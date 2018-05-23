@@ -1,8 +1,5 @@
 // Copyright 2001-2018 Crytek GmbH / Crytek Group. All rights reserved.
 
-#ifndef __BOOSTPYTHONHELPER_H__
-#define __BOOSTPYTHONHELPER_H__
-
 #pragma once
 
 #ifdef USE_PYTHON_SCRIPTING
@@ -76,7 +73,7 @@ struct SPyWrappedProperty
 
 	EType     type;
 	UProperty property;
-	string   stringValue;
+	string    stringValue;
 };
 
 typedef boost::shared_ptr<SPyWrappedProperty> pSPyWrappedProperty;
@@ -125,14 +122,14 @@ public:
 	PyGameLayer(void* layerPtr);
 	~PyGameLayer();
 	void*                                       GetPtr() const           { return m_layerPtr; }
-	string                                     GetName() const          { return m_layerName; }
-	string                                     GetPath() const          { return m_layerPath; }
+	string                                      GetName() const          { return m_layerName; }
+	string                                      GetPath() const          { return m_layerPath; }
 	CryGUID                                     GetGUID() const          { return m_layerGUID; }
 	bool                                        IsVisible() const        { return m_layerVisible; }
 	bool                                        IsFrozen() const         { return m_layerFrozen; }
-	bool                                        IsExportable() const     { return m_layerExportable; };
-	bool                                        IsExportLayerPak() const { return m_layerExportLayerPak; };
-	bool                                        IsDefaultLoaded() const  { return m_layerDefaultLoaded; };
+	bool                                        IsExportable() const     { return m_layerExportable; }
+	bool                                        IsExportLayerPak() const { return m_layerExportLayerPak; }
+	bool                                        IsDefaultLoaded() const  { return m_layerDefaultLoaded; }
 	bool                                        IsPhysics() const        { return m_layerPhysics; }
 	std::vector<boost::shared_ptr<PyGameLayer>> GetChildren() const
 	{
@@ -140,20 +137,20 @@ public:
 	}
 
 	// Many setters ignored here as they can better be handled in other areas.
-	void SetName(string name)                  { m_layerName = name; };
-	void SetVisible(bool visible)               { m_layerVisible = visible; };
-	void SetFrozen(bool frozen)                 { m_layerFrozen = frozen; };
-	void SetExportable(bool exportable)         { m_layerExportable = exportable; };
-	void SetExportLayerPak(bool exportLayerPak) { m_layerExportLayerPak = exportLayerPak; };
-	void SetDefaultLoaded(bool loaded)          { m_layerDefaultLoaded = loaded; };
+	void SetName(string name)                   { m_layerName = name; }
+	void SetVisible(bool visible)               { m_layerVisible = visible; }
+	void SetFrozen(bool frozen)                 { m_layerFrozen = frozen; }
+	void SetExportable(bool exportable)         { m_layerExportable = exportable; }
+	void SetExportLayerPak(bool exportLayerPak) { m_layerExportLayerPak = exportLayerPak; }
+	void SetDefaultLoaded(bool loaded)          { m_layerDefaultLoaded = loaded; }
 	void SetHavePhysics(bool physics)           { m_layerPhysics = physics; }
 
 	void UpdateLayer();
 
 private:
 	void*   m_layerPtr;
-	string m_layerName;
-	string m_layerPath;
+	string  m_layerName;
+	string  m_layerPath;
 	CryGUID m_layerGUID;
 	std::vector<boost::shared_ptr<PyGameLayer>> m_layerChildren;
 	bool    m_layerVisible;
@@ -170,15 +167,15 @@ class PyGameTexture
 public:
 	PyGameTexture(void* pTexture);
 	~PyGameTexture();
-	void*   GetPtr() const        { return m_texPtr; }
-	string GetName() const       { return m_texName; }
+	void*  GetPtr() const       { return m_texPtr; }
+	string GetName() const      { return m_texName; }
 
-	void    SetName(string name) { m_texName = name; }
+	void   SetName(string name) { m_texName = name; }
 
-	void    UpdateTexture();
+	void   UpdateTexture();
 
 private:
-	void*   m_texPtr;
+	void*  m_texPtr;
 	string m_texName;
 };
 typedef boost::shared_ptr<PyGameTexture> pPyGameTexture;
@@ -188,7 +185,7 @@ class PyGameSubMaterial
 public:
 	PyGameSubMaterial(void* pMat, int id);
 	~PyGameSubMaterial();
-	void*                                  GetPtr() const         { return m_matPtr; }
+	void*                                 GetPtr() const         { return m_matPtr; }
 	string                                GetName() const        { return m_matName; }
 	string                                GetShader() const      { return m_matShader; }
 	string                                GetSurfaceType() const { return m_matSurfaceType; }
@@ -204,19 +201,19 @@ public:
 	void SetName(string name)                                       { m_matName = name; }
 	void SetShader(string shader)                                   { m_matShader = shader; }
 	void SetSurfaceType(string surface)                             { m_matSurfaceType = surface; }
-	void SetTextures(std::vector<pPyGameTexture> textures)           { m_matTextures = textures; }
+	void SetTextures(std::vector<pPyGameTexture> textures)          { m_matTextures = textures; }
 	void SetMatParams(std::map<string, pSPyWrappedProperty> params) { m_matParams = params; }
 
 	void UpdateSubMaterial();
 
 private:
-	void*                                  m_matPtr;
-	int                                    m_matId;
+	void*                                 m_matPtr;
+	int                                   m_matId;
 	string                                m_matName;
 	string                                m_matPath;
 	string                                m_matShader;
 	string                                m_matSurfaceType;
-	std::vector<pPyGameTexture>            m_matTextures;
+	std::vector<pPyGameTexture>           m_matTextures;
 	std::map<string, pSPyWrappedProperty> m_matParams;
 
 };
@@ -229,23 +226,23 @@ public:
 	~PyGameMaterial();
 
 	void*                           GetPtr() const  { return m_matPtr; }
-	string                         GetName() const { return m_matName; }
-	string                         GetPath() const { return m_matPath; }
+	string                          GetName() const { return m_matName; }
+	string                          GetPath() const { return m_matPath; }
 	std::vector<pPyGameSubMaterial> GetSubMaterials() const
 	{
 		return m_matSubMaterials;
 	}
 
-	void SetName(string name) { m_matName = name; };
-	//void SetPath(string path) { m_matPath = path; };
+	void SetName(string name) { m_matName = name; }
+	//void SetPath(string path) { m_matPath = path; }
 	// No setters for this class as the engine handles this way better.
 
 	void UpdateMaterial();
 
 private:
 	void*                           m_matPtr;
-	string                         m_matName;
-	string                         m_matPath;
+	string                          m_matName;
+	string                          m_matPath;
 	std::vector<pPyGameSubMaterial> m_matSubMaterials;
 };
 typedef boost::shared_ptr<PyGameMaterial> pPyGameMaterial;
@@ -260,8 +257,8 @@ public:
 
 	pSPyWrappedClass GetClassObject()                  { return m_objClass; }
 	void*            GetPtr() const                    { return m_objPtr; }
-	string          GetName() const                   { return m_objName; }
-	string          GetType() const                   { return m_objType; }
+	string           GetName() const                   { return m_objName; }
+	string           GetType() const                   { return m_objType; }
 	CryGUID          GetGUID() const                   { return m_objGUID; }
 	pPyGameLayer     GetLayer() const                  { return m_objLayer; }
 	pPyGameMaterial  GetMaterial() const               { return m_objMaterial; }
@@ -275,24 +272,24 @@ public:
 	bool             IsFrozen() const                  { return m_objFrozen; }
 	bool             IsSelected() const                { return m_objSelected; }
 
-	void             SetName(string name)             { m_objName = name; };
-	void             SetLayer(pPyGameLayer pLayer)     { m_objLayer = pLayer; };
-	void             SetMaterial(pPyGameMaterial pMat) { m_objMaterial = pMat; };
+	void             SetName(string name)              { m_objName = name; }
+	void             SetLayer(pPyGameLayer pLayer)     { m_objLayer = pLayer; }
+	void             SetMaterial(pPyGameMaterial pMat) { m_objMaterial = pMat; }
 	void             SetParent(pPyGameObject pParent);
-	void             SetPosition(Vec3 position)        { m_objPosition = position; };
-	void             SetRotation(Vec3 rotation)        { m_objRotation = rotation; };
-	void             SetScale(Vec3 scale)              { m_objScale = scale; };
-	void             SetVisible(bool visible)          { m_objVisible = visible; };
-	void             SetFrozen(bool frozen)            { m_objFrozen = frozen; };
-	void             SetSelected(bool selected)        { m_objSelected = selected; };
+	void             SetPosition(Vec3 position)        { m_objPosition = position; }
+	void             SetRotation(Vec3 rotation)        { m_objRotation = rotation; }
+	void             SetScale(Vec3 scale)              { m_objScale = scale; }
+	void             SetVisible(bool visible)          { m_objVisible = visible; }
+	void             SetFrozen(bool frozen)            { m_objFrozen = frozen; }
+	void             SetSelected(bool selected)        { m_objSelected = selected; }
 
-	void             UpdateObject(); // store the class ref as a void pointer. in update reinterpret cast the object back to its baseclass, in this case CBaseObject.
+	void             UpdateObject(); // store the class ref as a void pointer. in update reinterpret cast the object back to its base class, in this case CBaseObject.
 
 private:
 	void*            m_objPtr;
 	pSPyWrappedClass m_objClass;
-	string          m_objName;
-	string          m_objType;
+	string           m_objName;
+	string           m_objType;
 	CryGUID          m_objGUID;
 	Vec3             m_objPosition;
 	Vec3             m_objRotation;
@@ -314,23 +311,23 @@ public:
 	PyGameBrush(void* brushPtr, pSPyWrappedClass sharedPtr);
 	~PyGameBrush();
 	string GetModel() const            { return m_brushModel; }
-	int     GetRatioLod() const         { return m_brushRatioLod; }
-	int     GetRatioViewDist() const    { return m_brushRatioviewDist; }
-	int     GetLodCount() const         { return m_brushLodCount; }
+	int    GetRatioLod() const         { return m_brushRatioLod; }
+	int    GetRatioViewDist() const    { return m_brushRatioviewDist; }
+	int    GetLodCount() const         { return m_brushLodCount; }
 
-	void    SetModel(string model)     { m_brushModel = model; }
-	void    SetRatioLod(int ratio)      { m_brushRatioLod = ratio; }
-	void    SetRatioViewDist(int ratio) { m_brushRatioviewDist = ratio; }
+	void   SetModel(string model)      { m_brushModel = model; }
+	void   SetRatioLod(int ratio)      { m_brushRatioLod = ratio; }
+	void   SetRatioViewDist(int ratio) { m_brushRatioviewDist = ratio; }
 
-	void    Reload();
-	void    UpdateBrush();
+	void   Reload();
+	void   UpdateBrush();
 
 private:
-	void*   m_brushPtr;
+	void*  m_brushPtr;
 	string m_brushModel;
-	int     m_brushRatioLod;
-	int     m_brushRatioviewDist;
-	int     m_brushLodCount;
+	int    m_brushRatioLod;
+	int    m_brushRatioviewDist;
+	int    m_brushLodCount;
 };
 
 class PyGameEntity
@@ -340,8 +337,8 @@ public:
 	~PyGameEntity();
 	string                                GetModel() const         { return m_entityModel; }
 	string                                GetSubClass() const      { return m_entitySubClass; }
-	int                                    GetRatioLod() const      { return m_entityRatioLod; }
-	int                                    GetRatioViewDist() const { return m_entityRatioviewDist; }
+	int                                   GetRatioLod() const      { return m_entityRatioLod; }
+	int                                   GetRatioViewDist() const { return m_entityRatioviewDist; }
 	std::map<string, pSPyWrappedProperty> GetProperties()
 	{
 		return m_entityProps;
@@ -349,20 +346,20 @@ public:
 
 	void SetModel(string model)                                     { m_entityModel = model; }
 	void SetSubClass(string cls)                                    { m_entitySubClass = cls; }
-	void SetRatioLod(int ratio)                                      { m_entityRatioLod = ratio; }
-	void SetRatioViewDist(int ratio)                                 { m_entityRatioviewDist = ratio; }
+	void SetRatioLod(int ratio)                                     { m_entityRatioLod = ratio; }
+	void SetRatioViewDist(int ratio)                                { m_entityRatioviewDist = ratio; }
 	void SetProperties(std::map<string, pSPyWrappedProperty> props) { m_entityProps = props; }
 
 	void Reload();
 	void UpdateEntity();
 
 private:
-	void*   m_entityPtr;
-	int     m_entityId;
+	void*  m_entityPtr;
+	int    m_entityId;
 	string m_entitySubClass;
 	string m_entityModel;
-	float   m_entityRatioLod;
-	float   m_entityRatioviewDist;
+	float  m_entityRatioLod;
+	float  m_entityRatioviewDist;
 	std::map<string, pSPyWrappedProperty> m_entityProps;
 };
 
@@ -373,7 +370,7 @@ public:
 	~PyGamePrefab();
 
 	bool                       IsOpen();
-	string                    GetName() const { return m_prefabName; }
+	string                     GetName() const { return m_prefabName; }
 	std::vector<pPyGameObject> GetChildren();
 
 	void                       SetName(string name) { m_prefabName = name; }
@@ -389,7 +386,7 @@ public:
 
 private:
 	void*                      m_prefabPtr;
-	string                    m_prefabName;
+	string                     m_prefabName;
 	std::vector<pPyGameObject> m_prefabChildren;
 };
 
@@ -461,30 +458,30 @@ public:
 	~PyGameVegetation();
 
 	void*                                  GetPtr() const          { return m_vegPtr; }
-	string                                GetName() const         { return m_vegName; }
-	string                                GetGroup() const        { return m_vegGroup; }
+	string                                 GetName() const         { return m_vegName; }
+	string                                 GetGroup() const        { return m_vegGroup; }
 	int                                    GetID() const           { return m_vegID; }
 	int                                    GetNumInstances() const { return m_vegInstCount; }
 	std::vector<pPyGameVegetationInstance> GetInstances() const
 	{
 		return m_vegInstances;
 	}
-	bool IsSelected() const                    { return m_vegSelected; }
-	bool IsVisible() const                     { return m_vegVisible; }
-	bool IsFrozen() const                      { return m_vegFrozen; }
-	bool IsCastShadow() const                  { return m_vegCastShadows; }
-	bool GetGIMode() const                     { return m_vegGIMode; }
-	bool IsAutoMerged() const                  { return m_vegAutoMerged; }
-	bool IsHideable() const                    { return m_vegHideable; }
+	bool IsSelected() const              { return m_vegSelected; }
+	bool IsVisible() const               { return m_vegVisible; }
+	bool IsFrozen() const                { return m_vegFrozen; }
+	bool IsCastShadow() const            { return m_vegCastShadows; }
+	bool GetGIMode() const               { return m_vegGIMode; }
+	bool IsAutoMerged() const            { return m_vegAutoMerged; }
+	bool IsHideable() const              { return m_vegHideable; }
 
-	void SetName(string name)                 { m_vegName = name; }
-	void SetGroup(string group)               { m_vegGroup = group; }
-	void SetSelected(bool selected)            { m_vegSelected = selected; }
-	void SetVisible(bool visible)              { m_vegVisible = visible; }
-	void SetFrozen(bool frozen)                { m_vegFrozen = frozen; }
-	void SetCastShadow(bool castShadows)       { m_vegCastShadows = castShadows; }
-	void SetGIMode(bool mode)                  { m_vegGIMode = mode; }
-	void SetHideable(bool hideable)            { m_vegHideable = hideable; }
+	void SetName(string name)            { m_vegName = name; }
+	void SetGroup(string group)          { m_vegGroup = group; }
+	void SetSelected(bool selected)      { m_vegSelected = selected; }
+	void SetVisible(bool visible)        { m_vegVisible = visible; }
+	void SetFrozen(bool frozen)          { m_vegFrozen = frozen; }
+	void SetCastShadow(bool castShadows) { m_vegCastShadows = castShadows; }
+	void SetGIMode(bool mode)            { m_vegGIMode = mode; }
+	void SetHideable(bool hideable)      { m_vegHideable = hideable; }
 
 	void Load();
 	void Unload();
@@ -492,18 +489,18 @@ public:
 	void UpdateVegetation();
 
 private:
-	void*   m_vegPtr;
+	void*  m_vegPtr;
 	string m_vegName;
 	string m_vegGroup;
-	int     m_vegID;
-	int     m_vegInstCount;
-	bool    m_vegSelected;
-	bool    m_vegVisible;
-	bool    m_vegFrozen;
-	bool    m_vegCastShadows;
-	bool    m_vegGIMode;
-	bool    m_vegAutoMerged;
-	bool    m_vegHideable;
+	int    m_vegID;
+	int    m_vegInstCount;
+	bool   m_vegSelected;
+	bool   m_vegVisible;
+	bool   m_vegFrozen;
+	bool   m_vegCastShadows;
+	bool   m_vegGIMode;
+	bool   m_vegAutoMerged;
+	bool   m_vegHideable;
 	std::vector<pPyGameVegetationInstance> m_vegInstances;
 
 };
@@ -729,6 +726,3 @@ inline string PyCommand(const char* commandString, ...)
 	va_end(args);
 	return buffer;
 }
-
-#endif // __BOOSTPYTHONHELPER_H__
-

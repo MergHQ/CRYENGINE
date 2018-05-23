@@ -1,7 +1,6 @@
 // Copyright 2001-2018 Crytek GmbH / Crytek Group. All rights reserved.
 
-#ifndef _COLLISION_CLASS_FILTERING_H__
-#define _COLLISION_CLASS_FILTERING_H__
+#pragma once
 
 class CCollisionFilteringProperties
 {
@@ -34,8 +33,5 @@ protected:
 	SCollisionClass          m_collisionClass;
 
 	static bool              m_bNamesInitialised;
-	static string           m_collision_class_names[k_maxCollisionClasses];
+	static string            m_collision_class_names[k_maxCollisionClasses];
 };
-
-#endif
-

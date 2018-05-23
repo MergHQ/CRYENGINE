@@ -1,11 +1,6 @@
 // Copyright 2001-2018 Crytek GmbH / Crytek Group. All rights reserved.
 
-#ifndef __FRAGMENT_EDITOR_H__
-#define __FRAGMENT_EDITOR_H__
-
-#if _MSC_VER > 1000
-	#pragma once
-#endif
+#pragma once
 
 #include "Dialogs/ToolbarDialog.h"
 #include "SequencerSplitter.h"
@@ -34,7 +29,7 @@ public:
 	void                     InitialiseToPreviewFile(const XmlNodeRef& xmlSequenceRoot);
 
 	void                     SetMannequinContexts(SMannequinContexts* contexts);
-	CSequencerSequence*      GetSequence() { return m_pSequence; };
+	CSequencerSequence*      GetSequence() { return m_pSequence; }
 
 	SFragmentHistoryContext* GetFragmentHistory()
 	{
@@ -108,6 +103,3 @@ protected:
 
 	bool                     m_bEditingFragment;
 };
-
-#endif // __FRAGMENT_EDITOR_H__
-

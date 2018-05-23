@@ -1,18 +1,5 @@
 // Copyright 2001-2018 Crytek GmbH / Crytek Group. All rights reserved.
 
-////////////////////////////////////////////////////////////////////////////
-//
-//  CryEngine Source File.
-//  Copyright (C), Crytek, 2014.
-// -------------------------------------------------------------------------
-//  File name: QtMain.h
-//  Created:   26/09/2014 by timur
-//  Description: QT Main entry point
-// -------------------------------------------------------------------------
-//  History:
-//
-////////////////////////////////////////////////////////////////////////////
-
 #include <StdAfx.h>
 #include <processenv.h>
 #include "QMfcApp/qmfcapp.h"
@@ -290,4 +277,3 @@ int main(int argc, char* argv[])
 
 	return 0;
 }
-

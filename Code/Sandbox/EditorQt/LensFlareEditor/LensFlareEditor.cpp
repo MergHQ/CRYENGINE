@@ -199,13 +199,13 @@ void CLensFlareEditor::DoDataExchange(CDataExchange* pDX)
 
 class CLensFlareEditorClass : public IViewPaneClass
 {
-	virtual ESystemClassID SystemClassID()   override { return ESYSTEM_CLASS_VIEWPANE; };
-	virtual const char*    ClassName()       override { return CLensFlareEditor::s_pLensFlareEditorClassName; };
-	virtual const char*    Category()        override { return "Database"; };
+	virtual ESystemClassID SystemClassID()   override { return ESYSTEM_CLASS_VIEWPANE; }
+	virtual const char*    ClassName()       override { return CLensFlareEditor::s_pLensFlareEditorClassName; }
+	virtual const char*    Category()        override { return "Database"; }
 	virtual const char*    GetMenuPath()     override { return ""; }
-	virtual CRuntimeClass* GetRuntimeClass() override { return RUNTIME_CLASS(CLensFlareEditor); };
-	virtual const char*    GetPaneTitle()    override { return CLensFlareEditor::s_pLensFlareEditorClassName; };
-	virtual bool           SinglePane()      override { return true; };
+	virtual CRuntimeClass* GetRuntimeClass() override { return RUNTIME_CLASS(CLensFlareEditor); }
+	virtual const char*    GetPaneTitle()    override { return CLensFlareEditor::s_pLensFlareEditorClassName; }
+	virtual bool           SinglePane()      override { return true; }
 };
 
 REGISTER_CLASS_DESC(CLensFlareEditorClass)

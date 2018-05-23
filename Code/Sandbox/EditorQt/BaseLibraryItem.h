@@ -1,7 +1,5 @@
 // Copyright 2001-2018 Crytek GmbH / Crytek Group. All rights reserved.
 
-#ifndef __baselibraryitem_h__
-#define __baselibraryitem_h__
 #pragma once
 
 #include "SandboxAPI.h"
@@ -62,14 +60,14 @@ public:
 	//! Mark library as modified.
 	void SetModified(bool bModified = true);
 	//! Check if library was modified.
-	bool IsModified() const { return m_bModified; };
+	bool IsModified() const { return m_bModified; }
 
 	//! Validate item for errors.
-	virtual void Validate() {};
+	virtual void Validate() {}
 
 	//////////////////////////////////////////////////////////////////////////
 	//! Gathers resources by this item.
-	virtual void GatherUsedResources(CUsedResources& resources) {};
+	virtual void GatherUsedResources(CUsedResources& resources) {}
 
 protected:
 
@@ -78,19 +76,16 @@ protected:
 	friend class CBaseLibrary;
 	friend class CBaseLibraryManager;
 	// Name of this prototype.
-	string                  m_name;
+	string                   m_name;
 	//! Reference to prototype library who contains this prototype.
 	_smart_ptr<CBaseLibrary> m_library;
 
 	//! Every base library item have unique id.
 	CryGUID m_guid;
 	// True when item modified by editor.
-	bool m_bModified;
+	bool    m_bModified;
 	// True when item registered in manager.
-	bool m_bRegistered;
+	bool    m_bRegistered;
 };
 
 TYPEDEF_AUTOPTR(CBaseLibraryItem);
-
-#endif // __baselibraryitem_h__
-

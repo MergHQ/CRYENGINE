@@ -1,11 +1,6 @@
 // Copyright 2001-2018 Crytek GmbH / Crytek Group. All rights reserved.
 
-#ifndef __brushobject_h__
-#define __brushobject_h__
-
-#if _MSC_VER > 1000
-	#pragma once
-#endif
+#pragma once
 
 #include "Objects/BaseObject.h"
 #include "CollisionFilteringProperties.h"
@@ -21,7 +16,7 @@ public:
 	DECLARE_DYNCREATE(CBrushObject)
 
 	//////////////////////////////////////////////////////////////////////////
-	// Ovverides from CBaseObject.
+	// Overrides from CBaseObject.
 	//////////////////////////////////////////////////////////////////////////
 	bool                     Init(CBaseObject* prev, const string& file);
 	void                     Done();
@@ -57,10 +52,10 @@ public:
 
 	//////////////////////////////////////////////////////////////////////////
 	virtual IStatObj* GetIStatObj();
-	int               GetRenderFlags() const   { return m_renderFlags; };
-	IRenderNode*      GetEngineNode() const    { return m_pRenderNode; };
-	float             GetRatioLod() const      { return mv_ratioLOD; };
-	float             GetRatioViewDist() const { return mv_ratioViewDist; };
+	int               GetRenderFlags() const   { return m_renderFlags; }
+	IRenderNode*      GetEngineNode() const    { return m_pRenderNode; }
+	float             GetRatioLod() const      { return mv_ratioLOD; }
+	float             GetRatioViewDist() const { return mv_ratioViewDist; }
 	const string& GetGeometryFile() const  { return mv_geometryFile; }
 	void          SetGeometryFile(const string& geometryFile);
 
@@ -95,7 +90,7 @@ protected:
 	void WorldToLocalRay(Vec3& raySrc, Vec3& rayDir);
 
 	bool ConvertFromObject(CBaseObject* object);
-	void DeleteThis() { delete this; };
+	void DeleteThis() { delete this; }
 	void InvalidateTM(int nWhyFlags);
 	void OnEvent(ObjectEvent event);
 
@@ -175,13 +170,10 @@ private:
 class CBrushObjectClassDesc : public CObjectClassDesc
 {
 public:
-	ObjectType          GetObjectType()                     { return OBJTYPE_BRUSH; };
-	const char*         ClassName()                         { return "Brush"; };
-	const char*         Category()                          { return "Brush"; };
-	CRuntimeClass*      GetRuntimeClass()                   { return RUNTIME_CLASS(CBrushObject); };
-	const char*         GetFileSpec()                       { return "*.cgf"; };
+	ObjectType          GetObjectType()                     { return OBJTYPE_BRUSH; }
+	const char*         ClassName()                         { return "Brush"; }
+	const char*         Category()                          { return "Brush"; }
+	CRuntimeClass*      GetRuntimeClass()                   { return RUNTIME_CLASS(CBrushObject); }
+	const char*         GetFileSpec()                       { return "*.cgf"; }
 	virtual const char* GetDataFilesFilterString() override { return GetFileSpec(); }
 };
-
-#endif // __brushobject_h__
-

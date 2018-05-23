@@ -1,11 +1,6 @@
 // Copyright 2001-2018 Crytek GmbH / Crytek Group. All rights reserved.
 
-#ifndef __FlowGraphHelpers_h__
-#define __FlowGraphHelpers_h__
-
-#if _MSC_VER > 1000
-	#pragma once
-#endif
+#pragma once
 
 #include <vector>
 
@@ -53,6 +48,3 @@ void OpenFlowGraphView(CHyperFlowGraph* pFlowGraph, string selectNode);
 
 void ListFlowGraphsForEntity(CEntityObject* pEntity);
 };
-
-#endif
-

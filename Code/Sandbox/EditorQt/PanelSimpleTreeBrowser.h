@@ -1,7 +1,6 @@
 // Copyright 2001-2018 Crytek GmbH / Crytek Group. All rights reserved.
 
-#ifndef __PanelSimpleTreeBrowser_H__
-#define __PanelSimpleTreeBrowser_H__
+#pragma once
 
 #include "Controls/TreeCtrlReport.h"
 #include "Viewport.h"
@@ -35,7 +34,7 @@ struct ISimpleTreeBrowserScanner
 class CSimpleTreeBrowser : public CXTResizeDialog
 {
 public:
-	CSimpleTreeBrowser(int Height = 0, int iddImageList = 0, CWnd* pParent = NULL);   // standard constructor
+	CSimpleTreeBrowser(int Height = 0, int iddImageList = 0, CWnd* pParent = NULL);
 	virtual ~CSimpleTreeBrowser();
 
 	// Dialog Data
@@ -46,24 +45,24 @@ public:
 	void SetAutoResize(bool bEnabled, int minHeight = 0, int maxHeight = 0);
 
 	typedef Functor1<SSimpleTreeBrowserItem*> TEventCallback;
-	void SetOnSelectCallback(TEventCallback& cb)                          { m_onSelectCallback = cb; };
-	void SetOnDblClickCallback(TEventCallback& cb)                        { m_onDblClickCallback = cb; };
-	void SetOnDragAndDropCallback(TEventCallback& cb, EViewportType type) { m_onDragAndDropCallbacks[type] = cb; };
-	void EnableOnSelectCallback(bool bEnable)                             { m_bOnSelectCallbackEnabled = bEnable; };
-	void EnableOnCblClickCallback(bool bEnable)                           { m_bOnDblClickCallbackEnabled = bEnable; };
-	void EnableOnDragAndDropCallback(bool bEnable)                        { m_bOnDragAndDropCallbackEnabled = bEnable; };
+	void SetOnSelectCallback(TEventCallback& cb)                          { m_onSelectCallback = cb; }
+	void SetOnDblClickCallback(TEventCallback& cb)                        { m_onDblClickCallback = cb; }
+	void SetOnDragAndDropCallback(TEventCallback& cb, EViewportType type) { m_onDragAndDropCallbacks[type] = cb; }
+	void EnableOnSelectCallback(bool bEnable)                             { m_bOnSelectCallbackEnabled = bEnable; }
+	void EnableOnCblClickCallback(bool bEnable)                           { m_bOnDblClickCallbackEnabled = bEnable; }
+	void EnableOnDragAndDropCallback(bool bEnable)                        { m_bOnDragAndDropCallbackEnabled = bEnable; }
 
 	typedef Functor2wRet<SSimpleTreeBrowserItem*, CMenu&, bool> TContextMenuPopulationCallback;
 	typedef Functor1<int>                                       TContextMenuCommandCallback;
 	void SetContextMenuCallbacks(TContextMenuPopulationCallback& cbCreate, TContextMenuCommandCallback& cbCommand) { m_CMCallbackCreate = cbCreate; m_CMCallbackCommand = cbCommand; }
-	void EnableContextMenuCallbacks(bool bEnable)                                                                  { m_bContextMenuCallbacksEnabled = bEnable; };
+	void EnableContextMenuCallbacks(bool bEnable)                                                                  { m_bContextMenuCallbacksEnabled = bEnable; }
 
 	void Refresh();
 
 protected:
-	virtual void DoDataExchange(CDataExchange* pDX);    // DDX/DDV support
-	virtual void OnOK()     {};
-	virtual void OnCancel() {};
+	virtual void DoDataExchange(CDataExchange* pDX);
+	virtual void OnOK()     {}
+	virtual void OnCancel() {}
 
 	// Generated message map functions
 	virtual BOOL OnInitDialog();
@@ -110,6 +109,3 @@ private:
 	bool                           m_bOnDragAndDropCallbackEnabled;
 	bool                           m_bContextMenuCallbacksEnabled;
 };
-
-#endif // __PanelSimpleTreeBrowser_H__
-

@@ -1,7 +1,5 @@
 // Copyright 2001-2018 Crytek GmbH / Crytek Group. All rights reserved.
 
-#ifndef __visareashapeobject_h__
-#define __visareashapeobject_h__
 #pragma once
 
 #include "ShapeObject.h"
@@ -67,7 +65,7 @@ public:
 	void InitVariables();
 
 protected:
-	virtual int  GetMaxPoints() const { return 4; };
+	virtual int  GetMaxPoints() const { return 4; }
 	virtual void UpdateGameArea();
 
 	CVariable<bool>  mv_bUseDeepness;
@@ -88,8 +86,8 @@ public:
 	void InitVariables();
 
 protected:
-	virtual int  GetMinPoints() const { return 2; };
-	virtual int  GetMaxPoints() const { return 2; };
+	virtual int  GetMinPoints() const { return 2; }
+	virtual int  GetMaxPoints() const { return 2; }
 	virtual void UpdateGameArea();
 
 	CVariable<bool>  mv_bUseInIndoors;
@@ -109,8 +107,8 @@ public:
 	void InitVariables();
 
 protected:
-	virtual int  GetMinPoints() const { return 4; };
-	virtual int  GetMaxPoints() const { return 4; };
+	virtual int  GetMinPoints() const { return 4; }
+	virtual int  GetMaxPoints() const { return 4; }
 	virtual void UpdateGameArea();
 
 	CVariable<bool>  mv_bUseInIndoors;
@@ -123,10 +121,10 @@ protected:
 class CVisAreaShapeObjectClassDesc : public CObjectClassDesc
 {
 public:
-	ObjectType     GetObjectType()     { return OBJTYPE_VOLUME; };
-	const char*    ClassName()         { return "VisArea"; };
-	const char*    Category()          { return "Area"; };
-	CRuntimeClass* GetRuntimeClass()   { return RUNTIME_CLASS(CVisAreaShapeObject); };
+	ObjectType     GetObjectType()   { return OBJTYPE_VOLUME; }
+	const char*    ClassName()       { return "VisArea"; }
+	const char*    Category()        { return "Area"; }
+	CRuntimeClass* GetRuntimeClass() { return RUNTIME_CLASS(CVisAreaShapeObject); }
 };
 
 /*!
@@ -135,10 +133,10 @@ public:
 class CPortalShapeObjectClassDesc : public CObjectClassDesc
 {
 public:
-	ObjectType     GetObjectType()     { return OBJTYPE_VOLUME; };
-	const char*    ClassName()         { return "Portal"; };
-	const char*    Category()          { return "Area"; };
-	CRuntimeClass* GetRuntimeClass()   { return RUNTIME_CLASS(CPortalShapeObject); };
+	ObjectType     GetObjectType()   { return OBJTYPE_VOLUME; }
+	const char*    ClassName()       { return "Portal"; }
+	const char*    Category()        { return "Area"; }
+	CRuntimeClass* GetRuntimeClass() { return RUNTIME_CLASS(CPortalShapeObject); }
 };
 
 /*!
@@ -147,10 +145,10 @@ public:
 class COccluderPlaneObjectClassDesc : public CObjectClassDesc
 {
 public:
-	ObjectType     GetObjectType()     { return OBJTYPE_VOLUME; };
-	const char*    ClassName()         { return "OccluderPlane"; };
-	const char*    Category()          { return "Area"; };
-	CRuntimeClass* GetRuntimeClass()   { return RUNTIME_CLASS(COccluderPlaneObject); };
+	ObjectType     GetObjectType()   { return OBJTYPE_VOLUME; }
+	const char*    ClassName()       { return "OccluderPlane"; }
+	const char*    Category()        { return "Area"; }
+	CRuntimeClass* GetRuntimeClass() { return RUNTIME_CLASS(COccluderPlaneObject); }
 };
 
 /*!
@@ -159,12 +157,9 @@ public:
 class COccluderAreaObjectClassDesc : public CObjectClassDesc
 {
 public:
-	ObjectType     GetObjectType()     { return OBJTYPE_VOLUME; };
-	const char*    ClassName()         { return "OccluderArea"; };
-	const char*    UIName()            { return "Occluder"; };
-	const char*    Category()          { return "Area"; };
-	CRuntimeClass* GetRuntimeClass()   { return RUNTIME_CLASS(COccluderAreaObject); };
+	ObjectType     GetObjectType()   { return OBJTYPE_VOLUME; }
+	const char*    ClassName()       { return "OccluderArea"; }
+	const char*    UIName()          { return "Occluder"; }
+	const char*    Category()        { return "Area"; }
+	CRuntimeClass* GetRuntimeClass() { return RUNTIME_CLASS(COccluderAreaObject); }
 };
-
-#endif // __visareashapeobject_h__
-

@@ -1,10 +1,7 @@
 // Copyright 2001-2018 Crytek GmbH / Crytek Group. All rights reserved.
 
-#ifndef __ShaderCache_h__
-#define __ShaderCache_h__
 #pragma once
 
-//////////////////////////////////////////////////////////////////////////
 class CLevelShaderCache
 {
 public:
@@ -23,12 +20,8 @@ public:
 	void ActivateShaders();
 
 private:
-	//////////////////////////////////////////////////////////////////////////
 	bool    m_bModified;
-	string m_filename;
+	string  m_filename;
 	typedef std::set<string> Entries;
 	Entries m_entries;
 };
-
-#endif // __ShaderCache_h__
-

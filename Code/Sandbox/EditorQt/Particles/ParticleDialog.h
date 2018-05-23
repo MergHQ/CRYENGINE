@@ -1,7 +1,5 @@
 // Copyright 2001-2018 Crytek GmbH / Crytek Group. All rights reserved.
 
-#ifndef __particledialog_h__
-#define __particledialog_h__
 #pragma once
 
 #include "BaseLibraryDialog.h"
@@ -119,6 +117,3 @@ protected:
 
 	TSmartPtr<CParticleItem>     m_pDraggedParticleItem;
 };
-
-#endif // __particledialog_h__
-

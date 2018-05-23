@@ -1,11 +1,6 @@
 // Copyright 2001-2018 Crytek GmbH / Crytek Group. All rights reserved.
 
-#ifndef __2dviewport_h__
-#define __2dviewport_h__
-
-#if _MSC_VER > 1000
-	#pragma once
-#endif
+#pragma once
 
 #include "Viewport.h"
 #include "Objects\DisplayContext.h"
@@ -23,7 +18,7 @@ public:
 
 	virtual void          SetType(EViewportType type);
 	virtual EViewportType GetType() const        { return m_viewType; }
-	virtual float         GetAspectRatio() const { return 1.0f; };
+	virtual float         GetAspectRatio() const { return 1.0f; }
 
 	virtual void          ResetContent();
 	virtual void          UpdateContent(int flags);
@@ -40,19 +35,19 @@ public:
 	//! Project a point as close as possible to a world space axis based on screen space projection
 	virtual Vec3  ViewToAxisConstraint(POINT& point, Vec3 axis, Vec3 origin) const;
 	//! Get view up direction - basically this is hack to compensate for fact of inconsistency between 2d-perspective view matrices
-	virtual Vec3 UpViewDirection() const;
+	virtual Vec3  UpViewDirection() const;
 	//! Get view direction
-	virtual Vec3 ViewDirection() const;
+	virtual Vec3  ViewDirection() const;
 	//! Get direction from camera to a world point - not necessarily normalized
-	virtual Vec3 CameraToWorld(Vec3 worldPoint) const;
+	virtual Vec3  CameraToWorld(Vec3 worldPoint) const;
 
 	virtual bool  HitTest(CPoint point, HitContext& hitInfo);
 	virtual bool  IsBoundsVisible(const AABB& box) const;
 
-	// ovverided from CViewport.
+	// overrides from CViewport.
 	float GetScreenScaleFactor(const Vec3& worldPoint) const;
 
-	// Overrided from CViewport.
+	// Overrides from CViewport.
 	void OnDragSelectRectangle(CPoint p1, CPoint p2, bool bNormilizeRect = false);
 	void CenterOnSelection();
 
@@ -67,7 +62,7 @@ public:
 	void SetShowViewMarker(bool bEnable)                { m_bShowViewMarker = bEnable; }
 
 	void SetShowGrid(bool bShowGrid)                    { m_bShowGrid = bShowGrid; }
-	bool GetShowGrid() const                            { return m_bShowGrid; };
+	bool GetShowGrid() const                            { return m_bShowGrid; }
 
 	void SetShowObjectsInfo(bool bShowObjectsInfo)      { m_bShowObjectsInfo = bShowObjectsInfo; }
 	bool GetShowObjectsInfo() const                     { return m_bShowObjectsInfo; }
@@ -95,7 +90,7 @@ protected:
 	virtual void SetZoom(float fZoomFactor, CPoint center);
 
 	// overrides from CViewport.
-	virtual void            MakeSnappingGridPlane(int axis);
+	virtual void MakeSnappingGridPlane(int axis);
 
 	//! Calculate view transformation matrix.
 	virtual void CalculateViewTM();
@@ -118,16 +113,16 @@ protected:
 	//////////////////////////////////////////////////////////////////////////
 	//! Get current screen matrix.
 	//! Screen matrix transform from World space to Screen space.
-	const Matrix34& GetScreenTM() const { return m_screenTM; };
+	const Matrix34&     GetScreenTM() const { return m_screenTM; }
 
-	void            OnResize() override;
-	void            OnPaint() override;
-	bool            MouseCallback(EMouseEvent event, CPoint& point, int flags) override;
+	void                OnResize() override;
+	void                OnPaint() override;
+	bool                MouseCallback(EMouseEvent event, CPoint& point, int flags) override;
 
-	void            SerializeDisplayOptions(Serialization::IArchive& ar);
+	void                SerializeDisplayOptions(Serialization::IArchive& ar);
 
 	const CViewManager* GetViewManager() const { return GetIEditor()->GetViewManager(); }
-	CViewManager* GetViewManager() { return GetIEditor()->GetViewManager(); }
+	CViewManager*       GetViewManager()       { return GetIEditor()->GetViewManager(); }
 
 protected:
 	//! XY/XZ/YZ mode of this 2D viewport.
@@ -141,44 +136,41 @@ protected:
 	Vec3 m_origin2D;
 
 	// Scrolling / zooming related
-	CPoint         m_cMousePos;
-	CPoint         m_RMouseDownPos;
+	CPoint             m_cMousePos;
+	CPoint             m_RMouseDownPos;
 
-	float          m_prevZoomFactor;
-	CSize          m_prevScrollOffset;
+	float              m_prevZoomFactor;
+	CSize              m_prevScrollOffset;
 
-	CRect          m_rcSelect;
-	CRect          m_rcClient;
+	CRect              m_rcSelect;
+	CRect              m_rcClient;
 
-	AABB           m_displayBounds;
+	AABB               m_displayBounds;
 
-	bool           m_bShowTerrain;
-	bool           m_bShowViewMarker;
-	bool           m_bShowGrid;
-	bool           m_bShowObjectsInfo;
-	bool           m_bShowMinorGridLines;
-	bool           m_bShowMajorGridLines;
-	bool           m_bShowNumbers;
-	bool           m_bAutoAdjustGrids;
+	bool               m_bShowTerrain;
+	bool               m_bShowViewMarker;
+	bool               m_bShowGrid;
+	bool               m_bShowObjectsInfo;
+	bool               m_bShowMinorGridLines;
+	bool               m_bShowMajorGridLines;
+	bool               m_bShowNumbers;
+	bool               m_bAutoAdjustGrids;
 
-	Matrix34       m_screenTM;
-	Matrix34       m_screenTM_Inverted;
+	Matrix34           m_screenTM;
+	Matrix34           m_screenTM_Inverted;
 
-	float          m_gridAlpha;
-	COLORREF       m_colorGridText;
-	COLORREF       m_colorAxisText;
-	COLORREF       m_colorBackground;
-	bool           m_bContentValid;
+	float              m_gridAlpha;
+	COLORREF           m_colorGridText;
+	COLORREF           m_colorAxisText;
+	COLORREF           m_colorBackground;
+	bool               m_bContentValid;
 
-	DisplayContext m_displayContext;
-	CPoint         m_cMouseDownPos;
+	DisplayContext     m_displayContext;
+	CPoint             m_cMouseDownPos;
 
-	bool           m_bRenderContextCreated;
+	bool               m_bRenderContextCreated;
 
-	CCamera        m_camera;
+	CCamera            m_camera;
 
 	SDisplayContextKey m_displayContextKey;
 };
-
-#endif // __2dviewport_h__
-

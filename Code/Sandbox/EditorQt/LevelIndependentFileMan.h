@@ -1,7 +1,6 @@
 // Copyright 2001-2018 Crytek GmbH / Crytek Group. All rights reserved.
 
-#ifndef __LevelIndependentFileMan_H__
-#define __LevelIndependentFileMan_H__
+#pragma once
 
 struct ILevelIndependentFileModule
 {
@@ -23,6 +22,3 @@ public:
 private:
 	std::vector<ILevelIndependentFileModule*> m_Modules;
 };
-
-#endif
-

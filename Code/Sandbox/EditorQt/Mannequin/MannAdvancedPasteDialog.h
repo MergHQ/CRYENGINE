@@ -1,7 +1,6 @@
 // Copyright 2001-2018 Crytek GmbH / Crytek Group. All rights reserved.
 
-#ifndef __MANN_ADVANCED_PASTE_DIALOG__
-#define __MANN_ADVANCED_PASTE_DIALOG__
+#pragma once
 
 #include <ICryMannequin.h>
 #include "Controls/TagSelectionControl.h"
@@ -32,6 +31,3 @@ private:
 	CTagSelectionControl      m_globalTagsSelectionControl;
 	CTagSelectionControl      m_fragTagsSelectionControl;
 };
-
-#endif
-

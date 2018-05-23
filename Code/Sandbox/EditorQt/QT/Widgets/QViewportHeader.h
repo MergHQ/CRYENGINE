@@ -1,19 +1,5 @@
 // Copyright 2001-2018 Crytek GmbH / Crytek Group. All rights reserved.
 
-////////////////////////////////////////////////////////////////////////////
-//
-//  CryEngine Source File.
-//  Copyright (C), Crytek, 2014.
-// -------------------------------------------------------------------------
-//  File name:   QViewportHeader.h
-//  Version:     v1.00
-//  Created:     15/10/2014 by timur.
-//  Description: Viewport header widget
-// -------------------------------------------------------------------------
-//  History:
-//
-////////////////////////////////////////////////////////////////////////////
-
 #pragma once
 
 #include <QFrame>

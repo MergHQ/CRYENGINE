@@ -1,7 +1,5 @@
 // Copyright 2001-2018 Crytek GmbH / Crytek Group. All rights reserved.
 
-#ifndef __ISEQUENCER_SYSTEM__H__
-#define __ISEQUENCER_SYSTEM__H__
 #pragma once
 
 class CSequencerTrack;
@@ -345,6 +343,3 @@ private:
 	uint32              m_changeCount;
 	bool                m_muted;
 };
-
-#endif // __ISequencerSystem_h__
-

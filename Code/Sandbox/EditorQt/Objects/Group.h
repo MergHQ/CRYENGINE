@@ -1,11 +1,6 @@
 // Copyright 2001-2018 Crytek GmbH / Crytek Group. All rights reserved.
 
-#ifndef __Group_h__
-#define __Group_h__
-
-#if _MSC_VER > 1000
-	#pragma once
-#endif
+#pragma once
 
 #include "Objects/BaseObject.h"
 
@@ -14,8 +9,8 @@ class CObjectManager;
 
 namespace Private_Group
 {
-	class CBatchAttachChildrenTransformationsHandler;
-	class CUndoBatchAttachBaseObject;
+class CBatchAttachChildrenTransformationsHandler;
+class CUndoBatchAttachBaseObject;
 }
 
 /*!
@@ -28,7 +23,7 @@ class SANDBOX_API CGroup : public CBaseObject
 public:
 	DECLARE_DYNCREATE(CGroup)
 
-	static void ForEachParentOf(const std::vector<CBaseObject*>& objects, std::function<void(CGroup*, std::vector<CBaseObject*>&)>);
+	static void ForEachParentOf(const std::vector<CBaseObject*>& objects, std::function<void(CGroup*, std::vector<CBaseObject*>&)> );
 	static bool CanCreateFrom(std::vector<CBaseObject*>& objects);
 	static void CreateFrom(std::vector<CBaseObject*>& objects, Vec3 center);
 
@@ -56,17 +51,17 @@ public:
 	virtual void        DetachChildren(std::vector<CBaseObject*>& objects, bool shouldKeepPos = true, bool shouldPlaceOnRoot = false) override;
 
 	//! Detach all childs of this node.
-	virtual void        DetachAll(bool bKeepPos = true, bool bPlaceOnRoot = false) override;
-	virtual void        AttachChildren(std::vector<CBaseObject*>& objects, bool shouldKeepPos = true, bool shouldInvalidateTM = true) override;
+	virtual void DetachAll(bool bKeepPos = true, bool bPlaceOnRoot = false) override;
+	virtual void AttachChildren(std::vector<CBaseObject*>& objects, bool shouldKeepPos = true, bool shouldInvalidateTM = true) override;
 
-	virtual void        SetMaterial(IEditorMaterial* mtl);
+	virtual void SetMaterial(IEditorMaterial* mtl);
 
-	void                GetBoundBox(AABB& box);
-	void                GetLocalBounds(AABB& box);
-	bool                HitTest(HitContext& hc);
-	virtual bool        HitHelperTestForChildObjects(HitContext& hc);
+	void         GetBoundBox(AABB& box);
+	void         GetLocalBounds(AABB& box);
+	bool         HitTest(HitContext& hc);
+	virtual bool HitHelperTestForChildObjects(HitContext& hc);
 
-	void                Serialize(CObjectArchive& ar);
+	void         Serialize(CObjectArchive& ar);
 
 	//! Overwrite event handler from CBaseObject.
 	void OnEvent(ObjectEvent event);
@@ -92,15 +87,15 @@ public:
 	void Close();
 
 	//! Return true if group is in Open state.
-	bool IsOpen() const { return m_opened; };
+	bool IsOpen() const { return m_opened; }
 
 	//! Called by child object, when it changes.
-	void OnChildModified();
+	void         OnChildModified();
 
 	virtual void DeleteAllMembers();
 	virtual void GetAllLinkedObjects(std::vector<CBaseObject*>& objects, CBaseObject* pObject);
 
-	void BindToParent();
+	void         BindToParent();
 
 	virtual bool SuspendUpdate(bool bForceSuspend = true) { return true; }
 	virtual void ResumeUpdate()                           {}
@@ -135,21 +130,21 @@ protected:
 	// Overwritten from CBaseObject.
 	virtual void RemoveChildren(const std::vector<CBaseObject*>& children) override;
 	virtual void RemoveChild(CBaseObject* node) override;
-	void DeleteThis() { delete this; };
+	void         DeleteThis()                       { delete this; }
 
-	void SetChildsParent(CBaseObject* pObj) { pObj->m_parent = this; }
+	void         SetChildsParent(CBaseObject* pObj) { pObj->m_parent = this; }
 
-	void FilterOutNonMembers(std::vector<CBaseObject*>& objects);
+	void         FilterOutNonMembers(std::vector<CBaseObject*>& objects);
 
 	// This list contains children which are actually members of this group, rather than regular attached ones.
 	TBaseObjects m_members;
 
 	AABB         m_bbox;
-	bool         m_bBBoxValid : 1;
-	bool         m_opened : 1;
-	bool         m_bAlwaysDrawBox : 1;
+	bool         m_bBBoxValid        : 1;
+	bool         m_opened            : 1;
+	bool         m_bAlwaysDrawBox    : 1;
 	bool         m_ignoreChildModify : 1;
-	bool         m_bUpdatingPivot : 1;
+	bool         m_bUpdatingPivot    : 1;
 
 	friend Private_Group::CBatchAttachChildrenTransformationsHandler;
 	friend Private_Group::CUndoBatchAttachBaseObject;
@@ -163,11 +158,8 @@ protected:
 class CGroupClassDesc : public CObjectClassDesc
 {
 public:
-	ObjectType     GetObjectType()   { return OBJTYPE_GROUP; };
-	const char*    ClassName()       { return "Group"; };
-	const char*    Category()        { return ""; };
-	CRuntimeClass* GetRuntimeClass() { return RUNTIME_CLASS(CGroup); };
+	ObjectType     GetObjectType()   { return OBJTYPE_GROUP; }
+	const char*    ClassName()       { return "Group"; }
+	const char*    Category()        { return ""; }
+	CRuntimeClass* GetRuntimeClass() { return RUNTIME_CLASS(CGroup); }
 };
-
-#endif // __Group_h__
-

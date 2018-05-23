@@ -1,7 +1,5 @@
 // Copyright 2001-2018 Crytek GmbH / Crytek Group. All rights reserved.
 
-#ifndef __MANN_CONTEXT_EDITOR_DIALOG_H__
-#define __MANN_CONTEXT_EDITOR_DIALOG_H__
 #pragma once
 
 #include "MannequinBase.h"
@@ -47,6 +45,3 @@ private:
 	CButton           m_moveUp;
 	CButton           m_moveDown;
 };
-
-#endif
-

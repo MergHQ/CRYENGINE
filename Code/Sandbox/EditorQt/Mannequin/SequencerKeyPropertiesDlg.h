@@ -1,19 +1,12 @@
 // Copyright 2001-2018 Crytek GmbH / Crytek Group. All rights reserved.
 
-#ifndef __SequencerKeyPropertiesDlg_h__
-#define __SequencerKeyPropertiesDlg_h__
 #pragma once
 
-#if _MSC_VER > 1000
-	#pragma once
-#endif
-
-#include "Controls\PropertyCtrl.h"
+#include "Controls/PropertyCtrl.h"
 #include "Controls/NumberCtrl.h"
 #include "SequencerUtils.h"
 #include "SequencerDopeSheetBase.h"
 #include "SequencerSequence.h"
-
 
 class CSequencerKeyPropertiesDlg;
 
@@ -25,7 +18,7 @@ public:
 	typedef CSequencerUtils::SelectedKey  SelectedKey;
 	typedef CSequencerUtils::SelectedKeys SelectedKeys;
 
-	CSequencerKeyUIControls() { m_pVarBlock = new CVarBlock; };
+	CSequencerKeyUIControls() { m_pVarBlock = new CVarBlock; }
 
 	void SetKeyPropertiesDlg(CSequencerKeyPropertiesDlg* pDlg) { m_pKeyPropertiesDlg = pDlg; }
 
@@ -114,9 +107,9 @@ protected:
 	void         SetCurrKey(int nkey);
 
 	virtual BOOL OnInitDialog();
-	virtual void OnOK()     {};
-	virtual void OnCancel() {};
-	virtual void DoDataExchange(CDataExchange* pDX);    // DDX/DDV support
+	virtual void OnOK()     {}
+	virtual void OnCancel() {}
+	virtual void DoDataExchange(CDataExchange* pDX);
 
 	afx_msg void OnDeltaposPrevnext(NMHDR* pNMHDR, LRESULT* pResult);
 	afx_msg void OnUpdateTime();
@@ -149,7 +142,7 @@ public:
 	}
 
 	void                SetSequence(CSequencerSequence* pSequence);
-	CSequencerSequence* GetSequence() { return m_pSequence; };
+	CSequencerSequence* GetSequence() { return m_pSequence; }
 
 	void                PopulateVariables();
 	void                PopulateVariables(CPropertyCtrl& propCtrl);
@@ -170,8 +163,8 @@ protected:
 
 	virtual BOOL OnInitDialog();
 	//virtual BOOL PreTranslateMessage(MSG* pMsg);
-	virtual void OnOK()     {};
-	virtual void OnCancel() {};
+	virtual void OnOK()     {}
+	virtual void OnCancel() {}
 
 	//////////////////////////////////////////////////////////////////////////
 	void OnVarChange(IVariable* pVar);
@@ -193,6 +186,3 @@ protected:
 
 	CSequencerTrack*         m_pLastTrackSelected;
 };
-
-#endif //__SequencerKeyPropertiesDlg_h__
-

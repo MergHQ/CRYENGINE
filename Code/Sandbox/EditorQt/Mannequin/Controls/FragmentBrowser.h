@@ -1,7 +1,6 @@
 // Copyright 2001-2018 Crytek GmbH / Crytek Group. All rights reserved.
 
-#ifndef __FRAGMENT_BROWSER__H__
-#define __FRAGMENT_BROWSER__H__
+#pragma once
 
 #include <ICryMannequin.h>
 #include "afxwin.h"
@@ -153,45 +152,45 @@ private:
 	void         KeepCorrectData();
 
 private:
-	UINT                   m_nFragmentClipboardFormat;
+	UINT                       m_nFragmentClipboardFormat;
 
-	CFragmentTreeCtrl      m_TreeCtrl;
-	CComboBox              m_cbContext;
+	CFragmentTreeCtrl          m_TreeCtrl;
+	CComboBox                  m_cbContext;
 	CEditWithSelectAllOnLClick m_editFilterTags;
 	CEditWithSelectAllOnLClick m_editFilterFragmentIDs;
 	CEditWithSelectAllOnLClick m_editAnimClipFilter;
-	CButton                m_chkShowSubFolders;
+	CButton                    m_chkShowSubFolders;
 
-	CButton                m_chkShowEmptyFolders;
-	CImageButton           m_newEntry;
-	CImageButton           m_deleteEntry;
-	CImageButton           m_editEntry;
-	CImageButton           m_newID;
-	CImageButton           m_deleteID;
-	CImageButton           m_renameID;
-	CImageButton           m_tagDefEditor;
-	CImageList             m_buttonImages;
-	CToolTipCtrl           m_toolTip;
+	CButton                    m_chkShowEmptyFolders;
+	CImageButton               m_newEntry;
+	CImageButton               m_deleteEntry;
+	CImageButton               m_editEntry;
+	CImageButton               m_newID;
+	CImageButton               m_deleteID;
+	CImageButton               m_renameID;
+	CImageButton               m_tagDefEditor;
+	CImageList                 m_buttonImages;
+	CToolTipCtrl               m_toolTip;
 
-	bool                   m_showSubFolders;
-	bool                   m_showEmptyFolders;
+	bool                       m_showSubFolders;
+	bool                       m_showEmptyFolders;
 
-	CString                m_filterText;
-	std::vector<CString>   m_filters;
+	CString                    m_filterText;
+	std::vector<CString>       m_filters;
 
-	CString                m_filterFragmentIDText;
+	CString                    m_filterFragmentIDText;
 
-	CString                m_filterAnimClipText;
+	CString                    m_filterAnimClipText;
 
-	IAnimationDatabase*    m_animDB;
-	CMannFragmentEditor&   m_fragEditor;
+	IAnimationDatabase*        m_animDB;
+	CMannFragmentEditor&       m_fragEditor;
 
-	std::vector<HTREEITEM> m_boldItems;
+	std::vector<HTREEITEM>     m_boldItems;
 
-	bool                   m_rightDrag;
+	bool                       m_rightDrag;
 
-	CImageList*            m_draggingImage;
-	HTREEITEM              m_dragItem;
+	CImageList*                m_draggingImage;
+	HTREEITEM                  m_dragItem;
 
 	struct SCopyItem
 	{
@@ -242,6 +241,3 @@ private:
 	COleDropTarget*               m_pDropTarget;
 	OnScopeContextChangedCallback m_onScopeContextChangedCallback;
 };
-
-#endif
-

@@ -1,7 +1,5 @@
 // Copyright 2001-2018 Crytek GmbH / Crytek Group. All rights reserved.
 
-#ifndef __MannequinEditorPage_h__
-#define __MannequinEditorPage_h__
 #pragma once
 
 #include "Dialogs/ToolbarDialog.h"
@@ -24,10 +22,5 @@ public:
 
 protected:
 	virtual BOOL PreTranslateMessage(MSG* pMsg);
-	virtual void ValidateToolbarButtonsState() {};
-
-private:
+	virtual void ValidateToolbarButtonsState() {}
 };
-
-#endif // __MannequinEditorPage_h__
-

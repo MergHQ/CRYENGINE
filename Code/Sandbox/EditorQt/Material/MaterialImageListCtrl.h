@@ -1,11 +1,9 @@
 // Copyright 2001-2018 Crytek GmbH / Crytek Group. All rights reserved.
 
-#ifndef __MaterialImageListCtrl_h__
-#define __MaterialImageListCtrl_h__
 #pragma once
 
-#include "Controls\ImageListCtrl.h"
-#include "Controls\PreviewModelCtrl.h"
+#include "Controls/ImageListCtrl.h"
+#include "Controls/PreviewModelCtrl.h"
 #include "Material.h"
 #include <CryRenderer/IRenderer.h> // IAsyncTextureCompileListener
 
@@ -27,7 +25,7 @@ public:
 	struct CMtlItem : public CImageListCtrlItem
 	{
 		_smart_ptr<CMaterial> pMaterial;
-		std::vector<string>  vVisibleTextures;
+		std::vector<string>   vVisibleTextures;
 	};
 
 	CMaterialImageListCtrl();
@@ -39,7 +37,7 @@ public:
 	CMtlItem*           FindMaterialItem(CMaterial* pMaterial);
 	void                InvalidateMaterial(CMaterial* pMaterial);
 
-	void                SetSelectMaterialCallback(SelectCallback func) { m_selectMtlFunc = func; };
+	void                SetSelectMaterialCallback(SelectCallback func) { m_selectMtlFunc = func; }
 
 	void                DeleteAllItems() override;
 
@@ -60,18 +58,18 @@ private:
 	virtual void OnCompilationFinished(const char* source, const char* target, ERcExitCode eReturnCode);
 
 	virtual void OnCompilationQueueTriggered(int nPending) {}
-	virtual void OnCompilationQueueDepleted() {}
+	virtual void OnCompilationQueueDepleted()              {}
 
 	// Stream listener
 	virtual void OnCreatedStreamedTexture(void* pHandle, const char* name, int nMips, int nMinMipAvailable) {}
 	virtual void OnUploadedStreamedTexture(void* pHandle);
-	virtual void OnDestroyedStreamedTexture(void* pHandle) {}
+	virtual void OnDestroyedStreamedTexture(void* pHandle)                                                  {}
 
-	virtual void OnTextureWantsMip(void* pHandle, int nMinMip) {}
-	virtual void OnTextureHasMip(void* pHandle, int nMinMip) {}
+	virtual void OnTextureWantsMip(void* pHandle, int nMinMip)                                              {}
+	virtual void OnTextureHasMip(void* pHandle, int nMinMip)                                                {}
 
-	virtual void OnBegunUsingTextures(void** pHandles, size_t numHandles) {}
-	virtual void OnEndedUsingTextures(void** pHandle, size_t numHandles) {}
+	virtual void OnBegunUsingTextures(void** pHandles, size_t numHandles)                                   {}
+	virtual void OnEndedUsingTextures(void** pHandle, size_t numHandles)                                    {}
 private:
 	_smart_ptr<CMaterial> m_pMatPreview;
 
@@ -81,6 +79,3 @@ private:
 	EMILC_ModelType       m_nModel;
 	int                   m_nColor;
 };
-
-#endif //__MaterialImageListCtrl_h__
-

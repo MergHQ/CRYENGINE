@@ -1,7 +1,6 @@
 // Copyright 2001-2018 Crytek GmbH / Crytek Group. All rights reserved.
 
-#ifndef __RULERPATHAGENT_H__
-#define __RULERPATHAGENT_H__
+#pragma once
 
 #include <CryAISystem/IAgent.h>
 #include <CryAISystem/IPathfinder.h>
@@ -43,13 +42,13 @@ public:
 
 	virtual const AgentMovementAbility& GetPathAgentMovementAbility() const;
 
-	virtual void                        SetPathToFollow(const char* pathName)  {}
-	virtual void                        SetPathAttributeToFollow(bool bSpline) {}
+	virtual void                        SetPathToFollow(const char* pathName)                                              {}
+	virtual void                        SetPathAttributeToFollow(bool bSpline)                                             {}
 
-	virtual bool           GetValidPositionNearby(const Vec3& proposedPosition, Vec3& adjustedPosition) const { return false; }
-	virtual bool           GetTeleportPosition(Vec3& teleportPos) const                                       { return false; }
-	virtual IPathFollower* GetPathFollower() const                                                            { return 0; }
-	virtual bool           IsPointValidForAgent(const Vec3& pos, uint32 flags) const                          { return true; }
+	virtual bool                        GetValidPositionNearby(const Vec3& proposedPosition, Vec3& adjustedPosition) const { return false; }
+	virtual bool                        GetTeleportPosition(Vec3& teleportPos) const                                       { return false; }
+	virtual IPathFollower*              GetPathFollower() const                                                            { return 0; }
+	virtual bool                        IsPointValidForAgent(const Vec3& pos, uint32 flags) const                          { return true; }
 	//~IAIPathAgent
 
 private:
@@ -64,6 +63,3 @@ private:
 
 	PATHPOINTVECTOR      m_path; // caches the path locally to allow multiple requests
 };
-
-#endif //__RULERPATHAGENT_H__
-

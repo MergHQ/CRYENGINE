@@ -1,11 +1,6 @@
 // Copyright 2001-2018 Crytek GmbH / Crytek Group. All rights reserved.
 
-#ifndef __PhysTool_h__
-#define __PhysTool_h__
-
-#if _MSC_VER > 1000
-	#pragma once
-#endif
+#pragma once
 
 #include "EditTool.h"
 
@@ -33,7 +28,7 @@ public:
 
 protected:
 	virtual ~CPhysPullTool();
-	void DeleteThis() { delete this; };
+	void DeleteThis() { delete this; }
 	void UpdateAttachPos(const struct SMiniCamera& cam, const CPoint& point);
 	static const int m_idConstr = 2015;
 
@@ -43,9 +38,6 @@ protected:
 	int              m_partid;
 	float            m_timeMove, m_timeHit, m_timeBullet;
 	float            m_attachDist;
-	int 						 m_nAttachPoints;
+	int              m_nAttachPoints;
 	HCURSOR          m_hcur[4];
 };
-
-#endif // __PhysTool_h__
-

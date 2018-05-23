@@ -1,11 +1,6 @@
 // Copyright 2001-2018 Crytek GmbH / Crytek Group. All rights reserved.
 
-#ifndef __CloudObject_h__
-#define __CloudObject_h__
-
-#if _MSC_VER > 1000
-	#pragma once
-#endif
+#pragma once
 
 #include "Objects/BaseObject.h"
 
@@ -15,15 +10,15 @@ public:
 	DECLARE_DYNCREATE(CCloudObject)
 
 	//////////////////////////////////////////////////////////////////////////
-	// Ovverides from CBaseObject.
+	// Overrides from CBaseObject.
 	//////////////////////////////////////////////////////////////////////////
 	void          Display(DisplayContext& dc);
 	void          GetLocalBounds(AABB& box);
 	bool          HitTest(HitContext& hc);
 
 	virtual float GetCreationOffsetFromTerrain() const override { return 0.f; }
-	
-	virtual void CreateInspectorWidgets(CInspectorWidgetCreator& creator) override;
+
+	virtual void  CreateInspectorWidgets(CInspectorWidgetCreator& creator) override;
 
 	//////////////////////////////////////////////////////////////////////////
 	// Cloud parameters.
@@ -39,7 +34,7 @@ public:
 protected:
 	CCloudObject();
 
-	void DeleteThis() { delete this; };
+	void DeleteThis() { delete this; }
 	void OnSizeChange(IVariable* pVar);
 
 	bool m_bNotSharedGeom;
@@ -52,12 +47,9 @@ protected:
 class CCloudObjectClassDesc : public CObjectClassDesc
 {
 public:
-	ObjectType     GetObjectType()     { return OBJTYPE_CLOUD; };
-	const char*    ClassName()         { return "CloudVolume"; };
-	const char*    Category()          { return ""; };
-	CRuntimeClass* GetRuntimeClass()   { return RUNTIME_CLASS(CCloudObject); };
-	const char*    GetFileSpec()       { return ""; };
+	ObjectType     GetObjectType()   { return OBJTYPE_CLOUD; }
+	const char*    ClassName()       { return "CloudVolume"; }
+	const char*    Category()        { return ""; }
+	CRuntimeClass* GetRuntimeClass() { return RUNTIME_CLASS(CCloudObject); }
+	const char*    GetFileSpec()     { return ""; }
 };
-
-#endif // __CloudObject_h__
-

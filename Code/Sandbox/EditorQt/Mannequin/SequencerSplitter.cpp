@@ -14,10 +14,6 @@ CSequencerSplitter::CSequencerSplitter()
 	m_cxBorder = m_cyBorder = 0;
 }
 
-CSequencerSplitter::~CSequencerSplitter()
-{
-}
-
 BEGIN_MESSAGE_MAP(CSequencerSplitter, CClampedSplitterWnd)
 END_MESSAGE_MAP()
 

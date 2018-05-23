@@ -67,7 +67,7 @@ public:
 	CEditShapeTool();
 
 	virtual string GetDisplayName() const override { return "Edit Shape"; }
-	// Ovverides from CEditTool
+	// Overrides from CEditTool
 	bool           MouseCallback(CViewport* view, EMouseEvent event, CPoint& point, int flags);
 
 	virtual void   SetUserData(const char* key, void* userData);
@@ -462,7 +462,7 @@ public:
 
 	CMergeShapesTool();
 
-	// Ovverides from CEditTool
+	// Overrides from CEditTool
 	virtual string GetDisplayName() const override { return "Merge Shapes"; }
 	bool           MouseCallback(CViewport* view, EMouseEvent event, CPoint& point, int flags);
 	virtual void   SetUserData(const char* key, void* userData);
@@ -600,7 +600,7 @@ public:
 
 	CSplitShapeTool();
 
-	// Ovverides from CEditTool
+	// Overrides from CEditTool
 	virtual string GetDisplayName() const override { return "Split Shape"; }
 	bool           MouseCallback(CViewport* view, EMouseEvent event, CPoint& point, int flags);
 	virtual void   SetUserData(const char* key, void* userData);

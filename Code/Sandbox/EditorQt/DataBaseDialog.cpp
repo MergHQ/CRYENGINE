@@ -21,12 +21,12 @@ class CDataBaseViewPaneClass : public IViewPaneClass
 	//////////////////////////////////////////////////////////////////////////
 	// IClassDesc
 	//////////////////////////////////////////////////////////////////////////
-	virtual ESystemClassID SystemClassID()	 override { return ESYSTEM_CLASS_VIEWPANE; };
-	virtual const char*    ClassName()       override { return DATABASE_VIEW_NAME; };
-	virtual const char*    Category()        override { return "Editor"; };
-	virtual CRuntimeClass* GetRuntimeClass() override { return RUNTIME_CLASS(CDataBaseDialog); };
-	virtual const char*    GetPaneTitle()    override { return _T(DATABASE_VIEW_NAME); };
-	virtual bool           SinglePane()      override { return true; };
+	virtual ESystemClassID SystemClassID()	 override { return ESYSTEM_CLASS_VIEWPANE; }
+	virtual const char*    ClassName()       override { return DATABASE_VIEW_NAME; }
+	virtual const char*    Category()        override { return "Editor"; }
+	virtual CRuntimeClass* GetRuntimeClass() override { return RUNTIME_CLASS(CDataBaseDialog); }
+	virtual const char*    GetPaneTitle()    override { return _T(DATABASE_VIEW_NAME); }
+	virtual bool           SinglePane()      override { return true; }
 };
 
 REGISTER_CLASS_DESC(CDataBaseViewPaneClass)

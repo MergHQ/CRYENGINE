@@ -1,7 +1,5 @@
 // Copyright 2001-2018 Crytek GmbH / Crytek Group. All rights reserved.
 
-#ifndef __particlemanager_h__
-#define __particlemanager_h__
 #pragma once
 
 #include "BaseLibraryManager.h"
@@ -40,13 +38,10 @@ protected:
 	virtual CBaseLibraryItem* MakeNewItem();
 	virtual CBaseLibrary*     MakeNewLibrary();
 
-	bool OnPickParticle(const string& oldValue, string& newValue);
+	bool                      OnPickParticle(const string& oldValue, string& newValue);
 
 	//! Path to libraries in this manager.
 	virtual string GetLibsPath();
 
 	string m_libsPath;
 };
-
-#endif // __particlemanager_h__
-

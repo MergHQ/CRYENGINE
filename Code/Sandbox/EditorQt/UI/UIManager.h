@@ -1,7 +1,6 @@
 // Copyright 2001-2018 Crytek GmbH / Crytek Group. All rights reserved.
 
-#ifndef __UIManager_H__
-#define __UIManager_H__
+#pragma once
 
 #include <CrySystem/Scaleform/IFlashUI.h>
 #include "LevelIndependentFileMan.h"
@@ -45,6 +44,3 @@ private:
 	CUIEditor* m_pEditor;
 
 };
-
-#endif // #ifndef __UIManager_H__
-

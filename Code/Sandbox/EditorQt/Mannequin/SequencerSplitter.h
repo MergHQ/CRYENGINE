@@ -1,11 +1,6 @@
 // Copyright 2001-2018 Crytek GmbH / Crytek Group. All rights reserved.
 
-#ifndef __sequencersplitter_h__
-#define __sequencersplitter_h__
-
-#if _MSC_VER > 1000
-	#pragma once
-#endif
+#pragma once
 
 #include "..\Controls\ClampedSplitterWnd.h"
 
@@ -13,6 +8,7 @@
 
 class CSequencerSplitter : public CClampedSplitterWnd
 {
+	DECLARE_MESSAGE_MAP()
 	DECLARE_DYNAMIC(CSequencerSplitter)
 
 	virtual CWnd * GetActivePane(int* pRow = NULL, int* pCol = NULL)
@@ -21,16 +17,9 @@ class CSequencerSplitter : public CClampedSplitterWnd
 	}
 
 	void SetPane(int row, int col, CWnd* pWnd, SIZE sizeInit);
-	// Ovveride this for flat look.
+	// Override this for flat look.
 	void OnDrawSplitter(CDC* pDC, ESplitType nType, const CRect& rectArg);
 
 public:
 	CSequencerSplitter();
-	virtual ~CSequencerSplitter();
-
-protected:
-	DECLARE_MESSAGE_MAP()
 };
-
-#endif // __sequencersplitter_h__
-

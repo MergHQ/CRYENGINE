@@ -1,11 +1,6 @@
 // Copyright 2001-2018 Crytek GmbH / Crytek Group. All rights reserved.
 
-#ifndef __aimanager_h__
-#define __aimanager_h__
-
-#if _MSC_VER > 1000
-	#pragma once
-#endif
+#pragma once
 
 #include <IAIManager.h>
 
@@ -112,7 +107,7 @@ struct SAINavigationPreferences : public SPreferencePage
 	{
 		INavigationSystem* pNavigationSystem = gEnv->pAISystem->GetNavigationSystem();
 
-		IF_UNLIKELY(pNavigationSystem == nullptr)
+		IF_UNLIKELY (pNavigationSystem == nullptr)
 		{
 			return false;
 		}
@@ -123,7 +118,7 @@ struct SAINavigationPreferences : public SPreferencePage
 		for (int agentIndex = 0; agentIndex < agentTypeCount; ++agentIndex)
 		{
 			const NavigationAgentTypeID currentAgentID = pNavigationSystem->GetAgentTypeID(agentIndex);
-			const char *szCurrentAgentName = pNavigationSystem->GetAgentTypeName(currentAgentID);
+			const char* szCurrentAgentName = pNavigationSystem->GetAgentTypeName(currentAgentID);
 			agentTypeList.push_back(szCurrentAgentName);
 		}
 
@@ -135,7 +130,7 @@ struct SAINavigationPreferences : public SPreferencePage
 		ar(m_navigationRegenDisabledOnLevelLoad, "navigationRegenDisabledOnLevelLoad", "Disable Navigation Regeneration on Level Load");
 		ar(m_initialNavigationAreaHeightOffset, "initNavAreaHeightOffset", "Initial Navigation Area Height Offset");
 		ar.doc("Initial navigation area height offset from the terrain when the area is created.");
-		
+
 		if (agentTypeCount > 0)
 		{
 			Serialization::StringListValue agentTypeValue(agentTypeList, m_navigationDebugAgentType);
@@ -206,8 +201,8 @@ public:
 	// !IAIManager
 
 	IAISystem*            GetAISystem();
-	CAIBehaviorLibrary*   GetBehaviorLibrary()     { return m_pBehaviorLibrary; };
-	CCoverSurfaceManager* GetCoverSurfaceManager() { return m_coverSurfaceManager.get(); };
+	CAIBehaviorLibrary*   GetBehaviorLibrary()     { return m_pBehaviorLibrary; }
+	CCoverSurfaceManager* GetCoverSurfaceManager() { return m_coverSurfaceManager.get(); }
 
 	//////////////////////////////////////////////////////////////////////////
 	//! Smart Objects States and Actions enumeration
@@ -289,10 +284,10 @@ private:
 	void               PauseMNMRegeneration();
 	void               ResumeMNMRegeneration();
 
-	MapTemplates                        m_mapTemplates;
+	MapTemplates                          m_mapTemplates;
 
-	CAIBehaviorLibrary*                 m_pBehaviorLibrary;
-	IAISystem*                          m_pAISystem;
+	CAIBehaviorLibrary*                   m_pBehaviorLibrary;
+	IAISystem*                            m_pAISystem;
 
 	std::unique_ptr<CCoverSurfaceManager> m_coverSurfaceManager;
 
@@ -333,6 +328,3 @@ private:
 };
 
 extern SAINavigationPreferences gAINavigationPreferences;
-
-#endif // __aimanager_h__
-

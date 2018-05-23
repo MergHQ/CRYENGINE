@@ -1,16 +1,9 @@
 // Copyright 2001-2018 Crytek GmbH / Crytek Group. All rights reserved.
 
-#ifndef __SequencerUtils_h__
-#define __SequencerUtils_h__
 #pragma once
-
-#if _MSC_VER > 1000
-	#pragma once
-#endif
 
 #include "ISequencerSystem.h"
 
-//////////////////////////////////////////////////////////////////////////
 class CSequencerUtils
 {
 public:
@@ -65,12 +58,8 @@ public:
 	static bool CanAnyKeyBeMoved(const SelectedKeys& selectedKeys);
 };
 
-//////////////////////////////////////////////////////////////////////////
 struct ISequencerEventsListener
 {
 	// Called when Key selection changes.
 	virtual void OnKeySelectionChange() = 0;
 };
-
-#endif //__SequencerUtils_h__
-

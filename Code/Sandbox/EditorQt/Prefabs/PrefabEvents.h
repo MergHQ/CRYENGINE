@@ -1,7 +1,5 @@
 // Copyright 2001-2018 Crytek GmbH / Crytek Group. All rights reserved.
 
-#ifndef __PrefabEvents_h__
-#define __PrefabEvents_h__
 #pragma once
 
 #include <HyperGraph/IHyperGraph.h>
@@ -36,7 +34,7 @@ public:
 	bool AddPrefabInstanceNodeFromSelection(CFlowNode* pNode, CPrefabObject* pPrefabObj);
 
 	// Updates a prefab instance node to refer to another prefab instance. A null object is valid to clear the assignment
-	void UpdatePrefabInstanceNodeFromSelection(CFlowNode* pNode, CPrefabObject *pPrefabObj);
+	void UpdatePrefabInstanceNodeFromSelection(CFlowNode* pNode, CPrefabObject* pPrefabObj);
 
 	// Sets currently setting prefab flag (When cloning, serializing, updating prefabs), used to delay adding of prefab event source nodes since prefab name + instance can't be determined yet
 	void SetCurrentlySettingPrefab(const bool bCurrentlySetting);
@@ -220,6 +218,3 @@ protected:
 	// Whether currently setting prefab or not (Prefab event source nodes created when this is true are put into m_delayedAddingEventSourceNodes)
 	bool m_bCurrentlySettingPrefab;
 };
-
-#endif // __PrefabEvents_h__
-

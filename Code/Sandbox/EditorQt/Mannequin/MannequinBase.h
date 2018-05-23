@@ -1,7 +1,6 @@
 // Copyright 2001-2018 Crytek GmbH / Crytek Group. All rights reserved.
 
-#ifndef __MannequinBase_h__
-#define __MannequinBase_h__
+#pragma once
 
 #include "ICryMannequin.h"
 #include <CryInput/IInput.h>
@@ -602,6 +601,3 @@ public:
 	float m_lockedValues[eMotionParamID_COUNT];
 	bool  m_locked[eMotionParamID_COUNT];
 };
-
-#endif //!__MannequinBase_h__
-

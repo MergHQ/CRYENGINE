@@ -1,7 +1,5 @@
 // Copyright 2001-2018 Crytek GmbH / Crytek Group. All rights reserved.
 
-#ifndef __ObjectMode_h__
-#define __ObjectMode_h__
 #pragma once
 
 #include "AI\AIMoveSimulation.h"
@@ -125,7 +123,7 @@ protected:
 	void         MoveSelectionToPos(CViewport* view, Vec3& pos, bool align, const CPoint& point);
 	void         SetObjectCursor(CViewport* view, CBaseObject* hitObj, IObjectManager::ESelectOp selectMode);
 
-	virtual void DeleteThis() { delete this; };
+	virtual void DeleteThis() { delete this; }
 
 	void         AwakeObjectAtPoint(CViewport* view, CPoint point);
 
@@ -137,7 +135,7 @@ protected:
 private:
 	class NormalGizmoOwner : public ITransformManipulatorOwner
 	{
-		virtual void GetManipulatorPosition(Vec3& position) {};
+		virtual void GetManipulatorPosition(Vec3& position) {}
 	};
 
 	void CheckDeepSelection(HitContext& hitContext, CViewport* pWnd);
@@ -171,6 +169,3 @@ private:
 
 	bool                       m_bGizmoDrag;
 };
-
-#endif //__ObjectMode_h__
-

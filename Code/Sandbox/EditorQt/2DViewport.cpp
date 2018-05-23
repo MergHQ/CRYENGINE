@@ -290,7 +290,7 @@ bool C2DViewport::CreateRenderContext(HWND hWnd)
 
 	int width = 0;
 	int height = 0;
-	GetDimensions(&width,&height);
+	GetDimensions(&width, &height);
 
 	IRenderer::SDisplayContextDescription desc;
 
@@ -460,7 +460,7 @@ void C2DViewport::Render()
 		if (rc.right != 0 && rc.bottom != 0)
 		{
 			gEnv->pRenderer->GetIRenderAuxGeom()->SetOrthographicProjection(true, 0.0f, rc.right, rc.bottom, 0.0f);
-			
+
 			//////////////////////////////////////////////////////////////////////////
 			// Draw viewport elements here.
 			//////////////////////////////////////////////////////////////////////////
@@ -469,7 +469,7 @@ void C2DViewport::Render()
 
 			// Draw all objects.
 			DisplayContext& dc = m_displayContext;
-			
+
 			dc.view = this;
 			dc.renderer = gEnv->pRenderer;
 			dc.engine = GetIEditorImpl()->Get3DEngine();
@@ -1058,7 +1058,7 @@ void C2DViewport::OnResize()
 	int height = 0;
 	GetDimensions(&width, &height);
 
-	gEnv->pRenderer->ResizeContext(m_displayContextKey,width,height);
+	gEnv->pRenderer->ResizeContext(m_displayContextKey, width, height);
 
 	GetClientRect(&m_rcClient);
 	CalculateViewTM();
