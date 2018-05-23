@@ -109,25 +109,9 @@ void CTriggerComponent::Initialize()
 }
 
 //////////////////////////////////////////////////////////////////////////
-void CTriggerComponent::OnShutDown()
-{
-	if (m_bAutoPlay)
-	{
-		Stop();
-	}
-
-	if (m_pIEntityAudioComponent != nullptr && m_auxObjectId != CryAudio::InvalidAuxObjectId && m_auxObjectId != CryAudio::DefaultAuxObjectId)
-	{
-		m_pIEntityAudioComponent->RemoveAudioAuxObject(m_auxObjectId);
-	}
-
-	m_auxObjectId = CryAudio::InvalidAuxObjectId;
-}
-
-//////////////////////////////////////////////////////////////////////////
 uint64 CTriggerComponent::GetEventMask() const
 {
-	uint64 mask = ENTITY_EVENT_BIT(ENTITY_EVENT_AUDIO_TRIGGER_STARTED) | ENTITY_EVENT_BIT(ENTITY_EVENT_AUDIO_TRIGGER_ENDED) | ENTITY_EVENT_BIT(ENTITY_EVENT_START_GAME);
+	uint64 mask = ENTITY_EVENT_BIT(ENTITY_EVENT_AUDIO_TRIGGER_STARTED) | ENTITY_EVENT_BIT(ENTITY_EVENT_AUDIO_TRIGGER_ENDED) | ENTITY_EVENT_BIT(ENTITY_EVENT_START_GAME) | ENTITY_EVENT_BIT(ENTITY_EVENT_DONE);
 
 #if defined(INCLUDE_DEFAULT_PLUGINS_PRODUCTION_CODE)
 	mask |= ENTITY_EVENT_BIT(ENTITY_EVENT_COMPONENT_PROPERTY_CHANGED);
@@ -171,6 +155,19 @@ void CTriggerComponent::ProcessEvent(const SEntityEvent& event)
 			{
 				Play();
 			}
+			break;
+		case ENTITY_EVENT_DONE:
+			if (m_bAutoPlay)
+			{
+				Stop();
+			}
+
+			if (m_pIEntityAudioComponent != nullptr && m_auxObjectId != CryAudio::InvalidAuxObjectId && m_auxObjectId != CryAudio::DefaultAuxObjectId)
+			{
+				m_pIEntityAudioComponent->RemoveAudioAuxObject(m_auxObjectId);
+			}
+
+			m_auxObjectId = CryAudio::InvalidAuxObjectId;
 			break;
 #if defined(INCLUDE_DEFAULT_PLUGINS_PRODUCTION_CODE)
 		case ENTITY_EVENT_COMPONENT_PROPERTY_CHANGED:
