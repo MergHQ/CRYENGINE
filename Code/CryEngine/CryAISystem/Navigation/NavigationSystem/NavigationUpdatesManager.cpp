@@ -28,6 +28,8 @@ void CMNMUpdatesManager::Clear()
 	m_updateRequestsMap.clear();
 	m_pospondedUpdateRequests.clear();
 	m_ignoredUpdateRequests.clear();
+
+	m_pendingOldestAabbsOfChangedMeshes.clear();
 }
 
 //------------------------------------------------------------------------
@@ -112,6 +114,8 @@ void CMNMUpdatesManager::OnMeshDestroyed(NavigationMeshID meshID)
 	
 	RemoveMeshUpdatesFromVector(m_pospondedUpdateRequests, meshID);
 	RemoveMeshUpdatesFromVector(m_ignoredUpdateRequests, meshID);
+
+	m_pendingOldestAabbsOfChangedMeshes.erase(meshID);
 }
 
 //------------------------------------------------------------------------
@@ -246,6 +250,7 @@ CMNMUpdatesManager::EUpdateRequestStatus CMNMUpdatesManager::RequestMeshUpdate(N
 	{
 		return EUpdateRequestStatus::RequestInvalid;
 	}
+
 	return requestParams.status;
 }
 
@@ -264,6 +269,12 @@ CMNMUpdatesManager::EUpdateRequestStatus CMNMUpdatesManager::RequestMeshDifferen
 	{
 		return EUpdateRequestStatus::RequestInvalid;
 	}
+
+	if (queueAndState.status == EUpdateRequestStatus::RequestIgnoredAndBuffered)
+	{
+		m_pendingOldestAabbsOfChangedMeshes.insert(std::make_pair(meshID, oldVolume.aabb));
+	}
+
 	return queueAndState.status;
 }
 
@@ -414,7 +425,7 @@ CMNMUpdatesManager::MeshUpdateBoundaries CMNMUpdatesManager::ComputeMeshUpdateDi
 //------------------------------------------------------------------------
 bool CMNMUpdatesManager::RequestQueueMeshUpdate(const SRequestParams& requestParams, NavigationMeshID meshID, const AABB& aabb)
 {
-	assert(meshID != 0);
+	CRY_ASSERT(meshID != 0);
 
 #if NAVIGATION_SYSTEM_PC_ONLY
 	if (!meshID || !m_pNavigationSystem->m_meshes.validate(meshID))
@@ -635,6 +646,38 @@ void CMNMUpdatesManager::DisableRegenerationRequestsAndBuffer()
 	{
 		m_activeUpdateRequestsQueue.erase(rear, m_activeUpdateRequestsQueue.end());
 	}
+}
+
+void CMNMUpdatesManager::EnableRegenerationRequestsExecution(bool updateChangedVolumes)
+{
+	m_bIsRegenerationRequestExecutionEnabled = true;
+
+	if (updateChangedVolumes)
+	{
+		for (auto& meshWithAabb : m_pendingOldestAabbsOfChangedMeshes)
+		{
+			NavigationMeshID meshID = meshWithAabb.first;
+			if (!meshID || !m_pNavigationSystem->m_meshes.validate(meshID))
+				continue;
+
+			SRequestParams queueAndState = GetRequestParams(m_bExplicitRegenerationToggle);
+			NavigationMesh& mesh = m_pNavigationSystem->m_meshes[meshID];
+
+			CRY_ASSERT(m_pNavigationSystem->m_volumes.validate(mesh.boundary));
+			const AABB& oldAABB = meshWithAabb.second;
+			const AABB& currAABB = m_pNavigationSystem->m_volumes[mesh.boundary].aabb;
+
+			if (oldAABB.min != currAABB.min || oldAABB.max != currAABB.max)
+			{
+				MeshUpdateBoundaries bounds = ComputeMeshUpdateDifferenceBoundaries(mesh, oldAABB, currAABB);
+				SheduleTileUpdateRequests(queueAndState, meshID, bounds);
+
+				m_bWasRegenerationRequestedThisUpdateCycle = true;
+			}
+		}
+	}
+	
+	m_pendingOldestAabbsOfChangedMeshes.clear();
 }
 
 //------------------------------------------------------------------------

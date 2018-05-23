@@ -235,7 +235,7 @@ void CAIManager::OnEditorNotifyEvent(EEditorNotifyEvent event)
 
 	case eNotify_OnEndLoad:
 		RequestResumeNavigationWorldMonitorOnNextUpdate();
-		ResumeMNMRegeneration();
+		ResumeMNMRegenerationWithoutUpdatingPengingNavMeshChanges();
 		break;
 	case eNotify_OnBeginExportToGame:
 		PauseNavigationUpdating();
@@ -1344,7 +1344,7 @@ void CAIManager::PauseMNMRegeneration()
 	}
 }
 
-void CAIManager::ResumeMNMRegeneration()
+void CAIManager::ResumeMNMRegeneration(bool updateChangedVolumes)
 {
 	if (--m_MNMRegenerationPausedCount == 0)
 	{
@@ -1352,7 +1352,21 @@ void CAIManager::ResumeMNMRegeneration()
 		{
 			if (INavigationSystem* pNavigationSystem = m_pAISystem->GetNavigationSystem())
 			{
-				pNavigationSystem->GetUpdateManager()->EnableRegenerationRequestsExecution();
+				pNavigationSystem->GetUpdateManager()->EnableRegenerationRequestsExecution(true);
+			}
+		}
+	}
+}
+
+void CAIManager::ResumeMNMRegenerationWithoutUpdatingPengingNavMeshChanges()
+{
+	if (--m_MNMRegenerationPausedCount == 0)
+	{
+		if (m_pAISystem)
+		{
+			if (INavigationSystem* pNavigationSystem = m_pAISystem->GetNavigationSystem())
+			{
+				pNavigationSystem->GetUpdateManager()->EnableRegenerationRequestsExecution(false);
 			}
 		}
 	}
