@@ -27,6 +27,16 @@ void DrawCompiledRenderItemsToCommandList(
 	passContext.pCommandList = commandList;
 
 	bool bContextStart = passContext.renderItemGroup == 0 && startRenderItem == passContext.rendItems.start;
+
+	// Resolve pass
+	if (passContext.type == GraphicsPipelinePassType::resolve)
+	{
+		passContext.pSceneRenderPass->ResolvePass(*commandList, passContext.resolveScreenBounds, passContext.profilerSectionIndex, bContextStart);
+		return;
+	}
+
+	// Renderpass
+
 	passContext.pSceneRenderPass->BeginRenderPass(*commandList, passContext.renderNearest, passContext.profilerSectionIndex, bContextStart);
 
 	static const int cDynamicInstancingMaxCount = 128;
@@ -157,7 +167,7 @@ DECLARE_JOB("ListDrawCommandRecorder", TListDrawCommandRecorder, ListDrawCommand
 
 void CRenderItemDrawer::DrawCompiledRenderItems(const SGraphicsPipelinePassContext& passContext) const
 {
-	if (passContext.rendItems.IsEmpty())
+	if (passContext.type == GraphicsPipelinePassType::renderPass && passContext.rendItems.IsEmpty())
 		return;
 	if (CRenderer::CV_r_NoDraw == 2) // Completely skip filling of the command list.
 		return;

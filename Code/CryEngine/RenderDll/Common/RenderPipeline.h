@@ -177,7 +177,7 @@ enum EBatchFlags
 	FB_WATER_CAUSTIC   = 0x8000,
 	FB_DEBUG           = 0x10000,
 	FB_TILED_FORWARD   = 0x20000,
-//	FB________________ = 0x40000,
+	FB_REFRACTION      = 0x40000,
 	FB_EYE_OVERLAY     = 0x80000,
 
 	FB_MASK            = 0xfffff //! FB flags cannot exceed 0xfffff

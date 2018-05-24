@@ -323,7 +323,7 @@ private:
 	float GetMaxParticleScale() const;
 	int   GetMaxParticleCount(const SParticleUpdateContext& context) const;
 	void  UpdateParticleStates(SParticleUpdateContext& context);
-	void  SetScreenBounds(const CCamera& cam, uint8 aScreenBounds[4]);
+	void  SetScreenBounds(const CCamera& cam, TRect_tpl<uint16> &bounds);
 
 	CRenderObject* CreateRenderObject(uint64 nObjFlags, const SRenderingPassInfo& passInfo);
 };

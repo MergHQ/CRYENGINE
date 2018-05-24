@@ -144,7 +144,7 @@ struct SRenderObjData
 
 	uint16                            m_LightVolumeId;
 
-	uint8                             m_screenBounds[4];
+	TRect_tpl<uint16>                 m_screenBounds;
 
 	//@ see ERenderObjectCustomFlags
 	uint16 m_nCustomFlags;
@@ -169,7 +169,7 @@ struct SRenderObjData
 		m_LightVolumeId = 0;
 		m_pSkinningData = NULL;
 		m_scissorX = m_scissorY = m_scissorWidth = m_scissorHeight = 0;
-		m_screenBounds[0] = m_screenBounds[1] = m_screenBounds[2] = m_screenBounds[3] = 0;
+		m_screenBounds = { 0,0,0,0 };
 		m_nCustomData = 0;
 		m_nCustomFlags = 0;
 		m_nHUDSilhouetteParams = m_nVisionParams = 0;
@@ -177,8 +177,7 @@ struct SRenderObjData
 		m_pShaderParams = NULL;
 		m_pTerrainSectorTextureInfo = 0;
 		m_fMaxViewDistance = 100000.f;
-		m_pParticleShaderData = nullptr;
-		m_FogVolumeContribIdx = (uint16) - 1;
+		m_FogVolumeContribIdx = ~(uint16)0;
 	}
 
 	void SetShaderParams(const DynArray<SShaderParam>* pShaderParams)
@@ -396,7 +395,8 @@ public:
 			m_bInstanceDataDirty[i] = dirty;
 	}
 
-	ILINE SRenderObjData*   GetObjData()        { return &m_data;  }
+	ILINE SRenderObjData*         GetObjData()       { return &m_data; }
+	ILINE const SRenderObjData*   GetObjData() const { return &m_data; }
 
 	ILINE CRenderElement*     GetRE() const       { return m_pRE; }
 
