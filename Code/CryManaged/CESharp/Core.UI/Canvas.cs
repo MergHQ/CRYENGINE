@@ -303,7 +303,7 @@ namespace CryEngine.UI
 
 			int u = (int)Mouse.CursorPosition.x, v = (int)Mouse.CursorPosition.y;
 			TryAdaptMouseInput(ref u, ref v);
-			return e.RectTransform.Bounds.Contains(new Point(u, v));
+			return e.RectTransform.Bounds.Contains(u, v);
 		}
 
 		void OnLeftMouseDown(int x, int y)
