@@ -379,7 +379,8 @@ void CManager::AddSubstanceArchiveContextMenu(CAsset* asset, CAbstractMenu* menu
 		QObject::connect(newAct, &QAction::triggered, this, &CManager::OnCreateInstance);
 	}
 	QAction* rebuild = menu->CreateAction("Rebuild All Instances");
-	QObject::connect(rebuild, &QAction::triggered, this, [=]()
+	rebuild->setEnabled(!CAssetManager::GetInstance()->GetReverseDependencies(*asset).empty());
+	QObject::connect(rebuild, &QAction::triggered, this, [=]() 
 	{
 		for (auto& item : CAssetManager::GetInstance()->GetReverseDependencies(*asset))
 		{

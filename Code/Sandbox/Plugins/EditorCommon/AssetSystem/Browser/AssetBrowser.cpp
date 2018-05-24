@@ -1646,7 +1646,7 @@ void CAssetBrowser::OnContextMenu()
 
 		for (CAsset* asset : assets)
 		{
-			if (asset->GetType()->IsImported() && !asset->IsReadOnly())
+			if (asset->GetType()->IsImported() && !asset->IsReadOnly() && asset->HasSourceFile())
 			{
 				bCanReimport = true;
 			}
