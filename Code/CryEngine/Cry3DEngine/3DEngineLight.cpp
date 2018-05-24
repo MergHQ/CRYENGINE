@@ -210,15 +210,6 @@ void C3DEngine::ResetCasterCombinationsCache()
 	}
 }
 
-void C3DEngine::DeleteAllStaticLightSources()
-{
-	for (int i = 0; i < m_lstStaticLights.Count(); i++)
-		delete m_lstStaticLights[i];
-	m_lstStaticLights.Reset();
-
-	m_pSun = NULL;
-}
-
 void C3DEngine::AddDynamicLightSource(const SRenderLight& LSource, ILightSource* pEnt, int nEntityLightId, float fFadeout, const SRenderingPassInfo& passInfo)
 {
 	assert(pEnt && _finite(LSource.m_Origin.x) && _finite(LSource.m_Origin.y) && _finite(LSource.m_fRadius));

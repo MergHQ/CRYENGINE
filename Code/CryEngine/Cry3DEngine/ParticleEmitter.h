@@ -39,7 +39,7 @@ public:
 	//////////////////////////////////////////////////////////////////////////
 	// IRenderNode implementation.
 	//////////////////////////////////////////////////////////////////////////
-	virtual void        ReleaseNode(bool bImmediate) { Register(false, bImmediate); Kill(); }
+	virtual void        ReleaseNode(bool bImmediate) { CRY_ASSERT((m_dwRndFlags & ERF_PENDING_DELETE) == 0); Register(false, bImmediate); Kill(); }
 	virtual EERType     GetRenderNodeType()          { return eERType_ParticleEmitter; }
 
 	virtual char const* GetName() const              { return m_pTopEffect ? m_pTopEffect->GetName() : ""; }
