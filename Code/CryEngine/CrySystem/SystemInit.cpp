@@ -1963,6 +1963,15 @@ bool CSystem::InitFileSystem(const SSystemInitParams& startupParams)
 #endif
 	}
 
+	// Load value of sys_game_folder from system.cfg into the sys_project console variable
+	ILoadConfigurationEntrySink* pCVarsWhiteListConfigSink = GetCVarsWhiteListConfigSink();
+#if CRY_PLATFORM_ANDROID && !defined(ANDROID_OBB)
+	string path = string(CryGetProjectStoragePath()) + "/system.cfg";
+	LoadConfiguration(path.c_str(), pCVarsWhiteListConfigSink, eLoadConfigInit, ELoadConfigurationFlags::SuppressConfigNotFoundWarning);
+#else
+	LoadConfiguration("%ENGINEROOT%/system.cfg", pCVarsWhiteListConfigSink, eLoadConfigInit, ELoadConfigurationFlags::SuppressConfigNotFoundWarning);
+#endif
+
 	// Now set up the log
 	InitLog(startupParams);
 
@@ -1972,15 +1981,6 @@ bool CSystem::InitFileSystem(const SSystemInitParams& startupParams)
 
 	const char* szConfigPakPath = "%ENGINEROOT%/config.pak";
 	m_env.pCryPak->OpenPack(szConfigPakPath);
-
-	// Load value of sys_game_folder from system.cfg into the sys_game_folder console variable
-	ILoadConfigurationEntrySink* pCVarsWhiteListConfigSink = GetCVarsWhiteListConfigSink();
-#if CRY_PLATFORM_ANDROID && !defined(ANDROID_OBB)
-	string path = string(CryGetProjectStoragePath()) + "/system.cfg";
-	LoadConfiguration(path.c_str(), pCVarsWhiteListConfigSink, eLoadConfigInit, ELoadConfigurationFlags::SuppressConfigNotFoundWarning);
-#else
-	LoadConfiguration("%ENGINEROOT%/system.cfg", pCVarsWhiteListConfigSink, eLoadConfigInit, ELoadConfigurationFlags::SuppressConfigNotFoundWarning);
-#endif
 
 	if (!m_pProjectManager->ParseProjectFile())
 	{
@@ -5115,10 +5115,10 @@ void CSystem::CreateSystemVars()
 	                                         "0: Disable the profiler\n"
 	                                         "1: Show the full profiler\n"
 	                                         "2: Show only the execution graph\n");
-#if CRY_PLATFORM_WINDOWS || CRY_PLATFORM_DURANGO
-	const uint32 nJobSystemDefaultCoreNumber = 8;
-#else
+#if CRY_PLATFORM_CONSOLE || CRY_PLATFORM_MOBILE
 	const uint32 nJobSystemDefaultCoreNumber = 4;
+#else
+	const uint32 nJobSystemDefaultCoreNumber = 8;
 #endif
 	m_sys_job_system_max_worker = REGISTER_INT("sys_job_system_max_worker", nJobSystemDefaultCoreNumber, 0,
 	                                           "Sets the number of threads to use for the job system"
