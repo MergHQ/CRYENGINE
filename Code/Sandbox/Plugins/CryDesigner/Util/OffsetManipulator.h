@@ -31,7 +31,7 @@ public:
 	PolygonPtr                     GetScaledPolygon() const { return m_pScaledPolygon; }
 	const std::vector<PolygonPtr>& GetHoles() const         { return m_Holes; }
 
-	void                           Display(DisplayContext& dc, bool bDisplayDistanceLine = true);
+	void                           Display(SDisplayContext& dc, bool bDisplayDistanceLine = true);
 
 private:
 	bool                    m_bValid;

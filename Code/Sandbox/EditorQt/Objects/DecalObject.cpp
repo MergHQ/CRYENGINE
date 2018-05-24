@@ -27,7 +27,7 @@ public:
 	CDecalObjectTool();
 
 	virtual string GetDisplayName() const override { return "Decal Object"; }
-	virtual void   Display(DisplayContext& dc)     {};
+	virtual void   Display(SDisplayContext& dc)    {};
 	virtual bool   MouseCallback(CViewport* view, EMouseEvent event, CPoint& point, int flags);
 	virtual bool   OnKeyDown(CViewport* view, uint32 nChar, uint32 nRepCnt, uint32 nFlags);
 	virtual bool   OnKeyUp(CViewport* view, uint32 nChar, uint32 nRepCnt, uint32 nFlags);
@@ -489,8 +489,10 @@ int CDecalObject::MouseCreateCallback(IDisplayViewport* view, EMouseEvent event,
 }
 
 //////////////////////////////////////////////////////////////////////////
-void CDecalObject::Display(DisplayContext& dc)
+void CDecalObject::Display(CObjectRenderHelper& objRenderHelper)
 {
+	SDisplayContext& dc = objRenderHelper.GetDisplayContextRef();
+
 	if (!gViewportDebugPreferences.showDecalObjectHelper)
 		return;
 

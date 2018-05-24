@@ -28,7 +28,7 @@ public:
 
 	virtual void   SetUserData(const char* key, void* userData);
 
-	virtual void   Display(DisplayContext& dc)                                           {};
+	virtual void   Display(SDisplayContext& dc)                                          {};
 	virtual bool   OnKeyDown(CViewport* view, uint32 nChar, uint32 nRepCnt, uint32 nFlags);
 	virtual bool   OnKeyUp(CViewport* view, uint32 nChar, uint32 nRepCnt, uint32 nFlags) { return false; };
 
@@ -665,7 +665,7 @@ float CGravityVolumeObject::GetBezierSegmentLength(int index, float t)
 }
 
 //////////////////////////////////////////////////////////////////////////
-void CGravityVolumeObject::DrawBezierSpline(DisplayContext& dc, CGravityVolumePointVector& points, COLORREF col, bool isDrawJoints, bool isDrawGravityVolume)
+void CGravityVolumeObject::DrawBezierSpline(SDisplayContext& dc, CGravityVolumePointVector& points, COLORREF col, bool isDrawJoints, bool isDrawGravityVolume)
 {
 	const Matrix34& wtm = GetWorldTM();
 	float fPointSize = 0.5f;
@@ -756,7 +756,7 @@ void CGravityVolumeObject::DrawBezierSpline(DisplayContext& dc, CGravityVolumePo
 }
 
 //////////////////////////////////////////////////////////////////////////
-void CGravityVolumeObject::Display(DisplayContext& dc)
+void CGravityVolumeObject::Display(SDisplayContext& dc)
 {
 	//dc.renderer->EnableDepthTest(false);
 
@@ -1396,9 +1396,9 @@ void CGravityVolumeObject::OnEvent(ObjectEvent event)
 {
 	if (event == EVENT_INGAME)
 	{
-		if(m_pLuaProperties == nullptr)
+		if (m_pLuaProperties == nullptr)
 			return;
-		
+
 		bool bEnabled = false;
 		IVariable* pVarEn = m_pLuaProperties->FindVariable("bEnabled");
 		if (pVarEn)

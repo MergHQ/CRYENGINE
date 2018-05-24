@@ -61,7 +61,7 @@ void CAxisScaleGizmo::SetScale(float scale)
 	m_scale = scale;
 }
 
-void CAxisScaleGizmo::DrawSquishBox(DisplayContext& dc, Vec3 position)
+void CAxisScaleGizmo::DrawSquishBox(SDisplayContext& dc, Vec3 position)
 {
 	IDisplayViewport* view = dc.view;
 
@@ -101,7 +101,7 @@ void CAxisScaleGizmo::DrawSquishBox(DisplayContext& dc, Vec3 position)
 	dc.PopMatrix();
 }
 
-void CAxisScaleGizmo::Display(DisplayContext& dc)
+void CAxisScaleGizmo::Display(SDisplayContext& dc)
 {
 	uint32 curflags = dc.GetState();
 	dc.DepthTestOff();

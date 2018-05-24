@@ -29,13 +29,14 @@ CVehicleComponent::CVehicleComponent()
 }
 
 //////////////////////////////////////////////////////////////////////////
-void CVehicleComponent::Display(DisplayContext& dc)
+void CVehicleComponent::Display(CObjectRenderHelper& objRenderHelper)
 {
 	if (!IsSelected())
 	{
 		return;
 	}
 
+	SDisplayContext& dc = objRenderHelper.GetDisplayContextRef();
 	uint8 alpha = 102;
 	COLORREF wireColor = dc.GetSelectedColor();
 

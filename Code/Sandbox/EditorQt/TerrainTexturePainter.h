@@ -57,7 +57,7 @@ public:
 
 	virtual string GetDisplayName() const override { return "Paint Texture"; }
 
-	virtual void   Display(DisplayContext& dc);
+	virtual void   Display(SDisplayContext& dc);
 
 	// Overrides from CEditTool
 	bool MouseCallback(CViewport* view, EMouseEvent event, CPoint& point, int flags);

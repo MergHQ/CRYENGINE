@@ -77,9 +77,9 @@ public:
 	// CEditTool implementation.
 	//////////////////////////////////////////////////////////////////////////
 	virtual string GetDisplayName() const override { return "Select Objects"; }
-	virtual void   Display(struct DisplayContext& dc);
-	virtual void   DisplaySelectionPreview(struct DisplayContext& dc);
-	virtual void   DrawSelectionPreview(struct DisplayContext& dc, CBaseObject* drawObject);
+	virtual void   Display(SDisplayContext& dc);
+	virtual void   DisplaySelectionPreview(SDisplayContext& dc);
+	virtual void   DrawSelectionPreview(SDisplayContext& dc, CBaseObject* drawObject);
 
 	virtual bool   MouseCallback(CViewport* view, EMouseEvent event, CPoint& point, int flags);
 	virtual bool   OnKeyDown(CViewport* view, uint32 nChar, uint32 nRepCnt, uint32 nFlags);

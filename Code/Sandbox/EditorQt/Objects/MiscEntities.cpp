@@ -20,7 +20,7 @@ IMPLEMENT_DYNCREATE(CJointGenEntity, CEntityObject)
 //////////////////////////////////////////////////////////////////////////
 // CConstraintEntity
 //////////////////////////////////////////////////////////////////////////
-static inline void DrawHingeQuad(DisplayContext& dc, float angle)
+static inline void DrawHingeQuad(SDisplayContext& dc, float angle)
 {
 	const float len = 1.0f;
 	Vec3 zero(0, 0, 0);
@@ -38,18 +38,20 @@ static inline void DrawHingeQuad(DisplayContext& dc, float angle)
 	dc.DrawQuad(p4, p3, p2, p1);
 }
 
-void CConstraintEntity::Display(DisplayContext& dc)
+void CConstraintEntity::Display(CObjectRenderHelper& objRenderHelper)
 {
 	// CRYIII-1928: disabled drawing while in AI/Physics mode so it doesn't crash anymore
 	if (GetIEditorImpl()->GetGameEngine()->GetSimulationMode())
 		return;
+
+	SDisplayContext& dc = objRenderHelper.GetDisplayContextRef();
 
 	// The pre-allocated array is used as an optimization, trying to avoid the physics system from allocating an entity list.
 	const int nPreAllocatedListSize(1024);                            //Magic number, probably big enough for the list.
 	IPhysicalEntity* pPreAllocatedEntityList[nPreAllocatedListSize];  //Pre-allocated list.
 	IPhysicalEntity** pEnts = pPreAllocatedEntityList;                // Container for the list of entities.
 
-	CEntityObject::Display(dc);
+	CEntityObject::Display(objRenderHelper);
 
 	// get the entities within the proximity radius of the constraint (only when not simulated)
 	Vec3 center(GetWorldPos());
@@ -221,9 +223,11 @@ void CConstraintEntity::Display(DisplayContext& dc)
 }
 
 //////////////////////////////////////////////////////////////////////////
-void CWindAreaEntity::Display(DisplayContext& dc)
+void CWindAreaEntity::Display(CObjectRenderHelper& objRenderHelper)
 {
-	CEntityObject::Display(dc);
+	SDisplayContext& dc = objRenderHelper.GetDisplayContextRef();
+
+	CEntityObject::Display(objRenderHelper);
 
 	IEntity* pEntity = GetIEntity();
 	if (pEntity == NULL)
@@ -286,7 +290,7 @@ void CWindAreaEntity::Display(DisplayContext& dc)
 
 void AlignCutTemplate(const IStatObj* pSrcObj, const IStatObj* pObjTpl, int align, const Vec3& tplOffs, float tplScale, Matrix33& R, Vec3& offset, float& scale);
 
-void DrawCutTemplate(DisplayContext& dc, IStatObj* pObj, const Matrix34& tmWorld, const Vec3& campos)
+void DrawCutTemplate(SDisplayContext& dc, IStatObj* pObj, const Matrix34& tmWorld, const Vec3& campos)
 {
 	for (int i = 0; i < pObj->GetSubObjectCount(); i++)
 	{
@@ -327,9 +331,11 @@ void DrawCutTemplate(DisplayContext& dc, IStatObj* pObj, const Matrix34& tmWorld
 	}
 }
 
-void CJointGenEntity::Display(DisplayContext& dc)
+void CJointGenEntity::Display(CObjectRenderHelper& objRenderHelper)
 {
-	CEntityObject::Display(dc);
+	SDisplayContext& dc = objRenderHelper.GetDisplayContextRef();
+
+	CEntityObject::Display(objRenderHelper);
 
 	Vec3 campos = dc.camera->GetPosition();
 	IEntity* pent = GetIEntity();

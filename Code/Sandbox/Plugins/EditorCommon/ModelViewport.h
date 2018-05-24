@@ -92,7 +92,7 @@ protected:
 	void LoadStaticObject(const string& file);
 
 	// Called to render stuff.
-	virtual void OnRender() override;
+	virtual void OnRender(SDisplayContext& context) override;
 
 	virtual void DrawFloorGrid(const Quat& tmRotation, const Vec3& MotionTranslation, const Matrix33& rGridRot, bool bInstantSubmit);
 	void         DrawCoordSystem(const QuatT& q, f32 length);

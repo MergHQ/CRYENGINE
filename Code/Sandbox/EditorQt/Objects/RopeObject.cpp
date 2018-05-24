@@ -210,8 +210,9 @@ void CRopeObject::SetMaterial(IEditorMaterial* mtl)
 }
 
 //////////////////////////////////////////////////////////////////////////
-void CRopeObject::Display(DisplayContext& dc)
+void CRopeObject::Display(CObjectRenderHelper& objRenderHelper)
 {
+	SDisplayContext& dc = objRenderHelper.GetDisplayContextRef();
 	bool bPrevShowIcons = gViewportPreferences.showIcons;
 	const Matrix34& wtm = GetWorldTM();
 
@@ -303,7 +304,7 @@ void CRopeObject::Display(DisplayContext& dc)
 			SetColor(g_lineDisconnectedColor);
 	}
 
-	__super::Display(dc);
+	__super::Display(objRenderHelper);
 	gViewportPreferences.showIcons = bPrevShowIcons;
 }
 

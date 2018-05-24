@@ -56,7 +56,7 @@ public:
 	const Vec3& GetPos() const   { return m_Pos;    }
 	void        Hide(bool bHide) { m_bVisible = !bHide; }
 	void        SetMode(EGizmoMode mode);
-	void        Draw(DisplayContext& dc);
+	void        Draw(SDisplayContext& dc);
 	bool        HitTest(QViewport* viewport, int x, int y, int& axis);
 
 	void        OnViewportMouse(const SMouseEvent& ev) override;
@@ -71,20 +71,20 @@ private:
 
 	std::vector<IGizmoTransform*> m_GizmoTransformCallbacks;
 
-	CAxisTranslateGizmo m_xTranslateGizmo;
-	CAxisTranslateGizmo m_yTranslateGizmo;
-	CViewTranslateGizmo m_viewTranslateGizmo;
+	CAxisTranslateGizmo           m_xTranslateGizmo;
+	CAxisTranslateGizmo           m_yTranslateGizmo;
+	CViewTranslateGizmo           m_viewTranslateGizmo;
 
-	CAxisScaleGizmo     m_xScaleGizmo;
-	CAxisScaleGizmo     m_yScaleGizmo;
-	CUniformScaleGizmo  m_uniformScaleGizmo;
+	CAxisScaleGizmo               m_xScaleGizmo;
+	CAxisScaleGizmo               m_yScaleGizmo;
+	CUniformScaleGizmo            m_uniformScaleGizmo;
 
-	CAxisRotateGizmo    m_rotateGizmo;
+	CAxisRotateGizmo              m_rotateGizmo;
 
-	CGizmo*             m_highlightedGizmo;
-	CGizmo*             m_lastHitGizmo;
+	CGizmo*                       m_highlightedGizmo;
+	CGizmo*                       m_lastHitGizmo;
 
-	EGizmoMode          m_mode;
+	EGizmoMode                    m_mode;
 };
 
 typedef _smart_ptr<UVGizmo> UVGizmoPtr;

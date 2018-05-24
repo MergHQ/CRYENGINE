@@ -46,7 +46,7 @@ bool CVehiclePart::Init(CBaseObject* prev, const string& file)
 	return res;
 }
 
-void CVehiclePart::DrawRotationLimits(DisplayContext& dc, IVariable* pSpeed, IVariable* pLimits, IVariable* pHelper, int axis)
+void CVehiclePart::DrawRotationLimits(SDisplayContext& dc, IVariable* pSpeed, IVariable* pLimits, IVariable* pHelper, int axis)
 {
 	if (pSpeed)
 	{
@@ -176,12 +176,13 @@ void CVehiclePart::DrawRotationLimits(DisplayContext& dc, IVariable* pSpeed, IVa
 }
 
 //////////////////////////////////////////////////////////////////////////
-void CVehiclePart::Display(DisplayContext& dc)
+void CVehiclePart::Display(CObjectRenderHelper& objRenderHelper)
 {
 	// only draw if selected
 	if (!IsSelected())
 		return;
 
+	SDisplayContext& dc = objRenderHelper.GetDisplayContextRef();
 	COLORREF wireColor, solidColor;
 	float alpha = 0.4f;
 	wireColor = dc.GetSelectedColor();

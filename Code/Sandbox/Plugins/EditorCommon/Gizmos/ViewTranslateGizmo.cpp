@@ -33,7 +33,7 @@ void CViewTranslateGizmo::SetScale(float scale)
 	m_scale = scale;
 }
 
-void CViewTranslateGizmo::Display(DisplayContext& dc)
+void CViewTranslateGizmo::Display(SDisplayContext& dc)
 {
 	IDisplayViewport* view = dc.view;
 	Vec3 position;

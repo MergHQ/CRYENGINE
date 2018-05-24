@@ -39,8 +39,8 @@ void OffsetTool::Serialize(Serialization::IArchive& ar)
 	}
 }
 
-bool OffsetTool::IsManipulatorVisible() 
-{ 
+bool OffsetTool::IsManipulatorVisible()
+{
 	DesignerSession* pSession = DesignerSession::GetInstance();
 	return m_Params.bMultipleOffset && !pSession->GetSelectedElements()->IsEmpty();
 }
@@ -236,7 +236,7 @@ void OffsetTool::AddScaledPolygon(
 	ApplyPostProcess(ePostProcess_ExceptMirror);
 }
 
-void OffsetTool::Display(DisplayContext& dc)
+void OffsetTool::Display(SDisplayContext& dc)
 {
 	if (m_Params.bMultipleOffset)
 		__super::Display(dc);

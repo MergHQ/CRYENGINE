@@ -101,10 +101,11 @@ bool CSmartObjectHelperObject::HitTest(HitContext& hc)
 }
 
 //////////////////////////////////////////////////////////////////////////
-void CSmartObjectHelperObject::Display(DisplayContext& dc)
+void CSmartObjectHelperObject::Display(CObjectRenderHelper& objRenderHelper)
 {
 	COLORREF color = CMFCUtils::ColorBToColorRef(GetColor());
 	float radius = RADIUS;
+	SDisplayContext& dc = objRenderHelper.GetDisplayContextRef();
 
 	//dc.SetColor( color, 0.5f );
 	//dc.DrawBall( GetPos(), radius );

@@ -38,7 +38,7 @@ void CTrackGizmo::SetMatrix(const Matrix34& tm)
 	m_worldBbox.max = Vec3(10000, 10000, 10000);
 }
 
-void CTrackGizmo::Display(DisplayContext& dc)
+void CTrackGizmo::Display(SDisplayContext& dc)
 {
 	if (!(dc.flags & DISPLAY_TRACKS))
 	{
@@ -140,7 +140,7 @@ void CTrackGizmo::GetWorldBounds(AABB& bbox)
 	bbox = m_worldBbox;
 }
 
-void CTrackGizmo::DrawAxis(DisplayContext& dc, const Vec3& org)
+void CTrackGizmo::DrawAxis(SDisplayContext& dc, const Vec3& org)
 {
 	float size = kAxisSize;
 
@@ -205,7 +205,7 @@ bool CTrackGizmo::HitTest(HitContext& hc)
 	return false;
 }
 
-void CTrackGizmo::DrawKeys(DisplayContext& dc, CTrackViewTrack* pTrack, CTrackViewTrack* pKeysTrack)
+void CTrackGizmo::DrawKeys(SDisplayContext& dc, CTrackViewTrack* pTrack, CTrackViewTrack* pKeysTrack)
 {
 	// Get Key color.
 	dc.SetColor(1, 0, 0, 1);

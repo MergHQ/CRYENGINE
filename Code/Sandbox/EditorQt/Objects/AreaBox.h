@@ -24,8 +24,8 @@ public:
 
 	bool                   HasMeasurementAxis() const                     { return true; }
 
-	void CreateInspectorWidgets(CInspectorWidgetCreator& creator) override;
-	
+	void                   CreateInspectorWidgets(CInspectorWidgetCreator& creator) override;
+
 	virtual void           Serialize(CObjectArchive& ar);
 
 	virtual void           OnAreaChange(IVariable* pVariable) = 0;
@@ -36,7 +36,7 @@ protected:
 	CAreaObjectBase();
 	~CAreaObjectBase();
 
-	void         DrawEntityLinks(DisplayContext& dc);
+	void         DrawEntityLinks(SDisplayContext& dc);
 	virtual void PostClone(CBaseObject* pFromObject, CObjectCloneContext& ctx);
 	void         SerializeEntityTargets(Serialization::IArchive& ar, bool bMultiEdit);
 
@@ -64,13 +64,13 @@ public:
 	void         Done();
 	bool         CreateGameObject();
 	virtual void InitVariables();
-	void         Display(DisplayContext& dc);
+	void         Display(SDisplayContext& dc);
 	void         InvalidateTM(int nWhyFlags);
 	void         GetLocalBounds(AABB& box);
 	bool         HitTest(HitContext& hc);
-	bool         IsScalable() const { return false; };
+	bool         IsScalable() const { return false; }
 
-	void CreateInspectorWidgets(CInspectorWidgetCreator& creator) override;
+	void         CreateInspectorWidgets(CInspectorWidgetCreator& creator) override;
 
 	virtual void PostLoad(CObjectArchive& ar);
 
@@ -113,7 +113,7 @@ protected:
 	//! Dtor must be protected.
 	CAreaBox();
 
-	void         DeleteThis() { delete this; };
+	void         DeleteThis() { delete this; }
 
 	void         Reload(bool bReloadScript = false) override;
 	virtual void OnAreaChange(IVariable* pVariable) override;
@@ -150,10 +150,10 @@ protected:
 class CAreaBoxClassDesc : public CObjectClassDesc
 {
 public:
-	ObjectType     GetObjectType()     { return OBJTYPE_VOLUME; };
-	const char*    ClassName()         { return "AreaBox"; };
-	const char*    UIName()            { return "Box"; };
-	const char*    Category()          { return "Area"; };
-	CRuntimeClass* GetRuntimeClass()   { return RUNTIME_CLASS(CAreaBox); };
+	ObjectType     GetObjectType()   { return OBJTYPE_VOLUME; }
+	const char*    ClassName()       { return "AreaBox"; }
+	const char*    UIName()          { return "Box"; }
+	const char*    Category()        { return "Area"; }
+	CRuntimeClass* GetRuntimeClass() { return RUNTIME_CLASS(CAreaBox); }
 };
 

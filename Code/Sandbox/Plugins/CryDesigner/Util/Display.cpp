@@ -14,7 +14,7 @@
 namespace Designer {
 namespace Display
 {
-void DisplayHighlightedElements(DisplayContext& dc, MainContext& mc, int nPickFlag, ExcludedEdgeManager* pExcludedEdgeMgr)
+void DisplayHighlightedElements(SDisplayContext& dc, MainContext& mc, int nPickFlag, ExcludedEdgeManager* pExcludedEdgeMgr)
 {
 	if (Deprecated::CheckVirtualKey(VK_SPACE))
 		dc.DepthTestOff();
@@ -31,7 +31,7 @@ void DisplayHighlightedElements(DisplayContext& dc, MainContext& mc, int nPickFl
 	dc.DepthTestOn();
 }
 
-void DisplayHighlightedVertices(DisplayContext& dc, MainContext& mc, bool bExcludeVerticesFromSecondInOpenPolygon)
+void DisplayHighlightedVertices(SDisplayContext& dc, MainContext& mc, bool bExcludeVerticesFromSecondInOpenPolygon)
 {
 	if (GetDesigner() == NULL)
 		return;
@@ -73,12 +73,12 @@ void DisplayHighlightedVertices(DisplayContext& dc, MainContext& mc, bool bExclu
 	dc.PushMatrix(mc.pObject->GetWorldTM());
 }
 
-void DisplayHighlightedEdges(DisplayContext& dc, MainContext& mc, ExcludedEdgeManager* pExcludedEdgeMgr)
+void DisplayHighlightedEdges(SDisplayContext& dc, MainContext& mc, ExcludedEdgeManager* pExcludedEdgeMgr)
 {
 	DisplayModel(dc, mc.pModel, pExcludedEdgeMgr, eShelf_Any, kElementEdgeThickness, kElementBoxColor);
 }
 
-void DisplayHighlightedPolygons(DisplayContext& dc, MainContext& mc)
+void DisplayHighlightedPolygons(SDisplayContext& dc, MainContext& mc)
 {
 	if (GetDesigner() == NULL)
 		return;
@@ -109,7 +109,7 @@ void DisplayHighlightedPolygons(DisplayContext& dc, MainContext& mc)
 	dc.PushMatrix(mc.pObject->GetWorldTM());
 }
 
-void DisplayModel(DisplayContext& dc, Model* pModel, ExcludedEdgeManager* pExcludedEdgeMgr, ShelfID nShelf, const int nLineThickness, const ColorB& lineColor)
+void DisplayModel(SDisplayContext& dc, Model* pModel, ExcludedEdgeManager* pExcludedEdgeMgr, ShelfID nShelf, const int nLineThickness, const ColorB& lineColor)
 {
 	MODEL_SHELF_RECONSTRUCTOR(pModel);
 	for (int i = eShelf_Base; i < cShelfMax; ++i)
@@ -124,7 +124,7 @@ void DisplayModel(DisplayContext& dc, Model* pModel, ExcludedEdgeManager* pExclu
 	DisplaySubdividedMesh(dc, pModel);
 }
 
-void DisplaySubdividedMesh(DisplayContext& dc, Model* pModel)
+void DisplaySubdividedMesh(SDisplayContext& dc, Model* pModel)
 {
 	HalfEdgeMesh* pSubdivisionResult = pModel->GetSubdivisionResult();
 	if (!pSubdivisionResult || gDesignerSettings.bDisplayTriangulation || !gDesignerSettings.bDisplaySubdividedResult)
@@ -147,7 +147,7 @@ void DisplaySubdividedMesh(DisplayContext& dc, Model* pModel)
 	}
 }
 
-void DisplayPolygons(DisplayContext& dc, const std::vector<PolygonPtr>& polygons, ExcludedEdgeManager* pExcludedEdgeMgr, const int nLineThickness, const ColorB& lineColor)
+void DisplayPolygons(SDisplayContext& dc, const std::vector<PolygonPtr>& polygons, ExcludedEdgeManager* pExcludedEdgeMgr, const int nLineThickness, const ColorB& lineColor)
 {
 	int oldThickness = dc.GetLineWidth();
 	dc.SetLineWidth(nLineThickness);
@@ -183,7 +183,7 @@ void DisplayPolygons(DisplayContext& dc, const std::vector<PolygonPtr>& polygons
 	dc.SetLineWidth(oldThickness);
 }
 
-void DisplayPolygon(DisplayContext& dc, PolygonPtr polygon)
+void DisplayPolygon(SDisplayContext& dc, PolygonPtr polygon)
 {
 	if (!polygon || !polygon->IsValid())
 		return;
@@ -195,7 +195,7 @@ void DisplayPolygon(DisplayContext& dc, PolygonPtr polygon)
 	}
 }
 
-void DisplayBottomPolygon(DisplayContext& dc, PolygonPtr polygon, const ColorB& lineColor)
+void DisplayBottomPolygon(SDisplayContext& dc, PolygonPtr polygon, const ColorB& lineColor)
 {
 	if (!polygon)
 		return;
@@ -207,7 +207,7 @@ void DisplayBottomPolygon(DisplayContext& dc, PolygonPtr polygon, const ColorB& 
 	dc.SetLineWidth(oldThickness);
 }
 
-void DisplayVertexNormals(DisplayContext& dc, MainContext& mc)
+void DisplayVertexNormals(SDisplayContext& dc, MainContext& mc)
 {
 	_smart_ptr<IStatObj> pStatObj = NULL;
 	if (!mc.pCompiler->GetIStatObj(&pStatObj))
@@ -228,7 +228,7 @@ void DisplayVertexNormals(DisplayContext& dc, MainContext& mc)
 	}
 }
 
-void DisplayPolygonNormals(DisplayContext& dc, MainContext& mc)
+void DisplayPolygonNormals(SDisplayContext& dc, MainContext& mc)
 {
 	const float normal_length = 1.0f * 0.025f * dc.view->GetScreenScaleFactor(mc.pObject->GetWorldPos());
 	dc.SetColor(ColorB(255, 255, 255, 255));
@@ -243,7 +243,7 @@ void DisplayPolygonNormals(DisplayContext& dc, MainContext& mc)
 	}
 }
 
-void DisplayTriangulation(DisplayContext& dc, MainContext& mc)
+void DisplayTriangulation(SDisplayContext& dc, MainContext& mc)
 {
 	MODEL_SHELF_RECONSTRUCTOR(mc.pModel);
 

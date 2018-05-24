@@ -160,7 +160,7 @@ bool DiscTool::OnKeyDown(CViewport* view, uint32 nChar, uint32 nRepCnt, uint32 n
 	return true;
 }
 
-void DiscTool::Display(DisplayContext& dc)
+void DiscTool::Display(SDisplayContext& dc)
 {
 	DisplayCurrentSpot(dc);
 

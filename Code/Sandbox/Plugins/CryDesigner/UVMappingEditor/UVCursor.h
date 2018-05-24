@@ -14,7 +14,7 @@ public:
 	const Vec3& GetPos() const           { return m_Pos; }
 	void        SetPos(const Vec3& pos)  { m_Pos = pos;  }
 	void        SetRadius(float fRadius) { m_Radius = fRadius; }
-	void        Draw(DisplayContext& dc);
+	void        Draw(SDisplayContext& dc);
 	bool        IsPicked(const Ray& ray);
 	void        Transform(const Matrix33& tm);
 

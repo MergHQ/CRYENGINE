@@ -31,7 +31,7 @@ public:
 	bool         OnLButtonUp(CViewport* view, UINT nFlags, CPoint point) override;
 	bool         OnMouseMove(CViewport* view, UINT nFlags, CPoint point) override;
 
-	virtual void Display(DisplayContext& dc) override;
+	virtual void Display(SDisplayContext& dc) override;
 	virtual bool OnKeyDown(CViewport* view, uint32 nChar, uint32 nRepCnt, uint32 nFlags) override;
 
 	bool         IsPhaseFirstStepOnPrimitiveCreation() const override;

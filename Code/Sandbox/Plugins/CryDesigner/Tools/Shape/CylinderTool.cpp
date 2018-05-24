@@ -66,7 +66,7 @@ bool CylinderTool::OnLButtonDown(CViewport* view, UINT nFlags, CPoint point)
 	return true;
 }
 
-void CylinderTool::Display(DisplayContext& dc)
+void CylinderTool::Display(SDisplayContext& dc)
 {
 	if (!GetModel() || !GetBaseObject())
 		return;

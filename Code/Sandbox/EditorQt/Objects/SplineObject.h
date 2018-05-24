@@ -75,7 +75,7 @@ protected:
 	DECLARE_DYNAMIC(CSplineObject);
 	void          OnUpdateUI();
 
-	void          DrawJoints(DisplayContext& dc);
+	void          DrawJoints(SDisplayContext& dc);
 	bool          RayToLineDistance(const Vec3& rayLineP1, const Vec3& rayLineP2, const Vec3& pi, const Vec3& pj, float& distance, Vec3& intPnt);
 
 	virtual int   GetMaxPoints() const { return 1000; }
@@ -90,11 +90,11 @@ protected:
 	bool         Init(CBaseObject* prev, const string& file) override;
 	void         Done() override;
 
-	void CreateInspectorWidgets(CInspectorWidgetCreator& creator) override;
+	void         CreateInspectorWidgets(CInspectorWidgetCreator& creator) override;
 
 	void         GetBoundBox(AABB& box) override;
 	void         GetLocalBounds(AABB& box) override;
-	void         Display(DisplayContext& dc) override;
+	void         Display(CObjectRenderHelper& objRenderHelper) override;
 	bool         HitTest(HitContext& hc) override;
 	bool         HitTestRect(HitContext& hc) override;
 	void         Serialize(CObjectArchive& ar) override;
@@ -105,7 +105,7 @@ protected:
 	void         EditSpline();
 
 protected:
-	void         SerializeProperties(Serialization::IArchive& ar, bool bMultiEdit);
+	void SerializeProperties(Serialization::IArchive& ar, bool bMultiEdit);
 
 protected:
 	std::vector<CSplinePoint>  m_points;

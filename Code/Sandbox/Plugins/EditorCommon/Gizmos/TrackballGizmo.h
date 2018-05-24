@@ -5,7 +5,7 @@
 #include "IEditor.h" // for AxisConstrains and RefCoordSys
 #include "Gizmo.h"
 
-struct DisplayContext;
+struct SDisplayContext;
 struct HitContext;
 struct IDisplayViewport;
 
@@ -27,7 +27,7 @@ public:
 	//! set unique scale of the gizmo
 	void         SetScale(float scale);
 
-	virtual void Display(DisplayContext& dc) override;
+	virtual void Display(SDisplayContext& dc) override;
 
 	virtual bool MouseCallback(IDisplayViewport* view, EMouseEvent event, CPoint& point, int nFlags) override;
 

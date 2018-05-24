@@ -15,46 +15,46 @@ public:
 	ClipVolumeObject();
 	virtual ~ClipVolumeObject();
 
-	void Display(DisplayContext& dc) override;
+	void                       Display(CObjectRenderHelper& objRenderHelper) override;
 
-	bool Init(CBaseObject* prev, const string& file) override;
-	void InitVariables() override {}
-	void Serialize(CObjectArchive& ar) override;
+	bool                       Init(CBaseObject* prev, const string& file) override;
+	void                       InitVariables() override {}
+	void                       Serialize(CObjectArchive& ar) override;
 
-	bool CreateGameObject() override;
-	void EntityLinked(const string& name, CryGUID targetEntityId);
+	bool                       CreateGameObject() override;
+	void                       EntityLinked(const string& name, CryGUID targetEntityId);
 
-	void LoadFromCGF();
+	void                       LoadFromCGF();
 
-	void CreateInspectorWidgets(CInspectorWidgetCreator& creator) override;
+	void                       CreateInspectorWidgets(CInspectorWidgetCreator& creator) override;
 
-	ModelCompiler* GetCompiler() const override;
+	ModelCompiler*             GetCompiler() const override;
 
-	void           GetLocalBounds(AABB& box) override;
-	bool           HitTest(HitContext& hc) override;
+	void                       GetLocalBounds(AABB& box) override;
+	bool                       HitTest(HitContext& hc) override;
 
-	void           UpdateGameResource() override;
-	string        GenerateGameFilename();
+	void                       UpdateGameResource() override;
+	string                     GenerateGameFilename();
 
-	void           PostLoad(CObjectArchive& ar) override;
-	void           InvalidateTM(int nWhyFlags);
+	void                       PostLoad(CObjectArchive& ar) override;
+	void                       InvalidateTM(int nWhyFlags);
 
-	void           ExportBspTree(IChunkFile* pChunkFile) const;
+	void                       ExportBspTree(IChunkFile* pChunkFile) const;
 
-	void           OnEvent(ObjectEvent event) override;
-	void           SetHidden(bool bHidden, bool bAnimated = false) override;
-	bool           IsHiddenByOption() override;
+	void                       OnEvent(ObjectEvent event) override;
+	void                       SetHidden(bool bHidden, bool bAnimated = false) override;
+	bool                       IsHiddenByOption() override;
 
 	std::vector<EDesignerTool> GetIncompatibleSubtools() override;
 
-	virtual void Reload(bool bReloadScript = false) override {}
+	virtual void               Reload(bool bReloadScript = false) override {}
 
 private:
-	void       UpdateCollisionData(const DynArray<Vec3>& meshFaces);
-	void       OnPropertyChanged(IVariable* var);
+	void      UpdateCollisionData(const DynArray<Vec3>& meshFaces);
+	void      OnPropertyChanged(IVariable* var);
 
-	IStatObj*  GetIStatObj() override;
-	void       DeleteThis() override { delete this; }
+	IStatObj* GetIStatObj() override;
+	void      DeleteThis() override { delete this; }
 
 	CVariable<bool>      mv_filled;
 	CVariable<bool>      mv_ignoreOutdoorAO;
@@ -68,13 +68,13 @@ private:
 class ClipVolumeClassDesc : public CObjectClassDesc
 {
 public:
-	ObjectType     GetObjectType()            { return OBJTYPE_VOLUMESOLID; };
-	const char*    ClassName()                { return "ClipVolume"; };
-	const char*    Category()                 { return "Area"; };
-	CRuntimeClass* GetRuntimeClass()          { return RUNTIME_CLASS(ClipVolumeObject); };
-	const char*    GetTextureIcon()           { return "%EDITOR%/ObjectIcons/ClipVolume.bmp"; };
-	virtual bool   RenderTextureOnTop() const { return true; }
-	virtual const char* GetToolClassName() { return "EditTool.CreateClipVolumeTool"; }
+	ObjectType          GetObjectType()            { return OBJTYPE_VOLUMESOLID; }
+	const char*         ClassName()                { return "ClipVolume"; }
+	const char*         Category()                 { return "Area"; }
+	CRuntimeClass*      GetRuntimeClass()          { return RUNTIME_CLASS(ClipVolumeObject); }
+	const char*         GetTextureIcon()           { return "%EDITOR%/ObjectIcons/ClipVolume.bmp"; }
+	virtual bool        RenderTextureOnTop() const { return true; }
+	virtual const char* GetToolClassName()         { return "EditTool.CreateClipVolumeTool"; }
 };
 }
 

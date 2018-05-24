@@ -18,7 +18,7 @@ public:
 	CUndoChangePivot(CBaseObject* obj, const char* undoDescription);
 
 protected:
-	virtual const char* GetDescription() override { return m_undoDescription; };
+	virtual const char* GetDescription() override { return m_undoDescription; }
 	virtual const char* GetObjectName() override;
 
 	virtual void        Undo(bool bUndo) override;
@@ -51,7 +51,7 @@ public:
 	virtual void       PostInit(const string& file) override;
 	virtual void       Done() override;
 
-	virtual void       Display(DisplayContext& disp) override;
+	virtual void       Display(CObjectRenderHelper& objRenderHelper) override;
 	virtual bool       HitTest(HitContext& hc) override;
 
 	virtual void       CreateInspectorWidgets(CInspectorWidgetCreator& creator) override;
@@ -121,9 +121,9 @@ protected:
 	bool         HitTestMembers(HitContext& hcOrg);
 	virtual void PostClone(CBaseObject* pFromObject, CObjectCloneContext& ctx);
 	virtual void CalcBoundBox();
-	void         DeleteThis() { delete this; };
+	void         DeleteThis() { delete this; }
 
-	void         RecursivelyDisplayObject(CBaseObject* object, DisplayContext& dc);
+	void         RecursivelyDisplayObject(CBaseObject* object, CObjectRenderHelper& objRenderHelper);
 	void         DeleteAllPrefabObjects();
 
 	void         SyncParentObject();
@@ -170,17 +170,17 @@ public:
 class CPrefabObjectClassDesc : public CObjectClassDesc
 {
 public:
-	ObjectType     GetObjectType()   { return OBJTYPE_PREFAB; };
-	const char*    ClassName()       { return PREFAB_OBJECT_CLASS_NAME; };
-	const char*    Category()        { return CATEGORY_PREFABS; };
-	CRuntimeClass* GetRuntimeClass() { return RUNTIME_CLASS(CPrefabObject); };
+	ObjectType     GetObjectType()   { return OBJTYPE_PREFAB; }
+	const char*    ClassName()       { return PREFAB_OBJECT_CLASS_NAME; }
+	const char*    Category()        { return CATEGORY_PREFABS; }
+	CRuntimeClass* GetRuntimeClass() { return RUNTIME_CLASS(CPrefabObject); }
 
 	//! Select all prefabs.
 	//! ObjectTreeBrowser object can recognize this hard-coded name.
-	const char*         GetFileSpec()                       { return "*Prefabs"; };
+	const char*         GetFileSpec()                       { return "*Prefabs"; }
 	virtual const char* GetDataFilesFilterString() override { return ""; }
 	virtual void        EnumerateObjects(IObjectEnumerator* pEnumerator) override;
-	virtual const char* GetTextureIcon()                    { return "%EDITOR%/ObjectIcons/prefab.bmp"; };
+	virtual const char* GetTextureIcon()                    { return "%EDITOR%/ObjectIcons/prefab.bmp"; }
 	virtual bool        IsCreatable() const override;
 };
 

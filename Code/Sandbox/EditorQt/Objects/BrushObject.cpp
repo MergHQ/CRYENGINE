@@ -46,10 +46,10 @@ protected:
 	virtual void        Undo(bool bUndo) override;
 	virtual void        Redo() override;
 private:
-	string        m_undoDescription;
-	CryGUID       m_guid;
-	string        m_redoGeometryFile;
-	string        m_undoGeometryFile;
+	string  m_undoDescription;
+	CryGUID m_guid;
+	string  m_redoGeometryFile;
+	string  m_undoGeometryFile;
 };
 
 CUndoSetGeometryFile::CUndoSetGeometryFile(CBrushObject* pObject, const char* pUndoDescription)
@@ -70,7 +70,7 @@ const char* CUndoSetGeometryFile::GetObjectName()
 
 void CUndoSetGeometryFile::Undo(bool bUndo)
 {
-	CBrushObject* pObject = static_cast<CBrushObject *>(GetIEditor()->GetObjectManager()->FindObject(m_guid));
+	CBrushObject* pObject = static_cast<CBrushObject*>(GetIEditor()->GetObjectManager()->FindObject(m_guid));
 	if (pObject)
 	{
 		if (bUndo)
@@ -83,7 +83,7 @@ void CUndoSetGeometryFile::Undo(bool bUndo)
 
 void CUndoSetGeometryFile::Redo()
 {
-	CBrushObject* pObject = static_cast<CBrushObject *>(GetIEditor()->GetObjectManager()->FindObject(m_guid));
+	CBrushObject* pObject = static_cast<CBrushObject*>(GetIEditor()->GetObjectManager()->FindObject(m_guid));
 	if (pObject)
 	{
 		pObject->SetGeometryFile(m_redoGeometryFile);
@@ -298,18 +298,18 @@ void CBrushObject::ApplyStatObjProperties()
 			// TODO: Consider automatic iteration over m_pVarObject.
 			if (strncmp("cast_shadow_maps", pKey, keyLength) == 0)
 			{
-				mv_castShadowMaps = !valueLength || strncmp("true", pValue, valueLength) == 0 || strncmp("1", pValue, valueLength) == 0;
+			  mv_castShadowMaps = !valueLength || strncmp("true", pValue, valueLength) == 0 || strncmp("1", pValue, valueLength) == 0;
 			}
 			else if (valueLength && std::isdigit(*pValue))
 			{
-				if (strncmp("lod_ratio", pKey, keyLength) == 0)
-				{
-					mv_ratioLOD = (float)atof(pValue);
-				}
-				else if (strncmp("view_dist_ratio", pKey, keyLength) == 0)
-				{
-					mv_ratioViewDist = (float)atof(pValue);
-				}
+			  if (strncmp("lod_ratio", pKey, keyLength) == 0)
+			  {
+			    mv_ratioLOD = (float)atof(pValue);
+			  }
+			  else if (strncmp("view_dist_ratio", pKey, keyLength) == 0)
+			  {
+			    mv_ratioViewDist = (float)atof(pValue);
+			  }
 			}
 		});
 	}
@@ -349,10 +349,12 @@ void CBrushObject::GetLocalBounds(AABB& box)
 }
 
 //////////////////////////////////////////////////////////////////////////
-void CBrushObject::Display(DisplayContext& dc)
+void CBrushObject::Display(CObjectRenderHelper& objRenderHelper)
 {
 	if (!gViewportDebugPreferences.showBrushObjectHelper)
 		return;
+
+	SDisplayContext& dc = objRenderHelper.GetDisplayContextRef();
 
 	if (!m_pGeometry)
 	{
@@ -735,30 +737,30 @@ void CBrushObject::CreateInspectorWidgets(CInspectorWidgetCreator& creator)
 		// If a new geometry file is assigned it can set new default values. Do not overwrite them with old values from the UI.
 		if (ar.isOutput() || geometryFile == (string)pObject->mv_geometryFile)
 		{
-			pObject->m_pVarObject->SerializeVariable(&pObject->mv_outdoor, ar);
-			pObject->m_pVarObject->SerializeVariable(&pObject->mv_castShadowMaps, ar);
-			pObject->m_pVarObject->SerializeVariable(pObject->mv_giMode.GetVar(), ar);
-			pObject->m_pVarObject->SerializeVariable(&pObject->mv_dynamicDistanceShadows, ar);
-			pObject->m_pVarObject->SerializeVariable(&pObject->mv_rainOccluder, ar);
-			pObject->m_pVarObject->SerializeVariable(&pObject->mv_registerByBBox, ar);
-			pObject->m_pVarObject->SerializeVariable(&pObject->mv_hideable, ar);
-			pObject->m_pVarObject->SerializeVariable(&pObject->mv_ratioLOD, ar);
-			pObject->m_pVarObject->SerializeVariable(&pObject->mv_ratioViewDist, ar);
-			pObject->m_pVarObject->SerializeVariable(&pObject->mv_excludeFromTriangulation, ar);
-			pObject->m_pVarObject->SerializeVariable(&pObject->mv_noDynWater, ar);
-			pObject->m_pVarObject->SerializeVariable(&pObject->mv_aiRadius, ar);
-			pObject->m_pVarObject->SerializeVariable(&pObject->mv_noDecals, ar);
-			pObject->m_pVarObject->SerializeVariable(&pObject->mv_recvWind, ar);
-			pObject->m_pVarObject->SerializeVariable(&pObject->mv_Occluder, ar);
-			pObject->m_pVarObject->SerializeVariable(&pObject->mv_drawLast, ar);
-			pObject->m_pVarObject->SerializeVariable(&pObject->mv_shadowLodBias, ar);
+		  pObject->m_pVarObject->SerializeVariable(&pObject->mv_outdoor, ar);
+		  pObject->m_pVarObject->SerializeVariable(&pObject->mv_castShadowMaps, ar);
+		  pObject->m_pVarObject->SerializeVariable(pObject->mv_giMode.GetVar(), ar);
+		  pObject->m_pVarObject->SerializeVariable(&pObject->mv_dynamicDistanceShadows, ar);
+		  pObject->m_pVarObject->SerializeVariable(&pObject->mv_rainOccluder, ar);
+		  pObject->m_pVarObject->SerializeVariable(&pObject->mv_registerByBBox, ar);
+		  pObject->m_pVarObject->SerializeVariable(&pObject->mv_hideable, ar);
+		  pObject->m_pVarObject->SerializeVariable(&pObject->mv_ratioLOD, ar);
+		  pObject->m_pVarObject->SerializeVariable(&pObject->mv_ratioViewDist, ar);
+		  pObject->m_pVarObject->SerializeVariable(&pObject->mv_excludeFromTriangulation, ar);
+		  pObject->m_pVarObject->SerializeVariable(&pObject->mv_noDynWater, ar);
+		  pObject->m_pVarObject->SerializeVariable(&pObject->mv_aiRadius, ar);
+		  pObject->m_pVarObject->SerializeVariable(&pObject->mv_noDecals, ar);
+		  pObject->m_pVarObject->SerializeVariable(&pObject->mv_recvWind, ar);
+		  pObject->m_pVarObject->SerializeVariable(&pObject->mv_Occluder, ar);
+		  pObject->m_pVarObject->SerializeVariable(&pObject->mv_drawLast, ar);
+		  pObject->m_pVarObject->SerializeVariable(&pObject->mv_shadowLodBias, ar);
 		}
 
 		if (ar.openBlock("cgf", "<CGF"))
 		{
-			ar(Serialization::ActionButton(std::bind(&CBrushObject::ReloadGeometry, pObject)), "reload_geometry", "^Reload CGF");
-			ar(Serialization::ActionButton(std::bind(&CBrushObject::SaveToCGF, pObject)), "save_cgf", "^Save CGF");
-			ar.closeBlock();
+		  ar(Serialization::ActionButton(std::bind(&CBrushObject::ReloadGeometry, pObject)), "reload_geometry", "^Reload CGF");
+		  ar(Serialization::ActionButton(std::bind(&CBrushObject::SaveToCGF, pObject)), "save_cgf", "^Save CGF");
+		  ar.closeBlock();
 		}
 	});
 }

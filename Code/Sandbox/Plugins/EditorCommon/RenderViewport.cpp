@@ -63,12 +63,11 @@ bool SCameraPreferences::Serialize(yasli::Archive& ar)
 
 	ar.openBlock("collisions", "Collisions");
 	ar(terrainCollisionEnabled, "terrainCollisionEnabled", "Terrain Collision");
-	ar(objectCollisionEnabled,  "objectCollisionEnabled", "Object Collision");
+	ar(objectCollisionEnabled, "objectCollisionEnabled", "Object Collision");
 	ar.closeBlock();
 
 	return true;
 }
-
 
 //////////////////////////////////////////////////////////////////////////
 // CRenderViewport
@@ -100,7 +99,6 @@ CRenderViewport::CRenderViewport() : m_pCameraDelegate(nullptr)
 
 	GetIEditor()->RegisterNotifyListener(this);
 
-	m_displayContext.pIconManager = GetIEditor()->GetIconManager();
 	GetIEditor()->GetIUndoManager()->AddListener(this);
 
 	m_currentResolution.width = m_currentResolution.height = 0;
@@ -113,7 +111,6 @@ CRenderViewport::CRenderViewport() : m_pCameraDelegate(nullptr)
 	m_bPendingResizeNotification = false;
 	m_lastCameraSpeedScale = 1.0f;
 }
-
 
 //////////////////////////////////////////////////////////////////////////
 void CRenderViewport::OnFilterCryInputEvent(CryInputEvent* evt)
@@ -139,7 +136,6 @@ void CRenderViewport::OnFilterCryInputEvent(CryInputEvent* evt)
 		}
 	}
 }
-
 
 //////////////////////////////////////////////////////////////////////////
 CRenderViewport::~CRenderViewport()
@@ -264,21 +260,21 @@ void CRenderViewport::ProcessMouse()
 
 	//TODO : This may have broken player movement in mannequin but commenting it out for refactoring
 	/*if (m_PlayerControl)
-	{
-		if (m_bInRotateMode)
-		{
-			f32 MousedeltaX = (m_mousePos.x - point.x);
-			f32 MousedeltaY = (m_mousePos.y - point.y);
-			m_relCameraRotZ += MousedeltaX;
-			m_relCameraRotX += MousedeltaY;
-			CPoint pnt = m_mousePos;
-			ClientToScreen(&pnt);
-			SetCursorPos(pnt.x, pnt.y);
+	   {
+	   if (m_bInRotateMode)
+	   {
+	    f32 MousedeltaX = (m_mousePos.x - point.x);
+	    f32 MousedeltaY = (m_mousePos.y - point.y);
+	    m_relCameraRotZ += MousedeltaX;
+	    m_relCameraRotX += MousedeltaY;
+	    CPoint pnt = m_mousePos;
+	    ClientToScreen(&pnt);
+	    SetCursorPos(pnt.x, pnt.y);
 
-			if (m_bAttachCameraToSelected) m_bCaptureAttachOffset = true;
-		}
-	}
-	else*/ if ((m_bInRotateMode && m_bInMoveMode) || m_bInZoomMode)
+	    if (m_bAttachCameraToSelected) m_bCaptureAttachOffset = true;
+	   }
+	   }
+	   else*/if ((m_bInRotateMode && m_bInMoveMode) || m_bInZoomMode)
 	{
 		if (m_eCameraMoveState == ECameraMoveState::NoMove)
 			m_eCameraMoveState = ECameraMoveState::MovingWithoutUndoPushed;
@@ -382,7 +378,7 @@ void CRenderViewport::ProcessMouse()
 
 		// Calc new source.
 		Vec3 dst = m_orbitTarget + rotateTM * vInitViewProjection;
-	
+
 		Matrix34 camTM = Matrix34(rotateTM, dst);
 		SetViewTM(camTM);
 		if (m_bAttachCameraToSelected) m_bCaptureAttachOffset = true;
@@ -498,7 +494,13 @@ void CRenderViewport::Update()
 		SScopedCurrentContext context(this);
 
 		// Configures Aux to draw to the current display-context
-		InitDisplayContext(m_displayContextKey);
+		SDisplayContext displayContext = InitDisplayContext(m_displayContextKey);
+
+		if (m_bForceUpdateVisibleObjectCache)
+		{
+			GetIEditor()->GetObjectManager()->ForceUpdateVisibleObjectCache(displayContext);
+			m_bForceUpdateVisibleObjectCache = false;
+		}
 
 		// 3D engine stats
 		GetIEditor()->GetSystem()->RenderBegin(m_displayContextKey);
@@ -509,19 +511,19 @@ void CRenderViewport::Update()
 		if (!m_bCanDrawWithoutLevelLoaded && (!le || !le->IsLevelLoaded() || !GetIEditor()->IsDocumentReady()))
 		{
 			bRenderStats = false;
-			DrawBackground();
+			DrawBackground(displayContext);
 		}
 		else
 		{
-			OnRender();
+			OnRender(displayContext);
 		}
 
-		ProcessRenderListeners(m_displayContext);
+		ProcessRenderListeners(displayContext);
 
-		m_displayContext.Flush2D();
+		displayContext.Flush2D();
 
 		// draw gizmos on top of 2d icons.
-		GetIEditor()->GetGizmoManager()->Display(m_displayContext);
+		GetIEditor()->GetGizmoManager()->Display(displayContext);
 
 		// 3D engine stats
 
@@ -681,7 +683,7 @@ inline Vec3 NegY(const Vec3& v, float y)
 }
 
 //////////////////////////////////////////////////////////////////////////
-void CRenderViewport::RenderSelectionRectangle()
+void CRenderViewport::RenderSelectionRectangle(SDisplayContext& context)
 {
 	if (m_selectedRect.IsRectEmpty())
 	{
@@ -691,17 +693,17 @@ void CRenderViewport::RenderSelectionRectangle()
 	CPoint topLeft(m_selectedRect.left, m_selectedRect.top);
 	CPoint bottomRight(m_selectedRect.right, m_selectedRect.bottom);
 
-	m_displayContext.SetColor(1, 1, 1, 0.4f);
-	m_displayContext.DrawWireQuad2d(topLeft, bottomRight, 1);
+	context.SetColor(1, 1, 1, 0.4f);
+	context.DrawWireQuad2d(topLeft, bottomRight, 1);
 }
 
 //////////////////////////////////////////////////////////////////////////
-void CRenderViewport::InitDisplayContext(SDisplayContextKey displayContextKey)
+SDisplayContext CRenderViewport::InitDisplayContext(const SDisplayContextKey& displayContextKey)
 {
 	CRY_PROFILE_FUNCTION(PROFILE_EDITOR);
 
 	// Draw all objects.
-	DisplayContext& dctx = m_displayContext;
+	SDisplayContext dctx;
 	dctx.SetDisplayContext(displayContextKey, IRenderer::eViewportType_Default);
 	dctx.SetView(this);
 	dctx.SetCamera(&m_Camera);
@@ -710,6 +712,8 @@ void CRenderViewport::InitDisplayContext(SDisplayContextKey displayContextKey)
 	dctx.box.min = Vec3(-100000, -100000, -100000);
 	dctx.box.max = Vec3(100000, 100000, 100000);
 	dctx.flags = 0;
+	dctx.pIconManager = GetIEditor()->GetIconManager();
+
 	if (!gViewportPreferences.displayLabels || !(GetIEditor()->IsHelpersDisplayed()))
 	{
 		dctx.flags |= DISPLAY_HIDENAMES;
@@ -740,10 +744,12 @@ void CRenderViewport::InitDisplayContext(SDisplayContextKey displayContextKey)
 	{
 		dctx.flags |= DISPLAY_WORLDSPACEAXIS;
 	}
+
+	return dctx;
 }
 
 //////////////////////////////////////////////////////////////////////////
-void CRenderViewport::DrawAxis()
+void CRenderViewport::DrawAxis(SDisplayContext& context)
 {
 	if (!GetIEditor()->IsHelpersDisplayed())      // show axis only if draw helpers is activated
 		return;
@@ -751,8 +757,8 @@ void CRenderViewport::DrawAxis()
 	Vec3 colX(1, 0, 0), colY(0, 1, 0), colZ(0, 0, 1), colW(1, 1, 1);
 	Vec3 pos(50, 50, 0.1f); // Bottom-left corner
 
-	Vec3 posInWorld(0,0,0);
-	if (!GetCamera().Unproject(pos,posInWorld))
+	Vec3 posInWorld(0, 0, 0);
+	if (!GetCamera().Unproject(pos, posInWorld))
 		return;
 
 	float screenScale = GetScreenScaleFactor(posInWorld);
@@ -764,39 +770,34 @@ void CRenderViewport::DrawAxis()
 	Vec3 y(0, length, 0);
 	Vec3 z(0, 0, length);
 
-	DisplayContext& dc = m_displayContext;
-	int prevRState = dc.GetState();
+	int prevRState = context.GetState();
 
-	dc.DepthWriteOff();
-	dc.DepthTestOff();
-	dc.CullOff();
-	dc.SetLineWidth(1);
-
-	dc.SetColor(colX);
-	dc.DrawLine(posInWorld, posInWorld + x);
-	dc.DrawArrow(posInWorld + x * 0.9f, posInWorld + x, arrowSize);
-	dc.SetColor(colY);
-	dc.DrawLine(posInWorld, posInWorld + y);
-	dc.DrawArrow(posInWorld + y * 0.9f, posInWorld + y, arrowSize);
-	dc.SetColor(colZ);
-	dc.DrawLine(posInWorld, posInWorld + z);
-	dc.DrawArrow(posInWorld + z * 0.9f, posInWorld + z, arrowSize);
-
-	dc.SetColor(colW);
-	dc.DrawTextLabel(posInWorld + x, textSize, "x");
-	dc.DrawTextLabel(posInWorld + y, textSize, "y");
-	dc.DrawTextLabel(posInWorld + z, textSize, "z");
-
-	dc.DepthWriteOn();
-	dc.DepthTestOn();
-	dc.CullOn();
-	dc.SetState(prevRState);
+	context.DepthWriteOff();
+	context.DepthTestOff();
+	context.CullOff();
+	context.SetLineWidth(1);
+	context.SetColor(colX);
+	context.DrawLine(posInWorld, posInWorld + x);
+	context.DrawArrow(posInWorld + x * 0.9f, posInWorld + x, arrowSize);
+	context.SetColor(colY);
+	context.DrawLine(posInWorld, posInWorld + y);
+	context.DrawArrow(posInWorld + y * 0.9f, posInWorld + y, arrowSize);
+	context.SetColor(colZ);
+	context.DrawLine(posInWorld, posInWorld + z);
+	context.DrawArrow(posInWorld + z * 0.9f, posInWorld + z, arrowSize);
+	context.SetColor(colW);
+	context.DrawTextLabel(posInWorld + x, textSize, "x");
+	context.DrawTextLabel(posInWorld + y, textSize, "y");
+	context.DrawTextLabel(posInWorld + z, textSize, "z");
+	context.DepthWriteOn();
+	context.DepthTestOn();
+	context.CullOn();
+	context.SetState(prevRState);
 }
 
 //////////////////////////////////////////////////////////////////////////
-void CRenderViewport::DrawBackground()
+void CRenderViewport::DrawBackground(SDisplayContext& context)
 {
-	DisplayContext& dc = m_displayContext;
 
 	if (!GetIEditor()->IsHelpersDisplayed())      // show gradient bg only if draw helpers are activated
 		return;
@@ -825,8 +826,8 @@ void CRenderViewport::DrawBackground()
 	ColorB secondC(GetRValue(topColor), GetGValue(topColor), GetBValue(topColor), 255.0f);
 	ColorB firstC(GetRValue(bottomColor), GetGValue(bottomColor), GetBValue(bottomColor), 255.0f);
 
-	dc.SetState(e_Mode2D | e_AlphaBlended | e_FillModeSolid | e_CullModeBack | e_DepthWriteOn | e_DepthTestOn);
-	dc.DrawQuadGradient(bottomRight, bottomLeft, topLeft, topRight, secondC, firstC);
+	context.SetState(e_Mode2D | e_AlphaBlended | e_FillModeSolid | e_CullModeBack | e_DepthWriteOn | e_DepthTestOn);
+	context.DrawQuadGradient(bottomRight, bottomLeft, topLeft, topRight, secondC, firstC);
 }
 
 //////////////////////////////////////////////////////////////////////////
@@ -896,19 +897,17 @@ void CRenderViewport::UpdateSafeFrame()
 }
 
 //////////////////////////////////////////////////////////////////////////
-void CRenderViewport::RenderSafeFrame()
+void CRenderViewport::RenderSafeFrame(SDisplayContext& context)
 {
-	RenderSafeFrame(m_safeFrame, 0.75f, 0.75f, 0, 0.8f);
-	RenderSafeFrame(m_safeAction, 0, 0.85f, 0.80f, 0.8f);
-	RenderSafeFrame(m_safeTitle, 0.80f, 0.60f, 0, 0.8f);
+	RenderSafeFrame(context, m_safeFrame, 0.75f, 0.75f, 0, 0.8f);
+	RenderSafeFrame(context, m_safeAction, 0, 0.85f, 0.80f, 0.8f);
+	RenderSafeFrame(context, m_safeTitle, 0.80f, 0.60f, 0, 0.8f);
 }
 
 //////////////////////////////////////////////////////////////////////////
-void CRenderViewport::RenderSafeFrame(const CRect& frame, float r, float g, float b, float a)
+void CRenderViewport::RenderSafeFrame(SDisplayContext& context, const CRect& frame, float r, float g, float b, float a)
 {
-	DisplayContext& dc = m_displayContext;
-
-	dc.SetColor(r, g, b, a);
+	context.SetColor(r, g, b, a);
 
 	const int LINE_WIDTH = 2;
 	for (int i = 0; i < LINE_WIDTH; i++)
@@ -916,7 +915,7 @@ void CRenderViewport::RenderSafeFrame(const CRect& frame, float r, float g, floa
 		Vec3 topLeft(frame.left + i, frame.top + i, 0);
 		Vec3 bottomRight(frame.right - i, frame.bottom - i, 0);
 
-		dc.DrawWireBox(topLeft, bottomRight);
+		context.DrawWireBox(topLeft, bottomRight);
 	}
 }
 
@@ -927,7 +926,7 @@ float CRenderViewport::GetAspectRatio() const
 }
 
 //////////////////////////////////////////////////////////////////////////
-void CRenderViewport::RenderSnapMarker()
+void CRenderViewport::RenderSnapMarker(SDisplayContext& context)
 {
 	if (!gSnappingPreferences.markerDisplay())
 		return;
@@ -936,8 +935,6 @@ void CRenderViewport::RenderSnapMarker()
 	::GetCursorPos(&point);
 	ScreenToClient(&point);
 	Vec3 p = MapViewToCP(point);
-
-	DisplayContext& dc = m_displayContext;
 
 	float fScreenScaleFactor = GetScreenScaleFactor(p);
 
@@ -948,18 +945,18 @@ void CRenderViewport::RenderSnapMarker()
 	y = y * gSnappingPreferences.markerSize() * fScreenScaleFactor * 0.1f;
 	z = z * gSnappingPreferences.markerSize() * fScreenScaleFactor * 0.1f;
 
-	dc.SetColor(gSnappingPreferences.markerColor());
-	dc.DrawLine(p - x, p + x);
-	dc.DrawLine(p - y, p + y);
-	dc.DrawLine(p - z, p + z);
+	context.SetColor(gSnappingPreferences.markerColor());
+	context.DrawLine(p - x, p + x);
+	context.DrawLine(p - y, p + y);
+	context.DrawLine(p - z, p + z);
 
 	point = WorldToView(p);
 
 	int s = 8;
-	dc.DrawLine2d(point + CPoint(-s, -s), point + CPoint(s, -s), 0);
-	dc.DrawLine2d(point + CPoint(-s, s), point + CPoint(s, s), 0);
-	dc.DrawLine2d(point + CPoint(-s, -s), point + CPoint(-s, s), 0);
-	dc.DrawLine2d(point + CPoint(s, -s), point + CPoint(s, s), 0);
+	context.DrawLine2d(point + CPoint(-s, -s), point + CPoint(s, -s), 0);
+	context.DrawLine2d(point + CPoint(-s, s), point + CPoint(s, s), 0);
+	context.DrawLine2d(point + CPoint(-s, -s), point + CPoint(-s, s), 0);
+	context.DrawLine2d(point + CPoint(s, -s), point + CPoint(s, s), 0);
 }
 
 //////////////////////////////////////////////////////////////////////////
@@ -1175,7 +1172,7 @@ void CRenderViewport::SetViewTM(const Matrix34& viewTM, bool bMoveOnly)
 }
 
 //////////////////////////////////////////////////////////////////////////
-void CRenderViewport::RenderSelectedRegion()
+void CRenderViewport::RenderSelectedRegion(SDisplayContext& context)
 {
 	if (!m_engine)
 		return;
@@ -1190,8 +1187,6 @@ void CRenderViewport::RenderSelectedRegion()
 	float x2 = box.max.x;
 	float y2 = box.max.y;
 
-	DisplayContext& dc = m_displayContext;
-
 	float fMaxSide = MAX(y2 - y1, x2 - x1);
 	if (fMaxSide < 0.1f)
 		return;
@@ -1201,7 +1196,7 @@ void CRenderViewport::RenderSelectedRegion()
 	float fMaxZ = 0;
 
 	// Draw yellow border lines.
-	dc.SetColor(1, 1, 0, 1);
+	context.SetColor(1, 1, 0, 1);
 	float offset = 0.01f;
 	Vec3 p1, p2;
 
@@ -1214,7 +1209,7 @@ void CRenderViewport::RenderSelectedRegion()
 		p2.x = x1;
 		p2.y = y + fStep;
 		p2.z = m_engine->GetTerrainElevation(p2.x, p2.y) + offset;
-		dc.DrawLine(p1, p2);
+		context.DrawLine(p1, p2);
 
 		p1.x = x2;
 		p1.y = y;
@@ -1223,7 +1218,7 @@ void CRenderViewport::RenderSelectedRegion()
 		p2.x = x2;
 		p2.y = y + fStep;
 		p2.z = m_engine->GetTerrainElevation(p2.x, p2.y) + offset;
-		dc.DrawLine(p1, p2);
+		context.DrawLine(p1, p2);
 
 		fMinZ = min(fMinZ, min(p1.z, p2.z));
 		fMaxZ = max(fMaxZ, max(p1.z, p2.z));
@@ -1237,7 +1232,7 @@ void CRenderViewport::RenderSelectedRegion()
 		p2.x = x + fStep;
 		p2.y = y1;
 		p2.z = m_engine->GetTerrainElevation(p2.x, p2.y) + offset;
-		dc.DrawLine(p1, p2);
+		context.DrawLine(p1, p2);
 
 		p1.x = x;
 		p1.y = y2;
@@ -1246,7 +1241,7 @@ void CRenderViewport::RenderSelectedRegion()
 		p2.x = x + fStep;
 		p2.y = y2;
 		p2.z = m_engine->GetTerrainElevation(p2.x, p2.y) + offset;
-		dc.DrawLine(p1, p2);
+		context.DrawLine(p1, p2);
 
 		fMinZ = min(fMinZ, min(p1.z, p2.z));
 		fMaxZ = max(fMaxZ, max(p1.z, p2.z));
@@ -1331,16 +1326,16 @@ void CRenderViewport::RenderSelectedRegion()
 		{
 			Vec3& p = base[i];
 
-			dc.DrawLine(p, Vec3(p.x, p.y, p.z + fBoxHeight), ColorF(1, 1, 0, 1), ColorF(1, 1, 0, 1));
-			dc.DrawLine(Vec3(p.x, p.y, p.z + fBoxHeight), Vec3(p.x, p.y, p.z + fBoxHeight + fBoxOver), ColorF(1, 1, 0, 1), ColorF(1, 1, 0, 0));
+			context.DrawLine(p, Vec3(p.x, p.y, p.z + fBoxHeight), ColorF(1, 1, 0, 1), ColorF(1, 1, 0, 1));
+			context.DrawLine(Vec3(p.x, p.y, p.z + fBoxHeight), Vec3(p.x, p.y, p.z + fBoxHeight + fBoxOver), ColorF(1, 1, 0, 1), ColorF(1, 1, 0, 0));
 		}
 
 		// Draw volume
-		dc.DepthWriteOff();
-		dc.CullOff();
-		dc.pRenderAuxGeom->DrawTriangles(&verts[0], verts.size(), &inds[0], numInds, &colors[0]);
-		dc.CullOn();
-		dc.DepthWriteOn();
+		context.DepthWriteOff();
+		context.CullOff();
+		context.pRenderAuxGeom->DrawTriangles(&verts[0], verts.size(), &inds[0], numInds, &colors[0]);
+		context.CullOn();
+		context.DepthWriteOn();
 	}
 }
 
@@ -1463,16 +1458,16 @@ Vec3 CRenderViewport::WorldToView3D(const Vec3& wp, int nFlags) const
 //////////////////////////////////////////////////////////////////////////
 POINT CRenderViewport::WorldToView(const Vec3& wp) const
 {
-	CPoint p(0,0);
+	CPoint p(0, 0);
 
-	Vec3 out(0,0,0);
+	Vec3 out(0, 0, 0);
 	GetCamera().Project(wp, out);
 	if (std::isfinite(out.x) && std::isfinite(out.y))
 	{
 		CRect rc;
 		GetClientRect(&rc);
-		p.x = out.x * ((float)rc.Width()/m_currentResolution.width);
-		p.y = out.y * ((float)rc.Height()/m_currentResolution.height);
+		p.x = out.x * ((float)rc.Width() / m_currentResolution.width);
+		p.y = out.y * ((float)rc.Height() / m_currentResolution.height);
 	}
 
 	return p;
@@ -1601,13 +1596,13 @@ void CRenderViewport::ViewToWorldRay(POINT vp, Vec3& raySrc, Vec3& rayDir) const
 	vp.x = vp.x * m_currentResolution.width / (float)rc.Width();
 	vp.y = vp.y * m_currentResolution.height / (float)rc.Height();
 
-	Vec3 pos0(0,0,0), pos1(0,0,0);
+	Vec3 pos0(0, 0, 0), pos1(0, 0, 0);
 
-	GetCamera().Unproject(Vec3(vp.x, m_currentResolution.height - vp.y, 0),pos0);
-	GetCamera().Unproject(Vec3(vp.x, m_currentResolution.height - vp.y, 1),pos1);
+	GetCamera().Unproject(Vec3(vp.x, m_currentResolution.height - vp.y, 0), pos0);
+	GetCamera().Unproject(Vec3(vp.x, m_currentResolution.height - vp.y, 1), pos1);
 
 	if (!IsVectorInValidRange(pos0))
-		pos0 = Vec3(0,0,0);
+		pos0 = Vec3(0, 0, 0);
 	if (!IsVectorInValidRange(pos1))
 		pos1 = Vec3(0, 0, 0);
 
@@ -1862,7 +1857,9 @@ bool CRenderViewport::MouseCallback(EMouseEvent event, CPoint& point, int flags)
 		// selection will work properly even if helpers are not being displayed,
 		// in which case the cache is not updated every frame.
 		if (!GetIEditor()->IsHelpersDisplayed())
-			GetIEditor()->GetObjectManager()->ForceUpdateVisibleObjectCache(this->m_displayContext);
+		{
+			m_bForceUpdateVisibleObjectCache = true;
+		}
 	}
 	else if (event == eMouseLUp)
 	{
@@ -1877,9 +1874,9 @@ bool CRenderViewport::MouseCallback(EMouseEvent event, CPoint& point, int flags)
 	}
 
 	// accelerate only if camera is actually moving, but not if mouse wheel is pressed
-	if (!(flags & (MK_CONTROL | MK_MBUTTON)) && (event == eMouseWheel) && 
-		((gViewportMovementPreferences.mouseWheelBehavior == SViewportMovementPreferences::eWheel_SpeedOnly) ||
-		((m_eCameraMoveState != ECameraMoveState::NoMove) && gViewportMovementPreferences.mouseWheelBehavior == SViewportMovementPreferences::eWheel_ZoomSpeed)))
+	if (!(flags & (MK_CONTROL | MK_MBUTTON)) && (event == eMouseWheel) &&
+	    ((gViewportMovementPreferences.mouseWheelBehavior == SViewportMovementPreferences::eWheel_SpeedOnly) ||
+	     ((m_eCameraMoveState != ECameraMoveState::NoMove) && gViewportMovementPreferences.mouseWheelBehavior == SViewportMovementPreferences::eWheel_ZoomSpeed)))
 	{
 		Accelerate((point.x > 0) ? 1 : -1);
 		return true;
@@ -1985,30 +1982,30 @@ void CRenderViewport::OnCameraTransformEvent(CameraTransformEvent* msg)
 
 namespace
 {
-	void PyToggleCameraTerrainCollisions()
-	{
-		CRenderViewport::s_cameraPreferences.terrainCollisionEnabled = !CRenderViewport::s_cameraPreferences.terrainCollisionEnabled;
-	}
+void PyToggleCameraTerrainCollisions()
+{
+	CRenderViewport::s_cameraPreferences.terrainCollisionEnabled = !CRenderViewport::s_cameraPreferences.terrainCollisionEnabled;
+}
 
-	void PyToggleCameraObjectCollisions()
-	{
-		CRenderViewport::s_cameraPreferences.objectCollisionEnabled = !CRenderViewport::s_cameraPreferences.objectCollisionEnabled;
-	}
+void PyToggleCameraObjectCollisions()
+{
+	CRenderViewport::s_cameraPreferences.objectCollisionEnabled = !CRenderViewport::s_cameraPreferences.objectCollisionEnabled;
+}
 
-	void PyToggleCameraSpeedHeightRelative()
-	{
-		CRenderViewport::s_cameraPreferences.speedHeightRelativeEnabled = !CRenderViewport::s_cameraPreferences.speedHeightRelativeEnabled;
-	}
+void PyToggleCameraSpeedHeightRelative()
+{
+	CRenderViewport::s_cameraPreferences.speedHeightRelativeEnabled = !CRenderViewport::s_cameraPreferences.speedHeightRelativeEnabled;
+}
 }
 
 REGISTER_EDITOR_AND_SCRIPT_COMMAND(PyToggleCameraTerrainCollisions, camera, toggle_terrain_collisions,
-	CCommandDescription("Camera Terrain Collisions"))
+                                   CCommandDescription("Camera Terrain Collisions"))
 REGISTER_EDITOR_UI_COMMAND_DESC(camera, toggle_terrain_collisions, "Camera Terrain Collisions", "Q", "", true)
 
 REGISTER_EDITOR_AND_SCRIPT_COMMAND(PyToggleCameraObjectCollisions, camera, toggle_object_collisions,
-	CCommandDescription("Camera Object Collisions"))
+                                   CCommandDescription("Camera Object Collisions"))
 REGISTER_EDITOR_UI_COMMAND_DESC(camera, toggle_object_collisions, "Camera Object Collisions", "", "", true)
 
 REGISTER_EDITOR_AND_SCRIPT_COMMAND(PyToggleCameraSpeedHeightRelative, camera, toggle_speed_height_relative,
-	CCommandDescription("Camera Speed Height-Relative"))
+                                   CCommandDescription("Camera Speed Height-Relative"))
 REGISTER_EDITOR_UI_COMMAND_DESC(camera, toggle_speed_height_relative, "Camera Speed Height-Relative", "Z", "", true)

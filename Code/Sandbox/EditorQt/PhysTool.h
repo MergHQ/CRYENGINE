@@ -14,7 +14,7 @@ public:
 
 	// Overrides from CEditTool
 	virtual string GetDisplayName() const override { return "Pull Physics"; }
-	virtual void   Display(DisplayContext& dc) override;
+	virtual void   Display(SDisplayContext& dc) override;
 	virtual bool   MouseCallback(CViewport* view, EMouseEvent event, CPoint& point, int flags) override;
 
 	static float cv_HitVel0;

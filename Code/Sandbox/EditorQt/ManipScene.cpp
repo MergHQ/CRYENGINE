@@ -212,7 +212,7 @@ void CScene::OnViewportRender(const SRenderContext& rc)
 	{
 		int selectionCaps = GetSelectionCaps();
 		Matrix34 m = Matrix34(GetGizmoOrientation(GetSelectionTransform(SPACE_WORLD), rc.viewport->Camera(), m_transformationSpace));
-		DisplayContext dc;
+		SDisplayContext dc;
 		CDisplayViewportAdapter view(rc.viewport);
 		dc.SetView(&view);
 

@@ -213,7 +213,7 @@ CObjectMode::~CObjectMode()
 	}
 }
 
-void CObjectMode::DrawSelectionPreview(struct DisplayContext& dc, CBaseObject* drawObject)
+void CObjectMode::DrawSelectionPreview(SDisplayContext& dc, CBaseObject* drawObject)
 {
 	int childColVal = 0;
 
@@ -314,7 +314,7 @@ void CObjectMode::DrawSelectionPreview(struct DisplayContext& dc, CBaseObject* d
 	}
 }
 
-void CObjectMode::DisplaySelectionPreview(struct DisplayContext& dc)
+void CObjectMode::DisplaySelectionPreview(SDisplayContext& dc)
 {
 	CViewport* view = GetIEditorImpl()->GetViewManager()->GetActiveViewport();
 	if (!view)
@@ -357,7 +357,7 @@ void CObjectMode::DisplaySelectionPreview(struct DisplayContext& dc)
 }
 
 //////////////////////////////////////////////////////////////////////////
-void CObjectMode::Display(struct DisplayContext& dc)
+void CObjectMode::Display(SDisplayContext& dc)
 {
 	// Selection Candidates Preview
 	DisplaySelectionPreview(dc);

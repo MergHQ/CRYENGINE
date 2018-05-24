@@ -21,7 +21,7 @@ struct RectangleSelectionContext : public _i_reference_target_t
 {
 	RectangleSelectionContext(bool multipleselection, const Vec3& _start);
 
-	void Draw(DisplayContext& dc);
+	void Draw(SDisplayContext& dc);
 	void Select(ESelectionFlag flag, const SMouseEvent& me);
 
 	Vec3            start;
@@ -39,7 +39,7 @@ public:
 	virtual void OnLButtonUp(const SMouseEvent& me) override;
 	virtual void OnMouseMove(const SMouseEvent& me) override;
 
-	virtual void Display(DisplayContext& dc) override;
+	virtual void Display(SDisplayContext& dc) override;
 
 protected:
 

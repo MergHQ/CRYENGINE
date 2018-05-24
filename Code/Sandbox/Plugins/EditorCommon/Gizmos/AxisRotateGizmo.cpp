@@ -15,24 +15,24 @@
 
 namespace Private_AxisRotateGizmo
 {
-	float GetDistanceBetweenLines(const Vec3& p1, const Vec3& dir1, const Vec3& p2, const Vec3& dir2)
-	{
-		const Vec3 cross = dir2.Cross(dir1);
-		return cross.Dot(p2 - p1);
-	}
+float GetDistanceBetweenLines(const Vec3& p1, const Vec3& dir1, const Vec3& p2, const Vec3& dir2)
+{
+	const Vec3 cross = dir2.Cross(dir1);
+	return cross.Dot(p2 - p1);
+}
 
-	bool IsWithinRing(const Ray& ray, const Vec3& viewDir, const Vec3& pos, float outerRadius, float radius = 0)
-	{
-		const float rayAxisDot = ray.direction * viewDir;
-		const float radiusSq = radius * radius;
-		const float radiusOuterSq = outerRadius * outerRadius;
+bool IsWithinRing(const Ray& ray, const Vec3& viewDir, const Vec3& pos, float outerRadius, float radius = 0)
+{
+	const float rayAxisDot = ray.direction * viewDir;
+	const float radiusSq = radius * radius;
+	const float radiusOuterSq = outerRadius * outerRadius;
 
-		const Vec3 dp = ray.origin - pos;
-		const Vec3 isect = ray.origin - (dp * viewDir) * ray.direction / rayAxisDot;
+	const Vec3 dp = ray.origin - pos;
+	const Vec3 isect = ray.origin - (dp * viewDir) * ray.direction / rayAxisDot;
 
-		const float distSq = (isect - pos).len2();
-		return distSq > radiusSq && distSq < radiusOuterSq;
-	}
+	const float distSq = (isect - pos).len2();
+	return distSq > radiusSq && distSq < radiusOuterSq;
+}
 }
 
 class CInteractionMode
@@ -65,7 +65,7 @@ public:
 	//! Get the angle calculated during the Interact call
 	float        GetAngle() { return m_angle; }
 
-	virtual void DrawCursor(DisplayContext& dc, float scale) = 0;
+	virtual void DrawCursor(SDisplayContext& dc, float scale) = 0;
 
 	//! Initialization utility function, stores 2D offset in screen space. Also useful for screen aligned rotation
 	bool InitializeScreenSpaceOffset(POINT point, IDisplayViewport* view)
@@ -251,7 +251,7 @@ public:
 		return true;
 	}
 
-	virtual void DrawCursor(DisplayContext& dc, float scale) override
+	virtual void DrawCursor(SDisplayContext& dc, float scale) override
 	{
 		Vec3 cursorDir;
 		cursorDir = ((m_cursorPosition - m_initPosition) ^ dc.view->CameraToWorld(m_cursorPosition)).GetNormalized() * 0.3 * scale;
@@ -382,7 +382,7 @@ public:
 		return true;
 	}
 
-	virtual void DrawCursor(DisplayContext& dc, float scale) override
+	virtual void DrawCursor(SDisplayContext& dc, float scale) override
 	{
 		Vec3 cursorDir = m_interactionLine * 0.5 * scale;
 		float activeSign = (m_angle < 0.0f) ? 1.0f : -1.0f;
@@ -438,7 +438,7 @@ void CAxisRotateGizmo::SetScale(float scale)
 	m_scale = scale;
 }
 
-void CAxisRotateGizmo::Display(DisplayContext& dc)
+void CAxisRotateGizmo::Display(SDisplayContext& dc)
 {
 	IDisplayViewport* view = dc.view;
 

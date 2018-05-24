@@ -183,7 +183,7 @@ bool CTerrainMiniMapTool::MouseCallback(CViewport* view, EMouseEvent event, CPoi
 	return false;
 }
 
-void CTerrainMiniMapTool::Display(DisplayContext& dc)
+void CTerrainMiniMapTool::Display(SDisplayContext& dc)
 {
 	dc.SetColor(0, 0, 1);
 	dc.DrawTerrainRect(m_minimap.vCenter.x - 0.5f, m_minimap.vCenter.y - 0.5f,

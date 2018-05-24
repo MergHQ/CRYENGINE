@@ -9,7 +9,7 @@
 
 #define HIT_RADIUS (8)
 
-CAxisTranslateGizmo::CAxisTranslateGizmo(bool bDrawArrowTip/* = true*/)
+CAxisTranslateGizmo::CAxisTranslateGizmo(bool bDrawArrowTip /* = true*/)
 	: m_color(1.0f, 1.0f, 1.0f)
 	, m_scale(1.0f)
 	, m_offset(0.0f)
@@ -57,7 +57,7 @@ void CAxisTranslateGizmo::SetScale(float scale)
 	m_scale = scale;
 }
 
-void CAxisTranslateGizmo::DrawArrow(DisplayContext& dc, Vec3 position, Vec3 direction)
+void CAxisTranslateGizmo::DrawArrow(SDisplayContext& dc, Vec3 position, Vec3 direction)
 {
 	IDisplayViewport* view = dc.view;
 
@@ -83,7 +83,7 @@ void CAxisTranslateGizmo::DrawArrow(DisplayContext& dc, Vec3 position, Vec3 dire
 	dc.PopMatrix();
 }
 
-void CAxisTranslateGizmo::Display(DisplayContext& dc)
+void CAxisTranslateGizmo::Display(SDisplayContext& dc)
 {
 	uint32 curflags = dc.GetState();
 	dc.DepthTestOff();

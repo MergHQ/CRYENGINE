@@ -1,11 +1,10 @@
 // Copyright 2001-2018 Crytek GmbH / Crytek Group. All rights reserved.
-
 #pragma once
 
 class CBaseObject;
 class CBrushObject;
 class CGeomEntity;
-struct DisplayContext;
+struct SDisplayContext;
 
 #include "SandboxAPI.h"
 #include "ObjectEvent.h"

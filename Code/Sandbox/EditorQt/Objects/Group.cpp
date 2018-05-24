@@ -703,8 +703,10 @@ void CGroup::OnContextMenu(CPopupMenuItem* menu)
 }
 
 //////////////////////////////////////////////////////////////////////////
-void CGroup::Display(DisplayContext& dc)
+void CGroup::Display(CObjectRenderHelper& objRenderHelper)
 {
+	SDisplayContext& dc = objRenderHelper.GetDisplayContextRef();
+
 	if (!gViewportDebugPreferences.showGroupObjectHelper)
 		return;
 

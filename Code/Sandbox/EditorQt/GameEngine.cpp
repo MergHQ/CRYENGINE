@@ -1559,7 +1559,7 @@ void CGameEngine::Update()
 		bool bReadOnlyConsole = pRenderViewport ? pFocusWidget != pRenderViewport->GetViewWidget() : true;
 		gEnv->pConsole->SetReadOnly(bReadOnlyConsole);
 
-		gEnv->pSystem->DoFrame((static_cast<CRenderViewport*>(pRenderViewport))->GetDisplayContext().GetDisplayContextKey());
+		gEnv->pSystem->DoFrame((static_cast<CRenderViewport*>(pRenderViewport))->GetDisplayContextKey());
 
 		// TODO: still necessary after AVI recording removal?
 		if (pRenderViewport)
@@ -1611,7 +1611,7 @@ void CGameEngine::Update()
 			}
 			const CRenderViewport* gameViewport = static_cast<CRenderViewport*>(GetIEditorImpl()->GetViewManager()->GetGameViewport());
 			CRY_ASSERT(gameViewport);
-			gEnv->pSystem->DoFrame(gameViewport->GetDisplayContext().GetDisplayContextKey(), updateFlags);
+			gEnv->pSystem->DoFrame(gameViewport->GetDisplayContextKey(), updateFlags);
 		}
 
 		GetIEditorImpl()->GetAI()->Update(updateFlags.UnderlyingValue());

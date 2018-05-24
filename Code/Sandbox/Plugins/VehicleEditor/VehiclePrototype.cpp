@@ -203,11 +203,12 @@ void CVehiclePrototype::Done()
 }
 
 //////////////////////////////////////////////////////////////////////////
-void CVehiclePrototype::Display(DisplayContext& dc)
+void CVehiclePrototype::Display(CObjectRenderHelper& objRenderHelper)
 {
 	// don't display anything, we're attached to vehicle now
 	return;
 
+	SDisplayContext& dc = objRenderHelper.GetDisplayContextRef();
 	Matrix34 wtm = GetWorldTM();
 
 	if (hasEntity())

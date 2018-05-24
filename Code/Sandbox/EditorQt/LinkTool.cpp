@@ -141,7 +141,7 @@ bool CLinkTool::OnKeyDown(CViewport* view, uint32 nChar, uint32 nRepCnt, uint32 
 }
 
 //////////////////////////////////////////////////////////////////////////
-void CLinkTool::Display(DisplayContext& dc)
+void CLinkTool::Display(SDisplayContext& dc)
 {
 	if (m_pChild && m_EndDrag != Vec3(ZERO))
 	{
@@ -151,7 +151,7 @@ void CLinkTool::Display(DisplayContext& dc)
 }
 
 //////////////////////////////////////////////////////////////////////////
-void CLinkTool::DrawObjectHelpers(CBaseObject* pObject, DisplayContext& dc)
+void CLinkTool::DrawObjectHelpers(CBaseObject* pObject, SDisplayContext& dc)
 {
 	if (!m_pChild)
 	{

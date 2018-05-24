@@ -94,7 +94,7 @@ void MirrorTool::RemoveEdgesOnMirrorPlane(Model* pModel)
 	}
 }
 
-void MirrorTool::Display(DisplayContext& dc)
+void MirrorTool::Display(SDisplayContext& dc)
 {
 	if (GetModel()->CheckFlag(eModelFlag_Mirror))
 		return;

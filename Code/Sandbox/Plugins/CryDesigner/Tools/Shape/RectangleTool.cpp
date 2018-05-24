@@ -206,7 +206,7 @@ void RectangleTool::UpdateShape(bool bUpdateUIs)
 	CompileShelf(eShelf_Construction);
 }
 
-void RectangleTool::Display(DisplayContext& dc)
+void RectangleTool::Display(SDisplayContext& dc)
 {
 	DisplayCurrentSpot(dc);
 

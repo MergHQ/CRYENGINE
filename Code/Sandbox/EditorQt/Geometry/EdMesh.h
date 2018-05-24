@@ -1,5 +1,4 @@
 // Copyright 2001-2018 Crytek GmbH / Crytek Group. All rights reserved.
-
 #pragma once
 
 #include "EdGeometry.h"
@@ -33,7 +32,7 @@ public:
 	virtual void            GetTM(Matrix34* pTM, size_t idx = 0);
 	virtual bool            StartSubObjSelection(const Matrix34& nodeWorldTM, int elemType, int nFlags);
 	virtual void            EndSubObjSelection();
-	virtual void            Display(DisplayContext& dc);
+	virtual void            Display(SDisplayContext& dc);
 	virtual bool            HitTest(HitContext& hit);
 	bool                    GetSelectionReferenceFrame(Matrix34& refFrame);
 	//////////////////////////////////////////////////////////////////////////

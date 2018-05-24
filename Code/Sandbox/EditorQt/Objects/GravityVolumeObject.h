@@ -1,5 +1,4 @@
 // Copyright 2001-2018 Crytek GmbH / Crytek Group. All rights reserved.
-
 #pragma once
 
 #include "EntityObject.h"
@@ -44,8 +43,8 @@ public:
 	void Done();
 	bool HasMeasurementAxis() const { return true;  }
 
-	void Display(DisplayContext& dc);
-	void DrawBezierSpline(DisplayContext& dc, CGravityVolumePointVector& points, COLORREF col, bool isDrawJoints, bool isDrawGravityVolume);
+	void Display(SDisplayContext& dc);
+	void DrawBezierSpline(SDisplayContext& dc, CGravityVolumePointVector& points, COLORREF col, bool isDrawJoints, bool isDrawGravityVolume);
 
 	bool CreateGameObject();
 
@@ -128,9 +127,9 @@ protected:
 	virtual int GetMinPoints() const { return 2; }
 
 	// Ignore default draw highlight.
-	void DrawHighlight(DisplayContext& dc) {}
+	void DrawHighlight(SDisplayContext& dc) {}
 
-	//overrided from CBaseObject.
+	//overrides from CBaseObject.
 	void InvalidateTM(int nWhyFlags);
 
 	//! Called when GravityVolume variable changes.

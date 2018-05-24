@@ -141,9 +141,10 @@ bool DesignerObject::Init(CBaseObject* prev, const string& file)
 	return ret;
 }
 
-void DesignerObject::Display(DisplayContext& dc)
+void DesignerObject::Display(CObjectRenderHelper& objRenderHelper)
 {
 	const CSelectionGroup* pSelection = GetIEditor()->GetObjectManager()->GetSelection();
+	SDisplayContext& dc = objRenderHelper.GetDisplayContextRef();
 
 	bool bDisplay2D = dc.flags & DISPLAY_2D;
 	if (bDisplay2D)
@@ -161,7 +162,7 @@ void DesignerObject::Display(DisplayContext& dc)
 		DrawOpenPolygons(dc);
 }
 
-void DesignerObject::DrawOpenPolygons(DisplayContext& dc)
+void DesignerObject::DrawOpenPolygons(SDisplayContext& dc)
 {
 	dc.PushMatrix(GetWorldTM());
 
@@ -401,24 +402,24 @@ void DesignerObject::CreateInspectorWidgets(CInspectorWidgetCreator& creator)
 	CBaseObject::CreateInspectorWidgets(creator);
 
 	creator.AddPropertyTree<DesignerObject>("Designer", [](DesignerObject* pObject, Serialization::IArchive& ar, bool bMultiEdit)
-	{
-		pObject->m_EngineFlags.Serialize(ar);
-
-		if (ar.openBlock("Edit", "<Edit"))
 		{
-			ar(Serialization::ActionButton([=]
+			pObject->m_EngineFlags.Serialize(ar);
+
+			if (ar.openBlock("Edit", "<Edit"))
 			{
-				GetIEditor()->ExecuteCommand("general.open_pane 'Modeling'");
-			})
-				, "edit", "^Edit");
-			ar.closeBlock();
-		}
+			  ar(Serialization::ActionButton([ = ]
+				{
+					GetIEditor()->ExecuteCommand("general.open_pane 'Modeling'");
+			  })
+			     , "edit", "^Edit");
+			  ar.closeBlock();
+			}
 
-		if (ar.isInput())
-		{
-			pObject->UpdateGameResource();
-		}
-	});
+			if (ar.isInput())
+			{
+			  pObject->UpdateGameResource();
+			}
+	  });
 }
 
 void DesignerObject::SetMaterial(IEditorMaterial* mtl)
@@ -586,7 +587,7 @@ void DesignerObject::GenerateGameFilename(string& generatedFileName) const
 	generatedFileName.Format("%%level%%/Brush/designer_%d.%s", m_nBrushUniqFileId, CRY_GEOMETRY_FILE_EXT);
 }
 
-void DesignerObject::DrawDimensions(DisplayContext& dc, AABB* pMergedBoundBox)
+void DesignerObject::DrawDimensions(SDisplayContext& dc, AABB* pMergedBoundBox)
 {
 	if (!HasMeasurementAxis() || GetDesigner() || !gDesignerSettings.bDisplayDimensionHelper)
 		return;

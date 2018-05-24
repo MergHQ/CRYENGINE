@@ -1172,7 +1172,7 @@ void CBaseObject::SetModified(bool boModifiedTransformOnly, bool bNotifyObjectMa
 		UpdatePrefab();
 }
 
-void CBaseObject::DrawDefault(DisplayContext& dc, COLORREF labelColor)
+void CBaseObject::DrawDefault(SDisplayContext& dc, COLORREF labelColor)
 {
 	using namespace BO_Private;
 	Vec3 wp = GetWorldPos();
@@ -1275,7 +1275,7 @@ void CBaseObject::DrawDefault(DisplayContext& dc, COLORREF labelColor)
 }
 
 //////////////////////////////////////////////////////////////////////////
-void CBaseObject::DrawDimensions(DisplayContext& dc, AABB* pMergedBoundBox)
+void CBaseObject::DrawDimensions(SDisplayContext& dc, AABB* pMergedBoundBox)
 {
 	if (HasMeasurementAxis() && gViewportPreferences.displayDimension)
 	{
@@ -1286,7 +1286,7 @@ void CBaseObject::DrawDimensions(DisplayContext& dc, AABB* pMergedBoundBox)
 }
 
 //////////////////////////////////////////////////////////////////////////
-void CBaseObject::DrawDimensionsImpl(DisplayContext& dc, const AABB& localBoundBox, AABB* pMergedBoundBox)
+void CBaseObject::DrawDimensionsImpl(SDisplayContext& dc, const AABB& localBoundBox, AABB* pMergedBoundBox)
 {
 	AABB boundBox;
 	Matrix34 rotatedTM;
@@ -1539,7 +1539,7 @@ void CBaseObject::DrawDimensionsImpl(DisplayContext& dc, const AABB& localBoundB
 }
 
 //////////////////////////////////////////////////////////////////////////
-void CBaseObject::DrawTextOn2DBox(DisplayContext& dc, const Vec3& pos, const char* text, float textScale, const ColorF& TextColor, const ColorF& TextBackColor)
+void CBaseObject::DrawTextOn2DBox(SDisplayContext& dc, const Vec3& pos, const char* text, float textScale, const ColorF& TextColor, const ColorF& TextBackColor)
 {
 	Vec3 worldPos = dc.ToWorldPos(pos);
 	int vx = 0, vy = 0, vw = dc.GetWidth(), vh = dc.GetHeight();
@@ -1601,7 +1601,7 @@ void CBaseObject::DrawTextOn2DBox(DisplayContext& dc, const Vec3& pos, const cha
 }
 
 //////////////////////////////////////////////////////////////////////////
-void CBaseObject::DrawSelectionHelper(DisplayContext& dc, const Vec3& pos, COLORREF labelColor, float alpha)
+void CBaseObject::DrawSelectionHelper(SDisplayContext& dc, const Vec3& pos, COLORREF labelColor, float alpha)
 {
 	// Magic Number to offset the text from the selection box
 	// Can't use fixed value as we move in world space, so we need to use a fracture of the screenScaleFactor to always have a certain distance from the selection box in the viewport
@@ -1622,7 +1622,7 @@ void CBaseObject::DrawSelectionHelper(DisplayContext& dc, const Vec3& pos, COLOR
 }
 
 //////////////////////////////////////////////////////////////////////////
-void CBaseObject::SetDrawTextureIconProperties(DisplayContext& dc, const Vec3& pos, float alpha)
+void CBaseObject::SetDrawTextureIconProperties(SDisplayContext& dc, const Vec3& pos, float alpha)
 {
 	if (gViewportPreferences.showIcons || gViewportPreferences.showSizeBasedIcons)
 	{
@@ -1645,7 +1645,7 @@ void CBaseObject::SetDrawTextureIconProperties(DisplayContext& dc, const Vec3& p
 			AABB box;
 			GetBoundBox(box);
 			m_vDrawIconPos.z = (m_vDrawIconPos.z - objectPos.z) + box.max.z;
-			nIconFlags = DisplayContext::TEXICON_ALIGN_BOTTOM;
+			nIconFlags = SDisplayContext::TEXICON_ALIGN_BOTTOM;
 		}
 
 		m_nIconFlags = nIconFlags;
@@ -1653,7 +1653,7 @@ void CBaseObject::SetDrawTextureIconProperties(DisplayContext& dc, const Vec3& p
 }
 
 //////////////////////////////////////////////////////////////////////////
-void CBaseObject::DrawTextureIcon(DisplayContext& dc, const Vec3& pos, float alpha, bool bDisplaySelectionHelper, float distanceSquared)
+void CBaseObject::DrawTextureIcon(SDisplayContext& dc, const Vec3& pos, float alpha, bool bDisplaySelectionHelper, float distanceSquared)
 {
 	if (m_nTextureIcon && (gViewportPreferences.showIcons || gViewportPreferences.showSizeBasedIcons))
 	{
@@ -1663,7 +1663,7 @@ void CBaseObject::DrawTextureIcon(DisplayContext& dc, const Vec3& pos, float alp
 }
 
 //////////////////////////////////////////////////////////////////////////
-void CBaseObject::DrawWarningIcons(DisplayContext& dc, const Vec3& pos)
+void CBaseObject::DrawWarningIcons(SDisplayContext& dc, const Vec3& pos)
 {
 	// Don't draw warning icons if they are beyond draw distance
 	if ((dc.camera->GetPosition() - pos).GetLength() > gViewportDebugPreferences.warningIconsDrawDistance)
@@ -1702,7 +1702,7 @@ void CBaseObject::DrawWarningIcons(DisplayContext& dc, const Vec3& pos)
 }
 
 //////////////////////////////////////////////////////////////////////////
-void CBaseObject::DrawLabel(DisplayContext& dc, const Vec3& pos, COLORREF labelColor, float alpha, float size)
+void CBaseObject::DrawLabel(SDisplayContext& dc, const Vec3& pos, COLORREF labelColor, float alpha, float size)
 {
 	// Check if our group is not closed.
 	if (!GetGroup() || GetIEditor()->IsGroupOpen(GetGroup()))
@@ -1746,7 +1746,7 @@ void CBaseObject::DrawLabel(DisplayContext& dc, const Vec3& pos, COLORREF labelC
 }
 
 //////////////////////////////////////////////////////////////////////////
-void CBaseObject::DrawHighlight(DisplayContext& dc)
+void CBaseObject::DrawHighlight(SDisplayContext& dc)
 {
 	if (!m_nTextureIcon && m_bSupportsBoxHighlight)
 	{
@@ -1761,7 +1761,7 @@ void CBaseObject::DrawHighlight(DisplayContext& dc)
 }
 
 //////////////////////////////////////////////////////////////////////////
-bool CBaseObject::CanBeDrawn(const DisplayContext& dc, bool& outDisplaySelectionHelper) const
+bool CBaseObject::CanBeDrawn(const SDisplayContext& dc, bool& outDisplaySelectionHelper) const
 {
 	bool bResult = true;
 	outDisplaySelectionHelper = false;

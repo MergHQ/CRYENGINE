@@ -41,7 +41,7 @@ public:
 	void        Enter() override;
 	void        Leave() override;
 
-	void        Display(struct DisplayContext& dc) override;
+	void        Display(struct SDisplayContext& dc) override;
 	bool        OnLButtonDown(CViewport* view, UINT nFlags, CPoint point) override;
 	bool        OnMouseMove(CViewport* view, UINT nFlags, CPoint point) override;
 	void        Serialize(Serialization::IArchive& ar);

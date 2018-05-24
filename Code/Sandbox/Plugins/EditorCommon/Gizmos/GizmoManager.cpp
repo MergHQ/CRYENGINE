@@ -34,7 +34,7 @@ EDITOR_COMMON_API SGizmoPreferences gGizmoPreferences;
 REGISTER_PREFERENCES_PAGE_PTR(SGizmoPreferences, &gGizmoPreferences)
 
 //////////////////////////////////////////////////////////////////////////
-void CGizmoManager::Display(DisplayContext& dc)
+void CGizmoManager::Display(SDisplayContext& dc)
 {
 	CRY_PROFILE_FUNCTION(PROFILE_EDITOR);
 
@@ -102,10 +102,9 @@ ITransformManipulator* CGizmoManager::AddManipulator(ITransformManipulatorOwner*
 
 void CGizmoManager::RemoveManipulator(ITransformManipulator* pManipulator)
 {
-	CTransformManipulator* pGizmo = static_cast <CTransformManipulator*> (pManipulator);
+	CTransformManipulator* pGizmo = static_cast<CTransformManipulator*>(pManipulator);
 	RemoveGizmo(pGizmo);
 }
-
 
 //////////////////////////////////////////////////////////////////////////
 void CGizmoManager::AddGizmo(CGizmo* gizmo)

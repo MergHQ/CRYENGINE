@@ -1,9 +1,8 @@
 // Copyright 2001-2018 Crytek GmbH / Crytek Group. All rights reserved.
-
 #pragma once
 
 struct IIndexedMesh;
-struct DisplayContext;
+struct SDisplayContext;
 struct HitContext;
 struct SSubObjSelectionModifyContext;
 class CObjectArchive;
@@ -49,7 +48,7 @@ public:
 	virtual void EndSubObjSelection() = 0;
 
 	// Display geometry for sub object selection.
-	virtual void Display(DisplayContext& dc) = 0;
+	virtual void Display(SDisplayContext& dc) = 0;
 
 	// Sub geometry hit testing and selection.
 	virtual bool HitTest(HitContext& hit) = 0;

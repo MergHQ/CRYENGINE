@@ -319,7 +319,7 @@ bool CBrushTool::OnKeyDown(CViewport* view, uint32 key, uint32 nRepCnt, uint32 n
 	return false;
 }
 
-void CBrushTool::DrawTool(DisplayContext& dc, bool innerCircle, bool line, bool terrainCircle)
+void CBrushTool::DrawTool(SDisplayContext& dc, bool innerCircle, bool line, bool terrainCircle)
 {
 	if (dc.view)
 	{
@@ -695,7 +695,7 @@ void CHolesTool::Serialize(Serialization::IArchive& ar)
 		setShareBrushParams(shareParams);
 }
 
-void CHolesTool::Display(DisplayContext& dc)
+void CHolesTool::Display(SDisplayContext& dc)
 {
 	if (dc.flags & DISPLAY_2D)
 		return;

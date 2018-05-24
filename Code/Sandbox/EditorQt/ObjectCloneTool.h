@@ -1,5 +1,4 @@
 // Copyright 2001-2018 Crytek GmbH / Crytek Group. All rights reserved.
-
 #pragma once
 
 class CBaseObject;
@@ -21,7 +20,7 @@ public:
 	virtual string GetDisplayName() const override { return "Clone Object"; }
 	bool           MouseCallback(CViewport* view, EMouseEvent event, CPoint& point, int flags);
 
-	virtual void   Display(DisplayContext& dc);
+	virtual void   Display(SDisplayContext& dc);
 	virtual bool   OnKeyDown(CViewport* view, uint32 nChar, uint32 nRepCnt, uint32 nFlags);
 	virtual bool   OnKeyUp(CViewport* view, uint32 nChar, uint32 nRepCnt, uint32 nFlags) { return false; }
 	//////////////////////////////////////////////////////////////////////////

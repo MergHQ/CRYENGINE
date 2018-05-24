@@ -1,5 +1,4 @@
 // Copyright 2001-2018 Crytek GmbH / Crytek Group. All rights reserved.
-
 #pragma once
 
 #include "EntityObject.h"
@@ -21,7 +20,7 @@ public:
 	//////////////////////////////////////////////////////////////////////////
 	virtual bool  Init(CBaseObject* prev, const string& file);
 	virtual void  InitVariables() {}
-	virtual void  Display(DisplayContext& disp);
+	virtual void  Display(CObjectRenderHelper& objRenderHelper);
 	virtual bool  HitTest(HitContext& hc);
 	virtual void  GetLocalBounds(AABB& box);
 	virtual void  SetScale(const Vec3& scale) {} // Ignore scale

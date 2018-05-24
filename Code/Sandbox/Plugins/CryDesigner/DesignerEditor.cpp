@@ -191,7 +191,7 @@ void DesignerEditor::EndEdit()
 	}
 }
 
-void DesignerEditor::Display(DisplayContext& dc)
+void DesignerEditor::Display(SDisplayContext& dc)
 {
 	DesignerSession* pSession = DesignerSession::GetInstance();
 	MainContext ctx = pSession->GetMainContext();

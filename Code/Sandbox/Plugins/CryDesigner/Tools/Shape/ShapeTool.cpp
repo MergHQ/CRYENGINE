@@ -63,7 +63,7 @@ bool ShapeTool::UpdateCurrentSpotPosition(
 	return true;
 }
 
-void ShapeTool::DisplayCurrentSpot(DisplayContext& dc)
+void ShapeTool::DisplayCurrentSpot(SDisplayContext& dc)
 {
 	dc.SetFillMode(e_FillModeSolid);
 	DrawCurrentSpot(dc, GetWorldTM());

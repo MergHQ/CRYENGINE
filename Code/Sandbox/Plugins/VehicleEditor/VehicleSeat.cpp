@@ -53,10 +53,11 @@ bool CVehicleSeat::Init(CBaseObject* prev, const string& file)
 }
 
 //////////////////////////////////////////////////////////////////////////
-void CVehicleSeat::Display(DisplayContext& dc)
+void CVehicleSeat::Display(CObjectRenderHelper& objRenderHelper)
 {
 	return;
 
+	SDisplayContext& dc = objRenderHelper.GetDisplayContextRef();
 	COLORREF color = CMFCUtils::ColorBToColorRef(GetColor());
 
 	if (IsSelected())

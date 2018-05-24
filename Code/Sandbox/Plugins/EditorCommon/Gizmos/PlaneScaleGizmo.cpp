@@ -55,7 +55,7 @@ void CPlaneScaleGizmo::SetOffsetFromCenter(float offset)
 	m_offsetFromCenter = offset;
 }
 
-void CPlaneScaleGizmo::DrawPlane(DisplayContext& dc, Vec3 position)
+void CPlaneScaleGizmo::DrawPlane(SDisplayContext& dc, Vec3 position)
 {
 	IDisplayViewport* view = dc.view;
 
@@ -93,7 +93,7 @@ void CPlaneScaleGizmo::DrawPlane(DisplayContext& dc, Vec3 position)
 	dc.SetState(prevflags);
 }
 
-void CPlaneScaleGizmo::Display(DisplayContext& dc)
+void CPlaneScaleGizmo::Display(SDisplayContext& dc)
 {
 	if (GetFlag(EGIZMO_INTERACTING))
 	{

@@ -11,7 +11,7 @@
 
 namespace Designer
 {
-void SpotManager::DrawCurrentSpot(DisplayContext& dc, const BrushMatrix34& worldTM) const
+void SpotManager::DrawCurrentSpot(SDisplayContext& dc, const BrushMatrix34& worldTM) const
 {
 	static const ColorB edgeCenterColor(100, 255, 100, 255);
 	static const ColorB polygonCenterColor(100, 255, 100, 255);
@@ -34,7 +34,7 @@ void SpotManager::DrawCurrentSpot(DisplayContext& dc, const BrushMatrix34& world
 		DrawSpot(dc, worldTM, m_CurrentSpot.m_Pos, normalColor);
 }
 
-void SpotManager::DrawPolyline(DisplayContext& dc) const
+void SpotManager::DrawPolyline(SDisplayContext& dc) const
 {
 	if (m_SpotList.empty())
 		return;

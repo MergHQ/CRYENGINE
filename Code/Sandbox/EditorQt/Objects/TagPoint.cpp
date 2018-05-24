@@ -70,7 +70,7 @@ int CTagPoint::MouseCreateCallback(IDisplayViewport* view, EMouseEvent event, CP
 }
 
 //////////////////////////////////////////////////////////////////////////
-void CTagPoint::Display(DisplayContext& dc)
+void CTagPoint::Display(SDisplayContext& dc)
 {
 	const Matrix34& wtm = GetWorldTM();
 
@@ -158,7 +158,7 @@ CNavigationSeedPoint::CNavigationSeedPoint()
 	m_entityClass = "NavigationSeedPoint";
 }
 
-void CNavigationSeedPoint::Display(DisplayContext& dc)
+void CNavigationSeedPoint::Display(SDisplayContext& dc)
 {
 	DrawDefault(dc);
 }

@@ -66,7 +66,7 @@ void OffsetManipulator::UpdateOffset(BrushFloat scale)
 	m_Scale = ApplyScaleCheckingBoundary(m_pScaledPolygon, scale);
 }
 
-void OffsetManipulator::Display(DisplayContext& dc, bool bDisplayDistanceLine)
+void OffsetManipulator::Display(SDisplayContext& dc, bool bDisplayDistanceLine)
 {
 	if (!m_bValid)
 		return;

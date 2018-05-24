@@ -1,5 +1,4 @@
 // Copyright 2001-2018 Crytek GmbH / Crytek Group. All rights reserved.
-
 #pragma once
 
 #include "EntityObject.h"
@@ -37,7 +36,7 @@ public:
 	void         InitVariables();
 	void         Done();
 	string       GetTypeDescription() const { return GetTypeName(); }
-	void         Display(DisplayContext& disp);
+	void         Display(SDisplayContext& disp);
 
 	virtual void CreateInspectorWidgets(CInspectorWidgetCreator& creator) override;
 
@@ -91,10 +90,10 @@ private:
 	//! Dtor must be protected.
 	CCameraObject();
 
-	// overrided from IAnimNodeCallback
+	// overrides from IAnimNodeCallback
 	//void OnNodeAnimated( IAnimNode *pNode );
 
-	virtual void DrawHighlight(DisplayContext& dc) {}
+	virtual void DrawHighlight(SDisplayContext& dc) {}
 
 	// return world position for the entity targeted by look at.
 	Vec3 GetLookAtEntityPos() const;
@@ -121,7 +120,7 @@ private:
 	// Arguments
 	//   fAspectRatio - e.g. 4.0/3.0
 	void GetConePoints(Vec3 q[4], float dist, const float fAspectRatio);
-	void DrawCone(DisplayContext& dc, float dist, float fScale = 1);
+	void DrawCone(SDisplayContext& dc, float dist, float fScale = 1);
 	void CreateTarget();
 	//////////////////////////////////////////////////////////////////////////
 	//! Field of view.
@@ -184,7 +183,7 @@ public:
 	bool   Init(CBaseObject* prev, const string& file);
 	void   InitVariables();
 	string GetTypeDescription() const { return GetTypeName(); }
-	void   Display(DisplayContext& disp);
+	void   Display(SDisplayContext& disp);
 	bool   HitTest(HitContext& hc);
 	void   GetBoundBox(AABB& box);
 	bool   IsScalable() const override  { return false; }
@@ -196,7 +195,7 @@ protected:
 	//! Dtor must be protected.
 	CCameraObjectTarget();
 
-	virtual void DrawHighlight(DisplayContext& dc) {}
+	virtual void DrawHighlight(SDisplayContext& dc) {}
 };
 
 /*!

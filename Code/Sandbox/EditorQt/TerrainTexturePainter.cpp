@@ -441,7 +441,7 @@ bool CTerrainTexturePainter::MouseCallback(CViewport* view, EMouseEvent event, C
 	return true;
 }
 
-void CTerrainTexturePainter::Display(DisplayContext& dc)
+void CTerrainTexturePainter::Display(SDisplayContext& dc)
 {
 	dc.SetColor(0, 1, 0, 1);
 

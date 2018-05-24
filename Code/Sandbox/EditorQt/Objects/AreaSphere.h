@@ -19,7 +19,7 @@ public:
 	//////////////////////////////////////////////////////////////////////////
 	bool         CreateGameObject();
 	virtual void InitVariables();
-	void         Display(DisplayContext& dc);
+	void         Display(SDisplayContext& dc);
 	bool         IsScalable() const override  { return false; }
 	bool         IsRotatable() const override { return false; }
 	void         GetLocalBounds(AABB& box);
@@ -70,10 +70,10 @@ protected:
 class CAreaSphereClassDesc : public CObjectClassDesc
 {
 public:
-	ObjectType     GetObjectType()     { return OBJTYPE_VOLUME; }
-	const char*    ClassName()         { return "AreaSphere"; }
-	const char*    UIName()            { return "Sphere"; }
-	const char*    Category()          { return "Area"; }
-	CRuntimeClass* GetRuntimeClass()   { return RUNTIME_CLASS(CAreaSphere); }
+	ObjectType     GetObjectType()   { return OBJTYPE_VOLUME; }
+	const char*    ClassName()       { return "AreaSphere"; }
+	const char*    UIName()          { return "Sphere"; }
+	const char*    Category()        { return "Area"; }
+	CRuntimeClass* GetRuntimeClass() { return RUNTIME_CLASS(CAreaSphere); }
 };
 

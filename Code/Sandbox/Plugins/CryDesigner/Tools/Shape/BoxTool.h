@@ -41,7 +41,7 @@ public:
 	bool         OnLButtonDown(CViewport* view, UINT nFlags, CPoint point) override;
 	bool         OnLButtonUp(CViewport* view, UINT nFlags, CPoint point) override;
 	bool         OnMouseMove(CViewport* view, UINT nFlags, CPoint point) override;
-	void         Display(DisplayContext& dc) override;
+	void         Display(SDisplayContext& dc) override;
 
 	virtual void Serialize(Serialization::IArchive& ar) override;
 

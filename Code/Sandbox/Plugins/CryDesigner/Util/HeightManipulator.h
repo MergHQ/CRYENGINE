@@ -27,7 +27,7 @@ public:
 
 	void       Init(const BrushPlane& floorPlane, const BrushVec3& vPivot, bool bDisplayPole = false);
 	BrushFloat Update(const BrushMatrix34& worldTM, CViewport* view, const BrushRay& ray);
-	void       Display(DisplayContext& dc);
+	void       Display(SDisplayContext& dc);
 	BrushVec3  GetDir() const        { return m_FloorPlane.Normal(); }
 	BrushPlane GetFloorPlane() const { return m_FloorPlane; }
 

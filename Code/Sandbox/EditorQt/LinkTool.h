@@ -1,5 +1,4 @@
 // Copyright 2001-2018 Crytek GmbH / Crytek Group. All rights reserved.
-
 #pragma once
 
 #include "EditTool.h"
@@ -18,11 +17,11 @@ public:
 	virtual string GetDisplayName() const override { return "Link Objects"; }
 	bool           MouseCallback(CViewport* view, EMouseEvent event, CPoint& point, int flags);
 
-	virtual void   Display(DisplayContext& dc);
+	virtual void   Display(SDisplayContext& dc);
 	virtual bool   OnKeyDown(CViewport* view, uint32 nChar, uint32 nRepCnt, uint32 nFlags);
 	virtual bool   OnKeyUp(CViewport* view, uint32 nChar, uint32 nRepCnt, uint32 nFlags) { return false; }
 
-	virtual void   DrawObjectHelpers(CBaseObject* pObject, DisplayContext& dc) override;
+	virtual void   DrawObjectHelpers(CBaseObject* pObject, SDisplayContext& dc) override;
 	virtual bool   HitTest(CBaseObject* pObject, HitContext& hc) override;
 
 	static void    PickObject();

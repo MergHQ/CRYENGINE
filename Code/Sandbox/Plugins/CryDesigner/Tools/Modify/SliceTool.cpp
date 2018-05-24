@@ -25,7 +25,7 @@ void SliceTool::Enter()
 	CenterPivot();
 }
 
-void SliceTool::Display(DisplayContext& dc)
+void SliceTool::Display(SDisplayContext& dc)
 {
 	dc.SetDrawInFrontMode(true);
 
@@ -42,7 +42,7 @@ void SliceTool::Display(DisplayContext& dc)
 	dc.SetDrawInFrontMode(false);
 }
 
-void SliceTool::DrawOutlines(DisplayContext& dc)
+void SliceTool::DrawOutlines(SDisplayContext& dc)
 {
 	float oldLineWidth = dc.GetLineWidth();
 	dc.SetLineWidth(3);
@@ -57,7 +57,7 @@ void SliceTool::DrawOutlines(DisplayContext& dc)
 	dc.SetLineWidth(oldLineWidth);
 }
 
-void SliceTool::DrawOutline(DisplayContext& dc, TraverseLineList& lineList)
+void SliceTool::DrawOutline(SDisplayContext& dc, TraverseLineList& lineList)
 {
 	for (int i = 0, iSize(lineList.size()); i < iSize; ++i)
 		dc.DrawLine(lineList[i].m_Edge.m_v[0], lineList[i].m_Edge.m_v[1]);
@@ -223,7 +223,7 @@ void SliceTool::InvertSlicePlane()
 	GenerateLoop(m_SlicePlane, m_MainTraverseLines);
 }
 
-void SliceTool::OnManipulatorDrag(IDisplayViewport* pView, ITransformManipulator* pManipulator, CPoint& p0, BrushVec3 value, int  nFlags)
+void SliceTool::OnManipulatorDrag(IDisplayViewport* pView, ITransformManipulator* pManipulator, CPoint& p0, BrushVec3 value, int nFlags)
 {
 	if (GetIEditor()->GetEditMode() == eEditModeScale)
 		return;

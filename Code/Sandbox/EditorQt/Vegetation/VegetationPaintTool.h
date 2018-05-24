@@ -17,7 +17,7 @@ public:
 	CVegetationPaintTool();
 
 	virtual string GetDisplayName() const override { return "Paint Vegetation"; }
-	virtual void   Display(DisplayContext& dc);
+	virtual void   Display(SDisplayContext& dc);
 
 	// Overides from CEditTool
 	virtual bool MouseCallback(CViewport* pView, EMouseEvent event, CPoint& point, int flags) override;

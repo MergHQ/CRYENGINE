@@ -16,7 +16,7 @@ public:
 	// CEditTool
 	//////////////////////////////////////////////////////////////////////////
 	virtual string GetDisplayName() const override { return "Minimap Tool"; }
-	virtual void   Display(DisplayContext& dc);
+	virtual void   Display(SDisplayContext& dc);
 	virtual bool   MouseCallback(CViewport* view, EMouseEvent event, CPoint& point, int flags);
 	virtual void   DeleteThis() { delete this; }
 	//////////////////////////////////////////////////////////////////////////

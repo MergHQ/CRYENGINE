@@ -37,7 +37,7 @@ public:
 	bool OnLButtonDown(CViewport* view, UINT nFlags, CPoint point) { return true; }
 	bool OnLButtonUp(CViewport* view, UINT nFlags, CPoint point);
 	bool OnMouseMove(CViewport* view, UINT nFlags, CPoint point);
-	void Display(DisplayContext& dc);
+	void Display(SDisplayContext& dc);
 	bool OnKeyDown(CViewport* view, uint32 nChar, uint32 nRepCnt, uint32 nFlags);
 
 	bool IsPhaseFirstStepOnPrimitiveCreation() const override;

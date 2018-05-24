@@ -45,12 +45,12 @@ public:
 	~CVertexSnappingModeTool();
 
 	virtual string GetDisplayName() const override { return "Snap to Vertex"; }
-	void           Display(DisplayContext& dc);
+	void           Display(SDisplayContext& dc);
 	bool           MouseCallback(CViewport* view, EMouseEvent event, CPoint& point, int flags);
 
 protected:
 
-	void DrawVertexCubes(DisplayContext& dc, const Matrix34& tm, IStatObj* pStatObj);
+	void DrawVertexCubes(SDisplayContext& dc, const Matrix34& tm, IStatObj* pStatObj);
 	void DeleteThis() { delete this; }
 	Vec3 GetCubeSize(IDisplayViewport* pView, const Vec3& pos) const;
 

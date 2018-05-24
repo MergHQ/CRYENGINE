@@ -9,6 +9,7 @@
 #include "Util/Variable.h"
 #include "CryExtension/CryGUID.h"
 #include "Objects/DisplayContext.h"
+#include "IIconManager.h"
 
 class CAsset;
 class CEdGeometry;
@@ -31,6 +32,7 @@ struct ISelectionGroup;
 struct IStatObj;
 struct Ray;
 struct SRayHitInfo;
+struct SDisplayContext;
 
 //////////////////////////////////////////////////////////////////////////
 typedef _smart_ptr<CBaseObject>     CBaseObjectPtr;
@@ -176,6 +178,31 @@ public:
 	virtual bool IsPositionDelegated(bool ignoreSelection) const = 0;
 	virtual bool IsRotationDelegated(bool ignoreSelection) const = 0;
 	virtual bool IsScaleDelegated(bool ignoreSelection) const = 0;
+};
+
+class CObjectRenderHelper
+{
+public:
+	CObjectRenderHelper(SDisplayContext& _displayContext, const SRenderingPassInfo& _passinfo) : displayContext(_displayContext), passInfo(_passinfo) {}
+
+	SDisplayContext& GetDisplayContextRef()
+	{
+		return displayContext;
+	}
+
+	const SRenderingPassInfo& GetPassInfo()
+	{
+		return passInfo;
+	}
+
+	void Render(const Matrix34& tm, int objType = eStatObject_Anchor)
+	{
+		displayContext.RenderObject(objType, tm, passInfo);
+	}
+
+private:
+	SDisplayContext&          displayContext;
+	const SRenderingPassInfo& passInfo;
 };
 
 /*!
@@ -473,7 +500,7 @@ public:
 	virtual float GetCreationOffsetFromTerrain() const { return 1.f; }
 
 	//! Draw object to specified viewport.
-	virtual void Display(DisplayContext& disp) = 0;
+	virtual void Display(CObjectRenderHelper& displayInfo) = 0;
 
 	//! Perform intersection testing of this object.
 	//! Return true if was hit.
@@ -629,7 +656,7 @@ public:
 
 	virtual IStatObj* GetIStatObj()                      { return nullptr; }
 	//! Display length of each axis.
-	void              DrawDimensionsImpl(DisplayContext& dc, const AABB& localBoundBox, AABB* pMergedBoundBox = NULL);
+	void              DrawDimensionsImpl(SDisplayContext& dc, const AABB& localBoundBox, AABB* pMergedBoundBox = NULL);
 
 	// Invalidates cached transformation matrix.
 	// nWhyFlags - Flags that indicate the reason for matrix invalidation.
@@ -707,25 +734,25 @@ protected:
 	void SetColor(ColorB color);
 
 	//! Draw default object items.
-	virtual void DrawDefault(DisplayContext& dc, COLORREF labelColor = RGB(255, 255, 255));
+	virtual void DrawDefault(SDisplayContext& dc, COLORREF labelColor = RGB(255, 255, 255));
 	//! Draw object label.
-	void         DrawLabel(DisplayContext& dc, const Vec3& pos, COLORREF labelColor = RGB(255, 255, 255), float alpha = 1.0f, float size = 1.2f);
+	void         DrawLabel(SDisplayContext& dc, const Vec3& pos, COLORREF labelColor = RGB(255, 255, 255), float alpha = 1.0f, float size = 1.2f);
 	//! Draw selection helper.
-	void         DrawSelectionHelper(DisplayContext& dc, const Vec3& pos, COLORREF labelColor = RGB(255, 255, 255), float alpha = 1.0f);
+	void         DrawSelectionHelper(SDisplayContext& dc, const Vec3& pos, COLORREF labelColor = RGB(255, 255, 255), float alpha = 1.0f);
 	//! Draw helper icon.
-	virtual void DrawTextureIcon(DisplayContext& dc, const Vec3& pos, float alpha = 1.0f, bool bDisplaySelectionHelper = false, float distanceSquared = 0);
+	virtual void DrawTextureIcon(SDisplayContext& dc, const Vec3& pos, float alpha = 1.0f, bool bDisplaySelectionHelper = false, float distanceSquared = 0);
 	//! Draw warning icons
-	virtual void DrawWarningIcons(DisplayContext& dc, const Vec3& pos);
+	virtual void DrawWarningIcons(SDisplayContext& dc, const Vec3& pos);
 	//! Display text with a 3d world coordinate.
-	void         DrawTextOn2DBox(DisplayContext& dc, const Vec3& pos, const char* text, float textScale, const ColorF& TextColor, const ColorF& TextBackColor);
+	void         DrawTextOn2DBox(SDisplayContext& dc, const Vec3& pos, const char* text, float textScale, const ColorF& TextColor, const ColorF& TextBackColor);
 	//! Check if dimension's figures can be displayed before draw them.
-	virtual void DrawDimensions(DisplayContext& dc, AABB* pMergedBoundBox = NULL);
+	virtual void DrawDimensions(SDisplayContext& dc, AABB* pMergedBoundBox = NULL);
 
 	//! Draw highlight.
-	virtual void DrawHighlight(DisplayContext& dc);
+	virtual void DrawHighlight(SDisplayContext& dc);
 
 	//! Returns if the object can be drawn, and if its selection helper should also be drawn.
-	bool CanBeDrawn(const DisplayContext& dc, bool& outDisplaySelectionHelper) const;
+	bool CanBeDrawn(const SDisplayContext& dc, bool& outDisplaySelectionHelper) const;
 
 	//! Returns if object is in the camera view.
 	virtual bool  IsInCameraView(const CCamera& camera);
@@ -766,7 +793,7 @@ protected:
 	virtual void  SetHelperScale(float scale) {}
 	virtual float GetHelperScale()            { return 1; }
 
-	void          SetDrawTextureIconProperties(DisplayContext& dc, const Vec3& pos, float alpha = 1.0f);
+	void          SetDrawTextureIconProperties(SDisplayContext& dc, const Vec3& pos, float alpha = 1.0f);
 	const Vec3& GetTextureIconDrawPos() { return m_vDrawIconPos; }
 	int         GetTextureIconFlags()   { return m_nIconFlags; }
 

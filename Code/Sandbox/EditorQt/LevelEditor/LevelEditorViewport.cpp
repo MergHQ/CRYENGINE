@@ -397,7 +397,7 @@ int CVarAutoSetAndRestore<int >::GetCVarValue()
 	return pCVar->GetIVal();
 }
 
-void CLevelEditorViewport::OnRender()
+void CLevelEditorViewport::OnRender(SDisplayContext& context)
 {
 	CRY_PROFILE_FUNCTION(PROFILE_EDITOR);
 
@@ -518,8 +518,10 @@ void CLevelEditorViewport::OnRender()
 			tmpCamera.SetFrustum(cubeRes, cubeRes, DEG2RAD(90), tmpCamera.GetNearPlane(), tmpCamera.GetFarPlane(), 1.0f);
 
 			// Display Context handle forces rendering of the world go to the current viewport output window.
+
 			SRenderingPassInfo passInfo = SRenderingPassInfo::CreateGeneralPassRenderingInfo(tmpCamera, SRenderingPassInfo::DEFAULT_FLAGS, false, this->m_displayContextKey);
 			m_engine->RenderWorld(renderFlags | SHDF_ALLOW_AO | SHDF_ALLOWPOSTPROCESS | SHDF_ALLOW_WATER | SHDF_ALLOWHDR | SHDF_ZPASS | SHDF_NOASYNC, passInfo, __FUNCTION__);
+			RenderAll(CObjectRenderHelper { context, passInfo });
 		}
 		m_renderer->EnableSwapBuffers(true);
 	}
@@ -531,8 +533,10 @@ void CLevelEditorViewport::OnRender()
 		m_engine->Update();
 
 		// Display Context handle forces rendering of the world go to the current viewport output window.
+
 		SRenderingPassInfo passInfo = SRenderingPassInfo::CreateGeneralPassRenderingInfo(m_Camera, SRenderingPassInfo::DEFAULT_FLAGS, false, this->m_displayContextKey);
 		m_engine->RenderWorld(renderFlags | SHDF_ALLOW_AO | SHDF_ALLOWPOSTPROCESS | SHDF_ALLOW_WATER | SHDF_ALLOWHDR | SHDF_ZPASS, passInfo, __FUNCTION__);
+		RenderAll(CObjectRenderHelper { context, passInfo });
 	}
 
 	if (!m_renderer->IsStereoEnabled() && !m_Camera.m_bOmniCamera)
@@ -558,16 +562,8 @@ void CLevelEditorViewport::OnRender()
 		   light[0].SetRadius(1000000);
 		   m_renderer->EF_ADDDlight(&light[0], passInfo);
 
-		   light[1].m_Flags |= DLF_DIRECTIONAL;
-		   light[1].SetPosition(Vec3(100000, 100000, 100000));
-		   light[1].SetLightColor(ColorF(1, 1, 1, 1));
-		   light[1].SetSpecularMult(1.0f);
-		   light[1].SetRadius(1000000);
-		   m_renderer->EF_ADDDlight(&light[1], passInfo);
-		   //////////////////////////////////////////////////////////////////////////
-		 */
 
-		RenderAll();
+		 */
 
 		//m_renderer->EF_EndEf3D(renderFlags | SHDF_NOASYNC | SHDF_STREAM_SYNC | SHDF_ALLOWHDR, -1, -1, passInfo);
 
@@ -582,11 +578,11 @@ void CLevelEditorViewport::OnRender()
 		// Draw Axis arrow in lower left corner.
 		if (ge && ge->IsLevelLoaded())
 		{
-			DrawAxis();
+			DrawAxis(context);
 		}
 
 		// Draw 2D helpers.
-		m_displayContext.SetState(e_Mode3D | e_AlphaBlended | e_FillModeSolid | e_CullModeBack | e_DepthWriteOn | e_DepthTestOn);
+		context.SetState(e_Mode3D | e_AlphaBlended | e_FillModeSolid | e_CullModeBack | e_DepthWriteOn | e_DepthTestOn);
 
 		// Display cursor string.
 		RenderCursorString();
@@ -594,32 +590,30 @@ void CLevelEditorViewport::OnRender()
 		if (gViewportPreferences.showSafeFrame)
 		{
 			UpdateSafeFrame();
-			RenderSafeFrame();
+			RenderSafeFrame(context);
 		}
 
-		RenderSelectionRectangle();
+		RenderSelectionRectangle(context);
 	}
 }
 
-void CLevelEditorViewport::RenderAll()
+void CLevelEditorViewport::RenderAll(CObjectRenderHelper& displayInfo)
 {
 	// Draw physics helper/proxies, if requested
 #if !defined(_RELEASE) && !CRY_PLATFORM_DURANGO
 	if (m_bRenderStats) GetIEditor()->GetSystem()->RenderPhysicsHelpers();
 #endif
+	SDisplayContext& context = displayInfo.GetDisplayContextRef();
 
-	// Draw all objects.
-	DisplayContext& dctx = m_displayContext;
+	context.SetState(e_Mode3D | e_AlphaBlended | e_FillModeSolid | e_CullModeBack | e_DepthWriteOn | e_DepthTestOn);
+	GetIEditor()->GetObjectManager()->Display(displayInfo);
 
-	dctx.SetState(e_Mode3D | e_AlphaBlended | e_FillModeSolid | e_CullModeBack | e_DepthWriteOn | e_DepthTestOn);
-	GetIEditor()->GetObjectManager()->Display(dctx);
-
-	RenderSelectedRegion();
-	RenderSnapMarker();
+	RenderSelectedRegion(context);
+	RenderSnapMarker(context);
 
 	if (gViewportPreferences.showGridGuide
 	    && GetIEditor()->IsHelpersDisplayed())
-		RenderSnappingGrid();
+		RenderSnappingGrid(context);
 
 	IAISystem* aiSystem = GetIEditor()->GetSystem()->GetAISystem();
 	if (aiSystem)
@@ -638,11 +632,11 @@ void CLevelEditorViewport::RenderAll()
 	// Display editing tool.
 	if (GetEditTool() && m_bMouseInside)
 	{
-		GetEditTool()->Display(dctx);
+		GetEditTool()->Display(context);
 	}
 }
 
-void CLevelEditorViewport::RenderSnappingGrid()
+void CLevelEditorViewport::RenderSnappingGrid(SDisplayContext& context)
 {
 	// First, Check whether we should draw the grid or not.
 	const CSelectionGroup* pSelGroup = GetIEditorImpl()->GetSelection();
@@ -660,10 +654,8 @@ void CLevelEditorViewport::RenderSnappingGrid()
 		return;
 	}
 
-	DisplayContext& dc = m_displayContext;
-
-	int prevState = dc.GetState();
-	dc.DepthWriteOff();
+	int prevState = context.GetState();
+	context.DepthWriteOff();
 
 	Vec3 p = pSelGroup->GetObject(0)->GetWorldPos();
 
@@ -671,7 +663,7 @@ void CLevelEditorViewport::RenderSnappingGrid()
 	pSelGroup->GetObject(0)->GetBoundBox(bbox);
 	float size = 2 * bbox.GetRadius();
 	float alphaMax = 1.0f, alphaMin = 0.2f;
-	dc.SetLineWidth(3);
+	context.SetLineWidth(3);
 
 	if (GetIEditor()->GetEditMode() == eEditModeMove && gSnappingPreferences.gridSnappingEnabled())
 	// Draw the translation grid.
@@ -687,15 +679,15 @@ void CLevelEditorViewport::RenderSnappingGrid()
 		{
 			// Draw u lines.
 			float alphaCur = alphaMax - fabsf(float(i) / float(nSteps)) * (alphaMax - alphaMin);
-			dc.DrawLine(p + v * (step * i), p + u * size + v * (step * i),
-			            ColorF(0, 0, 0, alphaCur), ColorF(0, 0, 0, alphaMin));
-			dc.DrawLine(p + v * (step * i), p - u * size + v * (step * i),
-			            ColorF(0, 0, 0, alphaCur), ColorF(0, 0, 0, alphaMin));
+			context.DrawLine(p + v * (step * i), p + u * size + v * (step * i),
+			                 ColorF(0, 0, 0, alphaCur), ColorF(0, 0, 0, alphaMin));
+			context.DrawLine(p + v * (step * i), p - u * size + v * (step * i),
+			                 ColorF(0, 0, 0, alphaCur), ColorF(0, 0, 0, alphaMin));
 			// Draw v lines.
-			dc.DrawLine(p + u * (step * i), p + v * size + u * (step * i),
-			            ColorF(0, 0, 0, alphaCur), ColorF(0, 0, 0, alphaMin));
-			dc.DrawLine(p + u * (step * i), p - v * size + u * (step * i),
-			            ColorF(0, 0, 0, alphaCur), ColorF(0, 0, 0, alphaMin));
+			context.DrawLine(p + u * (step * i), p + v * size + u * (step * i),
+			                 ColorF(0, 0, 0, alphaCur), ColorF(0, 0, 0, alphaMin));
+			context.DrawLine(p + u * (step * i), p - v * size + u * (step * i),
+			                 ColorF(0, 0, 0, alphaCur), ColorF(0, 0, 0, alphaMin));
 		}
 	}
 	else if (GetIEditor()->GetEditMode() == eEditModeRotate && gSnappingPreferences.angleSnappingEnabled())
@@ -721,14 +713,14 @@ void CLevelEditorViewport::RenderSnappingGrid()
 			{
 				AngleAxis rot(i * step * gf_PI / 180.0, rotAxis);
 				Vec3 dir = rot * anotherAxis;
-				dc.DrawLine(p, p + dir,
-				            ColorF(0, 0, 0, alphaMax), ColorF(0, 0, 0, alphaMin));
-				dc.DrawLine(p, p - dir,
-				            ColorF(0, 0, 0, alphaMax), ColorF(0, 0, 0, alphaMin));
+				context.DrawLine(p, p + dir,
+				                 ColorF(0, 0, 0, alphaMax), ColorF(0, 0, 0, alphaMin));
+				context.DrawLine(p, p - dir,
+				                 ColorF(0, 0, 0, alphaMax), ColorF(0, 0, 0, alphaMin));
 			}
 		}
 	}
-	dc.SetState(prevState);
+	context.SetState(prevState);
 }
 
 void CLevelEditorViewport::OnCameraSpeedChanged()

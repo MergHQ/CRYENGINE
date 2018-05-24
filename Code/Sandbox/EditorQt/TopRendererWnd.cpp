@@ -284,7 +284,8 @@ void CTopRendererWnd::ResetSurfaceTexture()
 	m_bContentValid = false;
 }
 
-void CTopRendererWnd::Draw(DisplayContext& dc)
+//////////////////////////////////////////////////////////////////////////
+void CTopRendererWnd::Draw(CObjectRenderHelper& objRenderHelper)
 {
 	CRY_PROFILE_FUNCTION(PROFILE_EDITOR);
 
@@ -434,7 +435,7 @@ void CTopRendererWnd::Draw(DisplayContext& dc)
 	gEnv->pRenderer->GetIRenderAuxGeom()->SetTexture(-1);
 	gEnv->pRenderer->GetIRenderAuxGeom()->SetRenderFlags(prevRenderFlags);
 
-	C2DViewport::Draw(dc);
+	C2DViewport::Draw(objRenderHelper);
 }
 
 Vec3 CTopRendererWnd::ViewToWorld(CPoint vp, bool* collideWithTerrain, bool onlyTerrain, bool bSkipVegetation, bool bTestRenderMesh)

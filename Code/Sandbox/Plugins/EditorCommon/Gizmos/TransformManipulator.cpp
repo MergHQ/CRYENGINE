@@ -380,7 +380,7 @@ void CTransformManipulator::UpdateTransform()
 }
 
 //////////////////////////////////////////////////////////////////////////
-void CTransformManipulator::Display(DisplayContext& dc)
+void CTransformManipulator::Display(SDisplayContext& dc)
 {
 	if (!m_owner->IsManipulatorVisible())
 	{
@@ -514,11 +514,11 @@ void CTransformManipulator::Display(DisplayContext& dc)
 	}
 }
 
-void CTransformManipulator::DisplayPivotPoint(DisplayContext& dc)
+void CTransformManipulator::DisplayPivotPoint(SDisplayContext& dc)
 {
 	uint32 curflags = dc.GetState();
 	dc.DepthTestOff();
-	
+
 	Vec3 position = m_matrix.GetTranslation();
 	Vec3 direction = -dc.view->ViewDirection();
 	Vec3 upVec = dc.view->UpViewDirection();
@@ -564,7 +564,7 @@ void CTransformManipulator::SetMatrix(const Matrix34& m)
 }
 
 //////////////////////////////////////////////////////////////////////////
-bool CTransformManipulator::HitTest(HitContext& hc, EManipulatorMode &manipulatorMode)
+bool CTransformManipulator::HitTest(HitContext& hc, EManipulatorMode& manipulatorMode)
 {
 	int nEditMode = GetIEditor()->GetEditMode();
 
@@ -627,7 +627,7 @@ bool CTransformManipulator::HitTest(HitContext& hc, EManipulatorMode &manipulato
 		return false;
 	}
 	else if (nEditMode == eEditModeRotate)
-	{	
+	{
 		if (m_xWheelGizmo.HitTest(hc))
 		{
 			m_lastHitGizmo = &m_xWheelGizmo;
@@ -721,7 +721,6 @@ bool CTransformManipulator::HitTest(HitContext& hc, EManipulatorMode &manipulato
 	return false;
 }
 
-
 bool CTransformManipulator::HitTest(HitContext& hc)
 {
 	if (IsDelete() || !m_owner->IsManipulatorVisible())
@@ -745,7 +744,7 @@ Matrix34 CTransformManipulator::GetTransform() const
 }
 
 void CTransformManipulator::SetCustomTransform(bool on, const Matrix34& m)
-{ 
+{
 	m_matrix = m;
 	m_bUseCustomTransform = on;
 
@@ -872,7 +871,6 @@ void CTransformManipulator::RotateDragging(IDisplayViewport* view, CGizmo* gizmo
 {
 	Vec3 vDragValue(0.0f, 0.0f, 0.0f);
 
-	
 	// in view space coordinates, we create a rotation in world space
 	if (GetIEditor()->GetReferenceCoordSys() == COORDS_VIEW)
 	{
@@ -1000,7 +998,6 @@ void CTransformManipulator::ScaleDragging(IDisplayViewport* view, CGizmo* gizmo,
 	Vec2i ipoint(point.x, point.y);
 	signalDragging(view, this, ipoint, vDragValue, nFlags);
 }
-
 
 void CTransformManipulator::EndDrag(IDisplayViewport* view, CGizmo* gizmo, const CPoint& point, int nFlags)
 {

@@ -11,7 +11,7 @@ CProximityTrigger::CProximityTrigger()
 	m_entityClass = "ProximityTrigger";
 }
 
-void CProximityTrigger::Display(DisplayContext& dc)
+void CProximityTrigger::Display(CObjectRenderHelper& objRenderHelper)
 {
 	if (IEntity* pEntity = GetIEntity())
 	{
@@ -27,10 +27,11 @@ void CProximityTrigger::Display(DisplayContext& dc)
 				properties->GetValue("DimY", dimensions.y);
 				properties->GetValue("DimZ", dimensions.z);
 
+				SDisplayContext& dc = objRenderHelper.GetDisplayContextRef();
 				dc.DrawWireBox(pEntity->GetWorldPos() + dimensions * -0.5f, pEntity->GetWorldPos() + dimensions * 0.5f);
 			}
 		}
 	}
 
-	CEntityObject::Display(dc);
+	CEntityObject::Display(objRenderHelper);
 }

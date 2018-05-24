@@ -1,5 +1,4 @@
 // Copyright 2001-2018 Crytek GmbH / Crytek Group. All rights reserved.
-
 #pragma once
 
 #include "ModelViewport.h"
@@ -36,7 +35,7 @@ public:
 	virtual void Update();
 	void         UpdateAnimation(float timePassed);
 
-	virtual void OnRender();
+	virtual void OnRender(SDisplayContext& context);
 
 	void         SetActionController(IActionController* pActionController)
 	{

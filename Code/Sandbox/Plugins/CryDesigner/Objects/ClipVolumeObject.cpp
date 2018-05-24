@@ -126,8 +126,9 @@ void ClipVolumeObject::GetLocalBounds(AABB& bbox)
 		bbox = pModel->GetBoundBox();
 }
 
-void ClipVolumeObject::Display(DisplayContext& dc)
+void ClipVolumeObject::Display(CObjectRenderHelper& objRenderHelper)
 {
+	SDisplayContext& dc = objRenderHelper.GetDisplayContextRef();
 	DrawDefault(dc);
 
 	if (!GetDesigner())

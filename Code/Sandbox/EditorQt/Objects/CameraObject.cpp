@@ -262,7 +262,7 @@ Vec3 CCameraObject::GetLookAtEntityPos() const
 }
 
 //////////////////////////////////////////////////////////////////////////
-void CCameraObject::Display(DisplayContext& dc)
+void CCameraObject::Display(SDisplayContext& dc)
 {
 	Matrix34 wtm = GetWorldTM();
 
@@ -432,7 +432,7 @@ void CCameraObject::GetConePoints(Vec3 q[4], float dist, const float fAspectRati
 	q[3] = Vec3(w, dist, -h);
 }
 
-void CCameraObject::DrawCone(DisplayContext& dc, float dist, float fScale)
+void CCameraObject::DrawCone(SDisplayContext& dc, float dist, float fScale)
 {
 	Vec3 q[4];
 	GetConePoints(q, dist, dc.view->GetAspectRatio());
@@ -665,7 +665,7 @@ void CCameraObjectTarget::InitVariables()
 }
 
 //////////////////////////////////////////////////////////////////////////
-void CCameraObjectTarget::Display(DisplayContext& dc)
+void CCameraObjectTarget::Display(SDisplayContext& dc)
 {
 	Vec3 wp = GetWorldPos();
 

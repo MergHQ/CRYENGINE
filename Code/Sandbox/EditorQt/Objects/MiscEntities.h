@@ -14,7 +14,7 @@ public:
 
 	//////////////////////////////////////////////////////////////////////////
 	CWindAreaEntity(){}
-	virtual void Display(DisplayContext& disp);
+	virtual void Display(CObjectRenderHelper& objRenderHelper);
 
 private:
 };
@@ -25,11 +25,11 @@ private:
 class CWindAreaEntityClassDesc : public CObjectClassDesc
 {
 public:
-	ObjectType          GetObjectType()                     { return OBJTYPE_ENTITY; };
-	const char*         ClassName()                         { return "Entity::WindArea"; };
-	const char*         Category()                          { return ""; };
-	CRuntimeClass*      GetRuntimeClass()                   { return RUNTIME_CLASS(CWindAreaEntity); };
-	const char*         GetFileSpec()                       { return "*.cgf;*.chr;*.cga;*.cdf"; };
+	ObjectType          GetObjectType()                     { return OBJTYPE_ENTITY; }
+	const char*         ClassName()                         { return "Entity::WindArea"; }
+	const char*         Category()                          { return ""; }
+	CRuntimeClass*      GetRuntimeClass()                   { return RUNTIME_CLASS(CWindAreaEntity); }
+	const char*         GetFileSpec()                       { return "*.cgf;*.chr;*.cga;*.cdf"; }
 	virtual const char* GetDataFilesFilterString() override { return GetFileSpec(); }
 };
 
@@ -43,7 +43,7 @@ public:
 	//////////////////////////////////////////////////////////////////////////
 	CConstraintEntity() : m_body0(NULL), m_body1(NULL) {}
 
-	virtual void Display(DisplayContext& disp);
+	virtual void Display(CObjectRenderHelper& objRenderHelper);
 
 private:
 	// the orientation of the constraint in world, body0 and body1 space
@@ -62,12 +62,12 @@ private:
 class CConstraintEntityClassDesc : public CObjectClassDesc
 {
 public:
-	ObjectType          GetObjectType()                     { return OBJTYPE_ENTITY; };
+	ObjectType          GetObjectType()                     { return OBJTYPE_ENTITY; }
 	// this was done because the string was prefixed in the object manager and would otherwise return by default CEntityObject
-	const char*         ClassName()                         { return "Entity::Constraint"; };
-	const char*         Category()                          { return ""; };
-	CRuntimeClass*      GetRuntimeClass()                   { return RUNTIME_CLASS(CConstraintEntity); };
-	const char*         GetFileSpec()                       { return "*.cgf;*.chr;*.cga;*.cdf"; };
+	const char*         ClassName()                         { return "Entity::Constraint"; }
+	const char*         Category()                          { return ""; }
+	CRuntimeClass*      GetRuntimeClass()                   { return RUNTIME_CLASS(CConstraintEntity); }
+	const char*         GetFileSpec()                       { return "*.cgf;*.chr;*.cga;*.cdf"; }
 	virtual const char* GetDataFilesFilterString() override { return GetFileSpec(); }
 };
 
@@ -112,11 +112,11 @@ public:
 class CGeomCacheEntityClassDesc : public CObjectClassDesc
 {
 public:
-	ObjectType          GetObjectType()                     { return OBJTYPE_GEOMCACHE; };
-	const char*         ClassName()                         { return "Entity::GeomCache"; };
-	const char*         Category()                          { return ""; };
-	CRuntimeClass*      GetRuntimeClass()                   { return RUNTIME_CLASS(CGeomCacheEntity); };
-	const char*         GetFileSpec()                       { return "*.cax"; };
+	ObjectType          GetObjectType()                     { return OBJTYPE_GEOMCACHE; }
+	const char*         ClassName()                         { return "Entity::GeomCache"; }
+	const char*         Category()                          { return ""; }
+	CRuntimeClass*      GetRuntimeClass()                   { return RUNTIME_CLASS(CGeomCacheEntity); }
+	const char*         GetFileSpec()                       { return "*.cax"; }
 	virtual const char* GetDataFilesFilterString() override { return GetFileSpec(); }
 	virtual bool        RenderTextureOnTop() const override { return true; }
 };
@@ -130,7 +130,7 @@ class CJointGenEntity : public CEntityObject
 public:
 	DECLARE_DYNCREATE(CJointGenEntity)
 	CJointGenEntity() {}
-	virtual void Display(DisplayContext& disp);
+	virtual void Display(CObjectRenderHelper& objRenderHelper);
 private:
 	string                m_fname;
 	_smart_ptr<IStatObj>  m_pObj;
@@ -140,11 +140,11 @@ private:
 class CJointGenEntityClassDesc : public CObjectClassDesc
 {
 public:
-	ObjectType          GetObjectType()                     { return OBJTYPE_ENTITY; };
-	const char*         ClassName()                         { return "Entity::JointGen"; };
-	const char*         Category()                          { return ""; };
-	CRuntimeClass*      GetRuntimeClass()                   { return RUNTIME_CLASS(CJointGenEntity); };
-	const char*         GetFileSpec()                       { return "*.cgf"; };
+	ObjectType          GetObjectType()                     { return OBJTYPE_ENTITY; }
+	const char*         ClassName()                         { return "Entity::JointGen"; }
+	const char*         Category()                          { return ""; }
+	CRuntimeClass*      GetRuntimeClass()                   { return RUNTIME_CLASS(CJointGenEntity); }
+	const char*         GetFileSpec()                       { return "*.cgf"; }
 	virtual const char* GetDataFilesFilterString() override { return GetFileSpec(); }
 };
 

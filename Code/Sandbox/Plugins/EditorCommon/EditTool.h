@@ -2,16 +2,17 @@
 
 #pragma once
 
+#include "HitContext.h"
 #include <CrySandbox/CrySignal.h>
 #include <CrySerialization/IArchive.h>
 #include <IEditor.h>
-#include "HitContext.h"
 
 class CViewport;
 class QEvent;
+enum EOperationMode;
 struct IClassDesc;
 struct ITransformManipulator;
-enum EOperationMode;
+struct SDisplayContext;
 
 enum EEditToolType
 {
@@ -46,7 +47,7 @@ public:
 	virtual void SetUserData(const char* key, void* userData) {}
 
 	// Called each frame to display tool for given viewport.
-	virtual void Display(struct DisplayContext& dc) {}
+	virtual void Display(SDisplayContext& dc) {}
 
 	//! Mouse callback sent from viewport.
 	//! Returns true if event processed by callback, and all other processing for this event should abort.
@@ -93,7 +94,7 @@ public:
 	virtual bool IsExclusiveMode() { return false; }//Ambiguous naming
 
 	// Draws object specific helpers for this tool
-	virtual void DrawObjectHelpers(CBaseObject* pObject, DisplayContext& dc) {}
+	virtual void DrawObjectHelpers(CBaseObject* pObject, SDisplayContext& dc) {}
 
 	// Hit test against edit tool
 	virtual bool HitTest(CBaseObject* pObject, HitContext& hc) { return false; }

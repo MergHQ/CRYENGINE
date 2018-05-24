@@ -19,7 +19,7 @@ public:
 	void        PostInit(const string& file);
 	void        AssignEffect(const string& effectName);
 
-	void        Display(DisplayContext& disp);
+	void        Display(SDisplayContext& disp);
 
 	static bool IsGroup(const string& effectName);
 	string      GetParticleName() const;

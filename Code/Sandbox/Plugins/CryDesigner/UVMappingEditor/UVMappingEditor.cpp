@@ -263,7 +263,7 @@ void UVMappingEditor::OnRender(const SRenderContext& rc)
 {
 	IRenderAuxGeom* aux = gEnv->pRenderer->GetIRenderAuxGeom();
 
-	DisplayContext dc;
+	SDisplayContext dc;
 	m_pViewportAdapter->EnableXYViewport(true);
 	dc.SetView(m_pViewportAdapter.get());
 
@@ -401,7 +401,7 @@ void UVMappingEditor::UpdateObject()
 	}
 }
 
-void UVMappingEditor::RenderUnwrappedMesh(DisplayContext& dc)
+void UVMappingEditor::RenderUnwrappedMesh(SDisplayContext& dc)
 {
 	if (!m_pObject)
 		return;
@@ -422,7 +422,7 @@ void UVMappingEditor::RenderUnwrappedMesh(DisplayContext& dc)
 	}
 }
 
-void UVMappingEditor::RenderUnwrappedPolygon(DisplayContext& dc, UVIslandPtr pUVIsland, PolygonPtr pPolygon, ColorB color)
+void UVMappingEditor::RenderUnwrappedPolygon(SDisplayContext& dc, UVIslandPtr pUVIsland, PolygonPtr pPolygon, ColorB color)
 {
 	if (!pPolygon || (!m_bViewAllUVIslands && pPolygon->GetSubMatID() != GetSubMatID()))
 		return;
@@ -462,7 +462,7 @@ void UVMappingEditor::SetSubMatID(int nSubMatID)
 	}
 }
 
-void UVMappingEditor::RenderElements(DisplayContext& dc, ColorB color, UVElementSetPtr pUVElementSet)
+void UVMappingEditor::RenderElements(SDisplayContext& dc, ColorB color, UVElementSetPtr pUVElementSet)
 {
 	dc.SetColor(color);
 	for (int i = 0, iCount(pUVElementSet->GetCount()); i < iCount; ++i)

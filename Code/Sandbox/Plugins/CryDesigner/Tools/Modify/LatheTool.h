@@ -37,7 +37,7 @@ public:
 	  UINT nFlags,
 	  CPoint point) override;
 
-	void Display(DisplayContext& dc) override;
+	void Display(SDisplayContext& dc) override;
 
 private:
 	ELatheErrorCode CreateShapeAlongPath(

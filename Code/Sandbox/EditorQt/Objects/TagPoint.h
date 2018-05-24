@@ -1,5 +1,4 @@
 // Copyright 2001-2018 Crytek GmbH / Crytek Group. All rights reserved.
-
 #pragma once
 
 #include "EntityObject.h"
@@ -40,7 +39,7 @@ public:
 	//////////////////////////////////////////////////////////////////////////
 	bool Init(CBaseObject* prev, const string& file);
 	void InitVariables();
-	void Display(DisplayContext& disp);
+	void Display(SDisplayContext& disp);
 	bool IsScalable() const override { return false; }
 
 	//! Called when object is being created.
@@ -70,7 +69,7 @@ public:
 	//////////////////////////////////////////////////////////////////////////
 	// Overrides from CBaseObject.
 	//////////////////////////////////////////////////////////////////////////
-	virtual void Display(DisplayContext& dc);
+	virtual void Display(SDisplayContext& dc);
 	virtual int  MouseCreateCallback(IDisplayViewport* view, EMouseEvent event, CPoint& point, int flags);
 	virtual void Done();
 	virtual void SetModified(bool boModifiedTransformOnly, bool bNotifyObjectManager);

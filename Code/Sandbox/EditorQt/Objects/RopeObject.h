@@ -16,18 +16,18 @@ public:
 	//////////////////////////////////////////////////////////////////////////
 	virtual bool       Init(CBaseObject* prev, const string& file);
 	virtual void       Done();
-	virtual bool       SetScale(const Vec3& vScale, int nWhyFlags = 0) const { return false; };
+	virtual bool       SetScale(const Vec3& vScale, int nWhyFlags = 0) const { return false; }
 	virtual void       SetSelected(bool bSelect);
 	virtual bool       CreateGameObject();
 	virtual void       InitVariables();
 	virtual void       UpdateGameArea();
 	virtual void       InvalidateTM(int nWhyFlags);
 	virtual void       SetMaterial(IEditorMaterial* mtl);
-	virtual void       Display(DisplayContext& dc);
+	virtual void       Display(CObjectRenderHelper& objRenderHelper);
 	virtual void       OnEvent(ObjectEvent event);
 	virtual void       Reload(bool bReloadScript = false);
 
-	void CreateInspectorWidgets(CInspectorWidgetCreator& creator) override;
+	void               CreateInspectorWidgets(CInspectorWidgetCreator& creator) override;
 
 	virtual void       Serialize(CObjectArchive& ar);
 	virtual void       PostLoad(CObjectArchive& ar);
@@ -35,8 +35,8 @@ public:
 	//////////////////////////////////////////////////////////////////////////
 
 protected:
-	virtual int      GetMinPoints() const    { return 2; };
-	virtual int      GetMaxPoints() const    { return 200; };
+	virtual int      GetMinPoints() const    { return 2; }
+	virtual int      GetMaxPoints() const    { return 200; }
 	virtual float    GetShapeZOffset() const { return 0.0f; }
 	virtual void     CalcBBox();
 
@@ -44,7 +44,7 @@ protected:
 
 	//! Called when Road variable changes.
 	void OnParamChange(IVariable* var);
-	
+
 	void SerializeProperties(Serialization::IArchive& ar, bool bMultiEdit);
 
 protected:
@@ -85,10 +85,10 @@ private:
 class CRopeObjectClassDesc : public CObjectClassDesc
 {
 public:
-	ObjectType          GetObjectType()     { return OBJTYPE_OTHER; };
-	const char*         ClassName()         { return "Rope"; };
-	const char*         Category()          { return "Misc"; };
-	virtual const char* GetTextureIcon()    { return "%EDITOR%/ObjectIcons/rope.bmp"; };
-	CRuntimeClass*      GetRuntimeClass()   { return RUNTIME_CLASS(CRopeObject); };
+	ObjectType          GetObjectType()   { return OBJTYPE_OTHER; }
+	const char*         ClassName()       { return "Rope"; }
+	const char*         Category()        { return "Misc"; }
+	virtual const char* GetTextureIcon()  { return "%EDITOR%/ObjectIcons/rope.bmp"; }
+	CRuntimeClass*      GetRuntimeClass() { return RUNTIME_CLASS(CRopeObject); }
 };
 

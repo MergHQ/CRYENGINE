@@ -23,10 +23,10 @@ protected:
 	void       UpdateVisibility(bool visible) override;
 	XmlNodeRef Export(const string& levelPath, XmlNodeRef& xmlNode) override;
 	void       InvalidateTM(int nWhyFlags) override;
-	void       DeleteThis() override                      { delete this; }
+	void       DeleteThis() override                       { delete this; }
 	// Ignore default draw highlight.
-	void       DrawHighlight(DisplayContext& dc) override {}
-	void CreateInspectorWidgets(CInspectorWidgetCreator& creator) override;
+	void       DrawHighlight(SDisplayContext& dc) override {}
+	void       CreateInspectorWidgets(CInspectorWidgetCreator& creator) override;
 
 	//! Called when variable changes.
 	void OnParamChange(IVariable* pVariable);
@@ -40,7 +40,7 @@ private:
 	void SetObjectCount(int num);
 
 protected:
-	CVariable<string> mv_geometryFile;
+	CVariable<string>  mv_geometryFile;
 	CVariable<float>   mv_step;
 
 	CVariable<bool>    mv_follow;

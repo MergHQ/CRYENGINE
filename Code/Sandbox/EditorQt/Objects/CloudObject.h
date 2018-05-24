@@ -1,5 +1,4 @@
 // Copyright 2001-2018 Crytek GmbH / Crytek Group. All rights reserved.
-
 #pragma once
 
 #include "Objects/BaseObject.h"
@@ -12,7 +11,7 @@ public:
 	//////////////////////////////////////////////////////////////////////////
 	// Overrides from CBaseObject.
 	//////////////////////////////////////////////////////////////////////////
-	void          Display(DisplayContext& dc);
+	void          Display(CObjectRenderHelper& objRenderHelper);
 	void          GetLocalBounds(AABB& box);
 	bool          HitTest(HitContext& hc);
 

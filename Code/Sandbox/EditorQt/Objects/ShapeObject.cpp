@@ -74,7 +74,7 @@ public:
 
 	virtual bool   IsNeedMoveTool() override                 { return true; }
 
-	virtual void   Display(DisplayContext& dc)               {};
+	virtual void   Display(SDisplayContext& dc)              {};
 	virtual bool   OnKeyDown(CViewport* view, uint32 nChar, uint32 nRepCnt, uint32 nFlags);
 	bool           IsNeedToSkipPivotBoxForObjects() override { return true; }
 	bool           IsDisplayGrid()                           { return false; }
@@ -466,7 +466,7 @@ public:
 	virtual string GetDisplayName() const override { return "Merge Shapes"; }
 	bool           MouseCallback(CViewport* view, EMouseEvent event, CPoint& point, int flags);
 	virtual void   SetUserData(const char* key, void* userData);
-	virtual void   Display(DisplayContext& dc) {};
+	virtual void   Display(SDisplayContext& dc) {};
 	virtual bool   OnKeyDown(CViewport* view, uint32 nChar, uint32 nRepCnt, uint32 nFlags);
 
 protected:
@@ -604,7 +604,7 @@ public:
 	virtual string GetDisplayName() const override { return "Split Shape"; }
 	bool           MouseCallback(CViewport* view, EMouseEvent event, CPoint& point, int flags);
 	virtual void   SetUserData(const char* key, void* userData);
-	virtual void   Display(DisplayContext& dc);
+	virtual void   Display(SDisplayContext& dc);
 	virtual bool   OnKeyDown(CViewport* view, uint32 nChar, uint32 nRepCnt, uint32 nFlags);
 
 protected:
@@ -661,7 +661,7 @@ bool CSplitShapeTool::OnKeyDown(CViewport* view, uint32 nChar, uint32 nRepCnt, u
 	return true;
 }
 
-void CSplitShapeTool::Display(DisplayContext& dc)
+void CSplitShapeTool::Display(SDisplayContext& dc)
 {
 	if (m_curIndex >= 0)
 	{
@@ -1244,8 +1244,10 @@ void CShapeObject::EndCreation()
 	SetClosed(mv_closed);
 }
 
-void CShapeObject::Display(DisplayContext& dc)
+void CShapeObject::Display(CObjectRenderHelper& objRenderHelper)
 {
+	SDisplayContext& dc = objRenderHelper.GetDisplayContextRef();
+
 	if (mv_displaySoundInfo)
 	{
 		DisplaySoundInfo(dc);
@@ -1257,7 +1259,7 @@ void CShapeObject::Display(DisplayContext& dc)
 }
 
 //////////////////////////////////////////////////////////////////////////
-void CShapeObject::DisplayNormal(DisplayContext& dc)
+void CShapeObject::DisplayNormal(SDisplayContext& dc)
 {
 	if (!gViewportDebugPreferences.showShapeObjectHelper)
 		return;
@@ -1515,7 +1517,7 @@ void CShapeObject::GetSoundObstructionColors(ColorB& obstructionColor, ColorB& n
 	}
 }
 
-void CShapeObject::DisplaySoundInfo(DisplayContext& dc)
+void CShapeObject::DisplaySoundInfo(SDisplayContext& dc)
 {
 	const Matrix34& wtm = GetWorldTM();
 	COLORREF col = 0;
@@ -1692,7 +1694,7 @@ void CShapeObject::DisplaySoundInfo(DisplayContext& dc)
 	DrawDefault(dc, CMFCUtils::ColorBToColorRef(GetColor()));
 }
 
-void CShapeObject::DisplaySoundRoofAndFloor(DisplayContext& dc)
+void CShapeObject::DisplaySoundRoofAndFloor(SDisplayContext& dc)
 {
 	if (!IsSelected())
 		return;
@@ -1753,7 +1755,7 @@ void CShapeObject::DisplaySoundRoofAndFloor(DisplayContext& dc)
 }
 
 //////////////////////////////////////////////////////////////////////////
-void CShapeObject::DrawTerrainLine(DisplayContext& dc, const Vec3& p1, const Vec3& p2)
+void CShapeObject::DrawTerrainLine(SDisplayContext& dc, const Vec3& p1, const Vec3& p2)
 {
 	float len = (p2 - p1).GetLength();
 	int steps = len / 2;
@@ -3121,7 +3123,7 @@ void CAIPathObject::UpdateGameArea()
 	m_bAreaModified = false;
 }
 
-void CAIPathObject::DrawSphere(DisplayContext& dc, const Vec3& p0, float r, int n)
+void CAIPathObject::DrawSphere(SDisplayContext& dc, const Vec3& p0, float r, int n)
 {
 	// Note: The Aux Render already supports drawing spheres, but they appear
 	// shaded when rendered and there is no cylinder rendering available.
@@ -3154,7 +3156,7 @@ void CAIPathObject::DrawSphere(DisplayContext& dc, const Vec3& p0, float r, int 
 	}
 }
 
-void CAIPathObject::DrawCylinder(DisplayContext& dc, const Vec3& p0, const Vec3& p1, float rad, int n)
+void CAIPathObject::DrawCylinder(SDisplayContext& dc, const Vec3& p0, const Vec3& p1, float rad, int n)
 {
 	Vec3 dir(p1 - p0);
 	Vec3 a = dir.GetOrthogonal();
@@ -3206,8 +3208,10 @@ bool CAIPathObject::IsSegmentValid(const Vec3& p0, const Vec3& p1, float rad)
 	return true;
 }
 
-void CAIPathObject::Display(DisplayContext& dc)
+void CAIPathObject::Display(CObjectRenderHelper& objRenderHelper)
 {
+	SDisplayContext& dc = objRenderHelper.GetDisplayContextRef();
+
 	// Display path validation
 	if (m_bValidatePath && IsSelected())
 	{
@@ -3278,7 +3282,7 @@ void CAIPathObject::Display(DisplayContext& dc)
 		dc.DrawTextLabel(wtm.GetTranslation(), 1.2f, msg, true);
 	}
 
-	CShapeObject::Display(dc);
+	CShapeObject::Display(objRenderHelper);
 }
 
 int CAIPathObject::InsertPoint(int index, const Vec3& point, bool const bModifying)
@@ -4306,15 +4310,17 @@ void CNavigationAreaObject::CreateInspectorWidgets(CInspectorWidgetCreator& crea
 }
 
 //////////////////////////////////////////////////////////////////////////
-void CNavigationAreaObject::Display(DisplayContext& dc)
+void CNavigationAreaObject::Display(CObjectRenderHelper& objRenderHelper)
 {
+	SDisplayContext& dc = objRenderHelper.GetDisplayContextRef();
+
 	if (IsSelected() || gAINavigationPreferences.navigationShowAreas())
 	{
 		SetColor(mv_exclusion ? ColorB(200, 0, 0) : ColorB(0, 126, 255));
 
 		float lineWidth = dc.GetLineWidth();
 		dc.SetLineWidth(8.0f);
-		__super::Display(dc);
+		__super::Display(objRenderHelper);
 		dc.SetLineWidth(lineWidth);
 	}
 }

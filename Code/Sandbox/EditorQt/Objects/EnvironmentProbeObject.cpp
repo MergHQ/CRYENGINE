@@ -275,7 +275,7 @@ void CEnvironementProbeObject::CreateInspectorWidgets(CInspectorWidgetCreator& c
 }
 
 /////////////////////////////////////////////////////////////////////////
-void CEnvironementProbeObject::Display(DisplayContext& dc)
+void CEnvironementProbeObject::Display(SDisplayContext& dc)
 {
 	if (!gViewportDebugPreferences.showEnviromentProbeObjectHelper)
 		return;

@@ -95,7 +95,7 @@ public:
 	void              SetEntityPropertyFloat(const char* name, float value);
 	void              SetEntityPropertyString(const char* name, const string& value);
 
-	virtual void      Display(DisplayContext& disp);
+	virtual void      Display(CObjectRenderHelper& objRenderHelper);
 
 	virtual void      GetDisplayBoundBox(AABB& box);
 
@@ -324,11 +324,11 @@ protected:
 	virtual void PostClone(CBaseObject* pFromObject, CObjectCloneContext& ctx);
 
 	//! Draw default object items.
-	virtual void DrawDefault(DisplayContext& dc, COLORREF labelColor = RGB(255, 255, 255)) override;
-	virtual void DrawTextureIcon(DisplayContext& dc, const Vec3& pos, float alpha, bool bDisplaySelectionHelper, float distanceSquared = 0) override;
-	void         DrawProjectorPyramid(DisplayContext& dc, float dist);
-	void         DrawProjectorFrustum(DisplayContext& dc, Vec2 size, float dist);
-	void         DrawEntityLinks(DisplayContext& dc);
+	virtual void DrawDefault(SDisplayContext& dc, COLORREF labelColor = RGB(255, 255, 255)) override;
+	virtual void DrawTextureIcon(SDisplayContext& dc, const Vec3& pos, float alpha, bool bDisplaySelectionHelper, float distanceSquared = 0) override;
+	void         DrawProjectorPyramid(SDisplayContext& dc, float dist);
+	void         DrawProjectorFrustum(SDisplayContext& dc, Vec2 size, float dist);
+	void         DrawEntityLinks(SDisplayContext& dc);
 
 	// !Recreates the icons buffer
 	void RenewTextureIconsBuffer();
@@ -383,7 +383,7 @@ protected:
 	virtual void BindIEntityChilds();
 	virtual void UnbindIEntity();
 
-	void         DrawAIInfo(DisplayContext& dc, struct IAIObject* aiObj);
+	void         DrawAIInfo(SDisplayContext& dc, struct IAIObject* aiObj);
 
 	//////////////////////////////////////////////////////////////////////////
 	// Callbacks.

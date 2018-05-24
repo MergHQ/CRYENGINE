@@ -248,7 +248,7 @@ Vec3 CVertexSnappingModeTool::GetCubeSize(IDisplayViewport* pView, const Vec3& p
 	return gVertexSnappingPreferences.vertexCubeSize() * Vec3(fScreenFactor, fScreenFactor, fScreenFactor);
 }
 
-void CVertexSnappingModeTool::Display(struct DisplayContext& dc)
+void CVertexSnappingModeTool::Display(struct SDisplayContext& dc)
 {
 	const ColorB SnappedColor(0xFF00FF00);
 	const ColorB PivotColor(0xFF2020FF);
@@ -314,7 +314,7 @@ void CVertexSnappingModeTool::Display(struct DisplayContext& dc)
 	}
 }
 
-void CVertexSnappingModeTool::DrawVertexCubes(DisplayContext& dc, const Matrix34& tm, IStatObj* pStatObj)
+void CVertexSnappingModeTool::DrawVertexCubes(SDisplayContext& dc, const Matrix34& tm, IStatObj* pStatObj)
 {
 	if (!pStatObj)
 		return;

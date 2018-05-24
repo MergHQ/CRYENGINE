@@ -45,7 +45,7 @@ void CUniformScaleGizmo::SetYVector(Vec3 dir)
 	m_yAxis.Normalize();
 }
 
-void CUniformScaleGizmo::Display(DisplayContext& dc)
+void CUniformScaleGizmo::Display(SDisplayContext& dc)
 {
 	IDisplayViewport* view = dc.view;
 	Vec3 position;

@@ -139,7 +139,7 @@ void CurveTool::PrepareArcSpots(CViewport* view, UINT nFlags, CPoint point)
 	}
 }
 
-void CurveTool::Display(DisplayContext& dc)
+void CurveTool::Display(SDisplayContext& dc)
 {
 	int oldThickness = dc.GetLineWidth();
 

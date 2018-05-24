@@ -119,9 +119,9 @@ public slots:
 
 private:
 
-	void RenderUnwrappedMesh(DisplayContext& dc);
-	void RenderUnwrappedPolygon(DisplayContext & dc, UVIslandPtr pUVIsland, PolygonPtr pPolygon, ColorB);
-	void RenderElements(DisplayContext& dc, ColorB color, UVElementSetPtr pUVElementSet);
+	void RenderUnwrappedMesh(SDisplayContext& dc);
+	void RenderUnwrappedPolygon(SDisplayContext & dc, UVIslandPtr pUVIsland, PolygonPtr pPolygon, ColorB);
+	void RenderElements(SDisplayContext& dc, ColorB color, UVElementSetPtr pUVElementSet);
 	void UpdateObject();
 	void OrganizeToolbar(QBoxLayout* pTopLayout);
 	void InitializeMaterialComboBox();

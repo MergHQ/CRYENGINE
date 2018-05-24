@@ -75,7 +75,7 @@ public:
 
 	virtual bool MouseCallback(CViewport* view, EMouseEvent event, CPoint& point, int flags) override;
 	virtual bool OnKeyDown(CViewport* view, uint32 nChar, uint32 nRepCnt, uint32 nFlags) override;
-	virtual void DeleteThis()                                 { delete this; };
+	virtual void DeleteThis()                                 { delete this; }
 	virtual void SetUserData(const char* key, void* userData) { m_pBrush = (CTerrainBrush*)userData; }
 
 protected:
@@ -83,7 +83,7 @@ protected:
 	void           SetRiseHeight(float height);
 	void           SetHeight(float height);
 	virtual bool   PickHeight(QPoint point)                                                                               { return false; }
-	void           DrawTool(DisplayContext& dc, bool innerCircle, bool line, bool terrainCircle);
+	void           DrawTool(SDisplayContext& dc, bool innerCircle, bool line, bool terrainCircle);
 	virtual void   PaintTerrain(CHeightmap* pHeightmap, int tx, int ty, int tsize, float fInsideRadius, float brushSpeed) {}
 	bool           getShareBrushParams()                                                                                  { return s_shareBrushParameters; }
 	void           setShareBrushParams(bool share)                                                                        { s_shareBrushParameters = share; signalPropertiesChanged(this); }
@@ -126,7 +126,7 @@ public:
 
 	virtual string GetDisplayName() const override { return "Flatten Terrain"; }
 	virtual void   Serialize(Serialization::IArchive& ar) override;
-	virtual void   Display(DisplayContext& dc)     { DrawTool(dc, true, true, true); }
+	virtual void   Display(SDisplayContext& dc)    { DrawTool(dc, true, true, true); }
 	virtual void   PaintTerrain(CHeightmap* pHeightmap, int tx, int ty, int tsize, float fInsideRadius, float brushSpeed) override;
 	virtual bool   PickHeight(QPoint point) override;
 };
@@ -141,7 +141,7 @@ public:
 	virtual bool   OnKeyUp(CViewport* view, uint32 key, uint32 nRepCnt, uint32 nFlags) override;
 	virtual string GetDisplayName() const override                 { return "Smooth Terrain"; }
 	virtual void   Serialize(Serialization::IArchive& ar) override;
-	virtual void   Display(DisplayContext& dc)                     { DrawTool(dc, false, false, false); }
+	virtual void   Display(SDisplayContext& dc)                    { DrawTool(dc, false, false, false); }
 	virtual void   PaintTerrain(CHeightmap* pHeightmap, int tx, int ty, int tsize, float fInsideRadius, float brushSpeed) override;
 	void           SetPrevToolClass(CRuntimeClass* pPrevToolClass) { m_pPrevToolClass = pPrevToolClass; }
 	CRuntimeClass* GetPrevToolClass() const                        { return m_pPrevToolClass; }
@@ -162,7 +162,7 @@ public:
 	virtual bool   OnKeyUp(CViewport* view, uint32 key, uint32 nRepCnt, uint32 nFlags) override;
 	virtual string GetDisplayName() const override { return "Raise/Lower Terrain"; }
 	virtual void   Serialize(Serialization::IArchive& ar) override;
-	virtual void   Display(DisplayContext& dc)     { DrawTool(dc, true, false, false); }
+	virtual void   Display(SDisplayContext& dc)    { DrawTool(dc, true, false, false); }
 	virtual void   PaintTerrain(CHeightmap* pHeightmap, int tx, int ty, int tsize, float fInsideRadius, float brushSpeed) override;
 	virtual void   OnEditorNotifyEvent(EEditorNotifyEvent event) override;
 
@@ -177,7 +177,7 @@ public:
 
 	virtual string GetDisplayName() const override { return "Terrain Holes"; }
 	virtual void   Serialize(Serialization::IArchive& ar) override;
-	virtual void   Display(DisplayContext& dc) override;
+	virtual void   Display(SDisplayContext& dc) override;
 	virtual bool   MouseCallback(CViewport* view, EMouseEvent event, CPoint& point, int flags) override;
 
 protected:

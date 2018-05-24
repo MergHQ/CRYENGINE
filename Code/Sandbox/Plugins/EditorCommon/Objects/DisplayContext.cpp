@@ -16,14 +16,14 @@
 
 namespace DC_Private
 {
-	inline Vec3 Rgb2Vec(COLORREF color)
-	{
-		return Vec3(GetRValue(color) / 255.0f, GetGValue(color) / 255.0f, GetBValue(color) / 255.0f);
-	}
+inline Vec3 Rgb2Vec(COLORREF color)
+{
+	return Vec3(GetRValue(color) / 255.0f, GetGValue(color) / 255.0f, GetBValue(color) / 255.0f);
+}
 }
 
 //////////////////////////////////////////////////////////////////////////
-DisplayContext::DisplayContext()
+SDisplayContext::SDisplayContext()
 {
 	view = 0;
 	renderer = 0;
@@ -44,7 +44,7 @@ DisplayContext::DisplayContext()
 }
 
 //////////////////////////////////////////////////////////////////////////
-void DisplayContext::SetView(IDisplayViewport* pView)
+void SDisplayContext::SetView(IDisplayViewport* pView)
 {
 	view = pView;
 	int width, height;
@@ -54,32 +54,32 @@ void DisplayContext::SetView(IDisplayViewport* pView)
 	m_textureLabels.resize(0);
 }
 
-void DisplayContext::SetCamera(CCamera* pCamera)
+void SDisplayContext::SetCamera(CCamera* pCamera)
 {
 	assert(pCamera);
 	camera = pCamera;
 }
 
 //////////////////////////////////////////////////////////////////////////
-void DisplayContext::InternalDrawLine(const Vec3& v0, const ColorB& colV0, const Vec3& v1, const ColorB& colV1)
+void SDisplayContext::InternalDrawLine(const Vec3& v0, const ColorB& colV0, const Vec3& v1, const ColorB& colV1)
 {
 	pRenderAuxGeom->DrawLine(v0, colV0, v1, colV1, m_thickness);
 }
 
 //////////////////////////////////////////////////////////////////////////
-void DisplayContext::DrawPoint(const Vec3& p, int nSize)
+void SDisplayContext::DrawPoint(const Vec3& p, int nSize)
 {
 	pRenderAuxGeom->DrawPoint(p, m_color4b, nSize);
 }
 
 //////////////////////////////////////////////////////////////////////////
-void DisplayContext::DrawTri(const Vec3& p1, const Vec3& p2, const Vec3& p3)
+void SDisplayContext::DrawTri(const Vec3& p1, const Vec3& p2, const Vec3& p3)
 {
 	pRenderAuxGeom->DrawTriangle(p1, m_color4b, p2, m_color4b, p3, m_color4b);
 }
 
 //////////////////////////////////////////////////////////////////////////
-void DisplayContext::DrawQuad(const Vec3& p1, const Vec3& p2, const Vec3& p3, const Vec3& p4)
+void SDisplayContext::DrawQuad(const Vec3& p1, const Vec3& p2, const Vec3& p3, const Vec3& p4)
 {
 	pRenderAuxGeom->DrawTriangle(p1, m_color4b, p2, m_color4b, p3, m_color4b);
 	pRenderAuxGeom->DrawTriangle(p3, m_color4b, p4, m_color4b, p1, m_color4b);
@@ -88,7 +88,7 @@ void DisplayContext::DrawQuad(const Vec3& p1, const Vec3& p2, const Vec3& p3, co
 }
 
 //////////////////////////////////////////////////////////////////////////
-void DisplayContext::DrawCylinder(const Vec3& p1, const Vec3& p2, float radius, float height)
+void SDisplayContext::DrawCylinder(const Vec3& p1, const Vec3& p2, float radius, float height)
 {
 	Vec3 p[2] = { ToWS(p1), ToWS(p2) };
 	Vec3 dir = p[1] - p[0];
@@ -106,24 +106,24 @@ void DisplayContext::DrawCylinder(const Vec3& p1, const Vec3& p2, float radius, 
 }
 
 //////////////////////////////////////////////////////////////////////////
-void DisplayContext::DrawWireBox(const Vec3& min, const Vec3& max)
+void SDisplayContext::DrawWireBox(const Vec3& min, const Vec3& max)
 {
 	pRenderAuxGeom->DrawAABB(AABB(min, max), false, m_color4b, eBBD_Faceted);
 }
 
 //////////////////////////////////////////////////////////////////////////
-void DisplayContext::DrawSolidBox(const Vec3& min, const Vec3& max)
+void SDisplayContext::DrawSolidBox(const Vec3& min, const Vec3& max)
 {
 	pRenderAuxGeom->DrawAABB(AABB(min, max), true, m_color4b, eBBD_Faceted);
 }
 
 //////////////////////////////////////////////////////////////////////////
-void DisplayContext::DrawLine(const Vec3& p1, const Vec3& p2)
+void SDisplayContext::DrawLine(const Vec3& p1, const Vec3& p2)
 {
 	InternalDrawLine(p1, m_color4b, p2, m_color4b);
 }
 
-void DisplayContext::DrawDottedLine(const Vec3& p1, const Vec3& p2, float interval)
+void SDisplayContext::DrawDottedLine(const Vec3& p1, const Vec3& p2, float interval)
 {
 	// ideally we would do the interval in screen space, but for now do it in local space
 	Vec3 vDir = p2 - p1;
@@ -137,7 +137,7 @@ void DisplayContext::DrawDottedLine(const Vec3& p1, const Vec3& p2, float interv
 	// clamp the segments to avoid explosion of primitives
 	clamp_tpl(totsegments, 0, 100);
 
-	std::vector <Vec3> lineVerts;
+	std::vector<Vec3> lineVerts;
 	lineVerts.reserve(totsegments * 2);
 
 	Vec3 v1, v2;
@@ -154,7 +154,7 @@ void DisplayContext::DrawDottedLine(const Vec3& p1, const Vec3& p2, float interv
 }
 
 //////////////////////////////////////////////////////////////////////////
-void DisplayContext::DrawPolyLine(const Vec3* pnts, int numPoints, bool cycled)
+void SDisplayContext::DrawPolyLine(const Vec3* pnts, int numPoints, bool cycled)
 {
 	MAKE_SURE(numPoints >= 2, return );
 	MAKE_SURE(pnts != 0, return );
@@ -172,7 +172,7 @@ void DisplayContext::DrawPolyLine(const Vec3* pnts, int numPoints, bool cycled)
 }
 
 //////////////////////////////////////////////////////////////////////////
-void DisplayContext::DrawTerrainCircle(const Vec3& worldPos, float radius, float height)
+void SDisplayContext::DrawTerrainCircle(const Vec3& worldPos, float radius, float height)
 {
 	// Draw circle with default radius.
 	Vec3 p0, p1;
@@ -187,7 +187,7 @@ void DisplayContext::DrawTerrainCircle(const Vec3& worldPos, float radius, float
 		p1.y = worldPos.y + radius * cos(angle);
 		p1.z = engine->GetTerrainElevation(p1.x, p1.y) + height;
 
-		if (p0.z>height && p1.z>height)
+		if (p0.z > height && p1.z > height)
 		{
 			InternalDrawLine(p0, m_color4b, p1, m_color4b);
 		}
@@ -197,7 +197,7 @@ void DisplayContext::DrawTerrainCircle(const Vec3& worldPos, float radius, float
 }
 
 //////////////////////////////////////////////////////////////////////////
-void DisplayContext::DrawTerrainCircle(const Vec3& worldPos, float radius, float angle1, float angle2, float height)
+void SDisplayContext::DrawTerrainCircle(const Vec3& worldPos, float radius, float angle1, float angle2, float height)
 {
 	// Draw circle with default radius.
 	Vec3 p0, p1;
@@ -212,7 +212,7 @@ void DisplayContext::DrawTerrainCircle(const Vec3& worldPos, float radius, float
 		p1.y = worldPos.y + radius * cos(angle);
 		p1.z = engine->GetTerrainElevation(p1.x, p1.y) + height;
 
-		if (p0.z>height && p1.z>height)
+		if (p0.z > height && p1.z > height)
 		{
 			InternalDrawLine(p0, m_color4b, p1, m_color4b);
 		}
@@ -228,7 +228,7 @@ void DisplayContext::DrawTerrainCircle(const Vec3& worldPos, float radius, float
 }
 
 //////////////////////////////////////////////////////////////////////////
-void DisplayContext::DrawCircle(const Vec3& pos, float radius, int nUnchangedAxis)
+void SDisplayContext::DrawCircle(const Vec3& pos, float radius, int nUnchangedAxis)
 {
 	// Draw circle with default radius.
 	Vec3 p0, p1;
@@ -246,7 +246,7 @@ void DisplayContext::DrawCircle(const Vec3& pos, float radius, int nUnchangedAxi
 	}
 }
 
-void DisplayContext::DrawDisc(float radius, float angle)
+void SDisplayContext::DrawDisc(float radius, float angle)
 {
 	Vec3 p0(0.0f, 0.0f, 0.0f);
 	Vec3 p1;
@@ -264,7 +264,7 @@ void DisplayContext::DrawDisc(float radius, float angle)
 	}
 	int numsteps = angle / step;
 
-	std::vector <Vec3> vertices;
+	std::vector<Vec3> vertices;
 
 	int numverts = numsteps * 3 + 3;
 	vertices.reserve(numverts);
@@ -299,7 +299,7 @@ void DisplayContext::DrawDisc(float radius, float angle)
 	pRenderAuxGeom->DrawTriangles(&vertices[0], numverts, m_color4b);
 }
 
-void DisplayContext::DrawCircle3D(float radius, float angle, float thickness)
+void SDisplayContext::DrawCircle3D(float radius, float angle, float thickness)
 {
 	// split angle in steps of 10 degrees
 	float step = 10.0f / 180 * gf_PI;
@@ -309,7 +309,7 @@ void DisplayContext::DrawCircle3D(float radius, float angle, float thickness)
 	}
 	int numsteps = angle / step;
 
-	std::vector <Vec3> vertices;
+	std::vector<Vec3> vertices;
 
 	int numverts = numsteps * 2 + 2;
 	vertices.reserve(numverts);
@@ -349,7 +349,7 @@ void DisplayContext::DrawCircle3D(float radius, float angle, float thickness)
 	pRenderAuxGeom->DrawLines(&vertices[0], numverts, m_color4b, thickness);
 }
 
-void DisplayContext::DrawRing(float innerRadius, float outerRadius, float angle)
+void SDisplayContext::DrawRing(float innerRadius, float outerRadius, float angle)
 {
 	Vec3 p1Inner;
 	Vec3 p2Inner;
@@ -373,7 +373,7 @@ void DisplayContext::DrawRing(float innerRadius, float outerRadius, float angle)
 	}
 	int numsteps = angle / step;
 
-	std::vector <Vec3> vertices;
+	std::vector<Vec3> vertices;
 
 	int numverts = numsteps * 6 + 6;
 	vertices.reserve(numverts);
@@ -435,7 +435,7 @@ void DisplayContext::DrawRing(float innerRadius, float outerRadius, float angle)
 }
 
 //////////////////////////////////////////////////////////////////////////
-void DisplayContext::DrawWireCircle2d(const CPoint& center, float radius, float z)
+void SDisplayContext::DrawWireCircle2d(const CPoint& center, float radius, float z)
 {
 	Vec3 p0, p1, pos;
 	pos.x = float(center.x);
@@ -460,7 +460,7 @@ void DisplayContext::DrawWireCircle2d(const CPoint& center, float radius, float 
 }
 
 //////////////////////////////////////////////////////////////////////////
-void DisplayContext::DrawWireSphere(const Vec3& pos, float radius)
+void SDisplayContext::DrawWireSphere(const Vec3& pos, float radius)
 {
 	Vec3 p0, p1;
 	float step = 10.0f / 180 * gf_PI;
@@ -510,7 +510,7 @@ void DisplayContext::DrawWireSphere(const Vec3& pos, float radius)
 }
 
 //////////////////////////////////////////////////////////////////////////
-void DisplayContext::DrawWireSphere(const Vec3& pos, const Vec3 radius)
+void SDisplayContext::DrawWireSphere(const Vec3& pos, const Vec3 radius)
 {
 	Vec3 p0, p1;
 	float step = 10.0f / 180 * gf_PI;
@@ -559,7 +559,7 @@ void DisplayContext::DrawWireSphere(const Vec3& pos, const Vec3 radius)
 	}
 }
 
-void DisplayContext::DrawWireQuad2d(const CPoint& pmin, const CPoint& pmax, float z)
+void SDisplayContext::DrawWireQuad2d(const CPoint& pmin, const CPoint& pmax, float z)
 {
 	int prevState = GetState();
 	SetState((prevState | e_Mode2D) & (~e_Mode3D));
@@ -570,7 +570,7 @@ void DisplayContext::DrawWireQuad2d(const CPoint& pmin, const CPoint& pmax, floa
 	SetState(prevState);
 }
 
-void DisplayContext::DrawLine2d(const CPoint& p1, const CPoint& p2, float z)
+void SDisplayContext::DrawLine2d(const CPoint& p1, const CPoint& p2, float z)
 {
 	int prevState = GetState();
 
@@ -600,7 +600,7 @@ void DisplayContext::DrawLine2d(const CPoint& p1, const CPoint& p2, float z)
 	SetState(prevState);
 }
 
-void DisplayContext::DrawLine2dGradient(const CPoint& p1, const CPoint& p2, float z, ColorB firstColor, ColorB secondColor)
+void SDisplayContext::DrawLine2dGradient(const CPoint& p1, const CPoint& p2, float z, ColorB firstColor, ColorB secondColor)
 {
 	int prevState = GetState();
 
@@ -610,14 +610,14 @@ void DisplayContext::DrawLine2dGradient(const CPoint& p1, const CPoint& p2, floa
 }
 
 //////////////////////////////////////////////////////////////////////////
-void DisplayContext::DrawQuadGradient(const Vec3& p1, const Vec3& p2, const Vec3& p3, const Vec3& p4, ColorB firstColor, ColorB secondColor)
+void SDisplayContext::DrawQuadGradient(const Vec3& p1, const Vec3& p2, const Vec3& p3, const Vec3& p4, ColorB firstColor, ColorB secondColor)
 {
 	pRenderAuxGeom->DrawTriangle(p1, firstColor, p2, firstColor, p3, secondColor);
 	pRenderAuxGeom->DrawTriangle(p3, secondColor, p4, secondColor, p1, firstColor);
 }
 
 //////////////////////////////////////////////////////////////////////////
-COLORREF DisplayContext::GetSelectedColor()
+COLORREF SDisplayContext::GetSelectedColor()
 {
 	float t = GetTickCount() / 1000.0f;
 	float r1 = fabs(sin(t * 8.0f));
@@ -628,32 +628,32 @@ COLORREF DisplayContext::GetSelectedColor()
 	//dc.renderer->SetMaterialColor( 1,0,r1,0.5f );
 }
 
-COLORREF DisplayContext::GetFreezeColor()
+COLORREF SDisplayContext::GetFreezeColor()
 {
 	return FREEZE_COLOR;
 }
 
 //////////////////////////////////////////////////////////////////////////
-void DisplayContext::SetSelectedColor(float fAlpha)
+void SDisplayContext::SetSelectedColor(float fAlpha)
 {
 	SetColor(GetSelectedColor(), fAlpha);
 }
 
 //////////////////////////////////////////////////////////////////////////
-void DisplayContext::SetFreezeColor()
+void SDisplayContext::SetFreezeColor()
 {
 	SetColor(FREEZE_COLOR, 0.5f);
 }
 
 //////////////////////////////////////////////////////////////////////////
-void DisplayContext::DrawLine(const Vec3& p1, const Vec3& p2, const ColorF& col1, const ColorF& col2)
+void SDisplayContext::DrawLine(const Vec3& p1, const Vec3& p2, const ColorF& col1, const ColorF& col2)
 {
 	InternalDrawLine(p1, ColorB(uint8(col1.r * 255.0f), uint8(col1.g * 255.0f), uint8(col1.b * 255.0f), uint8(col1.a * 255.0f)),
 	                 p2, ColorB(uint8(col2.r * 255.0f), uint8(col2.g * 255.0f), uint8(col2.b * 255.0f), uint8(col2.a * 255.0f)));
 }
 
 //////////////////////////////////////////////////////////////////////////
-void DisplayContext::DrawLine(const Vec3& p1, const Vec3& p2, COLORREF rgb1, COLORREF rgb2)
+void SDisplayContext::DrawLine(const Vec3& p1, const Vec3& p2, COLORREF rgb1, COLORREF rgb2)
 {
 	Vec3 c1 = DC_Private::Rgb2Vec(rgb1);
 	Vec3 c2 = DC_Private::Rgb2Vec(rgb2);
@@ -661,7 +661,7 @@ void DisplayContext::DrawLine(const Vec3& p1, const Vec3& p2, COLORREF rgb1, COL
 }
 
 //////////////////////////////////////////////////////////////////////////
-void DisplayContext::PushMatrix(const Matrix34& tm)
+void SDisplayContext::PushMatrix(const Matrix34& tm)
 {
 	assert(m_currentMatrix < 32);
 	if (m_currentMatrix < 32)
@@ -673,7 +673,7 @@ void DisplayContext::PushMatrix(const Matrix34& tm)
 }
 
 //////////////////////////////////////////////////////////////////////////
-void DisplayContext::PopMatrix()
+void SDisplayContext::PopMatrix()
 {
 	assert(m_currentMatrix > 0);
 	if (m_currentMatrix > 0)
@@ -682,13 +682,13 @@ void DisplayContext::PopMatrix()
 }
 
 //////////////////////////////////////////////////////////////////////////
-const Matrix34& DisplayContext::GetMatrix()
+const Matrix34& SDisplayContext::GetMatrix()
 {
 	return m_matrixStack[m_currentMatrix];
 }
 
 //////////////////////////////////////////////////////////////////////////
-void DisplayContext::DrawBall(const Vec3& pos, float radius)
+void SDisplayContext::DrawBall(const Vec3& pos, float radius)
 {
 	// TODO: pretty weird that 2D drawing should be the exception here. Investigate
 	if (flags & DISPLAY_2D)
@@ -700,7 +700,7 @@ void DisplayContext::DrawBall(const Vec3& pos, float radius)
 }
 
 //////////////////////////////////////////////////////////////////////////
-void DisplayContext::DrawArrow(const Vec3& src, const Vec3& trg, float fHeadScale)
+void SDisplayContext::DrawArrow(const Vec3& src, const Vec3& trg, float fHeadScale)
 {
 	float f2dScale = 1.0f;
 	float arrowLen = 0.4f * fHeadScale;
@@ -724,7 +724,7 @@ void DisplayContext::DrawArrow(const Vec3& src, const Vec3& trg, float fHeadScal
 }
 
 //////////////////////////////////////////////////////////////////////////
-void DisplayContext::RenderObject(int objectType, const Vec3& pos, float scale)
+void SDisplayContext::RenderObject(int objectType, const Vec3& pos, float scale, const SRenderingPassInfo& passInfo)
 {
 	Matrix34 tm;
 	tm.SetIdentity();
@@ -732,11 +732,11 @@ void DisplayContext::RenderObject(int objectType, const Vec3& pos, float scale)
 	tm = Matrix33::CreateScale(Vec3(scale, scale, scale)) * tm;
 
 	tm.SetTranslation(pos);
-	RenderObject(objectType, tm);
+	RenderObject(objectType, tm, passInfo);
 }
 
 //////////////////////////////////////////////////////////////////////////
-void DisplayContext::RenderObject(int objectType, const Matrix34& tm)
+void SDisplayContext::RenderObject(int objectType, const Matrix34& tm, const SRenderingPassInfo& passInfo)
 {
 	IStatObj* object = pIconManager ? pIconManager->GetObject((EStatObject)objectType) : 0;
 	if (object)
@@ -755,13 +755,12 @@ void DisplayContext::RenderObject(int objectType, const Matrix34& tm)
 		rp.dwFObjFlags |= FOB_TRANS_MASK;
 		//rp.nShaderTemplate = EFT_HELPER;
 
-		SRenderingPassInfo passInfo = SRenderingPassInfo::CreateGeneralPassRenderingInfo(GetCamera(), SRenderingPassInfo::DEFAULT_FLAGS, true, m_displayContextKey);
 		object->Render(rp, passInfo);
 	}
 }
 
 /////////////////////////////////////////////////////////////////////////
-void DisplayContext::DrawTerrainRect(float x1, float y1, float x2, float y2, float height)
+void SDisplayContext::DrawTerrainRect(float x1, float y1, float x2, float y2, float height)
 {
 	Vec3 p1, p2;
 	float x, y;
@@ -820,7 +819,7 @@ void DisplayContext::DrawTerrainRect(float x1, float y1, float x2, float y2, flo
 }
 
 //////////////////////////////////////////////////////////////////////////
-void DisplayContext::DrawTerrainLine(Vec3 worldPos1, Vec3 worldPos2)
+void SDisplayContext::DrawTerrainLine(Vec3 worldPos1, Vec3 worldPos2)
 {
 	worldPos1.z = worldPos2.z = 0;
 
@@ -843,7 +842,7 @@ void DisplayContext::DrawTerrainLine(Vec3 worldPos1, Vec3 worldPos2)
 }
 
 //////////////////////////////////////////////////////////////////////////
-void DisplayContext::DrawTextLabel(const Vec3& pos, float size, const char* text, const bool bCenter, int srcOffsetX, int scrOffsetY)
+void SDisplayContext::DrawTextLabel(const Vec3& pos, float size, const char* text, const bool bCenter, int srcOffsetX, int scrOffsetY)
 {
 	ColorF col(m_color4b.r * (1.0f / 255.0f), m_color4b.g * (1.0f / 255.0f), m_color4b.b * (1.0f / 255.0f), m_color4b.a * (1.0f / 255.0f));
 
@@ -855,18 +854,18 @@ void DisplayContext::DrawTextLabel(const Vec3& pos, float size, const char* text
 }
 
 //////////////////////////////////////////////////////////////////////////
-void DisplayContext::Draw2dTextLabel(float x, float y, float size, const char* text, bool bCenter)
+void SDisplayContext::Draw2dTextLabel(float x, float y, float size, const char* text, bool bCenter)
 {
 	float col[4] = { m_color4b.r * (1.0f / 255.0f), m_color4b.g * (1.0f / 255.0f), m_color4b.b * (1.0f / 255.0f), m_color4b.a * (1.0f / 255.0f) };
 	IRenderAuxText::Draw2dLabel(x, y, size, col, bCenter, "%s", text);
 }
 
-void DisplayContext::DrawTextOn2DBox(const Vec3& pos, const char* text, float textScale, const ColorF& TextColor, const ColorF& TextBackColor)
+void SDisplayContext::DrawTextOn2DBox(const Vec3& pos, const char* text, float textScale, const ColorF& TextColor, const ColorF& TextBackColor)
 {
 	if (!m_width || !m_height || !camera)
 		return;
 	Vec3 worldPos = ToWorldPos(pos);
-	int vx=0, vy=0, vw=m_width, vh=m_height;
+	int vx = 0, vy = 0, vw = m_width, vh = m_height;
 
 	uint32 backupstate = GetState();
 	int backupThickness = int(GetLineWidth());
@@ -944,13 +943,13 @@ void DisplayContext::DrawTextOn2DBox(const Vec3& pos, const char* text, float te
 }
 
 //////////////////////////////////////////////////////////////////////////
-void DisplayContext::SetLineWidth(float width)
+void SDisplayContext::SetLineWidth(float width)
 {
 	m_thickness = width;
 }
 
 //////////////////////////////////////////////////////////////////////////
-bool DisplayContext::IsVisible(const AABB& bounds)
+bool SDisplayContext::IsVisible(const AABB& bounds)
 {
 	if (flags & DISPLAY_2D)
 	{
@@ -967,14 +966,14 @@ bool DisplayContext::IsVisible(const AABB& bounds)
 }
 
 //////////////////////////////////////////////////////////////////////////
-uint32 DisplayContext::GetState() const
+uint32 SDisplayContext::GetState() const
 {
 	return m_renderState;
 }
 
 //! Set a new render state flags.
 //! @param returns previous render state.
-uint32 DisplayContext::SetState(uint32 state)
+uint32 SDisplayContext::SetState(uint32 state)
 {
 	uint32 old = m_renderState;
 	m_renderState = state;
@@ -984,7 +983,7 @@ uint32 DisplayContext::SetState(uint32 state)
 
 //! Set a new render state flags.
 //! @param returns previous render state.
-uint32 DisplayContext::SetStateFlag(uint32 state)
+uint32 SDisplayContext::SetStateFlag(uint32 state)
 {
 	uint32 old = m_renderState;
 	m_renderState |= state;
@@ -995,7 +994,7 @@ uint32 DisplayContext::SetStateFlag(uint32 state)
 
 //! Clear specified flags in render state.
 //! @param returns previous render state.
-uint32 DisplayContext::ClearStateFlag(uint32 state)
+uint32 SDisplayContext::ClearStateFlag(uint32 state)
 {
 	uint32 old = m_renderState;
 	m_renderState &= ~state;
@@ -1005,7 +1004,7 @@ uint32 DisplayContext::ClearStateFlag(uint32 state)
 }
 
 //////////////////////////////////////////////////////////////////////////
-void DisplayContext::DepthTestOff()
+void SDisplayContext::DepthTestOff()
 {
 	m_renderState = pRenderAuxGeom->GetRenderFlags().m_renderFlags;
 	pRenderAuxGeom->SetRenderFlags((m_renderState | e_DepthTestOff) & (~e_DepthTestOn));
@@ -1013,7 +1012,7 @@ void DisplayContext::DepthTestOff()
 }
 
 //////////////////////////////////////////////////////////////////////////
-void DisplayContext::DepthTestOn()
+void SDisplayContext::DepthTestOn()
 {
 	m_renderState = pRenderAuxGeom->GetRenderFlags().m_renderFlags;
 	pRenderAuxGeom->SetRenderFlags((m_renderState | e_DepthTestOn) & (~e_DepthTestOff));
@@ -1021,7 +1020,7 @@ void DisplayContext::DepthTestOn()
 }
 
 //////////////////////////////////////////////////////////////////////////
-void DisplayContext::DepthWriteOff()
+void SDisplayContext::DepthWriteOff()
 {
 	m_renderState = pRenderAuxGeom->GetRenderFlags().m_renderFlags;
 	pRenderAuxGeom->SetRenderFlags((m_renderState | e_DepthWriteOff) & (~e_DepthWriteOn));
@@ -1029,7 +1028,7 @@ void DisplayContext::DepthWriteOff()
 }
 
 //////////////////////////////////////////////////////////////////////////
-void DisplayContext::DepthWriteOn()
+void SDisplayContext::DepthWriteOn()
 {
 	m_renderState = pRenderAuxGeom->GetRenderFlags().m_renderFlags;
 	pRenderAuxGeom->SetRenderFlags((m_renderState | e_DepthWriteOn) & (~e_DepthWriteOff));
@@ -1037,7 +1036,7 @@ void DisplayContext::DepthWriteOn()
 }
 
 //////////////////////////////////////////////////////////////////////////
-void DisplayContext::CullOff()
+void SDisplayContext::CullOff()
 {
 	m_renderState = pRenderAuxGeom->GetRenderFlags().m_renderFlags;
 	pRenderAuxGeom->SetRenderFlags((m_renderState | e_CullModeNone) & (~(e_CullModeBack | e_CullModeFront)));
@@ -1045,7 +1044,7 @@ void DisplayContext::CullOff()
 }
 
 //////////////////////////////////////////////////////////////////////////
-void DisplayContext::CullOn()
+void SDisplayContext::CullOn()
 {
 	m_renderState = pRenderAuxGeom->GetRenderFlags().m_renderFlags;
 	pRenderAuxGeom->SetRenderFlags((m_renderState | e_CullModeBack) & (~(e_CullModeNone | e_CullModeFront)));
@@ -1053,7 +1052,7 @@ void DisplayContext::CullOn()
 }
 
 //////////////////////////////////////////////////////////////////////////
-bool DisplayContext::SetDrawInFrontMode(bool bOn)
+bool SDisplayContext::SetDrawInFrontMode(bool bOn)
 {
 	int prevState = m_renderState;
 	SAuxGeomRenderFlags renderFlags = m_renderState;
@@ -1063,7 +1062,7 @@ bool DisplayContext::SetDrawInFrontMode(bool bOn)
 	return (prevState & e_DrawInFrontOn) != 0;
 }
 
-int DisplayContext::SetFillMode(int nFillMode)
+int SDisplayContext::SetFillMode(int nFillMode)
 {
 	int prevState = m_renderState;
 	SAuxGeomRenderFlags renderFlags = m_renderState;
@@ -1074,7 +1073,7 @@ int DisplayContext::SetFillMode(int nFillMode)
 }
 
 //////////////////////////////////////////////////////////////////////////
-void DisplayContext::DrawTextureLabel(const Vec3& pos, int nWidth, int nHeight, int nTexId, int nTexIconFlags, int srcOffsetX, int srcOffsetY, float fDistanceScale, float distanceSquared)
+void SDisplayContext::DrawTextureLabel(const Vec3& pos, int nWidth, int nHeight, int nTexId, int nTexIconFlags, int srcOffsetX, int srcOffsetY, float fDistanceScale, float distanceSquared)
 {
 	const float fLabelDepthPrecision = 0.05f;
 	Vec3 scrpos = view->WorldToView3D(pos);
@@ -1120,9 +1119,9 @@ void DisplayContext::DrawTextureLabel(const Vec3& pos, int nWidth, int nHeight, 
 	tl.color[1] = m_color4b.g * (1.0f / 255.0f);
 	tl.color[2] = m_color4b.b * (1.0f / 255.0f);
 	tl.color[3] = m_color4b.a * (1.0f / 255.0f);
-	
+
 	if (gViewportPreferences.objectIconsOnTop)
-		tl.flags |= TEXICON_ON_TOP;		
+		tl.flags |= TEXICON_ON_TOP;
 
 	// Try to not overflood memory with labels.
 	if (m_textureLabels.size() < 100000)
@@ -1130,7 +1129,7 @@ void DisplayContext::DrawTextureLabel(const Vec3& pos, int nWidth, int nHeight, 
 }
 
 //////////////////////////////////////////////////////////////////////////
-void DisplayContext::Flush2D()
+void SDisplayContext::Flush2D()
 {
 #ifndef PHYSICS_EDITOR
 	CRY_PROFILE_FUNCTION(PROFILE_EDITOR);
@@ -1150,10 +1149,11 @@ void DisplayContext::Flush2D()
 		float w2 = t.w * 0.5f;
 		float h2 = t.h * 0.5f;
 
-		auto oldFlags = pAux->GetRenderFlags();;
+		auto oldFlags = pAux->GetRenderFlags();
+		;
 		SAuxGeomRenderFlags flags = EAuxGeomPublicRenderflags_Defaults::e_Def2DImageRenderflags;
 		flags.SetDepthTestFlag(EAuxGeomPublicRenderflags_DepthTest::e_DepthTestOn);
-		
+
 		if (t.flags & TEXICON_ADDITIVE)
 		{
 			flags.SetAlphaBlendMode(EAuxGeomPublicRenderflags_AlphaBlendMode::e_AlphaAdditive);
@@ -1170,9 +1170,9 @@ void DisplayContext::Flush2D()
 		img.w = t.w;
 		img.h = -t.h;
 		img.textureId = t.nTexId;
-		img.uv[0] = Vec2(0.f,0.f);
-		img.uv[1] = Vec2(1.f,1.f);
-		img.color = ColorB(ColorF(t.color[0],t.color[1],t.color[2],t.color[3]));
+		img.uv[0] = Vec2(0.f, 0.f);
+		img.uv[1] = Vec2(1.f, 1.f);
+		img.color = ColorB(ColorF(t.color[0], t.color[1], t.color[2], t.color[3]));
 		img.renderFlags = flags;
 
 		pAux->PushImage(img);
@@ -1182,7 +1182,7 @@ void DisplayContext::Flush2D()
 	m_textureLabels.clear();
 }
 
-void DisplayContext::SetDisplayContext(const SDisplayContextKey &displayContextKey, IRenderer::EViewportType eType)
+void SDisplayContext::SetDisplayContext(const SDisplayContextKey& displayContextKey, IRenderer::EViewportType eType)
 {
 	m_displayContextKey = displayContextKey;
 	m_eType = eType;

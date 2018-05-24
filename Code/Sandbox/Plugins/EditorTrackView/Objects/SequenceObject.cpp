@@ -110,8 +110,9 @@ void CSequenceObject::GetLocalBounds(AABB& box)
 	box.max = Vec3(1, 1, 1);
 }
 
-void CSequenceObject::Display(DisplayContext& dc)
+void CSequenceObject::Display(CObjectRenderHelper& objRenderHelper)
 {
+	SDisplayContext& dc = objRenderHelper.GetDisplayContextRef();
 	DrawDefault(dc);
 }
 

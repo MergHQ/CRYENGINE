@@ -2539,7 +2539,7 @@ template<> struct IVariableType<Vec3>
 	enum { value = IVariable::VECTOR };
 };
 
-void CEntityObject::DrawProjectorPyramid(DisplayContext& dc, float dist)
+void CEntityObject::DrawProjectorPyramid(SDisplayContext& dc, float dist)
 {
 	const int numPoints = 16; // per one arc
 	const int numArcs = 6;
@@ -2624,7 +2624,7 @@ void CEntityObject::DrawProjectorPyramid(DisplayContext& dc, float dist)
 	dc.DrawLine(org, points[numPoints * 3]);
 }
 
-void CEntityObject::DrawProjectorFrustum(DisplayContext& dc, Vec2 size, float dist)
+void CEntityObject::DrawProjectorFrustum(SDisplayContext& dc, Vec2 size, float dist)
 {
 	static const Vec3 org(0.0f, 0.0f, 0.0f);
 	const Vec3 corners[4] =
@@ -2643,7 +2643,7 @@ void CEntityObject::DrawProjectorFrustum(DisplayContext& dc, Vec2 size, float di
 	dc.DrawWireBox(Vec3(dist, -size.x, -size.y), Vec3(dist, size.x, size.y));
 }
 
-void CEntityObject::DrawEntityLinks(DisplayContext& dc)
+void CEntityObject::DrawEntityLinks(SDisplayContext& dc)
 {
 	if (dc.flags & DISPLAY_LINKS)
 	{
@@ -2673,7 +2673,7 @@ void CEntityObject::DrawEntityLinks(DisplayContext& dc)
 	}
 }
 
-void CEntityObject::Display(DisplayContext& dc)
+void CEntityObject::Display(CObjectRenderHelper& objRenderHelper)
 {
 	if (!gViewportDebugPreferences.showEntityObjectHelper)
 		return;
@@ -2687,6 +2687,8 @@ void CEntityObject::Display(DisplayContext& dc)
 	float fHeight = m_fAreaHeight * 0.5f;
 
 	Matrix34 wtm = GetWorldTM();
+
+	SDisplayContext & dc = objRenderHelper.GetDisplayContextRef();
 
 	COLORREF col = CMFCUtils::ColorBToColorRef(GetColor());
 	if (IsFrozen())
@@ -2925,7 +2927,7 @@ void CEntityObject::GetDisplayBoundBox(AABB& box)
 	box = bbox;
 }
 
-void CEntityObject::DrawAIInfo(DisplayContext& dc, IAIObject* aiObj)
+void CEntityObject::DrawAIInfo(SDisplayContext& dc, IAIObject* aiObj)
 {
 	assert(aiObj);
 
@@ -3637,7 +3639,7 @@ void CEntityObject::UpdateVisibility(bool bVisible)
 	}
 };
 
-void CEntityObject::DrawDefault(DisplayContext& dc, COLORREF labelColor)
+void CEntityObject::DrawDefault(SDisplayContext& dc, COLORREF labelColor)
 {
 	CBaseObject::DrawDefault(dc, labelColor);
 
@@ -3679,7 +3681,7 @@ void CEntityObject::DrawDefault(DisplayContext& dc, COLORREF labelColor)
 	DrawEntityLinks(dc);
 }
 
-void CEntityObject::DrawTextureIcon(DisplayContext& dc, const Vec3& pos, float alpha, bool bDisplaySelectionHelper, float distanceSquared)
+void CEntityObject::DrawTextureIcon(SDisplayContext& dc, const Vec3& pos, float alpha, bool bDisplaySelectionHelper, float distanceSquared)
 {
 	if (!gViewportPreferences.showSizeBasedIcons && !gViewportPreferences.showIcons)
 		return;

@@ -488,7 +488,7 @@ bool PolylineTool::IntersectExisintingLines(const BrushVec3& v0, const BrushVec3
 	return false;
 }
 
-void PolylineTool::Display(DisplayContext& dc)
+void PolylineTool::Display(SDisplayContext& dc)
 {
 	__super::Display(dc);
 

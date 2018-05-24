@@ -77,17 +77,17 @@ bool BaseTool::OnMouseMove(CViewport* view, UINT nFlags, CPoint point)
 // remove those ASAP please
 ModelCompiler* BaseTool::GetCompiler() const
 {
-	return 	DesignerSession::GetInstance()->GetCompiler();
+	return DesignerSession::GetInstance()->GetCompiler();
 }
 
 CBaseObject* BaseTool::GetBaseObject() const
 {
-	return 	DesignerSession::GetInstance()->GetBaseObject();
+	return DesignerSession::GetInstance()->GetBaseObject();
 }
 
 MainContext BaseTool::GetMainContext() const
 {
-	return 	DesignerSession::GetInstance()->GetMainContext();
+	return DesignerSession::GetInstance()->GetMainContext();
 }
 
 void BaseTool::ApplyPostProcess(int postprocesses)
@@ -118,7 +118,7 @@ Model* BaseTool::GetModel() const
 	return DesignerSession::GetInstance()->GetModel();
 }
 
-void BaseTool::Display(DisplayContext& dc)
+void BaseTool::Display(SDisplayContext& dc)
 {
 	if (dc.flags & DISPLAY_2D)
 		return;
@@ -132,7 +132,7 @@ bool BaseTool::OnKeyDown(CViewport* view, uint32 nChar, uint32 nRepCnt, uint32 n
 	return true;
 }
 
-void BaseTool::DisplayDimensionHelper(DisplayContext& dc, const AABB& aabb)
+void BaseTool::DisplayDimensionHelper(SDisplayContext& dc, const AABB& aabb)
 {
 	if (gDesignerSettings.bDisplayDimensionHelper)
 	{
@@ -143,7 +143,7 @@ void BaseTool::DisplayDimensionHelper(DisplayContext& dc, const AABB& aabb)
 	}
 }
 
-void BaseTool::DisplayDimensionHelper(DisplayContext& dc, ShelfID nShelf)
+void BaseTool::DisplayDimensionHelper(SDisplayContext& dc, ShelfID nShelf)
 {
 	AABB aabb = GetModel()->GetBoundBox(nShelf);
 	if (!aabb.IsReset())

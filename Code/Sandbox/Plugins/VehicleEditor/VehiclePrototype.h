@@ -1,11 +1,5 @@
 // Copyright 2001-2018 Crytek GmbH / Crytek Group. All rights reserved.
-
-#ifndef __VehiclePrototype_h__
-#define __VehiclePrototype_h__
-
-#if _MSC_VER > 1000
-	#pragma once
-#endif
+#pragma once
 
 #include "Objects/EntityObject.h"
 #include "VehicleDialogComponent.h"
@@ -34,8 +28,8 @@ public:
 	// Overwrites from CBaseObject.
 	//////////////////////////////////////////////////////////////////////////
 	bool Init(CBaseObject* prev, const string& file);
-	void InitVariables() {};
-	void Display(DisplayContext& disp);
+	void InitVariables() {}
+	void Display(CObjectRenderHelper& objRenderHelper);
 	void Done();
 
 	bool HitTest(HitContext& hc);
@@ -87,7 +81,7 @@ protected:
 	IVehicleData* m_pVehicleData;
 	IVariablePtr  m_pClone;
 
-	string       m_name;
+	string        m_name;
 
 	friend class CVehicleEditorDialog;
 
@@ -99,13 +93,10 @@ protected:
 class CVehiclePrototypeClassDesc : public CObjectClassDesc
 {
 public:
-	ObjectType          GetObjectType()                     { return OBJTYPE_OTHER; };
-	const char*         ClassName()                         { return "VehiclePrototype"; };
-	const char*         Category()                          { return ""; };
-	CRuntimeClass*      GetRuntimeClass()                   { return RUNTIME_CLASS(CVehiclePrototype); };
-	const char*         GetFileSpec()                       { return "Scripts/Entities/Vehicles/Implementations/Xml/*.xml"; };
+	ObjectType          GetObjectType()                     { return OBJTYPE_OTHER; }
+	const char*         ClassName()                         { return "VehiclePrototype"; }
+	const char*         Category()                          { return ""; }
+	CRuntimeClass*      GetRuntimeClass()                   { return RUNTIME_CLASS(CVehiclePrototype); }
+	const char*         GetFileSpec()                       { return "Scripts/Entities/Vehicles/Implementations/Xml/*.xml"; }
 	virtual const char* GetDataFilesFilterString() override { return GetFileSpec(); }
 };
-
-#endif // __VehicleObject_h__
-

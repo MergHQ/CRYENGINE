@@ -33,7 +33,7 @@ void CTrackballGizmo::SetScale(float scale)
 	m_scale = scale;
 }
 
-void CTrackballGizmo::Display(DisplayContext& dc)
+void CTrackballGizmo::Display(SDisplayContext& dc)
 {
 	if (!GetFlag(EGIZMO_INTERACTING) && GetFlag(EGIZMO_HIGHLIGHTED))
 	{

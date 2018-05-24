@@ -189,8 +189,10 @@ void CDistanceCloudObject::GetLocalBounds(AABB& box)
 }
 
 //////////////////////////////////////////////////////////////////////////
-void CDistanceCloudObject::Display(DisplayContext& dc)
+void CDistanceCloudObject::Display(CObjectRenderHelper& objRenderHelper)
 {
+	SDisplayContext& dc = objRenderHelper.GetDisplayContextRef();
+
 	if (IsSelected())
 	{
 		const Matrix34& wtm(GetWorldTM());

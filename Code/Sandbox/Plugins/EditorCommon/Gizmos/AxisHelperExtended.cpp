@@ -29,7 +29,7 @@ CAxisHelperExtended::CAxisHelperExtended()
 }
 
 //////////////////////////////////////////////////////////////////////////
-void CAxisHelperExtended::DrawAxes(DisplayContext& dc, const Matrix34& matrix)
+void CAxisHelperExtended::DrawAxes(SDisplayContext& dc, const Matrix34& matrix)
 {
 	const DWORD updateTime = 2000; // 2 sec
 	const ISelectionGroup* const pSelection = GetIEditor()->GetISelectionGroup();
@@ -98,7 +98,7 @@ void CAxisHelperExtended::DrawAxes(DisplayContext& dc, const Matrix34& matrix)
 }
 
 //////////////////////////////////////////////////////////////////////////
-void CAxisHelperExtended::DrawAxis(DisplayContext& dc, const Vec3& direction, const float dist, const Vec3& up, const Vec3& color)
+void CAxisHelperExtended::DrawAxis(SDisplayContext& dc, const Vec3& direction, const float dist, const Vec3& up, const Vec3& color)
 {
 	const float BALL_SIZE = 0.005f;
 	const float TEXT_SIZE = 1.4f;

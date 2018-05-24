@@ -33,7 +33,7 @@ enum DisplayFlags
  *	It contains everything the object should know to display itself in a view.
  *	All fields must be filled before passing that structure to Display call.
  */
-struct EDITOR_COMMON_API DisplayContext
+struct EDITOR_COMMON_API SDisplayContext
 {
 	enum ETextureIconFlags
 	{
@@ -52,8 +52,7 @@ struct EDITOR_COMMON_API DisplayContext
 	AABB              box; // Bounding box of volume that need to be repainted.
 	int               flags;
 
-	//! Ctor.
-	DisplayContext();
+	SDisplayContext();
 	// Helper methods.
 	void              SetView(IDisplayViewport* pView);
 	IDisplayViewport* GetView() const { return view; }
@@ -153,8 +152,8 @@ struct EDITOR_COMMON_API DisplayContext
 	void DrawTextureLabel(const Vec3& pos, int nWidth, int nHeight, int nTexId, int nTexIconFlags = 0, int srcOffsetX = 0, int scrOffsetY = 0,
 	                      float fDistanceScale = 1.0f, float distanceSquared = 0);
 
-	void RenderObject(int objectType, const Vec3& pos, float scale);
-	void RenderObject(int objectType, const Matrix34& tm);
+	void RenderObject(int objectType, const Vec3& pos, float scale, const SRenderingPassInfo& passInfo);
+	void RenderObject(int objectType, const Matrix34& tm, const SRenderingPassInfo& passInfo);
 
 	void DrawTextLabel(const Vec3& pos, float size, const char* text, const bool bCenter = false, int srcOffsetX = 0, int scrOffsetY = 0);
 	void Draw2dTextLabel(float x, float y, float size, const char* text, bool bCenter = false);
