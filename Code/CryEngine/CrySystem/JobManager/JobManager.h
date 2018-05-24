@@ -26,9 +26,9 @@ namespace JobManager
 // Util Functions to get access Thread local data (needs to be unique per worker thread)
 namespace detail {
 // function to manipulate the per thread fallback job freelist
-void                    PushToFallbackJobList(JobManager::SInfoBlock* pInfoBlock);
-JobManager::SInfoBlock* PopFromFallbackJobList();
-constexpr int    GetFallbackJobListSize() { return 4096; }
+void                    PushToFallbackJobList(EBackEndType type, JobManager::SInfoBlock* pInfoBlock);
+JobManager::SInfoBlock* PopFromFallbackJobList(EBackEndType type);
+constexpr int    GetFallbackJobListSize() { return 2048; }
 
 // functions to access the per thread worker thread id
 void   SetWorkerThreadId(uint32 nWorkerThreadId);

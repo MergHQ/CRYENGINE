@@ -40,8 +40,9 @@ float CAIAnchor::GetRadius()
 }
 
 //////////////////////////////////////////////////////////////////////////
-void CAIAnchor::Display(DisplayContext& dc)
+void CAIAnchor::Display(CObjectRenderHelper& objRenderHelper)
 {
+	SDisplayContext& dc = objRenderHelper.GetDisplayContextRef();
 	const Matrix34& wtm = GetWorldTM();
 
 	//CHANGED_BY_IVO
@@ -55,7 +56,7 @@ void CAIAnchor::Display(DisplayContext& dc)
 		dc.SetColor(GetColor());
 
 	Matrix34 tm = wtm;
-	dc.RenderObject(eStatObject_Anchor, tm);
+	objRenderHelper.Render(tm);
 
 	if (IsSelected())
 	{

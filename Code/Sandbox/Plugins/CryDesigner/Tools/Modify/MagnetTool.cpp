@@ -391,7 +391,7 @@ void MagnetTool::InitializeSelectedPolygonBeforeTransform()
 	m_pSelectedPolygon->Transform(tmDelta);
 }
 
-void MagnetTool::Display(DisplayContext& dc)
+void MagnetTool::Display(SDisplayContext& dc)
 {
 	if (m_Phase == eMTP_ChoosePolygon)
 	{

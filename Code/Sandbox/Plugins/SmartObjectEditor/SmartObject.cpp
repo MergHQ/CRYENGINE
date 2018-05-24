@@ -52,8 +52,10 @@ float CSmartObject::GetRadius()
 	return 0.5f;
 }
 
-void CSmartObject::Display(DisplayContext& dc)
+void CSmartObject::Display(CObjectRenderHelper& objRenderHelper)
 {
+	SDisplayContext& dc = objRenderHelper.GetDisplayContextRef();
+	const SRenderingPassInfo& passInfo = objRenderHelper.GetPassInfo();
 	const Matrix34& wtm = GetWorldTM();
 
 	if (IsFrozen())
@@ -63,7 +65,7 @@ void CSmartObject::Display(DisplayContext& dc)
 
 	if (!GetIStatObj())
 	{
-		dc.RenderObject(eStatObject_Anchor, wtm);
+		objRenderHelper.Render(wtm);
 	}
 	else if (!(dc.flags & DISPLAY_2D))
 	{
@@ -83,7 +85,6 @@ void CSmartObject::Display(DisplayContext& dc)
 			rp.dwFObjFlags |= FOB_TRANS_MASK;
 			//rp.nShaderTemplate = EFT_HELPER;
 
-			SRenderingPassInfo passInfo = SRenderingPassInfo::CreateGeneralPassRenderingInfo(GetIEditor()->GetSystem()->GetViewCamera(), SRenderingPassInfo::DEFAULT_FLAGS, true, dc.GetDisplayContextKey());
 			m_pStatObj->Render(rp, passInfo);
 		}
 	}

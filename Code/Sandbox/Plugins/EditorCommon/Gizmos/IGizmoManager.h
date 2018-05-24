@@ -1,11 +1,11 @@
 // Copyright 2001-2018 Crytek GmbH / Crytek Group. All rights reserved.
-
 #pragma once
+
 #include "ITransformManipulator.h"
 #include "IEditor.h" // for EMouseEvent
 
 class CGizmo;
-struct DisplayContext;
+struct SDisplayContext;
 struct HitContext;
 struct IDisplayViewport;
 
@@ -25,7 +25,7 @@ struct EDITOR_COMMON_API IGizmoManager
 
 	virtual CGizmo*                GetHighlightedGizmo() const = 0;
 
-	virtual void                   Display(DisplayContext& dc) = 0;
+	virtual void                   Display(SDisplayContext& dc) = 0;
 
 	virtual bool                   HandleMouseInput(IDisplayViewport*, EMouseEvent event, CPoint& point, int flags) = 0;
 };

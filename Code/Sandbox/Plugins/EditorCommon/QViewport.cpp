@@ -75,10 +75,14 @@ void QViewport::CreateGridLine(ColorB col, const float alpha, const float alphaF
 
 	const uint32 cPacked = col.pack_argb8888();
 	const uint32 cEndPacked = colEnd.pack_argb8888();
-	m_gridLineVertices.push_back(points[0]); m_gridLineVerticesColor.push_back(cPacked);
-	m_gridLineVertices.push_back(points[1]); m_gridLineVerticesColor.push_back(cEndPacked);
-	m_gridLineVertices.push_back(points[0]); m_gridLineVerticesColor.push_back(cPacked);
-	m_gridLineVertices.push_back(points[2]); m_gridLineVerticesColor.push_back(cEndPacked);
+	m_gridLineVertices.push_back(points[0]);
+	m_gridLineVerticesColor.push_back(cPacked);
+	m_gridLineVertices.push_back(points[1]);
+	m_gridLineVerticesColor.push_back(cEndPacked);
+	m_gridLineVertices.push_back(points[0]);
+	m_gridLineVerticesColor.push_back(cPacked);
+	m_gridLineVertices.push_back(points[2]);
+	m_gridLineVerticesColor.push_back(cEndPacked);
 }
 
 void QViewport::CreateGridLines(const uint count, const uint interStepCount, const Vec3& stepDir, const float stepSize, const Vec3& orthoDir, const float offset)
@@ -120,13 +124,13 @@ void QViewport::DrawGrid()
 	const uint count = gridSettings.count * 2;
 	const float gridSize = gridSettings.spacing * gridSettings.count * 2.0f;
 	const float stepSize = gridSize / count;
-	
+
 	m_gridLineVertices.clear();
 	m_gridLineVerticesColor.clear();
 	CreateGridLines(count, gridSettings.interCount, Vec3(1.0f, 0.0f, 0.0f), stepSize, Vec3(0.0f, 1.0f, 0.0f), m_state->gridCellOffset.x);
 	CreateGridLines(count, gridSettings.interCount, Vec3(0.0f, 1.0f, 0.0f), stepSize, Vec3(1.0f, 0.0f, 0.0f), m_state->gridCellOffset.y);
-	
-	m_pAuxGeom->DrawLines( &m_gridLineVertices[0], &m_gridLineVerticesColor[0], (uint32)m_gridLineVertices.size() );
+
+	m_pAuxGeom->DrawLines(&m_gridLineVertices[0], &m_gridLineVerticesColor[0], (uint32)m_gridLineVertices.size());
 }
 
 void QViewport::DrawOrigin(const ColorB& col)
@@ -213,6 +217,8 @@ QViewport::QViewport(SSystemGlobalEnvironment* env, QWidget* parent, int supersa
 	m_LightRotationRadian = 0;
 
 	m_pViewportAdapter.reset(new CDisplayViewportAdapter(this));
+
+	CreateRenderContext();
 }
 
 QViewport::~QViewport()
@@ -241,7 +247,7 @@ bool QViewport::ScreenToWorldRay(Ray* ray, int x, int y)
 	if (!m_env->pRenderer)
 		return false;
 
-	Vec3 pos0(0,0,0), pos1(0,0,0);
+	Vec3 pos0(0, 0, 0), pos1(0, 0, 0);
 	if (!Camera()->Unproject(Vec3(float(x), float(m_height - y), 0), pos0))
 	{
 		return false;
@@ -250,7 +256,7 @@ bool QViewport::ScreenToWorldRay(Ray* ray, int x, int y)
 	{
 		return false;
 	}
-	
+
 	Vec3 v = (pos1 - pos0);
 	v = v.GetNormalized();
 
@@ -264,7 +270,7 @@ QPoint QViewport::ProjectToScreen(const Vec3& wp)
 	Vec3 out(0, 0, 0);
 	if (Camera()->Project(wp, out))
 	{
-		return QPoint((int)out.x,(int)out.y);
+		return QPoint((int)out.x, (int)out.y);
 	}
 	RestorePreviousContext();
 
@@ -361,14 +367,11 @@ void QViewport::RestorePreviousContext()
 	m_env->pSystem->SetViewCamera(x.systemCamera);
 }
 
-void QViewport::InitDisplayContext(HWND hWnd)
+SDisplayContext QViewport::InitDisplayContext(const SDisplayContextKey& displayContextKey)
 {
 	CRY_PROFILE_FUNCTION(PROFILE_EDITOR);
 
-	// Draw all objects.
-	SDisplayContextKey displayContextKey;
-	displayContextKey.key.emplace<HWND>(hWnd);
-	DisplayContext& dctx = m_displayContext;
+	SDisplayContext dctx;
 	dctx.SetDisplayContext(displayContextKey);
 	dctx.SetView(m_pViewportAdapter.get());
 	dctx.SetCamera(m_camera.get());
@@ -377,6 +380,8 @@ void QViewport::InitDisplayContext(HWND hWnd)
 	dctx.box.min = Vec3(-100000, -100000, -100000);
 	dctx.box.max = Vec3(100000, 100000, 100000);
 	dctx.flags = 0;
+
+	return dctx;
 }
 
 void QViewport::Serialize(IArchive& ar)
@@ -757,31 +762,30 @@ struct ScopedBackup
 	{
 		ppDCAuxGeom = pDCAuxGeomPtr;
 		oldAuxGeom = *pDCAuxGeomPtr;
-		*pDCAuxGeomPtr = pNewAuxGeom;
+		* pDCAuxGeomPtr = pNewAuxGeom;
 	}
 	~ScopedBackup()
 	{
-		*ppDCAuxGeom = oldAuxGeom;
+		* ppDCAuxGeom = oldAuxGeom;
 	}
 
 	IRenderAuxGeom** ppDCAuxGeom;
-	IRenderAuxGeom* oldAuxGeom;
+	IRenderAuxGeom*  oldAuxGeom;
 };
 
-void QViewport::Render()
+void QViewport::Render(SDisplayContext& context)
 {
-	DisplayContext& dc = m_displayContext;
-	ScopedBackup(&m_displayContext.pRenderAuxGeom, m_pAuxGeom);
+	ScopedBackup(&context.pRenderAuxGeom, m_pAuxGeom);
 
 	IRenderAuxGeom* aux = m_pAuxGeom;
 	SAuxGeomRenderFlags oldFlags = aux->GetRenderFlags();
 
-	dc.SetState(e_Mode3D | e_AlphaBlended | e_FillModeSolid | e_CullModeBack | e_DepthWriteOff | e_DepthTestOn);
+	context.SetState(e_Mode3D | e_AlphaBlended | e_FillModeSolid | e_CullModeBack | e_DepthWriteOff | e_DepthTestOn);
 
 	// wireframe mode
 	CScopedWireFrameMode scopedWireFrame(m_env->pRenderer, m_settings->rendering.wireframe ? R_WIREFRAME_MODE : R_SOLID_MODE);
 
-	SRenderingPassInfo passInfo = SRenderingPassInfo::CreateGeneralPassRenderingInfo(*m_camera, SRenderingPassInfo::DEFAULT_FLAGS, true, dc.GetDisplayContextKey());
+	SRenderingPassInfo passInfo = SRenderingPassInfo::CreateGeneralPassRenderingInfo(*m_camera, SRenderingPassInfo::DEFAULT_FLAGS, true, context.GetDisplayContextKey());
 
 	if (m_settings->background.useGradient)
 	{
@@ -872,7 +876,7 @@ void QViewport::Render()
 		m_consumers[i]->OnViewportRender(rc);
 	SignalRender(rc);
 
-	m_gizmoManager.Display(dc);
+	m_gizmoManager.Display(context);
 
 	m_env->pSystem->GetIPhysicsDebugRenderer()->Flush(m_lastFrameTime);
 	m_env->pRenderer->EF_EndEf3D(SHDF_ALLOWHDR | SHDF_SECONDARY_VIEWPORT, -1, -1, passInfo);
@@ -919,23 +923,19 @@ void QViewport::RenderInternal()
 	// lock while we are rendering to prevent any recursive rendering across the application
 	if (CScopedRenderLock lock = CScopedRenderLock())
 	{
-		const HWND hWnd = reinterpret_cast<HWND>(QWidget::winId());
-		SDisplayContextKey displayContextKey;
-		displayContextKey.key.emplace<HWND>(hWnd);
-
 		SetCurrentContext();
 
 		// Configures Aux to draw to the current display-context
-		InitDisplayContext(hWnd);
+		SDisplayContext context = InitDisplayContext(m_displayContextKey);
 
 		// Request for a new aux geometry to capture aux commands in the current viewport
 		CCamera camera = *m_camera;
 		m_pAuxGeom = gEnv->pRenderer->GetOrCreateIRenderAuxGeom(&camera);
 
-		m_env->pSystem->RenderBegin(displayContextKey);
+		m_env->pSystem->RenderBegin(context.GetDisplayContextKey());
 
 		// Sets the current viewport's aux geometry display context
-		m_pAuxGeom->SetCurrentDisplayContext(displayContextKey);
+		m_pAuxGeom->SetCurrentDisplayContext(context.GetDisplayContextKey());
 
 		// Do the pre-rendering. This call updates the member camera (applying transformation to the camera).
 		PreRender();
@@ -950,8 +950,8 @@ void QViewport::RenderInternal()
 		gEnv->pRenderer->UpdateAuxDefaultCamera(*m_camera);
 
 		// Do the actual render call for the viewport.
-		Render();
-		
+		Render(context);
+
 		// Submit the current viewport's aux geometry and make it null to completely pass the ownership to renderer
 		gEnv->pRenderer->SubmitAuxGeom(m_pAuxGeom, false);
 		m_pAuxGeom = nullptr;
@@ -1167,11 +1167,6 @@ void QViewport::moveEvent(QMoveEvent* ev)
 bool QViewport::event(QEvent* ev)
 {
 	bool result = QWidget::event(ev);
-
-	if (ev->type() == QEvent::WinIdChange)
-	{
-		CreateRenderContext();
-	}
 
 	return result;
 }

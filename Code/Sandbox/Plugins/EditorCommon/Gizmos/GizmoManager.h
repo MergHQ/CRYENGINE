@@ -51,22 +51,22 @@ public:
 	ITransformManipulator* AddManipulator(ITransformManipulatorOwner* pOwner);
 	void                   RemoveManipulator(ITransformManipulator* pManipulator);
 
-	void    AddGizmo(CGizmo* gizmo);
-	void    RemoveGizmo(CGizmo* gizmo);
+	void                   AddGizmo(CGizmo* gizmo);
+	void                   RemoveGizmo(CGizmo* gizmo);
 
-	int     GetGizmoCount() const override;
-	CGizmo* GetGizmoByIndex(int nIndex) const override;
+	int                    GetGizmoCount() const override;
+	CGizmo*                GetGizmoByIndex(int nIndex) const override;
 
-	CGizmo* GetHighlightedGizmo() const override;
+	CGizmo*                GetHighlightedGizmo() const override;
 
-	void    Display(DisplayContext& dc) override;
-	bool    HitTest(HitContext& hc);
+	void                   Display(SDisplayContext& dc) override;
+	bool                   HitTest(HitContext& hc);
 
-	bool    HandleMouseInput(IDisplayViewport* view, EMouseEvent event, CPoint& point, int flags) override;
+	bool                   HandleMouseInput(IDisplayViewport* view, EMouseEvent event, CPoint& point, int flags) override;
 
 private:
 	typedef std::set<CGizmoPtr> Gizmos;
-	Gizmos m_gizmos;
+	Gizmos    m_gizmos;
 	//! gizmo that cursor is over. It receives input events and may start interaction
 	CGizmoPtr m_highlighted;
 };

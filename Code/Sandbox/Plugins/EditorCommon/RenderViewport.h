@@ -134,11 +134,11 @@ public:
 
 	virtual const char*   GetCameraMenuName() const override;
 
-	void                  LockCameraMovement(bool bLock) { m_bLockCameraMovement = bLock;  }
-	bool                  IsCameraMovementLocked() const { return m_bLockCameraMovement; }
+	void                LockCameraMovement(bool bLock) { m_bLockCameraMovement = bLock;  }
+	bool                IsCameraMovementLocked() const { return m_bLockCameraMovement; }
 
-	const DisplayContext& GetDisplayContext() const      { return m_displayContext;  }
-	CBaseObject*          GetCameraObject() const;
+	SDisplayContextKey  GetDisplayContextKey() const   { return m_displayContextKey; }
+	CBaseObject*        GetCameraObject() const;
 
 	static SCameraPreferences s_cameraPreferences;
 	CCamera                   m_Camera;
@@ -164,21 +164,21 @@ protected:
 	virtual float GetCameraRotateSpeed() const;
 
 	// Called to render stuff.
-	virtual void OnRender() = 0;
+	virtual void OnRender(SDisplayContext& context) = 0;
 
 	virtual void OnEditorNotifyEvent(EEditorNotifyEvent event) override;
 
 	//! Get currently active camera object.
 	void             ToggleCameraObject();
 
-	void             RenderSnapMarker();
+	void             RenderSnapMarker(SDisplayContext& context);
 	void             RenderCursorString();
 	void             ProcessMouse();
 	void             ProcessKeys();
 
-	void             DrawAxis();
-	void             DrawBackground();
-	void             InitDisplayContext(SDisplayContextKey displayContextKey);
+	void             DrawAxis(SDisplayContext& context);
+	void             DrawBackground(SDisplayContext& context);
+	SDisplayContext  InitDisplayContext(const SDisplayContextKey& displayContextKey);
 	void             Accelerate(const int acceleration);
 	float            GetCameraSpeedScale() const;
 
@@ -190,16 +190,16 @@ protected:
 	void UpdateSafeFrame();
 
 	// Draw safe frame, safe action, safe title rectangles and borders.
-	void RenderSafeFrame();
+	void RenderSafeFrame(SDisplayContext& context);
 
 	// Draw one of the safe frame rectangles with the desired color.
-	void RenderSafeFrame(const CRect& frame, float r, float g, float b, float a);
+	void RenderSafeFrame(SDisplayContext& context, const CRect& frame, float r, float g, float b, float a);
 
 	// Draw the selection rectangle.
-	void RenderSelectionRectangle();
+	void RenderSelectionRectangle(SDisplayContext& context);
 
 	// Draw a selected region if it has been selected
-	void         RenderSelectedRegion();
+	void         RenderSelectedRegion(SDisplayContext& context);
 
 	virtual bool CreateRenderContext(HWND hWnd, IRenderer::EViewportType viewportType = IRenderer::EViewportType::eViewportType_Secondary);
 	virtual void DestroyRenderContext();
@@ -268,8 +268,6 @@ protected:
 	Matrix34                  m_prevViewTM;
 	string                    m_prevViewName;
 
-	DisplayContext            m_displayContext;
-
 	mutable PIPhysicalEntity* m_pSkipEnts;
 	mutable int               m_numSkipEnts;
 
@@ -286,7 +284,7 @@ protected:
 
 	//TODO: We would like all viewports to render whether or not a level is loaded but this has to be further tested.
 	bool m_bCanDrawWithoutLevelLoaded;
-
+	bool m_bForceUpdateVisibleObjectCache;
 protected:
 
 	virtual void OnResizeInternal(int width, int height);

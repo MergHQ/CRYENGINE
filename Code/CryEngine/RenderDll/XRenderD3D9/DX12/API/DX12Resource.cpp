@@ -396,17 +396,67 @@ const char* StateToString(D3D12_RESOURCE_STATES state)
 	return ret;
 }
 
+D3D12_RESOURCE_STATES CResource::TransitionBarrierStatic(CCommandList* pCmdList, D3D12_RESOURCE_STATES eDesiredState, D3D12_RESOURCE_STATES& eCurrentState) const
+{
+	if (IsOffCard())
+		return eCurrentState;
+
+	D3D12_RESOURCE_STATES ePreviousState = eCurrentState;
+	if (IsPromotableState(eCurrentState, eDesiredState))
+	{
+		DX12_LOG(DX12_BARRIER_ANALYZER, "Resource barrier change %s (ID3D12: %p): %s ->%s", GetName().c_str(), m_pD3D12Resource.get(), StateToString(eCurrentState), StateToString(eDesiredState));
+		DX12_ASSERT(m_eAnnouncedState == (D3D12_RESOURCE_STATES)-1, "Resource barrier has conflicting begin without end: %s", StateToString(m_eAnnouncedState));
+
+		eCurrentState = eDesiredState;
+		//		m_AnnouncedState = (D3D12_RESOURCE_STATES)-1;
+
+		DX12_ASSERT(eCurrentState != m_eAnnouncedState, "Resource barrier corruption detected!");
+	}
+	else if (IsIncompatibleState(eCurrentState, eDesiredState))
+	{
+		DX12_LOG(DX12_BARRIER_ANALYZER, "Resource barrier change %s (ID3D12: %p): %s ->%s", GetName().c_str(), m_pD3D12Resource.get(), StateToString(eCurrentState), StateToString(eDesiredState));
+		DX12_ASSERT(m_eAnnouncedState == (D3D12_RESOURCE_STATES)-1, "Resource barrier has conflicting begin without end: %s", StateToString(m_eAnnouncedState));
+
+		D3D12_RESOURCE_BARRIER barrierDesc = {};
+		barrierDesc.Flags = D3D12_RESOURCE_BARRIER_FLAG_NONE;
+		barrierDesc.Type = D3D12_RESOURCE_BARRIER_TYPE_TRANSITION;
+		barrierDesc.Transition.pResource = m_pD3D12Resource;
+		barrierDesc.Transition.Subresource = D3D12_RESOURCE_BARRIER_ALL_SUBRESOURCES;
+		barrierDesc.Transition.StateBefore = eCurrentState;
+		barrierDesc.Transition.StateAfter = eDesiredState;
+
+		pCmdList->ResourceBarrier(1, &barrierDesc);
+		eCurrentState = eDesiredState;
+		//		m_AnnouncedState = (D3D12_RESOURCE_STATES)-1;
+
+		DX12_ASSERT(eCurrentState != m_eAnnouncedState, "Resource barrier corruption detected!");
+	}
+	else if ((eDesiredState == D3D12_RESOURCE_STATE_UNORDERED_ACCESS) && !IsConcurrentWritable())
+	{
+		DX12_LOG(DX12_BARRIER_ANALYZER, "Resource barrier block %s (ID3D12: %p): %s", GetName().c_str(), m_pD3D12Resource.get(), StateToString(eCurrentState));
+		DX12_ASSERT(m_eAnnouncedState == (D3D12_RESOURCE_STATES)-1, "Resource barrier has conflicting begin without end: %s", StateToString(m_eAnnouncedState));
+
+		D3D12_RESOURCE_BARRIER barrierDesc = {};
+		barrierDesc.Flags = D3D12_RESOURCE_BARRIER_FLAG_NONE;
+		barrierDesc.Type = D3D12_RESOURCE_BARRIER_TYPE_UAV;
+		barrierDesc.UAV.pResource = m_pD3D12Resource;
+
+		pCmdList->ResourceBarrier(1, &barrierDesc);
+		//		m_CurrentState = desiredState;
+		//		m_AnnouncedState = (D3D12_RESOURCE_STATES)-1;
+
+		DX12_ASSERT(eCurrentState != m_eAnnouncedState, "Resource barrier corruption detected!");
+	}
+
+	return ePreviousState;
+}
+
 D3D12_RESOURCE_STATES CResource::TransitionBarrier(CCommandList* pCmdList, D3D12_RESOURCE_STATES eDesiredState)
 {
 	if (m_InitialData)
-	{
 		InitDeferred(pCmdList, eDesiredState);
-	}
-
 	if (IsOffCard())
-	{
 		return m_eCurrentState;
-	}
 
 	if (HasSubresourceTransitionBarriers()) // Switch from subresource barrier mode to shared barrier mode
 	{
@@ -430,54 +480,7 @@ D3D12_RESOURCE_STATES CResource::TransitionBarrier(CCommandList* pCmdList, D3D12
 	}
 #endif
 
-	D3D12_RESOURCE_STATES ePreviousState = m_eCurrentState;
-	if (IsPromotableState(m_eCurrentState, eDesiredState))
-	{
-		DX12_LOG(DX12_BARRIER_ANALYZER, "Resource barrier change %s (ID3D12: %p): %s ->%s", GetName().c_str(), m_pD3D12Resource.get(), StateToString(m_eCurrentState), StateToString(eDesiredState));
-		DX12_ASSERT(m_eAnnouncedState == (D3D12_RESOURCE_STATES)-1, "Resource barrier has conflicting begin without end: %s", StateToString(m_eAnnouncedState));
-
-		m_eCurrentState = eDesiredState;
-		//		m_AnnouncedState = (D3D12_RESOURCE_STATES)-1;
-
-		DX12_ASSERT(m_eCurrentState != m_eAnnouncedState, "Resource barrier corruption detected!");
-	}
-	else if (IsIncompatibleState(m_eCurrentState, eDesiredState))
-	{
-		DX12_LOG(DX12_BARRIER_ANALYZER, "Resource barrier change %s (ID3D12: %p): %s ->%s", GetName().c_str(), m_pD3D12Resource.get(), StateToString(m_eCurrentState), StateToString(eDesiredState));
-		DX12_ASSERT(m_eAnnouncedState == (D3D12_RESOURCE_STATES)-1, "Resource barrier has conflicting begin without end: %s", StateToString(m_eAnnouncedState));
-
-		D3D12_RESOURCE_BARRIER barrierDesc = {};
-		barrierDesc.Flags = D3D12_RESOURCE_BARRIER_FLAG_NONE;
-		barrierDesc.Type = D3D12_RESOURCE_BARRIER_TYPE_TRANSITION;
-		barrierDesc.Transition.pResource = m_pD3D12Resource;
-		barrierDesc.Transition.Subresource = D3D12_RESOURCE_BARRIER_ALL_SUBRESOURCES;
-		barrierDesc.Transition.StateBefore = m_eCurrentState;
-		barrierDesc.Transition.StateAfter = eDesiredState;
-
-		pCmdList->ResourceBarrier(1, &barrierDesc);
-		m_eCurrentState = eDesiredState;
-		//		m_AnnouncedState = (D3D12_RESOURCE_STATES)-1;
-
-		DX12_ASSERT(m_eCurrentState != m_eAnnouncedState, "Resource barrier corruption detected!");
-	}
-	else if ((eDesiredState == D3D12_RESOURCE_STATE_UNORDERED_ACCESS) && !IsConcurrentWritable())
-	{
-		DX12_LOG(DX12_BARRIER_ANALYZER, "Resource barrier block %s (ID3D12: %p): %s", GetName().c_str(), m_pD3D12Resource.get(), StateToString(m_eCurrentState));
-		DX12_ASSERT(m_eAnnouncedState == (D3D12_RESOURCE_STATES)-1, "Resource barrier has conflicting begin without end: %s", StateToString(m_eAnnouncedState));
-
-		D3D12_RESOURCE_BARRIER barrierDesc = {};
-		barrierDesc.Flags = D3D12_RESOURCE_BARRIER_FLAG_NONE;
-		barrierDesc.Type = D3D12_RESOURCE_BARRIER_TYPE_UAV;
-		barrierDesc.UAV.pResource = m_pD3D12Resource;
-
-		pCmdList->ResourceBarrier(1, &barrierDesc);
-		//		m_CurrentState = desiredState;
-		//		m_AnnouncedState = (D3D12_RESOURCE_STATES)-1;
-
-		DX12_ASSERT(m_eCurrentState != m_eAnnouncedState, "Resource barrier corruption detected!");
-	}
-
-	return ePreviousState;
+	return TransitionBarrierStatic(pCmdList, eDesiredState, m_eCurrentState);
 }
 
 D3D12_RESOURCE_STATES CResource::TransitionBarrier(CCommandList* pCmdList, const CView& view, D3D12_RESOURCE_STATES desiredState)

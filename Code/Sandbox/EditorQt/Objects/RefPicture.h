@@ -1,5 +1,4 @@
 // Copyright 2001-2018 Crytek GmbH / Crytek Group. All rights reserved.
-
 #pragma once
 
 #include "Objects/BaseObject.h"
@@ -15,7 +14,7 @@ public:
 
 	CRefPicture();
 
-	void          Display(DisplayContext& dc);
+	void          Display(CObjectRenderHelper& objRenderHelper);
 	bool          HitTest(HitContext& hc);
 	void          GetLocalBounds(AABB& box);
 

@@ -1070,7 +1070,7 @@ int BevelTool::GetEdgeCountHavingVertexInElementList(const BrushVec3& vertex, co
 	return nCount;
 }
 
-void BevelTool::Display(DisplayContext& dc)
+void BevelTool::Display(SDisplayContext& dc)
 {
 	BaseTool::Display(dc);
 	ElementSet* pSelected = DesignerSession::GetInstance()->GetSelectedElements();

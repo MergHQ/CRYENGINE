@@ -18,7 +18,7 @@ public:
 	{
 	}
 
-	virtual void Display(DisplayContext& dc) override;
+	virtual void Display(SDisplayContext& dc) override;
 
 	void         Enter() override;
 
@@ -60,8 +60,8 @@ protected:
 	void         GenerateLoop(const BrushPlane& slicePlane, TraverseLineList& outLineList) const;
 	BrushVec3    GetLoopPivotPoint() const;
 
-	void         DrawOutlines(DisplayContext& dc);
-	void         DrawOutline(DisplayContext& dc, TraverseLineList& lineList);
+	void         DrawOutlines(SDisplayContext& dc);
+	void         DrawOutline(SDisplayContext& dc, TraverseLineList& lineList);
 	virtual void UpdateGizmo();
 
 	TraverseLineList  m_MainTraverseLines;

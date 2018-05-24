@@ -1444,7 +1444,6 @@ bool CObjectManager::ChangeObjectName(CBaseObject* pObject, const string& newNam
 				return false;
 			}
 		}
-		
 		pObject->SetName(name);
 		return true;
 	}
@@ -2302,9 +2301,11 @@ void CObjectManager::InvertSelection()
 }
 
 //////////////////////////////////////////////////////////////////////////
-void CObjectManager::Display(DisplayContext& dc)
+void CObjectManager::Display(CObjectRenderHelper& objRenderHelper)
 {
 	Vec3 org;
+	SDisplayContext& dc = objRenderHelper.GetDisplayContextRef();
+	const SRenderingPassInfo& passInfo = objRenderHelper.GetPassInfo();
 
 	CRY_PROFILE_FUNCTION(PROFILE_EDITOR);
 
@@ -2317,16 +2318,16 @@ void CObjectManager::Display(DisplayContext& dc)
 	if (GetIEditor()->IsHelpersDisplayed() || dc.view->GetVisibleObjectsCache()->GetObjectCount() == 0 ||
 	    dc.flags & DISPLAY_SELECTION_HELPERS) // is display helpers or list is not populated (needed to select objects)
 	{
-		FindDisplayableObjects(dc, true);
+		FindDisplayableObjects(dc, &passInfo, true);
 	}
 }
 
-void CObjectManager::ForceUpdateVisibleObjectCache(DisplayContext& dc)
+void CObjectManager::ForceUpdateVisibleObjectCache(SDisplayContext& dc)
 {
-	FindDisplayableObjects(dc, false);
+	FindDisplayableObjects(dc, nullptr, false);
 }
 
-void CObjectManager::FindDisplayableObjects(DisplayContext& dc, bool bDisplay)
+void CObjectManager::FindDisplayableObjects(SDisplayContext& dc, const SRenderingPassInfo* passInfo, bool bDisplay)
 {
 	CRY_PROFILE_FUNCTION(PROFILE_EDITOR);
 
@@ -2356,7 +2357,7 @@ void CObjectManager::FindDisplayableObjects(DisplayContext& dc, bool bDisplay)
 
 				if (bDisplay && GetIEditor()->IsHelpersDisplayed() && (gViewportPreferences.showFrozenHelpers || !obj->IsFrozen()))
 				{
-					obj->Display(dc);
+					obj->Display(CObjectRenderHelper { dc, *passInfo });
 					if (pEditTool)
 					{
 						pEditTool->DrawObjectHelpers(obj, dc);
@@ -2415,7 +2416,7 @@ void CObjectManager::FindDisplayableObjects(DisplayContext& dc, bool bDisplay)
 					}
 					if (bDisplay && (GetIEditor()->IsHelpersDisplayed() || dc.flags & DISPLAY_SELECTION_HELPERS) && (gViewportPreferences.showFrozenHelpers || !obj->IsFrozen()) && !obj->CheckFlags(OBJFLAG_HIDE_HELPERS))
 					{
-						obj->Display(dc);
+						obj->Display(CObjectRenderHelper { dc, *passInfo });
 						if (pEditTool)
 						{
 							pEditTool->DrawObjectHelpers(obj, dc);

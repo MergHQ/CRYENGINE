@@ -28,7 +28,6 @@
 #include "RenderLock.h"
 #include "IDataBaseItem.h"
 
-
 //uint32 g_ypos = 0;
 
 #define SKYBOX_NAME "InfoRedGal"
@@ -228,189 +227,189 @@ bool CModelViewport::IsPreviewableFileType(const char* szPath)
 void CModelViewport::SaveDebugOptions() const
 {
 	//TODO save this in personalization
-/*
-	CXTRegistryManager regMgr;
-	string str;
-	const string strSection = _T(m_settingsPath);
+	/*
+	   CXTRegistryManager regMgr;
+	   string str;
+	   const string strSection = _T(m_settingsPath);
 
-	CVarBlock* vb = GetVarObject()->GetVarBlock();
-	int32 vbCount = vb->GetNumVariables();
+	   CVarBlock* vb = GetVarObject()->GetVarBlock();
+	   int32 vbCount = vb->GetNumVariables();
 
-	regMgr.WriteProfileInt(strSection, _T("iDebugOptionCount"), vbCount);
+	   regMgr.WriteProfileInt(strSection, _T("iDebugOptionCount"), vbCount);
 
-	char keyType[64], keyValue[64];
-	for (int32 i = 0; i < vbCount; ++i)
-	{
-		IVariable* var = vb->GetVariable(i);
-		IVariable::EType vType = var->GetType();
-		cry_sprintf(keyType, "DebugOption_%s_type", var->GetName());
-		cry_sprintf(keyValue, "DebugOption_%s_value", var->GetName());
-		switch (vType)
-		{
-		case IVariable::UNKNOWN:
-			{
-				break;
-			}
-		case IVariable::INT:
-			{
-				int32 value = 0;
-				var->Get(value);
-				regMgr.WriteProfileInt(strSection, _T(keyType), IVariable::INT);
-				regMgr.WriteProfileInt(strSection, _T(keyValue), value);
+	   char keyType[64], keyValue[64];
+	   for (int32 i = 0; i < vbCount; ++i)
+	   {
+	    IVariable* var = vb->GetVariable(i);
+	    IVariable::EType vType = var->GetType();
+	    cry_sprintf(keyType, "DebugOption_%s_type", var->GetName());
+	    cry_sprintf(keyValue, "DebugOption_%s_value", var->GetName());
+	    switch (vType)
+	    {
+	    case IVariable::UNKNOWN:
+	      {
+	        break;
+	      }
+	    case IVariable::INT:
+	      {
+	        int32 value = 0;
+	        var->Get(value);
+	        regMgr.WriteProfileInt(strSection, _T(keyType), IVariable::INT);
+	        regMgr.WriteProfileInt(strSection, _T(keyValue), value);
 
-				break;
-			}
-		case IVariable::BOOL:
-			{
-				BOOL value = 0;
-				var->Get(value);
-				regMgr.WriteProfileInt(strSection, _T(keyType), IVariable::BOOL);
-				regMgr.WriteProfileInt(strSection, _T(keyValue), value);
-				break;
-			}
-		case IVariable::FLOAT:
-			{
-				f32 value = 0;
-				var->Get(value);
-				regMgr.WriteProfileInt(strSection, _T(keyType), IVariable::FLOAT);
-				regMgr.WriteProfileBinary(strSection, _T(keyValue), (LPBYTE)(&value), sizeof(f32));
-				break;
-			}
-		case IVariable::VECTOR:
-			{
-				Vec3 value;
-				var->Get(value);
-				f32 valueArray[3];
-				valueArray[0] = value.x;
-				valueArray[1] = value.y;
-				valueArray[2] = value.z;
-				regMgr.WriteProfileInt(strSection, _T(keyType), IVariable::VECTOR);
-				regMgr.WriteProfileBinary(strSection, _T(keyValue), (LPBYTE)(&value), 3 * sizeof(f32));
+	        break;
+	      }
+	    case IVariable::BOOL:
+	      {
+	        BOOL value = 0;
+	        var->Get(value);
+	        regMgr.WriteProfileInt(strSection, _T(keyType), IVariable::BOOL);
+	        regMgr.WriteProfileInt(strSection, _T(keyValue), value);
+	        break;
+	      }
+	    case IVariable::FLOAT:
+	      {
+	        f32 value = 0;
+	        var->Get(value);
+	        regMgr.WriteProfileInt(strSection, _T(keyType), IVariable::FLOAT);
+	        regMgr.WriteProfileBinary(strSection, _T(keyValue), (LPBYTE)(&value), sizeof(f32));
+	        break;
+	      }
+	    case IVariable::VECTOR:
+	      {
+	        Vec3 value;
+	        var->Get(value);
+	        f32 valueArray[3];
+	        valueArray[0] = value.x;
+	        valueArray[1] = value.y;
+	        valueArray[2] = value.z;
+	        regMgr.WriteProfileInt(strSection, _T(keyType), IVariable::VECTOR);
+	        regMgr.WriteProfileBinary(strSection, _T(keyValue), (LPBYTE)(&value), 3 * sizeof(f32));
 
-				break;
-			}
-		case IVariable::QUAT:
-			{
-				Quat value;
-				var->Get(value);
-				f32 valueArray[4];
-				valueArray[0] = value.w;
-				valueArray[1] = value.v.x;
-				valueArray[2] = value.v.y;
-				valueArray[3] = value.v.z;
+	        break;
+	      }
+	    case IVariable::QUAT:
+	      {
+	        Quat value;
+	        var->Get(value);
+	        f32 valueArray[4];
+	        valueArray[0] = value.w;
+	        valueArray[1] = value.v.x;
+	        valueArray[2] = value.v.y;
+	        valueArray[3] = value.v.z;
 
-				regMgr.WriteProfileInt(strSection, _T(keyType), IVariable::QUAT);
-				regMgr.WriteProfileBinary(strSection, _T(keyValue), (LPBYTE)(&value), 4 * sizeof(f32));
+	        regMgr.WriteProfileInt(strSection, _T(keyType), IVariable::QUAT);
+	        regMgr.WriteProfileBinary(strSection, _T(keyValue), (LPBYTE)(&value), 4 * sizeof(f32));
 
-				break;
-			}
-		case IVariable::STRING:
-			{
-				string value;
-				var->Get(value);
-				regMgr.WriteProfileInt(strSection, _T(keyType), IVariable::QUAT);
-				regMgr.WriteProfileString(strSection, _T(keyValue), value);
+	        break;
+	      }
+	    case IVariable::STRING:
+	      {
+	        string value;
+	        var->Get(value);
+	        regMgr.WriteProfileInt(strSection, _T(keyType), IVariable::QUAT);
+	        regMgr.WriteProfileString(strSection, _T(keyValue), value);
 
-				break;
-			}
-		case IVariable::ARRAY:
-			{
-				break;
-			}
-		default:
-			break;
-		}
-	}*/
+	        break;
+	      }
+	    case IVariable::ARRAY:
+	      {
+	        break;
+	      }
+	    default:
+	      break;
+	    }
+	   }*/
 }
 
 //////////////////////////////////////////////////////////////////////////
 void CModelViewport::RestoreDebugOptions()
 {
-/*
-	CXTRegistryManager regMgr;
-	string str;
-	const string strSection = _T(m_settingsPath);
+	/*
+	   CXTRegistryManager regMgr;
+	   string str;
+	   const string strSection = _T(m_settingsPath);
 
-	f32 floatValue = .0f;
-	UINT byteNum = sizeof(f32);
-	string strRead = "";
-	int32 iRead = 0;
-	BOOL bRead = FALSE;
-	f32 fRead = .0f;
-	LPBYTE pbtData = NULL;
-	UINT bytes = 0;
+	   f32 floatValue = .0f;
+	   UINT byteNum = sizeof(f32);
+	   string strRead = "";
+	   int32 iRead = 0;
+	   BOOL bRead = FALSE;
+	   f32 fRead = .0f;
+	   LPBYTE pbtData = NULL;
+	   UINT bytes = 0;
 
-	CVarBlock* vb = m_vars.GetVarBlock();
-	int32 vbCount = vb->GetNumVariables();
+	   CVarBlock* vb = m_vars.GetVarBlock();
+	   int32 vbCount = vb->GetNumVariables();
 
-	char keyType[64], keyValue[64];
-	for (int32 i = 0; i < vbCount; ++i)
-	{
-		IVariable* var = vb->GetVariable(i);
-		IVariable::EType vType = var->GetType();
-		cry_sprintf(keyType, "DebugOption_%s_type", var->GetName());
-		int32 iType = regMgr.GetProfileInt(strSection, _T(keyType), 0);
+	   char keyType[64], keyValue[64];
+	   for (int32 i = 0; i < vbCount; ++i)
+	   {
+	    IVariable* var = vb->GetVariable(i);
+	    IVariable::EType vType = var->GetType();
+	    cry_sprintf(keyType, "DebugOption_%s_type", var->GetName());
+	    int32 iType = regMgr.GetProfileInt(strSection, _T(keyType), 0);
 
-		cry_sprintf(keyValue, "DebugOption_%s_value", var->GetName());
-		switch (iType)
-		{
-		case IVariable::UNKNOWN:
-			{
-				break;
-			}
-		case IVariable::INT:
-			{
-				iRead = regMgr.GetProfileInt(strSection, _T(keyValue), 0);
-				var->Set(iRead);
-				break;
-			}
-		case IVariable::BOOL:
-			{
-				bRead = regMgr.GetProfileInt(strSection, _T(keyValue), FALSE);
-				var->Set(bRead);
-				break;
-			}
-		case IVariable::FLOAT:
-			{
-				regMgr.GetProfileBinary(strSection, _T(keyValue), &pbtData, &bytes);
-				fRead = *(f32*)(pbtData);
-				var->Set(fRead);
-				break;
-			}
-		case IVariable::VECTOR:
-			{
-				regMgr.GetProfileBinary(strSection, _T(keyValue), &pbtData, &bytes);
-				assert(bytes == 3 * sizeof(f32));
-				f32* pfRead = (f32*)(pbtData);
+	    cry_sprintf(keyValue, "DebugOption_%s_value", var->GetName());
+	    switch (iType)
+	    {
+	    case IVariable::UNKNOWN:
+	      {
+	        break;
+	      }
+	    case IVariable::INT:
+	      {
+	        iRead = regMgr.GetProfileInt(strSection, _T(keyValue), 0);
+	        var->Set(iRead);
+	        break;
+	      }
+	    case IVariable::BOOL:
+	      {
+	        bRead = regMgr.GetProfileInt(strSection, _T(keyValue), FALSE);
+	        var->Set(bRead);
+	        break;
+	      }
+	    case IVariable::FLOAT:
+	      {
+	        regMgr.GetProfileBinary(strSection, _T(keyValue), &pbtData, &bytes);
+	        fRead = *(f32*)(pbtData);
+	        var->Set(fRead);
+	        break;
+	      }
+	    case IVariable::VECTOR:
+	      {
+	        regMgr.GetProfileBinary(strSection, _T(keyValue), &pbtData, &bytes);
+	        assert(bytes == 3 * sizeof(f32));
+	        f32* pfRead = (f32*)(pbtData);
 
-				Vec3 vecRead(pfRead[0], pfRead[1], pfRead[2]);
-				var->Set(vecRead);
-				break;
-			}
-		case IVariable::QUAT:
-			{
-				regMgr.GetProfileBinary(strSection, _T(keyValue), &pbtData, &bytes);
-				assert(bytes == 4 * sizeof(f32));
-				f32* pfRead = (f32*)(pbtData);
+	        Vec3 vecRead(pfRead[0], pfRead[1], pfRead[2]);
+	        var->Set(vecRead);
+	        break;
+	      }
+	    case IVariable::QUAT:
+	      {
+	        regMgr.GetProfileBinary(strSection, _T(keyValue), &pbtData, &bytes);
+	        assert(bytes == 4 * sizeof(f32));
+	        f32* pfRead = (f32*)(pbtData);
 
-				Quat valueRead(pfRead[0], pfRead[1], pfRead[2], pfRead[3]);
-				var->Set(valueRead);
-				break;
-			}
-		case IVariable::STRING:
-			{
-				strRead = regMgr.GetProfileString(strSection, _T(keyValue), "");
-				var->Set(strRead);
-				break;
-			}
-		case IVariable::ARRAY:
-			{
-				break;
-			}
-		default:
-			break;
-		}
-	}*/
+	        Quat valueRead(pfRead[0], pfRead[1], pfRead[2], pfRead[3]);
+	        var->Set(valueRead);
+	        break;
+	      }
+	    case IVariable::STRING:
+	      {
+	        strRead = regMgr.GetProfileString(strSection, _T(keyValue), "");
+	        var->Set(strRead);
+	        break;
+	      }
+	    case IVariable::ARRAY:
+	      {
+	        break;
+	      }
+	    default:
+	      break;
+	    }
+	   }*/
 }
 
 //////////////////////////////////////////////////////////////////////////
@@ -563,7 +562,7 @@ void CModelViewport::LoadStaticObject(const string& file)
 }
 
 //////////////////////////////////////////////////////////////////////////
-void CModelViewport::OnRender()
+void CModelViewport::OnRender(SDisplayContext& context)
 {
 	CRY_PROFILE_FUNCTION(PROFILE_EDITOR);
 
@@ -769,7 +768,6 @@ void CModelViewport::OnDestroy()
 	if (m_pRESky)
 		m_pRESky->Release(false);
 }
-
 
 //////////////////////////////////////////////////////////////////////////
 void CModelViewport::Update()
@@ -1121,10 +1119,10 @@ void CModelViewport::DrawLights(const SRenderingPassInfo& passInfo)
 {
 	//feature currently disabled
 	/*if (mv_animateLights)
-		m_LightRotationRadian += m_AverageFrameTime;
+	   m_LightRotationRadian += m_AverageFrameTime;
 
-	if (m_LightRotationRadian > gf_PI)
-		m_LightRotationRadian = -gf_PI;*/
+	   if (m_LightRotationRadian > gf_PI)
+	   m_LightRotationRadian = -gf_PI;*/
 
 	Matrix33 LightRot33 = Matrix33::CreateRotationZ(m_LightRotationRadian);
 	uint32 numLights = m_VPLights.size();
@@ -1254,7 +1252,7 @@ void CModelViewport::DrawFloorGrid(const Quat& m33, const Vec3& vPhysicalLocatio
 	pAuxGeom->DrawOBB(_obb2, SlopeMat33 * Vec3(0.0f) + m_GridOrigin, 1, RGBA8(0x9f, 0x9f, 0x9f, 0x00), eBBD_Faceted);
 
 	// Draw grid.
-	const size_t nLineVertices = ( ((int)(XR / step) * 2 + 1) + ((int)(YR / step) * 2 + 1) ) * 2;
+	const size_t nLineVertices = (((int)(XR / step) * 2 + 1) + ((int)(YR / step) * 2 + 1)) * 2;
 	if (m_gridLineVertices.size() != nLineVertices) m_gridLineVertices.resize(nLineVertices);
 	Vec3* p = &m_gridLineVertices[0];
 
@@ -1262,16 +1260,16 @@ void CModelViewport::DrawFloorGrid(const Quat& m33, const Vec3& vPhysicalLocatio
 	for (float x = -XR; x < XR; x += step)
 	{
 		p[idx++] = SlopeMat33 * Vec3(x, -YR, 0) + m_GridOrigin;
-		p[idx++] = SlopeMat33 * Vec3(x,  YR, 0) + m_GridOrigin;
+		p[idx++] = SlopeMat33 * Vec3(x, YR, 0) + m_GridOrigin;
 	}
 
 	for (float y = -YR; y < YR; y += step)
 	{
 		p[idx++] = SlopeMat33 * Vec3(-XR, y, 0) + m_GridOrigin;
-		p[idx++] = SlopeMat33 * Vec3( XR, y, 0) + m_GridOrigin;
+		p[idx++] = SlopeMat33 * Vec3(XR, y, 0) + m_GridOrigin;
 	}
 
-	pAuxGeom->DrawLines( p, nLineVertices, RGBA8(0x7f, 0x7f, 0x7f, 0x00) );
+	pAuxGeom->DrawLines(p, nLineVertices, RGBA8(0x7f, 0x7f, 0x7f, 0x00));
 
 	// TODO - the grid should probably be an IRenderNode at some point
 	// flushing grid geometry now so it will not override transparent

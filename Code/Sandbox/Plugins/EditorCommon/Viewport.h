@@ -9,7 +9,6 @@
 #include <CrySerialization/IArchive.h>
 
 #include <QPoint>
-
 class CameraTransformEvent;
 class CBaseObject;
 class CBaseObjectsCache;
@@ -19,10 +18,10 @@ class CImageEx;
 class CryInputEvent;
 class CViewManager;
 class QWidget;
-
 struct DisplayContext;
 struct HitContext;
 struct IRenderListener;
+struct SDisplayContext;
 
 /** Type of viewport.
  */
@@ -216,7 +215,7 @@ public:
 	//! Called when dragging selection rectangle.
 	virtual void  OnDragSelectRectangle(CPoint p1, CPoint p2, bool bNormilizeRect = false);
 	//! Get selection precision tolerance.
-	float         GetSelectionTolerance() const { return m_selectionTollerance; }
+	float         GetSelectionTolerance() const { return m_selectionTolerance; }
 	//! Center viewport on selection.
 	virtual void  CenterOnSelection()           {}
 
@@ -364,13 +363,13 @@ protected:
 	bool         IsVectorInValidRange(const Vec3& v) const { return fabs(v.x) < 1e+8 && fabs(v.y) < 1e+8 && fabs(v.z) < 1e+8; }
 	void         AssignConstructionPlane(const Vec3& p1, const Vec3& p2, const Vec3& p3);
 
-	void         ProcessRenderListeners(DisplayContext& rstDisplayContext);
+	void         ProcessRenderListeners(SDisplayContext& rstDisplayContext);
 	bool         MoreMouseEventProcessNeeded(EMouseEvent event);
 
 protected:
 	string        m_name;
 
-	float         m_selectionTollerance;
+	float         m_selectionTolerance;
 
 	mutable float m_fZoomFactor;
 

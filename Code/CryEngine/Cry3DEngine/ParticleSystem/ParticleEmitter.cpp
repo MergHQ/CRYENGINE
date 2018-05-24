@@ -368,6 +368,8 @@ void CParticleEmitter::SetViewDistRatio(int nViewDistRatio)
 
 void CParticleEmitter::ReleaseNode(bool bImmediate)
 {
+	CRY_ASSERT((m_dwRndFlags & ERF_PENDING_DELETE) == 0);
+
 	Activate(false);
 	Unregister();
 }

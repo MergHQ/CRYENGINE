@@ -599,6 +599,16 @@ ColorB CObjectLayer::GetColor() const
 {
 	if (!m_useColorOverride)
 	{
+		CObjectLayer* pOwner = m_parent;
+		while (pOwner)
+		{
+			if (pOwner->IsUsingColorOverride())
+			{
+				return pOwner->GetColor();
+			}
+			pOwner = pOwner->GetParent();
+		}
+
 		return ColorB(Private_ObjectLayer::g_defaultLayerColor);
 	}
 	return m_color;
@@ -657,4 +667,3 @@ bool CObjectLayer::IsFrozen(bool isRecursive) const
 	}
 	return m_frozen;
 }
-

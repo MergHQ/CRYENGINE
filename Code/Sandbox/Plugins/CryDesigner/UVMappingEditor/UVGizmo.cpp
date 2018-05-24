@@ -62,8 +62,8 @@ void UVGizmo::SetMode(EGizmoMode mode)
 	m_mode = mode;
 }
 
-void UVGizmo::SetPos(const Vec3& pos) 
-{ 
+void UVGizmo::SetPos(const Vec3& pos)
+{
 	m_Pos = pos;
 	m_xTranslateGizmo.SetPosition(m_Pos);
 	m_yTranslateGizmo.SetPosition(m_Pos);
@@ -77,11 +77,11 @@ void UVGizmo::SetPos(const Vec3& pos)
 }
 
 void UVGizmo::MovePos(const Vec3& offset)
-{ 
+{
 	SetPos(m_Pos + offset);
 }
 
-void UVGizmo::Draw(DisplayContext& dc)
+void UVGizmo::Draw(SDisplayContext& dc)
 {
 	if (!m_bVisible)
 		return;
@@ -242,7 +242,7 @@ void UVGizmo::OnViewportMouse(const SMouseEvent& ev_)
 				float radian = 0;
 				Vec3 vDir0 = Vec3(0, 0, 0);
 				Vec3 vDir1 = Vec3(0, 0, 0);
-				
+
 				if (gSnappingPreferences.angleSnappingEnabled())
 				{
 					Vec3 v0 = SearchUtil::FindHitPointToUVPlane(ev.viewport, m_Context.mouse_down_x, m_Context.mouse_down_y);

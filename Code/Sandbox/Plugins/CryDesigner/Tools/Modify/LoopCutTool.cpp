@@ -280,7 +280,7 @@ void LoopCutTool::UpdateLoops()
 	}
 }
 
-void LoopCutTool::Display(DisplayContext& dc)
+void LoopCutTool::Display(SDisplayContext& dc)
 {
 	if (!m_LoopPolygons.empty())
 	{

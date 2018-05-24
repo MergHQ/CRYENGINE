@@ -76,7 +76,7 @@ public:
 	bool OnMouseMove(CViewport* view, UINT nFlags, CPoint point) override;
 	void OnEditorNotifyEvent(EEditorNotifyEvent event) override;
 
-	void Display(DisplayContext& dc) override;
+	void Display(SDisplayContext& dc) override;
 	bool IsManipulatorVisible() { return false; }
 
 private:

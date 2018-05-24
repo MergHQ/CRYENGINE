@@ -58,7 +58,7 @@ void PivotTool::InitializeManipulator()
 {
 	m_StartingDragManipulatorPos = m_PivotPos = BrushVec3(0, 0, 0);
 	GetIEditor()->SetEditMode(eEditModeMove);
-	if(GetDesigner())
+	if (GetDesigner())
 		GetDesigner()->UpdateTMManipulator(m_PivotPos, BrushVec3(0, 0, 1));
 }
 
@@ -87,7 +87,7 @@ void PivotTool::SetSelectionType(EPivotSelectionType selectionType, bool bForce)
 	}
 }
 
-void PivotTool::Display(DisplayContext& dc)
+void PivotTool::Display(SDisplayContext& dc)
 {
 	dc.SetColor(0xAAAAAAFF);
 	dc.DepthTestOff();

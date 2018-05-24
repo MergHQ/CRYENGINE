@@ -102,15 +102,15 @@ public:
 	void Update();
 
 	//! Display objects on display context.
-	void Display(DisplayContext& dc);
+	void Display(CObjectRenderHelper& objRenderHelper);
 
 	//! Called when selecting without selection helpers - this is needed since
 	//! the visible object cache is normally not updated when not displaying helpers.
-	void ForceUpdateVisibleObjectCache(DisplayContext& dc);
+	void ForceUpdateVisibleObjectCache(SDisplayContext& dc);
 
 	//! Check intersection with objects.
 	//! Find intersection with nearest to ray origin object hit by ray.
-	//! If distance tollerance is specified certain relaxation applied on collision test.
+	//! If distance tolerance is specified certain relaxation applied on collision test.
 	//! @return true if hit any object, and fills hitInfo structure.
 	bool HitTest(HitContext& hitInfo);
 
@@ -189,7 +189,7 @@ public:
 	void InvertSelection() override;
 
 	//! Get current selection.
-	const CSelectionGroup* GetSelection() const { return &m_currSelection; };
+	const CSelectionGroup* GetSelection() const { return &m_currSelection; }
 
 	bool                   IsObjectDeletionAllowed(CBaseObject* pObject);
 
@@ -199,11 +199,11 @@ public:
 	uint32 ForceID() const     { return m_forceID; }
 	void   ForceID(uint32 FID) { m_forceID = FID; }
 
-	//! Generates uniq name base on type name of object.
+	//! Generates unique name base on type name of object.
 	string GenUniqObjectName(const string& typeName);
-	//! Register object name in object manager, needed for generating uniq names.
+	//! Register object name in object manager, needed for generating unique names.
 	void   RegisterObjectName(const string& name);
-	//! Decrease name number and remove if it was last in object manager, needed for generating uniq names.
+	//! Decrease name number and remove if it was last in object manager, needed for generating unique names.
 	void   UpdateRegisterObjectName(const string& name);
 	//! Enable/Disable generating of unique object names (Enabled by default).
 	//! Return previous value.
@@ -222,7 +222,7 @@ public:
 	virtual std::vector<string> GetAllClasses() const override;
 
 	//! Export objects to xml.
-	//! When onlyShared is true ony objects with shared flags exported, overwise only not shared object exported.
+	//! When onlyShared is true only objects with shared flags exported, otherwise only not shared object exported.
 	void Export(const string& levelPath, XmlNodeRef& rootNode, bool onlyShared);
 
 	//! Serialize Objects in manager to specified XML Node.
@@ -259,20 +259,20 @@ public:
 	void IterateTypeConverters(CRuntimeClass* pSource, std::function<void(const char* szTargetName, std::function<void(CBaseObject* pObject)> conversionFunc)> callback) override;
 
 	// Enables/Disables creating of game objects.
-	void SetCreateGameObject(bool enable) { m_createGameObjects = enable; };
-	//! Return true if objects loaded from xml should immidiatly create game objects associated with them.
-	bool IsCreateGameObjects() const      { return m_createGameObjects; };
+	void SetCreateGameObject(bool enable) { m_createGameObjects = enable; }
+	//! Return true if objects loaded from xml should immediately create game objects associated with them.
+	bool IsCreateGameObjects() const      { return m_createGameObjects; }
 
 	//////////////////////////////////////////////////////////////////////////
-	//! Get acess to object layers manager.
+	//! Get access to object layers manager.
 	CObjectLayerManager* GetLayersManager() const { return m_pLayerManager; }
 
 	//////////////////////////////////////////////////////////////////////////
-	//! Get acess to object layers manager.
+	//! Get access to object layers manager.
 	IObjectLayerManager* GetIObjectLayerManager() const;
 
 	//////////////////////////////////////////////////////////////////////////
-	//! Invalidate visibily settings of objects.
+	//! Invalidate visibility settings of objects.
 	void InvalidateVisibleList();
 
 	//////////////////////////////////////////////////////////////////////////
@@ -352,7 +352,7 @@ private:
 	void NotifyObjectListeners(CBaseObject* pObject, const CObjectEvent& event) const override;
 	void NotifyObjectListeners(const std::vector<CBaseObject*>& objects, const CObjectEvent& event) const override;
 
-	void FindDisplayableObjects(DisplayContext& dc, bool bDisplay);
+	void FindDisplayableObjects(SDisplayContext& dc, const SRenderingPassInfo* passInfo, bool bDisplay);
 
 	void UpdateAttachedEntities();
 
@@ -427,4 +427,3 @@ private:
 
 	std::vector<SConverter> m_typeConverters;
 };
-

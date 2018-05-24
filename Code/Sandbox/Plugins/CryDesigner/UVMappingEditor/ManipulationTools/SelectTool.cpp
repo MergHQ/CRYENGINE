@@ -166,7 +166,7 @@ void SelectTool::OnMouseMove(const SMouseEvent& me)
 	}
 }
 
-void SelectTool::Display(DisplayContext& dc)
+void SelectTool::Display(SDisplayContext& dc)
 {
 	if (m_pRectangleSelectionContext)
 		m_pRectangleSelectionContext->Draw(dc);
@@ -177,7 +177,7 @@ RectangleSelectionContext::RectangleSelectionContext(bool multipleselection, con
 	m_pSelectedElements = multipleselection ? GetUVEditor()->GetElementSet()->Clone() : new UVElementSet;
 }
 
-void RectangleSelectionContext::Draw(DisplayContext& dc)
+void RectangleSelectionContext::Draw(SDisplayContext& dc)
 {
 	float z = 0.001f;
 

@@ -82,8 +82,10 @@ void CCloudObject::GetLocalBounds(AABB& box)
 }
 
 //////////////////////////////////////////////////////////////////////////
-void CCloudObject::Display(DisplayContext& dc)
+void CCloudObject::Display(CObjectRenderHelper& objRenderHelper)
 {
+	SDisplayContext& dc = objRenderHelper.GetDisplayContextRef();
+
 	const Matrix34& wtm = GetWorldTM();
 	Vec3 wp = wtm.GetTranslation();
 

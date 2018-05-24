@@ -130,7 +130,8 @@ bool CPreviewModelCtrl::CreateRenderContext()
 	// Create context.
 	if (m_pRenderer && !m_renderContextCreated)
 	{
-		CRect rc; GetClientRect(rc);
+		CRect rc;
+		GetClientRect(rc);
 		IRenderer::SDisplayContextDescription desc;
 
 		desc.handle = m_hWnd;
@@ -164,23 +165,21 @@ void CPreviewModelCtrl::DestroyRenderContext()
 	}
 }
 
-void CPreviewModelCtrl::InitDisplayContext(HWND hWnd)
+SDisplayContext CPreviewModelCtrl::InitDisplayContext(const SDisplayContextKey& displayContextKey)
 {
 	CRY_PROFILE_FUNCTION(PROFILE_EDITOR);
 
-	// Draw all objects.
-	SDisplayContextKey displayContextKey;
-	displayContextKey.key.emplace<HWND>(hWnd);
-
-	DisplayContext& dctx = m_displayContext;
+	SDisplayContext dctx;
 	dctx.SetDisplayContext(displayContextKey, IRenderer::eViewportType_Secondary);
-//	dctx.SetView(m_pViewportAdapter.get());
+	//	dctx.SetView(m_pViewportAdapter.get());
 	dctx.SetCamera(&m_camera);
 	dctx.renderer = m_pRenderer;
 	dctx.engine = nullptr;
 	dctx.box.min = Vec3(-100000, -100000, -100000);
 	dctx.box.max = Vec3(100000, 100000, 100000);
 	dctx.flags = 0;
+
+	return dctx;
 }
 
 void CPreviewModelCtrl::PreSubclassWindow()
@@ -475,11 +474,11 @@ bool CPreviewModelCtrl::Render()
 		}
 
 		// Configures Aux to draw to the current display-context
-		InitDisplayContext(m_hWnd);
+		SDisplayContext context = InitDisplayContext(m_displayContextKey);
 
 		m_pRenderer->BeginFrame(m_displayContextKey);
 
-		result = RenderInternal();
+		result = RenderInternal(context);
 
 		m_pRenderer->EndFrame();
 	}
@@ -487,10 +486,8 @@ bool CPreviewModelCtrl::Render()
 	return result;
 }
 
-bool CPreviewModelCtrl::RenderInternal()
+bool CPreviewModelCtrl::RenderInternal(SDisplayContext& context)
 {
-	DisplayContext& dc = m_displayContext;
-
 	CRect rc;
 	GetClientRect(rc);
 
@@ -515,7 +512,7 @@ bool CPreviewModelCtrl::RenderInternal()
 	gEnv->pConsole->GetCVar("r_displayInfo")->Set((int)m_bShowRenderInfo);
 
 	// Render object.
-	SRenderingPassInfo passInfo = SRenderingPassInfo::CreateGeneralPassRenderingInfo(m_camera, SRenderingPassInfo::DEFAULT_FLAGS, true, dc.GetDisplayContextKey());
+	SRenderingPassInfo passInfo = SRenderingPassInfo::CreateGeneralPassRenderingInfo(m_camera, SRenderingPassInfo::DEFAULT_FLAGS, true, context.GetDisplayContextKey());
 	m_pRenderer->EF_StartEf(passInfo);
 
 	{
@@ -1253,8 +1250,8 @@ void CPreviewModelCtrl::DrawBackground()
 	const uint32 color = 0xFFFFFFFF;
 	const float w = 1.0f;
 	const float h = 1.0f;
-	const float s[4] = {0.0f, 1.0f, 1.0f, 0.0f};
-	const float t[4] = {1.0f, 1.0f, 0.0f, 0.0f};
+	const float s[4] = { 0.0f, 1.0f, 1.0f, 0.0f };
+	const float t[4] = { 1.0f, 1.0f, 0.0f, 0.0f };
 
 	pVertex->xyz.x = xpos;
 	pVertex->xyz.y = ypos;

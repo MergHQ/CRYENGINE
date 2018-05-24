@@ -79,7 +79,7 @@ bool LatheTool::OnMouseMove(
 	return true;
 }
 
-void LatheTool::Display(DisplayContext& dc)
+void LatheTool::Display(SDisplayContext& dc)
 {
 	if (!m_bChoosePathPolygonPhase)
 		MagnetTool::Display(dc);

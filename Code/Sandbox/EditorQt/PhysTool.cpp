@@ -65,8 +65,9 @@ bool CPhysPullTool::MouseCallback(CViewport* view, EMouseEvent event, CPoint& po
 			pp.pos = hit.pt;
 			if (!m_pEntAttach)
 			{
-				pe_params_flags pf; pf.flagsOR = pef_never_affect_triggers;
-				(m_pEntAttach = gEnv->pPhysicalWorld->CreatePhysicalEntity(PE_RIGID,&pf))->AddRef();
+				pe_params_flags pf;
+				pf.flagsOR = pef_never_affect_triggers;
+				(m_pEntAttach = gEnv->pPhysicalWorld->CreatePhysicalEntity(PE_RIGID, &pf))->AddRef();
 				primitives::sphere sph;
 				sph.center.zero();
 				sph.r = 0.05f;
@@ -183,7 +184,7 @@ bool CPhysPullTool::MouseCallback(CViewport* view, EMouseEvent event, CPoint& po
 				Vec3 ptEdge = pt[1].GetRotated(pt[0], (pt[2] - pt[0] ^ pt[1] - pt[0]).normalized(), DEG2RAD(1));
 				ray_hit hit1;
 				if (!(gEnv->pPhysicalWorld->RayTraceEntity(m_pEntPull, pt[0], ptEdge - pt[0], &hit1)))
-					pt[1] = ptEdge;	// slice over the edge if close enough
+					pt[1] = ptEdge; // slice over the edge if close enough
 				m_pEntPull->Action(&as);
 			}
 			pe_action_awake aa;
@@ -286,7 +287,7 @@ bool CPhysPullTool::MouseCallback(CViewport* view, EMouseEvent event, CPoint& po
 	return false;
 }
 
-void CPhysPullTool::Display(DisplayContext& dc)
+void CPhysPullTool::Display(SDisplayContext& dc)
 {
 	UpdateAttachPos(dc.camera, m_lastMousePos);
 	pe_status_pos sp;
@@ -303,8 +304,8 @@ void CPhysPullTool::Display(DisplayContext& dc)
 		m_pEntPull->GetParams(&pr);
 		dc.DrawLine(m_lastAttachPos, pr.pPoints[m_partid], ColorF(0, 0, 1), ColorF(0, 0, 1));
 		m_pEntPull->GetParams(&pfd);
-		dc.DrawTextLabel(pr.pPoints[m_partid] + mc.Screen2World(CPoint(m_lastMousePos.x, m_lastMousePos.y + 20), m_attachDist) - mc.Screen2World(m_lastMousePos, m_attachDist), 1.2f, 
-			gEnv->pSystem->GetIPhysRenderer()->GetForeignName(pfd.pForeignData, pfd.iForeignData, pfd.iForeignFlags), true);
+		dc.DrawTextLabel(pr.pPoints[m_partid] + mc.Screen2World(CPoint(m_lastMousePos.x, m_lastMousePos.y + 20), m_attachDist) - mc.Screen2World(m_lastMousePos, m_attachDist), 1.2f,
+		                 gEnv->pSystem->GetIPhysRenderer()->GetForeignName(pfd.pForeignData, pfd.iForeignData, pfd.iForeignFlags), true);
 	}
 	else if (m_pEntPull && (m_pEntPull->GetType() != PE_SOFT || GetKeyState(VK_CONTROL) & 0x8000 && !m_nAttachPoints) && drawPull && !is_unused(m_partid) && m_pEntPull->GetStatus(&sp))
 	{

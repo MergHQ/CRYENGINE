@@ -3,11 +3,18 @@
 #include "stdafx.h"
 #include "AudioCVars.h"
 #include "Common/Logger.h"
+#include "PropagationProcessor.h"
 #include <CrySystem/ISystem.h>
 #include <CrySystem/IConsole.h>
 
 namespace CryAudio
 {
+//////////////////////////////////////////////////////////////////////////
+void OnOcclusionRayTypesChanged(ICVar* const pCvar)
+{
+	CPropagationProcessor::UpdateOcclusionRayFlags();
+}
+
 //////////////////////////////////////////////////////////////////////////
 void CCVars::RegisterVariables()
 {
@@ -173,6 +180,17 @@ void CCVars::RegisterVariables()
 	               "Usage: s_IgnoreWindowFocus [0/1]\n"
 	               "Default: 0 (off)\n");
 
+	REGISTER_CVAR2_CB("s_OcclusionCollisionTypes", &m_occlusionCollisionTypes, AlphaBits64("abcd"), VF_CHEAT | VF_BITFIELD,
+	                  "Sets which types of ray casting collision hits are used to calculate occlusion.\n"
+	                  "Usage: s_OcclusionCollisionTypes [0ab...] (flags can be combined)\n"
+	                  "Default: abcd\n"
+	                  "0: No collisions.\n"
+	                  "a: Collisions with static objects.\n"
+	                  "b: Collisions with rigid entities.\n"
+	                  "c: Collisions with water.\n"
+	                  "d: Collisions with terrain.\n",
+	                  OnOcclusionRayTypesChanged);
+
 	REGISTER_COMMAND("s_ExecuteTrigger", CmdExecuteTrigger, VF_CHEAT,
 	                 "Execute an Audio Trigger.\n"
 	                 "The first argument is the name of the AudioTrigger to be executed, the second argument is an optional AudioObject ID.\n"
@@ -295,6 +313,8 @@ void CCVars::UnregisterVariables()
 		pConsole->UnregisterVariable("s_AudioEventPoolSize");
 		pConsole->UnregisterVariable("s_AudioStandaloneFilePoolSize");
 		pConsole->UnregisterVariable("s_AccumulateOcclusion");
+		pConsole->UnregisterVariable("s_IgnoreWindowFocus");
+		pConsole->UnregisterVariable("s_OcclusionCollisionTypes");
 		pConsole->UnregisterVariable("s_ExecuteTrigger");
 		pConsole->UnregisterVariable("s_StopTrigger");
 		pConsole->UnregisterVariable("s_SetParameter");
@@ -303,7 +323,6 @@ void CCVars::UnregisterVariables()
 
 #if defined(INCLUDE_AUDIO_PRODUCTION_CODE)
 		pConsole->UnregisterVariable("s_DebugDistance");
-		pConsole->UnregisterVariable("s_IgnoreWindowFocus");
 		pConsole->UnregisterVariable("s_DrawAudioDebug");
 		pConsole->UnregisterVariable("s_FileCacheManagerDebugFilter");
 		pConsole->UnregisterVariable("s_HideInactiveAudioObjects");

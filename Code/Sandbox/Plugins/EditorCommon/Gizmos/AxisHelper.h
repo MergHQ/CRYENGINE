@@ -1,10 +1,9 @@
 // Copyright 2001-2018 Crytek GmbH / Crytek Group. All rights reserved.
-
 #pragma once
 
 #include "GizmoManager.h" // for AxisConstrains and RefCoordSys
 
-struct DisplayContext;
+struct SDisplayContext;
 struct HitContext;
 struct IDisplayViewport;
 
@@ -47,7 +46,7 @@ public:
 	void SetMode(int nModeFlags);
 	int  GetMode() const { return m_nModeFlags; }
 
-	void DrawAxis(const Matrix34& worldTM, const SGizmoPreferences& setup, DisplayContext& dc, float fScaleRatio = 1.0f);
+	void DrawAxis(const Matrix34& worldTM, const SGizmoPreferences& setup, SDisplayContext& dc, float fScaleRatio = 1.0f);
 	bool HitTest(const Matrix34& worldTM, const SGizmoPreferences& setup, HitContext& hc, EHelperMode* manipulatorMode = nullptr, float fScaleRatio = 1.0f);
 
 	// 0 - X-Axis, 1 - Y-Axis, 2 - Z-Axis

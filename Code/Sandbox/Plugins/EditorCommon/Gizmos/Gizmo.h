@@ -4,7 +4,7 @@
 
 #include "Objects/BaseObject.h"
 
-struct DisplayContext;
+struct SDisplayContext;
 struct HitContext;
 struct IDisplayViewport;
 
@@ -43,7 +43,7 @@ public:
 
 	/** Display Gizmo in the viewport.
 	 */
-	virtual void Display(DisplayContext& dc) = 0;
+	virtual void Display(SDisplayContext& dc) = 0;
 
 	/** Performs hit testing on gizmo object.
 	 */

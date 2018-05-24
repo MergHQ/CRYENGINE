@@ -730,6 +730,8 @@ void C3DEngine::Tick()
 
 	GetMatMan()->DelayedMaterialDeletion();
 
+	TickDelayedRenderNodeDeletion();
+
 	// clear stored cameras from last frame
 	m_RenderingPassCameras[nThreadID].resize(0);
 }
@@ -2975,8 +2977,24 @@ IRenderNode* C3DEngine::CreateRenderNode(EERType type)
 void C3DEngine::DeleteRenderNode(IRenderNode* pRenderNode)
 {
 	LOADING_TIME_PROFILE_SECTION;
+	pRenderNode->SetRndFlags(ERF_PENDING_DELETE, true);
+
 	UnRegisterEntityDirect(pRenderNode);
-	delete pRenderNode;
+
+	m_renderNodesToDelete[m_renderNodesToDeleteID].push_back(pRenderNode);
+}
+
+void C3DEngine::TickDelayedRenderNodeDeletion()
+{
+	m_renderNodesToDeleteID = (m_renderNodesToDeleteID + 1) % CRY_ARRAY_COUNT(m_renderNodesToDelete);
+
+	for (auto pRenderNode : m_renderNodesToDelete[m_renderNodesToDeleteID])
+	{
+		pRenderNode->SetRndFlags(ERF_PENDING_DELETE, false);
+		pRenderNode->ReleaseNode(true);
+	}
+
+	m_renderNodesToDelete[m_renderNodesToDeleteID].clear();
 }
 
 void C3DEngine::SetWind(const Vec3& vWind)

@@ -29,8 +29,8 @@ public:
 	void InitVariables();
 	void Done();
 	bool HasMeasurementAxis() const { return true;  }
-	void Display(DisplayContext& dc);
-	
+	void Display(CObjectRenderHelper& objRenderHelper);
+
 	//////////////////////////////////////////////////////////////////////////
 	void SetName(const string& name);
 
@@ -53,7 +53,7 @@ public:
 	int  GetAreaId();
 
 	void SetClosed(bool bClosed);
-	bool IsClosed() { return mv_closed; };
+	bool IsClosed() { return mv_closed; }
 
 	//! Insert new point to shape at given index.
 	//! @return index of newly inserted point.
@@ -116,14 +116,14 @@ public:
 	virtual void  OnContextMenu(CPopupMenuItem* menu);
 
 	virtual float GetShapeZOffset() const { return m_zOffset; }
-	virtual bool  SupportsZAxis() const { return true; }
+	virtual bool  SupportsZAxis() const   { return true; }
 
 	virtual void  CalcBBox();
 
 	void          SerializeShapeTargets(Serialization::IArchive& ar);
 
-	void CreateInspectorWidgets(CInspectorWidgetCreator& creator) override;
-	void  SerializeProperties(Serialization::IArchive& ar, bool bMultiEdit);
+	void          CreateInspectorWidgets(CInspectorWidgetCreator& creator) override;
+	void          SerializeProperties(Serialization::IArchive& ar, bool bMultiEdit);
 
 	virtual void  SetInEditMode(bool editing) {}
 
@@ -139,21 +139,21 @@ protected:
 	virtual void PostClone(CBaseObject* pFromObject, CObjectCloneContext& ctx);
 
 	bool         RayToLineDistance(const Vec3& rayLineP1, const Vec3& rayLineP2, const Vec3& pi, const Vec3& pj, float& distance, Vec3& intPnt);
-	virtual int  GetMaxPoints() const   { return 100000; };
-	virtual int  GetMinPoints() const   { return 3; };
-	virtual void ReadEntityProperties() {};
+	virtual int  GetMaxPoints() const   { return 100000; }
+	virtual int  GetMinPoints() const   { return 3; }
+	virtual void ReadEntityProperties() {}
 
 	// Get obstruction colors to be used based on settings
 	void GetSoundObstructionColors(ColorB& obstruction, ColorB& noObstruction);
 	// Helper function to draw sound roof and floor
-	void DisplaySoundRoofAndFloor(DisplayContext& dc);
+	void DisplaySoundRoofAndFloor(SDisplayContext& dc);
 	////! Calculate distance between
 	//float DistanceToShape( const Vec3 &pos );
-	void DrawTerrainLine(DisplayContext& dc, const Vec3& p1, const Vec3& p2);
+	void DrawTerrainLine(SDisplayContext& dc, const Vec3& p1, const Vec3& p2);
 	void AlignToGrid();
 
 	// Ignore default draw highlight.
-	void         DrawHighlight(DisplayContext& dc) {};
+	void         DrawHighlight(SDisplayContext& dc) {}
 
 	virtual void EndCreation();
 
@@ -175,10 +175,10 @@ protected:
 	//! Called when shape point sound obstruction variable changes.
 	void OnPointChange(IVariable* var);
 
-	void DeleteThis() { delete this; };
+	void DeleteThis() { delete this; }
 
-	void DisplayNormal(DisplayContext& dc);
-	void DisplaySoundInfo(DisplayContext& dc);
+	void DisplayNormal(SDisplayContext& dc);
+	void DisplaySoundInfo(SDisplayContext& dc);
 
 private:
 
@@ -257,10 +257,10 @@ protected:
 class CShapeObjectClassDesc : public CObjectClassDesc
 {
 public:
-	ObjectType     GetObjectType()     { return OBJTYPE_SHAPE; };
-	const char*    ClassName()         { return "Shape"; };
-	const char*    Category()          { return "Area"; };
-	CRuntimeClass* GetRuntimeClass()   { return RUNTIME_CLASS(CShapeObject); };
+	ObjectType     GetObjectType()   { return OBJTYPE_SHAPE; };
+	const char*    ClassName()       { return "Shape"; };
+	const char*    Category()        { return "Area"; };
+	CRuntimeClass* GetRuntimeClass() { return RUNTIME_CLASS(CShapeObject); };
 };
 
 //////////////////////////////////////////////////////////////////////////
@@ -279,7 +279,7 @@ public:
 	}
 
 	virtual bool HasMeasurementAxis() const                           { return false; }
-	XmlNodeRef   Export(const string& levelPath, XmlNodeRef& xmlNode) { return 0; };
+	XmlNodeRef   Export(const string& levelPath, XmlNodeRef& xmlNode) { return 0; }
 
 protected:
 	string m_lastGameArea;
@@ -287,7 +287,7 @@ protected:
 //////////////////////////////////////////////////////////////////////////
 
 //////////////////////////////////////////////////////////////////////////
-// Special object for AI Walkabale paths.
+// Special object for AI Walkable paths.
 //////////////////////////////////////////////////////////////////////////
 class CAIPathObject : public CAIShapeObjectBase
 {
@@ -296,14 +296,14 @@ public:
 
 	CAIPathObject();
 
-	virtual void       Display(DisplayContext& dc) override;
+	virtual void       Display(CObjectRenderHelper& objRenderHelper) override;
 	virtual XmlNodeRef Export(const string& levelPath, XmlNodeRef& xmlNode) override { return 0; };
 
 	virtual void       RemovePoint(int index) override;
 	virtual int        InsertPoint(int index, const Vec3& point, bool const bModifying) override;
 	virtual void       SetPoint(int index, const Vec3& pos) override;
 
-	void CreateInspectorWidgets(CInspectorWidgetCreator& creator) override;
+	void               CreateInspectorWidgets(CInspectorWidgetCreator& creator) override;
 
 protected:
 
@@ -314,8 +314,8 @@ protected:
 private:
 
 	bool IsSegmentValid(const Vec3& p0, const Vec3& p1, float rad);
-	void DrawSphere(DisplayContext& dc, const Vec3& p0, float rad, int n);
-	void DrawCylinder(DisplayContext& dc, const Vec3& p0, const Vec3& p1, float rad, int n);
+	void DrawSphere(SDisplayContext& dc, const Vec3& p0, float rad, int n);
+	void DrawCylinder(SDisplayContext& dc, const Vec3& p0, const Vec3& p1, float rad, int n);
 
 	CVariable<bool>    m_bRoad;
 	CVariableEnum<int> m_navType;
@@ -332,9 +332,9 @@ class CAIShapeObject : public CAIShapeObjectBase
 public:
 	CAIShapeObject();
 
-	XmlNodeRef Export(const string& levelPath, XmlNodeRef& xmlNode) { return 0; };
+	XmlNodeRef Export(const string& levelPath, XmlNodeRef& xmlNode) { return 0; }
 
-	void CreateInspectorWidgets(CInspectorWidgetCreator& creator) override;
+	void       CreateInspectorWidgets(CInspectorWidgetCreator& creator) override;
 
 protected:
 
@@ -356,7 +356,7 @@ class CAIOcclusionPlaneObject : public CAIShapeObjectBase
 public:
 	CAIOcclusionPlaneObject();
 
-	XmlNodeRef Export(const string& levelPath, XmlNodeRef& xmlNode) { return 0; };
+	XmlNodeRef Export(const string& levelPath, XmlNodeRef& xmlNode) { return 0; }
 
 protected:
 
@@ -372,11 +372,11 @@ class CAIPerceptionModifierObject : public CAIShapeObjectBase
 	DECLARE_DYNCREATE(CAIPerceptionModifierObject)
 public:
 	CAIPerceptionModifierObject();
-	// Override init variables to add our own, and not put irrelevant ones on the rollup bar
+	// Override init variables to add our own, and not put irrelevant ones on the roll up bar
 	void       InitVariables();
-	XmlNodeRef Export(const string& levelPath, XmlNodeRef& xmlNode) { return 0; };
+	XmlNodeRef Export(const string& levelPath, XmlNodeRef& xmlNode) { return 0; }
 
-	void CreateInspectorWidgets(CInspectorWidgetCreator& creator) override;
+	void       CreateInspectorWidgets(CInspectorWidgetCreator& creator) override;
 
 protected:
 
@@ -404,7 +404,7 @@ public:
 	XmlNodeRef Export(const string& levelPath, XmlNodeRef& xmlNode) { return CEntityObject::Export(levelPath, xmlNode); }
 	void       GetLinkedWaves(std::vector<CAIWaveObject*>& result);
 
-	void CreateInspectorWidgets(CInspectorWidgetCreator& creator) override;
+	void       CreateInspectorWidgets(CInspectorWidgetCreator& creator) override;
 
 protected:
 
@@ -439,7 +439,6 @@ public:
 	virtual void       SpawnEntity();
 	virtual void       CalcBBox();
 	virtual void       CreateInspectorWidgets(CInspectorWidgetCreator& creator) override;
-
 
 protected:
 
@@ -531,11 +530,11 @@ public:
 
 	virtual void       Serialize(CObjectArchive& ar);
 
-	void CreateInspectorWidgets(CInspectorWidgetCreator& creator) override;
+	void               CreateInspectorWidgets(CInspectorWidgetCreator& creator) override;
 
-	virtual void       Display(DisplayContext& dc);
+	virtual void       Display(CObjectRenderHelper& objRenderHelper);
 	virtual void       PostLoad(CObjectArchive& ar);
-	// Override init variables to add our own, and not put irrelevant ones on the rollup bar
+	// Override init variables to add our own, and not put irrelevant ones on the roll up bar
 	virtual void       InitVariables();
 	virtual XmlNodeRef Export(const string& levelPath, XmlNodeRef& xmlNode) { return CEntityObject::Export(levelPath, xmlNode); }
 	virtual void       SetName(const string& name);
@@ -595,10 +594,10 @@ protected:
 class CAIPathObjectClassDesc : public CObjectClassDesc
 {
 public:
-	ObjectType     GetObjectType()     { return OBJTYPE_SHAPE; };
-	const char*    ClassName()         { return "AIPath"; };
-	const char*    Category()          { return "AI"; };
-	CRuntimeClass* GetRuntimeClass()   { return RUNTIME_CLASS(CAIPathObject); };
+	ObjectType     GetObjectType()   { return OBJTYPE_SHAPE; }
+	const char*    ClassName()       { return "AIPath"; }
+	const char*    Category()        { return "AI"; }
+	CRuntimeClass* GetRuntimeClass() { return RUNTIME_CLASS(CAIPathObject); }
 };
 
 /*!
@@ -607,10 +606,10 @@ public:
 class CAIShapeObjectClassDesc : public CObjectClassDesc
 {
 public:
-	ObjectType     GetObjectType()     { return OBJTYPE_SHAPE; };
-	const char*    ClassName()         { return "AIShape"; };
-	const char*    Category()          { return "AI"; };
-	CRuntimeClass* GetRuntimeClass()   { return RUNTIME_CLASS(CAIShapeObject); };
+	ObjectType     GetObjectType()   { return OBJTYPE_SHAPE; }
+	const char*    ClassName()       { return "AIShape"; }
+	const char*    Category()        { return "AI"; }
+	CRuntimeClass* GetRuntimeClass() { return RUNTIME_CLASS(CAIShapeObject); }
 };
 
 /*!
@@ -619,10 +618,10 @@ public:
 class CAIOcclusionPlaneObjectClassDesc : public CObjectClassDesc
 {
 public:
-	ObjectType     GetObjectType()     { return OBJTYPE_SHAPE; };
-	const char*    ClassName()         { return "AIHorizontalOcclusionPlane"; };
-	const char*    Category()          { return "AI"; };
-	CRuntimeClass* GetRuntimeClass()   { return RUNTIME_CLASS(CAIOcclusionPlaneObject); };
+	ObjectType     GetObjectType()   { return OBJTYPE_SHAPE; }
+	const char*    ClassName()       { return "AIHorizontalOcclusionPlane"; }
+	const char*    Category()        { return "AI"; }
+	CRuntimeClass* GetRuntimeClass() { return RUNTIME_CLASS(CAIOcclusionPlaneObject); }
 };
 
 /*!
@@ -631,10 +630,10 @@ public:
 class CAIPerceptionModifierObjectClassDesc : public CObjectClassDesc
 {
 public:
-	ObjectType     GetObjectType()     { return OBJTYPE_SHAPE; };
-	const char*    ClassName()         { return "AIPerceptionModifier"; };
-	const char*    Category()          { return "AI"; };
-	CRuntimeClass* GetRuntimeClass()   { return RUNTIME_CLASS(CAIPerceptionModifierObject); };
+	ObjectType     GetObjectType()   { return OBJTYPE_SHAPE; }
+	const char*    ClassName()       { return "AIPerceptionModifier"; }
+	const char*    Category()        { return "AI"; }
+	CRuntimeClass* GetRuntimeClass() { return RUNTIME_CLASS(CAIPerceptionModifierObject); }
 };
 
 /*!
@@ -643,10 +642,10 @@ public:
 class CGameShapeObjectClassDesc : public CObjectClassDesc
 {
 public:
-	ObjectType     GetObjectType()     { return OBJTYPE_SHAPE; }
-	const char*    ClassName()         { return "GameVolume"; }
-	const char*    Category()          { return "Area"; }
-	CRuntimeClass* GetRuntimeClass()   { return RUNTIME_CLASS(CGameShapeObject); }
+	ObjectType     GetObjectType()   { return OBJTYPE_SHAPE; }
+	const char*    ClassName()       { return "GameVolume"; }
+	const char*    Category()        { return "Area"; }
+	CRuntimeClass* GetRuntimeClass() { return RUNTIME_CLASS(CGameShapeObject); }
 	virtual bool   IsCreatable() const override
 	{
 		if (gEnv->pGameFramework == nullptr)
@@ -662,7 +661,7 @@ public:
 
 		return pGameVolumesEdit->GetVolumeClassesCount() > 0;
 	}
-	virtual bool  IsCreatedByListEnumeration() override { return false; }
+	virtual bool IsCreatedByListEnumeration() override { return false; }
 };
 
 /*!
@@ -671,10 +670,10 @@ public:
 class CGameShapeLedgeObjectClassDesc : public CObjectClassDesc
 {
 public:
-	ObjectType     GetObjectType()     { return OBJTYPE_SHAPE; }
-	const char*    ClassName()         { return "Ledge"; }
-	const char*    Category()          { return "GameCustom"; }
-	CRuntimeClass* GetRuntimeClass()   { return RUNTIME_CLASS(CGameShapeLedgeObject); }
+	ObjectType     GetObjectType()              { return OBJTYPE_SHAPE; }
+	const char*    ClassName()                  { return "Ledge"; }
+	const char*    Category()                   { return "GameCustom"; }
+	CRuntimeClass* GetRuntimeClass()            { return RUNTIME_CLASS(CGameShapeLedgeObject); }
 	virtual bool   IsCreatable() const override { return gEnv->pEntitySystem->GetClassRegistry()->FindClass("LedgeObject") != nullptr; }
 };
 
@@ -684,10 +683,10 @@ public:
 class CGameShapeLedgeStaticObjectClassDesc : public CObjectClassDesc
 {
 public:
-	ObjectType     GetObjectType()     { return OBJTYPE_SHAPE; }
-	const char*    ClassName()         { return "LedgeStatic"; }
-	const char*    Category()          { return "GameCustom"; }
-	CRuntimeClass* GetRuntimeClass()   { return RUNTIME_CLASS(CGameShapeLedgeStaticObject); }
+	ObjectType     GetObjectType()              { return OBJTYPE_SHAPE; }
+	const char*    ClassName()                  { return "LedgeStatic"; }
+	const char*    Category()                   { return "GameCustom"; }
+	CRuntimeClass* GetRuntimeClass()            { return RUNTIME_CLASS(CGameShapeLedgeStaticObject); }
 	virtual bool   IsCreatable() const override { return gEnv->pEntitySystem->GetClassRegistry()->FindClass("LedgeObjectStatic") != nullptr; }
 };
 /*!
@@ -696,10 +695,10 @@ public:
 class CNavigationAreaObjectDesc : public CObjectClassDesc
 {
 public:
-	ObjectType     GetObjectType()     { return OBJTYPE_SHAPE; }
-	const char*    ClassName()         { return "NavigationArea"; }
-	const char*    Category()          { return "AI"; }
-	CRuntimeClass* GetRuntimeClass()   { return RUNTIME_CLASS(CNavigationAreaObject); }
+	ObjectType     GetObjectType()   { return OBJTYPE_SHAPE; }
+	const char*    ClassName()       { return "NavigationArea"; }
+	const char*    Category()        { return "AI"; }
+	CRuntimeClass* GetRuntimeClass() { return RUNTIME_CLASS(CNavigationAreaObject); }
 };
 
 /*!
@@ -708,9 +707,9 @@ public:
 class CAITerritoryObjectClassDesc : public CObjectClassDesc
 {
 public:
-	ObjectType     GetObjectType()     { return OBJTYPE_SHAPE; };
-	const char*    ClassName()         { return "Entity::AITerritory"; };
-	const char*    Category()          { return ""; };
-	CRuntimeClass* GetRuntimeClass()   { return RUNTIME_CLASS(CAITerritoryObject); };
+	ObjectType     GetObjectType()   { return OBJTYPE_SHAPE; }
+	const char*    ClassName()       { return "Entity::AITerritory"; }
+	const char*    Category()        { return ""; }
+	CRuntimeClass* GetRuntimeClass() { return RUNTIME_CLASS(CAITerritoryObject); }
 };
 

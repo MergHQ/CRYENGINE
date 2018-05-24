@@ -399,7 +399,7 @@ void CRoadObject::SetMaterial(IEditorMaterial* pMaterial)
 }
 
 //////////////////////////////////////////////////////////////////////////
-void CRoadObject::DrawSectorLines(DisplayContext& dc)
+void CRoadObject::DrawSectorLines(SDisplayContext& dc)
 {
 	const Matrix34& wtm = GetWorldTM();
 	float fPointSize = 0.5f;
@@ -421,7 +421,7 @@ void CRoadObject::DrawSectorLines(DisplayContext& dc)
 }
 
 //////////////////////////////////////////////////////////////////////////
-void CRoadObject::DrawRoadObject(DisplayContext& dc, COLORREF col)
+void CRoadObject::DrawRoadObject(SDisplayContext& dc, COLORREF col)
 {
 	if (IsSelected())
 	{
@@ -430,8 +430,10 @@ void CRoadObject::DrawRoadObject(DisplayContext& dc, COLORREF col)
 }
 
 //////////////////////////////////////////////////////////////////////////
-void CRoadObject::Display(DisplayContext& dc)
+void CRoadObject::Display(CObjectRenderHelper& objRenderHelper)
 {
+	SDisplayContext& dc = objRenderHelper.GetDisplayContextRef();
+
 	if (!gViewportDebugPreferences.showRoadObjectHelper)
 		return;
 
@@ -455,7 +457,7 @@ void CRoadObject::Display(DisplayContext& dc)
 
 		DrawRoadObject(dc, col);
 	}
-	__super::Display(dc);
+	__super::Display(objRenderHelper);
 }
 
 //////////////////////////////////////////////////////////////////////////

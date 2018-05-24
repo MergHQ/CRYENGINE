@@ -35,7 +35,7 @@ public:
 
 	virtual void   SetUserData(const char* key, void* userData);
 
-	virtual void   Display(DisplayContext& dc) {}
+	virtual void   Display(SDisplayContext& dc) {}
 	virtual bool   OnKeyDown(CViewport* view, uint32 nChar, uint32 nRepCnt, uint32 nFlags);
 
 	bool           IsNeedMoveTool() override { return true; }
@@ -388,7 +388,7 @@ public:
 	virtual string GetDisplayName() const override { return "Split Spline"; }
 	bool           MouseCallback(CViewport* view, EMouseEvent event, CPoint& point, int flags);
 	virtual void   SetUserData(const char* key, void* userData);
-	virtual void   Display(DisplayContext& dc) {};
+	virtual void   Display(SDisplayContext& dc) {};
 	virtual bool   OnKeyDown(CViewport* view, uint32 nChar, uint32 nRepCnt, uint32 nFlags);
 
 protected:
@@ -504,7 +504,7 @@ public:
 	virtual string GetDisplayName() const override { return "Merge Splines"; }
 	bool           MouseCallback(CViewport* view, EMouseEvent event, CPoint& point, int flags);
 	virtual void   SetUserData(const char* key, void* userData);
-	virtual void   Display(DisplayContext& dc) {};
+	virtual void   Display(SDisplayContext& dc) {};
 	virtual bool   OnKeyDown(CViewport* view, uint32 nChar, uint32 nRepCnt, uint32 nFlags);
 
 protected:
@@ -1241,8 +1241,9 @@ void CSplineObject::CalcBBox()
 }
 
 //////////////////////////////////////////////////////////////////////////
-void CSplineObject::Display(DisplayContext& dc)
+void CSplineObject::Display(CObjectRenderHelper& objRenderHelper)
 {
+	SDisplayContext& dc = objRenderHelper.GetDisplayContextRef();
 	bool isSelected = IsSelected();
 
 	float fPointSize = isSelected ? 0.005f : 0.0025f;
@@ -1323,7 +1324,7 @@ void CSplineObject::Display(DisplayContext& dc)
 }
 
 //////////////////////////////////////////////////////////////////////////
-void CSplineObject::DrawJoints(DisplayContext& dc)
+void CSplineObject::DrawJoints(SDisplayContext& dc)
 {
 	const Matrix34& wtm = GetWorldTM();
 	float fPointSize = 0.5f;

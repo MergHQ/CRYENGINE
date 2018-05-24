@@ -32,7 +32,7 @@ protected:
 	void UpdateSurfaceTexture(int flags);
 
 	// Draw everything.
-	virtual void Draw(DisplayContext& dc);
+	virtual void Draw(CObjectRenderHelper& objRenderHelper);
 
 	void         DrawStaticObjects();
 

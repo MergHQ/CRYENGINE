@@ -20,7 +20,7 @@ public:
 
 	bool OnLButtonDown(CViewport* view, UINT nFlags, CPoint point) override;
 	bool OnMouseMove(CViewport* view, UINT nFlags, CPoint point) override;
-	void Display(DisplayContext& dc) override;
+	void Display(SDisplayContext& dc) override;
 	bool EnabledSeamlessSelection() const;
 	void OnChangeParameter(bool continuous) override;
 	void Serialize(Serialization::IArchive& ar) override;

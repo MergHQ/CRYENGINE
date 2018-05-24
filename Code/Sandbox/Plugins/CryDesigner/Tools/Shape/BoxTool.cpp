@@ -164,7 +164,7 @@ void BoxTool::UpdateShape(bool bUpdateUIs)
 	ApplyPostProcess(ePostProcess_Mesh | ePostProcess_Mirror | ePostProcess_SmoothingGroup);
 }
 
-void BoxTool::Display(DisplayContext& dc)
+void BoxTool::Display(SDisplayContext& dc)
 {
 	DisplayCurrentSpot(dc);
 	DisplayDimensionHelper(dc, eShelf_Construction);

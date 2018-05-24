@@ -55,7 +55,7 @@ void CPlaneTranslateGizmo::SetYOffset(float offset)
 	m_yOffset = offset;
 }
 
-void CPlaneTranslateGizmo::DrawPlane(DisplayContext& dc, Vec3 position)
+void CPlaneTranslateGizmo::DrawPlane(SDisplayContext& dc, Vec3 position)
 {
 	IDisplayViewport* view = dc.view;
 
@@ -91,7 +91,7 @@ void CPlaneTranslateGizmo::DrawPlane(DisplayContext& dc, Vec3 position)
 	dc.SetState(prevflags);
 }
 
-void CPlaneTranslateGizmo::Display(DisplayContext& dc)
+void CPlaneTranslateGizmo::Display(SDisplayContext& dc)
 {
 	if (GetFlag(EGIZMO_INTERACTING))
 	{

@@ -2,7 +2,7 @@
 
 #pragma once
 
-struct DisplayContext;
+struct SDisplayContext;
 struct AABB;
 class CBaseObjectsCache;
 class CPoint;
@@ -41,7 +41,7 @@ struct IDisplayViewport
 
 	virtual void            ScreenToClient(POINT* pt) const = 0;
 	virtual void            GetDimensions(int* width, int* height) const = 0;
-	virtual Vec3			MapViewToCP(CPoint point, int axis, bool aSnapToTerrain = false, float aTerrainOffset = 0.f) = 0;
+	virtual Vec3            MapViewToCP(CPoint point, int axis, bool aSnapToTerrain = false, float aTerrainOffset = 0.f) = 0;
 	virtual void            SetConstructionMatrix(const Matrix34& xform) = 0;
 
 	virtual Vec3            SnapToGrid(Vec3 vec) = 0;

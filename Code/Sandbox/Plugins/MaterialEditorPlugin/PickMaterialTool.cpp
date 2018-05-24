@@ -50,7 +50,7 @@ bool CPickMaterialTool::MouseCallback(CViewport* view, EMouseEvent event, CPoint
 }
 
 //////////////////////////////////////////////////////////////////////////
-void CPickMaterialTool::Display(DisplayContext& dc)
+void CPickMaterialTool::Display(SDisplayContext& dc)
 {
 	CPoint mousePoint;
 	::GetCursorPos(&mousePoint);
@@ -121,7 +121,7 @@ bool CPickMaterialTool::OnMouseMove(CViewport* view, UINT nFlags, CPoint point)
 //////////////////////////////////////////////////////////////////////////
 class CMaterialPickTool_ClassDesc : public IClassDesc
 {
-	virtual ESystemClassID SystemClassID() { return ESYSTEM_CLASS_EDITTOOL; }
+	virtual ESystemClassID SystemClassID()   { return ESYSTEM_CLASS_EDITTOOL; }
 	virtual const char*    ClassName()       { return "Material.PickTool"; };
 	virtual const char*    Category()        { return "Material"; };
 	virtual CRuntimeClass* GetRuntimeClass() { return RUNTIME_CLASS(CPickMaterialTool); }

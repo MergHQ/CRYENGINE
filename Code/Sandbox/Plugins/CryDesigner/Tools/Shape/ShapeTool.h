@@ -22,7 +22,7 @@ public:
 	virtual void Enter() override;
 	virtual void Leave() override;
 
-	void         DisplayCurrentSpot(DisplayContext& dc);
+	void         DisplayCurrentSpot(SDisplayContext& dc);
 	virtual void Serialize(Serialization::IArchive& ar);
 
 protected:

@@ -18,10 +18,11 @@ CCharacterAttachHelperObject::CCharacterAttachHelperObject()
 }
 
 //////////////////////////////////////////////////////////////////////////
-void CCharacterAttachHelperObject::Display(DisplayContext& dc)
+void CCharacterAttachHelperObject::Display(CObjectRenderHelper& objRenderHelper)
 {
-	__super::Display(dc);
+	__super::Display(objRenderHelper);
 
+	SDisplayContext& dc = objRenderHelper.GetDisplayContextRef();
 	dc.SetLineWidth(4.0f);
 	float s = 1.0f * GetHelperScale();
 

@@ -97,6 +97,16 @@ enum class EAudioListenerRequestType : EnumFlagsType
 	SetName,
 };
 
+enum class EOcclusionCollisionType : EnumFlagsType
+{
+	None    = 0,
+	Static  = BIT(6),  // a,
+	Rigid   = BIT(7),  // b,
+	Water   = BIT(8),  // c,
+	Terrain = BIT(9),  // d,
+};
+CRY_CREATE_ENUM_FLAG_OPERATORS(EOcclusionCollisionType);
+
 //////////////////////////////////////////////////////////////////////////
 struct SAudioEventListener
 {
@@ -180,9 +190,9 @@ template<>
 struct SAudioManagerRequestData<EAudioManagerRequestType::AddRequestListener> final : public SAudioManagerRequestDataBase
 {
 	explicit SAudioManagerRequestData(
-	  void const* const pObjectToListenTo_,
-	  void(*func_)(SRequestInfo const* const),
-	  ESystemEvents const eventMask_)
+		void const* const pObjectToListenTo_,
+		void (*func_)(SRequestInfo const* const),
+		ESystemEvents const eventMask_)
 		: SAudioManagerRequestDataBase(EAudioManagerRequestType::AddRequestListener)
 		, pObjectToListenTo(pObjectToListenTo_)
 		, func(func_)
@@ -207,7 +217,7 @@ struct SAudioManagerRequestData<EAudioManagerRequestType::AddRequestListener> fi
 template<>
 struct SAudioManagerRequestData<EAudioManagerRequestType::RemoveRequestListener> final : public SAudioManagerRequestDataBase
 {
-	explicit SAudioManagerRequestData(void const* const pObjectToListenTo_, void(*func_)(SRequestInfo const* const))
+	explicit SAudioManagerRequestData(void const* const pObjectToListenTo_, void (*func_)(SRequestInfo const* const))
 		: SAudioManagerRequestDataBase(EAudioManagerRequestType::RemoveRequestListener)
 		, pObjectToListenTo(pObjectToListenTo_)
 		, func(func_)
@@ -687,9 +697,9 @@ template<>
 struct SAudioObjectRequestData<EAudioObjectRequestType::PlayFile> final : public SAudioObjectRequestDataBase
 {
 	explicit SAudioObjectRequestData(
-	  CryFixedStringT<MaxFilePathLength> const& file_,
-	  ControlId const usedAudioTriggerId_,
-	  bool const bLocalized_)
+		CryFixedStringT<MaxFilePathLength> const& file_,
+		ControlId const usedAudioTriggerId_,
+		bool const bLocalized_)
 		: SAudioObjectRequestDataBase(EAudioObjectRequestType::PlayFile)
 		, file(file_)
 		, usedAudioTriggerId(usedAudioTriggerId_)
@@ -1007,8 +1017,8 @@ template<>
 struct SAudioListenerRequestData<EAudioListenerRequestType::SetTransformation> final : public SAudioListenerRequestDataBase
 {
 	explicit SAudioListenerRequestData(
-	  CObjectTransformation const& transformation_,
-	  CATLListener* const pListener_)
+		CObjectTransformation const& transformation_,
+		CATLListener* const pListener_)
 		: SAudioListenerRequestDataBase(EAudioListenerRequestType::SetTransformation)
 		, transformation(transformation_)
 		, pListener(pListener_)
@@ -1108,12 +1118,12 @@ public:
 	{}
 
 	explicit CAudioRequest(
-	  ERequestFlags const flags_,
-	  CATLAudioObject* const pObject_,
-	  void* const pOwner_,
-	  void* const pUserData_,
-	  void* const pUserDataOwner_,
-	  SAudioRequestData const* const pRequestData_)
+		ERequestFlags const flags_,
+		CATLAudioObject* const pObject_,
+		void* const pOwner_,
+		void* const pUserData_,
+		void* const pUserDataOwner_,
+		SAudioRequestData const* const pRequestData_)
 		: flags(flags_)
 		, pObject(pObject_)
 		, pOwner(pOwner_)
@@ -1125,12 +1135,12 @@ public:
 
 	SAudioRequestData* GetData() const { return pData.get(); }
 
-	ERequestFlags    flags = ERequestFlags::None;
+	ERequestFlags flags = ERequestFlags::None;
 	CATLAudioObject* pObject = nullptr;
-	void*            pOwner = nullptr;
-	void*            pUserData = nullptr;
-	void*            pUserDataOwner = nullptr;
-	ERequestStatus   status = ERequestStatus::None;
+	void* pOwner = nullptr;
+	void* pUserData = nullptr;
+	void* pUserDataOwner = nullptr;
+	ERequestStatus status = ERequestStatus::None;
 
 private:
 
@@ -1168,17 +1178,17 @@ enum class EDrawFilter : EnumFlagsType
 CRY_CREATE_ENUM_FLAG_OPERATORS(EDrawFilter);
 
 static constexpr EDrawFilter objectMask =
-  EDrawFilter::Spheres |
-  EDrawFilter::ObjectLabel |
-  EDrawFilter::ObjectTriggers |
-  EDrawFilter::ObjectStates |
-  EDrawFilter::ObjectParameters |
-  EDrawFilter::ObjectEnvironments |
-  EDrawFilter::ObjectDistance |
-  EDrawFilter::OcclusionRayLabels |
-  EDrawFilter::OcclusionRays |
-  EDrawFilter::ListenerOcclusionPlane |
-  EDrawFilter::ObjectStandaloneFiles;
+	EDrawFilter::Spheres |
+	EDrawFilter::ObjectLabel |
+	EDrawFilter::ObjectTriggers |
+	EDrawFilter::ObjectStates |
+	EDrawFilter::ObjectParameters |
+	EDrawFilter::ObjectEnvironments |
+	EDrawFilter::ObjectDistance |
+	EDrawFilter::OcclusionRayLabels |
+	EDrawFilter::OcclusionRays |
+	EDrawFilter::ListenerOcclusionPlane |
+	EDrawFilter::ObjectStandaloneFiles;
 }
 #endif // INCLUDE_AUDIO_PRODUCTION_CODE
 

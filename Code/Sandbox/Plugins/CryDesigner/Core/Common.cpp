@@ -60,7 +60,7 @@ BrushVec3 ScreenPos2WorldPos(const BrushVec3& screenPos)
 	return worldPos;
 }
 
-void DrawSpot(DisplayContext& dc, const BrushMatrix34& worldTM, const BrushVec3& pos, const ColorB& color, float fSize)
+void DrawSpot(SDisplayContext& dc, const BrushMatrix34& worldTM, const BrushVec3& pos, const ColorB& color, float fSize)
 {
 	const BrushMatrix34& viewTM(dc.view->GetViewTM());
 	const BrushMatrix34& invWorldTM(worldTM.GetInverted());
@@ -595,7 +595,7 @@ void GetLocalViewRay(const BrushMatrix34& worldTM, IDisplayViewport* view, CPoin
 	outRay.direction = invWorldTM.TransformVector(ToBrushVec3(rayDir));
 }
 
-void DrawPlane(DisplayContext& dc, const BrushVec3& vPivot, const BrushPlane& plane, float s)
+void DrawPlane(SDisplayContext& dc, const BrushVec3& vPivot, const BrushPlane& plane, float s)
 {
 	Matrix33 orthogonalTM = Matrix33::CreateOrthogonalBase(ToVec3(plane.Normal()));
 

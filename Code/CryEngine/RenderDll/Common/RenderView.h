@@ -354,6 +354,7 @@ private:
 	CCompiledRenderObject* AllocCompiledObject(CRenderObject* pObj, CRenderElement* pElem, const SShaderItem& shaderItem);
 	CCompiledRenderObject* AllocCompiledObjectTemporary(CRenderObject* pObj, CRenderElement* pElem, const SShaderItem& shaderItem);
 
+	TRect_tpl<uint16>      ComputeResolveViewport(const SRenderViewport &viewport, const CRenderObject* obj, const CCamera &camera, bool forceFullscreenUpdate = false) const;
 
 private:
 	EUsageMode       m_usageMode;

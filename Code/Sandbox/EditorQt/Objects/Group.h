@@ -1,5 +1,4 @@
 // Copyright 2001-2018 Crytek GmbH / Crytek Group. All rights reserved.
-
 #pragma once
 
 #include "Objects/BaseObject.h"
@@ -36,7 +35,7 @@ public:
 	bool Init(CBaseObject* prev, const string& file);
 	void Done();
 
-	void Display(DisplayContext& disp);
+	void Display(CObjectRenderHelper& objRenderHelper);
 
 	void CreateInspectorWidgets(CInspectorWidgetCreator& creator) override;
 

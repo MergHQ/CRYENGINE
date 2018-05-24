@@ -1349,16 +1349,16 @@ void CRenderView::AddRenderObject(CRenderElement* re, SShaderItem& SH, CRenderOb
 
 	CShaderResources* const __restrict pShaderResources = (CShaderResources*)SH.m_pShaderResources;
 
-	// Need to differentiate between something rendered with cloak layer material, and sorted with cloak.
-	// e.g. ironsight glows on gun should be sorted with cloak to not write depth - can be inconsistent with no depth from gun.
-	const uint32 nCloakRenderedMask = mask_nz_zr(nMaterialLayers & MTL_LAYER_BLEND_CLOAK, pShaderResources ? static_cast<CShaderResources*>(pShaderResources)->CShaderResources::GetMtlLayerNoDrawFlags() & MTL_LAYER_CLOAK : 0);
-	uint32 nCloakLayerMask = nz2mask(nMaterialLayers & MTL_LAYER_BLEND_CLOAK);
-
 	// Discard 0 alpha blended geometry - this should be discarded earlier on 3dengine side preferably
 	if (!obj->m_fAlpha)
 		return;
 	if (pShaderResources && pShaderResources->::CShaderResources::IsInvisible())
 		return;
+
+	// Need to differentiate between something rendered with cloak layer material, and sorted with cloak.
+	// e.g. ironsight glows on gun should be sorted with cloak to not write depth - can be inconsistent with no depth from gun.
+	const uint32 nCloakRenderedMask = pShaderResources && mask_nz_zr(nMaterialLayers & MTL_LAYER_BLEND_CLOAK, pShaderResources ? static_cast<CShaderResources*>(pShaderResources)->CShaderResources::GetMtlLayerNoDrawFlags() & MTL_LAYER_CLOAK : 0);
+	uint32 nCloakLayerMask = nz2mask(nMaterialLayers & MTL_LAYER_BLEND_CLOAK);
 
 #ifdef _DEBUG
 	static float sMatIdent[12] =
@@ -1470,66 +1470,6 @@ void CRenderView::AddRenderObject(CRenderElement* re, SShaderItem& SH, CRenderOb
 	//if (obj->m_nMaterialLayers & MTL_LAYER_BLEND_CLOAK) nAW = 1;   -> branchless
 	nAW |= nz2one(obj->m_nMaterialLayers & MTL_LAYER_BLEND_CLOAK);
 
-	if (nShaderFlags & (EF_REFRACTIVE | EF_FORCEREFRACTIONUPDATE) || nCloakRenderedMask)
-	{
-		SRenderObjData* pOD = obj->GetObjData();
-
-		if (obj->m_pRenderNode && pOD)
-		{
-			const auto& rViewport = passInfo.GetRenderView()->GetViewport();
-			const int32 align16 = (16 - 1);
-			const int32 shift16 = 4;
-			if (CRenderer::CV_r_RefractionPartialResolves)
-			{
-				AABB aabb;
-				IRenderNode* pRenderNode = obj->m_pRenderNode;
-				pRenderNode->FillBBox(aabb);
-
-				int iOut[4];
-
-				passInfo.GetCamera().CalcScreenBounds(&iOut[0], &aabb, rViewport.width, rViewport.height);
-				pOD->m_screenBounds[0] = min(iOut[0] >> shift16, 255);
-				pOD->m_screenBounds[1] = min(iOut[1] >> shift16, 255);
-				pOD->m_screenBounds[2] = min((iOut[2] + align16) >> shift16, 255);
-				pOD->m_screenBounds[3] = min((iOut[3] + align16) >> shift16, 255);
-
-#if REFRACTION_PARTIAL_RESOLVE_DEBUG_VIEWS
-				if (CRenderer::CV_r_RefractionPartialResolvesDebug == eRPR_DEBUG_VIEW_3D_BOUNDS)
-				{
-					// Debug bounding box view for refraction partial resolves
-					IRenderAuxGeom* pAuxRenderer = gEnv->pRenderer->GetIRenderAuxGeom();
-					if (pAuxRenderer)
-					{
-						SAuxGeomRenderFlags oldRenderFlags = pAuxRenderer->GetRenderFlags();
-
-						SAuxGeomRenderFlags newRenderFlags;
-						newRenderFlags.SetDepthTestFlag(e_DepthTestOff);
-						newRenderFlags.SetAlphaBlendMode(e_AlphaBlended);
-						pAuxRenderer->SetRenderFlags(newRenderFlags);
-
-						const bool bSolid = true;
-						const ColorB solidColor(64, 64, 255, 64);
-						pAuxRenderer->DrawAABB(aabb, bSolid, solidColor, eBBD_Faceted);
-
-						const ColorB wireframeColor(255, 0, 0, 255);
-						pAuxRenderer->DrawAABB(aabb, !bSolid, wireframeColor, eBBD_Faceted);
-
-						// Set previous Aux render flags back again
-						pAuxRenderer->SetRenderFlags(oldRenderFlags);
-					}
-				}
-#endif
-			}
-			else if (nShaderFlags & EF_FORCEREFRACTIONUPDATE)
-			{
-				pOD->m_screenBounds[0] = 0;
-				pOD->m_screenBounds[1] = 0;
-				pOD->m_screenBounds[2] = std::min<uint32>((rViewport.width ) >> shift16, 255);
-				pOD->m_screenBounds[3] = std::min<uint32>((rViewport.height) >> shift16, 255);
-			}
-		}
-	}
-
 	// final step, for post 3d items, remove them from any other list than POST_3D_RENDER
 	// (have to do this here as the batch needed to go through the normal nList assign path first)
 	nBatchFlags = iselmask(nz2mask(nBatchFlags & FB_POST_3D_RENDER), FB_POST_3D_RENDER, nBatchFlags);
@@ -1571,6 +1511,25 @@ void CRenderView::AddRenderItem(CRenderElement* pElem, CRenderObject* RESTRICT_P
 	}
 
 	nBatchFlags |= (shaderItem.m_nPreprocessFlags & FSPR_MASK);
+
+	const uint32 nMaterialLayers = pObj->m_nMaterialLayers;
+	// Need to differentiate between something rendered with cloak layer material, and sorted with cloak.
+	// e.g. ironsight glows on gun should be sorted with cloak to not write depth - can be inconsistent with no depth from gun.
+	const uint32 nCloakRenderedMask = shaderItem.m_pShaderResources && mask_nz_zr(nMaterialLayers & MTL_LAYER_BLEND_CLOAK, static_cast<CShaderResources*>(shaderItem.m_pShaderResources)->CShaderResources::GetMtlLayerNoDrawFlags() & MTL_LAYER_CLOAK);
+
+	if (pShader->m_Flags & (EF_REFRACTIVE | EF_FORCEREFRACTIONUPDATE) || nCloakRenderedMask)
+	{
+		SRenderObjData* pOD = pObj->GetObjData();
+
+		if (pObj->m_pRenderNode && pOD)
+		{
+			const auto& viewport = passInfo.GetRenderView()->GetViewport();
+			const bool forceFullscreenUpdate = !!(pShader->m_Flags & EF_FORCEREFRACTIONUPDATE);
+			pOD->m_screenBounds = ComputeResolveViewport(viewport, pObj, passInfo.GetCamera(), forceFullscreenUpdate);
+		}
+
+		nBatchFlags |= FB_REFRACTION;
+	}
 
 	SRendItem ri;
 
@@ -1733,6 +1692,63 @@ inline void CRenderView::AddRenderItemToRenderLists(const SRendItem& ri, int nRe
 	}
 }
 
+TRect_tpl<uint16> CRenderView::ComputeResolveViewport(const SRenderViewport &viewport, const CRenderObject* obj, const CCamera &camera, bool forceFullscreenUpdate) const {
+	const int32 align16 = (16 - 1);
+	const int32 shift16 = 4;
+
+	TRect_tpl<uint16> resolveViewport;
+	if (CRenderer::CV_r_RefractionPartialResolves)
+	{
+		AABB aabb;
+		IRenderNode* pRenderNode = obj->m_pRenderNode;
+		pRenderNode->FillBBox(aabb);
+
+		int iOut[4];
+
+		camera.CalcScreenBounds(&iOut[0], &aabb, viewport.width, viewport.height);
+		resolveViewport.Min.x = iOut[0] >> shift16;
+		resolveViewport.Min.y = iOut[1] >> shift16;
+		resolveViewport.Max.x = (iOut[2] + align16) >> shift16;
+		resolveViewport.Max.y = (iOut[3] + align16) >> shift16;
+
+#if REFRACTION_PARTIAL_RESOLVE_DEBUG_VIEWS
+		if (CRenderer::CV_r_RefractionPartialResolvesDebug == eRPR_DEBUG_VIEW_3D_BOUNDS)
+		{
+			// Debug bounding box view for refraction partial resolves
+			IRenderAuxGeom* pAuxRenderer = gEnv->pRenderer->GetIRenderAuxGeom();
+			if (pAuxRenderer)
+			{
+				SAuxGeomRenderFlags oldRenderFlags = pAuxRenderer->GetRenderFlags();
+
+				SAuxGeomRenderFlags newRenderFlags;
+				newRenderFlags.SetDepthTestFlag(e_DepthTestOff);
+				newRenderFlags.SetAlphaBlendMode(e_AlphaBlended);
+				pAuxRenderer->SetRenderFlags(newRenderFlags);
+
+				const bool bSolid = true;
+				const ColorB solidColor(64, 64, 255, 64);
+				pAuxRenderer->DrawAABB(aabb, bSolid, solidColor, eBBD_Faceted);
+
+				const ColorB wireframeColor(255, 0, 0, 255);
+				pAuxRenderer->DrawAABB(aabb, !bSolid, wireframeColor, eBBD_Faceted);
+
+				// Set previous Aux render flags back again
+				pAuxRenderer->SetRenderFlags(oldRenderFlags);
+			}
+		}
+#endif
+	}
+	else if (forceFullscreenUpdate)
+	{
+		resolveViewport.Min.x = 0;
+		resolveViewport.Min.y = 0;
+		resolveViewport.Max.x = (viewport.width) >> shift16;
+		resolveViewport.Max.y = (viewport.height) >> shift16;
+	}
+
+	return resolveViewport;
+}
+
 void CRenderView::ExpandPermanentRenderObjects()
 {
 	PROFILE_FRAME(ExpandPermanentRenderObjects);
@@ -1843,7 +1859,10 @@ void CRenderView::ExpandPermanentRenderObjects()
 					else
 						renderList = pri.m_nRenderList;
 
-					AddRenderItemToRenderLists<false>(ri, renderList, pri.m_nBatchFlags, shaderItem);
+
+					if (renderList == EFSLIST_TRANSP || renderList == EFSLIST_TRANSP_NEAREST || renderList == EFSLIST_HALFRES_PARTICLES)
+						ri.fDist = SRendItem::EncodeDistanceSortingValue(ri.pObj);
+					AddRenderItemToRenderLists<false>(ri, renderList, ri.nBatchFlags, shaderItem);
 
 					// The need for compilation is not detected beforehand, and it only needs to be recompiled because the elements are either skinned, dirty, or need to be updated always.
 					// In this case object need to be recompiled to get skinning, or input stream updated but compilation of constant buffer is not needed.

@@ -1292,8 +1292,7 @@ void CTrackViewBatchRenderDlg::InitializeRenderContext()
 		CRenderViewport* pGameViewport = (CRenderViewport*)GetIEditor()->GetViewManager()->GetGameViewport();
 		if (pGameViewport)
 		{
-			auto displayContext = pGameViewport->GetDisplayContext();
-			m_displayContextKey = displayContext.GetDisplayContextKey();
+			m_displayContextKey = pGameViewport->GetDisplayContextKey();
 			pGameViewport->GetResolution(m_viewPortResW, m_viewPortResH);
 		}
 		else
@@ -1420,7 +1419,7 @@ void CTrackViewBatchRenderDlg::EndCaptureItem(IAnimSequence* pSequence)
 	pSequence->SetActiveDirector(m_renderContext.pActiveDirectorBU);
 
 	SRenderItem renderItem = m_renderItems[m_renderContext.currentItemIndex];
-	if(m_renderContext.currentItemIndex==m_renderItems.size()-1)  // after last item, reset viewport.
+	if (m_renderContext.currentItemIndex == m_renderItems.size() - 1)  // after last item, reset viewport.
 		gEnv->pRenderer->ResizeContext(m_displayContextKey, m_viewPortResW, m_viewPortResH);
 
 	if (renderItem.bCreateVideo)

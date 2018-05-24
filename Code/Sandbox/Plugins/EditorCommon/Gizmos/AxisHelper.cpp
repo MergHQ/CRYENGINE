@@ -88,7 +88,7 @@ void CAxisHelper::Prepare(const Matrix34& worldTM, const SGizmoPreferences& setu
 }
 
 //////////////////////////////////////////////////////////////////////////
-void CAxisHelper::DrawAxis(const Matrix34& worldTM, const SGizmoPreferences& setup, DisplayContext& dc, float fScaleRatio)
+void CAxisHelper::DrawAxis(const Matrix34& worldTM, const SGizmoPreferences& setup, SDisplayContext& dc, float fScaleRatio)
 {
 	Prepare(worldTM, setup, dc.view, fScaleRatio);
 

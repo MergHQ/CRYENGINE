@@ -707,14 +707,6 @@ void CSceneForwardStage::ExecuteTransparent(bool bBelowWater)
 	CD3D9Renderer* pRenderer = gcpRendD3D;
 	CRenderView* pRenderView = RenderView();
 
-	const bool bItemsBelowWater = !pRenderView->GetRenderItems(EFSLIST_TRANSP).empty() && (pRenderView->GetBatchFlags(EFSLIST_TRANSP) & FB_BELOW_WATER);
-	const bool bItemsBelowWaterNearest = !pRenderView->GetRenderItems(EFSLIST_TRANSP_NEAREST).empty() && (pRenderView->GetBatchFlags(EFSLIST_TRANSP_NEAREST) & FB_BELOW_WATER);
-	if(bItemsBelowWater || bItemsBelowWaterNearest || !bBelowWater)
-	{
-		CStretchRectPass& copyPass = bBelowWater ? m_copySceneTargetBWPass : m_copySceneTargetAWPass;
-		copyPass.Execute(CRendererResources::s_ptexHDRTarget, CRendererResources::s_ptexSceneTarget);
-	}
-
 	CSceneRenderPass& scenePass = bBelowWater ? m_forwardTransparentBWPass : m_forwardTransparentAWPass;
 
 	CSceneRenderPass::EPassFlags passFlags = CSceneRenderPass::ePassFlags_None;

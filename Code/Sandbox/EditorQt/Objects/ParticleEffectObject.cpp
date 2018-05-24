@@ -27,8 +27,8 @@ void CParticleEffectObject::CreateInspectorWidgets(CInspectorWidgetCreator& crea
 	{
 		if (ar.openBlock("effect", "<Effect"))
 		{
-			ar(Serialization::ActionButton(std::bind(&CParticleEffectObject::OnMenuGoToDatabase, pObject)), "go_to_database", "^Edit");
-			ar.closeBlock();
+		  ar(Serialization::ActionButton(std::bind(&CParticleEffectObject::OnMenuGoToDatabase, pObject)), "go_to_database", "^Edit");
+		  ar.closeBlock();
 		}
 	});
 }
@@ -124,7 +124,7 @@ void CParticleEffectObject::AssignEffect(const string& effectName)
 	}
 }
 
-void CParticleEffectObject::Display(DisplayContext& dc)
+void CParticleEffectObject::Display(SDisplayContext& dc)
 {
 	const Matrix34& wtm = GetWorldTM();
 

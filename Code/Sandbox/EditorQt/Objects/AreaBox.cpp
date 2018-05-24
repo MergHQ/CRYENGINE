@@ -290,7 +290,7 @@ void CAreaObjectBase::Serialize(CObjectArchive& ar)
 }
 
 //////////////////////////////////////////////////////////////////////////
-void CAreaObjectBase::DrawEntityLinks(DisplayContext& dc)
+void CAreaObjectBase::DrawEntityLinks(SDisplayContext& dc)
 {
 	if (!m_entities.IsEmpty())
 	{
@@ -544,7 +544,7 @@ void CAreaBox::OnSizeChange(IVariable* pVariable)
 }
 
 //////////////////////////////////////////////////////////////////////////
-void CAreaBox::Display(DisplayContext& dc)
+void CAreaBox::Display(SDisplayContext& dc)
 {
 	if (!gViewportDebugPreferences.showAreaObjectHelper)
 		return;

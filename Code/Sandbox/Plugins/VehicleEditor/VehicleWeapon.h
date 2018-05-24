@@ -1,11 +1,5 @@
 // Copyright 2001-2018 Crytek GmbH / Crytek Group. All rights reserved.
-
-#ifndef __VehicleWeapon_h__
-#define __VehicleWeapon_h__
-
-#if _MSC_VER > 1000
-	#pragma once
-#endif
+#pragma once
 
 #include "Objects/BaseObject.h"
 #include "VehicleDialogComponent.h"
@@ -25,11 +19,11 @@ public:
 	~CVehicleWeapon(){}
 
 	//////////////////////////////////////////////////////////////////////////
-	// Ovverides from CBaseObject.
+	// Overrides from CBaseObject.
 	//////////////////////////////////////////////////////////////////////////
 	void Done();
 
-	void Display(DisplayContext& dc);
+	void Display(CObjectRenderHelper& objRenderHelper);
 
 	void GetBoundBox(AABB& box);
 	void GetLocalBounds(AABB& box);
@@ -37,7 +31,7 @@ public:
 	void Serialize(CObjectArchive& ar) {}
 	//////////////////////////////////////////////////////////////////////////
 
-	// Ovverides from IVeedObject.
+	// Overrides from IVeedObject.
 	//////////////////////////////////////////////////////////////////////////
 	void        UpdateVarFromObject();
 	void        UpdateObjectFromVar()        {}
@@ -52,7 +46,7 @@ public:
 
 protected:
 	CVehicleWeapon();
-	void DeleteThis() { delete this; };
+	void DeleteThis() { delete this; }
 
 	CVehicleSeat*      m_pSeat;
 	CVehiclePrototype* m_pVehicle;
@@ -64,11 +58,8 @@ protected:
 class CVehicleWeaponClassDesc : public CObjectClassDesc
 {
 public:
-	ObjectType     GetObjectType()   { return OBJTYPE_OTHER; };
-	const char*    ClassName()       { return "VehicleWeapon"; };
-	const char*    Category()        { return ""; };
-	CRuntimeClass* GetRuntimeClass() { return RUNTIME_CLASS(CVehicleWeapon); };
+	ObjectType     GetObjectType()   { return OBJTYPE_OTHER; }
+	const char*    ClassName()       { return "VehicleWeapon"; }
+	const char*    Category()        { return ""; }
+	CRuntimeClass* GetRuntimeClass() { return RUNTIME_CLASS(CVehicleWeapon); }
 };
-
-#endif // __VehicleWeapon_h__
-

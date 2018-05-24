@@ -369,8 +369,9 @@ void AreaSolidObject::InvalidateTM(int nWhyFlags)
 	UpdateGameArea();
 }
 
-void AreaSolidObject::Display(DisplayContext& dc)
+void AreaSolidObject::Display(CObjectRenderHelper& objRenderHelper)
 {
+	SDisplayContext& dc = objRenderHelper.GetDisplayContextRef();
 	DrawDefault(dc);
 
 	if (GetCompiler())
@@ -430,7 +431,7 @@ void AreaSolidObject::Display(DisplayContext& dc)
 	}
 }
 
-void AreaSolidObject::DisplayMemoryUsage(DisplayContext& dc)
+void AreaSolidObject::DisplayMemoryUsage(SDisplayContext& dc)
 {
 	if (IsEmpty() || !GetDesigner())
 		return;

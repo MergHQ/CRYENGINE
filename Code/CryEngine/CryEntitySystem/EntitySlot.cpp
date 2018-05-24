@@ -76,11 +76,8 @@ void CEntitySlot::ReleaseObjects()
 	}
 	else if (m_pRenderNode)
 	{
-		if (m_bRegisteredRenderNode)
-			gEnv->p3DEngine->UnRegisterEntityDirect(m_pRenderNode);
+		gEnv->p3DEngine->DeleteRenderNode(m_pRenderNode);
 		m_bRegisteredRenderNode = false;
-
-		m_pRenderNode->ReleaseNode();
 		m_pRenderNode = nullptr;
 	}
 	m_renderNodeType = eERType_NotRenderNode;
@@ -114,18 +111,19 @@ void CEntitySlot::UpdateRenderNode(bool bForceRecreateNode)
 	{
 		if (m_pRenderNode)
 		{
-			if (m_bRegisteredRenderNode)
-			{
-				gEnv->p3DEngine->UnRegisterEntityDirect(m_pRenderNode);
-				m_bRegisteredRenderNode = false;
-			}
 			if (bForceRecreateNode)
 			{
 				// Only release node if we force node recreation.
 				// Not should not be released if we only switching it to not rendered slot
-				m_pRenderNode->ReleaseNode();
+				gEnv->p3DEngine->DeleteRenderNode(m_pRenderNode);
+				m_bRegisteredRenderNode = false;
 				m_pRenderNode = 0;
 				m_renderNodeType = eERType_NotRenderNode;
+			}
+			else if (m_bRegisteredRenderNode)
+			{
+				gEnv->p3DEngine->UnRegisterEntityDirect(m_pRenderNode);
+				m_bRegisteredRenderNode = false;
 			}
 		}
 	}

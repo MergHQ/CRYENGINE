@@ -1,5 +1,4 @@
 // Copyright 2001-2018 Crytek GmbH / Crytek Group. All rights reserved.
-
 #pragma once
 
 #include "EntityObject.h"
@@ -16,7 +15,7 @@ public:
 	// CEntity
 	//////////////////////////////////////////////////////////////////////////
 	virtual void  InitVariables() {}
-	virtual void  Display(DisplayContext& disp);
+	virtual void  Display(CObjectRenderHelper& objRenderHelper);
 
 	virtual void  SetHelperScale(float scale);
 	virtual float GetHelperScale() { return m_charAttachHelperScale; }

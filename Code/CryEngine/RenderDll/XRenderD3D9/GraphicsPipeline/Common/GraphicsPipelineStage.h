@@ -15,60 +15,62 @@ struct SRenderViewInfo;
 class CGraphicsPipeline;
 class CRenderOutput;
 
+enum class GraphicsPipelinePassType : std::uint8_t
+{
+	renderPass,
+	resolve,
+};
+
 struct SGraphicsPipelinePassContext
 {
-	SGraphicsPipelinePassContext()
-	{
-	}
+	SGraphicsPipelinePassContext() = default;
 
 	SGraphicsPipelinePassContext(CRenderView* renderView, CSceneRenderPass* pSceneRenderPass, EShaderTechniqueID technique, uint32 filter, uint32 excludeFilter)
 		: pSceneRenderPass(pSceneRenderPass)
-		, techniqueID(technique)
 		, batchFilter(filter)
 		, batchExcludeFilter(excludeFilter)
-		, renderListId(EFSLIST_INVALID)
-		, stageID(0)
-		, passID(0)
 		, pRenderView(renderView)
-		, renderNearest(false)
-		, pCommandList(nullptr)
-		, pDrawCallInfoPerNode(nullptr)
-		, pDrawCallInfoPerMesh(nullptr)
+		, techniqueID(technique)
 	{
+
+		;
 	}
 
-	SGraphicsPipelinePassContext& operator=(const SGraphicsPipelinePassContext& other)
-	{
-		memcpy(this, &other, sizeof(*this));
-		return *this;
-	}
+	SGraphicsPipelinePassContext(GraphicsPipelinePassType type, CRenderView* renderView, CSceneRenderPass* pSceneRenderPass) 
+		: type(type), pSceneRenderPass(pSceneRenderPass), pRenderView(renderView)
+	{}
+
+	GraphicsPipelinePassType type = GraphicsPipelinePassType::renderPass;
 
 	CSceneRenderPass*  pSceneRenderPass;
-	EShaderTechniqueID techniqueID;
+
 	uint32             batchFilter;
 	uint32             batchExcludeFilter;
 
-	ERenderListID      renderListId;
+	ERenderListID      renderListId = EFSLIST_INVALID;
 
 	// Stage ID of a scene stage (EStandardGraphicsPipelineStage)
-	uint32 stageID;
+	uint32 stageID = 0;
 	// Pass ID, in case a stage has several different scene passes
-	uint32 passID;
+	uint32 passID = 0;
 
 	uint32 renderItemGroup;
 	uint32 profilerSectionIndex;
 
 	// rend items
 	CRenderView* pRenderView;
-	TRange<int>  rendItems;
 
-	bool         renderNearest;
+	uint16 resolveScreenBounds[4];
+
+	TRange<int>        rendItems;
+	bool               renderNearest = false;
+	EShaderTechniqueID techniqueID;
 
 	// Output command list.
-	CDeviceCommandList* pCommandList;
+	CDeviceCommandList* pCommandList = nullptr;
 
-	std::map<struct IRenderNode*, IRenderer::SDrawCallCountInfo>* pDrawCallInfoPerNode;
-	std::map<struct IRenderMesh*, IRenderer::SDrawCallCountInfo>* pDrawCallInfoPerMesh;
+	std::map<struct IRenderNode*, IRenderer::SDrawCallCountInfo>* pDrawCallInfoPerNode = nullptr;
+	std::map<struct IRenderMesh*, IRenderer::SDrawCallCountInfo>* pDrawCallInfoPerMesh = nullptr;
 };
 
 class CGraphicsPipelineStage

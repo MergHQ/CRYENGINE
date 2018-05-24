@@ -1,7 +1,5 @@
 // Copyright 2001-2018 Crytek GmbH / Crytek Group. All rights reserved.
-
 #pragma once
-
 #include "Viewport.h"
 #include "Objects\DisplayContext.h"
 
@@ -44,7 +42,7 @@ public:
 	virtual bool  HitTest(CPoint point, HitContext& hitInfo);
 	virtual bool  IsBoundsVisible(const AABB& box) const;
 
-	// overrides from CViewport.
+	//Overrides from CViewport.
 	float GetScreenScaleFactor(const Vec3& worldPoint) const;
 
 	// Overrides from CViewport.
@@ -99,14 +97,14 @@ protected:
 	void Render();
 
 	// Draw everything.
-	virtual void Draw(DisplayContext& dc);
+	virtual void Draw(CObjectRenderHelper& objRenderHelper);
 
 	// Draw elements of viewport.
-	void DrawGrid(DisplayContext& dc, bool bNoXNumbers = false);
-	void DrawAxis(DisplayContext& dc);
-	void DrawSelection(DisplayContext& dc);
-	void DrawObjects(DisplayContext& dc);
-	void DrawViewerMarker(DisplayContext& dc);
+	void DrawGrid(SDisplayContext& dc, bool bNoXNumbers = false);
+	void DrawAxis(SDisplayContext& dc);
+	void DrawSelection(SDisplayContext& dc);
+	void DrawObjects(CObjectRenderHelper& objRenderHelper);
+	void DrawViewerMarker(SDisplayContext& dc);
 
 	AABB GetWorldBounds(CPoint p1, CPoint p2);
 
@@ -125,6 +123,7 @@ protected:
 	CViewManager*       GetViewManager()       { return GetIEditor()->GetViewManager(); }
 
 protected:
+
 	//! XY/XZ/YZ mode of this 2D viewport.
 	EViewportType m_viewType;
 	EViewportAxis m_axis;
@@ -164,8 +163,6 @@ protected:
 	COLORREF           m_colorAxisText;
 	COLORREF           m_colorBackground;
 	bool               m_bContentValid;
-
-	DisplayContext     m_displayContext;
 	CPoint             m_cMouseDownPos;
 
 	bool               m_bRenderContextCreated;

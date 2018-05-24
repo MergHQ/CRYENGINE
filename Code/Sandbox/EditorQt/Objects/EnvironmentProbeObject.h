@@ -27,7 +27,7 @@ public:
 
 	void                         CreateInspectorWidgets(CInspectorWidgetCreator& creator) override;
 
-	void                         Display(DisplayContext& dc);
+	void                         Display(SDisplayContext& dc);
 	void                         GetDisplayBoundBox(AABB& box) override;
 	void                         GetBoundBox(AABB& box);
 	void                         GetLocalBounds(AABB& aabb);
@@ -46,7 +46,7 @@ public:
 
 	// HACK: We override this function because environment probes need to manually set their light param
 	// after the entity has set/initialized the script
-	void                         SetScriptName(const string& file, CBaseObject* pPrev) override;
+	void SetScriptName(const string& file, CBaseObject* pPrev) override;
 
 protected:
 	//! Dtor must be protected.
@@ -81,11 +81,11 @@ private:
 class CEnvironmentProbeObjectClassDesc : public CObjectClassDesc
 {
 public:
-	ObjectType     GetObjectType()              { return OBJTYPE_ENTITY; };
-	const char*    ClassName()                  { return "EnvironmentProbe"; };
-	const char*    Category()                   { return "Misc"; };
-	CRuntimeClass* GetRuntimeClass()            { return RUNTIME_CLASS(CEnvironementProbeObject); };
-	const char*    GetTextureIcon()             { return "%EDITOR%/ObjectIcons/environmentProbe.bmp"; };
+	ObjectType     GetObjectType()              { return OBJTYPE_ENTITY; }
+	const char*    ClassName()                  { return "EnvironmentProbe"; }
+	const char*    Category()                   { return "Misc"; }
+	CRuntimeClass* GetRuntimeClass()            { return RUNTIME_CLASS(CEnvironementProbeObject); }
+	const char*    GetTextureIcon()             { return "%EDITOR%/ObjectIcons/environmentProbe.bmp"; }
 	virtual bool   IsCreatable() const override { return gEnv->pEntitySystem->GetClassRegistry()->FindClass("EnvironmentLight"); }
 };
 

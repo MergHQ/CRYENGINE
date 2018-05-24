@@ -184,7 +184,7 @@ bool CTerrainMoveTool::MouseCallback(CViewport* pView, EMouseEvent event, CPoint
 	return true;
 }
 
-void CTerrainMoveTool::Display(DisplayContext& dc)
+void CTerrainMoveTool::Display(SDisplayContext& dc)
 {
 	if (m_source.isShow)
 	{

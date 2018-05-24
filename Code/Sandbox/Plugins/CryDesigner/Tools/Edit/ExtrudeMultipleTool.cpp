@@ -144,7 +144,7 @@ void ExtrudeMultipleTool::OnEditorNotifyEvent(EEditorNotifyEvent event)
 	}
 }
 
-void ExtrudeMultipleTool::Display(DisplayContext& dc)
+void ExtrudeMultipleTool::Display(SDisplayContext& dc)
 {
 	__super::Display(dc);
 	s_HeightManipulator.Display(dc);

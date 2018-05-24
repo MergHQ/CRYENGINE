@@ -90,8 +90,9 @@ void CAICoverSurface::DeleteThis()
 	delete this;
 }
 
-void CAICoverSurface::Display(DisplayContext& disp)
+void CAICoverSurface::Display(CObjectRenderHelper& objRenderHelper)
 {
+	SDisplayContext& disp = objRenderHelper.GetDisplayContextRef();
 	if (IsFrozen())
 		disp.SetFreezeColor();
 	else
@@ -99,7 +100,7 @@ void CAICoverSurface::Display(DisplayContext& disp)
 
 	Matrix34 scale(Matrix34::CreateScale(Vec3(gGizmoPreferences.helperScale * GetHelperScale())));
 
-	disp.RenderObject(eStatObject_Anchor, GetWorldTM() * scale);
+	objRenderHelper.Render(GetWorldTM() * scale);
 
 	if (m_sampler)
 	{
@@ -443,7 +444,7 @@ void CAICoverSurface::CreatePropertyVars()
 	m_propertyVars->AddOnSetCallback(functor(*this, &CAICoverSurface::OnPropertyVarChange));
 }
 
-void CAICoverSurface::DisplayBadCoverSurfaceObject(DisplayContext& disp)
+void CAICoverSurface::DisplayBadCoverSurfaceObject(SDisplayContext& disp)
 {
 	IRenderAuxGeom* pRenderAux = gEnv->pRenderer->GetIRenderAuxGeom();
 

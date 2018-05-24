@@ -40,7 +40,7 @@ public:
 
 	virtual string GetDisplayName() const override { return "Clone Terrain"; }
 
-	virtual void   Display(DisplayContext& dc);
+	virtual void   Display(SDisplayContext& dc);
 
 	// Overrides from CEditTool
 	bool MouseCallback(CViewport* pView, EMouseEvent event, CPoint& point, int flags);

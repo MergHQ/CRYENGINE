@@ -142,7 +142,7 @@ bool CloneTool::OnMouseMove(CViewport* view, UINT nFlags, CPoint point)
 	return true;
 }
 
-void CloneTool::Display(struct DisplayContext& dc)
+void CloneTool::Display(struct SDisplayContext& dc)
 {
 	dc.SetColor(ColorB(100, 200, 100, 255));
 

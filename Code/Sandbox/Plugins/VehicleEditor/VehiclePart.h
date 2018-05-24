@@ -1,11 +1,6 @@
 // Copyright 2001-2018 Crytek GmbH / Crytek Group. All rights reserved.
 
-#ifndef __VehiclePart_h__
-#define __VehiclePart_h__
-
-#if _MSC_VER > 1000
-	#pragma once
-#endif
+#pragma once
 
 #include <list>
 
@@ -39,8 +34,8 @@ public:
 	//////////////////////////////////////////////////////////////////////////
 	bool Init(CBaseObject* prev, const string& file);
 	void Done();
-	void InitVariables() {};
-	void Display(DisplayContext& disp);
+	void InitVariables() {}
+	void Display(CObjectRenderHelper& objRenderHelper);
 
 	bool HitTest(HitContext& hc);
 
@@ -53,9 +48,9 @@ public:
 	void Serialize(CObjectArchive& ar) {}
 	/////////////////////////////////////////////////////////////////////////
 
-	void    AddPart(CVehiclePart* pPart);
-	void    SetMainPart(bool bMain) { m_isMain = bMain; }
-	bool    IsMainPart() const      { return m_isMain; }
+	void   AddPart(CVehiclePart* pPart);
+	void   SetMainPart(bool bMain) { m_isMain = bMain; }
+	bool   IsMainPart() const      { return m_isMain; }
 	string GetPartClass();
 
 	//! returns whether this part is a leaf part (false means it can have children)
@@ -81,14 +76,14 @@ public:
 
 protected:
 	CVehiclePart();
-	void DeleteThis() { delete this; };
+	void DeleteThis() { delete this; }
 
 	void UpdateFromVar();
 
 	void OnSetClass(IVariable* pVar);
 	void OnSetPos(IVariable* pVar);
 
-	void DrawRotationLimits(DisplayContext& dc, IVariable* pSpeed, IVariable* pLimits, IVariable* pHelper, int axis);
+	void DrawRotationLimits(SDisplayContext& dc, IVariable* pSpeed, IVariable* pLimits, IVariable* pHelper, int axis);
 
 	CVehiclePrototype* m_pVehicle;
 	CVehiclePart*      m_pParent;
@@ -111,11 +106,8 @@ protected:
 class CVehiclePartClassDesc : public CObjectClassDesc
 {
 public:
-	ObjectType     GetObjectType()   { return OBJTYPE_OTHER; };
-	const char*    ClassName()       { return "VehiclePart"; };
-	const char*    Category()        { return ""; };
-	CRuntimeClass* GetRuntimeClass() { return RUNTIME_CLASS(CVehiclePart); };
+	ObjectType     GetObjectType()   { return OBJTYPE_OTHER; }
+	const char*    ClassName()       { return "VehiclePart"; }
+	const char*    Category()        { return ""; }
+	CRuntimeClass* GetRuntimeClass() { return RUNTIME_CLASS(CVehiclePart); }
 };
-
-#endif // __VehiclePart_h__
-

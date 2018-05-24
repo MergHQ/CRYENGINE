@@ -53,14 +53,14 @@ public:
 	bool OnLButtonDown(CViewport* view, UINT nFlags, CPoint point) override;
 	bool OnMouseMove(CViewport* view, UINT nFlags, CPoint point) override;
 	bool OnKeyDown(CViewport* view, uint32 nChar, uint32 nRepCnt, uint32 nFlags) override;
-	void Display(DisplayContext& dc) override;
+	void Display(SDisplayContext& dc) override;
 	void Serialize(Serialization::IArchive& ar) override;
 	bool IsPhaseFirstStepOnPrimitiveCreation() const override;
 
 protected:
 
 	void CreateCandidates();
-	void DrawCandidateStair(DisplayContext& dc, int nIndex, const ColorB& color);
+	void DrawCandidateStair(SDisplayContext& dc, int nIndex, const ColorB& color);
 	Spot Convert2Spot(Model* pModel, const BrushPlane& plane, const BrushVec2& pos) const;
 
 	ESideStairMode        m_SideStairMode;

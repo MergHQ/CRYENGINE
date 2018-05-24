@@ -58,7 +58,8 @@ namespace Cry
 
 		virtual void ProcessEvent(const SEntityEvent& event) override
 		{
-			if (event.event == ENTITY_EVENT_UPDATE)
+			// We don't update the camera if we are in edit mode otherwise we would override the camera transformation of the editor camera.
+			if (event.event == ENTITY_EVENT_UPDATE && !gEnv->IsEditing())
 			{
 				const CCamera& systemCamera = gEnv->pSystem->GetViewCamera();
 

@@ -51,7 +51,7 @@ protected:
 	}
 
 private:
-	string             m_undoDescription;
+	string              m_undoDescription;
 	int                 m_nCopyFlags;
 	_smart_ptr<CEdMesh> m_pEdMesh;
 	CTriMesh            undoMesh;
@@ -365,7 +365,7 @@ void CEdMesh::EndSubObjSelection()
 }
 
 //////////////////////////////////////////////////////////////////////////
-void CEdMesh::Display(DisplayContext& dc)
+void CEdMesh::Display(SDisplayContext& dc)
 {
 	if (!m_pSubObjCache || m_pSubObjCache->bNoDisplay)
 		return;

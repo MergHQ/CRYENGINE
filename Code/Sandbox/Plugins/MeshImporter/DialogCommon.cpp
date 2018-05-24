@@ -201,6 +201,8 @@ bool CBaseDialog::SaveAs(const QString& targetFilePath)
 		return false;
 	}
 
+	GetIEditor()->GetSystem()->GetIPak()->MakeDir(PathUtil::GetDirectory(ctx.targetFilePath.c_str()));
+
 	const string absMetaSrcPath = 
 		m_sceneData->pAsset
 		? PathUtil::Make(PathUtil::GetGameProjectAssetsPath(), m_sceneData->pAsset->GetMetadataFile())

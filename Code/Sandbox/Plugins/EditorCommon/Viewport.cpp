@@ -47,7 +47,7 @@ CViewport::CViewport()
 {
 	m_viewWidget = 0;
 
-	m_selectionTollerance = 0;
+	m_selectionTolerance = 0;
 	m_fGridZoom = 1.0f;
 
 	m_nLastUpdateFrame = 0;
@@ -151,7 +151,7 @@ CEditTool* CViewport::GetEditTool()
 {
 	if (m_pLocalEditTool)
 		return m_pLocalEditTool;
-	else 
+	else
 		return GetIEditor()->GetEditTool();
 }
 
@@ -307,7 +307,7 @@ void CViewport::Update()
 	m_bAdvancedSelectMode = false;
 	bool bSpaceClick = false;
 	CEditTool* pEditTool = GetIEditor()->GetEditTool();
-	
+
 	//TODO : this is deprecated
 	bSpaceClick = CryGetAsyncKeyState(VK_SPACE);
 
@@ -991,7 +991,7 @@ bool CViewport::OnKeyUp(uint32 nChar, uint32 nRepCnt, uint32 nFlags)
 }
 
 //////////////////////////////////////////////////////////////////////////
-void CViewport::ProcessRenderListeners(DisplayContext& rstDisplayContext)
+void CViewport::ProcessRenderListeners(SDisplayContext& rstDisplayContext)
 {
 	CRY_PROFILE_FUNCTION(PROFILE_EDITOR);
 
@@ -1014,9 +1014,9 @@ float CViewport::GetFOV() const
 //////////////////////////////////////////////////////////////////////////
 void CViewport::ClientToScreen(CPoint* pnt)
 {
-	QPoint local_qt_space = QtUtil::QtScale(m_viewWidget,QPoint(pnt->x, pnt->y));
+	QPoint local_qt_space = QtUtil::QtScale(m_viewWidget, QPoint(pnt->x, pnt->y));
 	QPoint global_qt_space = m_viewWidget->mapToGlobal(local_qt_space);
-	QPoint global_pixel_space = QtUtil::PixelScale(m_viewWidget,global_qt_space);
+	QPoint global_pixel_space = QtUtil::PixelScale(m_viewWidget, global_qt_space);
 	pnt->x = global_pixel_space.x();
 	pnt->y = global_pixel_space.y();
 }
@@ -1051,7 +1051,7 @@ void CViewport::GetClientRect(RECT* rc) const
 	rc->left = 0;
 	rc->top = 0;
 	rc->right = m_viewWidget->size().width() * m_viewWidget->devicePixelRatioF();
-	rc->bottom = m_viewWidget->size().height()  * m_viewWidget->devicePixelRatioF();
+	rc->bottom = m_viewWidget->size().height() * m_viewWidget->devicePixelRatioF();
 }
 
 bool CViewport::IsMouseInWindow(CPoint* pnt, bool bIsLocal)

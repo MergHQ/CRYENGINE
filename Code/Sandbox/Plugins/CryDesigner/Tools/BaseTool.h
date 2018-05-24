@@ -33,32 +33,32 @@ public:
 
 	virtual ~BaseTool() {}
 
-	virtual bool    OnLButtonDown(CViewport* view, UINT nFlags, CPoint point)   { return false; }
-	virtual bool    OnLButtonUp(CViewport* view, UINT nFlags, CPoint point)     { return false; }
-	virtual bool    OnLButtonDblClk(CViewport* view, UINT nFlags, CPoint point) { return false; }
-	virtual bool    OnRButtonDown(CViewport* view, UINT nFlags, CPoint point)   { return false; }
-	virtual bool    OnRButtonUp(CViewport* view, UINT nFlags, CPoint point)     { return false; }
-	virtual bool    OnMButtonDown(CViewport* view, UINT nFlags, CPoint point)   { return false; }
-	virtual bool    OnMouseMove(CViewport* view, UINT nFlags, CPoint point);
-	virtual bool    OnMouseWheel(CViewport* view, UINT nFlags, CPoint point)    { return false; }
-	virtual bool    OnFocusLeave(CViewport* view, UINT nFlags, CPoint point)    { return false; }
-	virtual bool    OnFocusEnter(CViewport* view, UINT nFlags, CPoint point)    { return false; }
+	virtual bool OnLButtonDown(CViewport* view, UINT nFlags, CPoint point)   { return false; }
+	virtual bool OnLButtonUp(CViewport* view, UINT nFlags, CPoint point)     { return false; }
+	virtual bool OnLButtonDblClk(CViewport* view, UINT nFlags, CPoint point) { return false; }
+	virtual bool OnRButtonDown(CViewport* view, UINT nFlags, CPoint point)   { return false; }
+	virtual bool OnRButtonUp(CViewport* view, UINT nFlags, CPoint point)     { return false; }
+	virtual bool OnMButtonDown(CViewport* view, UINT nFlags, CPoint point)   { return false; }
+	virtual bool OnMouseMove(CViewport* view, UINT nFlags, CPoint point);
+	virtual bool OnMouseWheel(CViewport* view, UINT nFlags, CPoint point)    { return false; }
+	virtual bool OnFocusLeave(CViewport* view, UINT nFlags, CPoint point)    { return false; }
+	virtual bool OnFocusEnter(CViewport* view, UINT nFlags, CPoint point)    { return false; }
 
-	virtual bool    OnKeyDown(CViewport* view, uint32 nChar, uint32 nRepCnt, uint32 nFlags);
-	virtual void    Display(DisplayContext& dc);
-	virtual void    OnManipulatorDrag(IDisplayViewport* view, ITransformManipulator* pManipulator, CPoint& p0, BrushVec3 value, int flags)  {}
-	virtual void    OnManipulatorBegin(IDisplayViewport* view, ITransformManipulator* pManipulator, CPoint& point, int flags) {}
-	virtual void    OnManipulatorEnd(IDisplayViewport* view, ITransformManipulator* pManipulator) {}
+	virtual bool OnKeyDown(CViewport* view, uint32 nChar, uint32 nRepCnt, uint32 nFlags);
+	virtual void Display(SDisplayContext& dc);
+	virtual void OnManipulatorDrag(IDisplayViewport* view, ITransformManipulator* pManipulator, CPoint& p0, BrushVec3 value, int flags) {}
+	virtual void OnManipulatorBegin(IDisplayViewport* view, ITransformManipulator* pManipulator, CPoint& point, int flags)              {}
+	virtual void OnManipulatorEnd(IDisplayViewport* view, ITransformManipulator* pManipulator)                                          {}
 
-	virtual void    Enter();
-	virtual void    Leave();
+	virtual void Enter();
+	virtual void Leave();
 
-	virtual void    OnEditorNotifyEvent(EEditorNotifyEvent event)                       {}
+	virtual void OnEditorNotifyEvent(EEditorNotifyEvent event) {}
 
-	virtual void    OnChangeParameter(bool continuous)          {}
-	virtual bool    EnabledSeamlessSelection() const            { return true; }
-	virtual bool    IsPhaseFirstStepOnPrimitiveCreation() const { return true; }
-	virtual bool    IsManipulatorVisible() 
+	virtual void OnChangeParameter(bool continuous)            {}
+	virtual bool EnabledSeamlessSelection() const              { return true; }
+	virtual bool IsPhaseFirstStepOnPrimitiveCreation() const   { return true; }
+	virtual bool IsManipulatorVisible()
 	{
 		DesignerSession* pSession = DesignerSession::GetInstance();
 		return pSession->GetSelectedElements()->GetCount() > 0;
@@ -70,8 +70,8 @@ public:
 	CBaseObject*   GetBaseObject() const;
 	MainContext    GetMainContext() const;
 
-	void           DisplayDimensionHelper(DisplayContext& dc, ShelfID nShelf = eShelf_Any);
-	void           DisplayDimensionHelper(DisplayContext& dc, const AABB& aabb);
+	void           DisplayDimensionHelper(SDisplayContext& dc, ShelfID nShelf = eShelf_Any);
+	void           DisplayDimensionHelper(SDisplayContext& dc, const AABB& aabb);
 
 	bool           IsModelEmpty() const;
 	void           ApplyPostProcess(int postprocesses = ePostProcess_All);

@@ -1,11 +1,5 @@
 // Copyright 2001-2018 Crytek GmbH / Crytek Group. All rights reserved.
-
-#ifndef __VehicleSeat_h__
-#define __VehicleSeat_h__
-
-#if _MSC_VER > 1000
-	#pragma once
-#endif
+#pragma once
 
 #include <list>
 
@@ -39,8 +33,8 @@ public:
 	//////////////////////////////////////////////////////////////////////////
 	bool Init(CBaseObject* prev, const string& file);
 	void Done();
-	void InitVariables() {};
-	void Display(DisplayContext& disp);
+	void InitVariables() {}
+	void Display(CObjectRenderHelper& objRenderHelper);
 
 	bool HitTest(HitContext& hc);
 
@@ -79,7 +73,7 @@ public:
 
 protected:
 	CVehicleSeat();
-	void DeleteThis() { delete this; };
+	void DeleteThis() { delete this; }
 
 	void UpdateFromVar();
 
@@ -95,11 +89,8 @@ protected:
 class CVehicleSeatClassDesc : public CObjectClassDesc
 {
 public:
-	ObjectType     GetObjectType()   { return OBJTYPE_OTHER; };
-	const char*    ClassName()       { return "VehicleSeat"; };
-	const char*    Category()        { return ""; };
-	CRuntimeClass* GetRuntimeClass() { return RUNTIME_CLASS(CVehicleSeat); };
+	ObjectType     GetObjectType()   { return OBJTYPE_OTHER; }
+	const char*    ClassName()       { return "VehicleSeat"; }
+	const char*    Category()        { return ""; }
+	CRuntimeClass* GetRuntimeClass() { return RUNTIME_CLASS(CVehicleSeat); }
 };
-
-#endif // __VehicleSeat_h__
-

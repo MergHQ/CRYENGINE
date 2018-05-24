@@ -41,7 +41,7 @@ public:
 	  uint32 nRepCnt,
 	  uint32 nFlags) override;
 
-	void Display(DisplayContext& dc) override;
+	void Display(SDisplayContext& dc) override;
 	bool MouseCallback(
 	  CViewport* view,
 	  EMouseEvent event,
@@ -115,7 +115,7 @@ public:
 protected:
 	virtual ~DesignerEditor();
 	// Delete itself.
-	void DeleteThis() { delete this; };
+	void DeleteThis() { delete this; }
 
 	bool SetSelectionDesignerMode(EDesignerTool tool, bool bAllowMultipleMode = true);
 

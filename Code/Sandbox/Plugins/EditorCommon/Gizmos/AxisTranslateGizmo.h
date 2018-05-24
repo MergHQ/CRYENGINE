@@ -5,13 +5,13 @@
 #include "IEditor.h" // for AxisConstrains and RefCoordSys
 #include "Gizmo.h"
 
-struct DisplayContext;
 struct HitContext;
 struct IDisplayViewport;
+struct SDisplayContext;
 
 //////////////////////////////////////////////////////////////////////////
-// Axis Gizmo. 
-// 
+// Axis Gizmo.
+//
 // Interacts with an axis by constrained movement along that axis
 //////////////////////////////////////////////////////////////////////////
 class EDITOR_COMMON_API CAxisTranslateGizmo : public CGizmo
@@ -24,17 +24,17 @@ public:
 	virtual const char* GetName() override;
 
 	//! set position - should be world space
-	void SetPosition(Vec3 pos);
+	void         SetPosition(Vec3 pos);
 	//! set direction - should be world space
-	void SetDirection(Vec3 dir);
+	void         SetDirection(Vec3 dir);
 	//! set rgb color of the gizmo
-	void SetColor(Vec3 color);
+	void         SetColor(Vec3 color);
 	//! set offset from central position as factor of the gizmo length
-	void SetOffset(float offset);
+	void         SetOffset(float offset);
 	//! set unique scale of the gizmo
-	void SetScale(float scale);
+	void         SetScale(float scale);
 
-	virtual void Display(DisplayContext& dc) override;
+	virtual void Display(SDisplayContext& dc) override;
 
 	virtual bool MouseCallback(IDisplayViewport* view, EMouseEvent event, CPoint& point, int nFlags) override;
 
@@ -43,21 +43,21 @@ public:
 	virtual bool HitTest(HitContext& hc) override;
 
 	// emitted when user starts dragging the gizmo
-	CCrySignal <void (IDisplayViewport* view, CGizmo* gizmo, const Vec3& initialPosition, const CPoint& point, int nFlags)> signalBeginDrag;
+	CCrySignal<void (IDisplayViewport* view, CGizmo* gizmo, const Vec3& initialPosition, const CPoint& point, int nFlags)> signalBeginDrag;
 
 	// emitted while dragging.
-	CCrySignal <void (IDisplayViewport* view, CGizmo* gizmo, const Vec3& offset, const CPoint& point, int nFlags)> signalDragging;
+	CCrySignal<void (IDisplayViewport* view, CGizmo* gizmo, const Vec3& offset, const CPoint& point, int nFlags)> signalDragging;
 
 	// emitted when finished dragging
-	CCrySignal <void (IDisplayViewport* view, CGizmo* gizmo, const CPoint& point, int nFlags)> signalEndDrag;
+	CCrySignal<void (IDisplayViewport* view, CGizmo* gizmo, const CPoint& point, int nFlags)> signalEndDrag;
 
 private:
-	void DrawArrow(DisplayContext& dc, Vec3 position, Vec3 direction);
+	void DrawArrow(SDisplayContext& dc, Vec3 position, Vec3 direction);
 
 	// position and direction in world space
-	Vec3 m_position;
-	Vec3 m_direction;
-	Vec3 m_color;
+	Vec3   m_position;
+	Vec3   m_direction;
+	Vec3   m_color;
 
 	string m_name;
 
@@ -77,5 +77,4 @@ private:
 
 	bool m_bDrawArrowTip;
 };
-
 

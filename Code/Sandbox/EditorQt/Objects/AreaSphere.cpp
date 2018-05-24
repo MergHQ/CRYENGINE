@@ -156,7 +156,7 @@ void CAreaSphere::OnSizeChange(IVariable* pVar)
 }
 
 //////////////////////////////////////////////////////////////////////////
-void CAreaSphere::Display(DisplayContext& dc)
+void CAreaSphere::Display(SDisplayContext& dc)
 {
 	if (!gViewportDebugPreferences.showAreaObjectHelper)
 		return;

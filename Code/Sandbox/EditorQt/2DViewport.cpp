@@ -79,8 +79,6 @@ C2DViewport::C2DViewport()
 
 	m_bShowViewMarker = true;
 
-	m_displayContext.pIconManager = GetIEditorImpl()->GetIconManager();
-
 	// Calculate the View transformation matrix.
 	CalculateViewTM();
 }
@@ -468,7 +466,7 @@ void C2DViewport::Render()
 			m_displayBounds = GetWorldBounds(CPoint(0, 0), CPoint(rc.Width(), rc.Height()));
 
 			// Draw all objects.
-			DisplayContext& dc = m_displayContext;
+			SDisplayContext dc;
 
 			dc.view = this;
 			dc.renderer = gEnv->pRenderer;
@@ -479,6 +477,7 @@ void C2DViewport::Render()
 			// Should be setting orthogonal camera
 			m_camera.SetFrustum(rc.Width(), rc.Height(), m_camera.GetFov(), m_camera.GetNearPlane(), m_camera.GetFarPlane());
 			dc.SetCamera(&m_camera);
+			dc.pIconManager = GetIEditorImpl()->GetIconManager();
 			dc.SetDisplayContext(m_displayContextKey);
 
 			if (!gViewportPreferences.displayLabels || !(GetIEditor()->IsHelpersDisplayed()))
@@ -501,11 +500,11 @@ void C2DViewport::Render()
 			auto oldCamera = gEnv->pRenderer->GetIRenderAuxGeom()->GetCamera();
 			gEnv->pRenderer->UpdateAuxDefaultCamera(m_camera);
 
-			SRenderingPassInfo passInfo = SRenderingPassInfo::CreateGeneralPassRenderingInfo(GetIEditorImpl()->GetSystem()->GetViewCamera(), SRenderingPassInfo::DEFAULT_FLAGS, false, m_displayContextKey);
+			SRenderingPassInfo passInfo = SRenderingPassInfo::CreateGeneralPassRenderingInfo(GetIEditorImpl()->GetSystem()->GetViewCamera(), SRenderingPassInfo::DEFAULT_FLAGS, false, dc.GetDisplayContextKey());
 
 			gEnv->pRenderer->EF_StartEf(passInfo);
 			dc.SetState(e_Mode3D | e_AlphaBlended | e_FillModeSolid | e_CullModeBack | e_DepthWriteOff | e_DepthTestOn);
-			Draw(dc);
+			Draw(CObjectRenderHelper { dc, passInfo });
 			gEnv->pRenderer->EF_EndEf3D(SHDF_ALLOWHDR | SHDF_SECONDARY_VIEWPORT, -1, -1, passInfo);
 
 			// Return back from 2D mode.
@@ -513,7 +512,7 @@ void C2DViewport::Render()
 
 			gEnv->pRenderer->RenderDebug(false);
 
-			ProcessRenderListeners(m_displayContext);
+			ProcessRenderListeners(dc);
 
 			gEnv->pRenderer->EndFrame();
 		}
@@ -521,14 +520,15 @@ void C2DViewport::Render()
 }
 
 //////////////////////////////////////////////////////////////////////////
-void C2DViewport::Draw(DisplayContext& dc)
+void C2DViewport::Draw(CObjectRenderHelper& objRenderHelper)
 {
+	SDisplayContext& dc = objRenderHelper.GetDisplayContextRef();
 	dc.DepthTestOff();
 	dc.DepthWriteOff();
 	if (m_bShowGrid)
 		DrawGrid(dc);
 
-	DrawObjects(dc);
+	DrawObjects(objRenderHelper);
 	DrawSelection(dc);
 	if (m_bShowViewMarker)
 		DrawViewerMarker(dc);
@@ -546,7 +546,7 @@ inline Vec3 SnapToSize(Vec3 v, double size)
 }
 
 //////////////////////////////////////////////////////////////////////////
-void C2DViewport::DrawGrid(DisplayContext& dc, bool bNoXNumbers)
+void C2DViewport::DrawGrid(SDisplayContext& dc, bool bNoXNumbers)
 {
 	float gridSize = gSnappingPreferences.gridSize();
 
@@ -704,7 +704,7 @@ void C2DViewport::DrawGrid(DisplayContext& dc, bool bNoXNumbers)
 }
 
 //////////////////////////////////////////////////////////////////////////
-void C2DViewport::DrawAxis(DisplayContext& dc)
+void C2DViewport::DrawAxis(SDisplayContext& dc)
 {
 	int ix = 0;
 	int iy = 0;
@@ -772,7 +772,7 @@ void C2DViewport::DrawAxis(DisplayContext& dc)
 }
 
 //////////////////////////////////////////////////////////////////////////
-void C2DViewport::DrawSelection(DisplayContext& dc)
+void C2DViewport::DrawSelection(SDisplayContext& dc)
 {
 	AABB box;
 	GetIEditorImpl()->GetSelectedRegion(box);
@@ -812,7 +812,7 @@ void C2DViewport::DrawSelection(DisplayContext& dc)
 }
 
 //////////////////////////////////////////////////////////////////////////
-void C2DViewport::DrawViewerMarker(DisplayContext& dc)
+void C2DViewport::DrawViewerMarker(SDisplayContext& dc)
 {
 	float noScale = 1.0f / GetZoomFactor();
 
@@ -870,12 +870,13 @@ void C2DViewport::DrawViewerMarker(DisplayContext& dc)
 }
 
 //////////////////////////////////////////////////////////////////////////
-void C2DViewport::DrawObjects(DisplayContext& dc)
+void C2DViewport::DrawObjects(CObjectRenderHelper& objRenderHelper)
 {
+	SDisplayContext& dc = objRenderHelper.GetDisplayContextRef();
 	dc.PushMatrix(GetScreenTM());
 	if (m_bShowObjectsInfo)
 	{
-		GetIEditorImpl()->GetObjectManager()->Display(dc);
+		GetIEditorImpl()->GetObjectManager()->Display(objRenderHelper);
 		GetIEditorImpl()->GetGizmoManager()->Display(dc);
 	}
 

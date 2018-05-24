@@ -82,7 +82,7 @@ void CObjectCloneTool::SetConstrPlane(CViewport* view, CPoint point)
 	view->SetConstructionMatrix(originTM);
 }
 
-void CObjectCloneTool::Display(DisplayContext& dc)
+void CObjectCloneTool::Display(SDisplayContext& dc)
 {
 	//dc.SetColor( 1,1,0,1 );
 	//dc.DrawBall( gP1,1.1f );

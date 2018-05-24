@@ -52,13 +52,13 @@ public:
 	void InitVariables();
 	void Done();
 
-	void Display(DisplayContext& dc);
-	void DrawRoadObject(DisplayContext& dc, COLORREF col);
-	void DrawSectorLines(DisplayContext& dc);
+	void Display(CObjectRenderHelper& objRenderHelper);
+	void DrawRoadObject(SDisplayContext& dc, COLORREF col);
+	void DrawSectorLines(SDisplayContext& dc);
 
 	//////////////////////////////////////////////////////////////////////////
 
-	void CreateInspectorWidgets(CInspectorWidgetCreator& creator) override;
+	void         CreateInspectorWidgets(CInspectorWidgetCreator& creator) override;
 
 	void         SetHidden(bool bHidden);
 	void         UpdateVisibility(bool visible);
@@ -99,7 +99,7 @@ protected:
 	virtual void UpdateSectors();
 
 	// Ignore default draw highlight.
-	void  DrawHighlight(DisplayContext& dc) {};
+	void  DrawHighlight(SDisplayContext& dc) {}
 
 	float GetLocalWidth(int index, float t);
 
@@ -109,7 +109,7 @@ protected:
 	//! Called when Road variable changes.
 	void OnParamChange(IVariable* var);
 
-	void DeleteThis() { delete this; };
+	void DeleteThis() { delete this; }
 
 	void InitBaseVariables();
 

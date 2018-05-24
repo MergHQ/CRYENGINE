@@ -83,12 +83,11 @@ public:
 	bool        OnLButtonUp(CViewport* view, UINT nFlags, CPoint point) override;
 	bool        OnMouseMove(CViewport* view, UINT nFlags, CPoint point) override;
 
-	void        Display(DisplayContext& dc) override;
+	void        Display(SDisplayContext& dc) override;
 	void        OnEditorNotifyEvent(EEditorNotifyEvent event) override;
 	void        Serialize(Serialization::IArchive& ar);
 
 	bool        IsManipulatorVisible() { return false; }
-
 
 	static void Extrude(MainContext& mc, PolygonPtr pPolygon, float fHeight, float fScale);
 	static void UpdateModel(ExtrusionContext& ec);

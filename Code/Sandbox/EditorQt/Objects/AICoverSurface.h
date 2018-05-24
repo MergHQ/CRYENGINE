@@ -1,5 +1,4 @@
 // Copyright 2001-2018 Crytek GmbH / Crytek Group. All rights reserved.
-
 #pragma once
 
 #include "Objects/BaseObject.h"
@@ -30,7 +29,7 @@ public:
 	virtual XmlNodeRef    Export(const string& levelPath, XmlNodeRef& xmlNode);
 
 	virtual void          DeleteThis();
-	virtual void          Display(DisplayContext& disp);
+	virtual void          Display(CObjectRenderHelper& objRenderHelper);
 
 	virtual float         GetCreationOffsetFromTerrain() const override { return 0.25f; }
 
@@ -143,7 +142,7 @@ protected:
 	void                  CommitSurface();
 	void                  ClearSurface();
 
-	void                  DisplayBadCoverSurfaceObject(DisplayContext& disp);
+	void                  DisplayBadCoverSurfaceObject(SDisplayContext& disp);
 
 	void                  OnPropertyVarChange(IVariable* var);
 

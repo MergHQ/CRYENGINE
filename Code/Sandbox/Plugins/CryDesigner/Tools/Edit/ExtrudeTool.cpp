@@ -251,7 +251,7 @@ bool ExtrudeTool::OnMouseMove(CViewport* view, UINT nFlags, CPoint point)
 	return true;
 }
 
-void ExtrudeTool::Display(DisplayContext& dc)
+void ExtrudeTool::Display(SDisplayContext& dc)
 {
 	__super::Display(dc);
 

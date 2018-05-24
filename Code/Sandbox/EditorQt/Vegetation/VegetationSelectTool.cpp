@@ -54,7 +54,7 @@ CVegetationSelectTool::~CVegetationSelectTool()
 	}
 }
 
-void CVegetationSelectTool::Display(DisplayContext& dc)
+void CVegetationSelectTool::Display(SDisplayContext& dc)
 {
 	const CViewport* const pActiveView = GetIEditorImpl()->GetActiveView();
 	if (pActiveView && pActiveView->GetAdvancedSelectModeFlag())
@@ -312,7 +312,7 @@ void CVegetationSelectTool::UpdateTransformManipulator()
 		}
 		tm.SetTranslation(pos / m_selectedThings.size());
 	}
-	
+
 	m_pManipulator->SetCustomTransform(true, tm);
 }
 

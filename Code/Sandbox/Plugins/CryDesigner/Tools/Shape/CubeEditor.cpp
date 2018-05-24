@@ -345,13 +345,13 @@ bool CubeEditor::OnMouseWheel(CViewport* view, UINT nFlags, CPoint point)
 	return true;
 }
 
-void CubeEditor::Display(DisplayContext& dc)
+void CubeEditor::Display(SDisplayContext& dc)
 {
 	__super::Display(dc);
 	DisplayBrush(dc);
 }
 
-void CubeEditor::DisplayBrush(DisplayContext& dc)
+void CubeEditor::DisplayBrush(SDisplayContext& dc)
 {
 	for (int i = 0, iBrushCount(m_BrushAABBs.size()); i < iBrushCount; ++i)
 	{

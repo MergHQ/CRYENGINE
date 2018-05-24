@@ -11,7 +11,7 @@ public:
 
 	virtual string GetDisplayName() const override { return "Pick Material"; }
 	virtual bool   MouseCallback(CViewport* view, EMouseEvent event, CPoint& point, int flags);
-	virtual void   Display(DisplayContext& dc);
+	virtual void   Display(SDisplayContext& dc);
 
 protected:
 

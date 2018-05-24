@@ -295,7 +295,7 @@ void SelectTool::UpdateCursor(CViewport* view, bool bPickingElements)
 		view->SetCurrentCursor(STD_CURSOR_SCALE, "");
 }
 
-void SelectTool::Display(DisplayContext& dc)
+void SelectTool::Display(SDisplayContext& dc)
 {
 	__super::Display(dc);
 
@@ -312,7 +312,7 @@ void SelectTool::OnEditorNotifyEvent(EEditorNotifyEvent event)
 	__super::OnEditorNotifyEvent(event);
 
 	DesignerSession* pSession = DesignerSession::GetInstance();
-	ElementSet* pSelected =pSession->GetSelectedElements();
+	ElementSet* pSelected = pSession->GetSelectedElements();
 
 	switch (event)
 	{

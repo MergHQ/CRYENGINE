@@ -5,13 +5,13 @@
 #include "IEditor.h" // for AxisConstrains and RefCoordSys
 #include "Gizmo.h"
 
-struct DisplayContext;
+struct SDisplayContext;
 struct HitContext;
 struct IDisplayViewport;
 
 //////////////////////////////////////////////////////////////////////////
-// CPlaneTranslateGizmo Gizmo. 
-// 
+// CPlaneTranslateGizmo Gizmo.
+//
 // Allows constrained movement on the plane of the gizmo
 //////////////////////////////////////////////////////////////////////////
 class EDITOR_COMMON_API CPlaneTranslateGizmo : public CGizmo
@@ -21,21 +21,21 @@ public:
 	~CPlaneTranslateGizmo();
 
 	//! set position - should be world space
-	void SetPosition(Vec3 pos);
+	void         SetPosition(Vec3 pos);
 	//! set x vector of the plane - should be world space
-	void SetXVector(Vec3 dir);
+	void         SetXVector(Vec3 dir);
 	//! set y vector of the plane - should be world space
-	void SetYVector(Vec3 dir);
+	void         SetYVector(Vec3 dir);
 	//! set rgb color of the gizmo
-	void SetColor(Vec3 color);
+	void         SetColor(Vec3 color);
 	//! set unique scale of the gizmo
-	void SetScale(float scale);
+	void         SetScale(float scale);
 	//! set x offset from position along the length of the x vector
-	void SetXOffset(float offset);
+	void         SetXOffset(float offset);
 	//! set y offset from position along the length of the x vector
-	void SetYOffset(float offset);
+	void         SetYOffset(float offset);
 
-	virtual void Display(DisplayContext& dc) override;
+	virtual void Display(SDisplayContext& dc) override;
 
 	virtual bool MouseCallback(IDisplayViewport* view, EMouseEvent event, CPoint& point, int nFlags) override;
 
@@ -44,16 +44,16 @@ public:
 	virtual bool HitTest(HitContext& hc) override;
 
 	// emitted when user starts dragging the gizmo
-	CCrySignal <void(IDisplayViewport* view, CGizmo* gizmo, const Vec3& initialPosition, const CPoint& point, int nFlags)> signalBeginDrag;
+	CCrySignal<void(IDisplayViewport* view, CGizmo* gizmo, const Vec3& initialPosition, const CPoint& point, int nFlags)> signalBeginDrag;
 
 	// emitted while dragging.
-	CCrySignal <void(IDisplayViewport* view, CGizmo* gizmo, const Vec3& offset, const CPoint& point, int nFlags)> signalDragging;
+	CCrySignal<void(IDisplayViewport* view, CGizmo* gizmo, const Vec3& offset, const CPoint& point, int nFlags)> signalDragging;
 
 	// emitted when finished dragging
-	CCrySignal <void(IDisplayViewport* view, CGizmo* gizmo, const CPoint& point, int nFlags)> signalEndDrag;
+	CCrySignal<void(IDisplayViewport* view, CGizmo* gizmo, const CPoint& point, int nFlags)> signalEndDrag;
 
 private:
-	void DrawPlane(DisplayContext& dc, Vec3 position);
+	void DrawPlane(SDisplayContext& dc, Vec3 position);
 
 	// position and vectors defining the plane in world space
 	Vec3 m_position;
@@ -71,5 +71,4 @@ private:
 	Vec3 m_initOffset;
 	Vec3 m_interactionOffset;
 };
-
 

@@ -403,6 +403,13 @@ bool CAssetManager::HasSharedSourceFile(const CAsset& asset) const
 		return false;
 	}
 
+	// It could be possible that the source file of this asset is a regular asset file of another asset. 
+	// For example this is so for substance instance asset.
+	if (FindAssetForFile(asset.GetSourceFile()))
+	{
+		return true;
+	}
+
 	return std::find_if(m_assets.begin(), m_assets.end(), [&asset](const CAssetPtr& x)
 	{
 		return (&asset != x) && (stricmp(x->GetSourceFile(), asset.GetSourceFile()) == 0);

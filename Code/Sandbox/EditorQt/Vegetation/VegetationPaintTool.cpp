@@ -158,7 +158,7 @@ bool CVegetationPaintTool::MouseCallback(CViewport* pView, EMouseEvent event, CP
 }
 
 //////////////////////////////////////////////////////////////////////////
-void CVegetationPaintTool::Display(DisplayContext& dc)
+void CVegetationPaintTool::Display(SDisplayContext& dc)
 {
 	// Brush paint mode.
 	if (dc.flags & DISPLAY_2D)

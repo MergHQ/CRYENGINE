@@ -19,30 +19,30 @@ const float CMannequinModelViewport::s_maxTweenTime = 0.5f;
 
 namespace
 {
-	bool IsLevelLoading()
-	{
-		ESystemGlobalState state = GetISystem()->GetSystemGlobalState();
-		bool isLevelLoading = state != ESYSTEM_GLOBAL_STATE_RUNNING && state != ESYSTEM_GLOBAL_STATE_INIT;
-		return isLevelLoading;
-	}
+bool IsLevelLoading()
+{
+	ESystemGlobalState state = GetISystem()->GetSystemGlobalState();
+	bool isLevelLoading = state != ESYSTEM_GLOBAL_STATE_RUNNING && state != ESYSTEM_GLOBAL_STATE_INIT;
+	return isLevelLoading;
+}
 
-	CString GetUserOptionsRegKeyName(EMannequinEditorMode editorMode)
+CString GetUserOptionsRegKeyName(EMannequinEditorMode editorMode)
+{
+	CString keyName("Settings\\Mannequin\\");
+	switch (editorMode)
 	{
-		CString keyName("Settings\\Mannequin\\");
-		switch (editorMode)
-		{
-		case eMEM_FragmentEditor:
-			keyName += "FragmentEditor";
-			break;
-		case eMEM_Previewer:
-			keyName += "Previewer";
-			break;
-		case eMEM_TransitionEditor:
-			keyName += "TransitionEditor";
-			break;
-		}
-		return keyName + "UserOptions";
+	case eMEM_FragmentEditor:
+		keyName += "FragmentEditor";
+		break;
+	case eMEM_Previewer:
+		keyName += "Previewer";
+		break;
+	case eMEM_TransitionEditor:
+		keyName += "TransitionEditor";
+		break;
 	}
+	return keyName + "UserOptions";
+}
 }
 
 //////////////////////////////////////////////////////////////////////////
@@ -440,7 +440,7 @@ bool CMannequinModelViewport::HitTest(HitContext& hc, const bool bIsClick)
 	return false;
 }
 
-void CMannequinModelViewport::OnRender()
+void CMannequinModelViewport::OnRender(SDisplayContext& context)
 {
 	if (IsLevelLoading()) return; // avoid render-update during level loading time, since QT-MFC-coupling might crash in rare cases
 
@@ -491,13 +491,13 @@ void CMannequinModelViewport::OnRender()
 			pAuxGeom->DrawLine(groundProj - Vec3(0.2f, 0.0f, 0.0f), RGBA8(0xff, 0x00, 0x00, 0x00), groundProj + Vec3(0.2f, 0.0f, 0.0f), RGBA8(0xff, 0x00, 0x00, 0x00));
 			pAuxGeom->DrawLine(groundProj - Vec3(0.0f, 0.2f, 0.0f), RGBA8(0xff, 0x00, 0x00, 0x00), groundProj + Vec3(0.0f, 0.2f, 0.0f), RGBA8(0xff, 0x00, 0x00, 0x00));
 
-			locator.m_AxisHelper.DrawAxis(m34, gGizmoPreferences, m_displayContext);
+			locator.m_AxisHelper.DrawAxis(m34, gGizmoPreferences, context);
 		}
 	}
 
 	if (mv_AttachCamera)
 	{
-		const int screenWidth  = std::max(pAuxGeom->GetCamera().GetViewSurfaceX(), 1);
+		const int screenWidth = std::max(pAuxGeom->GetCamera().GetViewSurfaceX(), 1);
 		const int screenHeight = std::max(pAuxGeom->GetCamera().GetViewSurfaceZ(), 1);
 		static bool showCrosshair = true;
 		static bool showSafeZone = true;
@@ -616,7 +616,7 @@ void CMannequinModelViewport::OnRender()
 
 	UpdateAnimation(m_playbackMultiplier * gEnv->pTimer->GetFrameTime());
 
-	__super::OnRender();
+	__super::OnRender(context);
 }
 
 void CMannequinModelViewport::SetTimelineUnits(ESequencerTickMode mode)
@@ -1169,7 +1169,7 @@ void CMannequinModelViewport::DrawCharacter(IEntity* pEntity, ICharacterInstance
 
 	Matrix34 localEntityMat = Matrix34(physicalLocation);
 	SRendParams rp = rRP;
-	rp.pRenderNode = pEntity->GetRenderInterface() ? pEntity->GetRenderInterface()->GetRenderNode() :  nullptr;
+	rp.pRenderNode = pEntity->GetRenderInterface() ? pEntity->GetRenderInterface()->GetRenderNode() : nullptr;
 	assert(rp.pRenderNode != NULL);
 	rp.pMatrix = &localEntityMat;
 	rp.pPrevMatrix = &localEntityMat;

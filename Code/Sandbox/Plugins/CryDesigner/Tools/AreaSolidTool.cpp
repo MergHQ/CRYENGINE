@@ -56,8 +56,7 @@ bool AreaSolidTool::OnKeyDown(CViewport* pView, uint32 nChar, uint32 nRepCnt, ui
 	{
 		if (nChar == Qt::Key_Escape)
 		{
-			// Release the current tool by ending the current session
-			DesignerSession::GetInstance()->EndSession();
+			GetIEditor()->SetEditTool(nullptr);
 		}
 		return true;
 	}

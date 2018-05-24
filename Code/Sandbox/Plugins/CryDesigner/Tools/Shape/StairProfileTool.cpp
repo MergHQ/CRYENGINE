@@ -22,7 +22,7 @@ void StairProfileTool::Serialize(Serialization::IArchive& ar)
 	m_StairProfileParameter.Serialize(ar);
 }
 
-void StairProfileTool::Display(DisplayContext& dc)
+void StairProfileTool::Display(SDisplayContext& dc)
 {
 	if (m_SideStairMode == eSideStairMode_PlaceFirstPoint || m_SideStairMode == eSideStairMode_DrawDiagonal)
 	{
@@ -51,7 +51,7 @@ void StairProfileTool::Display(DisplayContext& dc)
 	}
 }
 
-void StairProfileTool::DrawCandidateStair(DisplayContext& dc, int nIndex, const ColorB& color)
+void StairProfileTool::DrawCandidateStair(SDisplayContext& dc, int nIndex, const ColorB& color)
 {
 	if (m_CandidateStairs[nIndex].empty())
 		return;

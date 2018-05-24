@@ -327,8 +327,10 @@ void CPrefabObject::OnContextMenu(CPopupMenuItem* menu)
 
 }
 
-void CPrefabObject::Display(DisplayContext& dc)
+void CPrefabObject::Display(CObjectRenderHelper& objRenderHelper)
 {
+	SDisplayContext& dc = objRenderHelper.GetDisplayContextRef();
+
 	if (!gViewportDebugPreferences.showPrefabObjectHelper)
 		return;
 
@@ -383,14 +385,16 @@ void CPrefabObject::Display(DisplayContext& dc)
 			int numObjects = GetChildCount();
 			for (int i = 0; i < numObjects; i++)
 			{
-				RecursivelyDisplayObject(GetChild(i), dc);
+				RecursivelyDisplayObject(GetChild(i), objRenderHelper);
 			}
 		}
 	}
 }
 
-void CPrefabObject::RecursivelyDisplayObject(CBaseObject* obj, DisplayContext& dc)
+void CPrefabObject::RecursivelyDisplayObject(CBaseObject* obj, CObjectRenderHelper& objRenderHelper)
 {
+	SDisplayContext& dc = objRenderHelper.GetDisplayContextRef();
+
 	if (!obj->CheckFlags(OBJFLAG_PREFAB) || obj->IsHidden())
 		return;
 
@@ -400,24 +404,24 @@ void CPrefabObject::RecursivelyDisplayObject(CBaseObject* obj, DisplayContext& d
 	{
 		if (dc.box.IsIntersectBox(bbox))
 		{
-			obj->Display(dc);
+			obj->Display(objRenderHelper);
 		}
 	}
 	else
 	{
 		if (dc.camera && dc.camera->IsAABBVisible_F(AABB(bbox.min, bbox.max)))
 		{
-			obj->Display(dc);
+			obj->Display(objRenderHelper);
 		}
 	}
 
 	int numObjects = obj->GetChildCount();
 	for (int i = 0; i < numObjects; i++)
-		RecursivelyDisplayObject(obj->GetChild(i), dc);
+		RecursivelyDisplayObject(obj->GetChild(i), objRenderHelper);
 
 	int numLinkedObjects = obj->GetLinkedObjectCount();
 	for (int i = 0; i < numLinkedObjects; ++i)
-		RecursivelyDisplayObject(obj->GetLinkedObject(i), dc);
+		RecursivelyDisplayObject(obj->GetLinkedObject(i), objRenderHelper);
 }
 
 void CPrefabObject::Serialize(CObjectArchive& ar)

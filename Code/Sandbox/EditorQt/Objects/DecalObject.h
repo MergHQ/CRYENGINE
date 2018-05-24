@@ -1,5 +1,4 @@
 // Copyright 2001-2018 Crytek GmbH / Crytek Group. All rights reserved.
-
 #pragma once
 
 #include "Objects/BaseObject.h"
@@ -13,7 +12,7 @@ public:
 	DECLARE_DYNCREATE(CDecalObject)
 
 	// CBaseObject overrides
-	virtual void         Display(DisplayContext& dc);
+	virtual void         Display(CObjectRenderHelper& objRenderHelper);
 
 	virtual bool         HitTest(HitContext& hc);
 

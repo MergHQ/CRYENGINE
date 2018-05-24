@@ -16,7 +16,7 @@ public:
 
 	void        OnManipulatorBegin(IDisplayViewport* pView, ITransformManipulator* pManipulator, CPoint& point, int flags) override;
 	void        OnManipulatorEnd(IDisplayViewport* pView, ITransformManipulator* pManipulator) override;
-	void        Display(DisplayContext& dc) override;
+	void        Display(SDisplayContext& dc) override;
 
 	void        OnEditorNotifyEvent(EEditorNotifyEvent event) override;
 

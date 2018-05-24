@@ -46,8 +46,9 @@ float CAIReinforcementSpot::GetRadius()
 }
 
 //////////////////////////////////////////////////////////////////////////
-void CAIReinforcementSpot::Display(DisplayContext& dc)
+void CAIReinforcementSpot::Display(CObjectRenderHelper& objRenderHelper)
 {
+	SDisplayContext& dc = objRenderHelper.GetDisplayContextRef();
 	const Matrix34& wtm = GetWorldTM();
 
 	Vec3 wp = wtm.GetTranslation();
@@ -58,7 +59,7 @@ void CAIReinforcementSpot::Display(DisplayContext& dc)
 		dc.SetColor(GetColor());
 
 	Matrix34 tm(wtm);
-	dc.RenderObject(eStatObject_ReinforcementSpot, tm);
+	objRenderHelper.Render(tm);
 
 	if (IsSelected())
 	{

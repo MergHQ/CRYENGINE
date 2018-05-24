@@ -5,6 +5,7 @@
 class CBaseObject;
 class CObjectArchive;
 class CObjectClassDesc;
+struct SDisplayContext;
 class CObjectLayer;
 class CObjectLayerManager;
 class CObjectPhysicsManager;
@@ -15,10 +16,10 @@ class CUsedResources;
 class CViewport;
 
 struct CObjectEvent;
-struct DisplayContext;
 struct HitContext;
 struct IGizmoManager;
 struct IObjectLayerManager;
+class CObjectRenderHelper;
 
 enum EObjectListenerEvent;
 
@@ -128,11 +129,11 @@ public:
 	virtual void Link(const std::vector<CBaseObject*>& objects, CBaseObject* pLinkTo, const char* szTargetName = "") = 0;
 
 	//! Display objects on specified display context.
-	virtual void Display(DisplayContext& dc) = 0;
+	virtual void Display(CObjectRenderHelper& objRenderHelper) = 0;
 
 	//! Called when selecting without selection helpers - this is needed since
 	//! the visible object cache is normally not updated when not displaying helpers.
-	virtual void ForceUpdateVisibleObjectCache(DisplayContext& dc) = 0;
+	virtual void ForceUpdateVisibleObjectCache(SDisplayContext& dc) = 0;
 
 	//! Check intersection with objects.
 	//! Find intersection with nearest to ray origin object hit by ray.

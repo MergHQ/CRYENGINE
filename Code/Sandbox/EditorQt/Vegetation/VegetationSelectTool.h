@@ -22,7 +22,7 @@ public:
 	CVegetationSelectTool();
 
 	virtual string GetDisplayName() const override { return "Select Vegetation"; }
-	virtual void   Display(DisplayContext& dc);
+	virtual void   Display(SDisplayContext& dc);
 
 	// Overides from CEditTool
 	virtual bool MouseCallback(CViewport* pView, EMouseEvent event, CPoint& point, int flags);
@@ -40,7 +40,7 @@ public:
 	int                                      GetCountSelectedInstances() const         { return m_selectedThings.size(); }
 	QVector<CVegetationInstance*>            GetSelectedInstances() const;
 
-	void                                     GetManipulatorPosition(Vec3& position) override {};
+	void                                     GetManipulatorPosition(Vec3& position) override {}
 	bool                                     IsManipulatorVisible() override;
 
 	static QEditToolButtonPanel::SButtonInfo CreateSelectToolButtonInfo();
