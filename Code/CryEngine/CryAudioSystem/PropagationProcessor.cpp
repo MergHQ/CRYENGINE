@@ -51,6 +51,8 @@ RaySamplePositions g_raySamplePositionsLow;
 RaySamplePositions g_raySamplePositionsMedium;
 RaySamplePositions g_raySamplePositionsHigh;
 
+int CPropagationProcessor::s_occlusionRayFlags = 0;
+
 ///////////////////////////////////////////////////////////////////////////
 void CAudioRayInfo::Reset()
 {
@@ -117,6 +119,7 @@ CPropagationProcessor::CPropagationProcessor(CObjectTransformation const& transf
 	, m_rayDebugInfos(g_numConcurrentRaysHigh)
 #endif // INCLUDE_AUDIO_PRODUCTION_CODE
 {
+	UpdateOcclusionRayFlags();
 	UpdateOcclusionPlanes();
 	m_raysInfo.resize(g_numConcurrentRaysHigh);
 	m_raysOcclusion.resize(g_numRaySamplePositionsHigh, 0.0f);
@@ -143,11 +146,51 @@ void CPropagationProcessor::Init(CATLAudioObject* const pObject, Vec3 const& lis
 #endif // INCLUDE_AUDIO_PRODUCTION_CODE
 }
 
+//////////////////////////////////////////////////////////////////////////
+void CPropagationProcessor::UpdateOcclusionRayFlags()
+{
+	if ((g_cvars.m_occlusionCollisionTypes & EOcclusionCollisionType::Static) != 0)
+	{
+		s_occlusionRayFlags |= ent_static;
+	}
+	else
+	{
+		s_occlusionRayFlags &= ~ent_static;
+	}
+
+	if ((g_cvars.m_occlusionCollisionTypes & EOcclusionCollisionType::Rigid) != 0)
+	{
+		s_occlusionRayFlags |= (ent_sleeping_rigid | ent_rigid);
+	}
+	else
+	{
+		s_occlusionRayFlags &= ~(ent_sleeping_rigid | ent_rigid);
+	}
+
+	if ((g_cvars.m_occlusionCollisionTypes & EOcclusionCollisionType::Water) != 0)
+	{
+		s_occlusionRayFlags |= ent_water;
+	}
+	else
+	{
+		s_occlusionRayFlags &= ~ent_water;
+	}
+
+	if ((g_cvars.m_occlusionCollisionTypes & EOcclusionCollisionType::Terrain) != 0)
+	{
+		s_occlusionRayFlags |= ent_terrain;
+	}
+	else
+	{
+		s_occlusionRayFlags &= ~ent_terrain;
+	}
+}
+
 ///////////////////////////////////////////////////////////////////////////
 void CPropagationProcessor::Update(
-  float const distanceToListener,
-  Vec3 const& listenerPosition,
-  EObjectFlags const objectFlags)
+	float const distanceToListener,
+	Vec3 const& listenerPosition,
+	EObjectFlags const objectFlags)
 {
 #if defined(INCLUDE_AUDIO_PRODUCTION_CODE)
 	if (g_cvars.m_audioObjectsRayType > 0)
@@ -204,24 +247,23 @@ void CPropagationProcessor::SetOcclusionType(EOcclusionType const occlusionType,
 	if (CanRunObstructionOcclusion())
 	{
 		Vec3 directionNormalized(direction / m_currentListenerDistance);
-		Vec3 const finalDirection(direction - (directionNormalized * g_cvars.m_occlusionRayLengthOffset));
+		Vec3 const finalDirection(direction - (directionNormalized* g_cvars.m_occlusionRayLengthOffset));
 
 		CAudioRayInfo& rayInfo = m_raysInfo[0];
-		static int const physicsFlags = ent_water | ent_static | ent_sleeping_rigid | ent_rigid | ent_terrain;
 
 		// We use "rwi_max_piercing" to allow audio rays to always pierce surfaces regardless of the "pierceability" attribute.
 		// Note: The very first entry of rayInfo.hits (solid slot) is always empty.
 		rayInfo.numHits = static_cast<size_t>(gEnv->pPhysicalWorld->RayWorldIntersection(
-		                                        listenerPosition,
-		                                        finalDirection,
-		                                        physicsFlags,
-		                                        rwi_max_piercing,
-		                                        rayInfo.hits,
-		                                        static_cast<int>(s_maxRayHits),
-		                                        nullptr,
-		                                        0,
-		                                        &rayInfo,
-		                                        PHYS_FOREIGN_ID_SOUND_OBSTRUCTION));
+																						listenerPosition,
+																						finalDirection,
+																						s_occlusionRayFlags,
+																						rwi_max_piercing,
+																						rayInfo.hits,
+																						static_cast<int>(s_maxRayHits),
+																						nullptr,
+																						0,
+																						&rayInfo,
+																						PHYS_FOREIGN_ID_SOUND_OBSTRUCTION));
 
 		rayInfo.numHits = std::min(rayInfo.numHits + 1, s_maxRayHits);
 		float finalOcclusion = 0.0f;
@@ -448,31 +490,31 @@ void CPropagationProcessor::ProcessObstructionOcclusion()
 
 ///////////////////////////////////////////////////////////////////////////
 void CPropagationProcessor::CastObstructionRay(
-  Vec3 const& origin,
-  size_t const rayIndex,
-  size_t const samplePosIndex,
-  bool const bSynch)
+	Vec3 const& origin,
+	size_t const rayIndex,
+	size_t const samplePosIndex,
+	bool const bSynch)
 {
-	static int const physicsFlags = ent_water | ent_static | ent_sleeping_rigid | ent_rigid | ent_terrain;
 	CAudioRayInfo& rayInfo = m_raysInfo[rayIndex];
 	rayInfo.samplePosIndex = samplePosIndex;
 	Vec3 const direction(m_transformation.GetPosition() - origin);
 	Vec3 directionNormalized(direction);
 	directionNormalized.Normalize();
-	Vec3 const finalDirection(direction - (directionNormalized * g_cvars.m_occlusionRayLengthOffset));
+	Vec3 const finalDirection(direction - (directionNormalized* g_cvars.m_occlusionRayLengthOffset));
 
 	// We use "rwi_max_piercing" to allow audio rays to always pierce surfaces regardless of the "pierceability" attribute.
 	// Note: The very first entry of rayInfo.hits (solid slot) is always empty.
 	int const numHits = gEnv->pPhysicalWorld->RayWorldIntersection(
-	  origin,
-	  finalDirection, physicsFlags,
-	  bSynch ? rwi_max_piercing : rwi_max_piercing | rwi_queue,
-	  rayInfo.hits,
-	  static_cast<int>(s_maxRayHits),
-	  nullptr,
-	  0,
-	  &rayInfo,
-	  PHYS_FOREIGN_ID_SOUND_OBSTRUCTION);
+		origin,
+		finalDirection,
+		s_occlusionRayFlags,
+		bSynch ? rwi_max_piercing : rwi_max_piercing | rwi_queue,
+		rayInfo.hits,
+		static_cast<int>(s_maxRayHits),
+		nullptr,
+		0,
+		&rayInfo,
+		PHYS_FOREIGN_ID_SOUND_OBSTRUCTION);
 
 	++m_remainingRays;
 
@@ -545,10 +587,10 @@ void CPropagationProcessor::RunObstructionQuery(Vec3 const& listenerPosition)
 
 //////////////////////////////////////////////////////////////////////////
 void CPropagationProcessor::ProcessLow(
-  Vec3 const& listenerPosition,
-  Vec3 const& up,
-  Vec3 const& side,
-  bool const bSynch)
+	Vec3 const& listenerPosition,
+	Vec3 const& up,
+	Vec3 const& side,
+	bool const bSynch)
 {
 	for (size_t i = 0; i < g_numConcurrentRaysLow; ++i)
 	{
@@ -557,7 +599,7 @@ void CPropagationProcessor::ProcessLow(
 			m_rayIndex = 0;
 		}
 
-		Vec3 const origin(listenerPosition + up * g_raySamplePositionsLow[m_rayIndex].z + side * g_raySamplePositionsLow[m_rayIndex].x);
+		Vec3 const origin(listenerPosition + up* g_raySamplePositionsLow[m_rayIndex].z + side* g_raySamplePositionsLow[m_rayIndex].x);
 		CastObstructionRay(origin, i, m_rayIndex, bSynch);
 		++m_rayIndex;
 	}
@@ -565,10 +607,10 @@ void CPropagationProcessor::ProcessLow(
 
 //////////////////////////////////////////////////////////////////////////
 void CPropagationProcessor::ProcessMedium(
-  Vec3 const& listenerPosition,
-  Vec3 const& up,
-  Vec3 const& side,
-  bool const bSynch)
+	Vec3 const& listenerPosition,
+	Vec3 const& up,
+	Vec3 const& side,
+	bool const bSynch)
 {
 	for (size_t i = 0; i < g_numConcurrentRaysMedium; ++i)
 	{
@@ -577,7 +619,7 @@ void CPropagationProcessor::ProcessMedium(
 			m_rayIndex = 0;
 		}
 
-		Vec3 const origin(listenerPosition + up * g_raySamplePositionsMedium[m_rayIndex].z + side * g_raySamplePositionsMedium[m_rayIndex].x);
+		Vec3 const origin(listenerPosition + up* g_raySamplePositionsMedium[m_rayIndex].z + side* g_raySamplePositionsMedium[m_rayIndex].x);
 		CastObstructionRay(origin, i, m_rayIndex, bSynch);
 		++m_rayIndex;
 	}
@@ -585,10 +627,10 @@ void CPropagationProcessor::ProcessMedium(
 
 //////////////////////////////////////////////////////////////////////////
 void CPropagationProcessor::ProcessHigh(
-  Vec3 const& listenerPosition,
-  Vec3 const& up,
-  Vec3 const& side,
-  bool const bSynch)
+	Vec3 const& listenerPosition,
+	Vec3 const& up,
+	Vec3 const& side,
+	bool const bSynch)
 {
 	for (size_t i = 0; i < g_numConcurrentRaysHigh; ++i)
 	{
@@ -597,7 +639,7 @@ void CPropagationProcessor::ProcessHigh(
 			m_rayIndex = 0;
 		}
 
-		Vec3 const origin(listenerPosition + up * g_raySamplePositionsHigh[m_rayIndex].z + side * g_raySamplePositionsHigh[m_rayIndex].x);
+		Vec3 const origin(listenerPosition + up* g_raySamplePositionsHigh[m_rayIndex].z + side* g_raySamplePositionsHigh[m_rayIndex].x);
 		CastObstructionRay(origin, i, m_rayIndex, bSynch);
 		++m_rayIndex;
 	}

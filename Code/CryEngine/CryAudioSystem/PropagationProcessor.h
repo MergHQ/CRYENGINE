@@ -22,14 +22,14 @@ public:
 	void Reset();
 
 	CATLAudioObject* pObject = nullptr;
-	size_t           samplePosIndex = 0;
-	size_t           numHits = 0;
-	float            totalSoundOcclusion = 0.0f;
-	ray_hit          hits[s_maxRayHits];
+	size_t samplePosIndex = 0;
+	size_t numHits = 0;
+	float totalSoundOcclusion = 0.0f;
+	ray_hit hits[s_maxRayHits];
 
 #if defined(INCLUDE_AUDIO_PRODUCTION_CODE)
-	Vec3  startPosition = ZERO;
-	Vec3  direction = ZERO;
+	Vec3 startPosition = ZERO;
+	Vec3 direction = ZERO;
 	float distanceToFirstObstacle = FLT_MAX;
 #endif // INCLUDE_AUDIO_PRODUCTION_CODE
 };
@@ -49,12 +49,13 @@ public:
 	void Init(CATLAudioObject* const pObject, Vec3 const& listenerPosition);
 
 	// PhysicsSystem callback
-	static int OnObstructionTest(EventPhys const* pEvent);
+	static int  OnObstructionTest(EventPhys const* pEvent);
+	static void UpdateOcclusionRayFlags();
 
-	void       Update(
-	  float const distanceToListener,
-	  Vec3 const& listenerPosition,
-	  EObjectFlags const objectFlags);
+	void        Update(
+		float const distanceToListener,
+		Vec3 const& listenerPosition,
+		EObjectFlags const objectFlags);
 	void SetOcclusionType(EOcclusionType const occlusionType, Vec3 const& listenerPosition);
 	bool CanRunObstructionOcclusion() const;
 	void GetPropagationData(SATLSoundPropagationData& propagationData) const;
@@ -67,46 +68,48 @@ private:
 
 	void ProcessObstructionOcclusion();
 	void CastObstructionRay(
-	  Vec3 const& origin,
-	  size_t const rayIndex,
-	  size_t const samplePosIndex,
-	  bool const bSynch);
+		Vec3 const& origin,
+		size_t const rayIndex,
+		size_t const samplePosIndex,
+		bool const bSynch);
 	void RunObstructionQuery(Vec3 const& listenerPosition);
 	void ProcessLow(
-	  Vec3 const& listenerPosition,
-	  Vec3 const& up,
-	  Vec3 const& side,
-	  bool const bSynch);
+		Vec3 const& listenerPosition,
+		Vec3 const& up,
+		Vec3 const& side,
+		bool const bSynch);
 	void ProcessMedium(
-	  Vec3 const& listenerPosition,
-	  Vec3 const& up,
-	  Vec3 const& side,
-	  bool const bSynch);
+		Vec3 const& listenerPosition,
+		Vec3 const& up,
+		Vec3 const& side,
+		bool const bSynch);
 	void ProcessHigh(
-	  Vec3 const& listenerPosition,
-	  Vec3 const& up,
-	  Vec3 const& side,
-	  bool const bSynch);
+		Vec3 const& listenerPosition,
+		Vec3 const& up,
+		Vec3 const& side,
+		bool const bSynch);
 	size_t GetNumConcurrentRays() const;
 	size_t GetNumSamplePositions() const;
 	void   UpdateOcclusionPlanes();
 
-	float                        m_obstruction;
-	float                        m_lastQuerriedObstruction;
-	float                        m_lastQuerriedOcclusion;
-	float                        m_occlusion;
-	float                        m_currentListenerDistance;
-	RayOcclusionVec              m_raysOcclusion;
+	float m_obstruction;
+	float m_lastQuerriedObstruction;
+	float m_lastQuerriedOcclusion;
+	float m_occlusion;
+	float m_currentListenerDistance;
+	RayOcclusionVec m_raysOcclusion;
 
-	size_t                       m_remainingRays;
-	size_t                       m_rayIndex;
+	size_t m_remainingRays;
+	size_t m_rayIndex;
 
 	CObjectTransformation const& m_transformation;
 
-	RayInfoVec                   m_raysInfo;
-	EOcclusionType               m_occlusionType;
-	EOcclusionType               m_originalOcclusionType;
-	EOcclusionType               m_occlusionTypeWhenAdaptive;
+	RayInfoVec m_raysInfo;
+	EOcclusionType m_occlusionType;
+	EOcclusionType m_originalOcclusionType;
+	EOcclusionType m_occlusionTypeWhenAdaptive;
+
+	static int s_occlusionRayFlags;
 
 #if defined(INCLUDE_AUDIO_PRODUCTION_CODE)
 public:
@@ -138,7 +141,7 @@ private:
 	using RayDebugInfoVec = std::vector<SRayDebugInfo>;
 
 	RayDebugInfoVec m_rayDebugInfos;
-	ColorB          m_listenerOcclusionPlaneColor;
+	ColorB m_listenerOcclusionPlaneColor;
 #endif // INCLUDE_AUDIO_PRODUCTION_CODE
 };
 } // namespace CryAudio
