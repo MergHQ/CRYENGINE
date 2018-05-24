@@ -686,6 +686,32 @@ int CPrefabManager::GetPrefabInstanceCount(IDataBaseItem* pPrefabItem)
 	return instanceCount;
 }
 
+IDataBaseLibrary* CPrefabManager::AddLibrary(const string& library, bool bSetFullFilename /*= false*/)
+{
+	// Check if library with same name already exist.
+	IDataBaseLibrary* const pBaseLib = FindLibrary(library);
+	if (pBaseLib)
+	{
+		return pBaseLib;
+	}
+
+	CBaseLibrary* const pLib = MakeNewLibrary();
+	pLib->SetName(library);
+
+	const string filename = MakeFilename(library);
+
+	pLib->SetFilename(filename);
+	pLib->SetModified(false);
+
+	m_libs.push_back(pLib);
+	return pLib;
+}
+
+string CPrefabManager::MakeFilename(const string& library)
+{
+	return string().Format("%s.%s", library.c_str(), GetFileExtension());
+}
+
 void CPrefabManager::importAssetsFromLevel(XmlNodeRef& levelRoot)
 {
 	using namespace Private_PrefabManager;

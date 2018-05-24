@@ -124,7 +124,7 @@ public:
 	void   OnItemChanged(IDataBaseItem* pItem);
 	void   OnUpdateProperties(IDataBaseItem* pItem);
 
-	string MakeFilename(const string& library);
+	virtual string MakeFilename(const string& library);
 
 	bool   HasUidMap() const  { return m_bUniqGuidMap; }
 	bool   HasNameMap() const { return m_bUniqNameMap; }

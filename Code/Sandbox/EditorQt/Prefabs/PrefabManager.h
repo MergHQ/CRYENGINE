@@ -111,6 +111,10 @@ public:
 	virtual void              BeginRestoreTransaction() override { SetSkipPrefabUpdate(true); }
 	virtual void              EndRestoreTransaction() override   { SetSkipPrefabUpdate(false); }
 
+
+	virtual IDataBaseLibrary* AddLibrary(const string& library, bool bSetFullFilename = false) override;
+	virtual string MakeFilename(const string& library) override;
+
 	// Allows to generate prefab assets from level files of CE5.5
 	static void importAssetsFromLevel(XmlNodeRef& levelRoot);
 
