@@ -1666,17 +1666,49 @@ uint32 JobManager::detail::GetWorkerThreadId()
 	return is_marked_worker_thread_id(nID) ? unmark_worker_thread_id(nID) : ~0;
 }
 
-static BoundMPMC<JobManager::SInfoBlock*> gFallbackInfoBlocks(JobManager::detail::GetFallbackJobListSize());
+static BoundMPMC<JobManager::SInfoBlock*> gFallbackInfoBlocks_ThreadBackend(JobManager::detail::GetFallbackJobListSize());
+static BoundMPMC<JobManager::SInfoBlock*> gFallbackInfoBlocks_BlockingBackend(JobManager::detail::GetFallbackJobListSize());
+static BoundMPMC<JobManager::SInfoBlock*> gFallbackInfoBlocks_FallbackBackend(JobManager::detail::GetFallbackJobListSize());
 
 ///////////////////////////////////////////////////////////////////////////////
-void JobManager::detail::PushToFallbackJobList(JobManager::SInfoBlock* pInfoBlock)
+void JobManager::detail::PushToFallbackJobList(EBackEndType type, JobManager::SInfoBlock* pInfoBlock)
 {
-	bool ret = gFallbackInfoBlocks.enqueue(pInfoBlock);
+	bool ret = false;
+	switch (type)
+	{
+	case eBET_Thread:
+		ret = gFallbackInfoBlocks_ThreadBackend.enqueue(pInfoBlock);
+		break;
+	case eBET_Blocking:
+		ret = gFallbackInfoBlocks_BlockingBackend.enqueue(pInfoBlock);
+		break;
+	case eBET_Fallback:
+		ret = gFallbackInfoBlocks_FallbackBackend.enqueue(pInfoBlock);
+		break;
+	default:
+		CRY_ASSERT(false);
+	}
+	
 	CRY_ASSERT_MESSAGE(ret, "JobSystem: Fallback info block limit reached");
 }
 
-JobManager::SInfoBlock* JobManager::detail::PopFromFallbackJobList()
+JobManager::SInfoBlock* JobManager::detail::PopFromFallbackJobList(EBackEndType type)
 {
 	JobManager::SInfoBlock* pInfoBlock = nullptr;
-	return gFallbackInfoBlocks.dequeue(pInfoBlock) ? pInfoBlock : nullptr;
+	bool ret = false;
+	switch (type)
+	{
+	case eBET_Thread:
+		return gFallbackInfoBlocks_ThreadBackend.dequeue(pInfoBlock) ? pInfoBlock : nullptr;
+		break;
+	case eBET_Blocking:
+		return gFallbackInfoBlocks_BlockingBackend.dequeue(pInfoBlock) ? pInfoBlock : nullptr;
+		break;
+	case eBET_Fallback:
+		return gFallbackInfoBlocks_FallbackBackend.dequeue(pInfoBlock) ? pInfoBlock : nullptr;
+		break;
+	default:
+		CRY_ASSERT(false);
+	}
+	return nullptr;
 }

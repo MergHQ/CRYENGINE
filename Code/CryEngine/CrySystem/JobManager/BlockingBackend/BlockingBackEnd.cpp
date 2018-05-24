@@ -189,7 +189,7 @@ void JobManager::BlockingBackEnd::CBlockingBackEnd::AddJob(JobManager::CJobDeleg
 	IF (cEnqRes == JobManager::detail::eAJR_NeedFallbackJobInfoBlock, 0)
 	{
 		// in case of a fallback job, add self to per thread list (thus no synchronization needed)
-		JobManager::detail::PushToFallbackJobList(&rJobInfoBlock);
+		JobManager::detail::PushToFallbackJobList(eBET_Blocking, &rJobInfoBlock);
 	}
 	else
 	{
@@ -227,7 +227,7 @@ void JobManager::BlockingBackEnd::CBlockingBackEndWorkerThread::ThreadEntry()
 		IF(m_bStop == true, 0)
 			break;
 
-		if (JobManager::SInfoBlock* pFallbackInfoBlock = JobManager::detail::PopFromFallbackJobList())
+		if (JobManager::SInfoBlock* pFallbackInfoBlock = JobManager::detail::PopFromFallbackJobList(eBET_Blocking))
 		{
 			CRY_PROFILE_REGION(PROFILE_SYSTEM, "JobWorkerThread: Fallback");
 

@@ -25,11 +25,6 @@ class CWorkerBackEndProfiler;
 
 namespace JobManager {
 namespace BlockingBackEnd {
-namespace detail {
-// stack size for each worker thread of the blocking backend
-enum {eStackSize = 32 * 1024 };
-
-}   // namespace detail
 
 // forward declarations
 class CBlockingBackEnd;

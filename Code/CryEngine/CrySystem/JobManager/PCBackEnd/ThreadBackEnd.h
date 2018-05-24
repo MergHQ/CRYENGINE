@@ -1,16 +1,6 @@
 // Copyright 2001-2018 Crytek GmbH / Crytek Group. All rights reserved.
 
-// -------------------------------------------------------------------------
-//  File name:   ThreadBackEnd.h
-//  Version:     v1.00
-//  Created:     07/05/2011 by Christopher Bolte
-//  Compilers:   Visual Studio.NET
-// -------------------------------------------------------------------------
-//  History:
-////////////////////////////////////////////////////////////////////////////
-
-#ifndef THREAD_BACKEND_H_
-#define THREAD_BACKEND_H_
+#pragma once
 
 #include <CryThreading/IJobManager.h>
 #include "../JobStructs.h"
@@ -20,6 +10,7 @@
 #if CRY_PLATFORM_DURANGO
 	#include <CryCore/Platform/CryWindows.h>
 	#define JOB_SPIN_DURING_IDLE
+	#define DURANGO_ENABLE_ASYNC_DIPS 1
 #endif
 
 namespace JobManager
@@ -33,165 +24,200 @@ class CJobManager;
 
 namespace ThreadBackEnd {
 namespace detail {
-// stack size for backend worker threads
-enum { eStackSize = 256 * 1024 };
 
-class CWaitForJobObject
-{
-public:
-	CWaitForJobObject(uint32 nMaxCount) :
-#if defined(JOB_SPIN_DURING_IDLE)
-		m_nCounter(0)
-#else
-		m_Semaphore(nMaxCount)
-#endif
-	{}
-
-	void SignalNewJob()
+#if DURANGO_ENABLE_ASYNC_DIPS == 1
+	void ExecuteAsyncDipJob()
 	{
-#if defined(JOB_SPIN_DURING_IDLE)
-		int nCount = ~0;
-		do
-		{
-			nCount = *const_cast<volatile int*>(&m_nCounter);
-		}
-		while (CryInterlockedCompareExchange(alias_cast<volatile LONG*>(&m_nCounter), nCount + 1, nCount) != nCount);
-#else
-		m_Semaphore.Release();
-#endif
-	}
-
-	bool TryGetJob()
-	{
-#if CRY_PLATFORM_DURANGO
-		int nCount = *const_cast<volatile int*>(&m_nCounter);
-		if (nCount > 0)
-		{
-			if (CryInterlockedCompareExchange(alias_cast<volatile long*>(&m_nCounter), nCount - 1, nCount) == nCount)
-				return true;
-		}
-		return false;
-#else
-		return false;
-#endif
-	}
-	void WaitForNewJob(uint32 nWorkerID)
-	{
-#if defined(JOB_SPIN_DURING_IDLE)
-		int nCount = ~0;
-
-	#if CRY_PLATFORM_DURANGO
 		UAsyncDipState nCurrentState;
 		UAsyncDipState nNewState;
 
-		do      // mark as idle
+		nCurrentState.nValue = *const_cast<volatile uint32*>(&gEnv->mAsyncDipState.nValue);
+
+		if (nCurrentState.nQueueGuard == 0 && nCurrentState.nNumJobs > 0)
 		{
-			nCurrentState.nValue = *const_cast<volatile uint32*>(&gEnv->mAsyncDipState.nValue);
+			HANDLE  threadHandle = GetCurrentThread();
+			int oldPrio = GetThreadPriority(threadHandle);
+			SetThreadPriority(threadHandle, THREAD_PRIORITY_TIME_CRITICAL);
+
 			nNewState = nCurrentState;
-			nNewState.nWorker_Idle |= 1 << nWorkerID;
+			nNewState.nQueueGuard = 1;
+
+			// Aquire Guard
 			if (CryInterlockedCompareExchange((volatile long*)&gEnv->mAsyncDipState.nValue, nNewState.nValue, nCurrentState.nValue) == nCurrentState.nValue)
-				break;
-		}
-		while (true);
-retry:
-	#endif  // CRY_PLATFORM_DURANGO
-
-		do
-		{
-
-	#if CRY_PLATFORM_DURANGO
-			nCurrentState.nValue = *const_cast<volatile uint32*>(&gEnv->mAsyncDipState.nValue);
-			if (nCurrentState.nQueueGuard == 0 && nCurrentState.nNumJobs > 0)
 			{
-				SetThreadPriority(GetCurrentThread(), THREAD_PRIORITY_TIME_CRITICAL);
-
-				nNewState = nCurrentState;
-				nNewState.nQueueGuard = 1;
-				if (CryInterlockedCompareExchange((volatile long*)&gEnv->mAsyncDipState.nValue, nNewState.nValue, nCurrentState.nValue) == nCurrentState.nValue)
+				// Execute Async DIP Job
+				do
 				{
-ExecuteAsyncDip:
 					gEnv->pRenderer->ExecuteAsyncDIP();
+				} while (nCurrentState.nNumJobs > 0);
 
-					// clear guard variable
-					do
-					{
-						nCurrentState.nValue = *const_cast<volatile uint32*>(&gEnv->mAsyncDipState.nValue);
-						nNewState = nCurrentState;
-						nNewState.nQueueGuard = 0;
-
-						// if jobs were added in the meantime, continue executing those
-						if (nCurrentState.nNumJobs > 0)
-							goto ExecuteAsyncDip;
-
-						if (CryInterlockedCompareExchange((volatile long*)&gEnv->mAsyncDipState.nValue, nNewState.nValue, nCurrentState.nValue) == nCurrentState.nValue)
-							break;
-					}
-					while (true);
-				}     // else another thread must have gotten the guard var, go back to IDLE priority spinning
-				SetThreadPriority(GetCurrentThread(), THREAD_PRIORITY_IDLE);
-			}
-	#endif    // CRY_PLATFORM_DURANGO
-
-			nCount = *const_cast<volatile int*>(&m_nCounter);
-			if (nCount > 0)
-			{
-				if (CryInterlockedCompareExchange(alias_cast<volatile LONG*>(&m_nCounter), nCount - 1, nCount) == nCount)
-					break;
-			}
-
-			YieldProcessor();
-			YieldProcessor();
-			YieldProcessor();
-			YieldProcessor();
-			YieldProcessor();
-			YieldProcessor();
-			YieldProcessor();
-			YieldProcessor();
-
-			SwitchToThread();
-
-		}
-		while (true);
-
-	#if CRY_PLATFORM_DURANGO
-		do      // mark as busy
-		{
-			nCurrentState.nValue = *const_cast<volatile uint32*>(&gEnv->mAsyncDipState.nValue);
-			nNewState = nCurrentState;
-			nNewState.nWorker_Idle &= ~(1 << nWorkerID);
-
-			// new job was submitted while we were leaving the loop
-			// try to get the guard again
-			if (nCurrentState.nQueueGuard == 0 && nCurrentState.nNumJobs > 0)
-			{
-				do      // increment job counter again, to allow another thread to take this job
+				do
 				{
-					nCount = *const_cast<volatile int*>(&m_nCounter);
-					if (CryInterlockedCompareExchange(alias_cast<volatile long*>(&m_nCounter), nCount + 1, nCount) == nCount)
-						break;
-				}
-				while (true);
-
-				goto retry;
+					nCurrentState.nValue = *const_cast<volatile uint32*>(&gEnv->mAsyncDipState.nValue);
+					nNewState = nCurrentState;
+					nNewState.nQueueGuard = 0;
+				} while (CryInterlockedCompareExchange((volatile long*)&gEnv->mAsyncDipState.nValue, nNewState.nValue, nCurrentState.nValue) == nCurrentState.nValue);
 			}
 
-			if (CryInterlockedCompareExchange((volatile long*)&gEnv->mAsyncDipState.nValue, nNewState.nValue, nCurrentState.nValue) == nCurrentState.nValue)
-				break;
-
+			// Reset prio
+			SetThreadPriority(threadHandle, oldPrio);
 		}
-		while (true);
-	#endif  // CRY_PLATFORM_DURANGO
-#else
-		m_Semaphore.Acquire();
-#endif
 	}
-private:
-#if defined(JOB_SPIN_DURING_IDLE)
-	volatile int m_nCounter;
-#else
-	CryFastSemaphore m_Semaphore;
+#endif  // DURANGO_ENABLE_ASYNC_DIPS	
+
+static thread_local int tls_workerSpins = 0;
+#ifdef JOB_SPIN_DURING_IDLE
+	
+	class CWorkStatusSyncVar
+	{
+	public:
+		CWorkStatusSyncVar()
+		{}
+
+		void Wait()
+		{
+#if DURANGO_ENABLE_ASYNC_DIPS == 1
+			ExecuteAsyncDipJob();
 #endif
-};
+			if (tls_workerSpins++ > 10) // Worker failed more than 10 times to get work from the queue
+			{			
+				// Deep OS call (10k+ cycles on Win)
+				// Allow switching to another thread 
+				CrySleep(0);
+			}
+			else
+			{
+				// Yield ... will pause processor and give resources to another processor that is on the same core (hyperthreading) if available 
+				CryMT::CryYieldThread();
+			}					
+		}
+
+		void Aquire()
+		{
+			// Managed to successfully acquire a resource
+			tls_workerSpins = 0;
+		}
+
+		void ReleaseAndSignal()
+		{
+		}
+	};
+#else
+
+// Use lock to allow workers to sleep
+// Reduce contention between threads
+// Lock contention should only happen when the "count" of jobs in the queue is low and new jobs are added at the same time. (or when jobs wake up)
+//
+// Producer: 
+//  - Increment job counter
+//  - Notify condition
+//
+// Consumer:
+//  - When a worker managed to grab a job from the queue, decrement the counter
+//  - If a worker has failed to grab a job often enough he might enter Wait. Once we ensured that there is no work available it will enter the wait condition
+//
+// Note:
+// The "m_counter" & "m_workIndicator" might be negative if an already active worker has grabbed the job from the queue prior ReleaseAndSignal() was called by the producer
+// 
+
+	class CWorkStatusSyncVar
+	{
+	public:
+		CWorkStatusSyncVar()
+			: m_counter(0)
+			, m_workIndicator(0)
+		{
+		}
+
+		void Wait()
+		{
+			if (m_workIndicator <= 0)
+			{
+				//CRY_PROFILE_REGION(PROFILE_SYSTEM, "JobWorkerThread: Wait - Wait Start");
+				AUTO_LOCK_T(CryMutexFast, m_hasWorkLock);
+				{
+					//CRY_PROFILE_REGION(PROFILE_SYSTEM, "JobWorkerThread: Wait - Wait End");
+					while (m_workIndicator <= 0)
+					{
+						m_hasWorkCnd.Wait(m_hasWorkLock);
+					}
+				}
+			}
+			else
+			{
+#if DURANGO_ENABLE_ASYNC_DIPS == 1
+				ExecuteAsyncDipJob();
+#endif
+				if (tls_workerSpins++ < 10) // Worker failed more than 10 times to get work from the queue
+				{
+					//CRY_PROFILE_REGION(PROFILE_SYSTEM, "JobWorkerThread: Wait - Sleep");
+					// Deep OS call (10k+ cycles on Win)
+					// Allow switching to another thread 
+					CrySleep(0);
+				}
+				else
+				{
+					// Yield ... will pause processor and give resources to another processor that is on the same core (hyperthreading) if available 
+					CryMT::CryYieldThread();
+				}
+			}
+		}
+
+		void Aquire()
+		{
+			int count = CryInterlockedDecrement(&m_counter);
+
+			// Notify that this was "potentially" the last job in the queue i.e. someone might have already added new work. 
+			// Each count == 0 (on decrement) should be matched by a count == 1 (on increment) to keep m_workIndicator in sync
+			// Note: count can be negative
+			if (count == 0)
+			{
+				//CRY_PROFILE_REGION(PROFILE_SYSTEM, "JobWorkerThread: Aquire - Wait Start");
+				AUTO_LOCK_T(CryMutexFast, m_hasWorkLock);
+				{
+					//CRY_PROFILE_REGION(PROFILE_SYSTEM, "JobWorkerThread: Aquire - Wait End");
+					--m_workIndicator;
+				}
+			}
+
+			// Reset spin counter as we just managed to grab work from the queue
+			tls_workerSpins = 0;
+		}
+
+		void ReleaseAndSignal()
+		{
+			int count = CryInterlockedIncrement(&m_counter);
+
+			// Signal if work is available 
+			// Notify that this was "potentially" there might be work in the queue i.e. some worker might have already grabbed the work. 
+			// Each count == 1 (on increment) should be matched by a count == 0 (on decrement) to keep m_workIndicator in sync
+			// Note: count can be negative
+			if (count == 1)
+			{
+				//CRY_PROFILE_REGION(PROFILE_SYSTEM, "JobWorkerThread: Release - Wait Start");
+				AUTO_LOCK_T(CryMutexFast, m_hasWorkLock);
+				{
+					//CRY_PROFILE_REGION(PROFILE_SYSTEM, "JobWorkerThread: Release - Wait End");
+					m_workIndicator++;
+
+					// Need to wake up all workers as we don't want to end up with a single worker active when "count" > 2
+					// Alternative 1: We can use NotifySingle ... if "count" < numWorkers 
+					// Alternative 2: Call NotifySingle every time we increment the count
+					m_hasWorkCnd.Notify(); 
+					
+					// Notify() will wake up all jobs but that is ok if we add a lot of jobs quickly we want them to be running, ready to take work.
+					// In the worst case they go back to sleep and we wasted cycles
+				}
+			}
+		}
+
+	protected:
+		CryConditionVariable m_hasWorkCnd;
+		CryMutexFast m_hasWorkLock;
+		volatile int32 m_counter;
+		volatile int32 m_workIndicator;
+	};
+#endif
 
 } // namespace detail
   // forward declarations
@@ -213,7 +239,7 @@ class CThreadBackEndWorkerThread : public IThread
 	};
 
 public:
-	CThreadBackEndWorkerThread(CThreadBackEnd* pThreadBackend, detail::CWaitForJobObject& rSemaphore, JobManager::SJobQueue_ThreadBackEnd& rJobQueue, uint32 nId, bool bIsTempWorker);
+	CThreadBackEndWorkerThread(CThreadBackEnd* pThreadBackend, detail::CWorkStatusSyncVar& rSemaphore, JobManager::SJobQueue_ThreadBackEnd& rJobQueue, uint32 nId, bool bIsTempWorker);
 	~CThreadBackEndWorkerThread();
 
 	// Start accepting work on thread
@@ -227,7 +253,7 @@ public:
 private:
 	void DoWorkProducerConsumerQueue(SInfoBlock& rInfoBlock);
 
-	detail::CWaitForJobObject&           m_rSemaphore;
+	detail::CWorkStatusSyncVar&          m_rSemaphore;
 	JobManager::SJobQueue_ThreadBackEnd& m_rJobQueue;
 	CThreadBackEnd*                      m_pThreadBackend;
 
@@ -265,7 +291,7 @@ private:
 	friend class JobManager::CJobManager;
 
 	JobManager::SJobQueue_ThreadBackEnd      m_JobQueue;              // job queue node where jobs are pushed into and from
-	detail::CWaitForJobObject                m_Semaphore;             // semaphore to count available jobs, to allow the workers to go sleeping instead of spinning when no work is required
+	detail::CWorkStatusSyncVar               m_Semaphore;             // semaphore to count available jobs, to allow the workers to go sleeping instead of spinning when no work is required
 	std::vector<CThreadBackEndWorkerThread*> m_arrWorkerThreads;      // array of worker threads
 	uint8 m_nNumWorkerThreads;                                        // number of worker threads
 
@@ -277,5 +303,3 @@ private:
 
 } // namespace ThreadBackEnd
 } // namespace JobManager
-
-#endif // THREAD_BACKEND_H_
