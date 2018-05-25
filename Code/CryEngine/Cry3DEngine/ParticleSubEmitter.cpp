@@ -53,7 +53,7 @@ void CParticleSubEmitter::Initialize(float fAge)
 	// Compute lifetime params.
 	m_fStartAge = m_fStopAge = m_fActivateAge + params.fSpawnDelay(VRANDOM);
 	m_fLastEmitAge = -fHUGE;
-	if (params.bContinuous || !params.fParticleLifeTime)
+	if (params.bContinuous)
 	{
 		if (params.fEmitterLifeTime)
 			m_fStopAge += params.fEmitterLifeTime(VRANDOM);
