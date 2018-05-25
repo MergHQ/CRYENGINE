@@ -24,9 +24,6 @@
 #include <algorithm>
 #include <memory>
 
-#pragma warning( push )
-#pragma warning( disable : 4477 ) // 'printf' : format string '%s' requires an argument of type 'char *', but variadic argument 1 has type 'const wchar_t *'
-
 //Keys
 static unsigned char g_rsa_private_key_data[EAAS_PRIV_SIZE]; 
 static unsigned char g_rsa_public_key_data[EAAS_PUB_SIZE];
@@ -307,7 +304,7 @@ bool FindCDREnd(FILE *pArchiveFile, ZipFile::CDREnd* pCDREnd, size_t* pCommentSt
 {
 	fseek(pArchiveFile,0,SEEK_END);
 	long fLength = ftell(pArchiveFile);
-	if(fLength < sizeof(ZipFile::CDREnd))
+	if(sizeof(ZipFile::CDREnd) > (unsigned long)fLength)
 	{
 		printf("File isn't big enough to contain a CDREnd structure");
 		return false;
@@ -363,11 +360,11 @@ bool ProcessFileSection(FILE *in, FILE *out, unsigned long length, bool needsDec
 	unsigned char *dataBuffer = new unsigned char[length];
 	if(!dataBuffer)
 	{
-		printf("Failed to allocate %d of buffer to encrypt an entry. Is the entry too large?\n",length);
+		printf("Failed to allocate %lu of buffer to encrypt an entry. Is the entry too large?\n", length);
 		return false;
 	}
 
-	fread(dataBuffer,1,length,in);
+	fread(dataBuffer, 1, length, in);
 
 	if(needsDecrypting)
 	{
@@ -476,11 +473,12 @@ int GenerateDeterministicKeys(_TCHAR* tchar_key_source,
 
 	size_t numCharsConverted;
 	wcstombs_s(&numCharsConverted, keysrc.get(), keysrc_len + 1, tchar_key_source, keysrc_len);
+
 	unsigned long keylength = (unsigned long)ZipFile::BLOCK_CIPHER_KEY_LENGTH;     // hash function needs to be passed this as a pointer.
 
 	if (CRYPT_OK != hash_memory(md5, (unsigned char*)keysrc.get(), keysrc_len, CDR_initial_vector, &keylength))
 	{
-		fprintf(stderr, "Unable to use md5 hash on '%s' for CDR_initial_vector.\n", keysrc);
+		fprintf(stderr, "Unable to use md5 hash on '%s' for CDR_initial_vector.\n", keysrc.get());
 		return false;
 	}
 
@@ -488,7 +486,7 @@ int GenerateDeterministicKeys(_TCHAR* tchar_key_source,
 	{
 		if (CRYPT_OK != hash_memory(md5, (unsigned char*)keysrc.get(), keysrc_len, block_cipher_keys_table[i], &keylength))
 		{
-			fprintf(stderr, "Unable to use md5 hash on '%s'.\n", keysrc);
+			fprintf(stderr, "Unable to use md5 hash on '%s'.\n", keysrc.get());
 			return false;
 		}
 	}
@@ -512,8 +510,8 @@ int _tmain(int argc, _TCHAR* argv[])
 	}
 
 	// Read key base. If it is '-', then don't use deterministic keys.
-	bool useDeterministicKeys = (TWOFISH_KEY_SOURCE < argc) && wcscmp(argv[TWOFISH_KEY_SOURCE], L"-");
-	if (useDeterministicKeys && wcslen(argv[TWOFISH_KEY_SOURCE]) < 16)
+	bool useDeterministicKeys = (TWOFISH_KEY_SOURCE < argc) && _tcscmp(argv[TWOFISH_KEY_SOURCE], _T("-"));
+	if (useDeterministicKeys && _tcslen(argv[TWOFISH_KEY_SOURCE]) < 16)
 	{
 		fprintf(stderr, "The 'key_source' string must be at least 16 characters long (or '-' to skip deterministic generation).\n");
 		return 1;
@@ -564,7 +562,7 @@ int _tmain(int argc, _TCHAR* argv[])
 
 	FILE *pSourceArchive;
 	{
-		errno_t fopenRet = _tfopen_s(&pSourceArchive,argv[SOURCE_PATH], _T("rb"));
+		int fopenRet = _tfopen_s(&pSourceArchive, argv[SOURCE_PATH], _T("rb"));
 		if(pSourceArchive == NULL)
 		{
 			printf("Failed to open source archive\n");
@@ -632,7 +630,7 @@ int _tmain(int argc, _TCHAR* argv[])
 
 	FILE *pDestArchive;
 	{
-		errno_t fopenRet = _tfopen_s(&pDestArchive,destArchiveTempName.c_str(), _T("wb"));
+		int fopenRet = _tfopen_s(&pDestArchive, destArchiveTempName.c_str(), _T("wb"));
 		if(pDestArchive == NULL)
 		{
 			printf("Failed to open destination archive\n");
@@ -710,6 +708,7 @@ int _tmain(int argc, _TCHAR* argv[])
 	//CDR signature
 	unsigned char signature[1024] = { 0 };
 	unsigned long signatureLen = 1024;
+	
 	//Start by reading the entire CDR into memory if it exists
 	if(fileCDREnd.lCDRSize > 0)
 	{
@@ -1052,18 +1051,18 @@ int _tmain(int argc, _TCHAR* argv[])
 		_get_errno(&error_no);
 		if( error_no != ENOENT )	//Can ignore 'file not found'
 		{
-			printf("Failed to delete old destination pak. _tunlink returned %d",error_no);
+			printf("Failed to delete old destination pak. _tunlink returned %d", error_no);
 			return error_no;
 		}
 	}
 	error_no = _trename(destArchiveTempName.c_str(),destArchiveName.c_str());
 	if(error_no != 0)
 	{
-		printf( "Failed to rename temp file (%ls) to destination file (%ls), _trename returned %d", destArchiveName.c_str(), destArchiveTempName.c_str(), error_no );
+		tstring errmsg = _T("Failed to rename temp file (") + destArchiveName + _T(") ") +
+				         _T("to destination file (") + destArchiveTempName + _T(", error code: %d");
+		_tprintf(errmsg.c_str(), error_no);
 		return error_no;
 	}
 
 	return 0;
 }
-
-#pragma warning( pop )
