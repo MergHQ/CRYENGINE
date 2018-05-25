@@ -14,8 +14,8 @@ public:
 	QEditToolButton(QWidget* parent);
 	~QEditToolButton();
 
-	void SetToolClass(CRuntimeClass* toolClass, const char* userDataKey = 0, void* userData = 0);
-	void SetToolName(const string& sEditToolName, const char* userDataKey = 0, void* userData = 0);
+	void SetToolClass(CRuntimeClass* toolClass);
+	void SetToolName(const string& sEditToolName);
 	// Set if this tool button relies on a loaded level / ready document. By default every tool button only works if a level is loaded.
 	// However some tools are also used without a loaded level (e.g. UI Emulator)
 	void SetNeedDocument(bool bNeedDocument) { m_bNeedDocument = bNeedDocument; }
@@ -71,8 +71,6 @@ public:
 	void UncheckAll();
 
 protected:
-	void ReleaseGuiButtons();
-
 	//////////////////////////////////////////////////////////////////////////
 	struct SButton
 	{

@@ -22,9 +22,6 @@ add_sources("Editor_Uber_AI.cpp"
 )
 
 add_sources("Editor_Uber_ControlsQt.cpp"
-	SOURCE_GROUP "Controls\\\\Deprecated"
-		"PanelSimpleTreeBrowser.cpp"
-		"PanelSimpleTreeBrowser.h"
 	SOURCE_GROUP "Controls"
 		"QT/Widgets/QEditToolButton.cpp"
 		"QT/Widgets/QEditToolButton.h"

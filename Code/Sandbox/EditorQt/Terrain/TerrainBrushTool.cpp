@@ -1,26 +1,39 @@
 // Copyright 2001-2018 Crytek GmbH / Crytek Group. All rights reserved.
 
 #include "StdAfx.h"
-
 #include "Terrain/TerrainBrushTool.h"
-#include "Objects/DisplayContext.h"
+
 #include "Terrain/Heightmap.h"
-#include "Viewport.h"
 #include "Vegetation/VegetationMap.h"
-#include "QtUtil.h"
+
 #include <EditorFramework/PersonalizationManager.h>
 #include <EditorFramework/Preferences.h>
+#include <Objects/DisplayContext.h>
+#include <Serialization/Decorators/EditorActionButton.h>
+#include <QtUtil.h>
+#include <Viewport.h>
+
 #include <CrySerialization/Decorators/ActionButton.h>
-#include "Serialization/Decorators/EditorActionButton.h"
 
 #define MAX_BRUSH_SIZE     500.0f
 #define MAX_BRUSH_HARDNESS 1.0f
 #define MAX_TERRAIN_HEIGHT 1000.0f
 #define MAX_RISE_HEIGHT    50.0f
 
-bool CBrushTool::s_shareBrushParameters;
 Vec3 CBrushTool::s_pointerPos;
 Vec3 CBrushTool::s_pointerPosPrev;
+bool CBrushTool::s_bSharedBrushMode;
+CTerrainBrush CBrushTool::s_sharedBrush;
+
+namespace
+{
+const char* const g_szFlatternToolPersonalizationModule = "FlatternTool";
+const char* const g_szSmoothToolPersonalizationModule = "SmoothTool";
+const char* const g_szRiseLowerToolPersonalizationModule = "RiseLowerTool";
+const char* const g_szMakeHolesToolPersonalizationModule = "MakeHolesTool";
+const char* const g_szFillHolesToolPersonalizationModule = "FillHolesTool";
+
+} // unnamed namespace
 
 struct SBrushPreferences : public SPreferencePage
 {
@@ -28,9 +41,8 @@ struct SBrushPreferences : public SPreferencePage
 		: SPreferencePage("Brush", "Painting/General")
 		, m_hardnessSensistivity(0.0001f)
 		, m_radiusSensitivity(0.01f)
-	{
+	{}
 
-	}
 	virtual bool Serialize(yasli::Archive& ar) override
 	{
 		ar(yasli::Range(m_hardnessSensistivity, -4.0f, 4.0f), "hardnessSensistivity", "Hardness Sensitivity");
@@ -57,8 +69,8 @@ public:
 	}
 
 	virtual IViewPaneClass::EDockingDirection GetDockingDirection() const override { return IViewPaneClass::DOCK_FLOAT; }
-	virtual const char*                       GetPaneTitle() const override { return "Brush Preferences"; }
-	virtual QRect                             GetPaneRect() override { return QRect(0, 0, 270, 200); }
+	virtual const char*                       GetPaneTitle() const override        { return "Brush Preferences"; }
+	virtual QRect                             GetPaneRect() override               { return QRect(0, 0, 270, 200); }
 };
 
 REGISTER_HIDDEN_VIEWPANE_FACTORY(CBrushPreferencesDialog, "Brush Settings", "Preferences", true)
@@ -66,50 +78,82 @@ REGISTER_HIDDEN_VIEWPANE_FACTORY(CBrushPreferencesDialog, "Brush Settings", "Pre
 SBrushPreferences gBrushPreferences;
 REGISTER_PREFERENCES_PAGE_PTR(SBrushPreferences, &gBrushPreferences)
 
-CBrushTool::CBrushTool()
-	: m_pBrush(&m_brush)
+//////////////////////////////////////////////////////////////////////////
+CTerrainBrush::CTerrainBrush()
+	: radiusOutside(2.0f)
+	, radiusInside(0.0f) // default 0 is preferred by designers
+	, height(1.0f)
+	, riseHeight(1.0f)
+	, bDisplacement(false)
+	, hardness(0.2f)
+	, displacementScale(50.0f)
+	, bRepositionObjects(false)
+	, bRepositionVegetation(true)
+{}
+
+CTerrainBrush& CTerrainBrush::operator=(const CTerrainBrush& rhs)
+{
+	radiusOutside = rhs.radiusOutside;
+	radiusInside = rhs.radiusInside;
+	height = rhs.height;
+	riseHeight = rhs.riseHeight;
+	hardness = rhs.hardness;
+	bDisplacement = rhs.bDisplacement;
+	displacementScale = rhs.displacementScale;
+	bRepositionObjects = rhs.bRepositionObjects;
+	bRepositionVegetation = rhs.bRepositionVegetation;
+	displacementMapName = rhs.displacementMapName;
+	//Displacement image will not be copied
+
+	return *this;
+}
+
+//////////////////////////////////////////////////////////////////////////
+CBrushTool::CBrushTool(const char* const szPersonalizationModuleName)
+	: m_szPersonalizationModuleName(szPersonalizationModuleName)
 	, m_nPaintingMode(ePaintMode_None)
 	, m_bPickHeight(false)
 	, m_LMButtonDownPoint(0, 0)
 {
-	CPersonalizationManager* pManager = GetIEditorImpl()->GetPersonalizationManager();
-	const char* toolName = GetRuntimeClass()->m_lpszClassName;
+	CRY_ASSERT(m_szPersonalizationModuleName && *m_szPersonalizationModuleName);
 
-	if (!pManager || !toolName || !*toolName)
+	CPersonalizationManager* pManager = GetIEditorImpl()->GetPersonalizationManager();
+	if (!pManager)
 		return;
 
-	pManager->GetProperty(toolName, "radius", m_brush.radius);
-	pManager->GetProperty(toolName, "radiusInside", m_brush.radiusInside);
-	pManager->GetProperty(toolName, "height", m_brush.height);
-	pManager->GetProperty(toolName, "riseHeight", m_brush.riseHeight);
-	pManager->GetProperty(toolName, "hardness", m_brush.hardness);
-	pManager->GetProperty(toolName, "bDisplacement", m_brush.bDisplacement);
-	pManager->GetProperty(toolName, "displacementScale", m_brush.displacementScale);
+	pManager->GetProperty(m_szPersonalizationModuleName, "radiusOutside", m_brush.radiusOutside);
+	pManager->GetProperty(m_szPersonalizationModuleName, "radiusInside", m_brush.radiusInside);
+	pManager->GetProperty(m_szPersonalizationModuleName, "height", m_brush.height);
+	pManager->GetProperty(m_szPersonalizationModuleName, "riseHeight", m_brush.riseHeight);
+	pManager->GetProperty(m_szPersonalizationModuleName, "hardness", m_brush.hardness);
+	pManager->GetProperty(m_szPersonalizationModuleName, "bDisplacement", m_brush.bDisplacement);
+	pManager->GetProperty(m_szPersonalizationModuleName, "displacementScale", m_brush.displacementScale);
 	QString displacementMapName;
-	pManager->GetProperty(toolName, "displacementMapName", displacementMapName);
+	pManager->GetProperty(m_szPersonalizationModuleName, "displacementMapName", displacementMapName);
 	m_brush.displacementMapName = QtUtil::ToString(displacementMapName);
-	pManager->GetProperty(toolName, "bRepositionObjects", m_brush.bRepositionObjects);
-	pManager->GetProperty(toolName, "bRepositionVegetation", m_brush.bRepositionVegetation);
+	pManager->GetProperty(m_szPersonalizationModuleName, "bRepositionObjects", m_brush.bRepositionObjects);
+	pManager->GetProperty(m_szPersonalizationModuleName, "bRepositionVegetation", m_brush.bRepositionVegetation);
 }
 
 CBrushTool::~CBrushTool()
 {
 	CPersonalizationManager* pManager = GetIEditorImpl()->GetPersonalizationManager();
-	const char* toolName = GetRuntimeClass()->m_lpszClassName;
 
-	if (!pManager || !toolName || !*toolName)
+	if (!pManager)
 		return;
 
-	pManager->SetProperty(toolName, "radius", m_brush.radius);
-	pManager->SetProperty(toolName, "radiusInside", m_brush.radiusInside);
-	pManager->SetProperty(toolName, "height", m_brush.height);
-	pManager->SetProperty(toolName, "riseHeight", m_brush.riseHeight);
-	pManager->SetProperty(toolName, "hardness", m_brush.hardness);
-	pManager->SetProperty(toolName, "bDisplacement", m_brush.bDisplacement);
-	pManager->SetProperty(toolName, "displacementScale", m_brush.displacementScale);
-	pManager->SetProperty(toolName, "displacementMapName", m_brush.displacementMapName.c_str());
-	pManager->SetProperty(toolName, "bRepositionObjects", m_brush.bRepositionObjects);
-	pManager->SetProperty(toolName, "bRepositionVegetation", m_brush.bRepositionVegetation);
+	CTerrainBrush& brush = GetBrush();
+
+	pManager->SetProperty(m_szPersonalizationModuleName, "radiusOutside", brush.radiusOutside);
+	pManager->SetProperty(m_szPersonalizationModuleName, "radiusInside", brush.radiusInside);
+	pManager->SetProperty(m_szPersonalizationModuleName, "height", brush.height);
+	pManager->SetProperty(m_szPersonalizationModuleName, "riseHeight", brush.riseHeight);
+	pManager->SetProperty(m_szPersonalizationModuleName, "hardness", brush.hardness);
+	pManager->SetProperty(m_szPersonalizationModuleName, "bDisplacement", brush.bDisplacement);
+	pManager->SetProperty(m_szPersonalizationModuleName, "displacementScale", brush.displacementScale);
+	pManager->SetProperty(m_szPersonalizationModuleName, "displacementMapName", brush.displacementMapName.c_str());
+	pManager->SetProperty(m_szPersonalizationModuleName, "bRepositionObjects", brush.bRepositionObjects);
+	pManager->SetProperty(m_szPersonalizationModuleName, "bRepositionVegetation", brush.bRepositionVegetation);
 }
 
 void CBrushTool::SetBrushRadius(float inRadius, float outRadius)
@@ -117,30 +161,51 @@ void CBrushTool::SetBrushRadius(float inRadius, float outRadius)
 	inRadius = clamp_tpl(inRadius, 0.0f, MAX_BRUSH_SIZE);
 	outRadius = clamp_tpl(outRadius, 0.0f, MAX_BRUSH_SIZE);
 
-	if (getBrush().radius != outRadius)
+	if (GetBrush().radiusOutside != outRadius)
 	{
-		getBrush().radiusInside = std::min(getBrush().radiusInside, outRadius);
-		getBrush().radius = outRadius;
+		GetBrush().radiusInside = std::min(GetBrush().radiusInside, outRadius);
+		GetBrush().radiusOutside = outRadius;
 		signalPropertiesChanged(this);
 	}
-	else if (getBrush().radiusInside != inRadius)
+	else if (GetBrush().radiusInside != inRadius)
 	{
-		getBrush().radius = std::max(inRadius, getBrush().radius);
-		getBrush().radiusInside = inRadius;
+		GetBrush().radiusOutside = std::max(inRadius, GetBrush().radiusOutside);
+		GetBrush().radiusInside = inRadius;
 		signalPropertiesChanged(this);
 	}
 }
 
 void CBrushTool::SetRiseHeight(float height)
 {
-	getBrush().riseHeight = clamp_tpl(height, -MAX_RISE_HEIGHT, MAX_RISE_HEIGHT);
+	GetBrush().riseHeight = clamp_tpl(height, -MAX_RISE_HEIGHT, MAX_RISE_HEIGHT);
 	signalPropertiesChanged(this);
 }
 
 void CBrushTool::SetHeight(float height)
 {
-	getBrush().height = clamp_tpl(height, -MAX_TERRAIN_HEIGHT, MAX_TERRAIN_HEIGHT);
+	GetBrush().height = clamp_tpl(height, -MAX_TERRAIN_HEIGHT, MAX_TERRAIN_HEIGHT);
 	signalPropertiesChanged(this);
+}
+
+void CBrushTool::SetShareBrushParams(bool share)
+{
+	//Exchange brush params between shared per-tool brushes
+	if (share == true)
+	{
+		s_sharedBrush = m_brush;
+	}
+	else
+	{
+		m_brush = s_sharedBrush;
+	}
+
+	s_bSharedBrushMode = share;
+	signalPropertiesChanged(this);
+}
+
+CTerrainBrush& CBrushTool::GetBrush()
+{
+	return s_bSharedBrushMode ? s_sharedBrush : m_brush;
 }
 
 bool CBrushTool::MouseCallback(CViewport* view, EMouseEvent event, CPoint& point, int flags)
@@ -166,12 +231,12 @@ bool CBrushTool::MouseCallback(CViewport* view, EMouseEvent event, CPoint& point
 		static float oldHardness, oldRadius, oldRadiusInside;
 		static bool modifyRadiusSensitivity = true;
 
-		CTerrainBrush& brush = getBrush();
+		CTerrainBrush& brush = GetBrush();
 
 		if (event == eMouseLDown)
 		{
 			oldHardness = brush.hardness;
-			oldRadius = brush.radius;
+			oldRadius = brush.radiusOutside;
 			oldRadiusInside = brush.radiusInside;
 		}
 		else if (event == eMouseWheel)
@@ -198,15 +263,15 @@ bool CBrushTool::MouseCallback(CViewport* view, EMouseEvent event, CPoint& point
 		else if (event == eMouseMove && bCollideWithTerrain && (flags & MK_LBUTTON))
 		{
 			const CPoint delta = s_lastMousePoint - point;
-			const CPoint magnitudeFromStart(abs(m_LMButtonDownPoint.x - point.x), abs(m_LMButtonDownPoint.y - point.y));
+			const CPoint magnitudeFromStart = abs(m_LMButtonDownPoint.x - point.x), abs(m_LMButtonDownPoint.y - point.y);
 
 			if (magnitudeFromStart.x > magnitudeFromStart.y)
 			{
 				// When calculating the weight for changing radius, make sure to invert the axis as well
 				const float finalAmount = static_cast<float>(delta.x) * -gBrushPreferences.radiusSensitivity();
 
-				brush.radius = min(MAX_BRUSH_SIZE, max(0.0f, brush.radius + finalAmount));
-				brush.radiusInside = min(brush.radiusInside, brush.radius);
+				brush.radiusOutside = min(MAX_BRUSH_SIZE, max(0.0f, brush.radiusOutside + finalAmount));
+				brush.radiusInside = min(brush.radiusInside, brush.radiusOutside);
 
 				brush.hardness = oldHardness;
 				// Set the flag so the user can modify radius sensitivity
@@ -216,7 +281,7 @@ bool CBrushTool::MouseCallback(CViewport* view, EMouseEvent event, CPoint& point
 			{
 				const float finalAmount = static_cast<float>(delta.y) * gBrushPreferences.hardnessSensistivity();
 
-				brush.radius = oldRadius;
+				brush.radiusOutside = oldRadius;
 				brush.radiusInside = oldRadiusInside;
 				brush.hardness = min(MAX_BRUSH_HARDNESS, max(0.0f, brush.hardness + finalAmount));
 				// Set the flag so the user can modify hardness sensitivity
@@ -288,27 +353,26 @@ bool CBrushTool::OnKeyDown(CViewport* view, uint32 key, uint32 nRepCnt, uint32 n
 		break;
 
 	case Qt::Key_Plus:
-		SetBrushRadius(getBrush().radiusInside, getBrush().radius + 1.0f);
+		SetBrushRadius(GetBrush().radiusInside, GetBrush().radiusOutside + 1.0f);
 		return true;
 
 	case Qt::Key_Minus:
-		SetBrushRadius(getBrush().radiusInside, getBrush().radius - 1.0f);
+		SetBrushRadius(GetBrush().radiusInside, GetBrush().radiusOutside - 1.0f);
 		return true;
 
 	case Qt::Key_Asterisk:
-		SetHeight(getBrush().height + 1.0f);
+		SetHeight(GetBrush().height + 1.0f);
 		return true;
 
 	case Qt::Key_Slash:
-		SetHeight(getBrush().height - 1.0f);
+		SetHeight(GetBrush().height - 1.0f);
 		return true;
 
 	case Qt::Key_Shift:
 		{
 			if (!IsKindOf(RUNTIME_CLASS(CSmoothTool)))
 			{
-				CSmoothTool* pSmoothTool = new CSmoothTool();
-				pSmoothTool->SetUserData(nullptr, m_pBrush);
+				CSmoothTool* pSmoothTool = new CSmoothTool;
 				pSmoothTool->SetPrevToolClass(GetRuntimeClass());
 				GetIEditorImpl()->SetEditTool(pSmoothTool);
 				return true;
@@ -335,21 +399,21 @@ void CBrushTool::DrawTool(SDisplayContext& dc, bool innerCircle, bool line, bool
 	if (innerCircle)
 	{
 		dc.SetColor(0.5f, 1, 0.5f, 1);
-		dc.DrawTerrainCircle(s_pointerPos, getBrush().radiusInside, 0.2f);
+		dc.DrawTerrainCircle(s_pointerPos, GetBrush().radiusInside, 0.2f);
 	}
 
 	dc.SetColor(0, 1, 0, 1);
-	dc.DrawTerrainCircle(s_pointerPos, getBrush().radius, 0.2f);
+	dc.DrawTerrainCircle(s_pointerPos, GetBrush().radiusOutside, 0.2f);
 
-	if (s_pointerPos.z < getBrush().height)
+	if (s_pointerPos.z < GetBrush().height)
 	{
 		if (line)
 		{
 			Vec3 p = s_pointerPos;
-			p.z = getBrush().height;
+			p.z = GetBrush().height;
 			dc.SetColor(1, 1, 0, 1);
 			if (terrainCircle)
-				dc.DrawTerrainCircle(p, getBrush().radiusInside, getBrush().height - s_pointerPos.z);
+				dc.DrawTerrainCircle(p, GetBrush().radiusInside, GetBrush().height - s_pointerPos.z);
 
 			dc.DrawLine(s_pointerPos, p);
 		}
@@ -359,7 +423,6 @@ void CBrushTool::DrawTool(SDisplayContext& dc, bool innerCircle, bool line, bool
 void CBrushTool::ApplyObjectsReposition()
 {
 	// Make sure objects preserve height.
-
 	if (GetIEditorImpl()->GetVegetationMap() && !m_vegBox.IsReset())
 	{
 		GetIEditorImpl()->GetVegetationMap()->RepositionArea(m_vegBox);
@@ -385,15 +448,14 @@ void CBrushTool::Paint()
 
 	CHeightmap* pHeightmap = GetIEditorImpl()->GetHeightmap();
 
-	CTerrainBrush* pBrush = &getBrush();
+	const CTerrainBrush& brush = GetBrush();
 	float unitSize = pHeightmap->GetUnitSize();
 
-	//dc.renderer->SetMaterialColor( 1,1,0,1 );
 	int tx = pos_directed_rounding(s_pointerPos.y / unitSize);
 	int ty = pos_directed_rounding(s_pointerPos.x / unitSize);
 
-	float fInsideRadius = (pBrush->radiusInside / unitSize);
-	int tsize = (pBrush->radius / unitSize);
+	float fInsideRadius = (brush.radiusInside / unitSize);
+	int tsize = (brush.radiusOutside / unitSize);
 	if (tsize == 0)
 		tsize = 1;
 	int tsize2 = tsize * 2;
@@ -401,12 +463,12 @@ void CBrushTool::Paint()
 	int y1 = ty - tsize;
 
 	AABB brushBox;
-	brushBox.min = s_pointerPos - Vec3(pBrush->radius, pBrush->radius, 0);
-	brushBox.max = s_pointerPos + Vec3(pBrush->radius, pBrush->radius, 0);
+	brushBox.min = s_pointerPos - Vec3(brush.radiusOutside, brush.radiusInside, 0);
+	brushBox.max = s_pointerPos + Vec3(brush.radiusOutside, brush.radiusInside, 0);
 	brushBox.min.z -= 10000.0f;
 	brushBox.max.z += 10000.0f;
 
-	if (pBrush->bRepositionObjects)
+	if (brush.bRepositionObjects)
 	{
 		CBaseObjectsArray areaObjects;
 		GetIEditorImpl()->GetObjectManager()->GetObjectsRepeatFast(areaObjects, brushBox);
@@ -416,7 +478,7 @@ void CBrushTool::Paint()
 		{
 			AABB instanceBox;
 			obj->GetBoundBox(instanceBox);
-			if (!obj->GetGroup() && instanceBox.GetDistance(s_pointerPos) < pBrush->radius && m_objElevations.find(obj) == m_objElevations.end())
+			if (!obj->GetGroup() && instanceBox.GetDistance(s_pointerPos) < brush.radiusOutside && m_objElevations.find(obj) == m_objElevations.end())
 			{
 				Vec3 pos = obj->GetPos();
 				m_objElevations[obj] = pos.z - GetIEditorImpl()->GetTerrainElevation(pos.x, pos.y);
@@ -424,13 +486,13 @@ void CBrushTool::Paint()
 		}
 	}
 
-	if (pBrush->bRepositionVegetation)
+	if (brush.bRepositionVegetation)
 	{
 		m_vegBox.Add(brushBox);
 	}
 
 	// calculate brush movement speed
-	float brushSpeed = SATURATE((s_pointerPosPrev - s_pointerPos).GetLength2D() / pBrush->radius * 2.f);
+	float brushSpeed = SATURATE((s_pointerPosPrev - s_pointerPos).GetLength2D() / brush.radiusOutside * 2.f);
 	s_pointerPosPrev = s_pointerPos;
 
 	PaintTerrain(pHeightmap, tx, ty, tsize, fInsideRadius, brushSpeed);
@@ -441,27 +503,33 @@ void CBrushTool::Paint()
 }
 
 IMPLEMENT_DYNAMIC(CBrushTool, CEditTool)
-
 IMPLEMENT_DYNAMIC(CTerrainTool, CBrushTool)
+
+//////////////////////////////////////////////////////////////////////////
+CFlattenTool::CFlattenTool()
+	: CTerrainTool{g_szFlatternToolPersonalizationModule}
+{}
 
 void CFlattenTool::Serialize(Serialization::IArchive& ar)
 {
-	bool shareParams = getShareBrushParams();
+	bool brushShared = IsBrushShared();
 	if (ar.openBlock("brush", "Brush"))
 	{
-		float outRadius = getBrush().radius;
-		float inRadius = getBrush().radiusInside;
+		float outRadius = GetBrush().radiusOutside;
+		float inRadius = GetBrush().radiusInside;
 
-		ar(shareParams, "shareparams", "Share Parameters");
-		ar(Serialization::Range(outRadius, 0.0f, MAX_BRUSH_SIZE), "outradius", "Outside Radius");
-		ar(Serialization::Range(inRadius, 0.0f, MAX_BRUSH_SIZE), "inradius", "Inside Radius");
-		ar(Serialization::Range(getBrush().hardness, 0.0f, MAX_BRUSH_HARDNESS), "hardness", "Hardness");
+		ar(brushShared, "shareparams", "Share Parameters");
+		ar(Serialization::Range(outRadius, 0.0f, MAX_BRUSH_SIZE), "outradius", "Radius (outside)");
+		ar(Serialization::Range(inRadius, 0.0f, MAX_BRUSH_SIZE), "inradius", "Radius (inside)");
+		ar(Serialization::Range(GetBrush().hardness, 0.0f, MAX_BRUSH_HARDNESS), "hardness", "Hardness");
 
 		if (ar.openBlock("height", "Height"))
 		{
-			ar(Serialization::Range(getBrush().height, -MAX_TERRAIN_HEIGHT, MAX_TERRAIN_HEIGHT), "height", "^");
-			ar(Serialization::ActionButton([this] { m_bPickHeight = true;
-			                               }, "icons:General/Picker.ico"), "pick", "^");
+			ar(Serialization::Range(GetBrush().height, -MAX_TERRAIN_HEIGHT, MAX_TERRAIN_HEIGHT), "height", "^");
+			ar(Serialization::ActionButton([this]
+			{
+				m_bPickHeight = true;
+			}, "icons:General/Picker.ico"), "pick", "^");
 			ar.doc("Pick height by mouse click on the terrain.");
 			ar.closeBlock();
 		}
@@ -474,67 +542,73 @@ void CFlattenTool::Serialize(Serialization::IArchive& ar)
 
 	if (ar.openBlock("Displacement", "Displacement"))
 	{
-		ar(getBrush().bDisplacement, "bDisplacement", "Enable Displacement");
-		ar(getBrush().displacementScale, "displacementScale", "Displacement Scale");
-		ar(Serialization::TextureFilename(getBrush().displacementMapName), "displacementMapName", "Displacement Map");
+		ar(GetBrush().bDisplacement, "bDisplacement", "Enable Displacement");
+		ar(GetBrush().displacementScale, "displacementScale", "Displacement Scale");
+		ar(Serialization::TextureFilename(GetBrush().displacementMapName), "displacementMapName", "Displacement Map");
 		ar.closeBlock();
 
 		// load displacement brush image
-		getBrush().displacementMapData.Release();
-		CImageUtil::LoadImage(getBrush().displacementMapName, getBrush().displacementMapData);
+		GetBrush().displacementMapData.Release();
+		CImageUtil::LoadImage(GetBrush().displacementMapName, GetBrush().displacementMapData);
 	}
 
 	if (ar.openBlock("reposition", "Reposition"))
 	{
-		ar(getBrush().bRepositionObjects, "repoobjects", "Objects");
-		ar(getBrush().bRepositionVegetation, "repoveget", "Vegetation");
+		ar(GetBrush().bRepositionObjects, "repoobjects", "Objects");
+		ar(GetBrush().bRepositionVegetation, "repoveget", "Vegetation");
 		ar.closeBlock();
 	}
 
-	if (shareParams != getShareBrushParams())
-		setShareBrushParams(shareParams);
+	if (brushShared != IsBrushShared())
+		SetShareBrushParams(brushShared);
 }
 
 bool CFlattenTool::PickHeight(QPoint point)
 {
-	getBrush().height = GetIEditorImpl()->GetTerrainElevation(point.x(), point.y());
+	GetBrush().height = GetIEditorImpl()->GetTerrainElevation(point.x(), point.y());
 	signalPropertiesChanged(this);
 	return true;
 }
 
 void CFlattenTool::PaintTerrain(CHeightmap* pHeightmap, int tx, int ty, int tsize, float fInsideRadius, float brushSpeed)
 {
-	pHeightmap->DrawSpot(tx, ty, tsize, fInsideRadius, getBrush().height, getBrush().hardness * brushSpeed,
-	                     (getBrush().bDisplacement && getBrush().displacementMapData.GetData()) ? &getBrush().displacementMapData : nullptr, getBrush().displacementScale);
+	pHeightmap->DrawSpot(tx, ty, tsize, fInsideRadius, GetBrush().height, GetBrush().hardness * brushSpeed,
+	                     (GetBrush().bDisplacement && GetBrush().displacementMapData.GetData()) ? &GetBrush().displacementMapData : nullptr, GetBrush().displacementScale);
 }
 
 IMPLEMENT_DYNCREATE(CFlattenTool, CTerrainTool)
 
+//////////////////////////////////////////////////////////////////////////
+CSmoothTool::CSmoothTool()
+	: CTerrainTool{g_szSmoothToolPersonalizationModule}
+	, m_pPrevToolClass(nullptr)
+{}
+
 void CSmoothTool::Serialize(Serialization::IArchive& ar)
 {
-	bool shareParams = getShareBrushParams();
+	bool brushShared = IsBrushShared();
 	if (ar.openBlock("brush", "Brush"))
 	{
-		ar(shareParams, "shareparams", "Share Parameters");
-		ar(Serialization::Range(getBrush().radius, 0.0f, MAX_BRUSH_SIZE), "outradius", "Radius");
-		ar(Serialization::Range(getBrush().hardness, 0.0f, 1.0f), "hardness", "Hardness");
+		ar(brushShared, "shareparams", "Share Parameters");
+		ar(Serialization::Range(GetBrush().radiusOutside, 0.0f, MAX_BRUSH_SIZE), "outradius", "Radius (outside)");
+		ar(Serialization::Range(GetBrush().hardness, 0.0f, 1.0f), "hardness", "Hardness");
 		ar.closeBlock();
 	}
 
 	if (ar.openBlock("reposition", "Reposition"))
 	{
-		ar(getBrush().bRepositionObjects, "repoobjects", "Objects");
-		ar(getBrush().bRepositionVegetation, "repoveget", "Vegetation");
+		ar(GetBrush().bRepositionObjects, "repoobjects", "Objects");
+		ar(GetBrush().bRepositionVegetation, "repoveget", "Vegetation");
 		ar.closeBlock();
 	}
 
-	if (shareParams != getShareBrushParams())
-		setShareBrushParams(shareParams);
+	if (brushShared != IsBrushShared())
+		SetShareBrushParams(brushShared);
 }
 
 void CSmoothTool::PaintTerrain(CHeightmap* pHeightmap, int tx, int ty, int tsize, float fInsideRadius, float brushSpeed)
 {
-	pHeightmap->SmoothSpot(tx, ty, tsize, getBrush().height, getBrush().hardness * brushSpeed);
+	pHeightmap->SmoothSpot(tx, ty, tsize, GetBrush().height, GetBrush().hardness * brushSpeed);
 }
 
 bool CSmoothTool::OnKeyUp(CViewport* view, uint32 key, uint32 nRepCnt, uint32 nFlags)
@@ -550,9 +624,6 @@ bool CSmoothTool::OnKeyUp(CViewport* view, uint32 key, uint32 nRepCnt, uint32 nF
 				CEditTool* pTool = (CEditTool*)pPrevToolClass->CreateObject();
 				if (pTool)
 				{
-					if (pTool->IsKindOf(RUNTIME_CLASS(CBrushTool)))
-						pTool->SetUserData(nullptr, m_pBrush);
-
 					GetIEditorImpl()->SetEditTool(pTool);
 					return true;
 				}
@@ -566,6 +637,12 @@ bool CSmoothTool::OnKeyUp(CViewport* view, uint32 key, uint32 nRepCnt, uint32 nF
 
 IMPLEMENT_DYNCREATE(CSmoothTool, CTerrainTool)
 
+//////////////////////////////////////////////////////////////////////////
+CRiseLowerTool::CRiseLowerTool()
+	: CTerrainTool{g_szRiseLowerToolPersonalizationModule}
+	, m_lowerTool(false)
+{}
+
 bool CRiseLowerTool::OnKeyUp(CViewport* view, uint32 key, uint32 nRepCnt, uint32 nFlags)
 {
 	switch (key)
@@ -574,7 +651,7 @@ bool CRiseLowerTool::OnKeyUp(CViewport* view, uint32 key, uint32 nRepCnt, uint32
 		if (m_lowerTool)
 		{
 			m_lowerTool = false;
-			SetRiseHeight(-getBrush().riseHeight);
+			SetRiseHeight(-GetBrush().riseHeight);
 		}
 		return true;
 	}
@@ -587,12 +664,12 @@ bool CRiseLowerTool::MouseCallback(CViewport* view, EMouseEvent event, CPoint& p
 	if ((flags & MK_CONTROL) && !m_lowerTool)
 	{
 		m_lowerTool = true;
-		SetRiseHeight(-getBrush().riseHeight);
+		SetRiseHeight(-GetBrush().riseHeight);
 	}
 	else if (!(flags & MK_CONTROL) && m_lowerTool)
 	{
 		m_lowerTool = false;
-		SetRiseHeight(-getBrush().riseHeight);
+		SetRiseHeight(-GetBrush().riseHeight);
 	}
 
 	return __super::MouseCallback(view, event, point, flags);
@@ -606,16 +683,16 @@ bool CRiseLowerTool::OnKeyDown(CViewport* view, uint32 key, uint32 nRepCnt, uint
 		if (!m_lowerTool)
 		{
 			m_lowerTool = true;
-			SetRiseHeight(-getBrush().riseHeight);
+			SetRiseHeight(-GetBrush().riseHeight);
 		}
 		return true;
 
 	case Qt::Key_Asterisk:
-		SetRiseHeight(getBrush().riseHeight + 1.0f);
+		SetRiseHeight(GetBrush().riseHeight + 1.0f);
 		return true;
 
 	case Qt::Key_Slash:
-		SetRiseHeight(getBrush().riseHeight - 1.0f);
+		SetRiseHeight(GetBrush().riseHeight - 1.0f);
 		return true;
 	}
 
@@ -627,22 +704,25 @@ void CRiseLowerTool::OnEditorNotifyEvent(EEditorNotifyEvent event)
 	if (event == eNotify_OnBeginGameMode && m_lowerTool)
 	{
 		m_lowerTool = false;
-		SetRiseHeight(-getBrush().riseHeight);
+		SetRiseHeight(-GetBrush().riseHeight);
 	}
 }
 
 void CRiseLowerTool::Serialize(Serialization::IArchive& ar)
 {
-	bool shareParams = getShareBrushParams();
+	bool brushShared = IsBrushShared();
 	if (ar.openBlock("brush", "Brush"))
 	{
-		ar(shareParams, "shareparams", "Share Parameters");
-		float outRadius = getBrush().radius;
-		float inRadius = getBrush().radiusInside;
-		ar(Serialization::Range(outRadius, 0.0f, MAX_BRUSH_SIZE), "outradius", "Outside Radius");
-		ar(Serialization::Range(inRadius, 0.0f, MAX_BRUSH_SIZE), "inradius", "Inside Radius");
-		ar(Serialization::Range(getBrush().hardness, 0.0f, 1.0f), "hardness", "Hardness");
-		ar(Serialization::Range(getBrush().riseHeight, -MAX_RISE_HEIGHT, MAX_RISE_HEIGHT), "height", "Height");
+		ar(brushShared, "shareparams", "Share Parameters");
+		float outRadius = GetBrush().radiusOutside;
+		float inRadius = GetBrush().radiusInside;
+		ar(Serialization::Range(outRadius, 0.0f, MAX_BRUSH_SIZE), "outradius", "Radius (outside)");
+		ar(Serialization::Range(inRadius, 0.0f, MAX_BRUSH_SIZE), "inradius", "Radius (inside)");
+		ar(Serialization::Range(GetBrush().hardness, 0.0f, 1.0f), "hardness", "Hardness");
+
+		//#Sandbox_TODO: need to ask Falk: this is different height, than in "Flatten" tool. It is probably should named differently:
+		// in "Shared mode" they will not be the same after switch between these 2 tools
+		ar(Serialization::Range(GetBrush().riseHeight, -MAX_RISE_HEIGHT, MAX_RISE_HEIGHT), "height", "Height");
 
 		if (ar.isInput())
 			SetBrushRadius(inRadius, outRadius);
@@ -652,47 +732,52 @@ void CRiseLowerTool::Serialize(Serialization::IArchive& ar)
 
 	if (ar.openBlock("Displacement", "Displacement"))
 	{
-		ar(getBrush().bDisplacement, "bDisplacement", "Enable Displacement");
-		ar(getBrush().displacementScale, "displacementScale", "Displacement Scale");
-		ar(Serialization::TextureFilename(getBrush().displacementMapName), "displacementMapName", "Displacement Map");
+		ar(GetBrush().bDisplacement, "bDisplacement", "Enable Displacement");
+		ar(GetBrush().displacementScale, "displacementScale", "Displacement Scale");
+		ar(Serialization::TextureFilename(GetBrush().displacementMapName), "displacementMapName", "Displacement Map");
 		ar.closeBlock();
 
 		// load displacement brush image
-		getBrush().displacementMapData.Release();
-		CImageUtil::LoadImage(getBrush().displacementMapName, getBrush().displacementMapData);
+		GetBrush().displacementMapData.Release();
+		CImageUtil::LoadImage(GetBrush().displacementMapName, GetBrush().displacementMapData);
 	}
 
 	if (ar.openBlock("reposition", "Reposition"))
 	{
-		ar(getBrush().bRepositionObjects, "repoobjects", "Objects");
-		ar(getBrush().bRepositionVegetation, "repoveget", "Vegetation");
+		ar(GetBrush().bRepositionObjects, "repoobjects", "Objects");
+		ar(GetBrush().bRepositionVegetation, "repoveget", "Vegetation");
 		ar.closeBlock();
 	}
 
-	if (shareParams != getShareBrushParams())
-		setShareBrushParams(shareParams);
+	if (brushShared != IsBrushShared())
+		SetShareBrushParams(brushShared);
 }
 
 void CRiseLowerTool::PaintTerrain(CHeightmap* pHeightmap, int tx, int ty, int tsize, float fInsideRadius, float brushSpeed)
 {
-	pHeightmap->RiseLowerSpot(tx, ty, tsize, fInsideRadius, getBrush().riseHeight, getBrush().hardness * brushSpeed,
-	                          (getBrush().bDisplacement && getBrush().displacementMapData.GetData()) ? &getBrush().displacementMapData : nullptr, getBrush().displacementScale);
+	pHeightmap->RiseLowerSpot(tx, ty, tsize, fInsideRadius, GetBrush().riseHeight, GetBrush().hardness * brushSpeed,
+	                          (GetBrush().bDisplacement && GetBrush().displacementMapData.GetData()) ? &GetBrush().displacementMapData : nullptr, GetBrush().displacementScale);
 }
 
 IMPLEMENT_DYNCREATE(CRiseLowerTool, CTerrainTool)
 
+//////////////////////////////////////////////////////////////////////////
+CHolesTool::CHolesTool(const char* const szPersonalizationModuleName)
+	: CTerrainTool{szPersonalizationModuleName}
+{}
+
 void CHolesTool::Serialize(Serialization::IArchive& ar)
 {
-	bool shareParams = getShareBrushParams();
+	bool brushShared = IsBrushShared();
 	if (ar.openBlock("brush", "Brush"))
 	{
-		ar(shareParams, "shareparams", "Share Parameters");
-		ar(Serialization::Range(getBrush().radius, 0.0f, MAX_BRUSH_SIZE), "outradius", "Radius");
+		ar(brushShared, "shareparams", "Share Parameters");
+		ar(Serialization::Range(GetBrush().radiusOutside, 0.0f, MAX_BRUSH_SIZE), "outradius", "Radius (outside)");
 		ar.closeBlock();
 	}
 
-	if (shareParams != getShareBrushParams())
-		setShareBrushParams(shareParams);
+	if (brushShared != IsBrushShared())
+		SetShareBrushParams(brushShared);
 }
 
 void CHolesTool::Display(SDisplayContext& dc)
@@ -709,12 +794,12 @@ void CHolesTool::Display(SDisplayContext& dc)
 	float unitSize = pHeightmap->GetUnitSize();
 
 	dc.SetColor(0, 1, 0, 1);
-	dc.DrawTerrainCircle(s_pointerPos, getBrush().radius, 0.2f);
+	dc.DrawTerrainCircle(s_pointerPos, GetBrush().radiusOutside, 0.2f);
 
 	Vec2i min;
 	Vec2i max;
 
-	CalculateHoleArea(s_pointerPos, getBrush().radius, min, max);
+	CalculateHoleArea(s_pointerPos, GetBrush().radiusOutside, min, max);
 
 	dc.SetColor(m_toolColor);
 	dc.DrawTerrainRect(min.y * unitSize, min.x * unitSize, max.y * unitSize + unitSize, max.x * unitSize + unitSize, 0.2f);
@@ -722,10 +807,8 @@ void CHolesTool::Display(SDisplayContext& dc)
 
 bool CHolesTool::MouseCallback(CViewport* view, EMouseEvent event, CPoint& point, int flags)
 {
-	bool bHitTerrain(false);
-	Vec3 stPointerPos;
-
-	stPointerPos = view->ViewToWorld(point, &bHitTerrain, true);
+	bool bHitTerrain = false;
+	Vec3 stPointerPos = view->ViewToWorld(point, &bHitTerrain, true);
 
 	// Initialize it to the first position so we can avoid a huge delta on the first call
 	static CPoint s_lastMousePoint = point;
@@ -795,11 +878,18 @@ bool CHolesTool::CalculateHoleArea(const Vec3& pointer, float radius, Vec2i& min
 
 IMPLEMENT_DYNAMIC(CHolesTool, CTerrainTool)
 
+//////////////////////////////////////////////////////////////////////////
+CMakeHolesTool::CMakeHolesTool()
+	: CHolesTool{g_szMakeHolesToolPersonalizationModule}
+{
+	m_toolColor = ColorF(1, 0, 0, 1);
+}
+
 void CMakeHolesTool::PaintTerrain(CHeightmap* pHeightmap, int tx, int ty, int tsize, float fInsideRadius, float brushSpeed)
 {
 	Vec2i min;
 	Vec2i max;
-	CalculateHoleArea(s_pointerPos, getBrush().radius, min, max);
+	CalculateHoleArea(s_pointerPos, GetBrush().radiusOutside, min, max);
 
 	if (((max.x - min.x) >= 0) && ((max.y - min.y) >= 0))
 	{
@@ -809,11 +899,18 @@ void CMakeHolesTool::PaintTerrain(CHeightmap* pHeightmap, int tx, int ty, int ts
 
 IMPLEMENT_DYNCREATE(CMakeHolesTool, CHolesTool)
 
+//////////////////////////////////////////////////////////////////////////
+CFillHolesTool::CFillHolesTool()
+	: CHolesTool{g_szFillHolesToolPersonalizationModule}
+{
+	m_toolColor = ColorF(0, 0, 1, 1);
+}
+
 void CFillHolesTool::PaintTerrain(CHeightmap* pHeightmap, int tx, int ty, int tsize, float fInsideRadius, float brushSpeed)
 {
 	Vec2i min;
 	Vec2i max;
-	CalculateHoleArea(s_pointerPos, getBrush().radius, min, max);
+	CalculateHoleArea(s_pointerPos, GetBrush().radiusOutside, min, max);
 
 	if (((max.x - min.x) >= 0) && ((max.y - min.y) >= 0))
 	{
@@ -822,4 +919,3 @@ void CFillHolesTool::PaintTerrain(CHeightmap* pHeightmap, int tx, int ty, int ts
 }
 
 IMPLEMENT_DYNCREATE(CFillHolesTool, CHolesTool)
-

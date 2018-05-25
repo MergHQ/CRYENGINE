@@ -13,8 +13,7 @@ public:
 private:
 	void AddTool(CRuntimeClass* pRuntimeClass, const char* text);
 
-	int           m_buttonCount;
-	CTerrainBrush mTerrainBrush;
+	int m_buttonCount;
 };
 
 class QTerrainSculptPanel : public QEditToolPanel

@@ -10,15 +10,12 @@
 #include "RecursionLoopGuard.h"
 #include "CryIcon.h"
 
-//////////////////////////////////////////////////////////////////////////
 QEditToolButton::QEditToolButton(QWidget* parent)
 	: QToolButton(parent)
+	, m_toolClass(nullptr)
+	, m_bNeedDocument(false)
 	, m_ignoreClick(false)
 {
-	m_toolClass = 0;
-	//m_bNeedDocument = true;
-	m_bNeedDocument = false;
-
 	setCheckable(true);
 	connect(this, SIGNAL(toggled(bool)), this, SLOT(OnClicked(bool)));
 	GetIEditorImpl()->RegisterNotifyListener(this);
@@ -29,8 +26,7 @@ QEditToolButton::~QEditToolButton()
 	GetIEditorImpl()->UnregisterNotifyListener(this);
 }
 
-//////////////////////////////////////////////////////////////////////////
-void QEditToolButton::SetToolName(const string& sEditToolName, const char* userDataKey, void* userData)
+void QEditToolButton::SetToolName(const string& sEditToolName)
 {
 	IClassDesc* pClass = GetIEditorImpl()->GetClassFactory()->FindClass(sEditToolName);
 	if (!pClass)
@@ -50,20 +46,11 @@ void QEditToolButton::SetToolName(const string& sEditToolName, const char* userD
 		return;
 	}
 	m_toolClass = pRtClass;
-
-	m_userData = userData;
-	if (userDataKey)
-		m_userDataKey = userDataKey;
 }
 
-//////////////////////////////////////////////////////////////////////////
-void QEditToolButton::SetToolClass(CRuntimeClass* toolClass, const char* userDataKey, void* userData)
+void QEditToolButton::SetToolClass(CRuntimeClass* toolClass)
 {
 	m_toolClass = toolClass;
-
-	m_userData = userData;
-	if (userDataKey)
-		m_userDataKey = userDataKey;
 
 	// Now we can determine if we can be checked or not, since we have a valid tool class
 	DetermineCheckedState();
@@ -78,6 +65,7 @@ void QEditToolButton::OnEditorNotifyEvent(EEditorNotifyEvent event)
 		DetermineCheckedState();
 	}
 }
+
 void QEditToolButton::DetermineCheckedState()
 {
 	RECURSION_GUARD(m_ignoreClick);
@@ -107,7 +95,6 @@ void QEditToolButton::DetermineCheckedState()
 	}
 }
 
-//////////////////////////////////////////////////////////////////////////
 void QEditToolButton::OnClicked(bool bChecked)
 {
 	RECURSION_GUARD(m_ignoreClick);
@@ -133,9 +120,6 @@ void QEditToolButton::OnClicked(bool bChecked)
 		CEditTool* pNewTool = (CEditTool*)m_toolClass->CreateObject();
 		if (!pNewTool)
 			return;
-
-		if (m_userData)
-			pNewTool->SetUserData(m_userDataKey, m_userData);
 
 		// Must be last function, can delete this.
 		GetIEditorImpl()->SetEditTool(pNewTool);
@@ -173,7 +157,6 @@ QEditToolButtonPanel::~QEditToolButtonPanel()
 	ClearButtons();
 }
 
-//////////////////////////////////////////////////////////////////////////
 void QEditToolButtonPanel::AddButton(const SButtonInfo& button)
 {
 	SButton b;
@@ -204,15 +187,14 @@ void QEditToolButtonPanel::AddButton(const SButtonInfo& button)
 
 	if (b.info.pToolClass)
 	{
-		b.pButton->SetToolClass(b.info.pToolClass, b.info.toolUserDataKey, (void*)(const char*)b.info.toolUserData);
+		b.pButton->SetToolClass(b.info.pToolClass);
 	}
 	else if (!b.info.toolClassName.empty())
 	{
-		b.pButton->SetToolName(b.info.toolClassName, b.info.toolUserDataKey, (void*)(const char*)b.info.toolUserData);
+		b.pButton->SetToolName(b.info.toolClassName);
 	}
 }
 
-//////////////////////////////////////////////////////////////////////////
 void QEditToolButtonPanel::AddButton(string name, string toolClass)
 {
 	SButtonInfo bi;
@@ -220,7 +202,7 @@ void QEditToolButtonPanel::AddButton(string name, string toolClass)
 	bi.toolClassName = toolClass;
 	AddButton(bi);
 }
-//////////////////////////////////////////////////////////////////////////
+
 void QEditToolButtonPanel::AddButton(string name, CRuntimeClass* pToolClass)
 {
 	SButtonInfo bi;
@@ -228,7 +210,7 @@ void QEditToolButtonPanel::AddButton(string name, CRuntimeClass* pToolClass)
 	bi.pToolClass = pToolClass;
 	AddButton(bi);
 }
-//////////////////////////////////////////////////////////////////////////
+
 void QEditToolButtonPanel::ClearButtons()
 {
 	for (int i = 0; i < m_buttons.size(); i++)
@@ -257,4 +239,3 @@ void QEditToolButtonPanel::EnableButton(string buttonName, bool enable)
 			b.pButton->setEnabled(enable);
 	}
 }
-
