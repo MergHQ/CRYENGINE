@@ -53,6 +53,7 @@ CMaterialEditor::~CMaterialEditor()
 
 void CMaterialEditor::InitMenuBar()
 {
+	AddToMenu(CEditor::MenuItems::SaveAs);
 	AddToMenu(CEditor::MenuItems::EditMenu);
 	AddToMenu(CEditor::MenuItems::Undo);
 	AddToMenu(CEditor::MenuItems::Redo);
