@@ -17,7 +17,7 @@ namespace CryDRS
 {
 class CVariableCollection;
 
-class CActionSetVariable final : public IVariableUsingBase, public DRS::IResponseAction
+class CActionSetVariable final : public DRS::IResponseAction, public IVariableUsingBase
 {
 public:
 	enum EChangeOperation
@@ -39,8 +39,8 @@ public:
 	//////////////////////////////////////////////////////////
 
 private:
-	CVariableValue   m_valueToSet;
+	CVariableValue m_valueToSet;
 	EChangeOperation m_changeOperation;
-	float            m_cooldown;
+	float m_cooldown;
 };
 } // namespace CryDRS
