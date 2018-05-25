@@ -958,8 +958,8 @@ struct SShaderPass
 	CHWShader*  m_VShader;        // Pointer to the vertex shader for the current pass
 	CHWShader*  m_PShader;        // Pointer to fragment shader
 	CHWShader*  m_GShader;        // Pointer to the geometry shader for the current pass
-	CHWShader*  m_HShader;        // Pointer to the hull shader for the current pass
 	CHWShader*  m_DShader;        // Pointer to the domain shader for the current pass
+	CHWShader*  m_HShader;        // Pointer to the hull shader for the current pass
 	CHWShader*  m_CShader;        // Pointer to the compute shader for the current pass
 	SShaderPass();
 

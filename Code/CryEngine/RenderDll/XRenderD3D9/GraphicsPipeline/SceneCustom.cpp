@@ -3,6 +3,7 @@
 #include "StdAfx.h"
 #include "SceneCustom.h"
 #include "D3DPostProcess.h"
+#include "CompiledRenderObject.h"
 #include "Common/ReverseDepth.h"
 #include "Common/Include_HLSL_CPP_Shared.h"
 #include "Common/TypedConstantBuffer.h"
@@ -217,7 +218,7 @@ struct CHighlightPredicate
 {
 	bool operator() (SRendItem& item)
 	{
-		return (item.pObj->m_editorSelectionID & 0x2) == 0;
+		return (item.pCompiledObject->m_pRO->m_editorSelectionID & 0x2) == 0;
 	}
 };
 
@@ -225,7 +226,7 @@ struct CSelectionPredicate
 {
 	bool operator() (SRendItem& item)
 	{
-		return (item.pObj->m_editorSelectionID & 0x1) == 0;
+		return (item.pCompiledObject->m_pRO->m_editorSelectionID & 0x1) == 0;
 	}
 };
 

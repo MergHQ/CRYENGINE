@@ -33,9 +33,7 @@ struct IRenderMesh;
 #define MAX_REND_SHADERS                      4096
 #define MAX_REND_SHADER_RES                   16384
 
-// FIXME: probably better to sort by shaders (Currently sorted by resources)
-// TODO: DURANGO doesn't like _MS_ALIGN(32) when passed to std::sort
-struct SRendItem
+struct CRY_ALIGN(32) SRendItem
 {
 	uint32 SortVal;
 	uint32 nBatchFlags;
@@ -44,10 +42,13 @@ struct SRendItem
 		uint32 ObjSort;
 		float  fDist;
 	};
-	SRendItemSorter        rendItemSorter;
-	CRenderObject*         pObj;
-	CCompiledRenderObject* pCompiledObject;
-	CRenderElement*        pElem;
+	SRendItemSorter rendItemSorter;
+	union
+	{
+		CRenderObject*         pRenderObject;
+		CCompiledRenderObject* pCompiledObject;
+	};
+	CRenderElement* pElem;
 	//uint32 nStencRef  : 8;
 
 	static float EncodeDistanceSortingValue(CRenderObject* pObj)

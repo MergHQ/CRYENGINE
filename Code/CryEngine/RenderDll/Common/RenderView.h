@@ -349,7 +349,7 @@ private:
 	void                   PrepareNearestShadows();
 	void                   CheckAndScheduleForUpdate(const SShaderItem& shaderItem) threadsafe;
 	template<bool bConcurrent>
-	void                   AddRenderItemToRenderLists(const SRendItem& ri, int nRenderList, int nBatchFlags, const SShaderItem& shaderItem) threadsafe;
+	void                   AddRenderItemToRenderLists(const SRendItem& ri, int nRenderList, CRenderObject* RESTRICT_POINTER pObj, const SShaderItem& shaderItem) threadsafe;
 
 	CCompiledRenderObject* AllocCompiledObject(CRenderObject* pObj, CRenderElement* pElem, const SShaderItem& shaderItem);
 	CCompiledRenderObject* AllocCompiledObjectTemporary(CRenderObject* pObj, CRenderElement* pElem, const SShaderItem& shaderItem);
@@ -459,8 +459,7 @@ private:
 	lockfree_add_vector<SPermanentRenderObjectCompilationData> m_permanentRenderObjectsToCompile;
 
 	// Temporary compiled objects for this frame
-	struct SCompiledPair { CRenderObject* pRenderObject; CCompiledRenderObject* pCompiledObject; };
-	lockfree_add_vector<SCompiledPair> m_temporaryCompiledObjects;
+	lockfree_add_vector<CCompiledRenderObject*> m_temporaryCompiledObjects;
 
 	// shader items that need to be updated
 	lockfree_add_vector<std::pair<CShaderResources*, CShader*>> m_shaderItemsToUpdate;

@@ -269,7 +269,7 @@ int CD3D9Renderer::EF_Preprocess(SRendItem* ri, uint32 nums, uint32 nume, const 
 		Shader = static_cast<CShader*>(shaderItem.m_pShader);
 		Res = static_cast<CShaderResources*>(shaderItem.m_pShaderResources);
 
-		pObject = ri[i].pObj;
+		pObject = ri[i].pCompiledObject->m_pRO;
 		if (!(ri[i].nBatchFlags & FSPR_MASK))
 			break;
 		nReturn++;

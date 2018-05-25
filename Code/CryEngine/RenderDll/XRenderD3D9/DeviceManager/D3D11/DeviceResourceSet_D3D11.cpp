@@ -60,9 +60,11 @@ bool CDeviceResourceSet_DX11::UpdateImpl(const CDeviceResourceSetDesc& desc, CDe
 			compiledCB.size = size;
 			compiledCB.slot = it.first.slotNumber;
 
-			for (EHWShaderClass shaderClass = eHWSC_Vertex; shaderClass != eHWSC_Num; shaderClass = EHWShaderClass(shaderClass + 1))
+			// Shader stages are ordered by usage-frequency and loop exists according to usage-frequency (VS+PS fast, etc.)
+			int validShaderStages = it.first.stages;
+			for (EHWShaderClass shaderClass = eHWSC_Vertex; validShaderStages; shaderClass = EHWShaderClass(shaderClass + 1), validShaderStages >>= 1)
 			{
-				if (it.first.stages & SHADERSTAGE_FROM_SHADERCLASS(shaderClass))
+				if (validShaderStages & 1)
 					compiledCBs[shaderClass][numCompiledCBs[shaderClass]++] = compiledCB;
 			}
 		}
@@ -76,9 +78,11 @@ bool CDeviceResourceSet_DX11::UpdateImpl(const CDeviceResourceSetDesc& desc, CDe
 
 			ID3D11ShaderResourceView* pSRV = pResource->LookupSRV(resource.view);
 
-			for (EHWShaderClass shaderClass = eHWSC_Vertex; shaderClass != eHWSC_Num; shaderClass = EHWShaderClass(shaderClass + 1))
+			// Shader stages are ordered by usage-frequency and loop exists according to usage-frequency (VS+PS fast, etc.)
+			int validShaderStages = bindPoint.stages;
+			for (EHWShaderClass shaderClass = eHWSC_Vertex; validShaderStages; shaderClass = EHWShaderClass(shaderClass + 1), validShaderStages >>= 1)
 			{
-				if (bindPoint.stages & SHADERSTAGE_FROM_SHADERCLASS(shaderClass))
+				if (validShaderStages & 1)
 					compiledTextureSRVs[shaderClass][bindPoint.slotNumber] = pSRV;
 			}
 		};
@@ -115,9 +119,11 @@ bool CDeviceResourceSet_DX11::UpdateImpl(const CDeviceResourceSetDesc& desc, CDe
 		{
 			ID3D11SamplerState* pSamplerState = CDeviceObjectFactory::LookupSamplerState(resource.samplerState).second;
 
-			for (EHWShaderClass shaderClass = eHWSC_Vertex; shaderClass != eHWSC_Num; shaderClass = EHWShaderClass(shaderClass + 1))
+			// Shader stages are ordered by usage-frequency and loop exists according to usage-frequency (VS+PS fast, etc.)
+			int validShaderStages = bindPoint.stages;
+			for (EHWShaderClass shaderClass = eHWSC_Vertex; validShaderStages; shaderClass = EHWShaderClass(shaderClass + 1), validShaderStages >>= 1)
 			{
-				if (bindPoint.stages & SHADERSTAGE_FROM_SHADERCLASS(shaderClass))
+				if (validShaderStages & 1)
 					compiledSamplers[shaderClass][bindPoint.slotNumber] = pSamplerState;
 			}
 		}
