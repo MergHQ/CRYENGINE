@@ -1,13 +1,6 @@
 // Copyright 2001-2018 Crytek GmbH / Crytek Group. All rights reserved.
 
 #pragma once
-////////////////////////////////////////////////////////////////////////////
-//  Crytek Engine Source File.
-//  Copyright (C), Crytek Studios, 2011.
-// -------------------------------------------------------------------------
-//  File name:   LensFlareElementTree.h
-//  Created:     7/Dec/2012 by Jaesik.
-////////////////////////////////////////////////////////////////////////////
 
 #include "LensFlareElement.h"
 #include "LensFlareUtil.h"
@@ -33,7 +26,7 @@ public:
 		if (pListener == NULL)
 			return;
 		std::vector<ILensFlareChangeElementListener*>::iterator ii = m_LensFlaresElementListeners.begin();
-		for (; ii != m_LensFlaresElementListeners.end(); )
+		for (; ii != m_LensFlaresElementListeners.end();)
 		{
 			if (*ii == pListener)
 				ii = m_LensFlaresElementListeners.erase(ii);
@@ -160,4 +153,3 @@ private:
 	std::vector<CLensFlareElement::LensFlareElementPtr> m_LensFlareElements;
 	CLensFlareItem* m_pLensFlareItem;
 };
-

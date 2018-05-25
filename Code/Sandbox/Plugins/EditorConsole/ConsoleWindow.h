@@ -1,19 +1,5 @@
 // Copyright 2001-2018 Crytek GmbH / Crytek Group. All rights reserved.
 
-////////////////////////////////////////////////////////////////////////////
-//
-//  Crytek Engine Source File.
-//  Copyright (C), Crytek Studios, 1999-2014.
-// -------------------------------------------------------------------------
-//  File name:   ConsoleWindow.h
-//  Version:     v1.00
-//  Created:     03/03/2014 by Matthijs vd Meide
-//  Compilers:   Visual Studio 2010
-// -------------------------------------------------------------------------
-//  History:
-//
-////////////////////////////////////////////////////////////////////////////
-
 #pragma once
 #include <CryCore/Platform/platform.h>
 #include <CrySystem/ISystem.h>
@@ -83,7 +69,7 @@ class CConsoleWindow : public CDockableEditor, public ILogCallback
 	//when one of the following is called, also move the pop-up window
 	void keyPressEvent(QKeyEvent* e);
 
-	void OnWriteToFile(const char* sText, bool bNewLine) {};
+	void OnWriteToFile(const char* sText, bool bNewLine) {}
 	void OnWriteToConsole(const char* sText, bool bNewLine);
 
 	//setup this window
@@ -96,17 +82,13 @@ class CConsoleWindow : public CDockableEditor, public ILogCallback
 
 	bool         ClearConsole();
 	void         SearchBox(const QString& text);
-	void         ClearSearchBox();
 	void         HighlightSelection(const QString& text);
 	void         SearchBoxEnterPressed();
 	bool         OnCloseSearch();
 	bool m_searchBackwards;
 
 public:
-	//constructor
 	CConsoleWindow(QWidget* pParent = nullptr);
-
-	//destructor
 	~CConsoleWindow();
 
 	//static QTextEdit& GetEditLog(){ return m_pHistory;}
@@ -146,10 +128,9 @@ private:
 	int           m_lastConsoleLineNumber;
 
 	//if set, keep the history scrolled down all the way at all times
-	int               m_sticky;
+	int        m_sticky;
 
-	QSearchBox        m_searchBox;
-	QWidget*          m_searchWidget;
-	QString           m_lastSearchBoxString;
+	QSearchBox m_searchBox;
+	QWidget*   m_searchWidget;
+	QString    m_lastSearchBoxString;
 };
-

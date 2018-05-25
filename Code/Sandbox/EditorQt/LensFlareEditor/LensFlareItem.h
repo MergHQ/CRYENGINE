@@ -1,13 +1,7 @@
 // Copyright 2001-2018 Crytek GmbH / Crytek Group. All rights reserved.
 
 #pragma once
-////////////////////////////////////////////////////////////////////////////
-//  Crytek Engine Source File.
-//  Copyright (C), Crytek Studios, 2011.
-// -------------------------------------------------------------------------
-//  File name:   LensFlareItem.h
-//  Created:     12/Dec/2012 by Jaesik.
-////////////////////////////////////////////////////////////////////////////
+
 #include "BaseLibraryItem.h"
 
 class IOpticsElementBase;
@@ -30,15 +24,12 @@ public:
 
 	void                  CreateOptics();
 
-	IOpticsElementBasePtr GetOptics() const
-	{
-		return m_pOptics;
-	}
+	IOpticsElementBasePtr GetOptics() const { return m_pOptics; }
 
-	void       ReplaceOptics(IOpticsElementBasePtr pNewData);
+	void                  ReplaceOptics(IOpticsElementBasePtr pNewData);
 
-	XmlNodeRef CreateXmlData() const;
-	void       UpdateLights(IOpticsElementBasePtr pSrcOptics = NULL);
+	XmlNodeRef            CreateXmlData() const;
+	void                  UpdateLights(IOpticsElementBasePtr pSrcOptics = NULL);
 
 private:
 
@@ -47,4 +38,3 @@ private:
 
 	IOpticsElementBasePtr m_pOptics;
 };
-

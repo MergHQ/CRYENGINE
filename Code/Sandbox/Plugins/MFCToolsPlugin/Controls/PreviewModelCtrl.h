@@ -1,10 +1,6 @@
 // Copyright 2001-2018 Crytek GmbH / Crytek Group. All rights reserved.
 
 #pragma once
-////////////////////////////////////////////////////////////////////////////
-//  CryEngine Source File.
-//  Copyright (C), Crytek, 1999-2013
-////////////////////////////////////////////////////////////////////////////
 
 struct IEntity;
 struct IParticleEffect;
@@ -188,4 +184,3 @@ private:
 protected:
 	virtual void PreSubclassWindow();
 };
-

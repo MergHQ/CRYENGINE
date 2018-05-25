@@ -1,19 +1,5 @@
 // Copyright 2001-2018 Crytek GmbH / Crytek Group. All rights reserved.
 
-////////////////////////////////////////////////////////////////////////////
-//
-//  Crytek Engine Source File.
-//  Copyright (C), Crytek Studios, 1999-2014.
-// -------------------------------------------------------------------------
-//  File name:   CVarWindow.h
-//  Version:     v1.00
-//  Created:     10/04/2014 by Matthijs vd Meide
-//  Compilers:   Visual Studio 2010
-// -------------------------------------------------------------------------
-//  History:
-//
-////////////////////////////////////////////////////////////////////////////
-
 #pragma once
 #include <vector>
 #include "Messages.h"
@@ -64,7 +50,7 @@ class CCVarWindow : public QWidget
 		CCVarModel(CCVarWindow* pParent);
 
 		//the number of rows in the model
-		int rowCount(const QModelIndex& parent) const { return m_items.size(); };
+		int rowCount(const QModelIndex& parent) const { return m_items.size(); }
 
 		//the number of columns in the model
 		int columnCount(const QModelIndex& parent) const { return 2; }
@@ -112,11 +98,7 @@ class CCVarWindow : public QWidget
 	};
 
 public:
-	//constructor
 	CCVarWindow();
-
-	//destructor
-	~CCVarWindow() {}
 
 	//handle change of filter expression
 	void HandleFilterChanged(const QString& filter);
@@ -154,4 +136,3 @@ private:
 	QTableView* m_pCVarList;
 	QLineEdit*  m_pFilterInput;
 };
-

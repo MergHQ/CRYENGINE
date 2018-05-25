@@ -1,26 +1,11 @@
 // Copyright 2001-2018 Crytek GmbH / Crytek Group. All rights reserved.
 
-////////////////////////////////////////////////////////////////////////////
-//
-//  Crytek Engine Source File.
-//  Copyright (C), Crytek Studios, 1999-2014.
-// -------------------------------------------------------------------------
-//  File name:   AutoCompletePopup.cpp
-//  Version:     v1.00
-//  Created:     03/03/2014 by Matthijs vd Meide
-//  Compilers:   Visual Studio 2010
-// -------------------------------------------------------------------------
-//  History:
-//
-////////////////////////////////////////////////////////////////////////////
-
 #include "StdAfx.h"
 #include <QtUtil.h>
 #include "AutoCompletePopup.h"
 
 #include <QVBoxLayout>
 
-//constructor
 CAutoCompletePopup::CAutoCompletePopup(QWidget* parent)
 	: QWidget(parent, Qt::FramelessWindowHint | Qt::WindowDoesNotAcceptFocus | Qt::Tool)
 	, m_bChanging(false)
@@ -273,7 +258,6 @@ QString CAutoCompletePopup::SelectNext()
 	return GetSelectedItem();
 }
 
-
 //handle item changes
 void CAutoCompletePopup::HandleSelectionChanged(const QItemSelection& selected, const QItemSelection& deselected)
 {
@@ -318,4 +302,3 @@ void CAutoCompletePopup::DisplayHistory()
 		}
 	}
 }
-

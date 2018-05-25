@@ -1,13 +1,6 @@
 // Copyright 2001-2018 Crytek GmbH / Crytek Group. All rights reserved.
 
 #pragma once
-////////////////////////////////////////////////////////////////////////////
-//  Crytek Engine Source File.
-//  Copyright (C), Crytek Studios, 2011.
-// -------------------------------------------------------------------------
-//  File name:   LensFlareView.h
-//  Created:     7/Dec/2012 by Jaesik.
-////////////////////////////////////////////////////////////////////////////
 
 #include "ILensFlareListener.h"
 #include "Controls/PreviewModelCtrl.h"
@@ -49,4 +42,3 @@ private:
 	_smart_ptr<CMaterial>      m_pLensFlareMaterial;
 	_smart_ptr<CLensFlareItem> m_pLensFlareItem;
 };
-

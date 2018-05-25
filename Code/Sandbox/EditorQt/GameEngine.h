@@ -1,15 +1,5 @@
 // Copyright 2001-2018 Crytek GmbH / Crytek Group. All rights reserved.
 
-////////////////////////////////////////////////////////////////////////////
-//
-//  Crytek Engine Source File.
-//  Copyright (C), Crytek Studios
-// -------------------------------------------------------------------------
-//  Created:     13/5/2002 by Timur.
-//  Description: The game engine for editor
-//
-////////////////////////////////////////////////////////////////////////////
-
 #pragma once
 
 #include "LogFile.h"
@@ -47,11 +37,11 @@ public:
 	//! Initialize System.
 	//! @return true if initialization succeeded, false otherwise
 	bool Init(
-	  bool bPreviewMode,
-	  bool bTestMode,
-	  bool bShaderCacheGen,
-	  const char* sCmdLine,
-	  IInitializeUIInfo* logo);
+		bool bPreviewMode,
+		bool bTestMode,
+		bool bShaderCacheGen,
+		const char* sCmdLine,
+		IInitializeUIInfo* logo);
 
 	//! Configures editor related engine components
 	void InitAdditionalEngineComponents();
@@ -59,10 +49,10 @@ public:
 	//! Load new terrain level into 3d engine.
 	//! Also load AI triangulation for this level.
 	bool LoadLevel(
-	  const string& levelPath,
-	  const string& mission,
-	  bool bDeleteAIGraph,
-	  bool bReleaseResources);
+		const string& levelPath,
+		const string& mission,
+		bool bDeleteAIGraph,
+		bool bReleaseResources);
 	//!* Reload level if it was already loaded.
 	bool ReloadLevel();
 	//! Loads AI triangulation.
@@ -79,60 +69,60 @@ public:
 	void RequestSetGameMode(bool inGame);
 	//! Switch In/Out of AI and Physics simulation mode.
 	//! @param enabled When true editor switch to simulation mode.
-	void           SetSimulationMode(bool enabled, bool bOnlyPhysics = false);
+	void          SetSimulationMode(bool enabled, bool bOnlyPhysics = false);
 	//! Get current simulation mode.
-	bool           GetSimulationMode() const { return m_bSimulationMode; };
+	bool          GetSimulationMode() const { return m_bSimulationMode; }
 	//! Returns true if level is loaded.
-	bool           IsLevelLoaded() const     { return m_bLevelLoaded; };
+	bool          IsLevelLoaded() const     { return m_bLevelLoaded; }
 	//! Assign new level path name.
-	void           SetLevelPath(const string& path);
+	void          SetLevelPath(const string& path);
 	//! Assign new current mission name.
-	void           SetMissionName(const string& mission);
+	void          SetMissionName(const string& mission);
 	//! Return name of currently loaded level.
-	const string& GetLevelName() const               { return m_levelName; };
+	const string& GetLevelName() const               { return m_levelName; }
 	//! Return name of currently active mission.
-	const string& GetMissionName() const             { return m_missionName; };
+	const string& GetMissionName() const             { return m_missionName; }
 	//! Get fully specified level path.
-	const string& GetLevelPath() const               { return m_levelPath; };
+	const string& GetLevelPath() const               { return m_levelPath; }
 	//! Query if engine is in game mode.
-	bool           IsInGameMode() const               { return m_bInGameMode; };
+	bool          IsInGameMode() const               { return m_bInGameMode; }
 	//! Force level loaded variable to true.
-	void           SetLevelLoaded(bool bLoaded)       { m_bLevelLoaded = bLoaded; }
+	void          SetLevelLoaded(bool bLoaded)       { m_bLevelLoaded = bLoaded; }
 	//! Force level just created variable to true.
-	void           SetLevelCreated(bool bJustCreated) { m_bJustCreated = bJustCreated; }
+	void          SetLevelCreated(bool bJustCreated) { m_bJustCreated = bJustCreated; }
 	//! Generate All AI data
-	void           GenerateAiAll(uint32 flags);
+	void          GenerateAiAll(uint32 flags);
 	//! Generate AI MNM navigation of currently loaded data.
-	void           GenerateAINavigationMesh();
+	void          GenerateAINavigationMesh();
 	//! Generate AI Cover Surfaces of currently loaded data.
-	void           GenerateAICoverSurfaces();
+	void          GenerateAICoverSurfaces();
 	//! Loading all the AI navigation data of current level.
-	void           LoadAINavigationData();
+	void          LoadAINavigationData();
 	//! Does some basic sanity checking of the AI navigation
-	void           ValidateAINavigation();
+	void          ValidateAINavigation();
 	//! Clears all AI navigation data from the current level.
-	void           ClearAllAINavigation();
+	void          ClearAllAINavigation();
 	//! Generates 3D volume voxels only for debugging
-	void           ExportAiData(
-	  const char* navFileName,
-	  const char* areasFileName,
-	  const char* roadsFileName,
-	  const char* fileNameVerts,
-	  const char* fileNameVolume,
-	  const char* fileNameFlight);
+	void          ExportAiData(
+		const char* navFileName,
+		const char* areasFileName,
+		const char* roadsFileName,
+		const char* fileNameVerts,
+		const char* fileNameVolume,
+		const char* fileNameFlight);
 	CNavigation* GetNavigation() { return m_pNavigation; }
 	//! Sets equipment pack current used by player.
 	void         SetPlayerEquipPack(const char* sEqipPackName);
 	//! Called when Game resource file must be reloaded.
 	void         ReloadResourceFile(const string& filename);
 	//! Query ISystem interface.
-	ISystem*     GetSystem() { return m_pISystem; };
+	ISystem*     GetSystem() { return m_pISystem; }
 	//! Set player position in game.
 	//! @param bEyePos If set then given position is position of player eyes.
 	void                       SetPlayerViewMatrix(const Matrix34& tm, bool bEyePos = true);
 	//! When set, player in game will be every frame synchronized with editor camera.
 	void                       SyncPlayerPosition(bool bEnable);
-	bool                       IsSyncPlayerPosition() const { return m_bSyncPlayerPosition; };
+	bool                       IsSyncPlayerPosition() const { return m_bSyncPlayerPosition; }
 	void                       HideLocalPlayer(bool bHide);
 	//! Set game's current Mod name.
 	void                       SetCurrentMOD(const char* sMod);
@@ -223,4 +213,3 @@ private:
 	//! Keeps the editor active even if no focus is set
 	int keepEditorActive;
 };
-

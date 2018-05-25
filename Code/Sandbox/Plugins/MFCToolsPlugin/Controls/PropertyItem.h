@@ -1,17 +1,6 @@
 // Copyright 2001-2018 Crytek GmbH / Crytek Group. All rights reserved.
 
 #pragma once
-////////////////////////////////////////////////////////////////////////////
-//
-//  Crytek Engine Source File.
-//  Copyright (C), Crytek Studios, 2002.
-// -------------------------------------------------------------------------
-//  Created:     5/6/2002 by Timur.
-//  Description:
-// -------------------------------------------------------------------------
-//  History:
-//
-////////////////////////////////////////////////////////////////////////////
 
 #include "Controls/ColorCtrl.h"
 #include "Util/Variable.h"
@@ -129,11 +118,11 @@ public:
 
 	/** Get name of property item.
 	 */
-	virtual CString GetName() const { return m_name; };
+	virtual CString GetName() const { return m_name; }
 
 	/** Set name of property item.
 	 */
-	virtual void SetName(const char* sName) { m_name = sName; };
+	virtual void SetName(const char* sName) { m_name = sName; }
 
 	/** Called when item becomes selected.
 	 */
@@ -141,19 +130,19 @@ public:
 
 	/** Get if item is selected.
 	 */
-	bool IsSelected() const { return m_bSelected; };
+	bool IsSelected() const { return m_bSelected; }
 
 	/** Get if item is currently expanded.
 	 */
-	bool IsExpanded() const { return m_bExpanded; };
+	bool IsExpanded() const { return m_bExpanded; }
 
 	/** Get if item can be expanded (Have children).
 	 */
-	bool IsExpandable() const { return m_bExpandable; };
+	bool IsExpandable() const { return m_bExpandable; }
 
 	/** Check if item cannot be category.
 	 */
-	bool IsNotCategory() const { return m_bNoCategory; };
+	bool IsNotCategory() const { return m_bNoCategory; }
 
 	/** Check if item must be bold.
 	 */
@@ -175,7 +164,7 @@ public:
 	 */
 	virtual void DrawValue(CDC* dc, CRect rect);
 
-	/** Called by PropertyCtrl when item selected to creare in place editing control.
+	/** Called by PropertyCtrl when item selected to create in place editing control.
 	 */
 	virtual void CreateInPlaceControl(CWnd* pWndParent, CRect& rect);
 	/** Called by PropertyCtrl when item deselected to destroy in place editing control.
@@ -197,13 +186,13 @@ public:
 
 	/** Set data from InPlace control to Item value.
 	 */
-	virtual void SetData(CWnd* pWndInPlaceControl) {};
+	virtual void SetData(CWnd* pWndInPlaceControl) {}
 
 	//////////////////////////////////////////////////////////////////////////
 	// Mouse notifications.
 	//////////////////////////////////////////////////////////////////////////
 	virtual void OnLButtonDown(UINT nFlags, CPoint point);
-	virtual void OnRButtonDown(UINT nFlags, CPoint point) {};
+	virtual void OnRButtonDown(UINT nFlags, CPoint point) {}
 	virtual void OnLButtonDblClk(UINT nFlags, CPoint point);
 	virtual void OnMouseWheel(UINT nFlags, short zDelta, CPoint point);
 
@@ -217,14 +206,14 @@ public:
 
 	/** Get Item's XML node.
 	 */
-	XmlNodeRef& GetXmlNode() { return m_node; };
+	XmlNodeRef& GetXmlNode() { return m_node; }
 
 	//////////////////////////////////////////////////////////////////////////
 	//! Get description of this item.
 	CString GetTip() const;
 
 	//! Return image index of this property.
-	int GetImage() const { return m_image; };
+	int GetImage() const { return m_image; }
 
 	//! Return true if this property item is modified.
 	bool IsModified() const { return m_modified; }
@@ -233,19 +222,19 @@ public:
 
 	/** Get script default value of property item.
 	 */
-	virtual bool HasScriptDefault() const { return m_strScriptDefault != m_strNoScriptDefault; };
+	virtual bool HasScriptDefault() const { return m_strScriptDefault != m_strNoScriptDefault; }
 
 	/** Get script default value of property item.
 	 */
-	virtual CString GetScriptDefault() const { return m_strScriptDefault; };
+	virtual CString GetScriptDefault() const { return m_strScriptDefault; }
 
 	/** Set script default value of property item.
 	 */
-	virtual void SetScriptDefault(const char* sScriptDefault) { m_strScriptDefault = sScriptDefault; };
+	virtual void SetScriptDefault(const char* sScriptDefault) { m_strScriptDefault = sScriptDefault; }
 
 	/** Set script default value of property item.
 	 */
-	virtual void ClearScriptDefault() { m_strScriptDefault = m_strNoScriptDefault; };
+	virtual void ClearScriptDefault() { m_strScriptDefault = m_strNoScriptDefault; }
 
 	//////////////////////////////////////////////////////////////////////////
 	// Childs.
@@ -253,16 +242,16 @@ public:
 	//! Expand child nodes.
 	virtual void SetExpanded(bool expanded);
 
-	//! Reload Value from Xml Node (hierarchicaly reload children also).
+	//! Reload Value from Xml Node (hierarchically reload children also).
 	virtual void ReloadValues();
 
 	//! Get number of child nodes.
-	int            GetChildCount() const     { return m_childs.size(); };
+	int            GetChildCount() const     { return m_childs.size(); }
 	//! Get Child by id.
-	CPropertyItem* GetChild(int index) const { return m_childs[index]; };
+	CPropertyItem* GetChild(int index) const { return m_childs[index]; }
 
 	//! Parent of this item.
-	CPropertyItem* GetParent() const { return m_parent; };
+	CPropertyItem* GetParent() const { return m_parent; }
 
 	//! Add Child item.
 	void AddChild(CPropertyItem* item);
@@ -298,9 +287,8 @@ protected:
 	void OnEditChanged();
 	void OnNumberCtrlUpdate(CNumberCtrl* ctrl);
 	void OnFillSliderCtrlUpdate(CSliderCtrlEx* ctrl);
-	void OnNumberCtrlBeginUpdate(CNumberCtrl* ctrl) {};
-	void OnNumberCtrlEndUpdate(CNumberCtrl* ctrl)   {};
-	void OnSplineCtrlUpdate(CSplineCtrl* ctrl);
+	void OnNumberCtrlBeginUpdate(CNumberCtrl* ctrl) {}
+	void OnNumberCtrlEndUpdate(CNumberCtrl* ctrl)   {}
 
 	void OnComboSelection();
 
@@ -372,7 +360,7 @@ private:
 	unsigned int m_bShowChildren       : 1;
 	//! True if item can not be category.
 	unsigned int m_bNoCategory         : 1;
-	//! If tru ignore update that comes from childs.
+	//! If true ignore update that comes from childs.
 	unsigned int m_bIgnoreChildsUpdate : 1;
 	//! If can move in place controls.
 	unsigned int m_bMoveControls       : 1;
@@ -452,4 +440,3 @@ private:
 };
 
 typedef _smart_ptr<CPropertyItem> CPropertyItemPtr;
-

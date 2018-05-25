@@ -1,19 +1,5 @@
 // Copyright 2001-2018 Crytek GmbH / Crytek Group. All rights reserved.
 
-////////////////////////////////////////////////////////////////////////////
-//
-//  Crytek Engine Source File.
-//  Copyright (C), Crytek Studios, 1999-2014.
-// -------------------------------------------------------------------------
-//  File name:   EngineListener.h
-//  Version:     v1.00
-//  Created:     03/03/2014 by Matthijs vd Meide
-//  Compilers:   Visual Studio 2010
-// -------------------------------------------------------------------------
-//  History:
-//
-////////////////////////////////////////////////////////////////////////////
-
 #pragma once
 #include <CryCore/Platform/platform.h>
 #include <CrySystem/ISystem.h>
@@ -83,7 +69,7 @@ protected:
 	void Init(size_t maxHistory);
 
 	//get console instance
-	IConsole* GetConsole() const { return m_system ? m_system->GetIConsole() : NULL; }
+	IConsole* GetConsole() const { return m_system ? m_system->GetIConsole() : nullptr; }
 
 	//string comparison function to use
 	static int StringCompare(const char* left, const char* right);
@@ -94,8 +80,6 @@ protected:
 public:
 	//constructs an event listener for the specified engine instance
 	CEngineListener(ISystem* system) : m_system(system), m_lines(0) {}
-
-	//destructor
 	~CEngineListener();
 
 	//emits a CVar after it has been discovered or changed
@@ -150,4 +134,3 @@ private:
 	//collection of known commands
 	t_commands m_commands;
 };
-

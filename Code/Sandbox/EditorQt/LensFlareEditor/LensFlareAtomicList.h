@@ -1,13 +1,6 @@
 // Copyright 2001-2018 Crytek GmbH / Crytek Group. All rights reserved.
 
 #pragma once
-////////////////////////////////////////////////////////////////////////////
-//  Crytek Engine Source File.
-//  Copyright (C), Crytek Studios, 2011.
-// -------------------------------------------------------------------------
-//  File name:   LensFlareAtomicList.h
-//  Created:     7/Dec/2012 by Jaesik.
-////////////////////////////////////////////////////////////////////////////
 
 #include "Controls/ImageListCtrl.h"
 
@@ -36,6 +29,4 @@ protected:
 	void OnDropItem(CPoint point);
 	void OnDraggingItem(CPoint point);
 	bool InsertItem(const FlareInfo& flareInfo);
-
 };
-
