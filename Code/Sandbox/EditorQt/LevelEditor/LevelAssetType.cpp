@@ -118,6 +118,16 @@ std::vector<SAssetDependencyInfo> GetDependencies(const CAsset& asset)
 
 }
 
+CAssetEditor* CLevelType::Edit(CAsset* pAsset) const
+{
+	// Editing the level type presents a special case, as it does not return an asset editor.
+	// Instead we load the level.
+
+	CCryEditApp::GetInstance()->LoadLevel(pAsset->GetFile(0));
+
+	return nullptr;
+}
+
 bool CLevelType::DeleteAssetFiles(const CAsset& asset, bool bDeleteSourceFile, size_t& numberOfFilesDeleted) const
 {
 	numberOfFilesDeleted = 0;
