@@ -754,7 +754,7 @@ DEFINE_ENUM_FLAG_OPERATORS(ELoadConfigurationFlags);
 
 struct SPlatformInfo
 {
-	const char* processorType;
+	const char* szProcessorType;
 	unsigned int numCoresAvailableToProcess;
 	unsigned int numLogicalProcessors;
 
@@ -781,7 +781,7 @@ struct SPlatformInfo
 		bool          vistaKB940105Required;
 	};
 
-	SWinInfo win;
+	SWinInfo winInfo;
 #endif
 };
 

@@ -1564,13 +1564,13 @@ struct IRenderer//: public IRendererCallbackServer
 	{
 		CryFixedStringT<64> name;
 		unsigned int nNodeCount;
-		UINT VendorId;
-		UINT DeviceId;
-		UINT SubSysId;
-		UINT Revision;
-		SIZE_T DedicatedVideoMemory;
-		unsigned long DriverVersion;
-		const char* DriverBuildNumber;
+		UINT vendorId;
+		UINT deviceId;
+		UINT subSysId;
+		UINT revision;
+		SIZE_T dedicatedVideoMemory;
+		unsigned long driverVersion;
+		const char* szDriverBuildNumber;
 	};
 
 	virtual void QueryActiveGpuInfo(SGpuInfo& info) const = 0;

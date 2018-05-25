@@ -1299,7 +1299,7 @@ void CSystem::LogSystemInfo()
 	OSVerInfo.dwOSVersionInfoSize = sizeof(OSVERSIONINFO);
 
 	// log Windows type
-	Win32SysInspect::GetOS(m_env.pi.win, szBuffer, sizeof(szBuffer));
+	Win32SysInspect::GetOS(m_env.pi.winInfo, szBuffer, sizeof(szBuffer));
 	CryLogAlways(szBuffer);
 
 	// log user name
