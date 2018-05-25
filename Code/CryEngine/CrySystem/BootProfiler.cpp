@@ -54,6 +54,10 @@ public:
 		const unsigned int counter = CryInterlockedIncrement(&m_threadCounter) - 1;     //count to index
 		m_threadInfo[counter] = threadID;
 		m_threadNames[counter] = gEnv->pThreadManager->GetThreadName(threadID);
+		if (m_threadNames[counter].empty())
+		{
+			m_threadNames[counter].Format("tid_%" PRIu64, static_cast<uint64>(threadID));
+		}
 
 		return counter;
 	}

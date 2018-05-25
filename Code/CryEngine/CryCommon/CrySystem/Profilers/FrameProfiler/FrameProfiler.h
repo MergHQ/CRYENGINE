@@ -776,7 +776,7 @@ public:
 // CRY_PROFILE_FUNCTION(PROFILE_LOADING_ONLY);
 #define LOADING_TIME_PROFILE_SECTION \
 	static CFrameProfiler staticFrameProfilerLoading(PROFILE_LOADING_ONLY, EProfileDescription::FUNCTIONENTRY, __FUNC__, __FILE__, __LINE__); \
-	CFrameProfilerSection frameProfilerSectionLoading(&staticFrameProfilerLoading, __FILE__, nullptr, EProfileDescription::FUNCTIONENTRY);
+	CFrameProfilerSection frameProfilerSectionLoading(&staticFrameProfilerLoading, __FUNC__, nullptr, EProfileDescription::FUNCTIONENTRY);
 
 #define LOADING_TIME_PROFILE_SECTION_ARGS(args)                    CSYSBootProfileBlock _profileBlockLine_args(gEnv->pSystem, __FUNC__, args);
 #define LOADING_TIME_PROFILE_SECTION_NAMED(sectionName)            CSYSBootProfileBlock _profileBlockLine_named(gEnv->pSystem, sectionName);
