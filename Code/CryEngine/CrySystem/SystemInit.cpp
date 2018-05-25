@@ -1278,25 +1278,6 @@ bool CSystem::InitInput(const SSystemInitParams& startupParams)
 	return true;
 }
 
-/////////////////////////////////////////////////////////////////////////////////
-/////////////////////////////////////////////////////////////////////////////////
-bool CSystem::InitConsole()
-{
-	LOADING_TIME_PROFILE_SECTION(GetISystem());
-	MEMSTAT_CONTEXT(EMemStatContextTypes::MSC_Other, 0, "Init Console");
-
-	//	m_Console->Init(this);
-	// Ignore when run in Editor.
-	if (m_env.IsEditor() && !m_env.pRenderer)
-		return true;
-
-	// Ignore for dedicated server.
-	if (gEnv->IsDedicated())
-		return true;
-
-	return (true);
-}
-
 //////////////////////////////////////////////////////////////////////////
 // attaches the given variable to the given container;
 // recreates the variable if necessary
@@ -1981,6 +1962,13 @@ bool CSystem::InitFileSystem(const SSystemInitParams& startupParams)
 
 	const char* szConfigPakPath = "%ENGINEROOT%/config.pak";
 	m_env.pCryPak->OpenPack(szConfigPakPath);
+
+	// Initialize console before the project system
+	// This ensures that "exec" and other early commands can be executed immediately on parsing
+	if (m_env.pConsole != nullptr)
+	{
+		static_cast<CXConsole*>(m_env.pConsole)->PreProjectSystemInit();
+	}
 
 	if (!m_pProjectManager->ParseProjectFile())
 	{
@@ -3457,16 +3445,6 @@ bool CSystem::Initialize(SSystemInitParams& startupParams)
 		m_env.pRemoteCommandManager = new CRemoteCommandManager();
 
 		//////////////////////////////////////////////////////////////////////////
-		// CONSOLE
-		//////////////////////////////////////////////////////////////////////////
-		if (!startupParams.bShaderCacheGen)
-		{
-			CryLogAlways("Console initialization");
-			if (!InitConsole())
-				return false;
-		}
-
-		//////////////////////////////////////////////////////////////////////////
 		// THREAD PROFILER
 		//////////////////////////////////////////////////////////////////////////
 		m_pThreadProfiler = new CThreadProfiler;
@@ -3515,8 +3493,10 @@ bool CSystem::Initialize(SSystemInitParams& startupParams)
 
 		InlineInitializationProcessing("CSystem::Init InitMiniGUI");
 
-		if (m_env.pConsole != 0)
-			((CXConsole*)m_env.pConsole)->Init(this);
+		if (m_env.pConsole != nullptr)
+		{
+			static_cast<CXConsole*>(m_env.pConsole)->PostRendererInit();
+		}
 
 		//////////////////////////////////////////////////////////////////////////
 		// Init Animation system

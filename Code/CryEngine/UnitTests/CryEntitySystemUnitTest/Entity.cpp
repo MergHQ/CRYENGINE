@@ -74,14 +74,6 @@ class CMockConsole : public IConsole
 	{
 		return nullptr;
 	}
-	virtual char * GetVariable(const char * szVarName, const char * szFileName, const char * def_val) override
-	{
-		return nullptr;
-	}
-	virtual float GetVariable(const char * szVarName, const char * szFileName, float def_val) override
-	{
-		return 0.0f;
-	}
 	virtual void PrintLine(const char * s) override
 	{
 	}

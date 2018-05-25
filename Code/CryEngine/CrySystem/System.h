@@ -534,7 +534,6 @@ private:
 	bool InitNetwork(const SSystemInitParams& startupParams);
 	bool InitInput(const SSystemInitParams& startupParams);
 
-	bool InitConsole();
 	bool InitRenderer(SSystemInitParams& startupParams);
 	bool InitPhysics(const SSystemInitParams& startupParams);
 	bool InitPhysicsRenderer(const SSystemInitParams& startupParams);

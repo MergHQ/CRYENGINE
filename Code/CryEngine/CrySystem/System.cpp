@@ -428,7 +428,7 @@ CSystem::CSystem(const SSystemInitParams& startupParams)
 	m_pImeManager = nullptr;
 	RegisterWindowMessageHandler(this);
 
-	m_env.pConsole = new CXConsole;
+	m_env.pConsole = new CXConsole(*this);
 	if (startupParams.pPrintSync)
 		m_env.pConsole->AddOutputPrintSink(startupParams.pPrintSync);
 

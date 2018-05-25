@@ -281,20 +281,6 @@ struct IConsole
 	//! \include CrySystem/Examples/ConsoleVariable.cpp
 	virtual ICVar* GetCVar(const char* name) = 0;
 
-	//! Read a value from a configuration file (.ini) and return the value.
-	//! \param szVarName Variable name.
-	//! \param szFileName Source configuration file.
-	//! \param def_val Default value (if the variable is not found into the file).
-	//! \return The variable value.
-	virtual char* GetVariable(const char* szVarName, const char* szFileName, const char* def_val) = 0;
-
-	//! Read a value from a configuration file (.ini) and return the value.
-	//! \param szVarName variable name.
-	//! \param szFileName source configuration file.
-	//! \param def_val default value (if the variable is not found into the file).
-	//! \return the variable value.
-	virtual float GetVariable(const char* szVarName, const char* szFileName, float def_val) = 0;
-
 	//! Print a string in the console and go to the new line.
 	//! \param s The string to print.
 	virtual void PrintLine(const char* s) = 0;
