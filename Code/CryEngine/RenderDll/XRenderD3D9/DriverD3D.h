@@ -943,6 +943,7 @@ inline DWORD CD3D9Renderer::GetBoundThreadID() const
 ///////////////////////////////////////////////////////////////////////////////
 inline void CD3D9Renderer::WaitForAsynchronousDevice() const
 {
+#if DURANGO_ENABLE_ASYNC_DIPS
 	if (m_nAsyncDeviceState)
 	{
 		CRY_PROFILE_REGION_WAITING(PROFILE_RENDERER, "Sync Async DIPS");
@@ -957,6 +958,7 @@ inline void CD3D9Renderer::WaitForAsynchronousDevice() const
 #endif
 		}
 	}
+#endif
 }
 
 ///////////////////////////////////////////////////////////////////////////////

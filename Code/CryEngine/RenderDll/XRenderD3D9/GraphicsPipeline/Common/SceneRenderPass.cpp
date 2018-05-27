@@ -295,7 +295,7 @@ void CSceneRenderPass::DrawRenderItems(CRenderView* pRenderView, ERenderListID l
 		for (auto i = listStart; i != listEnd;)
 		{
 			const bool needsResolve = !!(renderItems[i].nBatchFlags & FB_REFRACTION);
-			const auto& bounds = renderItems[i].pObj->GetObjData()->m_screenBounds;
+			const auto& bounds = renderItems[i].pCompiledObject->m_pRO->GetObjData()->m_screenBounds;
 
 			passContext.rendItems.start = i;
 			// Render till, and not including, next item that needs resolve.

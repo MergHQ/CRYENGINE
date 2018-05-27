@@ -1519,7 +1519,7 @@ void CTexture::InitStreaming()
 		int nMaxTexStreamPool = 1536;
 
 	#if CRY_PLATFORM_WINDOWS && CRY_PLATFORM_32BIT
-		if (!pEnv->pi.win.is64Bit)  // 32 bit executable
+		if (!pEnv->pi.winInfo.is64Bit)  // 32 bit executable
 		{
 			nMaxTexStreamPool = 512;
 		}

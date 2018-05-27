@@ -1,15 +1,9 @@
 // Copyright 2001-2018 Crytek GmbH / Crytek Group. All rights reserved.
 
 #pragma once
-////////////////////////////////////////////////////////////////////////////
-//
-//  Crytek Engine Source File.
-//  Copyright (C), Crytek Studios
-// -------------------------------------------------------------------------
-//  Created:     13/2/2003 by Timur.
-//  Description: Main header included by every file in Editor.
-//
-////////////////////////////////////////////////////////////////////////////
+
+//  Main header included by every file in Editor.
+
 #include <Include/SandboxAPI.h>
 
 //////////////////////////////////////////////////////////////////////////
@@ -96,7 +90,7 @@
 #ifndef ON_WM_INPUT
 // MFC does not define this one.
 	#define ON_WM_INPUT() \
-	  { WM_INPUT, 0, 0, 0, AfxSig_vwl, (AFX_PMSG)(AFX_PMSGW)(static_cast<void(AFX_MSG_CALL CWnd::*)(UINT, HRAWINPUT)>(&ThisClass::OnRawInput)) },
+	{ WM_INPUT, 0, 0, 0, AfxSig_vwl, (AFX_PMSG)(AFX_PMSGW)(static_cast<void(AFX_MSG_CALL CWnd::*)(UINT, HRAWINPUT)>(&ThisClass::OnRawInput)) },
 #endif
 
 #define CRY_ENABLE_FBX_SDK
@@ -170,4 +164,3 @@
 // Command Manager.
 #include "Commands/CommandManager.h"
 #include "Objects/ObjectManager.h"
-

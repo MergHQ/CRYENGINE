@@ -2,6 +2,7 @@
 
 #include "StdAfx.h"
 #include <CryCore/CryCustomTypes.h>
+#include <CryCore/BitFiddling.h>
 #include "../../DeviceManager/DeviceObjects.h"
 #include "DeviceResourceSet_D3D12.h"
 #include "DeviceCommandListCommon_D3D12.h"
@@ -26,6 +27,25 @@ static auto lambdaCeaseCallback = [](void* cmd, uint nPoolId)
 static auto lambdaResumeCallback = [](void* cmd, uint nPoolId)
 {
 	reinterpret_cast<CDeviceCommandListImpl*>(cmd)->ResumeCommandListEvent(nPoolId);
+};
+
+D3D12_SHADER_VISIBILITY shaderVisibility[eHWSC_Num + 1] =
+{
+	D3D12_SHADER_VISIBILITY_VERTEX,     // eHWSC_Vertex
+	D3D12_SHADER_VISIBILITY_PIXEL,      // eHWSC_Pixel
+	D3D12_SHADER_VISIBILITY_GEOMETRY,   // eHWSC_Geometry
+	D3D12_SHADER_VISIBILITY_DOMAIN,     // eHWSC_Domain
+	D3D12_SHADER_VISIBILITY_HULL,       // eHWSC_Hull
+	D3D12_SHADER_VISIBILITY_ALL,        // eHWSC_Compute
+	D3D12_SHADER_VISIBILITY_ALL,        // eHWSC_Num
+};
+
+D3D12_DESCRIPTOR_RANGE_TYPE mapDescriptorRange[size_t(SResourceBindPoint::ESlotType::Count)] =
+{
+	D3D12_DESCRIPTOR_RANGE_TYPE_CBV,     // SResourceBindPoint::ESlotType::ConstantBuffer
+	D3D12_DESCRIPTOR_RANGE_TYPE_SRV,     // SResourceBindPoint::ESlotType::TextureAndBuffer
+	D3D12_DESCRIPTOR_RANGE_TYPE_SAMPLER, // SResourceBindPoint::ESlotType::Sampler
+	D3D12_DESCRIPTOR_RANGE_TYPE_UAV,     // SResourceBindPoint::ESlotType::UnorderedAccessView
 };
 
 ///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////

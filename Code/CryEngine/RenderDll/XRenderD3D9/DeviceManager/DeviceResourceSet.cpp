@@ -495,9 +495,11 @@ bool SDeviceResourceLayoutDesc::IsValid() const
 
 	auto validateResourceBindPoint = [&](SResourceBindPoint bindPoint, const SResourceBinding& resource)
 	{
-		for (EHWShaderClass shaderClass = eHWSC_Vertex; shaderClass != eHWSC_Num; shaderClass = EHWShaderClass(shaderClass + 1))
+		// Shader stages are ordered by usage-frequency and loop exists according to usage-frequency (VS+PS fast, etc.)
+		int validShaderStages = bindPoint.stages;
+		for (EHWShaderClass shaderClass = eHWSC_Vertex; validShaderStages; shaderClass = EHWShaderClass(shaderClass + 1), validShaderStages >>= 1)
 		{
-			if (bindPoint.stages & SHADERSTAGE_FROM_SHADERCLASS(shaderClass))
+			if (validShaderStages & 1)
 			{
 				auto insertResult = usedShaderBindSlots[uint8(bindPoint.slotType)][shaderClass].insert(std::make_pair(bindPoint.slotNumber, resource));
 				if (insertResult.second == false)

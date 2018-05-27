@@ -73,8 +73,8 @@ public:
 
 private:
 	CHashedString m_ResponseToTest;
-	int           m_minExecutions;
-	int           m_maxExecutions;
+	int m_minExecutions;
+	int m_maxExecutions;
 };
 
 //////////////////////////////////////////////////////////////////////////
@@ -94,12 +94,12 @@ public:
 
 private:
 	CHashedString m_responseToReuse;
-	ResponsePtr   m_pCachedResponse;
+	ResponsePtr m_pCachedResponse;
 };
 
 //////////////////////////////////////////////////////////////////////////
 // Checks if the time (stored in variable) is in the specified range
-class CTimeSinceCondition final : public IVariableUsingBase, public DRS::IResponseCondition
+class CTimeSinceCondition final : public DRS::IResponseCondition, public IVariableUsingBase
 {
 public:
 	CTimeSinceCondition() { m_minTime = 5.0f; m_maxTime = -1.0f; }
@@ -133,8 +133,8 @@ public:
 
 protected:
 	CHashedString m_responseId;
-	float         m_minTime;
-	float         m_maxTime;
+	float m_minTime;
+	float m_maxTime;
 };
 
 //////////////////////////////////////////////////////////////////////////
@@ -161,8 +161,8 @@ public:
 	//////////////////////////////////////////////////////////
 
 private:
-	IGameToken*    m_pCachedToken;
-	string         m_tokenName;
+	IGameToken* m_pCachedToken;
+	string m_tokenName;
 
 	CVariableValue m_minValue;
 	CVariableValue m_maxValue;

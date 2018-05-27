@@ -259,8 +259,9 @@ int CXConsole::con_restricted = 0;
 //////////////////////////////////////////////////////////////////////
 // Construction/Destruction
 //////////////////////////////////////////////////////////////////////
-CXConsole::CXConsole()
+CXConsole::CXConsole(CSystem& system)
 	: m_managedConsoleCommandListeners(1)
+	, m_system(system)
 {
 	m_fRepeatTimer = 0;
 	m_pSysDeactivateConsole = 0;
@@ -280,7 +281,6 @@ CXConsole::CXConsole()
 	m_bActivationKeyEnable = true;
 	m_bIsProcessingGroup = false;
 	m_sdScrollDir = sdNONE;
-	m_pSystem = NULL;
 	m_bDrawCursor = true;
 	m_fCursorBlinkTimer = 0;
 
@@ -406,22 +406,8 @@ void Command_DumpVars(IConsoleCmdArgs* Cmd)
 #endif
 
 //////////////////////////////////////////////////////////////////////////
-void CXConsole::Init(CSystem* pSystem)
+void CXConsole::PreProjectSystemInit()
 {
-	m_pSystem = pSystem;
-	if (pSystem->GetICryFont())
-		m_pFont = pSystem->GetICryFont()->GetFont("default");
-	m_pRenderer = pSystem->GetIRenderer();
-	m_pNetwork = gEnv->pNetwork;  // EvenBalance - M. Quinn
-	m_pInput = pSystem->GetIInput();
-	m_pTimer = pSystem->GetITimer();
-
-	if (m_pInput)
-	{
-		// Assign this class as input listener.
-		m_pInput->AddConsoleEventListener(this);
-	}
-
 #if !defined(_RELEASE) || defined(ENABLE_DEVELOPER_CONSOLE_IN_RELEASE)
 	const int disableConsoleDefault = 0;
 	const int disableConsoleFlags = 0;
@@ -443,8 +429,8 @@ void CXConsole::Init(CSystem* pSystem)
 	REGISTER_CVAR(con_debug, 0, VF_CHEAT, "Log call stack on every GetCVar call");
 	REGISTER_CVAR(con_restricted, con_restricted, VF_RESTRICTEDMODE, "0=normal mode / 1=restricted access to the console");        // later on VF_RESTRICTEDMODE should be removed (to 0)
 
-	if (m_pSystem->IsDevMode()  // unrestricted console for -DEVMODE
-	    || gEnv->IsDedicated()) // unrestricted console for dedicated server
+	if (m_system.IsDevMode()  // unrestricted console for -DEVMODE
+		|| gEnv->IsDedicated()) // unrestricted console for dedicated server
 		con_restricted = 0;
 
 	// test cases -----------------------------------------------
@@ -479,7 +465,48 @@ void CXConsole::Init(CSystem* pSystem)
 	ResetAutoCompletion();
 	m_sInputBuffer = "";
 
-	// ----------------------------------------------------------
+	REGISTER_COMMAND("ConsoleShow", &ConsoleShow, VF_NULL, "Opens the console");
+	REGISTER_COMMAND("ConsoleHide", &ConsoleHide, VF_NULL, "Closes the console");
+
+#if ALLOW_AUDIT_CVARS
+	REGISTER_COMMAND("audit_cvars", &Command_AuditCVars, VF_NULL, "Logs all console commands and cvars");
+#endif // ALLOW_AUDIT_CVARS
+
+#if !defined(_RELEASE) && !(CRY_PLATFORM_LINUX || CRY_PLATFORM_ANDROID) && !CRY_PLATFORM_APPLE
+	REGISTER_COMMAND("DumpCommandsVars", &Command_DumpCommandsVars, VF_NULL,
+		"This console command dumps all console variables and commands to disk\n"
+		"DumpCommandsVars [prefix]");
+	REGISTER_COMMAND("DumpVars", &Command_DumpVars, VF_NULL,
+		"This console command dumps all console variables to disk\n"
+		"DumpVars [IncludeCheatCvars]");
+#endif
+
+	REGISTER_COMMAND("Bind", &Bind, VF_NULL, "");
+	REGISTER_COMMAND("wait_seconds", &Command_SetWaitSeconds, VF_BLOCKFRAME,
+		"Forces the console to wait for a given number of seconds before the next deferred command is processed\n"
+		"Works only in deferred command mode");
+	REGISTER_COMMAND("wait_frames", &Command_SetWaitFrames, VF_BLOCKFRAME,
+		"Forces the console to wait for a given number of frames before the next deferred command is processed\n"
+		"Works only in deferred command mode");
+
+	CConsoleBatchFile::Init();
+}
+
+//////////////////////////////////////////////////////////////////////////
+void CXConsole::PostRendererInit()
+{
+	if (m_system.GetICryFont())
+		m_pFont = m_system.GetICryFont()->GetFont("default");
+	m_pRenderer = m_system.GetIRenderer();
+	m_pNetwork = gEnv->pNetwork;  // EvenBalance - M. Quinn
+	m_pInput = m_system.GetIInput();
+	m_pTimer = m_system.GetITimer();
+
+	if (m_pInput)
+	{
+		// Assign this class as input listener.
+		m_pInput->AddConsoleEventListener(this);
+	}
 
 	if (m_pRenderer)
 	{
@@ -488,7 +515,7 @@ void CXConsole::Init(CSystem* pSystem)
 		ITexture* pTex = 0;
 
 		// This texture is already loaded by the renderer. It's ref counted so there is no wasted space.
-		pTex = pSystem->GetIRenderer()->EF_LoadTexture("%ENGINE%/EngineAssets/Textures/White.dds", FT_DONT_STREAM | FT_DONT_RELEASE);
+		pTex = m_system.GetIRenderer()->EF_LoadTexture("%ENGINE%/EngineAssets/Textures/White.dds", FT_DONT_STREAM | FT_DONT_RELEASE);
 		if (pTex)
 			m_nWhiteTexID = pTex->GetTextureID();
 	}
@@ -500,38 +527,12 @@ void CXConsole::Init(CSystem* pSystem)
 	if (gEnv->IsDedicated())
 		m_bConsoleActive = true;
 
-	REGISTER_COMMAND("ConsoleShow", &ConsoleShow, VF_NULL, "Opens the console");
-	REGISTER_COMMAND("ConsoleHide", &ConsoleHide, VF_NULL, "Closes the console");
-
-#if ALLOW_AUDIT_CVARS
-	REGISTER_COMMAND("audit_cvars", &Command_AuditCVars, VF_NULL, "Logs all console commands and cvars");
-#endif // ALLOW_AUDIT_CVARS
-
-#if !defined(_RELEASE) && !(CRY_PLATFORM_LINUX || CRY_PLATFORM_ANDROID) && !CRY_PLATFORM_APPLE
-	REGISTER_COMMAND("DumpCommandsVars", &Command_DumpCommandsVars, VF_NULL,
-	                 "This console command dumps all console variables and commands to disk\n"
-	                 "DumpCommandsVars [prefix]");
-	REGISTER_COMMAND("DumpVars", &Command_DumpVars, VF_NULL,
-	                 "This console command dumps all console variables to disk\n"
-	                 "DumpVars [IncludeCheatCvars]");
-#endif
-
-	REGISTER_COMMAND("Bind", &Bind, VF_NULL, "");
-	REGISTER_COMMAND("wait_seconds", &Command_SetWaitSeconds, VF_BLOCKFRAME,
-	                 "Forces the console to wait for a given number of seconds before the next deferred command is processed\n"
-	                 "Works only in deferred command mode");
-	REGISTER_COMMAND("wait_frames", &Command_SetWaitFrames, VF_BLOCKFRAME,
-	                 "Forces the console to wait for a given number of frames before the next deferred command is processed\n"
-	                 "Works only in deferred command mode");
-
-	CConsoleBatchFile::Init();
-
 	if (con_showonload)
 	{
 		ShowConsole(true);
 	}
 
-	pSystem->GetIRemoteConsole()->RegisterListener(this, "CXConsole");
+	m_system.GetIRemoteConsole()->RegisterListener(this, "CXConsole");
 }
 
 void CXConsole::LogChangeMessage(const char* name, const bool isConst, const bool isCheat, const bool isReadOnly, const bool isDeprecated,
@@ -1200,7 +1201,7 @@ ICVar* CXConsole::GetCVar(const char* sName)
 	{
 		// Log call stack on get cvar.
 		CryLog("GetCVar(\"%s\") called", sName);
-		m_pSystem->debug_LogCallStack();
+		m_system.debug_LogCallStack();
 	}
 
 	// Fast map lookup for case-sensitive match.
@@ -1236,20 +1237,6 @@ ICVar* CXConsole::GetCVar(const char* sName)
 }
 
 //////////////////////////////////////////////////////////////////////////
-char* CXConsole::GetVariable(const char* szVarName, const char* szFileName, const char* def_val)
-{
-	assert(m_pSystem);
-	return 0;
-}
-
-//////////////////////////////////////////////////////////////////////////
-float CXConsole::GetVariable(const char* szVarName, const char* szFileName, float def_val)
-{
-	assert(m_pSystem);
-	return 0;
-}
-
-//////////////////////////////////////////////////////////////////////////
 bool CXConsole::GetStatus()
 {
 	return m_bConsoleActive;
@@ -1264,14 +1251,10 @@ void CXConsole::Clear()
 //////////////////////////////////////////////////////////////////////////
 void CXConsole::Update()
 {
-	// Repeat GetIRenderer (For Editor).
-	if (!m_pSystem)
-		return;
-
 	// Execute the deferred commands
 	ExecuteDeferredCommands();
 
-	m_pRenderer = m_pSystem->GetIRenderer();
+	m_pRenderer = m_system.GetIRenderer();
 
 	if (!m_bConsoleActive)
 		m_nRepeatEvent.keyId = eKI_Unknown;
@@ -1403,14 +1386,13 @@ bool CXConsole::OnInputEvent(const SInputEvent& event)
 		//switch process or page or other things
 		m_sInputBuffer = "";
 		m_nCursorPos = 0;
-		if (m_pSystem)
-		{
-			ShowConsole(false);
 
-			ISystemUserCallback* pCallback = ((CSystem*)m_pSystem)->GetUserCallback();
-			if (pCallback)
-				pCallback->OnProcessSwitch();
-		}
+		ShowConsole(false);
+
+		ISystemUserCallback* pCallback = m_system.GetUserCallback();
+		if (pCallback)
+			pCallback->OnProcessSwitch();
+
 		return false;
 	}
 
@@ -1639,14 +1621,13 @@ const char* CXConsole::GetHistoryElement(const bool bUpOrDown)
 //////////////////////////////////////////////////////////////////////////
 void CXConsole::Draw()
 {
-	//ShowConsole(true);
-	if (!m_pSystem || !m_nTempScrollMax)
+	if (!m_nTempScrollMax)
 		return;
 
 	if (!m_pRenderer)
 	{
 		// For Editor.
-		m_pRenderer = m_pSystem->GetIRenderer();
+		m_pRenderer = m_system.GetIRenderer();
 	}
 
 	if (!m_pRenderer)
@@ -1655,10 +1636,10 @@ void CXConsole::Draw()
 	if (!m_pFont)
 	{
 		// For Editor.
-		ICryFont* pICryFont = m_pSystem->GetICryFont();
+		ICryFont* pICryFont = m_system.GetICryFont();
 
 		if (pICryFont)
-			m_pFont = m_pSystem->GetICryFont()->GetFont("default");
+			m_pFont = m_system.GetICryFont()->GetFont("default");
 	}
 
 	ScrollConsole();
@@ -2288,10 +2269,10 @@ void CXConsole::ExecuteStringInternal(const char* command, const bool bFromConso
 		{
 			AddLine(command);
 
-			if (m_pSystem->IsDevMode())
+			if (m_system.IsDevMode())
 			{
-				if (m_pSystem->GetIScriptSystem())
-					m_pSystem->GetIScriptSystem()->ExecuteBuffer(command + 1, strlen(command) - 1);
+				if (m_system.GetIScriptSystem())
+					m_system.GetIScriptSystem()->ExecuteBuffer(command + 1, strlen(command) - 1);
 				m_bDrawCursor = 0;
 			}
 			else
@@ -2548,7 +2529,7 @@ void CXConsole::ExecuteCommand(CConsoleCommand& cmd, string& str, bool bIgnoreDe
 		gEnv->pSystem->debug_LogCallStack();
 	#endif // LOG_CVAR_INFRACTIONS_CALLSTACK
 #endif   // LOG_CVAR_INFRACTIONS
-		if (!(gEnv->IsEditor()) && !(m_pSystem->IsDevMode()) && !bIgnoreDevMode)
+		if (!(gEnv->IsEditor()) && !(m_system.IsDevMode()) && !bIgnoreDevMode)
 		{
 			return;
 		}
@@ -2646,8 +2627,8 @@ void CXConsole::ExecuteCommand(CConsoleCommand& cmd, string& str, bool bIgnoreDe
 		}
 	}
 
-	if (m_pSystem->GetIScriptSystem())
-		m_pSystem->GetIScriptSystem()->ExecuteBuffer(buf.c_str(), buf.length());
+	if (m_system.GetIScriptSystem())
+		m_system.GetIScriptSystem()->ExecuteBuffer(buf.c_str(), buf.length());
 	m_bDrawCursor = 0;
 }
 
@@ -3029,10 +3010,10 @@ void CXConsole::TickProgressBar()
 	if (m_nProgressRange != 0 && m_nProgressRange > m_nProgress)
 	{
 		m_nProgress++;
-		m_pSystem->UpdateLoadingScreen();
+		m_system.UpdateLoadingScreen();
 	}
-	if (m_pSystem->GetIRenderer())
-		m_pSystem->GetIRenderer()->FlushRTCommands(false, false, false); // Try to switch render thread contexts to make RT always busy during loading
+	if (m_system.GetIRenderer())
+		m_system.GetIRenderer()->FlushRTCommands(false, false, false); // Try to switch render thread contexts to make RT always busy during loading
 }
 
 //////////////////////////////////////////////////////////////////////////
@@ -3040,12 +3021,12 @@ void CXConsole::SetLoadingImage(const char* szFilename)
 {
 	ITexture* pTex = 0;
 
-	pTex = m_pSystem->GetIRenderer()->EF_LoadTexture(szFilename, FT_DONT_STREAM | FT_NOMIPS);
+	pTex = m_system.GetIRenderer()->EF_LoadTexture(szFilename, FT_DONT_STREAM | FT_NOMIPS);
 
 	if (!pTex || (pTex->GetFlags() & FT_FAILED))
 	{
 		SAFE_RELEASE(pTex);
-		pTex = m_pSystem->GetIRenderer()->EF_LoadTexture("Textures/Console/loadscreen_default.dds", FT_DONT_STREAM | FT_NOMIPS);
+		pTex = m_system.GetIRenderer()->EF_LoadTexture("Textures/Console/loadscreen_default.dds", FT_DONT_STREAM | FT_NOMIPS);
 	}
 
 	if (pTex)

@@ -1,16 +1,6 @@
 // Copyright 2001-2018 Crytek GmbH / Crytek Group. All rights reserved.
 
 #pragma once
-////////////////////////////////////////////////////////////////////////////
-//
-//  Crytek Engine Source File.
-//  Copyright (C), Crytek Studios, 2002.
-// -------------------------------------------------------------------------
-//  File name:   splitterwndex.h
-//  Created:     24/4/2002 by Timur.
-//  Description: CSplitterCtrl (former CSplitterWndEx) class.
-//
-////////////////////////////////////////////////////////////////////////////
 
 class PLUGIN_API CSplitterCtrl : public CSplitterWnd
 {
@@ -37,4 +27,3 @@ protected:
 	virtual BOOL OnNotify(WPARAM wParam, LPARAM lParam, LRESULT* pResult);
 	bool m_bTrackable;
 };
-

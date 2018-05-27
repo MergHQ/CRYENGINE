@@ -1,7 +1,5 @@
 // Copyright 2001-2018 Crytek GmbH / Crytek Group. All rights reserved.
 
-
-// Copyright 2001-2016 Crytek GmbH / Crytek Group. All rights reserved.
 #pragma once
 
 #include "EditorCommonAPI.h"
@@ -89,11 +87,11 @@ private:
 	SPreferencePage() {}
 
 	friend class CPreferences;
-	void SetName(const string& name) { m_name = name; }
-	void SetPath(const string& path) { m_path = path; }
+	void    SetName(const string& name) { m_name = name; }
+	void    SetPath(const string& path) { m_path = path; }
 
 	QString GetSerializedProperties();
-	void FromSerializedProperties(const QByteArray& jsonBlob);
+	void    FromSerializedProperties(const QByteArray& jsonBlob);
 
 public:
 	CCrySignal<void()> signalSettingsChanged;
@@ -101,8 +99,8 @@ public:
 private:
 	CCrySignal<void()> signalRequestReset;
 
-	string m_name;
-	string m_path;
+	string             m_name;
+	string             m_path;
 };
 
 class EDITOR_COMMON_API CPreferences
@@ -123,7 +121,7 @@ public:
 		pPreferencePage->signalSettingsChanged.Connect(std::function<void()>([this]() { signalSettingsChanged(); }));
 		pPreferencePage->signalRequestReset.Connect(std::function<void()>([pPreferencePage]()
 		{
-			*pPreferencePage =  Type();
+			*pPreferencePage = Type();
 			pPreferencePage->signalSettingsChanged();
 		}));
 
@@ -134,7 +132,8 @@ public:
 	void RegisterPage(Type* pPreferencePage)
 	{
 		pPreferencePage->signalSettingsChanged.Connect(std::function<void()>([this]() { signalSettingsChanged(); }));
-		pPreferencePage->signalRequestReset.Connect(std::function<void()>([pPreferencePage]() {
+		pPreferencePage->signalRequestReset.Connect(std::function<void()>([pPreferencePage]()
+		{
 			*pPreferencePage = Type();
 			pPreferencePage->signalSettingsChanged();
 		}));
@@ -148,11 +147,11 @@ public:
 		return new QPreferencePage(GetPages(path), path);
 	}
 
-	const std::map<string, std::vector<SPreferencePage*>>& GetPages() const { return m_preferences; }
+	const std::map<string, std::vector<SPreferencePage*>>& GetPages() const  { return m_preferences; }
 
-	bool         IsLoading() const { return m_bIsLoading; }
-	void         Reset(const char* path);
-	void         Save();
+	bool                                                   IsLoading() const { return m_bIsLoading; }
+	void                                                   Reset(const char* path);
+	void                                                   Save();
 
 private:
 	void         Load();
@@ -177,4 +176,3 @@ ILINE bool Serialize(yasli::Archive& ar, SPreferencePage* val, const char* name,
 
 	return ar(*val, name ? name : val->GetFullPath().c_str(), label ? label : val->GetName().c_str());
 }
-

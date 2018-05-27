@@ -1,13 +1,6 @@
 // Copyright 2001-2018 Crytek GmbH / Crytek Group. All rights reserved.
 
 #pragma once
-////////////////////////////////////////////////////////////////////////////
-//  Crytek Engine Source File.
-//  (c) 2001 - 2012 Crytek GmbH
-// -------------------------------------------------------------------------
-//  File name:   VertexSnappingMode.h
-//  Created:     Sep/12/2012 by Jaesik.
-////////////////////////////////////////////////////////////////////////////
 
 #include <CrySerialization/yasli/decorators/Range.h>
 
@@ -86,4 +79,3 @@ private:
 	std::vector<AABB>                  m_DebugBoxes;
 	std::map<CBaseObjectPtr, CKDTree*> m_ObjectKdTreeMap;
 };
-

@@ -2,6 +2,8 @@
 
 #pragma once
 
+#define DEVICE_MANAGER_USE_TYPE_DELEGATES 1
+
 #if CRY_PLATFORM_ORBIS && !CRY_RENDERER_GNM
 	#define DEVICE_MANAGER_IMMEDIATE_STATE_WRITE 1
 #else
@@ -31,6 +33,15 @@ public:
 		TYPE_CS,
 		MAX_TYPE,
 	};
+
+	static_assert(
+		int(eHWSC_Vertex  ) == int(TYPE_VS) &&
+		int(eHWSC_Pixel   ) == int(TYPE_PS) &&
+		int(eHWSC_Geometry) == int(TYPE_GS) &&
+		int(eHWSC_Domain  ) == int(TYPE_DS) &&
+		int(eHWSC_Hull    ) == int(TYPE_HS) &&
+		int(eHWSC_Compute ) == int(TYPE_CS),
+		"SHADER_TYPE enumeration should match EHWShaderClass for performance reasons");
 
 	enum
 	{

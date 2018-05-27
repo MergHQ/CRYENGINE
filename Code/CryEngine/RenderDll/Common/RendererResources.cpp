@@ -492,9 +492,9 @@ void CRendererResources::LoadDefaultSystemTextures()
 			s_ptexVelocityTiles[0] = CTexture::GetOrCreateTextureObject("$VelocityTilesTmp0", 0, 0, 1, eTT_2D, FT_DONT_RELEASE | FT_DONT_STREAM | FT_USAGE_RENDERTARGET, eTF_Unknown, -1);
 			s_ptexVelocityTiles[1] = CTexture::GetOrCreateTextureObject("$VelocityTilesTmp1", 0, 0, 1, eTT_2D, FT_DONT_RELEASE | FT_DONT_STREAM | FT_USAGE_RENDERTARGET, eTF_Unknown, -1);
 			s_ptexVelocityTiles[2] = CTexture::GetOrCreateTextureObject("$VelocityTiles", 0, 0, 1, eTT_2D, FT_DONT_RELEASE | FT_DONT_STREAM | FT_USAGE_RENDERTARGET, eTF_Unknown, -1);
-			s_ptexVelocityObjects[0] = CTexture::GetOrCreateTextureObject("$VelocityObjects", 0, 0, 1, eTT_2D, FT_DONT_RELEASE | FT_DONT_STREAM | FT_USAGE_RENDERTARGET, eTF_Unknown, -1);
+			s_ptexVelocityObjects[0] = CTexture::GetOrCreateTextureObject("$VelocityObjects", 0, 0, 1, eTT_2D, FT_DONT_RELEASE | FT_DONT_STREAM | FT_USAGE_RENDERTARGET | FT_USAGE_UNORDERED_ACCESS, eTF_Unknown, -1);
 			// Only used for VR, but we need to support runtime switching
-			s_ptexVelocityObjects[1] = CTexture::GetOrCreateTextureObject("$VelocityObjects_R", 0, 0, 1, eTT_2D, FT_DONT_RELEASE | FT_DONT_STREAM | FT_USAGE_RENDERTARGET, eTF_Unknown, -1);
+			s_ptexVelocityObjects[1] = CTexture::GetOrCreateTextureObject("$VelocityObjects_R", 0, 0, 1, eTT_2D, FT_DONT_RELEASE | FT_DONT_STREAM | FT_USAGE_RENDERTARGET | FT_USAGE_UNORDERED_ACCESS, eTF_Unknown, -1);
 
 			s_ptexBackBuffer = CTexture::GetOrCreateTextureObject("$BackBuffer", 0, 0, 1, eTT_2D, FT_DONT_RELEASE | FT_DONT_STREAM | FT_USAGE_RENDERTARGET, eTF_Unknown, TO_BACKBUFFERMAP);
 
@@ -881,10 +881,10 @@ void CRendererResources::CreateDeferredMaps(int resourceWidth, int resourceHeigh
 		SD3DPostEffectsUtils::GetOrCreateRenderTarget("$SceneSpecularESRAM", s_ptexSceneSpecularESRAM, width, height, Clr_Empty, true, false, eTF_R8G8B8A8, -1);
 #endif
 
-		SD3DPostEffectsUtils::GetOrCreateRenderTarget("$VelocityObjects", s_ptexVelocityObjects[0], width, height, Clr_Transparent, true, false, eTF_R16G16F, -1);
+		SD3DPostEffectsUtils::GetOrCreateRenderTarget("$VelocityObjects", s_ptexVelocityObjects[0], width, height, Clr_Transparent, true, false, eTF_R16G16F, -1, FT_USAGE_UNORDERED_ACCESS);
 		if (gRenDev->IsStereoEnabled())
 		{
-			SD3DPostEffectsUtils::GetOrCreateRenderTarget("$VelocityObject_R", s_ptexVelocityObjects[1], width, height, Clr_Transparent, true, false, eTF_R16G16F, -1);
+			SD3DPostEffectsUtils::GetOrCreateRenderTarget("$VelocityObject_R", s_ptexVelocityObjects[1], width, height, Clr_Transparent, true, false, eTF_R16G16F, -1, FT_USAGE_UNORDERED_ACCESS);
 		}
 
 		SD3DPostEffectsUtils::GetOrCreateDepthStencil("$SceneDepthScaled", s_ptexSceneDepthScaled[0], width_r2, height_r2, Clr_FarPlane, false, false, preferredDepthFormat, -1, FT_USAGE_DEPTHSTENCIL);

@@ -17,7 +17,7 @@ namespace CryDRS
 class CVariable;
 class CResponseInstance;
 
-class CVariableSmallerCondition final : public IVariableUsingBase, public DRS::IResponseCondition
+class CVariableSmallerCondition final : public DRS::IResponseCondition, public IVariableUsingBase
 {
 public:
 	//////////////////////////////////////////////////////////
@@ -30,7 +30,7 @@ public:
 	CVariableValue m_value;
 };
 
-class CVariableLargerCondition final : public IVariableUsingBase, public DRS::IResponseCondition
+class CVariableLargerCondition final : public DRS::IResponseCondition, public IVariableUsingBase
 {
 public:
 	//////////////////////////////////////////////////////////
@@ -43,7 +43,7 @@ public:
 	CVariableValue m_value;
 };
 
-class CVariableEqualCondition final : public IVariableUsingBase, public DRS::IResponseCondition
+class CVariableEqualCondition final : public DRS::IResponseCondition, public IVariableUsingBase
 {
 public:
 	//////////////////////////////////////////////////////////
@@ -56,7 +56,7 @@ public:
 	CVariableValue m_value;
 };
 
-class CVariableRangeCondition final : public IVariableUsingBase, public DRS::IResponseCondition
+class CVariableRangeCondition final : public DRS::IResponseCondition, public IVariableUsingBase
 {
 public:
 	//////////////////////////////////////////////////////////

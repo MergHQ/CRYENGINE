@@ -35,7 +35,7 @@ void QTerrainSculptButtons::AddTool(CRuntimeClass* pRuntimeClass, const char* te
 	icon = "icons:TerrainEditor/" + icon;
 
 	QEditToolButton* pToolButton = new QEditToolButton(nullptr);
-	pToolButton->SetToolClass(pRuntimeClass, nullptr, &mTerrainBrush);
+	pToolButton->SetToolClass(pRuntimeClass);
 	pToolButton->setText(text);
 	pToolButton->setIcon(CryIcon(icon));
 	pToolButton->setIconSize(QSize(24, 24));

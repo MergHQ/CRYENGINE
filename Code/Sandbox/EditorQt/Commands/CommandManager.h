@@ -1,18 +1,7 @@
 // Copyright 2001-2018 Crytek GmbH / Crytek Group. All rights reserved.
 
 #pragma once
-////////////////////////////////////////////////////////////////////////////
-//
-//  Crytek Engine Source File.
-//  Copyright (C), Crytek Studios, 2002.
-// -------------------------------------------------------------------------
-//  Created:     4/7/2002 by Timur.
-//  Description: the command manager
-// -------------------------------------------------------------------------
-//  History:
-//	- 6/29/2011 Refactored by Jaewon for an intimate operation with the scripting system
-//
-////////////////////////////////////////////////////////////////////////////
+
 #include "ICommandManager.h"
 #include <CrySandbox/CrySignal.h>
 
@@ -97,4 +86,3 @@ protected:
 	void          LogCommand(const string& fullCmdName, const CCommand::CArgs& args) const;
 	string        ExecuteAndLogReturn(CCommand* pCommand, const CCommand::CArgs& args);
 };
-

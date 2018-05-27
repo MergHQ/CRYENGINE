@@ -1,13 +1,7 @@
 // Copyright 2001-2018 Crytek GmbH / Crytek Group. All rights reserved.
 
 #pragma  once
-//////////////////////////////////  CRYTEK  ////////////////////////////////
-//
-//  Crytek Engine Source File.
-//  Copyright (C), Crytek Studios, 2011.
-// -------------------------------------------------------------------------
-//  Author           : Jaewon Jung
-//  Time of creation : 8/15/2011   16:05
+
 //  Description      : A simple string class which is safe over a DLL boundary
 //  Notice           :
 //		- This uses LocalAlloc()/LocalFree() to guarantee consistent memory operations
@@ -212,4 +206,3 @@ bool operator!=(const dll_string_tpl<T>& lhs, const dll_string_tpl<T>& rhs)
 }
 
 typedef dll_string_tpl<char> dll_string;
-

@@ -1,13 +1,6 @@
 // Copyright 2001-2018 Crytek GmbH / Crytek Group. All rights reserved.
 
 #pragma once
-////////////////////////////////////////////////////////////////////////////
-//  Crytek Engine Source File.
-//  Copyright (C), Crytek Studios, 2011.
-// -------------------------------------------------------------------------
-//  File name:   LensFlareLightEntityTree.h
-//  Created:     18/Dec/2012 by Jaesik.
-////////////////////////////////////////////////////////////////////////////
 
 #include "ILensFlareListener.h"
 
@@ -32,4 +25,3 @@ protected:
 
 	void OnTvnItemDoubleClicked(NMHDR* pNMHDR, LRESULT* pResult);
 };
-

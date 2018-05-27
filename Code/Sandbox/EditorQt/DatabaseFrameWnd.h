@@ -1,13 +1,6 @@
 // Copyright 2001-2018 Crytek GmbH / Crytek Group. All rights reserved.
 
 #pragma once
-////////////////////////////////////////////////////////////////////////////
-//  Crytek Engine Source File.
-//  Copyright (C), Crytek Studios, 2011.
-// -------------------------------------------------------------------------
-//  File name:   DatabaseFrameWnd.h
-//  Created:     10/Dec/2012 by Jaesik.
-////////////////////////////////////////////////////////////////////////////
 
 #include "Dialogs/BaseFrameWnd.h"
 class CBaseLibrary;
@@ -50,30 +43,30 @@ public:
 	virtual bool          SetItemName(CBaseLibraryItem* item, const CString& groupName, const CString& itemName);
 
 	// for CString conversion
-	inline CBaseLibrary* FindLibrary(const char*  libraryName)
+	inline CBaseLibrary* FindLibrary(const char* libraryName)
 	{
 		return FindLibrary(CString(libraryName));
 	}
-	inline CBaseLibrary* NewLibrary(const char*  libraryName)
+	inline CBaseLibrary* NewLibrary(const char* libraryName)
 	{
 		return NewLibrary(CString(libraryName));
 	}
-	inline void          SelectLibrary(const char*  library, bool bForceSelect = false)
+	inline void SelectLibrary(const char* library, bool bForceSelect = false)
 	{
 		SelectLibrary(CString(library), bForceSelect);
 	}
-	inline bool			  SetItemName(CBaseLibraryItem* item, const char* groupName, const char* itemName)
+	inline bool SetItemName(CBaseLibraryItem* item, const char* groupName, const char* itemName)
 	{
 		return SetItemName(item, CString(groupName), CString(itemName));
 	}
 
-	void                  DoesItemExist(const string& itemName, bool& bOutExist) const;
-	void                  DoesGroupExist(const string& groupName, bool& bOutExist) const;
-	void                  OnSetModifedCurrentLibrary(bool modified);
+	void         DoesItemExist(const string& itemName, bool& bOutExist) const;
+	void         DoesGroupExist(const string& groupName, bool& bOutExist) const;
+	void         OnSetModifedCurrentLibrary(bool modified);
 
-	virtual void          OnEditorNotifyEvent(EEditorNotifyEvent event);
+	virtual void OnEditorNotifyEvent(EEditorNotifyEvent event);
 
-	CString               GetSelectedLibraryName() const
+	CString      GetSelectedLibraryName() const
 	{
 		return m_selectedLib;
 	}
@@ -127,7 +120,7 @@ protected:
 
 	void                 LoadLibrary();
 
-	string              MakeValidName(const string& candidateName, Functor2<const string&, bool&>& cb) const;
+	string               MakeValidName(const string& candidateName, Functor2<const string&, bool&>& cb) const;
 
 	virtual CTreeCtrl&   GetTreeCtrl()
 	{
@@ -177,4 +170,3 @@ protected:
 	ItemsToTreeMap       m_itemsToTree;
 	CString              m_selectedGroup;
 };
-

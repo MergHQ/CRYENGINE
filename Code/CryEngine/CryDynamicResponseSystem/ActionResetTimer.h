@@ -15,7 +15,7 @@ namespace CryDRS
 {
 class CVariableCollection;
 
-class CActionResetTimerVariable final : public IVariableUsingBase, public DRS::IResponseAction
+class CActionResetTimerVariable final : public DRS::IResponseAction, public IVariableUsingBase
 {
 public:
 	CActionResetTimerVariable() = default;

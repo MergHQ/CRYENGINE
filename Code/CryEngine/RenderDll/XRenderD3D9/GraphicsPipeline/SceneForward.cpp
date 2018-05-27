@@ -312,7 +312,17 @@ bool CSceneForwardStage::CreatePipelineState(const SGraphicsPipelineStateDescrip
 			else
 			{
 				psoDesc.m_RenderState = (psoDesc.m_RenderState & ~(GS_BLEND_MASK | GS_DEPTHWRITE | GS_DEPTHFUNC_MASK | GS_STENCIL));
-				psoDesc.m_RenderState |= GS_DEPTHFUNC_LEQUAL | GS_BLSRC_SRCALPHA | GS_BLDST_ONEMINUSSRCALPHA | GS_NOCOLMASK_A;
+
+				if (shaderFlags2 & EF2_DEPTH_FIXUP)
+				{
+					psoDesc.m_RenderState |= GS_DEPTHFUNC_LEQUAL;
+					psoDesc.m_RenderState |= GS_BLSRC_SRC1ALPHA | GS_BLDST_ONEMINUSSRC1ALPHA | GS_BLALPHA_MIN;
+				}
+				else
+				{
+					psoDesc.m_RenderState |= GS_DEPTHFUNC_LEQUAL | GS_BLSRC_SRCALPHA | GS_BLDST_ONEMINUSSRCALPHA | GS_NOCOLMASK_A;
+				}
+
 				psoDesc.m_ShaderFlags_RT |= g_HWSR_MaskBit[HWSR_ALPHABLEND];
 			}
 
@@ -451,6 +461,11 @@ bool CSceneForwardStage::PreparePerPassResources(bool bOnInit, bool bShadowMask,
 			pResources->SetTexture(39, CRendererResources::s_ptexNoise3D, EDefaultResourceViews::Default, EShaderStage_AllWithoutCompute);
 			pResources->SetTexture(40, CRendererResources::s_ptexEnvironmentBRDF, EDefaultResourceViews::Default, EShaderStage_AllWithoutCompute);
 			pResources->SetTexture(45, (pRenderView && pRenderView->IsRecursive()) ? CRendererResources::s_ptexBlackCM : CRendererResources::s_ptexDefaultProbeCM, EDefaultResourceViews::Default, EShaderStage_AllWithoutCompute);
+
+			if (i == 1) // Transparent pass only: allow writing motion vectors
+			{
+				pResources->SetTexture(2, CRendererResources::s_ptexVelocityObjects[0], EDefaultResourceViews::UnorderedAccess, EShaderStage_Pixel);
+			}			
 		}
 
 		// Particle resources

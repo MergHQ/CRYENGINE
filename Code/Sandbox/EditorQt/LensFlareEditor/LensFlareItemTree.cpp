@@ -18,14 +18,6 @@ ON_WM_MOUSEMOVE()
 ON_WM_KEYDOWN()
 END_MESSAGE_MAP()
 
-CLensFlareItemTree::CLensFlareItemTree()
-{
-}
-
-CLensFlareItemTree::~CLensFlareItemTree()
-{
-}
-
 void CLensFlareItemTree::OnLButtonDown(UINT nFlags, CPoint point)
 {
 	CUndo undo("Changed lens flare item");
@@ -181,4 +173,3 @@ void CLensFlareItemTree::UpdateDraggingFromOtherWindow()
 	if (bChanged)
 		RedrawWindow();
 }
-

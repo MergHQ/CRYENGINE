@@ -26,6 +26,26 @@ CDeviceGraphicsPSO_Vulkan::~CDeviceGraphicsPSO_Vulkan()
 	}
 }
 
+static struct
+{
+	ERenderPrimitiveType primitiveType;
+	VkPrimitiveTopology  primitiveTopology;
+	int                  controlPointCount;
+}
+topologyTypes[] =
+{
+	{ eptUnknown,                VK_PRIMITIVE_TOPOLOGY_MAX_ENUM, 0 },
+	{ eptTriangleList,           VK_PRIMITIVE_TOPOLOGY_TRIANGLE_LIST, 0 },
+	{ eptTriangleStrip,          VK_PRIMITIVE_TOPOLOGY_TRIANGLE_STRIP, 0 },
+	{ eptLineList,               VK_PRIMITIVE_TOPOLOGY_LINE_LIST, 0 },
+	{ eptLineStrip,              VK_PRIMITIVE_TOPOLOGY_LINE_STRIP, 0 },
+	{ eptPointList,              VK_PRIMITIVE_TOPOLOGY_POINT_LIST, 0 },
+	{ ept1ControlPointPatchList, VK_PRIMITIVE_TOPOLOGY_PATCH_LIST, 1 },
+	{ ept2ControlPointPatchList, VK_PRIMITIVE_TOPOLOGY_PATCH_LIST, 2 },
+	{ ept3ControlPointPatchList, VK_PRIMITIVE_TOPOLOGY_PATCH_LIST, 3 },
+	{ ept4ControlPointPatchList, VK_PRIMITIVE_TOPOLOGY_PATCH_LIST, 4 },
+};
+
 CDeviceGraphicsPSO::EInitResult CDeviceGraphicsPSO_Vulkan::Init(const CDeviceGraphicsPSODesc& psoDesc)
 {
 	m_bValid = false;
@@ -51,10 +71,10 @@ CDeviceGraphicsPSO::EInitResult CDeviceGraphicsPSO_Vulkan::Init(const CDeviceGra
 	const bool bDiscardRasterizer = (hwShaders[eHWSC_Pixel].pHwShader == nullptr) && (psoDesc.m_RenderState & GS_NODEPTHTEST) && !(psoDesc.m_RenderState & GS_DEPTHWRITE) && !(psoDesc.m_RenderState & GS_STENCIL);
 	const bool bUsingDynamicDepthBias = psoDesc.m_bDynamicDepthBias;
 	
-	VkPipelineShaderStageCreateInfo shaderStageCreateInfos[eHWSC_Num];
+	VkPipelineShaderStageCreateInfo shaderStageCreateInfos[eHWSC_NumGfx];
 
 	int validShaderCount = 0;
-	for (EHWShaderClass shaderClass = eHWSC_Vertex; shaderClass < eHWSC_Num; shaderClass = EHWShaderClass(shaderClass + 1))
+	for (EHWShaderClass shaderClass = eHWSC_Vertex; shaderClass < eHWSC_NumGfx; shaderClass = EHWShaderClass(shaderClass + 1))
 	{
 		m_pHwShaderInstances[shaderClass] = hwShaders[shaderClass].pHwShaderInstance;
 
@@ -184,47 +204,28 @@ CDeviceGraphicsPSO::EInitResult CDeviceGraphicsPSO_Vulkan::Init(const CDeviceGra
 	vertexInputStateCreateInfo.vertexAttributeDescriptionCount = vertexInputAttributeDescriptions.Num();
 	vertexInputStateCreateInfo.pVertexAttributeDescriptions = vertexInputAttributeDescriptions.Data();
 
-	if (!ValidateShadersAndTopologyCombination(psoDesc, m_pHwShaderInstances))
-		return EInitResult::ErrorShadersAndTopologyCombination;
-
-	VkPrimitiveTopology topology;
 	unsigned int controlPointCount = 0;
-	switch (psoDesc.m_PrimitiveType)
+	VkPrimitiveTopology topology = VK_PRIMITIVE_TOPOLOGY_MAX_ENUM;
+	// primitive topology
 	{
-	case eptTriangleList:
-		topology = VK_PRIMITIVE_TOPOLOGY_TRIANGLE_LIST;
-		break;
-	case eptTriangleStrip:
-		topology = VK_PRIMITIVE_TOPOLOGY_TRIANGLE_STRIP;
-		break;
-	case eptLineList:
-		topology = VK_PRIMITIVE_TOPOLOGY_LINE_LIST;
-		break;
-	case eptLineStrip:
-		topology = VK_PRIMITIVE_TOPOLOGY_LINE_STRIP;
-		break;
-	case eptPointList:
-		topology = VK_PRIMITIVE_TOPOLOGY_POINT_LIST;
-		break;
-	case ept1ControlPointPatchList:
-		topology = VK_PRIMITIVE_TOPOLOGY_PATCH_LIST;
-		controlPointCount = 1;
-		break;
-	case ept2ControlPointPatchList:
-		topology = VK_PRIMITIVE_TOPOLOGY_PATCH_LIST;
-		controlPointCount = 2;
-		break;
-	case ept3ControlPointPatchList:
-		topology = VK_PRIMITIVE_TOPOLOGY_PATCH_LIST;
-		controlPointCount = 3;
-		break;
-	case ept4ControlPointPatchList:
-		topology = VK_PRIMITIVE_TOPOLOGY_PATCH_LIST;
-		controlPointCount = 4;
-		break;
-	default:
-		CRY_ASSERT_MESSAGE(0, "Primitive type not supported");
-		return EInitResult::Failure;
+		if (!ValidateShadersAndTopologyCombination(psoDesc, m_pHwShaderInstances))
+			return EInitResult::ErrorShadersAndTopologyCombination;
+
+		for (int i = 0; i < CRY_ARRAY_COUNT(topologyTypes); ++i)
+		{
+			if (topologyTypes[i].primitiveType == psoDesc.m_PrimitiveType)
+			{
+				topology = topologyTypes[i].primitiveTopology;
+				controlPointCount = topologyTypes[i].controlPointCount;
+				break;
+			}
+		}
+
+		if (topology == VK_PRIMITIVE_TOPOLOGY_MAX_ENUM)
+		{
+			CRY_ASSERT_MESSAGE(0, "Primitive type not supported");
+			return EInitResult::Failure;
+		}
 	}
 
 	VkPipelineInputAssemblyStateCreateInfo inputAssemblyStateCreateInfo = {};

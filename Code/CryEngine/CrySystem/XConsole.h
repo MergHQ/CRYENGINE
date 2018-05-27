@@ -117,20 +117,20 @@ public:
 	typedef ConsoleBuffer::reverse_iterator ConsoleBufferRItor;
 
 	// constructor
-	CXConsole();
+	CXConsole(CSystem& system);
 	// destructor
 	virtual ~CXConsole();
 
-	//
-	void Init(CSystem* pSystem);
-	//
+	void PreProjectSystemInit();
+	void PostRendererInit();
+
 	void SetStatus(bool bActive) { m_bConsoleActive = bActive; }
 	bool GetStatus() const       { return m_bConsoleActive; }
-	//
+	
 	void FreeRenderResources();
-	//
+	
 	void Copy();
-	//
+	
 	void Paste();
 
 	// interface IConsole ---------------------------------------------------------
@@ -152,8 +152,6 @@ public:
 	virtual bool                   GetLineNo(const int indwLineNo, char* outszBuffer, const int indwBufferSize) const;
 	virtual int                    GetLineCount() const;
 	virtual ICVar*                 GetCVar(const char* name);
-	virtual char*                  GetVariable(const char* szVarName, const char* szFileName, const char* def_val);
-	virtual float                  GetVariable(const char* szVarName, const char* szFileName, float def_val);
 	virtual void                   PrintLine(const char* s);
 	virtual void                   PrintLinePlus(const char* s);
 	virtual bool                   GetStatus();
@@ -393,7 +391,7 @@ private: // ----------------------------------------------------------
 	bool                           m_bCheatHashDirty;
 	uint64                         m_nCheatHash;
 
-	CSystem*                       m_pSystem;
+	CSystem&                       m_system;
 	IFFont*                        m_pFont;
 	IRenderer*                     m_pRenderer;
 	IInput*                        m_pInput;
