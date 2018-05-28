@@ -393,7 +393,7 @@ CSystem::CSystem(const SSystemInitParams& startupParams)
 #if defined(ENABLE_LOADING_PROFILER)
 	if (!startupParams.bShaderCacheGen)
 	{
-		CBootProfiler::GetInstance().Init(this);
+		CBootProfiler::GetInstance().Init(this, startupParams.szSystemCmdLine);
 	}
 #endif
 
