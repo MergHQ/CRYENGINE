@@ -15,9 +15,9 @@ struct IInitializeUIInfo;
 
 class CNavigation;
 
-class IGameEngineListener
+struct IGameEngineListener
 {
-public:
+	virtual ~IGameEngineListener() {}
 	virtual void OnPreEditorUpdate() = 0;
 	virtual void OnPostEditorUpdate() = 0;
 };
@@ -25,6 +25,7 @@ public:
 //! Callback used by editor when initializing for info in UI dialogs
 struct IInitializeUIInfo
 {
+	virtual ~IInitializeUIInfo() {}
 	virtual void SetInfoText(const char* text) = 0;
 };
 

@@ -290,11 +290,11 @@ public:
 		CEntityScriptRegistry::Instance()->m_scriptRemoved.DisconnectObject(this);
 	}
 
-	ObjectType     GetObjectType()   { return superType->GetObjectType(); };
-	const char*    ClassName()       { return type; };
-	const char*    Category()        { return category; };
-	CRuntimeClass* GetRuntimeClass() { return superType->GetRuntimeClass(); };
-	const char*    GetTextureIcon()  { return superType->GetTextureIcon(); };
+	ObjectType     GetObjectType()   { return superType->GetObjectType(); }
+	const char*    ClassName()       { return type; }
+	const char*    Category()        { return category; }
+	CRuntimeClass* GetRuntimeClass() { return superType->GetRuntimeClass(); }
+	const char*    GetTextureIcon()  { return superType->GetTextureIcon(); }
 	const char*    GetFileSpec()
 	{
 		if (!fileSpec.IsEmpty())
@@ -439,8 +439,8 @@ public:
 			ExtractRemapingInformation(pObj, m_remaping);
 	}
 protected:
-	virtual const char* GetDescription() override { return "New BaseObject"; };
-	virtual const char* GetObjectName()  override { return m_object->GetName(); };
+	virtual const char* GetDescription() override { return "New BaseObject"; }
+	virtual const char* GetObjectName()  override { return m_object->GetName(); }
 
 	virtual void        Undo(bool bUndo) override
 	{
@@ -518,8 +518,8 @@ public:
 			ExtractRemapingInformation(m_object, m_remaping);
 	}
 protected:
-	virtual const char* GetDescription() override { return "Delete BaseObject"; };
-	virtual const char* GetObjectName() override  { return m_object->GetName(); };
+	virtual const char* GetDescription() override { return "Delete BaseObject"; }
+	virtual const char* GetObjectName() override  { return m_object->GetName(); }
 
 	virtual void        Undo(bool bUndo) override
 	{
@@ -586,8 +586,8 @@ public:
 		}
 	}
 protected:
-	virtual void        Release()                 { delete this; };
-	virtual const char* GetDescription() override { return "Select Objects"; };
+	virtual void        Release()                 { delete this; }
+	virtual const char* GetDescription() override { return "Select Objects"; }
 	virtual const char* GetObjectName() override
 	{
 		if (m_objectsGuids.size() == 1)
@@ -3858,7 +3858,7 @@ void CObjectManager::AssignLayerIDsToRenderNodes()
 }
 
 //////////////////////////////////////////////////////////////////////////
-void CObjectManager::SaveEntitiesInternalState(struct IDataWriteStream& writer) const
+void CObjectManager::SaveEntitiesInternalState(IDataWriteStream& writer) const
 {
 	// save layer state
 	{
@@ -4022,4 +4022,3 @@ void CObjectManager::SelectObjectInRect(CBaseObject* pObj, CViewport* view, HitC
 		}
 	}
 }
-

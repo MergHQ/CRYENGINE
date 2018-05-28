@@ -394,7 +394,6 @@ class PyGameGroup
 {
 public:
 	PyGameGroup(void* groupPtr, pSPyWrappedClass sharedPtr);
-	~PyGameGroup();
 
 	bool                       IsOpen();
 	std::vector<pPyGameObject> GetChildren();    // const { return m_groupChildren; }
@@ -416,7 +415,6 @@ class PyGameCamera
 {
 public:
 	PyGameCamera(void* cameraPtr, pSPyWrappedClass sharedPtr);
-	~PyGameCamera();
 
 	void UpdateCamera();
 
@@ -428,7 +426,6 @@ class PyGameVegetationInstance
 {
 public:
 	PyGameVegetationInstance(void* vegPtr);
-	~PyGameVegetationInstance();
 
 	Vec3  GetPosition() const             { return m_vegPosition; }
 	float GetAngle() const                { return m_vegAngle; }
@@ -455,7 +452,6 @@ class PyGameVegetation
 {
 public:
 	PyGameVegetation(void* vegPtr);
-	~PyGameVegetation();
 
 	void*                                  GetPtr() const          { return m_vegPtr; }
 	string                                 GetName() const         { return m_vegName; }
@@ -557,27 +553,6 @@ typedef SPyWrapperCache<pPyGameSubMaterial, CMaterial*>        PySubMatCache;
 typedef SPyWrapperCache<pPyGameTexture, SEfResTexture*>        PyTextureCache;
 typedef SPyWrapperCache<pPyGameVegetation, CVegetationObject*> PyVegCache;
 
-struct SPyCache
-{
-public:
-	SPyCache();
-	~SPyCache();
-	PyObjCache*     GetObjectCache() const      { return m_ObjCache; }
-	PyLyrCache*     GetLayerCache() const       { return m_LyrCache; }
-	PyMatCache*     GetMaterialCache() const    { return m_MatCache; }
-	PySubMatCache*  GetSubMaterialCache() const { return m_SubMatCache; }
-	PyTextureCache* GetTextureCache() const     { return m_TextureCache; }
-	PyVegCache*     GetVegetationCache() const  { return m_VegCache; }
-
-private:
-	PyObjCache*     m_ObjCache;
-	PyLyrCache*     m_LyrCache;
-	PyMatCache*     m_MatCache;
-	PySubMatCache*  m_SubMatCache;
-	PyTextureCache* m_TextureCache;
-	PyVegCache*     m_VegCache;
-};
-
 /////////////////////////////////////////////////////////////////////////
 // Python List and Dictionary Wrapper to avoid issues inherent in using the map indexing suite.
 template<class KEY, class VAL>
@@ -667,6 +642,7 @@ namespace PyScript
 {
 struct IPyScriptListener
 {
+	virtual ~IPyScriptListener() {}
 	virtual void OnStdOut(const char* pString) = 0;
 	virtual void OnStdErr(const char* pString) = 0;
 };

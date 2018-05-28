@@ -46,9 +46,9 @@ inline const EntityGUID& ToEntityGuid(CryGUID guid)
 	return guid;
 }
 
-class IEntityObjectListener
+struct IEntityObjectListener
 {
-public:
+	virtual ~IEntityObjectListener() {}
 	virtual void OnNameChanged(const char* pName) = 0;
 	virtual void OnSelectionChanged(const bool bSelected) = 0;
 	virtual void OnDone() = 0;
@@ -56,6 +56,7 @@ public:
 
 struct IPickEntitesOwner
 {
+	virtual ~IPickEntitesOwner() {}
 	virtual void         AddEntity(CBaseObject* const pBaseObject) = 0;
 	virtual CBaseObject* GetEntity(size_t const index) = 0;
 	virtual size_t       GetEntityCount() const = 0;
@@ -143,7 +144,7 @@ public:
 	virtual void             SetMaterial(IEditorMaterial* mtl);
 	virtual IEditorMaterial* GetRenderMaterial() const;
 
-	virtual bool ApplyAsset(const CAsset& asset, HitContext* pHitContext = nullptr) override;
+	virtual bool             ApplyAsset(const CAsset& asset, HitContext* pHitContext = nullptr) override;
 
 	virtual void             InvalidateGeometryFile(const string& gamePath) override;
 
@@ -248,10 +249,10 @@ public:
 	float            GetRatioLod() const          { return (float)mv_ratioLOD; }
 	float            GetRatioViewDist() const     { return (float)mv_ratioViewDist; }
 
-	CVarBlock*       GetProperties() const        { return m_pLuaProperties; };
-	CVarBlock*       GetProperties2() const       { return m_pLuaProperties2; };
+	CVarBlock*       GetProperties() const        { return m_pLuaProperties; }
+	CVarBlock*       GetProperties2() const       { return m_pLuaProperties2; }
 
-	bool             IsLight()  const             { return m_bLight;    }
+	bool             IsLight()  const             { return m_bLight; }
 
 	void             Validate();
 
@@ -383,7 +384,7 @@ protected:
 	virtual void BindIEntityChilds();
 	virtual void UnbindIEntity();
 
-	void         DrawAIInfo(SDisplayContext& dc, struct IAIObject* aiObj);
+	void         DrawAIInfo(SDisplayContext& dc, IAIObject* aiObj);
 
 	//////////////////////////////////////////////////////////////////////////
 	// Callbacks.
@@ -615,4 +616,3 @@ public:
 	const char*         GetFileSpec()                       { return "*EntityClass"; }
 	virtual const char* GetDataFilesFilterString() override { return not_implemented; }
 };
-

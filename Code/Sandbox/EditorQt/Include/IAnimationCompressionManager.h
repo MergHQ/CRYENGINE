@@ -4,6 +4,8 @@
 
 struct IAnimationCompressionManager
 {
+	virtual ~IAnimationCompressionManager() {}
+
 	virtual bool IsEnabled() const = 0;
 	virtual void UpdateLocalAnimations() = 0;
 
@@ -11,4 +13,3 @@ struct IAnimationCompressionManager
 	// "animations/alien/cerberus/cerberus_activation.caf"
 	virtual void QueueAnimationCompression(const char* animationName) = 0;
 };
-

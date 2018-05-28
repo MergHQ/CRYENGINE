@@ -24,6 +24,7 @@ struct SMTBox
 
 struct ITerrainMoveToolListener
 {
+	virtual ~ITerrainMoveToolListener() {}
 	virtual void OnMove(const Vec3 targetPos, Vec3 sourcePos, bool bIsCopy) = 0;
 };
 

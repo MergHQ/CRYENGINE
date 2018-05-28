@@ -23,7 +23,7 @@ public:
 	CArcBall3D()
 	{
 		InitArcBall();
-	};
+	}
 
 	void InitArcBall()
 	{
@@ -43,7 +43,6 @@ public:
 	//---------------------------------------------------------------
 	bool          ArcControl(const Matrix34& reference, const Ray& ray, uint32 mouseleft);
 	void          ArcRotation();
-	void          DrawSphere(const Matrix34& reference, const CCamera& cam, struct IRenderAuxGeom* pRenderer);
+	void          DrawSphere(const Matrix34& reference, const CCamera& cam, IRenderAuxGeom* pRenderer);
 	static uint32 IntersectSphereLineSegment(const Sphere& s, const Vec3& LineStart, const Vec3& LineEnd, Vec3& I);
 };
-

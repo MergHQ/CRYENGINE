@@ -2,7 +2,6 @@
 #pragma once
 
 #include "EditTool.h"
-#include <CryMath/Cry_Vector2.h>
 
 struct CTerrainBrush
 {
@@ -35,6 +34,7 @@ struct CTerrainBrush
 
 class CBrushTool : public CEditTool
 {
+	DECLARE_DYNAMIC(CBrushTool)
 public:
 	enum EPaintMode
 	{
@@ -42,8 +42,6 @@ public:
 		ePaintMode_Ready,
 		ePaintMode_InProgress,
 	};
-
-	DECLARE_DYNAMIC(CBrushTool)
 
 	explicit CBrushTool(const char* const szPersonalizationModuleName);
 	virtual ~CBrushTool() override;
@@ -87,17 +85,17 @@ private:
 
 class CTerrainTool : public CBrushTool
 {
-public:
 	DECLARE_DYNAMIC(CTerrainTool)
-	CTerrainTool(const char* const szPersonalizationModuleName) : CBrushTool{szPersonalizationModuleName} {}
+public:
+	explicit CTerrainTool(const char* const szPersonalizationModuleName) : CBrushTool(szPersonalizationModuleName) {}
 
 	virtual void DeleteThis() { delete this; }
 };
 
 class CFlattenTool : public CTerrainTool
 {
-public:
 	DECLARE_DYNCREATE(CFlattenTool)
+public:
 	CFlattenTool();
 
 	virtual string GetDisplayName() const override { return "Flatten Terrain"; }
@@ -109,10 +107,9 @@ public:
 
 class CSmoothTool : public CTerrainTool
 {
+	DECLARE_DYNCREATE(CSmoothTool)
 public:
 	CSmoothTool();
-
-	DECLARE_DYNCREATE(CSmoothTool)
 
 	virtual bool   OnKeyUp(CViewport* view, uint32 key, uint32 nRepCnt, uint32 nFlags) override;
 	virtual string GetDisplayName() const override { return "Smooth Terrain"; }
@@ -129,10 +126,9 @@ private:
 
 class CRiseLowerTool : public CTerrainTool, public IAutoEditorNotifyListener
 {
+	DECLARE_DYNCREATE(CRiseLowerTool)
 public:
 	CRiseLowerTool();
-
-	DECLARE_DYNCREATE(CRiseLowerTool)
 
 	virtual bool   MouseCallback(CViewport* view, EMouseEvent event, CPoint& point, int flags) override;
 	virtual bool   OnKeyDown(CViewport* view, uint32 nChar, uint32 nRepCnt, uint32 nFlags) override;
@@ -149,9 +145,9 @@ private:
 
 class CHolesTool : public CTerrainTool
 {
+	DECLARE_DYNAMIC(CHolesTool)
 public:
 	explicit CHolesTool(const char* const szPersonalizationModuleName);
-	DECLARE_DYNAMIC(CHolesTool)
 
 	virtual string GetDisplayName() const override { return "Terrain Holes"; }
 	virtual void   Serialize(Serialization::IArchive& ar) override;
@@ -166,9 +162,8 @@ protected:
 
 class CMakeHolesTool : public CHolesTool
 {
-public:
 	DECLARE_DYNCREATE(CMakeHolesTool)
-
+public:
 	CMakeHolesTool();
 
 	virtual string GetDisplayName() const override { return "Make Terrain Holes"; }
@@ -177,9 +172,8 @@ public:
 
 class CFillHolesTool : public CHolesTool
 {
-public:
 	DECLARE_DYNCREATE(CFillHolesTool)
-
+public:
 	CFillHolesTool();
 
 	virtual string GetDisplayName() const override { return "Fill Terrain Holes"; }

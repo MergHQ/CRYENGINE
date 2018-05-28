@@ -708,12 +708,13 @@ const bool CTerrainGIGen::PrepareBrush
 // Interface to indirect lighting engine (not used)
 struct IIndirectLighting
 {
+	virtual ~IIndirectLighting() {}
 	struct SVoxelInfo
 	{
 		IRenderNode* pRenderNode;
 		IRenderMesh* pRenderMesh;
 		Matrix34     mat34;
-		SVoxelInfo() : pRenderNode(NULL), pRenderMesh(NULL)
+		SVoxelInfo() : pRenderNode(nullptr), pRenderMesh(nullptr)
 		{
 			mat34.SetIdentity();
 		}
@@ -2598,4 +2599,3 @@ const bool CTerrainGIGen::Generate
 
 	return true;
 }
-

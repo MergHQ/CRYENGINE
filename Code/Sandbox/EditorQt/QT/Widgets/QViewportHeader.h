@@ -2,19 +2,19 @@
 
 #pragma once
 
+#include <QDialog>
 #include <QFrame>
 #include <QMenu>
-#include <QDialog>
 
-class QToolButton;
+class CameraSpeedPopup;
+class CLevelEditorViewport;
+class CPopupMenuItem;
 class QLabel;
 class QLineEdit;
-class QSpinBox;
-class CPopupMenuItem;
-class CLevelEditorViewport;
 class QPushButton;
+class QSpinBox;
+class QToolButton;
 class QViewportHeader;
-class CameraSpeedPopup;
 
 //////////////////////////////////////////////////////////////////////////
 
@@ -98,7 +98,7 @@ private:
 	void         SetViewportFOV(float fov);
 	float        GetViewportFOV();
 
-	void         OnMenuViewSelected(struct IViewPaneClass* viewClass);
+	void         OnMenuViewSelected(IViewPaneClass* viewClass);
 
 	friend class QViewportTitleMenu;
 private:
@@ -131,4 +131,3 @@ private:
 	string       m_viewPaneClass;
 	uint64       m_displayInfoFuncIdx;
 };
-

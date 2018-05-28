@@ -3,9 +3,9 @@
 
 #include "EntityObject.h"
 
-class ICameraObjectListener
+struct ICameraObjectListener
 {
-public:
+	virtual ~ICameraObjectListener() {}
 	virtual void OnFovChange(const float fov)                                                                                                      {}
 	virtual void OnNearZChange(const float nearZ)                                                                                                  {}
 	virtual void OnFarZChange(const float farZ)                                                                                                    {}

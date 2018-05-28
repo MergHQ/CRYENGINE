@@ -4,6 +4,7 @@
 
 struct ILevelIndependentFileModule
 {
+	virtual ~ILevelIndependentFileModule() {}
 	// this function should prompt some message box if changed files need to be saved
 	// if return false, editor will not continue with current action (e.g close the editor)
 	virtual bool PromptChanges() = 0;

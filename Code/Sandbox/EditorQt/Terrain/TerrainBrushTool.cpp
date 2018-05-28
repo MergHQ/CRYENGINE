@@ -507,7 +507,7 @@ IMPLEMENT_DYNAMIC(CTerrainTool, CBrushTool)
 
 //////////////////////////////////////////////////////////////////////////
 CFlattenTool::CFlattenTool()
-	: CTerrainTool{g_szFlatternToolPersonalizationModule}
+	: CTerrainTool(g_szFlatternToolPersonalizationModule)
 {}
 
 void CFlattenTool::Serialize(Serialization::IArchive& ar)
@@ -580,7 +580,7 @@ IMPLEMENT_DYNCREATE(CFlattenTool, CTerrainTool)
 
 //////////////////////////////////////////////////////////////////////////
 CSmoothTool::CSmoothTool()
-	: CTerrainTool{g_szSmoothToolPersonalizationModule}
+	: CTerrainTool(g_szSmoothToolPersonalizationModule)
 	, m_pPrevToolClass(nullptr)
 {}
 
@@ -639,7 +639,7 @@ IMPLEMENT_DYNCREATE(CSmoothTool, CTerrainTool)
 
 //////////////////////////////////////////////////////////////////////////
 CRiseLowerTool::CRiseLowerTool()
-	: CTerrainTool{g_szRiseLowerToolPersonalizationModule}
+	: CTerrainTool(g_szRiseLowerToolPersonalizationModule)
 	, m_lowerTool(false)
 {}
 
@@ -763,7 +763,7 @@ IMPLEMENT_DYNCREATE(CRiseLowerTool, CTerrainTool)
 
 //////////////////////////////////////////////////////////////////////////
 CHolesTool::CHolesTool(const char* const szPersonalizationModuleName)
-	: CTerrainTool{szPersonalizationModuleName}
+	: CTerrainTool(szPersonalizationModuleName)
 {}
 
 void CHolesTool::Serialize(Serialization::IArchive& ar)
@@ -880,7 +880,7 @@ IMPLEMENT_DYNAMIC(CHolesTool, CTerrainTool)
 
 //////////////////////////////////////////////////////////////////////////
 CMakeHolesTool::CMakeHolesTool()
-	: CHolesTool{g_szMakeHolesToolPersonalizationModule}
+	: CHolesTool(g_szMakeHolesToolPersonalizationModule)
 {
 	m_toolColor = ColorF(1, 0, 0, 1);
 }
@@ -901,7 +901,7 @@ IMPLEMENT_DYNCREATE(CMakeHolesTool, CHolesTool)
 
 //////////////////////////////////////////////////////////////////////////
 CFillHolesTool::CFillHolesTool()
-	: CHolesTool{g_szFillHolesToolPersonalizationModule}
+	: CHolesTool(g_szFillHolesToolPersonalizationModule)
 {
 	m_toolColor = ColorF(0, 0, 1, 1);
 }
