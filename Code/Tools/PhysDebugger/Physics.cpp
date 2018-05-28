@@ -113,7 +113,7 @@ protected:
 };
 CPhysRenderer g_PhysRenderer;
 
-struct DisplayContextImp : DisplayContext {
+struct DisplayContextImp : SDisplayContext {
 	DisplayContextImp(CCamera *cam) { camera = cam; }
 	virtual void DrawLine(const Vec3& pt0, const Vec3& pt1, const ColorF& clr0, const ColorF& clr1);
 	virtual void DrawBall(const Vec3& c, float r);
