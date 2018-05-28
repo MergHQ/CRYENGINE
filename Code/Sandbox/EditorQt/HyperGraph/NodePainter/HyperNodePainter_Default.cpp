@@ -196,8 +196,8 @@ struct SDefaultRenderPort
 
 void CHyperNodePainter_Default::Paint(CHyperNode* pNode, CDisplayList* pList)
 {
-	static SAssets* pAssets = 0;
-	struct IHyperGraph* pPrevGraph = 0;
+	static SAssets* pAssets = nullptr;
+	IHyperGraph* pPrevGraph = nullptr;
 
 	if (pNode->GetBlackBox()) //hide node
 		return;
@@ -325,7 +325,7 @@ void CHyperNodePainter_Default::Paint(CHyperNode* pNode, CDisplayList* pList)
 				bool bIsInitializationPhase;
 				pNode->GetAdditionalDebugPortInformation(pp, bIsInitializationPhase);
 				pr.pBackground = pList->Add<CDisplayRectangle>()
-				                 ->SetFilled(bIsInitializationPhase? &pAssets->brushPortDebugActivatedForInitialization : &pAssets->brushPortDebugActivated)
+				                 ->SetFilled(bIsInitializationPhase ? &pAssets->brushPortDebugActivatedForInitialization : &pAssets->brushPortDebugActivated)
 				                 ->SetHitEvent(eSOID_FirstInputPort + i);
 			}
 
@@ -742,4 +742,3 @@ void CHyperNodePainter_Default::CheckBreakpoint(IFlowGraphPtr pFlowGraph, const 
 		bIsTracepoint = pFlowGraphDebugger->IsTracepoint(pFlowGraph, addr);
 	}
 }
-

@@ -90,8 +90,8 @@ CBootProfiler gProfilerInstance;
 CBootProfilerThreadsInterface gThreadsInterface;
 }
 
-int CBootProfiler::CV_sys_bp_enabled = 1;
-int CBootProfiler::CV_sys_bp_level_load = 1;
+int CBootProfiler::CV_sys_bp_enabled = 0;
+int CBootProfiler::CV_sys_bp_level_load = 0;
 int CBootProfiler::CV_sys_bp_level_load_include_first_frame = 0;
 int CBootProfiler::CV_sys_bp_frames_worker_thread = 0;
 int CBootProfiler::CV_sys_bp_frames = 0;
@@ -1126,16 +1126,23 @@ void CBootProfiler::ThreadEntry()
 	}
 }
 
-void CBootProfiler::Init(ISystem* pSystem)
+void CBootProfiler::Init(ISystem* pSystem, const char* cmdLine)
 {
 	pSystem->GetISystemEventDispatcher()->RegisterListener(this,"CBootProfiler");
+	CryStackStringT<char, 2048> lwrCmdLine = cmdLine;
+	lwrCmdLine.MakeLower();
+	const char* bpCmd = nullptr;
+	if ((bpCmd = strstr(lwrCmdLine.c_str(), "-bootprofiler")) != 0)
+	{
+		CV_sys_bp_enabled = 1;
+	}
 	StartSession("boot");
 }
 
 void CBootProfiler::RegisterCVars()
 {
-	REGISTER_CVAR2("sys_bp_enabled", &CV_sys_bp_enabled, 1, VF_DEV_ONLY, "If this is set to false, new boot profiler sessions will not be started.");
-	REGISTER_CVAR2("sys_bp_level_load", &CV_sys_bp_level_load, 1, VF_DEV_ONLY, "If this is set to true, a boot profiler session will be started to profile the level loading. Ignored if sys_bp_enabled is false.");
+	REGISTER_CVAR2("sys_bp_enabled", &CV_sys_bp_enabled, 0, VF_DEV_ONLY, "If this is set to false, new boot profiler sessions will not be started.");
+	REGISTER_CVAR2("sys_bp_level_load", &CV_sys_bp_level_load, 0, VF_DEV_ONLY, "If this is set to true, a boot profiler session will be started to profile the level loading. Ignored if sys_bp_enabled is false.");
 	REGISTER_CVAR2("sys_bp_level_load_include_first_frame", &CV_sys_bp_level_load_include_first_frame, 0, VF_DEV_ONLY, "If this is set to true, the level profiler will include the first frame - in order to catch calls to Misc:Start from Flowgraph and other late initialization events that result in stalls.");
 	REGISTER_CVAR2("sys_bp_frames_worker_thread", &CV_sys_bp_frames_worker_thread, 0, VF_DEV_ONLY | VF_REQUIRE_APP_RESTART, "If this is set to true. The system will dump the profiled session from a different thread.");
 	REGISTER_CVAR2("sys_bp_frames", &CV_sys_bp_frames, 0, VF_DEV_ONLY, "Starts frame profiling for specified number of frames using BootProfiler");

@@ -877,10 +877,6 @@ PyGameGroup::PyGameGroup(void* groupPtr, pSPyWrappedClass sharedPtr)
 	CGroup* pGroup = static_cast<CGroup*>(m_groupPtr);
 }
 
-PyGameGroup::~PyGameGroup()
-{
-}
-
 std::vector<pPyGameObject> PyGameGroup::GetChildren()
 {
 	CGroup* pGroup = static_cast<CGroup*>(m_groupPtr);
@@ -950,11 +946,6 @@ PyGameCamera::PyGameCamera(void* cameraPtr, pSPyWrappedClass sharedPtr)
 {
 	m_cameraPtr = cameraPtr;
 	CCameraObject* pCamera = static_cast<CCameraObject*>(m_cameraPtr);
-}
-
-PyGameCamera::~PyGameCamera()
-{
-
 }
 
 void PyGameCamera::UpdateCamera()
@@ -1227,10 +1218,6 @@ PyGameVegetationInstance::PyGameVegetationInstance(void* vegPtr)
 	m_vegBrightness = pVegInst->brightness;
 }
 
-PyGameVegetationInstance::~PyGameVegetationInstance()
-{
-}
-
 void PyGameVegetationInstance::UpdateVegetationInstance()
 {
 	if (m_vegPtr == NULL)
@@ -1294,10 +1281,6 @@ PyGameVegetation::PyGameVegetation(void* vegPtr)
 			m_vegInstances.push_back(vegInst);
 		}
 	}
-}
-
-PyGameVegetation::~PyGameVegetation()
-{
 }
 
 void PyGameVegetation::Load()

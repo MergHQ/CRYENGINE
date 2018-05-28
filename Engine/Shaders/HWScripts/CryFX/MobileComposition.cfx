@@ -162,6 +162,11 @@ technique LightingMobile
   }
 }
 
+Texture2D texSceneTarget   : register(t0);
+Texture2D texVignettingMap : register(t1);
+
+SamplerState ssSceneTarget   : register(s0);
+SamplerState ssVignettingMap : register(s1);
 
 vtxOut TonemappingMobileVS(vtxIn IN)
 {
@@ -177,13 +182,13 @@ pixout TonemappingMobilePS(vtxOut IN)
 {
 	pixout OUT = (pixout)0;
 	
-	float3 col = tex2D(_tex0, IN.baseTC.xy).rgb;
+	float3 col = GetTexture2D(texSceneTarget, ssSceneTarget, IN.baseTC.xy).rgb;
 	
 	// Apply fixed exposure
 	col *= 1.0;
 	
 	// Apply vignette
-	col *= tex2D(_tex1, IN.baseTC.xy).x;
+	col *= GetTexture2D(texVignettingMap, ssVignettingMap, IN.baseTC.xy).x;
 	
 	// Tonemap (ACES Filmic Curve, fitted by K. Narkowicz)
 	OUT.Color.rgb = saturate((col * (2.51 * col + 0.03)) / (col * (2.43 * col + 0.59) + 0.14));

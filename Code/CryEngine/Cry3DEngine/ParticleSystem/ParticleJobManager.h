@@ -19,26 +19,26 @@ class CParticleJobManager
 public:
 	struct SDeferredRender
 	{
-		SDeferredRender(CParticleComponentRuntime* pRuntime, const SRenderContext& renderContext)
-			: m_pRuntime(pRuntime)
+		SDeferredRender(const CParticleComponentRuntime& runtime, const SRenderContext& renderContext)
+			: m_runtime(runtime)
 			, m_rParam(renderContext.m_renderParams)
 			, m_passInfo(renderContext.m_passInfo)
 			, m_distance(renderContext.m_distance)
 			, m_lightVolumeId(renderContext.m_lightVolumeId)
 			, m_fogVolumeId(renderContext.m_fogVolumeId) {}
-		CParticleComponentRuntime* m_pRuntime;
-		SRendParams                m_rParam;
-		SRenderingPassInfo         m_passInfo;
-		float                      m_distance;
-		uint16                     m_lightVolumeId;
-		uint16                     m_fogVolumeId;
+		const CParticleComponentRuntime& m_runtime;
+		SRendParams                      m_rParam;
+		SRenderingPassInfo               m_passInfo;
+		float                            m_distance;
+		uint16                           m_lightVolumeId;
+		uint16                           m_fogVolumeId;
 	};
 
 public:
 	CParticleJobManager();
 	void AddEmitter(CParticleEmitter* pEmitter) { m_emitterRefs.push_back(pEmitter); }
-	void AddDeferredRender(CParticleComponentRuntime* pRuntime, const SRenderContext& renderContext);
-	void ScheduleComputeVertices(CParticleComponentRuntime* pComponentRuntime, CRenderObject* pRenderObject, const SRenderContext& renderContext);
+	void AddDeferredRender(const CParticleComponentRuntime& runtime, const SRenderContext& renderContext);
+	void ScheduleComputeVertices(CParticleComponentRuntime& runtime, CRenderObject* pRenderObject, const SRenderContext& renderContext);
 	void ScheduleUpdates();
 	void SynchronizeUpdates();
 	void DeferredRender();

@@ -22,7 +22,7 @@ class CObjectManipulatorOwner;
 class CGeomCacheEntity;
 
 //////////////////////////////////////////////////////////////////////////
-// Helper class to signal when we are exportin a level to game
+// Helper class to signal when we are exporting a level to game
 //////////////////////////////////////////////////////////////////////////
 class CObjectManagerLevelIsExporting
 {
@@ -143,7 +143,7 @@ public:
 
 	//////////////////////////////////////////////////////////////////////////
 	// Find object from in game physical entity.
-	CBaseObject* FindPhysicalObjectOwner(struct IPhysicalEntity* pPhysicalEntity);
+	CBaseObject* FindPhysicalObjectOwner(IPhysicalEntity* pPhysicalEntity);
 
 	//////////////////////////////////////////////////////////////////////////
 	// Operations on objects.
@@ -298,7 +298,7 @@ public:
 	virtual void                 FindAndRenameProperty2(const char* property2Name, const string& oldValue, const string& newValue);
 	virtual void                 FindAndRenameProperty2If(const char* property2Name, const string& oldValue, const string& newValue, const char* otherProperty2Name, const string& otherValue);
 
-	virtual void                 SaveEntitiesInternalState(struct IDataWriteStream& writer) const;
+	virtual void                 SaveEntitiesInternalState(IDataWriteStream& writer) const;
 	virtual void                 AssignLayerIDsToRenderNodes();
 
 	void                         ResolveMissingObjects();

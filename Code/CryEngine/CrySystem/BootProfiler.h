@@ -47,7 +47,7 @@ public:
 
 	static CBootProfiler&      GetInstance();
 
-	void                       Init(ISystem* pSystem);
+	void                       Init(ISystem* pSystem, const char* cmdLine);
 	void                       RegisterCVars();
 
 	void                       StartSession(const char* sessionName);

@@ -1,8 +1,7 @@
-// Copyright 2001-2018 Crytek GmbH / Crytek Group. All rights reserved.
+// Copyright 2015-2018 Crytek GmbH / Crytek Group. All rights reserved.
 
 #include "StdAfx.h"
-#include "ParticleSystem/ParticleRender.h"
-#include "ParticleSystem/ParticleEmitter.h"
+#include "FeatureCommon.h"
 
 namespace pfx2
 {
@@ -23,7 +22,7 @@ public:
 
 	virtual void AddToComponent(CParticleComponent* pComponent, SComponentParams* pParams) override;
 	virtual void Serialize(Serialization::IArchive& ar) override;
-	virtual void RenderDeferred(CParticleEmitter* pEmitter, CParticleComponentRuntime* pCommonComponentRuntime, CParticleComponent* pComponent, const SRenderContext& renderContext) override;
+	virtual void RenderDeferred(const CParticleComponentRuntime& runtime, const SRenderContext& renderContext) override;
 
 private:
 	SFloat m_thickness;
@@ -104,22 +103,20 @@ struct SDecalTiler
 	const bool hasAnimation;
 };
 
-void CFeatureRenderDecals::RenderDeferred(CParticleEmitter* pEmitter, CParticleComponentRuntime* pCommonComponentRuntime, CParticleComponent* pComponent, const SRenderContext& renderContext)
+void CFeatureRenderDecals::RenderDeferred(const CParticleComponentRuntime& runtime, const SRenderContext& renderContext)
 {
 	CRY_PROFILE_FUNCTION(PROFILE_PARTICLE);
 
 	if (renderContext.m_passInfo.IsRecursivePass())
 		return;
-
-	CParticleComponentRuntime* pComponentRuntime = pCommonComponentRuntime->GetCpuRuntime();
-	if (!pComponentRuntime)
+	if (!runtime.IsCPURuntime())
 		return;
-	auto context = SUpdateContext(pComponentRuntime);
+
 	const auto& passInfo = renderContext.m_passInfo;
 	
 	IRenderer* pRenderer = GetRenderer();
-	const SComponentParams& params = pComponent->GetComponentParams();
-	const CParticleContainer& container = context.m_container;
+	const SComponentParams& params = runtime.ComponentParams();
+	const CParticleContainer& container = runtime.GetContainer();
 	const IVec3Stream positions = container.GetIVec3Stream(EPVF_Position);
 	const IQuatStream orientations = container.GetIQuatStream(EPQF_Orientation);
 	const IFStream sizes = container.GetIFStream(EPDT_Size);
@@ -134,7 +131,7 @@ void CFeatureRenderDecals::RenderDeferred(CParticleEmitter* pEmitter, CParticleC
 	decal.nSortOrder = clamp_tpl(int(m_sortBias * 100.f), 0, 255);
 	decal.nFlags = 0;
 
-	for (auto particleId : context.GetUpdateRange())
+	for (auto particleId : runtime.FullRange())
 	{
 		const float size = sizes.Load(particleId);
 		if (size <= 0.0f)

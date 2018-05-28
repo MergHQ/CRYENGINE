@@ -44,26 +44,26 @@ public:
 		SERIALIZE_VAR(ar, m_flare);
 	}
 
-	virtual void RenderDeferred(CParticleEmitter* pEmitter, CParticleComponentRuntime* pComponentRuntime, CParticleComponent* pComponent, const SRenderContext& renderContext) override
+	virtual void RenderDeferred(const CParticleComponentRuntime& runtime, const SRenderContext& renderContext) override
 	{
-		ComputeLights(pComponentRuntime, &renderContext, nullptr);
+		ComputeLights(runtime, &renderContext, nullptr);
 	}
 
-	void ComputeBounds(CParticleComponentRuntime* pComponentRuntime, AABB& bounds) override
+	void ComputeBounds(const CParticleComponentRuntime& runtime, AABB& bounds) override
 	{
 		// PFX2_TODO: Compute bounds augmentation statically, using min/max particle data. 
 		// Track min/max of all float data types, in AddToComponent.
-		ComputeLights(pComponentRuntime, nullptr, &bounds);
+		ComputeLights(runtime, nullptr, &bounds);
 	}
 
-	void ComputeLights(CParticleComponentRuntime* pComponentRuntime, const SRenderContext* pRenderContext, AABB* pBounds)
+	void ComputeLights(const CParticleComponentRuntime& runtime, const SRenderContext* pRenderContext, AABB* pBounds)
 	{
 		CRY_PROFILE_FUNCTION(PROFILE_PARTICLE);
 
 		if (!GetCVars()->e_DynamicLights)
 			return;
 
-		if (!pComponentRuntime->GetCpuRuntime())
+		if (!runtime.IsCPURuntime())
 			return;
 
 		SRenderLight light;
@@ -91,7 +91,7 @@ public:
 
 		UCol defaultColor;
 		defaultColor.dcolor = ~0;
-		const CParticleContainer& container = pComponentRuntime->GetContainer();
+		const CParticleContainer& container = runtime.GetContainer();
 		const IVec3Stream positions = container.GetIVec3Stream(EPVF_Position);
 		const IColorStream colors = container.GetIColorStream(EPDT_Color, defaultColor);
 		const IFStream alphas = container.GetIFStream(EPDT_Alpha, 1.0f);

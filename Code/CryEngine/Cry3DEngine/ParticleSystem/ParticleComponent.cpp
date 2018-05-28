@@ -258,29 +258,6 @@ void CParticleComponent::UpdateTimings()
 	}
 }
 
-void CParticleComponent::RenderAll(CParticleEmitter* pEmitter, CParticleComponentRuntime* pRuntime, const SRenderContext& renderContext)
-{
-	CRY_PROFILE_FUNCTION(PROFILE_PARTICLE);
-
-	if (auto* pGPURuntime = pRuntime->GetGpuRuntime())
-	{
-		SParticleStats stats;
-		pGPURuntime->AccumStats(stats);
-		auto& statsGPU = GetPSystem()->GetThreadData().statsGPU;
-		statsGPU.components.rendered += stats.components.rendered;
-		statsGPU.particles.rendered += stats.particles.rendered;
-	}
-
-	Render(pEmitter, pRuntime, this, renderContext);
-		
-	if (RenderDeferred.size())
-	{
-		CParticleJobManager& jobManager = GetPSystem()->GetJobManager();
-		CParticleComponentRuntime* pCpuRuntime = static_cast<CParticleComponentRuntime*>(pRuntime);
-		jobManager.AddDeferredRender(pCpuRuntime, renderContext);
-	}
-}
-
 bool CParticleComponent::CanMakeRuntime(CParticleEmitter* pEmitter) const
 {
 	if (!IsEnabled())
@@ -369,7 +346,7 @@ void CParticleComponent::Compile()
 				{
 					if (auto* feature = params->m_pFactory())
 					{
-						m_defaultFeatures.push_back(pfx2::TParticleFeaturePtr(static_cast<CParticleFeature*>(feature)));
+						m_defaultFeatures.push_back(static_cast<CParticleFeature*>(feature));
 						static_cast<CParticleFeature*>(feature)->AddToComponent(this, &m_Params);
 					}
 				}

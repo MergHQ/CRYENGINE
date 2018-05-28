@@ -298,6 +298,7 @@ add_sources("NoUberFile"
 
 add_sources("ParticleFeatures_uber.cpp"
 	SOURCE_GROUP "ParticleSystem\\\\Features"
+		"ParticleSystem/Features/FeatureCommon.h"
 		"ParticleSystem/Features/FeatureAudio.cpp"
 		"ParticleSystem/Features/FeatureAngles.h"
 		"ParticleSystem/Features/FeatureAnglesImpl.h"
@@ -382,8 +383,6 @@ add_sources("ParticleSystem_uber.cpp"
 		"ParticleSystem/ParticleSystem.h"
 		"ParticleSystem/ParticleSystem.cpp"
 		"ParticleSystem/ParticleSystemUnit.cpp"
-		"ParticleSystem/ParticleUpdate.h"
-		"ParticleSystem/ParticleUpdate.cpp"
 )
 
 end_sources()

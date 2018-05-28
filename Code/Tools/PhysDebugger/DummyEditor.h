@@ -41,7 +41,7 @@ struct CCamera {
 	void GetDimensions(int *x,int *y) const { *x=size.x; *y=size.y; }
 };
 
-struct DisplayContext {
+struct SDisplayContext {
 	CCamera *camera;
 	virtual void DrawLine(const Vec3& pt0, const Vec3& pt1, const ColorF& clr0, const ColorF& clr1) {}
 	virtual void DrawBall(const Vec3& c, float r) {}
@@ -53,7 +53,7 @@ struct CViewport : CCamera {};
 class CEditTool {
 public:
 	virtual string GetDisplayName() const { return nullptr; }
-	virtual void   Display(DisplayContext& dc) {}
+	virtual void   Display(SDisplayContext& dc) {}
 	virtual bool   OnSetCursor(CViewport* view) { return true; }
 	virtual bool   MouseCallback(CViewport* view, EMouseEvent event, CPoint& point, int flags) { return true; }
 };

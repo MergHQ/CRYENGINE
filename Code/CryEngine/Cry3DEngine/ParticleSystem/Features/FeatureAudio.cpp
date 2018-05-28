@@ -69,30 +69,30 @@ public:
 		ar(m_occlusionType, "Occlusion", "Occlusion");
 	}
 
-	virtual void InitParticles(const SUpdateContext& context) override
+	virtual void InitParticles(CParticleComponentRuntime& runtime) override
 	{
 		CRY_PFX2_PROFILE_DETAIL;
 
-		context.m_container.FillData(EPDT_AudioObject, (CryAudio::IObject*)0, context.GetSpawnedRange());
+		runtime.GetContainer().FillData(EPDT_AudioObject, (CryAudio::IObject*)0, runtime.SpawnedRange());
 	}
 
-	void MainPreUpdate(CParticleComponentRuntime* pComponentRuntime) override
+	void MainPreUpdate(CParticleComponentRuntime& runtime) override
 	{
 		CryStackStringT<char, 512> proxyName;
-		proxyName.append(pComponentRuntime->GetComponent()->GetEffect()->GetName());
+		proxyName.append(runtime.GetComponent()->GetEffect()->GetName());
 		proxyName.append(" : ");
-		proxyName.append(pComponentRuntime->GetComponent()->GetName());
+		proxyName.append(runtime.GetComponent()->GetName());
 
 		if (m_followParticle || m_stopOnDeath)
-			TriggerFollowAudioEvents(pComponentRuntime, proxyName);
+			TriggerFollowAudioEvents(runtime, proxyName);
 		else
-			TriggerSingleAudioEvents(pComponentRuntime, proxyName);
+			TriggerSingleAudioEvents(runtime, proxyName);
 	}
 
-	void DestroyParticles(const SUpdateContext& context) override
+	void DestroyParticles(CParticleComponentRuntime& runtime) override
 	{
-		auto audioObjects = context.m_container.IStream(EPDT_AudioObject);
-		for (auto particleId : context.GetUpdateRange())
+		auto audioObjects = runtime.GetContainer().IStream(EPDT_AudioObject);
+		for (auto particleId : runtime.FullRange())
 		{
 			if (auto pIObject = audioObjects.Load(particleId))
 			{
@@ -138,16 +138,15 @@ private:
 		}
 	}
 
-	void TriggerSingleAudioEvents(CParticleComponentRuntime* pComponentRuntime, cstr proxyName)
+	void TriggerSingleAudioEvents(CParticleComponentRuntime& runtime, cstr proxyName)
 	{
 		CRY_PFX2_PROFILE_DETAIL;
 
-		const SUpdateContext context(pComponentRuntime);
-		CParticleContainer& container = context.m_container;
+		CParticleContainer& container = runtime.GetContainer();
 		const IVec3Stream positions = container.GetIVec3Stream(EPVF_Position);
 		const auto normAges = container.GetIFStream(EPDT_NormalAge);
 
-		for (auto particleId : context.GetUpdateRange())
+		for (auto particleId : runtime.FullRange())
 		{
 			if (m_playTrigger && container.IsNewBorn(particleId))
 			{
@@ -160,17 +159,16 @@ private:
 		}
 	}
 
-	void TriggerFollowAudioEvents(CParticleComponentRuntime* pComponentRuntime, cstr proxyName)
+	void TriggerFollowAudioEvents(CParticleComponentRuntime& runtime, cstr proxyName)
 	{
 		CRY_PFX2_PROFILE_DETAIL;
 
-		const SUpdateContext context(pComponentRuntime);
-		CParticleContainer& container = context.m_container;
+		CParticleContainer& container = runtime.GetContainer();
 		const IVec3Stream positions = container.GetIVec3Stream(EPVF_Position);
 		const auto normAges = container.GetIFStream(EPDT_NormalAge);
 		auto audioObjects = container.IOStream(EPDT_AudioObject);
 
-		for (auto particleId : context.GetUpdateRange())
+		for (auto particleId : runtime.FullRange())
 		{
 			CryAudio::IObject* pIObject = audioObjects.Load(particleId);
 			if (container.IsNewBorn(particleId))
@@ -265,17 +263,16 @@ public:
 		ar(m_value, "Value", "Value");
 	}
 
-	void MainPreUpdate(CParticleComponentRuntime* pComponentRuntime) override
+	void MainPreUpdate(CParticleComponentRuntime& runtime) override
 	{
-		const SUpdateContext context(pComponentRuntime);
-		CParticleContainer& container = context.m_container;
+		CParticleContainer& container = runtime.GetContainer();
 		if (!container.HasData(EPDT_AudioObject))
 			return;
 
 		auto audioObjects = container.IOStream(EPDT_AudioObject);
-		STempUpdateBuffer<float> values(context, m_value, context.GetUpdateRange());
+		STempUpdateBuffer<float> values(runtime, m_value, runtime.FullRange());
 
-		for (auto particleId : context.GetUpdateRange())
+		for (auto particleId : runtime.FullRange())
 		{
 			if (auto* pIObject = audioObjects.Load(particleId))
 			{

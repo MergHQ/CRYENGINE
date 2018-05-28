@@ -151,9 +151,9 @@ float CDomain::GetGlobalValue(EDomainGlobal source) const
 
 namespace detail
 {
-	CAttributeSampler::CAttributeSampler(const SUpdateContext& context, const CAttributeReference& attr)
+	CAttributeSampler::CAttributeSampler(CParticleComponentRuntime& runtime, const CAttributeReference& attr)
 	{
-		const CAttributeInstance& attributes = context.m_runtime.GetEmitter()->GetAttributeInstance();
+		const CAttributeInstance& attributes = runtime.GetEmitter()->GetAttributeInstance();
 		m_attributeValue = ToFloatv(attr.GetValueAs(attributes, 1.0f));
 	}
 }

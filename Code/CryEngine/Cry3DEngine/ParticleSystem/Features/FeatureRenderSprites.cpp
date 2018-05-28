@@ -1,9 +1,8 @@
 // Copyright 2001-2018 Crytek GmbH / Crytek Group. All rights reserved.
 
 #include "StdAfx.h"
+#include "FeatureCommon.h"
 #include "ParticleSystem/ParticleRender.h"
-#include "ParticleSystem/ParticleSystem.h"
-#include <CrySerialization/Math.h>
 #include <CryMath/RadixSort.h>
 
 namespace pfx2
@@ -30,9 +29,8 @@ SERIALIZATION_DECLARE_ENUM(EFacingMode,
 
 struct SSpritesContext
 {
-	SSpritesContext(CParticleComponentRuntime* pComponentRuntime, const SComponentParams& params, const SCameraInfo& camInfo, const SVisEnviron& visEnviron, const SPhysEnviron& physEnviron, CREParticle* pRE, TParticleHeap& memHeap, size_t numParticles)
-		: m_context(pComponentRuntime)
-		, m_params(params)
+	SSpritesContext(const CParticleComponentRuntime& runtime, const SCameraInfo& camInfo, const SVisEnviron& visEnviron, const SPhysEnviron& physEnviron, CREParticle* pRE, TParticleHeap& memHeap, size_t numParticles)
+		: m_runtime(runtime)
 		, m_camInfo(camInfo)
 		, m_visEnviron(visEnviron)
 		, m_physEnviron(physEnviron)
@@ -52,20 +50,19 @@ struct SSpritesContext
 		return sqr(m_camInfo.pCamera->GetAngularResolution());
 	}
 
-	const SUpdateContext    m_context;
-	const SComponentParams& m_params;
-	const SCameraInfo&      m_camInfo;
-	const SVisEnviron&      m_visEnviron;
-	const SPhysEnviron&     m_physEnviron;
-	AABB                    m_bounds;
-	CREParticle*            m_pRE;
-	TParticleIdArray        m_particleIds;
-	TFloatArray             m_spriteAlphas;
-	float                   m_area;
-	float                   m_areaDrawn;
-	float                   m_areaLimit;
-	uint64                  m_renderFlags;
-	size_t                  m_rangeId;
+	const CParticleComponentRuntime& m_runtime;
+	const SCameraInfo&               m_camInfo;
+	const SVisEnviron&               m_visEnviron;
+	const SPhysEnviron&              m_physEnviron;
+	AABB                             m_bounds;
+	CREParticle*                     m_pRE;
+	TParticleIdArray                 m_particleIds;
+	TFloatArray                      m_spriteAlphas;
+	float                            m_area;
+	float                            m_areaDrawn;
+	float                            m_areaLimit;
+	uint64                           m_renderFlags;
+	size_t                           m_rangeId;
 };
 
 class CFeatureRenderSprites : public CParticleRenderBase
@@ -80,7 +77,7 @@ public:
 	CFeatureRenderSprites();
 
 	virtual void AddToComponent(CParticleComponent* pComponent, SComponentParams* pParams) override;
-	virtual void ComputeVertices(CParticleComponentRuntime* pComponentRuntime, const SCameraInfo& camInfo, CREParticle* pRE, uint64 uRenderFlags, float fMaxPixels) override;
+	virtual void ComputeVertices(const CParticleComponentRuntime& runtime, const SCameraInfo& camInfo, CREParticle* pRE, uint64 uRenderFlags, float fMaxPixels) override;
 	virtual void Serialize(Serialization::IArchive& ar) override;
 
 protected:
@@ -155,10 +152,10 @@ void CFeatureRenderSprites::Serialize(Serialization::IArchive& ar)
 	ar(m_flipV, "FlipV", "Flip V");
 }
 
-void CFeatureRenderSprites::ComputeVertices(CParticleComponentRuntime* pComponentRuntime, const SCameraInfo& camInfo, CREParticle* pRE, uint64 uRenderFlags, float fMaxPixels)
+void CFeatureRenderSprites::ComputeVertices(const CParticleComponentRuntime& runtime, const SCameraInfo& camInfo, CREParticle* pRE, uint64 uRenderFlags, float fMaxPixels)
 {
-	CParticleContainer& container = pComponentRuntime->GetContainer();
-	const CParticleEmitter* pEmitter = pComponentRuntime->GetEmitter();
+	const CParticleContainer& container = runtime.GetContainer();
+	const CParticleEmitter* pEmitter = runtime.GetEmitter();
 
 	TParticleId numParticles = container.GetNumParticles();
 	if (numParticles == 0)
@@ -170,7 +167,7 @@ void CFeatureRenderSprites::ComputeVertices(CParticleComponentRuntime* pComponen
 	auto& memHeap = GetPSystem()->GetThreadData().memHeap;
 
 	SSpritesContext spritesContext(
-		pComponentRuntime, pComponentRuntime->GetComponentParams(),
+		runtime,
 		camInfo, pEmitter->GetVisEnv(),
 		pEmitter->GetPhysicsEnv(), pRE, memHeap,
 		numParticles);
@@ -188,11 +185,11 @@ void CFeatureRenderSprites::ComputeVertices(CParticleComponentRuntime* pComponen
 		SortSprites(spritesContext);
 		WriteToGPUMem(spritesContext);
 		stats.particles.rendered += spritesContext.m_particleIds.size();
-		stats.particles.culled += pComponentRuntime->GetContainer().GetNumParticles() - spritesContext.m_particleIds.size();
+		stats.particles.culled += runtime.GetContainer().GetNumParticles() - spritesContext.m_particleIds.size();
 
 		stats.pixels.updated += pos_round(spritesContext.m_area * spritesContext.AreaToPixels());
 		stats.pixels.rendered += pos_round(spritesContext.m_areaDrawn * spritesContext.AreaToPixels());
-		GetPSystem()->GetProfiler().AddEntry(pComponentRuntime, EPS_RendereredParticles, uint(spritesContext.m_particleIds.size()));
+		GetPSystem()->GetProfiler().AddEntry(runtime, EPS_RendereredParticles, uint(spritesContext.m_particleIds.size()));
 	}
 }
 
@@ -200,9 +197,9 @@ void CFeatureRenderSprites::CullParticles(SSpritesContext& spritesContext)
 {
 	CRY_PROFILE_FUNCTION(PROFILE_PARTICLE);
 
-	const SUpdateContext& context = spritesContext.m_context;
-	const SVisibilityParams& visibility = context.m_params.m_visibility;
-	const CParticleEmitter& emitter = *context.m_runtime.GetEmitter();
+	const CParticleComponentRuntime& runtime = spritesContext.m_runtime;
+	const SVisibilityParams& visibility = runtime.ComponentParams().m_visibility;
+	const CParticleEmitter& emitter = *runtime.GetEmitter();
 	const CCamera& camera = *spritesContext.m_camInfo.pCamera;
 	const Vec3 cameraPosition = camera.GetPosition();
 
@@ -220,16 +217,16 @@ void CFeatureRenderSprites::CullParticles(SSpritesContext& spritesContext)
 	const float minCamDist = max(+visibility.m_minCameraDistance, camNearClip);
 	const float maxCamDist = visibility.m_maxCameraDistance;
 	const float invMaxAng = 1.0f / (maxScreen * camAng * 0.5f);
-	const float invMinAng = spritesContext.m_context.m_pSystem->GetMaxAngularDensity(camera) * emitter.GetViewDistRatio() * visibility.m_viewDistanceMultiple;
+	const float invMinAng = GetPSystem()->GetMaxAngularDensity(camera) * emitter.GetViewDistRatio() * visibility.m_viewDistanceMultiple;
 
 	const bool cullNear = nearDist < minCamDist * 2.0f
-	                      || maxScreen < 2 && nearDist < context.m_params.m_maxParticleSize * invMaxAng * 2.0f;
+	                      || maxScreen < 2 && nearDist < runtime.ComponentParams().m_maxParticleSize * invMaxAng * 2.0f;
 	const bool cullFar = farDist > maxCamDist * 0.75f
 	                     || GetCVars()->e_ParticlesMinDrawPixels > 0.0f;
 
 	// count and cull pixels drawn for near emitters
-	const float maxArea = context.m_container.GetNumParticles() *
-		div_min(sqr(context.m_params.m_maxParticleSize * 2.0f), sqr(nearDist), screenArea);
+	const float maxArea = runtime.GetContainer().GetNumParticles() *
+		div_min(sqr(runtime.ComponentParams().m_maxParticleSize * 2.0f), sqr(nearDist), screenArea);
 	const bool cullArea = maxArea > spritesContext.m_areaLimit;
 	const bool sumArea = cullArea || maxArea > 1.0f / 256.0f;
 
@@ -238,9 +235,9 @@ void CFeatureRenderSprites::CullParticles(SSpritesContext& spritesContext)
 	auto& memHeap = GetPSystem()->GetThreadData().memHeap;
 	THeapArray<float> areas(memHeap);
 	if (cullArea)
-		areas.resize(context.GetUpdateRange().size());
+		areas.resize(runtime.FullRange().size());
 
-	CParticleContainer& container = spritesContext.m_context.m_container;
+	const CParticleContainer& container = spritesContext.m_runtime.GetContainer();
 	IFStream alphas = container.GetIFStream(EPDT_Alpha, 1.0f);
 	IFStream sizes = container.GetIFStream(EPDT_Size);
 	IVec3Stream positions = container.GetIVec3Stream(EPVF_Position);
@@ -250,7 +247,7 @@ void CFeatureRenderSprites::CullParticles(SSpritesContext& spritesContext)
 	uint numParticles = 0;
 
 	// camera culling
-	for (auto particleId : context.GetUpdateRange())
+	for (auto particleId : runtime.FullRange())
 	{
 		float alpha = alphas.SafeLoad(particleId);
 		const float size = sizes.Load(particleId);
@@ -381,7 +378,7 @@ void CFeatureRenderSprites::SortSprites(SSpritesContext& spritesContext)
 	THeapArray<float> keys(memHeap, numSprites);
 	auto& particleIds = spritesContext.m_particleIds;
 
-	const CParticleContainer& container = spritesContext.m_context.m_container;
+	const CParticleContainer& container = spritesContext.m_runtime.GetContainer();
 	const bool byAge = (m_sortMode == ESortMode::NewToOld) || (m_sortMode == ESortMode::OldToNew);
 	const bool byDistance = (m_sortMode == ESortMode::FrontToBack) || (m_sortMode == ESortMode::BackToFront);
 	const bool invertKey = (m_sortMode == ESortMode::OldToNew) || (m_sortMode == ESortMode::FrontToBack);
@@ -542,7 +539,7 @@ void CFeatureRenderSprites::WriteToGPUMem(const SSpritesContext& spritesContext)
 {
 	CRY_PROFILE_FUNCTION(PROFILE_PARTICLE);
 
-	const CParticleContainer& container = spritesContext.m_context.m_container;
+	const CParticleContainer& container = spritesContext.m_runtime.GetContainer();
 	const CCamera& camera = *spritesContext.m_camInfo.pCamera;
 	const uint numSprites = spritesContext.m_particleIds.size();
 
@@ -569,8 +566,8 @@ void CFeatureRenderSprites::WriteToGPUMem(const SSpritesContext& spritesContext)
 template<typename TAxesSampler>
 void CFeatureRenderSprites::WriteToGPUMem(const SSpritesContext& spritesContext, SRenderVertices* pRenderVertices, const TAxesSampler& axesSampler)
 {
-	const SComponentParams& params = spritesContext.m_params;
-	const CParticleContainer& container = spritesContext.m_context.m_container;
+	const SComponentParams& params = spritesContext.m_runtime.ComponentParams();
+	const CParticleContainer& container = spritesContext.m_runtime.GetContainer();
 	const IVec3Stream positions = container.GetIVec3Stream(EPVF_Position);
 	const IFStream ages = container.GetIFStream(EPDT_NormalAge);
 	const IFStream lifetimes = container.GetIFStream(EPDT_LifeTime);
@@ -578,7 +575,7 @@ void CFeatureRenderSprites::WriteToGPUMem(const SSpritesContext& spritesContext,
 	const IColorStream colors = container.GetIColorStream(EPDT_Color);
 	const TIStream<uint8> tiles = container.IStream(EPDT_Tile);
 	const Vec3 camPos = spritesContext.m_camInfo.pCamera->GetPosition();
-	const Vec3 emitterPosition = spritesContext.m_context.m_runtime.GetEmitter()->GetPos();
+	const Vec3 emitterPosition = spritesContext.m_runtime.GetEmitter()->GetPos();
 	const Vec3 cameraOffset = (emitterPosition - camPos).GetNormalized() * m_cameraOffset;
 	const auto& particleIds = spritesContext.m_particleIds;
 	const auto& spriteAlphas = spritesContext.m_spriteAlphas;
@@ -589,7 +586,7 @@ void CFeatureRenderSprites::WriteToGPUMem(const SSpritesContext& spritesContext,
 	const bool hasAngles2D = container.HasData(EPDT_Angle2D);
 	const bool hasColors = container.HasData(EPDT_Color);
 	const bool hasTiling = container.HasData(EPDT_Tile);
-	const bool hasAnimation = spritesContext.m_params.m_textureAnimation.IsAnimating();
+	const bool hasAnimation = params.m_textureAnimation.IsAnimating();
 	const bool hasAbsFrameRate = params.m_textureAnimation.HasAbsoluteFrameRate();
 	const bool hasOffset = (m_offset != Vec2(ZERO)) || (m_cameraOffset != 0.0f);
 

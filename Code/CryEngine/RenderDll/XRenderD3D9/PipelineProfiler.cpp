@@ -25,7 +25,7 @@ void CRenderPipelineProfiler::Init()
 	}
 }
 
-void CRenderPipelineProfiler::BeginFrame()
+void CRenderPipelineProfiler::BeginFrame(const int frameID)
 {
 	m_recordData = IsEnabled();
 
@@ -39,7 +39,8 @@ void CRenderPipelineProfiler::BeginFrame()
 
 	SFrameData& frameData = m_frameData[m_frameDataIndex];
 	frameData.m_numSections = 0;
-
+	frameData.m_frameID = frameID;
+	
 	frameData.m_timestampGroup.BeginMeasurement();
 
 	BeginSection("FRAME");
@@ -820,4 +821,28 @@ void CRenderPipelineProfiler::DisplayOverviewStats()
 bool CRenderPipelineProfiler::IsEnabled()
 {
 	return m_enabled || CRenderer::CV_r_profiler;
+}
+
+const DynArray<RPProfilerDetailedStats> CRenderPipelineProfiler::GetRPPDetailedStatsArray(uint32 frameDataIndex)
+{
+	SFrameData& frameData = m_frameData[frameDataIndex];
+	DynArray<RPProfilerDetailedStats> data(frameData.m_numSections);
+
+	for(uint32 idx = 0; idx < frameData.m_numSections; ++idx)
+	{
+		SProfilerSection& section = frameData.m_sections[idx];
+		
+		memcpy(data[idx].name, section.name, 31);
+		data[idx].gpuTime = section.gpuTime;
+		data[idx].gpuTimeSmoothed = section.gpuTimeSmoothed;
+		data[idx].cpuTimeSmoothed = section.cpuTimeSmoothed;
+		data[idx].startTimeCPU = section.startTimeCPU;
+		data[idx].endTimeCPU = section.endTimeCPU;
+		data[idx].numDIPs = section.numDIPs;
+		data[idx].numPolys = section.numPolys;
+		data[idx].recLevel = section.recLevel;
+		data[idx].flags = section.flags;
+	}
+
+	return data;
 }

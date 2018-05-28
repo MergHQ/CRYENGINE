@@ -511,7 +511,7 @@ void CGameExporter::ExportHeightMap(const char* pszGamePath, EEndian eExportEndi
 }
 
 //////////////////////////////////////////////////////////////////////////
-void CGameExporter::ExportMergedMeshInstanceSectors(const char* pszGamePath, EEndian eExportEndian, std::vector<struct IStatInstGroup*>* pVegGroupTable)
+void CGameExporter::ExportMergedMeshInstanceSectors(const char* pszGamePath, EEndian eExportEndian, std::vector<IStatInstGroup*>* pVegGroupTable)
 {
 	char szFileOutputPath[_MAX_PATH];
 	DynArray<string> usedMeshes;
@@ -1592,12 +1592,12 @@ void CGameExporter::DownSampleWithBordersPreservedAO(const CImageEx rIn[4],
 
 			uint32 dwC[2];
 			dwC[0] = ComputeAvgCol_AO(
-			  rIn[dwPart].ValueAt(dwLocalInX, dwLocalInY),
-			  rIn[dwPart].ValueAt(dwLocalInX + 1, dwLocalInY),
-			  rInTerrainMinZ[dwPart], rInTerrainMaxZ[dwPart], fNewZMin, fNewZMax);
+				rIn[dwPart].ValueAt(dwLocalInX, dwLocalInY),
+				rIn[dwPart].ValueAt(dwLocalInX + 1, dwLocalInY),
+				rInTerrainMinZ[dwPart], rInTerrainMaxZ[dwPart], fNewZMin, fNewZMax);
 			dwC[1] = ComputeAvgCol_AO(
-			  rIn[dwPart].ValueAt(dwLocalInX, dwLocalInY + 1), rIn[dwPart].ValueAt(dwLocalInX + 1, dwLocalInY + 1),
-			  rInTerrainMinZ[dwPart], rInTerrainMaxZ[dwPart], fNewZMin, fNewZMax);
+				rIn[dwPart].ValueAt(dwLocalInX, dwLocalInY + 1), rIn[dwPart].ValueAt(dwLocalInX + 1, dwLocalInY + 1),
+				rInTerrainMinZ[dwPart], rInTerrainMaxZ[dwPart], fNewZMin, fNewZMax);
 
 			rOut.ValueAt(dwX, dwY) = ComputeAvgCol_AO(dwC[0], dwC[1], fNewZMin, fNewZMax, fNewZMin, fNewZMax);
 		}

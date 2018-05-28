@@ -112,6 +112,4 @@ ILINE CParticleSystem* GetPSystem()
 	return static_cast<CParticleSystem*>(pSystem.get());
 };
 
-uint GetVersion(IArchive& ar);
-
 }

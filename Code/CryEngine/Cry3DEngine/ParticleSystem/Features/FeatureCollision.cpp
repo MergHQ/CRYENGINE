@@ -2,7 +2,6 @@
 
 #include "StdAfx.h"
 #include "FeatureCollision.h"
-#include "ParticleSystem/ParticleComponentRuntime.h"
 
 namespace pfx2
 {
@@ -100,9 +99,9 @@ struct SCollisionLimitKill
 	IOFStream m_ages;
 };
 
-void CFeatureCollision::InitParticles(const SUpdateContext& context)
+void CFeatureCollision::InitParticles(CParticleComponentRuntime& runtime)
 {
-	CParticleContainer& container = context.m_container;
+	CParticleContainer& container = runtime.GetContainer();
 	container.FillData(EPDT_ContactPoint, SContactPoint(), container.GetSpawnedRange());
 }
 
@@ -439,12 +438,12 @@ bool CFeatureCollision::DoCollision(SContactPoint& contact, QuadPath& path, int 
 }
 
 
-void CFeatureCollision::DoCollisions(const SUpdateContext& context) const
+void CFeatureCollision::DoCollisions(CParticleComponentRuntime& runtime) const
 {
 	// #PFX2_TODO : raytrace caching not implemented yet
 	const int objectFilter = GetRayTraceFilter();
 
-	CParticleContainer& container = context.m_container;
+	CParticleContainer& container = runtime.GetContainer();
 	const IFStream normAges = container.GetIFStream(EPDT_NormalAge);
 	const IFStream lifeTimes = container.GetIFStream(EPDT_LifeTime);
 	IVec3Stream positionsPrev = container.GetIVec3Stream(EPVF_PositionPrev);
@@ -454,13 +453,13 @@ void CFeatureCollision::DoCollisions(const SUpdateContext& context) const
 	IOFStream collideSpeeds = container.GetIOFStream(EPDT_CollideSpeed);
 	TIOStream<SContactPoint> contactPoints = container.IOStream(EPDT_ContactPoint);
 
-	for (auto particleId : context.GetUpdateRange())
+	for (auto particleId : runtime.FullRange())
 	{
 		SContactPoint contact = contactPoints.Load(particleId);
 		if (contact.m_state.ignore)
 			continue;
 
-		float dT = DeltaTime(context.m_deltaTime, particleId, normAges, lifeTimes);
+		float dT = DeltaTime(runtime.DeltaTime(), particleId, normAges, lifeTimes);
 		if (dT == 0.0f)
 			continue;
 
@@ -510,34 +509,34 @@ void CFeatureCollision::DoCollisions(const SUpdateContext& context) const
 	}
 }
 
-void CFeatureCollision::PostUpdateParticles(const SUpdateContext& context)
+void CFeatureCollision::PostUpdateParticles(CParticleComponentRuntime& runtime)
 {
 	CRY_PFX2_PROFILE_DETAIL;
 
-	DoCollisions(context);
+	DoCollisions(runtime);
 
 	switch (m_collisionsLimitMode)
 	{
 	case ECollisionLimitMode::Ignore:
-		UpdateCollisionLimit<SCollisionLimitIgnore>(context);
+		UpdateCollisionLimit<SCollisionLimitIgnore>(runtime);
 		break;
 	case ECollisionLimitMode::Stop:
-		UpdateCollisionLimit<SCollisionLimitStop>(context);
+		UpdateCollisionLimit<SCollisionLimitStop>(runtime);
 		break;
 	case ECollisionLimitMode::Kill:
-		UpdateCollisionLimit<SCollisionLimitKill>(context);
+		UpdateCollisionLimit<SCollisionLimitKill>(runtime);
 		break;
 	}
 }
 
 template<typename TCollisionLimit>
-void CFeatureCollision::UpdateCollisionLimit(const SUpdateContext& context) const
+void CFeatureCollision::UpdateCollisionLimit(CParticleComponentRuntime& runtime) const
 {
-	CParticleContainer& container = context.m_container;
+	CParticleContainer& container = runtime.GetContainer();
 	TCollisionLimit limiter(container);
 	const auto contactPoints = container.IStream(EPDT_ContactPoint);
 
-	for (auto particleId : context.GetUpdateRange())
+	for (auto particleId : runtime.FullRange())
 	{
 		const SContactPoint contact = contactPoints.Load(particleId);
 		if (contact.m_totalCollisions >= m_maxCollisions)

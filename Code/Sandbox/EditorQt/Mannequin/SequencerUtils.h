@@ -60,6 +60,7 @@ public:
 
 struct ISequencerEventsListener
 {
+	virtual ~ISequencerEventsListener() {}
 	// Called when Key selection changes.
 	virtual void OnKeySelectionChange() = 0;
 };

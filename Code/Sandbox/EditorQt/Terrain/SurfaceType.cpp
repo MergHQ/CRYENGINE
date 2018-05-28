@@ -96,7 +96,7 @@ void CSurfaceType::SaveVegetationIds(XmlNodeRef& node)
 
 	if (bExport)
 	{
-		DynArray<struct IStatInstGroup*> statInstGroupTable;
+		DynArray<IStatInstGroup*> statInstGroupTable;
 
 		if (ITerrain* pTerrain = GetIEditorImpl()->Get3DEngine()->GetITerrain())
 		{

@@ -201,7 +201,6 @@ void CAssetEditor::InitGenericMenu()
 	AddToMenu(CEditor::MenuItems::Open);
 	AddToMenu(CEditor::MenuItems::Close);
 	AddToMenu(CEditor::MenuItems::Save);
-	AddToMenu(CEditor::MenuItems::SaveAs);
 	AddToMenu(CEditor::MenuItems::RecentFiles);
 
 	//TODO: help menu doesn't always occupy last position

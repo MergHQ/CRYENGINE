@@ -10,7 +10,7 @@
 #pragma once
 
 #include "StdAfx.h"
-#include "ParticleSystem/ParticleFeature.h"
+#include "FeatureCommon.h"
 
 namespace pfx2
 {
@@ -57,19 +57,19 @@ public:
 
 	virtual void AddToComponent(CParticleComponent* pComponent, SComponentParams* pParams) override;
 	virtual void Serialize(Serialization::IArchive& ar) override;
-	virtual void InitParticles(const SUpdateContext& context) override;
-	virtual void PostUpdateParticles(const SUpdateContext& context) override;
+	virtual void InitParticles(CParticleComponentRuntime& runtime) override;
+	virtual void PostUpdateParticles(CParticleComponentRuntime& runtime) override;
 
 	bool  IsActive() const           { return m_terrain || m_staticObjects || m_dynamicObjects; }
 	float GetElasticity() const      { return m_elasticity; }
 	int   GetRayTraceFilter() const;
 
 private:
-	void DoCollisions(const SUpdateContext& context) const;
+	void DoCollisions(CParticleComponentRuntime& runtime) const;
 	bool DoCollision(SContactPoint& contact, QuadPath& path, int objectFilter, bool doSliding = true) const;
 
 	template<typename TCollisionLimit>
-	void UpdateCollisionLimit(const SUpdateContext& context) const;
+	void UpdateCollisionLimit(CParticleComponentRuntime& runtime) const;
 
 	UUnitFloat          m_elasticity;
 	UUnitFloat          m_friction;

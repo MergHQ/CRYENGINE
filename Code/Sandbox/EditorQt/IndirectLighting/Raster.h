@@ -24,6 +24,7 @@ struct SMatChunk
 //interface for an optional triangle validator getting the triangle world positions passed
 struct ITriangleValidator
 {
+	virtual ~ITriangleValidator() {}
 	virtual const bool ValidateTriangle(const Vec3 crA, const Vec3 crB, const Vec3 crC) const { return true; }
 };
 

@@ -67,10 +67,10 @@ public:
 		NewLine();
 	}
 
-	void WriteStatistics(CParticleComponentRuntime* pRuntime, const SStatistics& statistics)
+	void WriteStatistics(const CParticleComponentRuntime& runtime, const SStatistics& statistics)
 	{
-		CParticleComponent* pComponent = pRuntime->GetComponent();
-		CParticleEmitter* pEmitter = pRuntime->GetEmitter();
+		CParticleComponent* pComponent = runtime.GetComponent();
+		CParticleEmitter* pEmitter = runtime.GetEmitter();
 		CParticleEffect* pEffect = pEmitter->GetCEffect();
 		IEntity* pEntity = pEmitter->GetOwnerEntity();
 		cstr effectName = pEffect->GetFullName();
@@ -84,7 +84,7 @@ public:
 		Column(string().Format("%s%s%s%s", 
 			pComponent->GetParentComponent() ? "#Child " : "",
 			pComponent->ComponentParams().IsImmortal() ? "#Immortal " : "",
-			pRuntime->IsAlive() ? "#C:Alive " : "#C:Dead ",
+			runtime.IsAlive() ? "#C:Alive " : "#C:Dead ",
 			componentName));
 		Column(string().Format("%s%s", entityName, 
 			pEmitter->IsIndependent() ? " #Independent" : ""
@@ -283,19 +283,19 @@ void CParticleProfiler::WriteEntries(CCSVFileOutput& output) const
 
 	const CParticleEmitter* pEmitter = nullptr;
 	SStatistics runtimeStats;
-	CParticleComponentRuntime* pCurrentRuntime = finalElements.front().m_pRuntime;
+	const CParticleComponentRuntime* pCurrentRuntime = finalElements.front().m_pRuntime;
 
 	for (const SEntry& entry : finalElements)
 	{
 		if (entry.m_pRuntime != pCurrentRuntime)
 		{
-			output.WriteStatistics(entry.m_pRuntime, runtimeStats);
+			output.WriteStatistics(*entry.m_pRuntime, runtimeStats);
 			runtimeStats = SStatistics();
 			pCurrentRuntime = entry.m_pRuntime;
 		}
 		runtimeStats.m_values[entry.m_type] += entry.m_value;
 	}
-	output.WriteStatistics(pCurrentRuntime, runtimeStats);
+	output.WriteStatistics(*pCurrentRuntime, runtimeStats);
 }
 
 void CParticleProfiler::DrawPerfomanceStats()
@@ -369,7 +369,7 @@ void CParticleProfiler::DrawStats(CStatisticsDisplay& output, Vec2 pos, EProfile
 		SStatEntry()
 			: pRuntime(nullptr)
 			, value(0) {}
-		CParticleComponentRuntime* pRuntime;
+		const CParticleComponentRuntime* pRuntime;
 		uint value;
 	};
 
@@ -417,9 +417,9 @@ void CParticleProfiler::DrawStats(CStatisticsDisplay& output, Vec2 pos, EProfile
 	uint statCount = min(uint(statEntries.size()), gDisplayMaxNumComponents);
 	for (uint i = 0; i < statCount; ++i)
 	{
-		CParticleComponentRuntime* pRuntime = statEntries[i].pRuntime;
-		CParticleComponent* pComponent = pRuntime->GetComponent();
-		CParticleEmitter* pEmitter = pRuntime->GetEmitter();
+		const CParticleComponentRuntime* pRuntime = statEntries[i].pRuntime;
+		const CParticleComponent* pComponent = pRuntime->GetComponent();
+		const CParticleEmitter* pEmitter = pRuntime->GetEmitter();
 		IEntity* pEntity = pEmitter->GetOwnerEntity();
 
 		const ColorF color = pEmitter->GetProfilerColor();
@@ -465,7 +465,7 @@ void CParticleProfiler::DrawMemoryStats()
 		CParticleEffect* pEffect = pEmitter->GetCEffect();
 		for (auto pRuntime : pEmitter->GetRuntimes())
 		{
-			if (!pRuntime->GetCpuRuntime())
+			if (!pRuntime->IsCPURuntime())
 				continue;
 			const CParticleContainer& container = pRuntime->GetContainer();
 			const uint totalNumParticles = container.GetMaxParticles();
@@ -492,7 +492,7 @@ void CParticleProfiler::DrawMemoryStats()
 		CParticleEffect* pEffect = pEmitter->GetCEffect();
 		for (auto pRuntime : pEmitter->GetRuntimes())
 		{
-			if (!pRuntime->GetCpuRuntime())
+			if (!pRuntime->IsCPURuntime())
 				continue;
 
 			const CParticleContainer& container = pRuntime->GetContainer();

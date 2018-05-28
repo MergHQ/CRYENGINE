@@ -143,7 +143,7 @@ public:
 		blayout->addWidget(m_speedctrl);
 
 		m_timer = new QTimer();
-		QObject::connect(m_timer, &QTimer::timeout, [ = ]
+		QObject::connect(m_timer, &QTimer::timeout, [=]
 		{
 			hide();
 		});
@@ -1199,7 +1199,7 @@ QSize QViewportHeader::sizeHint() const
 }
 
 //////////////////////////////////////////////////////////////////////////
-void QViewportHeader::OnMenuViewSelected(struct IViewPaneClass* viewClass)
+void QViewportHeader::OnMenuViewSelected(IViewPaneClass* viewClass)
 {
 	string cmd;
 	cmd.Format("general.open_pane '%s'", viewClass->ClassName());

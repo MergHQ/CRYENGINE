@@ -1,19 +1,7 @@
-// Copyright 2001-2018 Crytek GmbH / Crytek Group. All rights reserved.
-
-// -------------------------------------------------------------------------
-//  Created:     14/01/2015 by Filipe amim
-//  Description:
-// -------------------------------------------------------------------------
-//
-////////////////////////////////////////////////////////////////////////////
+// Copyright 2015-2018 Crytek GmbH / Crytek Group. All rights reserved.
 
 #include "StdAfx.h"
-#include <CrySerialization/SmartPtr.h>
-#include <CrySerialization/Math.h>
-#include "ParticleSystem/ParticleFeature.h"
-#include "ParamMod.h"
-
-#include <CryRenderer/IGpuParticles.h>
+#include "FeatureCommon.h"
 
 namespace pfx2
 {
@@ -71,16 +59,16 @@ public:
 		ar(m_clipRange, "ClipRange", "Clip Range");
 	}
 
-	virtual void InitParticles(const SUpdateContext& context) override
+	virtual void InitParticles(CParticleComponentRuntime& runtime) override
 	{
 		CRY_PFX2_PROFILE_DETAIL;
-		m_opacity.InitParticles(context, EPDT_Alpha);
+		m_opacity.InitParticles(runtime, EPDT_Alpha);
 	}
 
-	virtual void UpdateParticles(const SUpdateContext& context) override
+	virtual void UpdateParticles(CParticleComponentRuntime& runtime) override
 	{
 		CRY_PFX2_PROFILE_DETAIL;
-		m_opacity.Update(context, EPDT_Alpha);
+		m_opacity.Update(runtime, EPDT_Alpha);
 	}
 
 private:
@@ -129,16 +117,16 @@ public:
 		return EFT_Size;
 	}
 
-	virtual void InitParticles(const SUpdateContext& context) override
+	virtual void InitParticles(CParticleComponentRuntime& runtime) override
 	{
 		CRY_PFX2_PROFILE_DETAIL;
-		m_size.InitParticles(context, EPDT_Size);
+		m_size.InitParticles(runtime, EPDT_Size);
 	}
 
-	virtual void UpdateParticles(const SUpdateContext& context) override
+	virtual void UpdateParticles(CParticleComponentRuntime& runtime) override
 	{
 		CRY_PFX2_PROFILE_DETAIL;
-		m_size.Update(context, EPDT_Size);
+		m_size.Update(runtime, EPDT_Size);
 	}
 
 private:
@@ -191,7 +179,7 @@ public:
 		ar(m_affectOpacity, "AffectOpacity", "Affect Opacity");
 	}
 
-	virtual void UpdateParticles(const SUpdateContext& context) override
+	virtual void UpdateParticles(CParticleComponentRuntime& runtime) override
 	{
 		CRY_PFX2_PROFILE_DETAIL;
 
@@ -207,13 +195,13 @@ public:
 		const floatv minDrawPixels = ToFloatv(fov / height * 0.5f);
 		const floatv epsilon = ToFloatv(1.0f / 1024.0f);
 
-		CParticleContainer& container = context.m_container;
+		CParticleContainer& container = runtime.GetContainer();
 		IVec3Stream positions = container.GetIVec3Stream(EPVF_Position);
 		IOFStream sizes = container.GetIOFStream(EPDT_Size);
 		IFStream inputAlphas = m_initAlphas ? IFStream(nullptr, 1.0f) : container.GetIFStream(EPDT_Alpha);
 		IOFStream outputAlphas = container.GetIOFStream(EPDT_Alpha);
 
-		for (auto particleGroupId : context.GetUpdateGroupRange())
+		for (auto particleGroupId : runtime.FullRangeV())
 		{
 			const Vec3v position = positions.Load(particleGroupId);
 			const floatv size0 = sizes.Load(particleGroupId);

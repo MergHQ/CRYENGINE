@@ -626,8 +626,8 @@ void CRainDrops::DrawFinal(CTexture*& rptexCurrRT)
 	static CCryNameR pParam1Name("vRainParams");
 	PostProcessUtils().ShSetParamPS(pParam1Name, Vec4(1.0f, 1.0f, 1.0f, 1.0f));
 
-	PostProcessUtils().SetTexture(CRendererResources::s_ptexBackBuffer, 0, FILTER_LINEAR);
-	PostProcessUtils().SetTexture(rptexCurrRT, 1, FILTER_LINEAR, eSamplerAddressMode_Mirror);
+	PostProcessUtils().SetTexture(rptexCurrRT, 0, FILTER_LINEAR, eSamplerAddressMode_Mirror);
+	PostProcessUtils().SetTexture(CRendererResources::s_ptexBackBuffer, 1, FILTER_LINEAR);
 
 	PostProcessUtils().DrawFullScreenTri(CRendererResources::s_ptexBackBuffer->GetWidth(), CRendererResources::s_ptexBackBuffer->GetHeight());
 
