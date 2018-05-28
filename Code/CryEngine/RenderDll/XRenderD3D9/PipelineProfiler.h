@@ -15,7 +15,7 @@ public:
 	CRenderPipelineProfiler();
 
 	void                   Init();
-	void                   BeginFrame();
+	void                   BeginFrame(const int frameID);
 	void                   EndFrame();
 	void                   BeginSection(const char* name);
 	void                   EndSection(const char* name);
@@ -28,6 +28,8 @@ public:
 
 	const RPProfilerStats& GetBasicStats(ERenderPipelineProfilerStats stat, int nThreadID) { assert((uint32)stat < RPPSTATS_NUM); return m_basicStats[nThreadID][stat]; }
 	const RPProfilerStats* GetBasicStatsArray(int nThreadID)                               { return m_basicStats[nThreadID]; }
+
+	const DynArray<RPProfilerDetailedStats> GetRPPDetailedStatsArray(uint32 frameDataIndex);
 
 protected:
 	struct SProfilerSection
@@ -48,13 +50,15 @@ protected:
 	{
 		enum { kMaxNumSections = CDeviceTimestampGroup::kMaxTimestamps / 2 };
 
-		uint32                 m_numSections;
-		SProfilerSection       m_sections[kMaxNumSections];
-		CDeviceTimestampGroup  m_timestampGroup;
+		uint32                  m_numSections;
+		int                     m_frameID;
+		SProfilerSection        m_sections[kMaxNumSections];
+		CDeviceTimestampGroup   m_timestampGroup;
 
 		// cppcheck-suppress uninitMemberVar
 		SFrameData()
 			: m_numSections(0)
+			, m_frameID(0)
 		{
 			memset(m_sections, 0, sizeof(m_sections));
 		}

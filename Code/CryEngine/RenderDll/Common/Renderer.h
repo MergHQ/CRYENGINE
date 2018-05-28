@@ -1246,8 +1246,9 @@ public:
 
 	virtual void                   SetTexturePrecaching(bool stat) override;
 
-	virtual const RPProfilerStats* GetRPPStats(ERenderPipelineProfilerStats eStat, bool bCalledFromMainThread = true) override                       { return NULL; }
-	virtual const RPProfilerStats* GetRPPStatsArray(bool bCalledFromMainThread = true) override                                                      { return NULL; }
+	virtual const RPProfilerStats* GetRPPStats(ERenderPipelineProfilerStats eStat, bool bCalledFromMainThread = true) override  { return nullptr; }
+	virtual const RPProfilerStats* GetRPPStatsArray(bool bCalledFromMainThread = true) override                                 { return nullptr; }
+	virtual const DynArray<RPProfilerDetailedStats>	GetRPPDetailedStatsArray(uint32 frameDataIndex) override                    { return DynArray<RPProfilerDetailedStats>(); }
 
 	virtual int                    GetPolygonCountByType(uint32 EFSList, EVertexCostTypes vct, uint32 z, bool bCalledFromMainThread = true) override { return 0; }
 

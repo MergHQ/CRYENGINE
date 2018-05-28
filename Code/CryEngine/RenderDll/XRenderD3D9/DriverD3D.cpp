@@ -960,7 +960,7 @@ void CD3D9Renderer::RT_BeginFrame(const SDisplayContextKey& displayContextKey)
 	GetDeviceObjectFactory().OnBeginFrame();
 
 	if (m_pPipelineProfiler)
-		m_pPipelineProfiler->BeginFrame();
+		m_pPipelineProfiler->BeginFrame(gRenDev->GetRenderFrameID());
 
 	//////////////////////////////////////////////////////////////////////
 	// Build the matrices
@@ -5198,12 +5198,17 @@ bool CD3D9Renderer::IsStereoEnabled() const
 
 const RPProfilerStats* CD3D9Renderer::GetRPPStats(ERenderPipelineProfilerStats eStat, bool bCalledFromMainThread /*= true */)
 {
-	return m_pPipelineProfiler ? &m_pPipelineProfiler->GetBasicStats(eStat, bCalledFromMainThread ? gRenDev->GetMainThreadID() : gRenDev->GetRenderThreadID()) : NULL;
+	return m_pPipelineProfiler ? &m_pPipelineProfiler->GetBasicStats(eStat, bCalledFromMainThread ? gRenDev->GetMainThreadID() : gRenDev->GetRenderThreadID()) : nullptr;	
 }
 
 const RPProfilerStats* CD3D9Renderer::GetRPPStatsArray(bool bCalledFromMainThread /*= true */)
 {
-	return m_pPipelineProfiler ? m_pPipelineProfiler->GetBasicStatsArray(bCalledFromMainThread ? gRenDev->GetMainThreadID() : gRenDev->GetRenderThreadID()) : NULL;
+	return m_pPipelineProfiler ? m_pPipelineProfiler->GetBasicStatsArray(bCalledFromMainThread ? gRenDev->GetMainThreadID() : gRenDev->GetRenderThreadID()) : nullptr;
+}
+
+const DynArray<RPProfilerDetailedStats> CD3D9Renderer::GetRPPDetailedStatsArray(uint32 frameDataIndex)
+{
+	return m_pPipelineProfiler->GetRPPDetailedStatsArray(frameDataIndex);
 }
 
 int CD3D9Renderer::GetPolygonCountByType(uint32 EFSList, EVertexCostTypes vct, uint32 z, bool bCalledFromMainThread /*= true*/)
