@@ -101,7 +101,7 @@ CParticleEditor::CParticleEditor()
 void CParticleEditor::InitMenu()
 {
 	const CEditor::MenuItems items[] = {
-		CEditor::MenuItems::FileMenu, CEditor::MenuItems::Save,
+		CEditor::MenuItems::FileMenu, CEditor::MenuItems::Save, CEditor::MenuItems::SaveAs,
 		CEditor::MenuItems::EditMenu, CEditor::MenuItems::Undo,  CEditor::MenuItems::Redo,
 		CEditor::MenuItems::Copy,     CEditor::MenuItems::Paste, CEditor::MenuItems::Delete
 	};

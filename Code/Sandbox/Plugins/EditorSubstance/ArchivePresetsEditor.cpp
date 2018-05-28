@@ -34,6 +34,7 @@ namespace EditorSubstance
 		: CAssetEditor("SubstanceDefinition")
 		, m_pOutputsGraphEditor(nullptr)
 	{
+		AddToMenu(CEditor::MenuItems::SaveAs);
 
 		m_pScrollBox = new QScrollableBox(this);
 
