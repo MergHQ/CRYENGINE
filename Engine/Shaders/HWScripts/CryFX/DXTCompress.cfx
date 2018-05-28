@@ -242,7 +242,8 @@ float4 compress(const in float3 colors[16])
 // Standard FX routine
 ////////////////////////////////////////////////////////////////////////////////
 
-sampler2D srcSampler : register(s0);
+Texture2D texCompress   : register(t0);
+SamplerState ssCompress : register(s0);
 
 float4 g_vSrcRTSize;
 float4 g_vDstRTSize;
@@ -270,7 +271,7 @@ float4 DXTCompressPS(const in float2 vTexCoords : TEXCOORD0) : COLOR0
 	for(int i=0;i<16;i++)
 	{
 		const float2 curTexCoord = vTexCoords + float2(fmod(i, 4), round(i/4)) * g_vSrcRTSize.zw;
-		colors[i] = tex2D(srcSampler, curTexCoord).rgb;
+		colors[i] = texCompress.Sample(ssCompress, curTexCoord).rgb;
 	}
 
 	// main stage: compress it

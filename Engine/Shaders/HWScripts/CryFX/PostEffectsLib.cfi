@@ -57,67 +57,6 @@ samplerCUBE _cubetex5 : register(s5);
 samplerCUBE _cubetex6 : register(s6);
 samplerCUBE _cubetex7 : register(s7);
 
-// Use for auto binding
-sampler2D screenMapSampler : register (s0)
-{
-  Texture = $BackBuffer;
-  MinFilter = POINT;
-  MagFilter = POINT;
-  MipFilter = POINT; 
-  AddressU = Clamp;
-  AddressV = Clamp;	
-};
-
-sampler2D depthMapSampler  : register (s1)
-{
-  Texture = $ZTarget;
-  MinFilter = POINT;
-  MagFilter = POINT;
-  MipFilter = POINT; 
-  AddressU = Clamp;
-  AddressV = Clamp;	
-};
-
-sampler2D screenMapScaledSampler_d2  : register (s2)
-{
-  Texture = $BackBufferScaled_d2;
-  MinFilter = LINEAR;
-  MagFilter = LINEAR;
-  MipFilter = POINT; 
-  AddressU = Clamp;
-  AddressV = Clamp;	
-};
-
-sampler2D screenMapScaledSampler_d4  : register (s3)
-{
-  Texture = $BackBufferScaled_d4;
-  MinFilter = LINEAR;
-  MagFilter = LINEAR;
-  MipFilter = POINT; 
-  AddressU = Clamp;
-  AddressV = Clamp;	
-};
-
-sampler2D screenMapScaledSampler_d8  : register (s4)
-{
-  Texture = $BackBufferScaled_d8;
-  MinFilter = LINEAR;
-  MagFilter = LINEAR;
-  MipFilter = POINT; 
-  AddressU = Clamp;
-  AddressV = Clamp;	
-};
-
-sampler2D screenTargetSampler : register (s0)
-{
-  Texture = $SceneTarget;
-  MinFilter = POINT;
-  MagFilter = POINT;
-  MipFilter = POINT; 
-  AddressU = Clamp;
-  AddressV = Clamp;	
-};
-
 //////////////////////////////// Common vertex shader stuff ////////////////
 
 struct pixout_MRT

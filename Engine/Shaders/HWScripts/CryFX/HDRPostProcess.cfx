@@ -367,7 +367,7 @@ pixout HDRFinalScenePS(vert2frag IN)
 	fVignetting = vignettingTex.Sample(linearClampSS, ScreenTC.xy); 
 #endif
 #if %_RT_SAMPLE3
-	cBloom = bloomTex.Sample(linearClampSS, ScreenTC.xy);//??tex2D(bloomMap0, ScreenTC);
+	cBloom = bloomTex.Sample(linearClampSS, ScreenTC.xy);
 #endif
 
 
