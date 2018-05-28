@@ -123,7 +123,7 @@ void CParticleEmitter::Render(const struct SRendParams& rParam, const SRendering
 	for (auto& pRuntime : m_componentRuntimes)
 	{
 		if (pRuntime->GetComponent()->IsVisible() && passInfo.GetCamera().IsAABBVisible_E(pRuntime->GetBounds()))
-			pRuntime->GetComponent()->RenderAll(this, pRuntime, renderContext);
+			pRuntime->RenderAll(renderContext);
 	}
 }
 
@@ -158,10 +158,10 @@ void CParticleEmitter::Update()
 	for (auto const& elem: GetCEffect()->MainPreUpdate)
 	{
 		if (auto pRuntime = GetRuntimeFor(elem.pComponent))
-			elem.pFeature->MainPreUpdate(pRuntime);
+			elem.pFeature->MainPreUpdate(*pRuntime);
 	}
 
-	if (CParticleJobManager::ThreadMode() >= 4 && SkipUpdate())
+	if (CParticleJobManager::ThreadMode() >= 4 && SkipUpdate() && !(GetRndFlags() & ERF_HIDDEN))
 	{
 		// If not updating this frame, use max bounds for visibility
 		if (!m_bounds.ContainsBox(m_maxBounds))
@@ -190,31 +190,34 @@ void CParticleEmitter::Update()
 namespace Bounds
 {
 	float Expansion       = 1.125f;
-	float ShrinkThreshold = 0.5f;
+	float ShrinkThreshold = 0.25f;
 }
 
 void CParticleEmitter::UpdateBoundingBox()
 {
 	CRY_PFX2_PROFILE_DETAIL;
 
-	if (!m_registered || 
-	!m_bounds.ContainsBox(m_realBounds) ||
-	m_realBounds.GetVolume() <= m_bounds.GetVolume() * Bounds::ShrinkThreshold)
+	if (!m_registered
+	|| m_realBounds.GetVolume() <= m_bounds.GetVolume() * Bounds::ShrinkThreshold)
+	{
 		m_boundsChanged = true;
-	
+		m_bounds = m_realBounds;
+	}
+	else if (!m_bounds.ContainsBox(m_realBounds))
+	{
+		m_boundsChanged = true;
+		m_bounds.Add(m_realBounds);
+		m_maxBounds.Add(m_bounds);
+	}
+
 	if (m_boundsChanged)
 	{
-		if (m_realBounds.IsReset())
-		{
-			m_bounds.Reset();
-		}
-		else
+		if (!m_bounds.IsReset())
 		{
 			// Expand bounds to avoid frequent re-registering
-			Vec3 center = m_realBounds.GetCenter();
-			Vec3 extent = m_realBounds.GetSize() * (Bounds::Expansion * 0.5f);
+			Vec3 center = m_bounds.GetCenter();
+			Vec3 extent = m_bounds.GetSize() * (Bounds::Expansion * 0.5f);
 			m_bounds = AABB(center - extent, center + extent);
-			m_maxBounds.Add(m_bounds);
 		}
 	}
 }
@@ -295,12 +298,14 @@ void CParticleEmitter::DebugRender(const SRenderingPassInfo& passInfo) const
 		for (auto& pRuntime : m_componentRuntimes)
 		{
 			if (!pRuntime->GetBounds().IsReset())
+			{
 				pRenderAux->DrawAABB(pRuntime->GetBounds(), false, componentColor, eBBD_Faceted);
+				string label = string().Format("%s #%d", pRuntime->GetComponent()->GetName(),
+					pRuntime->GetContainer().GetRealNumParticles());
+				IRenderAuxText::DrawLabelEx(pRuntime->GetBounds().GetCenter(), 1.5f, componentColor, true, true, label);
+			}
 		}
 		string label = string().Format("%s #%d Age %.3f", m_pEffect->GetShortName().c_str(), m_stats.particles.alive, GetAge());
-		float stableTime = max(m_timeStable - m_time, 0.0f);
-		if (stableTime > 0.0f)
-			label += string().Format(" Stable %.3f", stableTime);
 		IRenderAuxText::DrawLabelEx(m_location.t, 1.5f, (float*)&alphaColor, true, true, label);
 	}
 	if (!m_maxBounds.IsReset())
@@ -466,6 +471,9 @@ void CParticleEmitter::SetLocation(const QuatTS& loc)
 
 	m_parentContainer.GetIOVec3Stream(EPVF_Position).Store(0, m_location.t);
 	m_parentContainer.GetIOQuatStream(EPQF_Orientation).Store(0, m_location.q);
+
+	if (IsEquivalent(m_location, prevLoc, RAD_EPSILON, 0.001f))
+		return;
 
 	if (m_registered)
 	{

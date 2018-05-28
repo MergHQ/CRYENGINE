@@ -4,6 +4,7 @@
 
 #include "ParticleCommon.h"
 #include "ParticleComponent.h"
+#include "ParticleContainer.h"
 #include <CryRenderer/IGpuParticles.h>
 
 namespace pfx2
@@ -24,30 +25,32 @@ public:
 	CParticleComponentRuntime(CParticleEmitter* pEmitter, CParticleComponent* pComponent);
 	~CParticleComponentRuntime();
 
-	CParticleComponentRuntime*    GetCpuRuntime()      { return !m_pGpuRuntime ? this : nullptr; }
-	gpu_pfx2::IParticleComponentRuntime* GetGpuRuntime() { return m_pGpuRuntime; }
-	CParticleComponent*           GetComponent() const { return m_pComponent; }
+	bool                          IsCPURuntime() const   { return !m_pGpuRuntime; }
+	gpu_pfx2::IParticleComponentRuntime* GetGpuRuntime() const { return m_pGpuRuntime; }
+	CParticleComponent*           GetComponent() const   { return m_pComponent; }
 	bool                          IsValidForComponent() const;
-	const AABB&                   GetBounds() const    { return m_pGpuRuntime ? m_pGpuRuntime->GetBounds() : m_bounds; }
-	bool                          IsChild() const      { return m_pComponent->GetParentComponent() != nullptr; }
+	const AABB&                   GetBounds() const      { return m_pGpuRuntime ? m_pGpuRuntime->GetBounds() : m_bounds; }
+	bool                          IsChild() const        { return m_pComponent->GetParentComponent() != nullptr; }
 	void                          ReparentParticles(TConstArray<TParticleId> swapIds);
 	void                          AddSubInstances(TVarArray<SInstance> instances);
 	void                          RemoveAllSubInstances();
+	void                          RenderAll(const SRenderContext& renderContext);
+
 	void                          ComputeVertices(const SCameraInfo& camInfo, CREParticle* pRE, uint64 uRenderFlags, float fMaxPixels) override;
 
 	void                      Initialize();
 	CParticleEffect*          GetEffect() const          { return m_pComponent->GetEffect(); }
 	CParticleEmitter*         GetEmitter() const         { return m_pEmitter; }
-	const SComponentParams&   GetComponentParams() const { return m_pComponent->GetComponentParams(); }
 
 	CParticleContainer&       GetParentContainer();
 	const CParticleContainer& GetParentContainer() const;
 	CParticleContainer&       GetContainer()            { return m_container; }
 	const CParticleContainer& GetContainer() const      { return m_container; }
+	CParticleContainer&       GetContainer(EModDomain domain) { return domain == EMD_PerParticle ? GetContainer() : GetParentContainer(); }
 
 	void                      UpdateAll();
-	void                      AddRemoveParticles(const SUpdateContext& context);
-	void                      UpdateParticles(const SUpdateContext& context);
+	void                      AddRemoveParticles();
+	void                      UpdateParticles();
 	void                      CalculateBounds();
 
 	bool                      IsAlive() const               { return m_alive; }
@@ -58,7 +61,7 @@ public:
 	TParticleId               GetParentId(uint idx) const   { return GetInstance(idx).m_parentId; }
 	template<typename T> T&   GetInstanceData(uint idx, TDataOffset<T> offset)
 	{
-		const auto stride = GetComponentParams().m_instanceDataStride;
+		const auto stride = ComponentParams().m_instanceDataStride;
 		CRY_PFX2_ASSERT(offset + sizeof(T) <= stride);
 		CRY_PFX2_ASSERT(idx < m_subInstances.size());
 		byte* addr = m_subInstanceData.data() + stride * idx + offset;
@@ -66,27 +69,39 @@ public:
 	}
 	void                      GetEmitLocations(TVarArray<QuatTS> locations) const;
 	void                      EmitParticle();
-	SChaosKey                 MakeSeed(TParticleId id = 0) const;
-	SChaosKey                 MakeParentSeed(TParticleId id = 0) const;
 
 	bool                      HasParticles() const;
 	void                      AccumStats();
 
+	SChaosKey&                Chaos()                 { return m_chaos; }
+	SChaosKeyV&               ChaosV()                { return m_chaosV; }
+
+	SUpdateRange              FullRange() const       { return m_container.GetFullRange(); }
+	SGroupRange               FullRangeV() const      { return SGroupRange(m_container.GetFullRange()); }
+	SUpdateRange              SpawnedRange() const    { return m_container.GetSpawnedRange(); }
+	SGroupRange               SpawnedRangeV() const   { return SGroupRange(m_container.GetSpawnedRange()); }
+	const SComponentParams&   ComponentParams() const { return m_pComponent->GetComponentParams(); }
+
+	static TParticleHeap&     MemHeap();
+	float                     DeltaTime() const;
+
 private:
-	void AddParticles(const SUpdateContext& context);
-	void RemoveParticles(const SUpdateContext& context);
-	void UpdateNewBorns(const SUpdateContext& context);
-	void UpdateGPURuntime(const SUpdateContext& context);
-	void AgeUpdate(const SUpdateContext& context);
+	void AddParticles();
+	void RemoveParticles();
+	void UpdateNewBorns();
+	void UpdateGPURuntime();
+	void AgeUpdate();
 	void DebugStabilityCheck();
 
-	_smart_ptr<CParticleComponent>                  m_pComponent;
-	CParticleEmitter*                               m_pEmitter;
-	CParticleContainer                              m_container;
-	TDynArray<SInstance>                            m_subInstances;
-	TDynArray<byte>                                 m_subInstanceData;
-	AABB                                            m_bounds;
-	bool                                            m_alive;
+	_smart_ptr<CParticleComponent> m_pComponent;
+	CParticleEmitter*              m_pEmitter;
+	CParticleContainer             m_container;
+	TDynArray<SInstance>           m_subInstances;
+	TDynArray<byte>                m_subInstanceData;
+	AABB                           m_bounds;
+	bool                           m_alive;
+	SChaosKey                      m_chaos;
+	SChaosKeyV                     m_chaosV;
 
 	_smart_ptr<gpu_pfx2::IParticleComponentRuntime> m_pGpuRuntime;
 };

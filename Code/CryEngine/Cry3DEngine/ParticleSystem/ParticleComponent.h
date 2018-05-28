@@ -4,12 +4,13 @@
 
 #include "ParticleCommon.h"
 #include "ParticleFeature.h"
+#include "ParticleDataTypes.h"
 #include <CryRenderer/IGpuParticles.h>
 
 namespace pfx2
 {
 
-class CParticleComponentRuntime;
+class CParticleEffect;
 
 SERIALIZATION_ENUM_DECLARE(EAnimationCycle, : uint8,
 	Once,
@@ -207,7 +208,6 @@ public:
 	void                    GetMaxParticleCounts(int& total, int& perFrame, float minFPS = 4.0f, float maxFPS = 120.0f) const;
 	void                    UpdateTimings();
 
-	void                    RenderAll(CParticleEmitter* pEmitter, CParticleComponentRuntime* pRuntime, const SRenderContext& renderContext);
 	bool                    CanMakeRuntime(CParticleEmitter* pEmitter) const;
 
 private:
@@ -222,8 +222,8 @@ private:
 	TComponents                              m_children;
 	Vec2                                     m_nodePosition;
 	SComponentParams                         m_Params;
-	std::vector<TParticleFeaturePtr>         m_features;
-	std::vector<TParticleFeaturePtr>         m_defaultFeatures;
+	TSmartArray<CParticleFeature>            m_features;
+	TSmartArray<CParticleFeature>            m_defaultFeatures;
 	StaticEnumArray<bool, EParticleDataType> m_useParticleData;
 	SEnable                                  m_enabled;
 	SEnable                                  m_visible;

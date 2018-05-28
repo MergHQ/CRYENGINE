@@ -16,6 +16,8 @@ struct SSerializationContext
 	uint m_documentVersion;
 };
 
+uint GetVersion(IArchive& ar);
+
 class CParticleEffect : public IParticleEffectPfx2
 {
 public:

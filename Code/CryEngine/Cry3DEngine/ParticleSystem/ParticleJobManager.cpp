@@ -19,23 +19,21 @@ CParticleJobManager::CParticleJobManager()
 	REGISTER_CVAR(e_ParticlesJobsPerThread, 16, 0, "Maximum particle jobs to assign per worker thread");
 }
 
-void CParticleJobManager::AddDeferredRender(CParticleComponentRuntime* pRuntime, const SRenderContext& renderContext)
+void CParticleJobManager::AddDeferredRender(const CParticleComponentRuntime& runtime, const SRenderContext& renderContext)
 {
-	SDeferredRender render(pRuntime, renderContext);
+	SDeferredRender render(runtime, renderContext);
 	m_deferredRenders.push_back(render);
 }
 
-void CParticleJobManager::ScheduleComputeVertices(CParticleComponentRuntime* pComponentRuntime, CRenderObject* pRenderObject, const SRenderContext& renderContext)
+void CParticleJobManager::ScheduleComputeVertices(CParticleComponentRuntime& runtime, CRenderObject* pRenderObject, const SRenderContext& renderContext)
 {
 	CParticleManager* pPartManager = static_cast<CParticleManager*>(gEnv->pParticleManager);
 
 	SAddParticlesToSceneJob& job = pPartManager->GetParticlesToSceneJob(renderContext.m_passInfo);
-	auto pGpuRuntime = pComponentRuntime->GetGpuRuntime();
-	auto pCpuRuntime = pComponentRuntime->GetCpuRuntime();
-	if (pGpuRuntime)
+	if (auto pGpuRuntime = runtime.GetGpuRuntime())
 		job.pGpuRuntime = pGpuRuntime;
-	else if (pCpuRuntime)
-		job.pVertexCreator = pCpuRuntime;
+	else
+		job.pVertexCreator = &runtime;
 	job.pRenderObject = pRenderObject;
 	job.pShaderItem = &pRenderObject->m_pCurrMaterial->GetShaderItem();
 	job.nCustomTexId = renderContext.m_renderParams.nTextureID;
@@ -139,15 +137,12 @@ void CParticleJobManager::DeferredRender()
 
 	for (const SDeferredRender& render : m_deferredRenders)
 	{
-		CParticleComponentRuntime* pRuntime = render.m_pRuntime;
-		CParticleComponent* pComponent = pRuntime->GetComponent();
-		CParticleEmitter* pEmitter = pRuntime->GetEmitter();
-		pEmitter->SyncUpdate();
+		render.m_runtime.GetEmitter()->SyncUpdate();
 		SRenderContext renderContext(render.m_rParam, render.m_passInfo);
 		renderContext.m_distance = render.m_distance;
 		renderContext.m_lightVolumeId = render.m_lightVolumeId;
 		renderContext.m_fogVolumeId = render.m_fogVolumeId;
-		pRuntime->GetComponent()->RenderDeferred(pEmitter, pRuntime, pComponent, renderContext);
+		render.m_runtime.GetComponent()->RenderDeferred(render.m_runtime, renderContext);
 	}
 	m_deferredRenders.clear();
 }

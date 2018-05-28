@@ -78,6 +78,13 @@ enum EDataFlags
 	BNeedsClear = 2  // indicates data type requires clearing after editing
 };
 
+enum EModDomain
+{
+	EMD_PerParticle,
+	EMD_PerInstance,
+	EMD_PerEffect,
+};
+
 // Traits for extracting element-type info from scalar and vector types
 template<typename T>
 struct TDimInfo

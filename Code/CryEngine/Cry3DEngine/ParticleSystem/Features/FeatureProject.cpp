@@ -1,9 +1,7 @@
-// Copyright 2001-2018 Crytek GmbH / Crytek Group. All rights reserved.
+// Copyright 2015-2018 Crytek GmbH / Crytek Group. All rights reserved.
 
 #include "StdAfx.h"
-#include "ParticleSystem/ParticleFeature.h"
-#include "ParticleSystem/ParticleEmitter.h"
-#include "ParamTraits.h"
+#include "FeatureCommon.h"
 #include "FeatureAngles.h"
 
 namespace pfx2
@@ -59,31 +57,31 @@ public:
 		}
 	}
 
-	virtual void InitParticles(const SUpdateContext& context) override
+	virtual void InitParticles(CParticleComponentRuntime& runtime) override
 	{
 		CRY_PFX2_PROFILE_DETAIL;
-		Project(context, context.m_container.GetSpawnedRange());
+		Project(runtime, runtime.SpawnedRange());
 	}
 
-	virtual void UpdateParticles(const SUpdateContext& context) override
+	virtual void UpdateParticles(CParticleComponentRuntime& runtime) override
 	{
 		CRY_PFX2_PROFILE_DETAIL;
-		Project(context, context.m_updateRange);
+		Project(runtime, runtime.FullRange());
 	}
 
 private:
-	virtual void FillSamples(const SUpdateContext& context, const SUpdateRange& range, TPosNormArray& samples) = 0;
+	virtual void FillSamples(CParticleComponentRuntime& runtime, const SUpdateRange& range, TPosNormArray& samples) = 0;
 
-	ILINE void Project(const SUpdateContext& context, const SUpdateRange& range)
+	ILINE void Project(CParticleComponentRuntime& runtime, const SUpdateRange& range)
 	{
 		const Matrix34 viewTM = gEnv->p3DEngine->GetRenderingCamera().GetMatrix();
 		const Vec3 cameraPos = gEnv->p3DEngine->GetRenderingCamera().GetPosition();
 		const Vec3 forward = -viewTM.GetColumn1();
 
-		CParticleContainer& container = context.m_container;
+		CParticleContainer& container = runtime.GetContainer();
 
-		TPosNormArray posNormArray(*context.m_pMemHeap, container.GetMaxParticles());
-		FillSamples(context, range, posNormArray);
+		TPosNormArray posNormArray(runtime.MemHeap(), container.GetMaxParticles());
+		FillSamples(runtime, range, posNormArray);
 
 		IOVec3Stream positions = container.GetIOVec3Stream(EPVF_Position);
 		IOVec3Stream velocities = container.GetIOVec3Stream(EPVF_Velocity);
@@ -151,11 +149,11 @@ public:
 	CRY_PFX2_DECLARE_FEATURE
 
 private:
-	virtual void FillSamples(const SUpdateContext& context, const SUpdateRange& range, TPosNormArray& samples) override
+	virtual void FillSamples(CParticleComponentRuntime& runtime, const SUpdateRange& range, TPosNormArray& samples) override
 	{
-		CTerrain* pTerrain = context.m_runtime.GetEmitter()->GetTerrain();
+		CTerrain* pTerrain = runtime.GetEmitter()->GetTerrain();
 
-		const CParticleContainer& container = context.m_container;
+		const CParticleContainer& container = runtime.GetContainer();
 		const IVec3Stream positions = container.GetIVec3Stream(EPVF_Position);
 		const IFStream sizes = container.GetIFStream(EPDT_Size);
 
@@ -207,10 +205,10 @@ public:
 	}
 
 private:
-	virtual void FillSamples(const SUpdateContext& context, const SUpdateRange& range, TPosNormArray& samples) override
+	virtual void FillSamples(CParticleComponentRuntime& runtime, const SUpdateRange& range, TPosNormArray& samples) override
 	{
-		const SPhysEnviron& physicsEnvironment = context.m_runtime.GetEmitter()->GetPhysicsEnv();
-		CParticleContainer& container = context.m_container;
+		const SPhysEnviron& physicsEnvironment = runtime.GetEmitter()->GetPhysicsEnv();
+		CParticleContainer& container = runtime.GetContainer();
 		const IVec3Stream positions = container.GetIVec3Stream(EPVF_Position);
 		IOFStream ages = container.GetIOFStream(EPDT_NormalAge);
 

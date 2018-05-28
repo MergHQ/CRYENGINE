@@ -1,9 +1,8 @@
 // Copyright 2001-2018 Crytek GmbH / Crytek Group. All rights reserved.
 
 #include "StdAfx.h"
+#include "FeatureCommon.h"
 #include <CrySerialization/Decorators/Resources.h>
-#include <CrySerialization/Math.h>
-#include "ParticleSystem/ParticleSystem.h"
 
 namespace pfx2
 {
@@ -108,11 +107,11 @@ public:
 		}
 	}
 
-	virtual void InitParticles(const SUpdateContext& context) override
+	virtual void InitParticles(CParticleComponentRuntime& runtime) override
 	{
 		CRY_PROFILE_FUNCTION(PROFILE_PARTICLE);
 
-		CParticleContainer& container = context.m_container;
+		CParticleContainer& container = runtime.GetContainer();
 		TIOStream<IMeshObj*> meshes = container.IOStream(EPDT_MeshGeometry);
 		TIStream<uint> spawnIds = container.IStream(EPDT_SpawnId);
 		IOVec3Stream positions = container.GetIOVec3Stream(EPVF_Position);
@@ -121,12 +120,12 @@ public:
 		uint pieceCount = m_aSubObjects.size();
 		Vec3 center = m_pStaticObject->GetAABB().GetCenter();
 
-		for (auto particleId : context.GetSpawnedRange())
+		for (auto particleId : runtime.SpawnedRange())
 		{
 			uint piece;
 			if (m_piecesMode == EPiecesMode::RandomPiece)
 			{
-				piece = context.m_spawnRng.Rand();
+				piece = runtime.Chaos().Rand();
 			}
 			else if (m_piecesMode == EPiecesMode::AllPieces)
 			{
@@ -155,7 +154,7 @@ public:
 				position += orientation * localTM.GetTranslation() * size;
 				orientation = orientation * Quat(localTM);
 
-				if (context.m_params.m_meshCentered)
+				if (runtime.ComponentParams().m_meshCentered)
 				{
 					Vec3 subCenter = m_aSubObjects[piece]->pStatObj->GetAABB().GetCenter();
 					position += orientation * subCenter * size;
@@ -167,18 +166,16 @@ public:
 		}
 	}
 
-	virtual void RenderDeferred(CParticleEmitter* pEmitter, CParticleComponentRuntime* pCommonComponentRuntime, CParticleComponent* pComponent, const SRenderContext& renderContext) override
+	virtual void RenderDeferred(const CParticleComponentRuntime& runtime, const SRenderContext& renderContext) override
 	{
 		CRY_PROFILE_FUNCTION(PROFILE_PARTICLE);
 
-		CParticleComponentRuntime* pComponentRuntime = pCommonComponentRuntime->GetCpuRuntime();
-		if (!pComponentRuntime)
+		if (!runtime.IsCPURuntime())
 			return;
-		auto context = SUpdateContext(pComponentRuntime);
 		auto& passInfo = renderContext.m_passInfo;
 		SRendParams renderParams = renderContext.m_renderParams;
 
-		const CParticleContainer& container = context.m_container;
+		const CParticleContainer& container = runtime.GetContainer();
 		const IVec3Stream positions = container.GetIVec3Stream(EPVF_Position);
 		const IQuatStream orientations = container.GetIQuatStream(EPQF_Orientation);
 		const IFStream alphas = container.GetIFStream(EPDT_Alpha, 1.0f);
@@ -196,7 +193,7 @@ public:
 
 		renderParams.dwFObjFlags |= FOB_TRANS_MASK;
 
-		for (auto particleId : context.GetUpdateRange())
+		for (auto particleId : runtime.FullRange())
 		{
 			const Vec3 position = positions.Load(particleId);
 			const Quat orientation = orientations.Load(particleId);
@@ -213,7 +210,7 @@ public:
 				offset = -pMeshObj->GetAABB().GetCenter();
 			}
 
-			if (context.m_params.m_meshCentered)
+			if (runtime.ComponentParams().m_meshCentered)
 				wsMatrix.SetTranslation(wsMatrix * offset);
 
 			renderParams.fAlpha = alphas.SafeLoad(particleId);

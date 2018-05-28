@@ -75,7 +75,7 @@ void DebugDrawEffect(CParticleEffect* pEffect, size_t effectBarIdx)
 #endif
 }
 
-void DebugDrawComponentRuntime(CParticleComponentRuntime* pRuntime, size_t emitterBarIdx, size_t barIdx)
+void DebugDrawComponentRuntime(CParticleComponentRuntime& runtime, size_t emitterBarIdx, size_t barIdx)
 {
 	IRenderAuxGeom* pRenderAux = gEnv->pRenderer->GetIRenderAuxGeom();
 	SAuxGeomRenderFlags prevFlags = pRenderAux->GetRenderFlags();
@@ -88,10 +88,9 @@ void DebugDrawComponentRuntime(CParticleComponentRuntime* pRuntime, size_t emitt
 	const float screenWidth  = float(pRenderAux->GetCamera().GetViewSurfaceX());
 	const float screenHeight = float(pRenderAux->GetCamera().GetViewSurfaceZ());
 
-	const SUpdateContext context = SUpdateContext(pRuntime);
-	const CParticleContainer& container = context.m_container;
-	const SComponentParams& params = context.m_params;
-	const uint numInstances = pRuntime->GetNumInstances();
+	const CParticleContainer& container = runtime.GetContainer();
+	const SComponentParams& params = runtime.ComponentParams();
+	const uint numInstances = runtime.GetNumInstances();
 	IPidStream parentIds = container.GetIPidStream(EPDT_ParentId);
 	IFStream normAges = container.GetIFStream(EPDT_NormalAge);
 	const Vec2 screenSz = Vec2(screenWidth, screenHeight);
@@ -121,7 +120,7 @@ void DebugDrawComponentRuntime(CParticleComponentRuntime* pRuntime, size_t emitt
 
 	// particle bars
 	pos = contLoc;
-	for (auto particleId : context.GetUpdateRange())
+	for (auto particleId : runtime.FullRange())
 	{
 		AABB box;
 		// box.min = pos;
@@ -136,14 +135,14 @@ void DebugDrawComponentRuntime(CParticleComponentRuntime* pRuntime, size_t emitt
 		pRenderAux->DrawAABB(box, true, color, eBBD_Faceted);
 	}
 
-	if (pRuntime->IsChild())
+	if (runtime.IsChild())
 	{
-		const CParticleContainer& parentContainer = pRuntime->GetParentContainer();
+		const CParticleContainer& parentContainer = runtime.GetParentContainer();
 		const Vec2 parentPartSz = Vec2(barSz, 0.9f / parentContainer.GetMaxParticles());
 		const Vec2 parentContLoc = Vec2((emitterBarIdx /*+ params.m_parentId*/) * barGap + barSz * 3.0f + startPos, startPos);
 
 		// parenting lines
-		for (auto particleId : context.GetUpdateRange())
+		for (auto particleId : runtime.FullRange())
 		{
 			const TParticleId parentId = parentIds.Load(particleId);
 			if (parentId == gInvalidId)
@@ -157,12 +156,12 @@ void DebugDrawComponentRuntime(CParticleComponentRuntime* pRuntime, size_t emitt
 	IRenderAuxText::Draw2dLabel(
 	  screenSz.x * (barIdx * barGap + startPos),
 	  screenSz.y * 0.95f, 1.0f, whiteF, false,
-	  "%s", pRuntime->GetComponent()->GetName());
+	  "%s", runtime.GetComponent()->GetName());
 
 	pRenderAux->SetRenderFlags(prevFlags);
 }
 
-void DebugDrawComponentCollisions(CParticleComponentRuntime* pRuntime)
+void DebugDrawComponentCollisions(CParticleComponentRuntime& runtime)
 {
 	IRenderAuxGeom* pRenderAux = gEnv->pRenderer->GetIRenderAuxGeom();
 	SAuxGeomRenderFlags prevFlags = pRenderAux->GetRenderFlags();
@@ -172,13 +171,12 @@ void DebugDrawComponentCollisions(CParticleComponentRuntime* pRuntime)
 	curFlags.SetDepthWriteFlag(e_DepthWriteOn);
 	pRenderAux->SetRenderFlags(curFlags);
 
-	const auto context = SUpdateContext(pRuntime);
-	const CParticleContainer& container = pRuntime->GetContainer();
+	const CParticleContainer& container = runtime.GetContainer();
 	if (!container.HasData(EPDT_ContactPoint))
 		return;
 	const TIStream<SContactPoint> contactPoints = container.IStream(EPDT_ContactPoint);
 
-	for (auto particleId : context.GetUpdateRange())
+	for (auto particleId : runtime.FullRange())
 	{
 		SContactPoint contact = contactPoints.Load(particleId);
 
@@ -325,15 +323,14 @@ void DebugParticleSystem(const TParticleEmitters& activeEmitters)
 			CParticleEffect* pEffect = pEmitter->GetCEffect();
 			for (auto pRuntime : pEmitter->GetRuntimes())
 			{
-				auto pComponentRuntime = pRuntime->GetCpuRuntime();
-				if (!pComponentRuntime)
+				if (!pRuntime->IsCPURuntime())
 					continue;
-				if (!pComponentRuntime->GetComponent()->IsEnabled())
+				if (!pRuntime->GetComponent()->IsEnabled())
 					continue;
 				if (debugContainers)
-					DebugDrawComponentRuntime(pComponentRuntime, emitterBarIdx, barIdx++);
+					DebugDrawComponentRuntime(*pRuntime, emitterBarIdx, barIdx++);
 				if (debugCollisions)
-					DebugDrawComponentCollisions(pComponentRuntime);
+					DebugDrawComponentCollisions(*pRuntime);
 			}
 			emitterBarIdx = barIdx;
 		}

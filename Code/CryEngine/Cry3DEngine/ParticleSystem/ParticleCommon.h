@@ -60,18 +60,6 @@ namespace pfx2
 const uint gMinimumVersion = 1;
 const uint gCurrentVersion = 12;
 
-class CParticleSystem;
-class CParticleEffect;
-class CParticleComponent;
-class CParticleFeature;
-
-class CParticleEmitter;
-class CParticleComponentRuntime;
-
-struct SComponentParams;
-
-typedef _smart_ptr<CParticleFeature> TParticleFeaturePtr;
-
 const TParticleId gInvalidId           = -1;
 const float gInfinity                  = std::numeric_limits<float>::infinity();
 

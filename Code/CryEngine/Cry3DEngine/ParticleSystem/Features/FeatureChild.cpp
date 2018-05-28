@@ -1,8 +1,7 @@
-// Copyright 2001-2018 Crytek GmbH / Crytek Group. All rights reserved.
+// Copyright 2001-2016 Crytek GmbH / Crytek Group. All rights reserved.
 
 #include "StdAfx.h"
-#include "ParticleSystem/ParticleFeature.h"
-#include "ParticleSystem/ParticleEmitter.h"
+#include "FeatureCommon.h"
 #include "FeatureCollision.h"
 
 namespace pfx2
@@ -39,20 +38,20 @@ public:
 
 	static uint DefaultForType() { return EFT_Child; }
 
-	void AddSubInstances(const SUpdateContext& context) override
+	void AddSubInstances(CParticleComponentRuntime& runtime) override
 	{
-		CParticleContainer& parentContainer = context.m_runtime.GetParentContainer();
+		CParticleContainer& parentContainer = runtime.GetParentContainer();
 		IFStream normAges = parentContainer.GetIFStream(EPDT_NormalAge);
 		IFStream lifeTimes = parentContainer.GetIFStream(EPDT_LifeTime);
 
-		THeapArray<SInstance> triggers(*context.m_pMemHeap);
+		THeapArray<SInstance> triggers(runtime.MemHeap());
 		triggers.reserve(parentContainer.GetNumParticles());
 		for (auto particleId : parentContainer.GetSpawnedRange())
 		{
-			const float delay = context.m_deltaTime - normAges.Load(particleId) * lifeTimes.Load(particleId);
+			const float delay = runtime.DeltaTime() - normAges.Load(particleId) * lifeTimes.Load(particleId);
 			triggers.emplace_back(particleId, delay);
 		}
-		context.m_runtime.AddSubInstances(triggers);
+		runtime.AddSubInstances(triggers);
 	}
 };
 
@@ -67,14 +66,14 @@ public:
 
 	bool IsDelayed() const override { return true; }
 
-	void AddSubInstances(const SUpdateContext& context) override
+	void AddSubInstances(CParticleComponentRuntime& runtime) override
 	{
-		CParticleContainer& parentContainer = context.m_runtime.GetParentContainer();
+		CParticleContainer& parentContainer = runtime.GetParentContainer();
 		
 		IFStream normAges = parentContainer.GetIFStream(EPDT_NormalAge);
 		IFStream lifeTimes = parentContainer.GetIFStream(EPDT_LifeTime);
 
-		THeapArray<SInstance> triggers(*context.m_pMemHeap);
+		THeapArray<SInstance> triggers(runtime.MemHeap());
 		triggers.reserve(parentContainer.GetNumParticles());
 		for (auto particleId : parentContainer.GetFullRange())
 		{
@@ -82,11 +81,11 @@ public:
 			if (IsExpired(normAge))
 			{
 				const float overAge = (normAge - 1.0f) * lifeTimes.Load(particleId);
-				const float delay = context.m_deltaTime - overAge;
+				const float delay = runtime.DeltaTime() - overAge;
 				triggers.emplace_back(particleId, delay);
 			}
 		}
-		context.m_runtime.AddSubInstances(triggers);
+		runtime.AddSubInstances(triggers);
 	}
 };
 
@@ -101,10 +100,10 @@ public:
 
 	bool IsDelayed() const override { return true; }
 
-	void AddSubInstances(const SUpdateContext& context) override
+	void AddSubInstances(CParticleComponentRuntime& runtime) override
 	{
-		CParticleContainer& parentContainer = context.m_runtime.GetParentContainer();
-		THeapArray<SInstance> triggers(*context.m_pMemHeap);
+		CParticleContainer& parentContainer = runtime.GetParentContainer();
+		THeapArray<SInstance> triggers(runtime.MemHeap());
 		triggers.reserve(parentContainer.GetNumParticles());
 		
 		const auto contactPoints = parentContainer.IStream(EPDT_ContactPoint);
@@ -115,7 +114,7 @@ public:
 			if (contact.m_state.collided)
 				triggers.emplace_back(particleId, contact.m_time);
 		}
-		context.m_runtime.AddSubInstances(triggers);
+		runtime.AddSubInstances(triggers);
 	}
 };
 

@@ -29,17 +29,17 @@ void CParticleRenderBase::AddToComponent(CParticleComponent* pComponent, SCompon
 	pParams->m_requiredShaderType = eST_Particle;
 }
 
-void CParticleRenderBase::Render(CParticleEmitter* pEmitter, CParticleComponentRuntime* pComponentRuntime, CParticleComponent* pComponent, const SRenderContext& renderContext)
+void CParticleRenderBase::Render(CParticleComponentRuntime& runtime, const SRenderContext& renderContext)
 {
 	CRY_PROFILE_FUNCTION(PROFILE_PARTICLE);
 
-	const SComponentParams& params = pComponent->GetComponentParams();
+	const SComponentParams& params = runtime.ComponentParams();
 	const uint threadId = renderContext.m_passInfo.ThreadID();
 
 	if (!params.m_pMaterial)
 		return;
 
-	const bool isIndoors = pEmitter->GetVisEnv().OriginIndoors();
+	const bool isIndoors = runtime.GetEmitter()->GetVisEnv().OriginIndoors();
 	const bool renderIndoor = params.m_visibility.m_indoorVisibility != EIndoorVisibility::OutdoorOnly;
 	const bool renderOutdoors = params.m_visibility.m_indoorVisibility != EIndoorVisibility::IndoorOnly;
 	if ((isIndoors && !renderIndoor) || (!isIndoors && !renderOutdoors))
@@ -54,22 +54,21 @@ void CParticleRenderBase::Render(CParticleEmitter* pEmitter, CParticleComponentR
 	const bool renderAboveWater = params.m_visibility.m_waterVisibility != EWaterVisibility::BelowWaterOnly;
 
 	if (m_waterCulling && ((isCameraUnderWater && renderAboveWater) || (!isCameraUnderWater && renderBelowWater)))
-		AddRenderObject(pEmitter, pComponentRuntime, pComponent, renderContext, m_renderObjectBeforeWaterId, threadId, objFlags);
+		AddRenderObject(runtime, renderContext, m_renderObjectBeforeWaterId, threadId, objFlags);
 	if ((isCameraUnderWater && renderBelowWater) || (!isCameraUnderWater && renderAboveWater))
-		AddRenderObject(pEmitter, pComponentRuntime, pComponent, renderContext, m_renderObjectAfterWaterId, threadId, objFlags | FOB_AFTER_WATER);
+		AddRenderObject(runtime, renderContext, m_renderObjectAfterWaterId, threadId, objFlags | FOB_AFTER_WATER);
 }
 
-void CParticleRenderBase::PrepareRenderObject(CParticleEmitter* pEmitter, CParticleComponent* pComponent, uint renderObjectId, uint threadId, uint64 objFlags)
+void CParticleRenderBase::PrepareRenderObject(const CParticleComponentRuntime& runtime, uint renderObjectId, uint threadId, uint64 objFlags)
 {
-	const SComponentParams& params = pComponent->GetComponentParams();
-
+	const SComponentParams& params = runtime.ComponentParams();
 	CRenderObject* pRenderObject = gEnv->pRenderer->EF_GetObject();
 	auto particleMaterial = params.m_pMaterial;
 
 	pRenderObject->SetIdentityMatrix();
 	pRenderObject->m_fAlpha = 1.0f;
 	pRenderObject->m_pCurrMaterial = particleMaterial;
-	pRenderObject->m_pRenderNode = pEmitter;
+	pRenderObject->m_pRenderNode = runtime.GetEmitter();
 	pRenderObject->m_RState = params.m_renderStateFlags;
 	pRenderObject->m_fSort = 0;
 	pRenderObject->m_ParticleObjFlags = params.m_particleObjFlags;
@@ -78,17 +77,18 @@ void CParticleRenderBase::PrepareRenderObject(CParticleEmitter* pEmitter, CParti
 	SRenderObjData* pObjData = pRenderObject->GetObjData();
 	pObjData->m_pParticleShaderData = &params.m_shaderData;
 
-	pEmitter->SetRenderObject(pRenderObject, std::move(particleMaterial), threadId, renderObjectId);
+	runtime.GetEmitter()->SetRenderObject(pRenderObject, std::move(particleMaterial), threadId, renderObjectId);
 }
 
-void CParticleRenderBase::AddRenderObject(CParticleEmitter* pEmitter, CParticleComponentRuntime* pComponentRuntime, CParticleComponent* pComponent, const SRenderContext& renderContext, uint renderObjectId, uint threadId, uint64 objFlags)
+void CParticleRenderBase::AddRenderObject(CParticleComponentRuntime& runtime, const SRenderContext& renderContext, uint renderObjectId, uint threadId, uint64 objFlags)
 {
-	const SComponentParams& params = pComponent->GetComponentParams();
-	CRenderObject* pRenderObject = pEmitter->GetRenderObject(threadId, renderObjectId);
+	const SComponentParams& params = runtime.ComponentParams();
+	CParticleEmitter& emitter = *runtime.GetEmitter();
+	CRenderObject* pRenderObject = emitter.GetRenderObject(threadId, renderObjectId);
 	if (!pRenderObject)
 	{
-		PrepareRenderObject(pEmitter, pComponent, renderObjectId, threadId, params.m_renderObjectFlags);
-		pRenderObject = pEmitter->GetRenderObject(threadId, renderObjectId);
+		PrepareRenderObject(runtime, renderObjectId, threadId, params.m_renderObjectFlags);
+		pRenderObject = emitter.GetRenderObject(threadId, renderObjectId);
 	}
 	SRenderObjData* pObjData = pRenderObject->GetObjData();
 
@@ -100,13 +100,13 @@ void CParticleRenderBase::AddRenderObject(CParticleEmitter* pEmitter, CParticleC
 	pRenderObject->SetInstanceDataDirty();
 	pObjData->m_FogVolumeContribIdx = renderContext.m_fogVolumeId;
 	pObjData->m_LightVolumeId = renderContext.m_lightVolumeId;
-	if (const auto p = pEmitter->m_pTempData.load())
+	if (const auto p = emitter.m_pTempData.load())
 		*((Vec4f*)&pObjData->m_fTempVars[0]) = Vec4f(p->userData.vEnvironmentProbeMults);
 	else
 		*((Vec4f*)&pObjData->m_fTempVars[0]) = Vec4f(1.0f, 1.0f, 1.0f, 1.0f);
 
 	CParticleJobManager& kernel = GetPSystem()->GetJobManager();
-	kernel.ScheduleComputeVertices(pComponentRuntime, pRenderObject, renderContext);
+	kernel.ScheduleComputeVertices(runtime, pRenderObject, renderContext);
 	
 	int passId = renderContext.m_passInfo.IsShadowPass() ? 1 : 0;
 	int passMask = BIT(passId);

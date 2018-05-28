@@ -38,13 +38,13 @@ class CParticleRenderBase : public CParticleFeature, public Cry3DEngineBase
 public:
 	virtual EFeatureType GetFeatureType() override;
 	virtual void         AddToComponent(CParticleComponent* pComponent, SComponentParams* pParams) override;
-	virtual void         Render(CParticleEmitter* pEmitter, CParticleComponentRuntime* pComponentRuntime, CParticleComponent* pComponent, const SRenderContext& renderContext) override;
+	virtual void         Render(CParticleComponentRuntime& runtime, const SRenderContext& renderContext) override;
 
 protected:
 	ILINE C3DEngine* Get3DEngine() const          { return static_cast<C3DEngine*>(gEnv->p3DEngine); }
 	virtual bool     SupportsWaterCulling() const { return false; }
-	void             PrepareRenderObject(CParticleEmitter* pEmitter, CParticleComponent* pComponent, uint renderObjectId, uint threadId, uint64 objFlags);
-	void             AddRenderObject(CParticleEmitter* pEmitter, CParticleComponentRuntime* pComponentRuntime, CParticleComponent* pComponent, const SRenderContext& renderContext, uint renderObjectId, uint threadId, uint64 objFlags);
+	void             PrepareRenderObject(const CParticleComponentRuntime& runtime, uint renderObjectId, uint threadId, uint64 objFlags);
+	void             AddRenderObject(CParticleComponentRuntime& runtime, const SRenderContext& renderContext, uint renderObjectId, uint threadId, uint64 objFlags);
 
 	// Frustum culling support
 	struct SFrustumTest

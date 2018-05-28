@@ -379,12 +379,4 @@ void CParticleSystem::GetMemoryUsage(ICrySizer* pSizer) const
 {
 }
 
-uint GetVersion(Serialization::IArchive& ar)
-{
-	SSerializationContext* pContext = ar.context<SSerializationContext>();
-	if (!pContext)
-		return gCurrentVersion;
-	return pContext->m_documentVersion;
-}
-
 }

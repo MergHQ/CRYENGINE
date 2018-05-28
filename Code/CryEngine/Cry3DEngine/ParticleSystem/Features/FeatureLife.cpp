@@ -1,15 +1,7 @@
-// Copyright 2001-2018 Crytek GmbH / Crytek Group. All rights reserved.
-
-// -------------------------------------------------------------------------
-//  Created:     29/09/2014 by Filipe amim
-//  Description:
-// -------------------------------------------------------------------------
-//
-////////////////////////////////////////////////////////////////////////////
+// Copyright 2015-2018 Crytek GmbH / Crytek Group. All rights reserved.
 
 #include "StdAfx.h"
-#include "ParticleSystem/ParticleFeature.h"
-#include "ParamMod.h"
+#include "FeatureCommon.h"
 
 namespace pfx2
 {
@@ -62,20 +54,20 @@ public:
 		pComponent->UpdateGPUParams.add(this);
 	}
 
-	virtual void PreInitParticles(const SUpdateContext& context) override
+	virtual void PreInitParticles(CParticleComponentRuntime& runtime) override
 	{
 		CRY_PFX2_PROFILE_DETAIL;
 
-		CParticleContainer& container = context.m_container;
+		CParticleContainer& container = runtime.GetContainer();
 		IOFStream lifeTimes = container.GetIOFStream(EPDT_LifeTime);
 		IOFStream invLifeTimes = container.GetIOFStream(EPDT_InvLifeTime);
 
 		if (m_lifeTime.IsEnabled() && m_lifeTime.GetBaseValue())
 		{
-			m_lifeTime.InitParticles(context, EPDT_LifeTime);
+			m_lifeTime.InitParticles(runtime, EPDT_LifeTime);
 			if (m_lifeTime.HasModifiers())
 			{
-				for (auto particleGroupId : context.GetSpawnedGroupRange())
+				for (auto particleGroupId : runtime.SpawnedRangeV())
 				{
 					const floatv lifetime = lifeTimes.Load(particleGroupId);
 					const floatv invLifeTime = rcp(max(lifetime, ToFloatv(FLT_EPSILON)));
@@ -84,29 +76,29 @@ public:
 			}
 			else
 			{
-				invLifeTimes.Fill(context.GetSpawnedRange(), rcp(m_lifeTime.GetBaseValue()));
+				invLifeTimes.Fill(runtime.SpawnedRange(), rcp(m_lifeTime.GetBaseValue()));
 			}
 		}
 		else
 		{
-			lifeTimes.Fill(context.GetSpawnedRange(), 0.0f);
-			invLifeTimes.Fill(context.GetSpawnedRange(), 0.0f);
+			lifeTimes.Fill(runtime.SpawnedRange(), 0.0f);
+			invLifeTimes.Fill(runtime.SpawnedRange(), 0.0f);
 		}
 	}
 
-	virtual void PostUpdateParticles(const SUpdateContext& context) override
+	virtual void PostUpdateParticles(CParticleComponentRuntime& runtime) override
 	{
 		CRY_PFX2_PROFILE_DETAIL;
 
 		// Kill on parent death
-		CParticleContainer& container = context.m_container;
-		const CParticleContainer& parentContainer = context.m_parentContainer;
+		CParticleContainer& container = runtime.GetContainer();
+		const CParticleContainer& parentContainer = runtime.GetParentContainer();
 		const auto parentAges = parentContainer.GetIFStream(EPDT_NormalAge);
 
 		const IPidStream parentIds = container.GetIPidStream(EPDT_ParentId);
 		IOFStream ages = container.GetIOFStream(EPDT_NormalAge);
 
-		for (auto particleId : context.GetUpdateRange())
+		for (auto particleId : runtime.FullRange())
 		{
 			const TParticleId parentId = parentIds.Load(particleId);
 			if (parentId == gInvalidId || IsExpired(parentAges.Load(parentId)))
@@ -114,9 +106,9 @@ public:
 		}
 	}
 
-	virtual void UpdateGPUParams(const SUpdateContext& context, gpu_pfx2::SUpdateParams& params) override
+	virtual void UpdateGPUParams(CParticleComponentRuntime& runtime, gpu_pfx2::SUpdateParams& params) override
 	{
-		params.lifeTime = m_lifeTime.GetValueRange(context)(0.5f);
+		params.lifeTime = m_lifeTime.GetValueRange(runtime)(0.5f);
 	}
 
 protected:

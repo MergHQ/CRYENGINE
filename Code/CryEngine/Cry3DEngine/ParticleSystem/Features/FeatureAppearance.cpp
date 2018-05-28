@@ -1,18 +1,8 @@
-// Copyright 2001-2018 Crytek GmbH / Crytek Group. All rights reserved.
-
-// -------------------------------------------------------------------------
-//  Created:     27/10/2014 by Filipe amim
-//  Description:
-// -------------------------------------------------------------------------
-//
-////////////////////////////////////////////////////////////////////////////
+// Copyright 2015-2018 Crytek GmbH / Crytek Group. All rights reserved.
 
 #include "StdAfx.h"
-#include "ParticleSystem/ParticleComponent.h"
-#include "ParticleSystem/ParticleSystem.h"
-#include <CrySerialization/IArchive.h>
+#include "FeatureCommon.h"
 #include <CrySerialization/Decorators/Resources.h>
-#include <CrySerialization/Enum.h>
 
 namespace pfx2
 {
@@ -56,14 +46,14 @@ public:
 		MakeGpuInterface(pComponent, gpu_pfx2::eGpuFeatureType_Dummy);
 	}
 
-	virtual void InitParticles(const SUpdateContext& context) override
+	virtual void InitParticles(CParticleComponentRuntime& runtime) override
 	{
 		CRY_PROFILE_FUNCTION(PROFILE_PARTICLE);
 
 		if (m_variantMode == EVariantMode::Random)
-			AssignTiles<EVariantMode::Random>(context);
+			AssignTiles<EVariantMode::Random>(runtime);
 		else
-			AssignTiles<EVariantMode::Ordered>(context);
+			AssignTiles<EVariantMode::Ordered>(runtime);
 	}
 
 	virtual void Serialize(Serialization::IArchive& ar) override
@@ -86,19 +76,19 @@ private:
 	STextureAnimation m_anim;
 
 	template<EVariantMode mode>
-	void AssignTiles(const SUpdateContext& context)
+	void AssignTiles(CParticleComponentRuntime& runtime)
 	{
-		CParticleContainer& container = context.m_container;
+		CParticleContainer& container = runtime.GetContainer();
 		TIOStream<uint8> tiles = container.IOStream(EPDT_Tile);
 		TIStream<uint> spawnIds = container.IStream(EPDT_SpawnId);
 		uint variantCount = VariantCount();
 
-		for (auto particleId : context.GetSpawnedRange())
+		for (auto particleId : runtime.SpawnedRange())
 		{
 			uint32 tile;
 			if (mode == EVariantMode::Random)
 			{
-				tile = context.m_spawnRng.Rand();
+				tile = runtime.Chaos().Rand();
 			}
 			else if (mode == EVariantMode::Ordered)
 			{
