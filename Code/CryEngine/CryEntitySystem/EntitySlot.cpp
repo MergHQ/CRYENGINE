@@ -203,8 +203,11 @@ void CEntitySlot::UpdateRenderNode(bool bForceRecreateNode)
 
 		if (!m_bRegisteredRenderNode)
 		{
-			m_bRegisteredRenderNode = true;
-			gEnv->p3DEngine->RegisterEntity(m_pRenderNode);
+			if (renderNodeType != eERType_ParticleEmitter)
+			{
+				m_bRegisteredRenderNode = true;
+				gEnv->p3DEngine->RegisterEntity(m_pRenderNode);
+			}
 		}
 
 		IMaterial* pMaterial = (m_pMaterial) ? m_pMaterial.get() : m_pEntity->GetMaterial();
