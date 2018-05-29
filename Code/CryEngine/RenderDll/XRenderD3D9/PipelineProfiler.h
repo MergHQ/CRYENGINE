@@ -26,10 +26,9 @@ public:
 	bool                   IsEnabled();
 	void                   SetEnabled(bool enabled)                                        { m_enabled = enabled; }
 
-	const RPProfilerStats& GetBasicStats(ERenderPipelineProfilerStats stat, int nThreadID) { assert((uint32)stat < RPPSTATS_NUM); return m_basicStats[nThreadID][stat]; }
-	const RPProfilerStats* GetBasicStatsArray(int nThreadID)                               { return m_basicStats[nThreadID]; }
-
-	const DynArray<RPProfilerDetailedStats> GetRPPDetailedStatsArray(uint32 frameDataIndex);
+	const RPProfilerStats&                   GetBasicStats(ERenderPipelineProfilerStats stat, int nThreadID) { assert((uint32)stat < RPPSTATS_NUM); return m_basicStats[nThreadID][stat]; }
+	const RPProfilerStats*                   GetBasicStatsArray(int nThreadID)                               { return m_basicStats[nThreadID]; }
+	const DynArray<RPProfilerDetailedStats>* GetDetailedStatsArray(int nThreadID)                            { return &m_detailedStats[nThreadID]; }
 
 protected:
 	struct SProfilerSection
@@ -106,10 +105,11 @@ protected:
 	void UpdateThreadTimings();
 	
 	void ResetBasicStats(RPProfilerStats* pBasicStats, bool bResetAveragedStats);
+	void ResetDetailedStats(DynArray<RPProfilerDetailedStats>& pDetailedStats, bool bResetAveragedStats);
 	void ComputeAverageStats(SFrameData& frameData);
 	void AddToStats(RPProfilerStats& outStats, SProfilerSection& section);
 	void SubtractFromStats(RPProfilerStats& outStats, SProfilerSection& section);
-	void UpdateBasicStats(uint32 frameDataIndex);
+	void UpdateStats(uint32 frameDataIndex);
 
 	void DisplayOverviewStats();
 	void DisplayDetailedPassStats(uint32 frameDataIndex);
@@ -117,15 +117,16 @@ protected:
 protected:
 	enum { kNumPendingFrames = MAX_FRAMES_IN_FLIGHT };
 
-	std::vector<uint32> m_stack;
-	SFrameData          m_frameData[kNumPendingFrames];
-	uint32              m_frameDataIndex;
-	float               m_avgFrameTime;
-	bool                m_enabled;
-	bool                m_recordData;
+	std::vector<uint32>               m_stack;
+	SFrameData                        m_frameData[kNumPendingFrames];
+	uint32                            m_frameDataIndex;
+	float                             m_avgFrameTime;
+	bool                              m_enabled;
+	bool                              m_recordData;
 
-	RPProfilerStats     m_basicStats[RT_COMMAND_BUF_COUNT][RPPSTATS_NUM];
-	SThreadTimings      m_threadTimings;
+	RPProfilerStats                   m_basicStats[RT_COMMAND_BUF_COUNT][RPPSTATS_NUM];
+	DynArray<RPProfilerDetailedStats> m_detailedStats[RT_COMMAND_BUF_COUNT];
+	SThreadTimings                    m_threadTimings;
 
 	// we take a snapshot every now and then and store it in here to prevent the text from jumping too much
 	std::multimap<CCryNameTSCRC, SStaticElementInfo> m_staticNameList;

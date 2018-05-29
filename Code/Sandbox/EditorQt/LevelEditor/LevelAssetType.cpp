@@ -27,8 +27,18 @@ REGISTER_ASSET_TYPE(CLevelType)
 namespace Private_LevelAssetType
 {
 
-std::vector<SAssetDependencyInfo> GetDependencies(const string& levelFolder)
+template <typename TAsset>
+string GetLevelFolder(const TAsset& level)
 {
+	// Level is a folder, and the cryasset is next to the folder. 
+	// Getting the path to the level folder is actually removing the extension twice.
+	return PathUtil::RemoveExtension(PathUtil::RemoveExtension(level.GetMetadataFile()));
+}
+
+std::vector<SAssetDependencyInfo> GetDependencies(const IEditableAsset& level)
+{
+	const string levelFolder = GetLevelFolder(level);
+
 	const CAssetManager* const pAssetManager = GetIEditorImpl()->GetAssetManager();
 	std::vector<CAssetType*> types(pAssetManager->GetAssetTypes());
 	types.erase(std::remove_if(types.begin(), types.end(), [](const auto x)
@@ -147,7 +157,7 @@ bool CLevelType::DeleteAssetFiles(const CAsset& asset, bool bDeleteSourceFile, s
 {
 	numberOfFilesDeleted = 0;
 	const string activeLevelPath = PathUtil::GetDirectory(GetIEditorImpl()->GetDocument()->GetPathName());
-	const string levelPath = PathUtil::Make(PathUtil::GetGameFolder(), PathUtil::GetDirectory(asset.GetFile(0)));
+	const string levelPath = PathUtil::Make(PathUtil::GetGameFolder(), Private_LevelAssetType::GetLevelFolder(asset));
 	if (activeLevelPath.CompareNoCase(levelPath) == 0)
 	{
 		GetIEditorImpl()->GetSystem()->GetIPak()->ClosePacks(PathUtil::Make(activeLevelPath, "*.*"));
@@ -187,7 +197,7 @@ CryIcon CLevelType::GetIconInternal() const
 
 void CLevelType::UpdateDependencies(IEditableAsset& editAsset)
 {
-	std::vector<SAssetDependencyInfo> dependencies = Private_LevelAssetType::GetDependencies(PathUtil::RemoveExtension(editAsset.GetMetadataFile()));
+	std::vector<SAssetDependencyInfo> dependencies = Private_LevelAssetType::GetDependencies(editAsset);
 	if (dependencies.size())
 	{
 		editAsset.SetDependencies(dependencies);

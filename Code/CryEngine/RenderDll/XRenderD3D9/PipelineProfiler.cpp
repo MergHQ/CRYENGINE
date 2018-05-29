@@ -14,7 +14,10 @@ CRenderPipelineProfiler::CRenderPipelineProfiler()
 	m_stack.reserve(8);
 
 	for (int i = 0; i < RT_COMMAND_BUF_COUNT; i++)
+	{
 		ResetBasicStats(m_basicStats[i], true);
+		ResetDetailedStats(m_detailedStats[i], true);
+	}			
 }
 
 void CRenderPipelineProfiler::Init()
@@ -80,7 +83,7 @@ void CRenderPipelineProfiler::EndFrame()
 	if (prevFrameIndex >= 0)
 	{
 		UpdateGPUTimes(prevFrameIndex);
-		UpdateBasicStats(prevFrameIndex);
+		UpdateStats(prevFrameIndex);
 		UpdateThreadTimings();
 
 		m_recordData = false;
@@ -307,6 +310,29 @@ void CRenderPipelineProfiler::ResetBasicStats(RPProfilerStats* pBasicStats, bool
 	}
 }
 
+void CRenderPipelineProfiler::ResetDetailedStats(DynArray<RPProfilerDetailedStats>& detailedStats, bool bResetAveragedStats)
+{
+	for (RPProfilerDetailedStats& stat : detailedStats)
+	{
+		stat.gpuTime = 0.0f;
+		stat.startTimeCPU = 0.0f;
+		stat.endTimeCPU = 0.0f;
+		stat.startTimestamp = 0;
+		stat.endTimestamp = 0;
+		stat.flags = 0;
+		stat.recLevel = 0;
+		stat.numDIPs = 0;
+		stat.numPolys = 0;
+		memset(stat.name, 0, 31);
+
+		if (bResetAveragedStats)
+		{
+			stat.gpuTimeSmoothed = 0.0f;
+			stat.cpuTimeSmoothed = 0.0f;
+		}
+	}
+}
+
 void CRenderPipelineProfiler::ComputeAverageStats(SFrameData& frameData)
 {
 	static int s_frameCounter = 0;
@@ -341,6 +367,9 @@ void CRenderPipelineProfiler::ComputeAverageStats(SFrameData& frameData)
 		SProfilerSection& section = frameData.m_sections[i];
 		section.gpuTimeSmoothed = smoothWeightDataOld * section.gpuTimeSmoothed + smoothWeightDataNew * section.gpuTime;
 		section.cpuTimeSmoothed = smoothWeightDataOld * section.cpuTimeSmoothed + smoothWeightDataNew * section.endTimeCPU.GetDifferenceInSeconds(section.startTimeCPU) * 1000.0f;
+
+		m_detailedStats[processThreadID][i].gpuTimeSmoothed = section.gpuTimeSmoothed;
+		m_detailedStats[processThreadID][i].cpuTimeSmoothed = section.cpuTimeSmoothed;
 	}
 
 	s_frameCounter += 1;
@@ -362,14 +391,18 @@ ILINE void CRenderPipelineProfiler::SubtractFromStats(RPProfilerStats& outStats,
 	outStats.numPolys -= section.numPolys;
 }
 
-void CRenderPipelineProfiler::UpdateBasicStats(uint32 frameDataIndex)
+void CRenderPipelineProfiler::UpdateStats(uint32 frameDataIndex)
 {
 	RPProfilerStats* pBasicStats = m_basicStats[gRenDev->GetRenderThreadID()];
+	DynArray<RPProfilerDetailedStats> &detailedStats = m_detailedStats[gRenDev->GetRenderThreadID()];
 
 	ResetBasicStats(pBasicStats, false);
+	ResetDetailedStats(detailedStats, false);
 
 	bool bRecursivePass = false;
 	SFrameData& frameData = m_frameData[frameDataIndex];
+
+	detailedStats.resize(frameData.m_numSections);
 
 	for (uint32 i = 0; i < frameData.m_numSections; ++i)
 	{
@@ -552,6 +585,18 @@ void CRenderPipelineProfiler::UpdateBasicStats(uint32 frameDataIndex)
 		{
 			AddToStats(pBasicStats[eRPPSTATS_TI_DEMOSAIC_SPEC], section);
 		}
+
+		// Update detailed stats
+		memcpy(detailedStats[i].name, section.name, 31);
+		detailedStats[i].gpuTime = section.gpuTime;
+		detailedStats[i].gpuTimeSmoothed = section.gpuTimeSmoothed;
+		detailedStats[i].cpuTimeSmoothed = section.cpuTimeSmoothed;
+		detailedStats[i].startTimeCPU = section.startTimeCPU;
+		detailedStats[i].endTimeCPU = section.endTimeCPU;
+		detailedStats[i].numDIPs = section.numDIPs;
+		detailedStats[i].numPolys = section.numPolys;
+		detailedStats[i].recLevel = section.recLevel;
+		detailedStats[i].flags = section.flags;
 	}
 
 	AddToStats(pBasicStats[eRPPSTATS_OverallFrame], frameData.m_sections[0]);
@@ -820,29 +865,5 @@ void CRenderPipelineProfiler::DisplayOverviewStats()
 
 bool CRenderPipelineProfiler::IsEnabled()
 {
-	return m_enabled || CRenderer::CV_r_profiler;
-}
-
-const DynArray<RPProfilerDetailedStats> CRenderPipelineProfiler::GetRPPDetailedStatsArray(uint32 frameDataIndex)
-{
-	SFrameData& frameData = m_frameData[frameDataIndex];
-	DynArray<RPProfilerDetailedStats> data(frameData.m_numSections);
-
-	for(uint32 idx = 0; idx < frameData.m_numSections; ++idx)
-	{
-		SProfilerSection& section = frameData.m_sections[idx];
-		
-		memcpy(data[idx].name, section.name, 31);
-		data[idx].gpuTime = section.gpuTime;
-		data[idx].gpuTimeSmoothed = section.gpuTimeSmoothed;
-		data[idx].cpuTimeSmoothed = section.cpuTimeSmoothed;
-		data[idx].startTimeCPU = section.startTimeCPU;
-		data[idx].endTimeCPU = section.endTimeCPU;
-		data[idx].numDIPs = section.numDIPs;
-		data[idx].numPolys = section.numPolys;
-		data[idx].recLevel = section.recLevel;
-		data[idx].flags = section.flags;
-	}
-
-	return data;
+	return m_enabled || CRenderer::CV_r_profiler || gcpRendD3D->m_CVDisplayInfo->GetIVal() == 3;
 }
