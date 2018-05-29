@@ -670,6 +670,7 @@ void CHyperGraphDialog::PrepareLevelUnload()
 {
 	SetGraph(nullptr);
 	m_graphsTreeCtrl.PrepareLevelUnload();
+	m_graphList.clear();
 }
 
 void CHyperGraphDialog::SetGraph(CHyperGraph* pGraph)
