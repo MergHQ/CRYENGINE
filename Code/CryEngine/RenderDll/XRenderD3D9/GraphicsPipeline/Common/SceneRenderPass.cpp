@@ -135,10 +135,10 @@ void CSceneRenderPass::BeginRenderPass(CDeviceCommandListRef RESTRICT_REFERENCE 
 {
 	// Note: Function has to be threadsafe since it can be called from several worker threads
 
+#if defined(ENABLE_PROFILING_CODE)
 	if (gcpRendD3D->m_pPipelineProfiler)
 		gcpRendD3D->m_pPipelineProfiler->UpdateMultithreadedSection(profilerSectionIndex, true, 0, 0, bIssueGPUTimestamp, &commandList);
 
-#if defined(ENABLE_PROFILING_CODE)
 	commandList.BeginProfilingSection();
 #endif
 
@@ -148,7 +148,8 @@ void CSceneRenderPass::BeginRenderPass(CDeviceCommandListRef RESTRICT_REFERENCE 
 	commandList.Reset();
 
 	CDeviceGraphicsCommandInterface* pCommandInterface = commandList.GetGraphicsInterface();
-	pCommandInterface->BeginProfilerEvent(GetLabel());
+	if (bIssueGPUTimestamp)
+		pCommandInterface->BeginProfilerEvent(GetLabel());
 	pCommandInterface->BeginRenderPass(*m_pRenderPass, m_scissorRect);
 
 	if (m_passFlags & ePassFlags_VrProjectionPass)
@@ -173,11 +174,12 @@ void CSceneRenderPass::BeginRenderPass(CDeviceCommandListRef RESTRICT_REFERENCE 
 
 void CSceneRenderPass::ResolvePass(CDeviceCommandListRef RESTRICT_REFERENCE commandList, const uint16* screenBounds, uint32 profilerSectionIndex, bool bIssueGPUTimestamp) const
 {
+#if defined(ENABLE_PROFILING_CODE)
 	if (gcpRendD3D->m_pPipelineProfiler)
 		gcpRendD3D->m_pPipelineProfiler->UpdateMultithreadedSection(profilerSectionIndex, true, 0, 0, bIssueGPUTimestamp, &commandList);
+#endif
 
 	CDeviceGraphicsCommandInterface* pCommandInterface = commandList.GetGraphicsInterface();
-	pCommandInterface->BeginProfilerEvent(GetLabel());
 
 	const auto textureWidth = CRendererResources::s_ptexHDRTarget->GetWidth();
 	const auto textureHeight = CRendererResources::s_ptexHDRTarget->GetHeight();
@@ -194,7 +196,15 @@ void CSceneRenderPass::ResolvePass(CDeviceCommandListRef RESTRICT_REFERENCE comm
 		D3D11_COPY_NO_OVERWRITE_CONC // This is being done from job threads
 	};
 
+	if (bIssueGPUTimestamp)
+		pCommandInterface->BeginProfilerEvent(GetLabel());
 	commandList.GetCopyInterface()->Copy(CRendererResources::s_ptexHDRTarget->GetDevTexture(), CRendererResources::s_ptexSceneTarget->GetDevTexture(), mapping);
+
+#if defined(ENABLE_PROFILING_CODE)
+	if (gcpRendD3D->m_pPipelineProfiler)
+		gcpRendD3D->m_pPipelineProfiler->UpdateMultithreadedSection(profilerSectionIndex, false, 0, 0, false, &commandList);
+	gcpRendD3D->AddRecordedProfilingStats(commandList.EndProfilingSection(), m_renderList, true);
+#endif
 }
 
 void CSceneRenderPass::EndRenderPass(CDeviceCommandListRef RESTRICT_REFERENCE commandList, bool bNearest, uint32 profilerSectionIndex, bool bIssueGPUTimestamp) const
@@ -202,7 +212,8 @@ void CSceneRenderPass::EndRenderPass(CDeviceCommandListRef RESTRICT_REFERENCE co
 	// Note: Function has to be threadsafe since it can be called from several worker threads
 
 	CDeviceGraphicsCommandInterface* pCommandInterface = commandList.GetGraphicsInterface();
-	pCommandInterface->EndProfilerEvent(GetLabel());
+	if (bIssueGPUTimestamp)
+		pCommandInterface->EndProfilerEvent(GetLabel());
 	pCommandInterface->EndRenderPass(*m_pRenderPass);
 
 #if (CRY_RENDERER_DIRECT3D < 120)
@@ -237,9 +248,7 @@ void CSceneRenderPass::BeginExecution()
 		m_profilerSectionIndex = gcpRendD3D->m_pPipelineProfiler->InsertMultithreadedSection(GetLabel());
 
 	if (gcpRendD3D->GetGraphicsPipeline().GetRenderPassScheduler().IsActive())
-	{
 		gcpRendD3D->GetGraphicsPipeline().GetRenderPassScheduler().AddPass(this);
-	}
 }
 
 void CSceneRenderPass::EndExecution()
@@ -303,7 +312,6 @@ void CSceneRenderPass::DrawRenderItems(CRenderView* pRenderView, ERenderListID l
 				!(renderItems[i].nBatchFlags & FB_REFRACTION)) 
 			{}
 			passContext.rendItems.end = i;
-			passContext.renderItemGroup = m_numRenderItemGroups++;
 
 			if (needsResolve)
 			{
@@ -321,6 +329,8 @@ void CSceneRenderPass::DrawRenderItems(CRenderView* pRenderView, ERenderListID l
 				passes.back().resolveScreenBounds[2] = bounds.Max.x << shift16;
 				passes.back().resolveScreenBounds[3] = bounds.Max.y << shift16;
 			}
+
+			passContext.renderItemGroup = m_numRenderItemGroups++;
 
 			passes.push_back(passContext);
 		}
