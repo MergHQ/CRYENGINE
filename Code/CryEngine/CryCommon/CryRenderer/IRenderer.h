@@ -1546,7 +1546,7 @@ struct IRenderer//: public IRendererCallbackServer
 
 	virtual const RPProfilerStats*                      GetRPPStats(ERenderPipelineProfilerStats eStat, bool bCalledFromMainThread = true) = 0;
 	virtual const RPProfilerStats*                      GetRPPStatsArray(bool bCalledFromMainThread = true) = 0;
-	virtual const DynArray<RPProfilerDetailedStats>     GetRPPDetailedStatsArray(uint32 frameDataIndex) = 0;
+	virtual const DynArray<RPProfilerDetailedStats>*    GetRPPDetailedStatsArray(bool bCalledFromMainThread = true) = 0;
 
 	virtual int                                         GetPolygonCountByType(uint32 EFSList, EVertexCostTypes vct, uint32 z, bool bCalledFromMainThread = true) = 0;
 

@@ -5206,9 +5206,9 @@ const RPProfilerStats* CD3D9Renderer::GetRPPStatsArray(bool bCalledFromMainThrea
 	return m_pPipelineProfiler ? m_pPipelineProfiler->GetBasicStatsArray(bCalledFromMainThread ? gRenDev->GetMainThreadID() : gRenDev->GetRenderThreadID()) : nullptr;
 }
 
-const DynArray<RPProfilerDetailedStats> CD3D9Renderer::GetRPPDetailedStatsArray(uint32 frameDataIndex)
+const DynArray<RPProfilerDetailedStats>* CD3D9Renderer::GetRPPDetailedStatsArray(bool bCalledFromMainThread /*= true */)
 {
-	return m_pPipelineProfiler->GetRPPDetailedStatsArray(frameDataIndex);
+	return m_pPipelineProfiler ? m_pPipelineProfiler->GetDetailedStatsArray(bCalledFromMainThread ? gRenDev->GetMainThreadID() : gRenDev->GetRenderThreadID()) : nullptr;
 }
 
 int CD3D9Renderer::GetPolygonCountByType(uint32 EFSList, EVertexCostTypes vct, uint32 z, bool bCalledFromMainThread /*= true*/)

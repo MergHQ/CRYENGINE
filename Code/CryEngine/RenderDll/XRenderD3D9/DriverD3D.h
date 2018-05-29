@@ -681,9 +681,9 @@ public:
 	CD3DStereoRenderer&            GetS3DRend() const    { return *m_pStereoRenderer; }
 	virtual bool                   IsStereoEnabled() const override;
 
-	virtual const RPProfilerStats* GetRPPStats(ERenderPipelineProfilerStats eStat, bool bCalledFromMainThread = true) override;
-	virtual const RPProfilerStats* GetRPPStatsArray(bool bCalledFromMainThread = true) override;
-	virtual const DynArray<RPProfilerDetailedStats>	GetRPPDetailedStatsArray(uint32 frameDataIndex) override;
+	virtual const RPProfilerStats*                   GetRPPStats(ERenderPipelineProfilerStats eStat, bool bCalledFromMainThread = true) override;
+	virtual const RPProfilerStats*                   GetRPPStatsArray(bool bCalledFromMainThread = true) override;
+	virtual const DynArray<RPProfilerDetailedStats>* GetRPPDetailedStatsArray(bool bCalledFromMainThread = true) override;
 
 	virtual int                    GetPolygonCountByType(uint32 EFSList, EVertexCostTypes vct, uint32 z, bool bCalledFromMainThread = true) override;
 
