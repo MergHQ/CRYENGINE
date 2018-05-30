@@ -66,12 +66,14 @@ namespace CryEngine.EntitySystem
 		/// </summary>
 		protected Entity _entity;
 
+		[SerializeValue]
 		internal virtual IPhysicalEntity NativeHandle { get; private set; }
 
 		/// <summary>
 		/// The physicalized type of this <see cref="PhysicsObject"/>. If the <see cref="PhysicsObject"/> is not physicalized this will be <c>PhysicalizationType.None</c>.
 		/// </summary>
 		/// <value>The physicalized type of the <see cref="PhysicsObject"/>.</value>
+		[SerializeValue]
 		public PhysicalizationType PhysicsType{ get; set;} = PhysicalizationType.None;
 
 		/// <summary>

@@ -131,6 +131,7 @@ namespace CryEngine.Animations
 			}
 		}
 
+		[SerializeValue]
 		internal IActionController NativeHandle { get; private set; }
 
 		internal ActionController(IActionController actionController)

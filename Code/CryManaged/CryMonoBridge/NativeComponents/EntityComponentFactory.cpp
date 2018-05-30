@@ -638,6 +638,15 @@ bool CManagedEntityComponentFactory::SPropertyTypeDescription::Serialize(Seriali
 			case EEntityPropertyType::Animation:
 				archive(Serialization::CharacterAnimationPicker(value), szName, szLabel);
 				break;
+			case EEntityPropertyType::Character:
+				archive(Serialization::CharacterPath(value), szName, szLabel);
+				break;
+			case EEntityPropertyType::ActionMapName:
+				archive(Serialization::ActionMapName(value), szName, szLabel);
+				break;
+			case EEntityPropertyType::ActionMapActionName:
+				archive(Serialization::ActionMapActionName(value), szName, szLabel);
+				break;
 			}
 
 			if (archive.isInput())

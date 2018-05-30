@@ -97,6 +97,7 @@ namespace CryEngine
 		/// <summary>
 		/// The <see cref="CryEngine.Entity"/> that owns this <see cref="EntityComponent"/>.
 		/// </summary>
+		[SerializeValue]
 		public Entity Entity { get; private set; }
 
 		#region Functions

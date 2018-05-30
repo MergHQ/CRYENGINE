@@ -202,6 +202,7 @@ namespace CryEngine
 			}
 		}
 
+		[SerializeValue]
 		internal SpawnParams NativeHandle { get; private set; }
 
 		internal SpawnParameters(SpawnParams nativeHandle)

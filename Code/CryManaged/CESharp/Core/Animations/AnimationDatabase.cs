@@ -15,6 +15,7 @@ namespace CryEngine.Animations
 		/// <value>The name of the file.</value>
 		public string FileName { get { return NativeHandle.GetFilename(); } }
 
+		[SerializeValue]
 		internal IAnimationDatabase NativeHandle { get; private set; }
 
 		internal AnimationDatabase(IAnimationDatabase nativeHandle)

@@ -11,12 +11,14 @@ namespace CryEngine.Animations
 		/// The name of this AnimationTag.
 		/// </summary>
 		/// <value>The name.</value>
+		[SerializeValue]
 		public string Name { get; private set; }
 
 		/// <summary>
 		/// The ID of this AnimationTag.
 		/// </summary>
 		/// <value>The identifier.</value>
+		[SerializeValue]
 		public int Id { get; private set; }
 
 		internal AnimationTag(string name, int id)

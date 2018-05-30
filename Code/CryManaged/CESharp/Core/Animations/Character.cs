@@ -14,9 +14,17 @@ namespace CryEngine.Animations
 	/// </summary>
 	public sealed class Character
 	{
+		[SerializeValue]
 		internal ICharacterInstance NativeHandle { get; private set; }
 
+		[SerializeValue]
 		private IAttachmentManager _attachmentManager;
+
+		public ECharRenderFlags Flags
+		{
+			get { return (ECharRenderFlags)NativeHandle.GetFlags(); }
+			set { NativeHandle.SetFlags((int)value); }
+		}
 
 		/// <summary>
 		/// The scale at which animation play on this <see cref="Character"/> .

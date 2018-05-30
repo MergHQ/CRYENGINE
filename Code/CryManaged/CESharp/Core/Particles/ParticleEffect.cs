@@ -6,6 +6,7 @@ namespace CryEngine
 {
 	public sealed class ParticleEffect
 	{
+		[SerializeValue]
 		internal IParticleEffect NativeHandle { get; private set; }
 
 		public string Name

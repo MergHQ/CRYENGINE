@@ -10,6 +10,7 @@ namespace CryEngine
 	/// </summary>
 	public sealed class View
 	{
+		[SerializeValue]
 		internal IView NativeHandle { get; private set; }
 		internal View(IView nativeHandle)
 		{

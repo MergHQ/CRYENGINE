@@ -18,13 +18,13 @@ ResourceSelector<T> MakeResourceSelector(T& s, const char* selectorType)
 // animation resources
 template<class T> ResourceSelector<T> AnimationAlias(T& s)                   { return ResourceSelector<T>(s, "AnimationAlias"); } // "name" from animation set
 template<class T> ResourceSelector<T> AnimationPath(T& s)                    { return ResourceSelector<T>(s, "Animation"); }
-template<class T> ResourceSelector<T> AnimationOrBlendSpacePath(T& s)		 { return ResourceSelector<T>(s, "AnimationOrBSpace"); }
+template<class T> ResourceSelector<T> AnimationOrBlendSpacePath(T& s)        { return ResourceSelector<T>(s, "AnimationOrBSpace"); }
 inline ResourceSelectorWithId         AnimationPathWithId(string& s, int id) { return ResourceSelectorWithId(s, "AnimationOrBSpace", id); }
 template<class T> ResourceSelector<T> CharacterPath(T& s)                    { return ResourceSelector<T>(s, "Character"); }
 template<class T> ResourceSelector<T> CharacterPhysicsPath(T& s)             { return ResourceSelector<T>(s, "CharacterPhysics"); }
 template<class T> ResourceSelector<T> CharacterRigPath(T& s)                 { return ResourceSelector<T>(s, "CharacterRig"); }
 template<class T> ResourceSelector<T> SkeletonPath(T& s)                     { return ResourceSelector<T>(s, "Skeleton"); }
-template<class T> ResourceSelector<T> SkeletonOrCgaPath(T& s)				 { return ResourceSelector<T>(s, "SkeletonOrCga"); } //Used by the character tool
+template<class T> ResourceSelector<T> SkeletonOrCgaPath(T& s)                { return ResourceSelector<T>(s, "SkeletonOrCga"); } //Used by the character tool
 template<class T> ResourceSelector<T> SkeletonParamsPath(T& s)               { return ResourceSelector<T>(s, "SkeletonParams"); } // CHRParams
 template<class T> ResourceSelector<T> JointName(T& s)                        { return ResourceSelector<T>(s, "Joint"); }
 template<class T> ResourceSelector<T> AttachmentName(T& s)                   { return ResourceSelector<T>(s, "Attachment"); }

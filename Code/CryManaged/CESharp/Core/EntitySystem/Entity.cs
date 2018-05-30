@@ -22,6 +22,7 @@ namespace CryEngine
 		/// <summary>
 		/// Gets the unique identifier associated with this entity
 		/// </summary>
+		[SerializeValue]
 		public EntityId Id { get; internal set; }
 
 		/// <summary>
@@ -269,8 +270,10 @@ namespace CryEngine
 			}
 		}
 
+		[SerializeValue]
 		internal IEntity NativeHandle { get; set; }
 
+		[SerializeValue]
 		internal IntPtr NativeEntityPointer { get; set; }
 
 

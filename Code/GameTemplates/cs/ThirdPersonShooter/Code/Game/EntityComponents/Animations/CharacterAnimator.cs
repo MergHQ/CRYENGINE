@@ -12,12 +12,19 @@ namespace CryEngine.Game
 	[EntityComponent(Category = "Animation", Guid = "78583bcc-4cc4-67e7-b83d-88a4bdc53e0f")]
 	public class CharacterAnimator : EntityComponent
 	{
+		[SerializeValue]
 		private string _characterGeometry = "";
+		[SerializeValue]
 		private int _characterSlot = 0;
+		[SerializeValue]
 		private string _controllerDefinition = "";
+		[SerializeValue]
 		private string _mannequinContext = "";
+		[SerializeValue]
 		private string _animationDatabase = "";
+		[SerializeValue]
 		private bool _animationDrivenMotion = false;
+		[SerializeValue]
 		private float _playbackScale = 1.0f;
 
 		private ActionController _actionController;
@@ -219,8 +226,6 @@ namespace CryEngine.Game
 
 		protected override void OnInitialize()
 		{
-			base.OnInitialize();
-
 			// The user might have just added the component, or it might have been loaded from the map-data.
 			// We try to initialize it, but we don't want to spam the log if the user might not have put in all the right values.
 			Initialize(true);
@@ -228,23 +233,17 @@ namespace CryEngine.Game
 
 		protected override void OnRemove()
 		{
-			base.OnRemove();
-
 			Deinitialize();
 		}
 
 		protected override void OnGameplayStart()
 		{
-			base.OnGameplayStart();
-
 			// When the gameplay starts all values are assumed to be set correctly, so log any errors that might occur.
 			Initialize(false);
 		}
 
 		protected override void OnEditorGameModeChange(bool enterGame)
 		{
-			base.OnEditorGameModeChange(enterGame);
-
 			if(!enterGame)
 			{
 				Deinitialize();
@@ -258,8 +257,6 @@ namespace CryEngine.Game
 
 		protected override void OnUpdate(float frameTime)
 		{
-			base.OnUpdate(frameTime);
-
 			if(_destroyed)
 			{
 				return;
@@ -466,7 +463,7 @@ namespace CryEngine.Game
 
 			foreach(var keyValue in _tagValues)
 			{
-				_animationContext.SetTagValue(keyValue.Key, keyValue.Value);
+				_animationContext?.SetTagValue(keyValue.Key, keyValue.Value);
 			}
 			_tagValues.Clear();
 		}
@@ -480,7 +477,7 @@ namespace CryEngine.Game
 
 			foreach(var keyValue in _motionValues)
 			{
-				_character.SetAnimationSkeletonParameter(keyValue.Key, keyValue.Value);
+				_character?.SetAnimationSkeletonParameter(keyValue.Key, keyValue.Value);
 			}
 			_motionValues.Clear();
 		}
@@ -587,29 +584,29 @@ namespace CryEngine.Game
 
 				switch(id)
 				{
-				// Most values can have the accumulated values from over multiple frames
-				case MotionParameterId.TravelSpeed:
-				case MotionParameterId.TurnSpeed:
-				case MotionParameterId.TurnAngle:
-				case MotionParameterId.TravelDist:
-				case MotionParameterId.StopLeg:
-				case MotionParameterId.BlendWeight1:
-				case MotionParameterId.BlendWeight2:
-				case MotionParameterId.BlendWeight3:
-				case MotionParameterId.BlendWeight4:
-				case MotionParameterId.BlendWeight5:
-				case MotionParameterId.BlendWeight6:
-				case MotionParameterId.BlendWeight7:
-					_motionValues[id] += value;
-					break;
+					// Most values can have the accumulated values from over multiple frames
+					case MotionParameterId.TravelSpeed:
+					case MotionParameterId.TurnSpeed:
+					case MotionParameterId.TurnAngle:
+					case MotionParameterId.TravelDist:
+					case MotionParameterId.StopLeg:
+					case MotionParameterId.BlendWeight1:
+					case MotionParameterId.BlendWeight2:
+					case MotionParameterId.BlendWeight3:
+					case MotionParameterId.BlendWeight4:
+					case MotionParameterId.BlendWeight5:
+					case MotionParameterId.BlendWeight6:
+					case MotionParameterId.BlendWeight7:
+						_motionValues[id] += value;
+						break;
 
-				// Some values need absolute values
-				case MotionParameterId.TravelAngle:
-				case MotionParameterId.TravelSlope:
-					_motionValues[id] = value;
-					break;
-				default:
-					throw new ArgumentOutOfRangeException();
+					// Some values need absolute values
+					case MotionParameterId.TravelAngle:
+					case MotionParameterId.TravelSlope:
+						_motionValues[id] = value;
+						break;
+					default:
+						throw new ArgumentOutOfRangeException();
 				}
 			}
 			else

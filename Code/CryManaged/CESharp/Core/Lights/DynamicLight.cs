@@ -20,7 +20,8 @@ namespace CryEngine
 				return NativeHandle.GetFinalColor(Color.White);
 			}
 		}
-		
+
+		[SerializeValue]
 		internal SRenderLight NativeHandle { get; private set; }
 
 		internal DynamicLight(SRenderLight nativeHandle) : base(nativeHandle)

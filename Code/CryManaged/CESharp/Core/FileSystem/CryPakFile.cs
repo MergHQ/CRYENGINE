@@ -9,6 +9,7 @@ namespace CryEngine.FileSystem
 	/// </summary>
 	public class CryPakFile
 	{
+		[SerializeValue]
 		private readonly _CrySystem_cs_SWIGTYPE_p_FILE _nativeHandle;
 
 		internal _CrySystem_cs_SWIGTYPE_p_FILE NativeHandle { get { return _nativeHandle; } }

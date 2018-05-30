@@ -38,7 +38,7 @@ namespace CryEngine.Serialization
 		private static readonly Type _uintptrType = typeof(UIntPtr);
 		private static readonly Type _decimalType = typeof(decimal);
 
-		private static readonly Type _serializableType = typeof(ISerializable);
+		private static readonly Type _SerializeValueType = typeof(ISerializable);
 		private static readonly Type _entityComponentType = typeof(EntityComponent);
 
 		private static readonly Type _monoType;
@@ -99,7 +99,7 @@ namespace CryEngine.Serialization
 			{
 				_serializedType = SerializedObjectType.MemberInfo;
 			}
-			else if(_serializableType.IsAssignableFrom(_type) && _type.GetCustomAttributes(typeof(SerializableAttribute), true).Length > 0)
+			else if(_SerializeValueType.IsAssignableFrom(_type) && _type.GetCustomAttributes<SerializeValueAttribute>(true) != null)
 			{
 				_serializedType = SerializedObjectType.ISerializable;
 			}

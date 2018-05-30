@@ -12,8 +12,10 @@ namespace CryEngine
 	/// </summary>
 	public class ActionHandler : IActionListener
 	{
+		[SerializeValue]
 		private readonly Dictionary<string, Action<string, InputState, float>> _handlers = new Dictionary<string, Action<string, InputState, float>>();
-		private string _actionMapName;
+		[SerializeValue]
+		private readonly string _actionMapName;
 
 		/// <summary>
 		/// Create a new ActionHandler that can receive the input as described in the config-file at actionMapPath.
