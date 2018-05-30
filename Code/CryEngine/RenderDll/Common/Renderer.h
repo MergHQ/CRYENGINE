@@ -906,7 +906,7 @@ public:
 
 	//misc
 	virtual bool                ScreenShot(const char* filename = NULL, const SDisplayContextKey& displayContextKey = {}) override = 0;
-	virtual bool                ReadFrameBuffer(uint32* pDstRGBA8, int destinationWidth, int destinationHeight, bool readPresentedBackBuffer = true) override = 0;
+	virtual bool                ReadFrameBuffer(uint32* pDstRGBA8, int destinationWidth, int destinationHeight, bool readPresentedBackBuffer = true, EReadTextureFormat format = EReadTextureFormat::RGB8) override = 0;
 
 	virtual int                 GetColorBpp() override   { return m_cbpp; }
 	virtual int                 GetDepthBpp() override   { return m_zbpp; }

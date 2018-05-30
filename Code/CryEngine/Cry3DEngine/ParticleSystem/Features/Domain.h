@@ -58,9 +58,9 @@ public:
 	template<typename TParam, typename TMod>
 	void              AddToParam(CParticleComponent* pComponent, TParam* pParam, TMod* pModifier);
 	template<typename TBase, typename TStream>
-	void              Dispatch(CParticleComponentRuntime& runtime, const SUpdateRange& range, TStream stream, EModDomain domain) const;
+	void              Dispatch(CParticleComponentRuntime& runtime, const SUpdateRange& range, TStream stream, EDataDomain domain) const;
 
-	EModDomain        GetDomain() const;
+	EDataDomain        GetDomain() const;
 	TDataType<float>  GetDataType() const;
 	string            GetSourceDescription() const;
 	float             Adjust(float sample) const { return sample * m_domainScale + m_domainBias; }

@@ -174,28 +174,17 @@ void CDebugDrawComponent::ProcessEvent(const SEntityEvent& event)
 			Vec3 textPosition = GetWorldTransformMatrix().GetTranslation();
 			float cameraDistance = (textPosition - gEnv->pSystem->GetViewCamera().GetPosition()).GetLength();
 
-			float alpha;
-
-			if (m_persistentViewDistance >= 255.f)
-			{
-				alpha = 1.f;
-			}
-			else if (cameraDistance < m_persistentViewDistance)
-			{
-				alpha = cameraDistance / m_persistentViewDistance;
-				alpha = 1.f - alpha * alpha;
-			}
-			else
-			{
-				alpha = 0.f;
-			}
-
-			if (alpha == 0.f)
+			if (cameraDistance > m_persistentViewDistance)
 				return;
 
-			float color[4] = { m_persistentTextColor.r, m_persistentTextColor.g, m_persistentTextColor.b, alpha };
+			float fontSize = m_persistentFontSize;
 
-			IRenderAuxText::DrawLabelEx(textPosition, m_persistentFontSize, color, true, true, m_persistentText.c_str());
+			if (m_shouldScaleWithCameraDistance)
+			{
+				fontSize *= 1 - (std::min(cameraDistance, static_cast<float>(m_persistentViewDistance)) / m_persistentViewDistance);
+			}
+
+			IRenderAuxText::DrawLabelEx(textPosition, fontSize, m_persistentTextColor, true, true, m_persistentText.c_str());
 		}
 		break;
 	case ENTITY_EVENT_COMPONENT_PROPERTY_CHANGED:
@@ -208,7 +197,7 @@ void CDebugDrawComponent::ProcessEvent(const SEntityEvent& event)
 
 Cry::Entity::EventFlags CDebugDrawComponent::GetEventMask() const
 {
-	Cry::Entity::EventFlags bitFlags = m_bDrawPersistent ? ENTITY_EVENT_UPDATE : Cry::Entity::EventFlags();
+	Cry::Entity::EventFlags bitFlags = m_drawPersistent ? ENTITY_EVENT_UPDATE : Cry::Entity::EventFlags();
 	bitFlags |= ENTITY_EVENT_COMPONENT_PROPERTY_CHANGED;
 
 	return bitFlags;

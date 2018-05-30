@@ -112,8 +112,8 @@ public:
 	}
 
 protected:
-	CParamMod<SModParticleSpawnInit, UInfFloat> m_lifeTime          = 1;
-	bool                                        m_killOnParentDeath = false;
+	CParamMod<EDD_PerParticle, UInfFloat> m_lifeTime          = 1;
+	bool                                  m_killOnParentDeath = false;
 };
 
 CRY_PFX2_IMPLEMENT_FEATURE(CParticleFeature, CFeatureLifeTime, "Life", "Time", colorLife);

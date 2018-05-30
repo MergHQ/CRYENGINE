@@ -13,7 +13,7 @@ namespace pfx2
 class CFTimeSource : public CDomain, public IModifier
 {
 public:
-	virtual EModDomain GetDomain() const
+	virtual EDataDomain GetDomain() const
 	{
 		return CDomain::GetDomain();
 	}
@@ -54,7 +54,7 @@ public:
 		}
 	}
 
-	virtual void Modify(CParticleComponentRuntime& runtime, const SUpdateRange& range, IOFStream stream, TDataType<float> streamType, EModDomain domain) const
+	virtual void Modify(CParticleComponentRuntime& runtime, const SUpdateRange& range, IOFStream stream, TDataType<float> streamType, EDataDomain domain) const
 	{
 		CRY_PFX2_PROFILE_DETAIL;
 		CDomain::Dispatch<CModCurve>(runtime, range, stream, domain);
@@ -113,7 +113,7 @@ public:
 		ar(m_spline, "DoubleCurve", "Double Curve");
 	}
 
-	virtual void Modify(CParticleComponentRuntime& runtime, const SUpdateRange& range, IOFStream stream, TDataType<float> streamType, EModDomain domain) const
+	virtual void Modify(CParticleComponentRuntime& runtime, const SUpdateRange& range, IOFStream stream, TDataType<float> streamType, EDataDomain domain) const
 	{
 		CRY_PFX2_PROFILE_DETAIL;
 		CDomain::Dispatch<CModDoubleCurve>(runtime, range, stream, domain);
@@ -161,9 +161,9 @@ public:
 		: m_amount(amount)
 	{}
 
-	virtual EModDomain GetDomain() const
+	virtual EDataDomain GetDomain() const
 	{
-		return EMD_PerParticle;
+		return EDD_PerParticle;
 	}
 
 	virtual void AddToParam(CParticleComponent* pComponent, IParamMod* pParam)
@@ -177,7 +177,7 @@ public:
 		ar(m_amount, "Amount", "Amount");
 	}
 
-	virtual void Modify(CParticleComponentRuntime& runtime, const SUpdateRange& range, IOFStream stream, TDataType<float> streamType, EModDomain domain) const
+	virtual void Modify(CParticleComponentRuntime& runtime, const SUpdateRange& range, IOFStream stream, TDataType<float> streamType, EDataDomain domain) const
 	{
 		CRY_PFX2_PROFILE_DETAIL;
 
@@ -247,7 +247,7 @@ public:
 		return nullptr;
 	}
 
-	virtual void Modify(CParticleComponentRuntime& runtime, const SUpdateRange& range, IOFStream stream, TDataType<float> streamType, EModDomain domain) const
+	virtual void Modify(CParticleComponentRuntime& runtime, const SUpdateRange& range, IOFStream stream, TDataType<float> streamType, EDataDomain domain) const
 	{
 		CRY_PFX2_PROFILE_DETAIL;
 		CDomain::Dispatch<CModNoise>(runtime, range, stream, domain);
@@ -407,7 +407,7 @@ public:
 		}
 	}
 
-	virtual void Modify(CParticleComponentRuntime& runtime, const SUpdateRange& range, IOFStream stream, TDataType<float> streamType, EModDomain domain) const
+	virtual void Modify(CParticleComponentRuntime& runtime, const SUpdateRange& range, IOFStream stream, TDataType<float> streamType, EDataDomain domain) const
 	{
 		CRY_PFX2_PROFILE_DETAIL;
 		CDomain::Dispatch<CModWave>(runtime, range, stream, domain);
@@ -541,7 +541,7 @@ public:
 		CDomain::SerializeInplace(ar);
 	}
 
-	virtual void Modify(CParticleComponentRuntime& runtime, const SUpdateRange& range, IOFStream stream, TDataType<float> streamType, EModDomain domain) const
+	virtual void Modify(CParticleComponentRuntime& runtime, const SUpdateRange& range, IOFStream stream, TDataType<float> streamType, EDataDomain domain) const
 	{
 		CRY_PFX2_PROFILE_DETAIL;
 		CDomain::Dispatch<CModLinear>(runtime, range, stream, domain);
@@ -612,9 +612,9 @@ public:
 			pParam->AddToUpdate(this);
 	}
 
-	virtual EModDomain GetDomain() const override
+	virtual EDataDomain GetDomain() const override
 	{
-		return EMD_PerParticle;
+		return EDD_PerParticle;
 	}
 
 	virtual Range GetMinMax() const override
@@ -632,16 +632,16 @@ public:
 		for (uint i = 1; i < gNumConfigSpecs; ++i)
 			m_range = Range(min(m_range.start, m_specMultipliers[1]), max(m_range.end, m_specMultipliers[0]));
 
-		const auto& context = *ar.context<IParamModContext>();
-		if (context.GetDomain() == EMD_PerInstance)
+		const EDataDomain domain = *ar.context<EDataDomain>();
+		if (domain & EDD_PerInstance)
 			m_spawnOnly = false;
-		else if (!context.HasUpdate())
+		else if (!(domain & EDD_HasUpdate))
 			m_spawnOnly = true;
 		else
 			ar(m_spawnOnly, "SpawnOnly", "Spawn Only");
 	}
 
-	virtual void Modify(CParticleComponentRuntime& runtime, const SUpdateRange& range, IOFStream stream, TDataType<float> streamType, EModDomain domain) const override
+	virtual void Modify(CParticleComponentRuntime& runtime, const SUpdateRange& range, IOFStream stream, TDataType<float> streamType, EDataDomain domain) const override
 	{
 		CRY_PFX2_PROFILE_DETAIL;
 
@@ -687,9 +687,9 @@ public:
 			pParam->AddToUpdate(this);
 	}
 
-	virtual EModDomain GetDomain() const override
+	virtual EDataDomain GetDomain() const override
 	{
-		return EMD_PerParticle;
+		return EDD_PerParticle;
 	}
 
 	virtual void Serialize(Serialization::IArchive& ar) override
@@ -701,7 +701,7 @@ public:
 		ar(m_spawnOnly, "SpawnOnly", "Spawn Only");
 	}
 
-	virtual void Modify(CParticleComponentRuntime& runtime, const SUpdateRange& range, IOFStream stream, TDataType<float> streamType, EModDomain domain) const override
+	virtual void Modify(CParticleComponentRuntime& runtime, const SUpdateRange& range, IOFStream stream, TDataType<float> streamType, EDataDomain domain) const override
 	{
 		CRY_PFX2_PROFILE_DETAIL;
 
@@ -763,9 +763,9 @@ public:
 	CModInherit()
 		: m_spawnOnly(true) {}
 
-	virtual EModDomain GetDomain() const
+	virtual EDataDomain GetDomain() const
 	{
-		return EMD_PerParticle;
+		return EDD_PerParticle;
 	}
 
 	virtual void AddToParam(CParticleComponent* pComponent, IParamMod* pParam)
@@ -782,7 +782,7 @@ public:
 		ar(m_spawnOnly, "SpawnOnly", "Spawn Only");
 	}
 
-	virtual void Modify(CParticleComponentRuntime& runtime, const SUpdateRange& range, IOFStream stream, TDataType<float> streamType, EModDomain domain) const
+	virtual void Modify(CParticleComponentRuntime& runtime, const SUpdateRange& range, IOFStream stream, TDataType<float> streamType, EDataDomain domain) const
 	{
 		CRY_PFX2_PROFILE_DETAIL;
 

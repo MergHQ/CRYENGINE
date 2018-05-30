@@ -74,10 +74,12 @@ template<typename T> using TSmartArray = TDynArray<_smart_ptr<T>>;
 
 #ifdef CRY_PFX2_USE_SSE
 
+#define CRY_PFX2_PARTICLESGROUP_STRIDE 4 // can be 8 for AVX or 64 forGPU
+
 struct TParticleGroupId
 {
 	TParticleGroupId() {}
-	TParticleGroupId(uint32 i) { id = i; }
+	explicit TParticleGroupId(uint32 i) { id = i; CRY_PFX2_ASSERT(IsAligned(i, CRY_PFX2_PARTICLESGROUP_STRIDE)); }
 	friend bool                       operator<(const TParticleGroupId a, const TParticleGroupId b)  { return a.id < b.id; }
 	friend bool                       operator>(const TParticleGroupId a, const TParticleGroupId b)  { return a.id > b.id; }
 	friend bool                       operator<=(const TParticleGroupId a, const TParticleGroupId b) { return a.id <= b.id; }
@@ -85,7 +87,7 @@ struct TParticleGroupId
 	friend bool                       operator==(const TParticleGroupId a, const TParticleGroupId b) { return a.id == b.id; }
 	friend bool                       operator!=(const TParticleGroupId a, const TParticleGroupId b) { return a.id != b.id; }
 	TParticleGroupId                  operator++(int)                                                { id++; return *this; }
-	TParticleGroupId&                 operator+=(int stride)                                         { id += stride; return *this; }
+	TParticleGroupId&                 operator+=(uint stride)                                        { id += stride; return *this; }
 	template<class type> friend type* operator+(type* ptr, TParticleGroupId id)                      { return ptr + id.id; }
 	friend TParticleGroupId           operator&(TParticleGroupId id, uint32 mask)                    { return TParticleGroupId(id.id & mask); }
 	uint32                            operator+() const                                              { return id; }
@@ -93,18 +95,14 @@ private:
 	uint32 id;
 };
 
-#define CRY_PFX2_PARTICLESGROUP_STRIDE 4 // can be 8 for AVX or 64 forGPU
-
 #else
-
-typedef TParticleId TParticleGroupId;
 
 #define CRY_PFX2_PARTICLESGROUP_STRIDE 1
 
+typedef TParticleId TParticleGroupId;
+
 #endif
 
-#define CRY_PFX2_PARTICLESGROUP_LOWER(id) ((id) & ~((CRY_PFX2_PARTICLESGROUP_STRIDE - 1)))
-#define CRY_PFX2_PARTICLESGROUP_UPPER(id) ((id) | ((CRY_PFX2_PARTICLESGROUP_STRIDE - 1)))
 #define CRY_PFX2_PARTICLESGROUP_ALIGN(id) Align(id, CRY_PFX2_PARTICLESGROUP_STRIDE)
 
 
@@ -152,7 +150,7 @@ struct TIndexRange
 
 	template<typename TIndex2, int nStride2>
 	TIndexRange(TIndexRange<TIndex2, nStride2> range)
-		: TIndexRange(+range.m_begin, +range.m_end) {}
+		: TIndexRange(TIndex(+range.m_begin), TIndex(Align(+range.m_end, nStride))) {}
 };
 
 typedef TIndexRange<TParticleId> SUpdateRange;

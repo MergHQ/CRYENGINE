@@ -1,11 +1,4 @@
-// Copyright 2001-2018 Crytek GmbH / Crytek Group. All rights reserved.
-
-// -------------------------------------------------------------------------
-//  Created:     29/09/2014 by Filipe amim
-//  Description:
-// -------------------------------------------------------------------------
-//
-////////////////////////////////////////////////////////////////////////////
+// Copyright 2015-2018 Crytek GmbH / Crytek Group. All rights reserved.
 
 #include "StdAfx.h"
 #include <CrySystem/Testing/CryTest.h>
@@ -53,7 +46,7 @@ public:
 			return;
 
 		TFloatArray sizes(runtime.MemHeap(), runtime.GetParentContainer().GetMaxParticles());
-		auto modRange = m_scale.GetValues(runtime, sizes, EMD_PerInstance, true);
+		auto modRange = m_scale.GetValues(runtime, sizes, EDD_PerInstance, true);
 
 		const uint numInstances = runtime.GetNumInstances();
 		for (uint i = 0; i < numInstances; ++i)
@@ -70,7 +63,7 @@ public:
 		TFloatArray scales(runtime.MemHeap(), parentId + 1);
 		const SUpdateRange range(parentId, parentId + 1);
 
-		auto modRange = m_scale.GetValues(runtime, scales.data(), range, EMD_PerInstance, true);
+		auto modRange = m_scale.GetValues(runtime, scales.data(), range, EDD_PerInstance, true);
 		const float scale = scales[parentId] * (modRange.start + modRange.end) * 0.5f;
 		offset += m_offset * scale;
 	}
@@ -108,8 +101,8 @@ public:
 	}
 
 private:
-	Vec3 m_offset;
-	CParamMod<SModParticleSpawnInit, UFloat10> m_scale;
+	Vec3                                 m_offset;
+	CParamMod<EDD_PerParticle, UFloat10> m_scale;
 };
 
 CRY_PFX2_IMPLEMENT_FEATURE(CParticleFeature, CFeatureLocationOffset, "Location", "Offset", colorLocation);
@@ -141,7 +134,7 @@ public:
 	{
 		uint numInstances = runtime.GetNumInstances();
 		TFloatArray sizes(runtime.MemHeap(), runtime.GetParentContainer().GetMaxParticles());
-		auto modRange = m_scale.GetValues(runtime, sizes, EMD_PerInstance, true);
+		auto modRange = m_scale.GetValues(runtime, sizes, EDD_PerInstance, true);
 		float avg = (modRange.start + modRange.end) * 0.5f;
 
 		for (uint i = 0; i < numInstances; ++i)
@@ -189,8 +182,8 @@ public:
 	}
 
 private:
-	Vec3 m_box = ZERO;
-	CParamMod<SModParticleSpawnInit, UFloat10> m_scale;
+	Vec3                                 m_box = ZERO;
+	CParamMod<EDD_PerParticle, UFloat10> m_scale;
 };
 
 CRY_PFX2_IMPLEMENT_FEATURE(CParticleFeature, CFeatureLocationBox, "Location", "Box", colorLocation);
@@ -254,7 +247,7 @@ public:
 	{
 		uint numInstances = runtime.GetNumInstances();
 		TFloatArray sizes(runtime.MemHeap(), runtime.GetParentContainer().GetMaxParticles());
-		auto modRange = m_radius.GetValues(runtime, sizes, EMD_PerInstance, true);
+		auto modRange = m_radius.GetValues(runtime, sizes, EDD_PerInstance, true);
 
 		for (uint i = 0; i < numInstances; ++i)
 		{
@@ -304,9 +297,9 @@ private:
 		}
 	}
 
-	CParamMod<SModParticleSpawnInit, UFloat10> m_radius;
-	CParamMod<SModParticleSpawnInit, SFloat10> m_velocity;
-	Vec3 m_axisScale;
+	CParamMod<EDD_PerParticle, UFloat10> m_radius;
+	CParamMod<EDD_PerParticle, SFloat10> m_velocity;
+	Vec3                                 m_axisScale;
 };
 
 CRY_PFX2_IMPLEMENT_FEATURE(CParticleFeature, CFeatureLocationSphere, "Location", "Sphere", colorLocation);
@@ -373,7 +366,7 @@ public:
 	{
 		const uint numInstances = runtime.GetNumInstances();
 		TFloatArray sizes(runtime.MemHeap(), runtime.GetParentContainer().GetMaxParticles()); 
-		auto modRange = m_radius.GetValues(runtime, sizes, EMD_PerInstance, true);
+		auto modRange = m_radius.GetValues(runtime, sizes, EDD_PerInstance, true);
 
 		for (uint i = 0; i < numInstances; ++i)
 		{
@@ -432,10 +425,10 @@ private:
 	}
 
 private:
-	CParamMod<SModParticleSpawnInit, UFloat10> m_radius;
-	CParamMod<SModParticleSpawnInit, SFloat10> m_velocity;
-	Vec3 m_axis;
-	Vec2 m_axisScale;
+	CParamMod<EDD_PerParticle, UFloat10> m_radius;
+	CParamMod<EDD_PerParticle, SFloat10> m_velocity;
+	Vec3                                 m_axis;
+	Vec2                                 m_axisScale;
 };
 
 CRY_PFX2_IMPLEMENT_FEATURE(CParticleFeature, CFeatureLocationCircle, "Location", "Circle", colorLocation);
@@ -693,12 +686,12 @@ public:
 		}
 	}
 
-	EGeometrySource                            m_source          = EGeometrySource::Render;
-	EGeometryLocation                          m_location        = EGeometryLocation::Surface;
-	CParamMod<SModParticleSpawnInit, SFloat10> m_offset = 0;
-	CParamMod<SModParticleSpawnInit, SFloat10> m_velocity = 0;
-	bool                                       m_orientToNormal  = true;
-	bool                                       m_augmentLocation = false;
+	EGeometrySource                      m_source          = EGeometrySource::Render;
+	EGeometryLocation                    m_location        = EGeometryLocation::Surface;
+	CParamMod<EDD_PerParticle, SFloat10> m_offset          = 0;
+	CParamMod<EDD_PerParticle, SFloat10> m_velocity        = 0;
+	bool                                 m_orientToNormal  = true;
+	bool                                 m_augmentLocation = false;
 };
 
 CRY_PFX2_IMPLEMENT_FEATURE(CParticleFeature, CFeatureLocationGeometry, "Location", "Geometry", colorLocation);
@@ -818,10 +811,10 @@ private:
 		return total;
 	}
 
-	CParamMod<SModParticleSpawnInit, SFloat10> m_amplitude;
-	UFloat10    m_size;
-	UFloat10    m_rate;
-	UIntOctaves m_octaves;
+	CParamMod<EDD_PerParticle, SFloat10> m_amplitude;
+	UFloat10                             m_size;
+	UFloat10                             m_rate;
+	UIntOctaves                          m_octaves;
 };
 
 CRY_PFX2_IMPLEMENT_FEATURE(CParticleFeature, CFeatureLocationNoise, "Location", "Noise", colorLocation);
@@ -1362,7 +1355,7 @@ private:
 	}
 
 	// Parameters
-	CParamMod<SModInstanceCounter, UFloat100> m_visibility;
+	CParamMod<EDD_InstanceUpdate, UFloat100> m_visibility;
 
 	// Debugging and profiling options
 	bool m_wrapSector         = true;

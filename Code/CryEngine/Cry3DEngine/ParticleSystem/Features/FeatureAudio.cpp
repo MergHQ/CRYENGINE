@@ -282,9 +282,9 @@ public:
 	}
 
 private:
-	string                               m_parameterName;
-	CryAudio::ControlId                  m_parameterId;
-	CParamMod<SModParticleField, SFloat> m_value;
+	string                                m_parameterName;
+	CryAudio::ControlId                   m_parameterId;
+	CParamMod<EDD_ParticleUpdate, SFloat> m_value;
 };
 
 CRY_PFX2_IMPLEMENT_FEATURE(CParticleFeature, CFeatureAudioParameter, "Audio", "Rtpc", colorAudio);

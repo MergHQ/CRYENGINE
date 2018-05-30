@@ -7,7 +7,7 @@
 namespace pfx2
 {
 
-MakeDataType(EPDT_MeshGeometry, IMeshObj*, EDataFlags::BNeedsClear); // Submesh pointers must be cleared on edit to avoid referencing freed parent mesh
+MakeDataType(EPDT_MeshGeometry, IMeshObj*, EDataDomain(EDD_PerParticle | EDD_NeedsClear)); // Submesh pointers must be cleared on edit to avoid referencing freed parent mesh
 
 extern TDataType<float> EPDT_Alpha;
 extern TDataType<UCol>  EPDT_Color;

@@ -14,7 +14,6 @@
 #include <CryEntitySystem/IEntitySystem.h>
 #include <CryAISystem/INavigationSystem.h>
 #include <CryMath/Random.h>
-#include "ScriptBind_AI.h"
 
 #include "CoverSurfaceManager.h"
 
@@ -108,7 +107,6 @@ CAIManager::CAIManager()
 	, m_resumeMNMRegenWhenPumpedPhysicsEventsAreFinished(false)
 {
 	m_pAISystem = nullptr;
-	m_pScriptAI = nullptr;
 	m_pBehaviorLibrary = new CAIBehaviorLibrary;
 
 	gViewportDebugPreferences.objectHideMaskChanged.Connect(this, &CAIManager::OnHideMaskChanged);
@@ -121,7 +119,6 @@ CAIManager::~CAIManager()
 	FreeActionGraphs();
 
 	SAFE_DELETE(m_pBehaviorLibrary);
-	SAFE_DELETE(m_pScriptAI);
 }
 
 void CAIManager::Init(ISystem* system)
@@ -129,9 +126,6 @@ void CAIManager::Init(ISystem* system)
 	m_pAISystem = system->GetAISystem();
 	if (!m_pAISystem)
 		return;
-
-	if (!m_pScriptAI)
-		m_pScriptAI = new CScriptBind_AI(system);
 
 	// (MATT) Reset the AI to allow it to update its configuration, with respect to ai_CompatibilityMode cvar {2009/06/25}
 	m_pAISystem->Reset(IAISystem::RESET_INTERNAL);
@@ -235,7 +229,7 @@ void CAIManager::OnEditorNotifyEvent(EEditorNotifyEvent event)
 
 	case eNotify_OnEndLoad:
 		RequestResumeNavigationWorldMonitorOnNextUpdate();
-		ResumeMNMRegeneration();
+		ResumeMNMRegenerationWithoutUpdatingPengingNavMeshChanges();
 		break;
 	case eNotify_OnBeginExportToGame:
 		PauseNavigationUpdating();
@@ -1344,7 +1338,7 @@ void CAIManager::PauseMNMRegeneration()
 	}
 }
 
-void CAIManager::ResumeMNMRegeneration()
+void CAIManager::ResumeMNMRegeneration(bool updateChangedVolumes)
 {
 	if (--m_MNMRegenerationPausedCount == 0)
 	{
@@ -1352,7 +1346,21 @@ void CAIManager::ResumeMNMRegeneration()
 		{
 			if (INavigationSystem* pNavigationSystem = m_pAISystem->GetNavigationSystem())
 			{
-				pNavigationSystem->GetUpdateManager()->EnableRegenerationRequestsExecution();
+				pNavigationSystem->GetUpdateManager()->EnableRegenerationRequestsExecution(true);
+			}
+		}
+	}
+}
+
+void CAIManager::ResumeMNMRegenerationWithoutUpdatingPengingNavMeshChanges()
+{
+	if (--m_MNMRegenerationPausedCount == 0)
+	{
+		if (m_pAISystem)
+		{
+			if (INavigationSystem* pNavigationSystem = m_pAISystem->GetNavigationSystem())
+			{
+				pNavigationSystem->GetUpdateManager()->EnableRegenerationRequestsExecution(false);
 			}
 		}
 	}

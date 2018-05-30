@@ -12,7 +12,7 @@ namespace detail
 class CSelfStreamSampler
 {
 public:
-	CSelfStreamSampler(CParticleComponentRuntime& runtime, TDataType<float> sourceStreamType, EModDomain domain = EMD_PerParticle)
+	CSelfStreamSampler(CParticleComponentRuntime& runtime, TDataType<float> sourceStreamType, EDataDomain domain = EDD_PerParticle)
 		: sourceStream(runtime.GetContainer(domain).GetIFStream(sourceStreamType))
 	{}
 	ILINE floatv Sample(TParticleGroupId particleId) const
@@ -73,7 +73,7 @@ private:
 class CLevelTimeSampler
 {
 public:
-	CLevelTimeSampler(CParticleComponentRuntime& runtime, EModDomain domain)
+	CLevelTimeSampler(CParticleComponentRuntime& runtime, EDataDomain domain)
 		: deltaTime(ToFloatv(runtime.DeltaTime()))
 		, ages(runtime.GetContainer(domain).GetIFStream(EPDT_NormalAge))
 		, lifeTimes(runtime.GetContainer(domain).GetIFStream(EPDT_LifeTime))
@@ -93,7 +93,7 @@ private:
 class CSelfSpeedSampler
 {
 public:
-	CSelfSpeedSampler(CParticleComponentRuntime& runtime, EModDomain domain = EMD_PerParticle)
+	CSelfSpeedSampler(CParticleComponentRuntime& runtime, EDataDomain domain = EDD_PerParticle)
 		: velocities(runtime.GetContainer(domain).GetIVec3Stream(EPVF_Velocity))
 	{}
 	ILINE floatv Sample(TParticleGroupId particleId) const
@@ -166,7 +166,7 @@ private:
 class CViewAngleSampler
 {
 public:
-	CViewAngleSampler(CParticleComponentRuntime& runtime, EModDomain domain = EMD_PerParticle)
+	CViewAngleSampler(CParticleComponentRuntime& runtime, EDataDomain domain = EDD_PerParticle)
 		: m_positions(runtime.GetContainer(domain).GetIVec3Stream(EPVF_Position))
 		, m_orientations(runtime.GetContainer(domain).GetIQuatStream(EPQF_Orientation))
 		, m_cameraPosition(ToVec3v(gEnv->p3DEngine->GetRenderingCamera().GetPosition())) {}
@@ -205,7 +205,7 @@ private:
 class CCameraDistanceSampler
 {
 public:
-	CCameraDistanceSampler(CParticleComponentRuntime& runtime, EModDomain domain = EMD_PerParticle)
+	CCameraDistanceSampler(CParticleComponentRuntime& runtime, EDataDomain domain = EDD_PerParticle)
 		: m_positions(runtime.GetContainer(domain).GetIVec3Stream(EPVF_Position))
 		, m_cameraPosition(ToVec3v(gEnv->p3DEngine->GetRenderingCamera().GetPosition())) {}
 	ILINE floatv Sample(TParticleGroupId particleId) const
@@ -254,23 +254,23 @@ ILINE void CDomain::AddToParam(CParticleComponent* pComponent, TParam* pParam, T
 	}
 }
 
-ILINE EModDomain CDomain::GetDomain() const
+ILINE EDataDomain CDomain::GetDomain() const
 {
 	switch (m_domain)
 	{
 	case EDomain::Global:
 	case EDomain::Attribute:
-		return EMD_PerEffect;
+		return EDD_None;
 	}
 
 	switch (m_sourceOwner)
 	{
 	case EDomainOwner::Self:
-		return EMD_PerParticle;
+		return EDD_PerParticle;
 	case EDomainOwner::Parent:
-		return EMD_PerInstance;
+		return EDD_PerInstance;
 	default:
-		return EMD_PerEffect;
+		return EDD_None;
 	}
 }
 ILINE TDataType<float> CDomain::GetDataType() const
@@ -289,7 +289,7 @@ ILINE TDataType<float> CDomain::GetDataType() const
 }
 
 template<typename TBase, typename TStream>
-ILINE void CDomain::Dispatch(CParticleComponentRuntime& runtime, const SUpdateRange& range, TStream stream, EModDomain domain) const
+ILINE void CDomain::Dispatch(CParticleComponentRuntime& runtime, const SUpdateRange& range, TStream stream, EDataDomain domain) const
 {
 	switch (m_domain)
 	{
@@ -319,13 +319,13 @@ ILINE void CDomain::Dispatch(CParticleComponentRuntime& runtime, const SUpdateRa
 			detail::CViewAngleSampler(runtime, domain));
 		break;
 	case EDomain::CameraDistance:
-		if (!(C3DEngine::GetCVars()->e_ParticlesDebug & AlphaBit('u')) || domain == EMD_PerParticle)
+		if (!(C3DEngine::GetCVars()->e_ParticlesDebug & AlphaBit('u')) || domain == EDD_PerParticle)
 			((TBase*)this)->DoModify(
 				runtime, range, stream,
 				detail::CCameraDistanceSampler(runtime, domain));
 		break;
 	case EDomain::Speed:
-		if (m_sourceOwner == EDomainOwner::Self || domain == EMD_PerInstance)
+		if (m_sourceOwner == EDomainOwner::Self || domain == EDD_PerInstance)
 			((TBase*)this)->DoModify(
 			  runtime, range, stream,
 			  detail::CSelfSpeedSampler(runtime, domain));
@@ -335,7 +335,7 @@ ILINE void CDomain::Dispatch(CParticleComponentRuntime& runtime, const SUpdateRa
 			  detail::CParentSpeedSampler(runtime));
 		break;
 	default:
-		if (m_sourceOwner == EDomainOwner::Self || domain == EMD_PerInstance)
+		if (m_sourceOwner == EDomainOwner::Self || domain == EDD_PerInstance)
 			((TBase*)this)->DoModify(
 				runtime, range, stream,
 				detail::CSelfStreamSampler(runtime, GetDataType(), domain));

@@ -6,7 +6,7 @@
 namespace pfx2
 {
 
-MakeDataType(EPDT_Alpha, float, EDataFlags::BHasInit);
+MakeDataType(EPDT_Alpha, float, EDD_ParticleUpdate);
 
 //////////////////////////////////////////////////////////////////////////
 // CFeatureFieldOpacity
@@ -72,7 +72,7 @@ public:
 	}
 
 private:
-	CParamMod<SModParticleField, UUnitFloat> m_opacity;
+	CParamMod<EDD_ParticleUpdate, UUnitFloat> m_opacity;
 	Vec2 m_alphaScale;
 	Vec2 m_clipLow, m_clipRange;
 };
@@ -82,7 +82,7 @@ CRY_PFX2_IMPLEMENT_FEATURE(CParticleFeature, CFeatureFieldOpacity, "Field", "Opa
 //////////////////////////////////////////////////////////////////////////
 // CFeatureFieldSize
 
-MakeDataType(EPDT_Size, float, EDataFlags::BHasInit);
+MakeDataType(EPDT_Size, float, EDD_ParticleUpdate);
 
 class CFeatureFieldSize : public CParticleFeature
 {
@@ -130,7 +130,7 @@ public:
 	}
 
 private:
-	CParamMod<SModParticleField, UFloat10> m_size;
+	CParamMod<EDD_ParticleUpdate, UFloat10> m_size;
 };
 
 CRY_PFX2_IMPLEMENT_FEATURE(CParticleFeature, CFeatureFieldSize, "Field", "Size", colorField);

@@ -596,12 +596,46 @@ vert2fragCustomRender Vegetation_CustomRenderPassVS(app2vertGeneral IN)
 }
 
 
+pixout Vegetation_CustomRenderPassPS(vert2fragCustomRender IN)
+{
+	pixout OUT = (pixout)0;
+
+	// Switch between diferent rendering modes
+
+#if %_RT_SAMPLE0
+
+	OUT.Color = SilhoueteGeometryHighlights(IN);
+
+#elif %_RT_SAMPLE1
+
+	OUT.Color.xyz = ThermalVision(IN);
+	OUT.Color.w = 1;
+
+#elif %_RT_SAMPLE2
+
+	OUT.Color = SilhoueteVisionOptimised(IN);
+
+#else
+
+	OUT.Color = SilhoueteVision(IN);
+
+#endif
+
+#if %_RT_ALPHATEST
+	half diffuseMapAlpha = GetAlphaTex(diffuseTex, IN.baseTC.xy);
+	clip(diffuseMapAlpha - Get_MaterialAlphaTest());
+#endif
+
+	return OUT;
+}
+
+
 technique CustomRenderVegetation
 {
 	pass p0
 	{
 		VertexShader = Vegetation_CustomRenderPassVS() CustomRenderVS;
-		PixelShader = Common_CustomRenderPassPS() CustomRenderPS;
+		PixelShader = Vegetation_CustomRenderPassPS() CustomRenderPS;
 
 		ZEnable = true;
 		ZWriteEnable = true;

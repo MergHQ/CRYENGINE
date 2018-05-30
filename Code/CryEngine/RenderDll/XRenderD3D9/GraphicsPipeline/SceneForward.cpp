@@ -205,7 +205,7 @@ bool CSceneForwardStage::CreatePipelineState(const SGraphicsPipelineStateDescrip
 	
 	CDeviceGraphicsPSODesc psoDesc(nullptr, desc);
 	
-	if (passId == ePass_ForwardRecursive)
+	if (bRecursive)
 		psoDesc.m_ShaderFlags_RT |= g_HWSR_MaskBit[HWSR_SECONDARY_VIEW];
 
 

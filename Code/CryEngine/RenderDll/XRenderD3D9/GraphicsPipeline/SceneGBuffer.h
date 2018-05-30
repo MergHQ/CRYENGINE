@@ -48,6 +48,7 @@ public:
 	}
 
 	void Execute();
+	void ExecuteMinimumZpass();
 	void ExecuteMicroGBuffer();
 	void ExecuteLinearizeDepth();
 	void ExecuteGBufferVisualization();

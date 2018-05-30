@@ -66,8 +66,8 @@ private:
 	void AngularLinearIntegral(CParticleComponentRuntime& runtime);
 	void AngularDragFastIntegral(CParticleComponentRuntime& runtime);
 
-	CParamMod<SModParticleField, SFloat> m_gravity;
-	CParamMod<SModParticleField, UFloat> m_drag;
+	CParamMod<EDD_ParticleUpdate, SFloat> m_gravity;
+	CParamMod<EDD_ParticleUpdate, UFloat> m_drag;
 	UFloat                               m_windMultiplier;
 	UFloat                               m_angularDragMultiplier;
 	bool                                 m_perParticleForceComputation;

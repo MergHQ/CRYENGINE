@@ -117,7 +117,7 @@ void CParticleComponentRuntime::UpdateParticles()
 
 	for (EParticleDataType type(0); type < EParticleDataType::size(); type = type + type.info().step())
 	{
-		if (type.info().hasInit)
+		if (type.info().domain & EDD_HasUpdate)
 			m_container.CopyData(type, InitType(type), FullRange());
 	}
 
@@ -331,7 +331,7 @@ void CParticleComponentRuntime::UpdateNewBorns()
 
 	GetComponent()->PreInitParticles(*this);
 
-	for (auto particleGroupId : SGroupRange(m_container.GetSpawnedRange()))
+	for (auto particleGroupId : SpawnedRangeV())
 	{
 		// Convert absolute spawned particle age to normal age / life
 		floatv normAge = normAges.Load(particleGroupId);
@@ -374,13 +374,13 @@ void CParticleComponentRuntime::UpdateNewBorns()
 	}
 
 	// neutral velocity
-	m_container.FillData(EPVF_Velocity, Vec3(0), m_container.GetSpawnedRange());
+	m_container.FillData(EPVF_Velocity, Vec3(0), SpawnedRange());
 
 	// initialize random
 	if (m_container.HasData(EPDT_Random))
 	{
 		IOFStream unormRands = m_container.GetIOFStream(EPDT_Random);
-		for (auto particleGroupId : m_container.GetSpawnedRange())
+		for (auto particleGroupId : SpawnedRangeV())
 		{
 			const floatv unormRand = ChaosV().RandUNorm();
 			unormRands.Store(particleGroupId, unormRand);
@@ -439,8 +439,8 @@ void CParticleComponentRuntime::CalculateBounds()
 	#ifdef CRY_PFX2_USE_SSE
 		// vector part
 		const TParticleId lastParticleId = m_container.GetNumParticles();
-		const TParticleGroupId lastParticleGroupId = CRY_PFX2_PARTICLESGROUP_LOWER(lastParticleId);
-		for (auto particleGroupId : SGroupRange(0, lastParticleGroupId))
+		const TParticleGroupId lastParticleGroupId { lastParticleId & ~(CRY_PFX2_PARTICLESGROUP_STRIDE - 1) };
+		for (auto particleGroupId : SGroupRange(TParticleGroupId(0), lastParticleGroupId))
 		{
 			const floatv size = sizes.Load(particleGroupId);
 			const Vec3v position = positions.Load(particleGroupId);
@@ -556,14 +556,14 @@ void CParticleComponentRuntime::DebugStabilityCheck()
 
 	if (m_container.HasNewBorns())
 	{
-		for (auto particleId : m_container.GetSpawnedRange())
+		for (auto particleId : SpawnedRange())
 		{
 			TParticleId parentId = parentIds.Load(particleId);
 			CRY_PFX2_ASSERT(parentIds.Load(particleId) != gInvalidId);      // recently spawn particles are not supposed to be orphan
 		}
 	}
 
-	for (auto particleId : m_container.GetFullRange())
+	for (auto particleId : FullRange())
 	{
 		TParticleId parentId = parentIds.Load(particleId);
 		CRY_PFX2_ASSERT(parentId < parentCount || parentId == gInvalidId);    // this particle is not pointing to the correct parent
