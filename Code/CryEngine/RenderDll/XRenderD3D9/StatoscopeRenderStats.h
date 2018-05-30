@@ -19,6 +19,21 @@ protected:
 	CD3D9Renderer* m_pRenderer;
 };
 
+class CDetailedRenderTimesDG : public IStatoscopeDataGroup
+{
+public:
+	CDetailedRenderTimesDG(CD3D9Renderer* pRenderer);
+
+	virtual SDescription GetDescription() const;
+	virtual void         Enable();
+	virtual void         Write(IStatoscopeFrameRecord& fr);
+	virtual uint32       PrepareToWrite();
+
+protected:
+	CD3D9Renderer* m_pRenderer;
+	const DynArray<RPProfilerDetailedStats>* m_stats;
+};
+
 class CGraphicsDG : public IStatoscopeDataGroup
 {
 public:

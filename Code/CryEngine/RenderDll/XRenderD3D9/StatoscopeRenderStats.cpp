@@ -2,6 +2,7 @@
 
 #include "StdAfx.h"
 #include <CrySystem/Profilers/IStatoscope.h>
+#include "PipelineProfiler.h"
 #include <CryNetwork/INetwork.h>
 #include "StatoscopeRenderStats.h"
 
@@ -15,8 +16,11 @@ CGPUTimesDG::CGPUTimesDG(CD3D9Renderer* pRenderer)
 IStatoscopeDataGroup::SDescription CGPUTimesDG::GetDescription() const
 {
 	return IStatoscopeDataGroup::SDescription('i', "GPU Times",
-	                                          "['/GPUTimes/' (float Frame) (float Scene) (float Shadows) "
-	                                          "(float Lighting) (float VFX)]");
+		"['/GPUTimes/' (float Frame) (float OceanReflections) "
+		"(float Scene/Overall) (float Scene/Decals) (float Scene/Forward) (float Scene/Water) "
+		"(float Shadows/Overall) (float Shadows/Sun) (float Shadows/Per-Object) (float Shadows/Local) "
+		"(float Lighting/Overall) (float Lighting/VoxelGI) "
+		"(float VFX/Overall) (float VFX/Particles&Glass) (float VFX/Fog) (float VFX/Flares)]");
 }
 
 void CGPUTimesDG::Enable()
@@ -35,11 +39,102 @@ void CGPUTimesDG::Write(IStatoscopeFrameRecord& fr)
 	if (pRPPStats)
 	{
 		fr.AddValue(pRPPStats[eRPPSTATS_OverallFrame].gpuTime);
+		fr.AddValue(pRPPStats[eRPPSTATS_Recursion].gpuTime);
+
 		fr.AddValue(pRPPStats[eRPPSTATS_SceneOverall].gpuTime);
+		fr.AddValue(pRPPStats[eRPPSTATS_SceneDecals].gpuTime);
+		fr.AddValue(pRPPStats[eRPPSTATS_SceneForward].gpuTime);
+		fr.AddValue(pRPPStats[eRPPSTATS_SceneWater].gpuTime);
+
 		fr.AddValue(pRPPStats[eRPPSTATS_ShadowsOverall].gpuTime);
+		fr.AddValue(pRPPStats[eRPPSTATS_ShadowsSun].gpuTime);
+		fr.AddValue(pRPPStats[eRPPSTATS_ShadowsSunCustom].gpuTime);
+		fr.AddValue(pRPPStats[eRPPSTATS_ShadowsLocal].gpuTime);
+
 		fr.AddValue(pRPPStats[eRPPSTATS_LightingOverall].gpuTime);
+		fr.AddValue(pRPPStats[eRPPSTATS_LightingGI].gpuTime);
+
 		fr.AddValue(pRPPStats[eRPPSTATS_VfxOverall].gpuTime);
+		fr.AddValue(pRPPStats[eRPPSTATS_VfxTransparent].gpuTime);
+		fr.AddValue(pRPPStats[eRPPSTATS_VfxFog].gpuTime);
+		fr.AddValue(pRPPStats[eRPPSTATS_VfxFlares].gpuTime);
 	}
+}
+
+CDetailedRenderTimesDG::CDetailedRenderTimesDG(CD3D9Renderer* pRenderer)
+	: m_pRenderer(pRenderer)
+{
+}
+
+IStatoscopeDataGroup::SDescription CDetailedRenderTimesDG::GetDescription() const
+{
+	return IStatoscopeDataGroup::SDescription('I', "Detailed Rendering Timers",
+		"['/RenderTimes/$' (float GPUTime) (float CPUTime) (int DIPs) (int Polygons)]");
+}
+
+void CDetailedRenderTimesDG::Enable()
+{
+	IStatoscopeDataGroup::Enable();
+
+	if (m_pRenderer->m_pPipelineProfiler)
+	{
+		m_pRenderer->m_pPipelineProfiler->SetEnabled(true);
+	}
+}
+
+void CDetailedRenderTimesDG::Write(IStatoscopeFrameRecord& fr)
+{
+	string path = "";
+	int curRecLevel = 1;
+	char buf[1024];
+	std::stack<int> recLevelStack;
+	recLevelStack.push(0);
+	int disambigCounter = 0;
+	for (auto it = m_stats->begin(); it != m_stats->end(); ++it)
+	{
+		const RPProfilerDetailedStats& st = *it;
+		while (curRecLevel > st.recLevel)
+		{
+			recLevelStack.pop();
+			curRecLevel--;
+		}
+		if (curRecLevel < st.recLevel)
+		{
+			recLevelStack.push(strlen(buf));
+			curRecLevel++;
+		}
+
+		// Ensure nodes at the same place in the tree have unique names
+		// Assumes all identically-named nodes at the same level will appear consecutively
+		if (it != m_stats->begin() && (it - 1)->recLevel == st.recLevel && strncmp((it - 1)->name, st.name, strlen(st.name)) == 0)
+		{
+			cry_sprintf(&buf[recLevelStack.top()], 1024 - recLevelStack.top(), "%s%d/", st.name, ++disambigCounter);
+		}
+		else
+		{
+			disambigCounter = 0;
+			cry_sprintf(&buf[recLevelStack.top()], 1024-recLevelStack.top(), "%s/", st.name);
+		}
+
+		fr.AddValue(buf);
+		fr.AddValue(st.gpuTimeSmoothed);
+		if (!(st.flags & CRenderPipelineProfiler::eProfileSectionFlags_MultithreadedSection))
+		{
+			fr.AddValue(st.cpuTimeSmoothed);
+		}
+		else
+		{
+			fr.AddValue(0);
+		}
+		fr.AddValue(st.numDIPs);
+		fr.AddValue(st.numPolys);
+	}
+}
+
+uint32 CDetailedRenderTimesDG::PrepareToWrite()
+{
+	m_stats = m_pRenderer->GetRPPDetailedStatsArray();
+	return m_stats->size();
 }
 
 CGraphicsDG::CGraphicsDG(CD3D9Renderer* pRenderer)

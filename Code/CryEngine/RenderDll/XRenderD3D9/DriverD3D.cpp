@@ -200,9 +200,11 @@ void CD3D9Renderer::InitRenderer()
 
 #if ENABLE_STATOSCOPE
 	m_pGPUTimesDG = new CGPUTimesDG(this);
+	m_pDetailedRenderTimesDG = new CDetailedRenderTimesDG(this);
 	m_pGraphicsDG = new CGraphicsDG(this);
 	m_pPerformanceOverviewDG = new CPerformanceOverviewDG(this);
 	gEnv->pStatoscope->RegisterDataGroup(m_pGPUTimesDG);
+	gEnv->pStatoscope->RegisterDataGroup(m_pDetailedRenderTimesDG);
 	gEnv->pStatoscope->RegisterDataGroup(m_pGraphicsDG);
 	gEnv->pStatoscope->RegisterDataGroup(m_pPerformanceOverviewDG);
 #endif

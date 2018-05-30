@@ -735,6 +735,7 @@ public:
 
 #if ENABLE_STATOSCOPE
 	IStatoscopeDataGroup * m_pGPUTimesDG;
+	IStatoscopeDataGroup* m_pDetailedRenderTimesDG;
 	IStatoscopeDataGroup* m_pGraphicsDG;
 	IStatoscopeDataGroup* m_pPerformanceOverviewDG;
 #endif
