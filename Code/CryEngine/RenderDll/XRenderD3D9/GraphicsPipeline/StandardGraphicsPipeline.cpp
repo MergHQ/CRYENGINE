@@ -682,6 +682,9 @@ void CStandardGraphicsPipeline::ExecuteMinimumForwardShading()
 		}
 	}
 
+	// GBuffer ZPass only
+	m_pSceneGBufferStage->ExecuteMinimumZpass();
+
 	// forward opaque and transparent passes for recursive rendering
 	m_pSceneForwardStage->ExecuteMinimum(pColorTex, pDepthTex);
 
