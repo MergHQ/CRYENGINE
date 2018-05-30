@@ -3572,9 +3572,13 @@ void C3DEngine::ScreenShotHighRes(CStitchedImage* pStitchedImage, const int nRen
 	RenderInternal(nRenderFlags, screenShotPassInfo, "ScreenShotHighRes");
 
 	GetRenderer()->EndFrame();
+
+	// Check output format and adjust acordingly
+	const char* szExtension = GetCVars()->e_ScreenShotFileFormat->GetString();
+	EReadTextureFormat dstFormat = (stricmp(szExtension, "tga") == 0) ? EReadTextureFormat::BGR8 : EReadTextureFormat::RGB8;
 	
-	GetRenderer()->ReadFrameBuffer((uint32*)pStitchedImage->GetBuffer(), pStitchedImage->GetWidth(), pStitchedImage->GetHeight(), false);
-	GetRenderer()->ResizeContext(passInfo.GetDisplayContextKey(), prevScreenWidth, prevScreenHeight);	
+	GetRenderer()->ReadFrameBuffer((uint32*)pStitchedImage->GetBuffer(), pStitchedImage->GetWidth(), pStitchedImage->GetHeight(), false, dstFormat);
+	GetRenderer()->ResizeContext(passInfo.GetDisplayContextKey(), prevScreenWidth, prevScreenHeight);
 
 	GetRenderer()->EnableSwapBuffers(true);
 

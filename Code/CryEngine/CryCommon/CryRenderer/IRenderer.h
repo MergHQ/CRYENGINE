@@ -1455,7 +1455,7 @@ struct IRenderer//: public IRendererCallbackServer
 	virtual bool ScreenShot(const char* filename = nullptr, const SDisplayContextKey& displayContextKey = {}) = 0;
 
 	//! Copy frame buffer into destination memory buffer.
-	virtual bool ReadFrameBuffer(uint32* pDstRGBA8, int destinationWidth, int destinationHeight, bool readPresentedBackBuffer = true) = 0;
+	virtual bool ReadFrameBuffer(uint32* pDstRGBA8, int destinationWidth, int destinationHeight, bool readPresentedBackBuffer = true, EReadTextureFormat format = EReadTextureFormat::RGB8) = 0;
 
 	virtual gpu_pfx2::IManager* GetGpuParticleManager() = 0;
 
