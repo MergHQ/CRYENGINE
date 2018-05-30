@@ -411,8 +411,8 @@ half4 GetBlurredRefraction(float2 tcProj, half cloudiness)
 
 	half4 cAcc = 0;
 	for (int t = 0; t < tapCount; t++)
-	{ 
-		half4 tap = Fwd_SceneTarget.Sample(ssFwdBilinearWrap, tcProj + poisson[t] * mask);
+	{
+        half4 tap = Fwd_SceneTarget.Sample(ssMaterialBilinearClamp, tcProj + poisson[t] * mask);
 		cAcc += tap;
 	}
 
@@ -530,7 +530,7 @@ pixout GlassPS(vert2FragGeneral IN, bool bIsFrontFace : SV_IsFrontFace)
 #if %BLUR_REFRACTION
 	cBackbuffer = GetBlurredRefraction(tcProj, tintMap.y).rgb;
 #else
-	cBackbuffer = Fwd_SceneTarget.Sample(ssFwdBilinearWrap, tcProj).rgb;
+    cBackbuffer = Fwd_SceneTarget.Sample(ssMaterialBilinearClamp, tcProj).rgb;
 #endif
 
 #if %DEPTH_FOG
