@@ -1,11 +1,4 @@
-// Copyright 2001-2018 Crytek GmbH / Crytek Group. All rights reserved.
-
-// -------------------------------------------------------------------------
-//  Created:     29/10/2014 by Filipe amim
-//  Description:
-// -------------------------------------------------------------------------
-//
-////////////////////////////////////////////////////////////////////////////
+// Copyright 2015-2018 Crytek GmbH / Crytek Group. All rights reserved.
 
 #include "StdAfx.h"
 #include <CrySerialization/Math.h>
@@ -89,9 +82,9 @@ public:
 	}
 
 private:
-	CParamMod<SModParticleSpawnInit, UAngle180> m_angle;
-	CParamMod<SModParticleSpawnInit, UFloat10>  m_velocity;
-	Vec3 m_axis;
+	CParamMod<EDD_PerParticle, UAngle180> m_angle;
+	CParamMod<EDD_PerParticle, UFloat10>  m_velocity;
+	Vec3                                  m_axis;
 };
 
 CRY_PFX2_IMPLEMENT_FEATURE(CParticleFeature, CFeatureVelocityCone, "Velocity", "Cone", colorVelocity);
@@ -154,8 +147,8 @@ public:
 	}
 
 private:
-	Vec3 m_direction;
-	CParamMod<SModParticleSpawnInit, UFloat10> m_scale;
+	Vec3                                 m_direction;
+	CParamMod<EDD_PerParticle, UFloat10> m_scale;
 };
 
 CRY_PFX2_IMPLEMENT_FEATURE(CParticleFeature, CFeatureVelocityDirectional, "Velocity", "Directional", colorVelocity);
@@ -210,7 +203,7 @@ public:
 	}
 
 private:
-	CParamMod<SModParticleSpawnInit, UFloat10> m_velocity;
+	CParamMod<EDD_PerParticle, UFloat10> m_velocity;
 };
 
 CRY_PFX2_IMPLEMENT_FEATURE(CParticleFeature, CFeatureVelocityOmniDirectional, "Velocity", "OmniDirectional", colorVelocity);
@@ -289,7 +282,7 @@ public:
 	}
 
 private:
-	CParamMod<SModParticleSpawnInit, SFloat> m_scale;
+	CParamMod<EDD_PerParticle, SFloat> m_scale;
 };
 
 CRY_PFX2_IMPLEMENT_FEATURE(CParticleFeature, CFeatureVelocityInherit, "Velocity", "Inherit", colorVelocity);
@@ -352,9 +345,9 @@ public:
 	}
 
 private:
-	CParamMod<SModParticleSpawnInit, SAngle360> m_azimuth;
-	CParamMod<SModParticleSpawnInit, UAngle180> m_angle;
-	CParamMod<SModParticleSpawnInit, SFloat10> m_velocity;
+	CParamMod<EDD_PerParticle, SAngle360> m_azimuth;
+	CParamMod<EDD_PerParticle, UAngle180> m_angle;
+	CParamMod<EDD_PerParticle, SFloat10>  m_velocity;
 };
 
 CRY_PFX2_IMPLEMENT_FEATURE(CParticleFeature, CFeatureVelocityCompass, "Velocity", "Compass", colorVelocity);

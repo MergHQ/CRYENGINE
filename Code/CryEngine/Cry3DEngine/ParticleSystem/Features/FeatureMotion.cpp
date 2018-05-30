@@ -17,8 +17,8 @@ void ILocalEffector::Serialize(Serialization::IArchive& ar)
 //////////////////////////////////////////////////////////////////////////
 // CFeatureMotionPhysics
 
-MakeDataType(EPDT_Gravity,       float, EDataFlags::BHasInit);
-MakeDataType(EPDT_Drag,          float, EDataFlags::BHasInit);
+MakeDataType(EPDT_Gravity,       float, EDD_ParticleUpdate);
+MakeDataType(EPDT_Drag,          float, EDD_ParticleUpdate);
 MakeDataType(EPVF_Acceleration,  Vec3);
 MakeDataType(EPVF_VelocityField, Vec3);
 MakeDataType(EPVF_PositionPrev,  Vec3);

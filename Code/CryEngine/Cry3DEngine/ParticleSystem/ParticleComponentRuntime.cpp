@@ -117,7 +117,7 @@ void CParticleComponentRuntime::UpdateParticles()
 
 	for (EParticleDataType type(0); type < EParticleDataType::size(); type = type + type.info().step())
 	{
-		if (type.info().hasInit)
+		if (type.info().domain & EDD_HasUpdate)
 			m_container.CopyData(type, InitType(type), FullRange());
 	}
 

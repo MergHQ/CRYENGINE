@@ -25,7 +25,7 @@ bool Serialize(Serialization::IArchive& ar, EDomainField& value, cstr name, cstr
 
 void CDomain::SerializeInplace(Serialization::IArchive& ar)
 {
-	const auto& context = *ar.context<IParamModContext>();
+	const EDataDomain domain = *ar.context<EDataDomain>();
 	const uint version = GetVersion(ar);
 
 	bool patchedDomain = false;
@@ -59,7 +59,7 @@ void CDomain::SerializeInplace(Serialization::IArchive& ar)
 	case EDomain::Speed:
 		if (m_sourceOwner == EDomainOwner::_None)
 			m_sourceOwner = EDomainOwner::Self;
-		if (context.GetDomain() == EMD_PerParticle)
+		if (domain & EDD_PerParticle)
 			ar(m_sourceOwner, "Owner", "Owner");
 		break;
 	case EDomain::Attribute:
@@ -105,9 +105,9 @@ void CDomain::SerializeInplace(Serialization::IArchive& ar)
 		ar(m_domainBias, "DomainBias", "Domain Bias");
 	}
 
-	if (!context.HasUpdate() || m_domain == EDomain::Random)
+	if (!(domain & EDD_HasUpdate) || m_domain == EDomain::Random)
 		m_spawnOnly = true;
-	else if (context.GetDomain() == EMD_PerParticle && m_domain == EDomain::Age && m_sourceOwner == EDomainOwner::Self || m_domain == EDomain::ViewAngle || m_domain == EDomain::CameraDistance)
+	else if (domain & EDD_PerParticle && m_domain == EDomain::Age && m_sourceOwner == EDomainOwner::Self || m_domain == EDomain::ViewAngle || m_domain == EDomain::CameraDistance)
 		m_spawnOnly = false;
 	else
 		ar(m_spawnOnly, "SpawnOnly", "Spawn Only");

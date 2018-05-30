@@ -1,11 +1,4 @@
-// Copyright 2001-2018 Crytek GmbH / Crytek Group. All rights reserved.
-
-// -------------------------------------------------------------------------
-//  Created:     29/09/2014 by Filipe amim
-//  Description:
-// -------------------------------------------------------------------------
-//
-////////////////////////////////////////////////////////////////////////////
+// Copyright 2015-2018 Crytek GmbH / Crytek Group. All rights reserved.
 
 #include "StdAfx.h"
 #include "FeatureColor.h"
@@ -17,7 +10,7 @@
 namespace pfx2
 {
 
-MakeDataType(EPDT_Color, UCol, EDataFlags::BHasInit);
+MakeDataType(EPDT_Color, UCol, EDD_ParticleUpdate);
 
 void IColorModifier::Serialize(Serialization::IArchive& ar)
 {
@@ -60,8 +53,8 @@ void CFeatureFieldColor::AddToComponent(CParticleComponent* pComponent, SCompone
 void CFeatureFieldColor::Serialize(Serialization::IArchive& ar)
 {
 	CParticleFeature::Serialize(ar);
-	SModParticleField modContext;
-	Serialization::SContext _modContext(ar, static_cast<IParamModContext*>(&modContext));
+	EDataDomain domain = EDD_ParticleUpdate;
+	Serialization::SContext _modContext(ar, static_cast<EDataDomain*>(&domain));
 	struct SerStruct
 	{
 		SerStruct(std::vector<PColorModifier>& modifiers, ColorB& color)
@@ -224,7 +217,7 @@ public:
 	virtual void Modify(CParticleComponentRuntime& runtime, const SUpdateRange& range, IOColorStream stream) const
 	{
 		CRY_PFX2_PROFILE_DETAIL;
-		CDomain::Dispatch<CColorCurve>(runtime, range, stream, EMD_PerParticle);
+		CDomain::Dispatch<CColorCurve>(runtime, range, stream, EDD_PerParticle);
 	}
 
 	template<typename TTimeKernel>

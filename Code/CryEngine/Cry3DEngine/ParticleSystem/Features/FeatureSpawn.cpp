@@ -1,11 +1,4 @@
-// Copyright 2001-2018 Crytek GmbH / Crytek Group. All rights reserved.
-
-// -------------------------------------------------------------------------
-//  Created:     29/09/2014 by Filipe amim
-//  Description:
-// -------------------------------------------------------------------------
-//
-////////////////////////////////////////////////////////////////////////////
+// Copyright 2015-2018 Crytek GmbH / Crytek Group. All rights reserved.
 
 #include "StdAfx.h"
 #include "ParticleSystem/ParticleSystem.h"
@@ -107,7 +100,7 @@ protected:
 			
 				void Serialize(Serialization::IArchive& ar)
 				{
-					typedef CParamMod<SModInstanceTimer, UFloat> TTimeParam;
+					typedef CParamMod<EDD_PerInstance, UFloat> TTimeParam;
 
 					bool state = false;
 					ar(state, "State", "^");
@@ -259,12 +252,12 @@ protected:
 
 protected:
 
-	CParamMod<SModInstanceCounter, UFloat>  m_amount   = 1;
-	CParamMod<SModInstanceTimer, UFloat>    m_delay    = 0;
-	CParamMod<SModInstanceTimer, UInfFloat> m_duration = gInfinity;
-	CParamMod<SModInstanceTimer, PInfFloat> m_restart  = gInfinity;
+	CParamMod<EDD_InstanceUpdate, UFloat>  m_amount   = 1;
+	CParamMod<EDD_PerInstance, UFloat>     m_delay    = 0;
+	CParamMod<EDD_PerInstance, UInfFloat>  m_duration = gInfinity;
+	CParamMod<EDD_PerInstance, PInfFloat>  m_restart  = gInfinity;
 
-	TDataOffset<SSpawnData>                 m_offsetSpawnData;
+	TDataOffset<SSpawnData>                m_offsetSpawnData;
 };
 
 SERIALIZATION_DECLARE_ENUM(ESpawnCountMode,

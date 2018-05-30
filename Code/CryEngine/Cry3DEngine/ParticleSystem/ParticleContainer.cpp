@@ -87,7 +87,7 @@ void CParticleContainer::AddParticleData(EParticleDataType type)
 		m_useData[type + i] = true;
 		if (!m_pData[type + i])
 			m_pData[type + i] = ParticleAlloc(allocSize);
-		else if (type.info().needsClear)
+		else if (type.info().domain & EDD_NeedsClear)
 			memset(m_pData[type + i], 0, allocSize);
 	}
 }

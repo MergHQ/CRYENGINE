@@ -46,7 +46,7 @@ public:
 	const CParticleContainer& GetParentContainer() const;
 	CParticleContainer&       GetContainer()            { return m_container; }
 	const CParticleContainer& GetContainer() const      { return m_container; }
-	CParticleContainer&       GetContainer(EModDomain domain) { return domain == EMD_PerParticle ? GetContainer() : GetParentContainer(); }
+	CParticleContainer&       GetContainer(EDataDomain domain) { return domain & EDD_PerInstance ? GetParentContainer() : GetContainer(); }
 
 	void                      UpdateAll();
 	void                      AddRemoveParticles();
