@@ -497,7 +497,7 @@ public:
 	bool ScreenShot(const char* filename, CRenderDisplayContext *pDC);
 	virtual bool ScreenShot(const char* filename = NULL, const SDisplayContextKey& displayContextKey = {}) override;
 	void         CaptureFrameBuffer();
-	virtual bool ReadFrameBuffer(uint32* pDstRGBA8, int destinationWidth, int destinationHeight, bool readPresentedBackBuffer = true) override;
+	virtual bool ReadFrameBuffer(uint32* pDstRGBA8, int destinationWidth, int destinationHeight, bool readPresentedBackBuffer = true, EReadTextureFormat format = EReadTextureFormat::RGB8) override;
 
 	//misc
 	void         UnloadOldTextures() {};
