@@ -479,13 +479,8 @@ pixout GlassPS(vert2FragGeneral IN, bool bIsFrontFace : SV_IsFrontFace)
 	attribs.normal = normalize(mul(normalMap.xyz, matTangentToWS));
 	attribs.normalSpecProbe = attribs.normal;
 	
-	half3 newNormal = half3(normalMap.xy * BumpScale, 1);
-	half holeMask = 1;  // Initialize to no holes
-	
 	// TODO: No Decals for the glass
 	// ApplyDecals(IN.baseTC.xy, newNormal, holeMask, tintMap);
-
-	newNormal = normalize(newNormal);
 
 	half3 diffuseAcc = 0;
 	half3 specularAcc = 0;
@@ -507,7 +502,7 @@ pixout GlassPS(vert2FragGeneral IN, bool bIsFrontFace : SV_IsFrontFace)
 #endif
 
 	const half2 refractionNormScale = 0.1h * CV_HPosScale.xy;
-	half2 tcRefractionOffset = newNormal * refractionNormScale;		
+	half2 tcRefractionOffset = normalMap * refractionNormScale;		
 
 	half3 cBackbuffer = 0;
 
@@ -519,13 +514,10 @@ pixout GlassPS(vert2FragGeneral IN, bool bIsFrontFace : SV_IsFrontFace)
 #if %_RT_NEAREST
 	fFarPlaneScale /= CV_NearFarClipDist.z;
 #endif
-
-	half fDepth = -mul((float3x3)CV_ViewMatr, IN.vView.xyz).z;
-	
-	int3 vPixCoord = int3(max(min(tcProj + tcRefractionOffset * CV_ScreenSize.xy, CV_ScreenSize.xy - float2(1.0f, 1.0f)), float2(0.0f, 0.0f)), 0);
-	float fZBufferRefrac = Fwd_SceneDepth.Load(vPixCoord).x * fFarPlaneScale;
-
-	tcProj += tcRefractionOffset * saturate(fZBufferRefrac - fDepth);
+    
+    float2 screenCoords = floor(IN.WPos.xy);
+    float fZBufferRefrac = Fwd_SceneDepth[screenCoords].x * fFarPlaneScale;
+    tcProj += tcRefractionOffset * saturate(fZBufferRefrac - IN.screenProj.w);
 
 #if %BLUR_REFRACTION
 	cBackbuffer = GetBlurredRefraction(tcProj, tintMap.y).rgb;
@@ -579,7 +571,7 @@ pixout GlassPS(vert2FragGeneral IN, bool bIsFrontFace : SV_IsFrontFace)
 	half3 cDiffuse = lerp(tintBlend, litDiffuse, attribs.custom.backlightMask);   
 	half3 cSpecular = specularAcc.xyz;
 
-	half alpha = holeMask * vertColor.a;
+	half alpha = vertColor.a;
 	half4 cFinal = half4(lerp(cDiffuse, cSpecular, fresnel), alpha);	
 	
 	Fwd_ApplyFog(attribs.worldPos + GetWorldViewPos(), attribs.worldPos, IN.WPos, cFinal.xyz);
