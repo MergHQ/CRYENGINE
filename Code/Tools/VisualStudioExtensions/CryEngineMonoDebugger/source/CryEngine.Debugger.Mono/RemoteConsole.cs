@@ -185,11 +185,12 @@ namespace CryEngine.Debugger.Mono
 					if (_clientSocket != null)
 					{
 						_clientSocket.Close();
-						_clientSocket = new TcpClient();
 					}
 				}
 				while (_stopping && _consoleThread.IsAlive)
+				{
 					Thread.Sleep(10);
+				}
 				_consoleThread = null;
 			}
 		}
@@ -341,6 +342,12 @@ namespace CryEngine.Debugger.Mono
 					{
 						_autoCompleteIsDone = false;
 					}
+					else
+					{
+						// Reset the connection attempts if reconnecting was succesful.
+						_connectionAttempts = 0;
+					}
+
 					if (_resetConnection)
 					{
 						_resetConnection = false;
@@ -350,7 +357,10 @@ namespace CryEngine.Debugger.Mono
 				{
 					try
 					{
-						_isConnected = ProcessClient();
+						if(_clientSocket.Available > 0)
+						{
+							_isConnected = ProcessClient();
+						}
 
 						// Pump the events immediately since they will be logged thread-safe later on.
 						PumpEvents();
@@ -511,6 +521,7 @@ namespace CryEngine.Debugger.Mono
 			if(disposing)
 			{
 				_clientSocket.Dispose();
+				_clientSocket = null;
 			}
 		}
 	}
