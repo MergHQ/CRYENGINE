@@ -136,7 +136,7 @@ public:
 	virtual void RequestGlobalUpdate() override;
 	virtual void RequestGlobalUpdateForAgentType(NavigationAgentTypeID agentTypeID) override;
 
-	virtual void EnableRegenerationRequestsExecution() override     { m_bIsRegenerationRequestExecutionEnabled = true; }
+	virtual void EnableRegenerationRequestsExecution(bool updateChangedVolumes) override;
 	virtual void DisableRegenerationRequestsAndBuffer() override;
 	virtual bool AreRegenerationRequestsDisabled() const override   { return m_bIsRegenerationRequestExecutionEnabled; }
 
@@ -187,10 +187,10 @@ private:
 		uint16 maxZ;
 	};
 
-	typedef std::deque<size_t>                    TileRequestQueue;
-	typedef std::vector<size_t>                   TileUpdatesVector;
-	typedef std::unordered_map<uint64, size_t>    TileUpdatesMap;
-	typedef std::unordered_map<int, EntityUpdate> EntityUpdatesMap;
+	typedef std::deque<size_t>                         TileRequestQueue;
+	typedef std::vector<size_t>                        TileUpdatesVector;
+	typedef std::unordered_map<uint64, size_t>         TileUpdatesMap;
+	typedef std::unordered_map<int, EntityUpdate>      EntityUpdatesMap;
 
 	struct SRequestParams
 	{
@@ -230,6 +230,9 @@ private:
 	TileUpdatesVector m_ignoredUpdateRequests;
 
 	EntityUpdatesMap  m_postponedEntityUpdatesMap;
+
+	// map for storing AABBs of navigation areas in the case when navmesh updates are disabled and we will need to update them later after enabling
+	std::unordered_map<NavigationMeshID, AABB> m_pendingOldestAabbsOfChangedMeshes;
 
 	bool              m_bIsRegenerationRequestExecutionEnabled;
 	bool              m_bWasRegenerationRequestedThisUpdateCycle;
