@@ -295,7 +295,7 @@ public:
 	static int                                           m_voxTexPoolDimXY;
 	static int                                           m_voxTexPoolDimZ;
 	static int32                                         m_streamingTasksInProgress;
-	static int32                                         m_tasksInProgressALL;
+	static bool                                          m_bUpdateBrickRenderDataPostponed;
 	static int32                                         m_updatesInProgressBri;
 	static int32                                         m_updatesInProgressTex;
 	static PodArray<CVoxelSegment*>                      m_arrLoadedSegments;

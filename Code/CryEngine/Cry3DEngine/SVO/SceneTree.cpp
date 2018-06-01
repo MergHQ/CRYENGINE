@@ -442,7 +442,7 @@ bool CSvoEnv::Render()
 			Cry3DEngineBase::DrawSphere(vPos + pKernelPoints[i] * 4.f, .1f, (i < kRaysNum / 2) ? Col_Yellow : Col_Cyan);
 	}
 
-	StartupStreamingTimeTest(CVoxelSegment::m_streamingTasksInProgress == 0 && CVoxelSegment::m_updatesInProgressBri == 0 && CVoxelSegment::m_updatesInProgressTex == 0 && CVoxelSegment::m_tasksInProgressALL == 0);
+	StartupStreamingTimeTest(CVoxelSegment::m_streamingTasksInProgress == 0 && CVoxelSegment::m_updatesInProgressBri == 0 && CVoxelSegment::m_updatesInProgressTex == 0 && CVoxelSegment::m_bUpdateBrickRenderDataPostponed == 0);
 
 	// show GI probe object in front of the camera
 	if (GetCVars()->e_svoDebug == 1)
@@ -2219,7 +2219,8 @@ void C3DEngine::GetSvoBricksForUpdate(PodArray<SSvoNodeInfo>& arrNodeInfo, float
 
 bool C3DEngine::IsSvoReady(bool testPostponed) const
 {
-	return (CVoxelSegment::m_streamingTasksInProgress == 0) && ((CVoxelSegment::m_postponedCounter == 0) || (testPostponed == false));
+	return (CVoxelSegment::m_streamingTasksInProgress == 0) && ((CVoxelSegment::m_postponedCounter == 0) || (testPostponed == false)) &&
+	       (CVoxelSegment::m_updatesInProgressBri == 0) && (CVoxelSegment::m_updatesInProgressTex == 0) && (CVoxelSegment::m_bUpdateBrickRenderDataPostponed == 0);
 }
 
 int C3DEngine::GetSvoCompiledData(ICryArchive* pArchive)

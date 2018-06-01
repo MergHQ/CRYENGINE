@@ -171,7 +171,7 @@ void CSvoManager::Release()
 	SAFE_DELETE(gSvoEnv);
 }
 
-void CSvoManager::Render()
+void CSvoManager::Render(bool bSyncUpdate)
 {
 	LOADING_TIME_PROFILE_SECTION;
 	if (GetCVars()->e_svoTI_Apply && (!m_bLevelLoadingInProgress || gEnv->IsEditor()) && !GetCVars()->e_svoTI_Active)
@@ -211,6 +211,9 @@ void CSvoManager::Render()
 
 		if (gSvoEnv && !CVoxelSegment::m_bExportMode)
 		{
+			if (bSyncUpdate)
+				gSvoEnv->m_svoFreezeTime = gEnv->pTimer->GetAsyncCurTime();
+
 			if (gSvoEnv->m_bFirst_SvoFreezeTime)
 				gSvoEnv->m_svoFreezeTime = gEnv->pTimer->GetAsyncCurTime();
 			gSvoEnv->m_bFirst_SvoFreezeTime = false;
@@ -284,7 +287,7 @@ int CSvoManager::ExportSvo(ICryArchive* pArchive)
 
 	if (!gSvoEnv)
 	{
-		CSvoManager::Render();
+		CSvoManager::Render(false);
 	}
 
 	int result = 0;
