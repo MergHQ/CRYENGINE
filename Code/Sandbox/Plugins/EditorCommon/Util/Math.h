@@ -1,11 +1,6 @@
 // Copyright 2001-2018 Crytek GmbH / Crytek Group. All rights reserved.
 
-#ifndef __math_h__
-#define __math_h__
-
-#if _MSC_VER > 1000
-	#pragma once
-#endif
+#pragma once
 
 //! Half PI
 #define PI_HALF (3.1415926535897932384626433832795f / 2.0f)
@@ -15,17 +10,15 @@
 
 #include <CryMath/Cry_Geo.h>
 
-//////////////////////////////////////////////////////////////////////////
-/** Compare two vectors if they are equal.
- */
+//!  Compare two vectors if they are equal.
 inline bool IsVectorsEqual(const Vec3& v1, const Vec3& v2, const float aEpsilon = FLOAT_EPSILON)
 {
 	return (fabs(v2.x - v1.x) < aEpsilon && fabs(v2.y - v1.y) < aEpsilon && fabs(v2.z - v1.z) < aEpsilon);
 }
 
-//////////////////////////////////////////////////////////////////////////
+
 // Math utilities.
-//////////////////////////////////////////////////////////////////////////
+
 inline float PointToLineDistance2D(const Vec3& p1, const Vec3& p2, const Vec3& p3)
 {
 	float dx = p2.x - p1.x;
@@ -60,14 +53,13 @@ inline float PointToLineDistance(const Vec3& p1, const Vec3& p2, const Vec3& p3)
 	}
 }
 
-/** Calculate distance between point and line.
-   @param p1 Source line point.
-   @param p2 Target line point.
-   @param p3 Point to find intersecion with.
-   @param intersectPoint Intersection point on the line.
-   @return Distance between point and line.
- */
-inline float PointToLineDistance(const Vec3& p1, const Vec3& p2, const Vec3& p3, Vec3& intersectPoint)
+//! Calculate distance between point and line.
+//! \param p1 Source line point.
+//! \param p2 Target line point.
+//! \param p3 Point to find intersection with.
+//! \param intersectPoint Intersection point on the line.
+//! \return Distance between point and line.
+ inline float PointToLineDistance(const Vec3& p1, const Vec3& p2, const Vec3& p3, Vec3& intersectPoint)
 {
 	Vec3 d = p2 - p1;
 	float fLength2 = d.GetLengthSquared();
@@ -98,18 +90,16 @@ inline float PointToLineDistance(const Vec3& p1, const Vec3& p2, const Vec3& p3,
 	}
 }
 
-/**
-   Calculate the line segment PaPb that is the shortest route between
-   two lines P1P2 and P3P4. Calculate also the values of mua and mub where
-      Pa = P1 + mua (P2 - P1)
-      Pb = P3 + mub (P4 - P3)
-
-   @param p1 Source point of first line.
-   @param p2 Target point of first line.
-   @param p3 Source point of second line.
-   @param p4 Target point of second line.
-   @return FALSE if no solution exists.
- */
+ //! Calculate the line segment PaPb that is the shortest route between
+ //! two lines P1P2 and P3P4. Calculate also the values of mua and mub where
+ //!    Pa = P1 + mua (P2 - P1)
+ //!    Pb = P3 + mub (P4 - P3)
+ //! 
+ //! \param Source point of first line.
+ //! \param Target point of first line.
+ //! \param Source point of second line.
+ //! \param Target point of second line.
+ //! \return FALSE if no solution exists.
 inline bool LineLineIntersect(const Vec3& p1, const Vec3& p2, const Vec3& p3, const Vec3& p4,
                               Vec3& pa, Vec3& pb, float& mua, float& mub)
 {
@@ -155,15 +145,13 @@ inline bool LineLineIntersect(const Vec3& p1, const Vec3& p2, const Vec3& p3, co
 	return true;
 }
 
-/*!
-    Calculates shortest distance between ray and a arbitary line segment.
-    @param raySrc Source point of ray.
-    @param rayTrg Target point of ray.
-    @param p1 First point of line segment.
-    @param p2 Second point of line segment.
-    @param intersectPoint This parameter returns nearest point on line segment to ray.
-    @return distance fro ray to line segment.
- */
+//! Calculates shortest distance between ray and a arbitrary line segment.
+//! \param raySrc Source point of ray.
+//! \param rayTrg Target point of ray.
+//! \param p1 First point of line segment.
+//! \param p2 Second point of line segment.
+//! \param intersectPoint This parameter returns nearest point on line segment to ray.
+//! return distance fro ray to line segment.
 inline float RayToLineDistance(const Vec3& raySrc, const Vec3& rayTrg, const Vec3& p1, const Vec3& p2, Vec3& nearestPoint)
 {
 	Vec3 intPnt;
@@ -189,7 +177,6 @@ inline float RayToLineDistance(const Vec3& raySrc, const Vec3& rayTrg, const Vec
 	return d;
 }
 
-//////////////////////////////////////////////////////////////////////////
 inline Matrix34 MatrixFromVector(const Vec3& dir, const Vec3& up = Vec3(0, 0, 1.0f), float rollAngle = 0)
 {
 	// LookAt transform.
@@ -225,6 +212,25 @@ inline Matrix34 MatrixFromVector(const Vec3& dir, const Vec3& up = Vec3(0, 0, 1.
 	return tm;
 }
 
+//! Snaps rotation matrix to the nearest multiple of the given angle
+//! \param orientation Source rotation matrix.
+//! \param step angle in radians to snap to.
+inline Matrix33 SnapToNearest(const Matrix33& orientation, float step)
+{
+	if (step <= std::numeric_limits<float>::min())
+	{
+		return orientation;
+	}
+
+	Ang3 euler = Ang3::GetAnglesXYZ(orientation);
+	euler /= step;
+	euler.x = std::round(euler.x);
+	euler.y = std::round(euler.y);
+	euler.z = std::round(euler.z);
+	euler *= step;
+	return Matrix33(euler);
+}
+
 //TODO: could we include this function in the core engine math Intersect namespace ?
 namespace Intersect
 {
@@ -235,9 +241,9 @@ inline uint8 Ray_AABB(const Vec3& rRayStart, const Vec3& rRayDir, const AABB& rB
 }
 
 //! Check if ray intersect edge of bounding box.
-//! @param epsilonDist if distance between ray and egde is less then this epsilon then edge was intersected.
-//! @param dist Distance between ray and edge.
-//! @param intPnt intersection point.
+//! \param epsilonDist if distance between ray and edge is less then this epsilon then edge was intersected.
+//! \param dist Distance between ray and edge.
+//! \param intPnt intersection point.
 inline bool Ray_AABBEdge(const Vec3& raySrc, const Vec3& rayDir, const AABB& aabb, float epsilonDist, float& dist, Vec3& intPnt)
 {
 	// Check 6 group lines.
@@ -293,6 +299,4 @@ inline int gcd(int a, int b)
 	}
 	return b;
 }
-
-#endif // __math_h__
 
