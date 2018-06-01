@@ -315,3 +315,14 @@ std::shared_ptr<CMonoObject> CAppDomain::DeserializeObject(CMonoObject* pSeriali
 
 	return nullptr;
 }
+
+void CAppDomain::DeserializeDeletedObject(CMonoObject* pSerializer)
+{
+	// Now serialize the statics contained inside this library
+	if (std::shared_ptr<CMonoMethod> pMethod = pSerializer->GetClass()->FindMethod("Read").lock())
+	{
+		int64 startTime = CryGetTicks();
+		pMethod->Invoke(pSerializer);
+		m_serializationTicks += CryGetTicks() - startTime;
+	}
+}

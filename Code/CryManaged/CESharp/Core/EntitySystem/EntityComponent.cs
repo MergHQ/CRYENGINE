@@ -91,7 +91,7 @@ namespace CryEngine
 				}
 			}
 
-			throw new KeyNotFoundException("Component was not registered!");
+			return null;
 		}
 
 		/// <summary>

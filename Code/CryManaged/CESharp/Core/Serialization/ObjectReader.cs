@@ -193,6 +193,11 @@ namespace CryEngine.Serialization
 			var componentTypeGuid = (EntityComponent.GUID)Read();
 
 			var type = EntityComponent.GetComponentTypeByGUID(componentTypeGuid);
+			if(type == null)
+			{
+				ReadObjectMembers(null, null, false);
+				return null;
+			}
 
 			object obj = null;
 			try
@@ -266,7 +271,7 @@ namespace CryEngine.Serialization
 				ReadObjectBaseTypeMembers(obj, baseType, fieldFlags, isConstructed);
 			}
 
-			if(_deserializationCallbackType.IsAssignableFrom(type))
+			if(type != null && _deserializationCallbackType.IsAssignableFrom(type))
 			{
 				_deserializationMethod.Invoke(obj, new object[] { this });
 			}
@@ -275,10 +280,19 @@ namespace CryEngine.Serialization
 		private void ReadObjectBaseTypeMembers(object obj, Type objectType, BindingFlags flags, bool setSerializedFieldsOnly)
 		{
 			var numFields = Reader.ReadInt32();
-			var typeChanged = obj == null ? false : !objectType.IsAssignableFrom(obj.GetType());
+			var typeChanged = obj == null || objectType == null ? false : !objectType.IsAssignableFrom(obj.GetType());
 			for(var iField = 0; iField < numFields; iField++)
 			{
 				var fieldName = Reader.ReadString();
+
+				// If the objectType is null, it means the object was removed from the assembly. 
+				// Perform the ReadInternal anyway to make sure the reader doesn't go out of sync.
+				if(objectType == null)
+				{
+					ReadInternal();
+					continue;
+				}
+
 				var fieldInfo = objectType?.GetField(fieldName, flags);
 
 				var canWrite = !typeChanged // Writing a new type is not possible.

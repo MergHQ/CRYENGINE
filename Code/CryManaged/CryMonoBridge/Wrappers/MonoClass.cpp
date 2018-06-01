@@ -75,6 +75,10 @@ void CMonoClass::Deserialize(CMonoObject* pSerializer)
 			std::shared_ptr<CMonoObject> pDeserializedObject = pDomain->DeserializeObject(pSerializer, this);
 			pObject->AssignObject(pDeserializedObject != nullptr ? pDeserializedObject->GetManagedObject() : nullptr);
 		}
+		else
+		{
+			pDomain->DeserializeDeletedObject(pSerializer);
+		}
 	}
 
 	RefreshCachedMembers();
