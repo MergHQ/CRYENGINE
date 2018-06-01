@@ -1212,7 +1212,7 @@ bool CMessageQueue::AreMessagesToWrite(const SSchedulingParams& params)
 
 		if (pEntSend->ordering.latencyClass == eLC_CantSend)
 		{
-			break;
+			continue;
 		}
 		ELatencyClass lcSort = m_slots[pEntSend->sortOrderingSlot].ordering.latencyClass;
 
