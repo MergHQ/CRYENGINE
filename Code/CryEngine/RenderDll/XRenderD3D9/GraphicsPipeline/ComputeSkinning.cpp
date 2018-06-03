@@ -499,5 +499,6 @@ void CComputeSkinningStage::PreDraw()
 	}
 
 	// Prepare skinning buffers which have been used in the compute shader for vertex use
-	pCoreInterface.GetGraphicsInterface()->PrepareUAVsForUse(UAVs.size(), &UAVs[0], false);
+	if(!UAVs.empty())
+		pCoreInterface.GetGraphicsInterface()->PrepareUAVsForUse(UAVs.size(), &UAVs[0], false);
 }

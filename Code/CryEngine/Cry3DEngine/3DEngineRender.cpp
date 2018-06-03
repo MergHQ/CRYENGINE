@@ -1793,7 +1793,7 @@ void C3DEngine::RenderScene(const int nRenderFlags, const SRenderingPassInfo& pa
 #if defined(FEATURE_SVO_GI)
 	if (passInfo.IsGeneralPass() && (nRenderFlags & SHDF_ALLOW_AO))
 	{
-		CSvoManager::Render();
+		CSvoManager::Render((nRenderFlags & SHDF_CUBEMAPGEN) != 0);
 	}
 #endif
 

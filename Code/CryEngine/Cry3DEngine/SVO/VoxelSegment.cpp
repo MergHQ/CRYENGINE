@@ -50,7 +50,7 @@ int CVoxelSegment::m_poolUsageBytes = 0;
 int CVoxelSegment::m_poolUsageItems = 0;
 int CVoxelSegment::m_streamingTasksInProgress = 0;
 int CVoxelSegment::m_svoDataPoolsCounter = 0;
-int CVoxelSegment::m_tasksInProgressALL = 0;
+bool CVoxelSegment::m_bUpdateBrickRenderDataPostponed = 0;
 int CVoxelSegment::m_updatesInProgressBri = 0;
 int CVoxelSegment::m_updatesInProgressTex = 0;
 int CVoxelSegment::m_voxTrisCounter = 0;
@@ -990,9 +990,11 @@ bool CVoxelSegment::UpdateBrickRenderData()
 	{
 		Cry3DEngineBase::PrintMessage("UpdateBrickRenderData postponed %d", GetCurrPassMainFrameID());
 		gSvoEnv->m_svoFreezeTime = -1; // prevent hang in case of full sync update
+		CVoxelSegment::m_bUpdateBrickRenderDataPostponed = 1;
 		return false;
 	}
 
+	CVoxelSegment::m_bUpdateBrickRenderDataPostponed = 0;
 	m_lastTexUpdateFrameId = GetCurrPassMainFrameID();
 	m_lastRendFrameId = GetCurrPassMainFrameID();
 

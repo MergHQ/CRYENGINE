@@ -12,7 +12,7 @@ public:
 	static void  UpdateSubSystems(const CCamera& _newCam, CCamera& newCam);
 	static void  OnFrameStart(const SRenderingPassInfo& passInfo);
 	static void  OnFrameComplete();
-	static void  Render();
+	static void  Render(bool bSyncUpdate);
 	static char* GetStatusString(int nLine);
 	static void  OnDisplayInfo(float& textPosX, float& textPosY, float& textStepY, float textScale);
 	static bool  GetSvoStaticTextures(I3DEngine::SSvoStaticTexInfo& svoInfo, PodArray<I3DEngine::SLightTI>* pLightsTI_S, PodArray<I3DEngine::SLightTI>* pLightsTI_D);

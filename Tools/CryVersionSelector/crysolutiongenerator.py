@@ -169,7 +169,7 @@ def generate_cpp_cmakelists (project_name, project_file, code_directory, engine_
     project_file_name = os.path.basename(project_file)
 
     if is_default_project:
-         cmakelists_template.template += """set(CRYENGINE_DIR "$engine_root_directory")
+         cmakelists_template.template += """set(CRYENGINE_DIR "$engine_root_directory" CACHE STRING "CRYENGINE root directory.")
 set(TOOLS_CMAKE_DIR "$${CRYENGINE_DIR}/Tools/CMake")
 
 set(PROJECT_BUILD 1)
