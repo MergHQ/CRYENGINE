@@ -307,7 +307,9 @@ bool CSceneForwardStage::CreatePipelineState(const SGraphicsPipelineStateDescrip
 			{
 				// Handle emissive materials
 				psoDesc.m_RenderState = (psoDesc.m_RenderState & ~(GS_BLEND_MASK | GS_DEPTHWRITE | GS_DEPTHFUNC_MASK | GS_STENCIL));
-				psoDesc.m_RenderState |= GS_DEPTHFUNC_LEQUAL | GS_BLSRC_ONE | GS_BLDST_ONE | GS_NOCOLMASK_A;
+				psoDesc.m_RenderState |= GS_DEPTHFUNC_LEQUAL;
+				if (!bRecursive)
+					psoDesc.m_RenderState |= GS_BLSRC_ONE | GS_BLDST_ONE | GS_NOCOLMASK_A;
 			}
 			else
 			{
@@ -327,7 +329,7 @@ bool CSceneForwardStage::CreatePipelineState(const SGraphicsPipelineStateDescrip
 			}
 
 			if (bOverlay)
-				pSceneRenderPass = bRecursive ? &m_forwardOverlayPass : &m_forwardOverlayPass;
+				pSceneRenderPass = bRecursive ? &m_forwardOverlayRecursivePass : &m_forwardOverlayPass;
 		}
 		else if (bEyeOverlay)
 		{
