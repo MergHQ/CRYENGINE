@@ -454,16 +454,10 @@ void CSelectionGroup::Rotate(const Matrix34& rotateTM, int referenceCoordSys) co
 //////////////////////////////////////////////////////////////////////////
 void CSelectionGroup::Scale(const Vec3& scaleArg, int referenceCoordSys) const
 {
-	//if (scale.x == 1 && scale.y == 1 && scale.z == 1)
-	//	return;
-
 	Vec3 scl = scaleArg;
 	if (scl.x == 0) scl.x = 0.01f;
 	if (scl.y == 0) scl.y = 0.01f;
 	if (scl.z == 0) scl.z = 0.01f;
-
-	// Scale selection relative to selection center.
-	Vec3 center = GetCenter();
 
 	FilterParents();
 
@@ -471,11 +465,10 @@ void CSelectionGroup::Scale(const Vec3& scaleArg, int referenceCoordSys) const
 	{
 		int objCoordSystem = referenceCoordSys;
 
-		CBaseObject* obj = GetFilteredObject(i);
-		Matrix34 m = obj->GetWorldTM();
+		CBaseObject* const pObj = GetFilteredObject(i);
 		Vec3 scale = m_initElementTransforms[i].scale;
 
-		if (objCoordSystem == COORDS_PARENT && obj->GetParent() == nullptr)
+		if (objCoordSystem == COORDS_PARENT && pObj->GetParent() == nullptr)
 		{
 			objCoordSystem = COORDS_LOCAL;
 		}
@@ -497,15 +490,21 @@ void CSelectionGroup::Scale(const Vec3& scaleArg, int referenceCoordSys) const
 			{
 				mFromWorld = m_initElementTransforms[i].worldRotation.GetTransposed();
 			}
-			// by transforming the difference to the new space instead of the original vector, we
-			// can avoid scale getting zeroed-out in perpendicular to the original vector directions
-			Vec3 scaleDiff = scl - Vec3(1.0f, 1.0f, 1.0f);
+
+			// Since the scale is always in the local space, we can not scale in directions that are not parallel to the local coordinate axes.
+			// Therefore we snap the mFromWorld orientation to the nearest 90 degrees in the local space.
+			mFromWorld = SnapToNearest(mFromWorld, gf_PI * 0.5f);
+
 			// all components of the matrix should be positive since we are only interested in positive contributions to the object scale
 			mFromWorld.Fabs();
+
+			// by transforming the difference to the new space instead of the original vector, we
+			// can avoid scale getting zeroed-out in perpendicular to the original vector directions
+			const Vec3 scaleDiff = scl - Vec3(1.0f, 1.0f, 1.0f);
 			scale = scale.CompMul(Vec3(1.0f, 1.0f, 1.0f) + mFromWorld * scaleDiff);
 		}
 
-		obj->SetScale(scale, eObjectUpdateFlags_UserInput | eObjectUpdateFlags_ScaleTool);
+		pObj->SetScale(scale, eObjectUpdateFlags_UserInput | eObjectUpdateFlags_ScaleTool);
 	}
 }
 
