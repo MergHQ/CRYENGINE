@@ -1960,12 +1960,14 @@ struct SDummyCVar : ICVar
 	const char*     GetDataProbeString() const override                             { return ""; }
 	void            Set(const char* s) override                                     { if (SQueryTypeEnum<T>::ParseString(s) != value) InvalidAccess(); }
 	void            ForceSet(const char* s) override                                { Set(s); }
-	void            Set(const float f) override                                     { if (static_cast<T>(f) != value) InvalidAccess(); }
-	void            Set(const int i) override                                       { if (static_cast<T>(i) != value) InvalidAccess(); }
+	void            Set(float f) override                                           { if (static_cast<T>(f) != value) InvalidAccess(); }
+	void            Set(int i) override                                             { if (static_cast<T>(i) != value) InvalidAccess(); }
+	void            Set(int64 i) override                                           { if (static_cast<T>(i) != value) InvalidAccess(); }
+	void            SetFromString(const char* s) override                           { if (SQueryTypeEnum<T>::ParseString(s) != value) InvalidAccess(); }
 	void            ClearFlags(int flags) override                                  {}
 	int             GetFlags() const override                                       { return VF_CONST_CVAR | VF_READONLY; }
 	int             SetFlags(int flags) override                                    { return 0; }
-	ECVarType       GetType() override                                              { return SQueryTypeEnum<T>::type; }
+	ECVarType       GetType() const override                                        { return SQueryTypeEnum<T>::type; }
 	const char*     GetHelp() override                                              { return NULL; }
 	bool            IsConstCVar() const override                                    { return true; }
 	void            SetOnChangeCallback(ConsoleVarFunc pChangeFunc) override        { (void)pChangeFunc; }
@@ -1979,11 +1981,14 @@ struct SDummyCVar : ICVar
 	void            SetDataProbeString(const char* pDataProbeString)                { InvalidAccess(); }
 	void            SetMinValue(int min) override                                   {}
 	void            SetMinValue(float min) override                                 {}
+	void            SetMinValue(int64 min) override                                 {}
 	void            SetMaxValue(int max) override                                   {}
 	void            SetMaxValue(float max) override                                 {}
+	void            SetMaxValue(int64 max) override                                 {}
 	void            SetAllowedValues(std::initializer_list<int> values) override    {}
 	void            SetAllowedValues(std::initializer_list<float> values) override  {}
 	void            SetAllowedValues(std::initializer_list<string> values) override {}
+	void            SetAllowedValues(std::initializer_list<int64> values) override  {}
 };
 }
 

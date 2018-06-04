@@ -137,7 +137,7 @@ public:
 
 	virtual void                   Release();
 
-	virtual void                   UnregisterVariable(const char* sVarName, bool bDelete = false);
+	virtual void                   UnregisterVariable(const char* sVarName, bool bDelete = true);
 	virtual void                   SetScrollMax(int value);
 	virtual void                   AddOutputPrintSink(IOutputPrintSink* inpSink);
 	virtual void                   RemoveOutputPrintSink(IOutputPrintSink* inpSink);
@@ -197,6 +197,9 @@ public:
 	virtual void                   SaveInternalState(struct IDataWriteStream& writer) const;
 	virtual void                   LoadInternalState(struct IDataReadStream& reader);
 
+	virtual bool                   OnBeforeVarChange(ICVar* pVar, const char* sNewValue);
+	virtual void                   OnAfterVarChange(ICVar* pVar);
+
 	// interface IInputEventListener ------------------------------------------------------------------
 
 	virtual bool OnInputEvent(const SInputEvent& event);
@@ -208,13 +211,6 @@ public:
 	// interface IRemoteConsoleListener ------------------------------------------------------------------
 
 	virtual void OnConsoleCommand(const char* cmd);
-
-	// interface IConsoleVarSink ----------------------------------------------------------------------
-
-	virtual bool OnBeforeVarChange(ICVar* pVar, const char* sNewValue);
-	virtual void OnAfterVarChange(ICVar* pVar);
-
-	//////////////////////////////////////////////////////////////////////////
 
 	// Returns
 	//   0 if the operation failed

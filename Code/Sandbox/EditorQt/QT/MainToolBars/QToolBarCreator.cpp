@@ -813,11 +813,12 @@ void QToolBarCreator::SetCVarValueRegExp()
 	case ECVarType::Int:
 		m_pCVarValueInput->setValidator(new QIntValidator());
 		break;
-
 	case ECVarType::Float:
 		m_pCVarValueInput->setValidator(new QDoubleValidator());
 		break;
-
+	case ECVarType::Int64:
+		CRY_ASSERT_MESSAGE(false, "QToolBarCreator::SetCVarValueRegExp int64 cvar not implemented");
+		// fall through
 	default:
 		m_pCVarValueInput->setValidator(nullptr);
 	}
@@ -841,7 +842,9 @@ void QToolBarCreator::SetCVarValue(const char* cvarValue)
 	case ECVarType::Float:
 		std::static_pointer_cast<QMainToolBarManager::QCVarDesc>(m_pSelectedItem)->SetCVarValue(valueStr.toDouble());
 		break;
-
+	case ECVarType::Int64:
+		CRY_ASSERT_MESSAGE(false, "QToolBarCreator::SetCVarValue int64 cvar not implemented");
+		// fall through
 	default:
 		std::static_pointer_cast<QMainToolBarManager::QCVarDesc>(m_pSelectedItem)->SetCVarValue(cvarValue);
 	}

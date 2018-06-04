@@ -51,6 +51,10 @@ void PySetCVar(const char* pName, pSPyWrappedProperty pValue)
 	{
 		pCVar->Set((LPCTSTR)pValue->stringValue);
 	}
+	else if (pCVar->GetType() == ECVarType::Int64)
+	{
+		CRY_ASSERT_MESSAGE(false, "PySetCVar int64 cvar not implemented");
+	}
 	else
 	{
 		Warning("PyGetCVar: Type mismatch while assigning CVar '%s'", pName ? pName : "(null)");

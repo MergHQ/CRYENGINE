@@ -676,6 +676,7 @@ bool CXConsoleVariableCVarGroup::_TestCVars(const SCVarGroup& rGroup, const ICVa
 			switch (pVar->GetType())
 			{
 			case ECVarType::Int:
+			case ECVarType::Int64:
 				{
 					int iVal;
 					if (sscanf(rValue.c_str(), "%d", &iVal) == 1)

@@ -647,7 +647,13 @@ void CSystem::ShutDown()
 	//////////////////////////////////////////////////////////////////////////
 
 	if (m_env.pGameFramework)
+	{
 		m_env.pGameFramework->ShutDown();
+#if !defined(CRY_IS_MONOLITHIC_BUILD)
+		// This handle keeps gamedll loaded, it must be emptied on shutdown in order to properly clean up
+		m_gameLibrary.Set(nullptr); 
+#endif
+	}
 
 	if (m_env.pEntitySystem)
 		m_env.pEntitySystem->Unload();

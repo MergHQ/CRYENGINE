@@ -2188,6 +2188,10 @@ public:
 					const string sVal = pICVar->GetString();
 					ActivateOutput(pActInfo, STRVALUE, sVal);
 				}
+				if (pICVar->GetType() == ECVarType::Int64)
+				{
+					CRY_ASSERT_MESSAGE(false, "CMPCheckCVar_Node::ProcessEvent int64 cvar not implemented");
+				}
 			}
 			else
 			{

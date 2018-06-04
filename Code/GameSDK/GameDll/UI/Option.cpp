@@ -168,7 +168,7 @@ void CCVarOption::InitializeFromProfile()
 		}
 		else
 		{
-			var->Set(m_currentValue.c_str());
+			var->SetFromString(m_currentValue.c_str());
 		}
 	}
 	else if(var)
@@ -217,7 +217,7 @@ void CCVarOption::Set(const char* param)
 		// Marcio: Let's not override *.cfg files if we're in Editor mode!
 
 		if (var != NULL && (!gEnv->IsEditor() || ((var->GetFlags() & VF_WASINCONFIG) == 0)))
-			var->Set(m_currentValue.c_str());
+			var->SetFromString(m_currentValue.c_str());
 	}
 }
 

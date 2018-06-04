@@ -737,7 +737,6 @@ void CProfileOptions::CCVarSink::OnElementFound(ICVar *pCVar)
 		return;
 
 	const char* name = pCVar->GetName();
-	const char* val = pCVar->GetString();
 
 	COption* pOption = m_pOptions->GetOptionByCVar(name);
 	if(!pOption)
