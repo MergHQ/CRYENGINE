@@ -516,6 +516,8 @@ bool CDefaultSkeleton::ParsePhysInfoProperties_ROPE(CryBonePhysics& pi, const Dy
 				(pi.flags &= ~8) |= (props[i].bval ? 8 : 0);
 			else if (!strcmp(props[i].name, "HingeZ"))
 				(pi.flags &= ~16) |= (props[i].bval ? 16 : 0);
+			else if (!strcmp(props[i].name, "SurfaceType") && *props[i].strval)
+				*(int*)(pi.spring_angle + 1) = gEnv->p3DEngine->GetMaterialManager()->GetSurfaceTypeIdByName(props[i].strval);
 
 			if (!strcmp(props[i].name, "EnvCollisions"))
 				(pi.flags &= ~1) |= (props[i].bval ? 0 : 1);
@@ -603,6 +605,8 @@ DynArray<SJointProperty> CDefaultSkeleton::GetPhysInfoProperties_ROPE(const CryB
 		res.push_back(SJointProperty("StiffnessControlBone", (float)FtoI(pi.framemtx[0][1] - 1.0f) * (pi.framemtx[0][1] >= 2.0f && pi.framemtx[0][1] < 100.0f)));
 		res.push_back(SJointProperty("EnvCollisions", !(pi.flags & 1)));
 		res.push_back(SJointProperty("BodyCollisions", !(pi.flags & 2)));
+		ISurfaceType *pSurf = gEnv->p3DEngine->GetMaterialManager()->GetSurfaceType(*(int*)(pi.spring_angle + 1));
+		res.push_back(SJointProperty("SurfaceType", pSurf && pSurf->GetId() ? pSurf->GetName() : ""));
 	}
 
 	if (nRopeOrGrid > 0)

@@ -940,7 +940,7 @@ const CryBonePhysics& CSkeletonPhysics::GetJointPhysInfo(uint32 iJoint, int nLod
 	for (int i = m_extraPhysInfo.size() - 1; i >= 0; i--)
 		if (m_extraPhysInfo[i].iJoint == iJoint && m_extraPhysInfo[i].nLod == nLod)
 		{
-			*(int*)(m_extraPhysInfo[i].info.spring_angle + 1) = *(int*)(piModel.spring_angle + 1);
+			*(int*)(m_extraPhysInfo[i].info.spring_angle + 1) = max(*(int*)(m_extraPhysInfo[i].info.spring_angle + 1), *(int*)(piModel.spring_angle + 1));
 			return m_extraPhysInfo[i].info;
 		}
 	return piModel;
