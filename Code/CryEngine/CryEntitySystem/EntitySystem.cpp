@@ -2139,7 +2139,8 @@ void CEntitySystem::UpdateTimers()
 			m_profiledEvents[eventIndex].numEvents = m_currentTimers.size();
 			m_profiledEvents[eventIndex].totalCostMs = (timeAfterTimerEvents - timeBeforeTimerEvents).GetMilliSeconds();
 		}
-#else
+		else
+#endif
 		for (const SEntityTimerEvent& event : m_currentTimers)
 		{
 			// Send Timer event to the entity.
@@ -2148,7 +2149,6 @@ void CEntitySystem::UpdateTimers()
 
 			event.pListener->ProcessEvent(entityEvent);
 		}
-#endif
 	}
 }
 
