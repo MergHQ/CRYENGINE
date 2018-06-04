@@ -1376,8 +1376,7 @@ void CBaseObject::DrawDimensionsImpl(SDisplayContext& dc, const AABB& localBound
 		Vec3(boundBox.min.x, boundBox.min.y, boundBox.max.z),
 		Vec3(boundBox.min.x, boundBox.max.y, boundBox.max.z),
 		Vec3(boundBox.max.x, boundBox.max.y, boundBox.max.z),
-		Vec3(boundBox.max.x, boundBox.min.y, boundBox.max.z)
-	};
+		Vec3(boundBox.max.x, boundBox.min.y, boundBox.max.z) };
 	const int kElementSize(sizeof(basePoints) / sizeof(*basePoints));
 	Vec3 axisDirections[kElementSize] = { Vec3(1, 1, 1), Vec3(1, -1, 1), Vec3(-1, -1, 1), Vec3(-1, 1, 1), Vec3(1, 1, -1), Vec3(1, -1, -1), Vec3(-1, -1, -1), Vec3(-1, 1, -1) };
 	int nLoopCount = bHave2Axis ? (kElementSize / 2) : kElementSize;
@@ -1560,8 +1559,7 @@ void CBaseObject::DrawTextOn2DBox(SDisplayContext& dc, const Vec3& pos, const ch
 		Vec3(screenPos.x,             screenPos.y,              screenPos.z),
 		Vec3(screenPos.x + textwidth, screenPos.y,              screenPos.z),
 		Vec3(screenPos.x + textwidth, screenPos.y + textheight, screenPos.z),
-		Vec3(screenPos.x,             screenPos.y + textheight, screenPos.z)
-	};
+		Vec3(screenPos.x,             screenPos.y + textheight, screenPos.z) };
 
 	Vec3 textworldreign[4];
 	Matrix34 dcInvTm = dc.GetMatrix().GetInverted();
@@ -1959,6 +1957,8 @@ void CBaseObject::SetFrozen(bool bFrozen)
 		else
 			ClearFlags(OBJFLAG_FROZEN);
 	}
+
+	GetIEditor()->GetObjectManager()->signalObjectsChanged({ this }, CObjectEvent(OBJECT_ON_FREEZE));
 }
 
 //////////////////////////////////////////////////////////////////////////
@@ -2482,8 +2482,7 @@ bool CBaseObject::HitTestRectBounds(HitContext& hc, const AABB& box)
 		hc.view->WorldToView(Vec3(box.min.x, box.min.y, box.max.z)),
 		hc.view->WorldToView(Vec3(box.min.x, box.max.y, box.max.z)),
 		hc.view->WorldToView(Vec3(box.max.x, box.min.y, box.max.z)),
-		hc.view->WorldToView(Vec3(box.max.x, box.max.y, box.max.z))
-	};
+		hc.view->WorldToView(Vec3(box.max.x, box.max.y, box.max.z)) };
 
 	CRect objrc, temprc;
 	objrc.left = 10000;
@@ -2541,8 +2540,7 @@ bool CBaseObject::HitTestRectBounds(HitContext& hc, const AABB& box)
 			hc.view->WorldToView(ax - ay - az + tr),
 			hc.view->WorldToView(ax - ay + az + tr),
 			hc.view->WorldToView(ax + ay - az + tr),
-			hc.view->WorldToView(ax + ay + az + tr)
-		};
+			hc.view->WorldToView(ax + ay + az + tr) };
 
 		int nEdgeList1Count(kMaxSizeOfEdgeList1);
 		Edge2D edgelist1[kMaxSizeOfEdgeList1];
@@ -2554,8 +2552,7 @@ bool CBaseObject::HitTestRectBounds(HitContext& hc, const AABB& box)
 			Edge2D(Vec2(hc.rect.left,  hc.rect.top),    Vec2(hc.rect.right, hc.rect.top)),
 			Edge2D(Vec2(hc.rect.right, hc.rect.top),    Vec2(hc.rect.right, hc.rect.bottom)),
 			Edge2D(Vec2(hc.rect.right, hc.rect.bottom), Vec2(hc.rect.left,  hc.rect.bottom)),
-			Edge2D(Vec2(hc.rect.left,  hc.rect.bottom), Vec2(hc.rect.left,  hc.rect.top))
-		};
+			Edge2D(Vec2(hc.rect.left,  hc.rect.bottom), Vec2(hc.rect.left,  hc.rect.top)) };
 
 		ModifyConvexEdgeDirection(edgelist0, kMaxSizeOfEdgeList0);
 		ModifyConvexEdgeDirection(edgelist1, nEdgeList1Count);
@@ -3582,7 +3579,7 @@ void CBaseObject::OnContextMenu(CPopupMenuItem* menu)
 	menu->AddCommand("Delete", "general.delete");
 
 	CPopupMenuItem& transformMenu = menu->Add("Transform");
-	transformMenu.Add("Clear Rotation", [ = ]
+	transformMenu.Add("Clear Rotation", [=]
 	{
 		BeginUndoAndEnsureSelection();
 		const ISelectionGroup* pGroup = GetIEditor()->GetISelectionGroup();
@@ -3595,7 +3592,7 @@ void CBaseObject::OnContextMenu(CPopupMenuItem* menu)
 		GetIEditor()->GetIUndoManager()->Accept("Clear Rotation");
 	});
 
-	transformMenu.Add("Clear Scale", [ = ]
+	transformMenu.Add("Clear Scale", [=]
 	{
 		BeginUndoAndEnsureSelection();
 		const ISelectionGroup* pGroup = GetIEditor()->GetISelectionGroup();
@@ -3608,7 +3605,7 @@ void CBaseObject::OnContextMenu(CPopupMenuItem* menu)
 		GetIEditor()->GetIUndoManager()->Accept("Clear Scale");
 	});
 
-	transformMenu.Add("Clear All", [ = ]
+	transformMenu.Add("Clear All", [=]
 	{
 		BeginUndoAndEnsureSelection();
 		const ISelectionGroup* pGroup = GetIEditor()->GetISelectionGroup();
