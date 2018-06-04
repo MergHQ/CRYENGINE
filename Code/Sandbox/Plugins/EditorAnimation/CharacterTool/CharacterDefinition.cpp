@@ -87,6 +87,8 @@ static DynArray<SJointProperty> GetPhysInfoProperties_ROPE(const CryBonePhysics&
 		res.push_back(SJointProperty("StiffnessControlBone", (float)FtoI(pi.framemtx[0][1] - 1.0f) * (pi.framemtx[0][1] >= 2.0f && pi.framemtx[0][1] < 100.0f)));
 		res.push_back(SJointProperty("EnvCollisions", !(pi.flags & 1)));
 		res.push_back(SJointProperty("BodyCollisions", !(pi.flags & 2)));
+		ISurfaceType *pSurf = gEnv->p3DEngine->GetMaterialManager()->GetSurfaceType(*(int*)(pi.spring_angle + 1));
+		res.push_back(SJointProperty("SurfaceType", pSurf && pSurf->GetId() ? pSurf->GetName() : ""));
 	}
 
 	if (nRopeOrGrid > 0)
@@ -562,11 +564,26 @@ void SJointPhysics::Serialize(Serialization::IArchive& ar)
 					ar(property.bval, property.name, property.name);
 					break;
 				}
-			case 2:
-				{
-					assert(false);
-					break;
+			case 2:	// only used for surfacetype name
+				if (ISurfaceTypeEnumerator* pSurfaceTypeEnum = gEnv->p3DEngine->GetMaterialManager()->GetSurfaceTypeManager()->GetEnumerator())
+				{	
+					Serialization::StringList surfList;
+					int idx = 0;
+					ISurfaceType *pCurST = gEnv->p3DEngine->GetMaterialManager()->GetSurfaceTypeByName(property.strval);
+					for (ISurfaceType* pST = pSurfaceTypeEnum->GetFirst(); pST; pST = pSurfaceTypeEnum->GetNext())
+					{
+						idx += pST == pCurST ? surfList.size()-idx : 0;
+						surfList.push_back(pST->GetName());
+					}
+					Serialization::StringListValue val(surfList, idx);
+					ar(val, property.name, property.name);
+					if (ar.isInput())
+					{
+						pCurST = gEnv->p3DEngine->GetMaterialManager()->GetSurfaceTypeByName(val.c_str());
+						property.strval = pCurST && pCurST->GetId() ? pCurST->GetName() : "";
+					}
 				}
+				break;
 			}
 		}
 		ar.closeBlock();
@@ -601,8 +618,14 @@ void SJointPhysics::LoadFromXml(const XmlNodeRef& node)
 			cry_sprintf(buf, "lod%d_%s", setIndex, property.name);
 			if (property.type == 0)
 				node->getAttr(buf, property.fval);
-			else
+			else if (property.type == 1)
 				node->getAttr(buf, property.bval);
+			else
+			{	// only used for surfacetype name
+				string str;
+				ISurfaceType *pST = node->getAttr(buf, str) ? gEnv->p3DEngine->GetMaterialManager()->GetSurfaceTypeByName(str) : nullptr;
+				property.strval = pST && pST->GetId() ? pST->GetName() : "";
+			}
 		}
 	}
 }
@@ -625,8 +648,10 @@ void SJointPhysics::SaveToXml(XmlNodeRef node) const
 			cry_sprintf(buf, "lod%d_%s", setIndex, property.name);
 			if (property.type == 0)
 				node->setAttr(buf, property.fval);
-			else
+			else if (property.type == 1)
 				node->setAttr(buf, property.bval);
+			else if (*property.strval)
+				node->setAttr(buf, property.strval);
 		}
 	}
 }

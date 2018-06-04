@@ -263,6 +263,10 @@ QVariant CCVarModel::data(const QModelIndex& index, int role /*= Qt::DisplayRole
 			case ECVarType::String:
 				return pCVar->GetString();
 
+			case ECVarType::Int64:
+				CRY_ASSERT_MESSAGE(false, "CCVarModel::data int64 cvar not implemented");
+				return pCVar->GetIVal();
+
 			default:
 				return QVariant();
 			}
@@ -297,6 +301,10 @@ QVariant CCVarModel::data(const QModelIndex& index, int role /*= Qt::DisplayRole
 				case ECVarType::String:
 					return "String";
 
+				case ECVarType::Int64:
+					CRY_ASSERT_MESSAGE(false, "CCVarModel::data int64 cvar not implemented");
+					return "Integer";
+
 				default:
 					return "UNKNOWN";
 				}
@@ -326,6 +334,10 @@ QVariant CCVarModel::data(const QModelIndex& index, int role /*= Qt::DisplayRole
 
 		case ECVarType::String:
 			return DataTypes::String;
+
+		case ECVarType::Int64:
+			CRY_ASSERT_MESSAGE(false, "CCVarModel::data int64 cvar not implemented");
+			// fall through
 
 		default:
 			return -1;
@@ -411,6 +423,10 @@ bool CCVarModel::setData(const QModelIndex& index, const QVariant& value, int ro
 					pCVar->Set(valueString.c_str());
 					return true;
 				}
+
+				case ECVarType::Int64:
+					CRY_ASSERT_MESSAGE(false, "CCVarModel::setData int64 cvar not implemented");
+					// fall through
 
 				default:
 					return false;
@@ -685,6 +701,10 @@ QVariant CCVarListDockable::GetState()
 
 			case ECVarType::String:
 				map.insert(pCVar->GetName(), pCVar->GetString());
+				break;
+
+			case ECVarType::Int64:
+				CRY_ASSERT_MESSAGE(false, "CCVarListDockable::GetState int64 cvar not implemented");
 				break;
 
 			default:

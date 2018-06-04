@@ -55,6 +55,10 @@ inline Messages::EVarType GetVarType(ICVar* pVar)
 			return Messages::eVarType_Float;
 		case ECVarType::String:
 			return Messages::eVarType_String;
+		case ECVarType::Int64:
+			// TODO: full int64 support
+			return Messages::eVarType_Int;
+			break;
 		}
 	}
 	return Messages::eVarType_None;

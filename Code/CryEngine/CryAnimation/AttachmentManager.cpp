@@ -262,8 +262,14 @@ uint32 CAttachmentManager::ParseXMLAttachmentList(CharacterAttachment* parrAttac
 					cry_sprintf(buf, "lod%d_%s", nLod, jp[idx].name);
 					if (jp[idx].type == 0)
 						lodUsed |= nodeAttach->getAttr(buf, jp[idx].fval);
-					else
+					else if (jp[idx].type == 1)
 						lodUsed |= nodeAttach->getAttr(buf, jp[idx].bval);
+					else
+					{	// string's only used for surface type names
+						XmlString str;
+						lodUsed |= nodeAttach->getAttr(buf, str);
+						jp[idx].strval = str.IsEmpty() ? "" : gEnv->p3DEngine->GetMaterialManager()->GetSurfaceTypeByName(str)->GetName();
+					}
 				}
 				if (lodUsed)
 					CDefaultSkeleton::ParsePhysInfoProperties_ROPE(attach.m_AttPhysInfo[nLod], jp);                                         //just init m_PhysInfo from jp

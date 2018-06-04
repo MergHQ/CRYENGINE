@@ -87,6 +87,7 @@ public:
 	virtual uint64          GetNumberOfOnChangeFunctors() const override;
 	virtual const SFunctor& GetOnChangeFunctor(uint64 nFunctorIndex) const override;
 	virtual ConsoleVarFunc  GetOnChangeCallback() const override;
+	virtual void            SetFromString(const char* s) override { Set(s); }
 
 	virtual int             GetRealIVal() const override { return GetIVal(); }
 	virtual bool            IsConstCVar() const override { return (m_nFlags & VF_CONST_CVAR) != 0; }
@@ -195,7 +196,7 @@ public:
 		}
 	}
 
-	virtual void Set(const float f) override
+	virtual void Set(float f) override
 	{
 		stack_string s;
 		s.Format("%g", f);
@@ -207,7 +208,19 @@ public:
 		Set(s.c_str());
 	}
 
-	virtual void Set(const int i) override
+	virtual void Set(int64 i) override 
+	{
+		stack_string s;
+		s.Format("%lli", i);
+
+		if ((m_sValue == s.c_str()) && (m_nFlags & VF_ALWAYSONCHANGE) == 0)
+			return;
+
+		m_nFlags |= VF_MODIFIED;
+		Set(s.c_str());
+	}
+
+	virtual void Set(int i) override
 	{
 		stack_string s;
 		s.Format("%d", i);
@@ -219,12 +232,15 @@ public:
 		Set(s.c_str());
 	}
 
-	virtual void SetMinValue(int min) override { CRY_ASSERT_MESSAGE(false, "Trying to set a minimum value on a string CVar."); }
+	virtual void SetMinValue(int min) override   { CRY_ASSERT_MESSAGE(false, "Trying to set a minimum value on a string CVar."); }
+	virtual void SetMinValue(int64 min) override { CRY_ASSERT_MESSAGE(false, "Trying to set a minimum value on a string CVar."); }
 	virtual void SetMinValue(float min) override { CRY_ASSERT_MESSAGE(false, "Trying to set a minimum value on a string CVar."); }
-	virtual void SetMaxValue(int max) override { CRY_ASSERT_MESSAGE(false, "Trying to set a maximum value on a string CVar."); }
+	virtual void SetMaxValue(int max) override   { CRY_ASSERT_MESSAGE(false, "Trying to set a maximum value on a string CVar."); }
+	virtual void SetMaxValue(int64 max) override { CRY_ASSERT_MESSAGE(false, "Trying to set a maximum value on a string CVar."); }
 	virtual void SetMaxValue(float max) override { CRY_ASSERT_MESSAGE(false, "Trying to set a maximum value on a string CVar."); }
 
-	virtual void SetAllowedValues(std::initializer_list<int> values) override { CRY_ASSERT_MESSAGE(false, "Trying to set allowed int values on a string CVar."); }
+	virtual void SetAllowedValues(std::initializer_list<int> values) override   { CRY_ASSERT_MESSAGE(false, "Trying to set allowed int values on a string CVar."); }
+	virtual void SetAllowedValues(std::initializer_list<int64> values) override { CRY_ASSERT_MESSAGE(false, "Trying to set allowed int values on a string CVar."); }
 	virtual void SetAllowedValues(std::initializer_list<float> values) override { CRY_ASSERT_MESSAGE(false, "Trying to set allowed float values on a string CVar."); }
 	virtual void SetAllowedValues(std::initializer_list<string> values) override
 	{
@@ -232,7 +248,7 @@ public:
 		Set(m_sValue.c_str());
 	}
 
-	virtual ECVarType GetType() override                                     { return ECVarType::String; }
+	virtual ECVarType GetType() const override                                     { return ECVarType::String; }
 
 	virtual void GetMemoryUsage(class ICrySizer* pSizer) const override { pSizer->AddObject(this, sizeof(*this)); }
 private:           // --------------------------------------------------------------------------------------------
@@ -271,11 +287,15 @@ public:
 
 		Set(nValue);
 	}
-	virtual void Set(const float f) override
+	virtual void Set(float f) override
 	{
 		Set((int)f);
 	}
-	virtual void Set(const int i) override
+	virtual void Set(int64 i) override
+	{
+		Set((int)i);
+	}
+	virtual void Set(int i) override
 	{
 		if (i == m_iValue && (m_nFlags & VF_ALWAYSONCHANGE) == 0)
 			return;
@@ -294,6 +314,8 @@ public:
 		}
 	}
 
+	virtual void SetMinValue(float min) override { SetMinValue(static_cast<int>(min)); }
+	virtual void SetMinValue(int64 min) override { SetMinValue(static_cast<int>(min)); }
 	virtual void SetMinValue(int min) override
 	{
 		CRY_ASSERT_MESSAGE((m_nFlags & VF_BITFIELD) == 0, "Trying to set a minimum value on a bitfield");
@@ -301,7 +323,9 @@ public:
 		m_minValue = min;
 		SetInternal(m_iValue);
 	}
-	virtual void SetMinValue(float min) override { SetMinValue(static_cast<int>(min)); }
+
+	virtual void SetMaxValue(float max) override { SetMaxValue(static_cast<int>(max)); }
+	virtual void SetMaxValue(int64 max) override { SetMaxValue(static_cast<int>(max)); }
 	virtual void SetMaxValue(int max) override
 	{
 		CRY_ASSERT_MESSAGE((m_nFlags & VF_BITFIELD) == 0, "Trying to set a maximum value on a bitfield");
@@ -309,17 +333,17 @@ public:
 		m_maxValue = max;
 		SetInternal(m_iValue);
 	}
-	virtual void SetMaxValue(float max) override { SetMaxValue(static_cast<int>(max)); }
 
+	virtual void SetAllowedValues(std::initializer_list<int64> values) override { CRY_ASSERT_MESSAGE(false, "Trying to set allowed int64 values on an int CVar."); }
+	virtual void SetAllowedValues(std::initializer_list<float> values) override { CRY_ASSERT_MESSAGE(false, "Trying to set allowed float values on an int CVar."); }
+	virtual void SetAllowedValues(std::initializer_list<string> values) override { CRY_ASSERT_MESSAGE(false, "Trying to set allowed string values on an int CVar."); }
 	virtual void SetAllowedValues(std::initializer_list<int> values) override
 	{
 		m_allowedValues = values;
 		SetInternal(m_iValue);
 	}
-	virtual void SetAllowedValues(std::initializer_list<float> values) override { CRY_ASSERT_MESSAGE(false, "Trying to set allowed float values on an int CVar."); }
-	virtual void SetAllowedValues(std::initializer_list<string> values) override { CRY_ASSERT_MESSAGE(false, "Trying to set allowed string values on an int CVar."); }
 	
-	virtual ECVarType GetType() override                                     { return ECVarType::Int; }
+	virtual ECVarType GetType() const override { return ECVarType::Int; }
 
 	virtual void GetMemoryUsage(class ICrySizer* pSizer) const override { pSizer->AddObject(this, sizeof(*this)); }
 protected: // --------------------------------------------------------------------------------------------
@@ -362,15 +386,15 @@ public:
 
 		Set(nValue);
 	}
-	virtual void Set(const float f) override
+	virtual void Set(float f) override
 	{
 		Set((int)f);
 	}
-	virtual void Set(const int i) override
+	virtual void Set(int i) override
 	{
 		Set((int64)i);
 	}
-	virtual void Set(const int64 i)
+	virtual void Set(int64 i) override
 	{
 		if (i == m_iValue && (m_nFlags & VF_ALWAYSONCHANGE) == 0)
 			return;
@@ -388,27 +412,32 @@ public:
 			m_pConsole->OnAfterVarChange(this);
 		}
 	}
-	virtual ECVarType GetType() override                                     { return ECVarType::Int; }
+	virtual ECVarType GetType() const override                                     { return ECVarType::Int; }
 
-	virtual void SetMinValue(int64 min)
+	virtual void SetMinValue(int min) override { SetMinValue(static_cast<int64>(min)); }
+	virtual void SetMinValue(float min) override { SetMinValue(static_cast<int64>(min)); }
+	virtual void SetMinValue(int64 min) override
 	{
 		CRY_ASSERT_MESSAGE((m_nFlags & VF_BITFIELD) == 0, "Trying to set a minimum value on a bitfield");
 		CRY_ASSERT_MESSAGE(m_allowedValues.empty(), "Trying to set a minimum value after SetAllowedValues() was used, the minimum will be ignored");
 		m_minValue = min;
 		SetInternal(m_iValue);
 	}
-	virtual void SetMinValue(int min) override { SetMinValue(static_cast<int64>(min)); }
-	virtual void SetMinValue(float min) override { SetMinValue(static_cast<int64>(min)); }
-	virtual void SetMaxValue(int64 max)
+
+	virtual void SetMaxValue(int max) override   { SetMaxValue(static_cast<int64>(max)); }
+	virtual void SetMaxValue(float max) override { SetMaxValue(static_cast<int64>(max)); }
+	virtual void SetMaxValue(int64 max) override
 	{
 		CRY_ASSERT_MESSAGE((m_nFlags & VF_BITFIELD) == 0, "Trying to set a maximum value on a bitfield");
 		CRY_ASSERT_MESSAGE(m_allowedValues.empty(), "Trying to set a maximum value after SetAllowedValues() was used, the maximum will be ignored");
 		m_maxValue = max;
 		SetInternal(m_iValue);
 	}
-	virtual void SetMaxValue(int max) override { SetMaxValue(static_cast<int64>(max)); }
-	virtual void SetMaxValue(float max) override { SetMaxValue(static_cast<int64>(max)); }
 
+	virtual void SetAllowedValues(std::initializer_list<int64> values) override 
+	{
+		m_allowedValues = values;
+	}
 	virtual void SetAllowedValues(std::initializer_list<int> values) override
 	{
 		if (values.size() > 0)
@@ -482,7 +511,7 @@ public:
 			m_pConsole->OnAfterVarChange(this);
 		}
 	}
-	virtual void Set(const float f) override
+	virtual void Set(float f) override
 	{
 		if (f == m_fValue && (m_nFlags & VF_ALWAYSONCHANGE) == 0)
 			return;
@@ -500,7 +529,11 @@ public:
 			m_pConsole->OnAfterVarChange(this);
 		}
 	}
-	virtual void Set(const int i) override
+	virtual void Set(int64 i) override
+	{
+		Set((int)i);
+	}
+	virtual void Set(int i) override
 	{
 		if ((float)i == m_fValue && (m_nFlags & VF_ALWAYSONCHANGE) == 0)
 			return;
@@ -517,7 +550,8 @@ public:
 		}
 	}
 
-	virtual void SetMinValue(int min) override { SetMinValue(static_cast<float>(min)); }
+	virtual void SetMinValue(int min) override   { SetMinValue(static_cast<float>(min)); }
+	virtual void SetMinValue(int64 min) override { SetMinValue(static_cast<float>(min)); }
 	virtual void SetMinValue(float min) override
 	{
 		CRY_ASSERT_MESSAGE((m_nFlags & VF_BITFIELD) == 0, "Trying to set a minimum value on a bitfield");
@@ -525,7 +559,8 @@ public:
 		m_minValue = min;
 		SetInternal(m_fValue);
 	}
-	virtual void SetMaxValue(int max) override { SetMinValue(static_cast<float>(max)); }
+	virtual void SetMaxValue(int max) override   { SetMinValue(static_cast<float>(max)); }
+	virtual void SetMaxValue(int64 max) override { SetMinValue(static_cast<float>(max)); }
 	virtual void SetMaxValue(float max) override
 	{
 		CRY_ASSERT_MESSAGE((m_nFlags & VF_BITFIELD) == 0, "Trying to set a maximum value on a bitfield");
@@ -534,15 +569,16 @@ public:
 		SetInternal(m_fValue);
 	}
 
-	virtual void SetAllowedValues(std::initializer_list<int> values) override { CRY_ASSERT_MESSAGE(false, "Trying to set allowed int values on a float CVar."); }
+	virtual void SetAllowedValues(std::initializer_list<int> values) override    { CRY_ASSERT_MESSAGE(false, "Trying to set allowed int values on a float CVar."); }
+	virtual void SetAllowedValues(std::initializer_list<int64> values) override  { CRY_ASSERT_MESSAGE(false, "Trying to set allowed int64 values on a float CVar."); }
+	virtual void SetAllowedValues(std::initializer_list<string> values) override { CRY_ASSERT_MESSAGE(false, "Trying to set allowed int values on a float CVar."); }
 	virtual void SetAllowedValues(std::initializer_list<float> values) override
 	{
 		m_allowedValues = values;
 		SetInternal(m_fValue);
 	}
-	virtual void SetAllowedValues(std::initializer_list<string> values) override { CRY_ASSERT_MESSAGE(false, "Trying to set allowed int values on a float CVar."); }
 
-	virtual ECVarType GetType() override                                     { return ECVarType::Float; }
+	virtual ECVarType GetType() const override                                     { return ECVarType::Float; }
 
 	virtual void GetMemoryUsage(class ICrySizer* pSizer) const override { pSizer->AddObject(this, sizeof(*this)); }
 
@@ -610,7 +646,7 @@ public:
 			m_pConsole->OnAfterVarChange(this);
 		}
 	}
-	virtual void Set(const float f) override
+	virtual void Set(float f) override
 	{
 		if ((int)f == m_iValue && (m_nFlags & VF_ALWAYSONCHANGE) == 0)
 			return;
@@ -626,7 +662,11 @@ public:
 			m_pConsole->OnAfterVarChange(this);
 		}
 	}
-	virtual void Set(const int i) override
+	virtual void Set(int64 i) override
+	{
+		Set((int)i);
+	}
+	virtual void Set(int i) override
 	{
 		if (i == m_iValue && (m_nFlags & VF_ALWAYSONCHANGE) == 0)
 			return;
@@ -643,6 +683,8 @@ public:
 		}
 	}
 
+	virtual void SetMinValue(float min) override { SetMinValue(static_cast<int>(min)); }
+	virtual void SetMinValue(int64 min) override { SetMinValue(static_cast<int>(min)); }
 	virtual void SetMinValue(int min) override
 	{
 		CRY_ASSERT_MESSAGE((m_nFlags & VF_BITFIELD) == 0, "Trying to set a minimum value on a bitfield");
@@ -650,7 +692,9 @@ public:
 		m_minValue = min;
 		SetInternal(m_iValue);
 	}
-	virtual void SetMinValue(float min) override { SetMinValue(static_cast<int>(min)); }
+
+	virtual void SetMaxValue(float max) override { SetMaxValue(static_cast<int>(max)); }
+	virtual void SetMaxValue(int64 max) override { SetMaxValue(static_cast<int>(max)); }
 	virtual void SetMaxValue(int max) override
 	{
 		CRY_ASSERT_MESSAGE((m_nFlags & VF_BITFIELD) == 0, "Trying to set a maximum value on a bitfield");
@@ -658,17 +702,18 @@ public:
 		m_maxValue = max;
 		SetInternal(m_iValue);
 	}
-	virtual void SetMaxValue(float max) override { SetMaxValue(static_cast<int>(max)); }
+
 
 	virtual void SetAllowedValues(std::initializer_list<int> values) override
 	{
 		m_allowedValues = values;
 		SetInternal(m_iValue);
 	}
-	virtual void SetAllowedValues(std::initializer_list<float> values) override { CRY_ASSERT_MESSAGE(false, "Trying to set allowed float values on an int CVar."); }
+	virtual void SetAllowedValues(std::initializer_list<float> values) override  { CRY_ASSERT_MESSAGE(false, "Trying to set allowed float values on an int CVar."); }
 	virtual void SetAllowedValues(std::initializer_list<string> values) override { CRY_ASSERT_MESSAGE(false, "Trying to set allowed string values on an int CVar."); }
+	virtual void SetAllowedValues(std::initializer_list<int64> values) override  { CRY_ASSERT_MESSAGE(false, "Trying to set allowed int64 values on an int CVar."); }
 
-	virtual ECVarType GetType() override                                     { return ECVarType::Int; }
+	virtual ECVarType GetType() const override { return ECVarType::Int; }
 
 	virtual void GetMemoryUsage(class ICrySizer* pSizer) const override { pSizer->AddObject(this, sizeof(*this)); }
 private: // --------------------------------------------------------------------------------------------
@@ -727,7 +772,7 @@ public:
 			m_pConsole->OnAfterVarChange(this);
 		}
 	}
-	virtual void Set(const float f) override
+	virtual void Set(float f) override
 	{
 		if (f == m_fValue && (m_nFlags & VF_ALWAYSONCHANGE) == 0)
 			return;
@@ -743,7 +788,11 @@ public:
 			m_pConsole->OnAfterVarChange(this);
 		}
 	}
-	virtual void Set(const int i) override
+	virtual void Set(int64 i) override
+	{
+		Set((int)i);
+	}
+	virtual void Set(int i) override
 	{
 		if ((float)i == m_fValue && (m_nFlags & VF_ALWAYSONCHANGE) == 0)
 			return;
@@ -760,7 +809,8 @@ public:
 		}
 	}
 
-	virtual void SetMinValue(int min) override { SetMinValue(static_cast<float>(min)); }
+	virtual void SetMinValue(int min) override   { SetMinValue(static_cast<float>(min)); }
+	virtual void SetMinValue(int64 min) override { SetMinValue(static_cast<float>(min)); }
 	virtual void SetMinValue(float min) override
 	{
 		CRY_ASSERT_MESSAGE((m_nFlags & VF_BITFIELD) == 0, "Trying to set a minimum value on a bitfield");
@@ -768,7 +818,9 @@ public:
 		m_minValue = min;
 		SetInternal(m_fValue);
 	}
-	virtual void SetMaxValue(int max) override { SetMinValue(static_cast<float>(max)); }
+
+	virtual void SetMaxValue(int max) override   { SetMinValue(static_cast<float>(max)); }
+	virtual void SetMaxValue(int64 max) override { SetMinValue(static_cast<float>(max)); }
 	virtual void SetMaxValue(float max) override
 	{
 		CRY_ASSERT_MESSAGE((m_nFlags & VF_BITFIELD) == 0, "Trying to set a maximum value on a bitfield");
@@ -778,14 +830,15 @@ public:
 	}
 
 	virtual void SetAllowedValues(std::initializer_list<int> values) override { CRY_ASSERT_MESSAGE(false, "Trying to set allowed int values on a float CVar."); }
+	virtual void SetAllowedValues(std::initializer_list<int64> values) override { CRY_ASSERT_MESSAGE(false, "Trying to set allowed int64 values on a float CVar."); }
+	virtual void SetAllowedValues(std::initializer_list<string> values) override { CRY_ASSERT_MESSAGE(false, "Trying to set allowed string values on a float CVar."); }
 	virtual void SetAllowedValues(std::initializer_list<float> values) override
 	{
 		m_allowedValues = values;
 		SetInternal(m_fValue);
 	}
-	virtual void SetAllowedValues(std::initializer_list<string> values) override { CRY_ASSERT_MESSAGE(false, "Trying to set allowed string values on a float CVar."); }
 
-	virtual ECVarType GetType() override                                     { return ECVarType::Float; }
+	virtual ECVarType GetType() const override                                     { return ECVarType::Float; }
 
 	virtual void GetMemoryUsage(class ICrySizer* pSizer) const override { pSizer->AddObject(this, sizeof(*this)); }
 
@@ -872,25 +925,29 @@ public:
 			m_pConsole->OnAfterVarChange(this);
 		}
 	}
-	virtual void Set(const float f) override
+	virtual void Set(float f) override
 	{
 		stack_string s;
 		s.Format("%g", f);
 		Set(s.c_str());
 	}
-	virtual void Set(const int i) override
+	virtual void Set(int64 i) override { Set((int)i); }
+	virtual void Set(int i) override
 	{
 		stack_string s;
 		s.Format("%d", i);
 		Set(s.c_str());
 	}
 	
-	virtual void SetMinValue(int min) override { CRY_ASSERT_MESSAGE(false, "Trying to set a minimum value on a string CVar."); }
+	virtual void SetMinValue(int min) override   { CRY_ASSERT_MESSAGE(false, "Trying to set a minimum value on a string CVar."); }
+	virtual void SetMinValue(int64 min) override { CRY_ASSERT_MESSAGE(false, "Trying to set a minimum value on a string CVar."); }
 	virtual void SetMinValue(float min) override { CRY_ASSERT_MESSAGE(false, "Trying to set a minimum value on a string CVar."); }
-	virtual void SetMaxValue(int max) override { CRY_ASSERT_MESSAGE(false, "Trying to set a maximum value on a string CVar."); }
+	virtual void SetMaxValue(int max) override   { CRY_ASSERT_MESSAGE(false, "Trying to set a maximum value on a string CVar."); }
+	virtual void SetMaxValue(int64 max) override { CRY_ASSERT_MESSAGE(false, "Trying to set a maximum value on a string CVar."); }
 	virtual void SetMaxValue(float max) override { CRY_ASSERT_MESSAGE(false, "Trying to set a maximum value on a string CVar."); }
 
-	virtual void SetAllowedValues(std::initializer_list<int> values) override { CRY_ASSERT_MESSAGE(false, "Trying to set allowed int values on a string CVar."); }
+	virtual void SetAllowedValues(std::initializer_list<int> values) override   { CRY_ASSERT_MESSAGE(false, "Trying to set allowed int values on a string CVar."); }
+	virtual void SetAllowedValues(std::initializer_list<int64> values) override { CRY_ASSERT_MESSAGE(false, "Trying to set allowed int64 values on a string CVar."); }
 	virtual void SetAllowedValues(std::initializer_list<float> values) override { CRY_ASSERT_MESSAGE(false, "Trying to set allowed float values on a string CVar."); }
 	virtual void SetAllowedValues(std::initializer_list<string> values) override
 	{
@@ -898,7 +955,7 @@ public:
 		Set(m_sValue.c_str());
 	}
 
-	virtual ECVarType GetType() override                                     { return ECVarType::String; }
+	virtual ECVarType GetType() const override                                     { return ECVarType::String; }
 
 	virtual void GetMemoryUsage(class ICrySizer* pSizer) const override { pSizer->AddObject(this, sizeof(*this)); }
 private: // --------------------------------------------------------------------------------------------
@@ -933,7 +990,7 @@ public:
 
 	virtual void        DebugLog(const int iExpectedValue, const ICVar::EConsoleLogMode mode) const override;
 
-	virtual void        Set(const int i) override;
+	virtual void        Set(int i) override;
 
 	// ConsoleVarFunc ------------------------------------------------------------------------------------
 

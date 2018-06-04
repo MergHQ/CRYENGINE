@@ -812,6 +812,11 @@ void CXConsole::SaveInternalState(struct IDataWriteStream& writer) const
 					writer.WriteString(pCVar->GetString());
 					break;
 				}
+			case ECVarType::Int64:
+				{
+					writer.WriteInt64(pCVar->GetI64Val());
+					break;
+				}
 			}
 		}
 	}
@@ -866,6 +871,19 @@ void CXConsole::LoadInternalState(struct IDataReadStream& reader)
 				if ((NULL != pVar) && (pVar->GetType() == ECVarType::String))
 				{
 					pVar->Set(strValue);
+				}
+				else
+				{
+					gEnv->pLog->LogError("Unable to restore CVar '%s'", varName.c_str());
+				}
+				break;
+			}
+		case ECVarType::Int64:
+			{
+				const int64 iValue = reader.ReadInt64();
+				if ((NULL != pVar) && (pVar->GetType() == ECVarType::Int64))
+				{
+					pVar->Set(iValue);
 				}
 				else
 				{
@@ -1086,8 +1104,8 @@ void CXConsole::UnregisterVariable(const char* sVarName, bool bDelete)
 	{
 		it->OnVarUnregister(pCVar);
 	}
-
-	delete pCVar;
+	if (bDelete)
+		delete pCVar;
 }
 
 void CXConsole::RemoveCheckedCVar(ConsoleVariablesVector& vector, const ConsoleVariablesVector::value_type& value)
@@ -2377,7 +2395,7 @@ void CXConsole::ExecuteStringInternal(const char* command, const bool bFromConso
 							continue;
 						}
 
-						pCVar->Set(sTemp.c_str());
+						pCVar->SetFromString(sTemp.c_str());
 					}
 				}
 

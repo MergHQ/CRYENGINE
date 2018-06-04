@@ -65,25 +65,26 @@ enum ObjectEvent
 enum EObjectListenerEvent
 {
 	OBJECT_ON_DELETE = 0,// Sent after object was deleted from object manager.
-	OBJECT_ON_ADD,                  // Sent after object was added to object manager.
-	OBJECT_ON_TRANSFORM,            // Sent when object transformed.
-	OBJECT_ON_VISIBILITY,           // Sent when object visibility changes.
-	OBJECT_ON_RENAME,               // Sent when object changes name.
-	OBJECT_ON_PREDELETE,            // Sent before an object is processed to be deleted from the object manager.
-	OBJECT_ON_GROUP_OPEN,           // Sent when this group/prefab object is opened
-	OBJECT_ON_GROUP_CLOSE,          // Sent when this group/prefab object is closed
-	OBJECT_ON_PREFAB_CHANGED,       // Sent when prefab representation has been changed
-	OBJECT_ON_UI_PROPERTY_CHANGED,  // Sent when any misc variable/property changes (Meant for UI/inspector).
-	OBJECT_ON_LAYERCHANGE,          // Sent after object has changed layer
-	OBJECT_ON_PREATTACHED,          // Sent before an object is attached to a group or prefab
-	OBJECT_ON_ATTACHED,             // Sent after an object is attached to a group or prefab
-	OBJECT_ON_PREDETACHED,          // Sent before object is detached from parent object
-	OBJECT_ON_DETACHED,             // Sent after the object is detached from parent
-	OBJECT_ON_PRELINKED,            // Sent before the object is linked
-	OBJECT_ON_LINKED,               // Sent after the object is linked
-	OBJECT_ON_PREUNLINKED,          // Sent before the object is linked
-	OBJECT_ON_UNLINKED,             // Sent after the object is linked
-	OBJECT_ON_COLOR_CHANGED,        // Sent when an object color is changed
+	OBJECT_ON_ADD,                 // Sent after object was added to object manager.
+	OBJECT_ON_TRANSFORM,           // Sent when object transformed.
+	OBJECT_ON_VISIBILITY,          // Sent when object visibility changes.
+	OBJECT_ON_RENAME,              // Sent when object changes name.
+	OBJECT_ON_PREDELETE,           // Sent before an object is processed to be deleted from the object manager.
+	OBJECT_ON_GROUP_OPEN,          // Sent when this group/prefab object is opened
+	OBJECT_ON_GROUP_CLOSE,         // Sent when this group/prefab object is closed
+	OBJECT_ON_PREFAB_CHANGED,      // Sent when prefab representation has been changed
+	OBJECT_ON_UI_PROPERTY_CHANGED, // Sent when any misc variable/property changes (Meant for UI/inspector).
+	OBJECT_ON_LAYERCHANGE,         // Sent after object has changed layer
+	OBJECT_ON_PREATTACHED,         // Sent before an object is attached to a group or prefab
+	OBJECT_ON_ATTACHED,            // Sent after an object is attached to a group or prefab
+	OBJECT_ON_PREDETACHED,         // Sent before object is detached from parent object
+	OBJECT_ON_DETACHED,            // Sent after the object is detached from parent
+	OBJECT_ON_PRELINKED,           // Sent before the object is linked
+	OBJECT_ON_LINKED,              // Sent after the object is linked
+	OBJECT_ON_PREUNLINKED,         // Sent before the object is linked
+	OBJECT_ON_UNLINKED,            // Sent after the object is linked
+	OBJECT_ON_COLOR_CHANGED,       // Sent when an object color is changed
+	OBJECT_ON_FREEZE,              // Sent when an object is frozen/unfrozen
 
 	OBJECT_EVENT_LAST
 };

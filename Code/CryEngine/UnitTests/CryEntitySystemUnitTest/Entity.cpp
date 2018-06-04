@@ -195,6 +195,13 @@ class CMockConsole : public IConsole
 	virtual void RemoveConsoleVarSink(IConsoleVarSink * pSink) override
 	{
 	}
+	virtual bool OnBeforeVarChange(ICVar* pVar, const char* sNewValue) override 
+	{
+		return false;
+	}
+	virtual void OnAfterVarChange(ICVar* pVar) override 
+	{
+	}
 	virtual const char * GetHistoryElement(const bool bUpOrDown) override
 	{
 		return nullptr;

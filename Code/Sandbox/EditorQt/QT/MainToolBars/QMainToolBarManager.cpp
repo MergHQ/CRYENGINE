@@ -673,6 +673,9 @@ void QMainToolBarManager::CreateToolBar(const std::shared_ptr<QToolBarDesc> tool
 						break;
 					case ECVarType::String:
 						pCVar->Set(variant.toString().toStdString().c_str());
+					case ECVarType::Int64:
+						CRY_ASSERT_MESSAGE(false, "QMainToolBarManager::CreateToolBar int64 cvar not implemented");
+						break;
 					default:
 						break;
 					}
@@ -730,6 +733,9 @@ void QMainToolBarManager::OnCVarChanged(ICVar* pCVar)
 	case ECVarType::String:
 		for (QAction* pAction : actions)
 			pAction->setChecked(pAction->property(s_actionPropertyName) == QString(pCVar->GetString()));
+	case ECVarType::Int64:
+		CRY_ASSERT_MESSAGE(false, "QMainToolBarManager::OnCVarChanged int64 cvar not implemented");
+		break;
 	default:
 		break;
 	}

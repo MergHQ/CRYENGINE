@@ -32,20 +32,26 @@ struct SNullCVar : public ICVar
 	virtual const char *GetDataProbeString() const override { return "NULL"; }
 	virtual void Set(const char* s) override { return; }
 	virtual void ForceSet(const char* s) override { return; }
-	virtual void Set(const float f) override { return; }
-	virtual void Set(const int i) override { return; }
+	virtual void Set(float f) override { return; }
+	virtual void Set(int i) override { return; }
+	virtual void Set(int64 i) override { return; }
+	virtual void SetFromString(const char* s) override { return; }
 	virtual void SetMinValue(int min) override { return; }
+	virtual void SetMinValue(int64 min) override { return; }
 	virtual void SetMinValue(float min) override { return; }
 	virtual void SetMaxValue(int max) override { return; }
+	virtual void SetMaxValue(int64 max) override { return; }
 	virtual void SetMaxValue(float max) override { return; }
 
 	virtual void SetAllowedValues(std::initializer_list<int> values) override { return; }
+	virtual void SetAllowedValues(std::initializer_list<int64> values) override { return; }
 	virtual void SetAllowedValues(std::initializer_list<float> values) override { return; }
 	virtual void SetAllowedValues(std::initializer_list<string> values) override { return; }
+
 	virtual void ClearFlags (int flags) override { return; }
 	virtual int GetFlags() const override { return 0; }
 	virtual int SetFlags(int flags) override { return 0; }
-	virtual ECVarType GetType() override { return ECVarType::Invalid; }
+	virtual ECVarType GetType() const override { return ECVarType::Invalid; }
 	virtual const char* GetName() const override { return "NULL"; }
 	virtual const char* GetHelp() override { return "NULL"; }
 	virtual bool IsConstCVar() const override { return 0; }

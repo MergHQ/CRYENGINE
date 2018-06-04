@@ -1226,6 +1226,20 @@ void CLevelLayerModel::OnObjectEvent(const std::vector<CBaseObject*>& objects, c
 		}
 		break;
 
+	case OBJECT_ON_VISIBILITY:
+		{
+			QVector<int> updateRoles(1, Qt::DisplayRole);
+			NotifyUpdateObject(pObject, updateRoles);
+		}
+		break;
+
+	case OBJECT_ON_FREEZE:
+		{
+			QVector<int> updateRoles(1, Qt::DisplayRole);
+			NotifyUpdateObject(pObject, updateRoles);
+		}
+		break;
+
 	default:
 		break;
 	}
@@ -1768,4 +1782,3 @@ void CLevelLayerModel::FinishBatchProcess()
 	assert(m_isRuningBatchProcess);
 	m_isRuningBatchProcess = false;
 }
-
