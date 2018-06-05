@@ -293,10 +293,13 @@ void CPostAAStage::ApplyTemporalAA(CTexture*& pCurrRT, CTexture*& pMgpuRT, uint3
 	CD3D9Renderer* pRenderer = gcpRendD3D;
 
 	CShader* pShader = CShaderMan::s_shPostAA;
-	CTexture* pDestRT = GetUtils().GetTaaRT(RenderView(), true);
-	CTexture* pPrevRT = ((SPostEffectsUtils::m_iFrameCounter - m_lastFrameID) < 10) ? GetUtils().GetTaaRT(RenderView(),false) : pCurrRT;
+	CTexture* pDestRT = GetAARenderTarget(RenderView(), true);
+	CTexture* pPrevRT = ((SPostEffectsUtils::m_iFrameCounter - m_lastFrameID) < 10) ? GetAARenderTarget(RenderView(),false) : pCurrRT;
 
-	assert((pCurrRT->GetFlags() & FT_USAGE_ALLOWREADSRGB));
+	CRY_ASSERT_MESSAGE(pDestRT && pPrevRT, "PostAA rendertargets do not exist!");
+	CRY_ASSERT_MESSAGE(pCurrRT->GetFlags() & FT_USAGE_ALLOWREADSRGB, "PostAA: Expected sRGB target.");
+	if (!pDestRT || !pPrevRT)
+		return;
 
 	uint64 rtMask = 0;
 	if (aaMode & (eAT_SMAA_1TX_MASK))
@@ -515,4 +518,55 @@ void CPostAAStage::Execute()
 	{
 		pMgpuRT->MgpuResourceUpdate(false);
 	}
+}
+
+void CPostAAStage::Resize(int renderWidth, int renderHeight)
+{
+	if (CRenderer::CV_r_AntialiasingMode)
+	{
+		const uint32 renderTargetFlags = FT_NOMIPS | FT_DONT_STREAM | FT_USAGE_RENDERTARGET;
+		m_pPrevBackBuffersLeftEye[0] = CTexture::GetOrCreateRenderTarget("$PrevBackBuffer0", renderWidth, renderHeight, Clr_Unknown, eTT_2D, renderTargetFlags, eTF_R16G16B16A16);
+		m_pPrevBackBuffersLeftEye[1] = CTexture::GetOrCreateRenderTarget("$PrevBackBuffer1", renderWidth, renderHeight, Clr_Unknown, eTT_2D, renderTargetFlags, eTF_R16G16B16A16);
+		if (gRenDev->IsStereoEnabled())
+		{
+			m_pPrevBackBuffersRightEye[0] = CTexture::GetOrCreateRenderTarget("$PrevBackBuffer0_R", renderWidth, renderHeight, Clr_Unknown, eTT_2D, renderTargetFlags, eTF_R16G16B16A16);
+			m_pPrevBackBuffersRightEye[1] = CTexture::GetOrCreateRenderTarget("$PrevBackBuffer1_R", renderWidth, renderHeight, Clr_Unknown, eTT_2D, renderTargetFlags, eTF_R16G16B16A16);
+		}
+		else
+		{
+			SAFE_RELEASE(m_pPrevBackBuffersRightEye[0]);
+			SAFE_RELEASE(m_pPrevBackBuffersRightEye[1]);
+		}
+	}
+	else
+	{
+		SAFE_RELEASE(m_pPrevBackBuffersLeftEye[0]);
+		SAFE_RELEASE(m_pPrevBackBuffersLeftEye[1]);
+		SAFE_RELEASE(m_pPrevBackBuffersRightEye[0]);
+		SAFE_RELEASE(m_pPrevBackBuffersRightEye[1]);
+	}
+
+	oldStereoEnabledState = gRenDev->IsStereoEnabled();
+	oldAAState = CRenderer::CV_r_AntialiasingMode;
+}
+
+void CPostAAStage::Update()
+{
+	// Check if Stereo or AA settings have been updated, if so we might need to recreate prevBackBuffer rendertarget
+	if (oldStereoEnabledState != gRenDev->IsStereoEnabled() ||
+		oldAAState != CRenderer::CV_r_AntialiasingMode)
+		Resize(CRendererResources::s_renderWidth, CRendererResources::s_renderHeight);
+}
+
+CTexture* CPostAAStage::GetAARenderTarget(const CRenderView* pRenderView, bool bCurrentFrame) const
+{
+	int eye = static_cast<int>(pRenderView->GetCurrentEye());
+	int index = (bCurrentFrame ? SPostEffectsUtils::m_iFrameCounter : (SPostEffectsUtils::m_iFrameCounter + 1)) % 2;
+
+	CRY_ASSERT(eye == CCamera::eEye_Left || eye == CCamera::eEye_Right);
+
+	if (eye == CCamera::eEye_Left)
+		return m_pPrevBackBuffersLeftEye[index];
+	else
+		return m_pPrevBackBuffersRightEye[index];
 }

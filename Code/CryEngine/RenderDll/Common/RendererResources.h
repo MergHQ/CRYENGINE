@@ -46,8 +46,6 @@ enum
 	TO_RT_CM,
 	TO_CLOUDS_LM,
 	TO_BACKBUFFERMAP,
-	TO_PREVBACKBUFFERMAP0,
-	TO_PREVBACKBUFFERMAP1,
 	TO_MIPCOLORS_DIFFUSE,
 	TO_MIPCOLORS_BUMP,
 
@@ -296,7 +294,6 @@ public:
 	static CTexture* s_ptexBackBuffer;                                           // back buffer copy
 	static CTexture* s_ptexBackBufferScaled[3];                                  // backbuffer low-resolution/blurred version. 2x/4x/8x/16x smaller than screen
 	static CTexture* s_ptexBackBufferScaledTemp[2];                              // backbuffer low-resolution/blurred version. 2x/4x/8x/16x smaller than screen, temp textures (used for blurring/ping-pong)
-	static CTexture* s_ptexPrevBackBuffer[2][2];                                 // previous frame back buffer copies (for left and right eye)
 
 	static CTexture* s_ptexAOColorBleed;                                         // CScreenSpaceObscuranceStage, CTiledShadingStage
 	static CTexture* s_ptexShadowMask;                                           // CShadowMapStage

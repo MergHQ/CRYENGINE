@@ -20,7 +20,9 @@ public:
 			CalculateJitterOffsets(w, h, pRenderView);
 	}
 
-	void Init();
+	void Resize(int renderWidth, int renderHeight) override;
+	void Update() override;
+	void Init() override;
 	void Execute();
 
 private:
@@ -28,9 +30,13 @@ private:
 	void ApplyTemporalAA(CTexture*& pCurrRT, CTexture*& pMgpuRT, uint32 aaMode);
 	void DoFinalComposition(CTexture*& pCurrRT, CTexture* pDestRT, uint32 aaMode);
 
+	CTexture* GetAARenderTarget(const CRenderView* pRenderView, bool bCurrentFrame) const;
+
 private:
 	_smart_ptr<CTexture> m_pTexAreaSMAA;
 	_smart_ptr<CTexture> m_pTexSearchSMAA;
+	CTexture*            m_pPrevBackBuffersLeftEye[2];
+	CTexture*            m_pPrevBackBuffersRightEye[2];
 	int                  m_lastFrameID;
 
 	CFullscreenPass      m_passSMAAEdgeDetection;
@@ -38,4 +44,7 @@ private:
 	CFullscreenPass      m_passSMAANeighborhoodBlending;
 	CFullscreenPass      m_passTemporalAA;
 	CFullscreenPass      m_passComposition;
+
+	bool oldStereoEnabledState{ false };
+	int  oldAAState{ 0 };
 };

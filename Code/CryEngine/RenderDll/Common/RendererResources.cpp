@@ -183,7 +183,6 @@ CTexture* CRendererResources::s_ptexSceneSpecularESRAM;
 // Post-process related textures
 CTexture* CRendererResources::s_ptexBackBuffer = NULL;
 CTexture* CRendererResources::s_ptexModelHudBuffer;
-CTexture* CRendererResources::s_ptexPrevBackBuffer[2][2] = { { NULL } };
 CTexture* CRendererResources::s_ptexCached3DHud;
 CTexture* CRendererResources::s_ptexCached3DHudScaled;
 CTexture* CRendererResources::s_ptexBackBufferScaled[3];
@@ -1131,7 +1130,6 @@ void CRendererResources::DestroyHDRMaps()
 
 bool CRendererResources::CreatePostFXMaps(int resourceWidth, int resourceHeight)
 {
-	const bool bCreatePostAA = (CRenderer::CV_r_AntialiasingMode && !CTexture::IsTextureExist(s_ptexPrevBackBuffer[0][0])) || (gRenDev->IsStereoEnabled() && !s_ptexPrevBackBuffer[0][1]);
 	const bool bCreateCaustics = (CRenderer::CV_r_watervolumecaustics && CRenderer::CV_r_watercaustics && CRenderer::CV_r_watercausticsdeferred) && !CTexture::IsTextureExist(s_ptexWaterCaustics[0]);
 
 	const int width = resourceWidth, width_r2 = (width + 1) / 2, width_r4 = (width_r2 + 1) / 2, width_r8 = (width_r4 + 1) / 2;
@@ -1139,27 +1137,10 @@ bool CRendererResources::CreatePostFXMaps(int resourceWidth, int resourceHeight)
 
 	if (!s_ptexBackBufferScaled[0] ||
 		s_ptexBackBufferScaled[0]->GetWidth() != width_r2 ||
-		s_ptexBackBufferScaled[0]->GetHeight() != height_r2 || bCreatePostAA || bCreateCaustics)
+		s_ptexBackBufferScaled[0]->GetHeight() != height_r2 || 
+		bCreateCaustics)
 	{
 		assert(gRenDev);
-
-		if (CRenderer::CV_r_AntialiasingMode)
-		{
-			SPostEffectsUtils::GetOrCreateRenderTarget("$PrevBackBuffer0", s_ptexPrevBackBuffer[0][0], width, height, Clr_Unknown, 1, 0, eTF_R16G16B16A16, TO_PREVBACKBUFFERMAP0, FT_DONT_RELEASE);
-			SPostEffectsUtils::GetOrCreateRenderTarget("$PrevBackBuffer1", s_ptexPrevBackBuffer[1][0], width, height, Clr_Unknown, 1, 0, eTF_R16G16B16A16, TO_PREVBACKBUFFERMAP1, FT_DONT_RELEASE);
-			if (gRenDev->IsStereoEnabled())
-			{
-				SPostEffectsUtils::GetOrCreateRenderTarget("$PrevBackBuffer0_R", s_ptexPrevBackBuffer[0][1], width, height, Clr_Unknown, 1, 0, eTF_R16G16B16A16, -1, FT_DONT_RELEASE);
-				SPostEffectsUtils::GetOrCreateRenderTarget("$PrevBackBuffer1_R", s_ptexPrevBackBuffer[1][1], width, height, Clr_Unknown, 1, 0, eTF_R16G16B16A16, -1, FT_DONT_RELEASE);
-			}
-		}
-		else
-		{
-			SAFE_RELEASE_FORCE(s_ptexPrevBackBuffer[0][0]);
-			SAFE_RELEASE_FORCE(s_ptexPrevBackBuffer[1][0]);
-			SAFE_RELEASE_FORCE(s_ptexPrevBackBuffer[0][1]);
-			SAFE_RELEASE_FORCE(s_ptexPrevBackBuffer[1][1]);
-		}
 
 		SPostEffectsUtils::GetOrCreateRenderTarget("$Cached3DHud", s_ptexCached3DHud, width, height, Clr_Unknown, 1, 0, eTF_R8G8B8A8, -1, FT_DONT_RELEASE);
 		SPostEffectsUtils::GetOrCreateRenderTarget("$Cached3DHudDownsampled", s_ptexCached3DHudScaled, width_r4, height_r4, Clr_Unknown, 1, 0, eTF_R8G8B8A8, -1, FT_DONT_RELEASE);
@@ -1233,11 +1214,6 @@ bool CRendererResources::CreatePostFXMaps(int resourceWidth, int resourceHeight)
 
 void CRendererResources::DestroyPostFXMaps()
 {
-	SAFE_RELEASE_FORCE(s_ptexPrevBackBuffer[0][0]);
-	SAFE_RELEASE_FORCE(s_ptexPrevBackBuffer[1][0]);
-	SAFE_RELEASE_FORCE(s_ptexPrevBackBuffer[0][1]);
-	SAFE_RELEASE_FORCE(s_ptexPrevBackBuffer[1][1]);
-
 	SAFE_RELEASE_FORCE(s_ptexBackBufferScaled[0]);
 	SAFE_RELEASE_FORCE(s_ptexBackBufferScaled[1]);
 	SAFE_RELEASE_FORCE(s_ptexBackBufferScaled[2]);
@@ -1461,10 +1437,6 @@ void CRendererResources::Clear()
 		s_ptexSceneDiffuseTmp,
 		s_ptexSceneSpecularTmp,
 		s_ptexBackBuffer,
-		s_ptexPrevBackBuffer[0][0],
-		s_ptexPrevBackBuffer[1][0],
-		s_ptexPrevBackBuffer[0][1],
-		s_ptexPrevBackBuffer[1][1],
 		s_ptexSceneTarget,
 		s_ptexLinearDepth,
 		s_ptexHDRTarget
@@ -1492,10 +1464,6 @@ void CRendererResources::ShutDown()
 		s_ptexSceneDiffuseTmp = NULL;
 		s_ptexSceneSpecularTmp = NULL;
 		s_ptexBackBuffer = NULL;
-		s_ptexPrevBackBuffer[0][0] = NULL;
-		s_ptexPrevBackBuffer[1][0] = NULL;
-		s_ptexPrevBackBuffer[0][1] = NULL;
-		s_ptexPrevBackBuffer[1][1] = NULL;
 		s_ptexSceneTarget = NULL;
 		s_ptexLinearDepth = NULL;
 		s_ptexHDRTarget = NULL;
