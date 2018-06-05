@@ -19,7 +19,7 @@
 
 namespace
 {
-static const float MIN_TIME_RANGE = 100.0f;
+static const float MIN_TIME_RANGE = 1.0f;
 static const int CHAR_BUFFER_SIZE = 512;
 };
 

@@ -19,7 +19,7 @@
 
 namespace
 {
-static const float TRANSITION_MIN_TIME_RANGE = 100.0f;
+static const float TRANSITION_MIN_TIME_RANGE = 1.0f;
 static const int TRANSITION_CHAR_BUFFER_SIZE = 512;
 };
 
