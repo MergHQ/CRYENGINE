@@ -104,7 +104,16 @@ public:
 
 	virtual void AddFile(const char* szFilepath) override
 	{
-		m_metadata.files.emplace_back(PathUtil::GetFile(szFilepath));
+		// Convert filepath to relative to metadata file.
+
+		string filename(PathUtil::ToGamePath(szFilepath));
+
+		if (strncmp(m_folder.c_str(), filename.c_str(), m_folder.size()) == 0)
+		{
+			filename.erase(0, m_folder.size());
+		}
+
+		m_metadata.files.push_back(filename);
 	}
 
 	virtual void SetFiles(const std::vector<string>& filenames) override

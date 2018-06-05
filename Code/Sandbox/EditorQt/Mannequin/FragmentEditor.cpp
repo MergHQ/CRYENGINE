@@ -17,7 +17,7 @@
 
 namespace
 {
-static const float FRAGMENT_MIN_TIME_RANGE = 100.0f;
+static const float FRAGMENT_MIN_TIME_RANGE = 1.0f;
 };
 
 #define IDW_KEYS_PANE AFX_IDW_CONTROLBAR_FIRST + 10

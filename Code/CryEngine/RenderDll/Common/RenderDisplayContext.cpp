@@ -76,7 +76,8 @@ void CRenderDisplayContext::AllocateColorTarget()
 	const uint32 renderTargetFlags = FT_NOMIPS | FT_DONT_STREAM | FT_USAGE_RENDERTARGET;
 	const std::string uniqueTexName = GenerateUniqueTextureName("$HDR-Overlay", m_uniqueId);
 
-	m_pColorTarget = CTexture::GetOrCreateRenderTarget(uniqueTexName.c_str(), m_DisplayWidth, m_DisplayHeight, clearValue, eTT_2D, renderTargetFlags, eHDRFormat);
+	m_pColorTarget = nullptr;
+	m_pColorTarget.Assign_NoAddRef(CTexture::GetOrCreateRenderTarget(uniqueTexName.c_str(), m_DisplayWidth, m_DisplayHeight, clearValue, eTT_2D, renderTargetFlags, eHDRFormat));
 }
 
 void CRenderDisplayContext::AllocateDepthTarget()
@@ -98,7 +99,8 @@ void CRenderDisplayContext::AllocateDepthTarget()
 	const uint32 renderTargetFlags = FT_NOMIPS | FT_DONT_STREAM | FT_USAGE_DEPTHSTENCIL;
 	const std::string uniqueOverlayTexName = GenerateUniqueTextureName("$Z-Overlay", m_uniqueId);
 
-	m_pDepthTarget = CTexture::GetOrCreateDepthStencil(uniqueOverlayTexName.c_str(), m_DisplayWidth, m_DisplayHeight, clearValues, eTT_2D, renderTargetFlags, eZFormat);
+	m_pDepthTarget = nullptr;
+	m_pDepthTarget.Assign_NoAddRef(CTexture::GetOrCreateDepthStencil(uniqueOverlayTexName.c_str(), m_DisplayWidth, m_DisplayHeight, clearValues, eTT_2D, renderTargetFlags, eZFormat));
 }
 
 void CRenderDisplayContext::ReleaseResources()
@@ -231,7 +233,8 @@ void CSwapChainBackedRenderDisplayContext::AllocateBackBuffers()
 	{
 		sprintf(str, "$SwapChainBackBuffer %d:Current", m_uniqueId);
 
-		m_pBackBufferProxy = CTexture::GetOrCreateTextureObject(str, displayWidth, displayHeight, 1, eTT_2D, renderTargetFlags, displayFormat);
+		m_pBackBufferProxy = nullptr;
+		m_pBackBufferProxy.Assign_NoAddRef(CTexture::GetOrCreateTextureObject(str, displayWidth, displayHeight, 1, eTT_2D, renderTargetFlags, displayFormat));
 		m_pBackBufferProxy->SRGBRead(DeviceFormats::ConvertToSRGB(DeviceFormats::ConvertFromTexFormat(displayFormat)) == m_swapChain.GetSwapChainDesc().Format);
 	}
 
@@ -252,7 +255,8 @@ void CSwapChainBackedRenderDisplayContext::AllocateBackBuffers()
 		{
 			sprintf(str, "$SwapChainBackBuffer %d:Buffer %d", m_uniqueId, i);
 
-			m_backBuffersArray[i] = CTexture::GetOrCreateTextureObject(str, displayWidth, displayHeight, 1, eTT_2D, renderTargetFlags, displayFormat);
+			m_backBuffersArray[i] = nullptr;
+			m_backBuffersArray[i].Assign_NoAddRef(CTexture::GetOrCreateTextureObject(str, displayWidth, displayHeight, 1, eTT_2D, renderTargetFlags, displayFormat));
 			m_backBuffersArray[i]->SRGBRead(DeviceFormats::ConvertToSRGB(DeviceFormats::ConvertFromTexFormat(displayFormat)) == m_swapChain.GetSwapChainDesc().Format);
 		}
 

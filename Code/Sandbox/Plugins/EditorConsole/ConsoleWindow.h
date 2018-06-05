@@ -57,6 +57,9 @@ class CConsoleWindow : public CDockableEditor, public ILogCallback
 	//handle enter pressed
 	void HandleEnter();
 
+	//handle context menu on console history
+	void HandleContextMenu(const QPoint& pt);
+
 	//handle auto-complete selection change
 	void HandleAutoCompleteSelection(const QString& selection, CAutoCompletePopup::ESelectReason reason);
 

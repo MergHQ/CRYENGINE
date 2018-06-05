@@ -607,6 +607,10 @@ bool CHWShader_D3D::mfPrecacheAllCombinations(CShader* pSH, int cacheType)
 		if (m_pDevCache->m_DeviceShaders.size())
 			return false;
 
+		// Log
+		if (CRenderer::CV_r_shadersdebug == 3 || CRenderer::CV_r_shadersdebug == 4)
+			iLog->Log("---Shader Cache: mfPrecacheAllCombinations() %s", pSH->GetName());
+
 		// decompress and upload all shaders in file
 		CResFileOpenScope rfOpenGuard(&cacheResourceFile);
 		rfOpenGuard.open(RA_READ | (CParserBin::m_bEndians ? RA_ENDIANS : 0), &gRenDev->m_cEF.m_ResLookupDataMan[cacheType], nullptr);
