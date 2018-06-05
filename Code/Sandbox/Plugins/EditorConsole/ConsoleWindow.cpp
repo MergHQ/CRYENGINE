@@ -42,9 +42,11 @@ CConsoleWindow::CConsoleWindow(QWidget* pParent /*= nullptr*/)
 	connect(&m_popup, &CAutoCompletePopup::selectionChanged, this, &CConsoleWindow::HandleAutoCompleteSelection);
 	connect(&m_searchBox, &QSearchBox::textChanged, this, &CConsoleWindow::SearchBox);
 	connect(&m_searchBox, &QSearchBox::returnPressed, this, &CConsoleWindow::OnFindNext);
+	m_pHistory->setContextMenuPolicy(Qt::CustomContextMenu);
+	connect(m_pHistory, &QTextEdit::customContextMenuRequested, this, &CConsoleWindow::HandleContextMenu);
 
 	m_pInput->installEventFilter(this);
-	
+
 	layout()->setContentsMargins(1, 1, 1, 1);
 
 	gEnv->pLog->AddCallback(this);
@@ -63,8 +65,7 @@ void CConsoleWindow::InitMenu()
 	const CEditor::MenuItems items[] = {
 		CEditor::MenuItems::FileMenu,
 		CEditor::MenuItems::EditMenu,
-		CEditor::MenuItems::Save
-	};
+		CEditor::MenuItems::Save };
 	AddToMenu(&items[0], CRY_ARRAY_COUNT(items));
 
 	auto pEditMenu = GetMenu(MenuItems::EditMenu);
@@ -73,13 +74,11 @@ void CConsoleWindow::InitMenu()
 	const CEditor::MenuItems items2[] = {
 		CEditor::MenuItems::Find,
 		CEditor::MenuItems::FindNext,
-		CEditor::MenuItems::FindPrevious
-	};
+		CEditor::MenuItems::FindPrevious };
 	AddToMenu(&items2[0], CRY_ARRAY_COUNT(items2));
 
 	const CEditor::MenuItems itemsHelp[] = {
-		CEditor::MenuItems::HelpMenu,
-	};
+		CEditor::MenuItems::HelpMenu, };
 
 	AddToMenu(&itemsHelp[0], CRY_ARRAY_COUNT(itemsHelp));
 
@@ -346,7 +345,7 @@ void CConsoleWindow::HandleTab()
 			}
 
 		}
-		else if (!completion.isEmpty() && m_pInput->text().simplified().compare(completion, Qt::CaseInsensitive)==0 )
+		else if (!completion.isEmpty() && m_pInput->text().simplified().compare(completion, Qt::CaseInsensitive) == 0)
 		{
 			m_pInput->setText(m_popup.SelectNext().append(QStringLiteral(" ")));
 		}
@@ -460,12 +459,12 @@ void CConsoleWindow::MovePopup(bool force)
 		// Resize Popup Height
 		int cutSizeY = -(globalYpos.y() - defaultPopupHeight - topMarginSize - inputEditBorderSize);
 
-		if (cutSizeY>0)
+		if (cutSizeY > 0)
 		{
 			m_popup.setMinimumHeight(defaultPopupHeight - cutSizeY);
 			m_popup.setMaximumHeight(defaultPopupHeight - cutSizeY);
 		}
-		else if (cutSizeY<=0)
+		else if (cutSizeY <= 0)
 		{
 			m_popup.setMinimumHeight(defaultPopupHeight);
 			m_popup.setMaximumHeight(defaultPopupHeight);
@@ -599,9 +598,9 @@ bool CConsoleWindow::event(QEvent* pEvent)
 		switch (pEvent->type())
 		{
 		case QEvent::WindowDeactivate:
-		    {
+			{
 				m_popup.hide();
-		    }
+			}
 		}
 	}
 
@@ -758,12 +757,20 @@ bool CConsoleWindow::ClearConsole()
 
 bool CConsoleWindow::eventFilter(QObject* o, QEvent* ev)
 {
-	if (o == m_pInput && ev->type() == QEvent::FocusOut)		
+	if (o == m_pInput && ev->type() == QEvent::FocusOut)
 	{
 		m_popup.hide();
 	}
 
 	return CDockableEditor::eventFilter(o, ev);
+}
+
+void CConsoleWindow::HandleContextMenu(const QPoint& pt)
+{
+	QMenu* menu = m_pHistory->createStandardContextMenu();
+	menu->insertAction(menu->actions()[0], GetIEditor()->GetICommandManager()->GetAction("general.consoleClearLog"));
+	menu->exec(m_pHistory->mapToGlobal(pt));
+	delete menu;
 }
 
 namespace
@@ -778,4 +785,3 @@ void PyConsoleClearLog()
 }
 
 REGISTER_PYTHON_COMMAND_WITH_EXAMPLE(Private_EditorConsoleCommands::PyConsoleClearLog, general, consoleClearLog, "Clear", "general.consoleClearLog()");
-
