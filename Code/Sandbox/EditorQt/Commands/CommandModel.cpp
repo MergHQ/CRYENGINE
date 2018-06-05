@@ -9,9 +9,34 @@
 
 const char* CommandModel::s_ColumnNames[3] = { QT_TR_NOOP("Action"), QT_TR_NOOP("Command"), QT_TR_NOOP("Shortcut") };
 
-CommandModel::CommandModel()
+namespace Private_CommandModel
 {
 
+enum ItemType : int
+{
+	Module,
+	Function,
+	Parameter
+};
+
+ItemType GetItemType(const QModelIndex& index)
+{
+	QModelIndex parent = index.parent();
+	if (!parent.isValid())
+	{
+		return Module;
+	}
+	else if (!parent.parent().isValid())
+	{
+		return Function;
+	}
+	return Parameter;
+}
+
+} // namespace Private_CommandModel
+
+CommandModel::CommandModel()
+{
 }
 
 CommandModel::~CommandModel()
@@ -50,6 +75,8 @@ void CommandModel::Rebuild()
 
 QVariant CommandModel::data(const QModelIndex& index, int role /* = Qt::DisplayRole */) const
 {
+	using namespace Private_CommandModel;
+
 	if (!index.isValid())
 	{
 		return QVariant();
@@ -128,21 +155,35 @@ QVariant CommandModel::data(const QModelIndex& index, int role /* = Qt::DisplayR
 		}
 	case Qt::ToolTipRole:
 		{
-			QModelIndex parent = index.parent();
-			if (parent.isValid())
+			//Show tooltip only for first column
+			if (index.column() != 0)
 			{
-				if (index.column() == 0)
+				return QVariant();
+			}
+
+			ItemType itemType = GetItemType(index);
+			switch (itemType)
+			{
+			case Module:
 				{
-					return QtUtil::ToQString(m_modules[parent.row()].m_commands[index.row()]->GetDescription());
-				}
-				else
-				{
+					// At a module level: no tooltip
 					return QVariant();
 				}
+			case Function:
+				{
+					return QtUtil::ToQString(m_modules[index.parent().row()].m_commands[index.row()]->GetDescription());
+				}
+			case Parameter:
+				{
+					QModelIndex parent = index.parent();
+					const auto& module = m_modules[parent.parent().row()];
+					const CCommand* pCmd = module.m_commands[parent.row()];
+					const CCommandArgument& arg = pCmd->GetParameters().at(index.row());
+					return QtUtil::ToQString(arg.GetDescription());
+				}
+				break;
 			}
-			return QVariant();
 		}
-		break;
 	case Roles::SearchRole:
 		{
 			QModelIndex parent = index.parent();
@@ -160,8 +201,6 @@ QVariant CommandModel::data(const QModelIndex& index, int role /* = Qt::DisplayR
 		{
 			return QVariant::fromValue((CCommand*)GetCommand(index));
 		}
-		break;
-	default:
 		break;
 	}
 
@@ -376,10 +415,7 @@ CommandModel::CommandModule& CommandModel::FindOrCreateModule(const QString& mod
 	{
 		return *it;
 	}
-	else
-	{
-		auto inserted = m_modules.insert(it, module);
-		return *inserted;
-	}
-}
 
+	auto inserted = m_modules.insert(it, module);
+	return *inserted;
+}
