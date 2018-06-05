@@ -1084,7 +1084,7 @@ void CBaseObject::ChangeColor(ColorB color)
 void CBaseObject::SetColor(ColorB color)
 {
 	m_color = color;
-	GetIEditor()->GetObjectManager()->signalObjectsChanged({ this }, CObjectEvent(OBJECT_ON_COLOR_CHANGED));
+	GetIEditor()->GetObjectManager()->NotifyObjectListeners(this, OBJECT_ON_COLOR_CHANGED);
 }
 
 void CBaseObject::UseColorOverride(bool color)
@@ -1099,7 +1099,7 @@ void CBaseObject::UseColorOverride(bool color)
 		StoreUndo("Color Override", true);
 	}
 	m_useColorOverride = color;
-	GetIEditor()->GetObjectManager()->signalObjectsChanged({ this }, CObjectEvent(OBJECT_ON_COLOR_CHANGED));
+	GetIEditor()->GetObjectManager()->NotifyObjectListeners(this, OBJECT_ON_COLOR_CHANGED);
 }
 
 bool CBaseObject::IsUsingColorOverride() const
@@ -1957,8 +1957,7 @@ void CBaseObject::SetFrozen(bool bFrozen)
 		else
 			ClearFlags(OBJFLAG_FROZEN);
 	}
-
-	GetIEditor()->GetObjectManager()->signalObjectsChanged({ this }, CObjectEvent(OBJECT_ON_FREEZE));
+	GetIEditor()->GetObjectManager()->NotifyObjectListeners(this, OBJECT_ON_FREEZE);
 }
 
 //////////////////////////////////////////////////////////////////////////
@@ -4173,7 +4172,7 @@ void CBaseObject::SerializeGeneralProperties(Serialization::IArchive& ar, bool b
 		if (color != m_color)
 		{
 			objectChanged = true;
-			SetColor(color);
+			ChangeColor(color);
 		}
 
 		if (!name.empty() && strcmp(name.c_str(), (LPCSTR)m_name) != 0)
