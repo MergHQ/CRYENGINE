@@ -579,7 +579,8 @@ CRY_TEST_SUITE(EntityTestsSuit)
 				const CTimeValue duration = gEnv->pTimer->GetFrameStartTime() - m_startTime;
 
 				//To be replaced with direct CTimeValue multiplication after it is supported
-				CRY_TEST_ASSERT(duration.GetSeconds() > m_expectedDuration.GetSeconds() * 0.8f && duration.GetSeconds() < m_expectedDuration.GetSeconds() * 1.2f);
+				CRY_TEST_ASSERT(duration.GetSeconds() > m_expectedDuration.GetSeconds() * 0.8f && duration.GetSeconds() < m_expectedDuration.GetSeconds() * 1.2f, 
+					"duration: %f, expected: %f", duration.GetSeconds(), m_expectedDuration.GetSeconds());
 			}
 			return m_isCalled;
 		}
@@ -594,7 +595,7 @@ CRY_TEST_SUITE(EntityTestsSuit)
 			SEntitySpawnParams spawnParams;
 			m_pTimerEntity = gEnv->pEntitySystem->SpawnEntity(spawnParams);
 			m_pTimerEntity->SetTimer(this, m_pTimerEntity->GetId(), CryGUID(), 0, static_cast<int>(m_expectedDuration.GetMilliSeconds()));
-			m_startTime = gEnv->pTimer->GetFrameStartTime().GetMilliSeconds();
+			m_startTime = gEnv->pTimer->GetFrameStartTime();
 		}
 	};
 
