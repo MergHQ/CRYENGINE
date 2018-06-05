@@ -331,13 +331,6 @@ void CGameObject::Initialize()
 	m_pNetEntity = m_pEntity->AssignNetEntityLegacy(this);
 
 	GetEntity()->SetFlags(GetEntity()->GetFlags() | ENTITY_FLAG_SEND_RENDER_EVENT);
-
-	// Fix case where init was already called
-	if (m_pEntity->IsInitialized())
-	{
-		SEntityEvent event(ENTITY_EVENT_INIT);
-		ProcessEvent(event);
-	}
 }
 
 //////////////////////////////////////////////////////////////////////////
