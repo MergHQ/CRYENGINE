@@ -25,6 +25,9 @@ endif()
 
 option(OPTION_DEVELOPER_CONSOLE_IN_RELEASE "Enables the developer console in Release builds" ON)
 
+#The remote console is useful in development, but it is a potential security vulnerability, therefore opt-in
+option(OPTION_REMOTE_CONSOLE "Allows remote console connection" OFF)
+
 if(EXISTS "${SDK_DIR}/googletest_CE_Support")
 	option(OPTION_UNIT_TEST "Unit Tests" ON)
 elseif(OPTION_UNIT_TEST)

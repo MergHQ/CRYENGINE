@@ -15,11 +15,6 @@
 #include <CrySystem/IConsole.h>
 #include <CryCore/Containers/CryListenerSet.h>
 #include <CryNetwork/CrySocks.h>
-
-#if !defined(RELEASE) || defined(RELEASE_LOGGING) || defined(ENABLE_PROFILING_CODE)
-	#define USE_REMOTE_CONSOLE
-#endif
-
 #include <CryThreading/IThreadManager.h>
 
 /////////////////////////////////////////////////////////////////////////////////////////////
