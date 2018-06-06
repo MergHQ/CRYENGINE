@@ -427,18 +427,20 @@ bool GlobalAnimationHeaderAIM::ReadController(IChunkFile::ChunkDesc* pChunkDesc,
 			if (controllerChunk.numRotationKeys > 0)
 			{
 				const size_t rotationStorageSize = ControllerHelper::GetRotationFormatSizeOf(controllerChunk.rotationFormat) * controllerChunk.numRotationKeys;
-				pTrackRotStorage = ControllerHelper::GetRotationControllerPtr(controllerChunk.rotationFormat, consumeData(rotationStorageSize), controllerChunk.numRotationKeys);
+				pTrackRotStorage = ControllerHelper::GetRotationControllerPtr(controllerChunk.rotationFormat);
 				if (!pTrackRotStorage)
 				{
 					return false;
 				}
+				pTrackRotStorage->AssignData(consumeData(rotationStorageSize), controllerChunk.numRotationKeys);
 
 				const size_t timeStorageSize = ControllerHelper::GetKeyTimesFormatSizeOf(controllerChunk.rotationTimeFormat) * controllerChunk.numRotationKeys;
-				pRotTimeKeys = ControllerHelper::GetKeyTimesControllerPtr(controllerChunk.rotationTimeFormat, consumeData(timeStorageSize), controllerChunk.numRotationKeys);
+				pRotTimeKeys = ControllerHelper::GetKeyTimesControllerPtr(controllerChunk.rotationTimeFormat);
 				if (!pRotTimeKeys)
 				{
 					return false;
 				}
+				pRotTimeKeys->AssignKeyTime(consumeData(timeStorageSize), controllerChunk.numRotationKeys);
 			}
 
 			ITrackPositionStorage* pTrackPosStorage = nullptr;
@@ -446,20 +448,22 @@ bool GlobalAnimationHeaderAIM::ReadController(IChunkFile::ChunkDesc* pChunkDesc,
 			if (controllerChunk.numPositionKeys > 0)
 			{
 				const size_t positionStorageSize = ControllerHelper::GetPositionsFormatSizeOf(controllerChunk.positionFormat) * controllerChunk.numPositionKeys;
-				pTrackPosStorage = ControllerHelper::GetPositionControllerPtr(controllerChunk.positionFormat, consumeData(positionStorageSize), controllerChunk.numPositionKeys);
+				pTrackPosStorage = ControllerHelper::GetPositionControllerPtr(controllerChunk.positionFormat);
 				if (!pTrackPosStorage)
 				{
 					return false;
 				}
+				pTrackPosStorage->AssignData(consumeData(positionStorageSize), controllerChunk.numPositionKeys);
 
 				if (controllerChunk.positionKeysInfo == CONTROLLER_CHUNK_DESC_0832::eKeyTimePosition)
 				{
 					const size_t timeStorageSize = ControllerHelper::GetKeyTimesFormatSizeOf(controllerChunk.positionTimeFormat) * controllerChunk.numPositionKeys;
-					pPosTimeKeys = ControllerHelper::GetKeyTimesControllerPtr(controllerChunk.positionTimeFormat, consumeData(timeStorageSize), controllerChunk.numPositionKeys);
+					pPosTimeKeys = ControllerHelper::GetKeyTimesControllerPtr(controllerChunk.positionTimeFormat);
 					if (!pPosTimeKeys)
 					{
 						return false;
 					}
+					pPosTimeKeys->AssignKeyTime(consumeData(timeStorageSize), controllerChunk.numPositionKeys);
 				}
 			}
 
@@ -468,20 +472,22 @@ bool GlobalAnimationHeaderAIM::ReadController(IChunkFile::ChunkDesc* pChunkDesc,
 			if (controllerChunk.numScaleKeys > 0)
 			{
 				const size_t scalingStorageSize = ControllerHelper::GetScalingFormatSizeOf(controllerChunk.scaleFormat) * controllerChunk.numScaleKeys;
-				pTrackSclStorage = ControllerHelper::GetScalingControllerPtr(controllerChunk.scaleFormat, consumeData(scalingStorageSize), controllerChunk.numScaleKeys);
+				pTrackSclStorage = ControllerHelper::GetScalingControllerPtr(controllerChunk.scaleFormat);
 				if (!pTrackSclStorage)
 				{
 					return false;
 				}
+				pTrackSclStorage->AssignData(consumeData(scalingStorageSize), controllerChunk.numScaleKeys);
 
 				if (controllerChunk.scaleKeysInfo == CONTROLLER_CHUNK_DESC_0832::eKeyTimeScale)
 				{
 					const size_t timeStorageSize = ControllerHelper::GetKeyTimesFormatSizeOf(controllerChunk.scaleTimeFormat) * controllerChunk.numScaleKeys;
-					pSclTimeKeys = ControllerHelper::GetKeyTimesControllerPtr(controllerChunk.scaleTimeFormat, consumeData(timeStorageSize), controllerChunk.numScaleKeys);
+					pSclTimeKeys = ControllerHelper::GetKeyTimesControllerPtr(controllerChunk.scaleTimeFormat);
 					if (!pSclTimeKeys)
 					{
 						return false;
 					}
+					pSclTimeKeys->AssignKeyTime(consumeData(timeStorageSize), controllerChunk.numScaleKeys);
 				}
 			}
 
