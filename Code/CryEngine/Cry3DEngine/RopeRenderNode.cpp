@@ -928,7 +928,7 @@ void CRopeRenderNode::Render(const SRendParams& rParams, const SRenderingPassInf
 	pObj->m_nMaterialLayers = m_nMaterialLayers;
 
 	//////////////////////////////////////////////////////////////////////////
-	if (GetCVars()->e_DebugDraw)
+	if (GetCVars()->e_DebugDraw && pObj->m_fDistance <= GetCVars()->e_DebugDrawMaxDistance)
 	{
 		RenderDebugInfo(rParams, passInfo);
 	}

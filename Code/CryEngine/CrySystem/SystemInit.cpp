@@ -5249,19 +5249,7 @@ void CSystem::CreateSystemVars()
 	               "sets the base port for the simple http server to run on, defaults to 1880");
 #endif
 
-#if defined DEDICATED_SERVER
-	const int DEFAULT_DUMP_TYPE = 3;
-#else
-	const int DEFAULT_DUMP_TYPE = 2;
-#endif
 
-	REGISTER_CVAR2("sys_dump_type", &g_cvars.sys_dump_type, DEFAULT_DUMP_TYPE, VF_NULL,
-	               "Specifies type of crash dump to create - see MINIDUMP_TYPE in dbghelp.h for full list of values\n"
-	               "0: Do not create a minidump\n"
-	               "1: Create a small minidump (stacktrace)\n"
-	               "2: Create a medium minidump (+ some variables)\n"
-	               "3: Create a full minidump (+ all memory)\n"
-	               );
 	REGISTER_CVAR2("sys_dump_aux_threads", &g_cvars.sys_dump_aux_threads, 1, VF_NULL, "Dumps callstacks of other threads in case of a crash");
 	REGISTER_CVAR2("sys_keyboard_break", &g_cvars.sys_keyboard_break, 0, VF_NULL, "Enables keyboard break handler");
 

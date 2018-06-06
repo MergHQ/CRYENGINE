@@ -88,7 +88,7 @@ public:
 	void InitPrimitives();
 	void ResetPrimitives();
 	int  PreparePrimitives(CPrimitiveRenderPass& sliceGenPass, int& firstUnusedStencilValue, bool renderCloudShadows, bool renderScreenSpaceShadows, bool renderSvoShadows,
-	                       bool bTexelRelativeBias, bool extendLastCachedCascade, CPrimitiveRenderPass* pDebugCascadesPass, CRenderView* pRenderView, uint64 qualityFlags);
+	                       bool texelRelativeBias, bool extendLastCachedCascade, CPrimitiveRenderPass* pDebugCascadesPass, CRenderView* pRenderView, uint64 qualityFlags);
 
 	void OnCVarsChanged(const CCVarUpdateRecorder& cvarUpdater);
 
@@ -162,23 +162,16 @@ public:
 
 	void InitPrimitives();
 	void ResetPrimitives();
-	int  PreparePrimitives(std::vector<CPrimitiveRenderPass>& maskGenPasses, int& firstUnusedStencilValue, bool bScreenSpaceShadows, CRenderView* pRenderView, uint64 qualityFlags);
+	int  PreparePrimitives(std::vector<CPrimitiveRenderPass>& maskGenPasses, int& firstUnusedStencilValue, bool usingScreenSpaceShadows, CRenderView* pRenderView, uint64 qualityFlags);
 	
 	void OnCVarsChanged(const CCVarUpdateRecorder& cvarUpdater);
 
 private:
-	typedef std::pair<SShadowFrustumToRender*, Vec4>      FrustumCoveragePair;
-	typedef std::vector<std::vector<FrustumCoveragePair>> FrustumListByMaskSlice;
-
-	int                    PreparePrimitivesForLight(const CRenderView* pRenderView, CPrimitiveRenderPass& sliceGenPass, int& firstUnusedStencilValue, bool bScreenSpaceShadows, SShadowFrustumToRender* pFrustumToRender, uint64 qualityFlags);
+	int                    PreparePrimitivesForLight(const CRenderView* pRenderView, CPrimitiveRenderPass& sliceGenPass, int& firstUnusedStencilValue, bool usingScreenSpaceShadows, SShadowFrustumToRender* pFrustumToRender, uint64 qualityFlags, int& volumePrimitiveCount, int& quadPrimitiveCount);
 	void                   PrepareConstantBuffersForPrimitives(SLocalLightPrimitives& primitives, SShadowFrustumToRender* pFrustumToRender, int side, bool bVolumePrimitive) const;
-	FrustumListByMaskSlice SortFrustumsByScreenspaceOverlap(bool bSkipFirstSlice, CRenderView* pRenderView) const;
 
 	std::array<SLocalLightPrimitives, MAX_SHADOWMAP_FRUSTUMS> volumePrimitives;
 	std::array<SLocalLightPrimitives, MAX_SHADOWMAP_FRUSTUMS> quadPrimitives;
-
-	int                     volumePrimitiveCount;
-	int                     quadPrimitiveCount;
 
 	const CShadowMaskStage& shadowMaskStage;
 };
@@ -186,14 +179,13 @@ private:
 }
 
 CShadowMaskStage::CShadowMaskStage()
-	: m_pShadowMaskRT(nullptr)
+	: m_pSunShadows(stl::make_unique<ShadowMaskInternal::CSunShadows>(*this))
+	, m_pLocalLightShadows(stl::make_unique<ShadowMaskInternal::CLocalLightShadows>(*this))
+	, m_pShadowMaskRT(nullptr)
 	, m_sunShadowPrimitives(0)
 	, m_localLightPrimitives(0)
 	, m_viewInfoCount(0)
-{
-	m_pSunShadows = stl::make_unique<ShadowMaskInternal::CSunShadows>(*this);
-	m_pLocalLightShadows = stl::make_unique<ShadowMaskInternal::CLocalLightShadows>(*this);
-}
+{}
 
 void CShadowMaskStage::Init()
 {
@@ -204,107 +196,96 @@ void CShadowMaskStage::Init()
 void CShadowMaskStage::Prepare()
 {
 	CD3D9Renderer* const __restrict rd = gcpRendD3D;
+
 	CRenderView* pRenderView = RenderView();
+	CTexture* pZTexture = pRenderView->GetDepthTarget();
 
-	static ICVar* pDebugCascadesCVar           = gEnv->pConsole->GetCVar("e_ShadowsCascadesDebug");
-	static ICVar* pAutoBiasCVar                = gEnv->pConsole->GetCVar("e_ShadowsAutoBias");
-	static ICVar* pExtendLastCachedCascadeCVar = gEnv->pConsole->GetCVar("e_ShadowsCacheExtendLastCascade");
-	const bool bDebugCascades                  = pDebugCascadesCVar && pDebugCascadesCVar->GetIVal() > 0;
-	const bool bCloudShadows                   = rd->GetCloudShadowsEnabled() || rd->m_bVolumetricCloudsEnabled;
-	const bool bScreenSpaceShadows             = CRendererCVars::CV_r_ShadowsScreenSpace != 0;
-#if defined(FEATURE_SVO_GI)
-	CSvoRenderer* pSR      = CSvoRenderer::GetInstance();
-	const bool bSvoShadows = (pSR && pSR->GetTracedSunShadowsRT());
-#else
-	const bool bSvoShadows = false;
-#endif
-	const bool bTexelRelativeBias      = pAutoBiasCVar && pAutoBiasCVar->GetFVal() > 0;
-	const bool extendLastCachedCascade = pExtendLastCachedCascadeCVar && pExtendLastCachedCascadeCVar->GetIVal() > 0;
-
-	// get rendertarget and initialize passes
-	{
-		m_pShadowMaskRT = CRendererResources::s_ptexShadowMask;
-		CTexture* pZTexture = pRenderView->GetDepthTarget();
-
-		// workaround for vector::resize requiring copy constructor on ps4
-		while (m_maskGenPasses.size() < CRendererResources::s_ptexShadowMask->StreamGetNumSlices())
-			m_maskGenPasses.emplace_back();
-		while (m_maskGenPasses.size() > CRendererResources::s_ptexShadowMask->StreamGetNumSlices())
-			m_maskGenPasses.pop_back();
-
-		D3DViewPort viewport;
-		viewport.TopLeftX = viewport.TopLeftY = 0.0f;
-		viewport.Width = (float)m_pShadowMaskRT->GetWidth();
-		viewport.Height = (float)m_pShadowMaskRT->GetHeight();
-		viewport.MinDepth = 0.0f;
-		viewport.MaxDepth = 1.0f;
-
-		for (int shadowMaskSlice = 0; shadowMaskSlice < m_maskGenPasses.size(); ++shadowMaskSlice)
-		{
-			auto& sliceGenPass = m_maskGenPasses[shadowMaskSlice];
-
-			SResourceView curSliceDesc = SResourceView::RenderTargetView(DeviceFormats::ConvertFromTexFormat(m_pShadowMaskRT->GetDstFormat()), shadowMaskSlice, 1);
-			ResourceViewHandle curSliceView = m_pShadowMaskRT->GetDevTexture()->GetOrCreateResourceViewHandle(curSliceDesc);
-
-			sliceGenPass.SetFlags(CPrimitiveRenderPass::ePassFlags_VrProjectionPass);
-			sliceGenPass.SetTargetClearMask((shadowMaskSlice == 0) ? CPrimitiveRenderPass::eClear_Stencil : CPrimitiveRenderPass::eClear_None);
-			sliceGenPass.SetRenderTarget(0, m_pShadowMaskRT, curSliceView);
-			sliceGenPass.SetDepthTarget(pZTexture);
-			sliceGenPass.SetViewport(viewport);
-			sliceGenPass.BeginAddingPrimitives();
-		}
-
-		m_debugCascadesPass.SetFlags(CPrimitiveRenderPass::ePassFlags_VrProjectionPass);
-		m_debugCascadesPass.SetRenderTarget(0, CRendererResources::s_ptexSceneDiffuse);
-		m_debugCascadesPass.SetDepthTarget(pZTexture);
-		m_debugCascadesPass.SetViewport(viewport);
-		m_debugCascadesPass.BeginAddingPrimitives();
-	}
-
-	// *INDENT-OFF*
-	EShaderQuality shaderQuality = rd->m_cEF.m_ShaderProfiles[eST_Shadow].GetShaderQuality();
-	uint64 rtFlagsByQuality[] =
+	const uint64 rtFlagsByQuality[] =
 	{
 		0,                                                                                             // eSQ_Low
 		g_HWSR_MaskBit[HWSR_QUALITY],                                                                  // eSQ_Medium
 		g_HWSR_MaskBit[HWSR_QUALITY1],                                                                 // eSQ_High
-		g_HWSR_MaskBit[HWSR_QUALITY ] | g_HWSR_MaskBit[HWSR_QUALITY1] | g_HWSR_MaskBit[HWSR_SAMPLE1],  // eSQ_VeryHigh
+		g_HWSR_MaskBit[HWSR_QUALITY] | g_HWSR_MaskBit[HWSR_QUALITY1] | g_HWSR_MaskBit[HWSR_SAMPLE1],   // eSQ_VeryHigh
 	};
-	// *INDENT-ON*
 
-	// update shared constant buffer data
+	static ICVar* pDebugCascadesCVar           = gEnv->pConsole->GetCVar("e_ShadowsCascadesDebug");
+	static ICVar* pAutoBiasCVar                = gEnv->pConsole->GetCVar("e_ShadowsAutoBias");
+	static ICVar* pExtendLastCachedCascadeCVar = gEnv->pConsole->GetCVar("e_ShadowsCacheExtendLastCascade");
+	const bool debugCascades                   = pDebugCascadesCVar && pDebugCascadesCVar->GetIVal() > 0;
+	const bool usingCloudShadows               = rd->GetCloudShadowsEnabled() || rd->m_bVolumetricCloudsEnabled;
+	const bool usingScreenSpaceShadows         = CRendererCVars::CV_r_ShadowsScreenSpace != 0;
+	const bool texelRelativeBias               = pAutoBiasCVar && pAutoBiasCVar->GetFVal() > 0;
+	const bool extendLastCachedCascade         = pExtendLastCachedCascadeCVar && pExtendLastCachedCascadeCVar->GetIVal() > 0;
+#if defined(FEATURE_SVO_GI)
+	CSvoRenderer* pSR                          = CSvoRenderer::GetInstance();
+	const bool usingSvoShadows                 = pSR && pSR->GetTracedSunShadowsRT();
+#else
+	const bool usingSvoShadows                 = false;
+#endif
+
+	// Set rendertarget
+	this->m_pShadowMaskRT = CRendererResources::s_ptexShadowMask;
+
+	// Initialize passes
+	D3DViewPort viewport;
+	viewport.TopLeftX = viewport.TopLeftY = 0.0f;
+	viewport.Width = (float)m_pShadowMaskRT->GetWidth();
+	viewport.Height = (float)m_pShadowMaskRT->GetHeight();
+	viewport.MinDepth = 0.0f;
+	viewport.MaxDepth = 1.0f;
+
+	const auto slices = m_pShadowMaskRT->StreamGetNumSlices();
+	m_maskGenPasses.reserve(slices);
+	for (int shadowMaskSlice = 0; shadowMaskSlice < slices; ++shadowMaskSlice)
+	{
+		if (m_maskGenPasses.size() <= shadowMaskSlice)
+			m_maskGenPasses.emplace_back();
+
+		const SResourceView curSliceDesc = SResourceView::RenderTargetView(DeviceFormats::ConvertFromTexFormat(m_pShadowMaskRT->GetDstFormat()), shadowMaskSlice, 1);
+		const ResourceViewHandle curSliceView = m_pShadowMaskRT->GetDevTexture()->GetOrCreateResourceViewHandle(curSliceDesc);
+
+		auto& sliceGenPass = m_maskGenPasses[shadowMaskSlice];
+		sliceGenPass.SetFlags(CPrimitiveRenderPass::ePassFlags_VrProjectionPass);
+		sliceGenPass.SetTargetClearMask(shadowMaskSlice == 0 ? CPrimitiveRenderPass::eClear_Stencil : CPrimitiveRenderPass::eClear_None);
+		sliceGenPass.SetRenderTarget(0, m_pShadowMaskRT, curSliceView);
+		sliceGenPass.SetDepthTarget(pZTexture);
+		sliceGenPass.SetViewport(viewport);
+		sliceGenPass.BeginAddingPrimitives();
+	}
+
+	m_debugCascadesPass.SetFlags(CPrimitiveRenderPass::ePassFlags_VrProjectionPass);
+	m_debugCascadesPass.SetRenderTarget(0, CRendererResources::s_ptexSceneDiffuse);
+	m_debugCascadesPass.SetDepthTarget(pZTexture);
+	m_debugCascadesPass.SetViewport(viewport);
+	m_debugCascadesPass.BeginAddingPrimitives();
+
+	// Update shared constant buffer data (must be done before preparing primitives)
 	m_viewInfoCount = GetGraphicsPipeline().GenerateViewInfo(m_viewInfo);
 	rd->GetGraphicsPipeline().GeneratePerViewConstantBuffer(m_viewInfo, m_viewInfoCount, m_pPerViewConstantBuffer);
 
-	// prepare primitives
+	// Prepare primitives
+	const EShaderQuality shaderQuality = rd->m_cEF.m_ShaderProfiles[eST_Shadow].GetShaderQuality();
 	int firstUnusedStencilValue = 1; // cannot use stencil ref 0 here
+	m_sunShadowPrimitives = m_pSunShadows->PreparePrimitives(
+		m_maskGenPasses.front(),
+		firstUnusedStencilValue,
+		usingCloudShadows,
+		usingScreenSpaceShadows,
+		usingSvoShadows,
+		texelRelativeBias,
+		extendLastCachedCascade,
+		debugCascades ? &m_debugCascadesPass : nullptr,
+		pRenderView,
+		rtFlagsByQuality[shaderQuality]);
+	m_localLightPrimitives = m_pLocalLightShadows->PreparePrimitives(
+		m_maskGenPasses,
+		firstUnusedStencilValue,
+		usingScreenSpaceShadows,
+		pRenderView,
+		rtFlagsByQuality[shaderQuality]);
+	rd->m_nStencilMaskRef = firstUnusedStencilValue;
 
-	// sun shadows
-	{
-		m_sunShadowPrimitives = m_pSunShadows->PreparePrimitives(
-		  m_maskGenPasses.front(),
-		  firstUnusedStencilValue,
-		  bCloudShadows,
-			bScreenSpaceShadows,
-		  bSvoShadows,
-		  bTexelRelativeBias,
-		  extendLastCachedCascade,
-		  bDebugCascades ? &m_debugCascadesPass : nullptr,
-		  pRenderView,
-		  rtFlagsByQuality[shaderQuality]);
-	}
-
-	// local lights
-	{
-		m_localLightPrimitives = m_pLocalLightShadows->PreparePrimitives(
-		  m_maskGenPasses,
-		  firstUnusedStencilValue,
-			bScreenSpaceShadows,
-		  pRenderView,
-		  rtFlagsByQuality[shaderQuality]);
-	}
-
-	// clear first rendertarget slice and stencil buffer
+	// Clear first rendertarget slice and stencil buffer
 	{
 		auto& RESTRICT_REFERENCE commandList = GetDeviceObjectFactory().GetCoreCommandList();
 
@@ -315,8 +296,6 @@ void CShadowMaskStage::Prepare()
 		commandList.GetGraphicsInterface()->ClearSurface(pFirstSliceSRV, Clr_Transparent);
 		commandList.GetGraphicsInterface()->ClearSurface(pAllSliceDSV, CLEAR_STENCIL, Clr_Unused.r, 0);
 	}
-
-	rd->m_nStencilMaskRef = firstUnusedStencilValue;
 }
 
 void CShadowMaskStage::Execute()
@@ -446,7 +425,7 @@ int CSunShadows::PreparePrimitives(CPrimitiveRenderPass& sliceGenPass, int& firs
 		customPrimitiveCount = 0;
 		rtFlags &= ~g_HWSR_MaskBit[HWSR_SAMPLE1]; // disable contact hardening for custom frustums
 
-		for (auto pFrustumToRender : pRenderView->GetShadowFrustumsByType(CRenderView::eShadowFrustumRenderType_Custom))
+		for (auto& pFrustumToRender : pRenderView->GetShadowFrustumsByType(CRenderView::eShadowFrustumRenderType_Custom))
 		{
 			auto pFrustum = pFrustumToRender->pFrustum;
 
@@ -1071,8 +1050,6 @@ bool CSunShadows::PrepareDebugPrimitive(CPrimitiveRenderPass& debugPass, CRender
 
 CLocalLightShadows::CLocalLightShadows(const CShadowMaskStage& stage)
 	: shadowMaskStage(stage)
-	, volumePrimitiveCount(0)
-	, quadPrimitiveCount(0)
 {
 	InitPrimitives();
 }
@@ -1107,40 +1084,33 @@ void CLocalLightShadows::OnCVarsChanged(const CCVarUpdateRecorder& cvarUpdater)
 	}
 }
 
-int CLocalLightShadows::PreparePrimitives(std::vector<CPrimitiveRenderPass>& maskGenPasses, int& firstUnusedStencilValue, bool bScreenSpaceShadows, CRenderView* pRenderView, uint64 qualityFlags)
+int CLocalLightShadows::PreparePrimitives(std::vector<CPrimitiveRenderPass>& maskGenPasses, int& firstUnusedStencilValue, bool usingScreenSpaceShadows, CRenderView* pRenderView, uint64 qualityFlags)
 {
 	// sort shadow frustums into shadow mask slices such that frustums in each slice don't overlap in screen space
 	const uint32 maxSliceCount = shadowMaskStage.m_pShadowMaskRT->StreamGetNumSlices();
-	auto frustumsPerSlice = SortFrustumsByScreenspaceOverlap(maskGenPasses.front().GetPrimitiveCount() > 0, pRenderView);
+	auto &frustumsPerSlice = pRenderView->m_shadows.m_frustumsPerTiledShadingSlice;
 
 	// prepare primitives for each shadow mask slice
-	volumePrimitiveCount = 0;
-	quadPrimitiveCount = 0;
-
-	for (int currentSlice = 0; currentSlice < frustumsPerSlice.size(); ++currentSlice)
+	int volumePrimitiveCount = 0;
+	int quadPrimitiveCount = 0;
+	for (int slice = 0; slice < frustumsPerSlice.size(); ++slice)
 	{
-		for (auto frustumPair : frustumsPerSlice[currentSlice])
+		for (auto& frustumPair : frustumsPerSlice[slice])
 		{
 			if (auto pFrustumToRender = frustumPair.first)
 			{
-				if (currentSlice < maxSliceCount)
-				{
+				if (slice < maxSliceCount)
 					PreparePrimitivesForLight(
 						pRenderView,
-						maskGenPasses[currentSlice],
+						maskGenPasses[slice],
 						firstUnusedStencilValue,
-						bScreenSpaceShadows,
+						usingScreenSpaceShadows,
 						pFrustumToRender,
-						qualityFlags);
-
-					// TODO: don't write this into the light-info: it will prevent making a large
-					// function-chain "const", and it also races when used in multiple locations
-					pFrustumToRender->pLight->m_ShadowMaskIndex = currentSlice;
-				}
+						qualityFlags,
+						volumePrimitiveCount,
+						quadPrimitiveCount);
 				else
-				{
 					pFrustumToRender->pFrustum->GetSideSampleMask().store(0);
-				}
 			}
 		}
 	}
@@ -1151,7 +1121,7 @@ int CLocalLightShadows::PreparePrimitives(std::vector<CPrimitiveRenderPass>& mas
 	return (volumePrimitiveCount + quadPrimitiveCount) * 3;
 }
 
-int CLocalLightShadows::PreparePrimitivesForLight(const CRenderView* pRenderView, CPrimitiveRenderPass& sliceGenPass, int& firstUnusedStencilValue, bool bScreenSpaceShadows, SShadowFrustumToRender* pFrustumToRender, uint64 qualityFlags)
+int CLocalLightShadows::PreparePrimitivesForLight(const CRenderView* pRenderView, CPrimitiveRenderPass& sliceGenPass, int& firstUnusedStencilValue, bool usingScreenSpaceShadows, SShadowFrustumToRender* pFrustumToRender, uint64 qualityFlags, int& volumePrimitiveCount, int& quadPrimitiveCount)
 {
 	CD3D9Renderer* const __restrict rd = gcpRendD3D;
 
@@ -1210,7 +1180,7 @@ int CLocalLightShadows::PreparePrimitivesForLight(const CRenderView* pRenderView
 
 			uint64 rtFlagsSampling = qualityFlags;
 			rtFlagsSampling |= bUseLightVolumes ? g_HWSR_MaskBit[HWSR_CUBEMAP0] : 0;
-			rtFlagsSampling |= bScreenSpaceShadows ? g_HWSR_MaskBit[HWSR_SAMPLE2] : 0;
+			rtFlagsSampling |= usingScreenSpaceShadows ? g_HWSR_MaskBit[HWSR_SAMPLE2] : 0;
 
 			const int gsDepthFunc = bReverseDepth ? GS_DEPTHFUNC_GEQUAL : GS_DEPTHFUNC_LEQUAL;
 			const int gsDepthTest = bUseLightVolumes ? 0 : GS_NODEPTHTEST;
@@ -1352,68 +1322,6 @@ void CLocalLightShadows::PrepareConstantBuffersForPrimitives(SLocalLightPrimitiv
 	}
 
 	constantManager.EndTypedConstantUpdate(constants);
-}
-
-CLocalLightShadows::FrustumListByMaskSlice CLocalLightShadows::SortFrustumsByScreenspaceOverlap(bool bSkipFirstSlice, CRenderView* pRenderView) const
-{
-	CLocalLightShadows::FrustumListByMaskSlice frustumsBySlice;
-	frustumsBySlice.reserve(32);
-
-	if (bSkipFirstSlice)
-	{
-		auto frustumPair = std::make_pair(nullptr, Vec4(0, 0, std::numeric_limits<float>::max(), std::numeric_limits<float>::max()));
-		std::vector<FrustumCoveragePair> firstSliceFrustums(1, frustumPair);
-		frustumsBySlice.push_back(std::move(firstSliceFrustums));
-	}
-
-	for (auto pFrustumToRender : pRenderView->GetShadowFrustumsByType(CRenderView::eShadowFrustumRenderType_LocalLight))
-	{
-		const auto pLight = pFrustumToRender->pLight;
-		const auto pFrustum = pFrustumToRender->pFrustum;
-		Vec4 curLightRect = Vec4(
-		  float(pLight->m_sX),
-		  float(pLight->m_sY),
-		  float(pLight->m_sWidth),
-		  float(pLight->m_sHeight));
-
-		auto frustumPair = std::make_pair(pFrustumToRender, curLightRect);
-		bool bNewSliceRequired = true;
-
-		for (auto& curSlice : frustumsBySlice)
-		{
-			bool bHasOverlappingLight = false;
-
-			float minX = curLightRect.x, maxX = curLightRect.x + curLightRect.z;
-			float minY = curLightRect.y, maxY = curLightRect.y + curLightRect.w;
-
-			for (auto curFrustumPair : curSlice)
-			{
-				Vec4 lightRect = curFrustumPair.second;
-
-				if (maxX >= lightRect.x && minX <= lightRect.x + lightRect.z &&
-				    maxY >= lightRect.y && minY <= lightRect.y + lightRect.w)
-				{
-					bHasOverlappingLight = true;
-					break;
-				}
-			}
-
-			if (!bHasOverlappingLight)
-			{
-				curSlice.push_back(frustumPair);
-				bNewSliceRequired = false;
-				break;
-			}
-		}
-
-		if (bNewSliceRequired)
-		{
-			std::vector<FrustumCoveragePair> firstSliceFrustums(1, frustumPair);
-			frustumsBySlice.push_back(std::move(firstSliceFrustums));
-		}
-	}
-
-	return frustumsBySlice;
 }
 
 }

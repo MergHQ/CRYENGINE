@@ -171,6 +171,7 @@ struct CVars : public Cry3DEngineBase
 	ICVar* e_DebugDrawFilter;
 	DeclareConstIntCVar(e_DebugDrawListSize, 16);
 	DeclareConstIntCVar(e_DebugDrawListBBoxIndex, 0);
+	float e_DebugDrawMaxDistance;
 #if !defined(_RELEASE)
 	const char* e_pStatObjRenderFilterStr;
 	int         e_statObjRenderFilterMode;

@@ -103,6 +103,8 @@ AllocateConstIntCVar(CRendererCVars, CV_r_texturesstreamingPostponeMips);
 AllocateConstIntCVar(CRendererCVars, CV_r_texturesstreamingPostponeThresholdKB);
 AllocateConstIntCVar(CRendererCVars, CV_r_texturesstreamingPostponeThresholdMip);
 AllocateConstIntCVar(CRendererCVars, CV_r_texturesstreamingMinReadSizeKB);
+AllocateConstIntCVar(CRendererCVars, CV_r_TexturesStreamingLowestPrefetchBias);
+AllocateConstIntCVar(CRendererCVars, CV_r_TexturesStreamingMaxUpdateRate);
 int CRendererCVars::CV_r_texturesstreamingSkipMips;
 int CRendererCVars::CV_r_texturesstreamingMinUsableMips;
 int CRendererCVars::CV_r_texturesstreamingJobUpdate;
@@ -2068,6 +2070,14 @@ void CRendererCVars::InitCVars()
 	                    "Usage: r_TexturesStreaming [0/1/2]\n"
 	                    "Default is 0 (off). All textures save in native format with mips in a\n"
 	                    "cache file. Textures are then loaded into texture memory from the cache.");
+	DefineConstIntCVar3("r_TexturesStreamingLowestPrefetchBias", CV_r_TexturesStreamingLowestPrefetchBias, 0, VF_NULL,
+	                    "Clamping texture prefetch to at most fetch this many more mips than requested if there's free pool memory.\n"
+	                    "Usage: r_TexturesStreamingLowestPrefetchBias [-0...-inf]\n"
+	                    "Default is 0 (don't prefetch).");
+	DefineConstIntCVar3("r_TexturesStreamingMaxUpdateRate", CV_r_TexturesStreamingMaxUpdateRate, 1, VF_NULL,
+	                    "Clamping texture stream in to at most fetch this many mips at the same time.\n"
+	                    "Usage: r_TexturesStreamingMaxUpdateRate [1...inf]\n"
+	                    "Default is 1 (stream in at most 1 mip per frame per texture).");
 
 	DefineConstIntCVar3("r_TexturesStreamingDebug", CV_r_TexturesStreamingDebug, 0, VF_CHEAT,
 	                    "Enables textures streaming debug mode. (Log uploads and remove unnecessary mip levels)\n"

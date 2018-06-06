@@ -48,10 +48,10 @@ void CManager::RenderThreadUpdate(CRenderView* pRenderView)
 		m_scratch.CreateDeviceBuffer();
 
 		// Full clear
-		UINT nulls[4] = { 0 };
+		const ColorI nulls = { 0, 0, 0, 0 };
 
-		GetDeviceObjectFactory().GetCoreCommandList().GetComputeInterface()->ClearUAV(m_counter.GetBuffer().GetDevBuffer()->LookupUAV(EDefaultResourceViews::UnorderedAccess), nulls, 0, nullptr);
-		GetDeviceObjectFactory().GetCoreCommandList().GetComputeInterface()->ClearUAV(m_scratch.GetBuffer().GetDevBuffer()->LookupUAV(EDefaultResourceViews::UnorderedAccess), nulls, 0, nullptr);
+		CClearSurfacePass::Execute(&m_counter.GetBuffer(), nulls);
+		CClearSurfacePass::Execute(&m_scratch.GetBuffer(), nulls);
 
 		// initialize readback staging buffer
 		m_counter.Readback(kMaxRuntimes);
@@ -140,28 +140,28 @@ void CManager::RenderThreadPostUpdate(CRenderView* pRenderView)
 {
 	if (uint32 numRuntimes = uint32(GetReadRuntimes().size()))
 	{
-		{
-			std::vector<CGpuBuffer*> UAVs;
+		std::vector<CGpuBuffer*> UAVs;
 
-			UAVs.reserve(numRuntimes);
-			for (auto& pRuntime : GetReadRuntimes())
-				UAVs.emplace_back(&pRuntime->PrepareForUse());
+		UAVs.reserve(numRuntimes);
+		for (auto& pRuntime : GetReadRuntimes())
+			UAVs.emplace_back(&pRuntime->PrepareForUse());
 
-			// Prepare particle buffers which have been used in the vertex shader for compute use
-			GetDeviceObjectFactory().GetCoreCommandList().GetGraphicsInterface()->PrepareUAVsForUse(numRuntimes, &UAVs[0], true);
-		}
+		// Prepare particle buffers which have been used in the vertex shader for compute use
+		GetDeviceObjectFactory().GetCoreCommandList().GetGraphicsInterface()->PrepareUAVsForUse(numRuntimes, &UAVs[0], true);
 
 		{
 			// Minimal clear
-			UINT nulls[4] = { 0 };
-#if defined(DEVICE_SUPPORTS_D3D11_1) && (!CRY_PLATFORM_ORBIS || CRY_RENDERER_GNM)
+			const ColorI nulls = { 0, 0, 0, 0 };
+
+#if (CRY_RENDERER_DIRECT3D >= 111)
 			const UINT numRanges = 1;
 			const D3D11_RECT uavRange = { 0, 0, numRuntimes, 0 };
-			GetDeviceObjectFactory().GetCoreCommandList().GetComputeInterface()->ClearUAV(m_counter.GetBuffer().GetDevBuffer()->LookupUAV(EDefaultResourceViews::UnorderedAccess), nulls, numRanges, &uavRange);
-			GetDeviceObjectFactory().GetCoreCommandList().GetComputeInterface()->ClearUAV(m_scratch.GetBuffer().GetDevBuffer()->LookupUAV(EDefaultResourceViews::UnorderedAccess), nulls, numRanges, &uavRange);
+
+			gcpRendD3D->GetGraphicsPipeline().GetOrCreateUtilityPass<CClearRegionPass>()->Execute(&m_counter.GetBuffer(), nulls, numRanges, &uavRange);
+			gcpRendD3D->GetGraphicsPipeline().GetOrCreateUtilityPass<CClearRegionPass>()->Execute(&m_scratch.GetBuffer(), nulls, numRanges, &uavRange);
 #else
-			GetDeviceObjectFactory().GetCoreCommandList().GetComputeInterface()->ClearUAV(m_counter.GetBuffer().GetDevBuffer()->LookupUAV(EDefaultResourceViews::UnorderedAccess), nulls, 0, nullptr);
-			GetDeviceObjectFactory().GetCoreCommandList().GetComputeInterface()->ClearUAV(m_scratch.GetBuffer().GetDevBuffer()->LookupUAV(EDefaultResourceViews::UnorderedAccess), nulls, 0, nullptr);
+			CClearSurfacePass::Execute(&m_counter.GetBuffer(), nulls);
+			CClearSurfacePass::Execute(&m_scratch.GetBuffer(), nulls);
 #endif
 		}
 	}

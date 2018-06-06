@@ -10,6 +10,7 @@ ILINE float FClamp(float X, float Min, float Max)
 
 template<class T> struct Color_tpl;
 
+typedef Color_tpl<uint32> ColorI; //!< [0, 2^32-1]
 typedef Color_tpl<uint8> ColorB; //!< [0, 255]
 typedef Color_tpl<float> ColorF; //!< [0.0, 1.0]
 
@@ -352,6 +353,24 @@ ILINE Color_tpl<uint8>::Color_tpl(uint8 _x, uint8 _y, uint8 _z, uint8 _w)
 
 template<>
 ILINE Color_tpl<uint8>::Color_tpl(uint8 _x, uint8 _y, uint8 _z)
+{
+	r = _x;
+	g = _y;
+	b = _z;
+	a = 255;
+}
+
+template<>
+ILINE Color_tpl<uint32>::Color_tpl(uint32 _x, uint32 _y, uint32 _z, uint32 _w)
+{
+	r = _x;
+	g = _y;
+	b = _z;
+	a = _w;
+}
+
+template<>
+ILINE Color_tpl<uint32>::Color_tpl(uint32 _x, uint32 _y, uint32 _z)
 {
 	r = _x;
 	g = _y;

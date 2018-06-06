@@ -504,12 +504,16 @@ private:
 
 	struct SShadows
 	{
+		using TiledShadingFrustumCoveragePair =    std::pair<SShadowFrustumToRender*, Vec4>;
+		using TiledShadingFrustumListByMaskSlice = std::vector<std::vector<TiledShadingFrustumCoveragePair>>;
+
 		// Shadow frustums needed for a view.
 		ShadowMapFrustum*                                             m_pShadowFrustumOwner;
 		std::vector<SShadowFrustumToRender>                           m_renderFrustums;
 
 		std::map<int, ShadowFrustumsPtr>                              m_frustumsByLight;
 		std::array<ShadowFrustumsPtr, eShadowFrustumRenderType_Count> m_frustumsByType;
+		TiledShadingFrustumListByMaskSlice                            m_frustumsPerTiledShadingSlice;
 
 		CThreadSafeRendererContainer<AABB>                            m_nearestCasterBoxes;
 
@@ -517,6 +521,7 @@ private:
 		void AddNearestCaster(CRenderObject* pObj, const SRenderingPassInfo& passInfo);
 		void CreateFrustumGroups();
 		void PrepareNearestShadows();
+		void GenerateSortedFrustumsForTiledShadingByScreenspaceOverlap();
 	};
 
 public:// temp

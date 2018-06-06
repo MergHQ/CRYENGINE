@@ -182,6 +182,10 @@ void CStandardGraphicsPipeline::Update(CRenderView* pRenderView, EShaderRenderin
 	m_numInvalidDrawcalls = 0;
 	GenerateMainViewConstantBuffer();
 
+	// Compile shadow renderitems
+	if (!pRenderView->IsRecursive() && pRenderView->GetCurrentEye() != CCamera::eEye_Right)
+		pRenderView->PrepareShadowViews();
+
 	m_renderingFlags = renderingFlags;
 	CGraphicsPipeline::Update(pRenderView, renderingFlags);
 
@@ -746,7 +750,6 @@ void CStandardGraphicsPipeline::ExecuteMobilePipeline()
 
 		{
 			m_pClipVolumesStage->GenerateClipVolumeInfo();
-			m_pTiledLightVolumesStage->GenerateLightList();
 			m_pTiledLightVolumesStage->Execute();
 			m_pTiledShadingStage->Execute();
 		}
@@ -785,12 +788,6 @@ void CStandardGraphicsPipeline::Execute()
 		m_pComputeSkinningStage->PreDraw();
 
 		m_pRainStage->ExecuteRainOcclusion();
-	}
-
-	if (!pRenderView->IsRecursive() && pRenderView->GetCurrentEye() != CCamera::eEye_Right)
-	{
-		// compile shadow renderitems. needs to happen before gbuffer pass accesses renderitems
-		pRenderView->PrepareShadowViews();
 	}
 
 	// GBuffer
@@ -896,7 +893,6 @@ void CStandardGraphicsPipeline::Execute()
 			m_pShadowMaskStage->Prepare();
 			m_pShadowMaskStage->Execute();
 			
-			m_pTiledLightVolumesStage->GenerateLightList();
 			m_pTiledLightVolumesStage->Execute();
 			m_pTiledShadingStage->Execute();
 

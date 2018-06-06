@@ -295,10 +295,13 @@ void CTiledLightVolumesStage::Update()
 
 	if (CRenderer::CV_r_DeferredShadingTiled >= 3)
 	{
-		uint clearNull[4] = { 0 };
-		GetDeviceObjectFactory().GetCoreCommandList().GetComputeInterface()->ClearUAV(m_tileOpaqueLightMaskBuf.GetDevBuffer()->LookupUAV(EDefaultResourceViews::UnorderedAccess), clearNull, 0, nullptr);
-		GetDeviceObjectFactory().GetCoreCommandList().GetComputeInterface()->ClearUAV(m_tileTranspLightMaskBuf.GetDevBuffer()->LookupUAV(EDefaultResourceViews::UnorderedAccess), clearNull, 0, nullptr);
+		const ColorI nulls = { 0, 0, 0, 0 };
+
+		CClearSurfacePass::Execute(&m_tileOpaqueLightMaskBuf, nulls);
+		CClearSurfacePass::Execute(&m_tileTranspLightMaskBuf, nulls);
 	}
+
+	GenerateLightList();
 }
 
 
@@ -624,6 +627,8 @@ void CTiledLightVolumesStage::GenerateLightList()
 
 	const SRenderViewInfo& viewInfo = pRenderView->GetViewInfo(CCamera::eEye_Left);
 
+	const uint32 maxSliceCount = CRendererResources::s_ptexShadowMask->StreamGetNumSlices();	// Should be set to same texture as CShadowMaskStage::m_pShadowMaskRT
+
 	const float invCameraFar = 1.0f / viewInfo.farClipPlane;
 
 	// Prepare view matrix with flipped z-axis
@@ -845,11 +850,12 @@ void CTiledLightVolumesStage::GenerateLightList()
 							continue;  // Skip light
 
 						const Vec2 shadowParams = Vec2(kernelSize * ((float)firstFrustum.nTexSize / (float)CDeferredShading::Instance().m_nShadowPoolSize), firstFrustum.fDepthConstBias);
-
 						const Vec3 cubeDirs[6] = { Vec3(-1, 0, 0), Vec3(1, 0, 0), Vec3(0, -1, 0), Vec3(0, 1, 0), Vec3(0, 0, -1), Vec3(0, 0, 1) };
 
 						for (int side = 0; side < numSides; ++side)
 						{
+							bool shouldSample = firstFrustum.ShouldSampleSide(side) && renderLight.m_ShadowMaskIndex < maxSliceCount;
+
 							CShadowUtils::SShadowsSetupInfo shadowsSetup = rd->ConfigShadowTexgen(pRenderView, &firstFrustum, side);
 							Matrix44A shadowMat = shadowsSetup.ShadowMat;
 							// Pre-multiply by inverse frustum far plane distance
@@ -863,7 +869,7 @@ void CTiledLightVolumesStage::GenerateLightList()
 							Vec3 coneDirVS = Vec3(Vec4(-spotParams.x, -spotParams.y, -spotParams.z, 0) * matView);
 							AABB coneBounds = AABB::CreateAABBfromCone(Cone(coneTipVS, coneDirVS, renderLight.m_fRadius, spotParams.w));
 							Vec2 depthBoundsVS = Vec2(coneBounds.min.z, coneBounds.max.z) * invCameraFar;
-							Vec2 sideShadowParams = firstFrustum.ShouldSampleSide(side) ? shadowParams : Vec2(ZERO);
+							Vec2 sideShadowParams = shouldSample ? shadowParams : Vec2(ZERO);
 
 							if (side == 0)
 							{

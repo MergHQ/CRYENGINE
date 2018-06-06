@@ -254,7 +254,7 @@ bool CD3D9Renderer::FX_DrawToRenderTarget(
 
 		I3DEngine* eng               = (I3DEngine*)gEnv->p3DEngine;
 		int nVisibleWaterPixelsCount = eng->GetOceanVisiblePixelsCount() / 2;            // bug in occlusion query returns 2x more
-		int nPixRatioThreshold       = (int)(CRendererResources::s_renderWidth * CRendererResources::s_renderHeight * CRenderer::CV_r_waterreflections_min_visible_pixels_update);
+		int nPixRatioThreshold       = (int)(CRendererResources::s_renderArea * CRenderer::CV_r_waterreflections_min_visible_pixels_update);
 
 		static int nVisWaterPixCountPrev = nVisibleWaterPixelsCount;
 		if (CRenderer::CV_r_waterreflections_mgpu)

@@ -227,6 +227,11 @@ namespace Cry
 				constexpr Identifier invalidLobby = 0;
 				if (m_steamLobbyId != invalidLobby)
 				{
+					for (IListener* pListener : m_listeners)
+					{
+						pListener->OnLeave();
+					}
+
 					ISteamMatchmaking* pSteamMatchmaking = SteamMatchmaking();
 					const bool isShuttingDown = pSteamMatchmaking == nullptr;
 					if (!isShuttingDown)
@@ -235,15 +240,11 @@ namespace Cry
 					}
 					m_steamLobbyId = invalidLobby;
 
-					for (IListener* pListener : m_listeners)
-					{
-						pListener->OnLeave();
-					}
-
 					ISteamUser* pSteamUser = SteamUser();
-
 					if (pSteamUser && m_serverIP != 0)
+					{
 						pSteamUser->TerminateGameConnection(m_serverIP, m_serverPort);
+					}
 
 					if (!isShuttingDown)
 					{

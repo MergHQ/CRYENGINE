@@ -303,6 +303,8 @@ public:
 	DeclareStaticConstIntCVar(CV_r_texturesstreamingUpdateType, TEXSTREAMING_UPDATETYPE_DEFAULT_VAL);
 	DeclareStaticConstIntCVar(CV_r_texturesstreamingPrecacheRounds, 1);
 	DeclareStaticConstIntCVar(CV_r_texturesstreamingSuppress, 0);
+	DeclareStaticConstIntCVar(CV_r_TexturesStreamingLowestPrefetchBias, 0);
+	DeclareStaticConstIntCVar(CV_r_TexturesStreamingMaxUpdateRate, 1);
 	static int CV_r_texturesstreamingSkipMips;
 	static int CV_r_texturesstreamingMinUsableMips;
 	static int CV_r_texturesstreamingJobUpdate;

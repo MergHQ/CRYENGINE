@@ -119,7 +119,7 @@ void CCharInstance::Render(const struct SRendParams& RendParams, const SRenderin
 		RenderCHR(RendParams, FinalMat, passInfo);
 
 	// draw weapon and binded objects
-	m_AttachmentManager.DrawAttachments(attachmentRendParams, FinalMat, passInfo, fZoomFactor, fZoomDistanceSq);
+	m_AttachmentManager.DrawAttachments(attachmentRendParams, RenderMat34, passInfo, fZoomFactor, fZoomDistanceSq);
 
 #ifndef _RELEASE
 	// in-game debug rendering of characters attachments proxies 

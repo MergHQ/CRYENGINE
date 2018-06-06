@@ -2558,7 +2558,7 @@ void CD3D9Renderer::RT_RenderDebug(bool bRenderStats)
 		const ColorF textColor = Col_Yellow;
 		const bool bCentre = false;
 
-		float fInvScreenArea = 1.0f / ((float)CRendererResources::s_displayWidth * (float)CRendererResources::s_displayHeight);
+		float fInvScreenArea = 1.0f / ((float)CRendererResources::s_renderArea);
 
 		IRenderAuxText::Draw2dLabel(xPos, yPos, size, &titleColor.r, bCentre, "Partial Resolves");
 		yPos += textYSpacing;
@@ -3782,46 +3782,6 @@ bool CD3D9Renderer::ScreenShot(const char* filename, CRenderDisplayContext *pDC)
 bool CD3D9Renderer::ScreenShot(const char* filename, const SDisplayContextKey& displayContextKey)
 {
 	return ScreenShot(filename, FindDisplayContext(displayContextKey));
-}
-
-int CD3D9Renderer::CreateRenderTarget(int nWidth, int nHeight, const ColorF& cClear, ETEX_Format eTF)
-{
-	// check if parameters are valid
-	if (!nWidth || !nHeight)
-		return -1;
-
-	if (m_RTargets.empty())
-	{
-		m_RTargets.push_back(nullptr);
-	}
-
-	size_t n = m_RTargets.size();
-	for (size_t i = 1; i < m_RTargets.size(); i++)
-	{
-		if (!m_RTargets[i])
-		{
-			n = i;
-			break;
-		}
-	}
-
-	if (n == m_RTargets.size())
-	{
-		m_RTargets.push_back(nullptr);
-	}
-
-	char pName[128];
-	cry_sprintf(pName, "$RenderTarget_%d", n);
-	m_RTargets[n] = CTexture::GetOrCreateRenderTarget(pName, nWidth, nHeight, cClear, eTT_2D, FT_NOMIPS, eTF);
-
-	return m_RTargets[n]->GetID();
-}
-
-bool CD3D9Renderer::DestroyRenderTarget(int nHandle)
-{
-	CTexture* pTex = CTexture::GetByID(nHandle);
-	SAFE_RELEASE(pTex);
-	return true;
 }
 
 bool CD3D9Renderer::ReadFrameBuffer(uint32* pDstRGBA8, int destinationWidth, int destinationHeight, bool readPresentedBackBuffer, EReadTextureFormat format)

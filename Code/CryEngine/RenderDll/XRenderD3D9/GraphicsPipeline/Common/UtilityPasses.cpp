@@ -716,6 +716,20 @@ void CClearSurfacePass::Execute(const CTexture* pColorTex, const ColorF& cClear)
 	commandList.GetGraphicsInterface()->ClearSurface(pColorTex->GetDevTexture(pColorTex->IsMSAA())->LookupRTV(EDefaultResourceViews::RenderTarget), cClear);
 }
 
+void CClearSurfacePass::Execute(const CGpuBuffer* pBuf, const ColorF& cClear)
+{
+	// Full buffer clear, no need to do custom pass
+	CDeviceCommandListRef commandList = GetDeviceObjectFactory().GetCoreCommandList();
+	commandList.GetComputeInterface()->ClearUAV(pBuf->GetDevBuffer()->LookupUAV(EDefaultResourceViews::UnorderedAccess), cClear);
+}
+
+void CClearSurfacePass::Execute(const CGpuBuffer* pBuf, const ColorI& cClear)
+{
+	// Full buffer clear, no need to do custom pass
+	CDeviceCommandListRef commandList = GetDeviceObjectFactory().GetCoreCommandList();
+	commandList.GetComputeInterface()->ClearUAV(pBuf->GetDevBuffer()->LookupUAV(EDefaultResourceViews::UnorderedAccess), cClear);
+}
+
 ///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 // CClearRegionPass
 ///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
@@ -828,6 +842,40 @@ void CClearRegionPass::Execute(CTexture* pTex, const ColorF& cClear, const uint 
 	}
 
 	m_clearPass.Execute();
+#endif
+}
+
+void CClearRegionPass::Execute(CGpuBuffer* pBuf, const ColorF& cClear, const uint numRects, const RECT* pRects)
+{
+#if (CRY_RENDERER_DIRECT3D >= 111)
+	CDeviceCommandListRef commandList = GetDeviceObjectFactory().GetCoreCommandList();
+	commandList.GetComputeInterface()->ClearUAV(pBuf->GetDevBuffer()->LookupUAV(EDefaultResourceViews::UnorderedAccess), cClear, numRects, pRects);
+#else
+	if (!numRects || (numRects == 1 && pRects->left <= 0 && pRects->right >= pBuf->GetElementCount()))
+	{
+		// Full buffer clear, no need to do custom pass
+		return CClearSurfacePass::Execute(pBuf, cClear);
+	}
+
+	// TODO: implement as a Dispatch(), same way it is implemented as a Draw() for Surfaces
+	__debugbreak();
+#endif
+}
+
+void CClearRegionPass::Execute(CGpuBuffer* pBuf, const ColorI& cClear, const uint numRects, const RECT* pRects)
+{
+#if (CRY_RENDERER_DIRECT3D >= 111)
+	CDeviceCommandListRef commandList = GetDeviceObjectFactory().GetCoreCommandList();
+	commandList.GetComputeInterface()->ClearUAV(pBuf->GetDevBuffer()->LookupUAV(EDefaultResourceViews::UnorderedAccess), cClear, numRects, pRects);
+#else
+	if (!numRects || (numRects == 1 && pRects->left <= 0 && pRects->right >= pBuf->GetElementCount()))
+	{
+		// Full buffer clear, no need to do custom pass
+		return CClearSurfacePass::Execute(pBuf, cClear);
+	}
+
+	// TODO: implement as a Dispatch(), same way it is implemented as a Draw() for Surfaces
+	__debugbreak();
 #endif
 }
 

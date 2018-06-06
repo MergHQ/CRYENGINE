@@ -1482,9 +1482,6 @@ struct IRenderer//: public IRendererCallbackServer
 
 	virtual void                OnEntityDeleted(struct IRenderNode* pRenderNode) = 0;
 
-	virtual int                 CreateRenderTarget(int nWidth, int nHeight, const ColorF& cClear, ETEX_Format eTF) = 0;
-	virtual bool                DestroyRenderTarget(int nHandle) = 0;
-
 	virtual float               EF_GetWaterZElevation(float fX, float fY) = 0;
 
 	virtual IOpticsElementBase* CreateOptics(EFlareType type) const = 0;

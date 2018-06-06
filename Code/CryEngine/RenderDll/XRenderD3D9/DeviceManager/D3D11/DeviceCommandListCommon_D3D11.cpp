@@ -598,7 +598,7 @@ void CDeviceGraphicsCommandInterfaceImpl::ClearSurfaceImpl(D3DSurface* pView, co
 	gcpRendD3D->GetDeviceContext().ClearView(pView, color, numRects, pRects);
 #else
 	CRY_ASSERT(numRects == 0); // not supported on dx11
-	return gcpRendD3D->GetDeviceContext().ClearRenderTargetView(pView, color);
+	gcpRendD3D->GetDeviceContext().ClearRenderTargetView(pView, color);
 #endif
 }
 
@@ -729,20 +729,26 @@ void CDeviceComputeCommandInterfaceImpl::DispatchImpl(uint32 X, uint32 Y, uint32
 
 void CDeviceComputeCommandInterfaceImpl::ClearUAVImpl(D3DUAV* pView, const FLOAT Values[4], UINT NumRects, const D3D11_RECT* pRects)
 {
-#if (CRY_RENDERER_DIRECT3D < 111)
-	if (NumRects) __debugbreak();
-#endif
 	CD3D9Renderer* const __restrict rd = gcpRendD3D;
-	rd->GetDeviceContext().ClearUnorderedAccessViewFloat(pView, Values);
+
+#if (CRY_RENDERER_DIRECT3D >= 120)
+	gcpRendD3D->GetDeviceContext().ClearRectsUnorderedAccessViewFloat(pView, Values, NumRects, pRects);
+#else
+	CRY_ASSERT(NumRects == 0); // not supported on dx11
+	gcpRendD3D->GetDeviceContext().ClearUnorderedAccessViewFloat(pView, Values);
+#endif
 }
 
 void CDeviceComputeCommandInterfaceImpl::ClearUAVImpl(D3DUAV* pView, const UINT Values[4], UINT NumRects, const D3D11_RECT* pRects)
 {
-#if (CRY_RENDERER_DIRECT3D < 111)
-	if (NumRects) __debugbreak();
-#endif
 	CD3D9Renderer* const __restrict rd = gcpRendD3D;
-	rd->GetDeviceContext().ClearUnorderedAccessViewUint(pView, Values);
+
+#if (CRY_RENDERER_DIRECT3D >= 120)
+	gcpRendD3D->GetDeviceContext().ClearRectsUnorderedAccessViewUint(pView, Values, NumRects, pRects);
+#else
+	CRY_ASSERT(NumRects == 0); // not supported on dx11
+	gcpRendD3D->GetDeviceContext().ClearUnorderedAccessViewUint(pView, Values);
+#endif
 }
 
 ///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////

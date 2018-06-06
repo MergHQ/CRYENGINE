@@ -2031,9 +2031,7 @@ void CAttachmentManager::DrawMergedAttachments(SRendParams& rParams, const Matri
 				if (!(rParams.nCustomFlags & COB_POST_3D_RENDER) && fZoomDistanceSq > fRadiusSqr)
 					continue; //too small to render. cancel the update
 
-				// Similar to DrawAttachments() handle special case for nearest
-				const auto& FinalMat34 = ((rParams.dwFObjFlags & FOB_NEAREST) != 0) ? *rParams.pNearestMatrix : rWorldMat34;
-				pCAttachmentMerged->DrawAttachment(rParams, passInfo, FinalMat34, fZoomFactor);
+				pCAttachmentMerged->DrawAttachment(rParams, passInfo, rWorldMat34, fZoomFactor);
 			}
 		}
 	}

@@ -41,7 +41,7 @@ void CFillRateManager::ComputeMaxPixels()
 	ICVar* pVar = gEnv->pConsole->GetCVar("e_ParticlesMaxScreenFill");
 	if (!pVar)
 		return;
-	float fMaxTotalPixels = pVar->GetFVal() * CRendererResources::s_renderWidth * CRendererResources::s_renderHeight;
+	float fMaxTotalPixels = pVar->GetFVal() * CRendererResources::s_renderArea;
 	float fNewMax = fMaxTotalPixels;
 
 	Lock();

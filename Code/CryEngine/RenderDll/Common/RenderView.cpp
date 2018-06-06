@@ -2366,6 +2366,64 @@ struct SCompareFrustumsByLightIds
 };
 
 //////////////////////////////////////////////////////////////////////////
+void CRenderView::SShadows::GenerateSortedFrustumsForTiledShadingByScreenspaceOverlap()
+{
+	for (auto& fr : m_renderFrustums)
+	{
+		const auto pLight = fr.pLight;
+
+		// We are only interested in dynamic point lights
+		if (fr.pFrustum->m_eFrustumType != ShadowMapFrustum::e_GsmDynamic &&
+			fr.pFrustum->m_eFrustumType != ShadowMapFrustum::e_GsmDynamicDistance)
+			continue;
+		if (pLight->m_Flags & DLF_SUN)
+			continue;
+
+		Vec4 curLightRect = Vec4(
+			float(pLight->m_sX),
+			float(pLight->m_sY),
+			float(pLight->m_sWidth),
+			float(pLight->m_sHeight));
+
+		auto frustumPair = std::make_pair(&fr, curLightRect);
+		bool bNewSliceRequired = true;
+
+		for (auto& curSlice : m_frustumsPerTiledShadingSlice)
+		{
+			bool bHasOverlappingLight = false;
+
+			float minX = curLightRect.x, maxX = curLightRect.x + curLightRect.z;
+			float minY = curLightRect.y, maxY = curLightRect.y + curLightRect.w;
+
+			for (auto curFrustumPair : curSlice)
+			{
+				Vec4 lightRect = curFrustumPair.second;
+
+				if (maxX >= lightRect.x && minX <= lightRect.x + lightRect.z &&
+					maxY >= lightRect.y && minY <= lightRect.y + lightRect.w)
+				{
+					bHasOverlappingLight = true;
+					break;
+				}
+			}
+
+			if (!bHasOverlappingLight)
+			{
+				curSlice.push_back(frustumPair);
+				bNewSliceRequired = false;
+				break;
+			}
+		}
+
+		if (bNewSliceRequired)
+		{
+			std::vector<TiledShadingFrustumCoveragePair> firstSliceFrustums(1, frustumPair);
+			m_frustumsPerTiledShadingSlice.emplace_back(std::move(firstSliceFrustums));
+		}
+	}
+}
+
+////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 void CRenderView::SShadows::CreateFrustumGroups()
 {
 	m_frustumsByLight.clear();
@@ -2422,6 +2480,7 @@ void CRenderView::SShadows::Clear()
 
 	m_pShadowFrustumOwner = nullptr;
 	m_nearestCasterBoxes.clear();
+	m_frustumsPerTiledShadingSlice.clear();
 }
 
 //////////////////////////////////////////////////////////////////////////

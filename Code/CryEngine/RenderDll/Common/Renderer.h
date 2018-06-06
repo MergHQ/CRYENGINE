@@ -767,9 +767,6 @@ public:
 
 	virtual WIN_HWND    GetCurrentContextHWND() { return GetHWND(); }
 
-	virtual int         CreateRenderTarget(int nWidth, int nHeight, const ColorF& cClear, ETEX_Format eTF = eTF_R8G8B8A8) override = 0;
-	virtual bool        DestroyRenderTarget(int nHandle) override = 0;
-
 	virtual int         GetFeatures() override { return m_Features; }
 
 	virtual int         GetNumGeomInstances() override;
@@ -1220,7 +1217,7 @@ public:
 	}
 
 	//	Get mipmap distance factor (depends on screen width, screen height and aspect ratio)
-	float                GetMipDistFactor(uint32 twidth, uint32 theight) { return (1.0f / std::min(CRendererResources::s_renderWidth, CRendererResources::s_renderHeight)) * std::max(twidth, theight); }
+	float                GetMipDistFactor(uint32 twidth, uint32 theight) { float ratio = std::max(twidth, theight) / float(CRendererResources::s_renderMinDim); return ratio * ratio; }
 //	float                GetMipDistFactor(uint32 twidth, uint32 theight) { return ((TANGENT30_2 * TANGENT30_2) / (m_rheight * m_rheight)) * std::max(twidth, theight) * std::max(twidth, theight); }
 
 	static int           GetTexturesStreamPoolSize();

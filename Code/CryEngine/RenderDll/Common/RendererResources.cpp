@@ -1404,6 +1404,7 @@ void CRendererResources::DestroyNearestShadowMap()
 
 int CRendererResources::s_resourceWidth = 0, CRendererResources::s_resourceHeight = 0;
 int CRendererResources::s_renderWidth   = 0, CRendererResources::s_renderHeight   = 0;
+int CRendererResources::s_renderMinDim  = 0, CRendererResources::s_renderArea     = 0;
 int CRendererResources::s_outputWidth   = 0, CRendererResources::s_outputHeight   = 0;
 int CRendererResources::s_displayWidth  = 0, CRendererResources::s_displayHeight  = 0;
 
@@ -1420,6 +1421,8 @@ void CRendererResources::OnRenderResolutionChanged(int renderWidth, int renderHe
 
 		s_renderWidth  = renderWidth;
 		s_renderHeight = renderHeight;
+		s_renderMinDim = std::min(renderWidth, renderHeight);
+		s_renderArea   = renderWidth * renderHeight;
 	}
 }
 
@@ -1516,6 +1519,7 @@ void CRendererResources::ShutDown()
 ////////////////////////////////////////////////////////////////////////////////////////////////////
 
 CRendererResources::tempTexturePool_t CRendererResources::m_TempDepths;
+std::vector<CTexture*> CRendererResources::m_RTargets;
 
 STempDepthTexture::~STempDepthTexture() 
 {
@@ -1601,43 +1605,65 @@ SDepthTexture CRendererResources::CreateDepthSurface(int nWidth, int nHeight, bo
 	const uint   clearStencil = 0;
 	const ColorF clearValues = ColorF(clearDepth, FLOAT(clearStencil), 0.f, 0.f);
 
-	STextureLayout Layout =
-	{
-		nullptr,
-		nWidth, nHeight, 1, 1, 1,
-		preferredDepthFormat, preferredDepthFormat, eTT_2D,
-
-		/* TODO: change FT_... to CDeviceObjectFactory::... */
-		FT_USAGE_DEPTHSTENCIL /* CDeviceObjectFactory::BIND_DEPTH_STENCIL | CDeviceObjectFactory::HEAP_DEFAULT */, false,
-		clearValues
-#if CRY_PLATFORM_DURANGO && DURANGO_USE_ESRAM
-		, SKIP_ESRAM
-#endif
-	};
-
 	SDepthTexture depthSurface;
-	depthSurface.pTexture = nullptr;
+	depthSurface.nWidth = nWidth;
+	depthSurface.nHeight = nHeight;
+	depthSurface.nFrameAccess = -1;
 
-	Layout.m_eDstFormat = CTexture::GetClosestFormatSupported(Layout.m_eDstFormat, Layout.m_pPixelFormat);
-	CDeviceTexture* pZTexture = CDeviceTexture::Create(Layout, nullptr);
-	if (pZTexture)
-	{
-		depthSurface.nWidth = nWidth;
-		depthSurface.nHeight = nHeight;
-		depthSurface.nFrameAccess = -1;
+	char pName[128];
+	cry_sprintf(pName, "$DepthStencil_%d", m_TempDepths.size());
 
-		depthSurface.pTexture = new CTexture(FT_USAGE_DEPTHSTENCIL | FT_DONT_STREAM, clearValues, pZTexture);
-		depthSurface.pTarget = depthSurface.pTexture->GetDevTexture()->Get2DTexture();
-		depthSurface.pSurface = depthSurface.pTexture->GetDevTexture()->LookupDSV(EDefaultResourceViews::DepthStencil);
+	depthSurface.pTexture = CTexture::GetOrCreateDepthStencil(pName, nWidth, nHeight, clearValues, eTT_2D, FT_NOMIPS, preferredDepthFormat);
+	depthSurface.pTarget = depthSurface.pTexture->GetDevTexture()->Get2DTexture();
+	depthSurface.pSurface = depthSurface.pTexture->GetDevTexture()->LookupDSV(EDefaultResourceViews::DepthStencil);
 
 #if !defined(RELEASE) && CRY_PLATFORM_WINDOWS
-		depthSurface.pTarget->SetPrivateData(WKPDID_D3DDebugObjectName, strlen("Dynamically requested Depth-Buffer"), "Dynamically requested Depth-Buffer");
+	depthSurface.pTarget->SetPrivateData(WKPDID_D3DDebugObjectName, strlen("Dynamically requested Depth-Buffer"), "Dynamically requested Depth-Buffer");
 #endif
 
-		CClearSurfacePass::Execute(depthSurface.pTexture, D3D11_CLEAR_DEPTH | D3D11_CLEAR_STENCIL, clearDepth, clearStencil);
-	}
+	CClearSurfacePass::Execute(depthSurface.pTexture, D3D11_CLEAR_DEPTH | D3D11_CLEAR_STENCIL, clearDepth, clearStencil);
 
 	return depthSurface;
+}
+
+int CRendererResources::CreateRenderTarget(int nWidth, int nHeight, const ColorF& cClear, ETEX_Format eTF)
+{
+	// check if parameters are valid
+	if (!nWidth || !nHeight)
+		return -1;
+
+	if (m_RTargets.empty())
+	{
+		m_RTargets.push_back(nullptr);
+	}
+
+	size_t n = m_RTargets.size();
+	for (size_t i = 1; i < m_RTargets.size(); i++)
+	{
+		if (!m_RTargets[i])
+		{
+			n = i;
+			break;
+		}
+	}
+
+	if (n == m_RTargets.size())
+	{
+		m_RTargets.push_back(nullptr);
+	}
+
+	char pName[128];
+	cry_sprintf(pName, "$RenderTarget_%d", n);
+	m_RTargets[n] = CTexture::GetOrCreateRenderTarget(pName, nWidth, nHeight, cClear, eTT_2D, FT_NOMIPS, eTF);
+
+	return m_RTargets[n]->GetID();
+}
+
+bool CRendererResources::ReleaseRenderTarget(int nHandle)
+{
+	CTexture* pTex = CTexture::GetByID(nHandle);
+	SAFE_RELEASE(pTex);
+	return true;
 }
 
 ////////////////////////////////////////////////////////////////////////////////////////////////////

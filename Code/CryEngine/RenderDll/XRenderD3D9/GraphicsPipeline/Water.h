@@ -180,4 +180,5 @@ private:
 	Vec4   m_oceanAnimationParams[2];
 
 	bool              m_bWaterNormalGen;
+	bool              m_bOceanMaskGen;
 };
