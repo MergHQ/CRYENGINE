@@ -228,7 +228,7 @@ public:
 	void   SetScissor(bool bEnable, const D3DRectangle& scissor);
 	void   SetTargetClearMask(uint32 clearMask);
 
-	bool   IsOutputDirty() const { return m_renderPassDesc.HasChanged(); }
+	bool   InputChanged() const override { return m_renderPassDesc.HasChanged(); }
 	const  D3DViewPort& GetViewport() const { return m_viewport; }
 
 	void   Reset();

@@ -15,7 +15,7 @@ public:
 
 	bool InputChanged() const override final
 	{
-		return IsDirty();
+		return m_primitive.IsDirty() || CPrimitiveRenderPass::InputChanged();
 	}
 	using CRenderPassBase::InputChanged;
 
@@ -114,8 +114,6 @@ public:
 	}
 
 	bool Execute();
-
-	bool IsDirty() const { return m_primitive.IsDirty(); }
 
 	void SetCustomViewport(const D3DViewPort& viewport)
 	{
