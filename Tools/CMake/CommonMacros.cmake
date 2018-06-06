@@ -136,6 +136,11 @@ MACRO(SET_PLATFORM_TARGET_PROPERTIES TargetProject)
 	if(OPTION_UNSIGNED_PAKS_IN_RELEASE)
 		target_compile_definitions( ${THIS_PROJECT} PRIVATE "-DSUPPORT_UNSIGNED_PAKS")
 	endif()
+
+	if (OPTION_REMOTE_CONSOLE)
+		target_compile_definitions( ${THIS_PROJECT} PRIVATE "-DUSE_REMOTE_CONSOLE")
+	endif()
+		
 		
 	IF(DURANGO)
 		set_target_properties_for_durango(${TargetProject})

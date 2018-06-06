@@ -75,8 +75,6 @@ public:
 
 	virtual void PostUpdateParticles(CParticleComponentRuntime& runtime) {}
 
-	virtual void ComputeBounds(const CParticleComponentRuntime& runtime, AABB& bounds) {}
-
 	// Rendering
 	virtual void Render(CParticleComponentRuntime& runtime, const SRenderContext& renderContext) {}
 	virtual void RenderDeferred(const CParticleComponentRuntime& runtime, const SRenderContext& renderContext) {}
@@ -116,7 +114,6 @@ struct SFeatureDispatchers
 	TFeatureDispatcher<CParticleComponentRuntime&> UpdateParticles { &CParticleFeature::UpdateParticles };
 	TFeatureDispatcher<CParticleComponentRuntime&> PostUpdateParticles { &CParticleFeature::PostUpdateParticles };
 
-	TFeatureDispatcher<const CParticleComponentRuntime&, AABB&> ComputeBounds { &CParticleFeature::ComputeBounds };
 	TFeatureDispatcher<CParticleComponentRuntime&, gpu_pfx2::SUpdateParams&> UpdateGPUParams { &CParticleFeature::UpdateGPUParams };
 
 	TFeatureDispatcher<CParticleComponentRuntime&, const SRenderContext&> Render { &CParticleFeature::Render };

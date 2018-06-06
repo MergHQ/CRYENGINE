@@ -146,6 +146,9 @@ dll_string EntityClassNameSelector(const SResourceSelectorContext& context, cons
 
 	while (IEntityClass* pClass = entityClassRegistry.IteratorNext())
 	{
+		if ((pClass->GetFlags() & ECLF_INVISIBLE) != 0)
+			continue;
+
 		names.push_back(pClass->GetName());
 	}
 

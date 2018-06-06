@@ -64,6 +64,11 @@ EDITOR_COMMON_API string GetUniqueName(const string& fileName, const string& fol
 //! Only the shortest extension is replaced: ReplaceExtension("archive.tar.gz", "zip") = "archive.tar.zip"
 EDITOR_COMMON_API QString ReplaceExtension(const QString& str, const char* ext);
 
+//! Transforms an Absolute Path to a relative path provided the absolute path of the directory to be relative to
+//! Example : AbsoluteToRelativePath("A:/dir/to/file.ext","A:/dir/") returns "to/file.ext"
+//! Please note this has edge cases and will not always canonize the paths properly
+EDITOR_COMMON_API string AbsoluteToRelativePath(const string& absolutePath, const char* dirPathRelativeTo);
+
 //! DEPRECATED: Convert an absolute path to a patch that is relative to the project root directory
 //! Prefer using ToGamePath which will always convert a path to a game path, which can be used in CryPak methods as well
 //! Example: <project_root>/<sys_game_folder>/Objects/box.cgf -> <sys_game_folder>/Objects/box.cgf

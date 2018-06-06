@@ -11,8 +11,9 @@
 #include "substance/framework/inputimage.h"
 
 struct IFileChangeListener;
-class ISubstancePreset;
-class ISubstanceInstanceRenderer;
+struct ISubstanceInstanceRenderer;
+struct ISubstancePreset;
+
 class ResourceCompilerCfgFile;
 
 namespace SubstanceAir

@@ -55,9 +55,6 @@ public:
 
 	bool CreatePipelineStates(DevicePipelineStatesArray* pStateArray, const SGraphicsPipelineStateDescription& stateDesc, CGraphicsPipelineStateLocalCache* pStateCache);
 
-	bool IsDepthLinearizationPassDirty()  const { return m_passDepthLinearization.IsDirty(); }
-	bool IsBufferVisualizationPassDirty() const { return m_passBufferVisualization.IsDirty(); }
-
 private:
 	bool CreatePipelineState(const SGraphicsPipelineStateDescription& desc, EPass passID, CDeviceGraphicsPSOPtr& outPSO);
 

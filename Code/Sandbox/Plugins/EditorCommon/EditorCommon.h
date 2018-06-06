@@ -25,10 +25,7 @@
 #include <CryMath/Cry_Math.h>
 #include "IEditor.h"
 #include "PluginAPI.h"
-/*
-#include "QAdvancedTreeView.h"
-#include "QAdvancedItemDelegate.h"
-*/
+
 #include "QControls.h"
 #include "Controls/QMenuComboBox.h"
 #include "QSearchBox.h"

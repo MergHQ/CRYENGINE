@@ -27,7 +27,7 @@ namespace EditorSubstance
 		bool OnSave() final;
 	protected:
 
-		virtual const char* GetEditorName() const override { return "Substance Graph Default Mapping Editor"; };
+		virtual const char* GetEditorName() const override { return "Substance Graph Default Mapping Editor"; }
 		bool TryClose();
 
 		virtual bool OnClose() override;

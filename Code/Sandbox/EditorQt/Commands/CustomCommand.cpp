@@ -4,7 +4,6 @@
 
 #include "CommandManager.h"
 #include "CommandModuleDescription.h"
-#include "ICommandManager.h"
 
 CCustomCommand::CCustomCommand(const string& name, const string& command)
 	: CCommand0("custom", name, CCommandDescription(""), Functor0())

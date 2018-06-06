@@ -1,8 +1,6 @@
 // Copyright 2001-2018 Crytek GmbH / Crytek Group. All rights reserved.
 #pragma once
 
-class ICommandManager;
-
 class CCustomCommand : public CCommand0
 {
 public:
@@ -19,7 +17,5 @@ public:
 	virtual string GetCommandString() const override { return m_command; }
 
 private:
-
 	string m_command;
 };
-

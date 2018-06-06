@@ -44,6 +44,7 @@
 #include "ThreadingUtils.h"
 #include "EditorStyleHelper.h"
 #include "Util/FileUtil.h"
+#include <AssetSystem/Browser/AssetBrowserDialog.h>
 
 // CryCommon
 #include <CrySandbox/ScopedVariableSetter.h>
@@ -119,14 +120,6 @@ bool UnpakCryFile(ICryPak* pCryPak, const string& cryFilename, const string& des
 	return true;
 }
 
-bool CreateNewLevelFile(const string& levelFolder, const char* const szName)
-{
-	// Rename level.editor_xml to a new *.level
-	const string oldFilename = PathUtil::Make(levelFolder, "level.editor_xml");
-	const string newFilename = PathUtil::Make(levelFolder, PathUtil::ReplaceExtension(szName, CLevelType::GetFileExtensionStatic()));
-	return PathUtil::MoveFileAllowOverwrite(oldFilename, newFilename);
-}
-
 void UpdateLevels(const std::vector<string>& levels)
 {
 	size_t countOfImported = 0;
@@ -156,8 +149,8 @@ void UpdateLevels(const std::vector<string>& levels)
 			const float totalProgress = minBound + (maxBound - minBound) * unpakProgress;
 			notif.SetProgress(totalProgress);
 		};
-
-		if (!UnpakCryFile(pCryPak, oldFilePath, levelFolder, updateProgressBar) || !CreateNewLevelFile(levelFolder, szOldFilename))
+		const CLevelEditor* const pLevelEditor = static_cast<const CLevelEditor* const>(GetIEditorImpl()->GetLevelEditor());
+		if (!UnpakCryFile(pCryPak, oldFilePath, levelFolder, updateProgressBar) || !pLevelEditor->ConvertEditorXmlToLevelAssetType(levelFolder, szOldFilename))
 		{
 			CryWarning(EValidatorModule::VALIDATOR_MODULE_EDITOR, EValidatorSeverity::VALIDATOR_WARNING, "Could not import level %s", szOldFilename);
 			continue;
@@ -602,6 +595,34 @@ bool CLevelEditor::IsLevelLoaded()
 	return GetIEditor()->GetDocument() && GetIEditor()->GetGameEngine() && GetIEditor()->GetGameEngine()->IsLevelLoaded();
 }
 
+bool CLevelEditor::ConvertEditorXmlToLevelAssetType(const string& levelFolder, const char* const szName) const
+{
+	// Rename level.editor_xml to a new *.level
+	const string oldFilename = PathUtil::Make(levelFolder, "level.editor_xml");
+	const string newFilename = PathUtil::Make(levelFolder, PathUtil::ReplaceExtension(szName, CLevelType::GetFileExtensionStatic()));
+	if (PathUtil::MoveFileAllowOverwrite(oldFilename, newFilename))
+	{
+		CAssetType* pType = GetIEditorImpl()->GetAssetManager()->FindAssetType("Level");
+		CRY_ASSERT(pType);
+
+		const string path = PathUtil::RemoveSlash(levelFolder);
+
+		const string cryassetPath = string().Format("%s.%s.cryasset", path, pType->GetFileExtension());
+		CAsset asset(pType->GetTypeName(), CryGUID::Create(), PathUtil::GetFile(cryassetPath));
+		CEditableAsset editAsset(asset);
+		editAsset.SetMetadataFile(cryassetPath);
+		
+		const string rootFolder = PathUtil::GetParentDirectory(path);
+		editAsset.AddFile(PathUtil::AbsoluteToRelativePath(newFilename, rootFolder));
+		
+		editAsset.WriteToFile();
+
+		return true;
+	}
+
+	return false;
+}
+
 bool CLevelEditor::OnNew()
 {
 	bool isProceed = GetIEditorImpl()->GetDocument()->CanClose();
@@ -707,18 +728,32 @@ bool CLevelEditor::OnOpen()
 	{
 		return true;
 	}
-	COpenLevelDialog levelOpenDialog;
+
+	CAssetBrowserDialog dialog({ "Level" }, CAssetBrowserDialog::Mode::OpenSingleAsset);
 	QString lastLoadedLevelName(GetIEditorImpl()->GetDocument()->GetLastLoadedLevelName());
 	if (!lastLoadedLevelName.isEmpty())
 	{
-		levelOpenDialog.SelectLevelFile(lastLoadedLevelName);
+		CAssetManager* const pManager = CAssetManager::GetInstance();
+
+		const CAsset* pAsset = pManager->FindAssetForFile(lastLoadedLevelName.toStdString().c_str());
+
+		if (pAsset)
+		{
+			dialog.SelectAsset(*pAsset);
+		}
 	}
-	if (levelOpenDialog.exec() == QDialog::Accepted)
+
+	if (dialog.Execute())
 	{
-		auto filename = levelOpenDialog.GetAcceptedLevelFile().toStdString();//will be relative to working directory/project root
-		CCryEditApp::GetInstance()->DiscardLevelChanges();
-		CCryEditApp::GetInstance()->LoadLevel(filename.c_str());
+		if (CAsset* pSelectedAsset = dialog.GetSelectedAsset())
+		{
+			CCryEditApp::GetInstance()->DiscardLevelChanges();
+
+			const string levelPath = PathUtil::Make(PathUtil::GetGameProjectAssetsPath(), pSelectedAsset->GetFile(0));
+			CCryEditApp::GetInstance()->LoadLevel(levelPath);
+		}
 	}
+
 	return true;
 }
 

@@ -1,14 +1,14 @@
 // Copyright 2001-2018 Crytek GmbH / Crytek Group. All rights reserved.
 
 #pragma once
-#include "CrySerialization/Serializer.h"
+
 #include "CrySubstanceAPI.h"
-#include "substance/framework/typedefs.h"
-
-
+#include <CrySerialization/Serializer.h>
+#include <substance/framework/typedefs.h>
 
 struct CRY_SUBSTANCE_API IFileManipulator
 {
+	virtual ~IFileManipulator() {}
 	virtual bool ReadFile(const string& filePath, std::vector<char>& buffer, size_t& readSize, const string& mode) = 0;
 	virtual string GetAbsolutePath(const string& filename) const = 0;
 };
@@ -17,16 +17,16 @@ extern IFileManipulator* g_fileManipulator;
 
 void CRY_SUBSTANCE_API InitCrySubstanceLib(IFileManipulator* fileManipulator);
 
-
-
-
 struct CRY_SUBSTANCE_API SSubstanceOutputChannelMapping
 {
 	SSubstanceOutputChannelMapping();
+
+	virtual ~SSubstanceOutputChannelMapping() {}
+	virtual void Serialize(Serialization::IArchive& ar);
+
 	char sourceId; // if -1 channel is not used
 	char channel;
 	void Reset();
-	virtual void Serialize(Serialization::IArchive& ar);
 };
 
 struct CRY_SUBSTANCE_API SSubstanceOutput
@@ -39,6 +39,10 @@ struct CRY_SUBSTANCE_API SSubstanceOutput
 	};
 
 	SSubstanceOutput();
+
+	virtual ~SSubstanceOutput() {}
+	virtual void Serialize(Serialization::IArchive& ar);
+
 	void SetAllSources(int value = 0);
 	void SetAllChannels(int value = -1);
 	void RemoveSource(int sourceID);
@@ -51,8 +55,6 @@ struct CRY_SUBSTANCE_API SSubstanceOutput
 	std::vector<string> sourceOutputs;
 	ESubstanceOutputResolution resolution;
 	SSubstanceOutputChannelMapping channels[4];
-
-	virtual void Serialize(Serialization::IArchive& ar);
 };
 
 
@@ -75,10 +77,10 @@ struct CRY_SUBSTANCE_API SSubstanceRenderData
 	size_t customData;
 };
 
-
 CRY_SUBSTANCE_API extern std::vector<std::pair<string, SSubstanceOutput::ESubstanceOutputResolution>> resolutionNamesMap;
 
-namespace SubstanceSerialization {
+namespace SubstanceSerialization 
+{
 	template<class T> bool LoadJsonFile(T& instance, const string& filename);
 	template<class T> bool SaveJsonFile(const string& filename, const T& instance);
 	
@@ -95,12 +97,13 @@ namespace SubstanceSerialization {
 
 struct CRY_SUBSTANCE_API ISubstancePresetSerializer
 {
+	virtual ~ISubstancePresetSerializer() {}
 	virtual void Serialize(Serialization::IArchive& ar) = 0;
 };
 
-class CRY_SUBSTANCE_API ISubstancePreset
+struct CRY_SUBSTANCE_API ISubstancePreset
 {
-public:
+	virtual ~ISubstancePreset() {}
 	virtual void Save() = 0;
 	static ISubstancePreset* Load(const string& filePath);
 	static ISubstancePreset* Instantiate(const string& archiveName, const string& graphName);

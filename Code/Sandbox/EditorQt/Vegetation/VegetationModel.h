@@ -2,12 +2,11 @@
 #pragma once
 
 #include <QAbstractItemModel>
-
-#include <QString>
 #include <QHash>
+#include <QString>
 
-#include <vector>
 #include <memory>
+#include <vector>
 
 class CVegetationDragDropData;
 class CVegetationMap;
@@ -89,12 +88,12 @@ public:
 	virtual Qt::DropActions     supportedDropActions() const override;
 
 	CVegetationObject*          GetVegetationObject(const QModelIndex& index) const;
-	QModelIndex					GetGroup(CVegetationObject* pVegetationObject);
+	QModelIndex                 GetGroup(CVegetationObject* pVegetationObject);
 	const CVegetationModelItem* GetGroup(const QModelIndex& index) const;
 	bool                        IsGroup(const QModelIndex& index) const;
 	bool                        IsVegetationObject(const QModelIndex& index) const;
 
-	CVegetationObject*			AddVegetationObject(const QModelIndex& currentIndex, const QString& filename);
+	CVegetationObject*          AddVegetationObject(const QModelIndex& currentIndex, const QString& filename);
 	void                        AddGroup();
 	void                        RenameGroup(const QModelIndex& selectedGroupIndex, const QString& name);
 	void                        RemoveItems(const QModelIndexList& selectedIndexes);
@@ -146,4 +145,3 @@ private:
 	QHash<CVegetationObject*, CVegetationModelItem*> m_vegetationObjectToItem;
 	CVegetationMap* m_pVegetationMap;
 };
-

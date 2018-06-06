@@ -118,6 +118,19 @@ T StartTime(T curTime, T frameTime, T absAge);
 void RotateAxes(Vec3* v0, Vec3* v1, const float angle);
 Vec3 PolarCoordToVec3(float azimuth, float altitude);
 
+///////////////////////////////////////////////////////////////////////////
+template<typename F>
+struct Slope
+{
+	F scale;
+	F start;
+
+	Slope(F scale = 1, F start = 0) : scale(scale), start(start) {}
+	template<typename F2> Slope(const Slope<F2>& o) : scale(convert<F>(o.scale)), start(convert<F>(o.start)) {}
+
+	F operator()(F val) const { return MAdd(val, scale, start); }
+};
+
 }
 
 // Cry_Math_SSE extension

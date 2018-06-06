@@ -163,7 +163,7 @@ QVariant CVegetationModel::data(const QModelIndex& index, int role) const
 	}
 
 	auto pTreeItem = static_cast<CVegetationModelItem*>(index.internalPointer());
-	// Object Visiblity/Name columns have to be merged
+	// Object Visibility/Name columns have to be merged
 	if (role == Qt::CheckStateRole && static_cast<Column>(index.column()) == Column::VisibleAndObject)
 	{
 		return CVegetationModelItem::GetCheckStateFromVisibility(pTreeItem->visibility);

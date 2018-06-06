@@ -15,11 +15,11 @@ class CVegetationPlaceTool_ClassDesc : public IClassDesc
 	virtual ESystemClassID SystemClassID() { return ESYSTEM_CLASS_EDITTOOL; }
 
 	//! This method returns the human readable name of the class.
-	virtual const char* ClassName() { return "EditTool.VegetationPlace"; };
+	virtual const char* ClassName() { return "EditTool.VegetationPlace"; }
 
 	//! This method returns Category of this class, Category is specifing where this plugin class fits best in
 	//! create panel.
-	virtual const char*    Category()        { return "Terrain"; };
+	virtual const char*    Category()        { return "Terrain"; }
 
 	virtual CRuntimeClass* GetRuntimeClass() { return RUNTIME_CLASS(CVegetationPlaceTool); }
 };
@@ -162,4 +162,3 @@ bool CVegetationPlaceTool::ObjectWasCreated() const
 {
 	return m_pCreatedInstance;
 }
-

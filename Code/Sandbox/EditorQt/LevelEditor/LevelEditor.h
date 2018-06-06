@@ -14,6 +14,9 @@ class CTagLocations;
 class CLevelEditor : public CEditor, public ILevelEditor, public IAutoEditorNotifyListener
 {
 	Q_OBJECT
+
+	friend bool CreateNewLevelFile(const string& levelFolder, const char* const szName);
+
 public:
 	CLevelEditor();
 	~CLevelEditor();
@@ -46,6 +49,8 @@ public:
 	bool IsGeometrySnappingEnabled() const;
 	bool IsSurfaceNormalSnappingEnabled() const;
 	bool IsHelpersDisplayed() const;
+
+	bool ConvertEditorXmlToLevelAssetType(const string& levelFolder, const char* const szName) const;
 
 	//ILevelEditor interface
 	virtual bool IsLevelLoaded() override;

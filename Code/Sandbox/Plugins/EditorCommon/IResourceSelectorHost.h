@@ -80,6 +80,7 @@ class QWidget;
 
 struct IResourceSelectionCallback
 {
+	virtual ~IResourceSelectionCallback() {}
 	virtual void SetValue(const char* newValue) = 0;
 };
 
@@ -129,6 +130,7 @@ typedef dll_string (* TResourceValidationFunctionWithContext)(const SResourceSel
 // See note at the beginning of the file.
 struct IResourceSelectorHost
 {
+	virtual ~IResourceSelectorHost() {}
 	virtual const SStaticResourceSelectorEntry* GetSelector(const char* typeName) const = 0;
 
 	//Select a resource without having to build a context
@@ -202,6 +204,7 @@ public:
 	dll_string				ValidateValue(const SResourceSelectorContext& context, const char* newValue, const char* previousValue) const;
 	dll_string				SelectResource(const SResourceSelectorContext& context, const char* previousValue) const;
 
+	virtual                 ~SStaticResourceSelectorEntry() {}
 	virtual bool			ShowTooltip(const SResourceSelectorContext& context, const char* value) const;
 	virtual void			HideTooltip(const SResourceSelectorContext& context, const char* value) const;
 	bool					IsAssetSelector() const { return isAsset; }
@@ -287,4 +290,3 @@ public:
 };
 
 typedef CAutoRegister<SStaticResourceSelectorEntry> CAutoRegisterResourceSelector;
-

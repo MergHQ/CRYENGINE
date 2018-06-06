@@ -76,15 +76,6 @@ public:
 	string                    GetShortName() const;
 	int                       GetEditVersion() const;
 
-	// Consolidated list of MainPreUpdate features, called per emitter
-	struct ComponentFeature
-	{
-		CParticleComponent* pComponent;
-		CParticleFeature*   pFeature;
-	};
-	using TComponentFeatures = std::vector<ComponentFeature>;
-	TComponentFeatures MainPreUpdate;
-
 private:
 	string             m_name;
 	TAttributeTablePtr m_pAttributes;
@@ -97,6 +88,11 @@ private:
 	bool               m_substitutedPfx1;
 
 	void               Sort();
+
+public:
+	// List of components with specific features, called per emitter
+	TComponents MainPreUpdate;
+	TComponents RenderDeferred;
 };
 
 }

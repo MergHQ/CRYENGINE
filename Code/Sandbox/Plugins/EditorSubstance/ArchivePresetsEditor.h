@@ -29,7 +29,7 @@ namespace EditorSubstance
 		CArchivePresetsEditor(QWidget* parent = nullptr);
 		const string& GetSubstanceArchive() const { return m_substanceArchive; }
 	protected:
-		virtual const char* GetEditorName() const override { return "Substance Archive Graph Editor"; };
+		virtual const char* GetEditorName() const override { return "Substance Archive Graph Editor"; }
 
 		virtual bool OnOpenAsset(CAsset* pAsset) override;
 		virtual bool OnSaveAsset(CEditableAsset& editAsset) override;

@@ -1,9 +1,8 @@
 // Copyright 2001-2018 Crytek GmbH / Crytek Group. All rights reserved.
-// Precompiled header.
+
 #pragma once
 
 #include <CryCore/Platform/platform.h>
-
 
 // std::unique_ptr and _smart_ptr conversions
 #include <CryCore/smartptr.h>
@@ -120,12 +119,3 @@ inline _smart_ptr<T> MakeSmartFromUnique(std::unique_ptr<T, Detail::DeleteUsingR
 	pUnique.reset();                     // Calls Release()
 	return pSmart;
 }
-
-
-//struct Hash
-//{
-//	uint32 operator()(const string& str) const
-//	{
-//		return CryStringUtils::CalculateHashLowerCase(str.c_str());
-//	}
-//};

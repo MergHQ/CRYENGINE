@@ -1,7 +1,6 @@
 // Copyright 2001-2018 Crytek GmbH / Crytek Group. All rights reserved.
 
-#if !defined __cubemaputils_h_
-#define __cubemaputils_h_
+#pragma once
 
 namespace CubemapUtils
 {
@@ -11,6 +10,3 @@ void GenHDRCubemapTiff(const string& fileName, int size, Vec3& pos);
 void RegenerateAllEnvironmentProbeCubemaps();
 void GenerateCubemaps();
 }
-
-#endif //__cubemaputils_h_
-

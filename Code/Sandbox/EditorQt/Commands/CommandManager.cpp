@@ -304,41 +304,6 @@ void CEditorCommandManager::SetChecked(const char* cmdFullName, bool checked)
 	pAction->setChecked(checked);
 }
 
-string CEditorCommandManager::AutoComplete(const string& substr) const
-{
-	std::vector<string> cmds;
-	GetCommandList(cmds);
-
-	// If substring is empty return first command.
-	if (substr.empty() && (cmds.empty() == false))
-		return cmds[0];
-
-	size_t substrLen = substr.length();
-
-	for (size_t i = 0; i < cmds.size(); ++i)
-	{
-		size_t cmdLen = cmds[i].length();
-
-		if (cmdLen >= substrLen && !strncmp(cmds[i].c_str(), substr.c_str(), substrLen))
-		{
-			if (substrLen == cmdLen)
-			{
-				++i;
-
-				if (i < cmds.size())
-					return cmds[i];
-				else
-					return cmds[i - 1];
-			}
-
-			return cmds[i];
-		}
-	}
-
-	// Not found
-	return "";
-}
-
 bool CEditorCommandManager::IsRegistered(const char* module, const char* name) const
 {
 	string fullName = GetFullCommandName(module, name);
@@ -706,4 +671,3 @@ void CEditorCommandManager::SetEditorUIActionsEnabled(bool bEnabled)
 		}
 	}
 }
-

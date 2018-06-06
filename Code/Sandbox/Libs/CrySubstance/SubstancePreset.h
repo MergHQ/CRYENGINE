@@ -38,7 +38,7 @@ public:
 	SubstanceAir::GraphInstance& PrepareRenderInstance(ISubstanceInstanceRenderer* renderer);
 	const SubstanceAir::GraphInstance* GetGraphInstance() const { return m_pGraphInstance; }
 	ISubstancePreset* Clone() const override;
-	void Destroy() override { delete this; };
+	void Destroy() override { delete this; }
 	virtual ISubstancePresetSerializer* GetSerializer() override;
 	virtual const std::vector<string> GetInputImages() const override;
 	//////////////////////////////////////////////////////////////////////////
@@ -92,5 +92,3 @@ private:
 
 	bool m_uniformResolution;
 };
-
-

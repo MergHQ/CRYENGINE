@@ -109,7 +109,12 @@ void CParticleEmitter::Render(const struct SRendParams& rParam, const SRendering
 	if (passInfo.IsShadowPass())
 		return;
 
-	m_unrendered = 0;
+	CParticleJobManager& jobManager = GetPSystem()->GetJobManager();
+	if (ThreadMode() >= 4 && !WasRenderedLastFrame())
+	{
+		// Not currently scheduled for high priority update
+		jobManager.ScheduleUpdateEmitter(this);
+	}
 
 	CLightVolumesMgr& lightVolumeManager = m_p3DEngine->GetLightVolumeManager();
 	SRenderContext renderContext(rParam, passInfo);
@@ -118,13 +123,20 @@ void CParticleEmitter::Render(const struct SRendParams& rParam, const SRendering
 	ColorF fogVolumeContrib;
 	CFogVolumeRenderNode::TraceFogVolumes(GetPos(), fogVolumeContrib, passInfo);
 	renderContext.m_fogVolumeId = passInfo.GetIRenderView()->PushFogVolumeContribution(fogVolumeContrib, passInfo);
+
+	if (m_pEffect->RenderDeferred.size())
+	{
+		jobManager.AddDeferredRender(this, renderContext);
+	}
 	
-	GetPSystem()->GetThreadData().statsCPU.emitters.rendered ++;
 	for (auto& pRuntime : m_componentRuntimes)
 	{
-		if (pRuntime->GetComponent()->IsVisible() && passInfo.GetCamera().IsAABBVisible_E(pRuntime->GetBounds()))
+		if (pRuntime->GetComponent()->IsVisible())
 			pRuntime->RenderAll(renderContext);
 	}
+	
+	m_unrendered = 0;
+	GetPSystem()->GetThreadData().statsCPU.emitters.rendered ++;
 }
 
 void CParticleEmitter::CheckUpdated()
@@ -155,13 +167,15 @@ void CParticleEmitter::Update()
 
 	UpdateFromEntity();
 
-	for (auto const& elem: GetCEffect()->MainPreUpdate)
+	for (auto const& component: GetCEffect()->MainPreUpdate)
 	{
-		if (auto pRuntime = GetRuntimeFor(elem.pComponent))
-			elem.pFeature->MainPreUpdate(*pRuntime);
+		if (auto pRuntime = GetRuntimeFor(component))
+		{
+			component->MainPreUpdate(*pRuntime);
+		}
 	}
 
-	if (CParticleJobManager::ThreadMode() >= 4 && SkipUpdate() && !(GetRndFlags() & ERF_HIDDEN))
+	if (!NeedsUpdate() && !(GetRndFlags() & ERF_HIDDEN))
 	{
 		// If not updating this frame, use max bounds for visibility
 		if (!m_bounds.ContainsBox(m_maxBounds))
@@ -222,7 +236,7 @@ void CParticleEmitter::UpdateBoundingBox()
 	}
 }
 
-bool CParticleEmitter::UpdateAll()
+bool CParticleEmitter::UpdateParticles()
 {
 	// Multithread support
 	stl::AutoLock<stl::PSyncMultiThread> lock(m_lock);
@@ -263,11 +277,15 @@ bool CParticleEmitter::UpdateAll()
 	return true;
 }
 
-void CParticleEmitter::SyncUpdate()
+void CParticleEmitter::SyncUpdateParticles()
 {
-	if (CParticleJobManager::ThreadMode() >= 2)
+	if (ThreadMode() >= 1)
 	{
-		UpdateAll();
+		auto& statsSync = GetPSystem()->GetThreadData().statsSync;
+		statsSync.alive += m_componentRuntimes.size();
+		statsSync.rendered += m_pEffect->RenderDeferred.size();
+		if (UpdateParticles())
+			statsSync.updated += m_componentRuntimes.size();
 	}
 	CRY_PFX2_ASSERT(m_timeUpdated >= m_time);
 }
@@ -293,12 +311,13 @@ void CParticleEmitter::DebugRender(const SRenderingPassInfo& passInfo) const
 
 	if (visible)
 	{
-		// Draw component boxes and label
-		const ColorB componentColor = ColorF(1, 0.5, 0) * alphaColor;
+		// Draw component boxes and labels
 		for (auto& pRuntime : m_componentRuntimes)
 		{
 			if (!pRuntime->GetBounds().IsReset())
 			{
+				const float volumeRatio = div_min(pRuntime->GetBounds().GetVolume(), m_realBounds.GetVolume(), 1.0f);
+				const ColorB componentColor = ColorF(1, 0.5, 0) * (alphaColor * sqrt(volumeRatio));
 				pRenderAux->DrawAABB(pRuntime->GetBounds(), false, componentColor, eBBD_Faceted);
 				string label = string().Format("%s #%d", pRuntime->GetComponent()->GetName(),
 					pRuntime->GetContainer().GetRealNumParticles());
