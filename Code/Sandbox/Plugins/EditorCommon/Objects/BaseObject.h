@@ -10,6 +10,7 @@
 #include "CryExtension/CryGUID.h"
 #include "Objects/DisplayContext.h"
 #include "IIconManager.h"
+#include <IUndoObject.h>
 
 class CAsset;
 class CEdGeometry;
@@ -576,7 +577,7 @@ public:
 	IObjectManager*                 GetObjectManager() const;
 
 	//! Store undo information for this object.
-	void StoreUndo(const char* undoDescription, bool minimal = false, int flags = 0);
+	virtual void StoreUndo(const char* undoDescription, bool minimal = false, int flags = 0);
 
 	//////////////////////////////////////////////////////////////////////////
 	//! Material handling for this base object.
@@ -965,4 +966,27 @@ public:
 private:
 	//! List of objects that was displayed at last frame.
 	std::vector<_smart_ptr<CBaseObject>> m_objects;
+};
+
+//////////////////////////////////////////////////////////////////////////
+//////////////////////////////////////////////////////////////////////////
+//! Undo object for CBaseObject.
+class EDITOR_COMMON_API CUndoBaseObject : public IUndoObject
+{
+public:
+	CUndoBaseObject(CBaseObject* pObj, const char* undoDescription);
+
+protected:
+	virtual int         GetSize() { return sizeof(*this); }
+	virtual const char* GetDescription() override { return m_undoDescription; };
+	virtual const char* GetObjectName() override;
+
+	virtual void        Undo(bool bUndo) override;
+	virtual void        Redo() override;
+
+protected:
+	string     m_undoDescription;
+	CryGUID    m_guid;
+	XmlNodeRef m_undo;
+	XmlNodeRef m_redo;
 };

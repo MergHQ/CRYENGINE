@@ -195,28 +195,6 @@ bool CalculateConvexEdgesForOBB(const CPoint* obb_p, const int maxSizeOfEdgeList
 
 //////////////////////////////////////////////////////////////////////////
 //////////////////////////////////////////////////////////////////////////
-//! Undo object for CBaseObject.
-class CUndoBaseObject : public IUndoObject
-{
-public:
-	CUndoBaseObject(CBaseObject* pObj, const char* undoDescription);
-
-protected:
-	virtual const char* GetDescription() override { return m_undoDescription; }
-	virtual const char* GetObjectName() override;
-
-	virtual void        Undo(bool bUndo) override;
-	virtual void        Redo() override;
-
-protected:
-	string     m_undoDescription;
-	CryGUID    m_guid;
-	XmlNodeRef m_undo;
-	XmlNodeRef m_redo;
-};
-
-//////////////////////////////////////////////////////////////////////////
-//////////////////////////////////////////////////////////////////////////
 //! Undo object for CBaseObject that only stores its transform, color, area and minSpec
 class CUndoBaseObjectMinimal : public IUndoObject
 {

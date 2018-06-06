@@ -3,6 +3,7 @@
 #include "StdAfx.h"
 #include "EntityObject.h"
 
+#include "EntityObjectUndo.h"
 #include "Viewport.h"
 #include <Preferences/ViewportPreferences.h>
 #include "Group.h"
@@ -102,279 +103,55 @@ const char* CEntityObject::s_LensFlareMaterialName("%ENGINE%/EngineAssets/Materi
 
 namespace Private_EntityObject
 {
-
-//////////////////////////////////////////////////////////////////////////
-//! Undo object for attach/detach changes
-class CUndoAttachEntity : public IUndoObject
-{
-public:
-	CUndoAttachEntity(CEntityObject* pAttachedObject, bool bAttach)
-		: m_attachedEntityGUID(pAttachedObject->GetId())
-		, m_attachmentTarget(pAttachedObject->GetAttachTarget())
-		, m_attachmentType(pAttachedObject->GetAttachType())
-		, m_bAttach(bAttach)
-	{}
-
-	virtual void Undo(bool bUndo) override
+	class EntityLinkTool : public CPickObjectTool
 	{
-		if (!m_bAttach) SetAttachmentTypeAndTarget();
-	}
+		DECLARE_DYNCREATE(EntityLinkTool)
 
-	virtual void Redo() override
-	{
-		if (m_bAttach) SetAttachmentTypeAndTarget();
-	}
-
-private:
-	void SetAttachmentTypeAndTarget()
-	{
-		CObjectManager* pObjectManager = static_cast<CObjectManager*>(GetIEditorImpl()->GetObjectManager());
-		CEntityObject* pEntity = static_cast<CEntityObject*>(pObjectManager->FindObject(m_attachedEntityGUID));
-
-		if (pEntity)
+		struct SEntityLinkPicker : IPickObjectCallback
 		{
-			pEntity->SetAttachType(m_attachmentType);
-			pEntity->SetAttachTarget(m_attachmentTarget);
-		}
-	}
-
-	virtual const char* GetDescription() { return "Attachment Changed"; }
-
-	CryGUID                        m_attachedEntityGUID;
-	CEntityObject::EAttachmentType m_attachmentType;
-	string                         m_attachmentTarget;
-	bool                           m_bAttach;
-};
-
-//////////////////////////////////////////////////////////////////////////
-//! Undo object for adding an entity component
-class CUndoAddComponent : public IUndoObject
-{
-	struct SComponentInstanceInfo
-	{
-		CryGUID owningEntityGUID;
-		CryGUID instanceGUID;
-	};
-
-public:
-	CUndoAddComponent(const CEntityComponentClassDesc* pClassDescription, size_t numExpectedEntities)
-		: m_pClassDescription(pClassDescription)
-	{
-		m_affectedEntityInfo.reserve(numExpectedEntities);
-	}
-
-	virtual void Undo(bool bUndo) override
-	{
-		for (const SComponentInstanceInfo& componentInstanceInfo : m_affectedEntityInfo)
-		{
-			CEntityObject* pEntityObject = static_cast<CEntityObject*>(GetIEditorImpl()->GetObjectManager()->FindObject(componentInstanceInfo.owningEntityGUID));
-			if (pEntityObject == nullptr)
-				continue;
-
-			IEntity* pEntity = pEntityObject->GetIEntity();
-			if (pEntity == nullptr)
-				continue;
-
-			IEntityComponent* pComponent = pEntity->GetComponentByGUID(componentInstanceInfo.instanceGUID);
-			if (pComponent == nullptr)
-				continue;
-
-			pEntity->RemoveComponent(pComponent);
-		}
-
-		GetIEditor()->GetObjectManager()->EmitPopulateInspectorEvent();
-	}
-
-	virtual void Redo() override
-	{
-		for (SComponentInstanceInfo& componentInstanceInfo : m_affectedEntityInfo)
-		{
-			CEntityObject* pEntityObject = static_cast<CEntityObject*>(GetIEditorImpl()->GetObjectManager()->FindObject(componentInstanceInfo.owningEntityGUID));
-			if (pEntityObject == nullptr)
-				continue;
-
-			IEntity* pEntity = pEntityObject->GetIEntity();
-			if (pEntity == nullptr)
-				continue;
-
-			componentInstanceInfo.instanceGUID = AddComponentInternal(pEntity);
-		}
-
-		GetIEditor()->GetObjectManager()->EmitPopulateInspectorEvent();
-	}
-
-	void AddComponent(IEntity* pEntity)
-	{
-		const CryGUID& componentInstanceGUID = AddComponentInternal(pEntity);
-		if (!componentInstanceGUID.IsNull())
-		{
-			m_affectedEntityInfo.emplace_back(SComponentInstanceInfo { pEntity->GetGuid(), componentInstanceGUID });
-		}
-	}
-
-	bool IsValid() const { return m_affectedEntityInfo.size() > 0; }
-
-private:
-	const CryGUID& AddComponentInternal(IEntity* pEntity)
-	{
-		EntityComponentFlags flags = m_pClassDescription->GetComponentFlags();
-		flags.Add(EEntityComponentFlags::UserAdded);
-		IEntityComponent::SInitParams initParams(pEntity, CryGUID::Create(), "", m_pClassDescription, flags, nullptr, nullptr);
-		IF_LIKELY (IEntityComponent* pComponent = pEntity->CreateComponentByInterfaceID(m_pClassDescription->GetGUID(), &initParams))
-		{
-			return pComponent->GetGUID();
-		}
-
-		static CryGUID invalidGUID = CryGUID::Null();
-		return invalidGUID;
-	}
-
-	virtual const char* GetDescription() { return "Added Entity Component"; }
-
-	const CEntityComponentClassDesc*    m_pClassDescription;
-	std::vector<SComponentInstanceInfo> m_affectedEntityInfo;
-};
-
-class EntityLinkTool : public CPickObjectTool
-{
-	DECLARE_DYNCREATE(EntityLinkTool)
-
-	struct SEntityLinkPicker : IPickObjectCallback
-	{
-		SEntityLinkPicker()
-		{
-		}
-
-		void OnPick(CBaseObject* pObj) override
-		{
-			if (m_owner)
+			SEntityLinkPicker()
 			{
-				CUndo undo("Add entity link");
-				m_owner->AddEntityLink(pObj->GetName(), pObj->GetId());
 			}
-		}
 
-		bool OnPickFilter(CBaseObject* filterObject) override
-		{
-			return filterObject->IsKindOf(RUNTIME_CLASS(CEntityObject));
-		}
-
-		void OnCancelPick() override
-		{
-		}
-
-		CEntityObject* m_owner;
-	};
-
-public:
-	EntityLinkTool()
-		: CPickObjectTool(&m_picker)
-	{
-	}
-
-	virtual void SetUserData(const char* key, void* userData) override
-	{
-		m_picker.m_owner = static_cast<CEntityObject*>(userData);
-	}
-
-private:
-	SEntityLinkPicker m_picker;
-};
-
-IMPLEMENT_DYNCREATE(EntityLinkTool, CPickObjectTool)
-
-//////////////////////////////////////////////////////////////////////////
-//! Undo Entity Link
-class CUndoEntityLink : public IUndoObject
-{
-public:
-	CUndoEntityLink(const std::vector<CBaseObject*>& objects)
-	{
-		m_Links.reserve(objects.size());
-		for (CBaseObject* pObj : objects)
-		{
-			if (pObj->IsKindOf(RUNTIME_CLASS(CEntityObject)))
+			void OnPick(CBaseObject* pObj) override
 			{
-				SLink link;
-				link.entityID = pObj->GetId();
-				link.linkXmlNode = XmlHelpers::CreateXmlNode("undo");
-				((CEntityObject*)pObj)->SaveLink(link.linkXmlNode);
-				m_Links.push_back(link);
+				if (m_owner)
+				{
+					CUndo undo("Add entity link");
+					m_owner->AddEntityLink(pObj->GetName(), pObj->GetId());
+				}
 			}
-		}
-	}
 
-protected:
-	virtual void        Release()        { delete this; }
-	virtual const char* GetDescription() { return "Entity Link"; }
-	virtual const char* GetObjectName()  { return ""; }
+			bool OnPickFilter(CBaseObject* filterObject) override
+			{
+				return filterObject->IsKindOf(RUNTIME_CLASS(CEntityObject));
+			}
 
-	virtual void        Undo(bool bUndo)
-	{
-		for (int i = 0, iLinkSize(m_Links.size()); i < iLinkSize; ++i)
+			void OnCancelPick() override
+			{
+			}
+
+			CEntityObject* m_owner;
+		};
+
+	public:
+		EntityLinkTool()
+			: CPickObjectTool(&m_picker)
 		{
-			SLink& link = m_Links[i];
-			CBaseObject* pObj = GetIEditorImpl()->GetObjectManager()->FindObject(link.entityID);
-			if (pObj == NULL)
-				continue;
-			if (!pObj->IsKindOf(RUNTIME_CLASS(CEntityObject)))
-				continue;
-			CEntityObject* pEntity = (CEntityObject*)pObj;
-			if (link.linkXmlNode->getChildCount() == 0)
-				continue;
-			pEntity->LoadLink(link.linkXmlNode->getChild(0));
 		}
-	}
-	virtual void Redo() {}
 
-private:
+		virtual void SetUserData(const char* key, void* userData) override
+		{
+			m_picker.m_owner = static_cast<CEntityObject*>(userData);
+		}
 
-	struct SLink
-	{
-		CryGUID    entityID;
-		XmlNodeRef linkXmlNode;
+	private:
+		SEntityLinkPicker m_picker;
 	};
 
-	std::vector<SLink> m_Links;
-};
+	IMPLEMENT_DYNCREATE(EntityLinkTool, CPickObjectTool)
 
-class CUndoCreateFlowGraph : public IUndoObject
-{
-public:
-	CUndoCreateFlowGraph(CEntityObject* entity, const char* groupName)
-		: m_entityGuid(entity->GetId())
-		, m_groupName(groupName)
-	{
-	}
-
-protected:
-	virtual void Undo(bool bUndo) override
-	{
-		auto pEntity = static_cast<CEntityObject*>(GetIEditorImpl()->GetObjectManager()->FindObject(m_entityGuid));
-		if (pEntity)
-		{
-			pEntity->RemoveFlowGraph();
-		}
-	}
-
-	virtual void Redo() override
-	{
-		auto pEntity = static_cast<CEntityObject*>(GetIEditorImpl()->GetObjectManager()->FindObject(m_entityGuid));
-		if (pEntity)
-		{
-			pEntity->OpenFlowGraph(m_groupName);
-		}
-	}
-
-	virtual const char* GetDescription() override { return "Create Flow Graph"; }
-
-private:
-	CryGUID     m_entityGuid;
-	const char* m_groupName;
-};
-
-std::map<EntityId, CEntityObject*> s_entityIdMap;
-
+	std::map<EntityId, CEntityObject*> s_entityIdMap;
 };
 
 IMPLEMENT_DYNCREATE(CEntityObject, CBaseObject)
@@ -5229,6 +5006,19 @@ IRenderNode* CEntityObject::GetEngineNode() const
 	}
 
 	return NULL;
+}
+
+void CEntityObject::StoreUndo(const char* undoDescription, bool minimal, int flags)
+{
+	if (CUndo::IsRecording())
+	{
+		if (IsLegacyObject())
+		{
+			return CBaseObject::StoreUndo(undoDescription, minimal, flags);
+		}
+
+		return CUndo::Record(new CUndoEntityObject(this, undoDescription));
+	}
 }
 
 void CEntityObject::OnMenuCreateFlowGraph()

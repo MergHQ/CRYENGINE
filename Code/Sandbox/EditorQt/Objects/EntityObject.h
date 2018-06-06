@@ -183,6 +183,8 @@ public:
 	virtual IRenderNode* GetEngineNode() const;
 	virtual bool         HasMeasurementAxis() const { return false; }
 
+	virtual void StoreUndo(const char* undoDescription, bool minimal = false, int flags = 0) override;
+
 	//////////////////////////////////////////////////////////////////////////
 	// END CBaseObject
 	//////////////////////////////////////////////////////////////////////////
