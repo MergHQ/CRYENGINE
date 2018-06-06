@@ -2695,7 +2695,7 @@ void CEntityObject::GetDisplayBoundBox(AABB& box)
 
 	for (const auto& link : m_links)
 	{
-		if (CEntityObject* pTarget = link.GetTarget())
+		if (const CEntityObject* pTarget = link.GetTarget())
 		{
 			bbox.Add(pTarget->GetWorldPos());
 		}
@@ -4187,7 +4187,7 @@ int CEntityObject::AddEntityLink(const string& name, CryGUID targetEntityId)
 		{
 			target = (CEntityObject*)pObject;
 
-			if (target->GetEntityId() == m_pEntity->GetId())
+			if (target->GetId() == this->GetId())
 			{
 				CryWarning(VALIDATOR_MODULE_EDITOR, VALIDATOR_ASSERT, "Attempting to link Object %s with itself", m_pEntity->GetName());
 				return -1;
