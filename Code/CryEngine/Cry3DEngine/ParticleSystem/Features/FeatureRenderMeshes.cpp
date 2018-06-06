@@ -61,7 +61,7 @@ public:
 
 	virtual EFeatureType GetFeatureType() override { return EFT_Render; }
 
-	virtual void         AddToComponent(CParticleComponent* pComponent, SComponentParams* pParams) override
+	virtual void AddToComponent(CParticleComponent* pComponent, SComponentParams* pParams) override
 	{
 		if (!(m_pStaticObject = Get3DEngine()->FindStatObjectByFilename(m_meshName)))
 		{
@@ -77,6 +77,7 @@ public:
 			pComponent->AddParticleData(EPQF_Orientation);
 
 			m_aSubObjects.clear();
+			float maxRadiusSqr = 0.0f;
 			if (m_piecesMode != EPiecesMode::Whole)
 			{
 				int subObjectCount = m_pStaticObject->GetSubObjectCount();
@@ -88,23 +89,38 @@ public:
 							if (string(pSub->name).Right(5) == "_main")
 								continue;
 							m_aSubObjects.push_back(pSub);
+							SetMax(maxRadiusSqr, MeshRadiusSqr(pSub->pStatObj));
 						}
 				}
+			}
 
-				if (m_aSubObjects.size() > 0)
+			if (m_aSubObjects.size() > 0)
+			{
+				// Require per-particle sub-objects
+				assert(m_aSubObjects.size() < 256);
+				pComponent->InitParticles.add(this);
+				pComponent->AddParticleData(EPDT_MeshGeometry);
+				if (m_piecesMode == EPiecesMode::AllPieces)
 				{
-					// Require per-particle sub-objects
-					assert(m_aSubObjects.size() < 256);
-					pComponent->InitParticles.add(this);
-					pComponent->AddParticleData(EPDT_MeshGeometry);
-					if (m_piecesMode == EPiecesMode::AllPieces)
-					{
-						pComponent->AddParticleData(EPDT_SpawnId);
-						pParams->m_scaleParticleCount *= m_aSubObjects.size();
-					}
+					pComponent->AddParticleData(EPDT_SpawnId);
+					pParams->m_scaleParticleCount *= m_aSubObjects.size();
 				}
 			}
+			else
+			{
+				maxRadiusSqr = MeshRadiusSqr(m_pStaticObject);
+			}
+			if (m_sizeMode == ESizeMode::Scale)
+				SetMax(pParams->m_physicalSizeSlope.scale, sqrt(maxRadiusSqr));
 		}
+	}
+
+	float MeshRadiusSqr(IMeshObj* pMesh) const
+	{
+		AABB bb = pMesh->GetAABB();
+		return m_originMode == EOriginMode::Center ? 
+			bb.GetRadiusSqr() :
+			max(bb.min.GetLengthSquared(), bb.max.GetLengthSquared());
 	}
 
 	virtual void InitParticles(CParticleComponentRuntime& runtime) override
@@ -154,7 +170,7 @@ public:
 				position += orientation * localTM.GetTranslation() * size;
 				orientation = orientation * Quat(localTM);
 
-				if (runtime.ComponentParams().m_meshCentered)
+				if (m_originMode == EOriginMode::Center)
 				{
 					Vec3 subCenter = m_aSubObjects[piece]->pStatObj->GetAABB().GetCenter();
 					position += orientation * subCenter * size;
@@ -183,35 +199,32 @@ public:
 		const TIStream<IMeshObj*> meshes = container.IStream(EPDT_MeshGeometry);
 		const Vec3 camPosition = passInfo.GetCamera().GetPosition();
 		const bool hasAlphas = container.HasData(EPDT_Alpha);
-		const bool hasPieces = container.HasData(EPDT_MeshGeometry);
 
 		IMeshObj* pMeshObj = m_pStaticObject;
-
-		const AABB bBox = m_pStaticObject->GetAABB();
-		const float invObjectSize = (m_sizeMode == ESizeMode::Size) ? rsqrt_fast(bBox.GetRadiusSqr()) : 1.0f;
-		Vec3 offset = -bBox.GetCenter();
+		AABB bBox = pMeshObj->GetAABB();
+		float sizeScale = m_sizeMode == ESizeMode::Size ? rsqrt_fast(MeshRadiusSqr(pMeshObj)) : 1.0f;
 
 		renderParams.dwFObjFlags |= FOB_TRANS_MASK;
 
 		for (auto particleId : runtime.FullRange())
 		{
-			const Vec3 position = positions.Load(particleId);
-			const Quat orientation = orientations.Load(particleId);
-			const float size = sizes.Load(particleId);
-			const Vec3 scale = m_scale * size * invObjectSize;
-
-			Matrix34 wsMatrix(scale, orientation, position);
-
-			if (hasPieces)
+			if (m_aSubObjects.size())
 			{
-				pMeshObj = meshes.Load(particleId);
+				pMeshObj = meshes.SafeLoad(particleId);
 				if (!pMeshObj)
 					continue;
-				offset = -pMeshObj->GetAABB().GetCenter();
+				bBox = pMeshObj->GetAABB();
+				sizeScale = m_sizeMode == ESizeMode::Size ? rsqrt_fast(MeshRadiusSqr(pMeshObj)) : 1.0f;
 			}
 
-			if (runtime.ComponentParams().m_meshCentered)
-				wsMatrix.SetTranslation(wsMatrix * offset);
+			const Vec3 position = positions.Load(particleId);
+			const Quat orientation = orientations.Load(particleId);
+			float size = sizes.Load(particleId);
+
+			const Vec3 scale = m_scale * size;
+			Matrix34 wsMatrix(scale, orientation, position);
+			if (m_originMode == EOriginMode::Center)
+				wsMatrix.SetTranslation(wsMatrix * -bBox.GetCenter());
 
 			renderParams.fAlpha = alphas.SafeLoad(particleId);
 

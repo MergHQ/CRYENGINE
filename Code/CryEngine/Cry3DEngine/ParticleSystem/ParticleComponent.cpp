@@ -80,6 +80,7 @@ SComponentParams::SComponentParams()
 	m_renderStateFlags     = OS_ALPHA_BLEND;
 	m_requiredShaderType   = eST_All;
 	m_maxParticleSize      = 0.0f;
+	m_maxParticleAlpha     = 1.0f;
 	m_meshCentered         = false;
 	m_diffuseMap           = "%ENGINE%/EngineAssets/Textures/white.dds";
 	m_particleObjFlags     = 0;

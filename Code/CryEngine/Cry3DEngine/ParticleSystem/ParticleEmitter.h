@@ -79,8 +79,8 @@ public:
 	void                      InitSeed();
 	void                      DebugRender(const SRenderingPassInfo& passInfo) const;
 	void                      CheckUpdated();
-	bool                      UpdateAll();
-	void                      SyncUpdate();
+	bool                      UpdateParticles();
+	void                      SyncUpdateParticles();
 	void                      PostUpdate();
 	CParticleContainer&       GetParentContainer()         { return m_parentContainer; }
 	const CParticleContainer& GetParentContainer() const   { return m_parentContainer; }
@@ -119,7 +119,7 @@ public:
 	bool                      IsIndependent() const        { return Unique(); }
 	bool                      HasParticles() const;
 	bool                      HasBounds() const            { return m_bounds.GetVolume() > 0.0f; }
-	bool                      SkipUpdate() const           { return IsStable() && !WasRenderedLastFrame(); }
+	bool                      NeedsUpdate() const          { return ThreadMode() < 3 || !IsStable() || WasRenderedLastFrame(); }
 
 	struct EmitterStats
 	{

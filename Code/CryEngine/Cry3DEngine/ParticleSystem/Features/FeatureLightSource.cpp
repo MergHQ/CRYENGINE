@@ -28,10 +28,16 @@ public:
 	virtual void AddToComponent(CParticleComponent* pComponent, SComponentParams* pParams) override
 	{
 		pComponent->RenderDeferred.add(this);
-		pComponent->ComputeBounds.add(this);
 		pComponent->AddParticleData(EPVF_Position);
 		if (GetPSystem()->GetFlareMaterial() && !m_flare.empty())
 			m_hasFlareOptics = gEnv->pOpticsManager->Load(m_flare.c_str(), m_lensOpticsId);
+
+		// Compute max effective radius
+		SRenderLight light;
+		light.SetRadius(m_radiusClip, FLT_MIN);
+		light.SetLightColor(ColorF(m_intensity * pParams->m_maxParticleAlpha));
+		SetMax(pParams->m_physicalSizeSlope.start, light.m_fRadius);
+		SetMax(pParams->m_maxParticleSize, light.m_fRadius);
 	}
 
 	virtual void Serialize(Serialization::IArchive& ar) override
@@ -46,18 +52,6 @@ public:
 
 	virtual void RenderDeferred(const CParticleComponentRuntime& runtime, const SRenderContext& renderContext) override
 	{
-		ComputeLights(runtime, &renderContext, nullptr);
-	}
-
-	void ComputeBounds(const CParticleComponentRuntime& runtime, AABB& bounds) override
-	{
-		// PFX2_TODO: Compute bounds augmentation statically, using min/max particle data. 
-		// Track min/max of all float data types, in AddToComponent.
-		ComputeLights(runtime, nullptr, &bounds);
-	}
-
-	void ComputeLights(const CParticleComponentRuntime& runtime, const SRenderContext* pRenderContext, AABB* pBounds)
-	{
 		CRY_PROFILE_FUNCTION(PROFILE_PARTICLE);
 
 		if (!GetCVars()->e_DynamicLights)
@@ -67,26 +61,23 @@ public:
 			return;
 
 		SRenderLight light;
-		if (pRenderContext)
+		if (renderContext.m_passInfo.IsRecursivePass())
+			return;
+
+		light.m_nStencilRef[0] = m_affectsThisAreaOnly ? renderContext.m_renderParams.nClipVolumeStencilRef : CClipVolumeManager::AffectsEverythingStencilRef;
+		light.m_nStencilRef[1] = CClipVolumeManager::InactiveVolumeStencilRef;
+		light.m_Flags |= DLF_DEFERRED_LIGHT;
+		if (m_affectsFog == ELightAffectsFog::Both)
+			light.m_Flags |= DLF_VOLUMETRIC_FOG;
+		else if (m_affectsFog == ELightAffectsFog::FogOnly)
+			light.m_Flags |= DLF_VOLUMETRIC_FOG | DLF_VOLUMETRIC_FOG_ONLY;
+
+		if (m_hasFlareOptics)
 		{
-			if (pRenderContext->m_passInfo.IsRecursivePass())
-				return;
-
-			light.m_nStencilRef[0] = m_affectsThisAreaOnly ? pRenderContext->m_renderParams.nClipVolumeStencilRef : CClipVolumeManager::AffectsEverythingStencilRef;
-			light.m_nStencilRef[1] = CClipVolumeManager::InactiveVolumeStencilRef;
-			light.m_Flags |= DLF_DEFERRED_LIGHT;
-			if (m_affectsFog == ELightAffectsFog::Both)
-				light.m_Flags |= DLF_VOLUMETRIC_FOG;
-			else if (m_affectsFog == ELightAffectsFog::FogOnly)
-				light.m_Flags |= DLF_VOLUMETRIC_FOG | DLF_VOLUMETRIC_FOG_ONLY;
-
-			if (m_hasFlareOptics)
-			{
-				light.m_sName = "Wavicle";
-				IOpticsElementBase* pOptics = gEnv->pOpticsManager->GetOptics(m_lensOpticsId);
-				light.SetLensOpticsElement(pOptics);
-				light.m_Shader = GetPSystem()->GetFlareMaterial()->GetShaderItem();
-			}
+			light.m_sName = "Wavicle";
+			IOpticsElementBase* pOptics = gEnv->pOpticsManager->GetOptics(m_lensOpticsId);
+			light.SetLensOpticsElement(pOptics);
+			light.m_Shader = GetPSystem()->GetFlareMaterial()->GetShaderItem();
 		}
 
 		UCol defaultColor;
@@ -97,6 +88,9 @@ public:
 		const IFStream alphas = container.GetIFStream(EPDT_Alpha, 1.0f);
 		const IFStream sizes = container.GetIFStream(EPDT_Size);
 
+		const SRenderingPassInfo& passInfo = renderContext.m_passInfo;
+		const CCamera& camera = passInfo.GetCamera();
+		const Vec3 camPos = camera.GetPosition();
 		const float distRatio = GetFloatCVar(e_ParticlesLightsViewDistRatio);
 
 		for (auto particleId : container.GetFullRange())
@@ -109,22 +103,12 @@ public:
 			const float intensity = m_intensity * alphas.SafeLoad(particleId) * rcp(light.GetIntensityScale());
 			light.SetLightColor(ToColorF(color) * ColorF(intensity));
 
-			if (pBounds)
+			if (position.GetSquaredDistance(camPos) < sqr(light.m_fRadius * distRatio)
+				&& camera.IsSphereVisible_F(Sphere(position, light.m_fRadius)))
 			{
-				pBounds->Add(position, light.m_fRadius);
-			}
-			if (pRenderContext)
-			{
-				auto& passInfo = pRenderContext->m_passInfo;
-				const CCamera& camera = passInfo.GetCamera();
-				const Vec3 camPos = camera.GetPosition();
-				if (position.GetSquaredDistance(camPos) < sqr(light.m_fRadius * distRatio)
-					&& camera.IsSphereVisible_F(Sphere(position, light.m_fRadius)))
-				{
-					Get3DEngine()->SetupLightScissors(&light, passInfo);
-					light.m_n3DEngineUpdateFrameID = passInfo.GetMainFrameID();
-					Get3DEngine()->AddLightToRenderer(light, 1.0f, passInfo);
-				}
+				Get3DEngine()->SetupLightScissors(&light, passInfo);
+				light.m_n3DEngineUpdateFrameID = passInfo.GetMainFrameID();
+				Get3DEngine()->AddLightToRenderer(light, 1.0f, passInfo);
 			}
 		}
 	}

@@ -191,6 +191,8 @@ bool Serialize(Serialization::IArchive& ar, SkipEmptySerialize<C>& cont, cstr na
 	return Serialize(ar, cont.container, name, label);
 }
 
+inline int ThreadMode() { return Cry3DEngineBase::GetCVars()->e_ParticlesThread; }
+
 }
 
 
