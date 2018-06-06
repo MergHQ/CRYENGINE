@@ -16,8 +16,7 @@ public:
 
 	virtual IViewPaneClass::EDockingDirection GetDockingDirection() const override { return IViewPaneClass::DOCK_FLOAT; }
 	virtual QRect                             GetPaneRect() override               { return QRect(0, 0, 800, 500); }
-
-	virtual const char*                       GetEditorName() const override       { return "Vegetation Editor"; };
+	virtual const char*                       GetEditorName() const override       { return "Vegetation Editor"; }
 
 protected:
 	virtual bool OnNew() override;
@@ -29,4 +28,3 @@ private:
 	struct SImplementation;
 	std::unique_ptr<SImplementation> p;
 };
-

@@ -5,8 +5,8 @@
 #include "ICommandManager.h"
 #include <CrySandbox/CrySignal.h>
 
-class QCommandAction;
 class CCustomCommand;
+class QCommandAction;
 
 class CEditorCommandManager : public ICommandManager
 {
@@ -40,7 +40,6 @@ public:
 	void                             SetEditorUIActionsEnabled(bool bEnabled);
 
 	//! Used in the console dialog
-	string AutoComplete(const string& substr) const;
 	bool   IsRegistered(const char* module, const char* name) const override;
 	bool   IsRegistered(const char* cmdLine) const override;
 

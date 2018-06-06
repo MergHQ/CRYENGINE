@@ -67,13 +67,15 @@ namespace RCConfigParser
 			: name(name), value(value)
 		{}
 
-		virtual bool IsEmpty() {
+		bool IsEmpty() 
+		{
 			return value.empty();
 		}
 		const string& GetName() { return name; }
 		const string GetAsString() { return value; }
 		const bool GetAsBool() { return atoi(value.c_str()) == 1; }
-		const std::vector<string> GetAsStringVector() {
+		const std::vector<string> GetAsStringVector() 
+		{
 			std::vector<string> result;
 			if (!IsEmpty())
 			{
