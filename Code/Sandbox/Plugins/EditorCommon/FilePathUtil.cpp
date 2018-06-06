@@ -400,11 +400,7 @@ QString ReplaceExtension(const QString& str, const char* ext)
 
 //////////////////////////////////////////////////////////////////////////
 
-
-//! Transforms an Absolute Path to a relative path provided the absolute path of the directory to be relative to
-//! Example : AbsoluteToRelativePath("A:/dir/to/file.ext","A:/dir/") returns "to/file.ext"
-//! Please note this has edge cases and will not always canonize the paths properly
-string AbsoluteToRelativePath(const string& absolutePath, const char* dirPathRelativeTo)
+inline string AbsoluteToRelativePath(const string& absolutePath, const char* dirPathRelativeTo)
 {
 	CryPathString path(absolutePath);
 	path = ToUnixPath(path);

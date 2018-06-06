@@ -46,6 +46,8 @@ public:
 	bool IsSurfaceNormalSnappingEnabled() const;
 	bool IsHelpersDisplayed() const;
 
+	bool ConvertEditorXmlToLevelAssetType(const string& levelFolder, const char* const szName) const;
+
 	//ILevelEditor.h interface
 	virtual bool IsLevelLoaded() override;
 	//end ILevelEditor.h

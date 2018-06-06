@@ -116,14 +116,6 @@ bool UnpakCryFile(ICryPak* pCryPak, const string& cryFilename, const string& des
 	return true;
 }
 
-bool CreateNewLevelFile(const string& levelFolder, const char* const szName)
-{
-	// Rename level.editor_xml to a new *.level
-	const string oldFilename = PathUtil::Make(levelFolder, "level.editor_xml");
-	const string newFilename = PathUtil::Make(levelFolder, PathUtil::ReplaceExtension(szName, CLevelType::GetFileExtensionStatic()));
-	return PathUtil::MoveFileAllowOverwrite(oldFilename, newFilename);
-}
-
 void UpdateLevels(const std::vector<string>& levels)
 {
 	size_t countOfImported = 0;
@@ -154,7 +146,8 @@ void UpdateLevels(const std::vector<string>& levels)
 			notif.SetProgress(totalProgress);
 		};
 
-		if (!UnpakCryFile(pCryPak, oldFilePath, levelFolder, updateProgressBar) || !CreateNewLevelFile(levelFolder, szOldFilename))
+		const CLevelEditor* const pLevelEditor = static_cast<const CLevelEditor* const>(GetIEditorImpl()->GetLevelEditor());
+		if (!UnpakCryFile(pCryPak, oldFilePath, levelFolder, updateProgressBar) || !pLevelEditor->ConvertEditorXmlToLevelAssetType(levelFolder, szOldFilename))
 		{
 			CryWarning(EValidatorModule::VALIDATOR_MODULE_EDITOR, EValidatorSeverity::VALIDATOR_WARNING, "Could not import level %s", szOldFilename);
 			continue;
@@ -557,6 +550,34 @@ bool CLevelEditor::IsHelpersDisplayed() const
 bool CLevelEditor::IsLevelLoaded()
 {
 	return GetIEditor()->GetDocument() && GetIEditor()->GetGameEngine() && GetIEditor()->GetGameEngine()->IsLevelLoaded();
+}
+
+bool CLevelEditor::ConvertEditorXmlToLevelAssetType(const string& levelFolder, const char* const szName) const
+{
+	// Rename level.editor_xml to a new *.level
+	const string oldFilename = PathUtil::Make(levelFolder, "level.editor_xml");
+	const string newFilename = PathUtil::Make(levelFolder, PathUtil::ReplaceExtension(szName, CLevelType::GetFileExtensionStatic()));
+	if (PathUtil::MoveFileAllowOverwrite(oldFilename, newFilename))
+	{
+		CAssetType* pType = GetIEditorImpl()->GetAssetManager()->FindAssetType("Level");
+		CRY_ASSERT(pType);
+
+		const string path = PathUtil::RemoveSlash(levelFolder);
+
+		const string cryassetPath = string().Format("%s.%s.cryasset", path, pType->GetFileExtension());
+		CAsset asset(pType->GetTypeName(), CryGUID::Create(), PathUtil::GetFile(cryassetPath));
+		CEditableAsset editAsset(asset);
+		editAsset.SetMetadataFile(cryassetPath);
+		
+		const string rootFolder = PathUtil::GetParentDirectory(path);
+		editAsset.AddFile(PathUtil::AbsoluteToRelativePath(newFilename, rootFolder));
+		
+		editAsset.WriteToFile();
+
+		return true;
+	}
+
+	return false;
 }
 
 bool CLevelEditor::OnNew()
