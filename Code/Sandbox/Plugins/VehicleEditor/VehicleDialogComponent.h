@@ -1,7 +1,5 @@
 // Copyright 2001-2018 Crytek GmbH / Crytek Group. All rights reserved.
 
-#ifndef __VehicleDialogComponent_h__
-#define __VehicleDialogComponent_h__
 #pragma once
 
 struct IVariable;
@@ -23,10 +21,11 @@ struct IVariable;
 
 struct STreeItem
 {
+	STreeItem() : item(0), parent(0) {}
+	STreeItem(HTREEITEM hItem, HTREEITEM hParent) { item = hItem; parent = hParent; }
+
 	HTREEITEM item;
 	HTREEITEM parent;
-	STreeItem() : item(0), parent(0){}
-	STreeItem(HTREEITEM hItem, HTREEITEM hParent){ item = hItem; parent = hParent; }
 };
 
 typedef std::map<CBaseObject*, STreeItem> TPartToTreeMap;
@@ -38,9 +37,10 @@ class CVehiclePrototype;
  */
 struct IVehicleDialogComponent
 {
+	virtual ~IVehicleDialogComponent() {}
 	virtual void UpdateVehiclePrototype(CVehiclePrototype* pProt) = 0;
 	virtual void OnPaneClose() = 0;
-	virtual void NotifyObjectsDeletion(CVehiclePrototype* pProt) {};
+	virtual void NotifyObjectsDeletion(CVehiclePrototype* pProt) {}
 };
 
 /** Logs to console if v_debugdraw set to DEBUGDRAW_VEED
@@ -51,6 +51,7 @@ void VeedLog(const char* s, ...);
  */
 struct IVeedObject
 {
+	virtual ~IVeedObject() {}
 	virtual void        UpdateVarFromObject() = 0;
 	virtual void        UpdateObjectFromVar() = 0;
 
@@ -96,7 +97,7 @@ public:
 
 	virtual int         GetIconIndex()               { return 0; }
 
-	virtual void        UpdateScale(float scale)     {};
+	virtual void        UpdateScale(float scale)     {}
 	virtual void        OnTreeSelection()            {}
 	///////////////////////////////////////////////////////////////
 
@@ -121,6 +122,3 @@ protected:
 	bool       m_ignoreOnTransformCallback;
 	bool       m_ignoreObjectUpdateCallback;
 };
-
-#endif // __VehicleDialogComponent_h__
-

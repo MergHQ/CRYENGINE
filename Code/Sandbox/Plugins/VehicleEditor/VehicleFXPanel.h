@@ -1,7 +1,5 @@
 // Copyright 2001-2018 Crytek GmbH / Crytek Group. All rights reserved.
 
-#ifndef __VehicleFXPanel_h__
-#define __VehicleFXPanel_h__
 #pragma once
 
 #include "PropertyCtrlExt.h"
@@ -42,6 +40,3 @@ protected:
 
 	IVariable::OnSetCallback m_onSetCallback;
 };
-
-#endif // __VehicleFXPanel_h__
-
