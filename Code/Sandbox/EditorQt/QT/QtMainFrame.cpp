@@ -54,7 +54,6 @@
 #include "Commands/KeybindEditor.h"
 #include "KeyboardShortcut.h"
 #include "EditorFramework/Events.h"
-#include "LevelEditor/LevelEditorSharedState.h"
 #include <Preferences/GeneralPreferences.h>
 #include "Controls/SandboxWindowing.h"
 #include "QToolWindowManager/QToolWindowManager.h"
@@ -232,22 +231,6 @@ public:
 		pSnapSettings->setIcon(CryIcon("icons:Viewport/viewport-snap-options.ico"));
 		actionReduce_Working_Set = new QCommandAction(nullptr, nullptr, MainWindow);
 		actionReduce_Working_Set->setObjectName(QStringLiteral("actionReduce_Working_Set"));
-		RefCoordSys value = GetIEditorImpl()->GetReferenceCoordSys();
-		switch (value)
-		{
-		case COORDS_WORLD:
-			GetIEditorImpl()->GetCommandManager()->GetCommandAction("level.set_world_coordinate_system")->setChecked(true);
-			break;
-		case COORDS_PARENT:
-			GetIEditorImpl()->GetCommandManager()->GetCommandAction("level.set_parent_coordinate_system")->setChecked(true);
-			break;
-		case COORDS_VIEW:
-			GetIEditorImpl()->GetCommandManager()->GetCommandAction("level.set_view_coordinate_system")->setChecked(true);
-			break;
-		case COORDS_LOCAL:
-			GetIEditorImpl()->GetCommandManager()->GetCommandAction("level.set_local_coordinate_system")->setChecked(true);
-			break;
-		}
 
 		QActionGroup* renderQualityGroup = new QActionGroup(menuGraphics);
 		actionVery_High = new QCommandAction(nullptr, nullptr, MainWindow);
@@ -762,9 +745,6 @@ CEditorMainFrame::CEditorMainFrame(QWidget* parent)
 	QToolWindowManager* mainDockArea = m_toolManager;
 	setCentralWidget(mainDockArea);
 
-	CViewManager* pViewManager = GetIEditorImpl()->GetViewManager();
-	pViewManager->signalAxisConstrainChanged.Connect(this, &CEditorMainFrame::OnAxisConstrainChanged);
-
 	UpdateWindowTitle();
 
 	setWindowIcon(QIcon("icons:editor_icon.ico"));
@@ -774,6 +754,8 @@ CEditorMainFrame::CEditorMainFrame(QWidget* parent)
 	QWidget* w = QSandboxWindow::wrapWidget(this, m_toolManager);
 	w->setObjectName("mainWindow");
 	w->show();
+
+	GetIEditorImpl()->GetLevelEditorSharedState()->signalEditToolChanged.Connect(this, &CEditorMainFrame::OnEditToolChanged);
 
 	//Important so the focus is set to this and messages reach the CLevelEditor when clicking on the menu.
 	setFocusPolicy(Qt::StrongFocus);
@@ -796,6 +778,8 @@ void CEditorMainFrame::UpdateWindowTitle(const QString& levelPath /*= "" */)
 //////////////////////////////////////////////////////////////////////////
 CEditorMainFrame::~CEditorMainFrame()
 {
+	GetIEditorImpl()->GetLevelEditorSharedState()->signalEditToolChanged.DisconnectObject(this);
+
 	m_loopHandler.RemoveNativeHandler(reinterpret_cast<uintptr_t>(this));
 
 	if (m_pInstance)
@@ -1439,9 +1423,11 @@ void CEditorMainFrame::InitLayout()
 
 bool CEditorMainFrame::focusNextPrevChild(bool next)
 {
-	if (GetIEditorImpl()->GetEditTool() && GetIEditorImpl()->GetEditTool()->IsAllowTabKey())
+	CEditTool* pTool = GetIEditorImpl()->GetLevelEditorSharedState()->GetEditTool();
+	if (pTool && pTool->IsAllowTabKey())
 		return false;
-	return __super::focusNextPrevChild(next);
+
+	return QMainWindow::focusNextPrevChild(next);
 }
 
 void CEditorMainFrame::contextMenuEvent(QContextMenuEvent* pEvent)
@@ -1492,6 +1478,17 @@ void CEditorMainFrame::contextMenuEvent(QContextMenuEvent* pEvent)
 	menu.exec(pEvent->globalPos());
 }
 
+void CEditorMainFrame::OnEditToolChanged()
+{
+	if (!GetIEditorImpl()->GetLevelEditorSharedState()->GetEditTool()->IsKindOf(RUNTIME_CLASS(CLinkTool)))
+	{
+		if (QAction* pAction = GetIEditorImpl()->GetICommandManager()->GetAction("tools.link"))
+		{
+			pAction->setChecked(false);
+		}
+	}
+}
+
 void CEditorMainFrame::OnEditorNotifyEvent(EEditorNotifyEvent event)
 {
 	switch (event)
@@ -1515,17 +1512,6 @@ void CEditorMainFrame::OnEditorNotifyEvent(EEditorNotifyEvent event)
 			actionXBox_One->setChecked(currentConfigSpec == CONFIG_DURANGO);
 			actionPS4->setChecked(currentConfigSpec == CONFIG_ORBIS);
 			actionCustom->setChecked(currentConfigSpec == CONFIG_CUSTOM);
-		}
-		break;
-	case eNotify_OnEditToolEndChange:
-		{
-			if (!GetIEditorImpl()->GetEditTool()->IsKindOf(RUNTIME_CLASS(CLinkTool)))
-			{
-				if (QAction* pAction = GetIEditorImpl()->GetICommandManager()->GetAction("tools.link"))
-				{
-					pAction->setChecked(false);
-				}
-			}
 		}
 		break;
 	}
@@ -1591,7 +1577,7 @@ bool CEditorMainFrame::BeforeClose()
 
 	// Close all edit panels.
 	GetIEditorImpl()->ClearSelection();
-	GetIEditorImpl()->SetEditTool(0);
+	GetIEditorImpl()->GetLevelEditorSharedState()->SetEditTool(nullptr);
 
 	CTabPaneManager::GetInstance()->CloseAllPanes();
 
@@ -1651,43 +1637,6 @@ bool CEditorMainFrame::event(QEvent* event)
 		}
 	}
 	return QMainWindow::event(event);
-}
-
-//////////////////////////////////////////////////////////////////////////
-void CEditorMainFrame::OnAxisConstrainChanged(int axis)
-{
-	CEditorCommandManager* pCommandManager = GetIEditorImpl()->GetCommandManager();
-	QCommandAction* pXConstraintAction = pCommandManager->GetCommandAction("tools.enable_x_axis_contraint");
-	QCommandAction* pYConstraintAction = pCommandManager->GetCommandAction("tools.enable_y_axis_contraint");
-	QCommandAction* pZConstraintAction = pCommandManager->GetCommandAction("tools.enable_z_axis_contraint");
-	QCommandAction* pXYConstraintAction = pCommandManager->GetCommandAction("tools.enable_xy_axis_contraint");
-
-	pXConstraintAction->setChecked(false);
-	pYConstraintAction->setChecked(false);
-	pZConstraintAction->setChecked(false);
-	pXYConstraintAction->setChecked(false);
-
-	switch (axis)
-	{
-	case AXIS_X:
-		pXConstraintAction->setChecked(true);
-		break;
-
-	case AXIS_Y:
-		pYConstraintAction->setChecked(true);
-		break;
-
-	case AXIS_Z:
-		pZConstraintAction->setChecked(true);
-		break;
-
-	case AXIS_XY:
-		pXYConstraintAction->setChecked(true);
-		break;
-
-	default:
-		return;
-	}
 }
 
 //////////////////////////////////////////////////////////////////////////

@@ -75,7 +75,7 @@
 #include "UndoEntityProperty.h"
 #include "UndoEntityParam.h"
 
-#include "PickObjectTool.h"
+#include <LevelEditor/Tools/PickObjectTool.h>
 
 #include <Cry3DEngine/IGeomCache.h>
 
@@ -2685,6 +2685,27 @@ void CEntityObject::Display(CObjectRenderHelper& objRenderHelper)
 	}
 
 	DrawDefault(dc, col);
+}
+const ColorB& CEntityObject::GetSelectionPreviewHighlightColor()
+{
+	return gViewportSelectionPreferences.colorEntityBBox;
+}
+
+void CEntityObject::DrawSelectionPreviewHighlight(SDisplayContext& dc)
+{
+	CBaseObject::DrawSelectionPreviewHighlight(dc);
+
+	AABB bbox;
+	GetBoundBox(bbox);
+	ColorB color = GetSelectionPreviewHighlightColor();
+
+	if (GetParent())
+		color.a = (uint8)(gViewportSelectionPreferences.childObjectGeomAlpha * 255);
+
+	dc.DepthTestOff();
+	dc.SetColor(color);
+	dc.DrawSolidBox(bbox.min, bbox.max);
+	dc.DepthTestOn();
 }
 
 void CEntityObject::GetDisplayBoundBox(AABB& box)

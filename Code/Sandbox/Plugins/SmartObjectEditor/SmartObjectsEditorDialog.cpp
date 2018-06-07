@@ -117,21 +117,6 @@ void CSOLibrary::OnEditorNotifyEvent(EEditorNotifyEvent event)
 	case eNotify_OnInit:                    // Sent after editor fully initialized.
 		REGISTER_COMMAND("so_reload", ReloadSmartObjects, VF_NULL, "");
 		break;
-
-	case eNotify_OnEndSceneOpen:            // Sent after document have been opened.
-	case eNotify_OnEndSceneSave:            // Sent after document have been saved.
-	case eNotify_OnEndNewScene:             // Sent after the document have been cleared.
-	case eNotify_OnMissionChange:           // Send when the current mission changes.
-	case eNotify_OnEditModeChange:          // Sent when editing mode change (move,rotate,scale,....)
-	case eNotify_OnEditToolBeginChange:     // Sent when edit tool is about to be changed (ObjectMode,TerrainModify,....)
-	case eNotify_OnEditToolEndChange:       // Sent when edit tool has been changed (ObjectMode,TerrainModify,....)
-	case eNotify_OnEndGameMode:             // Send when editor goes out of game mode.
-	case eNotify_OnUpdateViewports:         // Sent when editor needs to update data in the viewports.
-	case eNotify_OnInvalidateControls:      // Sent when editor needs to update some of the data that can be cached by controls like combo boxes.
-	case eNotify_OnSelectionChange:         // Sent when object selection change.
-	case eNotify_OnPlaySequence:            // Sent when editor start playing animation sequence.
-	case eNotify_OnStopSequence:            // Sent when editor stop playing animation sequence.
-		break;
 	}
 }
 
@@ -2019,42 +2004,6 @@ void CSmartObjectsEditorDialog::OnEditorNotifyEvent(EEditorNotifyEvent event)
 			CSOLibrary::m_bSaveNeeded = false;
 			CSOLibrary::m_bLoadNeeded = false;
 		}
-		break;
-
-	case eNotify_OnInit:                    // Sent after editor fully initialized.
-	case eNotify_OnEndSceneOpen:            // Sent after document have been opened.
-		//		ReloadEntries();
-		break;
-
-	case eNotify_OnEndSceneSave:            // Sent after document have been saved.
-	case eNotify_OnEndNewScene:             // Sent after the document have been cleared.
-	case eNotify_OnMissionChange:           // Send when the current mission changes.
-		break;
-
-	//////////////////////////////////////////////////////////////////////////
-	// Editing events.
-	//////////////////////////////////////////////////////////////////////////
-	case eNotify_OnEditModeChange:          // Sent when editing mode change (move,rotate,scale,....)
-	case eNotify_OnEditToolBeginChange:     // Sent when edit tool is about to be changed (ObjectMode,TerrainModify,....)
-	case eNotify_OnEditToolEndChange:       // Sent when edit tool has been changed (ObjectMode,TerrainModify,....)
-		break;
-
-	// Game related events.
-	case eNotify_OnEndGameMode:             // Send when editor goes out of game mode.
-		break;
-
-	// UI events.
-	case eNotify_OnUpdateViewports:         // Sent when editor needs to update data in the viewports.
-	case eNotify_OnInvalidateControls:      // Sent when editor needs to update some of the data that can be cached by controls like combo boxes.
-		break;
-
-	// Object events.
-	case eNotify_OnSelectionChange:         // Sent when object selection change.
-		// Unfortunately I have never received this notification!!!
-		// SyncSelection();
-		break;
-	case eNotify_OnPlaySequence:            // Sent when editor start playing animation sequence.
-	case eNotify_OnStopSequence:            // Sent when editor stop playing animation sequence.
 		break;
 	}
 }

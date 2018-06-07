@@ -845,7 +845,7 @@ namespace Private_PrefabCommands
 
 static void PyCreateFromSelection()
 {
-	GetIEditorImpl()->SetEditTool(nullptr);
+	GetIEditorImpl()->GetLevelEditorSharedState()->SetEditTool(nullptr);
 	GetIEditorImpl()->GetPrefabManager()->MakeFromSelection();
 }
 

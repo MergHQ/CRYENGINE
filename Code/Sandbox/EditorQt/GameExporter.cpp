@@ -166,7 +166,7 @@ bool CGameExporter::DoExport(unsigned int flags, const char* subdirectory)
 	SetCurrentDirectory(GetIEditorImpl()->GetMasterCDFolder());
 
 	// Close all Editor tools
-	GetIEditorImpl()->SetEditTool(0);
+	GetIEditorImpl()->GetLevelEditorSharedState()->SetEditTool(nullptr);
 
 	string sLevelPath = PathUtil::AddSlash(pGameEngine->GetLevelPath().GetString());
 	if (subdirectory && subdirectory[0] && strcmp(subdirectory, ".") != 0)

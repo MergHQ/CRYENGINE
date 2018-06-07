@@ -160,22 +160,20 @@ bool CVegetationSelectTool::MouseCallback(CViewport* pView, EMouseEvent event, C
 
 void CVegetationSelectTool::OnManipulatorDrag(IDisplayViewport* pView, ITransformManipulator* pManipulator, const Vec2i& point0, const Vec3& value, int flags)
 {
-	// get world/local coordinate system setting.
-	auto coordSys = GetIEditorImpl()->GetReferenceCoordSys();
-	auto editMode = GetIEditorImpl()->GetEditMode();
+	auto editMode = GetIEditorImpl()->GetLevelEditorSharedState()->GetEditMode();
 
 	// get current axis constrains.
 	switch (editMode)
 	{
-	case eEditModeMove:
+	case CLevelEditorSharedState::EditMode::Move:
 		GetIEditorImpl()->GetIUndoManager()->Restore();
 		MoveSelected(pView, value);
 		break;
-	case eEditModeRotate:
+	case CLevelEditorSharedState::EditMode::Rotate:
 		GetIEditorImpl()->GetIUndoManager()->Restore();
 		RotateSelected(value);
 		break;
-	case eEditModeScale:
+	case CLevelEditorSharedState::EditMode::Scale:
 		{
 			GetIEditorImpl()->GetIUndoManager()->Restore();
 
@@ -668,7 +666,7 @@ bool CVegetationSelectTool::OnLButtonDown(CViewport* pView, UINT flags, CPoint p
 		{
 			m_opMode = OPMODE_SCALE;
 		}
-		else if (GetIEditorImpl()->GetEditMode() == eEditModeMove)
+		else if (GetIEditorImpl()->GetLevelEditorSharedState()->GetEditMode() == CLevelEditorSharedState::EditMode::Move)
 		{
 			m_opMode = OPMODE_MOVE;
 			signalSelectionChanged();

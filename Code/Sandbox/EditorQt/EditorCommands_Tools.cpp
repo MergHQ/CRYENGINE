@@ -15,27 +15,30 @@ namespace Private_EditorCommands
 {
 void Select()
 {
-	GetIEditorImpl()->SetEditMode(eEditModeSelect);
+	GetIEditorImpl()->GetLevelEditorSharedState()->SetEditMode(CLevelEditorSharedState::EditMode::Select);
 }
 
 void Move()
 {
-	GetIEditorImpl()->SetEditMode(eEditModeMove);
+	GetIEditorImpl()->GetLevelEditorSharedState()->SetEditMode(CLevelEditorSharedState::EditMode::Move);
+	GetIEditorImpl()->GetLevelEditorSharedState()->SetEditMode(CLevelEditorSharedState::EditMode::Move);
 }
 
 void Rotate()
 {
-	GetIEditorImpl()->SetEditMode(eEditModeRotate);
+	GetIEditorImpl()->GetLevelEditorSharedState()->SetEditMode(CLevelEditorSharedState::EditMode::Rotate);
+	GetIEditorImpl()->GetLevelEditorSharedState()->SetEditMode(CLevelEditorSharedState::EditMode::Rotate);
 }
 
 void Scale()
 {
-	GetIEditorImpl()->SetEditMode(eEditModeScale);
+	GetIEditorImpl()->GetLevelEditorSharedState()->SetEditMode(CLevelEditorSharedState::EditMode::Scale);
+	GetIEditorImpl()->GetLevelEditorSharedState()->SetEditMode(CLevelEditorSharedState::EditMode::Scale);
 }
 
 void PickMaterial()
 {
-	GetIEditorImpl()->SetEditTool("Material.PickTool");
+	GetIEditorImpl()->GetLevelEditorSharedState()->SetEditTool("Material.PickTool");
 }
 
 static float s_fastRotateAngle {
@@ -46,21 +49,21 @@ void FastRotateX()
 {
 	CUndo undo("Rotate X");
 	const CSelectionGroup* pSelection = GetIEditorImpl()->GetSelection();
-	pSelection->Rotate(Ang3(s_fastRotateAngle, 0, 0), GetIEditorImpl()->GetReferenceCoordSys());
+	pSelection->Rotate(Ang3(s_fastRotateAngle, 0, 0));
 }
 
 void FastRotateY()
 {
 	CUndo undo("Rotate Y");
 	const CSelectionGroup* pSelection = GetIEditorImpl()->GetSelection();
-	pSelection->Rotate(Ang3(0, s_fastRotateAngle, 0), GetIEditorImpl()->GetReferenceCoordSys());
+	pSelection->Rotate(Ang3(0, s_fastRotateAngle, 0));
 }
 
 void FastRotateZ()
 {
 	CUndo undo("Rotate Z");
 	const CSelectionGroup* pSelection = GetIEditorImpl()->GetSelection();
-	pSelection->Rotate(Ang3(0, 0, s_fastRotateAngle), GetIEditorImpl()->GetReferenceCoordSys());
+	pSelection->Rotate(Ang3(0, 0, s_fastRotateAngle));
 }
 
 void SetFastRotateAngle()
@@ -77,22 +80,22 @@ void SetFastRotateAngle()
 
 void EnableXAxisConstraint()
 {
-	GetIEditorImpl()->SetAxisConstrains(AXIS_X);
+	GetIEditorImpl()->GetLevelEditorSharedState()->SetAxisConstraint(CLevelEditorSharedState::Axis::X);
 }
 
 void EnableYAxisConstraint()
 {
-	GetIEditorImpl()->SetAxisConstrains(AXIS_Y);
+	GetIEditorImpl()->GetLevelEditorSharedState()->SetAxisConstraint(CLevelEditorSharedState::Axis::Y);
 }
 
 void EnableZAxisConstraint()
 {
-	GetIEditorImpl()->SetAxisConstrains(AXIS_Z);
+	GetIEditorImpl()->GetLevelEditorSharedState()->SetAxisConstraint(CLevelEditorSharedState::Axis::Z);
 }
 
 void EnableXYAxisConstraint()
 {
-	GetIEditorImpl()->SetAxisConstrains(AXIS_XY);
+	GetIEditorImpl()->GetLevelEditorSharedState()->SetAxisConstraint(CLevelEditorSharedState::Axis::XY);
 }
 }
 

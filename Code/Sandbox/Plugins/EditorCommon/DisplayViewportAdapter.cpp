@@ -44,17 +44,18 @@ bool CDisplayViewportAdapter::HitTestLine(const Vec3& lineP1, const Vec3& lineP2
 	return false;
 }
 
-void CDisplayViewportAdapter::GetPerpendicularAxis(EAxis* axis, bool* is2D) const
+CLevelEditorSharedState::Axis CDisplayViewportAdapter::GetPerpendicularAxis(bool* pIs2D) const
 {
+	if (pIs2D)
+		*pIs2D = false;
+
 	if (m_bXYViewport)
 	{
-		*axis = AXIS_Z;
-		*is2D = false;
+		return CLevelEditorSharedState::Axis::Z;
 	}
 	else
 	{
-		*axis = AXIS_NONE;
-		*is2D = false;
+		return CLevelEditorSharedState::Axis::None;
 	}
 }
 
@@ -66,8 +67,8 @@ const Matrix34& CDisplayViewportAdapter::GetViewTM() const
 
 POINT CDisplayViewportAdapter::WorldToView(const Vec3& worldPoint) const
 {
-	Vec3 out(0,0,0);
-	m_viewport->Camera()->Project(worldPoint,out);
+	Vec3 out(0, 0, 0);
+	m_viewport->Camera()->Project(worldPoint, out);
 	POINT result;
 	result.x = (int)out.x;
 	result.y = (int)out.y;
@@ -122,7 +123,6 @@ Vec3 CDisplayViewportAdapter::UpViewDirection() const
 {
 	return m_viewport->Camera()->GetUp();
 }
-
 
 Vec3 CDisplayViewportAdapter::CameraToWorld(Vec3 worldPoint) const
 {

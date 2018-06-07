@@ -4,6 +4,7 @@
 
 #include "Group.h"
 #include "Prefabs/PrefabItem.h"
+#include "IUndoObject.h"
 
 class CPopupMenuItem;
 
@@ -53,6 +54,8 @@ public:
 
 	virtual void       Display(CObjectRenderHelper& objRenderHelper) override;
 	virtual bool       HitTest(HitContext& hc) override;
+
+	const ColorB&      GetSelectionPreviewHighlightColor() override;
 
 	virtual void       CreateInspectorWidgets(CInspectorWidgetCreator& creator) override;
 

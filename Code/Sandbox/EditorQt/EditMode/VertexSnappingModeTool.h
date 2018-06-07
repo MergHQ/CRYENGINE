@@ -38,7 +38,7 @@ public:
 	~CVertexSnappingModeTool();
 
 	virtual string GetDisplayName() const override { return "Snap to Vertex"; }
-	void           Display(SDisplayContext& dc);
+	void           Display(SDisplayContext& dc) override;
 	bool           MouseCallback(CViewport* view, EMouseEvent event, CPoint& point, int flags);
 
 protected:

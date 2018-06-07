@@ -51,7 +51,7 @@
 #include "Objects/BaseObject.h"
 
 #include "IDisplayViewport.h"
-#include "EditTool.h"
+#include "LevelEditor/Tools/EditTool.h"
 
 #include "Core/Declaration.h"
 #include "Core/Common.h"

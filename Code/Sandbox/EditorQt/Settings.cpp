@@ -5,7 +5,6 @@
 #include "Util/FileUtil.h"
 #include "FilePathUtil.h"
 #include "EditMode/VertexSnappingModeTool.h"
-#include "EditMode/ObjectMode.h"
 #include "HyperGraph/FlowGraphPreferences.h"
 #include "Mannequin/MannPreferences.h"
 #include "Grid.h"
@@ -14,6 +13,8 @@
 #include <EditorFramework/Editor.h>
 #include <Preferences/GeneralPreferences.h>
 #include <Preferences/ViewportPreferences.h>
+#include <LevelEditor/LevelEditorSharedState.h>
+#include <LevelEditor/Tools/ObjectMode.h>
 
 #include <QSettings>
 

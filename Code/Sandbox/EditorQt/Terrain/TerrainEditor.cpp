@@ -68,7 +68,7 @@ void PyGenerateTerrainTexture()       { GetTerrainDialog()->GenerateTerrainTextu
 void PyExportTerrainArea()            { GetTerrainDialog()->OnExportTerrainArea(); }
 void PyExportTerrainAreaWithObjects() { GetTerrainDialog()->OnExportTerrainAreaWithObjects(); }
 void PyReloadTerrain()                { GetTerrainDialog()->OnReloadTerrain(); }
-void PySelectTerrain()                { GetIEditorImpl()->SetEditMode(eEditModeSelectArea); }
+void PySelectTerrain()                { GetIEditorImpl()->GetLevelEditorSharedState()->SetEditMode(CLevelEditorSharedState::EditMode::SelectArea); }
 
 // Layer Functions
 void PyImportLayers()   { GetTerrainLayers()->OnImport(); }
@@ -82,11 +82,12 @@ void PyDuplicateLayer() { GetTerrainLayers()->OnDuplicateItem(); }
 
 void PyFloodLayer()
 {
-	CEditTool* pTool = GetIEditorImpl()->GetEditTool();
+	CLevelEditorSharedState* pLevelEditor = GetIEditorImpl()->GetLevelEditorSharedState();
+	CEditTool* pTool = pLevelEditor->GetEditTool();
 	if (!pTool || !pTool->IsKindOf(RUNTIME_CLASS(CTerrainTexturePainter)))
 	{
 		pTool = new CTerrainTexturePainter();
-		GetIEditorImpl()->SetEditTool(pTool);
+		pLevelEditor->SetEditTool(pTool);
 	}
 
 	if (pTool && pTool->IsKindOf(RUNTIME_CLASS(CTerrainTexturePainter)))

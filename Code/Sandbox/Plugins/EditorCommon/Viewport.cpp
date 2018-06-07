@@ -29,7 +29,7 @@
 
 #include "Gizmos/IGizmoManager.h"
 #include "Gizmos/Gizmo.h"
-#include "EditTool.h"
+#include "LevelEditor/Tools/EditTool.h"
 
 #include <QDrag>
 #include <QDropEvent>
@@ -78,8 +78,6 @@ CViewport::CViewport()
 	m_hCursor[STD_CURSOR_SUBOBJ_SEL_MINUS] = QCursor(pointer__pixmap, 6, 6);
 	QPixmap Mouse_pixmap = QPixmap(":/icons/Viewport/Mouse.png");
 	m_hCursor[STD_CURSOR_CRYSIS] = QCursor(Mouse_pixmap, 0, 0);
-
-	m_activeAxis = AXIS_XY;
 
 	m_snappingMatrix.SetIdentity();
 	m_viewTM.SetIdentity();
@@ -152,7 +150,7 @@ CEditTool* CViewport::GetEditTool()
 	if (m_pLocalEditTool)
 		return m_pLocalEditTool;
 	else
-		return GetIEditor()->GetEditTool();
+		return GetIEditor()->GetLevelEditorSharedState()->GetEditTool();
 }
 
 //////////////////////////////////////////////////////////////////////////
@@ -306,7 +304,7 @@ void CViewport::Update()
 
 	m_bAdvancedSelectMode = false;
 	bool bSpaceClick = false;
-	CEditTool* pEditTool = GetIEditor()->GetEditTool();
+	CEditTool* pEditTool = GetIEditor()->GetLevelEditorSharedState()->GetEditTool();
 
 	//TODO : this is deprecated
 	bSpaceClick = CryGetAsyncKeyState(VK_SPACE);
@@ -386,7 +384,7 @@ Vec3 CViewport::CameraToWorld(Vec3 worldPoint) const
 void CViewport::ResetSelectionRegion()
 {
 	AABB box(Vec3(0, 0, 0), Vec3(0, 0, 0));
-	GetIEditor()->SetSelectedRegion(box);
+	GetIEditor()->GetLevelEditorSharedState()->SetSelectedRegion(box);
 	m_selectedRect.SetRectEmpty();
 }
 
@@ -424,7 +422,7 @@ void CViewport::OnDragSelectRectangle(CPoint pnt1, CPoint pnt2, bool bNormilizeR
 
 	box.min.z = -10000;
 	box.max.z = 10000;
-	GetIEditor()->SetSelectedRegion(box);
+	GetIEditor()->GetLevelEditorSharedState()->SetSelectedRegion(box);
 
 	// Show marker position in the status bar
 	float w = box.max.x - box.min.x;
@@ -470,7 +468,7 @@ void CViewport::SetConstructionMatrix(const Matrix34& xform)
 {
 	m_snappingMatrix = xform;
 	m_snappingMatrix.OrthonormalizeFast(); // Remove scale component from matrix.
-	MakeSnappingGridPlane(GetAxisConstrain());
+	MakeSnappingGridPlane(GetIEditor()->GetLevelEditorSharedState()->GetAxisConstraint());
 }
 
 //////////////////////////////////////////////////////////////////////////
@@ -482,7 +480,7 @@ void CViewport::AssignConstructionPlane(const Vec3& p1, const Vec3& p2, const Ve
 }
 
 //////////////////////////////////////////////////////////////////////////
-void CViewport::MakeSnappingGridPlane(int axis)
+void CViewport::MakeSnappingGridPlane(CLevelEditorSharedState::Axis axis)
 {
 	CPoint cursor;
 	GetCursorPos(&cursor);
@@ -500,7 +498,7 @@ void CViewport::MakeSnappingGridPlane(int axis)
 
 	Vec3 pos = m_snappingMatrix.GetTranslation();
 
-	if (axis == AXIS_X)
+	if (axis == CLevelEditorSharedState::Axis::X)
 	{
 		// X direction.
 		Vec3 n;
@@ -514,7 +512,7 @@ void CViewport::MakeSnappingGridPlane(int axis)
 		Vec3 v2 = n.Cross(v1);
 		AssignConstructionPlane(pos, pos + v2, pos + v1);
 	}
-	else if (axis == AXIS_Y)
+	else if (axis == CLevelEditorSharedState::Axis::Y)
 	{
 		// Y direction.
 		Vec3 n;
@@ -527,7 +525,7 @@ void CViewport::MakeSnappingGridPlane(int axis)
 		Vec3 v2 = n.Cross(v1);
 		AssignConstructionPlane(pos, pos + v2, pos + v1);
 	}
-	else if (axis == AXIS_Z)
+	else if (axis == CLevelEditorSharedState::Axis::Z)
 	{
 		// Z direction.
 		Vec3 n;
@@ -540,15 +538,15 @@ void CViewport::MakeSnappingGridPlane(int axis)
 		Vec3 v2 = n.Cross(v1);
 		AssignConstructionPlane(pos, pos + v2, pos + v1);
 	}
-	else if (axis == AXIS_XY)
+	else if (axis == CLevelEditorSharedState::Axis::XY)
 	{
 		AssignConstructionPlane(pos, pos + yAxis, pos + xAxis);
 	}
-	else if (axis == AXIS_XZ)
+	else if (axis == CLevelEditorSharedState::Axis::XZ)
 	{
 		AssignConstructionPlane(pos, pos + zAxis, pos + xAxis);
 	}
-	else if (axis == AXIS_YZ)
+	else if (axis == CLevelEditorSharedState::Axis::YZ)
 	{
 		AssignConstructionPlane(pos, pos + zAxis, pos + yAxis);
 	}
@@ -559,9 +557,9 @@ void CViewport::MakeSnappingGridPlane(int axis)
 }
 
 //////////////////////////////////////////////////////////////////////////
-Vec3 CViewport::MapViewToCP(CPoint point, int axis, bool aSnapToTerrain, float aTerrainOffset)
+Vec3 CViewport::MapViewToCP(CPoint point, CLevelEditorSharedState::Axis axis, bool aSnapToTerrain, float aTerrainOffset)
 {
-	if (((GetIEditor()->IsSnapToTerrainEnabled() || aSnapToTerrain) && axis != AXIS_Z) || GetIEditor()->IsSnapToGeometryEnabled())
+	if (((gSnappingPreferences.IsSnapToTerrainEnabled() || aSnapToTerrain) && axis != CLevelEditorSharedState::Axis::Z) || gSnappingPreferences.IsSnapToGeometryEnabled())
 	{
 		bool hasCollidedWithTerrain;
 		Vec3 pos = ViewToWorld(point, &hasCollidedWithTerrain);
@@ -598,7 +596,7 @@ Vec3 CViewport::MapViewToCP(CPoint point, int axis, bool aSnapToTerrain, float a
 }
 
 //////////////////////////////////////////////////////////////////////////
-Vec3 CViewport::GetCPVector(const Vec3& p1, const Vec3& p2, int axis)
+Vec3 CViewport::GetCPVector(const Vec3& p1, const Vec3& p2, CLevelEditorSharedState::Axis axis)
 {
 	Vec3 v = p2 - p1;
 
@@ -611,35 +609,35 @@ Vec3 CViewport::GetCPVector(const Vec3& p1, const Vec3& p2, int axis)
 	yAxis = m_snappingMatrix.TransformVector(yAxis);
 	zAxis = m_snappingMatrix.TransformVector(zAxis);
 
-	if (axis == AXIS_X || axis == AXIS_Y || axis == AXIS_Z)
+	if (axis == CLevelEditorSharedState::Axis::X || axis == CLevelEditorSharedState::Axis::Y || axis == CLevelEditorSharedState::Axis::Z)
 	{
 		// Project vector v on transformed axis x,y or z.
 		Vec3 axisVector;
-		if (axis == AXIS_X)
+		if (axis == CLevelEditorSharedState::Axis::X)
 			axisVector = xAxis;
-		if (axis == AXIS_Y)
+		if (axis == CLevelEditorSharedState::Axis::Y)
 			axisVector = yAxis;
-		if (axis == AXIS_Z)
+		if (axis == CLevelEditorSharedState::Axis::Z)
 			axisVector = zAxis;
 
 		// Project vector on construction plane into the one of axises.
 		v = v.Dot(axisVector) * axisVector;
 	}
-	else if (axis == AXIS_XY)
+	else if (axis == CLevelEditorSharedState::Axis::XY)
 	{
 		// Project vector v on transformed plane x/y.
 		Vec3 planeNormal = xAxis.Cross(yAxis);
 		Vec3 projV = v.Dot(planeNormal) * planeNormal;
 		v = v - projV;
 	}
-	else if (axis == AXIS_XZ)
+	else if (axis == CLevelEditorSharedState::Axis::XZ)
 	{
 		// Project vector v on transformed plane x/y.
 		Vec3 planeNormal = xAxis.Cross(zAxis);
 		Vec3 projV = v.Dot(planeNormal) * planeNormal;
 		v = v - projV;
 	}
-	else if (axis == AXIS_YZ)
+	else if (axis == CLevelEditorSharedState::Axis::YZ)
 	{
 		// Project vector v on transformed plane x/y.
 		Vec3 planeNormal = yAxis.Cross(zAxis);
@@ -647,18 +645,12 @@ Vec3 CViewport::GetCPVector(const Vec3& p1, const Vec3& p2, int axis)
 		v = v - projV;
 	}
 
-	if (GetIEditor()->IsSnapToTerrainEnabled() && axis != AXIS_Z)
+	if (gSnappingPreferences.IsSnapToTerrainEnabled() && axis != CLevelEditorSharedState::Axis::Z)
 	{
 		v.z = 0;
 	}
 	return v;
 }
-
-//////////////////////////////////////////////////////////////////////////
-void CViewport::SetAxisConstrain(int axis)
-{
-	m_activeAxis = axis;
-};
 
 //////////////////////////////////////////////////////////////////////////
 bool CViewport::HitTest(CPoint point, HitContext& hitInfo)
@@ -789,36 +781,45 @@ bool CViewport::HitTestLine(const Vec3& lineP1, const Vec3& lineP2, const CPoint
 }
 
 //////////////////////////////////////////////////////////////////////////
-void CViewport::GetPerpendicularAxis(EAxis* pAxis, bool* pIs2D) const
+CLevelEditorSharedState::Axis CViewport::GetPerpendicularAxis(bool* pIs2D) const
 {
+	if (pIs2D)
+		*pIs2D = false;
+
 	EViewportType vpType = GetType();
-	bool b2D = false;
 	switch (vpType)
 	{
 	case ET_ViewportXY:
 		if (pIs2D)
+		{
 			*pIs2D = true;
-		if (pAxis)
-			*pAxis = AXIS_Z;
+		}
+		return CLevelEditorSharedState::Axis::Z;
 		break;
 	case ET_ViewportXZ:
 		if (pIs2D)
+		{
 			*pIs2D = true;
-		if (pAxis)
-			*pAxis = AXIS_Y;
+		}
+		return CLevelEditorSharedState::Axis::Y;
 		break;
 	case ET_ViewportYZ:
 		if (pIs2D)
+		{
 			*pIs2D = true;
-		if (pAxis)
-			*pAxis = AXIS_X;
+		}
+		return CLevelEditorSharedState::Axis::X;
 		break;
 	case ET_ViewportMap:
 	case ET_ViewportZ:
 		if (pIs2D)
+		{
 			*pIs2D = true;
+		}
 		break;
 	}
+
+	return CLevelEditorSharedState::Axis::None;
 }
 
 //////////////////////////////////////////////////////////////////////////
@@ -968,7 +969,7 @@ bool CViewport::OnKeyDown(uint32 nChar, uint32 nRepCnt, uint32 nFlags)
 			return true;
 		else if (nChar == Qt::Key_Escape)
 		{
-			GetIEditor()->SetEditTool(0);
+			GetIEditor()->GetLevelEditorSharedState()->SetEditTool(nullptr);
 		}
 	}
 	return false;

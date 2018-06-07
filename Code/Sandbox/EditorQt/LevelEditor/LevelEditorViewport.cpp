@@ -26,7 +26,7 @@
 #include "IViewportManager.h"
 #include "IObjectManager.h"
 #include "ILevelEditor.h"
-#include "EditTool.h"
+#include "LevelEditor/Tools/EditTool.h"
 
 #include <QResizeEvent>
 #include "QtUtil.h"
@@ -229,7 +229,7 @@ bool CLevelEditorViewport::AssetDragEvent(EDragEvent eventId, QEvent* event, int
 	}
 
 	GetIEditor()->StartObjectCreation(className.c_str(), nullptr);
-	CEditTool* const pEditTool = GetIEditor()->GetEditTool();
+	CEditTool* const pEditTool = GetIEditor()->GetLevelEditorSharedState()->GetEditTool();
 	if (!pEditTool)
 	{
 		return false;
@@ -239,7 +239,7 @@ bool CLevelEditorViewport::AssetDragEvent(EDragEvent eventId, QEvent* event, int
 	assert(pDrag);
 	QObject::connect(pDrag, &QObject::destroyed, [](auto)
 	{
-		CEditTool* editTool = GetIEditor()->GetEditTool();
+		CEditTool* editTool = GetIEditor()->GetLevelEditorSharedState()->GetEditTool();
 		CObjectCreateTool* objectCreateTool = editTool ? DYNAMIC_DOWNCAST(CObjectCreateTool, editTool) : nullptr;
 
 		if (objectCreateTool)
@@ -642,17 +642,16 @@ void CLevelEditorViewport::RenderSnappingGrid(SDisplayContext& context)
 	const CSelectionGroup* pSelGroup = GetIEditorImpl()->GetSelection();
 	if (pSelGroup == NULL || pSelGroup->GetCount() != 1)
 		return;
-	if (GetIEditor()->GetEditMode() != eEditModeMove
-	    && GetIEditor()->GetEditMode() != eEditModeRotate)
+	if (GetIEditor()->GetLevelEditorSharedState()->GetEditMode() != CLevelEditorSharedState::EditMode::Move
+	    && GetIEditor()->GetLevelEditorSharedState()->GetEditMode() != CLevelEditorSharedState::EditMode::Rotate)
 		return;
 
 	if (gSnappingPreferences.gridSnappingEnabled() == false && gSnappingPreferences.angleSnappingEnabled() == false)
 		return;
-	if (GetIEditor()->GetEditTool() && !GetIEditor()->GetEditTool()->IsDisplayGrid() && !(GetIEditor()->GetGizmoManager()->GetHighlightedGizmo()
-	                                                                                      && GetIEditor()->GetGizmoManager()->GetHighlightedGizmo()->NeedsSnappingGrid()))
-	{
+
+	CEditTool* pTool = GetIEditor()->GetLevelEditorSharedState()->GetEditTool();
+	if (pTool && !pTool->IsDisplayGrid() && !(GetIEditor()->GetGizmoManager()->GetHighlightedGizmo() && GetIEditor()->GetGizmoManager()->GetHighlightedGizmo()->NeedsSnappingGrid()))
 		return;
-	}
 
 	int prevState = context.GetState();
 	context.DepthWriteOff();
@@ -665,7 +664,7 @@ void CLevelEditorViewport::RenderSnappingGrid(SDisplayContext& context)
 	float alphaMax = 1.0f, alphaMin = 0.2f;
 	context.SetLineWidth(3);
 
-	if (GetIEditor()->GetEditMode() == eEditModeMove && gSnappingPreferences.gridSnappingEnabled())
+	if (GetIEditor()->GetLevelEditorSharedState()->GetEditMode() == CLevelEditorSharedState::EditMode::Move && gSnappingPreferences.gridSnappingEnabled())
 	// Draw the translation grid.
 	{
 		Vec3 u = m_constructionPlaneAxisX;
@@ -690,21 +689,23 @@ void CLevelEditorViewport::RenderSnappingGrid(SDisplayContext& context)
 			                 ColorF(0, 0, 0, alphaCur), ColorF(0, 0, 0, alphaMin));
 		}
 	}
-	else if (GetIEditor()->GetEditMode() == eEditModeRotate && gSnappingPreferences.angleSnappingEnabled())
+	else if (GetIEditor()->GetLevelEditorSharedState()->GetEditMode() == CLevelEditorSharedState::EditMode::Rotate && gSnappingPreferences.angleSnappingEnabled())
 	// Draw the rotation grid.
 	{
-		int nAxis(GetAxisConstrain());
-		if (nAxis == AXIS_X || nAxis == AXIS_Y || nAxis == AXIS_Z)
+		CLevelEditorSharedState::Axis axisConstraint(GetIEditor()->GetLevelEditorSharedState()->GetAxisConstraint());
+		if (axisConstraint == CLevelEditorSharedState::Axis::X ||
+		    axisConstraint == CLevelEditorSharedState::Axis::Y ||
+		    axisConstraint == CLevelEditorSharedState::Axis::Z)
 		{
 			Vec3 xAxis(1, 0, 0);
 			Vec3 yAxis(0, 1, 0);
 			Vec3 zAxis(0, 0, 1);
 			Vec3 rotAxis;
-			if (nAxis == AXIS_X)
+			if (axisConstraint == CLevelEditorSharedState::Axis::X)
 				rotAxis = m_snappingMatrix.TransformVector(xAxis);
-			else if (nAxis == AXIS_Y)
+			else if (axisConstraint == CLevelEditorSharedState::Axis::Y)
 				rotAxis = m_snappingMatrix.TransformVector(yAxis);
-			else if (nAxis == AXIS_Z)
+			else if (axisConstraint == CLevelEditorSharedState::Axis::Z)
 				rotAxis = m_snappingMatrix.TransformVector(zAxis);
 			Vec3 anotherAxis = m_constructionPlane.n * size;
 			float step = gSnappingPreferences.angleSnap();
@@ -983,7 +984,7 @@ Vec3 CLevelEditorViewport::ViewToWorld(POINT vp, bool* collideWithTerrain, bool 
 	}
 
 	int col = 0;
-	const int queryFlags = (onlyTerrain || GetIEditor()->IsSnapToTerrainEnabled()) ? ent_terrain : ent_all;
+	const int queryFlags = (onlyTerrain || gSnappingPreferences.IsSnapToTerrainEnabled()) ? ent_terrain : ent_all;
 	for (int chcnt = 0; chcnt < 3; chcnt++)
 	{
 		hit.pCollider = 0;
@@ -1117,7 +1118,7 @@ Vec3 CLevelEditorViewport::ViewToWorldNormal(POINT vp, bool onlyTerrain, bool bT
 	}
 
 	int col = 1;
-	const int queryFlags = (onlyTerrain || GetIEditor()->IsSnapToGeometryEnabled()) ? ent_terrain : ent_terrain | ent_static;
+	const int queryFlags = (onlyTerrain || gSnappingPreferences.IsSnapToGeometryEnabled()) ? ent_terrain : ent_terrain | ent_static;
 	while (col)
 	{
 		hit.pCollider = 0;

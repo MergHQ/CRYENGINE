@@ -9,7 +9,8 @@
 
 #include "IEditor.h"
 #include "IEditorClassFactory.h"
-#include "EditTool.h"
+#include "LevelEditor/Tools/EditTool.h"
+#include "LevelEditor/LevelEditorSharedState.h"
 
 namespace Serialization
 {
@@ -101,7 +102,7 @@ struct SEditToolButton
 		}
 
 		// Check tool state.
-		CEditTool* tool = GetIEditor()->GetEditTool();
+		CEditTool* tool = GetIEditor()->GetLevelEditorSharedState()->GetEditTool();
 		CRuntimeClass* toolClass = 0;
 		if (tool)
 			toolClass = tool->GetRuntimeClass();
@@ -144,11 +145,11 @@ struct SEditToolButton
 
 		if (buttonflags & BUTTON_PRESSED)
 		{
-			CEditTool* tool = GetIEditor()->GetEditTool();
+			CEditTool* tool = GetIEditor()->GetLevelEditorSharedState()->GetEditTool();
 			if (m_activeTool && tool == m_activeTool)
 			{
 				m_activeTool = nullptr;
-				GetIEditor()->SetEditTool(m_activeTool);
+				GetIEditor()->GetLevelEditorSharedState()->SetEditTool(m_activeTool);
 			}
 			return;
 		}
@@ -162,7 +163,7 @@ struct SEditToolButton
 				m_activeTool->SetUserData(m_userDataKey, m_userData);
 
 			// Must be last function, can delete this.
-			GetIEditor()->SetEditTool(m_activeTool);
+			GetIEditor()->GetLevelEditorSharedState()->SetEditTool(m_activeTool);
 		}
 	}
 

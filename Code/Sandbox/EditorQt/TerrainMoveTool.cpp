@@ -46,7 +46,7 @@ private:
 
 	virtual void        Undo(bool bUndo)
 	{
-		CEditTool* pTool = GetIEditorImpl()->GetEditTool();
+		CEditTool* pTool = GetIEditorImpl()->GetLevelEditorSharedState()->GetEditTool();
 		if (!pTool || !pTool->IsKindOf(RUNTIME_CLASS(CTerrainMoveTool)))
 			return;
 		CTerrainMoveTool* pMoveTool = (CTerrainMoveTool*)pTool;
@@ -64,7 +64,7 @@ private:
 	}
 	virtual void Redo()
 	{
-		CEditTool* pTool = GetIEditorImpl()->GetEditTool();
+		CEditTool* pTool = GetIEditorImpl()->GetLevelEditorSharedState()->GetEditTool();
 		if (!pTool || !pTool->IsKindOf(RUNTIME_CLASS(CTerrainMoveTool)))
 			return;
 		CTerrainMoveTool* pMoveTool = (CTerrainMoveTool*)pTool;
@@ -165,7 +165,7 @@ bool CTerrainMoveTool::MouseCallback(CViewport* pView, EMouseEvent event, CPoint
 	{
 		// Close tool.
 		if (!m_source.isSelected && !m_target.isSelected)
-			GetIEditorImpl()->SetEditTool(0);
+			GetIEditorImpl()->GetLevelEditorSharedState()->SetEditTool(nullptr);
 	}
 	else if (event == eMouseLUp)
 	{
@@ -324,8 +324,8 @@ void CTerrainMoveTool::Select(int nBox)
 
 void CTerrainMoveTool::OnManipulatorDrag(IDisplayViewport* view, ITransformManipulator* pManipulator, const Vec2i& p0, const Vec3& value, int nFlags)
 {
-	int editMode = GetIEditorImpl()->GetEditMode();
-	if (editMode == eEditModeMove)
+	CLevelEditorSharedState::EditMode editMode = GetIEditorImpl()->GetLevelEditorSharedState()->GetEditMode();
+	if (editMode == CLevelEditorSharedState::EditMode::Move)
 	{
 		CHeightmap* pHeightmap = GetIEditorImpl()->GetHeightmap();
 		GetIEditorImpl()->GetIUndoManager()->Restore();
@@ -436,9 +436,11 @@ void CTerrainMoveTool::GetManipulatorPosition(Vec3& position)
 	}
 }
 
-bool CTerrainMoveTool::GetManipulatorMatrix(RefCoordSys coordSys, Matrix34& tm)
+bool CTerrainMoveTool::GetManipulatorMatrix(Matrix34& tm)
 {
-	if (coordSys == COORDS_LOCAL && m_target.isSelected)
+	CLevelEditorSharedState::CoordSystem coordSystem = GetIEditor()->GetLevelEditorSharedState()->GetCoordSystem();
+
+	if (coordSystem == CLevelEditorSharedState::CoordSystem::Local && m_target.isSelected)
 	{
 		tm.SetIdentity();
 		if (m_targetRot)

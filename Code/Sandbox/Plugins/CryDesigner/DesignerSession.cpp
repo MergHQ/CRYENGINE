@@ -378,7 +378,7 @@ void DesignerSession::EndSession()
 		// In that case, designer won't have data to work with so we need to ensure the tool has quit.
 		if (GetDesigner())
 		{
-			GetIEditor()->SetEditTool(nullptr);
+			GetIEditor()->GetLevelEditorSharedState()->SetEditTool(nullptr);
 		}
 
 		gExclusiveModeSettings.EnableExclusiveMode(false);

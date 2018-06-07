@@ -28,7 +28,7 @@
 #include "CryEdit.h"
 #include "QtUtil.h"
 
-#include "EditMode\ObjectMode.h"
+#include <LevelEditor/Tools/ObjectMode.h>
 
 #include <CryAISystem/IAgent.h>
 #include <CryEntitySystem/IEntitySystem.h>
@@ -39,7 +39,7 @@
 #include "Material\MaterialManager.h"
 
 #include <CryAISystem/IAIObject.h>
-#include "../EditMode/DeepSelection.h"
+#include <LevelEditor/Tools/DeepSelection.h>
 #include "Objects\EnvironmentProbeObject.h"
 #include "Util/CubemapUtils.h"
 
@@ -1444,6 +1444,7 @@ bool CObjectManager::ChangeObjectName(CBaseObject* pObject, const string& newNam
 				return false;
 			}
 		}
+
 		pObject->SetName(name);
 		return true;
 	}
@@ -2341,7 +2342,7 @@ void CObjectManager::FindDisplayableObjects(SDisplayContext& dc, const SRenderin
 	pDispayedViewObjects->ClearObjects();
 	pDispayedViewObjects->Reserve(m_visibleObjects.size());
 
-	CEditTool* pEditTool = GetIEditorImpl()->GetEditTool();
+	CEditTool* pEditTool = GetIEditorImpl()->GetLevelEditorSharedState()->GetEditTool();
 
 	if (dc.flags & DISPLAY_2D)
 	{
@@ -2576,7 +2577,7 @@ bool CObjectManager::HitTestObject(CBaseObject* obj, HitContext& hc)
 			return false;
 		}
 
-		CEditTool* pEditTool = GetIEditorImpl()->GetEditTool();
+		CEditTool* pEditTool = GetIEditorImpl()->GetLevelEditorSharedState()->GetEditTool();
 		if (pEditTool && pEditTool->HitTest(obj, hc))
 		{
 			return true;
@@ -2593,12 +2594,12 @@ bool CObjectManager::HitTest(HitContext& hitInfo)
 
 	hitInfo.object = 0;
 	hitInfo.dist = FLT_MAX;
-	hitInfo.axis = 0;
+	hitInfo.axis = CLevelEditorSharedState::Axis::None;
 
 	HitContext hc = hitInfo;
 	if (hc.view)
 	{
-		hc.view->GetPerpendicularAxis(0, &hc.b2DViewport);
+		hc.view->GetPerpendicularAxis(&hc.b2DViewport);
 	}
 	hc.rayDir = hc.rayDir.GetNormalized();
 
@@ -2627,7 +2628,7 @@ bool CObjectManager::HitTest(HitContext& hitInfo)
 				hc.object = obj;
 
 			// Check if this object is nearest.
-			if (hc.axis != 0)
+			if (hc.axis != CLevelEditorSharedState::Axis::None)
 			{
 				hitInfo.object = obj;
 				hitInfo.axis = hc.axis;

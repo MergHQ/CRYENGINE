@@ -774,8 +774,7 @@ void C2DViewport::DrawAxis(SDisplayContext& dc)
 //////////////////////////////////////////////////////////////////////////
 void C2DViewport::DrawSelection(SDisplayContext& dc)
 {
-	AABB box;
-	GetIEditorImpl()->GetSelectedRegion(box);
+	AABB box = GetIEditorImpl()->GetLevelEditorSharedState()->GetSelectedRegion();
 
 	if (box.min != box.max)
 	{
@@ -889,26 +888,21 @@ void C2DViewport::DrawObjects(CObjectRenderHelper& objRenderHelper)
 }
 
 //////////////////////////////////////////////////////////////////////////
-void C2DViewport::MakeSnappingGridPlane(int axis)
+void C2DViewport::MakeSnappingGridPlane(CLevelEditorSharedState::Axis axis)
 {
-	RefCoordSys coordSys = GetIEditorImpl()->GetReferenceCoordSys();
-	m_snappingMatrix = GetViewTM();
-
-	Vec3 p(0, 0, 0);
-
 	switch (m_axis)
 	{
 	case VPA_XY:
-		AssignConstructionPlane(p, p + Vec3(0, 1, 0), p + Vec3(1, 0, 0));
+		AssignConstructionPlane(Vec3(0, 0, 0), Vec3(0, 1, 0), Vec3(1, 0, 0));
 		break;
 	case VPA_YX:
-		m_constructionPlane.SetPlane(p, p + Vec3(1, 0, 0), p + Vec3(0, 1, 0));
+		m_constructionPlane.SetPlane(Vec3(0, 0, 0), Vec3(1, 0, 0), Vec3(0, 1, 0));
 		break;
 	case VPA_XZ:
-		AssignConstructionPlane(p, p + Vec3(0, 0, 1), p + Vec3(1, 0, 0));
+		AssignConstructionPlane(Vec3(0, 0, 0), Vec3(0, 0, 1), Vec3(1, 0, 0));
 		break;
 	case VPA_YZ:
-		AssignConstructionPlane(p, p + Vec3(0, 0, 1), p + Vec3(0, 1, 0));
+		AssignConstructionPlane(Vec3(0, 0, 0), Vec3(0, 0, 1), Vec3(0, 1, 0));
 		break;
 	}
 }
@@ -994,7 +988,7 @@ void C2DViewport::OnDragSelectRectangle(CPoint pnt1, CPoint pnt2, bool bNormiliz
 		break;
 	}
 
-	GetIEditorImpl()->SetSelectedRegion(box);
+	GetIEditorImpl()->GetLevelEditorSharedState()->SetSelectedRegion(box);
 }
 
 //////////////////////////////////////////////////////////////////////////

@@ -41,7 +41,7 @@ public:
 	void    InvalidateLayers();
 	void    ClearLayers();
 	void    SerializeLayerSettings(CXmlArchive& xmlAr);
-	void    MarkUsedLayerIds(bool bFree[CLayer::e_undefined]) const;
+	void    MarkUsedLayerIds(bool bFree[e_layerIdUndefined]) const;
 
 	void    CreateDefaultLayer();
 

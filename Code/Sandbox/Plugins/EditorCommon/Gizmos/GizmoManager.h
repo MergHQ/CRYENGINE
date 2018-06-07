@@ -22,8 +22,6 @@ struct EDITOR_COMMON_API SGizmoPreferences : public SPreferencePage
 		: SPreferencePage("Gizmo", "Viewport/Gizmo")
 		, axisGizmoSize(0.15f)
 		, helperScale(1.0f)
-		, axisConstraint(AXIS_XY)
-		, referenceCoordSys(COORDS_LOCAL)
 		, enabled(true)
 		, axisGizmoText(false)
 		, rotationInteraction(eRotationDial)
@@ -34,8 +32,6 @@ struct EDITOR_COMMON_API SGizmoPreferences : public SPreferencePage
 
 	float                         axisGizmoSize;
 	float                         helperScale;
-	AxisConstrains                axisConstraint;
-	RefCoordSys                   referenceCoordSys;
 	bool                          enabled;
 	bool                          axisGizmoText;
 	enum ERotationInteractionMode rotationInteraction;

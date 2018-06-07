@@ -40,7 +40,7 @@ DesignerUndo::DesignerUndo(CBaseObject* pObj, const Model* pModel, const char* u
 
 void DesignerUndo::StoreEditorTool()
 {
-	CEditTool* pEditor = GetIEditor()->GetEditTool();
+	CEditTool* pEditor = GetIEditor()->GetLevelEditorSharedState()->GetEditTool();
 	if (!IsAKindOfDesignerTool(pEditor))
 		m_Tool = eDesigner_Invalid;
 	else
@@ -146,7 +146,7 @@ void DesignerUndo::RestoreEditTool(Model* pModel, CryGUID objGUID, EDesignerTool
 		GetIEditor()->GetObjectManager()->SelectObject(pSelectedObj);
 	}
 
-	CEditTool* pEditor = GetIEditor()->GetEditTool();
+	CEditTool* pEditor = GetIEditor()->GetLevelEditorSharedState()->GetEditTool();
 	if (pEditor && IsAKindOfDesignerTool(pEditor))
 	{
 		// if it's a non-modal tool...

@@ -56,7 +56,7 @@ bool AreaSolidTool::OnKeyDown(CViewport* pView, uint32 nChar, uint32 nRepCnt, ui
 	{
 		if (nChar == Qt::Key_Escape)
 		{
-			GetIEditor()->SetEditTool(nullptr);
+			GetIEditor()->GetLevelEditorSharedState()->SetEditTool(nullptr);
 		}
 		return true;
 	}

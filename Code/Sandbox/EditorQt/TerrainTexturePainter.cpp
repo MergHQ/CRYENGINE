@@ -854,14 +854,14 @@ REGISTER_CLASS_DESC(CTerrainTexturePainter_ClassDesc);
 
 void CTerrainTexturePainter::Command_Activate()
 {
-	CEditTool* pTool = GetIEditorImpl()->GetEditTool();
+	CEditTool* pTool = GetIEditorImpl()->GetLevelEditorSharedState()->GetEditTool();
 	if (pTool && pTool->IsKindOf(RUNTIME_CLASS(CTerrainTexturePainter)))
 	{
 		// Already active.
 		return;
 	}
 	pTool = new CTerrainTexturePainter();
-	GetIEditorImpl()->SetEditTool(pTool);
+	GetIEditorImpl()->GetLevelEditorSharedState()->SetEditTool(pTool);
 }
 
 REGISTER_PYTHON_COMMAND(CTerrainTexturePainter::Command_Activate, edit_mode, terrain_painter, "Activates terrain texture painting mode");

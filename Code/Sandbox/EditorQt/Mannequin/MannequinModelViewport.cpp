@@ -206,7 +206,7 @@ void CMannequinModelViewport::OnLButtonDown(UINT nFlags, CPoint point)
 
 			SetConstructionMatrix(m34);
 
-			if (locator.m_AxisHelper.HitTest(m34, gGizmoPreferences, m_HitContext))
+			if (locator.m_AxisHelper.HitTest(m34, m_HitContext))
 			{
 				m_draggingLocator = true;
 				m_selectedLocator = i;
@@ -278,7 +278,7 @@ void CMannequinModelViewport::OnMouseMove(UINT nFlags, CPoint point)
 		{
 			SLocator& locator = m_locators[m_selectedLocator];
 
-			int axis = locator.m_AxisHelper.GetHighlightAxis();
+			CLevelEditorSharedState::Axis axis = locator.m_AxisHelper.GetHighlightAxis();
 
 			if (m_locMode == LM_Translate)
 			{
@@ -467,8 +467,8 @@ void CMannequinModelViewport::OnRender(SDisplayContext& context)
 			pAuxGeom->DrawSphere(locator.m_pEntity->GetWorldTM().GetTranslation(), 0.1f, ColorB());
 		}
 
-		if (locator.m_AxisHelper.GetHighlightAxis() == 0)
-			locator.m_AxisHelper.SetHighlightAxis(GetAxisConstrain());
+		if (locator.m_AxisHelper.GetHighlightAxis() == CLevelEditorSharedState::Axis::None)
+			locator.m_AxisHelper.SetHighlightAxis(GetIEditorImpl()->GetLevelEditorSharedState()->GetAxisConstraint());
 
 		locator.m_AxisHelper.SetMode(mode);
 
@@ -480,7 +480,7 @@ void CMannequinModelViewport::OnRender(SDisplayContext& context)
 		{
 			Matrix34 m34 = GetLocatorWorldMatrix(locator);
 
-			if (GetIEditorImpl()->GetReferenceCoordSys() == COORDS_WORLD)
+			if (GetIEditorImpl()->GetLevelEditorSharedState()->GetCoordSystem() == CLevelEditorSharedState::CoordSystem::World)
 			{
 				m34.SetRotation33(IDENTITY);
 			}
@@ -491,7 +491,7 @@ void CMannequinModelViewport::OnRender(SDisplayContext& context)
 			pAuxGeom->DrawLine(groundProj - Vec3(0.2f, 0.0f, 0.0f), RGBA8(0xff, 0x00, 0x00, 0x00), groundProj + Vec3(0.2f, 0.0f, 0.0f), RGBA8(0xff, 0x00, 0x00, 0x00));
 			pAuxGeom->DrawLine(groundProj - Vec3(0.0f, 0.2f, 0.0f), RGBA8(0xff, 0x00, 0x00, 0x00), groundProj + Vec3(0.0f, 0.2f, 0.0f), RGBA8(0xff, 0x00, 0x00, 0x00));
 
-			locator.m_AxisHelper.DrawAxis(m34, gGizmoPreferences, context);
+			locator.m_AxisHelper.DrawAxis(m34, context);
 		}
 	}
 

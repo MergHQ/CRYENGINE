@@ -1,7 +1,8 @@
 // Copyright 2001-2018 Crytek GmbH / Crytek Group. All rights reserved.
 #pragma once
 
-#include "GizmoManager.h" // for AxisConstrains and RefCoordSys
+#include "GizmoManager.h" // for AxisConstrains and CLevelEditorSharedState::CoordSystem
+#include "LevelEditor/LevelEditorSharedState.h"
 
 struct SDisplayContext;
 struct HitContext;
@@ -46,29 +47,26 @@ public:
 	void SetMode(int nModeFlags);
 	int  GetMode() const { return m_nModeFlags; }
 
-	void DrawAxis(const Matrix34& worldTM, const SGizmoPreferences& setup, SDisplayContext& dc, float fScaleRatio = 1.0f);
-	bool HitTest(const Matrix34& worldTM, const SGizmoPreferences& setup, HitContext& hc, EHelperMode* manipulatorMode = nullptr, float fScaleRatio = 1.0f);
+	void DrawAxis(const Matrix34& worldTM, SDisplayContext& dc, float fScaleRatio = 1.0f);
+	bool HitTest(const Matrix34& worldTM, HitContext& hc, EHelperMode* manipulatorMode = nullptr, float fScaleRatio = 1.0f);
 
 	// 0 - X-Axis, 1 - Y-Axis, 2 - Z-Axis
-	void SetUnchangedAxisForRotationCircle(EAxis axis) { m_UnchangedAxis = axis; }
-
-	void SetHighlightAxis(int axis)                    { m_highlightAxis = axis; }
-	int  GetHighlightAxis() const                      { return m_highlightAxis; }
+	void                          SetHighlightAxis(CLevelEditorSharedState::Axis axis) { m_highlightAxis = axis; }
+	CLevelEditorSharedState::Axis GetHighlightAxis() const                             { return m_highlightAxis; }
 
 private:
-	void  Prepare(const Matrix34& worldTM, const SGizmoPreferences& setup, IDisplayViewport* view, float fScaleRatio);
+	void  Prepare(const Matrix34& worldTM, IDisplayViewport* view, float fScaleRatio);
 	float GetDistance2D(IDisplayViewport* view, CPoint p, Vec3& wp);
 
-	int      m_nModeFlags;
-	int      m_highlightAxis;
-	int      m_highlightMode;
+	int                           m_nModeFlags;
+	CLevelEditorSharedState::Axis m_highlightAxis;
+	int                           m_highlightMode;
 
-	float    m_fScreenScale;
-	bool     m_bNeedX;
-	bool     m_bNeedY;
-	bool     m_bNeedZ;
-	bool     m_b2D;
-	float    m_size;
-	Matrix34 m_matrix;
-	EAxis    m_UnchangedAxis;
+	float                         m_fScreenScale;
+	bool                          m_bNeedX;
+	bool                          m_bNeedY;
+	bool                          m_bNeedZ;
+	bool                          m_b2D;
+	float                         m_size;
+	Matrix34                      m_matrix;
 };

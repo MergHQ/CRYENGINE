@@ -374,7 +374,7 @@ bool CBrushTool::OnKeyDown(CViewport* view, uint32 key, uint32 nRepCnt, uint32 n
 			{
 				CSmoothTool* pSmoothTool = new CSmoothTool;
 				pSmoothTool->SetPrevToolClass(GetRuntimeClass());
-				GetIEditorImpl()->SetEditTool(pSmoothTool);
+				GetIEditorImpl()->GetLevelEditorSharedState()->SetEditTool(pSmoothTool);
 				return true;
 			}
 		}
@@ -624,7 +624,7 @@ bool CSmoothTool::OnKeyUp(CViewport* view, uint32 key, uint32 nRepCnt, uint32 nF
 				CEditTool* pTool = (CEditTool*)pPrevToolClass->CreateObject();
 				if (pTool)
 				{
-					GetIEditorImpl()->SetEditTool(pTool);
+					GetIEditorImpl()->GetLevelEditorSharedState()->SetEditTool(pTool);
 					return true;
 				}
 			}

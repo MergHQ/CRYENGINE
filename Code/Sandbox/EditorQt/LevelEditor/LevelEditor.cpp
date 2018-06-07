@@ -21,7 +21,6 @@
 #include "QT/QtMainFrame.h"
 #include "QT/QToolTabManager.h"
 #include "Commands/QCommandAction.h"
-#include "PickObjectTool.h"
 #include "EditMode/VertexSnappingModeTool.h"
 #include "LevelExplorer.h"
 #include "Util/Clipboard.h"
@@ -30,21 +29,22 @@
 #include "TagLocations.h"
 
 // EditorCommon
-#include "QtUtil.h"
-#include "EditorFramework/Inspector.h"
+#include <AssetSystem/EditableAsset.h>
+#include <QtUtil.h>
+#include <EditorFramework/Inspector.h>
 #include <Notifications/NotificationCenterTrayWidget.h>
 #include <EditorFramework/PreferencesDialog.h>
 #include <Preferences/GeneralPreferences.h>
-#include "Objects/ObjectLoader.h"
-#include "AssetSystem/EditableAsset.h"
-#include "AssetSystem/AssetManager.h"
-#include "AssetSystem/Browser/AssetBrowser.h"
-#include "Controls/DockableDialog.h"
-#include "FilePathUtil.h"
-#include "ThreadingUtils.h"
-#include "EditorStyleHelper.h"
-#include "Util/FileUtil.h"
+#include <Objects/ObjectLoader.h>
+#include <AssetSystem/AssetManager.h>
 #include <AssetSystem/Browser/AssetBrowserDialog.h>
+#include <AssetSystem/Browser/AssetBrowser.h>
+#include <Controls/DockableDialog.h>
+#include <FilePathUtil.h>
+#include <ThreadingUtils.h>
+#include <EditorStyleHelper.h>
+#include <Util/FileUtil.h>
+#include <LevelEditor/Tools/PickObjectTool.h>
 
 // CryCommon
 #include <CrySandbox/ScopedVariableSetter.h>
@@ -480,16 +480,16 @@ void CLevelEditor::CreateRecentFilesMenu(QMenu* pRecentFilesMenu)
 
 void CLevelEditor::EnableVertexSnapping(bool bEnable)
 {
-	bEnable ? GetIEditorImpl()->SetEditTool("EditTool.VertexSnappingMode") : GetIEditorImpl()->SetEditTool(NULL);
+	bEnable ? GetIEditorImpl()->GetLevelEditorSharedState()->SetEditTool("EditTool.VertexSnappingMode") : GetIEditorImpl()->GetLevelEditorSharedState()->SetEditTool(NULL);
 
 	VertexSnappingEnabled(bEnable);
 }
 
 void CLevelEditor::EnablePivotSnapping(bool bEnable)
 {
-	bEnable ? GetIEditorImpl()->PickObject(new CAlignPickCallback) : GetIEditorImpl()->SetEditTool(NULL);
+	bEnable ? GetIEditorImpl()->GetLevelEditorSharedState()->PickObject(new CAlignPickCallback) : GetIEditorImpl()->GetLevelEditorSharedState()->SetEditTool(NULL);
 
-	GetIEditorImpl()->EnablePivotSnapping(bEnable);
+	gSnappingPreferences.EnablePivotSnapping(bEnable);
 
 	PivotSnappingEnabled(bEnable);
 }
@@ -518,21 +518,21 @@ void CLevelEditor::EnableScaleSnapping(bool bEnable)
 
 void CLevelEditor::EnableTerrainSnapping(bool bEnable)
 {
-	GetIEditorImpl()->EnableSnapToTerrain(bEnable);
+	gSnappingPreferences.EnableSnapToTerrain(bEnable);
 
 	TerrainSnappingEnabled(bEnable);
 }
 
 void CLevelEditor::EnableGeometrySnapping(bool bEnable)
 {
-	GetIEditorImpl()->EnableSnapToGeometry(bEnable);
+	gSnappingPreferences.EnableSnapToGeometry(bEnable);
 
 	GeometrySnappingEnabled(bEnable);
 }
 
 void CLevelEditor::EnableSurfaceNormalSnapping(bool bEnable)
 {
-	GetIEditorImpl()->EnableSnapToNormal(bEnable);
+	gSnappingPreferences.EnableSnapToNormal(bEnable);
 
 	SurfaceNormalSnappingEnabled(bEnable);
 }
@@ -546,13 +546,13 @@ void CLevelEditor::EnableHelpersDisplay(bool bEnable)
 
 bool CLevelEditor::IsVertexSnappingEnabled() const
 {
-	CEditTool* pTool = GetIEditorImpl()->GetEditTool();
+	CEditTool* pTool = GetIEditorImpl()->GetLevelEditorSharedState()->GetEditTool();
 	return pTool && pTool->IsKindOf(RUNTIME_CLASS(CVertexSnappingModeTool));
 }
 
 bool CLevelEditor::IsPivotSnappingEnabled() const
 {
-	return GetIEditorImpl()->IsPivotSnappingEnabled();
+	return gSnappingPreferences.IsPivotSnappingEnabled();
 }
 
 bool CLevelEditor::IsGridSnappingEnabled() const
@@ -572,17 +572,17 @@ bool CLevelEditor::IsScaleSnappingEnabled() const
 
 bool CLevelEditor::IsTerrainSnappingEnabled() const
 {
-	return GetIEditorImpl()->IsSnapToTerrainEnabled();
+	return gSnappingPreferences.IsSnapToTerrainEnabled();
 }
 
 bool CLevelEditor::IsGeometrySnappingEnabled() const
 {
-	return GetIEditorImpl()->IsSnapToGeometryEnabled();
+	return gSnappingPreferences.IsSnapToGeometryEnabled();
 }
 
 bool CLevelEditor::IsSurfaceNormalSnappingEnabled() const
 {
-	return GetIEditorImpl()->IsSnapToNormalEnabled();
+	return gSnappingPreferences.IsSnapToNormalEnabled();
 }
 
 bool CLevelEditor::IsHelpersDisplayed() const
@@ -792,9 +792,9 @@ bool CLevelEditor::OnSaveAs()
 bool CLevelEditor::OnDelete()
 {
 	// If Edit tool active cannot delete object.
-	if (GetIEditorImpl()->GetEditTool())
+	if (GetIEditorImpl()->GetLevelEditorSharedState()->GetEditTool())
 	{
-		if (GetIEditorImpl()->GetEditTool()->OnKeyDown(GetIEditorImpl()->GetViewManager()->GetView(0), Qt::Key_Delete, 0, 0))
+		if (GetIEditorImpl()->GetLevelEditorSharedState()->GetEditTool()->OnKeyDown(GetIEditorImpl()->GetViewManager()->GetView(0), Qt::Key_Delete, 0, 0))
 			return true;
 	}
 

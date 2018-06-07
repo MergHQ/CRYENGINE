@@ -90,7 +90,7 @@ public:
 	void       Serialize(Serialization::IArchive& archive);
 
 	// ITransformManipulatorOwner
-	virtual bool GetManipulatorMatrix(RefCoordSys coordSys, Matrix34& tm) override;
+	virtual bool GetManipulatorMatrix(Matrix34& tm) override;
 	virtual void GetManipulatorPosition(Vec3& position) override;
 	// ~ITransformManipulatorOwner
 

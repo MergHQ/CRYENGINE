@@ -1,13 +1,12 @@
 // Copyright 2001-2018 Crytek GmbH / Crytek Group. All rights reserved.
 
-#include "StdAfx.h"
+#include <StdAfx.h>
 #include "PickObjectTool.h"
+#include "Objects/BaseObject.h"
 #include "Viewport.h"
 
-//////////////////////////////////////////////////////////////////////////
 IMPLEMENT_DYNAMIC(CPickObjectTool, CEditTool)
 
-//////////////////////////////////////////////////////////////////////////
 CPickObjectTool::CPickObjectTool(IPickObjectCallback* callback, CRuntimeClass* targetClass)
 {
 	assert(callback != 0);
@@ -16,15 +15,12 @@ CPickObjectTool::CPickObjectTool(IPickObjectCallback* callback, CRuntimeClass* t
 	m_bMultiPick = false;
 }
 
-//////////////////////////////////////////////////////////////////////////
 CPickObjectTool::~CPickObjectTool()
 {
 	if (m_callback)
 		m_callback->OnCancelPick();
 }
 
-
-//////////////////////////////////////////////////////////////////////////
 bool CPickObjectTool::MouseCallback(CViewport* view, EMouseEvent event, CPoint& point, int flags)
 {
 	if (event == eMouseLDown)
@@ -44,7 +40,7 @@ bool CPickObjectTool::MouseCallback(CViewport* view, EMouseEvent event, CPoint& 
 				if (!m_bMultiPick)
 				{
 					m_callback = 0;
-					GetIEditorImpl()->SetEditTool(0);
+					GetIEditor()->GetLevelEditorSharedState()->SetEditTool(nullptr);
 				}
 			}
 		}
@@ -74,18 +70,16 @@ bool CPickObjectTool::MouseCallback(CViewport* view, EMouseEvent event, CPoint& 
 	return true;
 }
 
-//////////////////////////////////////////////////////////////////////////
 bool CPickObjectTool::OnKeyDown(CViewport* view, uint32 nChar, uint32 nRepCnt, uint32 nFlags)
 {
 	if (nChar == Qt::Key_Escape)
 	{
 		// Cancel selection.
-		GetIEditorImpl()->SetEditTool(0);
+		GetIEditor()->GetLevelEditorSharedState()->SetEditTool(nullptr);
 	}
 	return false;
 }
 
-//////////////////////////////////////////////////////////////////////////
 bool CPickObjectTool::IsRelevant(CBaseObject* obj)
 {
 	assert(obj != 0);
@@ -107,5 +101,3 @@ bool CPickObjectTool::IsRelevant(CBaseObject* obj)
 	}
 	return false;
 }
-
-

@@ -334,7 +334,7 @@ void CVegetationPaintTool::SetBrushRadius(float r)
 //////////////////////////////////////////////////////////////////////////
 void CVegetationPaintTool::Command_Activate(bool activateEraseMode)
 {
-	CEditTool* pTool = GetIEditorImpl()->GetEditTool();
+	CEditTool* pTool = GetIEditorImpl()->GetLevelEditorSharedState()->GetEditTool();
 	if (pTool && pTool->IsKindOf(RUNTIME_CLASS(CVegetationPaintTool)))
 	{
 		// Already active.
@@ -342,7 +342,7 @@ void CVegetationPaintTool::Command_Activate(bool activateEraseMode)
 	}
 	auto pPaintTool = new CVegetationPaintTool();
 	pPaintTool->m_eraseMode = activateEraseMode;
-	GetIEditorImpl()->SetEditTool(pPaintTool);
+	GetIEditorImpl()->GetLevelEditorSharedState()->SetEditTool(pPaintTool);
 }
 
 //////////////////////////////////////////////////////////////////////////

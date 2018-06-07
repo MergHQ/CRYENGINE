@@ -82,6 +82,7 @@ Q_SIGNALS:
 	void cameraSpeedChanged(float speed, int increments);
 
 protected:
+	void OnEditToolChanged();
 	virtual void  OnEditorNotifyEvent(EEditorNotifyEvent event);
 	virtual QSize sizeHint() const;
 	//virtual QSize minimumSizeHint() const { return sizeHint(); }

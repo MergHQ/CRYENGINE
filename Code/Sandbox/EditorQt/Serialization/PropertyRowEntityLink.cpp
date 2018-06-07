@@ -81,7 +81,7 @@ PropertyRowEntityLink::~PropertyRowEntityLink()
 		// Make sure the picker's tree is set to null since it's in the process of getting destroyed.
 		// Calling repaint on the tree will lead to a crash
 		picker_->tree = nullptr;
-		GetIEditorImpl()->CancelPick();
+		GetIEditorImpl()->GetLevelEditorSharedState()->CancelPick();
 	}
 }
 
@@ -99,7 +99,7 @@ void PropertyRowEntityLink::pick(PropertyTree* tree)
 	if (!picker_)
 		picker_.reset(new Picker(this, tree));
 	picker_->picking = true;
-	GetIEditorImpl()->PickObject(picker_.get());
+	GetIEditorImpl()->GetLevelEditorSharedState()->PickObject(picker_.get());
 	tree->repaint();
 }
 

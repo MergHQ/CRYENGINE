@@ -135,7 +135,7 @@ bool CLinkTool::OnKeyDown(CViewport* view, uint32 nChar, uint32 nRepCnt, uint32 
 	if (nChar == Qt::Key_Escape)
 	{
 		// Cancel selection.
-		GetIEditorImpl()->SetEditTool(0);
+		GetIEditorImpl()->GetLevelEditorSharedState()->SetEditTool(nullptr);
 	}
 	return false;
 }
@@ -220,7 +220,7 @@ void CLinkTool::DrawObjectHelpers(CBaseObject* pObject, SDisplayContext& dc)
 void CLinkTool::PickObject()
 {
 	CLinkToPicker* pCallback = new CLinkToPicker;
-	GetIEditorImpl()->PickObject(pCallback);
+	GetIEditorImpl()->GetLevelEditorSharedState()->PickObject(pCallback);
 }
 
 //////////////////////////////////////////////////////////////////////////
@@ -320,10 +320,10 @@ namespace Private_LinkToolCommands
 {
 void Link()
 {
-	if (GetIEditorImpl()->GetEditTool() && GetIEditorImpl()->GetEditTool()->IsKindOf(RUNTIME_CLASS(CLinkTool)))
-		GetIEditorImpl()->SetEditTool(0);
+	if (GetIEditorImpl()->GetLevelEditorSharedState()->GetEditTool() && GetIEditorImpl()->GetLevelEditorSharedState()->GetEditTool()->IsKindOf(RUNTIME_CLASS(CLinkTool)))
+		GetIEditorImpl()->GetLevelEditorSharedState()->SetEditTool(nullptr);
 	else
-		GetIEditorImpl()->SetEditTool(new CLinkTool());
+		GetIEditorImpl()->GetLevelEditorSharedState()->SetEditTool(new CLinkTool());
 }
 
 void LinkTo()

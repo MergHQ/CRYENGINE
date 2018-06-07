@@ -52,6 +52,7 @@ public:
 	UVMappingEditor();
 	~UVMappingEditor();
 
+	void              OnEditModeChanged(CLevelEditorSharedState::EditMode editMode);
 	void              OnEditorNotifyEvent(EEditorNotifyEvent event) override;
 	void              OnDataBaseItemEvent(IDataBaseItem* pItem, EDataBaseItemEvent event) override;
 	void              OnDesignerNotifyHandler(EDesignerNotify notification, void* param);

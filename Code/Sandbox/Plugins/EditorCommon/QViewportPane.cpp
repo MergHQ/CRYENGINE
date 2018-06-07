@@ -227,7 +227,7 @@ void QViewportWidget::keyPressEvent(QKeyEvent* event)
 			return;
 		else if (nChar == Qt::Key_Escape)
 		{
-			GetIEditor()->SetEditTool(0);
+			GetIEditor()->GetLevelEditorSharedState()->SetEditTool(nullptr);
 			return;
 		}
 		event->ignore();

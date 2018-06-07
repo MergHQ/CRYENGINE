@@ -14,7 +14,6 @@ class CBroadcastManager;
 class CConfigurationManager;
 class CCryEditDoc;
 class CDisplaySettings;
-class CEditTool;
 class CFlowGraphManager;
 class CGameEngine;
 class CMaterialManager;
@@ -35,6 +34,8 @@ class IPane;
 class IPythonManager;
 class QString;
 class QWidget;
+class CLevelEditorSharedState;
+class CHeightmap;
 
 struct AABB;
 struct I3DEngine;
@@ -71,7 +72,6 @@ struct SEditorSettings;
 struct SObjectChangedContext;
 struct SRayHitInfo;
 
-enum AxisConstrains;
 enum EModifiedModule;
 enum ESystemConfigSpec;
 
@@ -116,11 +116,6 @@ enum EEditorNotifyEvent
 	eNotify_OnBeginExportToGame,       // Sent when the level starts to be exported to game
 	eNotify_OnExportToGame,            // Sent when the level is exported to game
 	eNotify_OnExportToGameFailed,      // Sent when the exporting level to game failed
-
-	// Editing events.
-	eNotify_OnEditModeChange,          // Sent when editing mode change (move, rotate, scale, ....)
-	eNotify_OnEditToolBeginChange,     // Sent when edit tool is about to be changed (ObjectMode,TerrainModify,....)
-	eNotify_OnEditToolEndChange,       // Sent when edit tool has been changed (ObjectMode,TerrainModify,....)
 
 	// Game related events.
 	eNotify_OnBeginGameMode,           // Sent when editor goes to game mode.
@@ -181,9 +176,6 @@ enum EEditorNotifyEvent
 	eNotify_OnTextureLayerChange,      // Sent when texture layer was added, removed or moved
 	eNotify_OnBeginBindViewport,       // Sent when a viewport is about to be bound.
 
-	eNotify_OnReferenceCoordSysChanged, // Send when the reference coordinate system has changed
-	eNotify_OnAxisConstraintChanged,    // Send when axis constraint has changed
-
 	eNotify_OnBeginLayoutResize, //  Sent when we begin changing the layout
 	eNotify_OnEndLayoutResize,   //  Sent when we begin changing the layout
 	eNotify_EditorConfigSpecChanged
@@ -223,48 +215,6 @@ enum EOperationMode
 	eOperationModeNone = 0, // None
 	eCompositingMode,       // Normal operation mode where objects are composited in the scene
 	eModellingMode          // Geometry modeling mode
-};
-
-enum EEditMode
-{
-	eEditModeSelect,
-	eEditModeSelectArea,
-	eEditModeMove,
-	eEditModeRotate,
-	eEditModeScale,
-	eEditModeTool,
-};
-
-enum ESnapMode
-{
-	eSnapMode_None          = 0x0,
-	eSnapMode_Terrain       = 0x01,
-	eSnapMode_Geometry      = 0x02,
-	eSnapMode_SurfaceNormal = 0x04
-};
-
-//! Reference coordinate system values
-enum RefCoordSys
-{
-	COORDS_VIEW = 0,
-	COORDS_LOCAL,
-	COORDS_PARENT,
-	COORDS_WORLD,
-	COORDS_USERDEFINED,
-	LAST_COORD_SYSTEM, // Must always be the last member
-};
-
-//! Axis constrains value.
-enum AxisConstrains
-{
-	AXIS_X = 1,
-	AXIS_Y,
-	AXIS_Z,
-	AXIS_XY,
-	AXIS_YZ,
-	AXIS_XZ,
-	AXIS_XYZ,
-	AXIS_VIEW
 };
 
 //////////////////////////////////////////////////////////////////////////
@@ -339,13 +289,18 @@ struct IEditor
 	virtual IProjectManager* GetProjectManager() = 0;
 
 	//! Gets the level editor primary interface
-	virtual ILevelEditor* GetLevelEditor() = 0;
+	virtual ILevelEditor*            GetLevelEditor() = 0;
+	virtual CLevelEditorSharedState* GetLevelEditorSharedState() = 0;
 
-	virtual void          Notify(EEditorNotifyEvent event) = 0;
+	virtual void                     Notify(EEditorNotifyEvent event) = 0;
 	//! Register Editor notifications listener.
-	virtual void          RegisterNotifyListener(IEditorNotifyListener* listener) = 0;
+	virtual void                     RegisterNotifyListener(IEditorNotifyListener* listener) = 0;
 	//! Unregister Editor notifications listener.
-	virtual void          UnregisterNotifyListener(IEditorNotifyListener* listener) = 0;
+	virtual void                     UnregisterNotifyListener(IEditorNotifyListener* listener) = 0;
+
+	// Register Object Mode sub tools. Needed for tools defined within Sandbox project
+	virtual void RegisterAllObjectModeSubTools() = 0;
+	virtual void UnRegisterAllObjectModeSubTools() = 0;
 
 	//! This folder is supposed to store Sandbox user settings and state
 	virtual const char* GetUserFolder() = 0;
@@ -405,15 +360,8 @@ struct IEditor
 
 	//TODO: This is part of level editor
 	virtual IGizmoManager* GetGizmoManager() = 0;
-	virtual RefCoordSys    GetReferenceCoordSys() = 0;
-	virtual void           SetReferenceCoordSys(RefCoordSys refCoords) = 0;
-	//! Returns current edit tool.
-	virtual CEditTool*     GetEditTool() = 0;
 
 	virtual CRuler*        GetRuler() = 0;
-	//! Assign current edit tool, destroy previously used edit too.
-	virtual void           SetEditTool(CEditTool* tool, bool bStopCurrentTool = true) = 0;
-	virtual void           SetEditTool(const string& sEditToolName, bool bStopCurrentTool = true) = 0;
 
 	// Return true if editor in a state where document is ready to be modified.
 	virtual bool         IsDocumentReady() const = 0;
@@ -434,23 +382,15 @@ struct IEditor
 	virtual void                   DeleteObject(CBaseObject* obj) = 0;
 	virtual const ISelectionGroup* GetISelectionGroup() const = 0;
 	virtual int                    ClearSelection() = 0;
+	virtual bool                   IsSelectionLocked() = 0;
 	virtual CBaseObject*           GetSelectedObject() = 0;
-	virtual int                    GetEditMode() = 0;
-	virtual void                   SetEditMode(int editMode) = 0;
 	virtual CPrefabManager*        GetPrefabManager() = 0;
 	virtual const char*            GetLevelName() = 0;
 	virtual const char*            GetLevelPath() = 0;
-	virtual bool                   IsSnapToTerrainEnabled() const = 0;
-	virtual bool                   IsSnapToGeometryEnabled() const = 0;
 	virtual bool                   IsHelpersDisplayed() const = 0;
 	virtual void                   EnableHelpersDisplay(bool bEnable) = 0;
-	virtual bool                   IsPivotSnappingEnabled() const = 0;
-	virtual void                   EnablePivotSnapping(bool bEnable) = 0;
-	virtual AxisConstrains         GetAxisConstrains() = 0;
-	virtual void                   SetAxisConstrains(AxisConstrains axis) = 0;
 	virtual void                   StartObjectCreation(const char* type, const char* file = nullptr) = 0;
-	virtual void                   SetSelectedRegion(const AABB& box) = 0;
-	virtual void                   GetSelectedRegion(AABB& box) = 0;
+	virtual CHeightmap*            GetHeightmap() = 0;
 	// end level editor methods
 
 	virtual ESystemConfigSpec GetEditorConfigSpec() const = 0;

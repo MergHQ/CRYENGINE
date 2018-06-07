@@ -2,7 +2,6 @@
 
 #pragma once
 
-#include "HitContext.h"
 #include <CrySandbox/CrySignal.h>
 #include <CrySerialization/IArchive.h>
 #include <IEditor.h>
@@ -13,6 +12,7 @@ enum EOperationMode;
 struct IClassDesc;
 struct ITransformManipulator;
 struct SDisplayContext;
+struct HitContext;
 
 enum EEditToolType
 {
@@ -45,6 +45,9 @@ public:
 	virtual void Abort();
 	//! Used to pass user defined data to edit tool from ToolButton.
 	virtual void SetUserData(const char* key, void* userData) {}
+
+	//! Called whenever the tool is made the active edit tool
+	virtual void Activate() {}
 
 	// Called each frame to display tool for given viewport.
 	virtual void Display(SDisplayContext& dc) {}

@@ -74,7 +74,7 @@ void CObjectCloneTool::SetConstrPlane(CViewport* view, CPoint point)
 	Matrix34 originTM;
 	originTM.SetIdentity();
 	const CSelectionGroup* pSelection = GetIEditorImpl()->GetSelection();
-	if (!pSelection->GetManipulatorMatrix(GetIEditorImpl()->GetReferenceCoordSys(), originTM))
+	if (!pSelection->GetManipulatorMatrix(originTM))
 		originTM.SetIdentity();
 
 	m_initPosition = pSelection->GetCenter();
@@ -117,8 +117,6 @@ bool CObjectCloneTool::MouseCallback(CViewport* view, EMouseEvent event, CPoint&
 			{
 				bool followTerrain = false;
 
-				int axis = GetIEditorImpl()->GetAxisConstrains();
-
 				Vec3 p1 = m_initPosition;
 				Vec3 p2 = view->MapViewToCP(point);
 				if (p2.IsZero())
@@ -129,16 +127,16 @@ bool CObjectCloneTool::MouseCallback(CViewport* view, EMouseEvent event, CPoint&
 				offset = view->SnapToGrid(offset);
 
 				int selectionFlags = CSelectionGroup::eMS_None;
-				if (GetIEditorImpl()->IsSnapToTerrainEnabled())
+				if (gSnappingPreferences.IsSnapToTerrainEnabled())
 					selectionFlags = CSelectionGroup::eMS_FollowTerrain;
 
-				if (GetIEditorImpl()->IsSnapToGeometryEnabled())
+				if (gSnappingPreferences.IsSnapToGeometryEnabled())
 					selectionFlags |= CSelectionGroup::eMS_FollowGeometry;
 
-				if (GetIEditorImpl()->IsSnapToNormalEnabled())
+				if (gSnappingPreferences.IsSnapToNormalEnabled())
 					selectionFlags |= CSelectionGroup::eMS_SnapToNormal;
 
-				GetIEditorImpl()->GetSelection()->Move(offset, selectionFlags, GetIEditorImpl()->GetReferenceCoordSys(), point, true);
+				GetIEditorImpl()->GetSelection()->Move(offset, selectionFlags, point, true);
 			}
 		}
 		if (event == eMouseWheel)
@@ -180,7 +178,7 @@ void CObjectCloneTool::Accept()
 	if (GetIEditorImpl()->GetIUndoManager()->IsUndoRecording())
 		GetIEditorImpl()->GetIUndoManager()->Accept("Clone");
 
-	GetIEditorImpl()->SetEditTool(0);
+	GetIEditorImpl()->GetLevelEditorSharedState()->SetEditTool(nullptr);
 }
 
 bool CObjectCloneTool::OnKeyDown(CViewport* view, uint32 nChar, uint32 nRepCnt, uint32 nFlags)

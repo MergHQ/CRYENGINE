@@ -31,13 +31,17 @@ CTransformManipulator::CTransformManipulator(ITransformManipulatorOwner* owner)
 
 	SetUpGizmos();
 
-	GetIEditor()->RegisterNotifyListener(this);
+	GetIEditor()->GetLevelEditorSharedState()->signalAxisConstraintChanged.Connect(this, &CTransformManipulator::UpdateGizmoColors);
+	GetIEditor()->GetLevelEditorSharedState()->signalCoordSystemChanged.Connect(this, &CTransformManipulator::OnUpdateState);
+	GetIEditor()->GetLevelEditorSharedState()->signalEditModeChanged.Connect(this, &CTransformManipulator::OnUpdateState);
 }
 
 //////////////////////////////////////////////////////////////////////////
 CTransformManipulator::~CTransformManipulator()
 {
-	GetIEditor()->UnregisterNotifyListener(this);
+	GetIEditor()->GetLevelEditorSharedState()->signalAxisConstraintChanged.DisconnectObject(this);
+	GetIEditor()->GetLevelEditorSharedState()->signalCoordSystemChanged.DisconnectObject(this);
+	GetIEditor()->GetLevelEditorSharedState()->signalEditModeChanged.DisconnectObject(this);
 }
 
 void CTransformManipulator::SetUpGizmos()
@@ -218,39 +222,39 @@ void CTransformManipulator::UpdateGizmoColors()
 
 	if (!m_bSkipConstraintColor)
 	{
-		switch (GetIEditor()->GetAxisConstrains())
+		switch (GetIEditor()->GetLevelEditorSharedState()->GetAxisConstraint())
 		{
-		case AXIS_X:
+		case CLevelEditorSharedState::Axis::X:
 			m_xMoveAxis.SetColor(white);
 			m_xWheelGizmo.SetColor(white);
 			m_xScaleAxis.SetColor(white);
 			break;
-		case AXIS_Y:
+		case CLevelEditorSharedState::Axis::Y:
 			m_yMoveAxis.SetColor(white);
 			m_yScaleAxis.SetColor(white);
 			m_yWheelGizmo.SetColor(white);
 			break;
-		case AXIS_Z:
+		case CLevelEditorSharedState::Axis::Z:
 			m_zMoveAxis.SetColor(white);
 			m_zWheelGizmo.SetColor(white);
 			m_zScaleAxis.SetColor(white);
 			break;
-		case AXIS_XY:
+		case CLevelEditorSharedState::Axis::XY:
 			m_xyMovePlane.SetColor(white);
 			m_xyScalePlane.SetColor(white);
 			break;
-		case AXIS_YZ:
+		case CLevelEditorSharedState::Axis::YZ:
 			m_yzMovePlane.SetColor(white);
 			m_yzScalePlane.SetColor(white);
 			break;
-		case AXIS_XZ:
+		case CLevelEditorSharedState::Axis::XZ:
 			m_zxMovePlane.SetColor(white);
 			m_zxScalePlane.SetColor(white);
 			break;
-		case AXIS_XYZ:
+		case CLevelEditorSharedState::Axis::XYZ:
 			m_xyzScaleGizmo.SetColor(white);
 			break;
-		case AXIS_VIEW:
+		case CLevelEditorSharedState::Axis::View:
 			m_viewMoveGizmo.SetColor(white);
 			m_viewRotationGizmo.SetColor(white);
 			break;
@@ -261,9 +265,9 @@ void CTransformManipulator::UpdateGizmoColors()
 void CTransformManipulator::UpdateGizmos()
 {
 	Vec3 position = m_matrix.GetTranslation();
-	int nEditMode = GetIEditor()->GetEditMode();
+	CLevelEditorSharedState::EditMode editMode = GetIEditor()->GetLevelEditorSharedState()->GetEditMode();
 
-	if (nEditMode == eEditModeMove)
+	if (editMode == CLevelEditorSharedState::EditMode::Move)
 	{
 		m_xMoveAxis.SetPosition(position);
 		m_xMoveAxis.SetDirection(m_matrix.GetColumn0());
@@ -288,7 +292,7 @@ void CTransformManipulator::UpdateGizmos()
 
 		m_viewMoveGizmo.SetPosition(position);
 	}
-	else if (nEditMode == eEditModeRotate)
+	else if (editMode == CLevelEditorSharedState::EditMode::Rotate)
 	{
 		m_xWheelGizmo.SetPosition(position);
 		m_xWheelGizmo.SetAxis(m_matrix.GetColumn0());
@@ -305,9 +309,8 @@ void CTransformManipulator::UpdateGizmos()
 		m_viewRotationGizmo.SetPosition(position);
 		m_trackballGizmo.SetPosition(position);
 
-		RefCoordSys coordSys = GetIEditor()->GetReferenceCoordSys();
 		Matrix34 manipulatorMatrix;
-		if (!m_owner->GetManipulatorMatrix(coordSys, manipulatorMatrix))
+		if (!m_owner->GetManipulatorMatrix(manipulatorMatrix))
 			manipulatorMatrix = m_matrix;
 
 		m_xRotateAxis.SetPosition(position);
@@ -319,7 +322,7 @@ void CTransformManipulator::UpdateGizmos()
 		m_zRotateAxis.SetPosition(position);
 		m_zRotateAxis.SetDirection(manipulatorMatrix.GetColumn2());
 	}
-	else if (nEditMode == eEditModeScale)
+	else if (editMode == CLevelEditorSharedState::EditMode::Scale)
 	{
 		m_xScaleAxis.SetPosition(position);
 		m_xScaleAxis.SetDirection(m_matrix.GetColumn0());
@@ -353,7 +356,7 @@ void CTransformManipulator::UpdateGizmos()
 
 void CTransformManipulator::UpdateTransform()
 {
-	RefCoordSys coordSys = GetIEditor()->GetReferenceCoordSys();
+	CLevelEditorSharedState::CoordSystem coordSystem = GetIEditor()->GetLevelEditorSharedState()->GetCoordSystem();
 
 	// if we have a custom transform our matrix is already as it should be
 	if (!m_bUseCustomTransform)
@@ -363,15 +366,15 @@ void CTransformManipulator::UpdateTransform()
 		// the real position of the transform manipulator and then expecting the original matrix to be modified here.
 		// GetManipulatorMatrix() should already return a matrix with the correct position data.
 		m_owner->GetManipulatorPosition(position);
-		if (coordSys == COORDS_LOCAL || coordSys == COORDS_PARENT)
+		if (coordSystem == CLevelEditorSharedState::CoordSystem::Local || coordSystem == CLevelEditorSharedState::CoordSystem::Parent)
 		{
 			// attempt to get local or parent matrix from gizmo owner. If none is provided, just use world matrix instead
-			if (!m_owner->GetManipulatorMatrix(coordSys, m_matrix))
+			if (!m_owner->GetManipulatorMatrix(m_matrix))
 			{
 				m_matrix.SetIdentity();
 			}
 		}
-		else if (coordSys == COORDS_WORLD)
+		else if (coordSystem == CLevelEditorSharedState::CoordSystem::World)
 		{
 			m_matrix.SetIdentity();
 		}
@@ -397,7 +400,7 @@ void CTransformManipulator::Display(SDisplayContext& dc)
 	}
 
 	// view coordinates need to be calculated each frame
-	if (GetIEditor()->GetReferenceCoordSys() == COORDS_VIEW && !m_bUseCustomTransform)
+	if (GetIEditor()->GetLevelEditorSharedState()->GetCoordSystem() == CLevelEditorSharedState::CoordSystem::View && !m_bUseCustomTransform)
 	{
 		Vec3 position = m_matrix.GetTranslation();
 		Vec3 direction = -dc.view->ViewDirection();
@@ -415,23 +418,23 @@ void CTransformManipulator::Display(SDisplayContext& dc)
 	}
 
 	// Only enable axis planes when editor is in Move mode.
-	int nEditMode = GetIEditor()->GetEditMode();
+	CLevelEditorSharedState::EditMode editMode = GetIEditor()->GetLevelEditorSharedState()->GetEditMode();
 	int nModeFlags = 0;
-	switch (nEditMode)
+	switch (editMode)
 	{
-	case eEditModeMove:
+	case CLevelEditorSharedState::EditMode::Move:
 		nModeFlags |= CAxisHelper::MOVE_FLAG;
 		break;
-	case eEditModeRotate:
+	case CLevelEditorSharedState::EditMode::Rotate:
 		nModeFlags |= CAxisHelper::ROTATE_FLAG;
 		break;
-	case eEditModeScale:
+	case CLevelEditorSharedState::EditMode::Scale:
 		nModeFlags |= CAxisHelper::SCALE_FLAG;
 		break;
-	case eEditModeSelect:
+	case CLevelEditorSharedState::EditMode::Select:
 		nModeFlags |= CAxisHelper::SELECT_FLAG;
 		break;
-	case eEditModeSelectArea:
+	case CLevelEditorSharedState::EditMode::SelectArea:
 		nModeFlags |= CAxisHelper::SELECT_FLAG;
 		break;
 	}
@@ -440,18 +443,18 @@ void CTransformManipulator::Display(SDisplayContext& dc)
 	{
 		m_highlightedGizmo->Display(dc);
 
-		if (nEditMode == eEditModeMove)
+		if (editMode == CLevelEditorSharedState::EditMode::Move)
 		{
 			DisplayPivotPoint(dc);
 		}
-		else if (nEditMode == eEditModeRotate)
+		else if (editMode == CLevelEditorSharedState::EditMode::Rotate)
 		{
 			m_xRotateAxis.Display(dc);
 			m_yRotateAxis.Display(dc);
 			m_zRotateAxis.Display(dc);
 		}
 
-		if (nEditMode == eEditModeMove && !(dc.flags & DISPLAY_2D))
+		if (editMode == CLevelEditorSharedState::EditMode::Move && !(dc.flags & DISPLAY_2D))
 		{
 			// TODO: Use SHIFT+G key for this, make it a polled key
 			bool bClickedShift = QtUtil::IsModifierKeyDown(Qt::ShiftModifier);
@@ -464,7 +467,7 @@ void CTransformManipulator::Display(SDisplayContext& dc)
 	}
 
 	// first try for new gizmo code!
-	if (nEditMode == eEditModeMove)
+	if (editMode == CLevelEditorSharedState::EditMode::Move)
 	{
 		m_viewMoveGizmo.Display(dc);
 
@@ -486,7 +489,7 @@ void CTransformManipulator::Display(SDisplayContext& dc)
 			}
 		}
 	}
-	else if (nEditMode == eEditModeRotate)
+	else if (editMode == CLevelEditorSharedState::EditMode::Rotate)
 	{
 		m_trackballGizmo.Display(dc);
 
@@ -500,7 +503,7 @@ void CTransformManipulator::Display(SDisplayContext& dc)
 
 		m_viewRotationGizmo.Display(dc);
 	}
-	else if (nEditMode == eEditModeScale)
+	else if (editMode == CLevelEditorSharedState::EditMode::Scale)
 	{
 		m_xScaleAxis.Display(dc);
 		m_yScaleAxis.Display(dc);
@@ -566,17 +569,17 @@ void CTransformManipulator::SetMatrix(const Matrix34& m)
 //////////////////////////////////////////////////////////////////////////
 bool CTransformManipulator::HitTest(HitContext& hc, EManipulatorMode& manipulatorMode)
 {
-	int nEditMode = GetIEditor()->GetEditMode();
+	CLevelEditorSharedState::EditMode editMode = GetIEditor()->GetLevelEditorSharedState()->GetEditMode();
 
 	m_lastHitGizmo = nullptr;
 
-	if (nEditMode == eEditModeMove)
+	if (editMode == CLevelEditorSharedState::EditMode::Move)
 	{
 		if (m_viewMoveGizmo.HitTest(hc))
 		{
 			m_lastHitGizmo = &m_viewMoveGizmo;
 			manipulatorMode = MOVE_MODE;
-			hc.axis = AXIS_VIEW;
+			hc.axis = CLevelEditorSharedState::Axis::View;
 			return true;
 		}
 
@@ -584,21 +587,21 @@ bool CTransformManipulator::HitTest(HitContext& hc, EManipulatorMode& manipulato
 		{
 			m_lastHitGizmo = &m_xMoveAxis;
 			manipulatorMode = MOVE_MODE;
-			hc.axis = AXIS_X;
+			hc.axis = CLevelEditorSharedState::Axis::X;
 			return true;
 		}
 		if (m_yMoveAxis.HitTest(hc))
 		{
 			m_lastHitGizmo = &m_yMoveAxis;
 			manipulatorMode = MOVE_MODE;
-			hc.axis = AXIS_Y;
+			hc.axis = CLevelEditorSharedState::Axis::Y;
 			return true;
 		}
 		if (m_zMoveAxis.HitTest(hc))
 		{
 			m_lastHitGizmo = &m_zMoveAxis;
 			manipulatorMode = MOVE_MODE;
-			hc.axis = AXIS_Z;
+			hc.axis = CLevelEditorSharedState::Axis::Z;
 			return true;
 		}
 
@@ -606,72 +609,72 @@ bool CTransformManipulator::HitTest(HitContext& hc, EManipulatorMode& manipulato
 		{
 			m_lastHitGizmo = &m_xyMovePlane;
 			manipulatorMode = MOVE_MODE;
-			hc.axis = AXIS_XY;
+			hc.axis = CLevelEditorSharedState::Axis::XY;
 			return true;
 		}
 		if (m_yzMovePlane.HitTest(hc))
 		{
 			m_lastHitGizmo = &m_yzMovePlane;
 			manipulatorMode = MOVE_MODE;
-			hc.axis = AXIS_YZ;
+			hc.axis = CLevelEditorSharedState::Axis::YZ;
 			return true;
 		}
 		if (m_zxMovePlane.HitTest(hc))
 		{
 			m_lastHitGizmo = &m_zxMovePlane;
 			manipulatorMode = MOVE_MODE;
-			hc.axis = AXIS_XZ;
+			hc.axis = CLevelEditorSharedState::Axis::XZ;
 			return true;
 		}
 
 		return false;
 	}
-	else if (nEditMode == eEditModeRotate)
+	else if (editMode == CLevelEditorSharedState::EditMode::Rotate)
 	{
 		if (m_xWheelGizmo.HitTest(hc))
 		{
 			m_lastHitGizmo = &m_xWheelGizmo;
 			manipulatorMode = ROTATE_MODE;
-			hc.axis = AXIS_X;
+			hc.axis = CLevelEditorSharedState::Axis::X;
 			return true;
 		}
 		if (m_yWheelGizmo.HitTest(hc))
 		{
 			m_lastHitGizmo = &m_yWheelGizmo;
 			manipulatorMode = ROTATE_MODE;
-			hc.axis = AXIS_Y;
+			hc.axis = CLevelEditorSharedState::Axis::Y;
 			return true;
 		}
 		if (m_zWheelGizmo.HitTest(hc))
 		{
 			m_lastHitGizmo = &m_zWheelGizmo;
 			manipulatorMode = ROTATE_MODE;
-			hc.axis = AXIS_Z;
+			hc.axis = CLevelEditorSharedState::Axis::Z;
 			return true;
 		}
 		if (m_viewRotationGizmo.HitTest(hc))
 		{
 			m_lastHitGizmo = &m_viewRotationGizmo;
 			manipulatorMode = ROTATE_MODE;
-			hc.axis = AXIS_VIEW;
+			hc.axis = CLevelEditorSharedState::Axis::View;
 			return true;
 		}
 		if (m_trackballGizmo.HitTest(hc))
 		{
 			m_lastHitGizmo = &m_trackballGizmo;
 			manipulatorMode = ROTATE_MODE;
-			hc.axis = AXIS_XYZ;
+			hc.axis = CLevelEditorSharedState::Axis::XYZ;
 			return true;
 		}
 		return false;
 	}
-	else if (nEditMode == eEditModeScale)
+	else if (editMode == CLevelEditorSharedState::EditMode::Scale)
 	{
 		if (m_xyzScaleGizmo.HitTest(hc))
 		{
 			m_lastHitGizmo = &m_xyzScaleGizmo;
 			manipulatorMode = SCALE_MODE;
-			hc.axis = AXIS_XYZ;
+			hc.axis = CLevelEditorSharedState::Axis::XYZ;
 			return true;
 		}
 
@@ -679,42 +682,42 @@ bool CTransformManipulator::HitTest(HitContext& hc, EManipulatorMode& manipulato
 		{
 			m_lastHitGizmo = &m_xScaleAxis;
 			manipulatorMode = SCALE_MODE;
-			hc.axis = AXIS_X;
+			hc.axis = CLevelEditorSharedState::Axis::X;
 			return true;
 		}
 		if (m_yScaleAxis.HitTest(hc))
 		{
 			m_lastHitGizmo = &m_yScaleAxis;
 			manipulatorMode = SCALE_MODE;
-			hc.axis = AXIS_Y;
+			hc.axis = CLevelEditorSharedState::Axis::Y;
 			return true;
 		}
 		if (m_zScaleAxis.HitTest(hc))
 		{
 			m_lastHitGizmo = &m_zScaleAxis;
 			manipulatorMode = SCALE_MODE;
-			hc.axis = AXIS_Z;
+			hc.axis = CLevelEditorSharedState::Axis::Z;
 			return true;
 		}
 		if (m_xyScalePlane.HitTest(hc))
 		{
 			m_lastHitGizmo = &m_xyScalePlane;
 			manipulatorMode = SCALE_MODE;
-			hc.axis = AXIS_XY;
+			hc.axis = CLevelEditorSharedState::Axis::XY;
 			return true;
 		}
 		if (m_yzScalePlane.HitTest(hc))
 		{
 			m_lastHitGizmo = &m_yzScalePlane;
 			manipulatorMode = SCALE_MODE;
-			hc.axis = AXIS_YZ;
+			hc.axis = CLevelEditorSharedState::Axis::YZ;
 			return true;
 		}
 		if (m_zxScalePlane.HitTest(hc))
 		{
 			m_lastHitGizmo = &m_zxScalePlane;
 			manipulatorMode = SCALE_MODE;
-			hc.axis = AXIS_XZ;
+			hc.axis = CLevelEditorSharedState::Axis::XZ;
 			return true;
 		}
 	}
@@ -753,7 +756,7 @@ void CTransformManipulator::SetCustomTransform(bool on, const Matrix34& m)
 
 bool CTransformManipulator::NeedsSnappingGrid() const
 {
-	return m_bDragging && GetIEditor()->GetEditMode() == eEditModeMove;
+	return m_bDragging && GetIEditor()->GetLevelEditorSharedState()->GetEditMode() == CLevelEditorSharedState::EditMode::Move;
 }
 
 //////////////////////////////////////////////////////////////////////////
@@ -790,31 +793,31 @@ void CTransformManipulator::BeginMoveDrag(IDisplayViewport* view, CGizmo* gizmo,
 	m_bSkipConstraintColor = true;
 	if (gizmo == &m_xMoveAxis)
 	{
-		GetIEditor()->SetAxisConstrains(AXIS_X);
+		GetIEditor()->GetLevelEditorSharedState()->SetAxisConstraint(CLevelEditorSharedState::Axis::X);
 	}
 	else if (gizmo == &m_yMoveAxis)
 	{
-		GetIEditor()->SetAxisConstrains(AXIS_Y);
+		GetIEditor()->GetLevelEditorSharedState()->SetAxisConstraint(CLevelEditorSharedState::Axis::Y);
 	}
 	else if (gizmo == &m_zMoveAxis)
 	{
-		GetIEditor()->SetAxisConstrains(AXIS_Z);
+		GetIEditor()->GetLevelEditorSharedState()->SetAxisConstraint(CLevelEditorSharedState::Axis::Z);
 	}
 	else if (gizmo == &m_xyMovePlane)
 	{
-		GetIEditor()->SetAxisConstrains(AXIS_XY);
+		GetIEditor()->GetLevelEditorSharedState()->SetAxisConstraint(CLevelEditorSharedState::Axis::XY);
 	}
 	else if (gizmo == &m_yzMovePlane)
 	{
-		GetIEditor()->SetAxisConstrains(AXIS_YZ);
+		GetIEditor()->GetLevelEditorSharedState()->SetAxisConstraint(CLevelEditorSharedState::Axis::YZ);
 	}
 	else if (gizmo == &m_zxMovePlane)
 	{
-		GetIEditor()->SetAxisConstrains(AXIS_XZ);
+		GetIEditor()->GetLevelEditorSharedState()->SetAxisConstraint(CLevelEditorSharedState::Axis::XZ);
 	}
 	else if (gizmo == &m_viewMoveGizmo)
 	{
-		GetIEditor()->SetAxisConstrains(AXIS_VIEW);
+		GetIEditor()->GetLevelEditorSharedState()->SetAxisConstraint(CLevelEditorSharedState::Axis::View);
 	}
 
 	view->SetConstructionMatrix(m_matrix);
@@ -842,23 +845,23 @@ void CTransformManipulator::BeginRotateDrag(IDisplayViewport* view, CGizmo* gizm
 	m_bSkipConstraintColor = true;
 	if (gizmo == &m_xWheelGizmo)
 	{
-		GetIEditor()->SetAxisConstrains(AXIS_X);
+		GetIEditor()->GetLevelEditorSharedState()->SetAxisConstraint(CLevelEditorSharedState::Axis::X);
 	}
 	else if (gizmo == &m_yWheelGizmo)
 	{
-		GetIEditor()->SetAxisConstrains(AXIS_Y);
+		GetIEditor()->GetLevelEditorSharedState()->SetAxisConstraint(CLevelEditorSharedState::Axis::Y);
 	}
 	else if (gizmo == &m_zWheelGizmo)
 	{
-		GetIEditor()->SetAxisConstrains(AXIS_Z);
+		GetIEditor()->GetLevelEditorSharedState()->SetAxisConstraint(CLevelEditorSharedState::Axis::Z);
 	}
 	else if (gizmo == &m_viewRotationGizmo)
 	{
-		GetIEditor()->SetAxisConstrains(AXIS_VIEW);
+		GetIEditor()->GetLevelEditorSharedState()->SetAxisConstraint(CLevelEditorSharedState::Axis::View);
 	}
 	else if (gizmo == &m_trackballGizmo)
 	{
-		GetIEditor()->SetAxisConstrains(AXIS_XYZ);
+		GetIEditor()->GetLevelEditorSharedState()->SetAxisConstraint(CLevelEditorSharedState::Axis::XYZ);
 	}
 
 	Vec2i ipoint(point.x, point.y);
@@ -872,7 +875,7 @@ void CTransformManipulator::RotateDragging(IDisplayViewport* view, CGizmo* gizmo
 	Vec3 vDragValue(0.0f, 0.0f, 0.0f);
 
 	// in view space coordinates, we create a rotation in world space
-	if (GetIEditor()->GetReferenceCoordSys() == COORDS_VIEW)
+	if (GetIEditor()->GetLevelEditorSharedState()->GetCoordSystem() == CLevelEditorSharedState::CoordSystem::View)
 	{
 		Matrix33 customSpaceRot = Matrix33::CreateRotationAA(rotationAxis.angle, rotationAxis.axis);
 		Ang3 ang(customSpaceRot);
@@ -924,31 +927,31 @@ void CTransformManipulator::BeginScaleDrag(IDisplayViewport* view, CGizmo* gizmo
 	m_bSkipConstraintColor = true;
 	if (gizmo == &m_xScaleAxis)
 	{
-		GetIEditor()->SetAxisConstrains(AXIS_X);
+		GetIEditor()->GetLevelEditorSharedState()->SetAxisConstraint(CLevelEditorSharedState::Axis::X);
 	}
 	else if (gizmo == &m_yScaleAxis)
 	{
-		GetIEditor()->SetAxisConstrains(AXIS_Y);
+		GetIEditor()->GetLevelEditorSharedState()->SetAxisConstraint(CLevelEditorSharedState::Axis::Y);
 	}
 	else if (gizmo == &m_zScaleAxis)
 	{
-		GetIEditor()->SetAxisConstrains(AXIS_Z);
+		GetIEditor()->GetLevelEditorSharedState()->SetAxisConstraint(CLevelEditorSharedState::Axis::Z);
 	}
 	if (gizmo == &m_xyScalePlane)
 	{
-		GetIEditor()->SetAxisConstrains(AXIS_XY);
+		GetIEditor()->GetLevelEditorSharedState()->SetAxisConstraint(CLevelEditorSharedState::Axis::XY);
 	}
 	else if (gizmo == &m_yzScalePlane)
 	{
-		GetIEditor()->SetAxisConstrains(AXIS_YZ);
+		GetIEditor()->GetLevelEditorSharedState()->SetAxisConstraint(CLevelEditorSharedState::Axis::YZ);
 	}
 	else if (gizmo == &m_zxScalePlane)
 	{
-		GetIEditor()->SetAxisConstrains(AXIS_XZ);
+		GetIEditor()->GetLevelEditorSharedState()->SetAxisConstraint(CLevelEditorSharedState::Axis::XZ);
 	}
 	else if (gizmo == &m_xyzScaleGizmo)
 	{
-		GetIEditor()->SetAxisConstrains(AXIS_XYZ);
+		GetIEditor()->GetLevelEditorSharedState()->SetAxisConstraint(CLevelEditorSharedState::Axis::XYZ);
 	}
 
 	Vec2i ipoint(point.x, point.y);
@@ -1019,17 +1022,13 @@ void CTransformManipulator::EndDrag(IDisplayViewport* view, CGizmo* gizmo, const
 	}
 }
 
-void CTransformManipulator::OnEditorNotifyEvent(EEditorNotifyEvent event)
+void CTransformManipulator::OnUpdateState()
 {
 	// if we are interacting skip update; it will happen after we finish dragging anyway.
-	if (!m_bDragging && (event == eNotify_OnReferenceCoordSysChanged || event == eNotify_OnEditModeChange))
+	if (!m_bDragging)
 	{
 		SetHighlighted(false);
 		Invalidate();
-	}
-	else if (event == eNotify_OnAxisConstraintChanged)
-	{
-		UpdateGizmoColors();
 	}
 }
 

@@ -488,8 +488,8 @@ void CHeightmap::Resize(int iWidth, int iHeight, float unitSize, bool bCleanOld,
 
 void CHeightmap::PaintLayerId(const float fpx, const float fpy, const SEditorPaintBrush& brush, const uint32 dwLayerId)
 {
-	assert(dwLayerId <= CLayer::e_hole);
-	uint8 ucLayerInfoData = dwLayerId & (CLayer::e_hole | CLayer::e_undefined);
+	assert(dwLayerId <= e_layerIdHole);
+	uint8 ucLayerInfoData = dwLayerId & (e_layerIdHole | e_layerIdUndefined);
 
 	SEditorPaintBrush cpyBrush = brush;
 
@@ -512,14 +512,14 @@ void CHeightmap::EraseLayerID(uchar id)
 			if (st.GetDominatingSurfaceType() == id)
 			{
 				bool hole = st.GetHole();
-				st = CLayer::e_undefined;
+				st = e_layerIdUndefined;
 				st.SetHole(hole);
 			}
 		}
 	}
 }
 
-void CHeightmap::MarkUsedLayerIds(bool bFree[CLayer::e_undefined]) const
+void CHeightmap::MarkUsedLayerIds(bool bFree[e_layerIdUndefined]) const
 {
 	for (uint32 dwY = 0; dwY < m_iHeight; ++dwY)
 	{
@@ -529,7 +529,7 @@ void CHeightmap::MarkUsedLayerIds(bool bFree[CLayer::e_undefined]) const
 
 			for (int s = 0; s < SSurfaceTypeItem::kMaxSurfaceTypesNum; s++)
 			{
-				if (st.we[s] && st.ty[s] < CLayer::e_undefined)
+				if (st.we[s] && st.ty[s] < e_layerIdUndefined)
 				{
 					bFree[st.ty[s]] = false; // it's possible to have undefined layers here
 				}
@@ -2540,7 +2540,7 @@ void CHeightmap::UpdateEngineTerrain(int x1, int y1, int areaSize, int _height, 
 		uint8 LayerIdToDetailId[256];
 
 		// to speed up the following loops
-		for (uint32 dwI = 0; dwI < CLayer::e_hole; ++dwI)
+		for (uint32 dwI = 0; dwI < e_layerIdHole; ++dwI)
 			LayerIdToDetailId[dwI] = GetIEditorImpl()->GetTerrainManager()->GetDetailIdLayerFromLayerId(dwI);
 
 		for (int y = y1; y < y2; y++)
@@ -2698,9 +2698,9 @@ void CHeightmap::Serialize(CXmlArchive& xmlAr)
 						unsigned char ucVal = oldLayerIdBitmap[dwX + dwY * m_iWidth];
 
 						SSurfaceTypeItem st;
-						st = ucVal & CLayer::e_undefined;
+						st = ucVal & e_layerIdUndefined;
 						SetLayerIdAt(dwX, dwY, st);
-						SetHoleAt(dwX, dwY, ucVal & CLayer::e_hole);
+						SetHoleAt(dwX, dwY, ucVal & e_layerIdHole);
 					}
 				}
 			}
@@ -3422,12 +3422,12 @@ void CHeightmap::ImportSegmentLayerIDs(CMemoryBlock& mem, const CRect& rc)
 				for (int x = 0; x < LayerIdBitmapImage.GetWidth(); ++x)
 				{
 					SSurfaceTypeItem& rValue = (SSurfaceTypeItem&)LayerIdBitmapImage.ValueAt(x, y);
-					int lidOld = rValue.GetDominatingSurfaceType() & CLayer::e_undefined;
+					int lidOld = rValue.GetDominatingSurfaceType() & e_layerIdUndefined;
 					TUIntUIntMap::const_iterator itNew = tLayerIDMap.find(lidOld);
 					if (itNew == tLayerIDMap.end())
 						continue;
 					int lidNew = itNew->second;
-					rValue = (rValue.GetDominatingSurfaceType() & CLayer::e_hole) | (lidNew & CLayer::e_undefined);
+					rValue = (rValue.GetDominatingSurfaceType() & e_layerIdHole) | (lidNew & e_layerIdUndefined);
 				}
 			}
 		}

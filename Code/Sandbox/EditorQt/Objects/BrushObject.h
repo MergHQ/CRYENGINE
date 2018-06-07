@@ -21,6 +21,8 @@ public:
 	bool                     Init(CBaseObject* prev, const string& file);
 	void                     Done();
 	void                     Display(CObjectRenderHelper& objRenderHelper);
+	const ColorB&            GetSelectionPreviewHighlightColor() override;
+	void                     DrawSelectionPreviewHighlight(SDisplayContext& dc) override;
 	bool                     CreateGameObject();
 
 	void                     GetLocalBounds(AABB& box);

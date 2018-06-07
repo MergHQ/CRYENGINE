@@ -12,7 +12,7 @@
 #include "UniformScaleGizmo.h"
 #include "PlaneScaleGizmo.h"
 #include "TrackballGizmo.h"
-#include "IEditor.h" // for AxisConstrains and RefCoordSys
+#include "IEditor.h" // for AxisConstrains and CLevelEditorSharedState::CoordSystem
 
 #include "AxisHelperExtended.h"
 
@@ -21,7 +21,7 @@ struct SDisplayContext;
 
 /** Gizmo of Objects animation track.
  */
-class EDITOR_COMMON_API CTransformManipulator : public CGizmo, public ITransformManipulator, public IEditorNotifyListener
+class EDITOR_COMMON_API CTransformManipulator : public CGizmo, public ITransformManipulator
 {
 public:
 	CTransformManipulator(ITransformManipulatorOwner* owner);
@@ -63,8 +63,6 @@ public:
 
 	virtual void SetHighlighted(bool highlighted) override;
 
-	virtual void OnEditorNotifyEvent(EEditorNotifyEvent event) override;
-
 	virtual void Invalidate() override { SetFlag(EGIZMO_INVALID); }
 
 private:
@@ -84,6 +82,7 @@ private:
 	void SetMatrix(const Matrix34&);
 	void SetUpGizmos();
 	//! update gizmo position and orientation
+	void OnUpdateState();
 	void UpdateGizmos();
 	void UpdateTransform();
 	//! update gizmo colors when for example, setting axis constraints

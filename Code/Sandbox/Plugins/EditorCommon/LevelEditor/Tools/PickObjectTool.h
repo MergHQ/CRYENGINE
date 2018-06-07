@@ -1,7 +1,10 @@
 // Copyright 2001-2018 Crytek GmbH / Crytek Group. All rights reserved.
 #pragma once
 
-class CPickObjectTool : public CEditTool
+#include "LevelEditor/Tools/EditTool.h"
+struct IPickObjectCallback;
+
+class EDITOR_COMMON_API CPickObjectTool : public CEditTool
 {
 public:
 	DECLARE_DYNAMIC(CPickObjectTool)

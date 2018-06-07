@@ -28,7 +28,7 @@
 #include "IViewportManager.h"
 #include "IObjectManager.h"
 #include "ILevelEditor.h"
-#include "EditTool.h"
+#include "LevelEditor/Tools/EditTool.h"
 
 #include <QResizeEvent>
 #include "QtUtil.h"
@@ -314,7 +314,7 @@ void CRenderViewport::ProcessMouse()
 		ypr.y = CLAMP(ypr.y, -1.5f, 1.5f);    // to keep rotation in reasonable range
 		// In the recording mode of a custom camera, the z rotation is allowed.
 
-		//		bool bExclusiveMode = GetIEditor()->GetEditTool() && GetIEditor()->GetEditTool()->IsExclusiveMode();
+		//		bool bExclusiveMode = GetIEditor()->GetLevelEditorSharedState()->GetEditTool() && GetIEditor()->GetLevelEditorSharedState()->GetEditTool()->IsExclusiveMode();
 		//		if( GetCameraObject() == NULL || (!GetIEditor()->GetAnimation()->IsRecordMode() && !bExclusiveMode) )
 		{
 			ypr.z = 0;    // to have camera always upward
@@ -740,7 +740,7 @@ SDisplayContext CRenderViewport::InitDisplayContext(const SDisplayContextKey& di
 	if (m_bAdvancedSelectMode)
 		dctx.flags |= DISPLAY_SELECTION_HELPERS;
 
-	if (GetIEditor()->GetReferenceCoordSys() == COORDS_WORLD)
+	if (GetIEditor()->GetLevelEditorSharedState()->GetCoordSystem() == CLevelEditorSharedState::CoordSystem::World)
 	{
 		dctx.flags |= DISPLAY_WORLDSPACEAXIS;
 	}
@@ -1147,7 +1147,7 @@ void CRenderViewport::SetViewTM(const Matrix34& viewTM, bool bMoveOnly)
 			return;
 		}
 
-		const bool bExclusiveMode = GetIEditor()->GetEditTool() && GetIEditor()->GetEditTool()->IsExclusiveMode();
+		const bool bExclusiveMode = GetIEditor()->GetLevelEditorSharedState()->GetEditTool() && GetIEditor()->GetLevelEditorSharedState()->GetEditTool()->IsExclusiveMode();
 		const bool bPushUndo = !bExclusiveMode && (m_eCameraMoveState == ECameraMoveState::MovingWithoutUndoPushed);
 		if (bPushUndo)
 		{
@@ -1177,8 +1177,7 @@ void CRenderViewport::RenderSelectedRegion(SDisplayContext& context)
 	if (!m_engine)
 		return;
 
-	AABB box;
-	GetIEditor()->GetSelectedRegion(box);
+	AABB box = GetIEditor()->GetLevelEditorSharedState()->GetSelectedRegion();
 	if (box.IsEmpty())
 		return;
 

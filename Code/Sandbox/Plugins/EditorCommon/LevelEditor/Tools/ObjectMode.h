@@ -1,19 +1,21 @@
 // Copyright 2001-2018 Crytek GmbH / Crytek Group. All rights reserved.
-
 #pragma once
 
-#include "AI\AIMoveSimulation.h"
-#include "IObjectManager.h"
+// CryCommon
 #include "CryExtension/CryGUID.h"
-
-#include <EditorFramework/Preferences.h>
-#include "Gizmos/ITransformManipulator.h"
 #include <CrySerialization/yasli/decorators/Range.h>
+
+// EditorInterface
+#include "IObjectManager.h"
+
+// EditorCommon
+#include "EditorFramework/Preferences.h"
+#include "Gizmos/ITransformManipulator.h"
 
 // {87109FED-BDB5-4874-936D-338400079F58}
 DEFINE_GUID(OBJECT_MODE_GUID, 0x87109fed, 0xbdb5, 0x4874, 0x93, 0x6d, 0x33, 0x84, 0x0, 0x7, 0x9f, 0x58);
 
-struct SDeepSelectionPreferences : public SPreferencePage
+struct EDITOR_COMMON_API SDeepSelectionPreferences : public SPreferencePage
 {
 	SDeepSelectionPreferences()
 		: SPreferencePage("Deep Selection", "General/General")
@@ -33,7 +35,7 @@ struct SDeepSelectionPreferences : public SPreferencePage
 	float deepSelectionRange;
 };
 
-extern SDeepSelectionPreferences gDeepSelectionPreferences;
+EDITOR_COMMON_API extern SDeepSelectionPreferences gDeepSelectionPreferences;
 
 class CBaseObject;
 class CDeepSelection;
@@ -45,7 +47,7 @@ public:
 	CObjectManipulatorOwner(CObjectMode* objectModeTool);
 	~CObjectManipulatorOwner();
 
-	bool GetManipulatorMatrix(RefCoordSys coordSys, Matrix34& tm) override;
+	bool GetManipulatorMatrix(Matrix34& tm) override;
 	void GetManipulatorPosition(Vec3& position) override;
 	bool IsManipulatorVisible() override;
 
@@ -65,13 +67,23 @@ private:
  *	CObjectMode is an abstract base class for All Editing	Tools supported by Editor.
  *	Edit tools handle specific editing modes in viewports.
  */
-class SANDBOX_API CObjectMode : public CEditTool
+class EDITOR_COMMON_API CObjectMode : public CEditTool
 {
 public:
+
+	class EDITOR_COMMON_API ISubTool
+	{
+	public:
+		virtual ~ISubTool() = 0 {};
+		virtual bool HandleMouseEvent(CViewport* view, EMouseEvent event, CPoint& point, int flags) = 0;
+	};
+
 	DECLARE_DYNCREATE(CObjectMode);
 
 	CObjectMode();
 	virtual ~CObjectMode();
+
+	void Activate() override;
 
 	//////////////////////////////////////////////////////////////////////////
 	// CEditTool implementation.
@@ -79,7 +91,6 @@ public:
 	virtual string GetDisplayName() const override { return "Select Objects"; }
 	virtual void   Display(SDisplayContext& dc);
 	virtual void   DisplaySelectionPreview(SDisplayContext& dc);
-	virtual void   DrawSelectionPreview(SDisplayContext& dc, CBaseObject* drawObject);
 
 	virtual bool   MouseCallback(CViewport* view, EMouseEvent event, CPoint& point, int flags);
 	virtual bool   OnKeyDown(CViewport* view, uint32 nChar, uint32 nRepCnt, uint32 nFlags);
@@ -90,6 +101,9 @@ public:
 	void           OnManipulatorBeginDrag(IDisplayViewport* view, ITransformManipulator* pManipulator, const Vec2i& point, int flags);
 	void           OnManipulatorDrag(IDisplayViewport* view, ITransformManipulator* pManipulator, const Vec2i& p0, const Vec3& value, int flags);
 	void           OnManipulatorEndDrag(IDisplayViewport* view, ITransformManipulator* pManipulator);
+
+	void           RegisterSubTool(ISubTool* pSubTool);
+	void           UnRegisterSubTool(ISubTool* pSubTool);
 
 public:
 	enum ECommandMode
@@ -140,32 +154,47 @@ private:
 
 	void CheckDeepSelection(HitContext& hitContext, CViewport* pWnd);
 
-	CPoint            m_cMouseDownPos;
-	Vec3              m_mouseDownWorldPos;
-	CPoint            m_rMouseDownPos;
-	bool              m_bDragThresholdExceeded;
-	ECommandMode      m_commandMode;
+	CPoint       m_cMouseDownPos;
+	Vec3         m_mouseDownWorldPos;
+	CPoint       m_rMouseDownPos;
+	bool         m_bDragThresholdExceeded;
+	ECommandMode m_commandMode;
 
-	CAIMoveSimulation m_AIMoveSimulation;
-
-	CryGUID           m_MouseOverObject;
-	bool              m_openContext;
+	CryGUID      m_MouseOverObject;
+	bool         m_openContext;
 	// used to keep highlight from disappearing when we use right click menu
-	bool              m_suspendHighlightChange;
+	bool         m_suspendHighlightChange;
 
 	typedef std::vector<CryGUID> TGuidContainer;
-	TGuidContainer             m_PreviewGUIDs;
+	std::unordered_set<ISubTool*> m_subTools;
+	TGuidContainer                m_PreviewGUIDs;
 
-	_smart_ptr<CDeepSelection> m_pDeepSelection;
+	_smart_ptr<CDeepSelection>    m_pDeepSelection;
 
-	bool                       m_bMoveByFaceNormManipShown;
-	CBaseObject*               m_pHitObject;
+	bool                          m_bMoveByFaceNormManipShown;
+	CBaseObject*                  m_pHitObject;
 
-	bool                       m_bTransformChanged;
+	bool                          m_bTransformChanged;
 
-	ITransformManipulator*     m_normalMoveGizmo;
-	NormalGizmoOwner           m_normalGizmoOwner;
-	CObjectManipulatorOwner    m_objectManipulatorOwner;
+	ITransformManipulator*        m_normalMoveGizmo;
+	NormalGizmoOwner              m_normalGizmoOwner;
+	CObjectManipulatorOwner       m_objectManipulatorOwner;
 
-	bool                       m_bGizmoDrag;
+	bool                          m_bGizmoDrag;
 };
+
+typedef CAutoRegister<CObjectMode::ISubTool> CAutoRegisterObjectModeSubToolHelper;
+
+#define REGISTER_OBJECT_MODE_SUB_TOOL_PTR(Type, typePtr)                                                            \
+  namespace Internal                                                                                                \
+  {                                                                                                                 \
+  void RegisterObjectModeSubTool ## Type()                                                                          \
+  {                                                                                                                 \
+    CEditTool* pTool = GetIEditorImpl()->GetLevelEditorSharedState()->GetEditTool();                                \
+    if (!pTool || !pTool->IsKindOf(RUNTIME_CLASS(CObjectMode)))                                                     \
+      return;                                                                                                       \
+    CObjectMode* pObjectMode = static_cast<CObjectMode*>(pTool);                                                    \
+    pObjectMode->RegisterSubTool(typePtr);                                                                          \
+  }                                                                                                                 \
+  CAutoRegisterObjectModeSubToolHelper g_AutoRegObjectModeSubToolHelper ## Type(RegisterObjectModeSubTool ## Type); \
+  }

@@ -12,12 +12,12 @@ public:
 
 	CDisplayViewportAdapter(QViewport* viewport);
 
-	void               Update() override {}
-	float              GetScreenScaleFactor(const Vec3& position) const override;
-	bool               HitTestLine(const Vec3& lineP1, const Vec3& lineP2, const CPoint& hitpoint, int pixelRadius, float* pToCameraDistance = 0) const override;
-	CBaseObjectsCache* GetVisibleObjectsCache() override               { return 0; }
-	bool               IsBoundsVisible(const AABB& box) const override { return false; }
-	void               GetPerpendicularAxis(EAxis* axis, bool* is2D) const override;
+	void                                    Update() override {}
+	float                                   GetScreenScaleFactor(const Vec3& position) const override;
+	bool                                    HitTestLine(const Vec3& lineP1, const Vec3& lineP2, const CPoint& hitpoint, int pixelRadius, float* pToCameraDistance = 0) const override;
+	CBaseObjectsCache*                      GetVisibleObjectsCache() override               { return 0; }
+	bool                                    IsBoundsVisible(const AABB& box) const override { return false; }
+	CLevelEditorSharedState::Axis GetPerpendicularAxis(bool* is2D) const override;
 	const Matrix34& GetViewTM() const override;
 	POINT           WorldToView(const Vec3& worldPoint) const override;
 	Vec3            WorldToView3D(const Vec3& worldPoint, int flags = 0) const override                                                                                      { return Vec3(0.0f, 0.0f, 0.0f); }
@@ -28,15 +28,15 @@ public:
 	Vec3            UpViewDirection() const;
 	Vec3            CameraToWorld(Vec3 worldPoint) const;
 
-	float           GetGridStep() const override                                                                                                                             { return 1.0f; }
+	float           GetGridStep() const override             { return 1.0f; }
 	float           GetAspectRatio() const override;
-	void            ScreenToClient(POINT* pt) const override                                                                                                                 {}
+	void            ScreenToClient(POINT* pt) const override {}
 	void            GetDimensions(int* width, int* height) const override;
 
-	void            EnableXYViewport(bool bEnable) { m_bXYViewport = bEnable; }
-	virtual Vec3	MapViewToCP(CPoint point, int axis, bool aSnapToTerrain = false, float aTerrainOffset = 0.f) { return Vec3(0, 0, 0); }
-	virtual Vec3    SnapToGrid(Vec3 vec) { return vec; }
-	virtual void    SetConstructionMatrix(const Matrix34& xform) {}
+	void            EnableXYViewport(bool bEnable)                                                                                                   { m_bXYViewport = bEnable; }
+	virtual Vec3    MapViewToCP(CPoint point, CLevelEditorSharedState::Axis axis, bool aSnapToTerrain = false, float aTerrainOffset = 0.f) { return Vec3(0, 0, 0); }
+	virtual Vec3    SnapToGrid(Vec3 vec)                                                                                                             { return vec; }
+	virtual void    SetConstructionMatrix(const Matrix34& xform)                                                                                     {}
 	virtual void    SetCursor(QCursor* hCursor) override;
 
 private:

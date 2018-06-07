@@ -5,6 +5,8 @@
 #include "Objects\SubObjSelection.h"
 #include "TriMesh.h"
 
+#include <Util/PakFile.h>
+
 // Flags that can be set on CEdMesh.
 enum CEdMeshFlags
 {

@@ -225,7 +225,7 @@ void SliceTool::InvertSlicePlane()
 
 void SliceTool::OnManipulatorDrag(IDisplayViewport* pView, ITransformManipulator* pManipulator, CPoint& p0, BrushVec3 value, int nFlags)
 {
-	if (GetIEditor()->GetEditMode() == eEditModeScale)
+	if (GetIEditor()->GetLevelEditorSharedState()->GetEditMode() == CLevelEditorSharedState::EditMode::Scale)
 		return;
 
 	BrushVec3 vDelta = value - m_PrevGizmoPos;
@@ -241,13 +241,13 @@ void SliceTool::OnManipulatorDrag(IDisplayViewport* pView, ITransformManipulator
 
 	if (!bUpdatedManipulator)
 	{
-		if (GetIEditor()->GetEditMode() == eEditModeMove)
+		if (GetIEditor()->GetLevelEditorSharedState()->GetEditMode() == CLevelEditorSharedState::EditMode::Move)
 		{
 			m_GizmoPos += vDelta;
 			m_CursorPos = m_GizmoPos;
 			AlignSlicePlane(m_SlicePlane.Normal());
 		}
-		else if (!bDesignerMirrorMode && GetIEditor()->GetEditMode() == eEditModeRotate)
+		else if (!bDesignerMirrorMode && GetIEditor()->GetLevelEditorSharedState()->GetEditMode() == CLevelEditorSharedState::EditMode::Rotate)
 		{
 			AlignSlicePlane(offsetTM.TransformVector(m_SlicePlane.Normal()));
 		}

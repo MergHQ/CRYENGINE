@@ -17,7 +17,7 @@
 #include "Util/Math.h"
 #include "Util/AffineParts.h"
 #include "Controls/DynamicPopupMenu.h"
-#include "EditTool.h"
+#include "LevelEditor/Tools/EditTool.h"
 #include "UsedResources.h"
 #include "IEditorMaterial.h"
 #include "Grid.h"
@@ -1576,6 +1576,29 @@ void CBaseObject::DrawTextOn2DBox(SDisplayContext& dc, const Vec3& pos, const ch
 	dc.SetState(backupstate);
 }
 
+void CBaseObject::DrawSelectionPreviewHighlight(SDisplayContext& dc)
+{
+	AABB bbox;
+	GetBoundBox(bbox);
+
+	if (GetChildCount() > 0)
+	{
+		// Draw object name label on top of object
+		Vec3 vTopEdgeCenterPos = bbox.GetCenter();
+
+		dc.SetColor(gViewportSelectionPreferences.colorGroupBBox);
+		vTopEdgeCenterPos(vTopEdgeCenterPos.x, vTopEdgeCenterPos.y, bbox.max.z);
+		dc.DrawTextLabel(vTopEdgeCenterPos, 1.3f, GetName());
+		// Draw bounding box wireframe
+		dc.DrawWireBox(bbox.min, bbox.max);
+	}
+	else
+	{
+		dc.SetColor(Vec3(1, 1, 1));
+		dc.DrawTextLabel(ConvertToTextPos(bbox.GetCenter(), Matrix34::CreateIdentity(), dc.view, dc.flags & DISPLAY_2D), 1, GetName());
+	}
+}
+
 //////////////////////////////////////////////////////////////////////////
 void CBaseObject::DrawSelectionHelper(SDisplayContext& dc, const Vec3& pos, COLORREF labelColor, float alpha)
 {
@@ -1792,7 +1815,7 @@ int CBaseObject::MouseCreateCallback(IDisplayViewport* view, EMouseEvent event, 
 {
 	if (event == eMouseMove || event == eMouseLDown)
 	{
-		Vec3 pos = view->MapViewToCP(point, 0, true, GetCreationOffsetFromTerrain());
+		Vec3 pos = view->MapViewToCP(point, CLevelEditorSharedState::Axis::None, true, GetCreationOffsetFromTerrain());
 		SetPos(pos);
 
 		if (event == eMouseLDown)
@@ -2981,14 +3004,15 @@ const Matrix34& CBaseObject::GetWorldTM() const
 	return m_worldTM;
 }
 
-bool CBaseObject::GetManipulatorMatrix(RefCoordSys coordSys, Matrix34& tm) const
+bool CBaseObject::GetManipulatorMatrix(Matrix34& tm) const
 {
-	if (coordSys == COORDS_LOCAL)
+	CLevelEditorSharedState::CoordSystem coordSystem = GetIEditor()->GetLevelEditorSharedState()->GetCoordSystem();
+	if (coordSystem == CLevelEditorSharedState::CoordSystem::Local)
 	{
 		tm = GetWorldTM();
 		return true;
 	}
-	else if (coordSys == COORDS_PARENT)
+	else if (coordSystem == CLevelEditorSharedState::CoordSystem::Parent)
 	{
 		if (GetLinkedTo())
 		{
@@ -3004,7 +3028,7 @@ bool CBaseObject::GetManipulatorMatrix(RefCoordSys coordSys, Matrix34& tm) const
 		}
 		return true;
 	}
-	else if (coordSys == COORDS_WORLD)
+	else if (coordSystem == CLevelEditorSharedState::CoordSystem::World)
 	{
 		tm = GetWorldTM();
 		return true;
@@ -3724,7 +3748,7 @@ ERotationWarningLevel CBaseObject::GetRotationWarningLevel() const
 
 bool CBaseObject::IsSkipSelectionHelper() const
 {
-	CEditTool* pEditTool(GetIEditor()->GetEditTool());
+	CEditTool* pEditTool(GetIEditor()->GetLevelEditorSharedState()->GetEditTool());
 	if (pEditTool && pEditTool->IsNeedToSkipPivotBoxForObjects())
 		return true;
 	return false;

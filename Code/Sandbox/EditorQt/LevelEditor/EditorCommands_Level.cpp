@@ -124,17 +124,17 @@ void PyToggleDisplayInfo()
 
 void PyDisplayInfoLow()
 {
-	GetIEditorImpl()->GetLevelEditorSharedState()->SetDisplayInfoLevel(LevelEditorSharedState::eDisplayInfoLevel_Low);
+	GetIEditorImpl()->GetLevelEditorSharedState()->SetDisplayInfoLevel(CLevelEditorSharedState::eDisplayInfoLevel_Low);
 }
 
 void PyDisplayInfoMedium()
 {
-	GetIEditorImpl()->GetLevelEditorSharedState()->SetDisplayInfoLevel(LevelEditorSharedState::eDisplayInfoLevel_Med);
+	GetIEditorImpl()->GetLevelEditorSharedState()->SetDisplayInfoLevel(CLevelEditorSharedState::eDisplayInfoLevel_Med);
 }
 
 void PyDisplayInfoHigh()
 {
-	GetIEditorImpl()->GetLevelEditorSharedState()->SetDisplayInfoLevel(LevelEditorSharedState::eDisplayInfoLevel_High);
+	GetIEditorImpl()->GetLevelEditorSharedState()->SetDisplayInfoLevel(CLevelEditorSharedState::eDisplayInfoLevel_High);
 }
 
 void PyToggleDisplayHelpers()
@@ -319,32 +319,32 @@ void UpdateProceduralVegetation()
 
 void SetCoordSys(int value)
 {
-	GetIEditorImpl()->SetReferenceCoordSys((RefCoordSys)value);
+	GetIEditor()->GetLevelEditorSharedState()->SetCoordSystem((CLevelEditorSharedState::CoordSystem)value);
 }
 
 void SetViewCoords()
 {
-	GetIEditorImpl()->SetReferenceCoordSys(COORDS_VIEW);
+	GetIEditor()->GetLevelEditorSharedState()->SetCoordSystem(CLevelEditorSharedState::CoordSystem::View);
 }
 
 void SetLocalCoords()
 {
-	GetIEditorImpl()->SetReferenceCoordSys(COORDS_LOCAL);
+	GetIEditor()->GetLevelEditorSharedState()->SetCoordSystem(CLevelEditorSharedState::CoordSystem::Local);
 }
 
 void SetParentCoords()
 {
-	GetIEditorImpl()->SetReferenceCoordSys(COORDS_PARENT);
+	GetIEditor()->GetLevelEditorSharedState()->SetCoordSystem(CLevelEditorSharedState::CoordSystem::Parent);
 }
 
 void SetWorldCoords()
 {
-	GetIEditorImpl()->SetReferenceCoordSys(COORDS_WORLD);
+	GetIEditor()->GetLevelEditorSharedState()->SetCoordSystem(CLevelEditorSharedState::CoordSystem::World);
 }
 
 void SetCustomCoords()
 {
-	GetIEditorImpl()->SetReferenceCoordSys(COORDS_USERDEFINED);
+	GetIEditor()->GetLevelEditorSharedState()->SetCoordSystem(CLevelEditorSharedState::CoordSystem::UserDefined);
 }
 }
 }

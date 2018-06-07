@@ -1117,13 +1117,13 @@ void CCryEditApp::OnEditDuplicate()
 		return;
 	}
 
-	CEditTool* tool = GetIEditorImpl()->GetEditTool();
+	CEditTool* tool = GetIEditorImpl()->GetLevelEditorSharedState()->GetEditTool();
 	if (tool && tool->IsKindOf(RUNTIME_CLASS(CObjectCloneTool)))
 	{
 		((CObjectCloneTool*)tool)->Accept();
 	}
 
-	GetIEditorImpl()->SetEditTool(new CObjectCloneTool);
+	GetIEditorImpl()->GetLevelEditorSharedState()->SetEditTool(new CObjectCloneTool);
 	GetIEditorImpl()->SetModifiedFlag();
 }
 

@@ -15,9 +15,11 @@
 
 #include "Controls/DynamicPopupMenu.h"
 
-#include "Grid.h"
-#include "Viewport.h"
+#include <Grid.h>
+#include <Viewport.h>
 #include <Preferences/ViewportPreferences.h>
+#include <LevelEditor/Tools/PickObjectTool.h>
+
 #include "Util/MFCUtil.h"
 #include <CryCore/ToolsHelpers/GuidUtil.h>
 #include "Util/BoostPythonHelpers.h"
@@ -31,7 +33,6 @@
 #include "Serialization/Decorators/EditToolButton.h"
 
 #include "IDataBaseManager.h"
-#include "PickObjectTool.h"
 #include "CryEditDoc.h"
 
 #include <CrySystem/ICryLink.h>
@@ -734,6 +735,11 @@ bool CPrefabObject::HitTest(HitContext& hc)
 	}
 
 	return false;
+}
+
+const ColorB& CPrefabObject::GetSelectionPreviewHighlightColor()
+{
+	return gViewportSelectionPreferences.colorPrefabBBox;
 }
 
 void CPrefabObject::SerializeMembers(Serialization::IArchive& ar)

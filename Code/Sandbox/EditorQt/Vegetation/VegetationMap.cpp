@@ -134,7 +134,7 @@ protected:
 	}
 	void Update()
 	{
-		CEditTool* pTool = GetIEditorImpl()->GetEditTool();
+		CEditTool* pTool = GetIEditorImpl()->GetLevelEditorSharedState()->GetEditTool();
 		if (pTool && pTool->IsKindOf(RUNTIME_CLASS(CVegetationSelectTool)))
 		{
 			auto pVegetationTool = static_cast<CVegetationSelectTool*>(pTool);
@@ -243,7 +243,7 @@ protected:
 
 	void ClearThingSelection()
 	{
-		CEditTool* pTool = GetIEditorImpl()->GetEditTool();
+		CEditTool* pTool = GetIEditorImpl()->GetLevelEditorSharedState()->GetEditTool();
 		if (pTool && pTool->IsKindOf(RUNTIME_CLASS(CVegetationSelectTool)))
 		{
 			auto pVegetationTool = static_cast<CVegetationSelectTool*>(pTool);

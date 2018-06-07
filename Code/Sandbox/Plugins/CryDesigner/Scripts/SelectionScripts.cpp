@@ -20,7 +20,7 @@ namespace Script
 {
 DesignerEditor* GetDesignerEditTool()
 {
-	CEditTool* pEditor = GetIEditor()->GetEditTool();
+	CEditTool* pEditor = GetIEditor()->GetLevelEditorSharedState()->GetEditTool();
 	if (pEditor->IsKindOf(RUNTIME_CLASS(DesignerEditor)))
 		return (DesignerEditor*)pEditor;
 	return NULL;

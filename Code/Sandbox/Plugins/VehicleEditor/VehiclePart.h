@@ -83,7 +83,7 @@ protected:
 	void OnSetClass(IVariable* pVar);
 	void OnSetPos(IVariable* pVar);
 
-	void DrawRotationLimits(SDisplayContext& dc, IVariable* pSpeed, IVariable* pLimits, IVariable* pHelper, int axis);
+	void DrawRotationLimits(SDisplayContext& dc, IVariable* pSpeed, IVariable* pLimits, IVariable* pHelper, CLevelEditorSharedState::Axis axis);
 
 	CVehiclePrototype* m_pVehicle;
 	CVehiclePart*      m_pParent;

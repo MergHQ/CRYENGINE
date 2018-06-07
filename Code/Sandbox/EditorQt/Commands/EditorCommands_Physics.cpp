@@ -25,10 +25,10 @@ void PyPhysicsSingleStep()
 
 void PySetPhysicsTool()
 {
-	if (GetIEditorImpl()->GetEditTool() && GetIEditorImpl()->GetEditTool()->IsKindOf(RUNTIME_CLASS(CPhysPullTool)))
-		GetIEditorImpl()->SetEditTool(0);
+	if (GetIEditorImpl()->GetLevelEditorSharedState()->GetEditTool() && GetIEditorImpl()->GetLevelEditorSharedState()->GetEditTool()->IsKindOf(RUNTIME_CLASS(CPhysPullTool)))
+		GetIEditorImpl()->GetLevelEditorSharedState()->SetEditTool(nullptr);
 	else
-		GetIEditorImpl()->SetEditTool(new CPhysPullTool());
+		GetIEditorImpl()->GetLevelEditorSharedState()->SetEditTool(new CPhysPullTool());
 }
 }
 

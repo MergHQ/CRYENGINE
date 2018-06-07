@@ -36,22 +36,22 @@ namespace Private_VegetationEditor
 {
 void Paint()
 {
-	GetIEditor()->SetEditTool(new CVegetationPaintTool());
+	GetIEditor()->GetLevelEditorSharedState()->SetEditTool(new CVegetationPaintTool());
 }
 
 void Erase()
 {
-	GetIEditor()->SetEditTool(new CVegetationEraseTool());
+	GetIEditor()->GetLevelEditorSharedState()->SetEditTool(new CVegetationEraseTool());
 }
 
 void Select()
 {
-	GetIEditor()->SetEditTool(new CVegetationSelectTool());
+	GetIEditor()->GetLevelEditorSharedState()->SetEditTool(new CVegetationSelectTool());
 }
 
 void TryClearSelection()
 {
-	auto pTool = GetIEditorImpl()->GetEditTool();
+	auto pTool = GetIEditorImpl()->GetLevelEditorSharedState()->GetEditTool();
 	if (pTool && pTool->IsKindOf(RUNTIME_CLASS(CVegetationSelectTool)))
 	{
 		auto pVegetationTool = static_cast<CVegetationSelectTool*>(pTool);
@@ -502,11 +502,13 @@ struct CVegetationEditor::SImplementation : public IEditorNotifyListener
 		SetupControls();
 
 		GetIEditorImpl()->RegisterNotifyListener(this);
+		GetIEditorImpl()->GetLevelEditorSharedState()->signalEditToolChanged.Connect(this, &SImplementation::OnEditToolChanged);
 	}
 
 	~SImplementation()
 	{
 		GetIEditorImpl()->UnregisterNotifyListener(this);
+		GetIEditorImpl()->GetLevelEditorSharedState()->signalEditToolChanged.DisconnectObject(this);
 	}
 
 	void SetupControls()
@@ -714,7 +716,7 @@ struct CVegetationEditor::SImplementation : public IEditorNotifyListener
 
 		QObject::connect(m_actions.pMoveSelectionToGroupAction, &QAction::triggered, [this]
 		{
-			auto pTool = GetIEditorImpl()->GetEditTool();
+			auto pTool = GetIEditorImpl()->GetLevelEditorSharedState()->GetEditTool();
 			if (pTool && pTool->IsKindOf(RUNTIME_CLASS(CVegetationSelectTool)))
 			{
 			  auto pVegetationTool = static_cast<CVegetationSelectTool*>(pTool);
@@ -871,6 +873,28 @@ struct CVegetationEditor::SImplementation : public IEditorNotifyListener
 		return pContextMenu;
 	}
 
+	void OnEditToolChanged()
+	{
+		m_actions.pMoveSelectionToGroupAction->setVisible(false);
+
+		auto pTool = GetIEditorImpl()->GetLevelEditorSharedState()->GetEditTool();
+		if (pTool)
+		{
+			if (pTool->IsKindOf(RUNTIME_CLASS(CVegetationPaintTool)))
+			{
+				auto pPaintTool = static_cast<CVegetationPaintTool*>(pTool);
+				pPaintTool->signalBrushRadiusChanged.Connect(this, &SImplementation::UpdateBrushRadius);
+			}
+			else if (pTool->IsKindOf(RUNTIME_CLASS(CVegetationSelectTool)))
+			{
+				auto pSelectTool = static_cast<CVegetationSelectTool*>(pTool);
+				pSelectTool->signalSelectionChanged.Connect(this, &SImplementation::InstanceSelected);
+				m_actions.pMoveSelectionToGroupAction->setVisible(true);
+			}
+		}
+		UpdatePaintBrushSerializer();
+	}
+
 	virtual void OnEditorNotifyEvent(EEditorNotifyEvent event) override
 	{
 		switch (event)
@@ -885,29 +909,6 @@ struct CVegetationEditor::SImplementation : public IEditorNotifyListener
 		case eNotify_OnEndSceneOpen: // Level Open
 		case eNotify_OnEndNewScene:  // New Level
 			m_pVegetationModel->EndResetOnLevelChange();
-			break;
-
-		case eNotify_OnEditToolEndChange:
-			{
-				m_actions.pMoveSelectionToGroupAction->setVisible(false);
-
-				auto pTool = GetIEditorImpl()->GetEditTool();
-				if (pTool)
-				{
-					if (pTool->IsKindOf(RUNTIME_CLASS(CVegetationPaintTool)))
-					{
-						auto pPaintTool = static_cast<CVegetationPaintTool*>(pTool);
-						pPaintTool->signalBrushRadiusChanged.Connect(this, &SImplementation::UpdateBrushRadius);
-					}
-					else if (pTool->IsKindOf(RUNTIME_CLASS(CVegetationSelectTool)))
-					{
-						auto pSelectTool = static_cast<CVegetationSelectTool*>(pTool);
-						pSelectTool->signalSelectionChanged.Connect(this, &SImplementation::InstanceSelected);
-						m_actions.pMoveSelectionToGroupAction->setVisible(true);
-					}
-				}
-				UpdatePaintBrushSerializer();
-			}
 			break;
 		}
 	}
@@ -943,7 +944,7 @@ struct CVegetationEditor::SImplementation : public IEditorNotifyListener
 		m_serializers.clear();
 
 		// if paint tool is active the brush has to be serializable
-		auto pTool = GetIEditorImpl()->GetEditTool();
+		auto pTool = GetIEditorImpl()->GetLevelEditorSharedState()->GetEditTool();
 		if (pTool && pTool->IsKindOf(RUNTIME_CLASS(CVegetationPaintTool)))
 		{
 			AddVegetationSerializer();
@@ -955,7 +956,7 @@ struct CVegetationEditor::SImplementation : public IEditorNotifyListener
 	void UpdatePaintBrushSerializer()
 	{
 		CVegetationPaintTool* pPaintTool = nullptr;
-		auto pTool = GetIEditorImpl()->GetEditTool();
+		auto pTool = GetIEditorImpl()->GetLevelEditorSharedState()->GetEditTool();
 		if (pTool && pTool->IsKindOf(RUNTIME_CLASS(CVegetationPaintTool)))
 		{
 			pPaintTool = static_cast<CVegetationPaintTool*>(pTool);
@@ -982,7 +983,7 @@ struct CVegetationEditor::SImplementation : public IEditorNotifyListener
 
 	void ActivatePlaceTool(CVegetationObject* pVegetationObject)
 	{
-		auto pTool = GetIEditorImpl()->GetEditTool();
+		auto pTool = GetIEditorImpl()->GetLevelEditorSharedState()->GetEditTool();
 		auto pPlaceTool = [pTool]() -> CVegetationPlaceTool*
 		{
 			if (pTool && pTool->IsKindOf(RUNTIME_CLASS(CVegetationPlaceTool)))
@@ -991,7 +992,7 @@ struct CVegetationEditor::SImplementation : public IEditorNotifyListener
 			}
 
 			auto pPlaceTool = new CVegetationPlaceTool();
-			GetIEditorImpl()->SetEditTool(pPlaceTool);
+			GetIEditorImpl()->GetLevelEditorSharedState()->SetEditTool(pPlaceTool);
 			return pPlaceTool;
 		} ();
 
@@ -1000,7 +1001,7 @@ struct CVegetationEditor::SImplementation : public IEditorNotifyListener
 
 	void AbortPlaceTool()
 	{
-		auto pTool = GetIEditorImpl()->GetEditTool();
+		auto pTool = GetIEditorImpl()->GetLevelEditorSharedState()->GetEditTool();
 		if (pTool && pTool->IsKindOf(RUNTIME_CLASS(CVegetationPlaceTool)))
 		{
 			pTool->Abort();
@@ -1149,7 +1150,7 @@ struct CVegetationEditor::SImplementation : public IEditorNotifyListener
 
 	void InstanceSelected()
 	{
-		auto pTool = GetIEditorImpl()->GetEditTool();
+		auto pTool = GetIEditorImpl()->GetLevelEditorSharedState()->GetEditTool();
 		if (pTool && pTool->IsKindOf(RUNTIME_CLASS(CVegetationSelectTool)))
 		{
 			auto pVegetationTool = static_cast<CVegetationSelectTool*>(pTool);
@@ -1262,7 +1263,7 @@ CVegetationEditor::CVegetationEditor(QWidget* parent)
 
 CVegetationEditor::~CVegetationEditor()
 {
-	GetIEditorImpl()->SetEditTool(nullptr);
+	GetIEditorImpl()->GetLevelEditorSharedState()->SetEditTool(nullptr);
 }
 
 bool CVegetationEditor::OnNew()

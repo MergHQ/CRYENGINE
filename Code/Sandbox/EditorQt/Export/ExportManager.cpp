@@ -583,8 +583,7 @@ bool CExportManager::IsNotChildOfGroup(CBaseObject* pObj)
 
 bool CExportManager::AddSelectedRegionObjects()
 {
-	AABB box;
-	GetIEditorImpl()->GetSelectedRegion(box);
+	AABB box = GetIEditorImpl()->GetLevelEditorSharedState()->GetSelectedRegion();
 	if (box.IsEmpty())
 		return false;
 
@@ -618,8 +617,7 @@ bool CExportManager::AddSelectedRegionObjects()
 
 bool CExportManager::AddTerrain()
 {
-	AABB box;
-	GetIEditorImpl()->GetSelectedRegion(box);
+	AABB box = GetIEditorImpl()->GetLevelEditorSharedState()->GetSelectedRegion();
 	if (box.IsEmpty())
 		return false;
 
@@ -750,8 +748,8 @@ bool CExportManager::AddVegetation()
 {
 	if (m_isOccluder)
 		return false;
-	AABB box;
-	GetIEditorImpl()->GetSelectedRegion(box);
+
+	AABB box = GetIEditorImpl()->GetLevelEditorSharedState()->GetSelectedRegion();
 	if (box.IsEmpty())
 		return false;
 

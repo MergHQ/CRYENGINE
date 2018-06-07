@@ -97,6 +97,8 @@ public:
 	void              SetEntityPropertyString(const char* name, const string& value);
 
 	virtual void      Display(CObjectRenderHelper& objRenderHelper);
+	const ColorB&     GetSelectionPreviewHighlightColor() override;
+	void              DrawSelectionPreviewHighlight(SDisplayContext& dc) override;
 
 	virtual void      GetDisplayBoundBox(AABB& box);
 

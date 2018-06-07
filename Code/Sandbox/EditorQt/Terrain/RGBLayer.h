@@ -4,6 +4,8 @@
 
 struct SEditorPaintBrush;
 
+#include <Util/MemoryBlock.h>
+
 // RGB terrain texture layer
 // internal structure (tiled based, loading tiles on demand) is hidden from outside
 // texture does not have to be square

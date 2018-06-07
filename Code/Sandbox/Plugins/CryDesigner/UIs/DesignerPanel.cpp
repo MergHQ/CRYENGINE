@@ -282,7 +282,7 @@ void DesignerPanel::OnClickedButton(EDesignerTool tool, bool ensureDesigner)
 	Designer::SwitchToDesignerToolForObject(DesignerSession::GetInstance()->GetBaseObject());
 	CRY_ASSERT(GetDesigner());
 
-	CEditTool* pEditTool = GetIEditor()->GetEditTool();
+	CEditTool* pEditTool = GetIEditor()->GetLevelEditorSharedState()->GetEditTool();
 	if (pEditTool->IsKindOf(RUNTIME_CLASS(DesignerEditor)))
 	{
 		DesignerEditor* pDesignerEditor = static_cast<DesignerEditor*>(pEditTool);

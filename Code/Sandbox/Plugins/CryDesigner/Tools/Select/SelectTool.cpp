@@ -287,11 +287,11 @@ void SelectTool::UpdateCursor(CViewport* view, bool bPickingElements)
 		view->SetCurrentCursor(STD_CURSOR_DEFAULT, "");
 		return;
 	}
-	else if (GetIEditor()->GetEditMode() == eEditModeMove)
+	else if (GetIEditor()->GetLevelEditorSharedState()->GetEditMode() == CLevelEditorSharedState::EditMode::Move)
 		view->SetCurrentCursor(STD_CURSOR_MOVE, "");
-	else if (GetIEditor()->GetEditMode() == eEditModeRotate)
+	else if (GetIEditor()->GetLevelEditorSharedState()->GetEditMode() == CLevelEditorSharedState::EditMode::Rotate)
 		view->SetCurrentCursor(STD_CURSOR_ROTATE, "");
-	else if (GetIEditor()->GetEditMode() == eEditModeScale)
+	else if (GetIEditor()->GetLevelEditorSharedState()->GetEditMode() == CLevelEditorSharedState::EditMode::Scale)
 		view->SetCurrentCursor(STD_CURSOR_SCALE, "");
 }
 

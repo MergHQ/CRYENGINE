@@ -470,7 +470,7 @@ public:
 	// Gets matrix of link attachment point
 	virtual Matrix34 GetLinkAttachPointWorldTM() const;
 
-	bool             GetManipulatorMatrix(RefCoordSys coordSys, Matrix34& tm) const;
+	bool             GetManipulatorMatrix(Matrix34& tm) const;
 	// Checks if the attachment point is valid
 	virtual bool     IsParentAttachmentValid() const;
 
@@ -501,8 +501,11 @@ public:
 	virtual float GetCreationOffsetFromTerrain() const { return 1.f; }
 
 	//! Draw object to specified viewport.
-	virtual void Display(CObjectRenderHelper& displayInfo) = 0;
-
+	virtual void          Display(CObjectRenderHelper& displayInfo) = 0;
+	//! Get selection preview highlight color
+	virtual const ColorB& GetSelectionPreviewHighlightColor() { CRY_ASSERT_MESSAGE(0, "Needs to be defined for specific object type"); return m_color; }
+	//! Draws selection preview highlight
+	virtual void          DrawSelectionPreviewHighlight(SDisplayContext& dc);
 	//! Perform intersection testing of this object.
 	//! Return true if was hit.
 	virtual bool HitTest(HitContext& hc) { return false; }

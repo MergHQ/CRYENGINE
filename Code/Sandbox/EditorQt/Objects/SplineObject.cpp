@@ -7,6 +7,9 @@
 #include "Objects/InspectorWidgetCreator.h"
 #include "Gizmos/IGizmoManager.h"
 #include "Util/MFCUtil.h"
+
+#include <Grid.h>
+
 #include "Serialization/Decorators/EditToolButton.h"
 #include "Controls/DynamicPopupMenu.h"
 
@@ -83,9 +86,9 @@ void CEditSplineObjectTool::SetUserData(const char* key, void* userData)
 
 	m_pSpline->signalChanged.Connect(this, &CEditSplineObjectTool::OnSplineEvent);
 
-	if (GetIEditorImpl()->GetEditMode() == eEditModeSelect)
+	if (GetIEditorImpl()->GetLevelEditorSharedState()->GetEditMode() == CLevelEditorSharedState::EditMode::Select)
 	{
-		GetIEditorImpl()->SetEditMode(eEditModeMove);
+		GetIEditorImpl()->GetLevelEditorSharedState()->SetEditMode(CLevelEditorSharedState::EditMode::Move);
 	}
 
 	SelectPoint(-1);
@@ -141,7 +144,7 @@ bool CEditSplineObjectTool::OnKeyDown(CViewport* view, uint32 nChar, uint32 nRep
 {
 	if (nChar == Qt::Key_Escape)
 	{
-		GetIEditorImpl()->SetEditTool(0);
+		GetIEditorImpl()->GetLevelEditorSharedState()->SetEditTool(nullptr);
 	}
 	else if (nChar == Qt::Key_Delete)
 	{
@@ -190,11 +193,11 @@ void CEditSplineObjectTool::SelectPoint(int index)
 void CEditSplineObjectTool::OnManipulatorDrag(IDisplayViewport* pView, ITransformManipulator* pManipulator, const Vec2i& point0, const Vec3& value, int flags)
 {
 	// get world/local coordinate system setting.
-	RefCoordSys coordSys = GetIEditorImpl()->GetReferenceCoordSys();
-	int editMode = GetIEditorImpl()->GetEditMode();
+	CLevelEditorSharedState::CoordSystem coordSys = GetIEditorImpl()->GetLevelEditorSharedState()->GetCoordSystem();
+	CLevelEditorSharedState::EditMode editMode = GetIEditorImpl()->GetLevelEditorSharedState()->GetEditMode();
 
 	// get current axis constrains.
-	if (editMode == eEditModeMove)
+	if (editMode == CLevelEditorSharedState::EditMode::Move)
 	{
 		GetIEditorImpl()->GetIUndoManager()->Restore();
 		const Matrix34& splineTM = m_pSpline->GetWorldTM();
@@ -207,7 +210,7 @@ void CEditSplineObjectTool::OnManipulatorDrag(IDisplayViewport* pView, ITransfor
 		Vec3 wp = splineTM.TransformPoint(pos);
 		Vec3 newPos = wp + value;
 
-		if (!GetAsyncKeyState(VK_CONTROL) && GetIEditorImpl()->IsSnapToTerrainEnabled())
+		if (!GetAsyncKeyState(VK_CONTROL) && gSnappingPreferences.IsSnapToTerrainEnabled())
 		{
 			float height = wp.z - GetIEditorImpl()->GetTerrainElevation(wp.x, wp.y);
 			newPos.z = GetIEditorImpl()->GetTerrainElevation(newPos.x, newPos.y) + height;
@@ -228,9 +231,9 @@ void CEditSplineObjectTool::OnManipulatorDrag(IDisplayViewport* pView, ITransfor
 
 void CEditSplineObjectTool::OnManipulatorBegin(IDisplayViewport* view, ITransformManipulator* pManipulator, const Vec2i& point, int flags)
 {
-	int editMode = GetIEditorImpl()->GetEditMode();
+	CLevelEditorSharedState::EditMode editMode = GetIEditorImpl()->GetLevelEditorSharedState()->GetEditMode();
 
-	if (editMode == eEditModeMove)
+	if (editMode == CLevelEditorSharedState::EditMode::Move)
 	{
 		m_modifying = true;
 		// Accept changes.
@@ -243,9 +246,9 @@ void CEditSplineObjectTool::OnManipulatorBegin(IDisplayViewport* view, ITransfor
 
 void CEditSplineObjectTool::OnManipulatorEnd(IDisplayViewport* view, ITransformManipulator* pManipulator)
 {
-	int editMode = GetIEditorImpl()->GetEditMode();
+	CLevelEditorSharedState::EditMode editMode = GetIEditorImpl()->GetLevelEditorSharedState()->GetEditMode();
 
-	if (editMode == eEditModeMove)
+	if (editMode == CLevelEditorSharedState::EditMode::Move)
 	{
 		m_modifying = true;
 		// Accept changes.
@@ -323,7 +326,7 @@ bool CEditSplineObjectTool::MouseCallback(CViewport* view, EMouseEvent event, CP
 		if (index >= 0 && dist < fSplineCloseDistance + view->GetSelectionTolerance())
 		{
 			// Cursor near one of edited Spline points.
-			SetCursor(GetIEditorImpl()->GetEditMode() ? STD_CURSOR_MOVE : STD_CURSOR_HIT);
+			SetCursor(GetIEditorImpl()->GetLevelEditorSharedState()->GetEditMode() == CLevelEditorSharedState::EditMode::Move ? STD_CURSOR_MOVE : STD_CURSOR_HIT);
 
 			if (event == eMouseLDown)
 			{
@@ -438,7 +441,7 @@ bool CSplitSplineObjectTool::OnKeyDown(CViewport* view, uint32 nChar, uint32 nRe
 {
 	if (nChar == Qt::Key_Escape)
 	{
-		GetIEditorImpl()->SetEditTool(0);
+		GetIEditorImpl()->GetLevelEditorSharedState()->SetEditTool(nullptr);
 	}
 	return true;
 }
@@ -477,7 +480,7 @@ bool CSplitSplineObjectTool::MouseCallback(CViewport* view, EMouseEvent event, C
 				m_pSpline->Split(p2, intPnt);
 				if (GetIEditorImpl()->GetIUndoManager()->IsUndoRecording())
 					GetIEditorImpl()->GetIUndoManager()->Accept("Split Spline");
-				GetIEditorImpl()->SetEditTool(0);
+				GetIEditorImpl()->GetLevelEditorSharedState()->SetEditTool(nullptr);
 			}
 		}
 		else
@@ -557,7 +560,7 @@ bool CMergeSplineObjectsTool::OnKeyDown(CViewport* view, uint32 nChar, uint32 nR
 {
 	if (nChar == Qt::Key_Escape)
 	{
-		GetIEditorImpl()->SetEditTool(0);
+		GetIEditorImpl()->GetLevelEditorSharedState()->SetEditTool(nullptr);
 	}
 	return true;
 }
@@ -636,7 +639,7 @@ bool CMergeSplineObjectsTool::MouseCallback(CViewport* view, EMouseEvent event, 
 				}
 				if (GetIEditorImpl()->GetIUndoManager()->IsUndoRecording())
 					GetIEditorImpl()->GetIUndoManager()->Accept("Spline Merging");
-				GetIEditorImpl()->SetEditTool(0);
+				GetIEditorImpl()->GetLevelEditorSharedState()->SetEditTool(nullptr);
 			}
 		}
 
@@ -1613,7 +1616,7 @@ int CSplineObject::MouseCreateCallback(IDisplayViewport* pView, EMouseEvent even
 {
 	if (event == eMouseMove || event == eMouseLDown || event == eMouseLDblClick)
 	{
-		Vec3 pos = ((CViewport*)pView)->MapViewToCP(point, 0, true);
+		Vec3 pos = ((CViewport*)pView)->MapViewToCP(point, CLevelEditorSharedState::Axis::None, true);
 
 		if (GetPointCount() < GetMinPoints())
 		{
@@ -1678,12 +1681,12 @@ void CSplineObject::EditSpline()
 		GetObjectManager()->SelectObject(this);
 	}
 
-	CEditTool* pEditTool = GetIEditorImpl()->GetEditTool();
+	CEditTool* pEditTool = GetIEditorImpl()->GetLevelEditorSharedState()->GetEditTool();
 
 	if (!pEditTool->IsKindOf(RUNTIME_CLASS(CEditSplineObjectTool)))
 	{
 		pEditTool = new CEditSplineObjectTool;
-		GetIEditorImpl()->SetEditTool(pEditTool);
+		GetIEditorImpl()->GetLevelEditorSharedState()->SetEditTool(pEditTool);
 		pEditTool->SetUserData("object", this);
 	}
 }

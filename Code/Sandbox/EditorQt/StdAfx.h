@@ -36,7 +36,7 @@
 #include "EditorDefs.h"
 
 //#include "CryEdit.h"
-#include "EditTool.h"
+#include "LevelEditor/Tools/EditTool.h"
 #include "PluginManager.h"
 
 #include "Util/Variable.h"

@@ -745,6 +745,34 @@ void CGroup::Display(CObjectRenderHelper& objRenderHelper)
 	}
 	dc.PopMatrix();
 }
+const ColorB& CGroup::GetSelectionPreviewHighlightColor()
+{
+	return gViewportSelectionPreferences.colorGroupBBox;
+}
+
+void CGroup::DrawSelectionPreviewHighlight(SDisplayContext& dc)
+{
+	CBaseObject::DrawSelectionPreviewHighlight(dc);
+
+	AABB bbox;
+	GetBoundBox(bbox);
+
+	dc.DepthTestOff();
+
+	dc.SetColor(GetSelectionPreviewHighlightColor());
+
+	dc.DrawSolidBox(bbox.min, bbox.max);
+	dc.DepthTestOn();
+
+	// Highlight also children objects if this object is opened
+	if (!IsOpen())
+		return;
+
+	for (auto childIdx = 0; childIdx < GetChildCount(); ++childIdx)
+	{
+		GetChild(childIdx)->DrawSelectionPreviewHighlight(dc);
+	}
+}
 
 void CGroup::CreateInspectorWidgets(CInspectorWidgetCreator& creator)
 {
