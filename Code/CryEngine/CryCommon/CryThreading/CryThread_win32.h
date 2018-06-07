@@ -276,7 +276,7 @@ public:
 
 private:
 	CrySemaphore   m_Semaphore;
-	volatile int32 m_nCounter;
+	volatile int   m_nCounter;
 };
 
 //////////////////////////////////////////////////////////////////////////
