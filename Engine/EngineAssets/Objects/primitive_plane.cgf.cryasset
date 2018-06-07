@@ -1,6 +1,6 @@
 <AssetMetadata version="0" type="Mesh" guid="18b4f1af-be00-e469-3079-5bf5bd318000">
  <Files>
-  <File path="primitive_plane_small.cgf"/>
+  <File path="primitive_plane.cgf"/>
  </Files>
  <Details>
   <Detail name="materialCount">1</Detail>

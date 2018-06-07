@@ -218,6 +218,8 @@ namespace CryEngine.UI
 			if(TargetTexture != null)
 			{
 				TargetTexture.UpdateData(resolution, resolution, data);
+				RectTransform.Width = _targetTexture.Width;
+				RectTransform.Height = _targetTexture.Height;
 			}
 			else
 			{
@@ -237,7 +239,7 @@ namespace CryEngine.UI
 				{
 					TargetEntity.Material = _originalMaterial;
 				}
-
+				
 				_targetMaterial.Release();
 				_targetMaterial.Dispose();
 			}
