@@ -8,7 +8,7 @@
 class CGraphicsPipeline;
 
 
-namespace ComputeRenderPassInputChangedDetail
+namespace ComputeRenderPassIsDirtyDetail
 {
 	template <int Size, int N, typename Tuple>
 	struct is_tuple_trivial
@@ -38,29 +38,29 @@ public:
 
 	CGraphicsPipeline& GetGraphicsPipeline() const;
 
-	virtual bool InputChanged() const { return false; }
+	virtual bool IsDirty() const { return false; }
 	// Take a variadic list of trivial parameters. Returns true if and only if IsDirty() is set or the serialized data is different from the input. 
 	// Note: Comparison is done as with memcmp on serialized blobs. Types are ignored.
 	template <typename T, typename... Ts>
-	bool InputChanged(T&& arg, Ts&&... args)
+	bool IsDirty(T&& arg, Ts&&... args)
 	{
-		return InputChanged(std::make_tuple(std::forward<T>(arg), std::forward<Ts>(args)...));
+		return IsDirty(std::make_tuple(std::forward<T>(arg), std::forward<Ts>(args)...));
 	}
 	template <typename... Ts>
-	bool InputChanged(std::tuple<Ts...>&& tuple)
+	bool IsDirty(std::tuple<Ts...>&& tuple)
 	{
 		using Tuple = std::tuple<Ts...>;
 		static constexpr size_t size = sizeof(Tuple);
 
 		// Verify all types are trivial
-		static_assert(ComputeRenderPassInputChangedDetail::is_tuple_trivial<std::tuple_size<Tuple>::value, 0, Tuple>::value, "All input types must be trivial non-pointer types");
+		static_assert(ComputeRenderPassIsDirtyDetail::is_tuple_trivial<std::tuple_size<Tuple>::value, 0, Tuple>::value, "All input types must be trivial non-pointer types");
 
 		// Check if input tuple equals the serialized one
 		if (size == m_inputVars.size() * sizeof(decltype(m_inputVars)::value_type) &&
 			*reinterpret_cast<const Tuple*>(m_inputVars.data()) == tuple)
 		{
 			// Nothing changed
-			return InputChanged();
+			return IsDirty();
 		}
 
 		// Store new data

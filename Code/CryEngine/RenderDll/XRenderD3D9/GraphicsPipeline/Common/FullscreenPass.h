@@ -13,11 +13,11 @@ public:
 	CFullscreenPass(CRenderPrimitive::EPrimitiveFlags primitiveFlags = CRenderPrimitive::eFlags_ReflectShaderConstants);
 	~CFullscreenPass();
 
-	bool InputChanged() const override final
+	bool IsDirty() const override final
 	{
-		return m_primitive.IsDirty() || CPrimitiveRenderPass::InputChanged();
+		return m_primitive.IsDirty() || CPrimitiveRenderPass::IsDirty();
 	}
-	using CRenderPassBase::InputChanged;
+	using CRenderPassBase::IsDirty;
 
 	void SetPrimitiveFlags(CRenderPrimitive::EPrimitiveFlags flags);
 

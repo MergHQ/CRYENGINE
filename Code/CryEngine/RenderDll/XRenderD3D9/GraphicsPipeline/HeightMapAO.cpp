@@ -80,7 +80,7 @@ void CHeightMapAOStage::Execute()
 
 			CShader* pShader = CShaderMan::s_shDeferredShading;
 
-			if (m_passSampling.InputChanged(resolutionIndex))
+			if (m_passSampling.IsDirty(resolutionIndex))
 			{
 				static CCryNameTSCRC techSampling("HeightMapAOPass");
 				m_passSampling.SetPrimitiveFlags(CRenderPrimitive::eFlags_ReflectShaderConstants_PS);
@@ -136,7 +136,7 @@ void CHeightMapAOStage::Execute()
 			uint32 clipVolumeCount = RenderView()->GetClipVolumes().size();
 			CDeferredShading::Instance().GetClipVolumeParams(pClipVolumeParams);
 
-			if (m_passSmoothing.InputChanged(resolutionIndex, clipVolumeCount > 0 ? 1 : 0))
+			if (m_passSmoothing.IsDirty(resolutionIndex, clipVolumeCount > 0 ? 1 : 0))
 			{
 				uint64 rtMask = clipVolumeCount > 0 ? g_HWSR_MaskBit[HWSR_SAMPLE0] : 0;
 

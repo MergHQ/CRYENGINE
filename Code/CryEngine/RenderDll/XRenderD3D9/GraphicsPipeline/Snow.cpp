@@ -129,11 +129,7 @@ void CSnowStage::ExecuteDeferredSnowGBuffer()
 
 	auto& pass = m_passDeferredSnowGBuffer;
 
-	if (pass.InputChanged(rtMask,
-		pOcclusionTex->GetID(),
-		zTarget->GetID(),
-		CRenderer::CV_r_snow_displacement,
-		m_pSnowDisplacementTex->GetID()))
+	if (pass.IsDirty(rtMask, CRenderer::CV_r_snow_displacement))
 	{
 		static CCryNameTSCRC techName("Snow");
 		pass.SetPrimitiveFlags(CRenderPrimitive::eFlags_ReflectShaderConstants_PS);
@@ -290,7 +286,7 @@ void CSnowStage::ExecuteDeferredSnowDisplacement()
 
 		auto& pass = m_passParallaxSnowHeightMapGen;
 
-		if (pass.InputChanged(m_pSnowDisplacementTex->GetID()))
+		if (pass.IsDirty())
 		{
 			static CCryNameTSCRC techName = "ParallaxMapPrepass";
 			pass.SetPrimitiveFlags(CRenderPrimitive::eFlags_ReflectShaderConstants_PS);
@@ -322,7 +318,7 @@ void CSnowStage::ExecuteDeferredSnowDisplacement()
 	{
 		auto& pass = m_passParallaxSnowMin;
 
-		if (pass.InputChanged())
+		if (pass.IsDirty())
 		{
 			static CCryNameTSCRC techName = "ParallaxMapMin";
 			pass.SetTechnique(CShaderMan::s_ShaderDeferredSnow, techName, 0);
@@ -361,7 +357,7 @@ void CSnowStage::ExecuteDeferredSnowDisplacement()
 		{
 			auto& pass = m_passParallaxSnow[0];
 
-			if (pass.InputChanged())
+			if (pass.IsDirty())
 			{
 				pass.SetPrimitiveFlags(CRenderPrimitive::eFlags_ReflectShaderConstants_PS);
 				pass.SetPrimitiveType(CRenderPrimitive::ePrim_ProceduralTriangle);
@@ -394,7 +390,7 @@ void CSnowStage::ExecuteDeferredSnowDisplacement()
 		{
 			auto& pass = m_passParallaxSnow[1];
 
-			if (pass.InputChanged())
+			if (pass.IsDirty())
 			{
 				pass.SetPrimitiveFlags(CRenderPrimitive::eFlags_ReflectShaderConstants_PS);
 				pass.SetPrimitiveType(CRenderPrimitive::ePrim_ProceduralTriangle);
@@ -427,7 +423,7 @@ void CSnowStage::ExecuteDeferredSnowDisplacement()
 		{
 			auto& pass = m_passParallaxSnow[2];
 
-			if (pass.InputChanged())
+			if (pass.IsDirty())
 			{
 				uint64 rtMask = g_HWSR_MaskBit[HWSR_SAMPLE0];
 				pass.SetPrimitiveFlags(CRenderPrimitive::eFlags_ReflectShaderConstants_PS);
@@ -808,7 +804,7 @@ void CSnowStage::ExecuteHalfResComposite()
 
 	auto& pass = m_passSnowHalfResCompisite;
 
-	if (pass.InputChanged())
+	if (pass.IsDirty())
 	{
 		static CCryNameTSCRC techName = "SnowHalfResComposite";
 		pass.SetPrimitiveFlags(CRenderPrimitive::eFlags_None);

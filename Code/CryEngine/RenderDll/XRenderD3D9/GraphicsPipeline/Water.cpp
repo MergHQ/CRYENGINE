@@ -431,7 +431,7 @@ void CWaterStage::ExecuteDeferredWaterVolumeCaustics()
 	auto* pTargetTex = CRendererResources::s_ptexSceneTargetR11G11B10F[1];
 	auto& pass = m_passDeferredWaterVolumeCaustics;
 
-	if (pass.InputChanged(pTargetTex->GetTextureID()))
+	if (pass.IsDirty())
 	{
 		static CCryNameTSCRC techName = "WaterVolumeCaustics";
 		pass.SetTechnique(CShaderMan::s_ShaderDeferredCaustics, techName, 0);
@@ -640,7 +640,7 @@ void CWaterStage::ExecuteDeferredOceanCaustics()
 
 		auto& pass = m_passDeferredOceanCaustics;
 
-		if (pass.InputChanged(CRenderer::CV_r_watercausticsdeferred, pOceanMask->GetID()))
+		if (pass.IsDirty(CRenderer::CV_r_watercausticsdeferred))
 		{
 			static CCryNameTSCRC techName = "General";
 			pass.SetPrimitiveFlags(CRenderPrimitive::eFlags_ReflectShaderConstants_PS);
@@ -1249,7 +1249,7 @@ void CWaterStage::ExecuteWaterNormalGen()
 	{
 		auto& pass = m_passWaterNormalGen;
 
-		if (pass.InputChanged())
+		if (pass.IsDirty())
 		{
 			static CCryNameTSCRC techName("WaterVolumesNormalGen");
 			pass.SetPrimitiveFlags(CRenderPrimitive::eFlags_ReflectShaderConstants_PS);
@@ -1387,7 +1387,7 @@ void CWaterStage::ExecuteWaterVolumeCausticsGen(N3DEngineCommon::SCausticInfo& c
 
 		auto& pass = m_passWaterCausticsDilation;
 
-		if (pass.InputChanged())
+		if (pass.IsDirty())
 		{
 			static CCryNameTSCRC techName("WaterCausticsInfoDilate");
 			pass.SetPrimitiveFlags(CRenderPrimitive::eFlags_None);

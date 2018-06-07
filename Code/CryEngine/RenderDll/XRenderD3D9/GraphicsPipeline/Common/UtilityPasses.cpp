@@ -59,7 +59,7 @@ void CStretchRectPass::Execute(CTexture* pSrcRT, CTexture* pDestRT)
 		return;
 	}
 
-	if (!m_pass.InputChanged(pSrcRT->GetTextureID(), pDestRT->GetTextureID()))
+	if (!m_pass.IsDirty())
 	{
 		m_pass.Execute();
 		return;
@@ -267,7 +267,7 @@ void CSharpeningUpsamplePass::Execute(CTexture* pSrcRT, CTexture* pDestRT)
 	if (!pSrcRT || !pDestRT)
 		return;
 
-	if (!m_pass.InputChanged(pSrcRT->GetTextureID(), pDestRT->GetTextureID()))
+	if (!m_pass.IsDirty())
 	{
 		m_pass.Execute();
 		return;
@@ -304,7 +304,7 @@ void CNearestDepthUpsamplePass::Execute(CTexture* pOrgDS, CTexture* pSrcRT, CTex
 	if (!pOrgDS || !pSrcRT || !pSrcDS || !pDestRT)
 		return;
 
-	if (!pPass.InputChanged(pOrgDS->GetTextureID(), pSrcRT->GetTextureID(), pSrcDS->GetTextureID(), pDestRT->GetTextureID()))
+	if (!pPass.IsDirty())
 	{
 		pPass.Execute();
 		return;
@@ -345,7 +345,7 @@ void CDownsamplePass::Execute(CTexture* pSrcRT, CTexture* pDestRT, int nSrcW, in
 	if (!pSrcRT || !pDestRT)
 		return;
 
-	// squeeze all the parameters in two integers, limit is 2^15 bit dimension and 2^4 filters
+	// squeeze all the parameters, limit is 2^15 bit dimension and 2^4 filters
 	union
 	{
 		struct
@@ -359,11 +359,7 @@ void CDownsamplePass::Execute(CTexture* pSrcRT, CTexture* pDestRT, int nSrcW, in
 			int fF : 4;
 		};
 
-		struct
-		{
-			int hi;
-			int lo;
-		};
+		std::uint64_t data;
 	} match;
 
 	match.sW = nSrcW;
@@ -372,7 +368,7 @@ void CDownsamplePass::Execute(CTexture* pSrcRT, CTexture* pDestRT, int nSrcW, in
 	match.dH = nDstH;
 	match.fF = 0;
 
-	if (!m_pass.InputChanged(pSrcRT->GetTextureID(), pDestRT->GetTextureID(), match.hi, match.lo))
+	if (!m_pass.IsDirty(match.data))
 	{
 		m_pass.Execute();
 		return;
@@ -462,7 +458,7 @@ void CStableDownsamplePass::Execute(CTexture* pSrcRT, CTexture* pDestRT, bool bK
 	if (!pSrcRT || !pDestRT)
 		return;
 
-	if (!m_pass.InputChanged(pSrcRT->GetTextureID(), pDestRT->GetTextureID(), bKillFireflies))
+	if (!m_pass.IsDirty(bKillFireflies))
 	{
 		m_pass.Execute();
 		return;
@@ -491,7 +487,7 @@ void CDepthDownsamplePass::Execute(CTexture* pSrcRT, CTexture* pDestRT, bool bLi
 	if (!pSrcRT || !pDestRT)
 		return;
 
-	if (!m_pass.InputChanged(pSrcRT->GetTextureID(), pDestRT->GetTextureID(), bLinearizeSrcDepth, bFromSingleChannel))
+	if (!m_pass.IsDirty(bLinearizeSrcDepth, bFromSingleChannel))
 	{
 		m_pass.Execute();
 		return;
@@ -587,8 +583,8 @@ void CGaussianBlurPass::Execute(CTexture* pScrDestRT, CTexture* pTempRT, float s
 
 	PROFILE_LABEL_SCOPE("TEXBLUR_GAUSSIAN");
 
-	if (!m_passH.InputChanged(pScrDestRT->GetTextureID(), pTempRT->GetTextureID()) &&
-	    !m_passV.InputChanged(pScrDestRT->GetTextureID(), pTempRT->GetTextureID()) &&
+	if (!m_passH.IsDirty() &&
+	    !m_passV.IsDirty() &&
 	    m_scale == scale &&
 		m_distribution == distribution)
 	{
@@ -671,7 +667,7 @@ void CMipmapGenPass::Execute(CTexture* pScrDestRT, int mipCount)
 	{
 		auto& curPass = m_downsamplePasses[i];
 
-		if (curPass.InputChanged(pScrDestRT->GetID()))
+		if (curPass.IsDirty())
 		{
 			auto rtv = SResourceView::RenderTargetView(DeviceFormats::ConvertFromTexFormat(pScrDestRT->GetDstFormat()), 0, -1, i + 1);
 			auto srv = SResourceView::ShaderResourceView(DeviceFormats::ConvertFromTexFormat(pScrDestRT->GetDstFormat()), 0, -1, i, 1);

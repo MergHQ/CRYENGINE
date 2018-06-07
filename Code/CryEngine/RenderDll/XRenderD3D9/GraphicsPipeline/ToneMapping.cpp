@@ -48,7 +48,7 @@ void CToneMappingStage::Execute()
 	int featureMask = ((int)bSunShafts << 1) | ((int)bColorGrading << 2) | ((int)bBloomEnabled << 3) |
 	                  ((CRenderer::CV_r_HDREyeAdaptationMode & 0xF) << 5) | ((CRenderer::CV_r_HDRDebug & 0xF) << 9);
 
-	if (m_passToneMapping.InputChanged(featureMask, pSunShaftsTex->GetTextureID(), CRendererResources::s_ptexCurLumTexture->GetTextureID(), pColorChartTex->GetTextureID()))
+	if (m_passToneMapping.IsDirty(featureMask))
 	{
 		uint64 rtMask = 0;
 		if (CRenderer::CV_r_HDREyeAdaptationMode == 2)
@@ -125,7 +125,7 @@ void CToneMappingStage::ExecuteDebug()
 	
 	int featureMask = ((CRenderer::CV_r_HDRDebug & 0xF) << 9);
 
-	if (m_passToneMapping.InputChanged(featureMask, CRendererResources::s_ptexCurLumTexture->GetTextureID()))
+	if (m_passToneMapping.IsDirty(featureMask))
 	{
 		uint64 rtMask = 0;
 

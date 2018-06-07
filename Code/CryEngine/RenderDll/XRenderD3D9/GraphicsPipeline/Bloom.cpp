@@ -30,7 +30,7 @@ void CBloomStage::Execute()
 	SamplerStateHandle samplerBloom = (CRendererResources::s_ptexHDRFinalBloom->GetWidth() == 400 && CRendererResources::s_ptexHDRFinalBloom->GetHeight() == 225) ? EDefaultSamplerStates::PointClamp : EDefaultSamplerStates::LinearClamp;
 
 	// Pass 1 Horizontal
-	if (m_pass1H.InputChanged())
+	if (m_pass1H.IsDirty())
 	{
 		m_pass1H.SetPrimitiveFlags(CRenderPrimitive::eFlags_ReflectShaderConstants_PS);
 		m_pass1H.SetPrimitiveType(CRenderPrimitive::ePrim_ProceduralTriangle);
@@ -47,7 +47,7 @@ void CBloomStage::Execute()
 	m_pass1H.Execute();
 
 	// Pass 1 Vertical
-	if (m_pass1V.InputChanged())
+	if (m_pass1V.IsDirty())
 	{
 		m_pass1V.SetPrimitiveFlags(CRenderPrimitive::eFlags_ReflectShaderConstants_PS);
 		m_pass1V.SetPrimitiveType(CRenderPrimitive::ePrim_ProceduralTriangle);
@@ -64,7 +64,7 @@ void CBloomStage::Execute()
 	m_pass1V.Execute();
 
 	// Pass 2 Horizontal
-	if (m_pass2H.InputChanged())
+	if (m_pass2H.IsDirty())
 	{
 		m_pass2H.SetPrimitiveFlags(CRenderPrimitive::eFlags_ReflectShaderConstants_PS);
 		m_pass2H.SetPrimitiveType(CRenderPrimitive::ePrim_ProceduralTriangle);
@@ -81,7 +81,7 @@ void CBloomStage::Execute()
 	m_pass2H.Execute();
 
 	// Pass 2 Vertical
-	if (m_pass2V.InputChanged())
+	if (m_pass2V.IsDirty())
 	{
 		m_pass2V.SetPrimitiveFlags(CRenderPrimitive::eFlags_ReflectShaderConstants_PS);
 		m_pass2V.SetPrimitiveType(CRenderPrimitive::ePrim_ProceduralTriangle);

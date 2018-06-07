@@ -207,7 +207,7 @@ void CPostAAStage::ApplySMAA(CTexture*& pCurrRT)
 
 	// Pass 1: Edge Detection
 	{
-		if (m_passSMAAEdgeDetection.InputChanged(pCurrRT->GetTextureID(), pZTexture->GetTextureID(), CRenderer::CV_r_AntialiasingModeSCull))
+		if (m_passSMAAEdgeDetection.IsDirty(CRenderer::CV_r_AntialiasingModeSCull))
 		{
 			static CCryNameTSCRC techEdgeDetection("LumaEdgeDetectionSMAA");
 			m_passSMAAEdgeDetection.SetPrimitiveFlags(CRenderPrimitive::eFlags_ReflectShaderConstants_PS);
@@ -236,7 +236,7 @@ void CPostAAStage::ApplySMAA(CTexture*& pCurrRT)
 
 	// Pass 2: Generate blend weight map
 	{
-		if (m_passSMAABlendWeights.InputChanged(pZTexture->GetTextureID(), CRenderer::CV_r_AntialiasingModeSCull))
+		if (m_passSMAABlendWeights.IsDirty(CRenderer::CV_r_AntialiasingModeSCull))
 		{
 			static CCryNameTSCRC techBlendWeights("BlendWeightSMAA");
 			m_passSMAABlendWeights.SetPrimitiveFlags(CRenderPrimitive::eFlags_ReflectShaderConstants_PS);
@@ -268,7 +268,7 @@ void CPostAAStage::ApplySMAA(CTexture*& pCurrRT)
 
 	// Final Pass: Blend neighborhood pixels
 	{
-		if (m_passSMAANeighborhoodBlending.InputChanged(pCurrRT->GetTextureID()))
+		if (m_passSMAANeighborhoodBlending.IsDirty())
 		{
 			static CCryNameTSCRC techNeighborhoodBlending("NeighborhoodBlendingSMAA");
 			m_passSMAANeighborhoodBlending.SetPrimitiveFlags(CRenderPrimitive::eFlags_ReflectShaderConstants_PS);
@@ -439,7 +439,7 @@ void CPostAAStage::DoFinalComposition(CTexture*& pCurrRT, CTexture* pDestRT, uin
 		}
 	}
 
-	if (m_passComposition.InputChanged(pCurrRT->GetID(), pDestRT->GetID(), CRendererResources::s_ptexCurLumTexture->GetID(), pColorChartTex->GetID(), rtMask))
+	if (m_passComposition.IsDirty(rtMask))
 	{
 		static CCryNameTSCRC techComposition("PostAAComposites");
 

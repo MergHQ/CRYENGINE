@@ -74,7 +74,7 @@ void CSunShaftsStage::Execute()
 
 	// Generate mask for sun shafts
 	{
-		if (m_passShaftsMask.InputChanged())
+		if (m_passShaftsMask.IsDirty())
 		{
 			static CCryNameTSCRC techMaskGen("SunShaftsMaskGen");
 			uint64 rtMask = g_HWSR_MaskBit[HWSR_SAMPLE0];
@@ -111,7 +111,7 @@ void CSunShaftsStage::Execute()
 
 		// Pass 1
 		{
-			if (m_passShaftsGen0.InputChanged())
+			if (m_passShaftsGen0.IsDirty())
 			{
 				static CCryNameTSCRC techShaftsGen("SunShaftsGen");
 				uint64 rtMask = g_HWSR_MaskBit[HWSR_SAMPLE0];
@@ -139,7 +139,7 @@ void CSunShaftsStage::Execute()
 
 		// Pass 2
 		{
-			if (m_passShaftsGen1.InputChanged())
+			if (m_passShaftsGen1.IsDirty())
 			{
 				static CCryNameTSCRC techShaftsGen("SunShaftsGen");
 				uint64 rtMask = g_HWSR_MaskBit[HWSR_SAMPLE0];
