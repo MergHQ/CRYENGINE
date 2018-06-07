@@ -733,6 +733,55 @@ static void DrawSceneToCubeSide(CRenderOutputPtr pRenderOutput, const Vec3& Pos,
 #endif
 }
 
+struct SCvarOverrideHelper
+{
+	template<typename T>
+	SCvarOverrideHelper(const char* cvarName, T value)
+	{
+		m_desiredValue.emplace<T>(value);
+		m_pCVar = gEnv->pConsole->GetCVar(cvarName);
+	}
+
+	void ApplyValue()
+	{
+		if (m_pCVar)
+		{
+			switch (m_pCVar->GetType())
+			{
+			case CVAR_INT:
+				m_previousValue.emplace<int>(m_pCVar->GetIVal());
+				m_pCVar->Set(stl::get<int>(m_desiredValue));
+				break;
+			case CVAR_FLOAT:
+				m_previousValue.emplace<float>(m_pCVar->GetFVal());
+				m_pCVar->Set(stl::get<float>(m_desiredValue));
+				break;
+			}
+		}
+	}
+
+	void RestoreValue()
+	{
+		if (m_pCVar)
+		{
+			switch (m_pCVar->GetType())
+			{
+			case CVAR_INT:
+				m_pCVar->Set(stl::get<int>(m_previousValue));
+				break;
+			case CVAR_FLOAT:
+				m_pCVar->Set(stl::get<float>(m_previousValue));
+				break;
+			}
+		}
+	}
+
+private:
+	CryVariant<int, float> m_desiredValue;
+	CryVariant<int, float> m_previousValue;
+	ICVar*                 m_pCVar;
+};
+
 bool CTexture::RenderEnvironmentCMHDR(int size, const Vec3& Pos, TArray<unsigned short>& vecData)
 {
 #if CRY_PLATFORM_DESKTOP
@@ -754,43 +803,22 @@ bool CTexture::RenderEnvironmentCMHDR(int size, const Vec3& Pos, TArray<unsigned
 		return false;
 	}
 
-	// Disable/set cvars that can affect cube map generation. This is thread unsafe (we assume editor will not run in mt mode), no other way around at this time
-	//	- coverage buffer unreliable for multiple views
-	//	- custom view distance ratios
-	ICVar* pCheckOcclusionCV = gEnv->pConsole->GetCVar("e_CheckOcclusion");
-	const int32 nCheckOcclusion = pCheckOcclusionCV ? pCheckOcclusionCV->GetIVal() : 1;
-	if (pCheckOcclusionCV)
-		pCheckOcclusionCV->Set(0);
+	// Disable/set cvars that can affect cube map generation.
+	SCvarOverrideHelper cvarOverrides[]
+	{
+		{ "e_CheckOcclusion",           0      },
+		{ "e_CoverageBuffer",           0      },
+		{ "e_StatObjBufferRenderTasks", 0      },
+		{ "e_ViewDistRatio",            1000.f },
+		{ "e_ViewDistRatioVegetation",  100.f  },
+		{ "e_LodRatio",                 1000.f },
+		{ "e_LodTransitionTime",        0.5f   },
+		{ "r_flares",                   0      },
+		{ "r_ssdoHalfRes",              0      },
+	};
 
-	ICVar* pCoverageBufferCV = gEnv->pConsole->GetCVar("e_CoverageBuffer");
-	const int32 nCoverageBuffer = pCoverageBufferCV ? pCoverageBufferCV->GetIVal() : 0;
-	if (pCoverageBufferCV)
-		pCoverageBufferCV->Set(0);
-
-	ICVar* pStatObjBufferRenderTasksCV = gEnv->pConsole->GetCVar("e_StatObjBufferRenderTasks");
-	const int32 nStatObjBufferRenderTasks = pStatObjBufferRenderTasksCV ? pStatObjBufferRenderTasksCV->GetIVal() : 0;
-	if (pStatObjBufferRenderTasksCV)
-		pStatObjBufferRenderTasksCV->Set(0);
-
-	ICVar* pViewDistRatioCV = gEnv->pConsole->GetCVar("e_ViewDistRatio");
-	const float fOldViewDistRatio = pViewDistRatioCV ? pViewDistRatioCV->GetFVal() : 1.f;
-	if (pViewDistRatioCV)
-		pViewDistRatioCV->Set(10000.f);
-
-	ICVar* pLodTransitionTime = gEnv->pConsole->GetCVar("e_LodTransitionTime");
-	const float fOldLodTransitionTime = pLodTransitionTime ? pLodTransitionTime->GetFVal() : .0f;
-	if (pLodTransitionTime)
-		pLodTransitionTime->Set(.0f);
-
-	ICVar* pViewDistRatioVegetationCV = gEnv->pConsole->GetCVar("e_ViewDistRatioVegetation");
-	const float fOldViewDistRatioVegetation = pViewDistRatioVegetationCV ? pViewDistRatioVegetationCV->GetFVal() : 100.f;
-	if (pViewDistRatioVegetationCV)
-		pViewDistRatioVegetationCV->Set(10000.f);
-
-	ICVar* pLodRatioCV = gEnv->pConsole->GetCVar("e_LodRatio");
-	const float fOldLodRatio = pLodRatioCV ? pLodRatioCV->GetFVal() : 1.f;
-	if (pLodRatioCV)
-		pLodRatioCV->Set(1000.f);
+	for (auto& cvarOverride : cvarOverrides)
+		cvarOverride.ApplyValue();
 
 	Vec3 oldSunDir, oldSunStr, oldSunRGB;
 	float oldSkyKm, oldSkyKr, oldSkyG;
@@ -799,14 +827,6 @@ bool CTexture::RenderEnvironmentCMHDR(int size, const Vec3& Pos, TArray<unsigned
 		gEnv->p3DEngine->GetSkyLightParameters(oldSunDir, oldSunStr, oldSkyKm, oldSkyKr, oldSkyG, oldSunRGB);
 		gEnv->p3DEngine->SetSkyLightParameters(oldSunDir, oldSunStr, oldSkyKm, oldSkyKr, 1.0f, oldSunRGB, true); // Hide sun disc
 	}
-
-	const int32 nFlaresCV = CRenderer::CV_r_flares;
-	CRenderer::CV_r_flares = 0;
-
-	ICVar* pSSDOHalfResCV = gEnv->pConsole->GetCVar("r_ssdoHalfRes");
-	const int nOldSSDOHalfRes = pSSDOHalfResCV ? pSSDOHalfResCV->GetIVal() : 1;
-	if (pSSDOHalfResCV)
-		pSSDOHalfResCV->Set(0);
 
 	// TODO: allow cube-map super-sampling
 	CRenderOutputPtr pRenderOutput = std::make_shared<CRenderOutput>(ptexGenEnvironmentCM, FRT_CLEAR, Clr_Transparent, 1.0f);
@@ -818,81 +838,76 @@ bool CTexture::RenderEnvironmentCMHDR(int size, const Vec3& Pos, TArray<unsigned
 
 	for (int nSide = 0; nSide < 6; nSide++)
 	{
-	#if defined(FEATURE_SVO_GI)
+		auto pStreamEngine = gEnv->pSystem->GetStreamEngine();
+		bool bStreamingTasksInProgress = false;
 
-		// draw the scene multiple times until GI is ready
-		while (true)
+		uint32 waitFrames = 0;
+		const uint32 maxWaitFrames = max(0, CRendererCVars::CV_r_CubemapGenerationTimeout);
+
+		do
 		{
-			bool bSvoReady = gEnv->p3DEngine->IsSvoReady(true);
+#if defined(FEATURE_SVO_GI)
+			bool bSvoTasksInProgress = !gEnv->p3DEngine->IsSvoReady(true);
+#endif
 
 			gEnv->nMainFrameID++;
 
 			DrawSceneToCubeSide(pRenderOutput, Pos, size, nSide);
 
-			bSvoReady &= gEnv->p3DEngine->IsSvoReady(true);
+			SStreamEngineOpenStats streamStats;
+			pStreamEngine->GetStreamingOpenStatistics(streamStats);
 
-			if (bSvoReady)
-				break;
+			bStreamingTasksInProgress =
+				streamStats.nOpenRequestCountByType[eStreamTaskTypeGeometry] > 0 ||
+				streamStats.nOpenRequestCountByType[eStreamTaskTypeTexture] > 0;
 
-			CrySleep(10);
-		}
+#if defined(FEATURE_SVO_GI)
+			bStreamingTasksInProgress |= bSvoTasksInProgress | !gEnv->p3DEngine->IsSvoReady(true);
+#endif
 
-	#else
-
-		gEnv->nMainFrameID++;
-
-		DrawSceneToCubeSide(pRenderOutput, Pos, size, nSide);
-
-	#endif
-
-		gcpRendD3D->ExecuteRenderThreadCommand([&]
-		{
-			CDeviceTexture* pDstDevTex = ptexGenEnvironmentCM->GetDevTexture();
-			pDstDevTex->DownloadToStagingResource(0, [&](void* pData, uint32 rowPitch, uint32 slicePitch)
+			if (bStreamingTasksInProgress)
 			{
-				unsigned short* pTarg = (unsigned short*)pData;
-				const uint32 nLineStride = CTexture::TextureDataSize(size, 1, 1, 1, 1, eTF_R16G16B16A16F) / sizeof(unsigned short);
+				CrySleep(10);
+			}
 
-				// Copy vertically flipped image
-				for (uint32 nLine = 0; nLine < size; ++nLine)
-					vecData.Copy(&pTarg[((size - 1) - nLine) * nLineStride], nLineStride);
+			gcpRendD3D->ExecuteRenderThreadCommand([&]
+			{
+				if (!bStreamingTasksInProgress)
+				{
+					CDeviceTexture* pDstDevTex = ptexGenEnvironmentCM->GetDevTexture();
+					pDstDevTex->DownloadToStagingResource(0, [&](void* pData, uint32 rowPitch, uint32 slicePitch)
+					{
+						unsigned short* pTarg = (unsigned short*)pData;
+						const uint32 nLineStride = CTexture::TextureDataSize(size, 1, 1, 1, 1, eTF_R16G16B16A16F) / sizeof(unsigned short);
 
-				return true;
-			});
-			GetDeviceObjectFactory().IssueFrameFences();
-		}, ERenderCommandFlags::FlushAndWait);
+						// Copy vertically flipped image
+						for (uint32 nLine = 0; nLine < size; ++nLine)
+							vecData.Copy(&pTarg[((size - 1) - nLine) * nLineStride], nLineStride);
+
+						return true;
+					});
+				}
+
+				GetDeviceObjectFactory().IssueFrameFences();
+			}, ERenderCommandFlags::FlushAndWait);
+
+		} while (++waitFrames <= maxWaitFrames && bStreamingTasksInProgress);
+
+		if (maxWaitFrames>0 && waitFrames > maxWaitFrames)
+		{
+			CryWarning(VALIDATOR_MODULE_RENDERER, VALIDATOR_WARNING, 
+			    "Cubemap generation timeout: some outstanding tasks didn't finish on time, generated cubemap might be incorrect.\n" \
+			    "Consider increasing r_CubemapGenerationTimeout");
+		}
 	}
 
 	SAFE_RELEASE(ptexGenEnvironmentCM);
 
-	if (pCheckOcclusionCV)
-		pCheckOcclusionCV->Set(nCheckOcclusion);
-
-	if (pCoverageBufferCV)
-		pCoverageBufferCV->Set(nCoverageBuffer);
-
-	if (pStatObjBufferRenderTasksCV)
-		pStatObjBufferRenderTasksCV->Set(nStatObjBufferRenderTasks);
-
-	if (pViewDistRatioCV)
-		pViewDistRatioCV->Set(fOldViewDistRatio);
-
-	if (pLodTransitionTime)
-		pLodTransitionTime->Set(fOldLodTransitionTime);
-
-	if (pViewDistRatioVegetationCV)
-		pViewDistRatioVegetationCV->Set(fOldViewDistRatioVegetation);
-
-	if (pLodRatioCV)
-		pLodRatioCV->Set(fOldLodRatio);
+	for (auto& cvarOverride : cvarOverrides)
+		cvarOverride.RestoreValue();
 
 	if (CRenderer::CV_r_HideSunInCubemaps)
 		gEnv->p3DEngine->SetSkyLightParameters(oldSunDir, oldSunStr, oldSkyKm, oldSkyKr, oldSkyG, oldSunRGB, true);
-
-	CRenderer::CV_r_flares = nFlaresCV;
-
-	if (pSSDOHalfResCV)
-		pSSDOHalfResCV->Set(nOldSSDOHalfRes);
 
 	float timeUsed = gEnv->pTimer->GetAsyncTime().GetSeconds() - timeStart;
 	iLog->Log("Successfully finished generating a cubemap in %.1f sec", timeUsed);

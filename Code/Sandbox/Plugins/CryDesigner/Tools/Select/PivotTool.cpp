@@ -57,7 +57,7 @@ void PivotTool::Leave()
 void PivotTool::InitializeManipulator()
 {
 	m_StartingDragManipulatorPos = m_PivotPos = BrushVec3(0, 0, 0);
-	GetIEditor()->SetEditMode(eEditModeMove);
+	GetIEditor()->GetLevelEditorSharedState()->SetEditMode(CLevelEditorSharedState::EditMode::Move);
 	if (GetDesigner())
 		GetDesigner()->UpdateTMManipulator(m_PivotPos, BrushVec3(0, 0, 1));
 }

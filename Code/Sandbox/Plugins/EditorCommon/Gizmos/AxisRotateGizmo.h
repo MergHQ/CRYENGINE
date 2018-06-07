@@ -2,7 +2,6 @@
 
 #pragma once
 
-#include "IEditor.h" // for AxisConstrains and RefCoordSys
 #include "Gizmo.h"
 #include <memory>
 

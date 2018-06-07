@@ -22,6 +22,7 @@ namespace CryEngine
 		/// <summary>
 		/// Gets the unique identifier associated with this entity
 		/// </summary>
+		[SerializeValue]
 		public EntityId Id { get; internal set; }
 
 		/// <summary>
@@ -269,8 +270,10 @@ namespace CryEngine
 			}
 		}
 
+		[SerializeValue]
 		internal IEntity NativeHandle { get; set; }
 
+		[SerializeValue]
 		internal IntPtr NativeEntityPointer { get; set; }
 
 
@@ -598,12 +601,10 @@ namespace CryEngine
 			{
 				"%ENGINE%/EngineAssets/Objects/primitive_box.cgf",
 				"%ENGINE%/EngineAssets/Objects/primitive_cube.cgf",
-				"%ENGINE%/EngineAssets/Objects/primitive_cube_small.cgf",
 				"%ENGINE%/EngineAssets/Objects/primitive_cylinder.cgf",
-				"%ENGINE%/EngineAssets/Objects/primitive_plane_small.cgf",
+				"%ENGINE%/EngineAssets/Objects/primitive_plane.cgf",
 				"%ENGINE%/EngineAssets/Objects/primitive_pyramid.cgf",
-				"%ENGINE%/EngineAssets/Objects/primitive_sphere.cgf",
-				"%ENGINE%/EngineAssets/Objects/primitive_sphere_small.cgf"
+				"%ENGINE%/EngineAssets/Objects/primitive_sphere.cgf"
 			};
 
 			NativeHandle.LoadGeometry(slot, urls[(int)primitiveShape]);

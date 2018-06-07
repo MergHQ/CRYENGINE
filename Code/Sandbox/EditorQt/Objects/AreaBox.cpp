@@ -15,7 +15,7 @@
 #include <Serialization/Decorators/EditorActionButton.h>
 #include <Serialization/Decorators/EditToolButton.h>
 
-#include "PickObjectTool.h"
+#include <LevelEditor/Tools/PickObjectTool.h>
 
 REGISTER_CLASS_DESC(CAreaBoxClassDesc);
 

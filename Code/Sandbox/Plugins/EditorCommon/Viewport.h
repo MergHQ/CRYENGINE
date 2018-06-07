@@ -180,14 +180,14 @@ public:
 	//TODO : decorrelate terrain logic from these methods, implementing like this for now to support backwards compatibility
 	//hint: offset should be applied to the result of this method, which takes into account all snapping parameters, not before. right now it is applied
 	//after constraint and terrain snapping but before grid snapping
-	Vec3         MapViewToCP(CPoint point)                                            { return MapViewToCP(point, GetAxisConstrain(), false, 0.f); }
-	Vec3         MapViewToCP(CPoint point, bool aSnapToTerrain, float aTerrainOffset) { return MapViewToCP(point, GetAxisConstrain(), aSnapToTerrain, aTerrainOffset); }
-	virtual Vec3 MapViewToCP(CPoint point, int axis, bool aSnapToTerrain = false, float aTerrainOffset = 0.f);
+	Vec3         MapViewToCP(CPoint point)                                            { return MapViewToCP(point, GetIEditor()->GetLevelEditorSharedState()->GetAxisConstraint(), false, 0.f); };
+	Vec3         MapViewToCP(CPoint point, bool aSnapToTerrain, float aTerrainOffset) { return MapViewToCP(point, GetIEditor()->GetLevelEditorSharedState()->GetAxisConstraint(), aSnapToTerrain, aTerrainOffset); };
+	virtual Vec3 MapViewToCP(CPoint point, CLevelEditorSharedState::Axis axis, bool aSnapToTerrain = false, float aTerrainOffset = 0.f);
 
 	//! This method return a vector (p2-p1) in world space aligned to construction plane and restriction axises.
 	//! p1 and p2 must be given in world space and lie on construction plane.
-	virtual Vec3 GetCPVector(const Vec3& p1, const Vec3& p2) { return GetCPVector(p1, p2, GetAxisConstrain()); }
-	virtual Vec3 GetCPVector(const Vec3& p1, const Vec3& p2, int axis);
+	virtual Vec3 GetCPVector(const Vec3& p1, const Vec3& p2) { return GetCPVector(p1, p2, GetIEditor()->GetLevelEditorSharedState()->GetAxisConstraint()); }
+	virtual Vec3 GetCPVector(const Vec3& p1, const Vec3& p2, CLevelEditorSharedState::Axis axis);
 
 	//! Snap any given 3D world position to grid lines if snap is enabled.
 	virtual Vec3  SnapToGrid(Vec3 vec) override;
@@ -201,7 +201,6 @@ public:
 	ViewMode      GetViewMode()                                      { return m_eViewMode; }
 
 	void          SetAxisConstrain(int axis);
-	int           GetAxisConstrain() const { return GetIEditor()->GetAxisConstrains(); }
 
 	//////////////////////////////////////////////////////////////////////////
 	// Selection.
@@ -230,9 +229,9 @@ public:
 	virtual bool HitTestLine(const Vec3& lineP1, const Vec3& lineP2, const CPoint& hitpoint, int pixelRadius, float* pToCameraDistance = 0) const;
 
 	// Access to the member m_bAdvancedSelectMode so interested modules can know its value.
-	bool         GetAdvancedSelectModeFlag() const;
+	bool                                            GetAdvancedSelectModeFlag() const;
 
-	virtual void GetPerpendicularAxis(EAxis* pAxis, bool* pIs2D) const;
+	virtual CLevelEditorSharedState::Axis GetPerpendicularAxis(bool* pIs2D) const;
 
 	//////////////////////////////////////////////////////////////////////////
 	// View matrix.
@@ -248,7 +247,7 @@ public:
 	//////////////////////////////////////////////////////////////////////////
 	//! Set construction plane from given position construction matrix reference coord system and axis settings.
 	//////////////////////////////////////////////////////////////////////////
-	virtual void MakeSnappingGridPlane(int axis);
+	virtual void MakeSnappingGridPlane(CLevelEditorSharedState::Axis axis);
 	virtual void SetConstructionMatrix(const Matrix34& xform) override;
 	//////////////////////////////////////////////////////////////////////////
 
@@ -379,8 +378,6 @@ protected:
 
 	//! Current selected rectangle.
 	CRect m_selectedRect;
-
-	int   m_activeAxis;
 
 	// Viewport matrix.
 	Matrix34 m_viewTM;

@@ -23,7 +23,7 @@ void DesignerBaseObject<T >::Done()
 	__super::Done();
 
 	if (!IsEmpty() && DesignerSession::GetInstance()->GetBaseObject() == this)
-		GetIEditor()->SetEditTool(NULL);
+		GetIEditor()->GetLevelEditorSharedState()->SetEditTool(NULL);
 }
 
 template<class T>

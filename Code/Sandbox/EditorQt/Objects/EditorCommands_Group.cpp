@@ -206,7 +206,7 @@ void CloseGroup()
 void AttachToGroup()
 {
 	CAttachToGroup* pCallback = new CAttachToGroup;
-	GetIEditorImpl()->PickObject(pCallback);
+	GetIEditorImpl()->GetLevelEditorSharedState()->PickObject(pCallback);
 }
 
 void Detach_Impl(bool shouldKeepPosition, bool shouldPlaceOnRoot)

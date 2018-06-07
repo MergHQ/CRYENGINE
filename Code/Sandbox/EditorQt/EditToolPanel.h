@@ -20,13 +20,14 @@ public:
 	CEditTool* pEditTool;
 };
 
-class QEditToolPanel : public QWidget, public IEditorNotifyListener
+class QEditToolPanel : public QWidget
 {
 public:
 	QEditToolPanel(QWidget* parent = nullptr);
 	virtual ~QEditToolPanel() override;
 
-	virtual void OnEditorNotifyEvent(EEditorNotifyEvent e) override;
+	void OnPreEditToolChanged();
+	void OnEditToolChanged();
 
 protected:
 	void         ReloadProperties(CEditTool* pTool);

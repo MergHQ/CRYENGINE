@@ -44,7 +44,7 @@ public:
 	//! Get object from a GUID in a prefab
 	CBaseObject* GetObjectByGuidInPrefab(CryGUID guid) const;
 	//! Get matrix suitable for manipulator
-	bool         GetManipulatorMatrix(RefCoordSys coordSys, Matrix34& tm) const override;
+	bool         GetManipulatorMatrix(Matrix34& tm) const override;
 
 	//! Get mass center of selected objects.
 	Vec3 GetCenter() const;
@@ -56,47 +56,36 @@ public:
 
 	//! Remove from selection group all objects which have parent also in selection group.
 	//! And save resulting objects to saveTo selection.
-	void         FilterParents() const;
+	void         FilterParents() const override;
 	//TODO : This is extremely dangerous as m_filtered now has several potential states and meanings
 	void         FilterLinkedObjects() const;
 	//! Get number of child filtered objects.
 	int          GetFilteredCount() const       { return m_filtered.size(); }
 	CBaseObject* GetFilteredObject(int i) const { return m_filtered[i]; }
 	//! Saves original positions of filtered objects
-	void         SaveFilteredTransform() const;
+	void         SaveFilteredTransform() const override;
 
 	//! Send ENTITY_EVENT_XFORM_FINISHED_EDITOR to selected objects
-	void ObjectModified() const;
+	void ObjectModified() const override;
 
 	//////////////////////////////////////////////////////////////////////////
 	// Operations on selection group.
 	//////////////////////////////////////////////////////////////////////////
-	enum EMoveSelectionFlag
-	{
-		eMS_None           = 0x00,
-		eMS_FollowTerrain  = 0x01,
-		eMS_FollowGeometry = 0x02,
-		eMS_SnapToNormal   = 0x04
-	};
 	//! Move objects in selection by offset.
-	void Move(const Vec3& offset, int moveFlags, int referenceCoordSys, const CPoint& point = CPoint(-1, -1), bool bFromInitPos = false) const;
-	//! Move objects in selection to specific position.
-	void MoveTo(const Vec3& pos, EMoveSelectionFlag moveFlag, int referenceCoordSys, const CPoint& point = CPoint(-1, -1)) const;
+	void Move(const Vec3& offset, int moveFlags, const CPoint& point = CPoint(-1, -1), bool bFromInitPos = false) const override;
 	//! Rotate objects in selection by given quaternion.
-	void Rotate(const Quat& qRot, int referenceCoordSys) const;
+	void Rotate(const Quat& qRot) const;
 	//! Rotate objects in selection by given angle.
-	void Rotate(const Ang3& angles, int referenceCoordSys) const;
+	void Rotate(const Ang3& angles) const;
 	//! Rotate objects in selection by given rotation matrix.
-	void Rotate(const Matrix34& matRot, int referenceCoordSys) const;
-	//! Transforms objects
-	void Transform(const Vec3& offset, EMoveSelectionFlag moveFlag, const Ang3& angles, const Vec3& scale, int referenceCoordSys) const;
+	void Rotate(const Matrix34& matRot) const;
 	//! Resets rotation and scale to identity and (1.0f, 1.0f, 1.0f)
 	void ResetTransformation() const;
 	//! Scale objects in selection by given scale.
-	void Scale(const Vec3& scale, int referenceCoordSys) const;
-	void SetScale(const Vec3& scale, int referenceCoordSys) const;
+	void Scale(const Vec3& scale) const;
+	void SetScale(const Vec3& scale) const;
 	//! Align objects in selection to surface normal
-	void Align() const;
+	void Align() const override;
 
 	//! Same as Copy but will copy all objects from hierarchy of current selection to new selection group.
 	void FlattenHierarchy(CSelectionGroup& newGroup, bool flattenGroups = false);
@@ -104,7 +93,7 @@ public:
 	// Send event to all objects in selection group.
 	void SendEvent(ObjectEvent event) const;
 
-	void FinishChanges() const;
+	void FinishChanges() const override;
 private:
 	// struct that stores information about initial transforms of objects
 	struct STransformElementInit

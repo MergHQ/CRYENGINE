@@ -221,22 +221,7 @@ void CScene::OnViewportRender(const SRenderContext& rc)
 
 		if (m_axisHelper.get())
 		{
-			switch (m_transformationMode)
-			{
-			case MODE_TRANSLATE:
-				m_axisHelper->SetMode(CAxisHelper::MOVE_FLAG);
-				gizmoParameters.enabled = (selectionCaps & CAP_MOVE) != 0;
-				break;
-			case MODE_ROTATE:
-				m_axisHelper->SetMode(CAxisHelper::ROTATE_FLAG);
-				gizmoParameters.enabled = (selectionCaps & CAP_ROTATE) != 0;
-				break;
-			case MODE_SCALE:
-				m_axisHelper->SetMode(CAxisHelper::SCALE_FLAG);
-				gizmoParameters.enabled = (selectionCaps & CAP_SCALE) != 0;
-				break;
-			}
-			m_axisHelper->DrawAxis(m, gizmoParameters, dc);
+			m_axisHelper->DrawAxis(m, dc);
 		}
 	}
 }
@@ -994,8 +979,6 @@ struct CScene::SBlockSelectHandler : public IMouseDragHandler
 
 void CScene::OnMouseMove(const SMouseEvent& ev)
 {
-	SGizmoPreferences gizmoParameters;
-	gizmoParameters.axisGizmoSize = 0.2f;
 	CDisplayViewportAdapter displayView(ev.viewport);
 
 	QuatT selectionTransform = GetSelectionTransform(SPACE_WORLD);
@@ -1027,12 +1010,12 @@ void CScene::OnMouseMove(const SMouseEvent& ev)
 			hc.point2d.x = ev.x;
 			hc.point2d.y = ev.y;
 			hc.view = &displayView;
-			m_axisHelper->HitTest(Matrix34(axesTransform), gizmoParameters, hc);
+			m_axisHelper->HitTest(Matrix34(axesTransform), hc);
 			m_axisHelper->SetHighlightAxis(hc.axis);
 		}
 		else
 		{
-			m_axisHelper->SetHighlightAxis(0);
+			m_axisHelper->SetHighlightAxis(CLevelEditorSharedState::Axis::None);
 		}
 
 		Ray ray;
@@ -1049,8 +1032,6 @@ void CScene::OnViewportMouse(const SMouseEvent& ev)
 	if (!ev.viewport)
 		return;
 
-	SGizmoPreferences gizmoParameters;
-	gizmoParameters.axisGizmoSize = 0.2f;
 	CDisplayViewportAdapter displayView(ev.viewport);
 
 	QuatT selectionTransform = GetSelectionTransform(SPACE_WORLD);
@@ -1074,43 +1055,43 @@ void CScene::OnViewportMouse(const SMouseEvent& ev)
 					hc.point2d.x = ev.x;
 					hc.point2d.y = ev.y;
 					hc.view = &displayView;
-					if (!Selection().IsEmpty() && m_axisHelper->HitTest(Matrix34(axesTransform), gizmoParameters, hc))
+					if (!Selection().IsEmpty() && m_axisHelper->HitTest(Matrix34(axesTransform), hc))
 					{
 						Quat localRot(selectionTransform.q);
 						Quat planeRot(GetGizmoOrientation(QuatT(selectionTransform.q, ZERO), ev.viewport->Camera(), m_transformationSpace).q);
 						switch (hc.axis)
 						{
-						case AXIS_X:
+						case CLevelEditorSharedState::Axis::X:
 							constraint.type = STransformConstraint::AXIS;
 							constraint.axis = Vec3(1.0f, 0.0f, 0.0f);
 							constraint.localAxis = localRot * constraint.axis;
 							break;
-						case AXIS_Y:
+						case CLevelEditorSharedState::Axis::Y:
 							constraint.type = STransformConstraint::AXIS;
 							constraint.axis = Vec3(0.0f, 1.0f, 0.0f);
 							constraint.localAxis = localRot * constraint.axis;
 							break;
-						case AXIS_Z:
+						case CLevelEditorSharedState::Axis::Z:
 							constraint.type = STransformConstraint::AXIS;
 							constraint.axis = Vec3(0.0f, 0.0f, 1.0f);
 							constraint.localAxis = localRot * constraint.axis;
 							break;
-						case AXIS_XY:
+						case CLevelEditorSharedState::Axis::XY:
 							constraint.type = STransformConstraint::PLANE;
 							constraint.plane.SetPlane(planeRot * Vec3(0.0f, 0.0f, 1.0f), hitPoint);
 							constraint.axis = Vec3(1.0f, 1.0f, 0.0f);
 							break;
-						case AXIS_XZ:
+						case CLevelEditorSharedState::Axis::XZ:
 							constraint.type = STransformConstraint::PLANE;
 							constraint.plane.SetPlane(planeRot * Vec3(0.0f, 1.0f, 0.0f), hitPoint);
 							constraint.axis = Vec3(1.0f, 0.0f, 1.0f);
 							break;
-						case AXIS_YZ:
+						case CLevelEditorSharedState::Axis::YZ:
 							constraint.type = STransformConstraint::PLANE;
 							constraint.plane.SetPlane(planeRot * Vec3(1.0f, 0.0f, 0.0f), hitPoint);
 							constraint.axis = Vec3(0.0f, 1.0f, 1.0f);
 							break;
-						case AXIS_XYZ:
+						case CLevelEditorSharedState::Axis::XYZ:
 							constraint.type = STransformConstraint::AXIS;
 							constraint.localAxis = Vec3(1.0f, 1.0f, 1.0f);
 							constraint.axis = Vec3(1.0f, 1.0f, 1.0f);

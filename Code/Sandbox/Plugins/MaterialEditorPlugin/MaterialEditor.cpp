@@ -11,6 +11,7 @@
 #include <QLineEdit>
 
 #include "EditorFramework/Inspector.h"
+#include <LevelEditor/LevelEditorSharedState.h>
 
 #include "SubMaterialView.h"
 #include "MaterialPreview.h"
@@ -397,7 +398,7 @@ void CMaterialEditor::OnPickMaterial()
 	auto pickMaterialTool = new CPickMaterialTool();
 	pickMaterialTool->SetActiveEditor(this);
 
-	GetIEditor()->SetEditTool(pickMaterialTool);
+	GetIEditor()->GetLevelEditorSharedState()->SetEditTool(pickMaterialTool);
 }
 
 void CMaterialEditor::OnResetSubMaterial(int slot)

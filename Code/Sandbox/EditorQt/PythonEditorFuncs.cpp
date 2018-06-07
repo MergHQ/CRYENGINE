@@ -523,57 +523,57 @@ static void PyDrawLabel(int x, int y, float size, float r, float g, float b, flo
 //////////////////////////////////////////////////////////////////////////
 const char* PyGetAxisConstraint()
 {
-	AxisConstrains actualConstrain = GetIEditorImpl()->GetAxisConstrains();
-	switch (actualConstrain)
+	CLevelEditorSharedState::Axis axisConstraint = GetIEditorImpl()->GetLevelEditorSharedState()->GetAxisConstraint();
+	switch (axisConstraint)
 	{
-	case AXIS_X:
+	case CLevelEditorSharedState::Axis::X:
 		return "X";
-	case AXIS_Y:
+	case CLevelEditorSharedState::Axis::Y:
 		return "Y";
-	case AXIS_Z:
+	case CLevelEditorSharedState::Axis::Z:
 		return "Z";
-	case AXIS_XY:
+	case CLevelEditorSharedState::Axis::XY:
 		return "XY";
-	case AXIS_XZ:
+	case CLevelEditorSharedState::Axis::XZ:
 		return "XZ";
-	case AXIS_YZ:
+	case CLevelEditorSharedState::Axis::YZ:
 		return "YZ";
-	case AXIS_XYZ:
+	case CLevelEditorSharedState::Axis::XYZ:
 		return "XYZ";
 	default:
-		throw std::logic_error("Invalid axes.");
+		throw std::logic_error("Invalid axis.");
 	}
 }
 
-void PySetAxisConstraint(string pConstrain)
+void PySetAxisConstraint(string constraint)
 {
-	if (pConstrain == "X")
+	if (constraint == "X")
 	{
-		GetIEditorImpl()->SetAxisConstrains(AXIS_X);
+		GetIEditorImpl()->GetLevelEditorSharedState()->SetAxisConstraint(CLevelEditorSharedState::Axis::X);
 	}
-	else if (pConstrain == "Y")
+	else if (constraint == "Y")
 	{
-		GetIEditorImpl()->SetAxisConstrains(AXIS_Y);
+		GetIEditorImpl()->GetLevelEditorSharedState()->SetAxisConstraint(CLevelEditorSharedState::Axis::Y);
 	}
-	else if (pConstrain == "Z")
+	else if (constraint == "Z")
 	{
-		GetIEditorImpl()->SetAxisConstrains(AXIS_Z);
+		GetIEditorImpl()->GetLevelEditorSharedState()->SetAxisConstraint(CLevelEditorSharedState::Axis::Z);
 	}
-	else if (pConstrain == "XY")
+	else if (constraint == "XY")
 	{
-		GetIEditorImpl()->SetAxisConstrains(AXIS_XY);
+		GetIEditorImpl()->GetLevelEditorSharedState()->SetAxisConstraint(CLevelEditorSharedState::Axis::XY);
 	}
-	else if (pConstrain == "YZ")
+	else if (constraint == "YZ")
 	{
-		GetIEditorImpl()->SetAxisConstrains(AXIS_YZ);
+		GetIEditorImpl()->GetLevelEditorSharedState()->SetAxisConstraint(CLevelEditorSharedState::Axis::YZ);
 	}
-	else if (pConstrain == "XZ")
+	else if (constraint == "XZ")
 	{
-		GetIEditorImpl()->SetAxisConstrains(AXIS_XZ);
+		GetIEditorImpl()->GetLevelEditorSharedState()->SetAxisConstraint(CLevelEditorSharedState::Axis::XZ);
 	}
-	else if (pConstrain == "XYZ")
+	else if (constraint == "XYZ")
 	{
-		GetIEditorImpl()->SetAxisConstrains(AXIS_XYZ);
+		GetIEditorImpl()->GetLevelEditorSharedState()->SetAxisConstraint(CLevelEditorSharedState::Axis::XYZ);
 	}
 	else
 	{
@@ -585,20 +585,20 @@ void PySetAxisConstraint(string pConstrain)
 //////////////////////////////////////////////////////////////////////////
 const char* PyGetEditMode()
 {
-	int actualEditMode = GetIEditorImpl()->GetEditMode();
-	switch (actualEditMode)
+	CLevelEditorSharedState::EditMode editMode = GetIEditorImpl()->GetLevelEditorSharedState()->GetEditMode();
+	switch (editMode)
 	{
-	case eEditModeSelect:
+	case CLevelEditorSharedState::EditMode::Select:
 		return "SELECT";
-	case eEditModeSelectArea:
+	case CLevelEditorSharedState::EditMode::SelectArea:
 		return "SELECTAREA";
-	case eEditModeMove:
+	case CLevelEditorSharedState::EditMode::Move:
 		return "MOVE";
-	case eEditModeRotate:
+	case CLevelEditorSharedState::EditMode::Rotate:
 		return "ROTATE";
-	case eEditModeScale:
+	case CLevelEditorSharedState::EditMode::Scale:
 		return "SCALE";
-	case eEditModeTool:
+	case CLevelEditorSharedState::EditMode::Tool:
 		return "TOOL";
 	default:
 		throw std::logic_error("Invalid edit mode.");
@@ -609,27 +609,27 @@ void PySetEditMode(string pEditMode)
 {
 	if (pEditMode == "MOVE")
 	{
-		GetIEditorImpl()->SetEditMode(eEditModeMove);
+		GetIEditorImpl()->GetLevelEditorSharedState()->SetEditMode(CLevelEditorSharedState::EditMode::Move);
 	}
 	else if (pEditMode == "ROTATE")
 	{
-		GetIEditorImpl()->SetEditMode(eEditModeRotate);
+		GetIEditorImpl()->GetLevelEditorSharedState()->SetEditMode(CLevelEditorSharedState::EditMode::Rotate);
 	}
 	else if (pEditMode == "SCALE")
 	{
-		GetIEditorImpl()->SetEditMode(eEditModeScale);
+		GetIEditorImpl()->GetLevelEditorSharedState()->SetEditMode(CLevelEditorSharedState::EditMode::Scale);
 	}
 	else if (pEditMode == "SELECT")
 	{
-		GetIEditorImpl()->SetEditMode(eEditModeSelect);
+		GetIEditorImpl()->GetLevelEditorSharedState()->SetEditMode(CLevelEditorSharedState::EditMode::Select);
 	}
 	else if (pEditMode == "SELECTAREA")
 	{
-		GetIEditorImpl()->SetEditMode(eEditModeSelectArea);
+		GetIEditorImpl()->GetLevelEditorSharedState()->SetEditMode(CLevelEditorSharedState::EditMode::SelectArea);
 	}
 	else if (pEditMode == "TOOL")
 	{
-		GetIEditorImpl()->SetEditMode(eEditModeTool);
+		GetIEditorImpl()->GetLevelEditorSharedState()->SetEditMode(CLevelEditorSharedState::EditMode::Tool);
 	}
 	else if (pEditMode == "RULER")
 	{

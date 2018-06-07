@@ -771,7 +771,7 @@ void CSceneForwardStage::ExecuteTransparentDepthFixup()
 	CTexture* pDestRT = CRendererResources::s_ptexLinearDepth;
 
 	CFullscreenPass& screenPass = m_depthFixupPass;
-	if (!screenPass.InputChanged(pSrcRT->GetTextureID(), pDestRT->GetTextureID()))
+	if (!screenPass.IsDirty())
 	{
 		screenPass.Execute();
 		return;
@@ -1173,7 +1173,7 @@ void CSceneForwardStage::ExecuteSky(CTexture* pColorTex, CTexture* pDepthTex)
 
 	const bool bFog = pRenderView->IsGlobalFogEnabled() && !(GetGraphicsPipeline().IsPipelineFlag(CGraphicsPipeline::EPipelineFlags::NO_SHADER_FOG));
 
-	//if (m_skyPass.InputChanged(pDepthTex->GetTextureID()))
+	//if (m_skyPass.IsDirty())
 	{
 		SSamplerState      samplerDescLinearWrapU(FILTER_LINEAR, eSamplerAddressMode_Wrap, eSamplerAddressMode_Clamp, eSamplerAddressMode_Clamp, 0);
 		SamplerStateHandle samplerStateLinearWrapU = GetDeviceObjectFactory().GetOrCreateSamplerStateHandle(samplerDescLinearWrapU);

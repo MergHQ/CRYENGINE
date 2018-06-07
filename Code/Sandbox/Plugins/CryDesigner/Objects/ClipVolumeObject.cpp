@@ -413,9 +413,9 @@ void ClipVolumeObject::CreateInspectorWidgets(CInspectorWidgetCreator& creator)
 					{
 						GetIEditor()->ExecuteCommand("general.open_pane 'Modeling'");
 
-						GetIEditor()->SetEditTool("EditTool.ClipVolumeTool", false);
-			    }),
-			       "edit", "^Edit");
+					GetIEditor()->GetLevelEditorSharedState()->SetEditTool("EditTool.ClipVolumeTool", false);
+				}),
+					"edit", "^Edit");
 
 			    ar(Serialization::ActionButton(std::bind(&ClipVolumeObject::LoadFromCGF, pObject)), "load_cgf", "^Load CGF");
 			    ar.closeBlock();

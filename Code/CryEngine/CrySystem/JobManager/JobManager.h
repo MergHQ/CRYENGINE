@@ -269,7 +269,8 @@ public:
 private:
 	static ColorB GenerateColorBasedOnName(const char* name);
 
-	void ActiveWaitOnJobState(JobManager::SJobState& jobState) const;
+	void KickTempWorker() const;
+	void StopTempWorker() const;
 
 	CryCriticalSection m_JobManagerLock;                             // lock to protect non-performance critical parts of the jobmanager
 	JobManager::Invoker m_arrJobInvokers[JOBSYSTEM_INVOKER_COUNT];   // support 128 jobs for now

@@ -2114,18 +2114,20 @@ void CMaterialDialog::OnUpdateObjectSelected(CCmdUI* pCmdUI)
 //////////////////////////////////////////////////////////////////////////
 void CMaterialDialog::OnPickMtl()
 {
-	if (GetIEditorImpl()->GetEditTool() && GetIEditorImpl()->GetEditTool()->GetRuntimeClass()->m_lpszClassName == "CMaterialPickTool")
+	CEditTool* pTool = GetIEditorImpl()->GetLevelEditorSharedState()->GetEditTool();
+	if (pTool && pTool->GetRuntimeClass()->m_lpszClassName == "CMaterialPickTool")
 	{
-		GetIEditorImpl()->SetEditTool(NULL);
+		GetIEditorImpl()->GetLevelEditorSharedState()->SetEditTool(NULL);
 	}
 	else
-		GetIEditorImpl()->SetEditTool("EditTool.PickMaterial");
+		GetIEditorImpl()->GetLevelEditorSharedState()->SetEditTool("EditTool.PickMaterial");
 }
 
 //////////////////////////////////////////////////////////////////////////
 void CMaterialDialog::OnUpdatePickMtl(CCmdUI* pCmdUI)
 {
-	if (GetIEditorImpl()->GetEditTool() && GetIEditorImpl()->GetEditTool()->GetRuntimeClass()->m_lpszClassName == "CMaterialPickTool")
+	CEditTool* pTool = GetIEditorImpl()->GetLevelEditorSharedState()->GetEditTool();
+	if (pTool && pTool->GetRuntimeClass()->m_lpszClassName == "CMaterialPickTool")
 	{
 		pCmdUI->SetCheck(1);
 	}

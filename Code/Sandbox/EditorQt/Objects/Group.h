@@ -15,7 +15,6 @@ class CUndoBatchAttachBaseObject;
 /*!
  *	CGroup groups object together.
  *  Object can only be assigned to one group.
- *
  */
 class SANDBOX_API CGroup : public CBaseObject
 {
@@ -37,7 +36,11 @@ public:
 
 	void Display(CObjectRenderHelper& objRenderHelper);
 
-	void CreateInspectorWidgets(CInspectorWidgetCreator& creator) override;
+	//! Draws selection preview highlight
+	const ColorB& GetSelectionPreviewHighlightColor() override;
+	void          DrawSelectionPreviewHighlight(SDisplayContext& dc) override;
+
+	void          CreateInspectorWidgets(CInspectorWidgetCreator& creator) override;
 
 	//! Attach new child node.
 	virtual void        AddMember(CBaseObject* pMember, bool bKeepPos = true) override;

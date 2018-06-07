@@ -6,6 +6,14 @@
 // Preferences
 struct EDITOR_COMMON_API SSnappingPreferences : public SPreferencePage
 {
+	enum Mode
+	{
+		eNone          = 0x0,
+		eTerrain       = 0x01,
+		eGeometry      = 0x02,
+		eSurfaceNormal = 0x04
+	};
+
 	SSnappingPreferences()
 		: SPreferencePage("Snapping", "General/Snapping")
 		, m_gridSize(1)
@@ -19,6 +27,8 @@ struct EDITOR_COMMON_API SSnappingPreferences : public SPreferencePage
 		, m_angleSnappingEnabled(true)
 		, m_scaleSnappingEnabled(true)
 		, m_markerDisplay(false)
+		, m_snapModeFlags(0)
+		, m_bPivotSnappingEnabled(false)
 	{
 	}
 
@@ -32,6 +42,21 @@ struct EDITOR_COMMON_API SSnappingPreferences : public SPreferencePage
 	Ang3         SnapAngle(const Ang3& vec) const;
 	Matrix34     GetMatrix() const;
 
+	uint16 GetSnapMode() const;
+
+	//! Terrain snapping
+	virtual void EnableSnapToTerrain(bool bEnable);
+	virtual bool IsSnapToTerrainEnabled() const;
+	//! Surface normal snapping
+	virtual void EnableSnapToNormal(bool bEnable);
+	virtual bool IsSnapToNormalEnabled() const;
+	//! Geometry snapping
+	virtual void EnableSnapToGeometry(bool bEnable);
+	virtual bool IsSnapToGeometryEnabled() const;
+	//! Pivot snapping
+	virtual bool IsPivotSnappingEnabled() const;
+	virtual void EnablePivotSnapping(bool bEnable);
+
 	ADD_PREFERENCE_PAGE_PROPERTY(double, gridSize, setGridSize)
 	ADD_PREFERENCE_PAGE_PROPERTY(double, angleSnap, setAngleSnap)
 	ADD_PREFERENCE_PAGE_PROPERTY(float, scaleSnap, setScaleSnap)
@@ -44,6 +69,9 @@ struct EDITOR_COMMON_API SSnappingPreferences : public SPreferencePage
 	ADD_PREFERENCE_PAGE_PROPERTY(bool, angleSnappingEnabled, setAngleSnappingEnabled)
 	ADD_PREFERENCE_PAGE_PROPERTY(bool, scaleSnappingEnabled, setScaleSnappingEnabled)
 	ADD_PREFERENCE_PAGE_PROPERTY(bool, markerDisplay, setMarkerDisplay)
+
+	uint16 m_snapModeFlags;
+	bool   m_bPivotSnappingEnabled;
 };
 
 EDITOR_COMMON_API extern SSnappingPreferences gSnappingPreferences;

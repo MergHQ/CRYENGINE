@@ -28,6 +28,7 @@ class CEditorFileMonitor;
 class CEditorFlowGraphModuleManager;
 class CEditorPythonManager;
 class CEditTool;
+class CSelectionGroup;
 class CEntityPrototype;
 class CEntityPrototypeManager;
 class CExportManager;
@@ -75,6 +76,7 @@ struct IDataBaseManager;
 struct IDevManager;
 struct IEditorClassFactory;
 struct IExportManager;
+class CLevelEditorSharedState;
 struct IGizmoManager;
 struct IIconManager;
 struct IRenderer;
@@ -103,17 +105,6 @@ namespace BackgroundTaskManager
 class CTaskManager;
 class CBackgroundTasksListener;
 }
-
-//! Callback class passed to PickObject.
-struct IPickObjectCallback
-{
-	//! Called when object picked.
-	virtual void OnPick(CBaseObject* picked) = 0;
-	//! Called when pick mode cancelled.
-	virtual void OnCancelPick() = 0;
-	//! Return true if specified object is pickable.
-	virtual bool OnPickFilter(CBaseObject* filterObject) { return true; }
-};
 
 class SANDBOX_API CEditorImpl : public IEditor, public ISystemEventListener
 {
@@ -207,9 +198,6 @@ public:
 	void                            SelectObjects(std::vector<CBaseObject*> objects);
 	void                            LockSelection(bool bLock);
 	bool                            IsSelectionLocked();
-	void                            PickObject(IPickObjectCallback* callback, CRuntimeClass* targetClass = 0, bool bMultipick = false);
-	void                            CancelPick();
-	bool                            IsPicking();
 	IDataBaseManager*               GetDBItemManager(EDataBaseItemType itemType);
 	CEntityPrototypeManager*        GetEntityProtManager()      { return m_pEntityManager; }
 	CMaterialManager*               GetMaterialManager()        { return m_pMaterialManager; }
@@ -227,7 +215,7 @@ public:
 	IIconManager*                   GetIconManager();
 	float                           GetTerrainElevation(float x, float y);
 	Vec3                            GetTerrainNormal(const Vec3& pos);
-	CHeightmap*                     GetHeightmap();
+	CHeightmap*                     GetHeightmap() override;
 	CVegetationMap*                 GetVegetationMap();
 	//////////////////////////////////////////////////////////////////////////
 	// Special FG
@@ -262,43 +250,15 @@ public:
 	void                      SetActiveView(CViewport* viewport);
 
 	CLevelIndependentFileMan* GetLevelIndependentFileMan() { return m_pLevelIndependentFileMan; }
-	LevelEditorSharedState*   GetLevelEditorSharedState();
+	CLevelEditorSharedState*  GetLevelEditorSharedState();
 
 	void                      UpdateViews(int flags = 0xFFFFFFFF, AABB* updateRegion = NULL);
 	void                      ResetViews();
 	void                      UpdateSequencer(bool bOnlyKeys = false);
-	void                      SetSelectedRegion(const AABB& box) override;
-	void                      GetSelectedRegion(AABB& box) override;
 	CRuler*                   GetRuler() override { return m_pRuler; }
 	void                      SetDataModified();
-
-	void                      SetEditMode(int editMode);
-	int                       GetEditMode();
-	void                      SetEditTool(CEditTool* tool, bool bStopCurrentTool = true);
-	void                      SetEditTool(const string& sEditToolName, bool bStopCurrentTool = true);
-	//! Returns current edit tool.
-	CEditTool*                GetEditTool();
-	void                      SetAxisConstrains(AxisConstrains axis);
-	AxisConstrains            GetAxisConstrains();
-	void                      SetAxisVectorLock(bool bAxisVectorLock) { m_bAxisVectorLock = bAxisVectorLock; }
-	bool                      IsAxisVectorLocked()                    { return m_bAxisVectorLock; }
-	//! Snap mode flags
-	virtual uint16            GetSnapMode();
-	//! Terrain snapping
-	virtual void              EnableSnapToTerrain(bool bEnable);
-	virtual bool              IsSnapToTerrainEnabled() const;
-	//! Surface normal snapping
-	virtual void              EnableSnapToNormal(bool bEnable);
-	virtual bool              IsSnapToNormalEnabled() const;
-	//! Geometry snapping
-	virtual void              EnableSnapToGeometry(bool bEnable);
-	virtual bool              IsSnapToGeometryEnabled() const override;
 	virtual bool              IsHelpersDisplayed() const;
 	virtual void              EnableHelpersDisplay(bool bEnable);
-	virtual bool              IsPivotSnappingEnabled() const;
-	virtual void              EnablePivotSnapping(bool bEnable);
-	void                      SetReferenceCoordSys(RefCoordSys refCoords);
-	RefCoordSys               GetReferenceCoordSys();
 	XmlNodeRef                FindTemplate(const string& templateName);
 	void                      AddTemplate(const string& templateName, XmlNodeRef& tmpl);
 	virtual void              OpenAndFocusDataBase(EDataBaseItemType type, IDataBaseItem* pItem) override;
@@ -319,6 +279,10 @@ public:
 	void                      Notify(EEditorNotifyEvent event);
 	void                      RegisterNotifyListener(IEditorNotifyListener* listener);
 	void                      UnregisterNotifyListener(IEditorNotifyListener* listener);
+
+	// Register Object Mode sub tools. Needed for tools defined within Sandbox project
+	void RegisterAllObjectModeSubTools() override;
+	void UnRegisterAllObjectModeSubTools() override;
 
 	//! Retrieve interface to the source control.
 	ISourceControl*                  GetSourceControl();
@@ -412,8 +376,6 @@ protected:
 	std::list<IEditorNotifyListener*> m_listeners;
 
 	int                               m_objectHideMask;
-	EEditMode                         m_currEditMode;
-	EEditMode                         m_prevEditMode;
 	EOperationMode                    m_operationMode;
 	ISystem*                          m_pSystem;
 	CClassFactory*                    m_pClassFactory;
@@ -430,23 +392,15 @@ protected:
 	CPluginManager*                   m_pPluginManager;
 	CViewManager*                     m_pViewManager;
 	IUndoManager*                     m_pUndoManager;
-	AABB                              m_selectedRegion;
-	AxisConstrains                    m_lastAxis[16];
-	RefCoordSys                       m_lastCoordSys[16];
-	uint16                            m_snapModeFlags;
 	bool                              m_areHelpersEnabled;
-	bool                              m_bPivotSnappingEnabled;
-	bool                              m_bAxisVectorLock;
 	bool                              m_bUpdates;
 	Version                           m_fileVersion;
 	Version                           m_productVersion;
 	CXmlTemplateRegistry              m_templateRegistry;
-	_smart_ptr<CEditTool>             m_pEditTool;
 	CIconManager*                     m_pIconManager;
 	wstring                           m_masterCDFolder;
 	string                            m_userFolder;
 	bool                              m_bSelectionLocked;
-	CEditTool*                        m_pPickTool;
 	CAIManager*                       m_pAIManager;
 	CUIManager*                       m_pUIManager;
 	CCustomActionsEditorManager*      m_pCustomActionsManager;
@@ -463,18 +417,18 @@ protected:
 	CLensFlareManager*                m_pLensFlareManager;
 	//! Global instance of error report class.
 	//! Source control interface.
-	ISourceControl*                         m_pSourceControl;
-	CFlowGraphManager*                      m_pFlowGraphManager;
+	ISourceControl*                          m_pSourceControl;
+	CFlowGraphManager*                       m_pFlowGraphManager;
 
-	CUIEnumsDatabase*                       m_pUIEnumsDatabase;
+	CUIEnumsDatabase*                        m_pUIEnumsDatabase;
 	//! Currently used ruler
-	CRuler*                                 m_pRuler;
-	EditorScriptEnvironment*                m_pScriptEnv;
+	CRuler*                                  m_pRuler;
+	EditorScriptEnvironment*                 m_pScriptEnv;
 	//! CConsole Synchronization
-	CConsoleSynchronization*                m_pConsoleSync;
+	CConsoleSynchronization*                 m_pConsoleSync;
 
-	CLevelIndependentFileMan*               m_pLevelIndependentFileMan;
-	std::unique_ptr<LevelEditorSharedState> m_pLevelEditorSharedState;
+	CLevelIndependentFileMan*                m_pLevelIndependentFileMan;
+	std::unique_ptr<CLevelEditorSharedState> m_pLevelEditorSharedState;
 
 	//! Export manager for exporting objects and a terrain from the game to DCC tools
 	CExportManager*        m_pExportManager;

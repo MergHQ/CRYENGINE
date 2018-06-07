@@ -103,7 +103,7 @@ void DisablePhysicsAndAISimulation()
 	}
 }
 
-void CallAudioSystemOnLoad(const string &szFilename)
+void CallAudioSystemOnLoad(const string& szFilename)
 {
 	string fileName = PathUtil::GetFileName(szFilename.GetString());
 	string const levelName = PathUtil::GetFileName(fileName.GetBuffer());
@@ -131,7 +131,7 @@ void LoadTerrain(TDocMultiArchive& arrXmlAr)
 void LoadGameEngineLevel(const string& filename, string currentMissionName)
 {
 	HEAP_CHECK
-	LOADING_TIME_PROFILE_SECTION_NAMED("Game Engine level load");
+	  LOADING_TIME_PROFILE_SECTION_NAMED("Game Engine level load");
 	CAutoLogTime logtime("Game Engine level load");
 	string szLevelPath = PathUtil::GetPathWithoutFilename(filename);
 	GetIEditorImpl()->GetGameEngine()->LoadLevel(szLevelPath, currentMissionName, true, true);
@@ -308,9 +308,8 @@ void CCryEditDoc::DeleteContents()
 		GetIEditorImpl()->Notify(eNotify_OnClearLevelContents);
 	}
 
-	GetIEditorImpl()->SetEditTool(0); // Turn off any active edit tools.
-	GetIEditorImpl()->SetEditMode(eEditModeSelect);
-
+	GetIEditorImpl()->GetLevelEditorSharedState()->SetEditTool(nullptr); // Turn off any active edit tools.
+	GetIEditorImpl()->GetLevelEditorSharedState()->SetEditMode(CLevelEditorSharedState::EditMode::Select);
 
 	//////////////////////////////////////////////////////////////////////////
 	// Clear all undo info.
@@ -477,7 +476,7 @@ void CCryEditDoc::LoadShaderCache(TDocMultiArchive& arrXmlAr)
 	SerializeShaderCache((*arrXmlAr[DMAS_GENERAL_NAMED_DATA]));
 }
 
-void CCryEditDoc::ActivateMission(const string &currentMissionName)
+void CCryEditDoc::ActivateMission(const string& currentMissionName)
 {
 	LOADING_TIME_PROFILE_SECTION_NAMED_ARGS("Activating Mission", currentMissionName.c_str());
 	string str;
@@ -539,7 +538,7 @@ string CCryEditDoc::GetCurrentMissionName(TDocMultiArchive& arrXmlAr)
 		{
 			currentMissionName = dlg.GetSelected();
 		}
-	}	
+	}
 	return currentMissionName;
 }
 
@@ -985,7 +984,6 @@ bool CCryEditDoc::SaveLevel(const string& filename)
 		pIPak->Unlock();
 	}
 
-
 	CryLog("Saving level file %s", filename.c_str());
 	{
 		// Make a backup of file.
@@ -1091,7 +1089,7 @@ namespace {
 struct SFolderTime
 {
 	string folder;
-	time_t  creationTime;
+	time_t creationTime;
 };
 
 bool SortByCreationTime(SFolderTime& a, SFolderTime& b)
@@ -1156,12 +1154,12 @@ void CCryEditDoc::SaveAutoBackup(bool bForce)
 
 	string levelName = GetIEditorImpl()->GetGameEngine()->GetLevelName();
 
-	string filename = string().Format( "%s/%s/%s/%s.%s", 
-		autoBackupPath.c_str(), 
-		subFolder.c_str(), 
-		levelName.c_str(), 
-		levelName.c_str(), 
-		CLevelType::GetFileExtensionStatic());
+	string filename = string().Format("%s/%s/%s/%s.%s",
+	                                  autoBackupPath.c_str(),
+	                                  subFolder.c_str(),
+	                                  levelName.c_str(),
+	                                  levelName.c_str(),
+	                                  CLevelType::GetFileExtensionStatic());
 
 	SaveLevel(filename);
 	GetIEditorImpl()->GetGameEngine()->SetLevelPath(levelPath);

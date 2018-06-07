@@ -2,10 +2,11 @@
 
 #pragma once
 
-#include "Layer.h"
+#include "TerrainCommon.h"
 #include "RGBLayer.h"
 #include "TerrainGrid.h"
 #include "Util/Image.h"
+#include <Cry3DEngine/I3DEngine.h>
 
 // Heightmap data type
 typedef float                    t_hmap;
@@ -150,7 +151,7 @@ public:
 
 	void EraseLayerID(uchar id);
 
-	void MarkUsedLayerIds(bool bFree[CLayer::e_undefined]) const;
+	void MarkUsedLayerIds(bool bFree[e_layerIdUndefined]) const;
 
 	// Hold / fetch
 	void Fetch();

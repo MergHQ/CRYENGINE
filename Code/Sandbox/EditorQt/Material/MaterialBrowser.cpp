@@ -2138,7 +2138,7 @@ void CMaterialBrowserCtrl::OnDataBaseItemEvent(IDataBaseItem* pItem, EDataBaseIt
 		break;
 	case EDB_ITEM_EVENT_SELECTED:
 		{
-			CEditTool* pTool = GetIEditorImpl()->GetEditTool();
+			CEditTool* pTool = GetIEditorImpl()->GetLevelEditorSharedState()->GetEditTool();
 			if (pTool && pTool->IsKindOf(RUNTIME_CLASS(CMaterialPickTool)))
 			{
 				m_wndToolBar.Reset();

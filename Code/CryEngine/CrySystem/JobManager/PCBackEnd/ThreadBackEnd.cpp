@@ -63,10 +63,11 @@ bool JobManager::ThreadBackEnd::CThreadBackEnd::Init(uint32 nSysMaxWorker)
 		const bool isTempWorker = i >= (m_nNumWorkerThreads - numTempWorkerThreads);
 		m_arrWorkerThreads[i] = new CThreadBackEndWorkerThread(this, m_Semaphore, m_JobQueue, i,  isTempWorker);
 
-		if (!gEnv->pThreadManager->SpawnThread(m_arrWorkerThreads[i], "JobSystem_Worker_%u", i))
+		const char* name = !isTempWorker ? "Worker" : "Helper";
+		if (!gEnv->pThreadManager->SpawnThread(m_arrWorkerThreads[i], "JobSystem_%s_%u", name, i))
 		{
-			CryFatalError("Error spawning \"JobSystem_Worker_%u\" thread.", i);
-		}
+			CryFatalError("Error spawning \"JobSystem_%s_%u\" thread.", name, i);
+		}		
 	}
 #if defined(JOBMANAGER_SUPPORT_FRAMEPROFILER)
 	m_pBackEndWorkerProfiler = new JobManager::CWorkerBackEndProfiler;
@@ -209,11 +210,24 @@ void JobManager::ThreadBackEnd::CThreadBackEnd::AddJob(JobManager::CJobDelegator
 }
 
 ///////////////////////////////////////////////////////////////////////////////
-bool JobManager::ThreadBackEnd::CThreadBackEnd::AddTempWorkerUntilJobStateIsComplete(JobManager::SJobState& pJobState)
+bool JobManager::ThreadBackEnd::CThreadBackEnd::KickTempWorker()
 {
 	for (CThreadBackEndWorkerThread* pWorker : m_arrWorkerThreads)
 	{
-		if (pWorker->KickTempWorker(&pJobState))
+		if (pWorker->KickTempWorker())
+		{
+			return true;
+		}
+	}
+	return false;
+}
+
+///////////////////////////////////////////////////////////////////////////////
+bool JobManager::ThreadBackEnd::CThreadBackEnd::StopTempWorker()
+{
+	for (CThreadBackEndWorkerThread* pWorker : m_arrWorkerThreads)
+	{
+		if (pWorker->StopTempWorker())
 		{
 			return true;
 		}
@@ -283,9 +297,21 @@ void JobManager::ThreadBackEnd::CThreadBackEndWorkerThread::ThreadEntry()
 	do
 	{
 		SInfoBlock infoBlock;
-		CJobManager* __restrict pJobManager = CJobManager::Instance();
 		uint32 nPriorityLevel = ~0;
 		bool hasJob = false;
+
+		// TEMP WORKER - Check if it should be active
+		if (m_pTempWorkerInfo && !m_pTempWorkerInfo->doWork)
+		{
+			m_pTempWorkerInfo->doWorkLock.Lock();
+			while (!m_pTempWorkerInfo->doWork)
+			{
+				CRY_PROFILE_REGION(PROFILE_SYSTEM, "TempWorker - In DISABLED state");
+				m_pTempWorkerInfo->doWorkCnd.Wait(m_pTempWorkerInfo->doWorkLock);
+			}
+			m_pTempWorkerInfo->doWorkLock.Unlock();
+		}
+
 		{
 			if (JobManager::SInfoBlock* pFallbackInfoBlock = JobManager::detail::PopFromFallbackJobList(eBET_Thread))
 			{
@@ -322,7 +348,7 @@ void JobManager::ThreadBackEnd::CThreadBackEndWorkerThread::ThreadEntry()
 					// We cannot Wait() here on the semaphore as there might be work on the fallback queue
 					if (hasJob || attemptToGetJobCount++ > 5)
 					{
-						break;	
+						break;
 					}
 
 					// volatile load
@@ -355,42 +381,18 @@ void JobManager::ThreadBackEnd::CThreadBackEndWorkerThread::ThreadEntry()
 				{
 					// We got a job, reduce the counter
 					//CRY_PROFILE_REGION(PROFILE_SYSTEM, "Aquire");
-					m_rSemaphore.Aquire();
+					m_rWorkSyncVar.Aquire();
 				}
 				else
-				{
-					// REGULAR WORKER - Wait for new work
-					if (!m_pTempWorkerInfo)
+				{					
+					// Wait for new work
 					{
-						CRY_PROFILE_REGION(PROFILE_SYSTEM, "Wait for work (RegularWorker)");
+						//CRY_PROFILE_REGION(PROFILE_SYSTEM, "Wait for work");
 						// We failed to get a job. Check if there is still work available or wait for new work
-						m_rSemaphore.Wait();
+						m_rWorkSyncVar.Wait();
 					}
-					// TEMP WORKER - Cannot wait until new work is available as it would stall the waiting thread which is most likely the producer
-					else
-					{
-						if (!m_pTempWorkerInfo->pJobStateToCheck)
-						{
-							m_pTempWorkerInfo->doWorkLock.Lock();
-							while (!m_pTempWorkerInfo->pJobStateToCheck)
-							{
-								CRY_PROFILE_REGION(PROFILE_SYSTEM, "Wait for work (TempWorker)");
-								m_pTempWorkerInfo->doWorkCnd.Wait(m_pTempWorkerInfo->doWorkLock);
-							}
-							m_pTempWorkerInfo->doWorkLock.Unlock();
-						}
-						else if (!m_pTempWorkerInfo->pJobStateToCheck->IsRunning())
-						{
-							m_pTempWorkerInfo->doWorkLock.Lock();
-							m_pTempWorkerInfo->pJobStateToCheck = nullptr;
-							m_pTempWorkerInfo->doWorkLock.Unlock();
 
-						}
-						else
-						{
-							m_rSemaphore.Wait();
-						}
-					}
+					// Try acquire work
 					continue;
 				}
 
@@ -406,7 +408,7 @@ void JobManager::ThreadBackEnd::CThreadBackEndWorkerThread::ThreadEntry()
 					int iter = 0;
 					while (!pJobInfoBlockState->IsReady())
 					{
-						CRY_PROFILE_REGION(PROFILE_SYSTEM, "JobWorkerThread: About to sleep");
+						//CRY_PROFILE_REGION(PROFILE_SYSTEM, "JobWorkerThread: About to sleep");
 						CrySleep(0);
 					};
 
@@ -430,15 +432,15 @@ void JobManager::ThreadBackEnd::CThreadBackEndWorkerThread::ThreadEntry()
 		}
 
 		{
-		//CRY_PROFILE_REGION(PROFILE_SYSTEM, "JobWorkerThread: Execute Job");
+			//CRY_PROFILE_REGION(PROFILE_SYSTEM, "JobWorkerThread: Execute Job");
 
-		///////////////////////////////////////////////////////////////////////////
-		// now we have a valid SInfoBlock to start work on it
-		// check if it is a producer/consumer queue job
-		IF(infoBlock.HasQueue(), 0)
-		{
-			DoWorkProducerConsumerQueue(infoBlock);
-		}
+			///////////////////////////////////////////////////////////////////////////
+			// now we have a valid SInfoBlock to start work on it
+			// check if it is a producer/consumer queue job
+			IF(infoBlock.HasQueue(), 0)
+			{
+				DoWorkProducerConsumerQueue(infoBlock);
+			}
 		else
 		{
 			// Now we are safe to use the info block
@@ -466,7 +468,7 @@ void JobManager::ThreadBackEnd::CThreadBackEndWorkerThread::ThreadEntry()
 				CFrameProfilerSection frameProfilerSection2(pProfiler, jobName, jobName, EProfileDescription::SECTION);
 				BROFILER_SECTION(jobName)
 
-				cry_sprintf(job_info, "%s (Prio %u)", jobName, nPriorityLevel);
+					cry_sprintf(job_info, "%s (Prio %u)", jobName, nPriorityLevel);
 
 				CRYPROFILE_SCOPE_PROFILE_MARKER(job_info);
 				CRYPROFILE_SCOPE_PLATFORM_MARKER(job_info);
@@ -502,12 +504,11 @@ void JobManager::ThreadBackEnd::CThreadBackEndWorkerThread::ThreadEntry()
 		}
 		}
 
-	}
-	while (m_bStop == false);
+	} while (m_bStop == false);
 }
 
 ///////////////////////////////////////////////////////////////////////////////
-bool JobManager::ThreadBackEnd::CThreadBackEndWorkerThread::KickTempWorker(JobManager::SJobState* pJobState)
+bool JobManager::ThreadBackEnd::CThreadBackEndWorkerThread::KickTempWorker()
 {
 	if (!IsTempWorker())
 	{
@@ -515,22 +516,41 @@ bool JobManager::ThreadBackEnd::CThreadBackEndWorkerThread::KickTempWorker(JobMa
 	}
 
 	// Check if worker is already acquired
-	if (!m_pTempWorkerInfo->pJobStateToCheck)
+	if (!m_pTempWorkerInfo->doWork)
 	{
-		m_pTempWorkerInfo->doWorkLock.Lock();
-		if (!m_pTempWorkerInfo->pJobStateToCheck)
+		CryAutoLock<CryMutexFast>(m_pTempWorkerInfo->doWorkLock);
+
+		// Check if some other thread managed to acquire the worker ahead of us
+		if (!m_pTempWorkerInfo->doWork)
 		{
 			// We can acquire the worker
-			m_pTempWorkerInfo->pJobStateToCheck = pJobState;
+			m_pTempWorkerInfo->doWork = true; // Signal worker to stop work
 			m_pTempWorkerInfo->doWorkCnd.Notify();
-			m_pTempWorkerInfo->doWorkLock.Unlock();
 			return true;
-		}
-		else
+		}		
+	}
+	return false;
+}
+
+///////////////////////////////////////////////////////////////////////////////
+bool JobManager::ThreadBackEnd::CThreadBackEndWorkerThread::StopTempWorker()
+{
+	if (!IsTempWorker())
+	{
+		return false;
+	}
+
+	// Find an active worker 
+	if (m_pTempWorkerInfo->doWork)
+	{
+		CryAutoLock<CryMutexFast>(m_pTempWorkerInfo->doWorkLock);
+
+		// Check if some other thread managed to modify this worker ahead of us
+		if (m_pTempWorkerInfo->doWork)
 		{
-			// Some other thread managed to acquire the worker ahead of us
-			m_pTempWorkerInfo->doWorkLock.Unlock();
-			return false;
+			// We can stop the worker
+			m_pTempWorkerInfo->doWork = false; // Signal worker to stop work
+			return true;
 		}
 	}
 	return false;
@@ -763,7 +783,7 @@ void JobManager::ThreadBackEnd::CThreadBackEndWorkerThread::DoWorkProducerConsum
 
 ///////////////////////////////////////////////////////////////////////////////
 JobManager::ThreadBackEnd::CThreadBackEndWorkerThread::CThreadBackEndWorkerThread(CThreadBackEnd* pThreadBackend, detail::CWorkStatusSyncVar& rSemaphore, JobManager::SJobQueue_ThreadBackEnd& rJobQueue, uint32 nId, bool bIsTempWorker) :
-	m_rSemaphore(rSemaphore),
+	m_rWorkSyncVar(rSemaphore),
 	m_rJobQueue(rJobQueue),
 	m_bStop(false),
 	m_nId(nId),

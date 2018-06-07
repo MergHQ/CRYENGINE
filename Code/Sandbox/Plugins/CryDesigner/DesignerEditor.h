@@ -108,7 +108,7 @@ public:
 	BrushRay GetRay() const;
 
 	// ITransformManipulatorOwner
-	virtual bool GetManipulatorMatrix(RefCoordSys coordSys, Matrix34& tm);
+	virtual bool GetManipulatorMatrix(Matrix34& tm);
 	virtual void GetManipulatorPosition(Vec3& position);
 	virtual bool IsManipulatorVisible();
 

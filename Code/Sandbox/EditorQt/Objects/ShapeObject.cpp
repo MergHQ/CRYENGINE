@@ -29,9 +29,11 @@
 
 #include "Controls/DynamicPopupMenu.h"
 
-#include "PickObjectTool.h"
+#include <LevelEditor/Tools/PickObjectTool.h>
 #include "Util/MFCUtil.h"
 #include "Gizmos/IGizmoManager.h"
+
+#include <Grid.h>
 
 //#pragma optimize("", off)
 //#pragma inline_depth(0)
@@ -83,7 +85,7 @@ public:
 	void           OnManipulatorDrag(IDisplayViewport*, ITransformManipulator*, const Vec2i&, const Vec3&, int);
 	void           OnManipulatorEndDrag(IDisplayViewport*, ITransformManipulator*);
 
-	virtual bool   GetManipulatorMatrix(RefCoordSys coordSys, Matrix34& tm) override;
+	virtual bool   GetManipulatorMatrix(Matrix34& tm) override;
 	virtual void   GetManipulatorPosition(Vec3& position) override;
 	virtual bool   IsManipulatorVisible() override;
 
@@ -162,7 +164,7 @@ bool CEditShapeTool::OnKeyDown(CViewport* view, uint32 nChar, uint32 nRepCnt, ui
 {
 	if (nChar == Qt::Key_Escape)
 	{
-		GetIEditorImpl()->SetEditTool(0);
+		GetIEditorImpl()->GetLevelEditorSharedState()->SetEditTool(nullptr);
 	}
 	else if (nChar == Qt::Key_Delete)
 	{
@@ -189,7 +191,7 @@ bool CEditShapeTool::OnKeyDown(CViewport* view, uint32 nChar, uint32 nRepCnt, ui
 
 void CEditShapeTool::OnManipulatorBeginDrag(IDisplayViewport* view, ITransformManipulator*, const Vec2i&, int flags)
 {
-	if (GetIEditorImpl()->GetEditMode() == eEditModeMove)
+	if (GetIEditorImpl()->GetLevelEditorSharedState()->GetEditMode() == CLevelEditorSharedState::EditMode::Move)
 	{
 		m_pointPos = m_shape->GetPoint(m_shape->GetSelectedPoint());
 
@@ -204,7 +206,7 @@ void CEditShapeTool::OnManipulatorBeginDrag(IDisplayViewport* view, ITransformMa
 
 void CEditShapeTool::OnManipulatorDrag(IDisplayViewport*, ITransformManipulator*, const Vec2i&, const Vec3& offset, int flags)
 {
-	if (GetIEditorImpl()->GetEditMode() == eEditModeMove)
+	if (GetIEditorImpl()->GetLevelEditorSharedState()->GetEditMode() == CLevelEditorSharedState::EditMode::Move)
 	{
 		Matrix34 m = m_shape->GetWorldTM();
 		m.Invert();
@@ -216,7 +218,7 @@ void CEditShapeTool::OnManipulatorDrag(IDisplayViewport*, ITransformManipulator*
 
 void CEditShapeTool::OnManipulatorEndDrag(IDisplayViewport*, ITransformManipulator*)
 {
-	if (GetIEditorImpl()->GetEditMode() == eEditModeMove)
+	if (GetIEditorImpl()->GetLevelEditorSharedState()->GetEditMode() == CLevelEditorSharedState::EditMode::Move)
 	{
 		m_modifying = false;
 
@@ -224,12 +226,12 @@ void CEditShapeTool::OnManipulatorEndDrag(IDisplayViewport*, ITransformManipulat
 	}
 }
 
-bool CEditShapeTool::GetManipulatorMatrix(RefCoordSys coordSys, Matrix34& tm)
+bool CEditShapeTool::GetManipulatorMatrix(Matrix34& tm)
 {
 	if (!m_shape)
 		return false;
 
-	return m_shape->GetManipulatorMatrix(coordSys, tm);
+	return m_shape->GetManipulatorMatrix(tm);
 }
 
 void CEditShapeTool::GetManipulatorPosition(Vec3& position)
@@ -253,7 +255,7 @@ void CEditShapeTool::OnShapePropertyChange(const CBaseObject* pObject, const COb
 	}
 	else if (event.m_type == OBJECT_ON_DELETE)
 	{
-		GetIEditorImpl()->SetEditTool(nullptr);
+		GetIEditorImpl()->GetLevelEditorSharedState()->SetEditTool(nullptr);
 	}
 }
 
@@ -418,7 +420,7 @@ bool CEditShapeTool::MouseCallback(CViewport* view, EMouseEvent event, CPoint& p
 			{
 				Vec3 wp = m_pointPos;
 				Vec3 newp = wp + v;
-				if (GetIEditorImpl()->IsSnapToTerrainEnabled())
+				if (gSnappingPreferences.IsSnapToTerrainEnabled())
 				{
 					// Keep height.
 					newp = view->MapViewToCP(point);
@@ -515,7 +517,7 @@ CMergeShapesTool::~CMergeShapesTool()
 bool CMergeShapesTool::OnKeyDown(CViewport* view, uint32 nChar, uint32 nRepCnt, uint32 nFlags)
 {
 	if (nChar == Qt::Key_Escape)
-		GetIEditorImpl()->SetEditTool(0);
+		GetIEditorImpl()->GetLevelEditorSharedState()->SetEditTool(nullptr);
 	return true;
 }
 
@@ -577,7 +579,7 @@ bool CMergeShapesTool::MouseCallback(CViewport* view, EMouseEvent event, CPoint&
 							m_shape->Merge(shape);
 						if (GetIEditorImpl()->GetIUndoManager()->IsUndoRecording())
 							GetIEditorImpl()->GetIUndoManager()->Accept("Merge shapes");
-						GetIEditorImpl()->SetEditTool(0);
+						GetIEditorImpl()->GetLevelEditorSharedState()->SetEditTool(nullptr);
 					}
 				}
 				foundSel = true;
@@ -657,7 +659,7 @@ CSplitShapeTool::~CSplitShapeTool()
 bool CSplitShapeTool::OnKeyDown(CViewport* view, uint32 nChar, uint32 nRepCnt, uint32 nFlags)
 {
 	if (nChar == Qt::Key_Escape)
-		GetIEditorImpl()->SetEditTool(0);
+		GetIEditorImpl()->GetLevelEditorSharedState()->SetEditTool(nullptr);
 	return true;
 }
 
@@ -740,7 +742,7 @@ bool CSplitShapeTool::MouseCallback(CViewport* view, EMouseEvent event, CPoint& 
 					m_shape->SplitAtPoint(m_curIndex, m_bSnap, m_curPoint);
 					if (GetIEditorImpl()->GetIUndoManager()->IsUndoRecording())
 						GetIEditorImpl()->GetIUndoManager()->Accept("Split shape");
-					GetIEditorImpl()->SetEditTool(0);
+					GetIEditorImpl()->GetLevelEditorSharedState()->SetEditTool(nullptr);
 				}
 			}
 		}
@@ -1169,7 +1171,7 @@ int CShapeObject::MouseCreateCallback(IDisplayViewport* view, EMouseEvent event,
 		float mouseX, mouseY;
 		gEnv->pHardwareMouse->GetHardwareMouseClientPosition(&mouseX, &mouseY);
 
-		Vec3 pos = view->MapViewToCP(CPoint(mouseX, mouseY), AXIS_XY, false);
+		Vec3 pos = view->MapViewToCP(CPoint(mouseX, mouseY), CLevelEditorSharedState::Axis::XY, false);
 
 		SetPoint(m_points.size() - 1, GetWorldTM().GetInverted().TransformPoint(pos));
 	}
@@ -1180,7 +1182,9 @@ int CShapeObject::MouseCreateCallback(IDisplayViewport* view, EMouseEvent event,
 		view->SetConstructionMatrix(Matrix34::Create(Vec3(1.f), IDENTITY, GetWorldPos()));
 		// Cast to terrain if we can move the Z axis, otherwise only allow XY movement (unless creating the first point).
 		// The reason for checking points < 2 is that the first point is temporarily added to the vector as we are creating the object.
-		Vec3 pos = SupportsZAxis() || m_points.size() < 2 ? view->MapViewToCP(point, 0, true, GetCreationOffsetFromTerrain()) : view->MapViewToCP(point, AXIS_XY, false);
+		Vec3 pos = SupportsZAxis() || m_points.size() < 2 ?
+		           view->MapViewToCP(point, CLevelEditorSharedState::Axis::None, true, GetCreationOffsetFromTerrain()) :
+		           view->MapViewToCP(point, CLevelEditorSharedState::Axis::XY, false);
 
 		if (m_points.size() < 2)
 		{
@@ -2611,12 +2615,12 @@ void CShapeObject::EditShape()
 		GetObjectManager()->SelectObject(this);
 	}
 
-	CEditTool* pEditTool = GetIEditorImpl()->GetEditTool();
+	CEditTool* pEditTool = GetIEditorImpl()->GetLevelEditorSharedState()->GetEditTool();
 
 	if (!pEditTool->IsKindOf(RUNTIME_CLASS(CEditShapeTool)))
 	{
 		pEditTool = new CEditShapeTool;
-		GetIEditorImpl()->SetEditTool(pEditTool);
+		GetIEditorImpl()->GetLevelEditorSharedState()->SetEditTool(pEditTool);
 		pEditTool->SetUserData("object", this);
 	}
 }

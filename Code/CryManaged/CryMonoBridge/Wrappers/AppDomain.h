@@ -31,6 +31,7 @@ public:
 
 	void SerializeObject(CMonoObject* pSerializer, MonoInternals::MonoObject* pObject, bool bIsAssembly);
 	std::shared_ptr<CMonoObject> DeserializeObject(CMonoObject* pSerializer, const CMonoClass* const pObjectClass);
+	void DeserializeDeletedObject(CMonoObject* pSerializer);
 
 	CMonoClass* GetVector2Class() const { return m_pVector2Class; }
 	CMonoClass* GetVector3Class() const { return m_pVector3Class; }

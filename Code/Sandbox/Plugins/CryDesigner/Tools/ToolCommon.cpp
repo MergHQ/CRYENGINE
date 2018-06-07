@@ -67,7 +67,7 @@ void GetSelectedObjectList(std::vector<MainContext>& selections)
 
 DesignerEditor* GetDesigner()
 {
-	CEditTool* pEditor = GetIEditor()->GetEditTool();
+	CEditTool* pEditor = GetIEditor()->GetLevelEditorSharedState()->GetEditTool();
 	if (!pEditor || !pEditor->IsKindOf(RUNTIME_CLASS(DesignerEditor)))
 		return NULL;
 	return (DesignerEditor*)pEditor;
@@ -172,18 +172,18 @@ void UpdateDrawnEdges(MainContext& mc)
 
 BrushMatrix34 GetOffsetTM(ITransformManipulator* pManipulator, const BrushVec3& vOffset, const BrushMatrix34& worldTM)
 {
-	int editMode = GetIEditor()->GetEditMode();
+	CLevelEditorSharedState::EditMode editMode = GetIEditor()->GetLevelEditorSharedState()->GetEditMode();
 
 	BrushMatrix34 worldRefTM(ToBrushMatrix34(pManipulator->GetTransform()));
 	BrushMatrix34 invWorldTM = worldTM.GetInverted();
 	BrushMatrix34 modRefFrame = invWorldTM * worldRefTM;
 	BrushMatrix34 modRefFrameInverse = worldRefTM.GetInverted() * worldTM;
 
-	if (editMode == eEditModeMove)
+	if (editMode == CLevelEditorSharedState::EditMode::Move)
 		return modRefFrame * BrushMatrix34::CreateTranslationMat(worldRefTM.GetInverted().TransformVector(vOffset)) * modRefFrameInverse;
-	else if (editMode == eEditModeRotate)
+	else if (editMode == CLevelEditorSharedState::EditMode::Rotate)
 		return modRefFrame * BrushMatrix34::CreateRotationXYZ(Ang3_tpl<BrushFloat>(-vOffset)) * modRefFrameInverse;
-	else if (editMode == eEditModeScale)
+	else if (editMode == CLevelEditorSharedState::EditMode::Scale)
 		return modRefFrame * BrushMatrix34::CreateScale(vOffset) * modRefFrameInverse;
 
 	return BrushMatrix34::CreateIdentity();

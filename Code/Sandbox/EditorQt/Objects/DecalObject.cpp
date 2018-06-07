@@ -377,7 +377,7 @@ void CDecalObject::MouseCallbackImpl(CViewport* view, EMouseEvent event, CPoint&
 
 	if ((callerIsMouseCreateCallback && !flags))
 	{
-		Vec3 pos(view->MapViewToCP(point, 0, true, GetCreationOffsetFromTerrain()));
+		Vec3 pos(view->MapViewToCP(point, CLevelEditorSharedState::Axis::None, true, GetCreationOffsetFromTerrain()));
 		SetPos(pos);
 		s_mousePosTracked = false;
 	}

@@ -2624,16 +2624,19 @@ int CRopeEntity::RayTrace(SRayTraceRes& rtr)
 
 void CRopeEntity::ApplyVolumetricPressure(const Vec3 &epicenter, float kr, float rmin)
 {
-	if (m_nSegs>0 && m_maxForce>0 && m_pTiedTo[0] && m_pTiedTo[1]) {
+	if (m_nSegs>0) {
 		int i;
-		float dP;
+		float dP,kseg=kr*m_length*m_collDist*2,minv=1/max(1e-6f,m_mass);
 		Vec3 r;
 		int bThreadSafe = -(get_iCaller()-MAX_PHYS_THREADS>>31);
 		for(i=0,dP=0; i<m_nSegs; i++) {
 			r = (m_segs[i].pt+m_segs[i+1].pt)*0.5f-epicenter;
-			dP += (m_segs[i].dir^r).len()/(r.len()*max(r.len2(),rmin*rmin));
+			float dPseg = kseg*(m_segs[i].dir^r).len()/(r.len()*max(r.len2(),rmin*rmin));
+			if (!m_bStrained)
+				m_segs[i].vel += r.GetNormalizedFast()*min(20.0f,dPseg*minv);
+			dP += dPseg;
 		}
-		if (dP*kr*m_length*m_collDist*2 > m_maxForce*0.01f) {
+		if (m_maxForce>0 && m_pTiedTo[0] && m_pTiedTo[1] && dP > m_maxForce*0.01f) {
 			EventPhysJointBroken epjb;
 			epjb.idJoint=0; epjb.bJoint=0; MARK_UNUSED epjb.pNewEntity[0],epjb.pNewEntity[1];
 			epjb.pEntity[0]=epjb.pEntity[1]=this; epjb.pForeignData[0]=epjb.pForeignData[1]=m_pForeignData; 

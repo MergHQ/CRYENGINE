@@ -28,6 +28,7 @@ namespace CryEngine
 			}
 		}
 
+		[SerializeValue]
 		internal IParticleManager NativeHandle { get; private set; }
 
 		private ParticleManager()

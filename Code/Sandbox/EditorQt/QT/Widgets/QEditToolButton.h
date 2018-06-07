@@ -7,7 +7,7 @@
 //////////////////////////////////////////////////////////////////////////
 //! This is meant to be used for a button that will activate a CEditTool
 //! The button will deactivate when the tool gets deactivated
-class QEditToolButton : public QToolButton, public IEditorNotifyListener
+class QEditToolButton : public QToolButton
 {
 	Q_OBJECT
 public:
@@ -19,7 +19,6 @@ public:
 	// Set if this tool button relies on a loaded level / ready document. By default every tool button only works if a level is loaded.
 	// However some tools are also used without a loaded level (e.g. UI Emulator)
 	void SetNeedDocument(bool bNeedDocument) { m_bNeedDocument = bNeedDocument; }
-	void OnEditorNotifyEvent(EEditorNotifyEvent event) override;
 
 protected Q_SLOTS:
 	void OnClicked(bool bChecked);

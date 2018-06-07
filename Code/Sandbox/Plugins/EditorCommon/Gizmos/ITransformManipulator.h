@@ -3,6 +3,7 @@
 #pragma once
 
 #include "CrySandbox/CrySignal.h"
+#include "LevelEditor/LevelEditorSharedState.h"
 
 struct EDITOR_COMMON_API ITransformManipulator
 {
@@ -26,7 +27,7 @@ struct EDITOR_COMMON_API ITransformManipulatorOwner
 	virtual ~ITransformManipulatorOwner() {}
 	// called at update time if reference coordinate system is  local or parent. Return true if there's a valid matrix else
 	// world orientation (identity matrix) is used instead
-	virtual bool GetManipulatorMatrix(RefCoordSys coordSys, Matrix34& tm) { return false; }
+	virtual bool GetManipulatorMatrix(Matrix34& tm) { return false; }
 	// called at update time when the transform manipulator is tagged as invalid
 	virtual void GetManipulatorPosition(Vec3& position) = 0;
 	// called during display and hit test of manipulator. This way owners can deactivate their manipulator under some circumstances

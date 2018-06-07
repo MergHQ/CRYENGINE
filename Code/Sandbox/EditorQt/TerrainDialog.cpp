@@ -16,7 +16,7 @@
 #include "Terrain/TerrainManager.h"
 #include "Terrain/TerrainBrushTool.h"
 
-#include "EditMode/ObjectMode.h"
+#include <LevelEditor/LevelEditorSharedState.h>
 
 #include "GameEngine.h"
 #include "CryEdit.h"
@@ -70,7 +70,7 @@ CTerrainDialog::~CTerrainDialog()
 		m_pHeightmap->signalWaterLevelChanged.DisconnectObject(this);
 
 	GetIEditorImpl()->UnregisterNotifyListener(this);
-	GetIEditorImpl()->SetEditTool(0);
+	GetIEditorImpl()->GetLevelEditorSharedState()->SetEditTool(nullptr);
 	delete m_sLastParam;
 }
 
@@ -862,7 +862,7 @@ void CTerrainDialog::GenerateTerrainTexture()
 
 void CTerrainDialog::TerrainTextureExport()
 {
-	GetIEditorImpl()->SetEditTool(0);
+	GetIEditorImpl()->GetLevelEditorSharedState()->SetEditTool(nullptr);
 
 	CTerrainTextureExport cDialog;
 	cDialog.DoModal();
@@ -870,8 +870,7 @@ void CTerrainDialog::TerrainTextureExport()
 
 void CTerrainDialog::OnExportTerrainArea()
 {
-	AABB bbox;
-	GetIEditorImpl()->GetSelectedRegion(bbox);
+	AABB bbox = GetIEditorImpl()->GetLevelEditorSharedState()->GetSelectedRegion();
 	if (!GetIEditorImpl()->GetDocument() || !GetIEditorImpl()->GetDocument() || !bbox.IsNonZero())
 	{
 		CryWarning(VALIDATOR_MODULE_EDITOR, VALIDATOR_WARNING, "No Terrain Area is selected. Use \"Select Terrain\" tool to select the terrain area.");
@@ -887,8 +886,7 @@ void CTerrainDialog::OnExportTerrainArea()
 
 void CTerrainDialog::OnExportTerrainAreaWithObjects()
 {
-	AABB bbox;
-	GetIEditorImpl()->GetSelectedRegion(bbox);
+	AABB bbox = GetIEditorImpl()->GetLevelEditorSharedState()->GetSelectedRegion();
 	if (!GetIEditorImpl()->GetDocument() || !GetIEditorImpl()->GetDocument() || !bbox.IsNonZero())
 	{
 		CryWarning(VALIDATOR_MODULE_EDITOR, VALIDATOR_WARNING, "No Terrain Area is selected. Use \"Select Terrain\" tool to select the terrain area.");
@@ -913,8 +911,7 @@ void CTerrainDialog::OnReloadTerrain()
 void CTerrainDialog::OnTerrainExportBlock()
 {
 	// TODO: Add your command handler code here
-	AABB box;
-	GetIEditorImpl()->GetSelectedRegion(box);
+	AABB box = GetIEditorImpl()->GetLevelEditorSharedState()->GetSelectedRegion();
 	if (!GetIEditorImpl()->GetDocument() || !GetIEditorImpl()->IsDocumentReady() || !box.IsNonZero())
 	{
 		CryWarning(VALIDATOR_MODULE_EDITOR, VALIDATOR_WARNING, "No Terrain Area is selected. Use \"Select Terrain\" tool to select the terrain area.");
@@ -996,11 +993,11 @@ void CTerrainDialog::OnTerrainImportBlock()
 		ar = 0;
 
 		/*
-		   // Archive will be deleted within Move tool.
-		   CTerrainMoveTool *mt = new CTerrainMoveTool;
-		   mt->SetArchive( ar );
-		   GetIEditorImpl()->SetEditTool( mt );
-		 */
+		// Archive will be deleted within Move tool.
+		CTerrainMoveTool *mt = new CTerrainMoveTool;
+		mt->SetArchive( ar );
+		GetIEditorImpl()->GetLevelEditorSharedState()->SetEditTool( mt );
+		*/
 	}
 }
 

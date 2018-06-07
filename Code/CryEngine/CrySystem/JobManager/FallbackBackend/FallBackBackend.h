@@ -33,6 +33,9 @@ public:
 
 	uint32 GetNumWorkerThreads() const { return 0; }
 
+	virtual bool KickTempWorker() { return false; }
+	virtual bool StopTempWorker() { return false; }
+
 #if defined(JOBMANAGER_SUPPORT_FRAMEPROFILER)
 	virtual IWorkerBackEndProfiler* GetBackEndWorkerProfiler() const { return 0; }
 #endif

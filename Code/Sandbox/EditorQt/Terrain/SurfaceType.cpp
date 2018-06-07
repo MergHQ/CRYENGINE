@@ -2,6 +2,7 @@
 
 #include "StdAfx.h"
 #include "Material/MaterialManager.h"
+#include "Terrain/TerrainCommon.h"
 #include "Terrain/Layer.h"
 #include "Terrain/TerrainManager.h"
 #include "Terrain/SurfaceType.h"
@@ -9,14 +10,14 @@
 #include "Vegetation/VegetationObject.h"
 #include "GameEngine.h"
 
-const int CSurfaceType::ms_maxSurfaceTypeIdCount = static_cast<int>(CLayer::e_undefined);
+const int CSurfaceType::ms_maxSurfaceTypeIdCount = static_cast<int>(LayerIdConstants::e_layerIdUndefined);
 
 CSurfaceType::CSurfaceType()
 {
 	m_detailScale[0] = 1.0f;
 	m_detailScale[1] = 1.0f;
 	m_projAxis = ESFT_Z;
-	m_surfaceTypeID = CLayer::e_undefined;
+	m_surfaceTypeID = LayerIdConstants::e_layerIdUndefined;
 }
 
 void CSurfaceType::Serialize(CXmlArchive& xmlAr)
@@ -157,7 +158,7 @@ void CSurfaceType::AssignUnusedSurfaceTypeID()
 	}
 	std::sort(ids.begin(), ids.end());
 
-	int nID = CLayer::e_undefined;
+	int nID = LayerIdConstants::e_layerIdUndefined;
 	for (int i = 0; i < idCount; i++)
 	{
 		int j;
@@ -172,9 +173,9 @@ void CSurfaceType::AssignUnusedSurfaceTypeID()
 			break;
 		}
 	}
-	if (nID >= CLayer::e_undefined)
+	if (nID >= LayerIdConstants::e_layerIdUndefined)
 	{
-		nID = idCount < CLayer::e_undefined ? idCount : CLayer::e_undefined;
+		nID = idCount < LayerIdConstants::e_layerIdUndefined ? idCount : LayerIdConstants::e_layerIdUndefined;
 	}
 
 	m_surfaceTypeID = nID;

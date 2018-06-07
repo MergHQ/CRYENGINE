@@ -218,6 +218,8 @@ namespace CryEngine.UI
 			if(TargetTexture != null)
 			{
 				TargetTexture.UpdateData(resolution, resolution, data);
+				RectTransform.Width = _targetTexture.Width;
+				RectTransform.Height = _targetTexture.Height;
 			}
 			else
 			{
@@ -237,7 +239,7 @@ namespace CryEngine.UI
 				{
 					TargetEntity.Material = _originalMaterial;
 				}
-
+				
 				_targetMaterial.Release();
 				_targetMaterial.Dispose();
 			}
@@ -303,7 +305,7 @@ namespace CryEngine.UI
 
 			int u = (int)Mouse.CursorPosition.x, v = (int)Mouse.CursorPosition.y;
 			TryAdaptMouseInput(ref u, ref v);
-			return e.RectTransform.Bounds.Contains(new Point(u, v));
+			return e.RectTransform.Bounds.Contains(u, v);
 		}
 
 		void OnLeftMouseDown(int x, int y)

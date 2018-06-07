@@ -88,7 +88,7 @@ protected:
 	virtual void SetZoom(float fZoomFactor, CPoint center);
 
 	// overrides from CViewport.
-	virtual void MakeSnappingGridPlane(int axis);
+	virtual void            MakeSnappingGridPlane(CLevelEditorSharedState::Axis axis) override;
 
 	//! Calculate view transformation matrix.
 	virtual void CalculateViewTM();

@@ -199,7 +199,7 @@ void CPreviewWidget::SetComponentInstance(const IScriptComponentInstance* pCompo
 
 			auto onBeginDrag = [this](IDisplayViewport*, ITransformManipulator*, const Vec2i&, int)
 			{
-				if (GetIEditor()->GetEditMode() == eEditModeMove)
+				if (GetIEditor()->GetLevelEditorSharedState()->GetEditMode() == CLevelEditorSharedState::EditMode::Move)
 				{
 					IScriptComponentInstance* pComponentInstance = DynamicCast<IScriptComponentInstance>(gEnv->pSchematyc->GetScriptRegistry().GetElement(m_componentInstanceGUID));
 					if (pComponentInstance)
@@ -301,7 +301,7 @@ void CPreviewWidget::Serialize(Serialization::IArchive& archive)
 	}
 }
 
-bool CPreviewWidget::GetManipulatorMatrix(RefCoordSys coordSys, Matrix34& tm)
+bool CPreviewWidget::GetManipulatorMatrix(Matrix34& tm)
 {
 	return false;
 }

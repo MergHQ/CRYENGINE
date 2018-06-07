@@ -5,7 +5,7 @@
 #include "Viewport.h"
 #include "Util\Triangulate.h"
 #include "Material\Material.h"
-#include "EditTool.h"
+#include "LevelEditor/Tools/EditTool.h"
 #include "Objects/DisplayContext.h"
 #include "Objects/ObjectLoader.h"
 #include "Objects/InspectorWidgetCreator.h"
@@ -14,6 +14,8 @@
 #include "Serialization/Decorators/EditToolButton.h"
 #include "Gizmos/ITransformManipulator.h"
 #include "Gizmos/IGizmoManager.h"
+
+#include <Grid.h>
 
 class CEditGravityVolumeTool : public CEditTool, public ITransformManipulatorOwner
 {
@@ -36,7 +38,7 @@ public:
 	void           OnManipulatorDrag(IDisplayViewport*, ITransformManipulator*, const Vec2i&, const Vec3&, int);
 	void           OnManipulatorEndDrag(IDisplayViewport*, ITransformManipulator*);
 
-	virtual bool   GetManipulatorMatrix(RefCoordSys coordSys, Matrix34& tm) override;
+	virtual bool   GetManipulatorMatrix(Matrix34& tm) override;
 	virtual void   GetManipulatorPosition(Vec3& position) override;
 	virtual bool   IsManipulatorVisible() override;
 
@@ -110,7 +112,7 @@ bool CEditGravityVolumeTool::OnKeyDown(CViewport* view, uint32 nChar, uint32 nRe
 {
 	if (nChar == Qt::Key_Escape)
 	{
-		GetIEditorImpl()->SetEditTool(0);
+		GetIEditorImpl()->GetLevelEditorSharedState()->SetEditTool(nullptr);
 	}
 	else if (nChar == Qt::Key_Delete)
 	{
@@ -138,7 +140,7 @@ bool CEditGravityVolumeTool::OnKeyDown(CViewport* view, uint32 nChar, uint32 nRe
 
 void CEditGravityVolumeTool::OnManipulatorBeginDrag(IDisplayViewport* view, ITransformManipulator*, const Vec2i&, int flags)
 {
-	if (GetIEditorImpl()->GetEditMode() == eEditModeMove)
+	if (GetIEditorImpl()->GetLevelEditorSharedState()->GetEditMode() == CLevelEditorSharedState::EditMode::Move)
 	{
 		m_pointPos = m_GravityVolume->GetPoint(m_GravityVolume->GetSelectedPoint());
 
@@ -153,7 +155,7 @@ void CEditGravityVolumeTool::OnManipulatorBeginDrag(IDisplayViewport* view, ITra
 
 void CEditGravityVolumeTool::OnManipulatorDrag(IDisplayViewport* view, ITransformManipulator*, const Vec2i&, const Vec3& offset, int)
 {
-	if (GetIEditorImpl()->GetEditMode() == eEditModeMove)
+	if (GetIEditorImpl()->GetLevelEditorSharedState()->GetEditMode() == CLevelEditorSharedState::EditMode::Move)
 	{
 		Matrix34 m = m_GravityVolume->GetWorldTM();
 		m.Invert();
@@ -165,19 +167,19 @@ void CEditGravityVolumeTool::OnManipulatorDrag(IDisplayViewport* view, ITransfor
 
 void CEditGravityVolumeTool::OnManipulatorEndDrag(IDisplayViewport* view, ITransformManipulator*)
 {
-	if (GetIEditorImpl()->GetEditMode() == eEditModeMove)
+	if (GetIEditorImpl()->GetLevelEditorSharedState()->GetEditMode() == CLevelEditorSharedState::EditMode::Move)
 	{
 		m_modifying = false;
 		m_GravityVolume->CalcBBox();
 	}
 }
 
-bool CEditGravityVolumeTool::GetManipulatorMatrix(RefCoordSys coordSys, Matrix34& tm)
+bool CEditGravityVolumeTool::GetManipulatorMatrix(Matrix34& tm)
 {
 	if (!m_GravityVolume)
 		return false;
 
-	return m_GravityVolume->GetManipulatorMatrix(coordSys, tm);
+	return m_GravityVolume->GetManipulatorMatrix(tm);
 }
 
 void CEditGravityVolumeTool::GetManipulatorPosition(Vec3& position)
@@ -322,7 +324,7 @@ bool CEditGravityVolumeTool::MouseCallback(CViewport* view, EMouseEvent event, C
 			{
 				Vec3 wp = m_pointPos;
 				Vec3 newp = wp + v;
-				if (GetIEditorImpl()->IsSnapToTerrainEnabled())
+				if (gSnappingPreferences.IsSnapToTerrainEnabled())
 				{
 					// Keep height.
 					newp = view->MapViewToCP(point);
@@ -548,7 +550,7 @@ int CGravityVolumeObject::MouseCreateCallback(IDisplayViewport* view, EMouseEven
 {
 	if (event == eMouseMove || event == eMouseLDown || event == eMouseLDblClick)
 	{
-		Vec3 pos = ((CViewport*)view)->MapViewToCP(point, 0, true, GetCreationOffsetFromTerrain());
+		Vec3 pos = ((CViewport*)view)->MapViewToCP(point, CLevelEditorSharedState::Axis::None, true, GetCreationOffsetFromTerrain());
 
 		if (m_points.size() < 2)
 		{

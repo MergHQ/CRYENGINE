@@ -173,11 +173,11 @@ void AreaSolidObject::CreateInspectorWidgets(CInspectorWidgetCreator& creator)
 				{
 					GetIEditor()->ExecuteCommand("general.open_pane 'Modeling'");
 
-					GetIEditor()->SetEditTool("EditTool.AreaSolidTool", false);
-			  }), "edit", "^Edit");
-			  ar.closeBlock();
-			}
-	  });
+				GetIEditor()->GetLevelEditorSharedState()->SetEditTool("EditTool.AreaSolidTool", false);
+			}), "edit", "^Edit");
+			ar.closeBlock();
+		}
+	});
 }
 
 void AreaSolidObject::Serialize(CObjectArchive& ar)

@@ -108,7 +108,7 @@ if(OPTION_BUILD_CSHARP_WITH_CSC)
 	source_group("Resources" FILES ${Resources_FILES})
 
 
-	set(Serialization_FILES Serialization/CachedTypeInfo.cs Serialization/DomainSerializer.cs Serialization/ISerializedObject.cs Serialization/ObjectReader.cs Serialization/ObjectWriter.cs)
+	set(Serialization_FILES Serialization/CachedTypeInfo.cs Serialization/DomainSerializer.cs Serialization/ISerializedObject.cs Serialization/ObjectReader.cs Serialization/ObjectWriter.cs Serialization/SerializeValueAttribute.cs)
 	source_group("Serialization" FILES ${Serialization_FILES})
 
 

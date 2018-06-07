@@ -5,7 +5,7 @@
 #include "Viewport.h"
 #include "ViewManager.h"
 
-#include "EditMode/ObjectMode.h"
+#include <LevelEditor/LevelEditorSharedState.h>
 #include "Objects/ObjectLayerManager.h"
 
 #include "DragDrop.h"

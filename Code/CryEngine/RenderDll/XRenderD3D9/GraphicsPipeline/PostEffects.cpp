@@ -294,7 +294,7 @@ bool CPostEffectStage::Execute()
 
 		auto& pass = m_passAntialiasingDebug;
 
-		if (pass.InputChanged(pSrcTex->GetID(), pDstTex->GetID()))
+		if (pass.IsDirty())
 		{
 			static CCryNameTSCRC pszTechName("DebugPostAA");
 			pass.SetPrimitiveFlags(CRenderPrimitive::eFlags_ReflectShaderConstants_PS);
@@ -475,7 +475,7 @@ void CUnderwaterGodRaysPass::Execute(const CPostEffectContext& context)
 		{
 			auto& pass = m_passUnderwaterGodRaysGen[r];
 
-			if (pass.InputChanged(rtMask, pSrcBackBufferTexture->GetID()))
+			if (pass.IsDirty(rtMask))
 			{
 				static CCryNameTSCRC techName("UnderwaterGodRays");
 				pass.SetTechnique(CShaderMan::s_shPostEffects, techName, rtMask);
@@ -509,7 +509,7 @@ void CUnderwaterGodRaysPass::Execute(const CPostEffectContext& context)
 		CTexture* pSrcTex = context.GetSrcBackBufferTexture();
 		CTexture* pDstTex = context.GetDstBackBufferTexture();
 
-		if (pass.InputChanged(pDstTex->GetID(), pSrcTex->GetID()))
+		if (pass.IsDirty())
 		{
 			static CCryNameTSCRC techName("UnderwaterGodRaysFinal");
 			pass.SetPrimitiveFlags(CRenderPrimitive::eFlags_ReflectShaderConstants_PS);
@@ -571,7 +571,7 @@ void CWaterDropletsPass::Execute(const CPostEffectContext& context)
 	CTexture* pSrcTex = context.GetSrcBackBufferTexture();
 	CTexture* pDstTex = context.GetDstBackBufferTexture();
 
-	if (pass.InputChanged(pDstTex->GetID(), pSrcTex->GetID()))
+	if (pass.IsDirty())
 	{
 		static CCryNameTSCRC techName("WaterDroplets");
 		pass.SetPrimitiveFlags(CRenderPrimitive::eFlags_ReflectShaderConstants_PS);
@@ -635,7 +635,7 @@ void CWaterFlowPass::Execute(const CPostEffectContext& context)
 	CTexture* pSrcTex = context.GetSrcBackBufferTexture();
 	CTexture* pDstTex = context.GetDstBackBufferTexture();
 
-	if (pass.InputChanged(pDstTex->GetID(), pSrcTex->GetID()))
+	if (pass.IsDirty())
 	{
 		static CCryNameTSCRC techName("WaterFlow");
 		pass.SetPrimitiveFlags(CRenderPrimitive::eFlags_ReflectShaderConstants_PS);
@@ -695,7 +695,7 @@ void CSharpeningPass::Execute(const CPostEffectContext& context)
 	CTexture* pSrcTex = context.GetSrcBackBufferTexture();
 	CTexture* pDstTex = context.GetDstBackBufferTexture();
 
-	if (pass.InputChanged(pDstTex->GetID(), pSrcTex->GetID(), CRendererResources::s_ptexBackBufferScaled[0]->GetID()))
+	if (pass.IsDirty())
 	{
 		static CCryNameTSCRC techName("CA_Sharpening");
 		pass.SetPrimitiveFlags(CRenderPrimitive::eFlags_ReflectShaderConstants_PS);
@@ -758,7 +758,7 @@ void CBlurringPass::Execute(const CPostEffectContext& context)
 	CTexture* pSrcTex = context.GetSrcBackBufferTexture();
 	CTexture* pDstTex = context.GetDstBackBufferTexture();
 
-	if (pass.InputChanged(pDstTex->GetID(), pSrcTex->GetID(), CRendererResources::s_ptexBackBufferScaled[0]->GetID()))
+	if (pass.IsDirty())
 	{
 		static CCryNameTSCRC techName("BlurInterpolation");
 		pass.SetPrimitiveFlags(CRenderPrimitive::eFlags_ReflectShaderConstants_PS);
@@ -829,7 +829,7 @@ void CUberGamePostEffectPass::Execute(const CPostEffectContext& context)
 		CTexture* pSrcTex = context.GetSrcBackBufferTexture();
 		CTexture* pDstTex = context.GetDstBackBufferTexture();
 
-		if (pass.InputChanged(pDstTex->GetID(), pSrcTex->GetID(), pMaskTex->GetID(), postEffectMask))
+		if (pass.IsDirty(postEffectMask))
 		{
 			static CCryNameTSCRC techName("UberGamePostProcess");
 			pass.SetPrimitiveFlags(CRenderPrimitive::eFlags_ReflectShaderConstants_PS);
@@ -948,7 +948,7 @@ void CFlashBangPass::Execute(const CPostEffectContext& context)
 
 		CTexture* pDstTex = context.GetDstBackBufferTexture();
 
-		if (pass.InputChanged(pDstTex->GetID(), pSrcTex->GetID(), postEffect.m_pGhostImage->m_pTexture->GetID()))
+		if (pass.IsDirty())
 		{
 			static CCryNameTSCRC techName("FlashBang");
 			pass.SetPrimitiveFlags(CRenderPrimitive::eFlags_ReflectShaderConstants_PS);
@@ -1016,7 +1016,7 @@ void CPostStereoPass::Execute(const CPostEffectContext& context)
 
 		auto& pass = m_passNearMask;
 
-		if (pass.InputChanged(pTmpMaskTex->GetID()))
+		if (pass.IsDirty())
 		{
 			static CCryNameTSCRC techName("StereoNearMask");
 			pass.SetPrimitiveFlags(CRenderPrimitive::eFlags_ReflectShaderConstants_PS);
@@ -1049,7 +1049,7 @@ void CPostStereoPass::Execute(const CPostEffectContext& context)
 		auto* pLeftEyeTex = leftDc->GetCurrentBackBuffer();
 		auto* pRightEyeTex = rightDc->GetCurrentBackBuffer();
 
-		if (pass.InputChanged(pLeftEyeTex->GetID(), pRightEyeTex->GetID(), pSrcBackBufferTexture->GetID()))
+		if (pass.IsDirty())
 		{
 			static CCryNameTSCRC techName("PostStereo");
 			pass.SetPrimitiveFlags(CRenderPrimitive::eFlags_ReflectShaderConstants_PS);
@@ -1127,7 +1127,7 @@ void CKillCameraPass::Execute(const CPostEffectContext& context)
 		CTexture* pSrcTex = context.GetSrcBackBufferTexture();
 		CTexture* pDsttex = context.GetDstBackBufferTexture();
 
-		if (pass.InputChanged(pDsttex->GetID(), pSrcTex->GetID()))
+		if (pass.IsDirty())
 		{
 			static CCryNameTSCRC techName("KillCameraFilter");
 			pass.SetPrimitiveFlags(CRenderPrimitive::eFlags_ReflectShaderConstants_PS);
@@ -1271,7 +1271,7 @@ void CScreenBloodPass::Execute(const CPostEffectContext& context)
 
 	CTexture* pDstTex = context.GetDstBackBufferTexture();
 
-	if (pass.InputChanged(pDstTex->GetID()))
+	if (pass.IsDirty())
 	{
 		static CCryNameTSCRC techName("ScreenBlood");
 		pass.SetPrimitiveFlags(CRenderPrimitive::eFlags_ReflectShaderConstants_PS);
@@ -1335,7 +1335,7 @@ void CScreenFaderPass::Execute(const CPostEffectContext& context)
 
 	CTexture* pDstTex = context.GetDstBackBufferTexture();
 
-	if (pass.InputChanged(pDstTex->GetID()))
+	if (pass.IsDirty())
 	{
 		static CCryNameTSCRC techTexToTex("TextureToTextureTinted");
 		pass.SetPrimitiveFlags(CRenderPrimitive::eFlags_ReflectShaderConstants_PS);
@@ -1431,7 +1431,7 @@ void CHudSilhouettesPass::ExecuteDeferredSilhouettesOptimised(const CPostEffectC
 
 		auto& pass = m_passDeferredSilhouettesOptimised;
 		CTexture* pDstTex = context.GetDstBackBufferTexture();
-		if (pass.InputChanged(pDstTex->GetID(), CRendererResources::s_ptexBackBufferScaled[0]->GetID()))
+		if (pass.IsDirty())
 		{
 			static CCryNameTSCRC techName("DeferredSilhouettesOptimised");
 			pass.SetTechnique(CShaderMan::s_shPostEffectsGame, techName, 0);

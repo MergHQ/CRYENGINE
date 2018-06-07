@@ -52,7 +52,7 @@ struct PropertyRowPrefabLink::Picker : IPickObjectCallback
 		// check if row is still there. If not, we need to quit
 		if (row->refCount() == 1)
 		{
-			GetIEditorImpl()->CancelPick();
+			GetIEditorImpl()->GetLevelEditorSharedState()->CancelPick();
 			return false;
 		}
 
@@ -127,7 +127,7 @@ void PrefabLinkMenuHandler::onMenuClone()
 PropertyRowPrefabLink::~PropertyRowPrefabLink()
 {
 	if (picker_.get() && picker_->picking)
-		GetIEditorImpl()->CancelPick();
+		GetIEditorImpl()->GetLevelEditorSharedState()->CancelPick();
 }
 
 void PropertyRowPrefabLink::select()
@@ -145,7 +145,7 @@ void PropertyRowPrefabLink::pick(PropertyTree* tree)
 	if (!picker_)
 		picker_.reset(new Picker(this, tree));
 	picker_->picking = true;
-	GetIEditorImpl()->PickObject(picker_.get());
+	GetIEditorImpl()->GetLevelEditorSharedState()->PickObject(picker_.get());
 	tree->repaint();
 }
 

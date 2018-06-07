@@ -119,12 +119,19 @@ struct CCachedFileRawData : public CMultiThreadRefCount
 struct CZipPseudoFile
 {
 	CZipPseudoFile()
+		: m_nCurSeek(0)
+		, m_pFileData(nullptr)
+		, m_nFlags(0)
+		, m_fileSlotInUse(false)
 	{
-		Construct();
 	}
-	~CZipPseudoFile()
-	{
-	}
+	~CZipPseudoFile() = default;
+
+	CZipPseudoFile(const CZipPseudoFile&) = delete;
+	CZipPseudoFile& operator=(const CZipPseudoFile&) = delete;
+
+	CZipPseudoFile(CZipPseudoFile&&);
+	CZipPseudoFile& operator=(CZipPseudoFile&&);
 
 	enum
 	{
@@ -134,7 +141,7 @@ struct CZipPseudoFile
 
 	// this object must be constructed before usage
 	// nFlags is a combination of _O_... flags
-	void             Construct(CCachedFileData* pFileData = NULL, unsigned nFlags = 0);
+	bool             TryConstruct(CCachedFileData* pFileData, unsigned nFlags);
 	// this object needs to be freed manually when the CryPak shuts down..
 	void             Destruct();
 
@@ -161,11 +168,14 @@ struct CZipPseudoFile
 	{
 		pSizer->AddObject(m_pFileData);
 	}
+
 protected:
 	unsigned long      m_nCurSeek;
 	CCachedFileDataPtr m_pFileData;
 	// nFlags is a combination of _O_... flags
 	unsigned           m_nFlags;
+
+	std::atomic_bool   m_fileSlotInUse;
 };
 
 struct CIStringOrder
@@ -387,6 +397,9 @@ public:
 
 	CCryPak(IMiniLog* pLog, PakVars* pPakVars, const bool bLvlRes);
 	~CCryPak();
+
+	CCryPak(const CCryPak&) = delete;
+	CCryPak& operator=(const CCryPak&) = delete;
 
 	const PakVars* GetPakVars() const { return m_pPakVars; }
 

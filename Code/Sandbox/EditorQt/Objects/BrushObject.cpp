@@ -10,12 +10,12 @@
 #include "Geometry/EdMesh.h"
 #include "Material/Material.h"
 #include "Material/MaterialManager.h"
-#include "EditMode/SubObjectSelectionReferenceFrameCalculator.h"
 #include "Objects/ObjectLoader.h"
 #include "Objects/InspectorWidgetCreator.h"
 
 #include <Serialization/Decorators/EditToolButton.h>
 #include <Serialization/Decorators/EditorActionButton.h>
+#include <LevelEditor/Tools/SubObjectSelectionReferenceFrameCalculator.h>
 
 #include <Cry3DEngine/I3DEngine.h>
 #include <CryEntitySystem/IEntitySystem.h>
@@ -419,6 +419,34 @@ void CBrushObject::Display(CObjectRenderHelper& objRenderHelper)
 	}
 
 	DrawDefault(dc);
+}
+
+const ColorB& CBrushObject::GetSelectionPreviewHighlightColor()
+{
+	return gViewportSelectionPreferences.geometryHighlightColor;
+}
+
+void CBrushObject::DrawSelectionPreviewHighlight(SDisplayContext& dc)
+{
+	CBaseObject::DrawSelectionPreviewHighlight(dc);
+
+	if (dc.flags & DISPLAY_2D)
+		return;
+
+	ColorB color = GetSelectionPreviewHighlightColor();
+
+	if (GetParent())
+		color.a = (uint8)(gViewportSelectionPreferences.childObjectGeomAlpha * 255);
+
+	SGeometryDebugDrawInfo dd;
+	dd.tm = GetWorldTM();
+	dd.color = color;
+	dd.lineColor = color;
+	dd.bDrawInFront = true;
+
+	IStatObj* pStatObj = GetIStatObj();
+	if (pStatObj)
+		pStatObj->DebugDraw(dd);
 }
 
 //////////////////////////////////////////////////////////////////////////

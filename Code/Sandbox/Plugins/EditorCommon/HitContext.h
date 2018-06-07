@@ -7,6 +7,8 @@ class CBaseObject;
 struct IDisplayViewport;
 class CDeepSelection;
 
+#include "LevelEditor/LevelEditorSharedState.h"
+
 //! Flags used in HitContext for nSubObjFlags member.
 enum ESubObjHitFlags
 {
@@ -78,19 +80,19 @@ struct HitContext
 
 	//! true if this hit should have less priority then non weak hits.
 	//! (exp: Ray hit entity bounding box but not entity geometry.)
-	bool                     weakHit;
+	bool weakHit;
 	//! constrain axis if hit AxisGizmo.
-	int                      axis;
+	CLevelEditorSharedState::Axis axis;
 	//! distance to the object from src.
-	float                    dist;
+	float           dist;
 	//! object that have been hit.
-	CBaseObject*             object;
+	CBaseObject*    object;
 	//! gizmo object that have been hit.
-	CGizmo*                  gizmo;
+	CGizmo*         gizmo;
 	//! for deep selection mode
-	CDeepSelection*          pDeepSelection;
+	CDeepSelection* pDeepSelection;
 	//! For linking tool
-	const char*              name;
+	const char*     name;
 
 	HitContext()
 	{
@@ -100,7 +102,7 @@ struct HitContext
 		camera = 0;
 		point2d.x = 0;
 		point2d.y = 0;
-		axis = 0;
+		axis = CLevelEditorSharedState::Axis::None;
 		distanceTolerance = 0;
 		raySrc(0, 0, 0);
 		rayDir(0, 0, 0);

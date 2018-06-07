@@ -10,7 +10,7 @@ class CBaseObject;
 //! selection on crowded area with two different method.
 //! One is to show pop menu of candidate objects list. Another is the cyclic
 //! selection on pick clicking.
-class CDeepSelection : public _i_reference_target_t
+class EDITOR_COMMON_API CDeepSelection : public _i_reference_target_t
 {
 public:
 	//! Deep Selection Mode Definition

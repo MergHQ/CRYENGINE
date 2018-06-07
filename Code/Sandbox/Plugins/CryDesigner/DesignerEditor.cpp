@@ -247,7 +247,7 @@ bool DesignerEditor::MouseCallback(
 	if (m_Tool == eDesigner_Invalid)
 	{
 		//TODO: hack to support non modal operators - remove
-		GetIEditor()->SetEditTool(nullptr);
+		GetIEditor()->GetLevelEditorSharedState()->SetEditTool(nullptr);
 		return false;
 	}
 
@@ -736,17 +736,17 @@ void DesignerEditor::UpdateTMManipulator(
 	m_pManipulator->Invalidate();
 }
 
-bool DesignerEditor::GetManipulatorMatrix(RefCoordSys coordSys, Matrix34& tm)
+bool DesignerEditor::GetManipulatorMatrix(Matrix34& tm)
 {
 	DesignerSession* pSession = DesignerSession::GetInstance();
 	CBaseObject* pObject = pSession->GetBaseObject();
-
-	if (coordSys == COORDS_LOCAL)
+	CLevelEditorSharedState::CoordSystem coordSystem = GetIEditor()->GetLevelEditorSharedState()->GetCoordSystem();
+	if (coordSystem == CLevelEditorSharedState::CoordSystem::Local)
 	{
 		tm = m_manipulatorMatrix;
 		return true;
 	}
-	else if (coordSys == COORDS_PARENT)
+	else if (coordSystem == CLevelEditorSharedState::CoordSystem::Parent)
 	{
 		if (pObject)
 		{

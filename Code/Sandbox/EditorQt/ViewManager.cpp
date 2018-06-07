@@ -162,7 +162,7 @@ struct CViewportClassDesc_Perspective : public CViewportClassDesc
 {
 	CViewportClassDesc_Perspective() : CViewportClassDesc(ET_ViewportCamera, "Perspective") {}
 	virtual CViewport* CreateViewport() const { return new CLevelEditorViewport; };
-	virtual IPane*         CreatePane() const override
+	virtual IPane*     CreatePane() const override
 	{
 		CLevelEditorViewport* pViewport = (CLevelEditorViewport*)CreateViewport();
 		QViewportHeader* pHeader = new QViewportHeader(pViewport);
@@ -312,17 +312,6 @@ void CViewManager::IdleUpdate()
 		//if (m_viewports[i]->GetType() != ET_ViewportCamera || GetIEditorImpl()->GetDocument()->IsDocumentReady())
 		m_viewports[i]->Update();
 	}
-}
-
-//////////////////////////////////////////////////////////////////////////
-void CViewManager::SetAxisConstrain(int axis)
-{
-	for (CViewport*& viewport : m_viewports)
-	{
-		viewport->SetAxisConstrain(axis);
-	}
-
-	signalAxisConstrainChanged(axis);
 }
 
 //////////////////////////////////////////////////////////////////////////

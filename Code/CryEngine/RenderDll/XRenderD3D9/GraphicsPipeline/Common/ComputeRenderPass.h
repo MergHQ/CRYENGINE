@@ -30,11 +30,8 @@ public:
 public:
 	CComputeRenderPass(EPassFlags flags = eFlags_None);
 
-	bool InputChanged() const override final
-	{
-		return IsDirty();
-	}
-	using CRenderPassBase::InputChanged;
+	bool IsDirty() const override final;
+	using CRenderPassBase::IsDirty;
 
 	void SetOutputUAV(uint32 slot, CTexture* pTexture, ResourceViewHandle resourceViewID = EDefaultResourceViews::UnorderedAccess, ::EShaderStage shaderStages = EShaderStage_Compute);
 	void SetOutputUAV(uint32 slot, CGpuBuffer* pBuffer, ResourceViewHandle resourceViewID = EDefaultResourceViews::UnorderedAccess, ::EShaderStage shaderStages = EShaderStage_Compute);
@@ -49,8 +46,6 @@ public:
 	void SetConstant(const CCryNameR& paramName, const Vec4 &param);
 	void SetConstant(const CCryNameR& paramName, const Matrix44 &param);
 	void SetConstantArray(const CCryNameR& paramName, const Vec4 params[], uint32 numParams);
-
-	bool IsDirty() const;
 
 	void PrepareResourcesForUse(CDeviceCommandListRef RESTRICT_REFERENCE commandList);
 

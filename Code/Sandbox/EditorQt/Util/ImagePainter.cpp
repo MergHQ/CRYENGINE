@@ -65,10 +65,10 @@ float SEditorPaintBrush::GetMask(const float fX, const float fY) const
 
 SSurfaceTypeItem CImagePainter::LerpTerrainSurfaceType(const SSurfaceTypeItem& s0, const SSurfaceTypeItem& s1, float t)
 {
-	byte arrUnroll[CLayer::e_hole];
+	byte arrUnroll[e_layerIdHole];
 	memset(arrUnroll, 0, sizeof(arrUnroll));
 
-	int s_min = CLayer::e_hole - 1;
+	int s_min = e_layerIdHole - 1;
 	int s_max = 0;
 
 	for (int c = 0; c < SSurfaceTypeItem::kMaxSurfaceTypesNum; c++)

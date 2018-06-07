@@ -64,7 +64,7 @@ void CTerrainManager::SerializeSurfaceTypes(CXmlArchive& xmlAr, bool bUpdateEngi
 			sf->Serialize(ar);
 			AddSurfaceType(sf);
 
-			if (sf->GetSurfaceTypeID() == CLayer::e_undefined)  // For older levels.
+			if (sf->GetSurfaceTypeID() == e_layerIdUndefined)  // For older levels.
 			{
 				sf->AssignUnusedSurfaceTypeID();
 			}
@@ -95,7 +95,7 @@ void CTerrainManager::ConsolidateSurfaceTypes()
 	// We must consolidate the IDs after removing
 	for (size_t i = 0; i < m_surfaceTypes.size(); ++i)
 	{
-		int id = i < CLayer::e_undefined ? i : CLayer::e_undefined;
+		int id = i < e_layerIdUndefined ? i : e_layerIdUndefined;
 		m_surfaceTypes[i]->SetSurfaceTypeID(id);
 	}
 }
@@ -159,11 +159,11 @@ void CTerrainManager::RemoveLayer(CLayer* layer)
 {
 	SelectLayer(-1);
 
-	if (layer && layer->GetCurrentLayerId() != CLayer::e_undefined)
+	if (layer && layer->GetCurrentLayerId() != e_layerIdUndefined)
 	{
 		uint32 id = layer->GetCurrentLayerId();
 
-		if (id != CLayer::e_undefined)
+		if (id != e_layerIdUndefined)
 			m_heightmap.EraseLayerID(id);
 	}
 
@@ -246,7 +246,7 @@ void CTerrainManager::SerializeLayerSettings(CXmlArchive& xmlAr)
 		// If surface type ids are unassigned, assign them.
 		for (int i = 0; i < GetSurfaceTypeCount(); i++)
 		{
-			if (GetSurfaceTypePtr(i)->GetSurfaceTypeID() >= CLayer::e_undefined)
+			if (GetSurfaceTypePtr(i)->GetSurfaceTypeID() >= e_layerIdUndefined)
 				GetSurfaceTypePtr(i)->AssignUnusedSurfaceTypeID();
 		}
 
@@ -297,10 +297,10 @@ uint32 CTerrainManager::GetDetailIdLayerFromLayerId(const uint32 dwLayerId)
 		AddLayer(pNewLayer);
 	}
 
-	return CLayer::e_undefined;
+	return e_layerIdUndefined;
 }
 
-void CTerrainManager::MarkUsedLayerIds(bool bFree[CLayer::e_undefined]) const
+void CTerrainManager::MarkUsedLayerIds(bool bFree[e_layerIdUndefined]) const
 {
 	std::vector<CLayer*>::const_iterator it;
 
@@ -310,7 +310,7 @@ void CTerrainManager::MarkUsedLayerIds(bool bFree[CLayer::e_undefined]) const
 
 		const uint32 id = pLayer->GetCurrentLayerId();
 
-		if (id < CLayer::e_undefined)
+		if (id < e_layerIdUndefined)
 			bFree[id] = false;
 	}
 }

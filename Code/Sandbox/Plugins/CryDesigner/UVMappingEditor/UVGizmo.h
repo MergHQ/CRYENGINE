@@ -27,7 +27,7 @@ public:
 
 struct GizmoDraggingContext
 {
-	int   axis;
+	CLevelEditorSharedState::Axis axis;
 	int   mode;
 	Vec3  pos;
 	int   mouse_x, mouse_y;
@@ -57,7 +57,7 @@ public:
 	void        Hide(bool bHide) { m_bVisible = !bHide; }
 	void        SetMode(EGizmoMode mode);
 	void        Draw(SDisplayContext& dc);
-	bool        HitTest(QViewport* viewport, int x, int y, int& axis);
+	bool        HitTest(QViewport* viewport, int x, int y, CLevelEditorSharedState::Axis& axis);
 
 	void        OnViewportMouse(const SMouseEvent& ev) override;
 

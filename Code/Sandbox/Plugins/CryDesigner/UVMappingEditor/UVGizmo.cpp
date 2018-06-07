@@ -104,7 +104,7 @@ void UVGizmo::Draw(SDisplayContext& dc)
 	}
 }
 
-bool UVGizmo::HitTest(QViewport* viewport, int x, int y, int& axis)
+bool UVGizmo::HitTest(QViewport* viewport, int x, int y, CLevelEditorSharedState::Axis& axis)
 {
 	if (!m_bVisible)
 		return false;
@@ -123,19 +123,19 @@ bool UVGizmo::HitTest(QViewport* viewport, int x, int y, int& axis)
 	{
 		if (m_viewTranslateGizmo.HitTest(hc))
 		{
-			axis = AXIS_XY;
+			axis = CLevelEditorSharedState::Axis::XY;
 			m_lastHitGizmo = &m_viewTranslateGizmo;
 			return true;
 		}
 		if (m_xTranslateGizmo.HitTest(hc))
 		{
-			axis = AXIS_X;
+			axis = CLevelEditorSharedState::Axis::X;
 			m_lastHitGizmo = &m_xTranslateGizmo;
 			return true;
 		}
 		if (m_yTranslateGizmo.HitTest(hc))
 		{
-			axis = AXIS_Y;
+			axis = CLevelEditorSharedState::Axis::Y;
 			m_lastHitGizmo = &m_yTranslateGizmo;
 			return true;
 		}
@@ -144,19 +144,19 @@ bool UVGizmo::HitTest(QViewport* viewport, int x, int y, int& axis)
 	{
 		if (m_uniformScaleGizmo.HitTest(hc))
 		{
-			axis = AXIS_XY;
+			axis = CLevelEditorSharedState::Axis::XY;
 			m_lastHitGizmo = &m_uniformScaleGizmo;
 			return true;
 		}
 		if (m_xScaleGizmo.HitTest(hc))
 		{
-			axis = AXIS_X;
+			axis = CLevelEditorSharedState::Axis::X;
 			m_lastHitGizmo = &m_xScaleGizmo;
 			return true;
 		}
 		if (m_yScaleGizmo.HitTest(hc))
 		{
-			axis = AXIS_Y;
+			axis = CLevelEditorSharedState::Axis::Y;
 			m_lastHitGizmo = &m_yScaleGizmo;
 			return true;
 		}
@@ -165,7 +165,7 @@ bool UVGizmo::HitTest(QViewport* viewport, int x, int y, int& axis)
 	{
 		if (m_rotateGizmo.HitTest(hc))
 		{
-			axis = AXIS_XY;
+			axis = CLevelEditorSharedState::Axis::XY;
 			m_lastHitGizmo = &m_rotateGizmo;
 			return true;
 		}
@@ -180,7 +180,7 @@ void UVGizmo::OnViewportMouse(const SMouseEvent& ev_)
 	if (!ev.viewport || !m_bVisible)
 		return;
 
-	int axis;
+	CLevelEditorSharedState::Axis axis;
 	bool bHit = HitTest(ev.viewport, ev.x, ev.y, axis);
 
 	if (ev.type == SMouseEvent::TYPE_PRESS && ev.button == SMouseEvent::BUTTON_LEFT)
@@ -232,9 +232,9 @@ void UVGizmo::OnViewportMouse(const SMouseEvent& ev_)
 			if (m_Context.mode == CAxisHelper::MOVE_MODE)
 			{
 				offset = pos - m_Context.pos;
-				if (m_Context.axis == AXIS_X)
+				if (m_Context.axis == CLevelEditorSharedState::Axis::X)
 					offset.y = 0;
-				else if (m_Context.axis == AXIS_Y)
+				else if (m_Context.axis == CLevelEditorSharedState::Axis::Y)
 					offset.x = 0;
 			}
 			else if (m_Context.mode == CAxisHelper::ROTATE_CIRCLE_MODE)
@@ -277,9 +277,9 @@ void UVGizmo::OnViewportMouse(const SMouseEvent& ev_)
 			else if (m_Context.mode == CAxisHelper::SCALE_MODE)
 			{
 				offset = Vec3(1.0f + 0.01f * (ev.x - m_Context.mouse_x), 1.0f - 0.01f * (ev.y - m_Context.mouse_y), 1.0f);
-				if (m_Context.axis == AXIS_X)
+				if (m_Context.axis == CLevelEditorSharedState::Axis::X)
 					offset.y = 1.0f;
-				else if (m_Context.axis == AXIS_Y)
+				else if (m_Context.axis == CLevelEditorSharedState::Axis::Y)
 					offset.x = 1.0f;
 				else
 					offset.x = offset.y;

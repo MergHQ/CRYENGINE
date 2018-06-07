@@ -57,7 +57,7 @@ int CTagPoint::MouseCreateCallback(IDisplayViewport* view, EMouseEvent event, CP
 {
 	if (event == eMouseMove || event == eMouseLDown)
 	{
-		Vec3 pos = ((CViewport*)view)->MapViewToCP(point, 0, true, GetCreationOffsetFromTerrain());
+		Vec3 pos = ((CViewport*)view)->MapViewToCP(point, CLevelEditorSharedState::Axis::None, true, GetCreationOffsetFromTerrain());
 
 		SetPos(pos);
 		if (event == eMouseLDown)

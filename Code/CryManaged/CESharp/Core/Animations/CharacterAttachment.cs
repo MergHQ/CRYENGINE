@@ -35,6 +35,7 @@ namespace CryEngine.Animations
 			}
 		}
 
+		[SerializeValue]
 		internal IAttachment NativeHandle{ get; private set; }
 
 		internal CharacterAttachment(IAttachment nativeAttachment)

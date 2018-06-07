@@ -106,6 +106,8 @@ StackSizeKB:
 		<Thread name ="JobSystem_Worker_2" Affinity="4" StackSizeKB="256"/>
 		<Thread name ="JobSystem_Worker_3" Affinity="5" StackSizeKB="256"/>
 		
+		<Thread name ="JobSystem_Helper_*" StackSizeKB="256"/>
+		
 		<!-- [SYSTEM] - Physics -->
 		<Thread name ="Physics"  Affinity="2,3" StackSizeKB="128"/>	
 		<Thread name ="PhysicsWorkerThread_*" Affinity="4,5" StackSizeKB="128"/>
@@ -213,6 +215,8 @@ StackSizeKB:
 		<Thread name ="JobSystem_Worker_1" Affinity="2" StackSizeKB="256"/>
 		<Thread name ="JobSystem_Worker_2" Affinity="3" StackSizeKB="256"/>
 		<Thread name ="JobSystem_Worker_3" Affinity="5" StackSizeKB="256"/>
+		
+		<Thread name ="JobSystem_Helper_*" StackSizeKB="256"/>
 
 		<!-- [SYSTEM] - Physics -->
 		<Thread name ="Physics"  StackSizeKB="128"/>
@@ -289,7 +293,9 @@ StackSizeKB:
 		
 		<!-- [SYSTEM] - JobSystem -->
 		<Thread name ="JobSystem_Worker_* (Blocking)" StackSizeKB="64"/>
-		<Thread name ="JobSystem_Worker_*" StackSizeKB="256"/>		
+		<Thread name ="JobSystem_Worker_*" StackSizeKB="256"/>
+		
+		<Thread name ="JobSystem_Helper_*" StackSizeKB="256"/>
 		
 		<!-- [SYSTEM] - Physics -->
 		<Thread name ="Physics"  StackSizeKB="128"/>
@@ -405,6 +411,8 @@ StackSizeKB:
 		<!-- [SYSTEM] - JobSystem -->
 		<Thread name ="JobSystem_Worker_* (Blocking)" StackSizeKB="64"/>
 		<Thread name ="JobSystem_Worker_*" StackSizeKB="256"/>
+		
+		<Thread name ="JobSystem_Helper_*" StackSizeKB="256"/>
 
 		<!-- [SYSTEM] - Physics -->
 		<Thread name ="Physics"  StackSizeKB="128"/>
@@ -489,7 +497,8 @@ StackSizeKB:
 
 		<!-- [SYSTEM] - JobSystem -->
 		<Thread name ="JobSystem_Worker_* (Blocking)" StackSizeKB="64"/>
-		<Thread name ="JobSystem_Worker_*" StackSizeKB="256"/>
+		<Thread name ="JobSystem_Worker_*" StackSizeKB="256"/>		
+		<Thread name ="JobSystem_Helper_*" StackSizeKB="256"/>
 
 		<!-- [SYSTEM] - Physics -->
 		<Thread name ="Physics"  StackSizeKB="128"/>

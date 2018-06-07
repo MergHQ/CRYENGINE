@@ -1059,9 +1059,9 @@ void CParticleDialog::OnTvnSelchangedTree(NMHDR* pNMHDR, LRESULT* pResult)
 void CParticleDialog::OnPick()
 {
 	if (!CParticlePickCallback::IsActive())
-		GetIEditorImpl()->PickObject(new CParticlePickCallback);
+		GetIEditorImpl()->GetLevelEditorSharedState()->PickObject(new CParticlePickCallback);
 	else
-		GetIEditorImpl()->CancelPick();
+		GetIEditorImpl()->GetLevelEditorSharedState()->CancelPick();
 }
 
 //////////////////////////////////////////////////////////////////////////

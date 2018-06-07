@@ -42,6 +42,7 @@ private:
 	bool OnNativeEvent(void* message, long* result);
 	void OnBackgroundUpdateTimer();
 	void OnAutoSaveTimer();
+	void OnEditToolChanged();
 	void OnEditorNotifyEvent(EEditorNotifyEvent event);
 	void UpdateWindowTitle(const QString& levelPath = "");
 
@@ -62,8 +63,6 @@ private:
 	void closeEvent(QCloseEvent*);
 	void SaveConfig();
 	bool event(QEvent* event) override;
-
-	void OnAxisConstrainChanged(int axis);
 
 public:
 	static CEditorMainFrame*      m_pInstance;

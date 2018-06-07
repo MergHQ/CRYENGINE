@@ -672,7 +672,7 @@ void CTerrainTextureDialog::OnLoadTexture()
 	if (!m_pCurrentLayer)
 		return;
 
-	GetIEditorImpl()->SetEditTool(0);
+	GetIEditorImpl()->GetLevelEditorSharedState()->SetEditTool(nullptr);
 	////////////////////////////////////////////////////////////////////////
 	// Load a texture from a BMP file
 	////////////////////////////////////////////////////////////////////////

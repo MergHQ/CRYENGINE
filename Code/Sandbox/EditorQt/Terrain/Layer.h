@@ -8,12 +8,6 @@ class CSurfaceType;
 class SANDBOX_API CLayer : public CObject
 {
 public:
-	enum
-	{
-		e_undefined = 127,
-		e_hole,
-	};
-
 	CLayer();
 	virtual ~CLayer();
 

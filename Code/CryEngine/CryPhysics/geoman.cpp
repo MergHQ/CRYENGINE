@@ -118,23 +118,25 @@ int CGeomManager::AddRefGeometry(phys_geometry *pgeom)
 
 int CGeomManager::UnregisterGeometry(phys_geometry *pgeom)
 {
-	WriteLock lock(m_lockGeoman);
-	AtomicAdd(&pgeom->nRefCount, -1);
-	if (pgeom->nRefCount!=0) 
-		return pgeom->nRefCount;
-	if (((CGeometry*)pgeom->pGeom)->m_nRefCount<=1)
-		m_sizeExtGeoms += ((CGeometry*)pgeom->pGeom)->GetSizeFast();
-	if (bop_meshupdate *pmu = (bop_meshupdate*)pgeom->pGeom->GetForeignData(DATA_MESHUPDATE)) {
-		delete pmu; pgeom->pGeom->SetForeignData(0,DATA_MESHUPDATE);
+	IGeometry *pGeom = pgeom->pGeom;
+	{ WriteLock lock(m_lockGeoman);
+		AtomicAdd(&pgeom->nRefCount, -1);
+		if (pgeom->nRefCount!=0) 
+			return pgeom->nRefCount;
+		if (((CGeometry*)pgeom->pGeom)->m_nRefCount<=1)
+			m_sizeExtGeoms += ((CGeometry*)pgeom->pGeom)->GetSizeFast();
+		if (bop_meshupdate *pmu = (bop_meshupdate*)pgeom->pGeom->GetForeignData(DATA_MESHUPDATE)) {
+			delete pmu; pgeom->pGeom->SetForeignData(0,DATA_MESHUPDATE);
+		}
+		pgeom->pGeom = 0;
+		if (pgeom->pMatMapping) delete[] pgeom->pMatMapping;
+		pgeom->pMatMapping = 0;
+		//if (pgeom-m_pGeoms[m_nGeomChunks-1]==m_nGeomsInLastChunk-1) 
+		//	m_nGeomsInLastChunk--;
+		pgeom->pForeignData = m_pFreeGeom;
+		m_pFreeGeom = pgeom;
 	}
-	pgeom->pGeom->Release();
-	pgeom->pGeom = 0;
-	if (pgeom->pMatMapping) delete[] pgeom->pMatMapping;
-	pgeom->pMatMapping = 0;
-	//if (pgeom-m_pGeoms[m_nGeomChunks-1]==m_nGeomsInLastChunk-1) 
-	//	m_nGeomsInLastChunk--;
-	pgeom->pForeignData = m_pFreeGeom;
-	m_pFreeGeom = pgeom;
+	pGeom->Release();
 	return 0;
 }
 
@@ -145,8 +147,17 @@ void CGeometry::Release()
 		if(g_pPhysWorlds[0]) {
 			CGeomManager *pGeoman = (CGeomManager*)((IPhysicalWorld*)g_pPhysWorlds[0])->GetGeomManager();
 			pGeoman->m_sizeExtGeoms-=GetSizeFast(); 
+			if (m_iForeignData==DATA_UNSCALED_GEOM && m_pForeignData)
+				pGeoman->UnregisterGeometry((phys_geometry*)m_pForeignData);
 		}	delete this;
 	} 
+}
+
+void CGeometry::SetForeignData(void *pForeignData, int iForeignData) 
+{ 
+	if (m_iForeignData==DATA_UNSCALED_GEOM && m_pForeignData && g_pPhysWorlds[0])
+		((IPhysicalWorld*)g_pPhysWorlds[0])->GetGeomManager()->UnregisterGeometry((phys_geometry*)m_pForeignData);
+	m_pForeignData=pForeignData; m_iForeignData=iForeignData; 
 }
 
 void CGeomManager::FlushOldGeoms()

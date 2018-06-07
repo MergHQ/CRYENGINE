@@ -39,7 +39,7 @@ DesignerSettings gDesignerSettings;
 
 DesignerEditor* GetDesignerEditTool()
 {
-	CEditTool* pEditor = GetIEditor()->GetEditTool();
+	CEditTool* pEditor = GetIEditor()->GetLevelEditorSharedState()->GetEditTool();
 	if (pEditor && pEditor->IsKindOf(RUNTIME_CLASS(DesignerEditor)))
 		return (DesignerEditor*)pEditor;
 	return NULL;

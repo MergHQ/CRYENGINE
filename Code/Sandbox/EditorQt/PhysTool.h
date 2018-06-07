@@ -2,7 +2,7 @@
 
 #pragma once
 
-#include "EditTool.h"
+#include "LevelEditor/Tools/EditTool.h"
 
 class CPhysPullTool : public CEditTool
 {

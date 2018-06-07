@@ -2,7 +2,7 @@
 
 #pragma once
 
-#include "EditTool.h"
+#include "LevelEditor/Tools/EditTool.h"
 #include "Gizmos/ITransformManipulator.h"
 #include <CryCore/Containers/CryListenerSet.h>
 
@@ -80,7 +80,7 @@ public:
 
 	// ITransformManipulatorOwner interface
 	virtual void GetManipulatorPosition(Vec3& position) override;
-	virtual bool GetManipulatorMatrix(RefCoordSys coordSys, Matrix34& tm) override;
+	virtual bool GetManipulatorMatrix(Matrix34& tm) override;
 	virtual bool IsManipulatorVisible();
 
 private:

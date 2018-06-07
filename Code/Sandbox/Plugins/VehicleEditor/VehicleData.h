@@ -1,12 +1,9 @@
 // Copyright 2001-2018 Crytek GmbH / Crytek Group. All rights reserved.
 
-#ifndef __VehicleFactory_h__
-#define __VehicleFactory_h__
-
 #pragma once
 
-#include <vector>
 #include "Util/Variable.h"
+#include <vector>
 
 #define DEBUGDRAW_VEED 10
 
@@ -14,16 +11,16 @@ const static string VEHICLE_XML_PATH = "scripts/entities/vehicles/implementation
 const static string VEHICLE_XML_DEF = "scripts/entities/vehicles/def_vehicle.xml";
 const static string VEED_DEFAULTS = "scripts/entities/vehicles/veed_defaults.xml";
 
-IVariablePtr LoadDefaultData();
-
 /*!
  * Veed data structure holding a vehicle's data
  * This holds just a root variable and can be used to implement other logic.
  */
 struct IVehicleData
 {
+	virtual ~IVehicleData() {}
 	virtual IVariablePtr GetRoot() = 0;
 };
+
 class CVehicleData : public IVehicleData
 {
 public:
@@ -59,7 +56,6 @@ protected:
 	// static data
 	static XmlNodeRef m_xmlDef;
 	static IVariable* m_pDefaults;
-
 };
 
 /**
@@ -80,9 +76,5 @@ void       DumpVariable(IVariable* pVar, int level = 0);
 /**
  * Create a Variable tree from an element in the xml definition
  */
-IVariable* CreateVarFromDefNode(XmlNodeRef node);
 IVariable* CreateDefaultVar(const char* name, bool rec = false);
 IVariable* CreateDefaultChildOf(const char* name);
-
-#endif
-

@@ -229,11 +229,11 @@ class CThreadBackEndWorkerThread : public IThread
 	struct STempWorkerInfo
 	{
 		STempWorkerInfo()
-			: pJobStateToCheck(nullptr)
+			: doWork(false)
 		{
 		};
 
-		JobManager::SJobState* pJobStateToCheck;
+		bool doWork;
 		CryConditionVariable doWorkCnd;
 		CryMutexFast  doWorkLock;
 	};
@@ -245,7 +245,8 @@ public:
 	// Start accepting work on thread
 	virtual void ThreadEntry();
 
-	bool KickTempWorker(JobManager::SJobState* pJobState);
+	bool KickTempWorker();
+	bool StopTempWorker();
 	bool IsTempWorker() { return m_pTempWorkerInfo ? true : false; }
 
 	// Signals the thread that it should not accept anymore work and exit
@@ -253,7 +254,7 @@ public:
 private:
 	void DoWorkProducerConsumerQueue(SInfoBlock& rInfoBlock);
 
-	detail::CWorkStatusSyncVar&          m_rSemaphore;
+	detail::CWorkStatusSyncVar&          m_rWorkSyncVar;
 	JobManager::SJobQueue_ThreadBackEnd& m_rJobQueue;
 	CThreadBackEnd*                      m_pThreadBackend;
 
@@ -277,7 +278,8 @@ public:
 	void           Update() {}
 
 	void   AddJob(JobManager::CJobDelegator& crJob, const JobManager::TJobHandle cJobHandle, JobManager::SInfoBlock& rInfoBlock);
-	bool   AddTempWorkerUntilJobStateIsComplete(JobManager::SJobState& pJobState);
+	bool   KickTempWorker();
+	bool   StopTempWorker();
 	uint32 GetNumWorkerThreads() const { return m_nNumWorkerThreads; }
 
 	// returns the index to use for the frame profiler

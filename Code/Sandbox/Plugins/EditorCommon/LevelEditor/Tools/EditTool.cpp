@@ -2,6 +2,7 @@
 
 #include "StdAfx.h"
 #include "EditTool.h"
+#include "LevelEditor/LevelEditorSharedState.h"
 
 IMPLEMENT_DYNAMIC(CEditTool, CObject);
 
@@ -12,5 +13,5 @@ CEditTool::CEditTool()
 
 void CEditTool::Abort()
 {
-	GetIEditor()->SetEditTool(nullptr);
+	GetIEditor()->GetLevelEditorSharedState()->SetEditTool(nullptr);
 }

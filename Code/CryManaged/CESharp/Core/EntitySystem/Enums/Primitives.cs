@@ -8,36 +8,28 @@ namespace CryEngine
 	public enum Primitives
 	{
 		/// <summary>
-		/// A 2x2x0.125 box.
+		/// A 1x1x0.25 box.
 		/// </summary>
 		Box,
 		/// <summary>
-		/// A 2x2x2 cube.
+		/// A 1x1x1 cube.
 		/// </summary>
 		Cube,
 		/// <summary>
-		/// A 0.25x0.25x0.25 cube.
-		/// </summary>
-		CubeSmall,
-		/// <summary>
-		/// A cylinder with a diameter of 2 units and a height of 2 units.
+		/// A cylinder with a diameter of 1 unit and a height of 1 unit.
 		/// </summary>
 		Cylinder,
 		/// <summary>
 		/// A 1x1 plane.
 		/// </summary>
-		PlaneSmall,
+		Plane,
 		/// <summary>
-		/// A pyramid shape of 2x2x2.
+		/// A pyramid shape of 1x1x0.75.
 		/// </summary>
 		Pyramid,
 		/// <summary>
-		/// A sphere with a diameter of 2 units.
+		/// A sphere with a diameter of 1 unit.
 		/// </summary>
-		Sphere,
-		/// <summary>
-		/// A sphere with a diameter of 0.25 units.
-		/// </summary>
-		SphereSmall
+		Sphere
 	}
 }

@@ -5,7 +5,6 @@
 
 #include "Viewport.h"
 #include "RenderViewport.h"
-#include "EditMode/ObjectMode.h"
 
 #include "ViewManager.h"
 #include <LevelEditor/LevelEditorSharedState.h>
@@ -40,7 +39,6 @@
 #include "QT/QtMainFrame.h"
 #include "Qt/QtMainFrameWidgets.h"
 #include "AlignTool.h"
-#include "PickObjectTool.h"
 #include "EditMode/VertexSnappingModeTool.h"
 #include "PanelDisplayRender.h"
 #include "CryEdit.h"
@@ -48,6 +46,9 @@
 
 #include <CryIcon.h>
 #include <EditorStyleHelper.h>
+#include <LevelEditor/LevelEditorSharedState.h>
+#include <LevelEditor/Tools/PickObjectTool.h>
+#include <LevelEditor/Tools/ObjectMode.h>
 #include "LevelEditor/LevelEditorViewport.h"
 
 static QColor Interpolate(const QColor& a, const QColor& b, float k)
@@ -343,14 +344,14 @@ QTerrainSnappingMenu::QTerrainSnappingMenu(QToolButton* pToolButton, QViewportHe
 	if (pTerrainSnap)
 	{
 		pTerrainSnap->setCheckable(true);
-		pTerrainSnap->setChecked(GetIEditorImpl()->IsSnapToTerrainEnabled());
+		pTerrainSnap->setChecked(gSnappingPreferences.IsSnapToTerrainEnabled());
 		connect(CEditorMainFrame::GetInstance()->m_levelEditor.get(), &CLevelEditor::TerrainSnappingEnabled, this, &QTerrainSnappingMenu::RefreshParentToolButton);
 	}
 	QAction* pGeometrySnap = AddCommandAction("level.toggle_snap_to_geometry", pViewportHeader);
 	if (pGeometrySnap)
 	{
 		pGeometrySnap->setCheckable(true);
-		pGeometrySnap->setChecked(GetIEditorImpl()->IsSnapToGeometryEnabled());
+		pGeometrySnap->setChecked(gSnappingPreferences.IsSnapToGeometryEnabled());
 		connect(CEditorMainFrame::GetInstance()->m_levelEditor.get(), &CLevelEditor::GeometrySnappingEnabled, this, &QTerrainSnappingMenu::RefreshParentToolButton);
 	}
 	addSeparator();
@@ -358,7 +359,7 @@ QTerrainSnappingMenu::QTerrainSnappingMenu(QToolButton* pToolButton, QViewportHe
 	if (pSnapNormal)
 	{
 		pSnapNormal->setCheckable(true);
-		pSnapNormal->setChecked(GetIEditorImpl()->IsSnapToNormalEnabled());
+		pSnapNormal->setChecked(gSnappingPreferences.IsSnapToNormalEnabled());
 		connect(CEditorMainFrame::GetInstance()->m_levelEditor.get(), &CLevelEditor::SurfaceNormalSnappingEnabled, this, &QTerrainSnappingMenu::RefreshParentToolButton);
 	}
 
@@ -385,20 +386,20 @@ void QTerrainSnappingMenu::RefreshParentToolButton()
 {
 	m_pParentToolButton->setChecked(false);
 
-	if (GetIEditorImpl()->IsSnapToTerrainEnabled())
+	if (gSnappingPreferences.IsSnapToTerrainEnabled())
 	{
 		m_pParentToolButton->setChecked(true);
-		if (GetIEditorImpl()->IsSnapToNormalEnabled())
+		if (gSnappingPreferences.IsSnapToNormalEnabled())
 		{
 			m_pParentToolButton->setIcon(CryIcon("icons:common/viewport-snap-terrain-normal.ico"));
 			return;
 		}
 		m_pParentToolButton->setIcon(CryIcon("icons:common/viewport-snap-terrain.ico"));
 	}
-	else if (GetIEditorImpl()->IsSnapToGeometryEnabled())
+	else if (gSnappingPreferences.IsSnapToGeometryEnabled())
 	{
 		m_pParentToolButton->setChecked(true);
-		if (GetIEditorImpl()->IsSnapToNormalEnabled())
+		if (gSnappingPreferences.IsSnapToNormalEnabled())
 		{
 			m_pParentToolButton->setIcon(CryIcon("icons:common/viewport-snap-geometry-normal.ico"));
 			return;
@@ -432,6 +433,7 @@ QViewportHeader::QViewportHeader(CLevelEditorViewport* pViewport)
 	m_viewport = pViewport;
 
 	GetIEditorImpl()->RegisterNotifyListener(this);
+	GetIEditorImpl()->GetLevelEditorSharedState()->signalEditToolChanged.Connect(this, &QViewportHeader::OnEditToolChanged);
 	CEditorCommandManager* pCommandManager = GetIEditorImpl()->GetCommandManager();
 
 	setContentsMargins(0, 0, 0, 0);
@@ -476,7 +478,7 @@ QViewportHeader::QViewportHeader(CLevelEditorViewport* pViewport)
 	m_currentToolExit->setIcon(CryIcon("icons:General/Close.ico"));
 	connect(m_currentToolExit, &QToolButton::clicked, []()
 	{
-		GetIEditorImpl()->SetEditTool(0);
+		GetIEditorImpl()->GetLevelEditorSharedState()->SetEditTool(nullptr);
 	});
 	m_currentToolText->setVisible(false);
 	m_currentToolExit->setVisible(false);
@@ -568,6 +570,7 @@ QViewportHeader::~QViewportHeader()
 {
 	ICVar* pCVar = gEnv->pConsole->GetCVar("r_displayInfo");
 	pCVar->RemoveOnChangeFunctor(m_displayInfoFuncIdx);
+	GetIEditorImpl()->GetLevelEditorSharedState()->signalEditToolChanged.DisconnectObject(this);
 	GetIEditorImpl()->UnregisterNotifyListener(this);
 	gViewportPreferences.signalSettingsChanged.DisconnectById((uintptr_t)this);
 }
@@ -853,6 +856,32 @@ void QViewportHeader::OnMenuResolutionCustomClear()
 	}
 }
 
+void QViewportHeader::OnEditToolChanged()
+{
+	if (!GetIEditorImpl()->GetLevelEditorSharedState()->GetEditTool()->IsKindOf(RUNTIME_CLASS(CVertexSnappingModeTool)))
+	{
+		m_vertexSnapping->setChecked(false);
+	}
+
+	if (!GetIEditorImpl()->GetLevelEditorSharedState()->GetEditTool()->IsKindOf(RUNTIME_CLASS(CPickObjectTool)))
+	{
+		m_pivotSnapping->setChecked(false);
+	}
+
+	// hide the current tool text and button if we're in the root tool mode
+	if (!GetIEditorImpl()->GetLevelEditorSharedState()->GetEditTool() || GetIEditorImpl()->GetLevelEditorSharedState()->GetEditTool()->IsKindOf(RUNTIME_CLASS(CObjectMode)))
+	{
+		m_currentToolText->setVisible(false);
+		m_currentToolExit->setVisible(false);
+	}
+	else
+	{
+		m_currentToolText->setVisible(true);
+		m_currentToolExit->setVisible(true);
+		m_currentToolText->setText(GetIEditorImpl()->GetLevelEditorSharedState()->GetEditTool()->GetDisplayName().c_str());
+	}
+}
+
 //////////////////////////////////////////////////////////////////////////
 void QViewportHeader::OnEditorNotifyEvent(EEditorNotifyEvent event)
 {
@@ -860,31 +889,6 @@ void QViewportHeader::OnEditorNotifyEvent(EEditorNotifyEvent event)
 	{
 	case eNotify_OnDisplayRenderUpdate:
 		m_toggleHelpersBtn->setChecked(GetIEditor()->IsHelpersDisplayed());
-		break;
-	case eNotify_OnEditToolEndChange:
-		if (!GetIEditorImpl()->GetEditTool()->IsKindOf(RUNTIME_CLASS(CVertexSnappingModeTool)))
-		{
-			m_vertexSnapping->setChecked(false);
-		}
-
-		if (!GetIEditorImpl()->GetEditTool()->IsKindOf(RUNTIME_CLASS(CPickObjectTool)))
-		{
-			m_pivotSnapping->setChecked(false);
-		}
-
-		// hide the current tool text and button if we're in the root tool mode
-		if (!GetIEditorImpl()->GetEditTool() || GetIEditorImpl()->GetEditTool()->IsKindOf(RUNTIME_CLASS(CObjectMode)))
-		{
-			m_currentToolText->setVisible(false);
-			m_currentToolExit->setVisible(false);
-		}
-		else
-		{
-			m_currentToolText->setVisible(true);
-			m_currentToolExit->setVisible(true);
-			m_currentToolText->setText(GetIEditorImpl()->GetEditTool()->GetDisplayName().c_str());
-		}
-
 		break;
 
 	case eNotify_CameraChanged:

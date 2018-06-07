@@ -6,6 +6,7 @@
 #include <malloc.h>
 #include "Controls/QuestionDialog.h"
 #include "FileDialogs/SystemFileDialog.h"
+#include "LevelEditor/LevelEditorSharedState.h"
 
 #include <QDesktopServices>
 #include <QJsonDocument>
@@ -182,16 +183,7 @@ Vec3 ConvertToTextPos(const Vec3& pos, const Matrix34& tm, IDisplayViewport* vie
 	if (bDisplay2D)
 	{
 		Vec3 world_pos = tm.TransformPoint(pos);
-		int width = 0;
-		int height = 0;
-		view->GetDimensions(&width, &height);
-
 		POINT screen_pos = view->WorldToView(world_pos);
-
-		IDisplayViewport::EAxis axis = IDisplayViewport::AXIS_NONE;
-		bool b2D;
-		view->GetPerpendicularAxis(&axis, &b2D);
-
 		return Vec3((float)screen_pos.x, (float)screen_pos.y, 0);
 	}
 	else

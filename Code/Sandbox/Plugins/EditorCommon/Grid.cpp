@@ -125,10 +125,59 @@ Matrix34 SSnappingPreferences::GetMatrix() const
 {
 	Matrix34 tm = Matrix34::CreateIdentity();
 	const ISelectionGroup* sel = GetIEditor()->GetISelectionGroup();
-	sel->GetManipulatorMatrix(GetIEditor()->GetReferenceCoordSys(), tm);
+	sel->GetManipulatorMatrix(tm);
 	tm.SetTranslation(Vec3(0, 0, 0));
 
 	return tm;
+}
+
+uint16 SSnappingPreferences::GetSnapMode() const
+{
+	return m_snapModeFlags;
+}
+
+void SSnappingPreferences::EnableSnapToTerrain(bool bEnable)
+{
+	m_snapModeFlags &= ~eTerrain;
+	if (bEnable) // Disable geometry before enabling terrain snapping
+		m_snapModeFlags = (m_snapModeFlags & ~eGeometry) | bEnable * eTerrain;
+}
+
+bool SSnappingPreferences::IsSnapToTerrainEnabled() const
+{
+	return m_snapModeFlags & eTerrain;
+}
+
+void SSnappingPreferences::EnableSnapToGeometry(bool bEnable)
+{
+	m_snapModeFlags &= ~eGeometry;
+	if (bEnable) // Disable terrain before enabling geometry snapping
+		m_snapModeFlags = (m_snapModeFlags & ~eTerrain) | bEnable * eGeometry;
+}
+
+bool SSnappingPreferences::IsSnapToGeometryEnabled() const
+{
+	return m_snapModeFlags & eGeometry;
+}
+
+void SSnappingPreferences::EnableSnapToNormal(bool bEnable)
+{
+	m_snapModeFlags = (m_snapModeFlags & ~eSurfaceNormal) | bEnable * eSurfaceNormal;
+}
+
+bool SSnappingPreferences::IsSnapToNormalEnabled() const
+{
+	return m_snapModeFlags & eSurfaceNormal;
+}
+
+void SSnappingPreferences::EnablePivotSnapping(bool bEnable)
+{
+	m_bPivotSnappingEnabled = bEnable;
+}
+
+bool SSnappingPreferences::IsPivotSnappingEnabled() const
+{
+	return m_bPivotSnappingEnabled;
 }
 
 namespace Private_SnapCommands

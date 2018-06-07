@@ -330,7 +330,7 @@ void CDepthReadbackStage::ExecutePasses(float sourceWidth, float sourceHeight, f
 		pass.SetConstant(psParam0Name, psParams0, eHWSC_Pixel);
 		pass.SetConstant(psParam1Name, psParams1, eHWSC_Pixel);
 
-		if (pass.InputChanged())
+		if (pass.IsDirty())
 			return false;
 
 		pass.Execute();

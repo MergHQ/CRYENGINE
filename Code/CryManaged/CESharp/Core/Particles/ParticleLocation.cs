@@ -43,6 +43,7 @@ namespace CryEngine
 			}
 		}
 
+		[SerializeValue]
 		internal ParticleLoc NativeHandle { get; private set; }
 
 		internal ParticleLocation(ParticleLoc nativeHandle)

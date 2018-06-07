@@ -17,30 +17,27 @@
 using Serialization::SEditToolButton;
 using Serialization::SEditToolButtonPtr;
 
-class PropertyRowSEditToolButton : public PropertyRow, public IEditorNotifyListener
+class PropertyRowSEditToolButton : public PropertyRow
 {
 public:
 	PropertyRowSEditToolButton() : minimalWidth_()
 	{
-		IEditor* editor = GetIEditor();
-		if (editor)
-			editor->RegisterNotifyListener(this);
+		IEditor* pEditor = GetIEditor();
+		if (pEditor)
+			pEditor->GetLevelEditorSharedState()->signalEditToolChanged.Connect(this, &PropertyRowSEditToolButton::OnEditToolChanged);
 	}
 
 	~PropertyRowSEditToolButton()
 	{
-		IEditor* editor = GetIEditor();
-		if (editor)
-			editor->UnregisterNotifyListener(this);
+		IEditor* pEditor = GetIEditor();
+		if (pEditor)
+			pEditor->GetLevelEditorSharedState()->signalEditToolChanged.DisconnectObject(this);
 	}
 
-	void OnEditorNotifyEvent(EEditorNotifyEvent event)
+	void OnEditToolChanged()
 	{
-		if (event == eNotify_OnEditToolEndChange)
-		{
-			if (value_)
-				value_->DetermineCheckedState();
-		}
+		if (value_)
+			value_->DetermineCheckedState();
 	}
 
 	bool isLeaf() const override       { return true; }

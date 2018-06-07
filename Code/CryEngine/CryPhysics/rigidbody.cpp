@@ -810,9 +810,16 @@ int PrepContacts(int iCaller, int &nConstraintsRes, SEntityGrid* &pgridRes, int 
 			if (!(cnt.flags & contact_angular)) {
 				cnt.pbody[0]->GetContactMatrix(cnt.pt[0]-cnt.pbody[0]->pos, K0);
 				cnt.pbody[1]->GetContactMatrix(AtoB(cnt.pt[1])-cnt.pbody[1]->pos, K1);
-			} else {
+			} else if (!((cnt.pbody[0]->flags | cnt.pbody[1]->flags) & rb_articulated)) {
 				K0 = cnt.pbody[0]->Iinv;
 				K1 = cnt.pbody[1]->Iinv;
+			}	else {
+				if (cnt.pbody[0]->flags & rb_articulated)
+					((ArticulatedBody*)cnt.pbody[0])->GetContactMatrixRot(K0, cnt.pent[0]==cnt.pent[1] ? (ArticulatedBody*)cnt.pbody[1] : nullptr);
+				else K0 = cnt.pbody[0]->Iinv;
+				if (cnt.pbody[1]->flags & rb_articulated)
+					((ArticulatedBody*)cnt.pbody[1])->GetContactMatrixRot(K1, cnt.pent[0]==cnt.pent[1] ? (ArticulatedBody*)cnt.pbody[0] : nullptr);
+				else K1 = cnt.pbody[1]->Iinv;
 			}
 			g_ContactsRB[i].K = AtoG(K0) + BtoG(K1);
 		}

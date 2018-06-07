@@ -248,7 +248,7 @@ Vec3 CVertexSnappingModeTool::GetCubeSize(IDisplayViewport* pView, const Vec3& p
 	return gVertexSnappingPreferences.vertexCubeSize() * Vec3(fScreenFactor, fScreenFactor, fScreenFactor);
 }
 
-void CVertexSnappingModeTool::Display(struct SDisplayContext& dc)
+void CVertexSnappingModeTool::Display(SDisplayContext& dc)
 {
 	const ColorB SnappedColor(0xFF00FF00);
 	const ColorB PivotColor(0xFF2020FF);

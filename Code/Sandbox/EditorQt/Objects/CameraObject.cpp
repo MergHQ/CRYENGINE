@@ -189,7 +189,7 @@ int CCameraObject::MouseCreateCallback(IDisplayViewport* view, EMouseEvent event
 {
 	if (event == eMouseMove || event == eMouseLDown || event == eMouseLUp)
 	{
-		Vec3 pos = ((CViewport*)view)->MapViewToCP(point, 0, true, GetCreationOffsetFromTerrain());
+		Vec3 pos = ((CViewport*)view)->MapViewToCP(point, CLevelEditorSharedState::Axis::None, true, GetCreationOffsetFromTerrain());
 
 		if (m_creationStep == 1)
 		{

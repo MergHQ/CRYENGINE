@@ -46,7 +46,7 @@ bool CVehiclePart::Init(CBaseObject* prev, const string& file)
 	return res;
 }
 
-void CVehiclePart::DrawRotationLimits(SDisplayContext& dc, IVariable* pSpeed, IVariable* pLimits, IVariable* pHelper, int axis)
+void CVehiclePart::DrawRotationLimits(SDisplayContext& dc, IVariable* pSpeed, IVariable* pLimits, IVariable* pHelper, CLevelEditorSharedState::Axis axis)
 {
 	if (pSpeed)
 	{
@@ -101,7 +101,7 @@ void CVehiclePart::DrawRotationLimits(SDisplayContext& dc, IVariable* pSpeed, IV
 
 				switch (axis)
 				{
-				case AXIS_X:
+				case CLevelEditorSharedState::Axis::X:
 					angleMin = DEG2RAD(max > 0 ? max : 360 + max); // angles for x-rotation
 					angleMax = DEG2RAD(min < 0 ? 360 + min : min);
 
@@ -114,7 +114,7 @@ void CVehiclePart::DrawRotationLimits(SDisplayContext& dc, IVariable* pSpeed, IV
 
 					break;
 
-				case AXIS_Z:
+				case CLevelEditorSharedState::Axis::Z:
 					angleMin = DEG2RAD(min < 0 ? -min : 360 - min); // angles for z-rotation
 					angleMax = DEG2RAD(max > 0 ? 360 - max : -max);
 
@@ -138,11 +138,11 @@ void CVehiclePart::DrawRotationLimits(SDisplayContext& dc, IVariable* pSpeed, IV
 				{
 					switch (axis)
 					{
-					case AXIS_X:
+					case CLevelEditorSharedState::Axis::X:
 						p1.y = sourcePos.y + radius * cos(angle);
 						p1.z = sourcePos.z + radius * sin(angle);
 						break;
-					case AXIS_Z:
+					case CLevelEditorSharedState::Axis::Z:
 						p1.x = sourcePos.x + radius * -sin(angle);
 						p1.y = sourcePos.y + radius * cos(angle);
 						break;
@@ -230,8 +230,8 @@ void CVehiclePart::Display(CObjectRenderHelper& objRenderHelper)
 	else
 	{
 		// draw rotation limits, if available
-		DrawRotationLimits(dc, m_pYawSpeed, m_pYawLimits, m_pHelper, AXIS_Z);
-		DrawRotationLimits(dc, m_pPitchSpeed, m_pPitchLimits, m_pHelper, AXIS_X);
+		DrawRotationLimits(dc, m_pYawSpeed, m_pYawLimits, m_pHelper, CLevelEditorSharedState::Axis::Z);
+		DrawRotationLimits(dc, m_pPitchSpeed, m_pPitchLimits, m_pHelper, CLevelEditorSharedState::Axis::X);
 	}
 
 	DrawDefault(dc);

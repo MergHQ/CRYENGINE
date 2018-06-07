@@ -32,7 +32,7 @@ CLayer::CLayer() : m_cLayerFilterColor(1, 1, 1), m_fLayerTiling(1), m_fSpecularA
 	m_iInstanceCount++;
 
 	m_bAutoGen = true;
-	m_dwLayerId = e_undefined;    // not set yet
+	m_dwLayerId = e_layerIdUndefined;    // not set yet
 
 	// Create a layer name based on the instance count
 	m_strLayerName.Format("Layer %i", m_iInstanceCount);
@@ -74,17 +74,17 @@ uint32 CLayer::GetCurrentLayerId()
 
 uint32 CLayer::GetOrRequestLayerId()
 {
-	if (m_dwLayerId == e_undefined)    // not set yet
+	if (m_dwLayerId == e_layerIdUndefined)    // not set yet
 	{
-		bool bFree[e_undefined];
+		bool bFree[e_layerIdUndefined];
 
-		for (uint32 id = 0; id < e_undefined; id++)
+		for (uint32 id = 0; id < e_layerIdUndefined; id++)
 			bFree[id] = true;
 
 		GetIEditorImpl()->GetTerrainManager()->MarkUsedLayerIds(bFree);
 		GetIEditorImpl()->GetHeightmap()->MarkUsedLayerIds(bFree);
 
-		for (uint32 id = 0; id < e_undefined; id++)
+		for (uint32 id = 0; id < e_layerIdUndefined; id++)
 			if (bFree[id])
 			{
 				m_dwLayerId = id;
@@ -94,7 +94,7 @@ uint32 CLayer::GetOrRequestLayerId()
 			}
 	}
 
-	assert(m_dwLayerId < e_undefined);
+	assert(m_dwLayerId < e_layerIdUndefined);
 
 	return m_dwLayerId;
 }
@@ -183,10 +183,10 @@ void CLayer::Serialize(CXmlArchive& xmlAr)
 		layer->getAttr("InUse", m_bLayerInUse);
 		layer->getAttr("AutoGenMask", m_bAutoGen);
 
-		if (m_dwLayerId > e_undefined)
+		if (m_dwLayerId > e_layerIdUndefined)
 		{
 			CLogFile::WriteLine("ERROR: LayerId is out of range - value was clamped");
-			m_dwLayerId = e_undefined;
+			m_dwLayerId = e_layerIdUndefined;
 		}
 
 		{
@@ -1349,9 +1349,9 @@ uint8& CLayer::GetSector(CPoint sector)
 
 void CLayer::SetLayerId(const uint32 dwLayerId)
 {
-	assert(dwLayerId < e_undefined);
+	assert(dwLayerId < e_layerIdUndefined);
 
-	m_dwLayerId = dwLayerId < e_undefined ? dwLayerId : e_undefined;
+	m_dwLayerId = dwLayerId < e_layerIdUndefined ? dwLayerId : e_layerIdUndefined;
 
 	//	CryLog("SetLayerId() '%s' m_dwLayerId=%d",GetLayerName(),m_dwLayerId);
 }
@@ -1537,7 +1537,7 @@ int CLayer::GetEngineSurfaceTypeId() const
 {
 	if (m_pSurfaceType)
 		return m_pSurfaceType->GetSurfaceTypeID();
-	return e_undefined;
+	return e_layerIdUndefined;
 }
 
 void CLayer::SetSelected(bool bSelected)

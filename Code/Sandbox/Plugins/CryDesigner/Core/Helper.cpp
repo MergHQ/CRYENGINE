@@ -227,29 +227,31 @@ void RemovePolygonWithoutSpecificFlagsFromList(std::vector<PolygonPtr>& polygonL
 
 void SwitchToDesignerToolForObject(CBaseObject * pObj)
 {
-	if(pObj)
+	CLevelEditorSharedState* pLevelEditor = GetIEditor()->GetLevelEditorSharedState();
+
+	if (pObj)
 	{
-		CEditTool* pEditor = GetIEditor()->GetEditTool();
+		CEditTool* pEditTool = pLevelEditor->GetEditTool();
 
 		if (pObj->IsKindOf(RUNTIME_CLASS(DesignerObject)))
 		{
-			if (!pEditor || pEditor->GetRuntimeClass() != RUNTIME_CLASS(DesignerEditor))
-				GetIEditor()->SetEditTool("EditTool.DesignerEditor", false);
+			if (!pEditTool || pEditTool->GetRuntimeClass() != RUNTIME_CLASS(DesignerEditor))
+				pLevelEditor->SetEditTool("EditTool.DesignerEditor", false);
 		}
 		else if (pObj->IsKindOf(RUNTIME_CLASS(AreaSolidObject)))
 		{
-			if (!pEditor || pEditor->GetRuntimeClass() != RUNTIME_CLASS(AreaSolidTool))
-				GetIEditor()->SetEditTool("EditTool.AreaSolidTool", false);
+			if (!pEditTool || pEditTool->GetRuntimeClass() != RUNTIME_CLASS(AreaSolidTool))
+				GetIEditor()->GetLevelEditorSharedState()->SetEditTool("EditTool.AreaSolidTool", false);
 		}
 		else if (pObj->IsKindOf(RUNTIME_CLASS(ClipVolumeObject)))
 		{
-			if (!pEditor || pEditor->GetRuntimeClass() != RUNTIME_CLASS(ClipVolumeTool))
-				GetIEditor()->SetEditTool("EditTool.ClipVolumeTool", false);
+			if (!pEditTool || pEditTool->GetRuntimeClass() != RUNTIME_CLASS(ClipVolumeTool))
+				pLevelEditor->SetEditTool("EditTool.ClipVolumeTool", false);
 		}
 	}
 	else
 	{
-		GetIEditor()->SetEditTool("EditTool.DesignerEditor", false);
+		pLevelEditor->SetEditTool("EditTool.DesignerEditor", false);
 	}
 }
 

@@ -98,14 +98,10 @@ namespace CryEngine.Resources
 		/// <summary>
 		/// Texture Width.
 		/// </summary>
-		/// <value>The width.</value>
-		//public int Width { get; private set; }
 		public int Width { get { return _nativeTexture.GetWidth(); } }
 		/// <summary>
 		/// Texture Height.
 		/// </summary>
-		/// <value>The height.</value>
-		//public int Height { get; private set; }
 		public int Height { get { return _nativeTexture.GetHeight(); } }
 
 		/// <summary>
@@ -218,7 +214,7 @@ namespace CryEngine.Resources
 			var flags = (int)ETextureFlags.FT_NOMIPS;
 			if(_isRenderTarget)
 			{
-				flags |= (int)ETextureFlags.FT_DONT_STREAM | (int)ETextureFlags.FT_DONT_RELEASE | (int)ETextureFlags.FT_USAGE_RENDERTARGET;
+				flags |= (int)ETextureFlags.FT_DONT_STREAM | (int)ETextureFlags.FT_USAGE_RENDERTARGET;
 			}
 			_nativeTexture = Global.gEnv.pRenderer.CreateTexture(_originalName, width, height, 1, data, (byte)ETEX_Format.eTF_R8G8B8A8, flags);
 			_nativeTexture.SetClamp(clamp);
@@ -345,15 +341,11 @@ namespace CryEngine.Resources
 			{
 				return;
 			}
-			if(!isRenderTarget)
+			
+			if(texture.Release() <= 0)
 			{
-				texture.Release();
+				Global.gEnv.pRenderer.RemoveTexture((uint)textureId);
 			}
-			else
-			{
-				texture.ReleaseForce();
-			}
-			Global.gEnv.pRenderer.RemoveTexture((uint)textureId);
 
 			texture.Dispose();
 		}

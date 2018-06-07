@@ -18,12 +18,12 @@ QEditToolButton::QEditToolButton(QWidget* parent)
 {
 	setCheckable(true);
 	connect(this, SIGNAL(toggled(bool)), this, SLOT(OnClicked(bool)));
-	GetIEditorImpl()->RegisterNotifyListener(this);
+	GetIEditorImpl()->GetLevelEditorSharedState()->signalEditToolChanged.Connect(this, &QEditToolButton::DetermineCheckedState);
 }
 
 QEditToolButton::~QEditToolButton()
 {
-	GetIEditorImpl()->UnregisterNotifyListener(this);
+	GetIEditorImpl()->GetLevelEditorSharedState()->signalEditToolChanged.DisconnectObject(this);
 }
 
 void QEditToolButton::SetToolName(const string& sEditToolName)
@@ -56,15 +56,6 @@ void QEditToolButton::SetToolClass(CRuntimeClass* toolClass)
 	DetermineCheckedState();
 }
 
-/////////////////////////////////////////////////////////////////////////////
-// QEditToolButton message handlers
-void QEditToolButton::OnEditorNotifyEvent(EEditorNotifyEvent event)
-{
-	if (event == eNotify_OnEditToolEndChange)
-	{
-		DetermineCheckedState();
-	}
-}
 
 void QEditToolButton::DetermineCheckedState()
 {
@@ -78,7 +69,7 @@ void QEditToolButton::DetermineCheckedState()
 	}
 
 	// Check tool state.
-	CEditTool* tool = GetIEditorImpl()->GetEditTool();
+	CEditTool* tool = GetIEditorImpl()->GetLevelEditorSharedState()->GetEditTool();
 	CRuntimeClass* toolClass = 0;
 	if (tool)
 		toolClass = tool->GetRuntimeClass();
@@ -106,12 +97,12 @@ void QEditToolButton::OnClicked(bool bChecked)
 		return;
 	}
 
-	CEditTool* tool = GetIEditorImpl()->GetEditTool();
+	CEditTool* tool = GetIEditorImpl()->GetLevelEditorSharedState()->GetEditTool();
 	if (!bChecked)
 	{
 		if (tool && tool->GetRuntimeClass() == m_toolClass)
 		{
-			GetIEditorImpl()->SetEditTool(0);
+			GetIEditorImpl()->GetLevelEditorSharedState()->SetEditTool(nullptr);
 		}
 		return;
 	}
@@ -122,7 +113,7 @@ void QEditToolButton::OnClicked(bool bChecked)
 			return;
 
 		// Must be last function, can delete this.
-		GetIEditorImpl()->SetEditTool(pNewTool);
+		GetIEditorImpl()->GetLevelEditorSharedState()->SetEditTool(pNewTool);
 	}
 }
 

@@ -4,8 +4,6 @@
 
 #include "ObjectEvent.h"
 
-enum RefCoordSys;
-
 // Windows API defines this
 #ifdef GetObject
 #undef GetObject
@@ -14,8 +12,15 @@ enum RefCoordSys;
 struct ISelectionGroup
 {
 public:
-	virtual ~ISelectionGroup() {}
+	enum EMoveSelectionFlag
+	{
+		eMS_None = 0x00,
+		eMS_FollowTerrain = 0x01,
+		eMS_FollowGeometry = 0x02,
+		eMS_SnapToNormal = 0x04
+	};
 
+	virtual ~ISelectionGroup() {}
 	//! Adds object into selection list.
 	virtual void AddObject(CBaseObject* obj) = 0;
 	//! Remove object from selection list.
@@ -33,7 +38,31 @@ public:
 	//! Send event to all objects in selection group.
 	virtual void SendEvent(ObjectEvent event) const = 0;
 	//! Get matrix suitable for manipulator
-	virtual bool GetManipulatorMatrix(RefCoordSys coordSys, Matrix34& tm) const = 0;
+	virtual bool GetManipulatorMatrix(Matrix34& tm) const = 0;
+	//! Used to notify when objects have been fully transformed
+	virtual void FinishChanges() const = 0;
+	//! Send ENTITY_EVENT_XFORM_FINISHED_EDITOR to selected objects
+	virtual void ObjectModified() const = 0;
+	//! Move objects in selection by offset.
+	virtual void Move(const Vec3& offset, int moveFlags, const CPoint& point = CPoint(-1, -1), bool bFromInitPos = false) const = 0;
+	//! Rotate objects in selection by given quaternion.
+	virtual void Rotate(const Quat& qRot) const = 0;
+	//! Rotate objects in selection by given angle.
+	virtual void Rotate(const Ang3& angles) const = 0;
+	//! Rotate objects in selection by given rotation matrix.
+	virtual void Rotate(const Matrix34& matRot) const = 0;
+	//! Resets rotation and scale to identity and (1.0f, 1.0f, 1.0f)
+	virtual void ResetTransformation() const = 0;
+	//! Scale objects in selection by given scale.
+	virtual void Scale(const Vec3& scale) const = 0;
+	virtual void SetScale(const Vec3& scale) const = 0;
+	//! Align objects in selection to surface normal
+	virtual void Align() const = 0;
+	//! Remove from selection group all objects which have parent also in selection group.
+	//! And save resulting objects to saveTo selection.
+	virtual void         FilterParents() const = 0;
+	//! Saves original positions of filtered objects
+	virtual void         SaveFilteredTransform() const = 0;
 };
 
 

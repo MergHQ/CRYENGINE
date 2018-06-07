@@ -38,7 +38,6 @@
 #include "Util/Ruler.h"
 #include "Script/ScriptEnvironment.h"
 #include "Gizmos/AxisHelper.h"
-#include "PickObjectTool.h"
 #include "ObjectCreateTool.h"
 #include "Vegetation/VegetationMap.h"
 #include "Terrain/TerrainManager.h"
@@ -54,13 +53,12 @@
 #include "BackgroundScheduleManager.h"
 #include "EditorFileMonitor.h"
 #include <CrySandbox/IEditorGame.h>
-#include "EditMode/ObjectMode.h"
+#include <LevelEditor/LevelEditorSharedState.h>
 #include "Mission.h"
 #include "Commands/PythonManager.h"
 #include "Commands/PolledKeyManager.h"
 #include "EditorFramework/PersonalizationManager.h"
 #include "EditorFramework/BroadcastManager.h"
-#include "LevelEditor/LevelEditorSharedState.h"
 #include "EditorCommonInit.h"
 #include "AssetSystem/AssetManager.h"
 #include "AssetSystem/Browser/AssetModel.h"
@@ -86,10 +84,12 @@
 #include <EditorFramework/Preferences.h>
 #include <Preferences/GeneralPreferences.h>
 #include <CrySystem/IProjectManager.h>
+#include <LevelEditor/LevelEditorSharedState.h>
 
 #include <QFileInfo>
 #include "ConfigurationManager.h"
 #include <CryGame/IGameFramework.h>
+#include <LevelEditor/Tools/ObjectMode.h>
 
 LINK_SYSTEM_LIBRARY("version.lib")
 // Shell utility library
@@ -139,11 +139,8 @@ CEditorImpl::CEditorImpl(CGameEngine* ge)
 	EditorCommon::SetIEditor(this);
 	MFCToolsPlugin::SetEditor(s_pEditor);
 
-	m_currEditMode = eEditModeSelect;
-	m_prevEditMode = m_currEditMode;
-	m_pEditTool = 0;
 	m_pLevelIndependentFileMan = new CLevelIndependentFileMan;
-	m_pLevelEditorSharedState.reset(new LevelEditorSharedState);
+	m_pLevelEditorSharedState.reset(new CLevelEditorSharedState);
 	m_pExportManager = 0;
 	SetMasterCDFolder();
 	m_bExiting = false;
@@ -202,27 +199,10 @@ CEditorImpl::CEditorImpl(CGameEngine* ge)
 
 	m_pMainThreadWorker = new CMainThreadWorker();
 
-	m_selectedRegion.min = Vec3(0, 0, 0);
-	m_selectedRegion.max = Vec3(0, 0, 0);
-	ZeroStruct(m_lastAxis);
-	m_lastAxis[eEditModeSelect] = AXIS_XY;
-	m_lastAxis[eEditModeSelectArea] = AXIS_XY;
-	m_lastAxis[eEditModeMove] = AXIS_XY;
-	m_lastAxis[eEditModeRotate] = AXIS_Z;
-	m_lastAxis[eEditModeScale] = AXIS_XY;
-	ZeroStruct(m_lastCoordSys);
-	m_lastCoordSys[eEditModeSelect] = COORDS_LOCAL;
-	m_lastCoordSys[eEditModeSelectArea] = COORDS_LOCAL;
-	m_lastCoordSys[eEditModeMove] = COORDS_LOCAL;
-	m_lastCoordSys[eEditModeRotate] = COORDS_LOCAL;
-	m_lastCoordSys[eEditModeScale] = COORDS_LOCAL;
-	m_bAxisVectorLock = false;
 	m_bUpdates = true;
 
 	m_bSelectionLocked = false;
-	m_snapModeFlags = 0;
 
-	m_pPickTool = 0;
 	m_bMatEditMode = false;
 	m_bShowStatusText = true;
 
@@ -662,203 +642,14 @@ void CEditorImpl::SetDataModified()
 	GetDocument()->SetModifiedFlag(TRUE);
 }
 
-int CEditorImpl::GetEditMode()
-{
-	return m_currEditMode;
-}
-
-void CEditorImpl::SetEditMode(int editMode)
-{
-	m_currEditMode = (EEditMode)editMode;
-	m_prevEditMode = m_currEditMode;
-	AABB box(Vec3(0, 0, 0), Vec3(0, 0, 0));
-	SetSelectedRegion(box);
-
-	if (GetEditTool() && !GetEditTool()->IsNeedMoveTool())
-	{
-		SetEditTool(0, true);
-	}
-
-	if (editMode == eEditModeMove || editMode == eEditModeRotate || editMode == eEditModeScale)
-	{
-		SetAxisConstrains(m_lastAxis[editMode]);
-		SetReferenceCoordSys(m_lastCoordSys[editMode]);
-	}
-
-	Notify(eNotify_OnEditModeChange);
-}
-
-void CEditorImpl::SetEditTool(CEditTool* tool, bool bStopCurrentTool)
-{
-	CViewport* pViewport = GetIEditorImpl()->GetActiveView();
-	if (pViewport)
-	{
-		pViewport->SetCurrentCursor(STD_CURSOR_DEFAULT);
-	}
-
-	if (tool == 0)
-	{
-		// Replace tool with the object modify edit tool.
-		if (m_pEditTool != 0 && m_pEditTool->IsKindOf(RUNTIME_CLASS(CObjectMode)))
-		{
-			// Do not change.
-			return;
-		}
-		else
-		{
-			tool = new CObjectMode;
-		}
-	}
-
-	Notify(eNotify_OnEditToolBeginChange);
-
-	m_pEditTool = tool;
-
-	// Make sure pick is aborted.
-	if (tool != m_pPickTool)
-	{
-		m_pPickTool = 0;
-	}
-	Notify(eNotify_OnEditToolEndChange);
-}
-
-void CEditorImpl::SetEditTool(const string& sEditToolName, bool bStopCurrentTool)
-{
-	CEditTool* pTool = GetEditTool();
-	if (pTool && pTool->GetRuntimeClass()->m_lpszClassName)
-	{
-		// Check if already selected.
-		if (stricmp(pTool->GetRuntimeClass()->m_lpszClassName, sEditToolName) == 0)
-			return;
-	}
-
-	IClassDesc* pClass = GetIEditorImpl()->GetClassFactory()->FindClass(sEditToolName);
-	if (!pClass)
-	{
-		Warning("Editor Tool %s not registered.", (const char*)sEditToolName);
-		return;
-	}
-	if (pClass->SystemClassID() != ESYSTEM_CLASS_EDITTOOL)
-	{
-		Warning("Class name %s is not a valid Edit Tool class.", (const char*)sEditToolName);
-		return;
-	}
-	CRuntimeClass* pRtClass = pClass->GetRuntimeClass();
-	if (pRtClass && pRtClass->IsDerivedFrom(RUNTIME_CLASS(CEditTool)))
-	{
-		CEditTool* pEditTool = (CEditTool*)pRtClass->CreateObject();
-		GetIEditorImpl()->SetEditTool(pEditTool);
-		return;
-	}
-	else
-	{
-		Warning("Class name %s is not a valid Edit Tool class.", (const char*)sEditToolName);
-		return;
-	}
-}
-
-CEditTool* CEditorImpl::GetEditTool()
-{
-	return m_pEditTool;
-}
-
-void CEditorImpl::SetAxisConstrains(AxisConstrains axisFlags)
-{
-	gGizmoPreferences.axisConstraint = axisFlags;
-	m_lastAxis[m_currEditMode] = gGizmoPreferences.axisConstraint;
-	m_pViewManager->SetAxisConstrain(axisFlags);
-
-	// Update all views.
-	UpdateViews(eUpdateObjects, NULL);
-	Notify(eNotify_OnAxisConstraintChanged);
-}
-
-AxisConstrains CEditorImpl::GetAxisConstrains()
-{
-	return gGizmoPreferences.axisConstraint;
-}
-
-uint16 CEditorImpl::GetSnapMode()
-{
-	return m_snapModeFlags;
-}
-
-void CEditorImpl::EnableSnapToTerrain(bool bEnable)
-{
-	m_snapModeFlags &= ~eSnapMode_Terrain;
-	if (bEnable) // Disable geometry before enabling terrain snapping
-		m_snapModeFlags = (m_snapModeFlags & ~eSnapMode_Geometry) | bEnable * eSnapMode_Terrain;
-}
-
-bool CEditorImpl::IsSnapToTerrainEnabled() const
-{
-	return m_snapModeFlags & eSnapMode_Terrain;
-}
-
-void CEditorImpl::EnableSnapToNormal(bool bEnable)
-{
-	m_snapModeFlags = (m_snapModeFlags & ~eSnapMode_SurfaceNormal) | bEnable * eSnapMode_SurfaceNormal;
-}
-
 void CEditorImpl::EnableHelpersDisplay(bool bEnable)
 {
 	m_areHelpersEnabled = bEnable;
 }
 
-void CEditorImpl::EnablePivotSnapping(bool bEnable)
-{
-	m_bPivotSnappingEnabled = bEnable;
-}
-
-bool CEditorImpl::IsSnapToNormalEnabled() const
-{
-	return m_snapModeFlags & eSnapMode_SurfaceNormal;
-}
-
 bool CEditorImpl::IsHelpersDisplayed() const
 {
 	return m_areHelpersEnabled;
-}
-
-bool CEditorImpl::IsPivotSnappingEnabled() const
-{
-	return m_bPivotSnappingEnabled;
-}
-
-void CEditorImpl::EnableSnapToGeometry(bool bEnable)
-{
-	m_snapModeFlags &= ~eSnapMode_Geometry;
-	if (bEnable) // Disable terrain before enabling geometry snapping
-		m_snapModeFlags = (m_snapModeFlags & ~eSnapMode_Terrain) | bEnable * eSnapMode_Geometry;
-}
-
-bool CEditorImpl::IsSnapToGeometryEnabled() const
-{
-	return m_snapModeFlags & eSnapMode_Geometry;
-}
-
-void CEditorImpl::SetReferenceCoordSys(RefCoordSys refCoords)
-{
-	if (refCoords != gGizmoPreferences.referenceCoordSys)
-	{
-		gGizmoPreferences.referenceCoordSys = refCoords;
-		m_lastCoordSys[m_currEditMode] = gGizmoPreferences.referenceCoordSys;
-
-		// Update all views.
-		UpdateViews(eUpdateObjects, NULL);
-
-		// Update the construction plane infos.
-		CViewport* pViewport = GetActiveView();
-		if (pViewport)
-			pViewport->MakeSnappingGridPlane(GetIEditorImpl()->GetAxisConstrains());
-
-		Notify(eNotify_OnReferenceCoordSysChanged);
-	}
-}
-
-RefCoordSys CEditorImpl::GetReferenceCoordSys()
-{
-	return gGizmoPreferences.referenceCoordSys;
 }
 
 CBaseObject* CEditorImpl::NewObject(const char* type, const char* file /*=nullptr*/, bool bInteractive /*= false*/)
@@ -918,7 +709,7 @@ void CEditorImpl::StartObjectCreation(const char* type, const char* file)
 		return;
 
 	CObjectCreateTool* tool = new CObjectCreateTool();
-	GetIEditorImpl()->SetEditTool(tool);
+	GetIEditorImpl()->GetLevelEditorSharedState()->SetEditTool(tool);
 	tool->SelectObjectToCreate(type, file);
 }
 
@@ -994,27 +785,7 @@ void CEditorImpl::ToggleGameInputSuspended()
 	return GetGameEngine()->ToggleGameInputSuspended();
 }
 
-void CEditorImpl::PickObject(IPickObjectCallback* callback, CRuntimeClass* targetClass, bool bMultipick)
-{
-	m_pPickTool = new CPickObjectTool(callback, targetClass);
-	((CPickObjectTool*)m_pPickTool)->SetMultiplePicks(bMultipick);
-	SetEditTool(m_pPickTool);
-}
-
-void CEditorImpl::CancelPick()
-{
-	SetEditTool(0);
-	m_pPickTool = 0;
-}
-
-bool CEditorImpl::IsPicking()
-{
-	if (GetEditTool() == m_pPickTool && m_pPickTool != 0)
-		return true;
-	return false;
-}
-
-LevelEditorSharedState* CEditorImpl::GetLevelEditorSharedState()
+CLevelEditorSharedState* CEditorImpl::GetLevelEditorSharedState()
 {
 	return m_pLevelEditorSharedState.get();
 }
@@ -1118,16 +889,6 @@ CHeightmap* CEditorImpl::GetHeightmap()
 CVegetationMap* CEditorImpl::GetVegetationMap()
 {
 	return m_pVegetationMap;
-}
-
-void CEditorImpl::SetSelectedRegion(const AABB& box)
-{
-	m_selectedRegion = box;
-}
-
-void CEditorImpl::GetSelectedRegion(AABB& box)
-{
-	box = m_selectedRegion;
 }
 
 CWnd* CEditorImpl::OpenView(const char* sViewClassName)
@@ -1401,6 +1162,16 @@ void CEditorImpl::Notify(EEditorNotifyEvent event)
 	{
 		(*it++)->OnEditorNotifyEvent(event);
 	}
+}
+
+void CEditorImpl::RegisterAllObjectModeSubTools()
+{
+	CAutoRegisterObjectModeSubToolHelper::RegisterAll();
+}
+
+void CEditorImpl::UnRegisterAllObjectModeSubTools()
+{
+	CAutoRegisterObjectModeSubToolHelper::UnregisterAll();
 }
 
 void CEditorImpl::RegisterNotifyListener(IEditorNotifyListener* listener)

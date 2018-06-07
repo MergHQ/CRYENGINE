@@ -42,6 +42,8 @@ UVMappingEditor* GetUVEditor()
 UVMappingEditor::UVMappingEditor()
 {
 	GetIEditor()->RegisterNotifyListener(this);
+	GetIEditor()->GetLevelEditorSharedState()->signalEditToolChanged.Connect(this, &UVMappingEditor::InitializeMaterialComboBox);
+	GetIEditor()->GetLevelEditorSharedState()->signalEditModeChanged.Connect(this, &UVMappingEditor::OnEditModeChanged);
 	GetIEditor()->GetMaterialManager()->AddListener(this);
 
 	m_PrevTool = m_Tool = eUVMappingTool_Island;
@@ -117,11 +119,31 @@ UVMappingEditor::UVMappingEditor()
 
 UVMappingEditor::~UVMappingEditor()
 {
+	GetIEditor()->GetLevelEditorSharedState()->signalEditToolChanged.DisconnectObject(this);
+	GetIEditor()->GetLevelEditorSharedState()->signalEditModeChanged.DisconnectObject(this);
 	GetIEditor()->UnregisterNotifyListener(this);
 	m_pGizmo->RemoveCallback(this);
 	GetIEditor()->GetMaterialManager()->RemoveListener(this);
 	DesignerSession::GetInstance()->signalDesignerEvent.DisconnectObject(this);
 	g_pUVMappingEditor = NULL;
+}
+
+void UVMappingEditor::OnEditModeChanged(CLevelEditorSharedState::EditMode editMode)
+{
+	switch (editMode)
+	{
+	case CLevelEditorSharedState::EditMode::Move:
+		OnTranslation();
+		break;
+
+	case CLevelEditorSharedState::EditMode::Rotate:
+		OnRotation();
+		break;
+
+	case CLevelEditorSharedState::EditMode::Scale:
+		OnScale();
+		break;
+	}
 }
 
 void UVMappingEditor::CreateTexturePanelMesh()
@@ -232,7 +254,7 @@ void UVMappingEditor::OnMouseEvent(const SMouseEvent& me_)
 
 	if (me.type == SMouseEvent::TYPE_PRESS && me.button == SMouseEvent::BUTTON_LEFT)
 	{
-		int axis;
+		CLevelEditorSharedState::Axis axis;
 		m_bLButtonDown = true;
 		m_bHitGizmo = m_pGizmo->HitTest(me.viewport, me.x, me.y, axis);
 		if (!m_bHitGizmo)
@@ -314,30 +336,9 @@ void UVMappingEditor::OnEditorNotifyEvent(EEditorNotifyEvent event)
 {
 	switch (event)
 	{
-	case eNotify_OnEditModeChange:
-		switch (GetIEditor()->GetEditMode())
-		{
-		case eEditModeMove:
-			OnTranslation();
-			break;
-
-		case eEditModeRotate:
-			OnRotation();
-			break;
-
-		case eEditModeScale:
-			OnScale();
-			break;
-		}
-		break;
-
 	case eNotify_OnIdleUpdate:
 		OnIdle();
 		UpdateObject();
-		break;
-
-	case eNotify_OnEditToolEndChange:
-		InitializeMaterialComboBox();
 		break;
 
 	case eNotify_OnSelectionChange:

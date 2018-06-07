@@ -1,14 +1,13 @@
 // Copyright 2001-2018 Crytek GmbH / Crytek Group. All rights reserved.
 
-#ifndef __Vehicle_Paints_Panel__h__
-#define __Vehicle_Paints_Panel__h__
+#pragma once
 
 #include "IDataBaseManager.h"
 #include "Controls\PropertyCtrl.h"
 
 class CVehiclePaintsPanel
 	: public CXTResizeDialog
-	  , public IDataBaseManagerListener
+	, public IDataBaseManagerListener
 {
 	DECLARE_DYNCREATE(CVehiclePaintsPanel)
 
@@ -72,6 +71,3 @@ private:
 	IVariable*    m_pPaints;
 	IVariable*    m_pSelectedPaint;
 };
-
-#endif
-

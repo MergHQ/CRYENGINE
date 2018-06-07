@@ -268,7 +268,7 @@ void CVegetationObject::OnVarChange(IVariable* var)
 	{
 		// Reposition this object on vegetation map.
 		GetIEditorImpl()->GetVegetationMap()->RepositionObject(this);
-		CEditTool* pTool = GetIEditorImpl()->GetEditTool();
+		CEditTool* pTool = GetIEditorImpl()->GetLevelEditorSharedState()->GetEditTool();
 		if (pTool && pTool->IsKindOf(RUNTIME_CLASS(CVegetationSelectTool)))
 		{
 			auto pVegetationTool = static_cast<CVegetationSelectTool*>(pTool);

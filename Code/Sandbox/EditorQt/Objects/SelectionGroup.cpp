@@ -160,22 +160,24 @@ Vec3 CSelectionGroup::GetCenter() const
 	return c;
 }
 
-bool CSelectionGroup::GetManipulatorMatrix(RefCoordSys coordSys, Matrix34& tm) const
+bool CSelectionGroup::GetManipulatorMatrix(Matrix34& tm) const
 {
 	int numObjects = GetCount();
 
 	if (numObjects > 0)
 	{
+		CLevelEditorSharedState::CoordSystem coordSystem = GetIEditor()->GetLevelEditorSharedState()->GetCoordSystem();
+
 		CBaseObject* pObj = GetObject(numObjects - 1);
-		if (coordSys == COORDS_LOCAL || coordSys == COORDS_PARENT)
+		if (coordSystem == CLevelEditorSharedState::CoordSystem::Local || coordSystem == CLevelEditorSharedState::CoordSystem::Parent)
 		{
 			// attempt to get local or parent matrix from gizmo owner. If none is provided, just use world matrix instead
-			if (!pObj->GetManipulatorMatrix(coordSys, tm))
+			if (!pObj->GetManipulatorMatrix(tm))
 			{
 				tm.SetIdentity();
 			}
 		}
-		else if (coordSys == COORDS_WORLD)
+		else if (coordSystem == CLevelEditorSharedState::CoordSystem::World)
 		{
 			tm.SetIdentity();
 		}
@@ -222,7 +224,7 @@ void CSelectionGroup::FilterLinkedObjects() const
 }
 //////////////////////////////////////////////////////////////////////////
 //////////////////////////////////////////////////////////////////////////
-void CSelectionGroup::Move(const Vec3& offset, int moveFlags, int referenceCoordSys, const CPoint& point, bool bFromInitPos) const
+void CSelectionGroup::Move(const Vec3& offset, int moveFlags, const CPoint& point, bool bFromInitPos) const
 {
 	// [MichaelS - 17/3/2005] Removed this code from the three edit functions (move,
 	// rotate and scale). This was causing a bug where the render node of objects
@@ -282,7 +284,7 @@ void CSelectionGroup::Move(const Vec3& offset, int moveFlags, int referenceCoord
 
 		if ((moveFlags & eMS_FollowGeometry) && bValidFollowGeometryMode)
 		{
-			if (GetIEditorImpl()->GetActiveView()->GetAxisConstrain() == AXIS_Z)
+			if (GetIEditor()->GetLevelEditorSharedState()->GetAxisConstraint() == CLevelEditorSharedState::Axis::Z)
 			{
 				continue;
 			}
@@ -308,7 +310,7 @@ void CSelectionGroup::Move(const Vec3& offset, int moveFlags, int referenceCoord
 
 		if (moveFlags & eMS_FollowTerrain)
 		{
-			if (GetIEditorImpl()->GetActiveView()->GetAxisConstrain() != AXIS_Z)
+			if (GetIEditor()->GetLevelEditorSharedState()->GetAxisConstraint() != CLevelEditorSharedState::Axis::Z)
 			{
 				// Make sure object keeps it height.
 				float height = wp.z - GetIEditorImpl()->GetTerrainElevation(wp.x, wp.y);
@@ -331,37 +333,26 @@ void CSelectionGroup::Move(const Vec3& offset, int moveFlags, int referenceCoord
 }
 
 //////////////////////////////////////////////////////////////////////////
-void CSelectionGroup::MoveTo(const Vec3& pos, EMoveSelectionFlag moveFlag, int referenceCoordSys, const CPoint& point) const
-{
-	FilterParents();
-	if (GetFilteredCount() < 1)
-		return;
-
-	CBaseObject* refObj = GetFilteredObject(0);
-	CSelectionGroup::Move(pos - refObj->GetWorldTM().GetTranslation(), moveFlag, referenceCoordSys, point);
-}
-
-//////////////////////////////////////////////////////////////////////////
-void CSelectionGroup::Rotate(const Quat& qRot, int referenceCoordSys) const
+void CSelectionGroup::Rotate(const Quat& qRot) const
 {
 	Matrix34 rotateTM = Matrix33(qRot);
 
-	Rotate(rotateTM, referenceCoordSys);
+	Rotate(rotateTM);
 }
 
 //////////////////////////////////////////////////////////////////////////
-void CSelectionGroup::Rotate(const Ang3& angles, int referenceCoordSys) const
+void CSelectionGroup::Rotate(const Ang3& angles) const
 {
 	//if (angles.x == 0 && angles.y == 0 && angles.z == 0)
 	//	return;
 
 	Matrix34 rotateTM = Matrix34::CreateRotationXYZ(DEG2RAD(-angles)); //NOTE: angles in radians and negated
 
-	Rotate(rotateTM, referenceCoordSys);
+	Rotate(rotateTM);
 }
 
 //////////////////////////////////////////////////////////////////////////
-void CSelectionGroup::Rotate(const Matrix34& rotateTM, int referenceCoordSys) const
+void CSelectionGroup::Rotate(const Matrix34& rotateTM) const
 {
 	// Rotate selection about selection center.
 	Vec3 center = GetCenter();
@@ -372,12 +363,14 @@ void CSelectionGroup::Rotate(const Matrix34& rotateTM, int referenceCoordSys) co
 	ToOrigin.SetIdentity();
 	FromOrigin.SetIdentity();
 
-	if (referenceCoordSys != COORDS_LOCAL)
+	CLevelEditorSharedState::CoordSystem coordinateSystem = GetIEditor()->GetLevelEditorSharedState()->GetCoordSystem();
+
+	if (coordinateSystem != CLevelEditorSharedState::CoordSystem::Local)
 	{
 		ToOrigin.SetTranslation(-center);
 		FromOrigin.SetTranslation(center);
 
-		if (referenceCoordSys == COORDS_USERDEFINED)
+		if (coordinateSystem == CLevelEditorSharedState::CoordSystem::UserDefined)
 		{
 			Matrix34 userTM = gSnappingPreferences.GetMatrix();
 			Matrix34 invUserTM = userTM.GetInvertedFast();
@@ -395,12 +388,12 @@ void CSelectionGroup::Rotate(const Matrix34& rotateTM, int referenceCoordSys) co
 
 		Matrix34 m = obj->GetWorldTM();
 
-		auto axisConstraints = GetIEditor()->GetAxisConstrains();
+		auto axisConstraints = GetIEditor()->GetLevelEditorSharedState()->GetAxisConstraint();
 		// Rotation around view axis should be the same regardless of space (local, parent, world)
-		if (axisConstraints == AXIS_VIEW || axisConstraints == AXIS_XYZ)
+		if (axisConstraints == CLevelEditorSharedState::Axis::View || axisConstraints == CLevelEditorSharedState::Axis::XYZ)
 		{
 			// Rotate objects in view space using each object's separate world position as the pivot
-			if (referenceCoordSys == COORDS_LOCAL)
+			if (coordinateSystem == CLevelEditorSharedState::CoordSystem::Local)
 			{
 				CBaseObject* obj = GetFilteredObject(i);
 				Matrix34 m = obj->GetWorldTM();
@@ -424,9 +417,9 @@ void CSelectionGroup::Rotate(const Matrix34& rotateTM, int referenceCoordSys) co
 				obj->SetWorldTM(m, eObjectUpdateFlags_UserInput);
 			}
 		}
-		else if (referenceCoordSys != COORDS_LOCAL)
+		else if (coordinateSystem != CLevelEditorSharedState::CoordSystem::Local)
 		{
-			if (referenceCoordSys == COORDS_PARENT && obj->GetParent())
+			if (coordinateSystem == CLevelEditorSharedState::CoordSystem::Parent && obj->GetParent())
 			{
 				Matrix34 parentTM = obj->GetParent()->GetWorldTM();
 				parentTM.OrthonormalizeFast();
@@ -452,7 +445,7 @@ void CSelectionGroup::Rotate(const Matrix34& rotateTM, int referenceCoordSys) co
 }
 
 //////////////////////////////////////////////////////////////////////////
-void CSelectionGroup::Scale(const Vec3& scaleArg, int referenceCoordSys) const
+void CSelectionGroup::Scale(const Vec3& scaleArg) const
 {
 	Vec3 scl = scaleArg;
 	if (scl.x == 0) scl.x = 0.01f;
@@ -461,31 +454,32 @@ void CSelectionGroup::Scale(const Vec3& scaleArg, int referenceCoordSys) const
 
 	FilterParents();
 
+	CLevelEditorSharedState::CoordSystem coordinateSystem = GetIEditor()->GetLevelEditorSharedState()->GetCoordSystem();
 	for (int i = 0; i < GetFilteredCount(); i++)
 	{
-		int objCoordSystem = referenceCoordSys;
+		CLevelEditorSharedState::CoordSystem objCoordSystem = coordinateSystem;
 
 		CBaseObject* const pObj = GetFilteredObject(i);
 		Vec3 scale = m_initElementTransforms[i].scale;
 
-		if (objCoordSystem == COORDS_PARENT && pObj->GetParent() == nullptr)
+		if (objCoordSystem == CLevelEditorSharedState::CoordSystem::Parent && pObj->GetParent() == nullptr)
 		{
-			objCoordSystem = COORDS_LOCAL;
+			objCoordSystem = CLevelEditorSharedState::CoordSystem::Local;
 		}
 
-		if (objCoordSystem == COORDS_LOCAL)
+		if (objCoordSystem == CLevelEditorSharedState::CoordSystem::Local)
 		{
 			scale = scale.CompMul(scl);
 		}
-		else if (objCoordSystem == COORDS_WORLD || objCoordSystem == COORDS_PARENT || objCoordSystem == COORDS_VIEW)
+		else if (objCoordSystem == CLevelEditorSharedState::CoordSystem::World || objCoordSystem == CLevelEditorSharedState::CoordSystem::Parent || objCoordSystem == CLevelEditorSharedState::CoordSystem::View)
 		{
 			Matrix33 mFromWorld;
 
 			// scale is not in local space, so we need to project the scale vector to the local space of the object
-			if (objCoordSystem == COORDS_PARENT)
+			if (objCoordSystem == CLevelEditorSharedState::CoordSystem::Parent)
 			{
 				mFromWorld = Matrix33(m_initElementTransforms[i].localRotation.GetInverted());
-			}	
+			}
 			else
 			{
 				mFromWorld = m_initElementTransforms[i].worldRotation.GetTransposed();
@@ -508,7 +502,7 @@ void CSelectionGroup::Scale(const Vec3& scaleArg, int referenceCoordSys) const
 	}
 }
 
-void CSelectionGroup::SetScale(const Vec3& scale, int referenceCoordSys) const
+void CSelectionGroup::SetScale(const Vec3& scale) const
 {
 	Vec3 relScale = scale;
 
@@ -520,7 +514,7 @@ void CSelectionGroup::SetScale(const Vec3& scale, int referenceCoordSys) const
 		relScale = relScale / objScale;
 	}
 
-	Scale(relScale, referenceCoordSys);
+	Scale(relScale);
 }
 
 //////////////////////////////////////////////////////////////////////////
@@ -543,19 +537,6 @@ void CSelectionGroup::Align() const
 		obj->SetRotation(nq * rot);
 		obj->SetPos(pos);
 	}
-}
-
-//////////////////////////////////////////////////////////////////////////
-void CSelectionGroup::Transform(const Vec3& offset, EMoveSelectionFlag moveFlag, const Ang3& angles, const Vec3& scale, int referenceCoordSys) const
-{
-	if (offset != Vec3(0))
-		Move(offset, moveFlag, referenceCoordSys);
-
-	if (!(angles == Ang3(ZERO)))
-		Rotate(angles, referenceCoordSys);
-
-	if (scale != Vec3(0))
-		Scale(scale, referenceCoordSys);
 }
 
 //////////////////////////////////////////////////////////////////////////
@@ -637,8 +618,8 @@ void CSelectionGroup::SaveFilteredTransform() const
 		// Here copied what was there in Move function instead of GetPos due to high risk time for the fix.
 		// TODO: explore if SetPos works correctly even with object hierarchies
 		STransformElementInit elem;
-		elem.position      = m_filtered[i]->GetWorldPos();
-		elem.scale         = m_filtered[i]->GetScale();
+		elem.position = m_filtered[i]->GetWorldPos();
+		elem.scale = m_filtered[i]->GetScale();
 		elem.worldRotation = m_filtered[i]->GetWorldRotTM();
 		elem.localRotation = m_filtered[i]->GetRotation();
 		m_initElementTransforms.push_back(elem);
