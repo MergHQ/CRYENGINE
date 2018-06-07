@@ -550,7 +550,7 @@ void CSkeletonPhysics::BuildPhysicalEntity(
 						pj.flags = angle0_locked;
 
 					if (nLod)
-						pj.flags &= ~(angle0_auto_kd * 7);
+						pj.flags &= ~(angle0_auto_kd * 7 | joint_no_gravity | joint_isolated_accelerations);
 
 					int iParent0;
 					if ((iParent0 = pj.op[0] = getBonePhysParentIndex(i, nLod)) >= 0)

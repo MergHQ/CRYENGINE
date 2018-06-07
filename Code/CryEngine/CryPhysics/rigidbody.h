@@ -58,6 +58,7 @@ struct ArticulatedBody {
 	Vec3 Pext,Lext;
 
 	void GetContactMatrix(const Vec3& r, Matrix33 &K);
+	void GetContactMatrixRot(Matrix33 &K, ArticulatedBody *buddy=nullptr);
 	void ApplyImpulse(const Vec3& dP, const Vec3& dL, body_helper *bodies, int iCaller);
 };
 

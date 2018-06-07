@@ -659,6 +659,8 @@ int CArticulatedEntity::SetParams(pe_params *_params, int bThreadSafe)
 			SyncWithHost(params->bRecalcJoints,0);
 		if (!is_unused(params->bCheckCollisions)) m_bCheckCollisions = params->bCheckCollisions;
 		if (!is_unused(params->bCollisionResp)) m_bFeatherstone = !params->bCollisionResp;
+		if (!is_unused(params->bFeatherstone)) if (m_bFeatherstone = params->bFeatherstone)
+			m_iSimType = m_iSimTypeLyingMode = 0;
 
 		if (!is_unused(params->nCollLyingMode)) m_nCollLyingMode = params->nCollLyingMode;
 		if (!is_unused(params->gravityLyingMode)) m_gravityLyingMode = params->gravityLyingMode;
@@ -741,6 +743,7 @@ int CArticulatedEntity::GetParams(pe_params *_params) const
 		params->qHostPivot = m_qHostPivot;
 		params->bCheckCollisions = m_bCheckCollisions;
 		params->bCollisionResp = !m_bFeatherstone;
+		params->bFeatherstone = m_bFeatherstone;
 		params->nCollLyingMode = m_nCollLyingMode;
 		params->gravityLyingMode = m_gravityLyingMode;
 		params->dampingLyingMode = m_dampingLyingMode;
@@ -1222,7 +1225,7 @@ int CArticulatedEntity::Step(float time_interval)
 		m_iSimTypeCur = m_iSimTypeLyingMode;
 	} else {
 		gravity = m_nBodyContacts ? m_gravity : m_gravityFreefall;
-		m_iSimTypeCur = m_iSimType | m_bFloating;
+		m_iSimTypeCur = m_iSimType | m_bFloating & 1-m_bFeatherstone;
 	}
 
 	for(i=m_nColliders-1;i>=0;i--)
@@ -1403,7 +1406,7 @@ int CArticulatedEntity::Step(float time_interval)
 		return UpdateHistory(i | isneg(3-(int)m_nStepBackCount));
 	}
 
-	if (m_simTime>10 || m_flags & pef_invisible || m_nJoints>1 && m_joints[1].dq.len2()>sqr(1000.0f)) {
+	if (m_iSimClass>2 && (m_simTime>10 || m_flags & pef_invisible || m_nJoints>1 && m_joints[1].dq.len2()>sqr(1000.0f))) {
 		for(i=0;i<m_nJoints;i++) {
 			m_joints[i].q=Ang3(ZERO); 
 			m_joints[i].dq.zero();
@@ -1458,7 +1461,6 @@ void CArticulatedEntity::CheckForGimbalLock(int idx)
 		if (!(m_joints[idx].flags & angle0_locked*7) && fabs_tpl(m_joints[idx].limits[1][0]-m_joints[idx].limits[0][0])>10 &&
 				fabsf(m_joints[idx].limits[1][1]-m_joints[idx].limits[0][1])>10 && fabsf(m_joints[idx].limits[1][2]-m_joints[idx].limits[0][2])>10)
 		{ // if joint is 3dof w/o limits, just rotate its quat0 to avoid gimbal lock
-			//m_joints[idx].quat0 *= quaternionf(g_PI/6,m_joints[idx].rotaxes[1]);
 			m_joints[idx].quat0 *= Quat::CreateRotationAA((float)g_PI/6,Vec3(0,1,0));//(m_joints[idx].rotaxes[0]+m_joints[idx].rotaxes[1])*(1.0f/sqrt2));
 			m_joints[idx].bQuat0Changed = 1;
 			SyncJointWithBody(idx,3);
@@ -1730,6 +1732,7 @@ int CArticulatedEntity::CalcBodyIa(int idx, matrixf& Ia_change, int bIncludeLimi
 	for (i=0;i<3;i++) if ((m_joints[idx].flags & (angle0_locked|angle0_limit_reached)<<i & -bIncludeLimits) == angle0_limit_reached<<i) {
 		m_joints[idx].fs->qidx2axidx[i] = j; m_joints[idx].fs->axidx2qidx[j++] = i;
 	} m_joints[idx].nPotentialAngles = j;
+	m_joints[idx].nActiveAngles += m_joints[idx].nPotentialAngles-m_joints[idx].nActiveAngles & m_iSimClass-3>>31;
 
 	for(j=0;j<m_joints[idx].nPotentialAngles;j++) {
 		i = m_joints[idx].fs->axidx2qidx[j];
@@ -1789,6 +1792,7 @@ int CArticulatedEntity::CollectPendingImpulses(int idx,int &bNotZero,int bBounce
 {
 	int i,j,curidx,newidx,bChildNotZero;
 	bNotZero = 0;
+	bBounce &= 2-m_iSimClass>>31;
 
 	for(i=0;i<(3&-bBounce);i++) if (!is_unused(m_joints[idx].dq_req[i])) {
 		// note that articulation matrices from the previous frame are used, while rotaxes are already new; this introduces slight inconsistency
@@ -1862,11 +1866,11 @@ void CArticulatedEntity::PropagateImpulses(const Vec3 &dv, int bLockLimits, int 
 			ddq += qinv_sT*Ya;
 
 			for(i=0; i<(m_joints[idx].nPotentialAngles&-bApplyVel); i++) {
-				j = m_joints[idx].fs->axidx2qidx[i]; 
+				j = m_joints[idx].fs->axidx2qidx[i];
 				if (!is_unused(m_joints[idx].dq_req[j])) {
 					m_joints[idx].ddq[i] = m_joints[idx].dq_req[j]-m_joints[idx].dq[j];
 					MARK_UNUSED m_joints[idx].dq_req[j];
-				} else if (m_joints[idx].flags & angle0_limit_reached<<j) {
+				} else if (m_joints[idx].flags & angle0_limit_reached<<j & 2-m_iSimClass>>31) {
 					bHitsLimit = isneg(-m_joints[idx].ddq[i]*m_joints[idx].dq_limit[j]);
 					if (bHitsLimit || bLockLimits) 
 						m_joints[idx].ddq[i] = 0;	// do not accelerate angle that reached its limit
@@ -1911,7 +1915,7 @@ void CArticulatedEntity::CalcVelocityChanges(float time_interval, const Vec3 &dv
 
 			for(i=0; i<m_joints[idx].nPotentialAngles; i++) {
 				j = m_joints[idx].fs->axidx2qidx[i]; 
-				if (m_joints[idx].flags & angle0_limit_reached<<j && m_joints[idx].ddq[i]*m_joints[idx].dq_limit[j]>0)
+				if (m_joints[idx].flags & angle0_limit_reached<<j & 2-m_iSimClass>>31 && m_joints[idx].ddq[i]*m_joints[idx].dq_limit[j]>0)
 					m_joints[idx].ddq[i] = 0;	// do not accelerate angle that reached its limit
 				m_joints[idx].dq[j] += m_joints[idx].ddq[i];
 			}
@@ -2073,8 +2077,10 @@ int CArticulatedEntity::StepJoint(int idx, float time_interval,int &bBounced,int
 				dq = sgnnz(dq)*min(fabsf(dq),0.1f+m_bFeatherstone); // limit angle snapping in full simulation mode
 				m_joints[idx].dq_limit[i] = m_joints[idx].dq[i];
 				m_joints[idx].flags |= angle0_limit_reached<<i;
-				m_joints[idx].dq_req[i] = -m_joints[idx].dq[i]*m_joints[idx].bounciness[i];
-				bBounced++;
+				if (m_iSimClass > 2) {
+					m_joints[idx].dq_req[i] = -m_joints[idx].dq[i]*m_joints[idx].bounciness[i];
+					bBounced++;
+				}
 			} else if (sgq!=0) {
 				m_joints[idx].flags &= ~(angle0_limit_reached<<i);
 				// if angle passes through 0 during this step (but isn't too close to 0), make it snap to 0 and also clamp dq if it's small enough
@@ -2192,7 +2198,7 @@ int CArticulatedEntity::StepJoint(int idx, float time_interval,int &bBounced,int
 			}
 		}
 
-		if (!m_bFeatherstone) {	// register new contacts
+		{	// register new contacts
 			for(j=m_joints[idx].iStartPart+m_joints[idx].nParts-1; j>=m_joints[idx].iStartPart; j--) {
 				m_parts[j].pPhysGeomProxy->pGeom->GetBBox(&bbox);
 				bbox.Basis *= Matrix33(!(m_qNew*m_infos[j].q));
@@ -2248,6 +2254,15 @@ void CArticulatedEntity::StepFeatherstone(float time_interval, int bBounced, Mat
 	float Iabuf[39]; matrixf Ia(6,6,0,_align16(Iabuf)); 
 	Vec3 Za_vec[2]; vectornf Za(6,Za_vec[0]);
 	Vec3 dv,dw;
+
+	if (m_bCheckCollisions)
+		VerifyExistingContacts(m_pWorld->m_vars.maxContactGap);
+	if (!m_bGrounded) {
+		m_joints[0].flags &= ~(angle0_locked*7);
+		m_joints[0].limits[0] = -(m_joints[0].limits[1]=Vec3(1e10f));
+		m_joints[0].quat0 = m_joints[0].quat0*Quat::CreateRotationXYZ(m_joints[0].q+m_joints[0].qext);
+		m_joints[0].q = m_joints[0].qext = Ang3(ZERO);
+	}
 
 	if (bBounced && m_bIaReady) {	// apply bounce impulses at joints that reached their limits
 		bBounced=0; CollectPendingImpulses(0,bBounced);
@@ -2306,7 +2321,7 @@ void CArticulatedEntity::StepFeatherstone(float time_interval, int bBounced, Mat
 	int nPhysColl = 0;
 	for(i=0;i<m_nColliders;i++)
 		nPhysColl += m_pColliders[i]->m_iSimClass<3 && m_pColliders[i]->GetMassInv();
-	if (m_nColliders && !nPhysColl) {
+	if (m_nColliders && !nPhysColl && m_iSimClass>2) {
 		float Ebefore=CalcEnergy(time_interval),Eafter=0,damping=GetDamping(time_interval);
 		for(i=0;i<m_nColliders;i++)	if (m_pColliders[i]!=this) {
 			damping = min(damping, m_pColliders[i]->GetDamping(time_interval));
@@ -2817,6 +2832,23 @@ void ArticulatedBody::GetContactMatrix(const Vec3& r, Matrix33 &K)
 	K -= Pv+Lv*rx-rx*(Pw+Lw*rx);
 }
 
+void ArticulatedBody::GetContactMatrixRot(Matrix33 &K, ArticulatedBody *buddy)
+{
+	Matrix33 L2w = GetMtxStrided<float,6,1>(fs->Iinv[0]+3);
+	K -= L2w;
+	strided_pointer<ArticulatedBody> joints0 = strided_pointer<ArticulatedBody>(this,fs->jointSize), 
+																	 joints1 = strided_pointer<ArticulatedBody>(buddy,fs->jointSize);
+	if (&joints0[fs->iparent]==buddy) { // buddy is our parent
+		Matrix33 P2w_parent = GetMtxStrided<float,6,1>(buddy->fs->Iinv[0]), L2w_parent = GetMtxStrided<float,6,1>(buddy->fs->Iinv[0]+3);
+		Matrix33 L2P_parent = GetMtxStrided<float,6,1>(fs->Ia_s_qinv_sT[0]+3), L2L_parent = GetMtxStrided<float,6,1>(fs->Ia_s_qinv_sT[3]+3);
+		K += P2w_parent*L2P_parent + L2w_parent*L2L_parent;
+	}	else if (buddy && &joints1[buddy->fs->iparent]==this) { // buddy is our child
+		Matrix33 L2v = GetMtxStrided<float,6,1>(fs->Iinv[3]+3);
+		Matrix33 w2w_child = GetMtxStrided<float,6,1>(buddy->fs->s_qinv_sT_Ia[0]), v2w_child = GetMtxStrided<float,6,1>(buddy->fs->s_qinv_sT_Ia[0]+3);
+		K += w2w_child*L2w + v2w_child*L2v;
+	}
+}
+
 void ArticulatedBody::ApplyImpulse(const Vec3& dP, const Vec3& dL, body_helper *bodies, int iCaller)
 {
 	Vec3 dPspat[2] = { dP, dL };
@@ -2839,7 +2871,7 @@ void ArticulatedBody::ApplyImpulse(const Vec3& dP, const Vec3& dL, body_helper *
 		vectornf(6,&body.w.x) -= matrixf(6,6,0,fs->Iinv[0])*vectornf(6,&dPspat[0].x);
 		int ibody = body.bProcessed[iCaller]-1;
 		bodies[ibody].v=body.v; bodies[ibody].w=body.w;	bodies[ibody].L+=dL;
-	}	else { 
+	}	else {
 		for(; joints[0].fs->iparent; joints=joints+joints[0].fs->iparent);
 		fs->Ya_vec[0]=-dP; fs->Ya_vec[1]=-dL;
 		CollectPendingImpulses(joints,0);
@@ -2848,7 +2880,7 @@ void ArticulatedBody::ApplyImpulse(const Vec3& dP, const Vec3& dL, body_helper *
 		PropagateImpulses(joints, *joints[0].fs->pM0inv*-Ya_vec[0]);
 		for(int i=0,j;i<=joints[0].nChildrenTree;i++) if (j=joints[i].body.bProcessed[iCaller]) {
 			bodies[j-1].v = (joints[i].body.v += joints[i].fs->dv_vec[1]);
-			bodies[j-1].w = (joints[j].body.w += joints[i].fs->dv_vec[0]);
+			bodies[j-1].w = (joints[i].body.w += joints[i].fs->dv_vec[0]);
 		}
 		bodies[body.bProcessed[iCaller]-1].L += dL;
 	}
@@ -2941,6 +2973,7 @@ int CArticulatedEntity::RegisterContacts(float time_interval,int nMaxPlaneContac
 			m_joints[i].fs->iparent = m_joints[i].iParent-i;
 			m_joints[i].fs->useTree = useTree;
 			m_joints[i].fs->jointSize = sizeof(ae_joint);
+			m_joints[i].fs->pM0inv = &m_M0inv;
 			matrixf s(6,m_joints[i].nActiveAngles,0, m_joints[i].fs->s);
 			matrixf Ia_s(6,m_joints[i].nActiveAngles,0, m_joints[i].fs->Ia_s);
 			vectornf ddq(m_joints[i].nActiveAngles, m_joints[i].ddq);
@@ -2950,7 +2983,6 @@ int CArticulatedEntity::RegisterContacts(float time_interval,int nMaxPlaneContac
 			m_Ejoints += Pspat[0]*vspat[1]+Pspat[1]*vspat[0];
 		}
 		flags = rb_articulated;
-		m_joints[0].fs->pM0inv = &m_M0inv;
 		m_joints[0].fs->iparent = 0;
 	}
 
@@ -3049,7 +3081,9 @@ __ae_step++;
 			pContact->pbody[0]->L += dL; pContact->pbody[1]->L -= dL; 
 			pContact->pbody[0]->w = pContact->pbody[0]->Iinv*pContact->pbody[0]->L;
 			pContact->pbody[1]->w = pContact->pbody[1]->Iinv*pContact->pbody[1]->L;
+		}
 
+		if ((m_iSimClass<=2 || !m_bFeatherstone) && (m_bGrounded || m_joints[idx].iParent>=0)) {
 			for(i=0;i<3;i++) if (m_joints[idx].flags & angle0_limit_reached<<i) {
 				if (!(pContact = CreateConstraintContact(idx)))
 					break;
@@ -3073,11 +3107,17 @@ int CArticulatedEntity::Update(float time_interval, float damping)
 	if (m_bFeatherstone && m_nJoints>0) {
 		int active = 1;
 		if (m_joints[0].fs) {
+			for(int i=0;i<m_nJoints;i++) { m_joints[i].Pext*=m_scaleBounceResponse; m_joints[i].Lext*=m_scaleBounceResponse; }
 			CollectPendingImpulses(0,active);
+			float dampingF = m_iSimClass>2 ? damping : 1.0f;
 			if (active) {
-				PropagateImpulses(m_M0inv*-m_Ya_vec[0]);
+				Vec3 dv; PropagateImpulses(dv = m_M0inv*-m_Ya_vec[0]);
+				if (!m_bGrounded)
+					(m_body.v += dv)*=dampingF;
+				int doSnap = 2-m_iSimClass>>31;
 				for(int i=0;i<m_nJoints;i++) {
-					for(int j=0;j<m_joints[i].nActiveAngles;j++) 
+					m_joints[i].dq *= dampingF;
+					for(int j=0;j<(m_joints[i].nActiveAngles&doSnap);j++) 
 						if (max(m_joints[i].prev_dq[j]*m_joints[i].dq[j], fabs_tpl(m_joints[i].dq[j])*0.2f-fabs_tpl(m_joints[i].prev_dq[j]))<0)
 							m_joints[i].dq[j] = 0;
 					SyncBodyWithJoint(i,2);
@@ -3087,7 +3127,8 @@ int CArticulatedEntity::Update(float time_interval, float damping)
 		if (active) {
 			m_timeIdle=0; m_bAwake=1;	m_simTime=0;
 		}
-		return 1;
+		if (m_iSimClass>2)
+		 return 1;
 	}
 
 	int i,j,nCollJoints=0,bPosChanged=0, bFloating=m_bFloating|iszero(m_gravity.len2()); 
@@ -3155,12 +3196,12 @@ int CArticulatedEntity::Update(float time_interval, float damping)
 		m_body.w.zero();
 		m_bInGroup = isneg(-m_nDynContacts);
 
-		for(i=0; i<m_nJoints; i++) {
+		if (!m_bFeatherstone) for(i=0; i<m_nJoints; i++) {
 			SyncJointWithBody(i,2);
 			if (m_iSimTypeCur==0)
 				SyncBodyWithJoint(i,2);
 		}
-		if (!m_bGrounded && m_nJoints>0 && m_joints[0].body.w.len2()>sqr(m_maxw)) {
+		if (!m_bGrounded && m_nJoints>0 && max(m_joints[0].dq.len2(),m_joints[0].body.w.len2())>sqr(m_maxw)) {
 			m_joints[0].body.w.normalize() *= m_maxw;
 			m_joints[0].dq.normalize() *= m_maxw;
 		}

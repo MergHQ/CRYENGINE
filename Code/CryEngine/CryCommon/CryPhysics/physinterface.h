@@ -858,7 +858,7 @@ struct pe_params_articulated_body : pe_params
 	{
 		type = type_id;
 		MARK_UNUSED bGrounded, bInheritVel, bCheckCollisions, bCollisionResp, nJointsAlloc;
-		MARK_UNUSED bGrounded, bInheritVel, bCheckCollisions, bCollisionResp, a, wa, w, v, pivot, scaleBounceResponse, posHostPivot, qHostPivot;
+		MARK_UNUSED bGrounded, bInheritVel, bCheckCollisions, bCollisionResp, bFeatherstone, a, wa, w, v, pivot, scaleBounceResponse, posHostPivot, qHostPivot;
 		MARK_UNUSED bAwake, pHost, nCollLyingMode, gravityLyingMode, dampingLyingMode, minEnergyLyingMode, iSimType, iSimTypeLyingMode, nRoots;
 		bApply_dqext = 0;
 		bRecalcJoints = 1;
@@ -867,6 +867,8 @@ struct pe_params_articulated_body : pe_params
 	int              bGrounded;           //!< whether body's pivot is firmly attached to something or free
 	int              bCheckCollisions;    //!< only works with bCollisionResp set
 	int              bCollisionResp;      //!< when on, uses 'ragdoll' simulation mode, when off - 'skeleton' (for hit simulation on alive actors)
+	int              bFeatherstone;       //!< 1 activates reduced coordinates simulation mode (bCollisionResp = 0 is a legacy way of setting it)
+	                                      //!< 1 also sets iSimType and iSimTypeLyingMode to 0
 	Vec3             pivot;               //!< attachment position for grounded entities
 	Vec3             a;                   //!< acceleration of the ground for grounded entities
 	Vec3             wa;                  //!< angular acceleration of the ground for grounded entities
