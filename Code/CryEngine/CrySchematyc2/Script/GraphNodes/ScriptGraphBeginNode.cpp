@@ -28,6 +28,11 @@ namespace Schematyc2
 		return s_typeGUID;
 	}
 
+	EScriptGraphNodeType CScriptGraphBeginNode::GetType() const
+	{
+		return EScriptGraphNodeType::Begin;
+	}
+
 	EScriptGraphColor CScriptGraphBeginNode::GetColor() const
 	{
 		return EScriptGraphColor::Green;
