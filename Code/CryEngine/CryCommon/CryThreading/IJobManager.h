@@ -939,7 +939,8 @@ struct IBackend
 	virtual void   AddJob(JobManager::CJobDelegator& crJob, const JobManager::TJobHandle cJobHandle, JobManager::SInfoBlock& rInfoBlock) = 0;
 	virtual uint32 GetNumWorkerThreads() const = 0;
 
-	virtual bool AddTempWorkerUntilJobStateIsComplete(JobManager::SJobState& pJobState) = 0;
+	virtual bool KickTempWorker() = 0;
+	virtual bool StopTempWorker() = 0;
 	// </interfuscator:shuffle>
 
 #if defined(JOBMANAGER_SUPPORT_FRAMEPROFILER)

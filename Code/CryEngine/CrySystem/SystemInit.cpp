@@ -5105,8 +5105,8 @@ void CSystem::CreateSystemVars()
 	                                           "Defaults to 4 on consoles and 8 threads an PC"
 	                                           "Set to 0 to create as many threads as cores are available");
 
-	m_sys_job_system_active_wait_enabled = REGISTER_INT("sys_job_system_active_wait_enabled", 1, 0,
-                                                        "Fires up additional worker thread when the Main/Render-Thread are having to wait on a job state");
+	m_sys_job_system_worker_boost_enabled = REGISTER_INT("sys_job_system_worker_boost_enabled", 1, 0,
+                                                        "Kicks off anadditional worker thread when the Main/Render-Thread have to wait on a job state");
 
 	REGISTER_COMMAND("sys_job_system_dump_job_list", CmdDumpJobManagerJobList, VF_CHEAT, "Show a list of all registered job in the console");
 	REGISTER_COMMAND("sys_dump_cvars", CmdDumpCvars, VF_CHEAT, "Dump all cvars to file");

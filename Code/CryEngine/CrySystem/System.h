@@ -819,7 +819,7 @@ private: // ------------------------------------------------------
 	ICVar* m_sys_job_system_enable;
 	ICVar* m_sys_job_system_profiler;
 	ICVar* m_sys_job_system_max_worker;
-	ICVar* m_sys_job_system_active_wait_enabled;
+	ICVar* m_sys_job_system_worker_boost_enabled;
 	ICVar* m_sys_spec;
 	ICVar* m_sys_firstlaunch;
 

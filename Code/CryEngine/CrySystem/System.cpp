@@ -313,7 +313,7 @@ CSystem::CSystem(const SSystemInitParams& startupParams)
 	m_sys_job_system_enable = nullptr;
 	m_sys_job_system_profiler = nullptr;
 	m_sys_job_system_max_worker = nullptr;
-	m_sys_job_system_active_wait_enabled = nullptr;
+	m_sys_job_system_worker_boost_enabled = nullptr;
 	m_sys_spec = nullptr;
 	m_sys_firstlaunch = nullptr;
 	m_sys_enable_budgetmonitoring = nullptr;
@@ -764,7 +764,7 @@ void CSystem::ShutDown()
 	SAFE_RELEASE(m_sys_job_system_enable);
 	SAFE_RELEASE(m_sys_job_system_profiler);
 	SAFE_RELEASE(m_sys_job_system_max_worker);
-	SAFE_RELEASE(m_sys_job_system_active_wait_enabled);
+	SAFE_RELEASE(m_sys_job_system_worker_boost_enabled);
 	SAFE_RELEASE(m_sys_spec);
 	SAFE_RELEASE(m_sys_firstlaunch);
 	SAFE_RELEASE(m_sys_enable_budgetmonitoring);

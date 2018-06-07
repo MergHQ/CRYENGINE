@@ -78,6 +78,9 @@ public:
 
 	void           AddBlockingFallbackJob(JobManager::SInfoBlock* pInfoBlock, uint32 nWorkerThreadID);
 
+	virtual bool KickTempWorker() { return false; }
+	virtual bool StopTempWorker() { return false; }
+
 #if defined(JOBMANAGER_SUPPORT_FRAMEPROFILER)
 	JobManager::IWorkerBackEndProfiler* GetBackEndWorkerProfiler() const { return m_pBackEndWorkerProfiler; }
 #endif

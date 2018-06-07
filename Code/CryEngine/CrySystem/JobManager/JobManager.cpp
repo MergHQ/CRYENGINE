@@ -404,7 +404,7 @@ JobManager::CJobManager::CJobManager()
 
 const bool JobManager::CJobManager::WaitForJob(JobManager::SJobState& rJobState) const
 {
-	static ICVar* isActiveWaitEnableCVar = gEnv->pConsole ? gEnv->pConsole->GetCVar("sys_job_system_active_wait_enabled") : nullptr;
+	static ICVar* isActiveWaitEnableCVar = gEnv->pConsole ? gEnv->pConsole->GetCVar("sys_job_system_worker_boost_enabled") : nullptr;
 	if (!rJobState.syncVar.NeedsToWait())
 	{
 		return true;
@@ -437,12 +437,15 @@ const bool JobManager::CJobManager::WaitForJob(JobManager::SJobState& rJobState)
 
 	if (processJobsWhileWaiting)
 	{		
-		ActiveWaitOnJobState(rJobState);
+		KickTempWorker();
 	}
 
-	// Unfortunately we don't know if the jobs that are synced to this job state are in the regular/blocking/streaming job queue
-	// Assume for now  that they are in the regular queue
 	rJobState.syncVar.Wait();
+
+	if (processJobsWhileWaiting)
+	{
+		StopTempWorker();
+	}
 
 
 #if defined(JOBMANAGER_SUPPORT_PROFILING)
@@ -1625,17 +1628,17 @@ void JobManager::CJobManager::AddBlockingFallbackJob(JobManager::SInfoBlock* pIn
 }
 
 ///////////////////////////////////////////////////////////////////////////////
-void JobManager::CJobManager::ActiveWaitOnJobState(JobManager::SJobState& jobState) const
+void JobManager::CJobManager::KickTempWorker() const
 {
-	if (!jobState.syncVar.NeedsToWait())
-	{
-		return;
-	}
+	CRY_ASSERT(m_pThreadBackEnd);
+	static_cast<ThreadBackEnd::CThreadBackEnd*>(m_pThreadBackEnd)->KickTempWorker();
+}
 
-	// Unfortunately we do not know if the jobState targets the Regular, Fallback or Blocking backend.
-	// We assume that it is the Regular backend
-	assert(m_pThreadBackEnd);
-	static_cast<ThreadBackEnd::CThreadBackEnd*>(m_pThreadBackEnd)->AddTempWorkerUntilJobStateIsComplete(jobState);
+///////////////////////////////////////////////////////////////////////////////
+void JobManager::CJobManager::StopTempWorker() const
+{
+	CRY_ASSERT(m_pThreadBackEnd);
+	static_cast<ThreadBackEnd::CThreadBackEnd*>(m_pThreadBackEnd)->StopTempWorker();
 }
 
 ///////////////////////////////////////////////////////////////////////////////
