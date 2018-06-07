@@ -4189,7 +4189,7 @@ int CEntityObject::AddEntityLink(const string& name, CryGUID targetEntityId)
 
 			if (target->GetId() == this->GetId())
 			{
-				CryWarning(VALIDATOR_MODULE_EDITOR, VALIDATOR_ASSERT, "Attempting to link Object %s with itself", m_pEntity->GetName());
+				CryWarning(VALIDATOR_MODULE_EDITOR, VALIDATOR_ASSERT, "Attempting to link Object %s with itself", pObject->GetName());
 				return -1;
 			}
 		}
