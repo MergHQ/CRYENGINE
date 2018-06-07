@@ -12,8 +12,10 @@ namespace CryEngine
 	/// </summary>
 	public class ActionHandler : IActionListener
 	{
+		[SerializeValue]
 		private readonly Dictionary<string, Action<string, InputState, float>> _handlers = new Dictionary<string, Action<string, InputState, float>>();
-		private string _actionMapName;
+		[SerializeValue]
+		private readonly string _actionMapName;
 
 		/// <summary>
 		/// Create a new ActionHandler that can receive the input as described in the config-file at actionMapPath.
@@ -67,7 +69,7 @@ namespace CryEngine
 		public override void Dispose()
 		{
 			_handlers.Clear();
-			var actionMapManager = Global.gEnv.pGameFramework.GetIActionMapManager();
+			var actionMapManager = Global.gEnv?.pGameFramework?.GetIActionMapManager();
 			actionMapManager?.RemoveExtraActionListener(this, _actionMapName);
 			base.Dispose();
 		}

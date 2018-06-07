@@ -9,6 +9,7 @@ namespace CryEngine.Animations
 	/// </summary>
 	public sealed class AnimationContextAction
 	{
+		[SerializeValue]
 		internal AnimationContextActionList NativeHandle { get; private set; }
 
 		internal AnimationContextAction(AnimationContextActionList nativeHandle)

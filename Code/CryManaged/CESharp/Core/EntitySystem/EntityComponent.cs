@@ -91,12 +91,13 @@ namespace CryEngine
 				}
 			}
 
-			throw new KeyNotFoundException("Component was not registered!");
+			return null;
 		}
 
 		/// <summary>
 		/// The <see cref="CryEngine.Entity"/> that owns this <see cref="EntityComponent"/>.
 		/// </summary>
+		[SerializeValue]
 		public Entity Entity { get; private set; }
 
 		#region Functions

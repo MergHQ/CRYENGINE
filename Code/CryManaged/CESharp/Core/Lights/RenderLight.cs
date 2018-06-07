@@ -779,6 +779,7 @@ namespace CryEngine
 			}
 		}
 
+		[SerializeValue]
 		internal SRenderLight NativeBaseHandle { get; private set; }
 
 		internal RenderLight(SRenderLight nativeHandle)

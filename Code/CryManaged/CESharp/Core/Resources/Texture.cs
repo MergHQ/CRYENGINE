@@ -98,14 +98,10 @@ namespace CryEngine.Resources
 		/// <summary>
 		/// Texture Width.
 		/// </summary>
-		/// <value>The width.</value>
-		//public int Width { get; private set; }
 		public int Width { get { return _nativeTexture.GetWidth(); } }
 		/// <summary>
 		/// Texture Height.
 		/// </summary>
-		/// <value>The height.</value>
-		//public int Height { get; private set; }
 		public int Height { get { return _nativeTexture.GetHeight(); } }
 
 		/// <summary>

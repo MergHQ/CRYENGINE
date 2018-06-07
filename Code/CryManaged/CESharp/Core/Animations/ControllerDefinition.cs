@@ -9,6 +9,7 @@ namespace CryEngine.Animations
 	/// </summary>
 	public class ControllerDefinition
 	{
+		[SerializeValue]
 		internal SControllerDef NativeHandle { get; private set; }
 
 		internal ControllerDefinition(SControllerDef nativeHandle)

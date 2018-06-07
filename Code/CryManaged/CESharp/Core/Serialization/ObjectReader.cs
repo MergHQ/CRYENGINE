@@ -11,6 +11,13 @@ namespace CryEngine.Serialization
 {
 	internal class ObjectReader
 	{
+		private const string MissingMethodText = "Unable to create a new instance of {0} because the constructor could not be found. " +
+												 "This can happen if the constructor is private or has required parameters specified. " +
+												 "For classes inheriting from {1} it's best to not have a constructor and instead initialize it in the OnInitialize and OnGameplayStart methods of the component.";
+
+		private const string MethodAccessText = "Unable to create a new instance of {0} because the constructor could not be accessed. " +
+												"This can happen if the constructor is private or has required parameters specified. " +
+												"For classes inheriting from {1} it's best to not have a constructor and instead initialize it in the OnInitialize and OnGameplayStart methods of the component.";
 		internal ObjectReader(Stream stream)
 		{
 			stream.Seek(0, SeekOrigin.Begin);
@@ -26,9 +33,12 @@ namespace CryEngine.Serialization
 		private Dictionary<Type, Dictionary<int, object>> _typeObjects = new Dictionary<Type, Dictionary<int, object>>();
 		private Dictionary<string, Type> _guidLookup = new Dictionary<string, Type>();
 
-		private Type _deserializationCallbackType = typeof(IDeserializationCallback);
-		private MethodInfo _deserializationMethod = typeof(IDeserializationCallback).GetMethod(nameof(IDeserializationCallback.OnDeserialization), BindingFlags.Instance | BindingFlags.Public | BindingFlags.DeclaredOnly);
-		private Type _entityComponentType = typeof(EntityComponent);
+		private readonly Type _deserializationCallbackType = typeof(IDeserializationCallback);
+		private readonly MethodInfo _deserializationMethod = typeof(IDeserializationCallback).GetMethod(nameof(IDeserializationCallback.OnDeserialization), BindingFlags.Instance | BindingFlags.Public | BindingFlags.DeclaredOnly);
+		private readonly Type _entityComponentType = typeof(EntityComponent);
+		private readonly Type _entityPropertyType = typeof(EntityPropertyAttribute);
+		private readonly Type _serializedType = typeof(SerializeValueAttribute);
+		private readonly Type _nonSerializedType = typeof(NonSerializedAttribute);
 
 		private void PopulateGuidLookup()
 		{
@@ -57,7 +67,7 @@ namespace CryEngine.Serialization
 			return ReadInternal();
 		}
 
-		private object ReadInternal(object existingObject = null, bool isConstructed = false)
+		private object ReadInternal(object existingObject = null, bool isConstructed = false, Type currentType = null)
 		{
 			var objectType = (SerializedObjectType)Reader.ReadByte();
 
@@ -100,7 +110,7 @@ namespace CryEngine.Serialization
 				case SerializedObjectType.Reference:
 					return ReadReference();
 				case SerializedObjectType.Object:
-					return ReadObject(existingObject, isConstructed);
+					return ReadObject(existingObject, isConstructed, currentType);
 				case SerializedObjectType.Array:
 					return ReadArray();
 				case SerializedObjectType.Assembly:
@@ -112,7 +122,7 @@ namespace CryEngine.Serialization
 				case SerializedObjectType.MemberInfo:
 					return ReadMemberInfo();
 				case SerializedObjectType.ISerializable:
-					return ReadISerializable();
+					return ReadISerializeValue();
 				case SerializedObjectType.EntityComponent:
 					return ReadEntityComponent();
 			}
@@ -183,8 +193,40 @@ namespace CryEngine.Serialization
 			var componentTypeGuid = (EntityComponent.GUID)Read();
 
 			var type = EntityComponent.GetComponentTypeByGUID(componentTypeGuid);
+			if(type == null)
+			{
+				ReadObjectMembers(null, null, false);
+				return null;
+			}
 
-			var obj = type != null ? Activator.CreateInstance(type) : null;
+			object obj = null;
+			try
+			{
+				obj = type != null ? Activator.CreateInstance(type) : null;
+			}
+			catch(MissingMethodException)
+			{
+				throw new MissingMethodException(string.Format(MissingMethodText, type.Name, nameof(EntityComponent)));
+			}
+			catch(MissingMemberException)
+			{
+				// Same error as MissingMethodException, but required for certain platforms.
+				throw new MissingMemberException(string.Format(MissingMethodText, type.Name, nameof(EntityComponent)));
+			}
+			catch(MethodAccessException)
+			{
+				throw new MethodAccessException(string.Format(MethodAccessText, type.Name, nameof(EntityComponent)));
+			}
+			catch(MemberAccessException)
+			{
+				// Same error as MethodAccessException, but required for certain platforms.
+				throw new MemberAccessException(string.Format(MethodAccessText, type.Name, nameof(EntityComponent)));
+			}
+			catch(Exception ex)
+			{
+				throw (ex);
+			}
+
 			if(type != null)
 			{
 				AddReference(type, obj, referenceId);
@@ -195,12 +237,12 @@ namespace CryEngine.Serialization
 			return obj;
 		}
 
-		private object ReadObject(object existingObject, bool isConstructed)
+		private object ReadObject(object existingObject, bool isConstructed, Type currentType)
 		{
 			var referenceId = Reader.ReadInt32();
 			var type = ReadType();
 
-			if(existingObject == null && type != null)
+			if(existingObject == null && type != null && (currentType == null || type == currentType))
 			{
 				existingObject = FormatterServices.GetUninitializedObject(type);
 			}
@@ -229,7 +271,7 @@ namespace CryEngine.Serialization
 				ReadObjectBaseTypeMembers(obj, baseType, fieldFlags, isConstructed);
 			}
 
-			if(_deserializationCallbackType.IsAssignableFrom(type))
+			if(type != null && _deserializationCallbackType.IsAssignableFrom(type))
 			{
 				_deserializationMethod.Invoke(obj, new object[] { this });
 			}
@@ -238,26 +280,49 @@ namespace CryEngine.Serialization
 		private void ReadObjectBaseTypeMembers(object obj, Type objectType, BindingFlags flags, bool setSerializedFieldsOnly)
 		{
 			var numFields = Reader.ReadInt32();
-			var typeChanged = obj == null ? false : !objectType.IsAssignableFrom(obj.GetType());
+			var typeChanged = obj == null || objectType == null ? false : !objectType.IsAssignableFrom(obj.GetType());
 			for(var iField = 0; iField < numFields; iField++)
 			{
 				var fieldName = Reader.ReadString();
+
+				// If the objectType is null, it means the object was removed from the assembly. 
+				// Perform the ReadInternal anyway to make sure the reader doesn't go out of sync.
+				if(objectType == null)
+				{
+					ReadInternal();
+					continue;
+				}
+
 				var fieldInfo = objectType?.GetField(fieldName, flags);
 
 				var canWrite = !typeChanged // Writing a new type is not possible.
 					&& fieldInfo != null // Can't write to non-existing field.
 					&& !fieldInfo.IsLiteral // Can't write to const objects
-					&& (obj == null) == fieldInfo.IsStatic; // If the object is null it can't be written, unless the field is static.
+					&& (obj == null) == fieldInfo.IsStatic // If the object is null it can't be written, unless the field is static.
+					&& !fieldInfo.IsNotSerialized; // Don't serialize objects that have the NonSerialized attribute.
 
 				var existingObject = canWrite ? fieldInfo.GetValue(obj) : null;
-				var fieldValue = ReadInternal(existingObject, false);
+				var fieldValue = ReadInternal(existingObject, false, fieldInfo?.FieldType);
+
+				if((fieldValue == null && fieldInfo.FieldType.IsValueType) || (fieldValue != null && fieldValue.GetType() != fieldInfo.FieldType))
+				{
+					// The type of the field has changed, so setting the value would be dangerous.
+					continue;
+				}
 
 				if(canWrite)
 				{
-					if(setSerializedFieldsOnly)
+					// Check if the field is a backing field for a property.
+					if(!setSerializedFieldsOnly)
 					{
-						// Check if the field is a backing field for a property.
-						if(!fieldInfo.IsDefined(objectType, false))
+						fieldInfo.SetValue(obj, fieldValue);
+					}
+					else
+					{
+						bool SerializeValue = false;
+						// Read properties with generated get; set; values first.
+						var generated = fieldInfo.GetCustomAttribute<System.Runtime.CompilerServices.CompilerGeneratedAttribute>() != null;
+						if(generated)
 						{
 							// Extract the property's name from the backing field's name.
 							// Backing fields are in the format "<NameOfProperty>k_backingfield".
@@ -273,18 +338,20 @@ namespace CryEngine.Serialization
 								continue;
 							}
 
-							var isEntityProperty = propertyInfo.GetCustomAttributes(typeof(EntityPropertyAttribute), false).Length != 0;
-
-							// Always write to EntityComponents, otherwise the Entity property will be null.
-							if(isEntityProperty || objectType == _entityComponentType)
-							{
-								fieldInfo.SetValue(obj, fieldValue);
-							}
+							// Only set the value of properties that are either EntityProperties, or marked with SerializeValue.
+							SerializeValue = propertyInfo.GetCustomAttribute<EntityPropertyAttribute>(false) != null || propertyInfo.GetCustomAttribute<SerializeValueAttribute>(false) != null;
 						}
-					}
-					else
-					{
-						fieldInfo.SetValue(obj, fieldValue);
+						else
+						{
+							// Read fields that are marked as SerializeValue.
+							SerializeValue = fieldInfo.GetCustomAttribute<SerializeValueAttribute>(false) != null;
+						}
+
+						// Only set the value if the field is marked as SerializeValue.
+						if(SerializeValue)
+						{
+							fieldInfo.SetValue(obj, fieldValue);
+						}
 					}
 				}
 			}
@@ -441,7 +508,7 @@ namespace CryEngine.Serialization
 			return memberInfo;
 		}
 
-		private object ReadISerializable()
+		private object ReadISerializeValue()
 		{
 			var referenceId = Reader.ReadInt32();
 			var type = ReadType();

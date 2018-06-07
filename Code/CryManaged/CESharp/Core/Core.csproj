@@ -156,6 +156,7 @@
     <Compile Include="Serialization\ObjectReader.cs" />
     <Compile Include="Serialization\ObjectWriter.cs" />
     <Compile Include="Serialization\ISerializedObject.cs" />
+    <Compile Include="Serialization\SerializeValueAttribute.cs" />
     <Compile Include="Util\Attribute.cs" />
     <Compile Include="Util\Event.cs" />
     <Compile Include="Util\IconType.cs" />

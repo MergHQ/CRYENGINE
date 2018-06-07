@@ -66,13 +66,15 @@ namespace CryEngine.EntitySystem
 		/// </summary>
 		protected Entity _entity;
 
+		[SerializeValue]
 		internal virtual IPhysicalEntity NativeHandle { get; private set; }
 
 		/// <summary>
 		/// The physicalized type of this <see cref="PhysicsObject"/>. If the <see cref="PhysicsObject"/> is not physicalized this will be <c>PhysicalizationType.None</c>.
 		/// </summary>
 		/// <value>The physicalized type of the <see cref="PhysicsObject"/>.</value>
-		public PhysicalizationType PhysicsType{ get; set;} = PhysicalizationType.None;
+		[SerializeValue]
+		public PhysicalizationType PhysicsType{ get; protected set;} = PhysicalizationType.None;
 
 		/// <summary>
 		/// Gets the Entity that this <see cref="PhysicsObject"/> belongs to. 
@@ -358,10 +360,12 @@ namespace CryEngine.EntitySystem
 				return;
 			}
 
-			var physParams = new SEntityPhysicalizeParams();
-			physParams.mass = mass;
-			physParams.type = (int)type;
-			OwnerEntity.NativeHandle.Physicalize(physParams);
+			OwnerEntity.NativeHandle.Physicalize(new SEntityPhysicalizeParams
+			{
+				mass = mass,
+				type = (int)type
+			});
+			PhysicsType = type;
 		}
 
 		/// <summary>
@@ -385,12 +389,12 @@ namespace CryEngine.EntitySystem
 		[Obsolete("Using EPhysicalizizationType is obsolete. Use PhysicalizationType instead.")]
 		public void Physicalize(float mass, int density, EPhysicalizationType type)
 		{
-			var physParams = new SEntityPhysicalizeParams();
-			physParams.mass = mass;
-			physParams.density = density;
-			physParams.type = (int)type;
-
-			OwnerEntity.NativeHandle.Physicalize(physParams);
+			OwnerEntity.NativeHandle.Physicalize(new SEntityPhysicalizeParams
+			{
+				mass = mass,
+				density = density,
+				type = (int)type
+			});
 			SetType((pe_type)type);
 		}
 

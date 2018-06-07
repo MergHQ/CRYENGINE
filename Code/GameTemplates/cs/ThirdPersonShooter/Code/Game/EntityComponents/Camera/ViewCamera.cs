@@ -10,9 +10,12 @@ namespace CryEngine.Game
 		/// The currently active ViewCamera, or null of no ViewCamera is active at the moment.
 		/// </summary>
 		/// <value>The active camera.</value>
+		[SerializeValue]
 		public static ViewCamera ActiveCamera { get; private set; }
 
+		[SerializeValue]
 		private View _view;
+		[SerializeValue]
 		private bool _active;
 
 		/// <summary>

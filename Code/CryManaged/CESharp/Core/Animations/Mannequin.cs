@@ -30,6 +30,7 @@ namespace CryEngine.Animations
 		private static Mannequin _mannequinInterface;
 		#endregion
 
+		[SerializeValue]
 		internal IMannequin NativeHandle { get; private set; }
 
 		/// <summary>

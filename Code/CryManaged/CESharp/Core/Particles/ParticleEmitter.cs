@@ -127,6 +127,7 @@ namespace CryEngine
 			}
 		}
 
+		[SerializeValue]
 		internal IParticleEmitter NativeHandle { get; private set; }
 
 		internal ParticleEmitter(IParticleEmitter nativeHandle)

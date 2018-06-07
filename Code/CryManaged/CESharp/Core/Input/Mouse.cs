@@ -89,7 +89,7 @@ namespace CryEngine
 			/// Called when the left mouse button is pressed down.
 			/// </summary>
 			event MouseEventHandler LeftButtonDown;
-			
+
 			/// <summary>
 			/// Called when the left mouse button was pressed down is now up again.
 			/// </summary>
@@ -115,92 +115,134 @@ namespace CryEngine
 		/// Used by all Mouse events.
 		/// </summary>
 		public delegate void MouseEventHandler(int x, int y);
+		#region Left mouse button
 		/// <summary>
 		/// Invoked when the left mouse button is pressed down.
 		/// </summary>
 		public static event MouseEventHandler OnLeftButtonDown;
+
 		/// <summary>
 		/// Invoked when the left mouse button is released after being pressed down.
 		/// </summary>
 		public static event MouseEventHandler OnLeftButtonUp;
+
+		/// <summary>
+		/// Invoked when the left mouse button is double clicked.
+		/// </summary>
+		public static event MouseEventHandler OnLeftButtonDoubleClicked;
+		#endregion
+
+		#region Right mouse button
 		/// <summary>
 		/// Invoked when the right mouse button is pressed down.
 		/// </summary>
 		public static event MouseEventHandler OnRightButtonDown;
+
 		/// <summary>
 		/// Invoked when the right mouse button is released after being pressed down.
 		/// </summary>
 		public static event MouseEventHandler OnRightButtonUp;
+
 		/// <summary>
-		/// Invoked when the mouse has moved.
+		/// Invoked when the right mouse button is double clicked.
+		/// </summary>
+		public static event MouseEventHandler OnRightButtonDoubleClicked;
+		#endregion
+
+		#region Middle mouse button
+		/// <summary>
+		/// Invoked when the middle mouse button is pressed down.
+		/// </summary>
+		public static event MouseEventHandler OnMiddleButtonDown;
+
+		/// <summary>
+		/// Invoked when the middle mouse button is released after being pressed down.
+		/// </summary>
+		public static event MouseEventHandler OnMiddleButtonUp;
+
+		/// <summary>
+		/// Invoked when the middle mouse button is double clicked.
+		/// </summary>
+		public static event MouseEventHandler OnMiddleButtonDoubleClicked;
+		#endregion
+
+		/// <summary>
+		/// Invoked when the mouse wheel value has changed.
+		/// </summary>
+		public static event System.Action<int> OnMouseWheelChanged;
+
+		/// <summary>
+		/// Invoked when the mouse has moved inside the window of the engine.
 		/// </summary>
 		public static event MouseEventHandler OnMove;
+
 		/// <summary>
-		/// Invoked when the mouse moves outside of a window.
+		/// Invoked when the mouse moves outside of the window of the engine.
 		/// </summary>
 		public static event MouseEventHandler OnWindowLeave;
+
 		/// <summary>
-		/// Invoked when the mouse enters a window.
+		/// Invoked when the mouse enters the window of the engine.
 		/// </summary>
 		public static event MouseEventHandler OnWindowEnter;
 
 		internal static Mouse Instance { get; set; }
 
 		private static IMouseOverride s_override = null;
-		private static float _lmx = 0;
-		private static float _lmy = 0;
 		private static bool _updateLeftDown = false;
 		private static bool _updateLeftUp = false;
 		private static bool _updateRightDown = false;
 		private static bool _updateRightUp = false;
-		private static uint _hitEntityId = 0;
-		private static Vector2 _hitEntityUV = new Vector2();
+		private static bool _updateMiddleDown = false;
+		private static bool _updateMiddleUp = false;
 		private static bool _cursorVisible = false;
 
 		private DeferredMouseListener _mouseListener;
 
 		/// <summary>
-		/// Current Mouse Cursor Position, refreshed before update loop.
+		/// Current mouse cursor position, refreshed before update loop.
 		/// </summary>
-		public static Point CursorPosition { get { return new Point(_lmx, _lmy); } }
+		public static Vector2 CursorPosition { get; private set; }
 
 		/// <summary>
-		/// Indicates whether left mouse button is Down during one update phase.
+		/// Indicates whether left mouse button is down during one update phase.
 		/// </summary>
 		public static bool LeftDown { get; private set; }
 
 		/// <summary>
-		/// Indicates whether left mouse button is Released during one update phase.
+		/// Indicates whether left mouse button is released during one update phase.
 		/// </summary>
 		public static bool LeftUp { get; private set; }
 
 		/// <summary>
-		/// Indicates whether right mouse button is Down during one update phase.
+		/// Indicates whether right mouse button is down during one update phase.
 		/// </summary>
 		public static bool RightDown { get; private set; }
 
 		/// <summary>
-		/// Indicates whether right mouse button is Released during one update phase.
+		/// Indicates whether right mouse button is released during one update phase.
 		/// </summary>
 		public static bool RightUp { get; private set; }
 
 		/// <summary>
+		/// Indicates whether middle mouse button is down during one update phase.
+		/// </summary>
+		public static bool MiddleDown { get; private set; }
+
+		/// <summary>
+		/// Indicates whether middle mouse button is released during one update phase.
+		/// </summary>
+		public static bool MiddleUp { get; private set; }
+
+		/// <summary>
 		/// ID of the Entity currently under the cursor position.
 		/// </summary>
-		public static uint HitEntityId
-		{
-			get { return _hitEntityId; }
-			set { _hitEntityId = value; }
-		}
+		public static uint HitEntityId { get; set; }
 
 		/// <summary>
 		/// UV-coordinates where the mouse-cursor is hitting an Entity.
 		/// </summary>
-		public static Vector2 HitEntityUV
-		{
-			get { return _hitEntityUV; }
-			set { _hitEntityUV = value; }
-		}
+		public static Vector2 HitEntityUV { get; set; }
 
 		/// <summary>
 		/// The Entity currently under the cursor position
@@ -242,76 +284,118 @@ namespace CryEngine
 			int x = mouseEvent.X;
 			int y = mouseEvent.Y;
 
-			switch (mouseEvent.HardwareEvent)
+			switch(mouseEvent.HardwareEvent)
 			{
-			case EHARDWAREMOUSEEVENT.HARDWAREMOUSEEVENT_LBUTTONDOWN:
-				_updateLeftDown = true;
-				HitScenes(x, y);
-				if (OnLeftButtonDown != null)
+				case EHARDWAREMOUSEEVENT.HARDWAREMOUSEEVENT_LBUTTONDOWN:
 				{
-						OnLeftButtonDown(x, y);
+					_updateLeftDown = true;
+					HitScenes(x, y);
+					OnLeftButtonDown?.Invoke(x, y);
+					break;
 				}
-				break;
 
-			case EHARDWAREMOUSEEVENT.HARDWAREMOUSEEVENT_LBUTTONUP:
-				_updateLeftUp = true;
-				HitScenes(x, y);
-				if (OnLeftButtonUp != null)
+				case EHARDWAREMOUSEEVENT.HARDWAREMOUSEEVENT_LBUTTONUP:
 				{
-							OnLeftButtonUp(x, y);
+					_updateLeftUp = true;
+					HitScenes(x, y);
+					OnLeftButtonUp?.Invoke(x, y);
+					break;
 				}
-				break;
-			case EHARDWAREMOUSEEVENT.HARDWAREMOUSEEVENT_RBUTTONDOWN:
-				_updateRightDown = true;
-				HitScenes(x, y);
-				if (OnRightButtonDown != null)
+
+				case EHARDWAREMOUSEEVENT.HARDWAREMOUSEEVENT_RBUTTONDOWN:
 				{
-					OnRightButtonDown(x, y);
+					_updateRightDown = true;
+					HitScenes(x, y);
+					OnRightButtonDown?.Invoke(x, y);
+					break;
 				}
-				break;
-			case EHARDWAREMOUSEEVENT.HARDWAREMOUSEEVENT_RBUTTONUP:
-				_updateRightUp = true;
-				HitScenes(x, y);
-				if (OnRightButtonUp != null)
+
+				case EHARDWAREMOUSEEVENT.HARDWAREMOUSEEVENT_RBUTTONUP:
 				{
-					OnRightButtonUp(x, y);
+					_updateRightUp = true;
+					HitScenes(x, y);
+					OnRightButtonUp?.Invoke(x, y);
+					break;
 				}
-				break;
+
+				case EHARDWAREMOUSEEVENT.HARDWAREMOUSEEVENT_MOVE:
+				{
+					// OnMove will be called from the Update method.
+					break;
+				}
+
+				case EHARDWAREMOUSEEVENT.HARDWAREMOUSEEVENT_LBUTTONDOUBLECLICK:
+				{
+					OnLeftButtonDoubleClicked?.Invoke(x, y);
+					break;
+				}
+
+				case EHARDWAREMOUSEEVENT.HARDWAREMOUSEEVENT_RBUTTONDOUBLECLICK:
+				{
+					OnRightButtonDoubleClicked?.Invoke(x, y);
+					break;
+				}
+
+				case EHARDWAREMOUSEEVENT.HARDWAREMOUSEEVENT_MBUTTONDOWN:
+				{
+					_updateMiddleDown = true;
+					HitScenes(x, y);
+					OnMiddleButtonDown?.Invoke(x, y);
+					break;
+				}
+
+				case EHARDWAREMOUSEEVENT.HARDWAREMOUSEEVENT_MBUTTONUP:
+				{
+					_updateMiddleUp = true;
+					HitScenes(x, y);
+					OnMiddleButtonUp?.Invoke(x, y);
+					break;
+				}
+
+				case EHARDWAREMOUSEEVENT.HARDWAREMOUSEEVENT_MBUTTONDOUBLECLICK:
+				{
+					OnMiddleButtonDoubleClicked?.Invoke(x, y);
+					break;
+				}
+
+				case EHARDWAREMOUSEEVENT.HARDWAREMOUSEEVENT_WHEEL:
+				{
+					OnMouseWheelChanged?.Invoke(mouseEvent.WheelDelta);	
+					break;
+				}
+					
+				default:
+					throw new System.NotImplementedException();
 			}
 		}
 
 		private static void OnOverrideLeftButtonDown(int x, int y)
 		{
 			_updateLeftDown = true;
-			if (OnLeftButtonDown != null)
-				OnLeftButtonDown(x, y);
+			OnLeftButtonDown?.Invoke(x, y);
 		}
 
 		private static void OnOverrideLeftButtonUp(int x, int y)
 		{
 			_updateLeftUp = true;
-			if (OnLeftButtonUp != null)
-				OnLeftButtonUp(x, y);
+			OnLeftButtonUp?.Invoke(x, y);
 		}
 
 		private static void OnOverrideRightButtonDown(int x, int y)
 		{
 			_updateRightDown = true;
-			if (OnRightButtonDown != null)
-				OnRightButtonDown(x, y);
+			OnRightButtonDown?.Invoke(x, y);
 		}
 
 		private static void OnOverrideRightButtonUp(int x, int y)
 		{
 			_updateRightUp = true;
-			if (OnRightButtonUp != null)
-				OnRightButtonUp(x, y);
+			OnRightButtonUp?.Invoke(x, y);
 		}
 
 		private static void OnOverrideMove(int x, int y)
 		{
-			if (OnMove != null)
-				OnMove(x, y);
+			OnMove?.Invoke(x, y);
 		}
 
 		/// <summary>
@@ -320,7 +404,7 @@ namespace CryEngine
 		/// <param name="mouseOverride"></param>
 		public static void SetOverride(IMouseOverride mouseOverride)
 		{
-			if (s_override != null)
+			if(s_override != null)
 			{
 				s_override.LeftButtonDown -= OnOverrideLeftButtonDown;
 				s_override.LeftButtonUp -= OnOverrideLeftButtonUp;
@@ -329,7 +413,7 @@ namespace CryEngine
 				s_override.Move -= OnOverrideMove;
 			}
 			s_override = mouseOverride;
-			if (s_override != null)
+			if(s_override != null)
 			{
 				s_override.LeftButtonDown += OnOverrideLeftButtonDown;
 				s_override.LeftButtonUp += OnOverrideLeftButtonUp;
@@ -349,36 +433,38 @@ namespace CryEngine
 			LeftUp = _updateLeftUp;
 			RightDown = _updateRightDown;
 			RightUp = _updateRightUp;
+			MiddleDown = _updateMiddleDown;
+			MiddleUp = _updateMiddleUp;
 
 			_updateLeftDown = false;
 			_updateLeftUp = false;
 			_updateRightDown = false;
 			_updateRightUp = false;
+			_updateMiddleDown = false;
+			_updateMiddleUp = false;
 
 			float x = 0, y = 0;
 			Global.gEnv.pHardwareMouse.GetHardwareMouseClientPosition(ref x, ref y);
 
 			var w = Renderer.ScreenWidth;
 			var h = Renderer.ScreenHeight;
-			bool wasInside = _lmx >= 0 && _lmy >= 0 && _lmx < w && _lmy < h;
+			var pos = CursorPosition;
+			bool wasInside = pos.X >= 0 && pos.Y >= 0 && pos.X < w && pos.Y < h;
 			bool isInside = x >= 0 && y >= 0 && x < w && y < h;
-			_lmx = x; _lmy = y;
+			CursorPosition = new Vector2(x, y);
 
 			HitScenes((int)x, (int)y);
-			if (wasInside && isInside)
+			if(wasInside && isInside)
 			{
-				if (OnMove != null)
-					OnMove((int)x, (int)y);
+				OnMove?.Invoke((int)x, (int)y);
 			}
-			else if (wasInside != isInside && isInside)
+			else if(wasInside != isInside && isInside)
 			{
-				if (OnWindowEnter != null)
-					OnWindowEnter((int)x, (int)y);
+				OnWindowEnter?.Invoke((int)x, (int)y);
 			}
-			else if (wasInside != isInside && !isInside)
+			else if(wasInside != isInside && !isInside)
 			{
-				if (OnWindowLeave != null)
-					OnWindowLeave((int)x, (int)y);
+				OnWindowLeave?.Invoke((int)x, (int)y);
 			}
 		}
 
@@ -399,12 +485,11 @@ namespace CryEngine
 				&& Physics.Raycast(Camera.Position, direction, 100, out RaycastHit hit))
 			{
 				HitEntityId = hit.EntityId;
-				_hitEntityUV = hit.UvPoint;
+				HitEntityUV = hit.UvPoint;
 			}
 			else
 			{
-				_hitEntityUV.x = 0;
-				_hitEntityUV.y = 0;
+				HitEntityUV = Vector2.Zero;
 			}
 		}
 

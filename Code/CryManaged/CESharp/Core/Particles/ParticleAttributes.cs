@@ -44,6 +44,7 @@ namespace CryEngine
 			}
 		}
 
+		[SerializeValue]
 		internal IParticleAttributes NativeHandle { get; private set; }
 
 		internal ParticleAttributes(IParticleAttributes nativeHandle)

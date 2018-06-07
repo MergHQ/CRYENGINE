@@ -10,6 +10,7 @@ namespace CryEngine.Animations
 	/// </summary>
 	public sealed class AnimationDatabaseManager
 	{
+		[SerializeValue]
 		internal IAnimationDatabaseManager NativeHandle { get; private set; }
 
 		internal AnimationDatabaseManager(IAnimationDatabaseManager nativeHandle)
