@@ -1,9 +1,7 @@
 // Copyright 2001-2018 Crytek GmbH / Crytek Group. All rights reserved.
 
 #include "StdAfx.h"
-#include "SandboxPythonBridge.h"
-
-#include "EditorFramework/Editor.h"
+#include <EditorFramework/Editor.h>
 
 // Disable warnings (treated as errors) thrown by shiboken headers, causing compilation to fail.
 #pragma warning (push)
@@ -16,14 +14,13 @@
 #include <pyside2_qtwidgets_python.h>
 #include <typeresolver.h>
 
-
 PyTypeObject** SbkPySide2_QtWidgetsTypes;
 SbkConverter** SbkPySide2_QtWidgetsTypeConverters;
 
 struct PythonWidget
 {
 	PyObject* pShibokenWrapper;
-	QWidget* pQtWidget;
+	QWidget*  pQtWidget;
 
 	operator bool() const { return pShibokenWrapper && pQtWidget; }
 };
@@ -38,8 +35,8 @@ QWidget* CreateErrorWidget()
 
 PythonWidget InstantiateWidgetFromPython(PyObject* pWidgetType)
 {
-	PyObject *arglist;
-	PyObject *pyResult;
+	PyObject* arglist;
+	PyObject* pyResult;
 
 	// Call evaluate on the python type (which will create an instance)
 	arglist = Py_BuildValue("()");
@@ -60,7 +57,7 @@ PythonWidget InstantiateWidgetFromPython(PyObject* pWidgetType)
 	PythonToCppFunc pythonToCpp = Shiboken::Conversions::isPythonToCppPointerConvertible((SbkObjectType*)SbkPySide2_QtWidgetsTypes[SBK_QWIDGET_IDX], pyResult);
 	if (!pythonToCpp)
 	{
-		Shiboken::warning(PyExc_RuntimeWarning, 2, "Invalid return value in function %s, expected %s, got %s.", "IWidgetFactory.ConstructWidget", Shiboken::SbkType< QWidget >()->tp_name, pyResult->ob_type->tp_name);
+		Shiboken::warning(PyExc_RuntimeWarning, 2, "Invalid return value in function %s, expected %s, got %s.", "IWidgetFactory.ConstructWidget", Shiboken::SbkType<QWidget>()->tp_name, pyResult->ob_type->tp_name);
 		Py_DECREF(pyResult);
 		return PythonWidget{ nullptr, CreateErrorWidget() };
 	}
@@ -92,23 +89,23 @@ public:
 		}
 	}
 
-	virtual QWidget* GetWidget() override { return pythonWidget.pQtWidget; }
+	virtual QWidget*    GetWidget() override          { return pythonWidget.pQtWidget; }
 	virtual const char* GetPaneTitle() const override { return name.c_str(); }
 
 private:
-	std::string name;
+	std::string  name;
 	PythonWidget pythonWidget;
 };
 
 class PythonViewPaneClass : public IViewPaneClass
 {
 private:
-	PyObject* pWidgetType;
+	PyObject*   pWidgetType;
 	std::string name;
 	std::string category;
-	bool needsMenuItem;
+	bool        needsMenuItem;
 	std::string menuPath;
-	bool unique;
+	bool        unique;
 
 public:
 	PythonViewPaneClass(PyObject* pWidgetType, const char* name, const char* category, bool needsMenuItem, const char* menuPath, bool unique)
@@ -128,22 +125,22 @@ public:
 		Py_DECREF(pWidgetType);
 	}
 
-	virtual const char* ClassName() override { return name.c_str(); }
-	virtual const char* Category()  override { return category.c_str(); }
-	virtual bool NeedsMenuItem() { return needsMenuItem; }
-	virtual const char* GetMenuPath() { return menuPath.c_str(); }
+	virtual const char*    ClassName() override       { return name.c_str(); }
+	virtual const char*    Category()  override       { return category.c_str(); }
+	virtual bool           NeedsMenuItem()            { return needsMenuItem; }
+	virtual const char*    GetMenuPath()              { return menuPath.c_str(); }
 	virtual CRuntimeClass* GetRuntimeClass() override { return 0; }
-	virtual const char* GetPaneTitle() override { return name.c_str(); }
-	virtual bool SinglePane() override { return unique; }
-	virtual IPane* CreatePane() const override
-	{ 
+	virtual const char*    GetPaneTitle() override    { return name.c_str(); }
+	virtual bool           SinglePane() override      { return unique; }
+	virtual IPane*         CreatePane() const override
+	{
 		return new PythonViewPaneWidget(pWidgetType, name.c_str());
 	}
 };
 
-static PyObject* RegisterWindow(PyObject *dummy, PyObject *args)
+static PyObject* RegisterWindow(PyObject* dummy, PyObject* args)
 {
-	PyObject *pythonType;
+	PyObject* pythonType;
 	const char* name;
 	const char* category;
 	bool needsMenu;
@@ -175,8 +172,8 @@ static PyObject* RegisterWindow(PyObject *dummy, PyObject *args)
 
 static PyMethodDef BridgeMethods[] =
 {
-	{ "register_window",  RegisterWindow, METH_VARARGS, "" },
-	{ NULL, NULL, 0, NULL }        /* Sentinel */
+	{ "register_window", RegisterWindow, METH_VARARGS, "" },
+	{ NULL,              NULL,           0,            NULL} // Sentinel
 };
 
 PyMODINIT_FUNC initSandboxPythonBridge(void)
@@ -194,4 +191,3 @@ PyMODINIT_FUNC initSandboxPythonBridge(void)
 	PyObject* module;
 	module = Py_InitModule("SandboxPythonBridge", BridgeMethods);
 }
-

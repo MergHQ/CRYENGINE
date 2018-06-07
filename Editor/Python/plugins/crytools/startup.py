@@ -28,7 +28,3 @@ if not init_script:
 if init_script:
     print 'Loading crytools from ' + os.path.dirname(init_script)
     imp.load_source('sandbox_init_script', init_script)
-
-
-import autocomplete
-autocomplete.generate_auto_complete_dummy_files()
