@@ -581,6 +581,7 @@ AllocateConstIntCVar(CRendererCVars, CV_r_Batching);
 
 AllocateConstIntCVar(CRendererCVars, CV_r_Unlit);
 AllocateConstIntCVar(CRendererCVars, CV_r_HideSunInCubemaps);
+AllocateConstIntCVar(CRendererCVars, CV_r_CubemapGenerationTimeout);
 
 AllocateConstIntCVar(CRendererCVars, CV_r_ParticlesDebug);
 
@@ -2844,6 +2845,9 @@ void CRendererCVars::InitCVars()
 
 	DefineConstIntCVar3("r_HideSunInCubemaps", CV_r_HideSunInCubemaps, 1, VF_NULL,
 	                    "Stops the sun being drawn during cubemap generation.\n");
+
+	DefineConstIntCVar3("r_CubemapGenerationTimeout", CV_r_CubemapGenerationTimeout, 100, VF_NULL,
+	                    "Maximum number of frames cubemap generation waits for streaming operations to complete.\n");
 
 	REGISTER_CVAR3("r_FlashMatTexResQuality", CV_r_FlashMatTexResQuality, 1.0f, VF_NULL,
 	               "Texture resolution quality of flash materials.\n"

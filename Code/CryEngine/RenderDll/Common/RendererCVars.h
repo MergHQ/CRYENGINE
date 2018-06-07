@@ -397,6 +397,7 @@ public:
 	DeclareStaticConstIntCVar(CV_r_Unlit, 0);
 	DeclareStaticConstIntCVar(CV_r_HideSunInCubemaps, 1);
 	DeclareStaticConstIntCVar(CV_r_ParticlesDebug, 0);
+	DeclareStaticConstIntCVar(CV_r_CubemapGenerationTimeout, 100);
 
 	//--------------float cvars----------------------
 
