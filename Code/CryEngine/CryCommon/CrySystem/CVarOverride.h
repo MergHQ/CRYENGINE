@@ -4,12 +4,18 @@
 
 #include <CryCore/CryCrc32.h>
 
-template<class T>
+enum class CVarOverrideType
+{
+	Numeric,
+	String,
+};
+
+template<CVarOverrideType T>
 class CVarOverride
 {
 public:
 	using hash_type = uint32;
-	using value_type = T;
+	using value_type = typename std::conditional<T == CVarOverrideType::Numeric, double, const char*>::type;
 
 	constexpr CVarOverride(const char* szName, const value_type value)
 		: m_hash(CCrc32::ComputeLowercase_CompileTime(szName))
@@ -22,9 +28,10 @@ public:
 		return m_hash;
 	}
 
-	constexpr value_type GetValue() const
+	template<class U>
+	constexpr U GetValue() const
 	{
-		return m_value;
+		return static_cast<U>(m_value);
 	}
 
 private:
@@ -33,7 +40,7 @@ private:
 };
 
 template<class T>
-constexpr T GetCVarOverride(const typename CVarOverride<T>::hash_type hashedName, T defaultValue)
+constexpr T GetCVarOverride(const typename CVarOverride<std::is_arithmetic<T>::value ? CVarOverrideType::Numeric : CVarOverrideType::String>::hash_type hashedName, T defaultValue)
 {
 	return defaultValue;
 }
@@ -69,11 +76,11 @@ private:
 
 namespace detail
 {
-	template<class T>
-	inline constexpr T GetCVarOverrideImpl(const CVarOverride<T>* pContainer, const size_t numOverrides, const typename CVarOverride<T>::hash_type hashedName, const T defaultValue, const size_t index)
+	template<CVarOverrideType T, class U>
+	inline constexpr U GetCVarOverrideImpl(const CVarOverride<T>* pContainer, const size_t numOverrides, const typename CVarOverride<T>::hash_type hashedName, const U defaultValue, const size_t index)
 	{
 		return index < numOverrides
-			? (pContainer[index].GetHashedName() == hashedName ? pContainer[index].GetValue() : GetCVarOverrideImpl(pContainer, numOverrides, hashedName, defaultValue, index + 1))
+			? (pContainer[index].GetHashedName() == hashedName ? pContainer[index].template GetValue<U>() : GetCVarOverrideImpl(pContainer, numOverrides, hashedName, defaultValue, index + 1))
 			: defaultValue;
 	}
 
@@ -87,25 +94,23 @@ namespace detail
 #define GET_CVAR_IMPL(container, hashedName, defaultValue) \
 	return detail::GetCVarOverrideImpl(container, CRY_ARRAY_COUNT(container), hashedName, defaultValue, 0)
 
-#if defined(CVAR_FLOAT_OVERRIDES)
+#if defined(CVAR_NUMERIC_OVERRIDES)
 template<>
-inline constexpr float GetCVarOverride<float>(const typename CVarOverride<float>::hash_type hashedName, const float defaultValue)
+inline constexpr float GetCVarOverride<float>(const typename CVarOverride<CVarOverrideType::Numeric>::hash_type hashedName, const float defaultValue)
 {
-	GET_CVAR_IMPL(CVAR_FLOAT_OVERRIDES, hashedName, defaultValue);
+	GET_CVAR_IMPL(CVAR_NUMERIC_OVERRIDES, hashedName, defaultValue);
 }
-#endif // defined(CVAR_FLOAT_OVERRIDES)
 
-#if defined(CVAR_INT_OVERRIDES)
 template<>
-inline constexpr int GetCVarOverride<int>(const typename CVarOverride<int>::hash_type hashedName, const int defaultValue)
+inline constexpr int GetCVarOverride<int>(const typename CVarOverride<CVarOverrideType::Numeric>::hash_type hashedName, const int defaultValue)
 {
-	GET_CVAR_IMPL(CVAR_INT_OVERRIDES, hashedName, defaultValue);
+	GET_CVAR_IMPL(CVAR_NUMERIC_OVERRIDES, hashedName, defaultValue);
 }
-#endif // defined(CVAR_INT_OVERRIDES)
+#endif // defined(CVAR_NUMERIC_OVERRIDES)
 
 #if defined(CVAR_STRING_OVERRIDES)
 template<>
-inline constexpr const char* GetCVarOverride<const char*>(const typename CVarOverride<const char>::hash_type hashedName, const char* defaultValue)
+inline constexpr const char* GetCVarOverride<const char*>(const typename CVarOverride<CVarOverrideType::String>::hash_type hashedName, const char* defaultValue)
 {
 	GET_CVAR_IMPL(CVAR_STRING_OVERRIDES, hashedName, defaultValue);
 }
