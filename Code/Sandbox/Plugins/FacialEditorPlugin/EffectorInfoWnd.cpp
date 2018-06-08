@@ -113,6 +113,8 @@ public:
 	CFacialAttachmentEffectorUI()
 	{
 	}
+
+	virtual ~CFacialAttachmentEffectorUI() {}
 	void Attach(CFacialEdContext* pContext, CPropertyCtrl* pPropsCtrl, IFacialEffector* pEffector)
 	{
 		m_pContext = pContext;
@@ -835,4 +837,3 @@ void CEffectorInfoWnd::OnDrawItem(int nIDCtl, LPDRAWITEMSTRUCT lpDrawItemStruct)
 
 	}
 }
-

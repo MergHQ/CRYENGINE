@@ -137,7 +137,7 @@ protected:
 		m_BuiltInSnapSize = (BrushFloat)0.5;
 		m_bEnableMagnetic = true;
 	}
-	~SpotManager(){}
+	virtual ~SpotManager() {}
 
 	void DrawPolyline(SDisplayContext& dc) const;
 	void DrawCurrentSpot(SDisplayContext& dc, const BrushMatrix34& worldTM) const;
@@ -225,4 +225,3 @@ private:
 	BrushFloat m_BuiltInSnapSize;
 };
 }
-

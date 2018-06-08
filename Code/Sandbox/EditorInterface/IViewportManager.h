@@ -10,6 +10,7 @@ class CViewport;
 // the viewport camera if the user selects it in the viewport menu.
 struct ICameraDelegate
 {
+	virtual ~ICameraDelegate() {}
 	virtual CryGUID     GetActiveCameraObjectGUID() const = 0;
 	virtual const char* GetName() const = 0;
 };

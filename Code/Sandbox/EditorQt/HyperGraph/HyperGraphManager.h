@@ -8,8 +8,8 @@
 struct IHyperGraph;
 
 class CHyperGraph;
-class CHyperNode;
 class CHyperGraphDialog;
+class CHyperNode;
 
 //////////////////////////////////////////////////////////////////////////
 //! Manages collection of hyper node classes that can be created for hyper graphs.
@@ -17,6 +17,8 @@ class SANDBOX_API CHyperGraphManager
 {
 public:
 	typedef Functor1wRet<CHyperNode*, bool> NodeFilterFunctor;
+
+	virtual ~CHyperGraphManager() {}
 
 	//! Initialize graph manager. Must be called after full game initialization.
 	virtual void Init();
@@ -33,22 +35,22 @@ public:
 
 	virtual CHyperGraph* CreateGraph() = 0;
 	virtual CHyperNode*  CreateNode(CHyperGraph* pGraph, const char* sNodeClass, HyperNodeID nodeId,
-                                  const Gdiplus::PointF& pos = Gdiplus::PointF(0.0f, 0.0f),
-                                  CBaseObject* pObj = nullptr, bool bAllowMissing = false);
+	                                const Gdiplus::PointF& pos = Gdiplus::PointF(0.0f, 0.0f),
+	                                CBaseObject* pObj = nullptr, bool bAllowMissing = false);
 
-	virtual void         AddListener(IHyperGraphManagerListener* pListener);
-	virtual void         RemoveListener(IHyperGraphManagerListener* pListener);
+	virtual void AddListener(IHyperGraphManagerListener* pListener);
+	virtual void RemoveListener(IHyperGraphManagerListener* pListener);
 
 	//! Opens view of the specified hyper graph.
-	CHyperGraphDialog*   OpenView(IHyperGraph* pGraph);
+	CHyperGraphDialog* OpenView(IHyperGraph* pGraph);
 
-	void                 SendNotifyEvent(EHyperGraphEvent event, IHyperGraph* pGraph = 0, IHyperNode* pNode = 0);
+	void               SendNotifyEvent(EHyperGraphEvent event, IHyperGraph* pGraph = 0, IHyperNode* pNode = 0);
 	//! Call this function to stop the listeners from getting events from the manager
-	void                 DisableNotifyListeners(bool disable) { m_notifyListenersDisabled = disable; }
+	void               DisableNotifyListeners(bool disable) { m_notifyListenersDisabled = disable; }
 	//! Main function to enable/disable event processing in GUI controls displaying flowgraph upon FG changes
-	void                 SetGUIControlsProcessEvents(bool active, bool refreshTreeCtrList);
+	void               SetGUIControlsProcessEvents(bool active, bool refreshTreeCtrList);
 	//! Function to set a current hypergraph in the active view
-	void                 SetCurrentViewedGraph(CHyperGraph* pGraph);
+	void               SetCurrentViewedGraph(CHyperGraph* pGraph);
 
 protected:
 	typedef std::map<string, THyperNodePtr> NodesPrototypesMap;
@@ -58,4 +60,3 @@ protected:
 	Listeners m_listeners;
 	bool      m_notifyListenersDisabled;
 };
-

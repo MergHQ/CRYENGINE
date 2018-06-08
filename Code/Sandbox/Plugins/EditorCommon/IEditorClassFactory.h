@@ -54,7 +54,7 @@ struct IClassDesc
 
 struct IEditorClassFactory
 {
-	~IEditorClassFactory() {}
+	virtual ~IEditorClassFactory() {}
 
 	//! Register new class to the factory.
 	virtual void        RegisterClass(IClassDesc* pClassDesc) = 0;

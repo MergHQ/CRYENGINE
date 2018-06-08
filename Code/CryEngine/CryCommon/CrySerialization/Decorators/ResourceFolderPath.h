@@ -18,6 +18,8 @@ struct ResourceFolderPath
 	{
 	}
 
+	virtual ~ResourceFolderPath() {}
+
 	//! The function should stay virtual to ensure cross-dll calls are using right heap.
 	virtual void SetPath(const char* path) { *this->path = path; }
 };

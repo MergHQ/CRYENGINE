@@ -154,7 +154,7 @@ struct SElementLayout
 	STimelineContentElementRef              elementRef;
 	std::vector<STimelineContentElementRef> subElements;
 
-	bool IsHighlighted() const
+	bool                                    IsHighlighted() const
 	{
 		if ((elementRef.pTrack->caps & STimelineTrack::CAP_COMPOUND_TRACK) == 0)
 		{
@@ -189,7 +189,7 @@ struct SElementLayout
 			}
 		}
 	}
-    
+
 	bool IsSelected() const
 	{
 		if ((elementRef.pTrack->caps & STimelineTrack::CAP_COMPOUND_TRACK) == 0)
@@ -598,7 +598,7 @@ STrackLayout* HitTestTrack(STrackLayouts& tracks, const QPoint& point, bool bIgn
 	auto findIter = std::upper_bound(tracks.begin(), tracks.end(), point.y(), [&](int y, const STrackLayout& track)
 		{
 			return y < track.rect.bottom();
-	  });
+		});
 
 	if (findIter != tracks.end() && (!bIgnoreTrackRange || findIter->rect.contains(point)))
 	{
@@ -642,7 +642,7 @@ void ForEachElement(STimelineTrack& track, Func& fun)
 			{
 			  fun(subTrack, subTrack.elements[i]);
 			}
-	  });
+		});
 }
 
 template<class Func>
@@ -654,7 +654,7 @@ void ForEachElementWithIndex(STimelineTrack& track, Func& fun)
 			{
 			  fun(subTrack, subTrack.elements[i], i);
 			}
-	  });
+		});
 }
 
 void ClearTrackSelection(STimelineTrack& track)
@@ -662,7 +662,7 @@ void ClearTrackSelection(STimelineTrack& track)
 	ForEachTrack(track, [](STimelineTrack& track)
 		{
 			track.selected = false;
-	  });
+		});
 }
 
 void GetSelectedTracks(STimelineTrack& track, std::vector<STimelineTrack*>& tracks)
@@ -673,7 +673,7 @@ void GetSelectedTracks(STimelineTrack& track, std::vector<STimelineTrack*>& trac
 			{
 			  tracks.push_back(&track);
 			}
-	  });
+		});
 }
 
 void ClearElementSelection(STimelineTrack& track)
@@ -682,7 +682,7 @@ void ClearElementSelection(STimelineTrack& track)
 		{
 			track.keySelectionChanged = track.keySelectionChanged || element.selected;
 			element.selected = false;
-	  });
+		});
 }
 
 void SetSelectedElementTimes(STimelineTrack& track, const std::vector<SAnimTime>& times)
@@ -697,7 +697,7 @@ void SetSelectedElementTimes(STimelineTrack& track, const std::vector<SAnimTime>
 			  element.start = *(iter++);
 			  element.end = element.start + length;
 			}
-	  });
+		});
 }
 
 float FindNearestKeyTime(std::vector<SAnimTime>& vec, SAnimTime value, SAnimTime selectedValue, bool forwardSearch)
@@ -774,7 +774,7 @@ TSelectedElements GetSelectedElements(STimelineTrack& track)
 			{
 			  elements.push_back(std::make_pair(&track, &element));
 			}
-	  });
+		});
 
 	return elements;
 }
@@ -820,7 +820,7 @@ void MoveSelectedElements(STimelineTrack& track, SAnimTime delta)
 			  if (element.end != SAnimTime::Max())
 					element.end += delta;
 			}
-	  });
+		});
 
 	if (track.caps & track.CAP_CLIP_TRUNCATED_BY_NEXT_KEY)
 		UpdateTruncatedDurations(&track);
@@ -846,7 +846,7 @@ void ScaleSelectedElements(STimelineTrack& track, SAnimTime cursorTime, SAnimTim
 			  track.modified = true;
 			  element.start = cursorTime + newDistance;
 			}
-	  });
+		});
 
 	if (track.caps & track.CAP_CLIP_TRUNCATED_BY_NEXT_KEY)
 		UpdateTruncatedDurations(&track);
@@ -856,18 +856,18 @@ void DeletedMarkedElements(STimelineTrack& track)
 {
 	ForEachTrack(track, [&](STimelineTrack& track)
 		{
-			for (auto iter = track.elements.begin(); iter != track.elements.end(); )
+			for (auto iter = track.elements.begin(); iter != track.elements.end();)
 			{
 			  if (iter->deleted)
 			  {
 			    iter = track.elements.erase(iter);
-			  }
+				}
 			  else
 			  {
 			    ++iter;
-			  }
+				}
 			}
-	  });
+		});
 }
 
 void SelectElementsInRect(const STrackLayouts& tracks, const QRect& rect, bool bToggleSelected = false, bool bSelect = false, bool bDeselect = false)
@@ -1016,7 +1016,7 @@ void UpdateClipLinesCache(STracksRenderCache& renderCache, const SElementLayout&
 
 	int len = viewState.TimeToLayout(duration);
 
-	int x1L = x0L - len*r;
+	int x1L = x0L - len * r;
 	int x1R = x1L + len;
 
 	x1R = (x1R >= x0R ? x1R : x0R);
@@ -1055,8 +1055,7 @@ void UpdateTracksRenderCache(STracksRenderCache& renderCache, QPainter& painter,
 	const char* passName[] = {
 		"PASS_BACKGROUND",
 		"PASS_MAIN",
-		"NUM_PASSES"
-	};
+		"NUM_PASSES" };
 
 	QRect outSideBackgroundRectLeft = QRect(0, 0, viewState.TimeToLayout(rulerRange.start), layout.size.height());
 	outSideBackgroundRectLeft.setLeft(-viewState.scrollPixels.x());
@@ -1146,7 +1145,7 @@ void UpdateTracksRenderCache(STracksRenderCache& renderCache, QPainter& painter,
 
 						if (renderCache.pTimeMarkers)
 						{
-							for (const DrawingPrimitives::CRuler::STick& tick : * renderCache.pTimeMarkers)
+							for (const DrawingPrimitives::CRuler::STick& tick : *renderCache.pTimeMarkers)
 							{
 								const int32 x = tick.position + rect.left();
 								const QLine line = QLine(QPoint(x, !tick.bTenth ? lowY : highY), QPoint(x, top + height));
@@ -1254,7 +1253,7 @@ void UpdateTracksRenderCache(STracksRenderCache& renderCache, QPainter& painter,
 								{
 									UpdateClipLinesCache(renderCache, element, rect, viewState);
 								}
-								
+
 								if (!element.IsSelected())
 								{
 									renderCache.defaultClipRects.emplace_back(rect);
@@ -1377,6 +1376,7 @@ void PaintRenderCacheLines(QPainter& painter, const std::vector<QLine>& lineVect
 
 struct CTimeline::SMouseHandler
 {
+	virtual ~SMouseHandler()                            {}
 	virtual void mousePressEvent(QMouseEvent* ev)       {}
 	virtual void mouseDoubleClickEvent(QMouseEvent* ev) {}
 	virtual void mouseMoveEvent(QMouseEvent* ev)        {}
@@ -1545,8 +1545,8 @@ struct CTimeline::SMoveHandler : SMouseHandler
 		const bool bToggleSelected = (ev->modifiers() & Qt::SHIFT) != 0;
 
 		SAnimTime deltaTime = SAnimTime(float(delta) / m_timeline->m_viewState.widthPixels * m_timeline->m_viewState.visibleDistance);
-		SAnimTime endTime = m_timeline->m_pContent->track.endTime;		
-		
+		SAnimTime endTime = m_timeline->m_pContent->track.endTime;
+
 		SAnimTime currentTime = m_timeline->m_viewState.LayoutToTime(m_timeline->m_viewState.LocalToLayout(currentPos).x());
 
 		bool bNeedMoveElements = false;
@@ -1598,7 +1598,7 @@ struct CTimeline::SMoveHandler : SMouseHandler
 		else
 		{
 			bNeedMoveElements = true;
-			moveElementsDeltaTime.SetTime( deltaTime );
+			moveElementsDeltaTime.SetTime(deltaTime);
 			m_startTime = currentTime;
 			m_startPoint.setX(m_timeline->m_viewState.LocalToLayout(currentPos).x());
 			m_timeline->ContentChanged(true);
@@ -1617,7 +1617,7 @@ struct CTimeline::SMoveHandler : SMouseHandler
 					bAtLeastOneSelectedElementIsOutOfRange = true;
 					break;
 				}
-				if ( (element.type == element.CLIP ? element.end : element.start) + deltaTime > track.endTime)
+				if ((element.type == element.CLIP ? element.end : element.start) + deltaTime > track.endTime)
 				{
 					bAtLeastOneSelectedElementIsOutOfRange = true;
 					break;
@@ -2183,7 +2183,7 @@ void CTimeline::CalculateRulerMarkerTimes()
 {
 	m_tickTimePositions.clear();
 
-	for (const DrawingPrimitives::CRuler::STick& tick : * m_tracksRenderCache.pTimeMarkers)
+	for (const DrawingPrimitives::CRuler::STick& tick : *m_tracksRenderCache.pTimeMarkers)
 	{
 		if (!tick.bIsOuterTick)
 		{
@@ -2376,7 +2376,7 @@ void CTimeline::paintEvent(QPaintEvent* ev)
 
 			for (const QRenderIcon& renderIcon : m_tracksRenderCache.defaultKeyIcons)
 			{
- 				painter.drawPixmap(renderIcon.rect, renderIcon.icon);
+				painter.drawPixmap(renderIcon.rect, renderIcon.icon);
 			}
 		}
 
@@ -2507,7 +2507,7 @@ void CTimeline::paintEvent(QPaintEvent* ev)
 		}
 	}
 
-    ///////////////////////////////////////////////////////////
+	///////////////////////////////////////////////////////////
 
 	painter.translate(-localToLayoutTranslate);
 	painter.restore();
@@ -3045,7 +3045,7 @@ void CTimeline::UpdateCursor(QMouseEvent* ev, const SElementLayoutPtrs& hitEleme
 }
 
 void CTimeline::UpdateHighligted(const SElementLayoutPtrs& hitElements)
-{    
+{
 	for (auto& element : hitElements)
 	{
 		bool inHighlightedElements = std::find(std::begin(m_highlightedElements), std::end(m_highlightedElements), element) != std::end(m_highlightedElements);
@@ -3183,7 +3183,7 @@ void CTimeline::focusTrack(STimelineTrack* pTrack)
 		    pParentTrack->expanded = true;
 
 		    track.expanded = true;
-		  }
+			}
 		}
 	});
 
@@ -3772,17 +3772,16 @@ STrackLayout* CTimeline::GetTrackLayoutFromPos(const QPoint& pos) const
 
 void CTimeline::ResolveHitElements(const QRect& rect, SElementLayoutPtrs& hitElements)
 {
-	hitElements.clear();     
+	hitElements.clear();
 	for (auto& pTrackLayout : m_layout->tracks)
 	{
 		HitTestElements(pTrackLayout, rect, hitElements);
 	}
 }
 
-
 void CTimeline::ResolveHitElements(const QPoint& pos, SElementLayoutPtrs& hitElements)
 {
-	hitElements.clear();  
+	hitElements.clear();
 
 	QPoint posInLayoutSpace = m_viewState.LocalToLayout(pos);
 	if (STrackLayout* pTrackLayout = GetTrackLayoutFromPos(pos))
@@ -3909,4 +3908,3 @@ void CTimeline::OnLayoutChange()
 
 	SignalLayoutChanged();
 }
-

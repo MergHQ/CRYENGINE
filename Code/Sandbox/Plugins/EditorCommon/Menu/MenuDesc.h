@@ -21,9 +21,10 @@ template<typename K> struct SMenuItem;
 template<typename K>
 struct SItemVisitor
 {
-	virtual void Visit(const SItem<K>&) {}
+	virtual ~SItemVisitor() {}
+	virtual void Visit(const SItem<K>&)       {}
 	virtual void Visit(const SActionItem<K>&) {}
-	virtual void Visit(const SMenuItem<K>&) {}
+	virtual void Visit(const SMenuItem<K>&)   {}
 };
 
 template<typename K>
@@ -36,6 +37,9 @@ struct SItem
 		, m_key(key)
 	{
 	}
+
+	virtual ~SItem() {}
+	virtual void   Accept(SItemVisitor<K>& visitor, const K& key) const = 0;
 
 	CAbstractMenu* FindMenu(CAbstractMenu* pRootMenu) const
 	{
@@ -57,12 +61,10 @@ struct SItem
 		return pMenu;
 	}
 
-	virtual void Accept(SItemVisitor<K>& visitor, const K& key) const = 0;
-
 	SMenuItem<K>* m_pParent;
-	int m_priority;
-	int m_section;
-	K m_key;
+	int           m_priority;
+	int           m_section;
+	K             m_key;
 };
 
 template<typename K>
@@ -88,20 +90,20 @@ struct SActionItem : SItem<K>
 template<typename K>
 struct SMenuItem : SItem<K>
 {
-	template<typename... ARGS>
-	SMenuItem(const char* szName, int priority, int section, const K& key, ARGS... args)
+	template<typename ... ARGS>
+	SMenuItem(const char* szName, int priority, int section, const K& key, ARGS ... args)
 		: SItem<K>(priority, section, key)
 		, m_name(szName)
 	{
-		Init(std::forward<ARGS>(args)...);
+		Init(std::forward<ARGS>(args) ...);
 	}
 
-	template<typename... ARGS>
-	void Init(std::unique_ptr<SItem<K>>&& item, ARGS&&... args)
+	template<typename ... ARGS>
+	void Init(std::unique_ptr<SItem<K>>&& item, ARGS&& ... args)
 	{
 		m_items.emplace_back(std::move(item));
 		m_items.back()->m_pParent = this;
-		Init(std::forward<ARGS>(args)...);
+		Init(std::forward<ARGS>(args) ...);
 	}
 
 	void Init() // Recursion anchor.
@@ -121,7 +123,7 @@ struct SMenuItem : SItem<K>
 		}
 	}
 
-	const string m_name;
+	const string                           m_name;
 	std::vector<std::unique_ptr<SItem<K>>> m_items;
 };
 
@@ -131,10 +133,10 @@ std::unique_ptr<SActionItem<K>> AddAction(const K& key, int section, int priorit
 	return std::unique_ptr<SActionItem<K>>(new SActionItem<K>(pAction, priority, section, key));
 }
 
-template<typename K, typename... ARGS>
-std::unique_ptr<SMenuItem<K>> AddMenu(const K& key, int section, int priority, const char* szName, ARGS... args)
+template<typename K, typename ... ARGS>
+std::unique_ptr<SMenuItem<K>> AddMenu(const K& key, int section, int priority, const char* szName, ARGS ... args)
 {
-	return std::unique_ptr<SMenuItem<K>>(new SMenuItem<K>(szName, priority, section, key, std::forward<ARGS>(args)...));
+	return std::unique_ptr<SMenuItem<K>>(new SMenuItem<K>(szName, priority, section, key, std::forward<ARGS>(args) ...));
 }
 
 template<typename K>
@@ -181,11 +183,11 @@ template<typename K>
 class CDesc
 {
 public:
-	template<typename... ARGS>
-	void Init(std::unique_ptr<SItem<K>>&& item, ARGS&&... args)
+	template<typename ... ARGS>
+	void Init(std::unique_ptr<SItem<K>>&& item, ARGS&& ... args)
 	{
 		m_items.emplace_back(std::move(item));
-		Init(std::forward<ARGS>(args)...);
+		Init(std::forward<ARGS>(args) ...);
 	}
 
 	void Init() // Recursion anchor.

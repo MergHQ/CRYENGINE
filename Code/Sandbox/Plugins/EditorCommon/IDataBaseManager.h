@@ -43,7 +43,7 @@ struct IDataBaseManagerListener
 //////////////////////////////////////////////////////////////////////////
 struct IDataBaseItemEnumerator
 {
-	~IDataBaseItemEnumerator() {}
+	virtual ~IDataBaseItemEnumerator() {}
 	virtual void           Release() = 0;
 	virtual IDataBaseItem* GetFirst() = 0;
 	virtual IDataBaseItem* GetNext() = 0;
@@ -57,7 +57,7 @@ struct IDataBaseItemEnumerator
 //////////////////////////////////////////////////////////////////////////
 struct IDataBaseManager
 {
-	~IDataBaseManager() {}
+	virtual ~IDataBaseManager() {}
 
 	//! Clear all libraries.
 	virtual void ClearAll() = 0;
@@ -119,7 +119,7 @@ struct IDataBaseManager
 				pEnumerator->AddEntry(pItem->GetFullName(), pItem->GetGUID().ToString());
 			}
 		}
-	};
+	}
 
 	//! Returns unique name base on input name.
 	virtual string MakeUniqItemName(const string& name) = 0;
