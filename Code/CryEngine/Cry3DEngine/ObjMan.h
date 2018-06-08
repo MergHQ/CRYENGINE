@@ -184,6 +184,7 @@ public:
 	void      PreloadLevelObjects();
 	void      StartPreloadLevelObjects();
 	I3DEngine::ELevelLoadStatus UpdatePreloadLevelObjects();
+	void      CancelPreloadLevelObjects();
 
 	void      UnloadObjects(bool bDeleteAll);
 	void      UnloadVegetationModels(bool bDeleteAll);

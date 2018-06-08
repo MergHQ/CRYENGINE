@@ -1237,22 +1237,20 @@ public:
 			{
 				// alert the listener
 				m_levelSystem.OnLevelNotFound(m_levelName);
-				return SetFailed();
+				return SetFailed("Level not found");
 			}
 
 			m_levelSystem.m_bLevelLoaded = false;
 			m_levelSystem.m_lastLevelName = m_levelName;
+			m_levelSystem.m_pCurrentLevelInfo = pLevelInfo;
 
 			//////////////////////////////////////////////////////////////////////////
 			// Read main level info.
 			if (!pLevelInfo->ReadInfo())
 			{
-				m_levelSystem.OnLoadingError(pLevelInfo, "Failed to read level info (level.pak might be corrupted)!");
-				return SetFailed();
+				return SetFailed("Failed to read level info (level.pak might be corrupted)!");
 			}
 			//////////////////////////////////////////////////////////////////////////
-
-			m_levelSystem.m_pCurrentLevelInfo = pLevelInfo;
 
 			gEnv->pConsole->SetScrollMax(600);
 			ICVar* con_showonload = gEnv->pConsole->GetCVar("con_showonload");
@@ -1325,8 +1323,7 @@ public:
 			ILevelInfo* pLevelInfo = m_levelSystem.m_pLoadingLevelInfo;
 			if (!gEnv->p3DEngine->StartLoadLevel(pLevelInfo->GetPath(), pLevelInfo->GetDefaultGameType()->name))
 			{
-				m_levelSystem.OnLoadingError(pLevelInfo, "3DEngine failed to handle loading the level");
-				return SetFailed();
+				return SetFailed("3DEngine failed to start loading the level");
 			}
 		}
 
@@ -1339,9 +1336,7 @@ public:
 
 			case I3DEngine::ELevelLoadStatus::Failed:
 				{
-					ILevelInfo* pLevelInfo = m_levelSystem.m_pLoadingLevelInfo;
-					m_levelSystem.OnLoadingError(pLevelInfo, "3DEngine failed to handle loading the level");
-					return SetFailed();
+					return SetFailed("3DEngine failed to handle loading the level");
 				}
 
 			case I3DEngine::ELevelLoadStatus::Done:
@@ -1356,9 +1351,7 @@ public:
 			ILevelInfo* pLevelInfo = m_levelSystem.m_pLoadingLevelInfo;
 			if (!gEnv->p3DEngine->LoadLevel(pLevelInfo->GetPath(), pLevelInfo->GetDefaultGameType()->name))
 			{
-				m_levelSystem.OnLoadingError(pLevelInfo, "3DEngine failed to handle loading the level");
-
-				return SetFailed();
+				return SetFailed("3DEngine failed to handle loading the level");
 			}
 		}
 #endif
@@ -1372,9 +1365,7 @@ public:
 			CRY_ASSERT(gEnv->pEntitySystem);
 			if (!gEnv->pEntitySystem || !gEnv->pEntitySystem->OnLoadLevel(pLevelInfo->GetPath()))
 			{
-				m_levelSystem.OnLoadingError(pLevelInfo, "EntitySystem failed to handle loading the level");
-
-				return SetFailed();
+				return SetFailed("EntitySystem failed to handle loading the level");
 			}
 
 			// reset all the script timers
@@ -1551,7 +1542,7 @@ public:
 
 		case EStep::Failed:
 		default:
-			return SetFailed();
+			return SetFailed("Loading have already failed");
 		}
 
 #undef NEXT_STEP
@@ -1583,9 +1574,14 @@ private:
 		return ILevelSystem::ELevelLoadStatus::Done;
 	}
 
-	ILevelSystem::ELevelLoadStatus SetFailed()
+	ILevelSystem::ELevelLoadStatus SetFailed(const char* szError)
 	{
+		GameWarning("CLevelLoadTimeslicer: failed loading in step %d: %s", static_cast<int>(m_currentStep), szError);
 		m_currentStep = EStep::Failed;
+
+		ILevelInfo* pLevelInfo = m_levelSystem.m_pLoadingLevelInfo;
+		m_levelSystem.OnLoadingError(pLevelInfo, szError);
+
 		return ILevelSystem::ELevelLoadStatus::Failed;
 	}
 
@@ -2206,6 +2202,12 @@ void CLevelSystem::UnLoadLevel()
 	INDENT_LOG_DURING_SCOPE();
 
 	CTimeValue tBegin = gEnv->pTimer->GetAsyncTime();
+
+	if (m_pLevelLoadTimeslicer)
+	{
+		// Time-sliced level loading was not finished
+		m_pLevelLoadTimeslicer.reset();
+	}
 
 	// One last update to execute pending requests.
 	// Do this before the EntitySystem resets!

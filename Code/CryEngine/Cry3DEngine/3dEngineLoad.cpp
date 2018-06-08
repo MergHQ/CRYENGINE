@@ -325,6 +325,12 @@ bool C3DEngine::LoadVisAreas(std::vector<struct IStatObj*>** ppStatObjTable, std
 void C3DEngine::UnloadLevel()
 {
 	LOADING_TIME_PROFILE_SECTION;
+
+	if (m_pLevelLoadTimeslicer)
+	{
+		m_pLevelLoadTimeslicer.reset();
+	}
+
 	if (GetRenderer())
 	{
 		GetRenderer()->EnableLevelUnloading(true);
@@ -707,6 +713,22 @@ C3DEngineLevelLoadTimeslicer::C3DEngineLevelLoadTimeslicer(C3DEngine& owner, con
 {
 }
 
+C3DEngineLevelLoadTimeslicer::~C3DEngineLevelLoadTimeslicer()
+{
+	switch (m_currentStep)
+	{
+#if PRELOAD_OBJECTS_SLICED
+	case EStep::UpdatePreloadLevelObjects:
+		{
+			if (ShouldPreloadLevelObjects())
+			{
+				m_owner.m_pObjManager->CancelPreloadLevelObjects();
+			}
+		}
+#endif
+	}
+}
+
 I3DEngine::ELevelLoadStatus C3DEngineLevelLoadTimeslicer::DoStep()
 {
 	LOADING_TIME_PROFILE_SECTION;
@@ -860,7 +882,7 @@ I3DEngine::ELevelLoadStatus C3DEngineLevelLoadTimeslicer::DoStep()
 	{
 		gEnv->pSystem->SetSystemGlobalState(ESYSTEM_GLOBAL_STATE_LEVEL_LOAD_START_OBJECTS);
 		// preload level cgfs
-		if (m_owner.GetCVars()->e_StatObjPreload && !gEnv->IsEditor())
+		if (ShouldPreloadLevelObjects())
 		{
 			if (m_owner.GetCVars()->e_StatObjPreload == 2)
 				m_owner.GetSystem()->OutputLoadingTimeStats();
@@ -871,7 +893,7 @@ I3DEngine::ELevelLoadStatus C3DEngineLevelLoadTimeslicer::DoStep()
 
 	NEXT_STEP(EStep::UpdatePreloadLevelObjects)
 	{
-		if (m_owner.GetCVars()->e_StatObjPreload && !gEnv->IsEditor())
+		if (ShouldPreloadLevelObjects())
 		{
 			switch (m_owner.m_pObjManager->UpdatePreloadLevelObjects())
 			{
@@ -918,7 +940,7 @@ I3DEngine::ELevelLoadStatus C3DEngineLevelLoadTimeslicer::DoStep()
 
 	NEXT_STEP(EStep::PreloadLevelCharacters)
 	{
-		if (m_owner.GetCVars()->e_StatObjPreload && !gEnv->IsEditor())
+		if (ShouldPreloadLevelObjects())
 		{
 			gEnv->pSystem->SetSystemGlobalState(ESYSTEM_GLOBAL_STATE_LEVEL_LOAD_START_CHARACTERS);
 			if (gEnv->pCharacterManager)
@@ -1057,6 +1079,11 @@ I3DEngine::ELevelLoadStatus C3DEngineLevelLoadTimeslicer::DoStep()
 	}
 
 #undef NEXT_STEP
+}
+
+bool C3DEngineLevelLoadTimeslicer::ShouldPreloadLevelObjects() const
+{
+	return m_owner.GetCVars()->e_StatObjPreload && !gEnv->IsEditor();
 }
 
 bool C3DEngine::LoadLevel(const char* szFolderName, const char* szMissionName)
