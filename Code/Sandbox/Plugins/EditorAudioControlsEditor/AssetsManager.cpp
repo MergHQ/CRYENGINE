@@ -39,22 +39,22 @@ void CAssetsManager::Initialize()
 	g_implementationManager.SignalImplementationAboutToChange.Connect([this]()
 		{
 			ClearAllConnections();
-	  }, reinterpret_cast<uintptr_t>(this));
+		}, reinterpret_cast<uintptr_t>(this));
 
 	g_implementationManager.SignalImplementationChanged.Connect([this]()
 		{
 			m_isLoading = false;
-	  }, reinterpret_cast<uintptr_t>(this));
+		}, reinterpret_cast<uintptr_t>(this));
 
 	CAudioControlsEditorPlugin::SignalAboutToLoad.Connect([&]()
-		{
-			m_isLoading = true;
-	  }, reinterpret_cast<uintptr_t>(this));
+	    {
+	                                                      m_isLoading = true;
+			}, reinterpret_cast<uintptr_t>(this));
 
 	CAudioControlsEditorPlugin::SignalLoaded.Connect([&]()
-		{
-			m_isLoading = false;
-	  }, reinterpret_cast<uintptr_t>(this));
+	    {
+	                                                 m_isLoading = false;
+			}, reinterpret_cast<uintptr_t>(this));
 }
 
 //////////////////////////////////////////////////////////////////////////
@@ -534,7 +534,7 @@ void CAssetsManager::UpdateLibraryConnectionStates(CAsset* const pAsset)
 //////////////////////////////////////////////////////////////////////////
 void CAssetsManager::UpdateAssetConnectionStates(CAsset* const pAsset)
 {
-	if (pAsset != nullptr)
+	if ((g_pIImpl != nullptr) && (pAsset != nullptr))
 	{
 		EAssetType const assetType = pAsset->GetType();
 
@@ -776,4 +776,3 @@ CAsset* CAssetsManager::CreateAndConnectImplItemsRecursively(Impl::IItem* const 
 	return pAsset;
 }
 } // namespace ACE
-
