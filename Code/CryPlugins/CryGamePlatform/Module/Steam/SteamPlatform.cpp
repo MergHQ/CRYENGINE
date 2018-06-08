@@ -277,18 +277,45 @@ namespace Cry
 			{
 				switch (dialog)
 				{
-					case EDialog::Friends:
-						return OpenDialog("Friends");
-					case EDialog::Community:
-						return OpenDialog("Community");
-					case EDialog::Players:
-						return OpenDialog("Players");
-					case EDialog::Settings:
-						return OpenDialog("Settings");
-					case EDialog::Group:
-						return OpenDialog("OfficialGameGroup");
-					case EDialog::Achievements:
-						return OpenDialog("Achievements");
+				case EDialog::Friends:
+					return OpenDialog("friends");
+				case EDialog::Community:
+					return OpenDialog("community");
+				case EDialog::Players:
+					return OpenDialog("players");
+				case EDialog::Settings:
+					return OpenDialog("settings");
+				case EDialog::Group:
+					return OpenDialog("officialgamegroup");
+				case EDialog::Achievements:
+					return OpenDialog("achievements");
+				}
+
+				return false;
+			}
+
+			bool CPlugin::OpenDialogWithTargetUser(EUserTargetedDialog dialog, IUser::Identifier targetUserId) const
+			{
+				switch (dialog)
+				{
+				case EUserTargetedDialog::UserInfo:
+					return OpenDialogWithTargetUser("steamid", targetUserId);
+				case EUserTargetedDialog::FriendAdd:
+					return OpenDialogWithTargetUser("friendadd", targetUserId);
+				case EUserTargetedDialog::FriendRemove:
+					return OpenDialogWithTargetUser("friendremove", targetUserId);
+				case EUserTargetedDialog::FriendRequestAccept:
+					return OpenDialogWithTargetUser("friendrequestaccept", targetUserId);
+				case EUserTargetedDialog::FriendRequestIgnore:
+					return OpenDialogWithTargetUser("friendrequestignore", targetUserId);
+				case EUserTargetedDialog::Chat:
+					return OpenDialogWithTargetUser("chat", targetUserId);
+				case EUserTargetedDialog::JoinTrade:
+					return OpenDialogWithTargetUser("jointrade", targetUserId);
+				case EUserTargetedDialog::Stats:
+					return OpenDialogWithTargetUser("stats", targetUserId);
+				case EUserTargetedDialog::Achievements:
+					return OpenDialogWithTargetUser("achievements", targetUserId);
 				}
 
 				return false;
@@ -299,6 +326,17 @@ namespace Cry
 				if (ISteamFriends* pSteamFriends = SteamFriends())
 				{
 					pSteamFriends->ActivateGameOverlay(szPage);
+					return true;
+				}
+
+				return false;
+			}
+
+			bool CPlugin::OpenDialogWithTargetUser(const char* szPage, IUser::Identifier targetUserId) const
+			{
+				if (ISteamFriends* pSteamFriends = SteamFriends())
+				{
+					pSteamFriends->ActivateGameOverlayToUser(szPage, targetUserId);
 					return true;
 				}
 

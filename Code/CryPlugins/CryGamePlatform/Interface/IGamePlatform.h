@@ -38,6 +38,20 @@ namespace Cry
 			Achievements
 		};
 
+		//! Type of in-game overlay dialog with a target user, used together with IPlugin::OpenDialogWithTargetUser
+		enum class EUserTargetedDialog
+		{
+			UserInfo,
+			FriendAdd,
+			FriendRemove,
+			FriendRequestAccept,
+			FriendRequestIgnore,
+			Chat,
+			JoinTrade,
+			Stats,
+			Achievements
+		};
+
 		//! Represents the current connection to the platform's services
 		enum class EConnectionStatus
 		{
@@ -130,8 +144,12 @@ namespace Cry
 			
 			//! Opens a known dialog via the platforms's overlay
 			virtual bool OpenDialog(EDialog dialog) const = 0;
+			//! Opens a known dialog targeted at a specific user id via the platform's overlay
+			virtual bool OpenDialogWithTargetUser(EUserTargetedDialog dialog, IUser::Identifier targetUserId) const = 0;
 			//! Opens a known dialog by platform-specific string via the platform's overlay
 			virtual bool OpenDialog(const char* szPage) const = 0;
+			//! Opens a known dialog by platform-specific string and targeted at a specific user id via the platform's overlay
+			virtual bool OpenDialogWithTargetUser(const char* szPage, IUser::Identifier targetUserId) const = 0;
 			//! Opens a browser window via the platform's overlay
 			virtual bool OpenBrowser(const char* szURL) const = 0;
 			//! Checks whether we are able to open the overlay used for purchasing assets
