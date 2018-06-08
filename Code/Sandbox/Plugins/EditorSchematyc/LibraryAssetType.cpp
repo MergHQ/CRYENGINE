@@ -42,7 +42,7 @@ bool CLibraryAssetType::OnCreate(CEditableAsset& editAsset, const void* /*pTypeS
 
 CAssetEditor* CLibraryAssetType::Edit(CAsset* pAsset) const
 {
-	return CAssetEditor::OpenAssetForEdit("Schematyc Editor(Experimental)", pAsset);
+	return CAssetEditor::OpenAssetForEdit("Schematyc Editor (Experimental)", pAsset);
 }
 
 bool CLibraryAssetType::RenameAsset(CAsset* pAsset, const char* szNewName) const
