@@ -134,8 +134,9 @@ void CTextureCache::InitPool(byte* pData, int nDim, ETEX_Format eTexFormat)
 	stack_string sPoolTextureName;
 	sPoolTextureName.Format("$TERRAIN_TEX_POOL_%p", this);
 
+	const bool asyncDevTexCreation = true;
 	m_nPoolTexId = GetRenderer()->UploadToVideoMemory(NULL, nPoolTexDim, nPoolTexDim, eTexFormat, eTexFormat, 0, false, FILTER_NONE, 0,
-		                                                  sPoolTextureName, (eTexFormat == eTF_R32F) ? 0 : FT_USAGE_ALLOWREADSRGB, GetPlatformEndian(), NULL, false);
+		                                                  sPoolTextureName, (eTexFormat == eTF_R32F) ? 0 : FT_USAGE_ALLOWREADSRGB, GetPlatformEndian(), NULL, asyncDevTexCreation);
 
 	if (m_nPoolTexId <= 0)
 	{

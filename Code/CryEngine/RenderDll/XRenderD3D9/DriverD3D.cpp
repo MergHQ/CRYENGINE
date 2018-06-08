@@ -4837,7 +4837,11 @@ unsigned int CD3D9Renderer::UploadToVideoMemory(unsigned char* pSrcData, int w, 
 		{
 			// make texture without device texture and request it async creation
 			int nImgSize = CTexture::TextureDataSize(w, h, d, nummipmap, 1, eSrcFormat);
-			std::shared_ptr<std::vector<uint8>> pImgData = std::make_shared<std::vector<uint8>>((uint8*)pSrcData, (uint8*)pSrcData + nImgSize);
+			std::shared_ptr<std::vector<uint8>> pImgData;
+			if (pSrcData)
+			{
+				pImgData = std::make_shared<std::vector<uint8>>((uint8*)pSrcData, (uint8*)pSrcData + nImgSize);
+			}
 
 			if (eTT == eTT_3D)
 				pTex = CTexture::GetOrCreateTextureObject(name, w, h, d, eTT_3D, flags, eTFDst);
@@ -4856,7 +4860,7 @@ unsigned int CD3D9Renderer::UploadToVideoMemory(unsigned char* pSrcData, int w, 
 
 			auto asyncTextureCreateCallback = [=]
 			{
-				const void* pData[] = { pImgData->data(), nullptr, nullptr, nullptr };
+				const void* pData[] = { pImgData ? pImgData->data() : nullptr, nullptr, nullptr, nullptr };
 				pTex->CreateDeviceTexture(pData);
 			};
 
