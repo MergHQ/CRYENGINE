@@ -160,11 +160,6 @@ void CCSharpEditorPlugin::OnFileChange(const char* szFilename, EChangeType type)
 	default:
 		break;
 	}
-
-	if (m_isSandboxInFocus)
-	{
-		UpdatePluginsAndSolution();
-	}
 }
 
 void CCSharpEditorPlugin::OnCompileFinished(const char* szCompileMessage)
@@ -293,6 +288,11 @@ void CCSharpEditorPlugin::OnEditorNotifyEvent(EEditorNotifyEvent aEventId)
 			GetIEditor()->OpenView("C# Output");
 			CryLogAlways(m_compileMessage);
 			m_compileMessage.clear();
+		}
+
+		if (m_isSandboxInFocus)
+		{
+			UpdatePluginsAndSolution();
 		}
 	}
 }
