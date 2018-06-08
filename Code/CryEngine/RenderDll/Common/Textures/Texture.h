@@ -1454,8 +1454,8 @@ public:
 	static ITextureStreamListener* s_pStreamListener;
 #endif
 
-	static void  Precache();
-	static void  RT_Precache();
+	static void  Precache(const bool isBlocking);
+	static void  RT_Precache(const bool isFinalPrecache);
 	static void  StreamValidateTexSize();
 	static uint8 StreamComputeFormatCode(uint32 nWidth, uint32 nHeight, uint32 nMips, ETEX_Format fmt);
 

@@ -3169,7 +3169,8 @@ void CRenderer::PostLevelLoading()
 
 	{
 		LOADING_TIME_PROFILE_SECTION(iSystem);
-		CTexture::Precache();
+		const bool isBlocking = true;
+		CTexture::Precache(isBlocking);
 	}
 }
 
@@ -3907,6 +3908,12 @@ void CRenderer::EF_DisableTemporalEffects()
 void CRenderer::SetTexturePrecaching(bool stat)
 {
 	CTexture::s_bPrecachePhase = stat;
+}
+
+void CRenderer::PrecachePostponedTextures()
+{
+	const bool isBlocking = false;
+	CTexture::Precache(isBlocking);
 }
 
 IOpticsElementBase* CRenderer::CreateOptics(EFlareType type) const
