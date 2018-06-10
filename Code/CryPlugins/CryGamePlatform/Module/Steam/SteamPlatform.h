@@ -60,7 +60,9 @@ namespace Cry
 				virtual ApplicationIdentifier GetApplicationIdentifier() const override;
 
 				virtual bool OpenDialog(EDialog dialog) const override;
+				virtual bool OpenDialogWithTargetUser(EUserTargetedDialog dialog, IUser::Identifier targetUserId) const override;
 				virtual bool OpenDialog(const char* szPage) const override;
+				virtual bool OpenDialogWithTargetUser(const char* szPage, IUser::Identifier otherUserId) const override;
 				virtual bool OpenBrowser(const char* szURL) const override;
 
 				virtual bool CanOpenPurchaseOverlay() const override;

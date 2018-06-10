@@ -37,10 +37,13 @@ public:
 	};
 
 	C3DEngineLevelLoadTimeslicer(C3DEngine& owner, const char* szFolderName, const char* szMissionName);
+	~C3DEngineLevelLoadTimeslicer();
 
 	I3DEngine::ELevelLoadStatus DoStep();
 
 private:
+
+	bool ShouldPreloadLevelObjects() const;
 
 	I3DEngine::ELevelLoadStatus SetInProgress(EStep nextStep)
 	{

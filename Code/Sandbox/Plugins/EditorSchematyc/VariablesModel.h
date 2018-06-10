@@ -14,7 +14,7 @@ public:
 	CAbstractVariablesModelItem(CAbstractVariablesModel& model)
 		: m_model(model)
 	{}
-	~CAbstractVariablesModelItem() {}
+	virtual ~CAbstractVariablesModelItem() {}
 
 	CAbstractVariablesModel& GetModel() const { return m_model; }
 
@@ -51,4 +51,3 @@ public:
 };
 
 }
-

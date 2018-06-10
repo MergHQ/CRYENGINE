@@ -77,14 +77,12 @@ private:
 
 // Abstract base class that defines common
 // operations for key bundles and tracks
-class ITrackViewKeyBundle
+struct ITrackViewKeyBundle
 {
-public:
+	virtual ~ITrackViewKeyBundle() {}
 	virtual bool                AreAllKeysOfSameType() const = 0;
-
 	virtual unsigned int        GetKeyCount() const = 0;
 	virtual CTrackViewKeyHandle GetKey(unsigned int index) = 0;
-
 	virtual void                SelectKeys(const bool bSelected) = 0;
 };
 
@@ -210,4 +208,3 @@ protected:
 
 	bool m_bSelected;
 };
-

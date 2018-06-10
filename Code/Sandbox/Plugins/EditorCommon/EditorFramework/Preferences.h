@@ -108,7 +108,7 @@ class EDITOR_COMMON_API CPreferences
 	friend yasli::Serializer;
 public:
 	CPreferences();
-	~CPreferences();
+	virtual ~CPreferences();
 
 	// Need to call init after all preferences have been registered
 	void Init();

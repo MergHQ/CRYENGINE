@@ -18,13 +18,13 @@ struct IAttributeFilterOperator;
 struct EDITOR_COMMON_API IAttributeType
 {
 	virtual std::vector<Attributes::IAttributeFilterOperator*> GetOperators() const = 0;
-	virtual Attributes::IAttributeFilterOperator* GetDefaultOperator() const = 0;
-	virtual QVariant ToQVariant(const char* szString) const = 0;
+	virtual Attributes::IAttributeFilterOperator*              GetDefaultOperator() const = 0;
+	virtual QVariant                                           ToQVariant(const char* szString) const = 0;
 
 	virtual ~IAttributeType() {}
 };
 
-template <typename T>
+template<typename T>
 class EDITOR_COMMON_API CAttributeType : public IAttributeType
 {
 public:
@@ -83,7 +83,7 @@ public:
 
 	const QString&        GetName() const               { return m_name; }
 	const IAttributeType* GetType() const               { return m_pType; }
-	Visibility            GetVisibility() const         { return (Visibility)m_visibility;  }
+	Visibility            GetVisibility() const         { return (Visibility)m_visibility; }
 	bool                  IsFilterable() const          { return m_filterable; }
 	const QVariant&       GetDefaultFilterValue() const { return m_defaultVal; }
 	int                   GetFilterRole() const         { return m_filterRole; }
@@ -95,7 +95,7 @@ private:
 	const uint8           m_visibility;
 	const bool            m_filterable;
 	const QVariant        m_defaultVal;
-	const int			  m_filterRole;
+	const int             m_filterRole;
 };
 
 class EDITOR_COMMON_API CItemModelAttributeEnum : public CItemModelAttribute
@@ -186,6 +186,7 @@ namespace Attributes
 {
 struct IAttributeFilterOperator
 {
+	virtual ~IAttributeFilterOperator() {}
 	virtual QString  GetName() = 0;
 	virtual bool     Match(const QVariant& value, const QVariant& filterValue) = 0;
 	virtual QWidget* CreateEditWidget(std::shared_ptr<CAttributeFilter> filter) = 0;
@@ -234,4 +235,3 @@ private:
 };
 
 typedef std::shared_ptr<CAttributeFilter> AttributeFilterSharedPtr;
-

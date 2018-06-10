@@ -100,6 +100,8 @@ private:
 			m_undo.Save(pJoystick);
 		}
 
+		virtual ~JoystickEntry() {}
+
 		virtual void Undo(bool bUndo, IJoystickSet* pJoystickSet)
 		{
 			IJoystick* pJoystick = (pJoystickSet && m_id ? pJoystickSet->GetJoystickByID(m_id) : 0);
@@ -952,8 +954,7 @@ void CJoystickCtrl::Render(CDC& dc)
 			LineEntry(Vec2(-1,    1),     Vec2(-1,    0.8f),  0),
 			LineEntry(Vec2(1,     1),     Vec2(1,     0.8f),  0),
 			LineEntry(Vec2(-1,    -1),    Vec2(-1,    -0.8f), 0),
-			LineEntry(Vec2(1,     -1),    Vec2(1,     -0.8f), 0)
-		};
+			LineEntry(Vec2(1,     -1),    Vec2(1,     -0.8f), 0) };
 		unsigned keyFoundFlags = 0;
 		for (IJoystick::ChannelType axis = IJoystick::ChannelType(0); axis < 2; axis = (IJoystick::ChannelType)(axis + 1))
 		{
@@ -1674,4 +1675,3 @@ void CJoystickCtrl::UpdateDocumentRect()
 
 	OnClientSizeUpdated();
 }
-

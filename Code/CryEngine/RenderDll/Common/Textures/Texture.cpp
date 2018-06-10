@@ -836,7 +836,7 @@ struct CompareTextures
 	}
 };
 
-void CTexture::Precache()
+void CTexture::Precache(const bool isBlocking)
 {
 	LOADING_TIME_PROFILE_SECTION(iSystem);
 
@@ -847,13 +847,16 @@ void CTexture::Precache()
 
 	gEnv->pLog->UpdateLoadingScreen("Requesting textures precache ...");
 
-	gRenDev->ExecuteRenderThreadCommand( []{ CTexture::RT_Precache(); },
-		ERenderCommandFlags::LevelLoadingThread_executeDirect|ERenderCommandFlags::FlushAndWait );
-
-	gEnv->pLog->UpdateLoadingScreen("Textures precache done.");
+	gRenDev->ExecuteRenderThreadCommand( [isBlocking]{ CTexture::RT_Precache(isBlocking); },
+		ERenderCommandFlags::LevelLoadingThread_executeDirect
+		| (isBlocking ? ERenderCommandFlags::FlushAndWait : ERenderCommandFlags::None));
+	if (isBlocking)
+	{
+		gEnv->pLog->UpdateLoadingScreen("Textures precache done.");
+	}
 }
 
-void CTexture::RT_Precache()
+void CTexture::RT_Precache(const bool isFinalPrecache)
 {
 	if (gRenDev->CheckDeviceLost())
 		return;
@@ -975,7 +978,10 @@ void CTexture::RT_Precache()
 	float dt = (t1 - t0).GetSeconds();
 	CryLog("Precaching textures done in %.2f seconds", dt);
 
-	s_bPrecachePhase = false;
+	if (isFinalPrecache)
+	{
+		s_bPrecachePhase = false;
+	}
 
 	// Restore pakLogFileAccess if it was disabled during precaching
 	// because texture precaching was disabled

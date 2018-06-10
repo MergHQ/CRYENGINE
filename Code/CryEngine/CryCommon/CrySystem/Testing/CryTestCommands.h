@@ -72,6 +72,57 @@ private:
 	const char* m_cmd = nullptr;
 };
 
+class CCommandLoadLevel : public ISystemEventListener
+{
+public:
+	explicit CCommandLoadLevel(const char* szLevelName) : m_szLevelName(szLevelName)
+	{
+	}
+
+	~CCommandLoadLevel()
+	{
+		 gEnv->pSystem->GetISystemEventDispatcher()->RemoveListener(this);
+	}
+
+	virtual void OnSystemEvent(ESystemEvent event, UINT_PTR wparam, UINT_PTR lparam) override
+	{
+		if (event == ESYSTEM_EVENT_LEVEL_LOAD_END)
+		{
+			m_IsLoaded = true;
+		}
+		else if(event == ESYSTEM_EVENT_LEVEL_LOAD_ERROR)
+		{
+			CRY_ASSERT(false);
+		}
+	}
+
+	bool Update()
+	{
+		if (!m_WasCalled)
+		{
+			gEnv->pSystem->GetISystemEventDispatcher()->RegisterListener(this, "LoadLevelCommand");
+
+			string mapCommand = "map ";
+			mapCommand += m_szLevelName;
+			gEnv->pConsole->ExecuteString(mapCommand);
+
+			m_WasCalled = true;
+		}
+
+		if (m_IsLoaded)
+		{
+			return true;
+		}
+
+		return false;
+	}
+
+private:
+	const char* m_szLevelName = nullptr;
+	bool m_IsLoaded = false;
+	bool m_WasCalled = false;
+};
+
 class CCommandWait
 {
 public:

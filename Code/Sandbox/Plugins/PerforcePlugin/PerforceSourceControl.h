@@ -1,8 +1,5 @@
 // Copyright 2001-2018 Crytek GmbH / Crytek Group. All rights reserved.
 
-#ifndef __PerforceSourceControl_h__
-#define __PerforceSourceControl_h__
-
 #pragma once
 
 #define USERNAME_LENGTH 64
@@ -50,18 +47,18 @@ public:
 	char           m_depotFile[MAX_PATH];
 	char           m_otherUser[USERNAME_LENGTH];
 	char           m_lockedBy[USERNAME_LENGTH];
-	string        m_clientRoot;
-	string        m_clientName;
-	string        m_clientHost;
-	string        m_currentDirectory;
+	string         m_clientRoot;
+	string         m_clientName;
+	string         m_clientHost;
+	string         m_currentDirectory;
 	bool           m_bIsClientUnknown;
 
 	const char*    m_initDesc;
 	bool           m_bIsSetup;
 	bool           m_bIsPreCreateFile;
 	bool           m_bIsCreatingChangelist;
-	string        m_output;
-	string        m_input;
+	string         m_output;
+	string         m_input;
 
 	int64          m_nFileHeadRev;
 	int64          m_nFileHaveRev;
@@ -126,14 +123,14 @@ public:
 	bool           IsFolder(const char* filename, char* FullFileName);
 
 	// from IClassDesc
-	virtual ESystemClassID SystemClassID() { return ESYSTEM_CLASS_SCM_PROVIDER; };
-	virtual const char*    ClassName()       { return "Perforce source control"; };
-	virtual const char*    Category()        { return "SourceControl"; };
-	virtual CRuntimeClass* GetRuntimeClass() { return 0; };
+	virtual ESystemClassID SystemClassID()       { return ESYSTEM_CLASS_SCM_PROVIDER; }
+	virtual const char*    ClassName()           { return "Perforce source control"; }
+	virtual const char*    Category()            { return "SourceControl"; }
+	virtual CRuntimeClass* GetRuntimeClass()     { return 0; }
 
-	CMyClientApi& GetClientApi() { return m_client; }
-	bool IsWorkOffline() const { return m_bIsWorkOffline; }
-	void SetWorkOffline(bool bWorkOffline);
+	CMyClientApi& GetClientApi()        { return m_client; }
+	bool          IsWorkOffline() const { return m_bIsWorkOffline; }
+	void          SetWorkOffline(bool bWorkOffline);
 
 protected:
 	bool        IsFileManageable(const char* sFilename, bool bCheckFatal = true);
@@ -181,6 +178,3 @@ public:
 private:
 	class QPopupWidget* m_pPopUpMenu;
 };
-
-#endif //__PerforceSourceControl_h__
-

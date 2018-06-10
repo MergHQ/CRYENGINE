@@ -48,6 +48,7 @@ private:
 class CAbstractComponentsModel
 {
 public:
+	virtual ~CAbstractComponentsModel() {}
 	virtual uint32                     GetComponentItemCount() const = 0;
 	virtual CComponentItem*            GetComponentItemByIndex(uint32 index) const = 0;
 	virtual CComponentItem*            CreateComponent(CryGUID typeId, const char* szName) = 0;
@@ -63,4 +64,3 @@ public:
 };
 
 }
-

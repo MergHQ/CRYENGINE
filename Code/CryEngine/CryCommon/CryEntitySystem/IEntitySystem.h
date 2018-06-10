@@ -262,14 +262,14 @@ struct IEntityLayerSetUpdateListener
 {
 	virtual void LayerEnablingEvent(const char* szLayerName, bool bEnabled, bool bSerialized) = 0;
 protected:
-	~IEntityLayerSetUpdateListener() {}
+	virtual ~IEntityLayerSetUpdateListener() {}
 };
 
 struct IEntityLayerListener
 {
 	virtual void LayerEnabled(bool bActivated) = 0;
 protected:
-	~IEntityLayerListener() {}
+	virtual ~IEntityLayerListener() {}
 };
 
 //! Structure used by proximity query in entity system.

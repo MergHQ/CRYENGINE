@@ -72,11 +72,10 @@ class EDITOR_COMMON_API EntryListBase
 {
 public:
 	EntryListBase() : m_nextId(1), m_idProvider(0), m_entries(*(new SEntries)) {}
-	~EntryListBase() { delete &m_entries; }
+	virtual ~EntryListBase() { delete &m_entries; }
 
 	size_t             Count() const { return m_entries.size(); }
 	void               Clear();
-	void               SaveAll();
 	bool               RemoveById(EntryId id);
 	EntryId            RemoveByPath(const char* path);
 
@@ -146,10 +145,9 @@ public:
 	}
 
 	SEntry<T>* GetById(EntryId id) const         { return static_cast<SEntry<T>*>(GetBaseById(id)); }
-	SEntry<T>* GetByIndex(size_t index) const    { return static_cast<SEntry<T>*>(GetBaseByIndex(index));  }
+	SEntry<T>* GetByIndex(size_t index) const    { return static_cast<SEntry<T>*>(GetBaseByIndex(index)); }
 	SEntry<T>* GetByName(const char* name) const { return static_cast<SEntry<T>*>(GetBaseByName(name)); }
 	SEntry<T>* GetByPath(const char* path) const { return static_cast<SEntry<T>*>(GetBaseByPath(path)); }
 };
 
 }
-

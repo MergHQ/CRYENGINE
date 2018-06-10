@@ -1572,6 +1572,7 @@ struct IRenderer//: public IRendererCallbackServer
 	virtual void                                        UpdateCachedShadowsLodCount(int nGsmLods) const = 0;
 				                                        
 	virtual void                                        SetTexturePrecaching(bool stat) = 0;
+	virtual void                                        PrecachePostponedTextures() = 0;
 
 	//! Platform-specific.
 	virtual void RT_InsertGpuCallback(uint32 context, GpuCallbackFunc callback) = 0;

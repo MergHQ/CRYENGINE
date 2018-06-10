@@ -1,18 +1,5 @@
 // Copyright 2001-2018 Crytek GmbH / Crytek Group. All rights reserved.
 
-// -------------------------------------------------------------------------
-//  File name:   IFileChangeMonitor.h
-//  Version:     v1.00
-//  Created:     27/07/2007 by Adam Rutkowski
-//  Compilers:   Visual Studio.NET 2005
-//  Description:
-// -------------------------------------------------------------------------
-//  History:
-//
-////////////////////////////////////////////////////////////////////////////
-
-#ifndef _IFILECHANGEMONITOR_H_
-#define _IFILECHANGEMONITOR_H_
 #pragma once
 
 struct IFileChangeListener
@@ -27,11 +14,13 @@ struct IFileChangeListener
 		eChangeType_RenamedNewName    //! This is the new name of a renamed file.
 	};
 
+	virtual ~IFileChangeListener() {}
 	virtual void OnFileChange(const char* sFilename, EChangeType eType) = 0;
 };
 
 struct IFileChangeMonitor
 {
+	virtual ~IFileChangeMonitor() {}
 	// <interfuscator:shuffle>
 	//! Register the path of a file or directory to monitor.
 	//! Path is relative to game directory, e.g. "Libs/WoundSystem/" or "Libs/WoundSystem/HitLocations.xml".
@@ -44,5 +33,3 @@ struct IFileChangeMonitor
 	virtual bool UnregisterListener(IFileChangeListener* pListener) = 0;
 	// </interfuscator:shuffle>
 };
-
-#endif //_IFILECHANGEMONITOR_H_

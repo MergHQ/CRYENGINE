@@ -19,12 +19,12 @@ enum Font
 
 struct Rect;
 
-enum CheckState {
+enum CheckState
+{
 	CHECK_SET,
 	CHECK_NOT_SET,
 	CHECK_IN_BETWEEN
 };
-
 
 struct Icon
 {
@@ -34,24 +34,25 @@ struct Icon
 		TYPE_XPM,
 		TYPE_FILE
 	};
-	Type type;
-	yasli::string filename;
+
+	Type           type;
+	yasli::string  filename;
 	yasli::IconXPM xpm;
 
 	Icon()
-	: type(TYPE_EMPTY)
+		: type(TYPE_EMPTY)
 	{
 	}
 
 	Icon(const char* filename)
-	: type(TYPE_FILE)
-	, filename(filename)
+		: type(TYPE_FILE)
+		, filename(filename)
 	{
 	}
 
 	Icon(const yasli::IconXPM& xpm)
-	: type(TYPE_XPM)
-	, xpm(xpm)
+		: type(TYPE_XPM)
+		, xpm(xpm)
 	{
 	}
 
@@ -64,17 +65,19 @@ enum IconEffect
 	ICON_DISABLED
 };
 
-enum {
-	BUTTON_PRESSED = 1 << 0,
-	BUTTON_FOCUSED = 1 << 1,
-	BUTTON_DISABLED = 1 << 2,
-	BUTTON_DROP_DOWN = 1 << 3,
+enum
+{
+	BUTTON_PRESSED     = 1 << 0,
+	BUTTON_FOCUSED     = 1 << 1,
+	BUTTON_DISABLED    = 1 << 2,
+	BUTTON_DROP_DOWN   = 1 << 3,
 	BUTTON_CENTER_TEXT = 1 << 4,
-	BUTTON_NO_FRAME = 1 << 5
+	BUTTON_NO_FRAME    = 1 << 5
 };
 
-enum {
-	FIELD_PRESSED = 1 << 0,
+enum
+{
+	FIELD_PRESSED  = 1 << 0,
 	FIELD_SELECTED = 1 << 1,
 	FIELD_DISABLED = 1 << 2
 };
@@ -82,18 +85,19 @@ enum {
 struct IDrawContext
 {
 	const PropertyTree* tree;
-	Rect widgetRect;
-	Rect lineRect;
-	bool captured;
-	bool pressed;
+	Rect                widgetRect;
+	Rect                lineRect;
+	bool                captured;
+	bool                pressed;
 
 	IDrawContext()
-	: tree(0)
-	, captured(false)
-	, pressed(false)
+		: tree(0)
+		, captured(false)
+		, pressed(false)
 	{
 	}
 
+	virtual ~IDrawContext() {}
 	virtual void drawControlButton(const Rect& rect, const char* text, int buttonFlags, property_tree::Font font, const Color* colorOverride = 0) = 0;
 	virtual void drawButton(const Rect& rect, const char* text, int buttonFlags, property_tree::Font font, const Color* colorOverride = 0) = 0;
 	virtual void drawCheck(const Rect& rect, bool disabled, CheckState checked) = 0;
@@ -111,12 +115,11 @@ struct IDrawContext
 	virtual void drawSplitter(const Rect& rect) = 0;
 	virtual void drawSelection(const Rect& rect, bool inlinedRow) = 0;
 	virtual void drawValueText(bool highlighted, const char* text) = 0;
-	virtual void drawValidatorWarningIcon(const Rect& rect) {}
-	virtual void drawValidatorErrorIcon(const Rect& rect) {}
+	virtual void drawValidatorWarningIcon(const Rect& rect)         {}
+	virtual void drawValidatorErrorIcon(const Rect& rect)           {}
 	virtual void drawValidators(PropertyRow* row, const Rect& rect) {}
 };
 
 }
 
 using namespace property_tree; // temporary
-

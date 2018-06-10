@@ -126,7 +126,7 @@ bool CMonoRuntime::InitializeRuntime()
 			szSuspend = "y";
 		}
 	}
-	sprintf_s(szSoftDebuggerOption, "--O=float32 --debugger-agent=transport=dt_socket,address=127.0.0.1:%d,embedding=1,server=y,suspend=%s", softDebuggerPort, szSuspend);
+	sprintf_s(szSoftDebuggerOption, "--debugger-agent=transport=dt_socket,address=127.0.0.1:%d,embedding=1,server=y,suspend=%s", softDebuggerPort, szSuspend);
 
 	MonoInternals::mono_debug_init(MonoInternals::MONO_DEBUG_FORMAT_MONO);
 	const char* options[] = {

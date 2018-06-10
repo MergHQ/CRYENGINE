@@ -1245,6 +1245,7 @@ public:
 	volatile bool m_bStopRendererAtFrameEnd;
 
 	virtual void                   SetTexturePrecaching(bool stat) override;
+	virtual void                   PrecachePostponedTextures() override;
 
 	virtual const RPProfilerStats*                   GetRPPStats(ERenderPipelineProfilerStats eStat, bool bCalledFromMainThread = true) override  { return nullptr; }
 	virtual const RPProfilerStats*                   GetRPPStatsArray(bool bCalledFromMainThread = true) override                                 { return nullptr; }

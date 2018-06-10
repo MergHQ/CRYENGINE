@@ -1,7 +1,7 @@
 #pragma once
 
 #pragma include_alias("StdAfx.h", "DummyEditor.h")
-#pragma include_alias("EditTool.h", "DummyEditor.h")
+#pragma include_alias("LevelEditor/Tools/EditTool.h", "DummyEditor.h")
 #pragma include_alias("Viewport.h", "DummyEditor.h")
 #pragma include_alias("Objects/DisplayContext.h", "DummyEditor.h")
 
