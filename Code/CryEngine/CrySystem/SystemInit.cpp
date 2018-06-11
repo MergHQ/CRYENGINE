@@ -5135,10 +5135,10 @@ void CSystem::CreateSystemVars()
 	                                         "0: Disable the profiler\n"
 	                                         "1: Show the full profiler\n"
 	                                         "2: Show only the execution graph\n");
-#if CRY_PLATFORM_WINDOWS || CRY_PLATFORM_DURANGO
-	const uint32 nJobSystemDefaultCoreNumber = 8;
-#else
+#if CRY_PLATFORM_CONSOLE || CRY_PLATFORM_MOBILE
 	const uint32 nJobSystemDefaultCoreNumber = 4;
+#else
+	const uint32 nJobSystemDefaultCoreNumber = 8;
 #endif
 	m_sys_job_system_max_worker = REGISTER_INT("sys_job_system_max_worker", nJobSystemDefaultCoreNumber, 0,
 	                                           "Sets the number of threads to use for the job system"
