@@ -9,6 +9,8 @@ namespace Cry
 	{
 		namespace Steam
 		{
+			class BugFix_SteamOverlay_CursorCount;
+
 			class CPlugin final : public IPlugin
 			{
 				CRYINTERFACE_BEGIN()
@@ -87,6 +89,7 @@ namespace Cry
 
 			private:
 				bool m_isInitialized = false;
+				std::shared_ptr<BugFix_SteamOverlay_CursorCount> m_steamOverlayFix;
 
 				std::shared_ptr<IStatistics> m_pStatistics;
 				std::shared_ptr<ILeaderboards> m_pSteamLeaderboards;

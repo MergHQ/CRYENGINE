@@ -19,9 +19,11 @@
 #include "SteamUserLobby.h"
 
 #include <CrySystem/ICmdLine.h>
+#include <CryInput/IInput.h>
 
 // Included only once per DLL module.
 #include <CryCore/Platform/platform_impl.inl>
+#include <CrySystem/ISystem.h>
 
 namespace Cry
 {
@@ -29,6 +31,93 @@ namespace Cry
 	{
 		namespace Steam
 		{
+
+			// Bug Description: (Steamworks 1.44)
+			//
+			// Note: While the Steam Overlay is open when the application is in "fullscreen" mode, 
+			// the Win32 ::ShowCursor() count will be increased by 1 each time the game windows gets focus again after loosing it
+			//
+			// Example scenario:
+			// User opens Steam Overlay (Alt+Shift) when in fullscreen mode
+			// User then loses focus of the game window e.g. Alt+Tab
+			// User gains back focus of the game window
+			// User closes the Steam Overlay
+			// The Win32 ::ShowCursor() count will have increased by 1
+
+			class BugFix_SteamOverlay_CursorCount : public IPlugin::IListener, ISystemEventListener
+			{
+			public:
+				BugFix_SteamOverlay_CursorCount(CPlugin* steamPlugin)
+					: m_overlayIsActive(false)
+					, m_fixCursorBugCount(0)
+				{
+					if (gEnv->pSystem)
+					{
+						gEnv->pSystem->GetISystemEventDispatcher()->RegisterListener(this, "SteamPlatform");
+					}
+
+					steamPlugin->AddListener(*this);
+				}
+
+				~BugFix_SteamOverlay_CursorCount()
+				{
+					if (gEnv->pSystem)
+					{
+						gEnv->pSystem->GetISystemEventDispatcher()->RemoveListener(this);
+					}
+				}
+
+				bool IsFullscreen()
+				{
+					CRY_ASSERT(gEnv);
+					CRY_ASSERT(gEnv->pRenderer || gEnv->IsDedicated());
+
+					bool bFullScreen = false;
+					if (gEnv->pRenderer)
+					{
+						gEnv->pRenderer->EF_Query(EFQ_Fullscreen, bFullScreen);
+					}
+					return bFullScreen;
+				}
+
+				virtual void OnOverlayActivated(bool active)
+				{
+					m_overlayIsActive = active;
+
+					if (!active && m_fixCursorBugCount)
+					{
+						// Force decrement the mouse cursor depending how often we lost focus while the steam overlay was active in fullscreen
+						for (int i = 0; i < m_fixCursorBugCount; ++i)
+						{
+							gEnv->pInput->ShowCursor(false);
+							CryLogAlways("GamePlatform: Applied Steam cursor bug fix");
+						}
+						m_fixCursorBugCount = 0;
+					}
+				}
+
+				virtual void OnSystemEvent(ESystemEvent event, UINT_PTR wparam, UINT_PTR lparam)
+				{
+					if (event == ESYSTEM_EVENT_CHANGE_FOCUS || event == ESYSTEM_EVENT_GAMEWINDOW_ACTIVATE)
+					{
+						if (m_overlayIsActive)
+						{
+							const bool isInFocus = (wparam != 0);
+							const bool isFullscreen = IsFullscreen();
+							if (isFullscreen && !isInFocus)
+							{
+								// Increment counter each time we lose focus in fullscreen mode while the overlay is open
+								++m_fixCursorBugCount;
+							}
+						}
+					}
+				}
+
+			private:
+				bool m_overlayIsActive;
+				int  m_fixCursorBugCount;
+			};
+
 			CPlugin* CPlugin::s_pInstance = nullptr;
 
 			//-----------------------------------------------------------------------------
@@ -134,6 +223,8 @@ namespace Cry
 
 				m_pRemoteStorage = std::make_shared<CRemoteStorage>();
 
+				m_steamOverlayFix = std::make_shared<BugFix_SteamOverlay_CursorCount>(this);
+
 				ICmdLine* pCmdLine = gEnv->pSystem->GetICmdLine();
 
 				ISteamApps* pSteamApps = SteamApps();
@@ -202,7 +293,6 @@ namespace Cry
 						}
 					}
 				}
-
 				return true;
 			}
 
