@@ -77,7 +77,7 @@ void CAssetGenerator::OnFileChange(const char* szFilename, EChangeType changeTyp
 
 	// Refresh cryasset files for the following types even if exists. 
 	// These asset types do not have true asset editors to update cryasset files.
-	static const char* const update[] = { "lua", "xml", "mtl", "cdf" };
+	static const char* const update[] = { "mtl", "cdf" };
 	const char* szExt = PathUtil::GetExt(szFilename);
 	const bool updateExisting = std::any_of(std::begin(update), std::end(update), [szExt](const char* szUpdatable)
 	{
@@ -136,6 +136,12 @@ CAssetGenerator::CAssetGenerator()
 	{
 		// Ignore fallback asset type.
 		if (strcmp(pType->GetTypeName(), "cryasset") == 0)
+		{
+			continue;
+		}
+
+		// Ignore deprecated asset types.
+		if (strcmp(pType->GetTypeName(), "Xml") == 0 || strcmp(pType->GetTypeName(), "Script") == 0)
 		{
 			continue;
 		}
