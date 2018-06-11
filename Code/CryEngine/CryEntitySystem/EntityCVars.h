@@ -15,10 +15,23 @@ struct SEntityWithCharacterInstanceAutoComplete : public IConsoleArgumentAutoCom
 
 struct CVar
 {
+	enum class EEntityDebugDrawType
+	{
+		Off,
+		BoundingBoxWithName,
+		BoundingBoxWithPositionPhysics,
+		BoundingBoxWithEntityId,
+		Hierarchies,
+		Links,
+		Components
+	};
+
 	// General entity CVars
 	static ICVar*      pUpdateScript;
 	static ICVar*      pUpdateEntities;
 	static ICVar*      pEntityBBoxes;
+
+	static EEntityDebugDrawType es_EntityDebugDraw;
 
 	static int         es_DebugFindEntity;
 	static int         es_debugEntityLifetime;
@@ -78,4 +91,8 @@ struct CVar
 
 	// Console commands to enable/disable layers
 	static void ConsoleCommandToggleLayer(IConsoleCmdArgs* pArgs);
+
+	// Legacy CVar mapping
+	static void MapEntityBBoxesCVar(ICVar* pBBoxCVar);
+	static void MapDrawEntityIDCVar(ICVar* pIDCVar);
 };
