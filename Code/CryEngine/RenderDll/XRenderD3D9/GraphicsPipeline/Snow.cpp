@@ -129,7 +129,7 @@ void CSnowStage::ExecuteDeferredSnowGBuffer()
 
 	auto& pass = m_passDeferredSnowGBuffer;
 
-	if (pass.IsDirty(rtMask, CRenderer::CV_r_snow_displacement))
+	if (pass.IsDirty(rtMask, CRenderer::CV_r_snow_displacement, pOcclusionTex->GetID()))
 	{
 		static CCryNameTSCRC techName("Snow");
 		pass.SetPrimitiveFlags(CRenderPrimitive::eFlags_ReflectShaderConstants_PS);

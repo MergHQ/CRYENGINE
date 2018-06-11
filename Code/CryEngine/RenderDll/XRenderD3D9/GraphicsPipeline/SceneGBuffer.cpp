@@ -386,7 +386,7 @@ void CSceneGBufferStage::ExecuteLinearizeDepth()
 {
 	PROFILE_LABEL_SCOPE("LINEARIZE_DEPTH");
 
-	if (m_passDepthLinearization.IsDirty())
+	if (m_passDepthLinearization.IsDirty(RenderView()->GetDepthTarget()->GetTextureID()))
 	{
 		static CCryNameTSCRC techLinearizeDepth("LinearizeDepth");
 

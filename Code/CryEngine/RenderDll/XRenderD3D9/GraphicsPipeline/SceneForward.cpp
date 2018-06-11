@@ -1173,7 +1173,7 @@ void CSceneForwardStage::ExecuteSky(CTexture* pColorTex, CTexture* pDepthTex)
 
 	const bool bFog = pRenderView->IsGlobalFogEnabled() && !(GetGraphicsPipeline().IsPipelineFlag(CGraphicsPipeline::EPipelineFlags::NO_SHADER_FOG));
 
-	//if (m_skyPass.IsDirty())
+	//if (m_skyPass.IsDirty(pDepthTex->GetTextureID()))
 	{
 		SSamplerState      samplerDescLinearWrapU(FILTER_LINEAR, eSamplerAddressMode_Wrap, eSamplerAddressMode_Clamp, eSamplerAddressMode_Clamp, 0);
 		SamplerStateHandle samplerStateLinearWrapU = GetDeviceObjectFactory().GetOrCreateSamplerStateHandle(samplerDescLinearWrapU);

@@ -472,7 +472,7 @@ void CSceneCustomStage::ExecuteSelectionHighlight()
 	static CCryNameTSCRC techSilhouette("SelectionSilhouetteHighlight");
 
 	CTexture* pTargetTex = pRenderView->GetColorTarget();
-	if (m_highlightPass.IsDirty())
+	if (m_highlightPass.IsDirty(pTargetTex->GetID()))
 	{
 		m_highlightPass.SetTechnique(CShaderMan::s_shPostEffects, techSilhouette, 0);
 		m_highlightPass.SetRenderTarget(0, pTargetTex);

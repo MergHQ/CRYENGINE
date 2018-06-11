@@ -48,7 +48,7 @@ void CToneMappingStage::Execute()
 	int featureMask = ((int)bSunShafts << 1) | ((int)bColorGrading << 2) | ((int)bBloomEnabled << 3) |
 	                  ((CRenderer::CV_r_HDREyeAdaptationMode & 0xF) << 5) | ((CRenderer::CV_r_HDRDebug & 0xF) << 9);
 
-	if (m_passToneMapping.IsDirty(featureMask))
+	if (m_passToneMapping.IsDirty(featureMask, pSunShaftsTex->GetTextureID(), pColorChartTex->GetTextureID()))
 	{
 		uint64 rtMask = 0;
 		if (CRenderer::CV_r_HDREyeAdaptationMode == 2)
@@ -122,7 +122,7 @@ void CToneMappingStage::ExecuteDebug()
 	PROFILE_LABEL_SCOPE("TONEMAPPING-DEBUG");
 
 	CShader* pShader = CShaderMan::s_shHDRPostProcess;
-	
+
 	int featureMask = ((CRenderer::CV_r_HDRDebug & 0xF) << 9);
 
 	if (m_passToneMapping.IsDirty(featureMask))

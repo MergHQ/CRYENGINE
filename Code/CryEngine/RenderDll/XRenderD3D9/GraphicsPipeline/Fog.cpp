@@ -115,7 +115,7 @@ void CFogStage::Execute()
 		inputFlag |= bFogDepthTest ? BIT(3) : 0;
 		inputFlag |= bReverseDepth ? BIT(4) : 0;
 
-		if (m_passFog.IsDirty(inputFlag, nSvoGiTexId))
+		if (m_passFog.IsDirty(inputFlag, nSvoGiTexId, RenderView()->GetDepthTarget()->GetTextureID()))
 		{
 			uint64 rtMask = 0;
 			rtMask |= bVolFogShadow ? g_HWSR_MaskBit[HWSR_SAMPLE0] : 0;

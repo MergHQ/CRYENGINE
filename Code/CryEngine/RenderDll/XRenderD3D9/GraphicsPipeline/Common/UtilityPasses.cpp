@@ -59,7 +59,7 @@ void CStretchRectPass::Execute(CTexture* pSrcRT, CTexture* pDestRT)
 		return;
 	}
 
-	if (!m_pass.IsDirty())
+	if (!m_pass.IsDirty(pSrcRT->GetTextureID(), pDestRT->GetTextureID()))
 	{
 		m_pass.Execute();
 		return;
@@ -267,7 +267,7 @@ void CSharpeningUpsamplePass::Execute(CTexture* pSrcRT, CTexture* pDestRT)
 	if (!pSrcRT || !pDestRT)
 		return;
 
-	if (!m_pass.IsDirty())
+	if (!m_pass.IsDirty(pSrcRT->GetTextureID(), pDestRT->GetTextureID()))
 	{
 		m_pass.Execute();
 		return;
@@ -304,7 +304,7 @@ void CNearestDepthUpsamplePass::Execute(CTexture* pOrgDS, CTexture* pSrcRT, CTex
 	if (!pOrgDS || !pSrcRT || !pSrcDS || !pDestRT)
 		return;
 
-	if (!pPass.IsDirty())
+	if (!pPass.IsDirty(pOrgDS->GetTextureID(), pSrcRT->GetTextureID(), pSrcDS->GetTextureID(), pDestRT->GetTextureID()))
 	{
 		pPass.Execute();
 		return;
@@ -368,7 +368,7 @@ void CDownsamplePass::Execute(CTexture* pSrcRT, CTexture* pDestRT, int nSrcW, in
 	match.dH = nDstH;
 	match.fF = 0;
 
-	if (!m_pass.IsDirty(match.data))
+	if (!m_pass.IsDirty(pSrcRT->GetTextureID(), pDestRT->GetTextureID(), match.data))
 	{
 		m_pass.Execute();
 		return;
@@ -458,7 +458,7 @@ void CStableDownsamplePass::Execute(CTexture* pSrcRT, CTexture* pDestRT, bool bK
 	if (!pSrcRT || !pDestRT)
 		return;
 
-	if (!m_pass.IsDirty(bKillFireflies))
+	if (!m_pass.IsDirty(pSrcRT->GetTextureID(), pDestRT->GetTextureID(), bKillFireflies))
 	{
 		m_pass.Execute();
 		return;
@@ -487,7 +487,7 @@ void CDepthDownsamplePass::Execute(CTexture* pSrcRT, CTexture* pDestRT, bool bLi
 	if (!pSrcRT || !pDestRT)
 		return;
 
-	if (!m_pass.IsDirty(bLinearizeSrcDepth, bFromSingleChannel))
+	if (!m_pass.IsDirty(pSrcRT->GetTextureID(), pDestRT->GetTextureID(), bLinearizeSrcDepth, bFromSingleChannel))
 	{
 		m_pass.Execute();
 		return;
@@ -583,8 +583,8 @@ void CGaussianBlurPass::Execute(CTexture* pScrDestRT, CTexture* pTempRT, float s
 
 	PROFILE_LABEL_SCOPE("TEXBLUR_GAUSSIAN");
 
-	if (!m_passH.IsDirty() &&
-	    !m_passV.IsDirty() &&
+	if (!m_passH.IsDirty(pScrDestRT->GetTextureID(), pTempRT->GetTextureID()) &&
+	    !m_passV.IsDirty(pScrDestRT->GetTextureID(), pTempRT->GetTextureID()) &&
 	    m_scale == scale &&
 		m_distribution == distribution)
 	{
@@ -667,7 +667,7 @@ void CMipmapGenPass::Execute(CTexture* pScrDestRT, int mipCount)
 	{
 		auto& curPass = m_downsamplePasses[i];
 
-		if (curPass.IsDirty())
+		if (curPass.IsDirty(pScrDestRT->GetID()))
 		{
 			auto rtv = SResourceView::RenderTargetView(DeviceFormats::ConvertFromTexFormat(pScrDestRT->GetDstFormat()), 0, -1, i + 1);
 			auto srv = SResourceView::ShaderResourceView(DeviceFormats::ConvertFromTexFormat(pScrDestRT->GetDstFormat()), 0, -1, i, 1);

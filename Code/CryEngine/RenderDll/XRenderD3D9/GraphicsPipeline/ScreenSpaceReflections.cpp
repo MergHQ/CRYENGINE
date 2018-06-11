@@ -37,7 +37,7 @@ void CScreenSpaceReflectionsStage::Execute()
 
 		CTexture* destRT = CRenderer::CV_r_SSReflHalfRes ? CRendererResources::s_ptexHDRTargetScaled[0] : CRendererResources::s_ptexHDRTarget;
 
-		if (m_passRaytracing.IsDirty(CRenderer::CV_r_SSReflHalfRes))
+		if (m_passRaytracing.IsDirty(CRenderer::CV_r_SSReflHalfRes, rd->RT_GetCurrGpuID()))
 		{
 			static CCryNameTSCRC techRaytrace("SSR_Raytrace");
 			m_passRaytracing.SetTechnique(pShader, techRaytrace, 0);
