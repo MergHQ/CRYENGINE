@@ -238,41 +238,30 @@ bool CDeviceResourceSet_DX12::GatherDescriptors(
 	return true;
 }
 
-static const UINT DescriptorRangesOfOnes[256] = {
-	1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,
-	1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,
-	1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,
-	1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,
-	1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,
-	1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,
-	1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,
-	1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,
-	1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,
-	1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,
-	1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,
-	1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,
-	1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,
-	1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,
-	1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,
-	1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,
-};
-
 void CDeviceResourceSet_DX12::FillDescriptorBlock(
 	StackDescriptorVector& descriptors,
 	CDescriptorBlock& descriptorBlock) const
 {
+	static constexpr UINT DescriptorRangesOfOnes[] = {
+		1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1,
+		1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1,
+	};
+	// 64 descriptors
+	static constexpr auto chunkSize = CRY_ARRAY_COUNT(DescriptorRangesOfOnes);
+
 	CRY_ASSERT(descriptorBlock.GetCapacity() - descriptorBlock.GetCursor() == descriptors.size());
 	auto pDevice = GetDevice()->GetD3D12Device();
 
 	if (!descriptors.empty())
 	{
-		D3D12_CPU_DESCRIPTOR_HANDLE dstHandle = descriptorBlock.GetHandleOffsetCPU(0);
-
-		// Deal with unbound number of descriptors in chunks of 256
-		for (UINT i = 0, srcSize = UINT(descriptors.size()), chunkSize = CRY_ARRAY_COUNT(DescriptorRangesOfOnes); i < srcSize; i += chunkSize)
+		// Deal with unbound number of descriptors in chunks of chunkSize
+		const auto srcSize = UINT(descriptors.size());
+		for (UINT i = 0; i < srcSize; i += chunkSize)
 		{
 			const UINT dstRangeCount = 1;
-			const UINT srcRangeCount = std::min(srcSize - i, chunkSize);
+			const UINT srcRangeCount = std::min<UINT>(srcSize - i, chunkSize);
+
+			D3D12_CPU_DESCRIPTOR_HANDLE dstHandle = descriptorBlock.GetHandleOffsetCPU(i);
 
 			pDevice->CopyDescriptors(
 				dstRangeCount, &dstHandle, &srcRangeCount,

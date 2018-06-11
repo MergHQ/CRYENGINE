@@ -57,8 +57,11 @@ void CCharInstance::Render(const struct SRendParams& RendParams, const SRenderin
 
 	uint32 nFrameID = g_pCharacterManager->m_nUpdateCounter;
 	if (m_LastRenderedFrameID != nFrameID)
+	{
+		m_fZoomDistanceSq = std::numeric_limits<float>::max();
 		m_LastRenderedFrameID = nFrameID;
-
+	}
+		
 	g_pAuxGeom->SetRenderFlags(e_Def3DPublicRenderflags);
 
 	if (!passInfo.IsShadowPass())
@@ -108,10 +111,10 @@ void CCharInstance::Render(const struct SRendParams& RendParams, const SRenderin
 	const f32 fFOV = passInfo.GetCamera().GetFov();
 	const f32 fZoomFactor = 0.0f + 1.0f * (RAD2DEG(fFOV) / 60.f);
 	const f32 attachmentCullingRation = (gEnv->bMultiplayer) ? Console::GetInst().ca_AttachmentCullingRationMP : Console::GetInst().ca_AttachmentCullingRation;
-	const f32 fZoomDistanceSq = sqr(RendParams.fDistance * fZoomFactor / attachmentCullingRation);
+	m_fZoomDistanceSq = std::fminf(m_fZoomDistanceSq, sqr(RendParams.fDistance * fZoomFactor / attachmentCullingRation));
 	const auto& FinalMat = (attachmentRendParams.dwFObjFlags & FOB_NEAREST) != 0 ? *RendParams.pNearestMatrix : RenderMat34;
 
-	m_AttachmentManager.DrawMergedAttachments(attachmentRendParams, FinalMat, passInfo, fZoomFactor, fZoomDistanceSq);
+	m_AttachmentManager.DrawMergedAttachments(attachmentRendParams, FinalMat, passInfo, fZoomFactor, m_fZoomDistanceSq);
 	
 	if (m_pDefaultSkeleton->m_ObjectType == CGA)
 		RenderCGA(RendParams, FinalMat, passInfo);
@@ -119,7 +122,7 @@ void CCharInstance::Render(const struct SRendParams& RendParams, const SRenderin
 		RenderCHR(RendParams, FinalMat, passInfo);
 
 	// draw weapon and binded objects
-	m_AttachmentManager.DrawAttachments(attachmentRendParams, RenderMat34, passInfo, fZoomFactor, fZoomDistanceSq);
+	m_AttachmentManager.DrawAttachments(attachmentRendParams, FinalMat, passInfo, fZoomFactor, m_fZoomDistanceSq);
 
 #ifndef _RELEASE
 	// in-game debug rendering of characters attachments proxies 

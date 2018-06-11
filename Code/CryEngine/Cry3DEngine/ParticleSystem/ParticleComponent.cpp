@@ -415,7 +415,7 @@ IMaterial* CParticleComponent::MakeMaterial()
 	{
 		const char* shaderName = UsesGPU() ? "Particles.ParticlesGpu" : "Particles";
 		const string& diffuseMap = m_Params.m_diffuseMap;
-		static uint32 textureLoadFlags = 0;//FT_DONT_STREAM;
+		const uint32 textureLoadFlags = 0;//FT_DONT_STREAM;
 		ITexture* pTexture = gEnv->pRenderer->EF_GetTextureByName(diffuseMap.c_str(), textureLoadFlags);
 		if (!pTexture)
 		{

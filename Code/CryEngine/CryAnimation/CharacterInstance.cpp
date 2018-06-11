@@ -46,6 +46,8 @@ CCharInstance::CCharInstance(const string& strFileName, CDefaultSkeleton* pDefau
 	m_LastUpdateFrameID_Pre = 0;
 	m_LastUpdateFrameID_Post = 0;
 
+	m_fZoomDistanceSq = std::numeric_limits<float>::max();
+
 	m_rpFlags = CS_FLAG_DRAW_MODEL;
 	memset(arrSkinningRendererData, 0, sizeof(arrSkinningRendererData));
 	m_processingContext = -1;

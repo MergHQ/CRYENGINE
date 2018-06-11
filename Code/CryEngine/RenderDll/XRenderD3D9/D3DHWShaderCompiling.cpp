@@ -2416,21 +2416,37 @@ void SShaderCache::GetMemoryUsage(ICrySizer* pSizer) const
 	pSizer->AddObject(m_pRes[1]);
 }
 
-bool SShaderCache::ReadResource(CResFile* rf, int i)
+bool SShaderCache::ReadResource(CResFile* rf, int nCache)
 {
-	CryLog("SShaderCache: Caching \"%s\"...", rf->mfGetFileName());
+	if (CRenderer::CV_r_shadersdebug == 3 || CRenderer::CV_r_shadersdebug == 4)
+		iLog->Log("---Shader Cache: Loading into in-memory cache %s", rf->mfGetFileName());
 
-	const auto librarySize = rf->mfGetResourceSize();
-	const auto handle = rf->mfGetHandle();
+	CResFileOpenScope rfOpenGuard(rf);
+
+	auto handle = rfOpenGuard.getHandle()->mfGetHandle();
+	if (!handle)
+	{
+		// Open without streaming
+		if (!rfOpenGuard.open(RA_READ | (CParserBin::m_bEndians ? RA_ENDIANS : 0),
+			&gRenDev->m_cEF.m_ResLookupDataMan[nCache],
+			nullptr))
+			return false;
+		handle = rfOpenGuard.getHandle()->mfGetHandle();
+		if (!handle)
+			return false;
+	}
+
+	const auto librarySize = rfOpenGuard.getHandle()->mfGetResourceSize();
+	const auto name = rfOpenGuard.getHandle()->mfGetFileName();
 	if (librarySize > 0)
 	{
-		m_pBinary[i] = std::unique_ptr<byte[]>(new byte[librarySize]);
+		m_pBinary[nCache] = std::unique_ptr<byte[]>(new byte[librarySize]);
 		gEnv->pCryPak->FSeek(handle, 0, SEEK_SET);
-		const auto readBytes = gEnv->pCryPak->FReadRaw(m_pBinary[i].get(), librarySize, 1, handle);
+		const auto readBytes = gEnv->pCryPak->FReadRaw(m_pBinary[nCache].get(), librarySize, 1, handle);
 		if (readBytes != 1)
 		{
-			CryWarning(EValidatorModule::VALIDATOR_MODULE_RENDERER, EValidatorSeverity::VALIDATOR_WARNING, "SShaderCache: \"%s\" invalid!", rf->mfGetFileName());
-			m_pBinary[i] = nullptr;
+			CryWarning(EValidatorModule::VALIDATOR_MODULE_RENDERER, EValidatorSeverity::VALIDATOR_WARNING, "SShaderCache: \"%s\" invalid!", name);
+			m_pBinary[nCache] = nullptr;
 
 			return false;
 		}
@@ -2546,43 +2562,51 @@ std::unique_ptr<byte[]> CHWShader_D3D::mfGetCacheItem(uint32& nFlags, int32& nSi
 	std::unique_ptr<byte[]> pData;
 	nSize = 0;
 	if (!m_pGlobalCache || !m_pGlobalCache->isValid())
-		return NULL;
-	CResFile* rf = NULL;
-	CDirEntry* de = NULL;
-	int i;
+		return nullptr;
+
+	char name[128];
+	mfGenName(pInst, name, 128, 1);
+
+	CResFile* rf = nullptr;
+	CDirEntry* de = nullptr;
+
+	int nCache;
 	bool bAsync = false;
 	int n = CRenderer::CV_r_shadersAllowCompilation == 0 ? 1 : 2;
-	for (i = 0; i < n; i++)
+	for (nCache = 0; nCache < n; nCache++)
 	{
-		rf = m_pGlobalCache->m_pRes[i];
+		rf = m_pGlobalCache->m_pRes[nCache];
 		if (!rf)
 			continue;
-		char name[128];
-		mfGenName(pInst, name, 128, 1);
 		de = rf->mfGetEntry(name, &bAsync);
 		if (de || bAsync)
 			break;
 	}
 	if (de)
 	{
-		if (CRenderer::CV_r_shadersdebug == 3 || CRenderer::CV_r_shadersdebug == 4)
-			iLog->Log("---Cache: LoadedFromGlobal %s': 0x%x", rf->mfGetFileName(), de->GetName().get());
-		pInst->m_nCache = i;
+		pInst->m_nCache = nCache;
 
 		pInst->m_bAsyncActivating = false;
 
 		// Attempt to cache the whole entry
-		if (!m_pGlobalCache->m_pBinary[i] && CRenderer::CV_r_shaderscacheinmemory != 0)
-			m_pGlobalCache->ReadResource(rf, i);
+		if (!m_pGlobalCache->m_pBinary[nCache] && CRenderer::CV_r_shaderscacheinmemory != 0)
+		{
+			m_pGlobalCache->ReadResource(rf, nCache);
+			// Needs to be re-read after (re-)opening the cache entry
+			de = rf->mfGetEntry(name, &bAsync);
+		}
 
-		if (m_pGlobalCache->m_pBinary[i] && CRenderer::CV_r_shaderscacheinmemory != 0)
+		if (m_pGlobalCache->m_pBinary[nCache] && CRenderer::CV_r_shaderscacheinmemory != 0)
 		{
 			if (de->IsValid())
 			{
 				// Decompress from library
-				auto pair = m_pGlobalCache->DecompressResource(rf->mfGetVersion(), i, de->GetOffset(), de->GetSize(), rf->RequiresSwapEndianOnRead());
+				auto pair = m_pGlobalCache->DecompressResource(rf->mfGetVersion(), nCache, de->GetOffset(), de->GetSize(), rf->RequiresSwapEndianOnRead());
 				nSize = static_cast<int32>(pair.second);
 				pData = std::move(pair).first;
+
+				if (CRenderer::CV_r_shadersdebug == 3 || CRenderer::CV_r_shadersdebug == 4)
+					iLog->Log("---Shader Cache: Loaded from in-memory cache %s: 0x%x", rf->mfGetFileName(), de->GetName().get());
 			}
 		}
 		else
@@ -2598,6 +2622,9 @@ std::unique_ptr<byte[]> CHWShader_D3D::mfGetCacheItem(uint32& nFlags, int32& nSi
 			}
 
 			rf->mfFileClose(de->GetName(), de->GetFlags());
+
+			if (CRenderer::CV_r_shadersdebug == 3 || CRenderer::CV_r_shadersdebug == 4)
+				iLog->Log("---Shader Cache: Loaded from disk %s: 0x%x", rf->mfGetFileName(), de->GetName().get());
 		}
 
 		if (pData && nSize > 0)
@@ -2606,7 +2633,7 @@ std::unique_ptr<byte[]> CHWShader_D3D::mfGetCacheItem(uint32& nFlags, int32& nSi
 				SwapEndian(*reinterpret_cast<SShaderCacheHeaderItem*>(pData.get()), eBigEndian);
 			pInst->m_DeviceObjectID = de->GetName().get();
 		}
-		if (i == CACHE_USER)
+		if (nCache == CACHE_USER)
 			nFlags |= HWSG_CACHE_USER;
 		return pData;
 	}

@@ -305,4 +305,39 @@ public:
 	static int m_nNumOpenResources;
 };
 
+class CResFileOpenScope
+{
+private:
+	CResFile * rf = nullptr;
+
+public:
+	CResFileOpenScope(CResFile* rf) : rf(rf) {}
+
+	CResFileOpenScope(const CResFileOpenScope&) = delete;
+	CResFileOpenScope& operator=(const CResFileOpenScope&) = delete;
+
+	CResFileOpenScope(CResFileOpenScope&& o) noexcept : rf(o.rf) { o.rf = nullptr; }
+	CResFileOpenScope& operator=(CResFileOpenScope&& o) noexcept { 
+		rf = o.rf;
+		o.rf = nullptr; 
+
+		return *this; 
+	}
+
+	template <typename... Ts>
+	bool open(Ts&&... args)
+	{
+		return rf->mfOpen(std::forward<Ts>(args)...) != 0;
+	}
+
+	~CResFileOpenScope()
+	{
+		if (rf)
+			rf->mfClose();
+	}
+
+	CResFile* getHandle() { return rf; }
+	const CResFile* getHandle() const { return rf; }
+};
+
 #endif //  __RESFILE_H__

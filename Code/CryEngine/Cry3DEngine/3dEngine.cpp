@@ -776,8 +776,7 @@ void C3DEngine::ProcessCVarsChange()
 	  GetCVars()->e_Portals +
 	  GetCVars()->e_DebugDraw +
 	  GetFloatCVar(e_ViewDistCompMaxSize) +
-	  GetCVars()->e_DecalsDeferredStatic +
-	  (GetRenderer() ? GetRenderer()->GetWidth() : 0);
+	  GetCVars()->e_DecalsDeferredStatic;
 
 	if (m_fRefreshSceneDataCVarsSumm != -1 && m_fRefreshSceneDataCVarsSumm != fNewCVarsSumm)
 	{

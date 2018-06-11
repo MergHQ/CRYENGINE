@@ -211,6 +211,8 @@ private:
 
 	f32 m_skinningTransformationsMovement;
 
+	f32 m_fZoomDistanceSq;
+
 	bool m_bHasVertexAnimation;
 
 	bool m_bWasVisible;

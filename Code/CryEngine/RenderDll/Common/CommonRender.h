@@ -681,21 +681,21 @@ struct SResourceBinding
 		, type(SResourceBinding::EResourceType::InvalidType)
 	{}
 
-	inline SResourceBinding(CTexture* pTexture, ResourceViewHandle view)
-		: pTexture(pTexture)
-		, view(view)
+	inline SResourceBinding(CTexture* _pTexture, ResourceViewHandle _view)
+		: pTexture(_pTexture)
+		, view(_view)
 		, type(EResourceType::Texture)
 	{}
 
-	inline SResourceBinding(CGpuBuffer* pBuffer, ResourceViewHandle view)
-		: pBuffer(pBuffer)
-		, view(view)
+	inline SResourceBinding(CGpuBuffer* _pBuffer, ResourceViewHandle _view)
+		: pBuffer(_pBuffer)
+		, view(_view)
 		, type(EResourceType::Buffer)
 	{}
 
-	inline SResourceBinding(CConstantBuffer* pConstantBuffer, ResourceViewHandle view)
-		: pConstantBuffer(pConstantBuffer)
-		, view(view)
+	inline SResourceBinding(CConstantBuffer* _pConstantBuffer, ResourceViewHandle _view)
+		: pConstantBuffer(_pConstantBuffer)
+		, view(_view)
 		, type(EResourceType::ConstantBuffer)
 	{}
 
@@ -706,8 +706,8 @@ struct SResourceBinding
 		samplerState = _samplerState;
 	}
 
-	inline SResourceBinding(CBaseResource* pResource)
-		: pResource(pResource)
+	inline SResourceBinding(CBaseResource* _pResource)
+		: pResource(_pResource)
 		, type(EResourceType::Resource)
 	{}
 

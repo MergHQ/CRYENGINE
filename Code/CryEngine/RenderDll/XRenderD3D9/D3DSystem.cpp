@@ -2063,6 +2063,10 @@ bool CD3D9Renderer::CreateDevice()
 	return true;
 }
 
+#if (CRY_RENDERER_DIRECT3D >= 110) && NTDDI_WIN10 && (WDK_NTDDI_VERSION >= NTDDI_WIN10) && defined(SUPPORT_DEVICE_INFO)
+	#include "dxgi1_4.h"
+#endif
+
 void CD3D9Renderer::GetVideoMemoryUsageStats(size_t& vidMemUsedThisFrame, size_t& vidMemUsedRecently, bool bGetPoolsSizes)
 {
 
@@ -2072,20 +2076,33 @@ void CD3D9Renderer::GetVideoMemoryUsageStats(size_t& vidMemUsedThisFrame, size_t
 	}
 	else
 	{
-#if (CRY_RENDERER_DIRECT3D >= 120) && defined(SUPPORT_DEVICE_INFO)
+#if (CRY_RENDERER_DIRECT3D >= 110) && NTDDI_WIN10 && (WDK_NTDDI_VERSION >= NTDDI_WIN10) && defined(SUPPORT_DEVICE_INFO)
 		CD3D9Renderer* rd = gcpRendD3D;
-		DXGI_QUERY_VIDEO_MEMORY_INFO videoMemoryInfoA;
-		DXGI_QUERY_VIDEO_MEMORY_INFO videoMemoryInfoB;
+		IDXGIAdapter3* pAdapter = nullptr;
 
-		rd->m_devInfo.Adapter()->QueryVideoMemoryInfo(0, DXGI_MEMORY_SEGMENT_GROUP_LOCAL, &videoMemoryInfoA);
-		rd->m_devInfo.Adapter()->QueryVideoMemoryInfo(0, DXGI_MEMORY_SEGMENT_GROUP_NON_LOCAL, &videoMemoryInfoB);
+	#if (CRY_RENDERER_DIRECT3D >= 120)
+		pAdapter = rd->m_devInfo.Adapter();
+		pAdapter->AddRef();
+	#else
+		rd->m_devInfo.Adapter()->QueryInterface(__uuidof(IDXGIAdapter3), (void**)&pAdapter);
+	#endif
+
+		DXGI_QUERY_VIDEO_MEMORY_INFO videoMemoryInfoA = {};
+		DXGI_QUERY_VIDEO_MEMORY_INFO videoMemoryInfoB = {};
+
+		if (pAdapter)
+		{
+			pAdapter->QueryVideoMemoryInfo(0, DXGI_MEMORY_SEGMENT_GROUP_LOCAL, &videoMemoryInfoA);
+			pAdapter->QueryVideoMemoryInfo(0, DXGI_MEMORY_SEGMENT_GROUP_NON_LOCAL, &videoMemoryInfoB);
+			pAdapter->Release();
+		}
+#else
+		struct { SIZE_T CurrentUsage; } videoMemoryInfoA = {};
+		struct { SIZE_T CurrentUsage; } videoMemoryInfoB = {};
+#endif
 
 		vidMemUsedThisFrame = size_t(videoMemoryInfoA.CurrentUsage);
 		vidMemUsedRecently = 0;
-#else
-		assert("CD3D9Renderer::GetVideoMemoryUsageStats() not implemented for this platform yet!");
-		vidMemUsedThisFrame = vidMemUsedRecently = 0;
-#endif
 	}
 }
 

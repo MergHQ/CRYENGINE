@@ -115,6 +115,10 @@ bool GetForcedFeatureLevel(D3D_FEATURE_LEVEL* pForcedFeatureLevel)
 }
 #endif // !defined(_RELEASE)
 
+#if (CRY_RENDERER_DIRECT3D >= 110)
+	#include "dxgi1_4.h"
+#endif
+
 bool DeviceInfo::CreateDevice(int zbpp, OnCreateDeviceCallback pCreateDeviceCallback, CreateWindowCallback pCreateWindowCallback)
 {
 #if CRY_RENDERER_VULKAN
@@ -360,17 +364,10 @@ bool DeviceInfo::CreateDevice(int zbpp, OnCreateDeviceCallback pCreateDeviceCall
 						pDevice->QueryInterface(__uuidof(D3DDevice), (void**)&m_pDevice);
 						pContext->QueryInterface(__uuidof(D3DDeviceContext), (void**)&m_pContext);
 
-						{
-							DXGIDevice* pDXGIDevice = 0;
-							if (SUCCEEDED(pDevice->QueryInterface(__uuidof(DXGIDevice), (void**) &pDXGIDevice)) && pDXGIDevice)
-								pDXGIDevice->SetMaximumFrameLatency(MAX_FRAME_LATENCY);
-							SAFE_RELEASE(pDXGIDevice);
-						}
-
 						IDXGIOutput* pOutput = nullptr;
 						if (SUCCEEDED(pAdapter->EnumOutputs(0, &pOutput)) && pOutput)
 						{
-							m_pAdapter->GetDesc1(&m_adapterDesc);
+							pAdapter->GetDesc1(&m_adapterDesc);
 							break;
 						}
 						else if (r_overrideDXGIAdapter >= 0)
@@ -409,8 +406,29 @@ bool DeviceInfo::CreateDevice(int zbpp, OnCreateDeviceCallback pCreateDeviceCall
 	SAFE_RELEASE(pAdapter);
 
 #if CRY_PLATFORM_WINDOWS
+	// Change adapter memory maximum utilization to 7/8th -------------------------------------------------------------------------
+#if (CRY_RENDERER_DIRECT3D >= 110)
+	if (m_pAdapter)
+	{
+
+		const auto memoryReservationLimit = m_adapterDesc.DedicatedVideoMemory * 7 / 8;
+#if (CRY_RENDERER_DIRECT3D >= 120)
+		m_pAdapter->SetVideoMemoryReservation(0, DXGI_MEMORY_SEGMENT_GROUP_LOCAL, memoryReservationLimit);
+#else
+		IDXGIAdapter3* pAdapter3 = nullptr;
+		m_pAdapter->QueryInterface(__uuidof(IDXGIAdapter3), (void**)&pAdapter3);
+		if (pAdapter3)
+		{
+			pAdapter3->SetVideoMemoryReservation(0, DXGI_MEMORY_SEGMENT_GROUP_LOCAL, memoryReservationLimit);
+			pAdapter3->Release();
+		}
+#endif
+	}
+#endif
+
+	// Enable debug-layer live object reporting -----------------------------------------------------------------------------------
 #if defined(DX11_ALLOW_D3D_DEBUG_RUNTIME)
-	if (true)
+	if (m_pDevice)
 	{
 		// TODO: Make it work, it's re right approach, maybe the flag is reset again?
 		HRESULT hr = S_FALSE;
@@ -420,7 +438,16 @@ bool DeviceInfo::CreateDevice(int zbpp, OnCreateDeviceCallback pCreateDeviceCall
 		SAFE_RELEASE(pDebugDevice);
 	}
 #endif
-	#endif
+#endif
+
+	// Configure maximum frame latency --------------------------------------------------------------------------------------------
+	if (m_pDevice)
+	{
+		DXGIDevice* pDXGIDevice = 0;
+		if (SUCCEEDED(m_pDevice->QueryInterface(__uuidof(DXGIDevice), (void**)&pDXGIDevice)) && pDXGIDevice)
+			pDXGIDevice->SetMaximumFrameLatency(MAX_FRAME_LATENCY);
+		SAFE_RELEASE(pDXGIDevice);
+	}
 
 	HWND hWnd = pCreateWindowCallback ? pCreateWindowCallback() : 0;
 	if (!hWnd)

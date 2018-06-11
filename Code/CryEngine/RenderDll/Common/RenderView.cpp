@@ -1731,6 +1731,7 @@ void CRenderView::ExpandPermanentRenderObjects()
 			}
 
 			if (needsCompilation ||
+			    needsInstanceDataUpdateOnly ||
 			    !pRenderObject->m_bAllCompiledValid)
 			{
 				SPermanentRenderObjectCompilationData compilationData{ pRenderObject, compilationOptions };

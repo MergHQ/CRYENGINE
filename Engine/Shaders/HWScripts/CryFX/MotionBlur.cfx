@@ -138,7 +138,7 @@ SamplerState PkVel_Sampler                 : register(s0); //pointClamp
 pixout PackVelocitiesPS(vtxOutWPOS IN) 
 {	
 	pixout OUT = (pixout) 0;
-	const float fDepth = GetLinearDepth(PkVel_LinDepth, int2(IN.baseTC.xy)).x;
+	const float fDepth = GetLinearDepth(PkVel_LinDepth, IN.baseTC.xy).x;
 	const float3 vPosWS = WorldViewPos.xyz + IN.CamVec.xyz * fDepth; 
 
 	float3 vPrevPos = mViewProjPrev[0].xyw * vPosWS.x + (mViewProjPrev[1].xyw * vPosWS.y + (mViewProjPrev[2].xyw * vPosWS.z + mViewProjPrev[3].xyw)); // <=> mul(float4(vPosWS, 1.0), mViewProjPrev).xyw;
