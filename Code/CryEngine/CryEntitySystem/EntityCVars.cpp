@@ -27,6 +27,8 @@ ICVar* CVar::pDrawAreaDebug = NULL;
 
 ICVar* CVar::pSysSpecLight = NULL;
 
+CVar::EEntityDebugDrawType CVar::es_EntityDebugDraw = CVar::EEntityDebugDrawType::Off;
+
 int CVar::es_DebugFindEntity = 0;
 int CVar::es_UsePhysVisibilityChecks = 1;
 float CVar::es_MaxPhysDist;
@@ -131,10 +133,21 @@ void CVar::Init()
 	REGISTER_COMMAND("es_dump_entity_classes_in_use", (ConsoleCommandFunc)DumpEntityClassesInUse, 0, "Dumps all used entity classes");
 	REGISTER_COMMAND("es_compile_area_grid", (ConsoleCommandFunc)CompileAreaGrid, 0, "Trigger a recompile of the area grid");
 
-	pEntityBBoxes = REGISTER_INT("es_bboxes", 0, VF_CHEAT,
+	REGISTER_CVAR2("es_DebugDraw", &es_EntityDebugDraw, es_EntityDebugDraw, VF_CHEAT,
+	                             "Provides different debug display options of the entity system\n"
+	                             "0 - Off\n"
+	                             "1 - Draw entities bbox with name\n"
+	                             "2 - Draw entities bbox with world position and physical state\n"
+	                             "3 - Draw entities bbox with entity id\n"
+	                             "4 - Draw hierarchies between entities. Red = parent -> blue = child\n"
+	                             "5 - Draw entity links\n"
+	                             "6 - Draw entities with components. Red = component receives updates every frame, Yellow = component receives pre physics update\n");
+
+	pEntityBBoxes = REGISTER_INT_CB("es_bboxes", 0, VF_CHEAT,
+	                             "[Deprecated: Use es_DebugDraw 1 instead]\n"
 	                             "Toggles entity bounding boxes.\n"
 	                             "Usage: es_bboxes [0/1]\n"
-	                             "Default is 0 (off). Set to 1 to display bounding boxes.");
+	                             "Default is 0 (off). Set to 1 to display bounding boxes.", MapEntityBBoxesCVar);
 	pUpdateScript = REGISTER_INT("es_UpdateScript", 1, VF_CHEAT,
 	                             "Usage: es_UpdateScript [0/1]\n"
 	                             "Default is 1 (on).");
@@ -213,18 +226,51 @@ void CVar::Init()
 	              "Indicates the position delta by which an entity must move before the AreaManager updates position relevant data.\n"
 	              "Default: 0.1 (10 cm)");
 
-	REGISTER_CVAR(es_debugDrawEntityIDs, 0, VF_CHEAT,
+	REGISTER_CVAR_CB(es_debugDrawEntityIDs, 0, VF_CHEAT,
+	              "[Deprecated: Use es_DebugDraw 3 instead]\n"
 	              "Displays the EntityId of all entities.\n"
-	              "Default is 0 (off), any other number enables it.\n"
-	              "Note: es_debug must be set to 1 also (or else the EntityId won't be displayed)");
+	              "Default is 0 (off), any other number enables it.\n", MapDrawEntityIDCVar);
 
 	REGISTER_CVAR(es_MaxJointFx, 8, 0, "Sets the maximum number of joint break fx per frame");
 
 	REGISTER_CVAR(es_profileComponentUpdates, 0, 0, "Enables profiling of components that are updated per frame.\n"
 	                                                "Default: 0 (off)\n"
 	                                                "1 - Simple profiling, shows cost of all components per frame\n"
-	                                                "2 - Component type cost breakdown, shows cost of each component type per frame\n"
-													"3 - Component event cost breakdown, shows amount and cost of entity events per frame");
+	                                                "2 - Component type cost breakdown, shows cost of each component type per frame");
+
+	// Call mapping in case the cvar was already set
+	MapEntityBBoxesCVar(pEntityBBoxes);
+	MapDrawEntityIDCVar(gEnv->pConsole->GetCVar("es_debugDrawEntityIDs"));
+}
+
+void CVar::MapEntityBBoxesCVar(ICVar* pBBoxCVar)
+{
+	if (ICVar* pIVar = gEnv->pConsole->GetCVar("es_DebugDraw"))
+	{
+		if (pBBoxCVar->GetIVal() != 0)
+		{
+			pIVar->Set(1);
+		}
+		else
+		{
+			pIVar->Set(0);
+		}
+	}
+}
+
+void CVar::MapDrawEntityIDCVar(ICVar* pIDCVar)
+{
+	if (ICVar* pIVar = gEnv->pConsole->GetCVar("es_DebugDraw"))
+	{
+		if (pIDCVar->GetIVal() != 0)
+		{
+			pIVar->Set(3);
+		}	
+		else
+		{
+			pIVar->Set(0);
+		}
+	}
 }
 
 void CVar::DumpEntities(IConsoleCmdArgs* args)

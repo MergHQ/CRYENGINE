@@ -111,7 +111,7 @@ void CTiledShadingStage::Execute()
 	}
 #endif
 
-	if (m_passCullingShading.IsDirty(rtFlags))
+	if (m_passCullingShading.IsDirty(rtFlags, pTexCaustics->GetID(), pTexGiDiff->GetID(), pTexGiSpec->GetID(), pTexAOColorBleed->GetID()))
 	{
 		static CCryNameTSCRC techTiledShading("TiledDeferredShading");
 		m_passCullingShading.SetTechnique(CShaderMan::s_shDeferredShading, techTiledShading, rtFlags);

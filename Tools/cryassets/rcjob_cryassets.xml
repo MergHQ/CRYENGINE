@@ -20,9 +20,7 @@
  <Job input="*.wav" assettypes="wav,Sound" />
  <Job input="*.ogg" assettypes="ogg,Sound" />
  <Job input="*.cax" assettypes="cax,GeometryCache" />
- <Job input="*.lua" assettypes="lua,Script" />
  <Job input="*.pfx" assettypes="pfx,Particles" />
- <Job input="*.xml" assettypes="xml,Xml" />
  <Job input="*.cs" assettypes="cs,CSharpScript" />
  <Job input="*.schematyc_ent" assettypes="schematyc_ent,SchematycEntity" />
 </AssetsJob>

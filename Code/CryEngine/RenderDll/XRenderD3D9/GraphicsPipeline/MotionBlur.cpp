@@ -63,7 +63,7 @@ void CMotionBlurStage::Execute()
 
 		const bool bRadialBlur = amount + (blurDir.x * blurDir.x) + (blurDir.y * blurDir.y) > 1.0f / (float)vpWidth;
 
-		if (m_passPacking.IsDirty(bRadialBlur))
+		if (m_passPacking.IsDirty(bRadialBlur, GetUtils().GetVelocityObjectRT(RenderView())->GetTextureID()))
 		{
 			static CCryNameTSCRC techPackVelocities("PackVelocities");
 			m_passPacking.SetPrimitiveFlags(CRenderPrimitive::eFlags_ReflectShaderConstants_PS);

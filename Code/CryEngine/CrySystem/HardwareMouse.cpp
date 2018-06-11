@@ -176,13 +176,6 @@ CHardwareMouse::~CHardwareMouse()
 
 void CHardwareMouse::ShowHardwareMouse(bool bShow)
 {
-	// Only manage mouse visibility if the application actually has focus.
-	// We don't want to mess around with the cursor otherwise
-	if (!m_bFocus)
-	{
-		return;
-	}
-
 	// Apply overrides here. Needless to say if any override changes value, then ShowHardwareMouse
 	// should be called with the reference counted value
 	bShow = m_shouldUseSystemCursor && ((bShow && !m_hide) || (m_allowConfine == false));
@@ -217,9 +210,13 @@ void CHardwareMouse::ShowHardwareMouse(bool bShow)
 	IInput* const pInput = gEnv->pInput;
 	if (pInput)
 	{
-		pInput->ShowCursor(bShow);
+		
+
+		const int count = pInput->ShowCursor(bShow);
 		pInput->SetExclusiveMode(eIDT_Mouse, false);
-		m_bPrevShowState = bShow;
+
+		if (m_debugHardwareMouse)
+			CryLogAlways("HM: ShowHardwareMouse - Windows cursor counter = %i", count);
 	}
 	else
 	{
@@ -397,7 +394,7 @@ void CHardwareMouse::HandleFocusEvent(bool bFocus)
 		// set focus first so the calls below work
 		m_bFocus = true;
 
-		ShowHardwareMouse(m_iReferenceCounter >= 1);
+		ShowHardwareMouse(m_iReferenceCounter > 0);
 		EvaluateCursorConfinement();
 	}
 	else

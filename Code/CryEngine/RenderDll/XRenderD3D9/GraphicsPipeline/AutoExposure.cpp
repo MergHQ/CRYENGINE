@@ -146,7 +146,7 @@ void CAutoExposureStage::AdjustExposure()
 
 	CShader* pShader = CShaderMan::s_shHDRPostProcess;
 
-	if (m_passAutoExposure.IsDirty())
+	if (m_passAutoExposure.IsDirty(pTexCur->GetTextureID(), pTexPrev->GetTextureID()))
 	{
 		static CCryNameTSCRC techAdaptedLum("HDRCalculateAdaptedLum");
 		m_passAutoExposure.SetPrimitiveFlags(CRenderPrimitive::eFlags_ReflectShaderConstants_PS);

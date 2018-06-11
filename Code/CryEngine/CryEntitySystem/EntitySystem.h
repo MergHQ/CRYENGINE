@@ -7,10 +7,15 @@
 #include <CrySystem/ITimer.h>
 #include "EntityComponentsVector.h"
 #include "SaltBufferArray.h"
+#include "EntityCVars.h"
 #include <CryCore/StlUtils.h>
 #include <CryMemory/STLPoolAllocator.h>
 #include <CryMemory/STLGlobalAllocator.h>
 #include <array>
+
+#if !defined(INCLUDE_DEBUG_ENTITY_DRAWING) && !defined(RELEASE)
+#define INCLUDE_DEBUG_ENTITY_DRAWING 1
+#endif
 
 //////////////////////////////////////////////////////////////////////////
 // forward declarations.
@@ -33,6 +38,7 @@ struct SEntityLayerGarbage;
 class CGeomCacheAttachmentManager;
 class CCharacterBoneAttachmentManager;
 class CEntitiesComponentPropertyCache;
+
 //////////////////////////////////////////////////////////////////////////
 
 //////////////////////////////////////////////////////////////////////////
@@ -264,10 +270,17 @@ private:
 
 	void DeleteEntity(CEntity* pEntity);
 	void UpdateTimers();
-	void DebugDraw(const CEntity* const pEntity, float fUpdateTime);
-
+	
+#ifdef INCLUDE_DEBUG_ENTITY_DRAWING
+	void DebugDraw();
+	void DebugDrawBBox(const CEntity& entity, const CVar::EEntityDebugDrawType drawMode);
+	void DebugDrawHierachies(const CEntity& entity);
 	void DebugDrawEntityUsage();
 	void DebugDrawLayerInfo();
+	void DebugDrawEntityLinks(CEntity& entity);
+	void DebugDrawComponents(const CEntity& entity);
+#endif // ~INCLUDE_DEBUG_ENTITY_DRAWING
+
 
 	void ClearEntityArray();
 

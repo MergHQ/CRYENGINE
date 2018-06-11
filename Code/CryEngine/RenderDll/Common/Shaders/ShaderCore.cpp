@@ -1211,6 +1211,8 @@ void CShaderMan::mfPostInit()
 	{
 		mfLoadDefaultSystemShaders();
 	}
+
+	gRenDev->m_pRT->FlushAndWait(); // TODO: Remove as soon as DeviceTexture's FlushAndWait is removed
 }
 
 void CShaderMan::OnSystemEvent(ESystemEvent event, UINT_PTR wparam, UINT_PTR lparam)

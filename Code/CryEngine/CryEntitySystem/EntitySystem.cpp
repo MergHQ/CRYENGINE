@@ -5,7 +5,6 @@
 #include "EntityIt.h"
 
 #include "Entity.h"
-#include "EntityCVars.h"
 #include "EntityClassRegistry.h"
 #include "ScriptBind_Entity.h"
 #include "PhysicsEventListener.h"
@@ -1014,19 +1013,6 @@ void CEntitySystem::Update()
 			DeletePendingEntities();
 		}
 
-		if (CVar::pEntityBBoxes->GetIVal() != 0)
-		{
-			// Render bboxes of all entities.
-			uint32 dwMaxUsed = static_cast<uint32>(m_EntitySaltBuffer.GetMaxUsed() + 1);
-			for (auto it = m_EntityArray.begin(), end = m_EntityArray.begin() + dwMaxUsed; it != end; ++it)
-			{
-				if (const CEntity* const pEntity = *it)
-				{
-					DebugDraw(pEntity, -1);
-				}
-			}
-		}
-
 		for (THeaps::iterator it = m_garbageLayerHeaps.begin(); it != m_garbageLayerHeaps.end(); )
 		{
 			SEntityLayerGarbage& lg = *it;
@@ -1053,181 +1039,18 @@ void CEntitySystem::Update()
 		CNetEntity::UpdateSchedulingProfiles();
 	}
 
-	if (CVar::pDrawAreas->GetIVal() != 0 || CVar::pDrawAreaDebug->GetIVal() != 0)
-		m_pAreaManager->DrawAreas(gEnv->pSystem);
-
-	if (CVar::pDrawAreaGrid->GetIVal() != 0)
-		m_pAreaManager->DrawGrid();
-
-	if (CVar::es_DebugEntityUsage > 0)
-		DebugDrawEntityUsage();
+#ifdef INCLUDE_DEBUG_ENTITY_DRAWING
+	DebugDraw();
+#endif // ~INCLUDE_DEBUG_ENTITY_DRAWING
 
 	if (NULL != gEnv->pLiveCreateHost)
 	{
 		gEnv->pLiveCreateHost->DrawOverlay();
 	}
 
-	if (CVar::es_LayerDebugInfo > 0)
-		DebugDrawLayerInfo();
-
 	m_pEntityObjectDebugger->Update();
 }
 
-//////////////////////////////////////////////////////////////////////////
-void CEntitySystem::DebugDrawEntityUsage()
-{
-	static float fLastUpdate = 0.0f;
-	float fCurrTime = gEnv->pTimer->GetFrameStartTime().GetSeconds();
-
-	struct SEntityClassDebugInfo
-	{
-		SEntityClassDebugInfo() = default;
-		explicit SEntityClassDebugInfo(IEntityClass* pEntityClass) : pClass(pEntityClass) {}
-
-		IEntityClass* pClass;
-
-		size_t        memoryUsage = 0;
-		uint32        numEntities = 0;
-		uint32        numActiveEntities = 0;
-		uint32        numNotHiddenEntities = 0;
-
-		// Amount of memory used by hidden entities
-		size_t hiddenMemoryUsage = 0;
-	};
-
-	static std::vector<SEntityClassDebugInfo> debuggedEntityClasses;
-
-	enum class EEntityUsageSortMode
-	{
-		None = 0,
-		ActiveInstances,
-		MemoryUsage
-	};
-
-	EEntityUsageSortMode sortMode = (EEntityUsageSortMode)CVar::es_DebugEntityUsageSortMode;
-
-	ICrySizer* pSizer = gEnv->pSystem->CreateSizer();
-
-	if (fCurrTime - fLastUpdate >= 0.001f * max(CVar::es_DebugEntityUsage, 1000))
-	{
-		fLastUpdate = fCurrTime;
-
-		string sFilter = CVar::es_DebugEntityUsageFilter;
-		sFilter.MakeLower();
-
-		debuggedEntityClasses.clear();
-		debuggedEntityClasses.reserve(GetClassRegistry()->GetClassCount());
-
-		for (CEntity* pEntity : m_EntityArray)
-		{
-			if (pEntity == nullptr)
-			{
-				continue;
-			}
-
-			IEntityClass* pEntityClass = pEntity->GetClass();
-
-			if (!sFilter.empty())
-			{
-				string szName = pEntityClass->GetName();
-				szName.MakeLower();
-				if (szName.find(sFilter) == string::npos)
-					continue;
-			}
-
-			auto debuggedEntityClassIterator = std::find_if(debuggedEntityClasses.begin(), debuggedEntityClasses.end(), [pEntityClass](const SEntityClassDebugInfo& classInfo)
-			{
-				return classInfo.pClass == pEntityClass;
-			});
-
-			if (debuggedEntityClassIterator == debuggedEntityClasses.end())
-			{
-				debuggedEntityClasses.emplace_back(pEntityClass);
-				debuggedEntityClassIterator = --debuggedEntityClasses.end();
-			}
-
-			// Calculate memory usage
-			const uint32 prevMemoryUsage = pSizer->GetTotalSize();
-			pEntity->GetMemoryUsage(pSizer);
-			const uint32 uMemoryUsage = pSizer->GetTotalSize() - prevMemoryUsage;
-			pSizer->Reset();
-
-			debuggedEntityClassIterator->memoryUsage += uMemoryUsage;
-			debuggedEntityClassIterator->numEntities++;
-
-			if (pEntity->IsActivatedForUpdates())
-			{
-				debuggedEntityClassIterator->numActiveEntities++;
-			}
-
-			if (pEntity->IsHidden())
-			{
-				debuggedEntityClassIterator->hiddenMemoryUsage += uMemoryUsage;
-			}
-			else
-			{
-				debuggedEntityClassIterator->numNotHiddenEntities++;
-			}
-		}
-
-		if (sortMode == EEntityUsageSortMode::ActiveInstances)
-		{
-			std::sort(debuggedEntityClasses.begin(), debuggedEntityClasses.end(), [](const SEntityClassDebugInfo& classInfoLeft, const SEntityClassDebugInfo& classInfoRight)
-			{
-				return classInfoLeft.numActiveEntities > classInfoRight.numActiveEntities;
-			});
-		}
-		else if (sortMode == EEntityUsageSortMode::MemoryUsage)
-		{
-			std::sort(debuggedEntityClasses.begin(), debuggedEntityClasses.end(), [](const SEntityClassDebugInfo& classInfoLeft, const SEntityClassDebugInfo& classInfoRight)
-			{
-				return classInfoLeft.memoryUsage > classInfoRight.memoryUsage;
-			});
-		}
-	}
-
-	pSizer->Release();
-
-	if (!debuggedEntityClasses.empty())
-	{
-		string sTitle = "Entity Class";
-		if (CVar::es_DebugEntityUsageFilter && CVar::es_DebugEntityUsageFilter[0])
-		{
-			sTitle.append(" [");
-			sTitle.append(CVar::es_DebugEntityUsageFilter);
-			sTitle.append("]");
-		}
-
-		float fColumnY = 11.0f;
-		const float colWhite[] = { 1.0f, 1.0f, 1.0f, 1.0f };
-		const float colGreen[] = { 0.0f, 1.0f, 0.0f, 1.0f };
-
-		const float fColumnX_Class = 50.0f;
-		const float fColumnX_ActiveCount = 350.0f;
-		const float fColumnX_NotHiddenCount = 450.0f;
-		const float fColumnX_MemoryUsage = 550.0f;
-		const float fColumnX_MemoryHidden = 650.0f;
-
-		IRenderAuxText::Draw2dLabel(fColumnX_Class, fColumnY, 1.2f, colWhite, false, "%s", sTitle.c_str());
-		IRenderAuxText::Draw2dLabel(fColumnX_ActiveCount, fColumnY, 1.2f, colWhite, true, "Active");
-		IRenderAuxText::Draw2dLabel(fColumnX_NotHiddenCount, fColumnY, 1.2f, colWhite, true, "Not Hidden");
-		IRenderAuxText::Draw2dLabel(fColumnX_MemoryUsage, fColumnY, 1.2f, colWhite, true, "Memory Usage");
-		IRenderAuxText::Draw2dLabel(fColumnX_MemoryHidden, fColumnY, 1.2f, colWhite, true, "[Only Hidden]");
-		fColumnY += 15.0f;
-
-		for (const SEntityClassDebugInfo& debugEntityClassInfo : debuggedEntityClasses)
-		{
-			const char* szName = debugEntityClassInfo.pClass->GetName();
-
-			IRenderAuxText::Draw2dLabel(fColumnX_Class, fColumnY, 1.0f, colWhite, false, "%s", szName);
-			IRenderAuxText::Draw2dLabel(fColumnX_ActiveCount, fColumnY, 1.0f, colWhite, true, "%u", debugEntityClassInfo.numActiveEntities);
-			IRenderAuxText::Draw2dLabel(fColumnX_NotHiddenCount, fColumnY, 1.0f, colWhite, true, "%u", debugEntityClassInfo.numNotHiddenEntities);
-			IRenderAuxText::Draw2dLabel(fColumnX_MemoryUsage, fColumnY, 1.0f, colWhite, true, "%u (%uKb)", debugEntityClassInfo.memoryUsage, debugEntityClassInfo.memoryUsage / 1000);
-			IRenderAuxText::Draw2dLabel(fColumnX_MemoryHidden, fColumnY, 1.0f, colGreen, true, "%u (%uKb)", debugEntityClassInfo.hiddenMemoryUsage, debugEntityClassInfo.hiddenMemoryUsage / 1000);
-			fColumnY += 12.0f;
-		}
-	}
-}
 //////////////////////////////////////////////////////////////////////////
 
 #ifdef ENABLE_PROFILING_CODE
@@ -1244,230 +1067,6 @@ void DrawText(const float x, const float y, ColorF c, const char* format, ...)
 }
 
 #endif
-
-void CEntitySystem::DebugDrawLayerInfo()
-{
-
-#ifdef ENABLE_PROFILING_CODE
-
-	bool bRenderAllLayerStats = CVar::es_LayerDebugInfo >= 2;
-	bool bRenderMemoryStats = CVar::es_LayerDebugInfo == 3;
-	bool bRenderAllLayerPakStats = CVar::es_LayerDebugInfo == 4;
-	bool bShowLayerActivation = CVar::es_LayerDebugInfo == 5;
-
-	float tx = 0;
-	float ty = 30;
-	float ystep = 12.0f;
-	ColorF clText(0, 1, 1, 1);
-
-	if (bShowLayerActivation) // Show which layer was switched on or off
-	{
-		const float fShowTime = 10.0f; // 10 seconds
-		float fCurTime = gEnv->pTimer->GetCurrTime();
-		float fPrevTime = 0;
-		std::vector<SLayerProfile>::iterator ppClearProfile = m_layerProfiles.end();
-		for (std::vector<SLayerProfile>::iterator ppProfiles = m_layerProfiles.begin(); ppProfiles != m_layerProfiles.end(); ++ppProfiles)
-		{
-			SLayerProfile& profile = (*ppProfiles);
-			CEntityLayer* pLayer = profile.pLayer;
-
-			ColorF clTextProfiledTime(0, 1, 1, 1);
-			if (profile.fTimeMS > 50)  // Red color for more then 50 ms
-				clTextProfiledTime = ColorF(1, 0.3f, 0.3f, 1);
-			else if (profile.fTimeMS > 10)    // Yellow color for more then 10 ms
-				clTextProfiledTime = ColorF(1, 1, 0.3f, 1);
-
-			if (!profile.isEnable)
-				clTextProfiledTime -= ColorF(0.3f, 0.3f, 0.3f, 0);
-
-			float xstep = 0.0f;
-			if (strlen(pLayer->GetParentName()) > 0)
-			{
-				xstep += 20;
-				const IEntityLayer* const pParentLayer = FindLayer(pLayer->GetParentName());
-				if (pParentLayer && strlen(pParentLayer->GetParentName()) > 0)
-					xstep += 20;
-			}
-			if (profile.fTimeOn != fPrevTime)
-			{
-				ty += 10.0f;
-				fPrevTime = profile.fTimeOn;
-			}
-
-			DrawText(tx + xstep, ty += ystep, clTextProfiledTime, "%.1f ms: %s (%s)", profile.fTimeMS, pLayer->GetName(), profile.isEnable ? "On" : "Off");
-			if (ppClearProfile == m_layerProfiles.end() && fCurTime - profile.fTimeOn > fShowTime)
-				ppClearProfile = ppProfiles;
-		}
-		if (ppClearProfile != m_layerProfiles.end())
-			m_layerProfiles.erase(ppClearProfile, m_layerProfiles.end());
-		return;
-	}
-
-	typedef std::map<string, std::vector<CEntityLayer*>> TParentLayerMap;
-	TParentLayerMap parentLayers;
-
-	for (TLayers::iterator it = m_layers.begin(); it != m_layers.end(); ++it)
-	{
-		CEntityLayer* pLayer = it->second;
-		if (strlen(pLayer->GetParentName()) == 0)
-		{
-			TParentLayerMap::iterator itFindRes = parentLayers.find(pLayer->GetName());
-			if (itFindRes == parentLayers.end())
-				parentLayers[pLayer->GetName()] = std::vector<CEntityLayer*>();
-		}
-		else
-		{
-			parentLayers[pLayer->GetParentName()].push_back(pLayer);
-		}
-	}
-
-	SLayerPakStats layerPakStats;
-	layerPakStats.m_MaxSize = 0;
-	layerPakStats.m_UsedSize = 0;
-	IResourceManager* pResMan = gEnv->pSystem->GetIResourceManager();
-	if (pResMan)
-		pResMan->GetLayerPakStats(layerPakStats, bRenderAllLayerPakStats);
-
-	if (bRenderAllLayerPakStats)
-	{
-		DrawText(tx, ty += ystep, clText, "Layer Pak Stats: %1.1f MB / %1.1f MB)",
-		         (float) layerPakStats.m_UsedSize / (1024.f * 1024.f),
-		         (float) layerPakStats.m_MaxSize / (1024.f * 1024.f));
-
-		for (SLayerPakStats::TEntries::iterator it = layerPakStats.m_entries.begin(); it != layerPakStats.m_entries.end(); ++it)
-		{
-			SLayerPakStats::SEntry& entry = *it;
-
-			DrawText(tx, ty += ystep, clText, "  %20s: %1.1f MB - %s)", entry.name.c_str(),
-			         (float)entry.nSize / (1024.f * 1024.f), entry.status.c_str());
-		}
-		ty += ystep;
-		DrawText(tx, ty += ystep, clText, "All Layers:");
-	}
-	else
-	{
-		string tmp = "Active Brush Layers";
-		if (bRenderAllLayerStats)
-			tmp = "All Layers";
-
-		DrawText(tx, ty += ystep, clText, "%s (PakInfo: %1.1f MB / %1.1f MB):", tmp.c_str(),
-		         (float) layerPakStats.m_UsedSize / (1024.f * 1024.f),
-		         (float) layerPakStats.m_MaxSize / (1024.f * 1024.f));
-	}
-
-	ty += ystep;
-
-	ICrySizer* pSizer = 0;
-	if (bRenderMemoryStats)
-		pSizer = gEnv->pSystem->CreateSizer();
-
-	for (TParentLayerMap::iterator it = parentLayers.begin(); it != parentLayers.end(); ++it)
-	{
-		const string& parentName = it->first;
-		std::vector<CEntityLayer*>& children = it->second;
-
-		IEntityLayer* pParent = FindLayer(parentName);
-
-		bool bIsEnabled = false;
-		if (bRenderAllLayerStats)
-		{
-			bIsEnabled = true;
-		}
-		else
-		{
-			if (pParent)
-				bIsEnabled = pParent->IsEnabledBrush();
-
-			if (!bIsEnabled)
-			{
-				for (size_t i = 0; i < children.size(); ++i)
-				{
-					CEntityLayer* pChild = children[i];
-					if (pChild->IsEnabledBrush())
-					{
-						bIsEnabled = true;
-						break;
-					}
-				}
-			}
-		}
-
-		if (!bIsEnabled)
-			continue;
-
-		SLayerPakStats::SEntry* pLayerPakEntry = 0;
-		for (SLayerPakStats::TEntries::iterator it2 = layerPakStats.m_entries.begin();
-		     it2 != layerPakStats.m_entries.end(); ++it2)
-		{
-			if (it2->name == parentName)
-			{
-				pLayerPakEntry = &(*it2);
-				break;
-			}
-		}
-
-		if (pLayerPakEntry)
-		{
-			DrawText(tx, ty += ystep, clText, "%s (PakInfo - %1.1f MB - %s)", parentName.c_str(),
-			         (float)pLayerPakEntry->nSize / (1024.f * 1024.f), pLayerPakEntry->status.c_str());
-		}
-		else
-		{
-			DrawText(tx, ty += ystep, clText, "%s", parentName.c_str());
-		}
-
-		for (size_t i = 0; i < children.size(); ++i)
-		{
-			CEntityLayer* pChild = children[i];
-
-			if (bRenderAllLayerStats)
-			{
-				const char* state = "enabled";
-				ColorF clTextState(0, 1, 1, 1);
-				if (pChild->IsEnabled() && !pChild->IsEnabledBrush())
-				{
-					// a layer was not disabled by Flowgraph in time when level is starting
-					state = "was not disabled";
-					clTextState = ColorF(1, 0.3f, 0.3f, 1);  // redish
-				}
-				else if (!pChild->IsEnabled())
-				{
-					state = "disabled";
-					clTextState = ColorF(0.7f, 0.7f, 0.7f, 1);  // grayish
-				}
-				ty += ystep;
-				DrawText(tx, ty, clTextState, "  %s (%s)", pChild->GetName(), state);
-
-				if (bRenderMemoryStats && pSizer)
-				{
-					pSizer->Reset();
-
-					int numBrushes, numDecals;
-					gEnv->p3DEngine->GetLayerMemoryUsage(pChild->GetId(), pSizer, &numBrushes, &numDecals);
-
-					int numEntities;
-					pChild->GetMemoryUsage(pSizer, &numEntities);
-					const float memorySize = float(pSizer->GetTotalSize()) / 1024.f;
-
-					const int kColumnPos = 350;
-					if (numDecals)
-						DrawText(tx + kColumnPos, ty, clTextState, "Brushes: %d, Decals: %d, Entities: %d; Mem: %.2f Kb", numBrushes, numDecals, numEntities, memorySize);
-					else
-						DrawText(tx + kColumnPos, ty, clTextState, "Brushes: %d, Entities: %d; Mem: %.2f Kb", numBrushes, numEntities, memorySize);
-				}
-			}
-			else if (pChild->IsEnabledBrush())
-			{
-				DrawText(tx, ty += ystep, clText, "  %s", pChild->GetName());
-			}
-		}
-	}
-
-	if (pSizer)
-		pSizer->Release();
-
-#endif //ENABLE_PROFILING_CODE
-}
 
 #ifdef ENABLE_PROFILING_CODE
 #define DEF_ENTITY_EVENT_NAME(x) #x
@@ -2259,75 +1858,157 @@ void CEntitySystem::RemoveEntityLayerListener(const char* szLayerName, IEntityLa
 	}
 }
 
+#ifdef INCLUDE_DEBUG_ENTITY_DRAWING
 //////////////////////////////////////////////////////////////////////////
-void CEntitySystem::DebugDraw(const CEntity* const pEntity, float timeMs)
+void CEntitySystem::DebugDraw()
+{
+	const CVar::EEntityDebugDrawType drawMode = CVar::es_EntityDebugDraw;
+
+	// Check if we have to iterate through all entities to debug draw information.
+	if (drawMode != CVar::EEntityDebugDrawType::Off)
+	{
+		const uint32 maxUsed = static_cast<uint32>(m_EntitySaltBuffer.GetMaxUsed() + 1);
+		for (auto it = m_EntityArray.begin(), end = m_EntityArray.begin() + maxUsed; it != end; ++it)
+		{
+			if (CEntity* const pEntity = *it)
+			{
+				switch (drawMode)
+				{
+				// All cases for bounding boxes
+				case CVar::EEntityDebugDrawType::BoundingBoxWithName:
+				case CVar::EEntityDebugDrawType::BoundingBoxWithPositionPhysics:
+				case CVar::EEntityDebugDrawType::BoundingBoxWithEntityId:
+					DebugDrawBBox(*pEntity, drawMode);
+					break;
+				case CVar::EEntityDebugDrawType::Hierarchies:
+					DebugDrawHierachies(*pEntity);
+					break;
+				case CVar::EEntityDebugDrawType::Links:
+					DebugDrawEntityLinks(*pEntity);
+					break;
+				case CVar::EEntityDebugDrawType::Components:
+					DebugDrawComponents(*pEntity);
+					break;
+				}
+			}
+		}
+	}
+
+	if (CVar::pDrawAreas->GetIVal() != 0 || CVar::pDrawAreaDebug->GetIVal() != 0)
+	{
+		m_pAreaManager->DrawAreas(gEnv->pSystem);
+	}
+
+	if (CVar::pDrawAreaGrid->GetIVal() != 0)
+	{
+		m_pAreaManager->DrawGrid();
+	}
+
+	if (CVar::es_DebugEntityUsage > 0)
+	{
+		DebugDrawEntityUsage();
+	}
+
+	if (CVar::es_LayerDebugInfo > 0)
+	{
+		DebugDrawLayerInfo();
+	}
+}
+
+//////////////////////////////////////////////////////////////////////////
+void CEntitySystem::DebugDrawHierachies(const CEntity& entity)
 {
 	IRenderAuxGeom* pRenderAux = gEnv->pAuxGeomRenderer;
 
-	Vec3 wp = pEntity->GetWorldTM().GetTranslation();
+	const int entityChildCount = entity.GetChildCount();
+	for (int i = 0; i < entityChildCount; ++i)
+	{
+		if (const CEntity* pChild = static_cast<CEntity*>(entity.GetChild(i)))
+		{
+			pRenderAux->DrawLine(entity.GetWorldPos(), Col_Red, pChild->GetWorldPos(), Col_Blue, 1.5f);
+		}
+	}
+}
 
-	if (wp.IsZero())
+//////////////////////////////////////////////////////////////////////////
+void CEntitySystem::DebugDrawBBox(const CEntity& entity, const CVar::EEntityDebugDrawType drawMode)
+{
+	IRenderAuxGeom* pRenderAux = gEnv->pAuxGeomRenderer;
+
+	Vec3 entityTranslation = entity.GetWorldTM().GetTranslation();
+
+	if (entityTranslation.IsZero())
 		return;
 
-	//float z = 1.0f / max(0.01f,wp.GetDistance(gEnv->pSystem->GetViewCamera().GetPosition()) );
-	//float fFontSize =
-
-	ColorB boundsColor;
-
-	if (CVar::es_debugDrawEntityIDs == 0)
+	ColorB boundsColor = ColorB(255, 255, 0, 255);
+	
+	if (drawMode == CVar::EEntityDebugDrawType::BoundingBoxWithName) // draw just the name of the entity
 	{
-		// draw information about timing, physics, position, and textual representation of the entity (but no EntityId)
-
-		if (pEntity->IsActivatedForUpdates() && timeMs >= 0)
-		{
-			char szProfInfo[256];
-
-			if (const CEntityRender* pProxy = pEntity->GetEntityRender())
-				cry_sprintf(szProfInfo, "%.3f ms : %s (%0.2f ago)", timeMs, pEntity->GetEntityTextDescription().c_str(), gEnv->pTimer->GetCurrTime() - pProxy->GetLastSeenTime());
-			else
-				cry_sprintf(szProfInfo, "%.3f ms : %s", timeMs, pEntity->GetEntityTextDescription().c_str());
-
-			if (timeMs > 0.5f)
-			{
-				float colorsYellow[4] = { 1, 1, 0, 1 };
-				IRenderAuxText::DrawLabelEx(wp, 1.3f, colorsYellow, true, true, szProfInfo);
-			}
-			else if (timeMs > 1.0f)
-			{
-				float colorsRed[4] = { 1, 0, 0, 1 };
-				IRenderAuxText::DrawLabelEx(wp, 1.6f, colorsRed, true, true, szProfInfo);
-			}
-			else
-			{
-				float colors[4] = { 1, 1, 1, 1 };
-				IRenderAuxText::DrawLabelEx(wp, 1.1f, colors, true, true, szProfInfo);
-
-				if (pEntity->GetPhysicalProxy() && pEntity->GetPhysicalProxy()->GetPhysicalEntity())
-				{
-					pe_status_pos pe;
-					pEntity->GetPhysicalProxy()->GetPhysicalEntity()->GetStatus(&pe);
-					cry_sprintf(szProfInfo, "Physics: %8.5f %8.5f %8.5f", pe.pos.x, pe.pos.y, pe.pos.z);
-					wp.z -= 0.1f;
-					IRenderAuxText::DrawLabelEx(wp, 1.1f, colors, true, true, szProfInfo);
-				}
-
-				Vec3 entPos = pEntity->GetPos();
-				cry_sprintf(szProfInfo, "Entity:  %8.5f %8.5f %8.5f", entPos.x, entPos.y, entPos.z);
-				wp.z -= 0.1f;
-				IRenderAuxText::DrawLabelEx(wp, 1.1f, colors, true, true, szProfInfo);
-			}
-		}
-		else
-		{
-			float colors[4] = { 1, 1, 1, 1 };
-			IRenderAuxText::DrawLabelEx(wp, 1.2f, colors, true, true, pEntity->GetEntityTextDescription().c_str());
-		}
-
-		boundsColor.set(255, 255, 0, 255);
+		float colors[4] = { 1, 1, 1, 1 };
+		IRenderAuxText::DrawLabelEx(entityTranslation, 1.2f, colors, true, true, entity.GetEntityTextDescription().c_str());
 	}
-	else
+	if (drawMode == CVar::EEntityDebugDrawType::BoundingBoxWithPositionPhysics) // draw information about physics, position, and textual representation of the entity
 	{
-		// draw only the EntityId (no other information, like position, physics status, etc.)
+		char szProfInfo[256];
+		float colors[4] = { 1, 1, 1, 1 };
+
+		if (entity.GetPhysicalProxy() && entity.GetPhysicalProxy()->GetPhysicalEntity())
+		{
+			pe_type type = entity.GetPhysics()->GetType();
+
+			pe_status_pos pe;
+			entity.GetPhysicalProxy()->GetPhysicalEntity()->GetStatus(&pe);
+			cry_sprintf(szProfInfo, "Physics: %8.5f %8.5f %8.5f", pe.pos.x, pe.pos.y, pe.pos.z);
+
+			switch (type)
+			{
+			case PE_STATIC:
+				cry_strcat(szProfInfo, " (PE_STATIC)");
+				break;
+			case PE_RIGID:
+				cry_strcat(szProfInfo, " (PE_RIGID)");
+				break;
+			case PE_WHEELEDVEHICLE:
+				cry_strcat(szProfInfo, " (PE_WHEELEDVEHICLE)");
+				break;
+			case PE_LIVING:
+				cry_strcat(szProfInfo, " (PE_LIVING)");
+				break;
+			case PE_PARTICLE:
+				cry_strcat(szProfInfo, " (PE_PARTICLE)");
+				break;
+			case PE_ARTICULATED:
+				cry_strcat(szProfInfo, " (PE_ARTICULATED)");
+				break;
+			case PE_ROPE:
+				cry_strcat(szProfInfo, " (PE_ROPE)");
+				break;
+			case PE_SOFT:
+				cry_strcat(szProfInfo, " (PE_SOFT)");
+				break;
+			case PE_AREA:
+				cry_strcat(szProfInfo, " (PE_AREA)");
+				break;
+			case PE_GRID:
+				cry_strcat(szProfInfo, " (PE_GRID)");
+				break;
+			case PE_WALKINGRIGID:
+				cry_strcat(szProfInfo, " (PE_WALKINGRIGID)");
+				break;
+			}
+
+			entityTranslation.z -= 0.1f;
+			IRenderAuxText::DrawLabelEx(entityTranslation, 1.1f, colors, true, true, szProfInfo);
+		}
+
+		Vec3 entPos = entity.GetPos();
+		cry_sprintf(szProfInfo, "Entity:  %8.5f %8.5f %8.5f", entPos.x, entPos.y, entPos.z);
+		entityTranslation.z -= 0.1f;
+		IRenderAuxText::DrawLabelEx(entityTranslation, 1.1f, colors, true, true, szProfInfo);
+	}
+	if(drawMode == CVar::EEntityDebugDrawType::BoundingBoxWithEntityId) // draw only the EntityId (no other information, like position, physics status, etc.)
+	{
+		Vec3 wp = entity.GetWorldTM().GetTranslation();
 
 		static const ColorF colorsToChooseFrom[] =
 		{
@@ -2343,12 +2024,12 @@ void CEntitySystem::DebugDraw(const CEntity* const pEntity, float timeMs)
 		};
 
 		char textToRender[256];
-		cry_sprintf(textToRender, "EntityId: %u", pEntity->GetId());
-		const ColorF& color = colorsToChooseFrom[pEntity->GetId() % CRY_ARRAY_COUNT(colorsToChooseFrom)];
+		cry_sprintf(textToRender, "EntityId: %u", entity.GetId());
+		const ColorF& color = colorsToChooseFrom[entity.GetId() % CRY_ARRAY_COUNT(colorsToChooseFrom)];
 
 		// Draw text.
 		float colors[4] = { color.r, color.g, color.b, 1.0f };
-		IRenderAuxText::DrawLabelEx(pEntity->GetPos(), 1.2f, colors, true, true, textToRender);
+		IRenderAuxText::DrawLabelEx(wp, 1.2f, colors, true, true, textToRender);
 
 		// specify color for drawing bounds below
 		boundsColor.set((uint8)(color.r * 255.0f), (uint8)(color.g * 255.0f), (uint8)(color.b * 255.0f), 255);
@@ -2356,15 +2037,471 @@ void CEntitySystem::DebugDraw(const CEntity* const pEntity, float timeMs)
 
 	// Draw bounds.
 	AABB box;
-	pEntity->GetLocalBounds(box);
+	entity.GetLocalBounds(box);
 	if (box.min == box.max)
 	{
-		box.min = wp - Vec3(0.1f, 0.1f, 0.1f);
-		box.max = wp + Vec3(0.1f, 0.1f, 0.1f);
+		box.min = entityTranslation - Vec3(0.1f, 0.1f, 0.1f);
+		box.max = entityTranslation + Vec3(0.1f, 0.1f, 0.1f);
 	}
 
-	pRenderAux->DrawAABB(box, pEntity->GetWorldTM(), false, boundsColor, eBBD_Extremes_Color_Encoded);
+	pRenderAux->DrawAABB(box, entity.GetWorldTM(), false, boundsColor, eBBD_Extremes_Color_Encoded);
 }
+
+//////////////////////////////////////////////////////////////////////////
+void CEntitySystem::DebugDrawEntityUsage()
+{
+	static float fLastUpdate = 0.0f;
+	float fCurrTime = gEnv->pTimer->GetFrameStartTime().GetSeconds();
+
+	struct SEntityClassDebugInfo
+	{
+		SEntityClassDebugInfo() = default;
+		explicit SEntityClassDebugInfo(IEntityClass* pEntityClass) : pClass(pEntityClass) {}
+
+		IEntityClass* pClass;
+
+		size_t        memoryUsage = 0;
+		uint32        numEntities = 0;
+		uint32        numActiveEntities = 0;
+		uint32        numNotHiddenEntities = 0;
+
+		// Amount of memory used by hidden entities
+		size_t hiddenMemoryUsage = 0;
+	};
+
+	static std::vector<SEntityClassDebugInfo> debuggedEntityClasses;
+
+	enum class EEntityUsageSortMode
+	{
+		None = 0,
+		ActiveInstances,
+		MemoryUsage
+	};
+
+	EEntityUsageSortMode sortMode = (EEntityUsageSortMode)CVar::es_DebugEntityUsageSortMode;
+
+	ICrySizer* pSizer = gEnv->pSystem->CreateSizer();
+
+	if (fCurrTime - fLastUpdate >= 0.001f * max(CVar::es_DebugEntityUsage, 1000))
+	{
+		fLastUpdate = fCurrTime;
+
+		string sFilter = CVar::es_DebugEntityUsageFilter;
+		sFilter.MakeLower();
+
+		debuggedEntityClasses.clear();
+		debuggedEntityClasses.reserve(GetClassRegistry()->GetClassCount());
+
+		for (CEntity* pEntity : m_EntityArray)
+		{
+			if (pEntity == nullptr)
+			{
+				continue;
+			}
+
+			IEntityClass* pEntityClass = pEntity->GetClass();
+
+			if (!sFilter.empty())
+			{
+				string szName = pEntityClass->GetName();
+				szName.MakeLower();
+				if (szName.find(sFilter) == string::npos)
+					continue;
+			}
+
+			auto debuggedEntityClassIterator = std::find_if(debuggedEntityClasses.begin(), debuggedEntityClasses.end(), [pEntityClass](const SEntityClassDebugInfo& classInfo)
+			{
+				return classInfo.pClass == pEntityClass;
+			});
+
+			if (debuggedEntityClassIterator == debuggedEntityClasses.end())
+			{
+				debuggedEntityClasses.emplace_back(pEntityClass);
+				debuggedEntityClassIterator = --debuggedEntityClasses.end();
+			}
+
+			// Calculate memory usage
+			const uint32 prevMemoryUsage = pSizer->GetTotalSize();
+			pEntity->GetMemoryUsage(pSizer);
+			const uint32 uMemoryUsage = pSizer->GetTotalSize() - prevMemoryUsage;
+			pSizer->Reset();
+
+			debuggedEntityClassIterator->memoryUsage += uMemoryUsage;
+			debuggedEntityClassIterator->numEntities++;
+
+			if (pEntity->IsActivatedForUpdates())
+			{
+				debuggedEntityClassIterator->numActiveEntities++;
+			}
+
+			if (pEntity->IsHidden())
+			{
+				debuggedEntityClassIterator->hiddenMemoryUsage += uMemoryUsage;
+			}
+			else
+			{
+				debuggedEntityClassIterator->numNotHiddenEntities++;
+			}
+		}
+
+		if (sortMode == EEntityUsageSortMode::ActiveInstances)
+		{
+			std::sort(debuggedEntityClasses.begin(), debuggedEntityClasses.end(), [](const SEntityClassDebugInfo& classInfoLeft, const SEntityClassDebugInfo& classInfoRight)
+			{
+				return classInfoLeft.numActiveEntities > classInfoRight.numActiveEntities;
+			});
+		}
+		else if (sortMode == EEntityUsageSortMode::MemoryUsage)
+		{
+			std::sort(debuggedEntityClasses.begin(), debuggedEntityClasses.end(), [](const SEntityClassDebugInfo& classInfoLeft, const SEntityClassDebugInfo& classInfoRight)
+			{
+				return classInfoLeft.memoryUsage > classInfoRight.memoryUsage;
+			});
+		}
+	}
+
+	pSizer->Release();
+
+	if (!debuggedEntityClasses.empty())
+	{
+		string title = "Entity Class";
+		if (CVar::es_DebugEntityUsageFilter && CVar::es_DebugEntityUsageFilter[0])
+		{
+			title.append(" [");
+			title.append(CVar::es_DebugEntityUsageFilter);
+			title.append("]");
+		}
+
+		float columnY = 11.0f;
+		const float colWhite[] = { 1.0f, 1.0f, 1.0f, 1.0f };
+		const float colGreen[] = { 0.0f, 1.0f, 0.0f, 1.0f };
+
+		const float columnX_Class = 50.0f;
+		const float columnX_ActiveCount = 350.0f;
+		const float columnX_NotHiddenCount = 450.0f;
+		const float columnX_MemoryUsage = 550.0f;
+		const float columnX_MemoryHidden = 650.0f;
+
+		IRenderAuxText::Draw2dLabel(columnX_Class, columnY, 1.2f, colWhite, false, "%s", title.c_str());
+		IRenderAuxText::Draw2dLabel(columnX_ActiveCount, columnY, 1.2f, colWhite, true, "Active");
+		IRenderAuxText::Draw2dLabel(columnX_NotHiddenCount, columnY, 1.2f, colWhite, true, "Not Hidden");
+		IRenderAuxText::Draw2dLabel(columnX_MemoryUsage, columnY, 1.2f, colWhite, true, "Memory Usage");
+		IRenderAuxText::Draw2dLabel(columnX_MemoryHidden, columnY, 1.2f, colWhite, true, "[Only Hidden]");
+		columnY += 15.0f;
+
+		for (const SEntityClassDebugInfo& debugEntityClassInfo : debuggedEntityClasses)
+		{
+			const char* szName = debugEntityClassInfo.pClass->GetName();
+
+			IRenderAuxText::Draw2dLabel(columnX_Class, columnY, 1.0f, colWhite, false, "%s", szName);
+			IRenderAuxText::Draw2dLabel(columnX_ActiveCount, columnY, 1.0f, colWhite, true, "%u", debugEntityClassInfo.numActiveEntities);
+			IRenderAuxText::Draw2dLabel(columnX_NotHiddenCount, columnY, 1.0f, colWhite, true, "%u", debugEntityClassInfo.numNotHiddenEntities);
+			IRenderAuxText::Draw2dLabel(columnX_MemoryUsage, columnY, 1.0f, colWhite, true, "%u (%uKb)", debugEntityClassInfo.memoryUsage, debugEntityClassInfo.memoryUsage / 1000);
+			IRenderAuxText::Draw2dLabel(columnX_MemoryHidden, columnY, 1.0f, colGreen, true, "%u (%uKb)", debugEntityClassInfo.hiddenMemoryUsage, debugEntityClassInfo.hiddenMemoryUsage / 1000);
+			columnY += 12.0f;
+		}
+	}
+}
+
+//////////////////////////////////////////////////////////////////////////
+void CEntitySystem::DebugDrawLayerInfo()
+{
+
+#ifdef ENABLE_PROFILING_CODE
+
+	bool shouldRenderAllLayerStats = CVar::es_LayerDebugInfo >= 2;
+	bool shouldRenderMemoryStats = CVar::es_LayerDebugInfo == 3;
+	bool shouldRenderAllLayerPakStats = CVar::es_LayerDebugInfo == 4;
+	bool shouldShowLayerActivation = CVar::es_LayerDebugInfo == 5;
+
+	float tx = 0;
+	float ty = 30;
+	float ystep = 12.0f;
+	ColorF clText(0, 1, 1, 1);
+
+	if (shouldShowLayerActivation) // Show which layer was switched on or off
+	{
+		const float fShowTime = 10.0f; // 10 seconds
+		float fCurTime = gEnv->pTimer->GetCurrTime();
+		float fPrevTime = 0;
+		std::vector<SLayerProfile>::iterator ppClearProfile = m_layerProfiles.end();
+		for (std::vector<SLayerProfile>::iterator ppProfiles = m_layerProfiles.begin(); ppProfiles != m_layerProfiles.end(); ++ppProfiles)
+		{
+			SLayerProfile& profile = (*ppProfiles);
+			CEntityLayer* pLayer = profile.pLayer;
+
+			ColorF clTextProfiledTime(0, 1, 1, 1);
+			if (profile.fTimeMS > 50)  // Red color for more then 50 ms
+				clTextProfiledTime = ColorF(1, 0.3f, 0.3f, 1);
+			else if (profile.fTimeMS > 10)    // Yellow color for more then 10 ms
+				clTextProfiledTime = ColorF(1, 1, 0.3f, 1);
+
+			if (!profile.isEnable)
+				clTextProfiledTime -= ColorF(0.3f, 0.3f, 0.3f, 0);
+
+			float xstep = 0.0f;
+			if (strlen(pLayer->GetParentName()) > 0)
+			{
+				xstep += 20;
+				const IEntityLayer* const pParentLayer = FindLayer(pLayer->GetParentName());
+				if (pParentLayer && strlen(pParentLayer->GetParentName()) > 0)
+					xstep += 20;
+			}
+			if (profile.fTimeOn != fPrevTime)
+			{
+				ty += 10.0f;
+				fPrevTime = profile.fTimeOn;
+			}
+
+			DrawText(tx + xstep, ty += ystep, clTextProfiledTime, "%.1f ms: %s (%s)", profile.fTimeMS, pLayer->GetName(), profile.isEnable ? "On" : "Off");
+			if (ppClearProfile == m_layerProfiles.end() && fCurTime - profile.fTimeOn > fShowTime)
+				ppClearProfile = ppProfiles;
+		}
+		if (ppClearProfile != m_layerProfiles.end())
+			m_layerProfiles.erase(ppClearProfile, m_layerProfiles.end());
+		return;
+	}
+
+	typedef std::map<string, std::vector<CEntityLayer*>> TParentLayerMap;
+	TParentLayerMap parentLayers;
+
+	for (TLayers::iterator it = m_layers.begin(); it != m_layers.end(); ++it)
+	{
+		CEntityLayer* pLayer = it->second;
+		if (strlen(pLayer->GetParentName()) == 0)
+		{
+			TParentLayerMap::iterator itFindRes = parentLayers.find(pLayer->GetName());
+			if (itFindRes == parentLayers.end())
+				parentLayers[pLayer->GetName()] = std::vector<CEntityLayer*>();
+		}
+		else
+		{
+			parentLayers[pLayer->GetParentName()].push_back(pLayer);
+		}
+	}
+
+	SLayerPakStats layerPakStats;
+	layerPakStats.m_MaxSize = 0;
+	layerPakStats.m_UsedSize = 0;
+	IResourceManager* pResMan = gEnv->pSystem->GetIResourceManager();
+	if (pResMan)
+		pResMan->GetLayerPakStats(layerPakStats, shouldShowLayerActivation);
+
+	if (shouldShowLayerActivation)
+	{
+		DrawText(tx, ty += ystep, clText, "Layer Pak Stats: %1.1f MB / %1.1f MB)",
+			(float)layerPakStats.m_UsedSize / (1024.f * 1024.f),
+			(float)layerPakStats.m_MaxSize / (1024.f * 1024.f));
+
+		for (SLayerPakStats::TEntries::iterator it = layerPakStats.m_entries.begin(); it != layerPakStats.m_entries.end(); ++it)
+		{
+			SLayerPakStats::SEntry& entry = *it;
+
+			DrawText(tx, ty += ystep, clText, "  %20s: %1.1f MB - %s)", entry.name.c_str(),
+				(float)entry.nSize / (1024.f * 1024.f), entry.status.c_str());
+		}
+		ty += ystep;
+		DrawText(tx, ty += ystep, clText, "All Layers:");
+	}
+	else
+	{
+		string tmp = "Active Brush Layers";
+		if (shouldRenderAllLayerStats)
+			tmp = "All Layers";
+
+		DrawText(tx, ty += ystep, clText, "%s (PakInfo: %1.1f MB / %1.1f MB):", tmp.c_str(),
+			(float)layerPakStats.m_UsedSize / (1024.f * 1024.f),
+			(float)layerPakStats.m_MaxSize / (1024.f * 1024.f));
+	}
+
+	ty += ystep;
+
+	ICrySizer* pSizer = 0;
+	if (shouldRenderMemoryStats)
+		pSizer = gEnv->pSystem->CreateSizer();
+
+	for (TParentLayerMap::iterator it = parentLayers.begin(); it != parentLayers.end(); ++it)
+	{
+		const string& parentName = it->first;
+		std::vector<CEntityLayer*>& children = it->second;
+
+		IEntityLayer* pParent = FindLayer(parentName);
+
+		bool bIsEnabled = false;
+		if (shouldRenderAllLayerStats)
+		{
+			bIsEnabled = true;
+		}
+		else
+		{
+			if (pParent)
+				bIsEnabled = pParent->IsEnabledBrush();
+
+			if (!bIsEnabled)
+			{
+				for (size_t i = 0; i < children.size(); ++i)
+				{
+					CEntityLayer* pChild = children[i];
+					if (pChild->IsEnabledBrush())
+					{
+						bIsEnabled = true;
+						break;
+					}
+				}
+			}
+		}
+
+		if (!bIsEnabled)
+			continue;
+
+		SLayerPakStats::SEntry* pLayerPakEntry = 0;
+		for (SLayerPakStats::TEntries::iterator it2 = layerPakStats.m_entries.begin();
+			it2 != layerPakStats.m_entries.end(); ++it2)
+		{
+			if (it2->name == parentName)
+			{
+				pLayerPakEntry = &(*it2);
+				break;
+			}
+		}
+
+		if (pLayerPakEntry)
+		{
+			DrawText(tx, ty += ystep, clText, "%s (PakInfo - %1.1f MB - %s)", parentName.c_str(),
+				(float)pLayerPakEntry->nSize / (1024.f * 1024.f), pLayerPakEntry->status.c_str());
+		}
+		else
+		{
+			DrawText(tx, ty += ystep, clText, "%s", parentName.c_str());
+		}
+
+		for (size_t i = 0; i < children.size(); ++i)
+		{
+			CEntityLayer* pChild = children[i];
+
+			if (shouldRenderAllLayerStats)
+			{
+				const char* state = "enabled";
+				ColorF clTextState(0, 1, 1, 1);
+				if (pChild->IsEnabled() && !pChild->IsEnabledBrush())
+				{
+					// a layer was not disabled by Flowgraph in time when level is starting
+					state = "was not disabled";
+					clTextState = ColorF(1, 0.3f, 0.3f, 1);  // redish
+				}
+				else if (!pChild->IsEnabled())
+				{
+					state = "disabled";
+					clTextState = ColorF(0.7f, 0.7f, 0.7f, 1);  // grayish
+				}
+				ty += ystep;
+				DrawText(tx, ty, clTextState, "  %s (%s)", pChild->GetName(), state);
+
+				if (shouldRenderMemoryStats && pSizer)
+				{
+					pSizer->Reset();
+
+					int numBrushes, numDecals;
+					gEnv->p3DEngine->GetLayerMemoryUsage(pChild->GetId(), pSizer, &numBrushes, &numDecals);
+
+					int numEntities;
+					pChild->GetMemoryUsage(pSizer, &numEntities);
+					const float memorySize = float(pSizer->GetTotalSize()) / 1024.f;
+
+					const int kColumnPos = 350;
+					if (numDecals)
+						DrawText(tx + kColumnPos, ty, clTextState, "Brushes: %d, Decals: %d, Entities: %d; Mem: %.2f Kb", numBrushes, numDecals, numEntities, memorySize);
+					else
+						DrawText(tx + kColumnPos, ty, clTextState, "Brushes: %d, Entities: %d; Mem: %.2f Kb", numBrushes, numEntities, memorySize);
+				}
+			}
+			else if (pChild->IsEnabledBrush())
+			{
+				DrawText(tx, ty += ystep, clText, "  %s", pChild->GetName());
+			}
+		}
+	}
+
+	SAFE_RELEASE(pSizer);
+
+#endif // ~ENABLE_PROFILING_CODE
+}
+
+//////////////////////////////////////////////////////////////////////////
+void CEntitySystem::DebugDrawEntityLinks(CEntity& entity)
+{
+	IRenderAuxGeom* pRenderAux = gEnv->pAuxGeomRenderer;
+
+	IEntityLink* pLink = entity.GetEntityLinks();
+	while (pLink != nullptr)
+	{
+		if (const CEntity* pTarget = GetEntityFromID(pLink->entityId))
+		{
+			pRenderAux->DrawLine(entity.GetWorldPos(), ColorF(0.0f, 1.0f, 0.0f), pTarget->GetWorldPos(), ColorF(0.0f, 1.0f, 0.0f));
+
+			Vec3 pos = 0.5f * (entity.GetWorldPos() + pTarget->GetWorldPos());
+
+			Vec3 camDir = pRenderAux->GetCamera().GetPosition() - entity.GetWorldPos();
+			float camDist = camDir.GetLength();
+
+			const float maxDist = 100.0f;
+			if (camDist < maxDist)
+			{
+				float rangeRatio = 1.0f;
+				float range = maxDist / 2.0f;
+				if (camDist > range)
+				{
+					rangeRatio = 1.0f * (1.0f - (camDist - range) / range);
+				}
+
+				IRenderAuxText::DrawLabelEx(pos, 1.2f, ColorF(0.4f, 1.0f, 0.0f, rangeRatio), true, false, pLink->name);
+			}
+		}
+
+		pLink = pLink->next;
+	}
+}
+
+//////////////////////////////////////////////////////////////////////////
+void CEntitySystem::DebugDrawComponents(const CEntity& entity)
+{
+	IRenderAuxGeom* pRenderAux = gEnv->pAuxGeomRenderer;
+
+	Vec3 entityTranslation = entity.GetWorldTM().GetTranslation();
+	if (entityTranslation.IsZero())
+		return;
+
+	const Vec3 camDir = pRenderAux->GetCamera().GetPosition() - entityTranslation;
+	const float maxDist = 100.0f;
+
+	if (camDir.GetLength() < maxDist)
+	{
+		ColorF color = Col_White;
+		IRenderAuxText::DrawLabelEx(entityTranslation, 1.2f, color, true, true, entity.GetEntityTextDescription().c_str());
+		entityTranslation.z -= 0.1f;
+
+		DynArray<IEntityComponent*> components;
+		entity.GetComponents(components);
+
+		for (const IEntityComponent* const pEntityComponent : components)
+		{
+			bool getsUpdated = pEntityComponent->GetEventMask().Check(ENTITY_EVENT_UPDATE);
+			bool getsPrePhysics = pEntityComponent->GetEventMask().Check(ENTITY_EVENT_PREPHYSICSUPDATE);
+
+			if (getsUpdated)
+				color = Col_Red;
+			else if(getsPrePhysics)
+				color = Col_Yellow;
+			else
+				color = Col_White;
+
+			IRenderAuxText::DrawLabelEx(entityTranslation, 1.2f, color, true, false, pEntityComponent->GetClassDesc().GetName().c_str());
+			entityTranslation.z -= 0.1f;
+		}
+	}
+}
+
+#endif // ~INCLUDE_DEBUG_ENTITY_DRAWING
 
 //////////////////////////////////////////////////////////////////////////
 void CEntitySystem::RegisterEntityGuid(const EntityGUID& guid, EntityId id)

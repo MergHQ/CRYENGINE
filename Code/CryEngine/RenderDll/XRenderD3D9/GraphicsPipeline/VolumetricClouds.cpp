@@ -727,7 +727,7 @@ void CVolumetricCloudsStage::Execute()
 			// TODO: remove after old graphics pipeline is removed.
 			rtMask |= g_HWSR_MaskBit[HWSR_SAMPLE2]; // enables explicit constant buffer.
 
-			if (pass.IsDirty(rtMask, bNewTemporalFilter))
+			if (pass.IsDirty(rtMask, bNewTemporalFilter, currMaxTex->GetID(), prevMaxTex->GetID()))
 			{
 				static CCryNameTSCRC shaderName = "ReprojectClouds";
 				pass.SetPrimitiveFlags(CRenderPrimitive::eFlags_None);
@@ -771,7 +771,7 @@ void CVolumetricCloudsStage::Execute()
 			// TODO: remove after old graphics pipeline is removed.
 			rtMask |= g_HWSR_MaskBit[HWSR_SAMPLE2]; // enables explicit constant buffer.
 
-			if (pass.IsDirty(rtMask, bNewTemporalFilter))
+			if (pass.IsDirty(rtMask, bNewTemporalFilter, currMinTex->GetID(), prevMinTex->GetID()))
 			{
 
 				static CCryNameTSCRC shaderName = "ReprojectClouds";
@@ -822,7 +822,7 @@ void CVolumetricCloudsStage::Execute()
 
 			CTexture* zTarget = RenderView()->GetDepthTarget();
 
-			if (pass.IsDirty(inputFlag))
+			if (pass.IsDirty(inputFlag, CRenderer::CV_r_VolumetricClouds, currMinTex->GetID(), currMaxTex->GetID(), zTarget->GetID(), context.scaledZTarget->GetID()))
 			{
 				uint64 rtMask = 0;
 				rtMask |= context.bScreenSpaceCloudBlocker ? g_HWSR_MaskBit[HWSR_SAMPLE4] : 0;
@@ -935,7 +935,7 @@ void CVolumetricCloudsStage::ExecuteVolumetricCloudShadowGen()
 	inputFlag |= bCloudVolTex ? BIT(0) : 0;
 	inputFlag |= bCloudBlocker ? BIT(1) : 0;
 
-	if (pass.IsDirty(inputFlag))
+	if (pass.IsDirty(inputFlag, cloudVolumeTex->GetID(), cloudNoiseTex->GetID(), cloudEdgeNoiseTex->GetID()))
 	{
 		uint64 rtMask = 0;
 		rtMask |= bCloudVolTex ? g_HWSR_MaskBit[HWSR_SAMPLE3] : 0;
@@ -1100,7 +1100,7 @@ void CVolumetricCloudsStage::ExecuteComputeDensityAndShadow(const VCCloudRenderC
 			}
 		}
 
-		if (pass.IsDirty(rtMask, CRenderer::CV_r_VolumetricClouds))
+		if (pass.IsDirty(rtMask, CRenderer::CV_r_VolumetricClouds, cloudVolumeTex->GetID()))
 		{
 			static CCryNameTSCRC shaderName = "InjectCloudDensityAndShadow";
 			pass.SetTechnique(pShader, shaderName, rtMask);
@@ -1216,7 +1216,7 @@ void CVolumetricCloudsStage::ExecuteRenderClouds(const VCCloudRenderContext& con
 		}
 	}
 
-	if (pass.IsDirty(rtMask, inputFlag))
+	if (pass.IsDirty(rtMask, inputFlag, cloudVolumeTex->GetID()))
 	{
 		const bool bMono = (CRenderer::CV_r_VolumetricCloudsPipeline == 0);
 		static CCryNameTSCRC shaderName0 = "RenderCloud_Monolithic";

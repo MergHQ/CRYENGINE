@@ -640,7 +640,7 @@ void CWaterStage::ExecuteDeferredOceanCaustics()
 
 		auto& pass = m_passDeferredOceanCaustics;
 
-		if (pass.IsDirty(CRenderer::CV_r_watercausticsdeferred))
+		if (pass.IsDirty(CRenderer::CV_r_watercausticsdeferred, pOceanMask->GetID()))
 		{
 			static CCryNameTSCRC techName = "General";
 			pass.SetPrimitiveFlags(CRenderPrimitive::eFlags_ReflectShaderConstants_PS);
