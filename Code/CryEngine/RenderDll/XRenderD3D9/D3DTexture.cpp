@@ -812,7 +812,7 @@ bool CTexture::RenderEnvironmentCMHDR(int size, const Vec3& Pos, TArray<unsigned
 		{ "e_ViewDistRatio",            1000.f },
 		{ "e_ViewDistRatioVegetation",  100.f  },
 		{ "e_LodRatio",                 1000.f },
-		{ "e_LodTransitionTime",        0.5f   },
+		{ "e_LodTransitionTime",        0.f    },
 		{ "r_flares",                   0      },
 		{ "r_ssdoHalfRes",              0      },
 	};
