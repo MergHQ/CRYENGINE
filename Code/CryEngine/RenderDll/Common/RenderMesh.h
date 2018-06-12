@@ -208,7 +208,7 @@ private:
   bool UpdateVidIndices(SMeshStream& IBStream, bool stall=true);
 
   bool CreateVidVertices(int nVerts=0, InputLayoutHandle eVF=InputLayoutHandle::Unspecified, int nStream=VSF_GENERAL);
-  bool UpdateVidVertices(int nStream, bool stall=true);
+  bool UpdateVidVertices(int nStream);
 
   bool CopyStreamToSystemForUpdate(SMeshStream& MS, size_t nSize);
 
@@ -253,7 +253,8 @@ public:
 	//! destructor
 	~CRenderMesh();
 
-	virtual bool CanRender() final {return (m_nFlags & FRM_ALLOCFAILURE) == 0; }
+	virtual bool CanUpdate() final { return (m_nFlags & FRM_ALLOCFAILURE) == 0; }
+	virtual bool CanRender() final { return (m_nFlags & FRM_ALLOCFAILURE) == 0 && CheckStreams(); }
 
 	inline bool IsSkinned() const
 	{
@@ -319,6 +320,8 @@ public:
   inline int GetStreamSize(int nStream, int nVerts=0) const { return GetStreamStride(nStream) * (nVerts ? nVerts : m_nVerts); }
   inline const buffer_handle_t _GetVBStream(int nStream) const { if (!m_VBStream[nStream]) return ~0u; return m_VBStream[nStream]->m_nID; }
   inline const buffer_handle_t _GetIBStream() const { return m_IBStream.m_nID; }
+  inline bool _NeedsVBStream(int nStream) const { return m_VBStream[nStream] && m_VBStream[nStream]->m_pUpdateData && (m_VBStream[nStream]->m_nFrameRequest > m_VBStream[nStream]->m_nFrameUpdate); }
+  inline bool _NeedsIBStream() const { return m_IBStream.m_pUpdateData && (m_IBStream.m_nFrameRequest > m_IBStream.m_nFrameUpdate); }
   inline bool _HasVBStream(int nStream) const { return m_VBStream[nStream] && m_VBStream[nStream]->m_nID!=~0u; }
   inline bool _HasIBStream() const { return m_IBStream.m_nID!=~0u; }
   inline int _IsVBStreamLocked(int nStream) const { if (!m_VBStream[nStream]) return 0; return (m_VBStream[nStream]->m_nLockFlags & FSL_LOCKED); }
@@ -374,12 +377,12 @@ public:
   void UnlockVB(int nStream);
   void UnlockIB();
 
-  bool RT_CheckUpdate(CRenderMesh *pVContainer, InputLayoutHandle eVF, uint32 nStreamMask, bool bTessellation = false, bool stall=true);
-	void RT_SetMeshCleanup();
-	void RT_AllocationFailure(const char* sPurpose, uint32 nSize);
+  bool RT_CheckUpdate(CRenderMesh *pVContainer, InputLayoutHandle eVF, uint32 nStreamMask, bool bTessellation = false);
+  void RT_SetMeshCleanup();
+  void RT_AllocationFailure(const char* sPurpose, uint32 nSize);
 
   void AssignChunk(CRenderChunk *pChunk, class CREMeshImpl *pRE);
-	void InitRenderChunk( CRenderChunk &rChunk );
+  void InitRenderChunk( CRenderChunk &rChunk );
 
   void FreeVB(int nStream);
   void FreeIB();
@@ -510,6 +513,7 @@ public:
 
 	bool GetRemappedSkinningData(uint32 guid, SStreamInfo& streamInfo);
 	bool FillGeometryInfo(CRenderElement::SGeometryInfo& geomInfo);
+	bool CheckStreams();
 
 private:
 	void AddHUDRenderElement(CRenderObject* pObj, IMaterial* pMaterial, const SRenderingPassInfo& passInfo);

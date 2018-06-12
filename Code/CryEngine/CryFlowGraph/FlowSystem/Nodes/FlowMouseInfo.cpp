@@ -186,7 +186,7 @@ public:
 
 		if (m_bOutputWorldCoords)
 		{
-			auto& camera = GetISystem()->GetViewCamera();
+			const CCamera& camera = GetISystem()->GetViewCamera();
 
 			Vec3 vPos;
 			int mouseX, mouseY;
@@ -577,7 +577,7 @@ public:
 	// Since the modelviewmatrix is updated in the update, and flowgraph is updated in the preupdate, we need this postupdate
 	virtual void OnPostUpdate(float fDeltaTime)
 	{
-		auto& camera = GetISystem()->GetViewCamera();
+		const CCamera& camera = GetISystem()->GetViewCamera();
 
 		int invMouseY = camera.GetViewSurfaceZ() - m_mouseY;
 

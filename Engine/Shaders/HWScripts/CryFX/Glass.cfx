@@ -34,7 +34,6 @@ struct CustomForwardShadingAttribs
 };
 
 #include "ShadeLib.cfi"
-#include "ForwardShading.cfi"
 #include "VertexLib.cfi"
 
 //////////////////////////////// Samplers ////////////////
@@ -259,7 +258,7 @@ void Callback_ShadingDirect(in ForwardShadingAttribs attribs, in ForwardLightPar
 #endif
 }
 
-#include "TiledShading.cfi"
+#include "ForwardShading.cfi"
 
 void ApplyDecals(float2 baseTC, inout half3 newNormal, inout half holeMask, inout half4 tintMap)
 {

@@ -538,16 +538,7 @@ bool CCompiledRenderObject::Compile(CRenderObject* pRenderObject, const EObjectC
 		{
 			if (!bMuteWarnings) Warning("[CCompiledRenderObject] Compile failed, GetGeometryInfo failed");
 			m_bIncomplete = true;
-
-			return true;
-		}
-
-		if (!(geomInfo.CalcStreamMask() & 1))
-		{
-			if (!bMuteWarnings) Warning("[CCompiledRenderObject] General stream missing");
-			m_bIncomplete = true;
-
-			return true;
+			return false;
 		}
 
 		m_bHasTessellation = bSupportTessellation;
@@ -567,7 +558,7 @@ bool CCompiledRenderObject::Compile(CRenderObject* pRenderObject, const EObjectC
 	if (!m_perInstanceExtraResources || !m_perInstanceExtraResources->IsValid())
 	{
 		m_bIncomplete = true;
-		return true;
+		return false;
 	}
 
 	if (!pRenderObject->m_Instances.empty() || m_bDynamicInstancingPossible)
@@ -592,7 +583,7 @@ bool CCompiledRenderObject::Compile(CRenderObject* pRenderObject, const EObjectC
 		if (!bMuteWarnings) Warning("[CCompiledRenderObject] Compile failed, invalid resource set");
 		m_bIncomplete = true;
 
-		return true;
+		return false;
 	}
 	m_materialResourceSet = pResources->m_pCompiledResourceSet;
 
@@ -617,9 +608,6 @@ bool CCompiledRenderObject::Compile(CRenderObject* pRenderObject, const EObjectC
 		CREMeshImpl* pRE = ((CREMeshImpl*)m_pRenderElement);
 		pRE->m_pRenderMesh->AddShadowPassMergedChunkIndicesAndVertices(pRE->m_pChunk, pRenderObject->m_pCurrMaterial, m_drawParams[eDrawParam_Shadow].m_nVerticesCount, m_drawParams[eDrawParam_Shadow].m_nNumIndices);
 	}
-
-	// THIS IS DANGEROUS!
-	//pRenderObject->m_Instances.clear();
 
 	// Stencil ref value
 	uint8 stencilRef = 0; // @TODO: get from CRNTmpData::SRNUserData::m_pClipVolume::GetStencilRef

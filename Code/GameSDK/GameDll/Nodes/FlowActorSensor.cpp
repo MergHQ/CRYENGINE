@@ -1733,7 +1733,7 @@ public:
 	virtual void OnActionEvent(const SActionEvent& event) {}
 	virtual void OnPostUpdate(float fDelta)
 	{
-		auto& camera = GetISystem()->GetViewCamera();
+		const CCamera& camera = GetISystem()->GetViewCamera();
 
 		const float px = GetPortFloat(&m_actInfo, EIP_PX);
 		const float py = GetPortFloat(&m_actInfo, EIP_PY);

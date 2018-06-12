@@ -764,7 +764,7 @@ void C3DEngine::DebugDraw_UpdateDebugNode()
 	ray_hit rayHit;
 
 	// use cam, no need for firing pos/dir
-	CCamera& cam = GetISystem()->GetViewCamera();
+	const CCamera& cam = GetISystem()->GetViewCamera();
 	const unsigned int flags = rwi_stop_at_pierceable | rwi_colltype_any;
 	const float hitRange = 2000.f;
 

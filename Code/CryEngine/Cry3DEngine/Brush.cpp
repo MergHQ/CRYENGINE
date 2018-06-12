@@ -112,7 +112,7 @@ CLodValue CBrush::ComputeLod(int wantedLod, const SRenderingPassInfo& passInfo)
 		nLodA = CLAMP(wantedLod, pStatObj->GetMinUsableLod(), (int)pStatObj->m_nMaxUsableLod);
 
 		if (!(pStatObj->m_nFlags & STATIC_OBJECT_COMPOUND))
-			nLodA = pStatObj->FindNearesLoadedLOD(nLodA, true);
+			nLodA = pStatObj->FindNearestLoadedLOD(nLodA, true);
 	}
 
 	return CLodValue(nLodA, 0, -1);

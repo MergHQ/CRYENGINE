@@ -969,7 +969,7 @@ void CATLAudioObject::DrawDebugInfo(
 
 	if (IRenderer* const pRenderer = gEnv->pRenderer)
 	{
-		auto& camera = GetISystem()->GetViewCamera();
+		auto const& camera = GetISystem()->GetViewCamera();
 		pRenderer->ProjectToScreen(position.x, position.y, position.z, &screenPos.x, &screenPos.y, &screenPos.z);
 
 		screenPos.x = screenPos.x * 0.01f * camera.GetViewSurfaceX();

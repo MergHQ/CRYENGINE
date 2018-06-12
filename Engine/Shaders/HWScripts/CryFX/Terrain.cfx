@@ -513,7 +513,6 @@ void Callback_ShadingDirect(in ForwardShadingAttribs attribs, in ForwardLightPar
 	specularAcc = specularAcc * light.illuminance;
 }
 
-#include "TiledShading.cfi"
 #include "ForwardShading.cfi"
 
 ////////////////////////////////////////////////////////////////////////////////////////////////////

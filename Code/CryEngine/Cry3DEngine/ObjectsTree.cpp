@@ -123,7 +123,7 @@ void COctreeNode::CheckManageVegetationSprites(float fNodeDistance, int nMaxFram
 				int nLodA;
 
 				nLodA = CLAMP(pTempData->userData.nWantedLod, (uint32)pStatObj->GetMinUsableLod(), (uint32)pStatObj->m_nMaxUsableLod);
-				nLodA = pStatObj->FindNearesLoadedLOD(nLodA);
+				nLodA = pStatObj->FindNearestLoadedLOD(nLodA);
 
 				// TODO: start dissolve transition to 3d lod
 			}

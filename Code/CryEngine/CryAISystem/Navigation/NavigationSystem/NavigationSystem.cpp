@@ -4989,7 +4989,7 @@ void NavigationSystemDebugDraw::DebugDrawNavigationMeshesForSelectedAgent(Naviga
 	AgentType::Meshes::const_iterator it = agentType.meshes.begin();
 	AgentType::Meshes::const_iterator end = agentType.meshes.end();
 
-	CCamera& viewCamera = gEnv->pSystem->GetViewCamera();
+	const CCamera& viewCamera = gEnv->pSystem->GetViewCamera();
 
 	for (; it != end; ++it)
 	{

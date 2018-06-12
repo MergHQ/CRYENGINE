@@ -34,14 +34,19 @@ bool CSunShaftsStage::IsActive()
 	return CRenderer::CV_r_sunshafts && CRenderer::CV_r_PostProcess;
 }
 
+int CSunShaftsStage::GetDownscaledTargetsIndex()
+{
+	return gRenDev->EF_GetRenderQuality() >= eRQ_High ? 0 : 1;
+}
+
 CTexture* CSunShaftsStage::GetFinalOutputRT()
 {
-	return gRenDev->EF_GetRenderQuality() >= eRQ_High ? CRendererResources::s_ptexBackBufferScaled[0] : CRendererResources::s_ptexBackBufferScaled[1];
+	return CRendererResources::s_ptexBackBufferScaled[GetDownscaledTargetsIndex()];
 }
 
 CTexture* CSunShaftsStage::GetTempOutputRT()
 {
-	return gRenDev->EF_GetRenderQuality() >= eRQ_High ? CRendererResources::s_ptexBackBufferScaledTemp[0] : CRendererResources::s_ptexBackBufferScaledTemp[1];
+	return CRendererResources::s_ptexBackBufferScaledTemp[GetDownscaledTargetsIndex()];
 }
 
 void CSunShaftsStage::GetCompositionParams(Vec4& params0, Vec4& params1)
@@ -66,6 +71,7 @@ void CSunShaftsStage::Execute()
 	CShader* pShader = CShaderMan::s_shPostSunShafts;
 	CTexture* pFinalRT = GetFinalOutputRT();
 	CTexture* pTempRT = GetTempOutputRT();
+	const int downscaledSourceIndex = GetDownscaledTargetsIndex();
 
 	// Generate mask for sun shafts
 	{
@@ -79,8 +85,8 @@ void CSunShaftsStage::Execute()
 			m_passShaftsMask.SetRenderTarget(0, pFinalRT);
 			m_passShaftsMask.SetState(GS_NODEPTHTEST);
 
-			m_passShaftsMask.SetTexture(0, CRendererResources::s_ptexLinearDepthScaled[0]);
-			m_passShaftsMask.SetTexture(1, CRendererResources::s_ptexHDRTargetScaled[0]);  // TODO
+			m_passShaftsMask.SetTexture(0, CRendererResources::s_ptexLinearDepthScaled[downscaledSourceIndex]);
+			m_passShaftsMask.SetTexture(1, CRendererResources::s_ptexHDRTargetScaled[downscaledSourceIndex]);
 			m_passShaftsMask.SetSampler(0, EDefaultSamplerStates::PointClamp);  
 		}
 

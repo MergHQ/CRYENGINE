@@ -73,7 +73,7 @@ void CView::Update(float frameTime, bool isActive)
 	{
 		m_viewParams.SaveLast();
 
-		CCamera* pSysCam = &m_pSystem->GetViewCamera();
+		const CCamera &sysCam = m_pSystem->GetViewCamera();
 
 		//process screen shaking
 		ProcessShaking(frameTime);
@@ -144,7 +144,7 @@ void CView::Update(float frameTime, bool isActive)
 			}
 		}
 
-		m_camera.SetFrustum(pSysCam->GetViewSurfaceX(), pSysCam->GetViewSurfaceZ(), fov, nearPlane, farPlane, pSysCam->GetPixelAspectRatio());
+		m_camera.SetFrustum(sysCam.GetViewSurfaceX(), sysCam.GetViewSurfaceZ(), fov, nearPlane, farPlane, sysCam.GetPixelAspectRatio());
 
 		//TODO: (14, 06, 2010, "the player view should always get updated, this due to the hud being visable, without shocking, in cutscenes - todo is to see if we can optimise this code");
 		IActor* pActor = gEnv->pGameFramework->GetClientActor();

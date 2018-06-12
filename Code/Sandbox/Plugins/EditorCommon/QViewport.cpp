@@ -368,6 +368,7 @@ void QViewport::InitDisplayContext(HWND hWnd)
 	// Draw all objects.
 	SDisplayContextKey displayContextKey;
 	displayContextKey.key.emplace<HWND>(hWnd);
+
 	DisplayContext& dctx = m_displayContext;
 	dctx.SetDisplayContext(displayContextKey);
 	dctx.SetView(m_pViewportAdapter.get());

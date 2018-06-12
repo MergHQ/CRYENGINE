@@ -145,6 +145,8 @@ inline void CDeviceObjectFactory::ExtractBasePointer(D3DBuffer* buffer, D3D11_MA
 	base_ptr = CDeviceObjectFactory::Map(buffer, 0, 0, 0, mode /* MAP_DISCARD could affect the ptr */);
 #elif CRY_RENDERER_VULKAN
 	base_ptr = (uint8*)buffer->Map();
+#else
+	base_ptr = NULL;
 #endif
 #else
 	base_ptr = NULL;

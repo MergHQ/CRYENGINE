@@ -1445,7 +1445,7 @@ int CStatObj::GetMinUsableLod()
 }
 
 ///////////////////////////////////////////////////////////////////////////////
-int CStatObj::FindNearesLoadedLOD(int nLodIn, bool bSearchUp)
+int CStatObj::FindNearestLoadedLOD(int nLodIn, bool bSearchUp)
 {
 	// make sure requested lod is loaded
 	/*  if(CStatObj * pObjForStreamIn = nLodIn ? m_pLODs[nLodIn] : this)
@@ -1458,10 +1458,10 @@ int CStatObj::FindNearesLoadedLOD(int nLodIn, bool bSearchUp)
 	// if requested lod is not ready - find nearest ready one
 	int nLod = nLodIn;
 
-	if (nLod == 0 && !GetRenderMesh())
+	if (nLod == 0 && (!GetRenderMesh() || !GetRenderMesh()->CanRender()))
 		nLod++;
 
-	while (nLod && nLod < MAX_STATOBJ_LODS_NUM && (!m_pLODs || !m_pLODs[nLod] || !m_pLODs[nLod]->GetRenderMesh()))
+	while (nLod && nLod < MAX_STATOBJ_LODS_NUM && (!m_pLODs || !m_pLODs[nLod] || !m_pLODs[nLod]->GetRenderMesh() || !m_pLODs[nLod]->GetRenderMesh()->CanRender()))
 		nLod++;
 
 	if (nLod >(int)m_nMaxUsableLod)
@@ -1470,10 +1470,10 @@ int CStatObj::FindNearesLoadedLOD(int nLodIn, bool bSearchUp)
 		{
 			nLod = min((int)m_nMaxUsableLod, nLodIn);
 
-			while (nLod && (!m_pLODs || !m_pLODs[nLod] || !m_pLODs[nLod]->GetRenderMesh()))
+			while (nLod && (!m_pLODs || !m_pLODs[nLod] || !m_pLODs[nLod]->GetRenderMesh() || !m_pLODs[nLod]->GetRenderMesh()->CanRender()))
 				nLod--;
 
-			if (nLod == 0 && !GetRenderMesh())
+			if (nLod == 0 && (!GetRenderMesh() || !GetRenderMesh()->CanRender()))
 				nLod--;
 		}
 		else

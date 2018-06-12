@@ -119,7 +119,7 @@ foundbox:
 			pEngine->m_arrEntsInFoliage[i].timeIdle = 0;
 
 		IRenderNode* pVeg = GetRenderNodeFromPhys(pOverlap->pForeignData[1], pOverlap->iForeignData[1]);
-		CCamera& cam = gEnv->pSystem->GetViewCamera();
+		const CCamera& cam = gEnv->pSystem->GetViewCamera();
 		int cullDist = GetCVars()->e_CullVegActivation;
 		int iSource = 0;
 
@@ -189,7 +189,7 @@ void CDeferredCollisionEventOnPhysCollision::RayTraceVegetation()
 		return;
 	}
 
-	CCamera& cam = gEnv->pSystem->GetViewCamera();
+	const CCamera& cam = gEnv->pSystem->GetViewCamera();
 	int cullDist = GetCVars()->e_CullVegActivation;
 	if (cullDist && (static_cast<unsigned>(pVeg->GetDrawFrame() + 10) < gEnv->nMainFrameID ||
 	                 (cam.GetPosition() - pVeg->GetPos()).len2() * sqr(cam.GetFov()) > sqr(cullDist * 1.04f)))

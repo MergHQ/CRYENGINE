@@ -96,7 +96,6 @@ const char* render_category_cvars[] =
 	"e_Particles",              LOCALIZE("Particles"),
 	"e_Clouds",                 LOCALIZE("Clouds"),
 	"e_GeomCaches",             LOCALIZE("Geom Caches"),
-	"r_Beams",                  LOCALIZE("Light Beams"),
 	"e_GI",                     LOCALIZE("Global Illumination"),
 };
 

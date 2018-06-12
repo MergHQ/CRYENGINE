@@ -91,7 +91,7 @@ void CDebugGun::Update( SEntityUpdateContext& ctx, int update)
   }
 
   // use cam, no need for firing pos/dir
-  CCamera& cam = GetISystem()->GetViewCamera();
+  const CCamera& cam = GetISystem()->GetViewCamera();
 
   if (gEnv->pPhysicalWorld->RayWorldIntersection(cam.GetPosition()+cam.GetViewdir(), cam.GetViewdir()*HIT_RANGE, ent_all, flags, &rayhit, 1))
   {
@@ -233,7 +233,7 @@ void CDebugGun::Shoot(bool bPrimary)
   IPhysicalEntity *pSkip = GetOwnerActor()->GetEntity()->GetPhysics();
   ray_hit rayhit;
 
-  CCamera& cam = GetISystem()->GetViewCamera();
+  const CCamera& cam = GetISystem()->GetViewCamera();
   Vec3 pos = cam.GetPosition()+cam.GetViewdir();
   Vec3 dir = cam.GetViewdir() * HIT_RANGE;
 

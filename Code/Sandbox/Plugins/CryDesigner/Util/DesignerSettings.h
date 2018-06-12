@@ -25,7 +25,6 @@ struct ConsoleVarsForExcluisveMode
 	int e_Shadows;
 	int e_Particles;
 	int e_Clouds;
-	int r_Beams;
 	int e_SkyBox;
 };
 

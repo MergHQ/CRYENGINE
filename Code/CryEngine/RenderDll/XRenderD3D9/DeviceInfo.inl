@@ -360,6 +360,11 @@ bool DeviceInfo::CreateDevice(int zbpp, OnCreateDeviceCallback pCreateDeviceCall
 	#endif
 #endif
 
+#if (CRY_RENDERER_DIRECT3D >= 111) && (CRY_RENDERER_DIRECT3D < 120)
+						if (!m_D3D110aOptions.MapNoOverwriteOnDynamicConstantBuffer)
+							CryFatalError("D3D11.1 feature 'MapNoOverwriteOnDynamicConstantBuffer' is required!");
+#endif
+
 						// Promote interfaces to the required level
 						pDevice->QueryInterface(__uuidof(D3DDevice), (void**)&m_pDevice);
 						pContext->QueryInterface(__uuidof(D3DDeviceContext), (void**)&m_pContext);

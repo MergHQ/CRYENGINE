@@ -407,7 +407,7 @@ public:
 	virtual Serialization::IArchiveHost* GetArchiveHost() const override         { return m_pArchiveHost; }
 
 	void                                 SetViewCamera( CCamera& Camera) override;
-	CCamera&                             GetViewCamera() override                { return m_ViewCamera; }
+	const CCamera&                       GetViewCamera() const override          { return m_ViewCamera; }
 
 	virtual uint32                       GetCPUFlags() override                  { return m_pCpu ? m_pCpu->GetFeatures() : 0; }
 	virtual int                          GetLogicalCPUCount() override           { return m_pCpu ? m_pCpu->GetLogicalCPUCount() : 0; }

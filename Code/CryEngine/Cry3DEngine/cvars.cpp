@@ -1073,7 +1073,7 @@ void CVars::Init()
 	              "1 = On\n"
 	              "2 = Force");
 
-	REGISTER_CVAR(e_ParticlesMotionBlur, 1, VF_NULL,
+	REGISTER_CVAR(e_ParticlesMotionBlur, 0, VF_INVISIBLE,
 	              "Motion blur for particles\n"
 	              "Usage: e_ParticlesMotionBlur [0/1/2]\n"
 	              "0 = Off\n"

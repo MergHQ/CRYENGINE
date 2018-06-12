@@ -2548,10 +2548,6 @@ struct SRenderingPassInfo
 
 	const SDisplayContextKey& GetDisplayContextKey() const   { return m_displayContextKey; }
 
-	// Job state associated with rendering to this view
-	void                             SetWriteMutex(void* jobState)                             { m_pJobState = jobState; }
-	void*                            WriteMutex() const                                        { return m_pJobState; };
-
 	void                             SetShadowPasses(class std::vector<SRenderingPassInfo>* p) { m_pShadowPasses = p; }
 	std::vector<SRenderingPassInfo>* GetShadowPasses() const                                   { return m_pShadowPasses; }
 
@@ -2603,9 +2599,6 @@ private:
 	uint8   m_nZoomInProgress = false;
 	uint8   m_nZoomMode = 0;
 	uint8   m_bAuxWindow = false;
-
-	// Job state to use for all jobs spawned by rendering with this pass.
-	void* m_pJobState = nullptr;
 
 	// Windows handle of the target Display Context in the multi-context rendering (in Editor)
 	SDisplayContextKey m_displayContextKey;
@@ -2931,8 +2924,6 @@ inline void SRenderingPassInfo::SetRenderView(IRenderView* pRenderView)
 	pRenderView->SetFrameId(GetFrameID());
 	pRenderView->SetFrameTime(gEnv->pTimer->GetFrameStartTime(ITimer::ETIMER_UI));
 	pRenderView->SetViewport(SRenderViewport(0, 0, m_pCamera->GetViewSurfaceX(), m_pCamera->GetViewSurfaceZ()));
-
-	SetWriteMutex(pRenderView->GetWriteMutex());
 }
 
 ////////////////////////////////////////////////////////////////////////////////

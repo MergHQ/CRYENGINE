@@ -541,7 +541,7 @@ public:
 	virtual IStatObj* GetLodObject(int nLodLevel, bool bReturnNearest = false) final;
 	virtual IStatObj* GetLowestLod() final;
 
-	virtual int FindNearesLoadedLOD(int nLodIn, bool bSearchUp = false) final;
+	virtual int FindNearestLoadedLOD(int nLodIn, bool bSearchUp = false) final;
 	virtual int FindHighestLOD(int nBias) final;
 
 	// interface IStreamCallback -----------------------------------------------------

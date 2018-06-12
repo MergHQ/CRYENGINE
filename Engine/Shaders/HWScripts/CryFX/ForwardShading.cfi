@@ -81,8 +81,15 @@ cbuffer CBPerPassForward : register(b5)
 	{
 		float4 CloudShadingColorSun;
 		float4 CloudShadingColorSky;
-	} cbMisc;
+	} cbClouds;
+	
+	struct
+	{
+		float4 IntegrationMode;
+	} cbSVOGI;
 };
+
+#include "TiledShading.cfi"
 
 SShadowSamplingParams GetShadowSamplingParams()
 {

@@ -80,7 +80,11 @@ void CBoidsProxy::ProcessEvent(const SEntityEvent& event)
 		break;
 	case ENTITY_EVENT_UPDATE:
 		if (m_pFlock)
-			m_pFlock->Update(&gEnv->pSystem->GetViewCamera());
+		{
+			CCamera cam = gEnv->pSystem->GetViewCamera();
+			m_pFlock->Update(&cam);
+			gEnv->pSystem->SetViewCamera(cam);
+		}
 		break;
 	}
 }

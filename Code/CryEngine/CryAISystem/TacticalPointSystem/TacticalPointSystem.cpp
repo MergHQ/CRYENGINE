@@ -2434,7 +2434,7 @@ bool CTacticalPointSystem::RealPropertyInternal(TTacticalPointQuery query, const
 			fY *= fHeight * 0.01f;
 
 			// [2/5/2009 evgeny] Reject points that are behind the frustrum near plane
-			CCamera& camera = GetISystem()->GetViewCamera();
+			const CCamera& camera = GetISystem()->GetViewCamera();
 			Vec3 vCameraNormalizedDirection = camera.GetViewdir().normalize();
 			Vec3 vPointRelativeToCameraNearPlane =
 			  point.GetPos() - camera.GetPosition() - camera.GetNearPlane() * vCameraNormalizedDirection;

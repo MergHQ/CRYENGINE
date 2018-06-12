@@ -34,6 +34,13 @@ CryCriticalSection CGraphicsDeviceConstantBuffer::s_accessLock;
 	#define DEVBUFFERMAN_ASSERT(x) (void)0
 #endif
 
+// Change this to != 0 to allocate CConstantBuffers from pool
+#ifdef _DEBUG
+	#define DEVBUFFERMAN_CCONSTANTBUFFER_POOL 0
+#else
+	#define DEVBUFFERMAN_CCONSTANTBUFFER_POOL 1 
+#endif
+
 #ifdef TRACK_DEVBUFFER_WITH_MEMREPLAY
 	#define DB_MEMREPLAY_SCOPE(a, b)               MEMREPLAY_SCOPE(a, b)
 	#define DB_MEMREPLAY_SCOPE_ALLOC(a, b, c)      MEMREPLAY_SCOPE_ALLOC(a, b, c)
@@ -1296,6 +1303,10 @@ struct CPartitionAllocator
 	uint32              m_partition;
 	uint32              m_capacity;
 
+#if (CRY_RENDERER_DIRECT3D >= 111) && (CRY_RENDERER_DIRECT3D < 120)
+	uint32              m_map_count = 0;
+#endif
+
 	std::vector<uint32> m_table;
 	std::vector<uint32> m_remap;
 
@@ -1341,6 +1352,28 @@ struct CPartitionAllocator
 		std::swap(m_table[roster_index], m_table[--m_partition]);
 		std::swap(m_remap[key], m_remap[m_table[roster_index]]);
 	}
+
+#if (CRY_RENDERER_DIRECT3D >= 111) && (CRY_RENDERER_DIRECT3D < 120)
+	void map()
+	{
+		if (0 == m_map_count++)
+		{
+			CRY_ASSERT(m_base_ptr == nullptr);
+			m_base_ptr = CDeviceObjectFactory::Map(m_buffer->GetBuffer(), 0, 0, m_page_size, D3D11_MAP_WRITE_NO_OVERWRITE_CB);
+		}
+	}
+
+	void unmap()
+	{
+		if (--m_map_count == 0)
+		{
+			CRY_ASSERT(m_base_ptr);
+			CDeviceObjectFactory::Unmap(m_buffer->GetBuffer(), 0, 0, m_page_size, D3D11_MAP_WRITE_NO_OVERWRITE_CB);
+			m_base_ptr = nullptr;
+		}
+	}
+#endif
+
 };
 
 //////////////////////////////////////////////////////////////////////////
@@ -1460,7 +1493,7 @@ retry:
 				CDeviceObjectFactory::USAGE_DIRECT_ACCESS_CPU_COHERENT |
 				CDeviceObjectFactory::USAGE_DIRECT_ACCESS_GPU_COHERENT |
 #endif
-#if (BUFFER_ENABLE_DIRECT_ACCESS == 1) // UMA || PersistentMap
+#if (CONSTANT_BUFFER_ENABLE_DIRECT_ACCESS == 1) // UMA || PersistentMap
 				CDeviceObjectFactory::USAGE_CPU_WRITE |
 #endif
 				CDeviceObjectFactory::BIND_CONSTANT_BUFFER
@@ -3119,7 +3152,7 @@ private:
 // Manages all pool - in anonymous namespace to reduce recompiles
 struct SPoolManager
 {
-#if !DEVBUFFERMAN_DEBUG
+#if DEVBUFFERMAN_CCONSTANTBUFFER_POOL
 	// Storage for constant buffer wrapper instances
 	CPartitionTable<CConstantBuffer> m_constant_buffers[2];
 #endif
@@ -3589,7 +3622,7 @@ CConstantBuffer* CDeviceBufferManager::CreateConstantBufferRaw(buffer_size_t siz
 	STATOSCOPE_TIMER(s_PoolManager.m_sdata[0].m_creator_time);
 	size = (max(size, buffer_size_t(1u)) + (255)) & ~(255);
 	CConditonalDevManLock lock(this, ts);
-#if !DEVBUFFERMAN_DEBUG
+#if DEVBUFFERMAN_CCONSTANTBUFFER_POOL
 	CConstantBuffer* buffer = &s_PoolManager.m_constant_buffers[ts][s_PoolManager.m_constant_buffers[ts].Allocate()];
 #else
 	CConstantBuffer* buffer = new CConstantBuffer(0xCACACACA);
@@ -3965,7 +3998,7 @@ void CConstantBuffer::ReturnToPool()
 	}
 #endif
 
-#if !DEVBUFFERMAN_DEBUG
+#if DEVBUFFERMAN_CCONSTANTBUFFER_POOL
 	if (m_handle != ~0u)
 		s_PoolManager.m_constant_buffers[m_lock].Free(m_handle);
 #else
@@ -3992,7 +4025,15 @@ void* CConstantBuffer::BeginWrite()
 		// Transfer sub-set of GPU resource to CPU, also allows graphics debugger and multi-gpu broadcaster to do the right thing
 		CDeviceObjectFactory::MarkReadRange(m_buffer->GetBuffer(), m_offset, 0, D3D11_MAP_WRITE);
 
-		return (void*)((uintptr_t)m_base_ptr + m_offset);
+		void* base_ptr = m_base_ptr;
+
+	#if (CRY_RENDERER_DIRECT3D >= 111) && (CRY_RENDERER_DIRECT3D < 120)
+		auto pAllocator = static_cast<CPartitionAllocator*>(m_allocator);
+		pAllocator->map();
+		base_ptr = pAllocator->base_ptr();
+	#endif
+
+		return (void*)((uintptr_t)base_ptr + m_offset);
 	}
 #else
 	if (!m_used)
@@ -4032,6 +4073,12 @@ void CConstantBuffer::EndWrite(bool requires_flush)
 	{
 		// Transfer sub-set of GPU resource to CPU, also allows graphics debugger and multi-gpu broadcaster to do the right thing
 		CDeviceObjectFactory::MarkWriteRange(m_buffer->GetBuffer(), m_offset, m_size, D3D11_MAP_WRITE);
+
+#if (CRY_RENDERER_DIRECT3D >= 111) && (CRY_RENDERER_DIRECT3D < 120)
+		auto pAllocator = static_cast<CPartitionAllocator*>(m_allocator);
+		pAllocator->unmap();
+#endif
+
 	}
 #else
 	if (m_dynamic)
@@ -4067,7 +4114,21 @@ bool CConstantBuffer::UpdateBuffer(const void* src, buffer_size_t size, buffer_s
 	if (s_PoolManager.m_constant_allocator[m_lock].Allocate(this))
 	{
 		m_used = 1;
-		CDeviceObjectFactory::UploadContents<true>(m_buffer->GetBuffer(), 0, m_offset + offset, size, D3D11_MAP_WRITE_NO_OVERWRITE_CB, src, reinterpret_cast<uint8*>(m_base_ptr) + m_offset + offset, numDataBlocks);
+
+		void* base_ptr = m_base_ptr;
+
+#if (CRY_RENDERER_DIRECT3D >= 111) && (CRY_RENDERER_DIRECT3D < 120)
+		auto pAllocator = static_cast<CPartitionAllocator*>(m_allocator);
+		pAllocator->map();
+		base_ptr = pAllocator->base_ptr();
+#endif
+
+		CDeviceObjectFactory::UploadContents<true>(m_buffer->GetBuffer(), 0, m_offset + offset, size, D3D11_MAP_WRITE_NO_OVERWRITE_CB, src, reinterpret_cast<uint8*>(base_ptr) + m_offset + offset, numDataBlocks);
+
+#if (CRY_RENDERER_DIRECT3D >= 111) && (CRY_RENDERER_DIRECT3D < 120)
+		pAllocator->unmap();
+#endif
+
 	}
 #else
 	if (!m_used)

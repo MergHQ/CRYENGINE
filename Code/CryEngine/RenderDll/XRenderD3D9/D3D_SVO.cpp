@@ -1132,6 +1132,42 @@ inline Vec3 SVO_StringToVector(const char* str)
 	return vTemp;
 }
 
+void CSvoRenderer::FillForwardParams(SForwardParams& svogiParams, bool enable) const
+{
+	if (enable)
+	{
+		svogiParams.IntegrationMode.x = 1.f - e_svoTI_HighGlossOcclusion;
+
+		float fModeFin = 0;
+		int nModeGI = GetIntegratioMode();
+
+		if (nModeGI == 0 && GetUseLightProbes())
+		{
+			// AO modulates diffuse and specular
+			fModeFin = 0;
+		}
+		else if (nModeGI <= 1)
+		{
+			// GI replaces diffuse and modulates specular
+			fModeFin = 1.f;
+		}
+		else if (nModeGI == 2)
+		{
+			// GI replaces diffuse and specular
+			fModeFin = 2.f;
+		}
+
+		svogiParams.IntegrationMode.y = fModeFin;
+		svogiParams.IntegrationMode.z = e_svoDVR ? (float)e_svoDVR : ((m_texInfo.bSvoReady && e_svoTI_NumberOfBounces) ? e_svoTI_SpecularAmplifier : 0);
+		svogiParams.IntegrationMode.w = e_svoTI_SkyColorMultiplier;
+	}
+	else
+	{
+		// turning off by parameters.
+		svogiParams.IntegrationMode = Vec4(0.0f, -1.0f, 0.0f, 0.0f);
+	}
+}
+
 bool CSvoRenderer::SetShaderParameters(float*& pSrc, uint32 paramType, UFloat4* sData)
 {
 	bool bRes = true;
@@ -1483,12 +1519,12 @@ uint64 CSvoRenderer::GetRunTimeFlags(bool bDiffuseMode, bool bPixelShader)
 	return rtFlags;
 }
 
-int CSvoRenderer::GetIntegratioMode()
+int CSvoRenderer::GetIntegratioMode() const
 {
 	return e_svoTI_IntegrationMode;
 }
 
-int CSvoRenderer::GetIntegratioMode(bool& bSpecTracingInUse)
+int CSvoRenderer::GetIntegratioMode(bool& bSpecTracingInUse) const
 {
 	bSpecTracingInUse = (e_svoTI_IntegrationMode == 2) || (e_svoTI_SpecularFromDiffuse != 0);
 	return e_svoTI_IntegrationMode;

@@ -599,8 +599,8 @@ void *CRenderMesh::LockVB(int nStream, uint32 nFlags, int nOffset, int nVerts, i
 #endif
 	const int threadId = gRenDev->GetMainThreadID();
 
-  if (!CanRender()) // if allocation failure suffered, don't lock anything anymore
-    return NULL;
+	if (!CanUpdate()) // if allocation failure suffered, don't lock anything anymore
+		return NULL;
 
 	SREC_AUTO_LOCK(m_sResLock);//need lock as resource must not be updated concurrently
 	SMeshStream* MS = GetVertexStream(nStream, nFlags);
@@ -753,8 +753,8 @@ vtx_idx *CRenderMesh::LockIB(uint32 nFlags, int nOffset, int nInds)
 			__debugbreak();
 	}
 #endif
-  if (!CanRender()) // if allocation failure suffered, don't lock anything anymore
-    return NULL;
+	if (!CanUpdate()) // if allocation failure suffered, don't lock anything anymore
+		return NULL;
 
 	const int threadId = gRenDev->GetMainThreadID();
 
@@ -2489,7 +2489,7 @@ void CRenderMesh::BuildAdjacency(const VertexFormat *pVerts, unsigned int nVerts
 }
 #endif //#ifdef MESH_TESSELLATION_RENDERER
 
-bool CRenderMesh::RT_CheckUpdate(CRenderMesh *pVContainer, InputLayoutHandle eVF, uint32 nStreamMask, bool bTessellation, bool stall)
+bool CRenderMesh::RT_CheckUpdate(CRenderMesh *pVContainer, InputLayoutHandle eVF, uint32 nStreamMask, bool bTessellation)
 {
 	MEMSTAT_CONTEXT(EMemStatContextTypes::MSC_RenderMeshType, 0, this->GetTypeName());
 	MEMSTAT_CONTEXT(EMemStatContextTypes::MSC_RenderMesh, 0, this->GetSourceName());
@@ -2498,12 +2498,9 @@ bool CRenderMesh::RT_CheckUpdate(CRenderMesh *pVContainer, InputLayoutHandle eVF
 	int nFrame = gRenDev->GetRenderFrameID();
 	bool bSkinned = (m_nFlags & (FRM_SKINNED | FRM_SKINNEDNEXTDRAW)) != 0;
 
-	if (nStreamMask & 0x80000000) // Disable skinning in instancing mode
-		bSkinned = false;
-
 	m_nFlags &= ~FRM_SKINNEDNEXTDRAW;
 
-	IF(!CanRender(), 0)
+	IF(!CanUpdate(), 0)
 		return false;
 
 	FUNCTION_PROFILER_RENDER_FLAT
@@ -2518,13 +2515,13 @@ bool CRenderMesh::RT_CheckUpdate(CRenderMesh *pVContainer, InputLayoutHandle eVF
 		if (pMS->m_pUpdateData && pMS->m_nFrameAccess != nFrame)
 		{
 			pMS->m_nFrameAccess = nFrame;
-			if ((pMS->m_nFrameRequest == -1) || (pMS->m_nFrameRequest > pMS->m_nFrameUpdate))
+			if (pMS->m_nFrameRequest > pMS->m_nFrameUpdate)
 			{
 				{
 					PROFILE_FRAME(Mesh_CheckUpdateUpdateGBuf);
 					if (!(pMS->m_nLockFlags & FSL_WRITE))
 					{
-						if (!pVContainer->UpdateVidVertices(VSF_GENERAL, stall))
+						if (!pVContainer->UpdateVidVertices(VSF_GENERAL))
 						{
 							RT_AllocationFailure("Update General Stream", GetStreamSize(VSF_GENERAL, m_nVerts));
 							return false;
@@ -2565,7 +2562,7 @@ bool CRenderMesh::RT_CheckUpdate(CRenderMesh *pVContainer, InputLayoutHandle eVF
 							PROFILE_FRAME(Mesh_CheckUpdateUpdateGBuf);
 							if (!(pMS->m_nLockFlags & FSL_WRITE))
 							{
-								if (!pVContainer->UpdateVidVertices(i, stall))
+								if (!pVContainer->UpdateVidVertices(i))
 								{
 									RT_AllocationFailure("Update VB Stream", GetStreamSize(i, m_nVerts));
 									return false;
@@ -2592,7 +2589,7 @@ bool CRenderMesh::RT_CheckUpdate(CRenderMesh *pVContainer, InputLayoutHandle eVF
 		PROFILE_FRAME(Mesh_CheckUpdate_UpdateInds);
 		if (!(pVContainer->m_IBStream.m_nLockFlags & FSL_WRITE))
 		{
-			if (!UpdateVidIndices(m_IBStream, stall))
+			if (!UpdateVidIndices(m_IBStream))
 			{
 				RT_AllocationFailure("Update IB Stream", m_nInds * sizeof(vtx_idx));
 				return false;
@@ -2679,7 +2676,7 @@ bool CRenderMesh::RT_CheckUpdate(CRenderMesh *pVContainer, InputLayoutHandle eVF
 	pVContainer->m_CreatedBoneIndices[threadId].clear();
 
 
-  return true;
+	return true;
 }
 
 void CRenderMesh::ReleaseVB(int nStream)
@@ -2927,7 +2924,7 @@ bool CRenderMesh::CreateVidVertices(int nVerts, InputLayoutHandle eVF, int nStre
   return (pMS->m_nID != ~0u);
 }
 
-bool CRenderMesh::UpdateVidVertices(int nStream, bool stall)
+bool CRenderMesh::UpdateVidVertices(int nStream)
 {
 	MEMSTAT_CONTEXT(EMemStatContextTypes::MSC_RenderMeshType, 0, this->GetTypeName());
 	MEMSTAT_CONTEXT(EMemStatContextTypes::MSC_RenderMesh, 0, this->GetSourceName());
@@ -4129,8 +4126,8 @@ bool CRenderMesh::ClearStaleMemory(bool bAcquireLock, int threadId)
 
 void CRenderMesh::UpdateModifiedMeshes(bool bAcquireLock, int threadId)
 {
-  MEMORY_SCOPE_CHECK_HEAP();
-  CRY_PROFILE_FUNCTION(PROFILE_RENDERER);
+	MEMORY_SCOPE_CHECK_HEAP();
+	CRY_PROFILE_FUNCTION(PROFILE_RENDERER);
 
 	// Update device buffers on modified meshes
 	std::vector<CRenderMesh*> modifiedMeshes;
@@ -4158,7 +4155,7 @@ void CRenderMesh::UpdateModifiedMeshes(bool bAcquireLock, int threadId)
 						// ToDo :
 						// - mark the mesh to not update itself if depending on how the async update was scheduled
 						// - returns true if no streams need further processing
-						updateSuccess = pMesh->RT_CheckUpdate(pMesh, pMesh->_GetVertexFormat(), VSM_MASK, false, true);
+						updateSuccess = pMesh->RT_CheckUpdate(pMesh, pMesh->_GetVertexFormat(), VSM_MASK, false);
 					}
 				}
 			}
@@ -4689,36 +4686,73 @@ bool CRenderMesh::GetRemappedSkinningData(uint32 guid, SStreamInfo& streamInfo)
 	return false;
 }
 
-bool CRenderMesh::FillGeometryInfo(CRenderElement::SGeometryInfo& geom)
+bool CRenderMesh::CheckStreams()
 {
 	CRenderMesh* pRenderMeshForVertices = _GetVertexContainer();
 
-	if (!_HasIBStream())
+	// Check on allocation/memory overflow
+	if (!pRenderMeshForVertices->CanUpdate())
 		return false;
 
-	if (!pRenderMeshForVertices->CanRender())
+	// Check on index-buffers
+	if (!_HasIBStream() &&
+		_NeedsIBStream())
 		return false;
 
-	geom.indexStream.hStream = _GetIBStream();
-	geom.indexStream.nStride = (sizeof(vtx_idx) == 2 ? Index16 : Index32);
+	// Check on vertex-buffers
+	for (int nStream = 0; nStream < VSF_NUM; ++nStream)
+	{
+		if (!pRenderMeshForVertices->_HasVBStream(nStream) &&
+			pRenderMeshForVertices->_NeedsVBStream(nStream))
+			return false;
+	}
+
+	return true;
+}
+
+bool CRenderMesh::FillGeometryInfo(CRenderElement::SGeometryInfo& geom)
+{
+	CRenderMesh* pRenderMeshForVertices = _GetVertexContainer();
+	bool streamsMissing = false;
+
+	// Check on allocation/memory overflow
+	if (!pRenderMeshForVertices->CanUpdate())
+		return false;
+
+	// Check on index-buffers
+	if (_HasIBStream())
+	{
+		geom.indexStream.hStream = _GetIBStream();
+		geom.indexStream.nStride = (sizeof(vtx_idx) == 2 ? Index16 : Index32);
+	}
+	else if (_NeedsIBStream())
+	{
+		streamsMissing = true;
+	}
+
+	// Check on vertex-buffers
 	geom.nNumVertexStreams = 0;
-
 	for (int nStream = 0; nStream < VSF_NUM; ++nStream)
 	{
 		if (pRenderMeshForVertices->_HasVBStream(nStream))
 		{
 			geom.vertexStreams[geom.nNumVertexStreams].hStream = pRenderMeshForVertices->_GetVBStream(nStream);
 			geom.vertexStreams[geom.nNumVertexStreams].nStride = pRenderMeshForVertices->GetStreamStride(nStream);
-			geom.vertexStreams[geom.nNumVertexStreams].nSlot   = nStream;
+			geom.vertexStreams[geom.nNumVertexStreams].nSlot = nStream;
 
 			geom.nNumVertexStreams++;
-			}
 		}
+		else if (pRenderMeshForVertices->_NeedsVBStream(nStream))
+		{
+			streamsMissing = true;
+		}
+	}
 
+	// Check on extra vertex-buffers
 	if (GetRemappedSkinningData(geom.bonesRemapGUID, geom.vertexStreams[geom.nNumVertexStreams]))
 	{
 		geom.nNumVertexStreams++;
-		}
+	}
 
 	geom.pSkinningExtraBonesBuffer = &m_extraBonesBuffer;
 #ifdef MESH_TESSELLATION_RENDERER
@@ -4727,7 +4761,7 @@ bool CRenderMesh::FillGeometryInfo(CRenderElement::SGeometryInfo& geom)
 	geom.pTessellationAdjacencyBuffer = nullptr;
 #endif
 
-	return true;
+	return !streamsMissing;
 }
 
 CThreadSafeRendererContainer<CRenderMesh*> CRenderMesh::m_deferredSubsetGarbageCollection[RT_COMMAND_BUF_COUNT];
@@ -4747,7 +4781,7 @@ void CRenderMesh::Render(CRenderObject* pObj, const SRenderingPassInfo& passInfo
 
 	CRY_PROFILE_FUNCTION(PROFILE_RENDERER);
 
-	IF(!CanRender(), 0)
+	IF(!CanUpdate(), 0)
 	return;
 
 	CRenderer* RESTRICT_POINTER rd = gRenDev;

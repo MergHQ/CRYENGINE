@@ -654,9 +654,11 @@ void CShadowMapStage::PrepareShadowPassForFrustum(const SShadowFrustumToRender& 
 		targetPass.m_ViewProjMatrix = view * proj;
 		targetPass.m_FrustumInfo = frustumInfo;
 		targetPass.SetDepthBias(0.0f, 0.0f, 0.0f);
-
-		targetPass.m_clearMode = (frustumToRender.pFrustum->ShouldCacheSideHint(nSide)) ? CShadowMapPass::eClearMode_None : CShadowMapPass::eClearMode_FillRect;
 	}
+
+	// Override clear mode for dynamic lights: Cached sides do not need a clear
+	if (frustum.m_eFrustumType == ShadowMapFrustum::e_GsmDynamic && frustum.ShouldCacheSideHint(nSide))
+		targetPass.m_clearMode = CShadowMapPass::eClearMode_None;
 }
 
 void CShadowMapStage::CShadowMapPassGroup::Init(CShadowMapStage* pStage, int nSize, CTexture* pDepthTarget, CTexture* pColorTarget0, CTexture* pColorTarget1)

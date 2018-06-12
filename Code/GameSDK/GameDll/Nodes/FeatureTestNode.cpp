@@ -332,7 +332,7 @@ void CFlowNode_FeatureTest::Update(float deltaTime)
 
 		if (pFollowEntity)
 		{
-			CCamera& viewCamera = gEnv->pSystem->GetViewCamera();
+			CCamera viewCamera = gEnv->pSystem->GetViewCamera();
 
 			Vec3 vPos(0, 0, 0);
 			Vec3 vDir(0, 0, 0);
@@ -354,6 +354,8 @@ void CFlowNode_FeatureTest::Update(float deltaTime)
 
 			viewCamera.SetMatrix(CCamera::CreateOrientationYPR(CCamera::CreateAnglesYPR(vDir, fRoll)));
 			viewCamera.SetPosition(vPos);
+			
+			gEnv->pSystem->SetViewCamera(viewCamera);
 		}
 
 		// If a valid max time has been set

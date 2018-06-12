@@ -661,16 +661,9 @@ static const char *cc_RenderViewName[IRenderView::eViewType_Count] = { "Normal V
 
 void CRenderView::DeleteThis() const
 {
-	if (m_bManaged)
-	{
-		// const_cast required here because ReturnRenderView needs to perform some cleanup on this.
-		// Ideally we should separate cleanup and actual deletion via some interface on CMultiThreadRefCount
-		gEnv->pRenderer->ReturnRenderView(const_cast<CRenderView*>(this)); 
-	}
-	else
-	{
-		delete this;
-	}
+	// const_cast required here because ReturnRenderView needs to perform some cleanup on this.
+	// Ideally we should separate cleanup and actual deletion via some interface on CMultiThreadRefCount
+	gEnv->pRenderer->ReturnRenderView(const_cast<CRenderView*>(this)); 
 }
 
 CRenderView* CRenderer::GetOrCreateRenderView(IRenderView::EViewType Type)
@@ -4479,9 +4472,7 @@ void CRenderer::InitRenderViewPool()
 	{
 		m_pRenderViewPool[type].allocElementFunction = [type]() -> CRenderView*
 		{
-			CRenderView* pRenderView = new CRenderView(cc_RenderViewName[type], IRenderView::EViewType(type));
-			pRenderView->SetManaged();
-			return pRenderView;
+			return new CRenderView(cc_RenderViewName[type], IRenderView::EViewType(type));
 		};
 		m_pRenderViewPool[type].freeElementFunction = [](CRenderView*) {};
 	}

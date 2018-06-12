@@ -46,7 +46,6 @@ struct CustomForwardShadingAttribs
 };
 
 #include "ShadeLib.cfi"
-#include "ForwardShading.cfi"
 
 //////////////////////////////// Common vertex shader ////////////////
 
@@ -273,7 +272,7 @@ void Callback_ShadingDirect(in ForwardShadingAttribs attribs, in ForwardLightPar
   specularAcc.xyz = cSpecular.xyz * light.illuminance;
 }
 
-#include "TiledShading.cfi"
+#include "ForwardShading.cfi"
 
 ////////////////////////////////////////////////////////////////////////////////////////////////////
 ////////////////////////////////////////////////////////////////////////////////////////////////////
@@ -388,13 +387,6 @@ float4 HairShading(vert2FragHair IN, bool bOpaquePass)
 	#endif
 	
 	TiledForwardShading(attribs, diffuseAcc, specularAcc, ssFwdBilinearWrap, ssFwdComparison, highQualityShadowFiltering, true, applyLights, true);
-#endif
-
-#if !%_RT_TILED_SHADING
-	#if FEATURE_SVO_GI
-		ApplyGI(specularAcc, diffuseAcc, diffuseAcc, attribs.screenUV + .5f / CV_ScreenSize.xy, attribs.smoothness, attribs.reflectance, 
-			Fwd_GiDiffuseRT, Fwd_GiSpecularRT, TrilinearClampSamplerState, (int)(ForwGiIntegrationMode.y));
-	#endif
 #endif
 	
 	// Final composition

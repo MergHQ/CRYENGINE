@@ -645,7 +645,6 @@ void CStandardGraphicsPipeline::ExecuteBillboards()
 	GetGBufferStage()->Execute();
 
 	pRenderView->SwitchUsageMode(CRenderView::eUsageModeReadingDone);
-	pRenderView->Clear();
 }
 
 // TODO: This will be used only for recursive render pass after all render views get rendered with full graphics pipeline including tiled forward shading.

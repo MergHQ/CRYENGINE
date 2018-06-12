@@ -975,7 +975,7 @@ void CDeviceObjectFactory::UploadContents(D3DBuffer* buffer, uint32 subresource,
 	if (!bDirectAccess)
 	{
 		const uint8* pInData = reinterpret_cast<const uint8*>(pInDataCPU);
-		uint8* pOutData = CDeviceObjectFactory::Map(buffer, subresource, offset, 0, mode) + offset;
+		uint8* pOutData = CDeviceObjectFactory::Map(buffer, subresource, offset, size, mode) + offset;
 
 		StreamBufferData(pOutData, pInData, size);
 

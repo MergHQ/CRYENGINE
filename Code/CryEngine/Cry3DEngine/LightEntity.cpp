@@ -569,6 +569,7 @@ void CLightEntity::InitShadowFrustum_SUN_Conserv(ShadowMapFrustum* pFr, int dwAl
 
 	pFr->Invalidate();
 
+	pFr->nOmniFrustumMask.set(0);
 	pFr->nShadowMapLod = nLod;
 	pFr->vLightSrcRelPos = m_light.m_Origin - passInfo.GetCamera().GetPosition();
 	pFr->fRadius = m_light.m_fRadius;

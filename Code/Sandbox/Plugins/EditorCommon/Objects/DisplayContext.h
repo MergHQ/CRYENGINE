@@ -60,7 +60,7 @@ struct EDITOR_COMMON_API DisplayContext
 	void              Flush2D();
 
 	void              SetCamera(CCamera* pCamera);
-	CCamera&          GetCamera() { return (camera) ? *camera : GetISystem()->GetViewCamera(); }
+	const CCamera&    GetCamera() const { return (camera) ? *camera : GetISystem()->GetViewCamera(); }
 
 	int               GetWidth() const { return static_cast<int>(m_width); }
 	int               GetHeight() const { return static_cast<int>(m_height); }

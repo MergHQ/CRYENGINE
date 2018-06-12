@@ -165,7 +165,7 @@ CLodValue CVegetation::ComputeLod(int wantedLod, const SRenderingPassInfo& passI
 			if (pStatObj->GetBillboardMaterial() && nLodA == maxUsableLod && vegetGroup.bUseSprites && GetCVars()->e_VegetationBillboards)
 				nLodA = maxUsableLod;
 			else
-				nLodA = pStatObj->FindNearesLoadedLOD(nLodA);
+				nLodA = pStatObj->FindNearestLoadedLOD(nLodA);
 		}
 
 		if (passInfo.IsGeneralPass())

@@ -18,11 +18,8 @@ struct SPerPassConstantBuffer
 	CFogStage::SForwardParams                 cbFog;
 	CVolumetricFogStage::SForwardParams       cbVoxelFog;
 	CShadowUtils::SShadowCascadesSamplingInfo cbShadowSampling;
-	struct  
-	{
-		Vec4 CloudShadingColorSun;
-		Vec4 CloudShadingColorSky;
-	}                                         cbMisc;
+	CSceneForwardStage::SCloudShadingParams   cbClouds;
+	CSvoRenderer::SForwardParams              cbSVOGI;
 };
 
 CSceneForwardStage::CSceneForwardStage()
@@ -385,6 +382,7 @@ bool CSceneForwardStage::PreparePerPassResources(bool bOnInit, bool bShadowMask,
 	auto* pTiledLights = GetStdGraphicsPipeline().GetTiledLightVolumesStage();
 	auto* pFogStage    = GetStdGraphicsPipeline().GetFogStage();
 	auto* pVolFogStage = GetStdGraphicsPipeline().GetVolumetricFogStage();
+	auto* pSVOGIStage  = CSvoRenderer::GetInstance();
 
 	CTexture* pShadowMask = bShadowMask ? CRendererResources::s_ptexShadowMask : CRendererResources::s_ptexBlack;
 
@@ -401,10 +399,10 @@ bool CSceneForwardStage::PreparePerPassResources(bool bOnInit, bool bShadowMask,
 
 		pFogStage->FillForwardParams(cb->cbFog, bFog);
 		pVolFogStage->FillForwardParams(cb->cbVoxelFog, bFog);
-
-		SRenderViewShaderConstants& paramsPF = RenderView()->GetShaderConstants();
-		cb->cbMisc.CloudShadingColorSun = Vec4(paramsPF.pCloudShadingColorSun, 0);
-		cb->cbMisc.CloudShadingColorSky = Vec4(paramsPF.pCloudShadingColorSky, 0);
+		this->FillCloudShadingParams(cb->cbClouds, true);
+#if defined(FEATURE_SVO_GI)
+		pSVOGIStage->FillForwardParams(cb->cbSVOGI, pSVOGIStage->IsActive());
+#endif
 
 		m_pPerPassCB->UpdateBuffer(cb, cbSize);
 	}
@@ -1256,4 +1254,21 @@ void CSceneForwardStage::ExecuteSky(CTexture* pColorTex, CTexture* pDepthTex)
 
 	m_pSkyRE = nullptr;
 	m_pHDRSkyRE = nullptr;
+}
+
+void CSceneForwardStage::FillCloudShadingParams(SCloudShadingParams& cloudParams, bool enable) const
+{
+	SRenderViewShaderConstants& paramsPF = RenderView()->GetShaderConstants();
+
+	if (enable)
+	{
+		cloudParams.CloudShadingColorSun = Vec4(paramsPF.pCloudShadingColorSun, 0.0f);
+		cloudParams.CloudShadingColorSky = Vec4(paramsPF.pCloudShadingColorSky, 0.0f);
+	}
+	else
+	{
+		// turning off by parameters.
+		cloudParams.CloudShadingColorSun = Vec4(0.0f);
+		cloudParams.CloudShadingColorSky = Vec4(0.0f);
+	}
 }

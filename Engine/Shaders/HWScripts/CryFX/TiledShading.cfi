@@ -98,14 +98,12 @@ Texture2D<float4>                      Fwd_EnvironmentBRDF : register(t40);
 #if FEATURE_SVO_GI
 Texture2D<float4>                      Fwd_GiDiffuseRT : register(t46);
 Texture2D<float4>                      Fwd_GiSpecularRT : register(t47);
-float4 ForwGiIntegrationMode : PB_SvoParams4;
 #endif
 
 SamplerComparisonState SampStateComp : register(s14);
 
 #define SHADOW_SAMPLE_COUNT 16
 float4 irreg_kernel_2d[SHADOW_SAMPLE_COUNT/2] : PB_IrregKernel;
-float4 ClipVolumeParams : PB_ClipVolumeParams;
 
 #ifndef AFFECTS_EVERYTHING_STENCILREF 
 #define AFFECTS_EVERYTHING_STENCILREF	0xFF
@@ -121,7 +119,7 @@ float GetClipVolumeWeightBinary(uint nClipVolumeID, uint nLightStencilID)
 
 #if FEATURE_SVO_GI
 void ApplyGI(inout float3 specularAcc, inout float3 diffuseAcc, float3 diffuseForwAcc, float2 pixelUV, float3 surfGloss, float3 surfSpecCol,
-             Texture2D<float4> TexGiDiffuse, Texture2D<float4> TexGiSpecular, SamplerState samplerTrilinearClamp, const int nIntegrMode)
+             Texture2D<float4> TexGiDiffuse, Texture2D<float4> TexGiSpecular, SamplerState samplerTrilinearClamp, const int nIntegrMode, float4 fParms)
 {
 	if(nIntegrMode == 0) // AO only mode
 	{
@@ -132,7 +130,7 @@ void ApplyGI(inout float3 specularAcc, inout float3 diffuseAcc, float3 diffuseFo
 	else if(nIntegrMode == 1) // GI replaces diffuse of env probes and adjusts specular
 	{
 		float3 diffuseIrradiance = TexGiDiffuse.SampleLevel( samplerTrilinearClamp, pixelUV, 0 );
-		specularAcc *= lerp(min( 2.f, GetLuminance(diffuseIrradiance) / (GetLuminance(diffuseAcc + diffuseForwAcc) + 0.001)), 1.f, saturate(surfGloss * GetLuminance(surfSpecCol) * ForwGiIntegrationMode.x)) * ForwGiIntegrationMode.z;
+		specularAcc *= lerp(min( 2.f, GetLuminance(diffuseIrradiance) / (GetLuminance(diffuseAcc + diffuseForwAcc) + 0.001)), 1.f, saturate(surfGloss * GetLuminance(surfSpecCol) * fParms.x)) * fParms.z;
 		diffuseAcc = diffuseIrradiance;
 	}
 	else if(nIntegrMode == 2) // Full GI mode
@@ -241,6 +239,14 @@ void TiledForwardShading(in ForwardShadingAttribs attribs, inout float3 diffuseA
 		}
 	}
 		
+#if FEATURE_SVO_GI
+	if (bOpaque)
+	{
+		ApplyGI(specularAcc, diffuseAcc, diffuseAcc, attribs.screenUV + .5f / CV_ScreenSize.xy, attribs.smoothness, attribs.reflectance, 
+			Fwd_GiDiffuseRT, Fwd_GiSpecularRT, ssTrilinearClamp, (int)(cbSVOGI.IntegrationMode.y), cbSVOGI.IntegrationMode);
+	}
+#endif
+	
 	for (;;)
 	{
 		[branch]
@@ -379,6 +385,9 @@ float4 ScreenSize;
 float4 SunDir;
 float4 SunColor;
 float4 SSDOParams;
+#if FEATURE_SVO_GI
+float4 ForwGiIntegrationMode : PB_SvoParams4;
+#endif
 
 SamplerState SampStateTrilinearClamp : register(s0);
 
@@ -782,7 +791,7 @@ void TiledDeferredShadingCS( uint3 GroupID : SV_GroupID,
 		#endif
 
 		ApplyGI(specularAcc, diffuseAcc, 0, pixelUV + .5f / ScreenSize.xy, surfGloss, surfSpecCol,
-		        GiDiffuseRT, GiSpecularRT, SampStateTrilinearClamp, nIntegrMode);
+		        GiDiffuseRT, GiSpecularRT, SampStateTrilinearClamp, nIntegrMode, ForwGiIntegrationMode);
 #endif
 	}
 		

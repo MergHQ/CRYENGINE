@@ -182,8 +182,6 @@ public:
 	static int CV_r_VkHardwareComputeQueue;
 	static int CV_r_VkHardwareCopyQueue;
 	static int CV_r_ReverseDepth;
-
-	// DX12 related cvars
 	static int CV_r_EnableDebugLayer;
 	static int CV_r_NoDraw;
 	static int CV_r_UpdateInstances;
@@ -247,7 +245,6 @@ public:
 	DeclareStaticConstIntCVar(CV_r_ShadowPass, 1);
 	DeclareStaticConstIntCVar(CV_r_ShadowGen, 1);
 	DeclareStaticConstIntCVar(CV_r_ShadowGenDepthClip, 1);
-	DeclareStaticConstIntCVar(CV_r_ShadowsUseClipVolume, SHADOWS_CLIP_VOL_DEFAULT_VAL);
 	DeclareStaticConstIntCVar(CV_r_ShadowGenMode, 1);
 	static int   CV_r_ShadowsCache;
 	static int   CV_r_ShadowsCacheFormat;
@@ -445,7 +442,6 @@ public:
 	static float CV_r_dofMinZBlendMult;
 	static float CV_r_dofDilation;
 	static float CV_r_ShadowsBias;
-	static float CV_r_shadowbluriness;
 	static float CV_r_ShadowsAdaptionRangeClamp;
 	static float CV_r_ShadowsAdaptionSize;
 	static float CV_r_ShadowsAdaptionMin;

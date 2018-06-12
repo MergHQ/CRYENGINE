@@ -274,10 +274,12 @@ void CTestSystemLegacy::BeforeRender()
 			ScreenShot(szDirectory, (string(pEntity->GetName()) + "_later.bmp").c_str());
 
 		// setup camera
-		CCamera& rCam = GetISystem()->GetViewCamera();
+		CCamera cam = GetISystem()->GetViewCamera();
 		Matrix34 mat = pEntity->GetWorldTM();
-		rCam.SetMatrix(mat);
-		rCam.SetFrustum(pRenderer->GetWidth(), pRenderer->GetHeight(), gf_PI / 2, rCam.GetNearPlane(), rCam.GetFarPlane());
+		cam.SetMatrix(mat);
+		cam.SetFrustum(pRenderer->GetWidth(), pRenderer->GetHeight(), gf_PI / 2, cam.GetNearPlane(), cam.GetFarPlane());
+
+		GetISystem()->SetViewCamera(cam);
 	}
 }
 

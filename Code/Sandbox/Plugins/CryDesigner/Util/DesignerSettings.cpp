@@ -256,13 +256,6 @@ void DesignerExclusiveMode::SetCVForExclusiveMode()
 		pClouds->Set(0);
 	}
 
-	ICVar* pBeams = pConsole->GetCVar("r_Beams");
-	if (pBeams)
-	{
-		m_OldConsoleVars.r_Beams = pBeams->GetIVal();
-		pBeams->Set(0);
-	}
-
 	ICVar* pSkybox = pConsole->GetCVar("e_SkyBox");
 	if (pSkybox)
 	{
@@ -390,10 +383,6 @@ void DesignerExclusiveMode::RestoreCV()
 	ICVar* pClouds = pConsole->GetCVar("e_Clouds");
 	if (pClouds)
 		pClouds->Set(m_OldConsoleVars.e_Clouds);
-
-	ICVar* pBeams = pConsole->GetCVar("r_Beams");
-	if (pBeams)
-		pBeams->Set(m_OldConsoleVars.r_Beams);
 
 	ICVar* pSkybox = pConsole->GetCVar("e_SkyBox");
 	if (pSkybox)

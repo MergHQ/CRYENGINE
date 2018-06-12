@@ -6924,7 +6924,7 @@ void CGameRules::UpdateEntitySchedules(float frameTime)
 			AABB aabb;
 			pEntity->GetWorldBounds(aabb);
 
-			CCamera &camera=m_pSystem->GetViewCamera();
+			const CCamera &camera = m_pSystem->GetViewCamera();
 			if (camera.IsAABBVisible_F(aabb))
 			{
 				removal.timer=removal.time;

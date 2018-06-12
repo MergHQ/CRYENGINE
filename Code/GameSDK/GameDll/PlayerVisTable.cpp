@@ -510,7 +510,7 @@ void CPlayerVisTable::DoVisibilityCheck(const Vec3& localPlayerPosn, SVisTableEn
 
 void CPlayerVisTable::GetLocalPlayerPosn(Vec3& localPlayerPosn)
 {
-	CCamera&  camera = gEnv->pSystem->GetViewCamera();
+	const CCamera& camera = gEnv->pSystem->GetViewCamera();
 	localPlayerPosn = camera.GetPosition();
 }
 

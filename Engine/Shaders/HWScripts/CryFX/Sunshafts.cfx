@@ -136,23 +136,18 @@ vtxOutSunShaftsGen SunShaftsGenVS(uint VertexID : SV_VertexID)
 ///////////////// pixel shader //////////////////
 pixout SunShaftsMaskGenPS(vtxOut IN)
 {
-  pixout OUT = (pixout) 0;
+    pixout OUT = (pixout) 0;
 
-  int nQuality = GetShaderQuality();
-
-  float2 sampleUV = MapViewportToRaster(IN.baseTC.xy);
-
-  half sceneDepth = GetLinearDepth(SSHFTM_LDepth, int2(IN.WPos.xy));
-  OUT.Color = half4(sceneDepth, sceneDepth, sceneDepth, 1 - sceneDepth.x);
-
-  half3 sceneCol = 0.25.xxx;
-
-  sceneCol = GetTexture2D(SSHFTM_Target, SSHFTM_PCSampler, sampleUV); // comes straight from hdr scaled target
+    half sceneDepth = GetLinearDepth(SSHFTM_LDepth, int2(IN.WPos.xy));
+    OUT.Color = half4(sceneDepth, sceneDepth, sceneDepth, 1 - sceneDepth.x);
+    
+    float2 sampleUV = MapViewportToRaster(IN.baseTC.xy);
+    half3 sceneCol = GetTexture2D(SSHFTM_Target, SSHFTM_PCSampler, sampleUV); // comes straight from hdr scaled target
 	
-  // cheaper and looks nicer
-  OUT.Color.xyz *= dot(sceneCol, 0.33*4);
+    // cheaper and looks nicer
+    OUT.Color.xyz *= dot(sceneCol, 0.33 * 4);
 
-  return OUT;
+    return OUT;
 }
 
 pixout SunShaftsGenPS(vtxOutSunShaftsGen IN)

@@ -1957,7 +1957,7 @@ void InjectCloudDensityAndShadowCS(uint3 GroupID : SV_GroupID,
 
 		const float4 reprojPos = mul(float4(vPixelUV.x, vPixelUV.y, depth, 1.0f), leftToRightReprojMatrix);
 		const float rcpW = rcp(reprojPos.w);
-		const float2 leftEyeTC = reprojPos.xy * rcpW;
+		float2 leftEyeTC = reprojPos.xy * rcpW;
 		leftEyeTC = MapViewportToRaster(leftEyeTC, true);
 
 		// convert non-linear depth to linear depth.
@@ -2387,7 +2387,7 @@ void RenderCloudCS(uint3 GroupID : SV_GroupID,
 
 			const float4 reprojPos = mul(float4(vPixelUV.x, vPixelUV.y, depth, 1.0f), leftToRightReprojMatrix);
 			const float rcpW = rcp(reprojPos.w);
-			const float2 leftEyeTC = reprojPos.xy * rcpW;
+			float2 leftEyeTC = reprojPos.xy * rcpW;
 			leftEyeTC = MapViewportToRaster(leftEyeTC, true);
 			colorReproj = LeftEyeColorBuffer.SampleLevel(VolCloudTrilinearClampSState, leftEyeTC.xy, 0.0f);
 			maxStepNum = -1.0f; // negative step number means success of reprojection;

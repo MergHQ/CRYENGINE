@@ -212,7 +212,7 @@ void CPersistantDebug::PostUpdateTags(float frameTime, SObj& obj)
 		return;
 
 	// Check if entity is outside of global distance maximum or behind camera
-	CCamera& cam = GetISystem()->GetViewCamera();
+	const CCamera& cam = GetISystem()->GetViewCamera();
 	float distFromCam = (cam.GetPosition() - baseCenterPos).GetLength();
 	float maxDist = m_pETMaxDisplayDistance->GetFVal();
 	bool isOutOfRange(maxDist >= 0.f && distFromCam > maxDist);

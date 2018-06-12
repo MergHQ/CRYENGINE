@@ -1796,7 +1796,7 @@ bool CSystem::Update(CEnumFlags<ESystemUpdateFlags> updateFlags, int nPauseMode)
 
 	if (!gEnv->IsEditor() && gEnv->pRenderer)
 	{
-		CCamera& rCamera = GetViewCamera();
+		CCamera rCamera = GetViewCamera();
 
 		// if aspect ratio changes or is different from default we need to update camera
 		const float fNewAspectRatio = gEnv->pRenderer->GetPixelAspectRatio();
@@ -1814,6 +1814,7 @@ bool CSystem::Update(CEnumFlags<ESystemUpdateFlags> updateFlags, int nPauseMode)
 				rCamera.GetNearPlane(),
 				rCamera.GetFarPlane(),
 				fNewAspectRatio);
+
 
 			SetViewCamera(rCamera);
 		}

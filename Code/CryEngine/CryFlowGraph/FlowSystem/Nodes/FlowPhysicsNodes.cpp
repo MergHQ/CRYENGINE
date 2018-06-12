@@ -684,7 +684,7 @@ public:
 		{
 			EntityId skipEntityId = GetPortEntityId(pActInfo, IGNORED_ENTITY);
 			ray_hit hit;
-			CCamera& cam = GetISystem()->GetViewCamera();
+			const CCamera& cam = GetISystem()->GetViewCamera();
 			Vec3 pos = cam.GetPosition();
 			Vec3 direction = cam.GetViewdir();
 			IPhysicalWorld * pWorld = gEnv->pPhysicalWorld;
@@ -892,7 +892,7 @@ public:
 		else if (bCreate)
 		{
 CreateCam:
-			CCamera& cam = GetISystem()->GetViewCamera();
+			const CCamera& cam = GetISystem()->GetViewCamera();
 			Quat qcam = Quat(Matrix33(cam.GetMatrix()));
 			SEntitySpawnParams esp;
 			esp.sName = "CameraProxy";

@@ -2455,7 +2455,10 @@ bool CMergedMeshRenderNode::DeleteRenderMesh(RENDERMESH_UPDATE_TYPE type, bool b
 	m_SizeInVRam = 0u;
 
 	if (type == RUT_STATIC)
+	{
 		InvalidatePermanentRenderObject();
+		m_manipulationFrame = -1;
+	}		
 
 	return true;
 }
@@ -2705,7 +2708,10 @@ done:
 	m_LastUpdateFrame = passInfo.GetMainFrameID();
 
 	if (type == RUT_STATIC)
+	{
 		InvalidatePermanentRenderObject();
+		m_manipulationFrame = -1;
+	}	
 }
 
 void CMergedMeshRenderNode::Render(const struct SRendParams& EntDrawParams, const SRenderingPassInfo& passInfo)
@@ -3035,16 +3041,19 @@ bool CMergedMeshRenderNode::PostRender(const SRenderingPassInfo& passInfo)
 
 	if (m_needsStaticMeshUpdate)
 	{
-		CRY_PROFILE_REGION(PROFILE_3DENGINE,"MMRM PR CR static");
+		CRY_PROFILE_REGION(PROFILE_3DENGINE, "MMRM PR CR static");
 		CreateRenderMesh(RUT_STATIC, passInfo);
 		m_needsStaticMeshUpdate = false;
 	}
 	if (m_needsDynamicMeshUpdate)
 	{
-		CRY_PROFILE_REGION(PROFILE_3DENGINE,"MMRM PR CR dynamic");
+		CRY_PROFILE_REGION(PROFILE_3DENGINE, "MMRM PR CR dynamic");
 		CreateRenderMesh(RUT_DYNAMIC, passInfo);
 		m_needsDynamicMeshUpdate = false;
 	}
+
+	// Check tempData in case object was validated before
+	Get3DEngine()->CheckAndCreateRenderNodeTempData(this, passInfo);
 
 	if (m_needsPostRenderStatic)
 	{

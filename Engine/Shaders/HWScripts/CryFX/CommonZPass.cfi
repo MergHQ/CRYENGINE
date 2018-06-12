@@ -43,7 +43,7 @@ vert2fragZ Common_ZPassVS(app2vertGBuffer IN_common)
 #endif
 
 #if !%_RT_OBJ_IDENTITY
-  vPos += g_VS_WorldViewPos.xyz;
+	vPos += g_VS_WorldViewPos.xyz;
 #endif
 	
 	float3 worldTangentS = mul((const float3x3)vertPassPos.InstMatrix, vertPassPos.ObjToTangentSpace[0]);
@@ -72,16 +72,17 @@ vert2fragZ Common_ZPassVS(app2vertGBuffer IN_common)
 	float fAlphaTest = 0.0f;
 	#if %_RT_ALPHATEST	
 		fAlphaTest = Get_MaterialAlphaTest();
-		OUT.vNormalWS.w = fAlphaTest;
 		#if %LEAVES
-			OUT.vNormalWS.w = ParallelOpacityFalloff(vertPassPos.WorldPos.xyz, worldTangentN.xyz, CapOpacityFalloff, fAlphaTest);
+			fAlphaTest = ParallelOpacityFalloff(vertPassPos.WorldPos.xyz, worldTangentN.xyz, CapOpacityFalloff, fAlphaTest);
 		#endif
 	#endif
+	
+	OUT.vNormalWS.w = fAlphaTest;
 
 	////////////////////////////////////////////////////////////////////////////////////////////////
 	// Output tangents
 
-	OUT.vNormalWS = float4(worldTangentN.xyz, fAlphaTest);
+	OUT.vNormalWS.xyz = worldTangentN;
 
 	#if !%GRASS
 		OUT.vTangent = float4(worldTangentS, vertPassPos.Tangent.w); 
@@ -323,19 +324,21 @@ pixout_gbuffer Common_ZPassPS(vert2fragZ IN)
 	////////////////////////////////////////////////////////////////////////////////////////////////
 	// Alpha testing
 	
-	#if %_RT_ALPHATEST
-		half fDiffuseAlpha = GetAlphaTex(diffuseTex, IN.baseTC.xy);
-		#if (%_RT_MSAA_QUALITY || %_RT_MSAA_QUALITY1) && %_RT_ALPHATEST
-			GetAlphaCoverageMask( diffuseTex, IN.baseTC.xy, IN.vNormalWS.w, fDiffuseAlpha, OUT.uCoverageMask);
-		#endif
-    clip(fDiffuseAlpha - IN.vNormalWS.w);
+#if %_RT_ALPHATEST
+	half diffuseMapAlpha = GetAlphaTex(diffuseTex, IN.baseTC.xy);
+	#if (%_RT_MSAA_QUALITY || %_RT_MSAA_QUALITY1) && %_RT_ALPHATEST
+		GetAlphaCoverageMask( diffuseTex, IN.baseTC.xy, IN.vNormalWS.w, diffuseMapAlpha, OUT.uCoverageMask);
 	#endif
+
+	clip(diffuseMapAlpha - IN.vNormalWS.w);
+#endif
 	
-	#if %_RT_DISSOLVE
-		float fDissolve = Get_SPI_Dissolve();
-		const int2 vPixQuadIdx= (int2)IN.WPos.xy % 2; // 4 transparency levels for a 2x2 quad. We're using dot/abs instead, since rsx doens't support array indexing. 
-		clip( (fDissolve > 0 ? 1 : -1) * (abs(dot(half4(0.0h, 0.76h, 0.5h,-1.0h), vPixQuadIdx.xxyy))-abs(fDissolve))); // todo: try using coverage mask when in MSAA mode.
-	#endif
+#if %_RT_DISSOLVE
+	float fDissolve = Get_SPI_Dissolve();
+	const int2 vPixQuadIdx = (int2)IN.WPos.xy % 2; // 4 transparency levels for a 2x2 quad. We're using dot/abs instead, since rsx doens't support array indexing.
+
+	clip((fDissolve > 0 ? 1 : -1) * (abs(dot(half4(0.0h, 0.76h, 0.5h,-1.0h), vPixQuadIdx.xxyy)) - abs(fDissolve))); // todo: try using coverage mask when in MSAA mode.
+#endif
 	
 	////////////////////////////////////////////////////////////////////////////////////////////////
   // Output normals
