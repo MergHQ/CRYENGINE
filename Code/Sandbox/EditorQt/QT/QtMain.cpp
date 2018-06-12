@@ -30,7 +30,6 @@
 #include "EditorStyleHelper.h"
 
 #include "Controls/QuestionTimeoutDialog.h"
-#include "Material/StandaloneMaterialEditor.h"
 #include "SessionData.h"
 
 #include <CryCore/Platform/CryLibrary.h>
@@ -253,12 +252,9 @@ int main(int argc, char* argv[])
 
 	splash.close();
 	
-	if (GetIEditorImpl()->IsInMatEditMode())//special mode where we only show a material editor. Currently handled here for code clarity
+	if (GetIEditorImpl()->IsInMatEditMode())
 	{
-		StandaloneMaterialEditor* standaloneMatEdit = new StandaloneMaterialEditor();
-		standaloneMatEdit->Execute();
-
-		mainFrame->hide();
+		// TODO: special mode where we only show a material editor.
 	}
 
 	theApp.PostInit();

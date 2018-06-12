@@ -6,6 +6,7 @@
 #include "AssetModel.h"
 #include "AssetSystem/Asset.h"
 #include "AssetSystem/AssetManager.h"
+#include "AssetSystem/Loader/AssetLoaderHelpers.h"
 
 #include "QtUtil.h"
 #include "QAdvancedTreeView.h"
@@ -198,6 +199,27 @@ std::vector<CAsset*> CAssetBrowserDialog::GetSelectedAssets()
 void CAssetBrowserDialog::SelectAsset(const CAsset& asset)
 {
 	m_pBrowser->SelectAsset(asset);
+}
+
+void CAssetBrowserDialog::SelectAsset(const string& path)
+{
+	m_pBrowser->SelectAsset(path.c_str());
+
+	if (m_mode != Mode::Create)
+	{
+		return;
+	}
+
+	const QStringList filenames = m_pPathEdit->GetFileNames();
+	if (!filenames.isEmpty())
+	{
+		return;
+	}
+
+	// We did not find any existing asset by the specified name, 
+	// set the name as the default asset name for the new asset.
+	const string assetName(AssetLoader::GetAssetName(path));
+	m_pPathEdit->setText(QtUtil::ToQString(assetName));
 }
 
 void CAssetBrowserDialog::OnAccept()

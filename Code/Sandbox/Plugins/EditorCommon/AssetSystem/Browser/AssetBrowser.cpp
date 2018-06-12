@@ -1240,6 +1240,14 @@ void CAssetBrowser::SelectAsset(const char* szPath) const
 	{
 		SelectAsset(*pAsset);
 	}
+	else if (PathUtil::GetExt(szPath)) // try to select folder by the file path
+	{
+		m_foldersView->SelectFolder(QtUtil::ToQString(PathUtil::GetDirectory(szPath)));
+	}
+	else
+	{
+		m_foldersView->SelectFolder(QtUtil::ToQString(szPath));
+	}
 }
 
 void CAssetBrowser::SelectAsset(const CAsset& asset) const

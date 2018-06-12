@@ -149,6 +149,7 @@ protected:
 
 	// For material syncing with 3dsMax.
 	void PickPreviewMaterial(HWND hWndCaller);
+	void InitMaterial(CMaterial* pMtl);
 	void InitMatSender();
 
 	void OnDebugFlagsChanged();

@@ -173,6 +173,9 @@ public:
 	//! Returns the color code of the thumbnail.
 	virtual QColor GetThumbnailColor() const { return QColor(Qt::green); }
 
+	//! Makes cryasset filename from asset name.
+	string MakeMetadataFilename(const char* szAssetName) const;
+
 protected:
 	//! Helper function that parses a string and returns a variant of a type corresponding to \p pAttrib->GetType().
 	//! If conversion fails, a default-constructed varient of that type is returned. (see QVariant::value).

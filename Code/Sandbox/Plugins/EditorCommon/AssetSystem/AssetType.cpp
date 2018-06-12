@@ -175,6 +175,11 @@ void CAssetType::Init()
 	m_icon = GetIconInternal();
 }
 
+string CAssetType::MakeMetadataFilename(const char* szAssetName) const
+{
+	return string().Format("%s.%s.cryasset", szAssetName, GetFileExtension());
+}
+
 QVariant CAssetType::GetVariantFromDetail(const string& detailValue, const CItemModelAttribute* pAttrib)
 {
 	CRY_ASSERT(pAttrib);
