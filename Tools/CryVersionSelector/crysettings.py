@@ -4,13 +4,14 @@ import json
 import os.path
 import sys
 
+
 class Settings:
     def __init__(self):
         self.settings = {}
         self.load()
 
     def get_filepath(self):
-        if getattr( sys, 'frozen', False ):
+        if getattr(sys, 'frozen', False):
             scriptpath = sys.executable
         else:
             scriptpath = __file__
@@ -22,8 +23,8 @@ class Settings:
         if not os.path.isfile(filepath):
             return
         try:
-            with open (filepath) as fd:
-                self.settings = json.loads (fd.read())
+            with open(filepath) as fd:
+                self.settings = json.loads(fd.read())
         except ValueError:
             self.settings = {}
 

@@ -19,6 +19,7 @@ except ImportError:
     print("Skipping importing tkinter, because it's not installed.")
     HAS_TK = False
 
+
 def select_config(configs):
     """
     Opens a GUI in which the user can select a CMake configuration.
@@ -42,6 +43,7 @@ def select_config(configs):
     app.mainloop()
     return app.selected_config
 
+
 def center_window(win):
     win.update_idletasks()
     width = win.winfo_width()
@@ -49,6 +51,7 @@ def center_window(win):
     position_x = (win.winfo_screenwidth() // 2) - (width // 2)
     position_y = (win.winfo_screenheight() // 2) - (height // 2)
     win.geometry('{}x{}+{}+{}'.format(width, height, position_x, position_y))
+
 
 if HAS_TK:
     class CryProjgen(tk.Frame):
@@ -69,12 +72,14 @@ if HAS_TK:
 
             self.newselection = ''
             self.box_value = tk.StringVar()
-            self.configs_box = ttk.Combobox(self, textvariable=self.box_value, width=40)
+            self.configs_box = ttk.Combobox(
+                self, textvariable=self.box_value, width=40)
 
             self.filtered_configs = self.filter_configs()
             if not self.filtered_configs:
-                print("Unable to find Visual Studio 2015 or Visual Studio 2017. "
-                      "Make sure either Visual Studio 2015 or Visual Studio 2017 is installed!")
+                print("Unable to find Visual Studio 2015 or Visual Studio "
+                      "2017. Make sure either Visual Studio 2015 or Visual "
+                      "Studio 2017 is installed!")
                 self.filtered_configs = self.configurations
             config_list = []
             for config in self.filtered_configs:
@@ -111,17 +116,20 @@ if HAS_TK:
         def filter_configs(self):
             configs = []
             for config in self.configurations:
-                # If it's not possible to check the registry, just add all options to the list and let the user decide.
+                # If it's not possible to check the registry, just add
+                # all options to the list and let the user decide.
                 if not HAS_WIN_MODULES:
                     configs.append(config)
                     continue
 
                 try:
-                    registry = winreg.ConnectRegistry(None, config['compiler']['reg_key'])
-                    key = winreg.OpenKey(registry, config['compiler']['key_path'])
+                    registry = winreg.ConnectRegistry(
+                        None, config['compiler']['reg_key'])
+                    key = winreg.OpenKey(
+                        registry, config['compiler']['key_path'])
                     if key:
                         configs.append(config)
-                except:
+                except Exception:
                     # The key probably doesn't exsist, so continue
                     continue
             return configs

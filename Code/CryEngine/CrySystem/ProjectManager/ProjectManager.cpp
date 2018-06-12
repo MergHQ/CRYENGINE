@@ -46,6 +46,11 @@ CryGUID CProjectManager::GetCurrentProjectGUID() const
 	return m_project.guid;
 }
 
+const char* CProjectManager::GetCurrentEngineID() const
+{
+	return m_project.engineVersionId.c_str();
+}
+
 const char* CProjectManager::GetCurrentProjectDirectoryAbsolute() const
 {
 	return m_project.rootDirectory;

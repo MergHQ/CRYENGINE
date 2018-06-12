@@ -19,13 +19,16 @@ except ImportError:
 
 DEFAULT_CONFIGURATION_FOLDER = os.path.join("bin", "win_x64")
 
+
 def configure_build(export_path, configurations):
     """
-    Opens a GUI in which the user can select an engine configuration to package.
+    Opens a GUI in which the user can select an engine configuration to
+    package.
     """
 
     if not HAS_TK:
-        # Return the first configuration available, which is most likely Profile.
+        # Return the first configuration available,
+        # which is most likely Profile.
         if not configurations:
             return None
         return (export_path, configurations[0][0], configurations[0][1], False)
@@ -38,7 +41,8 @@ def configure_build(export_path, configurations):
 
     root = tk.Tk()
     root.iconbitmap(iconfile)
-    app = CryConfigurationSelection(export_path=export_path, configurations=configurations, master=root)
+    app = CryConfigurationSelection(
+        export_path=export_path, configurations=configurations, master=root)
 
     app.mainloop()
     config = app.selected_config
@@ -51,6 +55,7 @@ def configure_build(export_path, configurations):
 
     return (path, config[0], config[1], include_symbols)
 
+
 def center_window(win):
     """
     Centers the window.
@@ -61,6 +66,7 @@ def center_window(win):
     position_x = (win.winfo_screenwidth() // 2) - (width // 2)
     position_y = (win.winfo_screenheight() // 2) - (height // 2)
     win.geometry('{}x{}+{}+{}'.format(width, height, position_x, position_y))
+
 
 if HAS_TK:
     class CryConfigurationSelection(tk.Frame):
@@ -88,29 +94,36 @@ if HAS_TK:
             """
             # Export path browse dialog
             self.browse_frame = tk.Frame(self)
-            self.browse_frame.pack(side='top', fill='both', expand=True, padx=5, pady=5)
+            self.browse_frame.pack(
+                side='top', fill='both', expand=True, padx=5, pady=5)
 
             tk.Label(self.browse_frame, text="Package location:").pack()
 
-            self.browse_button = tk.Button(self.browse_frame, text="...", width=3, command=self.browse_cmd)
+            self.browse_button = tk.Button(
+                self.browse_frame, text="...", width=3,
+                command=self.browse_cmd)
             self.browse_button.pack(side="right", padx=2)
 
             self.path_value = tk.StringVar()
             self.path_value.set(self.export_path)
-            self.dir_box = tk.Entry(self.browse_frame, textvariable=self.path_value)
+            self.dir_box = tk.Entry(
+                self.browse_frame, textvariable=self.path_value)
             self.dir_box.pack(fill="x", expand=True, side="right", padx=2)
 
             # Configuration selection
             self.config_frame = tk.Frame(self)
-            self.config_frame.pack(side='top', fill='both', expand=True, padx=5, pady=5)
+            self.config_frame.pack(
+                side='top', fill='both', expand=True, padx=5, pady=5)
 
             tk.Label(self.config_frame, text="Configuration:").pack()
             self.box_value = tk.StringVar()
-            self.configs_box = ttk.Combobox(self.config_frame, textvariable=self.box_value, width=40)
+            self.configs_box = ttk.Combobox(
+                self.config_frame, textvariable=self.box_value, width=40)
 
             if not self.configurations:
-                # If no configurations are available this window should never be created,
-                # but just in case of a mistakes it's caught here.
+                # If no configurations are available this window shoul
+                # never be created, but just in case of a mistakes it's
+                # caught here.
                 print("Unable to find valid configurations. "
                       "Make sure to compile the engine before packaging!")
                 self.exit()
@@ -118,7 +131,8 @@ if HAS_TK:
 
             config_list = []
             for configuration in self.configurations:
-                config_list.append("{} ({})".format(configuration[0], configuration[1]))
+                config_list.append("{} ({})".format(
+                    configuration[0], configuration[1]))
             self.configs_box['values'] = config_list
 
             config_index = 0
@@ -127,11 +141,14 @@ if HAS_TK:
 
             # Include debug symbols option
             self.symbols_frame = tk.Frame(self)
-            self.symbols_frame.pack(side='top', fill='both', expand=True, padx=5, pady=5)
+            self.symbols_frame.pack(
+                side='top', fill='both', expand=True, padx=5, pady=5)
 
             self.symbols_value = tk.BooleanVar()
             self.symbols_value.set(False)
-            self.symbols_checkbox = tk.Checkbutton(self.symbols_frame, text="Include debug symbols", variable=self.symbols_value)
+            self.symbols_checkbox = tk.Checkbutton(
+                self.symbols_frame, text="Include debug symbols",
+                variable=self.symbols_value)
             self.symbols_checkbox.pack()
 
             # Package button

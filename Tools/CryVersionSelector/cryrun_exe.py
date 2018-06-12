@@ -20,12 +20,13 @@ import winreg
 import uuid
 
 if __name__ == '__main__':
-    if getattr( sys, 'frozen', False ):
+    if getattr(sys, 'frozen', False):
         scriptpath = sys.executable
     else:
         scriptpath = __file__
     path = os.path.dirname(os.path.realpath(scriptpath))
 
     sys.path.insert(0, os.path.abspath(path))
-    cryrun = importlib.machinery.SourceFileLoader('cryrun',os.path.join(path, 'cryrun.py')).load_module()
+    cryrun = importlib.machinery.SourceFileLoader(
+        'cryrun', os.path.join(path, 'cryrun.py')).load_module()
     cryrun.main()
