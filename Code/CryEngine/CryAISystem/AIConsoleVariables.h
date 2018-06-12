@@ -126,6 +126,7 @@ struct AIConsoleVars
 	DeclareConstIntCVar(MNMPathfinderMT, 1);
 	DeclareConstIntCVar(MNMPathfinderConcurrentRequests, 4);
 	DeclareConstIntCVar(MNMRaycastImplementation, 2);
+	DeclareConstIntCVar(MNMRemoveInaccessibleTrianglesOnLoad, 0);
 
 	DeclareConstIntCVar(LogConsoleVerbosity, 0);
 	DeclareConstIntCVar(LogFileVerbosity, 0);
@@ -271,7 +272,7 @@ struct AIConsoleVars
 	float       ExtraVehicleAvoidanceRadiusSmall;
 	float       ObstacleSizeThreshold;
 
-	int         MNMDebugAccessibility; // TODO: remove
+	int         MNMDebugAccessibility;
 	const char* MNMDebugDrawFlag;
 
 	int         MNMEditorBackgroundUpdate;

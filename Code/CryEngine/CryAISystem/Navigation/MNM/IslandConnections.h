@@ -17,9 +17,12 @@ struct OffMeshNavigation;
 class IslandConnections
 {
 public:
+	typedef LocalDynArray<MNM::StaticIslandID, 1024> ConnectedIslandsArray;
+
 	IslandConnections() {}
 
 	void Reset();
+	void ResetForMesh(const NavigationMeshID meshId);
 
 	void SetOneWayOffmeshConnectionBetweenIslands(const MNM::GlobalIslandID fromIslandId, const MNM::AreaAnnotation fromIslandAnnotation, const MNM::GlobalIslandID toIslandId, const MNM::AreaAnnotation toIslandAnnotation, const MNM::OffMeshLinkID offMeshLinkId, const MNM::TriangleID toTriangleId, const uint32 connectionObjectOwnerId);
 	void RemoveOffMeshLinkConnection(const MNM::OffMeshLinkID offMeshLinkId);
@@ -27,6 +30,8 @@ public:
 	void SetTwoWayConnectionBetweenIslands(const MNM::GlobalIslandID islandId1, const MNM::AreaAnnotation islandAnnotation1, const MNM::GlobalIslandID islandId2, const MNM::AreaAnnotation islandAnnotation2, const int connectionChange);
 	
 	bool CanNavigateBetweenIslands(const IEntity* pEntityToTestOffGridLinks, const MNM::GlobalIslandID fromIsland, const MNM::GlobalIslandID toIsland, const INavMeshQueryFilter* pFilter) const;
+
+	void GetConnectedIslands(const MNM::GlobalIslandID seedIslandId, ConnectedIslandsArray& connectedIslandsArray) const;
 
 #ifdef CRYAISYSTEM_DEBUG
 	void DebugDraw() const;

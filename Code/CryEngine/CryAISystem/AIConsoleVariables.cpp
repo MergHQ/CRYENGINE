@@ -710,6 +710,9 @@ void AIConsoleVars::Init()
 	                       "2 - Version 3. The newest version that should be working in all special cases. This version is around 40% faster then the previous one. \n"
 	                       "Any other value is used for the biggest version.");
 
+	DefineConstIntCVarName("ai_MNMRemoveInaccessibleTrianglesOnLoad", MNMRemoveInaccessibleTrianglesOnLoad, 0, VF_CHEAT | VF_CHEAT_NOCHECK,
+		"Defines whether inaccessible triangles should be removed from NavMesh after it is loaded.");
+
 	DefineConstIntCVarName("ai_SmartPathFollower_useAdvancedPathShortcutting", SmartPathFollower_useAdvancedPathShortcutting, 1, VF_NULL, "Enables a more failsafe way of preventing the AI to shortcut through obstacles (0 = disable, any other value = enable)");
 	DefineConstIntCVarName("ai_SmartPathFollower_useAdvancedPathShortcutting_debug", SmartPathFollower_useAdvancedPathShortcutting_debug, 0, VF_NULL, "Show debug lines for when CVar ai_SmartPathFollower_useAdvancedPathShortcutting_debug is enabled");
 
@@ -1016,7 +1019,7 @@ void GatherPotentialDebugAgents(PotentialDebugAgents& agents)
 
 void AIConsoleVars::MNMComputeConnectedIslands(IConsoleCmdArgs* args)
 {
-	gAIEnv.pNavigationSystem->ComputeIslands();
+	gAIEnv.pNavigationSystem->ComputeAllIslands();
 }
 
 void AIConsoleVars::NavigationReloadConfig(IConsoleCmdArgs* args)

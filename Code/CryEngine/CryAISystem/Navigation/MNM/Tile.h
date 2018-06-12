@@ -55,27 +55,6 @@ struct STile
 	vector3_t::value_type  GetTriangleArea(const TriangleID triangleID) const;
 	vector3_t::value_type  GetTriangleArea(const Tile::STriangle& triangle) const;
 
-#if MNM_USE_EXPORT_INFORMATION
-	void        ResetConnectivity(uint8 accessible);
-	inline bool IsTriangleAccessible(const uint16 triangleIdx) const
-	{
-		assert((triangleIdx >= 0) && (triangleIdx < connectivity.triangleCount));
-		return (connectivity.trianglesAccessible[triangleIdx] != 0);
-	}
-	inline bool IsTileAccessible() const
-	{
-		return (connectivity.tileAccessible != 0);
-	}
-
-	inline void SetTriangleAccessible(const uint16 triangleIdx)
-	{
-		assert((triangleIdx >= 0) && (triangleIdx < connectivity.triangleCount));
-
-		connectivity.tileAccessible = 1;
-		connectivity.trianglesAccessible[triangleIdx] = 1;
-	}
-#endif
-
 	enum DrawFlags
 	{
 		DrawTriangles         = BIT(0),
@@ -119,57 +98,7 @@ private:
 	uint16           linkCount;
 
 	uint32           hashValue;
-
-#if MNM_USE_EXPORT_INFORMATION
-
-private:
-	struct TileConnectivity
-	{
-		TileConnectivity()
-			: tileAccessible(1)
-			, trianglesAccessible(NULL)
-			, triangleCount(0)
-		{
-		}
-
-		uint8  tileAccessible;
-		uint8* trianglesAccessible;
-		uint16 triangleCount;
-	};
-
-	bool ConsiderExportInformation() const;
-	void InitConnectivity(uint16 oldTriangleCount, uint16 newTriangleCount);
-
-	TileConnectivity connectivity;
-
-#endif
 };
-
-// Structure of precomputed data used for connecting a tile with adjacent tiles and updating islands
-struct STileConnectivityData
-{	
-	struct Edge
-	{
-		uint16 vertex[2];
-		uint16 triangle[2];
-
-		inline bool IsInternalEdgeOfTriangle(const size_t triangleIdx) const
-		{
-			return triangle[0] != triangle[1] && (triangleIdx == triangle[0] || triangleIdx == triangle[1]);
-		}
-		inline bool IsBoundaryEdgeOfTriangle(const size_t triangleIdx) const
-		{
-			return triangle[0] == triangle[1] && triangle[0] == triangleIdx;
-		}
-	};
-
-	void ComputeTriangleAdjacency(const Tile::STriangle* triangles, const size_t triangleCount, const size_t vertexCount);
-	static size_t ComputeTriangleAdjacency(const Tile::STriangle* triangles, const size_t triangleCount, const size_t vertexCount, STileConnectivityData::Edge* pEdges, uint16* pAdjacency);
-
-	std::vector<Edge> edges;
-	std::vector<uint16> adjacency;
-};
-
 } // namespace MNM
 
 #if DEBUG_MNM_DATA_CONSISTENCY_ENABLED

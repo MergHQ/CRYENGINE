@@ -22,12 +22,6 @@
 // Log additional information about OffMesh link operation (add, remove, ...)
 #define DEBUG_MNM_LOG_OFFMESH_LINK_OPERATIONS 0
 
-#if CRY_PLATFORM_WINDOWS
-	#define MNM_USE_EXPORT_INFORMATION 1
-#else
-	#define MNM_USE_EXPORT_INFORMATION 0
-#endif
-
 namespace MNM
 {
 

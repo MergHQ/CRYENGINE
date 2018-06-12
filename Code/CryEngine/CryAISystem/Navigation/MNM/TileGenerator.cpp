@@ -4107,33 +4107,32 @@ void CTileGenerator::CGeneratedMesh::CreateConnectivityData()
 	Tile::SLink links[MaxLinkCount];
 	size_t linkCount = 0;
 
-	m_metaData.connectivityData.ComputeTriangleAdjacency(m_triangles.data(), triCount, vertexCount);
+	const vector3_t tileSize(m_tileAabb.GetSize());
+
+	m_metaData.connectivityData.ComputeTriangleAdjacency(m_triangles.data(), triCount, m_vertices.data(), vertexCount, tileSize);
 	
 	// Create internal links
-	const std::vector<uint16>& adjacency = m_metaData.connectivityData.adjacency;
-	const std::vector<STileConnectivityData::Edge>& edges = m_metaData.connectivityData.edges;
-	for (size_t i = 0; i < triCount; ++i)
+	for (size_t triangleIdx = 0; triangleIdx < triCount; ++triangleIdx)
 	{
 		size_t triLinkCount = 0;
-		for (size_t e = 0; e < 3; ++e)
+		for (uint16 edgeIdx = 0; edgeIdx < 3; ++edgeIdx)
 		{
-			const size_t edgeIndex = adjacency[i * 3 + e];
-			const STileConnectivityData::Edge& edge = edges[edgeIndex];
-			if ((edge.triangle[0] != i) && (edge.triangle[1] != i))
+			const CTileConnectivityData::Edge& edge = m_metaData.connectivityData.GetEdge(triangleIdx, edgeIdx);
+			if ((edge.triangleIndex[0] != triangleIdx) && (edge.triangleIndex[1] != triangleIdx))
 				continue;
 
-			if (edge.triangle[0] != edge.triangle[1])
+			if (edge.triangleIndex[0] != edge.triangleIndex[1])
 			{
 				Tile::SLink& link = links[linkCount++];
 				link.side = Tile::SLink::Internal;
-				link.edge = e;
-				link.triangle = (edge.triangle[1] == i) ? edge.triangle[0] : edge.triangle[1];
+				link.edge = edgeIdx;
+				link.triangle = (edge.triangleIndex[1] == triangleIdx) ? edge.triangleIndex[0] : edge.triangleIndex[1];
 
 				++triLinkCount;
 			}
 		}
 
-		Tile::STriangle& triangle = m_triangles[i];
+		Tile::STriangle& triangle = m_triangles[triangleIdx];
 		triangle.linkCount = triLinkCount;
 		triangle.firstLink = linkCount - triLinkCount;
 	}

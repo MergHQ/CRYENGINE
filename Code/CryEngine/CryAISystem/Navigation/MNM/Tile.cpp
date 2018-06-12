@@ -42,9 +42,6 @@ STile::STile()
 	, nodeCount(0)
 	, linkCount(0)
 	, hashValue(0)
-#if MNM_USE_EXPORT_INFORMATION
-	, connectivity()
-#endif
 {
 }
 
@@ -119,10 +116,6 @@ void CopyTileData(const TData* pNewData, const TCount newCount, TData*& pOutData
 
 void STile::CopyTriangles(const Tile::STriangle* _triangles, uint16 count)
 {
-#if MNM_USE_EXPORT_INFORMATION
-	InitConnectivity(triangleCount, count);
-#endif
-
 	CopyTileData(_triangles, count, triangles, triangleCount);
 }
 
@@ -279,11 +272,6 @@ void STile::Swap(STile& other)
 	std::swap(vertices, other.vertices);
 	std::swap(nodes, other.nodes);
 	std::swap(links, other.links);
-
-#if MNM_USE_EXPORT_INFORMATION
-	InitConnectivity(triangleCount, other.triangleCount);
-#endif
-
 	std::swap(triangleCount, other.triangleCount);
 	std::swap(vertexCount, other.vertexCount);
 	std::swap(nodeCount, other.nodeCount);
@@ -306,11 +294,6 @@ void STile::Destroy()
 
 	delete[] links;
 	links = 0;
-
-#if MNM_USE_EXPORT_INFORMATION
-	SAFE_DELETE_ARRAY(connectivity.trianglesAccessible);
-	connectivity.tileAccessible = 0;
-#endif
 
 	triangleCount = 0;
 	vertexCount = 0;
@@ -377,19 +360,15 @@ void STile::Draw(size_t drawFlags, vector3_t origin, TileID tileID, const std::v
 			const Tile::STriangle& triangle = triangles[i];
 			
 			// Getting triangle color
-#if MNM_USE_EXPORT_INFORMATION
-			ColorB triangleColor = ((drawFlags & DrawAccessibility) && (connectivity.trianglesAccessible != NULL) && !connectivity.trianglesAccessible[i]) ? triangleColorDisconnected : triangleColorConnected;
-#else
 			ColorB triangleColor = triangleColorConnected;
-#endif
 
-			if (!(drawFlags & DrawAccessibility))
-			{
-				triangleColor = colorSelector.GetAnnotationColor(triangle.areaAnnotation);
-			}
 			if (drawFlags & DrawIslandsId)
 			{
 				triangleColor = CalculateColorFromMultipleItems(triangle.islandID, static_cast<uint32>(islandAreas.size()));
+			}
+			else
+			{
+				triangleColor = colorSelector.GetAnnotationColor(triangle.areaAnnotation);
 			}
 
 			if (triangleColor != currentColor)
@@ -632,154 +611,6 @@ vector3_t::value_type STile::GetTriangleArea(const Tile::STriangle& triangle) co
 	const vector3_t::value_type s = (len0 + len1 + len2) / vector3_t::value_type(2);
 
 	return sqrtf(s * (s - len0) * (s - len1) * (s - len2));
-}
-
-//////////////////////////////////////////////////////////////////////////
-
-#if MNM_USE_EXPORT_INFORMATION
-
-bool STile::ConsiderExportInformation() const
-{
-	// TODO FrancescoR: Remove if it's not necessary anymore or refactor it.
-	return true;
-}
-
-void STile::InitConnectivity(uint16 oldTriangleCount, uint16 newTriangleCount)
-{
-	if (ConsiderExportInformation())
-	{
-		// By default all is accessible
-		connectivity.tileAccessible = 1;
-		if (oldTriangleCount != newTriangleCount)
-		{
-			SAFE_DELETE_ARRAY(connectivity.trianglesAccessible);
-
-			if (newTriangleCount)
-			{
-				connectivity.trianglesAccessible = new uint8[newTriangleCount];
-			}
-		}
-
-		if (newTriangleCount)
-		{
-			memset(connectivity.trianglesAccessible, 1, sizeof(uint8) * newTriangleCount);
-		}
-		connectivity.triangleCount = newTriangleCount;
-	}
-}
-
-void STile::ResetConnectivity(uint8 accessible)
-{
-	if (ConsiderExportInformation())
-	{
-		assert(connectivity.triangleCount == triangleCount);
-
-		connectivity.tileAccessible = accessible;
-
-		if (connectivity.trianglesAccessible != NULL)
-		{
-			memset(connectivity.trianglesAccessible, accessible, sizeof(uint8) * connectivity.triangleCount);
-		}
-	}
-}
-
-#endif
-
-//////////////////////////////////////////////////////////////////////////
-
-void STileConnectivityData::ComputeTriangleAdjacency(const Tile::STriangle* triangles, const size_t triangleCount, const size_t vertexCount)
-{
-	Edge tmpEdges[MNM::Constants::TileTrianglesMaxCount * 3];
-
-	const size_t adjacencyCount = triangleCount * 3;
-	adjacency.resize(adjacencyCount);
-
-	const size_t edgesCount = STileConnectivityData::ComputeTriangleAdjacency(triangles, triangleCount, vertexCount, tmpEdges, adjacency.data());
-	edges.assign(tmpEdges, tmpEdges + edgesCount);
-}
-
-size_t STileConnectivityData::ComputeTriangleAdjacency(
-	const Tile::STriangle* triangles, const size_t triangleCount, const size_t vertexCount,
-	STileConnectivityData::Edge* pEdges, uint16* pAdjacency)
-{
-	CRY_PROFILE_FUNCTION(PROFILE_AI);
-
-	enum { Unused = 0xffff, };
-
-	//TODO: is this buffer always big enough?
-	const size_t MaxLookUp = 4096;
-	uint16 edgeLookUp[MaxLookUp];
-	CRY_ASSERT(MaxLookUp > vertexCount + triangleCount * 3);
-
-	std::fill(&edgeLookUp[0], &edgeLookUp[0] + vertexCount, static_cast<uint16>(Unused));
-
-	uint16 edgesCount = 0;
-
-	for (uint16 i = 0; i < triangleCount; ++i)
-	{
-		const Tile::STriangle& triangle = triangles[i];
-
-		for (size_t v = 0; v < 3; ++v)
-		{
-			const uint16 i1 = triangle.vertex[v];
-			const uint16 i2 = triangle.vertex[next_mod3(v)];
-
-			if (i1 < i2)
-			{
-				const uint16 edgeIdx = edgesCount++;
-				pAdjacency[i * 3 + v] = edgeIdx;
-
-				Edge& edge = pEdges[edgeIdx];
-				edge.triangle[0] = i;
-				edge.triangle[1] = i;
-				edge.vertex[0] = i1;
-				edge.vertex[1] = i2;
-
-				edgeLookUp[vertexCount + edgeIdx] = edgeLookUp[i1];
-				edgeLookUp[i1] = edgeIdx;
-			}
-		}
-	}
-
-	for (uint16 i = 0; i < triangleCount; ++i)
-	{
-		const Tile::STriangle& triangle = triangles[i];
-
-		for (size_t v = 0; v < 3; ++v)
-		{
-			const uint16 i1 = triangle.vertex[v];
-			const uint16 i2 = triangle.vertex[next_mod3(v)];
-
-			if (i1 > i2)
-			{
-				uint16 edgeIndex = edgeLookUp[i2];
-				for (; edgeIndex != Unused; edgeIndex = edgeLookUp[vertexCount + edgeIndex])
-				{
-					Edge& edge = pEdges[edgeIndex];
-
-					if ((edge.vertex[1] == i1) && (edge.triangle[0] == edge.triangle[1]))
-					{
-						edge.triangle[1] = i;
-						pAdjacency[i * 3 + v] = edgeIndex;
-						break;
-					}
-				}
-
-				if (edgeIndex == Unused)
-				{
-					const uint16 edgeIdx = edgesCount++;
-					pAdjacency[i * 3 + v] = edgeIdx;
-
-					Edge& edge = pEdges[edgeIdx];
-					edge.vertex[0] = i1;
-					edge.vertex[1] = i2;
-					edge.triangle[0] = i;
-					edge.triangle[1] = i;
-				}
-			}
-		}
-	}
-	return edgesCount;
 }
 
 }

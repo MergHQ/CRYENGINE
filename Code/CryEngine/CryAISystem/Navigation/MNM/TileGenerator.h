@@ -9,6 +9,7 @@
 #include "MNMProfiler.h"
 #include "CompactSpanGrid.h"
 #include "Tile.h"
+#include "TileConnectivity.h"
 #include "BoundingVolume.h"
 #include "MarkupVolume.h"
 #include "HashComputer.h"
@@ -142,7 +143,7 @@ public:
 		};
 
 		std::vector<SMarkupTriangles> markupTriangles;
-		STileConnectivityData connectivityData;
+		CTileConnectivityData connectivityData;
 	};
 
 	enum ProfilerTimers

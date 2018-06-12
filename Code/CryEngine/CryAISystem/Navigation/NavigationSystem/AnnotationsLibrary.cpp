@@ -12,12 +12,16 @@ void CAnnotationsLibrary::Clear()
 	m_areaFlags.clear();
 
 	m_areasColorMap.clear();
-	m_flagsColorMap.clear();
 
 	m_defaultColor = ColorB(Col_Azure, 0.65f);
 
-	CreateAreaFlag(0, "Walkable");
-	CreateAreaType(0, "Default", BIT(0));
+	const ColorB inaccessibleColor(Col_DimGray, 0.65f);
+
+	const NavigationAreaFlagID defaultFlag = CreateAreaFlag(0, "Walkable");
+	CreateAreaFlag(1, "Inaccessible", &inaccessibleColor);
+	m_inacessibleAreaFlagIdx = m_areaFlags.size() - 1;
+
+	CreateAreaType(0, "Default", GetAreaFlag(defaultFlag)->value);
 }
 
 NavigationAreaTypeID CAnnotationsLibrary::CreateAreaType(const uint32 id, const char* szName, const uint32 defaultFlags, const ColorB* pColor)

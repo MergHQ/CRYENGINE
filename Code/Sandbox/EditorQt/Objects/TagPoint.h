@@ -69,14 +69,17 @@ public:
 	//////////////////////////////////////////////////////////////////////////
 	// Overrides from CBaseObject.
 	//////////////////////////////////////////////////////////////////////////
-	virtual void Display(SDisplayContext& dc);
-	virtual int  MouseCreateCallback(IDisplayViewport* view, EMouseEvent event, CPoint& point, int flags);
-	virtual void Done();
-	virtual void SetModified(bool boModifiedTransformOnly, bool bNotifyObjectManager);
+	virtual void Display(SDisplayContext& dc)
+	{
+		DrawDefault(dc);
+	}
 
 	//////////////////////////////////////////////////////////////////////////
 protected:
-	CNavigationSeedPoint();
+	CNavigationSeedPoint()
+	{
+		m_entityClass = "NavigationSeedPoint";
+	}
 };
 
 /*!

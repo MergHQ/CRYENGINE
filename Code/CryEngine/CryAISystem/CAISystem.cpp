@@ -4871,6 +4871,11 @@ void CAISystem::NotifyAIObjectMoved(IEntity* pEntity, SEntityEvent event)
 
 	AIAssert(m_pSmartObjectManager);
 	m_pSmartObjectManager->OnEntityEvent(pEntity, event);
+
+	if (gEnv->IsEditing() && pEntity->GetAI()->GetAIType() == AIOBJECT_NAV_SEED)
+	{
+		gAIEnv.pNavigationSystem->RequestUpdateAccessibilityAfterSeedChange(pEntity->GetAI()->GetPos(), pEntity->GetWorldPos());
+	}
 }
 
 //====================================================================

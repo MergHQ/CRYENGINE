@@ -21,6 +21,7 @@ class OffMeshNavigationManager;
 namespace MNM
 {
 struct OffMeshNavigation;
+class CTileConnectivityData;
 
 ///////////////////////////////////////////////////////////////////////
 
@@ -331,6 +332,8 @@ public:
 		return m_triangleCount;
 	}
 
+	void                      MarkTrianglesNotConnectedToSeeds(const MNM::AreaAnnotation::value_type flags);
+
 	void                      AddOffMeshLinkToTile(const TileID tileID, const TriangleID triangleID, const uint16 offMeshIndex);
 	void                      UpdateOffMeshLinkForTile(const TileID tileID, const TriangleID triangleID, const uint16 offMeshIndex);
 	void                      RemoveOffMeshLinkFromTile(const TileID tileID, const TriangleID triangleID);
@@ -413,7 +416,7 @@ public:
 	void           ClearTile(TileID tileID, bool clearNetwork = true);
 
 	void           CreateNetwork();
-	void           ConnectToNetwork(const TileID tileID, const STileConnectivityData* pConnectivityData);
+	void           ConnectToNetwork(const TileID tileID, const CTileConnectivityData* pConnectivityData);
 
 	inline bool    Empty() const
 	{
@@ -472,27 +475,6 @@ public:
 	typedef MNMProfiler<ProfilerMemoryUsers, ProfilerTimers, ProfilerStats> ProfilerType;
 	const ProfilerType& GetProfiler() const;
 
-#if MNM_USE_EXPORT_INFORMATION
-	enum EAccessibilityRequestValue
-	{
-		eARNotAccessible = 0,
-		eARAccessible    = 1
-	};
-
-	struct AccessibilityRequest
-	{
-		AccessibilityRequest(TriangleID _fromTriangleId, const OffMeshNavigation& _offMeshNavigation)
-			: fromTriangle(_fromTriangleId)
-			, offMeshNavigation(_offMeshNavigation)
-		{}
-		const TriangleID         fromTriangle;
-		const OffMeshNavigation& offMeshNavigation;
-	};
-
-	void ResetAccessibility(uint8 accessible);
-	void ComputeAccessibility(const AccessibilityRequest& inputRequest);
-#endif
-
 	CIslands& GetIslands() { return m_islands; }
 	const CIslands& GetIslands() const { return m_islands; }
 
@@ -515,6 +497,8 @@ public:
 
 	template<typename TQuery>
 	void QueryTrianglesWithProcessing(const aabb_t& queryAabbWorld, const INavMeshQueryFilter* pFilter, TQuery&& query) const;
+
+	void RemoveTrianglesByFlags(const MNM::AreaAnnotation::value_type flags);
 
 private:
 	template<typename TFilter, typename TQuery>
@@ -566,7 +550,7 @@ private:
 	TriangleID FindClosestTriangleInternal(const vector3_t& localPosition, const TriangleID* pCandidateTriangles, const size_t candidateTrianglesCount, vector3_t* pOutClosestLocalPosition, real_t::unsigned_overflow_type* pOutClosestDistanceSq) const;
 
 protected:
-	void ComputeAdjacency(size_t x, size_t y, size_t z, const real_t& toleranceSq, STile& tile, const STileConnectivityData* pConnectivityData);
+	void ComputeAdjacency(size_t x, size_t y, size_t z, const real_t& toleranceSq, STile& tile, const CTileConnectivityData* pConnectivityData);
 	void ReComputeAdjacency(size_t x, size_t y, size_t z, const real_t& toleranceSq, STile& tile,
 	                        size_t side, size_t tx, size_t ty, size_t tz, TileID targetID);
 
