@@ -193,9 +193,7 @@ void CPostAAStage::ApplySMAA(CTexture*& pCurrRT)
 
 		if (gcpRendD3D->m_nStencilMaskRef > STENC_MAX_REF)
 		{
-			// Stencil initialized to 1 - 0 is reserved for MSAAed samples
-			CClearSurfacePass::Execute(pZTexture, CLEAR_STENCIL, 0.0f, 1);
-
+			CClearSurfacePass::Execute(pZTexture, CLEAR_STENCIL, 0.0f, 0);
 			gcpRendD3D->m_nStencilMaskRef = 1;
 		}
 

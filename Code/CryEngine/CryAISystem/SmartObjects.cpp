@@ -3515,12 +3515,6 @@ void CSmartObjectManager::OnEntityEvent(IEntity* pEntity, const SEntityEvent& ev
 						mapByPos.insert(std::make_pair(newX, pSmartObject));
 					}
 				}
-
-				// have the possibly changed nav-mesh accessibility immediately show up in Sandbox
-				if (event.nParam[0] & ENTITY_XFORM_EDITOR)
-				{
-					gAIEnv.pNavigationSystem->CalculateAccessibility();
-				}
 			}
 			break;
 		}

@@ -23,6 +23,7 @@ struct SPluginDefinition
 
 	void Serialize(Serialization::IArchive& ar)
 	{
+		ar(guid, "guid", "guid");
 		ar(type, "type", "type");
 		ar(path, "path", "path");
 
@@ -46,6 +47,7 @@ struct SPluginDefinition
 	//! Determines the platforms for which this plug-in should be loaded
 	//! An empty vector indicates that we should always load
 	std::vector<EPlatform> platforms;
+	CryGUID guid;
 };
 
 namespace Cry
@@ -222,6 +224,7 @@ public:
 	// IProjectManager
 	virtual const char*                   GetCurrentProjectName() const override;
 	virtual CryGUID                       GetCurrentProjectGUID() const override;
+	virtual const char*                   GetCurrentEngineID() const override;
 
 	virtual const char*                   GetCurrentProjectDirectoryAbsolute() const override;
 

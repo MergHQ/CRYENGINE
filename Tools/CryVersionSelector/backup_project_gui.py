@@ -16,6 +16,7 @@ except ImportError:
     print("Skipping importing tkinter, because it's not installed.")
     HAS_TK = False
 
+
 def configure_backup(export_path):
     """
     Opens a GUI in which the user can select where the backup is saved.
@@ -39,6 +40,7 @@ def configure_backup(export_path):
 
     return path
 
+
 def center_window(win):
     """
     Centers the window.
@@ -49,6 +51,7 @@ def center_window(win):
     position_x = (win.winfo_screenwidth() // 2) - (width // 2)
     position_y = (win.winfo_screenheight() // 2) - (height // 2)
     win.geometry('{}x{}+{}+{}'.format(width, height, position_x, position_y))
+
 
 if HAS_TK:
     class CryConfigureBackup(tk.Frame):
@@ -72,16 +75,20 @@ if HAS_TK:
             """
             # Export path browse dialog
             self.browse_frame = tk.Frame(self)
-            self.browse_frame.pack(side='top', fill=tk.BOTH, expand=True, padx=5, pady=5)
+            self.browse_frame.pack(
+                side='top', fill=tk.BOTH, expand=True, padx=5, pady=5)
 
             tk.Label(self.browse_frame, text="Backup location:").pack()
 
-            self.browse_button = tk.Button(self.browse_frame, text="...", width=3, command=self.browse_cmd)
+            self.browse_button = tk.Button(
+                self.browse_frame, text="...", width=3,
+                command=self.browse_cmd)
             self.browse_button.pack(side="right", padx=2)
 
             self.path_value = tk.StringVar()
             self.path_value.set(export_path)
-            self.dir_box = tk.Entry(self.browse_frame, textvariable=self.path_value)
+            self.dir_box = tk.Entry(
+                self.browse_frame, textvariable=self.path_value)
             self.dir_box.pack(fill=tk.X, expand=True, side="right", padx=2)
 
             # Confirm button

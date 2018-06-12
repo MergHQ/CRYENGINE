@@ -95,10 +95,10 @@ SamplerComparisonState ssShadowComparison     : register(s3) = SS_Shadow2;
 SamplerState           ssShadowPointWrap      : register(s7) = SS_PointWrap;
 
 
-#define CLIPVOLUME_CONNECTED_TO_OUTDOOR	(1<<0)
-#define CLIPVOLUME_IGNORE_GI 						(1<<1)
-#define CLIPVOLUME_AFFECTED_BY_SUN			(1<<2)
-#define CLIPVOLUME_BLEND 								(1<<3)
+#define CLIPVOLUME_CONNECTED_TO_OUTDOOR (1<<0)
+#define CLIPVOLUME_IGNORE_GI            (1<<1)
+#define CLIPVOLUME_AFFECTED_BY_SUN      (1<<2)
+#define CLIPVOLUME_BLEND                (1<<3)
 
 #define AFFECTS_EVERYTHING_STENCILREF	0xFF
 #define MAX_CLIPVOLUMES 64
@@ -1177,18 +1177,10 @@ float4 ResolveStencilPS(vtxOutMSAA IN) : SV_Target0
 	
 	int2 nStencilVal;
 	int3 vPixCoord = int3( IN.HPosition.xy, 0);
-#if %_RT_MSAA_QUALITY || %_RT_MSAA_QUALITY1 
-	uint uSample = 0;
-	#if %_RT_MSAA_SAMPLEFREQ_PASS
-		uSample = IN.uSample;
-	#endif
-	nStencilVal = StencilTexMS.Load(vPixCoord, uSample);
-#else
-	nStencilVal = StencilTex.Load(vPixCoord);
-#endif
 
+	nStencilVal = StencilTex.Load(vPixCoord);
 	nStencilVal = nStencilVal & BIT_STENCIL_STATIC;
-	nStencilVal = max(nStencilVal - BIT_STENCIL_INSIDE_VOLUME, 1);
+	nStencilVal = max(nStencilVal - BIT_STENCIL_INSIDE_VOLUME, 0);
 
 #if DURANGO || ORBIS
 	return nStencilVal.r * fMaxStencilRefRcp;

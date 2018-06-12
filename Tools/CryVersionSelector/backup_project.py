@@ -33,17 +33,25 @@ BIN_DIRS = [
     os.path.join("bin", "linux_x64_gcc_release")
 ]
 
-# "\\\\?\\" is added to make sure copying doesn't crash on Windows because the path gets too long for some files.
+# "\\\\?\\" is added to make sure copying doesn't crash on Windows
+# because the path gets too long for some files.
 # This is a requirement to copy the Mono folder on Windows.
 LONG_PATH_PREFIX = "\\\\?\\" if platform.system() == "Windows" else ""
+
 
 def run(project_file, backup_location, silent):
     """
     Entry point for setting up the process to create a backup of a project.
     """
-    # Path to the project file as created by the launcher - engine and project path are derivable from this.
-    project = cryproject.load(project_file)
-    project_title = project['info']['name']
+    # Path to the project file as created by the launcher - engine and
+    # project path are derivable from this.
+
+    project = cryproject.CryProject()
+    try:
+        project.load(project_file)
+    except Exception:
+        print("Unable to read project file %s" % (project_file))
+        raise
 
     # The path the folder that contains the .cryproject file.
     project_path = os.path.normpath(os.path.dirname(project_file))
@@ -67,36 +75,50 @@ def run(project_file, backup_location, silent):
 
         export_path = os.path.normpath(export_path)
         temp_project_file = os.path.join(export_path, project_file_name)
-        if os.path.isfile(temp_project_file) and os.path.samefile(temp_project_file, project_file):
-            message = "The backup directory cannot be the same as the current project directory!"
+        if os.path.isfile(temp_project_file) and os.path.samefile(
+                temp_project_file, project_file):
+            message = "The backup directory cannot be the same as the " \
+                "current project directory!"
             if HAS_WIN_MODULES:
-                MESSAGEBOX(None, message, 'Invalid folder selected!', win32con.MB_OK | win32con.MB_ICONWARNING)
+                MESSAGEBOX(None, message, 'Invalid folder selected!',
+                           win32con.MB_OK | win32con.MB_ICONWARNING)
             else:
                 print(message)
             continue
 
-        if HAS_WIN_MODULES and os.path.isdir(export_path) and os.listdir(export_path):
-            message = ('The directory "{}" is not empty. '
-                       'Continuing to write the backup to this location can cause data loss!'
-                       '\nAre you sure you wish to continue?'
-                      ).format(export_path)
-            if MESSAGEBOX(None, message, 'Overwrite existing folder', win32con.MB_OKCANCEL | win32con.MB_ICONWARNING) == win32con.IDCANCEL:
+        if HAS_WIN_MODULES and os.path.isdir(export_path) and os.listdir(
+                export_path):
+            message = (
+                'The directory "{}" is not empty. '
+                'Continuing to write the backup to this location can '
+                'cause data loss!\nAre you sure you wish to continue?').format(
+                    export_path)
+
+            mb_kind = win32con.MB_OKCANCEL | win32con.MB_ICONWARNING
+            if MESSAGEBOX(
+                    None, message, 'Overwrite existing folder',
+                    mb_kind) == win32con.IDCANCEL:
                 continue
         break
 
     export_path_long = LONG_PATH_PREFIX + export_path
 
     if not silent:
-        print("Creating a backup of project {}".format(project_title))
+        print("Creating a backup of project {}".format(project.name()))
         print("Backup is saved to: {}".format(export_path))
 
     task_list = []
 
-    task_list.append(("Copying code folder...", copy_code, project, project_path_long, export_path_long, silent))
-    task_list.append(("Copying project binaries...", copy_binaries, project, project_path, export_path, silent))
-    task_list.append(("Copying game assets...", copy_assets, project, project_path_long, export_path_long, silent))
-    task_list.append(("Copying shared libraries...", copy_libs, project, project_path_long, export_path_long))
-    task_list.append(("Copying config files...", copy_configs, project_path_long, export_path_long, project_file_name))
+    task_list.append(("Copying code folder...", copy_code,
+                      project, project_path_long, export_path_long, silent))
+    task_list.append(("Copying project binaries...", copy_binaries,
+                      project, project_path, export_path, silent))
+    task_list.append(("Copying game assets...", copy_assets,
+                      project, project_path_long, export_path_long, silent))
+    task_list.append(("Copying shared libraries...", copy_libs,
+                      project, project_path_long, export_path_long))
+    task_list.append(("Copying config files...", copy_configs,
+                      project_path_long, export_path_long, project_file_name))
 
     i = 0
     count = len(task_list)
@@ -104,7 +126,8 @@ def run(project_file, backup_location, silent):
         description = task[0]
         if not silent:
             print(description)
-            set_title("{}% {}".format(int(get_percentage(i, count)), description))
+            set_title("{}% {}".format(
+                int(get_percentage(i, count)), description))
         task[1](*task[2:])
         i += 1
 
@@ -112,10 +135,12 @@ def run(project_file, backup_location, silent):
         set_title("100% Backup created successfully")
         message = "Backup created successfully"
         if HAS_WIN_MODULES:
-            MESSAGEBOX(None, message, 'Backup created', win32con.MB_OK | win32con.MB_ICONINFORMATION)
+            MESSAGEBOX(None, message, 'Backup created',
+                       win32con.MB_OK | win32con.MB_ICONINFORMATION)
         else:
             print(message)
             input("Press Enter to exit")
+
 
 def set_title(title):
     """
@@ -124,16 +149,18 @@ def set_title(title):
     if not title:
         title = "Building..."
 
-    #using the kernel32 should be better, but in case it's not working it can switch to using system().
+    # using the kernel32 should be better, but in case it's not working
+    # it can switch to using os.system().
     if HAS_WIN_MODULES:
         try:
             kernel32 = ctypes.WinDLL('kernel32', use_last_error=True)
             if kernel32:
                 kernel32.SetConsoleTitleW(u"{}".format(title))
-        except:
-            system("title {}".format(title))
+        except Exception:
+            os.system("title {}".format(title))
     else:
-        system("title {}".format(title))
+        os.system("title {}".format(title))
+
 
 def get_percentage(index, count):
     """
@@ -141,36 +168,41 @@ def get_percentage(index, count):
     """
     return (100.0 / count) * index
 
+
 def sanitize_for_fn(text):
     """
     Escapes the [ and ] characters by wrapping them in [].
     """
     return text.translate(str.maketrans({'[': '[[]', ']': '[]]'}))
 
+
 def copy_code(project, project_path, export_path, silent):
     """
     Copies the code and solutions to the backup folder.
     """
-    code_dir = cryproject.cmakelists_dir(project)
+    code_dir = project.cmakelists_dir()
     copy_directory(project_path, export_path, code_dir, silent=silent)
 
     # Also try copying the solutions folder if available
     solutions_dir = "solutions"
-    copy_directory(project_path, export_path, solutions_dir, warn_on_fail=False, silent=silent)
+    copy_directory(project_path, export_path, solutions_dir,
+                   warn_on_fail=False, silent=silent)
+
 
 def copy_assets(project, project_path, export_path, silent):
     """
     Copies the assets of the project to the backup folder.
     """
-    assets_dir = cryproject.asset_dir(project)
+    assets_dir = project.asset_dir()
     copy_directory(project_path, export_path, assets_dir, silent=silent)
+
 
 def copy_binaries(project, project_path, export_path, silent):
     """
     Copies the projects binaries files (.dll) and
     related files such as debug symbols.
     """
-    plugins = cryproject.plugins_list(project)
+    plugins = project.plugins_list()
 
     if not plugins:
         return
@@ -190,8 +222,9 @@ def copy_binaries(project, project_path, export_path, silent):
 
         if plugin_type == "EPluginType::Native":
             for bin_dir in BIN_DIRS:
-                # Try to apply the selected engine configuration to the plugin as well.
-                # This does assume plugins follow the same naming-rules as the engine does, as defined in bin_dirs.
+                # Try to apply the selected engine configuration to the
+                # plugin as well. This does assume plugins follow the
+                # same naming-rules as the engine does, as defined in bin_dirs.
                 file_path = os.path.join(bin_dir, os.path.basename(path))
                 src_file = os.path.join(project_path, file_path)
                 if os.path.isfile(src_file):
@@ -214,20 +247,23 @@ def copy_binaries(project, project_path, export_path, silent):
                     dst_file = "{}.pdb".format(os.path.splitext(dst_file)[0])
                     shutil.copy2(src_file, dst_file)
             elif not silent:
-                print('Unable to copy plugin because the file "{}" doesn\'t exist!'.format(src_file))
+                print(
+                    'Unable to copy plugin because the file "{}" doesn\'t '
+                    'exist!'.format(src_file))
+
 
 def copy_libs(project, project_path, export_path):
     """
     Searches the bin folder for files that fit the name of the shared libs,
     and copies them to the backup directory.
     """
-    libs = cryproject.libs_list(project)
+    libs = project.libs_list()
 
     if not libs:
         return
 
-    # The bin folders are optional since they can be generated from the source code.
-    # So if they don't exist just skip them.
+    # The bin folders are optional since they can be generated from the
+    # source code. So if they don't exist just skip them.
     bin_dir = os.path.join(project_path, "bin")
     if not os.path.isdir(bin_dir):
         return
@@ -250,21 +286,25 @@ def copy_libs(project, project_path, export_path):
 
         if any_config:
             include = ["{}*".format(any_config)]
-            copy_directory_contents(bin_dir, export_bin, include, exclude, overwrite=True)
+            copy_directory_contents(
+                bin_dir, export_bin, include, exclude, overwrite=True)
 
         if win86:
             include = ["{}*".format(win86)]
             src_path = os.path.join(bin_dir, "win_x86")
             dst_path = os.path.join(export_bin, "win_x86")
             if os.path.isdir(src_path):
-                copy_directory_contents(src_path, dst_path, include, exclude, overwrite=True)
+                copy_directory_contents(
+                    src_path, dst_path, include, exclude, overwrite=True)
 
         if win64:
             include = ["{}*".format(win64)]
             src_path = os.path.join(bin_dir, "win_x64")
             dst_path = os.path.join(export_bin, "win_x64")
             if os.path.isdir(src_path):
-                copy_directory_contents(src_path, dst_path, include, exclude, overwrite=True)
+                copy_directory_contents(
+                    src_path, dst_path, include, exclude, overwrite=True)
+
 
 def copy_configs(project_path, export_path, project_file_name):
     """
@@ -275,6 +315,7 @@ def copy_configs(project_path, export_path, project_file_name):
     copy_file(project_path, export_path, "system.cfg")
     copy_file(project_path, export_path, "editor.cfg")
     copy_file(project_path, export_path, "user.cfg")
+
 
 def copy_file(project_path, export_path, file_path):
     """
@@ -289,7 +330,9 @@ def copy_file(project_path, export_path, file_path):
             os.remove(dst_file)
         shutil.copy2(src_file, dst_file)
 
-def copy_directory(project_path, export_path, copy_dir, warn_on_fail=True, silent=False):
+
+def copy_directory(
+        project_path, export_path, copy_dir, warn_on_fail=True, silent=False):
     """
     Copies the directory from the project to the backup folder.
     """
@@ -302,7 +345,8 @@ def copy_directory(project_path, export_path, copy_dir, warn_on_fail=True, silen
 
     if not os.path.isdir(src_path):
         if warn_on_fail and not silent:
-            print("Unable to copy {} because it doesn't exist!".format(src_path))
+            print("Unable to copy {} because it doesn't exist!".format(
+                src_path))
         return
 
     dst_path = os.path.join(export_path, copy_dir)
@@ -311,15 +355,17 @@ def copy_directory(project_path, export_path, copy_dir, warn_on_fail=True, silen
         shutil.rmtree(dst_path, onerror=on_rm_error)
     try:
         shutil.copytree(src_path, dst_path)
-    # This exception is thrown when the user still has locked files in the project,
-    # for example db.lock from Visual Studio.
+    # This exception is thrown when the user still has locked files in
+    # the project, for example db.lock from Visual Studio.
     except shutil.Error as e:
         errors = e.args[0]
         for error in errors:
             src, dst, msg = error
-            print('Unable to copy "{}" to "{}"!\nError:{}'.format(src, dst, msg))
+            print('Unable to copy "{}" to "{}"!\nError:{}'.format(
+                src, dst, msg))
     except IOError as e:
         print('Error: {}'.format(e.strerror))
+
 
 def on_rm_error(func, path, exc_info):
     """
@@ -331,7 +377,10 @@ def on_rm_error(func, path, exc_info):
     os.chmod(path, stat.S_IWRITE)
     os.remove(path)
 
-def copy_directory_contents(src_dir, dst_dir, include_patterns=None, exclude_patterns=None, recursive=True, overwrite=False):
+
+def copy_directory_contents(
+        src_dir, dst_dir, include_patterns=None, exclude_patterns=None,
+        recursive=True, overwrite=False):
     """
     Copies all files that match the include patterns and don't
     match the exclude patterns to the destination directory.
@@ -344,13 +393,16 @@ def copy_directory_contents(src_dir, dst_dir, include_patterns=None, exclude_pat
         dst_path = os.path.join(dst_dir, file)
 
         if os.path.isdir(src_path) and recursive:
-            copy_directory_contents(src_path, dst_path, include_patterns, exclude_patterns, recursive, overwrite)
+            copy_directory_contents(
+                src_path, dst_path, include_patterns, exclude_patterns,
+                recursive, overwrite)
             continue
 
         if exclude_patterns:
             exclude = False
             for pattern in exclude_patterns:
-                exclude = fnmatch.fnmatch(src_path, os.path.join(clean_dir, pattern))
+                exclude = fnmatch.fnmatch(
+                    src_path, os.path.join(clean_dir, pattern))
                 if exclude:
                     break
             if exclude:
@@ -359,7 +411,8 @@ def copy_directory_contents(src_dir, dst_dir, include_patterns=None, exclude_pat
         if include_patterns:
             include = False
             for pattern in include_patterns:
-                include = fnmatch.fnmatch(src_path, os.path.join(clean_dir, pattern))
+                include = fnmatch.fnmatch(
+                    src_path, os.path.join(clean_dir, pattern))
                 if include:
                     break
             if not include:
@@ -372,7 +425,9 @@ def copy_directory_contents(src_dir, dst_dir, include_patterns=None, exclude_pat
 
         shutil.copy2(src_path, dst_path)
 
-# Path validation retrieved from https://stackoverflow.com/questions/9532499/check-whether-a-path-is-valid-in-python-without-creating-a-file-at-the-paths-ta
+
+# Path validation retrieved from
+# https://stackoverflow.com/questions/9532499/check-whether-a-path-is-valid-in-python-without-creating-a-file-at-the-paths-ta
 # Sadly, Python fails to provide the following magic number for us.
 ERROR_INVALID_NAME = 123
 """
@@ -383,6 +438,7 @@ See Also
 https://msdn.microsoft.com/en-us/library/windows/desktop/ms681382%28v=vs.85%29.aspx
     Official listing of all such codes.
 """
+
 
 def is_pathname_valid(pathname: str) -> bool:
     """

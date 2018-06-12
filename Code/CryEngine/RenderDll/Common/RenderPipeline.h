@@ -153,6 +153,8 @@ enum EStencilStateOp
 //Stencil masks
 #define BIT_STENCIL_RESERVED          0x80
 #define BIT_STENCIL_INSIDE_CLIPVOLUME 0x40
+#define STENCIL_VALUE_OUTDOORS        0x0
+
 #define STENC_VALID_BITS_NUM          7
 #define STENC_MAX_REF                 ((1 << STENC_VALID_BITS_NUM) - 1)
 

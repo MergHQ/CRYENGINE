@@ -128,7 +128,8 @@ void CClipVolumesStage::GenerateClipVolumeInfo()
 	const auto& clipVolumes = pRenderView->GetClipVolumes();
 
 	m_nShaderParamCount = 0;
-	for (int i = 0; i < VisAreasOutdoorStencilOffset; ++i)
+	
+	// Outdoor
 	{
 		uint32 nFlags = IClipVolume::eClipVolumeConnectedToOutdoor | IClipVolume::eClipVolumeAffectedBySun;
 		m_clipVolumeShaderParams[m_nShaderParamCount++] = Vec4(gEnv->p3DEngine->GetSkyColor() * gcpRendD3D->m_fAdaptedSceneScaleLBuffer, alias_cast<float>(nFlags));
@@ -137,14 +138,14 @@ void CClipVolumesStage::GenerateClipVolumeInfo()
 	for (const auto& volume : clipVolumes)
 	{
 		// Update shader params
-		const uint32 paramIndex = volume.nStencilRef + 1;
-		CRY_ASSERT(paramIndex >= VisAreasOutdoorStencilOffset);
+		const uint32 paramIndex = volume.nStencilRef;
+		CRY_ASSERT(paramIndex > STENCIL_VALUE_OUTDOORS && paramIndex < MaxDeferredClipVolumes);
 
 		if (paramIndex < MaxDeferredClipVolumes)
 		{
 			uint32 nData =
-				(volume.blendInfo[1].blendID + 1) << 24 |
-				(volume.blendInfo[0].blendID + 1) << 16 |
+				volume.blendInfo[1].blendID << 24 |
+				volume.blendInfo[0].blendID << 16 |
 				volume.nFlags;
 
 			m_clipVolumeShaderParams[paramIndex] = Vec4(0, 0, 0, alias_cast<float>(nData));
@@ -245,8 +246,8 @@ void CClipVolumesStage::Prepare()
 			if ((volume.nFlags & IClipVolume::eClipVolumeIsVisArea) != 0 && !bRenderVisAreas)
 				continue;
 
-			CRY_ASSERT(((volume.nStencilRef + 1) & (BIT_STENCIL_RESERVED | BIT_STENCIL_INSIDE_CLIPVOLUME)) == 0);
-			const int stencilRef = ~(volume.nStencilRef + 1) & ~(BIT_STENCIL_RESERVED | BIT_STENCIL_INSIDE_CLIPVOLUME);
+			CRY_ASSERT(((volume.nStencilRef) & (BIT_STENCIL_RESERVED | BIT_STENCIL_INSIDE_CLIPVOLUME)) == 0);
+			const int stencilRef = ~(volume.nStencilRef) & ~(BIT_STENCIL_RESERVED | BIT_STENCIL_INSIDE_CLIPVOLUME);
 
 			buffer_handle_t hVertexStream = ~0u;
 			buffer_handle_t hIndexStream = ~0u;
@@ -381,7 +382,7 @@ void CClipVolumesStage::Prepare()
 			// Blend values
 			if (bRenderPortalBlendValues && (volume.nFlags & IClipVolume::eClipVolumeBlend))
 			{
-				const int stencilTestRef = BIT_STENCIL_INSIDE_CLIPVOLUME + volume.nStencilRef + 1;
+				const int stencilTestRef = BIT_STENCIL_INSIDE_CLIPVOLUME | volume.nStencilRef;
 
 				CRenderPrimitive& primBlend = m_blendPrimitives[i];
 				primBlend.SetTechnique(CShaderMan::s_shDeferredShading, techPortalBlend, CVrProjectionManager::Instance()->GetRTFlags());

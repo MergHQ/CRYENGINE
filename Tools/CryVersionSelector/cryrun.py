@@ -5,17 +5,12 @@ import argparse
 import os.path
 import subprocess
 import shutil
-import glob
 
 import configparser
 import tempfile
 import datetime
 import zipfile
 import stat
-
-import admin
-import distutils.dir_util
-import distutils.file_util
 
 import cryproject
 import cryregistry
@@ -29,53 +24,93 @@ try:
 except ImportError:
     HAS_WIN_MODULES = False
 
-#--- errors
+# --- errors
+
+
 def error_engine_not_found(path):
     sys.stderr.write("'%s' not found.\n" % path)
     sys.exit(600)
+
 
 def error_project_not_found(path):
     sys.stderr.write("'%s' not found.\n" % path)
     sys.exit(600)
 
+
 def error_project_json_decode(path):
     sys.stderr.write("Unable to parse '%s'.\n" % path)
     sys.exit(601)
 
+
 def error_missing_engine_source():
-    sys.stderr.write("Missing engine source files! To generate the engine solution make sure to get the source from github.com/CRYTEK/CRYENGINE/.\n")
+    sys.stderr.write(
+        "Missing engine source files! To generate the engine solution make "
+        "sure to get the source from github.com/CRYTEK/CRYENGINE/.\n")
     sys.exit(602)
 
+
 def error_winreg_not_available():
-    sys.stderr.write("Unable to load module winreg! This module is required to automatically generate C++ solutions.")
+    sys.stderr.write(
+        "Unable to load module winreg! This module is required to "
+        "automatically generate C++ solutions.")
     sys.exit(603)
 
+
 def error_unable_to_replace_file(path):
-    sys.stderr.write("Unable to replace file '%s'. Please remove the file manually.\n" % path)
+    sys.stderr.write(
+        "Unable to replace file '%s'. Please remove the file manually.\n"
+        % path)
     sys.exit(610)
+
 
 def error_engine_tool_not_found(path):
     sys.stderr.write("'%s' not found.\n" % path)
     sys.exit(620)
 
+
 def error_cmake_not_found():
-    sys.stderr.write("Unable to locate CMake.\nPlease download and install CMake from https://cmake.org/download/ and make sure it is available through the PATH environment variable.\n")
+    sys.stderr.write("Unable to locate CMake.\nPlease download and install "
+                     "CMake from https://cmake.org/download/ and make sure it "
+                     "is available through the PATH environment variable.\n")
     sys.exit(621)
 
+
+def error_upgrade_engine_version(engine_version):
+    sys.stderr.write("Unknown engine version: %s.\n" % engine_version)
+    sys.exit(630)
+
+
+def error_upgrade_template_unknown(project_file):
+    sys.stderr.write(
+        "Unable to identify original project template for '%s'.\n"
+        % project_file)
+    sys.exit(631)
+
+
+def error_upgrade_template_missing(restore_path):
+    sys.stderr.write("Missing upgrade information '%s'.\n" % restore_path)
+    sys.exit(632)
+
+
 def error_code_folder_not_specified():
-    sys.stderr.write("The code folder has not been specified in the project file!\n")
+    sys.stderr.write(
+        "The code folder has not been specified in the project file!\n")
     sys.exit(642)
+
 
 def print_subprocess(cmd):
     print(' '.join(map(lambda a: '"%s"' % a, cmd)))
 
-#---
+# ---
+
 
 def get_cmake_exe_path():
     return os.path.join(get_cmake_dir(), 'Win32/bin/cmake.exe')
 
+
 def get_cmake_dir():
     return os.path.join(get_engine_path(), 'Tools', 'CMake')
+
 
 def get_tools_path():
     if getattr(sys, 'frozen', False):
@@ -85,8 +120,10 @@ def get_tools_path():
 
     return os.path.abspath(os.path.dirname(script_path))
 
+
 def get_engine_path():
     return os.path.abspath(os.path.join(get_tools_path(), '..', '..'))
+
 
 def get_project_solution_dir(project_path):
     x64 = os.path.join("Solutions", "win64")
@@ -100,22 +137,25 @@ def get_project_solution_dir(project_path):
 
     return None
 
-#-- BUILD ---
+# -- BUILD ---
+
 
 def cmd_build(args):
     if not os.path.isfile(args.project_file):
         error_project_not_found(args.project_file)
 
-    project = cryproject.load(args.project_file)
-    if project is None:
+    project = cryproject.CryProject()
+    try:
+        project.load(args.project_file)
+    except Exception:
         error_project_json_decode(args.project_file)
 
     cmake_path = get_cmake_exe_path()
     if cmake_path is None:
         error_cmake_not_found()
 
-    #--- cmake
-    if cryproject.cmakelists_dir(project) is not None:
+    # --- cmake
+    if project.cmakelists_dir() is not None:
         project_path = os.path.dirname(os.path.abspath(args.project_file))
         solution_dir = get_project_solution_dir(project_path)
 
@@ -130,19 +170,21 @@ def cmd_build(args):
         if errcode != 0:
             sys.exit(errcode)
 
-#--- PROJGEN ---
+# --- PROJGEN ---
+
 
 def cmd_cmake_gui(args):
     if not os.path.isfile(args.project_file):
         error_project_not_found(args.project_file)
 
-    project = cryproject.load(args.project_file)
-    if project is None:
+    project = cryproject.CryProject()
+    try:
+        project.load(args.project_file)
+    except Exception:
         error_project_json_decode(args.project_file)
-    dirname = os.path.dirname(os.path.abspath(args.project_file))
 
-    #--- cpp
-    cmakelists_dir = cryproject.cmakelists_dir(project)
+    # --- cpp
+    cmakelists_dir = project.cmakelists_dir()
     if cmakelists_dir is not None:
         project_path = os.path.abspath(os.path.dirname(args.project_file))
         source_path = os.path.join(project_path, cmakelists_dir)
@@ -154,6 +196,7 @@ def cmd_cmake_gui(args):
             solution_path = os.path.join(project_path, solution_dir)
             open_cmake_gui(source_path, solution_path)
 
+
 def open_cmake_gui(source_dir, build_dir):
     cmake_path = get_cmake_exe_path()
     if cmake_path is None:
@@ -163,21 +206,25 @@ def open_cmake_gui(source_dir, build_dir):
     if not os.path.isfile(cmake_gui_path):
         error_cmake_not_found()
 
-    command_str = '"{}" -H"{}" -B"{}"'.format(cmake_gui_path, source_dir, build_dir)
+    command_str = '"{}" -H"{}" -B"{}"'.format(
+        cmake_gui_path, source_dir, build_dir)
     subprocess.Popen(command_str, cwd=source_dir)
+
 
 def cmd_projgen(args, open_cmake=False):
     if not os.path.isfile(args.project_file):
         error_project_not_found(args.project_file)
 
-    project = cryproject.load(args.project_file)
-    if project is None:
+    project = cryproject.CryProject()
+    try:
+        project.load(args.project_file)
+    except Exception:
         error_project_json_decode(args.project_file)
 
     project_path = os.path.abspath(os.path.dirname(args.project_file))
     engine_path = get_engine_path()
 
-    cmakelists_dir = cryproject.cmakelists_dir(project)
+    cmakelists_dir = project.cmakelists_dir()
 
     if not cmakelists_dir:
         error_code_folder_not_specified()
@@ -185,17 +232,20 @@ def cmd_projgen(args, open_cmake=False):
     code_directory = os.path.join(project_path, cmakelists_dir)
 
     # Generate solutions
-    crysolutiongenerator.generate_solution(args.project_file, code_directory, engine_path)
+    crysolutiongenerator.generate_solution(
+        args.project_file, code_directory, engine_path)
 
     # Skip on Crytek build agents
     if args.buildmachine:
         return
 
-    cmakelists_path = os.path.join(os.path.join(project_path, cmakelists_dir), 'CMakeLists.txt')
+    cmakelists_path = os.path.join(os.path.join(
+        project_path, cmakelists_dir), 'CMakeLists.txt')
 
     # Generate the Solution
     if code_directory is not None and os.path.isfile(cmakelists_path):
         generate_project_solution(project_path, code_directory, open_cmake)
+
 
 def cmd_engine_gen(args):
     if not os.path.isfile(args.engine_file):
@@ -203,7 +253,8 @@ def cmd_engine_gen(args):
 
     engine_path = get_engine_path()
 
-    # Check if the CrySystem folder is available, which indicates the source code is available
+    # Check if the CrySystem folder is available, which indicates the
+    # source code is available
     source_dir = os.path.join(engine_path, "Code", "CryEngine", "CrySystem")
     if not os.path.isdir(source_dir):
         error_missing_engine_source()
@@ -212,137 +263,172 @@ def cmd_engine_gen(args):
     if not args.buildmachine:
         generate_engine_solution(engine_path)
 
+
 def generate_project_solution(project_path, cmakelists_dir, open_cmake=False):
     """
-    Opens the configurations selection UI, and generates the project solution with the selected configuration.
+    Opens the configurations selection UI, and generates the project
+    solution with the selected configuration.
     """
     if not HAS_WIN_MODULES:
         error_winreg_not_available()
 
     configs = [
-        #Visual Studio 14 2015 Express
+        # Visual Studio 14 2015 Express
         {
-            'title':'Visual Studio 2015 Express Win64',
+            'title': 'Visual Studio 2015 Express Win64',
             'cmake_toolchain': 'toolchain/windows/WindowsPC-MSVC.cmake',
             'cmake_generator': 'Visual Studio 14 2015 Win64',
             'cmake_builddir': 'solutions/win64',
-            'compiler':{'reg_key': winreg.HKEY_CLASSES_ROOT, 'key_path': r'\WDExpress.DTE.14.0'}
+            'compiler': {'reg_key': winreg.HKEY_CLASSES_ROOT,
+                         'key_path': r'\WDExpress.DTE.14.0'}
         },
         {
-            'title':'Visual Studio 2015 Express Win32',
+            'title': 'Visual Studio 2015 Express Win32',
             'cmake_toolchain': 'toolchain/windows/WindowsPC-MSVC.cmake',
             'cmake_generator': 'Visual Studio 14 2015',
             'cmake_builddir': 'solutions/win32',
-            'compiler':{'reg_key': winreg.HKEY_CLASSES_ROOT, 'key_path': r'\WDExpress.DTE.14.0'}
+            'compiler': {'reg_key': winreg.HKEY_CLASSES_ROOT,
+                         'key_path': r'\WDExpress.DTE.14.0'}
         },
 
-        #Visual Studio 14 2015
+        # Visual Studio 14 2015
         {
-            'title':'Visual Studio 2015 Win64',
+            'title': 'Visual Studio 2015 Win64',
             'cmake_toolchain': 'toolchain/windows/WindowsPC-MSVC.cmake',
             'cmake_generator': 'Visual Studio 14 2015 Win64',
             'cmake_builddir': 'solutions/win64',
-            'compiler':{'reg_key': winreg.HKEY_CLASSES_ROOT, 'key_path': r'\VisualStudio.DTE.14.0'}
+            'compiler': {
+                'reg_key': winreg.HKEY_CLASSES_ROOT,
+                'key_path': r'\VisualStudio.DTE.14.0'
+            }
         },
         {
-            'title':'Visual Studio 2015 Win32',
+            'title': 'Visual Studio 2015 Win32',
             'cmake_toolchain': 'toolchain/windows/WindowsPC-MSVC.cmake',
             'cmake_generator': 'Visual Studio 14 2015',
             'cmake_builddir': 'solutions/win32',
-            'compiler':{'reg_key': winreg.HKEY_CLASSES_ROOT, 'key_path': r'\VisualStudio.DTE.14.0'}
+            'compiler': {
+                'reg_key': winreg.HKEY_CLASSES_ROOT,
+                'key_path': r'\VisualStudio.DTE.14.0'
+            }
         },
 
-        #Visual Studio 15 2017
+        # Visual Studio 15 2017
         {
-            'title':'Visual Studio 2017 Win64',
+            'title': 'Visual Studio 2017 Win64',
             'cmake_toolchain': 'toolchain/windows/WindowsPC-MSVC.cmake',
             'cmake_generator': 'Visual Studio 15 2017 Win64',
             'cmake_builddir': 'solutions/win64',
-            'compiler':{'reg_key': winreg.HKEY_CLASSES_ROOT, 'key_path': r'\VisualStudio.DTE.15.0'}
+            'compiler': {
+                'reg_key': winreg.HKEY_CLASSES_ROOT,
+                'key_path': r'\VisualStudio.DTE.15.0'
+            }
         },
         {
-            'title':'Visual Studio 2017 Win32',
+            'title': 'Visual Studio 2017 Win32',
             'cmake_toolchain': 'toolchain/windows/WindowsPC-MSVC.cmake',
             'cmake_generator': 'Visual Studio 15 2017',
             'cmake_builddir': 'solutions/win32',
-            'compiler':{'reg_key': winreg.HKEY_CLASSES_ROOT, 'key_path': r'\VisualStudio.DTE.15.0'}
+            'compiler': {
+                'reg_key': winreg.HKEY_CLASSES_ROOT,
+                'key_path': r'\VisualStudio.DTE.15.0'
+            }
         }
     ]
 
     # Run the GUI to select a config for CMake.
     config = cryrun_gui.select_config(configs)
 
-    #No config means the user canceled while selecting the config, so we can safely exit.
+    # No config means the user canceled while selecting the config,
+    # so we can safely exit.
     if not config:
         sys.exit(0)
 
     generate_solution(project_path, cmakelists_dir, config, open_cmake)
 
+
 def generate_engine_solution(engine_path):
     """
-    Opens the configurations selection UI, and generates the engine solution with the selected configuration.
+    Opens the configurations selection UI, and generates the engine
+    solution with the selected configuration.
     """
     if not HAS_WIN_MODULES:
         error_winreg_not_available()
 
     configs = [
-        #Visual Studio 14 2015 Express
+        # Visual Studio 14 2015 Express
         {
-            'title':'Visual Studio 2015 Express Win64',
+            'title': 'Visual Studio 2015 Express Win64',
             'cmake_toolchain': 'toolchain/windows/WindowsPC-MSVC.cmake',
             'cmake_generator': 'Visual Studio 14 2015 Win64',
             'cmake_builddir': 'solutions/win64',
-            'compiler':{'reg_key': winreg.HKEY_CLASSES_ROOT, 'key_path': r'\WDExpress.DTE.14.0'}
+            'compiler': {'reg_key': winreg.HKEY_CLASSES_ROOT,
+                         'key_path': r'\WDExpress.DTE.14.0'}
         },
         {
-            'title':'Visual Studio 2015 Express Win32',
+            'title': 'Visual Studio 2015 Express Win32',
             'cmake_toolchain': 'toolchain/windows/WindowsPC-MSVC.cmake',
             'cmake_generator': 'Visual Studio 14 2015',
             'cmake_builddir': 'solutions/win32',
-            'compiler':{'reg_key': winreg.HKEY_CLASSES_ROOT, 'key_path': r'\WDExpress.DTE.14.0'}
+            'compiler': {'reg_key': winreg.HKEY_CLASSES_ROOT,
+                         'key_path': r'\WDExpress.DTE.14.0'}
         },
 
-        #Visual Studio 14 2015
+        # Visual Studio 14 2015
         {
-            'title':'Visual Studio 2015 Win64',
+            'title': 'Visual Studio 2015 Win64',
             'cmake_toolchain': 'toolchain/windows/WindowsPC-MSVC.cmake',
             'cmake_generator': 'Visual Studio 14 2015 Win64',
             'cmake_builddir': 'solutions_cmake/win64',
-            'compiler':{'reg_key': winreg.HKEY_CLASSES_ROOT, 'key_path': r'\VisualStudio.DTE.14.0'}
+            'compiler': {
+                'reg_key': winreg.HKEY_CLASSES_ROOT,
+                'key_path': r'\VisualStudio.DTE.14.0'
+            }
         },
         {
-            'title':'Visual Studio 2015 Win32',
+            'title': 'Visual Studio 2015 Win32',
             'cmake_toolchain': 'toolchain/windows/WindowsPC-MSVC.cmake',
             'cmake_generator': 'Visual Studio 14 2015',
             'cmake_builddir': 'solutions_cmake/win32',
-            'compiler':{'reg_key': winreg.HKEY_CLASSES_ROOT, 'key_path': r'\VisualStudio.DTE.14.0'}
+            'compiler': {
+                'reg_key': winreg.HKEY_CLASSES_ROOT,
+                'key_path': r'\VisualStudio.DTE.14.0'
+            }
         },
 
-        #Visual Studio 15 2017
+        # Visual Studio 15 2017
         {
-            'title':'Visual Studio 2017 Win64',
+            'title': 'Visual Studio 2017 Win64',
             'cmake_toolchain': 'toolchain/windows/WindowsPC-MSVC.cmake',
             'cmake_generator': 'Visual Studio 15 2017 Win64',
             'cmake_builddir': 'solutions_cmake/win64',
-            'compiler':{'reg_key': winreg.HKEY_CLASSES_ROOT, 'key_path': r'\VisualStudio.DTE.15.0'}
+            'compiler': {
+                'reg_key': winreg.HKEY_CLASSES_ROOT,
+                'key_path': r'\VisualStudio.DTE.15.0'
+            }
         },
         {
-            'title':'Visual Studio 2017 Win32',
+            'title': 'Visual Studio 2017 Win32',
             'cmake_toolchain': 'toolchain/windows/WindowsPC-MSVC.cmake',
             'cmake_generator': 'Visual Studio 15 2017',
             'cmake_builddir': 'solutions_cmake/win32',
-            'compiler':{'reg_key': winreg.HKEY_CLASSES_ROOT, 'key_path': r'\VisualStudio.DTE.15.0'}
+            'compiler': {
+                'reg_key': winreg.HKEY_CLASSES_ROOT,
+                'key_path': r'\VisualStudio.DTE.15.0'
+            }
         }
     ]
 
     # Run the GUI to select a config for CMake.
     config = cryrun_gui.select_config(configs)
 
-    #No config means the user canceled while selecting the config, so we can safely exit.
+    # No config means the user canceled while selecting the config,
+    # so we can safely exit.
     if not config:
         sys.exit(0)
 
     generate_solution(engine_path, engine_path, config, True)
+
 
 def generate_solution(working_directory, cmakelists_dir, config, open_gui):
     cmake_dir = get_cmake_dir()
@@ -351,7 +437,8 @@ def generate_solution(working_directory, cmakelists_dir, config, open_gui):
     if cmake_path is None:
         error_cmake_not_found()
 
-    # By default the CMake output is hidden. This is printed to make sure the user knows it's not stuck.
+    # By default the CMake output is hidden. This is printed to make
+    # sure the user knows it's not stuck.
     print("Generating solution...")
 
     toolchain = config['cmake_toolchain']
@@ -379,10 +466,13 @@ def generate_solution(working_directory, cmakelists_dir, config, open_gui):
     command_str = ("".join("{} ".format(e) for e in cmake_command)).strip()
 
     try:
-        subprocess.run(command_str, cwd=solution_path, stdout=None, stderr=subprocess.PIPE, check=True, universal_newlines=True)
+        subprocess.run(command_str, cwd=solution_path, stdout=None,
+                       stderr=subprocess.PIPE, check=True,
+                       universal_newlines=True)
     except subprocess.CalledProcessError as e:
         if not e.returncode == 0:
-            print("Encountered and error while running command '{}'!".format(e.cmd))
+            print("Encountered and error while running command '{}'!".format(
+                e.cmd))
             print("Error: {}".format(e.stderr))
             print("Generating solution has failed!")
             print("Press Enter to exit")
@@ -392,10 +482,12 @@ def generate_solution(working_directory, cmakelists_dir, config, open_gui):
     if open_gui:
         open_cmake_gui(cmakelists_dir, solution_path)
 
+
 def check_cmake_cache(solution_path, generator):
     """
     Checks the line CMAKE_GENERATOR:INTERNAL in the cmake_cache.
-    If this line is different than the selected generator, the cache will be deleted.
+    If this line is different than the selected generator,
+    the cache will be deleted.
     """
     cache_file = os.path.join(solution_path, "CMakeCache.txt")
     if not os.path.isfile(cache_file):
@@ -418,9 +510,11 @@ def check_cmake_cache(solution_path, generator):
         print("Generator has changed. Deleting {}".format(solution_path))
         remove_directory(solution_path)
 
+
 def remove_directory(directory):
     if os.path.exists(directory):
         shutil.rmtree(directory, onerror=on_rm_error)
+
 
 def on_rm_error(func, path, exc_info):
     """
@@ -432,21 +526,25 @@ def on_rm_error(func, path, exc_info):
     os.chmod(path, stat.S_IWRITE)
     os.unlink(path)
 
-#--- OPEN ---
+# --- OPEN ---
+
 
 def cmd_open(args):
     if not os.path.isfile(args.project_file):
         error_project_not_found(args.project_file)
 
-    project = cryproject.load(args.project_file)
-    if project is None:
+    project = cryproject.CryProject()
+    try:
+        project.load(args.project_file)
+    except Exception:
         error_project_json_decode(args.project_file)
 
-    tool_path = os.path.join(get_engine_path(), 'bin', args.platform, 'GameLauncher.exe')
+    tool_path = os.path.join(get_engine_path(), 'bin',
+                             args.platform, 'GameLauncher.exe')
     if not os.path.isfile(tool_path):
         error_engine_tool_not_found(tool_path)
 
-    #---
+    # ---
 
     subcmd = (
         tool_path,
@@ -457,21 +555,25 @@ def cmd_open(args):
     print_subprocess(subcmd)
     subprocess.Popen(subcmd)
 
-#--- DEDICATED SERVER ---
+# --- DEDICATED SERVER ---
+
 
 def cmd_launch_dedicated_server(args):
     if not os.path.isfile(args.project_file):
         error_project_not_found(args.project_file)
 
-    project = cryproject.load(args.project_file)
-    if project is None:
+    project = cryproject.CryProject()
+    try:
+        project.load(args.project_file)
+    except Exception:
         error_project_json_decode(args.project_file)
 
-    tool_path = os.path.join(get_engine_path(), 'bin', args.platform, 'Game_Server.exe')
+    tool_path = os.path.join(get_engine_path(), 'bin',
+                             args.platform, 'Game_Server.exe')
     if not os.path.isfile(tool_path):
         error_engine_tool_not_found(tool_path)
 
-    #---
+    # ---
 
     subcmd = (
         tool_path,
@@ -482,7 +584,8 @@ def cmd_launch_dedicated_server(args):
     print_subprocess(subcmd)
     subprocess.Popen(subcmd)
 
-#--- PACKAGE ---
+# --- PACKAGE ---
+
 
 def cmd_package(args):
     if not os.path.isfile(args.project_file):
@@ -491,20 +594,23 @@ def cmd_package(args):
     release_project.run(args.project_file)
 
 
-#--- EDIT ---
+# --- EDIT ---
 def cmd_edit(args):
     if not os.path.isfile(args.project_file):
         error_project_not_found(args.project_file)
 
-    project = cryproject.load(args.project_file)
-    if project is None:
+    project = cryproject.CryProject()
+    try:
+        project.load(args.project_file)
+    except Exception:
         error_project_json_decode(args.project_file)
 
-    tool_path = os.path.join(get_engine_path(), 'bin', args.platform, 'Sandbox.exe')
+    tool_path = os.path.join(get_engine_path(), 'bin',
+                             args.platform, 'Sandbox.exe')
     if not os.path.isfile(tool_path):
         error_engine_tool_not_found(tool_path)
 
-    #---
+    # ---
 
     subcmd = (
         tool_path,
@@ -515,20 +621,25 @@ def cmd_edit(args):
     print_subprocess(subcmd)
     subprocess.Popen(subcmd)
 
-#--- UPGRADE ---
+# --- UPGRADE ---
+
 
 def upgrade_identify50(project_file):
     dirname = os.path.dirname(project_file)
 
     listdir = os.listdir(os.path.join(dirname, 'Code'))
-    if all((filename in listdir) for filename in ('CESharp', 'EditorApp', 'Game', 'SandboxInteraction', 'SandboxInteraction.sln')):
+    if all((filename in listdir) for filename in (
+            'CESharp', 'EditorApp', 'Game', 'SandboxInteraction',
+            'SandboxInteraction.sln')):
         return ('cs', 'SandboxInteraction')
 
-    if all((filename in listdir) for filename in ('CESharp', 'Game', 'Sydewinder', 'Sydewinder.sln')):
+    if all((filename in listdir) for filename in (
+            'CESharp', 'Game', 'Sydewinder', 'Sydewinder.sln')):
         return ('cs', 'Sydewinder')
 
     if all((filename in listdir) for filename in ('CESharp', 'Game')):
-        if os.path.isdir(os.path.join(dirname, 'Code', 'CESharp', 'SampleApp')):
+        if os.path.isdir(
+                os.path.join(dirname, 'Code', 'CESharp', 'SampleApp')):
             return ('cs', 'Blank')
 
     if all((filename in listdir) for filename in ('Game', )):
@@ -537,17 +648,22 @@ def upgrade_identify50(project_file):
 
     return None
 
+
 def upgrade_identify51(project_file):
     dirname = os.path.dirname(project_file)
 
     listdir = os.listdir(os.path.join(dirname, 'Code'))
-    if all((filename in listdir) for filename in ('Game', 'SampleApp', 'SampleApp.sln')):
+    if all((filename in listdir) for filename in (
+            'Game', 'SampleApp', 'SampleApp.sln')):
         return ('cs', 'Blank')
 
-    if all((filename in listdir) for filename in ('Game', 'EditorApp', 'SandboxInteraction', 'SandboxInteraction.sln')):
+    if all((filename in listdir) for filename in (
+            'Game', 'EditorApp', 'SandboxInteraction',
+            'SandboxInteraction.sln')):
         return ('cs', 'SandboxInteraction')
 
-    if all((filename in listdir) for filename in ('Game', 'Sydewinder', 'Sydewinder.sln')):
+    if all((filename in listdir) for filename in (
+            'Game', 'Sydewinder', 'Sydewinder.sln')):
         return ('cs', 'Sydewinder')
 
     if all((filename in listdir) for filename in ('Game', )):
@@ -555,6 +671,7 @@ def upgrade_identify51(project_file):
             return ('cpp', 'Blank')
 
     return None
+
 
 def cmd_upgrade(args):
     if not os.path.isfile(args.project_file):
@@ -586,11 +703,12 @@ def cmd_upgrade(args):
     if template_name is None:
         error_upgrade_template_unknown(args.project_file)
 
-    restore_path = os.path.abspath(os.path.join(get_tools_path(), 'upgrade', restore_version, *template_name) + '.zip')
+    restore_path = os.path.abspath(os.path.join(
+        get_tools_path(), 'upgrade', restore_version, *template_name) + '.zip')
     if not os.path.isfile(restore_path):
         error_upgrade_template_missing(restore_path)
 
-    #---
+    # ---
 
     (dirname, basename) = os.path.split(os.path.abspath(args.project_file))
     prevcwd = os.getcwd()
@@ -598,40 +716,48 @@ def cmd_upgrade(args):
 
     if not os.path.isdir('Backup'):
         os.mkdir('Backup')
-    (fd, zfilename) = tempfile.mkstemp('.zip', datetime.date.today().strftime('upgrade_%y%m%d_'), os.path.join('Backup', dirname))
+    (fd, zfilename) = tempfile.mkstemp('.zip', datetime.date.today().strftime(
+        'upgrade_%y%m%d_'), os.path.join('Backup', dirname))
     file = os.fdopen(fd, 'wb')
     backup = zipfile.ZipFile(file, 'w', zipfile.ZIP_DEFLATED)
     restore = zipfile.ZipFile(restore_path, 'r')
 
-    #.bat
-    for filename in (basename, 'Code_CPP.bat', 'Code_CS.bat', 'Editor.bat', 'Game.bat', 'CMakeLists.txt'):
+    # .bat
+    for filename in (
+            basename, 'Code_CPP.bat', 'Code_CS.bat', 'Editor.bat', 'Game.bat',
+            'CMakeLists.txt'):
         if os.path.isfile(filename):
             backup.write(filename)
 
-    #bin
+    # bin
     for (dirpath, dirnames, filenames) in os.walk('bin'):
-        for filename in filter(lambda a: os.path.splitext(a)[1] in ('.exe', '.dll'), filenames):
+        for filename in filter(
+                lambda a: os.path.splitext(a)[1] in ('.exe', '.dll'),
+                filenames):
             backup.write(os.path.join(dirpath, filename))
 
-    #Solutions
+    # Solutions
     for (dirpath, dirnames, filenames) in os.walk('Code'):
-        for filename in filter(lambda a: os.path.splitext(a)[1] in ('.sln', '.vcxproj', '.filters', '.user', '.csproj'), filenames):
+        for filename in filter(
+                lambda a: os.path.splitext(a)[1] in (
+                    '.sln', '.vcxproj', '.filters', '.user', '.csproj'),
+                filenames):
             path = os.path.join(dirpath, filename)
             backup.write(path)
 
     backup_list = backup.namelist()
 
-    #Files to be restored
+    # Files to be restored
     for filename in restore.namelist():
         if os.path.isfile(filename) and filename not in backup_list:
             backup.write(filename)
 
-    #---
+    # ---
 
     backup.close()
     file.close()
 
-    #Delete files backed up
+    # Delete files backed up
 
     z = zipfile.ZipFile(zfilename, 'r')
     for filename in z.namelist():
@@ -643,7 +769,8 @@ def cmd_upgrade(args):
     restore.close()
     os.chdir(prevcwd)
 
-#--- REQUIRE ---
+# --- REQUIRE ---
+
 
 def require_getall(registry, require_list, result):
 
@@ -652,8 +779,13 @@ def require_getall(registry, require_list, result):
             continue
 
         project_file = cryregistry.project_file(registry, k)
-        project = cryproject.load(project_file)
-        result[k] = cryproject.require_list(project)
+        project = cryproject.CryProject()
+        try:
+            project.load(project_file)
+            result[k] = project.require_list()
+        except Exception:
+            error_project_json_decode(project_file)
+
 
 def require_sortedlist(d):
     d = dict(d)
@@ -672,12 +804,17 @@ def require_sortedlist(d):
 
     return result
 
+
 def cmd_require(args):
     registry = cryregistry.load()
-    project = cryproject.load(args.project_file)
+    project = cryproject.CryProject()
+    try:
+        project.load(args.project_file)
+    except Exception:
+        error_project_json_decode(args.project_file)
 
     plugin_dependencies = {}
-    require_getall(registry, cryproject.require_list(project), plugin_dependencies)
+    require_getall(registry, project.require_list(), plugin_dependencies)
     plugin_list = require_sortedlist(plugin_dependencies)
     plugin_list = cryregistry.filter_plugin(registry, plugin_list)
 
@@ -690,40 +827,53 @@ def cmd_require(args):
     for k in plugin_list:
         project_file = cryregistry.project_file(registry, k)
         project_path = os.path.dirname(project_file)
-        project = cryproject.load(project_file)
+        project = cryproject.CryProject()
+        try:
+            project.load(project_file)
+        except Exception:
+            error_project_json_decode(args.project_file)
 
-        (m_extensionName, shared_path) = cryproject.shared_tuple(project, args.platform, args.config)
-        asset_dir = cryproject.asset_dir(project)
+        (m_extensionName, shared_path) = cryproject.shared_tuple(
+            project, args.platform, args.config)
+        asset_dir = project.asset_dir()
 
-        m_extensionBinaryPath = os.path.normpath(os.path.join(project_path, shared_path))
-        m_extensionAssetDirectory = asset_dir and os.path.normpath(os.path.join(project_path, asset_dir)) or ''
-        m_extensionClassName = 'EngineExtension_%s' % os.path.splitext(os.path.basename(m_extensionBinaryPath))[0]
+        m_extensionBinaryPath = os.path.normpath(
+            os.path.join(project_path, shared_path))
+        m_extensionAssetDirectory = os.path.normpath(
+            os.path.join(project_path, asset_dir)) if asset_dir else ''
+        m_extensionClassName = 'EngineExtension_%s' % os.path.splitext(
+            os.path.basename(m_extensionBinaryPath))[0]
 
-        line = ';'.join((m_extensionName, m_extensionClassName, m_extensionBinaryPath, m_extensionAssetDirectory))
+        line = ';'.join((m_extensionName, m_extensionClassName,
+                         m_extensionBinaryPath, m_extensionAssetDirectory))
         plugin_file.write(line + os.linesep)
 
     plugin_file.close()
 
-#--- METAGEN ---
+# --- METAGEN ---
+
 
 def cmd_metagen(args):
     if not os.path.isfile(args.project_file):
         error_project_not_found(args.project_file)
 
-    project = cryproject.load(args.project_file)
-    if project is None:
+    project = cryproject.CryProject()
+    try:
+        project.load(args.project_file)
+    except Exception:
         error_project_json_decode(args.project_file)
 
     tool_path = os.path.join(get_engine_path(), 'Tools/rc/rc.exe')
     if not os.path.isfile(tool_path):
         error_engine_tool_not_found(tool_path)
 
-    job_path = os.path.join(get_engine_path(), 'Tools/cryassets/rcjob_cryassets.xml')
+    job_path = os.path.join(
+        get_engine_path(), 'Tools/cryassets/rcjob_cryassets.xml')
     if not os.path.isfile(job_path):
         error_engine_tool_not_found(job_path)
 
     project_path = os.path.dirname(os.path.abspath(args.project_file))
-    asset_dir = cryproject.asset_dir(project)
+    asset_dir = project.asset_dir()
     asset_path = os.path.normpath(os.path.join(project_path, asset_dir))
 
     subcmd = (
@@ -735,11 +885,16 @@ def cmd_metagen(args):
     print_subprocess(subcmd)
     subprocess.Popen(subcmd)
 
-#--- MAIN ---
+# --- MAIN ---
+
+
 def main():
     parser = argparse.ArgumentParser()
-    parser.add_argument('--platform', default='win_x64', choices=('win_x86', 'win_x64'))
-    parser.add_argument('--config', default='RelWithDebInfo', choices=('Debug', 'Release', 'RelWithDebInfo', 'MinSizeRel'))
+    parser.add_argument('--platform', default='win_x64',
+                        choices=('win_x86', 'win_x64'))
+    parser.add_argument('--config', default='RelWithDebInfo',
+                        choices=('Debug', 'Release', 'RelWithDebInfo',
+                                 'MinSizeRel'))
 
     subparsers = parser.add_subparsers(dest='command')
     subparsers.required = True
@@ -755,12 +910,14 @@ def main():
 
     parser_engine_gen = subparsers.add_parser('engine_gen')
     parser_engine_gen.add_argument('engine_file')
-    parser_engine_gen.add_argument('--buildmachine', action='store_true', default=False)
+    parser_engine_gen.add_argument(
+        '--buildmachine', action='store_true', default=False)
     parser_engine_gen.set_defaults(func=cmd_engine_gen)
 
     parser_projgen = subparsers.add_parser('projgen')
     parser_projgen.add_argument('project_file')
-    parser_projgen.add_argument('--buildmachine', action='store_true', default=False)
+    parser_projgen.add_argument(
+        '--buildmachine', action='store_true', default=False)
     parser_projgen.set_defaults(func=cmd_projgen)
 
     parser_projgen = subparsers.add_parser('cmake-gui')
@@ -787,13 +944,13 @@ def main():
     parser_package.add_argument('project_file')
     parser_package.set_defaults(func=cmd_package)
 
-
     parser_edit = subparsers.add_parser('metagen')
     parser_edit.add_argument('project_file')
     parser_edit.set_defaults(func=cmd_metagen)
 
     args = parser.parse_args()
     args.func(args)
+
 
 if __name__ == '__main__':
     main()

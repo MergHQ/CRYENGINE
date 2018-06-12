@@ -1112,8 +1112,8 @@ void CVolumetricFogStage::GenerateLightList()
 			lightShadeInfo.resMipClamp0 = 0;
 			lightShadeInfo.resMipClamp1 = 0;
 			lightShadeInfo.shadowParams = Vec2(0, 0);
-			lightShadeInfo.stencilID0 = renderLight.m_nStencilRef[0] + lightShadeInfo.stencilBias;
-			lightShadeInfo.stencilID1 = renderLight.m_nStencilRef[1] + lightShadeInfo.stencilBias;
+			lightShadeInfo.stencilID0 = renderLight.m_nStencilRef[0];
+			lightShadeInfo.stencilID1 = renderLight.m_nStencilRef[1];
 
 			// Environment probes
 			if (lightListIdx == 0)

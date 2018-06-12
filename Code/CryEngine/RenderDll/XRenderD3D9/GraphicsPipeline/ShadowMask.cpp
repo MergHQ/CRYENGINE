@@ -264,7 +264,7 @@ void CShadowMaskStage::Prepare()
 
 	// Prepare primitives
 	const EShaderQuality shaderQuality = rd->m_cEF.m_ShaderProfiles[eST_Shadow].GetShaderQuality();
-	int firstUnusedStencilValue = 1; // cannot use stencil ref 0 here
+	int firstUnusedStencilValue = rd->m_nStencilMaskRef;
 
 	if (CRendererCVars::CV_r_ShadowsMask == 1 || CRendererCVars::CV_r_ShadowsMask == 2)
 	{
@@ -291,7 +291,9 @@ void CShadowMaskStage::Prepare()
 			rtFlagsByQuality[shaderQuality]);
 	}
 
-	rd->m_nStencilMaskRef = firstUnusedStencilValue;
+	CRY_ASSERT(rd->m_nStencilMaskRef == STENCIL_VALUE_OUTDOORS+1);
+	CRY_ASSERT(rd->m_nStencilMaskRef + firstUnusedStencilValue < STENC_MAX_REF);
+	rd->m_nStencilMaskRef += firstUnusedStencilValue;
 
 	// Clear first rendertarget slice and stencil buffer
 	{

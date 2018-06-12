@@ -151,39 +151,7 @@ void CTagPoint::GetLocalBounds(AABB& box)
 	box.max = Vec3(r, r, r);
 }
 
-//////////////////////////////////////////////////////////////////////////
+//////////////////////////////////////////////////////////////////////////}
 
-CNavigationSeedPoint::CNavigationSeedPoint()
-{
-	m_entityClass = "NavigationSeedPoint";
-}
 
-void CNavigationSeedPoint::Display(SDisplayContext& dc)
-{
-	DrawDefault(dc);
-}
-
-int CNavigationSeedPoint::MouseCreateCallback(IDisplayViewport* view, EMouseEvent event, CPoint& point, int flags)
-{
-	const int retValue = __super::MouseCreateCallback(view, event, point, flags);
-
-	if (event == eMouseLDown)
-	{
-		GetIEditorImpl()->GetAI()->CalculateNavigationAccessibility();
-	}
-
-	return retValue;
-}
-
-void CNavigationSeedPoint::Done()
-{
-	__super::Done();
-	GetIEditorImpl()->GetAI()->CalculateNavigationAccessibility();
-}
-
-void CNavigationSeedPoint::SetModified(bool boModifiedTransformOnly, bool bNotifyObjectManager)
-{
-	__super::SetModified(boModifiedTransformOnly, bNotifyObjectManager);
-	GetIEditorImpl()->GetAI()->CalculateNavigationAccessibility();
-}
 

@@ -84,7 +84,7 @@ void CCSharpEditorPlugin::SetDefaultTextEditor()
 
 	QProcess process;
 	process.start(szVSWherePath, QStringList() << "-format" << "value" << "-property" << "installationPath");
-	if(!process.waitForStarted())
+	if (!process.waitForStarted())
 	{
 		CryLog("Unable to detect installed versions of Visual Studio because vswhere.exe could not be started.");
 		return;
@@ -97,7 +97,7 @@ void CCSharpEditorPlugin::SetDefaultTextEditor()
 
 	QByteArray qtOutput = process.readAllStandardOutput();
 	string output = qtOutput.toStdString().c_str();
-	
+
 	string installationPath;
 	bool exists = false;
 	int pos = 0;
@@ -111,7 +111,7 @@ void CCSharpEditorPlugin::SetDefaultTextEditor()
 			break;
 		}
 	}
-	
+
 	if (exists && !installationPath.IsEmpty())
 	{
 		gEditorFilePreferences.textEditorCSharp = string().Format("\"%s\"", installationPath);
@@ -128,34 +128,39 @@ void CCSharpEditorPlugin::OnFileChange(const char* szFilename, EChangeType type)
 	switch (type)
 	{
 	case IFileChangeListener::eChangeType_Created:
-	{
-		// If a file was deleted and created at the same time, remove it from the changed list. It's probably only modified.
-		// Otherwise add it to the changed-files list, because the solution needs to be generated again.
-		if (!stl::find_and_erase(m_changedFiles, szFilename))
 		{
-			m_changedFiles.emplace_back(szFilename);
+			// If a file was deleted and created at the same time, remove it from the changed list. It's probably only modified.
+			// Otherwise add it to the changed-files list, because the solution needs to be generated again.
+			if (!stl::find_and_erase(m_changedFiles, szFilename))
+			{
+				m_changedFiles.emplace_back(szFilename);
+			}
+			m_reloadPlugins = true;
+			break;
 		}
-		m_reloadPlugins = true;
-		break;
-	}
 
 	case IFileChangeListener::eChangeType_RenamedNewName:
+		{
+			// If a file was deleted/renamed and created again remove it from the changed list. It's probably only modified.
+			stl::find_and_erase(m_changedFiles, szFilename);
+			m_reloadPlugins = true;
+			break;
+		}
+
 	case IFileChangeListener::eChangeType_Modified:
-	{
-		// If a file was deleted and created again remove it from the changed list. It's probably only modified.
-		stl::find_and_erase(m_changedFiles, szFilename);
-		m_reloadPlugins = true;
-		break;
-	}
+		{
+			m_reloadPlugins = true;
+			break;
+		}
 
 	case IFileChangeListener::eChangeType_RenamedOldName:
 	case IFileChangeListener::eChangeType_Deleted:
-	{
-		m_changedFiles.emplace_back(szFilename);
-		m_reloadPlugins = true;
-		break;
-	}
-	
+		{
+			m_changedFiles.emplace_back(szFilename);
+			m_reloadPlugins = true;
+			break;
+		}
+
 	case IFileChangeListener::eChangeType_Unknown:
 	default:
 		break;
@@ -165,7 +170,7 @@ void CCSharpEditorPlugin::OnFileChange(const char* szFilename, EChangeType type)
 void CCSharpEditorPlugin::OnCompileFinished(const char* szCompileMessage)
 {
 	m_compileMessage = szCompileMessage;
-	
+
 	for (CSharpMessageListeners::Notifier notifier(m_messageListeners); notifier.IsValid(); notifier.Next())
 	{
 		notifier->OnMessagesUpdated(m_compileMessage);
@@ -281,7 +286,7 @@ void CCSharpEditorPlugin::OnEditorNotifyEvent(EEditorNotifyEvent aEventId)
 			m_initialized = true;
 			SetDefaultTextEditor();
 		}
-		
+
 		// If a compile message was sent during compilation, open when Editor is fully initialized
 		if (!m_compileMessage.empty())
 		{
@@ -346,7 +351,7 @@ void CCSharpEditorPlugin::RegenerateSolution() const
 
 	string pluginReferences;
 	uint16 pluginCount = pProjectManager->GetPluginCount();
-	for(uint16 i = 0; i < pluginCount; ++i)
+	for (uint16 i = 0; i < pluginCount; ++i)
 	{
 		Cry::IPluginManager::EType type;
 		DynArray<EPlatform> platforms;
@@ -374,9 +379,9 @@ void CCSharpEditorPlugin::RegenerateSolution() const
 		{
 			string pluginName = PathUtil::GetFileName(pluginPath);
 			pluginReferences += "    <Reference Include=\"" + pluginName + "\">\n"
-				"      <HintPath>" + pluginPath + "</HintPath>\n"
-				"      <Private>False</Private>\n"
-				"    </Reference>\n";
+			                                                               "      <HintPath>" + pluginPath + "</HintPath>\n"
+			                                                                                                 "      <Private>False</Private>\n"
+			                                                                                                 "    </Reference>\n";
 		}
 	}
 
@@ -395,41 +400,41 @@ void CCSharpEditorPlugin::RegenerateSolution() const
 		{
 			if (!strcmp(szAlias, "csproject_guid"))
 			{
-				char buff[40];
-				guid.ToString(buff);
+			  char buff[40];
+			  guid.ToString(buff);
 
-				return buff;
+			  return buff;
 			}
 			else if (!strcmp(szAlias, "project_name"))
 			{
-				return projectName;
+			  return projectName;
 			}
 			else if (!strcmp(szAlias, "assembly_name"))
 			{
-				return assemblyName;
+			  return assemblyName;
 			}
 			else if (!strcmp(szAlias, "engine_bin_directory"))
 			{
-				char szEngineExecutableFolder[_MAX_PATH];
-				CryGetExecutableFolder(CRY_ARRAY_COUNT(szEngineExecutableFolder), szEngineExecutableFolder);
+			  char szEngineExecutableFolder[_MAX_PATH];
+			  CryGetExecutableFolder(CRY_ARRAY_COUNT(szEngineExecutableFolder), szEngineExecutableFolder);
 
-				return szEngineExecutableFolder;
+			  return szEngineExecutableFolder;
 			}
 			else if (!strcmp(szAlias, "project_file"))
 			{
-				return projectFilePath;
+			  return projectFilePath;
 			}
 			else if (!strcmp(szAlias, "output_path"))
 			{
-				return PathUtil::Make(szDirectory, "bin");
+			  return PathUtil::Make(szDirectory, "bin");
 			}
 			else if (!strcmp(szAlias, "includes"))
 			{
-				return includes;
+			  return includes;
 			}
 			else if (!strcmp(szAlias, "managed_plugin_references"))
 			{
-				return pluginReferences;
+			  return pluginReferences;
 			}
 
 			CRY_ASSERT_MESSAGE(false, "Unhandled alias!");
@@ -447,20 +452,20 @@ void CCSharpEditorPlugin::RegenerateSolution() const
 			{
 				if (!strcmp(szAlias, "project_name"))
 				{
-					return csProjName;
+				  return csProjName;
 				}
-				else  if (!strcmp(szAlias, "csproject_name"))
+				else if (!strcmp(szAlias, "csproject_name"))
 				{
-					return csProjFilename;
+				  return csProjFilename;
 				}
 				else if (!strcmp(szAlias, "csproject_guid"))
 				{
-					return guid.ToString().MakeUpper();
+				  return guid.ToString().MakeUpper();
 				}
 				else if (!strcmp(szAlias, "solution_guid"))
 				{
-					// Normally the solution guid would be a GUID that is deterministic but unique to the build tree.
-					return "0C7CC5CD-410D-443B-8223-108F849EAA5C";
+				  // Normally the solution guid would be a GUID that is deterministic but unique to the build tree.
+				  return "0C7CC5CD-410D-443B-8223-108F849EAA5C";
 				}
 
 				CRY_ASSERT_MESSAGE(false, "Unhandled alias!");
@@ -491,7 +496,8 @@ void CCSharpEditorPlugin::FindSourceFilesInDirectoryRecursive(const char* szDire
 		do
 		{
 			sourceFiles.emplace_back(PathUtil::Make(szDirectory, fd.name));
-		} while (gEnv->pCryPak->FindNext(handle, &fd) >= 0);
+		}
+		while (gEnv->pCryPak->FindNext(handle, &fd) >= 0);
 
 		gEnv->pCryPak->FindClose(handle);
 	}
@@ -513,7 +519,8 @@ void CCSharpEditorPlugin::FindSourceFilesInDirectoryRecursive(const char* szDire
 					FindSourceFilesInDirectoryRecursive(sDirectory, szExtension, sourceFiles);
 				}
 			}
-		} while (gEnv->pCryPak->FindNext(handle, &fd) >= 0);
+		}
+		while (gEnv->pCryPak->FindNext(handle, &fd) >= 0);
 
 		gEnv->pCryPak->FindClose(handle);
 	}
@@ -701,7 +708,7 @@ bool CCSharpEditorPlugin::OpenFileInTextEditor(const string& filePath, const int
 {
 	string textEditor = gEditorFilePreferences.textEditorCSharp;
 	string commandFormat = "";
-	
+
 	if (textEditor.find("XamarinStudio.exe") != string::npos)
 	{
 		commandFormat.Format(";%i;0", line);
@@ -791,6 +798,5 @@ bool CCSharpEditorPlugin::OpenCSharpFileSafe(const string& filePath) const
 	}
 	return false;
 }
-
 REGISTER_PLUGIN(CCSharpEditorPlugin)
 

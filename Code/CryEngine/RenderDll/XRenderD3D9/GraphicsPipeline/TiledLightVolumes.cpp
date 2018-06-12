@@ -67,7 +67,6 @@ constexpr float CTiledLightVolumesStage::AtlasItem::mipFactorMinSize;
 
 constexpr uint16 CTiledLightVolumesStage::STiledLightShadeInfo::resNoIndex;
 constexpr uint8  CTiledLightVolumesStage::STiledLightShadeInfo::resMipLimit;
-constexpr uint16 CTiledLightVolumesStage::STiledLightShadeInfo::stencilBias;
 
 void CTiledLightVolumesStage::Init()
 {
@@ -809,8 +808,8 @@ void CTiledLightVolumesStage::GenerateLightList()
 			lightShadeInfo.resMipClamp0 = 0;
 			lightShadeInfo.resMipClamp1 = 0;
 			lightShadeInfo.shadowParams = Vec2(0, 0);
-			lightShadeInfo.stencilID0 = renderLight.m_nStencilRef[0] + lightShadeInfo.stencilBias;
-			lightShadeInfo.stencilID1 = renderLight.m_nStencilRef[1] + lightShadeInfo.stencilBias;
+			lightShadeInfo.stencilID0 = renderLight.m_nStencilRef[0];
+			lightShadeInfo.stencilID1 = renderLight.m_nStencilRef[1];
 
 			// Environment probes
 			if (lightListIdx == 0)
@@ -1065,7 +1064,7 @@ void CTiledLightVolumesStage::GenerateLightList()
 			lightShadeInfo.attenuationParams = Vec2(TiledShading_SunSourceDiameter, TiledShading_SunSourceDiameter);
 			lightShadeInfo.shadowParams = Vec2(1, 0);
 			lightShadeInfo.shadowMaskIndex = 0;
-			lightShadeInfo.stencilID0 = lightShadeInfo.stencilID1 = 0;
+			lightShadeInfo.stencilID0 = lightShadeInfo.stencilID1 = STENCIL_VALUE_OUTDOORS;
 
 			Vec3 sunColor;
 			gEnv->p3DEngine->GetGlobalParameter(E3DPARAM_SUN_COLOR, sunColor);

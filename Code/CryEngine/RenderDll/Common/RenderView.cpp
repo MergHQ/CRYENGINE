@@ -686,7 +686,7 @@ uint8 CRenderView::AddClipVolume(const IClipVolume* pClipVolume)
 		m_clipVolumes.push_back(SDeferredClipVolume());
 
 		auto& volume = m_clipVolumes.back();
-		volume.nStencilRef = uint8(m_clipVolumes.size()); // the first clip volume ID is reserved for outdoors
+		volume.nStencilRef = uint8(m_clipVolumes.size()); // the first clip volume ID is reserved for outdoors. See STENCIL_VALUE_OUTDOORS
 		volume.nFlags = pClipVolume->GetClipVolumeFlags();
 		volume.mAABB = pClipVolume->GetClipVolumeBBox();
 		pClipVolume->GetClipVolumeMesh(volume.m_pRenderMesh, volume.mWorldTM);

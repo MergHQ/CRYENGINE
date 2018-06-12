@@ -183,6 +183,45 @@ void IslandConnections::RemoveOffMeshLinkConnection(const MNM::OffMeshLinkID off
 	m_offMeshLinksMap.erase(findOffmeshIt);
 }
 
+void IslandConnections::GetConnectedIslands(const MNM::GlobalIslandID seedIslandId, ConnectedIslandsArray& connectedIslandsArray) const
+{
+	const NavigationMeshID meshId(seedIslandId.GetNavigationMeshIDAsUint32());
+	TIslandNodeStatesArray& islandNodeStates = PrepareIslandNodeStatesArray(seedIslandId);
+
+	ConnectedIslandsArray& openList = connectedIslandsArray;
+	openList.clear();
+	openList.push_back(seedIslandId.GetStaticIslandID());
+
+	size_t currentIdx = 0;
+	while (currentIdx < openList.size())
+	{
+		const MNM::StaticIslandID currentStaticID = openList[currentIdx++];
+		const MNM::GlobalIslandID currentGlobalID(meshId, currentStaticID);
+		islandNodeStates[currentStaticID] = EIslandNodeState::Closed;
+
+		TIslandConnectionsMap::const_iterator currentIslandIt = m_islandConnections.find(currentGlobalID);
+		if (currentIslandIt == m_islandConnections.end())
+		{
+			continue;
+		}
+
+		const SIslandNode& islandNode = currentIslandIt->second;
+
+		for (const SIslandLink& link : islandNode.links)
+		{
+			if (!link.IsOutgoing())
+				continue;
+
+			if (islandNodeStates[link.toIsland] != EIslandNodeState::None)
+				continue;
+
+			islandNodeStates[link.toIsland] = EIslandNodeState::OpenedForward;
+
+			openList.push_back(link.toIsland);
+		}
+	}
+}
+
 struct SAcceptAllIslandsFilter
 {
 	inline bool PassFilter(const MNM::AreaAnnotation&) const { return true; }
@@ -390,7 +429,7 @@ IslandConnections::TIslandNodeStatesArray& IslandConnections::PrepareIslandNodeS
 	{
 		m_islandNodeStatesArrayCache.resize(maxIslandIdx);
 	}
-	std::fill(m_islandNodeStatesArrayCache.begin(), m_islandNodeStatesArrayCache.begin() + maxIslandIdx - 1, EIslandNodeState::None);
+	std::fill(m_islandNodeStatesArrayCache.begin(), m_islandNodeStatesArrayCache.begin() + maxIslandIdx, EIslandNodeState::None);
 
 	return m_islandNodeStatesArrayCache;
 }
@@ -400,6 +439,28 @@ void IslandConnections::Reset()
 	m_islandConnections.clear();
 	m_offMeshLinksMap.clear();
 	m_islandNodeStatesArrayCache.clear();
+}
+
+void IslandConnections::ResetForMesh(const NavigationMeshID meshId)
+{
+	auto it = m_islandConnections.begin();
+	while (it != m_islandConnections.end())
+	{
+		if (it->first.GetNavigationMeshIDAsUint32() != meshId)
+		{
+			it++;
+			continue;
+		}
+		const SIslandNode& node = it->second;
+		for (const SIslandLink& link : node.links)
+		{
+			if (link.offMeshLinkID != MNM::Constants::eOffMeshLinks_InvalidOffMeshLinkID)
+			{
+				m_offMeshLinksMap.erase(link.offMeshLinkID);
+			}
+		}
+		it = m_islandConnections.erase(it);
+	}
 }
 
 #ifdef CRYAISYSTEM_DEBUG

@@ -17,6 +17,14 @@ class CIslands
 public:
 	typedef uint64 TwoStaticIslandsIDs;
 
+	enum class ESeedConnectivityState : uint8
+	{
+		NotUpdated,
+		Accessible,
+		Inaccessible,
+		Count,
+	};
+
 	CIslands();
 	
 	void           ComputeStaticIslandsAndConnections(CNavMesh& navMesh, const NavigationMeshID meshID, const OffMeshNavigationManager& offMeshNavigationManager, MNM::IslandConnections& islandConnections);
@@ -28,6 +36,10 @@ public:
 
 	void           ResetConnectedIslandsIDs(CNavMesh& navMesh);
 
+	void           SetSeedConnectivityState(const StaticIslandID* pIslandIds, const size_t islandsCount, const ESeedConnectivityState state);
+	void           ResetSeedConnectivityStates(const ESeedConnectivityState state);
+	ESeedConnectivityState GetSeedConnectivityState(const StaticIslandID islandId) const;
+
 private:
 
 	struct SIsland
@@ -36,6 +48,7 @@ private:
 			: id(0)
 			, area(0.f)
 			, trianglesCount(0)
+			, seedConnectivityState(ESeedConnectivityState::NotUpdated)
 		{
 		}
 		SIsland(StaticIslandID id, AreaAnnotation annotation)
@@ -43,12 +56,14 @@ private:
 			, annotation(annotation)
 			, area(0.f)
 			, trianglesCount(0)
+			, seedConnectivityState(ESeedConnectivityState::NotUpdated)
 		{}
 
-		StaticIslandID id;
-		AreaAnnotation annotation;
-		uint32         trianglesCount;
-		float          area;
+		StaticIslandID         id;
+		AreaAnnotation         annotation;
+		uint32                 trianglesCount;
+		float                  area;
+		ESeedConnectivityState seedConnectivityState;
 	};
 
 	struct SConnectionRequests

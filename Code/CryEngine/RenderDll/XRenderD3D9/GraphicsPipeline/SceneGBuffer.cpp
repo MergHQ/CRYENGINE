@@ -491,19 +491,19 @@ void CSceneGBufferStage::Execute()
 	m_overlayPass.SetViewport(rViewport);
 
 	{
-		// Clear depth (stencil initialized to 1 - 0 is reserved for MSAAed samples)
+		// Clear depth (stencil initialized to STENCIL_VALUE_OUTDOORS)
 		bool bReverseDepth = true;
 
 		if (CVrProjectionManager::Instance()->GetProjectionType() == CVrProjectionManager::eVrProjection_LensMatched)
 		{
 			// use inverse depth here
 			bReverseDepth = !bReverseDepth;
-			CClearSurfacePass::Execute(pZTexture, CLEAR_ZBUFFER | CLEAR_STENCIL, bReverseDepth ? 0.0f : 1.0f, 1);
+			CClearSurfacePass::Execute(pZTexture, CLEAR_ZBUFFER | CLEAR_STENCIL, bReverseDepth ? 0.0f : 1.0f, STENCIL_VALUE_OUTDOORS);
 			CVrProjectionManager::Instance()->ExecuteLensMatchedOctagon(pRenderView->GetDepthTarget());
 		}
 		else
 		{
-			CClearSurfacePass::Execute(pZTexture, CLEAR_ZBUFFER | CLEAR_STENCIL, bReverseDepth ? 0.0f : 1.0f, 1);
+			CClearSurfacePass::Execute(pZTexture, CLEAR_ZBUFFER | CLEAR_STENCIL, bReverseDepth ? 0.0f : 1.0f, STENCIL_VALUE_OUTDOORS);
 		}
 
 		// Clear velocity target

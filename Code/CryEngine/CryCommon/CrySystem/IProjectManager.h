@@ -14,6 +14,8 @@ struct IProjectManager
 	virtual const char*  GetCurrentProjectName() const = 0;
 	//! Gets the globally unique identifier for this project, used to uniquely identify certain assets with projects
 	virtual CryGUID      GetCurrentProjectGUID() const = 0;
+	//! Gets the identifier for the engine used by this project
+	virtual const char*  GetCurrentEngineID() const = 0;
 
 	//! Gets the absolute path to the root of the project directory, where the .cryproject resides.
 	//! \return Path without trailing separator.

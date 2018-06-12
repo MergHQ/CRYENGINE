@@ -50,6 +50,9 @@ public:
 	std::vector<CAsset*> GetSelectedAssets();
 
 	void SelectAsset(const CAsset& asset);
+	void SelectAsset(const string& path);
+	void SetOverwriteMode(OverwriteMode mode);
+	const string GetSelectedAssetPath() const { return m_assetPath; }
 
 	static CAsset* OpenSingleAssetForTypes(const std::vector<string>& assetTypeNames);
 	static std::vector<CAsset*> OpenMultipleAssetsForTypes(const std::vector<string>& assetTypeNames);
@@ -59,9 +62,6 @@ public:
 private:
 	void OnAccept();
 	void OnAcceptSave();
-
-	void SetOverwriteMode(OverwriteMode mode);
-
 	bool IsReadOnlyMode() const;
 
 private:

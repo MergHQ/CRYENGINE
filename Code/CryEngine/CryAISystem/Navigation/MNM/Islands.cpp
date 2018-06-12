@@ -79,6 +79,29 @@ void CIslands::ResetConnectedIslandsIDs(CNavMesh& navMesh)
 	m_islandsFreeIndices.clear();
 }
 
+void CIslands::SetSeedConnectivityState(const StaticIslandID* pIslandIds, const size_t islandsCount, const ESeedConnectivityState state)
+{
+	for (size_t i = 0; i < islandsCount; ++i)
+	{
+		const size_t islandIdx = GetIslandIndex(pIslandIds[i]);
+		m_islands[islandIdx].seedConnectivityState = state;
+	}
+}
+
+CIslands::ESeedConnectivityState CIslands::GetSeedConnectivityState(const StaticIslandID islandId) const
+{
+	const size_t islandIdx = GetIslandIndex(islandId);
+	return m_islands[islandIdx].seedConnectivityState;
+}
+
+void CIslands::ResetSeedConnectivityStates(const ESeedConnectivityState state)
+{
+	for (SIsland& island : m_islands)
+	{
+		island.seedConnectivityState = state;
+	}
+}
+
 void CIslands::FloodFillOnTriangles(CNavMesh& navMesh, const MNM::TriangleID sourceTriangleId, const size_t reserveCount, 
 	std::function<bool(const STile& prevTile, const Tile::STriangle& prevTriangle, const STile& nextTile, Tile::STriangle& nextTriangle)> executeFunc)
 {

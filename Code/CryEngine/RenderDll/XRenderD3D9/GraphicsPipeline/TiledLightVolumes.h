@@ -148,7 +148,6 @@ private:
 	{
 		static constexpr uint16 resNoIndex = 0xFFFF;
 		static constexpr uint8  resMipLimit = 0x00;
-		static constexpr uint16 stencilBias = 1;
 
 		uint32   lightType;
 		uint16   resIndex;

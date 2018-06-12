@@ -11,8 +11,9 @@ class CAnnotationsLibrary : public IAnnotationsLibrary
 {
 public:
 	CAnnotationsLibrary()
-		: m_defaultColor(Col_Azure, 0.65f)
-	{}
+	{
+		Clear();
+	}
 
 	// IAnnotationsLibrary
 	virtual NavigationAreaTypeID GetAreaTypeID(const char* szName) const override;
@@ -40,12 +41,15 @@ public:
 
 	void                 SetDefaultAreaColor(const ColorB& color) { m_defaultColor = color; }
 	bool                 GetFirstFlagColor(const MNM::AreaAnnotation::value_type flags, ColorB& color) const;
+
+	const SAreaFlag&     GetInaccessibleAreaFlag() const { return m_areaFlags[m_inacessibleAreaFlagIdx]; }
 private:
-	std::vector<MNM::SAreaType> m_areaTypes;
+	std::vector<SAreaType> m_areaTypes;
 	std::vector<SAreaFlag> m_areaFlags;
 
+	size_t m_inacessibleAreaFlagIdx;
+
 	std::unordered_map<MNM::AreaAnnotation::value_type, ColorB> m_areasColorMap;
-	std::unordered_map<MNM::AreaAnnotation::value_type, ColorB> m_flagsColorMap;
 	ColorB m_defaultColor;
 };
 

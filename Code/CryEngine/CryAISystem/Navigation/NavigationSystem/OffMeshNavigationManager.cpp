@@ -151,6 +151,7 @@ bool OffMeshNavigationManager::AddCustomLink(const NavigationMeshID& meshID, MNM
 	m_links[linkID] = SLinkInfo(meshID, startTriangleID, endTriangleID, std::move(pOffMeshLink));
 
 	gAIEnv.pNavigationSystem->AddOffMeshLinkIslandConnectionsBetweenTriangles(meshID, startTriangleID, endTriangleID, linkID);
+	gAIEnv.pNavigationSystem->RequestUpdateMeshAccessibility(meshID);
 
 	if (pOutStartTriangleID)
 	{
@@ -182,6 +183,7 @@ void OffMeshNavigationManager::RemoveCustomLink(const MNM::OffMeshLinkID& linkID
 		offMeshNavigation.RemoveLink(mesh, linkInfo.startTriangleID, linkID);
 
 		gAIEnv.pNavigationSystem->RemoveOffMeshLinkIslandConnection(linkID);
+		gAIEnv.pNavigationSystem->RequestUpdateMeshAccessibility(linkInfo.meshID);
 
 		// Remove cached data
 		m_links.erase(linkIt);

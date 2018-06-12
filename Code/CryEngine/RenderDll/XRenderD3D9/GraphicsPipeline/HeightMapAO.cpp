@@ -157,9 +157,7 @@ void CHeightMapAOStage::Execute()
 			m_passSmoothing.BeginConstantUpdate();
 
 			m_passSmoothing.SetConstant(namePixelOffset, Vec4 (0, 0, (float)pDestRT->GetWidth(), (float)pDestRT->GetHeight()), eHWSC_Vertex);
-			m_passSmoothing.SetConstantArray(nameClipVolumeData, pClipVolumeParams, 
-				min(static_cast<uint32>(CClipVolumesStage::MaxDeferredClipVolumes), static_cast<uint32>(clipVolumeCount + CClipVolumesStage::VisAreasOutdoorStencilOffset)), eHWSC_Pixel);
-
+			m_passSmoothing.SetConstantArray(nameClipVolumeData, pClipVolumeParams, CClipVolumesStage::MaxDeferredClipVolumes);
 			m_passSmoothing.Execute();
 		}
 	}

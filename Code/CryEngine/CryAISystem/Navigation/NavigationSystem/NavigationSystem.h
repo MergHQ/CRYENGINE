@@ -279,9 +279,6 @@ struct NavigationMesh
 	typedef std::vector<NavigationVolumeID> Markups;
 	Markups markups;
 
-	typedef std::unordered_map<NavigationVolumeID, MNM::SMarkupVolumeData> MarkupsData;
-	MarkupsData markupsData;
-
 #ifdef SW_NAVMESH_USE_GUID
 	NavigationVolumeGUID boundaryGUID;
 #endif
@@ -556,10 +553,18 @@ public:
 	virtual bool                             IsInUse() const override;
 	virtual void                             CalculateAccessibility() override;
 
+	void                                     RequestUpdateMeshAccessibility(const NavigationMeshID meshId);
+	void                                     RequestUpdateAccessibilityAfterSeedChange(const Vec3& oldPosition, const Vec3& newPosition);
+	void                                     UpdatePendingAccessibilityRequests();
+	void                                     RemoveAllTrianglesByFlags(const MNM::AreaAnnotation::value_type flags);
+
 	void                                     OffsetBoundingVolume(const Vec3& additionalOffset, const NavigationVolumeID volumeId);
 	void                                     OffsetAllMeshes(const Vec3& additionalOffset);
 
-	void                                     ComputeIslands();
+	void                                     ComputeAllIslands();
+	void                                     ComputeIslandsForMeshes(const NavigationMeshID* pUpdatedMeshes, const size_t count);
+	void                                     ComputeMeshesAccessibility(const NavigationMeshID* pUpdatedMeshes, const size_t count);
+	void                                     OnMeshesUpdateCompleted(const NavigationMeshID* pUpdatedMeshes, const size_t count);
 
 	void                                     AddOffMeshLinkIslandConnectionsBetweenTriangles(const NavigationMeshID& meshID, const MNM::TriangleID startingTriangleID, const MNM::TriangleID endingTriangleID, const MNM::OffMeshLinkID& linkID);
 	void                                     RemoveOffMeshLinkIslandConnection(const MNM::OffMeshLinkID offMeshLinkId);
@@ -694,11 +699,6 @@ private:
 	void UpdateAllListener(const ENavigationEvent event);
 	void ApplyAnnotationChanges();
 
-#if MNM_USE_EXPORT_INFORMATION
-	void ClearAllAccessibility(uint8 resetValue);
-	void ComputeAccessibility(const Vec3& debugLocation, NavigationAgentTypeID agentTypeId = NavigationAgentTypeID(0));
-#endif
-
 	void GatherNavigationVolumesToSave(std::vector<NavigationVolumeID>& usedVolumes) const;
 
 	bool GrowMarkupsIfNeeded();
@@ -736,6 +736,12 @@ private:
 	MarkupVolumes                                   m_markupVolumes;
 	id_map<uint32, MNM::SMarkupVolumeData>          m_markupsData;
 	std::unordered_map<NavigationVolumeID, MNM::AreaAnnotation> m_markupAnnotationChangesToApply;
+	
+	// vector of meshes ids, that were recently updated with newly generated tile
+	std::vector<NavigationMeshID> m_recentlyUpdatedMeshIds;
+
+	// vector of meshes ids, that were requested to updated their accessibility
+	std::vector<NavigationMeshID> m_accessibilityUpdateRequestForMeshIds;
 
 #ifdef SW_NAVMESH_USE_GUID
 	typedef std::map<NavigationMeshGUID, NavigationMeshID> MeshMap;

@@ -1,56 +1,69 @@
 #!/usr/bin/env python3
 
+import cryplugin
 import json
-import os.path
 
-def load (path):
-    try:
-        file= open (path, 'r')
-        proj= json.loads (file.read())
+
+class CryProject:
+    def __init__(self):
+        self.data = {}
+        self.path = ''
+
+    def load(self, path):
+        file = open(path, 'r')
+        self.data = json.loads(file.read())
         file.close()
-    except ValueError:
-        proj= None
 
-    return proj
+        self.path = path
 
-def save (self, path):
-    file= open (path, 'w')
-    file.write (json.dumps (self, indent=4, sort_keys=True))
-    file.close()
-    
-def is_valid (self):
-    return True
+    def save(self, path):
+        file = open(path, 'w')
+        file.write(json.dumps(self.data, indent=4, sort_keys=True))
+        file.close()
 
-def engine_id(self):
-    return self.get ('require', {}).get ('engine')
+    def asset_dir(self):
+        return self.data.get('content', {}).get('assets', [None])[0]
 
-    
-def shared_dir(self, platform, config):
-    lib = libs_list(self)[0]
-    if lib is None:
-        return os.path.join ("bin", platform)
+    def cmakelists_dir(self):
+        return self.data.get('content', {}).get('code', [None])[0]
 
-    return os.path.dirname (lib.get('shared', {}).get (platform))
+    def engine_id(self):
+        return self.data.get('require', {}).get('engine')
 
-def asset_dir(self):
-    return self['content'].get ('assets', [None])[0]
+    def is_managed(self):
+        for plugin in self.plugins_list():
+            if 'managed' in plugin.get('type', '').lower():
+                return True
 
-def cmakelists_dir(self):
-    return self['content'].get ('code', [None])[0]
+            if plugin.get('guid') is not None:
+                plugin_file = cryplugin.find(
+                    self.data.get(
+                        'require', []).get('engine', '.'), plugin['guid'])
+                _plugin = cryplugin.CryPlugin()
+                try:
+                    _plugin.load(plugin_file)
+                except Exception:
+                    print("Unable to read plugin file %s" % (plugin_file))
+                    raise
 
-def require_list(self):
-    return self.get ('require', [])
+                return not _plugin.isNative()
 
-def plugins_list(self):
-    return self.get ('require', {}).get ('plugins')
+        return False
 
-def libs_list(self):
-    return self['content'].get ('libs', [None])
+    def name(self):
+        return self.data.get('info', {}).get('name')
 
-def is_managed(self):
-    plugins = plugins_list(self)
-    for plugin in plugins:
-        if plugin.get('type') == "EPluginType::Managed":
-            return True
+    def libs_list(self):
+        return self.data.get('content', {}).get('libs')
 
-    return False
+    def plugins_list(self):
+        return self.data.get('require', {}).get('plugins')
+
+    def require_list(self):
+        return self.data.get('require', [])
+
+    def set_engine_id(self, engine_id):
+        self.data['require']['engine'] = engine_id
+
+    def set_plugin_list(self, plugins):
+        self.data['require']['plugins'] = plugins
