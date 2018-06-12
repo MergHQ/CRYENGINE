@@ -594,7 +594,7 @@ public:
 
 	int GetTmpEntList(CPhysicalEntity **&pEntList, int iCaller)	{
 		INT_PTR plist = (INT_PTR)m_threadData[iCaller].pTmpEntList;
-		int is0=iszero(iCaller), isN=iszero(MAX_PHYS_THREADS-iCaller);
+		INT_PTR is0=-iszero(iCaller), isN=-iszero(MAX_PHYS_THREADS-iCaller);
 		plist += (INT_PTR)m_pTmpEntList -plist & is0;
 		plist += (INT_PTR)m_pTmpEntList2-plist & isN;
 		m_threadData[iCaller].pTmpEntList = (CPhysicalEntity**)plist;
