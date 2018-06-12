@@ -57,6 +57,7 @@ public:
 	virtual float      GetMaxViewDist() final;
 
 	virtual void       OnRenderNodeVisible( bool bBecomeVisible ) final;
+	virtual void       OnRenderNodeBecomeVisibleAsync(SRenderNodeTempData* pTempData, const SRenderingPassInfo& passInfo) final { OnRenderNodeVisible(true); }
 
 	virtual void       SetCameraSpacePos(Vec3* pCameraSpacePos) final;
 
