@@ -1812,6 +1812,10 @@ void CHyperGraphDialog::OnObjectEvent(CObjectEvent& eventObj)
 					{
 						CBaseObject* pEntityObject = children[i];
 						CHyperFlowGraph* pFlowGraph = static_cast<CEntityObject*>(pEntityObject)->GetFlowGraph();
+
+						if (!pFlowGraph)
+							continue;
+
 						CString newName;
 						newName.Format("[%s] %s", pObject->GetName(), pEntityObject->GetName());
 						m_graphsTreeCtrl.RenameGraphItem(pFlowGraph->GetHTreeItem(), newName);
