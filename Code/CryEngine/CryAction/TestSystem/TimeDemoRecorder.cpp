@@ -42,7 +42,7 @@
 
 #define TIMEDEMO_MAX_INPUT_EVENTS       16
 #define TIMEDEMO_MAX_GAME_EVENTS        1 // For now...
-#define TIMEDEMO_MAX_DESCRIPTION_LENGTH 64
+#define TIMEDEMO_MAX_DESCRIPTION_LENGTH 128
 
 #define FIXED_TIME_STEP                 (30) // Assume running at 30fps.
 
@@ -373,9 +373,10 @@ void CTimeDemoRecorder::cmd_Play(IConsoleCmdArgs* pArgs)
 void CTimeDemoRecorder::cmd_Stop(IConsoleCmdArgs* pArgs)
 {
 	if (s_pTimeDemoRecorder)
+	{
 		s_pTimeDemoRecorder->Record(false);
-	if (s_pTimeDemoRecorder)
 		s_pTimeDemoRecorder->Play(false);
+	}
 }
 
 //////////////////////////////////////////////////////////////////////////
@@ -604,9 +605,6 @@ std::array<EEntityEvent, 8> g_recordedEntityEvents =
 //////////////////////////////////////////////////////////////////////////
 void CTimeDemoRecorder::Record(bool bEnable)
 {
-	if (bEnable == m_bRecording)
-		return;
-
 	if (bEnable == m_bRecording)
 		return;
 
