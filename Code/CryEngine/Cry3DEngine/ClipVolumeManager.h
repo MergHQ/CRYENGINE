@@ -9,22 +9,18 @@ class CClipVolumeManager : public Cry3DEngineBase
 {
 	struct SClipVolumeInfo
 	{
-		CClipVolume* m_pVolume;
-		int          m_updateFrameId;
-		bool         m_bActive;
+		CClipVolume* m_pVolume         = nullptr;
+		int          m_updateFrameId   = 0;
+		float        m_currentViewDist = std::numeric_limits<float>::max();
+		bool         m_bActive         = false;
 
-		SClipVolumeInfo(CClipVolume* pVolume)
-			: m_pVolume(pVolume)
-			, m_updateFrameId(0)
-			, m_bActive(false)
-		{}
-
+		SClipVolumeInfo(CClipVolume* pVolume) : m_pVolume(pVolume) {}
 		bool operator==(const SClipVolumeInfo& other) const { return m_pVolume == other.m_pVolume; }
 	};
 
 public:
-	static const uint8 InactiveVolumeStencilRef = 0xFD;
-	static const uint8 AffectsEverythingStencilRef = 0xFE;
+	static const uint8 InactiveVolumeStencilRef    = 0xFE;
+	static const uint8 AffectsEverythingStencilRef = 0xFF;
 
 	virtual ~CClipVolumeManager();
 

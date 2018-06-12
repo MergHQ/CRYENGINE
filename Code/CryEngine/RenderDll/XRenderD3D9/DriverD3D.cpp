@@ -1072,7 +1072,7 @@ void CD3D9Renderer::RT_BeginFrame(const SDisplayContextKey& displayContextKey)
 		m_SceneRecurseCount++;
 	}
 
-	m_nStencilMaskRef = 1;
+	m_nStencilMaskRef = STENCIL_VALUE_OUTDOORS + 1;
 
 	//if (!IsRecursiveRenderView())
 	{

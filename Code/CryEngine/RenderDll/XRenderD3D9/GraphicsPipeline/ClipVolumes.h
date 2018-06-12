@@ -14,8 +14,7 @@
 class CClipVolumesStage : public CGraphicsPipelineStage
 {
 public:
-	static const uint32 MaxDeferredClipVolumes = 64;
-	static const uint32 VisAreasOutdoorStencilOffset = 2; // Note: 2 stencil values reserved for stencil+outdoor fragments
+	static const uint32 MaxDeferredClipVolumes = BIT_STENCIL_INSIDE_CLIPVOLUME - 1;
 
 public:
 	CClipVolumesStage();

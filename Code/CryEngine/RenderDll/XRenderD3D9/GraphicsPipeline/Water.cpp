@@ -547,13 +547,11 @@ void CWaterStage::ExecuteDeferredOceanCaustics()
 		const bool bReverseDepth = (viewInfo[0].flags & SRenderViewInfo::eFlags_ReverseDepth) != 0;
 		const int32 gsDepthFunc = bReverseDepth ? GS_DEPTHFUNC_GEQUAL : GS_DEPTHFUNC_LEQUAL;
 
-		// update shared stencil ref value. the code is copied from CD3D9Renderer::FX_StencilCullPass().
 		rd->m_nStencilMaskRef += 1;
 		if (rd->m_nStencilMaskRef > STENC_MAX_REF)
 		{
-			CClearSurfacePass::Execute(pDepthTarget, FRT_CLEAR_STENCIL, Clr_Unused.r, 1);
-
-			rd->m_nStencilMaskRef = 2;
+			CClearSurfacePass::Execute(pDepthTarget, FRT_CLEAR_STENCIL, Clr_Unused.r, 0);
+			rd->m_nStencilMaskRef = 1;
 		}
 
 		stencilRef = rd->m_nStencilMaskRef;
