@@ -1264,11 +1264,11 @@ void ResourceCompiler::LogLine(const IRCLog::EType eType, const char* szText)
 	switch(eType)
 	{
 	case IRCLog::eType_Info:
-		prefix = "   ";
+		prefix = "     ";
 		break;
 
 	case IRCLog::eType_Warning:
-		prefix = "W: ";
+		prefix = "[W]: ";
 		if (!m_warningLogFileName.empty())
 		{
 			additionalLogFileName = m_warningLogFileName.c_str();
@@ -1280,7 +1280,7 @@ void ResourceCompiler::LogLine(const IRCLog::EType eType, const char* szText)
 		break;
 
 	case IRCLog::eType_Error:
-		prefix = "E: ";
+		prefix = "[E]: ";
 		if (!m_errorLogFileName.empty())
 		{
 			additionalLogFileName = m_errorLogFileName.c_str();

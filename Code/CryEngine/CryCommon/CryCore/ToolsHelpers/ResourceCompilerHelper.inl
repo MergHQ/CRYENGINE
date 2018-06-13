@@ -359,24 +359,31 @@ namespace
 
 			// check the first three characters to see if it's a warning or error.
 			bool bHasPrefix;
+
+			typedef SettingsManagerHelpers::CFixedString<char, 5> Prefix;
+
+			static const Prefix infoPrefix("     ");
+			static const Prefix errorPrefix("[E]: ");
+			static const Prefix warningPrefix("[W]: ");
+
 			IResourceCompilerListener::MessageSeverity severity;
-			if ((line[0] == 'E') && (line[1] == ':') && (line[2] == ' '))
+			if (strncmp(line, errorPrefix.c_str(), errorPrefix.length()) == 0)
 			{
 				bHasPrefix = true;
 				severity = IResourceCompilerListener::MessageSeverity_Error;
-				line += 3;  // skip the prefix
+				line += errorPrefix.length();  // skip the prefix
 			}
-			else if ((line[0] == 'W') && (line[1] == ':') && (line[2] == ' '))
+			else if (strncmp(line, warningPrefix.c_str(), warningPrefix.length()) == 0)
 			{
 				bHasPrefix = true;
 				severity = IResourceCompilerListener::MessageSeverity_Warning;
-				line += 3;  // skip the prefix
+				line += warningPrefix.length();  // skip the prefix
 			}
-			else if ((line[0] == ' ') && (line[1] == ' ') && (line[2] == ' '))
+			else if (strncmp(line, infoPrefix.c_str(), infoPrefix.length()) == 0)
 			{
 				bHasPrefix = true;
 				severity = IResourceCompilerListener::MessageSeverity_Info;
-				line += 3;  // skip the prefix
+				line += infoPrefix.length();  // skip the prefix
 			}
 			else
 			{
