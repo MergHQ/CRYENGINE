@@ -1495,7 +1495,7 @@ void RenderCloudMonolithicCS(uint3 GroupID : SV_GroupID,
 
 		const float4 reprojPos = mul(float4(vPixelUV.x, vPixelUV.y, depth, 1.0f), leftToRightReprojMatrix);
 		const float rcpW = rcp(reprojPos.w);
-		const float2 leftEyeTC = reprojPos.xy * rcpW;
+		float2 leftEyeTC = reprojPos.xy * rcpW;
 		leftEyeTC = MapViewportToRaster(leftEyeTC);
 
 		// convert non-linear depth to linear depth.

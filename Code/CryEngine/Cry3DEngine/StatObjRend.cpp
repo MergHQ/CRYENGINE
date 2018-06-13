@@ -1238,7 +1238,7 @@ void CStatObj::RenderSubObjectInternal(CRenderObject* pRenderObject, int nLod, c
 		return;
 
 	// try next lod's if selected one is not ready
-	if ((!nLod && m_pRenderMesh && m_pRenderMesh->CanRender()) || !GetCVars()->e_Lods)
+	if ((!nLod && m_pRenderMesh && m_pRenderMesh->CanUpdate()) || !GetCVars()->e_Lods)
 	{
 		PrefetchLine(pRenderObject, 0);
 		RenderRenderMesh(pRenderObject, NULL, passInfo);
@@ -1262,7 +1262,7 @@ void CStatObj::RenderSubObjectInternal(CRenderObject* pRenderObject, int nLod, c
 		if (m_pLODs)
 			for (; nLod <= (int)m_nMaxUsableLod; nLod++)
 			{
-				if (m_pLODs[nLod] && m_pLODs[nLod]->m_pRenderMesh && m_pLODs[nLod]->m_pRenderMesh->CanRender())
+				if (m_pLODs[nLod] && m_pLODs[nLod]->m_pRenderMesh && m_pLODs[nLod]->m_pRenderMesh->CanUpdate())
 				{
 					PrefetchLine(pRenderObject, 0);
 					m_pLODs[nLod]->RenderRenderMesh(pRenderObject, NULL, passInfo);
@@ -1313,7 +1313,7 @@ void CStatObj::RenderObjectInternal(CRenderObject* pRenderObject, int nTargetLod
 	}
 
 	// try next lod's if selected one is not ready
-	if ((!nLod && m_pRenderMesh && m_pRenderMesh->CanRender()) || !GetCVars()->e_Lods)
+	if ((!nLod && m_pRenderMesh && m_pRenderMesh->CanUpdate()) || !GetCVars()->e_Lods)
 	{
 		PrefetchLine(pRenderObject, 0);
 		RenderRenderMesh(pRenderObject, NULL, passInfo);
@@ -1337,7 +1337,7 @@ void CStatObj::RenderObjectInternal(CRenderObject* pRenderObject, int nTargetLod
 		if (m_pLODs)
 			for (; nLod <= (int)m_nMaxUsableLod; nLod++)
 			{
-				if (m_pLODs[nLod] && m_pLODs[nLod]->m_pRenderMesh && m_pLODs[nLod]->m_pRenderMesh->CanRender())
+				if (m_pLODs[nLod] && m_pLODs[nLod]->m_pRenderMesh && m_pLODs[nLod]->m_pRenderMesh->CanUpdate())
 				{
 					PrefetchLine(pRenderObject, 0);
 					m_pLODs[nLod]->RenderRenderMesh(pRenderObject, NULL, passInfo);
@@ -1458,10 +1458,10 @@ int CStatObj::FindNearestLoadedLOD(int nLodIn, bool bSearchUp)
 	// if requested lod is not ready - find nearest ready one
 	int nLod = nLodIn;
 
-	if (nLod == 0 && (!GetRenderMesh() || !GetRenderMesh()->CanRender()))
+	if (nLod == 0 && (!GetRenderMesh() || !GetRenderMesh()->CanUpdate()))
 		nLod++;
 
-	while (nLod && nLod < MAX_STATOBJ_LODS_NUM && (!m_pLODs || !m_pLODs[nLod] || !m_pLODs[nLod]->GetRenderMesh() || !m_pLODs[nLod]->GetRenderMesh()->CanRender()))
+	while (nLod && nLod < MAX_STATOBJ_LODS_NUM && (!m_pLODs || !m_pLODs[nLod] || !m_pLODs[nLod]->GetRenderMesh() || !m_pLODs[nLod]->GetRenderMesh()->CanUpdate()))
 		nLod++;
 
 	if (nLod >(int)m_nMaxUsableLod)
@@ -1470,10 +1470,10 @@ int CStatObj::FindNearestLoadedLOD(int nLodIn, bool bSearchUp)
 		{
 			nLod = min((int)m_nMaxUsableLod, nLodIn);
 
-			while (nLod && (!m_pLODs || !m_pLODs[nLod] || !m_pLODs[nLod]->GetRenderMesh() || !m_pLODs[nLod]->GetRenderMesh()->CanRender()))
+			while (nLod && (!m_pLODs || !m_pLODs[nLod] || !m_pLODs[nLod]->GetRenderMesh() || !m_pLODs[nLod]->GetRenderMesh()->CanUpdate()))
 				nLod--;
 
-			if (nLod == 0 && (!GetRenderMesh() || !GetRenderMesh()->CanRender()))
+			if (nLod == 0 && (!GetRenderMesh() || !GetRenderMesh()->CanUpdate()))
 				nLod--;
 		}
 		else

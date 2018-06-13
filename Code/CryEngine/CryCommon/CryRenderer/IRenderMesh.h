@@ -135,6 +135,7 @@ struct IRenderMesh
 	//////////////////////////////////////////////////////////////////////////
 
 	//! Prevent rendering if video memory could not been allocated for it.
+	virtual bool CanUpdate() = 0;
 	virtual bool CanRender() = 0;
 
 	//! Returns type name given to the render mesh on creation time.
