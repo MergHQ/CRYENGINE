@@ -117,8 +117,8 @@ public:
 	// can be called from outside to save memory
 	void CleanupCache();
 
-	// writes out a debug images to the current directory
-	void Debug();
+	//! Writes out tiles to output directory
+	void Debug(const string& outputFolder);
 
 	// rarely needed editor operation - n terrain texture tiles become 4*n
 	// slow

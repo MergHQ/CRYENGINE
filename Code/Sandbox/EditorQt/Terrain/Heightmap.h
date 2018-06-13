@@ -253,16 +253,17 @@ public:
 
 	//! Dump to log sizes of all layers.
 	//! @return Total size allocated for layers.
-	int        LogLayerSizes();
+	int                   LogLayerSizes();
 
-	float      GetShortPrecisionScale() const { return (256.f * 256.f - 1.0f) / m_fMaxHeight; }
-	float      GetBytePrecisionScale() const  { return 255.f / m_fMaxHeight; }
+	float                 GetShortPrecisionScale() const { return (256.f * 256.f - 1.0f) / m_fMaxHeight; }
+	float                 GetBytePrecisionScale() const  { return 255.f / m_fMaxHeight; }
 
-	void       GetMemoryUsage(ICrySizer* pSizer);
+	void                  GetMemoryUsage(ICrySizer* pSizer);
 
-	void       RecordUndo(int x1, int y1, int width, int height, bool bInfo = false);
+	void                  RecordUndo(int x1, int y1, int width, int height, bool bInfo = false);
 
-	CRGBLayer* GetRGBLayer() { return &m_terrainRGBTexture; }
+	CRGBLayer*            GetRGBLayer()          { return &m_terrainRGBTexture; }
+	const CSurfTypeImage& GetLayersImage() const { return m_layerIdBitmap; }
 
 	// Arguments:
 	//   texsector - make sure the values are in valid range
@@ -349,4 +350,3 @@ inline float CHeightmap::GetSlope(int x, int y)
 	if (fs > 255.0f) fs = 255.0f;
 	return fs;
 };
-

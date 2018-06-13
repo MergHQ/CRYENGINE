@@ -1209,23 +1209,22 @@ uint32 CRGBLayer::CalcMinRequiredTextureExtend()
 	return max(m_dwTileCountX, m_dwTileCountY) * dwMaxLocalExtend;
 }
 
-void CRGBLayer::Debug()
+void CRGBLayer::Debug(const string& outputFolder)
 {
-	std::vector<CTerrainTextureTile>::iterator it;
-
 	uint32 dwI = 0;
 
-	for (it = m_terrainTextureTiles.begin(); it != m_terrainTextureTiles.end(); ++it, ++dwI)
+	for (std::vector<CTerrainTextureTile>::const_iterator tile = m_terrainTextureTiles.cbegin(); tile != m_terrainTextureTiles.cend(); ++tile)
 	{
-		CTerrainTextureTile& ref = *it;
-
-		if (ref.m_pTileImage)
+		if (tile->m_pTileImage)
 		{
 			char szName[256];
+			cry_sprintf(szName, "Tile_%d.%d.bmp", dwI % m_dwTileCountX, dwI / m_dwTileCountX);
 
-			cry_sprintf(szName, "RGBLayerTile%dx%d.bmp", dwI % m_dwTileCountX, dwI / m_dwTileCountX);
-			CImageUtil::SaveBitmap(szName, *ref.m_pTileImage);
+			const string fullPath = PathUtil::Make(outputFolder, szName);
+			CImageUtil::SaveBitmap(fullPath, *tile->m_pTileImage);
 		}
+
+		++dwI;
 	}
 }
 
