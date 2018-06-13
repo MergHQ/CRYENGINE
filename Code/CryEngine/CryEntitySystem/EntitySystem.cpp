@@ -561,6 +561,11 @@ IEntity* CEntitySystem::SpawnPreallocatedEntity(CEntity* pPrecreatedEntity, SEnt
 		}
 	}
 
+	if (params.guid.IsNull())
+	{
+		params.guid = CryGUID::Create();
+	}
+
 	if (pEntity == nullptr || pPrecreatedEntity != nullptr)
 	{
 		if (pPrecreatedEntity != nullptr)
@@ -579,8 +584,7 @@ IEntity* CEntitySystem::SpawnPreallocatedEntity(CEntity* pPrecreatedEntity, SEnt
 		// put it into the entity map
 		m_EntityArray[IdToHandle(params.id).GetIndex()] = pEntity;
 
-		if (!params.guid.IsNull())
-			RegisterEntityGuid(params.guid, params.id);
+		RegisterEntityGuid(params.guid, params.id);
 
 		if (bAutoInit)
 		{
