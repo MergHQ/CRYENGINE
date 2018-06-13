@@ -47,13 +47,13 @@ public:
 	// Plugins that require later activation can do so by listening to system events such as ESYSTEM_EVENT_PRE_RENDERER_INIT
 	void LoadProjectPlugins();
 
-	void UpdateBeforeSystem();
-	void UpdateBeforePhysics();
-	void UpdateAfterSystem();
-	void UpdateBeforeFinalizeCamera();
-	void UpdateBeforeRender();
-	void UpdateAfterRender();
-	void UpdateAfterRenderSubmit();
+	void UpdateBeforeSystem() override;
+	void UpdateBeforePhysics() override;
+	void UpdateAfterSystem() override;
+	void UpdateBeforeFinalizeCamera() override;
+	void UpdateBeforeRender() override;
+	void UpdateAfterRender() override;
+	void UpdateAfterRenderSubmit() override;
 
 	virtual void OnSystemEvent(ESystemEvent event, UINT_PTR wparam, UINT_PTR lparam) override;
 

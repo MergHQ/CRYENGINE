@@ -4,6 +4,8 @@
 
 #include <CryCore/Containers/CryListenerSet.h>
 
+class CGameEngine;
+
 namespace Cry
 {
 	struct IEnginePlugin;
@@ -66,5 +68,15 @@ namespace Cry
 
 		virtual void RegisterEventListener(const CryClassID& pluginClassId, IEventListener* pListener) = 0;
 		virtual void RemoveEventListener(const CryClassID& pluginClassId, IEventListener* pListener) = 0;
+
+
+		friend CGameEngine;
+		virtual void UpdateBeforeSystem() = 0;
+		virtual void UpdateBeforePhysics() = 0;
+		virtual void UpdateAfterSystem() = 0;
+		virtual void UpdateBeforeFinalizeCamera() = 0;
+		virtual void UpdateBeforeRender() = 0;
+		virtual void UpdateAfterRender() = 0;
+		virtual void UpdateAfterRenderSubmit() = 0;
 	};
 }
