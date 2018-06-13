@@ -15,7 +15,7 @@ typedef _smart_ptr<CPrefabObject> CPrefabObjectPtr;
 class CUndoAddObjectsToPrefab : public IUndoObject
 {
 public:
-	CUndoAddObjectsToPrefab(CPrefabObject* prefabObj, TBaseObjects& objects);
+	CUndoAddObjectsToPrefab(CPrefabObject* prefabObj, std::vector<CBaseObject*>& objects);
 
 protected:
 	virtual const char* GetDescription() { return "Add Objects To Prefab"; }
