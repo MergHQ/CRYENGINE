@@ -75,6 +75,42 @@ private:
 	bool m_resumed { false };
 };
 
+class CUndoChangeGuid : public IUndoObject
+{
+public:
+	CUndoChangeGuid(CBaseObject* pObject, const CryGUID& newGuid)
+		: m_newGuid(newGuid)
+	{
+		m_oldGuid = pObject->GetId();
+	}
+
+protected:
+	virtual const char* GetDescription() { return "Change GUIDs"; }
+
+	virtual void Undo(bool bUndo)
+	{
+		SetGuid(m_newGuid, m_oldGuid);
+	}
+
+	virtual void Redo()
+	{
+		SetGuid(m_oldGuid, m_newGuid);
+	}
+
+private:
+	void SetGuid(const CryGUID& currentGuid, const CryGUID& newGuid)
+	{
+		auto pObject = GetIEditor()->GetObjectManager()->FindObject(currentGuid);
+		if (pObject)
+		{
+			GetIEditor()->GetObjectManager()->ChangeObjectId(currentGuid, newGuid);
+		}
+	}
+
+	CryGUID m_oldGuid;
+	CryGUID m_newGuid;
+};
+
 }
 
 bool CPrefabChildGuidProvider::IsValidChildGUid(const CryGUID& id, CPrefabObject* pPrefabObject)
@@ -1015,67 +1051,49 @@ void CPrefabObject::CloneSelected(CSelectionGroup* pSelectedGroup, std::vector<C
 
 void CPrefabObject::AddMember(CBaseObject* pObj, bool bKeepPos /*=true */)
 {
+	std::vector<CBaseObject*> objects = { pObj };
+	AddMembers(objects, bKeepPos);
+}
+
+void CPrefabObject::AddMembers(std::vector<CBaseObject*>& objects, bool shouldKeepPos /* = true*/)
+{
+	using namespace Private_PrefabObject;
 	if (!m_pPrefabItem)
 	{
 		SetPrefab(m_prefabGUID, true);
 		if (!m_pPrefabItem)
 			return;
 	}
-	if (pObj->IsKindOf(RUNTIME_CLASS(CPrefabObject)))
+
+	std::vector<CBaseObject*> objectsToAttach;
+	objectsToAttach.reserve(objects.size());
+	std::copy_if(objects.cbegin(), objects.cend(), std::back_inserter(objectsToAttach), [](CBaseObject* pObject)
 	{
-		if (static_cast<CPrefabObject*>(pObj)->m_pPrefabItem == m_pPrefabItem)
-		{
-			Warning("Object has the same prefab item");
-			return;
-		}
-	}
+		return !pObject->GetParent();
+	});
 
-	GetIEditor()->GetIUndoManager()->Suspend();
-
-	if (!pObj->IsChildOf(this) && !pObj->GetParent())
-	{
-		AttachChild(pObj, bKeepPos);
-	}
-
-	for (auto i = 0; i < pObj->GetLinkedObjectCount(); ++i)
-	{
-		SetObjectPrefabFlagAndLayer(pObj->GetLinkedObject(i));
-	}
-
-	SetObjectPrefabFlagAndLayer(pObj);
-	InitObjectPrefabId(pObj);
-
-	CryGUID newGuid = CPrefabChildGuidProvider(this).GetFor(pObj);
-	GetObjectManager()->ChangeObjectId(pObj->GetId(), newGuid);
-
-	SObjectChangedContext context;
-	context.m_operation = eOCOT_Add;
-	context.m_modifiedObjectGlobalId = pObj->GetId();
-	context.m_modifiedObjectGuidInPrefab = pObj->GetIdInPrefab();
-
-	SyncPrefab(context);
-
-	GetIEditor()->GetIUndoManager()->Resume();
-	IObjectManager* pObjectManager = GetIEditor()->GetObjectManager();
-
-	pObjectManager->NotifyPrefabObjectChanged(this);
-
-	// if the currently modified prefab is selected make sure to refresh the inspector
-	if (pObjectManager->GetSelection()->IsContainObject(this))
-		pObjectManager->EmitPopulateInspectorEvent();
-}
-
-void CPrefabObject::AddMembers(std::vector<CBaseObject*>& objects, bool shouldKeepPos /* = true*/)
-{
-	CGroup::AddMembers(objects, shouldKeepPos);
+	AttachChildren(objectsToAttach, shouldKeepPos);
 
 	for (CBaseObject* pObject : objects)
 	{
+		if (pObject->IsKindOf(RUNTIME_CLASS(CPrefabObject)))
+		{
+			if (static_cast<CPrefabObject*>(pObject)->m_pPrefabItem == m_pPrefabItem)
+			{
+				Warning("Object has the same prefab item");
+				return;
+			}
+		}
+
 		SetObjectPrefabFlagAndLayer(pObject);
 		InitObjectPrefabId(pObject);
 		SetPrefabFlagForLinkedObjects(pObject);
 
 		CryGUID newGuid = CPrefabChildGuidProvider(this).GetFor(pObject);
+		if (CUndo::IsRecording())
+		{
+			CUndo::Record(new CUndoChangeGuid(pObject, newGuid));
+		}
 		GetObjectManager()->ChangeObjectId(pObject->GetId(), newGuid);
 
 		SObjectChangedContext context;

@@ -164,12 +164,19 @@ void CPickMaterialTool::OnPicked(IMaterial* pEditorMaterial)
 		{
 			//Opens the material for edit in the relevant editor if specified
 			asset->Edit(m_pMaterialEditor);
+			
+			auto pEditor = asset->GetCurrentEditor();
 
-			auto editor = asset->GetCurrentEditor();
-			CRY_ASSERT(editor->GetEditorName() == "Material Editor");
-			m_pMaterialEditor = static_cast<CMaterialEditor*>(editor);
+			// this will be the case if the user cancel picking up of another material
+			if (!pEditor)
+			{
+				return;
+			}
 
-			//Select the submaterial if possible
+			CRY_ASSERT(pEditor->GetEditorName() == "Material Editor");
+			m_pMaterialEditor = static_cast<CMaterialEditor*>(pEditor);
+
+			//Select the sub-material if possible
 			if (m_pMaterialEditor && pMtl->IsPureChild() && pMtl->GetParent() == m_pMaterialEditor->GetLoadedMaterial())
 			{
 				m_pMaterialEditor->SelectMaterialForEdit(pMtl);

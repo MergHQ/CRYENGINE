@@ -731,7 +731,7 @@ protected:
 	CEntityRender               m_render;
 	CEntityPhysics              m_physics;
 
-	// Optional entity guid.
+	// Global unique identifier which can be used for save files.
 	EntityGUID m_guid;
 
 	// Unique ID of the entity.

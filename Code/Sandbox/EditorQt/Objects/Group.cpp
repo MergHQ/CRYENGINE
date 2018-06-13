@@ -271,11 +271,10 @@ private:
 			{
 				m_oldLayersGuids.erase(std::next(it).base());
 			}
-
 		}
 		CBaseObject* pParentObject = pObjectManager->FindObject(m_parentGuid);
 		CGroup* pGroup = static_cast<CGroup*>(pParentObject);
-		pGroup->DetachChildren(objects, m_shouldKeepPos, m_shouldPlaceOnRoot);
+		pGroup->RemoveMembers(objects, m_shouldKeepPos, m_shouldPlaceOnRoot);
 
 		for (int i = 0; i < objects.size(); ++i)
 		{
@@ -512,16 +511,12 @@ void CGroup::AddMembers(std::vector<CBaseObject*>& objects, bool keepPos /*= tru
 
 	AttachChildren(objects, keepPos);
 
-	if (oldNumMembers != m_members.size())
+	CGroup* pPrefab = static_cast<CGroup*>(GetPrefab());
+	if (oldNumMembers != m_members.size() && pPrefab)
 	{
-		CBaseObject* pObj = nullptr;
 		for (auto i = oldNumMembers; i < m_members.size(); ++i)
 		{
-			pObj = m_members[i];
-			if (CGroup* pPrefab = (CGroup*)pObj->GetPrefab())
-			{
-				pPrefab->AddMember(pObj, true);
-			}
+			pPrefab->AddMember(m_members[i], true);
 		}
 	}
 
