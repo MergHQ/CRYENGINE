@@ -1,8 +1,4 @@
-if ((WIN32 OR WIN64) AND PLUGIN_GAMEPLATFORM)
-	option(PLUGIN_REDSHELL "Enable RedShell integration plug-in" ON)
-else()
-	option(PLUGIN_REDSHELL "Enable RedShell integration plug-in" OFF)
-endif()
+option(PLUGIN_REDSHELL "Enable RedShell integration plug-in" OFF)
 	
 if (NOT PLUGIN_REDSHELL)
 	return()
