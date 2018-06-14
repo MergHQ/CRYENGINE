@@ -902,6 +902,13 @@ void NavigationSystem::ApplyAnnotationChanges()
 		
 		for (MNM::SMarkupVolumeData::MeshTriangles& meshTriangles : m_markupsData[markupAnnotationChange.first].meshTriangles)
 		{
+			if (!m_meshes.validate(meshTriangles.meshId))
+			{
+				CryWarning(VALIDATOR_MODULE_AI, VALIDATOR_WARNING, 
+					"ApplyAnnotationChanges: Mesh with id %u wasn't found for annotation data id %u. Is the NavMesh really up to date?", meshTriangles.meshId, markupAnnotationChange.first);
+				continue;
+			}
+			
 			std::vector<MNM::TileID> affectedTiles;
 			NavigationMesh& mesh = m_meshes[meshTriangles.meshId];
 			mesh.navMesh.SetTrianglesAnnotation(meshTriangles.triangleIds.data(), meshTriangles.triangleIds.size(), areaAnnotation, affectedTiles);
@@ -2543,6 +2550,29 @@ void NavigationSystem::RemoveLoadedMeshesWithoutRegisteredAreas()
 		for (const NavigationVolumeID& volumeId : volumesToRemove)
 		{
 			DestroyVolume(volumeId);
+		}
+	}
+
+	// Remove all markups data whose mesh doesn't exist (was saved during the export but isn't in the map anymore)
+	for (const AgentType& agentType : m_agentTypes)
+	{
+		for (const NavigationVolumeID markupId : agentType.markups)
+		{
+			// Are markup data stored for this markup id?
+			if(!m_markupsData.validate(markupId))
+				continue;
+
+			MNM::SMarkupVolumeData& markupData = m_markupsData[markupId];
+			const auto removeIt = std::remove_if(markupData.meshTriangles.begin(), markupData.meshTriangles.end(), [this](const MNM::SMarkupVolumeData::MeshTriangles& meshTriangles)
+			{
+				return !m_meshes.validate(meshTriangles.meshId);
+			});
+			markupData.meshTriangles.erase(removeIt, markupData.meshTriangles.end());
+			
+			if (markupData.meshTriangles.empty())
+			{
+				m_markupsData.erase(markupId);
+			}
 		}
 	}
 
