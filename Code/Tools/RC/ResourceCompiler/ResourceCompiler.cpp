@@ -3231,19 +3231,17 @@ void ResourceCompiler::CopyFiles(const std::vector<RcFile>& files)
 				}
 			}
 
-			SetFileAttributes(trgFilename,FILE_ATTRIBUTE_ARCHIVE);
-			const bool bCopied = (::CopyFile( srcFilename,trgFilename,FALSE ) != 0);
-
+			string copyFileErrorString;
+			const bool bCopied = FileUtil::CopyFileAllowOverwrite(srcFilename, trgFilename, copyFileErrorString);
 			if (bCopied)
 			{
 				++numFilesCopied;
-				SetFileAttributes(trgFilename,FILE_ATTRIBUTE_ARCHIVE);
 				FileUtil::SetFileTimes(trgFilename,ftSource);
 			}
 			else
 			{
 				++numFilesFailed;
-				RCLog("Failed to copy %s to %s", srcFilename.c_str(), trgFilename.c_str());
+				RCLog("Failed to copy %s to %s: %s.", srcFilename.c_str(), trgFilename.c_str(), copyFileErrorString.c_str());
 			}
 		}
 
