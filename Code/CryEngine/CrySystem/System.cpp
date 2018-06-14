@@ -1550,8 +1550,11 @@ bool CSystem::DoFrame(const SDisplayContextKey& displayContextKey, CEnumFlags<ES
 	{
 		m_env.pGameFramework->PreSystemUpdate();
 	}
-
-	m_pPluginManager->UpdateBeforeSystem();
+	
+	if (!(updateFlags & ESYSUPDATE_EDITOR))
+	{
+		m_pPluginManager->UpdateBeforeSystem();
+	}
 
 	if (ITextModeConsole* pTextModeConsole = GetITextModeConsole())
 	{
@@ -1601,7 +1604,10 @@ bool CSystem::DoFrame(const SDisplayContextKey& displayContextKey, CEnumFlags<ES
 		}
 	}
 
-	m_pPluginManager->UpdateAfterSystem();
+	if (!(updateFlags & ESYSUPDATE_EDITOR))
+	{
+		m_pPluginManager->UpdateAfterSystem();
+	}
 
 	// Synchronize all animations so ensure that their computation have finished
 	// Has to be done before view update, in case camera depends on a joint
@@ -1615,7 +1621,10 @@ bool CSystem::DoFrame(const SDisplayContextKey& displayContextKey, CEnumFlags<ES
 		m_env.pGameFramework->PreFinalizeCamera(updateFlags);
 	}
 
-	m_pPluginManager->UpdateBeforeFinalizeCamera();
+	if (!(updateFlags & ESYSUPDATE_EDITOR))
+	{
+		m_pPluginManager->UpdateBeforeFinalizeCamera();
+	}
 
 	ICVar* pCameraFreeze = gEnv->pConsole->GetCVar("e_CameraFreeze");
 	const bool isCameraFrozen = pCameraFreeze && pCameraFreeze->GetIVal() != 0;
@@ -1628,7 +1637,10 @@ bool CSystem::DoFrame(const SDisplayContextKey& displayContextKey, CEnumFlags<ES
 		m_env.pGameFramework->PreRender();
 	}
 
-	m_pPluginManager->UpdateBeforeRender();
+	if (!(updateFlags & ESYSUPDATE_EDITOR))
+	{
+		m_pPluginManager->UpdateBeforeRender();
+	}
 
 	Render();
 
@@ -1637,7 +1649,10 @@ bool CSystem::DoFrame(const SDisplayContextKey& displayContextKey, CEnumFlags<ES
 		m_env.pGameFramework->PostRender(updateFlags);
 	}
 
-	m_pPluginManager->UpdateAfterRender();
+	if (!(updateFlags & ESYSUPDATE_EDITOR))
+	{
+		m_pPluginManager->UpdateAfterRender();
+	}
 
 	if (updateFlags & ESYSUPDATE_EDITOR_AI_PHYSICS)
 	{
@@ -1655,7 +1670,10 @@ bool CSystem::DoFrame(const SDisplayContextKey& displayContextKey, CEnumFlags<ES
 		m_env.pGameFramework->PostRenderSubmit();
 	}
 
-	m_pPluginManager->UpdateAfterRenderSubmit();
+	if (!(updateFlags & ESYSUPDATE_EDITOR))
+	{
+		m_pPluginManager->UpdateAfterRenderSubmit();
+	}
 
 	if (!(updateFlags & ESYSUPDATE_EDITOR))
 	{

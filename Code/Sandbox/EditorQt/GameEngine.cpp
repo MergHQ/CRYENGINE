@@ -58,6 +58,7 @@
 #include "Preferences/ViewportPreferences.h"
 #include "GameExporter.h"
 #include <RenderViewport.h>
+#include <CrySystem/ICryPluginManager.h>
 
 // added just because of the suspending/resuming of engine update, should be removed once we have msgboxes in a separate process
 #include "CryEdit.h"
@@ -1578,6 +1579,9 @@ void CGameEngine::Update()
 
 		gEnv->GetJobManager()->SetFrameStartTime(gEnv->pTimer->GetAsyncTime());
 
+		Cry::IPluginManager* const pPluginManager = gEnv->pSystem->GetIPluginManager();
+		pPluginManager->UpdateBeforeSystem();
+
 		CEnumFlags<ESystemUpdateFlags> updateFlags = ESYSUPDATE_EDITOR;
 
 		if (!m_bSimulationMode)
@@ -1610,6 +1614,12 @@ void CGameEngine::Update()
 			CRY_ASSERT(gameViewport);
 			gEnv->pSystem->DoFrame(gameViewport->GetDisplayContext().GetDisplayContextKey(), updateFlags);
 		}
+
+		pPluginManager->UpdateAfterSystem();
+		pPluginManager->UpdateBeforeFinalizeCamera();
+		pPluginManager->UpdateBeforeRender();
+		pPluginManager->UpdateAfterRender();
+		pPluginManager->UpdateAfterRenderSubmit();
 
 		GetIEditorImpl()->GetAI()->Update(updateFlags.UnderlyingValue());
 
