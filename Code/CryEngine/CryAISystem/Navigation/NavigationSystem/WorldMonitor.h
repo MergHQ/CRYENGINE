@@ -41,7 +41,7 @@ private:
 	};
 	
 	// physics event handlers
-	static int StateChangeHandler(const EventPhys* pPhysEvent);
+	static int BBoxChangeHandler(const EventPhys* pPhysEvent);
 	static int EntityRemovedHandler(const EventPhys* pPhysEvent);
 	static int EntityRemovedHandlerAsync(const EventPhys* pPhysEvent);
 

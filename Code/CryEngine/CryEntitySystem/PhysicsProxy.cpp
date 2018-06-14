@@ -945,13 +945,10 @@ bool CEntityPhysics::TriggerEventIfStateChanged(IPhysicalEntity* pPhysEntity, co
 	//send event if bounding box or simulation class is updated
 	if (!IsEquivalent(prevBBox, currBBox) || prevSimClass != currSimClass)
 	{
-		EventPhysStateChange event;
+		EventPhysBBoxChange event;
 		event.pEntity = pPhysEntity;
 		event.iForeignData = pPhysEntity->GetiForeignData();
 		event.pForeignData = pPhysEntity->GetForeignData(event.iForeignData);
-		event.timeIdle = 0.0f;
-		event.iSimClass[0] = prevSimClass;
-		event.iSimClass[1] = currSimClass;
 		event.BBoxOld[0] = prevBBox.min;
 		event.BBoxOld[1] = prevBBox.max;
 		event.BBoxNew[0] = currBBox.min;

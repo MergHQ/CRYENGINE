@@ -3128,6 +3128,7 @@ int CPhysicalWorld::RepositionEntity(CPhysicalPlaceholder *pobj, int flags, Vec3
 	int bGridLocked = 0;
 	int bBBoxUpdated = 0;
 	EventPhysStateChange event;
+	EventPhysBBoxChange eventBB;
 
 	if (flags&1 && pgrid->cells) {
 		i = -iszero((INT_PTR)BBox);
@@ -3327,15 +3328,15 @@ int CPhysicalWorld::RepositionEntity(CPhysicalPlaceholder *pobj, int flags, Vec3
 			}
 
 		if (bBBoxUpdated = BBox && (((pobj->m_BBox[0]-BBox[0]).len2()+(pobj->m_BBox[1]-BBox[1]).len2())>0)) {
-			event.BBoxNew[0] = BBox[0];
-			event.BBoxNew[1] = BBox[1];
+			eventBB.BBoxNew[0] = BBox[0];
+			eventBB.BBoxNew[1] = BBox[1];
 		}	else {
-			event.BBoxNew[0] = pobj->m_BBox[0];
-			event.BBoxNew[1] = pobj->m_BBox[1];
+			eventBB.BBoxNew[0] = pobj->m_BBox[0];
+			eventBB.BBoxNew[1] = pobj->m_BBox[1];
 		}
 	} else {
-		event.BBoxNew[0] = pobj->m_BBox[0];
-		event.BBoxNew[1] = pobj->m_BBox[1];
+		eventBB.BBoxNew[0] = pobj->m_BBox[0];
+		eventBB.BBoxNew[1] = pobj->m_BBox[1];
 	}
 
 	int bSimClassUpdated = 0;
@@ -3356,15 +3357,21 @@ DEBUG_BREAK;
 
 	if (bBBoxUpdated | bSimClassUpdated) {
 		CPhysicalEntity *pent = (CPhysicalEntity*)pobj;
-		if (pent->m_flags & (pef_monitor_state_changes | pef_log_state_changes) &&
-			(1 - bSimClassUpdated)*(1 - bBBoxUpdated + max(0.0f, pent->GetMassInv())) == 0) { // only send BBox updates for kinematic (0-mass) entities
-			event.pEntity=pent; event.pForeignData=pent->m_pForeignData; event.iForeignData=pent->m_iForeignData;
-			event.BBoxOld[0] = pent->m_BBox[0];
-			event.BBoxOld[1] = pent->m_BBox[1];
-			event.iSimClass[0] = bSimClassUpdated ? i : pent->m_iSimClass;
-			event.iSimClass[1] = pent->m_iSimClass;
-			event.timeIdle = pent->m_timeIdle;
-			OnEvent(pent->m_flags, &event);
+		if (pent->m_flags & (pef_monitor_state_changes | pef_log_state_changes)) {
+			if (bSimClassUpdated) {
+				event.pEntity=pent; event.pForeignData=pent->m_pForeignData; event.iForeignData=pent->m_iForeignData;
+				event.iSimClass[0] = bSimClassUpdated ? i : pent->m_iSimClass;
+				event.iSimClass[1] = pent->m_iSimClass;
+				event.timeIdle = pent->m_timeIdle;
+				OnEvent(pent->m_flags, &event);
+			}
+			if (bBBoxUpdated && ((INT_PTR)m_pEventClients[EventPhysBBoxChange::id][0] | (INT_PTR)m_pEventClients[EventPhysBBoxChange::id][1]) && !(m_vars.lastTimeStep*pent->GetMassInv())) { 
+				// during simulation, only send BBox updates for kinematic (0-mass) entities, to avoid redundancy with poststep
+				eventBB.pEntity=pent; eventBB.pForeignData=pent->m_pForeignData; eventBB.iForeignData=pent->m_iForeignData;
+				eventBB.BBoxOld[0] = pent->m_BBox[0];
+				eventBB.BBoxOld[1] = pent->m_BBox[1];
+				OnEvent(pent->m_flags, &event);
+			}
 		}
 	}
 

@@ -756,8 +756,6 @@ void PhysXWorld::PumpLoggedEvents()
 				epsc.pEntity=pents[i]; epsc.pForeignData=pents[i]->m_pForeignData; epsc.iForeignData=pents[i]->m_iForeignData;
 				epsc.iSimClass[0] = i+1; epsc.iSimClass[1] = 2-j;
 				PxBounds3 bbox = pents[i]->m_actor->getWorldBounds();
-				epsc.BBoxNew[0]=epsc.BBoxOld[0] = V(bbox.minimum);
-				epsc.BBoxNew[1]=epsc.BBoxOld[1] = V(bbox.maximum);
 				SendEvent(epsc,1);
 			}
 			_InterlockedAnd((volatile long*)&pents[i]->m_mask,~3);
