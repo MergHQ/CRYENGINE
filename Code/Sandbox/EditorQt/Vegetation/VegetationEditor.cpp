@@ -465,7 +465,7 @@ struct CVegetationEditor::SImplementation : public IEditorNotifyListener
 		}
 
 		// Using QDeepFilterProxyModel, we need to unmap indices received from selection before usage.
-		QModelIndex GetCurrentSourceIndex() const
+		QModelIndex GetSelectedSourceIndex() const
 		{
 			QAbstractProxyModel* pProxy = static_cast<QAbstractProxyModel*>(pVegetationTreeView->model());
 			return pProxy->mapToSource(pVegetationTreeView->selectionModel()->currentIndex());
@@ -483,6 +483,15 @@ struct CVegetationEditor::SImplementation : public IEditorNotifyListener
 			}
 
 			return selectedRows;
+		}
+
+		void MapFromSourceIndices(QModelIndexList& indices)
+		{
+			QAbstractProxyModel* pProxy = static_cast<QAbstractProxyModel*>(pVegetationTreeView->model());
+			for (auto& index : indices)
+			{
+				index = pProxy->mapFromSource(index);
+			}
 		}
 
 		CVegetationTreeView* pVegetationTreeView;
@@ -584,7 +593,7 @@ struct CVegetationEditor::SImplementation : public IEditorNotifyListener
 
 		QObject::connect(m_ui.pVegetationTreeView, &QTreeView::doubleClicked, [this]()
 		{
-			QModelIndex currSelection = m_ui.GetCurrentSourceIndex();
+			QModelIndex currSelection = m_ui.GetSelectedSourceIndex();
 			auto pVegetationObject = m_pVegetationModel->GetVegetationObject(currSelection);
 			if (!pVegetationObject)
 			{
@@ -688,7 +697,6 @@ struct CVegetationEditor::SImplementation : public IEditorNotifyListener
 			{
 			  CryWarning(VALIDATOR_MODULE_EDITOR, VALIDATOR_WARNING, "You need to select object(s) to export");
 			}
-
 		});
 	}
 
@@ -701,7 +709,7 @@ struct CVegetationEditor::SImplementation : public IEditorNotifyListener
 
 		QObject::connect(m_actions.pRenameGroupAction, &QAction::triggered, [this]
 		{
-			auto currentGroupIndex = m_ui.GetCurrentSourceIndex();
+			auto currentGroupIndex = m_ui.GetSelectedSourceIndex();
 			if (!m_pVegetationModel->IsGroup(currentGroupIndex))
 			{
 			  return;
@@ -743,7 +751,7 @@ struct CVegetationEditor::SImplementation : public IEditorNotifyListener
 
 		QObject::connect(m_actions.pReplaceVegetationObjectAction, &QAction::triggered, [this]
 		{
-			auto currentObjectIndex = m_ui.GetCurrentSourceIndex();
+			auto currentObjectIndex = m_ui.GetSelectedSourceIndex();
 			if (!m_pVegetationModel->IsVegetationObject(currentObjectIndex))
 			{
 			  return;
@@ -962,9 +970,8 @@ struct CVegetationEditor::SImplementation : public IEditorNotifyListener
 			pPaintTool = static_cast<CVegetationPaintTool*>(pTool);
 		}
 
-		// if paint tool is actived the brush has to be serializable even
-		// if no objects are selected
-		// if no paint tool is present the brush property tree is removed
+		// If paint tool is active, the brush has to be serializable even if no objects are selected
+		// If no paint tool is present the brush property tree is removed
 		m_vegetationBrush.SetVegetationPaintTool(pPaintTool);
 		if (m_vegetationSerializers.empty() && pPaintTool)
 		{
@@ -1041,7 +1048,7 @@ struct CVegetationEditor::SImplementation : public IEditorNotifyListener
 		}
 
 		auto pSelectionModel = m_ui.pVegetationTreeView->selectionModel();
-		auto currentIndex = m_ui.GetCurrentSourceIndex();
+		auto currentIndex = m_ui.GetSelectedSourceIndex();
 
 		auto pGroupItem = m_pVegetationModel->GetGroup(currentIndex);
 		const auto oldObjectCount = pGroupItem ? pGroupItem->rowCount() : -1;
@@ -1078,7 +1085,7 @@ struct CVegetationEditor::SImplementation : public IEditorNotifyListener
 
 	void CloneVegetationObject()
 	{
-		auto currentObjectIndex = m_ui.GetCurrentSourceIndex();
+		auto currentObjectIndex = m_ui.GetSelectedSourceIndex();
 		if (m_pVegetationModel->IsGroup(currentObjectIndex))
 		{
 			return;
@@ -1151,40 +1158,45 @@ struct CVegetationEditor::SImplementation : public IEditorNotifyListener
 	void InstanceSelected()
 	{
 		auto pTool = GetIEditorImpl()->GetLevelEditorSharedState()->GetEditTool();
-		if (pTool && pTool->IsKindOf(RUNTIME_CLASS(CVegetationSelectTool)))
+		if (!pTool || !pTool->IsKindOf(RUNTIME_CLASS(CVegetationSelectTool)))
 		{
-			auto pVegetationTool = static_cast<CVegetationSelectTool*>(pTool);
-			QModelIndexList indices = m_pVegetationModel->FindVegetationObjects(pVegetationTool->GetSelectedInstances());
-			CVegetationTreeView* treeView = m_pEditor->findChild<CVegetationTreeView*>();
-			QItemSelection selection;
+			return;
+		}
 
-			if (treeView)
+		CVegetationTreeView* pTreeView = m_pEditor->findChild<CVegetationTreeView*>();
+		if (!pTreeView)
+		{
+			return;
+		}
+
+		auto pVegetationTool = static_cast<CVegetationSelectTool*>(pTool);
+		QModelIndexList indices = m_pVegetationModel->FindVegetationObjects(pVegetationTool->GetSelectedInstances());
+		m_ui.MapFromSourceIndices(indices);
+
+		QItemSelection selection;
+		pTreeView->selectionModel()->clearSelection();
+		QModelIndex firstParent;
+
+		for (QModelIndex idx : indices)
+		{
+			if (!firstParent.isValid())
 			{
-				treeView->selectionModel()->clearSelection();
-				QModelIndex firstParent;
+				firstParent = idx.parent();
+			}
 
-				for (QModelIndex idx : indices)
-				{
-					if (!firstParent.isValid())
-					{
-						firstParent = idx.parent();
-					}
+			pTreeView->expand(idx.parent());
+			selection.select(idx, idx);
+		}
 
-					treeView->expand(idx.parent());
-					selection.select(idx, idx);
-				}
+		pTreeView->selectionModel()->select(selection, QItemSelectionModel::Select | QItemSelectionModel::Rows);
 
-				treeView->selectionModel()->select(selection, QItemSelectionModel::Select | QItemSelectionModel::Rows);
-
-				// Scroll to the last selected index
-				if (!indices.empty())
-				{
-					auto lastIdx = indices.last();
-					if (lastIdx.isValid())
-					{
-						treeView->scrollTo(lastIdx);
-					}
-				}
+		// Scroll to the last selected index
+		if (!indices.empty())
+		{
+			auto lastIdx = indices.last();
+			if (lastIdx.isValid())
+			{
+				pTreeView->scrollTo(lastIdx);
 			}
 		}
 	}
@@ -1294,4 +1306,3 @@ bool CVegetationEditor::OnSelectAll()
 	p->SelectAll();
 	return true;
 }
-
