@@ -385,6 +385,8 @@ void CDepthReadbackStage::ExecutePasses(float sourceWidth, float sourceHeight, f
 
 void CDepthReadbackStage::ReadbackLatestData()
 {
+	CRY_PROFILE_REGION(PROFILE_RENDERER, "CDepthReadbackStage::ReadbackLatestData");
+
 	// Determine the last completed readback.
 	const uint32 oldestReadback = m_readbackIndex % kMaxReadbackPasses;
 	uint32 receivableIndex = kMaxReadbackPasses;

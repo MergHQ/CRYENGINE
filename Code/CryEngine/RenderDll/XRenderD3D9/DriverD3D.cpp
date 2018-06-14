@@ -562,7 +562,7 @@ void CD3D9Renderer::HandleDisplayPropertyChanges()
 #if defined(SUPPORT_DEVICE_INFO_USER_DISPLAY_OVERRIDES)
 		bChangedRendering |= m_overrideRefreshRate != CV_r_overrideRefreshRate || m_overrideScanlineOrder != CV_r_overrideScanlineOrder;
 #endif
-		
+
 		EWindowState windowState = CalculateWindowState();
 		m_windowState = windowState;
 
@@ -586,7 +586,7 @@ void CD3D9Renderer::HandleDisplayPropertyChanges()
 		// Detect changes in rendering resolution ///////////////////////////////////////////////////////////////////////
 		pDC->m_nSSSamplesX = CV_r_Supersampling;
 		pDC->m_nSSSamplesY = CV_r_Supersampling;
-	
+
 		// Detect changes in back-buffer property ///////////////////////////////////////////////////////////////////////
 		const int colorBits = m_CVColorBits ? m_CVColorBits->GetIVal() : m_cbpp;
 //		const int depthBits = m_CVDepthBits ? m_CVDepthBits->GetIVal() : m_zbpp;
@@ -658,7 +658,8 @@ void CD3D9Renderer::HandleDisplayPropertyChanges()
 		// Swap-Chain recreate
 		if (m_cbpp != colorBits ||
 			m_VSync != vSync ||
-			wasFullscreen != IsFullscreen())
+			wasFullscreen != IsFullscreen() ||
+			pDC->GetBackBufferCount() != CRendererCVars::CV_r_MaxFrameLatency + 1)
 		{
 			bRecreateSwapchain = true;
 		}

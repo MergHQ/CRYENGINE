@@ -1106,7 +1106,10 @@ bool CHWShader_D3D::mfGetCacheTokenMap(FXShaderToken*& Table, TArray<uint32>*& p
 	{
 		if (m_pGlobalCache)
 			m_pGlobalCache->Release(false);
-		m_pGlobalCache = mfInitCache(NULL, this, true, m_CRC32, true, CRenderer::CV_r_shadersasyncactivation != 0);
+
+		const bool initReadOnly = CRenderer::CV_r_shadersAllowCompilation == 0;
+		const bool initAsync    = CRenderer::CV_r_shadersasyncactivation != 0;
+		m_pGlobalCache = mfInitCache(NULL, this, true, m_CRC32, initReadOnly, initAsync);
 	}
 	if (!m_pGlobalCache)
 	{

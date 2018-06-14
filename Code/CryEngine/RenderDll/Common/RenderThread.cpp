@@ -366,10 +366,10 @@ void SRenderThread::RC_PrecacheResource(ITexture* pTP, float fMipFactor, float f
 	}
 
 	_smart_ptr<ITexture> pRefTexture = pTP;
-	ExecuteRenderThreadCommand(
-		[=]{ gRenDev->PrecacheTexture(pRefTexture, fMipFactor, fTimeToReady, Flags, nUpdateId, nCounter); },
-		ERenderCommandFlags::LevelLoadingThread_defer
-	);
+	ExecuteRenderThreadCommand([=]
+	{
+		RC_PrecacheResource(pRefTexture.get(), fMipFactor, fTimeToReady, Flags, nUpdateId, nCounter);
+	}, ERenderCommandFlags::LevelLoadingThread_defer);
 }
 
 void SRenderThread::RC_TryFlush()
@@ -456,9 +456,6 @@ void SRenderThread::RC_StopVideoThread()
 #pragma warning(disable : 4800)
 void SRenderThread::ProcessCommands()
 {
-	CRY_PROFILE_REGION(PROFILE_RENDERER, "SRenderThread::ProcessCommands");
-	CRYPROFILE_SCOPE_PROFILE_MARKER("SRenderThread::ProcessCommands");
-
 #ifndef STRIP_RENDER_THREAD
 	assert(IsRenderThread());
 	if (!CheckFlushCond())
@@ -510,42 +507,57 @@ void SRenderThread::ProcessCommands()
 		switch (nC)
 		{
 		case eRC_CreateDevice:
+		{
+			CRY_PROFILE_REGION(PROFILE_RENDERER, "SRenderThread: eRC_CreateDevice");
 			m_bSuccessful &= gRenDev->RT_CreateDevice();
+		}
 			break;
 		case eRC_ResetDevice:
+		{
+			CRY_PROFILE_REGION(PROFILE_RENDERER, "SRenderThread: eRC_ResetDevice");
 			if (m_eVideoThreadMode == eVTM_Disabled)
 				gRenDev->RT_Reset();
+		}
 			break;
 	#if CRY_PLATFORM_DURANGO
 		case eRC_SuspendDevice:
+		{
+			CRY_PROFILE_REGION(PROFILE_RENDERER, "SRenderThread: eRC_SuspendDevice");
 			if (m_eVideoThreadMode == eVTM_Disabled)
 				gRenDev->RT_SuspendDevice();
+		}
 			break;
 		case eRC_ResumeDevice:
+		{
+			CRY_PROFILE_REGION(PROFILE_RENDERER, "SRenderThread: eRC_ResumeDevice");
 			if (m_eVideoThreadMode == eVTM_Disabled)
 			{
 				gRenDev->RT_ResumeDevice();
 				//Now we really want to resume the device
 				bSuspendDevice = false;
 			}
+		}
 			break;
 	#endif
 
 		case eRC_BeginFrame:
+		{
+			CRY_PROFILE_REGION(PROFILE_RENDERER, "SRenderThread: eRC_BeginFrame");
+			m_displayContextKey = ReadCommand<SDisplayContextKey>(n);
+			if (m_eVideoThreadMode == eVTM_Disabled)
 			{
-				m_displayContextKey = ReadCommand<SDisplayContextKey>(n);
-				if (m_eVideoThreadMode == eVTM_Disabled)
-				{
-					gRenDev->RT_BeginFrame(m_displayContextKey);
-					m_bBeginFrameCalled = false;
-				}
-				else
-				{
-					m_bBeginFrameCalled = true;
-				}
+				gRenDev->RT_BeginFrame(m_displayContextKey);
+				m_bBeginFrameCalled = false;
 			}
+			else
+			{
+				m_bBeginFrameCalled = true;
+			}
+		}
 			break;
 		case eRC_EndFrame:
+		{
+			CRY_PROFILE_REGION(PROFILE_RENDERER, "SRenderThread: eRC_EndFrame");
 			if (m_eVideoThreadMode == eVTM_Disabled)
 			{
 				gRenDev->RT_EndFrame();
@@ -561,6 +573,7 @@ void SRenderThread::ProcessCommands()
 				m_bEndFrameCalled = true;
 				gRenDev->m_nFrameSwapID++;
 			}
+		}
 			break;
 
 		case eRC_FlashRender:
@@ -573,24 +586,29 @@ void SRenderThread::ProcessCommands()
 			break;
 		case eRC_FlashRenderLockless:
 		{
+			CRY_PROFILE_REGION(PROFILE_RENDERER, "SRenderThread: eRC_FlashRenderLockless");
 			IFlashPlayer_RenderProxy* pPlayer = ReadCommand<IFlashPlayer_RenderProxy*>(n);
 			int cbIdx = ReadCommand<int>(n);
+			bool stereo = ReadCommand<int>(n) != 0;
 			bool finalPlayback = ReadCommand<int>(n) != 0;
 			gRenDev->RT_FlashRenderPlaybackLocklessInternal(pPlayer, cbIdx, finalPlayback, m_eVideoThreadMode == eVTM_Disabled);
 		}
 		break;
+			break;
 
 		case eRC_LambdaCall:
+		{
+			CRY_PROFILE_REGION(PROFILE_RENDERER, "SRenderThread: eRC_LambdaCall");
+			SRenderThreadLambdaCallback* pRTCallback = ReadCommand<SRenderThreadLambdaCallback*>(n);
+			bool bSkipCommand = (m_eVideoThreadMode != eVTM_Disabled) && (uint32(pRTCallback->flags & ERenderCommandFlags::SkipDuringLoading) != 0);
+			// Execute lambda callback on a render thread
+			if (!bSkipCommand)
 			{
-				SRenderThreadLambdaCallback* pRTCallback = ReadCommand<SRenderThreadLambdaCallback*>(n);
-				bool bSkipCommand = (m_eVideoThreadMode != eVTM_Disabled)	&& (uint32(pRTCallback->flags & ERenderCommandFlags::SkipDuringLoading) != 0);
-				// Execute lambda callback on a render thread
-				if (!bSkipCommand)
-				{
-					pRTCallback->callback();
-				}
-				m_lambdaCallbacksPool.Delete(pRTCallback);
+				pRTCallback->callback();
 			}
+
+			m_lambdaCallbacksPool.Delete(pRTCallback);
+		}
 			break;
 
 		default:

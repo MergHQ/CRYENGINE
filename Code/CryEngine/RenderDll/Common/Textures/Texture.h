@@ -1310,7 +1310,8 @@ public:
 	ILINE void                       PrefetchStreamingInfo() const               { PrefetchLine(m_pFileTexMips, 0); }
 	const STexStreamingInfo*         GetStreamingInfo() const                    { return m_pFileTexMips; }
 
-	virtual const bool               IsStreamable() const                  final { return !(m_eFlags & FT_DONT_STREAM) && !(m_eTT == eTT_3D); }
+	virtual const bool               IsStreamable() const                  final { return !(m_eFlags & FT_DONT_STREAM) && ((CRenderer::CV_r_texturesstreaming >= 1 && m_eTT == eTT_2D) || (CRenderer::CV_r_texturesstreaming >= 2 && m_eTT == eTT_Cube)); }
+	static  const bool               IsStreamable(uint32 eFlags, ETEX_Type eTT)  { return !(  eFlags & FT_DONT_STREAM) && ((CRenderer::CV_r_texturesstreaming >= 1 &&   eTT == eTT_2D) || (CRenderer::CV_r_texturesstreaming >= 2 &&   eTT == eTT_Cube)); }
 
 	ILINE void                       DisableMgpuSync()
 	{

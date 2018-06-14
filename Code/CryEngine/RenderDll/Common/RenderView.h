@@ -257,19 +257,22 @@ public:
 	//////////////////////////////////////////////////////////////////////////
 	// Dynamic Lights
 	//////////////////////////////////////////////////////////////////////////
+
+	virtual RenderLightIndex AddDeferredLight(const SRenderLight& pDL, float fMult, const SRenderingPassInfo& passInfo) final;
+
 	virtual RenderLightIndex AddDynamicLight(const SRenderLight& light) final;
 	virtual RenderLightIndex GetDynamicLightsCount() const final;
 	virtual SRenderLight&    GetDynamicLight(RenderLightIndex nLightId) final;
 
 	virtual RenderLightIndex AddLight(eDeferredLightType lightType, const SRenderLight& light) final;
 	virtual RenderLightIndex GetLightsCount(eDeferredLightType lightType) const final;
-	virtual SRenderLight& GetLight(eDeferredLightType lightType, RenderLightIndex nLightId) final;
+	virtual SRenderLight&    GetLight(eDeferredLightType lightType, RenderLightIndex nLightId) final;
 
-	RenderLightsList&     GetLightsArray(eDeferredLightType lightType);
-	SRenderLight*         AddLightAtIndex(eDeferredLightType lightType, const SRenderLight& light, RenderLightIndex index = -1);
+	RenderLightsList&        GetLightsArray(eDeferredLightType lightType);
+	SRenderLight*            AddLightAtIndex(eDeferredLightType lightType, const SRenderLight& light, RenderLightIndex index = -1);
 
-	bool                  HaveSunLight() { return GetSunLight() != nullptr; }
-	const SRenderLight*   GetSunLight() const;
+	bool                     HaveSunLight() { return GetSunLight() != nullptr; }
+	const SRenderLight*      GetSunLight() const;
 	//////////////////////////////////////////////////////////////////////////
 
 	//////////////////////////////////////////////////////////////////////////

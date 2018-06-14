@@ -51,7 +51,7 @@ private:
 
 	static const float        kExtendedFlareRadiusRatio;
 
-	void RT_RenderPreview(SLensFlareRenderParam* pParam, const Vec3& vPos);
+	void RT_RenderPreview(const SLensFlareRenderParam* pParam, const Vec3& vPos);
 
 public:
 
@@ -94,7 +94,7 @@ public:
 
 	void                Load(IXmlNode* pNode) override;
 
-	void                RenderPreview(SLensFlareRenderParam* pParam, const Vec3& vPos) override;
+	void                RenderPreview(const SLensFlareRenderParam* pParam, const Vec3& vPos) override;
 	bool                ProcessAll(CPrimitiveRenderPass& targetPass, std::vector<CPrimitiveRenderPass*>& prePasses, const SFlareLight& light, const SRenderViewInfo* pViewInfo, int viewInfoCount, bool bForceRender = false, bool bUpdateOcclusion = true);
 
 	IOpticsElementBase* GetParent() const override                 { return NULL; }

@@ -1223,7 +1223,7 @@ void CWaterStage::ExecuteWaterNormalGen()
 				const uint32 width = nGridSize;
 				const uint32 height = nGridSize;
 
-				CRY_PROFILE_REGION_WAITING(PROFILE_RENDERER, "update subresource");
+				CRY_PROFILE_REGION_WAITING(PROFILE_RENDERER, "CWaterStage: update subresource");
 
 				CDeviceTexture * pDevTex = pTexture->GetDevTexture();
 				pDevTex->UploadFromStagingResource(0, [=](void* pData, uint32 rowPitch, uint32 slicePitch)

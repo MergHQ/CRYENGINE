@@ -1339,6 +1339,8 @@ const SShaderProfile& CRenderer::GetShaderProfile(EShaderType eST) const
 
 void CShaderMan::RT_SetShaderQuality(EShaderType eST, EShaderQuality eSQ)
 {
+	CRY_PROFILE_REGION(PROFILE_RENDERER, "CShaderMan::RT_SetShaderQuality");
+
 	eSQ = CLAMP(eSQ, eSQ_Low, eSQ_VeryHigh);
 	if (eST == eST_All)
 	{

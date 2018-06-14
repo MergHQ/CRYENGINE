@@ -209,7 +209,7 @@ void RootOpticsElement::validateGlobalVars(const SAuxParams& aux)
 	COpticsGroup::validateChildrenGlobalVars(aux);
 }
 
-void RootOpticsElement::RenderPreview(SLensFlareRenderParam* pParam, const Vec3& vPos)
+void RootOpticsElement::RenderPreview(const SLensFlareRenderParam* pParam, const Vec3& vPos)
 {
 	if (pParam == NULL)
 		return;
@@ -222,21 +222,16 @@ void RootOpticsElement::RenderPreview(SLensFlareRenderParam* pParam, const Vec3&
 	}
 	
 	SLensFlareRenderParam copyParam = *pParam;
-	Vec3 copyPos = vPos;
-
-	gcpRendD3D->m_pRT->ExecuteRenderThreadCommand(
-		[=] {
-			SLensFlareRenderParam passParam = copyParam;
-			Vec3 passPos = copyPos;
-
-			RT_RenderPreview(&passParam, vPos);
-		},
-		ERenderCommandFlags::None
-	);
+	gcpRendD3D->m_pRT->ExecuteRenderThreadCommand([=] 
+	{
+		RT_RenderPreview(&copyParam, vPos);
+	}, ERenderCommandFlags::None);
 }
 
-void RootOpticsElement::RT_RenderPreview(SLensFlareRenderParam* pParam, const Vec3& vPos)
+void RootOpticsElement::RT_RenderPreview(const SLensFlareRenderParam* pParam, const Vec3& vPos)
 {
+	CRY_PROFILE_REGION(PROFILE_RENDERER, "RootOpticsElement::RT_RenderPreview");
+
 	CRY_ASSERT(pParam  && pParam->IsValid());
 
 	SFlareLight light;

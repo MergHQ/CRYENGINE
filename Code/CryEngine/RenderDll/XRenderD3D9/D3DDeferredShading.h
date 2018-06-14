@@ -45,31 +45,12 @@ public:
 		return (*m_pInstance);
 	}
 
-	void Render(CRenderView* pRenderView);
 	void SetupPasses(CRenderView* pRenderView);
 	void SetupGlobalConsts(CRenderView* pRenderView);
 
-	//shadows
-	void        ResolveCurrentBuffers();
-	void        RestoreCurrentBuffers();
-
-	void        FilterGBuffer();
-	bool        AmbientPass(const SRenderLight* pGlobalCubemap, bool& bOutdoorVisible);
-
-	bool        DeferredDecalPass(const SDeferredDecal& rDecal, uint32 indDecal);
-
-	void        DrawDecalVolume(const SDeferredDecal& rDecal, Matrix44A& mDecalLightProj, ECull volumeCull);
-	void        DrawLightVolume(EShapeMeshType meshType, const Matrix44& mVolumeToWorld, const Vec4& vSphereAdjust = Vec4(ZERO));
-	//void        DeferredLights(CRenderView *pRenderView,RenderLightsList& rLights, bool bCastShadows);
-	void        DeferredShadingPass();
-
 	void        Release();
-	void        DebugGBuffer();
-
-	RenderLightIndex AddLight(const SRenderLight& pDL, float fMult, const SRenderingPassInfo& passInfo);
 
 	void        AddGIClipVolume(IRenderMesh* pClipVolume, const Matrix34& mxTransform);
-	inline void ResetLights();
 
 	// called in between levels to free up memory
 	void          ReleaseData();

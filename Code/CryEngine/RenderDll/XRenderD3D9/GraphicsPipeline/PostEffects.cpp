@@ -1342,7 +1342,7 @@ void CScreenFaderPass::Execute(const CPostEffectContext& context)
 		pass.SetPrimitiveFlags(CRenderPrimitive::eFlags_ReflectShaderConstants_PS);
 		pass.SetPrimitiveType(CRenderPrimitive::ePrim_ProceduralTriangle);
 		pass.SetTechnique(CShaderMan::s_shPostEffects, techTexToTex, 0);
-		pass.SetState(GS_NODEPTHTEST | GS_BLSRC_DSTCOL | GS_BLDST_ONEMINUSSRCALPHA);
+		pass.SetState(GS_NODEPTHTEST | GS_BLSRC_SRCALPHA | GS_BLDST_ONEMINUSSRCALPHA);
 
 		pass.SetRenderTarget(0, pDstTex);
 

@@ -272,6 +272,8 @@ bool SDynTexture::Update(int nNewWidth, int nNewHeight)
 
 bool SDynTexture::RT_Update(int nNewWidth, int nNewHeight)
 {
+	CRY_PROFILE_REGION(PROFILE_RENDERER, "SDynTexture::RT_Update");
+
 	Unlink();
 
 	assert(s_iNumTextureBytesCheckedOut + s_iNumTextureBytesCheckedIn == s_nMemoryOccupied);
@@ -983,6 +985,8 @@ SDynTexture_Shadow::~SDynTexture_Shadow()
 
 void SDynTexture_Shadow::RT_EntityDelete(IRenderNode* pRenderNode)
 {
+	CRY_PROFILE_REGION(PROFILE_RENDERER, "SDynTexture_Shadow::RT_EntityDelete");
+
 	// remove references to the entity
 	SDynTexture_Shadow* pTX, * pNext;
 	for (pTX = SDynTexture_Shadow::s_RootShadow.m_NextShadow; pTX != &SDynTexture_Shadow::s_RootShadow; pTX = pNext)

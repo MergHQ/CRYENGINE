@@ -9,36 +9,40 @@
 
 CClipVolumeManager::~CClipVolumeManager()
 {
-	assert(m_ClipVolumes.empty());
+	CRY_ASSERT(m_clipVolumes.empty());
+	CRY_ASSERT(m_deletedClipVolumes.empty());
 }
 
 IClipVolume* CClipVolumeManager::CreateClipVolume()
 {
-	SClipVolumeInfo volumeInfo(new CClipVolume());
-	m_ClipVolumes.push_back(volumeInfo);
-
-	return m_ClipVolumes.back().m_pVolume;
+	m_clipVolumes.emplace_back(new CClipVolume);
+	return m_clipVolumes.back().m_pVolume;
 }
 
 bool CClipVolumeManager::DeleteClipVolume(IClipVolume* pClipVolume)
 {
-	if (m_ClipVolumes.Delete(static_cast<CClipVolume*>(pClipVolume)))
+	auto it = std::find(m_clipVolumes.begin(), m_clipVolumes.end(), static_cast<CClipVolume*>(pClipVolume));
+
+	if (it != m_clipVolumes.end())
 	{
-		delete pClipVolume;
+		m_deletedClipVolumes.push_back(*it);
+		m_clipVolumes.erase(it);
+
 		return true;
 	}
+
 	return false;
 }
 
 bool CClipVolumeManager::UpdateClipVolume(IClipVolume* pClipVolume, _smart_ptr<IRenderMesh> pRenderMesh, IBSPTree3D* pBspTree, const Matrix34& worldTM, bool bActive, uint32 flags, const char* szName)
 {
-	int nVolumeIndex = m_ClipVolumes.Find((CClipVolume*)pClipVolume);
-	if (nVolumeIndex >= 0)
+	auto it = std::find(m_clipVolumes.begin(), m_clipVolumes.end(), static_cast<CClipVolume*>(pClipVolume));
+
+	if (it != m_clipVolumes.end())
 	{
-		SClipVolumeInfo& volumeInfo = m_ClipVolumes[nVolumeIndex];
-		volumeInfo.m_pVolume->Update(pRenderMesh, pBspTree, worldTM, flags);
-		volumeInfo.m_pVolume->SetName(szName);
-		volumeInfo.m_bActive = bActive;
+		it->m_pVolume->Update(pRenderMesh, pBspTree, worldTM, flags);
+		it->m_pVolume->SetName(szName);
+		it->m_bActive = bActive;
 
 		AABB volumeBBox = pClipVolume->GetClipVolumeBBox();
 		Get3DEngine()->m_pObjManager->ReregisterEntitiesInArea(&volumeBBox);
@@ -50,10 +54,16 @@ bool CClipVolumeManager::UpdateClipVolume(IClipVolume* pClipVolume, _smart_ptr<I
 
 void CClipVolumeManager::PrepareVolumesForRendering(const SRenderingPassInfo& passInfo)
 {
-	for (size_t i = 0; i < m_ClipVolumes.size(); ++i)
+	// free clip volumes scheduled for deletion two frames ago: 
+	// 1 frame for render thread latency, 1 frame for potentially scheduled MarkRNTmpDataPoolForReset
+	TrimDeletedClipVolumes(passInfo.GetFrameID() - 2);
+
+	// add all active clip volumes to renderview
+	for (size_t i = 0; i < m_clipVolumes.size(); ++i)
 	{
-		SClipVolumeInfo& volInfo = m_ClipVolumes[i];
+		SClipVolumeInfo& volInfo = m_clipVolumes[i];
 		volInfo.m_pVolume->SetStencilRef(InactiveVolumeStencilRef);
+		volInfo.m_updateFrameId = passInfo.GetFrameID();
 
 		if (volInfo.m_bActive && passInfo.GetCamera().IsAABBVisible_F(volInfo.m_pVolume->GetClipVolumeBBox()))
 		{
@@ -69,12 +79,13 @@ void CClipVolumeManager::UpdateEntityClipVolume(const Vec3& pos, IRenderNode* pR
 
 	if (!pRenderNode)
 		return;
+
 	const auto pTempData = pRenderNode->m_pTempData.load();
 	if (!pTempData)
 		return;
 
-	IClipVolume* pPreviousVolume = pTempData->userData.m_pClipVolume;
-	UnregisterRenderNode(pRenderNode);
+	if (pTempData->userData.bClipVolumeAssigned && pTempData->userData.lastClipVolumePosition == pos)
+		return;
 
 	// user assigned clip volume
 	CLightEntity* pLight = static_cast<CLightEntity*>(pRenderNode);
@@ -83,37 +94,26 @@ void CClipVolumeManager::UpdateEntityClipVolume(const Vec3& pos, IRenderNode* pR
 		for (int i = 1; i >= 0; --i)
 		{
 			if (CClipVolume* pVolume = static_cast<CClipVolume*>(pLight->GetLightProperties().m_pClipVolumes[i]))
-				pVolume->RegisterRenderNode(pRenderNode);
+				pTempData->SetClipVolume(pVolume, pos);
 		}
 	}
 	else // assign by position
 	{
 		// Check if entity is in same clip volume as before
+		IClipVolume* pPreviousVolume = pTempData->userData.m_pClipVolume;
 		if (pPreviousVolume && (pPreviousVolume->GetClipVolumeFlags() & IClipVolume::eClipVolumeIsVisArea) == 0)
 		{
 			CClipVolume* pVolume = static_cast<CClipVolume*>(pPreviousVolume);
 			if (pVolume->IsPointInsideClipVolume(pos))
 			{
-				pVolume->RegisterRenderNode(pRenderNode);
+				pTempData->SetClipVolume(pVolume, pos);
 				return;
 			}
 		}
 
-		if (CClipVolume* pVolume = GetClipVolumeByPos(pos, pPreviousVolume))
-			pVolume->RegisterRenderNode(pRenderNode);
+		CClipVolume* pVolume = GetClipVolumeByPos(pos, pPreviousVolume);
+		pTempData->SetClipVolume(pVolume, pos); // may be nullptr
 	}
-}
-
-void CClipVolumeManager::UnregisterRenderNode(IRenderNode* pRenderNode)
-{
-	if (!pRenderNode)
-		return;
-
-	for (size_t i = 0; i < m_ClipVolumes.size(); ++i)
-		m_ClipVolumes[i].m_pVolume->UnregisterRenderNode(pRenderNode);
-
-	if (const auto pTempData = pRenderNode->m_pTempData.load())
-		pTempData->userData.m_pClipVolume = NULL;
 }
 
 bool CClipVolumeManager::IsClipVolumeRequired(IRenderNode* pRenderNode) const
@@ -132,12 +132,12 @@ bool CClipVolumeManager::IsClipVolumeRequired(IRenderNode* pRenderNode) const
 
 CClipVolume* CClipVolumeManager::GetClipVolumeByPos(const Vec3& pos, const IClipVolume* pIgnoreVolume) const
 {
-	for (size_t i = 0; i < m_ClipVolumes.size(); ++i)
+	for (size_t i = 0; i < m_clipVolumes.size(); ++i)
 	{
-		const SClipVolumeInfo& volInfo = m_ClipVolumes[i];
+		const SClipVolumeInfo& volInfo = m_clipVolumes[i];
 
 		if (volInfo.m_bActive && volInfo.m_pVolume != pIgnoreVolume && volInfo.m_pVolume->IsPointInsideClipVolume(pos))
-			return m_ClipVolumes[i].m_pVolume;
+			return m_clipVolumes[i].m_pVolume;
 	}
 
 	return NULL;
@@ -146,6 +146,20 @@ CClipVolume* CClipVolumeManager::GetClipVolumeByPos(const Vec3& pos, const IClip
 void CClipVolumeManager::GetMemoryUsage(class ICrySizer* pSizer) const
 {
 	pSizer->AddObject(this, sizeof(*this));
-	for (size_t i = 0; i < m_ClipVolumes.size(); ++i)
-		pSizer->AddObject(m_ClipVolumes[i].m_pVolume);
+	for (size_t i = 0; i < m_clipVolumes.size(); ++i)
+		pSizer->AddObject(m_clipVolumes[i].m_pVolume);
+}
+
+void CClipVolumeManager::TrimDeletedClipVolumes(int trimFrameId)
+{
+	auto itEnd = std::partition(m_deletedClipVolumes.begin(), m_deletedClipVolumes.end(),
+		[=](const SClipVolumeInfo& clipVolume)
+	{
+		return clipVolume.m_updateFrameId >= trimFrameId;
+	});
+	
+	for (auto it = itEnd; it != m_deletedClipVolumes.end(); ++it)
+		delete it->m_pVolume;
+
+	m_deletedClipVolumes.erase(itEnd, m_deletedClipVolumes.end());
 }

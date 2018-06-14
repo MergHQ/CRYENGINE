@@ -445,15 +445,6 @@ bool DeviceInfo::CreateDevice(int zbpp, OnCreateDeviceCallback pCreateDeviceCall
 #endif
 #endif
 
-	// Configure maximum frame latency --------------------------------------------------------------------------------------------
-	if (m_pDevice)
-	{
-		DXGIDevice* pDXGIDevice = 0;
-		if (SUCCEEDED(m_pDevice->QueryInterface(__uuidof(DXGIDevice), (void**)&pDXGIDevice)) && pDXGIDevice)
-			pDXGIDevice->SetMaximumFrameLatency(MAX_FRAME_LATENCY);
-		SAFE_RELEASE(pDXGIDevice);
-	}
-
 	HWND hWnd = pCreateWindowCallback ? pCreateWindowCallback() : 0;
 	if (!hWnd)
 	{

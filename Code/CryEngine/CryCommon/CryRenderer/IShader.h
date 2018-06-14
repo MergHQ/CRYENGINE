@@ -2301,7 +2301,6 @@ struct SRenderLight
 		SAFE_ACQUIRE(m_pLensOpticsElement);
 		SAFE_ACQUIRE(m_pSoftOccQuery);
 		SAFE_ACQUIRE(m_pLightAnim);
-		SAFE_ACQUIRE(m_pLightAttenMap);
 	}
 
 	void DropResources()
@@ -2313,7 +2312,6 @@ struct SRenderLight
 		SAFE_RELEASE(m_pLensOpticsElement);
 		SAFE_RELEASE(m_pSoftOccQuery);
 		SAFE_RELEASE(m_pLightAnim);
-		SAFE_RELEASE(m_pLightAttenMap);
 		SAFE_RELEASE(m_pLightDynTexSource);
 	}
 
@@ -2431,7 +2429,6 @@ struct SRenderLight
 		m_pSpecularCubemap = dl.m_pSpecularCubemap;
 		m_pLightImage = dl.m_pLightImage;
 		m_pLightDynTexSource = dl.m_pLightDynTexSource;
-		m_pLightAttenMap = dl.m_pLightAttenMap;
 		m_sName = dl.m_sName;
 		m_ProjMatrix = dl.m_ProjMatrix;
 		m_ObjMatrix = dl.m_ObjMatrix;
@@ -2528,7 +2525,6 @@ public:
 	uint8                m_ShadowMaskIndex = 0;
 
 	// Projector.
-	ITexture*          m_pLightAttenMap = nullptr;     //!< User can specify custom light attenuation gradient.
 	IDynTextureSource* m_pLightDynTexSource = nullptr; //!< Can be used to project dynamic textures.
 	ITexture*          m_pLightImage = nullptr;
 	Matrix44           m_ProjMatrix{type_zero::ZERO};

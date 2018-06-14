@@ -634,7 +634,7 @@ bool CTexture::StreamPrepare(bool bFromLoad)
 {
 	CHK_MAINORRENDTH;
 
-	if (!CRenderer::CV_r_texturesstreaming || m_eFlags & FT_DONT_STREAM)
+	if (!IsStreamable())
 		return false;
 
 	PROFILE_FRAME(Texture_StreamPrepare);
@@ -708,9 +708,9 @@ bool CTexture::StreamPrepare(CImageFile* pIM)
 
 	int nMipsPersistent = max(pIM->mfGet_numPersistantMips(), DDSSplitted::GetNumLastMips(nWidth, nHeight, nMips, nSides, eSrcFormat, (m_eFlags & FT_ALPHA) ? FIM_ALPHA : 0));
 
-	bool bStreamable = true;
-
 	m_eFlags &= ~(FT_SPLITTED | FT_HAS_ATTACHED_ALPHA | FT_DONT_STREAM | FT_FROMIMAGE);
+
+	bool bStreamable = IsStreamable(m_eFlags, eTT);
 
 	// Can't stream volume textures and textures without mips
 	if (eDstFormat == eTF_Unknown || nDepth > 1 || nMips < 2)
@@ -1615,6 +1615,8 @@ void CTexture::InitStreaming()
 
 void CTexture::RT_FlushStreaming(bool bAbort)
 {
+	CRY_PROFILE_REGION(PROFILE_RENDERER, "CTexture::RT_FlushStreaming");
+
 	RT_FlushAllStreamingTasks(bAbort);
 
 	// flush all pool items

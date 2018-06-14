@@ -121,7 +121,6 @@ float3 vfDecodeInscattering(float3 rawVal)
 	return rawVal.xyz / VOLUMETRIC_FOG_RANGE_SHIFT_INSCATTER;
 }
 
-
 ////////////////////////////////////////////////////////////////////////////
 // 
 ////////////////////////////////////////////////////////////////////////////
@@ -1487,9 +1486,10 @@ void AccumulateInscatteringRegularLights(inout float3 inscatter, in float depth,
 
 					const float AttenuationFalloffMax = 0.8f;// keep AttenuationFalloffMax as high as possible to mitigate sharp transition between probes.
 					float attenuation = GetAttenuation( tmpLightVec, 1, true, AttenuationFalloffMax) * light.attenuationParams.x;
+					uint4 resIndexClamps = GetResourceIndexAndMipClamps(light.resIndex);
 
 					// Diffuse
-					float4 diffuseProbe = VL_DiffuseCubeArray.SampleLevel( vfTrilinearClampSampler, float4( eyeRay, light.resIndex ), 0 );
+					float4 diffuseProbe = VL_DiffuseCubeArray.SampleLevel( vfTrilinearClampSampler, float4( eyeRay, resIndexClamps.x ), resIndexClamps.y );
 					diffuseProbe.rgb = DecodeHDRCubemap( diffuseProbe ).xyz;
 
 					VolumetricFogLight fragLight;
@@ -1556,7 +1556,11 @@ void AccumulateInscatteringRegularLights(inout float3 inscatter, in float depth,
 							vProjTC.xy /= vProjTC.w;
 						
 							if (vProjTC.w > 0 && max( abs(vProjTC.x * 2 - 1), abs(vProjTC.y * 2 - 1) ) < 1)  // Avoid back-projection
-								filter = VL_SpotTexArray.SampleLevel( vfTrilinearClampSampler, float3( vProjTC.xy, light.resIndex ), 4 ).x;
+							{
+								// TODO: base the mip-level selection on distance from the projector source (variable width "shadows")
+								uint4 resIndexClamps = GetResourceIndexAndMipClamps(light.resIndex);
+								filter = VL_SpotTexArray.SampleLevel( vfTrilinearClampSampler, float3( vProjTC.xy, resIndexClamps.x ), max(resIndexClamps.y, 4) ).x;
+							}
 						}
 					}
 					else
@@ -1780,7 +1784,11 @@ void AccumulateInscatteringRegularLights(inout float3 inscatter, in float depth,
 							if (projTC.w < plane || min( projTC.x, projTC.y ) < 0 || max( projTC.x, projTC.y ) > 1)  // Avoid back-projection
 								flag |= SkipShading;
 							else
-								fragLight.cDiffuse *= VL_SpotTexArray.SampleLevel( vfTrilinearClampSampler, float3(projTC.xy, light.resIndex), 4 ).xxx;
+							{
+								// TODO: base the mip-level selection on distance from the projector source (variable width "shadows")
+								uint4 resIndexClamps = GetResourceIndexAndMipClamps(light.resIndex);
+								fragLight.cDiffuse *= VL_SpotTexArray.SampleLevel( vfTrilinearClampSampler, float3(projTC.xy, resIndexClamps.x), max(resIndexClamps.y, 4) ).xxx;
+							}
 
 							if (light.shadowParams.x > 0)
 								flag |= ShadowMap;

@@ -1842,12 +1842,6 @@ bool CD3D9Renderer::CreateDeviceDurango()
 #if (CRY_RENDERER_DIRECT3D >= 120)
 			pD3D12Device = (pDX12Device = reinterpret_cast<CCryDX12Device*>(pD3D11Device))->GetD3D12Device();
 #endif
-			{
-				DXGIDevice* pDXGIDevice = 0;
-				if (SUCCEEDED(pD3D11Device->QueryInterface(__uuidof(DXGIDevice), (void**)&pDXGIDevice)) && pDXGIDevice)
-					pDXGIDevice->SetMaximumFrameLatency(MAX_FRAME_LATENCY);
-				SAFE_RELEASE(pDXGIDevice);
-			}
 		}
 	}
 
@@ -2273,7 +2267,7 @@ HRESULT CALLBACK CD3D9Renderer::OnD3D11PostCreateDevice(D3DDevice* pd3dDevice)
 	pDC->m_nSSSamplesX = CV_r_Supersampling;
 	pDC->m_nSSSamplesY = CV_r_Supersampling;
 	pDC->m_bMainViewport = true;
-	pDC->SetBackBufferCount(MAX_FRAME_LATENCY + 1);
+	pDC->SetBackBufferCount(CV_r_MaxFrameLatency + 1);
 
 #if DX11_WRAPPABLE_INTERFACE && CAPTURE_REPLAY_LOG
 	rd->MemReplayWrapD3DDevice();

@@ -197,7 +197,7 @@ public:
 		return m_globalColor.a > LensOpConst::_LO_MIN && m_globalFlareBrightness > LensOpConst::_LO_MIN;
 	}
 
-	virtual void RenderPreview(SLensFlareRenderParam* pParam, const Vec3& vPos) { assert(0); }
+	virtual void RenderPreview(const SLensFlareRenderParam* pParam, const Vec3& vPos) { assert(0); }
 	virtual bool PreparePrimitives(const SPreparePrimitivesContext& context) { assert(0); return false; }
 
 protected:

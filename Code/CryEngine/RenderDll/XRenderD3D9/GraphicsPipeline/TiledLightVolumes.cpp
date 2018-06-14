@@ -50,9 +50,10 @@ CTiledLightVolumesStage::CTiledLightVolumesStage()
 	m_dispatchSizeX = 0;
 	m_dispatchSizeY = 0;
 
-	m_numAtlasUpdates = 0;
 	m_numValidLights = 0;
 	m_numSkippedLights = 0;
+	m_numAtlasUpdates = 0;
+	m_numAtlasEvictions = 0;
 
 	m_bApplyCaustics = false;
 }
@@ -62,6 +63,12 @@ CTiledLightVolumesStage::~CTiledLightVolumesStage()
 	Destroy(true);
 }
 
+constexpr uint8 CTiledLightVolumesStage::AtlasItem::highestMip;
+constexpr float CTiledLightVolumesStage::AtlasItem::mipFactorMinSize;
+
+constexpr uint16 CTiledLightVolumesStage::STiledLightShadeInfo::resNoIndex;
+constexpr uint8  CTiledLightVolumesStage::STiledLightShadeInfo::resMipLimit;
+constexpr uint16 CTiledLightVolumesStage::STiledLightShadeInfo::stencilBias;
 
 void CTiledLightVolumesStage::Init()
 {
@@ -307,6 +314,8 @@ void CTiledLightVolumesStage::Update()
 
 void CTiledLightVolumesStage::GenerateLightVolumeInfo()
 {
+	CRY_PROFILE_FUNCTION(PROFILE_RENDERER);
+
 	const uint32 kNumPasses = eVolumeType_Count * 2;
 	uint16 volumeLightIndices[kNumPasses][MaxNumTileLights];
 
@@ -440,39 +449,40 @@ void CTiledLightVolumesStage::GenerateLightVolumeInfo()
 	m_lightVolumeInfoBuf.UpdateBufferContent(volumeInfo, sizeof(volumeInfo));
 }
 
-
-int CTiledLightVolumesStage::InsertTexture(CTexture* pTexInput, TextureAtlas& atlas, int arrayIndex)
+int CTiledLightVolumesStage::InsertTexture(CTexture* pTexInput, float mipFactor, TextureAtlas& atlas, int arrayIndex)
 {
 	CD3D9Renderer* const __restrict rd = gcpRendD3D;
 	const int frameID = gRenDev->GetRenderFrameID();
 
-	if (pTexInput == NULL)
-		return -1;
-
 	// Make sure the texture is loaded already
-	if (pTexInput->GetWidth() == 0 && pTexInput->GetHeight() == 0)
+	if (pTexInput == nullptr || (pTexInput->GetWidth() == 0 && pTexInput->GetHeight() == 0))
 		return -1;
 
-	bool isEditor = gEnv->IsEditor();
+	const int updateID = pTexInput->GetUpdateFrameID();
+	const bool isEditor = gEnv->IsEditor();
 
-	// Check if texture is already in atlas
-	for (uint32 i = 0, si = atlas.items.size(); i < si; ++i)
+	// Search the texture if no static index-assignment is requested (otherwise the texture _must_ be placed at the specified index)
+	if (arrayIndex < 0)
 	{
-		if (atlas.items[i].texture == pTexInput)
+		// Check if texture is already in atlas
+		for (uint32 i = 0, si = atlas.items.size(); i < si; ++i)
 		{
-			bool textureUpToDate = !isEditor ? true : (pTexInput->GetUpdateFrameID() == abs(atlas.items[i].updateFrameID) || pTexInput->GetUpdateFrameID() == 0);
-
-			if (textureUpToDate)
+			if (atlas.items[i].texture == pTexInput)
 			{
-				if (atlas.items[i].invalid)
+				bool textureUpToDate = !isEditor ? true : (updateID == abs(atlas.items[i].updateFrameID) || updateID == 0);
+
+				if (textureUpToDate)
 				{
-					// Texture was processed before and is invalid
-					return -1;
-				}
-				else
-				{
-					atlas.items[i].accessFrameID = frameID;
-					return (int)i;
+					if (atlas.items[i].invalid)
+					{
+						// Texture was processed before and is invalid
+						return -1;
+					}
+					else
+					{
+						arrayIndex = i;
+						break;
+					}
 				}
 			}
 		}
@@ -495,28 +505,54 @@ int CTiledLightVolumesStage::InsertTexture(CTexture* pTexInput, TextureAtlas& at
 		arrayIndex = minIndex;
 	}
 
-	atlas.items[arrayIndex].texture = pTexInput;
-	atlas.items[arrayIndex].accessFrameID = frameID;
-	atlas.items[arrayIndex].updateFrameID = pTexInput->GetUpdateFrameID();
-	atlas.items[arrayIndex].invalid = false;
+	AtlasItem& item = atlas.items[arrayIndex];
+
+	// Stream out previous texture if old texture is overwritten
+	if (item.invalid || (item.texture != pTexInput))
+	{
+		item.mipFactorRequested  = item.mipFactorMinSize;
+		item.lowestRenderableMip = item.highestMip;
+		item.lowestTransferedMip = item.highestMip;
+
+		if (item.texture && item.texture->IsStreamed())
+		{
+			item.mipFactorRequested = item.texture->GetStreamingInfo() ? std::nextafter(item.texture->GetStreamingInfo()->m_fMinMipFactor, 0.0f) : item.mipFactorMinSize;
+
+			if (item.texture->StreamGetLoadedMip() < item.texture->GetNumPersistentMips())
+			{
+				// 0 = near, 1 = far
+				item.texture->PrecacheAsynchronously(item.mipFactorRequested, FPR_STARTLOADING | FPR_HIGHPRIORITY, item.texture->GetStreamRoundInfo(0).nRoundUpdateId + 1, 0);
+				item.texture->PrecacheAsynchronously(item.mipFactorRequested, FPR_STARTLOADING | FPR_HIGHPRIORITY, item.texture->GetStreamRoundInfo(1).nRoundUpdateId + 1, 1);
+			}
+		}
+
+		++m_numAtlasEvictions;
+	}
+
+	item.mipFactorRequested = std::min<float>(item.invalid || item.accessFrameID != frameID ? item.mipFactorMinSize : item.mipFactorRequested, mipFactor);
+	item.lowestRenderableMip  = std::min<int>(item.invalid ? item.highestMip : item.lowestRenderableMip, pTexInput->IsStreamed() ? pTexInput->StreamGetLoadedMip() : 0);
+	item.accessFrameID = frameID;
+	item.updateFrameID = updateID;
+	item.texture = pTexInput;
+	item.invalid = false;
+
+	// Suppress streamed mip usage (they might be in the atlas, but we simulate streaming suppression here)
+	const bool enableSuppression = CRenderer::CV_r_texturesstreamingSuppress >= 1;
+	if (pTexInput->IsStreamed() && enableSuppression)
+		item.lowestRenderableMip = item.texture->GetNumPersistentMips();
 
 	// Check if texture is valid
 	if (!pTexInput->IsLoaded() ||
 		pTexInput->GetWidth() < atlas.texArray->GetWidth() ||
 		pTexInput->GetWidth() != pTexInput->GetHeight() ||
-		pTexInput->GetDstFormat() != atlas.texArray->GetDstFormat() ||
-		(pTexInput->IsStreamed() && pTexInput->IsPartiallyLoaded()))
+		pTexInput->GetDstFormat() != atlas.texArray->GetDstFormat())
 	{
-		atlas.items[arrayIndex].invalid = true;
+		item.invalid = true;
 
 		if (!pTexInput->IsLoaded())
 		{
-			iLog->LogError("TiledShading: Texture not found: %s", pTexInput->GetName());
-		}
-		else if (pTexInput->IsStreamed() && pTexInput->IsPartiallyLoaded())
-		{
-			iLog->LogError("TiledShading: Texture not fully streamed so impossible to add: %s (W:%i H:%i F:%s)",
-				pTexInput->GetName(), pTexInput->GetWidth(), pTexInput->GetHeight(), pTexInput->GetFormatName());
+			iLog->LogError("TiledShading: Texture not found: %s",
+				pTexInput->GetName());
 		}
 		else if (pTexInput->GetDstFormat() != atlas.texArray->GetDstFormat())
 		{
@@ -528,73 +564,154 @@ int CTiledLightVolumesStage::InsertTexture(CTexture* pTexInput, TextureAtlas& at
 			iLog->LogError("TiledShading: Unsupported texture properties: %s (W:%i H:%i F:%s)",
 				pTexInput->GetName(), pTexInput->GetWidth(), pTexInput->GetHeight(), pTexInput->GetFormatName());
 		}
+
 		return -1;
 	}
-
-	// Update atlas
-	uint32 numSrcMips = (uint32)pTexInput->GetNumMips();
-	uint32 numDstMips = (uint32)atlas.texArray->GetNumMips();
-	uint32 firstSrcMip = IntegerLog2((uint32)pTexInput->GetWidth() / atlas.texArray->GetWidth());
-	uint32 numFaces = atlas.texArray->GetTexType() == eTT_CubeArray ? 6 : 1;
-
-	CDeviceTexture* pTexInputDevTex = pTexInput->GetDevTexture();
-	CDeviceTexture* pTexArrayDevTex = atlas.texArray->GetDevTexture();
-
-	ASSERT_DEVICE_TEXTURE_IS_FIXED(pTexArrayDevTex);
-
-	UINT w = atlas.texArray->GetWidth();
-	UINT h = atlas.texArray->GetHeight();
-	UINT d = atlas.texArray->GetDepth();
-
-	if ((numDstMips == numSrcMips) && (firstSrcMip == 0) && 0 && "TODO: kill this branch, after taking a careful look for side-effects")
-	{
-		// MipMaps are laid out consecutively in the sub-resource specification, which allows us to issue a batch-copy for N sub-resources
-		const UINT NumSubresources = numDstMips * numFaces;
-		const UINT SrcSubresource = D3D11CalcSubresource(0, 0, numSrcMips);
-		const UINT DstSubresource = D3D11CalcSubresource(0, arrayIndex * numFaces, numDstMips);
-
-		const SResourceRegionMapping mapping =
-		{
-			{ 0, 0, 0, SrcSubresource }, // src position
-			{ 0, 0, 0, DstSubresource }, // dst position
-			{ w, h, d, NumSubresources }, // size
-			D3D11_COPY_NO_OVERWRITE_REVERT
-		};
-
-		GetDeviceObjectFactory().GetCoreCommandList().GetCopyInterface()->Copy(
-			pTexInputDevTex,
-			pTexArrayDevTex,
-			mapping);
-	}
-	else
-	{
-		for (uint32 i = 0; i < numFaces; ++i)
-		{
-			// MipMaps are laid out consecutively in the sub-resource specification, which allows us to issue a batch-copy for N sub-resources
-			const UINT NumSubresources = numDstMips;
-			const UINT SrcSubresource = D3D11CalcSubresource(0 + firstSrcMip, i, numSrcMips);
-			const UINT DstSubresource = D3D11CalcSubresource(0, arrayIndex * numFaces + i, numDstMips);
-
-			const SResourceRegionMapping mapping =
-			{
-				{ 0, 0, 0, SrcSubresource }, // src position
-				{ 0, 0, 0, DstSubresource }, // dst position
-				{ w, h, d, NumSubresources }, // size
-				D3D11_COPY_NO_OVERWRITE_REVERT
-			};
-
-			GetDeviceObjectFactory().GetCoreCommandList().GetCopyInterface()->Copy(
-				pTexInputDevTex,
-				pTexArrayDevTex,
-				mapping);
-		}
-	}
-
-	++m_numAtlasUpdates;
 
 	return arrayIndex;
 }
 
+#pragma optimize("", off)
+void CTiledLightVolumesStage::UploadTextures(TextureAtlas& atlas)
+{
+	CRY_PROFILE_FUNCTION(PROFILE_RENDERER);
+
+	const UINT w = atlas.texArray->GetWidth();
+	const UINT h = atlas.texArray->GetHeight();
+	const UINT d = atlas.texArray->GetDepth();
+
+	// Check if texture is already in atlas
+	for (uint32 arrayIndex = 0, si = atlas.items.size(); arrayIndex < si; ++arrayIndex)
+	{
+		AtlasItem& item = atlas.items[arrayIndex];
+
+		if (item.invalid || !item.texture)
+			continue;
+
+		CTexture* pTexUpload = item.texture;
+
+		const int availableMip = pTexUpload->IsStreamed() ? std::max(0, pTexUpload->StreamGetLoadedMip       (                       )) : 0;
+		const int requestedMip = pTexUpload->IsStreamed() ? std::max(0, pTexUpload->StreamCalculateMipsSigned(item.mipFactorRequested)) : 0;
+
+		// Copy for as long as we have less data in the array than in the texture
+		if (item.lowestTransferedMip > availableMip)
+		{
+			item.lowestTransferedMip = availableMip;
+
+			// Update atlas
+			const uint32 numMisMips = availableMip;
+			const uint32 numSrcMips = (uint32)pTexUpload->GetNumMips();
+			const uint32 numDstMips = (uint32)atlas.texArray->GetNumMips();
+			const uint32 numSkpMips = IntegerLog2(std::max((uint32)(pTexUpload->GetWidth() >> numMisMips) / atlas.texArray->GetWidth(), 1U));
+			const uint32 numFaces = atlas.texArray->GetTexType() == eTT_CubeArray ? 6 : 1;
+
+			CDeviceTexture* pTexInputDevTex = pTexUpload->GetDevTexture();
+			CDeviceTexture* pTexArrayDevTex = atlas.texArray->GetDevTexture();
+
+			ASSERT_DEVICE_TEXTURE_IS_FIXED(pTexArrayDevTex);
+
+			if ((numDstMips == numSrcMips) && ((numSkpMips + numMisMips) == 0) && 0 && "TODO: kill this branch, after taking a careful look for side-effects")
+			{
+				// MipMaps are laid out consecutively in the sub-resource specification, which allows us to issue a batch-copy for N sub-resources
+				const UINT NumSubresources = numDstMips * numFaces;
+				const UINT SrcSubresource = D3D11CalcSubresource(0, 0, numSrcMips);
+				const UINT DstSubresource = D3D11CalcSubresource(0, arrayIndex * numFaces, numDstMips);
+
+				const SResourceRegionMapping mapping =
+				{
+					{ 0, 0, 0, SrcSubresource }, // src position
+					{ 0, 0, 0, DstSubresource }, // dst position
+					{ w, h, d, NumSubresources }, // size
+					D3D11_COPY_NO_OVERWRITE_REVERT
+				};
+
+				GetDeviceObjectFactory().GetCoreCommandList().GetCopyInterface()->Copy(
+					pTexInputDevTex,
+					pTexArrayDevTex,
+					mapping);
+			}
+			else
+			{
+				for (uint32 i = 0; i < numFaces; ++i)
+				{
+					// MipMaps are laid out consecutively in the sub-resource specification, which allows us to issue a batch-copy for N sub-resources
+					const UINT NumSubresources = numDstMips - numMisMips;
+					const UINT SrcSubresource = D3D11CalcSubresource(numSkpMips, i, numSrcMips - numMisMips);
+					const UINT DstSubresource = D3D11CalcSubresource(numMisMips, arrayIndex * numFaces + i, numDstMips);
+
+					const UINT W = (w + (1 << numMisMips) - 1) >> numMisMips;
+					const UINT H = (h + (1 << numMisMips) - 1) >> numMisMips;
+					const UINT D = (d + (1 << numMisMips) - 1) >> numMisMips;
+
+					const SResourceRegionMapping mapping =
+					{
+						{ 0, 0, 0, SrcSubresource }, // src position
+						{ 0, 0, 0, DstSubresource }, // dst position
+						{ W, H, D, NumSubresources }, // size
+						D3D11_COPY_NO_OVERWRITE_REVERT
+					};
+
+					GetDeviceObjectFactory().GetCoreCommandList().GetCopyInterface()->Copy(
+						pTexInputDevTex,
+						pTexArrayDevTex,
+						mapping);
+				}
+			}
+
+			++m_numAtlasUpdates;
+		}
+
+		if (pTexUpload->IsStreamed())
+		{
+			// Stream in current texture if we don't yet have what we asked for
+			float mipFactorRequested = item.mipFactorRequested;
+			bool issueCommand = availableMip > requestedMip;
+
+			// Stream out current texture if we have all or more than we asked for
+			if (requestedMip >= item.lowestRenderableMip)
+			{
+				mipFactorRequested = pTexUpload->GetStreamingInfo() ? pTexUpload->GetStreamingInfo()->m_fMinMipFactor : item.mipFactorMinSize;
+				issueCommand = availableMip < item.texture->GetNumPersistentMips();
+			}
+
+			// Keep command-rate low
+			if (issueCommand)
+			{
+				// 0 = near, 1 = far
+				pTexUpload->PrecacheAsynchronously(mipFactorRequested, FPR_STARTLOADING | FPR_HIGHPRIORITY, pTexUpload->GetStreamRoundInfo(0).nRoundUpdateId + 1, 0);
+				pTexUpload->PrecacheAsynchronously(mipFactorRequested, FPR_STARTLOADING | FPR_HIGHPRIORITY, pTexUpload->GetStreamRoundInfo(1).nRoundUpdateId + 1, 1);
+			}
+		}
+	}
+}
+
+std::pair<size_t, size_t> CTiledLightVolumesStage::MeasureTextures(TextureAtlas& atlas)
+{
+	const UINT w = atlas.texArray->GetWidth();
+	const UINT h = atlas.texArray->GetHeight();
+	const UINT d = atlas.texArray->GetDepth();
+
+	std::pair<size_t, size_t> atlasSize = {};
+
+	// Check if texture is already in atlas
+	for (uint32 arrayIndex = 0, si = atlas.items.size(); arrayIndex < si; ++arrayIndex)
+	{
+		AtlasItem& item = atlas.items[arrayIndex];
+
+		if (item.invalid || !item.texture)
+			continue;
+
+		CTexture* pTexture = item.texture;
+		size_t textureSize = pTexture->GetDeviceDataSize();
+
+		if (pTexture->IsStreamed())
+			atlasSize.first += textureSize;
+		else
+			atlasSize.second += textureSize;
+	}
+
+	return atlasSize;
+}
 
 AABB RotateAABB(const AABB& aabb, const Matrix33& mat)
 {
@@ -615,9 +732,10 @@ AABB RotateAABB(const AABB& aabb, const Matrix33& mat)
 	return AABB(pos - sz, pos + sz);
 }
 
-
 void CTiledLightVolumesStage::GenerateLightList()
 {
+	CRY_PROFILE_FUNCTION(PROFILE_RENDERER);
+
 	CD3D9Renderer* const __restrict rd = gcpRendD3D;
 	CRenderView* pRenderView = RenderView();
 
@@ -626,6 +744,7 @@ void CTiledLightVolumesStage::GenerateLightList()
 	const auto& ambientLights = pRenderView->GetLightsArray(eDLT_DeferredAmbientLight);
 
 	const SRenderViewInfo& viewInfo = pRenderView->GetViewInfo(CCamera::eEye_Left);
+	const Vec3 cameraPosition = pRenderView->GetCamera(CCamera::eEye_Left).GetPosition();
 
 	const uint32 maxSliceCount = CRendererResources::s_ptexShadowMask->StreamGetNumSlices();	// Should be set to same texture as CShadowMaskStage::m_pShadowMaskRT
 
@@ -641,6 +760,7 @@ void CTiledLightVolumesStage::GenerateLightList()
 	int nThreadID = gRenDev->GetRenderThreadID();
 
 	uint32 numTileLights = 0;
+	uint32 numSkipLights = 0;
 	uint32 numRenderLights = 0;
 	uint32 numValidRenderLights = 0;
 
@@ -680,7 +800,8 @@ void CTiledLightVolumesStage::GenerateLightList()
 			if (numTileLights == MaxNumTileLights)
 				continue;  // Skip light
 
-						   // Setup standard parameters
+			// Setup standard parameters
+			float mipFactor = (cameraPosition - renderLight.m_Origin).GetLengthSquared() / max(0.001f, renderLight.m_fRadius * renderLight.m_fRadius);
 			bool areaLightRect = (renderLight.m_Flags & DLF_AREA_LIGHT) && renderLight.m_fAreaWidth && renderLight.m_fAreaHeight && renderLight.m_fLightFrustumAngle;
 			float volumeSize = (lightListIdx == 0) ? renderLight.m_ProbeExtents.len() : renderLight.m_fRadius;
 			Vec3 pos = renderLight.GetPosition();
@@ -693,16 +814,18 @@ void CTiledLightVolumesStage::GenerateLightList()
 			lightShadeInfo.color = Vec4(renderLight.m_Color.r * itensityScale, renderLight.m_Color.g * itensityScale,
 				renderLight.m_Color.b * itensityScale, renderLight.m_SpecMult);
 			lightShadeInfo.resIndex = 0;
+			lightShadeInfo.resMipClamp0 = 0;
+			lightShadeInfo.resMipClamp1 = 0;
 			lightShadeInfo.shadowParams = Vec2(0, 0);
-			lightShadeInfo.stencilID0 = renderLight.m_nStencilRef[0] + 1;
-			lightShadeInfo.stencilID1 = renderLight.m_nStencilRef[1] + 1;
+			lightShadeInfo.stencilID0 = renderLight.m_nStencilRef[0] + lightShadeInfo.stencilBias;
+			lightShadeInfo.stencilID1 = renderLight.m_nStencilRef[1] + lightShadeInfo.stencilBias;
 
 			// Environment probes
 			if (lightListIdx == 0)
 			{
 				lightInfo.volumeType = tlVolumeOBB;
 				lightShadeInfo.lightType = tlTypeProbe;
-				lightShadeInfo.resIndex = 0xFFFFFFFF;
+				lightShadeInfo.resIndex = lightShadeInfo.resNoIndex;
 				lightShadeInfo.attenuationParams = Vec2(renderLight.m_Color.a, max(renderLight.GetFalloffMax(), 0.001f));
 
 				AABB aabb = RotateAABB(AABB(-renderLight.m_ProbeExtents, renderLight.m_ProbeExtents), Matrix33(renderLight.m_ObjMatrix));
@@ -729,16 +852,20 @@ void CTiledLightVolumesStage::GenerateLightList()
 				lightShadeInfo.shadowMatrix.SetRow4(0, Vec4(boxProxyMin, 0));
 				lightShadeInfo.shadowMatrix.SetRow4(1, Vec4(boxProxyMax, 0));
 
-				int arrayIndex = InsertTexture((CTexture*)renderLight.GetSpecularCubemap(), m_specularProbeAtlas, -1);
-				if (arrayIndex >= 0)
 				{
-					if (InsertTexture((CTexture*)renderLight.GetDiffuseCubemap(), m_diffuseProbeAtlas, arrayIndex) >= 0)
-						lightShadeInfo.resIndex = arrayIndex;
-					else
+					CTexture* pSpecTexture = (CTexture*)renderLight.GetSpecularCubemap();
+					CTexture* pDiffTexture = (CTexture*)renderLight.GetDiffuseCubemap();
+
+					int arrayIndex = InsertTexture(pSpecTexture, mipFactor, m_specularProbeAtlas, -1);
+					if (arrayIndex < 0)
 						continue;  // Skip light
+					if (InsertTexture(pDiffTexture, mipFactor, m_diffuseProbeAtlas, arrayIndex) < 0)
+						continue;  // Skip light
+
+					lightShadeInfo.resIndex = arrayIndex;
+					lightShadeInfo.resMipClamp0 = m_diffuseProbeAtlas .items[arrayIndex].lowestRenderableMip;
+					lightShadeInfo.resMipClamp1 = m_specularProbeAtlas.items[arrayIndex].lowestRenderableMip;
 				}
-				else
-					continue;  // Skip light
 			}
 			// Regular and ambient lights
 			else
@@ -768,15 +895,21 @@ void CTiledLightVolumesStage::GenerateLightList()
 				{
 					lightInfo.volumeType = tlVolumeCone;
 					lightShadeInfo.lightType = ambientLight ? tlTypeAmbientProjector : tlTypeRegularProjector;
-					lightShadeInfo.resIndex = 0xFFFFFFFF;
+					lightShadeInfo.resIndex = lightShadeInfo.resNoIndex;
 
-					int arrayIndex = InsertTexture((CTexture*)renderLight.m_pLightImage, m_spotTexAtlas, -1);
-					if (arrayIndex >= 0)
-						lightShadeInfo.resIndex = (uint32)arrayIndex;
-					else
-						continue;  // Skip light
+					{
+						CTexture* pProjTexture = (CTexture*)renderLight.m_pLightImage;
 
-								   // Prevent culling errors for frustums with large FOVs by slightly enlarging the frustum
+						int arrayIndex = InsertTexture(pProjTexture, mipFactor, m_spotTexAtlas, -1);
+						if (arrayIndex < 0)
+							continue;  // Skip light
+
+						lightShadeInfo.resIndex = arrayIndex;
+						lightShadeInfo.resMipClamp0 =
+						lightShadeInfo.resMipClamp1 = m_spotTexAtlas.items[arrayIndex].lowestRenderableMip;
+					}
+
+					// Prevent culling errors for frustums with large FOVs by slightly enlarging the frustum
 					const float frustumAngleDelta = renderLight.m_fLightFrustumAngle > 50 ? 7.5f : 0.0f;
 
 					Matrix34 objMat = renderLight.m_ObjMatrix;
@@ -885,6 +1018,8 @@ void CTiledLightVolumesStage::GenerateLightList()
 									lightInfo.depthBoundsVS = depthBoundsVS;
 									lightShadeInfo.lightType = tlTypeRegularPointFace;
 									lightShadeInfo.resIndex = side;
+									lightShadeInfo.resMipClamp0 = 0;
+									lightShadeInfo.resMipClamp1 = 0;
 								}
 							}
 							else
@@ -899,6 +1034,8 @@ void CTiledLightVolumesStage::GenerateLightList()
 								tileLightsShade[numTileLights].shadowParams = sideShadowParams;
 								tileLightsShade[numTileLights].shadowMatrix = shadowMat;
 								tileLightsShade[numTileLights].resIndex = side;
+								tileLightsShade[numTileLights].resMipClamp0 = 0;
+								tileLightsShade[numTileLights].resMipClamp1 = 0;
 							}
 						}
 					}
@@ -918,7 +1055,7 @@ void CTiledLightVolumesStage::GenerateLightList()
 		ZeroMemory(&tileLightsShade[numTileLights], sizeof(STiledLightShadeInfo));
 	}
 
-	m_numSkippedLights = numRenderLights - numValidRenderLights;
+	numSkipLights = numRenderLights - numValidRenderLights;
 
 	// Add sun
 	if (pRenderView->HaveSunLight())
@@ -947,13 +1084,12 @@ void CTiledLightVolumesStage::GenerateLightList()
 		}
 		else
 		{
-			m_numSkippedLights += 1;
+			numSkipLights += 1;
 		}
 	}
 
-	m_numValidLights = numTileLights;
 #if defined(ENABLE_PROFILING_CODE)
-	SRenderStatistics::Write().m_NumTiledShadingSkippedLights = m_numSkippedLights;
+	SRenderStatistics::Write().m_NumTiledShadingSkippedLights = numSkipLights;
 #endif
 
 	// Prepare cull info
@@ -987,15 +1123,108 @@ void CTiledLightVolumesStage::GenerateLightList()
 	const size_t tileLightsCullUploadSize = CDeviceBufferManager::AlignBufferSizeForStreaming(sizeof(STiledLightCullInfo) * std::min(MaxNumTileLights, Align(numTileLights, 64) + 64));
 	const size_t tileLightsShadeUploadSize = CDeviceBufferManager::AlignBufferSizeForStreaming(sizeof(STiledLightShadeInfo) * std::min(MaxNumTileLights, Align(numTileLights, 64) + 64));
 
+	m_numSkippedLights = numSkipLights;
+	m_numValidLights = numTileLights;
+
 	m_lightCullInfoBuf.UpdateBufferContent(tileLightsCull, tileLightsCullUploadSize);
 	m_lightShadeInfoBuf.UpdateBufferContent(tileLightsShade, tileLightsShadeUploadSize);
+
+	UploadTextures(m_specularProbeAtlas);
+	UploadTextures(m_diffuseProbeAtlas);
+	UploadTextures(m_spotTexAtlas);
 
 	// Output debug information
 	if (CRenderer::CV_r_DeferredShadingTiledDebug == 1)
 	{
-		IRenderAuxText::Draw2dLabel(20, 60, 2.0f, Col_Blue, false, "Tiled Shading Debug");
-		IRenderAuxText::Draw2dLabel(20, 95, 1.7f, m_numSkippedLights > 0 ? Col_Red : Col_Blue, false, "Skipped Lights: %i", m_numSkippedLights);
-		IRenderAuxText::Draw2dLabel(20, 120, 1.7f, Col_Blue, false, "Atlas Updates: %i", m_numAtlasUpdates);
+		static const char* StringLightTypes[] =
+		{
+			"-",
+			"Probe",
+			"AmbientPoint",
+			"AmbientProjector",
+			"AmbientArea",
+			"Point",
+			"Projector",
+			"PointFace",
+			"Area",
+			"Sun"
+		};
+
+		float fontSize = 1.7f;
+		float fontSizeSmall = 1.2f;
+		int rowHeight = 35;
+		int rowHeightSmall = 13;
+		int rowPos = 25;
+		float colPos = 20;
+			
+		auto specularAtlasSize  = MeasureTextures(m_specularProbeAtlas);
+		auto diffuseAtlasSize   = MeasureTextures(m_diffuseProbeAtlas);
+		auto projectorAtlasSize = MeasureTextures(m_spotTexAtlas);
+
+		IRenderAuxText::Draw2dLabel(colPos, float(rowPos += rowHeight), 2.0f, Col_Blue, false, "Tiled Shading Debug");
+		IRenderAuxText::Draw2dLabel(colPos, float(rowPos += rowHeight), fontSize, m_numSkippedLights > 0 ? Col_Red : Col_Blue, false, "Skipped Lights: %i", m_numSkippedLights);
+		IRenderAuxText::Draw2dLabel(colPos, float(rowPos += rowHeight), fontSize, Col_Blue, false, "Atlas Updates: %i, Evictions: %i, Str. Sizes: %zu/%zu/%zu bytes, Non-Str.Sizes: %zu/%zu/%zu bytes",
+			m_numAtlasUpdates, m_numAtlasEvictions, specularAtlasSize.first, diffuseAtlasSize.first, projectorAtlasSize.first, specularAtlasSize.second, diffuseAtlasSize.second, projectorAtlasSize.second);
+		IRenderAuxText::Draw2dLabel(colPos, float(rowPos += rowHeight), 2.0f, Col_Yellow, false, "Light-vector:");
+
+		rowPos += (rowHeight - rowHeightSmall);
+		int rowReset = rowPos;
+
+		for (uint32 i = 0; i < numTileLights; i++)
+		{
+			STiledLightShadeInfo& lightShadeInfo = tileLightsShade[i];
+
+			const AtlasItem* pItem = nullptr;
+			if ((lightShadeInfo.resIndex != lightShadeInfo.resNoIndex))
+			{
+				if ((lightShadeInfo.lightType == tlTypeProbe))
+					pItem = &m_specularProbeAtlas.items[lightShadeInfo.resIndex];
+				if ((lightShadeInfo.lightType == tlTypeAmbientProjector || lightShadeInfo.lightType == tlTypeRegularProjector))
+					pItem = &m_spotTexAtlas.items[lightShadeInfo.resIndex];
+			}
+
+			bool isValid = pItem ? !pItem->invalid : false;
+			int lastAccess = pItem ? pItem->accessFrameID : 0;
+			int lastUpdate = pItem ? pItem->updateFrameID : 0;
+			const char* pName = pItem && pItem->texture ? pItem->texture->GetName() : "-";
+			int streamed0 = 0; // 32x32 non-streamed full-resolution
+			int streamed1 = pItem && pItem->texture && pItem->texture->IsStreamed() ? std::max(0, pItem->texture->StreamGetLoadedMip()) : 0;
+
+			Vec4 color = lightShadeInfo.color;
+
+#if 0
+			SDrawTextInfo ti;
+			ti.color[0] = Col_Yellow.r;
+			ti.color[1] = Col_Yellow.g;
+			ti.color[2] = Col_Yellow.b;
+			ti.color[3] = Col_Yellow.a;
+			ti.flags = eDrawText_2D | eDrawText_Monospace;
+			ti.scale = Vec2(fontSizeSmall);
+
+			gEnv->pRenderer->GetIRenderAuxGeom()->RenderText(Vec3(colPos, float(rowPos += rowHeightSmall), 0), ti,
+#else
+			IRenderAuxText::Draw2dLabel /* Ex */ (colPos, float(rowPos += rowHeightSmall), fontSizeSmall, Col_Yellow, false /* eDrawText_Monospace */,
+#endif
+				"%2x: \"%16s\" %2x u%06x a%06x (%1.4f,%1.4f),(%d,%d),(%d,%d) %c\"%s\"", i,
+				StringLightTypes[lightShadeInfo.lightType],
+				lightShadeInfo.resIndex != lightShadeInfo.resNoIndex ? lightShadeInfo.resIndex : 0x00,
+				lastUpdate,
+				lastAccess,
+				lightShadeInfo.attenuationParams.x,
+				lightShadeInfo.attenuationParams.y,
+				lightShadeInfo.resMipClamp0,
+				lightShadeInfo.resMipClamp1,
+				streamed0,
+				streamed1,
+				isValid ? '!' : '?',
+				pName);
+
+			if (rowPos >= (rd->GetHeight() - rowHeightSmall))
+			{
+				rowPos = rowReset;
+				colPos += 800;
+			}
+		}
 	}
 }
 

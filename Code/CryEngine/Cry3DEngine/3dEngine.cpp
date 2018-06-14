@@ -2854,16 +2854,19 @@ void C3DEngine::UpdateVisArea(IVisArea* pVisArea, const Vec3* pPoints, int nCoun
 
 IClipVolume* C3DEngine::CreateClipVolume()
 {
+	MarkRNTmpDataPoolForReset();
 	return m_pClipVolumeManager->CreateClipVolume();
 }
 
 void C3DEngine::DeleteClipVolume(IClipVolume* pClipVolume)
 {
+	MarkRNTmpDataPoolForReset();
 	m_pClipVolumeManager->DeleteClipVolume(pClipVolume);
 }
 
 void C3DEngine::UpdateClipVolume(IClipVolume* pClipVolume, _smart_ptr<IRenderMesh> pRenderMesh, IBSPTree3D* pBspTree, const Matrix34& worldTM, bool bActive, uint32 flags, const char* szName)
 {
+	MarkRNTmpDataPoolForReset();
 	m_pClipVolumeManager->UpdateClipVolume(pClipVolume, pRenderMesh, pBspTree, worldTM, bActive, flags, szName);
 }
 
@@ -6648,10 +6651,8 @@ bool C3DEngine::UnRegisterEntityImpl(IRenderNode* pEnt)
 		}
 	}
 
-	if (CClipVolumeManager* pClipVolumeManager = GetClipVolumeManager())
-	{
-		pClipVolumeManager->UnregisterRenderNode(pEnt);
-	}
+	if (auto pTempData = pEnt->m_pTempData.load())
+		pTempData->ResetClipVolume();
 
 	if (m_bIntegrateObjectsIntoTerrain && eRenderNodeType == eERType_MovableBrush && pEnt->GetGIMode() == IRenderNode::eGM_IntegrateIntoTerrain)
 	{

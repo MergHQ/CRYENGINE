@@ -4206,9 +4206,12 @@ void CRenderMesh::UpdateModified()
 // Mesh garbage collector
 void CRenderMesh::Tick(uint numFrames)
 {
+	CRY_PROFILE_REGION(PROFILE_RENDERER, "CRenderMesh::Tick");
+
 	MEMORY_SCOPE_CHECK_HEAP();
 	ASSERT_IS_RENDER_THREAD(gRenDev->m_pRT)
-		bool bKeepSystem = false;
+		
+	bool bKeepSystem = false;
 	const threadID threadId = gRenDev->m_pRT->IsMultithreaded() ? gRenDev->GetRenderThreadID() : threadID(1);
 	int nFrame = GetCurrentFrameID();
 
@@ -4512,6 +4515,7 @@ void CRenderMesh::CreateRemappedBoneIndicesPair(const uint pairGuid, const TRend
 void CRenderMesh::CreateRemappedBoneIndicesPair(const DynArray<JointIdType> &arrRemapTable, const uint pairGuid, const void* tag)
 {
 	ASSERT_IS_MAIN_THREAD(gRenDev->m_pRT);
+	CRY_PROFILE_REGION(PROFILE_RENDERER, "CRenderMesh::CreateRemappedBoneIndicesPair");
 
 	SREC_AUTO_LOCK(m_sResLock); 
 
@@ -4605,6 +4609,7 @@ void CRenderMesh::ReleaseRemappedBoneIndicesPair(const uint pairGuid)
 	}
 
 	CRY_ASSERT(gRenDev->m_pRT->IsRenderThread());
+	CRY_PROFILE_REGION(PROFILE_RENDERER, "CRenderMesh::ReleaseRemappedBoneIndicesPair");
 
 	SREC_AUTO_LOCK(m_sResLock); 
 	size_t deleted = ~0u; 

@@ -70,7 +70,7 @@ public:
 	static int   CV_r_MotionBlurGBufferVelocity;
 	static float CV_r_MotionBlurThreshold;
 	static int   CV_r_UseMergedPosts;
-	static int   CV_r_minimizeLatency;
+	static int   CV_r_MaxFrameLatency;
 	static int   CV_r_texatlassize;
 	static int   CV_r_DeferredShadingSortLights;
 	static int   CV_r_batchtype;

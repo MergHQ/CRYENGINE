@@ -164,7 +164,7 @@ public:
 	virtual void                GetMemoryUsage(ICrySizer* pSizer) const = 0;
 	virtual void                Invalidate() = 0;
 
-	virtual void                RenderPreview(SLensFlareRenderParam* pParam, const Vec3& vPos) = 0;
+	virtual void                RenderPreview(const SLensFlareRenderParam* pParam, const Vec3& vPos) = 0;
 
 	virtual void                SetOpticsReference(IOpticsElementBase* pReference) {}
 	virtual IOpticsElementBase* GetOpticsReference() const                         { return NULL; }

@@ -391,7 +391,7 @@ private:
 
 	uint32 m_frameFenceCounter;
 	uint32 m_completedFrameFenceCounter;
-	DeviceFenceHandle m_frameFences[MAX_FRAMES_IN_FLIGHT];
+	DeviceFenceHandle m_frameFences[MAX_FRAMES_IN_FLIGHT - 1]; // -1 because we issue/wait at end of frame
 
 	////////////////////////////////////////////////////////////////////////////
 	// SamplerState API

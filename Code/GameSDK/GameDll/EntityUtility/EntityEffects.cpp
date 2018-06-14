@@ -284,7 +284,7 @@ namespace EntityEffects
 
 		if (attachParams.projectTexture && attachParams.projectTexture[0])
 		{
-			light.m_pLightImage = gEnv->pRenderer->EF_LoadTexture(attachParams.projectTexture, FT_DONT_STREAM);
+			light.m_pLightImage = gEnv->pRenderer->EF_LoadTexture(attachParams.projectTexture, 0);
 
 			if (!light.m_pLightImage || !light.m_pLightImage->IsTextureLoaded())
 			{

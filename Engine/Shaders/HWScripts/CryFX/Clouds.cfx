@@ -1235,7 +1235,7 @@ void RenderCloudMonolithicCS(uint3 GroupID : SV_GroupID,
 	const float nearPlane = PS_NearFarClipDist.x;
 	const float farPlane = PS_NearFarClipDist.y;
 	const float reciprocalFarClipDist = PS_NearFarClipDist.w;
-	const float3 cameraPos = PS_WorldViewPos.xyz;c
+	const float3 cameraPos = PS_WorldViewPos.xyz;
 	const float2 worldAlignmentOffset = CloudShadowAnimParams.xy;
 	const float4 screenSize = ScreenSize;
 	const float4 frustumTL = FrustumTL;

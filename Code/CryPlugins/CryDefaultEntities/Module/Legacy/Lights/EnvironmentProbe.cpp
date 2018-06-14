@@ -127,6 +127,6 @@ void CEnvironmentProbeEntity::GetCubemapTextures(const char* path, ITexture** pS
 	stack_string specularCubemapUnix = PathUtil::ToUnixPath(specularCubemap.c_str());
 	stack_string diffuseCubemapUnix = PathUtil::ToUnixPath(diffuseCubemap);
 
-	*pSpecular = gEnv->pRenderer->EF_LoadTexture(specularCubemapUnix, FT_DONT_STREAM);
-	*pDiffuse = gEnv->pRenderer->EF_LoadTexture(diffuseCubemapUnix, FT_DONT_STREAM);
+	*pSpecular = gEnv->pRenderer->EF_LoadTexture(specularCubemapUnix, 0);
+	*pDiffuse = gEnv->pRenderer->EF_LoadTexture(diffuseCubemapUnix, 0);
 }

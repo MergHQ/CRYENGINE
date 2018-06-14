@@ -62,12 +62,24 @@ bool CShader::mfPrecache(SShaderCombination& cmb, bool bForce, CShaderResources*
 		{
 			SShaderPass& Pass = pTech->m_Passes[j];
 			SShaderCombination c = cmb;
-			uint32 nFlagsShader_MD = cmb.m_MDMask;
-			if (Pass.m_PShader)
-				bRes &= Pass.m_PShader->mfPrecache(cmb, bForce, false, this, pRes);
-			cmb.m_MDMask = nFlagsShader_MD;
-			if (Pass.m_VShader)
-				bRes &= Pass.m_VShader->mfPrecache(cmb, bForce, false, this, pRes);
+
+			CHWShader* const shadersToCompile[] = {
+				Pass.m_VShader,        // Vertex shader
+				Pass.m_PShader,        // Pixel shader
+				Pass.m_GShader,        // Geometry shader
+				Pass.m_HShader,        // Hull shader
+				Pass.m_DShader,        // Domain shader
+				Pass.m_CShader,        // Compute shader
+			};
+
+			for (const auto &shader : shadersToCompile)
+			{
+				uint32 nFlagsShader_MD = cmb.m_MDMask;
+				if (shader)
+					bRes &= shader->mfPrecache(cmb, bForce, false, this, pRes);
+				cmb.m_MDMask = nFlagsShader_MD;
+			}
+
 			cmb = c;
 		}
 	}

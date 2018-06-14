@@ -261,6 +261,7 @@ bool CTexture::CreateDeviceTexture(const void* pData[])
 
 bool CTexture::RT_CreateDeviceTexture(const void* pData[])
 {
+	CRY_PROFILE_REGION(PROFILE_RENDERER, "CTexture::RT_CreateDeviceTexture");
 	MEMSTAT_CONTEXT(EMemStatContextTypes::MSC_Texture, 0, "Creating Texture");
 	MEMSTAT_CONTEXT_FMT(EMemStatContextTypes::MSC_Texture, 0, "%s %ix%ix%i %08x", m_SrcName.c_str(), m_nWidth, m_nHeight, m_nMips, m_eFlags);
 	SCOPED_RENDERER_ALLOCATION_NAME_HINT(GetSourceName());
@@ -540,6 +541,7 @@ void CTexture::UpdateTextureRegion(byte* pSrcData, int nX, int nY, int nZ, int U
 
 void CTexture::RT_UpdateTextureRegion(byte* pSrcData, int nX, int nY, int nZ, int USize, int VSize, int ZSize, ETEX_Format eSrcFormat)
 {
+	CRY_PROFILE_REGION(PROFILE_RENDERER, "CTexture::RT_UpdateTextureRegion");
 	PROFILE_FRAME(UpdateTextureRegion);
 	PROFILE_LABEL_SCOPE("UpdateTextureRegion");
 

@@ -8,11 +8,13 @@
 #include "GraphicsPipeline/ShadowMap.h"
 #include "GraphicsPipeline/ClipVolumes.h"
 #include "CompiledRenderObject.h"
+#include "D3D_SVO.h"
 
 #include <CryRenderer/branchmask.h>
 #include <Common/RenderDisplayContext.h>
 
 #include "RendElements/CREClientPoly.h"
+#include "RendElements/FlareSoftOcclusionQuery.h"
 
 //////////////////////////////////////////////////////////////////////////
 CRenderView::CRenderView(const char* name, EViewType type, CRenderView* pParentView, ShadowMapFrustum* pShadowFrustumOwner)
@@ -465,6 +467,114 @@ void CRenderView::PrepareForWriting()
 }
 
 //////////////////////////////////////////////////////////////////////////
+
+RenderLightIndex CRenderView::AddDeferredLight(const SRenderLight& pDL, float fMult, const SRenderingPassInfo& passInfo)
+{
+	CRenderView* pRenderView = passInfo.GetRenderView();
+	CRY_ASSERT(pRenderView);
+
+	bool bSort = true;
+	bool bAppend = true;
+
+	eDeferredLightType LightType = eDLT_DeferredLight;
+	if (pDL.m_Flags & DLF_DEFERRED_CUBEMAPS)
+	{
+		LightType = eDLT_DeferredCubemap;
+		bSort = false;
+	}
+	else if (pDL.m_Flags & DLF_AMBIENT)
+	{
+		LightType = eDLT_DeferredAmbientLight;
+		bSort = false;
+	}
+
+	if (pDL.GetLensOpticsElement() && !pDL.m_pSoftOccQuery)
+	{
+		SRenderLight* pLight = const_cast<SRenderLight*>(&pDL);
+
+		const uint8 numVisibilityFaders = 2; // For each flare type
+		pLight->m_pSoftOccQuery = new CFlareSoftOcclusionQuery(numVisibilityFaders);
+	}
+
+	SRenderLight* pAddedLight = nullptr;
+
+	const RenderLightIndex lightsNum = pRenderView->GetLightsCount(LightType);
+	RenderLightIndex nLightId = -1;
+
+	if (CRenderer::CV_r_DeferredShadingSortLights == 1 && bSort && lightsNum)
+	{
+		RenderLightIndex endPoint = lightsNum - 1;
+		RenderLightIndex midPoint = 0;
+		RenderLightIndex startPoint = 0;
+
+		uint32 lightArea = pDL.m_sWidth * pDL.m_sHeight;
+
+		while (startPoint <= endPoint)  //binary search for insertion point
+		{
+			midPoint = (endPoint + startPoint) / 2;
+
+			const SRenderLight& compareLight = pRenderView->GetLight(LightType, midPoint);
+			uint32 compareLightArea = compareLight.m_sWidth * compareLight.m_sHeight;
+
+			if (lightArea < compareLightArea)
+			{
+				endPoint = midPoint - 1;
+			}
+			else
+			{
+				startPoint = midPoint + 1;
+			}
+		}
+
+		if (startPoint < lightsNum)
+		{
+			pAddedLight = pRenderView->AddLightAtIndex(LightType, pDL, startPoint);
+			nLightId = startPoint /* => pAddedLight->m_Id */;
+			bAppend = false;
+		}
+	}
+
+	if (bAppend)
+	{
+		pAddedLight = pRenderView->AddLightAtIndex(LightType, pDL);
+		nLightId = pAddedLight->m_Id;
+	}
+
+	if (pDL.m_Flags & DLF_LINK_TO_SKY_COLOR)
+	{
+#if defined(FEATURE_SVO_GI)
+		CSvoRenderer* pSR = CSvoRenderer::GetInstance();
+		if (pSR)
+		{
+			pAddedLight->m_Color *= pSR->GetSkyColor();
+		}
+		else
+#endif
+
+		{
+			pAddedLight->m_Color *= gEnv->p3DEngine->GetSkyColor();
+		}
+	}
+
+	IF_LIKELY((pDL.m_Flags & (DLF_DEFERRED_CUBEMAPS | DLF_AMBIENT)) == 0)
+	{
+		pAddedLight->m_Color *= fMult;
+		pAddedLight->m_SpecMult *= fMult;
+	}
+	else if (pDL.m_Flags & DLF_AMBIENT)
+	{
+		ColorF origCol(pAddedLight->m_Color);
+		pAddedLight->m_Color.lerpFloat(Col_White, origCol, fMult);
+	}
+	else
+	{
+		pAddedLight->m_Color.a = fMult; // store fade-out constant separately in alpha channel for deferred cubemaps
+	}
+
+	return nLightId;
+}
+
+//////////////////////////////////////////////////////////////////////////
 RenderLightIndex CRenderView::AddDynamicLight(const SRenderLight& light)
 {
 	return AddLight(eDLT_DynamicLight, light);
@@ -481,8 +591,6 @@ SRenderLight& CRenderView::GetDynamicLight(RenderLightIndex nLightId)
 {
 	return GetLight(eDLT_DynamicLight, nLightId);
 }
-
-
 
 //////////////////////////////////////////////////////////////////////////
 RenderLightIndex CRenderView::AddLight(eDeferredLightType lightType, const SRenderLight& light)
@@ -958,6 +1066,11 @@ void CRenderView::AddPermanentObject(CRenderObject* pObject, const SRenderingPas
 		assert(pRenderObject->m_bPermanent);
 
 		CRY_ASSERT_MESSAGE(pRenderObject != pObject, "Adding RenderObject twice is suspicious!");
+		if (pRenderObject == pObject)
+		{
+			// Record already exists, update instance data.
+			return;
+		}
 	}
 #endif
 

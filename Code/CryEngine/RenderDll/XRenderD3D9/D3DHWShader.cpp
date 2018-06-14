@@ -590,6 +590,7 @@ bool CHWShader_D3D::mfPrecache(SShaderCombination& cmb, bool bForce, bool bFallb
 		Ident.m_LightMask = 1;
 	Ident.m_GLMask = m_nMaskGenShader;
 	uint32 nFlags = HWSF_PRECACHE;
+
 	if (m_eSHClass == eHWSC_Pixel && pRes)
 	{
 		SHWSInstance* pInst = mfGetInstance(pSH, Ident, HWSF_PRECACHE_INST);
@@ -606,8 +607,11 @@ bool CHWShader_D3D::mfPrecache(SShaderCombination& cmb, bool bForce, bool bFallb
 	{
 		SHWSInstance* pInst = mfGetInstance(pSH, Ident, HWSF_PRECACHE_INST);
 		pInst->m_bFallback = bFallback;
+		int nResult = CheckActivation(pSH, pInst, HWSF_PRECACHE);
+		if (!nResult)
+			return bRes;
+
 		pInst->m_fLastAccess = gRenDev->GetFrameSyncTime().GetSeconds();
-		mfActivate(pSH, nFlags, NULL, NULL);
 	}
 
 	return bRes;

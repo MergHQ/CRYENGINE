@@ -835,7 +835,10 @@ void ProcessTiledLights(inout float4 vRGB, in float3 vPos0, in float3 vRayDir, i
 					projTC.xy /= projTC.w;
 
 					if (projTC.x > 0 && projTC.x < 1 && projTC.y > 0 && projTC.y < 1)
-						vCol.xyz *= (projTC.w > 0) * pow(SVO_SpotTexArray.SampleLevel(ssSvoPointClamp, float3(projTC.xy, light.resIndex), 0).xxx, .5);
+					{
+						uint4 resIndexClamps = GetResourceIndexAndMipClamps(light.resIndex);
+						vCol.xyz *= (projTC.w > 0) * pow(SVO_SpotTexArray.SampleLevel(ssSvoPointClamp, float3(projTC.xy, resIndexClamps.x), resIndexClamps.y).xxx, .5);
+					}
 					else
 						vCol.xyz = 0;
 

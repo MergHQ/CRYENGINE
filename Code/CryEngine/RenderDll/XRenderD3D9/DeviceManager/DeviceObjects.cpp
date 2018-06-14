@@ -99,11 +99,11 @@ void CDeviceObjectFactory::SyncToGPU()
 
 void CDeviceObjectFactory::IssueFrameFences()
 {
-	static_assert(CRY_ARRAY_COUNT(m_frameFences) == MAX_FRAMES_IN_FLIGHT, "Unexpected size for m_frameFences");
+	const int maxFramesInFlight = std::min(int(CRY_ARRAY_COUNT(m_frameFences)), CRendererCVars::CV_r_MaxFrameLatency + 1);
 
 	if (!m_frameFences[0])
 	{
-		m_frameFenceCounter = MAX_FRAMES_IN_FLIGHT;
+		m_frameFenceCounter = maxFramesInFlight - 1;
 		for (uint32 i = 0; i < CRY_ARRAY_COUNT(m_frameFences); i++)
 		{
 			HRESULT hr = CreateFence(m_frameFences[i]);
@@ -112,17 +112,21 @@ void CDeviceObjectFactory::IssueFrameFences()
 		return;
 	}
 
-	HRESULT hr = IssueFence(m_frameFences[m_frameFenceCounter % MAX_FRAMES_IN_FLIGHT]);
+	const int currentFrameFence = m_frameFenceCounter % maxFramesInFlight;
+	const int oldestFrameFence = (m_frameFenceCounter - (maxFramesInFlight - 1)) % maxFramesInFlight;
+
+	HRESULT hr = IssueFence(m_frameFences[currentFrameFence]);
 	assert(hr == S_OK);
 
 	if (CRenderer::CV_r_SyncToFrameFence)
 	{
 		// Stall render thread until GPU has finished processing previous frame (in case max frame latency is 1)
-		PROFILE_FRAME("WAIT FOR GPU");
-		HRESULT hr = SyncFence(m_frameFences[(m_frameFenceCounter - (MAX_FRAMES_IN_FLIGHT - 1)) % MAX_FRAMES_IN_FLIGHT], true, true);
+		CRY_PROFILE_REGION(PROFILE_RENDERER, "WAIT FOR GPU");
+		HRESULT hr = SyncFence(m_frameFences[oldestFrameFence], true, true);
 		assert(hr == S_OK);
 	}
-	m_completedFrameFenceCounter = m_frameFenceCounter - (MAX_FRAMES_IN_FLIGHT - 1);
+
+	m_completedFrameFenceCounter = m_frameFenceCounter - (maxFramesInFlight - 1);
 	m_frameFenceCounter += 1;
 }
 

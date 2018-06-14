@@ -1257,10 +1257,10 @@ void CRenderer::EF_StartEf (const SRenderingPassInfo& passInfo)
 
 void CRenderer::EF_SubmitWind(const SWindGrid* pWind)
 {
-	FUNCTION_PROFILER_RENDERER();
-
 	auto lambdaCallback = [=]
 	{
+		CRY_PROFILE_REGION(PROFILE_RENDERER, "CRenderer::EF_SubmitWind::lambda");
+
 		m_pCurWindGrid = pWind;
 		if (!CTexture::IsTextureExist(CRendererResources::s_ptexWindGrid))
 		{
@@ -1387,6 +1387,9 @@ void CRenderer::Log(char* str)
 	}
 }
 
+////////////////////////////////////////////////////////////////////////////////////////////////////
+////////////////////////////////////////////////////////////////////////////////////////////////////
+
 // Dynamic lights
 bool CRenderer::EF_IsFakeDLight(const SRenderLight* Source)
 {
@@ -1449,12 +1452,24 @@ void CRenderer::EF_ADDDlight(SRenderLight* Source, const SRenderingPassInfo& pas
 		return;
 	}
 
-	Source->m_Id = passInfo.GetRenderView()->AddDynamicLight(*Source);
+	RenderLightIndex nLightID = passInfo.GetRenderView()->AddDynamicLight(*Source);
 
-	EF_PrecacheResource(Source, (passInfo.GetCamera().GetPosition() - Source->m_Origin).GetLengthSquared() / max(0.001f, Source->m_fRadius * Source->m_fRadius), 0.1f, 0, 0);
+	//EF_CheckLightMaterial(Source, nLightID, passInfo);
 
-	//EF_CheckLightMaterial(Source, pNew, passInfo);
+	Source->m_Id = nLightID;
 }
+
+int CRenderer::EF_AddDeferredLight(const SRenderLight& pLight, float fMult, const SRenderingPassInfo& passInfo)
+{
+	RenderLightIndex nLightID = passInfo.GetRenderView()->AddDeferredLight(pLight, fMult, passInfo);
+
+	EF_CheckLightMaterial(const_cast<SRenderLight*>(&pLight), nLightID, passInfo);
+
+	return nLightID;
+}
+
+////////////////////////////////////////////////////////////////////////////////////////////////////
+////////////////////////////////////////////////////////////////////////////////////////////////////
 
 bool CRenderer::EF_AddDeferredDecal(const SDeferredDecal& rDecal, const SRenderingPassInfo& passInfo)
 {
@@ -4069,6 +4084,7 @@ void CRenderer::RefreshShaderResourceConstants(SShaderItem* pShaderItem, IMateri
 		{
 			if (pShader && pShaderResources)
 			{
+				CRY_PROFILE_REGION(PROFILE_RENDERER, "CRenderer::RefreshShaderResourceConstants");
 				if (pShaderItem->RefreshResourceConstants())
 					pShaderItem->m_pShaderResources->UpdateConstants(pShader);
 			}
@@ -4091,6 +4107,7 @@ void CRenderer::ForceUpdateShaderItem(SShaderItem* pShaderItem, IMaterial* pMate
 		{ 
 			if (pShader && pShaderResources)
 			{
+				CRY_PROFILE_REGION(PROFILE_RENDERER, "CRenderer::ForceUpdateShaderItem");
 				pShader->m_Flags &= ~EF_RELOADED;
 				pShaderItem->Update();
 			}

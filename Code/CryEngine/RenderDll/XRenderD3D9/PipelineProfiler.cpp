@@ -65,27 +65,32 @@ void CRenderPipelineProfiler::EndFrame()
 
 	frameData.m_timestampGroup.EndMeasurement();
 
-	// Resolve gpu timestamps from previous frame
-	uint32 prevFrameIndex = (m_frameDataIndex + (kNumPendingFrames - 1)) % kNumPendingFrames;
-	if (!m_frameData[prevFrameIndex].m_timestampGroup.ResolveTimestamps())
+	// Get newest timestamps completed on gpu
+	int prevFrameIndex = -1;
+	for (int i = 1; i < kNumPendingFrames; ++i)
 	{
-		// If previous frame is not yet ready, get data from 2 frames earlier
-		prevFrameIndex = (m_frameDataIndex + (kNumPendingFrames - 2)) % kNumPendingFrames;
-		bool bDataReady = m_frameData[prevFrameIndex].m_timestampGroup.ResolveTimestamps();
-		assert(bDataReady);
+		prevFrameIndex = (m_frameDataIndex + (kNumPendingFrames - i)) % kNumPendingFrames;
+		if (m_frameData[prevFrameIndex].m_timestampGroup.ResolveTimestamps())
+			break;
+
 	}
 
-	UpdateGPUTimes(prevFrameIndex);
-	UpdateBasicStats(prevFrameIndex);
-	UpdateThreadTimings();
+	CRY_ASSERT(prevFrameIndex != -1);
+	
+	if (prevFrameIndex >= 0)
+	{
+		UpdateGPUTimes(prevFrameIndex);
+		UpdateBasicStats(prevFrameIndex);
+		UpdateThreadTimings();
 
-	m_recordData = false;
+		m_recordData = false;
 
-	// Display UI
-	if (CRenderer::CV_r_profiler == 1)
-		DisplayOverviewStats();
-	if (CRenderer::CV_r_profiler == 2)
-		DisplayDetailedPassStats(prevFrameIndex);
+		// Display UI
+		if (CRenderer::CV_r_profiler == 1)
+			DisplayOverviewStats();
+		if (CRenderer::CV_r_profiler == 2)
+			DisplayDetailedPassStats(prevFrameIndex);
+	}
 }
 
 bool CRenderPipelineProfiler::FilterLabel(const char* name)

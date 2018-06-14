@@ -858,6 +858,7 @@ void CTexture::RT_Precache()
 	if (gRenDev->CheckDeviceLost())
 		return;
 
+	CRY_PROFILE_REGION(PROFILE_RENDERER, "CTexture::RT_Precache");
 	LOADING_TIME_PROFILE_SECTION(iSystem);
 
 	// Disable invalid file access logging if texture streaming is disabled
@@ -919,7 +920,7 @@ void CTexture::RT_Precache()
 			// TODO: jobbable
 			pFoundTextures.remove_if([&, numTextures](_smart_ptr<CTexture>& pTexture)
 			{
-				if (!CRenderer::CV_r_texturesstreaming || !pTexture->m_bStreamPrepared)
+				if (!pTexture->m_bStreamPrepared || !pTexture->IsStreamable())
 				{
 					pTexture->m_bPostponed = false;
 					pTexture->Load(pTexture->m_eDstFormat);
@@ -1044,7 +1045,7 @@ bool CTexture::LoadFromImage(const char* name, ETEX_Format eFormat)
 	m_eDstFormat = eFormat;
 
 	// try to stream-in the texture
-	if (CRenderer::CV_r_texturesstreaming && !(m_eFlags & FT_DONT_STREAM) && (m_eTT == eTT_2D || m_eTT == eTT_Cube))
+	if (IsStreamable())
 	{
 		m_bStreamed = true;
 		if (StreamPrepare(true))

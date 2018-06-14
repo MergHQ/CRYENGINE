@@ -7345,8 +7345,8 @@ bool CScriptBind_Entity::ParseLightParams(IScriptTable* pLightTable, SRenderLigh
 			string specularCubemapUnix = PathUtil::ToUnixPath(specularCubemap);
 			string diffuseCubemapUnix = PathUtil::ToUnixPath(diffuseCubemap);
 
-			light.SetSpecularCubemap(gEnv->pRenderer->EF_LoadTexture(specularCubemapUnix.c_str(), FT_DONT_STREAM));
-			light.SetDiffuseCubemap(gEnv->pRenderer->EF_LoadTexture(diffuseCubemapUnix.c_str(), FT_DONT_STREAM));
+			light.SetSpecularCubemap(gEnv->pRenderer->EF_LoadTexture(specularCubemapUnix.c_str(), 0));
+			light.SetDiffuseCubemap(gEnv->pRenderer->EF_LoadTexture(diffuseCubemapUnix.c_str(), 0));
 
 			if (!light.GetSpecularCubemap() || !light.GetSpecularCubemap()->IsTextureLoaded())
 			{
@@ -7528,7 +7528,7 @@ bool CScriptBind_Entity::ParseLightParams(IScriptTable* pLightTable, SRenderLigh
 
 		if (projectorTexture && strlen(projectorTexture) > 0 && gEnv->pRenderer)
 		{
-			int flags = FT_DONT_STREAM;
+			int flags = 0;
 			bool bProjectAllSides = false;
 			if (chain.GetValue("cubemap", bProjectAllSides) && bProjectAllSides && (light.m_Flags & DLF_DEFERRED_LIGHT))
 				flags |= FT_REPLICATE_TO_ALL_SIDES;

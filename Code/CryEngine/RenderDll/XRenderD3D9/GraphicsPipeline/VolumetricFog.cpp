@@ -1054,6 +1054,7 @@ void CVolumetricFogStage::GenerateLightList()
 	};
 
 	const Vec3 worldViewPos = viewInfo.cameraOrigin;
+	const Vec3 cameraPosition = pRenderView->GetCamera(CCamera::eEye_Left).GetPosition();
 
 	const bool areaLights = (CRenderer::CV_r_DeferredShadingAreaLights > 0);
 	const float minBulbSize = max(0.001f, min(2.0f, CRenderer::CV_r_VolumetricFogMinimumLightBulbSize));// limit the minimum bulb size to reduce the light flicker.
@@ -1100,6 +1101,7 @@ void CVolumetricFogStage::GenerateLightList()
 				continue;  // Skip light
 
 			// Setup standard parameters
+			float mipFactor = (cameraPosition - renderLight.m_Origin).GetLengthSquared() / max(0.001f, renderLight.m_fRadius * renderLight.m_fRadius);
 			bool areaLightRect = (renderLight.m_Flags & DLF_AREA_LIGHT) && renderLight.m_fAreaWidth && renderLight.m_fAreaHeight && renderLight.m_fLightFrustumAngle;
 			float volumeSize = (lightListIdx == 0) ? renderLight.m_ProbeExtents.len() : renderLight.m_fRadius;
 			Vec3 pos = renderLight.GetPosition();
@@ -1113,16 +1115,18 @@ void CVolumetricFogStage::GenerateLightList()
 			                            renderLight.m_Color.b * itensityScale,
 			                            renderLight.m_fFogRadialLobe);
 			lightShadeInfo.resIndex = 0;
+			lightShadeInfo.resMipClamp0 = 0;
+			lightShadeInfo.resMipClamp1 = 0;
 			lightShadeInfo.shadowParams = Vec2(0, 0);
-			lightShadeInfo.stencilID0 = renderLight.m_nStencilRef[0] + 1;
-			lightShadeInfo.stencilID1 = renderLight.m_nStencilRef[1] + 1;
+			lightShadeInfo.stencilID0 = renderLight.m_nStencilRef[0] + lightShadeInfo.stencilBias;
+			lightShadeInfo.stencilID1 = renderLight.m_nStencilRef[1] + lightShadeInfo.stencilBias;
 
 			// Environment probes
 			if (lightListIdx == 0)
 			{
 				lightCullInfo.volumeType = CTiledLightVolumesStage::tlVolumeOBB;
 				lightShadeInfo.lightType = CTiledLightVolumesStage::tlTypeProbe;
-				lightShadeInfo.resIndex = 0xFFFFFFFF;
+				lightShadeInfo.resIndex = lightShadeInfo.resNoIndex;
 				lightShadeInfo.attenuationParams.x = renderLight.m_Color.a;
 				// assigning value isn't needed because AttenuationFalloffMax is hard-coded in VolumeLighting.cfi to mitigate sharp transition between probes.
 				//lightShadeInfo.attenuationParams.y = max( renderLight.GetFalloffMax(), 0.001f );
@@ -1155,16 +1159,20 @@ void CVolumetricFogStage::GenerateLightList()
 				lightShadeInfo.shadowMatrix.SetRow4(0, Vec4(boxProxyMin, 0));
 				lightShadeInfo.shadowMatrix.SetRow4(1, Vec4(boxProxyMax, 0));
 
-				int32 arrayIndex = tiledLights->InsertTextureToSpecularProbeAtlas((CTexture*)renderLight.GetSpecularCubemap(), -1);
-				if (arrayIndex >= 0)
 				{
-					if (tiledLights->InsertTextureToDiffuseProbeAtlas((CTexture*)renderLight.GetDiffuseCubemap(), arrayIndex) >= 0)
-						lightShadeInfo.resIndex = arrayIndex;
-					else
+					CTexture* pSpecTexture = (CTexture*)renderLight.GetSpecularCubemap();
+					CTexture* pDiffTexture = (CTexture*)renderLight.GetDiffuseCubemap();
+
+					int arrayIndex = tiledLights->InsertTexture(pSpecTexture, mipFactor, tiledLights->m_specularProbeAtlas, -1);
+					if (arrayIndex < 0)
 						continue;  // Skip light
+					if (tiledLights->InsertTexture(pDiffTexture, mipFactor, tiledLights->m_diffuseProbeAtlas, arrayIndex) < 0)
+						continue;  // Skip light
+
+					lightShadeInfo.resIndex = arrayIndex;
+					lightShadeInfo.resMipClamp0 = tiledLights->m_diffuseProbeAtlas.items[arrayIndex].lowestRenderableMip;
+					lightShadeInfo.resMipClamp1 = tiledLights->m_specularProbeAtlas.items[arrayIndex].lowestRenderableMip;
 				}
-				else
-					continue;  // Skip light
 
 				// Determine the global env probe for lighting analytical volumetric fog if we have it in the scene.
 				// Enough big(more than 1000 meters), the biggest and the second biggest including camera position are selected.
@@ -1251,14 +1259,20 @@ void CVolumetricFogStage::GenerateLightList()
 				{
 					lightCullInfo.volumeType = CTiledLightVolumesStage::tlVolumeCone;
 					lightShadeInfo.lightType = ambientLight ? CTiledLightVolumesStage::tlTypeAmbientProjector : CTiledLightVolumesStage::tlTypeRegularProjector;
-					lightShadeInfo.resIndex = 0xFFFFFFFF;
+					lightShadeInfo.resIndex = lightShadeInfo.resNoIndex;
 					lightCullInfo.miscFlag = 0;
 
-					int32 arrayIndex = tiledLights->InsertTextureToSpotTexAtlas((CTexture*)renderLight.m_pLightImage, -1);
-					if (arrayIndex >= 0)
-						lightShadeInfo.resIndex = (uint32)arrayIndex;
-					else
-						continue;  // Skip light
+					{
+						CTexture* pProjTexture = (CTexture*)renderLight.m_pLightImage;
+
+						int arrayIndex = tiledLights->InsertTexture(pProjTexture, mipFactor, tiledLights->m_spotTexAtlas, -1);
+						if (arrayIndex < 0)
+							continue;  // Skip light
+
+						lightShadeInfo.resIndex = arrayIndex;
+						lightShadeInfo.resMipClamp0 =
+						lightShadeInfo.resMipClamp1 = tiledLights->m_spotTexAtlas.items[arrayIndex].lowestRenderableMip;
+					}
 
 					// Prevent culling errors for frustums with large FOVs by slightly enlarging the frustum
 					const float frustumAngleDelta = renderLight.m_fLightFrustumAngle > 50 ? 7.5f : 0.0f;
@@ -1389,6 +1403,8 @@ void CVolumetricFogStage::GenerateLightList()
 									lightCullInfo.volumeType = CTiledLightVolumesStage::tlVolumeCone;
 									lightShadeInfo.lightType = CTiledLightVolumesStage::tlTypeRegularPointFace;
 									lightShadeInfo.resIndex = side;
+									lightShadeInfo.resMipClamp0 = 0;
+									lightShadeInfo.resMipClamp1 = 0;
 									lightCullInfo.volumeParams0 = spotParamsVS;
 									lightCullInfo.depthBounds = depthBoundsVS;
 									lightCullInfo.miscFlag = 0;
@@ -1403,6 +1419,8 @@ void CVolumetricFogStage::GenerateLightList()
 								tileLightsShade[numTileLights].shadowParams = sideShadowParams;
 								tileLightsShade[numTileLights].shadowMatrix = shadowMat;
 								tileLightsShade[numTileLights].resIndex = side;
+								tileLightsShade[numTileLights].resMipClamp0 = 0;
+								tileLightsShade[numTileLights].resMipClamp1 = 0;
 								tileLightsCull[numTileLights].volumeParams0 = spotParamsVS;
 								tileLightsCull[numTileLights].depthBounds = depthBoundsVS;
 							}
@@ -1428,10 +1446,14 @@ void CVolumetricFogStage::GenerateLightList()
 	const size_t tileLightsCullUploadSize = CDeviceBufferManager::AlignBufferSizeForStreaming(sizeof(CTiledLightVolumesStage::STiledLightCullInfo) * std::min(MaxNumTileLights, Align(numTileLights, 64) + 64));
 	const size_t tileLightsShadeUploadSize = CDeviceBufferManager::AlignBufferSizeForStreaming(sizeof(CTiledLightVolumesStage::STiledLightShadeInfo) * std::min(MaxNumTileLights, Align(numTileLights, 64) + 64));
 
+	m_numTileLights = numTileLights;
+
 	m_lightCullInfoBuf.UpdateBufferContent(tileLightsCull, tileLightsCullUploadSize);
 	m_LightShadeInfoBuf.UpdateBufferContent(tileLightsShade, tileLightsShadeUploadSize);
 
-	m_numTileLights = numTileLights;
+	tiledLights->UploadTextures(tiledLights->m_specularProbeAtlas);
+	tiledLights->UploadTextures(tiledLights->m_diffuseProbeAtlas);
+	tiledLights->UploadTextures(tiledLights->m_spotTexAtlas);
 
 	// Update global env probes for analytical volumetric fog
 	{

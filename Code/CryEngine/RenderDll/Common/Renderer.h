@@ -97,7 +97,7 @@ const float TANGENT30_2 = 0.57735026918962576450914878050196f * 2;   // 2*tan(30
 
 #define DEF_SHAD_DBT_DEFAULT_VAL              1
 
-#define TEXSTREAMING_DEFAULT_VAL              1
+#define TEXSTREAMING_DEFAULT_VAL              2
 
 #define GEOM_INSTANCING_DEFAULT_VAL           0
 #define COLOR_GRADING_DEFAULT_VAL             1

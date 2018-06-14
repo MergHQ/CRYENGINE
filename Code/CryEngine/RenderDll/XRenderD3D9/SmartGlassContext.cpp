@@ -248,7 +248,7 @@ void CSmartGlassContext::CreateSwapChain()
 	// Ensure that DXGI does not queue more than one frame at a time. This both reduces
 	// latency and ensures that the application will only render after each VSync, minimizing
 	// power consumption.
-	dxgiDevice->SetMaximumFrameLatency(MAX_FRAME_LATENCY);
+	dxgiDevice->SetMaximumFrameLatency(1);
 
 	CreateSwapChainForSmartGlassDevice(m_pDevice, &swapChainDesc, &m_pSwapChain);
 
