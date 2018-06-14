@@ -115,6 +115,8 @@ namespace FileUtil
 		wstring widePath;
 		Unicode::Convert(widePath, filename);
 
+		SetFileAttributesW(widePath.c_str(), FILE_ATTRIBUTE_ARCHIVE);
+
 		const HANDLE hf = CreateFileW(widePath.c_str(), FILE_WRITE_ATTRIBUTES, FILE_SHARE_WRITE, 0, OPEN_EXISTING, 0, 0);
 		if (hf != INVALID_HANDLE_VALUE)
 		{
@@ -178,6 +180,9 @@ namespace FileUtil
 
 		return DirectoryExists(widePath.c_str());
 	}
+
+	// If the new file already exists, the function overwrites the file.
+	bool CopyFileAllowOverwrite(const string& existingFilename, const string& newFilename, string& errorString);
 
 	void FindFiles(
 		std::vector<string>& resultFiles,

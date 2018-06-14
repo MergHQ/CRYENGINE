@@ -323,6 +323,11 @@ static void SendComponentSignal(IEntity* pEntity, uint64 guidHipart, uint64 guid
 	}
 }
 
+static void SetManagedTimer(IEntityComponent* pTimer, uint8 id, int time)
+{
+	pTimer->SetTimer(id, time);
+}
+
 void CManagedEntityInterface::RegisterFunctions(std::function<void(const void* pMethod, const char* methodName)> func)
 {
 	func(RegisterComponent, "RegisterComponent");
@@ -337,4 +342,5 @@ void CManagedEntityInterface::RegisterFunctions(std::function<void(const void* p
 	func(RegisterComponentSignal, "RegisterComponentSignal");
 	func(AddComponentSignalParameter, "AddComponentSignalParameter");
 	func(SendComponentSignal, "SendComponentSignal");
+	func(SetManagedTimer, "SetTimer");
 }

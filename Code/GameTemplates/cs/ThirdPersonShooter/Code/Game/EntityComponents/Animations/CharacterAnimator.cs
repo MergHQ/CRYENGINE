@@ -305,7 +305,6 @@ namespace CryEngine.Game
 			string animationDatabasePath = AnimationDatabase;
 			string startFragmentName = StartFragmentName;
 
-
 			if(string.IsNullOrWhiteSpace(characterGeometry) ||
 			   string.IsNullOrWhiteSpace(mannequinControllerDefinition) ||
 			   string.IsNullOrWhiteSpace(mannequinContextName) ||

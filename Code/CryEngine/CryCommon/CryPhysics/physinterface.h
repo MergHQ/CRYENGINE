@@ -3114,8 +3114,6 @@ struct EventPhysStateChange : EventPhysMono
 	EventPhysStateChange() { idval = id; }
 	int   iSimClass[2];
 	float timeIdle; //!< how long the entity stayed without external activation (such as impulses)
-	Vec3  BBoxOld[2];
-	Vec3  BBoxNew[2];
 };
 
 //! Called when something around the entityy breaks.
@@ -3284,7 +3282,15 @@ struct EventPhysWorldStepStart : EventPhys
 	float dt;
 };
 
-const int EVENT_TYPES_NUM = 17;
+struct EventPhysBBoxChange : EventPhysMono
+{
+	enum entype { id = 17, flagsCall = pef_monitor_state_changes, flagsLog = pef_log_state_changes };
+	EventPhysBBoxChange() { idval = id; }
+	Vec3  BBoxOld[2];
+	Vec3  BBoxNew[2];
+};
+
+const int EVENT_TYPES_NUM = 18;
 
 //! Physical entity iterator interface. This interface is used to traverse trough all the physical entities in an physical world.
 //! In a way, this iterator works a lot like a stl iterator.

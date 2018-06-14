@@ -93,7 +93,7 @@ namespace CryEngine.Animations
 		/// The ID of the <see cref="CryEngine.Entity"/> that this <see cref="ActionController"/> belongs to.
 		/// </summary>
 		/// <value>The ID of the entity identifier.</value>
-		public EntitySystem.EntityId EntityId
+		public EntityId EntityId
 		{
 			get
 			{

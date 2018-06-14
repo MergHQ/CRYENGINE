@@ -63,7 +63,8 @@ void CManagedEntityComponentFactory::CacheMethods(bool isAbstract)
 		return;
 	}
 
-	m_pInternalSetEntityMethod = pEntityComponentClass->FindMethod("SetEntity", 2);
+	m_pInternalSetEntityMethod = pEntityComponentClass->FindMethod("SetEntity", 3);
+	m_pInternalUpdateComponentHandleMethod = pEntityComponentClass->FindMethod("UpdateEntityComponentHandle", 1);
 
 	m_pInitializeMethod = m_pClass->FindMethodWithDescInInheritedClasses("OnInitialize()", pEntityComponentClass);
 
@@ -82,14 +83,52 @@ void CManagedEntityComponentFactory::CacheMethods(bool isAbstract)
 		return pMethod;
 	};
 
+	auto tryGetInternalMethod = [this, pEntityComponentClass](const char* szMethodSignature, const char* szInternalMethodName, int parameterCount, EEntityEvent associatedEvent) -> std::weak_ptr<CMonoMethod>
+	{
+		std::weak_ptr<CMonoMethod> pMethod;
+		if (!m_pClass->FindMethodWithDescInInheritedClasses(szMethodSignature, pEntityComponentClass).expired())
+		{
+			pMethod = pEntityComponentClass->FindMethod(szInternalMethodName, parameterCount);
+			m_eventMask |= associatedEvent;
+		}
+		else
+		{
+			pMethod.reset();
+			m_eventMask &= ~associatedEvent;
+		}
+		return pMethod;
+	};
+
+	auto tryGetBaseMethod = [this, pEntityComponentClass](const char* szMethodSignature, EEntityEvent associatedEvent) -> std::weak_ptr<CMonoMethod>
+	{
+		std::weak_ptr<CMonoMethod> pMethod = m_pClass->FindMethodWithDescInBaseClass(szMethodSignature, pEntityComponentClass);
+		if (!pMethod.expired())
+		{
+			m_eventMask.Add(associatedEvent);
+		}
+		else
+		{
+			m_eventMask.Remove(associatedEvent);
+		}
+
+		return pMethod;
+	};
+
 	m_pGameStartMethod = tryGetMethod("OnGameplayStart()", ENTITY_EVENT_START_GAME);
 	m_pTransformChangedMethod = tryGetMethod("OnTransformChanged()", ENTITY_EVENT_XFORM);
 	m_pGameModeChangeMethod = tryGetMethod("OnEditorGameModeChange(bool)", ENTITY_EVENT_RESET);
 	m_pHideMethod = tryGetMethod("OnHide()", ENTITY_EVENT_HIDE);
 	m_pUnHideMethod = tryGetMethod("OnUnhide()", ENTITY_EVENT_UNHIDE);
 	m_pPrePhysicsUpdateMethod = tryGetMethod("OnPrePhysicsUpdate(single)", ENTITY_EVENT_PREPHYSICSUPDATE);
+	m_pMoveNearAreaMethod = tryGetMethod("OnMoveNearArea(EntityId,int,EntityId,single)", ENTITY_EVENT_MOVENEARAREA);
+	m_pLeaveNearAreaMethod = tryGetMethod("OnLeaveNearArea(EntityId,int,EntityId)", ENTITY_EVENT_LEAVENEARAREA);
+	m_pEnterNearAreaMethod = tryGetMethod("OnEnterNearArea(EntityId,int,EntityId,single)", ENTITY_EVENT_ENTERNEARAREA);
+	m_pMoveInsideAreaMethod = tryGetMethod("OnMoveInsideArea(EntityId,int,EntityId)", ENTITY_EVENT_MOVEINSIDEAREA);
+	m_pLeaveAreaMethod = tryGetMethod("OnLeaveArea(EntityId,int,EntityId)", ENTITY_EVENT_LEAVEAREA);
+	m_pEnterAreaMethod = tryGetMethod("OnEnterArea(EntityId,int,EntityId)", ENTITY_EVENT_ENTERAREA);
 	m_pRemoveMethod = tryGetMethod("OnRemove()", ENTITY_EVENT_DONE);
 
+	// The update event is split into an editor and game update method.
 	m_pUpdateMethod = tryGetMethod("OnUpdate(single)", ENTITY_EVENT_UPDATE);
 	m_pUpdateMethodEditing = tryGetMethod("OnEditorUpdate(single)", ENTITY_EVENT_UPDATE);
 	if (!m_pUpdateMethod.expired() || !m_pUpdateMethodEditing.expired())
@@ -97,16 +136,12 @@ void CManagedEntityComponentFactory::CacheMethods(bool isAbstract)
 		m_eventMask |= ENTITY_EVENT_UPDATE;
 	}
 
-	if (!m_pClass->FindMethodWithDescInInheritedClasses("OnCollision(CollisionEvent)", pEntityComponentClass).expired())
-	{
-		m_pCollisionMethod = pEntityComponentClass->FindMethod("OnCollisionInternal", 12);
-		m_eventMask |= ENTITY_EVENT_COLLISION;
-	}
-	else
-	{
-		m_pCollisionMethod.reset();
-		m_eventMask &= ~ENTITY_EVENT_COLLISION;
-	}
+	// Some methods are not overriden by the user, so we don't need to check if they're overriden.
+	m_pTimerMethod = tryGetBaseMethod("OnTimer(byte)", ENTITY_EVENT_TIMER);
+
+	// Some methods require objects to be sent. These methods use an internal method that converts the loose values to structs.
+	m_pAnimationEventMethod = tryGetInternalMethod("OnAnimationEvent(AnimationEvent,Character)", "OnAnimationEventInternal", 2, ENTITY_EVENT_ANIM_EVENT);
+	m_pCollisionMethod = tryGetInternalMethod("OnCollision(CollisionEvent)", "OnCollisionInternal", 12, ENTITY_EVENT_COLLISION);
 
 	if (prevEventMask != m_eventMask)
 	{

@@ -66,12 +66,10 @@ int CPhysicalPlaceholder::SetParams(pe_params *_params, int bThreadSafe)
 		if (m_pEntBuddy) {
 			CPhysicalEntity *pent = (CPhysicalEntity*)m_pEntBuddy;
 			if (pent->m_flags & (pef_monitor_state_changes | pef_log_state_changes)) {
-				EventPhysStateChange event;
+				EventPhysBBoxChange event;
 				event.pEntity=pent; event.pForeignData=pent->m_pForeignData; event.iForeignData=pent->m_iForeignData;
 				event.BBoxNew[0]=params->BBox[0]; event.BBoxNew[1]=params->BBox[1];
 				event.BBoxOld[0]=pent->m_BBox[0]; event.BBoxOld[1]=pent->m_BBox[1];
-				event.iSimClass[0] = pent->m_iSimClass; event.iSimClass[1] = pent->m_iSimClass;
-				event.timeIdle = pent->m_timeIdle;
 
 				pent->m_pWorld->OnEvent(pent->m_flags, &event);
 			}

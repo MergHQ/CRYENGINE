@@ -8,7 +8,7 @@ if(OPTION_BUILD_CSHARP_WITH_CSC)
 	source_group("AI" FILES ${AI_FILES})
 
 
-	set(Animations_FILES Animations/ActionController.cs Animations/AnimationContext.cs Animations/AnimationContextAction.cs Animations/AnimationDatabase.cs Animations/AnimationDatabaseManager.cs Animations/AnimationTag.cs Animations/Character.cs Animations/CharacterAttachment.cs Animations/ControllerDefinition.cs Animations/Mannequin.cs Animations/MotionParameterID.cs Animations/TagState.cs)
+	set(Animations_FILES Animations/ActionController.cs Animations/AnimationContext.cs Animations/AnimationContextAction.cs Animations/AnimationDatabase.cs Animations/AnimationDatabaseManager.cs Animations/AnimationEvent.cs Animations/AnimationTag.cs Animations/Character.cs Animations/CharacterAttachment.cs Animations/ControllerDefinition.cs Animations/Mannequin.cs Animations/MotionParameterID.cs Animations/TagState.cs)
 	source_group("Animations" FILES ${Animations_FILES})
 
 
@@ -40,7 +40,7 @@ if(OPTION_BUILD_CSHARP_WITH_CSC)
 	source_group("EntitySystem\\Attributes" FILES ${EntitySystem_Attributes_FILES})
 
 
-	set(EntitySystem_Enums_FILES EntitySystem/Enums/Primitives.cs)
+	set(EntitySystem_Enums_FILES EntitySystem/Enums/EntityFlags.cs EntitySystem/Enums/Primitives.cs)
 	source_group("EntitySystem\\Enums" FILES ${EntitySystem_Enums_FILES})
 
 

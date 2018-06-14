@@ -49,7 +49,9 @@ public:
 	std::weak_ptr<CMonoMethod> FindMethodWithDesc(const char* szMethodDesc);
 	// Searches the entire inheritance tree for the specified method by its description
 	// Skips searching after encountering pBaseClass if present
-	std::weak_ptr<CMonoMethod> FindMethodWithDescInInheritedClasses(const char* szMethodDesc, CMonoClass* pBaseClass);
+	std::weak_ptr<CMonoMethod> FindMethodWithDescInInheritedClasses(const char* szMethodDesc, const CMonoClass* pBaseClass);
+	// Searches the inheritance tree for the specified base-class, and tries to find the method by its description.
+	std::weak_ptr<CMonoMethod> FindMethodWithDescInBaseClass(const char* szMethodDesc, const CMonoClass* pBaseClass);
 	
 	std::weak_ptr<CMonoProperty> FindProperty(const char* szName);
 	std::weak_ptr<CMonoProperty> FindPropertyInInheritedClasses(const char* szName);

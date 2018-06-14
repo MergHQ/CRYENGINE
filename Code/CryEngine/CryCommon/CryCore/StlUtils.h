@@ -856,20 +856,20 @@ namespace stl {
 	template <typename T> struct always_false : std::false_type {};
 
 
-	// conjuction and negation helpers
+	// conjunction and negation helpers
 	//! Remove once we move to C++17
 	template <typename T>
 	struct negation {
 		static constexpr bool value = !T::value;
 	};
 	template <typename... Ts>
-	struct conjuction : std::true_type {};
+	struct conjunction : std::true_type {};
 	template <typename T, typename... Ts>
-	struct conjuction<T, Ts...> {
-		static constexpr bool value = T::value && conjuction<Ts...>::value;
+	struct conjunction<T, Ts...> {
+		static constexpr bool value = T::value && conjunction<Ts...>::value;
 	};
 	template <typename T>
-	struct conjuction<T> {
+	struct conjunction<T> {
 		static constexpr bool value = T::value;
 	};
 

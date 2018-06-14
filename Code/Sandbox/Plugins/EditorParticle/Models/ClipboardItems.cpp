@@ -91,16 +91,22 @@ void CClipboardItemCollection::Serialize(Serialization::IArchive& archive)
 
 				if (sourceNode != nodeIndexByInstance.end() && targetNode != nodeIndexByInstance.end())
 				{
-					CFeaturePinItem* pFeaturePin = pConnectionItem->GetSourcePinItem().Cast<CFeaturePinItem>();
-					CParentPinItem* pParentPin = pConnectionItem->GetTargetPinItem().Cast<CParentPinItem>();
+					CBasePinItem* pSourcePin = pConnectionItem->GetSourcePinItem().Cast<CBasePinItem>();
+					CBasePinItem* pTargetPin = pConnectionItem->GetTargetPinItem().Cast<CBasePinItem>();
 
-					if (pFeaturePin && pParentPin)
+					if (pSourcePin && pTargetPin && (pSourcePin->GetPinType() == EPinType::Feature) && (pTargetPin->GetPinType() == EPinType::Parent))
 					{
-						SConnection c;
-						c.sourceNodeIndex = sourceNode->second;
-						c.sourceFeatureIndex = pFeaturePin->GetFeatureItem().GetIndex();
-						c.targetNodeIndex = targetNode->second;
-						connectionSer.emplace_back(c);
+						CFeaturePinItem* pFeaturePin = pSourcePin->Cast<CFeaturePinItem>();
+						CParentPinItem* pParentPin = pTargetPin->Cast<CParentPinItem>();
+
+						if (pFeaturePin && pParentPin)
+						{
+							SConnection c;
+							c.sourceNodeIndex = sourceNode->second;
+							c.sourceFeatureIndex = pFeaturePin->GetFeatureItem().GetIndex();
+							c.targetNodeIndex = targetNode->second;
+							connectionSer.emplace_back(c);
+						}
 					}
 				}
 			}

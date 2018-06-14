@@ -633,6 +633,7 @@ public:
 			case EventPhysBBoxOverlap::id       : { EventPhysBBoxOverlap *pLogged; OnEvent(EventPhysBBoxOverlap::flagsLog,(EventPhysBBoxOverlap*)event,&pLogged); return pLogged; }
 			case EventPhysCollision::id         : { EventPhysCollision *pLogged; OnEvent(EventPhysCollision::flagsLog,(EventPhysCollision*)event,&pLogged); return pLogged; }
 			case EventPhysStateChange::id       : { EventPhysStateChange *pLogged; OnEvent(EventPhysStateChange::flagsLog,(EventPhysStateChange*)event,&pLogged); return pLogged; }
+			case EventPhysBBoxChange::id        : { EventPhysBBoxChange *pLogged; OnEvent(EventPhysBBoxChange::flagsLog,(EventPhysBBoxChange*)event,&pLogged); return pLogged; }
 			case EventPhysEnvChange::id         : { EventPhysEnvChange *pLogged; OnEvent(EventPhysEnvChange::flagsLog,(EventPhysEnvChange*)event,&pLogged); return pLogged; }
 			case EventPhysPostStep::id          : { EventPhysPostStep *pLogged; OnEvent(EventPhysPostStep::flagsLog,(EventPhysPostStep*)event,&pLogged); return pLogged; }
 			case EventPhysUpdateMesh::id        : { EventPhysUpdateMesh *pLogged; OnEvent(EventPhysUpdateMesh::flagsLog,(EventPhysUpdateMesh*)event,&pLogged); return pLogged; }

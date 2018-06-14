@@ -73,6 +73,7 @@
     <Compile Include="AI\BehaviorTreeNode.cs" />
     <Compile Include="AI\BehaviorTreeNodeFactory.cs" />
     <Compile Include="AI\LastingMovementRequest.cs" />
+    <Compile Include="Animations\AnimationEvent.cs" />
     <Compile Include="Animations\Character.cs" />
     <Compile Include="Animations\CharacterAttachment.cs" />
     <Compile Include="Animations\MotionParameterID.cs" />
@@ -104,6 +105,7 @@
     <Compile Include="EntitySystem\EntityId.cs" />
     <Compile Include="EntitySystem\EntityProperty.cs" />
     <Compile Include="EntitySystem\EntityStatics.cs" />
+    <Compile Include="EntitySystem\Enums\EntityFlags.cs" />
     <Compile Include="EntitySystem\Enums\Primitives.cs" />
     <Compile Include="EntitySystem\Native\NativeEntityMethods.cs" />
     <Compile Include="EntitySystem\PhysicsEntity.cs" />
