@@ -315,7 +315,7 @@ public:
 	virtual int                        LoadLight(int nSlot, SRenderLight* pLight) final;
 	int                                LoadLightImpl(int nSlot, SRenderLight* pLight);
 
-	virtual bool                       UpdateLightClipBounds(SRenderLight& light);
+	virtual bool                       UpdateLightClipBounds(SRenderLight& light) final;
 	int                                LoadCloudBlocker(int nSlot, const SCloudBlockerProperties& properties);
 	virtual int                        LoadFogVolume(int nSlot, const SFogVolumeProperties& properties) override;
 

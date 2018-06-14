@@ -78,6 +78,8 @@ namespace Cry
 
 			light.m_fFogRadialLobe = m_options.m_fogRadialLobe;
 
+			m_pEntity->UpdateLightClipBounds(light);
+
 			// Load the light source into the entity
 			const int slot = m_pEntity->LoadLight(GetOrMakeEntitySlotId(), &light);
 
@@ -90,12 +92,11 @@ namespace Cry
 				int viewDistance = static_cast<int>((m_viewDistance / 100.0f) * 255.0f);
 				pRenderNode->SetViewDistRatio(viewDistance);
 			}
-
 		}
 
 		void CPointLightComponent::ProcessEvent(const SEntityEvent& event)
 		{
-			if (event.event == ENTITY_EVENT_COMPONENT_PROPERTY_CHANGED)
+			if (event.event == ENTITY_EVENT_COMPONENT_PROPERTY_CHANGED || event.event == ENTITY_EVENT_LINK || event.event == ENTITY_EVENT_DELINK)
 			{
 				Initialize();
 			}
@@ -103,7 +104,7 @@ namespace Cry
 
 		uint64 CPointLightComponent::GetEventMask() const
 		{
-			return ENTITY_EVENT_BIT(ENTITY_EVENT_COMPONENT_PROPERTY_CHANGED);
+			return ENTITY_EVENT_BIT(ENTITY_EVENT_COMPONENT_PROPERTY_CHANGED) | ENTITY_EVENT_BIT(ENTITY_EVENT_LINK) | ENTITY_EVENT_BIT(ENTITY_EVENT_DELINK);
 		}
 
 #ifndef RELEASE
