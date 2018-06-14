@@ -351,7 +351,7 @@ std::weak_ptr<CMonoMethod> CMonoClass::FindMethodWithDesc(const char* szMethodDe
 	return std::weak_ptr<CMonoMethod>();
 }
 
-std::weak_ptr<CMonoMethod> CMonoClass::FindMethodWithDescInInheritedClasses(const char* szMethodDesc, CMonoClass* pBaseClass)
+std::weak_ptr<CMonoMethod> CMonoClass::FindMethodWithDescInInheritedClasses(const char* szMethodDesc, const CMonoClass* pBaseClass)
 {
 	string sMethodDesc;
 	sMethodDesc.Format(":%s", szMethodDesc);
@@ -363,8 +363,13 @@ std::weak_ptr<CMonoMethod> CMonoClass::FindMethodWithDescInInheritedClasses(cons
 	}
 
 	MonoInternals::MonoClass *pClass = m_pClass;
+	const MonoInternals::MonoClass *pMonoBaseClass = pBaseClass->GetMonoClass();
+	const MonoInternals::MonoClass *pMonoObjectClass = MonoInternals::mono_get_object_class();
 	while (pClass != nullptr)
 	{
+		if (pClass == pMonoObjectClass || pClass == pMonoBaseClass)
+			break;
+
 		if (MonoInternals::MonoMethod* pMethod = MonoInternals::mono_method_desc_search_in_class(pDesiredDesc, pClass))
 		{
 			MonoInternals::mono_method_desc_free(pDesiredDesc);
@@ -373,8 +378,45 @@ std::weak_ptr<CMonoMethod> CMonoClass::FindMethodWithDescInInheritedClasses(cons
 		}
 
 		pClass = MonoInternals::mono_class_get_parent(pClass);
-		if (pClass == MonoInternals::mono_get_object_class() || pClass == pBaseClass->GetMonoClass())
+	}
+
+	MonoInternals::mono_method_desc_free(pDesiredDesc);
+	return std::weak_ptr<CMonoMethod>();
+}
+
+std::weak_ptr<CMonoMethod> CMonoClass::FindMethodWithDescInBaseClass(const char* szMethodDesc, const CMonoClass* pBaseClass)
+{
+	string sMethodDesc;
+	sMethodDesc.Format(":%s", szMethodDesc);
+
+	MonoInternals::MonoMethodDesc* pDesiredDesc = MonoInternals::mono_method_desc_new(sMethodDesc, false);
+	if (pDesiredDesc == nullptr)
+	{
+		return std::weak_ptr<CMonoMethod>();
+	}
+
+	MonoInternals::MonoClass *pClass = m_pClass;
+	const MonoInternals::MonoClass *pMonoBaseClass = pBaseClass->GetMonoClass();
+	const MonoInternals::MonoClass *pMonoObjectClass = MonoInternals::mono_get_object_class();
+	while (pClass != nullptr)
+	{
+		if (pClass == pMonoBaseClass)
+		{
+			if (MonoInternals::MonoMethod* pMethod = MonoInternals::mono_method_desc_search_in_class(pDesiredDesc, pClass))
+			{
+				MonoInternals::mono_method_desc_free(pDesiredDesc);
+
+				return FindOrEmplaceMethod(pMethod);
+			}
 			break;
+		}
+
+		if (pClass == pMonoObjectClass)
+		{
+			break;
+		}
+
+		pClass = MonoInternals::mono_class_get_parent(pClass);
 	}
 
 	MonoInternals::mono_method_desc_free(pDesiredDesc);

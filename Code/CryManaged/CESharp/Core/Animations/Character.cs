@@ -109,11 +109,7 @@ namespace CryEngine.Animations
 
 		internal Character(ICharacterInstance nativeCharacter)
 		{
-			if(nativeCharacter == null)
-			{
-				throw new ArgumentNullException(nameof(nativeCharacter));
-			}
-			NativeHandle = nativeCharacter;
+			NativeHandle = nativeCharacter ?? throw new ArgumentNullException(nameof(nativeCharacter));
 		}
 
 		/// <summary>
@@ -160,8 +156,7 @@ namespace CryEngine.Animations
 			var skeleton = NativeHandle?.GetISkeletonAnim();
 			if(skeleton != null)
 			{
-				var values = Enum.GetValues(typeof(EMotionParamID)) as int[];
-				if(values != null)
+				if(Enum.GetValues(typeof(EMotionParamID)) is int[] values)
 				{
 					foreach(var value in values)
 					{

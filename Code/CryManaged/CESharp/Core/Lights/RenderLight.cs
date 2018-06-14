@@ -527,7 +527,7 @@ namespace CryEngine
 		/// <summary>
 		/// The ID of the entity.
 		/// </summary>
-		public EntitySystem.EntityId EntityId
+		public EntityId EntityId
 		{
 			get
 			{

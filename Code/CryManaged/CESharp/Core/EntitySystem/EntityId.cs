@@ -1,6 +1,6 @@
 // Copyright 2001-2018 Crytek GmbH / Crytek Group. All rights reserved.
 
-namespace CryEngine.EntitySystem
+namespace CryEngine
 {
 	/// <summary>
 	/// Entity ID's store references to game entities as unsigned integers.
