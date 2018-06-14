@@ -48,6 +48,13 @@ void CPostEffectContext::Setup(CPostEffectsMgr* pPostEffectsMgr)
 		m_shaderRTMask |= (quality | quality1);
 		break;
 	}
+
+	m_bUseAltBackBuffer = false;
+}
+
+void CPostEffectContext::EnableAltBackBuffer(bool enable)
+{
+	m_bUseAltBackBuffer = enable;
 }
 
 uint64 CPostEffectContext::GetShaderRTMask() const
@@ -62,6 +69,8 @@ CTexture* CPostEffectContext::GetSrcBackBufferTexture() const
 
 CTexture* CPostEffectContext::GetDstBackBufferTexture() const
 {
+	if (m_bUseAltBackBuffer)
+		return CRendererResources::s_ptexSceneDiffuse;
 	return GetRenderView()->GetColorTarget();
 }
 
@@ -123,6 +132,7 @@ void CPostEffectStage::Init()
 //	m_postEffectArray[EPostEffectID::AlienInterference   ] = stl::make_unique<CAlienInterferencePass   >();
 	m_postEffectArray[EPostEffectID::PostStereo          ] = stl::make_unique<CPostStereoPass          >();
 	m_postEffectArray[EPostEffectID::HUD3D               ] = stl::make_unique<CHud3DPass               >();
+	m_postEffectArray[EPostEffectID::ScreenFader         ] = stl::make_unique<CScreenFaderPass         >();
 //	m_postEffectArray[EPostEffectID::Post3DRenderer      ] = stl::make_unique<CPost3DRendererPass      >();
 
 	for (auto& pPostEffect : m_postEffectArray)
@@ -202,8 +212,7 @@ bool CPostEffectStage::Execute()
 	m_context.Setup(pPostMgr);
 	m_context.SetRenderView(RenderView());
 
-	const auto tempRT = CRendererResources::s_ptexSceneDiffuse;
-	bool usingTempRTs = true;
+	m_context.EnableAltBackBuffer(true);
 
 	for (CPostEffectItor pItor = pPostMgr->GetEffects().begin(), pItorEnd = pPostMgr->GetEffects().end(); pItor != pItorEnd; ++pItor)
 	{
@@ -233,13 +242,13 @@ bool CPostEffectStage::Execute()
 			const auto id = pCurrEffect->GetID();
 
 			if (id >= EPostEffectID::PostAA)
-				usingTempRTs = false;
+				m_context.EnableAltBackBuffer(false);
 
 			uint32 nRenderFlags = pCurrEffect->GetRenderFlags();
 			if (nRenderFlags & PSP_UPDATE_BACKBUFFER)
 			{
 				CTexture* pDstTex = m_context.GetSrcBackBufferTexture();
-				CTexture* pSrcTex = usingTempRTs ? m_context.GetDstBackBufferTexture() : tempRT;
+				CTexture* pSrcTex = m_context.GetDstBackBufferTexture();
 
 				m_passCopyScreenToTex.Execute(pSrcTex, pDstTex);
 			}
@@ -1305,6 +1314,55 @@ void CScreenBloodPass::Execute(const CPostEffectContext& context)
 
 //////////////////////////////////////////////////////////////////////////
 
+void CScreenFaderPass::Init()
+{}
+
+void CScreenFaderPass::Execute(const CPostEffectContext& context)
+{
+	const CEffectParam* pColor = context.GetEffectParamByName("ScreenFader_Color");
+	CRY_ASSERT(pColor != nullptr);
+
+	if (!pColor)
+	{
+		return;
+	}
+
+	PROFILE_LABEL_SCOPE("SCREEN FADER");
+
+	CD3D9Renderer* const RESTRICT_POINTER rd = gcpRendD3D;
+
+	auto& pass = m_passScreenFader;
+	const Vec4 &color = pColor->GetParamVec4();
+
+	CTexture* pDstTex = context.GetDstBackBufferTexture();
+
+	if (pass.InputChanged(pDstTex->GetID()))
+	{
+		static CCryNameTSCRC techTexToTex("TextureToTextureTinted");
+		pass.SetPrimitiveFlags(CRenderPrimitive::eFlags_ReflectShaderConstants_PS);
+		pass.SetPrimitiveType(CRenderPrimitive::ePrim_ProceduralTriangle);
+		pass.SetTechnique(CShaderMan::s_shPostEffects, techTexToTex, 0);
+		pass.SetState(GS_NODEPTHTEST | GS_BLSRC_DSTCOL | GS_BLDST_ONEMINUSSRCALPHA);
+
+		pass.SetRenderTarget(0, pDstTex);
+
+		pass.SetTexture(0, CRendererResources::s_ptexWhite);
+
+		pass.SetSampler(0, EDefaultSamplerStates::PointClamp);
+
+		pass.SetRequirePerViewConstantBuffer(true);
+	}
+
+	pass.BeginConstantUpdate();
+
+	static CCryNameR paramName("texToTexParams2");
+	pass.SetConstant(paramName, color);
+
+	pass.Execute();
+}
+
+//////////////////////////////////////////////////////////////////////////
+
 void CHudSilhouettesPass::Init()
 {
 
@@ -1372,12 +1430,8 @@ void CHudSilhouettesPass::ExecuteDeferredSilhouettesOptimised(const CPostEffectC
 		// Down Sample
 		m_passStrechRect.Execute(CRendererResources::s_ptexSceneNormalsMap, CRendererResources::s_ptexBackBufferScaled[0]);
 
-		CD3D9Renderer* const RESTRICT_POINTER rd = gcpRendD3D;
-
 		auto& pass = m_passDeferredSilhouettesOptimised;
-
 		CTexture* pDstTex = context.GetDstBackBufferTexture();
-
 		if (pass.InputChanged(pDstTex->GetID(), CRendererResources::s_ptexBackBufferScaled[0]->GetID()))
 		{
 			static CCryNameTSCRC techName("DeferredSilhouettesOptimised");

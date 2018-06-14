@@ -61,10 +61,6 @@ struct vert2FragGeneral
   float4 AvgFogVolumeContrib : TEXCOORDN;
 #endif
 
-#if %_RT_FOG || %_RT_DECAL_TEXGEN_2D || %DECAL
-  float4 Ambient   : TEXCOORDN;
-#endif
-
 #if ENABLE_TESSELLATION && !%_RT_NO_TESSELLATION
   half4 vNormal    : TEXCOORDN;
 #endif

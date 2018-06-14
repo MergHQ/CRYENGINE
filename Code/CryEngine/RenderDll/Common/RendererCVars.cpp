@@ -229,8 +229,6 @@ int CRendererCVars::CV_r_geominstancingthreshold;
 
 AllocateConstIntCVar(CRendererCVars, CV_r_DebugLightVolumes);
 
-AllocateConstIntCVar(CRendererCVars, CV_r_UseShadowsPool);
-
 float CRendererCVars::CV_r_ShadowsBias;
 float CRendererCVars::CV_r_ShadowsAdaptionRangeClamp;
 float CRendererCVars::CV_r_ShadowsAdaptionSize;
@@ -240,21 +238,16 @@ float CRendererCVars::CV_r_ShadowsParticleJitterAmount;
 float CRendererCVars::CV_r_ShadowsParticleAnimJitterAmount;
 float CRendererCVars::CV_r_ShadowsParticleNormalEffect;
 
-AllocateConstIntCVar(CRendererCVars, CV_r_ShadowGenMode);
-
 AllocateConstIntCVar(CRendererCVars, CV_r_shadowtexformat);
+AllocateConstIntCVar(CRendererCVars, CV_r_ShadowsMask);
 AllocateConstIntCVar(CRendererCVars, CV_r_ShadowsMaskResolution);
-AllocateConstIntCVar(CRendererCVars, CV_r_ShadowsMaskDownScale);
-AllocateConstIntCVar(CRendererCVars, CV_r_ShadowsStencilPrePass);
 AllocateConstIntCVar(CRendererCVars, CV_r_ShadowMaskStencilPrepass);
-int CRendererCVars::CV_r_ShadowsDepthBoundNV;
 int CRendererCVars::CV_r_ShadowsPCFiltering;
 float CRendererCVars::CV_r_shadow_jittering;
 int CRendererCVars::CV_r_ShadowPoolMaxTimeslicedUpdatesPerFrame;
 int CRendererCVars::CV_r_ShadowCastingLightsMaxCount;
 AllocateConstIntCVar(CRendererCVars, CV_r_ShadowsGridAligned);
-AllocateConstIntCVar(CRendererCVars, CV_r_ShadowPass);
-AllocateConstIntCVar(CRendererCVars, CV_r_ShadowGen);
+AllocateConstIntCVar(CRendererCVars, CV_r_ShadowMapsUpdate);
 AllocateConstIntCVar(CRendererCVars, CV_r_ShadowGenDepthClip);
 AllocateConstIntCVar(CRendererCVars, CV_r_ShadowPoolMaxFrames);
 int CRendererCVars::CV_r_ShadowsCache;
@@ -1533,11 +1526,6 @@ void CRendererCVars::InitCVars()
 	                    "1=Enable\n"
 	                    "Usage: r_DebugLightVolumes[0/1]");
 
-	DefineConstIntCVar3("r_UseShadowsPool", CV_r_UseShadowsPool, SHADOWS_POOL_DEFAULT_VAL, VF_NULL,
-	                    "0=Disable\n"
-	                    "1=Enable\n"
-	                    "Usage: r_UseShadowsPool[0/1]");
-
 	REGISTER_CVAR3("r_ShadowsBias", CV_r_ShadowsBias, 0.00008f, VF_DUMPTODISK, //-0.00002
 	               "Select shadow map blurriness if r_ShadowsBias is activated.\n"
 	               "Usage: r_ShadowsBias [0.1 - 16]");
@@ -1570,11 +1558,6 @@ void CRendererCVars::InitCVars()
 	               "Shadow taps on particles affected by normal and intensity (breaks lines and uniformity of shadows).\n"
 	               "Usage: r_ShadowsParticleNormalEffect [x], 1. is default");
 
-	DefineConstIntCVar3("r_ShadowGenMode", CV_r_ShadowGenMode, 1, VF_NULL,
-	                    "0=Use Frustums Mask\n"
-	                    "1=Regenerate all sides\n"
-	                    "Usage: r_ShadowGenMode [0/1]");
-
 	REGISTER_CVAR3_CB("r_ShadowsCache", CV_r_ShadowsCache, 0, VF_NULL,
 	                  "Replace all sun cascades above cvar value with cached (static) shadow map: 0=no cached shadows, 1=replace first cascade and up, 2=replace second cascade and up,...",
 	                  OnChange_CachedShadows);
@@ -1599,28 +1582,27 @@ void CRendererCVars::InitCVars()
 	                    "2=use D24S8 texture format for depth map\n"
 	                    "Usage: r_ShadowTexFormat [0-2]");
 
-	DefineConstIntCVar3("r_ShadowsMaskResolution", CV_r_ShadowsMaskResolution, 0, VF_NULL,
+	DefineConstIntCVar3("r_ShadowsMask", CV_r_ShadowsMask, 1, VF_CHEAT,
+	                    "Controls screen space calculation of shadow contribution"
+	                    "0=off\n"
+	                    "1=all shadow casting lights\n"
+	                    "2=sun only\n"
+	                    "3=point lights only\n"
+	                    "Usage: r_ShadowsMask [0/1/2/3]");
+
+	DefineConstIntCVar3("r_ShadowsMaskResolution", CV_r_ShadowsMaskResolution, 0, VF_INVISIBLE,
 	                    "0=per pixel shadow mask\n"
 	                    "1=horizontal half resolution shadow mask\n"
 	                    "2=horizontal and vertical half resolution shadow mask\n"
 	                    "Usage: r_ShadowsMaskResolution [0/1/2]");
-	DefineConstIntCVar3("r_ShadowsMaskDownScale", CV_r_ShadowsMaskDownScale, 0, VF_NULL,
-	                    "Saves video memory by using lower resolution for shadow masks except first one\n"
-	                    "0=per pixel shadow mask\n"
-	                    "1=half resolution shadow mask\n"
-	                    "Usage: r_ShadowsMaskDownScale [0/1]");
+
 	DefineConstIntCVar3("r_CBufferUseNativeDepth", CV_r_CBufferUseNativeDepth, CBUFFER_NATIVE_DEPTH_DEAFULT_VAL, VF_NULL,
 	                    "1= enable, 0 = disable\n"
 	                    "Usage: r_CBufferUseNativeDepth [0/1]");
-	DefineConstIntCVar3("r_ShadowsStencilPrePass", CV_r_ShadowsStencilPrePass, 1, VF_NULL,
-	                    "1=Use Stencil pre-pass for shadows\n"
-	                    "Usage: r_ShadowsStencilPrePass [0/1]");
+
 	DefineConstIntCVar3("r_ShadowMaskStencilPrepass", CV_r_ShadowMaskStencilPrepass, 0, VF_NULL,
 	                    "1=Run explicit stencil prepass for shadow mask generation (as opposed to merged stencil/sampling passes)");
 
-	REGISTER_CVAR3("r_ShadowsDepthBoundNV", CV_r_ShadowsDepthBoundNV, 0, VF_NULL,
-	               "1=use NV Depth Bound extension\n"
-	               "Usage: r_ShadowsDepthBoundNV [0/1]");
 	REGISTER_CVAR3("r_ShadowsPCFiltering", CV_r_ShadowsPCFiltering, 1, VF_NULL,
 	               "1=use PCF for shadows\n"
 	               "Usage: r_ShadowsPCFiltering [0/1]");
@@ -1638,11 +1620,9 @@ void CRendererCVars::InitCVars()
 	                    "Selects algorithm to use for shadow mask generation:\n"
 	                    "0 - Disable shadows snapping\n"
 	                    "1 - Enable shadows snapping");
-	DefineConstIntCVar3("r_ShadowPass", CV_r_ShadowPass, 1, VF_NULL,
-	                    "Process shadow pass");
 	DefineConstIntCVar3("r_ShadowGenDepthClip", CV_r_ShadowGenDepthClip, 1, VF_NULL,
 	                    "0=disable shadow gen depth clipping, 1=enable shadow gen depth clipping");
-	DefineConstIntCVar3("r_ShadowGen", CV_r_ShadowGen, 1, VF_NULL,
+	DefineConstIntCVar3("r_ShadowMapsUpdate", CV_r_ShadowMapsUpdate, 1, VF_NULL,
 	                    "0=disable shadow map updates, 1=enable shadow map updates");
 	DefineConstIntCVar3("r_ShadowPoolMaxFrames", CV_r_ShadowPoolMaxFrames, 30, VF_NULL,
 	                    "Maximum number of frames a shadow can exist in the pool");

@@ -61,6 +61,8 @@ enum EPostEffectID : int8
 	PostStereo,
 	HUD3D,
 
+	ScreenFader,
+
 	Post3DRenderer,
 
 	Num

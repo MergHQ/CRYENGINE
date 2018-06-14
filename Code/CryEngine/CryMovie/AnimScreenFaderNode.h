@@ -38,6 +38,8 @@ private:
 	CAnimScreenFaderNode(const CAnimScreenFaderNode&);
 	CAnimScreenFaderNode& operator=(const CAnimScreenFaderNode&);
 
+	void Deactivate();
+
 private:
 	void PrecacheTexData();
 

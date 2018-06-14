@@ -208,7 +208,7 @@ void CPostAAStage::ApplySMAA(CTexture*& pCurrRT)
 
 	// Pass 1: Edge Detection
 	{
-		if (m_passSMAAEdgeDetection.InputChanged(pCurrRT->GetTextureID(), CRenderer::CV_r_AntialiasingModeSCull))
+		if (m_passSMAAEdgeDetection.InputChanged(pCurrRT->GetTextureID(), pZTexture->GetTextureID(), CRenderer::CV_r_AntialiasingModeSCull))
 		{
 			static CCryNameTSCRC techEdgeDetection("LumaEdgeDetectionSMAA");
 			m_passSMAAEdgeDetection.SetPrimitiveFlags(CRenderPrimitive::eFlags_ReflectShaderConstants_PS);
@@ -237,7 +237,7 @@ void CPostAAStage::ApplySMAA(CTexture*& pCurrRT)
 
 	// Pass 2: Generate blend weight map
 	{
-		if (m_passSMAABlendWeights.InputChanged(CRenderer::CV_r_AntialiasingModeSCull))
+		if (m_passSMAABlendWeights.InputChanged(pZTexture->GetTextureID(), CRenderer::CV_r_AntialiasingModeSCull))
 		{
 			static CCryNameTSCRC techBlendWeights("BlendWeightSMAA");
 			m_passSMAABlendWeights.SetPrimitiveFlags(CRenderPrimitive::eFlags_ReflectShaderConstants_PS);

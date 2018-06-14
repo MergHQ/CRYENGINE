@@ -67,14 +67,6 @@ vtxOutTexToTex TexToTexRegVS(vtxIn IN)
   return OUT;
 }
 
-[earlydepthstencil]
-pixout TexToTexTintedPS(vtxOutTexToTex IN)
-{
-  pixout OUT = TexToTexPS(IN);
-  OUT.Color.rgba *= texToTexParams2.rgba;
-  return OUT;
-}
-
 ///////////////// pixel shader //////////////////
 
 [earlydepthstencil]
@@ -122,6 +114,14 @@ pixout TexToTexPS(vtxOutTexToTex IN)
 #endif
   
   return OUT;
+}
+
+[earlydepthstencil]
+pixout TexToTexTintedPS(vtxOutTexToTex IN)
+{
+    pixout OUT = TexToTexPS(IN);
+    OUT.Color.rgba *= texToTexParams2.rgba;
+    return OUT;
 }
 
 

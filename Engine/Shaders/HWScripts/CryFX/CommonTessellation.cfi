@@ -189,10 +189,6 @@ struct HS_CONTROL_POINT_OUTPUT_ILLUM
 	float4 AvgFogVolumeContrib : TEXCOORDN;
 #endif
 
-#if %_RT_FOG || %_RT_DECAL_TEXGEN_2D || %DECAL
-	float4 Ambient   : TEXCOORDN;
-#endif
-
 #if %VERTCOLORS || %DIRTLAYER || %BLENDLAYER
 	float4 Color      : COLOR0;
 #endif

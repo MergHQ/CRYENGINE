@@ -50,6 +50,7 @@ struct ICryPerfHUD;
 class CNULLRenderAuxGeom;
 class CManualFrameStepController;
 class CProjectManager;
+struct DisplayContext;
 
 namespace minigui
 {
@@ -255,7 +256,7 @@ public:
 
 	const char*                       GetRootFolder() const override  { return m_root.c_str(); }
 
-	virtual bool                        DoFrame(const SDisplayContextKey& displayContextKey, CEnumFlags<ESystemUpdateFlags> updateFlags = CEnumFlags<ESystemUpdateFlags>()) override;
+	virtual bool                        DoFrame(const SDisplayContextKey& displayContextKey = SDisplayContextKey{}, CEnumFlags<ESystemUpdateFlags> updateFlags = CEnumFlags<ESystemUpdateFlags>()) override;
 	virtual IManualFrameStepController* GetManualFrameStepController() const override;
 
 	virtual bool                      UpdateLoadtime() override;

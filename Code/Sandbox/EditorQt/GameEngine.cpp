@@ -1609,7 +1609,6 @@ void CGameEngine::Update()
 			{
 				pDialogSystem->Update(gEnv->pTimer->GetFrameTime());
 			}
-
 			const CRenderViewport* gameViewport = static_cast<CRenderViewport*>(GetIEditorImpl()->GetViewManager()->GetGameViewport());
 			CRY_ASSERT(gameViewport);
 			gEnv->pSystem->DoFrame(gameViewport->GetDisplayContext().GetDisplayContextKey(), updateFlags);

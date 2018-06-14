@@ -585,18 +585,6 @@ void C3DEngine::InitShadowFrustums(const SRenderingPassInfo& passInfo)
 {
 	FUNCTION_PROFILER_3DENGINE;
 
-	//reset shadow for e_ShadowsMasksLimit
-	if (GetCVars()->e_ShadowsMasksLimit > 0)
-	{
-		int nValidCasters = min((GetCVars()->e_ShadowsMasksLimit * 4), m_nRealLightsNum);
-
-		for (int i = nValidCasters; i < m_nRealLightsNum && i < m_lstDynLights.Count(); i++)
-		{
-			SRenderLight* pCurLight = m_lstDynLights[i];
-			pCurLight->m_Flags &= ~DLF_CASTSHADOW_MAPS;
-		}
-	}
-
 	for (int i = 0; i < m_nRealLightsNum && i < m_lstDynLights.Count(); i++)
 	{
 		SRenderLight* pLight = m_lstDynLights[i];

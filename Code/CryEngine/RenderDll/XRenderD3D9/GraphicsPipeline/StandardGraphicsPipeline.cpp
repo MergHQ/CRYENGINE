@@ -776,6 +776,9 @@ void CStandardGraphicsPipeline::Execute()
 	
 	m_renderPassScheduler.SetEnabled(true);
 
+	// Generate cloud volume textures for shadow mapping. Only needs view, and needs to run before ShadowMaskgen.
+	m_pVolumetricCloudsStage->ExecuteShadowGen();
+
 	if (pRenderView->GetCurrentEye() != CCamera::eEye_Right)
 	{
 		// Compute algorithms

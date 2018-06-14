@@ -569,7 +569,9 @@ void CFlashUI::OnLoadingProgress(ILevelInfo* pLevel, int progressAmount)
 			gEnv->pRenderer->EF_Query(EFQ_RecurseLevel, nRecursionLevel);
 			const bool bStandAlone = (nRecursionLevel <= 0);
 			if (bStandAlone)
-				gEnv->pSystem->RenderBegin({});
+			{
+				gEnv->pSystem->RenderBegin(SDisplayContextKey{});
+			}
 
 			const float currTime = gEnv->pTimer->GetAsyncCurTime();
 			OnPostUpdate(currTime - m_fLastAdvance);

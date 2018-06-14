@@ -866,6 +866,8 @@ struct ISvoRenderer
 	virtual void InitCVarValues()                                                            {}
 };
 
+//! \cond INTERNAL
+//! Describes the key used to create display context
 struct SDisplayContextKey
 {
 	struct SInvalidKey

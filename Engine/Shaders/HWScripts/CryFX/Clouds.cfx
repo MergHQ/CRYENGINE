@@ -1894,7 +1894,7 @@ void InjectCloudDensityAndShadowCS(uint3 GroupID : SV_GroupID,
 	const float3 pixelCoord = DispatchThreadID.xyz;
 	float2 vPixelUV = (pixelCoord.xy + 0.5f) * screenSize.zw;
 	vPixelUV = MapRasterToViewport(vPixelUV);
-	float3 vCamVec = ((1 - vPixelUV.x - vPixelUV.y) * FrustumTL.xyz + (vPixelUV.x * FrustumTR.xyz + (vPixelUV.y * FrustumBL.xyz)));
+	float3 vCamVec = ((1 - vPixelUV.x - vPixelUV.y) * frustumTL.xyz + (vPixelUV.x * frustumTR.xyz + (vPixelUV.y * frustumBL.xyz)));
 	const float3 camDir = normalize(vCamVec);
 
 

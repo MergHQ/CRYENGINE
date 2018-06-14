@@ -731,15 +731,8 @@ int CGParamManager::GetParametersGroup(SParamsGroup& InGr, int nId)
 	}
 	else if (nId == 1)
 	{
-		for (i = 0; i < nParams; i++)
-		{
-			SCGParam& Pr = InParams[i];
-			if (Pr.m_eCGParamType != ECGP_SI_AmbientOpacity)
-			{
-				bGeneral = false;
-				break;
-			}
-		}
+		SCGParam& Pr = InParams[0];
+		bGeneral = false;
 	}
 	s_Groups[n].bGeneral = bGeneral;
 
@@ -1610,9 +1603,6 @@ void CHWShader_D3D::mfSetParameters(SCGParam* pParams, const int nINParams, EHWS
 				sData[0].f[1] = sData[0].f[2] = sData[0].f[3] = 0;
 				break;
 
-			case ECGP_PB_AmbientOpacity:
-				sOneLine(sData);
-				break;
 			case ECGP_PB_FromRE:
 				ASSERT_LEGACY_PIPELINE;
 				sZeroLine(sData);

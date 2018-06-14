@@ -77,8 +77,6 @@ Texture2D DirectionTex : register(t4)
   UIDescription = "Tangent space map for defining hair direction";
 > = TM_Detail;
 
-half4 AmbientOpPB  : PB_AmbientOpacity;
-
 // Tweakables /////////////////
 
 float SoftIntersection
@@ -423,7 +421,7 @@ pixoutHair2 ThinHairDepthPS(vert2FragHair IN)
 {
 	pixoutHair2 OUT = (pixoutHair2)0;
 	
-	float fOpacity = saturate(GetAlphaTex(diffuseTex, IN.Common.baseTC) * AlphaBlendMultiplier) * AmbientOpPB.a;
+	float fOpacity = saturate(GetAlphaTex(diffuseTex, IN.Common.baseTC) * AlphaBlendMultiplier) a;
 	clip(fOpacity - ThinHairThreshold);
 	
 	return OUT;
@@ -763,7 +761,7 @@ pixout Hair_MotionBlurPassPS(vert2fragMotionBlur IN)
 {
 	pixout OUT = (pixout)1;
 
-	float fOpacity = saturate(GetAlphaTex(diffuseTex, IN.baseTC) * AlphaBlendMultiplier) * AmbientOpPB.a;
+	float fOpacity = saturate(GetAlphaTex(diffuseTex, IN.baseTC) * AlphaBlendMultiplier);
 
 	#if !%THIN_HAIR
 		clip(fOpacity - Get_MaterialAlphaTest());

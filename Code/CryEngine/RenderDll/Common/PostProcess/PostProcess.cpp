@@ -419,6 +419,7 @@ int CPostEffectsMgr::Init()
 	AddEffect(CNanoGlass);
 	AddEffect(CUberGamePostProcess);
 	AddEffect(CScreenBlood);
+	AddEffect(CScreenFader);
 	AddEffect(CPost3DRenderer);
 
 	// Sort all post effects by ID

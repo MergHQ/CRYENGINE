@@ -122,6 +122,7 @@ struct SFunctor;
 struct IScaleformHelper;
 struct IProjectManager;
 class IImeManager;
+struct SDisplayContextKey;
 
 class CBootProfilerRecord;
 

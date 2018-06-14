@@ -417,8 +417,7 @@ void CVolumetricCloudsStage::Init()
 		"$VolCloudPrevDepthScaled_R",
 	};
 
-	const uint32 rtFlags = FT_NOMIPS | FT_USAGE_RENDERTARGET;
-	const uint32 uavFlags = FT_NOMIPS | FT_USAGE_UNORDERED_ACCESS;
+	const uint32 rtFlags = FT_NOMIPS | FT_USAGE_UNORDERED_ACCESS | FT_USAGE_RENDERTARGET;
 
 	for (int e = 0; e < MaxEyeNum; ++e)
 	{
@@ -432,26 +431,26 @@ void CVolumetricCloudsStage::Init()
 		}
 
 		CRY_ASSERT(m_pScaledPrevDepthTex[e] == nullptr);
-		m_pScaledPrevDepthTex[e] = CTexture::GetOrCreateTextureObject(tnamePrevDepth[e], 0, 0, 0, eTT_2D, rtFlags, eTF_Unknown);
+		m_pScaledPrevDepthTex[e] = CTexture::GetOrCreateTextureObject(tnamePrevDepth[e], 0, 0, 0, eTT_2D, CRendererResources::s_ptexLinearDepthScaled[0]->GetFlags(), eTF_Unknown);
 	}
 
 	CRY_ASSERT(m_pCloudDepthTex == nullptr);
-	m_pCloudDepthTex = CTexture::GetOrCreateTextureObject("$VolCloudDepthScaled", 0, 0, 0, eTT_2D, uavFlags, eTF_Unknown);
+	m_pCloudDepthTex = CTexture::GetOrCreateTextureObject("$VolCloudDepthScaled", 0, 0, 0, eTT_2D, rtFlags, eTF_Unknown);
 
 	CRY_ASSERT(m_pDownscaledMaxTempTex == nullptr);
-	m_pDownscaledMaxTempTex = CTexture::GetOrCreateTextureObject("$VolCloudMaxTmp", 0, 0, 0, eTT_2D, uavFlags, eTF_Unknown);
+	m_pDownscaledMaxTempTex = CTexture::GetOrCreateTextureObject("$VolCloudMaxTmp", 0, 0, 0, eTT_2D, rtFlags, eTF_Unknown);
 
 	CRY_ASSERT(m_pDownscaledMinTempTex == nullptr);
-	m_pDownscaledMinTempTex = CTexture::GetOrCreateTextureObject("$VolCloudMinTmp", 0, 0, 0, eTT_2D, uavFlags, eTF_Unknown);
+	m_pDownscaledMinTempTex = CTexture::GetOrCreateTextureObject("$VolCloudMinTmp", 0, 0, 0, eTT_2D, rtFlags, eTF_Unknown);
 
 	CRY_ASSERT(m_pDownscaledLeftEyeTex == nullptr);
-	m_pDownscaledLeftEyeTex = CTexture::GetOrCreateTextureObject("$VolCloudLeftEye", 0, 0, 0, eTT_2D, uavFlags, eTF_Unknown);
+	m_pDownscaledLeftEyeTex = CTexture::GetOrCreateTextureObject("$VolCloudLeftEye", 0, 0, 0, eTT_2D, rtFlags, eTF_Unknown);
 
 	CRY_ASSERT(m_pCloudDensityTex == nullptr);
-	m_pCloudDensityTex = CTexture::GetOrCreateTextureObject("$VolCloudDensityTmp", 0, 0, 0, eTT_3D, uavFlags, eTF_Unknown);
+	m_pCloudDensityTex = CTexture::GetOrCreateTextureObject("$VolCloudDensityTmp", 0, 0, 0, eTT_3D, rtFlags, eTF_Unknown);
 
 	CRY_ASSERT(m_pCloudShadowTex == nullptr);
-	m_pCloudShadowTex = CTexture::GetOrCreateTextureObject("$VolCloudShadowTmp", 0, 0, 0, eTT_3D, uavFlags, eTF_Unknown);
+	m_pCloudShadowTex = CTexture::GetOrCreateTextureObject("$VolCloudShadowTmp", 0, 0, 0, eTT_3D, rtFlags, eTF_Unknown);
 
 	CRY_ASSERT(m_pCloudShadowConstantBuffer.get() == nullptr);
 	m_pCloudShadowConstantBuffer = gcpRendD3D->m_DevBufMan.CreateConstantBuffer(sizeof(SCloudShadowShaderParam));
@@ -502,60 +501,50 @@ void CVolumetricCloudsStage::Update()
 	const int32 scaledWidth = VCGetDownscaledResolution(screenWidth, scale);
 	const int32 scaledHeight = VCGetDownscaledResolution(screenHeight, scale);
 	const int32 depth = VCGetCloudRaymarchStepNum();
-	const uint32 rtFlags = FT_NOMIPS | FT_USAGE_RENDERTARGET;
-	const uint32 uavFlags = FT_NOMIPS | FT_USAGE_UNORDERED_ACCESS;
+	const uint32 rtFlags = FT_NOMIPS | FT_USAGE_UNORDERED_ACCESS | FT_USAGE_RENDERTARGET;
 
 	bool bReset = false;
 
-	auto createTexture2D = [=](CTexture* pTex, ETEX_Format texFormat, std::function<bool(void)> cond) -> bool
+	const auto createTexture2D = [=](CTexture* pTex, ETEX_Format texFormat, uint32 flags, bool cond) -> bool
 	{
-		bool bCreate = false;
-
 		if (pTex != nullptr
 		    && (scaledWidth != pTex->GetWidth()
 		        || scaledHeight != pTex->GetHeight()
 		        || !CTexture::IsTextureExist(pTex))
 		    && cond)
 		{
-			if (!pTex->Create2DTexture(scaledWidth, scaledHeight, 1, rtFlags, nullptr, texFormat))
+			if (!pTex->Create2DTexture(scaledWidth, scaledHeight, 1, flags, nullptr, texFormat))
 			{
 				CryFatalError("Couldn't allocate texture.");
 			}
 
-			bCreate = true;
+			return true;
 		}
-
-		return bCreate;
+		return false;
 	};
-
-	auto condTrue = []() -> bool { return true; };
 
 	for (int e = 0; e < MaxEyeNum; ++e)
 	{
-		auto condStereo = [=]() -> bool
-		{
-			return (e == 0 || (e == 1 && bStereo));
-		};
+		auto condStereo = e == 0 || (e == 1 && bStereo);
 
 		for (int i = 0; i < 2; ++i)
 		{
-			bReset |= createTexture2D(m_pDownscaledMaxTex[e][i], eTF_R16G16B16A16F, condStereo);
-
-			bReset |= createTexture2D(m_pDownscaledMinTex[e][i], eTF_R16G16B16A16F, condStereo);
+			bReset |= createTexture2D(m_pDownscaledMaxTex[e][i], eTF_R16G16B16A16F, rtFlags, condStereo);
+			bReset |= createTexture2D(m_pDownscaledMinTex[e][i], eTF_R16G16B16A16F, rtFlags, condStereo);
 		}
 
-		bReset |= createTexture2D(m_pScaledPrevDepthTex[e], eTF_R16G16B16A16F, condStereo);
+		bReset |= createTexture2D(m_pScaledPrevDepthTex[e], CRendererResources::s_ptexLinearDepthScaled[0]->GetDstFormat(), CRendererResources::s_ptexLinearDepthScaled[0]->GetFlags(), condStereo);
 	}
 
-	createTexture2D(m_pCloudDepthTex, eTF_R32F, condTrue);
+	createTexture2D(m_pCloudDepthTex, eTF_R32F, rtFlags, true);
 
-	createTexture2D(m_pDownscaledMaxTempTex, eTF_R16G16B16A16F, condTrue);
+	createTexture2D(m_pDownscaledMaxTempTex, eTF_R16G16B16A16F, rtFlags, true);
 
-	createTexture2D(m_pDownscaledMinTempTex, eTF_R16G16B16A16F, condTrue);
+	createTexture2D(m_pDownscaledMinTempTex, eTF_R16G16B16A16F, rtFlags, true);
 
 	if (stereoReproj)
 	{
-		createTexture2D(m_pDownscaledLeftEyeTex, eTF_R16G16B16A16F, condTrue);
+		createTexture2D(m_pDownscaledLeftEyeTex, eTF_R16G16B16A16F, rtFlags, true);
 	}
 	else
 	{
@@ -574,7 +563,7 @@ void CVolumetricCloudsStage::Update()
 		        || depth != pTex->GetDepth()
 		        || !CTexture::IsTextureExist(pTex)))
 		{
-			if (!pTex->Create3DTexture(scaledWidth, scaledHeight, depth, 1, uavFlags, nullptr, texFormat))
+			if (!pTex->Create3DTexture(scaledWidth, scaledHeight, depth, 1, rtFlags, nullptr, texFormat))
 			{
 				CryFatalError("Couldn't allocate texture.");
 			}
@@ -733,14 +722,13 @@ void CVolumetricCloudsStage::Execute()
 			// enables less flicker temporal reprojection filter.
 			const bool bNewTemporalFilter = (CRenderer::CV_r_VolumetricCloudsTemporalReprojection != 0);
 
-			if (pass.InputChanged(CRenderer::CV_r_VolumetricClouds, CRenderer::CV_r_VolumetricCloudsTemporalReprojection))
+			uint64 rtMask = g_HWSR_MaskBit[HWSR_SAMPLE0]; // activates using max-depth.
+			rtMask |= bNewTemporalFilter ? g_HWSR_MaskBit[HWSR_SAMPLE1] : 0;
+			// TODO: remove after old graphics pipeline is removed.
+			rtMask |= g_HWSR_MaskBit[HWSR_SAMPLE2]; // enables explicit constant buffer.
+
+			if (pass.InputChanged(rtMask, bNewTemporalFilter, currMaxTex->GetID(), prevMaxTex->GetID()))
 			{
-				uint64 rtMask = g_HWSR_MaskBit[HWSR_SAMPLE0]; // activates using max-depth.
-				rtMask |= bNewTemporalFilter ? g_HWSR_MaskBit[HWSR_SAMPLE1] : 0;
-
-				// TODO: remove after old graphics pipeline is removed.
-				rtMask |= g_HWSR_MaskBit[HWSR_SAMPLE2]; // enables explicit constant buffer.
-
 				static CCryNameTSCRC shaderName = "ReprojectClouds";
 				pass.SetPrimitiveFlags(CRenderPrimitive::eFlags_None);
 				pass.SetTechnique(pShader, shaderName, rtMask);
@@ -779,12 +767,12 @@ void CVolumetricCloudsStage::Execute()
 			// enables less flicker temporal reprojection filter.
 			const bool bNewTemporalFilter = (CRenderer::CV_r_VolumetricCloudsTemporalReprojection != 0);
 
-			if (pass.InputChanged(CRenderer::CV_r_VolumetricClouds, CRenderer::CV_r_VolumetricCloudsTemporalReprojection))
-			{
-				uint64 rtMask = bNewTemporalFilter ? g_HWSR_MaskBit[HWSR_SAMPLE1] : 0;
+			uint64 rtMask = bNewTemporalFilter ? g_HWSR_MaskBit[HWSR_SAMPLE1] : 0;
+			// TODO: remove after old graphics pipeline is removed.
+			rtMask |= g_HWSR_MaskBit[HWSR_SAMPLE2]; // enables explicit constant buffer.
 
-				// TODO: remove after old graphics pipeline is removed.
-				rtMask |= g_HWSR_MaskBit[HWSR_SAMPLE2]; // enables explicit constant buffer.
+			if (pass.InputChanged(rtMask, bNewTemporalFilter, currMinTex->GetID(), prevMinTex->GetID()))
+			{
 
 				static CCryNameTSCRC shaderName = "ReprojectClouds";
 				pass.SetPrimitiveFlags(CRenderPrimitive::eFlags_None);
@@ -852,7 +840,7 @@ void CVolumetricCloudsStage::Execute()
 				pass.SetTechnique(pShader, shaderName, rtMask);
 
 				pass.SetRenderTarget(0, CRendererResources::s_ptexHDRTarget);
-				pass.SetDepthTarget(RenderView()->GetDepthTarget());
+				pass.SetDepthTarget(zTarget);
 
 				// using GS_BLDST_SRCALPHA because GS_BLDST_ONEMINUSSRCALPHA causes banding artifact when alpha value is very low.
 				pass.SetState(GS_NODEPTHTEST | GS_BLSRC_ONE | GS_BLDST_SRCALPHA);

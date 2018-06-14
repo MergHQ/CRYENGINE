@@ -104,9 +104,6 @@ const float TANGENT30_2 = 0.57735026918962576450914878050196f * 2;   // 2*tan(30
 #define SUNSHAFTS_DEFAULT_VAL                 2
 #define HDR_RANGE_ADAPT_DEFAULT_VAL           0
 #define HDR_RENDERING_DEFAULT_VAL             1
-#define SHADOWS_POOL_DEFAULT_VAL              1
-#define SHADOWS_CLIP_VOL_DEFAULT_VAL          1
-#define SHADOWS_BLUR_DEFAULT_VAL              3
 #define TEXPREALLOCATLAS_DEFAULT_VAL          0
 #define TEXMAXANISOTROPY_DEFAULT_VAL          8
 #if CRY_PLATFORM_DESKTOP
@@ -1192,11 +1189,6 @@ public:
 
 	void              UpdateRenderingModesInfo();
 	bool              IsCustomRenderModeEnabled(uint32 nRenderModeMask);
-
-	bool              IsShadowPassEnabled() const
-	{
-		return (CV_r_ShadowPass && CV_r_usezpass && !m_wireframe_mode);
-	}
 
 	bool              IsEditorMode() const
 	{

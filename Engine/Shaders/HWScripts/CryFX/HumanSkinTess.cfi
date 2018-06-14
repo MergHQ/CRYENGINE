@@ -32,10 +32,6 @@ HS_CONTROL_POINT_OUTPUT_ILLUM SkinHS(InputPatch<vert2FragGeneral, 3> inputPatch,
 {
 	HS_CONTROL_POINT_OUTPUT_ILLUM output = (HS_CONTROL_POINT_OUTPUT_ILLUM)0;
 
-#if %_RT_FOG ||%_RT_DECAL_TEXGEN_2D
-	output.Ambient                 = inputPatch[uCPID].Ambient;
-#endif
-
 	output.vTangent                = inputPatch[uCPID].vTangent;
 	output.vBinormal               = inputPatch[uCPID].vBinormal;
 	output.controlPoint.vView      = inputPatch[uCPID].vView;
@@ -73,9 +69,6 @@ void ProcessEvalOutput(in CommonEvaluationOutputDS evalOutput, inout vert2FragGe
 vert2FragGeneral SkinDS( HS_CONSTANT_DATA_OUTPUT hsConstData, float3 vBaryCoords : SV_DomainLocation, const OutputPatch<HS_CONTROL_POINT_OUTPUT_ILLUM, 3> TrianglePatch )
 {
 	vert2FragGeneral output = (vert2FragGeneral)0;
-#if %_RT_FOG ||%_RT_DECAL_TEXGEN_2D
-	output.Ambient = EvalVec(TrianglePatch[0].Ambient, TrianglePatch[1].Ambient, TrianglePatch[2].Ambient, vBaryCoords);
-#endif
 
 	CommonEvaluationInputDS evalInput = (CommonEvaluationInputDS)0;
 	FillEvalInput(TrianglePatch, hsConstData, vBaryCoords, evalInput);

@@ -100,10 +100,6 @@ cbuffer PerMaterialConstants : register()
 #define PS_REG_PB_8 c8
 #define PS_REG_PB_9 c9
 
-float4 AmbientOp         : SI_AmbientOpacity   < vsregister = c5; >;
-
-float4 Ambient           : PI_Ambient       < psregister = PS_REG_PB_9; vsregister = c3 >;
-
 //=============================================================================
 //=== Global constants ========================================================
 

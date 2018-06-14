@@ -13,6 +13,8 @@
 
 #include "XRenderD3D9/DriverD3D.h"
 
+#include <algorithm>
+
 //////////////////////////////////////////////////////////////////////////
 DECLARE_JOB("CreateSubsetRenderMesh", TCreateSubsetRenderMesh, SMeshSubSetIndicesJobEntry::CreateSubSetRenderMesh);
 //////////////////////////////////////////////////////////////////////////
@@ -29,31 +31,38 @@ DECLARE_JOB("CreateSubsetRenderMesh", TCreateSubsetRenderMesh, SMeshSubSetIndice
 
 //////////////////////////////////////////////////////////////////////////////////////
 namespace 
-{ 
-	inline uint32 GetCurrentRenderFrameID(const SRenderingPassInfo& passInfo)
+{
+	struct SScopedMeshDataLock
 	{
-		return passInfo.GetFrameID();
+		SScopedMeshDataLock() = default;
+		SScopedMeshDataLock(CRenderMesh *pMesh) : p(pMesh) { if (p) p->LockForThreadAccess(); }
+		~SScopedMeshDataLock()                             { if (p) p->UnLockForThreadAccess(); }
+
+		SScopedMeshDataLock(const SScopedMeshDataLock&)            = delete;
+		SScopedMeshDataLock &operator=(const SScopedMeshDataLock&) = delete;
+
+		SScopedMeshDataLock(SScopedMeshDataLock&& o)            noexcept : p(o.p) { o.p = nullptr; }
+		SScopedMeshDataLock &operator=(SScopedMeshDataLock&& o) noexcept
+		{
+			if (p) p->UnLockForThreadAccess();
+			p = o.p;
+			o.p = nullptr;
+
+			return *this;
+		}
+
+		CRenderMesh* p = nullptr;
 	};
 
 	inline int GetCurrentFrameID()
 	{
-		return (gRenDev->m_pRT->IsRenderThread()) ? gRenDev->GetRenderFrameID() : gRenDev->GetMainFrameID();
+		return gRenDev->m_pRT->IsRenderThread() ? gRenDev->GetRenderFrameID() : gRenDev->GetMainFrameID();
 	};
 
-	class CConditionalLock
+	inline int GetCurrentThreadID()
 	{
-		CryCriticalSection &_lock;
-		bool _bActive;
-	public:
-		CConditionalLock(CryCriticalSection& lock, bool bActive)
-			: _lock(lock), _bActive(bActive)
-		{
-			if (_bActive) _lock.Lock();
-		}
-		~CConditionalLock()
-		{
-			if (_bActive) _lock.Unlock();
-		}
+		CRY_ASSERT(gRenDev->m_pRT->IsMainThread() || gRenDev->m_pRT->IsRenderThread());
+		return gRenDev->m_pRT->IsRenderThread() ? gRenDev->GetRenderThreadID() : gRenDev->GetMainThreadID();
 	};
 
 	static inline void RelinkTail(util::list<CRenderMesh>& instance, util::list<CRenderMesh>& list)
@@ -317,9 +326,7 @@ int CRenderMesh::Release()
 # if !defined(_RELEASE)
 	if (refCnt < 0)
 	{
-		CryLogAlways("CRenderMesh::Release() called so many times on rendermesh that refcount became negative");
-		if (CRenderer::CV_r_BreakOnError)
-			__debugbreak();
+		CRY_ASSERT_MESSAGE(refCnt>=0, "CRenderMesh::Release() called so many times on rendermesh that refcount became negative");
 	}
 # endif
 	if (refCnt == 0)
@@ -328,9 +335,7 @@ int CRenderMesh::Release()
 #   if !defined(_RELEASE)
 		if (m_nFlags & FRM_RELEASED)
 		{
-			CryLogAlways("CRenderMesh::Release() mesh already in the garbage list (double delete pending)");
-			if (CRenderer::CV_r_BreakOnError)
-				__debugbreak();
+			CRY_ASSERT_MESSAGE(refCnt > 0, "CRenderMesh::Release() mesh already in the garbage list (double delete pending)");
 		}
 #   endif
 		m_nFlags |= FRM_RELEASED;
@@ -448,6 +453,8 @@ CRenderMesh::CRenderMesh (const char *szType, const char *szSourceName, bool bLo
 
 void CRenderMesh::Cleanup()
 {
+	SREC_AUTO_LOCK(m_sResLock);
+
 	FreeDeviceBuffers(false);
 	FreeSystemBuffers();
 
@@ -480,21 +487,23 @@ void CRenderMesh::Cleanup()
 	for (size_t i=0; i<2; ++i)
 		m_asyncUpdateState[i] = m_asyncUpdateStateCounter[i] = 0;
 
-  for (int i=0; i<VSF_NUM; ++i) 
-    if (m_VBStream[i])
-      m_VBStream[i]->~SMeshStream();
-  FreeMeshInstanceData(m_VBStream[0]);
-  memset(m_VBStream, 0, sizeof(m_VBStream));
-
-	for (size_t j = 0; j < 2; ++j)
+	for (int i = 0; i < VSF_NUM; ++i)
 	{
-		for (size_t i = 0, end = m_CreatedBoneIndices[j].size(); i < end; ++i)
-		{
-			FreeMeshDataUnpooled(m_CreatedBoneIndices[j][i].pStream);
-		//	if (m_CreatedBoneIndices[j][i].pExtraStream)
-		//		FreeMeshDataUnpooled(m_CreatedBoneIndices[j][i].pExtraStream);
-		}
+		if (m_VBStream[i])
+			m_VBStream[i]->~SMeshStream();
 	}
+
+	FreeMeshInstanceData(m_VBStream[0]);
+	memset(m_VBStream, 0, sizeof(m_VBStream));
+
+	for (size_t i = 0, end = m_CreatedBoneIndices.size(); i < end; ++i)
+	{
+		FreeMeshDataUnpooled(m_CreatedBoneIndices[i].pStream);
+//			if (m_CreatedBoneIndices[i].pExtraStream)
+//				FreeMeshDataUnpooled(m_CreatedBoneIndices[i].pExtraStream);
+	}
+	m_CreatedBoneIndices.clear();
+	m_DeletedBoneIndices.clear();
 
 	for (size_t i=0,end=m_RemappedBoneIndices.size(); i<end; ++i)
 	{
@@ -503,6 +512,7 @@ void CRenderMesh::Cleanup()
 		if (m_RemappedBoneIndices[i].buffer != ~0u) 
 			gRenDev->m_DevBufMan.Destroy(m_RemappedBoneIndices[i].buffer);
 	}
+	m_RemappedBoneIndices.clear();
 
 	FreeMeshDataUnpooled(m_pExtraBoneMapping);
 }
@@ -586,18 +596,15 @@ void *CRenderMesh::LockVB(int nStream, uint32 nFlags, int nOffset, int nVerts, i
 {
 	FUNCTION_PROFILER_RENDERER();
 
-  MEMORY_SCOPE_CHECK_HEAP();
+	MEMORY_SCOPE_CHECK_HEAP();
 	MEMSTAT_CONTEXT(EMemStatContextTypes::MSC_RenderMeshType, 0, this->GetTypeName());
 	MEMSTAT_CONTEXT(EMemStatContextTypes::MSC_RenderMesh, 0, this->GetSourceName());
 # if !defined(_RELEASE)
-	if (!m_nThreadAccessCounter)
-	{
-		CryLogAlways("rendermesh must be locked via LockForThreadAccess() before LockIB/VB is called");
-		if (CRenderer::CV_r_BreakOnError)
-			__debugbreak();
-	}
+	CRY_ASSERT_MESSAGE(m_nThreadAccessCounter, "rendermesh must be locked via LockForThreadAccess() before LockIB/VB is called");
 #endif
-	const int threadId = gRenDev->GetMainThreadID();
+
+	// NOTE: When called from a job thread we will use main thread ID
+	const int threadId = gRenDev->m_pRT->IsRenderThread() ? gRenDev->GetRenderThreadID() : gRenDev->GetMainThreadID();
 
 	if (!CanUpdate()) // if allocation failure suffered, don't lock anything anymore
 		return NULL;
@@ -605,102 +612,103 @@ void *CRenderMesh::LockVB(int nStream, uint32 nFlags, int nOffset, int nVerts, i
 	SREC_AUTO_LOCK(m_sResLock);//need lock as resource must not be updated concurrently
 	SMeshStream* MS = GetVertexStream(nStream, nFlags);
 
+	int nFrame = GetCurrentFrameID();
+
 #if defined(USE_VBIB_PUSH_DOWN)
-	m_VBIBFramePushID = GetCurrentFrameID();
+	m_VBIBFramePushID = nFrame;
 	if (nFlags == FSL_SYSTEM_CREATE || nFlags == FSL_SYSTEM_UPDATE)
 		MS->m_nLockFlags &= ~FSL_VBIBPUSHDOWN;
 #endif
 
-  assert(nVerts <= (int)m_nVerts);
-  if (nVerts > (int)m_nVerts)
-    nVerts = m_nVerts;
-  if (nStride)
-    *nStride = GetStreamStride(nStream);
+	assert(nVerts <= (int)m_nVerts);
+	if (nVerts > (int)m_nVerts)
+		nVerts = m_nVerts;
+	if (nStride)
+		*nStride = GetStreamStride(nStream);
 
 	m_nFlags |= FRM_READYTOUPLOAD;
 
 	byte *pD;
-  int nFrame = GetCurrentFrameID();
 
-  if (nFlags == FSL_SYSTEM_CREATE)
-  {
-	lSysCreate:
+	if (nFlags == FSL_SYSTEM_CREATE)
+	{
+lSysCreate:
 		RelinkTail(m_Modified[threadId], s_MeshModifiedList[threadId]);
-    if (!MS->m_pUpdateData)
-    {
-      uint32 nSize = GetStreamSize(nStream);
-      pD = reinterpret_cast<byte*>(AllocateMeshData(nSize));
-      if (!pD) return NULL;
-      MS->m_pUpdateData = pD;
-    }
-    else
-      pD = (byte *)MS->m_pUpdateData;
-    //MS->m_nFrameRequest = nFrame;
-    MS->m_nLockFlags = (FSL_SYSTEM_CREATE | (MS->m_nLockFlags & FSL_LOCKED));
-    return &pD[nOffset];
-  }
+		if (!MS->m_pUpdateData)
+		{
+			uint32 nSize = GetStreamSize(nStream);
+			pD = reinterpret_cast<byte*>(AllocateMeshData(nSize));
+			if (!pD) return NULL;
+			MS->m_pUpdateData = pD;
+		}
+		else
+			pD = (byte *)MS->m_pUpdateData;
+		//MS->m_nFrameRequest = nFrame;
+		MS->m_nLockFlags = (FSL_SYSTEM_CREATE | (MS->m_nLockFlags & FSL_LOCKED));
+		return &pD[nOffset];
+	}
 	else if (nFlags == FSL_SYSTEM_UPDATE)
-  {
+	{
 lSysUpdate:
 		RelinkTail(m_Modified[threadId], s_MeshModifiedList[threadId]);
-    if (!MS->m_pUpdateData)
-    {
-      MESSAGE_VIDEO_BUFFER_ACC_ATTEMPT;
-      CopyStreamToSystemForUpdate(*MS, GetStreamSize(nStream));
-    }
-    assert(nStream || MS->m_pUpdateData);
-    if (!MS->m_pUpdateData)
-      return NULL;
-    //MS->m_nFrameRequest = nFrame;
-    pD = (byte *)MS->m_pUpdateData;
-    MS->m_nLockFlags = (nFlags | (MS->m_nLockFlags & FSL_LOCKED));
-    return &pD[nOffset];
-  }
-  else if (nFlags == FSL_READ)
-  {
-    if (!MS)
-      return NULL;
+		if (!MS->m_pUpdateData)
+		{
+			MESSAGE_VIDEO_BUFFER_ACC_ATTEMPT;
+			CopyStreamToSystemForUpdate(*MS, GetStreamSize(nStream));
+		}
+		assert(nStream || MS->m_pUpdateData);
+		if (!MS->m_pUpdateData)
+			return NULL;
+		//MS->m_nFrameRequest = nFrame;
+		pD = (byte *)MS->m_pUpdateData;
+		MS->m_nLockFlags = (nFlags | (MS->m_nLockFlags & FSL_LOCKED));
+		return &pD[nOffset];
+	}
+	else if (nFlags == FSL_READ)
+	{
+		if (!MS)
+			return NULL;
 		RelinkTail(m_Dirty[threadId], s_MeshDirtyList[threadId]);
 		if (MS->m_pUpdateData)
 		{
 			pD = (byte *)MS->m_pUpdateData;
 			return &pD[nOffset];
 		}
-    nFlags = FSL_READ | FSL_VIDEO;
-  }
+		nFlags = FSL_READ | FSL_VIDEO;
+	}
 
-  if (nFlags == (FSL_READ | FSL_VIDEO))
-  {
-    if (!MS)
-      return NULL; 
-		RelinkTail(m_Dirty[threadId], s_MeshDirtyList[threadId]); 
+	if (nFlags == (FSL_READ | FSL_VIDEO))
+	{
+		if (!MS)
+			return NULL;
+		RelinkTail(m_Dirty[threadId], s_MeshDirtyList[threadId]);
 #if RENDERMESH_BUFFER_ENABLE_DIRECT_ACCESS == 0
-    if (gRenDev->m_pRT && gRenDev->m_pRT->IsMultithreaded())
-    {
-      // Always use system copy in MT mode
-      goto lSysUpdate;
-    }
-    else
+		if (gRenDev->m_pRT && gRenDev->m_pRT->IsMultithreaded())
+		{
+			// Always use system copy in MT mode
+			goto lSysUpdate;
+		}
+		else
 #   endif 
-    {
-      buffer_handle_t nVB = MS->m_nID;
-      if (nVB == ~0u )
-         return NULL;
-      // Try to lock device buffer in single-threaded mode
-      if (!MS->m_pLockedData)
-      {
+		{
+			buffer_handle_t nVB = MS->m_nID;
+			if (nVB == ~0u)
+				return NULL;
+			// Try to lock device buffer in single-threaded mode
+			if (!MS->m_pLockedData)
+			{
 				MESSAGE_VIDEO_BUFFER_ACC_ATTEMPT;
 				if (MS->m_pLockedData = gRenDev->m_DevBufMan.BeginRead(nVB))
-          MS->m_nLockFlags |= FSL_LOCKED;
-      }
-      if (MS->m_pLockedData)
-      {
-        ++MS->m_nLockCount;
+					MS->m_nLockFlags |= FSL_LOCKED;
+			}
+			if (MS->m_pLockedData)
+			{
+				++MS->m_nLockCount;
 				pD = (byte *)MS->m_pLockedData;
-        return &pD[nOffset];
-      }
-    }
-  }
+				return &pD[nOffset];
+			}
+		}
+	}
 	if (nFlags == (FSL_VIDEO_CREATE))
 	{
 		// Only consoles support direct uploading to vram, but as the data is not
@@ -709,139 +717,135 @@ lSysUpdate:
 		// DX9 can experience huge stalls if resources are used while rendering is performed
 		buffer_handle_t nVB = ~0u;
 #if RENDERMESH_BUFFER_ENABLE_DIRECT_ACCESS
-    nVB = MS->m_nID;
-    if ((nVB != ~0u && (MS->m_nFrameCreate != nFrame || MS->m_nElements != m_nVerts)) || !CRenderer::CV_r_buffer_enable_lockless_updates)
+		nVB = MS->m_nID;
+		if ((nVB != ~0u && (MS->m_nFrameCreate != nFrame || MS->m_nElements != m_nVerts)) || !CRenderer::CV_r_buffer_enable_lockless_updates)
 #   endif
 			goto lSysCreate;
 		RelinkTail(m_Modified[threadId], s_MeshModifiedList[threadId]);
 		if (nVB == ~0u && !CreateVidVertices(m_nVerts, m_eVF, nStream))
-    {
-      RT_AllocationFailure("Create VB-Stream", GetStreamSize(nStream, m_nVerts) );
+		{
+			RT_AllocationFailure("Create VB-Stream", GetStreamSize(nStream, m_nVerts));
 			return NULL;
-    }
+		}
 		nVB = MS->m_nID;
-    if (!MS->m_pLockedData)
-    {
+		if (!MS->m_pLockedData)
+		{
 			MESSAGE_VIDEO_BUFFER_ACC_ATTEMPT;
 			if ((MS->m_pLockedData = gRenDev->m_DevBufMan.BeginWrite(nVB)) == NULL)
 				return NULL;
-			MS->m_nLockFlags |= FSL_DIRECT|FSL_LOCKED;
+			MS->m_nLockFlags |= FSL_DIRECT | FSL_LOCKED;
 		}
-    ++MS->m_nLockCount;
+		++MS->m_nLockCount;
 		pD = (byte *)MS->m_pLockedData;
-    return &pD[nOffset];
+		return &pD[nOffset];
 	}
 	if (nFlags == (FSL_VIDEO_UPDATE))
 	{
 		goto lSysUpdate;
 	}
 
-  return NULL;
+	return NULL;
 }
 
 vtx_idx *CRenderMesh::LockIB(uint32 nFlags, int nOffset, int nInds)
 {
 	FUNCTION_PROFILER_RENDERER();
 
-  MEMORY_SCOPE_CHECK_HEAP();
-  byte *pD;
+	MEMORY_SCOPE_CHECK_HEAP();
+	byte *pD;
 # if !defined(_RELEASE)
-	if (!m_nThreadAccessCounter)
-	{
-		CryLogAlways("rendermesh must be locked via LockForThreadAccess() before LockIB/VB is called");
-		if (CRenderer::CV_r_BreakOnError)
-			__debugbreak();
-	}
+	CRY_ASSERT_MESSAGE(m_nThreadAccessCounter, "rendermesh must be locked via LockForThreadAccess() before LockIB/VB is called");
 #endif
 	if (!CanUpdate()) // if allocation failure suffered, don't lock anything anymore
 		return NULL;
 
-	const int threadId = gRenDev->GetMainThreadID();
+	// NOTE: When called from a job thread we will use main thread ID
+	const int threadId = gRenDev->m_pRT->IsRenderThread() ? gRenDev->GetRenderThreadID() : gRenDev->GetMainThreadID();
 
 	int nFrame = GetCurrentFrameID();
 	SREC_AUTO_LOCK(m_sResLock);//need lock as resource must not be updated concurrently
 
 #if defined(USE_VBIB_PUSH_DOWN)
-	m_VBIBFramePushID = GetCurrentFrameID();
+	m_VBIBFramePushID = nFrame;
 	if (nFlags == FSL_SYSTEM_CREATE || nFlags == FSL_SYSTEM_UPDATE)
 		m_IBStream.m_nLockFlags &= ~FSL_VBIBPUSHDOWN;
 #endif
 	m_nFlags |= FRM_READYTOUPLOAD;
 
-  assert(nInds <= (int)m_nInds);
-  if (nFlags == FSL_SYSTEM_CREATE)
-  {
+	assert(nInds <= (int)m_nInds);
+	if (nFlags == FSL_SYSTEM_CREATE)
+	{
 lSysCreate:
 		RelinkTail(m_Modified[threadId], s_MeshModifiedList[threadId]);
-    if (!m_IBStream.m_pUpdateData)
-    {
-      uint32 nSize = m_nInds * sizeof(vtx_idx);
-      pD = reinterpret_cast<byte*>(AllocateMeshData(nSize));
-      if (!pD) return NULL;
-      m_IBStream.m_pUpdateData = (vtx_idx *)pD;
-    }
-    else
-      pD = (byte *)m_IBStream.m_pUpdateData;
-    //m_IBStream.m_nFrameRequest = nFrame;
-    m_IBStream.m_nLockFlags = (nFlags | (m_IBStream.m_nLockFlags & FSL_LOCKED));
-    return (vtx_idx *)&pD[nOffset];
-  }
+		if (!m_IBStream.m_pUpdateData)
+		{
+			uint32 nSize = m_nInds * sizeof(vtx_idx);
+			pD = reinterpret_cast<byte*>(AllocateMeshData(nSize));
+			if (!pD) return NULL;
+			m_IBStream.m_pUpdateData = (vtx_idx *)pD;
+		}
+		else
+			pD = (byte *)m_IBStream.m_pUpdateData;
+		//m_IBStream.m_nFrameRequest = nFrame;
+		m_IBStream.m_nLockFlags = (nFlags | (m_IBStream.m_nLockFlags & FSL_LOCKED));
+		return (vtx_idx *)&pD[nOffset];
+	}
 	else if (nFlags == FSL_SYSTEM_UPDATE)
-  {
+	{
 lSysUpdate:
 		RelinkTail(m_Modified[threadId], s_MeshModifiedList[threadId]);
-    if (!m_IBStream.m_pUpdateData)
-    {
-      MESSAGE_VIDEO_BUFFER_ACC_ATTEMPT;
+		if (!m_IBStream.m_pUpdateData)
+		{
+			MESSAGE_VIDEO_BUFFER_ACC_ATTEMPT;
 			CopyStreamToSystemForUpdate(m_IBStream, sizeof(vtx_idx)*m_nInds);
-    }
-    assert(m_IBStream.m_pUpdateData);
-    if (!m_IBStream.m_pUpdateData)
-      return NULL;
-    //m_IBStream.m_nFrameRequest = nFrame;
-    pD = (byte *)m_IBStream.m_pUpdateData;
-    m_IBStream.m_nLockFlags = (nFlags | (m_IBStream.m_nLockFlags & FSL_LOCKED));
-    return (vtx_idx *)&pD[nOffset];
-  }
-  else if (nFlags == FSL_READ)
-  {
+		}
+		assert(m_IBStream.m_pUpdateData);
+		if (!m_IBStream.m_pUpdateData)
+			return NULL;
+		//m_IBStream.m_nFrameRequest = nFrame;
+		pD = (byte *)m_IBStream.m_pUpdateData;
+		m_IBStream.m_nLockFlags = (nFlags | (m_IBStream.m_nLockFlags & FSL_LOCKED));
+		return (vtx_idx *)&pD[nOffset];
+	}
+	else if (nFlags == FSL_READ)
+	{
 		RelinkTail(m_Dirty[threadId], s_MeshDirtyList[threadId]);
-    if (m_IBStream.m_pUpdateData)
-    {
-      pD = (byte *)m_IBStream.m_pUpdateData;
-      return (vtx_idx *)&pD[nOffset];
-    }
-    nFlags = FSL_READ | FSL_VIDEO;
-  }
+		if (m_IBStream.m_pUpdateData)
+		{
+			pD = (byte *)m_IBStream.m_pUpdateData;
+			return (vtx_idx *)&pD[nOffset];
+		}
+		nFlags = FSL_READ | FSL_VIDEO;
+	}
 
-  if (nFlags == (FSL_READ | FSL_VIDEO))
-  {
+	if (nFlags == (FSL_READ | FSL_VIDEO))
+	{
 		RelinkTail(m_Dirty[threadId], s_MeshDirtyList[threadId]);
-    buffer_handle_t nIB = m_IBStream.m_nID;
-    if (nIB == ~0u)
-      return NULL;
-    if (gRenDev->m_pRT && gRenDev->m_pRT->IsMultithreaded())
-    {
-      // Always use system copy in MT mode
-      goto lSysUpdate;
-    }
-    else
-    {
-      // TODO: make smart caching mesh algorithm for consoles
-      if (!m_IBStream.m_pLockedData)
-      {
+		buffer_handle_t nIB = m_IBStream.m_nID;
+		if (nIB == ~0u)
+			return NULL;
+		if (gRenDev->m_pRT && gRenDev->m_pRT->IsMultithreaded())
+		{
+			// Always use system copy in MT mode
+			goto lSysUpdate;
+		}
+		else
+		{
+			// TODO: make smart caching mesh algorithm for consoles
+			if (!m_IBStream.m_pLockedData)
+			{
 				MESSAGE_VIDEO_BUFFER_ACC_ATTEMPT;
 				if (m_IBStream.m_pLockedData = gRenDev->m_DevBufMan.BeginRead(nIB))
-          m_IBStream.m_nLockFlags |= FSL_LOCKED;
-      }
-      if (m_IBStream.m_pLockedData)
-      {
-        pD = (byte *)m_IBStream.m_pLockedData;
-        ++m_IBStream.m_nLockCount;
-        return (vtx_idx *)&pD[nOffset];
-      }
-    }
-  }
+					m_IBStream.m_nLockFlags |= FSL_LOCKED;
+			}
+			if (m_IBStream.m_pLockedData)
+			{
+				pD = (byte *)m_IBStream.m_pLockedData;
+				++m_IBStream.m_nLockCount;
+				return (vtx_idx *)&pD[nOffset];
+			}
+		}
+	}
 	if (nFlags == (FSL_VIDEO_CREATE))
 	{
 		// Only consoles support direct uploading to vram, but as the data is not
@@ -850,32 +854,32 @@ lSysUpdate:
 		// DX9 can experience huge stalls if resources are used while rendering is performed
 		buffer_handle_t nIB = -1;
 #if RENDERMESH_BUFFER_ENABLE_DIRECT_ACCESS
-    nIB = m_IBStream.m_nID;
+		nIB = m_IBStream.m_nID;
 		if ((nIB != ~0u && (m_IBStream.m_nFrameCreate || m_IBStream.m_nElements != m_nInds)) || !CRenderer::CV_r_buffer_enable_lockless_updates)
 #   endif
 			goto lSysCreate;
 		RelinkTail(m_Modified[threadId], s_MeshModifiedList[threadId]);
 		if (m_IBStream.m_nID == ~0u)
 		{
-			nIB = (m_IBStream.m_nID = gRenDev->m_DevBufMan.Create(BBT_INDEX_BUFFER, (BUFFER_USAGE)m_eType, m_nInds*sizeof(vtx_idx)));
+			nIB = (m_IBStream.m_nID = gRenDev->m_DevBufMan.Create(BBT_INDEX_BUFFER, (BUFFER_USAGE)m_eType, m_nInds * sizeof(vtx_idx)));
 			m_IBStream.m_nFrameCreate = nFrame;
 		}
 		if (nIB == ~0u)
-    {
-      RT_AllocationFailure("Create IB-Stream", m_nInds*sizeof(vtx_idx) );
+		{
+			RT_AllocationFailure("Create IB-Stream", m_nInds * sizeof(vtx_idx));
 			return NULL;
-    }
+		}
 		m_IBStream.m_nElements = m_nInds;
 		if (!m_IBStream.m_pLockedData)
 		{
 			MESSAGE_VIDEO_BUFFER_ACC_ATTEMPT;
 			if ((m_IBStream.m_pLockedData = gRenDev->m_DevBufMan.BeginWrite(nIB)) == NULL)
 				return NULL;
-			m_IBStream.m_nLockFlags |= FSL_DIRECT|FSL_LOCKED;
+			m_IBStream.m_nLockFlags |= FSL_DIRECT | FSL_LOCKED;
 		}
-    ++m_IBStream.m_nLockCount;
+		++m_IBStream.m_nLockCount;
 		pD = (byte*)m_IBStream.m_pLockedData;
-    return (vtx_idx*)&pD[nOffset];
+		return (vtx_idx*)&pD[nOffset];
 	}
 	if (nFlags == (FSL_VIDEO_UPDATE))
 	{
@@ -884,7 +888,7 @@ lSysUpdate:
 
 	assert(0);
 
-  return NULL;
+	return NULL;
 }
 
 ILINE void CRenderMesh::UnlockVB(int nStream)
@@ -1058,7 +1062,7 @@ size_t CRenderMesh::SetMesh_Int(CMesh &mesh, int nSecColorsSetOffset, uint32 fla
   vtx_idx *pInds = NULL;
 
 	//AUTO_LOCK(m_sResLock);//need a resource lock as mesh could be reseted due to allocation failure
-	LockForThreadAccess();
+  SScopedMeshDataLock _lock(this);
 
   ReleaseRenderChunks(&m_ChunksSkinned);
 
@@ -1304,11 +1308,9 @@ size_t CRenderMesh::SetMesh_Int(CMesh &mesh, int nSecColorsSetOffset, uint32 fla
 		RT_CheckUpdate(_GetVertexContainer(),m_eVF, VSM_MASK);
   }
 
-	UnLockForThreadAccess();
 	return Size(SIZE_ONLY_SYSTEM);
 
 error:
-	UnLockForThreadAccess();
   RT_AllocationFailure("Generic Streaming Error", 0 );
   return ~0U;
 }
@@ -1338,49 +1340,48 @@ void CRenderMesh::SetSkinningDataVegetation(struct SMeshBoneMapping_uint8 *pBone
 {
 	MEMSTAT_CONTEXT(EMemStatContextTypes::MSC_RenderMeshType, 0, this->GetTypeName());
 	MEMSTAT_CONTEXT(EMemStatContextTypes::MSC_RenderMesh, 0, this->GetSourceName());
-  MEMORY_SCOPE_CHECK_HEAP();
-	LockForThreadAccess();
-  SVF_W4B_I4S *pSkinBuff = (SVF_W4B_I4S *)LockVB(VSF_HWSKIN_INFO, FSL_VIDEO_CREATE);
+	MEMORY_SCOPE_CHECK_HEAP();
+	SScopedMeshDataLock _lock(this);
+	SVF_W4B_I4S *pSkinBuff = (SVF_W4B_I4S *)LockVB(VSF_HWSKIN_INFO, FSL_VIDEO_CREATE);
 
 	// stop initializing if allocation failed
-	if( pSkinBuff == NULL ) return;
+	if (pSkinBuff == NULL) return;
 
-  for (uint32 i = 0; i < m_nVerts; i++ )
-  {
-    // get bone IDs
-    uint16 b0 = pBoneMapping[i].boneIds[0];
-    uint16 b1 = pBoneMapping[i].boneIds[1];
-    uint16 b2 = pBoneMapping[i].boneIds[2];
-    uint16 b3 = pBoneMapping[i].boneIds[3];
+	for (uint32 i = 0; i < m_nVerts; i++)
+	{
+		// get bone IDs
+		uint16 b0 = pBoneMapping[i].boneIds[0];
+		uint16 b1 = pBoneMapping[i].boneIds[1];
+		uint16 b2 = pBoneMapping[i].boneIds[2];
+		uint16 b3 = pBoneMapping[i].boneIds[3];
 
-    // get weights
-    const uint8 w0 = pBoneMapping[i].weights[0];
-    const uint8 w1 = pBoneMapping[i].weights[1];
-    const uint8 w2 = pBoneMapping[i].weights[2];
-    const uint8 w3 = pBoneMapping[i].weights[3];
+		// get weights
+		const uint8 w0 = pBoneMapping[i].weights[0];
+		const uint8 w1 = pBoneMapping[i].weights[1];
+		const uint8 w2 = pBoneMapping[i].weights[2];
+		const uint8 w3 = pBoneMapping[i].weights[3];
 
-    // if weight is zero set bone ID to zero as the bone has no influence anyway,
-    // this will fix some issue with incorrectly exported models (e.g. system freezes on ATI cards when access invalid bones)
-    if (w0 == 0) b0 = 0;
-    if (w1 == 0) b1 = 0;
-    if (w2 == 0) b2 = 0;
-    if (w3 == 0) b3 = 0;
+		// if weight is zero set bone ID to zero as the bone has no influence anyway,
+		// this will fix some issue with incorrectly exported models (e.g. system freezes on ATI cards when access invalid bones)
+		if (w0 == 0) b0 = 0;
+		if (w1 == 0) b1 = 0;
+		if (w2 == 0) b2 = 0;
+		if (w3 == 0) b3 = 0;
 
-    pSkinBuff[i].indices[0] = b0;
-    pSkinBuff[i].indices[1] = b1;
-    pSkinBuff[i].indices[2] = b2;
-    pSkinBuff[i].indices[3] = b3;
+		pSkinBuff[i].indices[0] = b0;
+		pSkinBuff[i].indices[1] = b1;
+		pSkinBuff[i].indices[2] = b2;
+		pSkinBuff[i].indices[3] = b3;
 
-    pSkinBuff[i].weights.bcolor[0] = w0;
-    pSkinBuff[i].weights.bcolor[1] = w1;
-    pSkinBuff[i].weights.bcolor[2] = w2;
-    pSkinBuff[i].weights.bcolor[3] = w3;
+		pSkinBuff[i].weights.bcolor[0] = w0;
+		pSkinBuff[i].weights.bcolor[1] = w1;
+		pSkinBuff[i].weights.bcolor[2] = w2;
+		pSkinBuff[i].weights.bcolor[3] = w3;
 
-  //  if (pBSStreamTemp)
-  //    pSkinBuff[i].boneSpace  = pBSStreamTemp[i];
-  }
-  UnlockVB(VSF_HWSKIN_INFO);
-	UnLockForThreadAccess();
+		//  if (pBSStreamTemp)
+		//    pSkinBuff[i].boneSpace  = pBSStreamTemp[i];
+	}
+	UnlockVB(VSF_HWSKIN_INFO);
 
 	CreateRemappedBoneIndicesPair(~0u, m_ChunksSkinned);
 }
@@ -1393,7 +1394,11 @@ void CRenderMesh::SetSkinningDataCharacter(CMesh& mesh, uint32 flags, struct SMe
   SVF_W4B_I4S *pSkinBuff = (SVF_W4B_I4S *)LockVB(VSF_HWSKIN_INFO, FSL_VIDEO_CREATE);
 
 	// stop initializing if allocation failed
-	if( pSkinBuff == NULL ) {return; }
+	if( pSkinBuff == NULL ) 
+	{
+		CRY_ASSERT_MESSAGE(pSkinBuff, "Skinning buffer allocation failed");
+		return; 
+	}
 
 	for (uint32 i=0; i<m_nVerts; i++ )
 	{
@@ -1624,13 +1629,8 @@ uint CRenderMesh::GetSkinningWeightCount() const
 IIndexedMesh *CRenderMesh::GetIndexedMesh(IIndexedMesh *pIdxMesh)
 {
   MEMORY_SCOPE_CHECK_HEAP();
-	struct MeshDataLock
-	{
-    MeshDataLock(CRenderMesh *pMesh) : _Mesh(pMesh) { _Mesh->LockForThreadAccess(); }
-    ~MeshDataLock() { _Mesh->UnLockForThreadAccess(); }
-    CRenderMesh *_Mesh;
-  };
-  MeshDataLock _lock(this);
+
+  SScopedMeshDataLock _lock(this);
 
   if (!pIdxMesh)
     pIdxMesh = gEnv->p3DEngine->CreateIndexedMesh();
@@ -1744,7 +1744,7 @@ void CRenderMesh::GenerateQTangents()
   MEMORY_SCOPE_CHECK_HEAP();
   // FIXME: This needs to be cleaned up. Breakable foliage shouldn't need both streams, and this shouldn't be duplicated
   // between here and CryAnimation.
-	LockForThreadAccess();
+  SScopedMeshDataLock _lock(this);
   int srcStride = 0;
   void *pSrcD = LockVB(VSF_TANGENTS, FSL_READ, 0, 0, &srcStride);
   if (pSrcD)
@@ -1763,7 +1763,6 @@ void CRenderMesh::GenerateQTangents()
     UnlockVB(VSF_QTANGENTS);
   }
   UnlockVB(VSF_TANGENTS);
-	UnLockForThreadAccess();
 }
 
 void CRenderMesh::CreateChunksSkinned()
@@ -1836,48 +1835,53 @@ int CRenderMesh::GetRenderChunksCount(IMaterial * pMaterial, int & nRenderTrisCo
 
 void CRenderMesh::CopyTo(IRenderMesh *_pDst, int nAppendVtx, bool bDynamic, bool fullCopy)
 {
-  MEMORY_SCOPE_CHECK_HEAP();
-  CRenderMesh *pDst = (CRenderMesh *)_pDst;
+	ASSERT_IS_MAIN_THREAD(gRenDev->m_pRT);
+	CRY_ASSERT(this != _pDst);
+
+	MEMORY_SCOPE_CHECK_HEAP();
+	CRenderMesh *pDst = (CRenderMesh *)_pDst;
 #ifdef USE_VBIB_PUSH_DOWN
-  SREC_AUTO_LOCK(m_sResLock);
+	SREC_AUTO_LOCK(m_sResLock);
 #endif
-  TRenderChunkArray& arrSrcMats = m_Chunks;
-  TRenderChunkArray& arrNewMats = pDst->m_Chunks;
-  //pDst->m_bMaterialsWasCreatedInRenderer  = true;
-  arrNewMats.resize (arrSrcMats.size());
-  int i;
-  for (i=0; i<arrSrcMats.size(); ++i)
-  {
-    CRenderChunk& rSrcMat = arrSrcMats[i];
-    CRenderChunk& rNewMat = arrNewMats[i];
-    rNewMat = rSrcMat;
-    rNewMat.nNumVerts	+= ((m_nVerts-2-rNewMat.nNumVerts-rNewMat.nFirstVertId)>>31) & nAppendVtx;
-    CREMeshImpl* re = (CREMeshImpl*) rSrcMat.pRE;
-    if (re)
-    {
-      rNewMat.pRE = (CREMeshImpl*) gRenDev->EF_CreateRE(eDATA_Mesh);
-      CRenderElement *pNext = rNewMat.pRE->m_NextGlobal;
-      CRenderElement *pPrev = rNewMat.pRE->m_PrevGlobal;
-      *(CREMeshImpl*)rNewMat.pRE = *re;
+	TRenderChunkArray& arrSrcMats = m_Chunks;
+	TRenderChunkArray& arrNewMats = pDst->m_Chunks;
+	//pDst->m_bMaterialsWasCreatedInRenderer  = true;
+	arrNewMats.resize(arrSrcMats.size());
+	int i;
+	for (i = 0; i < arrSrcMats.size(); ++i)
+	{
+		CRenderChunk& rSrcMat = arrSrcMats[i];
+		CRenderChunk& rNewMat = arrNewMats[i];
+		rNewMat = rSrcMat;
+		rNewMat.nNumVerts += ((m_nVerts - 2 - rNewMat.nNumVerts - rNewMat.nFirstVertId) >> 31) & nAppendVtx;
+		CREMeshImpl* re = (CREMeshImpl*)rSrcMat.pRE;
+		if (re)
+		{
+			rNewMat.pRE = (CREMeshImpl*)gRenDev->EF_CreateRE(eDATA_Mesh);
+			CRenderElement *pNext = rNewMat.pRE->m_NextGlobal;
+			CRenderElement *pPrev = rNewMat.pRE->m_PrevGlobal;
+			*(CREMeshImpl*)rNewMat.pRE = *re;
 			if (rNewMat.pRE->m_pChunk) // affects the source mesh!! will only work correctly if the source is deleted after copying
-      {
-        rNewMat.pRE->m_pChunk = &rNewMat;
-        rNewMat.pRE->m_pChunk->nNumVerts += ((m_nVerts-2-re->m_pChunk->nNumVerts-re->m_pChunk->nFirstVertId)>>31) & nAppendVtx;
-      }
-      rNewMat.pRE->m_NextGlobal = pNext;
-      rNewMat.pRE->m_PrevGlobal = pPrev;
-      rNewMat.pRE->m_pRenderMesh = pDst;
-      //assert(rNewMat.pRE->m_CustomData);
-      rNewMat.pRE->m_CustomData = NULL;
-    }
-  }
-	LockForThreadAccess();
-	pDst->LockForThreadAccess();
-  pDst->m_nVerts = m_nVerts+nAppendVtx;
+			{
+				rNewMat.pRE->m_pChunk = &rNewMat;
+				rNewMat.pRE->m_pChunk->nNumVerts += ((m_nVerts - 2 - re->m_pChunk->nNumVerts - re->m_pChunk->nFirstVertId) >> 31) & nAppendVtx;
+			}
+			rNewMat.pRE->m_NextGlobal = pNext;
+			rNewMat.pRE->m_PrevGlobal = pPrev;
+			rNewMat.pRE->m_pRenderMesh = pDst;
+			//assert(rNewMat.pRE->m_CustomData);
+			rNewMat.pRE->m_CustomData = NULL;
+	}
+}
+
+	SScopedMeshDataLock _lock(this);
+	SScopedMeshDataLock _lockDst(pDst);
+
+	pDst->m_nVerts = m_nVerts + nAppendVtx;
 	if (fullCopy)
 	{
 		pDst->m_eVF = m_eVF;
-		for (i=0; i<VSF_NUM; i++)
+		for (i = 0; i < VSF_NUM; i++)
 		{
 			void *pSrcD = LockVB(i, FSL_READ);
 			if (pSrcD)
@@ -1885,7 +1889,7 @@ void CRenderMesh::CopyTo(IRenderMesh *_pDst, int nAppendVtx, bool bDynamic, bool
 				void *pDstD = pDst->LockVB(i, FSL_VIDEO_CREATE);
 				assert(pDstD);
 				if (pDstD)
-					cryMemcpy(pDstD, pSrcD, GetStreamSize(i),MC_CPU_TO_GPU);
+					cryMemcpy(pDstD, pSrcD, GetStreamSize(i), MC_CPU_TO_GPU);
 				pDst->UnlockVB(i);
 			}
 			UnlockVB(i);
@@ -1898,17 +1902,14 @@ void CRenderMesh::CopyTo(IRenderMesh *_pDst, int nAppendVtx, bool bDynamic, bool
 			void *pDstD = pDst->LockIB(FSL_VIDEO_CREATE);
 			assert(pDstD);
 			if (pDstD)
-				cryMemcpy(pDstD, pSrcD, m_nInds*sizeof(vtx_idx),MC_CPU_TO_GPU);
+				cryMemcpy(pDstD, pSrcD, m_nInds * sizeof(vtx_idx), MC_CPU_TO_GPU);
 			pDst->UnlockIB();
 		}
 
 		pDst->m_eType = m_eType;
 		pDst->m_nFlags = m_nFlags;
 	}
-  UnlockIB();
-
-	UnLockForThreadAccess();
-	pDst->UnLockForThreadAccess();
+	UnlockIB();
 }
 
 // set effector for all chunks
@@ -2491,11 +2492,15 @@ void CRenderMesh::BuildAdjacency(const VertexFormat *pVerts, unsigned int nVerts
 
 bool CRenderMesh::RT_CheckUpdate(CRenderMesh *pVContainer, InputLayoutHandle eVF, uint32 nStreamMask, bool bTessellation)
 {
+	CRY_ASSERT(gRenDev->m_pRT->IsRenderThread());
+
+	const int threadId = gRenDev->GetRenderThreadID();
+	int nFrame = gRenDev->GetRenderFrameID();
+	
 	MEMSTAT_CONTEXT(EMemStatContextTypes::MSC_RenderMeshType, 0, this->GetTypeName());
 	MEMSTAT_CONTEXT(EMemStatContextTypes::MSC_RenderMesh, 0, this->GetSourceName());
 	PrefetchLine(&m_IBStream, 0);
 
-	int nFrame = gRenDev->GetRenderFrameID();
 	bool bSkinned = (m_nFlags & (FRM_SKINNED | FRM_SKINNEDNEXTDRAW)) != 0;
 
 	m_nFlags &= ~FRM_SKINNEDNEXTDRAW;
@@ -2505,6 +2510,68 @@ bool CRenderMesh::RT_CheckUpdate(CRenderMesh *pVContainer, InputLayoutHandle eVF
 
 	FUNCTION_PROFILER_RENDER_FLAT
 		PrefetchVertexStreams();
+
+	{
+		SRecursiveSpinLocker _lock0(&m_sResLock);
+		SRecursiveSpinLocker _lock1(&pVContainer->m_sResLock);
+
+		for (const uint32& guidToDelete : pVContainer->m_DeletedBoneIndices)
+		{
+			for (auto it = pVContainer->m_RemappedBoneIndices.begin(); it != pVContainer->m_RemappedBoneIndices.end(); ++it)
+			{
+				if (it->guid == guidToDelete)
+				{
+					if (it->buffer != ~0u)
+						gRenDev->m_DevBufMan.Destroy(it->buffer);
+					pVContainer->m_RemappedBoneIndices.erase(it);
+					break;
+				}
+			}
+		}
+		pVContainer->m_DeletedBoneIndices.clear();
+
+		// For bone-indices creation list: Only process elements whose target frameId is before or equal to our current frameId
+		auto createdBoneIndicesIt = std::partition(pVContainer->m_CreatedBoneIndices.begin(), pVContainer->m_CreatedBoneIndices.end(),
+			[&](const SBoneIndexStreamRequest &e) { return e.frameId > nFrame; });
+
+		for (auto it = createdBoneIndicesIt; it != pVContainer->m_CreatedBoneIndices.end(); ++it)
+		{
+			CRY_ASSERT(it->frameId <= nFrame);
+
+			bool bFound = false;
+			const uint32 guid = it->guid;
+			for (size_t j = 0, end = pVContainer->m_RemappedBoneIndices.size(); j < end; ++j)
+			{
+				if (pVContainer->m_RemappedBoneIndices[j].guid == guid && pVContainer->m_RemappedBoneIndices[j].refcount)
+				{
+					bFound = true;
+					++pVContainer->m_RemappedBoneIndices[j].refcount;
+				}
+			}
+
+			if (!bFound)
+			{
+				const size_t bufferSize = pVContainer->GetVerticesCount() * pVContainer->GetStreamStride(VSF_HWSKIN_INFO);
+				const size_t streamableSize = AlignedStreamableMeshDataSize(bufferSize);
+
+				SBoneIndexStream stream;
+				stream.buffer = gRenDev->m_DevBufMan.Create(BBT_VERTEX_BUFFER, BU_STATIC, bufferSize);
+				stream.guid = guid;
+				stream.refcount = it->refcount;
+				gRenDev->m_DevBufMan.UpdateBuffer(stream.buffer, it->pStream, streamableSize);
+				pVContainer->m_RemappedBoneIndices.push_back(stream);
+
+				static ICVar* cvar_gd = gEnv->pConsole->GetCVar("r_ComputeSkinning");
+				if (cvar_gd && cvar_gd->GetIVal() && m_sType == "Character" && (pVContainer->m_nFlags & FSM_USE_COMPUTE_SKINNING))
+					pVContainer->ComputeSkinningCreateSkinningBuffers(it->pStream, it->pExtraStream);
+			}
+
+			FreeMeshDataUnpooled(it->pStream);
+//			if (it->pExtraStream)
+//				FreeMeshDataUnpooled(it->pExtraStream);
+		}
+		pVContainer->m_CreatedBoneIndices.erase(createdBoneIndicesIt, pVContainer->m_CreatedBoneIndices.end());
+	}
 
 	PrefetchLine(pVContainer->m_VBStream, 0);
 	SMeshStream* pMS = pVContainer->GetVertexStream(VSF_GENERAL, 0);
@@ -2619,62 +2686,6 @@ bool CRenderMesh::RT_CheckUpdate(CRenderMesh *pVContainer, InputLayoutHandle eVF
 		}
 	}
 #endif
-
-	const int threadId = gRenDev->GetRenderThreadID();
-	for (size_t i = 0, end0 = pVContainer->m_DeletedBoneIndices[threadId].size(); i < end0; ++i)
-	{
-		for (size_t j = 0, end1 = pVContainer->m_RemappedBoneIndices.size(); j < end1; ++j)
-		{
-			if (pVContainer->m_RemappedBoneIndices[j].guid == pVContainer->m_DeletedBoneIndices[threadId][i])
-			{
-				SBoneIndexStream &stream = pVContainer->m_RemappedBoneIndices[j];
-				if (stream.buffer != ~0u)
-				{
-					gRenDev->m_DevBufMan.Destroy(stream.buffer);
-				}
-				pVContainer->m_RemappedBoneIndices.erase(pVContainer->m_RemappedBoneIndices.begin() + j);
-				break;
-			}
-		}
-	}
-	pVContainer->m_DeletedBoneIndices[threadId].clear();
-	for (size_t i = 0, end = pVContainer->m_CreatedBoneIndices[threadId].size(); i < end; ++i)
-	{
-		bool bFound = false;
-		SBoneIndexStreamRequest &rBoneIndexStreamRequest = pVContainer->m_CreatedBoneIndices[threadId][i];
-		const uint32 guid = rBoneIndexStreamRequest.guid;
-		for (size_t j = 0, end = m_RemappedBoneIndices.size(); j < end; ++j)
-		{
-			if (m_RemappedBoneIndices[j].guid == guid && m_RemappedBoneIndices[j].refcount)
-			{
-				bFound = true;
-				++m_RemappedBoneIndices[j].refcount;
-			}
-		}
-
-		if (bFound == false)
-		{
-			size_t bufferSize = pVContainer->GetVerticesCount() * pVContainer->GetStreamStride(VSF_HWSKIN_INFO);
-			size_t streamableSize = AlignedStreamableMeshDataSize(bufferSize);
-
-			SBoneIndexStream stream;
-			stream.buffer = gRenDev->m_DevBufMan.Create(BBT_VERTEX_BUFFER, BU_STATIC, bufferSize);
-			stream.guid = guid;
-			stream.refcount = rBoneIndexStreamRequest.refcount;
-			gRenDev->m_DevBufMan.UpdateBuffer(stream.buffer, rBoneIndexStreamRequest.pStream, streamableSize);
-			pVContainer->m_RemappedBoneIndices.push_back(stream);
-
-			static ICVar* cvar_gd = gEnv->pConsole->GetCVar("r_ComputeSkinning");
-			if (cvar_gd && cvar_gd->GetIVal() && m_sType == "Character" && (pVContainer->m_nFlags & FSM_USE_COMPUTE_SKINNING))
-				pVContainer->ComputeSkinningCreateSkinningBuffers(rBoneIndexStreamRequest.pStream, rBoneIndexStreamRequest.pExtraStream);
-		}
-
-		FreeMeshDataUnpooled(rBoneIndexStreamRequest.pStream);
-//		if (rBoneIndexStreamRequest.pExtraStream)
-//			FreeMeshDataUnpooled(rBoneIndexStreamRequest.pExtraStream);
-	}
-	pVContainer->m_CreatedBoneIndices[threadId].clear();
-
 
 	return true;
 }
@@ -2889,7 +2900,7 @@ bool CRenderMesh::UpdateVidIndices(SMeshStream& IBStream, bool stall)
   if (IBStream.m_nID != ~0u)
   {
     UnlockIndexStream();
-    if (m_IBStream.m_pUpdateData)
+    if (IBStream.m_pUpdateData)
     {
       bool bRes = true;
       return gRenDev->m_DevBufMan.UpdateBuffer(IBStream.m_nID, IBStream.m_pUpdateData, AlignedMeshDataSize(m_nInds * sizeof(vtx_idx)));
@@ -3596,7 +3607,7 @@ float CRenderMesh::GetExtent(EGeomForm eForm)
 	CGeomExtent& ext = m_Extents.Make(eForm);
 	if (!ext)
 	{
-		LockForThreadAccess();
+		SScopedMeshDataLock _lock(this);
 
 		// Possible vertex data streams
 		vtx_idx*                       pInds = GetIndexPtr(FSL_READ);
@@ -3688,7 +3699,6 @@ float CRenderMesh::GetExtent(EGeomForm eForm)
 		UnlockStream(VSF_QTANGENTS);
 		UnlockStream(VSF_TANGENTS);
 		UnlockIndexStream();
-		UnLockForThreadAccess();
 	}
 	return ext.TotalExtent();
 }
@@ -3696,7 +3706,7 @@ float CRenderMesh::GetExtent(EGeomForm eForm)
 void CRenderMesh::GetRandomPoints(Array<PosNorm> points, CRndGen& seed, EGeomForm eForm, SSkinningData const* pSkinning)
 {
 	CRY_PROFILE_FUNCTION(PROFILE_RENDERER);
-	LockForThreadAccess();
+	SScopedMeshDataLock _lock(this);
 
 	vtx_idx* pInds = GetIndexPtr(FSL_READ);
 	if (pInds && m_PosNorms.size())
@@ -3763,7 +3773,6 @@ void CRenderMesh::GetRandomPoints(Array<PosNorm> points, CRndGen& seed, EGeomFor
 		}
 	}
 
-	UnLockForThreadAccess();
 	UnlockIndexStream();
 	UnlockStream(VSF_HWSKIN_INFO);
 	#if SKIN_MORPHING
@@ -3838,36 +3847,34 @@ buffer_size_t CRenderMesh::Size(uint32 nFlags) const
 
 void CRenderMesh::FreeDeviceBuffers(bool bRestoreSys)
 {
-  uint32 i;
+	uint32 i;
 
-  for (i=0; i<VSF_NUM; i++)
-  {
-    if (_HasVBStream(i))
-    {
-      if (bRestoreSys)
-      {
-				LockForThreadAccess();
-        void *pSrc = LockVB(i, FSL_READ | FSL_VIDEO);
-        void *pDst = LockVB(i, FSL_SYSTEM_CREATE);
-        cryMemcpy(pDst, pSrc, GetStreamSize(i));
-				UnLockForThreadAccess();
-      }
-      ReleaseVB(i);
-    }
-  }
+	for (i = 0; i < VSF_NUM; i++)
+	{
+		if (_HasVBStream(i))
+		{
+			if (bRestoreSys)
+			{
+				SScopedMeshDataLock _lock(this);
+				void *pSrc = LockVB(i, FSL_READ | FSL_VIDEO);
+				void *pDst = LockVB(i, FSL_SYSTEM_CREATE);
+				cryMemcpy(pDst, pSrc, GetStreamSize(i));
+			}
+			ReleaseVB(i);
+		}
+	}
 
-  if (_HasIBStream())
-  {
-    if (bRestoreSys)
-    {
-			LockForThreadAccess();
-      void *pSrc = LockIB(FSL_READ | FSL_VIDEO);
-      void *pDst = LockIB(FSL_SYSTEM_CREATE);
-      cryMemcpy(pDst, pSrc, m_nInds * sizeof(vtx_idx));
-			UnLockForThreadAccess();
-    }
-    ReleaseIB();
-  }
+	if (_HasIBStream())
+	{
+		if (bRestoreSys)
+		{
+			SScopedMeshDataLock _lock(this);
+			void *pSrc = LockIB(FSL_READ | FSL_VIDEO);
+			void *pDst = LockIB(FSL_SYSTEM_CREATE);
+			cryMemcpy(pDst, pSrc, m_nInds * sizeof(vtx_idx));
+		}
+		ReleaseIB();
+	}
 }
 
 void CRenderMesh::FreeVB(int nStream)
@@ -3910,7 +3917,7 @@ void CRenderMesh::DebugDraw( const struct SGeometryDebugDrawInfo &info,uint32 nV
 {
   MEMORY_SCOPE_CHECK_HEAP();
 	IRenderAuxGeom *pRenderAuxGeom = gEnv->pRenderer->GetIRenderAuxGeom();
-	LockForThreadAccess();
+	SScopedMeshDataLock _lock(this);
 
 	const Matrix34 &mat = info.tm;
 
@@ -4050,7 +4057,6 @@ void CRenderMesh::DebugDraw( const struct SGeometryDebugDrawInfo &info,uint32 nV
 
 	pRenderAuxGeom->SetMatrixIndex(oldIndex);
 	pRenderAuxGeom->SetRenderFlags(prevRenderFlags);
-	UnLockForThreadAccess();
 }
 
 //===========================================================================================================
@@ -4126,20 +4132,26 @@ bool CRenderMesh::ClearStaleMemory(bool bAcquireLock, int threadId)
 
 void CRenderMesh::UpdateModifiedMeshes(bool bAcquireLock, int threadId)
 {
+	CRY_ASSERT(gRenDev->m_pRT->IsRenderThread());
+
 	MEMORY_SCOPE_CHECK_HEAP();
 	CRY_PROFILE_FUNCTION(PROFILE_RENDERER);
 
 	// Update device buffers on modified meshes
 	std::vector<CRenderMesh*> modifiedMeshes;
 	{
-		AUTO_LOCK(CRenderMesh::m_sLinkLock);
-		for (util::list<CRenderMesh>* iter = s_MeshModifiedList[threadId].next, *pos = iter->next; iter != &s_MeshModifiedList[threadId]; iter = pos, pos = pos->next)
-			modifiedMeshes.push_back(iter->item<&CRenderMesh::m_Modified>(threadId));
+		AUTO_LOCK(m_sLinkLock);
+		
+		while (!s_MeshModifiedList[threadId].empty())
+		{
+			util::list<CRenderMesh>* pListItem = s_MeshModifiedList[threadId].next;
+			pListItem->erase();
 
-		s_MeshModifiedList[threadId].clear();
+			modifiedMeshes.push_back(pListItem->item<&CRenderMesh::m_Modified>(threadId));
+		}
 	}
 
-	for (auto pMesh : modifiedMeshes)
+	for (auto* pMesh : modifiedMeshes)
 	{
 		bool updateSuccess = false;
 
@@ -4155,7 +4167,8 @@ void CRenderMesh::UpdateModifiedMeshes(bool bAcquireLock, int threadId)
 						// ToDo :
 						// - mark the mesh to not update itself if depending on how the async update was scheduled
 						// - returns true if no streams need further processing
-						updateSuccess = pMesh->RT_CheckUpdate(pMesh, pMesh->_GetVertexFormat(), VSM_MASK, false);
+						CRenderMesh* pVContainer = pMesh->_GetVertexContainer();
+						updateSuccess = pMesh->RT_CheckUpdate(pVContainer, pMesh->_GetVertexFormat(), VSM_MASK, false);
 					}
 				}
 			}
@@ -4164,6 +4177,7 @@ void CRenderMesh::UpdateModifiedMeshes(bool bAcquireLock, int threadId)
 
 		if (!updateSuccess)
 		{
+			AUTO_LOCK(m_sLinkLock);
 			pMesh->m_Modified[threadId].relink_tail(s_MeshModifiedList[threadId]);
 		}
 	}
@@ -4425,51 +4439,63 @@ bool CRenderMesh::SyncAsyncUpdate(int threadID, bool block)
 
 void CRenderMesh::CreateRemappedBoneIndicesPair(const uint pairGuid, const TRenderChunkArray& Chunks)
 {
-	SREC_AUTO_LOCK(m_sResLock); 	
+	ASSERT_IS_MAIN_THREAD(gRenDev->m_pRT);
+
+	SREC_AUTO_LOCK(m_sResLock);
+
 	// check already created remapped bone indices
-	for (size_t i=0,end=m_RemappedBoneIndices.size(); i<end; ++i)
+	for (size_t i=0,end= m_RemappedBoneIndices.size(); i<end; ++i)
 	{
 		if (m_RemappedBoneIndices[i].guid == pairGuid && m_RemappedBoneIndices[i].refcount)
 		{
-			++m_RemappedBoneIndices[i].refcount; 
+			++m_RemappedBoneIndices[i].refcount;
 			return; 
 		}
 	}
 
 	// check already currently in flight remapped bone indices
 	const int threadId = gRenDev->GetMainThreadID(); 
-	for (size_t i=0,end=m_CreatedBoneIndices[threadId].size(); i<end; ++i)
+	for (size_t i=0,end=m_CreatedBoneIndices.size(); i<end; ++i)
 	{
-		if (m_CreatedBoneIndices[threadId][i].guid == pairGuid)
+		if (m_CreatedBoneIndices[i].guid == pairGuid)
 		{
-			++m_CreatedBoneIndices[threadId][i].refcount;
+			++m_CreatedBoneIndices[i].refcount;
 			return; 
 		}
 	}
 
-	IRenderMesh::ThreadAccessLock access_lock(this);
-
-	int32 stride;
-	vtx_idx *indices = GetIndexPtr(FSL_READ);
-	uint32 vtxCount = GetVerticesCount();
-	std::vector<bool> touched(vtxCount, false); 
-	const SVF_W4B_I4S* pIndicesWeights = reinterpret_cast<SVF_W4B_I4S*>(GetHWSkinPtr(stride, FSL_READ)); 
-	SVF_W4B_I4S* remappedIndices = reinterpret_cast<SVF_W4B_I4S*>(AllocateMeshDataUnpooled(sizeof(SVF_W4B_I4S) * vtxCount));
-
-	for (size_t j=0; j<Chunks.size(); ++j)
+	SVF_W4B_I4S* remappedIndices = nullptr;
 	{
-		const CRenderChunk &chunk = Chunks[j];
-		for (size_t k=chunk.nFirstIndexId; k<chunk.nFirstIndexId+chunk.nNumIndices; ++k)
-		{
-			const vtx_idx vIdx = indices[k];
-			if (touched[vIdx])
-				continue;
-			touched[vIdx] = true;
+		SScopedMeshDataLock _lock(this);
 
-			for (int l = 0; l < 4; ++l)
+		int32 stride;
+		vtx_idx *indices = GetIndexPtr(FSL_READ);
+		uint32 vtxCount = GetVerticesCount();
+		std::vector<bool> touched(vtxCount, false);
+		const SVF_W4B_I4S* pIndicesWeights = reinterpret_cast<SVF_W4B_I4S*>(GetHWSkinPtr(stride, FSL_READ));
+		remappedIndices = reinterpret_cast<SVF_W4B_I4S*>(AllocateMeshDataUnpooled(sizeof(SVF_W4B_I4S) * vtxCount));
+
+		CRY_ASSERT_MESSAGE(stride == sizeof(SVF_W4B_I4S), "Stride doesn't match");
+		CRY_ASSERT(remappedIndices && pIndicesWeights);
+
+		if (remappedIndices && pIndicesWeights)
+		{
+			for (size_t j = 0; j < Chunks.size(); ++j)
 			{
-				remappedIndices[vIdx].weights.bcolor[l] = pIndicesWeights[vIdx].weights.bcolor[l];
-				remappedIndices[vIdx].indices[l] = pIndicesWeights[vIdx].indices[l];
+				const CRenderChunk &chunk = Chunks[j];
+				for (size_t k = chunk.nFirstIndexId; k < chunk.nFirstIndexId + chunk.nNumIndices; ++k)
+				{
+					const vtx_idx vIdx = indices[k];
+					if (touched[vIdx])
+						continue;
+					touched[vIdx] = true;
+
+					for (int l = 0; l < 4; ++l)
+					{
+						remappedIndices[vIdx].weights.bcolor[l] = pIndicesWeights[vIdx].weights.bcolor[l];
+						remappedIndices[vIdx].indices[l] = pIndicesWeights[vIdx].indices[l];
+					}
+				}
 			}
 		}
 	}
@@ -4477,12 +4503,16 @@ void CRenderMesh::CreateRemappedBoneIndicesPair(const uint pairGuid, const TRend
 	UnlockStream(VSF_HWSKIN_INFO);
 	UnlockIndexStream();
 
-	m_CreatedBoneIndices[threadId].push_back( SBoneIndexStreamRequest( pairGuid, remappedIndices, m_pExtraBoneMapping) );
+	if (remappedIndices)
+		m_CreatedBoneIndices.emplace_back(gRenDev->GetMainFrameID(), pairGuid, remappedIndices, m_pExtraBoneMapping);
+
 	RelinkTail(m_Modified[threadId], s_MeshModifiedList[threadId]); 
 }
 
 void CRenderMesh::CreateRemappedBoneIndicesPair(const DynArray<JointIdType> &arrRemapTable, const uint pairGuid, const void* tag)
 {
+	ASSERT_IS_MAIN_THREAD(gRenDev->m_pRT);
+
 	SREC_AUTO_LOCK(m_sResLock); 
 
 	const int threadId = gRenDev->GetMainThreadID(); 
@@ -4491,57 +4521,67 @@ void CRenderMesh::CreateRemappedBoneIndicesPair(const DynArray<JointIdType> &arr
 	{
 		if (m_RemappedBoneIndices[i].guid == pairGuid && m_RemappedBoneIndices[i].refcount)
 		{
-			++m_RemappedBoneIndices[i].refcount; 
+			++m_RemappedBoneIndices[i].refcount;
 			return; 
 		}
 	}
 
 	// check already currently in flight remapped bone indices
-	for (size_t i=0,end=m_CreatedBoneIndices[threadId].size(); i<end; ++i)
+	for (size_t i=0,end=m_CreatedBoneIndices.size(); i<end; ++i)
 	{
-		if (m_CreatedBoneIndices[threadId][i].guid == pairGuid)
+		if (m_CreatedBoneIndices[i].guid == pairGuid)
 		{
-			++m_CreatedBoneIndices[threadId][i].refcount;
+			++m_CreatedBoneIndices[i].refcount;
 			return; 
 		}
 	}
 	
-	IRenderMesh::ThreadAccessLock access_lock(this);
-
-	int32 stride;
-	vtx_idx* const indices = GetIndexPtr(FSL_READ);
-	uint32 vtxCount = GetVerticesCount();
-	std::vector<bool> touched(vtxCount, false);
-	const SVF_W4B_I4S* pIndicesWeights = reinterpret_cast<SVF_W4B_I4S*>(GetHWSkinPtr(stride, FSL_READ));
-	SVF_W4B_I4S* remappedIndices = reinterpret_cast<SVF_W4B_I4S*>(AllocateMeshDataUnpooled(sizeof(SVF_W4B_I4S) * vtxCount));
-
-	for (size_t j=0; j<m_Chunks.size(); ++j)
+	SVF_W4B_I4S* remappedIndices = nullptr;
 	{
-		const CRenderChunk &chunk = m_Chunks[j];
-		for (size_t k=chunk.nFirstIndexId; k<chunk.nFirstIndexId+chunk.nNumIndices; ++k)
-		{
-			const vtx_idx vIdx = indices[k];
-			if (touched[vIdx])
-				continue;
-			touched[vIdx] = true;
+		SScopedMeshDataLock _lock(this);
 
-			for (int l = 0; l < 4; ++l)
+		int32 stride;
+		vtx_idx* const indices = GetIndexPtr(FSL_READ);
+		uint32 vtxCount = GetVerticesCount();
+		std::vector<bool> touched(vtxCount, false);
+		const SVF_W4B_I4S* pIndicesWeights = reinterpret_cast<SVF_W4B_I4S*>(GetHWSkinPtr(stride, FSL_READ));
+		remappedIndices = reinterpret_cast<SVF_W4B_I4S*>(AllocateMeshDataUnpooled(sizeof(SVF_W4B_I4S) * vtxCount));
+
+		CRY_ASSERT_MESSAGE(stride == sizeof(SVF_W4B_I4S), "Stride doesn't match");
+		CRY_ASSERT(remappedIndices && pIndicesWeights);
+
+
+		if (remappedIndices && pIndicesWeights)
+		{
+			for (size_t j = 0; j < m_Chunks.size(); ++j)
 			{
-				remappedIndices[vIdx].weights.bcolor[l] = pIndicesWeights[vIdx].weights.bcolor[l];
-				remappedIndices[vIdx].indices[l] = arrRemapTable[pIndicesWeights[vIdx].indices[l]];
+				const CRenderChunk &chunk = m_Chunks[j];
+				for (size_t k = chunk.nFirstIndexId; k < chunk.nFirstIndexId + chunk.nNumIndices; ++k)
+				{
+					const vtx_idx vIdx = indices[k];
+					if (touched[vIdx])
+						continue;
+					touched[vIdx] = true;
+
+					for (int l = 0; l < 4; ++l)
+					{
+						remappedIndices[vIdx].weights.bcolor[l] = pIndicesWeights[vIdx].weights.bcolor[l];
+						remappedIndices[vIdx].indices[l] = arrRemapTable[pIndicesWeights[vIdx].indices[l]];
+					}
+				}
 			}
 		}
-	}
 
-	// bone mapping for extra bones (8 weight skinning; map weights 5 to 8 from skin bone indices to skeleton bone indices)
-	if (m_pExtraBoneMapping)
-	{
-		for (int i = 0; i < vtxCount; ++i)
+		// bone mapping for extra bones (8 weight skinning; map weights 5 to 8 from skin bone indices to skeleton bone indices)
+		if (m_pExtraBoneMapping)
 		{
-			for (int l = 0; l < 4; ++l)
+			for (int i = 0; i < vtxCount; ++i)
 			{
-				auto& boneIdx = m_pExtraBoneMapping[i].boneIds[l];
-				boneIdx = (boneIdx == 0) ? 0 : arrRemapTable[boneIdx];
+				for (int l = 0; l < 4; ++l)
+				{
+					auto& boneIdx = m_pExtraBoneMapping[i].boneIds[l];
+					boneIdx = (boneIdx == 0) ? 0 : arrRemapTable[boneIdx];
+				}
 			}
 		}
 	}
@@ -4549,8 +4589,10 @@ void CRenderMesh::CreateRemappedBoneIndicesPair(const DynArray<JointIdType> &arr
 	UnlockStream(VSF_HWSKIN_INFO);
 	UnlockIndexStream();
 
-	m_CreatedBoneIndices[threadId].push_back( SBoneIndexStreamRequest(pairGuid, remappedIndices, m_pExtraBoneMapping) );
-	RelinkTail(m_Modified[threadId], s_MeshModifiedList[threadId]); 
+	if (remappedIndices)
+		m_CreatedBoneIndices.emplace_back(gRenDev->GetMainFrameID(), pairGuid, remappedIndices, m_pExtraBoneMapping);
+
+	RelinkTail(m_Modified[threadId], s_MeshModifiedList[threadId]);
 }
 
 void CRenderMesh::ReleaseRemappedBoneIndicesPair(const uint pairGuid)
@@ -4562,9 +4604,11 @@ void CRenderMesh::ReleaseRemappedBoneIndicesPair(const uint pairGuid)
 		return;
 	}
 
+	CRY_ASSERT(gRenDev->m_pRT->IsRenderThread());
+
 	SREC_AUTO_LOCK(m_sResLock); 
 	size_t deleted = ~0u; 
-	const int threadId = gRenDev->GetRenderThreadID(); 
+	const int threadId = gRenDev->GetRenderThreadID();
 	bool bFound = false;
 
 	for (size_t i=0,end=m_RemappedBoneIndices.size(); i<end; ++i)
@@ -4574,27 +4618,23 @@ void CRenderMesh::ReleaseRemappedBoneIndicesPair(const uint pairGuid)
 			bFound = true;
 			if (--m_RemappedBoneIndices[i].refcount == 0)
 			{
-				deleted = i; 
-				break; 
+				m_DeletedBoneIndices.emplace_back(pairGuid);
+				RelinkTail(m_Modified[threadId], s_MeshModifiedList[threadId]);
+
+				return; 
 			}
 		}
 	}
 	
-	if (deleted != ~0u)
-	{
-		m_DeletedBoneIndices[threadId].push_back(pairGuid); 
-		RelinkTail(m_Modified[threadId], s_MeshModifiedList[threadId]); 
-	}
-
 	// Check for created but not yet remapped bone indices
 	if(!bFound)
 	{
-		for (size_t i=0,end=m_CreatedBoneIndices[threadId].size(); i<end; ++i)
+		for (size_t i=0,end=m_CreatedBoneIndices.size(); i<end; ++i)
 		{
-			if (m_CreatedBoneIndices[threadId][i].guid == pairGuid)
+			if (m_CreatedBoneIndices[i].guid == pairGuid)
 			{
-				bFound = true;
-				if (--m_CreatedBoneIndices[threadId][i].refcount == 0)
+				CRY_ASSERT_MESSAGE(m_CreatedBoneIndices[i].refcount > 0, "Bone indices pair over-released!");
+				if (--m_CreatedBoneIndices[i].refcount == 0)
 				{
 					deleted = i; 
 					break; 
@@ -4604,8 +4644,8 @@ void CRenderMesh::ReleaseRemappedBoneIndicesPair(const uint pairGuid)
 		
 		if (deleted != ~0u)
 		{
-			m_DeletedBoneIndices[threadId].push_back(pairGuid); 
-			RelinkTail(m_Modified[threadId], s_MeshModifiedList[threadId]); 
+			m_DeletedBoneIndices.emplace_back(pairGuid);
+			RelinkTail(m_Modified[threadId], s_MeshModifiedList[threadId]);
 		}
 	}
 }
@@ -4809,7 +4849,7 @@ void CRenderMesh::Render(CRenderObject* pObj, const SRenderingPassInfo& passInfo
 	if (!pMaterial)
 		return;
 
-	m_nLastRenderFrameID = GetCurrentRenderFrameID(passInfo);
+	m_nLastRenderFrameID = passInfo.GetFrameID();
 
 	//////////////////////////////////////////////////////////////////////////
 	if (!m_meshSubSetIndices.empty() && abs((int)m_nLastRenderFrameID - (int)m_nLastSubsetGCRenderFrameID) > DELETE_SUBSET_MESHES_AFTER_NOTUSED_FRAMES)
@@ -5126,7 +5166,7 @@ void SMeshSubSetIndicesJobEntry::CreateSubSetRenderMesh()
 	TRenderChunkArray& renderChunks = pSrcMesh->m_ChunksSubObjects;
 	uint32 nChunkCount              = renderChunks.size();
 
-	pSrcMesh->LockForThreadAccess();
+	SScopedMeshDataLock _lock(pSrcMesh);
 	int nIndCount = pSrcMesh->GetIndicesCount();
 	if (vtx_idx* pInds = pSrcMesh->GetIndexPtr(FSL_READ))
 	{
@@ -5156,7 +5196,7 @@ void SMeshSubSetIndicesJobEntry::CreateSubSetRenderMesh()
 				newChunks.back().nNumVerts    = max((int)srcChunk.nFirstVertId + (int)srcChunk.nNumVerts - (int)newChunks.back().nFirstVertId, (int)newChunks.back().nNumVerts);
 			}
 		}
-		pSrcMesh->UnLockForThreadAccess();
+		_lock = {};
 
 		IRenderMesh::SInitParamerers params;
 		SVF_P3S_C4B_T2S tempVertex;
@@ -5184,22 +5224,22 @@ void SMeshSubSetIndicesJobEntry::CreateSubSetRenderMesh()
 //////////////////////////////////////////////////////////////////////////
 bool CRenderMesh::RayIntersectMesh(const Ray& ray, Vec3& hitpos, Vec3& p0, Vec3& p1, Vec3& p2, Vec2& uv0, Vec2& uv1, Vec2& uv2)
 {
-	IRenderMesh* pMesh = this;
+	SScopedMeshDataLock _lock(this);
+
 	bool hasHit = false;
 	// get triangle that was hit
-	pMesh->LockForThreadAccess();
-	const int numIndices = pMesh->GetIndicesCount();
-	const int numVertices = pMesh->GetVerticesCount();
+	const int numIndices = GetIndicesCount();
+	const int numVertices = GetVerticesCount();
 	if (numIndices || numVertices)
 	{
 		// TODO: this could be optimized, e.g cache triangles and uv's and use octree to find triangles
 		strided_pointer<Vec3> pPos;
 		strided_pointer<Vec2> pUV;
-		pPos.data = (Vec3*)pMesh->GetPosPtr(pPos.iStride, FSL_READ);
-		pUV.data = (Vec2*)pMesh->GetUVPtr(pUV.iStride, FSL_READ);
-		const vtx_idx* pIndices = pMesh->GetIndexPtr(FSL_READ);
+		pPos.data = (Vec3*)GetPosPtr(pPos.iStride, FSL_READ);
+		pUV.data = (Vec2*)GetUVPtr(pUV.iStride, FSL_READ);
+		const vtx_idx* pIndices = GetIndexPtr(FSL_READ);
 
-		const TRenderChunkArray& Chunks = pMesh->GetChunks();
+		const TRenderChunkArray& Chunks = GetChunks();
 		const int nChunkCount = Chunks.size();
 		for (int nChunkId = 0; nChunkId < nChunkCount; nChunkId++)
 		{
@@ -5230,9 +5270,8 @@ bool CRenderMesh::RayIntersectMesh(const Ray& ray, Vec3& hitpos, Vec3& p0, Vec3&
 		}
 	}
 
-	pMesh->UnlockStream(VSF_GENERAL);
-	pMesh->UnlockIndexStream();
-	pMesh->UnLockForThreadAccess();
+	UnlockStream(VSF_GENERAL);
+	UnlockIndexStream();
 
 	return hasHit;
 }

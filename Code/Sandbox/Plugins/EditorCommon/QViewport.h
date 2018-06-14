@@ -123,7 +123,7 @@ private:
 	std::vector<SPreviousContext>      m_previousContexts;
 	std::unique_ptr<CCamera>           m_camera;
 	DisplayContext                     m_displayContext;
-	SDisplayContextKey      m_displayContextKey;
+	SDisplayContextKey                 m_displayContextKey;
 
 	int                                m_width;
 	int                                m_height;

@@ -90,7 +90,6 @@ public:
 	static float CV_r_tessellationtrianglesize;
 	static float CV_r_displacementfactor;
 	static int   CV_r_geominstancingthreshold;
-	static int   CV_r_ShadowsDepthBoundNV;
 	static int   CV_r_ShadowsPCFiltering;
 	static int   CV_r_rc_autoinvoke;
 	static int   CV_r_Refraction;
@@ -234,18 +233,14 @@ public:
 	DeclareStaticConstIntCVar(CV_r_geominstancingdebug, 0);
 	DeclareStaticConstIntCVar(CV_r_materialsbatching, 1);
 	DeclareStaticConstIntCVar(CV_r_DebugLightVolumes, 0);
-	DeclareStaticConstIntCVar(CV_r_UseShadowsPool, SHADOWS_POOL_DEFAULT_VAL);
 	DeclareStaticConstIntCVar(CV_r_shadowtexformat, 0);
+	DeclareStaticConstIntCVar(CV_r_ShadowsMask, 1);
 	DeclareStaticConstIntCVar(CV_r_ShadowsMaskResolution, 0);
-	DeclareStaticConstIntCVar(CV_r_ShadowsMaskDownScale, 0);
 	DeclareStaticConstIntCVar(CV_r_CBufferUseNativeDepth, CBUFFER_NATIVE_DEPTH_DEAFULT_VAL);
-	DeclareStaticConstIntCVar(CV_r_ShadowsStencilPrePass, 1);
 	DeclareStaticConstIntCVar(CV_r_ShadowMaskStencilPrepass, 0);
 	DeclareStaticConstIntCVar(CV_r_ShadowsGridAligned, 1);
-	DeclareStaticConstIntCVar(CV_r_ShadowPass, 1);
-	DeclareStaticConstIntCVar(CV_r_ShadowGen, 1);
+	DeclareStaticConstIntCVar(CV_r_ShadowMapsUpdate, 1);
 	DeclareStaticConstIntCVar(CV_r_ShadowGenDepthClip, 1);
-	DeclareStaticConstIntCVar(CV_r_ShadowGenMode, 1);
 	static int   CV_r_ShadowsCache;
 	static int   CV_r_ShadowsCacheFormat;
 	static int   CV_r_ShadowsNearestMapResolution;

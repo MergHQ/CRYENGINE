@@ -107,10 +107,6 @@ float4 OutBaseTC;
 #include "CommonShadowGenPassTess.cfi"
 //////////////////////////////////////
 
-#if !%TEMP_TERRAIN
-half4 AmbientOpPB        : PB_AmbientOpacity;
-#endif
-
 struct pixout_shadow
 {
 #if (!ENABLE_TESSELLATION || %_RT_NO_TESSELLATION) && %_RT_SAMPLE4

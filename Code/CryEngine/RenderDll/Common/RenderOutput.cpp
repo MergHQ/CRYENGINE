@@ -93,15 +93,15 @@ void CRenderOutput::BeginRendering(CRenderView* pRenderView, stl::optional<uint3
 
 	if (m_pDisplayContext)
 	{
-		CRY_ASSERT(m_OutputWidth  == (m_pDisplayContext->IsScalable() && CRendererCVars::CV_r_CustomResWidth  ? std::min(CRendererCVars::CV_r_CustomResMaxSize, CRendererCVars::CV_r_CustomResWidth)  : m_pDisplayContext->GetDisplayResolution()[0]));
+		CRY_ASSERT(m_OutputWidth == (m_pDisplayContext->IsScalable() && CRendererCVars::CV_r_CustomResWidth ? std::min(CRendererCVars::CV_r_CustomResMaxSize, CRendererCVars::CV_r_CustomResWidth) : m_pDisplayContext->GetDisplayResolution()[0]));
 		CRY_ASSERT(m_OutputHeight == (m_pDisplayContext->IsScalable() && CRendererCVars::CV_r_CustomResHeight ? std::min(CRendererCVars::CV_r_CustomResMaxSize, CRendererCVars::CV_r_CustomResHeight) : m_pDisplayContext->GetDisplayResolution()[1]));
 
 		if (pRenderView)
 		{
 			// This scope is the only one allowed to produce HDR data, all the rest is LDR
 			m_pDisplayContext->BeginRendering(pRenderView->IsHDRModeEnabled());
-// 			m_pDisplayContext->SetLastCamera(CCamera::eEye_Left, pRenderView->GetCamera(CCamera::eEye_Left));
-// 			m_pDisplayContext->SetLastCamera(CCamera::eEye_Right, pRenderView->GetCamera(CCamera::eEye_Right));
+			// 			m_pDisplayContext->SetLastCamera(CCamera::eEye_Left, pRenderView->GetCamera(CCamera::eEye_Left));
+			// 			m_pDisplayContext->SetLastCamera(CCamera::eEye_Right, pRenderView->GetCamera(CCamera::eEye_Right));
 		}
 	}
 	else if (m_pDynTexture)
@@ -118,64 +118,54 @@ void CRenderOutput::BeginRendering(CRenderView* pRenderView, stl::optional<uint3
 		m_pTempDepthTexture = CRendererResources::GetTempDepthSurface(gcpRendD3D->GetFrameID(), m_OutputWidth, m_OutputHeight, true);
 		CRY_ASSERT(m_pTempDepthTexture);
 
-		m_pDepthTarget = m_pTempDepthTexture->texture.pTexture;
-		m_pDepthTarget->Lock();
-		m_pDepthTarget->m_nUpdateFrameID = gRenDev->GetRenderFrameID();
+		//////////////////////////////////////////////////////////////////////////
+		// Clear render targets on demand.
+		//////////////////////////////////////////////////////////////////////////
+		uint32 clearTargetFlag = overrideClearFlags.value_or(m_clearTargetFlag);
+		ColorF clearColor = m_clearColor;
+
+		if (pRenderView && pRenderView->IsClearTarget())
+		{
+			// Override clear color from the Render View if given
+			clearTargetFlag |= FRT_CLEAR_COLOR;
+			clearColor = pRenderView->GetTargetClearColor();
+		}
+
+		if (clearTargetFlag = clearTargetFlag & ~m_hasBeenCleared)
+		{
+			const bool reverseDepth = true;
+			const auto depthClearFlags = clearTargetFlag & (FRT_CLEAR_DEPTH | FRT_CLEAR_STENCIL);
+			if (depthClearFlags)
+				CClearSurfacePass::Execute(m_pDepthTarget, depthClearFlags, reverseDepth ? 1.0f - m_clearDepth : m_clearDepth, 1);
+
+			if (clearTargetFlag & FRT_CLEAR_COLOR)
+				CClearSurfacePass::Execute(m_pColorTarget, clearColor);
+
+			m_hasBeenCleared |= clearTargetFlag;
+		}
+
+		//////////////////////////////////////////////////////////////////////////
+		// Assign resources to RenderView
+		//////////////////////////////////////////////////////////////////////////
+		if (pRenderView)
+		{
+			// NOTE: for debugging to revert unsetting the target-pointers
+			pRenderView->InspectRenderOutput();
+		}
+
+		//////////////////////////////////////////////////////////////////////////
+		// TODO: make color and/or depth|stencil optional (currently it's enforced to have all of them)
+		CRY_ASSERT(m_pColorTarget && CTexture::IsTextureExist(m_pColorTarget));
+		CRY_ASSERT(m_pDepthTarget && CTexture::IsTextureExist(m_pDepthTarget));
 	}
-
-	//////////////////////////////////////////////////////////////////////////
-	// Clear render targets on demand.
-	//////////////////////////////////////////////////////////////////////////
-	uint32 clearTargetFlag = overrideClearFlags.value_or(m_clearTargetFlag);
-	ColorF clearColor = m_clearColor;
-
-	if (pRenderView && pRenderView->IsClearTarget())
-	{
-		// Override clear color from the Render View if given
-		clearTargetFlag |= FRT_CLEAR_COLOR;
-		clearColor = pRenderView->GetTargetClearColor();
-	}
-
-	if (clearTargetFlag = clearTargetFlag & ~m_hasBeenCleared)
-	{
-		const bool reverseDepth = true;
-		const auto depthClearFlags = clearTargetFlag & (FRT_CLEAR_DEPTH | FRT_CLEAR_STENCIL);
-		if (depthClearFlags)
-			CClearSurfacePass::Execute(m_pDepthTarget, depthClearFlags, reverseDepth ? 1.0f - m_clearDepth : m_clearDepth, 1);
-
-		if (clearTargetFlag & FRT_CLEAR_COLOR)
-			CClearSurfacePass::Execute(m_pColorTarget, clearColor);
-
-		m_hasBeenCleared |= clearTargetFlag;
-	}
-
-	//////////////////////////////////////////////////////////////////////////
-	// Assign resources to RenderView
-	//////////////////////////////////////////////////////////////////////////
-	if (pRenderView)
-	{
-		// NOTE: for debugging to revert unsetting the target-pointers
-		pRenderView->InspectRenderOutput();
-	}
-
-	//////////////////////////////////////////////////////////////////////////
-	// TODO: make color and/or depth|stencil optional (currently it's enforced to have all of them)
-	CRY_ASSERT(m_pColorTarget && CTexture::IsTextureExist(m_pColorTarget));
-	CRY_ASSERT(m_pDepthTarget && CTexture::IsTextureExist(m_pDepthTarget));
 }
 
 void CRenderOutput::EndRendering(CRenderView* pRenderView)
 {
 	CRY_ASSERT(gcpRendD3D->m_pRT->IsRenderThread());
 
-	if (m_pTempDepthTexture)
-	{
-		if (m_pTempDepthTexture->texture.pTexture)
-		{
-			m_pTempDepthTexture->texture.pTexture->Unlock();
-		}
-		m_pTempDepthTexture = nullptr;
-	}
+	if (m_pTempDepthTexture && m_pTempDepthTexture->texture.pTexture)
+		m_pTempDepthTexture->texture.pTexture->Unlock();
 
 	if (m_pDisplayContext)
 	{
@@ -188,6 +178,8 @@ void CRenderOutput::EndRendering(CRenderView* pRenderView)
 		pRenderView->UnsetRenderOutput();
 	}
 
+
+	m_hasBeenCleared = 0;
 }
 
 //////////////////////////////////////////////////////////////////////////
@@ -277,9 +269,23 @@ void CRenderOutput::ChangeOutputResolution(int outputWidth, int outputHeight)
 		}
 	}
 
+	if (!m_pColorTarget || !CTexture::IsTextureExist(m_pColorTarget) ||
+		m_OutputWidth != m_pColorTarget->GetWidth() ||
+		m_OutputHeight != m_pColorTarget->GetHeight())
+	{
+		AllocateColorTarget();
+	}
+
+	if (!m_pDepthTarget || !CTexture::IsTextureExist(m_pDepthTarget) ||
+		m_OutputWidth != m_pDepthTarget->GetWidth() ||
+		m_OutputHeight != m_pDepthTarget->GetHeight())
+	{
+		AllocateDepthTarget();
+	}
+
 	// TODO: make color and/or depth|stencil optional (currently it's enforced to have all of them)
 	CRY_ASSERT(m_pColorTarget && CTexture::IsTextureExist(m_pColorTarget));
-	CRY_ASSERT(m_pDepthTarget && CTexture::IsTextureExist(m_pDepthTarget) || m_bUseTempDepthBuffer);
+	CRY_ASSERT(m_pDepthTarget && CTexture::IsTextureExist(m_pDepthTarget));
 }
 
 Vec2_tpl<uint32_t> CRenderOutput::GetDisplayResolution() const

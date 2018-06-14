@@ -724,7 +724,9 @@ const char* CD3D9Renderer::GetWindowStateName() const
 
 void CD3D9Renderer::BeginFrame(const SDisplayContextKey& displayContextKey)
 {
+#if defined(ENABLE_RENDER_AUX_GEOM)
 	m_renderThreadAuxGeom.SetCurrentDisplayContext(displayContextKey);
+#endif
 	//////////////////////////////////////////////////////////////////////
 	// Set up everything so we can start rendering
 	//////////////////////////////////////////////////////////////////////
@@ -806,6 +808,7 @@ void CD3D9Renderer::BeginFrame(const SDisplayContextKey& displayContextKey)
 		gEnv->pSystem->GetViewCamera() :
 		GetS3DRend().GetHeadLockedQuadCamera();
 
+#if defined(ENABLE_RENDER_AUX_GEOM)
 	if (auto pCurrAuxGeomCBCollector = m_currentAuxGeomCBCollector)
 	{
 		// Setting all aux geometries command buffers of the collector to the new camera.
@@ -825,6 +828,7 @@ void CD3D9Renderer::BeginFrame(const SDisplayContextKey& displayContextKey)
 			m_nTimeSlicedShadowsUpdatedThisFrame = 0;
 		}, ERenderCommandFlags::None);
 	}
+#endif
 
 	m_pRT->RC_BeginFrame(displayContextKey);
 }
@@ -3820,6 +3824,8 @@ bool CD3D9Renderer::RT_ReadTexture(void* pDst, int destinationWidth, int destina
 	// Copy the frame from our local surface to the requested buffer location
 	pSrc->GetDevTexture()->DownloadToStagingResource(0, [&](void* pData, uint32 rowPitch, uint32 slicePitch)
 	{
+		CRY_ASSERT(rowPitch);
+
 		const int srcStride = 4;
 		const int dstStride = dstFormat == EReadTextureFormat::RGBA8 ? 4 : 3;
 
@@ -5095,6 +5101,7 @@ IRenderAuxGeom* CD3D9Renderer::GetIRenderAuxGeom()
 
 IRenderAuxGeom* CD3D9Renderer::GetOrCreateIRenderAuxGeom(const CCamera* pCustomCamera)
 {
+#if defined(ENABLE_RENDER_AUX_GEOM)
 	auto auxGeom = m_auxGeomCBPool.GetOrCreateOneElement();
 
 	bool usesDefaultCamera = true;
@@ -5105,20 +5112,28 @@ IRenderAuxGeom* CD3D9Renderer::GetOrCreateIRenderAuxGeom(const CCamera* pCustomC
 	auxGeom->SetCamera(!usesDefaultCamera ? *pCustomCamera : m_currentAuxGeomCBCollector->GetCamera());
 
 	return auxGeom;
+#else
+	return nullptr;
+#endif
 }
 
 void CD3D9Renderer::UpdateAuxDefaultCamera(const CCamera & systemCamera)
 {
+#if defined(ENABLE_RENDER_AUX_GEOM)
 	m_currentAuxGeomCBCollector->SetDefaultCamera(systemCamera);
+#endif
 }
 
 void CD3D9Renderer::DeleteAuxGeom(IRenderAuxGeom* pRenderAuxGeom)
 {
+#if defined(ENABLE_RENDER_AUX_GEOM)
 	m_auxGeomCBPool.ReturnToPool(static_cast<CAuxGeomCB*>(pRenderAuxGeom));
+#endif
 }
 
 void CD3D9Renderer::SubmitAuxGeom(IRenderAuxGeom* pIRenderAuxGeom, bool merge)
 {
+#if defined(ENABLE_RENDER_AUX_GEOM)
 	if (merge)
 	{
 		m_currentAuxGeomCBCollector->Get(0)->Merge(static_cast<const CAuxGeomCB*>(pIRenderAuxGeom));
@@ -5127,36 +5142,49 @@ void CD3D9Renderer::SubmitAuxGeom(IRenderAuxGeom* pIRenderAuxGeom, bool merge)
 	{
 		m_currentAuxGeomCBCollector->Add(static_cast<CAuxGeomCB*>(pIRenderAuxGeom));
 	}
+#endif
 }
 
 void CD3D9Renderer::DeleteAuxGeomCBs()
 {
+#if defined(ENABLE_RENDER_AUX_GEOM)
 	m_auxGeomCBPool.ShutDown();
+#endif
 }
 
 void CD3D9Renderer::SetCurrentAuxGeomCollector(CAuxGeomCBCollector* auxGeomCollector)
 {
+#if defined(ENABLE_RENDER_AUX_GEOM)
 	m_currentAuxGeomCBCollector = auxGeomCollector;
 	gEnv->pAuxGeomRenderer = m_currentAuxGeomCBCollector->Get(0);
+#endif
 }
 
 ////////////////////////////////////////////////////////////////////////////////////////////////////
 
 CAuxGeomCBCollector* CD3D9Renderer::GetOrCreateAuxGeomCollector(const CCamera &defaultCamera)
 {
+#if defined(ENABLE_RENDER_AUX_GEOM)
 	auto p = m_auxGeometryCollectorPool.GetOrCreateOneElement();
 	p->SetDefaultCamera(defaultCamera);
 	return p;
+#else
+	return nullptr;
+#endif
 }
 
 void CD3D9Renderer::ReturnAuxGeomCollector(CAuxGeomCBCollector* auxGeomCollector)
 {
-	return m_auxGeometryCollectorPool.ReturnToPool(auxGeomCollector);
+#if defined(ENABLE_RENDER_AUX_GEOM)
+	m_auxGeometryCollectorPool.ReturnToPool(auxGeomCollector);
+#endif
 }
 
 void CD3D9Renderer::DeleteAuxGeomCollectors()
 {
+#if defined(ENABLE_RENDER_AUX_GEOM)
 	m_auxGeometryCollectorPool.ShutDown();
+#endif
 }
 
 IColorGradingController* CD3D9Renderer::GetIColorGradingController()

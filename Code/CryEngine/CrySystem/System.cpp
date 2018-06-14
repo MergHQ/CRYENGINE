@@ -1513,7 +1513,6 @@ void CSystem::RunMainLoop()
 #if CRY_PLATFORM_DURANGO
 		Windows::UI::Core::CoreWindow::GetForCurrentThread()->Dispatcher->ProcessEvents(Windows::UI::Core::CoreProcessEventsOption::ProcessAllIfPresent);
 #endif
-
 		if (!DoFrame({}))
 		{
 			break;

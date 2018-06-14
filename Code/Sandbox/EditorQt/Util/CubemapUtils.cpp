@@ -167,7 +167,8 @@ void CubemapUtils::GenHDRCubemapTiff(const string& fileName, int nDstSize, Vec3&
 
 				cResampledColor /= 16.f;
 
-				*pDst++ = CryHalf4(cResampledColor.x, cResampledColor.y, cResampledColor.z, cResampledColor.w);
+				// Force alpha to 1.0, render output might contain other values which will only serve to corrupt the TIFF.
+				*pDst++ = CryHalf4(cResampledColor.x, cResampledColor.y, cResampledColor.z, 1.0f);
 			}
 		}
 	}

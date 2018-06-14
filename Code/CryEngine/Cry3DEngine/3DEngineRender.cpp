@@ -1415,8 +1415,8 @@ void C3DEngine::RenderInternal(const int nRenderFlags, const SRenderingPassInfo&
 			m_fGsmRange = min(0.15f, GetCVars()->e_GsmRange);
 			m_fGsmRangeStep = min(2.8f, GetCVars()->e_GsmRangeStep);
 
-			m_fShadowsConstBias = min(GetCVars()->e_ShadowsConstBiasHQ, GetCVars()->e_ShadowsConstBias);
-			m_fShadowsSlopeBias = min(GetCVars()->e_ShadowsSlopeBiasHQ, GetCVars()->e_ShadowsSlopeBias);
+			m_fShadowsConstBias = GetCVars()->e_ShadowsConstBias;
+			m_fShadowsSlopeBias = GetCVars()->e_ShadowsSlopeBias;
 		}
 	}
 

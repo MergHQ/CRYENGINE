@@ -375,7 +375,11 @@ void CVars::Init()
 	DefineConstFloatCVar(e_WindBendingDistRatio, VF_CHEAT,
 	                     "Wind cutoff distance for bending (linearly attentuated to that distance)");
 	REGISTER_CVAR(e_Shadows, 1, VF_NULL,
-	              "Activates drawing of shadows");
+	              "Controls rendering of shadows\n"
+	              "  0=off,\n"
+	              "  1=on,\n"
+	              "  2=sun shadows only,\n"
+	              "  3=point light shadows only\n");
 	REGISTER_CVAR(e_ShadowsBlendCascades, 1, VF_NULL,
 	              "Blend between shadow cascades: 0=off, 1=on");
 	REGISTER_CVAR(e_ShadowsBlendCascadesVal, 0.75f, VF_NULL,
@@ -439,24 +443,13 @@ void CVars::Init()
 	              "Shadows slope bias for shadowgen");
 	REGISTER_CVAR(e_ShadowsSlopeBias, 1.0f, VF_NULL,
 	              "Shadows slope bias for shadowgen");
-	REGISTER_CVAR(e_ShadowsSlopeBiasHQ, 0.25f, VF_NULL,
-	              "Shadows slope bias for shadowgen (for high quality mode)");
 	REGISTER_CVAR(e_ShadowsConstBias, 1.0f, VF_NULL,
 	              "Shadows slope bias for shadowgen");
-	REGISTER_CVAR(e_ShadowsConstBiasHQ, 0.05f, VF_NULL,
-	              "Shadows slope bias for shadowgen (high quality mode)");
 	REGISTER_CVAR(e_ShadowsAutoBias, 0.0f, VF_NULL,
 	              "Attempts to compute an optimal shadow bias, ignoring all other bias settings (Experimental)\n"
 	              "  0: Deactivated\n"
 	              "  1.0: Good default value\n"
 	              "  Other values scale bias relative to default\n");
-
-	DefineConstIntCVar(e_ShadowsMasksLimit, 0, VF_NULL,
-	                   "Maximum amount of allocated shadow mask textures\n"
-	                   "This limits the number of shadow casting lights overlapping\n"
-	                   "0=disable limit(unpredictable memory requirements)\n"
-	                   "1=one texture (4 channels for 4 lights)\n"
-	                   "2=two textures (8 channels for 8 lights), ...");
 
 	REGISTER_CVAR(e_ShadowsUpdateViewDistRatio, 128, VF_NULL,
 	              "View dist ratio for shadow maps updating for shadowpool");

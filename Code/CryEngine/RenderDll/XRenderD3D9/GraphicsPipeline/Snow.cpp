@@ -126,12 +126,15 @@ void CSnowStage::ExecuteDeferredSnowGBuffer()
 	rtMask |= (rainVolParams.bApplyOcclusion) ? g_HWSR_MaskBit[HWSR_SAMPLE0] : 0;
 
 	CTexture* pOcclusionTex = (rainVolParams.bApplyOcclusion) ? CRendererResources::s_ptexRainOcclusion : CRendererResources::s_ptexBlack;
+	CTexture* zTarget = pRenderView->GetDepthTarget();
 
 	auto& pass = m_passDeferredSnowGBuffer;
 
 	if (pass.InputChanged(rtMask,
-	                      CRenderer::CV_r_snow_displacement,
-	                      m_pSnowDisplacementTex->GetID()))
+		pOcclusionTex->GetID(),
+		zTarget->GetID(),
+		CRenderer::CV_r_snow_displacement,
+		m_pSnowDisplacementTex->GetID()))
 	{
 		static CCryNameTSCRC techName("Snow");
 		pass.SetPrimitiveFlags(CRenderPrimitive::eFlags_ReflectShaderConstants_PS);
@@ -139,9 +142,9 @@ void CSnowStage::ExecuteDeferredSnowGBuffer()
 		pass.SetTechnique(CShaderMan::s_ShaderDeferredSnow, techName, rtMask);
 
 		const int32 stencilState = STENC_FUNC(FSS_STENCFUNC_EQUAL) |
-		                           STENCOP_FAIL(FSS_STENCOP_KEEP) |
-		                           STENCOP_ZFAIL(FSS_STENCOP_KEEP) |
-		                           STENCOP_PASS(FSS_STENCOP_KEEP);
+			STENCOP_FAIL(FSS_STENCOP_KEEP) |
+			STENCOP_ZFAIL(FSS_STENCOP_KEEP) |
+			STENCOP_PASS(FSS_STENCOP_KEEP);
 		const uint8 stencilRef = BIT_STENCIL_RESERVED;
 		const uint8 stencilReadMask = BIT_STENCIL_RESERVED;
 		pass.SetStencilState(stencilState, stencilRef, stencilReadMask, 0xFF);
@@ -150,7 +153,7 @@ void CSnowStage::ExecuteDeferredSnowGBuffer()
 		pass.SetRenderTarget(0, CRendererResources::s_ptexSceneNormalsMap);
 		pass.SetRenderTarget(1, CRendererResources::s_ptexSceneDiffuse);
 		pass.SetRenderTarget(2, CRendererResources__s_ptexSceneSpecular);
-		pass.SetDepthTarget(RenderView()->GetDepthTarget());
+		pass.SetDepthTarget(zTarget);
 
 		if (CRenderer::CV_r_snow_displacement)
 		{

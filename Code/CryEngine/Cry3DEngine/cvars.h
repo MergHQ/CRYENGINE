@@ -345,7 +345,6 @@ struct CVars : public Cry3DEngineBase
 	DeclareConstIntCVar(e_VegetationBending, 2);
 	DeclareConstFloatCVar(e_StreamPredictionAheadDebug);
 	float e_ShadowsSlopeBias;
-	float e_ShadowsSlopeBiasHQ;
 	float e_ShadowsAutoBias;
 	DeclareConstIntCVar(e_GsmDepthBoundsDebug, 0);
 	DeclareConstIntCVar(e_TimeOfDayDebug, 0);
@@ -413,7 +412,6 @@ struct CVars : public Cry3DEngineBase
 	int   e_CoverageBufferCullIndividualBrushesMaxNodeSize;
 	DeclareConstFloatCVar(e_TerrainOcclusionCullingPrecision);
 	float e_RenderMeshCollisionTolerance;
-	DeclareConstIntCVar(e_ShadowsMasksLimit, 0);
 	int   e_ShadowsCacheUpdate;
 	int   e_ShadowsCacheExtendLastCascade;
 	int   e_ShadowsCacheMaxNodesPerFrame;
@@ -444,7 +442,6 @@ struct CVars : public Cry3DEngineBase
 	DeclareConstIntCVar(e_Lods, 1);
 	DeclareConstIntCVar(e_LodFaceArea, 1);
 	float e_ShadowsConstBias;
-	float e_ShadowsConstBiasHQ;
 	int   e_ParticlesObjectCollisions;
 	int   e_ParticlesMinPhysicsDynamicBounds;
 	int   e_ParticlesSortQuality;

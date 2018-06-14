@@ -234,6 +234,20 @@ private:
 };
 
 //////////////////////////////////////////////////////////////////////////
+class CScreenFaderPass : public IPostEffectPass
+{
+public:
+	CScreenFaderPass() = default;
+
+	virtual void Init() override;
+	virtual void Execute(const CPostEffectContext& context) override;
+
+private:
+	CFullscreenPass m_passScreenFader;
+
+};
+
+//////////////////////////////////////////////////////////////////////////
 class CHudSilhouettesPass : public IPostEffectPass
 {
 public:
