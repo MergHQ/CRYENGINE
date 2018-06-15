@@ -715,6 +715,7 @@ void CClearSurfacePass::Execute(const CGpuBuffer* pBuf, const ColorF& cClear)
 {
 	// Full buffer clear, no need to do custom pass
 	CDeviceCommandListRef commandList = GetDeviceObjectFactory().GetCoreCommandList();
+	CRY_ASSERT_MESSAGE(!(pBuf->GetFlags() & CDeviceObjectFactory::USAGE_STRUCTURED), "Unsupported UAV-clear of a structured buffer!");
 	commandList.GetComputeInterface()->ClearUAV(pBuf->GetDevBuffer()->LookupUAV(EDefaultResourceViews::UnorderedAccess), cClear);
 }
 
@@ -722,6 +723,7 @@ void CClearSurfacePass::Execute(const CGpuBuffer* pBuf, const ColorI& cClear)
 {
 	// Full buffer clear, no need to do custom pass
 	CDeviceCommandListRef commandList = GetDeviceObjectFactory().GetCoreCommandList();
+	CRY_ASSERT_MESSAGE(!(pBuf->GetFlags() & CDeviceObjectFactory::USAGE_STRUCTURED), "Unsupported UAV-clear of a structured buffer!");
 	commandList.GetComputeInterface()->ClearUAV(pBuf->GetDevBuffer()->LookupUAV(EDefaultResourceViews::UnorderedAccess), cClear);
 }
 

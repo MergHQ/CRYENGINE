@@ -69,8 +69,8 @@ technique ReorderParticles
 	pass p0 { ComputeShader = ReorderParticlesCS(); }
 }
 
-RWStructuredBuffer<int> killList : register(u1);
-RWStructuredBuffer<uint> counter : register(u2);
+RWBuffer<int> killList : register(u1);
+RWBuffer<uint> counter : register(u2);
 RWStructuredBuffer<SReadbackData> readback : register(u3);
 
 // this corresponds to gpu_pfx2::kBoundsScale on the C++ side
@@ -215,9 +215,9 @@ technique SwapToEnd
 }
 			
 // SRV slots (not all of them need to be used)
-StructuredBuffer<float> sizeTable : register(t0);
+Buffer<float> sizeTable : register(t0);
 StructuredBuffer<float3> colorTable : register(t1);
-StructuredBuffer<float> opacityTable : register(t2);
+Buffer<float> opacityTable : register(t2);
 
 float DeltaTime(float normAge, float frameTime)
 {
@@ -551,7 +551,7 @@ cbuffer g_initializationParameters : register(b5)
 	int c_init_octaves;
 };
 
-StructuredBuffer<uint> newBornIndices : register(t0);
+Buffer<uint> newBornIndices : register(t0);
 StructuredBuffer<SInitialData> parentData : register(t1);
 
 [numthreads(1024, 1, 1)] 

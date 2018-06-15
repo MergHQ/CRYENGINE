@@ -73,9 +73,9 @@ private:
 	std::vector<_smart_ptr<CFeature>>                                     m_particleFeatureGpuInterfaces;
 	std::vector<_smart_ptr<CFeature>>                                     m_particleFeatureGpuInterfacesInitialization;
 
-	gpu::CTypedResource<uint, gpu::BufferFlagsReadWriteReadback>          m_counter;
-	gpu::CTypedResource<uint, gpu::BufferFlagsReadWriteReadback>          m_scratch;
-	gpu::CTypedResource<SReadbackData, gpu::BufferFlagsReadWriteReadback> m_readback;
+	gpu::CStructuredResource<uint, gpu::BufferFlagsReadWriteReadback>          m_counter;
+	gpu::CStructuredResource<uint, gpu::BufferFlagsReadWriteReadback>          m_scratch;
+	gpu::CStructuredResource<SReadbackData, gpu::BufferFlagsReadWriteReadback> m_readback;
 
 	int m_numRuntimesReadback;
 
