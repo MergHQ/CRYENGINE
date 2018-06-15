@@ -100,7 +100,6 @@ CAIManager::CAIManager()
 	: m_coverSurfaceManager(new CCoverSurfaceManager)
 	, m_navigationWorldMonitorState(ENavigationWorldMonitorState::Stopped)
 	, m_currentUpdateType(ENavigationUpdateType::Continuous)
-	, m_pendingNavigationCalculateAccessibility(true)
 	, m_refreshMnmOnGameExit(false)
 	, m_MNMRegenerationPausedCount(0)
 	, m_navigationUpdatePaused(false)
@@ -875,22 +874,7 @@ void CAIManager::NavigationContinuousUpdate()
 			// By resuming paused WorldMonitor here after physics event we skip overflowing the WorldMonitor right after level load.
 			StartNavigationWorldMonitorIfNeeded();
 		}
-
-		const INavigationSystem::WorkingState state = pNavigationSystem->Update();
-		switch (state)
-		{
-		case INavigationSystem::Idle:
-			if (m_pendingNavigationCalculateAccessibility)
-			{
-				CalculateNavigationAccessibility();
-				m_pendingNavigationCalculateAccessibility = false;
-			}
-			break;
-
-		case INavigationSystem::Working:
-			m_pendingNavigationCalculateAccessibility = true;
-			break;
-		}
+		pNavigationSystem->Update();
 	}
 }
 

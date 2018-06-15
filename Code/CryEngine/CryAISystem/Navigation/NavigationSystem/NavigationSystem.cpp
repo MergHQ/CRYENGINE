@@ -1087,7 +1087,10 @@ void NavigationSystem::UpdateInternalNavigationSystemData(const bool blocking)
 	}
 #endif
 
-	UpdatePendingAccessibilityRequests();
+	if (m_state != INavigationSystem::Working)
+	{
+		UpdatePendingAccessibilityRequests();
+	}
 }
 
 void NavigationSystem::UpdateInternalSubsystems()
@@ -1661,6 +1664,19 @@ void NavigationSystem::OnMeshesUpdateCompleted(const NavigationMeshID* pUpdatedM
 {
 	ComputeIslandsForMeshes(pUpdatedMeshes, count);
 	ComputeMeshesAccessibility(pUpdatedMeshes, count);
+
+	for (size_t updatedIdx = 0; updatedIdx < count; ++updatedIdx)
+	{
+		for (auto it = m_accessibilityUpdateRequestForMeshIds.begin(); it != m_accessibilityUpdateRequestForMeshIds.end(); ++it)
+		{
+			if (pUpdatedMeshes[updatedIdx] == *it)
+			{
+				std::iter_swap(it, m_accessibilityUpdateRequestForMeshIds.end() - 1);
+				m_accessibilityUpdateRequestForMeshIds.pop_back();
+				break;
+			}
+		}
+	}
 }
 
 void NavigationSystem::ComputeIslandsForMeshes(const NavigationMeshID* pUpdatedMeshes, const size_t count)
@@ -1860,6 +1876,7 @@ void NavigationSystem::UpdatePendingAccessibilityRequests()
 void NavigationSystem::CalculateAccessibility()
 {
 	CRY_PROFILE_FUNCTION(PROFILE_AI);
+	
 	for (const AgentType& agentType : m_agentTypes)
 	{
 		for (const AgentType::MeshInfo& meshInfo : agentType.meshes)
