@@ -953,7 +953,7 @@ bool CEntityPhysics::TriggerEventIfStateChanged(IPhysicalEntity* pPhysEntity, co
 		event.BBoxOld[1] = prevBBox.max;
 		event.BBoxNew[0] = currBBox.min;
 		event.BBoxNew[1] = currBBox.max;
-		PhysicalWorld()->AddDeferredEvent(EventPhysStateChange::id, &event);
+		PhysicalWorld()->AddDeferredEvent(EventPhysBBoxChange::id, &event);
 		return true;
 	}
 	return false;
