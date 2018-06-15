@@ -6,13 +6,12 @@
 #include "QtViewPane.h"
 #include "DockingSystem/DockableContainer.h"
 #include "Menu/MenuDesc.h"
-
-#include <QMenuBar>
 #include <QWidget>
 #include <QVariant>
 
 class CAbstractMenu;
-class CMenuBarUpdater;
+class CMenuUpdater;
+
 class QEvent;
 
 //! Base class for Editor(s) which means this should be the base class
@@ -34,9 +33,6 @@ public:
 	// Serialized in the layout
 	virtual void        SetLayout(const QVariantMap& state);
 	virtual QVariantMap GetLayout() const;
-
-public slots:
-	virtual QMenuBar* GetMenuBar();
 
 protected:
 	void        AddRecentFile(const QString& filePath);
@@ -197,27 +193,30 @@ private:
 	void InitMenuDesc();
 
 protected:
-	QMenuBar*          m_pMenuBar;
-
 	CBroadcastManager* m_broadcastManager;
-	bool               m_bIsOnlybackend;
+	bool m_bIsOnlybackend;
+	QMenu* m_pPaneMenu;
 
 private:
-	CDockableContainer*                         m_dockingRegistry;
-	QObject*                                    m_pBroadcastManagerFilter;
+	CDockableContainer* m_dockingRegistry;
+	QObject* m_pBroadcastManagerFilter;
 	std::unique_ptr<MenuDesc::CDesc<MenuItems>> m_pMenuDesc;
-	std::unique_ptr<CAbstractMenu>              m_pMenu;
-	std::unique_ptr<CMenuBarUpdater>            m_pMenuBarBar;
+	std::unique_ptr<CAbstractMenu> m_pMenu;
+	std::unique_ptr<CMenuUpdater> m_pMenuUpdater;
+
 };
 
 //! Inherit from this class to create a dockable editor
 class EDITOR_COMMON_API CDockableEditor : public CEditor, public IPane
 {
+	Q_OBJECT;
+	Q_INTERFACES(IPane);
 public:
 	CDockableEditor(QWidget* pParent = nullptr);
 	virtual ~CDockableEditor();
 
 	virtual QWidget*    GetWidget() final                        { return this; }
+	virtual QMenu*      GetPaneMenu() const override;
 	virtual const char* GetPaneTitle() const final               { return GetEditorName(); }
 	virtual QVariantMap GetState() const final                   { return GetLayout(); }
 	virtual void        SetState(const QVariantMap& state) final { SetLayout(state); }

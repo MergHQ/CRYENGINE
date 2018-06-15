@@ -63,9 +63,9 @@ private:
 	QString           m_resultingString;
 };
 
-class CMainEditorWindow 
+class CMainEditorWindow
 	: public CDockableWindow
-	, public IEditorNotifyListener
+	  , public IEditorNotifyListener
 {
 	Q_OBJECT
 
@@ -82,6 +82,10 @@ public:
 
 	CMainEditorWindow();
 	~CMainEditorWindow();
+
+	//IPane
+	virtual QMenu* GetPaneMenu() const override;
+	//~IPane
 
 	// CDockableWindow
 	virtual const char*                       GetPaneTitle() const override;
@@ -151,4 +155,5 @@ private:
 	QCheckBox*                              m_pSimulatorRunModeCheckBox;
 	CQuerySimulator                         m_querySimulator;
 	SSimulatedRuntimeParams                 m_simulatedRuntimeParams;
+	QMenu* m_pPaneMenu;
 };

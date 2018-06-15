@@ -307,8 +307,8 @@ QVariant CLevelModel::data(const QModelIndex& index, int role) const
 				else if (pLayer->GetLayerType() == eObjectLayerType_Folder)
 				{
 					//IsChildOf also checks for indirect ancestory (if it's a grandchild etc.)
-					auto currentLayer = GetIEditorImpl()->GetObjectManager()->GetLayersManager()->GetCurrentLayer();
-					if (currentLayer && currentLayer->IsChildOf(pLayer))
+					CObjectLayer* currentLayer = GetIEditorImpl()->GetObjectManager()->GetLayersManager()->GetCurrentLayer();
+					if(currentLayer && currentLayer->IsChildOf(pLayer))
 						return CryIcon("icons:General/Folder_Tree_Active.ico").pixmap(16, 16);
 					else
 						return CryIcon("icons:General/Folder_Tree.ico").pixmap(16, 16);

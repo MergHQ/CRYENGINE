@@ -87,7 +87,7 @@
     QWidget::setParent or move the QWinHost into a different layout.
  */
 QWinHost::QWinHost(QWidget* parent, Qt::WindowFlags f)
-	: QWidget(parent, f), wndproc(0), own_hwnd(false), hwnd(0)
+	: QMFCPaneHost(parent, f), wndproc(0), own_hwnd(false), hwnd(0)
 {
 	setAttribute(Qt::WA_NoBackground);
 	setAttribute(Qt::WA_NoSystemBackground);
@@ -107,14 +107,12 @@ QWinHost::~QWinHost()
 		QT_WA({
 			SetWindowLongPtr(hwnd, GWLP_WNDPROC, (LONG_PTR)wndproc);
 		}, {
-			SetWindowLongPtrA(hwnd, GWLP_WNDPROC, (LONG_PTR)wndproc);
-		})
+			SetWindowLongPtrA(hwnd, GWLP_WNDPROC, (LONG_PTR)wndproc); })
 #else
 		QT_WA({
 			SetWindowLong(hwnd, GWL_WNDPROC, (LONG)wndproc);
 		}, {
-			SetWindowLongA(hwnd, GWL_WNDPROC, (LONG)wndproc);
-		})
+			SetWindowLongA(hwnd, GWL_WNDPROC, (LONG)wndproc); })
 #endif
 	}
 
@@ -228,8 +226,7 @@ LRESULT CALLBACK WinHostProc(HWND hwnd, UINT msg, WPARAM wParam, LPARAM lParam)
 			QT_WA({
 				SendMessage((HWND)widget->winId(), msg, wParam, lParam);
 			}, {
-				SendMessageA((HWND)widget->winId(), msg, wParam, lParam);
-			})
+				SendMessageA((HWND)widget->winId(), msg, wParam, lParam); })
 			break;
 
 		case WM_KEYDOWN:
@@ -238,8 +235,7 @@ LRESULT CALLBACK WinHostProc(HWND hwnd, UINT msg, WPARAM wParam, LPARAM lParam)
 				QT_WA({
 					SendMessage((HWND)widget->winId(), msg, wParam, lParam);
 				}, {
-					SendMessageA((HWND)widget->winId(), msg, wParam, lParam);
-				})
+					SendMessageA((HWND)widget->winId(), msg, wParam, lParam); })
 			}
 			break;
 
@@ -263,8 +259,7 @@ LRESULT CALLBACK WinHostProc(HWND hwnd, UINT msg, WPARAM wParam, LPARAM lParam)
 	}, {
 		if (oldproc)
 			return CallWindowProcA(oldproc, hwnd, msg, wParam, lParam);
-		return DefWindowProcA(hwnd, msg, wParam, lParam);
-	})
+		return DefWindowProcA(hwnd, msg, wParam, lParam); })
 }
 
 /*!
@@ -291,8 +286,7 @@ bool QWinHost::event(QEvent* e)
 			}, {
 				void* oldProc = (void*)GetWindowLongPtrA(hwnd, GWLP_WNDPROC);
 				if (oldProc != WinHostProc)
-					wndproc = (void*)SetWindowLongPtrA(hwnd, GWLP_WNDPROC, (LONG_PTR)WinHostProc);
-			})
+					wndproc = (void*)SetWindowLongPtrA(hwnd, GWLP_WNDPROC, (LONG_PTR)WinHostProc); })
 #else
 			QT_WA({
 				void* oldProc = (void*)GetWindowLong(hwnd, GWLP_WNDPROC);
@@ -301,16 +295,14 @@ bool QWinHost::event(QEvent* e)
 			}, {
 				void* oldProc = (void*)GetWindowLongA(hwnd, GWL_WNDPROC);
 				if (oldProc != WinHostProc)
-					wndproc = (void*)SetWindowLongA(hwnd, GWL_WNDPROC, (LONG)WinHostProc);
-			})
+					wndproc = (void*)SetWindowLongA(hwnd, GWL_WNDPROC, (LONG)WinHostProc); })
 #endif
 
 			LONG style;
 			QT_WA({
 				style = GetWindowLong(hwnd, GWL_STYLE);
 			}, {
-				style = GetWindowLongA(hwnd, GWL_STYLE);
-			})
+				style = GetWindowLongA(hwnd, GWL_STYLE); })
 			if (style & WS_TABSTOP)
 				setFocusPolicy(Qt::FocusPolicy(focusPolicy() | Qt::StrongFocus));
 		}
@@ -389,4 +381,3 @@ bool QWinHost::winEvent(MSG* msg, long* result)
 	return QWidget::winEvent(msg, result);
 #endif
 }
-

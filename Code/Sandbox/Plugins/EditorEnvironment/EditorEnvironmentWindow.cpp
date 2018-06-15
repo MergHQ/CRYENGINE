@@ -22,7 +22,7 @@
 REGISTER_VIEWPANE_FACTORY(CEditorEnvironmentWindow, "Environment Editor", "Tools", true);
 
 CEditorEnvironmentWindow::CEditorEnvironmentWindow()
-	: CDockableEditor(nullptr)
+	: CDockableEditor()
 	, m_presetsWidget(new QPresetsWidget)
 	, m_timeOfDayWidget(new QTimeOfDayWidget)
 {

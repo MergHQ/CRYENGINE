@@ -267,7 +267,7 @@ struct CVegetationEditor::SImplementation : public IEditorNotifyListener
 			auto pEditMenu = pParentEditor->GetMenu(CEditor::MenuItems::EditMenu);
 			SetupEditMenu(pEditMenu);
 
-			auto pToolsMenu = pParentEditor->GetMenu(tr("Tools"));
+			CAbstractMenu * pToolsMenu = pParentEditor->GetRootMenu()->CreateMenu(tr("Tools"), 0);
 			SetupToolsMenu(pToolsMenu);
 
 			pParentEditor->AddToMenu(CEditor::MenuItems::ViewMenu);

@@ -3,22 +3,25 @@
 #include "stdafx.h"
 #include "SandboxWindowing.h"
 #include <QKeyEvent>
-
+#include <IEditor.h>
 #include <EditorFramework/Events.h>
+#include <QtViewPane.h>
+#include <EditorFramework/Editor.h>
+#include <QSizePolicy>
 
 namespace Private_SandboxWindowing
 {
-	bool SendMissedShortcutEvent(QKeyEvent* keyEvent)
+bool SendMissedShortcutEvent(QKeyEvent* keyEvent)
+{
+	const auto key = keyEvent->key();
+	if (key != Qt::Key_unknown && !(key == Qt::Key_Control || key == Qt::Key_Shift || key == Qt::Key_Alt || key == Qt::Key_Meta))
 	{
-		const auto key = keyEvent->key();
-		if (key != Qt::Key_unknown && !(key == Qt::Key_Control || key == Qt::Key_Shift || key == Qt::Key_Alt || key == Qt::Key_Meta)) {
-			MissedShortcutEvent* event = new MissedShortcutEvent(QKeySequence(key | keyEvent->modifiers()));
-			return QApplication::sendEvent(getMainWindow(), event);
-		}
-		return false;
+		MissedShortcutEvent* event = new MissedShortcutEvent(QKeySequence(key | keyEvent->modifiers()));
+		return QApplication::sendEvent(getMainWindow(), event);
 	}
+	return false;
 }
-
+}
 
 QSandboxTitleBar::QSandboxTitleBar(QWidget* parent, const QVariantMap& config) : QCustomTitleBar(parent), m_config(config)
 {
@@ -86,8 +89,6 @@ bool QSandboxWindow::eventFilter(QObject* o, QEvent* e)
 	return QCustomWindowFrame::eventFilter(o, e);
 }
 
-
-
 void QSandboxWrapper::ensureTitleBar()
 {
 	if (!m_titleBar)
@@ -140,7 +141,7 @@ void QNotifierSplitterHandle::mouseReleaseEvent(QMouseEvent* e)
 	QSplitterHandle::mouseReleaseEvent(e);
 }
 
-void QNotifierSplitterHandle::mouseMoveEvent(QMouseEvent *e)
+void QNotifierSplitterHandle::mouseMoveEvent(QMouseEvent* e)
 {
 	//QT 5.6: Screen position is incorrect in HiDPI contexts; so we fix it
 	QMouseEvent e2(e->type(), e->localPos(), e->windowPos(), QCursor::pos(), e->button(), e->buttons(), e->modifiers());
@@ -157,3 +158,243 @@ QSplitterHandle* QNotifierSplitter::createHandle()
 	return new QNotifierSplitterHandle(orientation(), this);
 }
 
+QToolsMenuWindowSingleTabAreaFrame::QToolsMenuWindowSingleTabAreaFrame(QToolWindowManager* manager, QWidget* parent)
+	: QToolWindowSingleTabAreaFrame(manager, parent)
+{
+	m_pUpperBarLayout = new QHBoxLayout();
+	m_layout->addLayout(m_pUpperBarLayout, 0, 0);
+	m_pUpperBarLayout->addWidget(m_caption, Qt::AlignLeft);
+
+}
+
+void QToolsMenuWindowSingleTabAreaFrame::setContents(QWidget* widget)
+{
+	QToolWindowSingleTabAreaFrame::setContents(widget);
+}
+
+QToolsMenuToolWindowArea::QToolsMenuToolWindowArea(QToolWindowManager* manager, QWidget* parent)
+	: QToolWindowArea(manager, parent)
+{
+	connect(tabBar(), &QTabBar::currentChanged, this, &QToolsMenuToolWindowArea::OnCurrentChanged);
+	setMovable(true);
+	m_menuButton = new QToolButton(this);
+	//Used in qss to style this widget
+	m_menuButton->setObjectName("QuickAccessButton");
+	m_menuButton->setPopupMode(QToolButton::InstantPopup);
+	m_menuButton->setVisible(false);
+	//Create temporary custom tab frame to be able to access m_layout
+	QToolsMenuWindowSingleTabAreaFrame* customTabFrame = new QToolsMenuWindowSingleTabAreaFrame(manager, this);
+	m_menuButton->setSizePolicy(QSizePolicy::Expanding, QSizePolicy::Preferred);
+	addAction(GetIEditor()->GetICommandManager()->GetAction("general.open_editor_menu"));
+	customTabFrame->m_layout->addWidget(m_menuButton, 0, 1, Qt::AlignVCenter | Qt::AlignRight);
+	//Override the standard frame with our custom version
+	m_tabFrame = customTabFrame;
+	//Without this all undocked mfc widgets will be black
+	m_tabFrame->hide();
+
+	m_tabFrame->installEventFilter(this);
+	customTabFrame->m_caption->installEventFilter(this);
+	tabBar()->installEventFilter(this);
+}
+
+void QToolsMenuToolWindowArea::OnCurrentChanged(int index)
+{
+	if (index < 0 || tabBar()->count() == 1)
+	{
+		return;
+	}
+
+	/*
+	   This is needed to make EditorCommands work properly
+	   A widget that derives from CEditor must be in focus
+	 */
+	QWidget* focusTarget = SetupMenu(index);
+	m_menuButton->setFocusProxy(focusTarget);
+	tabBar()->setFocusProxy(focusTarget);
+
+	QToolsMenuWindowSingleTabAreaFrame* customTabFrame = qobject_cast<QToolsMenuWindowSingleTabAreaFrame*>(m_tabFrame);
+
+	if (tabBar()->count() > 1)
+	{
+		setCornerWidget(m_menuButton);
+	}
+	else if (tabBar()->count() == 1)
+	{
+		customTabFrame->m_layout->addWidget(m_menuButton, 0, 1, Qt::AlignVCenter | Qt::AlignRight);
+	}
+}
+
+void QToolsMenuToolWindowArea::adjustDragVisuals()
+{
+	int currentIdx = tabBar()->currentIndex();
+	if (currentIdx >= 0)
+	{
+		/*
+		   This is needed to make EditorCommands work properly
+		   A widget that derives from CEditor must be in focus
+		 */
+		QWidget* focusTarget = SetupMenu(currentIdx);
+		m_menuButton->setFocusProxy(focusTarget);
+		tabBar()->setFocusProxy(focusTarget);
+
+		QToolsMenuWindowSingleTabAreaFrame* customTabFrame = qobject_cast<QToolsMenuWindowSingleTabAreaFrame*>(m_tabFrame);
+		bool floatingWrapper = m_manager->isFloatingWrapper(parentWidget());
+
+		if (tabBar()->count() > 1)
+		{
+			setCornerWidget(m_menuButton);
+		}
+		else if (tabBar()->count() == 1)
+		{
+			customTabFrame->m_layout->addWidget(m_menuButton, 0, 1, Qt::AlignVCenter | Qt::AlignRight);
+		}
+
+		/*
+		   If we are floating we can hide the caption because we already
+		   have the titlebar in Sandbox wrapper to show the title
+		 */
+		if (customTabFrame)
+		{
+			if (floatingWrapper)
+			{
+				customTabFrame->m_caption->hide();
+			}
+			else
+			{
+				customTabFrame->m_caption->show();
+			}
+		}
+
+	}
+
+	QToolWindowArea::adjustDragVisuals();
+}
+
+bool QToolsMenuToolWindowArea::shouldShowSingleTabFrame()
+{
+	// If we don't allow single tab frames at all
+	if (!m_manager->config().value(QTWM_SINGLE_TAB_FRAME, true).toBool())
+	{
+		return false;
+	}
+	// If we have one tool window in this area
+	if (count() == 1)
+	{
+		return true;
+	}
+	return false;
+}
+
+bool QToolsMenuToolWindowArea::event(QEvent* event)
+{
+	if (event->type() == SandboxEvent::Command)
+	{
+		CommandEvent* commandEvent = static_cast<CommandEvent*>(event);
+
+		//Note: this could be optimized this with a hash map
+		//TODO : better system of macros and registration of those commands in EditorCommon (or move all of this in Editor)
+		const string& command = commandEvent->GetCommand();
+		if (command == "general.open_editor_menu")
+		{
+			if (m_menuButton->isVisible())
+			{
+				m_menuButton->showMenu();
+			}
+
+			return true;
+		}
+	}
+
+	return QToolWindowArea::event(event);
+}
+
+std::pair<IPane*, QWidget*> QToolsMenuToolWindowArea::FindIPaneInTabChildren(int tabIndex)
+{
+	std::pair<IPane*, QWidget*> result{ nullptr, nullptr };
+
+	IPane* pane = nullptr;
+	for (QObject* object : widget(tabIndex)->children())
+	{
+		QBaseTabPane* pPaneProxy = qobject_cast<QBaseTabPane*>(object);
+		IPane* pPane = qobject_cast<IPane*>(object);
+
+		result.second = qobject_cast<QWidget*>(object);
+
+		if (pPaneProxy)
+		{
+			result.second = pPaneProxy;
+			result.first = pPaneProxy->m_pane;
+			break;
+		}
+		else if (pPane)
+		{
+			result.first = pPane;
+			break;
+		}
+	}
+
+	return result;
+}
+
+QWidget* QToolsMenuToolWindowArea::SetupMenu(int currentIndex)
+{
+	std::pair<IPane*, QWidget*> foundParents = FindIPaneInTabChildren(currentIndex);
+
+	QWidget* ownerWidget = foundParents.second;
+	IPane* pane = foundParents.first;
+
+	m_menuButton->setVisible(false);
+	setCornerWidget(0);
+
+	QWidget* focusTarget = ownerWidget;
+	QMenu* menuToAttach = nullptr;
+
+	QMFCPaneHost* host = qobject_cast<QMFCPaneHost*>(ownerWidget);
+
+	if (pane) //qt widget
+	{
+		auto title = pane->GetPaneTitle();
+		menuToAttach = pane->GetPaneMenu();
+		focusTarget = pane->GetWidget();
+	}
+	else if (ownerWidget && host) //Undocked MFC widget
+	{
+
+		if (host)
+		{
+			menuToAttach = CreateDefaultMenu();
+			focusTarget = host;
+		}
+	}
+	else if (ownerWidget && !host) //Docked MFC widget (QTabBar is the owner widget)
+	{
+		for (QObject* object : ownerWidget->children())
+		{
+			QMFCPaneHost* host = qobject_cast<QMFCPaneHost*>(object);
+
+			if (host)
+			{
+				menuToAttach = CreateDefaultMenu();
+				focusTarget = host;
+				break;
+			}
+		}
+
+	}
+
+	if (menuToAttach)
+	{
+		m_menuButton->setMenu(menuToAttach);
+		m_menuButton->setVisible(true);
+	}
+
+	return focusTarget;
+}
+
+QMenu* QToolsMenuToolWindowArea::CreateDefaultMenu()
+{
+	QMenu* helpMenu = new QMenu();
+	QMenu* menuItem = helpMenu->addMenu("Help");
+	menuItem->addAction(GetIEditor()->GetICommandManager()->GetAction("general.help"));
+	return helpMenu;
+}

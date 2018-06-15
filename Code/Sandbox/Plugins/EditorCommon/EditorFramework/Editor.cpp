@@ -7,7 +7,6 @@
 #include <QDesktopServices>
 #include <QFile>
 #include <QJsonDocument>
-#include <QMenuBar>
 #include <QUrl>
 #include <QVBoxLayout>
 #include <QCloseEvent>
@@ -16,8 +15,8 @@
 #include "ICommandManager.h"
 #include "Controls/SaveChangesDialog.h"
 #include "Menu/AbstractMenu.h"
-#include "Menu/MenuBarUpdater.h"
 #include "Menu/MenuWidgetBuilders.h"
+#include "Menu/MenuBarUpdater.h"
 
 #include "QtUtil.h"
 #include "FilePathUtil.h"
@@ -62,13 +61,13 @@ public:
 		m_connection = connect(&m_eventTimer, &QTimer::timeout, [this]()
 			{
 				m_dockableEditor.SaveLayoutPersonalization();
-		  });
+			});
 		m_eventTimer.setSingleShot(true);
 
 		connect(&dockableEditor, &QObject::destroyed, [this]()
 			{
 				disconnect(m_connection);
-		  });
+			});
 	}
 
 protected:
@@ -91,7 +90,6 @@ private:
 
 CEditor::CEditor(QWidget* pParent /*= nullptr*/, bool bIsOnlyBackend /* = false */)
 	: QWidget(pParent)
-	, m_pMenuBar(nullptr)
 	, m_broadcastManager(new CBroadcastManager())
 	, m_bIsOnlybackend(bIsOnlyBackend)
 	, m_dockingRegistry(nullptr)
@@ -100,11 +98,10 @@ CEditor::CEditor(QWidget* pParent /*= nullptr*/, bool bIsOnlyBackend /* = false 
 	if (bIsOnlyBackend)
 		return;
 
-	m_pMenuBar = new QMenuBar();
+	m_pPaneMenu = new QMenu();
 
 	setLayout(new QVBoxLayout());
 	layout()->setContentsMargins(1, 1, 1, 1);
-	layout()->addWidget(m_pMenuBar);
 
 	//Important so the focus is set to the CEditor when clicking on the menu.
 	setFocusPolicy(Qt::StrongFocus);
@@ -115,7 +112,11 @@ CEditor::CEditor(QWidget* pParent /*= nullptr*/, bool bIsOnlyBackend /* = false 
 	InitMenuDesc();
 
 	m_pMenu.reset(new CAbstractMenu());
-	m_pMenuBarBar.reset(new CMenuBarUpdater(m_pMenu.get(), m_pMenuBar));
+	m_pMenuUpdater.reset(new CMenuUpdater(m_pMenu.get(), m_pPaneMenu));
+
+	//Help Menu is enabled by default
+	AddToMenu(CEditor::MenuItems::HelpMenu);
+	AddToMenu(CEditor::MenuItems::Help);
 }
 
 CEditor::~CEditor()
@@ -139,40 +140,40 @@ void CEditor::InitMenuDesc()
 	// #TODO: Make this static?
 	m_pMenuDesc.reset(new CDesc<MenuItems>());
 	m_pMenuDesc->Init(
-	  MenuDesc::AddMenu(MenuItems::FileMenu, 0, 0, "File",
-	                    AddAction(MenuItems::New, 0, 0, GetAction("general.new")),
-	                    AddAction(MenuItems::Open, 0, 1, GetAction("general.open")),
-	                    AddAction(MenuItems::Close, 0, 2, GetAction("general.close")),
-	                    AddAction(MenuItems::Save, 0, 3, GetAction("general.save")),
-	                    AddAction(MenuItems::SaveAs, 0, 4, GetAction("general.save_as")),
-	                    AddMenu(MenuItems::RecentFiles, 0, 5, "Recent Files")
-	                    ),
-	  MenuDesc::AddMenu(MenuItems::EditMenu, 0, 1, "Edit",
-	                    AddAction(MenuItems::Undo, 0, 0, GetAction("general.undo")),
-	                    AddAction(MenuItems::Redo, 0, 1, GetAction("general.redo")),
+		MenuDesc::AddMenu(MenuItems::FileMenu, 0, 0, "File",
+		                  AddAction(MenuItems::New, 0, 0, GetAction("general.new")),
+		                  AddAction(MenuItems::Open, 0, 1, GetAction("general.open")),
+		                  AddAction(MenuItems::Close, 0, 2, GetAction("general.close")),
+		                  AddAction(MenuItems::Save, 0, 3, GetAction("general.save")),
+		                  AddAction(MenuItems::SaveAs, 0, 4, GetAction("general.save_as")),
+		                  AddMenu(MenuItems::RecentFiles, 0, 5, "Recent Files")
+		                  ),
+		MenuDesc::AddMenu(MenuItems::EditMenu, 0, 1, "Edit",
+		                  AddAction(MenuItems::Undo, 0, 0, GetAction("general.undo")),
+		                  AddAction(MenuItems::Redo, 0, 1, GetAction("general.redo")),
 
-	                    AddAction(MenuItems::Copy, 1, 0, GetAction("general.copy")),
-	                    AddAction(MenuItems::Cut, 1, 1, GetAction("general.cut")),
-	                    AddAction(MenuItems::Paste, 1, 2, GetAction("general.paste")),
-	                    AddAction(MenuItems::Delete, 1, 3, GetAction("general.delete")),
+		                  AddAction(MenuItems::Copy, 1, 0, GetAction("general.copy")),
+		                  AddAction(MenuItems::Cut, 1, 1, GetAction("general.cut")),
+		                  AddAction(MenuItems::Paste, 1, 2, GetAction("general.paste")),
+		                  AddAction(MenuItems::Delete, 1, 3, GetAction("general.delete")),
 
-	                    AddAction(MenuItems::Find, 2, 0, GetAction("general.find")),
-	                    AddAction(MenuItems::FindPrevious, 2, 1, GetAction("general.find_previous")),
-	                    AddAction(MenuItems::FindNext, 2, 2, GetAction("general.find_next")),
-	                    AddAction(MenuItems::SelectAll, 2, 3, GetAction("general.select_all")),
+		                  AddAction(MenuItems::Find, 2, 0, GetAction("general.find")),
+		                  AddAction(MenuItems::FindPrevious, 2, 1, GetAction("general.find_previous")),
+		                  AddAction(MenuItems::FindNext, 2, 2, GetAction("general.find_next")),
+		                  AddAction(MenuItems::SelectAll, 2, 3, GetAction("general.select_all")),
 
-	                    AddAction(MenuItems::Duplicate, 3, 0, GetAction("general.duplicate"))
-	                    ),
-	  MenuDesc::AddMenu(MenuItems::ViewMenu, 0, 2, "View",
-	                    AddAction(MenuItems::ZoomIn, 0, 0, GetAction("general.zoom_in")),
-	                    AddAction(MenuItems::ZoomOut, 0, 1, GetAction("general.zoom_out"))
-	                    ),
-	  MenuDesc::AddMenu(MenuItems::WindowMenu, 0, 20, "Window"
-	                    ),
-	  MenuDesc::AddMenu(MenuItems::HelpMenu, 0, 21, "Help",
-	                    AddAction(MenuItems::Help, 0, 0, GetAction("general.help"))
-	                    )
-	  );
+		                  AddAction(MenuItems::Duplicate, 3, 0, GetAction("general.duplicate"))
+		                  ),
+		MenuDesc::AddMenu(MenuItems::ViewMenu, 0, 2, "View",
+		                  AddAction(MenuItems::ZoomIn, 0, 0, GetAction("general.zoom_in")),
+		                  AddAction(MenuItems::ZoomOut, 0, 1, GetAction("general.zoom_out"))
+		                  ),
+		MenuDesc::AddMenu(MenuItems::WindowMenu, 0, 20, "Window"
+		                  ),
+		MenuDesc::AddMenu(MenuItems::HelpMenu, 1, CAbstractMenu::EPriorities::ePriorities_Append, "Help",
+		                  AddAction(MenuItems::Help, 0, 0, GetAction("general.help"))
+		                  )
+		);
 
 }
 
@@ -340,11 +341,6 @@ void CEditor::OnLayoutChange(const QVariantMap& state)
 	SetProperty("dockLayout", state);
 }
 
-QMenuBar* CEditor::GetMenuBar()
-{
-	return m_pMenuBar;
-}
-
 void CEditor::OnMainFrameAboutToClose(BroadcastEvent& event)
 {
 	if (event.type() == BroadcastEvent::AboutToQuit)
@@ -501,6 +497,11 @@ CDockableEditor::~CDockableEditor()
 		m_pReleaseMouseFilter->deleteLater();
 		m_pReleaseMouseFilter = nullptr;
 	}
+}
+
+QMenu* CDockableEditor::GetPaneMenu() const
+{
+	return m_pPaneMenu;
 }
 
 void CDockableEditor::LoadLayoutPersonalization()

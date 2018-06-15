@@ -401,7 +401,7 @@ void CTerrainEditor::InitTerrainMenu()
 		pEditMenu->AddAction(new QCommandAction("Brush Settings...", "general.open_pane 'Brush Settings'", nullptr));
 	}
 
-	CAbstractMenu* pLayerMenu = GetMenu(tr("Layers"));
+	CAbstractMenu* pLayerMenu = GetRootMenu()->CreateMenu(tr("Layers"),0);
 	pLayerMenu->AddAction(GetAction("terrain.create_layer"));
 	pLayerMenu->AddAction(GetAction("terrain.delete_layer"));
 	pLayerMenu->AddAction(GetAction("terrain.duplicate_layer"));

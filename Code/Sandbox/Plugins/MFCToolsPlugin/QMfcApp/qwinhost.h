@@ -44,8 +44,9 @@
 #define QWINHOST_H
 
 #include <QWidget>
+#include "Controls/SandboxWindowing.h"
 
-class PLUGIN_API QWinHost : public QWidget
+class PLUGIN_API QWinHost : public QMFCPaneHost
 {
 	Q_OBJECT
 public:
@@ -79,4 +80,3 @@ protected:
 };
 
 #endif // QWINHOST_H
-

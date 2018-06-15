@@ -52,6 +52,10 @@ public:
 	virtual IViewPaneClass::EDockingDirection GetDockingDirection() const override { return IViewPaneClass::DOCK_FLOAT; }
 	// ~CDockableWindow
 
+	// IPane
+	virtual QMenu* GetPaneMenu() const;
+	// ~IPane
+
 	// ~IQueryHistoryListener
 	virtual void OnQueryHistoryEvent(const UQS::Core::IQueryHistoryListener::SEvent& ev) override;
 	// ~IQueryHistoryListener
@@ -72,7 +76,7 @@ private:
 	void OnClearHistoryButtonClicked(bool checked);
 	void OnSaveLiveHistoryToFile();
 	void OnLoadHistoryFromFile();
-	void OnTreeViewCurrentChanged(const QModelIndex &current, const QModelIndex &previous);
+	void OnTreeViewCurrentChanged(const QModelIndex& current, const QModelIndex& previous);
 
 private:
 	string                           m_windowTitle;
@@ -86,4 +90,5 @@ private:
 	QPushButton*                     m_pButtonClearCurrentHistory;
 	QPropertyTree*                   m_pPropertyTree;
 	CUQSHistoryPostRenderer*         m_pHistoryPostRenderer;
+	QMenu*                           m_pPaneMenu;
 };

@@ -194,7 +194,7 @@ void CTrackViewWindow::InitMenu()
 		connect(action, &QAction::triggered, this, &CTrackViewWindow::OnShowAllEvents);
 	}
 
-	CAbstractMenu* const pPlaybackMenu = GetMenu(tr("Playback"));
+	CAbstractMenu* const pPlaybackMenu = GetRootMenu()->CreateMenu(tr("Playback"), 0);
 	pPlaybackMenu->signalAboutToShow.Connect([pPlaybackMenu, this]()
 	{
 		pPlaybackMenu->Clear();
@@ -267,7 +267,7 @@ void CTrackViewWindow::InitMenu()
 		action->connect(action, &QAction::triggered, [this]() { OnUnitsChanged(SAnimTime::EDisplayMode::Frames); });
 	});
 
-	CAbstractMenu* const pToolsMenu = GetMenu(tr("Tools"));
+	CAbstractMenu* const pToolsMenu = GetRootMenu()->CreateMenu(tr("Tools"), 0);
 	pToolsMenu->signalAboutToShow.Connect([pToolsMenu, this]()
 	{
 		pToolsMenu->Clear();

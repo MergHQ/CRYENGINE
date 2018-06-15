@@ -63,18 +63,6 @@ CMainWindow::CMainWindow()
 
 	InitMenuBar();
 
-	layout()->removeWidget(m_pMenuBar);
-
-	auto const pTopBox = new QHBoxLayout();
-	pTopBox->setMargin(0);
-	pTopBox->addWidget(m_pMenuBar, 0, Qt::AlignLeft);
-	pTopBox->addWidget(m_pImplNameLabel, 0, Qt::AlignRight);
-
-	auto const pTopBar = new QWidget();
-	pTopBar->setLayout(pTopBox);
-
-	layout()->addWidget(pTopBar);
-
 	InitToolbar(pWindowLayout);
 	SetContent(pWindowLayout);
 	RegisterWidgets();
@@ -87,7 +75,6 @@ CMainWindow::CMainWindow()
 
 	UpdateImplLabel();
 	m_pToolBar->setEnabled(g_pIImpl != nullptr);
-	GetMenuBar()->setEnabled(g_pIImpl != nullptr);
 
 	QObject::connect(m_pMonitorSystem, &CFileMonitorSystem::SignalReloadData, this, &CMainWindow::ReloadSystemData);
 	QObject::connect(m_pMonitorMiddleware, &CFileMonitorMiddleware::SignalReloadData, this, &CMainWindow::ReloadMiddlewareData);
@@ -96,7 +83,7 @@ CMainWindow::CMainWindow()
 		{
 			m_isModified = isDirty;
 			m_pSaveAction->setEnabled(isDirty);
-	  }, reinterpret_cast<uintptr_t>(this));
+		}, reinterpret_cast<uintptr_t>(this));
 
 	g_implementationManager.SignalImplementationAboutToChange.Connect(this, &CMainWindow::SaveBeforeImplementationChange);
 	g_implementationManager.SignalImplementationChanged.Connect([this]()
@@ -105,8 +92,7 @@ CMainWindow::CMainWindow()
 			Reload(true);
 
 			m_pToolBar->setEnabled(g_pIImpl != nullptr);
-			GetMenuBar()->setEnabled(g_pIImpl != nullptr);
-	  }, reinterpret_cast<uintptr_t>(this));
+		}, reinterpret_cast<uintptr_t>(this));
 
 	GetIEditor()->RegisterNotifyListener(this);
 }
@@ -199,7 +185,7 @@ CPropertiesWidget* CMainWindow::CreatePropertiesWidget()
 			{
 			  m_pPropertiesWidget->OnSetSelectedAssets(GetSelectedAssets(), !m_isReloading);
 			}
-	  });
+		});
 
 	QObject::connect(pPropertiesWidget, &QObject::destroyed, this, &CMainWindow::OnPropertiesWidgetDestruction);
 	QObject::connect(pPropertiesWidget, &CPropertiesWidget::SignalSelectConnectedImplItem, this, &CMainWindow::SignalSelectConnectedImplItem);
@@ -226,7 +212,7 @@ CMiddlewareDataWidget* CMainWindow::CreateMiddlewareDataWidget()
 			{
 			  g_pIImpl->OnSelectConnectedItem(itemId);
 			}
-	  });
+		});
 
 	return pMiddlewareDataWidget;
 }
@@ -589,7 +575,7 @@ void CMainWindow::OnPreferencesDialog()
 	QObject::connect(pPreferencesDialog, &CPreferencesDialog::SignalImplementationSettingsAboutToChange, [&]()
 		{
 			OnAboutToReload();
-	  });
+		});
 
 	QObject::connect(pPreferencesDialog, &CPreferencesDialog::SignalImplementationSettingsChanged, [&]()
 		{
@@ -600,7 +586,7 @@ void CMainWindow::OnPreferencesDialog()
 
 			OnReloaded();
 			m_pMonitorMiddleware->Enable();
-	  });
+		});
 
 	pPreferencesDialog->exec();
 }
@@ -667,5 +653,5 @@ bool CMainWindow::CanQuit(std::vector<string>& unsavedChanges)
 
 	return canQuit;
 }
-} // namespace ACE
 
+} // namespace ACE

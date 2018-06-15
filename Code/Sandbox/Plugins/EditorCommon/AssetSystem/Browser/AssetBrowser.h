@@ -37,19 +37,19 @@ public:
 	virtual ~CAssetBrowser();
 
 	QVector<CAsset*> GetSelectedAssets() const;
-	CAsset* GetLastSelectedAsset() const;
+	CAsset*          GetLastSelectedAsset() const;
 
-	void SelectAsset(const char* szPath) const;
-	void SelectAsset(const CAsset& asset) const;
+	void             SelectAsset(const char* szPath) const;
+	void             SelectAsset(const CAsset& asset) const;
 
-	QStringList GetSelectedFolders() const;
+	QStringList      GetSelectedFolders() const;
 
 	//CEditor implementation
 	virtual const char* GetEditorName() const override { return "Asset Browser"; }
 	virtual void        SetLayout(const QVariantMap& state) override;
 	virtual QVariantMap GetLayout() const override;
 
-	void GrabFocusSearchBar() { OnFind(); }
+	void                GrabFocusSearchBar() { OnFind(); }
 
 	enum ViewMode
 	{
@@ -61,14 +61,14 @@ public:
 		Max
 	};
 
-	void SetViewMode(ViewMode viewMode);
-	void SetRecursiveView(bool recursiveView);
-	void SetRecursiveSearch(bool recursiveSearch);
+	void    SetViewMode(ViewMode viewMode);
+	void    SetRecursiveView(bool recursiveView);
+	void    SetRecursiveSearch(bool recursiveSearch);
 
 	CAsset* QueryNewAsset(const CAssetType& type, const void* pTypeSpecificParameter);
 
 signals:
-	//! This signal is emitted whenever the selection of folders or assets changes. 
+	//! This signal is emitted whenever the selection of folders or assets changes.
 	void SelectionChanged();
 
 protected:
@@ -82,39 +82,39 @@ protected:
 	bool GetDropFolder(string& folder) const;
 
 	//! Sets \p folder to where assets should be imported. Returns whether the import location is unambiguous.
-	bool GetImportFolder(string& folder) const;
+	bool                        GetImportFolder(string& folder) const;
 
 	QAttributeFilterProxyModel* GetAttributeFilterProxyModel();
-	QItemSelectionModel* GetItemSelectionModel();
-	QAdvancedTreeView* GetDetailsView();
-	QThumbnailsView* GetThumbnailsView();
+	QItemSelectionModel*        GetItemSelectionModel();
+	QAdvancedTreeView*          GetDetailsView();
+	QThumbnailsView*            GetThumbnailsView();
 
 	// The widget has to be visible.
-	void ScrollToSelected();
+	void         ScrollToSelected();
 
 	virtual void OnDoubleClick(CAsset* pAsset);
 	virtual void OnDoubleClick(const QString& folder);
-	bool ValidatePath(const QString);
+	bool         ValidatePath(const QString);
 private:
 
-	void InitNewNameDelegates();
-	void InitViews(bool bHideEngineFolder);
-	void InitMenus();
+	void               InitNewNameDelegates();
+	void               InitViews(bool bHideEngineFolder);
+	void               InitMenus();
 
-	void InitAssetsView();
-	void InitDetailsView();
-	void InitThumbnailsView();
-	void AddViewModeButton(ViewMode viewMode, const char* szIconPath, const char* szToolTip, QMenu* pMenu = nullptr);
-	QWidget* CreateAssetsViewSelector();
+	void               InitAssetsView();
+	void               InitDetailsView();
+	void               InitThumbnailsView();
+	void               AddViewModeButton(ViewMode viewMode, const char* szIconPath, const char* szToolTip, QMenu* pMenu = nullptr);
+	QWidget*           CreateAssetsViewSelector();
 
-	void FillCreateAssetMenu(CAbstractMenu* menu, const QString& folder);
+	void               FillCreateAssetMenu(CAbstractMenu* menu, const QString& folder);
 
-	void BeginCreateAsset(const CAssetType& type, const void* pTypeSpecificParameter);
-	void EndCreateAsset();
+	void               BeginCreateAsset(const CAssetType& type, const void* pTypeSpecificParameter);
+	void               EndCreateAsset();
 
 	QAbstractItemView* GetFocusedView() const;
 
-	bool eventFilter(QObject *object, QEvent *event) override;
+	bool               eventFilter(QObject* object, QEvent* event) override;
 
 	//extract actual content from the selection for further processing
 	void ProcessSelection(QVector<CAsset*>& assets, QStringList& folders) const;
@@ -152,35 +152,34 @@ private:
 	//////////////////////////////////////////////////////////////////////////
 
 	//ui components
-	QAdvancedTreeView*			m_detailsView;
-	QThumbnailsView*			m_thumbnailView;
+	QAdvancedTreeView* m_detailsView;
+	QThumbnailsView* m_thumbnailView;
 	std::unique_ptr<CLineEditDelegate> m_detailsViewNewNameDelegate; // Note that delegates are not owned by view.
 	std::unique_ptr<CLineEditDelegate> m_thumbnailViewNewNameDelegate;
-	QItemSelectionModel*		m_selection;
-	QSplitter*					m_mainViewSplitter;
-	QFilteringPanel*            m_filterPanel;
-	QSplitter*					m_foldersSplitter;
-	CAssetFoldersView*			m_foldersView;
+	QItemSelectionModel* m_selection;
+	QSplitter* m_mainViewSplitter;
+	QFilteringPanel* m_filterPanel;
+	QSplitter* m_foldersSplitter;
+	CAssetFoldersView* m_foldersView;
 	std::unique_ptr<QAttributeFilterProxyModel> m_pAttributeFilterProxyModel;
 	std::unique_ptr<CAssetFolderFilterModel> m_pFolderFilterModel;
 	std::unique_ptr<CAssetDropHandler> m_pAssetDropHandler;
-	QToolButton*				m_backButton;
-	QToolButton*				m_forwardButton;
-	CBreadcrumbsBar*			m_breadcrumbs;
-	QLabel*						m_multipleFoldersLabel;
-	QButtonGroup*				m_viewModeButtons;
+	QToolButton* m_backButton;
+	QToolButton* m_forwardButton;
+	CBreadcrumbsBar* m_breadcrumbs;
+	QLabel* m_multipleFoldersLabel;
+	QButtonGroup* m_viewModeButtons;
 	std::unique_ptr<CAbstractMenu> m_thumbnailSizeMenu;
-	
+
 	//state variables
-	ViewMode					m_viewMode;
-	bool						m_recursiveView;
-	bool						m_recursiveSearch;
-	QVector<QStringList>		m_navigationHistory;
-	int							m_navigationIndex; //-1 is "all assets"
-	bool						m_dontPushNavHistory; //true when folder changes are triggered by back/forward buttons
+	ViewMode m_viewMode;
+	bool m_recursiveView;
+	bool m_recursiveSearch;
+	QVector<QStringList> m_navigationHistory;
+	int m_navigationIndex;             //-1 is "all assets"
+	bool m_dontPushNavHistory;         //true when folder changes are triggered by back/forward buttons
 
 #if ASSET_BROWSER_USE_PREVIEW_WIDGET
-	QContainer*					m_previewWidget;
+	QContainer* m_previewWidget;
 #endif
 };
-

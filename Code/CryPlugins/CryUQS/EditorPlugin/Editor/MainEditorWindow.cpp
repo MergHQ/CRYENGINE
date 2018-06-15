@@ -109,7 +109,7 @@ CMainEditorWindow::CMainEditorWindow()
 	pSplitter->addWidget(m_pDocumentTabsWidget);
 	pSplitter->addWidget(m_pSimulatorPanel);
 	pSplitter->setStretchFactor(0, 0);
-	pSplitter->setStretchFactor(1, 1);	// allow the document with the property tree to adaptively use most of the available space
+	pSplitter->setStretchFactor(1, 1);  // allow the document with the property tree to adaptively use most of the available space
 	pSplitter->setStretchFactor(2, 0);
 	setCentralWidget(pSplitter);
 
@@ -275,8 +275,8 @@ void CMainEditorWindow::BuildSimulatorPanel()
 
 				{
 					PropertyTreeStyle treeStyle(QPropertyTree::defaultTreeStyle());
-					treeStyle.propertySplitter = false;	// true would squeeze the labels more, such they quickly become unreadable
-					treeStyle.levelIndent = 1.0f;		// 0.0f would swallow nested properties (such as the x/y/z textboxes of a Vec3)
+					treeStyle.propertySplitter = false; // true would squeeze the labels more, such they quickly become unreadable
+					treeStyle.levelIndent = 1.0f;       // 0.0f would swallow nested properties (such as the x/y/z textboxes of a Vec3)
 					treeStyle.firstLevelIndent = 1.0f;  // (related)
 
 					m_pSimulatorPropertyTree = new QPropertyTree;
@@ -341,20 +341,21 @@ static QAction* AddCheckboxAction(QMenu* pMenu, const QString& label, bool bIsCh
 
 void CMainEditorWindow::BuildMenu()
 {
-	// TODO pavloi 2017.04.04: convert common actions (New, Save, ...) into the CEditor::MenuItems to support better integration into 
+	// TODO pavloi 2017.04.04: convert common actions (New, Save, ...) into the CEditor::MenuItems to support better integration into
 	// the editor framework (key bindings, scripted actions, etc.)
 
+	m_pPaneMenu = new QMenu(this);
 	{
 		// TODO pavloi 2016.04.08: implement File menu actions
 
-		QMenu* pFileMenu = menuBar()->addMenu("&File");
+		QMenu* pFileMenu = m_pPaneMenu->addMenu("&File");
 		connect(pFileMenu->addAction("&New"), &QAction::triggered, this, &CMainEditorWindow::OnMenuActionFileNew);
 		connect(pFileMenu->addAction("&Save"), &QAction::triggered, this, &CMainEditorWindow::OnMenuActionFileSave);
 		//connect(pFileMenu->addAction("Save &As"), &QAction::triggered, this, &CMainEditorWindow::OnMenuActionFileSaveAs);
 	}
 
 	{
-		QMenu* pViewMenu = menuBar()->addMenu("&View");
+		QMenu* pViewMenu = m_pPaneMenu->addMenu("&View");
 		connect(AddCheckboxAction(pViewMenu, "Use &selection helpers", m_editorContext.GetSettings().bUseSelectionHelpers), &QAction::triggered,
 		        this, &CMainEditorWindow::OnMenuActionViewUseSelectionHelpers);
 		connect(AddCheckboxAction(pViewMenu, "Show input param &types", m_editorContext.GetSettings().bShowInputParamTypes), &QAction::triggered,
@@ -364,7 +365,8 @@ void CMainEditorWindow::BuildMenu()
 	}
 
 	{
-		QMenu* pHelpMenu = menuBar()->addMenu("&Help");
+		m_pPaneMenu->addSeparator();
+		QMenu* pHelpMenu = m_pPaneMenu->addMenu("&Help");
 		connect(pHelpMenu->addAction("&Online documentation"), &QAction::triggered, this, &CMainEditorWindow::OnMenuActionHelpOnlineDocumentation);
 	}
 }
@@ -472,7 +474,7 @@ void CMainEditorWindow::SetCurrentDocumentFromExplorerEntry(const Explorer::Expl
 			m_pCurrentDocument = asset.GetDocument();
 			if (m_pCurrentDocument)
 			{
-				m_pCurrentDocument->OnTreeChanged();	// validate the query blueprint for syntactical errors
+				m_pCurrentDocument->OnTreeChanged();  // validate the query blueprint for syntactical errors
 				m_pCurrentDocument->AttachToTree(m_pDocumentPropertyTree);
 				m_pSimulatorPanel->setVisible(true);
 			}
@@ -512,9 +514,9 @@ void CMainEditorWindow::RebuildRuntimeParamsListForSimulationRecursively(const U
 
 		// skip already added parameters (by name)
 		if (std::find_if(
-			m_simulatedRuntimeParams.params.cbegin(),
-			m_simulatedRuntimeParams.params.cend(),
-			[szParamName](const CSimulatedRuntimeParam& param) { return strcmp(param.GetName(), szParamName) == 0; }) != m_simulatedRuntimeParams.params.cend())
+					m_simulatedRuntimeParams.params.cbegin(),
+					m_simulatedRuntimeParams.params.cend(),
+					[szParamName](const CSimulatedRuntimeParam& param) { return strcmp(param.GetName(), szParamName) == 0; }) != m_simulatedRuntimeParams.params.cend())
 		{
 			continue;
 		}
@@ -625,4 +627,9 @@ void CMainEditorWindow::SSimulatedRuntimeParams::Serialize(Serialization::IArchi
 	{
 		param.Serialize(archive);
 	}
+}
+
+QMenu* CMainEditorWindow::GetPaneMenu() const
+{
+	return m_pPaneMenu;
 }

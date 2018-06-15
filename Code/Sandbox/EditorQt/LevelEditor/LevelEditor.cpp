@@ -827,7 +827,6 @@ bool CLevelEditor::OnFind()
 		auto levelExplorer = m_findWindow->GetPaneT<CLevelExplorer>();
 		levelExplorer->SetSyncSelection(false);
 		levelExplorer->SetModelType(CLevelExplorer::Objects);
-		levelExplorer->ShowActiveLayerWidget(false);
 		m_findWindow->Popup();
 		m_findWindow->SetPosCascade();
 		levelExplorer->GrabFocusSearchBar();

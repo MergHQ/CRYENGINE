@@ -82,17 +82,17 @@ static bool UserConfirmsRenaming(CAsset& asset, QWidget* pParent)
 {
 	const CAssetManager* const pAssetManager = CAssetManager::GetInstance();
 	const QString question = QObject::tr("There is a possibility that %1 has undetected dependencies which can be violated after the operation.\n"
-		"\n"
-		"Do you really want to rename the asset?").arg(QtUtil::ToQString(asset.GetName()));
+	                                     "\n"
+	                                     "Do you really want to rename the asset?").arg(QtUtil::ToQString(asset.GetName()));
 	const QString title = QObject::tr("Rename Asset");
 
 	if (pAssetManager->HasAnyReverseDependencies({ &asset }))
 	{
 		CAssetReverseDependenciesDialog dialog({ &asset },
-			QObject::tr("Asset to be renamed"),
-			QObject::tr("Dependent Assets"),
-			QObject::tr("The following assets probably will not behave correctly after performing the operation."),
-			question, pParent);
+		                                       QObject::tr("Asset to be renamed"),
+		                                       QObject::tr("Dependent Assets"),
+		                                       QObject::tr("The following assets probably will not behave correctly after performing the operation."),
+		                                       question, pParent);
 		dialog.setWindowTitle(title);
 
 		if (!dialog.Execute())
@@ -211,7 +211,7 @@ private:
 			{
 				if (!pView)
 				{
-					return;
+					 return;
 				}
 				pView->TouchVisibleAssetsBatched(lastBatchRow + 1);
 			});
@@ -242,7 +242,7 @@ class CDependenciesOperatorBase : public Attributes::IAttributeFilterOperator
 		}
 	private:
 		CAttributeFilter* const m_pFilter;
-		QLineEdit* const m_pLineEdit;
+		QLineEdit* const        m_pLineEdit;
 	};
 
 public:
@@ -259,32 +259,32 @@ public:
 		}
 
 		QWidget::connect(pLineEdit, &QLineEdit::editingFinished, [pLineEdit, filter]()
-		{
-			filter->SetFilterValue(pLineEdit->text());
-		});
+			{
+				filter->SetFilterValue(pLineEdit->text());
+			});
 
 		QToolButton* pButton = new QToolButton();
 		pButton->setToolTip(QObject::tr("Open"));
 		pButton->setIcon(CryIcon("icons:General/Folder.ico"));
 		QWidget::connect(pButton, &QToolButton::clicked, [pLineEdit, filter]()
-		{
-			ResourceSelectionCallback callback(filter.get(), pLineEdit);
-			SResourceSelectorContext  context;
-			context.callback = &callback;
-
-			const string value(QtUtil::ToString(pLineEdit->text()));
-			dll_string filename = SStaticAssetSelectorEntry::SelectFromAsset(context, {}, value.c_str());
-			if (!filename.empty() && filename.c_str() != value)
 			{
-				callback.SetValue(filename.c_str());
-			}
-			else // restore the previous value
-			{
-				callback.SetValue(value.c_str());
-			}
-		});
+				ResourceSelectionCallback callback(filter.get(), pLineEdit);
+				SResourceSelectorContext context;
+				context.callback = &callback;
 
-		QHBoxLayout *pLayout = new QHBoxLayout();
+				const string value(QtUtil::ToString(pLineEdit->text()));
+				dll_string filename = SStaticAssetSelectorEntry::SelectFromAsset(context, {}, value.c_str());
+				if (!filename.empty() && filename.c_str() != value)
+				{
+				  callback.SetValue(filename.c_str());
+				}
+				else // restore the previous value
+				{
+				  callback.SetValue(value.c_str());
+				}
+			});
+
+		QHBoxLayout* pLayout = new QHBoxLayout();
 		pLayout->setMargin(0);
 		pLayout->addWidget(pLineEdit);
 		pLayout->addWidget(pButton);
@@ -304,7 +304,7 @@ public:
 	}
 
 	virtual std::pair<bool, int> GetUsageInfo(const CAsset& asset, const string& pathToTest) const = 0;
-	
+
 };
 
 class CUsedBy : public CDependenciesOperatorBase
@@ -312,7 +312,7 @@ class CUsedBy : public CDependenciesOperatorBase
 public:
 	virtual QString GetName() override { return QWidget::tr("UsedBy"); }
 
-	virtual bool Match(const QVariant& value, const QVariant& filterValue) override
+	virtual bool    Match(const QVariant& value, const QVariant& filterValue) override
 	{
 		if (!filterValue.isValid())
 		{
@@ -341,7 +341,7 @@ class CUse : public CDependenciesOperatorBase
 public:
 	virtual QString GetName() override { return QWidget::tr("Use"); }
 
-	virtual bool Match(const QVariant& value, const QVariant& filterValue) override
+	virtual bool    Match(const QVariant& value, const QVariant& filterValue) override
 	{
 		if (!filterValue.isValid())
 		{
@@ -374,9 +374,9 @@ public:
 		: CItemModelAttribute("Dependencies", &s_dependenciesAttributeType, CItemModelAttribute::AlwaysHidden, true, QVariant(), (int)CAssetModel::Roles::InternalPointerRole)
 	{
 		static CAssetModel::CAutoRegisterColumn column(this, [](const CAsset* pAsset, const CItemModelAttribute* /*pAttribute*/)
-		{
-			return QVariant();
-		});
+		    {
+		      return QVariant();
+				});
 	}
 };
 
@@ -387,11 +387,10 @@ public:
 		: CItemModelAttribute("Usage count", &Attributes::s_stringAttributeType, CItemModelAttribute::StartHidden, false)
 	{
 		static CAssetModel::CAutoRegisterColumn column(this, [](const CAsset* pAsset, const CItemModelAttribute* pAttribute)
-		{
-			const CUsageCountAttribute* const pUsageCountAttribute = static_cast<const CUsageCountAttribute*>(pAttribute);
-
-			return pUsageCountAttribute->GetValue(*pAsset);
-		});
+		    {
+		       const CUsageCountAttribute* const pUsageCountAttribute = static_cast<const CUsageCountAttribute*>(pAttribute);
+		       return pUsageCountAttribute->GetValue(*pAsset);
+				});
 	}
 
 	void SetDetailContext(CAttributeFilter* pFilter)
@@ -419,7 +418,6 @@ private:
 
 static CDependenciesAttribute s_dependenciesAttribute;
 static CUsageCountAttribute s_usageCountAttribute;
-
 
 class SortFilterProxyModel : public QAttributeFilterProxyModel
 {
@@ -508,7 +506,7 @@ class SortFilterProxyModel : public QAttributeFilterProxyModel
 	}
 
 	virtual void InvalidateFilter() override
-	{ 
+	{
 		int usageCountFiltersCount = 0;
 		m_pDependencyFilter = nullptr;
 		for (const auto filter : m_filters)
@@ -568,9 +566,9 @@ QVector<CAsset*> GetAssets(const CDragDropData& data)
 
 	QVector<CAsset*> assets;
 	std::transform(tmp.begin(), tmp.end(), std::back_inserter(assets), [](quintptr p)
-	{
-		return reinterpret_cast<CAsset*>(p);
-	});
+		{
+			return reinterpret_cast<CAsset*>(p);
+		});
 	return assets;
 }
 
@@ -585,9 +583,9 @@ bool IsMovePossible(QVector<CAsset*>& assets, const string& destinationFolder)
 	// Make sure none of assets belong to the destination folder.
 	const string path(PathUtil::AddSlash(destinationFolder));
 	return std::none_of(assets.begin(), assets.end(), [&path](CAsset* pAsset)
-	{
-		return strcmp(path.c_str(), pAsset->GetFolder()) == 0;
-	});
+		{
+			return strcmp(path.c_str(), pAsset->GetFolder()) == 0;
+		});
 }
 
 // Implements QueryNewAsset for the AssetBrowser context menu.
@@ -598,9 +596,9 @@ public:
 		: m_pBrowser(pBrowser)
 	{
 		m_connection = QObject::connect(pBrowser, &CAssetBrowser::destroyed, [this](auto)
-		{
-			m_pBrowser = nullptr;
-		});
+			{
+				m_pBrowser = nullptr;
+			});
 	}
 	~CContextMenuContext()
 	{
@@ -809,8 +807,7 @@ bool CAssetBrowser::GetDropFolder(string& folder) const
 	folder.clear();
 
 	const std::vector<const QAbstractItemView*> views {
-		m_foldersView->GetInternalView(), m_detailsView, m_thumbnailView->GetInternalView()
-	};
+		m_foldersView->GetInternalView(), m_detailsView, m_thumbnailView->GetInternalView() };
 
 	for (const QAbstractItemView* pView : views)
 	{
@@ -967,21 +964,16 @@ void CAssetBrowser::InitViews(bool bHideEngineFolder)
 
 void CAssetBrowser::InitMenus()
 {
-	const CEditor::MenuItems items[] = {
-		CEditor::MenuItems::FileMenu,
-		CEditor::MenuItems::EditMenu,CEditor::MenuItems::ViewMenu, CEditor::MenuItems::Find
-	};
-	AddToMenu(&items[0], CRY_ARRAY_COUNT(items));
-
 	// File menu
-	CAbstractMenu* const menuFile = GetMenu(MenuItems::FileMenu);
+	AddToMenu(CEditor::MenuItems::FileMenu);
+	CAbstractMenu* const menuFile = GetMenu(CEditor::MenuItems::FileMenu);
 	menuFile->signalAboutToShow.Connect([menuFile, this]()
 	{
 		menuFile->Clear();
 		auto folderSelection = m_foldersView->GetSelectedFolders();
 		const QString folder = (folderSelection.size() == 1 && !CAssetFoldersModel::GetInstance()->IsReadOnlyFolder(folderSelection[0]))
-		    ? folderSelection[0]
-		    : QString();
+		                       ? folderSelection[0]
+		                       : QString();
 
 		// Create assets.
 		{
@@ -1006,7 +998,9 @@ void CAssetBrowser::InitMenus()
 	});
 
 	// Edit menu
-	CAbstractMenu* const menuEdit = GetMenu(MenuItems::EditMenu);
+	AddToMenu(CEditor::MenuItems::EditMenu);
+	CAbstractMenu* const menuEdit = GetMenu(CEditor::MenuItems::EditMenu);
+
 	menuEdit->signalAboutToShow.Connect([menuEdit, this]()
 	{
 		menuEdit->Clear();
@@ -1020,7 +1014,7 @@ void CAssetBrowser::InitMenus()
 		action = menuEdit->CreateAction(tr("Generate/Repair All Metadata"));
 		if (!CAssetManager::GetInstance()->IsScanning())
 		{
-			connect(action, &QAction::triggered, []()
+		  connect(action, &QAction::triggered, []()
 			{
 				std::shared_ptr<CProgressNotification> pNotification = std::make_shared<CProgressNotification>(tr("Generating/Repairing Metadata"), QString(), false);
 				CAssetManager::GetInstance()->GenerateCryassetsAsync([pNotification]()
@@ -1030,12 +1024,14 @@ void CAssetBrowser::InitMenus()
 		}
 		else
 		{
-			action->setEnabled(false);
+		  action->setEnabled(false);
 		}
 	});
 
 	//View menu
-	CAbstractMenu* menuView = GetMenu(MenuItems::ViewMenu);
+	AddToMenu(CEditor::MenuItems::ViewMenu);
+	CAbstractMenu* const menuView = GetMenu(CEditor::MenuItems::ViewMenu);
+
 	menuView->signalAboutToShow.Connect([menuView, this]()
 	{
 		menuView->Clear();
@@ -1093,7 +1089,7 @@ void CAssetBrowser::InitMenus()
 
 		if (m_filterPanel)
 		{
-			m_filterPanel->FillMenu(menuView, tr("Apply Filter"));
+		  m_filterPanel->FillMenu(menuView, tr("Apply Filter"));
 		}
 	});
 }
@@ -1642,9 +1638,9 @@ void CAssetBrowser::OnContextMenu()
 	ProcessSelection(assets, folders);
 
 	CAssetManager::GetInstance()->AppendContextMenuActions(
-	  abstractMenu,
-	  assets.toStdVector(),
-	  std::make_shared<Private_AssetBrowser::CContextMenuContext>(this));
+		abstractMenu,
+		assets.toStdVector(),
+		std::make_shared<Private_AssetBrowser::CContextMenuContext>(this));
 
 	if (assets.length() != 0)
 	{
@@ -1869,9 +1865,9 @@ void CAssetBrowser::OnImport()
 	if (!CAssetManager::GetInstance()->GetAssetImporters().size())
 	{
 		const QString what = tr(
-		  "No importers available. This might be because you are missing editor plugins. "
-		  "If you build Sandbox locally, check if all plugins have been built successfully. "
-		  "If not, make sure that all required dependencies and SDKs are available.");
+			"No importers available. This might be because you are missing editor plugins. "
+			"If you build Sandbox locally, check if all plugins have been built successfully. "
+			"If not, make sure that all required dependencies and SDKs are available.");
 		CQuestionDialog::SWarning(tr("No importers registered"), what);
 		return;
 	}
@@ -1914,7 +1910,7 @@ void CAssetBrowser::OnImport()
 		{
 			return dropHandler.Import(filePaths, importParams);
 		},
-			[](std::vector<CAsset*>&& assets)
+		                              [](std::vector<CAsset*>&& assets)
 		{
 			GetIEditor()->GetAssetManager()->MergeAssets(assets);
 		});
@@ -2260,4 +2256,3 @@ void CAssetBrowser::ScrollToSelected()
 		m_thumbnailView->ScrollToRow(index, QAbstractItemView::EnsureVisible);
 	}
 }
-

@@ -68,6 +68,8 @@ public:
 	virtual IViewPaneClass::EDockingDirection GetDockingDirection() const override { return IViewPaneClass::DOCK_FLOAT; }
 	//////////////////////////////////////////////////////////
 
+	virtual QMenu* GetPaneMenu() const;
+
 public slots:
 	void             OnExportAnimationLayers();
 	void             OnImportAnimationLayers();
@@ -168,6 +170,7 @@ private:
 	QAction*                                   m_actionViewShowCompressionFlickerDiff;
 
 	QMenu*                                     m_menuLayout;
+	QMenu*                                     m_pPaneMenu;
 	QAction*                                   m_actionLayoutReset;
 	QAction*                                   m_actionLayoutLoadState;
 	QAction*                                   m_actionLayoutSaveState;
