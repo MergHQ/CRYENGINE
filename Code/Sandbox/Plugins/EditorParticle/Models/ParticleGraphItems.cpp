@@ -160,6 +160,7 @@ void CNodeItem::Serialize(Serialization::IArchive& archive)
 	features.reserve(numFeatures);
 	CryGraphEditor::PinItemArray pins;
 	pins.push_back(m_pins[0]);
+	pins.push_back(m_pins[1]);
 
 	size_t movedFeatures = 0;
 
