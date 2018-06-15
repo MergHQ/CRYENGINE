@@ -16,9 +16,7 @@
 IMPLEMENT_DYNAMIC(CSequencerDopeSheet, CSequencerDopeSheetBase)
 CSequencerDopeSheet::CSequencerDopeSheet()
 {
-	m_leftOffset = 30;
-
-	m_itemWidth = 1000;
+	m_scrollMargin = 30;
 }
 
 CSequencerDopeSheet::~CSequencerDopeSheet()
@@ -31,7 +29,7 @@ END_MESSAGE_MAP()
 // CSequencerKeyList message handlers
 
 //////////////////////////////////////////////////////////////////////////
-void CSequencerDopeSheet::DrawTrack(int item, CDC* dc, CRect& rcItem)
+void CSequencerDopeSheet::DrawTrack(int item, CDC* dc, const CRect& rcItem)
 {
 	CPen pen(PS_SOLID, 1, RGB(120, 120, 120));
 	CPen* prevPen = dc->SelectObject(&pen);
@@ -51,44 +49,50 @@ void CSequencerDopeSheet::DrawTrack(int item, CDC* dc, CRect& rcItem)
 		return;
 	}
 
-	CRect rcInner = rcItem;
-	rcInner.left = max(rcItem.left, m_leftOffset - m_scrollOffset.x);
-	rcInner.right = min(rcItem.right, (m_scrollMax + m_scrollMin) - m_scrollOffset.x + m_leftOffset * 2);
+	// Get time range of update rectangle.
+	const Range timeRange = GetTimeRange(rcItem);
 
-	CRect rcInnerDraw(rcInner.left - 6, rcInner.top, rcInner.right + 6, rcInner.bottom);
-	ColorB trackColor = track->GetColor();
+	const CRect rcInner{
+		TimeToClient(timeRange.start),
+		rcItem.top,
+		TimeToClient(timeRange.end),
+		rcItem.bottom
+	};
+
+	const CRect rcInnerDraw{
+		rcInner.left - 6,
+		rcInner.top,
+		rcInner.right + 6,
+		rcInner.bottom
+	};
+
+	const ColorB trackColor = track->GetColor();
 
 	CRect rc = rcInnerDraw;
 	rc.DeflateRect(0, 1, 0, 0);
 
+	// Inside background
 	if (IsSelectedItem(item))
 	{
-		XTPPaintManager()->GradientFill(dc, rc, RGB(trackColor.r, trackColor.g, trackColor.b),
-		                                RGB(trackColor.r / 2, trackColor.g / 2, trackColor.b / 2), FALSE);
+		XTPPaintManager()->GradientFill(dc, rc, RGB(trackColor.r, trackColor.g, trackColor.b), RGB(trackColor.r / 2, trackColor.g / 2, trackColor.b / 2), FALSE);
 	}
 	else
 	{
-		dc->FillSolidRect(rc.left, rc.top, rc.Width(), rc.Height(),
-		                  RGB(trackColor.r, trackColor.g, trackColor.b));
+		dc->FillSolidRect(rc.left, rc.top, rc.Width(), rc.Height(), RGB(trackColor.r, trackColor.g, trackColor.b));
 	}
 
-	// Left outside
+	// Left outside background
 	CRect rcOutside = rcItem;
 	rcOutside.right = rcInnerDraw.left - 1;
 	rcOutside.DeflateRect(1, 1, 1, 0);
 	dc->SelectObject(m_bkgrBrushEmpty);
-
 	XTPPaintManager()->GradientFill(dc, rcOutside, RGB(210, 210, 210), RGB(180, 180, 180), FALSE);
 
-	// Right outside.
+	// Right outside background
 	rcOutside = rcItem;
 	rcOutside.left = rcInnerDraw.right + 1;
 	rcOutside.DeflateRect(1, 1, 1, 0);
-
 	XTPPaintManager()->GradientFill(dc, rcOutside, RGB(210, 210, 210), RGB(180, 180, 180), FALSE);
-
-	// Get time range of update rectangle.
-	Range timeRange = GetTimeRange(rcItem);
 
 	// Draw keys in time range.
 	DrawKeys(track, dc, rcInner, timeRange, DRAW_BACKGROUND);
@@ -99,7 +103,7 @@ void CSequencerDopeSheet::DrawTrack(int item, CDC* dc, CRect& rcItem)
 }
 
 //////////////////////////////////////////////////////////////////////////
-void CSequencerDopeSheet::DrawKeys(CSequencerTrack* track, CDC* dc, CRect& rc, Range& timeRange, EDSRenderFlags renderFlags)
+void CSequencerDopeSheet::DrawKeys(const CSequencerTrack* track, CDC* dc, const CRect& rc, const Range& timeRange, EDSRenderFlags renderFlags)
 {
 	enum EBlendType
 	{
@@ -439,7 +443,7 @@ void CSequencerDopeSheet::DrawKeys(CSequencerTrack* track, CDC* dc, CRect& rc, R
 						nextKeyTime = max(nextKeyTime, nextFragKey.tranStartTime);
 					}
 
-					CFragmentTrack* pFragTrack = (CFragmentTrack*)track;
+					CFragmentIdTrack* pFragTrack = (CFragmentIdTrack*)track;
 					int nextFragID = pFragTrack->GetNextFragmentKey(i);
 					if (nextFragID >= 0)
 					{
@@ -698,7 +702,7 @@ void CSequencerDopeSheet::SelectKeys(const CRect& rc)
 }
 
 //////////////////////////////////////////////////////////////////////////
-void CSequencerDopeSheet::DrawNodeItem(CSequencerNode* pAnimNode, CDC* dc, CRect& rcItem)
+void CSequencerDopeSheet::DrawNodeItem(const CSequencerNode* pAnimNode, CDC* dc, const CRect& rcItem)
 {
 	CFont* prevFont = dc->SelectObject(m_descriptionFont);
 

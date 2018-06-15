@@ -77,7 +77,7 @@ struct CFragmentKey
 };
 
 //////////////////////////////////////////////////////////////////////////
-class CFragmentTrack : public TSequencerTrack<CFragmentKey>
+class CFragmentIdTrack : public TSequencerTrack<CFragmentKey>
 {
 public:
 
@@ -87,11 +87,11 @@ public:
 		eSK_START_TIME  = 2
 	};
 
-	CFragmentTrack(SScopeData& scopeData, EMannequinEditorMode editorMode);
+	CFragmentIdTrack(SScopeData& scopeData, EMannequinEditorMode editorMode);
 
-	virtual ColorB            GetColor() const;
-	virtual const SKeyColour& GetKeyColour(int key) const;
-	virtual const SKeyColour& GetBlendColour(int key) const;
+	virtual ColorB            GetColor() const override;
+	virtual const SKeyColour& GetKeyColour(int key) const override;
+	virtual const SKeyColour& GetBlendColour(int key) const override;
 
 	void                      SetHistory(SFragmentHistoryContext& history);
 
@@ -104,42 +104,42 @@ public:
 		FIND_TAG_REFERENCES,
 	};
 
-	virtual int     GetNumSecondarySelPts(int key) const;
-	virtual int     GetSecondarySelectionPt(int key, float timeMin, float timeMax) const;
-	virtual int     FindSecondarySelectionPt(int& key, float timeMin, float timeMax) const;
+	virtual int     GetNumSecondarySelPts(int key) const override;
+	virtual int     GetSecondarySelectionPt(int key, float timeMin, float timeMax) const override;
+	virtual int     FindSecondarySelectionPt(int& key, float timeMin, float timeMax) const override;
 
-	virtual void    SetSecondaryTime(int key, int idx, float time);
-	virtual float   GetSecondaryTime(int key, int idx) const;
+	virtual void    SetSecondaryTime(int key, int idx, float time) override;
+	virtual float   GetSecondaryTime(int key, int idx) const override;
 
-	virtual bool    CanEditKey(int key) const;
-	virtual bool    CanMoveKey(int key) const;
-	virtual bool    CanAddKey(float time) const;
-	virtual bool    CanRemoveKey(int key) const;
+	virtual bool    CanEditKey(int key) const override;
+	virtual bool    CanMoveKey(int key) const override;
+	virtual bool    CanAddKey(float time) const override;
+	virtual bool    CanRemoveKey(int key) const override;
 
 	int             GetNextFragmentKey(int key) const;
 	int             GetPrecedingFragmentKey(int key, bool includeTransitions) const;
 	int             GetParentFragmentKey(int key) const;
 
-	virtual CString GetSecondaryDescription(int key, int idx) const;
+	virtual CString GetSecondaryDescription(int key, int idx) const override;
 
-	virtual void    InsertKeyMenuOptions(CMenu& menu, int keyID);
-	virtual void    ClearKeyMenuOptions(CMenu& menu, int keyID)
-	{
-	}
-	virtual void  OnKeyMenuOption(int menuOption, int keyID);
+	virtual void    InsertKeyMenuOptions(CMenu& menu, int keyID) override;
+	virtual void    ClearKeyMenuOptions(CMenu& menu, int keyID) override {}
 
-	void          GetKeyInfo(int key, const char*& description, float& duration);
-	virtual float GetKeyDuration(const int key) const;
-	void          SerializeKey(CFragmentKey& key, XmlNodeRef& keyNode, bool bLoading);
+	virtual void  OnKeyMenuOption(int menuOption, int keyID) override;
 
-	void          SelectKey(int keyID, bool select);
+	virtual void  GetKeyInfo(int key, const char*& description, float& duration) const override;
+	virtual float GetKeyDuration(const int key) const override;
+	virtual void  SerializeKey(CFragmentKey& key, XmlNodeRef& keyNode, bool bLoading) override;
+
+	virtual void  SelectKey(int keyID, bool select) override;
+
 	void          CloneKey(int nKey, const CFragmentKey& key);
 	void          DistributeSharedKey(int keyID);
 
-	virtual void  SetKey(int index, CSequencerKey* _key);
+	virtual void  SetKey(int index, const CSequencerKey* _key) override;
 
 	//! Set time of specified key.
-	virtual void      SetKeyTime(int index, float time);
+	virtual void      SetKeyTime(int index, float time) override;
 
 	SScopeData&       GetScopeData();
 	const SScopeData& GetScopeData() const;
@@ -221,7 +221,7 @@ struct CClipKey : public CSequencerKey
 	bool         IsLMG() const      { return animIsLMG; }
 	const char*  GetDBAPath() const;
 
-	virtual void UpdateFlags();
+	virtual void UpdateFlags() override;
 
 	// Returns the time the animation asset "starts" (in seconds),
 	// taking into account that we can shift the animation clip back in time
@@ -299,12 +299,6 @@ struct CClipKey : public CSequencerKey
 		return (duration / max(0.1f, playbackSpeed)) - startTime;
 	}
 
-	ILINE float GetBlendOutTime() const
-	{
-		const float cachedDuration = GetDuration();
-		return clamp_tpl(cachedDuration - blendOutDuration, 0.0f, cachedDuration);
-	}
-
 	ILINE float GetAssetDuration() const
 	{
 		return duration;
@@ -338,7 +332,6 @@ struct CClipKey : public CSequencerKey
 			keyNode->getAttr("playbackSpeed", playbackSpeed);
 			keyNode->getAttr("playbackWeight", playbackWeight);
 			keyNode->getAttr("blend", blendDuration);
-			keyNode->getAttr("blendOutDuration", blendOutDuration);
 			for (int i = 0; i < MANN_NUMBER_BLEND_CHANNELS; ++i)
 			{
 				char name[16];
@@ -362,7 +355,6 @@ struct CClipKey : public CSequencerKey
 			keyNode->setAttr("playbackSpeed", playbackSpeed);
 			keyNode->setAttr("playbackWeight", playbackWeight);
 			keyNode->setAttr("blend", blendDuration);
-			keyNode->setAttr("blendOutDuration", blendOutDuration);
 			for (int i = 0; i < MANN_NUMBER_BLEND_CHANNELS; ++i)
 			{
 				char name[16];
@@ -386,7 +378,6 @@ struct CClipKey : public CSequencerKey
 	float    playbackSpeed;
 	float    playbackWeight;
 	float    blendDuration;
-	float    blendOutDuration;
 	float    blendChannels[MANN_NUMBER_BLEND_CHANNELS];
 	int      animFlags;
 	uint8    jointMask;
@@ -397,7 +388,7 @@ struct CClipKey : public CSequencerKey
 	uint8    fragIndexMain;
 
 protected:
-	virtual void GetExtensions(std::vector<CString>& extensions, CString& editableExtension) const;
+	virtual void GetExtensions(std::vector<CString>& extensions, CString& editableExtension) const override;
 
 	float                duration;
 	float                referenceLength;
@@ -425,39 +416,41 @@ public:
 
 	CClipTrack(SScopeContextData* pContext, EMannequinEditorMode editorMode);
 
-	ColorB                    GetColor() const;
-	virtual const SKeyColour& GetKeyColour(int key) const;
-	virtual const SKeyColour& GetBlendColour(int key) const;
+	virtual ColorB            GetColor() const override;
+	virtual const SKeyColour& GetKeyColour(int key) const override;
+	virtual const SKeyColour& GetBlendColour(int key) const override;
 
-	virtual int               GetNumSecondarySelPts(int key) const;
-	virtual int               GetSecondarySelectionPt(int key, float timeMin, float timeMax) const;
-	virtual int               FindSecondarySelectionPt(int& key, float timeMin, float timeMax) const;
-	virtual void              SetSecondaryTime(int key, int idx, float time);
-	virtual float             GetSecondaryTime(int key, int id) const;
-	virtual bool              CanMoveSecondarySelection(int key, int id) const;
+	virtual int               GetNumSecondarySelPts(int key) const override;
+	virtual int               GetSecondarySelectionPt(int key, float timeMin, float timeMax) const override;
+	virtual int               FindSecondarySelectionPt(int& key, float timeMin, float timeMax) const override;
+	virtual void              SetSecondaryTime(int key, int idx, float time) override;
+	virtual float             GetSecondaryTime(int key, int id) const override;
+	virtual bool              CanMoveSecondarySelection(int key, int id) const override;
 
-	virtual void              InsertKeyMenuOptions(CMenu& menu, int keyID);
-	virtual void              ClearKeyMenuOptions(CMenu& menu, int keyID);
-	virtual void              OnKeyMenuOption(int menuOption, int keyID);
+	virtual void              InsertKeyMenuOptions(CMenu& menu, int keyID) override;
+	virtual void              ClearKeyMenuOptions(CMenu& menu, int keyID) override;
+	virtual void              OnKeyMenuOption(int menuOption, int keyID) override;
 
-	virtual bool              CanAddKey(float time) const;
-	virtual bool              CanRemoveKey(int key) const;
+	virtual bool              CanAddKey(float time) const override;
+	virtual bool              CanRemoveKey(int key) const override;
 
-	virtual bool              CanEditKey(int key) const;
-	virtual bool              CanMoveKey(int key) const;
+	virtual bool              CanEditKey(int key) const override;
+	virtual bool              CanMoveKey(int key) const override;
 
-	virtual int               CreateKey(float time);
+	virtual int               CreateKey(float time) override;
 
 	void                      CheckKeyForSnappingToPrevious(int index);
 
-	virtual void              SetKey(int index, CSequencerKey* _key);
+	virtual void              SetKey(int index, const CSequencerKey* _key) override;
 
-	virtual void              SetKeyTime(int index, float time);
+	virtual void              SetKeyTime(int index, float time) override;
 
-	void                      GetKeyInfo(int key, const char*& description, float& duration);
-	void                      GetTooltip(int key, const char*& description, float& duration);
+	virtual void              GetKeyInfo(int key, const char*& description, float& duration) const override;
+	virtual void              GetTooltip(int key, const char*& description, float& duration) const override;
 	virtual float             GetKeyDuration(const int key) const;
-	void                      SerializeKey(CClipKey& key, XmlNodeRef& keyNode, bool bLoading);
+	virtual void              SerializeKey(CClipKey& key, XmlNodeRef& keyNode, bool bLoading) override;
+
+	virtual Range             GetTrackDuration() const override;
 
 	void                      SetMainAnimTrack(bool bSet) { m_mainAnimTrack = bSet; }
 
@@ -468,7 +461,7 @@ public:
 
 protected:
 
-	virtual void OnChangeCallback()
+	virtual void OnChangeCallback() override
 	{
 		if (m_pContext)
 		{
@@ -511,34 +504,36 @@ public:
 
 	CProcClipTrack(SScopeContextData* pContext, EMannequinEditorMode editorMode);
 
-	ColorB                    GetColor() const;
-	virtual const SKeyColour& GetKeyColour(int key) const;
-	virtual const SKeyColour& GetBlendColour(int key) const;
+	virtual ColorB            GetColor() const override;
+	virtual const SKeyColour& GetKeyColour(int key) const override;
+	virtual const SKeyColour& GetBlendColour(int key) const override;
 
-	virtual int               GetNumSecondarySelPts(int key) const;
-	virtual int               GetSecondarySelectionPt(int key, float timeMin, float timeMax) const;
-	virtual int               FindSecondarySelectionPt(int& key, float timeMin, float timeMax) const;
-	virtual void              SetSecondaryTime(int key, int idx, float time);
-	virtual float             GetSecondaryTime(int key, int id) const;
-	virtual bool              CanMoveSecondarySelection(int key, int id) const;
+	virtual int               GetNumSecondarySelPts(int key) const override;
+	virtual int               GetSecondarySelectionPt(int key, float timeMin, float timeMax) const override;
+	virtual int               FindSecondarySelectionPt(int& key, float timeMin, float timeMax) const override;
+	virtual void              SetSecondaryTime(int key, int idx, float time) override;
+	virtual float             GetSecondaryTime(int key, int id) const override;
+	virtual bool              CanMoveSecondarySelection(int key, int id) const override;
 
-	virtual void              InsertKeyMenuOptions(CMenu& menu, int keyID);
-	virtual void              ClearKeyMenuOptions(CMenu& menu, int keyID);
-	virtual void              OnKeyMenuOption(int menuOption, int keyID);
+	virtual void              InsertKeyMenuOptions(CMenu& menu, int keyID) override;
+	virtual void              ClearKeyMenuOptions(CMenu& menu, int keyID) override;
+	virtual void              OnKeyMenuOption(int menuOption, int keyID) override;
 
-	virtual bool              CanAddKey(float time) const;
+	virtual bool              CanAddKey(float time) const override;
 
-	virtual bool              CanEditKey(int key) const;
-	virtual bool              CanMoveKey(int key) const;
+	virtual bool              CanEditKey(int key) const override;
+	virtual bool              CanMoveKey(int key) const override;
 
-	virtual int               CreateKey(float time);
+	virtual int               CreateKey(float time) override;
 
-	void                      GetKeyInfo(int key, const char*& description, float& duration);
+	virtual void              GetKeyInfo(int key, const char*& description, float& duration) const override;
 	virtual float             GetKeyDuration(const int key) const;
-	void                      SerializeKey(CProcClipKey& key, XmlNodeRef& keyNode, bool bLoading);
+	virtual void              SerializeKey(CProcClipKey& key, XmlNodeRef& keyNode, bool bLoading) override;
+
+	virtual Range             GetTrackDuration() const override;
 
 protected:
-	virtual void OnChangeCallback()
+	virtual void OnChangeCallback() override
 	{
 		if (m_pContext)
 		{
@@ -569,19 +564,19 @@ public:
 
 	CTagTrack(const CTagDefinition& tagDefinition);
 
-	void                      GetKeyInfo(int key, const char*& description, float& duration);
-	virtual float             GetKeyDuration(const int key) const;
+	virtual void              GetKeyInfo(int key, const char*& description, float& duration) const override;
+	virtual float             GetKeyDuration(const int key) const override;
 
-	virtual void              InsertKeyMenuOptions(CMenu& menu, int keyID);
-	virtual void              ClearKeyMenuOptions(CMenu& menu, int keyID);
-	virtual void              OnKeyMenuOption(int menuOption, int keyID);
-	void                      SerializeKey(CTagKey& key, XmlNodeRef& keyNode, bool bLoading);
+	virtual void              InsertKeyMenuOptions(CMenu& menu, int keyID) override;
+	virtual void              ClearKeyMenuOptions(CMenu& menu, int keyID) override;
+	virtual void              OnKeyMenuOption(int menuOption, int keyID) override;
+	virtual void              SerializeKey(CTagKey& key, XmlNodeRef& keyNode, bool bLoading) override;
 
-	virtual void              SetKey(int index, CSequencerKey* _key);
+	virtual void              SetKey(int index, const CSequencerKey* _key) override;
 
-	ColorB                    GetColor() const;
-	virtual const SKeyColour& GetKeyColour(int key) const;
-	virtual const SKeyColour& GetBlendColour(int key) const;
+	virtual ColorB            GetColor() const override;
+	virtual const SKeyColour& GetKeyColour(int key) const override;
+	virtual const SKeyColour& GetBlendColour(int key) const override;
 
 private:
 	const CTagDefinition& m_tagDefinition;
@@ -630,29 +625,29 @@ public:
 
 	CTransitionPropertyTrack(SScopeData& scopeData);
 
-	void                          GetKeyInfo(int key, const char*& description, float& duration);
-	virtual float                 GetKeyDuration(const int key) const;
+	virtual void                  GetKeyInfo(int key, const char*& description, float& duration) const override;
+	virtual float                 GetKeyDuration(const int key) const override;
 
-	virtual bool                  CanEditKey(int key) const;
-	virtual bool                  CanMoveKey(int key) const;
-	virtual bool                  CanAddKey(float time) const { return false; }
-	virtual bool                  CanRemoveKey(int key) const { return false; }
+	virtual bool                  CanEditKey(int key) const override;
+	virtual bool                  CanMoveKey(int key) const override;
+	virtual bool                  CanAddKey(float time) const override { return false; }
+	virtual bool                  CanRemoveKey(int key) const override { return false; }
 
-	virtual void                  InsertKeyMenuOptions(CMenu& menu, int keyID);
-	virtual void                  ClearKeyMenuOptions(CMenu& menu, int keyID);
-	virtual void                  OnKeyMenuOption(int menuOption, int keyID);
-	void                          SerializeKey(CTransitionPropertyKey& key, XmlNodeRef& keyNode, bool bLoading);
+	virtual void                  InsertKeyMenuOptions(CMenu& menu, int keyID) override;
+	virtual void                  ClearKeyMenuOptions(CMenu& menu, int keyID) override;
+	virtual void                  OnKeyMenuOption(int menuOption, int keyID) override;
+	virtual void                  SerializeKey(CTransitionPropertyKey& key, XmlNodeRef& keyNode, bool bLoading) override;
 
-	virtual void                  SetKey(int index, CSequencerKey* _key);
+	virtual void                  SetKey(int index, const CSequencerKey* _key) override;
 
-	ColorB                        GetColor() const;
-	virtual const SKeyColour&     GetKeyColour(int key) const;
-	virtual const SKeyColour&     GetBlendColour(int key) const;
+	virtual ColorB                GetColor() const override;
+	virtual const SKeyColour&     GetKeyColour(int key) const override;
+	virtual const SKeyColour&     GetBlendColour(int key) const override;
 
-	virtual const int             GetNumBlendsForKey(int index) const;
-	virtual const SFragmentBlend* GetBlendForKey(int index) const;
-	virtual const SFragmentBlend* GetAlternateBlendForKey(int index, int blendIdx) const;
-	virtual void                  UpdateBlendForKey(int index, SFragmentBlend& blend) const;
+	const int                     GetNumBlendsForKey(int index) const;
+	const SFragmentBlend*         GetBlendForKey(int index) const;
+	const SFragmentBlend*         GetAlternateBlendForKey(int index, int blendIdx) const;
+	void                          UpdateBlendForKey(int index, SFragmentBlend& blend) const;
 protected:
 	const SScopeData& m_scopeData;
 };
@@ -681,15 +676,49 @@ public:
 
 	CParamTrack();
 
-	void                      GetKeyInfo(int key, const char*& description, float& duration);
-	virtual float             GetKeyDuration(const int key) const;
+	virtual void              GetKeyInfo(int key, const char*& description, float& duration) const override;
+	virtual float             GetKeyDuration(const int key) const override;
 
-	virtual void              InsertKeyMenuOptions(CMenu& menu, int keyID);
-	virtual void              ClearKeyMenuOptions(CMenu& menu, int keyID);
-	virtual void              OnKeyMenuOption(int menuOption, int keyID);
-	void                      SerializeKey(CParamKey& key, XmlNodeRef& keyNode, bool bLoading);
+	virtual void              InsertKeyMenuOptions(CMenu& menu, int keyID) override;
+	virtual void              ClearKeyMenuOptions(CMenu& menu, int keyID) override;
+	virtual void              OnKeyMenuOption(int menuOption, int keyID) override;
+	virtual void              SerializeKey(CParamKey& key, XmlNodeRef& keyNode, bool bLoading) override;
 
-	ColorB                    GetColor() const;
-	virtual const SKeyColour& GetKeyColour(int key) const;
-	virtual const SKeyColour& GetBlendColour(int key) const;
+	virtual ColorB            GetColor() const override;
+	virtual const SKeyColour& GetKeyColour(int key) const override;
+	virtual const SKeyColour& GetBlendColour(int key) const override;
+};
+//////////////////////////////////////////////////////////////////////////
+struct CFragmentPropertyKey : public CSequencerKey
+{
+	float actionFinishedTiming = 0.0f; //<! Value of the EFragmentProperty::ActionFinishedTiming property.
+
+	const char* GetDescription() const
+	{
+		static const char description[] = "Fragment Properties";
+		return description;
+	}
+};
+
+//////////////////////////////////////////////////////////////////////////
+class CFragmentPropertyTrack : public TSequencerTrack<CFragmentPropertyKey>
+{
+public:
+
+	virtual void              GetKeyInfo(int key, const char*& description, float& duration) const override;
+	virtual float             GetKeyDuration(const int key) const override;
+
+	virtual bool              CanMoveKey(int key) const { return false; }
+	virtual bool              CanAddKey(float time) const override { return false; }
+	virtual bool              CanRemoveKey(int key) const override { return false; }
+
+	virtual void              SerializeKey(CFragmentPropertyKey& key, XmlNodeRef& keyNode, bool bLoading) override;
+
+	virtual ColorB            GetColor() const override;
+	virtual const SKeyColour& GetKeyColour(int key) const override;
+	virtual const SKeyColour& GetBlendColour(int key) const override;
+
+	virtual void              SetKey(int index, const CSequencerKey* key) override;
+
+	virtual Range             GetTrackDuration() const override;
 };

@@ -468,7 +468,7 @@ bool CFragmentIDUIControls::OnKeySelectionChange(SelectedKeys& selectedKeys)
 		const ESequencerParamType paramType = selectedKey.pTrack->GetParameterType();
 		if (paramType == SEQUENCER_PARAM_FRAGMENTID)
 		{
-			CFragmentTrack* fragTrack = static_cast<CFragmentTrack*>(selectedKey.pTrack.get());
+			CFragmentIdTrack* fragTrack = static_cast<CFragmentIdTrack*>(selectedKey.pTrack.get());
 			CFragmentKey key;
 			fragTrack->GetKey(selectedKey.nKey, &key);
 
@@ -488,7 +488,7 @@ bool CFragmentIDUIControls::OnKeySelectionChange(SelectedKeys& selectedKeys)
 		const ESequencerParamType paramType = selectedKeys.keys[0].pTrack->GetParameterType();
 		if (paramType == SEQUENCER_PARAM_FRAGMENTID)
 		{
-			const CFragmentTrack* fragTrack = static_cast<CFragmentTrack*>(selectedKeys.keys[0].pTrack.get());
+			const CFragmentIdTrack* fragTrack = static_cast<CFragmentIdTrack*>(selectedKeys.keys[0].pTrack.get());
 			const CTagDefinition& fragDefs = fragTrack->GetScopeData().mannContexts->m_controllerDef->m_fragmentIDs;
 			const uint32 numFrags = fragDefs.GetNum();
 
@@ -586,7 +586,7 @@ void CFragmentIDUIControls::OnUIChange(IVariable* pVar, SelectedKeys& selectedKe
 		const ESequencerParamType paramType = selectedKey.pTrack->GetParameterType();
 		if (paramType == SEQUENCER_PARAM_FRAGMENTID)
 		{
-			const CFragmentTrack* fragTrack = static_cast<CFragmentTrack*>(selectedKey.pTrack.get());
+			const CFragmentIdTrack* fragTrack = static_cast<CFragmentIdTrack*>(selectedKey.pTrack.get());
 			const SControllerDef& contDef = *fragTrack->GetScopeData().mannContexts->m_controllerDef;
 			const CTagDefinition& fragDefs = contDef.m_fragmentIDs;
 
@@ -1173,6 +1173,76 @@ void CMannParamUIControls::OnUIChange(IVariable* pVar, SelectedKeys& selectedKey
 }
 
 //////////////////////////////////////////////////////////////////////////
+class CMannFragmentPropertyUIControls : public CSequencerKeyUIControls
+{
+	DECLARE_DYNCREATE(CMannFragmentPropertyUIControls)
+public:
+
+	CMannKeyPropertiesDlgFE* m_parent;
+
+	virtual bool SupportTrackType(ESequencerParamType type) const { return (type == SEQUENCER_PARAM_FRAGMENTPROPS); }
+	virtual bool OnKeySelectionChange(SelectedKeys& selectedKeys);
+	virtual void OnUIChange(IVariable* pVar, SelectedKeys& selectedKeys);
+
+protected:
+	virtual void OnCreateVars()
+	{
+		mv_table->DeleteAllVariables();
+
+		AddVariable(mv_table, "Fragment Properties");
+		AddVariable(mv_table, mv_actionFinishedTiming, "OnActionFinished() timing", IVariable::DT_SIMPLE);
+	}
+
+private:
+	CSmartVariableArray         mv_table;
+	CSmartVariable<float>       mv_actionFinishedTiming;
+};
+
+IMPLEMENT_DYNCREATE(CMannFragmentPropertyUIControls, CSequencerKeyUIControls)
+
+bool CMannFragmentPropertyUIControls::OnKeySelectionChange(SelectedKeys& selectedKeys)
+{
+	if (selectedKeys.keys.size() == 1)
+	{
+		SelectedKey& selectedKey = selectedKeys.keys[0];
+		const ESequencerParamType paramType = selectedKey.pTrack->GetParameterType();
+		if (paramType == SEQUENCER_PARAM_FRAGMENTPROPS)
+		{
+			CFragmentPropertyKey key;
+			selectedKey.pTrack->GetKey(selectedKey.nKey, &key);
+
+			mv_actionFinishedTiming = key.actionFinishedTiming;
+
+			return true;
+		}
+	}
+	
+	return false;
+}
+
+// Called when UI variable changes.
+void CMannFragmentPropertyUIControls::OnUIChange(IVariable* pVar, SelectedKeys& selectedKeys)
+{
+	for (size_t keyIndex = 0, keyCount = selectedKeys.keys.size(); keyIndex < keyCount; ++keyIndex)
+	{
+		SelectedKey& selectedKey = selectedKeys.keys[keyIndex];
+		const ESequencerParamType paramType = selectedKey.pTrack->GetParameterType();
+		if (paramType == SEQUENCER_PARAM_FRAGMENTPROPS)
+		{
+			CFragmentPropertyKey key;
+			selectedKey.pTrack->GetKey(selectedKey.nKey, &key);
+
+			key.actionFinishedTiming = mv_actionFinishedTiming;
+
+			selectedKey.pTrack->SetKey(selectedKey.nKey, &key);
+			selectedKey.pTrack->OnChange();
+		}
+	}
+
+	RefreshSequencerKeys();
+}
+
+//////////////////////////////////////////////////////////////////////////
 BEGIN_MESSAGE_MAP(CMannKeyPropertiesDlgFE, CDialog)
 ON_WM_SIZE()
 END_MESSAGE_MAP()
@@ -1207,6 +1277,9 @@ BOOL CMannKeyPropertiesDlgFE::OnInitDialog()
 	CMannParamUIControls* pMannParamControls = new CMannParamUIControls();
 	pMannParamControls->m_parent = this;
 	m_keyControls.push_back(pMannParamControls);
+	CMannFragmentPropertyUIControls* pMannFragmentPropertyControls = new CMannFragmentPropertyUIControls();
+	pMannFragmentPropertyControls->m_parent = this;
+	m_keyControls.push_back(pMannFragmentPropertyControls);
 	CreateAllVars();
 
 	return result;
@@ -1297,4 +1370,3 @@ void CMannKeyPropertiesDlgFE::OnUpdate()
 		OnKeySelectionChange();
 	}
 }
-

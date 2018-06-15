@@ -153,12 +153,11 @@ public:
 	const Item&            GetItem(int item) const;
 	CSequencerTrack*       GetTrack(int item) const;
 	CSequencerNode*        GetNode(int item) const;
-	int                    GetHorizontalExtent() const { return m_itemWidth; }
 
 	bool                   GetSelectedTracks(std::vector<CSequencerTrack*>& tracks) const;
 	bool                   GetSelectedNodes(std::vector<CSequencerNode*>& nodes) const;
 
-	virtual void           SetHorizontalExtent(int min, int max);
+	virtual void           UpdateHorizontalExtent();
 	virtual int            ItemFromPoint(CPoint pnt) const;
 	virtual int            GetItemRect(int item, CRect& rect) const;
 	virtual void           InvalidateItem(int item);
@@ -250,8 +249,8 @@ protected:
 	// Drawing methods.
 	//////////////////////////////////////////////////////////////////////////
 	virtual void DrawControl(CDC* dc, const CRect& rcUpdate);
-	virtual void DrawTrack(int item, CDC* dc, CRect& rcItem);
-	virtual void DrawTicks(CDC* dc, CRect& rc, Range& timeRange);
+	virtual void DrawTrack(int item, CDC* dc, const CRect& rcItem);
+	virtual void DrawTicks(CDC* dc, const CRect& rc, const Range& timeRange);
 
 	// Helper functions
 	void         ComputeFrameSteps(const Range& VisRange);
@@ -284,7 +283,7 @@ protected:
 
 	//! Returns visible time range.
 	Range GetVisibleRange();
-	Range GetTimeRange(CRect& rc);
+	Range GetTimeRange(const CRect& rc);
 
 	//! Return client position for given time.
 	int   TimeToClient(float time) const;
@@ -307,7 +306,6 @@ protected:
 
 	void UpdateAnimation(int item);
 	void UpdateAnimation(CSequencerTrack* animTrack);
-	void SetLeftOffset(int ofs) { m_leftOffset = ofs; }
 
 	void SetMouseCursor(HCURSOR crs);
 
@@ -396,9 +394,7 @@ protected:
 	//////////////////////////////////////////////////////////////////////////
 	std::vector<Item>      m_tracks;
 
-	int                    m_itemWidth;
-
-	int                    m_leftOffset;
+	int                    m_scrollMargin;
 	int                    m_scrollMin, m_scrollMax;
 
 	CToolTipCtrl           m_tooltip;
