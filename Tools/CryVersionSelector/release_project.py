@@ -196,7 +196,7 @@ def delete_temp_engine_folder(engine_path):
     """
     Deletes the temporary engine folder created by RC.
     """
-    temp_dir = os.path.abspath(os.path.join(engine_path, os.pardir, "_rc_PC"))
+    temp_dir = os.path.abspath(os.path.join(engine_path, "rc_out_PC"))
     if os.path.exists(temp_dir):
         os.chmod(temp_dir, stat.S_IWRITE)
         shutil.rmtree(temp_dir, onerror=on_rm_error)
@@ -207,7 +207,7 @@ def delete_temp_assets_folder(project_path):
     Deletes the temporary assets folder created by RC.
     """
     temp_dir = os.path.abspath(os.path.join(
-        project_path, os.pardir, "_rc_PC_pure"))
+        project_path, "rc_out_PC"))
     if os.path.exists(temp_dir):
         os.chmod(temp_dir, stat.S_IWRITE)
         shutil.rmtree(temp_dir, onerror=on_rm_error)
@@ -390,14 +390,14 @@ def run_command(command, silent=True):
 def package_engine_assets(engine_path, export_path):
     """
     Runs the Resource Compiler on the engine assets following the
-    instructions of rcjob_release_engine_assets.xml. Outputs the
+    instructions of engine_assets.xml. Outputs the
     .pak files in the Engine folder of the build.
     """
 
     rc_path = os.path.join(engine_path, "Tools", "rc", "rc.exe")
     rc_job_path = os.path.join(
         engine_path, "Tools", "CryVersionSelector", "rc_jobs",
-        "rcjob_release_engine_assets.xml")
+        "engine_assets.xml")
 
     if os.path.isfile(rc_path) and os.path.isfile(rc_job_path):
         pwd = os.getcwd()
@@ -541,14 +541,14 @@ def sanitize_for_fn(text):
 def package_assets(project, engine_path, project_path, export_path):
     """
     Runs the Resource Compiler on the game assets following the
-    instructions of rcjob_release_game_assets.xml. Outputs the
+    instructions of game_assets.xml. Outputs the
     .pak files in the Assets folder of the build that's specified
     in the project file.
     """
     rc_path = os.path.join(engine_path, "Tools", "rc", "rc.exe")
     rc_job_path = os.path.join(
         engine_path, "Tools", "CryVersionSelector", "rc_jobs",
-        "rcjob_release_game_assets.xml")
+        "game_assets.xml")
 
     if os.path.isfile(rc_path) and os.path.isfile(rc_job_path):
         asset_dir = project.asset_dir()

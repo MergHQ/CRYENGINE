@@ -4,11 +4,11 @@
 		 DefaultProperties can be override from command line
 	-->
 	<DefaultProperties
-			game="GameSDK"
+			game="Assets"
 			l10n="localization"
 			src="."
-			trg="..\_rc_${p}"
-			pak_root=""
+			trg="rc_out_${p}"
+			pak_root="pak_${p}"
 	/>
 
 	<!-- General properties-->
