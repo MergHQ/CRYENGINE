@@ -174,8 +174,6 @@ void CConsoleWindow::SetupUI()
 	verticalLayout->setObjectName(QStringLiteral("verticalLayout"));
 	verticalLayout->setContentsMargins(1, 2, 2, 2);
 
-	layout()->addWidget(m_pMenuBar);
-
 	m_pHistory = new QTextEdit();
 	m_pHistory->setReadOnly(true);
 	m_pHistory->setTextInteractionFlags(Qt::TextSelectableByMouse | Qt::TextSelectableByKeyboard);

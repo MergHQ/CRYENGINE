@@ -8,23 +8,15 @@ class CWnd;
 #include "SandboxAPI.h"
 #include <QFrame>
 #include <QDir>
+#include "Controls/SandboxWindowing.h"
 
 //Internal class for IPane management.
-class QTabPane : public QFrame
+class QTabPane : public QBaseTabPane
 {
 	Q_OBJECT
 public:
-	string m_title;
-	string m_category;
-	string m_class;
 
-	CWnd*  m_MfcWnd;
-	bool   m_bViewCreated;
-
-	IPane* m_pane;
-
-	QSize  m_defaultSize;
-	QSize  m_minimumSize;
+	CWnd* m_MfcWnd;
 
 public:
 	QTabPane();
@@ -85,7 +77,7 @@ public:
 
 	static CTabPaneManager* GetInstance();
 
-	void OnTabPaneMoved(QWidget* tabPane, bool visible);
+	void                    OnTabPaneMoved(QWidget* tabPane, bool visible);
 
 private:
 	QTabPane*                 CreateTabPane(const char* paneClassName, const char* title = 0, int nOverrideDockDirection = -1, bool bLoadLayoutPersonalization = false);
@@ -130,4 +122,3 @@ private:
 	QWidget* const                 m_pParent;
 	bool                           m_layoutLoaded;
 };
-

@@ -1116,41 +1116,19 @@ int CMannNodesCtrl::ShowPopupMenuNode(CPoint point, const SItemInfo* pItemInfo)
 
 	if (GetSelectedCount() == 1)
 	{
-		bool notOnValidItem = !pItemInfo || !pItemInfo->node;
-		bool onValidItem = !notOnValidItem;
-		onNode = onValidItem && pItemInfo->track == NULL;
-		bool onTrack = onValidItem && pItemInfo->track != NULL;
-		if (onValidItem)
+		const bool onValidItem = pItemInfo && pItemInfo->node;
+		const bool onTrack = onValidItem && pItemInfo->track;
+		onNode = onValidItem && !pItemInfo->track;
+
+		if (onNode)
 		{
-			if (onNode)
-			{
-				menu.AppendMenu(MF_SEPARATOR, 0, "");
-				menu.AppendMenu(MF_STRING, eMenuItem_CopySelectedKeys, "Copy Selected Keys");
-			}
-			else  // On a track
-			{
-				menu.AppendMenu(MF_STRING, eMenuItem_CopyKeys, "Copy Keys");
-			}
+			pItemInfo->node->InsertMenuOptions(menu);
 
-			menu.AppendMenu(MF_STRING, eMenuItem_PasteKeys, "Paste Keys");
-
-			if (onNode)
-			{
-				menu.AppendMenu(MF_SEPARATOR, 0, "");
-
-				pItemInfo->node->InsertMenuOptions(menu);
-			}
-		}
-
-		// add layers submenu
-		menuAddTrack.CreatePopupMenu();
-		bool bTracksToAdd = false;
-		if (onValidItem)
-		{
 			menu.AppendMenu(MF_SEPARATOR, 0, "");
-			// List`s which tracks can be added to animation node.
-			const int validParamCount = pItemInfo->node->GetParamCount();
-			for (int i = 0; i < validParamCount; ++i)
+
+			// Prepare the "Add Layer" sub-menu.
+			menuAddTrack.CreatePopupMenu();
+			for (int i = 0, paramCount = pItemInfo->node->GetParamCount(); i < paramCount; ++i)
 			{
 				CSequencerNode::SParamInfo paramInfo;
 				if (!pItemInfo->node->GetParamInfo(i, paramInfo))
@@ -1164,33 +1142,21 @@ int CMannNodesCtrl::ShowPopupMenuNode(CPoint point, const SItemInfo* pItemInfo)
 				}
 
 				menuAddTrack.AppendMenu(MF_STRING, eMenuItem_AddLayer_First + i, paramInfo.name);
-				bTracksToAdd = true;
 			}
-		}
 
-		if (bTracksToAdd)
-			menu.AppendMenu(MF_POPUP, (UINT_PTR)menuAddTrack.m_hMenu, "Add Layer");
+			if (menuAddTrack.GetMenuItemCount() > 0)
+			{
+				menu.AppendMenu(MF_POPUP, (UINT_PTR)menuAddTrack.m_hMenu, "Add Layer");
+			}
 
-		if (onTrack)
-			menu.AppendMenu(MF_STRING, eMenuItem_CopyLayer, "Copy Layer");
-
-		if (bTracksToAdd)
-		{
-			bool canPaste = pItemInfo && pItemInfo->node && CanPasteTrack(pItemInfo->node);
+			const bool canPaste = CanPasteTrack(pItemInfo->node);
 			menu.AppendMenu(MF_STRING | (canPaste ? 0 : MF_GRAYED), eMenuItem_PasteLayer, "Paste Layer");
-		}
 
-		if (onTrack)
-			menu.AppendMenu(MF_STRING, eMenuItem_RemoveLayer, "Remove Layer");
-
-		if (bTracksToAdd || onTrack)
 			menu.AppendMenu(MF_SEPARATOR, 0, "");
 
-		if (onValidItem)
-		{
 			CString str;
-			str.Format("%s Tracks", pItemInfo->node->GetName());
-			menu.AppendMenu(MF_STRING | MF_DISABLED, 0, str);
+			str.Format("Layers");
+			menu.AppendMenu(MF_STRING | MF_DISABLED, eMenuItem_ShowHide_First, str);
 
 			// Show tracks in anim node.
 			{
@@ -1211,6 +1177,19 @@ int CMannNodesCtrl::ShowPopupMenuNode(CPoint point, const SItemInfo* pItemInfo)
 					menu.AppendMenu(MF_STRING | checked, eMenuItem_ShowHide_First + i, CString("  ") + paramInfo.name);
 				}
 			}
+		}
+
+		if (onTrack)
+		{
+			const bool canRemove = pItemInfo->node->CanRemoveTrackForParameter(pItemInfo->track->GetParameterType());
+
+			menu.AppendMenu(MF_STRING, eMenuItem_CopyKeys, "Copy Keys");
+			menu.AppendMenu(MF_STRING, eMenuItem_PasteKeys, "Paste Keys");
+
+			menu.AppendMenu(MF_SEPARATOR, 0, "");
+
+			menu.AppendMenu(MF_STRING, eMenuItem_CopyLayer, "Copy Layer");
+			menu.AppendMenu(MF_STRING | (canRemove ? 0 : MF_GRAYED), eMenuItem_RemoveLayer, "Remove Layer");
 		}
 	}
 

@@ -130,6 +130,11 @@ void PyOpenOrFocusViewPane(const char* viewClassName)
 	}
 }
 
+void OpenEditorMenu()
+{
+	CommandEvent("general.open_editor_menu").SendToKeyboardFocus();
+}
+
 }
 
 DECLARE_PYTHON_MODULE(general);
@@ -231,6 +236,11 @@ REGISTER_PYTHON_COMMAND_WITH_EXAMPLE(Private_EditorCommands::PyOpenOrFocusViewPa
                                      "Opens an existing view pane specified by the pane class name. If no such pane exists, create it.",
                                      "general.open_or_focus_pane(str paneClassName)");
 
+REGISTER_EDITOR_AND_SCRIPT_COMMAND(Private_EditorCommands::OpenEditorMenu, general, open_editor_menu,
+                                   CCommandDescription("Open Editor Menu"))
+
+REGISTER_EDITOR_UI_COMMAND_DESC(general, open_editor_menu, "", "", "", false)
+
 //////////////////////////////////////////////////////////////////////////
 // Main frame UI Commands
 //////////////////////////////////////////////////////////////////////////
@@ -256,4 +266,3 @@ REGISTER_PYTHON_ENUM_END
   REGISTER_PYTHON_COMMAND_WITH_EXAMPLE(Private_EditorCommands::PySetConfigSpec, general, set_config_spec,
                                        "Sets the system config spec.",
                                        "general.set_config_spec(int specNumber)");
-

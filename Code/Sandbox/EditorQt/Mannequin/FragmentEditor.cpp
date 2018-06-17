@@ -15,12 +15,6 @@
 #include "ICryMannequinEditor.h"
 #include "Controls/FragmentEditorPage.h"
 
-namespace
-{
-static const float FRAGMENT_MIN_TIME_RANGE = 1.0f;
-};
-
-#define IDW_KEYS_PANE AFX_IDW_CONTROLBAR_FIRST + 10
 
 IMPLEMENT_DYNAMIC(CMannFragmentEditor, CSequencerDopeSheet)
 
@@ -58,11 +52,6 @@ void CMannFragmentEditor::SetMannequinContexts(SMannequinContexts* contexts)
 {
 	m_contexts = contexts;
 }
-
-//void CMannFragmentEditor::DrawKeys( CSequencerTrack *track,CDC *dc,CRect &rc,Range &timeRange )
-//{
-//	__super::DrawKeys(track, dc, rc, timeRange);
-//}
 
 void CMannFragmentEditor::SetCurrentFragment()
 {
@@ -140,6 +129,7 @@ void CMannFragmentEditor::SetFragment(const FragmentID fragID, const SFragTagSta
 		// Populate the "Params" track with new keys
 		{
 			CFERootNode* rootNode = new CFERootNode(sequenceFE, *m_contexts->m_controllerDef);
+			rootNode->SetName("Globals");
 			CSequencerTrack* paramTrack = rootNode->CreateTrack(SEQUENCER_PARAM_PARAMS);
 			sequenceFE->AddNode(rootNode);
 			m_fragmentHistory->m_tracks.push_back(paramTrack);
@@ -179,7 +169,7 @@ void CMannFragmentEditor::SetFragment(const FragmentID fragID, const SFragTagSta
 		m_fragmentScopeMask = scopeMask;
 
 		uint32 installedContexts = 0;
-		float maxTime = FRAGMENT_MIN_TIME_RANGE;
+		float maxTime = 0.0f;
 
 		for (uint32 i = 0; i < numScopes; i++)
 		{
@@ -282,8 +272,8 @@ void CMannFragmentEditor::SetFragment(const FragmentID fragID, const SFragTagSta
 					fragNode->SetIsSequenceNode(true);
 					fragNode->SetName(scopeData.name);
 
-					float maxTime2;
-					MannUtils::InsertFragmentTrackFromHistory(fragNode, *m_fragmentHistory, 0.0f, -1.0f, maxTime2, scopeData);
+					float dummyFloat = 0.0f;
+					MannUtils::InsertFragmentTrackFromHistory(fragNode, *m_fragmentHistory, 0.0f, -1.0f, dummyFloat, scopeData);
 				}
 			}
 		}
@@ -320,29 +310,18 @@ void CMannFragmentEditor::OnEditorNotifyEvent(EEditorNotifyEvent event)
 	switch (event)
 	{
 	case eNotify_OnUpdateSequencerKeySelection:
+	case eNotify_OnUpdateSequencerKeys:
 		if (m_bEditingFragment)
 		{
 			CSequencerUtils::SelectedKeys selectedKeys;
-			CSequencerUtils::GetSelectedKeys(GetSequence(), selectedKeys);
+			CSequencerUtils::GetAllKeys(GetSequence(), selectedKeys);
 
-			CClipKey animClip;
+			Range timeRange{ 0.0f, 0.0f };
 
-			Range timeRange = GetSequence()->GetTimeRange();
-			float maxTime = FRAGMENT_MIN_TIME_RANGE;
-			const uint32 numKeys = selectedKeys.keys.size();
-			for (uint32 i = 0; i < numKeys; i++)
+			for (uint32 i = 0, numKeys = selectedKeys.keys.size(); i < numKeys; i++)
 			{
 				CSequencerUtils::SelectedKey& key = selectedKeys.keys[i];
-
-				if (key.pTrack->GetParameterType() == SEQUENCER_PARAM_ANIMLAYER)
-				{
-					key.pTrack->GetKey(key.nKey, &animClip);
-					float time = (animClip.m_time + animClip.GetDuration());
-					if (time > timeRange.end)
-					{
-						timeRange.end = time;
-					}
-				}
+				timeRange |= key.pTrack->GetTrackDuration();
 			}
 
 			if (timeRange.end != GetSequence()->GetTimeRange().end)
@@ -496,8 +475,9 @@ void CMannFragmentEditor::OnAccept()
 
 							SClipTrackContext trackContext;
 							trackContext.context = scopeData->context[eMEM_FragmentEditor];
-							float maxTime = FRAGMENT_MIN_TIME_RANGE;
-							MannUtils::InsertClipTracksToNode(fragNode, fragData, 0.0f, -1.0f, maxTime, trackContext);
+
+							float dummyFloat = 0.0f;
+							MannUtils::InsertClipTracksToNode(fragNode, fragData, 0.0f, -1.0f, dummyFloat, trackContext);
 						}
 					}
 				}

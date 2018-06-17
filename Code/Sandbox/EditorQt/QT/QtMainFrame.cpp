@@ -23,6 +23,7 @@
 #include <QMouseEvent>
 #include <QAbstractEventDispatcher>
 #include <QCursor>
+#include <QToolWindowManager/QToolWindowRollupBarArea.h>
 
 #include <algorithm>
 //////////////////////////////////////////////////////////////////////////
@@ -132,6 +133,14 @@ public:
 	virtual QSplitter* createSplitter(QToolWindowManager* manager) Q_DECL_OVERRIDE
 	{
 		return new QNotifierSplitter;
+	}
+
+	virtual IToolWindowArea* createArea(QToolWindowManager* manager, QWidget* parent = 0, QTWMWrapperAreaType areaType = watTabs) Q_DECL_OVERRIDE
+	{
+		if (manager->config().value(QTWM_SUPPORT_SIMPLE_TOOLS, false).toBool() && areaType == watRollups)
+			return new QToolWindowRollupBarArea(manager, parent);
+		else
+			return new QToolsMenuToolWindowArea(manager, parent);
 	}
 };
 
@@ -1775,4 +1784,3 @@ bool CEditorMainFrame::IsClosing() const
 {
 	return m_bClosing;
 }
-

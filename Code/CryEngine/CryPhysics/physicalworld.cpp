@@ -3370,7 +3370,7 @@ DEBUG_BREAK;
 				eventBB.pEntity=pent; eventBB.pForeignData=pent->m_pForeignData; eventBB.iForeignData=pent->m_iForeignData;
 				eventBB.BBoxOld[0] = pent->m_BBox[0];
 				eventBB.BBoxOld[1] = pent->m_BBox[1];
-				OnEvent(pent->m_flags, &event);
+				OnEvent(pent->m_flags, &eventBB);
 			}
 		}
 	}

@@ -1261,7 +1261,7 @@ void CActionController::Update(float timePassed)
 				if (scope.m_isOneShot)
 				{
 					const float scaledDeltaTime = timePassed * pScopeAction->GetSpeedBias();
-					const float timeToCompletion = scope.CalculateFragmentTimeRemaining() - scope.m_blendOutDuration;
+					const float timeToCompletion = scope.CalculateFragmentTimeRemaining() - scope.m_actionFinishedTiming;
 					const bool reachedCompletionPoint = timeToCompletion >= 0.0f && timeToCompletion < scaledDeltaTime;
 					if (reachedCompletionPoint)
 					{

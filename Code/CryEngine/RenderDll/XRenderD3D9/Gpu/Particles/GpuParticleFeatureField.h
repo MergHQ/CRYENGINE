@@ -28,7 +28,7 @@ struct CFeatureFieldOpacity : public CFeature
 	virtual void InternalSetParameters(const EParameterType type, const SFeatureParametersBase& p) override;
 
 private:
-	gpu::CTypedResource<float, gpu::BufferFlagsDynamic> m_opacityTable;
+	gpu::CStructuredResource<float, gpu::BufferFlagsDynamic> m_opacityTable;
 };
 
 struct CFeatureFieldSize : public CFeature
@@ -42,7 +42,7 @@ struct CFeatureFieldSize : public CFeature
 	virtual void InternalSetParameters(const EParameterType type, const SFeatureParametersBase& p) override;
 
 private:
-	gpu::CTypedResource<float, gpu::BufferFlagsDynamic> m_sizeTable;
+	gpu::CStructuredResource<float, gpu::BufferFlagsDynamic> m_sizeTable;
 };
 
 struct SFeatureInternalParametersPixelSize

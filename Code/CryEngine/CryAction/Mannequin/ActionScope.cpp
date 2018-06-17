@@ -34,7 +34,7 @@ CActionScope::CActionScope(const char* _name, uint32 scopeID, CActionController&
 	, m_fragmentDuration(0.0f)
 	, m_transitionOutroDuration(0.0f)
 	, m_transitionDuration(0.0f)
-	, m_blendOutDuration(0.0f)
+	, m_actionFinishedTiming(0.0f)
 	, m_lastNormalisedTime(0.0f)
 	, m_normalisedTime(0.0f)
 	, m_mutedAnimLayerMask(0)
@@ -603,7 +603,7 @@ bool CActionScope::QueueFragment(FragmentID fragID, const SFragTagState& fragTag
 	m_lastQueueTagState = query.tagStateTo;
 	m_lastNormalisedTime = m_normalisedTime = 0.0f;
 	m_isOneShot = fragData.isOneShot && ((fragID == FRAGMENT_ID_INVALID) || ((m_context.controllerDef.GetFragmentDef(fragID).flags & SFragmentDef::PERSISTENT) == 0));
-	m_blendOutDuration = fragData.blendOutDuration;
+	m_actionFinishedTiming = fragData.actionFinishedTiming;
 	m_fragmentInstalled = principleContext;
 
 	const bool fragmentInstalled = HasFragment();

@@ -366,7 +366,7 @@ uint32 CAnimationDatabase::Query(SFragmentData& outFragmentData, const SBlendQue
 	}
 	if (fragment)
 	{
-		outFragmentData.blendOutDuration = fragment->m_blendOutDuration;
+		outFragmentData.actionFinishedTiming = fragment->m_actionFinishedTiming;
 		outFragmentData.duration[clipIdx] = AppendLayers(outFragmentData, *fragment, clipIdx, inAnimSet, timeTally, timeOffset, false, outFragmentData.isOneShot);
 		outFragmentData.transitionType[clipIdx] = eCT_Normal;
 		retFlags |= eSF_Fragment;

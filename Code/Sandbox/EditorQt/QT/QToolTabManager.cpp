@@ -327,7 +327,7 @@ QTabPane* CTabPaneManager::CreateTabPane(const char* paneClassName, const char* 
 	}
 
 	QRect maxRc;
-	maxRc.setLeft( GetSystemMetrics(SM_XVIRTUALSCREEN));
+	maxRc.setLeft(GetSystemMetrics(SM_XVIRTUALSCREEN));
 	maxRc.setTop(GetSystemMetrics(SM_YVIRTUALSCREEN));
 	maxRc.setRight(maxRc.left() + GetSystemMetrics(SM_CXVIRTUALSCREEN));
 	maxRc.setBottom(maxRc.top() + GetSystemMetrics(SM_CYVIRTUALSCREEN));
@@ -816,7 +816,6 @@ IPane* CTabPaneManager::CreatePaneContents(QTabPane* pTool)
 	if (pWidget)
 	{
 		QWidget* const pContentWidget = pWidget->GetWidget();
-
 		pTool->layout()->addWidget(pContentWidget);
 		pTool->m_pane = pWidget;
 
@@ -902,7 +901,7 @@ void CTabPaneManager::SetState(const QVariant& state)
 	// This can cause issues for some tools, especially MFC-based tools. We catch this case with a mutex in order to ignore these recursive layout load requests.
 	static std::mutex reentry_protection;
 	auto mutexLock = std::unique_lock<std::mutex>(reentry_protection, std::defer_lock);
-	
+
 	if (!state.isValid() || state.type() != QVariant::Map || !mutexLock.try_lock())
 	{
 		return;
@@ -977,7 +976,7 @@ void CTabPaneManager::PushUserEvent(const char* szEventName, const char* szTitle
 }
 
 //////////////////////////////////////////////////////////////////////////
-QTabPane::QTabPane()
+QTabPane::QTabPane() : QBaseTabPane()
 {
 	m_bViewCreated = false;
 	m_pane = nullptr;

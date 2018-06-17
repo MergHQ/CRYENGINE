@@ -47,7 +47,7 @@ CSubstancePresetEditor::CSubstancePresetEditor(QWidget* pParent /*= nullptr*/)
 
 	m_pScrollBox = new QScrollableBox();
 	
-	m_pSubstanceMenu = GetMenu("Substance Preset");
+	m_pSubstanceMenu = GetRootMenu()->CreateMenu("Substance Preset", 0);
 	QAction* const pAction = m_pSubstanceMenu->CreateAction("Reset Inputs");
 	connect(pAction, &QAction::triggered, [=]()
 	{

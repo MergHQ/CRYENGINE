@@ -83,44 +83,6 @@ public:
 };
 }
 
-//////////////////////////////////////////////////////////////////////////
-
-CActiveLayerWidget::CActiveLayerWidget(CLevelExplorer* parent)
-	: QWidget(parent)
-{
-	m_label = new           QLabel();
-
-	auto searchButton = new QToolButton();
-	searchButton->setIcon(CryIcon("icons:General/Search.ico"));
-	searchButton->setToolTip(tr("Focus on Active Layer"));
-	connect(searchButton, &QToolButton::clicked, [parent]()
-	{
-		parent->FocusActiveLayer();
-	});
-	searchButton->setMaximumSize(QSize(20, 20));
-
-	auto hbox = new QHBoxLayout();
-	hbox->setMargin(0);
-	hbox->addWidget(m_label);
-	hbox->addWidget(searchButton);
-	hbox->setAlignment(Qt::AlignLeft);
-
-	setLayout(hbox);
-
-	UpdateLabel();
-
-	setMaximumHeight(20);
-	setSizePolicy(QSizePolicy::Expanding, QSizePolicy::Fixed);
-}
-
-void CActiveLayerWidget::UpdateLabel()
-{
-	CObjectLayer* activeLayer = GetIEditorImpl()->GetObjectManager()->GetLayersManager()->GetCurrentLayer();
-	m_label->setText(QString(tr("Active Layer: %1")).arg(activeLayer ? (const char*)activeLayer->GetName() : "None"));
-}
-
-//////////////////////////////////////////////////////////////////////////
-
 CLevelExplorer::CLevelExplorer(QWidget* pParent)
 	: CDockableEditor(pParent)
 	, m_pAttributeFilterProxyModel(new QAttributeFilterProxyModel(QAttributeFilterProxyModel::AcceptIfChildMatches, this))
@@ -129,8 +91,6 @@ CLevelExplorer::CLevelExplorer(QWidget* pParent)
 	, m_ignoreSelectionEvents(false)
 	, m_treeView(nullptr)
 {
-	m_activeLayerWidget = new CActiveLayerWidget(this);
-
 	SetModelType(FullHierarchy);
 
 	m_treeView = new QAdvancedTreeView(QAdvancedTreeView::UseItemModelAttribute);
@@ -178,18 +138,6 @@ CLevelExplorer::CLevelExplorer(QWidget* pParent)
 
 	InitMenuBar();
 
-	layout()->removeWidget(m_pMenuBar);
-
-	QHBoxLayout* topBox = new QHBoxLayout();
-	topBox->setMargin(0);
-	topBox->addWidget(m_pMenuBar, 0, Qt::AlignLeft);
-	topBox->addWidget(m_activeLayerWidget, 0, Qt::AlignRight);
-
-	auto topBar = new QWidget();
-	topBar->setLayout(topBox);
-
-	layout()->addWidget(topBar);
-
 	SetContent(m_filterPanel);
 
 	CObjectManager* pObjManager = static_cast<CObjectManager*>(GetIEditorImpl()->GetObjectManager());
@@ -213,15 +161,10 @@ CLevelExplorer::~CLevelExplorer()
 
 void CLevelExplorer::InitMenuBar()
 {
-	const CEditor::MenuItems items[] = {
-		CEditor::MenuItems::FileMenu,
-		CEditor::MenuItems::EditMenu,CEditor::MenuItems::ViewMenu, CEditor::MenuItems::Delete
-		,                            CEditor::MenuItems::Find
-	};
-	AddToMenu(&items[0], CRY_ARRAY_COUNT(items));
 
 	//File
-	CAbstractMenu* const fileMenu = GetMenu(MenuItems::FileMenu);
+	AddToMenu(CEditor::MenuItems::FileMenu);
+	CAbstractMenu* const fileMenu = GetMenu(CEditor::MenuItems::FileMenu);
 
 	//TODO : this could use the default new action to inherit the shortcut (and icon)
 	auto action = fileMenu->CreateAction(CryIcon("icons:General/File_New.ico"), tr("New Layer"));
@@ -245,7 +188,8 @@ void CLevelExplorer::InitMenuBar()
 	});
 
 	//Edit
-	CAbstractMenu* editMenu = GetMenu(MenuItems::EditMenu);
+	AddToMenu(CEditor::MenuItems::EditMenu);
+	CAbstractMenu* editMenu = GetMenu(CEditor::MenuItems::EditMenu);
 
 	sec = editMenu->GetNextEmptySection();
 
@@ -260,7 +204,8 @@ void CLevelExplorer::InitMenuBar()
 	editMenu->AddCommandAction("layer.make_read_only_layers_uneditable", sec);
 
 	//View
-	CAbstractMenu* const menuView = GetMenu(MenuItems::ViewMenu);
+	AddToMenu(CEditor::MenuItems::ViewMenu);
+	CAbstractMenu* const menuView = GetMenu(CEditor::MenuItems::ViewMenu);
 	menuView->signalAboutToShow.Connect([menuView, this]()
 	{
 		menuView->Clear();
@@ -315,14 +260,6 @@ void CLevelExplorer::InitMenuBar()
 
 		sec = menuView->GetNextEmptySection();
 
-		action = menuView->CreateAction(tr("Show Active Layer Label"), sec);
-		action->setCheckable(true);
-		action->setChecked(m_activeLayerWidget->isVisible());
-		connect(action, &QAction::triggered, [&]()
-		{
-			m_activeLayerWidget->setVisible(!m_activeLayerWidget->isVisible());
-		});
-
 		action = menuView->CreateAction(tr("Sync Selection"), sec);
 		action->setCheckable(true);
 		action->setChecked(m_syncSelection);
@@ -337,6 +274,7 @@ void CLevelExplorer::InitMenuBar()
 		}
 	});
 
+	GetRootMenu()->AddCommandAction("level.focus_on_active_layer", 0);
 }
 
 void CLevelExplorer::SetLayout(const QVariantMap& state)
@@ -353,12 +291,6 @@ void CLevelExplorer::SetLayout(const QVariantMap& state)
 	if (syncSelVar.isValid())
 	{
 		SetSyncSelection(syncSelVar.toBool());
-	}
-
-	QVariant showLabelVar = state.value("showActiveLayerLabel");
-	if (showLabelVar.isValid())
-	{
-		m_activeLayerWidget->setVisible(showLabelVar.toBool());
 	}
 
 	QVariant filtersStateVar = state.value("filters");
@@ -379,7 +311,6 @@ QVariantMap CLevelExplorer::GetLayout() const
 	QVariantMap state = CDockableEditor::GetLayout();
 	state.insert("model", (int)m_modelType);
 	state.insert("syncSelection", m_syncSelection);
-	state.insert("showActiveLayerLabel", m_activeLayerWidget->isVisible());
 	state.insert("filters", m_filterPanel->GetState());
 	state.insert("treeView", m_treeView->GetState());
 	return state;
@@ -412,6 +343,10 @@ void CLevelExplorer::customEvent(QEvent* event)
 			IsolateVisibility(index);
 		}
 	}
+	else if (command == "level.focus_on_active_layer")
+	{
+		FocusActiveLayer();
+	}
 	else
 		CDockableEditor::customEvent(event);
 }
@@ -420,19 +355,12 @@ void CLevelExplorer::OnContextMenu(const QPoint& pos) const
 {
 	QMenu* menu = new QMenu();
 	static std::vector<SColorPreset> colorPresets = {
-		{ "Blue",   "icons:General/colour_blue.ico",   { 77,  155, 214 }
-		},
-		{ "Green",  "icons:General/colour_green.ico",  { 125, 209, 77  }
-		},
-		{ "Orange", "icons:General/colour_orange.ico", { 214, 155, 77  }
-		},
-		{ "Purple", "icons:General/colour_purple.ico", { 144, 92,  235 }
-		},
-		{ "Red",    "icons:General/colour_red.ico",    { 210, 86,  86  }
-		},
-		{ "Yellow", "icons:General/colour_yellow.ico", { 225, 225, 80  }
-		}
-	};
+		{ "Blue",   "icons:General/colour_blue.ico",   { 77,  155, 214 } },
+		{ "Green",  "icons:General/colour_green.ico",  { 125, 209, 77  } },
+		{ "Orange", "icons:General/colour_orange.ico", { 214, 155, 77  } },
+		{ "Purple", "icons:General/colour_purple.ico", { 144, 92,  235 } },
+		{ "Red",    "icons:General/colour_red.ico",    { 210, 86,  86  } },
+		{ "Yellow", "icons:General/colour_yellow.ico", { 225, 225, 80  } } };
 
 	std::vector<CBaseObject*> objects;
 	std::vector<CObjectLayer*> layers;
@@ -1007,7 +935,6 @@ void CLevelExplorer::OnLayerChange(const CLayerChangeEvent& event)
 			auto layer = GetIEditorImpl()->GetObjectManager()->GetLayersManager()->GetCurrentLayer();
 			SetSourceModel(CLevelModelsManager::GetInstance().GetLayerModel(layer));
 		}
-		m_activeLayerWidget->UpdateLabel();
 		break;
 	default:
 		break;
@@ -1058,11 +985,6 @@ void CLevelExplorer::OnLayerModelsUpdated()
 		auto layer = GetIEditorImpl()->GetObjectManager()->GetLayersManager()->GetCurrentLayer();
 		SetSourceModel(CLevelModelsManager::GetInstance().GetLayerModel(layer));
 	}
-}
-
-void CLevelExplorer::ShowActiveLayerWidget(bool show)
-{
-	m_activeLayerWidget->setVisible(show);
 }
 
 void CLevelExplorer::SetModelType(ModelType aModelType)
@@ -1479,8 +1401,7 @@ ColorB CLevelExplorer::AskForColor(const ColorB& color, QWidget* pParent) const
 		selectedColor.getRgb(&r, &g, &b);
 		ColorB finalColor
 		{
-			static_cast<uint8>(r), static_cast<uint8>(g), static_cast<uint8>(b)
-		};
+			static_cast<uint8>(r), static_cast<uint8>(g), static_cast<uint8>(b) };
 		return finalColor;
 	}
 	return ColorB(0, 0, 0);
@@ -1728,4 +1649,3 @@ void CLevelExplorer::FocusActiveLayer()
 	}
 
 }
-

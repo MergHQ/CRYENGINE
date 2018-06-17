@@ -154,7 +154,7 @@ struct SScopeData
 	int                        layer;
 	int                        numLayers;
 	SScopeContextData*         context[eMEM_Max];
-	class CFragmentTrack*      fragTrack[eMEM_Max];
+	class CFragmentIdTrack*      fragTrack[eMEM_Max];
 	CSequencerNode*            animNode[eMEM_Max];
 	struct SMannequinContexts* mannContexts;
 };
@@ -358,7 +358,7 @@ public:
 	IActionController& m_actionController;
 };
 
-class CFragmentTrack;
+class CFragmentIdTrack;
 
 struct SFragmentHistoryContext
 {

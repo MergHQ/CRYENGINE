@@ -119,8 +119,8 @@ struct SPerInstanceResources
 	size_t             GetSizeBytes();
 
 	// output data
-	gpu::CTypedResource<SComputeShaderSkinVertexOut, gpu::BufferFlagsReadWrite> verticesOut;
-	gpu::CTypedResource<SComputeShaderTriangleNT, gpu::BufferFlagsReadWrite>    tangentsOut;
+	gpu::CStructuredResource<SComputeShaderSkinVertexOut, gpu::BufferFlagsReadWrite> verticesOut;
+	gpu::CStructuredResource<SComputeShaderTriangleNT, gpu::BufferFlagsReadWrite>    tangentsOut;
 };
 
 class CStorage : public compute_skinning::IComputeSkinningStorage

@@ -15,16 +15,6 @@ struct CLayerChangeEvent;
 class CLevelExplorer;
 class QItemSelection;
 
-class CActiveLayerWidget : public QWidget
-{
-	Q_OBJECT
-public:
-	CActiveLayerWidget(CLevelExplorer* parent);
-	void UpdateLabel();
-
-	QLabel* m_label;
-};
-
 class CLevelExplorer final : public CDockableEditor
 {
 	Q_OBJECT
@@ -54,7 +44,6 @@ public:
 		return m_modelType == Layers || m_modelType == FullHierarchy;
 	}
 
-	void ShowActiveLayerWidget(bool show);
 	void SetModelType(ModelType aModelType);
 	void SetSyncSelection(bool syncSelection);
 	void FocusActiveLayer();
@@ -122,11 +111,10 @@ private:
 	QModelIndex FindLayerIndexInModel(const CObjectLayer* layer) const;
 	QModelIndex FindObjectInHierarchy(const QModelIndex& parentIndex, const CBaseObject* object) const;
 
-	ModelType                   m_modelType;
-	QAdvancedTreeView*          m_treeView;
-	CActiveLayerWidget*         m_activeLayerWidget;
-	QFilteringPanel*            m_filterPanel;
+	ModelType m_modelType;
+	QAdvancedTreeView* m_treeView;
+	QFilteringPanel* m_filterPanel;
 	QAttributeFilterProxyModel* m_pAttributeFilterProxyModel;
-	bool                        m_syncSelection;
-	bool                        m_ignoreSelectionEvents;
+	bool m_syncSelection;
+	bool m_ignoreSelectionEvents;
 };

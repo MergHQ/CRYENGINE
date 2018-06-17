@@ -13,8 +13,8 @@
 #include <CrySerialization/IArchiveHost.h>
 
 
-uint32 CFragmentTrack::s_sharedKeyID = 1;
-bool CFragmentTrack::s_distributingKey = false;
+uint32 CFragmentIdTrack::s_sharedKeyID = 1;
+bool CFragmentIdTrack::s_distributingKey = false;
 
 ColorB FRAG_TRACK_COLOUR(200, 240, 200);
 ColorB CLIP_TRACK_COLOUR(220, 220, 220);
@@ -56,7 +56,7 @@ SKeyColour TAG_KEY_COLOUR = {
 };
 
 //////////////////////////////////////////////////////////////////////////
-CFragmentTrack::CFragmentTrack(SScopeData& scopeData, EMannequinEditorMode editorMode)
+CFragmentIdTrack::CFragmentIdTrack(SScopeData& scopeData, EMannequinEditorMode editorMode)
 	:
 	m_scopeData(scopeData),
 	m_history(NULL),
@@ -64,12 +64,12 @@ CFragmentTrack::CFragmentTrack(SScopeData& scopeData, EMannequinEditorMode edito
 {
 }
 
-ColorB CFragmentTrack::GetColor() const
+ColorB CFragmentIdTrack::GetColor() const
 {
 	return FRAG_TRACK_COLOUR;
 }
 
-const SKeyColour& CFragmentTrack::GetKeyColour(int key) const
+const SKeyColour& CFragmentIdTrack::GetKeyColour(int key) const
 {
 	const CFragmentKey& fragKey = m_keys[key];
 	if (fragKey.tranFlags & SFragmentBlend::ExitTransition)
@@ -86,7 +86,7 @@ const SKeyColour& CFragmentTrack::GetKeyColour(int key) const
 	}
 }
 
-const SKeyColour& CFragmentTrack::GetBlendColour(int key) const
+const SKeyColour& CFragmentIdTrack::GetBlendColour(int key) const
 {
 	const CFragmentKey& fragKey = m_keys[key];
 	if (fragKey.tranFlags & SFragmentBlend::ExitTransition)
@@ -103,12 +103,12 @@ const SKeyColour& CFragmentTrack::GetBlendColour(int key) const
 	}
 }
 
-void CFragmentTrack::SetHistory(SFragmentHistoryContext& history)
+void CFragmentIdTrack::SetHistory(SFragmentHistoryContext& history)
 {
 	m_history = &history;
 }
 
-int CFragmentTrack::GetNumSecondarySelPts(int key) const
+int CFragmentIdTrack::GetNumSecondarySelPts(int key) const
 {
 	const CFragmentKey& fragKey = m_keys[key];
 
@@ -122,7 +122,7 @@ int CFragmentTrack::GetNumSecondarySelPts(int key) const
 	}
 }
 
-int CFragmentTrack::GetSecondarySelectionPt(int key, float timeMin, float timeMax) const
+int CFragmentIdTrack::GetSecondarySelectionPt(int key, float timeMin, float timeMax) const
 {
 	const CFragmentKey& fragKey = m_keys[key];
 
@@ -137,7 +137,7 @@ int CFragmentTrack::GetSecondarySelectionPt(int key, float timeMin, float timeMa
 	return 0;
 }
 
-int CFragmentTrack::FindSecondarySelectionPt(int& key, float timeMin, float timeMax) const
+int CFragmentIdTrack::FindSecondarySelectionPt(int& key, float timeMin, float timeMax) const
 {
 	const int numKeys = GetNumKeys();
 	for (uint32 i = 0; i < numKeys; i++)
@@ -156,7 +156,7 @@ int CFragmentTrack::FindSecondarySelectionPt(int& key, float timeMin, float time
 	return 0;
 }
 
-void CFragmentTrack::SetSecondaryTime(int key, int idx, float time)
+void CFragmentIdTrack::SetSecondaryTime(int key, int idx, float time)
 {
 	CFragmentKey& fragKey = m_keys[key];
 
@@ -175,7 +175,7 @@ void CFragmentTrack::SetSecondaryTime(int key, int idx, float time)
 	}
 }
 
-float CFragmentTrack::GetSecondaryTime(int key, int idx) const
+float CFragmentIdTrack::GetSecondaryTime(int key, int idx) const
 {
 	const CFragmentKey& fragKey = m_keys[key];
 
@@ -190,7 +190,7 @@ float CFragmentTrack::GetSecondaryTime(int key, int idx) const
 	return 0.0f;
 }
 
-int CFragmentTrack::GetNextFragmentKey(int key) const
+int CFragmentIdTrack::GetNextFragmentKey(int key) const
 {
 	for (int i = key + 1; i < m_keys.size(); i++)
 	{
@@ -203,7 +203,7 @@ int CFragmentTrack::GetNextFragmentKey(int key) const
 	return -1;
 }
 
-int CFragmentTrack::GetPrecedingFragmentKey(int key, bool includeTransitions) const
+int CFragmentIdTrack::GetPrecedingFragmentKey(int key, bool includeTransitions) const
 {
 	const CFragmentKey& fragKey = m_keys[key];
 	const bool isTransition = fragKey.transition;
@@ -223,7 +223,7 @@ int CFragmentTrack::GetPrecedingFragmentKey(int key, bool includeTransitions) co
 	return -1;
 }
 
-int CFragmentTrack::GetParentFragmentKey(int key) const
+int CFragmentIdTrack::GetParentFragmentKey(int key) const
 {
 	const CFragmentKey& fragKey = m_keys[key];
 	const bool isTransition = fragKey.transition;
@@ -242,7 +242,7 @@ int CFragmentTrack::GetParentFragmentKey(int key) const
 	return -1;
 }
 
-CString CFragmentTrack::GetSecondaryDescription(int key, int idx) const
+CString CFragmentIdTrack::GetSecondaryDescription(int key, int idx) const
 {
 	if (idx == eSK_SELECT_TIME)
 	{
@@ -255,7 +255,7 @@ CString CFragmentTrack::GetSecondaryDescription(int key, int idx) const
 	return "";
 }
 
-void CFragmentTrack::InsertKeyMenuOptions(CMenu& menu, int keyID)
+void CFragmentIdTrack::InsertKeyMenuOptions(CMenu& menu, int keyID)
 {
 	menu.AppendMenu(MF_SEPARATOR, 0, "");
 	CFragmentKey keyFrag;
@@ -305,7 +305,7 @@ void CFragmentTrack::InsertKeyMenuOptions(CMenu& menu, int keyID)
 	menu.AppendMenu(MF_STRING, FIND_TAG_REFERENCES, "Find tag transitions");
 }
 
-void CFragmentTrack::OnKeyMenuOption(int menuOption, int keyID)
+void CFragmentIdTrack::OnKeyMenuOption(int menuOption, int keyID)
 {
 	IMannequin& mannequinSys = gEnv->pGameFramework->GetMannequinInterface();
 
@@ -427,7 +427,7 @@ void CFragmentTrack::OnKeyMenuOption(int menuOption, int keyID)
 	}
 }
 
-void CFragmentTrack::GetKeyInfo(int key, const char*& description, float& duration)
+void CFragmentIdTrack::GetKeyInfo(int key, const char*& description, float& duration) const
 {
 	CFragmentKey keyFrag;
 	GetKey(key, &keyFrag);
@@ -504,7 +504,7 @@ void CFragmentTrack::GetKeyInfo(int key, const char*& description, float& durati
 	}
 }
 
-float CFragmentTrack::GetKeyDuration(const int key) const
+float CFragmentIdTrack::GetKeyDuration(const int key) const
 {
 	float duration = 0.0f;
 	CFragmentKey keyFrag;
@@ -532,7 +532,7 @@ float CFragmentTrack::GetKeyDuration(const int key) const
 	return duration;
 }
 
-void CFragmentTrack::SerializeKey(CFragmentKey& key, XmlNodeRef& keyNode, bool bLoading)
+void CFragmentIdTrack::SerializeKey(CFragmentKey& key, XmlNodeRef& keyNode, bool bLoading)
 {
 	if (bLoading)
 	{
@@ -604,7 +604,7 @@ void CFragmentTrack::SerializeKey(CFragmentKey& key, XmlNodeRef& keyNode, bool b
 	MannUtils::SerializeFragTagState(key.tranTagTo, contDef, key.fragmentID, keyNode->findChild("tranTagTo"), bLoading);
 }
 
-void CFragmentTrack::SelectKey(int keyID, bool select)
+void CFragmentIdTrack::SelectKey(int keyID, bool select)
 {
 	__super::SelectKey(keyID, select);
 
@@ -620,7 +620,7 @@ void CFragmentTrack::SelectKey(int keyID, bool select)
 
 			if (pTrack && (pTrack != this) && (pTrack->GetParameterType() == SEQUENCER_PARAM_FRAGMENTID))
 			{
-				CFragmentTrack* fragTrack = (CFragmentTrack*)pTrack;
+				CFragmentIdTrack* fragTrack = (CFragmentIdTrack*)pTrack;
 				const uint32 scopeID = fragTrack->GetScopeData().scopeID;
 				const int numKeys = fragTrack->GetNumKeys();
 				for (int nKey = 0; nKey < numKeys; nKey++)
@@ -637,7 +637,7 @@ void CFragmentTrack::SelectKey(int keyID, bool select)
 	}
 }
 
-void CFragmentTrack::CloneKey(int nKey, const CFragmentKey& key)
+void CFragmentIdTrack::CloneKey(int nKey, const CFragmentKey& key)
 {
 	CFragmentKey keyClone;
 	GetKey(nKey, &keyClone);
@@ -651,7 +651,7 @@ void CFragmentTrack::CloneKey(int nKey, const CFragmentKey& key)
 	SetKey(nKey, &keyClone);
 }
 
-void CFragmentTrack::DistributeSharedKey(int keyID)
+void CFragmentIdTrack::DistributeSharedKey(int keyID)
 {
 	s_distributingKey = true;
 	const uint32 numScopes = m_scopeData.mannContexts->m_scopeData.size();
@@ -689,7 +689,7 @@ void CFragmentTrack::DistributeSharedKey(int keyID)
 
 			if (pTrack && (pTrack != this) && (pTrack->GetParameterType() == SEQUENCER_PARAM_FRAGMENTID))
 			{
-				CFragmentTrack* fragTrack = (CFragmentTrack*)pTrack;
+				CFragmentIdTrack* fragTrack = (CFragmentIdTrack*)pTrack;
 				const uint32 scopeID = fragTrack->GetScopeData().scopeID;
 				const int numKeys = fragTrack->GetNumKeys();
 				int nKey;
@@ -729,7 +729,7 @@ void CFragmentTrack::DistributeSharedKey(int keyID)
 	s_distributingKey = false;
 }
 
-void CFragmentTrack::SetKey(int index, CSequencerKey* _key)
+void CFragmentIdTrack::SetKey(int index, const CSequencerKey* _key)
 {
 	CFragmentKey& key = *(CFragmentKey*)_key;
 	uint32 lastID = m_keys[index].sharedID;
@@ -753,7 +753,7 @@ void CFragmentTrack::SetKey(int index, CSequencerKey* _key)
 
 //! Set time of specified key.
 
-void CFragmentTrack::SetKeyTime(int index, float time)
+void CFragmentIdTrack::SetKeyTime(int index, float time)
 {
 	__super::SetKeyTime(index, time);
 
@@ -761,17 +761,17 @@ void CFragmentTrack::SetKeyTime(int index, float time)
 	MakeValid();
 }
 
-SScopeData& CFragmentTrack::GetScopeData()
+SScopeData& CFragmentIdTrack::GetScopeData()
 {
 	return m_scopeData;
 }
 
-const SScopeData& CFragmentTrack::GetScopeData() const
+const SScopeData& CFragmentIdTrack::GetScopeData() const
 {
 	return m_scopeData;
 }
 
-bool CFragmentTrack::CanEditKey(int key) const
+bool CFragmentIdTrack::CanEditKey(int key) const
 {
 	const CFragmentKey& fragmentKey = m_keys[key];
 	if (m_editorMode == eMEM_TransitionEditor)
@@ -780,7 +780,7 @@ bool CFragmentTrack::CanEditKey(int key) const
 		return !fragmentKey.transition;
 }
 
-bool CFragmentTrack::CanMoveKey(int key) const
+bool CFragmentIdTrack::CanMoveKey(int key) const
 {
 	const CFragmentKey& fragmentKey = m_keys[key];
 	if (m_editorMode == eMEM_TransitionEditor)
@@ -789,12 +789,12 @@ bool CFragmentTrack::CanMoveKey(int key) const
 		return !fragmentKey.transition;
 }
 
-bool CFragmentTrack::CanAddKey(float time) const
+bool CFragmentIdTrack::CanAddKey(float time) const
 {
 	return (m_editorMode == eMEM_Previewer);
 }
 
-bool CFragmentTrack::CanRemoveKey(int key) const
+bool CFragmentIdTrack::CanRemoveKey(int key) const
 {
 	return (m_editorMode == eMEM_Previewer);
 }
@@ -808,7 +808,6 @@ CClipKey::CClipKey()
 	playbackWeight(1.0f),
 	duration(0.0f),
 	blendDuration(0.2f),
-	blendOutDuration(0.2f),
 	animFlags(0),
 	alignToPrevious(false),
 	clipType(eCT_Normal),
@@ -1227,7 +1226,7 @@ void CClipTrack::CheckKeyForSnappingToPrevious(int index)
 	}
 }
 
-void CClipTrack::SetKey(int index, CSequencerKey* _key)
+void CClipTrack::SetKey(int index, const CSequencerKey* _key)
 {
 	__super::SetKey(index, _key);
 
@@ -1241,14 +1240,13 @@ void CClipTrack::SetKeyTime(int index, float time)
 	CheckKeyForSnappingToPrevious(index);
 }
 
-void CClipTrack::GetKeyInfo(int key, const char*& description, float& duration)
+void CClipTrack::GetKeyInfo(int key, const char*& description, float& duration) const
 {
 	static string desc;
 	desc.clear();
 
 	const CClipKey& clipKey = m_keys[key];
 
-	duration = max(clipKey.GetDuration(), clipKey.blendDuration);
 	if (clipKey.animRef.IsEmpty())
 	{
 		desc = "Blend out";
@@ -1259,15 +1257,10 @@ void CClipTrack::GetKeyInfo(int key, const char*& description, float& duration)
 	}
 	description = desc.c_str();
 
-	const float nextKeyTime = (key + 1 < m_keys.size()) ? GetKeyTime(key + 1) : GetTimeRange().end;
-	const float durationToNextKey = nextKeyTime - clipKey.m_time;
-	if (!clipKey.animRef.IsEmpty() && (clipKey.animFlags & CA_LOOP_ANIMATION))
-	{
-		duration = durationToNextKey;
-	}
+	duration = GetKeyDuration(key);
 }
 
-void CClipTrack::GetTooltip(int key, const char*& description, float& duration)
+void CClipTrack::GetTooltip(int key, const char*& description, float& duration) const
 {
 	static string desc;
 	desc.clear();
@@ -1316,14 +1309,31 @@ float CClipTrack::GetKeyDuration(const int key) const
 	const CClipKey& clipKey = m_keys[key];
 
 	float duration = max(clipKey.GetDuration(), clipKey.blendDuration);
-	const float nextKeyTime = (key + 1 < m_keys.size()) ? GetKeyTime(key + 1) : GetTimeRange().end;
-	const float durationToNextKey = nextKeyTime - clipKey.m_time;
 	if (!clipKey.animRef.IsEmpty() && (clipKey.animFlags & CA_LOOP_ANIMATION))
 	{
+		const float nextKeyTime = (key + 1 < m_keys.size()) ? GetKeyTime(key + 1) : GetTimeRange().end;
+		const float durationToNextKey = nextKeyTime - clipKey.m_time;
 		duration = durationToNextKey;
 	}
 
 	return duration;
+}
+
+Range CClipTrack::GetTrackDuration() const
+{
+	if (!m_keys.empty())
+	{
+		const CClipKey& firstKey = m_keys.front();
+		const CClipKey& lastKey = m_keys.back();
+
+		const float lastKeyDuration = std::max(lastKey.GetDuration(), lastKey.blendDuration);
+
+		return Range{ firstKey.m_time, lastKey.m_time + lastKeyDuration };
+	}
+	else
+	{
+		return Range{ 0.0f, 0.0f };
+	}
 }
 
 void CClipTrack::SerializeKey(CClipKey& key, XmlNodeRef& keyNode, bool bLoading)
@@ -1731,10 +1741,10 @@ int CProcClipTrack::CreateKey(float time)
 	return keyID;
 }
 
-void CProcClipTrack::GetKeyInfo(int key, const char*& description, float& duration)
+void CProcClipTrack::GetKeyInfo(int key, const char*& description, float& duration) const
 {
 	static char desc[128];
-	CProcClipKey& clipKey = m_keys[key];
+	const CProcClipKey& clipKey = m_keys[key];
 
 	const char* name = "Blend out";
 	if (!clipKey.typeNameHash.IsEmpty())
@@ -1797,6 +1807,23 @@ float CProcClipTrack::GetKeyDuration(const int key) const
 	}
 }
 
+Range CProcClipTrack::GetTrackDuration() const
+{
+	if (!m_keys.empty())
+	{
+		const CProcClipKey& firstKey = m_keys.front();
+		const CProcClipKey& lastKey = m_keys.back();
+
+		const float lastKeyDuration = std::max(lastKey.duration, lastKey.blendDuration);
+
+		return Range{ firstKey.m_time, lastKey.m_time + lastKeyDuration };
+	}
+	else
+	{
+		return Range{ 0.0f, 0.0f };
+	}
+}
+
 void CProcClipKey::Serialize(Serialization::IArchive& ar)
 {
 	ar(typeNameHash, "TypeNameHash");
@@ -1843,7 +1870,7 @@ CTagTrack::CTagTrack(const CTagDefinition& tagDefinition)
 {
 }
 
-void CTagTrack::SetKey(int index, CSequencerKey* _key)
+void CTagTrack::SetKey(int index, const CSequencerKey* _key)
 {
 	__super::SetKey(index, _key);
 
@@ -1851,9 +1878,9 @@ void CTagTrack::SetKey(int index, CSequencerKey* _key)
 	m_tagDefinition.FlagsToTagList(tagKey.tagState, tagKey.desc);
 }
 
-void CTagTrack::GetKeyInfo(int key, const char*& description, float& duration)
+void CTagTrack::GetKeyInfo(int key, const char*& description, float& duration) const
 {
-	CTagKey& tagKey = m_keys[key];
+	const CTagKey& tagKey = m_keys[key];
 	duration = 0.0f;
 	description = tagKey.desc.c_str();
 }
@@ -1909,16 +1936,16 @@ CTransitionPropertyTrack::CTransitionPropertyTrack(SScopeData& scopeData)
 {
 }
 
-void CTransitionPropertyTrack::SetKey(int index, CSequencerKey* _key)
+void CTransitionPropertyTrack::SetKey(int index, const CSequencerKey* _key)
 {
 	__super::SetKey(index, _key);
 
 	CTransitionPropertyKey& tagKey = m_keys[index];
 }
 
-void CTransitionPropertyTrack::GetKeyInfo(int key, const char*& description, float& duration)
+void CTransitionPropertyTrack::GetKeyInfo(int key, const char*& description, float& duration) const
 {
-	CTransitionPropertyKey& propKey = m_keys[key];
+	const CTransitionPropertyKey& propKey = m_keys[key];
 	duration = propKey.duration;
 
 	const SControllerDef& contDef = *m_scopeData.mannContexts->m_controllerDef;
@@ -2046,11 +2073,11 @@ CParamTrack::CParamTrack()
 {
 }
 
-void CParamTrack::GetKeyInfo(int key, const char*& description, float& duration)
+void CParamTrack::GetKeyInfo(int key, const char*& description, float& duration) const
 {
 	static char desc[128];
 
-	CParamKey& paramKey = m_keys[key];
+	const CParamKey& paramKey = m_keys[key];
 	duration = 0.0f;
 	description = paramKey.name;
 }
@@ -2103,3 +2130,54 @@ const SKeyColour& CParamTrack::GetBlendColour(int key) const
 	return TAG_KEY_COLOUR;
 }
 
+//////////////////////////////////////////////////////////////////////////
+void CFragmentPropertyTrack::GetKeyInfo(int key, const char*& description, float& duration) const
+{
+	description = m_keys[key].GetDescription();
+	duration = GetKeyDuration(key);
+}
+
+float CFragmentPropertyTrack::GetKeyDuration(const int key) const
+{
+	return GetTimeRange().Length();
+}
+
+void CFragmentPropertyTrack::SerializeKey(CFragmentPropertyKey& key, XmlNodeRef& keyNode, bool bLoading)
+{
+	if (bLoading)
+	{
+		keyNode->getAttr("actionFinishedTiming", key.actionFinishedTiming);
+	}
+	else
+	{
+		keyNode->setAttr("actionFinishedTiming", key.actionFinishedTiming);
+	}
+}
+
+ColorB CFragmentPropertyTrack::GetColor() const
+{
+	return FRAG_TRACK_COLOUR;
+}
+
+const SKeyColour& CFragmentPropertyTrack::GetKeyColour(int key) const
+{
+	return FRAG_KEY_COLOUR;
+}
+
+const SKeyColour& CFragmentPropertyTrack::GetBlendColour(int key) const
+{
+	return FRAG_KEY_COLOUR;
+}
+
+void CFragmentPropertyTrack::SetKey(int index, const CSequencerKey* key)
+{
+	assert(index == 0);
+
+	__super::SetKey(index, key);
+	m_keys[index].m_time = 0.0f;
+}
+
+Range CFragmentPropertyTrack::GetTrackDuration() const
+{
+	return Range{ 0.0f, !m_keys.empty() ? m_keys[0].actionFinishedTiming : 0.0f };
+}

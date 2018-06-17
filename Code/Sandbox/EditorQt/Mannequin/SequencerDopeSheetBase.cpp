@@ -119,7 +119,7 @@ CSequencerDopeSheetBase::CSequencerDopeSheetBase()
 
 	m_bMouseOverKey = false;
 
-	m_leftOffset = 0;
+	m_scrollMargin = 0;
 	m_scrollOffset = CPoint(0, 0);
 	m_bAnySelected = 0;
 	m_mouseMode = MOUSE_MODE_NONE;
@@ -130,7 +130,6 @@ CSequencerDopeSheetBase::CSequencerDopeSheetBase()
 	m_currCursor = NULL;
 	m_mouseActionMode = SEQMODE_MOVEKEY;
 
-	m_itemWidth = 1000;
 	m_scrollMin = 0;
 	m_scrollMax = 1000;
 
@@ -505,7 +504,7 @@ void CSequencerDopeSheetBase::DrawSummary(CDC* dc, CRect rcUpdate)
 //////////////////////////////////////////////////////////////////////////
 int CSequencerDopeSheetBase::TimeToClient(float time) const
 {
-	int x = m_leftOffset - m_scrollOffset.x + time * m_timeScale;
+	int x = time * m_timeScale - m_scrollOffset.x;
 	return x;
 }
 
@@ -513,19 +512,20 @@ int CSequencerDopeSheetBase::TimeToClient(float time) const
 Range CSequencerDopeSheetBase::GetVisibleRange()
 {
 	Range r;
-	r.start = (m_scrollOffset.x - m_leftOffset) / m_timeScale;
-	r.end = r.start + (m_rcClient.Width()) / m_timeScale;
+	r.start = m_scrollOffset.x / m_timeScale;
+	r.end = (m_scrollOffset.x + m_rcClient.Width()) / m_timeScale;
+
 	// Intersect range with global time range.
 	r = m_timeRange & r;
 	return r;
 }
 
 //////////////////////////////////////////////////////////////////////////
-Range CSequencerDopeSheetBase::GetTimeRange(CRect& rc)
+Range CSequencerDopeSheetBase::GetTimeRange(const CRect& rc)
 {
 	Range r;
-	r.start = (rc.left - m_leftOffset + m_scrollOffset.x) / m_timeScale;
-	r.end = r.start + (rc.Width()) / m_timeScale;
+	r.start = (rc.left + m_scrollOffset.x) / m_timeScale;
+	r.end = (rc.left + m_scrollOffset.x + rc.Width()) / m_timeScale;
 
 	r.start = TickSnap(r.start);
 	r.end = TickSnap(r.end);
@@ -535,7 +535,7 @@ Range CSequencerDopeSheetBase::GetTimeRange(CRect& rc)
 }
 
 //////////////////////////////////////////////////////////////////////////
-void CSequencerDopeSheetBase::DrawTicks(CDC* dc, CRect& rc, Range& timeRange)
+void CSequencerDopeSheetBase::DrawTicks(CDC* dc, const CRect& rc, const Range& timeRange)
 {
 	// Draw time ticks every tick step seconds.
 	CPen ltgray(PS_SOLID, 1, RGB(90, 90, 90));
@@ -606,24 +606,13 @@ HBRUSH CSequencerDopeSheetBase::CtlColor(CDC* pDC, UINT nCtlColor)
 //////////////////////////////////////////////////////////////////////////
 void CSequencerDopeSheetBase::SetTimeRange(float start, float end)
 {
-	/*
-	   if (m_timeMarked.start==m_timeRange.start)
-	   m_timeMarked.start=start;
-	   if (m_timeMarked.end==m_timeRange.end)
-	   m_timeMarked.end=end;
-	   if (m_timeMarked.end>end)
-	   m_timeMarked.end=end;
-	 */
-	if (m_timeMarked.start < start)
-		m_timeMarked.start = start;
-	if (m_timeMarked.end > end)
-		m_timeMarked.end = end;
+	m_timeMarked.start = start;
+	m_timeMarked.end = end;
 
 	m_realTimeRange.Set(start, end);
 	m_timeRange.Set(start, end);
-	//SetHorizontalExtent( m_timeRange.Length() *m_timeScale + 2*m_leftOffset );
 
-	SetHorizontalExtent(m_timeRange.start * m_timeScale - m_leftOffset, m_timeRange.end * m_timeScale - m_leftOffset);
+	UpdateHorizontalExtent();
 }
 
 //////////////////////////////////////////////////////////////////////////
@@ -681,16 +670,14 @@ void CSequencerDopeSheetBase::SetTimeScale(float timeScale, float fAnchorTime)
 	}
 	while (fPixelsPerTick >= 12.0 && steps < 100);
 
-	//float
-	//m_scrollOffset.x*=timeScale/fOldScale;
-
-	float fCurrentOffset = -fAnchorTime * m_timeScale;
+	const float fCurrentOffset = -fAnchorTime * m_timeScale;
 	m_scrollOffset.x += fOldOffset - fCurrentOffset;
+	m_scrollOffset.x = std::max<int>(m_scrollMin, m_scrollOffset.x);
+	m_scrollOffset.x = std::min<int>(m_scrollMax, m_scrollOffset.x);
 
 	Invalidate();
 
-	//SetHorizontalExtent( m_timeRange.Length()*m_timeScale + 2*m_leftOffset );
-	SetHorizontalExtent(m_timeRange.start * m_timeScale - m_leftOffset, m_timeRange.end * m_timeScale);
+	UpdateHorizontalExtent();
 
 	ComputeFrameSteps(GetVisibleRange());
 }
@@ -715,7 +702,7 @@ void CSequencerDopeSheetBase::OnSize(UINT nType, int cx, int cy)
 	m_rcSummary.top = m_rcTimeline.bottom;
 	m_rcSummary.bottom = m_rcSummary.top + 8;
 
-	SetHorizontalExtent(m_scrollMin, m_scrollMax);
+	UpdateHorizontalExtent();
 
 	if (m_tooltip.m_hWnd)
 	{
@@ -872,17 +859,13 @@ float CSequencerDopeSheetBase::TickSnap(float time) const
 //////////////////////////////////////////////////////////////////////////
 float CSequencerDopeSheetBase::TimeFromPoint(CPoint point) const
 {
-	int x = point.x - m_leftOffset + m_scrollOffset.x;
-	double t = (double)x / m_timeScale;
-	return (float)TickSnap(t);
+	return TickSnap((point.x + m_scrollOffset.x) / m_timeScale);
 }
 
 //////////////////////////////////////////////////////////////////////////
 float CSequencerDopeSheetBase::TimeFromPointUnsnapped(CPoint point) const
 {
-	int x = point.x - m_leftOffset + m_scrollOffset.x;
-	double t = (double)x / m_timeScale;
-	return t;
+	return (point.x + m_scrollOffset.x) / m_timeScale;
 }
 
 //////////////////////////////////////////////////////////////////////////
@@ -1258,7 +1241,7 @@ bool CSequencerDopeSheetBase::IsPointValidForFragmentInPreviewDrop(const CPoint&
 		return false;
 	}
 
-	CFragmentTrack* pFragTrack = static_cast<CFragmentTrack*>(pTrack);
+	CFragmentIdTrack* pFragTrack = static_cast<CFragmentIdTrack*>(pTrack);
 	uint32 nScopeID = pFragTrack->GetScopeData().scopeID;
 
 	ActionScopes scopes = CMannequinDialog::GetCurrentInstance()->Contexts()->m_controllerDef->GetScopeMask
@@ -2081,10 +2064,9 @@ void CSequencerDopeSheetBase::OnMouseMove(UINT nFlags, CPoint point)
 	if (m_bMoveDrag)
 	{
 		m_scrollOffset.x += m_mouseDownPos.x - point.x;
-		if (m_scrollOffset.x < m_scrollMin)
-			m_scrollOffset.x = m_scrollMin;
-		if (m_scrollOffset.x > m_scrollMax)
-			m_scrollOffset.x = m_scrollMax;
+		m_scrollOffset.x = std::max<int>(m_scrollMin, m_scrollOffset.x);
+		m_scrollOffset.x = std::min<int>(m_scrollMax, m_scrollOffset.x);
+
 		m_mouseDownPos = point;
 		// Set the new position of the thumb (scroll box).
 		SetScrollPos(SB_HORZ, m_scrollOffset.x);
@@ -2156,7 +2138,7 @@ void CSequencerDopeSheetBase::OnPaint()
 }
 
 //////////////////////////////////////////////////////////////////////////
-void CSequencerDopeSheetBase::DrawTrack(int item, CDC* dc, CRect& rcItem)
+void CSequencerDopeSheetBase::DrawTrack(int item, CDC* dc, const CRect& rcItem)
 {
 }
 
@@ -2320,6 +2302,8 @@ void CSequencerDopeSheetBase::DelSelectedKeys(bool bPrompt, bool bAllowUndo, boo
 		if (bIgnorePermission || skey.pTrack->CanRemoveKey(skey.nKey))
 		{
 			skey.pTrack->RemoveKey(skey.nKey);
+
+			GetIEditorImpl()->Notify(eNotify_OnUpdateSequencerKeys);
 
 			UpdateAnimation(skey.pTrack);
 		}
@@ -2620,25 +2604,22 @@ int CSequencerDopeSheetBase::ItemFromPoint(CPoint pnt) const
 }
 
 //////////////////////////////////////////////////////////////////////////
-void CSequencerDopeSheetBase::SetHorizontalExtent(int min, int max)
+void CSequencerDopeSheetBase::UpdateHorizontalExtent()
 {
-	m_scrollMin = min;
-	m_scrollMax = max;
-	m_itemWidth = max - min;
-	int nPage = m_rcClient.Width() / 2;
-	int sx = m_itemWidth - nPage + m_leftOffset;
+	const int pageWidth = m_rcClient.Width();
+
+	m_scrollMin = (m_timeRange.start * m_timeScale) - m_scrollMargin;
+	m_scrollMax = (m_timeRange.end * m_timeScale) + m_scrollMargin - pageWidth;
+	m_scrollMax = std::max(m_scrollMin, m_scrollMax);
 
 	SCROLLINFO si;
 	ZeroStruct(si);
 	si.cbSize = sizeof(si);
 	si.fMask = SIF_ALL;
 	si.nMin = m_scrollMin;
-	si.nMax = m_scrollMax - nPage + m_leftOffset;
-	si.nPage = m_rcClient.Width() / 2;
+	si.nMax = m_scrollMax + pageWidth;
+	si.nPage = pageWidth;
 	si.nPos = m_scrollOffset.x;
-	//si.nPage = max(0,m_rcClient.Width() - m_leftOffset*2);
-	//si.nPage = 1;
-	//si.nPage = 1;
 	SetScrollInfo(SB_HORZ, &si, TRUE);
 };
 
@@ -3301,11 +3282,19 @@ void CSequencerDopeSheetBase::ShowKeyTooltip(CSequencerTrack* pTrack, int nKey, 
 	}
 
 	CString tipText;
-	if (GetTickDisplayMode() == SEQTICK_INSECONDS)
-		tipText.Format("%.3f, %s", time, desc);
-	else if (GetTickDisplayMode() == SEQTICK_INFRAMES)
-		tipText.Format("%d, %s", pos_directed_rounding(time / m_snapFrameTime), desc);
-	else assert(0);
+	switch (GetTickDisplayMode())
+	{
+	case SEQTICK_INSECONDS:
+		tipText.Format("%.3fs [%.3fs] %s", time, duration, desc);
+		break;
+	case SEQTICK_INFRAMES:
+		tipText.Format("%d [%d] %s", pos_directed_rounding(time / m_snapFrameTime), pos_directed_rounding(duration / m_snapFrameTime), desc);
+		break;
+	default:
+		assert(false);
+		break;
+	}
+
 	if (!additionalDesc.IsEmpty())
 	{
 		tipText.Append(" - ");
@@ -3569,7 +3558,7 @@ void CSequencerDopeSheetBase::MouseMoveMove(CPoint point, UINT nFlags)
 		newTime = TickSnap(newTime);
 	}
 
-	m_realTimeRange.ClipValue(newTime);
+	newTime = std::max(newTime, m_realTimeRange.start);
 
 	const float timeOffset = newTime - oldTime;
 
@@ -3691,7 +3680,7 @@ void CSequencerDopeSheetBase::MouseMovePaste(CPoint point, UINT nFlags)
 
 	// Tick snapping
 	float time = TimeFromPointUnsnapped(p) - m_mouseMoveStartTimeOffset;
-	m_realTimeRange.ClipValue(time);
+	time = std::max(time, m_realTimeRange.start);
 	if (bSnap)
 	{
 		time = TickSnap(time);

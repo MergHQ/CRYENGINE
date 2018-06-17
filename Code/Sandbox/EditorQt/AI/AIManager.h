@@ -304,7 +304,6 @@ private:
 	ENavigationUpdateType        m_currentUpdateType;
 	ENavigationWorldMonitorState m_navigationWorldMonitorState;
 	int                          m_MNMRegenerationPausedCount;
-	bool                         m_pendingNavigationCalculateAccessibility;
 	bool                         m_refreshMnmOnGameExit;
 	bool                         m_resumeMNMRegenWhenPumpedPhysicsEventsAreFinished;
 

@@ -223,6 +223,7 @@
         <file alias="Game/Game_Sync.ico">icons/game_sync.ico</file>
 
         <!--General-->
+	<file alias="common/general_corner_menu.ico">icons/general_corner_menu.ico</file>
         <file alias="common/general_preview_size_0.ico">icons/general_preview_size_0.ico</file>
         <file alias="common/general_preview_size_1.ico">icons/general_preview_size_1.ico</file>
         <file alias="common/general_preview_size_2.ico">icons/general_preview_size_2.ico</file>

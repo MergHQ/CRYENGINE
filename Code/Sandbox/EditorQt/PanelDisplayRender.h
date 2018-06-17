@@ -15,6 +15,8 @@ class CViewport;
 
 class CPanelDisplayRender : public CDockableWidgetT<QScrollableBox>, public IAutoEditorNotifyListener
 {
+	Q_OBJECT;
+	Q_INTERFACES(IPane);
 public:
 	CPanelDisplayRender(QWidget* parent = nullptr, CViewport* viewport = nullptr);
 	~CPanelDisplayRender();
@@ -62,4 +64,3 @@ protected:
 	std::unordered_map<ICVar*, uint64> m_varCallbackMap;
 	CViewport*                         m_pViewport;
 };
-
