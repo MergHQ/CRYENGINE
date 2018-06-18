@@ -1323,16 +1323,19 @@ struct I3DEngine : public IProcess
 	//! Will load a level from the folder specified with SetLevelPath. If a
 	//! level is already loaded, the resources will be deleted before.
 	//! \param szFolderName - Name of the subfolder to load
-	//! \param szMissionName - Name of the mission
+	//! \param missionXml - Xml data with the mission information
 	//! \return A boolean which indicate the result of the function; true if succeeded, false if failed.
-	virtual bool LoadLevel(const char* szFolderName, const char* szMissionName) = 0;
+	virtual bool LoadLevel(const char* szFolderName, XmlNodeRef missionXml) = 0;
 	virtual bool InitLevelForEditor(const char* szFolderName, const char* szMissionName) = 0;
+
+	//CRY_DEPRECATED("Use different function override to pass missionXml data directly") 
+	virtual bool LoadLevel(const char* szFolderName, const char* szMissionName) = 0;
 
 	//! Start time-sliced loading of a level.
 	//! \param szFolderName - Name of the subfolder to load
-	//! \param szMissionName - Name of the mission
+	//! \param missionXml - Xml data with the mission information
 	//! \return A boolean which indicate the result of the function; true if succeeded, false if failed.
-	virtual bool StartLoadLevel(const char* szFolderName, const char* szMissionName) = 0;
+	virtual bool StartLoadLevel(const char* szFolderName, XmlNodeRef missionXml) = 0;
 
 	//! Updates time-sliced level loading.
 	//! \return Loading status result.

@@ -1191,6 +1191,7 @@ public:
 		PhysGlobalArea,
 		GameTokenLibs,
 		EntitySystemLayers,
+		LoadMissionXml,
 #if LOAD_3DENGINE_SLICED
 		LoadLevel3DEngine_SlicedStart,
 		LoadLevel3DEngine_SlicedContinue,
@@ -1317,11 +1318,20 @@ public:
 			}
 		}
 
+		NEXT_STEP(EStep::LoadMissionXml)
+		{
+			ILevelInfo* pLevelInfo = m_levelSystem.m_pLoadingLevelInfo;
+			const string& missionXml = pLevelInfo->GetDefaultGameType()->xmlFile;
+			CryPathString xmlFile = PathUtil::Make<CryPathString>(pLevelInfo->GetPath(), missionXml);
+			
+			m_missionXml = m_levelSystem.m_pSystem->LoadXmlFromFile(xmlFile.c_str());
+		}
+
 #if LOAD_3DENGINE_SLICED
 		NEXT_STEP(EStep::LoadLevel3DEngine_SlicedStart)
 		{
 			ILevelInfo* pLevelInfo = m_levelSystem.m_pLoadingLevelInfo;
-			if (!gEnv->p3DEngine->StartLoadLevel(pLevelInfo->GetPath(), pLevelInfo->GetDefaultGameType()->name))
+			if (!gEnv->p3DEngine->StartLoadLevel(pLevelInfo->GetPath(), m_missionXml))
 			{
 				return SetFailed("3DEngine failed to start loading the level");
 			}
@@ -1349,7 +1359,7 @@ public:
 		NEXT_STEP(EStep::LoadLevel3DEngine)
 		{
 			ILevelInfo* pLevelInfo = m_levelSystem.m_pLoadingLevelInfo;
-			if (!gEnv->p3DEngine->LoadLevel(pLevelInfo->GetPath(), pLevelInfo->GetDefaultGameType()->name))
+			if (!gEnv->p3DEngine->LoadLevel(pLevelInfo->GetPath(), m_missionXml))
 			{
 				return SetFailed("3DEngine failed to handle loading the level");
 			}
@@ -1418,14 +1428,10 @@ public:
 
 		NEXT_STEP(EStep::LoadEntities)
 		{
-			ILevelInfo* pLevelInfo = m_levelSystem.m_pLoadingLevelInfo;
-			string missionXml = pLevelInfo->GetDefaultGameType()->xmlFile;
-			string xmlFile = string(pLevelInfo->GetPath()) + "/" + missionXml;
-
-			if (XmlNodeRef rootNode = m_levelSystem.m_pSystem->LoadXmlFromFile(xmlFile.c_str()))
+			if (m_missionXml)
 			{
 				INDENT_LOG_DURING_SCOPE(true, "Reading '%s'", xmlFile.c_str());
-				const char* script = rootNode->getAttr("Script");
+				const char* script = m_missionXml->getAttr("Script");
 
 				if (script && script[0])
 				{
@@ -1434,7 +1440,7 @@ public:
 					gEnv->pScriptSystem->ExecuteFile(script, true, true);
 				}
 
-				XmlNodeRef objectsNode = rootNode->findChild("Objects");
+				XmlNodeRef objectsNode = m_missionXml->findChild("Objects");
 
 				if (objectsNode)
 				{
@@ -1596,6 +1602,7 @@ private:
 	// Intermediate
 	ICVar* m_pSpamDelay = nullptr;
 	float m_spamDelay = 0.0f;
+	XmlNodeRef m_missionXml;
 
 	// Result
 	ILevelInfo* m_pResult = nullptr;

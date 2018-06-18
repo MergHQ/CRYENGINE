@@ -705,10 +705,10 @@ void C3DEngine::LoadFlaresData()
 
 //////////////////////////////////////////////////////////////////////////
 
-C3DEngineLevelLoadTimeslicer::C3DEngineLevelLoadTimeslicer(C3DEngine& owner, const char* szFolderName, const char* szMissionName)
+C3DEngineLevelLoadTimeslicer::C3DEngineLevelLoadTimeslicer(C3DEngine& owner, const char* szFolderName, XmlNodeRef&& missionXml)
 	: m_owner(owner)
 	, m_folderName(szFolderName)
-	, m_missionName(szMissionName)
+	, m_missionXml(std::move(missionXml))
 	, m_setInLoad(owner.m_bInLoad, true)
 {
 }
@@ -773,13 +773,6 @@ I3DEngine::ELevelLoadStatus C3DEngineLevelLoadTimeslicer::DoStep()
 		{
 			m_owner.Warning("%s: Level name is not specified", __FUNCTION__);
 			return SetFailed();
-		}
-
-		if (m_missionName.empty())
-		{
-			m_owner.Warning("%s: Mission name is not specified", __FUNCTION__);
-
-			m_missionName = "NoMission";
 		}
 
 		m_owner.SetLevelPath(m_folderName);
@@ -1028,10 +1021,10 @@ I3DEngine::ELevelLoadStatus C3DEngineLevelLoadTimeslicer::DoStep()
 		//Update loading screen and important tick functions
 		SYNCHRONOUS_LOADING_TICK();
 
-		// load leveldata.xml
+		// load mission xml data (for example, mission_mission0.xml)
 		m_owner.m_pTerrainWaterMat = 0;
 		m_owner.m_nWaterBottomTexId = 0;
-		m_owner.LoadMissionDataFromXMLNode(m_missionName);
+		m_owner.LoadMissionDataFromXML(m_missionXml);
 
 		//Update loading screen and important tick functions
 		SYNCHRONOUS_LOADING_TICK();
@@ -1086,11 +1079,11 @@ bool C3DEngineLevelLoadTimeslicer::ShouldPreloadLevelObjects() const
 	return m_owner.GetCVars()->e_StatObjPreload && !gEnv->IsEditor();
 }
 
-bool C3DEngine::LoadLevel(const char* szFolderName, const char* szMissionName)
+bool C3DEngine::LoadLevel(const char* szFolderName, XmlNodeRef missionXml)
 {
 	LOADING_TIME_PROFILE_SECTION;
 
-	C3DEngineLevelLoadTimeslicer slicer(*this, szFolderName, szMissionName);
+	C3DEngineLevelLoadTimeslicer slicer(*this, szFolderName, std::move(missionXml));
 	ELevelLoadStatus result;
 	do
 	{
@@ -1100,15 +1093,20 @@ bool C3DEngine::LoadLevel(const char* szFolderName, const char* szMissionName)
 	return (result == ELevelLoadStatus::Done);
 }
 
+bool C3DEngine::LoadLevel(const char* szFolderName, const char* szMissionName)
+{
+	XmlNodeRef xmlMission = OpenMissionDataXML(szMissionName);
+	return LoadLevel(szFolderName, xmlMission);
+}
 
-bool C3DEngine::StartLoadLevel(const char* szFolderName, const char* szMissionName)
+bool C3DEngine::StartLoadLevel(const char* szFolderName, XmlNodeRef missionXml)
 {
 	if (m_pLevelLoadTimeslicer)
 	{
 		return false;
 	}
 
-	m_pLevelLoadTimeslicer.reset(new C3DEngineLevelLoadTimeslicer(*this, szFolderName, szMissionName));
+	m_pLevelLoadTimeslicer.reset(new C3DEngineLevelLoadTimeslicer(*this, szFolderName, std::move(missionXml)));
 	return true;
 }
 
@@ -1228,6 +1226,44 @@ void C3DEngine::LoadTerrainSurfacesFromXML(XmlNodeRef pDoc, bool bUpdateTerrain)
 	m_pTerrain->InitHeightfieldPhysics();
 }
 
+void C3DEngine::SetDefaultValuesForLoadMissionDataFromXML()
+{
+	m_vFogColor(1, 1, 1);
+	m_fMaxViewDistHighSpec = 8000;
+	m_fMaxViewDistLowSpec = 1000;
+	m_fTerrainDetailMaterialsViewDistRatio = 1;
+	m_vDefFogColor = m_vFogColor;
+}
+
+void C3DEngine::LoadMissionDataFromXML(XmlNodeRef missionXml)
+{
+	SetDefaultValuesForLoadMissionDataFromXML();
+	if (missionXml)
+	{
+		LoadEnvironmentSettingsFromXML(missionXml->findChild("Environment"));
+		LoadTimeOfDaySettingsFromXML(missionXml->findChild("TimeOfDay"));
+	}
+	else
+	{
+		Error("%s: Mission file is not provided", __FUNCTION__);
+	}
+}
+
+XmlNodeRef C3DEngine::OpenMissionDataXML(const char* szMissionName)
+{
+	if (szMissionName && szMissionName[0])
+	{
+		char szFileName[256];
+		cry_sprintf(szFileName, "mission_%s.xml", szMissionName);
+		return GetSystem()->LoadXmlFromFile(Get3DEngine()->GetLevelFilePath(szFileName));
+	}
+	else
+	{
+		Error("%s: Mission name is not defined", __FUNCTION__);
+		return XmlNodeRef();
+	}
+}
+
 void C3DEngine::LoadMissionDataFromXMLNode(const char* szMissionName)
 {
 	LOADING_TIME_PROFILE_SECTION;
@@ -1238,36 +1274,15 @@ void C3DEngine::LoadMissionDataFromXMLNode(const char* szMissionName)
 		return;
 	}
 
-	/*
-	   if (GetRenderer())
-	   {
-	   GetRenderer()->MakeMainContextActive();
-	   }
-	 */
-
-	// set default values
-	m_vFogColor(1, 1, 1);
-	m_fMaxViewDistHighSpec = 8000;
-	m_fMaxViewDistLowSpec = 1000;
-	m_fTerrainDetailMaterialsViewDistRatio = 1;
-	m_vDefFogColor = m_vFogColor;
-
 	// mission environment
-	if (szMissionName && szMissionName[0])
+	if (XmlNodeRef xmlMission = OpenMissionDataXML(szMissionName))
 	{
-		char szFileName[256];
-		cry_sprintf(szFileName, "mission_%s.xml", szMissionName);
-		XmlNodeRef xmlMission = GetSystem()->LoadXmlFromFile(Get3DEngine()->GetLevelFilePath(szFileName));
-		if (xmlMission)
-		{
-			LoadEnvironmentSettingsFromXML(xmlMission->findChild("Environment"));
-			LoadTimeOfDaySettingsFromXML(xmlMission->findChild("TimeOfDay"));
-		}
-		else
-			Error("%s: Mission file not found: %s", __FUNCTION__, szFileName);
+		LoadMissionDataFromXML(xmlMission);
 	}
 	else
-		Error("%s: Mission name is not defined", __FUNCTION__);
+	{
+		SetDefaultValuesForLoadMissionDataFromXML();
+	}
 }
 
 char* C3DEngine::GetXMLAttribText(XmlNodeRef pInputNode, const char* szLevel1, const char* szLevel2, const char* szDefaultValue)
