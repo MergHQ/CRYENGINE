@@ -2,7 +2,7 @@
 #include <CrySystem/VR/IHMDDevice.h>
 #include <CryEntitySystem/IEntitySystem.h>
 
-class CMyEventComponent final : public IEntityComponent
+class CLateCameraInjectionEventComponent final : public IEntityComponent
 {
 	// Should be called, from main thread, on each frame.
 	static bool PrepareLateCameraInjection()
@@ -25,9 +25,9 @@ class CMyEventComponent final : public IEntityComponent
 
 public:
 	// Provide a virtual destructor, ensuring correct destruction of IEntityComponent members
-	virtual ~CMyEventComponent() = default;
+	virtual ~CLateCameraInjectionEventComponent() = default;
 
-	static void ReflectType(Schematyc::CTypeDesc<CMyEventComponent>& desc) { /* Reflect the component GUID in here. */ }
+	static void ReflectType(Schematyc::CTypeDesc<CLateCameraInjectionEventComponent>& desc) { /* Reflect the component GUID in here. */ }
 
 	// Override the ProcessEvent function to receive the callback whenever an event specified in GetEventMask is triggered
 	virtual void ProcessEvent(const SEntityEvent& event) override

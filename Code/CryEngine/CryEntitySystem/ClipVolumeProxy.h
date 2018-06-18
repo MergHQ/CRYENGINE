@@ -42,7 +42,7 @@ public:
 	virtual void         UpdateRenderMesh(IRenderMesh* pRenderMesh, const DynArray<Vec3>& meshFaces) override;
 	virtual IClipVolume* GetClipVolume() const override { return m_pClipVolume; }
 	virtual IBSPTree3D*  GetBspTree() const override    { return m_pBspTree; }
-	virtual void         SetProperties(bool bIgnoresOutdoorAO) override;
+	virtual void         SetProperties(bool bIgnoresOutdoorAO, uint8 viewDistRatio) override;
 	//~IClipVolumeComponent
 
 private:
@@ -63,6 +63,9 @@ private:
 
 	// Clip volume flags
 	uint32 m_nFlags;
+
+	// View dist ratio
+	uint32 m_viewDistRatio;
 };
 
 DECLARE_SHARED_POINTERS(CEntityComponentClipVolume)

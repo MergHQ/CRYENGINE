@@ -894,7 +894,7 @@ struct IClipVolumeComponent : public IEntityComponent
 	virtual void         UpdateRenderMesh(IRenderMesh* pRenderMesh, const DynArray<Vec3>& meshFaces) = 0;
 	virtual IClipVolume* GetClipVolume() const = 0;
 	virtual IBSPTree3D*  GetBspTree() const = 0;
-	virtual void         SetProperties(bool bIgnoresOutdoorAO) = 0;
+	virtual void         SetProperties(bool bIgnoresOutdoorAO, uint8 viewDistRatio) = 0;
 };
 
 //! Flow Graph component allows entity to host reference to the flow graph.

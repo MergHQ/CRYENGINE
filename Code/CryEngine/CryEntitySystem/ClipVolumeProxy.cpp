@@ -12,6 +12,7 @@ CEntityComponentClipVolume::CEntityComponentClipVolume()
 	: m_pClipVolume(NULL)
 	, m_pBspTree(NULL)
 	, m_nFlags(IClipVolume::eClipVolumeAffectedBySun)
+	, m_viewDistRatio(100)
 {
 	m_componentFlags.Add(EEntityComponentFlags::Legacy);
 }
@@ -45,7 +46,7 @@ void CEntityComponentClipVolume::ProcessEvent(const SEntityEvent& event)
 	    event.event == ENTITY_EVENT_HIDE ||
 	    event.event == ENTITY_EVENT_UNHIDE)
 	{
-		gEnv->p3DEngine->UpdateClipVolume(m_pClipVolume, m_pRenderMesh, m_pBspTree, m_pEntity->GetWorldTM(), !m_pEntity->IsHidden(), m_nFlags, m_pEntity->GetName());
+		gEnv->p3DEngine->UpdateClipVolume(m_pClipVolume, m_pRenderMesh, m_pBspTree, m_pEntity->GetWorldTM(), m_viewDistRatio, !m_pEntity->IsHidden(), m_nFlags, m_pEntity->GetName());
 	}
 }
 
@@ -80,17 +81,20 @@ void CEntityComponentClipVolume::UpdateRenderMesh(IRenderMesh* pRenderMesh, cons
 	}
 
 	if (m_pEntity && m_pClipVolume)
-		gEnv->p3DEngine->UpdateClipVolume(m_pClipVolume, m_pRenderMesh, m_pBspTree, m_pEntity->GetWorldTM(), !m_pEntity->IsHidden(), m_nFlags, m_pEntity->GetName());
+	{
+		gEnv->p3DEngine->UpdateClipVolume(m_pClipVolume, m_pRenderMesh, m_pBspTree, m_pEntity->GetWorldTM(), m_viewDistRatio, !m_pEntity->IsHidden(), m_nFlags, m_pEntity->GetName());
+	}
 }
 
-void CEntityComponentClipVolume::SetProperties(bool bIgnoresOutdoorAO)
+void CEntityComponentClipVolume::SetProperties(bool bIgnoresOutdoorAO, uint8 viewDistRatio)
 {
 	if (m_pEntity && m_pClipVolume)
 	{
 		m_nFlags &= ~IClipVolume::eClipVolumeIgnoreOutdoorAO;
 		m_nFlags |= bIgnoresOutdoorAO ? IClipVolume::eClipVolumeIgnoreOutdoorAO : 0;
+		m_viewDistRatio = viewDistRatio;
 
-		gEnv->p3DEngine->UpdateClipVolume(m_pClipVolume, m_pRenderMesh, m_pBspTree, m_pEntity->GetWorldTM(), !m_pEntity->IsHidden(), m_nFlags, m_pEntity->GetName());
+		gEnv->p3DEngine->UpdateClipVolume(m_pClipVolume, m_pRenderMesh, m_pBspTree, m_pEntity->GetWorldTM(), m_viewDistRatio, !m_pEntity->IsHidden(), m_nFlags, m_pEntity->GetName());
 	}
 }
 
@@ -119,7 +123,9 @@ void CEntityComponentClipVolume::LegacySerializeXML(XmlNodeRef& entityNode, XmlN
 				cry_strcpy(szFilePath, gEnv->p3DEngine->GetLevelFilePath(szFileName + nAliasNameLen));
 
 				if (m_pEntity && LoadFromFile(szFilePath))
-					gEnv->p3DEngine->UpdateClipVolume(m_pClipVolume, m_pRenderMesh, m_pBspTree, m_pEntity->GetWorldTM(), !m_pEntity->IsHidden(), m_nFlags, m_pEntity->GetName());
+				{
+					gEnv->p3DEngine->UpdateClipVolume(m_pClipVolume, m_pRenderMesh, m_pBspTree, m_pEntity->GetWorldTM(), m_viewDistRatio, !m_pEntity->IsHidden(), m_nFlags, m_pEntity->GetName());
+				}
 			}
 		}
 	}

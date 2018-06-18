@@ -631,17 +631,18 @@ struct SResourceBindPoint
 	SResourceBindPoint(ESlotType type, uint8 slotNumber, EShaderStage shaderStages, EFlags flags = EFlags::None);
 
 	// ignore flags in all comparators (NOTE/TODO: shouldn't we ignore the stages as well?)
-	bool operator<(const SResourceBindPoint& other) const
+	bool operator<(const SResourceBindPoint& other) const noexcept
 	{
 		constexpr uint32 flagsMask = ~(0xFF << (offsetof(SResourceBindPoint, flags) * 8));
 		return (fastCompare & flagsMask) < (other.fastCompare & flagsMask);
 	}
 
-	bool operator==(const SResourceBindPoint& other) const
+	bool operator==(const SResourceBindPoint& other) const noexcept
 	{
 		constexpr uint32 flagsMask = ~(0xFF << (offsetof(SResourceBindPoint, flags) * 8));
 		return (fastCompare & flagsMask) == (other.fastCompare & flagsMask);
 	}
+	bool operator!=(const SResourceBindPoint& other) const noexcept { return !(*this == other); }
 
 	union
 	{
@@ -741,37 +742,27 @@ class CResourceBindingInvalidator
 {
 
 private:
-	typedef std::pair<void*, SResourceBindPoint> SInvalidateContext;
-
 	struct SInvalidateCallback
 	{
 		int refCount;
+		SResourceBindPoint bindpoint;
 		SResourceBinding::InvalidateCallbackFunction callback;
 
-		SInvalidateCallback(const SResourceBinding::InvalidateCallbackFunction& cb)
-			: callback(cb)
-			, refCount(0)
+		SInvalidateCallback(SResourceBindPoint bindpoint)
+			: refCount(0)
+			, bindpoint(bindpoint)
 		{}
+		SInvalidateCallback(const SResourceBinding::InvalidateCallbackFunction& cb, SResourceBindPoint bindpoint)
+			: refCount(0)
+			, bindpoint(bindpoint)
+			, callback(cb)
+		{}
+		bool operator<(const SInvalidateCallback &rhs) const noexcept { return bindpoint < rhs.bindpoint; }
+		bool operator<(const SResourceBindPoint &rhs) const noexcept { return bindpoint < rhs; }
 	};
 
-	struct SHashInvalidateContext
-	{
-		size_t operator()(const SInvalidateContext& key) const
-		{
-			// void* ^ uint32, needs to be fast, not smart
-			return size_t(key.first) ^ SwapEndianValue(size_t(key.second.fastCompare), true);
-		}
-
-		bool operator()(const SInvalidateContext& key1, const SInvalidateContext& key2) const
-		{
-			return (key1.first == key2.first) & (key1.second == key2.second);
-		}
-	};
-
-	typedef std::unordered_map<SInvalidateContext, SInvalidateCallback, SHashInvalidateContext> SInvalidateRegistry;
-
-	SInvalidateRegistry m_invalidateCallbacks;
-	CryRWLock           m_invalidationLock;
+	std::unordered_map<void*, std::vector<SInvalidateCallback>> m_invalidateCallbacks;
+	CryRWLock                                                   m_invalidationLock;
 
 public:
 	CResourceBindingInvalidator() { }

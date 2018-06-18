@@ -428,7 +428,7 @@ struct IClipVolume
 
 	virtual ~IClipVolume() {};
 	virtual void         GetClipVolumeMesh(_smart_ptr<IRenderMesh>& renderMesh, Matrix34& worldTM) const = 0;
-	virtual AABB  GetClipVolumeBBox() const = 0;
+	virtual const AABB&  GetClipVolumeBBox() const = 0;
 	virtual bool         IsPointInsideClipVolume(const Vec3& point) const = 0;
 
 	virtual uint8 GetStencilRef() const = 0;
@@ -1869,7 +1869,7 @@ struct I3DEngine : public IProcess
 	//! \param pRenderMesh Pointer to new render mesh.
 	//! \param worldTM Updated world transform.
 	//! \param szName Updated ClipVolume name.
-	virtual void UpdateClipVolume(IClipVolume* pClipVolume, _smart_ptr<IRenderMesh> pRenderMesh, IBSPTree3D* pBspTree, const Matrix34& worldTM, bool bActive, uint32 flags, const char* szName) = 0;
+	virtual void UpdateClipVolume(IClipVolume* pClipVolume, _smart_ptr<IRenderMesh> pRenderMesh, IBSPTree3D* pBspTree, const Matrix34& worldTM, uint8 viewDistRatio, bool bActive, uint32 flags, const char* szName) = 0;
 
 	//mat: todo
 

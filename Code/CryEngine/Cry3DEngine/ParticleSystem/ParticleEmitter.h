@@ -69,9 +69,6 @@ public:
 	virtual QuatTS                 GetLocation() const override                       { return m_location; }
 	virtual void                   SetTarget(const ParticleTarget& target) override;
 	virtual void                   Update() override;
-
-	void CheckUpdated();
-
 	virtual void                   EmitParticle(const EmitParticleData* pData = NULL)  override;
 
 	// pfx2 IParticleEmitter
@@ -81,6 +78,7 @@ public:
 	// CParticleEmitter
 	void                      InitSeed();
 	void                      DebugRender(const SRenderingPassInfo& passInfo) const;
+	void                      CheckUpdated();
 	bool                      UpdateAll();
 	void                      SyncUpdate();
 	void                      PostUpdate();

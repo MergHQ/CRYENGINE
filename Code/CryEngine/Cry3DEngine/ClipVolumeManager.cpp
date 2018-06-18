@@ -34,13 +34,13 @@ bool CClipVolumeManager::DeleteClipVolume(IClipVolume* pClipVolume)
 	return false;
 }
 
-bool CClipVolumeManager::UpdateClipVolume(IClipVolume* pClipVolume, _smart_ptr<IRenderMesh> pRenderMesh, IBSPTree3D* pBspTree, const Matrix34& worldTM, bool bActive, uint32 flags, const char* szName)
+bool CClipVolumeManager::UpdateClipVolume(IClipVolume* pClipVolume, _smart_ptr<IRenderMesh> pRenderMesh, IBSPTree3D* pBspTree, const Matrix34& worldTM, uint8 viewDistRatio, bool bActive, uint32 flags, const char* szName)
 {
 	auto it = std::find(m_clipVolumes.begin(), m_clipVolumes.end(), static_cast<CClipVolume*>(pClipVolume));
 
 	if (it != m_clipVolumes.end())
 	{
-		it->m_pVolume->Update(pRenderMesh, pBspTree, worldTM, flags);
+		it->m_pVolume->Update(pRenderMesh, pBspTree, worldTM, viewDistRatio, flags);
 		it->m_pVolume->SetName(szName);
 		it->m_bActive = bActive;
 
@@ -58,6 +58,8 @@ void CClipVolumeManager::PrepareVolumesForRendering(const SRenderingPassInfo& pa
 	// 1 frame for render thread latency, 1 frame for potentially scheduled MarkRNTmpDataPoolForReset
 	TrimDeletedClipVolumes(passInfo.GetFrameID() - 2);
 
+	const CCamera& cam = passInfo.GetCamera();
+
 	// add all active clip volumes to renderview
 	for (size_t i = 0; i < m_clipVolumes.size(); ++i)
 	{
@@ -65,10 +67,16 @@ void CClipVolumeManager::PrepareVolumesForRendering(const SRenderingPassInfo& pa
 		volInfo.m_pVolume->SetStencilRef(InactiveVolumeStencilRef);
 		volInfo.m_updateFrameId = passInfo.GetFrameID();
 
-		if (volInfo.m_bActive && passInfo.GetCamera().IsAABBVisible_F(volInfo.m_pVolume->GetClipVolumeBBox()))
+		if (volInfo.m_bActive)
 		{
-			uint8 nStencilRef = passInfo.GetIRenderView()->AddClipVolume(volInfo.m_pVolume);
-			volInfo.m_pVolume->SetStencilRef(nStencilRef);
+			const AABB& volumeBox = volInfo.m_pVolume->GetClipVolumeBBox();
+			const float volumeDistance = sqrt_tpl(Distance::Point_AABBSq(cam.GetPosition(), volumeBox)) * passInfo.GetZoomFactor();
+			const float volumeMaxViewDist = volInfo.m_pVolume->GetMaxViewDist();
+			if (volumeDistance < volumeMaxViewDist && cam.IsAABBVisible_F(volumeBox))
+			{
+				uint8 nStencilRef = passInfo.GetIRenderView()->AddClipVolume(volInfo.m_pVolume);
+				volInfo.m_pVolume->SetStencilRef(nStencilRef);
+			}
 		}
 	}
 }

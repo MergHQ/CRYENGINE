@@ -1938,7 +1938,7 @@ void CScaleformPlayback::RenderFlashPlayerToTexture(IFlashPlayer* pFlashPlayer, 
 	pScaleformPlayback->SetRenderOutput(pLastOutput);
 }
 
-void CScaleformPlayback::RenderFlashPlayerToOutput(IFlashPlayer* pFlashPlayer, CRenderOutputPtr output)
+void CScaleformPlayback::RenderFlashPlayerToOutput(IFlashPlayer* pFlashPlayer, const std::shared_ptr<CRenderOutput> &output)
 {
 	CScaleformPlayback* pScaleformPlayback = static_cast<CScaleformPlayback*>(pFlashPlayer->GetPlayback());
 	CRY_ASSERT(pScaleformPlayback->IsRenderThread());

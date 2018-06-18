@@ -127,6 +127,16 @@ void CParticleEmitter::Render(const struct SRendParams& rParam, const SRendering
 	}
 }
 
+void CParticleEmitter::CheckUpdated()
+{
+	if (m_effectEditVersion < 0 || (gEnv->IsEditing() && m_effectEditVersion != m_pEffectOriginal->GetEditVersion() + m_emitterEditVersion))
+	{
+		m_attributeInstance.Reset(m_pEffectOriginal->GetAttributeTable());
+		UpdateRuntimes();
+	}
+	m_alive = m_componentRuntimes.size() && m_time <= m_timeDeath;
+}
+
 void CParticleEmitter::Update()
 {
 	CRY_PROFILE_FUNCTION(PROFILE_PARTICLE);
@@ -816,16 +826,6 @@ uint CParticleEmitter::GetParticleSpec() const
 
 	const ESystemConfigSpec configSpec = gEnv->pSystem->GetConfigSpec();
 	return uint(configSpec);
-}
-
-void CParticleEmitter::CheckUpdated()
-{
-	if (m_effectEditVersion < 0 || (gEnv->IsEditing() && m_effectEditVersion != m_pEffectOriginal->GetEditVersion() + m_emitterEditVersion))
-	{
-		m_attributeInstance.Reset(m_pEffectOriginal->GetAttributeTable());
-		UpdateRuntimes();
-	}
-	m_alive = m_componentRuntimes.size() && m_time <= m_timeDeath;
 }
 
 }

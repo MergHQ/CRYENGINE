@@ -222,7 +222,7 @@ inline const char* GetScanlineOrderNaming(DXGI_MODE_SCANLINE_ORDER v)
 		return "unspecified";
 	}
 }
-inline void UserOverrideDisplayProperties(DXGI_MODE_DESC& desc)
+void CSwapChain::UserOverrideDisplayProperties(DXGI_MODE_DESC& desc)
 {
 	if (gcpRendD3D->IsFullscreen())
 	{

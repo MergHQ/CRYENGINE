@@ -38,6 +38,8 @@ void CMobileCompositionStage::Execute()
 				bestRadius = currRadius;
 				pBestProbe = reinterpret_cast<CTexture*>(itr->m_pSpecularCubemap);
 			}
+
+			itr++;
 		}
 	}
 

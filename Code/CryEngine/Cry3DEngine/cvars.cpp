@@ -1143,6 +1143,9 @@ void CVars::Init()
 	              "Will not render CGFs past the given amount of drawcalls\n"
 	              "(<=0 off (default), >0 draw calls limit)");
 
+	REGISTER_CVAR(e_ClipVolumes, 1, VF_CHEAT,
+	              "Enable/Disable light clip volumes. Default: 1 - Enabled");
+	
 	int defaultMergedMeshesValue = 1;
 #if defined(DEDICATED_SERVER)
 	defaultMergedMeshesValue = 0;

@@ -104,7 +104,7 @@ struct CVisArea : public IVisArea, public CBasicArea
 	void                    UpdateGeometryBBox();
 	void                    UpdateClipVolume();
 	void                    UpdatePortalBlendInfo(const SRenderingPassInfo& passInfo);
-	void DrawAreaBoundsIntoCBuffer(class CCullBuffer* pCBuffer);
+	void                    DrawAreaBoundsIntoCBuffer(class CCullBuffer* pCBuffer);
 	void                    ClipPortalVerticesByCameraFrustum(PodArray<Vec3>* pPolygon, const CCamera& cam);
 	void                    GetMemoryUsage(ICrySizer* pSizer);
 	bool                    IsConnectedToOutdoor() const;
@@ -119,33 +119,33 @@ struct CVisArea : public IVisArea, public CBasicArea
 	int                     GetSegmentData(byte*& pData, int& nDataSize, std::vector<IStatObj*>* pStatObjTable, std::vector<IMaterial*>* pMatTable, std::vector<IStatInstGroup*>* pStatInstGroupTable, EEndian eEndian, SHotUpdateInfo* pExportInfo);
 #endif
 	template<class T>
-	int                LoadHeader_T(T*& f, int& nDataSizeLeft, EEndian eEndian, int& objBlockSize);
+	int                 LoadHeader_T(T*& f, int& nDataSizeLeft, EEndian eEndian, int& objBlockSize);
 	template<class T>
-	int                LoadObjectsTree_T(T*& f, int& nDataSizeLeft, std::vector<IStatObj*>* pStatObjTable, std::vector<IMaterial*>* pMatTable, EEndian eEndian, SHotUpdateInfo* pExportInfo, const int objBlockSize);
+	int                 LoadObjectsTree_T(T*& f, int& nDataSizeLeft, std::vector<IStatObj*>* pStatObjTable, std::vector<IMaterial*>* pMatTable, EEndian eEndian, SHotUpdateInfo* pExportInfo, const int objBlockSize);
 	template<class T>
-	int                Load_T(T*& f, int& nDataSize, std::vector<IStatObj*>* pStatObjTable, std::vector<IMaterial*>* pMatTable, EEndian eEndian, SHotUpdateInfo* pExportInfo);
-	int                Load(byte*& f, int& nDataSizeLeft, std::vector<IStatObj*>* pStatObjTable, std::vector<IMaterial*>* pMatTable, EEndian eEndian, SHotUpdateInfo* pExportInfo);
-	int                Load(FILE*& f, int& nDataSizeLeft, std::vector<IStatObj*>* pStatObjTable, std::vector<IMaterial*>* pMatTable, EEndian eEndian, SHotUpdateInfo* pExportInfo);
-	const AABB*        GetAABBox() const;
-	const AABB*        GetStaticObjectAABBox() const;
-	void               UpdateOcclusionFlagInTerrain();
-	void               AddConnectedAreas(PodArray<CVisArea*>& lstAreas, int nMaxRecursion);
-	void               GetShapePoints(const Vec3*& pPoints, size_t& nPoints);
-	float              GetHeight();
-	float              CalcSignedArea();
+	int                 Load_T(T*& f, int& nDataSize, std::vector<IStatObj*>* pStatObjTable, std::vector<IMaterial*>* pMatTable, EEndian eEndian, SHotUpdateInfo* pExportInfo);
+	int                 Load(byte*& f, int& nDataSizeLeft, std::vector<IStatObj*>* pStatObjTable, std::vector<IMaterial*>* pMatTable, EEndian eEndian, SHotUpdateInfo* pExportInfo);
+	int                 Load(FILE*& f, int& nDataSizeLeft, std::vector<IStatObj*>* pStatObjTable, std::vector<IMaterial*>* pMatTable, EEndian eEndian, SHotUpdateInfo* pExportInfo);
+	const AABB*         GetAABBox() const;
+	const AABB*         GetStaticObjectAABBox() const;
+	void                UpdateOcclusionFlagInTerrain();
+	void                AddConnectedAreas(PodArray<CVisArea*>& lstAreas, int nMaxRecursion);
+	void                GetShapePoints(const Vec3*& pPoints, size_t& nPoints);
+	float               GetHeight();
+	float               CalcSignedArea();
 
-	bool               CalcPortalBlendPlanes(Vec3 camPos);
-	virtual void       GetClipVolumeMesh(_smart_ptr<IRenderMesh>& renderMesh, Matrix34& worldTM) const;
-	virtual AABB       GetClipVolumeBBox() const                       { return *GetStaticObjectAABBox(); }
-	virtual uint8      GetStencilRef() const                           { return m_nStencilRef; }
-	virtual uint       GetClipVolumeFlags() const;
-	virtual bool       IsPointInsideClipVolume(const Vec3& vPos) const { return IsPointInsideVisArea(vPos); }
+	bool                CalcPortalBlendPlanes(Vec3 camPos);
+	virtual void        GetClipVolumeMesh(_smart_ptr<IRenderMesh>& renderMesh, Matrix34& worldTM) const;
+	virtual const AABB& GetClipVolumeBBox() const                       { return *GetStaticObjectAABBox(); }
+	virtual uint8       GetStencilRef() const                           { return m_nStencilRef; }
+	virtual uint        GetClipVolumeFlags() const;
+	virtual bool        IsPointInsideClipVolume(const Vec3& vPos) const { return IsPointInsideVisArea(vPos); }
 
-	void               OffsetPosition(const Vec3& delta);
-	static VisAreaGUID GetGUIDFromFile(byte* f, EEndian eEndian);
-	VisAreaGUID        GetGUID() const { return m_nVisGUID; }
+	void                OffsetPosition(const Vec3& delta);
+	static VisAreaGUID  GetGUIDFromFile(byte* f, EEndian eEndian);
+	VisAreaGUID         GetGUID() const { return m_nVisGUID; }
 
-	const Vec3         GetFinalAmbientColor();
+	const Vec3          GetFinalAmbientColor();
 
 	static PodArray<CVisArea*>     m_lUnavailableAreas;
 	static PodArray<Vec3>          s_tmpLstPortVertsClipped;

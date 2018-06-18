@@ -1597,7 +1597,7 @@ void C3DEngine::RenderScene(const int nRenderFlags, const SRenderingPassInfo& pa
 	////////////////////////////////////////////////////////////////////////////////////////
 	// Add clip volumes to renderer
 	////////////////////////////////////////////////////////////////////////////////////////
-	if (m_pClipVolumeManager)
+	if (m_pClipVolumeManager && GetCVars()->e_ClipVolumes)
 		m_pClipVolumeManager->PrepareVolumesForRendering(passInfo);
 
 	if (m_pPartManager)
@@ -3084,7 +3084,7 @@ void C3DEngine::DisplayInfo(float& fTextPosX, float& fTextPosY, float& fTextStep
 
 					if (pFrameProfiler != NULL && pFrameProfiler->m_subsystem == PROFILE_AUDIO)
 					{
-						fTimeMS += pFrameProfiler->m_selfTimeHistory.GetAverage();
+						fTimeMS += pFrameProfiler->m_selfTime.Average();
 					}
 				}
 			}

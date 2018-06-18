@@ -1123,6 +1123,13 @@ struct DynArray : Array<T, I, STORE>
 		create(std::forward<Val1>(val1), std::forward<Val2>(val2));
 	}
 
+	DynArray(std::initializer_list<T> list)
+	{
+		reserve(list.size());
+		for (const T& element : list)
+			emplace_back(element);
+	}
+
 	template<class Val>
 	DynArray& operator=(const Val& val)
 	{

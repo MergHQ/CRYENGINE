@@ -344,7 +344,7 @@ void CSwapChainBackedRenderDisplayContext::ChangeOutputIfNecessary(bool isFullsc
 	bool recreatedSwapChain = false;
 
 #if CRY_PLATFORM_WINDOWS
-	HMONITOR hMonitor = MonitorFromWindow(reinterpret_cast<HWND>(m_hWnd), MONITOR_DEFAULTTONEAREST);
+	HMONITOR hMonitor = MonitorFromWindow(m_hWnd, MONITOR_DEFAULTTONEAREST);
 
 	bool isWindowOnExistingOutputMonitor = false;
 	DXGI_OUTPUT_DESC outputDesc;
@@ -390,7 +390,7 @@ void CSwapChainBackedRenderDisplayContext::ChangeOutputIfNecessary(bool isFullsc
 
 #ifdef SUPPORT_DEVICE_INFO
 	// Disable automatic DXGI alt + enter behavior
-	gcpRendD3D->DevInfo().Factory()->MakeWindowAssociation(reinterpret_cast<HWND>(m_hWnd), DXGI_MWA_NO_ALT_ENTER | DXGI_MWA_NO_WINDOW_CHANGES);
+	gcpRendD3D->DevInfo().Factory()->MakeWindowAssociation(m_hWnd, DXGI_MWA_NO_ALT_ENTER | DXGI_MWA_NO_WINDOW_CHANGES);
 #endif
 
 	if (m_fullscreen)
@@ -448,7 +448,7 @@ void CSwapChainBackedRenderDisplayContext::SetFullscreenState(bool isFullscreen)
 		scDesc.BufferDesc.Height = backbufferHeight;
 
 #if defined(SUPPORT_DEVICE_INFO_USER_DISPLAY_OVERRIDES)
-		UserOverrideDisplayProperties(scDesc.BufferDesc);
+		CSwapChain::UserOverrideDisplayProperties(scDesc.BufferDesc);
 #endif
 
 		HRESULT rr = m_swapChain.GetSwapChain()->ResizeTarget(&scDesc.BufferDesc);
@@ -491,8 +491,8 @@ void CSwapChainBackedRenderDisplayContext::EnforceFullscreenPreemption()
 		HRESULT hr = m_swapChain.Present(0, DXGI_PRESENT_TEST);
 		if (hr == DXGI_STATUS_OCCLUDED)
 		{
-			if (::GetFocus() == reinterpret_cast<HWND>(m_hWnd))
-				::BringWindowToTop(reinterpret_cast<HWND>(m_hWnd));
+			if (::GetFocus() == m_hWnd)
+				::BringWindowToTop(m_hWnd);
 		}
 	}
 }
@@ -502,7 +502,7 @@ RectI CSwapChainBackedRenderDisplayContext::GetCurrentMonitorBounds() const
 {
 #ifdef CRY_PLATFORM_WINDOWS
 	// When moving the window, update the preferred monitor dimensions so full-screen will pick the closest monitor
-	HMONITOR hMonitor = MonitorFromWindow(reinterpret_cast<HWND>(m_hWnd), MONITOR_DEFAULTTONEAREST);
+	HMONITOR hMonitor = MonitorFromWindow(m_hWnd, MONITOR_DEFAULTTONEAREST); 
 
 	MONITORINFO monitorInfo;
 	monitorInfo.cbSize = sizeof(MONITORINFO);

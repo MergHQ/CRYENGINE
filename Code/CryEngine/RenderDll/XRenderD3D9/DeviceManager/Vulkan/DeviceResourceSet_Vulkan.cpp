@@ -363,7 +363,15 @@ bool CDeviceResourceLayout_Vulkan::Init(const SDeviceResourceLayoutDesc& desc)
 		for (auto& encodedSet : encodedDescriptorSets)
 			encodedLayout.insert(encodedLayout.end(), encodedSet.begin(), encodedSet.end());
 
-		GetDeviceObjectFactory().RegisterEncodedResourceLayout(m_hash, std::move(encodedLayout));
+		auto storedEncodedLayoutForHash = GetDeviceObjectFactory().LookupResourceLayoutEncoding(m_hash);
+		if (storedEncodedLayoutForHash != nullptr)
+		{
+			CRY_ASSERT(std::mismatch(storedEncodedLayoutForHash->begin(), storedEncodedLayoutForHash->end(), encodedLayout.begin()).second == encodedLayout.end());
+		}
+		else
+		{
+			GetDeviceObjectFactory().RegisterEncodedResourceLayout(m_hash, std::move(encodedLayout));
+		}
 		
 		return true;
 	}

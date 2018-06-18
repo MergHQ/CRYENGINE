@@ -1797,7 +1797,6 @@ void CShaderResources::CreateModifiers(SInputShaderResources* pInRes)
 				pMod->m_eTGType = ETG_Stream;
 			if (pMod->m_eRotType >= ETMR_Max)
 				pMod->m_eRotType = ETMR_NoChange;
-
 			if (pMod->m_eTGType != ETG_Stream)
 			{
 				m_ResFlags |= MTL_FLAG_NOTINSTANCED;

@@ -1002,10 +1002,6 @@ inline CCryPerformanceDeviceContextWrapper& CD3D9Renderer::GetPerformanceDeviceC
 }
 #endif // DEVICE_SUPPORTS_PERFORMANCE_DEVICE
 
-#if defined(SUPPORT_DEVICE_INFO_USER_DISPLAY_OVERRIDES)
-void UserOverrideDisplayProperties(DXGI_MODE_DESC& desc);
-#endif
-
 extern CD3D9Renderer gcpRendD3D;
 
 //=========================================================================================

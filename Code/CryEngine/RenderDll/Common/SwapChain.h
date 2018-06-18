@@ -76,4 +76,8 @@ public:
 #else
 	static CSwapChain        CreateSwapChain(HWND hWnd, DXGIOutput* pOutput, uint32_t width, uint32_t height, bool isMainContext, bool isFullscreen, bool vsync);
 #endif
+
+#if defined(SUPPORT_DEVICE_INFO_USER_DISPLAY_OVERRIDES)
+	static void UserOverrideDisplayProperties(DXGI_MODE_DESC& desc);
+#endif
 };

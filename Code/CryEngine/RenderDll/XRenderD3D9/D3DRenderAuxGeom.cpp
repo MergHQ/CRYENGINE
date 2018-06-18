@@ -539,7 +539,6 @@ bool CRenderAuxGeomD3D::PreparePass(const CCamera& camera, const SDisplayContext
 
 	CTexture* pTargetTexture = displayContext->GetCurrentColorOutput();
 	CTexture* pDepthTexture = displayContext->GetCurrentDepthOutput();
-
 	pass.SetRenderTarget(0, pTargetTexture);
 	pass.SetDepthTarget(pDepthTexture);
 	pass.SetViewport(viewport);

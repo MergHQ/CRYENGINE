@@ -51,7 +51,7 @@ public:
 
 private:
 	void       UpdateCollisionData(const DynArray<Vec3>& meshFaces);
-	void       OnFlagsChanged(IVariable* var);
+	void       OnPropertyChanged(IVariable* var);
 
 	IStatObj*  GetIStatObj() override;
 	void       DeleteThis() override { delete this; }

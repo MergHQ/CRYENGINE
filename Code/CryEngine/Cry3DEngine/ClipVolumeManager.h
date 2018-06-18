@@ -30,7 +30,7 @@ public:
 
 	virtual IClipVolume* CreateClipVolume();
 	virtual bool         DeleteClipVolume(IClipVolume* pClipVolume);
-	virtual bool         UpdateClipVolume(IClipVolume* pClipVolume, _smart_ptr<IRenderMesh> pRenderMesh, IBSPTree3D* pBspTree, const Matrix34& worldTM, bool bActive, uint32 flags, const char* szName);
+	virtual bool         UpdateClipVolume(IClipVolume* pClipVolume, _smart_ptr<IRenderMesh> pRenderMesh, IBSPTree3D* pBspTree, const Matrix34& worldTM, uint8 viewDistRatio, bool bActive, uint32 flags, const char* szName);
 	void                 TrimDeletedClipVolumes(int trimFrameId = std::numeric_limits<int>::max());
 
 	void                 PrepareVolumesForRendering(const SRenderingPassInfo& passInfo);

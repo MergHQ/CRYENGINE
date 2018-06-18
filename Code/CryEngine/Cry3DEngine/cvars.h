@@ -495,6 +495,7 @@ struct CVars : public Cry3DEngineBase
 	float e_DecalsSpawnDistRatio;
 	int   e_CGFMaxFileSize;
 	int   e_MaxDrawCalls;
+	int   e_ClipVolumes;
 #if !defined(_RELEASE)
 	int   e_MergedMeshesClusterVisualization;
 	int   e_MergedMeshesClusterVisualizationDimension;
