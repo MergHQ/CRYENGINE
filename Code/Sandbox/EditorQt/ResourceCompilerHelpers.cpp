@@ -20,14 +20,27 @@ static QString ToQString(const SFileVersion& version)
 
 struct SRcVersion : SFileVersion, IResourceCompilerListener
 {
-	virtual void OnRCMessage(MessageSeverity severity, const char* text)
+	virtual void OnRCMessage(MessageSeverity severity, const char* szText)
 	{
-		const CryPathString key("Version ");
-		if (!v[3] && severity == MessageSeverity_Info && (strncmp(text, key.c_str(), key.length()) == 0))
+		if (!v[3] && severity == MessageSeverity_Info)
 		{
-			Set(text + key.length());
+			// skip leading spaces
+			while (*szText == ' ')
+			{
+				++szText;
+			}
+
+			const CryPathString key("Version ");
+
+			if (strncmp(szText, key.c_str(), key.length()) == 0)
+			{
+				Set(szText + key.length());
+				bFound = true;
+			}
 		}
 	}
+
+	bool bFound = false;
 };
 
 }
@@ -66,7 +79,7 @@ bool CResourceCompilerVersion::CheckIfValid(bool bSilent)
 				"It is recommended to update the Resource Compiler.\n"
 				"\n"
 				"Do you want to continue anyway?")
-				.arg(ToQString(rcVersion))
+				.arg(rcVersion.bFound ? ToQString(rcVersion) : QObject::tr("Could not find RC version information"))
 				.arg(ToQString(minimumVersion)),
 				QDialogButtonBox::StandardButton::No | QDialogButtonBox::StandardButton::Yes))
 		{
