@@ -37,7 +37,7 @@ class CEntityLoadManager;
 struct SEntityLayerGarbage;
 class CGeomCacheAttachmentManager;
 class CCharacterBoneAttachmentManager;
-class CEntitiesComponentPropertyCache;
+class CEntityComponentsCache;
 
 //////////////////////////////////////////////////////////////////////////
 
@@ -123,7 +123,9 @@ public:
 	virtual uint32                            GetNumEntities() const final;
 	virtual IEntityItPtr                      GetEntityIterator() final;
 	virtual void                              SendEventToAll(SEntityEvent& event) final;
+#ifndef RELEASE
 	virtual void                              OnEditorSimulationModeChanged(EEditorSimulationMode mode) final;
+#endif
 	virtual void                              OnLevelLoaded() final;
 	virtual void                              OnLevelGameplayStart() final;
 	virtual int                               QueryProximity(SEntityProximityQuery& query) final;
@@ -369,7 +371,9 @@ private:
 	TLayers m_layers;
 	THeaps  m_garbageLayerHeaps;
 
-	std::unique_ptr<CEntitiesComponentPropertyCache> m_entitiesPropertyCache;
+#ifndef RELEASE
+	std::unique_ptr<CEntityComponentsCache> m_entityComponentsCache;
+#endif
 
 public:
 	std::unique_ptr<class CEntityObjectDebugger> m_pEntityObjectDebugger;

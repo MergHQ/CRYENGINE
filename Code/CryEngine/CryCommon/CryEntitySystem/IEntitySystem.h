@@ -319,6 +319,7 @@ struct IEntitySystem
 		AllSinkEvents = ~0u,
 	};
 
+#ifndef RELEASE
 	//! Determines the state of simulation in the Editor, see OnEditorSimulationModeChanged
 	enum class EEditorSimulationMode
 	{
@@ -329,6 +330,7 @@ struct IEntitySystem
 		// Entities are being simulated without player being active
 		Simulation
 	};
+#endif
 
 	// <interfuscator:shuffle>
 	virtual ~IEntitySystem(){}
@@ -410,8 +412,10 @@ struct IEntitySystem
 	//! \param event Event to send.
 	virtual void SendEventToAll(SEntityEvent& event) = 0;
 
+#ifndef RELEASE
 	//! Sent when game mode in Editor is changed
 	virtual void OnEditorSimulationModeChanged(EEditorSimulationMode mode) = 0;
+#endif
 
 	//! Sent after the level has finished loading
 	virtual void OnLevelLoaded() = 0;

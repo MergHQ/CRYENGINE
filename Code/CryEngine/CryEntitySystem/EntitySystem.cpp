@@ -192,10 +192,12 @@ CEntitySystem::CEntitySystem(ISystem* pSystem)
 
 	m_pEntityObjectDebugger.reset(new CEntityObjectDebugger);
 
+#ifndef RELEASE
 	if (gEnv->IsEditor())
 	{
-		m_entitiesPropertyCache.reset(new CEntitiesComponentPropertyCache);
+		m_entityComponentsCache.reset(new CEntityComponentsCache);
 	}
+#endif
 }
 
 //////////////////////////////////////////////////////////////////////
@@ -631,6 +633,13 @@ bool CEntitySystem::InitEntity(IEntity* pEntity, SEntitySpawnParams& params)
 		return false;
 	}
 
+#ifndef RELEASE
+	if (gEnv->IsEditor() && !gEnv->IsEditing() && !(pCEntity->GetFlags() & ENTITY_FLAG_UNREMOVABLE))
+	{
+		m_entityComponentsCache->OnEntitySpawnedDuringGameMode(pEntity->GetId());
+	}
+#endif
+
 	const std::vector<IEntitySystemSink*>& sinks = m_sinks[stl::static_log2 < (size_t)IEntitySystem::OnSpawn > ::value];
 
 	for (IEntitySystemSink* pSink : sinks)
@@ -773,6 +782,13 @@ void CEntitySystem::RemoveEntity(CEntity* pEntity, bool forceRemoveImmediately, 
 					return;
 				}
 			}
+
+#ifndef RELEASE
+			if (gEnv->IsEditor() && !gEnv->IsEditing() && !(pEntity->GetFlags() & ENTITY_FLAG_UNREMOVABLE))
+			{
+				m_entityComponentsCache->OnEntityRemovedDuringGameMode(pEntity->GetId());
+			}
+#endif
 
 			// Mark the entity for deletion before sending the ENTITY_EVENT_DONE event
 			// This protects against cases where the event results in another deletion request for the same entity
@@ -1453,40 +1469,41 @@ void CEntitySystem::SendEventToAll(SEntityEvent& event)
 }
 
 //////////////////////////////////////////////////////////////////////////
+#ifndef RELEASE
 void CEntitySystem::OnEditorSimulationModeChanged(EEditorSimulationMode mode)
 {
-	bool bSimulating = mode != EEditorSimulationMode::Editing;
+	const bool isSimulating = mode != EEditorSimulationMode::Editing;
 
-	if (bSimulating && m_entitiesPropertyCache)
+	if (isSimulating && m_entityComponentsCache)
 	{
-		m_entitiesPropertyCache->StoreEntities();
+		m_entityComponentsCache->StoreEntities();
 	}
-	if (!bSimulating && m_entitiesPropertyCache)
+	if (!isSimulating && m_entityComponentsCache)
 	{
-		m_entitiesPropertyCache->RestoreEntities();
-		m_entitiesPropertyCache->ClearCache();
+		m_entityComponentsCache->RestoreEntities();
 	}
 
-	uint32 dwMaxUsed = static_cast<uint32>(m_EntitySaltBuffer.GetMaxUsed() + 1);
+	const uint32 dwMaxUsed = static_cast<uint32>(m_EntitySaltBuffer.GetMaxUsed() + 1);
 	for (auto it = m_EntityArray.cbegin(), end = m_EntityArray.cbegin() + dwMaxUsed; it != end; ++it)
 	{
 		if (CEntity* pEntity = *it)
 		{
-			pEntity->OnEditorGameModeChanged(bSimulating);
+			pEntity->OnEditorGameModeChanged(isSimulating);
 		}
 	}
 
 	SEntityEvent event;
 	event.event = ENTITY_EVENT_RESET;
-	event.nParam[0] = bSimulating ? 1 : 0;
+	event.nParam[0] = isSimulating ? 1 : 0;
 	SendEventToAll(event);
 
-	if (bSimulating)
+	if (isSimulating)
 	{
 		event.event = ENTITY_EVENT_START_GAME;
 		SendEventToAll(event);
 	}
 }
+#endif
 
 //////////////////////////////////////////////////////////////////////////
 void CEntitySystem::OnLevelLoaded()

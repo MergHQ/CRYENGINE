@@ -141,72 +141,6 @@ private:
 	IInitializeUIInfo* m_pLogo;
 };
 
-// Implements EntitySystemSink for InGame mode.
-struct SInGameEntitySystemListener : public IEntitySystemSink
-{
-	SInGameEntitySystemListener()
-	{
-	}
-
-	~SInGameEntitySystemListener()
-	{
-		// Remove all remaining entities from entity system.
-		IEntitySystem* pEntitySystem = GetIEditorImpl()->GetSystem()->GetIEntitySystem();
-
-		for (std::set<int>::iterator it = m_entities.begin(); it != m_entities.end(); ++it)
-		{
-			EntityId entityId = *it;
-			IEntity* pEntity = pEntitySystem->GetEntity(entityId);
-			if (pEntity)
-			{
-				IEntity* pParent = pEntity->GetParent();
-				if (pParent)
-				{
-					// Childs of irremovable entity are also not deleted (Needed for vehicles weapons for example)
-					if (pParent->GetFlags() & ENTITY_FLAG_UNREMOVABLE)
-						continue;
-				}
-			}
-			pEntitySystem->RemoveEntity(*it, true);
-		}
-	}
-
-	virtual bool OnBeforeSpawn(SEntitySpawnParams& params)
-	{
-		return true;
-	}
-
-	virtual void OnSpawn(IEntity* e, SEntitySpawnParams& params)
-	{
-		//if (params.ed.ClassId!=0 && ed.ClassId!=PLAYER_CLASS_ID) // Ignore MainPlayer
-		if (!(e->GetFlags() & ENTITY_FLAG_UNREMOVABLE))
-		{
-			m_entities.insert(e->GetId());
-		}
-	}
-
-	virtual bool OnRemove(IEntity* e)
-	{
-		if (!(e->GetFlags() & ENTITY_FLAG_UNREMOVABLE))
-			m_entities.erase(e->GetId());
-		return true;
-	}
-
-	virtual void OnReused(IEntity* pEntity, SEntitySpawnParams& params)
-	{
-		CRY_ASSERT_MESSAGE(false, "Editor should not be receiving entity reused events from IEntitySystemSink, investigate this.");
-	}
-
-private:
-	// Ids of all spawned entities.
-	std::set<int> m_entities;
-};
-
-namespace
-{
-SInGameEntitySystemListener* s_InGameEntityListener = 0;
-};
-
 // Timur.
 // This is FarCry.exe authentication function, this code is not for public release!!
 static void GameSystemAuthCheckFunction(void* data)
@@ -925,13 +859,6 @@ void CGameEngine::SwitchToInGame()
 	// triggered.
 	gEnv->pEntitySystem->ResetAreas();
 
-	// Register in game entitysystem listener.
-	if (!s_InGameEntityListener)
-	{
-		s_InGameEntityListener = new SInGameEntitySystemListener;
-		gEnv->pEntitySystem->AddSink(s_InGameEntityListener, IEntitySystem::OnSpawn | IEntitySystem::OnRemove);
-	}
-
 	gEnv->pEntitySystem->OnEditorSimulationModeChanged(IEntitySystem::EEditorSimulationMode::InGame);
 
 	m_pISystem->GetIMovieSystem()->Reset(true, false);
@@ -977,13 +904,7 @@ void CGameEngine::SwitchToInEditor()
 
 	// this has to be done before the RemoveSink() call, or else some entities may not be removed
 	gEnv->p3DEngine->GetDeferredPhysicsEventManager()->ClearDeferredEvents();
-	if (s_InGameEntityListener)
-	{
-		// Unregister ingame entitysystem listener, and kill all remaining entities.
-		gEnv->pEntitySystem->RemoveSink(s_InGameEntityListener);
-		delete s_InGameEntityListener;
-		s_InGameEntityListener = 0;
-	}
+	
 	// Enable accelerators.
 	GetIEditorImpl()->EnableAcceleratos(true);
 	// Reset mission script.
@@ -1168,13 +1089,6 @@ void CGameEngine::SetSimulationMode(bool enabled, bool bOnlyPhysics)
 			// When turning physics on, emulate out of game event.
 			m_pISystem->GetAISystem()->Reset(IAISystem::RESET_ENTER_GAME);
 		}
-
-		if (!s_InGameEntityListener)
-		{
-			// Register in game entitysystem listener.
-			s_InGameEntityListener = new SInGameEntitySystemListener;
-			gEnv->pEntitySystem->AddSink(s_InGameEntityListener, IEntitySystem::OnSpawn | IEntitySystem::OnRemove);
-		}
 	}
 	else
 	{
@@ -1196,14 +1110,6 @@ void CGameEngine::SetSimulationMode(bool enabled, bool bOnlyPhysics)
 		}
 
 		GetIEditorImpl()->GetObjectManager()->SendEvent(EVENT_OUTOFGAME);
-
-		if (s_InGameEntityListener)
-		{
-			// Unregister ingame entitysystem listener, and kill all remaining entities.
-			gEnv->pEntitySystem->RemoveSink(s_InGameEntityListener);
-			delete s_InGameEntityListener;
-			s_InGameEntityListener = 0;
-		}
 	}
 
 	if (!m_bSimulationMode && !bOnlyPhysics)
