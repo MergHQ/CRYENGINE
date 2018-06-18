@@ -3599,7 +3599,10 @@ void CD3D9Renderer::RT_EndFrame()
 	{
 		m_mtxStopAtRenderFrameEnd.Lock();
 		m_condStopAtRenderFrameEnd.Notify();
-		m_condStopAtRenderFrameEnd.Wait(m_mtxStopAtRenderFrameEnd);
+		while (m_bStopRendererAtFrameEnd)
+		{
+			m_condStopAtRenderFrameEnd.Wait(m_mtxStopAtRenderFrameEnd);
+		}
 		m_mtxStopAtRenderFrameEnd.Unlock();
 	}
 }
