@@ -379,13 +379,13 @@ void CCSharpEditorPlugin::RegenerateSolution() const
 		{
 			string pluginName = PathUtil::GetFileName(pluginPath);
 			pluginReferences += "    <Reference Include=\"" + pluginName + "\">\n"
-			                                                               "      <HintPath>" + pluginPath + "</HintPath>\n"
-			                                                                                                 "      <Private>False</Private>\n"
-			                                                                                                 "    </Reference>\n";
+			                    "      <HintPath>" + pluginPath + "</HintPath>\n"
+			                    "      <Private>False</Private>\n"
+			                    "    </Reference>\n";
 		}
 	}
 
-	string csProjName = "Game";
+	string csProjName = "Sandbox.Game";
 	string csProjFilename = csProjName + ".csproj";
 
 	string projectFilePath = PathUtil::Make(szDirectory, csProjFilename.c_str());
