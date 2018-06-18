@@ -1,12 +1,10 @@
 {
-	"NoUberFile":
+	"CrySystem_uber_platform_os.cpp":
 	{
 		"PlatformOS":
 		[
 			"PlatformOS/PlatformOS_PC.cpp",	
-			"PlatformOS/PlatformOS_PC.h",
-			"PlatformOS/SaveReaderWriter_Steam.h",
-			"PlatformOS/SaveReaderWriter_Steam.cpp"
+			"PlatformOS/PlatformOS_PC.h"
 		]
 	}
 }

@@ -6,6 +6,7 @@
       "DeviceManager/D3D11/DeviceSubmissionQueue_D3D11.h",
       "DeviceManager/D3D11/DeviceSubmissionQueue_D3D11.inl",
       "DeviceManager/D3D11/DeviceSubmissionQueue_D3D11.cpp",
+      "DeviceManager/D3D11/DeviceObjects_D3D11.h",
       "DeviceManager/D3D11/DeviceObjects_D3D11.inl",
       "DeviceManager/D3D11/DeviceObjects_D3D11.cpp",
       "DeviceManager/D3D11/DeviceResources_D3D11.inl",
@@ -14,7 +15,15 @@
       "DeviceManager/D3D11/DeviceCommandList_D3D11.h",
       "DeviceManager/D3D11/DeviceWrapper_D3D11_Logging.cpp",
       "DeviceManager/D3D11/DeviceWrapper_D3D11_MemReplay.h",
-      "DeviceManager/D3D11/DeviceWrapper_D3D11_MemReplay.cpp"
+      "DeviceManager/D3D11/DeviceWrapper_D3D11_MemReplay.cpp",
+      "DeviceManager/D3D11/DeviceResourceSet_D3D11.h",
+      "DeviceManager/D3D11/DeviceResourceSet_D3D11.cpp",
+      "DeviceManager/D3D11/DeviceCommandListCommon_D3D11.h",
+      "DeviceManager/D3D11/DeviceCommandListCommon_D3D11.cpp",
+      "DeviceManager/D3D11/DevicePSO_D3D11.h",
+      "DeviceManager/D3D11/DevicePSO_D3D11.cpp",
+      "DeviceManager/D3D11/DeviceRenderPass_D3D11.h",
+      "DeviceManager/D3D11/DeviceRenderPass_D3D11.cpp"
     ]
   }
 }

@@ -1,0 +1,19 @@
+{
+    "NoUberFile": {
+        "Root": [
+            "EditorEnvironment.qrc",
+            "main.cpp",
+            "EditorEnvironmentWindow.cpp",
+            "EditorEnvironmentWindow.h",
+            "stdafx.cpp",
+            "stdafx.h",
+            "QTimeOfDayWidget.h",
+            "QTimeOfDayWidget.cpp",
+            "QPresetsWidget.h",
+            "QPresetsWidget.cpp",
+            "PresetsModel.cpp",
+            "PresetsModel.h",
+            "LightingSettings.h"
+        ]
+    }
+}

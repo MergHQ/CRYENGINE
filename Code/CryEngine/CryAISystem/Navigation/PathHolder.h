@@ -18,6 +18,7 @@
 #pragma once
 
 #include "NavPath.h"
+#include "Navigation/MNM/NavMesh.h"
 #include <CryAISystem/INavigationSystem.h>
 
 template<class T>

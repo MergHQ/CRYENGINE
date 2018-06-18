@@ -28,20 +28,6 @@ const MNM::OffMeshNavigation& OffMeshNavigationManager::GetOffMeshNavigationForM
 	}
 }
 
-MNM::OffMeshNavigation& OffMeshNavigationManager::GetOffMeshNavigationForMesh(const NavigationMeshID& meshID)
-{
-	if (meshID && m_offMeshMap.validate(meshID))
-	{
-		return m_offMeshMap[meshID];
-	}
-	else
-	{
-		assert(0);
-		AIWarning("No off-mesh navigation available, returning empty one! Navigation might not be able to use external links when path-finding");
-		return m_emptyOffMeshNavigation;
-	}
-}
-
 void OffMeshNavigationManager::QueueCustomLinkAddition(const MNM::LinkAdditionRequest& request)
 {
 #if DEBUG_MNM_LOG_OFFMESH_LINK_OPERATIONS

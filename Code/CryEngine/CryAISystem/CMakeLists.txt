@@ -145,6 +145,7 @@ add_sources("CryAISystem_navigation_uber_1.cpp"
 		"Navigation/MNM/MarkupVolume.h"
 		"Navigation/MNM/BoundingVolume.h"
 		"Navigation/MNM/CompactSpanGrid.h"
+		"Navigation/MNM/DangerousAreas.h"
 		"Navigation/MNM/DynamicSpanGrid.h"
 		"Navigation/MNM/HashComputer.h"
 		"Navigation/MNM/Islands.h"
@@ -154,12 +155,14 @@ add_sources("CryAISystem_navigation_uber_1.cpp"
 		"Navigation/MNM/NavMesh.h"
 		"Navigation/MNM/NavMesh.inl"
 		"Navigation/MNM/MNM.h"
+		"Navigation/MNM/MNMDebugDefines.h"
 		"Navigation/MNM/OffGridLinks.h"
 		"Navigation/MNM/MNMProfiler.h"
 		"Navigation/MNM/Tile.h"
 		"Navigation/MNM/TileGenerator.h"
 		"Navigation/MNM/Voxelizer.h"
 		"Navigation/MNM/OpenList.h"
+		"Navigation/MNM/WayQuery.h"
 	SOURCE_GROUP "Navigation\\\\NavigationSystem"
 		"Navigation/NavigationSystem/AnnotationsLibrary.cpp"
 		"Navigation/NavigationSystem/IslandConnectionsManager.cpp"
@@ -487,46 +490,54 @@ add_sources("NoUberFile"
 end_sources()
 #END-FILE-LIST
 
+macro(setup_CryAISystem)
+	if (ORBIS OR CMAKE_CXX_COMPILER_ID STREQUAL "Clang")
+		target_compile_options(${THIS_PROJECT} PRIVATE
+			-Wno-unused-variable
+			-Wno-reorder
+			-Wno-unknown-pragmas
+			-Wno-parentheses
+			-Wno-format
+			-Wno-switch
+			-Wno-multichar
+			-Wno-empty-body
+			-Wno-unused-value
+			-Wno-unused-function
+			-Wno-unused-private-field
+			-Wno-char-subscripts
+			-Wno-c++11-narrowing
+			-Wno-undefined-var-template
+		)
+	elseif(CMAKE_CXX_COMPILER_ID STREQUAL "GNU")
+		target_compile_options(${THIS_PROJECT} PRIVATE
+			-Wno-unused-function
+			-Wno-unused-value
+			-Wno-unused-variable
+			-Wno-sign-compare
+			-Wno-unused-but-set-variable
+			-Wno-misleading-indentation
+			-Wno-unknown-pragmas
+			-Wno-multichar
+			-Wno-int-in-bool-context
+			-Wno-unused-result
+			-Wno-array-bounds
+			-Wno-strict-aliasing
+			-Wno-maybe-uninitialized
+			-Wno-logical-not-parentheses
+			-Wno-char-subscripts
+			-Wno-conversion-null
+			-Wno-comment
+			-Wno-reorder
+			-Wno-parentheses
+			-Wno-format
+			-Wno-switch
+		)
+	endif()
+endmacro()
+
 CryEngineModule(CryAISystem PCH "StdAfx.cpp" SOLUTION_FOLDER "CryEngine")
-if (ORBIS OR CMAKE_CXX_COMPILER_ID STREQUAL "Clang")
-	target_compile_options(${THIS_PROJECT} PRIVATE
-		-Wno-unused-variable
-		-Wno-reorder
-		-Wno-unknown-pragmas
-		-Wno-parentheses
-		-Wno-format
-		-Wno-switch
-		-Wno-multichar
-		-Wno-empty-body
-		-Wno-unused-value
-		-Wno-unused-function
-		-Wno-unused-private-field
-		-Wno-char-subscripts
-		-Wno-c++11-narrowing
-		-Wno-undefined-var-template
-	)
-elseif(CMAKE_CXX_COMPILER_ID STREQUAL "GNU")
-	target_compile_options(${THIS_PROJECT} PRIVATE
-		-Wno-unused-function
-		-Wno-unused-value
-		-Wno-unused-variable
-		-Wno-sign-compare
-		-Wno-unused-but-set-variable
-		-Wno-misleading-indentation
-		-Wno-unknown-pragmas
-		-Wno-multichar
-		-Wno-int-in-bool-context
-		-Wno-unused-result
-		-Wno-array-bounds
-		-Wno-strict-aliasing
-		-Wno-maybe-uninitialized
-		-Wno-logical-not-parentheses
-		-Wno-char-subscripts
-		-Wno-conversion-null
-		-Wno-comment
-		-Wno-reorder
-		-Wno-parentheses
-		-Wno-format
-		-Wno-switch
-	)
+setup_CryAISystem()
+if (OPTION_UNIT_TEST AND NOT OPTION_STATIC_LINKING) #Currently an additional static lib is only used by unit testing under non-monolithic mode
+	CryEngineModule(CryAISystemLib PCH "StdAfx.cpp" SOLUTION_FOLDER "CryEngine" FORCE_STATIC)
+	setup_CryAISystem()
 endif()

@@ -1,11 +1,13 @@
 // Copyright 2001-2018 Crytek GmbH / Crytek Group. All rights reserved.
 
 #include "stdafx.h"
+
+#ifndef RELEASE
 #include "EntityComponentsCache.h"
 #include "Entity.h"
 
 //////////////////////////////////////////////////////////////////////////
-void CEntitiesComponentPropertyCache::StoreEntities()
+void CEntityComponentsCache::StoreEntities()
 {
 	CRY_PROFILE_FUNCTION(PROFILE_ENTITY);
 
@@ -20,9 +22,11 @@ void CEntitiesComponentPropertyCache::StoreEntities()
 }
 
 //////////////////////////////////////////////////////////////////////////
-void CEntitiesComponentPropertyCache::RestoreEntities()
+void CEntityComponentsCache::RestoreEntities()
 {
 	CRY_PROFILE_FUNCTION(PROFILE_ENTITY);
+
+	RemoveEntitiesSpawnedDuringGameMode();
 
 	IEntityItPtr it = g_pIEntitySystem->GetEntityIterator();
 	while (CEntity* pEntity = static_cast<CEntity*>(it->Next()))
@@ -32,10 +36,32 @@ void CEntitiesComponentPropertyCache::RestoreEntities()
 			LoadEntity(*static_cast<CEntity*>(pEntity));
 		}
 	}
+
+	m_componentPropertyCache.clear();
 }
 
 //////////////////////////////////////////////////////////////////////////
-void CEntitiesComponentPropertyCache::StoreComponent(CEntity& entity, IEntityComponent& component)
+void CEntityComponentsCache::RemoveEntitiesSpawnedDuringGameMode()
+{
+	for (const EntityId entityId : m_entitiesSpawnedDuringEditorGameMode)
+	{
+		if (CEntity* pEntity = g_pIEntitySystem->GetEntityFromID(entityId))
+		{
+			CEntity* pParent = static_cast<CEntity*>(pEntity->GetParent());
+
+			// Childs of irremovable entity are not deleted (Needed for vehicles weapons for example)
+			if (pParent != nullptr && pParent->GetFlags() & ENTITY_FLAG_UNREMOVABLE)
+			{
+				continue;
+			}
+
+			g_pIEntitySystem->RemoveEntity(entityId, true);
+		}
+	}
+}
+
+//////////////////////////////////////////////////////////////////////////
+void CEntityComponentsCache::StoreComponent(CEntity& entity, IEntityComponent& component)
 {
 	CRY_PROFILE_FUNCTION(PROFILE_ENTITY);
 
@@ -54,7 +80,7 @@ void CEntitiesComponentPropertyCache::StoreComponent(CEntity& entity, IEntityCom
 }
 
 //////////////////////////////////////////////////////////////////////////
-void CEntitiesComponentPropertyCache::LoadComponent(CEntity& entity, IEntityComponent& component)
+void CEntityComponentsCache::LoadComponent(CEntity& entity, IEntityComponent& component)
 {
 	CRY_PROFILE_FUNCTION(PROFILE_ENTITY);
 
@@ -81,7 +107,7 @@ void CEntitiesComponentPropertyCache::LoadComponent(CEntity& entity, IEntityComp
 	}
 }
 
-void CEntitiesComponentPropertyCache::StoreEntity(CEntity& entity)
+void CEntityComponentsCache::StoreEntity(CEntity& entity)
 {
 	entity.GetComponentsVector().ForEach([this, &entity](const SEntityComponentRecord& rec) -> EComponentIterationResult
 	{
@@ -94,7 +120,7 @@ void CEntitiesComponentPropertyCache::StoreEntity(CEntity& entity)
 	});
 }
 
-void CEntitiesComponentPropertyCache::LoadEntity(CEntity& entity)
+void CEntityComponentsCache::LoadEntity(CEntity& entity)
 {
 	entity.GetComponentsVector().ForEach([this, &entity](const SEntityComponentRecord& rec) -> EComponentIterationResult
 	{
@@ -107,9 +133,4 @@ void CEntitiesComponentPropertyCache::LoadEntity(CEntity& entity)
 	});
 }
 
-//////////////////////////////////////////////////////////////////////////
-void CEntitiesComponentPropertyCache::ClearCache()
-{
-	CRY_PROFILE_FUNCTION(PROFILE_ENTITY);
-	m_componentPropertyCache.clear();
-}
+#endif

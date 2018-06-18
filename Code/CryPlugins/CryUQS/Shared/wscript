@@ -9,14 +9,8 @@
 
 def build(bld):
 
-	bld.CryEngineStaticModule(
+	bld.CryFileContainer(
 		target        = 'CryUQS_Shared',
 		vs_filter     = 'CryPlugins/CryUQS',
-		file_list     = 'uqs_shared.waf_files',
-		pch           = 'shared/StdAfx.cpp',
-		includes      = [ '.' ],
-		use_module    = [ 'CryUQS_Interfaces' ],
-		module_provides = dict(
-			includes = [ Path('Code/CryPlugins')],
-		),
+		file_list     = 'uqs_shared.waf_files'
 	)

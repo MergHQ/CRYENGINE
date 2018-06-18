@@ -1,9 +1,6 @@
 {
-	"NoUberFile":
-	{
-		"Source Files":
-		[
-			"assert_term.c"
-		]
-	}
+    "NoUberFile": {
+        "Header Files": [],
+        "Source Files": []
+    }
 }

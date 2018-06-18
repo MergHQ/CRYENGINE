@@ -8,10 +8,17 @@
   },
   "CryRenderer_uber_5_dx12_dx12.cpp":{
     "DeviceManager/D3D12":[
-      "DeviceManager/D3D12/DeviceObjects_D3D12.inl",
       "DeviceManager/D3D12/DeviceObjects_D3D12.cpp",
       "DeviceManager/D3D12/DeviceResources_D3D12.inl",
-      "DeviceManager/D3D12/DeviceCommandList_D3D12.h"
+      "DeviceManager/D3D12/DeviceCommandList_D3D12.h",
+      "DeviceManager/D3D12/DeviceResourceSet_D3D12.h",
+      "DeviceManager/D3D12/DeviceResourceSet_D3D12.cpp",
+      "DeviceManager/D3D12/DeviceCommandListCommon_D3D12.h",
+      "DeviceManager/D3D12/DeviceCommandListCommon_D3D12.cpp",
+      "DeviceManager/D3D12/DevicePSO_D3D12.h",
+      "DeviceManager/D3D12/DevicePSO_D3D12.cpp",
+      "DeviceManager/D3D12/DeviceRenderPass_D3D12.h",
+      "DeviceManager/D3D12/DeviceRenderPass_D3D12.cpp"
     ]
   },
   "NoUberFile":{
@@ -137,7 +144,7 @@
       "DX12/Resource/View/CCryDX12ShaderResourceView.hpp",
       "DX12/Resource/View/CCryDX12UnorderedAccessView.hpp"
     ],
-    "DX12/3rdParty":[
+    "DX12/3rdParty": [
       "DX12/Includes/d3d11TokenizedProgramFormat.hpp",
       "DX12/Includes/d3dx12.h"
     ]

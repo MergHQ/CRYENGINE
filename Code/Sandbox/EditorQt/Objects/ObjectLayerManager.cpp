@@ -45,7 +45,7 @@ public:
 protected:
 	virtual const char* GetDescription() { return m_bCreate ? "Create Layer" : "Delete Layer"; };
 
-	virtual void Undo(bool bUndo) override
+	virtual void        Undo(bool bUndo) override
 	{
 		if (m_bCreate)
 			DeleteLayer();
@@ -220,7 +220,7 @@ uint CObjectLayerManager::HasLayers() const
 	return !m_layersMap.empty();
 }
 
-CObjectLayer* CObjectLayerManager::CreateLayer(EObjectLayerType layerType/*= eObjectLayerType_Layer*/, CObjectLayer* pParent/*= nullptr*/)
+CObjectLayer* CObjectLayerManager::CreateLayer(EObjectLayerType layerType /*= eObjectLayerType_Layer*/, CObjectLayer* pParent /*= nullptr*/)
 {
 	string name;
 	if (layerType == eObjectLayerType_Layer)
@@ -241,7 +241,7 @@ CObjectLayer* CObjectLayerManager::CreateLayer(EObjectLayerType layerType/*= eOb
 	return CreateLayer(finalName.c_str(), layerType, pParent);
 }
 
-CObjectLayer* CObjectLayerManager::CreateLayer(const char* szName, EObjectLayerType layerType/*= eObjectLayerType_Layer*/, CObjectLayer* pParent/*= nullptr*/)
+CObjectLayer* CObjectLayerManager::CreateLayer(const char* szName, EObjectLayerType layerType /*= eObjectLayerType_Layer*/, CObjectLayer* pParent /*= nullptr*/)
 {
 	using namespace Private_ObjectLayerManager;
 	CRY_ASSERT((!pParent || pParent->GetLayerType() == eObjectLayerType_Folder) && layerType != eObjectLayerType_Size);
@@ -373,7 +373,6 @@ void CObjectLayerManager::DeleteLayer(CObjectLayer* pLayer, bool bNotify /*= tru
 
 	if (GetIEditorImpl()->GetIUndoManager()->IsUndoRecording())
 		GetIEditorImpl()->GetIUndoManager()->RecordUndo(new CUndoLayerCreateDelete(pLayer, false));
-
 
 	// Insert layer path in list of files to be deleted on save
 	m_toBeDeleted.insert(pLayer->GetLayerFilepath().c_str());
@@ -528,7 +527,6 @@ bool CObjectLayerManager::IsAnyLayerOfType(EObjectLayerType type) const
 		return x.second->GetLayerType() == eObjectLayerType_Terrain;
 	});
 }
-
 
 void CObjectLayerManager::NotifyLayerChange(const CLayerChangeEvent& event)
 {
@@ -837,7 +835,7 @@ CObjectLayer* CObjectLayerManager::ImportLayer(CObjectArchive& ar, bool bNotify 
 	TSmartPtr<CObjectLayer> pLayer(new CObjectLayer());
 
 	XmlNodeRef layerNode = ar.node;
-	
+
 	pLayer->SerializeBase(layerNode, true);
 	if (pLayer->GetLayerType() == eObjectLayerType_Terrain)
 	{
@@ -907,7 +905,7 @@ CObjectLayer* CObjectLayerManager::ImportLayerFromFile(const char* filename, boo
 				{
 
 					uint32 attr = CFileUtil::GetAttributes(filename);
-					if (!gEditorGeneralPreferences.freezeReadOnly() && attr != SCC_FILE_ATTRIBUTE_INVALID && (attr & SCC_FILE_ATTRIBUTE_READONLY))
+					if (gEditorGeneralPreferences.freezeReadOnly() && attr != SCC_FILE_ATTRIBUTE_INVALID && (attr & SCC_FILE_ATTRIBUTE_READONLY))
 					{
 						pLayer->SetFrozen(true);
 					}
@@ -1273,7 +1271,7 @@ void CObjectLayerManager::ToggleFreezeAllBut(CObjectLayer* pLayer)
 	{
 		CObjectLayer* pObjectLayer = it->second;
 		if (layerHierarchy.find(pObjectLayer) == layerHierarchy.end() && !pObjectLayer->IsChildOf(pLayer)
-			&& pObjectLayer->GetLayerType() != eObjectLayerType_Terrain)
+		    && pObjectLayer->GetLayerType() != eObjectLayerType_Terrain)
 		{
 			pObjectLayer->SetFrozen(freezeAll);
 		}
@@ -1312,7 +1310,7 @@ void CObjectLayerManager::ToggleHideAllBut(CObjectLayer* pLayer)
 	{
 		CObjectLayer* pObjectLayer = it->second;
 		if (layerHierarchy.find(pObjectLayer) == layerHierarchy.end() && !pObjectLayer->IsChildOf(pLayer)
-			&& pObjectLayer->GetLayerType() != eObjectLayerType_Terrain)
+		    && pObjectLayer->GetLayerType() != eObjectLayerType_Terrain)
 		{
 			pObjectLayer->SetVisible(!hideAll);
 		}
@@ -1578,4 +1576,3 @@ XmlNodeRef CObjectLayerManager::GenerateDynTexSrcLayerInfo() const
 
 	return root;
 }
-

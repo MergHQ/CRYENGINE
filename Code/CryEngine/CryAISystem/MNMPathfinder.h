@@ -15,8 +15,7 @@
 #ifndef _MNMPATHFINDER_H_
 #define _MNMPATHFINDER_H_
 
-#include "Navigation/MNM/MNM.h"
-#include "Navigation/MNM/NavMesh.h"
+#include "Navigation/MNM/WayQuery.h"
 #include "NavPath.h"
 #include "Navigation/PathHolder.h"
 #include <CryPhysics/AgePriorityQueue.h>
@@ -26,8 +25,13 @@
 
 //////////////////////////////////////////////////////////////////////////
 
+class OffMeshNavigationManager;
+
 namespace MNM
 {
+
+class CNavMesh;
+
 namespace PathfinderUtils
 {
 struct QueuedRequest
@@ -160,8 +164,8 @@ struct ProcessingContext
 	ProcessingContext& operator=(const ProcessingContext&) = delete;
 
 	ProcessingRequest            processingRequest;
-	CNavMesh::WayQueryResult     queryResult;
-	CNavMesh::WayQueryWorkingSet workingSet;
+	MNM::SWayQueryResult         queryResult;
+	MNM::SWayQueryWorkingSet     workingSet;
 
 	volatile EProcessingStatus   status;
 	JobManager::SJobState        jobState;
@@ -379,7 +383,7 @@ public:
 
 	// Utility function, which takes a triangles way found by MNM::CNavMesh::FindWay() and converts it into a way-point path.
 	static bool ConstructPathFromFoundWay(
-	  const MNM::CNavMesh::WayQueryResult& way,
+	  const MNM::SWayQueryResult& way,
 	  const MNM::CNavMesh& navMesh,
 	  const OffMeshNavigationManager* pOffMeshNavigationManager,
 	  const Vec3& startLocation,

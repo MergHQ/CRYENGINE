@@ -48,7 +48,7 @@ CLayerPicker::CLayerPicker()
 	QDeepFilterProxyModel::BehaviorFlags behavior = QDeepFilterProxyModel::AcceptIfChildMatches | QDeepFilterProxyModel::AcceptIfParentMatches;
 	QDeepFilterProxyModel* proxy = new QDeepFilterProxyModel(behavior);
 	proxy->setSourceModel(model);
-	proxy->setFilterKeyColumn(1);
+	proxy->setFilterKeyColumn((int)eLayerColumns_Name);
 
 	auto searchBox = new QSearchBox();
 	searchBox->SetModel(proxy);

@@ -208,13 +208,13 @@ private:
 		{
 			QPointer<CThumbnailsInternalView> pView(this);
 			QTimer::singleShot(0, [pView, lastBatchRow]()
-			{
-				if (!pView)
 				{
-					 return;
-				}
-				pView->TouchVisibleAssetsBatched(lastBatchRow + 1);
-			});
+					if (!pView)
+					{
+					  return;
+					}
+					pView->TouchVisibleAssetsBatched(lastBatchRow + 1);
+				});
 		}
 	}
 
@@ -375,7 +375,7 @@ public:
 	{
 		static CAssetModel::CAutoRegisterColumn column(this, [](const CAsset* pAsset, const CItemModelAttribute* /*pAttribute*/)
 		    {
-		      return QVariant();
+		       return QVariant();
 				});
 	}
 };
@@ -837,9 +837,9 @@ bool CAssetBrowser::GetImportFolder(string& folderPath) const
 {
 	const auto getSelectedFolder = [this](string& folderPath)
 	{
-		auto folderSelection = m_foldersView->GetSelectedFolders();
-		folderPath = QtUtil::ToString(folderSelection.front());
-		return folderSelection.size() == 1;
+		 auto folderSelection = m_foldersView->GetSelectedFolders();
+		 folderPath = QtUtil::ToString(folderSelection.front());
+		 return folderSelection.size() == 1;
 	};
 
 	return GetDropFolder(folderPath) || getSelectedFolder(folderPath);
@@ -1300,6 +1300,7 @@ void CAssetBrowser::EditNewAsset()
 	if (filteredIndex.isValid())
 	{
 		pView->edit(filteredIndex);
+		pView->scrollTo(filteredIndex);
 		pView->selectionModel()->select(filteredIndex, QItemSelectionModel::ClearAndSelect | QItemSelectionModel::Rows);
 	}
 	else

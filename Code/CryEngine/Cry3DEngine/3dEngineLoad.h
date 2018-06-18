@@ -36,7 +36,7 @@ public:
 		Count
 	};
 
-	C3DEngineLevelLoadTimeslicer(C3DEngine& owner, const char* szFolderName, const char* szMissionName);
+	C3DEngineLevelLoadTimeslicer(C3DEngine& owner, const char* szFolderName, XmlNodeRef&& missionXml);
 	~C3DEngineLevelLoadTimeslicer();
 
 	I3DEngine::ELevelLoadStatus DoStep();
@@ -67,7 +67,7 @@ private:
 	// Inputs
 	C3DEngine& m_owner;
 	string m_folderName;
-	string m_missionName;
+	XmlNodeRef m_missionXml;
 
 	// Intermediate
 	XmlNodeRef m_xmlLevelData;

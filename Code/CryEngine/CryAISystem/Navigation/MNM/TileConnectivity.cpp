@@ -2,6 +2,7 @@
 
 #include "StdAfx.h"
 #include "TileConnectivity.h"
+#include "Navigation/MNM/MNM.h"
 #include <CryAISystem/NavigationSystem/MNMNavMesh.h>
 
 namespace MNM

@@ -8,6 +8,5 @@
 #pragma once
 
 #include <CryAISystem/NavigationSystem/MNMBaseTypes.h>
-#include <CryAISystem/NavigationSystem/OffMeshLink.h>
 
 #endif // __IMNM_H__

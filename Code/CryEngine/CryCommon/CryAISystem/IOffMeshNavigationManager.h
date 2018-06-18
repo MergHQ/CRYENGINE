@@ -6,10 +6,10 @@
 #pragma once
 
 #include "INavigationSystem.h"
+#include "NavigationSystem/OffMeshLink.h"
 
 namespace MNM
 {
-struct OffMeshLink;
 
 enum EOffMeshOperationResult
 {

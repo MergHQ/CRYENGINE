@@ -356,8 +356,9 @@ public:
 	virtual void      ShutDown();
 	virtual void      Release() { CryAlignedDelete(this); };
 	virtual void      SetLevelPath(const char* szFolderName);
+	virtual bool      LoadLevel(const char* szFolderName, XmlNodeRef missionXml);
+	virtual bool      StartLoadLevel(const char* szFolderName, XmlNodeRef missionXml);
 	virtual bool      LoadLevel(const char* szFolderName, const char* szMissionName);
-	virtual bool      StartLoadLevel(const char* szFolderName, const char* szMissionName);
 	virtual ELevelLoadStatus UpdateLoadLevelStatus();
 	virtual void      UnloadLevel();
 	virtual void      PostLoadLevel();
@@ -927,6 +928,9 @@ public:
 private:
 	// not sorted
 
+	void  SetDefaultValuesForLoadMissionDataFromXML();
+	XmlNodeRef OpenMissionDataXML(const char* szMissionName);
+	void  LoadMissionDataFromXML(XmlNodeRef missionXml);
 	void  LoadTimeOfDaySettingsFromXML(XmlNodeRef node);
 	char* GetXMLAttribText(XmlNodeRef pInputNode, const char* szLevel1, const char* szLevel2, const char* szDefaultValue);
 	char* GetXMLAttribText(XmlNodeRef pInputNode, const char* szLevel1, const char* szLevel2, const char* szLevel3, const char* szDefaultValue);

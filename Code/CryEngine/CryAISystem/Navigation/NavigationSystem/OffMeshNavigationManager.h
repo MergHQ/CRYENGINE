@@ -5,9 +5,10 @@
 
 #pragma once
 
+#include "Navigation/MNM/OffGridLinks.h"
+
 #include <CryAISystem/INavigationSystem.h>
 #include <CryAISystem/IOffMeshNavigationManager.h>
-#include "../MNM/OffGridLinks.h"
 
 class CSmartObject;
 class CSmartObjectClass;
@@ -82,10 +83,6 @@ public:
 	OffMeshNavigationManager(const int offMeshMapSize);
 
 	const MNM::OffMeshNavigation& GetOffMeshNavigationForMesh(const NavigationMeshID& meshID) const;
-
-	//Note: Try to kill this one, outside should never manipulate this
-	// Needs to make a lot of code in SmartObjects const correct first...
-	MNM::OffMeshNavigation& GetOffMeshNavigationForMesh(const NavigationMeshID& meshID);
 
 	void                    RegisterSmartObject(CSmartObject* pSmartObject, CSmartObjectClass* pSmartObjectClass);
 	void                    UnregisterSmartObjectForAllClasses(CSmartObject* pSmartObject);

@@ -1,16 +1,13 @@
 {
- "NoUberFile":{
-		"Header Files":
-		[
-			"StdAfx.h"
-		],			
-		"Source Files":
-		[
-			"Main.cpp"
-		],
-		"Resource Files":
-		[
-			"resource.h"
-		]
-	}
+    "NoUberFile": {
+        "Header Files": [
+            "StdAfx.h"
+        ],
+        "Resource Files": [
+            "resource.h"
+        ],
+        "Source Files": [
+            "Main.cpp"
+        ]
+    }
 }

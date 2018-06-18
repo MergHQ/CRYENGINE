@@ -20,7 +20,7 @@
 
 #include <CryEntitySystem/IEntitySystem.h>
 #include <CryMemory/STLPoolAllocator.h>
-#include "Navigation/MNM/MNM.h"
+#include <CryAISystem/NavigationSystem/OffMeshLink.h>
 
 // forward declaration
 class CAIActor;
