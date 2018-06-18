@@ -1,27 +1,12 @@
 {
-	"NoUberFile":
-	{
-		"shared":
-		[
-			"shared/StdAfx.cpp",
-			"shared/StdAfx.h"
-		]
-	},
-	"UQS_uber_shared.cpp":
-	{
-		"Root":
-		[
-			"SharedIncludes.h"
-		],
-		"shared":
-		[
-			"shared/UqsString.h",
-			"shared/UqsString.cpp",
-			"shared/VariantDict.h",
-			"shared/VariantDict.cpp",
-			"shared/FactoryBase.h",
-			"shared/TimeValueUtil.h",
-			"shared/TimeValueUtil.cpp"
-		]
-	}
+    "UQS_uber_shared.cpp": {
+        "Root": [
+            "SharedIncludes.h"
+        ],
+        "shared": [
+            "shared/UqsString.h",
+            "shared/VariantDict.h",
+            "shared/FactoryBase.h"
+        ]
+    }
 }

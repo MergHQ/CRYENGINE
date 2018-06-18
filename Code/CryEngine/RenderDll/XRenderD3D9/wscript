@@ -2,7 +2,7 @@
 import os
 from waflib.TaskGen import after_method, feature
 from waflib import Logs
-
+from waflib.Utils import run_once
 
 def build(bld):
 	additional_defines = []
@@ -23,9 +23,8 @@ def build(bld):
 		pch         = '../StdAfx.cpp',
 		includes    = [ '..', Path('Code/SDKs/squish-ccr') ],
 		use_module  = [ 'lzma', 'lzss', 'lz4', 'zlib' ],
-		features    = [ 'copy_d3d_compiler' ],
+		features    = [ 'copy_d3d_compiler', 'copy_amd_binaries' ],
 
-		win_features    = [ 'copy_d3d_compiler' ],
 		win_file_list   = [ 'dx11_renderer.waf_files', 'mesh_baker.waf_files' ],
 		win_defines     = [ 'CRY_RENDERER_DIRECT3D=110', 'DO_RENDERSTATS', '_RENDERER' ] + additional_defines,
 		win_lib         = [ 'dxguid', 'd3d11', 'd3d10', 'd3dcompiler', 'Ole32', 'Gdi32', 'wininet', 'Shell32' ],
@@ -107,7 +106,8 @@ def build(bld):
 			includes    = [ '..', Path('Code/SDKs'), Path('Code/SDKs/squish-ccr') ],
 			use_module  = [ 'lzma', 'lzss', 'lz4', 'zlib' ],
 
-			win_features     = ['copy_d3d_compiler' ],
+			features     = ['copy_d3d_compiler', 'copy_amd_binaries' ],
+
 			win_file_list    = ['mesh_baker.waf_files' ],
 			win_defines      = ['CRY_RENDERER_DIRECT3D=120', 'DO_RENDERSTATS', '_RENDERER' ] + additional_defines,
 			win_includes     = [ Path('Code/Tools/LibTIFF'), Path('Code/CryEngine/RenderDll/XRenderD3D9/DX12/Includes') ],
@@ -170,3 +170,27 @@ def build(bld):
 		android_file_list = ['mesh_baker.waf_files']
 	)
 
+@feature('copy_amd_binaries')
+@run_once
+def feature_copy_amd_binaries(self):
+	bld 			= self.bld
+	platform		= bld.env['PLATFORM']
+	configuration	= bld.env['CONFIGURATION']
+
+	if platform  == 'project_generator':
+		return
+
+	if not platform in ['win_x64', 'win_x86']:
+		return
+		
+	output_folder = bld.get_output_folders(platform, configuration)[0]
+	libpath = bld.CreateRootRelativePath('Code/SDKs/AMD/AGS Lib/lib/')
+	
+	if platform == 'win_x64':
+		filename =  'amd_ags_x64.dll'
+	elif platform =='win_x86':
+		filename =  'amd_ags_x86.dll'	
+	
+	self.create_task('copy_outputs', self.bld.root.make_node(os.path.join(libpath, filename)), output_folder.make_node(filename))
+
+	

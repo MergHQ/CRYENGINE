@@ -1,17 +1,41 @@
 {
-	"EditorWwise_uber_0.cpp":
-	{
-		"Root":
-		[
-			"AudioSystemControl_wwise.cpp",
-			"AudioSystemControl_wwise.h",
-			"AudioSystemEditor_wwise.cpp",
-			"AudioSystemEditor_wwise.h",
-			"main.cpp",
-			"AudioWwiseLoader.h",
-			"AudioWwiseLoader.cpp",
-			"StdAfx.h",
-			"StdAfx.cpp"
-		]
-	}
+    "EditorWwise_uber_0.cpp": {
+        "Connections": [
+            "BaseConnection.cpp",
+            "BaseConnection.h",
+            "ParameterConnection.cpp",
+            "ParameterConnection.h",
+            "ParameterToStateConnection.cpp",
+            "ParameterToStateConnection.h",
+            "SoundbankConnection.cpp",
+            "SoundbankConnection.h"
+        ],
+        "DataPanel": [
+            "DataPanel.cpp",
+            "DataPanel.h",
+            "FilterProxyModel.cpp",
+            "FilterProxyModel.h",
+            "ItemModel.cpp",
+            "ItemModel.h",
+            "TreeView.cpp",
+            "TreeView.h"
+        ],
+        "Root": [
+            "Common.h",
+            "Impl.cpp",
+            "Impl.h",
+            "Item.cpp",
+            "Item.h",
+            "main.cpp",
+            "ProjectLoader.cpp",
+            "ProjectLoader.h",
+            "StdAfx.cpp",
+            "StdAfx.h"
+        ]
+    },
+    "NoUberFile": {
+        "Resources": [
+            "EditorWwiseUI.qrc"
+        ]
+    }
 }

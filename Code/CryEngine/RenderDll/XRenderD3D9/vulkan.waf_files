@@ -71,16 +71,16 @@
          }
       ]
    },
-   "CryRenderer_uber_5_vulkan_vulkan.cpp":{
-      "DeviceManager":[
-         {
-            "Vulkan":[
-               "DeviceManager/Vulkan/DeviceObjects_Vulkan.inl",
-               "DeviceManager/Vulkan/DeviceObjects_Vulkan.cpp",
-               "DeviceManager/Vulkan/DeviceResources_Vulkan.inl",
-               "DeviceManager/Vulkan/DeviceCommandList_Vulkan.h"
-            ]
-         }
-      ]
-   }
+  "CryRenderer_uber_5_vulkan_vulkan.cpp": {
+    "DeviceManager": [
+      {
+        "Vulkan": [
+          "DeviceManager/Vulkan/DeviceObjects_Vulkan.inl",
+          "DeviceManager/Vulkan/DeviceObjects_Vulkan.cpp",
+          "DeviceManager/Vulkan/DeviceResources_Vulkan.inl",
+          "DeviceManager/Vulkan/DeviceCommandList_Vulkan.h"
+        ]
+      }
+    ]
+  }
 }

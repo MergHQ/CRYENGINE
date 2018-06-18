@@ -1,0 +1,24 @@
+{
+  "NoUberFile":{
+    "Root":[
+      "StdAfx.cpp",
+      "StdAfx.h"
+    ]
+  },
+  "CryReflection_Uber_0.cpp":{
+    "Descriptions": [
+      "DescExtension.h",
+      "ReflectedFunctionDesc.cpp",
+      "ReflectedFunctionDesc.h",
+      "ReflectedTypeDesc.cpp",
+      "ReflectedTypeDesc.h",
+      "ReflectedVariableDesc.cpp",
+      "ReflectedVariableDesc.h"
+    ],
+    "Registry":
+    [
+      "ReflectionRegistry.cpp",
+		  "ReflectionRegistry.h"
+    ]
+  }
+}
