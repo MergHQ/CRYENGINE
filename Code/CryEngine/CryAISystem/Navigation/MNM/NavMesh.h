@@ -9,6 +9,7 @@
 #include "Tile.h"
 #include "MNMProfiler.h"
 #include "Islands.h"
+#include "DangerousAreas.h"
 
 #include <CryMath/SimpleHashLookUp.h>
 #include <CryCore/Containers/VectorMap.h>
@@ -23,110 +24,9 @@ namespace MNM
 struct OffMeshNavigation;
 class CTileConnectivityData;
 
-///////////////////////////////////////////////////////////////////////
-
-// Heuristics for dangers
-enum EWeightCalculationType
-{
-	eWCT_None = 0,
-	eWCT_Range,             // It returns 1 as a weight for the cost if the location to evaluate
-	                        //  is in the specific range from the threat, 0 otherwise
-	eWCT_InverseDistance,   // It returns the inverse of the distance as a weight for the cost
-	eWCT_Direction,         // It returns a value between [0,1] as a weight for the cost in relation of
-	                        // how the location to evaluate is in the threat direction. The range is not taken into
-	                        // account with this weight calculation type
-	eWCT_Last,
-};
-
-template<EWeightCalculationType WeightType>
-struct DangerWeightCalculation
-{
-	MNM::real_t CalculateWeight(const Vec3& locationToEval, const Vec3& startingLocation, const Vec3& dangerPosition, const float rangeSq) const
-	{
-		return MNM::real_t(.0f);
-	}
-};
-
-template<>
-struct DangerWeightCalculation<eWCT_InverseDistance>
-{
-	MNM::real_t CalculateWeight(const Vec3& locationToEval, const Vec3& startingLocation, const Vec3& dangerPosition, const float rangeSq) const
-	{
-		// TODO: This is currently not used, but if we see we need it, then we should think to change
-		// the euclidean distance calculation with a faster approximation (Like the one used in the FindWay function)
-		const float distance = (dangerPosition - locationToEval).len();
-		bool isInRange = rangeSq > .0f ? sqr(distance) > rangeSq : true;
-		return isInRange ? MNM::real_t(1 / distance) : MNM::real_t(.0f);
-	}
-};
-
-template<>
-struct DangerWeightCalculation<eWCT_Range>
-{
-	MNM::real_t CalculateWeight(const Vec3& locationToEval, const Vec3& startingLocation, const Vec3& dangerPosition, const float rangeSq) const
-	{
-		const Vec3 dangerToLocationDir = locationToEval - dangerPosition;
-		const float weight = static_cast<float>(__fsel(dangerToLocationDir.len2() - rangeSq, 0.0f, 1.0f));
-		return MNM::real_t(weight);
-	}
-};
-
-template<>
-struct DangerWeightCalculation<eWCT_Direction>
-{
-	real_t CalculateWeight(const Vec3& locationToEval, const Vec3& startingLocation, const Vec3& dangerPosition, const float rangeSq) const
-	{
-		Vec3 startLocationToNewLocation = (locationToEval - startingLocation);
-		startLocationToNewLocation.NormalizeSafe();
-		Vec3 startLocationToDangerPosition = (dangerPosition - startingLocation);
-		startLocationToDangerPosition.NormalizeSafe();
-		float dotProduct = startLocationToNewLocation.dot(startLocationToDangerPosition);
-		return max(real_t(.0f), real_t(dotProduct));
-	}
-};
-
-struct DangerArea
-{
-	virtual ~DangerArea() {}
-	virtual real_t      GetDangerHeuristicCost(const Vec3& locationToEval, const Vec3& startingLocation) const = 0;
-	virtual const Vec3& GetLocation() const = 0;
-};
-DECLARE_SHARED_POINTERS(DangerArea)
-
-template<EWeightCalculationType WeightType>
-struct DangerAreaT : public DangerArea
-{
-	DangerAreaT()
-		: location(ZERO)
-		, effectRangeSq(.0f)
-		, cost(0)
-		, weightCalculator()
-	{}
-
-	DangerAreaT(const Vec3& _location, const float _effectRange, const uint8 _cost)
-		: location(_location)
-		, effectRangeSq(sqr(_effectRange))
-		, cost(_cost)
-		, weightCalculator()
-	{}
-
-	virtual real_t GetDangerHeuristicCost(const Vec3& locationToEval, const Vec3& startingLocation) const
-	{
-		return real_t(cost) * weightCalculator.CalculateWeight(locationToEval, startingLocation, location, effectRangeSq);
-	}
-
-	virtual const Vec3& GetLocation() const { return location; }
-
-private:
-	const Vec3                                location;      // Position of the danger
-	const float                               effectRangeSq; // If zero the effect is on the whole level
-	const unsigned int                        cost;          // Absolute cost associated with the Danger represented by the DangerAreaT
-	const DangerWeightCalculation<WeightType> weightCalculator;
-};
-
-enum { max_danger_amount = 5, };
-
-typedef CryFixedArray<MNM::DangerAreaConstPtr, max_danger_amount> DangerousAreasList;
+struct SWayQueryWorkingSet;
+struct SWayQueryResult;
+struct SWayQueryRequest;
 
 ///////////////////////////////////////////////////////////////////////
 
@@ -168,11 +68,17 @@ public:
 		ePredictionType_Latest,
 	};
 
-	struct WayQueryRequest
+	enum EWayQueryResult
 	{
-		WayQueryRequest(EntityId _requesterEntityId, TriangleID _from, const vector3_t& _fromLocation, TriangleID _to,
-		                const vector3_t& _toLocation, const OffMeshNavigation& _offMeshNavigation, const OffMeshNavigationManager& _offMeshNavigationManager,
-		                const DangerousAreasList& dangerousAreas, const INavMeshQueryFilter* pFilter, const MNMCustomPathCostComputerSharedPtr& _pCustomPathCostComputer)
+		eWQR_Continuing = 0,
+		eWQR_Done,
+	};
+
+	struct SWayQueryRequest
+	{
+		SWayQueryRequest(EntityId _requesterEntityId, TriangleID _from, const vector3_t& _fromLocation, TriangleID _to,
+			const vector3_t& _toLocation, const OffMeshNavigation& _offMeshNavigation, const OffMeshNavigationManager& _offMeshNavigationManager,
+			const DangerousAreasList& dangerousAreas, const INavMeshQueryFilter* pFilter, const MNMCustomPathCostComputerSharedPtr& _pCustomPathCostComputer)
 			: m_from(_from)
 			, m_to(_to)
 			, m_fromLocation(_fromLocation)
@@ -185,19 +91,19 @@ public:
 			, m_pFilter(pFilter)
 		{}
 
-		virtual ~WayQueryRequest(){}
+		virtual ~SWayQueryRequest() {}
 
 		virtual bool                    CanUseOffMeshLink(const OffMeshLinkID linkID, float* costMultiplier) const;
-		bool                            IsPointValidForAgent(const Vec3& pos, uint32 flags) const;
+		bool                            IsPointValidForAgent(const Vec3& pos, uint32 flags) const { return true; }
 
-		ILINE const TriangleID          From() const                 { return m_from; }
-		ILINE const TriangleID          To() const                   { return m_to; }
+		ILINE const TriangleID          From() const { return m_from; }
+		ILINE const TriangleID          To() const { return m_to; }
 		ILINE const OffMeshNavigation&  GetOffMeshNavigation() const { return m_offMeshNavigation; }
-		ILINE const DangerousAreasList& GetDangersInfos()            { return m_dangerousAreas; }
-		ILINE const vector3_t&          GetFromLocation() const      { return m_fromLocation; };
-		ILINE const vector3_t&          GetToLocation() const        { return m_toLocation; };
+		ILINE const DangerousAreasList& GetDangersInfos() { return m_dangerousAreas; }
+		ILINE const vector3_t&          GetFromLocation() const { return m_fromLocation; };
+		ILINE const vector3_t&          GetToLocation() const { return m_toLocation; };
 		ILINE const MNMCustomPathCostComputerSharedPtr& GetCustomPathCostComputer() const { return m_pCustomPathCostComputer; }  // might be nullptr (which is totally OK)
-		ILINE const INavMeshQueryFilter* GetFilter() const        { return m_pFilter; }
+		ILINE const INavMeshQueryFilter* GetFilter() const { return m_pFilter; }
 
 	private:
 		const TriangleID                m_from;
@@ -208,71 +114,9 @@ public:
 		const OffMeshNavigationManager& m_offMeshNavigationManager;
 		DangerousAreasList              m_dangerousAreas;
 		MNMCustomPathCostComputerSharedPtr m_pCustomPathCostComputer;
-		const INavMeshQueryFilter*   m_pFilter;
+		const INavMeshQueryFilter*      m_pFilter;
 	protected:
 		const EntityId                  m_requesterEntityId;
-	};
-
-	struct WayQueryWorkingSet
-	{
-		WayQueryWorkingSet()
-		{
-			nextLinkedTriangles.reserve(32);
-		}
-		typedef std::vector<WayTriangleData> TNextLinkedTriangles;
-
-		void Reset()
-		{
-			aStarOpenList.Reset();
-			nextLinkedTriangles.clear();
-			nextLinkedTriangles.reserve(32);
-		}
-
-		TNextLinkedTriangles nextLinkedTriangles;
-		AStarOpenList        aStarOpenList;
-	};
-
-	struct WayQueryResult
-	{
-		WayQueryResult(const size_t wayMaxSize = 512)
-			: m_wayMaxSize(wayMaxSize)
-			, m_waySize(0)
-		{
-			Reset();
-		}
-
-		WayQueryResult(WayQueryResult&&) = default;
-		WayQueryResult(const WayQueryResult&) = delete;
-		~WayQueryResult() = default;
-
-		void Reset()
-		{
-			m_pWayTriData.reset(new WayTriangleData[m_wayMaxSize]);
-			m_waySize = 0;
-		}
-
-		ILINE WayTriangleData* GetWayData() const               { return m_pWayTriData.get(); }
-		ILINE size_t           GetWaySize() const               { return m_waySize; }
-		ILINE size_t           GetWayMaxSize() const            { return m_wayMaxSize; }
-
-		ILINE void             SetWaySize(const size_t waySize) { m_waySize = waySize; }
-
-		ILINE void             Clear()                          { m_waySize = 0; }
-
-		WayQueryResult& operator=(WayQueryResult&&) = default;
-		WayQueryResult& operator=(const WayQueryResult&) = delete;
-
-	private:
-
-		std::unique_ptr<WayTriangleData[]> m_pWayTriData;
-		size_t                             m_wayMaxSize;
-		size_t                             m_waySize;
-	};
-
-	enum EWayQueryResult
-	{
-		eWQR_Continuing = 0,
-		eWQR_Done,
 	};
 
 	CNavMesh();
@@ -338,9 +182,8 @@ public:
 	void                      UpdateOffMeshLinkForTile(const TileID tileID, const TriangleID triangleID, const uint16 offMeshIndex);
 	void                      RemoveOffMeshLinkFromTile(const TileID tileID, const TriangleID triangleID);
 
-	CNavMesh::EWayQueryResult FindWay(WayQueryRequest& inputRequest, WayQueryWorkingSet& workingSet, WayQueryResult& result) const;
+	CNavMesh::EWayQueryResult FindWay(SWayQueryRequest& inputRequest, SWayQueryWorkingSet& workingSet, SWayQueryResult& result) const;
 
-	real_t                    CalculateHeuristicCostForDangers(const vector3_t& locationToEval, const vector3_t& startingLocation, const Vec3& meshOrigin, const DangerousAreasList& dangersInfos) const;
 	real_t                    CalculateHeuristicCostForCustomRules(const vector3_t& locationComingFrom, const vector3_t& locationGoingTo, const Vec3& meshOrigin, const IMNMCustomPathCostComputer* pCustomPathCostComputer) const;
 	void                      PullString(const vector3_t& fromLocalPosition, const TriangleID fromTriID, const vector3_t& toLocalPosition, const TriangleID toTriID, vector3_t& middleLocalPosition) const;
 
@@ -508,7 +351,7 @@ private:
 	INavMeshQueryProcessing::EResult QueryTileTrianglesWithProcessing(const TileID tileID, const STile& tile, const aabb_t& queryAabbTile, TFilter& filter, TQuery&& query) const;
 
 	template<typename TFilter>
-	CNavMesh::EWayQueryResult FindWayInternal(WayQueryRequest& inputRequest, WayQueryWorkingSet& workingSet, const TFilter& filter, WayQueryResult& result) const;
+	CNavMesh::EWayQueryResult FindWayInternal(SWayQueryRequest& inputRequest, SWayQueryWorkingSet& workingSet, const TFilter& filter, SWayQueryResult& result) const;
 
 	void    PredictNextTriangleEntryPosition(const TriangleID bestNodeTriangleID, const vector3_t& bestNodeLocalPosition, const TriangleID nextTriangleID, const unsigned int vertexIndex, const vector3_t& finalLocalPosition, vector3_t& outLocalPosition) const;
 

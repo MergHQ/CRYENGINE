@@ -3,10 +3,10 @@
 #include "StdAfx.h"
 
 #include "MNMPathfinder.h"
+#include "Navigation/MNM/NavMesh.h"
 #include "Navigation/NavigationSystem/NavigationSystem.h"
 #include "DebugDrawContext.h"
 #include "AIBubblesSystem/AIBubblesSystem.h"
-#include "Navigation/PathHolder.h"
 #include <CryThreading/IJobManager_JobDelegator.h>
 
 //#pragma optimize("", off)
@@ -577,7 +577,7 @@ void CMNMPathfinder::ProcessPathRequest(MNM::PathfinderUtils::ProcessingContext&
 	assert(offMeshNavigationManager);
 	const MNM::OffMeshNavigation& meshOffMeshNav = offMeshNavigationManager->GetOffMeshNavigationForMesh(processingRequest.meshID);
 
-	MNM::CNavMesh::WayQueryRequest inputParams(
+	MNM::CNavMesh::SWayQueryRequest inputParams(
 		processingRequest.data.requesterEntityId, processingRequest.fromTriangleID,
 		navMesh.ToMeshSpace(processingRequest.data.requestParams.startLocation), processingRequest.toTriangleID,
 		navMesh.ToMeshSpace(processingRequest.data.requestParams.endLocation), meshOffMeshNav, *offMeshNavigationManager,
@@ -593,7 +593,7 @@ void CMNMPathfinder::ProcessPathRequest(MNM::PathfinderUtils::ProcessingContext&
 }
 
 bool CMNMPathfinder::ConstructPathFromFoundWay(
-  const MNM::CNavMesh::WayQueryResult& way,
+  const MNM::SWayQueryResult& way,
   const MNM::CNavMesh& navMesh,
   const OffMeshNavigationManager* pOffMeshNavigationManager,
   const Vec3& startLocation,

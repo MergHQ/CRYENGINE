@@ -6,6 +6,7 @@
 #include "OffGridLinks.h"
 #include "Tile.h"
 #include "TileConnectivity.h"
+#include "WayQuery.h"
 #include "../NavigationSystem/OffMeshNavigationManager.h"
 
 #if defined(min)
@@ -25,7 +26,8 @@
 
 namespace MNM
 {
-bool CNavMesh::WayQueryRequest::CanUseOffMeshLink(const OffMeshLinkID linkID, float* costMultiplier) const
+
+bool CNavMesh::SWayQueryRequest::CanUseOffMeshLink(const OffMeshLinkID linkID, float* costMultiplier) const
 {
 	if (m_requesterEntityId)
 	{
@@ -37,18 +39,6 @@ bool CNavMesh::WayQueryRequest::CanUseOffMeshLink(const OffMeshLinkID linkID, fl
 			}
 		}
 	}
-	return true;    // Always allow by default
-}
-
-bool CNavMesh::WayQueryRequest::IsPointValidForAgent(const Vec3& pos, uint32 flags) const
-{
-	// TODO: Do we need replacement for this function before introducing new 'QueryFilter'? 
-	// All known implementations of m_pRequester (IAIPathAgent) were returning true in IsPointValidForAgent method.
-	/*if (m_pRequester)
-	{
-		return m_pRequester->IsPointValidForAgent(pos, flags);
-	}
-	*/
 	return true;    // Always allow by default
 }
 
@@ -874,7 +864,7 @@ void CNavMesh::PredictNextTriangleEntryPosition(const TriangleID bestNodeTriangl
 	}
 }
 
-CNavMesh::EWayQueryResult CNavMesh::FindWay(WayQueryRequest& inputRequest, WayQueryWorkingSet& workingSet, WayQueryResult& result) const
+CNavMesh::EWayQueryResult CNavMesh::FindWay(SWayQueryRequest& inputRequest, SWayQueryWorkingSet& workingSet, SWayQueryResult& result) const
 {
 	if (inputRequest.GetFilter())
 	{
@@ -887,8 +877,35 @@ CNavMesh::EWayQueryResult CNavMesh::FindWay(WayQueryRequest& inputRequest, WayQu
 	}
 }
 
+struct CostAccumulator
+{
+	CostAccumulator(const Vec3& locationToEval, const Vec3& startingLocation, real_t& totalCost)
+		: m_totalCost(totalCost)
+		, m_locationToEvaluate(locationToEval)
+		, m_startingLocation(startingLocation)
+	{}
+
+	void operator()(const DangerAreaConstPtr& dangerInfo)
+	{
+		m_totalCost += dangerInfo->GetDangerHeuristicCost(m_locationToEvaluate, m_startingLocation);
+	}
+private:
+	real_t & m_totalCost;
+	const Vec3& m_locationToEvaluate;
+	const Vec3& m_startingLocation;
+};
+
+real_t CalculateHeuristicCostForDangers(const vector3_t& locationToEval, const vector3_t& startingLocation, const Vec3& meshOrigin, const DangerousAreasList& dangersInfos)
+{
+	real_t totalCost(0.0f);
+	const Vec3 startingLocationInWorldSpace = startingLocation.GetVec3() + meshOrigin;
+	const Vec3 locationInWorldSpace = locationToEval.GetVec3() + meshOrigin;
+	std::for_each(dangersInfos.begin(), dangersInfos.end(), CostAccumulator(locationInWorldSpace, startingLocationInWorldSpace, totalCost));
+	return totalCost;
+}
+
 template<typename TFilter>
-CNavMesh::EWayQueryResult CNavMesh::FindWayInternal(WayQueryRequest& inputRequest, WayQueryWorkingSet& workingSet, const TFilter& filter, WayQueryResult& result) const
+CNavMesh::EWayQueryResult CNavMesh::FindWayInternal(SWayQueryRequest& inputRequest, SWayQueryWorkingSet& workingSet, const TFilter& filter, SWayQueryResult& result) const
 {
 	result.SetWaySize(0);
 	if (result.GetWayMaxSize() < 2)
@@ -1112,33 +1129,6 @@ CNavMesh::EWayQueryResult CNavMesh::FindWayInternal(WayQueryRequest& inputReques
 	}
 
 	return eWQR_Done;
-}
-
-struct CostAccumulator
-{
-	CostAccumulator(const Vec3& locationToEval, const Vec3& startingLocation, real_t& totalCost)
-		: m_totalCost(totalCost)
-		, m_locationToEvaluate(locationToEval)
-		, m_startingLocation(startingLocation)
-	{}
-
-	void operator()(const DangerAreaConstPtr& dangerInfo)
-	{
-		m_totalCost += dangerInfo->GetDangerHeuristicCost(m_locationToEvaluate, m_startingLocation);
-	}
-private:
-	real_t&     m_totalCost;
-	const Vec3& m_locationToEvaluate;
-	const Vec3& m_startingLocation;
-};
-
-real_t CNavMesh::CalculateHeuristicCostForDangers(const vector3_t& locationToEval, const vector3_t& startingLocation, const Vec3& meshOrigin, const DangerousAreasList& dangersInfos) const
-{
-	real_t totalCost(0.0f);
-	const Vec3 startingLocationInWorldSpace = startingLocation.GetVec3() + meshOrigin;
-	const Vec3 locationInWorldSpace = locationToEval.GetVec3() + meshOrigin;
-	std::for_each(dangersInfos.begin(), dangersInfos.end(), CostAccumulator(locationInWorldSpace, startingLocationInWorldSpace, totalCost));
-	return totalCost;
 }
 
 real_t CNavMesh::CalculateHeuristicCostForCustomRules(const vector3_t& locationComingFrom, const vector3_t& locationGoingTo, const Vec3& meshOrigin, const IMNMCustomPathCostComputer* pCustomPathCostComputer) const
@@ -2003,7 +1993,9 @@ CNavMesh::ERayCastResult CNavMesh::RayCast_v1(const vector3_t& fromLocalPosition
 						if (nextID)
 							break;   // link loop
 					}
-					if (IsTriangleAlreadyInWay(nextID, raycastRequest.way, triCount))
+
+					// Is triangle nextID already in a way?
+					if (std::find(raycastRequest.way, raycastRequest.way + triCount, nextID) != (raycastRequest.way + triCount))
 					{
 						assert(0);
 						nextID = 0;

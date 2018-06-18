@@ -2,8 +2,6 @@
 
 #include "StdAfx.h"
 #include "NavigationSystem.h"
-#include "../MNM/TileGenerator.h"
-#include "../MNM/NavMesh.h"
 #include "DebugDrawContext.h"
 #include "MNMPathfinder.h"
 
@@ -2737,8 +2735,7 @@ MNM::TriangleID NavigationSystem::GetTriangleIDWhereLocationIsAtForMesh(const Na
 	NavigationMeshID meshId = GetEnclosingMeshID(agentID, location);
 	if (meshId)
 	{
-		NavigationMesh& mesh = GetMesh(meshId);
-		const MNM::OffMeshNavigation& offMeshNavigation = GetOffMeshNavigationManager()->GetOffMeshNavigationForMesh(meshId);
+		const NavigationMesh& mesh = GetMesh(meshId);
 
 		const Vec3& voxelSize = mesh.navMesh.GetGridParams().voxelSize;
 		const uint16 agentHeightUnits = GetAgentHeightInVoxelUnits(agentID);
@@ -2785,8 +2782,6 @@ bool NavigationSystem::NavMeshTestRaycastHit(NavigationAgentTypeID agentTypeID, 
 		return false;
 
 	const NavigationMesh& mesh = GetMesh(meshId);
-	const MNM::OffMeshNavigation& offMeshNavigation = GetOffMeshNavigationManager()->GetOffMeshNavigationForMesh(meshId);
-
 	const Vec3& voxelSize = mesh.navMesh.GetGridParams().voxelSize;
 	const uint16 agentHeightUnits = GetAgentHeightInVoxelUnits(agentTypeID);
 
@@ -4714,7 +4709,7 @@ void NavigationSystemDebugDraw::DebugDrawPathFinder(NavigationSystem& navigation
 	{
 		const MNM::vector3_t startToEnd = (fixedPointStartLoc - fixedPointEndLoc);
 		const MNM::real_t startToEndDist = startToEnd.lenNoOverflow();
-		MNM::CNavMesh::WayQueryWorkingSet workingSet;
+		MNM::SWayQueryWorkingSet workingSet;
 		workingSet.aStarOpenList.SetFrameTimeQuota(0.0f);
 		workingSet.aStarOpenList.SetUpForPathSolving(navMesh.GetTriangleCount(), triStart, fixedPointStartLoc, startToEndDist);
 
@@ -4739,13 +4734,13 @@ void NavigationSystemDebugDraw::DebugDrawPathFinder(NavigationSystem& navigation
 		const float pathSharingPenalty = .0f;
 		const float pathLinkSharingPenalty = .0f;
 
-		MNM::CNavMesh::WayQueryRequest inputParams(
+		MNM::CNavMesh::SWayQueryRequest inputParams(
 			debugObjectStart.entityId,
 			triStart, startLoc, triEnd, endLoc,
 			offMeshNavigation, *offMeshNavigationManager, 
 			dangersInfo, pDebugQueryFilter, MNMCustomPathCostComputerSharedPtr());  // no custom cost-computer (where should we get it from!?));
 
-		MNM::CNavMesh::WayQueryResult result(k_MaxWaySize);
+		MNM::SWayQueryResult result(k_MaxWaySize);
 
 		const bool hasPathfindingFinished = (navMesh.FindWay(inputParams, workingSet, result) == MNM::CNavMesh::eWQR_Done);
 

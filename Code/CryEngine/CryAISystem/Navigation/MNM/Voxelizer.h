@@ -5,6 +5,7 @@
 
 #pragma once
 
+#include "MNMDebugDefines.h"
 #include "DynamicSpanGrid.h"
 
 namespace MNM

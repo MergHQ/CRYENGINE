@@ -56,9 +56,6 @@
 
 #include "DebugDrawContext.h"
 
-#include "Navigation/MNM/TileGenerator.h"
-#include "Navigation/MNM/NavMesh.h"
-
 //-----------------------------------------------------------------------------------------------------------
 static bool IsPuppetOnScreen(CPuppet* pPuppet)
 {
