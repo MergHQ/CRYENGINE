@@ -211,11 +211,26 @@ bool PropertyRowCurve::onActivate(const PropertyActivationEvent& e)
 	return false;
 }
 
+SCurveEditorContent* PropertyRowCurve::GetEditorContent()
+{
+	if (!editorContent_)
+		editorContent_ = new SCurveEditorContent();
+
+	return editorContent_;
+}
+
+const SCurveEditorContent* const PropertyRowCurve::GetEditorContent() const
+{
+	CRY_ASSERT_MESSAGE(editorContent_, "Editor content not initialized");
+	return editorContent_;
+}
+
 void PropertyRowCurve::editCurve(PropertyTree* tree)
 {
 	if (!tree_ && tree)
 	{
-		QObject::connect(&editorContent_, &SCurveEditorContent::SignalAboutToBeChanged, [this](CCurveEditor& editor)
+		SCurveEditorContent* pEditorContent = GetEditorContent();
+		QObject::connect(pEditorContent, &SCurveEditorContent::SignalAboutToBeChanged, [this](CCurveEditor& editor)
 		{
 			for (auto& curve : curves())
 			{
@@ -232,7 +247,7 @@ void PropertyRowCurve::editCurve(PropertyTree* tree)
 			}
 		});
 
-		QObject::connect(&editorContent_, &SCurveEditorContent::SignalChanged, [this](CCurveEditor& editor)
+		QObject::connect(pEditorContent, &SCurveEditorContent::SignalChanged, [this](CCurveEditor& editor)
 		{
 			int32 rowCurve = 0;
 			PropertyRowCurve* pLastRow = nullptr;
@@ -266,7 +281,8 @@ void PropertyRowCurve::editCurve(PropertyTree* tree)
 		CBroadcastManager* broadcastManager = CBroadcastManager::Get(widget);
 		if (broadcastManager)
 		{
-			auto setupEditor = [this](CCurveEditorPanel& editorPanel)
+			SCurveEditorContent* pEditorContent = GetEditorContent();
+			auto setupEditor = [this, pEditorContent](CCurveEditorPanel& editorPanel)
 			{
 				CRY_ASSERT(curves().size() > 0);
 				editorPanel.SetTitle(curveDomain_.c_str());
@@ -277,7 +293,7 @@ void PropertyRowCurve::editCurve(PropertyTree* tree)
 				editor.ZoomToTimeRange(0, 1);
 				editor.ZoomToValueRange(0, 1);
 
-				editorPanel.SetEditorContent(&editorContent_);
+				editorPanel.SetEditorContent(pEditorContent);
 
 				if (curves().size() > 1)
 					editor.SetPriorityCurve(curves()[0]);
