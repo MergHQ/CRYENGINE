@@ -239,6 +239,7 @@ CCompiledRenderObject* CRenderView::AllocCompiledObject(CRenderObject* pObj, CRe
 
 	// Assign any compiled object to the RenderObject, just to be used as a root reference for constant buffer sharing
 	pObj->m_pCompiledObject = pCompiledObject;
+	pCompiledObject->m_pRO = pObj;
 
 	return pCompiledObject;
 }
@@ -251,11 +252,9 @@ CCompiledRenderObject* CRenderView::AllocCompiledObjectTemporary(CRenderObject* 
 
 	// Assign any compiled object to the RenderObject, just to be used as a root reference for constant buffer sharing
 	pObj->m_pCompiledObject = pCompiledObject;
+	pCompiledObject->m_pRO = pObj;
 
-	SCompiledPair pair;
-	pair.pRenderObject = pObj;
-	pair.pCompiledObject = pCompiledObject;
-	m_temporaryCompiledObjects.push_back(pair);
+	m_temporaryCompiledObjects.push_back(pCompiledObject);
 
 	// Temporary object is not linked to the RenderObject owner
 	return pCompiledObject;
@@ -688,7 +687,7 @@ uint8 CRenderView::AddClipVolume(const IClipVolume* pClipVolume)
 		m_clipVolumes.push_back(SDeferredClipVolume());
 
 		auto& volume = m_clipVolumes.back();
-		volume.nStencilRef = uint8(m_clipVolumes.size()); // the first clip volume ID is reserved for outdoors
+		volume.nStencilRef = uint8(m_clipVolumes.size()); // the first clip volume ID is reserved for outdoors. See STENCIL_VALUE_OUTDOORS
 		volume.nFlags = pClipVolume->GetClipVolumeFlags();
 		volume.mAABB = pClipVolume->GetClipVolumeBBox();
 		pClipVolume->GetClipVolumeMesh(volume.m_pRenderMesh, volume.mWorldTM);
@@ -1350,16 +1349,16 @@ void CRenderView::AddRenderObject(CRenderElement* re, SShaderItem& SH, CRenderOb
 
 	CShaderResources* const __restrict pShaderResources = (CShaderResources*)SH.m_pShaderResources;
 
-	// Need to differentiate between something rendered with cloak layer material, and sorted with cloak.
-	// e.g. ironsight glows on gun should be sorted with cloak to not write depth - can be inconsistent with no depth from gun.
-	const uint32 nCloakRenderedMask = mask_nz_zr(nMaterialLayers & MTL_LAYER_BLEND_CLOAK, pShaderResources ? static_cast<CShaderResources*>(pShaderResources)->CShaderResources::GetMtlLayerNoDrawFlags() & MTL_LAYER_CLOAK : 0);
-	uint32 nCloakLayerMask = nz2mask(nMaterialLayers & MTL_LAYER_BLEND_CLOAK);
-
 	// Discard 0 alpha blended geometry - this should be discarded earlier on 3dengine side preferably
 	if (!obj->m_fAlpha)
 		return;
 	if (pShaderResources && pShaderResources->::CShaderResources::IsInvisible())
 		return;
+
+	// Need to differentiate between something rendered with cloak layer material, and sorted with cloak.
+	// e.g. ironsight glows on gun should be sorted with cloak to not write depth - can be inconsistent with no depth from gun.
+	const uint32 nCloakRenderedMask = pShaderResources && mask_nz_zr(nMaterialLayers & MTL_LAYER_BLEND_CLOAK, pShaderResources ? static_cast<CShaderResources*>(pShaderResources)->CShaderResources::GetMtlLayerNoDrawFlags() & MTL_LAYER_CLOAK : 0);
+	uint32 nCloakLayerMask = nz2mask(nMaterialLayers & MTL_LAYER_BLEND_CLOAK);
 
 #ifdef _DEBUG
 	static float sMatIdent[12] =
@@ -1471,66 +1470,6 @@ void CRenderView::AddRenderObject(CRenderElement* re, SShaderItem& SH, CRenderOb
 	//if (obj->m_nMaterialLayers & MTL_LAYER_BLEND_CLOAK) nAW = 1;   -> branchless
 	nAW |= nz2one(obj->m_nMaterialLayers & MTL_LAYER_BLEND_CLOAK);
 
-	if (nShaderFlags & (EF_REFRACTIVE | EF_FORCEREFRACTIONUPDATE) || nCloakRenderedMask)
-	{
-		SRenderObjData* pOD = obj->GetObjData();
-
-		if (obj->m_pRenderNode && pOD)
-		{
-			const auto& rViewport = passInfo.GetRenderView()->GetViewport();
-			const int32 align16 = (16 - 1);
-			const int32 shift16 = 4;
-			if (CRenderer::CV_r_RefractionPartialResolves)
-			{
-				AABB aabb;
-				IRenderNode* pRenderNode = obj->m_pRenderNode;
-				pRenderNode->FillBBox(aabb);
-
-				int iOut[4];
-
-				passInfo.GetCamera().CalcScreenBounds(&iOut[0], &aabb, rViewport.width, rViewport.height);
-				pOD->m_screenBounds[0] = min(iOut[0] >> shift16, 255);
-				pOD->m_screenBounds[1] = min(iOut[1] >> shift16, 255);
-				pOD->m_screenBounds[2] = min((iOut[2] + align16) >> shift16, 255);
-				pOD->m_screenBounds[3] = min((iOut[3] + align16) >> shift16, 255);
-
-#if REFRACTION_PARTIAL_RESOLVE_DEBUG_VIEWS
-				if (CRenderer::CV_r_RefractionPartialResolvesDebug == eRPR_DEBUG_VIEW_3D_BOUNDS)
-				{
-					// Debug bounding box view for refraction partial resolves
-					IRenderAuxGeom* pAuxRenderer = gEnv->pRenderer->GetIRenderAuxGeom();
-					if (pAuxRenderer)
-					{
-						SAuxGeomRenderFlags oldRenderFlags = pAuxRenderer->GetRenderFlags();
-
-						SAuxGeomRenderFlags newRenderFlags;
-						newRenderFlags.SetDepthTestFlag(e_DepthTestOff);
-						newRenderFlags.SetAlphaBlendMode(e_AlphaBlended);
-						pAuxRenderer->SetRenderFlags(newRenderFlags);
-
-						const bool bSolid = true;
-						const ColorB solidColor(64, 64, 255, 64);
-						pAuxRenderer->DrawAABB(aabb, bSolid, solidColor, eBBD_Faceted);
-
-						const ColorB wireframeColor(255, 0, 0, 255);
-						pAuxRenderer->DrawAABB(aabb, !bSolid, wireframeColor, eBBD_Faceted);
-
-						// Set previous Aux render flags back again
-						pAuxRenderer->SetRenderFlags(oldRenderFlags);
-					}
-				}
-#endif
-			}
-			else if (nShaderFlags & EF_FORCEREFRACTIONUPDATE)
-			{
-				pOD->m_screenBounds[0] = 0;
-				pOD->m_screenBounds[1] = 0;
-				pOD->m_screenBounds[2] = std::min<uint32>((rViewport.width ) >> shift16, 255);
-				pOD->m_screenBounds[3] = std::min<uint32>((rViewport.height) >> shift16, 255);
-			}
-		}
-	}
-
 	// final step, for post 3d items, remove them from any other list than POST_3D_RENDER
 	// (have to do this here as the batch needed to go through the normal nList assign path first)
 	nBatchFlags = iselmask(nz2mask(nBatchFlags & FB_POST_3D_RENDER), FB_POST_3D_RENDER, nBatchFlags);
@@ -1573,23 +1512,24 @@ void CRenderView::AddRenderItem(CRenderElement* pElem, CRenderObject* RESTRICT_P
 
 	nBatchFlags |= (shaderItem.m_nPreprocessFlags & FSPR_MASK);
 
-	SRendItem ri;
+	const uint32 nMaterialLayers = pObj->m_nMaterialLayers;
+	// Need to differentiate between something rendered with cloak layer material, and sorted with cloak.
+	// e.g. ironsight glows on gun should be sorted with cloak to not write depth - can be inconsistent with no depth from gun.
+	const uint32 nCloakRenderedMask = shaderItem.m_pShaderResources && mask_nz_zr(nMaterialLayers & MTL_LAYER_BLEND_CLOAK, static_cast<CShaderResources*>(shaderItem.m_pShaderResources)->CShaderResources::GetMtlLayerNoDrawFlags() & MTL_LAYER_CLOAK);
 
-	ri.pObj = pObj;
-	ri.pCompiledObject = nullptr;
+	if (pShader->m_Flags & (EF_REFRACTIVE | EF_FORCEREFRACTIONUPDATE) || nCloakRenderedMask)
+	{
+		SRenderObjData* pOD = pObj->GetObjData();
 
-	if (nList == EFSLIST_TRANSP || nList == EFSLIST_TRANSP_NEAREST || nList == EFSLIST_HALFRES_PARTICLES)
-		ri.fDist = SRendItem::EncodeDistanceSortingValue(pObj);
-	else
-		ri.ObjSort = SRendItem::EncodeObjFlagsSortingValue(pObj);
+		if (pObj->m_pRenderNode && pOD)
+		{
+			const auto& viewport = passInfo.GetRenderView()->GetViewport();
+			const bool forceFullscreenUpdate = !!(pShader->m_Flags & EF_FORCEREFRACTIONUPDATE);
+			pOD->m_screenBounds = ComputeResolveViewport(viewport, pObj, passInfo.GetCamera(), forceFullscreenUpdate);
+		}
 
-	ri.nBatchFlags = nBatchFlags;
-	//ri.nStencRef = pObj->m_nClipVolumeStencilRef + 1; // + 1, we start at 1. 0 is reserved for MSAAed areas.
-
-	ri.rendItemSorter = sorter;
-
-	ri.SortVal = SRendItem::PackShaderItem(shaderItem);
-	ri.pElem = pElem;
+		nBatchFlags |= FB_REFRACTION;
+	}
 
 	// objects with FOB_NEAREST go to EFSLIST_NEAREST in shadow pass and general
 	if ((pObj->m_ObjFlags & FOB_NEAREST) && (bShadowPass || (nList == EFSLIST_GENERAL && CRenderer::CV_r_GraphicsPipeline > 0)))
@@ -1599,6 +1539,45 @@ void CRenderView::AddRenderItem(CRenderElement* pElem, CRenderObject* RESTRICT_P
 		if (bShadowPass)
 			m_shadows.AddNearestCaster(pObj, passInfo);
 	}
+
+	SRendItem ri;
+
+	ri.SortVal = SRendItem::PackShaderItem(shaderItem);
+	ri.nBatchFlags = nBatchFlags;
+
+	// ATTENTION: Keep in sync with symmetric switch in CRenderView::Job_SortRenderItemsInList(ERenderListID list), see below
+	switch (nList)
+	{
+	// No need to sort.
+	case EFSLIST_SHADOW_GEN:
+	case EFSLIST_FOG_VOLUME:
+		break;
+	case EFSLIST_ZPREPASS:
+	case EFSLIST_GENERAL:
+	case EFSLIST_SKIN:
+	case EFSLIST_NEAREST_OBJECTS:
+	case EFSLIST_DEBUG_HELPER:
+		if (CRenderer::CV_r_ZPassDepthSorting != 2)
+			goto fallthrough;
+	case EFSLIST_WATER_VOLUMES:
+	case EFSLIST_TRANSP:
+	case EFSLIST_TRANSP_NEAREST:
+	case EFSLIST_WATER:
+	case EFSLIST_HALFRES_PARTICLES:
+	case EFSLIST_LENSOPTICS:
+	case EFSLIST_EYE_OVERLAY:
+		ri.fDist = SRendItem::EncodeDistanceSortingValue(pObj);
+		break;
+	fallthrough:
+	default:
+		ri.ObjSort = SRendItem::EncodeObjFlagsSortingValue(pObj);
+		break;
+	}
+
+	ri.rendItemSorter = sorter;
+	ri.pCompiledObject = nullptr;
+	ri.pElem = pElem;
+	//ri.nStencRef = pObj->m_nClipVolumeStencilRef + 1; // + 1, we start at 1. 0 is reserved for MSAAed areas.
 
 	//////////////////////////////////////////////////////////////////////////
 	// Permanent objects support.
@@ -1612,43 +1591,64 @@ void CRenderView::AddRenderItem(CRenderElement* pElem, CRenderObject* RESTRICT_P
 		// This is not thread safe!!!, code at 3d engine makes sure this can never be called simultaneously on the same RenderObject on the same pass type.
 		//  General and shadows can be called simultaneously, they are writing to the separate arrays.
 		CPermanentRenderObject::SPermanentRendItem pri;
-		pri.m_nBatchFlags = nBatchFlags;
-		pri.m_nRenderList = nList;
-		pri.m_objSort = ri.ObjSort;
-		pri.m_pCompiledObject = ri.pCompiledObject;
-		pri.m_pRenderElement = pElem;
+
 		pri.m_sortValue = ri.SortVal;
+		pri.m_nBatchFlags = nBatchFlags;
+		pri.m_objSort = ri.ObjSort;
+		pri.m_nRenderList = nList;
+
+		pri.m_pCompiledObject = ri.pCompiledObject;
+		pri.m_nBatchFlags |= ri.pCompiledObject ? FB_COMPILED_OBJECT : 0;
+
+		pri.m_pRenderElement = pElem;
 
 		auto renderPassType = (bShadowPass) ? CPermanentRenderObject::eRenderPass_Shadows : CPermanentRenderObject::eRenderPass_General;
 		pPermanentRendObj->m_permanentRenderItems[renderPassType].push_back(pri);
 
 		pPermanentRendObj->PrepareForUse(pElem, renderPassType);
-
 		return;
 	}
-	else if (m_bTrackUncompiledItems)
+	
+	if (m_bTrackUncompiledItems)
 	{
 		// This item will need a temporary compiled object
 		EDataType reType = pElem ? pElem->mfGetType() : eDATA_Unknown;
-		bool bMeshCompatibleRenderElement = reType == eDATA_Mesh || reType == eDATA_Terrain || reType == eDATA_GeomCache || reType == eDATA_ClientPoly;
-		bool bCompiledRenderElement = (reType == eDATA_WaterVolume
-		                               || reType == eDATA_WaterOcean
-		                               || reType == eDATA_Sky
-		                               || reType == eDATA_HDRSky
-		                               || reType == eDATA_FogVolume);
+
+		bool bMeshCompatibleRenderElement = 
+			reType == eDATA_Mesh ||
+			reType == eDATA_Terrain ||
+			reType == eDATA_GeomCache ||
+			reType == eDATA_ClientPoly;
+
+		bool bCompiledRenderElement = 
+			reType == eDATA_WaterVolume ||
+			reType == eDATA_WaterOcean ||
+			reType == eDATA_Sky ||
+			reType == eDATA_HDRSky ||
+			reType == eDATA_FogVolume;
+
+		bool bCustomRenderLoop =
+			reType == eDATA_LensOptics;
+
 		if (bMeshCompatibleRenderElement || bCompiledRenderElement) // temporary disable for these types
 		{
 			// Allocate new CompiledRenderObject.
 			ri.pCompiledObject = AllocCompiledObjectTemporary(pObj, pElem, shaderItem);
+			ri.nBatchFlags |= FB_COMPILED_OBJECT;
+		}
+		else if (bCustomRenderLoop)
+		{
+			ri.pRenderObject = pObj;
 		}
 	}
 	//////////////////////////////////////////////////////////////////////////
+
 #if !defined(_RELEASE)
-	if (CRenderer::CV_r_SkipAlphaTested && (ri.pObj->m_ObjFlags & FOB_ALPHATEST))
+	if (CRenderer::CV_r_SkipAlphaTested && (pObj->m_ObjFlags & FOB_ALPHATEST))
 		return;
 #endif
 
-	AddRenderItemToRenderLists<true>(ri, nList, nBatchFlags, shaderItem);
+	AddRenderItemToRenderLists<true>(ri, nList, pObj, shaderItem);
 
 	////////////////////////////////////////////////////////////////////////
 	// Check if shader item needs update
@@ -1670,8 +1670,10 @@ inline void UpdateRenderListBatchFlags(volatile uint32& listFlags, int newFlags)
 }
 
 template<bool bConcurrent>
-inline void CRenderView::AddRenderItemToRenderLists(const SRendItem& ri, int nRenderList, int nBatchFlags, const SShaderItem& shaderItem) threadsafe
+inline void CRenderView::AddRenderItemToRenderLists(const SRendItem& ri, int nRenderList, CRenderObject* RESTRICT_POINTER pObj, const SShaderItem& shaderItem) threadsafe
 {
+	const uint32 nBatchFlags = ri.nBatchFlags;
+
 	m_renderItems[nRenderList].push_back(ri);
 	UpdateRenderListBatchFlags<bConcurrent>(m_BatchFlags[nRenderList], nBatchFlags);
 
@@ -1680,8 +1682,8 @@ inline void CRenderView::AddRenderItemToRenderLists(const SRendItem& ri, int nRe
 		const bool bForwardOpaqueFlags = (nBatchFlags & (FB_DEBUG | FB_TILED_FORWARD)) != 0;
 		const bool bIsMaterialEmissive = (shaderItem.m_pShaderResources && shaderItem.m_pShaderResources->IsEmissive());
 		const bool bIsTransparent = (nRenderList == EFSLIST_TRANSP) || (nRenderList == EFSLIST_TRANSP_NEAREST);
-		const bool bIsSelectable = ri.pObj->m_editorSelectionID > 0;
-		const bool bNearest = (ri.pObj->m_ObjFlags & FOB_NEAREST) != 0;
+		const bool bIsSelectable = pObj->m_editorSelectionID > 0;
+		const bool bNearest = (pObj->m_ObjFlags & FOB_NEAREST) != 0;
 
 		const bool bGeneralList =
 			nRenderList == EFSLIST_GENERAL ||
@@ -1732,6 +1734,63 @@ inline void CRenderView::AddRenderItemToRenderLists(const SRendItem& ri, int nRe
 			UpdateRenderListBatchFlags<bConcurrent>(m_BatchFlags[EFSLIST_HIGHLIGHT], nBatchFlags);
 		}
 	}
+}
+
+TRect_tpl<uint16> CRenderView::ComputeResolveViewport(const SRenderViewport &viewport, const CRenderObject* obj, const CCamera &camera, bool forceFullscreenUpdate) const {
+	const int32 align16 = (16 - 1);
+	const int32 shift16 = 4;
+
+	TRect_tpl<uint16> resolveViewport;
+	if (CRenderer::CV_r_RefractionPartialResolves)
+	{
+		AABB aabb;
+		IRenderNode* pRenderNode = obj->m_pRenderNode;
+		pRenderNode->FillBBox(aabb);
+
+		int iOut[4];
+
+		camera.CalcScreenBounds(&iOut[0], &aabb, viewport.width, viewport.height);
+		resolveViewport.Min.x = iOut[0] >> shift16;
+		resolveViewport.Min.y = iOut[1] >> shift16;
+		resolveViewport.Max.x = (iOut[2] + align16) >> shift16;
+		resolveViewport.Max.y = (iOut[3] + align16) >> shift16;
+
+#if REFRACTION_PARTIAL_RESOLVE_DEBUG_VIEWS
+		if (CRenderer::CV_r_RefractionPartialResolvesDebug == eRPR_DEBUG_VIEW_3D_BOUNDS)
+		{
+			// Debug bounding box view for refraction partial resolves
+			IRenderAuxGeom* pAuxRenderer = gEnv->pRenderer->GetIRenderAuxGeom();
+			if (pAuxRenderer)
+			{
+				SAuxGeomRenderFlags oldRenderFlags = pAuxRenderer->GetRenderFlags();
+
+				SAuxGeomRenderFlags newRenderFlags;
+				newRenderFlags.SetDepthTestFlag(e_DepthTestOff);
+				newRenderFlags.SetAlphaBlendMode(e_AlphaBlended);
+				pAuxRenderer->SetRenderFlags(newRenderFlags);
+
+				const bool bSolid = true;
+				const ColorB solidColor(64, 64, 255, 64);
+				pAuxRenderer->DrawAABB(aabb, bSolid, solidColor, eBBD_Faceted);
+
+				const ColorB wireframeColor(255, 0, 0, 255);
+				pAuxRenderer->DrawAABB(aabb, !bSolid, wireframeColor, eBBD_Faceted);
+
+				// Set previous Aux render flags back again
+				pAuxRenderer->SetRenderFlags(oldRenderFlags);
+			}
+		}
+#endif
+	}
+	else if (forceFullscreenUpdate)
+	{
+		resolveViewport.Min.x = 0;
+		resolveViewport.Min.y = 0;
+		resolveViewport.Max.x = (viewport.width) >> shift16;
+		resolveViewport.Max.y = (viewport.height) >> shift16;
+	}
+
+	return resolveViewport;
 }
 
 void CRenderView::ExpandPermanentRenderObjects()
@@ -1813,6 +1872,7 @@ void CRenderView::ExpandPermanentRenderObjects()
 							if (((volatile CCompiledRenderObject*)pri.m_pCompiledObject) == nullptr)
 							{
 								pri.m_pCompiledObject = AllocCompiledObject(pRenderObject, pri.m_pRenderElement, shaderItem); // Allocate new CompiledRenderObject.
+								pri.m_nBatchFlags |= FB_COMPILED_OBJECT;
 								needsCompilation = true;
 							}
 						}
@@ -1828,23 +1888,25 @@ void CRenderView::ExpandPermanentRenderObjects()
 
 					CheckAndScheduleForUpdate(shaderItem);
 
-					SRendItem ri;
-					ri.SortVal = pri.m_sortValue;
-					ri.pElem = pri.m_pRenderElement;
-					ri.pObj = pRenderObject;
-					ri.pCompiledObject = pri.m_pCompiledObject;
-					ri.ObjSort = pri.m_objSort;
-					ri.nBatchFlags = pri.m_nBatchFlags;
-					//ri.nStencRef = pRenderObject->m_nClipVolumeStencilRef + 1; // + 1, we start at 1. 0 is reserved for MSAAed areas.
-					ri.rendItemSorter = SRendItemSorter(record.itemSorter);
-
 					int renderList;
 					if (renderPassType == CPermanentRenderObject::eRenderPass_Shadows)
 						renderList = record.shadowFrustumSide;
 					else
 						renderList = pri.m_nRenderList;
 
-					AddRenderItemToRenderLists<false>(ri, renderList, pri.m_nBatchFlags, shaderItem);
+					SRendItem ri;
+
+					ri.SortVal = pri.m_sortValue;
+					ri.nBatchFlags = pri.m_nBatchFlags;
+					ri.ObjSort = pri.m_objSort;
+					ri.rendItemSorter = SRendItemSorter(record.itemSorter);
+					ri.pCompiledObject = pri.m_pCompiledObject;
+					ri.pElem = pri.m_pRenderElement;
+					//ri.nStencRef = pRenderObject->m_nClipVolumeStencilRef + 1; // + 1, we start at 1. 0 is reserved for MSAAed areas.
+
+					if (renderList == EFSLIST_TRANSP || renderList == EFSLIST_TRANSP_NEAREST || renderList == EFSLIST_HALFRES_PARTICLES)
+						ri.fDist = SRendItem::EncodeDistanceSortingValue(pRenderObject);
+					AddRenderItemToRenderLists<false>(ri, renderList, pRenderObject, shaderItem);
 
 					// The need for compilation is not detected beforehand, and it only needs to be recompiled because the elements are either skinned, dirty, or need to be updated always.
 					// In this case object need to be recompiled to get skinning, or input stream updated but compilation of constant buffer is not needed.
@@ -1958,7 +2020,7 @@ void CRenderView::CompileModifiedRenderObjects()
 			auto& pri = items[i];
 			if (!pri.m_pCompiledObject)
 				continue;
-			if (!pri.m_pCompiledObject->Compile(pRenderObject, compilationFlags, this))
+			if (!pri.m_pCompiledObject->Compile(compilationFlags, this))
 				bAllCompiled = false;
 		}
 
@@ -1982,13 +2044,13 @@ void CRenderView::CompileModifiedRenderObjects()
 	int numTempObjects = m_temporaryCompiledObjects.size();
 	for (int i = 0; i < numTempObjects; i++)
 	{
-		auto& pair = m_temporaryCompiledObjects[i]; // first=CRenderObject, second=CCompiledObject
-		const bool isCompiled = pair.pCompiledObject->Compile(pair.pRenderObject, eObjCompilationOption_All, this);
+		auto* pCompiledObject = m_temporaryCompiledObjects[i];
+		const bool isCompiled = pCompiledObject->Compile(eObjCompilationOption_All, this);
 
 		if (IsShadowGenView())
 		{
 			// NOTE: this can race with the the main thread but the worst outcome will be that the object is rendered multiple times into the shadow cache
-			ShadowMapFrustum::ForceMarkNodeAsUncached(pair.pRenderObject->m_pRenderNode);
+			ShadowMapFrustum::ForceMarkNodeAsUncached(pCompiledObject->m_pRO->m_pRenderNode);
 		}
 	}
 
@@ -2100,8 +2162,8 @@ void CRenderView::ClearTemporaryCompiledObjects()
 	size_t numObjects = m_temporaryCompiledObjects.size();
 	for (size_t i = 0; i < numObjects; i++)
 	{
-		auto& pair = m_temporaryCompiledObjects[i];
-		CCompiledRenderObject::FreeToPool(pair.pCompiledObject);
+		auto* pCompiledObject = m_temporaryCompiledObjects[i];
+		CCompiledRenderObject::FreeToPool(pCompiledObject);
 	}
 	m_temporaryCompiledObjects.clear();
 	/////////////////////////////////////////////////////////////////////////////
@@ -2191,8 +2253,8 @@ struct SCompareRendItemSelectionPass
 	bool operator()(const SRendItem& a, const SRendItem& b) const
 	{
 		// Selection and highlight are the first two bits of the selectionID
-		uint8 bAHighlightSelect = (a.pObj->m_editorSelectionID & 0x3);
-		uint8 bBHighlightSelect = (b.pObj->m_editorSelectionID & 0x3);
+		uint8 bAHighlightSelect = (a.pCompiledObject->m_pRO->m_editorSelectionID & 0x3);
+		uint8 bBHighlightSelect = (b.pCompiledObject->m_pRO->m_editorSelectionID & 0x3);
 
 		// Highlight is the higher bit, so highlighted objects win in the comparison.
 		// Also, selected objects win over non-selected objects, which is exactly what we want

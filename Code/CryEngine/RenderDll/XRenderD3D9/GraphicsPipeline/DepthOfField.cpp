@@ -41,6 +41,9 @@ Vec4 CDepthOfFieldStage::ToUnitDisk(Vec4& origin, float blades, float fstop)
 
 void CDepthOfFieldStage::Execute()
 {
+	if (CRenderer::CV_r_dof == 0)
+		return;
+
 	CD3D9Renderer* rd = gcpRendD3D;
 
 	CDepthOfField* pDofRenderTech = (CDepthOfField*)PostEffectMgr()->GetEffect(EPostEffectID::DepthOfField);
@@ -99,7 +102,7 @@ void CDepthOfFieldStage::Execute()
 		{
 			PROFILE_LABEL_SCOPE("DOWNSCALE LAYERS");
 
-			if (m_passLayerDownscale.InputChanged())
+			if (m_passLayerDownscale.IsDirty())
 			{
 				static CCryNameTSCRC techNameDownscale("DownscaleDof");
 				m_passLayerDownscale.SetPrimitiveFlags(CRenderPrimitive::eFlags_ReflectShaderConstants_PS);
@@ -126,7 +129,7 @@ void CDepthOfFieldStage::Execute()
 			PROFILE_LABEL_SCOPE("MIN COC DOWNSCALE");
 			for (uint32 i = 1; i < MIN_DOF_COC_K; i++)
 			{
-				if (m_passTileMinCoC[i].InputChanged())
+				if (m_passTileMinCoC[i].IsDirty())
 				{
 					static CCryNameTSCRC techNameTileMinCoC("TileMinCoC");
 					m_passTileMinCoC[i].SetPrimitiveFlags(CRenderPrimitive::eFlags_ReflectShaderConstants_VS);
@@ -163,7 +166,7 @@ void CDepthOfFieldStage::Execute()
 
 			PROFILE_LABEL_SCOPE("FAR/NEAR LAYER");
 
-			if (m_passGather0.InputChanged())
+			if (m_passGather0.IsDirty())
 			{
 				static CCryNameTSCRC techDOF("Dof");
 				m_passGather0.SetPrimitiveFlags(CRenderPrimitive::eFlags_ReflectShaderConstants_PS);
@@ -208,7 +211,7 @@ void CDepthOfFieldStage::Execute()
 
 			PROFILE_LABEL_SCOPE("FAR/NEAR LAYER ITERATION");
 
-			if (m_passGather1.InputChanged())
+			if (m_passGather1.IsDirty())
 			{
 				static CCryNameTSCRC techDOF("Dof");
 				m_passGather1.SetPrimitiveFlags(CRenderPrimitive::eFlags_ReflectShaderConstants_PS);
@@ -240,7 +243,7 @@ void CDepthOfFieldStage::Execute()
 		{
 			PROFILE_LABEL_SCOPE("COMPOSITE");
 
-			if (m_passComposition.InputChanged())
+			if (m_passComposition.IsDirty())
 			{
 				static CCryNameTSCRC techCompositeDof("CompositeDof");
 				m_passComposition.SetPrimitiveFlags(CRenderPrimitive::eFlags_ReflectShaderConstants_PS);

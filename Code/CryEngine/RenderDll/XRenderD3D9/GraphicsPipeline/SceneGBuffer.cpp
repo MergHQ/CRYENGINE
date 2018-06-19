@@ -387,7 +387,7 @@ void CSceneGBufferStage::ExecuteLinearizeDepth()
 {
 	PROFILE_LABEL_SCOPE("LINEARIZE_DEPTH");
 
-	if (m_passDepthLinearization.InputChanged(RenderView()->GetDepthTarget()->GetTextureID()))
+	if (m_passDepthLinearization.IsDirty(RenderView()->GetDepthTarget()->GetTextureID()))
 	{
 		static CCryNameTSCRC techLinearizeDepth("LinearizeDepth");
 
@@ -492,19 +492,19 @@ void CSceneGBufferStage::Execute()
 	m_overlayPass.SetViewport(rViewport);
 
 	{
-		// Clear depth (stencil initialized to 1 - 0 is reserved for MSAAed samples)
+		// Clear depth (stencil initialized to STENCIL_VALUE_OUTDOORS)
 		bool bReverseDepth = true;
 
 		if (CVrProjectionManager::Instance()->GetProjectionType() == CVrProjectionManager::eVrProjection_LensMatched)
-		{ 
+		{
 			// use inverse depth here
 			bReverseDepth = !bReverseDepth;
-			CClearSurfacePass::Execute(pZTexture, CLEAR_ZBUFFER | CLEAR_STENCIL, bReverseDepth ? 0.0f : 1.0f, 1);
+			CClearSurfacePass::Execute(pZTexture, CLEAR_ZBUFFER | CLEAR_STENCIL, bReverseDepth ? 0.0f : 1.0f, STENCIL_VALUE_OUTDOORS);
 			CVrProjectionManager::Instance()->ExecuteLensMatchedOctagon(pRenderView->GetDepthTarget());
 		}
 		else
 		{
-			CClearSurfacePass::Execute(pZTexture, CLEAR_ZBUFFER | CLEAR_STENCIL, bReverseDepth ? 0.0f : 1.0f, 1);
+			CClearSurfacePass::Execute(pZTexture, CLEAR_ZBUFFER | CLEAR_STENCIL, bReverseDepth ? 0.0f : 1.0f, STENCIL_VALUE_OUTDOORS);
 		}
 
 		// Clear velocity target
@@ -561,5 +561,39 @@ void CSceneGBufferStage::Execute()
 			ExecuteSceneOverlays();
 
 		rendItemDrawer.JobifyDrawSubmission();
+	}
+}
+
+void CSceneGBufferStage::ExecuteMinimumZpass()
+{
+	PROFILE_LABEL_SCOPE("MINIMUM_ZPASS");
+
+	// NOTE: no more external state changes in here, everything should have been setup
+	auto& rViewport = GetViewport();
+	CRenderView* pRenderView = RenderView();
+	auto& rendItemDrawer = pRenderView->GetDrawer();
+
+	m_depthPrepass.SetViewport(rViewport);
+
+	// Update pass viewport and flags
+	CSceneRenderPass::EPassFlags passFlags = CSceneRenderPass::ePassFlags_VrProjectionPass;
+	passFlags |= CSceneRenderPass::ePassFlags_ReverseDepth;
+	m_depthPrepass.SetFlags(passFlags | CSceneRenderPass::ePassFlags_RenderNearest);
+
+	{
+		rendItemDrawer.InitDrawSubmission();
+
+		m_depthPrepass.BeginExecution();
+
+		m_depthPrepass.SetupPassContext(m_stageID, ePass_DepthPrepass, TTYPE_ZPREPASS, FB_ZPREPASS);
+		m_depthPrepass.DrawRenderItems(pRenderView, EFSLIST_FORWARD_OPAQUE_NEAREST);
+
+		m_depthPrepass.SetupPassContext(m_stageID, ePass_DepthPrepass, TTYPE_ZPREPASS, FB_ZPREPASS | FB_GENERAL);
+		m_depthPrepass.DrawRenderItems(pRenderView, EFSLIST_FORWARD_OPAQUE);
+
+		m_depthPrepass.EndExecution();
+
+		rendItemDrawer.JobifyDrawSubmission();
+		rendItemDrawer.WaitForDrawSubmission();
 	}
 }

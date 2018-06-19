@@ -1039,6 +1039,8 @@ void CShaderMan::mfInitGlobal(void)
 				g_HWSR_MaskBit[HWSR_SAMPLE4] = gb->m_Mask;
 			else if (gb->m_ParamName == "%_RT_SAMPLE5")
 				g_HWSR_MaskBit[HWSR_SAMPLE5] = gb->m_Mask;
+			else if (gb->m_ParamName == "%_RT_SAMPLE6")
+				g_HWSR_MaskBit[HWSR_SAMPLE6] = gb->m_Mask;
 			else if (gb->m_ParamName == "%_RT_ANIM_BLEND")
 				g_HWSR_MaskBit[HWSR_ANIM_BLEND] = gb->m_Mask;
 			else if (gb->m_ParamName == "%_RT_MOTION_BLUR")
@@ -1210,6 +1212,8 @@ void CShaderMan::mfPostInit()
 	{
 		mfLoadDefaultSystemShaders();
 	}
+
+	gRenDev->m_pRT->FlushAndWait(); // TODO: Remove as soon as DeviceTexture's FlushAndWait is removed
 }
 
 void CShaderMan::OnSystemEvent(ESystemEvent event, UINT_PTR wparam, UINT_PTR lparam)

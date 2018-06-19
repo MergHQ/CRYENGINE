@@ -47,11 +47,13 @@ void CManager::RenderThreadUpdate(CRenderView* pRenderView)
 		m_counter.CreateDeviceBuffer();
 		m_scratch.CreateDeviceBuffer();
 
-		// Full clear
-		const ColorI nulls = { 0, 0, 0, 0 };
+		{
+			// Full clear
+			const ColorI nulls = { 0, 0, 0, 0 };
 
-		CClearSurfacePass::Execute(&m_counter.GetBuffer(), nulls);
-		CClearSurfacePass::Execute(&m_scratch.GetBuffer(), nulls);
+			CClearSurfacePass::Execute(&m_counter.GetBuffer(), nulls);
+			CClearSurfacePass::Execute(&m_scratch.GetBuffer(), nulls);
+		}
 
 		// initialize readback staging buffer
 		m_counter.Readback(kMaxRuntimes);

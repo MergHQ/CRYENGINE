@@ -5,6 +5,8 @@
 #include "ParticleSystem/ParticleSystem.h"
 #include "FeatureCollision.h"
 
+#include <CrySerialization/IArchiveHost.h>
+
 namespace pfx2
 {
 

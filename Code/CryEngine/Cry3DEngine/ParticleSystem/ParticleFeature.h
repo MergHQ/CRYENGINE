@@ -2,19 +2,17 @@
 
 #pragma once
 
-#include "ParticleUpdate.h"
+#include "ParticleCommon.h"
 #include "Features/ParamTraits.h"
-
-#include <CrySerialization/IArchive.h>
-#include <CrySerialization/Color.h>
-#include <CrySerialization/ClassFactory.h>
-
 #include <CryRenderer/IGpuParticles.h>
 #include <CryCore/Dispatcher.h>
 
 namespace pfx2
 {
 
+class CParticleEmitter;
+class CParticleComponent;
+struct SComponentParams;
 class CParticleComponentRuntime;
 struct SInstance;
 
@@ -47,51 +45,46 @@ public:
 	virtual bool              CanMakeRuntime(CParticleEmitter* pEmitter) const                          { return true; }
 
 	// Runtime and instance initialization
-	virtual void MainPreUpdate(CParticleComponentRuntime* pComponentRuntime) {}
+	virtual void MainPreUpdate(CParticleComponentRuntime& runtime) {}
 
-	virtual void AddSubInstances(const SUpdateContext& context) {}
+	virtual void AddSubInstances(CParticleComponentRuntime& runtime) {}
 
-	virtual void CullSubInstances(const SUpdateContext& context, TVarArray<SInstance>& instances) {}
+	virtual void CullSubInstances(CParticleComponentRuntime& runtime, TVarArray<SInstance>& instances) {}
 
-	virtual void InitSubInstances(const SUpdateContext& context, SUpdateRange instanceRange) {}
+	virtual void InitSubInstances(CParticleComponentRuntime& runtime, SUpdateRange instanceRange) {}
 
-	virtual void GetSpatialExtents(const SUpdateContext& context, TConstArray<float> scales, TVarArray<float> extents) {}
+	virtual void GetSpatialExtents(const CParticleComponentRuntime& runtime, TConstArray<float> scales, TVarArray<float> extents) {}
 
-	virtual void GetEmitOffset(const SUpdateContext& context, TParticleId parentId, Vec3& offset) {}
+	virtual void GetEmitOffset(const CParticleComponentRuntime& runtime, TParticleId parentId, Vec3& offset) {}
 
 	// Particle initialization
-	virtual void SpawnParticles(const SUpdateContext& context, TDynArray<SSpawnEntry>& spawnEntries) {}
+	virtual void SpawnParticles(CParticleComponentRuntime& runtime, TDynArray<SSpawnEntry>& spawnEntries) {}
 
-	virtual void PreInitParticles(const SUpdateContext& context) {}
+	virtual void PreInitParticles(CParticleComponentRuntime& runtime) {}
 
-	virtual void InitParticles(const SUpdateContext& context) {}
+	virtual void InitParticles(CParticleComponentRuntime& runtime) {}
 
-	virtual void PostInitParticles(const SUpdateContext& context) {}
+	virtual void PostInitParticles(CParticleComponentRuntime& runtime) {}
 
-	virtual void DestroyParticles(const SUpdateContext& context) {}
+	virtual void DestroyParticles(CParticleComponentRuntime& runtime) {}
 
 	// Particle update
-	virtual void PreUpdateParticles(const SUpdateContext& context) {}
+	virtual void PreUpdateParticles(CParticleComponentRuntime& runtime) {}
 
-	virtual void UpdateParticles(const SUpdateContext& context) {}
+	virtual void UpdateParticles(CParticleComponentRuntime& runtime) {}
 
-	virtual void PostUpdateParticles(const SUpdateContext& context) {}
-
-	virtual void ComputeBounds(CParticleComponentRuntime* pComponentRuntime, AABB& bounds) {}
+	virtual void PostUpdateParticles(CParticleComponentRuntime& runtime) {}
 
 	// Rendering
-	virtual void Render(CParticleEmitter* pEmitter, CParticleComponentRuntime* pComponentRuntime, CParticleComponent* pComponent, const SRenderContext& renderContext) {}
-	virtual void RenderDeferred(CParticleEmitter* pEmitter, CParticleComponentRuntime* pComponentRuntime, CParticleComponent* pComponent, const SRenderContext& renderContext) {}
-	virtual void ComputeVertices(CParticleComponentRuntime* pComponentRuntime, const SCameraInfo& camInfo, CREParticle* pRE, uint64 uRenderFlags, float fMaxPixels) {}
+	virtual void Render(CParticleComponentRuntime& runtime, const SRenderContext& renderContext) {}
+	virtual void RenderDeferred(const CParticleComponentRuntime& runtime, const SRenderContext& renderContext) {}
+	virtual void ComputeVertices(const CParticleComponentRuntime& runtime, const SCameraInfo& camInfo, CREParticle* pRE, uint64 uRenderFlags, float fMaxPixels) {}
 
 	// GPU interface
-	virtual void UpdateGPUParams(const SUpdateContext& context, gpu_pfx2::SUpdateParams& params) {}
+	virtual void UpdateGPUParams(CParticleComponentRuntime& runtime, gpu_pfx2::SUpdateParams& params) {}
 
 	gpu_pfx2::IParticleFeature* GetGpuInterface() { return m_gpuInterface; }
 	gpu_pfx2::IParticleFeature* MakeGpuInterface(CParticleComponent* pComponent, gpu_pfx2::EGpuFeatureType feature);
-
-protected:
-	void AddNoPropertiesLabel(Serialization::IArchive& ar);
 
 private:
 	SEnable                                m_enabled;
@@ -102,31 +95,30 @@ template<class... Args> using TFeatureDispatcher = Dispatcher<CParticleFeature, 
 
 struct SFeatureDispatchers
 {
-	TFeatureDispatcher<CParticleComponentRuntime*> MainPreUpdate { &CParticleFeature::MainPreUpdate };
+	TFeatureDispatcher<CParticleComponentRuntime&> MainPreUpdate { &CParticleFeature::MainPreUpdate };
 
-	TFeatureDispatcher<const SUpdateContext&> AddSubInstances { &CParticleFeature::AddSubInstances };
-	TFeatureDispatcher<const SUpdateContext&, TVarArray<SInstance>&> CullSubInstances { &CParticleFeature::CullSubInstances };
-	TFeatureDispatcher<const SUpdateContext&, SUpdateRange> InitSubInstances { &CParticleFeature::InitSubInstances };
-	TFeatureDispatcher<const SUpdateContext&, TDynArray<SSpawnEntry>&> SpawnParticles { &CParticleFeature::SpawnParticles };
+	TFeatureDispatcher<CParticleComponentRuntime&> AddSubInstances { &CParticleFeature::AddSubInstances };
+	TFeatureDispatcher<CParticleComponentRuntime&, TVarArray<SInstance>&> CullSubInstances { &CParticleFeature::CullSubInstances };
+	TFeatureDispatcher<CParticleComponentRuntime&, SUpdateRange> InitSubInstances { &CParticleFeature::InitSubInstances };
+	TFeatureDispatcher<CParticleComponentRuntime&, TDynArray<SSpawnEntry>&> SpawnParticles { &CParticleFeature::SpawnParticles };
 
-	TFeatureDispatcher<const SUpdateContext&, TConstArray<float>, TVarArray<float>> GetSpatialExtents { &CParticleFeature::GetSpatialExtents };
-	TFeatureDispatcher<const SUpdateContext&, TParticleId, Vec3&> GetEmitOffset { &CParticleFeature::GetEmitOffset };
+	TFeatureDispatcher<const CParticleComponentRuntime&, TConstArray<float>, TVarArray<float>> GetSpatialExtents { &CParticleFeature::GetSpatialExtents };
+	TFeatureDispatcher<const CParticleComponentRuntime&, TParticleId, Vec3&> GetEmitOffset { &CParticleFeature::GetEmitOffset };
 
-	TFeatureDispatcher<const SUpdateContext&> PreInitParticles { &CParticleFeature::PreInitParticles };
-	TFeatureDispatcher<const SUpdateContext&> InitParticles { &CParticleFeature::InitParticles };
-	TFeatureDispatcher<const SUpdateContext&> PostInitParticles { &CParticleFeature::PostInitParticles };
-	TFeatureDispatcher<const SUpdateContext&> DestroyParticles { &CParticleFeature::DestroyParticles };
+	TFeatureDispatcher<CParticleComponentRuntime&> PreInitParticles { &CParticleFeature::PreInitParticles };
+	TFeatureDispatcher<CParticleComponentRuntime&> InitParticles { &CParticleFeature::InitParticles };
+	TFeatureDispatcher<CParticleComponentRuntime&> PostInitParticles { &CParticleFeature::PostInitParticles };
+	TFeatureDispatcher<CParticleComponentRuntime&> DestroyParticles { &CParticleFeature::DestroyParticles };
 
-	TFeatureDispatcher<const SUpdateContext&> PreUpdateParticles { &CParticleFeature::PreUpdateParticles };
-	TFeatureDispatcher<const SUpdateContext&> UpdateParticles { &CParticleFeature::UpdateParticles };
-	TFeatureDispatcher<const SUpdateContext&> PostUpdateParticles { &CParticleFeature::PostUpdateParticles };
+	TFeatureDispatcher<CParticleComponentRuntime&> PreUpdateParticles { &CParticleFeature::PreUpdateParticles };
+	TFeatureDispatcher<CParticleComponentRuntime&> UpdateParticles { &CParticleFeature::UpdateParticles };
+	TFeatureDispatcher<CParticleComponentRuntime&> PostUpdateParticles { &CParticleFeature::PostUpdateParticles };
 
-	TFeatureDispatcher<CParticleComponentRuntime*, AABB&> ComputeBounds { &CParticleFeature::ComputeBounds };
-	TFeatureDispatcher<const SUpdateContext&, gpu_pfx2::SUpdateParams&> UpdateGPUParams { &CParticleFeature::UpdateGPUParams };
+	TFeatureDispatcher<CParticleComponentRuntime&, gpu_pfx2::SUpdateParams&> UpdateGPUParams { &CParticleFeature::UpdateGPUParams };
 
-	TFeatureDispatcher<CParticleEmitter*, CParticleComponentRuntime*, CParticleComponent*, const SRenderContext&> Render { &CParticleFeature::Render };
-	TFeatureDispatcher<CParticleEmitter*, CParticleComponentRuntime*, CParticleComponent*, const SRenderContext&> RenderDeferred { &CParticleFeature::RenderDeferred };
-	TFeatureDispatcher<CParticleComponentRuntime*, const SCameraInfo&, CREParticle*, uint64, float> ComputeVertices { &CParticleFeature::ComputeVertices };
+	TFeatureDispatcher<CParticleComponentRuntime&, const SRenderContext&> Render { &CParticleFeature::Render };
+	TFeatureDispatcher<const CParticleComponentRuntime&, const SRenderContext&> RenderDeferred { &CParticleFeature::RenderDeferred };
+	TFeatureDispatcher<const CParticleComponentRuntime&, const SCameraInfo&, CREParticle*, uint64, float> ComputeVertices { &CParticleFeature::ComputeVertices };
 };
 
 ILINE ColorB HexToColor(uint hex)

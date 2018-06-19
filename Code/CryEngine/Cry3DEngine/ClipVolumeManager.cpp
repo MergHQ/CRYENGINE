@@ -54,18 +54,21 @@ bool CClipVolumeManager::UpdateClipVolume(IClipVolume* pClipVolume, _smart_ptr<I
 
 void CClipVolumeManager::PrepareVolumesForRendering(const SRenderingPassInfo& passInfo)
 {
+	FUNCTION_PROFILER_3DENGINE;
+
 	// free clip volumes scheduled for deletion two frames ago: 
 	// 1 frame for render thread latency, 1 frame for potentially scheduled MarkRNTmpDataPoolForReset
 	TrimDeletedClipVolumes(passInfo.GetFrameID() - 2);
 
 	const CCamera& cam = passInfo.GetCamera();
 
-	// add all active clip volumes to renderview
+	// update all clipvolumes
 	for (size_t i = 0; i < m_clipVolumes.size(); ++i)
 	{
 		SClipVolumeInfo& volInfo = m_clipVolumes[i];
 		volInfo.m_pVolume->SetStencilRef(InactiveVolumeStencilRef);
 		volInfo.m_updateFrameId = passInfo.GetFrameID();
+		volInfo.m_currentViewDist = std::numeric_limits<float>::max();
 
 		if (volInfo.m_bActive)
 		{
@@ -73,10 +76,24 @@ void CClipVolumeManager::PrepareVolumesForRendering(const SRenderingPassInfo& pa
 			const float volumeDistance = sqrt_tpl(Distance::Point_AABBSq(cam.GetPosition(), volumeBox)) * passInfo.GetZoomFactor();
 			const float volumeMaxViewDist = volInfo.m_pVolume->GetMaxViewDist();
 			if (volumeDistance < volumeMaxViewDist && cam.IsAABBVisible_F(volumeBox))
-			{
-				uint8 nStencilRef = passInfo.GetIRenderView()->AddClipVolume(volInfo.m_pVolume);
-				volInfo.m_pVolume->SetStencilRef(nStencilRef);
-			}
+				volInfo.m_currentViewDist = volumeDistance;
+		}
+	}
+
+	// sort by view dist and add to renderview
+	{
+		std::sort(m_clipVolumes.begin(), m_clipVolumes.end(), [](const SClipVolumeInfo& volA, const SClipVolumeInfo& volB)
+		{
+			return volA.m_currentViewDist < volB.m_currentViewDist;
+		});
+
+		for (const auto& volInfo : m_clipVolumes)
+		{
+			if (volInfo.m_currentViewDist == std::numeric_limits<float>::max())
+				break;
+
+			uint8 nStencilRef = passInfo.GetIRenderView()->AddClipVolume(volInfo.m_pVolume);
+			volInfo.m_pVolume->SetStencilRef(nStencilRef);
 		}
 	}
 }

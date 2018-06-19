@@ -29,10 +29,9 @@ class CStaticDeviceObjectStorage
 public:
 	typedef std::pair<SDescription, CDeviceObject*> Element;
 
-	THandle GetHandle(const SDescription& pDescr) const threadsafe
+	THandle GetHandle(const SDescription& pDescr) threadsafe
 	{
 		CryAutoReadLock<CryRWLock> lock(m_accessLock);
-
 		m_accessLock.RLock();
 		const uint32 nContainerSize = m_Container.size();
 		for (uint32 i = 0; i < nContainerSize; i++)

@@ -350,14 +350,11 @@ void CHWShader_D3D::mfGatherFXParameters(SHWSInstance* pInst, std::vector<SCGBin
 
 	uint32 i, j;
 	SAliasSampler samps[MAX_TMU];
-	int nMaxSampler = -1;
 	int nParam = 0;
 	SParamsGroup Group;
 	SShaderFXParams& FXParams = gRenDev->m_cEF.m_Bin.mfGetFXParams(pInst->m_bFallback ? CShaderMan::s_ShaderFallback : pFXShader);
 	if (pInst->m_pBindVars.size())
 	{
-		std::list<uint32> skipped;
-
 		for (i = 0; i < pInst->m_pBindVars.size(); i++)
 		{
 			SCGBind* bn = &(*BindVars)[i];
@@ -365,17 +362,7 @@ void CHWShader_D3D::mfGatherFXParameters(SHWSInstance* pInst, std::vector<SCGBin
 
 			if (!strncmp(param, "_g_", 3))
 				continue;
-			bool bRes = mfAddFXParameter(pInst, Group, FXParams, param, bn, false, pSH->m_eSHClass, pFXShader);
-			if (!bRes && !(bn->m_dwBind & (SHADER_BIND_TEXTURE | SHADER_BIND_SAMPLER)))
-			{
-				//iLog->LogWarning("WARNING: Couldn't find parameter '%s' for shader '%s'", param, pSH->GetName());
-				// const parameters aren't listed in Params
-				// assert(0);
-			}
-			else if (!bRes && (bn->m_dwBind & SHADER_BIND_TEXTURE)) // try to find old samplers (Without semantics)
-			{
-				skipped.push_back(i);
-			}
+			mfAddFXParameter(pInst, Group, FXParams, param, bn, false, pSH->m_eSHClass, pFXShader);
 		}
 
 		bool setSamplers[256] = { false };
@@ -385,171 +372,16 @@ void CHWShader_D3D::mfGatherFXParameters(SHWSInstance* pInst, std::vector<SCGBin
 			setSamplers[pInst->m_Samplers[i].m_dwBind & 0xff] = true;
 		for (i = 0; i < pInst->m_Textures.size(); i++)
 			setTextures[pInst->m_Textures[i].m_dwBind & 0xff] = true;
-
-		while (skipped.size() > 0)
-		{
-			i = skipped.front();
-			skipped.pop_front();
-
-			SCGBind* bn = &(*BindVars)[i];
-			const char* param = bn->m_Name.c_str();
-
-			{
-				for (j = 0; j < (uint32)FXParams.m_FXSamplersOld.size(); j++)
-				{
-					STexSamplerFX* sm = &FXParams.m_FXSamplersOld[j];
-					if (!stricmp(sm->m_szName.c_str(), param))
-					{
-						int nSampler = bn->m_dwBind & 0x7f;
-						if (nSampler < MAX_TMU)
-						{
-							nMaxSampler = max(nSampler, nMaxSampler);
-							samps[nSampler].Sampler = STexSamplerRT(*sm);
-							samps[nSampler].NameTex = sm->m_szTexture;
-							samps[nSampler].Sampler.m_nSamplerSlot = (int8)(bn->m_dwCBufSlot & 0xff);
-							samps[nSampler].Sampler.m_nTextureSlot = nSampler;
-
-							// Solve slot-assignment when Sampler2D gets distinct t? and s? slot assigned by fxc (2 binds exist then)
-							for (int k = 0; k < pInst->m_pBindVars.size(); k++)
-								if ((*BindVars)[k].m_dwBind & SHADER_BIND_TEXTURE)
-									if (!stricmp((*BindVars)[k].m_Name.c_str(), param))
-										samps[nSampler].Sampler.m_nTextureSlot = (int8)(*BindVars)[k].m_dwCBufSlot;
-
-							for (int k = 0; k < pInst->m_pBindVars.size(); k++)
-								if ((*BindVars)[k].m_dwBind & SHADER_BIND_SAMPLER)
-									if (!stricmp((*BindVars)[k].m_Name.c_str(), param))
-										samps[nSampler].Sampler.m_nSamplerSlot = (int8)(*BindVars)[k].m_dwCBufSlot;
-
-							// Texture slot occupied, search an alternative
-							if (setSamplers[samps[nSampler].Sampler.m_nSamplerSlot])
-							{
-								uint32 f = 0;
-								while (setSamplers[f])
-									++f;
-								samps[nSampler].Sampler.m_nSamplerSlot = f;
-								assert(f < 16);
-							}
-
-							// Sampler slot occupied, search an alternative
-							if (setTextures[samps[nSampler].Sampler.m_nTextureSlot])
-							{
-								uint32 f = 0;
-								while (setTextures[f])
-									++f;
-								samps[nSampler].Sampler.m_nTextureSlot = f;
-								assert(f < 256);
-							}
-
-							setTextures[samps[nSampler].Sampler.m_nTextureSlot] = true;
-							setSamplers[samps[nSampler].Sampler.m_nSamplerSlot] = true;
-
-							break;
-						}
-					}
-				}
-
-				if (j == FXParams.m_FXSamplersOld.size())
-				{
-					for (j = 0; j < (uint32)FXParams.m_FXSamplersOld.size(); j++)
-					{
-						STexSamplerFX* sm = &FXParams.m_FXSamplersOld[j];
-						const char* src = sm->m_szName.c_str();
-						char name[128];
-						int n = 0;
-						while (src[n])
-						{
-							if (src[n] <= 0x20 || src[n] == '[')
-								break;
-							name[n] = src[n];
-							n++;
-						}
-						name[n] = 0;
-						if (!stricmp(name, param))
-						{
-							int nSampler = bn->m_dwBind & 0x7f;
-							if (nSampler < MAX_TMU)
-							{
-								samps[nSampler].Sampler = STexSamplerRT(*sm);
-								samps[nSampler].NameTex = sm->m_szTexture;
-								samps[nSampler].Sampler.m_nSamplerSlot = (int8)(bn->m_dwCBufSlot & 0xff);
-								samps[nSampler].Sampler.m_nTextureSlot = nSampler;
-
-								// Solve slot-assignment when Sampler2D gets distinct t? and s? slot assigned by fxc (2 binds exist then)
-								for (int k = 0; k < pInst->m_pBindVars.size(); k++)
-									if ((*BindVars)[k].m_dwBind & SHADER_BIND_TEXTURE)
-										if (!stricmp((*BindVars)[k].m_Name.c_str(), param))
-											samps[nSampler].Sampler.m_nTextureSlot = (int8)(*BindVars)[k].m_dwCBufSlot;
-
-								for (int k = 0; k < pInst->m_pBindVars.size(); k++)
-									if ((*BindVars)[k].m_dwBind & SHADER_BIND_SAMPLER)
-										if (!stricmp((*BindVars)[k].m_Name.c_str(), param))
-											samps[nSampler].Sampler.m_nSamplerSlot = (int8)(*BindVars)[k].m_dwCBufSlot;
-
-								// Texture slot occupied, search an alternative
-								if (setSamplers[samps[nSampler].Sampler.m_nSamplerSlot])
-								{
-									uint32 f = 0;
-									while (setSamplers[f])
-										++f;
-									samps[nSampler].Sampler.m_nSamplerSlot = f;
-									assert(f < 16);
-								}
-
-								// Sampler slot occupied, search an alternative
-								if (setTextures[samps[nSampler].Sampler.m_nTextureSlot])
-								{
-									uint32 f = 0;
-									while (setTextures[f])
-										++f;
-									samps[nSampler].Sampler.m_nTextureSlot = f;
-									assert(f < 256);
-								}
-
-								setTextures[samps[nSampler].Sampler.m_nTextureSlot] = true;
-								setSamplers[samps[nSampler].Sampler.m_nSamplerSlot] = true;
-
-								for (int nS = 0; nS < bn->m_nParameters; nS++)
-								{
-									nMaxSampler = max(nSampler + nS, nMaxSampler);
-									samps[nSampler + nS].Sampler = samps[nSampler].Sampler;
-									samps[nSampler + nS].NameTex = sm->m_szTexture;
-								}
-								break;
-							}
-						}
-					}
-					if (j == FXParams.m_FXSamplersOld.size())
-					{
-						// const parameters aren't listed in Params
-						//iLog->LogWarning("WARNING: Couldn't find parameter '%s' for shader '%s'", param, pSH->GetName());
-						//assert(0);
-					}
-				}
-			}
-		}
 	}
 	if (nFlags != 1)
 	{
-		for (i = 0; (int)i <= nMaxSampler; i++)
-		{
-			STexSamplerRT& smp = samps[i].Sampler;
-			smp.m_pTex = gRenDev->m_cEF.mfParseFXTechnique_LoadShaderTexture(&smp, samps[i].NameTex.c_str(), NULL, NULL, i, eCO_NOSET, eCO_NOSET, DEF_TEXARG0, DEF_TEXARG0);
-			if (!smp.m_pTex)
-				continue;
-			assert(!smp.m_pDynTexSource);
-			if (smp.m_bGlobal)
-			{
-				//mfAddGlobalSampler(smp);
-			}
-			else
-				pInst->m_pSamplers.push_back(smp);
-		}
+		pInst->m_pFXTextures.reserve(FXParams.m_FXTextures.size());
+		for (const auto &t : FXParams.m_FXTextures)
+			pInst->m_pFXTextures.push_back(&t);;
 	}
 	else
 	{
 		assert(pInst->m_pAsync);
-		if (pInst->m_pAsync && nMaxSampler >= 0)
-			pInst->m_pAsync->m_bPendedSamplers = true;
 	}
 
 	pInst->m_nMaxVecs[0] = pInst->m_nMaxVecs[1] = 0;
@@ -3464,7 +3296,7 @@ bool CHWShader_D3D::mfActivateCacheItem(CShader* pSH, SShaderCacheHeaderItem* pI
 			iLog->Log("WARNING: cannot create shader '%s' (FX: %s)", m_EntryFunc.c_str(), GetName());
 			return true;
 		}
-		pCache->m_DeviceShaders.insert(FXDeviceShaderItor::value_type(pInst->m_DeviceObjectID, pInst->m_Handle.m_pShader));
+		pCache->m_DeviceShaders.insert(std::make_pair(pInst->m_DeviceObjectID, pInst->m_Handle.m_pShader));
 	}
 	void* pConstantTable = NULL;
 	void* pShaderReflBuf = NULL;
@@ -4441,23 +4273,23 @@ bool CHWShader_D3D::mfActivate(CShader* pSH, uint32 nFlags, FXShaderToken* Table
 				pCacheItemBuffer = mfGetCacheItem(nFlags, nSize);
 			}
 
-			auto pCacheItem = reinterpret_cast<SShaderCacheHeaderItem*>(pCacheItemBuffer.get());
-			if (pCacheItem && pCacheItem->m_Class != 255)
+			if (auto pCacheItem = reinterpret_cast<SShaderCacheHeaderItem*>(pCacheItemBuffer.get()))
 			{
-				if (Table && CRenderer::CV_r_shadersAllowCompilation)
-					mfGetCacheTokenMap(Table, pSHData, m_nMaskGenShader);
-				if (((m_Flags & HWSG_PRECACHEPHASE) || gRenDev->m_cEF.m_nCombinationsProcess >= 0))
+				if (pCacheItem->m_Class != 255)
 				{
-					return true;
-				}
-				bool bRes = mfActivateCacheItem(pSH, pCacheItem, nSize, nFlags);
+					if (Table && CRenderer::CV_r_shadersAllowCompilation)
+						mfGetCacheTokenMap(Table, pSHData, m_nMaskGenShader);
 
-				if (bRes)
-					return (pInst->m_Handle.m_pShader != NULL);
-			}
-			else if (pCacheItem && pCacheItem->m_Class == 255 && (nFlags & HWSF_PRECACHE) == 0)
-			{
-				return false;
+					if ((m_Flags & HWSG_PRECACHEPHASE) || gRenDev->m_cEF.m_nCombinationsProcess >= 0)
+						return true;
+
+					if (mfActivateCacheItem(pSH, pCacheItem, nSize, nFlags))
+						return (pInst->m_Handle.m_pShader != NULL);
+				}
+				else if ((nFlags & HWSF_PRECACHE) == 0)
+				{
+					return false;
+				}
 			}
 		}
 		
@@ -4830,122 +4662,6 @@ void CAsyncShaderTask::CShaderThread::ThreadEntry()
 // Export/Import
 
 #ifdef SHADERS_SERIALIZING
-
-bool STexSamplerFX::Export(SShaderSerializeContext& SC)
-{
-	bool bRes = true;
-	SSTexSamplerFX TS;
-
-	TS.m_nRTIdx        = -1;
-	TS.m_nsName        = SC.AddString(m_szName.c_str());
-	TS.m_nsNameTexture = SC.AddString(m_szTexture.c_str());
-	TS.m_eTexType      = m_eTexType;
-	TS.m_nSamplerSlot  = m_nSlotId;
-	TS.m_nTexFlags     = m_nTexFlags;
-
-	if (m_nTexState != EDefaultSamplerStates::Unspecified)
-	{
-		const SSamplerState& pTS = CDeviceObjectFactory::LookupSamplerState(m_nTexState).first;
-
-		TS.m_bTexState     = 1;
-		TS.m_nMinFilter    = pTS.m_nMinFilter;
-		TS.m_nMagFilter    = pTS.m_nMagFilter;
-		TS.m_nMipFilter    = pTS.m_nMipFilter;
-		TS.m_nAddressU     = pTS.m_nAddressU;
-		TS.m_nAddressV     = pTS.m_nAddressV;
-		TS.m_nAddressW     = pTS.m_nAddressW;
-		TS.m_nAnisotropy   = pTS.m_nAnisotropy;
-		TS.m_dwBorderColor = pTS.m_dwBorderColor;
-		TS.m_bActive       = pTS.m_bActive;
-		TS.m_bComparison   = pTS.m_bComparison;
-		TS.m_bSRGBLookup   = pTS.m_bSRGBLookup;
-	}
-
-	if (m_pTarget)
-	{
-		TS.m_nRTIdx = SC.FXTexRTs.Num();
-
-		SHRenderTarget* pRT = m_pTarget;
-		SSHRenderTarget RT;
-
-		RT.m_eOrder        = pRT->m_eOrder;
-		RT.m_nProcessFlags = pRT->m_nProcessFlags;
-		RT.m_nsTargetName  = SC.AddString(pRT->m_TargetName.c_str());
-		RT.m_nWidth        = pRT->m_nWidth;
-		RT.m_nHeight       = pRT->m_nHeight;
-		RT.m_eTF           = pRT->m_eTF;
-		RT.m_nIDInPool     = pRT->m_nIDInPool;
-		RT.m_eUpdateType   = pRT->m_eUpdateType;
-		RT.m_bTempDepth    = pRT->m_bTempDepth;
-		RT.m_ClearColor    = pRT->m_ClearColor;
-		RT.m_fClearDepth   = pRT->m_fClearDepth;
-		RT.m_nFlags        = pRT->m_nFlags;
-		RT.m_nFilterFlags  = pRT->m_nFilterFlags;
-
-		SC.FXTexRTs.push_back(RT);
-	}
-
-	//crude workaround for TArray push_back() bug a=b operator. Does not init a, breaks texState dtor for a
-	SSTexSamplerFX* pNewSampler = SC.FXTexSamplers.AddIndex(1);
-	memcpy(pNewSampler, &TS, sizeof(SSTexSamplerFX));
-
-	return bRes;
-}
-bool STexSamplerFX::Import(SShaderSerializeContext& SC, SSTexSamplerFX* pTS)
-{
-	bool bRes = true;
-
-	m_szName    = sString(pTS->m_nsName, SC.Strings);
-	m_szTexture = sString(pTS->m_nsNameTexture, SC.Strings);
-	m_eTexType  = pTS->m_eTexType;
-	m_nSlotId   = pTS->m_nSamplerSlot;
-	m_nTexFlags = pTS->m_nTexFlags;
-
-	if (pTS->m_bTexState)
-	{
-		SSamplerState TS;
-
-		TS.m_nMinFilter    = pTS->m_nMinFilter;
-		TS.m_nMagFilter    = pTS->m_nMagFilter;
-		TS.m_nMipFilter    = pTS->m_nMipFilter;
-		TS.m_nAddressU     = pTS->m_nAddressU;
-		TS.m_nAddressV     = pTS->m_nAddressV;
-		TS.m_nAddressW     = pTS->m_nAddressW;
-		TS.m_nAnisotropy   = pTS->m_nAnisotropy;
-		TS.m_dwBorderColor = pTS->m_dwBorderColor;
-		TS.m_bActive       = pTS->m_bActive;
-		TS.m_bComparison   = pTS->m_bComparison;
-		TS.m_bSRGBLookup   = pTS->m_bSRGBLookup;
-
-		m_nTexState = CDeviceObjectFactory::GetOrCreateSamplerStateHandle(TS);
-	}
-
-	if (pTS->m_nRTIdx != -1)
-	{
-		SSHRenderTarget* pRT = &SC.FXTexRTs[pTS->m_nRTIdx];
-		SHRenderTarget* pDst = new SHRenderTarget;
-
-		pDst->m_eOrder        = pRT->m_eOrder;
-		pDst->m_nProcessFlags = pRT->m_nProcessFlags;
-		pDst->m_TargetName    = sString(pRT->m_nsTargetName, SC.Strings);
-		pDst->m_nWidth        = pRT->m_nWidth;
-		pDst->m_nHeight       = pRT->m_nHeight;
-		pDst->m_eTF           = pRT->m_eTF;
-		pDst->m_nIDInPool     = pRT->m_nIDInPool;
-		pDst->m_eUpdateType   = pRT->m_eUpdateType;
-		pDst->m_bTempDepth    = pRT->m_bTempDepth != 0;
-		pDst->m_ClearColor    = pRT->m_ClearColor;
-		pDst->m_fClearDepth   = pRT->m_fClearDepth;
-		pDst->m_nFlags        = pRT->m_nFlags;
-		pDst->m_nFilterFlags  = pRT->m_nFilterFlags;
-
-		m_pTarget = pDst;
-	}
-
-	PostLoad();
-
-	return bRes;
-}
 
 bool SFXParam::Export(SShaderSerializeContext& SC)
 {

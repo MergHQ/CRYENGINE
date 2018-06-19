@@ -20,8 +20,8 @@
 
 //////////////////////////////////////////////////////////////////////////
 // TypeInfo XML serialisation code
-
 #include <CryParticleSystem/ParticleParams_TypeInfo.h>
+#include <CryCore/TypeInfo_impl.h>
 
 DEFINE_INTRUSIVE_LINKED_LIST(CParticleEffect)
 

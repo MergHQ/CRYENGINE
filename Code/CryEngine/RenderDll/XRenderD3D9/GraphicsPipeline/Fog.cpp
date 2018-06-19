@@ -116,7 +116,7 @@ void CFogStage::Execute()
 		inputFlag |= bFogDepthTest ? BIT(3) : 0;
 		inputFlag |= bReverseDepth ? BIT(4) : 0;
 
-		if (m_passFog.InputChanged(inputFlag, CRendererResources::s_ptexHDRTarget->GetTextureID(), nSvoGiTexId, RenderView()->GetDepthTarget()->GetTextureID()))
+		if (m_passFog.IsDirty(inputFlag, nSvoGiTexId, RenderView()->GetDepthTarget()->GetTextureID()))
 		{
 			uint64 rtMask = 0;
 			rtMask |= bVolFogShadow ? g_HWSR_MaskBit[HWSR_SAMPLE0] : 0;
@@ -250,7 +250,7 @@ void CFogStage::Execute()
 	// render fog with lightning
 	if (bLightning)
 	{
-		if (m_passLightning.InputChanged())
+		if (m_passLightning.IsDirty())
 		{
 			uint64 rtMask = 0;
 
@@ -306,7 +306,7 @@ void CFogStage::ExecuteVolumetricFogShadow()
 		inputFlag |= bVolCloudShadow ? BIT(1) : 0;
 		inputFlag |= bSunShadow ? BIT(2) : 0;
 
-		if (m_passVolFogShadowRaycast.InputChanged(inputFlag, CRenderer::CV_r_FogShadowsMode))
+		if (m_passVolFogShadowRaycast.IsDirty(inputFlag, CRenderer::CV_r_FogShadowsMode))
 		{
 			uint64 rtMask = 0;
 			rtMask |= bCloudShadow ? g_HWSR_MaskBit[HWSR_SAMPLE5] : 0;
@@ -369,7 +369,7 @@ void CFogStage::ExecuteVolumetricFogShadow()
 
 	// horizontal blur
 	{
-		if (m_passVolFogShadowHBlur.InputChanged())
+		if (m_passVolFogShadowHBlur.IsDirty())
 		{
 			static CCryNameTSCRC TechName("FogPassVolShadowsGatherPass");
 			m_passVolFogShadowHBlur.SetPrimitiveFlags(CRenderPrimitive::eFlags_ReflectShaderConstants_PS);
@@ -398,7 +398,7 @@ void CFogStage::ExecuteVolumetricFogShadow()
 
 	// vertical blur
 	{
-		if (m_passVolFogShadowVBlur.InputChanged())
+		if (m_passVolFogShadowVBlur.IsDirty())
 		{
 			static CCryNameTSCRC TechName("FogPassVolShadowsGatherPass");
 			m_passVolFogShadowVBlur.SetPrimitiveFlags(CRenderPrimitive::eFlags_ReflectShaderConstants_PS);

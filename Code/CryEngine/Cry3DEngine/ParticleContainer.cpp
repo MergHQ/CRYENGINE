@@ -876,7 +876,7 @@ void CParticleContainer::ResetRenderObjects()
 	}
 }
 
-void CParticleContainer::SetScreenBounds(const CCamera& cam, uint8 aScreenBounds[4])
+void CParticleContainer::SetScreenBounds(const CCamera& cam, TRect_tpl<uint16> &bounds)
 {
 	const int32 align16 = (16 - 1);
 	const int32 shift16 = 4;
@@ -891,17 +891,17 @@ void CParticleContainer::SetScreenBounds(const CCamera& cam, uint8 aScreenBounds
 		{
 			iOut[2] += 16;  // Split fullscreen particles and fullscreen geometry. Better to use some sort of ID/Flag, but this will do the job for now
 		}
-		aScreenBounds[0] = min(iOut[0] >> shift16, (int32)255);
-		aScreenBounds[1] = min(iOut[1] >> shift16, (int32)255);
-		aScreenBounds[2] = min((iOut[2] + align16) >> shift16, (int32)255);
-		aScreenBounds[3] = min((iOut[3] + align16) >> shift16, (int32)255);
+		bounds.Min.x = iOut[0] >> shift16;
+		bounds.Min.y = iOut[1] >> shift16;
+		bounds.Max.x = (iOut[2] + align16) >> shift16;
+		bounds.Max.y = (iOut[3] + align16) >> shift16;
 	}
 	else
 	{
-		aScreenBounds[0] = 0;
-		aScreenBounds[1] = 0;
-		aScreenBounds[2] = min((nWidth >> shift16) + 1, (int32)255);
-		aScreenBounds[3] = min((nHeight >> shift16) + 1, (int32)255);
+		bounds.Min.x = 0;
+		bounds.Min.y = 0;
+		bounds.Max.x = (nWidth >> shift16) + 1;
+		bounds.Max.y = (nHeight >> shift16) + 1;
 	}
 }
 

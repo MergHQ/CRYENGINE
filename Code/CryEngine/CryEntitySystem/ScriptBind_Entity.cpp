@@ -6205,7 +6205,6 @@ int CScriptBind_Entity::MaterialFlashInvoke(IFunctionHandler* pH)
 								{
 									res = invokeRes;
 								}
-								pFlashPlayer->Release();
 							}
 						}
 					}

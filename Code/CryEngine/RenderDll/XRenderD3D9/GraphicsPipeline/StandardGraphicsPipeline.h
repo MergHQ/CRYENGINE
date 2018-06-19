@@ -205,10 +205,10 @@ private:
 	COmniCameraStage*             m_pOmniCameraStage = nullptr;
 	CDebugRenderTargetsStage*     m_pDebugRenderTargetsStage = nullptr;
 
-	CTypedConstantBuffer<HLSL_PerViewGlobalConstantBuffer> m_mainViewConstantBuffer;
-	CDeviceResourceSetDesc                                 m_defaultMaterialBindPoints;
-	CDeviceResourceSetDesc                                 m_defaultInstanceExtraResources;
-	CDeviceResourceSetPtr                                  m_pDefaultInstanceExtraResourceSet;
+	CTypedConstantBuffer<HLSL_PerViewGlobalConstantBuffer, 256> m_mainViewConstantBuffer;
+	CDeviceResourceSetDesc                                      m_defaultMaterialBindPoints;
+	CDeviceResourceSetDesc                                      m_defaultInstanceExtraResources;
+	CDeviceResourceSetPtr                                       m_pDefaultInstanceExtraResourceSet;
 
 	EShaderRenderingFlags         m_renderingFlags = EShaderRenderingFlags(0);
 

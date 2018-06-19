@@ -487,14 +487,14 @@ void CCompiledRenderObject::TrackStats(const SGraphicsPipelinePassContext& RESTR
 #endif
 
 //////////////////////////////////////////////////////////////////////////
-bool CCompiledRenderObject::Compile(CRenderObject* pRenderObject, const EObjectCompilationOptions& compilationOptions, CRenderView *pRenderView)
+bool CCompiledRenderObject::Compile(const EObjectCompilationOptions& compilationOptions, CRenderView *pRenderView)
 {
 	CRY_PROFILE_FUNCTION(PROFILE_RENDERER);
 
 	//int nFrameId = gEnv->pRenderer->GetFrameID(false);
 	//{ char buf[1024]; cry_sprintf(buf,"compiled: %p : frame(%d) \r\n", pRenderObject, nFrameId); OutputDebugString(buf); }
 
-	m_pRO = pRenderObject;
+	CRenderObject* pRenderObject = m_pRO;
 	const bool bMuteWarnings = true;  // @TODO: Remove later
 
 	bool updateInstanceDataOnly = (compilationOptions & eObjCompilationOption_PerInstanceDataOnly) == compilationOptions;

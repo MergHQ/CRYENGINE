@@ -171,7 +171,7 @@ Property
   Precache = EffectLayerVS
   Precache = MethaGenVS
   Precache = DebugPassVS
-  Precache = ParticleVS
+	Precache = ParticleVS
 }
 
 Property
@@ -188,7 +188,7 @@ Property
   Precache = VegetationHS
   Precache = VegetationDS
   Precache = VegetationPS
-  Precache = GeneralPS
+	Precache = GeneralPS
   Precache = GlassPS
   Precache = GlassVS
   Precache = GlowVS
@@ -400,7 +400,7 @@ Property
 	Precache = TerrainVS 
 	Precache = TerrainPS  
   Precache = VegetationVS
-  Precache = GeneralVS
+  Precache = GeneralVS 
 	Precache = GeneralPS
   Precache = ClothVS
   Precache = GlassVS
@@ -1296,4 +1296,11 @@ Property
   Precache = ParticleDS
   Precache = ConeTraceDiffusePS
   Precache = DemosaicPS
+}
+
+Property
+{
+  Name = %_RT_SAMPLE6
+  Mask = 0x4000000000000000
+  Precache = HDRPostProcessPS
 }

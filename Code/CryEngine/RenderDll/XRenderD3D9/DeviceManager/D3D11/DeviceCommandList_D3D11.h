@@ -107,6 +107,7 @@ protected:
 	void SetInlineConstantsImpl(uint32 bindSlot, uint32 constantCount, float* pConstants) {}
 	void SetStencilRefImpl(uint8 stencilRefValue);
 	void SetDepthBiasImpl(float constBias, float slopeBias, float biasClamp);
+	void SetDepthBoundsImpl(float fMin, float fMax);
 
 	void DrawImpl(uint32 VertexCountPerInstance, uint32 InstanceCount, uint32 StartVertexLocation, uint32 StartInstanceLocation);
 	void DrawIndexedImpl(uint32 IndexCountPerInstance, uint32 InstanceCount, uint32 StartIndexLocation, int BaseVertexLocation, uint32 StartInstanceLocation);

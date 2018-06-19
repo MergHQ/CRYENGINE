@@ -3,6 +3,7 @@
 #include "StdAfx.h"
 #include "DriverD3D.h"
 #include "LensOptics.h"
+#include "CompiledRenderObject.h"
 #include "Common/RendElements/RootOpticsElement.h"
 #include "Common/RendElements/FlareSoftOcclusionQuery.h"
 #include "Common/RenderView.h"
@@ -57,7 +58,7 @@ void CLensOpticsStage::Execute()
 			std::vector<CPrimitiveRenderPass*> prePasses;
 
 			CD3D9Renderer* pRD = gcpRendD3D;
-			CRenderObject* pObj = re.pObj;
+			CRenderObject* pObj = re.pRenderObject;
 			SRenderObjData* pOD = pObj->GetObjData();
 
 			SRenderLight* pLight = pOD ? &pRenderView->GetLight(eDLT_DeferredLight, pOD->m_nLightID) : nullptr;

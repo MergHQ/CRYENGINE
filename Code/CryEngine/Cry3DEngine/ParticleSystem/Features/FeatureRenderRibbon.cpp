@@ -8,8 +8,8 @@
 ////////////////////////////////////////////////////////////////////////////
 
 #include "StdAfx.h"
+#include "FeatureCommon.h"
 #include "ParticleSystem/ParticleRender.h"
-#include "ParticleSystem/ParticleSystem.h"
 #include <CryMath/RadixSort.h>
 
 namespace pfx2
@@ -41,7 +41,7 @@ TDataType<float> DataType(ERibbonStreamSource source)
 class CFeatureRenderRibbon : public CParticleRenderBase
 {
 private:
-	typedef SParticleAxes (CFeatureRenderRibbon::* AxesFn)(CParticleComponentRuntime* pComponentRuntime, TParticleId particleId, const CCamera& camera, Vec3 movingPositions[3]);
+	typedef SParticleAxes (CFeatureRenderRibbon::* AxesFn)(CParticleComponentRuntime& runtime, TParticleId particleId, const CCamera& camera, Vec3 movingPositions[3]);
 
 	struct SRibbon
 	{
@@ -60,18 +60,18 @@ public:
 
 	virtual void AddToComponent(CParticleComponent* pComponent, SComponentParams* pParams) override;
 	virtual void Serialize(Serialization::IArchive& ar) override;
-	virtual void InitParticles(const SUpdateContext& context) override;
-	virtual void ComputeVertices(CParticleComponentRuntime* pComponentRuntime, const SCameraInfo& camInfo, CREParticle* pRE, uint64 uRenderFlags, float fMaxPixels) override;
+	virtual void InitParticles(CParticleComponentRuntime& runtime) override;
+	virtual void ComputeVertices(const CParticleComponentRuntime& runtime, const SCameraInfo& camInfo, CREParticle* pRE, uint64 uRenderFlags, float fMaxPixels) override;
 
 private:
-	void             MakeRibbons(CParticleComponentRuntime* pComponentRuntime, TParticleIdArray* pSortEntries, TRibbons* pRibbons, uint* pNumVertices);
-	void             WriteToGPUMem(CParticleComponentRuntime* pComponentRuntime, const CCamera& camera, CREParticle* pRE, const TParticleIdArray& pSortEntries, const TRibbons& pRibbons, uint numVertices, float fMaxPixels);
+	void             MakeRibbons(const CParticleComponentRuntime& runtime, TParticleIdArray* pSortEntries, TRibbons* pRibbons, uint* pNumVertices);
+	void             WriteToGPUMem(const CParticleComponentRuntime& runtime, const CCamera& camera, CREParticle* pRE, const TParticleIdArray& pSortEntries, const TRibbons& pRibbons, uint numVertices, float fMaxPixels);
 	template<typename TAxesSampler>
-	void             WriteToGPUMem(CParticleComponentRuntime* pComponentRuntime, const CCamera& camera, CREParticle* pRE, const TParticleIdArray& pSortEntries, const TRibbons& pRibbons, const TAxesSampler& axesSampler, uint numVertices, float fMaxPixels);
+	void             WriteToGPUMem(const CParticleComponentRuntime& runtime, const CCamera& camera, CREParticle* pRE, const TParticleIdArray& pSortEntries, const TRibbons& pRibbons, const TAxesSampler& axesSampler, uint numVertices, float fMaxPixels);
 
-	void CullRibbonAreas(CParticleComponentRuntime* pComponentRuntime, const CCamera& camera, float fMaxPixels, TConstArray<uint> sortEntries, TConstArray<SRibbon> ribbons, TVarArray<float> ribbonAlphas, float& pixels, float &pixelsDrawn);
+	void CullRibbonAreas(const CParticleComponentRuntime& runtime, const CCamera& camera, float fMaxPixels, TConstArray<uint> sortEntries, TConstArray<SRibbon> ribbons, TVarArray<float> ribbonAlphas, float& pixels, float &pixelsDrawn);
 
-	SParticleColorST VertexColorST(CParticleComponentRuntime* pComponentRuntime, TParticleId particleId, uint frameId, float animPos);
+	SParticleColorST VertexColorST(const CParticleComponentRuntime& runtime, TParticleId particleId, uint frameId, float animPos);
 
 	SFloat              m_sortBias;
 	ERibbonMode         m_ribbonMode;
@@ -125,17 +125,17 @@ void CFeatureRenderRibbon::Serialize(Serialization::IArchive& ar)
 	ar(m_offset, "Offset", "Offset");
 }
 
-void CFeatureRenderRibbon::InitParticles(const SUpdateContext& context)
+void CFeatureRenderRibbon::InitParticles(CParticleComponentRuntime& runtime)
 {
 	CRY_PROFILE_FUNCTION(PROFILE_PARTICLE);
 
-	CParticleContainer& container = context.m_container;
-	CParticleContainer& parentContainer = context.m_parentContainer;
+	CParticleContainer& container = runtime.GetContainer();
+	CParticleContainer& parentContainer = runtime.GetParentContainer();
 	IOUintStream ribbonIds = container.IOStream(EPDT_RibbonId);
 	IPidStream parentIds = container.IStream(EPDT_ParentId);
 	IPidStream parentSpawnIds = parentContainer.IStream(EPDT_SpawnId);
 
-	for (auto particleId : context.GetSpawnedRange())
+	for (auto particleId : runtime.SpawnedRange())
 	{
 		const TParticleId parentId = parentIds.Load(particleId);
 		const uint32 parentSpawnId = parentSpawnIds.SafeLoad(parentId);
@@ -143,9 +143,9 @@ void CFeatureRenderRibbon::InitParticles(const SUpdateContext& context)
 	}
 }
 
-void CFeatureRenderRibbon::ComputeVertices(CParticleComponentRuntime* pComponentRuntime, const SCameraInfo& camInfo, CREParticle* pRE, uint64 uRenderFlags, float fMaxPixels)
+void CFeatureRenderRibbon::ComputeVertices(const CParticleComponentRuntime& runtime, const SCameraInfo& camInfo, CREParticle* pRE, uint64 uRenderFlags, float fMaxPixels)
 {
-	const CParticleContainer& container = pComponentRuntime->GetContainer();
+	const CParticleContainer& container = runtime.GetContainer();
 	const uint32 numParticles = container.GetNumParticles();
 
 	if (numParticles == 0)
@@ -158,26 +158,25 @@ void CFeatureRenderRibbon::ComputeVertices(CParticleComponentRuntime* pComponent
 	uint numVertices;
 	TParticleIdArray sortEntries(memHeap, numParticles);
 	TRibbons ribbons(memHeap);
-	MakeRibbons(pComponentRuntime, &sortEntries, &ribbons, &numVertices);
+	MakeRibbons(runtime, &sortEntries, &ribbons, &numVertices);
 	if (ribbons.size())
-		WriteToGPUMem(pComponentRuntime, *camInfo.pCamera, pRE, sortEntries, ribbons, numVertices, fMaxPixels);
+		WriteToGPUMem(runtime, *camInfo.pCamera, pRE, sortEntries, ribbons, numVertices, fMaxPixels);
 }
 
-void CFeatureRenderRibbon::MakeRibbons(CParticleComponentRuntime* pComponentRuntime, TParticleIdArray* pSortEntries, TRibbons* pRibbons, uint* pNumVertices)
+void CFeatureRenderRibbon::MakeRibbons(const CParticleComponentRuntime& runtime, TParticleIdArray* pSortEntries, TRibbons* pRibbons, uint* pNumVertices)
 {
 	CRY_PFX2_PROFILE_DETAIL;
 
 	auto& memHeap = GetPSystem()->GetThreadData().memHeap;
-	const SUpdateContext context = SUpdateContext(pComponentRuntime);
-	const CParticleContainer& container = pComponentRuntime->GetContainer();
+	const CParticleContainer& container = runtime.GetContainer();
 	const IUintStream ribbonIds = container.IStream(EPDT_RibbonId);
 	const IPidStream spawnIds = container.IStream(EPDT_SpawnId);
 	const uint32 numParticles = container.GetNumParticles();
-	uint numValidParticles = context.GetUpdateRange().size();
+	uint numValidParticles = runtime.FullRange().size();
 
 	{
 		THeapArray<uint64> sortEntries(memHeap, numParticles);
-		for (auto particleId : context.GetUpdateRange())
+		for (auto particleId : runtime.FullRange())
 		{
 			const TParticleId ribbonId = ribbonIds.Load(particleId);
 			const uint32 spawnId = spawnIds.Load(particleId);
@@ -328,24 +327,24 @@ private:
 	const bool         m_hasColors;
 };
 
-void CFeatureRenderRibbon::WriteToGPUMem(CParticleComponentRuntime* pComponentRuntime, const CCamera& camera, CREParticle* pRE, const TParticleIdArray& sortEntries, const TRibbons& ribbons, uint numVertices, float fMaxPixels)
+void CFeatureRenderRibbon::WriteToGPUMem(const CParticleComponentRuntime& runtime, const CCamera& camera, CREParticle* pRE, const TParticleIdArray& sortEntries, const TRibbons& ribbons, uint numVertices, float fMaxPixels)
 {
 	CRY_PFX2_PROFILE_DETAIL;
 
-	const CParticleContainer& container = pComponentRuntime->GetContainer();
+	const CParticleContainer& container = runtime.GetContainer();
 
 	if (m_ribbonMode == ERibbonMode::Camera)
-		WriteToGPUMem<CRibbonAxesCamera>(pComponentRuntime, camera, pRE, sortEntries, ribbons, CRibbonAxesCamera(container, camera), numVertices, fMaxPixels);
+		WriteToGPUMem<CRibbonAxesCamera>(runtime, camera, pRE, sortEntries, ribbons, CRibbonAxesCamera(container, camera), numVertices, fMaxPixels);
 	else
-		WriteToGPUMem<CRibbonAxesFree>(pComponentRuntime, camera, pRE, sortEntries, ribbons, CRibbonAxesFree(container), numVertices, fMaxPixels);
+		WriteToGPUMem<CRibbonAxesFree>(runtime, camera, pRE, sortEntries, ribbons, CRibbonAxesFree(container), numVertices, fMaxPixels);
 }
 
 template<typename TAxesSampler>
-void CFeatureRenderRibbon::WriteToGPUMem(CParticleComponentRuntime* pComponentRuntime, const CCamera& camera, CREParticle* pRE, const TParticleIdArray& sortEntries, const TRibbons& ribbons, const TAxesSampler& axesSampler, uint numVertices, float fMaxPixels)
+void CFeatureRenderRibbon::WriteToGPUMem(const CParticleComponentRuntime& runtime, const CCamera& camera, CREParticle* pRE, const TParticleIdArray& sortEntries, const TRibbons& ribbons, const TAxesSampler& axesSampler, uint numVertices, float fMaxPixels)
 {
-	const SComponentParams& params = pComponentRuntime->GetComponentParams();
-	const CParticleContainer& container = pComponentRuntime->GetContainer();
-	const CParticleContainer& parentContainer = pComponentRuntime->GetParentContainer();
+	const SComponentParams& params = runtime.ComponentParams();
+	const CParticleContainer& container = runtime.GetContainer();
+	const CParticleContainer& parentContainer = runtime.GetParentContainer();
 
 	const IVec3Stream parentPositions = parentContainer.GetIVec3Stream(EPVF_Position);
 	const IVec3Stream positions = container.GetIVec3Stream(EPVF_Position);
@@ -370,7 +369,7 @@ void CFeatureRenderRibbon::WriteToGPUMem(CParticleComponentRuntime* pComponentRu
 	THeapArray<float> ribbonAlphas(memHeap, ribbons.size());
 
 	float pixels = 0.0f, pixelsDrawn = 0.0f;
-	CullRibbonAreas(pComponentRuntime, camera, fMaxPixels, sortEntries, ribbons, ribbonAlphas, pixels, pixelsDrawn);
+	CullRibbonAreas(runtime, camera, fMaxPixels, sortEntries, ribbons, ribbonAlphas, pixels, pixelsDrawn);
 
 	for (uint ribbonId = 0; ribbonId < uint(ribbons.size()); ++ribbonId)
 	{
@@ -452,20 +451,20 @@ void CFeatureRenderRibbon::WriteToGPUMem(CParticleComponentRuntime* pComponentRu
 	stats.particles.rendered += totalRenderedParticles;
 	stats.components.rendered ++;
 
-	GetPSystem()->GetProfiler().AddEntry(pComponentRuntime, EPS_RendereredParticles, uint(totalRenderedParticles));
+	GetPSystem()->GetProfiler().AddEntry(runtime, EPS_RendereredParticles, uint(totalRenderedParticles));
 }
 
-void CFeatureRenderRibbon::CullRibbonAreas(CParticleComponentRuntime* pComponentRuntime, const CCamera& camera, float fMaxPixels, TConstArray<uint> sortEntries, TConstArray<SRibbon> ribbons, TVarArray<float> ribbonAlphas, float& pixels, float &pixelsDrawn)
+void CFeatureRenderRibbon::CullRibbonAreas(const CParticleComponentRuntime& runtime, const CCamera& camera, float fMaxPixels, TConstArray<uint> sortEntries, TConstArray<SRibbon> ribbons, TVarArray<float> ribbonAlphas, float& pixels, float &pixelsDrawn)
 {
 	CRY_PROFILE_FUNCTION(PROFILE_PARTICLE);
 
-	CParticleContainer& container = pComponentRuntime->GetContainer();
+	const CParticleContainer& container = runtime.GetContainer();
 	const Vec3 camPos = camera.GetPosition();
 	const float areaToPixels = sqr(camera.GetAngularResolution());
 	const float screenArea = camera.GetFov() * camera.GetHorizontalFov();
 	static const float ribbonAreaMultiple = 2.0f; // Estimate ribbon area as 2x sprite area
-	const float maxSize = sqr(pComponentRuntime->GetComponentParams().m_maxParticleSize * 2.0f) * ribbonAreaMultiple;
-	const float nearDist = pComponentRuntime->GetBounds().GetDistance(camPos);
+	const float maxSize = sqr(runtime.ComponentParams().m_maxParticleSize * 2.0f) * ribbonAreaMultiple;
+	const float nearDist = runtime.GetBounds().GetDistance(camPos);
 	const float maxArea = container.GetNumParticles() *	div_min(maxSize, sqr(nearDist), screenArea);
 	const float areaLimit = fMaxPixels / areaToPixels;
 	const bool cullArea = maxArea > areaLimit;
@@ -483,7 +482,7 @@ void CFeatureRenderRibbon::CullRibbonAreas(CParticleComponentRuntime* pComponent
 	IFStream sizes = container.GetIFStream(EPDT_Size);
 	IPidStream parentIds = container.GetIPidStream(EPDT_ParentId);
 
-	CParticleContainer& parentContainer = pComponentRuntime->GetParentContainer();
+	const CParticleContainer& parentContainer = runtime.GetParentContainer();
 	IVec3Stream parentPositions = parentContainer .GetIVec3Stream(EPVF_Position);
 
 	auto& memHeap = GetPSystem()->GetThreadData().memHeap;
@@ -495,7 +494,7 @@ void CFeatureRenderRibbon::CullRibbonAreas(CParticleComponentRuntime* pComponent
 		areas.resize(ribbons.size());
 	}
 
-	SFrustumTest frustumTest(camera, pComponentRuntime->GetBounds());
+	SFrustumTest frustumTest(camera, runtime.GetBounds());
 
 	float area = 0.0f;
 	for (uint ribbonId = 0; ribbonId < ribbons.size(); ++ribbonId)

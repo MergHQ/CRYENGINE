@@ -177,13 +177,6 @@ struct SPostEffectsUtils
 		return g;
 	}
 
-	static CTexture* GetTaaRT(CRenderView* pRenderView,bool bCurrentFrame = true)
-	{
-		int eye = static_cast<int>(pRenderView->GetCurrentEye());
-		int index = bCurrentFrame ? (SPostEffectsUtils::m_iFrameCounter % 2) : ((SPostEffectsUtils::m_iFrameCounter + 1) % 2);
-		return CRendererResources::s_ptexPrevBackBuffer[index][eye];
-	}
-
 	static CTexture* GetVelocityObjectRT(CRenderView* pRenderView)
 	{
 		int eye = static_cast<int>(pRenderView->GetCurrentEye());

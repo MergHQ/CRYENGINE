@@ -203,8 +203,6 @@ public:
 						{
 							GameWarning("[flow] CFlowFlashInvokeNode: Error while calling '%s' on Entity '%s' [%d]", methodName.c_str(), pEntity->GetName(), pEntity->GetId());
 						}
-
-						pFlashPlayer->Release();
 					}
 					else
 					{

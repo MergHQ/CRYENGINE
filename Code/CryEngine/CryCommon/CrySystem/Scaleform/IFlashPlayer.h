@@ -5,6 +5,8 @@
 #include <CryMath/Cry_Color.h>
 #include <CryMath/Cry_Math.h>
 
+#include <memory>
+
 struct IFlashVariableObject;
 struct IFlashPlayerBootStrapper;
 struct IFSCommandHandler;
@@ -75,14 +77,7 @@ struct IFlashPlayer
 		eAT_BottomLeft,
 		eAT_BottomRight
 	};
-
-	// <interfuscator:shuffle>
-	//! Lifetime.
-	//! ##@{
-	virtual void AddRef() = 0;
-	virtual void Release() = 0;
-	//! ##@}
-
+	
 	//! Initialization.
 	virtual bool Load(const char* pFilePath, unsigned int options = DEFAULT, unsigned int cat = eCat_Default) = 0;
 
@@ -125,6 +120,8 @@ struct IFlashPlayer
 	virtual void SendKeyEvent(const SFlashKeyEvent& keyEvent) = 0;
 	virtual void SendCharEvent(const SFlashCharEvent& charEvent) = 0;
 	//! ##@}
+
+	virtual bool HitTest(float x, float y) const = 0;
 
 	virtual void SetVisible(bool visible) = 0;
 	virtual bool GetVisible() const = 0;
@@ -198,9 +195,9 @@ struct IFlashPlayer_RenderProxy
 	};
 
 	// <interfuscator:shuffle>
-	virtual void RenderCallback(EFrameType ft, bool releaseOnExit = true) = 0;
-	virtual void RenderPlaybackLocklessCallback(int cbIdx, EFrameType ft, bool finalPlayback = true, bool releaseOnExit = true) = 0;
-	virtual void DummyRenderCallback(EFrameType ft, bool releaseOnExit = true) = 0;
+	virtual void RenderCallback(EFrameType ft) = 0;
+	virtual void RenderPlaybackLocklessCallback(int cbIdx, EFrameType ft, bool finalPlayback = true) = 0;
+	virtual void DummyRenderCallback(EFrameType ft) = 0;
 	// </interfuscator:shuffle>
 
 	virtual IScaleformPlayback* GetPlayback() = 0;
@@ -241,6 +238,7 @@ struct IFlashVariableObject
 	virtual void VisitMembers(ObjectVisitor* pVisitor) const = 0;
 	virtual bool DeleteMember(const char* pMemberName) = 0;
 	virtual bool Invoke(const char* pMethodName, const SFlashVarValue* pArgs, unsigned int numArgs, SFlashVarValue* pResult = 0) = 0;
+	virtual bool Invoke(const char* pMethodName, const IFlashVariableObject** pArgs, unsigned int numArgs, SFlashVarValue* pResult = 0) = 0;
 
 	//! AS Array support. These methods are only valid for Array type.
 	virtual unsigned int GetArraySize() const = 0;
@@ -283,7 +281,7 @@ struct IFlashVariableObject
 	// </interfuscator:shuffle>
 	bool         Invoke0(const char* pMethodName, SFlashVarValue* pResult = 0)
 	{
-		return Invoke(pMethodName, 0, 0, pResult);
+		return Invoke(pMethodName, static_cast<SFlashVarValue*>(0), 0, pResult);
 	}
 	bool Invoke1(const char* pMethodName, const SFlashVarValue& arg, SFlashVarValue* pResult = 0)
 	{
@@ -315,7 +313,7 @@ struct IFlashPlayerBootStrapper
 	virtual bool Load(const char* pFilePath) = 0;
 
 	//! Bootstrapping.
-	virtual IFlashPlayer* CreatePlayerInstance(unsigned int options = IFlashPlayer::DEFAULT, unsigned int cat = IFlashPlayer::eCat_Default) = 0;
+	virtual std::shared_ptr<IFlashPlayer> CreatePlayerInstance(unsigned int options = IFlashPlayer::DEFAULT, unsigned int cat = IFlashPlayer::eCat_Default) = 0;
 
 	//! General property queries
 	//! ##@{
@@ -370,7 +368,7 @@ struct IActionScriptFunction
 		//! as the (pointer to the) string will still be valid after Call() returns. However, if a pointer to a string on the stack is being
 		//! passed, "createManagedValue" must be set to true!
 		virtual void Set(const SFlashVarValue& value, bool createManagedValue = true) = 0;
-
+		virtual void Set(const IFlashVariableObject* value) = 0;
 	protected:
 		virtual ~IReturnValue() {}
 	};

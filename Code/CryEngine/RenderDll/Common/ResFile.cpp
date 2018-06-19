@@ -1787,10 +1787,6 @@ void CResFile::GetMemoryUsage(ICrySizer* pSizer) const
 	pSizer->AddObject(m_DirOpen);
 }
 
-ResDir* CResFile::mfGetDirectory()
-{
-	return &m_Dir;
-}
 
 #include <CryCore/TypeInfo_impl.h>
 #include "ResFile_info.h"

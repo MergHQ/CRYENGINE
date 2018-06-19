@@ -345,7 +345,7 @@ void CVrProjectionManager::ExecuteFlattenDepth(CTexture* pSrcRT, CTexture* pDest
 		pDestRT->CreateRenderTarget(CRendererResources::s_eTFZ, ColorF(1.0f, 1.0f, 1.0f, 1.0f));
 	}
 
-	if (m_passDepthFlattening.InputChanged())
+	if (m_passDepthFlattening.IsDirty())
 	{
 		static CCryNameTSCRC techFlattenDepth("FlattenDepth");
 

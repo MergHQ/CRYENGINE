@@ -898,99 +898,6 @@ struct IRenderTarget
 
 //==================================================================================================================
 
-//! \cond INTERNAL
-//! FX shader texture sampler (description).
-struct STexSamplerFX
-{
-#if SHADER_REFLECT_TEXTURE_SLOTS
-	string m_szUIName;
-	string m_szUIDescription;
-#endif
-
-	string m_szName;
-	string m_szTexture;
-
-	union
-	{
-		struct SHRenderTarget* m_pTarget;
-		IRenderTarget*         m_pITarget;
-	};
-
-	SamplerStateHandle m_nTexState;
-	uint8         m_eTexType; //!< ETEX_Type e.g. eTT_2D or eTT_Cube.
-	uint8         m_nSlotId;  //!< EFTT_ index if it references one of the material texture slots, EFTT_MAX otherwise.
-	uint32        m_nTexFlags;
-
-	STexSamplerFX()
-	{
-		m_nTexState = SamplerStateHandle::Unspecified;
-		m_eTexType = eTT_2D;
-		m_nSlotId = EFTT_MAX;
-		m_nTexFlags = 0;
-		m_pTarget = NULL;
-	}
-	~STexSamplerFX()
-	{
-		SAFE_RELEASE(m_pITarget);
-	}
-
-	int Size()
-	{
-		int nSize = sizeof(*this);
-		nSize += m_szName.capacity();
-		nSize += m_szTexture.capacity();
-#if SHADER_REFLECT_TEXTURE_SLOTS
-		nSize += m_szUIName.capacity();
-		nSize += m_szUIDescription.capacity();
-#endif
-		return nSize;
-	}
-
-	void GetMemoryUsage(ICrySizer* pSizer) const
-	{
-	}
-
-	uint32 GetTexFlags() { return m_nTexFlags; }
-	void   Update();
-	void   PostLoad();
-	NO_INLINE STexSamplerFX(const STexSamplerFX& src)
-	{
-		m_pITarget = src.m_pITarget;
-		if (m_pITarget)
-			m_pITarget->AddRef();
-		m_szName = src.m_szName;
-		m_szTexture = src.m_szTexture;
-		m_nSlotId = src.m_nSlotId;
-		m_eTexType = src.m_eTexType;
-		m_nTexFlags = src.m_nTexFlags;
-		m_nTexState = src.m_nTexState;
-
-#if SHADER_REFLECT_TEXTURE_SLOTS
-		m_szUIName = src.m_szUIName;
-		m_szUIDescription = src.m_szUIDescription;
-#endif
-	}
-	NO_INLINE STexSamplerFX& operator=(const STexSamplerFX& src)
-	{
-		this->~STexSamplerFX();
-		new(this)STexSamplerFX(src);
-		return *this;
-	}
-	inline friend bool operator!=(const STexSamplerFX& m1, const STexSamplerFX& m2)
-	{
-		if (m1.m_szTexture != m2.m_szTexture || m1.m_eTexType != m2.m_eTexType || m1.m_nTexFlags != m2.m_nTexFlags)
-			return true;
-		return false;
-	}
-	inline bool operator==(const STexSamplerFX& m1)
-	{
-		return !(*this != m1);
-	}
-
-	bool Export(SShaderSerializeContext& SC);
-	bool Import(SShaderSerializeContext& SC, SSTexSamplerFX* pTS);
-};
-
 //! Resource texture sampler (runtime).
 struct STexSamplerRT
 {
@@ -1082,21 +989,6 @@ struct STexSamplerRT
 		this->~STexSamplerRT();
 		new(this)STexSamplerRT(src);
 		return *this;
-	}
-	STexSamplerRT(const STexSamplerFX& src)
-	{
-		m_pITex = NULL;
-		m_pDynTexSource = NULL;
-		m_pAnimInfo = NULL;
-		m_pITarget = src.m_pITarget;
-		if (m_pITarget)
-			m_pITarget->AddRef();
-		m_eTexType = src.m_eTexType;
-		m_nTexFlags = src.m_nTexFlags;
-		m_nTexState = src.m_nTexState;
-		m_nSamplerSlot = -1;
-		m_nTextureSlot = -1;
-		m_bGlobal = (src.m_nTexFlags & FT_FROMIMAGE) != 0;
 	}
 	inline bool operator!=(const STexSamplerRT& m) const
 	{

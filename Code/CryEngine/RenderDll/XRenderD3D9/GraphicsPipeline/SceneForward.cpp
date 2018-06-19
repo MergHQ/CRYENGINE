@@ -204,7 +204,7 @@ bool CSceneForwardStage::CreatePipelineState(const SGraphicsPipelineStateDescrip
 	
 	CDeviceGraphicsPSODesc psoDesc(nullptr, desc);
 	
-	if (passId == ePass_ForwardRecursive)
+	if (bRecursive)
 		psoDesc.m_ShaderFlags_RT |= g_HWSR_MaskBit[HWSR_SECONDARY_VIEW];
 
 
@@ -308,17 +308,29 @@ bool CSceneForwardStage::CreatePipelineState(const SGraphicsPipelineStateDescrip
 			{
 				// Handle emissive materials
 				psoDesc.m_RenderState = (psoDesc.m_RenderState & ~(GS_BLEND_MASK | GS_DEPTHWRITE | GS_DEPTHFUNC_MASK | GS_STENCIL));
-				psoDesc.m_RenderState |= GS_DEPTHFUNC_LEQUAL | GS_BLSRC_ONE | GS_BLDST_ONE | GS_NOCOLMASK_A;
+				psoDesc.m_RenderState |= GS_DEPTHFUNC_LEQUAL;
+				if (!bRecursive)
+					psoDesc.m_RenderState |= GS_BLSRC_ONE | GS_BLDST_ONE | GS_NOCOLMASK_A;
 			}
 			else
 			{
 				psoDesc.m_RenderState = (psoDesc.m_RenderState & ~(GS_BLEND_MASK | GS_DEPTHWRITE | GS_DEPTHFUNC_MASK | GS_STENCIL));
-				psoDesc.m_RenderState |= GS_DEPTHFUNC_LEQUAL | GS_BLSRC_SRCALPHA | GS_BLDST_ONEMINUSSRCALPHA | GS_NOCOLMASK_A;
+
+				if (shaderFlags2 & EF2_DEPTH_FIXUP)
+				{
+					psoDesc.m_RenderState |= GS_DEPTHFUNC_LEQUAL;
+					psoDesc.m_RenderState |= GS_BLSRC_SRC1ALPHA | GS_BLDST_ONEMINUSSRC1ALPHA | GS_BLALPHA_MIN;
+				}
+				else
+				{
+					psoDesc.m_RenderState |= GS_DEPTHFUNC_LEQUAL | GS_BLSRC_SRCALPHA | GS_BLDST_ONEMINUSSRCALPHA | GS_NOCOLMASK_A;
+				}
+
 				psoDesc.m_ShaderFlags_RT |= g_HWSR_MaskBit[HWSR_ALPHABLEND];
 			}
 
 			if (bOverlay)
-				pSceneRenderPass = bRecursive ? &m_forwardOverlayPass : &m_forwardOverlayPass;
+				pSceneRenderPass = bRecursive ? &m_forwardOverlayRecursivePass : &m_forwardOverlayPass;
 		}
 		else if (bEyeOverlay)
 		{
@@ -451,6 +463,11 @@ bool CSceneForwardStage::PreparePerPassResources(bool bOnInit, bool bShadowMask,
 			pResources->SetTexture(39, CRendererResources::s_ptexNoise3D, EDefaultResourceViews::Default, EShaderStage_AllWithoutCompute);
 			pResources->SetTexture(40, CRendererResources::s_ptexEnvironmentBRDF, EDefaultResourceViews::Default, EShaderStage_AllWithoutCompute);
 			pResources->SetTexture(45, (pRenderView && pRenderView->IsRecursive()) ? CRendererResources::s_ptexBlackCM : CRendererResources::s_ptexDefaultProbeCM, EDefaultResourceViews::Default, EShaderStage_AllWithoutCompute);
+
+			if (i == 1) // Transparent pass only: allow writing motion vectors
+			{
+				pResources->SetTexture(2, CRendererResources::s_ptexVelocityObjects[0], EDefaultResourceViews::UnorderedAccess, EShaderStage_Pixel);
+			}			
 		}
 
 		// Particle resources
@@ -707,14 +724,6 @@ void CSceneForwardStage::ExecuteTransparent(bool bBelowWater)
 	CD3D9Renderer* pRenderer = gcpRendD3D;
 	CRenderView* pRenderView = RenderView();
 
-	const bool bItemsBelowWater = !pRenderView->GetRenderItems(EFSLIST_TRANSP).empty() && (pRenderView->GetBatchFlags(EFSLIST_TRANSP) & FB_BELOW_WATER);
-	const bool bItemsBelowWaterNearest = !pRenderView->GetRenderItems(EFSLIST_TRANSP_NEAREST).empty() && (pRenderView->GetBatchFlags(EFSLIST_TRANSP_NEAREST) & FB_BELOW_WATER);
-	if(bItemsBelowWater || bItemsBelowWaterNearest || !bBelowWater)
-	{
-		CStretchRectPass& copyPass = bBelowWater ? m_copySceneTargetBWPass : m_copySceneTargetAWPass;
-		copyPass.Execute(CRendererResources::s_ptexHDRTarget, CRendererResources::s_ptexSceneTarget);
-	}
-
 	CSceneRenderPass& scenePass = bBelowWater ? m_forwardTransparentBWPass : m_forwardTransparentAWPass;
 
 	CSceneRenderPass::EPassFlags passFlags = CSceneRenderPass::ePassFlags_None;
@@ -762,7 +771,7 @@ void CSceneForwardStage::ExecuteTransparentDepthFixup()
 	CTexture* pDestRT = CRendererResources::s_ptexLinearDepth;
 
 	CFullscreenPass& screenPass = m_depthFixupPass;
-	if (!screenPass.InputChanged(pSrcRT->GetTextureID(), pDestRT->GetTextureID()))
+	if (!screenPass.IsDirty())
 	{
 		screenPass.Execute();
 		return;
@@ -1151,7 +1160,7 @@ void CSceneForwardStage::ExecuteSky(CTexture* pColorTex, CTexture* pDepthTex)
 
 	const bool bFog = pRenderView->IsGlobalFogEnabled() && !(GetGraphicsPipeline().IsPipelineFlag(CGraphicsPipeline::EPipelineFlags::NO_SHADER_FOG));
 
-	//if (m_skyPass.InputChanged(pDepthTex->GetTextureID()))
+	//if (m_skyPass.IsDirty(pDepthTex->GetTextureID()))
 	{
 		SSamplerState      samplerDescLinearWrapU(FILTER_LINEAR, eSamplerAddressMode_Wrap, eSamplerAddressMode_Clamp, eSamplerAddressMode_Clamp, 0);
 		SamplerStateHandle samplerStateLinearWrapU = GetDeviceObjectFactory().GetOrCreateSamplerStateHandle(samplerDescLinearWrapU);

@@ -805,7 +805,12 @@ void CBrush::Render(const CLodValue& lodValue, const SRenderingPassInfo& passInf
 	   }
 	 */
 
+	const uint8 nMaterialLayers = IRenderNode::GetMaterialLayers();
+	const auto& shaderItem = GetMaterial()->GetShaderItem();
+	const bool isRefractive = shaderItem.m_pShader && !!(shaderItem.m_pShader->GetFlags() & (EF_REFRACTIVE | EF_FORCEREFRACTIONUPDATE));
+
 	Matrix34 transformMatrix = m_Matrix;
+	const Vec3 vCamPos = passInfo.GetCamera().GetPosition();
 	bool isNearestObject = (GetRndFlags() & ERF_FOB_NEAREST) != 0;
 	if (isNearestObject)
 	{
@@ -828,7 +833,7 @@ void CBrush::Render(const CLodValue& lodValue, const SRenderingPassInfo& passInf
 	}
 
 	CRenderObject* pObj = nullptr;
-	if (m_pFoliage || m_pDeform || (m_dwRndFlags & ERF_HUD) || isNearestObject)
+	if (m_pFoliage || m_pDeform || (m_dwRndFlags & ERF_HUD) || isNearestObject || isRefractive)
 	{
 		// Foliage and deform do not support permanent render objects
 		// HUD is managed in custom render-lists and also doesn't support it
@@ -838,16 +843,25 @@ void CBrush::Render(const CLodValue& lodValue, const SRenderingPassInfo& passInf
 	if (!pObj)
 	{
 		if (GetObjManager()->AddOrCreatePersistentRenderObject(pTempData, pObj, &lodValue, transformMatrix, passInfo))
+		{
+			if (pObj && !passInfo.IsShadowPass())
+			{
+ 				pObj->m_fDistance = sqrt_tpl(Distance::Point_AABBSq(vCamPos, CBrush::GetBBox())) * passInfo.GetZoomFactor();
+				IF(!m_bDrawLast, 1)
+					pObj->m_nSort = fastround_positive(pObj->m_fDistance * 2.0f);
+				else
+					pObj->m_fSort = 10000.0f;
+			}
 			return;
+		}
 	}
 
 	const auto& userData = pTempData->userData;
 
-	const Vec3 vCamPos = passInfo.GetCamera().GetPosition();
 	const Vec3 vObjCenter = CBrush::GetBBox().GetCenter();
 	const Vec3 vObjPos = CBrush::GetPos();
 
-	pObj->m_fDistance = pObj->m_bPermanent ? 0 : sqrt_tpl(Distance::Point_AABBSq(vCamPos, CBrush::GetBBox())) * passInfo.GetZoomFactor();
+	pObj->m_fDistance = sqrt_tpl(Distance::Point_AABBSq(vCamPos, CBrush::GetBBox())) * passInfo.GetZoomFactor();
 
 	pObj->m_pRenderNode = this;
 	pObj->m_fAlpha = 1.f;
@@ -872,7 +886,7 @@ void CBrush::Render(const CLodValue& lodValue, const SRenderingPassInfo& passInf
 		pObj->m_ObjFlags |= FOB_HUD_REQUIRE_DEPTHTEST;
 	}
 
-	if (uint8 nMaterialLayers = IRenderNode::GetMaterialLayers())
+	if (nMaterialLayers)
 	{
 		uint8 nFrozenLayer = (nMaterialLayers & MTL_LAYER_FROZEN) ? MTL_LAYER_FROZEN_MASK : 0;
 		uint8 nWetLayer = (nMaterialLayers & MTL_LAYER_WET) ? MTL_LAYER_WET_MASK : 0;

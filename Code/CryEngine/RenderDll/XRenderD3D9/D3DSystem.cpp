@@ -13,27 +13,15 @@
 #include <CryInput/IHardwareMouse.h>
 #include <Common/RenderDisplayContext.h>
 
-#define CRY_AMD_AGS_USE_DLL
-#include <CryCore/Platform/CryLibrary.h>
-
 #if CRY_PLATFORM_WINDOWS
 	#if defined(USE_AMD_API)
-		#if !defined(CRY_AMD_AGS_USE_DLL) // Set to 0 to load DLL at runtime, you need to redist amd_ags(64).dll yourself
-			#if CRY_PLATFORM_64BIT
-LINK_THIRD_PARTY_LIBRARY("SDKs/AMD/AGS Lib/lib/x64/static/amd_ags64.lib")
-			#else
-LINK_THIRD_PARTY_LIBRARY("SDKs/AMD/AGS Lib/lib/Win32/static/amd_ags.lib")
-			#endif
-		#else
-			#define _AMD_AGS_USE_DLL
-		#endif
-		#ifndef LoadLibrary
-			#define LoadLibrary CryLoadLibrary
-			#include <AMD/AGS Lib/inc/amd_ags.h>
-			#undef LoadLibrary
-		#else
-			#include <AMD/AGS Lib/inc/amd_ags.h>
-		#endif                              //LoadLibrary
+		#include AMD_API_HEADER
+LINK_THIRD_PARTY_LIBRARY(AMD_API_LIB)
+
+		AGSContext* g_pAGSContext = nullptr;
+		AGSConfiguration g_pAGSContextConfiguration = {};
+		AGSGPUInfo g_gpuInfo;
+		unsigned int g_extensionsSupported = 0;
 	#endif
 
 	#if defined(USE_NV_API)
@@ -44,9 +32,9 @@ LINK_THIRD_PARTY_LIBRARY(NV_API_LIB)
 	#if defined(USE_AMD_EXT)
 		#include <AMD/AMD_Extensions/AmdDxExtDepthBoundsApi.h>
 
-bool g_bDepthBoundsTest = true;
-IAmdDxExt* g_pExtension = NULL;
-IAmdDxExtDepthBounds* g_pDepthBoundsTest = NULL;
+		bool g_bDepthBoundsTest = true;
+		IAmdDxExt* g_pExtension = NULL;
+		IAmdDxExtDepthBounds* g_pDepthBoundsTest = NULL;
 	#endif
 #endif
 
@@ -1638,37 +1626,22 @@ iLog->Log(" %s shader quality: %s", # name, sGetSQuality("q_Shader" # name)); } 
 }
 
 //==========================================================================
-
 void CD3D9Renderer::InitAMDAPI()
 {
 #if USE_AMD_API
 	do
 	{
-		AGSReturnCode status = AGSInit();
+		AGSReturnCode status = g_pAGSContext ? AGS_SUCCESS : agsInit(&g_pAGSContext, &g_pAGSContextConfiguration, &g_gpuInfo);
 		iLog->Log("AGS: AMD GPU Services API init %s (%d)", status == AGS_SUCCESS ? "ok" : "failed", status);
 		m_bVendorLibInitialized = status == AGS_SUCCESS;
 		if (!m_bVendorLibInitialized)
 			break;
-
-		AGSDriverVersionInfoStruct driverInfo = { 0 };
-		status = AGSDriverGetVersionInfo(&driverInfo);
-
-		if (status != AGS_SUCCESS)
-			iLog->LogError("AGS: Unable to get driver version (%d)", status);
-		else
-			iLog->Log("AGS: Catalyst Version: %s  Driver Version: %s", driverInfo.strCatalystVersion, driverInfo.strDriverVersion);
-
-		int outputIndex = 0;
-	#if defined(SUPPORT_DEVICE_INFO)
-		outputIndex = (int)m_devInfo.OutputIndex();
-	#else
-		if (AGSGetDefaultDisplayIndex(&outputIndex) != AGS_SUCCESS)
-			outputIndex = 0;
-	#endif
+		
+		iLog->Log("AGS: Catalyst Version: %s  Driver Version: %s", g_gpuInfo.radeonSoftwareVersion, g_gpuInfo.driverVersion);
 
 		m_nGPUs = 1;
 		int numGPUs = 1;
-		status = AGSCrossfireGetGPUCount(outputIndex, &numGPUs);
+		status = agsGetCrossfireGPUCount(g_pAGSContext, &numGPUs);
 
 		if (status != AGS_SUCCESS)
 		{
@@ -1679,6 +1652,8 @@ void CD3D9Renderer::InitAMDAPI()
 			m_nGPUs = numGPUs;
 			iLog->Log("AGS: Multi GPU count = %d", numGPUs);
 		}
+		
+		m_bDeviceSupports_AMDExt = g_extensionsSupported;
 	}
 	while (0);
 #endif   // USE_AMD_API
@@ -1928,7 +1903,7 @@ bool CD3D9Renderer::CreateDeviceMobile()
 {
 	auto* pDC = GetBaseDisplayContext();
 
-	if (!m_devInfo.CreateDevice(false, pDC->GetDisplayResolution().x, pDC->GetDisplayResolution().y, m_zbpp, OnD3D11CreateDevice, CreateWindowCallback))
+	if (!m_devInfo.CreateDevice(m_zbpp, OnD3D11CreateDevice, CreateWindowCallback))
 		return false;
 
 	OnD3D11PostCreateDevice(m_devInfo.Device());

@@ -271,7 +271,7 @@ void CWaterRipplesStage::Execute()
 		{
 			auto& pass = m_passSnapToCenter;
 
-			if (pass.InputChanged())
+			if (pass.IsDirty())
 			{
 				uint64 rtMask = g_HWSR_MaskBit[HWSR_SAMPLE0];
 				pass.SetPrimitiveFlags(CRenderPrimitive::eFlags_None);
@@ -297,7 +297,7 @@ void CWaterRipplesStage::Execute()
 		{
 			auto& pass = m_passWaterWavePropagation;
 
-			if (pass.InputChanged())
+			if (pass.IsDirty())
 			{
 				pass.SetPrimitiveFlags(CRenderPrimitive::eFlags_None);
 				pass.SetPrimitiveType(CRenderPrimitive::ePrim_ProceduralTriangle);

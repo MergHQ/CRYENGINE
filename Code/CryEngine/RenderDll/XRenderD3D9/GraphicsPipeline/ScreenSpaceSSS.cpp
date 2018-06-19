@@ -24,7 +24,7 @@ void CScreenSpaceSSSStage::Execute(CTexture* pIrradianceTex)
 
 	// Horizontal pass
 	{
-		if (m_passH.InputChanged(pIrradianceTex->GetTextureID()))
+		if (m_passH.IsDirty(pIrradianceTex->GetTextureID()))
 		{
 			m_passH.SetTechnique(pShader, techBlur, 0);
 			m_passH.SetRenderTarget(0, CRendererResources::s_ptexSceneTargetR11G11B10F[1]);
@@ -49,7 +49,7 @@ void CScreenSpaceSSSStage::Execute(CTexture* pIrradianceTex)
 
 	// Vertical pass
 	{
-		if (m_passV.InputChanged(pIrradianceTex->GetTextureID()))
+		if (m_passV.IsDirty(pIrradianceTex->GetTextureID()))
 		{
 			m_passV.SetTechnique(pShader, techBlur, g_HWSR_MaskBit[HWSR_SAMPLE0]);
 			m_passV.SetRenderTarget(0, CRendererResources::s_ptexHDRTarget);

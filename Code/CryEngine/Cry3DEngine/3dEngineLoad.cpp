@@ -1307,6 +1307,10 @@ void C3DEngine::LoadEnvironmentSettingsFromXML(XmlNodeRef pInputNode)
 		{
 			m_nGsmCache = cvar->GetIVal();
 		}
+		else
+		{
+			m_nGsmCache = 0;
+		}
 	}
 
 	{

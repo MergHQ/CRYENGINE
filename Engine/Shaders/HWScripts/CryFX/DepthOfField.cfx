@@ -54,6 +54,13 @@ struct fragBokehQuad
   float4 Color     : COLOR0;
 };
 
+Texture2D texDofBkRef_SceneTarget : register(t0);
+Texture2D texDofBkRef_SceneDepth  : register(t1);
+Texture2D texDofBkRef_Dither      : register(t2);
+
+SamplerState ssDofBkRef_SceneTarget : register(s0);
+SamplerState ssDofBkRef_SceneDepth  : register(s1);
+SamplerState ssDofBkRef_Dither      : register(s2);
 
 v2fBokehQuad DofBokehRefVS(a2vBokehQuad IN, uint nVertexID : SV_VertexID)
 {
@@ -76,15 +83,15 @@ v2fBokehQuad DofBokehRefVS(a2vBokehQuad IN, uint nVertexID : SV_VertexID)
 	float4 screenProj = HPosToScreenTC(OUT.Position);
 		
 	// fetch scene color - output vertex/quad color
-	float fDepth = tex2Dlod(_tex1, float4(screenProj.xy, 0, 0)).x;
+	float fDepth = GetTexture2DLod(texDofBkRef_SceneDepth, ssDofBkRef_SceneDepth, float4(screenProj.xy, 0, 0)).x;
 	
 #if %_RT_SAMPLE1
 	// Dilate to avoid ghosting on edges due to lower resolution DOF
 	// This can cause artifacts in small cavities and on alpha-tested geometry
-	fDepth = min(fDepth, tex2Dlod(_tex1, float4(screenProj.xy + g_VS_ScreenSize.zw * half2( vAspectRatio.w, vAspectRatio.w), 0, 0)).x);
-	fDepth = min(fDepth, tex2Dlod(_tex1, float4(screenProj.xy + g_VS_ScreenSize.zw * half2(-vAspectRatio.w, vAspectRatio.w), 0, 0)).x);
-	fDepth = min(fDepth, tex2Dlod(_tex1, float4(screenProj.xy + g_VS_ScreenSize.zw * half2( vAspectRatio.w,-vAspectRatio.w), 0, 0)).x);
-	fDepth = min(fDepth, tex2Dlod(_tex1, float4(screenProj.xy + g_VS_ScreenSize.zw * half2(-vAspectRatio.w,-vAspectRatio.w), 0, 0)).x);
+	fDepth = GetTexture2DLod(texDofBkRef_SceneDepth, ssDofBkRef_SceneDepth, float4(screenProj.xy + g_VS_ScreenSize.zw * half2( vAspectRatio.w, vAspectRatio.w), 0, 0)).x);
+	fDepth = GetTexture2DLod(texDofBkRef_SceneDepth, ssDofBkRef_SceneDepth, float4(screenProj.xy + g_VS_ScreenSize.zw * half2(-vAspectRatio.w, vAspectRatio.w), 0, 0)).x);
+	fDepth = GetTexture2DLod(texDofBkRef_SceneDepth, ssDofBkRef_SceneDepth, float4(screenProj.xy + g_VS_ScreenSize.zw * half2( vAspectRatio.w,-vAspectRatio.w), 0, 0)).x);
+	fDepth = GetTexture2DLod(texDofBkRef_SceneDepth, ssDofBkRef_SceneDepth, float4(screenProj.xy + g_VS_ScreenSize.zw * half2(-vAspectRatio.w,-vAspectRatio.w), 0, 0)).x);
 #endif
 
 	// fetch depth - scale quad here
@@ -144,10 +151,10 @@ v2fBokehQuad DofBokehRefVS(a2vBokehQuad IN, uint nVertexID : SV_VertexID)
 
 	float4 vQuad[4] = 
 	{
-		tex2Dlod(_tex0, float4(screenProj.xy, 0, 0)),
-		tex2Dlod(_tex0, float4(screenProj.xy + g_VS_ScreenSize.zw * float2(2,0), 0, 0)),
-		tex2Dlod(_tex0, float4(screenProj.xy + g_VS_ScreenSize.zw * float2(0,2), 0, 0)),
-		tex2Dlod(_tex0, float4(screenProj.xy + g_VS_ScreenSize.zw * float2(2,2), 0, 0)),
+		GetTexture2DLod(texDofBkRef_SceneTarget, ssDofBkRef_SceneTarget, float4(screenProj.xy, 0, 0)),
+		GetTexture2DLod(texDofBkRef_SceneTarget, ssDofBkRef_SceneTarget, float4(screenProj.xy + g_VS_ScreenSize.zw * float2(2,2), 0, 0)),
+		GetTexture2DLod(texDofBkRef_SceneTarget, ssDofBkRef_SceneTarget, float4(screenProj.xy + g_VS_ScreenSize.zw * float2(2,0), 0, 0)),
+		GetTexture2DLod(texDofBkRef_SceneTarget, ssDofBkRef_SceneTarget, float4(screenProj.xy + g_VS_ScreenSize.zw * float2(0,2), 0, 0)),
 	};
 
 	vQuad[0].w = GetLuminance(vQuad[0]);
@@ -219,7 +226,7 @@ pixoutDofMRT DofBokehRefPS(fragBokehQuad IN)
 	OUT.LayerNear = cScene  *fRangeNormK* saturate(IN.QuadPos.z);
 
 	// Apply dither pattern (minimize banding artefacts from accumulation/blending + aproximate lens particles)	
-	half fDither = tex2D(_tex2, IN.QuadPos.xy).w;
+	half fDither = GetTexture2D(texDofBkRef_Dither, ssDofBkRef_Dither, IN.QuadPos.xy).w;
 	OUT.LayerFar += OUT.LayerFar * fDither;
 	OUT.LayerNear += OUT.LayerNear * fDither;
 
@@ -236,24 +243,34 @@ technique DofBokehRef
   }
 }
 
+Texture2D texDofNrm_DofLayer0   : register(t0);
+Texture2D texDofNrm_DofLayer1   : register(t1);
+Texture2D texDofNrm_SceneTarget : register(t2);
+Texture2D texDofNrm_DepthTarget : register(t3);
+
+SamplerState ssDofNrm_DofLayer0   : register(s0)
+SamplerState ssDofNrm_DofLayer1   : register(s1)
+SamplerState ssDofNrm_SceneTarget : register(s2)
+SamplerState ssDofNrm_DepthTarget : register(s3)
+
 pixout RefDofMBNormalizePS(vtxOut IN)
 {
 	pixout OUT = (pixout) 0;
 
 	PS_ScreenSize.zw*=2;
-	half4 cScene = tex2D(_tex2, IN.baseTC.xy); 	
+	half4 cScene = GetTexture2D(texDofNrm_SceneTarget, ssDofNrm_SceneTarget, IN.baseTC.xy); 	
 		
-	half fDepth = tex2D(_tex3, IN.baseTC.xy).x * PS_NearFarClipDist.y; 
+	half fDepth = GetTexture2D(texDofNrm_DepthTarget, ssDofNrm_DepthTarget, IN.baseTC.xy).x * PS_NearFarClipDist.y; 
 
 	half2 fullScaleTC = IN.baseTC.xy/CV_HPosScale.xy;
 	
-	half4 cLayerNear = tex2D(_tex0, fullScaleTC + PS_ScreenSize.zw * float2(-1, -1)); 
+	half4 cLayerNear = GetTexture2D(texDofNrm_DofLayer0, ssDofNrm_DofLayer0, fullScaleTC + PS_ScreenSize.zw * float2(-1, -1)); 
 	cLayerNear.rgb /= cLayerNear.w>0? cLayerNear.w: 1;
 
-	half4 cLayerFar = tex2D(_tex1, fullScaleTC + PS_ScreenSize.zw * float2(-1, -1)); 
-	half4 cLayerFar1 = tex2D(_tex1, fullScaleTC + PS_ScreenSize.zw * float2(1, -1)); 
-	half4 cLayerFar2 = tex2D(_tex1, fullScaleTC + PS_ScreenSize.zw * float2(-1, 1)); 
-	half4 cLayerFar3 = tex2D(_tex1, fullScaleTC + PS_ScreenSize.zw * float2(1, 1)); 
+	half4 cLayerFar  = GetTexture2D(texDofNrm_DofLayer1, ssDofNrm_DofLayer1, fullScaleTC + PS_ScreenSize.zw * float2(-1, -1)); 
+	half4 cLayerFar1 = GetTexture2D(texDofNrm_DofLayer1, ssDofNrm_DofLayer1, fullScaleTC + PS_ScreenSize.zw * float2(1, -1)); 
+	half4 cLayerFar2 = GetTexture2D(texDofNrm_DofLayer1, ssDofNrm_DofLayer1, fullScaleTC + PS_ScreenSize.zw * float2(-1, 1)); 
+	half4 cLayerFar3 = GetTexture2D(texDofNrm_DofLayer1, ssDofNrm_DofLayer1, fullScaleTC + PS_ScreenSize.zw * float2(1, 1)); 
 	
 	// Blur final result - minimize noticeable bilinear upscaling artefacts
 	cLayerFar = (cLayerFar + cLayerFar1 + cLayerFar2 + cLayerFar3)*0.25;
@@ -266,7 +283,7 @@ pixout RefDofMBNormalizePS(vtxOut IN)
 	half fDepthBlur = saturate( vFocusRanges.xx)*vDofParamsFocus1.w;	
 
 	const float fFarBlend = saturate(fDepthBlur);
-  const float fNearBlend = saturate(sqrt(2.0 * cLayerNear.w));
+    const float fNearBlend = saturate(sqrt(2.0 * cLayerNear.w));
 	OUT.Color = lerp(float4(cScene.rgb, 0), float4(cLayerFar.rgb, 1), fFarBlend);		
 	OUT.Color = lerp(OUT.Color, float4(cLayerNear.rgb, 1), fNearBlend);
 

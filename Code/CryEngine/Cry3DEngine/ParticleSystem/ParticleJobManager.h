@@ -19,37 +19,39 @@ class CParticleJobManager
 public:
 	struct SDeferredRender
 	{
-		SDeferredRender(CParticleComponentRuntime* pRuntime, const SRenderContext& renderContext)
-			: m_pRuntime(pRuntime)
+		SDeferredRender(CParticleEmitter* pEmitter, const SRenderContext& renderContext)
+			: m_pEmitter(pEmitter)
 			, m_rParam(renderContext.m_renderParams)
 			, m_passInfo(renderContext.m_passInfo)
 			, m_distance(renderContext.m_distance)
 			, m_lightVolumeId(renderContext.m_lightVolumeId)
 			, m_fogVolumeId(renderContext.m_fogVolumeId) {}
-		CParticleComponentRuntime* m_pRuntime;
-		SRendParams                m_rParam;
-		SRenderingPassInfo         m_passInfo;
-		float                      m_distance;
-		uint16                     m_lightVolumeId;
-		uint16                     m_fogVolumeId;
+		CParticleEmitter*  m_pEmitter;
+		SRendParams        m_rParam;
+		SRenderingPassInfo m_passInfo;
+		float              m_distance;
+		uint16             m_lightVolumeId;
+		uint16             m_fogVolumeId;
 	};
 
 public:
 	CParticleJobManager();
-	void AddEmitter(CParticleEmitter* pEmitter) { m_emitterRefs.push_back(pEmitter); }
-	void AddDeferredRender(CParticleComponentRuntime* pRuntime, const SRenderContext& renderContext);
-	void ScheduleComputeVertices(CParticleComponentRuntime* pComponentRuntime, CRenderObject* pRenderObject, const SRenderContext& renderContext);
+	void AddUpdateEmitter(CParticleEmitter* pEmitter);
+	void ScheduleUpdateEmitter(CParticleEmitter* pEmitter);
+	void AddDeferredRender(CParticleEmitter* pEmitter, const SRenderContext& renderContext);
+	void ScheduleComputeVertices(CParticleComponentRuntime& runtime, CRenderObject* pRenderObject, const SRenderContext& renderContext);
 	void ScheduleUpdates();
 	void SynchronizeUpdates();
 	void DeferredRender();
 
-	static int ThreadMode() { return Cry3DEngineBase::GetCVars()->e_ParticlesThread; }
-
 private:
 
 	void Job_ScheduleUpdates();
+	void ScheduleUpdateEmitters(TDynArray<CParticleEmitter*>& emitters, JobManager::TPriorityLevel priority);
 
-	TDynArray<CParticleEmitter*> m_emitterRefs;
+	TDynArray<CParticleEmitter*> m_emittersDeferred;
+	TDynArray<CParticleEmitter*> m_emittersVisible;
+	TDynArray<CParticleEmitter*> m_emittersInvisible;
 	TDynArray<SDeferredRender>   m_deferredRenders;
 	JobManager::SJobState        m_updateState;
 };

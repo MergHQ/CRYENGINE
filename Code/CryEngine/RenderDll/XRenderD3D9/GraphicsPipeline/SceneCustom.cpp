@@ -3,6 +3,7 @@
 #include "StdAfx.h"
 #include "SceneCustom.h"
 #include "D3DPostProcess.h"
+#include "CompiledRenderObject.h"
 #include "DriverD3D.h"
 #include "Common/ReverseDepth.h"
 #include "Common/Include_HLSL_CPP_Shared.h"
@@ -18,7 +19,7 @@ void CSceneCustomStage::Init()
 	m_pPerPassResourceSet = GetDeviceObjectFactory().CreateResourceSet(CDeviceResourceSet::EFlags_ForceSetAllState);	
 	m_pPerPassConstantBuffer = gcpRendD3D->m_DevBufMan.CreateConstantBuffer(sizeof(HLSL_PerPassConstantBuffer_Custom));
 	
-	CTypedConstantBuffer<HLSL_PerPassConstantBuffer_Custom> cb(m_pPerPassConstantBuffer);
+	CTypedConstantBuffer<HLSL_PerPassConstantBuffer_Custom, 256> cb(m_pPerPassConstantBuffer);
 	cb.UploadZeros();
 	
 	bool bSuccess = SetAndBuildPerPassResources(true);
@@ -218,7 +219,7 @@ struct CHighlightPredicate
 {
 	bool operator() (SRendItem& item)
 	{
-		return (item.pObj->m_editorSelectionID & 0x2) == 0;
+		return (item.pCompiledObject->m_pRO->m_editorSelectionID & 0x2) == 0;
 	}
 };
 
@@ -226,7 +227,7 @@ struct CSelectionPredicate
 {
 	bool operator() (SRendItem& item)
 	{
-		return (item.pObj->m_editorSelectionID & 0x1) == 0;
+		return (item.pCompiledObject->m_pRO->m_editorSelectionID & 0x1) == 0;
 	}
 };
 
@@ -323,7 +324,7 @@ void CSceneCustomStage::ExecuteDebugger()
 	m_debugViewPass.SetViewport(pRenderView->GetViewport());
 
 	{
-		CTypedConstantBuffer<HLSL_PerPassConstantBuffer_Custom> cb(m_pPerPassConstantBuffer);
+		CTypedConstantBuffer<HLSL_PerPassConstantBuffer_Custom, 256> cb(m_pPerPassConstantBuffer);
 		cb->CP_Custom_ViewMode = Vec4(bViewTexelDensity ? 1.f : 0.f, CRenderer::CV_r_TexelsPerMeter, 0.f, 0.f);
 		cb.CopyToDevice();
 	}
@@ -373,7 +374,7 @@ void CSceneCustomStage::ExecuteDebugOverlay()
 	m_debugViewPass.SetViewport(pRenderView->GetViewport());
 
 	{
-		CTypedConstantBuffer<HLSL_PerPassConstantBuffer_Custom> cb(m_pPerPassConstantBuffer);
+		CTypedConstantBuffer<HLSL_PerPassConstantBuffer_Custom, 256> cb(m_pPerPassConstantBuffer);
 		cb->CP_Custom_ViewMode = Vec4(0.f, 0.f, 0.f, 0.f);
 		cb.CopyToDevice();
 	}
@@ -472,7 +473,7 @@ void CSceneCustomStage::ExecuteSelectionHighlight()
 	static CCryNameTSCRC techSilhouette("SelectionSilhouetteHighlight");
 
 	CTexture* pTargetTex = pRenderView->GetColorTarget();
-	if (m_highlightPass.InputChanged(pTargetTex->GetID()))
+	if (m_highlightPass.IsDirty(pTargetTex->GetID()))
 	{
 		m_highlightPass.SetTechnique(CShaderMan::s_shPostEffects, techSilhouette, 0);
 		m_highlightPass.SetRenderTarget(0, pTargetTex);
@@ -548,7 +549,7 @@ void CSceneCustomStage::ExecuteHelpers()
 	{
 		bool bViewTexelDensity = CRenderer::CV_r_TexelsPerMeter > 0;
 
-		CTypedConstantBuffer<HLSL_PerPassConstantBuffer_Custom> cb(m_pPerPassConstantBuffer);
+		CTypedConstantBuffer<HLSL_PerPassConstantBuffer_Custom, 256> cb(m_pPerPassConstantBuffer);
 		cb->CP_Custom_ViewMode = Vec4(0.f, 0.f, 0.f, 0.f);
 		cb.CopyToDevice();
 	}

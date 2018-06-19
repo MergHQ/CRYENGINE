@@ -122,6 +122,7 @@ public:
 
 	void SetViewports(uint32 vpCount, const D3DViewPort* pViewports);
 	void SetScissorRects(uint32 rcCount, const D3DRectangle* pRects);
+	void SetDepthBounds(float fMin, float fMax);
 	void SetPipelineState(const CDeviceGraphicsPSO* devicePSO);
 	void SetResourceLayout(const CDeviceResourceLayout* resourceLayout);
 	void SetResources(uint32 bindSlot, const CDeviceResourceSet* pResources);
@@ -194,6 +195,7 @@ public:
 	void Copy(D3DTexture*     pSrc, CDeviceTexture* pDst);
 
 	void Copy(CDeviceBuffer*  pSrc, CDeviceBuffer*  pDst, const SResourceRegionMapping& regionMapping);
+	void Copy(CDeviceBuffer*  pSrc, D3DBuffer*      pDst, const SResourceRegionMapping& regionMapping);
 	void Copy(D3DBuffer*      pSrc, D3DBuffer*      pDst, const SResourceRegionMapping& regionMapping);
 	void Copy(CDeviceTexture* pSrc, CDeviceTexture* pDst, const SResourceRegionMapping& regionMapping);
 	void Copy(D3DTexture*     pSrc, CDeviceTexture* pDst, const SResourceRegionMapping& regionMapping);

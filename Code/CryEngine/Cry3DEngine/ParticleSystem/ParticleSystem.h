@@ -48,9 +48,10 @@ public:
 
 	struct SThreadData
 	{
-		TParticleHeap  memHeap;
-		SParticleStats statsCPU;
-		SParticleStats statsGPU;
+		TParticleHeap        memHeap;
+		SParticleStats       statsCPU;
+		SParticleStats       statsGPU;
+		TElementCounts<uint> statsSync;
 	};
 
 	PParticleEffect          LoadEffect(cstr effectName);
@@ -61,7 +62,7 @@ public:
 	CParticleJobManager&     GetJobManager() { return m_jobManager; }
 	CParticleProfiler&       GetProfiler()   { return m_profiler; }
 
-	void                     FinishUpdate();
+	void                     FinishUpdate() {}
 	void                     DeferredRender(const SRenderingPassInfo& passInfo);
 	float                    DisplayDebugStats(Vec2 displayLocation, float lineHeight);
 
@@ -111,7 +112,5 @@ ILINE CParticleSystem* GetPSystem()
 	static std::shared_ptr<IParticleSystem> pSystem(GetIParticleSystem());
 	return static_cast<CParticleSystem*>(pSystem.get());
 };
-
-uint GetVersion(IArchive& ar);
 
 }

@@ -1433,7 +1433,7 @@ struct IUIElement
 	virtual bool NeedLazyRender() const = 0;
 
 	//! Raw IFlashPlayer.
-	virtual IFlashPlayer* GetFlashPlayer() = 0;
+	virtual std::shared_ptr<IFlashPlayer> GetFlashPlayer() = 0;
 
 	// definitions
 	virtual const SUIParameterDesc* GetVariableDesc(int index) const = 0;

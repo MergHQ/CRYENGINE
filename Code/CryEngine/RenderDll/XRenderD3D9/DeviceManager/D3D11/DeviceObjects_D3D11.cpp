@@ -605,6 +605,13 @@ D3DResource* CDeviceObjectFactory::AllocateStagingResource(D3DResource* pForTex,
 	}
 }
 
+#if USE_NV_API
+	#include NV_API_HEADER
+#endif
+#if USE_AMD_API
+	#include AMD_API_HEADER
+#endif
+
 void CDeviceObjectFactory::ReleaseStagingResource(D3DResource* pStagingRes)
 {
 	D3D11_TEXTURE2D_DESC Desc;

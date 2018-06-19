@@ -18,16 +18,17 @@ EShaderStage SDeviceObjectHelpers::GetShaderInstanceInfo(THwShaderInfo& result, 
 			return EShaderStage_None;
 
 		SShaderPass& shaderPass = pShaderTechnique->m_Passes[0];
+		
+		// Shader pointers are consecutive
+		CHWShader** pHWShaders = &shaderPass.m_VShader;
 
-		CHWShader* pHWShaders[] =
-		{
-			shaderPass.m_VShader,
-			shaderPass.m_PShader,
-			shaderPass.m_GShader,
-			shaderPass.m_CShader,
-			shaderPass.m_DShader,
-			shaderPass.m_HShader,
-		};
+		// Compile time evaluable, should produce no code
+		CRY_ASSERT(eHWSC_Vertex   == (&shaderPass.m_VShader - &shaderPass.m_VShader));
+		CRY_ASSERT(eHWSC_Pixel    == (&shaderPass.m_PShader - &shaderPass.m_VShader));
+		CRY_ASSERT(eHWSC_Geometry == (&shaderPass.m_GShader - &shaderPass.m_VShader));
+		CRY_ASSERT(eHWSC_Domain   == (&shaderPass.m_DShader - &shaderPass.m_VShader));
+		CRY_ASSERT(eHWSC_Hull     == (&shaderPass.m_HShader - &shaderPass.m_VShader));
+		CRY_ASSERT(eHWSC_Compute  == (&shaderPass.m_CShader - &shaderPass.m_VShader));
 
 		EShaderStage validShaderStages = EShaderStage_None;
 
@@ -167,19 +168,22 @@ bool SDeviceObjectHelpers::CShaderConstantManager::AllocateShaderReflection(::CS
 		{
 			SShaderPass& shaderPass = pShaderTechnique->m_Passes[0];
 
-			CHWShader* pHWShaders[] =
-			{
-				shaderPass.m_VShader,
-				shaderPass.m_PShader,
-				shaderPass.m_GShader,
-				shaderPass.m_CShader,
-				shaderPass.m_DShader,
-				shaderPass.m_HShader,
-			};
+			// Shader pointers are consecutive
+			CHWShader** pHWShaders = &shaderPass.m_VShader;
+			
+			// Compile time evaluable, should produce no code
+			CRY_ASSERT(eHWSC_Vertex   == (&shaderPass.m_VShader - &shaderPass.m_VShader));
+			CRY_ASSERT(eHWSC_Pixel    == (&shaderPass.m_PShader - &shaderPass.m_VShader));
+			CRY_ASSERT(eHWSC_Geometry == (&shaderPass.m_GShader - &shaderPass.m_VShader));
+			CRY_ASSERT(eHWSC_Domain   == (&shaderPass.m_DShader - &shaderPass.m_VShader));
+			CRY_ASSERT(eHWSC_Hull     == (&shaderPass.m_HShader - &shaderPass.m_VShader));
+			CRY_ASSERT(eHWSC_Compute  == (&shaderPass.m_CShader - &shaderPass.m_VShader));
 
-			for (EHWShaderClass shaderClass = eHWSC_Vertex; shaderClass < eHWSC_Num; shaderClass = EHWShaderClass(shaderClass + 1))
+			// Shader stages are ordered by usage-frequency and loop exists according to usage-frequency (VS+PS fast, etc.)
+			int validShaderStages = shaderStages;
+			for (EHWShaderClass shaderClass = eHWSC_Vertex; validShaderStages; shaderClass = EHWShaderClass(shaderClass + 1), validShaderStages >>= 1)
 			{
-				if (shaderStages & SHADERSTAGE_FROM_SHADERCLASS(shaderClass))
+				if (validShaderStages & 1)
 				{
 					CRY_ASSERT(pHWShaders[shaderClass]);
 					CRY_ASSERT_MESSAGE(m_pShaderReflection->bufferCount < MaxReflectedBuffers, "Maximum reflected buffer count exceeded. Feel free to increase if necessary");

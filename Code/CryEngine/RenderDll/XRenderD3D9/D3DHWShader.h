@@ -434,6 +434,8 @@ class CHWShader_D3D : public CHWShader
 		SD3DShaderHandle           m_Handle;
 		EHWShaderClass             m_eClass;
 
+		std::vector<const SFXTexture*> m_pFXTextures;
+		
 		int                        m_nParams[2]; // 0: Instance independent; 1: Instance depended
 		std::vector<STexSamplerRT> m_pSamplers;
 		std::vector<SCGSampler>    m_Samplers;
@@ -545,8 +547,6 @@ public:
 	static int    m_FrameObj;
 
 	// FX support
-	//std::vector<STexSamplerFX> m_Samplers;
-	//std::vector<SFXParam> m_Params;
 	int m_nCurInstFrame;
 
 	// Bin FX support
@@ -729,6 +729,7 @@ public:
 	virtual const char* mfGetEntryName() override { return m_EntryFunc.c_str(); }
 	virtual bool        mfFlushCacheFile() override;
 	virtual bool        Export(SShaderSerializeContext& SC) override;
+	virtual bool        mfPrecacheAllCombinations(CShader* pSH, int cacheType = CACHE_READONLY) override;
 	virtual bool        mfPrecache(SShaderCombination& cmb, bool bForce, bool bFallback, CShader* pSH, CShaderResources* pRes) override;
 
 	// Vertex shader specific functions

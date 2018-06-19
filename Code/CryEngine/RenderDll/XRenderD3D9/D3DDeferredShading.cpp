@@ -318,7 +318,6 @@ void CDeferredShading::SetupPasses(CRenderView* pRenderView)
 
 	m_mViewProj.Transpose();
 
-	gRenDev->m_cEF.mfRefreshSystemShader("DeferredShading", CShaderMan::s_shDeferredShading);
 	m_pShader = CShaderMan::s_shDeferredShading;
 
 	//gcpRendD3D->SetCullMode(R_CULL_BACK);
@@ -538,30 +537,3 @@ void CRenderer::Ef_AddDeferredGIClipVolume(const IRenderMesh* pClipVolume, const
 	if (pClipVolume)
 		CDeferredShading::Instance().AddGIClipVolume(const_cast<IRenderMesh*>(pClipVolume), mxTransform);
 }
-
-////////////////////////////////////////////////////////////////////////////////////////////////////
-/*
-bool CD3D9Renderer::FX_DeferredRendering(CRenderView* pRenderView, bool bDebugPass, bool bUpdateRTOnly)
-{
-	CDeferredShading& pDS = CDeferredShading::Instance();
-
-	if (!CRendererResources::s_ptexSceneTarget)
-	{
-		pDS.Release();
-		return false;
-	}
-
-	if (bUpdateRTOnly)
-	{
-		pDS.CreateDeferredMaps();
-		return true;
-	}
-
-	if (!bDebugPass)
-		pDS.Render(pRenderView);
-	else
-		pDS.Debug();
-
-	return true;
-}
-*/

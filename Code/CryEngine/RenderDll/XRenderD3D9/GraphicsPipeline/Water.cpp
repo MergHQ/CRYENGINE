@@ -19,6 +19,7 @@ struct SPerPassWater
 {
 	Matrix44 causticViewProjMatr;
 	Vec4     waterRippleLookup;
+	Vec4     ssrParams;
 };
 
 // fog parameters
@@ -431,7 +432,7 @@ void CWaterStage::ExecuteDeferredWaterVolumeCaustics()
 	auto* pTargetTex = CRendererResources::s_ptexSceneTargetR11G11B10F[1];
 	auto& pass = m_passDeferredWaterVolumeCaustics;
 
-	if (pass.InputChanged(pTargetTex->GetTextureID()))
+	if (pass.IsDirty())
 	{
 		static CCryNameTSCRC techName = "WaterVolumeCaustics";
 		pass.SetTechnique(CShaderMan::s_ShaderDeferredCaustics, techName, 0);
@@ -547,13 +548,11 @@ void CWaterStage::ExecuteDeferredOceanCaustics()
 		const bool bReverseDepth = (viewInfo[0].flags & SRenderViewInfo::eFlags_ReverseDepth) != 0;
 		const int32 gsDepthFunc = bReverseDepth ? GS_DEPTHFUNC_GEQUAL : GS_DEPTHFUNC_LEQUAL;
 
-		// update shared stencil ref value. the code is copied from CD3D9Renderer::FX_StencilCullPass().
 		rd->m_nStencilMaskRef += 1;
 		if (rd->m_nStencilMaskRef > STENC_MAX_REF)
 		{
-			CClearSurfacePass::Execute(pDepthTarget, FRT_CLEAR_STENCIL, Clr_Unused.r, 1);
-
-			rd->m_nStencilMaskRef = 2;
+			CClearSurfacePass::Execute(pDepthTarget, FRT_CLEAR_STENCIL, Clr_Unused.r, 0);
+			rd->m_nStencilMaskRef = 1;
 		}
 
 		stencilRef = rd->m_nStencilMaskRef;
@@ -640,7 +639,7 @@ void CWaterStage::ExecuteDeferredOceanCaustics()
 
 		auto& pass = m_passDeferredOceanCaustics;
 
-		if (pass.InputChanged(CRenderer::CV_r_watercausticsdeferred, pOceanMask->GetID()))
+		if (pass.IsDirty(CRenderer::CV_r_watercausticsdeferred, pOceanMask->GetID()))
 		{
 			static CCryNameTSCRC techName = "General";
 			pass.SetPrimitiveFlags(CRenderPrimitive::eFlags_ReflectShaderConstants_PS);
@@ -858,6 +857,9 @@ bool CWaterStage::CreatePipelineState(
 		{
 			psoDesc.m_pRenderPass = m_passWaterSurface.GetRenderPass();
 
+			if (CRenderer::CV_r_DeferredShadingTiled > 0)
+				psoDesc.m_ShaderFlags_RT |= g_HWSR_MaskBit[HWSR_TILED_SHADING];
+
 			bWaterRipples = true;
 		}
 		break;
@@ -1052,6 +1054,7 @@ bool CWaterStage::SetAndBuildPerPassResources(bool bOnInit, EPass passId)
 		resources.SetBuffer(32, pTiledLights->GetTiledTranspLightMaskBuffer(), EDefaultResourceViews::Default, EShaderStage_AllWithoutCompute);
 		resources.SetBuffer(33, pTiledLights->GetLightShadeInfoBuffer(), EDefaultResourceViews::Default, EShaderStage_AllWithoutCompute);
 		resources.SetTexture(34, pTiledLights->GetSpecularProbeAtlas(), EDefaultResourceViews::Default, EShaderStage_AllWithoutCompute);
+		resources.SetTexture(40, CRendererResources::s_ptexEnvironmentBRDF, EDefaultResourceViews::Default, EShaderStage_AllWithoutCompute);
 	}
 
 	// Constant buffers
@@ -1105,6 +1108,11 @@ void CWaterStage::UpdatePerPassResources(EPass passId)
 		auto& cbWater = cb->cbPerPassWater;
 		cbWater.causticViewProjMatr = causticInfo.m_mCausticMatr;
 		cbWater.waterRippleLookup = pWaterRipplesStage->GetWaterRippleLookupParam();
+		cbWater.ssrParams = Vec4(
+			false ? 2.0f : 1.0f,
+			false ? 2.0f : 1.0f,
+			CRenderer::CV_r_SSReflDistance,
+			CRenderer::CV_r_SSReflSamples * 1.0f);
 
 		// fog
 		auto& cbFog = cb->cbPerPassFog;
@@ -1240,7 +1248,7 @@ void CWaterStage::ExecuteWaterNormalGen()
 	{
 		auto& pass = m_passWaterNormalGen;
 
-		if (pass.InputChanged())
+		if (pass.IsDirty())
 		{
 			static CCryNameTSCRC techName("WaterVolumesNormalGen");
 			pass.SetPrimitiveFlags(CRenderPrimitive::eFlags_ReflectShaderConstants_PS);
@@ -1378,7 +1386,7 @@ void CWaterStage::ExecuteWaterVolumeCausticsGen(N3DEngineCommon::SCausticInfo& c
 
 		auto& pass = m_passWaterCausticsDilation;
 
-		if (pass.InputChanged())
+		if (pass.IsDirty())
 		{
 			static CCryNameTSCRC techName("WaterCausticsInfoDilate");
 			pass.SetPrimitiveFlags(CRenderPrimitive::eFlags_None);
@@ -1482,7 +1490,7 @@ void CWaterStage::ExecuteReflection()
 	if ((batchMask & FB_WATER_REFL)
 	    && CTexture::IsTextureExist(CRendererResources::s_ptexWaterVolumeRefl[0]))
 	{
-		PROFILE_LABEL_SCOPE("WATER_REFLECTION_GEN");
+		PROFILE_LABEL_SCOPE("WATER_VOLUME_REFLECTION_GEN");
 
 		const int32 currWaterVolID = GetCurrentFrameID(frameID);
 		CTexture* pCurrWaterVolRefl = CRendererResources::s_ptexWaterVolumeRefl[currWaterVolID];

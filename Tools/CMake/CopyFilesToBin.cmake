@@ -13,6 +13,16 @@ if (OPTION_ENGINE OR OPTION_SANDBOX OR OPTION_SHADERCACHEGEN)
 		"${WINDOWS_SDK}/Debuggers/x86/srcsrv/dbgcore.dll"
 		"${WINDOWS_SDK}/bin/x86/d3dcompiler_47.dll"
 		)
+
+	if(EXISTS "${SDK_DIR}/AMD/AGS Lib")
+		set (BinaryFileList_Win64 ${BinaryFileList_Win64}
+			"${SDK_DIR}/AMD/AGS Lib/lib/amd_ags_x64.dll"
+			)
+
+	    set (BinaryFileList_Win32 ${BinaryFileList_Win32} 
+			"${SDK_DIR}/AMD/AGS Lib/lib/amd_ags_x86.dll"
+			)
+	endif()
 endif()
 
 file(TO_CMAKE_PATH "${DURANGO_SDK}" DURANGO_SDK_CMAKE)

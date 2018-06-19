@@ -166,7 +166,20 @@ bool DeviceInfo::CreateDevice(int zbpp, OnCreateDeviceCallback pCreateDeviceCall
 #endif //!defined(_RELEASE)
 
 			const D3D_DRIVER_TYPE driverType = m_driverType == D3D_DRIVER_TYPE_HARDWARE ? D3D_DRIVER_TYPE_UNKNOWN : m_driverType;
-			HRESULT hr = D3D11CreateDeviceAndSwapChain(m_pAdapter, driverType, 0, m_creationFlags, aFeatureLevels, uNumFeatureLevels, D3D11_SDK_VERSION, &m_swapChainDesc, &m_pSwapChain, &m_pDevice, &m_featureLevel, &m_pContext);
+			HRESULT hr = D3D11CreateDeviceAndSwapChain(
+				m_pAdapter,
+				driverType,
+				0,
+				m_creationFlags,
+				aFeatureLevels,
+				uNumFeatureLevels,
+				D3D11_SDK_VERSION,
+				&m_swapChainDesc,
+				&m_pSwapChain,
+				&m_pDevice,
+				&m_featureLevel,
+				&m_pContext);
+			
 			if (SUCCEEDED(hr) && m_pDevice && m_pSwapChain)
 			{
 				if (SUCCEEDED(m_pAdapter->EnumOutputs(0, &pOutput)) && pOutput)
@@ -291,7 +304,7 @@ bool DeviceInfo::CreateDevice(int zbpp, OnCreateDeviceCallback pCreateDeviceCall
 	#if (CRY_RENDERER_DIRECT3D >= 120)
 			(FP_D3D11CreateDevice)DX12CreateDevice;
 	#else
-		  (FP_D3D11CreateDevice)GetProcAddress(LoadLibraryA("d3d11.dll"), "D3D11CreateDevice");
+			(FP_D3D11CreateDevice)DX11CreateDevice;
 	#endif
 
 		if (pD3D11CD)
@@ -342,8 +355,11 @@ bool DeviceInfo::CreateDevice(int zbpp, OnCreateDeviceCallback pCreateDeviceCall
 	#if CRY_RENDERER_DIRECT3D >= 120
 						pDevice->CheckFeatureSupport((D3D11_FEATURE)D3D12_FEATURE_D3D12_OPTIONS , &m_D3D120aOptions, sizeof(m_D3D120aOptions));
 						pDevice->CheckFeatureSupport((D3D11_FEATURE)D3D12_FEATURE_D3D12_OPTIONS1, &m_D3D120bOptions, sizeof(m_D3D120bOptions));
-		#if CRY_RENDERER_DIRECT3D >= 121
+		#if NTDDI_WIN10_RS2 && (WDK_NTDDI_VERSION >= NTDDI_WIN10_RS2)
 						pDevice->CheckFeatureSupport((D3D11_FEATURE)D3D12_FEATURE_D3D12_OPTIONS2, &m_D3D120cOptions, sizeof(m_D3D120cOptions));
+		#if NTDDI_WIN10_RS3 && (WDK_NTDDI_VERSION >= NTDDI_WIN10_RS3)
+						pDevice->CheckFeatureSupport((D3D11_FEATURE)D3D12_FEATURE_D3D12_OPTIONS3, &m_D3D120dOptions, sizeof(m_D3D120dOptions));
+		#endif
 		#endif
 	#elif CRY_RENDERER_DIRECT3D >= 110
 						pDevice->CheckFeatureSupport((D3D11_FEATURE)D3D11_FEATURE_D3D11_OPTIONS , &m_D3D110aOptions, sizeof(m_D3D110aOptions));

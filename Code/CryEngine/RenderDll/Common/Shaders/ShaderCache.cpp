@@ -43,6 +43,35 @@ uint32 SShaderCombIdent::PostCreate()
 	return hash;
 }
 
+bool CShader::mfPrecacheAllCombinations()
+{
+	bool success = true;
+
+	for (auto& pTech : m_HWTechniques)
+	{
+		for (auto& techPass : pTech->m_Passes)
+		{
+			CHWShader* shaders[] = 
+			{
+				techPass.m_VShader,
+				techPass.m_PShader,
+				techPass.m_GShader,
+				techPass.m_DShader,
+				techPass.m_HShader,
+				techPass.m_CShader
+			};
+
+			for (auto pShader : shaders)
+			{
+				if (pShader)
+					success &= pShader->mfPrecacheAllCombinations(this);
+			}
+		}
+	}
+
+	return success;
+}
+
 bool CShader::mfPrecache(SShaderCombination& cmb, bool bForce, CShaderResources* pRes)
 {
 	bool bRes = true;

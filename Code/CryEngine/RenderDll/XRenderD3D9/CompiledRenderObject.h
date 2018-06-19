@@ -103,12 +103,12 @@ public:
 public:
 	struct SPermanentRendItem
 	{
-		CCompiledRenderObject* m_pCompiledObject; //!< Compiled object with precompiled PSO
-		CRenderElement*        m_pRenderElement;  //!< Mesh subset, or a special rendering object
-		uint32                 m_objSort;         //!< Custom object sorting value.
 		uint32                 m_sortValue;       //!< Encoded sort value, keeping info about material.
 		uint32                 m_nBatchFlags;     //!< see EBatchFlags, batch flags describe on what passes this object will be used (transparent,z-prepass,etc...)
+		uint32                 m_objSort;         //!< Custom object sorting value.
 		uint32                 m_nRenderList : 8; //!< Defines in which render list this compiled object belongs to, see ERenderListID
+		CCompiledRenderObject* m_pCompiledObject; //!< Compiled object with precompiled PSO
+		CRenderElement*        m_pRenderElement;  //!< Mesh subset, or a special rendering object
 	};
 	//! Persistent object record all items added to the object for the general and for shadow pass.
 	//! These items are then efficiently expanded adding render items to CRenderView lists.
@@ -216,11 +216,6 @@ public:
 	};
 
 public:
-	CRenderObject* m_pRO;
-
-	// Optimized access to constants that can be directly bound to the root signature.
-	SRootConstants m_rootConstants;
-
 	/////////////////////////////////////////////////////////////////////////////
 	// Packed parameters
 	uint32 m_StencilRef           : 8; //!< Stencil ref value
@@ -237,42 +232,50 @@ public:
 
 	//////////////////////////////////////////////////////////////////////////
 	// Members used in submitting in the draw submission, sorted by access order
-
-	// Array of the PSOs for every ERenderableTechnique.
-	// Sub array of PSO is defined inside the pass, and indexed by an integer passed inside the SGraphicsPipelinePassContext
-	DevicePipelineStatesArray m_pso[MAX_PIPELINE_SCENE_STAGES];
+	// This area should be smaller than 128 bytes (2x 64byte cache-lines)
 
 	// From Material
 	CDeviceResourceSetPtr m_materialResourceSet;
 
 	// Per instance constant buffer contain transformation matrix and other potentially not often changed data.
-	CConstantBufferPtr m_perInstanceCB;
+	CConstantBufferPtr    m_perInstanceCB;
 
 	// Per instance extra data
 	CDeviceResourceSetPtr m_perInstanceExtraResources;
-	int                   m_TessellationPatchIDOffset; // for tessellation only
-	CGpuBuffer*           m_pTessellationAdjacencyBuffer;
-	CGpuBuffer*           m_pExtraSkinWeights; // eight weight skinning
 
 	// Streams data.
-	const CDeviceInputStream*   m_vertexStreamSet;
-	const CDeviceInputStream*   m_indexStreamSet;
+	const CDeviceInputStream* m_vertexStreamSet;
+	const CDeviceInputStream* m_indexStreamSet;
 
 	CConstantBufferPtr  m_pInstancingConstBuffer;    //!< Constant Buffer with all instances
 	uint32              m_nInstances;                //!< Number of instances.
 
-	// Used for dynamic instancing.
-	SPerInstanceShaderData m_instanceShaderData;
-
 	// DrawCall parameters, store separate values for merged shadow-gen draw calls
 	SDrawParams m_drawParams[eDrawParam_Count];
 
+	// Array of the PSOs for every ERenderableTechnique.
+	// Sub array of PSO is defined inside the pass, and indexed by an integer passed inside the SGraphicsPipelinePassContext
+	// This data-blob alone is 200 bytes (the head of the array lies within the first 128 bytes)
+	DevicePipelineStatesArray m_pso[MAX_PIPELINE_SCENE_STAGES];
+
+	// / / / / / / / / / / / / / / / / / / / / / / / / / / / / / / / / / / / /
+	// These 2 members must be initialized prior to calling Compile
+	CRenderElement*        m_pRenderElement;
+	CRenderObject*         m_pRO;
+	SShaderItem            m_shaderItem;
+
+	//////////////////////////////////////////////////////////////////////////
 	EObjectCompilationOptions m_compiledFlags;
 
-private:
-	// These 2 members must be initialized prior to calling Compile
-	CRenderElement*     m_pRenderElement;
-	SShaderItem       m_shaderItem;
+	// Optimized access to constants that can be directly bound to the root signature.
+	SRootConstants         m_rootConstants;
+
+	// Used for dynamic instancing.
+	SPerInstanceShaderData m_instanceShaderData;
+
+	int                    m_TessellationPatchIDOffset; // for tessellation only
+	CGpuBuffer*            m_pTessellationAdjacencyBuffer;
+	CGpuBuffer*            m_pExtraSkinWeights; // eight weight skinning
 
 	//////////////////////////////////////////////////////////////////////////
 public:
@@ -299,7 +302,7 @@ public:
 
 	// Compile(): Returns true if the compilation is fully finished, false if compilation should be retriggered later
 
-	bool Compile(CRenderObject* pRenderObject, const EObjectCompilationOptions& compilationOptions, CRenderView *pRenderView);
+	bool Compile(const EObjectCompilationOptions& compilationOptions, CRenderView *pRenderView);
 	void PrepareForUse(CDeviceCommandListRef RESTRICT_REFERENCE commandList, bool bInstanceOnly) const;
 
 	void DrawToCommandList(const SGraphicsPipelinePassContext& RESTRICT_REFERENCE passContext, CConstantBuffer* pDynamicInstancingBuffer = nullptr, uint32 dynamicInstancingCount = 0) const;

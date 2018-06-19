@@ -173,13 +173,10 @@ void SRendItem::mfSortByLight(SRendItem* First, int Num, bool bSort, const bool 
 	{
 		if (bIgnoreRePtr)
 			std::sort(First, First + Num, SCompareItem_NoPtrCompare());
+		else if (bSortDecals)
+			std::sort(First, First + Num, SCompareItem_Decal());
 		else
-		{
-			if (bSortDecals)
-				std::sort(First, First + Num, SCompareItem_Decal());
-			else
-				std::sort(First, First + Num, SCompareRendItem());
-		}
+			std::sort(First, First + Num, SCompareRendItem());
 	}
 }
 
@@ -187,42 +184,10 @@ void SRendItem::mfSortByLight(SRendItem* First, int Num, bool bSort, const bool 
 void SRendItem::mfSortByDist(SRendItem* First, int Num, bool bDecals, bool InvertedOrder)
 {
 	//Note: Temporary use stable sort for flickering hair (meshes within the same skin attachment don't have a deterministic sort order)
-	CRenderer* r = gRenDev;
-	int i;
-	if (!bDecals)
-	{
-		//Pre-pass to bring in the first 8 entries. 8 cache requests can be in flight
-		const int iPrefetchLoopLastIndex = min_branchless(8, Num);
-		for (i = 0; i < iPrefetchLoopLastIndex; i++)
-		{
-			//It's safe to prefetch NULL
-			PrefetchLine(First[i].pObj, offsetof(CRenderObject, m_fSort));
-		}
-
-		const int iLastValidIndex = Num - 1;
-
-		//Note: this seems like quite a bit of work to do some prefetching but this code was generating a
-		//			level 2 cache miss per iteration of the loop - Rich S
-		for (i = 0; i < Num; i++)
-		{
-			SRendItem* pRI = &First[i];
-			int iPrefetchIndex = min_branchless(i + 8, iLastValidIndex);
-			PrefetchLine(First[iPrefetchIndex].pObj, offsetof(CRenderObject, m_fSort));
-			CRenderObject* pObj = pRI->pObj; // no need to flush, data is only read
-			assert(pObj);
-
-			// We're prefetching on m_fSort, we're still getting some L2 cache misses on access to m_fDistance,
-			// but moving them closer in memory is complicated due to an aligned array that's nestled in there...
-			pRI->fDist = EncodeDistanceSortingValue(pObj);
-		}
-
-		if (InvertedOrder)
-			std::stable_sort(First, First + Num, SCompareDistInverted());
-		else
-			std::stable_sort(First, First + Num, SCompareDist());
-	}
-	else
-	{
+	if (bDecals)
 		std::stable_sort(First, First + Num, SCompareItem_Decal());
-	}
+	else if (InvertedOrder)
+		std::stable_sort(First, First + Num, SCompareDistInverted());
+	else
+		std::stable_sort(First, First + Num, SCompareDist());
 }

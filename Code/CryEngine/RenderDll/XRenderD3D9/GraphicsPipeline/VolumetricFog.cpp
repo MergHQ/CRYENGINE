@@ -950,10 +950,10 @@ void CVolumetricFogStage::ExecuteDownscaleShadowmap()
 				target = m_pDownscaledShadowTemp;
 			}
 
-			if (pass.InputChanged(inputFlag,
-			                      CRenderer::CV_r_VolumetricFogDownscaledSunShadowRatio,
-			                      target->GetDstFormat(),
-			                      m_resourceFrameID))
+			if (pass.IsDirty(inputFlag,
+				CRenderer::CV_r_VolumetricFogDownscaledSunShadowRatio,
+				target->GetDstFormat(),
+				m_resourceFrameID))
 			{
 				uint64 rtMask = 0;
 				const uint64 lv0 = g_HWSR_MaskBit[HWSR_LIGHTVOLUME0];
@@ -994,9 +994,9 @@ void CVolumetricFogStage::ExecuteDownscaleShadowmap()
 		{
 			auto& pass = m_passDownscaleShadowmap2[i];
 
-			if (pass.InputChanged(CRenderer::CV_r_VolumetricFogDownscaledSunShadowRatio,
-			                      m_pDownscaledShadow[i]->GetDstFormat(),
-			                      m_resourceFrameID))
+			if (pass.IsDirty(CRenderer::CV_r_VolumetricFogDownscaledSunShadowRatio,
+				m_pDownscaledShadow[i]->GetDstFormat(),
+				m_resourceFrameID))
 			{
 				static CCryNameTSCRC shaderName0("DownscaleShadowMap2");
 				static CCryNameTSCRC shaderName1("DownscaleShadowMap4");
@@ -1118,8 +1118,8 @@ void CVolumetricFogStage::GenerateLightList()
 			lightShadeInfo.resMipClamp0 = 0;
 			lightShadeInfo.resMipClamp1 = 0;
 			lightShadeInfo.shadowParams = Vec2(0, 0);
-			lightShadeInfo.stencilID0 = renderLight.m_nStencilRef[0] + lightShadeInfo.stencilBias;
-			lightShadeInfo.stencilID1 = renderLight.m_nStencilRef[1] + lightShadeInfo.stencilBias;
+			lightShadeInfo.stencilID0 = renderLight.m_nStencilRef[0];
+			lightShadeInfo.stencilID1 = renderLight.m_nStencilRef[1];
 
 			// Environment probes
 			if (lightListIdx == 0)
@@ -1487,7 +1487,7 @@ void CVolumetricFogStage::ExecuteBuildLightListGrid(const SScopedComputeCommandL
 	CShader* pShader = CShaderMan::s_shDeferredShading;
 	auto& pass = m_passBuildLightListGrid;
 
-	if (pass.InputChanged(m_resourceFrameID))
+	if (pass.IsDirty(m_resourceFrameID))
 	{
 		static CCryNameTSCRC techName("BuildLightListGrid");
 		pass.SetTechnique(pShader, techName, 0);
@@ -1557,7 +1557,7 @@ void CVolumetricFogStage::ExecuteDownscaledDepth(const SScopedComputeCommandList
 
 		auto& pass = m_passDownscaleDepthHorizontal;
 
-		if (pass.InputChanged())
+		if (pass.IsDirty())
 		{
 			static CCryNameTSCRC techName("StoreDownscaledMaxDepthHorizontal");
 			pass.SetTechnique(pShader, techName, 0);
@@ -1600,7 +1600,7 @@ void CVolumetricFogStage::ExecuteDownscaledDepth(const SScopedComputeCommandList
 
 		auto& pass = m_passDownscaleDepthVertical;
 
-		if (pass.InputChanged())
+		if (pass.IsDirty())
 		{
 			static CCryNameTSCRC techName("StoreDownscaledMaxDepthVertical");
 			pass.SetTechnique(pShader, techName, 0);
@@ -1783,7 +1783,7 @@ void CVolumetricFogStage::ExecuteInjectFogDensity(const SScopedComputeCommandLis
 	CShader* pShader = CShaderMan::s_shDeferredShading;
 	auto& pass = m_passInjectFogDensity;
 
-	if (pass.InputChanged())
+	if (pass.IsDirty())
 	{
 		static CCryNameTSCRC techName("InjectFogDensity");
 		pass.SetTechnique(pShader, techName, 0);
@@ -1981,9 +1981,9 @@ void CVolumetricFogStage::ExecuteInjectInscatteringLight(const SScopedComputeCom
 	inputFlag |= bSunShadow ? BIT(0) : 0;
 	inputFlag |= bStaticShadowMap ? BIT(1) : 0;
 
-	if (pass.InputChanged(inputFlag,
-	                      rtMask,
-	                      m_resourceFrameID))
+	if (pass.IsDirty(inputFlag,
+		rtMask,
+		m_resourceFrameID))
 	{
 		static CCryNameTSCRC techName("InjectVolumetricInscattering");
 		pass.SetTechnique(pShader, techName, rtMask);
@@ -2120,7 +2120,7 @@ void CVolumetricFogStage::ExecuteBlurDensityVolume(const SScopedComputeCommandLi
 	{
 		auto& pass = m_passBlurDensityHorizontal[bufferId];
 
-		if (pass.InputChanged())
+		if (pass.IsDirty())
 		{
 			static CCryNameTSCRC techName("BlurHorizontalDensityVolume");
 			pass.SetTechnique(pShader, techName, 0);
@@ -2159,7 +2159,7 @@ void CVolumetricFogStage::ExecuteBlurDensityVolume(const SScopedComputeCommandLi
 	{
 		auto& pass = m_passBlurDensityVertical[bufferId];
 
-		if (pass.InputChanged())
+		if (pass.IsDirty())
 		{
 			static CCryNameTSCRC techName("BlurVerticalDensityVolume");
 			pass.SetTechnique(pShader, techName, 0);
@@ -2214,7 +2214,7 @@ void CVolumetricFogStage::ExecuteBlurInscatterVolume(const SScopedComputeCommand
 	{
 		auto& pass = m_passBlurInscatteringHorizontal[bufferId];
 
-		if (pass.InputChanged())
+		if (pass.IsDirty())
 		{
 			static CCryNameTSCRC techName("BlurHorizontalInscatteringVolume");
 			pass.SetTechnique(pShader, techName, 0);
@@ -2253,7 +2253,7 @@ void CVolumetricFogStage::ExecuteBlurInscatterVolume(const SScopedComputeCommand
 	{
 		auto& pass = m_passBlurInscatteringVertical[bufferId];
 
-		if (pass.InputChanged())
+		if (pass.IsDirty())
 		{
 			static CCryNameTSCRC techName("BlurVerticalInscatteringVolume");
 			pass.SetTechnique(pShader, techName, 0);
@@ -2322,7 +2322,7 @@ void CVolumetricFogStage::ExecuteTemporalReprojection(const SScopedComputeComman
 		const uint32 bufferId = GetTemporalBufferId();
 		auto& pass = m_passTemporalReprojection[bufferId];
 
-		if (pass.InputChanged(CRenderer::CV_r_VolumetricFogReprojectionMode))
+		if (pass.IsDirty(CRenderer::CV_r_VolumetricFogReprojectionMode))
 		{
 			uint64 rtMask = 0;
 			rtMask |= (CRenderer::CV_r_VolumetricFogReprojectionMode != 0) ? g_HWSR_MaskBit[HWSR_SAMPLE5] : 0;
@@ -2406,7 +2406,7 @@ void CVolumetricFogStage::ExecuteRaymarchVolumetricFog(const SScopedComputeComma
 	const uint32 bufferId = GetTemporalBufferId();
 	auto& pass = m_passRaymarch[bufferId];
 
-	if (pass.InputChanged())
+	if (pass.IsDirty())
 	{
 		static CCryNameTSCRC techName("RaymarchVolumetricFog");
 		pass.SetTechnique(pShader, techName, 0);

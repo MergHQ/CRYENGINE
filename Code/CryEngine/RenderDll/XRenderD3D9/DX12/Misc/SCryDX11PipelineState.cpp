@@ -458,8 +458,8 @@ void SCryDX11OutputMergerState::DebugPrint()
 
 void SCryDX11PipelineState::InitD3D12Descriptor(NCryDX12::CComputePSO::SInitParams& params, UINT nodeMask)
 {
-	D3D12_COMPUTE_PIPELINE_STATE_DESC& desc = params.m_Desc;
-	ZeroMemory(&desc, sizeof(D3D12_COMPUTE_PIPELINE_STATE_DESC));
+	auto& desc = params.m_Desc;
+	ZeroMemory(&desc, sizeof(params.m_Desc));
 
 	desc.NodeMask = nodeMask;
 
@@ -471,8 +471,8 @@ void SCryDX11PipelineState::InitD3D12Descriptor(NCryDX12::CComputePSO::SInitPara
 //---------------------------------------------------------------------------------------------------------------------
 void SCryDX11PipelineState::InitD3D12Descriptor(NCryDX12::CGraphicsPSO::SInitParams& params, UINT nodeMask)
 {
-	D3D12_GRAPHICS_PIPELINE_STATE_DESC& desc = params.m_Desc;
-	ZeroMemory(&desc, sizeof(D3D12_GRAPHICS_PIPELINE_STATE_DESC));
+	auto& desc = params.m_Desc;
+	ZeroMemory(&desc, sizeof(params.m_Desc));
 
 	desc.NodeMask = nodeMask;
 

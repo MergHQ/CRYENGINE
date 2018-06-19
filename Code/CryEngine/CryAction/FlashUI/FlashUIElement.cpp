@@ -336,7 +336,6 @@ CFlashUIElement::CFlashUIElement(CFlashUI* pFlashUI, CFlashUIElement* pBaseInsta
 	: m_refCount(1)
 	, m_pFlashUI(pFlashUI)
 	, m_bVisible(false)
-	, m_pFlashplayer(NULL)
 	, m_bCursorVisible(false)
 	, m_iFlags(0)
 	, m_fAlpha(0)
@@ -380,7 +379,7 @@ CFlashUIElement::~CFlashUIElement()
 	}
 
 	CRY_ASSERT_MESSAGE(m_variableObjects.empty(), "Variable objects not cleared!");
-	CRY_ASSERT_MESSAGE(m_pFlashplayer == NULL, "Flash player not correct unloaded!");
+	CRY_ASSERT_MESSAGE(!m_pFlashplayer, "Flash player not correct unloaded!");
 	CRY_ASSERT_MESSAGE(m_pBootStrapper == NULL, "Flash bootstrapper not correct unloaded!");
 
 #if !defined (_RELEASE)
@@ -508,7 +507,7 @@ bool CFlashUIElement::LazyInit()
 	if (!m_pFlashplayer)
 		Init();
 
-	return m_pFlashplayer != NULL;
+	return !!m_pFlashplayer;
 }
 
 //------------------------------------------------------------------------------------
@@ -641,7 +640,7 @@ bool CFlashUIElement::Init(bool bLoadAsset)
 	}
 
 	for (TUIEventListener::Notifier notifier(m_eventListener); notifier.IsValid(); notifier.Next())
-		notifier->OnInit(this, m_pFlashplayer);
+		notifier->OnInit(this, m_pFlashplayer.get());
 
 	if (HasExtTexture())
 	{
@@ -695,7 +694,7 @@ void CFlashUIElement::Unload(bool bAllInstances)
 		for (TUIEventListener::Notifier notifier(m_eventListener); notifier.IsValid(); notifier.Next())
 			notifier->OnUnload(this);
 
-		SAFE_RELEASE(m_pFlashplayer);
+		m_pFlashplayer = nullptr;
 	}
 }
 
@@ -844,7 +843,7 @@ bool CFlashUIElement::Serialize(XmlNodeRef& xmlNode, bool bIsLoading)
 void CFlashUIElement::Update(float fDeltaTime)
 {
 	CRY_PROFILE_FUNCTION(PROFILE_ACTION);
-	if (m_pFlashplayer == NULL || ((m_iFlags & (uint64) eFUI_LAZY_UPDATE) != 0 && !m_bNeedLazyUpdate)) return;
+	if (!m_pFlashplayer || ((m_iFlags & (uint64) eFUI_LAZY_UPDATE) != 0 && !m_bNeedLazyUpdate)) return;
 
 	m_pFlashplayer->Advance(fDeltaTime);
 	m_bNeedLazyUpdate = false;
@@ -864,7 +863,7 @@ void CFlashUIElement::Update(float fDeltaTime)
 void CFlashUIElement::Render()
 {
 	CRY_PROFILE_FUNCTION(PROFILE_ACTION);
-	if (m_pFlashplayer == NULL) return;
+	if (!m_pFlashplayer) return;
 
 	if (!HasExtTexture())
 	{
@@ -876,7 +875,7 @@ void CFlashUIElement::Render()
 void CFlashUIElement::RenderLockless()
 {
 	CRY_PROFILE_FUNCTION(PROFILE_ACTION);
-	if (m_pFlashplayer == NULL) return;
+	if (!m_pFlashplayer) return;
 
 	if (!HasExtTexture())
 	{
@@ -952,7 +951,7 @@ void CFlashUIElement::SetVisible(bool bVisible)
 }
 
 //------------------------------------------------------------------------------------
-IFlashPlayer* CFlashUIElement::GetFlashPlayer()
+std::shared_ptr<IFlashPlayer> CFlashUIElement::GetFlashPlayer()
 {
 	LazyInit();
 	return m_pFlashplayer;
@@ -1000,7 +999,7 @@ void CFlashUIElement::SetAlpha(float fAlpha)
 	UIACTION_LOG("%s (%i): Set background alpha: %f", GetName(), m_iInstanceID, m_fAlpha);
 
 	m_fAlpha = clamp_tpl(fAlpha, 0.0f, 1.f);
-	if (m_pFlashplayer != NULL)
+	if (m_pFlashplayer)
 		m_pFlashplayer->SetBackgroundAlpha(m_fAlpha);
 	ForceLazyUpdateInl();
 }
@@ -1978,7 +1977,7 @@ bool CFlashUIElement::HandleInternalCommand(const char* sCommand, const SUIArgum
 	if (strcmp(sCommand, "cry_imeFocus") == 0)
 	{
 		UIACTION_LOG("%s (%i): UIElement received \"cry_imeFocus\" from ActionScript", GetName(), m_iInstanceID);
-		IFlashPlayer* pPlayer = GetFlashPlayer();
+		const auto& pPlayer = GetFlashPlayer();
 		if (pPlayer) pPlayer->SetImeFocus();
 		return true;
 	}

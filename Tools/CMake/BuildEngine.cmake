@@ -343,7 +343,9 @@ if (OPTION_ENGINE OR OPTION_SHADERCACHEGEN)
 	add_subdirectory ("Code/CryEngine/RenderDll/XRenderD3D9")
 	
 	# Shaders custom project
-	add_subdirectory(Engine/Shaders)
+	if(EXISTS "${CRYENGINE_DIR}/Engine/Shaders")
+		add_subdirectory(Engine/Shaders)
+	endif()
 endif()
 
 #engine

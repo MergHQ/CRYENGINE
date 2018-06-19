@@ -27,6 +27,8 @@ public:
 	uint64                     m_ShaderFlags_RT;
 	uint32                     m_ShaderFlags_MD;
 	uint32                     m_ShaderFlags_MDV;
+	CDeviceResourceLayoutPtr   m_pResourceLayout;
+
 	EShaderQuality             m_ShaderQuality;
 	uint32                     m_RenderState;
 	uint32                     m_StencilState;
@@ -36,10 +38,10 @@ public:
 	uint32                     m_ObjectStreamMask;
 	ECull                      m_CullMode;
 	ERenderPrimitiveType       m_PrimitiveType;
-	CDeviceResourceLayoutPtr   m_pResourceLayout;
 	CDeviceRenderPassPtr       m_pRenderPass;
-	bool                       m_bDepthClip;
 	bool                       m_bAllowTesselation;
+	bool                       m_bDepthClip;
+	bool                       m_bDepthBoundsTest;
 	bool                       m_bDynamicDepthBias; // When clear, SetDepthBias() may be ignored by the PSO. This may be faster on PS4 and VK. It has no effect on DX11 (always on) and DX12 (always off).
 };
 

@@ -259,7 +259,7 @@ bool CShaderMan::mfReloadFile(const char* szPath, const char* szName, int nFlags
 	{
 		m_bReload = true;
 		char szShaderName[256];
-		cry_strcpy(szShaderName, szName, (size_t)(szExt - szName));
+		cry_strcpy(szShaderName, szName, std::distance(szName, szExt - 1)); // skip '.' as well
 		strlwr(szShaderName);
 
 		// Check if this shader already loaded
@@ -279,7 +279,7 @@ bool CShaderMan::mfReloadFile(const char* szPath, const char* szName, int nFlags
 		{
 			m_bReload = true;
 			char szShaderName[256];
-			cry_strcpy(szShaderName, szName, (size_t)(szExt - szName));
+			cry_strcpy(szShaderName, szName, std::distance(szName, szExt - 1)); // skip '.' as well
 			strlwr(szShaderName);
 			SShaderBin* pBin = m_Bin.GetBinShader(szShaderName, true, 0);
 			bool bAffect = false;
@@ -662,6 +662,8 @@ CShader* CShaderMan::mfForName(const char* nameSh, int flags, const CShaderResou
 	else if (CParserBin::m_nPlatform == SF_VULKAN)
 		cry_strcat(nameRes, "(VK)");
 
+	const auto nameEfCrc = CCrc32::ComputeLowercase(nameEf);
+
 	CShader* efGen = nullptr;
 
 	// Check if this shader already loaded
@@ -755,7 +757,7 @@ CShader* CShaderMan::mfForName(const char* nameSh, int flags, const CShaderResou
 		}
 	}
 	ef->m_NameShader = nameEf;
-	ef->m_NameShaderICRC = CCrc32::ComputeLowercase(nameEf);
+	ef->m_NameShaderICRC = nameEfCrc;
 
 	bool bSuccess = false;
 
@@ -766,9 +768,14 @@ CShader* CShaderMan::mfForName(const char* nameSh, int flags, const CShaderResou
 	
 	_smart_ptr<CShader> pShader(ef);
 	_smart_ptr<CShaderResources> pResources( const_cast<CShaderResources*>(Res) );
-	gRenDev->ExecuteRenderThreadCommand(
-		[=]{ this->RT_ParseShader(pShader, nMaskGen | nMaskGenHW, flags, pResources); },
-		ERenderCommandFlags::LevelLoadingThread_defer
+	gRenDev->ExecuteRenderThreadCommand([=] 
+		{
+			RT_ParseShader(pShader, nMaskGen | nMaskGenHW, flags, pResources);
+
+			if ((pShader->m_Flags & EF_LOADED) && CRendererCVars::CV_r_shaderscacheinmemory)
+				pShader->mfPrecacheAllCombinations();
+		},
+		ERenderCommandFlags::None
 	);
 
 	return ef;

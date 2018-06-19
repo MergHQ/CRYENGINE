@@ -11,6 +11,14 @@
 namespace pfx2
 {
 
+uint GetVersion(Serialization::IArchive& ar)
+{
+	SSerializationContext* pContext = ar.context<SSerializationContext>();
+	if (!pContext)
+		return gCurrentVersion;
+	return pContext->m_documentVersion;
+}
+
 //////////////////////////////////////////////////////////////////////////
 // CParticleEffect
 
@@ -50,12 +58,15 @@ void CParticleEffect::Compile()
 
 	uint id = 0;
 	MainPreUpdate.clear();
+	RenderDeferred.clear();
 	for (auto& component : m_components)
 	{
 		component->m_componentId = id++;
 		component->Compile();
-		for (auto feature : component->MainPreUpdate)
-			MainPreUpdate.push_back( {component, feature} );
+		if (component->MainPreUpdate.size())
+			MainPreUpdate.push_back(component);
+		if (component->RenderDeferred.size())
+			RenderDeferred.push_back(component);
 	}
 
 	m_timings = {};

@@ -5,7 +5,7 @@
 #include "DevBuffer.h"
 #include "DriverD3D.h"
 
-template<typename T, size_t Alignment = 256>
+template<typename T, size_t Alignment>
 class CTypedConstantBuffer : private NoCopy
 {
 protected:
@@ -19,7 +19,7 @@ private:
 
 public:
 	CTypedConstantBuffer() : m_hostBuffer(AlignHostBuffer()) { ZeroStruct(m_hostBuffer); }
-	CTypedConstantBuffer(const CTypedConstantBuffer<T>& cb) : m_hostBuffer(AlignHostBuffer()), m_constantBuffer(nullptr) { m_hostBuffer = cb.m_hostBuffer; }
+	CTypedConstantBuffer(const CTypedConstantBuffer<T, Alignment>& cb) : m_hostBuffer(AlignHostBuffer()), m_constantBuffer(nullptr) { m_hostBuffer = cb.m_hostBuffer; }
 	CTypedConstantBuffer(CConstantBufferPtr incb) : m_hostBuffer(AlignHostBuffer()), m_constantBuffer(incb) {}
 
 	void Clear()
@@ -37,13 +37,12 @@ public:
 		return m_constantBuffer;
 	}
 
-	template<typename S>
 	static CD3D9Renderer* ForceTwoPhase() { extern CD3D9Renderer gcpRendD3D; return &gcpRendD3D; }
 
 	void CreateDeviceBuffer()
 	{
 		int size = sizeof(T);
-		m_constantBuffer = ForceTwoPhase<T>()->m_DevBufMan.CreateConstantBuffer(size); // TODO: this could be a good candidate for dynamic=false
+		m_constantBuffer = ForceTwoPhase()->m_DevBufMan.CreateConstantBuffer(size); // TODO: this could be a good candidate for dynamic=false
 		CopyToDevice();
 	}
 	

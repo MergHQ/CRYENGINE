@@ -86,9 +86,9 @@ void SPostEffectsUtils::GetFullScreenQuad(SVF_P3F_C4B_T2F pResult[4], int nTexWi
 	if (pSrcRegion)
 	{
 		const Vec4 vTexCoordsRegion(float(pSrcRegion->left) / nTexWidth,
-		                            float(pSrcRegion->right) / nTexWidth,
-		                            float(pSrcRegion->top) / nTexHeight,
-		                            float(pSrcRegion->bottom) / nTexHeight);
+			float(pSrcRegion->right) / nTexWidth,
+			float(pSrcRegion->top) / nTexHeight,
+			float(pSrcRegion->bottom) / nTexHeight);
 		pResult[0].st = Vec2(vTexCoordsRegion.x, vTexCoordsRegion.z);
 		pResult[1].st = Vec2(vTexCoordsRegion.x, vTexCoordsRegion.w);
 		pResult[2].st = Vec2(vTexCoordsRegion.y, vTexCoordsRegion.z);
@@ -237,9 +237,9 @@ void SPostEffectsUtils::GetFullScreenQuadWPOS(SVF_P3F_T2F_T3F pResult[4], int nT
 	if (pSrcRegion)
 	{
 		const Vec4 vTexCoordsRegion(float(pSrcRegion->left) / nTexWidth,
-		                            float(pSrcRegion->right) / nTexWidth,
-		                            float(pSrcRegion->top) / nTexHeight,
-		                            float(pSrcRegion->bottom) / nTexHeight);
+			float(pSrcRegion->right) / nTexWidth,
+			float(pSrcRegion->top) / nTexHeight,
+			float(pSrcRegion->bottom) / nTexHeight);
 		pResult[0].st0 = Vec2(vTexCoordsRegion.x, vTexCoordsRegion.z);
 		pResult[1].st0 = Vec2(vTexCoordsRegion.x, vTexCoordsRegion.w);
 		pResult[2].st0 = Vec2(vTexCoordsRegion.y, vTexCoordsRegion.z);

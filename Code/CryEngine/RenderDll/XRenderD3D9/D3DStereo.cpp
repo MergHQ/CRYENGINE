@@ -802,7 +802,6 @@ std::pair<EHmdSocialScreen, EHmdSocialScreenAspectMode> CD3DStereoRenderer::GetS
 		socialScreenType = static_cast<EHmdSocialScreen>(pHmdSocialScreenCVar->GetIVal());
 
 	return std::make_pair(socialScreenType, aspectMode);
-
 }
 
 void CD3DStereoRenderer::DisplaySocialScreen()

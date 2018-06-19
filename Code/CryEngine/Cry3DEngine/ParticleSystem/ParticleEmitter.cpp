@@ -109,7 +109,12 @@ void CParticleEmitter::Render(const struct SRendParams& rParam, const SRendering
 	if (passInfo.IsShadowPass())
 		return;
 
-	m_unrendered = 0;
+	CParticleJobManager& jobManager = GetPSystem()->GetJobManager();
+	if (ThreadMode() >= 4 && !WasRenderedLastFrame())
+	{
+		// Not currently scheduled for high priority update
+		jobManager.ScheduleUpdateEmitter(this);
+	}
 
 	CLightVolumesMgr& lightVolumeManager = m_p3DEngine->GetLightVolumeManager();
 	SRenderContext renderContext(rParam, passInfo);
@@ -118,13 +123,20 @@ void CParticleEmitter::Render(const struct SRendParams& rParam, const SRendering
 	ColorF fogVolumeContrib;
 	CFogVolumeRenderNode::TraceFogVolumes(GetPos(), fogVolumeContrib, passInfo);
 	renderContext.m_fogVolumeId = passInfo.GetIRenderView()->PushFogVolumeContribution(fogVolumeContrib, passInfo);
+
+	if (m_pEffect->RenderDeferred.size())
+	{
+		jobManager.AddDeferredRender(this, renderContext);
+	}
 	
-	GetPSystem()->GetThreadData().statsCPU.emitters.rendered ++;
 	for (auto& pRuntime : m_componentRuntimes)
 	{
-		if (pRuntime->GetComponent()->IsVisible() && passInfo.GetCamera().IsAABBVisible_E(pRuntime->GetBounds()))
-			pRuntime->GetComponent()->RenderAll(this, pRuntime, renderContext);
+		if (pRuntime->GetComponent()->IsVisible())
+			pRuntime->RenderAll(renderContext);
 	}
+	
+	m_unrendered = 0;
+	GetPSystem()->GetThreadData().statsCPU.emitters.rendered ++;
 }
 
 void CParticleEmitter::CheckUpdated()
@@ -155,13 +167,15 @@ void CParticleEmitter::Update()
 
 	UpdateFromEntity();
 
-	for (auto const& elem: GetCEffect()->MainPreUpdate)
+	for (auto const& pComponent: GetCEffect()->MainPreUpdate)
 	{
-		if (auto pRuntime = GetRuntimeFor(elem.pComponent))
-			elem.pFeature->MainPreUpdate(pRuntime);
+		if (auto pRuntime = GetRuntimeFor(pComponent))
+		{
+			pComponent->MainPreUpdate(*pRuntime);
+		}
 	}
 
-	if (CParticleJobManager::ThreadMode() >= 4 && SkipUpdate())
+	if (!NeedsUpdate() && !(GetRndFlags() & ERF_HIDDEN))
 	{
 		// If not updating this frame, use max bounds for visibility
 		if (!m_bounds.ContainsBox(m_maxBounds))
@@ -190,36 +204,39 @@ void CParticleEmitter::Update()
 namespace Bounds
 {
 	float Expansion       = 1.125f;
-	float ShrinkThreshold = 0.5f;
+	float ShrinkThreshold = 0.25f;
 }
 
 void CParticleEmitter::UpdateBoundingBox()
 {
 	CRY_PFX2_PROFILE_DETAIL;
 
-	if (!m_registered || 
-	!m_bounds.ContainsBox(m_realBounds) ||
-	m_realBounds.GetVolume() <= m_bounds.GetVolume() * Bounds::ShrinkThreshold)
+	if (!m_registered
+	|| m_realBounds.GetVolume() <= m_bounds.GetVolume() * Bounds::ShrinkThreshold)
+	{
 		m_boundsChanged = true;
-	
+		m_bounds = m_realBounds;
+	}
+	else if (!m_bounds.ContainsBox(m_realBounds))
+	{
+		m_boundsChanged = true;
+		m_bounds.Add(m_realBounds);
+		m_maxBounds.Add(m_bounds);
+	}
+
 	if (m_boundsChanged)
 	{
-		if (m_realBounds.IsReset())
-		{
-			m_bounds.Reset();
-		}
-		else
+		if (!m_bounds.IsReset())
 		{
 			// Expand bounds to avoid frequent re-registering
-			Vec3 center = m_realBounds.GetCenter();
-			Vec3 extent = m_realBounds.GetSize() * (Bounds::Expansion * 0.5f);
+			Vec3 center = m_bounds.GetCenter();
+			Vec3 extent = m_bounds.GetSize() * (Bounds::Expansion * 0.5f);
 			m_bounds = AABB(center - extent, center + extent);
-			m_maxBounds.Add(m_bounds);
 		}
 	}
 }
 
-bool CParticleEmitter::UpdateAll()
+bool CParticleEmitter::UpdateParticles()
 {
 	// Multithread support
 	stl::AutoLock<stl::PSyncMultiThread> lock(m_lock);
@@ -260,13 +277,30 @@ bool CParticleEmitter::UpdateAll()
 	return true;
 }
 
-void CParticleEmitter::SyncUpdate()
+void CParticleEmitter::SyncUpdateParticles()
 {
-	if (CParticleJobManager::ThreadMode() >= 2)
+	if (ThreadMode() >= 1)
 	{
-		UpdateAll();
+		auto& statsSync = GetPSystem()->GetThreadData().statsSync;
+		statsSync.alive += m_componentRuntimes.size();
+		statsSync.rendered += m_pEffect->RenderDeferred.size();
+		if (UpdateParticles())
+			statsSync.updated += m_componentRuntimes.size();
 	}
-	CRY_PFX2_ASSERT(m_timeUpdated >= m_time);
+	CRY_ASSERT(m_timeUpdated >= m_time);
+}
+
+void CParticleEmitter::RenderDeferred(const SRenderContext& renderContext)
+{
+	SyncUpdateParticles();
+
+	for (auto const& pComponent: m_pEffect->RenderDeferred)
+	{
+		if (auto pRuntime = GetRuntimeFor(pComponent))
+		{
+			pComponent->RenderDeferred(*pRuntime, renderContext);
+		}
+	}
 }
 
 void CParticleEmitter::DebugRender(const SRenderingPassInfo& passInfo) const
@@ -290,15 +324,16 @@ void CParticleEmitter::DebugRender(const SRenderingPassInfo& passInfo) const
 
 	if (visible)
 	{
-		// Draw component boxes and label
-		const ColorB componentColor = ColorF(1, 0.5, 0) * alphaColor;
+		// Draw component boxes and labels
 		for (auto& pRuntime : m_componentRuntimes)
 		{
 			if (!pRuntime->GetBounds().IsReset())
 			{
+				const float volumeRatio = div_min(pRuntime->GetBounds().GetVolume(), m_realBounds.GetVolume(), 1.0f);
+				const ColorB componentColor = ColorF(1, 0.5, 0) * (alphaColor * sqrt(volumeRatio));
 				pRenderAux->DrawAABB(pRuntime->GetBounds(), false, componentColor, eBBD_Faceted);
 				string label = string().Format("%s #%d", pRuntime->GetComponent()->GetName(),
-					pRuntime->GetContainer().GetNumParticles());
+					pRuntime->GetContainer().GetRealNumParticles());
 				IRenderAuxText::DrawLabelEx(pRuntime->GetBounds().GetCenter(), 1.5f, componentColor, true, true, label);
 			}
 		}
@@ -468,6 +503,9 @@ void CParticleEmitter::SetLocation(const QuatTS& loc)
 
 	m_parentContainer.GetIOVec3Stream(EPVF_Position).Store(0, m_location.t);
 	m_parentContainer.GetIOQuatStream(EPQF_Orientation).Store(0, m_location.q);
+
+	if (IsEquivalent(m_location, prevLoc, RAD_EPSILON, 0.001f))
+		return;
 
 	if (m_registered)
 	{

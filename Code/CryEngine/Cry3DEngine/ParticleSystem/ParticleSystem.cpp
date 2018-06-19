@@ -120,6 +120,7 @@ void CParticleSystem::Update()
 	auto& sumData = GetSumData();
 	sumData.statsCPU = {};
 	sumData.statsGPU = {};
+	sumData.statsSync = {};
 	for (auto& data : m_threadData)
 	{
 		CRY_PFX2_ASSERT(data.memHeap.GetTotalMemory().nUsed == 0);  // some emitter leaked memory on mem stack
@@ -129,6 +130,8 @@ void CParticleSystem::Update()
 			data.statsCPU = {};
 			sumData.statsGPU += data.statsGPU;
 			data.statsGPU = {};
+			sumData.statsSync += data.statsSync;
+			data.statsSync = {};
 		}
 	}
 
@@ -149,7 +152,7 @@ void CParticleSystem::Update()
 	mainData.statsCPU = {};
 	mainData.statsGPU = {};
 	mainData.statsCPU.emitters.alloc = m_emitters.size();
-	
+
 	for (auto& pEmitter : m_emitters)
 	{
 		if (sys_spec_changed)
@@ -161,8 +164,7 @@ void CParticleSystem::Update()
 		{
 			mainData.statsCPU.emitters.alive++;
 			pEmitter->Update();
-			if (m_jobManager.ThreadMode() < 4 || !pEmitter->SkipUpdate())
-				m_jobManager.AddEmitter(pEmitter);
+			m_jobManager.AddUpdateEmitter(pEmitter);
 		}
 		else
 		{
@@ -173,15 +175,9 @@ void CParticleSystem::Update()
 	m_jobManager.ScheduleUpdates();
 }
 
-void CParticleSystem::FinishUpdate()
-{
-	if (m_jobManager.ThreadMode() == 1)
-		m_jobManager.SynchronizeUpdates();
-}
-
 void CParticleSystem::SyncMainWithRender()
 {
-	if (m_jobManager.ThreadMode() > 1)
+	if (ThreadMode() >= 1)
 		m_jobManager.SynchronizeUpdates();
 		
 	const CCamera& camera = gEnv->p3DEngine->GetRenderingCamera();
@@ -260,6 +256,13 @@ float CParticleSystem::DisplayDebugStats(Vec2 displayLocation, float lineHeight)
 
 	if (!statsCPUAvg.emitters.IsZero())
 		DisplayParticleStats(displayLocation, lineHeight, "Wavicle CPU", statsCPUAvg);
+
+	static TElementCounts<float> statsSyncAvg;
+	TElementCounts<float> statsSyncCur;
+	statsSyncCur.Set(GetSumData().statsSync);
+	statsSyncAvg = Lerp(statsSyncAvg, statsSyncCur, blendCur);
+	DisplayElementStats(displayLocation, lineHeight, "Comp Sync", statsSyncAvg);
+
 	if (!statsGPUAvg.components.IsZero())
 		DisplayParticleStats(displayLocation, lineHeight, "Wavicle GPU", statsGPUAvg);
 
@@ -378,14 +381,6 @@ void CParticleSystem::GetStats(SParticleStats& stats)
 
 void CParticleSystem::GetMemoryUsage(ICrySizer* pSizer) const
 {
-}
-
-uint GetVersion(Serialization::IArchive& ar)
-{
-	SSerializationContext* pContext = ar.context<SSerializationContext>();
-	if (!pContext)
-		return gCurrentVersion;
-	return pContext->m_documentVersion;
 }
 
 }

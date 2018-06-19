@@ -4,12 +4,13 @@
 
 #include "ParticleCommon.h"
 #include "ParticleFeature.h"
+#include "ParticleDataTypes.h"
 #include <CryRenderer/IGpuParticles.h>
 
 namespace pfx2
 {
 
-class CParticleComponentRuntime;
+class CParticleEffect;
 
 SERIALIZATION_ENUM_DECLARE(EAnimationCycle, : uint8,
 	Once,
@@ -120,6 +121,7 @@ struct SComponentParams: STimingParams
 	SParticleShaderData       m_shaderData;
 	_smart_ptr<IMaterial>     m_pMaterial;
 	_smart_ptr<IMeshObj>      m_pMesh;
+	bool                      m_meshCentered;
 	EShaderType               m_requiredShaderType;
 	string                    m_diffuseMap;
 	uint64                    m_renderObjectFlags;
@@ -130,11 +132,12 @@ struct SComponentParams: STimingParams
 	float                     m_maxParticleRate;
 	float                     m_scaleParticleCount;
 	float                     m_maxParticleSize;
+	Slope<float>              m_physicalSizeSlope;
 	float                     m_renderObjectSortBias;
+	float                     m_maxParticleAlpha;
 	SVisibilityParams         m_visibility;
 	int                       m_renderStateFlags;
 	uint8                     m_particleObjFlags;
-	bool                      m_meshCentered;
 
 	void GetMaxParticleCounts(int& total, int& perFrame, float minFPS = 4.0f, float maxFPS = 120.0f) const;
 };
@@ -207,7 +210,6 @@ public:
 	void                    GetMaxParticleCounts(int& total, int& perFrame, float minFPS = 4.0f, float maxFPS = 120.0f) const;
 	void                    UpdateTimings();
 
-	void                    RenderAll(CParticleEmitter* pEmitter, CParticleComponentRuntime* pRuntime, const SRenderContext& renderContext);
 	bool                    CanMakeRuntime(CParticleEmitter* pEmitter) const;
 
 private:
@@ -222,8 +224,8 @@ private:
 	TComponents                              m_children;
 	Vec2                                     m_nodePosition;
 	SComponentParams                         m_Params;
-	std::vector<TParticleFeaturePtr>         m_features;
-	std::vector<TParticleFeaturePtr>         m_defaultFeatures;
+	TSmartArray<CParticleFeature>            m_features;
+	TSmartArray<CParticleFeature>            m_defaultFeatures;
 	StaticEnumArray<bool, EParticleDataType> m_useParticleData;
 	SEnable                                  m_enabled;
 	SEnable                                  m_visible;

@@ -203,10 +203,9 @@ void CEntitySlot::UpdateRenderNode(bool bForceRecreateNode)
 
 		if (!m_bRegisteredRenderNode)
 		{
-			m_bRegisteredRenderNode = true;
-			//////////////////////////////////////////////////////////////////////////
 			if (renderNodeType != eERType_ParticleEmitter)
 			{
+				m_bRegisteredRenderNode = true;
 				gEnv->p3DEngine->RegisterEntity(m_pRenderNode);
 			}
 		}

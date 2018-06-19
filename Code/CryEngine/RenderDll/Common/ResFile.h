@@ -231,7 +231,7 @@ public:
 	const char* mfGetError(void);
 	void        mfSetError(const char* er, ...);
 	const char* mfGetFileName() const {return m_name.c_str(); }
-	int         mfGetVersion()        { return m_version; }
+	int         mfGetVersion()  const { return m_version; }
 	void        mfDeactivate(bool bReleaseDir);
 
 	void mfTickStreaming();
@@ -285,7 +285,8 @@ public:
 	SDirEntryOpen* mfOpenEntry(const CCryNameTSCRC &Name);
 	SDirEntryOpen* mfGetOpenEntry(const CCryNameTSCRC &Name);
 	CDirEntry*     mfGetEntry(const CCryNameTSCRC &name, bool* bAsync = NULL);
-	ResDir*        mfGetDirectory();
+	ResDir*        mfGetDirectory() { return &m_Dir; }
+	const ResDir*  mfGetDirectory() const { return &m_Dir; }
 
 	FILE* mfGetHandle() { return m_handle; }
 	int   mfGetResourceSize();

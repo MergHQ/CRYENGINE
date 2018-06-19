@@ -38,6 +38,7 @@ float4x4 g_mViewProjPrev;
 float4   g_mSSRParams;
 
 float4 g_TextureRect[2];	// x, y, w, h
+float4   g_mSSRParams;
 
 float4x4 g_mInvLightProj < vsregister = c18; > ;
 float4x4 g_mLightShadowProj <  psregister = c21; > ;
@@ -52,11 +53,6 @@ float4 g_cDeferredAmbient	< psregister = c8; > ;
 float4 g_cAmbGround	< psregister = c16; > ;
 float4 g_vAmbHeightParams	< psregister = c17; > ;
 float4 g_vAttenParams;
-
-float4 SSReflParams;      // (cut-off, exponent, dummy, dummy)
-float4 SSReflBlurParams;  // (1/w, 0, 0, 0) or (0, 1/h, 0, 0), if r_SSReflections < 3
-                          // (2/w, 0, 0, 0) or (0, 2/h, 0, 0), otherwise
-float4 SSReflBlurParams2; // (w, h, 1/w, 1/h)
 
 float4 SSDOParams;
 float3x4 SSDO_CameraMatrix;
@@ -99,10 +95,10 @@ SamplerComparisonState ssShadowComparison     : register(s3) = SS_Shadow2;
 SamplerState           ssShadowPointWrap      : register(s7) = SS_PointWrap;
 
 
-#define CLIPVOLUME_CONNECTED_TO_OUTDOOR	(1<<0)
-#define CLIPVOLUME_IGNORE_GI 						(1<<1)
-#define CLIPVOLUME_AFFECTED_BY_SUN			(1<<2)
-#define CLIPVOLUME_BLEND 								(1<<3)
+#define CLIPVOLUME_CONNECTED_TO_OUTDOOR (1<<0)
+#define CLIPVOLUME_IGNORE_GI            (1<<1)
+#define CLIPVOLUME_AFFECTED_BY_SUN      (1<<2)
+#define CLIPVOLUME_BLEND                (1<<3)
 
 #define AFFECTS_EVERYTHING_STENCILREF	0xFF
 #define MAX_CLIPVOLUMES 64
@@ -332,7 +328,7 @@ technique DeferredDecalVolumeMerged
 }
 
 ////////////////////////////////////////////////////////////////////////////////////////////////////
-/// Ambient pass ////////////////////////////////////////////////////////////////////////
+/// Ambient pass ///////////////////////////////////////////////////////////////////////////////////
 
 vtxOutWPOS AmbientVS(vtxInWPOS IN)
 {
@@ -346,20 +342,22 @@ vtxOutWPOS AmbientVS(vtxInWPOS IN)
 }
 
 ////////////////////////////////////////////////////////////////////////////////////////////////////
-// --- SSR_Raytrace --- //////////////////////////////////////////////////////////////////////////////////////////////////
+// --- SSR_Raytrace --- ////////////////////////////////////////////////////////////////////////////
 
-Texture2D   SSRRay_LinDepth        : register(t0);
-Texture2D   SSRRay_LinDepthSc      : register(t3);
-Texture2D   SSRRay_HDRLum     	   : register(t5); 
+#include "Reflection.cfi"
+
+Texture2D    SSRRay_LinDepth         : register(t0);
+Texture2D    SSRRay_LinDepthSc       : register(t3);
+Texture2D    SSRRay_HDRLum     	     : register(t5); 
 // This sampler is used by the preceding textures, this pattern is repeated
-SamplerState  SSRRay_LinDepth_Sampler : register(s0); //pointClamp
+SamplerState SSRRay_LinDepth_Sampler : register(s0); //pointClamp
 
-Texture2D   SSRRay_Norms    	   : register(t1);
-Texture2D   SSRRay_Spec     	   : register(t2);
-SamplerState  SSRRay_Norms_Sampler : register(s1); //linearClamp
+Texture2D    SSRRay_Norms    	     : register(t1);
+Texture2D    SSRRay_Spec     	     : register(t2);
+SamplerState SSRRay_Norms_Sampler    : register(s1); //linearClamp
 
-Texture2D   SSRRay_HDRTarg    	   : register(t4);
-SamplerState  SSRRay_HDRT_Sampler  : register(s2); //linearBorder_black
+Texture2D    SSRRay_HDRTarg    	     : register(t4);
+SamplerState SSRRay_HDRT_Sampler     : register(s2); //linearBorder_black
 
 
 vtxOutWPOS SSRRaytraceVS(vtxInWPOS IN)
@@ -377,132 +375,76 @@ vtxOutWPOS SSRRaytraceVS(vtxInWPOS IN)
   return OUT;
 }
 
-pixout SSRRaytracePS( vtxOutWPOS IN )
+pixout SSRRaytracePS(vtxOutWPOS IN)
 {
 	pixout OUT = (pixout) 0;
 	
-	// Random values for jittering a ray marching step
-	const half jitterOffsets[16] = {
-		0.215168h, -0.243968h, 0.625509h, -0.623349h,
-		0.247428h, -0.224435h, -0.355875h, -0.00792976h,
-		-0.619941h, -0.00287403h, 0.238996h, 0.344431h,
-		0.627993h, -0.772384h, -0.212489h, 0.769486h
-	};
-
-	const float borderSize = 0.07 * CV_HPosScale.x;  // Fade out at borders
-	const float2 halfTexel = g_ScreenSize.zw;
-
-	float2 ScreenTC = MapViewportToRaster(IN.baseTC.xy);
-	
-	MaterialAttribsCommon attribs = DecodeGBuffer( GetTexture2D( SSRRay_Norms, SSRRay_Norms_Sampler, ScreenTC + halfTexel ), 0, GetTexture2D( SSRRay_Spec, SSRRay_Norms_Sampler, ScreenTC + halfTexel ) );
-	
+	const float2 ScreenTC = MapViewportToRaster(IN.baseTC.xy);
 	const float fDepth = GetLinearDepth( SSRRay_LinDepth, int2(ScreenTC * g_mSSRParams.xy * g_ScreenSize.xy) ); // read from full size buffer even in halfres mode
-	float3 vPositionWS = GetWorldPos( fDepth, IN.CamVec );
-	float3 viewVec = normalize( vPositionWS );
-	vPositionWS += CV_WorldViewPosition.xyz;
-		
-	const float maxReflDist = 1.5 * fDepth * PS_NearFarClipDist.y;
-	float3 reflVec = normalize( reflect( viewVec, attribs.NormalWorld ) ) * maxReflDist;
 	
-	float dirAtten = saturate( dot( viewVec, reflVec ) + 0.5);
-	if (dirAtten < 0.01 || fDepth == 1) return OUT;  // Ignore sky pixels as well
+	if (fDepth == 1.0)
+		return OUT; // Ignore sky pixels
+
+	const float3 vPositionWS = GetWorldPos( fDepth, IN.CamVec ) + CV_WorldViewPosition.xyz;
+	const float2 halfTexel = g_ScreenSize.zw;
+	const float fLum  = GetTexture2DLod( SSRRay_HDRLum, SSRRay_LinDepth_Sampler, float4( ScreenTC, 0, 0 ) ).x * 100; // Limit brightness to reduce aliasing of specular highlights
+
+	MaterialAttribsCommon attribs = DecodeGBuffer(
+		GetTexture2D( SSRRay_Norms, SSRRay_Norms_Sampler, ScreenTC + halfTexel ), 0,
+		GetTexture2D( SSRRay_Spec, SSRRay_Norms_Sampler, ScreenTC + halfTexel ) );
 	
-	float4 rayStart = mul( CV_ViewProjMatr, float4( vPositionWS, 1 ) );
-	rayStart.z = fDepth;
-	rayStart.xy = GetScaledScreenTC( rayStart.xy * float2(0.5, -0.5) + 0.5 * rayStart.w );
-
-	float4 rayEnd = mul( CV_ViewProjMatr, float4( vPositionWS + reflVec, 1 ) );
-	rayEnd.z = g_PS_ProjRatio.y / (rayEnd.z / rayEnd.w - g_PS_ProjRatio.x);
-	rayEnd.xy = GetScaledScreenTC( rayEnd.xy * float2(0.5, -0.5) + 0.5 * rayEnd.w );
-
-	float4 ray = rayEnd - rayStart;
+	ReflParams params;
 	
-	const int numSamples = 4 + attribs.Smoothness * 28;
+	params.ScreenTC = ScreenTC;
+	params.ProjRatio = g_PS_ProjRatio.xy;
+	params.JitterUV = IN.baseTC.zw;
+	params.NearFarClipDist = PS_NearFarClipDist.xy;
+	params.UnscaledMultiplier = g_mSSRParams.xy;
+	params.MaxDistance = g_mSSRParams.z;
+	params.MaxSamples = g_mSSRParams.w;
+	params.ViewVec = normalize(IN.CamVec);
+	params.fDepth = fDepth;
+	params.vPositionWS = vPositionWS;
+	params.maxLum = fLum;
+	params.NormalWorld = attribs.NormalWorld;
+	params.Smoothness = attribs.Smoothness;
+	params.Reproject = true;
+	params.ViewProjPrev = g_mViewProjPrev;
+	params.borderSize = 0.07;
 	
-	//const int jitterIndex = (int)dot( frac( IN.baseTC.zw ), float2( 4, 16 ) );
-	//const float jitter = jitterOffsets[jitterIndex] * 0.002;
-	const float jitter = 0;
-	
-	const float stepSize = 1.0 / numSamples + jitter;
-	const float intervalSize = maxReflDist / (numSamples * 1.6) / PS_NearFarClipDist.y;
-	
-	// Perform raymarching
-	float4 color = 0;
-	float len = stepSize;
-	float bestLen = 0;
-	[loop] for (int i = 0; i < numSamples; ++i)
-	{
-		float4 projPos = rayStart + ray * len;
-		projPos.xy /= projPos.w;
+	OUT.Color = SSRRaytrace
+	(
+		SSRRay_LinDepthSc,
 
-		float2 uvMultiRes = MapViewportToRaster(projPos.xy);
-		
-		// check if the ray went outside of the projection
-		if(any(projPos.xy != saturate(projPos.xy)))
-		{
-			return OUT;
-		}
+		SSRRay_Norms,
+		SSRRay_Spec,
+		SSRRay_Norms_Sampler,
 
-		//float fLinearDepthTap = GetTexture2DLod( _tex3, float4( projPos.xy, 0, 0 ) ).x; // half res R16F
-		float fLinearDepthTap = GetTexture2DLod( SSRRay_LinDepthSc, SSRRay_LinDepth_Sampler, float4( uvMultiRes.xy, 0, 0 ) ).x;
+		SSRRay_HDRTarg,
+		SSRRay_HDRT_Sampler,
 
-		if (abs(fLinearDepthTap - projPos.z) < intervalSize)
-		{
-			bestLen = len;
-			break;
-		}
+		params
+	);
 
-		len += stepSize;
-	}
-
-	[branch] if (bestLen > 0)
-	{
-		float4 bestSample = float4( vPositionWS + reflVec * bestLen, 1 );
-
-		// Reprojection
-		float4 reprojPos = mul( bestSample, g_mViewProjPrev );
-		reprojPos.xyz /= reprojPos.w;
-		reprojPos.xy = saturate(reprojPos.xy);
-		
-		float borderDist = min( reprojPos.x, reprojPos.y );
-		borderDist = min( 1 - max( reprojPos.x, reprojPos.y ), borderDist );
-		float edgeWeight = borderDist > borderSize ? 1 : sqrt(borderDist / borderSize);
-
-		reprojPos.xy *= CV_HPosScale.zw;
-		
-		reprojPos.xy = MapViewportToRaster(reprojPos.xy);
-
-		const float curAvgLum = GetTexture2DLod( SSRRay_HDRLum, SSRRay_LinDepth_Sampler, float4( ScreenTC, 0, 0 ) ).x;
-		const float maxLum = curAvgLum * 100;  // Limit brightness to reduce aliasing of specular highlights
-		color.rgb = min( GetTexture2DLod( SSRRay_HDRTarg, SSRRay_HDRT_Sampler, float4( reprojPos.xy, 0, 0 ) ).rgb, maxLum.xxx );
-
-		// Filter out NANs that we still have sometimes, otherwise they get propagated and remain in the view
-		color.rgb = isfinite( color.rgb ) ? color.rgb: 0;
-
-		color.a = edgeWeight * dirAtten;  // Fade out where less information available
-	}
-
-	OUT.Color = color;
-	
 	return OUT;
 }
 
 technique SSR_Raytrace
 {
-  pass p0
-  {
-    VertexShader = SSRRaytraceVS() DeferredPassVS;
-    GeometryShader = $AutoGS_MultiRes();
-    PixelShader = SSRRaytracePS() DeferredPassPS;
-    CullMode = None;
-  }
+	pass p0
+	{
+		VertexShader = SSRRaytraceVS() DeferredPassVS;
+		GeometryShader = $AutoGS_MultiRes();
+		PixelShader = SSRRaytracePS() DeferredPassPS;
+		CullMode = None;
+	}
 }
 
 
-Texture2D   SSRComp_Spec     	      : register(t0);
-SamplerState  SSRComp_Sampler 	  	  : register(s0); //linearClamp
+Texture2D    SSRComp_Spec             : register(t0);
+SamplerState SSRComp_Sampler          : register(s0); //linearClamp
 
-Texture2D   SSRComp_HDRTargSc0    	  : register(t1);
+Texture2D   SSRComp_HDRTargSc0        : register(t1);
 Texture2D   SSRComp_HDRTargSc1    	  : register(t2);
 Texture2D   SSRComp_HDRTargSc2    	  : register(t3);
 Texture2D   SSRComp_HDRTargSc3    	  : register(t4);
@@ -1235,18 +1177,10 @@ float4 ResolveStencilPS(vtxOutMSAA IN) : SV_Target0
 	
 	int2 nStencilVal;
 	int3 vPixCoord = int3( IN.HPosition.xy, 0);
-#if %_RT_MSAA_QUALITY || %_RT_MSAA_QUALITY1 
-	uint uSample = 0;
-	#if %_RT_MSAA_SAMPLEFREQ_PASS
-		uSample = IN.uSample;
-	#endif
-	nStencilVal = StencilTexMS.Load(vPixCoord, uSample);
-#else
-	nStencilVal = StencilTex.Load(vPixCoord);
-#endif
 
+	nStencilVal = StencilTex.Load(vPixCoord);
 	nStencilVal = nStencilVal & BIT_STENCIL_STATIC;
-	nStencilVal = max(nStencilVal - BIT_STENCIL_INSIDE_VOLUME, 1);
+	nStencilVal = max(nStencilVal - BIT_STENCIL_INSIDE_VOLUME, 0);
 
 #if DURANGO || ORBIS
 	return nStencilVal.r * fMaxStencilRefRcp;

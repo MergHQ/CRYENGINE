@@ -1,8 +1,8 @@
-// Copyright 2001-2018 Crytek GmbH / Crytek Group. All rights reserved.
+// Copyright 2015-2018 Crytek GmbH / Crytek Group. All rights reserved.
 
 #include "StdAfx.h"
+#include "FeatureCommon.h"
 #include "ParticleSystem/ParticleRender.h"
-#include "ParticleSystem/ParticleEffect.h"
 
 namespace gpu_pfx2
 {

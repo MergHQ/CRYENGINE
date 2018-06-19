@@ -336,6 +336,7 @@ bool CStatObj::LoadStreamRenderMeshes(const char* filename, const void* pData, c
 	CLoaderCGF cgfLoader(util::pool_allocate, util::pool_free, GetCVars()->e_StatObjTessellationMode != 2 || bLod);
 	CStackContainer<CContentCGF> contentContainer(InplaceFactory(m_szFileName));
 	CContentCGF* pCGF = contentContainer.get();
+	CExportInfoCGF* pExportInfo = pCGF->GetExportInfo();
 
 	bool bMeshAssigned = false;
 
@@ -433,6 +434,11 @@ bool CStatObj::LoadStreamRenderMeshes(const char* filename, const void* pData, c
 				//////////////////////////////////////////////////////////////////////////
 				if (pStatObj->m_nSpines && pStatObj->m_pSpines) // foliage
 					pStatObj->m_pStreamedRenderMesh->GenerateQTangents();
+
+				if (!bLod && (pExportInfo->bMergeAllNodes || m_nSubObjectMeshCount == 0))
+				{
+					AnalyzeFoliage(pStatObj->m_pStreamedRenderMesh, pCGF);
+				}
 			}
 		}
 	}
@@ -1107,7 +1113,7 @@ bool CStatObj::LoadCGF_Int(const char* filename, bool bLod, unsigned long nLoadi
 	//////////////////////////////////////////////////////////////////////////
 	// Analyze foliage info.
 	//////////////////////////////////////////////////////////////////////////
-	if (!bLod && (pExportInfo->bMergeAllNodes || m_nSubObjectMeshCount == 0))
+	if (!bLod && (pExportInfo->bMergeAllNodes || m_nSubObjectMeshCount == 0) && !m_bCanUnload)
 	{
 		AnalyzeFoliage(pMainMesh, pCGF);
 	}

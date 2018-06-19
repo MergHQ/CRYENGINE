@@ -581,7 +581,7 @@ void CScaleformPlayback::ApplyTextureInfo(unsigned int texSlot, const FillTextur
 
 		texInfo.pTex = pTex;
 		texInfo.texState  = (pFill->WrapMode   == Wrap_Clamp   ) ? SSF_GlobalDrawParams::TS_Clamp     : 0;
-		texInfo.texState |= (pFill->SampleMode == Sample_Linear) ? SSF_GlobalDrawParams::TS_FilterLin : 0;
+		texInfo.texState |= (pFill->SampleMode == Sample_Linear) ? SSF_GlobalDrawParams::TS_FilterTriLin : 0;
 
 		m_drawParams.m_bScaleformMeshAttributesDirty = m_drawParams.m_bScaleformMeshAttributesDirty ||
 			(mparams->cTexGenMat[texSlot][0] != Vec4(m.m00, m.m01, 0, m.m02)) ||
@@ -817,6 +817,11 @@ void CScaleformPlayback::PopOutputTarget()
 	}
 
 	pCurOutput->pRenderTarget->Release();
+	if (pCurOutput->pStencilTarget)
+	{
+		pCurOutput->pStencilTarget->Release();
+	}
+
 	pCurOutput->tempDepthTexture = nullptr;
 
 	m_renderTargetStack.pop_back();
@@ -851,7 +856,9 @@ void CScaleformPlayback::PushOutputTarget(const Viewport &viewport)
 
 	sNewOutput.pRenderTarget->AddRef();
 	if (sNewOutput.pStencilTarget)
+	{
 		sNewOutput.pStencilTarget->AddRef();
+	}
 
 	// Graphics pipeline >= 1
 	{
@@ -909,6 +916,12 @@ void CScaleformPlayback::PopRenderTarget()
 	}
 
 	pCurOutput->pRenderTarget->Release();
+	if (pCurOutput->pStencilTarget)
+	{
+		pCurOutput->pStencilTarget->Unlock();
+		pCurOutput->pStencilTarget->Release();
+	}
+
 	pCurOutput->tempDepthTexture = nullptr;
 
 	//clear texture slot, may not be required
@@ -967,7 +980,12 @@ int32 CScaleformPlayback::PushTempRenderTarget(const RectF& frameRect, uint32 ta
 	sNewOutput.bRenderTargetClear = pNewTempRT && wantClear;
 	sNewOutput.bStencilTargetClear = pNewTempST && false;
 
-	pNewTempRT->AddRef();
+	sNewOutput.pRenderTarget->AddRef();
+	if (sNewOutput.pStencilTarget)
+	{
+		sNewOutput.pStencilTarget->AddRef();
+		sNewOutput.pStencilTarget->Lock();
+	}
 
 	// Graphics pipeline >= 1
 	{
@@ -1921,30 +1939,19 @@ std::shared_ptr<CRenderOutput> CScaleformPlayback::GetRenderOutput() const
 void CScaleformPlayback::RenderFlashPlayerToTexture(IFlashPlayer* pFlashPlayer, CTexture* pOutput)
 {
 	CRenderOutputPtr pTempRenderOutput = std::make_shared<CRenderOutput>(pOutput, FRT_CLEAR_COLOR /* no automatic clears */, Clr_Transparent, 0.0f);
-	CScaleformPlayback* pScaleformPlayback = static_cast<CScaleformPlayback*>(pFlashPlayer->GetPlayback());
-	CRY_ASSERT(pScaleformPlayback->IsRenderThread());
 
 	int x, y, width, height; float aspect;
 	pFlashPlayer->GetViewport(x, y, width, height, aspect);
 
-	// Remember currently used Render Target
-	std::shared_ptr<CRenderOutput> pLastOutput = pScaleformPlayback->GetRenderOutput();
-	pScaleformPlayback->SetRenderOutput(pTempRenderOutput);
-
 	pTempRenderOutput->SetViewport(SRenderViewport(x, y, width, height));
-	pFlashPlayer->Render();
 
-	// Restore previous Flash render output.
-	pScaleformPlayback->SetRenderOutput(pLastOutput);
+	RenderFlashPlayerToOutput(pFlashPlayer, pTempRenderOutput);
 }
 
 void CScaleformPlayback::RenderFlashPlayerToOutput(IFlashPlayer* pFlashPlayer, const std::shared_ptr<CRenderOutput> &output)
 {
 	CScaleformPlayback* pScaleformPlayback = static_cast<CScaleformPlayback*>(pFlashPlayer->GetPlayback());
 	CRY_ASSERT(pScaleformPlayback->IsRenderThread());
-
-	int x, y, width, height; float aspect;
-	pFlashPlayer->GetViewport(x, y, width, height, aspect);
 
 	// Remember currently used Render Target
 	std::shared_ptr<CRenderOutput> pLastOutput = pScaleformPlayback->GetRenderOutput();

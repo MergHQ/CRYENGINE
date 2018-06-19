@@ -125,9 +125,9 @@ private:
 
 	CParticleContainer                                  m_container;
 
-	gpu::CTypedResource<int, gpu::BufferFlagsReadWrite> m_blockSums;
-	gpu::CTypedResource<int, gpu::BufferFlagsReadWrite> m_killList;
-	gpu::CTypedResource<uint, gpu::BufferFlagsDynamic>  m_newBornIndices;
+	gpu::CStructuredResource<int, gpu::BufferFlagsReadWrite> m_blockSums;
+	gpu::CStructuredResource<int, gpu::BufferFlagsReadWrite> m_killList;
+	gpu::CStructuredResource<uint, gpu::BufferFlagsDynamic>  m_newBornIndices;
 
 	// Features handled by GPU system
 	DynArray<_smart_ptr<CFeature>, uint> m_features;
@@ -140,7 +140,7 @@ private:
 	};
 	SUpdateData m_updateData[RT_COMMAND_BUF_COUNT];
 	
-	gpu::CTypedResource<SParentData, gpu::BufferFlagsDynamic>    m_parentDataRenderThread;
+	gpu::CStructuredResource<SParentData, gpu::BufferFlagsDynamic>    m_parentDataRenderThread;
 	gpu::CTypedConstantBuffer<SParticleInitializationParameters> m_particleInitializationParameters;
 	gpu::CTypedConstantBuffer<SParticleParameters>               m_parameters;
 

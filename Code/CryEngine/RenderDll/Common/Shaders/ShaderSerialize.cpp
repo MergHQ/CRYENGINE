@@ -770,13 +770,6 @@ bool CShaderSerialize::ImportShader(CShader* pSH, CShaderManBin& binShaderMgr)
 
 	fxParams.m_FXSamplers.reserve(fxParams.m_FXSamplers.size() + SC.SSR.m_nFXSamplers);
 
-	for (i = 0; i < SC.SSR.m_nFXSamplers; i++)
-	{
-		STexSamplerFX fxSampler;
-		fxSampler.Import(SC, &SC.FXTexSamplers[i]);
-		fxParams.m_FXSamplersOld.push_back(fxSampler);
-	}
-
 	for (i = 0; i < SC.SSR.m_nTechniques; i++)
 	{
 		SSShaderTechnique& ST = SC.Techniques[i];

@@ -87,7 +87,7 @@ void CParticleContainer::AddParticleData(EParticleDataType type)
 		m_useData[type + i] = true;
 		if (!m_pData[type + i])
 			m_pData[type + i] = ParticleAlloc(allocSize);
-		else if (type.info().needsClear)
+		else if (type.info().domain & EDD_NeedsClear)
 			memset(m_pData[type + i], 0, allocSize);
 	}
 }
@@ -211,7 +211,7 @@ void CParticleContainer::AddParticles(TConstArray<SSpawnEntry> spawnEntries)
 			float age = spawnEntry.m_ageBegin;
 			auto ages = IOStream(EPDT_NormalAge);
 			uint32 i; for (i = currentId; i < lastId; ++i, age += spawnEntry.m_ageIncrement)
-				ages[i] = age;
+				ages[i] = max(age, 0.0f);
 		}
 
 		if (HasData(EPDT_SpawnFraction))

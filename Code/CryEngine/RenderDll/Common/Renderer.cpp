@@ -4072,9 +4072,6 @@ void CRenderer::UpdateShaderItem(SShaderItem* pShaderItem, IMaterial* pMaterial)
 
 void CRenderer::RefreshShaderResourceConstants(SShaderItem* pShaderItem, IMaterial* pMaterial)
 {
-	_smart_ptr<CShader> pShader = static_cast<CShader*>(pShaderItem->m_pShader);
-	_smart_ptr<CShaderResources> pShaderResources = static_cast<CShaderResources*>(pShaderItem->m_pShaderResources);
-
 	ERenderCommandFlags flags = ERenderCommandFlags::LevelLoadingThread_executeDirect;
 	if (gcpRendD3D->m_pRT->m_eVideoThreadMode != SRenderThread::eVTM_Disabled)
 		flags |= ERenderCommandFlags::MainThread_defer;
@@ -4082,11 +4079,11 @@ void CRenderer::RefreshShaderResourceConstants(SShaderItem* pShaderItem, IMateri
 	ExecuteRenderThreadCommand(
 		[=]
 		{
-			if (pShader && pShaderResources)
+			if (pShaderItem->m_pShader && pShaderItem->m_pShaderResources)
 			{
 				CRY_PROFILE_REGION(PROFILE_RENDERER, "CRenderer::RefreshShaderResourceConstants");
 				if (pShaderItem->RefreshResourceConstants())
-					pShaderItem->m_pShaderResources->UpdateConstants(pShader);
+					pShaderItem->m_pShaderResources->UpdateConstants(pShaderItem->m_pShader);
 			}
 		},
 		flags
@@ -4095,20 +4092,17 @@ void CRenderer::RefreshShaderResourceConstants(SShaderItem* pShaderItem, IMateri
 
 void CRenderer::ForceUpdateShaderItem(SShaderItem* pShaderItem, IMaterial* pMaterial)
 {
-	_smart_ptr<CShader> pShader = static_cast<CShader*>(pShaderItem->m_pShader);
-	_smart_ptr<CShaderResources> pShaderResources = static_cast<CShaderResources*>(pShaderItem->m_pShaderResources);
-
 	ERenderCommandFlags flags = ERenderCommandFlags::LevelLoadingThread_defer;
 	if (gcpRendD3D->m_pRT->m_eVideoThreadMode != SRenderThread::eVTM_Disabled)
 		flags |= ERenderCommandFlags::MainThread_defer;
 
 	ExecuteRenderThreadCommand( 
 		[=]
-		{ 
-			if (pShader && pShaderResources)
+		{
+			if (pShaderItem->m_pShader && pShaderItem->m_pShaderResources)
 			{
 				CRY_PROFILE_REGION(PROFILE_RENDERER, "CRenderer::ForceUpdateShaderItem");
-				pShader->m_Flags &= ~EF_RELOADED;
+				static_cast<CShader*>(pShaderItem->m_pShader)->m_Flags &= ~EF_RELOADED;
 				pShaderItem->Update();
 			}
 		},

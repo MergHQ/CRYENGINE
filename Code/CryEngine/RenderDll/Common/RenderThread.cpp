@@ -22,6 +22,8 @@
 
 #include <DriverD3D.h>
 
+#include <cstring>
+
 #include "RenderView.h"
 
 #ifdef STRIP_RENDER_THREAD
@@ -388,37 +390,47 @@ void SRenderThread::RC_TryFlush()
 	SyncMainWithRender();
 }
 
-void SRenderThread::RC_FlashRenderPlayer(IFlashPlayer* pPlayer)
+void SRenderThread::RC_FlashRenderPlayer(std::shared_ptr<IFlashPlayer> &&pPlayer)
 {
 	assert(IsRenderThread());
-	gRenDev->RT_FlashRenderInternal(pPlayer);
+	gRenDev->RT_FlashRenderInternal(std::move(pPlayer));
 }
 
-void SRenderThread::RC_FlashRender(IFlashPlayer_RenderProxy* pPlayer)
+void SRenderThread::RC_FlashRender(std::shared_ptr<IFlashPlayer_RenderProxy> &&pPlayer)
 {
 	if (IsRenderThread())
 	{
-		gRenDev->RT_FlashRenderInternal(pPlayer, true);
+		gRenDev->RT_FlashRenderInternal(std::move(pPlayer), true);
 		return;
 	}
 
 	LOADINGLOCK_COMMANDQUEUE
-	byte* p = AddCommand(eRC_FlashRender, sizeof(void*));
-	AddPointer(p, pPlayer);
+	byte* p = AddCommand(eRC_FlashRender, sizeof(std::shared_ptr<IFlashPlayer_RenderProxy>));
+
+	// Write the shared_ptr without releasing a reference.
+	StoreUnaligned<std::shared_ptr<IFlashPlayer_RenderProxy>>(p, pPlayer);
+	p += sizeof(std::shared_ptr<IFlashPlayer_RenderProxy>);
+	std::memset(&pPlayer, 0, sizeof(std::shared_ptr<IFlashPlayer_RenderProxy>));
+
 	EndCommand(p);
 }
 
-void SRenderThread::RC_FlashRenderPlaybackLockless(IFlashPlayer_RenderProxy* pPlayer, int cbIdx, bool finalPlayback)
+void SRenderThread::RC_FlashRenderPlaybackLockless(std::shared_ptr<IFlashPlayer_RenderProxy> &&pPlayer, int cbIdx, bool finalPlayback)
 {
 	if (IsRenderThread())
 	{
-		gRenDev->RT_FlashRenderPlaybackLocklessInternal(pPlayer, cbIdx, finalPlayback, true);
+		gRenDev->RT_FlashRenderPlaybackLocklessInternal(std::move(pPlayer), cbIdx, finalPlayback, true);
 		return;
 	}
 
 	LOADINGLOCK_COMMANDQUEUE
-	byte* p = AddCommand(eRC_FlashRenderLockless, 12 + sizeof(void*));
-	AddPointer(p, pPlayer);
+	byte* p = AddCommand(eRC_FlashRenderLockless, 12 + sizeof(std::shared_ptr<IFlashPlayer_RenderProxy>));
+
+	// Write the shared_ptr without releasing a reference.
+	StoreUnaligned<std::shared_ptr<IFlashPlayer_RenderProxy>>(p, pPlayer);
+	p += sizeof(std::shared_ptr<IFlashPlayer_RenderProxy>);
+	std::memset(&pPlayer, 0, sizeof(std::shared_ptr<IFlashPlayer_RenderProxy>));
+
 	AddDWORD(p, (uint32) cbIdx);
 	AddDWORD(p, finalPlayback ? 1 : 0);
 	EndCommand(p);
@@ -579,21 +591,18 @@ void SRenderThread::ProcessCommands()
 		case eRC_FlashRender:
 			{
 				START_PROFILE_RT;
-				IFlashPlayer_RenderProxy* pPlayer = ReadCommand<IFlashPlayer_RenderProxy*>(n);
-				gRenDev->RT_FlashRenderInternal(pPlayer, m_eVideoThreadMode == eVTM_Disabled);
+				std::shared_ptr<IFlashPlayer_RenderProxy> pPlayer = ReadCommand<std::shared_ptr<IFlashPlayer_RenderProxy>>(n);
+				gRenDev->RT_FlashRenderInternal(std::move(pPlayer), m_eVideoThreadMode == eVTM_Disabled);
 				END_PROFILE_PLUS_RT(gRenDev->m_fRTTimeFlashRender);
 			}
 			break;
 		case eRC_FlashRenderLockless:
-		{
-			CRY_PROFILE_REGION(PROFILE_RENDERER, "SRenderThread: eRC_FlashRenderLockless");
-			IFlashPlayer_RenderProxy* pPlayer = ReadCommand<IFlashPlayer_RenderProxy*>(n);
-			int cbIdx = ReadCommand<int>(n);
-			bool stereo = ReadCommand<int>(n) != 0;
-			bool finalPlayback = ReadCommand<int>(n) != 0;
-			gRenDev->RT_FlashRenderPlaybackLocklessInternal(pPlayer, cbIdx, finalPlayback, m_eVideoThreadMode == eVTM_Disabled);
-		}
-		break;
+			{
+				std::shared_ptr<IFlashPlayer_RenderProxy> pPlayer = ReadCommand<std::shared_ptr<IFlashPlayer_RenderProxy>>(n);
+				int cbIdx = ReadCommand<int>(n);
+				bool finalPlayback = ReadCommand<int>(n) != 0;
+				gRenDev->RT_FlashRenderPlaybackLocklessInternal(std::move(pPlayer), cbIdx, finalPlayback, m_eVideoThreadMode == eVTM_Disabled);
+			}
 			break;
 
 		case eRC_LambdaCall:

@@ -13,11 +13,11 @@ public:
 	CFullscreenPass(CRenderPrimitive::EPrimitiveFlags primitiveFlags = CRenderPrimitive::eFlags_ReflectShaderConstants);
 	~CFullscreenPass();
 
-	bool InputChanged() const override final
+	bool IsDirty() const override final
 	{
-		return IsDirty();
+		return m_primitive.IsDirty() || CPrimitiveRenderPass::IsDirty();
 	}
-	using CRenderPassBase::InputChanged;
+	using CRenderPassBase::IsDirty;
 
 	void SetPrimitiveFlags(CRenderPrimitive::EPrimitiveFlags flags);
 
@@ -114,8 +114,6 @@ public:
 	}
 
 	bool Execute();
-
-	bool IsDirty() const { return m_primitive.IsDirty(); }
 
 	void SetCustomViewport(const D3DViewPort& viewport)
 	{

@@ -55,7 +55,7 @@ void CAutoExposureStage::MeasureLuminance()
 
 	// Initial downsampling
 	{
-		if (m_passLuminanceInitial.InputChanged())
+		if (m_passLuminanceInitial.IsDirty())
 		{
 			static CCryNameTSCRC techLumInitial("HDRSampleLumInitial");
 			m_passLuminanceInitial.SetPrimitiveFlags(CRenderPrimitive::eFlags_ReflectShaderConstants_PS);
@@ -95,7 +95,7 @@ void CAutoExposureStage::MeasureLuminance()
 	{
 		CFullscreenPass& passLuminanceIteration = m_passLuminanceIteration[curTexture];
 
-		if (passLuminanceIteration.InputChanged())
+		if (passLuminanceIteration.IsDirty())
 		{
 			uint64 rtMask = 0;
 			if (!curTexture)
@@ -147,7 +147,7 @@ void CAutoExposureStage::AdjustExposure()
 
 	CShader* pShader = CShaderMan::s_shHDRPostProcess;
 
-	if (m_passAutoExposure.InputChanged(pTexCur->GetTextureID(), pTexPrev->GetTextureID()))
+	if (m_passAutoExposure.IsDirty(pTexCur->GetTextureID(), pTexPrev->GetTextureID()))
 	{
 		static CCryNameTSCRC techAdaptedLum("HDRCalculateAdaptedLum");
 		m_passAutoExposure.SetPrimitiveFlags(CRenderPrimitive::eFlags_ReflectShaderConstants_PS);

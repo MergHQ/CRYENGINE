@@ -64,7 +64,7 @@ void CMotionBlurStage::Execute()
 
 		const bool bRadialBlur = amount + (blurDir.x * blurDir.x) + (blurDir.y * blurDir.y) > 1.0f / (float)vpWidth;
 
-		if (m_passPacking.InputChanged(bRadialBlur, GetUtils().GetVelocityObjectRT(RenderView())->GetTextureID()))
+		if (m_passPacking.IsDirty(bRadialBlur, GetUtils().GetVelocityObjectRT(RenderView())->GetTextureID()))
 		{
 			static CCryNameTSCRC techPackVelocities("PackVelocities");
 			m_passPacking.SetPrimitiveFlags(CRenderPrimitive::eFlags_ReflectShaderConstants_PS);
@@ -101,7 +101,7 @@ void CMotionBlurStage::Execute()
 
 		// Tile generation first pass
 		{
-			if (m_passTileGen1.InputChanged())
+			if (m_passTileGen1.IsDirty())
 			{
 				m_passTileGen1.SetPrimitiveFlags(CRenderPrimitive::eFlags_ReflectShaderConstants_PS);
 				m_passTileGen1.SetPrimitiveType(CRenderPrimitive::ePrim_ProceduralTriangle);
@@ -124,7 +124,7 @@ void CMotionBlurStage::Execute()
 
 		// Tile generation second pass
 		{
-			if (m_passTileGen2.InputChanged())
+			if (m_passTileGen2.IsDirty())
 			{
 				m_passTileGen2.SetPrimitiveFlags(CRenderPrimitive::eFlags_ReflectShaderConstants_PS);
 				m_passTileGen2.SetPrimitiveType(CRenderPrimitive::ePrim_ProceduralTriangle);
@@ -148,7 +148,7 @@ void CMotionBlurStage::Execute()
 
 		// Neighborhood max
 		{
-			if (m_passNeighborMax.InputChanged())
+			if (m_passNeighborMax.IsDirty())
 			{
 				m_passNeighborMax.SetPrimitiveFlags(CRenderPrimitive::eFlags_ReflectShaderConstants_PS);
 				m_passNeighborMax.SetPrimitiveType(CRenderPrimitive::ePrim_ProceduralTriangle);
@@ -175,7 +175,7 @@ void CMotionBlurStage::Execute()
 			m_passCopy.Execute(CRendererResources::s_ptexHDRTarget, CRendererResources::s_ptexSceneTargetR11G11B10F[0]);
 		}
 
-		if (m_passMotionBlur.InputChanged(CRenderer::CV_r_MotionBlurQuality, bGatherDofEnabled))
+		if (m_passMotionBlur.IsDirty(CRenderer::CV_r_MotionBlurQuality, bGatherDofEnabled))
 		{
 			uint64 rtMask = 0;
 			rtMask |= (CRenderer::CV_r_MotionBlurQuality >= 2) ? g_HWSR_MaskBit[HWSR_SAMPLE2] : 0;

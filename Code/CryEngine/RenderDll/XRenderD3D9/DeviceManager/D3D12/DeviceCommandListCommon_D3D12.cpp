@@ -670,6 +670,11 @@ void CDeviceGraphicsCommandInterfaceImpl::SetDepthBiasImpl(float constBias, floa
 	CRY_ASSERT_MESSAGE(false, "Depth bias can only be set via PSO on DirectX 12");
 }
 
+void CDeviceGraphicsCommandInterfaceImpl::SetDepthBoundsImpl(float fMin, float fMax)
+{
+	GetDX12CommandList()->SetDepthBounds(fMin, fMax);
+}
+
 void CDeviceGraphicsCommandInterfaceImpl::DrawImpl(uint32 VertexCountPerInstance, uint32 InstanceCount, uint32 StartVertexLocation, uint32 StartInstanceLocation)
 {
 	GetDX12CommandList()->DrawInstanced(VertexCountPerInstance, InstanceCount, StartVertexLocation, StartInstanceLocation);
@@ -964,7 +969,44 @@ void CDeviceCopyCommandInterfaceImpl::CopyImpl(CDeviceTexture* pSrc, CDeviceText
 {
 	CD3D9Renderer* const __restrict rd = gcpRendD3D;
 	D3D11_BOX box = { region.SourceOffset.Left, region.SourceOffset.Top, region.SourceOffset.Front, region.SourceOffset.Left + region.Extent.Width, region.SourceOffset.Top + region.Extent.Height, region.SourceOffset.Front + region.Extent.Depth };
-	rd->GetDeviceContext().CopySubresourcesRegion1(pDst->GetBaseTexture(), region.DestinationOffset.Subresource, region.DestinationOffset.Left, region.DestinationOffset.Top, region.DestinationOffset.Front, pSrc->GetBaseTexture(), region.SourceOffset.Subresource, &box, region.Flags, region.Extent.Subresources);
+
+	if (region.Flags & DX12_COPY_CONCURRENT_MARKER)
+	{
+		ICryDX12Resource* dstDX12Resource = DX12_EXTRACT_ICRYDX12RESOURCE(pDst->GetBaseTexture());
+		ICryDX12Resource* srcDX12Resource = DX12_EXTRACT_ICRYDX12RESOURCE(pSrc->GetBaseTexture());
+		NCryDX12::CResource& rDstResource = dstDX12Resource->GetDX12Resource(); rDstResource.VerifyBackBuffer();
+		NCryDX12::CResource& rSrcResource = srcDX12Resource->GetDX12Resource(); rSrcResource.VerifyBackBuffer();
+
+
+		D3D12_RESOURCE_STATES prevDstState = rDstResource.GetState(), dstState = prevDstState;
+		D3D12_RESOURCE_STATES prevSrcState = rSrcResource.GetState(), srcState = prevSrcState;
+
+		GetDX12CommandList()->MaxResourceFenceValue(rDstResource, CMDTYPE_ANY);
+		GetDX12CommandList()->MaxResourceFenceValue(rSrcResource, CMDTYPE_WRITE);
+
+		rDstResource.TransitionBarrierStatic(GetDX12CommandList(), D3D12_RESOURCE_STATE_COPY_DEST, dstState);
+		rSrcResource.TransitionBarrierStatic(GetDX12CommandList(), D3D12_RESOURCE_STATE_COPY_SOURCE, srcState);
+
+		GetDX12CommandList()->PendingResourceBarriers();
+
+		CD3DX12_TEXTURE_COPY_LOCATION src(rSrcResource.GetD3D12Resource(), region.SourceOffset.Subresource);
+		CD3DX12_TEXTURE_COPY_LOCATION dst(rDstResource.GetD3D12Resource(), region.DestinationOffset.Subresource);
+
+		GetDX12CommandList()->CopyTextureRegion(
+			&dst, region.DestinationOffset.Left, region.DestinationOffset.Top, region.DestinationOffset.Front,
+			&src, reinterpret_cast<const D3D12_BOX*>(&box));
+		GetDX12CommandList()->m_nCommands += CLCOUNT_COPY;
+
+		GetDX12CommandList()->SetResourceFenceValue(rDstResource, CMDTYPE_WRITE);
+		GetDX12CommandList()->SetResourceFenceValue(rSrcResource, CMDTYPE_READ);
+
+		rDstResource.TransitionBarrierStatic(GetDX12CommandList(), prevDstState, dstState);
+		rSrcResource.TransitionBarrierStatic(GetDX12CommandList(), prevSrcState, srcState);
+	}
+	else
+	{
+		rd->GetDeviceContext().CopySubresourcesRegion1(pDst->GetBaseTexture(), region.DestinationOffset.Subresource, region.DestinationOffset.Left, region.DestinationOffset.Top, region.DestinationOffset.Front, pSrc->GetBaseTexture(), region.SourceOffset.Subresource, &box, region.Flags, region.Extent.Subresources);
+	}
 }
 
 void CDeviceCopyCommandInterfaceImpl::CopyImpl(D3DTexture* pSrc, CDeviceTexture* pDst, const SResourceRegionMapping& region)

@@ -15,9 +15,11 @@
 #include <CryThreading/IJobManager.h>
 #include <CryThreading/IJobManager_JobDelegator.h>
 
+#define PREFETCH_STRIDE	512
+
 void DrawCompiledRenderItemsToCommandList(
   const SGraphicsPipelinePassContext* pInputPassContext,
-  CRenderView::RenderItems* renderItems,
+  const CRenderView::RenderItems* renderItems,
   CDeviceCommandList* commandList,
   int startRenderItem,
   int endRenderItem
@@ -29,12 +31,25 @@ void DrawCompiledRenderItemsToCommandList(
 	passContext.pCommandList = commandList;
 
 	bool bContextStart = passContext.renderItemGroup == 0 && startRenderItem == passContext.rendItems.start;
+
+	// Resolve pass
+	if (passContext.type == GraphicsPipelinePassType::resolve)
+	{
+		passContext.pSceneRenderPass->ResolvePass(*commandList, passContext.resolveScreenBounds, passContext.profilerSectionIndex, bContextStart);
+		return;
+	}
+
+	// Renderpass
+
 	passContext.pSceneRenderPass->BeginRenderPass(*commandList, passContext.renderNearest, passContext.profilerSectionIndex, bContextStart);
+
+	// Allow only compiled objects to actually draw
+	const uint32 alwaysRequiredFlags = FB_COMPILED_OBJECT;
+	const uint32 batchExcludeFilter  = passContext.batchExcludeFilter | alwaysRequiredFlags;
 
 	static const int cDynamicInstancingMaxCount = 128;
 	int dynamicInstancingCount = 0;
 	CryStackAllocWithSizeVector(CCompiledRenderObject::SPerInstanceShaderData, cDynamicInstancingMaxCount + 1, dynamicInstancingBuffer, CDeviceBufferManager::AlignBufferSizeForStreaming);
-	CCompiledRenderObject* pDynamicInstancedObject = nullptr;
 
 	const bool cvarInstancing = CRendererCVars::CV_r_geominstancing != 0;
 
@@ -46,65 +61,73 @@ void DrawCompiledRenderItemsToCommandList(
 	}
 
 	// NOTE: doesn't load-balance well when the conditions for the draw mask lots of draws
-	for (int32 i = startRenderItem; i < endRenderItem; ++i)
+	for (int32 i = startRenderItem, e = endRenderItem - 1; i <= e; ++i)
 	{
-		SRendItem& ri = (*renderItems)[i];
-		if (!(ri.nBatchFlags & passContext.batchFilter))
-			continue;
+		// Accessing content of further away rendItem for prefetching also precaches the rendItem itself
+		const SRendItem& rif = (*renderItems)[std::min<int32>(i + PREFETCH_STRIDE / sizeof(SRendItem), e)];
+		// Last cache-line is the tail of the PSO array
+		PrefetchLine(rif.pCompiledObject,   0);
+		PrefetchLine(rif.pCompiledObject,  64);
+		PrefetchLine(rif.pCompiledObject, 128);
 
-		if (ri.nBatchFlags & passContext.batchExcludeFilter)
-			continue;
-
-		if (!ri.pCompiledObject)
-			continue;
-
-		if (cvarInstancing && (i < endRenderItem - 1 && dynamicInstancingCount < cDynamicInstancingMaxCount))
+		const SRendItem& ri = (*renderItems)[i];
+		if ((ri.nBatchFlags & batchExcludeFilter) == alwaysRequiredFlags)
 		{
-			// Look ahead to see if we can instance multiple sequential draw calls that have same draw parameters, with only difference in per instance constant buffer
-			SRendItem& nextri = (*renderItems)[i + 1];
-			if ((nextri.nBatchFlags & passContext.batchFilter)
-			   && !(nextri.nBatchFlags & passContext.batchExcludeFilter)
-			   && nextri.pCompiledObject)
+			if (ri.nBatchFlags & passContext.batchFilter)
 			{
-				if (ri.pCompiledObject->CheckDynamicInstancing(passContext, nextri.pCompiledObject))
+				if (cvarInstancing && (i < e && dynamicInstancingCount < cDynamicInstancingMaxCount))
 				{
-					dynamicInstancingBuffer[dynamicInstancingCount] = ri.pCompiledObject->GetInstancingData();
-					dynamicInstancingCount++;
+					for (int32 j = i + 1; j <= e; ++j)
+					{
+						// Accessing content of further away rendItem for prefetching also precaches the rendItem itself
+						const SRendItem& nextrif = (*renderItems)[std::min<int32>(j + PREFETCH_STRIDE / sizeof(SRendItem), e)];
+						// Last cache-line is the tail of the PSO array
+						PrefetchLine(nextrif.pCompiledObject, 0);
+						PrefetchLine(nextrif.pCompiledObject, 64);
+						PrefetchLine(nextrif.pCompiledObject, 128);
 
-					if (!pDynamicInstancedObject)
-						pDynamicInstancedObject = ri.pCompiledObject;
+						// Look ahead to see if we can instance multiple sequential draw calls that have same draw parameters, with only difference in per instance constant buffer
+						const SRendItem& nextri = (*renderItems)[i];
+						if (nextri.nBatchFlags & (nextri.nBatchFlags & passContext.batchExcludeFilter ? 0 : passContext.batchFilter))
+						{
+							if (ri.pCompiledObject->CheckDynamicInstancing(passContext, nextri.pCompiledObject))
+							{
+								dynamicInstancingBuffer[dynamicInstancingCount] = nextri.pCompiledObject->GetInstancingData();
+								dynamicInstancingCount++;
 
-					ri.nBatchFlags |= FB_COMPILED_OBJECT;
-					continue;
-				}
-			}
-		}
+								continue;
+							}
+						}
+					}
 
-		if (dynamicInstancingCount == 0)
-		{
-			// Draw single instance
-			ri.pCompiledObject->DrawToCommandList(passContext);
-		}
-		else
-		{
-			// Add current object to the dynamic array.
-			dynamicInstancingBuffer[dynamicInstancingCount] = ri.pCompiledObject->GetInstancingData();
-			dynamicInstancingCount++;
+					if (dynamicInstancingCount > 0)
+					{
+						i += dynamicInstancingCount;
+
+						// Add current object to the dynamic array.
+						dynamicInstancingBuffer[dynamicInstancingCount] = ri.pCompiledObject->GetInstancingData();
+						dynamicInstancingCount++;
 
 #if defined(ENABLE_PROFILING_CODE)
-			CryInterlockedAdd(&SRenderStatistics::Write().m_nInsts, dynamicInstancingCount);
-			CryInterlockedIncrement(&SRenderStatistics::Write().m_nInstCalls);
+						CryInterlockedAdd(&SRenderStatistics::Write().m_nInsts, dynamicInstancingCount);
+						CryInterlockedIncrement(&SRenderStatistics::Write().m_nInstCalls);
 #endif //ENABLE_PROFILING_CODE
 
-			tempInstancingCB->UpdateBuffer(&dynamicInstancingBuffer[0], dynamicInstancingCount * sizeof(CCompiledRenderObject::SPerInstanceShaderData));
+						tempInstancingCB->UpdateBuffer(&dynamicInstancingBuffer[0], dynamicInstancingCount * sizeof(CCompiledRenderObject::SPerInstanceShaderData));
 
-			// Draw object with dynamic instancing
-			pDynamicInstancedObject->DrawToCommandList(passContext, tempInstancingCB.get(), dynamicInstancingCount);
-			pDynamicInstancedObject = nullptr;
-			dynamicInstancingCount = 0;
+						// Draw object with dynamic instancing
+						// TODO: remove this special case and fall through to below
+						ri.pCompiledObject->DrawToCommandList(passContext, tempInstancingCB.get(), dynamicInstancingCount);
+
+						dynamicInstancingCount = 0;
+						continue;
+					}
+				}
+
+				// Draw single instance
+				ri.pCompiledObject->DrawToCommandList(passContext);
+			}
 		}
-
-		ri.nBatchFlags |= FB_COMPILED_OBJECT;
 	}
 
 	bool bContextEnd = passContext.renderItemGroup == passContext.pSceneRenderPass->GetNumRenderItemGroups() - 1 && endRenderItem == passContext.rendItems.end;
@@ -159,7 +182,7 @@ DECLARE_JOB("ListDrawCommandRecorder", TListDrawCommandRecorder, ListDrawCommand
 
 void CRenderItemDrawer::DrawCompiledRenderItems(const SGraphicsPipelinePassContext& passContext) const
 {
-	if (passContext.rendItems.IsEmpty())
+	if (passContext.type == GraphicsPipelinePassType::renderPass && passContext.rendItems.IsEmpty())
 		return;
 	if (CRenderer::CV_r_NoDraw == 2) // Completely skip filling of the command list.
 		return;

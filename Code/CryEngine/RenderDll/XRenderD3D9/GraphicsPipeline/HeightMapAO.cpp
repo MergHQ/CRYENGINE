@@ -81,7 +81,7 @@ void CHeightMapAOStage::Execute()
 
 			CShader* pShader = CShaderMan::s_shDeferredShading;
 
-			if (m_passSampling.InputChanged(resolutionIndex))
+			if (m_passSampling.IsDirty(resolutionIndex))
 			{
 				static CCryNameTSCRC techSampling("HeightMapAOPass");
 				m_passSampling.SetPrimitiveFlags(CRenderPrimitive::eFlags_ReflectShaderConstants_PS);
@@ -137,7 +137,7 @@ void CHeightMapAOStage::Execute()
 			uint32 clipVolumeCount = RenderView()->GetClipVolumes().size();
 			CDeferredShading::Instance().GetClipVolumeParams(pClipVolumeParams);
 
-			if (m_passSmoothing.InputChanged(resolutionIndex, clipVolumeCount > 0 ? 1 : 0))
+			if (m_passSmoothing.IsDirty(resolutionIndex, clipVolumeCount > 0 ? 1 : 0))
 			{
 				uint64 rtMask = clipVolumeCount > 0 ? g_HWSR_MaskBit[HWSR_SAMPLE0] : 0;
 
@@ -158,9 +158,7 @@ void CHeightMapAOStage::Execute()
 			m_passSmoothing.BeginConstantUpdate();
 
 			m_passSmoothing.SetConstant(namePixelOffset, Vec4 (0, 0, (float)pDestRT->GetWidth(), (float)pDestRT->GetHeight()), eHWSC_Vertex);
-			m_passSmoothing.SetConstantArray(nameClipVolumeData, pClipVolumeParams, 
-				min(static_cast<uint32>(CClipVolumesStage::MaxDeferredClipVolumes), static_cast<uint32>(clipVolumeCount + CClipVolumesStage::VisAreasOutdoorStencilOffset)), eHWSC_Pixel);
-
+			m_passSmoothing.SetConstantArray(nameClipVolumeData, pClipVolumeParams, CClipVolumesStage::MaxDeferredClipVolumes);
 			m_passSmoothing.Execute();
 		}
 	}

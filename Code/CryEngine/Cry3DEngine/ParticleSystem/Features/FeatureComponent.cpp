@@ -1,12 +1,28 @@
-// Copyright 2001-2018 Crytek GmbH / Crytek Group. All rights reserved.
+// Copyright 2015-2018 Crytek GmbH / Crytek Group. All rights reserved.
 
 #include "StdAfx.h"
-#include "ParticleSystem/ParticleFeature.h"
-#include "ParticleSystem/ParticleEmitter.h"
-#include "ParticleSystem/ParticleComponentRuntime.h"
+#include "FeatureCommon.h"
 
 namespace pfx2
 {
+
+//////////////////////////////////////////////////////////////////////////
+class CFeatureComment : public CParticleFeature
+{
+public:
+	CRY_PFX2_DECLARE_FEATURE
+
+	virtual void Serialize(Serialization::IArchive& ar) override
+	{
+		CParticleFeature::Serialize(ar);
+		ar(m_text, "Text", "Text");
+	}
+
+private:
+	string m_text;
+};
+
+CRY_PFX2_IMPLEMENT_FEATURE(CParticleFeature, CFeatureComment, "General", "Comment", colorGeneral);
 
 //////////////////////////////////////////////////////////////////////////
 // CFeatureComponentEnableIf
@@ -54,11 +70,11 @@ public:
 		ar(m_attribute, "Attribute", "Attribute");
 	}
 
-	virtual void MainPreUpdate(CParticleComponentRuntime* pComponentRuntime) override
+	virtual void MainPreUpdate(CParticleComponentRuntime& runtime) override
 	{
 		CRY_PFX2_PROFILE_DETAIL;
-		if (!m_attribute.GetValueAs(pComponentRuntime->GetEmitter()->GetAttributeInstance(), true))
-			pComponentRuntime->RemoveAllSubInstances();
+		if (!m_attribute.GetValueAs(runtime.GetEmitter()->GetAttributeInstance(), true))
+			runtime.RemoveAllSubInstances();
 	}
 
 private:
@@ -91,11 +107,11 @@ public:
 			SERIALIZE_VAR(ar, m_selectionStart);
 	}
 
-	virtual void CullSubInstances(const SUpdateContext& context, TVarArray<SInstance>& instances) override
+	virtual void CullSubInstances(CParticleComponentRuntime& runtime, TVarArray<SInstance>& instances) override
 	{
 		if (m_probability == 1.0f)
 			return;
-		uint32 groupKey = context.m_runtime.GetEmitter()->GetCurrentSeed() ^ m_group;
+		uint32 groupKey = runtime.GetEmitter()->GetCurrentSeed() ^ m_group;
 		uint newCount = 0;
 		for (const auto& instance : instances)
 		{
@@ -110,7 +126,7 @@ public:
 			else
 			{
 				// New random number for each component and instance
-				if (context.m_spawnRng.RandUNorm() > m_probability)
+				if (runtime.Chaos().RandUNorm() > m_probability)
 					continue;
 			}
 			instances[newCount++] = instance;

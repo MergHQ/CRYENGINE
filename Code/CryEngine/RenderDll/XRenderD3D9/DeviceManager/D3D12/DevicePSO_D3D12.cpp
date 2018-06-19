@@ -4,6 +4,24 @@
 #include "DeviceResourceSet_D3D12.h"	
 #include "DevicePSO_D3D12.h"
 
+static struct
+{
+	ERenderPrimitiveType          primitiveType;
+	D3D12_PRIMITIVE_TOPOLOGY_TYPE primitiveTopology;
+}
+topologyTypes[] =
+{
+	{ eptUnknown,                D3D12_PRIMITIVE_TOPOLOGY_TYPE_UNDEFINED },
+	{ eptTriangleList,           D3D12_PRIMITIVE_TOPOLOGY_TYPE_TRIANGLE },
+	{ eptTriangleStrip,          D3D12_PRIMITIVE_TOPOLOGY_TYPE_TRIANGLE },
+	{ eptLineList,               D3D12_PRIMITIVE_TOPOLOGY_TYPE_LINE },
+	{ eptLineStrip,              D3D12_PRIMITIVE_TOPOLOGY_TYPE_LINE },
+	{ eptPointList,              D3D12_PRIMITIVE_TOPOLOGY_TYPE_POINT },
+	{ ept1ControlPointPatchList, D3D12_PRIMITIVE_TOPOLOGY_TYPE_PATCH },
+	{ ept2ControlPointPatchList, D3D12_PRIMITIVE_TOPOLOGY_TYPE_PATCH },
+	{ ept3ControlPointPatchList, D3D12_PRIMITIVE_TOPOLOGY_TYPE_PATCH },
+	{ ept4ControlPointPatchList, D3D12_PRIMITIVE_TOPOLOGY_TYPE_PATCH },
+};
 
 CDeviceGraphicsPSO::EInitResult CDeviceGraphicsPSO_DX12::Init(const CDeviceGraphicsPSODesc& psoDesc)
 {
@@ -25,7 +43,7 @@ CDeviceGraphicsPSO::EInitResult CDeviceGraphicsPSO_DX12::Init(const CDeviceGraph
 		return CDeviceGraphicsPSO::EInitResult::Failure;
 
 	// validate shaders first
-	for (EHWShaderClass shaderClass = eHWSC_Vertex; shaderClass < eHWSC_Num; shaderClass = EHWShaderClass(shaderClass + 1))
+	for (EHWShaderClass shaderClass = eHWSC_Vertex; shaderClass < eHWSC_NumGfx; shaderClass = EHWShaderClass(shaderClass + 1))
 	{
 		m_pHwShaderInstances[shaderClass] = hwShaders[shaderClass].pHwShaderInstance;
 	}
@@ -84,6 +102,7 @@ CDeviceGraphicsPSO::EInitResult CDeviceGraphicsPSO_DX12::Init(const CDeviceGraph
 	// depth stencil and rasterizer state
 	memcpy(&psoInitParams.m_Desc.DepthStencilState, &depthStencilDesc, sizeof(depthStencilDesc));
 	memcpy(&psoInitParams.m_Desc.RasterizerState, &rasterizerDesc, sizeof(rasterizerDesc));
+	psoInitParams.m_DepthBoundsTestEnable = psoDesc.m_bDepthBoundsTest;
 
 	auto extractShaderBytecode = [&](EHWShaderClass shaderClass)
 	{
@@ -100,10 +119,10 @@ CDeviceGraphicsPSO::EInitResult CDeviceGraphicsPSO_DX12::Init(const CDeviceGraph
 
 	psoInitParams.m_Desc.NodeMask = m_pDevice->GetNodeMask();
 	psoInitParams.m_Desc.VS = extractShaderBytecode(eHWSC_Vertex);
+	psoInitParams.m_Desc.PS = extractShaderBytecode(eHWSC_Pixel);
+	psoInitParams.m_Desc.GS = extractShaderBytecode(eHWSC_Geometry);
 	psoInitParams.m_Desc.DS = extractShaderBytecode(eHWSC_Domain);
 	psoInitParams.m_Desc.HS = extractShaderBytecode(eHWSC_Hull);
-	psoInitParams.m_Desc.GS = extractShaderBytecode(eHWSC_Geometry);
-	psoInitParams.m_Desc.PS = extractShaderBytecode(eHWSC_Pixel);
 
 	psoInitParams.m_Desc.SampleMask = UINT_MAX;
 	psoInitParams.m_Desc.SampleDesc.Count = 1;
@@ -113,25 +132,6 @@ CDeviceGraphicsPSO::EInitResult CDeviceGraphicsPSO_DX12::Init(const CDeviceGraph
 			return EInitResult::ErrorShadersAndTopologyCombination;
 
 		m_PrimitiveTopology = static_cast<D3DPrimitiveType>(psoDesc.m_PrimitiveType);
-
-		struct
-		{
-			ERenderPrimitiveType          primitiveType;
-			D3D12_PRIMITIVE_TOPOLOGY_TYPE primitiveTopology;
-		}
-		topologyTypes[] =
-		{
-			{ eptUnknown,                D3D12_PRIMITIVE_TOPOLOGY_TYPE_UNDEFINED },
-			{ eptTriangleList,           D3D12_PRIMITIVE_TOPOLOGY_TYPE_TRIANGLE },
-			{ eptTriangleStrip,          D3D12_PRIMITIVE_TOPOLOGY_TYPE_TRIANGLE },
-			{ eptLineList,               D3D12_PRIMITIVE_TOPOLOGY_TYPE_LINE },
-			{ eptLineStrip,              D3D12_PRIMITIVE_TOPOLOGY_TYPE_LINE },
-			{ eptPointList,              D3D12_PRIMITIVE_TOPOLOGY_TYPE_POINT },
-			{ ept1ControlPointPatchList, D3D12_PRIMITIVE_TOPOLOGY_TYPE_PATCH },
-			{ ept2ControlPointPatchList, D3D12_PRIMITIVE_TOPOLOGY_TYPE_PATCH },
-			{ ept3ControlPointPatchList, D3D12_PRIMITIVE_TOPOLOGY_TYPE_PATCH },
-			{ ept4ControlPointPatchList, D3D12_PRIMITIVE_TOPOLOGY_TYPE_PATCH },
-		};
 
 		psoInitParams.m_Desc.PrimitiveTopologyType = D3D12_PRIMITIVE_TOPOLOGY_TYPE_UNDEFINED;
 		for (int i = 0; i < CRY_ARRAY_COUNT(topologyTypes); ++i)

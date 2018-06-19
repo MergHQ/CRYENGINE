@@ -1764,13 +1764,11 @@ public:
 
 		ILINE virtual ~IFlashPlayerInstanceWrapper(){}
 
-		virtual void          Release() = 0;
-
 		virtual bool          CheckPtr() const = 0;
 		virtual bool          CanDeactivate() const = 0;
 
-		virtual IFlashPlayer* GetTempPtr() const = 0;
-		virtual IFlashPlayer* GetPermPtr(CFlashTextureSourceBase* pSrc) = 0;
+		virtual std::shared_ptr<IFlashPlayer> GetTempPtr() const = 0;
+		virtual std::shared_ptr<IFlashPlayer> GetPermPtr(CFlashTextureSourceBase* pSrc) = 0;
 
 		virtual void          Activate(bool activate, CFlashTextureSourceBase* pSrc) = 0;
 		virtual void          Clear(CFlashTextureSourceBase* pSrc) = 0;
@@ -1792,8 +1790,8 @@ public:
 		bool                                    CheckPtr() const                                       { return false; }
 		bool                                    CanDeactivate() const                                  { return true; }
 
-		IFlashPlayer*                           GetTempPtr() const                                     { return NULL; }
-		IFlashPlayer*                           GetPermPtr(CFlashTextureSourceBase* pSrc)              { return NULL; }
+		std::shared_ptr<IFlashPlayer>           GetTempPtr() const                                     { return nullptr; }
+		std::shared_ptr<IFlashPlayer>           GetPermPtr(CFlashTextureSourceBase* pSrc)              { return nullptr; }
 
 		void                                    Activate(bool activate, CFlashTextureSourceBase* pSrc) {}
 		void                                    Clear(CFlashTextureSourceBase* pSrc)                   {};
@@ -1832,13 +1830,11 @@ public:
 			return m_pBootStrapper;
 		}
 
-		void          Release()             { delete this; }
-
 		bool          CheckPtr() const      { return m_pPlayer != 0; }
 		bool          CanDeactivate() const { return m_canDeactivate; }
 
-		IFlashPlayer* GetTempPtr() const;
-		IFlashPlayer* GetPermPtr(CFlashTextureSourceBase* pSrc);
+		std::shared_ptr<IFlashPlayer> GetTempPtr() const;
+		std::shared_ptr<IFlashPlayer> GetPermPtr(CFlashTextureSourceBase* pSrc);
 
 		void          Activate(bool activate, CFlashTextureSourceBase* pSrc);
 		void          Clear(CFlashTextureSourceBase* pSrc) {};
@@ -1854,12 +1850,12 @@ public:
 		int           GetHeight() const { return m_height; }
 
 	private:
-		IFlashPlayerBootStrapper*  m_pBootStrapper;
-		IFlashPlayer*              m_pPlayer;
-		mutable CryCriticalSection m_lock;
-		bool                       m_canDeactivate;
-		int                        m_width;
-		int                        m_height;
+		IFlashPlayerBootStrapper*     m_pBootStrapper;
+		std::shared_ptr<IFlashPlayer> m_pPlayer;
+		mutable CryCriticalSection    m_lock;
+		bool                          m_canDeactivate;
+		int                           m_width;
+		int                           m_height;
 	};
 
 	class CFlashPlayerInstanceWrapperUIElement : public IFlashPlayerInstanceWrapper
@@ -1871,13 +1867,11 @@ public:
 		void          SetUIElement(IUIElement* p);
 		IUIElement*   GetUIElement() const  { return m_pUIElement; }
 
-		void          Release()             { delete this; }
-
 		bool          CheckPtr() const      { return m_pPlayer != 0; }
 		bool          CanDeactivate() const { return m_canDeactivate; }
 
-		IFlashPlayer* GetTempPtr() const;
-		IFlashPlayer* GetPermPtr(CFlashTextureSourceBase* pSrc);
+		std::shared_ptr<IFlashPlayer> GetTempPtr() const;
+		std::shared_ptr<IFlashPlayer> GetPermPtr(CFlashTextureSourceBase* pSrc);
 
 		void          Activate(bool activate, CFlashTextureSourceBase* pSrc);
 		void          Clear(CFlashTextureSourceBase* pSrc);
@@ -1894,13 +1888,13 @@ public:
 		void UpdateUIElementPlayer(CFlashTextureSourceBase* pSrc);
 
 	private:
-		IUIElement*                m_pUIElement;
-		IFlashPlayer*              m_pPlayer;
-		mutable CryCriticalSection m_lock;
-		bool                       m_canDeactivate;
-		bool                       m_activated;
-		int                        m_width;
-		int                        m_height;
+		IUIElement*                   m_pUIElement;
+		std::shared_ptr<IFlashPlayer> m_pPlayer;
+		mutable CryCriticalSection    m_lock;
+		bool                          m_canDeactivate;
+		bool                          m_activated;
+		int                           m_width;
+		int                           m_height;
 	};
 
 	class CFlashPlayerInstanceWrapperLayoutElement : public IFlashPlayerInstanceWrapper
@@ -1914,8 +1908,8 @@ public:
 		bool          CheckPtr() const      { return m_pPlayer != 0; }
 		bool          CanDeactivate() const { return m_canDeactivate; }
 
-		IFlashPlayer* GetTempPtr() const;
-		IFlashPlayer* GetPermPtr(CFlashTextureSourceBase* pSrc);
+		std::shared_ptr<IFlashPlayer> GetTempPtr() const;
+		std::shared_ptr<IFlashPlayer> GetPermPtr(CFlashTextureSourceBase* pSrc);
 
 		void          Activate(bool activate, CFlashTextureSourceBase* pSrc);
 		void          Clear(CFlashTextureSourceBase* pSrc) {};
@@ -1933,8 +1927,8 @@ public:
 	private:
 		string                     m_layoutName;
 
-		IUILayoutBase*             m_pUILayout;
-		IFlashPlayer*              m_pPlayer;
+		IUILayoutBase*                m_pUILayout;
+		std::shared_ptr<IFlashPlayer> m_pPlayer;
 
 		mutable CryCriticalSection m_lock;
 
@@ -1944,46 +1938,6 @@ public:
 		bool                       m_canDeactivate;
 
 	};
-
-	template<typename T>
-	class AutoReleasedPlayerPtr
-	{
-	public:
-		AutoReleasedPlayerPtr(T* p) : m_pPlayer(p) {}
-		~AutoReleasedPlayerPtr()
-		{
-			if (m_pPlayer)
-			{
-				m_pPlayer->Release();
-				m_pPlayer = 0;
-			}
-		}
-		IFlashPlayer* operator*()
-		{
-			return m_pPlayer;
-		}
-		IFlashPlayer* operator->()
-		{
-			return m_pPlayer;
-		}
-		const IFlashPlayer* operator->() const
-		{
-			return m_pPlayer;
-		}
-		operator bool() const
-		{
-			return m_pPlayer != 0;
-		}
-
-	private:
-		AutoReleasedPlayerPtr(const AutoReleasedPlayerPtr&);
-		AutoReleasedPlayerPtr& operator=(const AutoReleasedPlayerPtr&);
-
-	private:
-		T* m_pPlayer;
-	};
-
-	typedef AutoReleasedPlayerPtr<IFlashPlayer> AutoReleasedFlashPlayerPtr;
 
 protected:
 	virtual ~CFlashTextureSourceBase();

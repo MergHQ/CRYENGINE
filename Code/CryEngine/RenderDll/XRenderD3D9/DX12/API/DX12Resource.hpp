@@ -224,6 +224,7 @@ public:
 	bool                  NeedsTransitionBarrier(CCommandList* pCmdList, const CView& view, D3D12_RESOURCE_STATES desiredState, bool bPrepare = false) const;
 	D3D12_RESOURCE_STATES DecayTransitionBarrier(CCommandList* pCmdList, D3D12_RESOURCE_STATES desiredState);
 	D3D12_RESOURCE_STATES TransitionBarrier(CCommandList* pCmdList, D3D12_RESOURCE_STATES desiredState);
+	D3D12_RESOURCE_STATES TransitionBarrierStatic(CCommandList* pCmdList, D3D12_RESOURCE_STATES desiredState, D3D12_RESOURCE_STATES& eCurrentState) const;
 	D3D12_RESOURCE_STATES TransitionBarrier(CCommandList* pCmdList, const CView& view, D3D12_RESOURCE_STATES desiredState);
 	D3D12_RESOURCE_STATES BeginTransitionBarrier(CCommandList* pCmdList, D3D12_RESOURCE_STATES desiredState);
 	D3D12_RESOURCE_STATES BeginTransitionBarrier(CCommandList* pCmdList, const CView& view, D3D12_RESOURCE_STATES desiredState);

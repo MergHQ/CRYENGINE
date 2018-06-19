@@ -46,8 +46,6 @@ enum
 	TO_RT_CM,
 	TO_CLOUDS_LM,
 	TO_BACKBUFFERMAP,
-	TO_PREVBACKBUFFERMAP0,
-	TO_PREVBACKBUFFERMAP1,
 	TO_MIPCOLORS_DIFFUSE,
 	TO_MIPCOLORS_BUMP,
 
@@ -108,25 +106,14 @@ public:
 public:
 	static tempTexturePool_t m_TempDepths;
 	static std::vector<CTexture*> m_RTargets;
+	static size_t m_RTallocs;
 
-	static CTempTexture   GetTempDepthSurface(int currentFrameID, int nWidth, int nHeight, bool bExactMatch = true);
-	static size_t         SizeofTempDepthSurfaces();
-	static void           ReleaseTempDepthSurfaces();
+	static CTempTexture  GetTempDepthSurface(int currentFrameID, int nWidth, int nHeight, bool bExactMatch = true);
+	static size_t        SizeofTempDepthSurfaces();
+	static void          ReleaseTempDepthSurfaces();
 
 	// Erases temporaries that have been unused for a specified frames count
-	static void TrimTempDepthSurfaces(int currentFrameID, int delayFrames)
-	{
-		for (auto it = m_TempDepths.begin(); it != m_TempDepths.end();)
-		{
-			const auto &tex = *it;
-
-			const auto unused = tex->UseCount() == 1 && !tex->texture.IsLocked();
-			const auto shouldDelete = unused && currentFrameID - tex->lastAccessFrameID >= delayFrames;
-			it = shouldDelete ?
-				m_TempDepths.erase(it) :
-				std::next(it);
-		}
-	}
+	static void          TrimTempDepthSurfaces(int currentFrameID, int delayFrames);
 
 	static SDepthTexture CreateDepthSurface(int nWidth, int nHeight, bool bAA);
 	static int           CreateRenderTarget(int nWidth, int nHeight, const ColorF& cClear, ETEX_Format eTF);
@@ -307,7 +294,6 @@ public:
 	static CTexture* s_ptexBackBuffer;                                           // back buffer copy
 	static CTexture* s_ptexBackBufferScaled[3];                                  // backbuffer low-resolution/blurred version. 2x/4x/8x/16x smaller than screen
 	static CTexture* s_ptexBackBufferScaledTemp[2];                              // backbuffer low-resolution/blurred version. 2x/4x/8x/16x smaller than screen, temp textures (used for blurring/ping-pong)
-	static CTexture* s_ptexPrevBackBuffer[2][2];                                 // previous frame back buffer copies (for left and right eye)
 
 	static CTexture* s_ptexAOColorBleed;                                         // CScreenSpaceObscuranceStage, CTiledShadingStage
 	static CTexture* s_ptexShadowMask;                                           // CShadowMapStage

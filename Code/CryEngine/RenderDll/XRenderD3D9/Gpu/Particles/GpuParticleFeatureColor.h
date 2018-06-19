@@ -25,7 +25,7 @@ struct CFeatureColor : public CFeature
 	virtual void Update(const gpu_pfx2::SUpdateContext& context, CDeviceCommandListRef RESTRICT_REFERENCE commandList) override;
 	virtual void InternalSetParameters(const EParameterType type, const SFeatureParametersBase& p) override;
 private:
-	gpu::CTypedResource<Vec3, gpu::BufferFlagsDynamic> m_colorTable;
+	gpu::CStructuredResource<Vec3, gpu::BufferFlagsDynamic> m_colorTable;
 };
 
 }

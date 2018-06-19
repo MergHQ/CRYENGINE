@@ -745,7 +745,7 @@ bool CShadowMapStage::CShadowMapPass::PrepareResources(const CRenderView* pMainV
 
 	// per pass CB
 	{
-		CTypedConstantBuffer<HLSL_PerPassConstantBuffer_ShadowGen> cb(m_pPerPassConstantBuffer);
+		CTypedConstantBuffer<HLSL_PerPassConstantBuffer_ShadowGen, 256> cb(m_pPerPassConstantBuffer);
 
 		cb->CP_ShadowGen_LightPos = Vec4(frustum.vLightSrcRelPos + frustum.vProjTranslation, 0);
 		cb->CP_ShadowGen_ViewPos = Vec4(pMainView->GetCamera(CCamera::eEye_Left).GetPosition(), 0);

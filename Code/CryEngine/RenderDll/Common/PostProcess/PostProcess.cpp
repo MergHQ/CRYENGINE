@@ -455,12 +455,15 @@ int CPostEffectsMgr::Init()
 	static float r_3MonHackHUDFOVY;
 	static float r_3MonHackLeftCGFOffsetX;
 	static float r_3MonHackRightCGFOffsetX;
-	REGISTER_CVAR(r_3MonHack, 0, VF_CHEAT | VF_CHEAT_NOCHECK, "Enables 3 monitor hack hud in center");
-	REGISTER_CVAR(r_3MonHackHUDFOVX, 28, VF_CHEAT | VF_CHEAT_NOCHECK, "3 monitor hack hud in center - X FOV");
-	REGISTER_CVAR(r_3MonHackHUDFOVY, 60, VF_CHEAT | VF_CHEAT_NOCHECK, "3 monitor hack hud in center - Y FOV");
-	REGISTER_CVAR(r_3MonHackLeftCGFOffsetX, 0.93f, VF_CHEAT | VF_CHEAT_NOCHECK, "3 monitor hack hud in center - Adds position offset in X direction to all left CGF planes");
-	REGISTER_CVAR(r_3MonHackRightCGFOffsetX, -0.93f, VF_CHEAT | VF_CHEAT_NOCHECK, "3 monitor hack hud in center - Adds position offset in X direction to all right CGF planes");
 
+	if (!gEnv->pConsole->GetCVar("r_3MonHack"))
+	{
+		REGISTER_CVAR(r_3MonHack, 0, VF_CHEAT | VF_CHEAT_NOCHECK, "Enables 3 monitor hack hud in center");
+		REGISTER_CVAR(r_3MonHackHUDFOVX, 28, VF_CHEAT | VF_CHEAT_NOCHECK, "3 monitor hack hud in center - X FOV");
+		REGISTER_CVAR(r_3MonHackHUDFOVY, 60, VF_CHEAT | VF_CHEAT_NOCHECK, "3 monitor hack hud in center - Y FOV");
+		REGISTER_CVAR(r_3MonHackLeftCGFOffsetX, 0.93f, VF_CHEAT | VF_CHEAT_NOCHECK, "3 monitor hack hud in center - Adds position offset in X direction to all left CGF planes");
+		REGISTER_CVAR(r_3MonHackRightCGFOffsetX, -0.93f, VF_CHEAT | VF_CHEAT_NOCHECK, "3 monitor hack hud in center - Adds position offset in X direction to all right CGF planes");
+	}
 	return 1;
 }
 

@@ -287,9 +287,9 @@ public:
 
 	//===============================================================================
 
-	virtual void RT_FlashRenderInternal(IFlashPlayer* pPlayer) override;
-	virtual void RT_FlashRenderInternal(IFlashPlayer_RenderProxy* pPlayer, bool bDoRealRender) override;
-	virtual void RT_FlashRenderPlaybackLocklessInternal(IFlashPlayer_RenderProxy* pPlayer, int cbIdx, bool bFinalPlayback, bool bDoRealRender) override;
+	virtual void RT_FlashRenderInternal(std::shared_ptr<IFlashPlayer> &&pPlayer) override;
+	virtual void RT_FlashRenderInternal(std::shared_ptr<IFlashPlayer_RenderProxy> &&pPlayer, bool bDoRealRender) override;
+	virtual void RT_FlashRenderPlaybackLocklessInternal(std::shared_ptr<IFlashPlayer_RenderProxy> &&pPlayer, int cbIdx, bool bFinalPlayback, bool bDoRealRender) override;
 
 	//===============================================================================
 
@@ -681,8 +681,9 @@ public:
 	CD3DStereoRenderer&            GetS3DRend() const    { return *m_pStereoRenderer; }
 	virtual bool                   IsStereoEnabled() const override;
 
-	virtual const RPProfilerStats* GetRPPStats(ERenderPipelineProfilerStats eStat, bool bCalledFromMainThread = true) override;
-	virtual const RPProfilerStats* GetRPPStatsArray(bool bCalledFromMainThread = true) override;
+	virtual const RPProfilerStats*                   GetRPPStats(ERenderPipelineProfilerStats eStat, bool bCalledFromMainThread = true) override;
+	virtual const RPProfilerStats*                   GetRPPStatsArray(bool bCalledFromMainThread = true) override;
+	virtual const DynArray<RPProfilerDetailedStats>* GetRPPDetailedStatsArray(bool bCalledFromMainThread = true) override;
 
 	virtual int                    GetPolygonCountByType(uint32 EFSList, EVertexCostTypes vct, uint32 z, bool bCalledFromMainThread = true) override;
 
@@ -942,6 +943,7 @@ inline DWORD CD3D9Renderer::GetBoundThreadID() const
 ///////////////////////////////////////////////////////////////////////////////
 inline void CD3D9Renderer::WaitForAsynchronousDevice() const
 {
+#if DURANGO_ENABLE_ASYNC_DIPS
 	if (m_nAsyncDeviceState)
 	{
 		CRY_PROFILE_REGION_WAITING(PROFILE_RENDERER, "Sync Async DIPS");
@@ -956,6 +958,7 @@ inline void CD3D9Renderer::WaitForAsynchronousDevice() const
 #endif
 		}
 	}
+#endif
 }
 
 ///////////////////////////////////////////////////////////////////////////////

@@ -90,6 +90,5 @@ private:
 
 }
 
-#include "ParticleUpdate.h"
 #include "ParticleContainerImpl.h"
 

@@ -62,14 +62,16 @@ inline void d2f(float* dst, double* src)
 //////////////////////////////////////////////////////////////////////
 // Resource conventions
 
-enum EHWShaderClass
+enum EHWShaderClass : uint8
 {
 	eHWSC_Vertex   = 0,
 	eHWSC_Pixel    = 1,
 	eHWSC_Geometry = 2,
-	eHWSC_Compute  = 3,
-	eHWSC_Domain   = 4,
-	eHWSC_Hull     = 5,
+	eHWSC_Domain   = 3,
+	eHWSC_Hull     = 4,
+	eHWSC_NumGfx   = 5,
+
+	eHWSC_Compute  = 5,
 	eHWSC_Num      = 6
 };
 
@@ -78,9 +80,9 @@ enum EShaderStage : uint8
 	EShaderStage_Vertex            = BIT(eHWSC_Vertex),
 	EShaderStage_Pixel             = BIT(eHWSC_Pixel),
 	EShaderStage_Geometry          = BIT(eHWSC_Geometry),
-	EShaderStage_Compute           = BIT(eHWSC_Compute),
 	EShaderStage_Domain            = BIT(eHWSC_Domain),
 	EShaderStage_Hull              = BIT(eHWSC_Hull),
+	EShaderStage_Compute           = BIT(eHWSC_Compute),
 
 	EShaderStage_Count             = eHWSC_Num,
 	EShaderStage_None              = 0,
@@ -89,6 +91,7 @@ enum EShaderStage : uint8
 };
 DEFINE_ENUM_FLAG_OPERATORS(EShaderStage)
 #define SHADERSTAGE_FROM_SHADERCLASS(SHADERCLASS) ::EShaderStage(BIT(SHADERCLASS))
+#define SHADERSTAGE_FROM_SHADERCLASS_CONDITIONAL(SHADERCLASS, SET) ::EShaderStage((SET) << (SHADERCLASS))
 
 enum EConstantBufferShaderSlot
 {

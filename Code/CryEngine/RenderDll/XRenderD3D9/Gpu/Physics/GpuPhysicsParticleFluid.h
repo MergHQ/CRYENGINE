@@ -39,12 +39,12 @@ struct SSimulationData
 		adjacencyList.CreateDeviceBuffer();
 	};
 
-	gpu::CTypedResource<SFluidBody, gpu::BufferFlagsReadWriteAppend>   bodies;
-	gpu::CTypedResource<SFluidBody, gpu::BufferFlagsReadWriteReadback> bodiesTemp;
-	gpu::CTypedResource<uint, gpu::BufferFlagsReadWrite>               bodiesOffsets;
-	gpu::CTypedResource<SGridCell, gpu::BufferFlagsReadWrite>          grid;
-	gpu::CTypedResource<SFluidBody, gpu::BufferFlagsDynamic>           bodiesInject;
-	gpu::CTypedResource<int, gpu::BufferFlagsDynamic>                  adjacencyList;
+	gpu::CStructuredResource<SFluidBody, gpu::BufferFlagsReadWriteAppend>   bodies;
+	gpu::CStructuredResource<SFluidBody, gpu::BufferFlagsReadWriteReadback> bodiesTemp;
+	gpu::CStructuredResource<uint, gpu::BufferFlagsReadWrite>               bodiesOffsets;
+	gpu::CStructuredResource<SGridCell, gpu::BufferFlagsReadWrite>          grid;
+	gpu::CStructuredResource<SFluidBody, gpu::BufferFlagsDynamic>           bodiesInject;
+	gpu::CStructuredResource<int, gpu::BufferFlagsDynamic>                  adjacencyList;
 };
 
 // fwd

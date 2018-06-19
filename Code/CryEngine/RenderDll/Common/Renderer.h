@@ -731,16 +731,16 @@ public:
 	virtual void RT_PrecacheDefaultShaders() = 0;
 	virtual bool RT_ReadTexture(void* pDst, int destinationWidth, int destinationHeight, EReadTextureFormat dstFormat, CTexture* pSrc) = 0;
 	virtual bool RT_StoreTextureToFile(const char* szFilePath, CTexture* pSrc) = 0;
-	virtual void FlashRender(IFlashPlayer_RenderProxy* pPlayer) override;
-	virtual void FlashRenderPlayer(IFlashPlayer* pPlayer) override;
-	virtual void FlashRenderPlaybackLockless(IFlashPlayer_RenderProxy* pPlayer, int cbIdx, bool finalPlayback) override;
+	virtual void FlashRenderPlayer(std::shared_ptr<IFlashPlayer> &&pPlayer) override;
+	virtual void FlashRender(std::shared_ptr<IFlashPlayer_RenderProxy> &&pPlayer) override;
+	virtual void FlashRenderPlaybackLockless(std::shared_ptr<IFlashPlayer_RenderProxy> &&pPlayer, int cbIdx, bool finalPlayback) override;
 	virtual void FlashRemoveTexture(ITexture* pTexture) override;
 
 	virtual void RT_RenderDebug(bool bRenderStats = true) = 0;
 
-	virtual void RT_FlashRenderInternal(IFlashPlayer* pPlayer) = 0;
-	virtual void RT_FlashRenderInternal(IFlashPlayer_RenderProxy* pPlayer, bool doRealRender) = 0;
-	virtual void RT_FlashRenderPlaybackLocklessInternal(IFlashPlayer_RenderProxy* pPlayer, int cbIdx, bool finalPlayback, bool doRealRender) = 0;
+	virtual void RT_FlashRenderInternal(std::shared_ptr<IFlashPlayer> &&pPlayer) = 0;
+	virtual void RT_FlashRenderInternal(std::shared_ptr<IFlashPlayer_RenderProxy> &&pPlayer, bool doRealRender) = 0;
+	virtual void RT_FlashRenderPlaybackLocklessInternal(std::shared_ptr<IFlashPlayer_RenderProxy> &&pPlayer, int cbIdx, bool finalPlayback, bool doRealRender) = 0;
 	virtual bool FlushRTCommands(bool bWait, bool bImmediatelly, bool bForce) override;
 	virtual bool ForceFlushRTCommands();
 	virtual void WaitForParticleBuffer() = 0;
@@ -1247,8 +1247,9 @@ public:
 
 	virtual void                   SetTexturePrecaching(bool stat) override;
 
-	virtual const RPProfilerStats* GetRPPStats(ERenderPipelineProfilerStats eStat, bool bCalledFromMainThread = true) override                       { return NULL; }
-	virtual const RPProfilerStats* GetRPPStatsArray(bool bCalledFromMainThread = true) override                                                      { return NULL; }
+	virtual const RPProfilerStats*                   GetRPPStats(ERenderPipelineProfilerStats eStat, bool bCalledFromMainThread = true) override  { return nullptr; }
+	virtual const RPProfilerStats*                   GetRPPStatsArray(bool bCalledFromMainThread = true) override                                 { return nullptr; }
+	virtual const DynArray<RPProfilerDetailedStats>* GetRPPDetailedStatsArray(bool bCalledFromMainThread = true ) override                        { return nullptr; }
 
 	virtual int                    GetPolygonCountByType(uint32 EFSList, EVertexCostTypes vct, uint32 z, bool bCalledFromMainThread = true) override { return 0; }
 
@@ -1377,6 +1378,7 @@ public:
 
 	byte      m_bDeviceSupportsInstancing;
 
+	uint32    m_bDeviceSupports_AMDExt;
 	uint32    m_bDeviceSupports_NVDBT          : 1;
 	uint32    m_bDeviceSupportsTessellation    : 1;
 	uint32    m_bDeviceSupportsGeometryShaders : 1;

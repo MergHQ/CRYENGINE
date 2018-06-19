@@ -38,7 +38,7 @@ void CScreenSpaceReflectionsStage::Execute()
 
 		CTexture* destRT = CRenderer::CV_r_SSReflHalfRes ? CRendererResources::s_ptexHDRTargetScaled[0] : CRendererResources::s_ptexHDRTarget;
 
-		if (m_passRaytracing.InputChanged(CRenderer::CV_r_SSReflHalfRes, rd->RT_GetCurrGpuID()))
+		if (m_passRaytracing.IsDirty(CRenderer::CV_r_SSReflHalfRes, rd->RT_GetCurrGpuID()))
 		{
 			static CCryNameTSCRC techRaytrace("SSR_Raytrace");
 			m_passRaytracing.SetTechnique(pShader, techRaytrace, 0);
@@ -62,7 +62,11 @@ void CScreenSpaceReflectionsStage::Execute()
 
 		static CCryNameR viewProjprevName("g_mViewProjPrev");
 		static CCryNameR ssrParamsName("g_mSSRParams"); // we need to tell the shader to read from a depth buffer with twice the size of the output in halfres mode
-		Vec4 ssrParams(CRenderer::CV_r_SSReflHalfRes ? 2.0f : 1.0f, CRenderer::CV_r_SSReflHalfRes ? 2.0f : 1.0f, 0.f, 0.f);
+		Vec4 ssrParams(
+			CRenderer::CV_r_SSReflHalfRes ? 2.0f : 1.0f,
+			CRenderer::CV_r_SSReflHalfRes ? 2.0f : 1.0f,
+			CRenderer::CV_r_SSReflDistance,
+			CRenderer::CV_r_SSReflSamples * 1.0f);
 
 		m_passRaytracing.BeginConstantUpdate();
 		m_passRaytracing.SetConstantArray(viewProjprevName, (Vec4*)mViewProjPrev.GetData(), 4, eHWSC_Pixel);
@@ -90,7 +94,7 @@ void CScreenSpaceReflectionsStage::Execute()
 
 		CTexture* destTex = CRendererResources::s_ptexHDRTargetScaledTmp[0];
 
-		if (m_passComposition.InputChanged())
+		if (m_passComposition.IsDirty())
 		{
 			static CCryNameTSCRC techComposition("SSReflection_Comp");
 			m_passComposition.SetPrimitiveFlags(CRenderPrimitive::eFlags_ReflectShaderConstants_VS);

@@ -199,7 +199,7 @@ void CRainStage::ExecuteDeferredRainGBuffer()
 
 	auto& pass = m_passDeferredRainGBuffer;
 
-	if (pass.InputChanged(rtMask, pDepthStencilTex->GetID(), pOcclusionTex->GetID()))
+	if (pass.IsDirty(rtMask, pDepthStencilTex->GetID(), pOcclusionTex->GetID()))
 	{
 		static CCryNameTSCRC techName("DeferredRainGBuffer");
 		pass.SetPrimitiveFlags(CRenderPrimitive::eFlags_ReflectShaderConstants_PS);
@@ -348,7 +348,7 @@ void CRainStage::Execute()
 
 			CTexture* pOcclusionTex = CRendererResources::s_ptexRainOcclusion;
 
-			if (pass.InputChanged(pOcclusionTex->GetID()))
+			if (pass.IsDirty())
 			{
 				static CCryNameTSCRC pSceneRainOccAccTechName("SceneRainOccAccumulate");
 				pass.SetPrimitiveFlags(CRenderPrimitive::eFlags_ReflectShaderConstants_VS);

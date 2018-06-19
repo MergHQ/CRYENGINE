@@ -59,7 +59,7 @@ private:
 	_smart_ptr<CTexture>          m_pTexWaterRipplesDDN; // xy: wave propagation normals, z: frame t-2, w: frame t-1
 	_smart_ptr<CTexture>          m_pTempTexture;
 
-	CTypedConstantBuffer<SWaterRippleConstants> m_constants;
+	CTypedConstantBuffer<SWaterRippleConstants, 256> m_constants;
 
 	CFullscreenPass               m_passSnapToCenter;
 	CStretchRectPass              m_passCopy;

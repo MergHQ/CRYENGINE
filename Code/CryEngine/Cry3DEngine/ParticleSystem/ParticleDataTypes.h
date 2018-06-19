@@ -72,10 +72,18 @@ typedef SChaosKey SChaosKeyV;
 // Implement EParticleDataTypes (size, position, etc) with DynamicEnum.
 // Data type entries can be declared in multiple source files, with info about the data type (float, Vec3, etc)
 
-enum EDataFlags
+enum EDataDomain
 {
-	BHasInit    = 1, // indicates data type has an extra init field
-	BNeedsClear = 2  // indicates data type requires clearing after editing
+	EDD_None           = 0,
+
+	EDD_PerParticle    = 1, // Data is per particle
+	EDD_PerInstance    = 2, // Data is per sub-emitter
+
+	EDD_HasUpdate      = 4, // Data is updated per-frame, has additional init-value element
+	EDD_NeedsClear     = 8, // Data requires clearing after editing
+
+	EDD_ParticleUpdate = EDD_PerParticle | EDD_HasUpdate,
+	EDD_InstanceUpdate = EDD_PerInstance | EDD_HasUpdate
 };
 
 // Traits for extracting element-type info from scalar and vector types
@@ -111,19 +119,18 @@ struct SDataInfo
 {
 	typedef yasli::TypeID TypeID;
 
-	TypeID     type;
-	size_t     typeSize   = 0;
-	uint       dimension  = 0;
-	bool       hasInit    = false;
-	bool       needsClear = false;
+	TypeID      type;
+	size_t      typeSize   = 0;
+	uint        dimension  = 0;
+	EDataDomain domain     = EDD_None;
 
 	SDataInfo() {}
 
 	template<typename T>
-	SDataInfo(T*, EDataFlags flags = EDataFlags(0))
+	SDataInfo(T*, EDataDomain domain)
 		: type(TypeID::get<typename TDimInfo<T>::TElem>())
 		, typeSize(sizeof(typename TDimInfo<T>::TElem)), dimension(TDimInfo<T>::Dim)
-		, hasInit(!!(flags & BHasInit)), needsClear(!!(flags & BNeedsClear))
+		, domain(domain)
 	{}
 
 	template<typename T>
@@ -132,7 +139,7 @@ struct SDataInfo
 	template<typename T>
 	bool isType(uint dim) const { return type == TypeID::get<T>() && dimension == dim; }
 
-	uint step() const           { return dimension * (1 + hasInit); }
+	uint step() const           { return dimension * (domain & EDD_HasUpdate ? 2 : 1); }
 };
 
 //! EParticleDataType implemented as a DynamicEnum, with SDataInfo
@@ -145,7 +152,7 @@ ILINE EParticleDataType InitType(EParticleDataType type)
 }
 
 //! DataType implemented as a DynamicEnum, with SDataInfo
-template<typename T>
+template<typename T, EDataDomain Domain = EDD_PerParticle>
 struct TDataType: EParticleDataType
 {
 	using EParticleDataType::EParticleDataType;
@@ -160,10 +167,10 @@ struct TDataType: EParticleDataType
 		return TDataType<TElem>(this->value() + e);
 	}
 
-	// Get following type used for initialisation
+	// Get following type used for initialization
 	TDataType InitType() const
 	{
-		CRY_ASSERT(this->info().hasInit);
+		CRY_ASSERT(this->info().domain & EDD_HasUpdate);
 		return TDataType(this->value() + Dim);
 	}
 };
@@ -173,7 +180,7 @@ struct TDataType: EParticleDataType
 //  MakeDataType(EPDT_SpawnID, TParticleID)
 //  MakeDataType(EPVF_Velocity, Vec3)
 
-inline EDataFlags PDT_FLAGS(EDataFlags flags = EDataFlags(0)) { return flags; } // Helper function for variadic macro
+inline EDataDomain PDT_FLAGS(EDataDomain domain = EDD_PerParticle) { return domain; } // Helper function for variadic macro
 
 #define MakeDataType(Name, T, ...) \
   TDataType<T> Name(SkipPrefix(#Name), nullptr, SDataInfo((T*)0, PDT_FLAGS(__VA_ARGS__)))

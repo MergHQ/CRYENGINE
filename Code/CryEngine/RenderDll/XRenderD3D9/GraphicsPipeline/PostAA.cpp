@@ -194,9 +194,7 @@ void CPostAAStage::ApplySMAA(CTexture*& pCurrRT)
 
 		if (gcpRendD3D->m_nStencilMaskRef > STENC_MAX_REF)
 		{
-			// Stencil initialized to 1 - 0 is reserved for MSAAed samples
-			CClearSurfacePass::Execute(pZTexture, CLEAR_STENCIL, 0.0f, 1);
-
+			CClearSurfacePass::Execute(pZTexture, CLEAR_STENCIL, 0.0f, 0);
 			gcpRendD3D->m_nStencilMaskRef = 1;
 		}
 
@@ -208,7 +206,7 @@ void CPostAAStage::ApplySMAA(CTexture*& pCurrRT)
 
 	// Pass 1: Edge Detection
 	{
-		if (m_passSMAAEdgeDetection.InputChanged(pCurrRT->GetTextureID(), pZTexture->GetTextureID(), CRenderer::CV_r_AntialiasingModeSCull))
+		if (m_passSMAAEdgeDetection.IsDirty(pCurrRT->GetTextureID(), pZTexture->GetTextureID(), CRenderer::CV_r_AntialiasingModeSCull))
 		{
 			static CCryNameTSCRC techEdgeDetection("LumaEdgeDetectionSMAA");
 			m_passSMAAEdgeDetection.SetPrimitiveFlags(CRenderPrimitive::eFlags_ReflectShaderConstants_PS);
@@ -237,7 +235,7 @@ void CPostAAStage::ApplySMAA(CTexture*& pCurrRT)
 
 	// Pass 2: Generate blend weight map
 	{
-		if (m_passSMAABlendWeights.InputChanged(pZTexture->GetTextureID(), CRenderer::CV_r_AntialiasingModeSCull))
+		if (m_passSMAABlendWeights.IsDirty(pZTexture->GetTextureID(), CRenderer::CV_r_AntialiasingModeSCull))
 		{
 			static CCryNameTSCRC techBlendWeights("BlendWeightSMAA");
 			m_passSMAABlendWeights.SetPrimitiveFlags(CRenderPrimitive::eFlags_ReflectShaderConstants_PS);
@@ -269,7 +267,7 @@ void CPostAAStage::ApplySMAA(CTexture*& pCurrRT)
 
 	// Final Pass: Blend neighborhood pixels
 	{
-		if (m_passSMAANeighborhoodBlending.InputChanged(pCurrRT->GetTextureID()))
+		if (m_passSMAANeighborhoodBlending.IsDirty(pCurrRT->GetTextureID()))
 		{
 			static CCryNameTSCRC techNeighborhoodBlending("NeighborhoodBlendingSMAA");
 			m_passSMAANeighborhoodBlending.SetPrimitiveFlags(CRenderPrimitive::eFlags_ReflectShaderConstants_PS);
@@ -294,10 +292,13 @@ void CPostAAStage::ApplyTemporalAA(CTexture*& pCurrRT, CTexture*& pMgpuRT, uint3
 	CD3D9Renderer* pRenderer = gcpRendD3D;
 
 	CShader* pShader = CShaderMan::s_shPostAA;
-	CTexture* pDestRT = GetUtils().GetTaaRT(RenderView(), true);
-	CTexture* pPrevRT = ((SPostEffectsUtils::m_iFrameCounter - m_lastFrameID) < 10) ? GetUtils().GetTaaRT(RenderView(),false) : pCurrRT;
+	CTexture* pDestRT = GetAARenderTarget(RenderView(), true);
+	CTexture* pPrevRT = ((SPostEffectsUtils::m_iFrameCounter - m_lastFrameID) < 10) ? GetAARenderTarget(RenderView(),false) : pCurrRT;
 
-	assert((pCurrRT->GetFlags() & FT_USAGE_ALLOWREADSRGB));
+	CRY_ASSERT_MESSAGE(pDestRT && pPrevRT, "PostAA rendertargets do not exist!");
+	CRY_ASSERT_MESSAGE(pCurrRT->GetFlags() & FT_USAGE_ALLOWREADSRGB, "PostAA: Expected sRGB target.");
+	if (!pDestRT || !pPrevRT)
+		return;
 
 	uint64 rtMask = 0;
 	if (aaMode & (eAT_SMAA_1TX_MASK))
@@ -401,12 +402,22 @@ void CPostAAStage::DoFinalComposition(CTexture*& pCurrRT, CTexture* pDestRT, uin
 	CTexture* pTexLensOptics = CRendererResources::s_ptexSceneTargetR11G11B10F[0];
 	CRY_ASSERT(pCurrRT != pDestRT);
 
+	Vec4 hdrSetupParams[5];
+	gEnv->p3DEngine->GetHDRSetupParams(hdrSetupParams);
+
+	// Calculate grain amount
+	CEffectParam* pParamGrainAmount = PostEffectMgr()->GetByName("FilterGrain_Amount");
+	CEffectParam* pParamArtifactsGrain = PostEffectMgr()->GetByName("FilterArtifacts_Grain");
+	const float paramGrainAmount = max(pParamGrainAmount->GetParam(), pParamArtifactsGrain->GetParam());
+	const float environmentGrainAmount = max(hdrSetupParams[1].w, CRenderer::CV_r_HDRGrainAmount);
+	const float grainAmount = max(paramGrainAmount, environmentGrainAmount);
+
 	uint64 rtMask = 0;
 	if (aaMode & (eAT_SMAA_2TX_MASK | eAT_TSAA_MASK))
 		rtMask |= g_HWSR_MaskBit[HWSR_SAMPLE2];
 	if (CRenderer::CV_r_colorRangeCompression)
 		rtMask |= g_HWSR_MaskBit[HWSR_SAMPLE4];
-	if (CRenderer::CV_r_GrainEnableExposureThreshold) // enable legacy grain/exposure interaction
+	if (grainAmount && CRenderer::CV_r_GrainEnableExposureThreshold) // enable legacy grain/exposure interaction
 		rtMask |= g_HWSR_MaskBit[HWSR_SAMPLE0];
 
 	if (GetStdGraphicsPipeline().GetLensOpticsStage()->HasContent())
@@ -427,7 +438,7 @@ void CPostAAStage::DoFinalComposition(CTexture*& pCurrRT, CTexture* pDestRT, uin
 		}
 	}
 
-	if (m_passComposition.InputChanged(pCurrRT->GetID(), pDestRT->GetID(), CRendererResources::s_ptexCurLumTexture->GetID(), pColorChartTex->GetID(), rtMask))
+	if (m_passComposition.IsDirty(pCurrRT->GetID(), pDestRT->GetID(), pColorChartTex->GetID(), rtMask))
 	{
 		static CCryNameTSCRC techComposition("PostAAComposites");
 
@@ -464,13 +475,7 @@ void CPostAAStage::DoFinalComposition(CTexture*& pCurrRT, CTexture* pDestRT, uin
 		m_passComposition.SetConstant(lensOpticsParamsName, lensOpticsParams, eHWSC_Pixel);
 
 		// Apply grain (final luminance texture doesn't get its final value baked, so we have to replicate the entire hdr eye adaption)
-		Vec4 hdrSetupParams[5];
-		gEnv->p3DEngine->GetHDRSetupParams(hdrSetupParams);
-
-		CEffectParam* pParamGrainAmount = PostEffectMgr()->GetByName("FilterGrain_Amount");
-		CEffectParam* pParamArtifactsGrain = PostEffectMgr()->GetByName("FilterArtifacts_Grain");
-		const float grainAmount = max(pParamGrainAmount->GetParam(), pParamArtifactsGrain->GetParam());
-		const Vec4 v = Vec4(0, 0, 0, max(grainAmount, max(hdrSetupParams[1].w, CRenderer::CV_r_HDRGrainAmount)));
+		const Vec4 v = Vec4(0, 0, 0, grainAmount);
 
 		m_passComposition.SetConstant(hdrParamsName, v, eHWSC_Pixel);
 		// This sets exposure clamping max,min, causing weird interaction between between Exp. min/max params and grain (CE-13325)
@@ -512,4 +517,55 @@ void CPostAAStage::Execute()
 	{
 		pMgpuRT->MgpuResourceUpdate(false);
 	}
+}
+
+void CPostAAStage::Resize(int renderWidth, int renderHeight)
+{
+	if (CRenderer::CV_r_AntialiasingMode)
+	{
+		const uint32 renderTargetFlags = FT_NOMIPS | FT_DONT_STREAM | FT_USAGE_RENDERTARGET;
+		m_pPrevBackBuffersLeftEye[0] = CTexture::GetOrCreateRenderTarget("$PrevBackBuffer0", renderWidth, renderHeight, Clr_Unknown, eTT_2D, renderTargetFlags, eTF_R16G16B16A16);
+		m_pPrevBackBuffersLeftEye[1] = CTexture::GetOrCreateRenderTarget("$PrevBackBuffer1", renderWidth, renderHeight, Clr_Unknown, eTT_2D, renderTargetFlags, eTF_R16G16B16A16);
+		if (gRenDev->IsStereoEnabled())
+		{
+			m_pPrevBackBuffersRightEye[0] = CTexture::GetOrCreateRenderTarget("$PrevBackBuffer0_R", renderWidth, renderHeight, Clr_Unknown, eTT_2D, renderTargetFlags, eTF_R16G16B16A16);
+			m_pPrevBackBuffersRightEye[1] = CTexture::GetOrCreateRenderTarget("$PrevBackBuffer1_R", renderWidth, renderHeight, Clr_Unknown, eTT_2D, renderTargetFlags, eTF_R16G16B16A16);
+		}
+		else
+		{
+			SAFE_RELEASE(m_pPrevBackBuffersRightEye[0]);
+			SAFE_RELEASE(m_pPrevBackBuffersRightEye[1]);
+		}
+	}
+	else
+	{
+		SAFE_RELEASE(m_pPrevBackBuffersLeftEye[0]);
+		SAFE_RELEASE(m_pPrevBackBuffersLeftEye[1]);
+		SAFE_RELEASE(m_pPrevBackBuffersRightEye[0]);
+		SAFE_RELEASE(m_pPrevBackBuffersRightEye[1]);
+	}
+
+	oldStereoEnabledState = gRenDev->IsStereoEnabled();
+	oldAAState = CRenderer::CV_r_AntialiasingMode;
+}
+
+void CPostAAStage::Update()
+{
+	// Check if Stereo or AA settings have been updated, if so we might need to recreate prevBackBuffer rendertarget
+	if (oldStereoEnabledState != gRenDev->IsStereoEnabled() ||
+		oldAAState != CRenderer::CV_r_AntialiasingMode)
+		Resize(CRendererResources::s_renderWidth, CRendererResources::s_renderHeight);
+}
+
+CTexture* CPostAAStage::GetAARenderTarget(const CRenderView* pRenderView, bool bCurrentFrame) const
+{
+	int eye = static_cast<int>(pRenderView->GetCurrentEye());
+	int index = (bCurrentFrame ? SPostEffectsUtils::m_iFrameCounter : (SPostEffectsUtils::m_iFrameCounter + 1)) % 2;
+
+	CRY_ASSERT(eye == CCamera::eEye_Left || eye == CCamera::eEye_Right);
+
+	if (eye == CCamera::eEye_Left)
+		return m_pPrevBackBuffersLeftEye[index];
+	else
+		return m_pPrevBackBuffersRightEye[index];
 }
