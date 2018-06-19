@@ -47,9 +47,11 @@ public:
 private:
 
 	void Job_ScheduleUpdates();
+	void ScheduleUpdateEmitters(TDynArray<CParticleEmitter*>& emitters, JobManager::TPriorityLevel priority);
 
-	TDynArray<CParticleEmitter*> m_emitterRefs;
-	TDynArray<CParticleEmitter*> m_emitterRefsFast;
+	TDynArray<CParticleEmitter*> m_emittersDeferred;
+	TDynArray<CParticleEmitter*> m_emittersVisible;
+	TDynArray<CParticleEmitter*> m_emittersInvisible;
 	TDynArray<SDeferredRender>   m_deferredRenders;
 	JobManager::SJobState        m_updateState;
 };

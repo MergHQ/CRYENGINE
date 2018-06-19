@@ -11,6 +11,7 @@
 
 #include <CryEntitySystem/IEntityComponent.h>
 #include <CryEntitySystem/IEntity.h>
+#include "ISelectionGroup.h"
 
 class CUndoRemoveComponent : public IUndoObject
 {
@@ -87,28 +88,46 @@ private:
 	DynArray<char>                   m_propertyBuffer;
 };
 
-CEntityComponentCollapsibleFrameHeader::CEntityComponentCollapsibleFrameHeader(const QString& title, QCollapsibleFrame* pParentCollapsible, IEntityComponent* pComponent)
-	: CCollapsibleFrameHeader(title, pParentCollapsible, QString(pComponent->GetClassDesc().GetIcon()))
+CEntityComponentCollapsibleFrameHeader::CEntityComponentCollapsibleFrameHeader(const QString& title, QCollapsibleFrame* pParentCollapsible, const CEntityComponentClassDesc& typeDesc, const size_t typeInstanceIndex, const bool isComponentUserAdded)
+	: CCollapsibleFrameHeader(title, pParentCollapsible, QString(typeDesc.GetIcon()))
 	, m_title(title)
 {
 	// Add the options icon
 	QToolButton* pOptionsIcon = new QToolButton();
 	pOptionsIcon->setIcon(CryIcon("icons:General/edit-select-object.ico"));
 	pOptionsIcon->setLayoutDirection(Qt::RightToLeft);
-	connect(pOptionsIcon, &QToolButton::clicked, [pComponent]
+	connect(pOptionsIcon, &QToolButton::clicked, [&typeDesc, typeInstanceIndex, isComponentUserAdded]
 	{
 		CDynamicPopupMenu menu;
 		CPopupMenuItem& root = menu.GetRoot();
 
-		if (pComponent->GetComponentFlags().Check(EEntityComponentFlags::UserAdded))
+		if (isComponentUserAdded)
 		{
-		  root.Add("Remove", "icons:General/Remove_Negative.ico", [pComponent]()
+			root.Add("Remove", "icons:General/Remove_Negative.ico", [&typeDesc, typeInstanceIndex]()
 			{
-				{
-				  CUndo undo("Remove Component");
-				  CUndo::Record(new CUndoRemoveComponent(pComponent));
+				CUndo undo("Remove Component");
 
-				  pComponent->GetEntity()->RemoveComponent(pComponent);
+				const ISelectionGroup* pGroup = GetIEditor()->GetISelectionGroup();
+
+				for (size_t i = 0; i < pGroup->GetCount(); ++i)
+				{
+					CRY_ASSERT(pGroup->GetObject(i) != nullptr);
+					IEntity* pEntity = pGroup->GetObject(i)->GetIEntity();
+					CRY_ASSERT(pEntity != nullptr);
+
+					DynArray<IEntityComponent*> components;
+					pEntity->GetComponentsByTypeId(typeDesc.GetGUID(), components);
+					
+					// Skip this entity since the component index is different
+					if (components.size() <= typeInstanceIndex)
+						continue;
+
+					IEntityComponent* pComponent = components[typeInstanceIndex];
+					if (pComponent->GetComponentFlags().Check(EEntityComponentFlags::UserAdded))
+					{
+						CUndo::Record(new CUndoRemoveComponent(pComponent));
+						pEntity->RemoveComponent(pComponent);
+					}
 				}
 
 				GetIEditor()->GetObjectManager()->EmitPopulateInspectorEvent();
@@ -121,8 +140,8 @@ CEntityComponentCollapsibleFrameHeader::CEntityComponentCollapsibleFrameHeader(c
 	layout()->addWidget(pOptionsIcon);
 }
 
-CEntityComponentCollapsibleFrame::CEntityComponentCollapsibleFrame(const QString& title, IEntityComponent* pComponent)
+CEntityComponentCollapsibleFrame::CEntityComponentCollapsibleFrame(const QString& title, const CEntityComponentClassDesc& typeDesc, const size_t typeInstanceIndex, const bool isComponentUserAdded)
 	: QCollapsibleFrame(nullptr)
 {
-	SetHeaderWidget(new CEntityComponentCollapsibleFrameHeader(title, this, pComponent));
+	SetHeaderWidget(new CEntityComponentCollapsibleFrameHeader(title, this, typeDesc, typeInstanceIndex, isComponentUserAdded));
 }

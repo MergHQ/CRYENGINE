@@ -549,18 +549,12 @@ void JobManager::CJobManager::AddJob(JobManager::CJobDelegator& crJob, const Job
 	// Test if the job should be invoked
 	bool bUseJobSystem = m_nJobSystemEnabled ? CJobManager::InvokeAsJob(cJobHandle) : false;
 
-	// get producer/consumer queue settings
-	JobManager::SProdConsQueueBase* cpQueue = crJob.GetQueue();
-	const bool cNoQueue = (cpQueue == NULL);
-
 	const uint32 cOrigParamSize = crJob.GetParamDataSize();
 	const uint8 cParamSize = cOrigParamSize >> 4;
 
 	//reset info block
-	unsigned int flagSet = cNoQueue ? 0 : (unsigned int)JobManager::SInfoBlock::scHasQueue;
-
-	infoBlock.pQueue = cpQueue;
-	infoBlock.nflags = (unsigned char)(flagSet);
+	infoBlock.pJobState = nullptr;
+	infoBlock.nflags = 0;
 	infoBlock.paramSize = cParamSize;
 	infoBlock.jobInvoker = crJob.GetGenericDelegator();
 	infoBlock.jobLambdaInvoker = crJob.GetLambda();
@@ -568,7 +562,7 @@ void JobManager::CJobManager::AddJob(JobManager::CJobDelegator& crJob, const Job
 	infoBlock.profilerIndex = crJob.GetProfilingDataIndex();
 #endif
 
-	if (cNoQueue && crJob.GetJobState())
+	if (crJob.GetJobState())
 	{
 		infoBlock.SetJobState(crJob.GetJobState());
 		crJob.SetRunning();

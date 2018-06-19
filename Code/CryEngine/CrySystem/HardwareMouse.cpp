@@ -67,15 +67,17 @@ CHardwareMouse::CHardwareMouse(bool bVisibleByDefault)
 	, m_allowConfine(true)
 #endif // !defined(_RELEASE)
 	, m_shouldUseSystemCursor(false)
+#if CRY_PLATFORM_DESKTOP
 	, m_usingSystemCursor(true)
+#else
+	, m_usingSystemCursor(false)
+#endif
 	, m_confinedWnd(nullptr)
 #if CRY_PLATFORM_WINDOWS
 	, m_hCursor(nullptr)
 	, m_nCurIDCCursorId(~0)
 #endif
 {
-
-#if CRY_PLATFORM_DESKTOP
 	REGISTER_STRING_CB("r_MouseCursorTexture", "%ENGINE%/EngineAssets/Textures/Cursor_Green.dds", VF_NULL,
 		"Sets the image (dds file) to be displayed as the mouse cursor",
 		SetMouseCursorIconCVar);
@@ -86,7 +88,6 @@ CHardwareMouse::CHardwareMouse(bool bVisibleByDefault)
 		"Should the game use the hardware mouse cursor?",
 		SetMouseUseSystemCursorCVar);
 #endif // CRY_PLATFORM_WINDOWS
-#endif //CRY_PLATFORM_DESKTOP
 
 	if (gEnv->pSystem)
 	{
@@ -458,8 +459,14 @@ void CHardwareMouse::Release()
 
 //-----------------------------------------------------------------------------------------------------
 
-void CHardwareMouse::OnPreInitRenderer()
+void CHardwareMouse::OnPostInitRenderer()
 {
+	CRY_ASSERT(gEnv->pRenderer);
+
+	if (gEnv->pConsole && !m_shouldUseSystemCursor && !m_pCursorTexture)
+	{
+		SetCursor(gEnv->pConsole->GetCVar("r_MouseCursorTexture")->GetString());
+	}
 }
 
 //-----------------------------------------------------------------------------------------------------

@@ -40,7 +40,7 @@ inline void CParticleContainer::CopyData(EParticleDataType dstType, EParticleDat
 	if (HasData(dstType) && HasData(srcType))
 	{
 		size_t stride = dstType.info().typeSize;
-		size_t count = range.size();
+		size_t count = SGroupRange(range).size();
 		uint dim = dstType.info().dimension;
 		for (uint i = 0; i < dim; ++i)
 			memcpy(

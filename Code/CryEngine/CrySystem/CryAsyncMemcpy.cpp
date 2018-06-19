@@ -5,7 +5,7 @@
 
 namespace
 {
-static void cryAsyncMemcpy_Int(
+void cryAsyncMemcpy_Int(
   void* dst
   , const void* src
   , size_t size

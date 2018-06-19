@@ -252,7 +252,6 @@ public:
 	// Signals the thread that it should not accept anymore work and exit
 	void SignalStopWork();
 private:
-	void DoWorkProducerConsumerQueue(SInfoBlock& rInfoBlock);
 
 	detail::CWorkStatusSyncVar&          m_rWorkSyncVar;
 	JobManager::SJobQueue_ThreadBackEnd& m_rJobQueue;

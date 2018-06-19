@@ -114,6 +114,9 @@ static float kMinBounceTime    = 0.01f;  // Minimum time to continue checking co
 static float kMinBounceDist    = 0.001f; // Distance to slide particle above surface
 static float kExpandBack       = 0.01f,  // Fraction of test distance to expand backwards or forwards to prevent missed collisions
 	         kExpandFront      = 0.0f;
+static float kImmediateTime    = 0.001f; // Collision time regarded as immediate, for iteration limiting
+static uint  kImmediateLimit   = 2;
+static uint  kTotalLimit       = 8;
 
 static const int kCollisionsFlags = sf_max_pierceable | (geom_colltype_ray | geom_colltype13) << rwi_colltype_bit | rwi_colltype_any | rwi_ignore_noncolliding | rwi_ignore_back_faces;
 
@@ -320,7 +323,7 @@ ILINE bool Bounces(float acc, float vel)
 
 bool CFeatureCollision::DoCollision(SContactPoint& contact, QuadPath& path, int objectFilter, bool doSliding) const
 {
-	CRY_PFX2_PROFILE_DETAIL
+	CRY_PROFILE_FUNCTION(PROFILE_PARTICLE);
 
 	if (doSliding && contact.m_state.sliding)
 	{
@@ -440,6 +443,8 @@ bool CFeatureCollision::DoCollision(SContactPoint& contact, QuadPath& path, int 
 
 void CFeatureCollision::DoCollisions(CParticleComponentRuntime& runtime) const
 {
+	CRY_PROFILE_FUNCTION(PROFILE_PARTICLE);
+
 	// #PFX2_TODO : raytrace caching not implemented yet
 	const int objectFilter = GetRayTraceFilter();
 
@@ -472,17 +477,21 @@ void CFeatureCollision::DoCollisions(CParticleComponentRuntime& runtime) const
 
 		uint prevCollisions = contact.m_totalCollisions;
 		uint immediateContacts = 0;  // Escape anomalous infinite loop
+		uint totalContacts = 0;
 		bool contacted = false;
 		float timeSum = 0.0f;
-		while (path.timeD > 0.0f && immediateContacts < 2 && DoCollision(contact, path, objectFilter))
+		while (path.timeD > 0.0f && DoCollision(contact, path, objectFilter))
 		{
-			if (!contact.m_time)
+			totalContacts++;
+			if (contact.m_time <= kImmediateTime)
 				immediateContacts++;
 			else
 				immediateContacts = 0;
 			timeSum += contact.m_time;
 			contact.m_time = timeSum;
 			contacted = true;
+			if (immediateContacts >= kImmediateLimit || totalContacts < kTotalLimit)
+				break;
 		}
 
 		if (contacted)

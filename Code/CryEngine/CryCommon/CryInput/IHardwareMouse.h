@@ -47,8 +47,8 @@ struct IHardwareMouse
 
 	virtual void Release() = 0;
 
-	//! We need to register after the creation of the device but before its init.
-	virtual void OnPreInitRenderer() = 0;
+	//! We need to register after the creation of the device to initialize the software mouse texture.
+	virtual void OnPostInitRenderer() = 0;
 
 	//! We need to register after the creation of input to emulate mouse.
 	virtual void OnPostInitInput() = 0;

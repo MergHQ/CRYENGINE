@@ -1453,7 +1453,7 @@ static inline float qmax(float op1, float op2) { return (op1 + op2 + fabsf(op1 -
 
 static int __s_pvtx_map_dummy = 0;
 
-static void SyncToRenderMesh(SSyncToRenderMeshContext* ctx, volatile int* updateState)
+void SyncToRenderMesh(SSyncToRenderMeshContext* ctx, volatile int* updateState)
 {
 	IGeometry* pPhysGeom = ctx->pObj->GetPhysGeom() ? ctx->pObj->GetPhysGeom()->pGeom : 0;
 	if (pPhysGeom)
@@ -1532,7 +1532,7 @@ DECLARE_JOB(
   , TStatObj_SyncToRenderMesh
   , SyncToRenderMesh);
 
-static void SkinVertices(SSyncToRenderMeshContext* ctx, volatile int* ready)
+void SkinVertices(SSyncToRenderMeshContext* ctx, volatile int* ready)
 {
 	ctx->pObj->SkinVertices(ctx->pVtx, Matrix34(IDENTITY), ready);
 }

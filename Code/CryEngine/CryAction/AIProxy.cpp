@@ -345,8 +345,11 @@ IWeapon* CAIProxy::GetWeaponByEntityId(EntityId eid)
 	if (IGameObject* pGameObject = gEnv->pGameFramework->GetGameObject(eid))
 	{
 		IGameObjectExtension* pExtension = pGameObject->QueryExtension("WeaponProxyExtension");
-		IWeaponProxyExtension* pProxyExtension = static_cast<IWeaponProxyExtension*>(pExtension);
-		return static_cast<IWeapon*>(pProxyExtension);
+		if (pExtension)
+		{
+			IWeaponProxyExtension* pProxyExtension = static_cast<IWeaponProxyExtension*>(pExtension);
+			return static_cast<IWeapon*>(pProxyExtension);
+		}
 	}
 
 	// if failed - fallback to GameSDK implementation

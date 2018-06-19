@@ -204,11 +204,7 @@ private:
 	}
 
 	template<bool WRITE, bool CULL, bool PROJECT, bool CULL_BACKFACES>
-#if CRY_PLATFORM_WINDOWS && CRY_PLATFORM_32BIT
-	inline bool Triangle2D(NVMath::vec4 rV0, NVMath::vec4 rV1, NVMath::vec4 rV2, uint32 MinX = 0, uint32 MinY = 0, uint32 MaxX = 0, uint32 MaxY = 0, NVMath::vec4& VMinMax = NVMath::Vec4Zero(), NVMath::vec4& V210 = NVMath::Vec4Zero())
-#else
 	inline bool Triangle2D(NVMath::vec4 rV0, NVMath::vec4 rV1, NVMath::vec4 rV2, uint32 MinX = 0, uint32 MinY = 0, uint32 MaxX = 0, uint32 MaxY = 0, NVMath::vec4 VMinMax = NVMath::Vec4Zero (), NVMath::vec4 V210 = NVMath::Vec4Zero ())
-#endif
 	{
 		using namespace NVMath;
 

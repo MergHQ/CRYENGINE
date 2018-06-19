@@ -873,4 +873,14 @@ namespace stl {
 		static constexpr bool value = T::value;
 	};
 
+	template<typename... Ts>
+	struct disjunction : std::false_type {};
+
+	template<typename T, typename... Ts>
+	struct disjunction<T, Ts...>
+		: std::conditional<bool(T::value), T, disjunction<Ts...>>::type
+	{};
+
+	template<typename T> struct disjunction<T> : T {};
+
 }
