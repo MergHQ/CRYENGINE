@@ -167,11 +167,11 @@ void CParticleEmitter::Update()
 
 	UpdateFromEntity();
 
-	for (auto const& component: GetCEffect()->MainPreUpdate)
+	for (auto const& pComponent: GetCEffect()->MainPreUpdate)
 	{
-		if (auto pRuntime = GetRuntimeFor(component))
+		if (auto pRuntime = GetRuntimeFor(pComponent))
 		{
-			component->MainPreUpdate(*pRuntime);
+			pComponent->MainPreUpdate(*pRuntime);
 		}
 	}
 
@@ -287,7 +287,20 @@ void CParticleEmitter::SyncUpdateParticles()
 		if (UpdateParticles())
 			statsSync.updated += m_componentRuntimes.size();
 	}
-	CRY_PFX2_ASSERT(m_timeUpdated >= m_time);
+	CRY_ASSERT(m_timeUpdated >= m_time);
+}
+
+void CParticleEmitter::RenderDeferred(const SRenderContext& renderContext)
+{
+	SyncUpdateParticles();
+
+	for (auto const& pComponent: m_pEffect->RenderDeferred)
+	{
+		if (auto pRuntime = GetRuntimeFor(pComponent))
+		{
+			pComponent->RenderDeferred(*pRuntime, renderContext);
+		}
+	}
 }
 
 void CParticleEmitter::DebugRender(const SRenderingPassInfo& passInfo) const
