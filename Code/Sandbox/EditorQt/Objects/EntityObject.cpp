@@ -1030,8 +1030,6 @@ void CEntityObject::CreateComponentWidgets(CInspectorWidgetCreator& creator)
 			}
 		}
 
-		std::unique_ptr<CEntityComponentCollapsibleFrame> pWidget = stl::make_unique<CEntityComponentCollapsibleFrame>(szComponentLabel, pComponent);
-
 		CryGUID componentClassGUID = pComponent->GetClassDesc().GetGUID();
 		if (componentClassGUID.IsNull())
 		{
@@ -1060,6 +1058,9 @@ void CEntityObject::CreateComponentWidgets(CInspectorWidgetCreator& creator)
 		}
 
 		CryGUID componentInstanceGUID = pComponent->GetGUID();
+
+		std::unique_ptr<CEntityComponentCollapsibleFrame> pWidget = stl::make_unique<CEntityComponentCollapsibleFrame>(szComponentLabel,
+			pComponent->GetClassDesc(), componentTypeIndex, pComponent->GetComponentFlags().Check(EEntityComponentFlags::UserAdded));
 
 		creator.AddPropertyTree(pComponent->GetClassDesc().GetGUID().hipart + componentTypeIndex, szComponentLabel, std::move(pWidget), [componentClassGUID, componentTypeIndex](CBaseObject* pObject, Serialization::IArchive& ar, bool bMultiEdit)
 		{
