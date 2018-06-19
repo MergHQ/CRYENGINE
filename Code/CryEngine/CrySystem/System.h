@@ -224,6 +224,8 @@ struct CProfilingSystem : public IProfilingSystem
 	//////////////////////////////////////////////////////////////////////////
 };
 
+IThreadManager* CreateThreadManager();
+
 /*
    ===========================================
    The System interface Class
@@ -1000,7 +1002,6 @@ protected: // -------------------------------------------------------------
 	CCmdLine*                                 m_pCmdLine;
 	std::unique_ptr<CryTest::ITestSystem>     m_pTestSystem;
 	CVisRegTest*                              m_pVisRegTest;
-	CThreadManager*                           m_pThreadManager;
 	CResourceManager*                         m_pResourceManager;
 	ITextModeConsole*                         m_pTextModeConsole;
 	INotificationNetwork*                     m_pNotificationNetwork;

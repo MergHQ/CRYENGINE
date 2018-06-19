@@ -667,12 +667,18 @@ void CThreadManager::SetFloatingPointExceptionMask(uint nMask)
 //////////////////////////////////////////////////////////////////////////
 void CSystem::InitThreadSystem()
 {
-	m_pThreadManager = new CThreadManager();
-	m_env.pThreadManager = m_pThreadManager;
+	m_env.pThreadManager = CreateThreadManager();
 }
 
 //////////////////////////////////////////////////////////////////////////
 void CSystem::ShutDownThreadSystem()
 {
-	SAFE_DELETE(m_pThreadManager);
+	SAFE_DELETE(m_env.pThreadManager);
 }
+
+//////////////////////////////////////////////////////////////////////////
+IThreadManager* CreateThreadManager()
+{
+	return new CThreadManager();
+}
+

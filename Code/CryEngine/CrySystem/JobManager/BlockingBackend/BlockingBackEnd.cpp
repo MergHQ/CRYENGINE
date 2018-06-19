@@ -159,11 +159,7 @@ void JobManager::BlockingBackEnd::CBlockingBackEnd::AddJob(JobManager::CJobDeleg
 	// Initialize the InfoBlock
 	rInfoBlock.AssignMembersTo(&rJobInfoBlock);
 
-	// copy job parameter if it is a non-queue job
-	if (crJob.GetQueue() == NULL)
-	{
-		JobManager::CJobManager::CopyJobParameter(crJob.GetParamDataSize(), rJobInfoBlock.GetParamAddress(), crJob.GetJobParamData());
-	}
+	JobManager::CJobManager::CopyJobParameter(crJob.GetParamDataSize(), rJobInfoBlock.GetParamAddress(), crJob.GetJobParamData());
 
 	assert(rInfoBlock.jobInvoker);
 
@@ -219,12 +215,12 @@ void JobManager::BlockingBackEnd::CBlockingBackEndWorkerThread::ThreadEntry()
 		CJobManager* __restrict pJobManager = CJobManager::Instance();
 		///////////////////////////////////////////////////////////////////////////
 		// wait for new work
-		{			
+		{
 			//CRY_PROFILE_REGION_WAITING(PROFILE_SYSTEM, "Wait - JobWorkerThread");
-			m_rSemaphore.Acquire();		
-		}		
+			m_rSemaphore.Acquire();
+		}
 
-		IF(m_bStop == true, 0)
+		IF (m_bStop == true, 0)
 			break;
 
 		if (JobManager::SInfoBlock* pFallbackInfoBlock = JobManager::detail::PopFromFallbackJobList(eBET_Blocking))
@@ -233,10 +229,7 @@ void JobManager::BlockingBackEnd::CBlockingBackEndWorkerThread::ThreadEntry()
 
 			// in case of a fallback job, just get it from the global per thread list
 			pFallbackInfoBlock->AssignMembersTo(&infoBlock);
-			if (!infoBlock.HasQueue())  // copy parameters for non producer/consumer jobs
-			{
-				JobManager::CJobManager::CopyJobParameter(infoBlock.paramSize << 4, infoBlock.GetParamAddress(), pFallbackInfoBlock->GetParamAddress());
-			}
+			JobManager::CJobManager::CopyJobParameter(infoBlock.paramSize << 4, infoBlock.GetParamAddress(), pFallbackInfoBlock->GetParamAddress());
 
 			// free temp info block again
 			delete pFallbackInfoBlock;
@@ -259,10 +252,7 @@ void JobManager::BlockingBackEnd::CBlockingBackEndWorkerThread::ThreadEntry()
 
 					// in case of a fallback job, just get it from the global per thread list
 					pRegularWorkerFallback->AssignMembersTo(&infoBlock);
-					if (!infoBlock.HasQueue())  // copy parameters for non producer/consumer jobs
-					{
-						JobManager::CJobManager::CopyJobParameter(infoBlock.paramSize << 4, infoBlock.GetParamAddress(), pRegularWorkerFallback->GetParamAddress());
-					}
+					JobManager::CJobManager::CopyJobParameter(infoBlock.paramSize << 4, infoBlock.GetParamAddress(), pRegularWorkerFallback->GetParamAddress());
 
 					// free temp info block again
 					delete pRegularWorkerFallback;
@@ -325,10 +315,7 @@ void JobManager::BlockingBackEnd::CBlockingBackEndWorkerThread::ThreadEntry()
 				// 3. Get a local copy of the info block as asson as it is ready to be used
 				JobManager::SInfoBlock* pCurrentJobSlot = &m_rJobQueue.jobInfoBlocks[nPriorityLevel][nJobSlot];
 				pCurrentJobSlot->AssignMembersTo(&infoBlock);
-				if (!infoBlock.HasQueue())  // copy parameters for non producer/consumer jobs
-				{
-					JobManager::CJobManager::CopyJobParameter(infoBlock.paramSize << 4, infoBlock.GetParamAddress(), pCurrentJobSlot->GetParamAddress());
-				}
+				JobManager::CJobManager::CopyJobParameter(infoBlock.paramSize << 4, infoBlock.GetParamAddress(), pCurrentJobSlot->GetParamAddress());
 
 				// 4. Remark the job state as suspended
 				MemoryBarrier();
@@ -342,62 +329,54 @@ void JobManager::BlockingBackEnd::CBlockingBackEndWorkerThread::ThreadEntry()
 
 		///////////////////////////////////////////////////////////////////////////
 		// now we have a valid SInfoBlock to start work on it
-		// check if it is a producer/consumer queue job
-		IF (infoBlock.HasQueue(), 0)
+		// Now we are safe to use the info block
+		assert(infoBlock.jobInvoker);
+		assert(infoBlock.GetParamAddress());
+
+		// store job start time
+#if defined(JOBMANAGER_SUPPORT_PROFILING) && 0
+		IF (infoBlock.GetJobState(), 1)
 		{
-			DoWorkProducerConsumerQueue(infoBlock);
+			SJobState* pJobState = infoBlock.GetJobState();
+			pJobState->LockProfilingData();
+			if (pJobState->pJobProfilingData)
+			{
+				pJobState->pJobProfilingData->nStartTime = gEnv->pTimer->GetAsyncTime();
+				pJobState->pJobProfilingData->nWorkerThread = GetWorkerThreadId();
+			}
+			pJobState->UnLockProfilingData();
+		}
+#endif
+
+#if defined(JOBMANAGER_SUPPORT_FRAMEPROFILER)
+		const uint64 nStartTime = JobManager::IWorkerBackEndProfiler::GetTimeSample();
+#endif
+
+		// call delegator function to invoke job entry
+#if !defined(_RELEASE) || defined(PERFORMANCE_BUILD)
+		CRY_PROFILE_REGION(PROFILE_SYSTEM, "Job");
+		CRYPROFILE_SCOPE_PROFILE_MARKER(pJobManager->GetJobName(infoBlock.jobInvoker));
+		CRYPROFILE_SCOPE_PLATFORM_MARKER(pJobManager->GetJobName(infoBlock.jobInvoker));
+#endif
+		if (infoBlock.jobLambdaInvoker)
+		{
+			infoBlock.jobLambdaInvoker();
 		}
 		else
 		{
-			// Now we are safe to use the info block
-			assert(infoBlock.jobInvoker);
-			assert(infoBlock.GetParamAddress());
-
-			// store job start time
-#if defined(JOBMANAGER_SUPPORT_PROFILING) && 0
-			IF (infoBlock.GetJobState(), 1)
-			{
-				SJobState* pJobState = infoBlock.GetJobState();
-				pJobState->LockProfilingData();
-				if (pJobState->pJobProfilingData)
-				{
-					pJobState->pJobProfilingData->nStartTime = gEnv->pTimer->GetAsyncTime();
-					pJobState->pJobProfilingData->nWorkerThread = GetWorkerThreadId();
-				}
-				pJobState->UnLockProfilingData();
-			}
-#endif
+			(*infoBlock.jobInvoker)(infoBlock.GetParamAddress());
+		}
 
 #if defined(JOBMANAGER_SUPPORT_FRAMEPROFILER)
-			const uint64 nStartTime = JobManager::IWorkerBackEndProfiler::GetTimeSample();
+		JobManager::IWorkerBackEndProfiler* workerProfiler = m_pBlockingBackend->GetBackEndWorkerProfiler();
+		const uint64 nEndTime = JobManager::IWorkerBackEndProfiler::GetTimeSample();
+		workerProfiler->RecordJob(infoBlock.frameProfIndex, m_nId, static_cast<const uint32>(infoBlock.jobId), static_cast<const uint32>(nEndTime - nStartTime));
 #endif
 
-			// call delegator function to invoke job entry
-#if !defined(_RELEASE) || defined(PERFORMANCE_BUILD)
-			CRY_PROFILE_REGION(PROFILE_SYSTEM, "Job");
-			CRYPROFILE_SCOPE_PROFILE_MARKER(pJobManager->GetJobName(infoBlock.jobInvoker));
-			CRYPROFILE_SCOPE_PLATFORM_MARKER(pJobManager->GetJobName(infoBlock.jobInvoker));
-#endif
-			if (infoBlock.jobLambdaInvoker)
-			{
-				infoBlock.jobLambdaInvoker();
-			}
-			else
-			{
-				(*infoBlock.jobInvoker)(infoBlock.GetParamAddress());
-			}
-
-#if defined(JOBMANAGER_SUPPORT_FRAMEPROFILER)
-			JobManager::IWorkerBackEndProfiler* workerProfiler = m_pBlockingBackend->GetBackEndWorkerProfiler();
-			const uint64 nEndTime = JobManager::IWorkerBackEndProfiler::GetTimeSample();
-			workerProfiler->RecordJob(infoBlock.frameProfIndex, m_nId, static_cast<const uint32>(infoBlock.jobId), static_cast<const uint32>(nEndTime - nStartTime));
-#endif
-
-			IF (infoBlock.GetJobState(), 1)
-			{
-				SJobState* pJobState = infoBlock.GetJobState();
-				pJobState->SetStopped();
-			}
+		IF (infoBlock.GetJobState(), 1)
+		{
+			SJobState* pJobState = infoBlock.GetJobState();
+			pJobState->SetStopped();
 		}
 
 	}
@@ -409,211 +388,6 @@ ILINE void IncrQueuePullPointer_Blocking(INT_PTR& rCurPullAddr, const INT_PTR cI
 {
 	const INT_PTR cNextPull = rCurPullAddr + cIncr;
 	rCurPullAddr = (cNextPull >= cQueueEnd) ? cQueueStart : cNextPull;
-}
-
-///////////////////////////////////////////////////////////////////////////////
-void JobManager::BlockingBackEnd::CBlockingBackEndWorkerThread::DoWorkProducerConsumerQueue(SInfoBlock& rInfoBlock)
-{
-	CJobManager* __restrict pJobManager = CJobManager::Instance();
-
-	JobManager::SProdConsQueueBase* pQueue = (JobManager::SProdConsQueueBase*)rInfoBlock.GetQueue();
-
-	volatile INT_PTR* pQueuePull = alias_cast<volatile INT_PTR*>(&pQueue->m_pPull);
-	volatile INT_PTR* pQueuePush = alias_cast<volatile INT_PTR*>(&pQueue->m_pPush);
-
-	uint32 queueIncr = pQueue->m_PullIncrement;
-	INT_PTR queueStart = pQueue->m_RingBufferStart;
-	INT_PTR queueEnd = pQueue->m_RingBufferEnd;
-	INT_PTR curPullPtr = *pQueuePull;
-
-	bool bNewJobFound = true;
-
-	// union used to construct 64 bit value for atomic updates
-	union T64BitValue
-	{
-		int64 doubleWord;
-		struct
-		{
-			uint32 word0;
-			uint32 word1;
-		};
-	};
-
-	const uint32 cParamSize = (rInfoBlock.paramSize << 4);
-
-	Invoker pInvoker = NULL;
-	uint8 nJobInvokerIdx = (uint8) ~0;
-	do
-	{
-
-		// == process job packet == //
-		void* pParamMem = (void*)curPullPtr;
-		SAddPacketData* const __restrict pAddPacketData = (SAddPacketData*)((unsigned char*)curPullPtr + cParamSize);
-
-		// do we need another job invoker (multi-type job prod/con queue)
-		IF (pAddPacketData->nInvokerIndex != nJobInvokerIdx, 0)
-		{
-			nJobInvokerIdx = pAddPacketData->nInvokerIndex;
-			pInvoker = pJobManager->GetJobInvoker(nJobInvokerIdx);
-		}
-		if (!pInvoker && pAddPacketData->nInvokerIndex == (uint8) ~0)
-		{
-			pInvoker = rInfoBlock.jobInvoker;
-		}
-
-		// make sure we don't try to execute an already stopped job
-		assert(pAddPacketData->pJobState && pAddPacketData->pJobState->IsRunning() == true);
-
-		// call delegator function to invoke job entry
-#if !defined(_RELEASE) || defined(PERFORMANCE_BUILD)
-		CRY_PROFILE_REGION(PROFILE_SYSTEM, "Job");
-		CRYPROFILE_SCOPE_PROFILE_MARKER(pJobManager->GetJobName(rInfoBlock.jobInvoker));
-		CRYPROFILE_SCOPE_PLATFORM_MARKER(pJobManager->GetJobName(rInfoBlock.jobInvoker));
-#endif
-		PREFAST_ASSUME(pInvoker);
-		(*pInvoker)(pParamMem);
-
-		// mark job as finished
-		IF (pAddPacketData->pJobState, 1)
-		{
-			pAddPacketData->pJobState->SetStopped();
-		}
-
-		// == update queue state == //
-		IncrQueuePullPointer_Blocking(curPullPtr, queueIncr, queueStart, queueEnd);
-
-		// load cur push once
-		INT_PTR curPushPtr = *pQueuePush;
-
-		// update pull ptr (safe since only change by a single job worker)
-		*pQueuePull = curPullPtr;
-
-		// check if we need to wake up the producer from a queue full state
-		IF ((curPushPtr & 1) == 1, 0)
-		{
-			(*pQueuePush) = curPushPtr & ~1;
-			pQueue->m_pQueueFullSemaphore->Release();
-		}
-
-		// clear queue full marker
-		curPushPtr = curPushPtr & ~1;
-
-		// work on next packet if still there
-		IF (curPushPtr != curPullPtr, 1)
-		{
-			continue;
-		}
-
-		// temp end of queue, try to update the state while checking the push ptr
-		bNewJobFound = false;
-
-		JobManager::SJobSyncVariable runningSyncVar;
-		runningSyncVar.SetRunning();
-		JobManager::SJobSyncVariable stoppedSyncVar;
-
-#if CRY_PLATFORM_64BIT // for 64 bit, we need to atomically swap 128 bit
-		bool bStopLoop = false;
-		bool bUnlockQueueFullstate = false;
-		SJobSyncVariable queueStoppedSemaphore;
-		int64 resultValue[2] = { *alias_cast<int64*>(&runningSyncVar), curPushPtr };
-		int64 compareValue[2] = { *alias_cast<int64*>(&runningSyncVar), curPushPtr };  // use for result comparsion, since the original compareValue is overwritten
-		int64 exchangeValue[2] = { *alias_cast<int64*>(&stoppedSyncVar), curPushPtr };
-		do
-		{
-			resultValue[0] = compareValue[0];
-			resultValue[1] = compareValue[1];
-			unsigned char ret = CryInterlockedCompareExchange128((volatile int64*)pQueue, exchangeValue[1], exchangeValue[0], resultValue);
-
-			bNewJobFound = ((resultValue[1] & ~1) != curPushPtr);
-			bStopLoop = bNewJobFound || (resultValue[0] == compareValue[0] && resultValue[1] == compareValue[1]);
-
-			if (bNewJobFound == false && resultValue[0] > 1)
-			{
-				// get a copy of the syncvar for unlock (since we will overwrite it)
-				queueStoppedSemaphore = *alias_cast<SJobSyncVariable*>(&resultValue[0]);
-
-				// update the exchange value to ensure the CAS succeeds
-				compareValue[0] = resultValue[0];
-			}
-
-			if (bNewJobFound == false && ((resultValue[1] & 1) == 1))
-			{
-				// update the exchange value to ensure the CAS succeeds
-				compareValue[1] = resultValue[1];
-				exchangeValue[1] = (resultValue[1] & ~1);
-				bUnlockQueueFullstate = true; // needs to be unset after the loop to ensure a correct state
-			}
-
-		}
-		while (!bStopLoop);
-
-		if (bUnlockQueueFullstate)
-		{
-			assert(bNewJobFound == false);
-			pQueue->m_pQueueFullSemaphore->Release();
-		}
-		if (queueStoppedSemaphore.IsRunning())
-		{
-			assert(bNewJobFound == false);
-			queueStoppedSemaphore.SetStopped();
-		}
-#else
-		bool bStopLoop = false;
-		bool bUnlockQueueFullstate = false;
-		SJobSyncVariable queueStoppedSemaphore;
-		T64BitValue resultValue;
-
-		T64BitValue compareValue;
-		compareValue.word0 = *alias_cast<uint32*>(&runningSyncVar);
-		compareValue.word1 = curPushPtr;
-
-		T64BitValue exchangeValue;
-		exchangeValue.word0 = *alias_cast<uint32*>(&stoppedSyncVar);
-		exchangeValue.word1 = curPushPtr;
-
-		do
-		{
-
-			resultValue.doubleWord = CryInterlockedCompareExchange64((volatile int64*)pQueue, exchangeValue.doubleWord, compareValue.doubleWord);
-
-			bNewJobFound = ((resultValue.word1 & ~1) != curPushPtr);
-			bStopLoop = bNewJobFound || resultValue.doubleWord == compareValue.doubleWord;
-
-			if (bNewJobFound == false && resultValue.word0 > 1)
-			{
-				// get a copy of the syncvar for unlock (since we will overwrite it)
-				queueStoppedSemaphore = *alias_cast<SJobSyncVariable*>(&resultValue.word0);
-
-				// update the exchange value to ensure the CAS succeeds
-				compareValue.word0 = resultValue.word0;
-			}
-
-			if (bNewJobFound == false && ((resultValue.word1 & 1) == 1))
-			{
-				// update the exchange value to ensure the CAS succeeds
-				compareValue.word1 = resultValue.word1;
-				exchangeValue.word1 = (resultValue.word1 & ~1);
-				bUnlockQueueFullstate = true;
-			}
-
-		}
-		while (!bStopLoop);
-
-		if (bUnlockQueueFullstate)
-		{
-			assert(bNewJobFound == false);
-			pQueue->m_pQueueFullSemaphore->Release();
-		}
-		if (queueStoppedSemaphore.IsRunning())
-		{
-			assert(bNewJobFound == false);
-			queueStoppedSemaphore.SetStopped();
-		}
-#endif
-
-	}
-	while (bNewJobFound);
-
 }
 
 ///////////////////////////////////////////////////////////////////////////////
