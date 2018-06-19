@@ -2670,7 +2670,11 @@ void CRendererCVars::InitCVars()
 	REGISTER_CVAR3("r_ReadZBufferDirectlyFromVMEM", CV_r_ReadZBufferDirectlyFromVMEM, 0, VF_NULL, "Uses direct VMEM reads instead of a staging buffer on durango for the reprojection ZBuffer");
 	REGISTER_CVAR3("r_ReverseDepth", CV_r_ReverseDepth, 1, VF_NULL, "Use 1-z depth rendering for increased depth precision");
 
-	REGISTER_CVAR3("r_EnableDebugLayer", CV_r_EnableDebugLayer, 0, VF_NULL, "Enable Graphics API specific debug layer");
+	REGISTER_CVAR3("r_EnableDebugLayer", CV_r_EnableDebugLayer, 0, VF_NULL, 
+		"Enable Graphics API specific debug layer"
+		"0: Debug layers disabled"
+		"1: Debug layers enabled"
+		"2: (DX12 specific) Enable GBV (GPU-Based Validation) in addition to debug layers");
 	REGISTER_CVAR3("r_NoDraw", CV_r_NoDraw, 0, VF_NULL, "Disable submitting of certain draw operations: 1-(Do not process render objects at all), 2-(Do not submit individual render objects), 3-(No DrawIndexed) 4-Disable entire GraphicsPipeline execution.");
 	REGISTER_CVAR3("r_UpdateInstances", CV_r_UpdateInstances, 0, VF_NULL, "Enabling runtime instancing CB updatings each frame");
 
