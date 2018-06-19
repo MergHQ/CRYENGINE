@@ -1340,9 +1340,6 @@ bool CSystem::InitRenderer(SSystemInitParams& startupParams)
 
 	if (m_env.pRenderer)
 	{
-		if (m_env.pHardwareMouse)
-			m_env.pHardwareMouse->OnPreInitRenderer();
-
 #ifndef RELEASE
 		const WIN_HWND hwnd = (startupParams.bEditor) ? (WIN_HWND)1 : m_hWnd;
 #else
@@ -1367,6 +1364,9 @@ bool CSystem::InitRenderer(SSystemInitParams& startupParams)
 
 		m_env.pAuxGeomRenderer = m_env.pRenderer->GetIRenderAuxGeom();
 		InitPhysicsRenderer(startupParams);
+
+		if (m_env.pHardwareMouse)
+			m_env.pHardwareMouse->OnPostInitRenderer();
 
 	#if CRY_PLATFORM_LINUX || CRY_PLATFORM_ANDROID || CRY_PLATFORM_APPLE || CRY_PLATFORM_ORBIS
 		return true;

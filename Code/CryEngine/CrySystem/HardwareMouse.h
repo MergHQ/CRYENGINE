@@ -41,7 +41,7 @@ public:
 
 	// IHardwareMouse
 	virtual void                         Release();
-	virtual void                         OnPreInitRenderer();
+	virtual void                         OnPostInitRenderer();
 	virtual void                         OnPostInitInput();
 	virtual void                         Event(int iX, int iY, EHARDWAREMOUSEEVENT eHardwareMouseEvent, int wheelDelta = 0);
 	virtual void                         AddListener(IHardwareMouseEventListener* pHardwareMouseEventListener);
