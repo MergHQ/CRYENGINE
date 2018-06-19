@@ -381,7 +381,7 @@ void BlendSpaceDimension::Serialize(IArchive& ar)
 {
 	ar(SMotionParametersPool::SSelector(parameterId), "parameterId", "<^");
 	ar(minimal, "min", "^>Min");
-	ar(maximal, "max", "^>Max");
+	ar(Serialization::Decorators::Range(maximal, minimal + 0.01f, std::numeric_limits<float>::max()), "max", "^>Max");
 	ar(cellCount, "cellCount", "Cell Count");
 	ar(locked, "locked", "Locked");
 }
@@ -490,6 +490,7 @@ bool BlendSpace::LoadFromXml(string& errorMessage, XmlNodeRef root, IAnimationSe
 					//define the scope of the blend-space for each dimension
 					nodeExample->getAttr("min", m_dimensions[d].minimal);
 					nodeExample->getAttr("max", m_dimensions[d].maximal);
+					m_dimensions[d].maximal = (m_dimensions[d].maximal - m_dimensions[d].minimal < 0.01f) ? (m_dimensions[d].minimal + 0.01f) : (m_dimensions[d].maximal);
 
 					nodeExample->getAttr("cells", m_dimensions[d].cellCount);
 					m_dimensions[d].cellCount = m_dimensions[d].cellCount < 3 ? 3 : m_dimensions[d].cellCount;
