@@ -267,7 +267,7 @@ struct CVegetationEditor::SImplementation : public IEditorNotifyListener
 			auto pEditMenu = pParentEditor->GetMenu(CEditor::MenuItems::EditMenu);
 			SetupEditMenu(pEditMenu);
 
-			CAbstractMenu * pToolsMenu = pParentEditor->GetRootMenu()->CreateMenu(tr("Tools"), 0);
+			CAbstractMenu* pToolsMenu = pParentEditor->GetRootMenu()->CreateMenu(tr("Tools"), 0);
 			SetupToolsMenu(pToolsMenu);
 
 			pParentEditor->AddToMenu(CEditor::MenuItems::ViewMenu);
@@ -543,7 +543,7 @@ struct CVegetationEditor::SImplementation : public IEditorNotifyListener
 
 	void SetupVegetationTreeView()
 	{
-		QObject::connect(m_ui.pVegetationTreeView, &QTreeView::customContextMenuRequested, [ = ]
+		QObject::connect(m_ui.pVegetationTreeView, &QTreeView::customContextMenuRequested, [=]
 		{
 			auto pMenu = CreateContextMenu();
 			pMenu->exec(QCursor::pos());
@@ -917,6 +917,9 @@ struct CVegetationEditor::SImplementation : public IEditorNotifyListener
 		case eNotify_OnEndSceneOpen: // Level Open
 		case eNotify_OnEndNewScene:  // New Level
 			m_pVegetationModel->EndResetOnLevelChange();
+			break;
+		case eNotify_OnClearLevelContents:
+			m_pVegetationModel->Clear();
 			break;
 		}
 	}

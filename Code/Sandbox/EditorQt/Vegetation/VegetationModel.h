@@ -46,14 +46,16 @@ public:
 		friend class CVegetationModel;
 
 	public:
-		CVegetationModelItem(const QString& name, int r);                                                 // group item
-		CVegetationModelItem(int r, CVegetationObject* pVegetationObject, CVegetationModelItem* pParent); // vegetation object item
+		CVegetationModelItem(const QString& name, int r);																			// group item
+		CVegetationModelItem(int r, CVegetationObject* pVegetationObject, CVegetationModelItem* pParent, CVegetationModel* pModel); // vegetation object item
+		~CVegetationModelItem();
 
 		int rowCount() const;
 
 	private:
-		CVegetationModelItem* AddChild(CVegetationObject* pVegetationObject);
+		CVegetationModelItem* AddChild(CVegetationObject* pVegetationObject, CVegetationModel* pModel);
 		bool                  IsGroup() const;
+		void                  OnVegetationObjectFileChange(IVariable* pFileNameVar);
 
 		static EVisibility    GetVisibilityFromCheckState(Qt::CheckState checkState);
 		static Qt::CheckState GetCheckStateFromVisibility(EVisibility visibility);
@@ -62,6 +64,7 @@ public:
 		QString                             name;
 		int                                 row;
 		CVegetationObject*                  pVegetationObject;
+		CVegetationModel*                   pModel;
 		EVisibility                         visibility;
 
 		CVegetationModelItem*               pParent;
@@ -96,6 +99,7 @@ public:
 	CVegetationObject*          AddVegetationObject(const QModelIndex& currentIndex, const QString& filename);
 	void                        AddGroup();
 	void                        RenameGroup(const QModelIndex& selectedGroupIndex, const QString& name);
+	void                        UpdateObjectName(CVegetationModelItem* pObject);
 	void                        RemoveItems(const QModelIndexList& selectedIndexes);
 	void                        ReplaceVegetationObject(const QModelIndex& objectIndex, const QString& filename);
 	void                        CloneObject(const QModelIndex& objectIndex);
@@ -106,7 +110,8 @@ public:
 	void                        MoveInstancesToGroup(const QString& groupName, const QVector<CVegetationInstance*> selectedInstances);
 	void                        BeginResetOnLevelChange();
 	void                        EndResetOnLevelChange();
-	void                        Reset();
+	void                        Reset(); // Cleanup + Reload
+	void                        Clear(); // Cleanup only
 
 signals:
 	void InfoDataChanged(int objectCount, int instanceCount, int textureUsage);
