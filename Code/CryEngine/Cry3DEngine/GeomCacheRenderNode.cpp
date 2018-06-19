@@ -729,7 +729,7 @@ bool CGeomCacheRenderNode::FillFrameAsync(const char* const pFloorFrameData, con
 	return true;
 }
 
-void CGeomCacheRenderNode::UpdateMesh_JobEntry(SGeomCacheRenderMeshUpdateContext* pUpdateContext, SGeomCacheStaticMeshData* pStaticMeshData,
+void CGeomCacheRenderNode::UpdateMesh_JobEntry(SGeomCacheRenderMeshUpdateContext* pUpdateContext, const SGeomCacheStaticMeshData* pStaticMeshData,
                                                const char* pFloorMeshData, const char* pCeilMeshData, float lerpFactor)
 {
 	GeomCacheDecoder::FillMeshDataFromDecodedFrame(m_bFilledFrameOnce, *pUpdateContext, *pStaticMeshData, pFloorMeshData, pCeilMeshData, lerpFactor);

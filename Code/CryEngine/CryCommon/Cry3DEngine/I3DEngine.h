@@ -1032,13 +1032,13 @@ struct IFoliage
 
 struct SSkyLightRenderParams
 {
-	static const int skyDomeTextureWidth = 64;
-	static const int skyDomeTextureHeight = 32;
-	static const int skyDomeTextureSize = 64 * 32;
+	static constexpr int skyDomeTextureWidth = 64;
+	static constexpr int skyDomeTextureHeight = 32;
+	static constexpr int skyDomeTextureSize = 64 * 32;
 
-	static const int skyDomeTextureWidthBy8 = 8;
-	static const int skyDomeTextureWidthBy4Log = 4;   //!< = log2(64/4).
-	static const int skyDomeTextureHeightBy2Log = 4;  //!< = log2(32/2).
+	static constexpr int skyDomeTextureWidthBy8 = 8;
+	static constexpr int skyDomeTextureWidthBy4Log = 4;   //!< = log2(64/4).
+	static constexpr int skyDomeTextureHeightBy2Log = 4;  //!< = log2(32/2).
 
 	SSkyLightRenderParams()
 		: m_pSkyDomeMesh(0)

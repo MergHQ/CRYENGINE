@@ -2596,7 +2596,7 @@ struct SCompressRowData
 	int offs;
 };
 
-static void DXTDecompressRow(SCompressRowData data)
+void DXTDecompressRow(SCompressRowData data)
 {
 #if CRY_PLATFORM_WINDOWS
 	SCOPED_DISABLE_FLOAT_EXCEPTIONS();
@@ -2631,7 +2631,7 @@ static void DXTDecompressRow(SCompressRowData data)
 	}
 }
 
-static void DXTDecompressRowFloat(SCompressRowData data)
+void DXTDecompressRowFloat(SCompressRowData data)
 {
 #if CRY_PLATFORM_WINDOWS
 	SCOPED_DISABLE_FLOAT_EXCEPTIONS();
@@ -2666,7 +2666,7 @@ static void DXTDecompressRowFloat(SCompressRowData data)
 	}
 }
 
-static void DXTCompressRow(SCompressRowData data)
+void DXTCompressRow(SCompressRowData data)
 {
 #if CRY_PLATFORM_WINDOWS
 	SCOPED_DISABLE_FLOAT_EXCEPTIONS();
@@ -2701,7 +2701,7 @@ static void DXTCompressRow(SCompressRowData data)
 	}
 }
 
-static void DXTCompressRowFloat(SCompressRowData data)
+void DXTCompressRowFloat(SCompressRowData data)
 {
 #if CRY_PLATFORM_WINDOWS
 	SCOPED_DISABLE_FLOAT_EXCEPTIONS();
