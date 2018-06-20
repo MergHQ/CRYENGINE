@@ -1154,7 +1154,12 @@ void CEntityPhysics::MovePhysics(CEntityPhysics* dstPhysics)
 		PhysicalWorld()->DestroyPhysicalEntity(dstPhysics->m_pPhysicalEntity);
 	}
 
-	for (uint32 i = static_cast<uint32>(CEntity::EInternalFlag::FirstPhysicsFlag); i < static_cast<uint32>(CEntity::EInternalFlag::LastPhysicsFlag) + 1; ++i)
+	using FlagType = std::underlying_type<CEntity::EInternalFlag>::type;
+
+	constexpr FlagType firstFlag = static_cast<FlagType>(CEntity::EInternalFlag::FirstPhysicsFlag);
+	constexpr FlagType endFlag = static_cast<FlagType>(CEntity::EInternalFlag::LastPhysicsFlag) << 1;
+
+	for (FlagType i = firstFlag; i != endFlag; i <<= 1)
 	{
 		dstPhysics->GetEntity()->SetInternalFlag(static_cast<CEntity::EInternalFlag>(i), GetEntity()->HasInternalFlag(static_cast<CEntity::EInternalFlag>(i)));
 		GetEntity()->SetInternalFlag(static_cast<CEntity::EInternalFlag>(i), false);
