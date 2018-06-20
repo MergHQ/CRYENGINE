@@ -257,7 +257,7 @@ private:
 public:
 	char*                 m_pCurScript;
 	CShaderManBin         m_Bin;
-	CResFileLookupDataMan m_ResLookupDataMan[2];  // CACHE_READONLY, CACHE_USER
+	CResFileLookupDataMan m_ResLookupDataMan[2];  // cacheSource::readonly, cacheSource::user
 
 	const char*     mfTemplateTexIdToName(int Id);
 	SShaderGenComb* mfGetShaderGenInfo(const char* nmFX);
@@ -514,8 +514,6 @@ public:
 	void              mfMergeShadersCombinations(FXShaderCacheCombinations* Combinations, int nType);
 	void              mfInsertNewCombination(SShaderCombIdent& Ident, EHWShaderClass eCL, const char* name, int nID, string* Str = NULL, byte bStore = 1);
 	string            mfGetShaderCompileFlags(EHWShaderClass eClass, UPipelineState pipelineState) const;
-	const char*       mfGetLevelListName() const;
-	void              mfExportShaders();
 
 	bool              mfPreloadBinaryShaders();
 
@@ -531,7 +529,7 @@ public:
 	void FilterShaderCombinations(std::vector<SCacheCombination>& Cmbs, const std::vector<CShaderListFilter>& Filters);
 	void mfPrecacheShaders(bool bStatsOnly);
 	void _PrecacheShaderList(bool bStatsOnly);
-	void mfOptimiseShaders(const char* szFolder, bool bForce);
+
 	void mfAddRTCombinations(FXShaderCacheCombinations& CmbsMapSrc, FXShaderCacheCombinations& CmbsMapDst, CHWShader* pSH, bool bListOnly);
 	void mfAddRTCombination_r(int nComb, FXShaderCacheCombinations& CmbsMapDst, SCacheCombination* cmb, CHWShader* pSH, bool bAutoPrecache);
 	void mfAddLTCombinations(SCacheCombination* cmb, FXShaderCacheCombinations& CmbsMapDst);

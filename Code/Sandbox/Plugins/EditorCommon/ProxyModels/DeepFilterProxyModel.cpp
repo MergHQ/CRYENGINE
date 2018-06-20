@@ -2,10 +2,10 @@
 
 #include "stdafx.h"
 #include "DeepFilterProxyModel.h"
-
-#include <QPersistentModelIndex>
-#include <QHash>
 #include "EditorStyleHelper.h"
+
+#include <QHash>
+#include <QPersistentModelIndex>
 
 struct QDeepFilterProxyModel::Implementation
 {
@@ -354,7 +354,7 @@ struct QDeepFilterProxyModel::Implementation
 		}
 		if (m_sourceRootIndex == sourceParent)
 		{
-			return true; // teminator
+			return true; // terminator
 		}
 		if (!sourceParent.isValid())
 		{
@@ -589,4 +589,3 @@ bool QDeepFilterProxyModel::rowMatchesFilter(int sourceRow, const QModelIndex& s
 		return QSortFilterProxyModel::filterAcceptsRow(sourceRow, sourceParent);
 	}
 }
-

@@ -771,11 +771,7 @@ CShader* CShaderMan::mfForName(const char* nameSh, int flags, const CShaderResou
 	gRenDev->ExecuteRenderThreadCommand([=] 
 		{
 			RT_ParseShader(pShader, nMaskGen | nMaskGenHW, flags, pResources);
-
-			if ((pShader->m_Flags & EF_LOADED) && CRendererCVars::CV_r_shaderscacheinmemory)
-				pShader->mfPrecacheAllCombinations();
-		},
-		ERenderCommandFlags::None
+		}
 	);
 
 	return ef;
@@ -873,8 +869,11 @@ void CShaderMan::RT_ParseShader(CShader* pSH, uint64 nMaskGen, uint32 flags, CSh
 		CRY_PROFILE_REGION(PROFILE_RENDERER, "Renderer: RT_ParseShader");
 		CRYPROFILE_SCOPE_PROFILE_MARKER("RT_ParseShader");
 
+
+		bool nukeCaches = false;
+
 #if !defined(SHADER_NO_SOURCES)
-		SShaderBin* pBin = m_Bin.GetBinShader(pSH->m_NameShader, false, 0);
+		SShaderBin* pBin = m_Bin.GetBinShader(pSH->m_NameShader, false, 0, &nukeCaches);
 		if (pBin)
 #endif
 		{
@@ -889,7 +888,7 @@ void CShaderMan::RT_ParseShader(CShader* pSH, uint64 nMaskGen, uint32 flags, CSh
 						gRenDev->m_cEF.m_Bin.m_BinValidCRCs.insert(FXShaderBinValidCRCItor::value_type(pBin->m_dwName, false));
 
 					m_Bin.DeleteFromCache(pBin);
-					pBin = m_Bin.GetBinShader(pSH->m_NameShader, false, nCRC32);
+					pBin = m_Bin.GetBinShader(pSH->m_NameShader, false, nCRC32, &nukeCaches);
 				}
 			}
 #endif
@@ -921,6 +920,31 @@ void CShaderMan::RT_ParseShader(CShader* pSH, uint64 nMaskGen, uint32 flags, CSh
 		{
 			CryWarning(VALIDATOR_MODULE_RENDERER, VALIDATOR_ERROR, "[SHADERS] Failed to load shader '%s'!", pSH->m_NameShader.c_str());
 			pSH->m_Flags |= EF_NOTFOUND;
+		}
+
+		if (nukeCaches)
+		{
+			for (auto& pTech : pSH->m_HWTechniques)
+			{
+				for (auto& techPass : pTech->m_Passes)
+				{
+					CHWShader* shaders[] =
+					{
+						techPass.m_VShader,
+						techPass.m_PShader,
+						techPass.m_GShader,
+						techPass.m_DShader,
+						techPass.m_HShader,
+						techPass.m_CShader
+					};
+
+					for (auto pShader : shaders)
+					{
+						if (pShader)
+							pShader->InvalidateCaches();
+					}
+				}
+			}
 		}
 	}
 	pSH->m_Flags |= EF_LOADED;

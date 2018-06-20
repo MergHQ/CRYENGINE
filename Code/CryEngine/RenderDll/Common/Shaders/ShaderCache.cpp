@@ -43,80 +43,6 @@ uint32 SShaderCombIdent::PostCreate()
 	return hash;
 }
 
-bool CShader::mfPrecacheAllCombinations()
-{
-	bool success = true;
-
-	for (auto& pTech : m_HWTechniques)
-	{
-		for (auto& techPass : pTech->m_Passes)
-		{
-			CHWShader* shaders[] = 
-			{
-				techPass.m_VShader,
-				techPass.m_PShader,
-				techPass.m_GShader,
-				techPass.m_DShader,
-				techPass.m_HShader,
-				techPass.m_CShader
-			};
-
-			for (auto pShader : shaders)
-			{
-				if (pShader)
-					success &= pShader->mfPrecacheAllCombinations(this);
-			}
-		}
-	}
-
-	return success;
-}
-
-bool CShader::mfPrecache(SShaderCombination& cmb, bool bForce, CShaderResources* pRes)
-{
-	bool bRes = true;
-
-	if (!CRenderer::CV_r_shadersAllowCompilation && !bForce)
-		return bRes;
-
-	int nAsync = CRenderer::CV_r_shadersasynccompiling;
-	CRenderer::CV_r_shadersasynccompiling = 0;
-
-	uint32 i, j;
-
-	for (i = 0; i < m_HWTechniques.Num(); i++)
-	{
-		SShaderTechnique* pTech = m_HWTechniques[i];
-		for (j = 0; j < pTech->m_Passes.Num(); j++)
-		{
-			SShaderPass& Pass = pTech->m_Passes[j];
-			SShaderCombination c = cmb;
-
-			CHWShader* const shadersToCompile[] = {
-				Pass.m_VShader,        // Vertex shader
-				Pass.m_PShader,        // Pixel shader
-				Pass.m_GShader,        // Geometry shader
-				Pass.m_HShader,        // Hull shader
-				Pass.m_DShader,        // Domain shader
-				Pass.m_CShader,        // Compute shader
-			};
-
-			for (const auto &shader : shadersToCompile)
-			{
-				uint32 nFlagsShader_MD = cmb.m_MDMask;
-				if (shader)
-					bRes &= shader->mfPrecache(cmb, bForce, false, this, pRes);
-				cmb.m_MDMask = nFlagsShader_MD;
-			}
-
-			cmb = c;
-		}
-	}
-	CRenderer::CV_r_shadersasynccompiling = nAsync;
-
-	return bRes;
-}
-
 SShaderGenComb* CShaderMan::mfGetShaderGenInfo(const char* nmFX)
 {
 	SShaderGenComb* c = NULL;
@@ -1692,12 +1618,12 @@ void CShaderMan::_PrecacheShaderList(bool bStatsOnly)
 		Cmbs.push_back(*cmb);
 	}
 
-	mfExportShaders();
-
 	int nEmpty = 0;
 	int nProcessed = 0;
 	int nCompiled = 0;
 	int nMaterialCombinations = 0;
+
+	std::vector<CShader*> allocatedShaders;
 
 	if (Cmbs.size() >= 1)
 	{
@@ -1847,10 +1773,9 @@ void CShaderMan::_PrecacheShaderList(bool bStatsOnly)
 						SCacheCombination cmbSaved = *cmba;
 
 						// Adjust some flags for low spec
-						CHWShader* shaders[] = { pPass->m_PShader, pPass->m_VShader };
-						for (int i = 0; i < 2; i++)
+						CHWShader* shaders[] = { pPass->m_PShader, pPass->m_VShader, pPass->m_GShader, pPass->m_HShader, pPass->m_CShader, pPass->m_DShader };
+						for (auto* shader : shaders)
 						{
-							CHWShader* shader = shaders[i];
 							if (shader && (!m_szShaderPrecache || (stricmp(m_szShaderPrecache, shader->m_EntryFunc.c_str()) == 0)))
 							{
 								uint64 nFlagsOrigShader_RT = (cmbSaved.Ident.m_RTMask & shader->m_nMaskAnd_RT) | shader->m_nMaskOr_RT;
@@ -1863,23 +1788,12 @@ void CShaderMan::_PrecacheShaderList(bool bStatsOnly)
 								{
 									m_nCombinationsEmpty++;
 									if (!bStatsOnly)
-										shader->mfAddEmptyCombination(pSH, nFlagsOrigShader_RT, nFlagsOrigShader_GL, nFlagsOrigShader_LT, cmbSaved);
+										shader->mfAddEmptyCombination(nFlagsOrigShader_RT, nFlagsOrigShader_GL, nFlagsOrigShader_LT, cmbSaved);
 								}
+
+								shader->mfWriteoutTokensToCache();
 							}
 							
-						}
-
-						if (CParserBin::m_nPlatform & (SF_D3D11 | SF_DURANGO |  SF_ORBIS | SF_GL4 | SF_VULKAN))
-						{
-							CHWShader* d3d11Shaders[] = { pPass->m_GShader, pPass->m_HShader, pPass->m_CShader, pPass->m_DShader };
-							for (int i = 0; i < 4; i++)
-							{
-								CHWShader* shader = d3d11Shaders[i];
-								if (shader && (!m_szShaderPrecache || (stricmp(m_szShaderPrecache, shader->m_EntryFunc.c_str()) == 0)))
-								{
-									shader->PrecacheShader(pSH,cmba->Ident,nFlags);
-								}
-							}
 						}
 
 						if (bStatsOnly)
@@ -1907,7 +1821,8 @@ void CShaderMan::_PrecacheShaderList(bool bStatsOnly)
 			// combinations when no shadertype is defined and the previous shader line
 			// was still async compiling -- needs fix in HWShader for m_nMaskGenFX
 			CHWShader::mfFlushPendedShadersWait(0);
-			SAFE_RELEASE(pSH);
+
+			allocatedShaders.push_back(pSH);
 
 			nProcessed += m_nCombinationsProcess;
 			nCompiled += m_nCombinationsCompiled;
@@ -1922,38 +1837,38 @@ void CShaderMan::_PrecacheShaderList(bool bStatsOnly)
 
 	// Optimise shader resources
 	SOptimiseStats Stats;
-	for (FXShaderCacheNamesItor it = CHWShader::m_ShaderCacheList.begin(); it != CHWShader::m_ShaderCacheList.end(); it++)
+	EHWShaderClass classes[] = { eHWSC_Vertex, eHWSC_Pixel, eHWSC_Geometry, eHWSC_Domain, eHWSC_Hull, eHWSC_Compute };
+	for (const auto &c : classes)
 	{
-		const char* szName = it->first.c_str();
-		SShaderCache* c = CHWShader::mfInitCache(szName, NULL, false, it->second, false);
-		if (c)
+		CryAutoReadLock<CryRWLock> lock(CBaseResource::s_cResLock);
+		const SResourceContainer* shaderCaches = CBaseResource::GetResourcesForClass(CHWShader::mfGetCacheClassName(c));
+		if (!shaderCaches)
+			continue;
+
+		for (auto *resource : shaderCaches->m_RList)
 		{
-			SOptimiseStats _Stats;
-			CHWShader::mfOptimiseCacheFile(c, false, &_Stats);
-			Stats.nEntries += _Stats.nEntries;
-			Stats.nUniqueEntries += _Stats.nUniqueEntries;
-			Stats.nSizeCompressed += _Stats.nSizeCompressed;
-			Stats.nSizeUncompressed += _Stats.nSizeUncompressed;
-			Stats.nTokenDataSize += _Stats.nTokenDataSize;
+			auto *hwCache = static_cast<SHWShaderCache*>(resource);
+			auto* userCache = hwCache ? hwCache->AcquireDiskCache(cacheSource::user) : nullptr;
+
+			// Optimize user disk caches
+			if (userCache)
+			{
+				SOptimiseStats _Stats;
+				userCache->mfOptimiseCacheFile(&_Stats);
+				Stats.nEntries += _Stats.nEntries;
+				Stats.nUniqueEntries += _Stats.nUniqueEntries;
+				Stats.nSizeCompressed += _Stats.nSizeCompressed;
+				Stats.nSizeUncompressed += _Stats.nSizeUncompressed;
+				Stats.nTokenDataSize += _Stats.nTokenDataSize;
+			}
 		}
-		c->Release();
 	}
+
+	for (auto &pSH : allocatedShaders)
+		SAFE_RELEASE(pSH);
 
 	string sShaderPath(gRenDev->m_cEF.m_szUserPath);
 	sShaderPath += gRenDev->m_cEF.m_ShadersCache;
-
-	//CResFileLookupDataMan kLookupDataMan;
-	//kDirDataMan.LoadData(sShaderPath + "direntrydata.bin", CParserBin::m_bEndians);
-	//GenerateResFileDirData(sShaderPath, &kLookupDataMan);
-	//kLookupDataMan.SaveData(sShaderPath + "lookupdata.bin", CParserBin::m_bEndians);
-
-	/*FILE *FP = gEnv->pCryPak->FOpen("Shaders/Cache/ShaderListDone", "w");
-	   if (FP)
-	   {
-	   gEnv->pCryPak->FPrintf(FP, "done: %d", m_nCombinationsProcess);
-	   gEnv->pCryPak->FClose(FP);
-	   }*/
-	CHWShader::m_ShaderCacheList.clear();
 
 	m_eCacheMode = eSC_Normal;
 	m_bReload = false;
@@ -2071,46 +1986,6 @@ static SResFileLookupData* sStoreLookupData(CResFileLookupDataMan& LevelLookup, 
 	}
 	assert(pData);
 	return pData;
-}
-
-void CShaderMan::mfExportShaders()
-{
-}
-
-void CShaderMan::mfOptimiseShaders(const char* szFolder, bool bForce)
-{
-	CHWShader::mfFlushPendedShadersWait(-1);
-
-	float t0 = gEnv->pTimer->GetAsyncCurTime();
-	SShaderCache* pCache;
-	uint32 i;
-
-	std::vector<CCryNameR> Names;
-	mfGatherFilesList(szFolder, Names, 0, false);
-
-	SOptimiseStats Stats;
-	for (i = 0; i < Names.size(); i++)
-	{
-		const char* szName = Names[i].c_str();
-		if (!strncmp(szName, "%USER%/", 7))
-			szName += 7;
-		pCache = CHWShader::mfInitCache(szName, NULL, false, 0, false);
-		if (!pCache || !pCache->m_pRes[CACHE_USER])
-			continue;
-		SOptimiseStats _Stats;
-		CHWShader::mfOptimiseCacheFile(pCache, bForce, &_Stats);
-		Stats.nEntries += _Stats.nEntries;
-		Stats.nUniqueEntries += _Stats.nUniqueEntries;
-		Stats.nSizeCompressed += _Stats.nSizeCompressed;
-		Stats.nSizeUncompressed += _Stats.nSizeUncompressed;
-		Stats.nTokenDataSize += _Stats.nTokenDataSize;
-		Stats.nDirDataSize += _Stats.nDirDataSize;
-		pCache->Release();
-	}
-
-	float t1 = gEnv->pTimer->GetAsyncCurTime();
-	CryLog("-- All shaders combinations optimized in %.2f seconds", t1 - t0);
-	CryLog("-- Shader cache overall stats: Entries: %d, Unique Entries: %d, Size: %.3f, Compressed Size: %.3f, Token data size: %.3f, Directory Size: %.3f Mb", Stats.nEntries, Stats.nUniqueEntries, Stats.nSizeUncompressed / 1024.0f / 1024.0f, Stats.nSizeCompressed / 1024.0f / 1024.0f, Stats.nTokenDataSize / 1024.0f / 1024.0f, Stats.nDirDataSize / 1024.0f / 1024.0f);
 }
 
 struct SMgData

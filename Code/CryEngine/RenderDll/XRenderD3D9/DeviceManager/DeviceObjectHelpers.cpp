@@ -68,7 +68,7 @@ EShaderStage SDeviceObjectHelpers::GetShaderInstanceInfo(THwShaderInfo& result, 
 				Ident.m_pipelineState = pipelineState ? pipelineState[shaderStage] : UPipelineState();
 
 				bool isShaderValid = false;
-				if (auto pInstance = pHWShaderD3D->mfGetInstance(pShader, Ident, 0))
+				if (auto pInstance = pHWShaderD3D->mfGetInstance(Ident, 0))
 				{
 					if (pHWShaderD3D->CheckActivation(pShader, pInstance, 0))
 					{
@@ -79,7 +79,7 @@ EShaderStage SDeviceObjectHelpers::GetShaderInstanceInfo(THwShaderInfo& result, 
 						else
 						{
 							result[shaderStage].pHwShaderInstance = pInstance;
-							result[shaderStage].pDeviceShader = pInstance->m_Handle.m_pShader->m_pHandle;
+							result[shaderStage].pDeviceShader = pInstance->m_Handle.m_pShader->GetHandle();
 
 							validShaderStages |= SHADERSTAGE_FROM_SHADERCLASS(shaderStage);
 						}

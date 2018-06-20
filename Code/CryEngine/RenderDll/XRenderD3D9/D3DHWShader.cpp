@@ -36,10 +36,6 @@ int CHWShader_D3D::s_nInstFrame = -1;
 CHWShader* CHWShader::s_pCurHWVS;
 char *CHWShader::s_GS_MultiRes_NV;
 
-FXShaderCache CHWShader::m_ShaderCache;
-FXShaderDevCache CHWShader::m_ShaderDevCache;
-FXShaderCacheNames CHWShader::m_ShaderCacheList;
-
 namespace
 {
 static inline void TransposeAndStore(UFloat4* sData, const Matrix44A& mMatrix)
@@ -58,40 +54,29 @@ static inline void Store(UFloat4* sData, const Matrix34A& mMatrix)
 }
 }
 
-int SD3DShader::Release(EHWShaderClass eSHClass, int nSize)
+SD3DShader::~SD3DShader() noexcept
 {
-	m_nRef--;
-	if (m_nRef)
-		return m_nRef;
-	void* pHandle = m_pHandle;
-	delete this;
-	if (!pHandle)
-		return 0;
-	if (eSHClass == eHWSC_Pixel)
-		CHWShader_D3D::s_nDevicePSDataSize -= nSize;
+	if (m_eSHClass == eHWSC_Pixel)
+		CHWShader_D3D::s_nDevicePSDataSize -= m_nSize;
 	else
-		CHWShader_D3D::s_nDeviceVSDataSize -= nSize;
-
-	if (eSHClass == eHWSC_Pixel)
-		return ((ID3D11PixelShader*)pHandle)->Release();
-	else if (eSHClass == eHWSC_Vertex)
-		return ((ID3D11VertexShader*)pHandle)->Release();
-	else if (eSHClass == eHWSC_Geometry)
-		return ((ID3D11GeometryShader*)pHandle)->Release();
-	else if (eSHClass == eHWSC_Hull)
-		return ((ID3D11HullShader*)pHandle)->Release();
-	else if (eSHClass == eHWSC_Compute)
-		return ((ID3D11ComputeShader*)pHandle)->Release();
-	else if (eSHClass == eHWSC_Domain)
-		return ((ID3D11DomainShader*)pHandle)->Release();
-	else
-	{
-		assert(0);
-		return 0;
-	}
+		CHWShader_D3D::s_nDeviceVSDataSize -= m_nSize;
+	SAFE_RELEASE(m_pHandle);
 }
 
-void CHWShader_D3D::SHWSInstance::Release(SShaderDevCache* pCache, bool bReleaseData)
+void SHWShaderCache::GetMemoryUsage(ICrySizer* pSizer) const
+{
+	for (const auto &s : m_shaders)
+	{
+		if (stl::holds_alternative<SDeviceShaderEntry>(s.second))
+			pSizer->AddObject(&stl::get<SDeviceShaderEntry>(s.second));
+	}
+	if (m_pDiskShaderCache[0])
+		pSizer->AddObject(m_pDiskShaderCache[0]);
+	if (m_pDiskShaderCache[1])
+		pSizer->AddObject(m_pDiskShaderCache[1]);
+}
+
+void CHWShader_D3D::SHWSInstance::Release()
 {
 	if (m_nParams[0] >= 0)
 		CGParamManager::FreeParametersGroup(m_nParams[0]);
@@ -99,69 +84,14 @@ void CHWShader_D3D::SHWSInstance::Release(SShaderDevCache* pCache, bool bRelease
 		CGParamManager::FreeParametersGroup(m_nParams[1]);
 	if (m_nParams_Inst >= 0)
 		CGParamManager::FreeParametersGroup(m_nParams_Inst);
-
-	int nCount = -1;
-	if (m_Handle.m_pShader)
-	{
-		if (m_eClass == eHWSC_Pixel)
-		{
-			SD3DShader* pPS = m_Handle.m_pShader;
-			if (pPS)
-			{
-				nCount = m_Handle.Release(m_eClass, m_Shader.m_nDataSize);
-			}
-		}
-		else if (m_eClass == eHWSC_Vertex)
-		{
-			SD3DShader* pVS = m_Handle.m_pShader;
-			if (pVS)
-			{
-				nCount = m_Handle.Release(m_eClass, m_Shader.m_nDataSize);
-			}
-		}
-		else if (m_eClass == eHWSC_Geometry)
-		{
-			SD3DShader* pGS = m_Handle.m_pShader;
-			if (pGS)
-			{
-				nCount = m_Handle.Release(m_eClass, m_Shader.m_nDataSize);
-			}
-		}
-		else if (m_eClass == eHWSC_Hull)
-		{
-			SD3DShader* pHS = m_Handle.m_pShader;
-			if (pHS)
-			{
-				nCount = m_Handle.Release(m_eClass, m_Shader.m_nDataSize);
-			}
-		}
-		else if (m_eClass == eHWSC_Compute)
-		{
-			SD3DShader* pCS = m_Handle.m_pShader;
-			if (pCS)
-			{
-				nCount = m_Handle.Release(m_eClass, m_Shader.m_nDataSize);
-			}
-		}
-		else if (m_eClass == eHWSC_Domain)
-		{
-			SD3DShader* pDS = m_Handle.m_pShader;
-			if (pDS)
-			{
-				nCount = m_Handle.Release(m_eClass, m_Shader.m_nDataSize);
-			}
-		}
-	}
+	
+	m_Handle.m_pShader = nullptr;
 
 	if (m_Shader.m_pShaderData)
 	{
 		delete[] (char*)m_Shader.m_pShaderData;
-		m_Shader.m_pShaderData = NULL;
+		m_Shader.m_pShaderData = nullptr;
 	}
-
-	if (!nCount && pCache && !pCache->m_DeviceShaders.empty())
-		pCache->m_DeviceShaders.erase(m_DeviceObjectID);
-	m_Handle.m_pShader = NULL;
 }
 
 void CHWShader_D3D::SHWSInstance::GetInstancingAttribInfo(uint8 Attributes[32], int32& nUsedAttr, int& nInstAttrMask)
@@ -190,44 +120,35 @@ void CHWShader_D3D::SHWSInstance::GetInstancingAttribInfo(uint8 Attributes[32], 
 
 void CHWShader_D3D::ShutDown()
 {
-	CCryNameTSCRC Name;
-	SResourceContainer* pRL;
-
 	uint32 numResourceLeaks = 0;
 
 	// First make sure all HW and FX shaders are released
-	Name = CHWShader::mfGetClassName(eHWSC_Vertex);
-	pRL = CBaseResource::GetResourcesForClass(Name);
-	if (pRL)
+	EHWShaderClass classes[] = {
+		eHWSC_Vertex,
+		eHWSC_Pixel,
+		eHWSC_Geometry,
+		eHWSC_Domain,
+		eHWSC_Hull,
+		eHWSC_Compute
+	};
+	for (const auto &c : classes)
 	{
-		ResourcesMapItor itor;
-		for (itor = pRL->m_RMap.begin(); itor != pRL->m_RMap.end(); itor++)
+		const CCryNameTSCRC Name = CHWShader::mfGetClassName(c);
+		SResourceContainer* pRL = CBaseResource::GetResourcesForClass(Name);
+		if (pRL)
 		{
-			CHWShader* vsh = (CHWShader*)itor->second;
-			if (vsh)
-				++numResourceLeaks;
+			for (const auto &s : pRL->m_RMap)
+			{
+				if (s.second)
+					++numResourceLeaks;
+			}
+			pRL->m_RList.clear();
+			pRL->m_AvailableIDs.clear();
 		}
-		pRL->m_RList.clear();
-		pRL->m_AvailableIDs.clear();
 	}
 
-	Name = CHWShader::mfGetClassName(eHWSC_Pixel);
-	pRL = CBaseResource::GetResourcesForClass(Name);
-	if (pRL)
-	{
-		ResourcesMapItor itor;
-		for (itor = pRL->m_RMap.begin(); itor != pRL->m_RMap.end(); itor++)
-		{
-			CHWShader* psh = (CHWShader*)itor->second;
-			if (psh)
-				++numResourceLeaks;
-		}
-		pRL->m_RList.clear();
-		pRL->m_AvailableIDs.clear();
-	}
-
-	Name = CShader::mfGetClassName();
-	pRL = CBaseResource::GetResourcesForClass(Name);
+	const CCryNameTSCRC Name = CShader::mfGetClassName();
+	SResourceContainer* pRL = CBaseResource::GetResourcesForClass(Name);
 	if (pRL)
 	{
 		ResourcesMapItor itor;
@@ -251,34 +172,99 @@ void CHWShader_D3D::ShutDown()
 
 	gRenDev->m_cEF.m_Bin.mfReleaseFXParams();
 
-#if 0
-	while (!m_ShaderCache.empty())
-	{
-		SShaderCache* pC = m_ShaderCache.begin()->second;
-		CRY_ASSERT(pC);
-		CRY_ASSERT(pC->m_nRefCount == 1);
-
-		SAFE_RELEASE(pC);
-	}
-	m_ShaderCacheList.clear();
-#endif
-
 	CGParamManager::Shutdown();
 
 }
 
-CHWShader* CHWShader::mfForName(const char* name, const char* nameSource, uint32 CRC32, const char* szEntryFunc, EHWShaderClass eClass, TArray<uint32>& SHData, FXShaderToken* pTable, uint32 dwType, CShader* pFX, uint64 nMaskGen, uint64 nMaskGenFX)
+CHWShader::~CHWShader() noexcept
+{
+	if (m_pCache)
+		m_pCache->Release();
+}
+
+CCryNameTSCRC CHWShader::mfGetClassName(EHWShaderClass eClass)
+{
+	static const auto s_sClassNameVertex = CCryNameTSCRC("CHWShader_VS");
+	static const auto s_sClassNamePixel = CCryNameTSCRC("CHWShader_PS");
+	static const auto s_sClassNameGeometry = CCryNameTSCRC("CHWShader_GS");
+	static const auto s_sClassNameDomain = CCryNameTSCRC("CHWShader_DS");
+	static const auto s_sClassNameHull = CCryNameTSCRC("CHWShader_HS");
+	static const auto s_sClassNameCompute = CCryNameTSCRC("CHWShader_CS");
+
+	switch (eClass)
+	{
+	case eHWSC_Vertex:
+		return s_sClassNameVertex;
+	case eHWSC_Pixel:
+		return s_sClassNamePixel;
+	case eHWSC_Geometry:
+		return s_sClassNameGeometry;
+	case eHWSC_Domain:
+		return s_sClassNameDomain;
+	case eHWSC_Hull:
+		return s_sClassNameHull;
+	default:
+		CRY_ASSERT("WTF");
+	case eHWSC_Compute:
+		return s_sClassNameCompute;
+	}
+}
+
+CCryNameTSCRC CHWShader::mfGetCacheClassName(EHWShaderClass eClass)
+{
+	static const auto s_sClassNameVertex = CCryNameTSCRC("CHWShader_cache_VS");
+	static const auto s_sClassNamePixel = CCryNameTSCRC("CHWShader_cache_PS");
+	static const auto s_sClassNameGeometry = CCryNameTSCRC("CHWShader_cache_GS");
+	static const auto s_sClassNameDomain = CCryNameTSCRC("CHWShader_cache_DS");
+	static const auto s_sClassNameHull = CCryNameTSCRC("CHWShader_cache_HS");
+	static const auto s_sClassNameCompute = CCryNameTSCRC("CHWShader_cache_CS");
+
+	switch (eClass)
+	{
+	case eHWSC_Vertex:
+		return s_sClassNameVertex;
+	case eHWSC_Pixel:
+		return s_sClassNamePixel;
+	case eHWSC_Geometry:
+		return s_sClassNameGeometry;
+	case eHWSC_Domain:
+		return s_sClassNameDomain;
+	case eHWSC_Hull:
+		return s_sClassNameHull;
+	default:
+		CRY_ASSERT("WTF");
+	case eHWSC_Compute:
+		return s_sClassNameCompute;
+	}
+}
+
+CHWShader* CHWShader::mfForName(const char* name, const char* nameSource, uint32 CRC32, const char* szEntryFunc, EHWShaderClass eClass, const TArray<uint32>& SHData, const FXShaderToken& Table, uint32 dwType, CShader* pFX, uint64 nMaskGen, uint64 nMaskGenFX)
 {
 	//	LOADING_TIME_PROFILE_SECTION(iSystem);
 	if (!name || !name[0])
-		return NULL;
+		return nullptr;
 
 	MEMSTAT_CONTEXT_FMT(EMemStatContextTypes::MSC_Shader, 0, "%s", name);
 
-	CHWShader_D3D* pSH = NULL;
+	CHWShader_D3D* pSH = nullptr;
 	stack_string strName = name;
-	CCryNameTSCRC className = mfGetClassName(eClass);
 	stack_string AddStr;
+	const auto className = mfGetClassName(eClass);
+
+	if (CParserBin::m_nPlatform == SF_ORBIS)
+		strName += AddStr.Format("(O)");
+	else if (CParserBin::m_nPlatform == SF_DURANGO)
+		strName += AddStr.Format("(D)");
+	else if (CParserBin::m_nPlatform == SF_D3D11)
+		strName += AddStr.Format("(X1)");
+	else if (CParserBin::m_nPlatform == SF_GL4)
+		strName + AddStr.Format("(G4)");
+	else if (CParserBin::m_nPlatform == SF_GLES3)
+		strName + AddStr.Format("(E3)");
+
+	const auto cacheClassName = mfGetCacheClassName(eClass);
+	const string cacheName = strName;
+	const auto cacheNameCrc = CCryNameTSCRC{ cacheName };
 
 	if (nMaskGen)
 	{
@@ -288,59 +274,74 @@ CHWShader* CHWShader::mfForName(const char* name, const char* nameSource, uint32
 		strName += AddStr.Format("(%I64x)", nMaskGen);
 #endif
 	}
-	if (CParserBin::m_nPlatform == SF_ORBIS)
-		strName += AddStr.Format("(O)");
-	else if (CParserBin::m_nPlatform == SF_DURANGO)
-		strName += AddStr.Format("(D)");
-	else if (CParserBin::m_nPlatform == SF_D3D11)
-		strName += AddStr.Format("(X1)", nMaskGen);
-	else if (CParserBin::m_nPlatform == SF_GL4)
-		strName + AddStr.Format("(G4)", nMaskGen);
-	else if (CParserBin::m_nPlatform == SF_GLES3)
-		strName + AddStr.Format("(E3)", nMaskGen);
+	const CCryNameTSCRC Name = strName.c_str();
 
-	CCryNameTSCRC Name = strName.c_str();
-	CBaseResource* pBR = CBaseResource::GetResource(className, Name, false);
+	CBaseResource* pBR = CBaseResource::GetResource(className, Name, true);
 	if (!pBR)
 	{
 		pSH = new CHWShader_D3D;
 		pSH->m_Name = strName.c_str();
 		pSH->m_NameSourceFX = nameSource;
 		pSH->Register(className, Name);
+		pSH->mfFree();
+
 		pSH->m_EntryFunc = szEntryFunc;
-		pSH->mfFree(CRC32);
+		pSH->m_CRC32 = CRC32;
+		pSH->m_eSHClass = eClass;
+
+		// Acquire cache resource
+		auto* hwSharedCache = CBaseResource::GetResource(cacheClassName, cacheNameCrc, true);
+		if (!hwSharedCache)
+		{
+			char dstName[256];
+			pSH->mfGetDstFileName(nullptr, dstName, 256, 0);
+
+			hwSharedCache = new SHWShaderCache(string{ dstName });
+			hwSharedCache->Register(cacheClassName, cacheNameCrc);
+		}
+		pSH->m_pCache = static_cast<SHWShaderCache*>(hwSharedCache);
 	}
 	else
 	{
-		pSH = (CHWShader_D3D*)pBR;
-		pSH->AddRef();
+		pSH = static_cast<CHWShader_D3D*>(pBR);
 		if (pSH->m_CRC32 == CRC32)
 		{
-			if (pTable && CRenderer::CV_r_shadersAllowCompilation)
+			if (CRenderer::CV_r_shadersAllowCompilation)
 			{
-				FXShaderToken* pMap = pTable;
-				TArray<uint32>* pData = &SHData;
-				if (pData->size())
-				  pSH->mfGetCacheTokenMap(pMap, pData, pSH->m_nMaskGenShader);
+				if (SHData.size())
+				{
+					char strName[256];
+#if defined(__GNUC__)
+					cry_sprintf(strName, "$MAP_%llx", pSH->m_nMaskGenShader);
+#else
+					cry_sprintf(strName, "$MAP_%I64x", pSH->m_nMaskGenShader);
+#endif
+					pSH->mfStoreCacheTokenMap(Table, SHData);
+				}
 			}
 			return pSH;
 		}
-		pSH->mfFree(CRC32);
+
+		// CRC mismatch
+		pSH->m_pCache->Reset();
+
+		pSH->mfFree();
 		pSH->m_CRC32 = CRC32;
+		pSH->m_eSHClass = eClass;
 	}
 
 	if (CParserBin::m_bEditable || (CVrProjectionManager::IsMultiResEnabledStatic() && eClass == eHWSC_Vertex))
 	{
-		if (pTable)
-			pSH->m_TokenTable = *pTable;
+		pSH->m_TokenTable = Table;
 		pSH->m_TokenData = SHData;
 	}
 
 	pSH->m_dwShaderType = dwType;
-	pSH->m_eSHClass = eClass;
 	pSH->m_nMaskGenShader = nMaskGen;
 	pSH->m_nMaskGenFX = nMaskGenFX;
-	pSH->m_CRC32 = CRC32;
+
+	pSH->mfWarmupCache(pFX);
+
 	// Check for auto MultiRes-Geom shader
 	if (eClass == eHWSC_Geometry && szEntryFunc[0] == '$')
 	{
@@ -357,13 +358,13 @@ CHWShader* CHWShader::mfForName(const char* name, const char* nameSource, uint32
 			CShader* efGen = pFX->m_pGenShader;
 			if (efGen && efGen->m_ShaderGenParams)
 				gRenDev->m_cEF.m_Bin.AddGenMacros(efGen->m_ShaderGenParams, Parser, pFX->m_nMaskGenFX);
-			Parser.Preprocess(0, pBinGS->m_Tokens, &pBinGS->m_TokenTable);
+			Parser.Preprocess(0, pBinGS->m_Tokens, pBinGS->m_TokenTable);
 			pSH->m_TokenTable = Parser.m_TokenTable;
 			pSH->m_TokenData.Copy(&Parser.m_Tokens[0], Parser.m_Tokens.size());
 		}
 	}
 
-	pSH->mfConstructFX(pTable, &SHData);
+	pSH->mfConstructFX(Table, SHData);
 
 	return pSH;
 }
@@ -417,7 +418,7 @@ uint64 CHWShader_D3D::CheckToken(uint32 nToken)
 	return nMask;
 }
 
-uint64 CHWShader_D3D::CheckIfExpr_r(uint32* pTokens, uint32& nCur, uint32 nSize)
+uint64 CHWShader_D3D::CheckIfExpr_r(const uint32* pTokens, uint32& nCur, uint32 nSize)
 {
 	uint64 nMask = 0;
 
@@ -487,7 +488,7 @@ uint64 CHWShader_D3D::CheckIfExpr_r(uint32* pTokens, uint32& nCur, uint32 nSize)
 	return nMask;
 }
 
-void CHWShader_D3D::mfConstructFX_Mask_RT(FXShaderToken* Table, TArray<uint32>* pSHData)
+void CHWShader_D3D::mfConstructFX_Mask_RT(const TArray<uint32>& SHData)
 {
 	assert(gRenDev->m_cEF.m_pGlobalExt);
 	m_nMaskAnd_RT = 0;
@@ -496,9 +497,9 @@ void CHWShader_D3D::mfConstructFX_Mask_RT(FXShaderToken* Table, TArray<uint32>* 
 		return;
 	SShaderGen* pGen = gRenDev->m_cEF.m_pGlobalExt;
 
-	assert(!pSHData->empty());
-	uint32* pTokens = &(*pSHData)[0];
-	uint32 nSize = pSHData->size();
+	assert(!SHData.empty());
+	const uint32* pTokens = &SHData[0];
+	uint32 nSize = SHData.size();
 	uint32 nCur = 0;
 	while (nCur < nSize)
 	{
@@ -541,246 +542,286 @@ void CHWShader_D3D::mfConstructFX_Mask_RT(FXShaderToken* Table, TArray<uint32>* 
 	mfSetDefaultRT(m_nMaskAnd_RT, m_nMaskOr_RT);
 }
 
-void CHWShader_D3D::mfConstructFX(FXShaderToken* Table, TArray<uint32>* pSHData)
+void CHWShader_D3D::mfConstructFX(const FXShaderToken& Table, const TArray<uint32>& SHData)
 {
 	if (!strnicmp(m_EntryFunc.c_str(), "Sync_", 5))
 		m_Flags |= HWSG_SYNC;
 
-	if (!pSHData->empty())
-		mfConstructFX_Mask_RT(Table, pSHData);
+	if (!SHData.empty())
+		mfConstructFX_Mask_RT(SHData);
 	else
 	{
 		m_nMaskAnd_RT = -1;
 		m_nMaskOr_RT = 0;
 	}
 
-	if (Table && CRenderer::CV_r_shadersAllowCompilation)
+	if (Table.size() && CRenderer::CV_r_shadersAllowCompilation)
 	{
-		FXShaderToken* pMap = Table;
-		TArray<uint32>* pData = pSHData;
-		if (pData->size())
-		  mfGetCacheTokenMap(pMap, pData, m_nMaskGenShader);   // Store tokens
+		if (SHData.size())
+		{
+			char strName[256];
+#if defined(__GNUC__)
+			cry_sprintf(strName, "$MAP_%llx", m_nMaskGenShader);
+#else
+			cry_sprintf(strName, "$MAP_%I64x", m_nMaskGenShader);
+#endif
+			mfStoreCacheTokenMap(Table, SHData);
+		}
 	}
 }
 
-bool CHWShader_D3D::mfPrecacheAllCombinations(CShader* pSH, int cacheType)
+bool CHWShader_D3D::mfWarmupCache(CShader* pFX)
+{
+	static constexpr auto fVersion = static_cast<float>(FX_CACHE_VER);
+
+	std::vector<cacheSource> cacheTypes = { cacheSource::readonly };
+	if (CRendererCVars::CV_r_shadersAllowCompilation)
+		cacheTypes = { cacheSource::user, cacheSource::readonly };
+	if (CRendererCVars::CV_r_shadersediting || gRenDev->IsShaderCacheGenMode())
+		cacheTypes = { cacheSource::user };
+
+	for (const auto &cacheType : cacheTypes)
+	{
+		auto cache = AcquireDiskCache(cacheType);
+
+		// Validate version and crc
+		bool validCache = !!cache->m_pRes;
+		if (validCache)
+		{
+			const SResFileLookupData* pLookup = cache->m_pRes->GetLookupData();
+			if (!pLookup)
+			{
+				if (cacheType != cacheSource::user)
+					LogWarningEngineOnly("WARNING: Shader cache '%s' does not have lookup data!", cache->m_pRes->mfGetFileName());
+				validCache = false;
+			}
+			else if (pLookup->m_CacheMajorVer != (int)fVersion || pLookup->m_CacheMinorVer != (int)(((float)fVersion - (float)(int)fVersion) * 10.1f))
+			{
+				if (cacheType != cacheSource::user)
+					LogWarningEngineOnly("WARNING: Shader cache '%s' version mismatch (Cache: %d.%d, Expected: %.1f)", cache->m_pRes->mfGetFileName(), pLookup->m_CacheMajorVer, pLookup->m_CacheMinorVer, fVersion);
+				validCache = false;
+			}
+			else if (pLookup->m_CRC32 != m_CRC32)
+			{
+				if (cacheType != cacheSource::user)
+					LogWarningEngineOnly("WARNING: Shader cache '%s' CRC mismatch", cache->m_pRes->mfGetFileName());
+				validCache = false;
+			}
+		}
+
+		if (cacheType == cacheSource::user && !validCache)
+		{
+			// Recreate user cache
+			cache = 
+				(m_pCache->m_pDiskShaderCache[static_cast<int>(cacheType)] = stl::make_unique<SDiskShaderCache>(SDiskShaderCache::recreateUserCacheTag{}, m_pCache->GetName().c_str(), m_CRC32, fVersion)).get();
+			validCache = cache && cache->m_pRes;
+		}
+
+		if (!validCache)
+			continue;
+
+		if (CRendererCVars::CV_r_ShadersCachePrecacheAll && gcpRendD3D->m_cEF.m_nCombinationsProcess <= 0)
+		{
+			CResFileOpenScope rfOpenGuard(cache->m_pRes);
+			const auto openResult = rfOpenGuard.open(RA_READ | (CParserBin::m_bEndians ? RA_ENDIANS : 0), &gRenDev->m_cEF.m_ResLookupDataMan[static_cast<int>(cacheType)], nullptr);
+			if (!openResult)
+			{
+				CryLog("CHWShader_D3D::mfWarmupCache(): Failed to open cache '%s'", rfOpenGuard.getHandle()->mfGetFileName());
+				continue;
+			}
+
+			// Precache combinations
+			mfPrecacheAllCombinations(pFX, rfOpenGuard, *cache);
+		}
+	}
+
+	return true;
+}
+
+SDeviceShaderEntry CHWShader_D3D::mfShaderEntryFromCache(CShader* pFX, const CDirEntry& de, CResFileOpenScope &rfOpenGuard, SDiskShaderCache &cache)
+{
+	const auto offset = de.GetOffset();
+	const auto size = de.GetSize();
+	const auto name = de.GetName().get();
+
+	// Decompress from library
+	auto decompressedDataAndSize = cache.DecompressResource(
+		rfOpenGuard,
+		offset,
+		size);
+
+	// Read resource
+	const std::unique_ptr<byte[]> pData = std::move(decompressedDataAndSize.first);
+	const int32 dataSize = static_cast<int32>(decompressedDataAndSize.second);
+	auto cacheItemHeader = pData ? *reinterpret_cast<const SShaderCacheHeaderItem*>(pData.get()) : SShaderCacheHeaderItem{};
+	CRY_ASSERT(dataSize && pData);
+	// Bad bad shader (invalid size, data or uncompiled stub entry)
+	if (dataSize <= sizeof(SShaderCacheHeaderItem) || !pData || cacheItemHeader.m_Class == 255)
+		return {};
+
+	CRY_ASSERT(this->m_eSHClass == cacheItemHeader.m_Class);
+
+	// Create fake instance
+	SHWSInstance instance = {};
+	instance.m_DeviceObjectID = name;
+	instance.m_eClass = this->m_eSHClass;
+	instance.m_nVertexFormat = cacheItemHeader.m_nVertexFormat;
+	instance.m_nInstructions = cacheItemHeader.m_nInstructions;
+	instance.m_VStreamMask_Decl = cacheItemHeader.m_StreamMask_Decl;
+	instance.m_VStreamMask_Stream = cacheItemHeader.m_StreamMask_Stream;
+
+	std::vector<SCGBind> bindsFromCache;
+	const byte* pShaderData = pData.get() + sizeof(SShaderCacheHeaderItem);
+	const byte* pBuf = mfBindsFromCache(bindsFromCache, cacheItemHeader.m_nInstBinds, pShaderData);
+	const auto nSize = dataSize - sizeof(SShaderCacheHeaderItem) - std::distance(pBuf, pShaderData);
+
+	// Store whole binary for vertex shaders and other vertex properties, as they are special that way (and need the binary for generating input layout).
+	std::unique_ptr<byte[]> pVertexShaderBinary;
+#if CRY_RENDERER_VULKAN
+	std::vector<SVertexInputStream>  VSInputStreams;
+#endif
+	std::vector<SCGBind> bindVars;
+
+	if (!gRenDev->IsShaderCacheGenMode())
+	{
+		// Upload to device
+		if (!mfUploadHW(&instance, pBuf, nSize, pFX, 0))
+		{
+			CRY_ASSERT_MESSAGE(false, "CHWShader_D3D::mfShaderEntryFromCache(): mfUploadHW() failed!");
+			return {};
+		}
+
+		// Reflect binds
+		void* pShaderReflBuf = nullptr;
+		HRESULT hr = D3DReflect(pBuf, nSize, IID_ID3D11ShaderReflection, &pShaderReflBuf);
+		ID3D11ShaderReflection* pShaderReflection = (ID3D11ShaderReflection*)pShaderReflBuf;
+		if (hr != S_OK)
+		{
+			CRY_ASSERT_MESSAGE(false, "CHWShader_D3D::mfShaderEntryFromCache(): D3DReflect() failed!");
+			return {};
+		}
+		if (pShaderReflection)
+			mfCreateBinds(bindVars, pShaderReflection, (std::size_t)nSize);
+
+		// Vertex shenanigans
+		if (instance.m_eClass == EHWShaderClass::eHWSC_Vertex)
+		{
+			pVertexShaderBinary = std::unique_ptr<byte[]>{ new byte[nSize] };
+			std::memcpy(pVertexShaderBinary.get(), pBuf, nSize);
+
+#if CRY_PLATFORM_ORBIS || CRY_PLATFORM_DURANGO || CRY_RENDERER_VULKAN
+			D3DBlob* pS = NULL;
+			D3DCreateBlob(nSize, (D3DBlob**)&pS);
+			DWORD* pBuffer = (DWORD*)pS->GetBufferPointer();
+			memcpy(pBuffer, pBuf, nSize);
+			mfVertexFormat(&instance, this, pS, nullptr);
+			SAFE_RELEASE(pS);
+
+			// Override header vertex format and stream stuff
+			cacheItemHeader.m_nVertexFormat = instance.m_nVertexFormat;
+			cacheItemHeader.m_StreamMask_Stream = instance.m_VStreamMask_Stream;
+			cacheItemHeader.m_StreamMask_Decl = instance.m_VStreamMask_Decl;
+#if CRY_RENDERER_VULKAN
+			VSInputStreams = std::move(instance.m_VSInputStreams);
+#endif
+#endif
+		}
+	}
+
+	const auto vertexShaderBinarySize = static_cast<std::size_t>(pVertexShaderBinary ? nSize : 0);
+	return SDeviceShaderEntry
+	{
+		cacheItemHeader,
+		std::move(bindVars),
+		std::move(pVertexShaderBinary),
+		vertexShaderBinarySize,
+#if CRY_RENDERER_VULKAN
+		std::move(VSInputStreams),
+#endif
+		std::move(instance.m_Handle.m_pShader) 
+	};
+}
+
+void CHWShader_D3D::mfPrecacheAllCombinations(CShader* pFX, CResFileOpenScope &rfOpenGuard, SDiskShaderCache &cache)
 {
 #if CRY_RENDERER_VULKAN || CRY_RENDERER_GNM
-	return false;
+	return;
 #endif
 
-	if (gcpRendD3D->m_cEF.m_nCombinationsProcess > 0)
-		return false;
-
+	CRY_ASSERT(gRenDev->m_pRT->IsRenderThread());
 	CRY_PROFILE_REGION(PROFILE_RENDERER, "CHWShader_D3D::mfPrecacheAllCombinations()");
 
-	CRY_ASSERT(CRendererCVars::CV_r_shaderscacheinmemory);
-	CRY_ASSERT(gRenDev->m_pRT->IsRenderThread());
+	std::vector<std::pair<size_t, const SDeviceShaderEntry*>> entries;
+	const auto entries_pred = [](const typename decltype(entries)::value_type &lhs, std::size_t rhs) noexcept { return std::get<0>(lhs) < rhs; };
+	// Vector of duplicated entries (offset and name)
+	std::vector<std::pair<size_t, SHWShaderCache::deviceShaderCacheKey>> duplicates;
 
-	char nameCache[256];
-	mfGetDstFileName(nullptr, this, nameCache, CRY_ARRAY_COUNT(nameCache), 0);
-	PathUtil::ReplaceExtension(nameCache, "fxcb");
+	// Log
+	CryLog("---Shader Cache: mfPrecacheAllCombinations() %s", rfOpenGuard.getHandle()->mfGetFileName());
 
-	if (!m_pDevCache)
+	// Go over all entries
+	auto &devCache = GetDevCache();
+	for (const auto& shaderEntry : *rfOpenGuard.getHandle()->mfGetDirectory())
 	{
-		// init device shader cache
-		m_pDevCache = mfInitDevCache(nameCache, this);
-	}
+		const auto offset = shaderEntry.GetOffset();
+		const auto name = shaderEntry.GetName().get();
+		const auto devCacheKey = static_cast<SHWShaderCache::deviceShaderCacheKey>(name);
 
-	// open shader cache file if not open already
-	const bool readOnly = CRenderer::CV_r_shadersAllowCompilation == 0;
-	const bool async = false;
-	if (!m_pGlobalCache || m_pGlobalCache->m_nPlatform != CParserBin::m_nPlatform ||
-		(!readOnly && !m_pGlobalCache->m_pRes[CACHE_USER]))
-	{
-		SAFE_RELEASE(m_pGlobalCache);
-		m_pGlobalCache = mfInitCache(nameCache, this, true, m_CRC32, readOnly, async);
-	}
+		// Already exists or invalid
+		if (!shaderEntry.IsValid() || 
+			(shaderEntry.GetFlags() & (RF_RES_$TOKENS | RF_RES_$)))
+			continue;
 
-	if (m_pGlobalCache->isValid() && m_pGlobalCache->m_pRes[cacheType])
-	{
-		// preload entire file
-		CResFile& cacheResourceFile = *m_pGlobalCache->m_pRes[cacheType];
-		if (!m_pGlobalCache->m_pBinary[cacheType] && !m_pGlobalCache->ReadResource(&cacheResourceFile, cacheType))
-			return false;
-		// Don't precache twice
-		if (m_pDevCache->m_DeviceShaders.size())
-			return false;
-
-		// Log
-		if (CRenderer::CV_r_shadersdebug == 3 || CRenderer::CV_r_shadersdebug == 4)
-			iLog->Log("---Shader Cache: mfPrecacheAllCombinations() %s", pSH->GetName());
-
-		// decompress and upload all shaders in file
-		CResFileOpenScope rfOpenGuard(&cacheResourceFile);
-		rfOpenGuard.open(RA_READ | (CParserBin::m_bEndians ? RA_ENDIANS : 0), &gRenDev->m_cEF.m_ResLookupDataMan[cacheType], nullptr);
-
-		// Vector of pairs of offset and shader pointer
-		std::vector<std::pair<size_t, SD3DShader*>> entries;
-		const auto entries_pred = [](const std::pair<size_t, SD3DShader*> &lhs, std::size_t rhs) noexcept { return lhs.first < rhs; };
-		// Vector of duplicated entries (offset and name)
-		std::vector<std::pair<size_t, int>> duplicates;
-		// Go over all entries
-		for (const auto& shaderEntry : *cacheResourceFile.mfGetDirectory())
+		// Store duplicates for later and continue
+		if (shaderEntry.IsDuplicate())
 		{
-			const auto offset = shaderEntry.GetOffset(); 
-			const auto size = shaderEntry.GetSize();
-			const auto name = shaderEntry.GetName().get();
-
-			if (!shaderEntry.IsValid() || (shaderEntry.GetFlags() & (RF_RES_$TOKENS | RF_RES_$)))
-				continue;
-
-			// Store duplicates for later and continue
-			if (shaderEntry.IsDuplicate())
-			{
-				duplicates.emplace_back(offset, name);
-				continue;
-			}
-
-			// Decompress from library
-			auto decompressedDataAndSize = m_pGlobalCache->DecompressResource(
-				cacheResourceFile.mfGetVersion(),
-				CACHE_READONLY,
-				offset,
-				size,
-				cacheResourceFile.RequiresSwapEndianOnRead());
-
-			std::unique_ptr<byte[]> pData = std::move(decompressedDataAndSize.first);
-			const int32 dataSize = static_cast<int32>(decompressedDataAndSize.second);
-			if (dataSize == 0 || !pData)
-				continue;
-
-			// skip header and binds
-			auto pCacheItem = reinterpret_cast<SShaderCacheHeaderItem*>(pData.get());
-			byte* pShaderData = pData.get() + sizeof(SShaderCacheHeaderItem);
-
-			const uint32_t nFlags = 0;
-			if (pCacheItem->m_Class == 255)
-				continue;
-
-			// Create fake instance
-			SHWSInstance instance = {};
-			instance.m_DeviceObjectID = name;
-			instance.m_eClass = (EHWShaderClass)pCacheItem->m_Class;
-			instance.m_nVertexFormat = pCacheItem->m_nVertexFormat;
-			instance.m_nInstructions = pCacheItem->m_nInstructions;
-			instance.m_VStreamMask_Decl = pCacheItem->m_StreamMask_Decl;
-			instance.m_VStreamMask_Stream = pCacheItem->m_StreamMask_Stream;
-
-			std::vector<SCGBind>* pInstBinds = nullptr;
-			byte* pBuf = mfBindsFromCache(pInstBinds, pCacheItem->m_nInstBinds, pShaderData);
-			const auto nSize = dataSize - sizeof(SShaderCacheHeaderItem) - std::distance(pBuf, pShaderData);
-
-			// Upload to device
-			if (!mfUploadHW(&instance, pBuf, nSize, pSH, nFlags))
-			{
-				CRY_ASSERT_MESSAGE(false, "mfUploadHW() failed");
-				SAFE_DELETE(pInstBinds);
-				continue;
-			}
-
-			m_pDevCache->m_DeviceShaders.insert(std::make_pair(name, instance.m_Handle.m_pShader));
-			{
-				// Store in entries vector
-				auto it = std::lower_bound(entries.begin(), entries.end(), offset, entries_pred);
-				CRY_ASSERT_MESSAGE(it == entries.end() || it->first > offset, "Duplicate!");
-				entries.emplace(it, offset, instance.m_Handle.m_pShader);
-			}
-
-			// Generate reflection stuff
-			void* pConstantTable = nullptr;
-			void* pShaderReflBuf = nullptr;
-			auto hr = D3DReflect(pBuf, nSize, IID_ID3D11ShaderReflection, &pShaderReflBuf);
-			ID3D11ShaderReflection* pShaderReflection = (ID3D11ShaderReflection*)pShaderReflBuf;
-			if (SUCCEEDED(hr))
-				pConstantTable = (void*)pShaderReflection;
-			if (m_eSHClass == eHWSC_Vertex || gRenDev->IsEditorMode())
-			{
-				instance.m_Shader.m_pShaderData = new byte[nSize];
-				instance.m_Shader.m_nDataSize = nSize;
-				memcpy(instance.m_Shader.m_pShaderData, pBuf, nSize);
-			}
-
-			CRY_ASSERT(hr == S_OK);
-
-			if (pConstantTable)
-				mfCreateBinds(&instance, pConstantTable, pBuf, nSize);
-
-			mfGatherFXParameters(&instance, &instance.m_pBindVars, pInstBinds, this, 0, pSH);
-			SAFE_DELETE(pInstBinds);
-			SAFE_RELEASE(pShaderReflection);
+			duplicates.emplace_back(offset, devCacheKey);
+			continue;
 		}
 
-		// Handle duplicates
-		for (const auto &p : duplicates)
-		{
-			const auto offset = p.first;
-			auto it = std::lower_bound(entries.begin(), entries.end(), offset, entries_pred);
-			CRY_ASSERT_MESSAGE(it != entries.end() && it->first == offset, "Entry not found!");
+		// Find where this goes into the entries list
+		auto it = std::lower_bound(entries.begin(), entries.end(), offset, entries_pred);
+		CRY_ASSERT_MESSAGE(it == entries.end() || std::get<0>(*it) > offset, "CHWShader_D3D::mfPrecacheAllCombinations(): Unmarked duplicate entry!");
 
-			// Add duplicate entry
-			if (it != entries.end() && it->first == offset)
-				m_pDevCache->m_DeviceShaders.insert(std::make_pair(p.second, it->second));
+		// Check for dev cache items with identical name
+		const auto devCacheIt = devCache.find(devCacheKey);
+		if (devCacheIt != devCache.end())
+		{
+			entries.emplace(it, offset, reinterpret_cast<const SDeviceShaderEntry*>(&devCacheIt->second));
+			continue;
 		}
 
-		return true;
+		// Generate entry
+		auto entry = mfShaderEntryFromCache(pFX, shaderEntry, rfOpenGuard, cache);
+		if (!entry)
+		{
+			entries.emplace(it, offset, nullptr);
+			continue;
+		}
+
+		// Store in the entries vector
+		SHWShaderCache::deviceShaderCacheValue v;
+		v.emplace<SDeviceShaderEntry>(std::move(entry));
+		auto insertResult = devCache.emplace(
+			std::piecewise_construct,
+			std::forward_as_tuple(devCacheKey), 
+			std::forward_as_tuple(std::move(v)));
+ 		const auto* ptr = &insertResult.first->second;
+		entries.emplace(it, offset, reinterpret_cast<const SDeviceShaderEntry*>(ptr));
 	}
 
-	return false;
-}
-
-
-bool CHWShader_D3D::mfPrecache(SShaderCombination& cmb, bool bForce, bool bFallback, CShader* pSH, CShaderResources* pRes)
-{
-#if CRY_RENDERER_VULKAN || CRY_RENDERER_GNM
-	return false;
-#endif
-
-	assert(gRenDev->m_pRT->IsRenderThread());
-
-	bool bRes = true;
-
-	if (!CRenderer::CV_r_shadersAllowCompilation && !bForce)
-		return bRes;
-
-	uint64 AndRTMask = 0;
-	uint64 OrRTMask = 0;
-	mfSetDefaultRT(AndRTMask, OrRTMask);
-	SShaderCombIdent Ident;
-	Ident.m_RTMask = (cmb.m_RTMask & AndRTMask) | OrRTMask;
-	Ident.m_pipelineState.opaque = cmb.m_pipelineState.opaque;
-	Ident.m_MDVMask = cmb.m_MDVMask;
-	if (m_eSHClass == eHWSC_Pixel)
-		Ident.m_MDVMask = CParserBin::m_nPlatform;
-	if (m_Flags & HWSG_SUPPORTS_MULTILIGHTS)
-		Ident.m_LightMask = 1;
-	Ident.m_GLMask = m_nMaskGenShader;
-	uint32 nFlags = HWSF_PRECACHE;
-
-	if (m_eSHClass == eHWSC_Pixel && pRes)
+	// Handle duplicates
+	for (const auto &p : duplicates)
 	{
-		SHWSInstance* pInst = mfGetInstance(pSH, Ident, HWSF_PRECACHE_INST);
-		pInst->m_bFallback = bFallback;
-		int nResult = CheckActivation(pSH, pInst, HWSF_PRECACHE);
-		if (!nResult)
-			return bRes;
+		const auto offset = p.first;
+		auto it = std::lower_bound(entries.begin(), entries.end(), offset, entries_pred);
+		CRY_ASSERT_MESSAGE(it != entries.end() && std::get<0>(*it) == offset, "CHWShader_D3D::mfPrecacheAllCombinations(): Duplicate entry not found!");
 
-		pInst->m_fLastAccess = gRenDev->GetFrameSyncTime().GetSeconds();
-		Ident.m_MDMask = cmb.m_MDMask & ~HWMD_TEXCOORD_FLAG_MASK;
+		// Add duplicate entry
+		const auto ptr = std::get<1>(*it);
+		if (it != entries.end() && std::get<0>(*it) == offset && ptr)
+			devCache.insert(std::make_pair(p.second, SHWShaderCache::deviceShaderCacheValue{ ptr }));
 	}
-
-	if (Ident.m_MDMask || bForce)
-	{
-		SHWSInstance* pInst = mfGetInstance(pSH, Ident, HWSF_PRECACHE_INST);
-		pInst->m_bFallback = bFallback;
-		int nResult = CheckActivation(pSH, pInst, HWSF_PRECACHE);
-		if (!nResult)
-			return bRes;
-
-		pInst->m_fLastAccess = gRenDev->GetFrameSyncTime().GetSeconds();
-	}
-
-	return bRes;
 }
 
 //==============================================================================================
@@ -1642,11 +1683,9 @@ bool CHWShader_D3D::PrecacheShader(CShader* pShader, const SShaderCombIdent &cac
 
 	ModifyLTMask(Ident.m_LightMask);
 
-	SHWSInstance* pInst = mfGetInstance(pShader, Ident, nFlags);
+	SHWSInstance* pInst = mfGetInstance(Ident, nFlags);
 	if (!pInst)
-	{
 		return false;
-	}
 
 	return CheckActivation(pShader, pInst, nFlags) != 0;
 }
@@ -2072,7 +2111,7 @@ void CHWShader_D3D::mfSetParameters(SCGParam* pParams, const int nINParams, EHWS
 
 //=========================================================================================
 
-void CHWShader_D3D::mfReset(uint32 CRC32)
+void CHWShader_D3D::mfReset()
 {
 	DETAILED_PROFILE_MARKER("mfReset");
 	for (uint32 i = 0; i < m_Insts.size(); i++)
@@ -2080,20 +2119,23 @@ void CHWShader_D3D::mfReset(uint32 CRC32)
 		m_pCurInst = m_Insts[i];
 		assert(m_pCurInst);
 		PREFAST_ASSUME(m_pCurInst);
-		if (!m_pCurInst->m_bDeleted)
-			m_pCurInst->Release(m_pDevCache);
 
 		delete m_pCurInst;
 	}
 	m_pCurInst = NULL;
 	m_Insts.clear();
 
-	mfCloseCacheFile();
+	if (m_pCache)
+	{
+		m_pCache->Release();
+		m_pCache = nullptr;
+	}
+	m_CachedTokens = {};
 }
 
 CHWShader_D3D::~CHWShader_D3D()
 {
-	mfFree(0);
+	mfFree();
 }
 
 void CHWShader_D3D::mfInit()
@@ -2108,8 +2150,7 @@ void CHWShader_D3D::mfConstruct()
 		s_bInitShaders = false;
 	}
 
-	m_pCurInst = NULL;
-	m_pDevCache = NULL;
+	m_pCurInst = nullptr;
 	m_nCurInstFrame = 0;
 
 	m_dwShaderType = 0;
@@ -2123,15 +2164,13 @@ ED3DShError CHWShader_D3D::mfFallBack(SHWSInstance*& pInst, int nStatus)
 
 ED3DShError CHWShader_D3D::mfIsValid_Int(SHWSInstance*& pInst, bool bFinalise)
 {
-	//if (stricmp(m_EntryFunc.c_str(), "FPPS") && stricmp(m_EntryFunc.c_str(), "FPVS") && stricmp(m_EntryFunc.c_str(), "AuxGeomPS") && stricmp(m_EntryFunc.c_str(), "AuxGeomVS"))
-	//  return mfFallBack(pInst, 0);
-
 	if (pInst->m_Handle.m_bStatus == 1)
 	{
 		return mfFallBack(pInst, -1);
 	}
 	if (pInst->m_Handle.m_bStatus == 2)
 		return ED3DShError_Fake;
+
 	if (pInst->m_Handle.m_pShader == NULL)
 	{
 		if (pInst->m_bAsyncActivating)
@@ -2203,7 +2242,6 @@ void CHWShader::mfLazyUnload()
 				else if (fTime - pInst->m_fLastAccess > fThr)
 				{
 					pPS->m_pCurInst = pInst;
-					pInst->Release(pPS->m_pDevCache, false);
 					pInst->m_bDeleted = true;
 					nDeleted++;
 					nUnloaded++;
@@ -2247,7 +2285,6 @@ void CHWShader::mfLazyUnload()
 				else if (fTime - pInst->m_fLastAccess > CRenderer::CV_r_shaderslazyunload)
 				{
 					pVS->m_pCurInst = pInst;
-					pInst->Release(pVS->m_pDevCache, false);
 					pInst->m_bDeleted = true;
 					nDeleted++;
 					nUnloaded++;
@@ -2322,7 +2359,7 @@ CHWShader_D3D::SHWSInstance* CHWShader_D3D::mfGetHashInst(InstContainer* pInstCo
 	return pInst;
 }
 
-CHWShader_D3D::SHWSInstance* CHWShader_D3D::mfGetInstance(CShader* pSH, int nHashInstance, SShaderCombIdent& Ident)
+CHWShader_D3D::SHWSInstance* CHWShader_D3D::mfGetInstance(int nHashInstance, SShaderCombIdent& Ident)
 {
 	DETAILED_PROFILE_MARKER("mfGetInstance");
 	FUNCTION_PROFILER_RENDER_FLAT
@@ -2334,7 +2371,7 @@ CHWShader_D3D::SHWSInstance* CHWShader_D3D::mfGetInstance(CShader* pSH, int nHas
 	return pInst;
 }
 
-CHWShader_D3D::SHWSInstance* CHWShader_D3D::mfGetInstance(CShader* pSH, SShaderCombIdent& Ident, uint32 nFlags)
+CHWShader_D3D::SHWSInstance* CHWShader_D3D::mfGetInstance(SShaderCombIdent& Ident, uint32 nFlags)
 {
 	DETAILED_PROFILE_MARKER("mfGetInstance");
 	FUNCTION_PROFILER_RENDER_FLAT
@@ -2359,7 +2396,6 @@ CHWShader_D3D::SHWSInstance* CHWShader_D3D::mfGetInstance(CShader* pSH, SShaderC
 	{
 		pInst = new SHWSInstance;
 		pInst->m_nVertexFormat = 1;
-		pInst->m_nCache = -1;
 		s_nInstFrame++;
 		pInst->m_Ident = Ident;
 		pInst->m_eClass = m_eSHClass;

@@ -272,7 +272,7 @@ void CDeviceGraphicsCommandInterfaceImpl::PrepareRenderPassForUseImpl(CDeviceRen
 		RequestTransition(renderPass.m_pDepthStencilTarget, VK_IMAGE_LAYOUT_DEPTH_STENCIL_ATTACHMENT_OPTIMAL, VK_ACCESS_DEPTH_STENCIL_ATTACHMENT_READ_BIT | VK_ACCESS_DEPTH_STENCIL_ATTACHMENT_WRITE_BIT);
 	}
 
-	for (uint32 i = 0; i < renderPass.m_renderTargetCount; ++i)
+	for (uint32 i = 0; i < renderPass.m_RenderTargetCount; ++i)
 	{
 		RequestTransition(renderPass.m_renderTargets[i], VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL, VK_ACCESS_COLOR_ATTACHMENT_READ_BIT | VK_ACCESS_COLOR_ATTACHMENT_WRITE_BIT);
 	}

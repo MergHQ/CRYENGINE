@@ -12,9 +12,9 @@
 
 #ifdef SHADERS_SERIALIZING
 
-bool CShaderSerialize::_OpenSResource(float fVersion, SSShaderRes* pSR, CShader* pSH, int nCache, CResFile* pRF, bool bReadOnly)
+bool CShaderSerialize::_OpenSResource(float fVersion, SSShaderRes* pSR, CShader* pSH, cacheSource nCache, CResFile* pRF, bool bReadOnly)
 {
-	assert(nCache == CACHE_USER || nCache == CACHE_READONLY);
+	assert(nCache == cacheSource::user || nCache == cacheSource::readonly);
 
 	SSShaderCacheHeader hd;
 	ZeroStruct(hd);
@@ -75,7 +75,7 @@ bool CShaderSerialize::_OpenSResource(float fVersion, SSShaderRes* pSR, CShader*
 				}
 			}
 		}
-		if (bValid && nCache == CACHE_USER)
+		if (bValid && nCache == cacheSource::user)
 		{
 			pRF->mfClose();
 			if (!pRF->mfOpen(RA_READ | (CParserBin::m_bEndians ? RA_ENDIANS : 0) | RA_WRITE, NULL, NULL))
@@ -85,7 +85,7 @@ bool CShaderSerialize::_OpenSResource(float fVersion, SSShaderRes* pSR, CShader*
 			}
 		}
 	}
-	if (!bValid && nCache == CACHE_USER && !bReadOnly && pSH->m_CRC32) //Create ResFile
+	if (!bValid && nCache == cacheSource::user && !bReadOnly && pSH->m_CRC32) //Create ResFile
 	{
 		if (!pRF->mfOpen(RA_CREATE | (CParserBin::m_bEndians ? RA_ENDIANS : 0), NULL, NULL))
 			return false;
@@ -122,9 +122,9 @@ bool CShaderSerialize::_OpenSResource(float fVersion, SSShaderRes* pSR, CShader*
 		SAFE_DELETE(pRF);
 	}
 
-	pSR->m_pRes[nCache] = pRF;
-	pSR->m_Header[nCache] = hd;
-	pSR->m_bReadOnly[nCache] = bReadOnly;
+	pSR->m_pRes[static_cast<int>(nCache)] = pRF;
+	pSR->m_Header[static_cast<int>(nCache)] = hd;
+	pSR->m_bReadOnly[static_cast<int>(nCache)] = bReadOnly;
 
 	if (bValid && !pSH->m_CRC32)
 		pSH->m_CRC32 = hd.m_CRC32;
@@ -143,7 +143,7 @@ bool CShaderSerialize::OpenSResource(const char* szName, SSShaderRes* pSR, CShad
 	{
 		stack_string szEngine = stack_string("%ENGINE%/") + stack_string(szName);
 		CResFile* rfRO = new CResFile(szEngine.c_str());
-		bValidRO = _OpenSResource(fVersion, pSR, pSH, bDontUseUserFolder ? CACHE_READONLY : CACHE_USER, rfRO, bReadOnly);
+		bValidRO = _OpenSResource(fVersion, pSR, pSH, bDontUseUserFolder ? cacheSource::readonly : cacheSource::user, rfRO, bReadOnly);
 	}
 
 	// now %USER%
@@ -152,7 +152,7 @@ bool CShaderSerialize::OpenSResource(const char* szName, SSShaderRes* pSR, CShad
 	{
 		stack_string szUser = stack_string(gRenDev->m_cEF.m_szUserPath.c_str()) + stack_string(szName);
 		CResFile* rfUser = new CResFile(szUser.c_str());
-		bValidUser = _OpenSResource(fVersion, pSR, pSH, CACHE_USER, rfUser, bReadOnly);
+		bValidUser = _OpenSResource(fVersion, pSR, pSH, cacheSource::user, rfUser, bReadOnly);
 	}
 #endif
 
@@ -192,11 +192,11 @@ SSShaderRes* CShaderSerialize::InitSResource(CShader* pSH, bool bDontUseUserFold
 		{
 			int nCache[2] = { -1, -1 };
 			if (!bReadOnly || bDontUseUserFolder)
-				nCache[0] = CACHE_USER;
+				nCache[0] = static_cast<int>(cacheSource::user);
 			else if (!bDontUseUserFolder || bReadOnly)
 			{
-				nCache[0] = CACHE_USER;
-				nCache[1] = CACHE_READONLY;
+				nCache[0] = static_cast<int>(cacheSource::user);
+				nCache[1] = static_cast<int>(cacheSource::readonly);
 			}
 			for (int i = 0; i < 2; i++)
 			{
@@ -211,9 +211,9 @@ SSShaderRes* CShaderSerialize::InitSResource(CShader* pSH, bool bDontUseUserFold
 				}
 			}
 			bool bValid = true;
-			if (!bReadOnly && !pSR->m_pRes[CACHE_USER])
+			if (!bReadOnly && !pSR->m_pRes[static_cast<int>(cacheSource::user)])
 				bValid = false;
-			else if ((!bDontUseUserFolder || bReadOnly) && !pSR->m_pRes[CACHE_READONLY] && !pSR->m_pRes[CACHE_USER])
+			else if ((!bDontUseUserFolder || bReadOnly) && !pSR->m_pRes[static_cast<int>(cacheSource::readonly)] && !pSR->m_pRes[static_cast<int>(cacheSource::user)])
 				bValid = false;
 			if (!bValid)
 			{
@@ -242,13 +242,13 @@ SSShaderRes* CShaderSerialize::InitSResource(CShader* pSH, bool bDontUseUserFold
 
 	if (pSH->m_CRC32 == 0 && pSR)
 	{
-		if (pSR->m_pRes[CACHE_READONLY])
+		if (pSR->m_pRes[static_cast<int>(cacheSource::readonly)])
 		{
-			pSH->m_CRC32 = pSR->m_Header[CACHE_READONLY].m_CRC32;
+			pSH->m_CRC32 = pSR->m_Header[static_cast<int>(cacheSource::readonly)].m_CRC32;
 		}
-		else if (pSR->m_pRes[CACHE_USER])
+		else if (pSR->m_pRes[static_cast<int>(cacheSource::user)])
 		{
-			pSH->m_CRC32 = pSR->m_Header[CACHE_USER].m_CRC32;
+			pSH->m_CRC32 = pSR->m_Header[static_cast<int>(cacheSource::user)].m_CRC32;
 		}
 	}
 
@@ -268,12 +268,12 @@ void CShaderSerialize::ClearSResourceCache()
 	m_SShaderResources.clear();
 }
 
-bool CShaderSerialize::ExportHWShader(CHWShader* pShader, SShaderSerializeContext& SC)
+bool CShaderSerialize::ExportHWShader(CShader *pSH, CHWShader* pShader, SShaderSerializeContext& SC)
 {
 	if (!pShader)
 		return false;
 
-	bool bRes = pShader->Export(SC);
+	bool bRes = pShader->Export(pSH, SC);
 
 	return bRes;
 }
@@ -296,7 +296,7 @@ bool CShaderSerialize::ExportShader(CShader* pSH, CShaderManBin& binShaderMgr)
 	uint32 i;
 	int j;
 
-	if (!pSR || !pSR->m_pRes[CACHE_USER])
+	if (!pSR || !pSR->m_pRes[static_cast<int>(cacheSource::user)])
 		return false;
 
 	SShaderSerializeContext SC;
@@ -375,7 +375,7 @@ bool CShaderSerialize::ExportShader(CShader* pSH, CShaderManBin& binShaderMgr)
 			if (P.m_VShader)
 			{
 				PS.m_nVShaderOffs = SC.Data.Num();
-				if (!ExportHWShader(P.m_VShader, SC))
+				if (!ExportHWShader(pSH, P.m_VShader, SC))
 				{
 					PS.m_nVShaderOffs = -1;
 					CryFatalError("Shader export failed. Set r_shadersExport=0 and inform AndyM");
@@ -389,7 +389,7 @@ bool CShaderSerialize::ExportShader(CShader* pSH, CShaderManBin& binShaderMgr)
 			if (P.m_PShader)
 			{
 				PS.m_nPShaderOffs = SC.Data.Num();
-				if (!ExportHWShader(P.m_PShader, SC))
+				if (!ExportHWShader(pSH, P.m_PShader, SC))
 				{
 					PS.m_nPShaderOffs = -1;
 					CryFatalError("Shader export failed. Set r_shadersExport=0 and inform AndyM");
@@ -474,17 +474,17 @@ bool CShaderSerialize::ExportShader(CShader* pSH, CShaderManBin& binShaderMgr)
 	#endif
 
 	CDirEntry de(sName, nLen, RF_COMPRESS);
-	pSR->m_pRes[CACHE_USER]->mfFileAdd(&de);
+	pSR->m_pRes[static_cast<int>(cacheSource::user)]->mfFileAdd(&de);
 
 	//create open dir and populate data
-	SDirEntryOpen* pOpenDir = pSR->m_pRes[CACHE_USER]->mfOpenEntry(de.GetName());
+	SDirEntryOpen* pOpenDir = pSR->m_pRes[static_cast<int>(cacheSource::user)]->mfOpenEntry(de.GetName());
 	pOpenDir->pData = &Data[0];
 	pOpenDir->nSize = de.GetSize();
 
 	//Preserve modification time
-	uint64 modTime = pSR->m_pRes[CACHE_USER]->mfGetModifTime();
+	uint64 modTime = pSR->m_pRes[static_cast<int>(cacheSource::user)]->mfGetModifTime();
 
-	pSR->m_pRes[CACHE_USER]->mfFlush();
+	pSR->m_pRes[static_cast<int>(cacheSource::user)]->mfFlush();
 
 	return bRes;
 }
@@ -496,7 +496,7 @@ float g_fTime2;
 bool CShaderSerialize::CheckFXBExists(CShader* pSH)
 {
 	SSShaderRes* pSR = InitSResource(pSH, false, true);
-	if (!pSR || (!pSR->m_Header[CACHE_USER].m_CRC32 && !pSR->m_Header[CACHE_READONLY].m_CRC32))
+	if (!pSR || (!pSR->m_Header[static_cast<int>(cacheSource::user)].m_CRC32 && !pSR->m_Header[static_cast<int>(cacheSource::readonly)].m_CRC32))
 		return false;
 
 	char sName[128];
@@ -554,7 +554,7 @@ bool CShaderSerialize::ImportShader(CShader* pSH, CShaderManBin& binShaderMgr)
 		//try global cache
 		pSR = InitSResource(pSH, !CRenderer::CV_r_shadersAllowCompilation, true);
 
-		if (pSR && (pSR->m_Header[CACHE_USER].m_CRC32 != 0 || pSR->m_Header[CACHE_READONLY].m_CRC32 != 0))
+		if (pSR && (pSR->m_Header[static_cast<int>(cacheSource::user)].m_CRC32 != 0 || pSR->m_Header[static_cast<int>(cacheSource::readonly)].m_CRC32 != 0))
 		{
 			for (i = 0; i < 2; i++)
 			{

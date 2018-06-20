@@ -1319,7 +1319,7 @@ public:
 	CStandardGraphicsPipeline&     GetGraphicsPipeline() { return *m_pGraphicsPipeline; }
 
 	template<typename RenderThreadCallback>
-	void ExecuteRenderThreadCommand(RenderThreadCallback&& callback, ERenderCommandFlags flags)
+	void ExecuteRenderThreadCommand(RenderThreadCallback&& callback, ERenderCommandFlags flags = ERenderCommandFlags::None)
 	{
 		m_pRT->ExecuteRenderThreadCommand(std::forward<RenderThreadCallback>(callback), flags);
 	}

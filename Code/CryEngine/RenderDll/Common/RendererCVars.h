@@ -129,7 +129,7 @@ public:
 	static int CV_r_shadersasyncactivation;
 	static int CV_r_shadersasyncmaxthreads;
 	static int CV_r_shaderscachedeterministic;
-	static int CV_r_shaderscacheinmemory;
+	static int CV_r_ShadersCachePrecacheAll;
 	static int CV_r_shaderssubmitrequestline;
 	static int CV_r_shaderslogcachemisses;
 	static int CV_r_shadersImport;

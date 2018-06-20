@@ -80,7 +80,8 @@ void CResFile::mfDeactivate(bool bReleaseDir)
 
 	if (m_handle)
 	{
-		mfFlush();
+		if (m_typeaccess != RA_READ)
+			mfFlush();
 		gEnv->pCryPak->FClose(m_handle);
 		m_handle = NULL;
 	}
@@ -213,27 +214,30 @@ void CResFile::mfSetError(const char* er, ...)
 	va_end(args);
 }
 
-SResFileLookupData* CResFile::GetLookupData(bool bCreate, uint32 CRC, float fVersion) const
+SResFileLookupData* CResFile::GetLookupData() const
 {
 	if (m_pLookupDataMan)
 	{
 		CCryNameTSCRC name = m_pLookupDataMan->AdjustName(m_name.c_str());
 		SResFileLookupData* pData = m_pLookupDataMan->GetData(name);
-		uint32 nMinor = (int)(((float)fVersion - (float)(int)fVersion) * 10.1f);
-		uint32 nMajor = (int)fVersion;
-
-		if (bCreate && (!pData || (CRC && pData->m_CRC32 != CRC) || pData->m_CacheMinorVer != nMinor || pData->m_CacheMajorVer != nMajor || pData->m_OffsetDir != m_nOffsDir || pData->m_NumOfFilesUnique != m_nNumFilesUnique))
-		{
-			m_pLookupDataMan->AddData(this, CRC);
-			pData = m_pLookupDataMan->GetData(name);
-			m_pLookupDataMan->MarkDirty(true);
-			assert(pData);
-		}
-
 		return pData;
 	}
 
-	return NULL;
+	return nullptr;
+}
+
+void CResFile::StoreLookupData(uint32 CRC, float fVersion)
+{
+	if (m_pLookupDataMan)
+	{
+		CCryNameTSCRC name = m_pLookupDataMan->AdjustName(m_name.c_str());
+
+		m_pLookupDataMan->AddData(this, CRC);
+		SResFileLookupData* pData = m_pLookupDataMan->GetData(name);
+		m_pLookupDataMan->MarkDirty(true);
+
+		CRY_ASSERT(pData);
+	}
 }
 
 const char* CResFile::mfGetError(void)
@@ -345,9 +349,6 @@ void CResStreamDirCallback::StreamOnComplete(IReadStream* pStream, unsigned nErr
 
 		pRes->m_bDirStreaming = false;
 	}
-
-	SShaderCache* pCache = pStreamInfo->m_pCache;
-	pCache->Release();
 }
 
 int CResFile::mfLoadDir(SResStreamInfo* pStreamInfo)
@@ -378,7 +379,6 @@ int CResFile::mfLoadDir(SResStreamInfo* pStreamInfo)
 			StrParams.pBuffer = &m_Dir[0];
 			StrParams.nOffset = m_nOffsDir;
 			StrParams.nSize = nSizeDir;
-			pStreamInfo->m_pCache->AddRef();
 
 			CryAutoLock<CryCriticalSection> lock(pStreamInfo->m_StreamLock);
 			pStreamInfo->m_dirReadStreams.push_back(iSystem->GetStreamEngine()->StartRead(
@@ -931,7 +931,6 @@ void CResStreamCallback::StreamOnComplete(IReadStream* pStream, unsigned nError)
 	assert(pStreamInfo);
 	if (!pStreamInfo)
 		return;
-	SShaderCache* pCache = pStreamInfo->m_pCache;
 	uint32 i;
 	bool bFound = false;
 
@@ -953,7 +952,6 @@ void CResStreamCallback::StreamOnComplete(IReadStream* pStream, unsigned nError)
 		}
 		assert(bFound);
 	}
-	pCache->Release();
 }
 
 int CResFile::mfFileRead(CDirEntry* de)
@@ -1003,7 +1001,6 @@ int CResFile::mfFileRead(CDirEntry* de)
 		StrParams.pBuffer = NULL;
 		StrParams.nOffset = de->offset;
 		StrParams.nSize = de->size;
-		m_pStreamInfo->m_pCache->AddRef();
 		//Warning("Warning: CResFile::mfFileRead: '%s' Ref: %d", m_name.c_str(), n);
 		pEntry->m_readStream = iSystem->GetStreamEngine()->StartRead(eStreamTaskTypeShader, m_name.c_str(), &m_pStreamInfo->m_Callback, &StrParams);
 		return -1;
@@ -1550,8 +1547,7 @@ int CResFile::mfFlushDir(long nOffset)
 	SAFE_DELETE_ARRAY(buf);
 	m_bDirValid = true;
 
-	SResFileLookupData* pLookup = GetLookupData(false, 0, 0);
-
+	SResFileLookupData* pLookup = GetLookupData();
 	if (pLookup)
 	{
 		pLookup->m_NumOfFilesUnique = m_nNumFilesUnique;

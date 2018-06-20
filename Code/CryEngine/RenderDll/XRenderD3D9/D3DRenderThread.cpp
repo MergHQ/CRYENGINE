@@ -256,35 +256,6 @@ void CD3D9Renderer::RT_CreateRenderResources()
 
 void CD3D9Renderer::RT_PrecacheDefaultShaders()
 {
-	CRY_PROFILE_REGION(PROFILE_RENDERER, "CD3D9Renderer::RT_PrecacheDefaultShaders");
-
-	SShaderCombination cmb;
-
-	m_cEF.s_ShaderStereo->mfPrecache(cmb, true, nullptr);
-
-#if defined(FEATURE_SVO_GI)
-	m_cEF.s_ShaderSVOGI->mfPrecache(cmb, true, nullptr);
-#endif
-	m_cEF.s_ShaderCommon->mfPrecache(cmb, true, nullptr);
-	m_cEF.s_ShaderDebug->mfPrecache(cmb, true, nullptr);
-	m_cEF.s_ShaderDeferredCaustics->mfPrecache(cmb, true, nullptr);
-	m_cEF.s_ShaderDeferredRain->mfPrecache(cmb, true, nullptr);
-	m_cEF.s_ShaderDeferredSnow->mfPrecache(cmb, true, nullptr);
-	m_cEF.s_shDeferredShading->mfPrecache(cmb, true, nullptr);
-	m_cEF.s_shPostDepthOfField->mfPrecache(cmb, true, nullptr);
-	m_cEF.s_ShaderDXTCompress->mfPrecache(cmb, true, nullptr);
-	m_cEF.s_ShaderLensOptics->mfPrecache(cmb, true, nullptr);
-	m_cEF.s_ShaderSoftOcclusionQuery->mfPrecache(cmb, true, nullptr);
-	m_cEF.s_shPostMotionBlur->mfPrecache(cmb, true, nullptr);
-	m_cEF.s_ShaderOcclTest->mfPrecache(cmb, true, nullptr);
-	m_cEF.s_shPostEffectsGame->mfPrecache(cmb, true, nullptr);
-	m_cEF.s_shPostEffectsRenderModes->mfPrecache(cmb, true, nullptr);
-	m_cEF.s_shPostAA->mfPrecache(cmb, true, nullptr);
-	m_cEF.s_ShaderShadowBlur->mfPrecache(cmb, true, nullptr);
-	m_cEF.s_shPostSunShafts->mfPrecache(cmb, true, nullptr);
-	m_cEF.s_ShaderClouds->mfPrecache(cmb, true, nullptr);
-	m_cEF.s_ShaderGpuParticles->mfPrecache(cmb, true, nullptr);
-
 #if RENDERER_SUPPORT_SCALEFORM
 	SF_PrecacheShaders();
 #endif

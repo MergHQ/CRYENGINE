@@ -20,15 +20,15 @@
 #include "Menu/AbstractMenu.h"
 
 #include <Serialization/QPropertyTree/QPropertyTree.h>
-#include <ProxyModels/DeepFilterProxyModel.h>
 
-#include <QLayout>
+#include <QFileInfo>
 #include <QInputDialog>
 #include <QLabel>
+#include <QLayout>
+#include <QSortFilterProxyModel>
 #include <QSplitter>
 #include <QStatusBar>
 #include <QToolBar>
-#include <QFileInfo>
 
 DECLARE_PYTHON_MODULE(vegetation);
 
@@ -415,7 +415,7 @@ struct CVegetationEditor::SImplementation : public IEditorNotifyListener
 		static CVegetationTreeView* CreateVegetationTreeView(QAbstractItemModel* pModel, QWidget* pParent)
 		{
 			auto pVegetationTreeView = new CVegetationTreeView(pParent);
-			auto pFilterModel = new QDeepFilterProxyModel();
+			auto pFilterModel = new QSortFilterProxyModel();
 			pFilterModel->setSourceModel(pModel);
 			pVegetationTreeView->setModel(pFilterModel);
 
@@ -464,7 +464,7 @@ struct CVegetationEditor::SImplementation : public IEditorNotifyListener
 			return pPreviewWidget;
 		}
 
-		// Using QDeepFilterProxyModel, we need to unmap indices received from selection before usage.
+		// Using QSortFilterProxyModel, we need to unmap indices received from selection before usage.
 		QModelIndex GetSelectedSourceIndex() const
 		{
 			QAbstractProxyModel* pProxy = static_cast<QAbstractProxyModel*>(pVegetationTreeView->model());

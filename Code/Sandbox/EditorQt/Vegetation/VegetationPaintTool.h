@@ -6,9 +6,9 @@
 #include <CrySandbox/CrySignal.h>
 #include "Qt/Widgets/QEditToolButton.h"
 
-class CVegetationObject;
 struct CVegetationInstance;
 class CVegetationMap;
+class CVegetationObject;
 
 class CVegetationPaintTool : public CEditTool
 {
@@ -19,7 +19,7 @@ public:
 	virtual string GetDisplayName() const override { return "Paint Vegetation"; }
 	virtual void   Display(SDisplayContext& dc);
 
-	// Overides from CEditTool
+	// Overrides from CEditTool
 	virtual bool MouseCallback(CViewport* pView, EMouseEvent event, CPoint& point, int flags) override;
 
 	// Key down.
@@ -27,7 +27,7 @@ public:
 	virtual bool                             OnKeyUp(CViewport* pView, uint32 key, uint32 repCnt, uint32 flags) override;
 
 	void                                     SetBrushRadius(float r);
-	float                                    GetBrushRadius() const { return m_brushRadius; };
+	float                                    GetBrushRadius() const { return m_brushRadius; }
 
 	void                                     PaintBrush();
 	void                                     PlaceThing(CViewport* pView, const CPoint& point);
@@ -41,8 +41,6 @@ public:
 	CCrySignal<void()> signalBrushRadiusChanged;
 
 protected:
-	virtual ~CVegetationPaintTool() {}
-	// Delete itself.
 	virtual void DeleteThis() override { delete this; }
 
 protected:
@@ -68,4 +66,3 @@ private:
 	static const float s_minBrushRadius;
 	static const float s_maxBrushRadius;
 };
-
