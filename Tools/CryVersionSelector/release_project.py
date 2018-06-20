@@ -379,7 +379,7 @@ def run_command(command, silent=True):
             subprocess.check_call(command_str)
     except subprocess.CalledProcessError as exception:
         if not exception.returncode == 0:
-            print("Encountered and error while running command '{}'!".format(
+            print("Encountered an error while running command '{}'!".format(
                 command_str))
             print(exception.output)
             return False
