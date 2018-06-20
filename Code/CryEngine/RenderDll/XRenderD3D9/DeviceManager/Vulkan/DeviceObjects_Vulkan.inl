@@ -42,7 +42,7 @@ public:
 	VkExtent2D                                                                           m_frameBufferExtent;
 	std::array<NCryVulkan::CImageResource*, CDeviceRenderPassDesc::MaxRendertargetCount> m_renderTargets;
 	NCryVulkan::CImageResource*                                                          m_pDepthStencilTarget;
-	int                                                                                  m_renderTargetCount;
+	int                                                                                  m_RenderTargetCount;
 };
 
 ////////////////////////////////////////////////////////////////////////////
