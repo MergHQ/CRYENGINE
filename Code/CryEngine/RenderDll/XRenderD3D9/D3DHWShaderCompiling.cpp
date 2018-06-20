@@ -2204,6 +2204,9 @@ SDeviceShaderEntry CHWShader_D3D::mfGetCacheItem(CShader* pFX, const char *name,
 	LOADING_TIME_PROFILE_SECTION(gEnv->pSystem);
 
 	CResFileOpenScope rfOpenGuard(cache->m_pRes);
+	if (!rfOpenGuard.open(RA_READ | (CParserBin::m_bEndians ? RA_ENDIANS : 0), &gRenDev->m_cEF.m_ResLookupDataMan[static_cast<int>(cache->GetType())], nullptr))
+		return {};
+
 	bool bAsync = false;
 	const CDirEntry* de = rfOpenGuard.getHandle()->mfGetEntry(name, &bAsync);
 	if (de)
