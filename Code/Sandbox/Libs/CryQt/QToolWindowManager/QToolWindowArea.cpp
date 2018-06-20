@@ -519,7 +519,8 @@ QRect QToolWindowArea::combineAreaRect() const
 
 void QToolWindowArea::showContextMenu(const QPoint& point)
 {
-	if (point.isNull() || m_manager->isMainWrapper(parentWidget()))
+	//If this is the only window on the main wrapper (or the last tab) we need to keep it there
+	if (point.isNull() || (m_manager->isMainWrapper(parentWidget()) && (tabBar()->count() <= 1)))
 		return;
 
 	QToolWindowSingleTabAreaFrame* singleTabFrame = qobject_cast<QToolWindowSingleTabAreaFrame*>(currentWidget());
