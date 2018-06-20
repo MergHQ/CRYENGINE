@@ -77,10 +77,6 @@ void CD3D9Renderer::LimitFramerate(const int maxFPS, const bool bUseSleep)
 }
 
 CCryNameTSCRC CTexture::s_sClassName = CCryNameTSCRC("CTexture");
-
-CCryNameTSCRC CHWShader::s_sClassNameVS = CCryNameTSCRC("CHWShader_VS");
-CCryNameTSCRC CHWShader::s_sClassNamePS = CCryNameTSCRC("CHWShader_PS");
-
 CCryNameTSCRC CShader::s_sClassName = CCryNameTSCRC("CShader");
 
 CD3D9Renderer gcpRendD3D;
@@ -1713,12 +1709,12 @@ void CD3D9Renderer::DebugDrawStats1(const SRenderStatistics& RStats)
 				{
 					for (j = 0; j < (int)ShadersVS.Num(); j++)
 					{
-						if (ShadersVS[j] == pShInst->m_Handle.m_pShader->m_pHandle)
+						if (ShadersVS[j] == pShInst->m_Handle.m_pShader->GetHandle())
 							break;
 					}
 					if (j == ShadersVS.Num())
 					{
-						ShadersVS.AddElem(pShInst->m_Handle.m_pShader->m_pHandle);
+						ShadersVS.AddElem(pShInst->m_Handle.m_pShader->GetHandle());
 					}
 				}
 			}
@@ -1751,12 +1747,12 @@ void CD3D9Renderer::DebugDrawStats1(const SRenderStatistics& RStats)
 				{
 					for (j = 0; j < (int)ShadersPS.Num(); j++)
 					{
-						if (ShadersPS[j] == pShInst->m_Handle.m_pShader->m_pHandle)
+						if (ShadersPS[j] == pShInst->m_Handle.m_pShader->GetHandle())
 							break;
 					}
 					if (j == ShadersPS.Num())
 					{
-						ShadersPS.AddElem(pShInst->m_Handle.m_pShader->m_pHandle);
+						ShadersPS.AddElem(pShInst->m_Handle.m_pShader->GetHandle());
 					}
 				}
 			}
@@ -1767,23 +1763,6 @@ void CD3D9Renderer::DebugDrawStats1(const SRenderStatistics& RStats)
 	n = 0;
 	nSize = 0;
 	size_t nSizeD = 0;
-	size_t nSizeAll = 0;
-
-	FXShaderCacheItor FXitor;
-	size_t nCache = 0;
-	nSize = 0;
-	for (FXitor = CHWShader::m_ShaderCache.begin(); FXitor != CHWShader::m_ShaderCache.end(); FXitor++)
-	{
-		SShaderCache* sc = FXitor->second;
-		if (!sc)
-			continue;
-		nCache++;
-		nSize += sc->Size();
-	}
-	IRenderAuxText::Draw2dLabel(nX, nY += nYstep, fFSize, &col.r, false, "Shader Cache: %" PRISIZE_T " (size: %.3f Mb)", nCache, BYTES_TO_MB(nSize));
-
-	nSize = 0;
-	n = 0;
 	CRenderElement* pRE = CRenderElement::s_RootGlobal.m_NextGlobal;
 	while (pRE != &CRenderElement::s_RootGlobal)
 	{
@@ -2326,7 +2305,7 @@ void CD3D9Renderer::DebugPrintShader(CHWShader_D3D* pSH, void* pI, int nX, int n
 	nY += 25;
 
 	SD3DShader* pHWS = pInst->m_Handle.m_pShader;
-	if (!pHWS || !pHWS->m_pHandle)
+	if (!pHWS || !pHWS->GetHandle())
 		return;
 	if (!pInst->m_Shader.m_pShaderData)
 		return;
@@ -5002,10 +4981,6 @@ void CD3D9Renderer::GetMemoryUsage(ICrySizer* Sizer)
 		{
 			SIZER_COMPONENT_NAME(Sizer, "Shader resources");
 			Sizer->AddObject(CShader::s_ShaderResources_known);
-		}
-		{
-			SIZER_COMPONENT_NAME(Sizer, "ShaderCache");
-			Sizer->AddObject(CHWShader::m_ShaderCache);
 		}
 		{
 			CryAutoReadLock<CryRWLock> lock(CBaseResource::s_cResLock);

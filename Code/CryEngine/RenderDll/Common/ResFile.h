@@ -226,7 +226,8 @@ public:
 		return m_pLookupDataMan;
 	}
 
-	SResFileLookupData* GetLookupData(bool bCreate, uint32 CRC, float fVersion) const;
+	SResFileLookupData* GetLookupData() const;
+	void                StoreLookupData(uint32 CRC, float fVersion);
 
 	const char* mfGetError(void);
 	void        mfSetError(const char* er, ...);

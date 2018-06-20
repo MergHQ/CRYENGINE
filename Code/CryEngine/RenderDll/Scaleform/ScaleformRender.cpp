@@ -361,9 +361,6 @@ void CD3D9Renderer::SF_PrecacheShaders()
 	if (!pShader)
 		return;
 
-	SShaderCombination cmb;
-	pShader->mfPrecache(cmb, true, NULL);
-
 	SDeviceObjectHelpers::THwShaderInfo shaderInfoXY16i;
 	SDeviceObjectHelpers::THwShaderInfo shaderInfoXY16iC32;
 	SDeviceObjectHelpers::THwShaderInfo shaderInfoXY16iCF32;

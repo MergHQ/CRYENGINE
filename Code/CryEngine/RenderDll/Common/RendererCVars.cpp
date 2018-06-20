@@ -285,7 +285,7 @@ int CRendererCVars::CV_r_shadersasynccompiling;
 int CRendererCVars::CV_r_shadersasyncactivation;
 int CRendererCVars::CV_r_shadersasyncmaxthreads;
 int CRendererCVars::CV_r_shaderscachedeterministic;
-int CRendererCVars::CV_r_shaderscacheinmemory;
+int CRendererCVars::CV_r_ShadersCachePrecacheAll;
 AllocateConstIntCVar(CRendererCVars, CV_r_shadersprecachealllights);
 AllocateConstIntCVar(CRendererCVars, CV_r_ReflectTextureSlots);
 int CRendererCVars::CV_r_shaderssubmitrequestline;
@@ -945,15 +945,6 @@ static void ShadersPrecacheList(IConsoleCmdArgs* Cmd)
 static void ShadersStatsList(IConsoleCmdArgs* Cmd)
 {
 	gRenDev->m_cEF.mfPrecacheShaders(true);
-}
-
-static void ShadersOptimise(IConsoleCmdArgs* Cmd)
-{
-	string userFolderCache = PathUtil::Make(gRenDev->m_cEF.m_szUserPath.c_str(), gRenDev->m_cEF.m_ShadersCache);
-	CParserBin::SetupForPlatform(CRenderer::ShaderTargetFlag);
-	CryLogAlways("\nStarting shaders optimizing for %s...", CRenderer::CV_r_ShaderTarget->GetString());
-	iLog->Log("Optimize user folder: '%s'", userFolderCache.c_str());
-	gRenDev->m_cEF.mfOptimiseShaders(userFolderCache.c_str(), false);
 }
 
 #endif
@@ -2259,7 +2250,7 @@ void CRendererCVars::InitCVars()
 
 	REGISTER_CVAR3("r_ShadersAsyncMaxThreads", CV_r_shadersasyncmaxthreads, 1, VF_DUMPTODISK, "");
 	REGISTER_CVAR3("r_ShadersCacheDeterministic", CV_r_shaderscachedeterministic, 1, VF_NULL, "Ensures that 2 shaderCaches built from the same source are binary equal");
-	REGISTER_CVAR3("r_ShadersCacheInMemory", CV_r_shaderscacheinmemory, 1, VF_NULL, "Caches compressed compiled shaders in memory");
+	REGISTER_CVAR3("r_ShadersCachePrecacheAll", CV_r_ShadersCachePrecacheAll, 1, VF_NULL, "Precaches all possible combinations for every shader instance");
 	DefineConstIntCVar3("r_ShadersPrecacheAllLights", CV_r_shadersprecachealllights, 1, VF_NULL, "");
 	REGISTER_CVAR3("r_ShadersSubmitRequestline", CV_r_shaderssubmitrequestline, 1, VF_NULL, "");
 
@@ -2783,7 +2774,6 @@ void CRendererCVars::InitCVars()
 #if CRY_PLATFORM_DESKTOP
 	REGISTER_COMMAND("r_PrecacheShaderList", &ShadersPrecacheList, VF_NULL, "");
 	REGISTER_COMMAND("r_StatsShaderList", &ShadersStatsList, VF_NULL, "");
-	REGISTER_COMMAND("r_OptimiseShaders", &ShadersOptimise, VF_NULL, "");
 #endif
 
 	DefineConstIntCVar3("r_TextureCompressor", CV_r_TextureCompressor, 1, VF_DUMPTODISK,
