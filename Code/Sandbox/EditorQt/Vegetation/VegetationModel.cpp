@@ -319,7 +319,7 @@ bool CVegetationModel::setData(const QModelIndex& index, const QVariant& value, 
 
 	if (bDataChanged)
 	{
-		dataChanged(index, index);
+		dataChanged(QModelIndex(), QModelIndex());
 	}
 
 	return bDataChanged;
