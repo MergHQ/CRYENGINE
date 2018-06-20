@@ -1659,11 +1659,12 @@ IEntityComponent* CEntity::CreateComponentByInterfaceID(const CryInterfaceID& in
 	}
 	else
 	{
-		auto visitComponentsLambda = [interfaceId, &pEnvComponent](const Schematyc::IEnvComponent& component)
+		auto visitComponentsLambda = [interfaceId, &pEnvComponent, &pClassDescription](const Schematyc::IEnvComponent& component)
 		{
 			if (component.GetDesc().FindBaseByTypeID(interfaceId) != nullptr)
 			{
 				pEnvComponent = &component;
+				pClassDescription = &component.GetDesc();
 				return Schematyc::EVisitStatus::Stop;
 			}
 
