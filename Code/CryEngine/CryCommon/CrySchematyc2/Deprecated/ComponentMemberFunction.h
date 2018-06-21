@@ -21,6 +21,7 @@
 #include "CrySchematyc2/Env/IEnvRegistry.h"
 #include "CrySchematyc2/Services/ILog.h"
 #include "CrySchematyc2/Utils/StringUtils.h"
+#include <CryReflection/IFunctionDesc.h>
 
 #define SCHEMATYC2_MAKE_COMPONENT_MEMBER_FUNCTION_SHARED(function, guid, componentGUID) Schematyc2::SMakeComponentMemberFunctionShared<TYPE_OF(&function)>()(&function, guid, componentGUID, TemplateUtils::GetFunctionName<TYPE_OF(&function), &function>(), __FILE__, "Code")
 
@@ -152,9 +153,10 @@ namespace Schematyc2
 		{
 		public:
 
-			inline CBase(const SGUID& guid, const SGUID& componentGUID, const char* szDeclaration, const char* szFileName, const char* szProjectDir)
+			inline CBase(const SGUID& guid, const SGUID& componentGUID, const char* szDeclaration, const char* szFileName, const char* szProjectDir, const Cry::Reflection::CFunction& function)
 				: m_guid(guid)
 				, m_componentGUID(componentGUID)
+				, m_function(function)
 			{
 				string _namespace;
 				StringUtils::SeparateTypeNameAndNamespace(szDeclaration, m_name, _namespace);
@@ -311,6 +313,10 @@ namespace Schematyc2
 				return m_variantOutputs;
 			}
 
+			virtual const Cry::Reflection::CFunction& GetFunction() const final
+			{
+				return m_function;
+			}
 			// ~IComponentMemberFunction
 
 		protected:
@@ -447,6 +453,7 @@ namespace Schematyc2
 			TVariantVector m_variantInputs;
 			UInt32Vector   m_outputs;
 			TVariantVector m_variantOutputs;
+			Cry::Reflection::CFunction m_function;
 		};
 	}
 
@@ -458,8 +465,8 @@ namespace Schematyc2
 
 		typedef void (COMPONENT::*FunctionPtr)();
 
-		inline CComponentMemberFunction(FunctionPtr pFunction, const SGUID& guid, const SGUID& componentGUID, const char* szDeclaration, const char* szFileName, const char* szProjectDir)
-			: CBase(guid, componentGUID, szDeclaration, szFileName, szProjectDir)
+		inline CComponentMemberFunction(FunctionPtr pFunction, const SGUID& guid, const SGUID& componentGUID, const char* szDeclaration, const char* szFileName, const char* szProjectDir, const Cry::Reflection::CFunction& function)
+			: CBase(guid, componentGUID, szDeclaration, szFileName, szProjectDir, function) 
 			, m_pFunction(pFunction)
 		{}
 
@@ -483,8 +490,8 @@ namespace Schematyc2
 
 		typedef void (COMPONENT::*FunctionPtr)() const;
 
-		inline CComponentMemberFunction(FunctionPtr pFunction, const SGUID& guid, const SGUID& componentGUID, const char* szDeclaration, const char* szFileName, const char* szProjectDir)
-			: CBase(guid, componentGUID, szDeclaration, szFileName, szProjectDir)
+		inline CComponentMemberFunction(FunctionPtr pFunction, const SGUID& guid, const SGUID& componentGUID, const char* szDeclaration, const char* szFileName, const char* szProjectDir, const Cry::Reflection::CFunction& function)
+			: CBase(guid, componentGUID, szDeclaration, szFileName, szProjectDir, function) 
 			, m_pFunction(pFunction)
 		{}
 
@@ -508,8 +515,8 @@ namespace Schematyc2
 
 		typedef PARAM0 (COMPONENT::*FunctionPtr)();
 
-		inline CComponentMemberFunction(FunctionPtr pFunction, const SGUID& guid, const SGUID& componentGUID, const char* szDeclaration, const char* szFileName, const char* szProjectDir)
-			: CBase(guid, componentGUID, szDeclaration, szFileName, szProjectDir)
+		inline CComponentMemberFunction(FunctionPtr pFunction, const SGUID& guid, const SGUID& componentGUID, const char* szDeclaration, const char* szFileName, const char* szProjectDir, const Cry::Reflection::CFunction& function)
+			: CBase(guid, componentGUID, szDeclaration, szFileName, szProjectDir, function) 
 			, m_pFunction(pFunction)
 		{
 			CBase::AddParam<PARAM0>(ComponentMemberFunctionUtils::EParamFlags::IsReturn);
@@ -540,8 +547,8 @@ namespace Schematyc2
 
 		typedef PARAM0 (COMPONENT::*FunctionPtr)() const;
 
-		inline CComponentMemberFunction(FunctionPtr pFunction, const SGUID& guid, const SGUID& componentGUID, const char* szDeclaration, const char* szFileName, const char* szProjectDir)
-			: CBase(guid, componentGUID, szDeclaration, szFileName, szProjectDir)
+		inline CComponentMemberFunction(FunctionPtr pFunction, const SGUID& guid, const SGUID& componentGUID, const char* szDeclaration, const char* szFileName, const char* szProjectDir, const Cry::Reflection::CFunction& function)
+			: CBase(guid, componentGUID, szDeclaration, szFileName, szProjectDir, function) 
 			, m_pFunction(pFunction)
 		{
 			CBase::AddParam<PARAM0>(ComponentMemberFunctionUtils::EParamFlags::IsReturn);
@@ -572,8 +579,8 @@ namespace Schematyc2
 
 		typedef void (COMPONENT::*FunctionPtr)(PARAM0);
 
-		inline CComponentMemberFunction(FunctionPtr pFunction, const SGUID& guid, const SGUID& componentGUID, const char* szDeclaration, const char* szFileName, const char* szProjectDir)
-			: CBase(guid, componentGUID, szDeclaration, szFileName, szProjectDir)
+		inline CComponentMemberFunction(FunctionPtr pFunction, const SGUID& guid, const SGUID& componentGUID, const char* szDeclaration, const char* szFileName, const char* szProjectDir, const Cry::Reflection::CFunction& function)
+			: CBase(guid, componentGUID, szDeclaration, szFileName, szProjectDir, function) 
 			, m_pFunction(pFunction)
 		{
 			CBase::AddParam<PARAM0>(ComponentMemberFunctionUtils::EParamFlags::None);
@@ -608,8 +615,8 @@ namespace Schematyc2
 
 		typedef void (COMPONENT::*FunctionPtr)(PARAM0) const;
 
-		inline CComponentMemberFunction(FunctionPtr pFunction, const SGUID& guid, const SGUID& componentGUID, const char* szDeclaration, const char* szFileName, const char* szProjectDir)
-			: CBase(guid, componentGUID, szDeclaration, szFileName, szProjectDir)
+		inline CComponentMemberFunction(FunctionPtr pFunction, const SGUID& guid, const SGUID& componentGUID, const char* szDeclaration, const char* szFileName, const char* szProjectDir, const Cry::Reflection::CFunction& function)
+			: CBase(guid, componentGUID, szDeclaration, szFileName, szProjectDir, function) 
 			, m_pFunction(pFunction)
 		{
 			CBase::AddParam<PARAM0>(ComponentMemberFunctionUtils::EParamFlags::None);
@@ -644,8 +651,8 @@ namespace Schematyc2
 
 		typedef PARAM0 (COMPONENT::*FunctionPtr)(PARAM1);
 
-		inline CComponentMemberFunction(FunctionPtr pFunction, const SGUID& guid, const SGUID& componentGUID, const char* szDeclaration, const char* szFileName, const char* szProjectDir)
-			: CBase(guid, componentGUID, szDeclaration, szFileName, szProjectDir)
+		inline CComponentMemberFunction(FunctionPtr pFunction, const SGUID& guid, const SGUID& componentGUID, const char* szDeclaration, const char* szFileName, const char* szProjectDir, const Cry::Reflection::CFunction& function)
+			: CBase(guid, componentGUID, szDeclaration, szFileName, szProjectDir, function) 
 			, m_pFunction(pFunction)
 		{
 			CBase::AddParam<PARAM0>(ComponentMemberFunctionUtils::EParamFlags::IsReturn);
@@ -682,8 +689,8 @@ namespace Schematyc2
 
 		typedef PARAM0 (COMPONENT::*FunctionPtr)(PARAM1) const;
 
-		inline CComponentMemberFunction(FunctionPtr pFunction, const SGUID& guid, const SGUID& componentGUID, const char* szDeclaration, const char* szFileName, const char* szProjectDir)
-			: CBase(guid, componentGUID, szDeclaration, szFileName, szProjectDir)
+		inline CComponentMemberFunction(FunctionPtr pFunction, const SGUID& guid, const SGUID& componentGUID, const char* szDeclaration, const char* szFileName, const char* szProjectDir, const Cry::Reflection::CFunction& function)
+			: CBase(guid, componentGUID, szDeclaration, szFileName, szProjectDir, function) 
 			, m_pFunction(pFunction)
 		{
 			CBase::AddParam<PARAM0>(ComponentMemberFunctionUtils::EParamFlags::IsReturn);
@@ -720,8 +727,8 @@ namespace Schematyc2
 
 		typedef void (COMPONENT::*FunctionPtr)(PARAM0, PARAM1);
 
-		inline CComponentMemberFunction(FunctionPtr pFunction, const SGUID& guid, const SGUID& componentGUID, const char* szDeclaration, const char* szFileName, const char* szProjectDir)
-			: CBase(guid, componentGUID, szDeclaration, szFileName, szProjectDir)
+		inline CComponentMemberFunction(FunctionPtr pFunction, const SGUID& guid, const SGUID& componentGUID, const char* szDeclaration, const char* szFileName, const char* szProjectDir, const Cry::Reflection::CFunction& function)
+			: CBase(guid, componentGUID, szDeclaration, szFileName, szProjectDir, function) 
 			, m_pFunction(pFunction)
 		{
 			CBase::AddParam<PARAM0>(ComponentMemberFunctionUtils::EParamFlags::None);
@@ -760,8 +767,8 @@ namespace Schematyc2
 
 		typedef void (COMPONENT::*FunctionPtr)(PARAM0, PARAM1) const;
 
-		inline CComponentMemberFunction(FunctionPtr pFunction, const SGUID& guid, const SGUID& componentGUID, const char* szDeclaration, const char* szFileName, const char* szProjectDir)
-			: CBase(guid, componentGUID, szDeclaration, szFileName, szProjectDir)
+		inline CComponentMemberFunction(FunctionPtr pFunction, const SGUID& guid, const SGUID& componentGUID, const char* szDeclaration, const char* szFileName, const char* szProjectDir, const Cry::Reflection::CFunction& function)
+			: CBase(guid, componentGUID, szDeclaration, szFileName, szProjectDir, function) 
 			, m_pFunction(pFunction)
 		{
 			CBase::AddParam<PARAM0>(ComponentMemberFunctionUtils::EParamFlags::None);
@@ -800,8 +807,8 @@ namespace Schematyc2
 
 		typedef PARAM0 (COMPONENT::*FunctionPtr)(PARAM1, PARAM2);
 
-		inline CComponentMemberFunction(FunctionPtr pFunction, const SGUID& guid, const SGUID& componentGUID, const char* szDeclaration, const char* szFileName, const char* szProjectDir)
-			: CBase(guid, componentGUID, szDeclaration, szFileName, szProjectDir)
+		inline CComponentMemberFunction(FunctionPtr pFunction, const SGUID& guid, const SGUID& componentGUID, const char* szDeclaration, const char* szFileName, const char* szProjectDir, const Cry::Reflection::CFunction& function)
+			: CBase(guid, componentGUID, szDeclaration, szFileName, szProjectDir, function) 
 			, m_pFunction(pFunction)
 		{
 			CBase::AddParam<PARAM0>(ComponentMemberFunctionUtils::EParamFlags::IsReturn);
@@ -842,8 +849,8 @@ namespace Schematyc2
 
 		typedef PARAM0 (COMPONENT::*FunctionPtr)(PARAM1, PARAM2) const;
 
-		inline CComponentMemberFunction(FunctionPtr pFunction, const SGUID& guid, const SGUID& componentGUID, const char* szDeclaration, const char* szFileName, const char* szProjectDir)
-			: CBase(guid, componentGUID, szDeclaration, szFileName, szProjectDir)
+		inline CComponentMemberFunction(FunctionPtr pFunction, const SGUID& guid, const SGUID& componentGUID, const char* szDeclaration, const char* szFileName, const char* szProjectDir, const Cry::Reflection::CFunction& function)
+			: CBase(guid, componentGUID, szDeclaration, szFileName, szProjectDir, function) 
 			, m_pFunction(pFunction)
 		{
 			CBase::AddParam<PARAM0>(ComponentMemberFunctionUtils::EParamFlags::IsReturn);
@@ -884,8 +891,8 @@ namespace Schematyc2
 
 		typedef void (COMPONENT::*FunctionPtr)(PARAM0, PARAM1, PARAM2);
 
-		inline CComponentMemberFunction(FunctionPtr pFunction, const SGUID& guid, const SGUID& componentGUID, const char* szDeclaration, const char* szFileName, const char* szProjectDir)
-			: CBase(guid, componentGUID, szDeclaration, szFileName, szProjectDir)
+		inline CComponentMemberFunction(FunctionPtr pFunction, const SGUID& guid, const SGUID& componentGUID, const char* szDeclaration, const char* szFileName, const char* szProjectDir, const Cry::Reflection::CFunction& function)
+			: CBase(guid, componentGUID, szDeclaration, szFileName, szProjectDir, function) 
 			, m_pFunction(pFunction)
 		{
 			CBase::AddParam<PARAM0>(ComponentMemberFunctionUtils::EParamFlags::None);
@@ -928,8 +935,8 @@ namespace Schematyc2
 
 		typedef void (COMPONENT::*FunctionPtr)(PARAM0, PARAM1, PARAM2) const;
 
-		inline CComponentMemberFunction(FunctionPtr pFunction, const SGUID& guid, const SGUID& componentGUID, const char* szDeclaration, const char* szFileName, const char* szProjectDir)
-			: CBase(guid, componentGUID, szDeclaration, szFileName, szProjectDir)
+		inline CComponentMemberFunction(FunctionPtr pFunction, const SGUID& guid, const SGUID& componentGUID, const char* szDeclaration, const char* szFileName, const char* szProjectDir, const Cry::Reflection::CFunction& function)
+			: CBase(guid, componentGUID, szDeclaration, szFileName, szProjectDir, function) 
 			, m_pFunction(pFunction)
 		{
 			CBase::AddParam<PARAM0>(ComponentMemberFunctionUtils::EParamFlags::None);
@@ -972,8 +979,8 @@ namespace Schematyc2
 
 		typedef PARAM0 (COMPONENT::*FunctionPtr)(PARAM1, PARAM2, PARAM3);
 
-		inline CComponentMemberFunction(FunctionPtr pFunction, const SGUID& guid, const SGUID& componentGUID, const char* szDeclaration, const char* szFileName, const char* szProjectDir)
-			: CBase(guid, componentGUID, szDeclaration, szFileName, szProjectDir)
+		inline CComponentMemberFunction(FunctionPtr pFunction, const SGUID& guid, const SGUID& componentGUID, const char* szDeclaration, const char* szFileName, const char* szProjectDir, const Cry::Reflection::CFunction& function)
+			: CBase(guid, componentGUID, szDeclaration, szFileName, szProjectDir, function) 
 			, m_pFunction(pFunction)
 		{
 			CBase::AddParam<PARAM0>(ComponentMemberFunctionUtils::EParamFlags::IsReturn);
@@ -1018,8 +1025,8 @@ namespace Schematyc2
 
 		typedef PARAM0 (COMPONENT::*FunctionPtr)(PARAM1, PARAM2, PARAM3) const;
 
-		inline CComponentMemberFunction(FunctionPtr pFunction, const SGUID& guid, const SGUID& componentGUID, const char* szDeclaration, const char* szFileName, const char* szProjectDir)
-			: CBase(guid, componentGUID, szDeclaration, szFileName, szProjectDir)
+		inline CComponentMemberFunction(FunctionPtr pFunction, const SGUID& guid, const SGUID& componentGUID, const char* szDeclaration, const char* szFileName, const char* szProjectDir, const Cry::Reflection::CFunction& function)
+			: CBase(guid, componentGUID, szDeclaration, szFileName, szProjectDir, function) 
 			, m_pFunction(pFunction)
 		{
 			CBase::AddParam<PARAM0>(ComponentMemberFunctionUtils::EParamFlags::IsReturn);
@@ -1064,8 +1071,8 @@ namespace Schematyc2
 
 		typedef void (COMPONENT::*FunctionPtr)(PARAM0, PARAM1, PARAM2, PARAM3);
 
-		inline CComponentMemberFunction(FunctionPtr pFunction, const SGUID& guid, const SGUID& componentGUID, const char* szDeclaration, const char* szFileName, const char* szProjectDir)
-			: CBase(guid, componentGUID, szDeclaration, szFileName, szProjectDir)
+		inline CComponentMemberFunction(FunctionPtr pFunction, const SGUID& guid, const SGUID& componentGUID, const char* szDeclaration, const char* szFileName, const char* szProjectDir, const Cry::Reflection::CFunction& function)
+			: CBase(guid, componentGUID, szDeclaration, szFileName, szProjectDir, function) 
 			, m_pFunction(pFunction)
 		{
 			CBase::AddParam<PARAM0>(ComponentMemberFunctionUtils::EParamFlags::None);
@@ -1112,8 +1119,8 @@ namespace Schematyc2
 
 		typedef void (COMPONENT::*FunctionPtr)(PARAM0, PARAM1, PARAM2, PARAM3) const;
 
-		inline CComponentMemberFunction(FunctionPtr pFunction, const SGUID& guid, const SGUID& componentGUID, const char* szDeclaration, const char* szFileName, const char* szProjectDir)
-			: CBase(guid, componentGUID, szDeclaration, szFileName, szProjectDir)
+		inline CComponentMemberFunction(FunctionPtr pFunction, const SGUID& guid, const SGUID& componentGUID, const char* szDeclaration, const char* szFileName, const char* szProjectDir, const Cry::Reflection::CFunction& function)
+			: CBase(guid, componentGUID, szDeclaration, szFileName, szProjectDir, function) 
 			, m_pFunction(pFunction)
 		{
 			CBase::AddParam<PARAM0>(ComponentMemberFunctionUtils::EParamFlags::None);
@@ -1160,8 +1167,8 @@ namespace Schematyc2
 
 		typedef void (COMPONENT::*FunctionPtr)(PARAM0, PARAM1, PARAM2, PARAM3, PARAM4);
 
-		inline CComponentMemberFunction(FunctionPtr pFunction, const SGUID& guid, const SGUID& componentGUID, const char* szDeclaration, const char* szFileName, const char* szProjectDir)
-			: CBase(guid, componentGUID, szDeclaration, szFileName, szProjectDir)
+		inline CComponentMemberFunction(FunctionPtr pFunction, const SGUID& guid, const SGUID& componentGUID, const char* szDeclaration, const char* szFileName, const char* szProjectDir, const Cry::Reflection::CFunction& function)
+			: CBase(guid, componentGUID, szDeclaration, szFileName, szProjectDir, function) 
 			, m_pFunction(pFunction)
 		{
 			CBase::AddParam<PARAM0>(ComponentMemberFunctionUtils::EParamFlags::None);
@@ -1212,8 +1219,8 @@ namespace Schematyc2
 
 		typedef void (COMPONENT::*FunctionPtr)(PARAM0, PARAM1, PARAM2, PARAM3, PARAM4) const;
 
-		inline CComponentMemberFunction(FunctionPtr pFunction, const SGUID& guid, const SGUID& componentGUID, const char* szDeclaration, const char* szFileName, const char* szProjectDir)
-			: CBase(guid, componentGUID, szDeclaration, szFileName, szProjectDir)
+		inline CComponentMemberFunction(FunctionPtr pFunction, const SGUID& guid, const SGUID& componentGUID, const char* szDeclaration, const char* szFileName, const char* szProjectDir, const Cry::Reflection::CFunction& function)
+			: CBase(guid, componentGUID, szDeclaration, szFileName, szProjectDir, function) 
 			, m_pFunction(pFunction)
 		{
 			CBase::AddParam<PARAM0>(ComponentMemberFunctionUtils::EParamFlags::None);
@@ -1264,8 +1271,8 @@ namespace Schematyc2
 
 		typedef PARAM0 (COMPONENT::*FunctionPtr)(PARAM1, PARAM2, PARAM3, PARAM4);
 
-		inline CComponentMemberFunction(FunctionPtr pFunction, const SGUID& guid, const SGUID& componentGUID, const char* szDeclaration, const char* szFileName, const char* szProjectDir)
-			: CBase(guid, componentGUID, szDeclaration, szFileName, szProjectDir)
+		inline CComponentMemberFunction(FunctionPtr pFunction, const SGUID& guid, const SGUID& componentGUID, const char* szDeclaration, const char* szFileName, const char* szProjectDir, const Cry::Reflection::CFunction& function)
+			: CBase(guid, componentGUID, szDeclaration, szFileName, szProjectDir, function) 
 			, m_pFunction(pFunction)
 		{
 			CBase::AddParam<PARAM0>(ComponentMemberFunctionUtils::EParamFlags::IsReturn);
@@ -1314,8 +1321,8 @@ namespace Schematyc2
 
 		typedef PARAM0 (COMPONENT::*FunctionPtr)(PARAM1, PARAM2, PARAM3, PARAM4) const;
 
-		inline CComponentMemberFunction(FunctionPtr pFunction, const SGUID& guid, const SGUID& componentGUID, const char* szDeclaration, const char* szFileName, const char* szProjectDir)
-			: CBase(guid, componentGUID, szDeclaration, szFileName, szProjectDir)
+		inline CComponentMemberFunction(FunctionPtr pFunction, const SGUID& guid, const SGUID& componentGUID, const char* szDeclaration, const char* szFileName, const char* szProjectDir, const Cry::Reflection::CFunction& function)
+			: CBase(guid, componentGUID, szDeclaration, szFileName, szProjectDir, function) 
 			, m_pFunction(pFunction)
 		{
 			CBase::AddParam<PARAM0>(ComponentMemberFunctionUtils::EParamFlags::IsReturn);
@@ -1364,8 +1371,8 @@ namespace Schematyc2
 
 		typedef void (COMPONENT::*FunctionPtr)(PARAM0, PARAM1, PARAM2, PARAM3, PARAM4, PARAM5);
 
-		inline CComponentMemberFunction(FunctionPtr pFunction, const SGUID& guid, const SGUID& componentGUID, const char* szDeclaration, const char* szFileName, const char* szProjectDir)
-			: CBase(guid, componentGUID, szDeclaration, szFileName, szProjectDir)
+		inline CComponentMemberFunction(FunctionPtr pFunction, const SGUID& guid, const SGUID& componentGUID, const char* szDeclaration, const char* szFileName, const char* szProjectDir, const Cry::Reflection::CFunction& function)
+			: CBase(guid, componentGUID, szDeclaration, szFileName, szProjectDir, function) 
 			, m_pFunction(pFunction)
 		{
 			CBase::AddParam<PARAM0>(ComponentMemberFunctionUtils::EParamFlags::None);
@@ -1420,8 +1427,8 @@ namespace Schematyc2
 
 		typedef void (COMPONENT::*FunctionPtr)(PARAM0, PARAM1, PARAM2, PARAM3, PARAM4, PARAM5) const;
 
-		inline CComponentMemberFunction(FunctionPtr pFunction, const SGUID& guid, const SGUID& componentGUID, const char* szDeclaration, const char* szFileName, const char* szProjectDir)
-			: CBase(guid, componentGUID, szDeclaration, szFileName, szProjectDir)
+		inline CComponentMemberFunction(FunctionPtr pFunction, const SGUID& guid, const SGUID& componentGUID, const char* szDeclaration, const char* szFileName, const char* szProjectDir, const Cry::Reflection::CFunction& function)
+			: CBase(guid, componentGUID, szDeclaration, szFileName, szProjectDir, function) 
 			, m_pFunction(pFunction)
 		{
 			CBase::AddParam<PARAM0>(ComponentMemberFunctionUtils::EParamFlags::None);
@@ -1476,8 +1483,8 @@ namespace Schematyc2
 
 		typedef PARAM0 (COMPONENT::*FunctionPtr)(PARAM1, PARAM2, PARAM3, PARAM4, PARAM5);
 
-		inline CComponentMemberFunction(FunctionPtr pFunction, const SGUID& guid, const SGUID& componentGUID, const char* szDeclaration, const char* szFileName, const char* szProjectDir)
-			: CBase(guid, componentGUID, szDeclaration, szFileName, szProjectDir)
+		inline CComponentMemberFunction(FunctionPtr pFunction, const SGUID& guid, const SGUID& componentGUID, const char* szDeclaration, const char* szFileName, const char* szProjectDir, const Cry::Reflection::CFunction& function)
+			: CBase(guid, componentGUID, szDeclaration, szFileName, szProjectDir, function) 
 			, m_pFunction(pFunction)
 		{
 			CBase::AddParam<PARAM0>(ComponentMemberFunctionUtils::EParamFlags::IsReturn);
@@ -1530,8 +1537,8 @@ namespace Schematyc2
 
 		typedef PARAM0 (COMPONENT::*FunctionPtr)(PARAM1, PARAM2, PARAM3, PARAM4, PARAM5) const;
 
-		inline CComponentMemberFunction(FunctionPtr pFunction, const SGUID& guid, const SGUID& componentGUID, const char* szDeclaration, const char* szFileName, const char* szProjectDir)
-			: CBase(guid, componentGUID, szDeclaration, szFileName, szProjectDir)
+		inline CComponentMemberFunction(FunctionPtr pFunction, const SGUID& guid, const SGUID& componentGUID, const char* szDeclaration, const char* szFileName, const char* szProjectDir, const Cry::Reflection::CFunction& function)
+			: CBase(guid, componentGUID, szDeclaration, szFileName, szProjectDir, function) 
 			, m_pFunction(pFunction)
 		{
 			CBase::AddParam<PARAM0>(ComponentMemberFunctionUtils::EParamFlags::IsReturn);
@@ -1584,8 +1591,8 @@ namespace Schematyc2
 
 		typedef void (COMPONENT::*FunctionPtr)(PARAM0, PARAM1, PARAM2, PARAM3, PARAM4, PARAM5, PARAM6);
 
-		inline CComponentMemberFunction(FunctionPtr pFunction, const SGUID& guid, const SGUID& componentGUID, const char* szDeclaration, const char* szFileName, const char* szProjectDir)
-			: CBase(guid, componentGUID, szDeclaration, szFileName, szProjectDir)
+		inline CComponentMemberFunction(FunctionPtr pFunction, const SGUID& guid, const SGUID& componentGUID, const char* szDeclaration, const char* szFileName, const char* szProjectDir, const Cry::Reflection::CFunction& function)
+			: CBase(guid, componentGUID, szDeclaration, szFileName, szProjectDir, function) 
 			, m_pFunction(pFunction)
 		{
 			CBase::AddParam<PARAM0>(ComponentMemberFunctionUtils::EParamFlags::None);
@@ -1644,8 +1651,8 @@ namespace Schematyc2
 
 		typedef void (COMPONENT::*FunctionPtr)(PARAM0, PARAM1, PARAM2, PARAM3, PARAM4, PARAM5, PARAM6) const;
 
-		inline CComponentMemberFunction(FunctionPtr pFunction, const SGUID& guid, const SGUID& componentGUID, const char* szDeclaration, const char* szFileName, const char* szProjectDir)
-			: CBase(guid, componentGUID, szDeclaration, szFileName, szProjectDir)
+		inline CComponentMemberFunction(FunctionPtr pFunction, const SGUID& guid, const SGUID& componentGUID, const char* szDeclaration, const char* szFileName, const char* szProjectDir, const Cry::Reflection::CFunction& function)
+			: CBase(guid, componentGUID, szDeclaration, szFileName, szProjectDir, function) 
 			, m_pFunction(pFunction)
 		{
 			CBase::AddParam<PARAM0>(ComponentMemberFunctionUtils::EParamFlags::None);
@@ -1704,8 +1711,8 @@ namespace Schematyc2
 
 		typedef PARAM0 (COMPONENT::*FunctionPtr)(PARAM1, PARAM2, PARAM3, PARAM4, PARAM5, PARAM6);
 
-		inline CComponentMemberFunction(FunctionPtr pFunction, const SGUID& guid, const SGUID& componentGUID, const char* szDeclaration, const char* szFileName, const char* szProjectDir)
-			: CBase(guid, componentGUID, szDeclaration, szFileName, szProjectDir)
+		inline CComponentMemberFunction(FunctionPtr pFunction, const SGUID& guid, const SGUID& componentGUID, const char* szDeclaration, const char* szFileName, const char* szProjectDir, const Cry::Reflection::CFunction& function)
+			: CBase(guid, componentGUID, szDeclaration, szFileName, szProjectDir, function) 
 			, m_pFunction(pFunction)
 		{
 			CBase::AddParam<PARAM0>(ComponentMemberFunctionUtils::EParamFlags::IsReturn);
@@ -1762,8 +1769,8 @@ namespace Schematyc2
 
 		typedef PARAM0 (COMPONENT::*FunctionPtr)(PARAM1, PARAM2, PARAM3, PARAM4, PARAM5, PARAM6) const;
 
-		inline CComponentMemberFunction(FunctionPtr pFunction, const SGUID& guid, const SGUID& componentGUID, const char* szDeclaration, const char* szFileName, const char* szProjectDir)
-			: CBase(guid, componentGUID, szDeclaration, szFileName, szProjectDir)
+		inline CComponentMemberFunction(FunctionPtr pFunction, const SGUID& guid, const SGUID& componentGUID, const char* szDeclaration, const char* szFileName, const char* szProjectDir, const Cry::Reflection::CFunction& function)
+			: CBase(guid, componentGUID, szDeclaration, szFileName, szProjectDir, function) 
 			, m_pFunction(pFunction)
 		{
 			CBase::AddParam<PARAM0>(ComponentMemberFunctionUtils::EParamFlags::IsReturn);
@@ -1820,8 +1827,8 @@ namespace Schematyc2
 
 		typedef void (COMPONENT::*FunctionPtr)(PARAM0, PARAM1, PARAM2, PARAM3, PARAM4, PARAM5, PARAM6, PARAM7);
 
-		inline CComponentMemberFunction(FunctionPtr pFunction, const SGUID& guid, const SGUID& componentGUID, const char* szDeclaration, const char* szFileName, const char* szProjectDir)
-			: CBase(guid, componentGUID, szDeclaration, szFileName, szProjectDir)
+		inline CComponentMemberFunction(FunctionPtr pFunction, const SGUID& guid, const SGUID& componentGUID, const char* szDeclaration, const char* szFileName, const char* szProjectDir, const Cry::Reflection::CFunction& function)
+			: CBase(guid, componentGUID, szDeclaration, szFileName, szProjectDir, function) 
 			, m_pFunction(pFunction)
 		{
 			CBase::AddParam<PARAM0>(ComponentMemberFunctionUtils::EParamFlags::None);
@@ -1884,8 +1891,8 @@ namespace Schematyc2
 
 		typedef void (COMPONENT::*FunctionPtr)(PARAM0, PARAM1, PARAM2, PARAM3, PARAM4, PARAM5, PARAM6, PARAM7) const;
 
-		inline CComponentMemberFunction(FunctionPtr pFunction, const SGUID& guid, const SGUID& componentGUID, const char* szDeclaration, const char* szFileName, const char* szProjectDir)
-			: CBase(guid, componentGUID, szDeclaration, szFileName, szProjectDir)
+		inline CComponentMemberFunction(FunctionPtr pFunction, const SGUID& guid, const SGUID& componentGUID, const char* szDeclaration, const char* szFileName, const char* szProjectDir, const Cry::Reflection::CFunction& function)
+			: CBase(guid, componentGUID, szDeclaration, szFileName, szProjectDir, function) 
 			, m_pFunction(pFunction)
 		{
 			CBase::AddParam<PARAM0>(ComponentMemberFunctionUtils::EParamFlags::None);
@@ -1948,8 +1955,8 @@ namespace Schematyc2
 
 		typedef PARAM0 (COMPONENT::*FunctionPtr)(PARAM1, PARAM2, PARAM3, PARAM4, PARAM5, PARAM6, PARAM7);
 
-		inline CComponentMemberFunction(FunctionPtr pFunction, const SGUID& guid, const SGUID& componentGUID, const char* szDeclaration, const char* szFileName, const char* szProjectDir)
-			: CBase(guid, componentGUID, szDeclaration, szFileName, szProjectDir)
+		inline CComponentMemberFunction(FunctionPtr pFunction, const SGUID& guid, const SGUID& componentGUID, const char* szDeclaration, const char* szFileName, const char* szProjectDir, const Cry::Reflection::CFunction& function)
+			: CBase(guid, componentGUID, szDeclaration, szFileName, szProjectDir, function) 
 			, m_pFunction(pFunction)
 		{
 			CBase::AddParam<PARAM0>(ComponentMemberFunctionUtils::EParamFlags::IsReturn);
@@ -2010,8 +2017,8 @@ namespace Schematyc2
 
 		typedef PARAM0 (COMPONENT::*FunctionPtr)(PARAM1, PARAM2, PARAM3, PARAM4, PARAM5, PARAM6, PARAM7) const;
 
-		inline CComponentMemberFunction(FunctionPtr pFunction, const SGUID& guid, const SGUID& componentGUID, const char* szDeclaration, const char* szFileName, const char* szProjectDir)
-			: CBase(guid, componentGUID, szDeclaration, szFileName, szProjectDir)
+		inline CComponentMemberFunction(FunctionPtr pFunction, const SGUID& guid, const SGUID& componentGUID, const char* szDeclaration, const char* szFileName, const char* szProjectDir, const Cry::Reflection::CFunction& function)
+			: CBase(guid, componentGUID, szDeclaration, szFileName, szProjectDir, function) 
 			, m_pFunction(pFunction)
 		{
 			CBase::AddParam<PARAM0>(ComponentMemberFunctionUtils::EParamFlags::IsReturn);
@@ -2072,8 +2079,8 @@ namespace Schematyc2
 
 		typedef void (COMPONENT::*FunctionPtr)(PARAM0, PARAM1, PARAM2, PARAM3, PARAM4, PARAM5, PARAM6, PARAM7, PARAM8);
 
-		inline CComponentMemberFunction(FunctionPtr pFunction, const SGUID& guid, const SGUID& componentGUID, const char* szDeclaration, const char* szFileName, const char* szProjectDir)
-			: CBase(guid, componentGUID, szDeclaration, szFileName, szProjectDir)
+		inline CComponentMemberFunction(FunctionPtr pFunction, const SGUID& guid, const SGUID& componentGUID, const char* szDeclaration, const char* szFileName, const char* szProjectDir, const Cry::Reflection::CFunction& function)
+			: CBase(guid, componentGUID, szDeclaration, szFileName, szProjectDir, function) 
 			, m_pFunction(pFunction)
 		{
 			CBase::AddParam<PARAM0>(ComponentMemberFunctionUtils::EParamFlags::None);
@@ -2140,8 +2147,8 @@ namespace Schematyc2
 
 		typedef void (COMPONENT::*FunctionPtr)(PARAM0, PARAM1, PARAM2, PARAM3, PARAM4, PARAM5, PARAM6, PARAM7, PARAM8) const;
 
-		inline CComponentMemberFunction(FunctionPtr pFunction, const SGUID& guid, const SGUID& componentGUID, const char* szDeclaration, const char* szFileName, const char* szProjectDir)
-			: CBase(guid, componentGUID, szDeclaration, szFileName, szProjectDir)
+		inline CComponentMemberFunction(FunctionPtr pFunction, const SGUID& guid, const SGUID& componentGUID, const char* szDeclaration, const char* szFileName, const char* szProjectDir, const Cry::Reflection::CFunction& function)
+			: CBase(guid, componentGUID, szDeclaration, szFileName, szProjectDir, function) 
 			, m_pFunction(pFunction)
 		{
 			CBase::AddParam<PARAM0>(ComponentMemberFunctionUtils::EParamFlags::None);
@@ -2208,8 +2215,8 @@ namespace Schematyc2
 
 		typedef PARAM0 (COMPONENT::*FunctionPtr)(PARAM1, PARAM2, PARAM3, PARAM4, PARAM5, PARAM6, PARAM7, PARAM8);
 
-		inline CComponentMemberFunction(FunctionPtr pFunction, const SGUID& guid, const SGUID& componentGUID, const char* szDeclaration, const char* szFileName, const char* szProjectDir)
-			: CBase(guid, componentGUID, szDeclaration, szFileName, szProjectDir)
+		inline CComponentMemberFunction(FunctionPtr pFunction, const SGUID& guid, const SGUID& componentGUID, const char* szDeclaration, const char* szFileName, const char* szProjectDir, const Cry::Reflection::CFunction& function)
+			: CBase(guid, componentGUID, szDeclaration, szFileName, szProjectDir, function) 
 			, m_pFunction(pFunction)
 		{
 			CBase::AddParam<PARAM0>(ComponentMemberFunctionUtils::EParamFlags::IsReturn);
@@ -2274,8 +2281,8 @@ namespace Schematyc2
 
 		typedef PARAM0 (COMPONENT::*FunctionPtr)(PARAM1, PARAM2, PARAM3, PARAM4, PARAM5, PARAM6, PARAM7, PARAM8) const;
 
-		inline CComponentMemberFunction(FunctionPtr pFunction, const SGUID& guid, const SGUID& componentGUID, const char* szDeclaration, const char* szFileName, const char* szProjectDir)
-			: CBase(guid, componentGUID, szDeclaration, szFileName, szProjectDir)
+		inline CComponentMemberFunction(FunctionPtr pFunction, const SGUID& guid, const SGUID& componentGUID, const char* szDeclaration, const char* szFileName, const char* szProjectDir, const Cry::Reflection::CFunction& function)
+			: CBase(guid, componentGUID, szDeclaration, szFileName, szProjectDir, function) 
 			, m_pFunction(pFunction)
 		{
 			CBase::AddParam<PARAM0>(ComponentMemberFunctionUtils::EParamFlags::IsReturn);
@@ -2340,8 +2347,8 @@ namespace Schematyc2
 
 		typedef void (COMPONENT::*FunctionPtr)(PARAM0, PARAM1, PARAM2, PARAM3, PARAM4, PARAM5, PARAM6, PARAM7, PARAM8, PARAM9);
 
-		inline CComponentMemberFunction(FunctionPtr pFunction, const SGUID& guid, const SGUID& componentGUID, const char* szDeclaration, const char* szFileName, const char* szProjectDir)
-			: CBase(guid, componentGUID, szDeclaration, szFileName, szProjectDir)
+		inline CComponentMemberFunction(FunctionPtr pFunction, const SGUID& guid, const SGUID& componentGUID, const char* szDeclaration, const char* szFileName, const char* szProjectDir, const Cry::Reflection::CFunction& function)
+			: CBase(guid, componentGUID, szDeclaration, szFileName, szProjectDir, function) 
 			, m_pFunction(pFunction)
 		{
 			CBase::AddParam<PARAM0>(ComponentMemberFunctionUtils::EParamFlags::None);
@@ -2412,8 +2419,8 @@ namespace Schematyc2
 
 		typedef void (COMPONENT::*FunctionPtr)(PARAM0, PARAM1, PARAM2, PARAM3, PARAM4, PARAM5, PARAM6, PARAM7, PARAM8, PARAM9) const;
 
-		inline CComponentMemberFunction(FunctionPtr pFunction, const SGUID& guid, const SGUID& componentGUID, const char* szDeclaration, const char* szFileName, const char* szProjectDir)
-			: CBase(guid, componentGUID, szDeclaration, szFileName, szProjectDir)
+		inline CComponentMemberFunction(FunctionPtr pFunction, const SGUID& guid, const SGUID& componentGUID, const char* szDeclaration, const char* szFileName, const char* szProjectDir, const Cry::Reflection::CFunction& function)
+			: CBase(guid, componentGUID, szDeclaration, szFileName, szProjectDir, function) 
 			, m_pFunction(pFunction)
 		{
 			CBase::AddParam<PARAM0>(ComponentMemberFunctionUtils::EParamFlags::None);
@@ -2484,8 +2491,8 @@ namespace Schematyc2
 
 		typedef PARAM0 (COMPONENT::*FunctionPtr)(PARAM1, PARAM2, PARAM3, PARAM4, PARAM5, PARAM6, PARAM7, PARAM8, PARAM9);
 
-		inline CComponentMemberFunction(FunctionPtr pFunction, const SGUID& guid, const SGUID& componentGUID, const char* szDeclaration, const char* szFileName, const char* szProjectDir)
-			: CBase(guid, componentGUID, szDeclaration, szFileName, szProjectDir)
+		inline CComponentMemberFunction(FunctionPtr pFunction, const SGUID& guid, const SGUID& componentGUID, const char* szDeclaration, const char* szFileName, const char* szProjectDir, const Cry::Reflection::CFunction& function)
+			: CBase(guid, componentGUID, szDeclaration, szFileName, szProjectDir, function) 
 			, m_pFunction(pFunction)
 		{
 			CBase::AddParam<PARAM0>(ComponentMemberFunctionUtils::EParamFlags::IsReturn);
@@ -2554,8 +2561,8 @@ namespace Schematyc2
 
 		typedef PARAM0 (COMPONENT::*FunctionPtr)(PARAM1, PARAM2, PARAM3, PARAM4, PARAM5, PARAM6, PARAM7, PARAM8, PARAM9) const;
 
-		inline CComponentMemberFunction(FunctionPtr pFunction, const SGUID& guid, const SGUID& componentGUID, const char* szDeclaration, const char* szFileName, const char* szProjectDir)
-			: CBase(guid, componentGUID, szDeclaration, szFileName, szProjectDir)
+		inline CComponentMemberFunction(FunctionPtr pFunction, const SGUID& guid, const SGUID& componentGUID, const char* szDeclaration, const char* szFileName, const char* szProjectDir, const Cry::Reflection::CFunction& function)
+			: CBase(guid, componentGUID, szDeclaration, szFileName, szProjectDir, function) 
 			, m_pFunction(pFunction)
 		{
 			CBase::AddParam<PARAM0>(ComponentMemberFunctionUtils::EParamFlags::IsReturn);
@@ -2628,7 +2635,7 @@ namespace Schematyc2
 
 		inline IComponentMemberFunctionPtr operator () (FunctionPtr pFunction, const SGUID& guid, const SGUID& componentGUID, const char* szDeclaration, const char* szFileName, const char* szProjectDir) const
 		{
-			return IComponentMemberFunctionPtr(new ComponentMemberFunction(pFunction, guid, componentGUID, szDeclaration, szFileName, szProjectDir));
+			return IComponentMemberFunctionPtr(new ComponentMemberFunction(pFunction, guid, componentGUID, szDeclaration, szFileName, szProjectDir, Cry::Reflection::CFunctionCreator<Cry::Reflection::Utils::CFunctionDesc<FunctionPtr>>(pFunction)));
 		}
 	};
 
@@ -2640,7 +2647,7 @@ namespace Schematyc2
 
 		inline IComponentMemberFunctionPtr operator () (FunctionPtr pFunction, const SGUID& guid, const SGUID& componentGUID, const char* szDeclaration, const char* szFileName, const char* szProjectDir) const
 		{
-			return IComponentMemberFunctionPtr(new ComponentMemberFunction(pFunction, guid, componentGUID, szDeclaration, szFileName, szProjectDir));
+			return IComponentMemberFunctionPtr(new ComponentMemberFunction(pFunction, guid, componentGUID, szDeclaration, szFileName, szProjectDir, Cry::Reflection::CFunctionCreator<Cry::Reflection::Utils::CFunctionDesc<FunctionPtr>>(pFunction)));
 		}
 	};
 
@@ -2652,7 +2659,7 @@ namespace Schematyc2
 
 		inline IComponentMemberFunctionPtr operator () (FunctionPtr pFunction, const SGUID& guid, const SGUID& componentGUID, const char* szDeclaration, const char* szFileName, const char* szProjectDir) const
 		{
-			return IComponentMemberFunctionPtr(new ComponentMemberFunction(pFunction, guid, componentGUID, szDeclaration, szFileName, szProjectDir));
+			return IComponentMemberFunctionPtr(new ComponentMemberFunction(pFunction, guid, componentGUID, szDeclaration, szFileName, szProjectDir, Cry::Reflection::CFunctionCreator<Cry::Reflection::Utils::CFunctionDesc<FunctionPtr>>(pFunction)));
 		}
 	};
 
@@ -2664,7 +2671,7 @@ namespace Schematyc2
 
 		inline IComponentMemberFunctionPtr operator () (FunctionPtr pFunction, const SGUID& guid, const SGUID& componentGUID, const char* szDeclaration, const char* szFileName, const char* szProjectDir) const
 		{
-			return IComponentMemberFunctionPtr(new ComponentMemberFunction(pFunction, guid, componentGUID, szDeclaration, szFileName, szProjectDir));
+			return IComponentMemberFunctionPtr(new ComponentMemberFunction(pFunction, guid, componentGUID, szDeclaration, szFileName, szProjectDir, Cry::Reflection::CFunctionCreator<Cry::Reflection::Utils::CFunctionDesc<FunctionPtr>>(pFunction)));
 		}
 	};
 
@@ -2676,7 +2683,7 @@ namespace Schematyc2
 
 		inline IComponentMemberFunctionPtr operator () (FunctionPtr pFunction, const SGUID& guid, const SGUID& componentGUID, const char* szDeclaration, const char* szFileName, const char* szProjectDir) const
 		{
-			return IComponentMemberFunctionPtr(new ComponentMemberFunction(pFunction, guid, componentGUID, szDeclaration, szFileName, szProjectDir));
+			return IComponentMemberFunctionPtr(new ComponentMemberFunction(pFunction, guid, componentGUID, szDeclaration, szFileName, szProjectDir, Cry::Reflection::CFunctionCreator<Cry::Reflection::Utils::CFunctionDesc<FunctionPtr>>(pFunction)));
 		}
 	};
 
@@ -2688,7 +2695,7 @@ namespace Schematyc2
 
 		inline IComponentMemberFunctionPtr operator () (FunctionPtr pFunction, const SGUID& guid, const SGUID& componentGUID, const char* szDeclaration, const char* szFileName, const char* szProjectDir) const
 		{
-			return IComponentMemberFunctionPtr(new ComponentMemberFunction(pFunction, guid, componentGUID, szDeclaration, szFileName, szProjectDir));
+			return IComponentMemberFunctionPtr(new ComponentMemberFunction(pFunction, guid, componentGUID, szDeclaration, szFileName, szProjectDir, Cry::Reflection::CFunctionCreator<Cry::Reflection::Utils::CFunctionDesc<FunctionPtr>>(pFunction)));
 		}
 	};
 
@@ -2700,7 +2707,7 @@ namespace Schematyc2
 
 		inline IComponentMemberFunctionPtr operator () (FunctionPtr pFunction, const SGUID& guid, const SGUID& componentGUID, const char* szDeclaration, const char* szFileName, const char* szProjectDir) const
 		{
-			return IComponentMemberFunctionPtr(new ComponentMemberFunction(pFunction, guid, componentGUID, szDeclaration, szFileName, szProjectDir));
+			return IComponentMemberFunctionPtr(new ComponentMemberFunction(pFunction, guid, componentGUID, szDeclaration, szFileName, szProjectDir, Cry::Reflection::CFunctionCreator<Cry::Reflection::Utils::CFunctionDesc<FunctionPtr>>(pFunction)));
 		}
 	};
 
@@ -2712,7 +2719,7 @@ namespace Schematyc2
 
 		inline IComponentMemberFunctionPtr operator () (FunctionPtr pFunction, const SGUID& guid, const SGUID& componentGUID, const char* szDeclaration, const char* szFileName, const char* szProjectDir) const
 		{
-			return IComponentMemberFunctionPtr(new ComponentMemberFunction(pFunction, guid, componentGUID, szDeclaration, szFileName, szProjectDir));
+			return IComponentMemberFunctionPtr(new ComponentMemberFunction(pFunction, guid, componentGUID, szDeclaration, szFileName, szProjectDir, Cry::Reflection::CFunctionCreator<Cry::Reflection::Utils::CFunctionDesc<FunctionPtr>>(pFunction)));
 		}
 	};
 
@@ -2724,7 +2731,7 @@ namespace Schematyc2
 
 		inline IComponentMemberFunctionPtr operator () (FunctionPtr pFunction, const SGUID& guid, const SGUID& componentGUID, const char* szDeclaration, const char* szFileName, const char* szProjectDir) const
 		{
-			return IComponentMemberFunctionPtr(new ComponentMemberFunction(pFunction, guid, componentGUID, szDeclaration, szFileName, szProjectDir));
+			return IComponentMemberFunctionPtr(new ComponentMemberFunction(pFunction, guid, componentGUID, szDeclaration, szFileName, szProjectDir, Cry::Reflection::CFunctionCreator<Cry::Reflection::Utils::CFunctionDesc<FunctionPtr>>(pFunction)));
 		}
 	};
 
@@ -2736,7 +2743,7 @@ namespace Schematyc2
 
 		inline IComponentMemberFunctionPtr operator () (FunctionPtr pFunction, const SGUID& guid, const SGUID& componentGUID, const char* szDeclaration, const char* szFileName, const char* szProjectDir) const
 		{
-			return IComponentMemberFunctionPtr(new ComponentMemberFunction(pFunction, guid, componentGUID, szDeclaration, szFileName, szProjectDir));
+			return IComponentMemberFunctionPtr(new ComponentMemberFunction(pFunction, guid, componentGUID, szDeclaration, szFileName, szProjectDir, Cry::Reflection::CFunctionCreator<Cry::Reflection::Utils::CFunctionDesc<FunctionPtr>>(pFunction)));
 		}
 	};
 
@@ -2748,7 +2755,7 @@ namespace Schematyc2
 
 		inline IComponentMemberFunctionPtr operator () (FunctionPtr pFunction, const SGUID& guid, const SGUID& componentGUID, const char* szDeclaration, const char* szFileName, const char* szProjectDir) const
 		{
-			return IComponentMemberFunctionPtr(new ComponentMemberFunction(pFunction, guid, componentGUID, szDeclaration, szFileName, szProjectDir));
+			return IComponentMemberFunctionPtr(new ComponentMemberFunction(pFunction, guid, componentGUID, szDeclaration, szFileName, szProjectDir, Cry::Reflection::CFunctionCreator<Cry::Reflection::Utils::CFunctionDesc<FunctionPtr>>(pFunction)));
 		}
 	};
 
@@ -2760,7 +2767,7 @@ namespace Schematyc2
 
 		inline IComponentMemberFunctionPtr operator () (FunctionPtr pFunction, const SGUID& guid, const SGUID& componentGUID, const char* szDeclaration, const char* szFileName, const char* szProjectDir) const
 		{
-			return IComponentMemberFunctionPtr(new ComponentMemberFunction(pFunction, guid, componentGUID, szDeclaration, szFileName, szProjectDir));
+			return IComponentMemberFunctionPtr(new ComponentMemberFunction(pFunction, guid, componentGUID, szDeclaration, szFileName, szProjectDir, Cry::Reflection::CFunctionCreator<Cry::Reflection::Utils::CFunctionDesc<FunctionPtr>>(pFunction)));
 		}
 	};
 
@@ -2772,7 +2779,7 @@ namespace Schematyc2
 
 		inline IComponentMemberFunctionPtr operator () (FunctionPtr pFunction, const SGUID& guid, const SGUID& componentGUID, const char* szDeclaration, const char* szFileName, const char* szProjectDir) const
 		{
-			return IComponentMemberFunctionPtr(new ComponentMemberFunction(pFunction, guid, componentGUID, szDeclaration, szFileName, szProjectDir));
+			return IComponentMemberFunctionPtr(new ComponentMemberFunction(pFunction, guid, componentGUID, szDeclaration, szFileName, szProjectDir, Cry::Reflection::CFunctionCreator<Cry::Reflection::Utils::CFunctionDesc<FunctionPtr>>(pFunction)));
 		}
 	};
 
@@ -2784,7 +2791,7 @@ namespace Schematyc2
 
 		inline IComponentMemberFunctionPtr operator () (FunctionPtr pFunction, const SGUID& guid, const SGUID& componentGUID, const char* szDeclaration, const char* szFileName, const char* szProjectDir) const
 		{
-			return IComponentMemberFunctionPtr(new ComponentMemberFunction(pFunction, guid, componentGUID, szDeclaration, szFileName, szProjectDir));
+			return IComponentMemberFunctionPtr(new ComponentMemberFunction(pFunction, guid, componentGUID, szDeclaration, szFileName, szProjectDir, Cry::Reflection::CFunctionCreator<Cry::Reflection::Utils::CFunctionDesc<FunctionPtr>>(pFunction)));
 		}
 	};
 
@@ -2796,7 +2803,7 @@ namespace Schematyc2
 
 		inline IComponentMemberFunctionPtr operator () (FunctionPtr pFunction, const SGUID& guid, const SGUID& componentGUID, const char* szDeclaration, const char* szFileName, const char* szProjectDir) const
 		{
-			return IComponentMemberFunctionPtr(new ComponentMemberFunction(pFunction, guid, componentGUID, szDeclaration, szFileName, szProjectDir));
+			return IComponentMemberFunctionPtr(new ComponentMemberFunction(pFunction, guid, componentGUID, szDeclaration, szFileName, szProjectDir, Cry::Reflection::CFunctionCreator<Cry::Reflection::Utils::CFunctionDesc<FunctionPtr>>(pFunction)));
 		}
 	};
 
@@ -2808,7 +2815,7 @@ namespace Schematyc2
 
 		inline IComponentMemberFunctionPtr operator () (FunctionPtr pFunction, const SGUID& guid, const SGUID& componentGUID, const char* szDeclaration, const char* szFileName, const char* szProjectDir) const
 		{
-			return IComponentMemberFunctionPtr(new ComponentMemberFunction(pFunction, guid, componentGUID, szDeclaration, szFileName, szProjectDir));
+			return IComponentMemberFunctionPtr(new ComponentMemberFunction(pFunction, guid, componentGUID, szDeclaration, szFileName, szProjectDir, Cry::Reflection::CFunctionCreator<Cry::Reflection::Utils::CFunctionDesc<FunctionPtr>>(pFunction)));
 		}
 	};
 
@@ -2820,7 +2827,7 @@ namespace Schematyc2
 
 		inline IComponentMemberFunctionPtr operator () (FunctionPtr pFunction, const SGUID& guid, const SGUID& componentGUID, const char* szDeclaration, const char* szFileName, const char* szProjectDir) const
 		{
-			return IComponentMemberFunctionPtr(new ComponentMemberFunction(pFunction, guid, componentGUID, szDeclaration, szFileName, szProjectDir));
+			return IComponentMemberFunctionPtr(new ComponentMemberFunction(pFunction, guid, componentGUID, szDeclaration, szFileName, szProjectDir, Cry::Reflection::CFunctionCreator<Cry::Reflection::Utils::CFunctionDesc<FunctionPtr>>(pFunction)));
 		}
 	};
 
@@ -2832,7 +2839,7 @@ namespace Schematyc2
 
 		inline IComponentMemberFunctionPtr operator () (FunctionPtr pFunction, const SGUID& guid, const SGUID& componentGUID, const char* szDeclaration, const char* szFileName, const char* szProjectDir) const
 		{
-			return IComponentMemberFunctionPtr(new ComponentMemberFunction(pFunction, guid, componentGUID, szDeclaration, szFileName, szProjectDir));
+			return IComponentMemberFunctionPtr(new ComponentMemberFunction(pFunction, guid, componentGUID, szDeclaration, szFileName, szProjectDir, Cry::Reflection::CFunctionCreator<Cry::Reflection::Utils::CFunctionDesc<FunctionPtr>>(pFunction)));
 		}
 	};
 
@@ -2844,7 +2851,7 @@ namespace Schematyc2
 
 		inline IComponentMemberFunctionPtr operator () (FunctionPtr pFunction, const SGUID& guid, const SGUID& componentGUID, const char* szDeclaration, const char* szFileName, const char* szProjectDir) const
 		{
-			return IComponentMemberFunctionPtr(new ComponentMemberFunction(pFunction, guid, componentGUID, szDeclaration, szFileName, szProjectDir));
+			return IComponentMemberFunctionPtr(new ComponentMemberFunction(pFunction, guid, componentGUID, szDeclaration, szFileName, szProjectDir, Cry::Reflection::CFunctionCreator<Cry::Reflection::Utils::CFunctionDesc<FunctionPtr>>(pFunction)));
 		}
 	};
 
@@ -2856,7 +2863,7 @@ namespace Schematyc2
 
 		inline IComponentMemberFunctionPtr operator () (FunctionPtr pFunction, const SGUID& guid, const SGUID& componentGUID, const char* szDeclaration, const char* szFileName, const char* szProjectDir) const
 		{
-			return IComponentMemberFunctionPtr(new ComponentMemberFunction(pFunction, guid, componentGUID, szDeclaration, szFileName, szProjectDir));
+			return IComponentMemberFunctionPtr(new ComponentMemberFunction(pFunction, guid, componentGUID, szDeclaration, szFileName, szProjectDir, Cry::Reflection::CFunctionCreator<Cry::Reflection::Utils::CFunctionDesc<FunctionPtr>>(pFunction)));
 		}
 	};
 
@@ -2868,7 +2875,7 @@ namespace Schematyc2
 
 		inline IComponentMemberFunctionPtr operator () (FunctionPtr pFunction, const SGUID& guid, const SGUID& componentGUID, const char* szDeclaration, const char* szFileName, const char* szProjectDir) const
 		{
-			return IComponentMemberFunctionPtr(new ComponentMemberFunction(pFunction, guid, componentGUID, szDeclaration, szFileName, szProjectDir));
+			return IComponentMemberFunctionPtr(new ComponentMemberFunction(pFunction, guid, componentGUID, szDeclaration, szFileName, szProjectDir, Cry::Reflection::CFunctionCreator<Cry::Reflection::Utils::CFunctionDesc<FunctionPtr>>(pFunction)));
 		}
 	};
 
@@ -2880,7 +2887,7 @@ namespace Schematyc2
 
 		inline IComponentMemberFunctionPtr operator () (FunctionPtr pFunction, const SGUID& guid, const SGUID& componentGUID, const char* szDeclaration, const char* szFileName, const char* szProjectDir) const
 		{
-			return IComponentMemberFunctionPtr(new ComponentMemberFunction(pFunction, guid, componentGUID, szDeclaration, szFileName, szProjectDir));
+			return IComponentMemberFunctionPtr(new ComponentMemberFunction(pFunction, guid, componentGUID, szDeclaration, szFileName, szProjectDir, Cry::Reflection::CFunctionCreator<Cry::Reflection::Utils::CFunctionDesc<FunctionPtr>>(pFunction)));
 		}
 	};
 
@@ -2892,7 +2899,7 @@ namespace Schematyc2
 
 		inline IComponentMemberFunctionPtr operator () (FunctionPtr pFunction, const SGUID& guid, const SGUID& componentGUID, const char* szDeclaration, const char* szFileName, const char* szProjectDir) const
 		{
-			return IComponentMemberFunctionPtr(new ComponentMemberFunction(pFunction, guid, componentGUID, szDeclaration, szFileName, szProjectDir));
+			return IComponentMemberFunctionPtr(new ComponentMemberFunction(pFunction, guid, componentGUID, szDeclaration, szFileName, szProjectDir, Cry::Reflection::CFunctionCreator<Cry::Reflection::Utils::CFunctionDesc<FunctionPtr>>(pFunction)));
 		}
 	};
 
@@ -2904,7 +2911,7 @@ namespace Schematyc2
 
 		inline IComponentMemberFunctionPtr operator () (FunctionPtr pFunction, const SGUID& guid, const SGUID& componentGUID, const char* szDeclaration, const char* szFileName, const char* szProjectDir) const
 		{
-			return IComponentMemberFunctionPtr(new ComponentMemberFunction(pFunction, guid, componentGUID, szDeclaration, szFileName, szProjectDir));
+			return IComponentMemberFunctionPtr(new ComponentMemberFunction(pFunction, guid, componentGUID, szDeclaration, szFileName, szProjectDir, Cry::Reflection::CFunctionCreator<Cry::Reflection::Utils::CFunctionDesc<FunctionPtr>>(pFunction)));
 		}
 	};
 
@@ -2916,7 +2923,7 @@ namespace Schematyc2
 
 		inline IComponentMemberFunctionPtr operator () (FunctionPtr pFunction, const SGUID& guid, const SGUID& componentGUID, const char* szDeclaration, const char* szFileName, const char* szProjectDir) const
 		{
-			return IComponentMemberFunctionPtr(new ComponentMemberFunction(pFunction, guid, componentGUID, szDeclaration, szFileName, szProjectDir));
+			return IComponentMemberFunctionPtr(new ComponentMemberFunction(pFunction, guid, componentGUID, szDeclaration, szFileName, szProjectDir, Cry::Reflection::CFunctionCreator<Cry::Reflection::Utils::CFunctionDesc<FunctionPtr>>(pFunction)));
 		}
 	};
 
@@ -2928,7 +2935,7 @@ namespace Schematyc2
 
 		inline IComponentMemberFunctionPtr operator () (FunctionPtr pFunction, const SGUID& guid, const SGUID& componentGUID, const char* szDeclaration, const char* szFileName, const char* szProjectDir) const
 		{
-			return IComponentMemberFunctionPtr(new ComponentMemberFunction(pFunction, guid, componentGUID, szDeclaration, szFileName, szProjectDir));
+			return IComponentMemberFunctionPtr(new ComponentMemberFunction(pFunction, guid, componentGUID, szDeclaration, szFileName, szProjectDir, Cry::Reflection::CFunctionCreator<Cry::Reflection::Utils::CFunctionDesc<FunctionPtr>>(pFunction)));
 		}
 	};
 
@@ -2940,7 +2947,7 @@ namespace Schematyc2
 
 		inline IComponentMemberFunctionPtr operator () (FunctionPtr pFunction, const SGUID& guid, const SGUID& componentGUID, const char* szDeclaration, const char* szFileName, const char* szProjectDir) const
 		{
-			return IComponentMemberFunctionPtr(new ComponentMemberFunction(pFunction, guid, componentGUID, szDeclaration, szFileName, szProjectDir));
+			return IComponentMemberFunctionPtr(new ComponentMemberFunction(pFunction, guid, componentGUID, szDeclaration, szFileName, szProjectDir, Cry::Reflection::CFunctionCreator<Cry::Reflection::Utils::CFunctionDesc<FunctionPtr>>(pFunction)));
 		}
 	};
 
@@ -2952,7 +2959,7 @@ namespace Schematyc2
 
 		inline IComponentMemberFunctionPtr operator () (FunctionPtr pFunction, const SGUID& guid, const SGUID& componentGUID, const char* szDeclaration, const char* szFileName, const char* szProjectDir) const
 		{
-			return IComponentMemberFunctionPtr(new ComponentMemberFunction(pFunction, guid, componentGUID, szDeclaration, szFileName, szProjectDir));
+			return IComponentMemberFunctionPtr(new ComponentMemberFunction(pFunction, guid, componentGUID, szDeclaration, szFileName, szProjectDir, Cry::Reflection::CFunctionCreator<Cry::Reflection::Utils::CFunctionDesc<FunctionPtr>>(pFunction)));
 		}
 	};
 
@@ -2964,7 +2971,7 @@ namespace Schematyc2
 
 		inline IComponentMemberFunctionPtr operator () (FunctionPtr pFunction, const SGUID& guid, const SGUID& componentGUID, const char* szDeclaration, const char* szFileName, const char* szProjectDir) const
 		{
-			return IComponentMemberFunctionPtr(new ComponentMemberFunction(pFunction, guid, componentGUID, szDeclaration, szFileName, szProjectDir));
+			return IComponentMemberFunctionPtr(new ComponentMemberFunction(pFunction, guid, componentGUID, szDeclaration, szFileName, szProjectDir, Cry::Reflection::CFunctionCreator<Cry::Reflection::Utils::CFunctionDesc<FunctionPtr>>(pFunction)));
 		}
 	};
 
@@ -2976,7 +2983,7 @@ namespace Schematyc2
 
 		inline IComponentMemberFunctionPtr operator () (FunctionPtr pFunction, const SGUID& guid, const SGUID& componentGUID, const char* szDeclaration, const char* szFileName, const char* szProjectDir) const
 		{
-			return IComponentMemberFunctionPtr(new ComponentMemberFunction(pFunction, guid, componentGUID, szDeclaration, szFileName, szProjectDir));
+			return IComponentMemberFunctionPtr(new ComponentMemberFunction(pFunction, guid, componentGUID, szDeclaration, szFileName, szProjectDir, Cry::Reflection::CFunctionCreator<Cry::Reflection::Utils::CFunctionDesc<FunctionPtr>>(pFunction)));
 		}
 	};
 
@@ -2988,7 +2995,7 @@ namespace Schematyc2
 
 		inline IComponentMemberFunctionPtr operator () (FunctionPtr pFunction, const SGUID& guid, const SGUID& componentGUID, const char* szDeclaration, const char* szFileName, const char* szProjectDir) const
 		{
-			return IComponentMemberFunctionPtr(new ComponentMemberFunction(pFunction, guid, componentGUID, szDeclaration, szFileName, szProjectDir));
+			return IComponentMemberFunctionPtr(new ComponentMemberFunction(pFunction, guid, componentGUID, szDeclaration, szFileName, szProjectDir, Cry::Reflection::CFunctionCreator<Cry::Reflection::Utils::CFunctionDesc<FunctionPtr>>(pFunction)));
 		}
 	};
 
@@ -3000,7 +3007,7 @@ namespace Schematyc2
 
 		inline IComponentMemberFunctionPtr operator () (FunctionPtr pFunction, const SGUID& guid, const SGUID& componentGUID, const char* szDeclaration, const char* szFileName, const char* szProjectDir) const
 		{
-			return IComponentMemberFunctionPtr(new ComponentMemberFunction(pFunction, guid, componentGUID, szDeclaration, szFileName, szProjectDir));
+			return IComponentMemberFunctionPtr(new ComponentMemberFunction(pFunction, guid, componentGUID, szDeclaration, szFileName, szProjectDir, Cry::Reflection::CFunctionCreator<Cry::Reflection::Utils::CFunctionDesc<FunctionPtr>>(pFunction)));
 		}
 	};
 
@@ -3012,7 +3019,7 @@ namespace Schematyc2
 
 		inline IComponentMemberFunctionPtr operator () (FunctionPtr pFunction, const SGUID& guid, const SGUID& componentGUID, const char* szDeclaration, const char* szFileName, const char* szProjectDir) const
 		{
-			return IComponentMemberFunctionPtr(new ComponentMemberFunction(pFunction, guid, componentGUID, szDeclaration, szFileName, szProjectDir));
+			return IComponentMemberFunctionPtr(new ComponentMemberFunction(pFunction, guid, componentGUID, szDeclaration, szFileName, szProjectDir, Cry::Reflection::CFunctionCreator<Cry::Reflection::Utils::CFunctionDesc<FunctionPtr>>(pFunction)));
 		}
 	};
 
@@ -3024,7 +3031,7 @@ namespace Schematyc2
 
 		inline IComponentMemberFunctionPtr operator () (FunctionPtr pFunction, const SGUID& guid, const SGUID& componentGUID, const char* szDeclaration, const char* szFileName, const char* szProjectDir) const
 		{
-			return IComponentMemberFunctionPtr(new ComponentMemberFunction(pFunction, guid, componentGUID, szDeclaration, szFileName, szProjectDir));
+			return IComponentMemberFunctionPtr(new ComponentMemberFunction(pFunction, guid, componentGUID, szDeclaration, szFileName, szProjectDir, Cry::Reflection::CFunctionCreator<Cry::Reflection::Utils::CFunctionDesc<FunctionPtr>>(pFunction)));
 		}
 	};
 
@@ -3036,7 +3043,7 @@ namespace Schematyc2
 
 		inline IComponentMemberFunctionPtr operator () (FunctionPtr pFunction, const SGUID& guid, const SGUID& componentGUID, const char* szDeclaration, const char* szFileName, const char* szProjectDir) const
 		{
-			return IComponentMemberFunctionPtr(new ComponentMemberFunction(pFunction, guid, componentGUID, szDeclaration, szFileName, szProjectDir));
+			return IComponentMemberFunctionPtr(new ComponentMemberFunction(pFunction, guid, componentGUID, szDeclaration, szFileName, szProjectDir, Cry::Reflection::CFunctionCreator<Cry::Reflection::Utils::CFunctionDesc<FunctionPtr>>(pFunction)));
 		}
 	};
 
@@ -3048,7 +3055,7 @@ namespace Schematyc2
 
 		inline IComponentMemberFunctionPtr operator () (FunctionPtr pFunction, const SGUID& guid, const SGUID& componentGUID, const char* szDeclaration, const char* szFileName, const char* szProjectDir) const
 		{
-			return IComponentMemberFunctionPtr(new ComponentMemberFunction(pFunction, guid, componentGUID, szDeclaration, szFileName, szProjectDir));
+			return IComponentMemberFunctionPtr(new ComponentMemberFunction(pFunction, guid, componentGUID, szDeclaration, szFileName, szProjectDir, Cry::Reflection::CFunctionCreator<Cry::Reflection::Utils::CFunctionDesc<FunctionPtr>>(pFunction)));
 		}
 	};
 
@@ -3060,7 +3067,7 @@ namespace Schematyc2
 
 		inline IComponentMemberFunctionPtr operator () (FunctionPtr pFunction, const SGUID& guid, const SGUID& componentGUID, const char* szDeclaration, const char* szFileName, const char* szProjectDir) const
 		{
-			return IComponentMemberFunctionPtr(new ComponentMemberFunction(pFunction, guid, componentGUID, szDeclaration, szFileName, szProjectDir));
+			return IComponentMemberFunctionPtr(new ComponentMemberFunction(pFunction, guid, componentGUID, szDeclaration, szFileName, szProjectDir, Cry::Reflection::CFunctionCreator<Cry::Reflection::Utils::CFunctionDesc<FunctionPtr>>(pFunction)));
 		}
 	};
 
@@ -3072,7 +3079,7 @@ namespace Schematyc2
 
 		inline IComponentMemberFunctionPtr operator () (FunctionPtr pFunction, const SGUID& guid, const SGUID& componentGUID, const char* szDeclaration, const char* szFileName, const char* szProjectDir) const
 		{
-			return IComponentMemberFunctionPtr(new ComponentMemberFunction(pFunction, guid, componentGUID, szDeclaration, szFileName, szProjectDir));
+			return IComponentMemberFunctionPtr(new ComponentMemberFunction(pFunction, guid, componentGUID, szDeclaration, szFileName, szProjectDir, Cry::Reflection::CFunctionCreator<Cry::Reflection::Utils::CFunctionDesc<FunctionPtr>>(pFunction)));
 		}
 	};
 
@@ -3084,7 +3091,7 @@ namespace Schematyc2
 
 		inline IComponentMemberFunctionPtr operator () (FunctionPtr pFunction, const SGUID& guid, const SGUID& componentGUID, const char* szDeclaration, const char* szFileName, const char* szProjectDir) const
 		{
-			return IComponentMemberFunctionPtr(new ComponentMemberFunction(pFunction, guid, componentGUID, szDeclaration, szFileName, szProjectDir));
+			return IComponentMemberFunctionPtr(new ComponentMemberFunction(pFunction, guid, componentGUID, szDeclaration, szFileName, szProjectDir, Cry::Reflection::CFunctionCreator<Cry::Reflection::Utils::CFunctionDesc<FunctionPtr>>(pFunction)));
 		}
 	};
 
@@ -3096,7 +3103,7 @@ namespace Schematyc2
 
 		inline IComponentMemberFunctionPtr operator () (FunctionPtr pFunction, const SGUID& guid, const SGUID& componentGUID, const char* szDeclaration, const char* szFileName, const char* szProjectDir) const
 		{
-			return IComponentMemberFunctionPtr(new ComponentMemberFunction(pFunction, guid, componentGUID, szDeclaration, szFileName, szProjectDir));
+			return IComponentMemberFunctionPtr(new ComponentMemberFunction(pFunction, guid, componentGUID, szDeclaration, szFileName, szProjectDir, Cry::Reflection::CFunctionCreator<Cry::Reflection::Utils::CFunctionDesc<FunctionPtr>>(pFunction)));
 		}
 	};
 
@@ -3108,7 +3115,7 @@ namespace Schematyc2
 
 		inline IComponentMemberFunctionPtr operator () (FunctionPtr pFunction, const SGUID& guid, const SGUID& componentGUID, const char* szDeclaration, const char* szFileName, const char* szProjectDir) const
 		{
-			return IComponentMemberFunctionPtr(new ComponentMemberFunction(pFunction, guid, componentGUID, szDeclaration, szFileName, szProjectDir));
+			return IComponentMemberFunctionPtr(new ComponentMemberFunction(pFunction, guid, componentGUID, szDeclaration, szFileName, szProjectDir, Cry::Reflection::CFunctionCreator<Cry::Reflection::Utils::CFunctionDesc<FunctionPtr>>(pFunction)));
 		}
 	};
 
@@ -3120,7 +3127,7 @@ namespace Schematyc2
 
 		inline IComponentMemberFunctionPtr operator () (FunctionPtr pFunction, const SGUID& guid, const SGUID& componentGUID, const char* szDeclaration, const char* szFileName, const char* szProjectDir) const
 		{
-			return IComponentMemberFunctionPtr(new ComponentMemberFunction(pFunction, guid, componentGUID, szDeclaration, szFileName, szProjectDir));
+			return IComponentMemberFunctionPtr(new ComponentMemberFunction(pFunction, guid, componentGUID, szDeclaration, szFileName, szProjectDir, Cry::Reflection::CFunctionCreator<Cry::Reflection::Utils::CFunctionDesc<FunctionPtr>>(pFunction)));
 		}
 	};
 }

@@ -199,7 +199,7 @@ struct IAttributeFilterOperator
 
 }
 
-class CAttributeFilter
+class EDITOR_COMMON_API CAttributeFilter
 {
 public:
 	CAttributeFilter(CItemModelAttribute* pAttribute);

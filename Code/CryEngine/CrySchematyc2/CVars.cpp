@@ -17,6 +17,7 @@ namespace Schematyc2
 	ICVar* CVars::sc_LogFileMessageTypes      = nullptr;
 	int    CVars::sc_DisplayCriticalErrors    = 0;
 
+	int    CVars::sc_LegacyMode               = 0;
 	int    CVars::sc_RunUnitTests             = 0;
 	int    CVars::sc_MaxRecursionDepth        = 100;
 	ICVar* CVars::sc_ExperimentalFeatures     = nullptr;
@@ -43,6 +44,7 @@ namespace Schematyc2
 		sc_LogFileMessageTypes = REGISTER_STRING("sc_LogFileMessageTypes", "Warning Error CriticalError", VF_NULL, "Set which message types should be sent to log file");
 		sc_DisplayCriticalErrors = REGISTER_CVAR(sc_DisplayCriticalErrors, sc_DisplayCriticalErrors, VF_NULL, g_szDisplayCriticalErrorsDescription)->GetIVal();
 
+		sc_RunUnitTests = REGISTER_CVAR(sc_LegacyMode, sc_LegacyMode, VF_NULL, "Enable/disable legacy new/open; 0 - Diable; 1 - Enable")->GetIVal();
 		sc_RunUnitTests = REGISTER_CVAR(sc_RunUnitTests, sc_RunUnitTests, VF_READONLY, "Enable/disable unit tests on startup")->GetIVal();
 		sc_MaxRecursionDepth = REGISTER_CVAR(sc_MaxRecursionDepth, sc_MaxRecursionDepth, VF_NULL, "Maximum recursion depth")->GetIVal();
 		sc_ExperimentalFeatures = REGISTER_STRING("sc_ExperimentalFeatures", "", VF_NULL, "Enable one or more experimental features");
@@ -75,6 +77,7 @@ namespace Schematyc2
 			pConsole->UnregisterVariable("sc_LogFileMessageTypes");
 			pConsole->UnregisterVariable("sc_DisplayCriticalErrors");
 
+			pConsole->UnregisterVariable("sc_LegacyMode");
 			pConsole->UnregisterVariable("sc_RunUnitTests");
 			pConsole->UnregisterVariable("sc_MaxRecursionDepth");
 			pConsole->UnregisterVariable("sc_ExperimentalFeatures");

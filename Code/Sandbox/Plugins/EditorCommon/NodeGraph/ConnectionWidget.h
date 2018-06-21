@@ -32,6 +32,7 @@ public:
 	virtual void                             DeleteLater() override;
 	virtual int32                            GetType() const override         { return Type; }
 	virtual CAbstractNodeGraphViewModelItem* GetAbstractItem() const override { return m_pItem; }
+	virtual const CNodeGraphViewStyleItem&   GetStyle() const override;
 	// ~CNodeGraphViewGraphicsWidget
 
 	CAbstractConnectionItem* GetItem() const                         { return m_pItem; }

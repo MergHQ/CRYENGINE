@@ -69,13 +69,21 @@ namespace CryAudio
 struct IAudioSystem;
 }
 struct ISystem;
-namespace Cry
-{
-namespace Reflection
-{
-struct IReflection;
-}
-}
+
+namespace Cry {
+namespace Reflection {
+
+struct IModule;
+
+} // ~Reflection namespace
+namespace Script {
+
+struct ICoreEnvironment;
+struct ICoreRegistry;
+
+} // ~Script namespace
+} // ~Cry namespace
+
 struct IFrameProfileSystem;
 struct IStatoscope;
 class IDiskProfiler;
@@ -829,52 +837,54 @@ union UAsyncDipState
 //! \see ISystem
 struct SSystemGlobalEnvironment
 {
-	IDialogSystem*               pDialogSystem;
-	I3DEngine*                   p3DEngine;
-	INetwork*                    pNetwork;
-	INetContext*                 pNetContext;
-	ICryLobby*                   pLobby;
-	IScriptSystem*               pScriptSystem;
-	IPhysicalWorld*              pPhysicalWorld;
-	IFlowSystem*                 pFlowSystem;
-	IInput*                      pInput;
-	IStatoscope*                 pStatoscope;
-	ICryPak*                     pCryPak;
-	IFileChangeMonitor*          pFileChangeMonitor;
-	IProfileLogSystem*           pProfileLogSystem;
-	IParticleManager*            pParticleManager;
-	IOpticsManager*              pOpticsManager;
-	IFrameProfileSystem*         pFrameProfileSystem;
-	ITimer*                      pTimer;
-	ICryFont*                    pCryFont;
-	IGameFramework*              pGameFramework;
-	ILocalMemoryUsage*           pLocalMemoryUsage;
-	IEntitySystem*               pEntitySystem;
-	IConsole*                    pConsole;
-	CryAudio::IAudioSystem*      pAudioSystem;
-	ISystem*                     pSystem;
-	ICharacterManager*           pCharacterManager;
-	IAISystem*                   pAISystem;
-	ILog*                        pLog;
-	ICodeCheckpointMgr*          pCodeCheckpointMgr;
-	IMovieSystem*                pMovieSystem;
-	INameTable*                  pNameTable;
-	IRenderer*                   pRenderer;
-	IRenderAuxGeom*              pAuxGeomRenderer;
-	IHardwareMouse*              pHardwareMouse;
-	IMaterialEffects*            pMaterialEffects;
-	JobManager::IJobManager*     pJobManager;
-	IOverloadSceneManager*       pOverloadSceneManager;
-	IFlashUI*                    pFlashUI;
-	UIFramework::IUIFramework*   pUIFramework;
-	IServiceNetwork*             pServiceNetwork;
-	IRemoteCommandManager*       pRemoteCommandManager;
-	DRS::IDynamicResponseSystem* pDynamicResponseSystem;
-	IThreadManager*              pThreadManager;
-	IScaleformHelper*            pScaleformHelper; // nullptr when Scaleform support is not enabled
-	ICrySchematycCore*           pSchematyc;
-	Schematyc2::IFramework*      pSchematyc2;
-	Cry::Reflection::IReflection* pReflection;
+	IDialogSystem*                 pDialogSystem;
+	I3DEngine*                     p3DEngine;
+	INetwork*                      pNetwork;
+	INetContext*                   pNetContext;
+	ICryLobby*                     pLobby;
+	IScriptSystem*                 pScriptSystem;
+	IPhysicalWorld*                pPhysicalWorld;
+	IFlowSystem*                   pFlowSystem;
+	IInput*                        pInput;
+	IStatoscope*                   pStatoscope;
+	ICryPak*                       pCryPak;
+	IFileChangeMonitor*            pFileChangeMonitor;
+	IProfileLogSystem*             pProfileLogSystem;
+	IParticleManager*              pParticleManager;
+	IOpticsManager*                pOpticsManager;
+	IFrameProfileSystem*           pFrameProfileSystem;
+	ITimer*                        pTimer;
+	ICryFont*                      pCryFont;
+	IGameFramework*                pGameFramework;
+	ILocalMemoryUsage*             pLocalMemoryUsage;
+	IEntitySystem*                 pEntitySystem;
+	IConsole*                      pConsole;
+	CryAudio::IAudioSystem*        pAudioSystem;
+	ISystem*                       pSystem;
+	ICharacterManager*             pCharacterManager;
+	IAISystem*                     pAISystem;
+	ILog*                          pLog;
+	ICodeCheckpointMgr*            pCodeCheckpointMgr;
+	IMovieSystem*                  pMovieSystem;
+	INameTable*                    pNameTable;
+	IRenderer*                     pRenderer;
+	IRenderAuxGeom*                pAuxGeomRenderer;
+	IHardwareMouse*                pHardwareMouse;
+	IMaterialEffects*              pMaterialEffects;
+	JobManager::IJobManager*       pJobManager;
+	IOverloadSceneManager*         pOverloadSceneManager;
+	IFlashUI*                      pFlashUI;
+	UIFramework::IUIFramework*     pUIFramework;
+	IServiceNetwork*               pServiceNetwork;
+	IRemoteCommandManager*         pRemoteCommandManager;
+	DRS::IDynamicResponseSystem*   pDynamicResponseSystem;
+	IThreadManager*                pThreadManager;
+	IScaleformHelper*              pScaleformHelper;  // nullptr when Scaleform support is not enabled
+	ICrySchematycCore*             pSchematyc;
+	Schematyc2::IFramework*        pSchematyc2;
+	Cry::Reflection::IModule*  pReflection;
+	Cry::Script::ICoreEnvironment* pScriptCoreEnv;
+	Cry::Script::ICoreRegistry*    pScriptCoreRegistry;
 
 #if CRY_PLATFORM_DURANGO
 	void*      pWindow;

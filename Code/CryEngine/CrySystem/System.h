@@ -166,6 +166,8 @@ struct SSystemCVars
 
 	int     sys_deferAudioUpdateOptim;
 	int     sys_filesystemCaseSensitivity;
+	
+	int sys_reflection_natvis;
 
 	PakVars pakVars;
 

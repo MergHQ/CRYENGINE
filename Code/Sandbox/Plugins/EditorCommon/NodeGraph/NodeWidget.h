@@ -6,7 +6,7 @@
 
 #include "NodeWidgetStyle.h"
 #include "NodeGraphViewGraphicsWidget.h"
-#include "NodeHeaderWidget.h"
+#include "HeaderWidget.h"
 
 #include "AbstractNodeItem.h"
 
@@ -32,10 +32,11 @@ public:
 	virtual void                             DeleteLater() override;
 	virtual int32                            GetType() const override         { return Type; }
 	virtual CAbstractNodeGraphViewModelItem* GetAbstractItem() const override { return &m_item; }
+	virtual const CNodeWidgetStyle&          GetStyle() const override        { return *m_pStyle; }
 	// ~CNodeGraphViewGraphicsWidget
 
 	CAbstractNodeItem&                  GetItem() const  { return m_item; }
-	const CNodeWidgetStyle&             GetStyle() const { return *m_pStyle; }
+	
 
 	virtual void                        SetContentWidget(CAbstractNodeContentWidget* pContent);
 	virtual void                        DetachContentWidget();
@@ -45,7 +46,7 @@ public:
 	QString                             GetName() const;
 	void                                EditName();
 
-	void                                AddHeaderIcon(CNodeHeaderIcon* pHeaderIcon, CNodeHeader::EIconSlot slot);
+	void                                AddHeaderIcon(CHeaderIconWidget* pHeaderIcon, CHeaderWidget::EIconSlot slot);
 	void                                SetHeaderNameWidth(int32 width);
 
 Q_SIGNALS:
@@ -77,7 +78,7 @@ private:
 	const CNodeWidgetStyle*     m_pStyle;
 	CAbstractNodeItem&          m_item;
 	QGraphicsLinearLayout*      m_pContentLayout;
-	CNodeHeader*                m_pHeader;
+	CHeaderWidget*              m_pHeader;
 	CNodeInfoWidget*            m_pInfoBar;
 	CAbstractNodeContentWidget* m_pContent;
 };

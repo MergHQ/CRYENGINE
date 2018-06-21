@@ -7,6 +7,8 @@
 #include "CrySchematyc2/GUID.h"
 #include "CrySchematyc2/IProperties.h"
 
+#include <CryType/Type.h>
+
 namespace Schematyc2
 {
 	struct IAction;
@@ -47,6 +49,7 @@ namespace Schematyc2
 		virtual EActionFlags GetFlags() const = 0;
 		virtual IActionPtr CreateAction() const = 0;
 		virtual IPropertiesPtr CreateProperties() const = 0;
+		virtual Cry::Type::CTypeDesc GetTypeDesc() const = 0;
 	};
 
 	DECLARE_SHARED_POINTERS(IActionFactory)

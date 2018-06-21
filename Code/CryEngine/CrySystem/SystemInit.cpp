@@ -48,7 +48,7 @@
 #include <CryScriptSystem/IScriptSystem.h>
 #include <CrySystem/ICmdLine.h>
 #include <CrySystem/IProcess.h>
-#include <CryReflection/IReflection.h>
+#include <CryReflection/Framework.h>
 
 #include "CryPak.h"
 #include "XConsole.h"
@@ -1079,7 +1079,7 @@ bool CSystem::InitReflectionSystem(const SSystemInitParams& startupParams)
 {
 	LOADING_TIME_PROFILE_SECTION(GetISystem());
 
-	if (!InitializeEngineModule(startupParams, "CryReflection", cryiidof<Cry::Reflection::IReflection>(), true))
+	if (!InitializeEngineModule(startupParams, "CryReflection", cryiidof<Cry::Reflection::IModule>(), true))
 		return false;
 
 	if (!m_env.pReflection)
@@ -2952,6 +2952,8 @@ bool CSystem::Initialize(SSystemInitParams& startupParams)
 		{
 			return false;
 		}
+
+		Cry::Reflection::CTypeRegistrationChain::Execute(g_cvars.sys_reflection_natvis != 0);
 
 		m_pResourceManager->Init();
 
@@ -5434,6 +5436,10 @@ void CSystem::CreateSystemVars()
 
 #if CRY_PLATFORM_WINDOWS
 	REGISTER_CVAR2("sys_highrestimer", &g_cvars.sys_highrestimer, 0, VF_REQUIRE_APP_RESTART, "Enables high resolution system timer.");
+#endif
+
+#if CRY_PLATFORM_WINDOWS
+	REGISTER_CVAR2("sys_reflection_natvis", &g_cvars.sys_reflection_natvis, 0, VF_NULL, "Enables reflection .natvis file generation on startup.");
 #endif
 
 	g_cvars.sys_intromoviesduringinit = 0;

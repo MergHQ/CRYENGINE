@@ -2,10 +2,8 @@
 
 #pragma once
 
-#include <CryExtension/CryGUID.h>
-
-#include "IReflection.h"
-#include "IDescExtension.h"
+#include <CryReflection/Framework/Common.h>
+#include <CryReflection/IDescExtension.h>
 
 namespace Cry {
 namespace Reflection {
@@ -16,18 +14,22 @@ struct IVariableDesc : public IExtensibleDesc
 {
 	virtual ~IVariableDesc() {}
 
-	virtual const CryGUID&         GetGuid() const = 0;
-	virtual CryTypeId              GetTypeId() const = 0;
+	virtual CGuid                  GetGuid() const = 0;
+	virtual CTypeId                GetTypeId() const = 0;
 
 	virtual const char*            GetLabel() const = 0;
 
 	virtual void                   SetDescription(const char* szDescription) = 0;
 	virtual const char*            GetDescription() const = 0;
 
+	virtual bool                   IsConst() const = 0;
+	virtual bool                   IsPublic() const = 0;
+
 	virtual bool                   IsMemberVariable() const = 0;
 	virtual ptrdiff_t              GetOffset() const = 0;
 	virtual void*                  GetPointer() const = 0;
 
+	virtual const ITypeDesc*       GetTypeDesc() const = 0;
 	virtual const SSourceFileInfo& GetSourceInfo() const = 0;
 };
 
@@ -49,5 +51,5 @@ private:
 	ptrdiff_t m_offset;
 };
 
-} // ~Cry namespace
 } // ~Reflection namespace
+} // ~Cry namespace

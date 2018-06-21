@@ -35,7 +35,7 @@ namespace EditorSubstance
 		};
 
 		CSubstanceOutputNodeBase::CSubstanceOutputNodeBase(const SSubstanceOutput& output, CryGraphEditor::CNodeGraphViewModel& viewModel)
-			: CAbstractNodeItem(viewModel)
+			: CAbstractNodeItem(*(m_pData = new CryGraphEditor::CNodeEditorData()), viewModel)
 			, m_pOutput(output)
 			, m_pNodeContentWidget(nullptr)
 		{
@@ -49,6 +49,8 @@ namespace EditorSubstance
 				CSubstanceBasePinItem* pBasePin = static_cast<CSubstanceBasePinItem*>(pItem);
 				delete pBasePin;
 			}
+
+			delete m_pData;
 		}
 
 		QVariant CSubstanceOutputNodeBase::GetId() const

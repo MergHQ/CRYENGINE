@@ -223,7 +223,7 @@
         <file alias="Game/Game_Sync.ico">icons/game_sync.ico</file>
 
         <!--General-->
-	<file alias="common/general_corner_menu.ico">icons/general_corner_menu.ico</file>
+        <file alias="common/general_corner_menu.ico">icons/general_corner_menu.ico</file>
         <file alias="common/general_preview_size_0.ico">icons/general_preview_size_0.ico</file>
         <file alias="common/general_preview_size_1.ico">icons/general_preview_size_1.ico</file>
         <file alias="common/general_preview_size_2.ico">icons/general_preview_size_2.ico</file>
@@ -395,15 +395,16 @@
         <file alias="General/edit-save-selected-objects.ico">icons/general_edit-save-selected-objects.ico</file>
         <file alias="General/edit-select-object.ico">icons/general_edit-select-object.ico</file>
         <file alias="General/file-open.ico">icons/general_file_open.ico</file>
-		
-	    <file alias="General/colour_blue.ico">icons/general_colour_blue.ico</file>
-	    <file alias="General/colour_green.ico">icons/general_colour_green.ico</file>
-	    <file alias="General/colour_orange.ico">icons/general_colour_orange.ico</file>
-	    <file alias="General/colour_other.ico">icons/general_colour_other.ico</file>
-	    <file alias="General/colour_purple.ico">icons/general_colour_purple.ico</file>
-	    <file alias="General/colour_red.ico">icons/general_colour_red.ico</file>
-	    <file alias="General/colour_yellow.ico">icons/general_colour_yellow.ico</file>
-		
+        <file alias="General/link-external.ico">icons/general_link_external.ico</file>
+
+        <file alias="General/colour_blue.ico">icons/general_colour_blue.ico</file>
+        <file alias="General/colour_green.ico">icons/general_colour_green.ico</file>
+        <file alias="General/colour_orange.ico">icons/general_colour_orange.ico</file>
+        <file alias="General/colour_other.ico">icons/general_colour_other.ico</file>
+        <file alias="General/colour_purple.ico">icons/general_colour_purple.ico</file>
+        <file alias="General/colour_red.ico">icons/general_colour_red.ico</file>
+        <file alias="General/colour_yellow.ico">icons/general_colour_yellow.ico</file>
+
         <file alias="common/general_physics_play.ico">icons/general_physics_play.ico</file>
         <file alias="common/general_physics_stop.ico">icons/general_physics_stop.ico</file>
         <file alias="common/general_physics_pause.ico">icons/general_physics_pause.ico</file>

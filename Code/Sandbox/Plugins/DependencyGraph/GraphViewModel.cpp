@@ -10,7 +10,7 @@
 #include "NodeGraph/AbstractNodeContentWidget.h"
 #include "NodeGraph/PinGridNodeContentWidget.h"
 #include "NodeGraph/ConnectionWidget.h"
-#include "NodeGraph/NodeHeaderWidgetStyle.h"
+#include "NodeGraph/HeaderWidgetStyle.h"
 #include "AssetSystem/AssetManager.h"
 #include "AssetSystem/DependencyTracker.h"
 #include "Notifications/NotificationCenter.h"
@@ -267,11 +267,16 @@ public:
 };
 
 CAssetNodeBase::CAssetNodeBase(CryGraphEditor::CNodeGraphViewModel& viewModel, CAsset* pAsset, const CAssetType* pAssetType, const string& path)
-	: CAbstractNodeItem(viewModel)
+	: CAbstractNodeItem(*(m_pData = new CryGraphEditor::CNodeEditorData()), viewModel)
 	, m_pAsset(pAsset)
 	, m_pAssetType(pAssetType)
 	, m_path(path)
 {
+}
+
+CAssetNodeBase::~CAssetNodeBase()
+{
+	delete m_pData;
 }
 
 bool CAssetNodeBase::CanBeEdited() const

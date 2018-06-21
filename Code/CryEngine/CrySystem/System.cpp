@@ -76,7 +76,7 @@
 #include <CryLiveCreate/ILiveCreateManager.h>
 #include "OverloadSceneManager/OverloadSceneManager.h"
 #include <CryThreading/IThreadManager.h>
-#include <CryReflection/IReflection.h>
+#include <CryReflection/IModule.h>
 
 #include <CrySystem/ZLib/IZLibCompressor.h>
 #include <CrySystem/ZLib/IZlibDecompressor.h>

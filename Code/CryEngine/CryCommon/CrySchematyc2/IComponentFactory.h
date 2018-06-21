@@ -8,6 +8,8 @@
 #include "CrySchematyc2/INetworkSpawnParams.h"
 #include "CrySchematyc2/IProperties.h"
 
+#include <CryType/Type.h>
+
 namespace Schematyc2
 {
 	struct IComponent;
@@ -69,6 +71,7 @@ namespace Schematyc2
 		virtual IPropertiesPtr CreateProperties() const = 0;
 		virtual void SetDefaultNetworkSpawnParams(const INetworkSpawnParamsPtr& pSpawnParams) = 0;
 		virtual INetworkSpawnParamsPtr CreateNetworkSpawnParams() const = 0;
+		virtual Cry::Type::CTypeDesc GetTypeDesc() const = 0;
 	};
 
 	DECLARE_SHARED_POINTERS(IComponentFactory)

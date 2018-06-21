@@ -157,6 +157,11 @@ void CPinWidget::DeleteLater()
 	CNodeGraphViewGraphicsWidget::DeleteLater();
 }
 
+const CNodeGraphViewStyleItem& CPinWidget::GetStyle() const
+{
+	return *m_pStyle;
+}
+
 void CPinWidget::SetNameWidget(CPinName* pWidget)
 {
 	if (m_pContent == pWidget)

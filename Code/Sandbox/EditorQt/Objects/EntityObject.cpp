@@ -587,10 +587,10 @@ static void OnBnClickedAddComponent()
 			return QVariant();
 		}
 
-		virtual QString                         GetToolTip() const override                     { return m_tooltip; }
-		virtual const QIcon*                    GetColumnIcon(int32 columnIndex) const override { return &m_icon; }
+		virtual QString      GetToolTip(int32 columnIndex) const override { return m_tooltip; }
+		virtual const QIcon* GetColumnIcon(int32 columnIndex) const override { return &m_icon; }
 		virtual const CAbstractDictionaryEntry* GetParentEntry() const override                 { return m_pParentEntry; }
-		virtual bool                            IsEnabled() const override                      { return m_bEnabled; }
+		virtual bool         IsEnabled() const override                      { return m_bEnabled; }
 		// ~CAbstractDictionaryEntry
 
 		const Schematyc::IEnvComponent& GetComponent() const { return m_component; }
