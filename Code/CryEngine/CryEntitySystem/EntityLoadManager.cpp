@@ -410,6 +410,7 @@ bool CEntityLoadManager::CreateEntity(XmlNodeRef& entityNode, SEntitySpawnParams
 //////////////////////////////////////////////////////////////////////////
 bool CEntityLoadManager::CreateEntity(CEntity* pPreallocatedEntity, SEntityLoadParams& loadParams, EntityId& outUsingId, bool bIsLoadingLevellFile)
 {
+	CRY_ASSERT_MESSAGE(loadParams.spawnParams.pClass != nullptr, "Create Entity was called without an entity class! This will lead to a crash!");
 	MEMSTAT_CONTEXT_FMT(EMemStatContextTypes::MSC_Entity, 0, "Entity %s", loadParams.spawnParams.pClass->GetName());
 
 	bool bResult = true;
