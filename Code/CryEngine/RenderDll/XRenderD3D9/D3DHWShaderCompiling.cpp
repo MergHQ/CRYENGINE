@@ -2258,6 +2258,7 @@ bool CHWShader_D3D::mfAddCacheItem(SDiskShaderCache* pCache, SShaderCacheHeaderI
 	if (!pOE)
 	{
 		CRY_ASSERT_MESSAGE(false, "CHWShader_D3D::mfAddCacheItem(): Couldn't add/open cache entry");
+		delete[] pNew;
 		return false;
 	}
 
