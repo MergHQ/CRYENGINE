@@ -2676,8 +2676,14 @@ void CRendererCVars::InitCVars()
 	               "Usage: r_D3D12HardwareCopyQueue [0-2]");
 
 #if (CRY_RENDERER_DIRECT3D >= 120)
-	gEnv->pConsole->GetCVar("r_D3D12HardwareComputeQueue")->SetOnChangeCallback(OnChange_CV_D3D12HardwareComputeQueue);
-	gEnv->pConsole->GetCVar("r_D3D12HardwareCopyQueue")->SetOnChangeCallback(OnChange_CV_D3D12HardwareCopyQueue);
+	if (ICVar* pVar = gEnv->pConsole->GetCVar("r_D3D12HardwareComputeQueue"))
+	{
+		pVar->AddOnChangeFunctor(SFunctor([pVar]() { OnChange_CV_D3D12HardwareComputeQueue(pVar); }));
+	}
+	if (ICVar* pVar = gEnv->pConsole->GetCVar("r_D3D12HardwareCopyQueue"))
+	{
+		pVar->AddOnChangeFunctor(SFunctor([pVar]() { OnChange_CV_D3D12HardwareCopyQueue(pVar); }));
+	}
 #endif
 
 	REGISTER_CVAR3("r_ReprojectOnlyStaticObjects", CV_r_ReprojectOnlyStaticObjects, 1, VF_NULL, "Forces a split in the zpass, to prevent moving object from beeing reprojected");
@@ -3032,9 +3038,9 @@ void CRendererCVars::InitCVars()
 	REGISTER_CVAR2("d3d11_debugBreakOnce", &CV_d3d11_debugBreakOnce, 1, VF_NULL,
 	               "If enabled, D3D debug runtime break on message/error will be enabled only for 1 frame since last change.\n");
 
-	CV_d3d11_debugMuteSeverity->SetOnChangeCallback(OnChange_CV_d3d11_debugMuteMsgID);
-	CV_d3d11_debugMuteMsgID->SetOnChangeCallback(OnChange_CV_d3d11_debugMuteMsgID);
-	CV_d3d11_debugBreakOnMsgID->SetOnChangeCallback(OnChange_CV_d3d11_debugMuteMsgID);
+	CV_d3d11_debugMuteSeverity->AddOnChangeFunctor(SFunctor([]() { OnChange_CV_d3d11_debugMuteMsgID(CV_d3d11_debugMuteSeverity); }));
+	CV_d3d11_debugMuteMsgID->AddOnChangeFunctor(SFunctor([]() { OnChange_CV_d3d11_debugMuteMsgID(CV_d3d11_debugMuteMsgID); }));
+	CV_d3d11_debugBreakOnMsgID->AddOnChangeFunctor(SFunctor([]() { OnChange_CV_d3d11_debugMuteMsgID(CV_d3d11_debugBreakOnMsgID); }));
 #endif
 
 #if defined(CRY_PLATFORM_WINDOWS)

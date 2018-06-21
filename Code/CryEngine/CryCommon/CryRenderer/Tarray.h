@@ -5,8 +5,9 @@
 #pragma once
 
 #include <CrySystem/ILog.h>
-#include <CrySystem/File/ICryPak.h> //impl of fxopen
 #include <CryMath/Cry_Math.h>
+
+FILE* fxopen(const char* file, const char* mode, bool bGameRelativePath /*= false*/);
 
 #ifndef CLAMP
 	#define CLAMP(X, mn, mx) ((X) < (mn) ? (mn) : ((X) < (mx) ? (X) : (mx)))
@@ -395,25 +396,7 @@ public:
 		_Remove(n, 1);
 	}
 
-	void Load(const char* file_name)
-	{
-		Clear();
-		FILE* f = fxopen(file_name, "rb");
-		if (!f)
-			return;
-
-		int size = 0;
-		fread(&size, 4, 1, f);
-
-		while (!feof(f) && sizeof(T) == size)
-		{
-			T tmp;
-			if (fread(&tmp, 1, sizeof(T), f) == sizeof(T))
-				AddElem(tmp);
-		}
-
-		fclose(f);
-	}
+	void Load(const char* file_name);
 
 	//! Standard compliance interface.
 	//! This is for those who don't want to learn the non standard and thus not very
@@ -450,6 +433,29 @@ template<class T> inline void Exchange(T& X, T& Y)
 	const T Tmp = X;
 	X = Y;
 	Y = Tmp;
+}
+
+#include <CrySystem/File/ICryPak.h> //impl of fxopen, included at the end to avoid a circular dependency
+
+template<class T>
+void TArray<T>::Load(const char* file_name)
+{
+	Clear();
+	FILE* f = fxopen(file_name, "rb", false);
+	if (!f)
+		return;
+
+	int size = 0;
+	fread(&size, 4, 1, f);
+
+	while (!feof(f) && sizeof(T) == size)
+	{
+		T tmp;
+		if (fread(&tmp, 1, sizeof(T), f) == sizeof(T))
+			AddElem(tmp);
+	}
+
+	fclose(f);
 }
 
 //! \endcond

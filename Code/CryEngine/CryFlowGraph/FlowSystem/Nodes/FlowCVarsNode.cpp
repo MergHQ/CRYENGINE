@@ -63,7 +63,7 @@ public:
 				if (isSet)
 				{
 					const string& val = GetPortString(pActInfo, VALUE);
-					pICVar->Set(val.c_str());
+					pICVar->SetFromString(val.c_str());
 				}
 				const string curVal = pICVar->GetString();
 				ActivateOutput(pActInfo, CURVALUE, curVal);

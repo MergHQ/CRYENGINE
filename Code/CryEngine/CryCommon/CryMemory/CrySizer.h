@@ -15,6 +15,7 @@
 #include <CryMath/Cry_Vector3.h>
 #include <CryMath/Cry_Quat.h>
 #include <CryMath/Cry_Color.h>
+#include <CryMemory/STLAlignedAlloc.h>
 
 // forward declarations for overloads
 struct AABB;

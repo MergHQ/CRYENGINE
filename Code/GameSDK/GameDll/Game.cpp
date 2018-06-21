@@ -736,6 +736,17 @@ CGame::~CGame()
 	g_pGame = 0;
 	g_pGameCVars = 0;
 	g_pGameActions = 0;
+
+	if (m_maxPlayerCallbackIndex != -1)
+	{
+		if (ICVar* pMaxPlayers = gEnv->pConsole->GetCVar("sv_maxplayers"))
+			pMaxPlayers->RemoveOnChangeFunctor(m_maxPlayerCallbackIndex);
+	}
+	if (m_migrationTimeoutCallbackIndex != -1)
+	{
+		if (ICVar* pTimeoutCVar = gEnv->pConsole->GetCVar("net_migrate_timeout"))
+			pTimeoutCVar->RemoveOnChangeFunctor(m_migrationTimeoutCallbackIndex);
+	}
 }
 
 #define EngineStartProfiler(x)
@@ -1036,7 +1047,7 @@ bool CGame::Init(/*IGameFramework* pFramework*/)
 	ICVar* pMaxPlayers = gEnv->pConsole->GetCVar("sv_maxplayers");
 	if (pMaxPlayers)
 	{
-		pMaxPlayers->SetOnChangeCallback(VerifyMaxPlayers); // this needs to be set 1st, if MAX_PLAYER_LIMIT is greater than 32 we'll clamp it otherwise
+		m_maxPlayerCallbackIndex = pMaxPlayers->AddOnChangeFunctor(SFunctor([pMaxPlayers]() { VerifyMaxPlayers(pMaxPlayers); })); // this needs to be set 1st, if MAX_PLAYER_LIMIT is greater than 32 we'll clamp it otherwise
 		pMaxPlayers->Set(MAX_PLAYER_LIMIT);
 	}
 
@@ -4367,7 +4378,7 @@ void CGame::SetHostMigrationStateAndTime(EHostMigrationState newState, float tim
 
 		ICVar* pTimeoutCVar = gEnv->pConsole->GetCVar("net_migrate_timeout");
 		m_hostMigrationNetTimeoutLength = pTimeoutCVar->GetFVal();
-		pTimeoutCVar->SetOnChangeCallback(OnHostMigrationNetTimeoutChanged);
+		m_migrationTimeoutCallbackIndex = pTimeoutCVar->AddOnChangeFunctor(SFunctor([pTimeoutCVar]() { OnHostMigrationNetTimeoutChanged(pTimeoutCVar); }));
 	}
 
 	m_hostMigrationState = newState;
@@ -4400,8 +4411,14 @@ void CGame::AbortHostMigration()
 	gEnv->pGameFramework->PauseGame(false, false);
 	m_hostMigrationState = eHMS_NotMigrating;
 	m_hostMigrationTimeStateChanged = 0.f;
-	ICVar* pTimeoutCVar = gEnv->pConsole->GetCVar("net_migrate_timeout");
-	pTimeoutCVar->SetOnChangeCallback(NULL);
+	if (m_migrationTimeoutCallbackIndex != -1)
+	{
+		if (ICVar* pTimeoutCVar = gEnv->pConsole->GetCVar("net_migrate_timeout"))
+		{
+			pTimeoutCVar->RemoveOnChangeFunctor(m_migrationTimeoutCallbackIndex);
+			m_migrationTimeoutCallbackIndex = -1;
+		}
+	}
 	g_pGameActions->FilterHostMigration()->Enable(false);
 }
 

@@ -1768,6 +1768,63 @@ inline void CryWarning(EValidatorModule module, EValidatorSeverity severity, con
 	#define CONST_CVAR_FLAGS (VF_CHEAT)
 #endif
 
+#ifdef EXCLUDE_NORMAL_LOG       // setting this removes a lot of logging to reduced code size (useful for consoles)
+
+    #define CryLog(...)       ((void)0)
+    #define CryComment(...)   ((void)0)
+    #define CryLogAlways(...) ((void)0)
+
+#else // EXCLUDE_NORMAL_LOG
+
+//! Simple logs of data with low verbosity.
+void        CryLog(const char*, ...) PRINTF_PARAMS(1, 2);
+inline void CryLog(const char* format, ...)
+{
+    // Fran: we need these guards for the testing framework to work
+    if (gEnv && gEnv->pSystem && gEnv->pLog)
+    {
+        va_list args;
+        va_start(args, format);
+        gEnv->pLog->LogV(ILog::eMessage, format, args);
+        va_end(args);
+    }
+}
+//! Very rarely used log comment.
+void        CryComment(const char*, ...) PRINTF_PARAMS(1, 2);
+inline void CryComment(const char* format, ...)
+{
+    // Fran: we need these guards for the testing framework to work
+    if (gEnv && gEnv->pSystem && gEnv->pLog)
+    {
+        va_list args;
+        va_start(args, format);
+        gEnv->pLog->LogV(ILog::eComment, format, args);
+        va_end(args);
+    }
+}
+//! Logs important data that must be printed regardless verbosity.
+void        CryLogAlways(const char*, ...) PRINTF_PARAMS(1, 2);
+inline void CryLogAlways(const char* format, ...)
+{
+    // log should not be used before system is ready
+    // error before system init should be handled explicitly
+
+    // Fran: we need these guards for the testing framework to work
+
+    if (gEnv && gEnv->pSystem && gEnv->pLog)
+    {
+        //		assert(gEnv);
+        //		assert(gEnv->pSystem);
+
+        va_list args;
+        va_start(args, format);
+        gEnv->pLog->LogV(ILog::eAlways, format, args);
+        va_end(args);
+    }
+}
+
+#endif // EXCLUDE_NORMAL_LOG
+
 #include <CrySystem/IConsole.h>
 
 #if (defined(_LAUNCHER) && defined(CRY_IS_MONOLITHIC_BUILD)) || !defined(_LIB)
@@ -1970,35 +2027,34 @@ struct SDummyCVar : ICVar
 	const char*     GetDataProbeString() const override                             { return ""; }
 	void            Set(const char* s) override                                     { if (SQueryTypeEnum<T>::ParseString(s) != value) InvalidAccess(); }
 	void            ForceSet(const char* s) override                                { Set(s); }
-	void            Set(float f) override                                           { if (static_cast<T>(f) != value) InvalidAccess(); }
-	void            Set(int i) override                                             { if (static_cast<T>(i) != value) InvalidAccess(); }
+	void            Set(const float f) override                                     { if (static_cast<T>(f) != value) InvalidAccess(); }
+	void            Set(const int i) override                                       { if (static_cast<T>(i) != value) InvalidAccess(); }
 	void            Set(int64 i) override                                           { if (static_cast<T>(i) != value) InvalidAccess(); }
-	void            SetFromString(const char* s) override                           { if (SQueryTypeEnum<T>::ParseString(s) != value) InvalidAccess(); }
+	void            SetFromString(const char* szValue) override                     { Set(szValue); }
 	void            ClearFlags(int flags) override                                  {}
 	int             GetFlags() const override                                       { return VF_CONST_CVAR | VF_READONLY; }
 	int             SetFlags(int flags) override                                    { return 0; }
 	ECVarType       GetType() const override                                        { return SQueryTypeEnum<T>::type; }
-	const char*     GetHelp() override                                              { return NULL; }
+	const char*     GetHelp() const override                                        { return NULL; }
 	bool            IsConstCVar() const override                                    { return true; }
-	void            SetOnChangeCallback(ConsoleVarFunc pChangeFunc) override        { (void)pChangeFunc; }
 	uint64          AddOnChangeFunctor(const SFunctor& /*changeFunctor*/) override  { return 0;  }
 	uint64          GetNumberOfOnChangeFunctors() const override                    { return 0; }
 	const SFunctor& GetOnChangeFunctor(uint64 nFunctorIndex) const override         { InvalidAccess();  static SFunctor oDummy; return oDummy; }
 	bool            RemoveOnChangeFunctor(const uint64 nElement) override           { return true; }
-	ConsoleVarFunc  GetOnChangeCallback() const override                            { InvalidAccess(); return NULL; }
 	void            GetMemoryUsage(class ICrySizer* pSizer) const override          {}
 	int             GetRealIVal() const override                                    { return GetIVal(); }
 	void            SetDataProbeString(const char* pDataProbeString)                { InvalidAccess(); }
 	void            SetMinValue(int min) override                                   {}
-	void            SetMinValue(float min) override                                 {}
 	void            SetMinValue(int64 min) override                                 {}
+	void            SetMinValue(float min) override                                 {}
 	void            SetMaxValue(int max) override                                   {}
-	void            SetMaxValue(float max) override                                 {}
 	void            SetMaxValue(int64 max) override                                 {}
+	void            SetMaxValue(float max) override                                 {}
 	void            SetAllowedValues(std::initializer_list<int> values) override    {}
+	void            SetAllowedValues(std::initializer_list<int64> values) override  {}
 	void            SetAllowedValues(std::initializer_list<float> values) override  {}
 	void            SetAllowedValues(std::initializer_list<string> values) override {}
-	void            SetAllowedValues(std::initializer_list<int64> values) override  {}
+	bool            IsOwnedByConsole() const override                               { return true; }
 };
 }
 
@@ -2167,63 +2223,6 @@ struct SDummyCVar : ICVar
 	#define REGISTER_COMMAND_DEDI_ONLY(_name, _func, _flags, _comment)                              REGISTER_COMMAND_DEV_ONLY(_name, _func, ((_flags) | VF_DEDI_ONLY), _comment)
 #endif // defined(RELEASE)
 //////////////////////////////////////////////////////////////////////////////
-
-#ifdef EXCLUDE_NORMAL_LOG       // setting this removes a lot of logging to reduced code size (useful for consoles)
-
-	#define CryLog(...)       ((void)0)
-	#define CryComment(...)   ((void)0)
-	#define CryLogAlways(...) ((void)0)
-
-#else // EXCLUDE_NORMAL_LOG
-
-//! Simple logs of data with low verbosity.
-void        CryLog(const char*, ...) PRINTF_PARAMS(1, 2);
-inline void CryLog(const char* format, ...)
-{
-	// Fran: we need these guards for the testing framework to work
-	if (gEnv && gEnv->pSystem && gEnv->pLog)
-	{
-		va_list args;
-		va_start(args, format);
-		gEnv->pLog->LogV(ILog::eMessage, format, args);
-		va_end(args);
-	}
-}
-//! Very rarely used log comment.
-void        CryComment(const char*, ...) PRINTF_PARAMS(1, 2);
-inline void CryComment(const char* format, ...)
-{
-	// Fran: we need these guards for the testing framework to work
-	if (gEnv && gEnv->pSystem && gEnv->pLog)
-	{
-		va_list args;
-		va_start(args, format);
-		gEnv->pLog->LogV(ILog::eComment, format, args);
-		va_end(args);
-	}
-}
-//! Logs important data that must be printed regardless verbosity.
-void        CryLogAlways(const char*, ...) PRINTF_PARAMS(1, 2);
-inline void CryLogAlways(const char* format, ...)
-{
-	// log should not be used before system is ready
-	// error before system init should be handled explicitly
-
-	// Fran: we need these guards for the testing framework to work
-
-	if (gEnv && gEnv->pSystem && gEnv->pLog)
-	{
-		//		assert(gEnv);
-		//		assert(gEnv->pSystem);
-
-		va_list args;
-		va_start(args, format);
-		gEnv->pLog->LogV(ILog::eAlways, format, args);
-		va_end(args);
-	}
-}
-
-#endif // EXCLUDE_NORMAL_LOG
 
 /*****************************************************
    ASYNC MEMCPY FUNCTIONS

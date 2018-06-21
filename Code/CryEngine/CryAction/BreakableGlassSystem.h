@@ -54,6 +54,8 @@ private:
 
 	SBreakableGlassCVars*                m_pGlassCVars;
 	bool m_enabled;
+
+	uint64 m_enableCallbackIndex = -1;
 };//------------------------------------------------------------------------------------------------
 
 #endif // _BREAKABLE_GLASS_SYSTEM_

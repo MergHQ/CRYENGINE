@@ -4652,7 +4652,10 @@ void CMergedMeshRenderNode::InitializeSpines()
 			continue;
 		for (size_t j = 0, base = 0; j < header->numSamples; ++j)
 		{
-			uint16 pos[3] = { uint16(header->instances[j].pos_x), uint16(header->instances[j].pos_y), uint16(header->instances[j].pos_z) };
+			uint16 pos[3];
+			pos[0] = static_cast<uint16>(header->instances[j].pos_x);
+			pos[1] = static_cast<uint16>(header->instances[j].pos_y);
+			pos[2] = static_cast<uint16>(header->instances[j].pos_z);
 			const float fScale = (1.f / VEGETATION_CONV_FACTOR) * header->instances[j].scale;
 			DecompressQuat(q, header->instances[j]);
 			Matrix34 wmat = CreateRotationQ(q, ConvertInstanceAbsolute(pos, vInternalAABBMin, m_pos, m_zRotation, fExtents)) * Matrix34::CreateScale(Vec3(fScale, fScale, fScale));

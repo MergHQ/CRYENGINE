@@ -420,7 +420,10 @@ void CXConsole::PreProjectSystemInit()
 	                                       "0: normal console behavior\n"
 	                                       "1: hide the console");
 
-	REGISTER_CVAR3("sys_cvar_logging", CXConsoleVariableBase::m_sys_cvar_logging, 1, VF_NULL, "Log attempts to set CVars to forbidden/out-of-range values.");
+	REGISTER_INT("sys_cvar_logging", 1, VF_NULL,
+		"0: Disable CVar logging\n"
+		"1: Log attempts to set CVars to forbidden/out-of-range values\n"
+		"2: Log all CVar changes");
 
 	REGISTER_CVAR(con_display_last_messages, 0, VF_NULL, "");  // keep default at 1, needed for gameplay
 	REGISTER_CVAR(con_line_buffer_size, 1000, VF_NULL, "");
@@ -565,11 +568,6 @@ void CXConsole::LogChangeMessage(const char* name, const bool isConst, const boo
 //////////////////////////////////////////////////////////////////////////
 void CXConsole::RegisterVar(ICVar* pCVar, ConsoleVarFunc pChangeFunc)
 {
-	// first register callback so setting the value from m_configVars
-	// is calling pChangeFunc         (that would be more correct but to not introduce new problems this code was not changed)
-	//	if (pChangeFunc)
-	//		pCVar->SetOnChangeCallback(pChangeFunc);
-
 	bool isConst = pCVar->IsConstCVar();
 	bool isCheat = ((pCVar->GetFlags() & (VF_CHEAT | VF_CHEAT_NOCHECK | VF_CHEAT_ALWAYS_CHECK)) != 0);
 	bool isReadOnly = ((pCVar->GetFlags() & VF_READONLY) != 0);
@@ -604,7 +602,7 @@ void CXConsole::RegisterVar(ICVar* pCVar, ConsoleVarFunc pChangeFunc)
 
 		if (allowChange)
 		{
-			pCVar->Set(var.m_value.c_str());
+			pCVar->SetFromString(var.m_value.c_str());
 			pCVar->SetFlags(pCVar->GetFlags() | var.nCVarOrFlags);
 		}
 
@@ -617,7 +615,9 @@ void CXConsole::RegisterVar(ICVar* pCVar, ConsoleVarFunc pChangeFunc)
 	}
 
 	if (pChangeFunc)
-		pCVar->SetOnChangeCallback(pChangeFunc);
+	{
+		pCVar->AddOnChangeFunctor(SFunctor([pChangeFunc, pCVar]() { pChangeFunc(pCVar); }));
+	}
 
 	ConsoleVariablesMapItor::value_type value = ConsoleVariablesMapItor::value_type(pCVar->GetName(), pCVar);
 
@@ -693,7 +693,8 @@ void CXConsole::LoadConfigVar(const char* sVariable, const char* sValue)
 
 		if (allowChange)
 		{
-			pCVar->Set(sValue);
+			pCVar->SetFromString(sValue);
+
 			if (m_currentLoadConfigType == eLoadConfigInit ||
 			    m_currentLoadConfigType == eLoadConfigDefault)
 			{
@@ -913,7 +914,7 @@ ICVar* CXConsole::Register(const char* sName, int* src, int iValue, int nFlags, 
 	if (!allowModify)
 		nFlags |= VF_CONST_CVAR;
 	*src = iValue; // Needs to be done before creating the CVar due to default overriding
-	pCVar = new CXConsoleVariableIntRef(this, sName, src, nFlags, help);
+	pCVar = new CXConsoleVariableIntRef(this, sName, *src, nFlags, help, true);
 	RegisterVar(pCVar, pChangeFunc);
 	return pCVar;
 }
@@ -971,7 +972,7 @@ ICVar* CXConsole::Register(const char* sName, float* src, float fValue, int nFla
 	if (!allowModify)
 		nFlags |= VF_CONST_CVAR;
 	*src = fValue; // Needs to be done before creating the CVar due to default overriding
-	pCVar = new CXConsoleVariableFloatRef(this, sName, src, nFlags, help);
+	pCVar = new CXConsoleVariableFloatRef(this, sName, *src, nFlags, help, true);
 	RegisterVar(pCVar, pChangeFunc);
 	return pCVar;
 }
@@ -992,7 +993,7 @@ ICVar* CXConsole::Register(const char* sName, const char** src, const char* defa
 	}
 	if (!allowModify)
 		nFlags |= VF_CONST_CVAR;
-	pCVar = new CXConsoleVariableStringRef(this, sName, src, defaultValue, nFlags, help);
+	pCVar = new CXConsoleVariableStringRef(this, sName, *src, defaultValue, nFlags, help, true);
 	RegisterVar(pCVar, pChangeFunc);
 	return pCVar;
 }
@@ -1012,7 +1013,7 @@ ICVar* CXConsole::RegisterString(const char* sName, const char* sValue, int nFla
 		return pCVar;
 	}
 
-	pCVar = new CXConsoleVariableString(this, sName, sValue, nFlags, help);
+	pCVar = new CXConsoleVariableString(this, sName, sValue, nFlags, help, true);
 	RegisterVar(pCVar, pChangeFunc);
 	return pCVar;
 }
@@ -1032,7 +1033,7 @@ ICVar* CXConsole::RegisterFloat(const char* sName, float fValue, int nFlags, con
 		return pCVar;
 	}
 
-	pCVar = new CXConsoleVariableFloat(this, sName, fValue, nFlags, help);
+	pCVar = new CXConsoleVariableFloat(this, sName, fValue, nFlags, help, true);
 	RegisterVar(pCVar, pChangeFunc);
 	return pCVar;
 }
@@ -1052,7 +1053,7 @@ ICVar* CXConsole::RegisterInt(const char* sName, int iValue, int nFlags, const c
 		return pCVar;
 	}
 
-	pCVar = new CXConsoleVariableInt(this, sName, iValue, nFlags, help);
+	pCVar = new CXConsoleVariableInt(this, sName, iValue, nFlags, help, true);
 	RegisterVar(pCVar, pChangeFunc);
 	return pCVar;
 }
@@ -1072,7 +1073,7 @@ ICVar* CXConsole::RegisterInt64(const char* sName, int64 iValue, int nFlags, con
 		return pCVar;
 	}
 
-	pCVar = new CXConsoleVariableInt64(this, sName, iValue, nFlags, help);
+	pCVar = new CXConsoleVariableInt64(this, sName, iValue, nFlags, help, true);
 	RegisterVar(pCVar, pChangeFunc);
 	return pCVar;
 }
@@ -1104,8 +1105,11 @@ void CXConsole::UnregisterVariable(const char* sVarName, bool bDelete)
 	{
 		it->OnVarUnregister(pCVar);
 	}
-	if (bDelete)
+
+	if (pCVar->IsOwnedByConsole())
+	{
 		delete pCVar;
+	}
 }
 
 void CXConsole::RemoveCheckedCVar(ConsoleVariablesVector& vector, const ConsoleVariablesVector::value_type& value)

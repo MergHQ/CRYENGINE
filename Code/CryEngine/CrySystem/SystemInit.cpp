@@ -533,7 +533,7 @@ struct SysSpecOverrideSink : public ILoadConfigurationEntrySink
 
 			if (applyCvar)
 			{
-				pCvar->Set(szValue);
+				pCvar->SetFromString(szValue);
 			}
 			else
 			{
