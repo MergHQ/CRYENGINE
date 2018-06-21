@@ -22,15 +22,14 @@
 namespace CryParticleEditor {
 
 CNodeItem::CNodeItem(pfx2::IParticleComponent& component, CryGraphEditor::CNodeGraphViewModel& viewModel)
-	: CAbstractNodeItem(viewModel)
+	: CAbstractNodeItem(*(m_pData = new CryGraphEditor::CNodeEditorData()), viewModel)
 	, m_component(component)
 {
 	SetAcceptsDeactivation(true);
 	SetAcceptsRenaming(true);
 
 	m_name = component.GetName();
-	m_position.setX(component.GetNodePosition().x);
-	m_position.setY(component.GetNodePosition().y);
+	m_data.SetPos(Vec2(component.GetNodePosition().x, component.GetNodePosition().y));
 
 	uint32 featureCount = m_component.GetNumFeatures();
 	m_pins.reserve(featureCount + 1);
@@ -66,6 +65,8 @@ CNodeItem::~CNodeItem()
 	{
 		delete pItem;
 	}
+
+	delete m_pData;
 }
 
 void CNodeItem::SetPosition(QPointF position)
@@ -85,9 +86,9 @@ CryGraphEditor::CNodeWidget* CNodeItem::CreateWidget(CryGraphEditor::CNodeGraphV
 	pNode->SetHeaderNameWidth(120);
 	CFeatureGridNodeContentWidget* pContent = new CFeatureGridNodeContentWidget(*pNode, static_cast<CParentPinItem&>(*m_pins[0]), static_cast<CChildPinItem&>(*m_pins[1]), view);
 
-	pNode->AddHeaderIcon(new CEmitterActiveIcon(*pNode), CryGraphEditor::CNodeHeader::EIconSlot::Right);
-	pNode->AddHeaderIcon(new CEmitterVisibleIcon(*pNode), CryGraphEditor::CNodeHeader::EIconSlot::Right);
-	pNode->AddHeaderIcon(new CSoloEmitterModeIcon(*pNode), CryGraphEditor::CNodeHeader::EIconSlot::Right);
+	pNode->AddHeaderIcon(new CEmitterActiveIcon(*pNode), CryGraphEditor::CHeaderWidget::EIconSlot::Right);
+	pNode->AddHeaderIcon(new CEmitterVisibleIcon(*pNode), CryGraphEditor::CHeaderWidget::EIconSlot::Right);
+	pNode->AddHeaderIcon(new CSoloEmitterModeIcon(*pNode), CryGraphEditor::CHeaderWidget::EIconSlot::Right);
 
 	pNode->SetContentWidget(pContent);
 

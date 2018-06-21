@@ -21,6 +21,27 @@
 
 #include "BaseEnv/BaseEnv_BaseEnv.h"
 
+//////////////////////////////////////////////////////////////////////////
+// NEW RUNTIME
+//////////////////////////////////////////////////////////////////////////
+#include <CryReflection/Register/TypeRegistrationChain.h>
+
+namespace Schematyc2 {
+
+Cry::Schematyc::IRuntime* CFramework::GetGameRuntime() const
+{
+	return nullptr;
+}
+
+Cry::Schematyc::IRuntime* CFramework::CreateEditorRuntime()
+{
+	return nullptr;
+}
+
+}
+
+//////////////////////////////////////////////////////////////////////////
+
 namespace Schematyc2
 {
 	namespace
@@ -51,30 +72,30 @@ namespace Schematyc2
 		static const SGUID	DIALOG_NAME_TYPE_GUID          = "839adde8-cc62-4636-9f26-16dd4236855f";
 		static const SGUID	FORCE_FEEDBACK_ID_TYPE_GUID    = "40dce92c-9532-4c02-8752-4afac04331ef";
 
-		//////////////////////////////////////////////////////////////////////////
 		static void OnLogToFileChange(ICVar* pCVar)
 		{
 			static_cast<CFramework*>(gEnv->pSchematyc2)->RefreshLogFileConfiguration();
 		}
 
-		//////////////////////////////////////////////////////////////////////////
 		static void OnLogFileStreamsChange(ICVar* pCVar)
 		{
 			static_cast<CFramework*>(gEnv->pSchematyc2)->RefreshLogFileStreams();
 		}
 
-		//////////////////////////////////////////////////////////////////////////
 		static void OnLogFileMessageTypesChange(ICVar* pCVar)
 		{ 
 			static_cast<CFramework*>(gEnv->pSchematyc2)->RefreshLogFileMessageTypes();
 		}
+
 	}
 
-	//////////////////////////////////////////////////////////////////////////
 	CFramework::CFramework()
-		: m_updateRelevanceContext(nullptr, 0, 0.f, 0.f) {}
+	: m_updateRelevanceContext(nullptr, 0, 0.f, 0.f)
+	, m_pEnvRegistryBridge(nullptr)
+{
+	Cry::Reflection::CTypeRegistrationChain::Execute();
+}
 
-	//////////////////////////////////////////////////////////////////////////
 	CFramework::~CFramework() 
 	{
 		Schematyc2::CVars::Unregister();
@@ -84,7 +105,6 @@ namespace Schematyc2
 		// ~TODO
 	}
 
-	//////////////////////////////////////////////////////////////////////////
 	bool CFramework::Initialize(SSystemGlobalEnvironment& env, const SSystemInitParams& initParams)
 	{
 		env.pSchematyc2 = this;
@@ -105,12 +125,11 @@ namespace Schematyc2
 			}
 			m_pLogFileOutput = m_log.CreateFileOutput(logFileName.c_str());
 			SCHEMATYC2_SYSTEM_ASSERT(m_pLogFileOutput);
-			RefreshLogFileConfiguration();
-			CVars::sc_LogToFile->SetOnChangeCallback(OnLogToFileChange);
+			CVars::sc_LogToFile->AddOnChangeFunctor(SFunctor([]() { OnLogToFileChange(CVars::sc_LogToFile); }));
 			RefreshLogFileStreams();
-			CVars::sc_LogFileStreams->SetOnChangeCallback(OnLogFileStreamsChange);
+			CVars::sc_LogFileStreams->AddOnChangeFunctor(SFunctor([]() { OnLogFileStreamsChange(CVars::sc_LogFileStreams); }));
 			RefreshLogFileMessageTypes();
-			CVars::sc_LogFileMessageTypes->SetOnChangeCallback(OnLogFileMessageTypesChange);
+			CVars::sc_LogFileMessageTypes->AddOnChangeFunctor(SFunctor([]() { OnLogFileMessageTypesChange(CVars::sc_LogFileMessageTypes); }));
 		}
 		SCHEMATYC2_SYSTEM_COMMENT("Initializing Schematyc framework");
 		// Refresh environment.
@@ -147,8 +166,24 @@ namespace Schematyc2
 	//////////////////////////////////////////////////////////////////////////
 	IEnvRegistry& CFramework::GetEnvRegistry()
 	{
+	if (m_pEnvRegistryBridge)
+	{
+		return *m_pEnvRegistryBridge;
+	}
+	else
+	{
 		return m_envRegistry;
 	}
+}
+void CFramework::SetEnvRegistryBridge(IEnvRegistry* pEnvRegistry)
+{
+	CRY_ASSERT_MESSAGE(!m_pEnvRegistryBridge, "EnvRegistryWrapper is overwritten. This shouldn't happen.");
+	if (m_pEnvRegistryBridge)
+	{
+		delete m_pEnvRegistryBridge;
+	}
+	m_pEnvRegistryBridge = pEnvRegistry;
+}
 
 	SchematycBaseEnv::IBaseEnv& CFramework::GetBaseEnv()
 	{
@@ -373,7 +408,8 @@ namespace Schematyc2
 				{
 					m_pLogFileOutput->EnableStream(logStreamId);
 				}
-			} while(pos < length);
+		}
+		while (pos < length);
 		}
 	}
 
@@ -395,7 +431,8 @@ namespace Schematyc2
 				{
 					m_pLogFileOutput->EnableMessageType(logMessageType);
 				}
-			} while(pos < length);
+		}
+		while (pos < length);
 		}
 	}
 

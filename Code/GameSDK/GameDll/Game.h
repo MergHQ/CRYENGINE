@@ -1017,6 +1017,9 @@ private:
 #endif
 
 	uint64                   m_stereoOutputFunctorId;
+
+	uint64 m_maxPlayerCallbackIndex = -1;
+	uint64 m_migrationTimeoutCallbackIndex = -1;
 };
 
 extern CGame* g_pGame;

@@ -39,7 +39,7 @@ QVariant CComponentDictionaryEntry::GetColumnValue(int32 columnIndex) const
 	return QVariant();
 }
 
-QString CComponentDictionaryEntry::GetToolTip() const
+QString CComponentDictionaryEntry::GetToolTip(int32 columnIndex) const
 {
 	return m_description;
 }

@@ -14,6 +14,8 @@
 #include "PinWidget.h"
 #include "ConnectionWidget.h"
 #include "GroupWidget.h"
+#include "CommentWidget.h"
+#include "GroupWidgetStyle.h"
 #include "AbstractNodeContentWidget.h"
 #include "NodeGraphItemPropertiesWidget.h"
 #include "NodeGraphUndo.h"
@@ -25,6 +27,7 @@
 #include "QtUtil.h"
 
 #include <IEditor.h>
+#include <CryMath/Cry_Math.h>
 #include <ICommandManager.h>
 #include <EditorFramework/Events.h>
 #include <EditorFramework/BroadcastManager.h>
@@ -40,20 +43,61 @@
 #include <QAction>
 #include <QClipboard>
 #include <QMimeData>
+#include <QTextEdit>
 
 namespace CryGraphEditor
 {
+
+class CTextEdit : public QTextEdit
+{
+public:
+	CCrySignal<void()> SignalEditingFinished;
+
+public:
+	CTextEdit(const CTextWidget& textWidget)
+		: m_textWidget(textWidget)
+	{
+	}
+
+protected:
+	virtual void keyPressEvent(QKeyEvent* pEvent) override
+	{
+		switch (pEvent->key())
+		{
+			case Qt::Key_Return: m_textWidget.SignalTextChanged(toPlainText());
+			case Qt::Key_Escape: SignalEditingFinished(); break;
+			default: QTextEdit::keyPressEvent(pEvent);
+		}
+	}
+
+	virtual void focusOutEvent(QFocusEvent* pEvent) override
+	{
+		SignalEditingFinished();
+		QTextEdit::focusOutEvent(pEvent);
+	}
+
+	virtual void wheelEvent(QWheelEvent* pEvent) override
+	{
+	}
+
+private:
+	const CTextWidget& m_textWidget;
+
+};
 
 CNodeGraphView::CNodeGraphView()
 	: QGraphicsView(static_cast<QWidget*>(nullptr))
 	, m_pModel(nullptr)
 	, m_pStyle(nullptr)
+	, m_contentEditPopup("ContentEditPopup", nullptr)
 	, m_pNewConnectionLine(nullptr)
+	, m_pResizingBox(nullptr)
 	, m_pSelectionBox(nullptr)
+	, m_pendingItemPlacementTimer(this)
 	, m_operation(eOperation_None)
 	, m_action(eAction_None)
 	, m_isRecodringUndo(false)
-	, m_isTooltipActive(false)
+	, m_isTooltipActive(false)	
 	, m_pNewConnectionBeginPin(nullptr)
 	, m_pNewConnectionPossibleTargetPin(nullptr)
 	, m_currentScaleFactor(1.0)
@@ -86,6 +130,8 @@ CNodeGraphView::CNodeGraphView()
 
 	m_pTooltip.reset(new QTrackingTooltip());
 	m_pTooltip->SetAutoHide(false);
+
+	QObject::connect(&m_pendingItemPlacementTimer, &QTimer::timeout, this, &CNodeGraphView::RunPendingItemPlacement);
 }
 
 CNodeGraphView::~CNodeGraphView()
@@ -139,6 +185,8 @@ void CNodeGraphView::OnNodeMouseEvent(QGraphicsItem* pSender, SNodeMouseEventArg
 			{
 				if (m_action == eAction_ItemMovement || m_action == eAction_ConnectionCreation)
 					AbortAction();
+
+				PlaceSelection();
 			}
 			else if (args.GetButton() == Qt::MouseButton::RightButton)
 			{
@@ -392,8 +440,8 @@ void CNodeGraphView::OnConnectionMouseEvent(QGraphicsItem* pSender, SConnectionM
 
 void CNodeGraphView::OnGroupMouseEvent(QGraphicsItem* pSender, SGroupMouseEventArgs& args)
 {
-	CGroupWidget* pNode = CNodeGraphViewGraphicsWidget::Cast<CGroupWidget>(pSender);
-	if (pNode == nullptr)
+	CGroupWidget* pGroupWidget = CNodeGraphViewGraphicsWidget::Cast<CGroupWidget>(pSender);
+	if (pGroupWidget == nullptr)
 		return;
 
 	switch (args.GetReason())
@@ -406,6 +454,23 @@ void CNodeGraphView::OnGroupMouseEvent(QGraphicsItem* pSender, SGroupMouseEventA
 				{
 					if ((args.GetModifiers() & Qt::ShiftModifier) == 0)
 						DeselectAllItems();
+				}
+				else
+				{
+					pGroupWidget->UpdateAABB();
+
+					const bool shiftPressed = (args.GetModifiers() & Qt::ShiftModifier) != 0;
+					if (pGroupWidget->IsSelected())
+					{
+						if (shiftPressed)
+							DeselectWidget(*pGroupWidget);
+					}
+					else
+					{
+						if (!shiftPressed)
+							DeselectAllItems();
+						SelectWidget(*pGroupWidget);
+					}
 				}
 			}
 		}
@@ -435,6 +500,19 @@ void CNodeGraphView::OnGroupMouseEvent(QGraphicsItem* pSender, SGroupMouseEventA
 						}
 					}
 				}
+				else if (m_action == eAction_ItemMovement || m_action == eAction_None)
+				{
+					SetAction(eAction_ItemMovement);
+
+					const QPointF delta = args.GetScenePos() - args.GetLastScenePos();
+					if (!m_isRecodringUndo)
+					{
+						m_isRecodringUndo = true;
+						GetIEditor()->GetIUndoManager()->Begin();
+					}
+
+					MoveSelection(delta);
+				}
 			}
 		}
 		break;
@@ -460,18 +538,107 @@ void CNodeGraphView::OnGroupMouseEvent(QGraphicsItem* pSender, SGroupMouseEventA
 			}
 		}
 		break;
+	case EMouseEventReason::HoverEnter:
+		{
+		}
+		break;
 	case EMouseEventReason::HoverMove:
 		{
-
+			if (m_action == eAction_None)
+			{
+				m_pResizingBox = pGroupWidget;
+				SelectMouseCursor(args.GetScenePos());
+			}
 		}
 		break;
 	case EMouseEventReason::HoverLeave:
 		{
-
+			if (m_pResizingBox)
+			{
+				m_pResizingBox = nullptr;
+				SelectMouseCursor(QPointF());
+			}
 		}
 		break;
 	default:
 		break;
+	}
+}
+
+void CNodeGraphView::OnCommentMouseEvent(QGraphicsItem* pSender, SGroupMouseEventArgs& args)
+{
+	CCommentWidget* pComment = CNodeGraphViewGraphicsWidget::Cast<CCommentWidget>(pSender);
+	if (pComment == nullptr)
+		return;
+
+	switch (args.GetReason())
+	{
+		case EMouseEventReason::ButtonPress:
+		{
+			if (args.GetButton() == Qt::MouseButton::LeftButton)
+			{
+				const bool shiftPressed = (args.GetModifiers() & Qt::ShiftModifier) != 0;
+				if (pComment->IsSelected())
+				{
+					if (shiftPressed)
+						DeselectWidget(*pComment);
+				}
+				else
+				{
+					if (!shiftPressed)
+						DeselectAllItems();
+
+					SelectWidget(*pComment);
+				}
+			}
+		}
+		break;
+		case EMouseEventReason::ButtonPressAndMove:
+		{
+			if (args.GetButtons() & Qt::MouseButton::LeftButton)
+			{
+				if (m_action == eAction_ItemMovement || m_action == eAction_None)
+				{
+					SetAction(eAction_ItemMovement);
+
+					const QPointF delta = args.GetScenePos() - args.GetLastScenePos();
+					if (!m_isRecodringUndo)
+					{
+						m_isRecodringUndo = true;
+						GetIEditor()->GetIUndoManager()->Begin();
+					}
+
+					MoveSelection(delta);
+				}
+			}
+		}
+		break;
+		case EMouseEventReason::ButtonRelease:
+		{
+			if (args.GetButton() == Qt::MouseButton::LeftButton)
+			{
+				if (args.GetButton() == Qt::MouseButton::LeftButton)
+				{
+					if (m_action == eAction_ItemMovement || m_action == eAction_ConnectionCreation)
+						AbortAction();
+
+					PlaceSelection();
+				}
+			}
+		}
+		break;
+		case EMouseEventReason::HoverMove:
+		{
+
+		}
+		break;
+		case EMouseEventReason::HoverLeave:
+		{
+
+		}
+		break;
+		default:
+			break;
 	}
 }
 
@@ -539,9 +706,13 @@ void CNodeGraphView::SetModel(CNodeGraphViewModel* pModel)
 		QObject::connect(m_pModel, &CNodeGraphViewModel::SignalInvalidated, this, &CNodeGraphView::ReloadItems);
 
 		QObject::connect(m_pModel, &CNodeGraphViewModel::SignalCreateNode, this, &CNodeGraphView::OnCreateNode);
+		QObject::connect(m_pModel, &CNodeGraphViewModel::SignalCreateGroup, this, &CNodeGraphView::OnCreateGroup);
+		QObject::connect(m_pModel, &CNodeGraphViewModel::SignalCreateComment, this, &CNodeGraphView::OnCreateComment);
 		QObject::connect(m_pModel, &CNodeGraphViewModel::SignalCreateConnection, this, &CNodeGraphView::OnCreateConnection);
 
 		QObject::connect(m_pModel, &CNodeGraphViewModel::SignalRemoveNode, this, &CNodeGraphView::OnRemoveNode);
+		QObject::connect(m_pModel, &CNodeGraphViewModel::SignalRemoveGroup, this, &CNodeGraphView::OnRemoveGroup);
+		QObject::connect(m_pModel, &CNodeGraphViewModel::SignalRemoveComment, this, &CNodeGraphView::OnRemoveComment);
 		QObject::connect(m_pModel, &CNodeGraphViewModel::SignalRemoveConnection, this, &CNodeGraphView::OnRemoveConnection);
 
 		QObject::connect(m_pModel, &CNodeGraphViewModel::SignalRemoveCustomItem, this, &CNodeGraphView::OnRemoveCustomItem);
@@ -554,6 +725,8 @@ void CNodeGraphView::SetModel(CNodeGraphViewModel* pModel)
 		m_pScene->clear();
 
 		m_nodeWidgetByItemInstance.clear();
+		m_groupWidgetByItemInstance.clear();
+		m_commentWidgetByItemInstance.clear();
 		m_connectionWidgetByItemInstance.clear();
 
 		m_pScene->addItem(m_pBackground);
@@ -727,6 +900,110 @@ void CNodeGraphView::DeselectItems(const GraphItemIds& itemIds)
 	}
 }
 
+CNodeWidget* CNodeGraphView::GetNodeWidget(const CAbstractNodeItem& node) const
+{
+	auto result = m_nodeWidgetByItemInstance.find(&node);
+	if (result != m_nodeWidgetByItemInstance.end())
+	{
+		CNodeWidget* pNodeWidget = result->second;
+		const bool isSame = pNodeWidget->GetItem().IsSame(node);
+		CRY_ASSERT(isSame);
+		if (isSame)
+			return pNodeWidget;
+	}
+	return nullptr;
+}
+
+CCommentWidget* CNodeGraphView::GetCommentWidget(const CAbstractCommentItem& comment) const
+{
+	auto result = m_commentWidgetByItemInstance.find(&comment);
+	if (result != m_commentWidgetByItemInstance.end())
+	{
+		CCommentWidget* pCommentWidget = result->second;
+		const bool isSame = pCommentWidget->GetAbstractItem()->IsSame(comment);
+		CRY_ASSERT(isSame);
+		if (isSame)
+			return pCommentWidget;
+	}
+	return nullptr;
+}
+
+CConnectionWidget* CNodeGraphView::GetConnectionWidget(const CAbstractConnectionItem& connection) const
+{
+	auto result = m_connectionWidgetByItemInstance.find(&connection);
+	if (result != m_connectionWidgetByItemInstance.end())
+	{
+		CConnectionWidget* pConnectionWidget = result->second;
+		const bool isSame = pConnectionWidget->GetItem() ? pConnectionWidget->GetItem()->IsSame(connection) : false;
+		CRY_ASSERT(isSame);
+		if (isSame)
+			return pConnectionWidget;
+	}
+	return nullptr;
+}
+
+CPinWidget* CNodeGraphView::GetPinWidget(const CAbstractPinItem& pin) const
+{
+	CNodeWidget* pNodeWidget = GetNodeWidget(pin.GetNodeItem());
+	if (pNodeWidget)
+	{
+		CAbstractNodeContentWidget* pContentWidget = pNodeWidget->GetContentWidget();
+		if (pContentWidget)
+		{
+			for (CPinWidget* pPinWidget : pContentWidget->GetPinWidgets())
+			{
+				if (pPinWidget->GetAbstractItem()->IsSame(pin))
+				{
+					return pPinWidget;
+				}
+			}
+		}
+	}
+	return nullptr;
+}
+
+void CNodeGraphView::LinkItemToGroup(CGroupWidget& group, CNodeGraphViewGraphicsWidget& item)
+{
+	CAbstractGroupItem* pGroupNode = static_cast<CAbstractGroupItem*>(group.GetAbstractItem());
+	CRY_ASSERT_MESSAGE(pGroupNode, "CGroupWidget without group item.");
+	if (!pGroupNode)
+	{
+		return;
+	}
+
+	CAbstractNodeGraphViewModelItem* pItemNode = item.GetAbstractItem();
+	if ((pItemNode->GetType() != eItemType_Node) && (pItemNode->GetType() != eItemType_Comment))
+	{
+		return;
+	}
+
+	CRY_ASSERT_MESSAGE(pItemNode->GetAcceptsGroup() == false, "Item already attached to group");
+	if (!pItemNode->GetAcceptsGroup())
+	{
+		return;
+	}
+
+	m_groupWidgetByItemInstance[pItemNode] = &group;
+	group.GetItems().insert(&item);
+	pGroupNode->LinkItem(*pItemNode);
+}
+
+void CNodeGraphView::UnlinkItemFromGroup(CGroupWidget& group, CNodeGraphViewGraphicsWidget& item)
+{
+	CAbstractGroupItem* pGroupNode = static_cast<CAbstractGroupItem*>(group.GetAbstractItem());
+	CRY_ASSERT_MESSAGE(pGroupNode, "CGroupWidget without group item.");
+	if (!pGroupNode)
+	{
+		return;
+	}
+
+	CAbstractNodeGraphViewModelItem* pItemNode = item.GetAbstractItem();
+
+	pGroupNode->UnlinkItem(*pItemNode);
+	group.GetItems().erase(&item);
+	m_groupWidgetByItemInstance[pItemNode] = nullptr;
+}
+
 void CNodeGraphView::SelectWidget(CNodeGraphViewGraphicsWidget& itemWidget)
 {
 	if (SetWidgetSelectionState(itemWidget, true))
@@ -792,6 +1069,12 @@ bool CNodeGraphView::SetItemSelectionState(CAbstractNodeGraphViewModelItem& item
 			{
 				if (CNodeWidget* pNodeWidget = GetNodeWidget(static_cast<CAbstractNodeItem&>(item)))
 					pViewWidget = pNodeWidget;
+			}
+			break;
+		case eItemType_Comment:
+			{
+				if (CCommentWidget* pCommentWidget = GetCommentWidget(static_cast<CAbstractCommentItem&>(item)))
+					pViewWidget = pCommentWidget;
 			}
 			break;
 		case eItemType_Connection:
@@ -959,6 +1242,28 @@ void CNodeGraphView::MoveSelection(const QPointF& delta)
 	}
 }
 
+void CNodeGraphView::PlaceSelection()
+{
+	GraphViewWidgetSet pendingSelection;
+	for (auto pWidget : m_selectedWidgets)
+	{
+		CAbstractNodeGraphViewModelItem* item = pWidget->GetAbstractItem();
+		if (item->GetType() == eItemType_Node || item->GetType() == eItemType_Comment)
+			pendingSelection.insert(pWidget);
+	}
+
+	for (auto pWidget : pendingSelection)
+	{
+		auto groupWidget = m_groupWidgetByItemInstance[pWidget->GetAbstractItem()];
+		if (groupWidget)
+		{
+			UnlinkItemFromGroup(*groupWidget, *pWidget);
+		}
+	}
+
+	PlaceSelectionToGroup(pendingSelection);
+}
+
 void CNodeGraphView::RemoveNodeItem(CAbstractNodeItem& node)
 {
 	GetIEditor()->GetIUndoManager()->Begin();
@@ -1035,6 +1340,19 @@ void CNodeGraphView::DeleteSelectedItems()
 					}
 				}
 				break;
+			case eItemType_Comment:
+				{
+					CAbstractCommentItem& commentItem = *pAbstractItem->Cast<CAbstractCommentItem>();
+					if (m_pModel->RemoveComment(commentItem))
+					{
+						++numDeletedItems;
+					}
+					else
+					{
+						notDeletedItems.emplace(pAbstractItem);
+					}
+				}
+				break;
 			case eItemType_Connection:
 				{
 					CAbstractConnectionItem& connectionItem = *pAbstractItem->Cast<CAbstractConnectionItem>();
@@ -1091,6 +1409,30 @@ void CNodeGraphView::OnCreateNode(CAbstractNodeItem& node)
 		m_pScene->addItem(pNodeWidget);
 		m_nodeWidgetByItemInstance.emplace(&node, pNodeWidget);
 	}
+
+	node.GetEditorData().SignalDataChanged();
+}
+
+void CNodeGraphView::OnCreateGroup(CAbstractGroupItem& group)
+{
+	if (CGroupWidget* pGroupWidget = group.CreateWidget(*this))
+	{
+		m_pScene->addItem(pGroupWidget);
+		m_pScene->addItem(pGroupWidget->GetPendingWidget());
+	}
+
+	group.GetEditorData().SignalDataChanged();
+}
+
+void CNodeGraphView::OnCreateComment(CAbstractCommentItem& comment)
+{
+	if (CCommentWidget* pCommentWidget = comment.CreateWidget(*this))
+	{
+		m_pScene->addItem(pCommentWidget);
+		m_commentWidgetByItemInstance.emplace(&comment, pCommentWidget);
+	}
+
+	comment.GetEditorData().SignalDataChanged();
 }
 
 void CNodeGraphView::OnCreateConnection(CAbstractConnectionItem& connection)
@@ -1121,8 +1463,11 @@ void CNodeGraphView::OnCreateConnection(CAbstractConnectionItem& connection)
 
 void CNodeGraphView::OnRemoveNode(CAbstractNodeItem& node)
 {
-	const QPointF nodePos = node.GetPosition();
+	CRY_ASSERT_MESSAGE(m_pModel, "No items should exist if m_pModel == nullptr");
+	if (m_pModel)
+		m_pModel->GetEditorData().RemoveNodeEditorDataById(node.GetId());
 
+	const QPointF nodePos = node.GetPosition();
 	const QList<QGraphicsItem*> itemList = m_pScene->items(QRectF(nodePos - QPoint(5, 5), nodePos + QPoint(5, 5)));
 	for (QGraphicsItem* pGraphicsItem : itemList)
 	{
@@ -1134,6 +1479,58 @@ void CNodeGraphView::OnRemoveNode(CAbstractNodeItem& node)
 				m_pScene->removeItem(pGraphicsItem);
 				DeselectWidget(*pNodeWidget);
 				pNodeWidget->DeleteLater();
+				return;
+			}
+		}
+	}
+
+	return;
+}
+
+void CNodeGraphView::OnRemoveGroup(CAbstractGroupItem& group)
+{
+	CRY_ASSERT_MESSAGE(m_pModel, "No items should exist if m_pModel == nullptr");
+	if (m_pModel)
+		m_pModel->GetEditorData().RemoveGroupEditorDataById(group.GetId());
+
+	const QPointF groupPos = group.GetPosition();	
+
+	const QList<QGraphicsItem*> itemList = m_pScene->items(QRectF(groupPos - QPoint(5, 5), groupPos + QPoint(5, 5)));
+	for (QGraphicsItem* pGraphicsItem : itemList)
+	{
+		if (CGroupWidget* pGroupWidget = CNodeGraphViewGraphicsWidget::Cast<CGroupWidget>(pGraphicsItem))
+		{
+			if (pGroupWidget->GetAbstractItem() == &group)
+			{
+				m_pScene->removeItem(pGroupWidget->GetPendingWidget());
+				m_pScene->removeItem(pGroupWidget);
+				DeselectWidget(*pGroupWidget);
+				pGroupWidget->DeleteLater();
+				return;
+			}
+		}
+	}	
+
+	return;
+}
+
+void CNodeGraphView::OnRemoveComment(CAbstractCommentItem& comment)
+{
+	CRY_ASSERT_MESSAGE(m_pModel, "No items should exist if m_pModel == nullptr");
+	if (m_pModel)
+		m_pModel->GetEditorData().RemoveCommentEditorDataById(comment.GetId());
+
+	const QPointF commentPos = comment.GetPosition();
+	const QList<QGraphicsItem*> itemList = m_pScene->items(QRectF(commentPos - QPoint(5, 5), commentPos + QPoint(5, 5)));
+	for (QGraphicsItem* pGraphicsItem : itemList)
+	{
+		if (CCommentWidget* pCommentWidget = CNodeGraphViewGraphicsWidget::Cast<CCommentWidget>(pGraphicsItem))
+		{
+			if (pCommentWidget->GetAbstractItem() == &comment)
+			{
+				m_pScene->removeItem(pCommentWidget);
+				DeselectWidget(*pCommentWidget);
+				pCommentWidget->DeleteLater();
 				return;
 			}
 		}
@@ -1175,6 +1572,7 @@ void CNodeGraphView::OnRemoveConnection(CAbstractConnectionItem& connection)
 
 	CRY_ASSERT_MESSAGE(false, "Item not found!!");
 }
+
 
 void CNodeGraphView::OnContextMenuAddNode(CAbstractDictionaryEntry& entry)
 {
@@ -1254,6 +1652,14 @@ void CNodeGraphView::OnContextMenuAbort()
 	}
 }
 
+void CNodeGraphView::OnEditingContentPopupFinish()
+{
+	if (m_action == eAction_ShowContentEditPopup)
+	{
+		AbortAction();
+	}
+}
+
 void CNodeGraphView::SetAction(uint32 action, bool abortCurrent)
 {
 	if (m_action != action)
@@ -1270,6 +1676,15 @@ void CNodeGraphView::SetAction(uint32 action, bool abortCurrent)
 
 		m_action = action;
 	}
+
+	switch (m_action)
+	{
+	case eAction_ItemMovement:
+		{
+			BeginPendingItemPlacement();
+		}
+		break;
+	}
 }
 
 bool CNodeGraphView::AbortAction()
@@ -1279,6 +1694,14 @@ bool CNodeGraphView::AbortAction()
 
 	switch (m_action)
 	{
+	case eAction_GroupBoxResizing:
+		{
+			if (m_pResizingBox)
+			{
+				m_pResizingBox = nullptr;
+				SelectMouseCursor(QPointF());
+			}
+		}
 	case eAction_ItemBoxSelection:
 		{
 			if (m_pSelectionBox)
@@ -1321,6 +1744,13 @@ bool CNodeGraphView::AbortAction()
 				}
 				m_isRecodringUndo = false;
 			}
+
+			EndPendingItemPlacement();
+		}
+		break;
+	case eAction_ShowContentEditPopup:
+		{
+			m_contentEditPopup.hide();
 		}
 		break;
 	case eAction_None:
@@ -1373,6 +1803,8 @@ void CNodeGraphView::ReloadItems()
 	m_pScene->clear();
 
 	m_nodeWidgetByItemInstance.clear();
+	m_groupWidgetByItemInstance.clear();
+	m_commentWidgetByItemInstance.clear();
 	m_connectionWidgetByItemInstance.clear();
 
 	m_pScene->addItem(m_pBackground);
@@ -1383,10 +1815,23 @@ void CNodeGraphView::ReloadItems()
 			AddNodeItem(*pItem);
 	}
 
+	for (int32 i = m_pModel->GetCommentItemCount(); i--; )
+	{
+		if (CAbstractCommentItem* pItem = m_pModel->GetCommentItemByIndex(i))
+			AddCommentItem(*pItem);
+	}
+	
 	for (int32 i = m_pModel->GetConnectionItemCount(); i--; )
 	{
 		if (CAbstractConnectionItem* pItem = m_pModel->GetConnectionItemByIndex(i))
 			AddConnectionItem(*pItem);
+	}
+
+	// groups should be restored after all other items restored
+	for (int32 i = m_pModel->GetGroupItemCount(); i--; )
+	{
+		if (CAbstractGroupItem* pItem = m_pModel->GetGroupItemByIndex(i))
+			AddGroupItem(*pItem);
 	}
 
 	SignalItemsReloaded(*this);
@@ -1397,6 +1842,16 @@ void CNodeGraphView::ReloadItems()
 void CNodeGraphView::AddNodeItem(CAbstractNodeItem& node)
 {
 	OnCreateNode(node);
+}
+
+void CNodeGraphView::AddGroupItem(CAbstractGroupItem& group)
+{
+	OnCreateGroup(group);
+}
+
+void CNodeGraphView::AddCommentItem(CAbstractCommentItem& comment)
+{
+	OnCreateComment(comment);
 }
 
 void CNodeGraphView::AddConnectionItem(CAbstractConnectionItem& connection)
@@ -1424,6 +1879,8 @@ void CNodeGraphView::keyPressEvent(QKeyEvent* pEvent)
 
 void CNodeGraphView::wheelEvent(QWheelEvent* pEvent)
 {
+	AbortAction();
+
 	const int32 percent = m_currentScalePercent + (pEvent->delta() > 0 ? 10 : -10);
 	SetZoom(percent);
 }
@@ -1435,6 +1892,17 @@ void CNodeGraphView::mouseMoveEvent(QMouseEvent* pEvent)
 
 	switch (m_action)
 	{
+	case eAction_GroupBoxResizing:
+		{
+			if (m_pResizingBox)
+			{
+				m_pResizingBox->CalcResize(mapToScene(pEvent->pos()));
+			}
+			else
+			{
+				AbortAction();
+			}
+		}
 	case eAction_SceneNavigation:
 		{
 			QMouseEvent moveEvent(
@@ -1486,13 +1954,17 @@ void CNodeGraphView::mousePressEvent(QMouseEvent* pEvent)
 		}
 		else if (IsSelectionButton(pEvent->buttons()))
 		{
-			if (itemAt(m_lastMouseActionPressPos) == m_pBackground)
+			if (m_pResizingBox)
+			{
+				SetAction(eAction_GroupBoxResizing);
+			}
+			else if (itemAt(m_lastMouseActionPressPos) == m_pBackground)
 			{
 				SetAction(eAction_ItemBoxSelection);
 				if (m_pSelectionBox == nullptr)
 				{
 					m_pSelectionBox = new CGroupWidget(*this);
-					m_pSelectionBox->SetColor(QColor(97, 172, 237));
+					m_pSelectionBox->SetColor(QColor(97, 172, 237, 128));
 				}
 
 				m_pScene->addItem(m_pSelectionBox);
@@ -1573,6 +2045,11 @@ void CNodeGraphView::mouseReleaseEvent(QMouseEvent* pEvent)
 			}
 		}
 		break;
+	case eAction_ShowContentEditPopup:
+		{
+			QGraphicsView::mouseReleaseEvent(pEvent);
+			return;
+		}
 	case eAction_None:
 		{
 			if (RequestContextMenu(pEvent))
@@ -1905,6 +2382,101 @@ void CNodeGraphView::EndCreateConnection(CPinWidget* pTargetPin)
 	}
 }
 
+void CNodeGraphView::BeginPendingItemPlacement()
+{
+	m_pendingItemPlacementTimer.start();
+}
+
+void CNodeGraphView::RunPendingItemPlacement()
+{
+	GraphViewWidgetSet selection;
+
+	// filter selected items
+	for (auto pItem : m_selectedWidgets)
+	{
+		CAbstractNodeGraphViewModelItem* pAbstractItem = pItem->GetAbstractItem();
+		if (pAbstractItem && (pAbstractItem->GetType() == eItemType_Node || pAbstractItem->GetType() == eItemType_Comment))
+			selection.insert(pItem);
+	}
+
+	CGroupWidget* pGroupCanditate = GetGroupCandidateForPlacement(selection);
+	if (pGroupCanditate)
+	{		
+		pGroupCanditate->PushPendingSelection(selection);
+	}
+}
+
+void CNodeGraphView::EndPendingItemPlacement()
+{
+	m_pendingItemPlacementTimer.stop();
+
+	uint32 groupCount = m_pModel->GetGroupItemCount();
+	for (int32 i = 0; i < groupCount; i++)
+	{
+		CGroupWidget* pGroup = m_pModel->GetGroupItemByIndex(i)->GetWidget();
+		if (pGroup)
+			pGroup->ClearPendingSelection();
+	}
+
+}
+
+void CNodeGraphView::SelectMouseCursor(const QPointF& pos)
+{
+	CGroupWidget::EResizePolicy policy = CGroupWidget::ResizePolicy_None;
+	if (m_pResizingBox)
+		policy = m_pResizingBox->CalcPolicy(pos);
+
+	switch (policy)
+	{
+	case CGroupWidget::ResizePolicy_None:
+		{
+			if (m_pResizingBox)
+			{
+				m_pResizingBox->setCursor(QCursor(Qt::ArrowCursor));
+				m_pResizingBox = nullptr;
+			}
+		}
+		break;
+	case CGroupWidget::ResizePolicy_Top:
+	case CGroupWidget::ResizePolicy_Bottom:
+		{
+			m_pResizingBox->setCursor(QCursor(Qt::SizeVerCursor));
+		}
+		break;
+	case CGroupWidget::ResizePolicy_Right:
+	case CGroupWidget::ResizePolicy_Left:
+		{
+			m_pResizingBox->setCursor(QCursor(Qt::SizeHorCursor));
+		}
+		break;
+	case CGroupWidget::ResizePolicy_TopLeft:
+	case CGroupWidget::ResizePolicy_BottomRight:
+		{
+			m_pResizingBox->setCursor(QCursor(Qt::SizeFDiagCursor));
+		}
+		break;
+	case CGroupWidget::ResizePolicy_BottomLeft:
+	case CGroupWidget::ResizePolicy_TopRight:
+		{
+			m_pResizingBox->setCursor(QCursor(Qt::SizeBDiagCursor));
+		}
+		break;
+	}
+}
+
+void CNodeGraphView::PlaceSelectionToGroup(const GraphViewWidgetSet& selection)
+{
+	CGroupWidget* pGroupCanditate = GetGroupCandidateForPlacement(selection);
+	if (pGroupCanditate)
+	{
+		for (auto pItem : selection)
+		{
+			LinkItemToGroup(*pGroupCanditate, *pItem);
+			pGroupCanditate->UpdateAABB();
+		}
+	}
+}
+
 void CNodeGraphView::BeginSceneDragging(QMouseEvent* pEvent)
 {
 	SetAction(eAction_SceneNavigation);
@@ -1974,9 +2546,9 @@ void CNodeGraphView::ShowNodeContextMenu(CNodeWidget* pNodeWidget, QPointF scree
 		menu.addSeparator();
 		QAction* pAction = menu.addAction(QObject::tr("Rename"));
 		QObject::connect(pAction, &QAction::triggered, this, [pNodeWidget](bool isChecked)
-			{
-				pNodeWidget->EditName();
-		  });
+		{
+			pNodeWidget->EditName();
+		});
 
 		menu.addSeparator();
 	}
@@ -2030,7 +2602,10 @@ void CNodeGraphView::ShowGraphContextMenu(QPointF screenPos)
 			if (pAvailableNodesDictionary)
 			{
 				m_contextMenuScenePos = sceenPos;
+
+				m_pContextMenuContent->RemoveAllDictionaries();
 				m_pContextMenuContent->AddDictionary(*pAvailableNodesDictionary);
+
 				m_pContextMenu->ShowAt(QPoint(screenPos.x(), screenPos.y()));
 			}
 		}
@@ -2111,6 +2686,25 @@ void CNodeGraphView::ShowSelectionContextMenu(QPointF screenPos)
 	menu.exec(QPoint(screenPos.x(), screenPos.y()));
 }
 
+void CNodeGraphView::ShowContentEditingPopup(const CTextWidget& textWidget, const QPoint& pos, const QSize& size, QString text, const QFont& font, bool multiline)
+{
+	SetAction(eAction_ShowContentEditPopup);
+
+	CTextEdit* pTextEdit = new CTextEdit(textWidget);
+	pTextEdit->setWordWrapMode(multiline ? QTextOption::WrapAnywhere : QTextOption::NoWrap);
+	pTextEdit->setVerticalScrollBarPolicy(Qt::ScrollBarAlwaysOff);
+	pTextEdit->setHorizontalScrollBarPolicy(Qt::ScrollBarAlwaysOff);
+	pTextEdit->setFocus();
+	pTextEdit->selectAll();
+	pTextEdit->setCurrentFont(font);
+	pTextEdit->setText(text);
+	pTextEdit->SignalEditingFinished.Connect(this, &CNodeGraphView::OnEditingContentPopupFinish);
+
+	m_contentEditPopup.SetContent(pTextEdit);
+	m_contentEditPopup.setFixedSize(size);
+	m_contentEditPopup.ShowAt(pos);
+}
+
 CPinWidget* CNodeGraphView::GetPossibleConnectionTarget(QPointF scenePos)
 {
 	const CAbstractPinItem& pinItem = m_pNewConnectionBeginPin->GetItem();
@@ -2142,51 +2736,64 @@ CPinWidget* CNodeGraphView::GetPossibleConnectionTarget(QPointF scenePos)
 	return pClosestPinWidget;
 }
 
-CNodeWidget* CNodeGraphView::GetNodeWidget(const CAbstractNodeItem& node) const
+CGroupWidget* CNodeGraphView::GetGroupCandidateForPlacement(const GraphViewWidgetSet& selection)
 {
-	auto result = m_nodeWidgetByItemInstance.find(&node);
-	if (result != m_nodeWidgetByItemInstance.end())
-	{
-		CNodeWidget* pNodeWidget = result->second;
-		const bool isSame = pNodeWidget->GetItem().IsSame(node);
-		CRY_ASSERT(isSame);
-		if (isSame)
-			return pNodeWidget;
-	}
-	return nullptr;
-}
+	uint32 candidateItemCount = 0;
 
-CConnectionWidget* CNodeGraphView::GetConnectionWidget(const CAbstractConnectionItem& connection) const
-{
-	auto result = m_connectionWidgetByItemInstance.find(&connection);
-	if (result != m_connectionWidgetByItemInstance.end())
-	{
-		CConnectionWidget* pConnectionWidget = result->second;
-		const bool isSame = pConnectionWidget->GetItem() ? pConnectionWidget->GetItem()->IsSame(connection) : false;
-		CRY_ASSERT(isSame);
-		if (isSame)
-			return pConnectionWidget;
-	}
-	return nullptr;
-}
+	QPointF selectionAA;
+	QPointF selectionBB;
 
-CPinWidget* CNodeGraphView::GetPinWidget(const CAbstractPinItem& pin) const
-{
-	CNodeWidget* pNodeWidget = GetNodeWidget(pin.GetNodeItem());
-	if (pNodeWidget)
+	// calculate selection AABB
+	for (auto pItem : selection)
 	{
-		CAbstractNodeContentWidget* pContentWidget = pNodeWidget->GetContentWidget();
-		if (pContentWidget)
+		if (QRectF(selectionAA, selectionBB).isEmpty())
 		{
-			for (CPinWidget* pPinWidget : pContentWidget->GetPinWidgets())
+			selectionAA = pItem->geometry().topLeft();
+			selectionBB = pItem->geometry().bottomRight();
+		}
+
+		QPointF itemAA = pItem->geometry().topLeft();
+		QPointF itemBB = pItem->geometry().bottomRight();
+
+		selectionAA.setX(std::min(selectionAA.x(), itemAA.x()));
+		selectionAA.setY(std::min(selectionAA.y(), itemAA.y()));
+
+		selectionBB.setX(std::max(selectionBB.x(), itemBB.x()));
+		selectionBB.setY(std::max(selectionBB.y(), itemBB.y()));
+	}
+
+
+	QRectF selectionAABB(selectionAA, selectionBB);
+
+	const QList<QGraphicsItem*> itemList = m_pScene->items(selectionAABB);
+	for (int32 i = 0; i < itemList.size(); i++)
+	{
+		CGroupWidget* pGroupWidget = CNodeGraphViewGraphicsWidget::Cast<CGroupWidget>(itemList[i]);
+		if (pGroupWidget)
+		{
+			pGroupWidget->ClearPendingSelection();
+			QRectF groupRect = pGroupWidget->geometry();
+
+			for (auto pItem : selection)
 			{
-				if (pPinWidget->GetAbstractItem()->IsSame(pin))
-				{
-					return pPinWidget;
-				}
+				QRectF itemRect = pItem->geometry();
+				float  itemArea = itemRect.width() * itemRect.height();
+
+				QRectF intersectRect = groupRect.intersected(itemRect);
+				float  intersectArea = intersectRect.width() * intersectRect.height();
+
+				candidateItemCount = (intersectArea > itemArea * 0.5f - 0.00001f) ? candidateItemCount + 1 : candidateItemCount;
 			}
 		}
+
+		if (candidateItemCount >= selection.size() * 0.5f)
+		{
+			return pGroupWidget;
+		}
+
+		candidateItemCount = 0;
 	}
+
 	return nullptr;
 }
 

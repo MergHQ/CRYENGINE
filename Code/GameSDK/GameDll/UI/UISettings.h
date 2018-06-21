@@ -35,7 +35,7 @@ struct SNullCVar : public ICVar
 	virtual void Set(float f) override { return; }
 	virtual void Set(int i) override { return; }
 	virtual void Set(int64 i) override { return; }
-	virtual void SetFromString(const char* s) override { return; }
+	virtual void SetFromString(const char* szValue) override { return; }
 	virtual void SetMinValue(int min) override { return; }
 	virtual void SetMinValue(int64 min) override { return; }
 	virtual void SetMinValue(float min) override { return; }
@@ -53,19 +53,19 @@ struct SNullCVar : public ICVar
 	virtual int SetFlags(int flags) override { return 0; }
 	virtual ECVarType GetType() const override { return ECVarType::Invalid; }
 	virtual const char* GetName() const override { return "NULL"; }
-	virtual const char* GetHelp() override { return "NULL"; }
+	virtual const char* GetHelp() const override { return "NULL"; }
 	virtual bool IsConstCVar() const override { return 0; }
 
-	virtual void SetOnChangeCallback(ConsoleVarFunc pChangeFunc) override { return; }
 	virtual uint64 AddOnChangeFunctor(const SFunctor& pChangeFunctor) override { return 0; }
 	virtual bool RemoveOnChangeFunctor(const uint64 nElement) override { return true; }
 	virtual uint64 GetNumberOfOnChangeFunctors() const override { return 0; }
 	virtual const SFunctor& GetOnChangeFunctor(uint64 nFunctorIndex) const override { static SFunctor oDummy; return oDummy; }
-	virtual ConsoleVarFunc GetOnChangeCallback() const override { return nullptr; }
 
 	virtual void GetMemoryUsage( class ICrySizer* pSizer ) const override { return; }
 	virtual int GetRealIVal() const override { return 0; }
 	virtual void DebugLog(const int iExpectedValue, const EConsoleLogMode mode) const override {}
+	
+	virtual bool IsOwnedByConsole() const override { return true; }
 
 	static SNullCVar* Get()
 	{

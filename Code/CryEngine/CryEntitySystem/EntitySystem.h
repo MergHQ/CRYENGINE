@@ -20,6 +20,14 @@
 //////////////////////////////////////////////////////////////////////////
 // forward declarations.
 //////////////////////////////////////////////////////////////////////////
+namespace Cry {
+namespace Entity {
+
+struct IReflectionRegistry;
+
+} // ~Entity namespace
+} // ~Cry namespace
+
 class CEntity;
 struct ICVar;
 struct IPhysicalEntity;
@@ -194,6 +202,8 @@ public:
 	virtual bool                              ShouldSerializedEntity(IEntity* pEntity) final;
 	virtual void                              RegisterPhysicCallbacks() final;
 	virtual void                              UnregisterPhysicCallbacks() final;
+	// New Reflection System
+	virtual Cry::Entity::IReflectionRegistry* GetReflectionRegistry() const final;
 
 	CEntityLayer*                             GetLayerForEntity(EntityId id);
 	void                                      EnableLayer(IEntityLayer* pLayer, bool bIsEnable, bool bIsSerialized, bool bAffectsChildren);
@@ -339,6 +349,7 @@ private:
 	// Entity class registry.
 	CEntityClassRegistry*  m_pClassRegistry;
 	CPhysicsEventListener* m_pPhysicsEventListener;
+	Cry::Entity::IReflectionRegistry* m_pReflectionRegistry = nullptr;
 
 	CAreaManager*          m_pAreaManager;
 

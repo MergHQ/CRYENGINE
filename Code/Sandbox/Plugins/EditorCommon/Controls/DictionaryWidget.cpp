@@ -10,28 +10,29 @@
 #include "ProxyModels/AttributeFilterProxyModel.h"
 #include "ProxyModels/ItemModelAttribute.h"
 #include "ProxyModels/MergingProxyModel.h"
-#include "EditorStyleHelper.h"
-#include "QFilteringPanel.h"
 
+#include <QFilteringPanel.h>
+#include <EditorStyleHelper.h>
 #include <QStyledItemDelegate>
 #include <QAbstractItemModel>
 
 #include <QHelpEvent>
 #include <QEventLoop>
+#include <QToolTip>
 
 class CDictionaryModel : public QAbstractItemModel
 {
 public:
 	enum ERole : int32
 	{
-		DisplayRole   = Qt::DisplayRole,
-		ToolTipRole   = Qt::ToolTipRole,
+		EditRole      = Qt::EditRole,
+		DisplayRole   = Qt::DisplayRole,		
 		IconRole      = Qt::DecorationRole,
 		ColorRole     = Qt::TextColorRole,
 		PointerRole   = Qt::UserRole + 0,
 		MergingRole   = Qt::UserRole + 1,
-		FilteringRole = Qt::UserRole + 2,
-
+		ToolTipRole   = Qt::UserRole + 2,
+		CategoryRole  = Qt::UserRole + 3,
 	};
 
 public:
@@ -82,6 +83,20 @@ public:
 		return 0;
 	}
 
+	virtual Qt::ItemFlags flags(const QModelIndex &index) const override
+	{
+		if (index.isValid())
+		{
+			const CAbstractDictionaryEntry* pEntry = static_cast<const CAbstractDictionaryEntry*>(index.internalPointer());
+			if (pEntry)
+			{				
+				return (pEntry->IsEditable(index.column()) ? (Qt::ItemIsEditable | QAbstractItemModel::flags(index)) : QAbstractItemModel::flags(index));
+			}
+		}
+
+		return 0;
+	}
+
 	virtual int CDictionaryModel::columnCount(const QModelIndex& parent) const override
 	{
 		return m_dictionary.GetNumColumns();
@@ -101,16 +116,17 @@ public:
 			{
 				switch (role)
 				{
+				case CDictionaryModel::EditRole:
 				case CDictionaryModel::DisplayRole:
 				case CDictionaryModel::MergingRole:
-				case CDictionaryModel::FilteringRole:
+				case CDictionaryModel::CategoryRole:
 					{
 						return QVariant::fromValue(pEntry->GetColumnValue(index.column()));
 					}
 					break;
 				case CDictionaryModel::ToolTipRole:
 					{
-						const QString text = pEntry->GetToolTip();
+						const QString text = pEntry->GetToolTip(index.column());
 						if (!text.isEmpty())
 						   return QVariant::fromValue(text);
 					}
@@ -144,6 +160,27 @@ public:
 			}
 		}
 		return QVariant();
+	}
+
+	virtual bool setData(const QModelIndex& index, const QVariant& value, int role) override
+	{
+		if (index.isValid())
+		{
+			CAbstractDictionaryEntry* pEntry = static_cast<CAbstractDictionaryEntry*>(index.internalPointer());
+			if (pEntry)
+			{
+				switch (role)
+				{
+					case CDictionaryModel::EditRole:
+					{
+						pEntry->SetColumnValue(index.column(), value);
+					}
+					break;
+				}
+				return true;
+			}
+		}
+		return false;
 	}
 
 	virtual QModelIndex CDictionaryModel::index(int row, int column, const QModelIndex& parent) const override
@@ -233,67 +270,51 @@ private:
 	CAbstractDictionary& m_dictionary;
 };
 
-class CDictionaryFilterProxyModel : public QAttributeFilterProxyModel//public QDeepFilterProxyModel
+CDictionaryFilterProxyModel::CDictionaryFilterProxyModel(BehaviorFlags behavior, QObject* pParent, int role)
+	: QAttributeFilterProxyModel(behavior, pParent, role)
+	, m_sortingOrder(Qt::AscendingOrder)
 {
-	using QAttributeFilterProxyModel::QAttributeFilterProxyModel;
+}
 
-	// Ensures folders and entries are always grouped together in the sorting order.
-	bool lessThan(const QModelIndex& left, const QModelIndex& right) const override
-	{
-		CAbstractDictionaryEntry* pLeft = reinterpret_cast<CAbstractDictionaryEntry*>(left.data(CDictionaryModel::PointerRole).value<quintptr>());
-		CAbstractDictionaryEntry* pRight = reinterpret_cast<CAbstractDictionaryEntry*>(right.data(CDictionaryModel::PointerRole).value<quintptr>());
-		if (pLeft && pRight && pLeft->GetType() != pRight->GetType())
-		{
-			return pLeft->GetType() == CAbstractDictionaryEntry::Type_Folder;
-		}
-		else
-			return QDeepFilterProxyModel::lessThan(left, right);
-	}
-};
-
-class CDictionaryDelegate : public QStyledItemDelegate
+void CDictionaryFilterProxyModel::sort(int column, Qt::SortOrder order)
 {
-public:
-	CDictionaryDelegate(QObject* pParent = nullptr)
-		: QStyledItemDelegate(pParent)
-	{
-		m_pLabel = new QLabel();
-		m_pLabel->setWordWrap(true);
-		m_pToolTip = new QPopupWidget("DictionaryToolTip ", m_pLabel);
-		m_pToolTip->setAttribute(Qt::WA_ShowWithoutActivating);
-	}
+	m_sortingOrder = order;
+	QDeepFilterProxyModel::sort(column, order);
+}
 
-	virtual bool helpEvent(QHelpEvent* pEvent, QAbstractItemView* pView, const QStyleOptionViewItem& option, const QModelIndex& index) override
-	{
-		QString description = index.data(CDictionaryModel::ToolTipRole).value<QString>();
-		if (!description.isEmpty())
-		{
-			if (m_currentDisplayedIndex != index)
-			{
-				m_pLabel->setText(description);
+bool CDictionaryFilterProxyModel::lessThan(const QModelIndex& left, const QModelIndex& right) const
+{
+	return m_sortingFunc(left, right);
+}
 
-				if (m_pToolTip->isHidden())
-					m_pToolTip->ShowAt(pEvent->globalPos());
-				else
-					m_pToolTip->move(pEvent->globalPos());
-			}
-			else if (m_pToolTip->isHidden())
-				m_pToolTip->ShowAt(pEvent->globalPos());
+void CDictionaryFilterProxyModel::SetupSortingFunc(const CSortingFunc& sortingFunc)
+{
+	m_sortingFunc = sortingFunc;
+}
 
-			m_currentDisplayedIndex = index;
+void CDictionaryFilterProxyModel::RestoreDefaultSortingFunc()
+{
+	m_sortingFunc = std::bind(&CDictionaryFilterProxyModel::DefaultSortingFunc, this, std::placeholders::_1, std::placeholders::_2);
+}
 
-			return true;
-		}
+bool CDictionaryFilterProxyModel::DefaultSortingFunc(const QModelIndex& left, const QModelIndex& right)
+{
+	CAbstractDictionaryEntry* pLeft = reinterpret_cast<CAbstractDictionaryEntry*>(left.data(CDictionaryModel::PointerRole).value<quintptr>());
+	CAbstractDictionaryEntry* pRight = reinterpret_cast<CAbstractDictionaryEntry*>(right.data(CDictionaryModel::PointerRole).value<quintptr>());
 
-		m_pToolTip->hide();
-		return false;
-	}
+	if (pLeft && !pLeft->IsSortable())
+		return m_sortingOrder = Qt::AscendingOrder;
 
-private:
-	QModelIndex   m_currentDisplayedIndex;
-	QPopupWidget* m_pToolTip;
-	QLabel*       m_pLabel;
-};
+	if (pRight && !pRight->IsSortable())
+		return m_sortingOrder != Qt::AscendingOrder;
+
+	if (pLeft && pRight && pLeft->GetType() != pRight->GetType())
+		return pLeft->GetType() == CAbstractDictionaryEntry::Type_Folder;
+
+	return QDeepFilterProxyModel::lessThan(left, right);
+}
+
+
 
 CAbstractDictionary::CAbstractDictionary()
 	: m_pDictionaryModel(new CDictionaryModel(*this))
@@ -335,11 +356,12 @@ CDictionaryModel* CAbstractDictionary::GetDictionaryModel() const
 	return m_pDictionaryModel;
 }
 
+
 CDictionaryWidget::CDictionaryWidget(QWidget* pParent, QFilteringPanel* pFilteringPanel)
 	: m_pFilterProxy(nullptr)
 	, m_pFilteringPanel(pFilteringPanel)
 	, m_pMergingModel(new CMergingProxyModel(this))
-	, m_pTreeView(new QAdvancedTreeView(static_cast<QAdvancedTreeView::Behavior>(QAdvancedTreeView::PreserveExpandedAfterReset | QAdvancedTreeView::PreserveSelectionAfterReset | QAdvancedTreeView::UseItemModelAttribute)))
+	, m_pTreeView(new QDictionaryTreeView(this, static_cast<QAdvancedTreeView::Behavior>(QAdvancedTreeView::PreserveExpandedAfterReset | QAdvancedTreeView::PreserveSelectionAfterReset | QAdvancedTreeView::UseItemModelAttribute)))
 {
 	m_pFilter = pFilteringPanel ? pFilteringPanel->GetSearchBox() : new QSearchBox();
 
@@ -352,7 +374,7 @@ CDictionaryWidget::CDictionaryWidget(QWidget* pParent, QFilteringPanel* pFilteri
 	m_pTreeView->setItemsExpandable(true);
 	m_pTreeView->setRootIsDecorated(true);
 	m_pTreeView->setMouseTracking(true);
-	m_pTreeView->setItemDelegate(new CDictionaryDelegate());
+	m_pTreeView->setSortingEnabled(true);
 
 	QObject::connect(m_pTreeView, &QTreeView::clicked, this, &CDictionaryWidget::OnClicked);
 	QObject::connect(m_pTreeView, &QTreeView::doubleClicked, this, &CDictionaryWidget::OnDoubleClicked);
@@ -429,7 +451,8 @@ void CDictionaryWidget::AddDictionary(CAbstractDictionary& newDictionary)
 	m_pMergingModel->SetHeaderDataCallbacks(columns.size(), std::bind(&CDictionaryWidget::GeneralHeaderDataCallback, this, columns, std::placeholders::_1, std::placeholders::_2, std::placeholders::_3), CDictionaryModel::MergingRole);
 	m_pMergingModel->MountAppend(newDictionary.GetDictionaryModel());
 
-	m_pFilterProxy = new CDictionaryFilterProxyModel(static_cast<CDictionaryFilterProxyModel::BehaviorFlags>(CDictionaryFilterProxyModel::AcceptIfChildMatches | CDictionaryFilterProxyModel::AcceptIfParentMatches), this, CDictionaryModel::FilteringRole);
+	m_pFilterProxy = new CDictionaryFilterProxyModel(static_cast<CDictionaryFilterProxyModel::BehaviorFlags>(CDictionaryFilterProxyModel::AcceptIfChildMatches | CDictionaryFilterProxyModel::AcceptIfParentMatches), this, CDictionaryModel::CategoryRole);
+	m_pFilterProxy->RestoreDefaultSortingFunc();
 	m_pFilterProxy->setSourceModel(m_pMergingModel);
 
 	if (m_pFilteringPanel)
@@ -446,11 +469,18 @@ void CDictionaryWidget::AddDictionary(CAbstractDictionary& newDictionary)
 	if (sortColumn >= 0)
 	{
 		m_pTreeView->setSortingEnabled(true);
-		m_pTreeView->sortByColumn(sortColumn, Qt::SortOrder::AscendingOrder);
 	}
 	else
 	{
 		m_pTreeView->setSortingEnabled(false);
+	}
+
+	m_pFilterProxy->sort(0, Qt::SortOrder::AscendingOrder);
+
+	const size_t columnCount = columns.size();
+	for (size_t i = 0; i < columnCount; i++)
+	{
+		m_pTreeView->resizeColumnToContents(i);
 	}
 }
 
@@ -464,14 +494,24 @@ void CDictionaryWidget::RemoveAllDictionaries()
 	m_pMergingModel->UnmountAll();
 }
 
-void CDictionaryWidget::ShowHeader(bool flag)
+void CDictionaryWidget::ShowHeader(bool isShown)
 {
-	m_pTreeView->setHeaderHidden(!flag);
+	m_pTreeView->setHeaderHidden(!isShown);
 }
 
 void CDictionaryWidget::SetFilterText(const QString& filterText)
 {
 	m_pFilter->setText(filterText);
+}
+
+QDictionaryTreeView* CDictionaryWidget::GetTreeView() const
+{
+	return m_pTreeView;
+}
+
+CDictionaryFilterProxyModel* CDictionaryWidget::GetFilterProxy() const
+{
+	return m_pFilterProxy;
 }
 
 void CDictionaryWidget::OnClicked(const QModelIndex& index)
@@ -491,6 +531,19 @@ void CDictionaryWidget::OnClicked(const QModelIndex& index)
 			}
 		}
 	}
+}
+
+void CDictionaryWidget::RemountDictionaries()
+{
+	//for (auto model : m_modelMap)
+	//{
+	//	m_pMergingModel->Unmount(model);
+	//}
+
+	//for (auto model : m_modelMap)
+	//{
+	//	m_pMergingModel->MountAppend(model);
+	//}
 }
 
 void CDictionaryWidget::OnDoubleClicked(const QModelIndex& index)
@@ -553,7 +606,7 @@ QVariant CDictionaryWidget::GeneralHeaderDataCallback(std::vector<CItemModelAttr
 		{
 			return pAttribute->GetName();
 		}
-		else if (role == CDictionaryModel::FilteringRole)//&& pAttribute->GetVisibility() == CItemModelAttribute::AlwaysHidden)
+		else if (role == CDictionaryModel::CategoryRole)
 		{
 			return QVariant::fromValue(const_cast<CItemModelAttribute*>(pAttribute));
 		}
@@ -632,5 +685,65 @@ void CModalPopupDictionary::OnAborted()
 {
 	if (m_pEventLoop)
 		m_pEventLoop->exit();
+}
+
+QDictionaryTreeView::QDictionaryTreeView(CDictionaryWidget* pWidget, BehaviorFlags flags, QWidget* pParent)
+	: QAdvancedTreeView(flags, pParent)
+	, m_pWidget(pWidget)
+{
+	CRY_ASSERT(m_pWidget);
+}
+
+QDictionaryTreeView::~QDictionaryTreeView()
+{
+}
+
+void QDictionaryTreeView::SetSeparator(QModelIndex index)
+{
+	m_index = index;
+}
+
+void QDictionaryTreeView::drawRow(QPainter *painter, const QStyleOptionViewItem &option, const QModelIndex &index) const
+{
+	QAdvancedTreeView::drawRow(painter, option, index);
+
+	if (m_index.isValid() && (m_index == index))
+	{
+		painter->setPen(QColor(0x66, 0x66, 0x66));
+		painter->drawLine(0, index.row()*rowHeight(index), viewport()->size().width(), index.row()*rowHeight(index));
+	}
+}
+
+void QDictionaryTreeView::mouseMoveEvent(QMouseEvent* pEvent)
+{
+	QAdvancedTreeView::mouseMoveEvent(pEvent);
+
+	QModelIndex index = indexAt(pEvent->pos());
+	if (index.isValid())
+	{
+		QString text = model()->data(index, CDictionaryModel::ToolTipRole).value<QString>();
+		if (text.size())
+		{
+			QToolTip::showText(pEvent->globalPos(), text);
+		}
+		else
+		{
+			QToolTip::hideText();
+		}
+	}
+	else
+	{
+		QToolTip::hideText();
+	}
+}
+
+void QDictionaryTreeView::mouseReleaseEvent(QMouseEvent* pEvent)
+{
+	QTreeView::mouseReleaseEvent(pEvent);
+
+	if (pEvent->button() == Qt::RightButton)
+	{		
+		signalMouseRightButton(indexAt(pEvent->localPos().toPoint()), pEvent->screenPos().toPoint());
+	}
 }
 

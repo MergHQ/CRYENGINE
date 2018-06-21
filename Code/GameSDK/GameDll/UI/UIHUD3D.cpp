@@ -62,7 +62,9 @@ void CUIHUD3D::InitEventSystem()
 
 	ICVar* pShowHudVar = gEnv->pConsole->GetCVar("hud_hide");
 	if (pShowHudVar)
-		pShowHudVar->SetOnChangeCallback(&OnVisCVarChange);
+	{
+		pShowHudVar->AddOnChangeFunctor(SFunctor([pShowHudVar]() { OnVisCVarChange(pShowHudVar); }));
+	}
 }
 
 ////////////////////////////////////////////////////////////////////////////

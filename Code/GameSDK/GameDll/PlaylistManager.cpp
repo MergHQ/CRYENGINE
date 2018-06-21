@@ -402,19 +402,6 @@ CPlaylistManager::~CPlaylistManager()
 		gEnv->pConsole->RemoveConsoleVarSink(this);
 	}
 
-	int numRestrictions = m_optionRestrictions.size();
-	for (int i = 0; i < numRestrictions; ++ i)
-	{
-		if (m_optionRestrictions[i].m_operand1.m_pVar)
-		{
-			m_optionRestrictions[i].m_operand1.m_pVar->SetOnChangeCallback(NULL);
-		}
-		if (m_optionRestrictions[i].m_operand2.m_pVar)
-		{
-			m_optionRestrictions[i].m_operand2.m_pVar->SetOnChangeCallback(NULL);
-		}
-	}
-
 	Deinit();
 }
 
@@ -2833,21 +2820,16 @@ void CPlaylistManager::LoadOptionRestrictions()
 					SOptionRestriction restriction;
 					if (LoadOperand(xmlOperand1, restriction.m_operand1) && LoadOperand(xmlOperand2, restriction.m_operand2))
 					{
-#ifndef _RELEASE
-						ConsoleVarFunc pCallbackFunc = restriction.m_operand1.m_pVar->GetOnChangeCallback();
-						if (pCallbackFunc && pCallbackFunc != CPlaylistManager::OnCustomOptionCVarChanged)
 						{
-							CryFatalError("Can't add callback on operand 1 (%s - %p) - one already exists", restriction.m_operand1.m_pVar->GetName(), restriction.m_operand1.m_pVar);
+							SFunctor functor;
+							functor.Set(OnCustomOptionCVarChanged, restriction.m_operand1.m_pVar);
+							restriction.m_operand1.m_pVar->AddOnChangeFunctor(functor);
 						}
-						pCallbackFunc = restriction.m_operand2.m_pVar->GetOnChangeCallback();
-						if (pCallbackFunc && pCallbackFunc != CPlaylistManager::OnCustomOptionCVarChanged)
 						{
-							CryFatalError("Can't add callback on operand 2 (%s - %p) - one already exists", restriction.m_operand2.m_pVar->GetName(), restriction.m_operand2.m_pVar);
+							SFunctor functor;
+							functor.Set(OnCustomOptionCVarChanged, restriction.m_operand2.m_pVar);
+							restriction.m_operand2.m_pVar->AddOnChangeFunctor(functor);
 						}
-#endif
-
-						restriction.m_operand1.m_pVar->SetOnChangeCallback(CPlaylistManager::OnCustomOptionCVarChanged);
-						restriction.m_operand2.m_pVar->SetOnChangeCallback(CPlaylistManager::OnCustomOptionCVarChanged);
 
 						m_optionRestrictions.push_back(restriction);
 					}

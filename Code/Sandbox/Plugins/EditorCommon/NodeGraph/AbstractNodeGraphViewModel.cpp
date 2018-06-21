@@ -10,5 +10,4 @@ CNodeGraphViewModel::~CNodeGraphViewModel()
 	SignalDestruction();
 }
 
-}
-
+} // namespace CryGraphEditor

@@ -14,7 +14,6 @@ CNodeGraphViewGraphicsWidget::CNodeGraphViewGraphicsWidget(CNodeGraphView& view)
 	, m_isHighlighted(false)
 	, m_isDeactivated(false)
 {
-
 }
 
 CNodeGraphViewGraphicsWidget::~CNodeGraphViewGraphicsWidget()
@@ -26,6 +25,12 @@ void CNodeGraphViewGraphicsWidget::DeleteLater()
 {
 	GetView().scene()->removeItem(this);
 	deleteLater();
+}
+
+const CNodeGraphViewStyleItem& CNodeGraphViewGraphicsWidget::GetStyle() const
+{
+	static CNodeGraphViewStyleItem style("Default");
+	return style;
 }
 
 void CNodeGraphViewGraphicsWidget::OnItemInvalidated()

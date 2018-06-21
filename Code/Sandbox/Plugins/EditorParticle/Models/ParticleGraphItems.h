@@ -84,9 +84,11 @@ public:
 	CCrySignal<void(bool isVisible)> SignalVisibleChanged;
 
 private:
-	pfx2::IParticleComponent&    m_component;
-	CryGraphEditor::PinItemArray m_pins;
-	FeatureItemArray             m_features;
+	pfx2::IParticleComponent&        m_component;
+	CryGraphEditor::PinItemArray     m_pins;
+	FeatureItemArray                 m_features;
+
+	CryGraphEditor::CNodeEditorData* m_pData;
 };
 
 inline CFeatureItem* CNodeItem::AddFeature(const pfx2::SParticleFeatureParams& featureParams)

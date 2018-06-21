@@ -143,6 +143,10 @@ namespace Schematyc2
 			return SActionPropertiesFactory<PROPERTIES>::CreateProperties();
 		}
 
+		virtual Cry::Type::CTypeDesc GetTypeDesc() const final
+		{
+			return Cry::Type::DescOf<ACTION>();
+		}
 		// ~IActionFactory
 
 	private:

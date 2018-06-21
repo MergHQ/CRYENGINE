@@ -4,6 +4,7 @@
 #include "Core.h"
 
 #include <CryCore/Platform/platform_impl.inl>
+#include <CryReflection/Framework_impl.inl>
 #include <CrySystem/ICryPluginManager.h>
 #include <CryGame/IGameFramework.h>
 
@@ -125,9 +126,9 @@ bool CCore::Initialize(SSystemGlobalEnvironment& env, const SSystemInitParams& i
 		m_pLogFileOutput = m_pLog->CreateFileOutput(logFileName.c_str());
 		SCHEMATYC_CORE_ASSERT(m_pLogFileOutput);
 		RefreshLogFileStreams();
-		CVars::sc_LogFileStreams->SetOnChangeCallback(OnLogFileStreamsChange);
+		CVars::sc_LogFileStreams->AddOnChangeFunctor(SFunctor([]() { OnLogFileStreamsChange(CVars::sc_LogFileStreams); }));
 		RefreshLogFileMessageTypes();
-		CVars::sc_LogFileMessageTypes->SetOnChangeCallback(OnLogFileMessageTypesChange);
+		CVars::sc_LogFileMessageTypes->AddOnChangeFunctor(SFunctor([]() { OnLogFileMessageTypesChange(CVars::sc_LogFileMessageTypes); }));
 	}
 
 	if (CVars::sc_RunUnitTests)

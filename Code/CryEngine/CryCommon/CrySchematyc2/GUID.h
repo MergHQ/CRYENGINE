@@ -223,6 +223,11 @@ namespace Schematyc2
 			sysGUID = StringUtils::SysGUIDFromString(szString);
 		}
 
+		inline void Convert(CryGUID& guid)
+		{
+			guid = cryGUID;
+		}
+
 		inline SGUID(const SGUID& rhs)
 			: cryGUID(rhs.cryGUID)
 		{}

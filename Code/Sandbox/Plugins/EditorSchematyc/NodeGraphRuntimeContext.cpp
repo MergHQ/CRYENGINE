@@ -15,7 +15,8 @@
 #include "VariableStorage/AbstractVariableTypesModel.h"
 
 #include "NodeGraph/NodeWidgetStyle.h"
-#include "NodeGraph/NodeHeaderWidgetStyle.h"
+#include "NodeGraph/TextWidgetStyle.h"
+#include "NodeGraph/HeaderWidgetStyle.h"
 #include "NodeGraph/NodeGraphViewStyle.h"
 #include "NodeGraph/ConnectionWidgetStyle.h"
 #include "NodeGraph/NodePinWidgetStyle.h"
@@ -86,7 +87,7 @@ public:
 			{
 				if (const CryGraphEditor::CNodeWidgetStyle* pNodeStyle = pStyle->GetNodeWidgetStyle(szStyleId))
 				{
-					pIcon = &pNodeStyle->GetMenuIcon();
+					pIcon = &pNodeStyle->GetTypeIcon();
 				}
 			}
 
@@ -112,7 +113,7 @@ public:
 			{
 				if (const CryGraphEditor::CNodeWidgetStyle* pNodeStyle = pStyle->GetNodeWidgetStyle(szStyleId))
 				{
-					pIcon = &pNodeStyle->GetMenuIcon();
+					pIcon = &pNodeStyle->GetTypeIcon();
 				}
 			}
 
@@ -320,13 +321,14 @@ void CNodesDictionary::LoadLoadsFromScriptGraph(Schematyc::IScriptGraph& scriptG
 void AddNodeStyle(CryGraphEditor::CNodeGraphViewStyle& viewStyle, const char* szStyleId, const char* szIcon, QColor color, bool coloredHeaderIconText = true)
 {
 	CryGraphEditor::CNodeWidgetStyle* pStyle = new CryGraphEditor::CNodeWidgetStyle(szStyleId, viewStyle);
-	CryGraphEditor::CNodeHeaderWidgetStyle& headerStyle = pStyle->GetHeaderWidgetStyle();
+	CryGraphEditor::CTextWidgetStyle& textStyle = pStyle->GetHeaderTextStyle();
+	CryGraphEditor::CHeaderWidgetStyle& headerStyle = pStyle->GetHeaderWidgetStyle();
 
 	headerStyle.SetNodeIconMenuColor(color);
 
 	if (coloredHeaderIconText)
 	{
-		headerStyle.SetNameColor(color);
+		textStyle.SetTextColor(color);
 		headerStyle.SetLeftColor(QColor(26, 26, 26));
 		headerStyle.SetRightColor(QColor(26, 26, 26));
 		headerStyle.SetNodeIconViewDefaultColor(color);
@@ -338,7 +340,7 @@ void AddNodeStyle(CryGraphEditor::CNodeGraphViewStyle& viewStyle, const char* sz
 	}
 	else
 	{
-		headerStyle.SetNameColor(QColor(26, 26, 26));
+		textStyle.SetTextColor(QColor(26, 26, 26));
 		headerStyle.SetLeftColor(color);
 		headerStyle.SetRightColor(color);
 		headerStyle.SetNodeIconViewDefaultColor(QColor(26, 26, 26));

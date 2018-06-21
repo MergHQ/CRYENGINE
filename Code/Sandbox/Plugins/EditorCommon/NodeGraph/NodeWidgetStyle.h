@@ -12,7 +12,7 @@
 
 namespace CryGraphEditor {
 
-class CNodeHeaderWidgetStyle;
+class CHeaderWidgetStyle;
 class CNodeContentWidgetStyle;
 class CNodeInfoWidgetStyle;
 
@@ -20,7 +20,7 @@ class EDITOR_COMMON_API CNodeWidgetStyle : public CNodeGraphViewStyleItem
 {
 	Q_OBJECT;
 
-	friend class CNodeHeaderWidgetStyle;
+	friend class CHeaderWidgetStyle;
 	friend class CNodeContentWidgetStyle;
 	friend class CNodeInfoWidgetStyle;
 
@@ -45,25 +45,17 @@ public:
 	QMargins                       GetMargins() const                     { return m_margins; }
 	void                           SetMargins(QMargins margins)           { m_margins = margins; }
 
-	const CNodeHeaderWidgetStyle&  GetHeaderWidgetStyle() const           { return *m_pHeaderStyle; }
 	const CNodeContentWidgetStyle& GetContentWidgetStyle() const          { return *m_pContentStyle; }
 	const CNodeInfoWidgetStyle&    GetInfoWidgetStyle() const             { return *m_pInfoWidgetStyle; }
 
-	CNodeHeaderWidgetStyle&        GetHeaderWidgetStyle()                 { return *m_pHeaderStyle; }
 	CNodeContentWidgetStyle&       GetContentWidgetStyle()                { return *m_pContentStyle; }
 	CNodeInfoWidgetStyle&          GetInfoWidgetStyle()                   { return *m_pInfoWidgetStyle; }
 
-	const QColor& GetSelectionColor() const              { return GetViewStyle()->GetSelectionColor(); }
-	const QColor& GetHighlightColor() const              { return GetViewStyle()->GetHighlightColor(); }
-	const QIcon&  GetMenuIcon() const;
-
 protected:
-	virtual CNodeHeaderWidgetStyle*  CreateHeaderWidgetStyle();
 	virtual CNodeContentWidgetStyle* CreateContentWidgetStyle();
 	virtual CNodeInfoWidgetStyle*    CreateInfoWidgetStyle();
 
 private:
-	CNodeHeaderWidgetStyle*  m_pHeaderStyle;
 	CNodeContentWidgetStyle* m_pContentStyle;
 	CNodeInfoWidgetStyle*    m_pInfoWidgetStyle;
 

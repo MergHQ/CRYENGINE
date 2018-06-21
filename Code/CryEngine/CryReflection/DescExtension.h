@@ -2,42 +2,44 @@
 
 #pragma once
 
-#include <CryType/Type.h>
 #include <CryReflection/IDescExtension.h>
-
-#include <CryExtension/CryGUID.h>
 
 #include <vector>
 
 namespace Cry {
 namespace Reflection {
 
-// TODO: Probably make 'const CDescExtension*' a shared pointer.
-typedef std::vector<const CDescExtension*> ExtensionsByTypeId;
-// ~TODO
-
 template<typename INTERFACE_TYPE>
 class CExtensibleDesc : public INTERFACE_TYPE
 {
 public:
 	CExtensibleDesc() {}
-	~CExtensibleDesc() {}
+	~CExtensibleDesc();
 
 	// IExtensibleDesc
-	bool                  AddExtension(const CDescExtension* pExtension) const;
-	const CDescExtension* FindExtensionByTypeId(CryTypeId typeId) const;
+	virtual bool            AddExtension(CDescExtension* pExtension) const override;
+	virtual CDescExtension* FindExtensionByTypeId(CTypeId typeId) const override;
 	// ~IExtensibleDesc
 
 protected:
 	// Note: We always allow to add extensions even though it's a const object.
-	mutable ExtensionsByTypeId m_extensions;
+	mutable std::vector<CDescExtension*> m_extensions;
 };
 
 template<typename INTERFACE_TYPE>
-inline bool CExtensibleDesc<INTERFACE_TYPE >::AddExtension(const CDescExtension* pExtension) const
+inline CExtensibleDesc<INTERFACE_TYPE>::~CExtensibleDesc()
 {
-	const CryTypeId typeId = pExtension->GetTypeId();
-	auto condition = [typeId](const CDescExtension* pExtension) -> bool
+	for (CDescExtension* pExtension : m_extensions)
+	{
+		delete pExtension;
+	}
+}
+
+template<typename INTERFACE_TYPE>
+inline bool CExtensibleDesc<INTERFACE_TYPE >::AddExtension(CDescExtension* pExtension) const
+{
+	const CTypeId typeId = pExtension->GetTypeId();
+	auto condition = [typeId](CDescExtension* pExtension) -> bool
 	{
 		return pExtension->GetTypeId() == typeId;
 	};
@@ -54,9 +56,9 @@ inline bool CExtensibleDesc<INTERFACE_TYPE >::AddExtension(const CDescExtension*
 }
 
 template<typename INTERFACE_TYPE>
-inline const CDescExtension* CExtensibleDesc<INTERFACE_TYPE >::FindExtensionByTypeId(CryTypeId typeId) const
+inline CDescExtension* CExtensibleDesc<INTERFACE_TYPE >::FindExtensionByTypeId(CTypeId typeId) const
 {
-	auto condition = [typeId](const CDescExtension* pExtension) -> bool
+	auto condition = [typeId](CDescExtension* pExtension) -> bool
 	{
 		return pExtension->GetTypeId() == typeId;
 	};

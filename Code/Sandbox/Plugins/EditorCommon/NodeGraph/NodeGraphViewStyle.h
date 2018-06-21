@@ -14,6 +14,8 @@
 namespace CryGraphEditor {
 
 class CNodeWidgetStyle;
+class CGroupWidgetStyle;
+class CCommentWidgetStyle;
 class CConnectionWidgetStyle;
 class CNodePinWidgetStyle;
 
@@ -52,6 +54,12 @@ public:
 	void                          RegisterNodeWidgetStyle(CNodeWidgetStyle* pStyle);
 	const CNodeWidgetStyle*       GetNodeWidgetStyle(const char* styleId) const;
 
+	void                          RegisterGroupWidgetStyle(CGroupWidgetStyle* pStyle);
+	const CGroupWidgetStyle*      GetGroupWidgetStyle(const char* styleId) const;
+
+	void                          RegisterCommentWidgetStyle(CCommentWidgetStyle* pStyle);
+	const CCommentWidgetStyle*    GetCommentWidgetStyle(const char* styleId) const;
+
 	void                          RegisterConnectionWidgetStyle(CConnectionWidgetStyle* pStyle);
 	const CConnectionWidgetStyle* GetConnectionWidgetStyle(const char* styleId) const;
 
@@ -88,6 +96,8 @@ public:
 
 private:
 	std::unordered_map<StyleIdHash, CNodeWidgetStyle*>       m_nodeWidgetStylesById;
+	std::unordered_map<StyleIdHash, CGroupWidgetStyle*>      m_groupWidgetStylesById;
+	std::unordered_map<StyleIdHash, CCommentWidgetStyle*>    m_commentWidgetStylesById;
 	std::unordered_map<StyleIdHash, CConnectionWidgetStyle*> m_connectionWidgetStylesById;
 	std::unordered_map<StyleIdHash, CNodePinWidgetStyle*>    m_pinWidgetStylesById;
 

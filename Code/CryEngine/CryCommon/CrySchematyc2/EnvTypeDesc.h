@@ -86,6 +86,10 @@ namespace Schematyc2
 			return MakeAnyShared(m_defaultValue);
 		}
 
+		virtual Cry::Type::CTypeDesc GetTypeDesc() const final
+		{
+			return Cry::Type::DescOf<TYPE>();
+		}
 		// ITypeDesc
 
 	private:

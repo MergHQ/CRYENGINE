@@ -17,6 +17,7 @@
 #include "CrySchematyc2/IProperties.h"
 #include "CrySchematyc2/Deprecated/Variant.h"
 #include "CrySchematyc2/Env/EnvTypeId.h"
+#include <CryReflection/IFunctionDesc.h>
 
 struct SRendParams;
 struct SRenderingPassInfo;
@@ -109,6 +110,7 @@ namespace Schematyc2
 		virtual const char* GetOutputDescription(uint32 outputIdx) const = 0;
 		virtual TVariantConstArray GetVariantOutputs() const = 0;
 		virtual void Call(IComponent& component, const TVariantConstArray& inputs, const TVariantArray& outputs) const = 0;
+		virtual const Cry::Reflection::CFunction& GetFunction() const = 0;
 
 		template <typename TYPE> inline void BindInput(uint32 paramIdx, const char* szName, const char* szDescription, const TYPE& value)
 		{
@@ -183,6 +185,7 @@ namespace Schematyc2
 		virtual const char* GetOutputDescription(uint32 outputIdx) const = 0;
 		virtual TVariantConstArray GetVariantOutputs() const = 0;
 		virtual void Call(IAction& action, const TVariantConstArray& inputs, const TVariantArray& outputs) const = 0;
+		virtual const Cry::Reflection::CFunction& GetFunction() const = 0;
 
 		template <typename TYPE> inline void BindInput(uint32 paramIdx, const char* szName, const char* szDescription, const TYPE& value)
 		{

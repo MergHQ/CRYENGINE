@@ -572,10 +572,12 @@ bool QDeepFilterProxyModel::rowMatchesFilter(int sourceRow, const QModelIndex& s
 			{
 				QModelIndex sourceIndex = model->index(sourceRow, column, sourceParent);
 				QString data = sourceIndex.data(filterRole()).toString();
-				if (!p->MatchTokenSearch(data))
-					return false;
+				if (p->MatchTokenSearch(data))
+				{
+					return true;
+				}
 			}
-			return true;
+			return false;
 		}
 		else
 		{

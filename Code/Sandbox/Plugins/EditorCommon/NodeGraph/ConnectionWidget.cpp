@@ -61,6 +61,11 @@ void CConnectionWidget::DeleteLater()
 	SetTargetConnectionPoint(nullptr);
 }
 
+const CNodeGraphViewStyleItem& CConnectionWidget::GetStyle() const
+{
+	return *m_pStyle;
+}
+
 void CConnectionWidget::SetSourceConnectionPoint(const CConnectionPoint* pPoint)
 {
 	if (m_pSourcePoint)

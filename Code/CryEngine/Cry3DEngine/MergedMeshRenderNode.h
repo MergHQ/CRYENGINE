@@ -653,6 +653,9 @@ class CMergedMeshesManager
 	DynArray<SMeshAreaCluster> m_clusters;
 #endif // MMRM_CLUSTER_VISUALIZATION
 
+	uint64 m_lodRatioCallbackIndex = -1;
+	uint64 m_viewDistRatioCallbackIndex = -1;
+
 	CMergedMeshRenderNode* FindNode(const Vec3& pos);
 
 	void                   AddProjectile(const SProjectile&);

@@ -83,7 +83,7 @@ CBreakableGlassSystem::CBreakableGlassSystem()
 	if (pSysEnabledCvar)
 	{
 		m_enabled = (pSysEnabledCvar->GetIVal() != 0);
-		pSysEnabledCvar->SetOnChangeCallback(OnEnabledCVarChange);
+		m_enableCallbackIndex = pSysEnabledCvar->AddOnChangeFunctor(SFunctor([pSysEnabledCvar]() { OnEnabledCVarChange(pSysEnabledCvar); }));
 	}
 }//-------------------------------------------------------------------------------------------------
 
@@ -128,13 +128,12 @@ CBreakableGlassSystem::~CBreakableGlassSystem()
 
 	SAFE_DELETE(m_pGlassCVars);
 
-	// Remove system enabled cvar callback
-	IConsole* pConsole = gEnv->pConsole;
-	ICVar* pSysEnabledCVar = pConsole ? pConsole->GetCVar("g_glassSystemEnable") : NULL;
-
-	if (pSysEnabledCVar)
+	if (m_enableCallbackIndex != -1)
 	{
-		pSysEnabledCVar->SetOnChangeCallback(NULL);
+		if (ICVar* pSysEnabledCvar = gEnv->pConsole->GetCVar("g_glassSystemEnable"))
+		{
+			pSysEnabledCvar->RemoveOnChangeFunctor(m_enableCallbackIndex);
+		}
 	}
 
 	// Remove physics callback

@@ -58,6 +58,7 @@ enum EGraphViewWidgetType : int32
 	eGraphViewWidgetType_NodeWidget,
 	eGraphViewWidgetType_ConnectionWidget,
 	eGraphViewWidgetType_GroupWidget,
+	eGraphViewWidgetType_CommentWidget,
 
 	eGraphViewWidgetType_UserType
 };

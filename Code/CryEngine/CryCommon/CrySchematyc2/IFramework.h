@@ -11,90 +11,109 @@
 #include <CrySchematyc2/IBaseEnv.h>
 #include <CrySchematyc2/ILibRegistry.h>
 
-namespace Schematyc2
+
+namespace Cry {
+namespace Schematyc {
+
+struct IRuntime;
+
+struct ICore
 {
-	struct ICompiler;
-	struct IDomainContext;
-	struct IEnvRegistry;
-	struct ILibRegistry;
-	struct ILog;
-	struct ILogRecorder;
-	struct IObjectManager;
-	struct IScriptRegistry;
-	struct ISerializationContext;
-	struct IStringPool;
-	struct ITimerSystem;
-	struct IUpdateScheduler;
-	struct IValidatorArchive;
-	struct IResourceCollectorArchive;
-	struct IGameResourceList;
+	virtual IRuntime* GetGameRuntime() const = 0;
+	virtual IRuntime* CreateEditorRuntime() = 0;
+};
 
-	struct SDomainContextScope;
-	struct SGUID;
-	struct SSerializationContextParams;
-	struct SValidatorArchiveParams;
+} // ~Schematyc namespace
+} // ~Cry namespace
 
-	class CUpdateRelevanceContext;
+namespace Schematyc2 {
 
-	DECLARE_SHARED_POINTERS(IDomainContext)
-	DECLARE_SHARED_POINTERS(ISerializationContext)
-	DECLARE_SHARED_POINTERS(IValidatorArchive)
-	DECLARE_SHARED_POINTERS(IResourceCollectorArchive)
-	DECLARE_SHARED_POINTERS(IGameResourceList)
+struct ICompiler;
+struct IDomainContext;
+struct IEnvRegistry;
+struct ILibRegistry;
+struct ILog;
+struct ILogRecorder;
+struct IObjectManager;
+struct IScriptRegistry;
+struct ISerializationContext;
+struct IStringPool;
+struct ITimerSystem;
+struct IUpdateScheduler;
+struct IValidatorArchive;
+struct IResourceCollectorArchive;
+struct IGameResourceList;
 
-	typedef TemplateUtils::CDelegate<SGUID ()> GUIDGenerator;
-	typedef TemplateUtils::CSignalv2<void ()>  EnvRefreshSignal;
+struct SDomainContextScope;
+struct SGUID;
+struct SSerializationContextParams;
+struct SValidatorArchiveParams;
 
-	struct SFrameworkSignals
-	{
-		EnvRefreshSignal envRefresh;
-	};
+class CUpdateRelevanceContext;
 
-	struct IFramework : public Cry::IDefaultModule
-	{
-		CRYINTERFACE_DECLARE_GUID(IFramework, "{C2D28CFF-542F-448E-9499-653C4077F28E}"_cry_guid);
+DECLARE_SHARED_POINTERS(IDomainContext)
+DECLARE_SHARED_POINTERS(ISerializationContext)
+DECLARE_SHARED_POINTERS(IValidatorArchive)
+DECLARE_SHARED_POINTERS(IResourceCollectorArchive)
+DECLARE_SHARED_POINTERS(IGameResourceList)
 
-		// #SchematycTODO : Clean up this interface!
+typedef TemplateUtils::CDelegate<SGUID()> GUIDGenerator;
+typedef TemplateUtils::CSignalv2<void ()> EnvRefreshSignal;
 
-		virtual void SetGUIDGenerator(const GUIDGenerator& guidGenerator) = 0;
-		virtual SGUID CreateGUID() const = 0;
+struct SFrameworkSignals
+{
+	EnvRefreshSignal envRefresh;
+};
 
-		virtual IStringPool& GetStringPool() = 0;
-		virtual IEnvRegistry& GetEnvRegistry() = 0;
-		virtual SchematycBaseEnv::IBaseEnv& GetBaseEnv() = 0;
-		virtual ILibRegistry& GetLibRegistry() = 0;
+struct IFramework : public Cry::IDefaultModule, public Cry::Schematyc::ICore
+{
+	CRYINTERFACE_DECLARE_GUID(IFramework, "{C2D28CFF-542F-448E-9499-653C4077F28E}"_cry_guid);
 
-		virtual const char* GetFileFormat() const = 0;
-		virtual const char* GetRootFolder() const = 0;
-		virtual const char* GetOldScriptsFolder() const = 0; 
-		virtual const char* GetOldScriptExtension() const = 0;
-		virtual const char* GetScriptsFolder() const = 0; // #SchematycTODO : Do we really need access to this outside script registry?
-		virtual const char* GetSettingsFolder() const = 0; // #SchematycTODO : Do we really need access to this outside env registry?
-		virtual const char* GetSettingsExtension() const = 0; // #SchematycTODO : Use GetFileFormat() instead?
-		virtual bool IsExperimentalFeatureEnabled(const char* szFeatureName) const = 0;
+	// TODO : Clean up this interface!
+	virtual void                         SetGUIDGenerator(const GUIDGenerator& guidGenerator) = 0; // Deprecated
+	virtual SGUID                        CreateGUID() const = 0;                                   // Deprecated
 
-		virtual IScriptRegistry& GetScriptRegistry() = 0;
-		virtual ICompiler& GetCompiler() = 0;
-		virtual IObjectManager& GetObjectManager() = 0;
-		virtual ILog& GetLog() = 0;
-		virtual ILogRecorder& GetLogRecorder() = 0;
-		virtual IUpdateScheduler& GetUpdateScheduler() = 0;
-		virtual ITimerSystem& GetTimerSystem() = 0;
+	virtual IStringPool&                 GetStringPool() = 0;  // Deprecated
+	virtual IEnvRegistry&                GetEnvRegistry() = 0; // Deprecated
+	virtual SchematycBaseEnv::IBaseEnv&  GetBaseEnv() = 0;     // Deprecated
+	virtual ILibRegistry&                GetLibRegistry() = 0; // Deprecated
 
-		virtual ISerializationContextPtr CreateSerializationContext(const SSerializationContextParams& params) const = 0;
-		virtual IDomainContextPtr CreateDomainContext(const SDomainContextScope& scope) const = 0;
-		virtual IValidatorArchivePtr CreateValidatorArchive(const SValidatorArchiveParams& params) const = 0;
+	virtual const char*                  GetFileFormat() const = 0;         // Deprecated
+	virtual const char*                  GetRootFolder() const = 0;         // Deprecated
+	virtual const char*                  GetOldScriptsFolder() const = 0;   // Deprecated
+	virtual const char*                  GetOldScriptExtension() const = 0; // Deprecated
 
-		virtual IGameResourceListPtr CreateGameResoucreList() const = 0;
-		virtual IResourceCollectorArchivePtr CreateResourceCollectorArchive(IGameResourceListPtr pResourceList) const = 0;
+	virtual const char*                  GetScriptsFolder() const = 0;     // Deprecated
+	virtual const char*                  GetSettingsFolder() const = 0;    // Deprecated
+	virtual const char*                  GetSettingsExtension() const = 0; // Deprecated
 
-		virtual void RefreshLogFileSettings() = 0;
-		virtual void RefreshEnv() = 0;
+	virtual bool                         IsExperimentalFeatureEnabled(const char* szFeatureName) const = 0;
 
-		virtual SFrameworkSignals& Signals() = 0;
+	virtual IScriptRegistry&             GetScriptRegistry() = 0;  // Deprecated
+	virtual ICompiler&                   GetCompiler() = 0;        // Deprecated
+	virtual IObjectManager&              GetObjectManager() = 0;   // Deprecated
+	virtual ILog&                        GetLog() = 0;             // Deprecated
+	virtual ILogRecorder&                GetLogRecorder() = 0;     // Deprecated
+	virtual IUpdateScheduler&            GetUpdateScheduler() = 0; // Deprecated
+	virtual ITimerSystem&                GetTimerSystem() = 0;     // Deprecated
 
-		virtual void PrePhysicsUpdate() = 0;
-		virtual void Update() = 0;
-		virtual void SetUpdateRelevancyContext(CUpdateRelevanceContext& context) = 0;
-	};
-}
+	virtual ISerializationContextPtr     CreateSerializationContext(const SSerializationContextParams& params) const = 0; // Deprecated
+	virtual IDomainContextPtr            CreateDomainContext(const SDomainContextScope& scope) const = 0;                 // Deprecated
+	virtual IValidatorArchivePtr         CreateValidatorArchive(const SValidatorArchiveParams& params) const = 0;         // Deprecated
+
+	virtual IGameResourceListPtr         CreateGameResoucreList() const = 0;                                           // Deprecated
+	virtual IResourceCollectorArchivePtr CreateResourceCollectorArchive(IGameResourceListPtr pResourceList) const = 0; // Deprecated
+
+	virtual void                         RefreshLogFileSettings() = 0; // Deprecated
+	virtual void                         RefreshEnv() = 0;             // Deprecated
+
+	virtual SFrameworkSignals& Signals() = 0; // Deprecated
+
+	virtual void               PrePhysicsUpdate() = 0;
+	virtual void               Update() = 0;
+	virtual void               SetUpdateRelevancyContext(CUpdateRelevanceContext& context) = 0;
+
+	virtual void SetEnvRegistryBridge(IEnvRegistry* pEnvRegistry) = 0;
+};
+
+} // ~Schematyc2 namespace

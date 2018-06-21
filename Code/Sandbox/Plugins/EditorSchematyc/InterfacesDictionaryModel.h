@@ -30,7 +30,7 @@ public:
 	virtual uint32   GetType() const override { return CAbstractDictionaryEntry::Type_Entry; }
 
 	virtual QVariant GetColumnValue(int32 columnIndex) const override;
-	virtual QString  GetToolTip() const override;
+	virtual QString  GetToolTip(int32 columnIndex) const override;
 	// ~CAbstractDictionaryEntry
 
 	QString            GetName() const    { return m_name; }

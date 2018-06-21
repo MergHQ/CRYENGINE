@@ -470,7 +470,7 @@ void CSysSpecOption::InitializeFromProfile()
 			m_currentValue.Format("%d", pSysSpecCVar->GetIVal());//reset to what was specified by cfg's
 		}
 		ScopedConsoleLoadConfigType consoleType(GetISystem()->GetIConsole(), eLoadConfigGame);
-		var->Set(m_currentValue.c_str());
+		var->SetFromString(m_currentValue.c_str());
 	}
 }
 

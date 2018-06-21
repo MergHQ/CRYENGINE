@@ -2,11 +2,11 @@
 
 #pragma once
 
-#include "../CryCore/CryCrc32.h"
-#include "../CryString/CryString.h"
+#include <CryType/TypeTraits.h>
+#include <CryType/TypeOperators.h>
 
-#include "TypeTraits.h"
-#include "TypeOperators.h"
+#include <CryCore/CryCrc32.h>
+#include <CryString/CryString.h>
 
 namespace Cry {
 namespace Type {
@@ -54,6 +54,11 @@ struct Explicit {};
 template<typename T>
 struct SCompileTime_TypeInfo
 {
+	constexpr static CCompileTime_String GetNamePointer()
+	{
+		return TypeName();
+	}
+
 	constexpr static CCompileTime_String GetName()
 	{
 		return TypeName();
@@ -61,11 +66,15 @@ struct SCompileTime_TypeInfo
 
 	constexpr static uint32 GetCrc32()
 	{
+#if _MSC_VER < 1910
+		return CCrc32::Compute_CompileTime(__FUNCTION__);
+#else
 		return ComputeCrc(TypeName());
+#endif
 	}
 
 private:
-	constexpr static uint32 ComputeCrc(CCompileTime_String str)
+	constexpr static uint32 ComputeCrc(const CCompileTime_String str)
 	{
 		return CCrc32::Compute_CompileTime(str.c_str(), str.length());
 	}
@@ -75,7 +84,7 @@ private:
 #if defined (CRY_PLATFORM_ORBIS) /*|| defined(CRY_PLATFORM_ANDROID) || defined(CRY_PLATFORM_APPLE) || defined(CRY_PLATFORM_LINUX)*/
 		return CCompileTime_String(__PRETTY_FUNCTION__ + GetTypeNameBegin(__PRETTY_FUNCTION__), GetTypeNameLength(__PRETTY_FUNCTION__));
 #elif defined (CRY_PLATFORM_WINDOWS) || defined(CRY_PLATFORM_DURANGO)
-		return CCompileTime_String(__FUNCTION__ + GetTypeNameBegin(__FUNCTION__), GetTypeNameLength(__FUNCTION__));
+		return CCompileTime_String(&__FUNCTION__[GetTypeNameBegin(__FUNCTION__)], GetTypeNameLength(__FUNCTION__));
 #else
 		return CCompileTime_String(__PRETTY_FUNCTION__);
 #endif
@@ -83,57 +92,71 @@ private:
 
 	enum { Offset = sizeof("Cry::Type::Utils::CompileTime_TypeInfo<") };
 
-	constexpr static uint32 GetTypeNameBegin(CCompileTime_String str)
+	template<size_t LENGTH>
+	constexpr static uint32 GetTypeNameBegin(const char(&charArray)[LENGTH])
 	{
 		// TODO: Validate that this runs on the commented out platforms.
 #if defined(CRY_PLATFORM_ORBIS) /*|| defined(CRY_PLATFORM_ANDROID) || defined(CRY_PLATFORM_APPLE) || defined(CRY_PLATFORM_LINUX)*/
-		return sizeof("static Cry::Type::Utils::CCompileTime_String Cry::Type::Utils::SCompileTime_TypeInfo<") - 1;
+		return static_cast<uint32>(sizeof("static Cry::Type::Utils::CCompileTime_String Cry::Type::Utils::SCompileTime_TypeInfo<") - 1);
 #elif defined(CRY_PLATFORM_WINDOWS) || defined(CRY_PLATFORM_DURANGO)
-		return str[Offset + 0] == 'c' && str[Offset + 1] == 'l' && str[Offset + 2] == 'a' && str[Offset + 3] == 's' && str[Offset + 4] == 's' && str[Offset + 5] == ' ' ?
-		       sizeof("Cry::Type::Utils::CompileTime_TypeInfo<class ")
-		       : str[Offset + 0] == 's' && str[Offset + 1] == 't' && str[Offset + 2] == 'r' && str[Offset + 3] == 'u' && str[Offset + 4] == 'c' && str[Offset + 5] == 't' && str[Offset + 6] == ' ' ?
-		       sizeof("Cry::Type::Utils::CompileTime_TypeInfo<struct ")
-		       : str[Offset + 0] == 'e' && str[Offset + 1] == 'n' && str[Offset + 2] == 'u' && str[Offset + 3] == 'm' && str[Offset + 4] == ' ' ?
-		       sizeof("Cry::Type::Utils::CompileTime_TypeInfo<enum ")
-		       : Offset;
+		return static_cast<uint32>(
+			charArray[Offset + 0] == 'c' &&
+			charArray[Offset + 1] == 'l' &&
+			charArray[Offset + 2] == 'a' &&
+			charArray[Offset + 3] == 's' &&
+			charArray[Offset + 4] == 's' &&
+			charArray[Offset + 5] == ' ' ? sizeof("Cry::Type::Utils::CompileTime_TypeInfo<class ") :
+			charArray[Offset + 0] == 's' &&
+			charArray[Offset + 1] == 't' &&
+			charArray[Offset + 2] == 'r' &&
+			charArray[Offset + 3] == 'u' &&
+			charArray[Offset + 4] == 'c' &&
+			charArray[Offset + 5] == 't' &&
+			charArray[Offset + 6] == ' ' ? sizeof("Cry::Type::Utils::CompileTime_TypeInfo<struct ") :
+			charArray[Offset + 0] == 'e' &&
+			charArray[Offset + 1] == 'n' &&
+			charArray[Offset + 2] == 'u' &&
+			charArray[Offset + 3] == 'm' &&
+			charArray[Offset + 4] == ' ' ? sizeof("Cry::Type::Utils::CompileTime_TypeInfo<enum ") : Offset);
 #else
 		return 0;
 #endif
 	}
 
-	constexpr static uint32 GetTypeNameLength(CCompileTime_String str)
+	template<size_t LENGTH>
+	constexpr static uint32 GetTypeNameLength(const char(&charArray)[LENGTH])
 	{
-		return FindTypeNameEnd(CCompileTime_String(str.c_str() + GetTypeNameBegin(str), str.length() - GetTypeNameBegin(str)), 0);
+		return FindTypeNameEnd(charArray + GetTypeNameBegin(charArray), LENGTH - GetTypeNameBegin(charArray), 0);
 	}
 
-	constexpr static uint32 FindTypeNameEnd(CCompileTime_String str, size_t fromIndex)
+	constexpr static uint32 FindTypeNameEnd(const char* szData, size_t length, size_t fromIndex)
 	{
 		// TODO: Validate that this runs on the commented out platforms.
 #if defined(CRY_PLATFORM_ORBIS) /*|| defined(CRY_PLATFORM_ANDROID) || defined(CRY_PLATFORM_APPLE) || defined(CRY_PLATFORM_LINUX)*/
 
-		return str[fromIndex + 0] == '>' &&
-		       str[fromIndex + 1] == ':' &&
-		       str[fromIndex + 2] == ':' &&
-		       str[fromIndex + 3] == 'T' &&
-		       str[fromIndex + 4] == 'y' &&
-		       str[fromIndex + 5] == 'p' &&
-		       str[fromIndex + 6] == 'e' &&
-		       str[fromIndex + 7] == 'N' &&
-		       str[fromIndex + 8] == 'a' &&
-		       str[fromIndex + 9] == 'm' &&
-		       str[fromIndex + 10] == 'e' &&
-		       str[fromIndex + 11] == '(' &&
-		       str[fromIndex + 12] == ')' &&
-		       str[fromIndex + 13] == ' ' &&
-		       str[fromIndex + 14] == '[' &&
-		       str[fromIndex + 15] == 'T' &&
-		       str[fromIndex + 16] == ' ' &&
-		       str[fromIndex + 17] == '=' &&
-		       str[fromIndex + 18] == ' '
-		       ? str[fromIndex - 1] != ' ' ? fromIndex : fromIndex - 1
-		       : FindTypeNameEnd(str, fromIndex + 1);
+		return szData[fromIndex + 0] == '>' &&
+		       szData[fromIndex + 1] == ':' &&
+		       szData[fromIndex + 2] == ':' &&
+		       szData[fromIndex + 3] == 'T' &&
+		       szData[fromIndex + 4] == 'y' &&
+		       szData[fromIndex + 5] == 'p' &&
+		       szData[fromIndex + 6] == 'e' &&
+		       szData[fromIndex + 7] == 'N' &&
+		       szData[fromIndex + 8] == 'a' &&
+		       szData[fromIndex + 9] == 'm' &&
+		       szData[fromIndex + 10] == 'e' &&
+		       szData[fromIndex + 11] == '(' &&
+		       szData[fromIndex + 12] == ')' &&
+		       szData[fromIndex + 13] == ' ' &&
+		       szData[fromIndex + 14] == '[' &&
+		       szData[fromIndex + 15] == 'T' &&
+		       szData[fromIndex + 16] == ' ' &&
+		       szData[fromIndex + 17] == '=' &&
+		       szData[fromIndex + 18] == ' '
+		       ? szData[fromIndex - 1] != ' ' ? fromIndex : fromIndex - 1
+		       : FindTypeNameEnd(szData, length, fromIndex + 1);
 #elif defined (CRY_PLATFORM_WINDOWS) || defined(CRY_PLATFORM_DURANGO)
-		return str.length() - (str[str.length() - sizeof(" >::TypeName")] != ' ' ? sizeof(">::TypeName") : sizeof(" >::TypeName"));
+		return static_cast<uint32>(length - (szData[length - sizeof(" >::TypeName")] != ' ' ? sizeof(">::TypeName") : sizeof(" >::TypeName")));
 #else
 		return 0;
 #endif
@@ -162,5 +185,5 @@ struct AlignOf<TYPE, true>
 };
 // ~TODO
 
-} // ~Reflection namespace
+} // ~Type namespace
 } // ~Cry namespace

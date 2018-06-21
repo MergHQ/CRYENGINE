@@ -2178,7 +2178,10 @@ bool CMergedMeshRenderNode::PrepareRenderMesh(RENDERMESH_UPDATE_TYPE type)
 			resize_list(header->spines, header->numSamples * header->procGeom->numSpineVtx, 128);
 			for (size_t j = 0, base = 0; j < header->numSamples; ++j)
 			{
-				uint16 pos[3] = { uint16(header->instances[j].pos_x), uint16(header->instances[j].pos_y), uint16(header->instances[j].pos_z) };
+				uint16 pos[3];
+				pos[0] = static_cast<uint16>(header->instances[j].pos_x);
+				pos[1] = static_cast<uint16>(header->instances[j].pos_y);
+				pos[2] = static_cast<uint16>(header->instances[j].pos_z);
 				const float fScale = (1.f / VEGETATION_CONV_FACTOR) * header->instances[j].scale;
 				DecompressQuat(q, header->instances[j]);
 				Matrix34 wmat = CreateRotationQ(q, ConvertInstanceAbsolute(pos, vInternalAABBMin, m_pos, m_zRotation, fExtents));
@@ -3830,9 +3833,13 @@ void CMergedMeshesManager::Init()
 {
 	s_GeomManager.Initialize(gEnv->pJobManager->GetNumWorkerThreads());
 	if (ICVar* pVar = gEnv->pConsole->GetCVar("e_MergedMeshesLodRatio"))
-		pVar->SetOnChangeCallback(UpdateRatios);
+	{
+		m_lodRatioCallbackIndex = pVar->AddOnChangeFunctor(SFunctor([pVar]() { UpdateRatios(pVar); }));
+	}
 	if (ICVar* pVar = gEnv->pConsole->GetCVar("e_MergedMeshesViewDistRatio"))
-		pVar->SetOnChangeCallback(UpdateRatios);
+	{
+		m_viewDistRatioCallbackIndex = pVar->AddOnChangeFunctor(SFunctor([pVar]() { UpdateRatios(pVar); }));
+	}
 
 	if (!s_MergedMeshPool)
 	{
@@ -3855,12 +3862,22 @@ void CMergedMeshesManager::Init()
 void CMergedMeshesManager::Shutdown()
 {
 	MEMORY_SCOPE_CHECK_HEAP();
-	if (ICVar* pVar = gEnv->pConsole->GetCVar("e_MergedMeshesLodRatio"))
-		pVar->SetOnChangeCallback(NULL);
-	if (ICVar* pVar = gEnv->pConsole->GetCVar("e_MergedMeshesViewDistRatio"))
-		pVar->SetOnChangeCallback(NULL);
+	if (m_lodRatioCallbackIndex != -1)
+	{
+		if (ICVar* pVar = gEnv->pConsole->GetCVar("e_MergedMeshesLodRatio"))
+			pVar->RemoveOnChangeFunctor(m_lodRatioCallbackIndex);
+		m_lodRatioCallbackIndex = -1;
+	}
+	if (m_viewDistRatioCallbackIndex != -1)
+	{
+		if (ICVar* pVar = gEnv->pConsole->GetCVar("e_MergedMeshesViewDistRatio"))
+			pVar->RemoveOnChangeFunctor(m_viewDistRatioCallbackIndex);
+		m_viewDistRatioCallbackIndex = -1;
+	}
 	for (size_t i = 0; i < HashDimXY; ++i)
+	{
 		for (size_t j = 0; j < HashDimXY; ++j)
+		{
 			for (size_t k = 0; k < HashDimZ; ++k)
 			{
 				NodeListT& list = m_Nodes[i][j][k];
@@ -3868,6 +3885,8 @@ void CMergedMeshesManager::Shutdown()
 					CryFatalError("Node list not empty. (THIS SHOULD NEVER HAPPEN)");
 				stl::free_container(list);
 			}
+		}
+	}
 	s_GeomManager.Shutdown();
 	stl::free_container(m_ActiveNodes);
 	stl::free_container(m_StreamedOutNodes);

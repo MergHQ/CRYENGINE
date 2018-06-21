@@ -17,6 +17,7 @@ namespace Schematyc2
 		static ICVar* sc_LogFileMessageTypes;
 		static int    sc_DisplayCriticalErrors;
 
+		static int    sc_LegacyMode;
 		static int    sc_RunUnitTests;
 		static int    sc_MaxRecursionDepth;
 		static ICVar* sc_ExperimentalFeatures;

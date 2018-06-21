@@ -1685,6 +1685,7 @@ namespace Schematyc2
 	public:
 
 		template <typename FUNCTION_PTR_TYPE> inline CEnvFunctionDescriptor(FUNCTION_PTR_TYPE pFunction)
+			: m_function(Cry::Reflection::CFunctionCreator<Cry::Reflection::Utils::CFunctionDesc<FUNCTION_PTR_TYPE>>(pFunction))
 		{
 			typedef EnvFunctionDescriptorUtils::SBinder<FUNCTION_PTR_TYPE> FunctionBinder;
 
@@ -1790,6 +1791,10 @@ namespace Schematyc2
 			return m_binding.pStub ? (*m_binding.pStub)(m_binding, context, pObject, inputs, outputs) : SEnvFunctionResult();
 		}
 
+		virtual const Cry::Reflection::CFunction& GetFunction() const final
+		{
+			return m_function;
+		}
 		// ~IEnvFunctionDescriptor
 
 		inline void SetGUID(const SGUID& guid)
@@ -1851,6 +1856,7 @@ namespace Schematyc2
 		string                               m_author;
 		string                               m_description;
 		EnvFunctionDescriptorUtils::SBinding m_binding;
+		Cry::Reflection::CFunction           m_function;
 	};
 
 	DECLARE_SHARED_POINTERS(CEnvFunctionDescriptor)

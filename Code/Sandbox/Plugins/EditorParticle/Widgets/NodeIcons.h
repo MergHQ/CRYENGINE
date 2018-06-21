@@ -5,7 +5,7 @@
 #include <CryParticleSystem/IParticlesPfx2.h>
 
 #include <NodeGraph/ICryGraphEditor.h>
-#include <NodeGraph/NodeHeaderIconWidget.h>
+#include <NodeGraph/HeaderIconWidget.h>
 
 namespace CryParticleEditor {
 
@@ -27,15 +27,15 @@ enum EIcon : int16
 
 typedef CryGraphEditor::CIconArray<Icon_Count> IconMap;
 
-class CEmitterActiveIcon : public CryGraphEditor::CNodeHeaderIcon
+class CEmitterActiveIcon : public CryGraphEditor::CHeaderIconWidget
 {
 public:
 	CEmitterActiveIcon(CryGraphEditor::CNodeWidget& nodeWidget);
 	~CEmitterActiveIcon();
 
-	// CryGraphEditor::CNodeHeaderIcon
+	// CryGraphEditor::CHeaderIconWidget
 	virtual void OnClicked();
-	// ~CryGraphEditor::CNodeHeaderIcon
+	// ~CryGraphEditor::CHeaderIconWidget
 
 protected:
 	void OnNodeSelectionChanged(bool isSelected);
@@ -45,15 +45,15 @@ private:
 	static IconMap s_iconMap;
 };
 
-class CSoloEmitterModeIcon : public CryGraphEditor::CNodeHeaderIcon
+class CSoloEmitterModeIcon : public CryGraphEditor::CHeaderIconWidget
 {
 public:
 	CSoloEmitterModeIcon(CryGraphEditor::CNodeWidget& nodeWidget);
 	~CSoloEmitterModeIcon();
 
-	// CryGraphEditor::CNodeHeaderIcon
+	// CryGraphEditor::CHeaderIconWidget
 	virtual void OnClicked();
-	// ~CryGraphEditor::CNodeHeaderIcon
+	// ~CryGraphEditor::CHeaderIconWidget
 
 protected:
 	void OnNodeSelectionChanged(bool isSelected);
@@ -66,15 +66,15 @@ private:
 	static IconMap s_iconMap;
 };
 
-class CEmitterVisibleIcon : public CryGraphEditor::CNodeHeaderIcon
+class CEmitterVisibleIcon : public CryGraphEditor::CHeaderIconWidget
 {
 public:
 	CEmitterVisibleIcon(CryGraphEditor::CNodeWidget& nodeWidget);
 	~CEmitterVisibleIcon();
 
-	// CryGraphEditor::CNodeHeaderIcon
+	// CryGraphEditor::CHeaderIconWidget
 	virtual void OnClicked();
-	// ~CryGraphEditor::CNodeHeaderIcon
+	// ~CryGraphEditor::CHeaderIconWidget
 
 protected:
 	void OnNodeSelectionChanged(bool isSelected);
