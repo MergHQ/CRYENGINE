@@ -503,7 +503,7 @@ bool CCompiler::CompileGraph(SCompilerContext& context, CRuntimeClass& runtimeCl
 		GraphNodeLookup graphNodeLookup;
 		graphNodeLookup.reserve(graphNodeCount);
 
-		auto visitScriptGraphNode = [this, &graphNodes, &graphNodeLookup](const IScriptGraphNode& scriptGraphNode) -> EVisitStatus
+		auto visitScriptGraphNode = [&graphNodes, &graphNodeLookup](const IScriptGraphNode& scriptGraphNode) -> EVisitStatus
 		{
 			SGraphNode graphNode(scriptGraphNode, scriptGraphNode.GetName());
 
@@ -564,7 +564,7 @@ bool CCompiler::CompileGraph(SCompilerContext& context, CRuntimeClass& runtimeCl
 
 		// Collect links.
 
-		auto visitScriptGraphLink = [this, &graphNodes, &graphNodeLookup](const IScriptGraphLink& scriptGraphLink) -> EVisitStatus
+		auto visitScriptGraphLink = [&graphNodes, &graphNodeLookup](const IScriptGraphLink& scriptGraphLink) -> EVisitStatus
 		{
 			GraphNodeLookup::iterator itSrcGraphNode = graphNodeLookup.find(scriptGraphLink.GetSrcNodeGUID());
 			GraphNodeLookup::iterator itDstGraphNode = graphNodeLookup.find(scriptGraphLink.GetDstNodeGUID());

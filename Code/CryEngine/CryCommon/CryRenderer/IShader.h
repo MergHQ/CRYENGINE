@@ -1194,7 +1194,7 @@ struct SEfResTexture
 		m_Ext.Cleanup();
 	}
 
-	~SEfResTexture()
+	virtual ~SEfResTexture()
 	{
 		Cleanup();
 	}

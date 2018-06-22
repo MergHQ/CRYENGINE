@@ -376,7 +376,7 @@ void CScriptGraphFunctionNode::Register(CScriptGraphNodeFactory& factory)
 			std::vector<SObject> objects;
 			objects.reserve(20);
 
-			auto visitScriptComponentInstance = [&scriptView, &objects](const IScriptComponentInstance& scriptComponentInstance) -> EVisitStatus
+			auto visitScriptComponentInstance = [&objects](const IScriptComponentInstance& scriptComponentInstance) -> EVisitStatus
 			{
 				CStackString name;
 				//scriptView.QualifyName(scriptComponentInstance, EDomainQualifier::Global, name);

@@ -399,7 +399,7 @@ void CScriptView::VisitEnvComponents(const EnvComponentConstVisitor& visitor) co
 		typedef std::vector<const IEnvComponent*> Exclusions;
 
 		Exclusions exclusions;
-		auto visitScriptComponentInstances = [&visitor, &exclusions](const IScriptComponentInstance& componentInstance) -> EVisitStatus
+		auto visitScriptComponentInstances = [&exclusions](const IScriptComponentInstance& componentInstance) -> EVisitStatus
 		{
 			const IEnvComponent* pEnvComponent = gEnv->pSchematyc->GetEnvRegistry().GetComponent(componentInstance.GetTypeGUID());
 			if (pEnvComponent && pEnvComponent->GetDesc().GetComponentFlags().Check(IEntityComponent::EFlags::Singleton))
@@ -411,7 +411,7 @@ void CScriptView::VisitEnvComponents(const EnvComponentConstVisitor& visitor) co
 		VisitScriptComponentInstances(visitScriptComponentInstances, EDomainScope::All);
 
 		const IEnvClass* pEnvClass = GetEnvClass();
-		auto visitEnvComponent = [&visitor, &exclusions, &pEnvClass](const IEnvComponent& envComponent) -> EVisitStatus
+		auto visitEnvComponent = [&visitor, &exclusions](const IEnvComponent& envComponent) -> EVisitStatus
 		{
 			if (std::find(exclusions.begin(), exclusions.end(), &envComponent) == exclusions.end())
 			{

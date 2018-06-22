@@ -1171,7 +1171,7 @@ void CScriptRegistry::SaveScript(CScript& script)
 	{
 		CStackString folder = fileName.substr(0, fileName.rfind('/'));
 
-		auto elementSerializeCallback = [this](IScriptElement& element)
+		auto elementSerializeCallback = [](IScriptElement& element)
 		{
 			CScriptRegistry& scriptRegistry = static_cast<CScriptRegistry&>(gEnv->pSchematyc->GetScriptRegistry());
 			scriptRegistry.ProcessChange(SScriptRegistryChange(EScriptRegistryChangeType::ElementSaved, element));
