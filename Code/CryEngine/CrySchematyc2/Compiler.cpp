@@ -1360,22 +1360,22 @@ namespace Schematyc2
 		{
 			const IScriptStateMachine& scriptStateMachine = *(*itScriptStateMachine);
 			// Convert state machine's lifetime parameter.
-			ELibStateMachineLifetime lifetime = ELibStateMachineLifetime::Unknown;
+			EStateMachineLifetime lifetime = EStateMachineLifetime::Unknown;
 			switch(scriptStateMachine.GetLifetime())
 			{
-			case EScriptStateMachineLifetime::Persistent:
+			case EStateMachineLifetime::Persistent:
 				{
-					lifetime = ELibStateMachineLifetime::Persistent;
+					lifetime = EStateMachineLifetime::Persistent;
 					break;
 				}
-			case EScriptStateMachineLifetime::Task:
+			case EStateMachineLifetime::Task:
 				{
-					lifetime = ELibStateMachineLifetime::Task;
+					lifetime = EStateMachineLifetime::Task;
 					break;
 				}
 			}
 			// Add state machine to library class.
-			libClass.AddStateMachine(scriptStateMachine.GetGUID(), scriptStateMachine.GetName(), lifetime);
+			libClass.AddStateMachine(scriptStateMachine.GetGUID(), scriptStateMachine.GetName(), lifetime, scriptStateMachine.GetNetAuthority());
 		}
 		for(TScriptStateMachineConstVector::iterator itScriptStateMachine = scriptStateMachines.begin(), itEndScriptStateMachine = scriptStateMachines.end(); itScriptStateMachine != itEndScriptStateMachine; ++ itScriptStateMachine)
 		{

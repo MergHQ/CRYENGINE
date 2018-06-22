@@ -108,19 +108,14 @@ namespace Schematyc2
 		virtual SGUID GetRefGUID() const = 0;
 	};
 
-	// #SchematycTODO : Move to BasicTypes.h, merge with ELibStateMachineLifetime and rename EStateMachineLifetime?
 	// #SchematycTODO : Consider making tasks and state machines different element types!
-	enum class EScriptStateMachineLifetime 
-	{
-		Persistent,
-		Task
-	};
 
 	struct IScriptStateMachine : public IScriptElement
 	{
 		virtual ~IScriptStateMachine() {}
 
-		virtual EScriptStateMachineLifetime GetLifetime() const = 0;
+		virtual EStateMachineLifetime GetLifetime() const = 0;
+		virtual EStateMachineNetAuthority GetNetAuthority() const = 0;
 		virtual SGUID GetContextGUID() const = 0;
 		virtual SGUID GetPartnerGUID() const = 0;
 	};
@@ -319,7 +314,7 @@ namespace Schematyc2
 		virtual const IScriptClassBase* GetClassBase(const SGUID& guid) const = 0;
 		virtual EVisitStatus VisitClassBases(const ScriptClassBaseVisitor& visitor, const SGUID& scopeGUID, bool bRecurseHierarchy) = 0;
 		virtual EVisitStatus VisitClassBases(const ScriptClassBaseConstVisitor& visitor, const SGUID& scopeGUID, bool bRecurseHierarchy) const = 0;
-		virtual IScriptStateMachine* AddStateMachine(const SGUID& scopeGUID, const char* szName, EScriptStateMachineLifetime lifetime, const SGUID& contextGUID, const SGUID& partnerGUID) = 0;
+		virtual IScriptStateMachine* AddStateMachine(const SGUID& scopeGUID, const char* szName, EStateMachineLifetime lifetime, const SGUID& contextGUID, const SGUID& partnerGUID) = 0;
 		virtual IScriptStateMachine* GetStateMachine(const SGUID& guid) = 0;
 		virtual const IScriptStateMachine* GetStateMachine(const SGUID& guid) const = 0;
 		virtual EVisitStatus VisitStateMachines(const ScriptStateMachineVisitor& visitor, const SGUID& scopeGUID, bool bRecurseHierarchy) = 0;

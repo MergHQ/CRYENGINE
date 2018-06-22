@@ -57,6 +57,19 @@ namespace Schematyc2
 		Game             // Object is in game.
 	};
 
+	enum class EStateMachineLifetime
+	{
+		Persistent,
+		Task,
+		Unknown
+	};
+
+	enum class EStateMachineNetAuthority
+	{
+		Local,
+		Server
+	};
+
 	enum class EGraphExecutionFilter
 	{
 		Always,

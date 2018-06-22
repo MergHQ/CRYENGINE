@@ -170,7 +170,7 @@ namespace Schematyc2
 				}
 			}
 
-			SGUID								signalGUID;
+			SGUID				signalGUID;
 			TVariantConstArray	inputs;
 		};
 
@@ -202,6 +202,7 @@ namespace Schematyc2
 		void CreateAndInitActions();
 
 		int32 GetNetworkAspect() const;
+		int32 GetStateMachineNetworkAspect(const ILibStateMachine& libStateMachine) const;
 		void MarkAspectDirtyForStateMachine(size_t iStateMachine);
 		bool HaveNetworkAuthority() const;
 		bool EvaluateTransitions(size_t iStateMachine, size_t iState, const SEvent& event, const TVariantConstArray& inputs);
@@ -215,23 +216,23 @@ namespace Schematyc2
 		void ProcessFunction(const LibFunctionId& functionId, const TVariantConstArray& inputs, const TVariantArray& outputs);
 		void NetworkSerialize(TSerialize serialize, int32 aspects, uint8 profile, int flags);
 
-		ObjectId												m_objectId;
-		ILibClassConstPtr								m_pLibClass;
-		INetworkObject*									m_pNetworkObject;
-		ExplicitEntityId								m_entityId;
-		int32														m_serverAspect;
-		int32														m_clientAspect;
-		EObjectFlags										m_flags;
-		ESimulationMode									m_simulationMode;
-		TStateMachineVector							m_stateMachines;
-		TVariantVector									m_variants;
-		TContainerVector								m_containers;
-		TTimerVector										m_timers;
-		ComponentInstances              m_componentInstances;
-		TActionInstanceVector						m_actionInstances;
-		ObjectSignalHistory							m_signalHistory;
-		TSignalObserverConnectionArray	m_signalObservers;
-		TemplateUtils::CConnectionScope	m_connectionScope;
-		CStateNetIdxMapper									m_stateNetIdxMapper;
+		ObjectId							m_objectId;
+		ILibClassConstPtr					m_pLibClass;
+		INetworkObject*						m_pNetworkObject;
+		ExplicitEntityId					m_entityId;
+		int32								m_serverAspect;
+		int32								m_clientAspect;
+		EObjectFlags						m_flags;
+		ESimulationMode						m_simulationMode;
+		TStateMachineVector					m_stateMachines;
+		TVariantVector						m_variants;
+		TContainerVector					m_containers;
+		TTimerVector						m_timers;
+		ComponentInstances					m_componentInstances;
+		TActionInstanceVector				m_actionInstances;
+		ObjectSignalHistory					m_signalHistory;
+		TSignalObserverConnectionArray		m_signalObservers;
+		TemplateUtils::CConnectionScope		m_connectionScope;
+		CStateNetIdxMapper					m_stateNetIdxMapper;
 	};
 }

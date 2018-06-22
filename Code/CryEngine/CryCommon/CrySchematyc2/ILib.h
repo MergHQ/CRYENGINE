@@ -55,29 +55,23 @@ struct ILibAbstractInterface
 
 DECLARE_SHARED_POINTERS(ILibAbstractInterface)
 
-enum class ELibStateMachineLifetime
-{
-	Unknown = 0,
-	Persistent,
-	Task
-};
-
 struct ILibStateMachine
 {
 	virtual ~ILibStateMachine() {}
 
-	virtual SGUID                    GetGUID() const = 0;
-	virtual const char*              GetName() const = 0;
-	virtual ELibStateMachineLifetime GetLifetime() const = 0;
-	virtual size_t                   GetPartner() const = 0;
-	virtual size_t                   GetListenerCount() const = 0;
-	virtual size_t                   GetListener(size_t listenerIdx) const = 0;
-	virtual size_t                   GetVariableCount() const = 0;
-	virtual size_t                   GetVariable(const size_t variableIdx) const = 0;
-	virtual size_t                   GetContainerCount() const = 0;
-	virtual size_t                   GetContainer(const size_t containerIdx) const = 0;
-	virtual void                     SetBeginFunction(const LibFunctionId& functionId) = 0;
-	virtual LibFunctionId            GetBeginFunction() const = 0;
+	virtual SGUID                      GetGUID() const = 0;
+	virtual const char*                GetName() const = 0;
+	virtual EStateMachineLifetime      GetLifetime() const = 0;
+	virtual EStateMachineNetAuthority  GetNetAuthority() const = 0;
+	virtual size_t                     GetPartner() const = 0;
+	virtual size_t                     GetListenerCount() const = 0;
+	virtual size_t                     GetListener(size_t listenerIdx) const = 0;
+	virtual size_t                     GetVariableCount() const = 0;
+	virtual size_t                     GetVariable(const size_t variableIdx) const = 0;
+	virtual size_t                     GetContainerCount() const = 0;
+	virtual size_t                     GetContainer(const size_t containerIdx) const = 0;
+	virtual void                       SetBeginFunction(const LibFunctionId& functionId) = 0;
+	virtual LibFunctionId              GetBeginFunction() const = 0;	
 };
 
 struct ILibState
