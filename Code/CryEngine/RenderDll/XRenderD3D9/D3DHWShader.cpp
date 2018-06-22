@@ -21,6 +21,8 @@
 
 #include "Common/RenderView.h"
 
+#include <string>
+
 #if CRY_PLATFORM_WINDOWS && CRY_PLATFORM_64BIT
 	#pragma warning(push)
 	#pragma warning(disable: 4244)
@@ -570,8 +572,24 @@ void CHWShader_D3D::mfConstructFX(const FXShaderToken& Table, const TArray<uint3
 	}
 }
 
-bool CHWShader_D3D::mfWarmupCache(CShader* pFX)
+CHWShader_D3D::cacheValidationResult CHWShader_D3D::mfValidateCache(const SDiskShaderCache &cache)
 {
+	static constexpr auto fVersion = static_cast<float>(FX_CACHE_VER);
+	const auto cacheType = cache.GetType();
+
+	const SResFileLookupData* pLookup = cache.m_pRes->GetLookupData();
+	if (!pLookup)
+		return cacheValidationResult::no_lookup;
+	if (pLookup->m_CacheMajorVer != (int)fVersion || pLookup->m_CacheMinorVer != (int)(((float)fVersion - (float)(int)fVersion) * 10.1f))
+		return cacheValidationResult::version_mismatch;
+	if (pLookup->m_CRC32 != m_CRC32)
+		return cacheValidationResult::checksum_mismatch;
+
+	return cacheValidationResult::ok;
+}
+
+bool CHWShader_D3D::mfWarmupCache(CShader* pFX)
+{ 
 	static constexpr auto fVersion = static_cast<float>(FX_CACHE_VER);
 
 	std::vector<cacheSource> cacheTypes = { cacheSource::readonly };
@@ -580,7 +598,7 @@ bool CHWShader_D3D::mfWarmupCache(CShader* pFX)
 	if (CRendererCVars::CV_r_shadersediting || gRenDev->IsShaderCacheGenMode())
 		cacheTypes = { cacheSource::user };
 
-	for (const auto &cacheType : cacheTypes)
+ 	for (const auto &cacheType : cacheTypes)
 	{
 		auto cache = AcquireDiskCache(cacheType);
 
@@ -588,25 +606,28 @@ bool CHWShader_D3D::mfWarmupCache(CShader* pFX)
 		bool validCache = !!cache->m_pRes;
 		if (validCache)
 		{
-			const SResFileLookupData* pLookup = cache->m_pRes->GetLookupData();
-			if (!pLookup)
+			const auto validationResult = mfValidateCache(*cache);
+
+			validCache = validationResult == cacheValidationResult::ok;
+
+			std::string error;
+			switch (validationResult)
 			{
-				if (cacheType != cacheSource::user)
-					LogWarningEngineOnly("WARNING: Shader cache '%s' does not have lookup data!", cache->m_pRes->mfGetFileName());
-				validCache = false;
+			case cacheValidationResult::no_lookup:
+				error = std::string("WARNING: Shader cache '") + cache->m_pRes->mfGetFileName() + "' does not have lookup data!";
+				break;
+			case cacheValidationResult::version_mismatch:
+				error = std::string("WARNING: Shader cache '") + cache->m_pRes->mfGetFileName() + "' version mismatch";
+				break;
+			case cacheValidationResult::checksum_mismatch:
+				error = std::string("WARNING: Shader cache '") + cache->m_pRes->mfGetFileName() + "' CRC mismatch";
+				break;
+			default: {}
 			}
-			else if (pLookup->m_CacheMajorVer != (int)fVersion || pLookup->m_CacheMinorVer != (int)(((float)fVersion - (float)(int)fVersion) * 10.1f))
-			{
-				if (cacheType != cacheSource::user)
-					LogWarningEngineOnly("WARNING: Shader cache '%s' version mismatch (Cache: %d.%d, Expected: %.1f)", cache->m_pRes->mfGetFileName(), pLookup->m_CacheMajorVer, pLookup->m_CacheMinorVer, fVersion);
-				validCache = false;
-			}
-			else if (pLookup->m_CRC32 != m_CRC32)
-			{
-				if (cacheType != cacheSource::user)
-					LogWarningEngineOnly("WARNING: Shader cache '%s' CRC mismatch", cache->m_pRes->mfGetFileName());
-				validCache = false;
-			}
+
+			// Output error only for readonly cache
+			if (cacheType == cacheSource::readonly && !validCache)
+				LogWarningEngineOnly(error.c_str());
 		}
 
 		if (cacheType == cacheSource::user && !validCache)
