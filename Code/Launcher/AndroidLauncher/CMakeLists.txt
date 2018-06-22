@@ -11,16 +11,21 @@ set( SOURCE_FILES_C
 )
 source_group("C Source Files" FILES ${SOURCE_FILES_C})
 
+# SDL*.java files sourced from SDL 2.0.8; some modifications applied to SDLActivity.java
+
 set( SOURCE_FILES_JAVA
+	SDL.java
 	SDLActivity.java
+	SDLAudioManager.java
+	SDLControllerManager.java
 	CryEngineActivity.java
 )
 source_group("Java Files" FILES ${SOURCE_FILES_JAVA})
 
 if(ANDROID)
 	set( SOURCE_FILES_SDLEXT
-		${CMAKE_SOURCE_DIR}/Code/Tools/SDLExtension/src/jni/SDLExt_android.c
-		${CMAKE_SOURCE_DIR}/Code/Tools/SDLExtension/src/jni/SDLExt_android_init.c
+		${CRYENGINE_DIR}/Code/Tools/SDLExtension/src/jni/SDLExt_android.c
+		${CRYENGINE_DIR}/Code/Tools/SDLExtension/src/jni/SDLExt_android_init.c
 	)
 	source_group("SDL Extension" FILES ${SOURCE_FILES_SDLEXT})
 
@@ -53,7 +58,13 @@ if(ANDROID)
 	configure_android_build(APP_NAME "CRYENGINE SDK" PACKAGE com.crytek.cryengine PERMISSIONS WRITE_EXTERNAL_STORAGE READ_EXTERNAL_STORAGE INTERNET DEBUGGABLE VERSION_CODE 1 VERSION_NAME 1.0)
 	configure_android_launcher(AndroidLauncher)
 
+	if(OPTION_STATIC_LINKING)
+		use_scaleform()
+		target_compile_definitions(${THIS_PROJECT} PRIVATE _LIB -DCRY_IS_MONOLITHIC_BUILD)
+	endif()
+
 	target_compile_definitions(${THIS_PROJECT} PRIVATE 
+		CRY_IS_APPLICATION
 		ANDROID_NDK 
 		ANDROID 
 		DISABLE_IMPORTGL 
@@ -71,9 +82,6 @@ if(ANDROID)
 	
 	set_libpath_flag()
 	set_property(TARGET ${THIS_PROJECT} APPEND_STRING PROPERTY LINK_FLAGS "-Wl,--allow-multiple-definition -Wl,--no-undefined -Wl,-z,relro -Wl,-z,now -Wl,-z,noexecstack -shared -Wl,-soname,\"libAndroidLauncher.so\"")
-	#set_property(TARGET ${THIS_PROJECT} APPEND_STRING PROPERTY LINK_FLAGS_DEBUG " ${LIBPATH_FLAG}${SDK_DIR}/Scaleform/Lib/android-${CMAKE_ANDROID_ARCH}/Debug ${LIBPATH_FLAG}${SDK_DIR}Audio/wwise/SDK/android-9_${CMAKE_ANDROID_ARCH}/Debug/lib")
-	#set_property(TARGET ${THIS_PROJECT} APPEND_STRING PROPERTY LINK_FLAGS_PROFILE " ${LIBPATH_FLAG}${SDK_DIR}/Scaleform/Lib/android-${CMAKE_ANDROID_ARCH}/Release ${LIBPATH_FLAG}${SDK_DIR}Audio/wwise/SDK/android-9_${CMAKE_ANDROID_ARCH}/Profile/lib")
-	#set_property(TARGET ${THIS_PROJECT} APPEND_STRING PROPERTY LINK_FLAGS_RELEASE " ${LIBPATH_FLAG}${SDK_DIR}/Scaleform/Lib/android-${CMAKE_ANDROID_ARCH}/Release ${LIBPATH_FLAG}${SDK_DIR}Audio/wwise/SDK/android-9_${CMAKE_ANDROID_ARCH}/Release/lib")
 	
 	set_property(TARGET ${THIS_PROJECT} PROPERTY ANDROID_JAVA_SOURCE_DIR .)
 	
@@ -81,9 +89,9 @@ if(ANDROID)
 	target_link_libraries(${THIS_PROJECT} PRIVATE SDL2)
 	target_link_libraries(${THIS_PROJECT} PRIVATE SDLExt)
 
-	#target_link_libraries(${THIS_PROJECT} PRIVATE CFilesForAndroidLauncher)
-
-	add_dependencies(${THIS_PROJECT} ${MODULES} ${GAME_MODULES})
+	wrap_whole_archive(${THIS_PROJECT} WRAPPED_MODULES MODULES)
+	wrap_whole_archive(${THIS_PROJECT} WRAPPED_GAME_MODULES GAME_MODULES)
+	target_link_libraries(${THIS_PROJECT} PRIVATE ${WRAPPED_MODULES} ${WRAPPED_GAME_MODULES})
 	
 	if (CMAKE_CXX_COMPILER_ID STREQUAL "Clang")
 	target_compile_options(${THIS_PROJECT} PRIVATE

@@ -105,18 +105,19 @@ target_link_libraries(${THIS_PROJECT} PRIVATE
 target_compile_definitions(${THIS_PROJECT} PRIVATE
 	-DMUSIC_OGG
 	-DMUSIC_FLAC
-	-DMUSIC_MID_NATIVE
 	-DMUSIC_MOD_MIKMOD
 	-DMUSIC_MOD_MODPLUG
 	-DMUSIC_MID_TIMIDITY
 )
+
 
 if(WIN32 OR WIN64)
 	target_compile_definitions(${THIS_PROJECT} PRIVATE
 		-DMUSIC_WAV
 		-DMODPLUG_DYNAMIC="libmodplug-1.dll"
 		-DMUSIC_MP3_SMPEG="smpeg2.dll"
-	)
+		-DMUSIC_MID_NATIVE
+		)
     target_link_libraries(${THIS_PROJECT}      PUBLIC Winmm native_midi smpeg)
 	target_include_directories(${THIS_PROJECT} PUBLIC "${SDK_DIR}/SDL_mixer/VisualC/external/include")
 	target_compile_options(${THIS_PROJECT}     PRIVATE /W0)
