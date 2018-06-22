@@ -1098,7 +1098,9 @@ bool CD3D9Renderer::SetWindow(int width, int height)
 			SetForegroundWindow(m_hWnd);
 		}
 	}
+#endif
 
+#if CRY_PLATFORM_WINDOWS || CRY_PLATFORM_ANDROID || CRY_PLATFORM_LINUX
 	m_VSync = !IsEditorMode() ? CV_r_vsync : 0;
 
 	// Update base context hWnd and key

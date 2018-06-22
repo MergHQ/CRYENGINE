@@ -127,6 +127,7 @@ void CSwapChainBackedRenderDisplayContext::CreateSwapChain(HWND hWnd, bool vsync
 		IsMainContext(),
 		IsFullscreen(),
 		vsync);
+	m_bVSync = vsync;
 #endif
 
 	auto w = m_DisplayWidth,
@@ -145,7 +146,7 @@ void CSwapChainBackedRenderDisplayContext::CreateSwapChain(HWND hWnd, bool vsync
 #endif
 
 	// Create the output
-	ChangeOutputIfNecessary(m_fullscreen);
+	ChangeOutputIfNecessary(m_fullscreen, vsync);
 }
 
 void CSwapChainBackedRenderDisplayContext::ShutDown()
@@ -341,6 +342,8 @@ void CSwapChainBackedRenderDisplayContext::CreateOutput()
 	// Release the reference added by QueryInterface
 	const unsigned long numRemainingReferences = m_pOutput->Release();
 	CRY_ASSERT(numRemainingReferences == 1);
+#elif CRY_PLATFORM_ANDROID || CRY_PLATFORM_LINUX
+	m_pOutput = CCryVKGIOutput::Create(gcpRendD3D->DevInfo().Adapter(), 0);
 #endif
 }
 
