@@ -550,6 +550,7 @@ private:
 	void InitLog(const SSystemInitParams& startupParams);
 	void LoadPatchPaks();
 	bool InitFileSystem_LoadEngineFolders();
+	void InitResourceCacheFolder();
 	bool InitStreamEngine();
 	bool Init3DEngine(const SSystemInitParams& startupParams);
 	bool InitAnimationSystem(const SSystemInitParams& startupParams);
