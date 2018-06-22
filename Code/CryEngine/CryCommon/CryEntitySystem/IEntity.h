@@ -1213,6 +1213,7 @@ public:
 	//! \par Example
 	//! \include CryEntitySystem/Examples/LoadParticleEmitter.cpp
 	virtual int LoadParticleEmitter(int nSlot, IParticleEffect* pEffect, SpawnParams const* params = NULL, bool bPrime = false, bool bSerialize = false) = 0;
+
 	//! Sets an existing particle emitter to the specified slot, or the next available slot.
 	//! If this slot number is occupied by different kind of object it is overwritten.
 	//! \return Slot id where the particle emitter was loaded, or -1 if loading failed.
@@ -1224,12 +1225,17 @@ public:
 	//! \include CryEntitySystem/Examples/LoadLight.cpp
 	virtual int LoadLight(int nSlot, SRenderLight* pLight) = 0;
 
+	//! Updates the clip bounds of the light. Doesn't update any entity slots.
+	//! \param Light which should update the clip volumes.
+	//! \return Returns true if the light box was updated.
+	virtual bool UpdateLightClipBounds(SRenderLight& light) = 0;
+
 	//! Loads a fog volume to the specified slot, or to the next available slot.
 	//! \return Slot id where the fog volume was loaded, or -1 if loading failed.
 	//! \par Example
 	//! \include CryEntitySystem/Examples/LoadFogVolume.cpp
 	virtual int LoadFogVolume(int nSlot, const SFogVolumeProperties& properties) = 0;
-
+	
 	//! Invalidates the entity's and all its children's transformation matrices!
 	virtual void InvalidateTM(EntityTransformationFlagsMask transformReasons = EntityTransformationFlagsMask(), bool bRecalcPhyBounds = false) = 0;
 
