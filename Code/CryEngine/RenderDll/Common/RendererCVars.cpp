@@ -81,6 +81,7 @@ int CRendererCVars::CV_r_VkHardwareCopyQueue;
 int CRendererCVars::CV_r_ReprojectOnlyStaticObjects;
 int CRendererCVars::CV_r_ReadZBufferDirectlyFromVMEM;
 int CRendererCVars::CV_r_ReverseDepth;
+int CRendererCVars::CV_r_FlushToGPU;
 
 int CRendererCVars::CV_r_EnableDebugLayer;
 int CRendererCVars::CV_r_NoDraw;
@@ -2689,6 +2690,10 @@ void CRendererCVars::InitCVars()
 	REGISTER_CVAR3("r_ReprojectOnlyStaticObjects", CV_r_ReprojectOnlyStaticObjects, 1, VF_NULL, "Forces a split in the zpass, to prevent moving object from beeing reprojected");
 	REGISTER_CVAR3("r_ReadZBufferDirectlyFromVMEM", CV_r_ReadZBufferDirectlyFromVMEM, 0, VF_NULL, "Uses direct VMEM reads instead of a staging buffer on durango for the reprojection ZBuffer");
 	REGISTER_CVAR3("r_ReverseDepth", CV_r_ReverseDepth, 1, VF_NULL, "Use 1-z depth rendering for increased depth precision");
+	REGISTER_CVAR3("r_FlushToGPU", CV_r_FlushToGPU, 1, VF_NULL,
+		"Configure gpu-work flushing behaviour"
+		"0: Flush at end-frame only"
+		"1: Flush at positions where the character of the work changes drastically (Flash vs. Scene vs. Post vs. Uploads etc.)");
 
 	REGISTER_CVAR3("r_EnableDebugLayer", CV_r_EnableDebugLayer, 0, VF_NULL, 
 		"Enable Graphics API specific debug layer"

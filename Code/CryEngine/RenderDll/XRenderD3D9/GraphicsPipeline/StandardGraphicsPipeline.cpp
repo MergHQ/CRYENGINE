@@ -873,6 +873,11 @@ void CStandardGraphicsPipeline::Execute()
 		m_pScreenSpaceObscuranceStage->Execute();
 	}
 
+	if (CRenderer::CV_r_DeferredShadingTiled > 1)
+	{
+		m_pTiledLightVolumesStage->Execute();
+	}
+
 	// Water volume caustics
 	m_pWaterStage->ExecuteWaterVolumeCaustics();
 
@@ -891,7 +896,6 @@ void CStandardGraphicsPipeline::Execute()
 			m_pShadowMaskStage->Prepare();
 			m_pShadowMaskStage->Execute();
 			
-			m_pTiledLightVolumesStage->Execute();
 			m_pTiledShadingStage->Execute();
 
 			if (CRenderer::CV_r_DeferredShadingSSS)

@@ -2,7 +2,6 @@
 
 #pragma once
 
-#include <Common/Textures/TempDepthTexture.h>
 #include <CryCore/optional.h>
 
 class CRenderDisplayContext;
@@ -68,8 +67,7 @@ private:
 	ColorF                 m_clearColor = {};
 	float                  m_clearDepth = 0.0f;
 
-	bool                                         m_bUseTempDepthBuffer = false;
-	CResourcePool<STempDepthTexture>::value_type m_pTempDepthTexture = nullptr;
+	bool                   m_bUseTempDepthBuffer = false;
 
 	SRenderViewport        m_viewport;
 

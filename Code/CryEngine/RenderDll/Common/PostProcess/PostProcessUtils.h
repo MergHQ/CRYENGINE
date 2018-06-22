@@ -12,7 +12,6 @@
 #ifndef _POSTPROCESSUTILS_H_
 #define _POSTPROCESSUTILS_H_
 
-struct SDepthTexture;
 class CShader;
 
 struct SPostEffectsUtils

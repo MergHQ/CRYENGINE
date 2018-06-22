@@ -134,6 +134,8 @@ static inline uint32 ConvertFromTextureFlags(ETextureFlags eFlags)
 		( (eFlags & FT_STAGE_READBACK        ) ? (CDeviceObjectFactory::USAGE_STAGE_ACCESS | CDeviceObjectFactory::USAGE_CPU_READ ) : 0) |
 		( (eFlags & FT_STAGE_UPLOAD          ) ? (CDeviceObjectFactory::USAGE_STAGE_ACCESS | CDeviceObjectFactory::USAGE_CPU_WRITE) : 0) |
 		( (eFlags & FT_FORCE_MIPS            ) ?  CDeviceObjectFactory::USAGE_AUTOGENMIPS                                           : 0) |
+		( (eFlags & FT_USAGE_TEMPORARY       ) ?  CDeviceObjectFactory::USAGE_HIFREQ_HEAP                                           : 0) |
+		( (eFlags & FT_USAGE_UAV_OVERLAP     ) ?  CDeviceObjectFactory::USAGE_UAV_OVERLAP                                           : 0) |
 		( (eFlags & FT_USAGE_UAV_RWTEXTURE   ) ?  CDeviceObjectFactory::USAGE_UAV_READWRITE                                         : 0);
 	// *INDENT-ON*
 }
@@ -158,6 +160,8 @@ static inline ETextureFlags ConvertToTextureFlags(uint32 eFlags)
 		( (eFlags & (CDeviceObjectFactory::USAGE_STAGE_ACCESS | CDeviceObjectFactory::USAGE_CPU_READ )) ? FT_STAGE_READBACK         : 0) |
 		( (eFlags & (CDeviceObjectFactory::USAGE_STAGE_ACCESS | CDeviceObjectFactory::USAGE_CPU_WRITE)) ? FT_STAGE_UPLOAD           : 0) |
 		( (eFlags &  CDeviceObjectFactory::USAGE_AUTOGENMIPS                                          ) ? FT_FORCE_MIPS             : 0) |
+		( (eFlags &  CDeviceObjectFactory::USAGE_HIFREQ_HEAP                                          ) ? FT_USAGE_TEMPORARY        : 0) |
+		( (eFlags &  CDeviceObjectFactory::USAGE_UAV_OVERLAP                                          ) ? FT_USAGE_UAV_OVERLAP      : 0) |
 		( (eFlags &  CDeviceObjectFactory::USAGE_UAV_READWRITE                                        ) ? FT_USAGE_UAV_RWTEXTURE    : 0));
 	// *INDENT-ON*
 }

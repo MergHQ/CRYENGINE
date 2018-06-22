@@ -504,11 +504,11 @@ void CRainStage::ExecuteRainOcclusionGen()
 	SRainParams& rainVolParams = m_RainVolParams;
 
 	// Get temp depth buffer
-	auto pTmpDepthSurface = rd->GetTempDepthSurface(rd->GetFrameID(), RAIN_OCC_MAP_SIZE, RAIN_OCC_MAP_SIZE);
+	CTexture* pTmpDepthSurface = rd->CreateDepthTarget(RAIN_OCC_MAP_SIZE, RAIN_OCC_MAP_SIZE, Clr_FarPlane, eTF_Unknown);
 
 	// clear buffers
 	CClearSurfacePass::Execute(CRendererResources::s_ptexRainOcclusion, Clr_Neutral);
-	CClearSurfacePass::Execute(pTmpDepthSurface->texture.pTexture, CLEAR_ZBUFFER, Clr_FarPlane.r, 0);
+	CClearSurfacePass::Execute(pTmpDepthSurface, CLEAR_ZBUFFER, Clr_FarPlane.r, 0);
 
 	// render occluders to rain occlusion texture
 	{
@@ -523,7 +523,7 @@ void CRainStage::ExecuteRainOcclusionGen()
 		viewport.MaxDepth = 1.0f;
 
 		pass.SetRenderTarget(0, CRendererResources::s_ptexRainOcclusion);
-		pass.SetDepthTarget(pTmpDepthSurface->texture.pTexture);
+		pass.SetDepthTarget(pTmpDepthSurface);
 		pass.SetViewport(viewport);
 		pass.BeginAddingPrimitives();
 
@@ -592,4 +592,6 @@ void CRainStage::ExecuteRainOcclusionGen()
 
 		pass.Execute();
 	}
+
+	SAFE_RELEASE(pTmpDepthSurface);
 }

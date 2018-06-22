@@ -701,5 +701,3 @@ class CDeviceIndexBuffer : public CDeviceResource
 {
 
 };
-
-#include "DeviceResources.inl"

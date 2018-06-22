@@ -914,9 +914,6 @@ CTexture* CRenderView::GetColorTarget() const
 
 CTexture* CRenderView::GetDepthTarget() const
 {
-	if (m_pTempDepthTexture)
-		return m_pTempDepthTexture->texture.pTexture;
-
 	CRY_ASSERT(m_pDepthTarget);
 	return m_pDepthTarget.get();
 }
@@ -975,24 +972,20 @@ void CRenderView::ChangeRenderResolution(uint32_t renderWidth, uint32_t renderHe
 	m_RenderHeight = renderHeight;
 	if (renderWidth == GetOutputResolution()[0] && renderHeight == GetOutputResolution()[1] && m_pRenderOutput) 
 	{
+		m_pColorTarget = m_pRenderOutput->GetColorTarget();
+		m_pDepthTarget = m_pRenderOutput->GetDepthTarget();
+
 		if (m_pRenderOutput->RequiresTemporaryDepthBuffer())
 		{
 			m_pDepthTarget = nullptr;
-			m_pTempDepthTexture = CRendererResources::GetTempDepthSurface(GetFrameId(), renderWidth, renderHeight);
+			m_pDepthTarget.Assign_NoAddRef(CRendererResources::CreateDepthTarget(renderWidth, renderHeight, Clr_Empty, eTF_Unknown));
 		}
-		else
-		{
-			m_pDepthTarget = m_pRenderOutput->GetDepthTarget();
-			m_pTempDepthTexture = nullptr;
-		}
-
-		m_pColorTarget = m_pRenderOutput->GetColorTarget();
 	}
 	else
 	{
-		m_pDepthTarget = nullptr;
-		m_pTempDepthTexture = CRendererResources::GetTempDepthSurface(GetFrameId(), renderWidth, renderHeight);
 		m_pColorTarget = CRendererResources::s_ptexHDRTarget;
+		m_pDepthTarget = nullptr;
+		m_pDepthTarget.Assign_NoAddRef(CRendererResources::CreateDepthTarget(renderWidth, renderHeight, Clr_Empty, eTF_Unknown));
 	}
 
 	CRY_ASSERT(m_pColorTarget->GetWidth() >= renderWidth && m_pColorTarget->GetHeight() >= renderHeight);
@@ -1003,7 +996,6 @@ void CRenderView::UnsetRenderOutput()
 	m_pRenderOutput.reset();
 	m_pColorTarget = nullptr;
 	m_pDepthTarget = nullptr;
-	m_pTempDepthTexture = nullptr;
 }
 
 //////////////////////////////////////////////////////////////////////////

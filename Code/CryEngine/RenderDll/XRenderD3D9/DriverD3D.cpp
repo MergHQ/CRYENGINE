@@ -592,6 +592,11 @@ void CD3D9Renderer::HandleDisplayPropertyChanges()
 
 		const int displayWidthBefore  = pDC->GetDisplayResolution()[0];
 		const int displayHeightBefore = pDC->GetDisplayResolution()[1];
+#if (CRY_RENDERER_DIRECT3D >= 110) || (CRY_RENDERER_VULKAN >= 10)
+		const int bufferCountBefore = pDC->IsSwapChainBacked() ? static_cast<const CSwapChainBackedRenderDisplayContext*>(pDC)->GetSwapChain().GetDesc                   ().BufferCount : CRendererCVars::CV_r_MaxFrameLatency + 1;
+#else
+		const int bufferCountBefore = pDC->IsSwapChainBacked() ? static_cast<const CSwapChainBackedRenderDisplayContext*>(pDC)->GetSwapChain().GetSwapChain()->GnmGetDesc().numBuffers  : CRendererCVars::CV_r_MaxFrameLatency + 1;
+#endif
 
 		// r_width and r_height are only honored when in game, otherwise
 		// the resolution is entirely controlled by dynamic window size
@@ -656,7 +661,7 @@ void CD3D9Renderer::HandleDisplayPropertyChanges()
 		if (m_cbpp != colorBits ||
 			m_VSync != vSync ||
 			wasFullscreen != IsFullscreen() ||
-			pDC->GetBackBufferCount() != CRendererCVars::CV_r_MaxFrameLatency + 1)
+			bufferCountBefore != (CRendererCVars::CV_r_MaxFrameLatency + 1))
 		{
 			bRecreateSwapchain = true;
 		}
@@ -947,15 +952,16 @@ void CD3D9Renderer::RT_BeginFrame(const SDisplayContextKey& displayContextKey)
 	// Delete resources scheduled for deletion.
 	RT_DelayedDeleteResources(false);
 
-	// Trim temporary depth texture pool
-	CRendererResources::TrimTempDepthSurfaces(GetFrameID(), 5);
-
 	// Update PSOs
 	GetDeviceObjectFactory().UpdatePipelineStates();
 
 	CResFile::Tick();
 	m_DevBufMan.Update(gRenDev->GetRenderFrameID(), false);
 	GetDeviceObjectFactory().OnBeginFrame();
+
+	// Render updated dynamic flash textures
+	CFlashTextureSourceSharedRT::TickRT();
+	CFlashTextureSourceBase::RenderLights();
 
 	if (m_pPipelineProfiler)
 		m_pPipelineProfiler->BeginFrame(gRenDev->GetRenderFrameID());
@@ -1319,9 +1325,7 @@ void CD3D9Renderer::ResolveHighDynamicRangeDisplay()
 	PROFILE_LABEL_SCOPE("RESOLVE_HIGHDYNAMICRANGE");
 
 	const CRenderOutput* pOutput = GetGraphicsPipeline().GetCurrentRenderOutput();
-	CRenderDisplayContext* pDC = GetActiveDisplayContext();
-	
-	pDC->PostPresent();
+	CRenderDisplayContext* pDC = GetActiveDisplayContext(); pDC->PostPresent();
 
 	CRY_ASSERT(pOutput->GetColorTarget() == pDC->GetStorableColorOutput());
 	CRY_ASSERT(pOutput->GetColorTarget() != pDC->GetCurrentBackBuffer());
@@ -1941,17 +1945,6 @@ void CD3D9Renderer::DebugVidResourcesBars(int nX, int nY)
 	AuxDrawQuad(nX + fOffs, nY + 1, nX + fOffs + (float)nSizeD2 / fMaxTextureMemory * fMaxBar, nY + 12, Col_Green, 1.0f);
 	nY += nYst;
 
-	// Currently this are the only resources allocated through "new CTexture" and not in the CBaseLibrary
-	size_t nSizeZRT = CRendererResources::SizeofTempDepthSurfaces();
-	size_t nSizeCRT = 0;
-
-	nSizeCRT += nSizeZRT;
-
-	IRenderAuxText::Draw2dLabel(nX, nY, fFSize, &col.r, false, "Temp targets: %.1f Mb", BYTES_TO_MB(nSizeCRT));
-
-	AuxDrawQuad(nX + fOffs, nY + 1, nX + fOffs + (float)nSizeCRT / fMaxTextureMemory * fMaxBar, nY + 12, Col_Green, 1.0f);
-	nY += nYst;
-
 	size_t nSAll = 0;
 	size_t nSOneMip = 0;
 	size_t nSNM = 0;
@@ -2048,7 +2041,7 @@ void CD3D9Renderer::DebugVidResourcesBars(int nX, int nY)
 	AuxDrawQuad(nX + fOffs, nY + 1, nX + fOffs + (float)nSizeDynM / fMaxTextureMemory * fMaxBar, nY + 12, Col_Green, 1.0f);
 	nY += nYst + 4;
 
-	size_t nSize = nSizeDynM + nSRT + nSizeCRT + nSizeSH + nSizeD + nSizeD2;
+	size_t nSize = nSizeDynM + nSRT + nSizeSH + nSizeD + nSizeD2;
 	ColorF colO = Col_Blue;
 	IRenderAuxText::Draw2dLabel(nX, nY, fFSize, &colO.r, false, "Overall (Pure): %.1f Mb", BYTES_TO_MB(nSize));
 
@@ -3260,7 +3253,6 @@ void CD3D9Renderer::RT_EndFrame()
 	{
 		CTexture::Update();
 	}
-	CFlashTextureSourceSharedRT::TickRT();
 
 	// Rnder-thread Aux
 	RenderAux_RT();
@@ -3342,6 +3334,11 @@ void CD3D9Renderer::RT_EndFrame()
 	//if (!m_bDeviceLost)
 		//FX_Commit();
 
+	// Capture previously presented back-buffer to not cause syncing CPU with GPU, lag is irrelevant because capturing is continuously going on
+	// Frame-capture works without a swap-chain, and without presenting, but rendering will serialize between CPU and GPU (TODO: rotate buffers even when not presenting)
+	CaptureFrameBuffer();
+	CaptureFrameBufferCallBack();
+
 	// Flip the back buffer to the front
 	bool bSetActive = false;
 	if (m_bSwapBuffers)
@@ -3349,9 +3346,6 @@ void CD3D9Renderer::RT_EndFrame()
 		CRenderDisplayContext* pDC = GetActiveDisplayContext();
 		CRY_ASSERT(pDC->IsSwapChainBacked());
 		auto swapDC = static_cast<CSwapChainBackedRenderDisplayContext*>(pDC);
-
-		CaptureFrameBuffer();
-		CaptureFrameBufferCallBack();
 
 		if (!IsEditorMode())
 		{
@@ -3374,6 +3368,7 @@ void CD3D9Renderer::RT_EndFrame()
 				}
 			}
 #endif
+
 #if CRY_RENDERER_GNM
 			auto* const pCommandList = GnmCommandList(GetDeviceObjectFactory().GetCoreCommandList().GetGraphicsInterfaceImpl());
 			const CGnmSwapChain::EFlipMode flipMode = m_VSync ? CGnmSwapChain::kFlipModeSequential : CGnmSwapChain::kFlipModeImmediate;
@@ -3485,8 +3480,6 @@ void CD3D9Renderer::RT_EndFrame()
 		m_nFrameSwapID++;
 	}
 
-	GetDeviceObjectFactory().IssueFrameFences();
-
 	m_fTimeWaitForGPU[gRenDev->GetRenderThreadID()] += iTimer->GetAsyncTime().GetDifferenceInSeconds(timePresentBegin);
 
 #ifdef ENABLE_BENCHMARK_SENSOR
@@ -3497,6 +3490,7 @@ void CD3D9Renderer::RT_EndFrame()
 	GetS3DRend().NotifyFrameFinished();
 
 	// Disable screenshot code path for pure release builds on consoles
+	// Capture currently presented back-buffer to be able to captures frames without capture-lag
 #if !defined(_RELEASE) || CRY_PLATFORM_WINDOWS || defined(ENABLE_LW_PROFILERS)
 	if (CV_r_GetScreenShot)
 	{
@@ -3618,7 +3612,6 @@ void CD3D9Renderer::RT_PresentFast()
 	assert(hReturn == S_OK);
 
 	m_nRenderThreadFrameID++;
-	swapDC->PostPresent();
 }
 
 //////////////////////////////////////////////////////////////////////////
@@ -5206,7 +5199,6 @@ void CD3D9Renderer::PostLevelUnload()
 	{
 		ExecuteRenderThreadCommand( []{
 			CTexture::RT_FlushStreaming(false);
-			CRendererResources::ReleaseTempDepthSurfaces();
 
 			// reset post effects
 			if (gRenDev->m_pPostProcessMgr)
@@ -5473,8 +5465,7 @@ void CD3D9Renderer::BeginRenderDocCapture()
 			CRY_ASSERT(pDC->IsSwapChainBacked());
 			auto swapDC = static_cast<CSwapChainBackedRenderDisplayContext*>(pDC);
 
-			DXGI_SWAP_CHAIN_DESC desc = { 0 };
-			swapDC->GetSwapChain().GetSwapChain()->GetDesc(&desc);
+			DXGI_SWAP_CHAIN_DESC desc = swapDC->GetSwapChain().GetDesc();
 			fpStartFrameCap(desc.OutputWindow);
 			CryLogAlways("Started RenderDoc capture");
 		}
@@ -5496,8 +5487,7 @@ void CD3D9Renderer::EndRenderDocCapture()
 			CRY_ASSERT(pDC->IsSwapChainBacked());
 			auto swapDC = static_cast<CSwapChainBackedRenderDisplayContext*>(pDC);
 
-			DXGI_SWAP_CHAIN_DESC desc = { 0 };
-			swapDC->GetSwapChain().GetSwapChain()->GetDesc(&desc);
+			DXGI_SWAP_CHAIN_DESC desc = swapDC->GetSwapChain().GetDesc();
 			fpEndFrameCap(desc.OutputWindow);
 			CryLogAlways("Finished RenderDoc capture");
 		}

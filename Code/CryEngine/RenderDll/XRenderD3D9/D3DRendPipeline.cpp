@@ -527,7 +527,7 @@ void CD3D9Renderer::RT_PreRenderScene(CRenderView* pRenderView)
 	CMotionBlur::InsertNewElements();
 	CRenderMesh::UpdateModified();
 
-	// Calcualte AA jitter
+	// Calculate AA jitter
 	if (bAllowPostAA)
 	{
 		if (GetS3DRend().IsStereoEnabled())
@@ -575,7 +575,6 @@ void CD3D9Renderer::RT_PreRenderScene(CRenderView* pRenderView)
 
 void CD3D9Renderer::RT_PostRenderScene(CRenderView* pRenderView)
 {
-
 	{
 		PROFILE_FRAME(ShadowViewsEndFrame);
 		for (auto& fr : pRenderView->m_shadows.m_renderFrustums)
@@ -711,8 +710,6 @@ void CD3D9Renderer::RT_RenderScene(CRenderView* pRenderView)
 
 	////////////////////////////////////////////////
 
-	CFlashTextureSourceBase::RenderLights();
-
 	SRenderStatistics::Write().m_fRenderTime += iTimer->GetAsyncTime().GetDifferenceInSeconds(Time);
 
 	CV_r_nodrawnear            = nSaveDrawNear;
@@ -722,6 +719,9 @@ void CD3D9Renderer::RT_RenderScene(CRenderView* pRenderView)
 		PROFILE_FRAME(RenderViewEndFrame);
 		pRenderView->SwitchUsageMode(CRenderView::eUsageModeReadingDone);
 	}
+
+	if (CRendererCVars::CV_r_FlushToGPU >= 1)
+		GetDeviceObjectFactory().FlushToGPU();
 }
 
 //======================================================================================================

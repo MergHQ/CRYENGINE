@@ -301,7 +301,24 @@ SResourceLayout CDeviceResource::GetLayout() const
 
 CDeviceResource::ESubstitutionResult CDeviceResource::SubstituteUsedResource()
 {
-	return eSubResult_Failed;
+	auto& rFactory = CDeviceObjectFactory::GetInstance();
+	const auto& fenceManager = rFactory.GetDX11Scheduler()->GetFenceManager();
+
+	// NOTE: Poor man's resource tracking (take current time as last-used moment)
+	HRESULT hResult = rFactory.GetDX11Device()->SubstituteUsedCommittedResource(fenceManager.GetCurrentValues(), &m_pNativeResource);
+
+	if (hResult == S_FALSE)
+		return eSubResult_Kept;
+	if (hResult == E_FAIL)
+		return eSubResult_Failed;
+
+	ReleaseResourceViews();
+	AllocatePredefinedResourceViews();
+
+	// TODO: also call this when it is moved to CDeviceResource
+	// InvalidateDeviceResource(uint32 dirtyFlags);
+
+	return eSubResult_Substituted;
 }
 
 ////////////////////////////////////////////////////////////////////////////
@@ -809,8 +826,11 @@ void CDeviceTexture::UploadFromStagingResource(const uint32 nSubRes, StagingHook
 
 	assert(pStagingResource);
 
+	// ID3D11DeviceContext::Map : Map cannot be called with MAP_WRITE access, because the Resource was created as D3D11_USAGE_DYNAMIC.
+	// D3D11_USAGE_DYNAMIC Resources must use either MAP_WRITE_DISCARD or MAP_WRITE_NO_OVERWRITE with Map.
+
 	D3D11_MAPPED_SUBRESOURCE lrct;
-	HRESULT hr = gcpRendD3D->GetDeviceContext_ForMapAndUnmap().Map(pStagingResource, nSubRes, D3D11_MAP_WRITE_DISCARD, 0, &lrct);
+	HRESULT hr = gcpRendD3D->GetDeviceContext_ForMapAndUnmap().Map(pStagingResource, nSubRes, D3D11_MAP_WRITE_NO_OVERWRITE_SR, 0, &lrct);
 
 	if (S_OK == hr)
 	{

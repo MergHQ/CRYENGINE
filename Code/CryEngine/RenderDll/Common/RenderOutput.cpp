@@ -115,12 +115,8 @@ void CRenderOutput::BeginRendering(CRenderView* pRenderView, stl::optional<uint3
 	//////////////////////////////////////////////////////////////////////////
 	if (m_bUseTempDepthBuffer)
 	{
-		m_pTempDepthTexture = CRendererResources::GetTempDepthSurface(gcpRendD3D->GetFrameID(), m_OutputWidth, m_OutputHeight, true);
-		CRY_ASSERT(m_pTempDepthTexture);
-
-		m_pDepthTarget = m_pTempDepthTexture->texture.pTexture;
-		m_pDepthTarget->Lock();
-		m_pDepthTarget->m_nUpdateFrameID = gRenDev->GetRenderFrameID();
+		m_pDepthTarget = nullptr;
+		m_pDepthTarget.Assign_NoAddRef(CRendererResources::CreateDepthTarget(m_OutputWidth, m_OutputHeight, Clr_Empty, eTF_Unknown));
 	}
 
 	//////////////////////////////////////////////////////////////////////////
@@ -168,13 +164,9 @@ void CRenderOutput::EndRendering(CRenderView* pRenderView)
 {
 	CRY_ASSERT(gcpRendD3D->m_pRT->IsRenderThread());
 
-	if (m_pTempDepthTexture)
+	if (m_bUseTempDepthBuffer)
 	{
-		if (m_pTempDepthTexture->texture.pTexture)
-		{
-			m_pTempDepthTexture->texture.pTexture->Unlock();
-		}
-		m_pTempDepthTexture = nullptr;
+		m_pDepthTarget = nullptr;
 	}
 
 	if (m_pDisplayContext)
@@ -299,7 +291,8 @@ void CRenderOutput::AllocateColorTarget()
 	// NOTE: Actual device texture allocation happens just before rendering.
 	const uint32 renderTargetFlags = FT_NOMIPS | /* FT_DONT_RELEASE | */FT_DONT_STREAM | FT_USAGE_RENDERTARGET;
 
-	m_pColorTarget = CTexture::GetOrCreateRenderTarget("$HDR-Output", m_OutputWidth, m_OutputHeight, clearValue, eTT_2D, renderTargetFlags, eHDRFormat);
+	m_pColorTarget = nullptr;
+	m_pColorTarget.Assign_NoAddRef(CTexture::GetOrCreateRenderTarget("$HDR-Output", m_OutputWidth, m_OutputHeight, clearValue, eTT_2D, renderTargetFlags, eHDRFormat));
 }
 
 //////////////////////////////////////////////////////////////////////////
@@ -317,5 +310,6 @@ void CRenderOutput::AllocateDepthTarget()
 	// Create the native resolution depth stencil buffer for overlay rendering if needed
 	const uint32 renderTargetFlags = FT_NOMIPS | /* FT_DONT_RELEASE | */FT_DONT_STREAM | FT_USAGE_DEPTHSTENCIL;
 
-	m_pDepthTarget = CTexture::GetOrCreateDepthStencil("$Z-Output", m_OutputWidth, m_OutputHeight, clearValues, eTT_2D, renderTargetFlags, eZFormat);
+	m_pDepthTarget = nullptr;
+	m_pDepthTarget.Assign_NoAddRef(CTexture::GetOrCreateDepthStencil("$Z-Output", m_OutputWidth, m_OutputHeight, clearValues, eTT_2D, renderTargetFlags, eZFormat));
 }

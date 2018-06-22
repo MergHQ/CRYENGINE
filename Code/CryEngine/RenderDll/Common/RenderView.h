@@ -438,10 +438,9 @@ private:
 	uint32           m_RenderWidth = -1;
 	uint32           m_RenderHeight = -1;
 
-	CRenderOutputPtr                 m_pRenderOutput; // Output render target (currently used for recursive pass and secondary viewport)
-	TexSmartPtr                      m_pColorTarget = nullptr;
-	TexSmartPtr                      m_pDepthTarget = nullptr;
-	CRendererResources::CTempTexture m_pTempDepthTexture = nullptr;
+	CRenderOutputPtr m_pRenderOutput; // Output render target (currently used for recursive pass and secondary viewport)
+	TexSmartPtr      m_pColorTarget = nullptr;
+	TexSmartPtr      m_pDepthTarget = nullptr;
 
 	SRenderViewport  m_viewport;
 

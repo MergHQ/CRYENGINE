@@ -10,6 +10,7 @@
 
 struct ICVar;
 struct IConsole;
+struct IConsoleCmdArgs;
 
 class CRendererCVars
 {
@@ -181,6 +182,7 @@ public:
 	static int CV_r_VkHardwareComputeQueue;
 	static int CV_r_VkHardwareCopyQueue;
 	static int CV_r_ReverseDepth;
+	static int CV_r_FlushToGPU;
 	static int CV_r_EnableDebugLayer;
 	static int CV_r_NoDraw;
 	static int CV_r_UpdateInstances;
