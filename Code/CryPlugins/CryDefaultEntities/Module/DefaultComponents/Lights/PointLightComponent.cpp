@@ -65,11 +65,12 @@ namespace Cry
 			{
 				light.m_Flags |= DLF_CASTSHADOW_MAPS;
 
-				light.SetShadowBiasParams(1.f, 1.f);
-				light.m_fShadowUpdateMinRadius = light.m_fRadius;
+				light.SetShadowBiasParams(m_shadows.m_shadowBias, m_shadows.m_shadowSlopeBias);
+				light.m_fShadowUpdateMinRadius = m_shadows.m_shadowUpdateMinRadius;
+				light.m_fShadowResolutionScale = m_shadows.m_shadowResolutionScale;
+				light.m_nShadowMinResolution = m_shadows.m_shadowMinResolution;
 
-				float shadowUpdateRatio = 1.f;
-				light.m_nShadowUpdateRatio = max((uint16)1, (uint16)(shadowUpdateRatio * (1 << DL_SHADOW_UPDATE_SHIFT)));
+				light.m_nShadowUpdateRatio = max((uint16)1, (uint16)(m_shadows.m_shadowUpdateRatio * (1 << DL_SHADOW_UPDATE_SHIFT)));
 			}
 			else
 				light.m_Flags &= ~DLF_CASTSHADOW_MAPS;
