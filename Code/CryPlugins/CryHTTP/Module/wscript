@@ -1,0 +1,25 @@
+# Copyright 2001-2018 Crytek GmbH / Crytek Group. All rights reserved.
+
+def build(bld):
+
+	bld.CryEngineModule(
+		target     = 'CryHTTP',
+		vs_filter  = 'CryPlugins',
+		file_list  = 'cryhttp.waf_files',
+
+		pch        = 'StdAfx.cpp',
+				
+		includes   = [ 
+			'../Interface'
+		],
+		
+		use_module = ['curl'],
+
+		# The exported includes are used by GameSDK only, CryEngine does not need them.
+		module_provides = dict(
+			includes = [
+				bld.path.make_node('../Interface').abspath()
+			]
+		)
+	)
+		

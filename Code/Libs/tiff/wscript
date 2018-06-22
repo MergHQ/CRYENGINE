@@ -10,12 +10,16 @@ def build(bld):
 
 		use_module = ['zlib'],
 
-		includes   = [ Path('Code/SDKs/tiff-4.0.4/libtiff'), ],
+		includes   = [ Path('Code/SDKs/tiff-4.0.4/libtiff')],
+		win_includes   = [ Path('Code/Libs/tiff/include_win')],
+		linux_includes   = [ Path('Code/Libs/tiff/include_linux')],
 
 		module_provides = dict(
 			includes = [	
 				Path('Code/SDKs/tiff-4.0.4/libtiff'),	
 				Path('Code/Libs/tiff'),			
 			],
+			win_includes   = [ Path('Code/Libs/tiff/include_win')],
+			linux_includes   = [ Path('Code/Libs/tiff/include_linux')]
 		),
 	)	

@@ -1,0 +1,42 @@
+{
+    "CryGamePlatform_Steam_uber_0.cpp": {
+        "Multiplayer": [
+            "Steam/SteamMatchmaking.cpp",
+            "Steam/SteamMatchmaking.h",
+            "Steam/SteamNetworking.cpp",
+            "Steam/SteamNetworking.h",
+            "Steam/SteamUserLobby.cpp",
+            "Steam/SteamUserLobby.h",
+            "Steam/SteamServer.cpp",
+            "Steam/SteamServer.h"
+        ],
+        "Profile": [
+            "Steam/SteamStatistics.cpp",
+            "Steam/SteamStatistics.h",
+            "Steam/SteamUser.cpp",
+            "Steam/SteamUser.h",
+            "Steam/SteamAchievement.cpp",
+            "Steam/SteamAchievement.h",
+            "Steam/SteamLeaderboards.cpp",
+            "Steam/SteamLeaderboards.h"
+        ],
+        "RemoteStorage": [
+            "Steam/SteamRemoteFile.cpp",
+            "Steam/SteamRemoteFile.h",
+            "Steam/SteamRemoteStorage.cpp",
+            "Steam/SteamRemoteStorage.h",
+            "Steam/SteamSharedRemoteFile.cpp",
+            "Steam/SteamSharedRemoteFile.h"
+        ],
+        "Root": [
+            "Steam/SteamPlatform.cpp",
+            "Steam/SteamPlatform.h"
+        ],
+        "UserGeneratedContent": [
+            "Steam/UserGeneratedContent.cpp",
+            "Steam/UserGeneratedContent.h",
+            "Steam/UserGeneratedContentManager.cpp",
+            "Steam/UserGeneratedContentManager.h"
+        ]
+    }
+}

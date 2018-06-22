@@ -1,0 +1,26 @@
+{
+    "CryHTTP_cURL_uber_0.cpp": {
+        "Implementation": [
+            "HttpImplementation_cURL.cpp",
+            "HttpImplementation_cURL.h"
+        ]
+    },
+    "CryHTTP_sce_uber_0.cpp": {
+        "Implementation": [
+            "HttpImplementation_SCE.cpp",
+            "HttpImplementation_SCE.h"
+        ]
+    },
+    "CryHTTP_uber_0.cpp": {
+        "Root": [
+            "resource.h",
+            "StdAfx.cpp",
+            "StdAfx.h"
+        ]
+    },
+    "NoUberFile": {
+        "Root": [
+            "StdAfx.cpp"
+        ]
+    }
+}

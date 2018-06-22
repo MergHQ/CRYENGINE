@@ -2,23 +2,19 @@
 
 def build(bld):
 
-	bld.CryEngineStaticModule(
-		target = 'CrySchematycLegacyCore',
-		vs_filter = 'Projects/Hunt/Plugins/CrySchematycLegacy',
+	bld.CryEngineModule(
+		target = 'CrySchematyc2',
+		vs_filter = 'CryEngine',
 		file_list = 'cryschematyc.waf_files',
 
 		pch = 'StdAfx.cpp',
 		defines = 'SCHEMATYC_EXPORTS',
-		includes = [ 
-			'.', 
-			'../TemplateUtils', 
-			'../Interface', 
-			Path('Code/CryEngine/CryCommon'),
-			Path('Code/CryExtensions/CryLink/Interface')],
+		
+		includes = [Path('Code/CryEngine/CryAction') ],
+
 		module_provides = dict(
-			includes = [ Path('Code/Game_Hunt/Plugins/CrySchematycLegacy/TemplateUtils'), Path('Code/Game_Hunt/Plugins/CrySchematycLegacy/Interface')],
-			defines = [ 'USE_SCHEMATYC_CORE' ],
+			defines = [ 'USE_SCHEMATYC_LEGACY_CORE', 'USE_SCHEMATYC_LEGACY_BASE_ENV' ],
 		),
 		
-		linux_cxxflags = '-fPIC',
+		#linux_cxxflags = '-fPIC',
 	)	
