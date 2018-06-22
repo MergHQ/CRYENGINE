@@ -6,36 +6,36 @@
         ],
         "Header Files/Gpu/Particles": [
             "Gpu/Particles/GpuParticleComponentRuntime.h",
-            "Gpu/Particles/GpuParticleManager.h",
-            "Gpu/Particles/GpuParticleContainer.h",
-            "Gpu/Particles/GpuParticleFeatureBase.h",
-            "Gpu/Particles/GpuParticleFeatureFactory.h",
-            "Gpu/Particles/GpuParticleFeatureColor.h",
-            "Gpu/Particles/GpuParticleFeatureCollision.h",
-            "Gpu/Particles/GpuParticleFeatureField.h",
-            "Gpu/Particles/GpuParticleFeatureMotion.h",
-            "Gpu/Particles/GpuParticleFeatureFluidDynamics.h"
+			"Gpu/Particles/GpuParticleManager.h",
+			"Gpu/Particles/GpuParticleContainer.h",
+			"Gpu/Particles/GpuParticleFeatureBase.h",
+			"Gpu/Particles/GpuParticleFeatureFactory.h",
+			"Gpu/Particles/GpuParticleFeatureColor.h",
+			"Gpu/Particles/GpuParticleFeatureCollision.h",
+			"Gpu/Particles/GpuParticleFeatureField.h",
+			"Gpu/Particles/GpuParticleFeatureMotion.h",
+			"Gpu/Particles/GpuParticleFeatureFluidDynamics.h"
         ],
         "Header Files/Gpu/Physics": [
             "Gpu/Physics/GpuPhysicsParticleFluid.h"
         ],
-        "Source Files/Gpu": [
+		 "Source Files/Gpu": [
             "Gpu/GpuComputeBackend.cpp",
-            "Gpu/GpuBitonicSort.cpp",
-            "Gpu/GpuMergeSort.cpp"
+			"Gpu/GpuBitonicSort.cpp",
+			"Gpu/GpuMergeSort.cpp"
         ],
-        "Source Files/Gpu/Particles": [
+		 "Source Files/Gpu/Particles": [
             "Gpu/Particles/GpuParticleComponentRuntime.cpp",
-            "Gpu/Particles/GpuParticleManager.cpp",
-            "Gpu/Particles/GpuParticleContainer.cpp",
-            "Gpu/Particles/GpuParticleFeatureFactory.cpp",
-            "Gpu/Particles/GpuParticleFeatureColor.cpp",
-            "Gpu/Particles/GpuParticleFeatureCollision.cpp",
-            "Gpu/Particles/GpuParticleFeatureField.cpp",
-            "Gpu/Particles/GpuParticleFeatureMotion.cpp",
-            "Gpu/Particles/GpuParticleFeatureFluidDynamics.cpp"
+			"Gpu/Particles/GpuParticleManager.cpp",
+			"Gpu/Particles/GpuParticleContainer.cpp",
+			"Gpu/Particles/GpuParticleFeatureFactory.cpp",
+			"Gpu/Particles/GpuParticleFeatureColor.cpp",
+			"Gpu/Particles/GpuParticleFeatureCollision.cpp",
+			"Gpu/Particles/GpuParticleFeatureField.cpp",
+			"Gpu/Particles/GpuParticleFeatureMotion.cpp",
+			"Gpu/Particles/GpuParticleFeatureFluidDynamics.cpp"
         ],
-        "Source Files/Gpu/Physics": [
+		"Source Files/Gpu/Physics": [
             "Gpu/Physics/GpuPhysicsParticleFluid.cpp"
         ]
     },
@@ -49,22 +49,6 @@
             "../Common/ResFile_info.h",
             "../Common/ResFileLookupDataMan.h"
         ]
-    },
-    "CryRenderer_dx_orbis_uber_0.cpp": {
-        "DXOrbis": [],
-        "DXOrbis/Device": [],
-        "DXOrbis/Device/Resources": [],
-        "DXOrbis/Device/Resources/Buffer": [],
-        "DXOrbis/Device/Resources/Misc": [],
-        "DXOrbis/Device/Resources/States": []
-    },
-    "CryRenderer_dx_orbis_uber_1.cpp": {
-        "DXOrbis/DXOrbisGI": [],
-        "DXOrbis/Debug": [],
-        "DXOrbis/Device/Resources/Shaders": [],
-        "DXOrbis/Device/Resources/Textures": [],
-        "DXOrbis/Device/SCUE": [],
-        "DXOrbis/Layer0": []
     },
     "CryRenderer_render_elements_uber_0.cpp": {
         "Common/RendElements": [
@@ -290,11 +274,9 @@
         ],
         "Header Files": [
             "ShadowTextureGroupManager.h",
-            "DeviceManager/D3D11/DeviceSubmissionQueue_D3D11.inl",
             "../Common/Textures/ITextureStreamer.h",
             "../Common/Shaders/ShaderAllocator.h",
             "../Common/CryNameR.h",
-            "DeviceManager/D3D11/DeviceWrapper_D3D11.h",
             "../Common/ISmartGlassContext.h",
             "../Common/LightVolumeBuffer.h",
             "../Common/ParticleBuffer.h",
@@ -496,14 +478,6 @@
         ]
     },
     "NoUberFile": {
-        "Common": [
-            "GpuHeap.h",
-            "GpuHeap.cpp",
-            "GpuHeap.natvis",
-            "GpuHeap.h",
-            "GpuHeap.cpp",
-            "GpuHeap.natvis"
-        ],
         "DX11": [
             "DX11/CryDX11.cpp",
             "DX11/CryDX11.hpp"

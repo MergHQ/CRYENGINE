@@ -17,6 +17,7 @@ def load_clang_common_settings(v):
 	v['CC_SRC_F'] = v['CXX_SRC_F'] = []
 	v['CC_TGT_F'] = v['CXX_TGT_F'] = ['-c', '-o']
 	
+	v['CPPPATH_SYSTEM_ST'] = '-isystem%s'
 	v['CPPPATH_ST'] = '-I%s'
 	v['DEFINES_ST'] = '-D%s'
 	
@@ -98,7 +99,7 @@ def load_clang_common_settings(v):
 	v['CXXFLAGS'] += COMMON_COMPILER_FLAGS[:] + [
 		'-fno-rtti', # Disable RTTI
 		'-fno-exceptions', # Disable Exceptions
-		'-std=c++11', # Enable c++11 features
+		'-std=c++14', # Enable c++14 features
 	]
 	
 	# Linker Flags

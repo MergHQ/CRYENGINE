@@ -1092,6 +1092,7 @@
             "Terrain/RGBLayer.h",
             "Terrain/SurfaceType.h",
             "Terrain/TerrainBeachGen.h",
+            "Terrain/TerrainDebugger.cpp",
             "Terrain/TerrainGrid.h",
             "Terrain/TerrainLayerTexGen.h",
             "Terrain/TerrainLightGen.h",
