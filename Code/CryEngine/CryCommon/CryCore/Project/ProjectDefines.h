@@ -322,8 +322,6 @@ extern void SliceAndSleep(const char* pFunc, int line);
 	#define SW_NAVMESH_USE_GUID
 #endif
 
-#include "ProjectDefinesInclude.h"
-
 #ifdef RELEASE
 // Forces the .cryproject file to be read from a .pak file instead of directly from disk.
 #define CRY_FORCE_CRYPROJECT_IN_PAK
@@ -379,5 +377,9 @@ extern void SliceAndSleep(const char* pFunc, int line);
 
 // #define this if you still need the old C1-style AI-character system, but which will get removed soon
 //#define USE_DEPRECATED_AI_CHARACTER_SYSTEM
+
+#if defined(CRY_ENGINE_DEFINE_OVERRIDE_FILE)
+	#include CRY_ENGINE_DEFINE_OVERRIDE_FILE
+#endif
 
 #endif // PROJECTDEFINES_H
