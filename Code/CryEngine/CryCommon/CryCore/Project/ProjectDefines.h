@@ -97,11 +97,11 @@ extern void SliceAndSleep(const char* pFunc, int line);
 
 // Compile with unit testing enabled when not in RELEASE
 #if !defined(_RELEASE)
-	#define CRY_UNIT_TESTING
+	#define CRY_TESTING
 
 // configure the unit testing framework, if we have exceptions or not
 	#if !(CRY_PLATFORM_APPLE || CRY_PLATFORM_LINUX || CRY_PLATFORM_ANDROID || CRY_PLATFORM_ORBIS)
-		#define CRY_UNIT_TESTING_USE_EXCEPTIONS
+		#define CRY_TESTING_USE_EXCEPTIONS
 	#endif
 
 #endif

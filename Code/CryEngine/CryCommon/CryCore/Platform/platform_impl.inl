@@ -210,7 +210,7 @@ extern "C" DLL_EXPORT void ModuleInitISystem(ISystem* pSystem, const char* modul
 		pCryFactoryImpl->RegisterFactories(g_pHeadToRegFactories);
 	}
 	#endif
-	#ifdef CRY_UNIT_TESTING
+	#ifdef CRY_TESTING
 	// Register All unit tests of this module.
 	if (pSystem)
 	{
@@ -226,7 +226,7 @@ extern "C" DLL_EXPORT void ModuleInitISystem(ISystem* pSystem, const char* modul
 			}
 		}
 	}
-	#endif //CRY_UNIT_TESTING
+	#endif //CRY_TESTING
 }
 
 int g_iTraceAllocations = 0;

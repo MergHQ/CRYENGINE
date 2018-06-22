@@ -20,7 +20,7 @@
 #include <CryCore/StaticInstanceList.h>
 #include <type_traits>
 #include <deque>
-#if defined(CRY_UNIT_TESTING_USE_EXCEPTIONS)
+#if defined(CRY_TESTING_USE_EXCEPTIONS)
 	#include <exception>
 #endif
 #include <CrySystem/ISystem.h>
@@ -30,7 +30,7 @@
 
 namespace CryTest
 {
-#if defined(CRY_UNIT_TESTING_USE_EXCEPTIONS)
+#if defined(CRY_TESTING_USE_EXCEPTIONS)
 //! Helper classes.
 class assert_exception
 	: public std::exception
@@ -283,6 +283,14 @@ std::unique_ptr<CTest> CConcreteTestFactory<TestClass >::CreateTest() const
   }                                                         \
   namespace SuiteName
 
+//! Traps the debugger when attached.
+//! Implemented as a Macro instead of function (see CryDebugBreak) to avoid additional layers in the call stack when debugging.
+#if CRY_PLATFORM_WINDOWS
+#define CRY_TEST_DEBUG_BREAK() if (IsDebuggerPresent()){__debugbreak();}
+#else
+#define CRY_TEST_DEBUG_BREAK() __debugbreak()
+#endif
+
 //! Fails and reports if the specified expression evaluates to false.
 //! Usage: CRY_TEST_ASSERT(expression)
 //! Usage: CRY_TEST_ASSERT(expression, errorMsg)              where errorMsg is string or string literal
@@ -292,7 +300,7 @@ std::unique_ptr<CTest> CConcreteTestFactory<TestClass >::CreateTest() const
   {                                                                           \
   if (!(expr))                                                                \
   {                                                                           \
-    CryDebugBreak();                                                          \
+    CRY_TEST_DEBUG_BREAK();                                                   \
     ::CryTest::impl::ReportError(__FILE__, __LINE__, # expr, ## __VA_ARGS__); \
   }                                                                           \
   } while (0)
@@ -306,7 +314,7 @@ std::unique_ptr<CTest> CConcreteTestFactory<TestClass >::CreateTest() const
   {                                                                                         \
     if (!(IsEquivalent(valueA, valueB, epsilon)))                                           \
     {                                                                                       \
-      CryDebugBreak();                                                                      \
+      CRY_TEST_DEBUG_BREAK();                                                               \
       string message = # valueA " != " # valueB " with epsilon " # epsilon " [";            \
       message.append(::CryTest::impl::FormatVar(valueA)).append(" != ");                    \
       message.append(::CryTest::impl::FormatVar(valueB)).append("]");                       \
@@ -323,7 +331,7 @@ std::unique_ptr<CTest> CConcreteTestFactory<TestClass >::CreateTest() const
   {                                                                                         \
     if (!::CryTest::impl::AreEqual(valueA, valueB))                                         \
     {                                                                                       \
-      CryDebugBreak();                                                                      \
+      CRY_TEST_DEBUG_BREAK();                                                               \
       string message = # valueA " != " # valueB " [";                                       \
       message.append(::CryTest::impl::FormatVar(valueA)).append(" != ");                    \
       message.append(::CryTest::impl::FormatVar(valueB)).append("]");                       \
@@ -340,7 +348,7 @@ std::unique_ptr<CTest> CConcreteTestFactory<TestClass >::CreateTest() const
   {                                                                                         \
     if (!::CryTest::impl::AreInequal(valueA, valueB))                                       \
     {                                                                                       \
-      CryDebugBreak();                                                                      \
+      CRY_TEST_DEBUG_BREAK();                                                               \
       string message = # valueA " == " # valueB " [";                                       \
       message.append(::CryTest::impl::FormatVar(valueA)).append(" != ");                    \
       message.append(::CryTest::impl::FormatVar(valueB)).append("]");                       \

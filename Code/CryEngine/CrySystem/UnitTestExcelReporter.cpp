@@ -23,14 +23,14 @@
 
 namespace CryTest
 {
-constexpr char kOutputFileName[] = "%USER%/TestResults/UnitTest.xml";
+constexpr char kOutputFileName[] = "%USER%/TestResults/CryTest.xml";
 
-void CTestExcelReporter::OnFinishTesting(const SRunContext& context)
+void CTestExcelReporter::OnFinishTesting(const SRunContext& context, bool openReport)
 {
 	// Generate report.
 	XmlNodeRef Workbook = GetISystem()->CreateXmlNode("Workbook");
 	InitExcelWorkbook(Workbook);
-	NewWorksheet("UnitTests");
+	NewWorksheet("Tests");
 
 	XmlNodeRef Column;
 	Column = m_CurrTable->newChild("Column");
@@ -154,7 +154,37 @@ void CTestExcelReporter::OnFinishTesting(const SRunContext& context)
 	}
 
 	bool bSaveSucceed = SaveToFile(kOutputFileName);
-	PostFinishTesting(context, bSaveSucceed);
+	if (openReport)
+	{
+#if CRY_PLATFORM_WINDOWS
+		if (!bSaveSucceed)
+		{
+			// For local testing notify user to close previously opened report.
+			// Use primitive windows msgbox because we are supposed to hide all pop-ups during auto testing.
+			CryMessageBox("Cry Test failed to save one or more report documents, make sure the file is writable!", "Cry Test", eMB_Error);
+		}
+		else
+		{
+			//Open report file if any test failed. Since the notification is used for local testing only, we only need Windows
+			if (context.failedTestCount > 0)
+			{
+				m_log.Log("%d Tests failed, opening report...", context.failedTestCount);
+				int nAdjustFlags = 0;
+				char path[_MAX_PATH];
+				const char* szAdjustedPath = gEnv->pCryPak->AdjustFileName(kOutputFileName, path, nAdjustFlags);
+				if (szAdjustedPath != nullptr)
+				{
+					//should open it with Excel
+					int err = (int)::ShellExecute(NULL, "open", szAdjustedPath, NULL, NULL, SW_SHOW);
+					if (err <= 32)  //returns a value greater than 32 if succeeds.
+					{
+						m_log.Log("Failed to open report %s, error code: %d", szAdjustedPath, err);
+					}
+				}
+			}
+		}
+#endif
+	}
 }
 
 void CTestExcelReporter::OnSingleTestStart(const STestInfo& testInfo)
@@ -182,49 +212,28 @@ void CTestExcelReporter::OnSingleTestFinish(const STestInfo& testInfo, float fRu
 	m_results.push_back(STestResult { testInfo, fRunTimeInMs, bSuccess, failures });
 }
 
-static constexpr const char* szExcelReporterSave = "%USER%/TestResults/UnitTestTemp.json";
+static constexpr const char* szExcelReporterSave = "%USER%/TestResults/CryTestTemp.json";
 
-void CTestExcelReporter::OnBreakTesting(const SRunContext& context)
+void CTestExcelReporter::SaveTemporaryReport()
 {
 	Serialization::SaveJsonFile(szExcelReporterSave, *this);
 }
 
-void CTestExcelReporter::OnRecoverTesting(const SRunContext& context)
+void CTestExcelReporter::RecoverTemporaryReport()
 {
 	Serialization::LoadJsonFile(*this, szExcelReporterSave);
 	gEnv->pCryPak->RemoveFile(szExcelReporterSave);
 }
 
-void CTestExcelNotificationReporter::PostFinishTesting(const SRunContext& context, bool bSavedReports) const
+bool CTestExcelReporter::HasTest(const STestInfo& testInfo) const
 {
-#if CRY_PLATFORM_WINDOWS
-	if (!bSavedReports)
+	for (const STestResult& result : m_results)
 	{
-		// For local unit testing notify user to close previously opened report.
-		// Use primitive windows msgbox because we are supposed to hide all pop-ups during auto testing.
-		CryMessageBox("Unit test failed to save one or more report documents, make sure the file is writable!", "Unit Test", eMB_Error);
-	}
-	else
-	{
-		//Open report file if any test failed. Since the notification is used for local testing only, we only need Windows
-		if (context.failedTestCount > 0)
+		if (result.testInfo.name == testInfo.name)
 		{
-			m_log.Log("%d Tests failed, opening report...", context.failedTestCount);
-			int nAdjustFlags = 0;
-			char path[_MAX_PATH];
-			const char* szAdjustedPath = gEnv->pCryPak->AdjustFileName(kOutputFileName, path, nAdjustFlags);
-			if (szAdjustedPath != nullptr)
-			{
-				//should open it with Excel
-				int err = (int)::ShellExecute(NULL, "open", szAdjustedPath, NULL, NULL, SW_SHOW);
-				if (err <= 32)  //returns a value greater than 32 if succeeds.
-				{
-					m_log.Log("Failed to open report %s, error code: %d", szAdjustedPath, err);
-				}
-			}
+			return true;
 		}
 	}
-#endif
+	return false;
 }
-
 }

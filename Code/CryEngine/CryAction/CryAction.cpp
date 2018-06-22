@@ -2309,16 +2309,22 @@ bool CCryAction::CompleteInit()
 
 	InitCommands();
 
-#if defined(CRY_UNIT_TESTING)
+#if defined(CRY_TESTING)
+	// Flag is set when testing is specified from command line arguments
+	// This means testing is started by running the testing target or automation, instead of the console command "crytest".
+	// In this case we run all tests and quit afterwards.
 	if (gEnv->bTesting)
 	{
-		//in local unit tests we pass in -unit_test_open_failed to notify the user, in automated tests we don't pass in.
-		CryTest::EReporterType reporterType = m_pSystem->GetICmdLine()->FindArg(eCLAT_Pre, "unit_test_open_failed") ? 
-			CryTest::EReporterType::ExcelWithNotification : CryTest::EReporterType::Excel;
 		CryTest::ITestSystem* pTestSystem = m_pSystem->GetITestSystem();
 		CRY_ASSERT(pTestSystem != nullptr);
+
 		pTestSystem->SetQuitAfterTests(true);
-		pTestSystem->Run(reporterType);
+
+		// For manual testing we pass in -crytest_open_report to open the test report for the user, 
+		// in automated tests we don't. See Build.cmake.
+		pTestSystem->SetOpenReport(m_pSystem->GetICmdLine()->FindArg(eCLAT_Pre, "crytest_open_report") != nullptr);
+
+		pTestSystem->Run();
 	}
 #endif
 

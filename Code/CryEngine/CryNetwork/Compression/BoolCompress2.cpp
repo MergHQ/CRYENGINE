@@ -109,7 +109,7 @@ ILINE CBoolCompress2::SSymLow CBoolCompress2::GetSymLow(bool isLastValue, uint8 
 
 #include <CrySystem/Testing/CryTest.h>
 
-#if defined(CRY_UNIT_TESTING) && USE_MEMENTO_PREDICTORS
+#if defined(CRY_TESTING) && USE_MEMENTO_PREDICTORS
 
 CRY_TEST_SUITE(NetCompression)
 {

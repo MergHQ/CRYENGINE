@@ -2648,7 +2648,7 @@ bool CSystem::Initialize(SSystemInitParams& startupParams)
 	}
 
 	// set unit test flag at start so multiple systems could handle initialization differently when needed
-	if (m_pCmdLine->FindArg(eCLAT_Pre, "run_unit_tests"))
+	if (m_pCmdLine->FindArg(eCLAT_Pre, "run_crytest"))
 	{
 		startupParams.bTesting = true;
 	}
