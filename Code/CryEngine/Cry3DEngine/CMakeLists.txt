@@ -291,9 +291,6 @@ add_sources("NoUberFile"
 	SOURCE_GROUP "Root"
 		"StdAfx.cpp"
 		"StdAfx.h"
-	SOURCE_GROUP "Mesh Compiler"
-		"${SDK_DIR}/TangentBasisComputation/mikkelsen/mikktspace.cpp"
-		"${SDK_DIR}/TangentBasisComputation/mikkelsen/mikktspace.h"
 )
 
 add_sources("ParticleFeatures_uber.cpp"
@@ -389,7 +386,7 @@ end_sources()
 #END-FILE-LIST
 
 MACRO(setup_Cry3DEngine)
-	target_link_libraries( ${THIS_PROJECT} PRIVATE lz4 )
+	target_link_libraries( ${THIS_PROJECT} PRIVATE lz4 mikkelsen)
 	target_include_directories(${THIS_PROJECT} PRIVATE "${SDK_DIR}/TangentBasisComputation")
 
 	if (ORBIS OR CMAKE_CXX_COMPILER_ID STREQUAL "Clang")

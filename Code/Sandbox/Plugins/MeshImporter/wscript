@@ -23,6 +23,7 @@ def build(bld):
 		defines                     = [ 'BUILDING_FBX_TOOL' ],
 		includes                    = [ Path('Code/SDKs/FbxSdk/include'), Path('Code/Sandbox/Plugins/MFCToolsPlugin') ],
 		use                         = [ 'Sandbox', 'MFCToolsPlugin'],
+		use_module                  = ['mikkelsen'],
 		pch                         = 'StdAfx.cpp',
 		win_x64_debug_libpath       = Path('Code/SDKs/FbxSdk/lib/' + fbx_sdk_subfolder + '/x64/debug'),
 		win_x64_profile_libpath     = Path('Code/SDKs/FbxSdk/lib/' + fbx_sdk_subfolder + '/x64/release'),

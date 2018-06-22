@@ -1,0 +1,18 @@
+# Copyright 2001-2018 Crytek GmbH / Crytek Group. All rights reserved.
+
+def build(bld):
+
+	bld.CryEngineStaticModule( 
+		target    = 'mikkelsen', 
+		vs_filter = 'Libs',
+		file_list = 'mikkelsen.waf_files',
+		exclude_from_static_code_analyzer = True,
+		includes  = [ Path('Code/SDKs/TangentBasisComputation/mikkelsen') ],
+		cflags    = [ '/W0' ], # Disable warnings in 3rdParty code
+
+		module_provides = dict(
+			includes = [
+				Path('Code/SDKs/TangentBasisComputation'),
+			],
+		),
+	)
