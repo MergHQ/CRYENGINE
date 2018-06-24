@@ -888,7 +888,8 @@ bool CTexture::RenderEnvironmentCMHDR(int size, const Vec3& Pos, TArray<unsigned
 					});
 				}
 
-				GetDeviceObjectFactory().IssueFrameFences();
+				// After download clean up temporal memory pools
+				GetDeviceObjectFactory().FlushToGPU(false, true);
 			}, ERenderCommandFlags::FlushAndWait);
 
 		} while (++waitFrames <= maxWaitFrames && bStreamingTasksInProgress);
@@ -1218,7 +1219,8 @@ bool CFlashTextureSource::Update()
 
 void CFlashTextureSourceSharedRT::ProbeDepthStencilSurfaceCreation(int width, int height)
 {
-	gcpRendD3D->GetTempDepthSurface(gcpRendD3D->GetFrameID(), width, height);
+	CTexture* pTex = gcpRendD3D->CreateDepthTarget(width, height, Clr_Empty, eTF_Unknown);
+	SAFE_RELEASE(pTex);
 }
 
 bool CFlashTextureSourceSharedRT::Update()

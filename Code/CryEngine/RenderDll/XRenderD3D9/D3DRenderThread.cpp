@@ -54,6 +54,9 @@ void CD3D9Renderer::RT_FlashRenderInternal(std::shared_ptr<IFlashPlayer> &&pPlay
 	}
 
 	SetProfileMarker("FLASH_RENDERING", CRenderer::ESPM_POP);
+
+	if (CRendererCVars::CV_r_FlushToGPU >= 1)
+		GetDeviceObjectFactory().FlushToGPU();
 }
 
 void CD3D9Renderer::RT_FlashRenderInternal(std::shared_ptr<IFlashPlayer_RenderProxy> &&pPlayer, bool bDoRealRender)
@@ -100,6 +103,9 @@ void CD3D9Renderer::RT_FlashRenderInternal(std::shared_ptr<IFlashPlayer_RenderPr
 	{
 		pPlayer->DummyRenderCallback(IFlashPlayer_RenderProxy::EFT_Mono);
 	}
+
+	if (CRendererCVars::CV_r_FlushToGPU >= 1)
+		GetDeviceObjectFactory().FlushToGPU();
 }
 
 void CD3D9Renderer::RT_FlashRenderPlaybackLocklessInternal(std::shared_ptr<IFlashPlayer_RenderProxy> &&pPlayer, int cbIdx, bool bFinalPlayback, bool bDoRealRender)
@@ -145,6 +151,9 @@ void CD3D9Renderer::RT_FlashRenderPlaybackLocklessInternal(std::shared_ptr<IFlas
 	{
 		pPlayer->DummyRenderCallback(IFlashPlayer_RenderProxy::EFT_Mono);
 	}
+
+	if (CRendererCVars::CV_r_FlushToGPU >= 1)
+		GetDeviceObjectFactory().FlushToGPU();
 }
 
 void CD3D9Renderer::RT_Init()

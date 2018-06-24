@@ -3,6 +3,8 @@
 #include "stdafx.h"
 #include "ParametricSampler.h"
 
+#include <numeric>
+
 #include <CryRenderer/IRenderAuxGeom.h>
 #include "CharacterInstance.h"
 #include "CharacterManager.h"
@@ -71,20 +73,12 @@ f32 SParametricSamplerInternal::Parameterizer(const CAnimationSet* pAnimationSet
 		m_fBlendWeight[i] /= fTotalSum; //normalize weights
 
 #if !defined(_RELEASE)
-	uint32 nExtrapolation1 = 0;
-	for (uint32 i = 0; i < m_numExamples; i++)
-		nExtrapolation1 |= uint32(m_fBlendWeight[i] < -5.2f);
-	uint32 nExtrapolation2 = 0;
-	for (uint32 i = 0; i < m_numExamples; i++)
-		nExtrapolation2 |= uint32(m_fBlendWeight[i] > 5.2f);
-
-	fTotalSum = 0.0f;
-	for (uint32 i = 0; i < m_numExamples; i++)
-		fTotalSum += m_fBlendWeight[i];
-	if (fabsf(fTotalSum - 1.0f) > 0.005f || nExtrapolation1 || nExtrapolation2)
 	{
-		assert(!"Sum of weights is wrong");
-		CryWarning(VALIDATOR_MODULE_ANIMATION, VALIDATOR_ERROR, "Sum of weights is wrong");
+		const float weightSum = std::accumulate(m_fBlendWeight, m_fBlendWeight + m_numExamples, 0.0f);
+		if (std::abs(weightSum - 1.0f) > 0.005f)
+		{
+			CryWarning(VALIDATOR_MODULE_ANIMATION, VALIDATOR_ERROR, "Parametric sampler encountered an error while processing '%s': Blend weights do not sum up to 1.0f.", rLMG.GetFilePath());
+		}
 	}
 #endif
 

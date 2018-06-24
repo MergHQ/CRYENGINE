@@ -182,6 +182,7 @@
             "CryCore/CryVariant.h",
             "CryCore/optional.h",
             "CryCore/DynamicEnum.h",
+            "CryCore/SmallFunction.h",
             "CryCore/Common_TypeInfo2.h",
             "CryCore/Common_TypeInfo.h",
             "CryCore/TypeInfo_decl.h",

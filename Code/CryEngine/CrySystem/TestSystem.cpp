@@ -1,8 +1,8 @@
 // Copyright 2001-2018 Crytek GmbH / Crytek Group. All rights reserved.
 
 #include "StdAfx.h"
-#if !defined(CRY_UNIT_TESTING_USE_EXCEPTIONS)
-#include <setjmp.h>
+#if !defined(CRY_TESTING_USE_EXCEPTIONS)
+	#include <setjmp.h>
 #endif
 #include <CrySystem/ISystem.h>                      // ISystem
 #include <CrySystem/IConsole.h>                     // IConsole
@@ -14,499 +14,501 @@
 namespace CryTest
 {
 
-	static constexpr float FreezeTimeOut = 120.f;
-
-	static void CreateTimeOutRecord(const string& testName)
+class CTestRecordFile
+{
+public:
+	CTestRecordFile(const char* path)
+		: m_Path(path)
 	{
-		const char* path = "%USER%/TestResults/UnitTestTimeOut.txt";
-		FILE* timeoutFile = gEnv->pCryPak->FOpen(path, "w");
-		if (timeoutFile)
-		{
-			gEnv->pCryPak->FPrintf(timeoutFile, "%s", testName.c_str());
-			gEnv->pCryPak->FClose(timeoutFile);
-		}
-	}
-
-	static stl::optional<string> DetectAndClearTimeOutRecord()
-	{
-		stl::optional<string> result;
-		const char* path = "%USER%/TestResults/UnitTestTimeOut.txt";
-		FILE* timeoutFile = gEnv->pCryPak->FOpen(path, "r");
-		if (timeoutFile)
+		FILE* record = gEnv->pCryPak->FOpen(m_Path, "r");
+		if (record)
 		{
 			char testName[256] = {};
-			gEnv->pCryPak->FGets(testName, 256, timeoutFile);
+			gEnv->pCryPak->FGets(testName, 256, record);
 			if (*testName)
 			{
-				result = string(testName);
+				m_LastRunningTest = string(testName);
 			}
-			gEnv->pCryPak->FClose(timeoutFile);
-			gEnv->pCryPak->RemoveFile(path);
-		}
-		return result;
-	}
-
-	CTestSystem::CTestSystem(ISystem* pSystem)
-		: m_log(pSystem)
-	{
-		// Listen to asserts and fatal errors, turn them into unit test failures during the test
-		if (!gEnv->pSystem->RegisterErrorObserver(this))
-		{
-			CRY_ASSERT_MESSAGE(false, "Test system failed to register error system callback");
-		}
-
-		// Spawn a thread to help figuring out time out or hang
-		if (!gEnv->pThreadManager->SpawnThread(this, "Test System"))
-		{
-			CRY_ASSERT_MESSAGE(false, "Error spawning test system watch thread.");
-		}
-
-		// Register tests defined in this module
-		for (CTestFactory* pFactory = CTestFactory::GetFirstInstance();
-			pFactory != nullptr;
-			pFactory = pFactory->GetNextInstance())
-		{
-			pFactory->SetModuleName("CrySystem");
-			AddFactory(pFactory);
+			gEnv->pCryPak->FClose(record);
 		}
 	}
 
-	CTestSystem::~CTestSystem()
+	~CTestRecordFile()
 	{
-		SignalStopWork();
-		gEnv->pThreadManager->JoinThread(this, eJM_Join);
+		CleanUp();
+	}
 
-		// Clean up listening to asserts and fatal errors
-		if (!gEnv->pSystem->UnregisterErrorObserver(this))
+	stl::optional<string> GetLastTestName() const { return m_LastRunningTest; }
+	void                  SetLastTestName(string name)
+	{
+		FILE* record = gEnv->pCryPak->FOpen(m_Path, "w");
+		if (record)
 		{
-			CRY_ASSERT_MESSAGE(false, "Test system failed to unregister error system callback");
+			m_LastRunningTest = name;
+			gEnv->pCryPak->FPrintf(record, "%s", name.c_str());
+			gEnv->pCryPak->FClose(record);
 		}
 	}
 
-	//////////////////////////////////////////////////////////////////////////
-	void RunUnitTests(IConsoleCmdArgs* pArgs)
+private:
+	void CleanUp()
 	{
-		// Check for "noquit" option.
-		bool quitAfter = true;
-		for (int i = 1; i < pArgs->GetArgCount(); i++)
+		if (gEnv && gEnv->pCryPak)
 		{
-			if (strcmpi(pArgs->GetArg(i), "noquit") == 0)
-			{
-				quitAfter = false;
-				break;
-			}
+			gEnv->pCryPak->RemoveFile(m_Path);
 		}
-
-		ITestSystem* pTestSystem = gEnv->pSystem->GetITestSystem();
-		pTestSystem->SetQuitAfterTests(quitAfter);
-		pTestSystem->Run(EReporterType::Excel);
 	}
 
-	//////////////////////////////////////////////////////////////////////////
-	/*static*/ void CTestSystem::InitCommands()
+	const char*           m_Path = nullptr;
+	stl::optional<string> m_LastRunningTest;
+};
+
+struct SCryTestArgumentAutoComplete : public IConsoleArgumentAutoComplete
+{
+	// Gets number of matches for the argument to auto complete.
+	virtual int GetCount() const override
 	{
-		REGISTER_COMMAND("RunUnitTests", RunUnitTests, VF_INVISIBLE | VF_CHEAT, "Execute a set of unit tests");
+		return testNames.size();
 	}
 
-	//////////////////////////////////////////////////////////////////////////
-	void CTestSystem::InitLog()
+	// Gets argument value by index, nIndex must be in 0 <= nIndex < GetCount()
+	virtual const char* GetValue(int nIndex) const override
 	{
-		m_log.SetFileName("%USER%/TestResults/TestLog.log");
+		return testNames[nIndex];
 	}
 
-	//////////////////////////////////////////////////////////////////////////
-	ILog* CTestSystem::GetLog()
+	void Add(CTestFactory* pFactory)
 	{
-		return &m_log;
+		auto& info = pFactory->GetTestInfo();
+		string name;
+		if (!info.module.empty())
+			name += info.module;
+		if (!info.suite.empty())
+			name += "." + info.suite;
+		name += "." + info.name;
+		if (!name.empty())
+			testNames.push_back(name);
 	}
 
-	//////////////////////////////////////////////////////////////////////////
-	class CLogTestReporter : public IReporter
-	{
-	public:
-		CLogTestReporter(ILog& log) : m_log(log) {}
-	private:
-		ILog & m_log;
-	private:
-		virtual void OnStartTesting(const SRunContext& context) override
-		{
-			m_log.Log("Testing Started");
-		}
-		virtual void OnFinishTesting(const SRunContext& context) override
-		{
-			m_log.Log("Testing Finished");
-		}
-		virtual void OnSingleTestStart(const STestInfo& testInfo) override
-		{
-			m_log.Log("Running test: [%s]%s:%s", testInfo.module.c_str(), testInfo.suite.c_str(), testInfo.name.c_str());
-		}
-		virtual void OnSingleTestFinish(const STestInfo& testInfo, float fRunTimeInMs, bool bSuccess, const std::vector<SError>& failures) override
-		{
-			if (bSuccess)
-				m_log.Log("Test result: [%s]%s:%s | OK (%3.2fms)", testInfo.module.c_str(), testInfo.suite.c_str(), testInfo.name.c_str(), fRunTimeInMs);
-			else
-			{
-				m_log.Log("Test result: [%s]%s:%s | %d failures:", testInfo.module.c_str(), testInfo.suite.c_str(), testInfo.name.c_str(), failures.size());
-				for (const SError& err : failures)
-				{
-					m_log.Log("at %s line %d:\t%s", err.fileName.c_str(), err.lineNumber, err.message.c_str());
-				}
-			}
-		}
-		virtual void OnBreakTesting(const SRunContext& context) override
-		{
-			//Nothing particular needs to be done
-		}
-		virtual void OnRecoverTesting(const SRunContext& context) override
-		{
-			//Nothing particular needs to be done
-		}
-	};
+	std::vector<string> testNames;
+};
 
-#if !defined(CRY_UNIT_TESTING_USE_EXCEPTIONS)
-	jmp_buf* GetAssertJmpBuf()
+static SCryTestArgumentAutoComplete sCryTestArgAutoComplete;
+
+static constexpr float FreezeTimeOut = 120.f;
+
+class CTestSystem::CTestInstance
+{
+public:
+	CTestInstance(CTestFactory* pTestFactory)
 	{
-		static jmp_buf s_jmpBuf;
-		return &s_jmpBuf;
+		m_currentTestInfo = pTestFactory->GetTestInfo();
+		m_pCurrentTest = pTestFactory->CreateTest();
+		m_TimeOut = pTestFactory->GetTimeOut();
 	}
+	void  Init()           { m_pCurrentTest->Init(); }
+	void  Done()           { m_pCurrentTest->Done(); }
+	void  Run()            { m_pCurrentTest->Run(); }
+	bool  UpdateCommands() { return m_pCurrentTest->UpdateCommands(); }
+	float GetTimeOut() const
+	{
+		return m_TimeOut;
+	}
+	void StartCountingCurrentTestTime()
+	{
+		m_currentTestStartTime = std::chrono::system_clock::now();
+	}
+	std::chrono::system_clock::duration GetCurrentTestElapsed()
+	{
+		return std::chrono::system_clock::now() - m_currentTestStartTime;
+	}
+	const STestInfo&           GetTestInfo() const    { return m_currentTestInfo; }
+	void                       AddFailure(SError err) { m_currentTestFailures.push_back(err); }
+	const std::vector<SError>& GetFailures() const    { return m_currentTestFailures; }
+
+private:
+
+	std::unique_ptr<CTest>                m_pCurrentTest;
+	float                                 m_TimeOut;
+	std::chrono::system_clock::time_point m_currentTestStartTime;
+	STestInfo                             m_currentTestInfo;
+	std::vector<SError>                   m_currentTestFailures;
+};
+
+CTestSystem::CTestSystem(ISystem* pSystem)
+	: m_log(pSystem)
+{
+	// Listen to asserts and fatal errors, turn them into test failures during the test
+	if (!gEnv->pSystem->RegisterErrorObserver(this))
+	{
+		CRY_ASSERT_MESSAGE(false, "Test system failed to register error system callback");
+	}
+
+	// Spawn a thread to help figuring out time out or hang
+	if (!gEnv->pThreadManager->SpawnThread(this, "Test System"))
+	{
+		CRY_ASSERT_MESSAGE(false, "Error spawning test system watch thread.");
+	}
+
+	// Register tests defined in this module
+	for (CTestFactory* pFactory = CTestFactory::GetFirstInstance();
+	     pFactory != nullptr;
+	     pFactory = pFactory->GetNextInstance())
+	{
+		pFactory->SetModuleName("CrySystem");
+		AddFactory(pFactory);
+	}
+}
+
+CTestSystem::~CTestSystem()
+{
+	SignalStopWork();
+	gEnv->pThreadManager->JoinThread(this, eJM_Join);
+
+	// Clean up listening to asserts and fatal errors
+	if (!gEnv->pSystem->UnregisterErrorObserver(this))
+	{
+		CRY_ASSERT_MESSAGE(false, "Test system failed to unregister error system callback");
+	}
+}
+
+//////////////////////////////////////////////////////////////////////////
+void RunTests(IConsoleCmdArgs* pArgs)
+{
+	string singleTestName = nullptr;
+
+	for (int i = 1; i < pArgs->GetArgCount(); i++)
+	{
+		string testName = pArgs->GetArg(i);
+		size_t lastDot = testName.find_last_of('.');
+		CRY_ASSERT(lastDot != string::npos);
+		singleTestName = testName.substr(lastDot + 1);
+		break;   //supports one test name as argument
+	}
+
+	ITestSystem* pTestSystem = gEnv->pSystem->GetITestSystem();
+	pTestSystem->SetQuitAfterTests(false);
+	if (!singleTestName.empty())
+		pTestSystem->RunSingle(singleTestName.c_str());
+	else
+		pTestSystem->Run();
+}
+
+//////////////////////////////////////////////////////////////////////////
+/*static*/ void CTestSystem::InitCommands()
+{
+	REGISTER_COMMAND("crytest", RunTests, VF_INVISIBLE | VF_CHEAT, "Execute a set of crytests");
+	gEnv->pConsole->RegisterAutoComplete("crytest", &sCryTestArgAutoComplete);
+}
+
+//////////////////////////////////////////////////////////////////////////
+void CTestSystem::InitLog()
+{
+	m_log.SetFileName("%USER%/TestResults/TestLog.log");
+}
+
+//////////////////////////////////////////////////////////////////////////
+ILog* CTestSystem::GetLog()
+{
+	return &m_log;
+}
+
+#if !defined(CRY_TESTING_USE_EXCEPTIONS)
+jmp_buf* GetAssertJmpBuf()
+{
+	static jmp_buf s_jmpBuf;
+	return &s_jmpBuf;
+}
 #endif
 
-	//////////////////////////////////////////////////////////////////////////
-	std::unique_ptr<IReporter> CreateReporter(EReporterType reporterType, ILog& m_log)
+template<typename F>
+stl::optional<SError> TryRun(F&& function)
+{
+#if defined(CRY_TESTING_USE_EXCEPTIONS)
+	try
 	{
-		std::unique_ptr<IReporter> pReporter;
-		switch (reporterType)
-		{
-		case EReporterType::Excel:
-			pReporter = stl::make_unique<CTestExcelReporter>(m_log);
-			break;
-		case EReporterType::ExcelWithNotification:
-			pReporter = stl::make_unique<CTestExcelNotificationReporter>(m_log);
-			break;
-		case EReporterType::Regular:
-			pReporter = stl::make_unique<CLogTestReporter>(m_log);
-			break;
-		default:
-			CRY_ASSERT(false);
-			break;
-		}
-		CRY_ASSERT(pReporter != nullptr);
-		return pReporter;
+		function();
+		return {};
 	}
-
-	template<typename F>
-	stl::optional<SError> TryRun(F&& function)
+	catch (assert_exception const& e)
 	{
-#if defined(CRY_UNIT_TESTING_USE_EXCEPTIONS)
-		try
-		{
-			function();
-			return {};
-		}
-		catch (assert_exception const& e)
-		{
-			return SError{
-							 e.what(), e.m_filename, e.m_lineNumber
-			};
-		}
-		catch (std::exception const& e)
-		{
-			string failureMessage;
-			failureMessage.Format("Unhandled exception: %s", e.what());
-			return SError{
-							 failureMessage, "Unknown", 0
-			};
-		}
+		return SError{
+						 e.what(), e.m_filename, e.m_lineNumber };
+	}
+	catch (std::exception const& e)
+	{
+		string failureMessage;
+		failureMessage.Format("Unhandled exception: %s", e.what());
+		return SError{
+						 failureMessage, "Unknown", 0 };
+	}
 #else
-		if (setjmp(*GetAssertJmpBuf()) == 0)
-		{
-			function();
-			return {};
-		}
-		else
-		{
-			return SError{
-							 "Crash", "Unknown", 0
-			};
-		}
-#endif // defined(CRY_UNIT_TESTING_USE_EXCEPTIONS)
-	}
-
-	void CTestSystem::Update()
+	if (setjmp(*GetAssertJmpBuf()) == 0)
 	{
-		if (m_isRunningTest)
+		function();
+		return {};
+	}
+	else
+	{
+		return SError{
+						 "Crash", "Unknown", 0 };
+	}
+#endif // defined(CRY_TESTING_USE_EXCEPTIONS)
+}
+
+void CTestSystem::Update()
+{
+	if (m_isRunningTest)
+	{
+		if (!m_remainingTestFactories.empty() && !m_currentTestInstance)
 		{
-			if (!m_remainingTestFactories.empty() && m_pCurrentTest == nullptr)
+			CTestFactory* pTestFactory = m_remainingTestFactories.front();
+			CRY_ASSERT(pTestFactory);
+			const bool wantSpawnTestForGame = pTestFactory->GetIsEnabledForGame() && !gEnv->IsEditor();
+			const bool wantSpawnTestForEditor = pTestFactory->GetIsEnabledForEditor() && gEnv->IsEditor();
+			if (wantSpawnTestForGame || wantSpawnTestForEditor)
 			{
-				CTestFactory* pTestFactory = m_remainingTestFactories.front();
-				CRY_ASSERT(pTestFactory);
-				const bool wantSpawnTestForGame = pTestFactory->GetIsEnabledForGame() && !gEnv->IsEditor();
-				const bool wantSpawnTestForEditor = pTestFactory->GetIsEnabledForEditor() && gEnv->IsEditor();
-				if (wantSpawnTestForGame || wantSpawnTestForEditor)
-				{
-					m_pCurrentTestFactory = pTestFactory;
-					m_currentTestInfo = m_pCurrentTestFactory->GetTestInfo();
-					m_pCurrentTest = m_pCurrentTestFactory->CreateTest();
-					m_remainingTestFactories.pop();
-					if (!InitTest())//critical errors
-					{
-						FinishTest();
-					}
-				}
-				else // test is skipped
-				{
-					m_remainingTestFactories.pop();
-				}
-			}
-
-			if (m_pCurrentTest != nullptr)
-			{
-				bool isDone = false;
-				TryRun([&]
-				{
-					isDone = m_pCurrentTest->UpdateCommands();
-				});
-
-				//check timeout
-				std::chrono::duration<float> runTimeSeconds = std::chrono::system_clock::now() - m_currentTestStartTime;
-				if (m_pCurrentTestFactory->GetTimeOut() > 0 && runTimeSeconds.count() > m_pCurrentTestFactory->GetTimeOut())
-				{
-					ReportNonCriticalError("Time out", "", 0);
-					isDone = true;
-				}
-
-				if (isDone)
+				m_currentTestInstance = stl::make_unique<CTestInstance>(pTestFactory);
+				m_remainingTestFactories.pop();
+				m_pTestRecordFile->SetLastTestName(m_currentTestInstance->GetTestInfo().name);
+				m_pReporter->SaveTemporaryReport();
+				if (!InitTest())  //critical errors
 				{
 					FinishTest();
 				}
 			}
-
-			if (m_remainingTestFactories.empty() && m_pCurrentTest == nullptr)
+			else   // test is skipped
 			{
-				m_pReporter->OnFinishTesting(m_testContext);
-				CryLogAlways("Running all unit tests done.");
-				m_isRunningTest = false;
-				if (m_wantQuitAfterTestsDone)
+				m_remainingTestFactories.pop();
+			}
+		}
+
+		if (m_currentTestInstance)
+		{
+			bool isDone = false;
+			TryRun([&]
 				{
-					gEnv->pSystem->Quit();
-				}
+					isDone = m_currentTestInstance->UpdateCommands();
+				});
+
+			//check timeout
+			std::chrono::duration<float> runTimeSeconds = m_currentTestInstance->GetCurrentTestElapsed();
+			if (m_currentTestInstance->GetTimeOut() > 0 && runTimeSeconds.count() > m_currentTestInstance->GetTimeOut())
+			{
+				ReportNonCriticalError("Time out", "", 0);
+				isDone = true;
+			}
+
+			if (isDone)
+			{
+				FinishTest();
+			}
+		}
+
+		if (m_remainingTestFactories.empty() && !m_currentTestInstance)
+		{
+			m_pReporter->OnFinishTesting(m_testContext, m_openReport);
+			CryLogAlways("Running all tests done.");
+			m_pTestRecordFile.reset();
+			m_isRunningTest = false;
+			if (m_wantQuitAfterTestsDone)
+			{
+				gEnv->pSystem->Quit();
 			}
 		}
 	}
+}
 
-	void CTestSystem::Run(EReporterType reporterType)
+template<typename F> void CTestSystem::RunTestsFilter(F&& predicate)
+{
+	CRY_ASSERT(!m_isRunningTest);
+	m_pTestRecordFile = stl::make_unique<CTestRecordFile>("%USER%/TestResults/TestRecord.txt");
+
+	m_isRunningTest = true;                     //before spawning tests because we'd like to catch errors during test spawns too
+
+	stl::optional<string> lastErrorTest = m_pTestRecordFile->GetLastTestName();
+
+	m_pReporter = stl::make_unique<CTestExcelReporter>(m_log);
+	m_testContext = {};
+
+	m_pReporter->OnStartTesting(m_testContext);
+
+	auto testStartIter = m_testFactories.begin();
+	if (lastErrorTest)
 	{
-		CRY_ASSERT(!m_isRunningTest);
-		m_isRunningTest = true; //before spawning tests because we'd like to catch errors during test spawns too
-		CryLogAlways("Running all unit tests...");//this gets output to main log. details are output to test log.
-
-		stl::optional<string> lastTimeOutTest = DetectAndClearTimeOutRecord();
-
-		m_pReporter = CreateReporter(reporterType, m_log);
-		m_testContext = {};
-
-		m_pReporter->OnStartTesting(m_testContext);
-
-		auto testStartIter = m_testFactories.begin();
-		if (lastTimeOutTest)
+		string lastErrorTestName = lastErrorTest.value();
+		testStartIter = std::find_if(m_testFactories.begin(), m_testFactories.end(), [&lastErrorTestName](CTestFactory* pFactory)
 		{
-			string lastTimeOutTestName = lastTimeOutTest.value();
-			testStartIter = std::find_if(m_testFactories.begin(), m_testFactories.end(), [&lastTimeOutTestName](CTestFactory* pFactory)
-			{
-				return pFactory->GetTestInfo().name == lastTimeOutTestName;
-			});
-			++testStartIter; //bypasses the time out test
-			m_pReporter->OnRecoverTesting(m_testContext);
-		}
-
-		for (auto iter = testStartIter; iter != m_testFactories.end(); ++iter)
-		{
-			m_remainingTestFactories.push(*iter);
-		}
-	}
-
-	bool CTestSystem::InitTest()
-	{
-		m_pReporter->OnSingleTestStart(m_currentTestInfo);
-		m_testContext.testCount++;
-
-		m_currentTestStartTime = std::chrono::system_clock::now();
-
-		stl::optional<SError> err = TryRun([&]
-		{
-			m_pCurrentTest->Init();
-			m_pCurrentTest->Run();
+			return pFactory->GetTestInfo().name == lastErrorTestName;
 		});
 
-		if (err)
-		{
-			m_testContext.failedTestCount++;
-			m_currentTestFailures.push_back({ err.value().message, err.value().fileName, err.value().lineNumber });
-			return false;
-		}
+		STestInfo lastErrorTestInfo = (*testStartIter)->GetTestInfo();
 
-		return true;
+		++testStartIter;   //bypasses the error test
+		m_pReporter->RecoverTemporaryReport();
+
+		//If the recovered report doesn't cover the unfinished test, it has crashed
+		if (!m_pReporter->HasTest(lastErrorTestInfo))
+		{
+			m_pReporter->OnSingleTestFinish(lastErrorTestInfo, 0, false, {
+				{ "Crash", nullptr, 0 } });
+		}
+		
 	}
 
-	void CTestSystem::FinishTest()
+	for (auto iter = testStartIter; iter != m_testFactories.end(); ++iter)
 	{
-		bool failed = false;
-		if (m_currentTestFailures.size())
+		if (predicate(*iter))
+			m_remainingTestFactories.push(*iter);
+	}
+}
+
+void CTestSystem::Run()
+{
+	CryLogAlways("Running all tests..."); //this gets output to main log. details are output to test log.
+	RunTestsFilter([](CTestFactory*) { return true; });
+}
+
+void CTestSystem::RunSingle(const char* testName)
+{
+	CryLogAlways("Running test %s", testName); //this gets output to main log. details are output to test log.
+	RunTestsFilter([testName](CTestFactory* pFactory) 
+	{ 
+		return stricmp(pFactory->GetTestInfo().name.c_str(), testName) == 0; 
+	});
+}
+
+bool CTestSystem::InitTest()
+{
+	m_pReporter->OnSingleTestStart(m_currentTestInstance->GetTestInfo());
+	m_testContext.testCount++;
+
+	m_currentTestInstance->StartCountingCurrentTestTime();
+
+	stl::optional<SError> err = TryRun([&]
 		{
-			m_testContext.failedTestCount++;
-			failed = true;
+			m_currentTestInstance->Init();
+			m_currentTestInstance->Run();
+		});
+
+	if (err)
+	{
+		m_testContext.failedTestCount++;
+		m_currentTestInstance->AddFailure({ err.value().message, err.value().fileName, err.value().lineNumber });
+		return false;
+	}
+
+	return true;
+}
+
+void CTestSystem::FinishTest()
+{
+	bool failed = false;
+	if (m_currentTestInstance->GetFailures().size())
+	{
+		m_testContext.failedTestCount++;
+		failed = true;
+	}
+	else
+	{
+		m_testContext.succedTestCount++;
+	}
+
+	stl::optional<SError> err = TryRun([&]
+		{
+			m_currentTestInstance->Done();
+		});
+
+	std::chrono::duration<float, std::milli> runTime = m_currentTestInstance->GetCurrentTestElapsed();
+	m_pReporter->OnSingleTestFinish(m_currentTestInstance->GetTestInfo(), runTime.count(), !failed, m_currentTestInstance->GetFailures());
+	m_currentTestInstance.reset();
+}
+
+void CTestSystem::SignalStopWork()
+{
+	m_wantQuit = true;
+}
+
+void CTestSystem::ThreadEntry()
+{
+	while (!m_wantQuit)
+	{
+		uint64 updateCounter = gEnv->pSystem->GetUpdateCounter();
+		std::chrono::duration<float> timeSinceHeartBeat = std::chrono::system_clock::now() - m_heartBeatTime;
+		if (m_currentTestInstance && updateCounter == m_lastUpdateCounter && timeSinceHeartBeat.count() > FreezeTimeOut)
+		{
+			//record timeout and quit
+			ReportNonCriticalError("Time out", "", 0);
+			std::chrono::duration<float, std::milli> runTime = m_currentTestInstance->GetCurrentTestElapsed();
+			m_pReporter->OnSingleTestFinish(m_currentTestInstance->GetTestInfo(), runTime.count(), false, m_currentTestInstance->GetFailures());
+
+			SignalStopWork();
+			gEnv->pSystem->Quit();
+		}
+		m_lastUpdateCounter = updateCounter;
+		CrySleep(100);
+	}
+}
+
+void CTestSystem::ReportCriticalError(const char* szExpression, const char* szFile, int line)
+{
+	if (m_isRunningTest)
+	{
+#ifdef USE_CRY_ASSERT
+		// Reset assert flag to not block other updates depending on the flag, e.g. editor update,
+		// in case we do not immediately quit after the test.
+		// The flag has to be set here, since the majority of engine code does not use exceptions
+		// but we are using exception or longjmp here, so it no longer returns to the assert caller
+		// which would otherwise reset the flag.
+		gEnv->stoppedOnAssert = false;
+#endif
+		m_currentTestInstance->AddFailure({ szExpression, szFile, line });
+#if defined(CRY_TESTING_USE_EXCEPTIONS)
+		throw assert_exception(szExpression, szFile, line);
+#else
+		longjmp(*GetAssertJmpBuf(), 1);
+#endif
+	}
+}
+
+void CTestSystem::ReportNonCriticalError(const char* szExpression, const char* szFile, int line)
+{
+	CRY_ASSERT(m_currentTestInstance);
+	m_currentTestInstance->AddFailure({ szExpression, szFile, line });
+}
+
+void CTestSystem::AddFactory(CTestFactory* pFactory)
+{
+	pFactory->SetupAttributes();
+	m_testFactories.push_back(pFactory);
+	sCryTestArgAutoComplete.Add(pFactory);
+}
+
+void CTestSystem::OnAssert(const char* szCondition, const char* szMessage, const char* szFileName, unsigned int fileLineNumber)
+{
+	if (m_isRunningTest)
+	{
+		string cause;
+		if (szMessage != nullptr && strlen(szMessage))
+		{
+			cause.Format("Assert: condition \"%s\" failed with \"%s\"", szCondition, szMessage);
 		}
 		else
 		{
-			m_testContext.succedTestCount++;
+			cause.Format("Assert: \"%s\"", szCondition);
 		}
-
-		stl::optional<SError> err = TryRun([&]
-		{
-			m_pCurrentTest->Done();
-		});
-
-		auto timeAfterTest = std::chrono::system_clock::now();
-		std::chrono::duration<float, std::milli> runTime = timeAfterTest - m_currentTestStartTime;
-		m_pReporter->OnSingleTestFinish(m_currentTestInfo, runTime.count(), !failed, m_currentTestFailures);
-		m_pCurrentTest.reset();
-		m_pCurrentTestFactory = nullptr;
-
-		m_currentTestInfo = {};
-		m_currentTestFailures.clear();
+		ReportNonCriticalError(cause.c_str(), szFileName, fileLineNumber);
 	}
+}
 
-	void CTestSystem::SignalStopWork()
+void CTestSystem::OnFatalError(const char* szMessage)
+{
+	if (m_isRunningTest)
 	{
-		m_wantQuit = true;
+		string cause;
+		cause.Format("Fatal Error: %s", szMessage);
+		ReportCriticalError(cause.c_str(), "", 0);
 	}
-
-	void CTestSystem::ThreadEntry()
-	{
-		while (!m_wantQuit)
-		{
-			uint64 updateCounter = gEnv->pSystem->GetUpdateCounter();
-			std::chrono::duration<float> timeSinceHeartBeat = std::chrono::system_clock::now() - m_heartBeatTime;
-			if (m_pCurrentTest != nullptr && updateCounter == m_lastUpdateCounter && timeSinceHeartBeat.count() > FreezeTimeOut)
-			{
-				//record timeout and quit
-				auto timeAfterTest = std::chrono::system_clock::now();
-				std::chrono::duration<float, std::milli> runTime = timeAfterTest - m_currentTestStartTime;
-				m_pReporter->OnSingleTestFinish(m_currentTestInfo, runTime.count(), false, m_currentTestFailures);
-
-				CreateTimeOutRecord(m_currentTestInfo.name);
-				SignalStopWork();
-				m_pReporter->OnBreakTesting(m_testContext);
-				gEnv->pSystem->Quit();
-			}
-			m_lastUpdateCounter = updateCounter;
-			CrySleep(100);
-		}
-	}
-
-	void CTestSystem::ReportCriticalError(const char* szExpression, const char* szFile, int line)
-	{
-		if (m_isRunningTest)
-		{
-#ifdef USE_CRY_ASSERT
-			// Reset assert flag to not block other updates depending on the flag, e.g. editor update,
-			// in case we do not immediately quit after the unit test.
-			// The flag has to be set here, since the majority of engine code does not use exceptions
-			// but we are using exception or longjmp here, so it no longer returns to the assert caller
-			// which would otherwise reset the flag.
-			gEnv->stoppedOnAssert = false;
-#endif
-			m_currentTestFailures.push_back({ szExpression, szFile, line });
-#if defined(CRY_UNIT_TESTING_USE_EXCEPTIONS)
-			throw assert_exception(szExpression, szFile, line);
-#else
-			longjmp(*GetAssertJmpBuf(), 1);
-#endif
-		}
-	}
-
-	void CTestSystem::ReportNonCriticalError(const char* szExpression, const char* szFile, int line)
-	{
-		CRY_ASSERT(m_pCurrentTest != nullptr);
-		m_currentTestFailures.push_back({ szExpression, szFile, line });
-	}
-
-	void CTestSystem::AddFactory(CTestFactory * pFactory)
-	{
-		pFactory->SetupAttributes();
-		m_testFactories.push_back(pFactory);
-	}
-
-	void CTestSystem::OnAssert(const char* szCondition, const char* szMessage, const char* szFileName, unsigned int fileLineNumber)
-	{
-		if (m_isRunningTest)
-		{
-			string cause;
-			if (szMessage != nullptr && strlen(szMessage))
-			{
-				cause.Format("Assert: condition \"%s\" failed with \"%s\"", szCondition, szMessage);
-			}
-			else
-			{
-				cause.Format("Assert: \"%s\"", szCondition);
-			}
-			ReportNonCriticalError(cause.c_str(), szFileName, fileLineNumber);
-		}
-	}
-
-	void CTestSystem::OnFatalError(const char* szMessage)
-	{
-		if (m_isRunningTest)
-		{
-			string cause;
-			cause.Format("Fatal Error: %s", szMessage);
-			ReportCriticalError(cause.c_str(), "", 0);
-		}
-	}
+}
 
 } // namespace CryTest
-
-
-//void SimulateKey(unsigned vkey)
-//{
-//	INPUT ip;
-//
-//	// Set up a generic keyboard event.
-//	ip.type = INPUT_KEYBOARD;
-//	ip.ki.wScan = 0; // hardware scan code for key
-//	ip.ki.time = 0;
-//	ip.ki.dwExtraInfo = 0;
-//
-//	ip.ki.wVk = vkey;
-//	ip.ki.dwFlags = 0; // 0 for key press
-//	SendInput(1, &ip, sizeof(INPUT));
-//
-//	ip.ki.dwFlags = KEYEVENTF_KEYUP; // KEYEVENTF_KEYUP for key release
-//	SendInput(1, &ip, sizeof(INPUT));
-//}
-//
-//class CCommandSimulateKey
-//{
-//public:
-//	CCommandSimulateKey(unsigned vkey, float duration = 0.2f)
-//		: m_vkey(vkey), m_duration(duration)
-//	{
-//	}
-//
-//	bool Update()
-//	{
-//		SimulateKey(m_vkey);
-//		return true;
-//	}
-//
-//	std::vector<CryTest::CCommand> GetSubCommands() const
-//	{
-//		return { CryTest::CCommandWait(m_duration) };
-//	}
-//
-//private:
-//
-//	unsigned m_vkey = 0;
-//	float    m_duration = 0;
-//
-//};

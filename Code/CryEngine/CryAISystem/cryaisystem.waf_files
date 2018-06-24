@@ -189,6 +189,7 @@
             "Navigation/MNM/MarkupVolume.h",
             "Navigation/MNM/BoundingVolume.h",
             "Navigation/MNM/CompactSpanGrid.h",
+            "Navigation/MNM/DangerousAreas.h",
             "Navigation/MNM/DynamicSpanGrid.h",
             "Navigation/MNM/HashComputer.h",
             "Navigation/MNM/Islands.h",
@@ -198,12 +199,14 @@
             "Navigation/MNM/NavMesh.h",
             "Navigation/MNM/NavMesh.inl",
             "Navigation/MNM/MNM.h",
+            "Navigation/MNM/MNMDebugDefines.h",
             "Navigation/MNM/OffGridLinks.h",
             "Navigation/MNM/MNMProfiler.h",
             "Navigation/MNM/Tile.h",
             "Navigation/MNM/TileGenerator.h",
             "Navigation/MNM/Voxelizer.h",
-            "Navigation/MNM/OpenList.h"
+            "Navigation/MNM/OpenList.h",
+            "Navigation/MNM/WayQuery.h"
         ],
         "Navigation/NavigationSystem": [
             "Navigation/NavigationSystem/AnnotationsLibrary.cpp",

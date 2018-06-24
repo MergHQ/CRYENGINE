@@ -714,6 +714,9 @@ public:
 	virtual bool        mfFlushCacheFile() override;
 	virtual bool        Export(CShader *pSH, SShaderSerializeContext& SC) override;
 
+	enum class cacheValidationResult { ok, no_lookup, version_mismatch, checksum_mismatch };
+	cacheValidationResult mfValidateCache(const SDiskShaderCache &cache);
+
 	bool               mfWarmupCache(CShader* pFX);
 	void               mfPrecacheAllCombinations(CShader* pFX, CResFileOpenScope &rfOpenGuard, SDiskShaderCache &cache);
 	SDeviceShaderEntry mfShaderEntryFromCache(CShader* pFX, const CDirEntry& de, CResFileOpenScope &rfOpenGuard, SDiskShaderCache &cache);

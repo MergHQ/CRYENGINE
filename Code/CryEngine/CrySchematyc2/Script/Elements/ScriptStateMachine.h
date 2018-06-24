@@ -13,7 +13,7 @@ namespace Schematyc2
 	public:
 
 		CScriptStateMachine(IScriptFile& file);
-		CScriptStateMachine(IScriptFile& file, const SGUID& guid, const SGUID& scopeGUID, const char* szName, EScriptStateMachineLifetime lifetime, const SGUID& contextGUID, const SGUID& partnerGUID);
+		CScriptStateMachine(IScriptFile& file, const SGUID& guid, const SGUID& scopeGUID, const char* szName, EStateMachineLifetime lifetime, const SGUID& contextGUID, const SGUID& partnerGUID);
 
 		// IScriptElement
 		virtual EAccessor GetAccessor() const override;
@@ -28,7 +28,8 @@ namespace Schematyc2
 		// ~IScriptElement
 
 		// IScriptStateMachine
-		virtual EScriptStateMachineLifetime GetLifetime() const override;
+		virtual EStateMachineLifetime GetLifetime() const override;
+		virtual EStateMachineNetAuthority GetNetAuthority() const override;
 		virtual SGUID GetContextGUID() const override;
 		virtual SGUID GetPartnerGUID() const override;
 		// ~IScriptStateMachine
@@ -41,7 +42,8 @@ namespace Schematyc2
 		SGUID                       m_guid;
 		SGUID                       m_scopeGUID;
 		string                      m_name;
-		EScriptStateMachineLifetime m_lifetime;
+		EStateMachineLifetime		m_lifetime;
+		EStateMachineNetAuthority	m_netAuthority;
 		SGUID                       m_contextGUID;
 		SGUID                       m_partnerGUID;
 		SGUID                       m_transitionGraphGUID;

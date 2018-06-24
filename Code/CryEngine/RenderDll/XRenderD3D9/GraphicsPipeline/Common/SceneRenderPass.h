@@ -41,10 +41,10 @@ public:
 
 	// Called from rendering backend (has to be threadsafe)
 	void                PrepareRenderPassForUse(CDeviceCommandListRef RESTRICT_REFERENCE commandList);
-	void                BeginRenderPass(CDeviceCommandListRef RESTRICT_REFERENCE commandList, bool bNearest, uint32 profilerSectionIndex, bool bIssueGPUTimestamp) const;
-	void                EndRenderPass(CDeviceCommandListRef RESTRICT_REFERENCE commandList, bool bNearest, uint32 profilerSectionIndex, bool bIssueGPUTimestamp) const;
+	void                BeginRenderPass(CDeviceCommandListRef RESTRICT_REFERENCE commandList, bool bNearest) const;
+	void                EndRenderPass(CDeviceCommandListRef RESTRICT_REFERENCE commandList, bool bNearest) const;
 
-	void                ResolvePass(CDeviceCommandListRef RESTRICT_REFERENCE commandList, const uint16* screenBounds, uint32 profilerSectionIndex, bool bIssueGPUTimestamp) const;
+	void                ResolvePass(CDeviceCommandListRef RESTRICT_REFERENCE commandList, const uint16* screenBounds) const;
 
 	uint32              GetStageID()             const { return m_stageID; }
 	uint32              GetPassID()              const { return m_passID; }
@@ -55,6 +55,7 @@ public:
 	
 	CDeviceResourceLayoutPtr   GetResourceLayout() const { return m_pResourceLayout; }
 	const CDeviceRenderPassPtr GetRenderPass()     const { return m_pRenderPass; }
+	ERenderListID GetRenderList()                  const { return m_renderList; }
 
 protected:
 	static bool OnResourceInvalidated(void* pThis, SResourceBindPoint bindPoint, UResourceReference pResource, uint32 flags) threadsafe;

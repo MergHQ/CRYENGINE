@@ -293,7 +293,7 @@ void CScriptGraphGetNode::Register(CScriptGraphNodeFactory& factory)
 			// ~TODO
 
 			// Populate component properties
-			auto visitScriptComponentInstance = [&nodeCreationMenu,&scriptView](const IScriptComponentInstance& scriptComponentInstance) -> EVisitStatus
+			auto visitScriptComponentInstance = [&nodeCreationMenu](const IScriptComponentInstance& scriptComponentInstance) -> EVisitStatus
 			{
 				CStackString baseName;
 				baseName = "Components::";

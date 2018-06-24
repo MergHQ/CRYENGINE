@@ -243,6 +243,15 @@ add_sources("NoUberFile"
 	SOURCE_GROUP "DX11"
 		"DX11/CryDX11.cpp"
 		"DX11/CryDX11.hpp"
+	SOURCE_GROUP "DX11\\\\API"
+		"DX11/API/DX11Base.cpp"
+		"DX11/API/DX11CommandScheduler.cpp"
+		"DX11/API/DX11CommandListFence.cpp"
+		"DX11/API/DX11Device.cpp"
+		"DX11/API/DX11Base.hpp"
+		"DX11/API/DX11CommandScheduler.hpp"
+		"DX11/API/DX11CommandListFence.hpp"
+		"DX11/API/DX11Device.hpp"
 )
 
 add_sources("NoUberFile"
@@ -815,7 +824,6 @@ add_sources("CryRenderer_textures_uber.cpp"
 		"../Common/Textures/StatoscopeTextureStreaming.cpp"
 		"../Common/Textures/DynTexture.cpp"
 		"../Common/Textures/PowerOf2BlockPacker.cpp"
-		"../Common/Textures/DepthTexture.cpp"
 		"../Common/Textures/Texture.cpp"
 		"../Common/Textures/TextureManager.cpp"
 		"../Common/Textures/TextureStreaming.cpp"
@@ -825,8 +833,6 @@ add_sources("CryRenderer_textures_uber.cpp"
 		"../Common/Textures/TextureCompiler.h"
 		"../Common/Textures/TextureStreamPool.h"
 		"../Common/Textures/PowerOf2BlockPacker.h"
-		"../Common/Textures/DepthTexture.h"
-		"../Common/Textures/TempDepthTexture.h"
 		"../Common/Textures/Texture.h"
 		"../Common/Textures/TextureManager.h"
 		"../Common/Textures/TextureHelpers.cpp"
@@ -950,7 +956,6 @@ add_sources("CryRenderer_uber_3.cpp"
 		"../Common/Renderer.h"
 		"../Common/RendererCVars.h"
 		"../Common/RendererResources.h"
-		"../Common/ResourcePool.h"
 		"../Common/RenderThread.h"
 		"../Common/Shadow_Renderer.h"
 		"../Common/ShadowUtils.h"
@@ -1296,7 +1301,7 @@ if (RENDERER_VULKAN)
 		set_property(TARGET ${THIS_PROJECT} APPEND_STRING PROPERTY LINK_FLAGS " ${LIBPATH_FLAG}\"${SDK_DIR}/VulkanSDK/Lib\"")
 	elseif(ANDROID)
 		target_compile_options(${THIS_PROJECT} PRIVATE -std=c++14)
-		find_library(LIBVULKAN vulkan PATHS "${CMAKE_ANDROID_NDK}/platforms/android-${CMAKE_SYSTEM_VERSION}/arch-${CMAKE_ANDROID_ARCH}")
+		find_library(LIBVULKAN vulkan PATHS "${CMAKE_ANDROID_NDK}/platforms/android-${CMAKE_SYSTEM_VERSION}/arch-${CMAKE_ANDROID_ARCH_FOLDER}/usr/lib/")
 		target_include_directories(${THIS_PROJECT} PRIVATE "${CMAKE_ANDROID_NDK}/sources/third_party/vulkan/src/include")
 		target_include_directories(${THIS_PROJECT} PRIVATE "${CRYENGINE_DIR}/Code/Tools/HLSLCrossCompiler/include")
 		target_link_libraries(${THIS_PROJECT} PRIVATE SDL2)

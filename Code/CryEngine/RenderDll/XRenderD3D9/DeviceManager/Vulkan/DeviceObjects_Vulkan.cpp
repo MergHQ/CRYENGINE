@@ -43,15 +43,9 @@ static auto lambdaResumeCallback = [](void* cmd, uint nPoolId)
 
 
 CDeviceObjectFactory::CDeviceObjectFactory()
-	: m_inlineConstantBufferLayout(VK_NULL_HANDLE),
-	  m_fence_handle(0)
+	: m_inlineConstantBufferLayout(VK_NULL_HANDLE)
 {
 	memset(m_NullResources, 0, sizeof(m_NullResources));
-
-	m_frameFenceCounter = 0;
-	m_completedFrameFenceCounter = 0;
-	for (uint32 i = 0; i < CRY_ARRAY_COUNT(m_frameFences); i++)
-		m_frameFences[i] = NULL;
 
 	m_pCoreCommandList.reset(new CDeviceCommandList());
 	m_pCoreCommandList->m_sharedState.pCommandList = nullptr;
@@ -100,18 +94,6 @@ CDeviceResourceLayoutPtr CDeviceObjectFactory::CreateResourceLayoutImpl(const SD
 		return pResult;
 
 	return nullptr;
-}
-
-SDeviceResourceLayoutDesc CDeviceObjectFactory::LookupResourceLayoutDesc(uint64 layoutHash)
-{
-	for (auto& it : m_ResourceLayoutCache)
-	{
-		auto pLayout = reinterpret_cast<CDeviceResourceLayout_Vulkan*>(it.second.get());
-		if (pLayout->GetHash() == layoutHash)
-			return it.first;
-	}
-
-	return SDeviceResourceLayoutDesc();
 }
 
 const std::vector<uint8>* CDeviceObjectFactory::LookupResourceLayoutEncoding(uint64 layoutHash)
@@ -420,7 +402,7 @@ void CDeviceObjectFactory::AllocateNullResources()
 		info.size = 256;
 		info.usage = VK_BUFFER_USAGE_UNIFORM_BUFFER_BIT       | VK_BUFFER_USAGE_UNIFORM_TEXEL_BUFFER_BIT | VK_BUFFER_USAGE_STORAGE_BUFFER_BIT | 
 		             VK_BUFFER_USAGE_STORAGE_TEXEL_BUFFER_BIT | VK_BUFFER_USAGE_TRANSFER_DST_BIT | 
-					 VK_BUFFER_USAGE_VERTEX_BUFFER_BIT        | VK_BUFFER_USAGE_INDEX_BUFFER_BIT;
+		             VK_BUFFER_USAGE_VERTEX_BUFFER_BIT        | VK_BUFFER_USAGE_INDEX_BUFFER_BIT;
 
 		info.sharingMode = VK_SHARING_MODE_EXCLUSIVE;
 		info.queueFamilyIndexCount = 0;
@@ -599,6 +581,16 @@ void CDeviceObjectFactory::ReleaseStagingResource(D3DResource* pStaging)
 	pStaging->Release(); // trigger ReleaseLater with kResourceFlagReusable
 }
 #endif
+
+void CDeviceObjectFactory::ReleaseResource(D3DResource* pResource)
+{
+	pResource->Release(); // trigger ReleaseLater with kResourceFlagReusable
+}
+
+void CDeviceObjectFactory::RecycleResource(D3DResource* pResource)
+{
+	pResource->Release(); // trigger ReleaseLater with kResourceFlagReusable
+}
 
 //=============================================================================
 // TODO: Function should be in DeviceObjects_Vulkan.inl
@@ -969,19 +961,22 @@ HRESULT CDeviceObjectFactory::CreateBuffer(buffer_size_t nSize, buffer_size_t el
 	VK_ASSERT(nSize * elemSize != 0);
 	CBufferResource* pResult = nullptr;
 	VkResult hResult = VK_SUCCESS;
-	if (nUsage & USAGE_HIFREQ_HEAP)
-	{
-		hResult = GetDevice()->CreateOrReuseCommittedResource(heapHint, info, &pResult);
-	}
-	else if (nBindFlags & BIND_CONSTANT_BUFFER)
+
+	if (nBindFlags & BIND_CONSTANT_BUFFER)
 	{
 		CDynamicOffsetBufferResource* pDynamicBuffer = nullptr;
-		GetDevice()->CreateCommittedResource(heapHint, info, &pDynamicBuffer);
+		if (nUsage & USAGE_HIFREQ_HEAP)
+			hResult = GetDevice()->CreateOrReuseCommittedResource<CDynamicOffsetBufferResource>(heapHint, info, &pDynamicBuffer);
+		else
+			GetDevice()->CreateCommittedResource<CDynamicOffsetBufferResource>(heapHint, info, &pDynamicBuffer);
 		pResult = pDynamicBuffer;
 	}
 	else
 	{
-		hResult = GetDevice()->CreateCommittedResource(heapHint, info, &pResult);
+		if (nUsage & USAGE_HIFREQ_HEAP)
+			hResult = GetDevice()->CreateOrReuseCommittedResource<CBufferResource>(heapHint, info, &pResult);
+		else
+			hResult = GetDevice()->CreateCommittedResource<CBufferResource>(heapHint, info, &pResult);
 	}
 
 	if (hResult != VK_SUCCESS)

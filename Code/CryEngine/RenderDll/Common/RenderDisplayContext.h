@@ -47,7 +47,6 @@ protected:
 	TexSmartPtr              m_pColorTarget = nullptr;
 	TexSmartPtr              m_pDepthTarget = nullptr;
 	float                    m_aspectRatio = 1.0f;
-	int                      m_backbufferCount = 2;
 
 	SRenderViewport          m_viewport;
 
@@ -83,8 +82,6 @@ public:
 	virtual CTexture*    GetCurrentBackBuffer() const = 0;
 	virtual CTexture*    GetPresentedBackBuffer() const = 0;
 	virtual CTexture*    GetStorableColorOutput() = 0;
-	int                  GetBackBufferCount()      const { return m_backbufferCount; }
-	void                 SetBackBufferCount(int count) { m_backbufferCount = count; }
 
 	uint32_t             GetID() const { return m_uniqueId; }
 	OutputSmartPtr       GetRenderOutput() const { return m_pRenderOutput; };

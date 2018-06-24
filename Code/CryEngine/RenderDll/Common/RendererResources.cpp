@@ -748,9 +748,12 @@ void CRendererResources::CreateDepthMaps(int resourceWidth, int resourceHeight)
 
 	ETEX_Format preferredDepthFormat =
 		gRenDev->GetDepthBpp() == 32 ? eTF_D32FS8 :
-		gRenDev->GetDepthBpp() == 24 ? eTF_D24S8 :
-		gRenDev->GetDepthBpp() ==  8 ? eTF_D16S8 : eTF_D16;
-	ETEX_Format eTFZ = s_eTFZ;
+		gRenDev->GetDepthBpp() == 24 ? eTF_D24S8  :
+		gRenDev->GetDepthBpp() ==  8 ? eTF_D16S8  : eTF_D16;
+	ETEX_Format eTFZ = s_eTFZ =
+		preferredDepthFormat == eTF_D32FS8 ? eTF_R32F :
+		preferredDepthFormat == eTF_D24S8  ? eTF_R32F :
+		preferredDepthFormat == eTF_D16S8  ? eTF_R16  : eTF_R16;
 
 	uint32 nDSFlags = FT_DONT_STREAM | FT_DONT_RELEASE | FT_USAGE_DEPTHSTENCIL;
 	uint32 nRTFlags = FT_DONT_STREAM | FT_DONT_RELEASE | FT_USAGE_RENDERTARGET;
@@ -1028,7 +1031,7 @@ void CRendererResources::CreateHDRMaps(int resourceWidth, int resourceHeight)
 	for (i = 0; i < 8; i++)
 	{
 		sprintf(szName, "$HDRAdaptedLuminanceCur_%d", i);
-		pHDRPostProcess->AddRenderTarget(1, 1, Clr_Unknown, eTF_R16G16F, 0.1f, szName, &s_ptexHDRAdaptedLuminanceCur[i], FT_DONT_RELEASE);
+		pHDRPostProcess->AddRenderTarget(1, 1, Clr_White, eTF_R16G16F, 0.1f, szName, &s_ptexHDRAdaptedLuminanceCur[i], FT_DONT_RELEASE);
 	}
 
 	pHDRPostProcess->AddRenderTarget(width, height, Clr_Unknown, eTF_R11G11B10F, 1.0f, "$SceneTargetR11G11B10F_0", &s_ptexSceneTargetR11G11B10F[0], nHDRTargetFlagsUAV);
@@ -1482,173 +1485,40 @@ void CRendererResources::ShutDown()
 }
 
 ////////////////////////////////////////////////////////////////////////////////////////////////////
-// TODO: redundant specialized texture-pool
-// TODO: implement reuse heap for DX11 as it exists for DX12 and Vulkan
 ////////////////////////////////////////////////////////////////////////////////////////////////////
 
-CRendererResources::tempTexturePool_t CRendererResources::m_TempDepths;
-std::vector<CTexture*> CRendererResources::m_RTargets;
 size_t CRendererResources::m_RTallocs = 0;
+size_t CRendererResources::m_DTallocs = 0;
 
-STempDepthTexture::~STempDepthTexture() 
+CTexture* CRendererResources::CreateDepthTarget(int nWidth, int nHeight, const ColorF& cClear, ETEX_Format eTF)
 {
-	texture.Release(true);
-}
-
-CRendererResources::CTempTexture CRendererResources::GetTempDepthSurface(int currentFrameID, int nWidth, int nHeight, bool bExactMatch)
-{
-#if defined(OGL_DO_NOT_ALLOW_LARGER_RT)
-	bExactMatch = true;
-#endif
-
-	tempTexturePool_t::value_type selectedTex = nullptr;
-	int leastSquares = std::numeric_limits<int>::max();		// For non-exact matching
-
-	// Choose temporary texture
-	for (const auto &tex : m_TempDepths)
-	{
-		if (tex->UseCount() > 1)
-			continue;
-		if (tex->texture.nWidth < nWidth || tex->texture.nHeight < nHeight)
-			continue;
-
-		const auto widthDiff = tex->texture.nWidth - nWidth;
-		const auto heightDiff = tex->texture.nHeight - nHeight;
-		const auto d = sqr(widthDiff) + sqr(heightDiff);
-
-		if (d == 0)
-		{
-			// Exact match
-			selectedTex = tex;
-			break;
-		}
-		else if (leastSquares > d && !bExactMatch) 
-		{
-			// Non-exact match
-			leastSquares = d;
-			selectedTex = tex;
-		}
-	}
-
-	// Allocate new temporary depth surface
-	if (!selectedTex) 
-	{
-		auto depthSurface = CreateDepthSurface(nWidth, nHeight, false);
-		if (depthSurface.pTexture) 
-		{
-			m_TempDepths.allocate(std::move(depthSurface));
-			selectedTex = m_TempDepths.back();
-		}
-	}
-
-	selectedTex->lastAccessFrameID = currentFrameID;
-
-	return selectedTex;
-}
-
-size_t CRendererResources::SizeofTempDepthSurfaces()
-{
-	size_t nSize = 0;
-	for (const auto &tex : m_TempDepths)
-		nSize += tex->texture.pTexture->GetDeviceDataSize();
-
-	return nSize;
-}
-
-void CRendererResources::ReleaseTempDepthSurfaces()
-{
-	m_TempDepths.clear();
-}
-
-// Erases temporaries that have been unused for a specified frames count
-void CRendererResources::TrimTempDepthSurfaces(int currentFrameID, int delayFrames)
-{
-	for (auto it = m_TempDepths.begin(); it != m_TempDepths.end();)
-	{
-		const auto &tex = *it;
-
-		const auto unused = tex->UseCount() == 1 && !tex->texture.IsLocked();
-		const auto shouldDelete = unused && currentFrameID - tex->lastAccessFrameID >= delayFrames;
-
-		it = shouldDelete ?
-			m_TempDepths.erase(it) :
-			std::next(it);
-	}
-}
-
-////////////////////////////////////////////////////////////////////////////////////////////////////
-////////////////////////////////////////////////////////////////////////////////////////////////////
-
-SDepthTexture CRendererResources::CreateDepthSurface(int nWidth, int nHeight, bool bAA)
-{
-	const ETEX_Format preferredDepthFormat =
+	ETEX_Format preferredDepthFormat = eTF == eTF_Unknown ?
 		gRenDev->GetDepthBpp() == 32 ? eTF_D32FS8 :
 		gRenDev->GetDepthBpp() == 24 ? eTF_D24S8 :
-		gRenDev->GetDepthBpp() ==  8 ? eTF_D16S8 : eTF_D16;
-
-	const float  clearDepth = 0.f;
-	const uint   clearStencil = 0;
-	const ColorF clearValues = ColorF(clearDepth, FLOAT(clearStencil), 0.f, 0.f);
-
-	SDepthTexture depthSurface;
-	depthSurface.nWidth = nWidth;
-	depthSurface.nHeight = nHeight;
-	depthSurface.nFrameAccess = -1;
+		gRenDev->GetDepthBpp() == 8  ? eTF_D16S8 : eTF_D16 : eTF;
 
 	char pName[128]; // Create unique names for every allocation, otherwise name-matches would occur in GetOrCreateDepthStencil()
-	cry_sprintf(pName, "$DepthStencil%8x", m_TempDepths.allocations());
-
-	depthSurface.pTexture = CTexture::GetOrCreateDepthStencil(pName, nWidth, nHeight, clearValues, eTT_2D, FT_NOMIPS, preferredDepthFormat);
-	depthSurface.pTarget = depthSurface.pTexture->GetDevTexture()->Get2DTexture();
-	depthSurface.pSurface = depthSurface.pTexture->GetDevTexture()->LookupDSV(EDefaultResourceViews::DepthStencil);
+	cry_sprintf(pName, "$DepthStencil%8x", ++m_DTallocs);
+	auto pTarget = CTexture::GetOrCreateDepthStencil(pName, nWidth, nHeight, cClear, eTT_2D, FT_USAGE_TEMPORARY | FT_NOMIPS, preferredDepthFormat);
 
 #if !defined(RELEASE) && CRY_PLATFORM_WINDOWS
-	depthSurface.pTarget->SetPrivateData(WKPDID_D3DDebugObjectName, strlen("Dynamically requested Depth-Buffer"), "Dynamically requested Depth-Buffer");
+	pTarget->GetDevTexture()->Get2DTexture()->SetPrivateData(WKPDID_D3DDebugObjectName, strlen("Dynamically requested Depth-Target"), "Dynamically requested Depth-Target");
 #endif
 
-	CClearSurfacePass::Execute(depthSurface.pTexture, D3D11_CLEAR_DEPTH | D3D11_CLEAR_STENCIL, clearDepth, clearStencil);
-
-	return depthSurface;
+	return pTarget;
 }
 
-int CRendererResources::CreateRenderTarget(int nWidth, int nHeight, const ColorF& cClear, ETEX_Format eTF)
+CTexture* CRendererResources::CreateRenderTarget(int nWidth, int nHeight, const ColorF& cClear, ETEX_Format eTF)
 {
-	// check if parameters are valid
-	if (!nWidth || !nHeight)
-		return -1;
-
-	if (m_RTargets.empty())
-	{
-		m_RTargets.push_back(nullptr);
-	}
-
-	size_t n = m_RTargets.size();
-	for (size_t i = 1; i < m_RTargets.size(); i++)
-	{
-		if (!m_RTargets[i])
-		{
-			n = i;
-			break;
-		}
-	}
-
-	if (n == m_RTargets.size())
-	{
-		m_RTargets.push_back(nullptr);
-	}
-
 	char pName[128]; // Create unique names for every allocation, otherwise name-matches would occur in GetOrCreateRenderTarget()
 	cry_sprintf(pName, "$RenderTarget%8x", ++m_RTallocs);
-	m_RTargets[n] = CTexture::GetOrCreateRenderTarget(pName, nWidth, nHeight, cClear, eTT_2D, FT_NOMIPS, eTF);
+	auto pTarget = CTexture::GetOrCreateRenderTarget(pName, nWidth, nHeight, cClear, eTT_2D, FT_USAGE_TEMPORARY | FT_NOMIPS, eTF);
 
-	return m_RTargets[n]->GetID();
-}
+#if !defined(RELEASE) && CRY_PLATFORM_WINDOWS
+	pTarget->GetDevTexture()->Get2DTexture()->SetPrivateData(WKPDID_D3DDebugObjectName, strlen("Dynamically requested Color-Target"), "Dynamically requested Color-Target");
+#endif
 
-bool CRendererResources::ReleaseRenderTarget(int nHandle)
-{
-	CTexture* pTex = CTexture::GetByID(nHandle);
-	SAFE_RELEASE(pTex);
-	return true;
+	return pTarget;
 }
 
 ////////////////////////////////////////////////////////////////////////////////////////////////////

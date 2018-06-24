@@ -231,6 +231,14 @@ if(EXISTS "$${CMAKE_CURRENT_SOURCE_DIR}/CVarOverrides.h")
             "CVarOverrides.h"
     )
 endif()
+
+if(EXISTS "$${CMAKE_CURRENT_SOURCE_DIR}/EngineDefineOverrides.h")
+    add_sources("NoUberFile"
+        PROJECTS Game
+        SOURCE_GROUP "Root"
+            "EngineDefineOverrides.h"
+    )
+endif()
 end_sources()
 
 CryGameModule($project_name FORCE_SHARED PCH "StdAfx.cpp" SOLUTION_FOLDER "Project")

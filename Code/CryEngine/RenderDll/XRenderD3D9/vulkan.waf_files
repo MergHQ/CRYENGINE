@@ -1,5 +1,11 @@
 {
    "NoUberFile":{     
+      "Common": [
+         "GpuHeap.h",
+         "GpuHeap.cpp",
+         "GpuHeap.natvis"
+      ],
+
       "Vulkan":[
          "Vulkan/CryVulkan.hpp",
          "Vulkan/CryVulkan.cpp",
@@ -31,6 +37,7 @@
          "Vulkan/API/VKMemoryResource.hpp",
          "Vulkan/API/VKMemoryResource.cpp",
          "Vulkan/API/VKLegacyToBeRemoved.cpp",
+         "Vulkan/API/VkSpirvHelper.hpp",
          "Vulkan/API/VKShader.hpp",
          "Vulkan/API/VKShader.cpp",
          "Vulkan/API/VKSampler.hpp",
@@ -60,6 +67,17 @@
          "Vulkan/CryVulkanWrappers/Resources/CCryVKShaderReflection.cpp"
       ]
    },
+   "CryRenderer_uber_5_vulkan_dxgi.cpp":{
+      "CryVulkanWrappers/GI/DXGI":[
+         "Vulkan/CryVulkanWrappers/GI/DXGI/CCryVKGIFactory_DXGI.hpp",
+         "Vulkan/CryVulkanWrappers/GI/DXGI/CCryVKGIFactory_DXGI.cpp",
+         "Vulkan/CryVulkanWrappers/GI/DXGI/CCryVKGIAdapter_DXGI.hpp",
+         "Vulkan/CryVulkanWrappers/GI/DXGI/CCryVKGIAdapter_DXGI.cpp",
+         "Vulkan/CryVulkanWrappers/GI/DXGI/CCryVKGIOutput_DXGI.hpp",
+         "Vulkan/CryVulkanWrappers/GI/DXGI/CCryVKGIOutput_DXGI.cpp"
+      ]
+   },
+
    "CryRenderer_uber_5_vulkan_dx11.cpp":{
       "DeviceManager":[
          {
@@ -71,6 +89,7 @@
          }
       ]
    },
+   
   "CryRenderer_uber_5_vulkan_vulkan.cpp": {
     "DeviceManager": [
       {
@@ -78,7 +97,15 @@
           "DeviceManager/Vulkan/DeviceObjects_Vulkan.inl",
           "DeviceManager/Vulkan/DeviceObjects_Vulkan.cpp",
           "DeviceManager/Vulkan/DeviceResources_Vulkan.inl",
-          "DeviceManager/Vulkan/DeviceCommandList_Vulkan.h"
+          "DeviceManager/Vulkan/DeviceCommandList_Vulkan.h",
+          "DeviceManager/Vulkan/DeviceResourceSet_Vulkan.h",
+          "DeviceManager/Vulkan/DeviceResourceSet_Vulkan.cpp",
+          "DeviceManager/Vulkan/DeviceCommandListCommon_Vulkan.h",
+          "DeviceManager/Vulkan/DeviceCommandListCommon_Vulkan.cpp",
+          "DeviceManager/Vulkan/DevicePSO_Vulkan.h",
+          "DeviceManager/Vulkan/DevicePSO_Vulkan.cpp",
+          "DeviceManager/Vulkan/DeviceRenderPass_Vulkan.h",
+          "DeviceManager/Vulkan/DeviceRenderPass_Vulkan.cpp"
         ]
       }
     ]

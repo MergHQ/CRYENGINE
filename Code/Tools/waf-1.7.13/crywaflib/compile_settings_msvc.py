@@ -22,8 +22,9 @@ def load_msvc_common_settings(conf):
 	v['CC_SRC_F']  	= v['CXX_SRC_F']	= []
 	v['CC_TGT_F'] 	= v['CXX_TGT_F']	= ['/c', '/Fo']
 	
-	v['CPPPATH_ST'] 	= '/I%s'
-	v['DEFINES_ST'] 	= '/D%s'
+	v['CPPPATH_SYSTEM_ST'] = '/I%s'
+	v['CPPPATH_ST'] 	   = '/I%s'
+	v['DEFINES_ST'] 	   = '/D%s'
 	
 	v['PCH_FILE_ST'] 	= '/Fp%s'
 	v['PCH_CREATE_ST'] 	= '/Yc%s'

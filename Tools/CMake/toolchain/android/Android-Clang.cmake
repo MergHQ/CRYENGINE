@@ -4,7 +4,15 @@ set(ANDROID 1)
 set(CMAKE_SYSTEM_NAME "Android")
 set(CMAKE_SYSTEM_VERSION 24)
 set(CMAKE_ANDROID_ARCH_ABI "arm64-v8a")
-set(CMAKE_ANDROID_NDK "${CMAKE_SOURCE_DIR}/Code/SDKs/android-ndk")
+
+# Define a separate variable to have a value consistent with Nsight Tegra builds
+set(CMAKE_ANDROID_ARCH_FOLDER "${CMAKE_ANDROID_ARCH}")
+
+if (NOT CRYENGINE_DIR)
+	set(CMAKE_ANDROID_NDK "${CMAKE_SOURCE_DIR}/Code/SDKs/android-ndk")
+else()
+	set(CMAKE_ANDROID_NDK "${CRYENGINE_DIR}/Code/SDKs/android-ndk")
+endif()
 set(CMAKE_ANDROID_NDK_TOOLCHAIN_VERSION "clang")
 set(CMAKE_ANDROID_STL_TYPE "c++_shared")
 
@@ -20,6 +28,7 @@ set(ANDROID_FLAGS "-DANDROID -D__ANDROID__ -DLINUX -D__linux__ -DHAS_STPCPY")
 set(CMAKE_C_FLAGS "${CMAKE_C_FLAGS} ${ANDROID_FLAGS}")
 set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} ${ANDROID_FLAGS}")
 set(CMAKE_LINKER_FLAGS "-Wl,--build-id,--warn-shared-textrel,--fatal-warnings,--gc-sections,-z,nocopyreloc,--fix-cortex-a8,--exclude-libs,libunwind.a -Qunused-arguments")
+set(CMAKE_BUILD_WITH_INSTALL_RPATH TRUE CACHE BOOL "No RPATH on Android")
 
 macro(configure_android_build)
 	set(options DEBUGGABLE)
@@ -171,16 +180,24 @@ macro(configure_android_launcher name)
 	set(apk_folder "${CMAKE_BINARY_DIR}/${name}/apk_data")
 
 	#Copy sources
-	foreach(source_file ${SOURCES})
+	foreach(source_file ${SOURCE_FILES_JAVA})
 		if (${source_file} MATCHES ".*\\.\\java$")
 			file(COPY "${source_file}" DESTINATION "${apk_folder}/src")
 		endif()
 	endforeach()
 
 	#Copy external libs
-	file(COPY "${CMAKE_ANDROID_NDK}/prebuilt/android-${CMAKE_ANDROID_ARCH}/gdbserver/gdbserver" DESTINATION "${apk_folder}/lib/${CMAKE_ANDROID_ARCH}")
-	file(COPY "${CMAKE_SOURCE_DIR}/Code/Tools/SDLExtension/lib/android-${CMAKE_ANDROID_ARCH_ABI}/libSDL2Ext.so" DESTINATION "${apk_folder}/lib/${CMAKE_ANDROID_ARCH_ABI}")
+	file(COPY "${CMAKE_ANDROID_NDK}/sources/cxx-stl/llvm-libc++/libs/${CMAKE_ANDROID_ARCH_ABI}/libc++_shared.so" DESTINATION "${apk_folder}/lib/${CMAKE_ANDROID_ARCH_ABI}")
+	file(COPY "${CMAKE_ANDROID_NDK}/prebuilt/android-${CMAKE_ANDROID_ARCH}/gdbserver/gdbserver" DESTINATION "${apk_folder}/lib/${CMAKE_ANDROID_ARCH_ABI}")
+	file(COPY "${CRYENGINE_DIR}/Code/Tools/SDLExtension/lib/android-${CMAKE_ANDROID_ARCH_ABI}/libSDL2Ext.so" DESTINATION "${apk_folder}/lib/${CMAKE_ANDROID_ARCH_ABI}")
 	file(COPY "${SDK_DIR}/SDL2/android/${CMAKE_ANDROID_ARCH_ABI}/libSDL2.so" DESTINATION "${apk_folder}/lib/${CMAKE_ANDROID_ARCH_ABI}")
+	file(COPY "${ANDROID_SDK_DIR}/extras/android/support/v4/android-support-v4.jar" DESTINATION "${apk_folder}/libs")
+
+	if (AUDIO_FMOD)
+		file(COPY "${SDK_DIR}/Audio/fmod/android/api/lowlevel/lib/${CMAKE_ANDROID_ARCH_ABI}/libfmod.so" DESTINATION "${apk_folder}/lib/${CMAKE_ANDROID_ARCH_ABI}")
+		file(COPY "${SDK_DIR}/Audio/fmod/android/api/studio/lib/${CMAKE_ANDROID_ARCH_ABI}/libfmodstudio.so" DESTINATION "${apk_folder}/lib/${CMAKE_ANDROID_ARCH_ABI}")
+		file(COPY "${SDK_DIR}/Audio/fmod/android/api/lowlevel/lib/fmod.jar" DESTINATION "${apk_folder}/libs")
+	endif()
 
 	#Make ANT run
 	file(TO_NATIVE_PATH "${OUTPUT_DIRECTORY}" NATIVE_OUTDIR)
@@ -189,14 +206,14 @@ macro(configure_android_launcher name)
 	set(shared_copy)
 	if(NOT OPTION_STATIC_LINKING)
 		foreach(mod ${SHARED_MODULES})
-			set(shared_copy ${shared_copy} COMMAND copy "${NATIVE_OUTDIR}\\lib${mod}.so" "${apk_folder_native}\\lib\\${CMAKE_ANDROID_ARCH}" )
+			set(shared_copy ${shared_copy} COMMAND copy "${NATIVE_OUTDIR}\\lib${mod}.so" "${apk_folder_native}\\lib\\${CMAKE_ANDROID_ARCH_ABI}" )
 		endforeach()
 	endif()
 
 	add_custom_command(TARGET AndroidLauncher POST_BUILD
-		COMMAND copy /Y "${NATIVE_OUTDIR}\\libAndroidLauncher.so" "${apk_folder_native}\\lib\\${CMAKE_ANDROID_ARCH}\\libAndroidLauncher.so"
+		COMMAND copy /Y "${NATIVE_OUTDIR}\\libAndroidLauncher.so" "${apk_folder_native}\\lib\\${CMAKE_ANDROID_ARCH_ABI}\\libAndroidLauncher.so"
 		${shared_copy}
-		COMMAND copy "${NATIVE_OUTDIR}\\lib${name}.so" ${so_paths} "${apk_folder_native}\\lib\\${CMAKE_ANDROID_ARCH}\\"
+		COMMAND copy "${NATIVE_OUTDIR}\\lib${name}.so" ${so_paths} "${apk_folder_native}\\lib\\${CMAKE_ANDROID_ARCH_ABI}\\"
 		COMMAND call "$ENV{ANT_HOME}/bin/ant" clean
 		COMMAND call "$ENV{ANT_HOME}/bin/ant" debug
 		COMMAND copy "${apk_folder_native}\\bin\\${name}-debug.apk" "${NATIVE_OUTDIR}\\${name}.apk" WORKING_DIRECTORY "${apk_folder}")	

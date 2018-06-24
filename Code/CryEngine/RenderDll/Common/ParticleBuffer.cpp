@@ -22,7 +22,7 @@ namespace
 
 CParticleSubBuffer::CParticleSubBuffer()
 	: m_handle(0)
-	, m_buffer(1)
+	, m_buffer()
 	, m_pLockedData(nullptr)
 	, m_elemCount(0)
 	, m_stride(0)

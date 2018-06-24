@@ -117,6 +117,12 @@ namespace Cry
 				inline bool operator==(const SShadows &rhs) const { return 0 == memcmp(this, &rhs, sizeof(rhs)); }
 
 				EMiniumSystemSpec m_castShadowSpec = EMiniumSystemSpec::Disabled;
+				float m_shadowBias = 1.f;
+				float m_shadowSlopeBias = 1.f;
+				float m_shadowResolutionScale = 1.f;
+				float m_shadowUpdateMinRadius = 4.f;
+				int m_shadowMinResolution = 0;
+				int m_shadowUpdateRatio = 1;
 			};
 
 			struct SAnimations
@@ -178,7 +184,13 @@ namespace Cry
 		static void ReflectType(Schematyc::CTypeDesc<CPointLightComponent::SShadows>& desc)
 		{
 			desc.SetGUID("{95F6EF06-2101-427C-9E55-481042117504}"_cry_guid);
-			desc.AddMember(&CPointLightComponent::SShadows::m_castShadowSpec, 'shad', "ShadowSpec", "Minimum Shadow Graphics", "Minimum graphical setting to cast shadows from this light", EMiniumSystemSpec::Disabled);
+			desc.AddMember(&CPointLightComponent::SShadows::m_castShadowSpec, 'shad', "ShadowSpec", "Minimum Shadow Graphics", "Minimum graphical setting to cast shadows from this light.", EMiniumSystemSpec::Disabled);
+			desc.AddMember(&CPointLightComponent::SShadows::m_shadowBias, 'bias', "ShadowBias", "Shadow Bias", "Moves the shadow cascade toward or away from the shadow-casting object.", 1.0f);
+			desc.AddMember(&CPointLightComponent::SShadows::m_shadowSlopeBias, 'sbia', "ShadowSlopeBias", "Shadow Slope Bias", "Allows you to adjust the gradient (slope-based) bias used to compute the shadow bias.", 1.0f);
+			desc.AddMember(&CPointLightComponent::SShadows::m_shadowResolutionScale, 'srsc', "ShadownResolution", "Shadow Resolution Scale", "", 1.0f);
+			desc.AddMember(&CPointLightComponent::SShadows::m_shadowUpdateMinRadius, 'sumr', "ShadowUpdateMin", "Shadow Min Update Radius", "Define the minimum radius from the light source to the player camera that the ShadowUpdateRatio setting will be ignored.", 4.0f);
+			desc.AddMember(&CPointLightComponent::SShadows::m_shadowMinResolution, 'smin', "ShadowMinRes", "Shadow Min Resolution", "Percentage of the shadow pool the light should use for its shadows.", 0);
+			desc.AddMember(&CPointLightComponent::SShadows::m_shadowUpdateRatio, 'sura', "ShadowUpdateRatio", "Shadow Update Ratio", "Define the update ratio for shadow maps cast from this light. The lower the value (example 0.01), the less frequent the updates will be and the more stuttering the shadow will appear.", 1);
 		}
 
 		static void ReflectType(Schematyc::CTypeDesc<CPointLightComponent::SAnimations>& desc)

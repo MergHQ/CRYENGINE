@@ -101,7 +101,7 @@ namespace Schematyc2
 	//////////////////////////////////////////////////////////////////////////
 	void CObjectManager::SendSignal(const ObjectId& objectId, const SGUID& signalGUID, const TVariantConstArray& inputs)
 	{
-		IObject*	pObject = GetObjectById(objectId);
+		IObject* pObject = GetObjectById(objectId);
 		if(pObject != NULL)
 		{
 			pObject->ProcessSignal(signalGUID, inputs);
@@ -113,7 +113,7 @@ namespace Schematyc2
 	{
 		for(TObjectMap::iterator iObject = m_objects.begin(), iEndObject = m_objects.end(); iObject != iEndObject; ++ iObject)
 		{
-			CObject&	object = *iObject->second;
+			CObject& object = *iObject->second;
 			if(object.GetEntityId() == entityId)
 			{
 				object.ProcessSignal(signalGUID, inputs);

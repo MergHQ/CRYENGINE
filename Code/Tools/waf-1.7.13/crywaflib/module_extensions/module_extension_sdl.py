@@ -38,7 +38,7 @@ def module_extensions_sdl2(ctx, kw, entry_prefix, platform, configuration):
 		
 	elif platform == 'android_arm64':
 		kw[entry_prefix + 'includes'] += [ ctx.CreateRootRelativePath('Code/SDKs/SDL2/android/include') ]
-		kw[entry_prefix + 'libpath']  += [ ctx.CreateRootRelativePath('Code/SDKs/SDL2/arm64-v8a/lib') ]
+		kw[entry_prefix + 'libpath']  += [ ctx.CreateRootRelativePath('Code/SDKs/SDL2/android/arm64-v8a') ]
 		kw[entry_prefix + 'defines']  += ['USE_SDL2', 'USE_SDL2_WINDOWAPI'] # SDL_Mixer, Renderer
 		kw[entry_prefix + 'lib']      += ['SDL2']
 

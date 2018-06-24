@@ -101,6 +101,10 @@ public:
 	{
 		return m_bCompressed;
 	}
+	ILINE bool IsPersistentMappable() const
+	{
+		return m_HeapType != D3D12_HEAP_TYPE_READBACK;
+	}
 	ILINE bool IsOffCard() const
 	{
 		return m_HeapType == D3D12_HEAP_TYPE_READBACK || m_HeapType == D3D12_HEAP_TYPE_UPLOAD;
@@ -394,6 +398,7 @@ protected:
 	bool m_bReusableResource;
 
 	// Potentially changes on every resource-use
+	D3D12_RESOURCE_STATES m_eInitialState;
 	D3D12_RESOURCE_STATES m_eCurrentState;
 	D3D12_RESOURCE_STATES m_eAnnouncedState;
 	std::vector<D3D12_RESOURCE_STATES> m_SubresourceStates;

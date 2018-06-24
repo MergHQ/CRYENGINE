@@ -131,25 +131,38 @@ void CSceneRenderPass::PrepareRenderPassForUse(CDeviceCommandListRef RESTRICT_RE
 	}
 }
 
-void CSceneRenderPass::BeginRenderPass(CDeviceCommandListRef RESTRICT_REFERENCE commandList, bool bNearest, uint32 profilerSectionIndex, bool bIssueGPUTimestamp) const
+void CSceneRenderPass::ResolvePass(CDeviceCommandListRef RESTRICT_REFERENCE commandList, const uint16* screenBounds) const
+{
+	CDeviceGraphicsCommandInterface* pCommandInterface = commandList.GetGraphicsInterface();
+
+	const auto textureWidth = CRendererResources::s_ptexHDRTarget->GetWidth();
+	const auto textureHeight = CRendererResources::s_ptexHDRTarget->GetHeight();
+	SResourceCoordinate region = { screenBounds[0], screenBounds[1], 0, 0 };
+	SResourceRegionMapping mapping =
+	{
+		region,   // src position
+		region,   // dst position
+		{ 
+			static_cast<UINT>(std::max<int>(0, std::min<int>(screenBounds[2] - screenBounds[0], textureWidth - screenBounds[0]))),
+			static_cast<UINT>(std::max<int>(0, std::min<int>(screenBounds[3] - screenBounds[1], textureHeight - screenBounds[1]))), 
+			1, 1 
+		},    // size
+		D3D11_COPY_NO_OVERWRITE_CONC // This is being done from job threads
+	};
+
+	if (mapping.Extent.Width && mapping.Extent.Height && mapping.Extent.Depth)
+		commandList.GetCopyInterface()->Copy(CRendererResources::s_ptexHDRTarget->GetDevTexture(), CRendererResources::s_ptexSceneTarget->GetDevTexture(), mapping);
+}
+
+void CSceneRenderPass::BeginRenderPass(CDeviceCommandListRef RESTRICT_REFERENCE commandList, bool bNearest) const
 {
 	// Note: Function has to be threadsafe since it can be called from several worker threads
 
-#if defined(ENABLE_PROFILING_CODE)
-	if (gcpRendD3D->m_pPipelineProfiler)
-		gcpRendD3D->m_pPipelineProfiler->UpdateMultithreadedSection(profilerSectionIndex, true, 0, 0, bIssueGPUTimestamp, &commandList);
-
-	commandList.BeginProfilingSection();
-#endif
 
 	D3D11_VIEWPORT viewport = GetViewport(bNearest);
 	bool bViewportSet = false;
 
-	commandList.Reset();
-
 	CDeviceGraphicsCommandInterface* pCommandInterface = commandList.GetGraphicsInterface();
-	if (bIssueGPUTimestamp)
-		pCommandInterface->BeginProfilerEvent(GetLabel());
 	pCommandInterface->BeginRenderPass(*m_pRenderPass, m_scissorRect);
 
 	if (m_passFlags & ePassFlags_VrProjectionPass)
@@ -172,64 +185,15 @@ void CSceneRenderPass::BeginRenderPass(CDeviceCommandListRef RESTRICT_REFERENCE 
 #endif
 }
 
-void CSceneRenderPass::ResolvePass(CDeviceCommandListRef RESTRICT_REFERENCE commandList, const uint16* screenBounds, uint32 profilerSectionIndex, bool bIssueGPUTimestamp) const
-{
-#if defined(ENABLE_PROFILING_CODE)
-	if (gcpRendD3D->m_pPipelineProfiler)
-		gcpRendD3D->m_pPipelineProfiler->UpdateMultithreadedSection(profilerSectionIndex, true, 0, 0, bIssueGPUTimestamp, &commandList);
-#endif
-
-	CDeviceGraphicsCommandInterface* pCommandInterface = commandList.GetGraphicsInterface();
-
-	if (bIssueGPUTimestamp)
-		pCommandInterface->BeginProfilerEvent(GetLabel());
-
-	const auto textureWidth = CRendererResources::s_ptexHDRTarget->GetWidth();
-	const auto textureHeight = CRendererResources::s_ptexHDRTarget->GetHeight();
-	SResourceCoordinate region = { screenBounds[0], screenBounds[1], 0, 0 };
-	SResourceRegionMapping mapping =
-	{
-		region,   // src position
-		region,   // dst position
-		{ 
-			static_cast<UINT>(std::max<int>(0, std::min<int>(screenBounds[2] - screenBounds[0], textureWidth - screenBounds[0]))),
-			static_cast<UINT>(std::max<int>(0, std::min<int>(screenBounds[3] - screenBounds[1], textureHeight - screenBounds[1]))), 
-			1, 1 
-		},    // size
-		D3D11_COPY_NO_OVERWRITE_CONC // This is being done from job threads
-	};
-
-	if (mapping.Extent.Width && mapping.Extent.Height && mapping.Extent.Depth)
-		commandList.GetCopyInterface()->Copy(CRendererResources::s_ptexHDRTarget->GetDevTexture(), CRendererResources::s_ptexSceneTarget->GetDevTexture(), mapping);
-
-#if defined(ENABLE_PROFILING_CODE)
-	if (gcpRendD3D->m_pPipelineProfiler)
-		gcpRendD3D->m_pPipelineProfiler->UpdateMultithreadedSection(profilerSectionIndex, false, 0, 0, false, &commandList);
-	gcpRendD3D->AddRecordedProfilingStats(commandList.EndProfilingSection(), m_renderList, true);
-#endif
-}
-
-void CSceneRenderPass::EndRenderPass(CDeviceCommandListRef RESTRICT_REFERENCE commandList, bool bNearest, uint32 profilerSectionIndex, bool bIssueGPUTimestamp) const
+void CSceneRenderPass::EndRenderPass(CDeviceCommandListRef RESTRICT_REFERENCE commandList, bool bNearest) const
 {
 	// Note: Function has to be threadsafe since it can be called from several worker threads
 
 	CDeviceGraphicsCommandInterface* pCommandInterface = commandList.GetGraphicsInterface();
-	if (bIssueGPUTimestamp)
-		pCommandInterface->EndProfilerEvent(GetLabel());
 	pCommandInterface->EndRenderPass(*m_pRenderPass);
 
 #if (CRY_RENDERER_DIRECT3D < 120)
 	pCommandInterface->SetDepthBias(0.0f, 0.0f, 0.0f);
-#endif
-
-#if defined(ENABLE_PROFILING_CODE)
-	if (gcpRendD3D->m_pPipelineProfiler)
-	{
-		gcpRendD3D->m_pPipelineProfiler->UpdateMultithreadedSection(profilerSectionIndex, false, commandList.EndProfilingSection().numDIPs,
-		                                                            commandList.EndProfilingSection().numPolygons, bIssueGPUTimestamp, &commandList);
-	}
-	
-	gcpRendD3D->AddRecordedProfilingStats(commandList.EndProfilingSection(), m_renderList, true);
 #endif
 
 	if (m_passFlags & ePassFlags_UseVrProjectionState)

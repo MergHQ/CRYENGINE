@@ -65,11 +65,12 @@ namespace Cry
 			{
 				light.m_Flags |= DLF_CASTSHADOW_MAPS;
 
-				light.SetShadowBiasParams(1.f, 1.f);
-				light.m_fShadowUpdateMinRadius = light.m_fRadius;
+				light.SetShadowBiasParams(m_shadows.m_shadowBias, m_shadows.m_shadowSlopeBias);
+				light.m_fShadowUpdateMinRadius = m_shadows.m_shadowUpdateMinRadius;
+				light.m_fShadowResolutionScale = m_shadows.m_shadowResolutionScale;
+				light.m_nShadowMinResolution = m_shadows.m_shadowMinResolution;
 
-				float shadowUpdateRatio = 1.f;
-				light.m_nShadowUpdateRatio = max((uint16)1, (uint16)(shadowUpdateRatio * (1 << DL_SHADOW_UPDATE_SHIFT)));
+				light.m_nShadowUpdateRatio = max((uint16)1, (uint16)(m_shadows.m_shadowUpdateRatio * (1 << DL_SHADOW_UPDATE_SHIFT)));
 			}
 			else
 				light.m_Flags &= ~DLF_CASTSHADOW_MAPS;
@@ -77,6 +78,8 @@ namespace Cry
 			light.SetRadius(m_radius, m_options.m_attenuationBulbSize);
 
 			light.m_fFogRadialLobe = m_options.m_fogRadialLobe;
+
+			m_pEntity->UpdateLightClipBounds(light);
 
 			// Load the light source into the entity
 			const int slot = m_pEntity->LoadLight(GetOrMakeEntitySlotId(), &light);
@@ -90,12 +93,11 @@ namespace Cry
 				int viewDistance = static_cast<int>((m_viewDistance / 100.0f) * 255.0f);
 				pRenderNode->SetViewDistRatio(viewDistance);
 			}
-
 		}
 
 		void CPointLightComponent::ProcessEvent(const SEntityEvent& event)
 		{
-			if (event.event == ENTITY_EVENT_COMPONENT_PROPERTY_CHANGED)
+			if (event.event == ENTITY_EVENT_COMPONENT_PROPERTY_CHANGED || event.event == ENTITY_EVENT_LINK || event.event == ENTITY_EVENT_DELINK)
 			{
 				Initialize();
 			}
@@ -103,7 +105,7 @@ namespace Cry
 
 		Cry::Entity::EventFlags CPointLightComponent::GetEventMask() const
 		{
-			return ENTITY_EVENT_COMPONENT_PROPERTY_CHANGED;
+			return ENTITY_EVENT_COMPONENT_PROPERTY_CHANGED | ENTITY_EVENT_LINK | ENTITY_EVENT_DELINK;
 		}
 
 #ifndef RELEASE

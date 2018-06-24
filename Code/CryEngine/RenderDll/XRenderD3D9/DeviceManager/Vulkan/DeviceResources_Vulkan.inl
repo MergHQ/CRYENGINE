@@ -208,27 +208,30 @@ CDeviceResource::ESubstitutionResult CDeviceResource::SubstituteUsedResource()
 {
 	NCryVulkan::CMemoryResource* pResource = GetNativeResource();
 	const auto& fenceManager = pResource->GetDevice()->GetScheduler().GetFenceManager();
-	NCryVulkan::CImageResource* pImage = pResource->AsImage();
-	NCryVulkan::CBufferResource* pBuffer = pResource->AsBuffer();
+	NCryVulkan::CDynamicOffsetBufferResource* pDynBuf = pResource->AsDynamicOffsetBuffer();
+	NCryVulkan::CBufferResource             * pBuffer = pResource->AsBuffer();
+	NCryVulkan::CImageResource              * pImage  = pResource->AsImage();
 	VkResult hVkResult = VK_SUCCESS;
 
-	if (pImage)
-		hVkResult = pImage->GetDevice()->SubstituteUsedCommittedResource(fenceManager.GetCurrentValues(), &pImage);
-	if (pBuffer)
+	// NOTE: Poor man's resource tracking (take current time as last-used moment)
+	if (pDynBuf)
+		hVkResult = pDynBuf->GetDevice()->SubstituteUsedCommittedResource(fenceManager.GetCurrentValues(), &pDynBuf);
+	else if (pBuffer)
 		hVkResult = pBuffer->GetDevice()->SubstituteUsedCommittedResource(fenceManager.GetCurrentValues(), &pBuffer);
+	else if (pImage)
+		hVkResult = pImage ->GetDevice()->SubstituteUsedCommittedResource(fenceManager.GetCurrentValues(), &pImage);
 
 	if (hVkResult == VK_NOT_READY) // NOT_SUBSTITUTED
 		return eSubResult_Kept;
 	if (hVkResult != VK_SUCCESS) // Other Error
 		return eSubResult_Failed;
 
-	if (pImage)
-		m_pNativeResource = pImage;
-	if (pBuffer)
+	m_pNativeResource = pResource;
+	
+	if (pDynBuf || pBuffer)
 	{
 		auto* const pPreviousBuffer = static_cast<NCryVulkan::CBufferResource*>(pResource);
 		pBuffer->SetStrideAndElementCount(pPreviousBuffer->GetStride(), pPreviousBuffer->GetElementCount());
-		m_pNativeResource = pBuffer;
 	}
 
 	ReleaseResourceViews();

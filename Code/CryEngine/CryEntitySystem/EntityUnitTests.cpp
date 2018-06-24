@@ -15,6 +15,7 @@
 
 #include <CrySchematyc/Env/IEnvRegistrar.h>
 #include <CrySchematyc/Env/Elements/EnvComponent.h>
+#include <CryMath/Random.h>
 
 CRY_TEST_SUITE(EntityTestsSuit)
 {
@@ -579,7 +580,7 @@ CRY_TEST_SUITE(EntityTestsSuit)
 				const CTimeValue duration = gEnv->pTimer->GetFrameStartTime() - m_startTime;
 
 				//To be replaced with direct CTimeValue multiplication after it is supported
-				CRY_TEST_ASSERT(duration.GetSeconds() > m_expectedDuration.GetSeconds() * 0.8f && duration.GetSeconds() < m_expectedDuration.GetSeconds() * 1.2f, 
+				CRY_TEST_ASSERT(duration.GetSeconds() > m_expectedDuration.GetSeconds() * 0.8f && duration.GetSeconds() < m_expectedDuration.GetSeconds() * 1.2f,
 					"duration: %f, expected: %f", duration.GetSeconds(), m_expectedDuration.GetSeconds());
 			}
 			return m_isCalled;
@@ -599,14 +600,303 @@ CRY_TEST_SUITE(EntityTestsSuit)
 		}
 	};
 
-	CRY_TEST(EntityTimerTest, timeout = 60)
+	CRY_TEST(EntityTimerTest, timeout = 60, editor=false)
 	{
 		commands = {
-			CryTest::CCommandConsoleCmd("map woodland"),
-			CryTest::CCommandWait(2.f),
+			CryTest::CCommandLoadLevel("woodland"),
 			CryTest::CCommandRepeat(10, CEntityTimerAccuracyTestCommand()),
 		};
 	}
+
+	//////////////////////////////////////////////////////////////////////
+	class CTestLinkComponent : public IEntityComponent
+	{
+	public:
+		CTestLinkComponent() {};
+		~CTestLinkComponent() {};
+
+		void ProcessEvent(const SEntityEvent& event) override
+		{
+			if (event.event == Cry::Entity::EEvent::LinkAdded)
+			{
+				IEntityLink* pLink = (IEntityLink*)event.nParam[0];
+
+				CRY_TEST_CHECK_DIFFERENT(pLink, nullptr);
+				CRY_TEST_CHECK_EQUAL(m_pLinkedEntity->GetId(), pLink->entityId);
+
+				m_isCalled = true;
+			}
+		}
+
+		virtual Cry::Entity::EventFlags GetEventMask() const override
+		{
+			return Cry::Entity::EEvent::LinkAdded;
+		}
+
+		void SetLinkedEntity(IEntity* pEntity)
+		{
+			m_pLinkedEntity = pEntity;
+		}
+
+	public:
+		bool m_isCalled = false;
+		IEntity* m_pLinkedEntity = nullptr;
+	};
+
+	void TestEntityLink()
+	{
+		IEntity* pFirstEntity = nullptr;
+		IEntity* pSecondEntity = nullptr;
+		CTestLinkComponent* pComponent = nullptr;
+		bool isCalled = false;
+		CTimeValue startTime;
+		CTimeValue expectedDuration;
+		string linkString = "Test Link";
+
+		SEntitySpawnParams spawnParams;
+		pFirstEntity = gEnv->pEntitySystem->SpawnEntity(spawnParams);
+		pComponent = pFirstEntity->CreateComponentClass<CTestLinkComponent>();
+
+		SEntitySpawnParams spawnParams2;
+		pSecondEntity = gEnv->pEntitySystem->SpawnEntity(spawnParams2);
+		pComponent->SetLinkedEntity(pSecondEntity);
+
+		pFirstEntity->AddEntityLink(linkString.c_str(), pSecondEntity->GetId(), pSecondEntity->GetGuid());
+
+		IEntityLink* pLink = pFirstEntity->GetEntityLinks();
+
+		CRY_TEST_CHECK_DIFFERENT(pLink, nullptr);
+		CRY_TEST_CHECK_EQUAL(pLink->name, linkString);
+		CRY_TEST_CHECK_EQUAL(pLink->entityId, pSecondEntity->GetId());
+
+		CRY_TEST_ASSERT(pComponent->m_isCalled);
+
+		// CleanUp
+		g_pIEntitySystem->RemoveEntity(pFirstEntity->GetId());
+		g_pIEntitySystem->RemoveEntity(pSecondEntity->GetId());
+	}
+
+
+	CRY_TEST(EntityLinkTest, timeout = 60)
+	{
+		commands = {
+			TestEntityLink,
+		};
+	}
+	//////////////////////////////////////////////////////////////////////
+
+	namespace TestEventPriority
+	{
+		int previousPriority = 0;
+		int componentCounter = 0;
+		const int numberOfComponents = 20;
+	}
+
+	class TestPrioComponent1 : public IEntityComponent
+	{
+	public:
+		int m_priority = 1;
+
+		virtual void Initialize() override
+		{
+			int a = 0;
+		}
+
+		virtual ComponentEventPriority GetEventPriority() const override { return m_priority; }
+		virtual Cry::Entity::EventFlags GetEventMask() const override { return Cry::Entity::EEvent::Update; }
+
+		virtual void ProcessEvent(const SEntityEvent& event) override
+		{
+			CRY_TEST_ASSERT(TestEventPriority::previousPriority <= m_priority);
+			TestEventPriority::previousPriority = m_priority;
+
+			TestEventPriority::componentCounter++;
+		}
+	};
+
+	class TestPrioComponent2 : public IEntityComponent
+	{
+	public:
+		int m_priority = 13;
+
+		virtual ComponentEventPriority GetEventPriority() const override { return m_priority; }
+		virtual Cry::Entity::EventFlags GetEventMask() const override { return Cry::Entity::EEvent::Update; }
+
+		virtual void ProcessEvent(const SEntityEvent& event) override
+		{
+			CRY_TEST_ASSERT(TestEventPriority::previousPriority <= m_priority);
+			TestEventPriority::previousPriority = m_priority;
+
+			TestEventPriority::componentCounter++;
+		}
+	};
+
+	class TestPrioComponent3 : public IEntityComponent
+	{
+	public:
+		int m_priority = 59;
+
+		virtual ComponentEventPriority GetEventPriority() const override { return m_priority; }
+		virtual Cry::Entity::EventFlags GetEventMask() const override { return Cry::Entity::EEvent::Update; }
+
+		virtual void ProcessEvent(const SEntityEvent& event) override
+		{
+			CRY_TEST_ASSERT(TestEventPriority::previousPriority <= m_priority);
+			TestEventPriority::previousPriority = m_priority;
+
+			TestEventPriority::componentCounter++;
+			if (TestEventPriority::numberOfComponents == TestEventPriority::componentCounter)
+			{
+				TestEventPriority::componentCounter = 0;
+				TestEventPriority::previousPriority = 0;
+			}
+		}
+	};
+
+	CRY_TEST_FIXTURE(CTestComponentEventPriority)
+	{
+		virtual void Done() override
+		{
+			g_pIEntitySystem->RemoveEntity(m_pEntity->GetId());
+		}
+
+		void Start()
+		{
+			SEntitySpawnParams params;
+			m_pEntity = g_pIEntitySystem->SpawnEntity(params);
+			AddRandomComponents(m_pEntity, TestEventPriority::numberOfComponents);
+		}
+
+		void RemoveAndReAddComponents()
+		{
+			m_pEntity->RemoveAllComponents();
+
+			AddRandomComponents(m_pEntity, TestEventPriority::numberOfComponents);
+			TestEventPriority::componentCounter = 0;
+		}
+
+		void AddRandomComponents(IEntity* pEntity, int count)
+		{
+			for (int i = 0; i < count; ++i)
+			{
+				int rnd = cry_random(0, 2);
+				if (rnd == 0)
+					pEntity->CreateComponentClass<TestPrioComponent1>();
+				else if (rnd == 1)
+					pEntity->CreateComponentClass<TestPrioComponent2>();
+				else
+					pEntity->CreateComponentClass<TestPrioComponent3>();
+			}
+		}
+
+		IEntity* m_pEntity = nullptr;
+	};
+
+	CRY_TEST_WITH_FIXTURE(EventPriority, CTestComponentEventPriority, editor=false, timeout = 20)
+	{
+		commands = {
+			CryTest::CCommandLoadLevel("woodland"),
+			CryTest::CCommandFunction(this, &CTestComponentEventPriority::Start),
+			CryTest::CCommandFunction(this, &CTestComponentEventPriority::RemoveAndReAddComponents),
+			CryTest::CCommandWait(4.f),
+			CryTest::CCommandFunction(this, &CTestComponentEventPriority::RemoveAndReAddComponents),
+			CryTest::CCommandWait(4.f),
+		};
+	}
+
+	//////////////////////////////////////////////////////////////////////////
+
+	class CChildTestComponent : public IEntityComponent
+	{
+	public:
+		CChildTestComponent() {}
+		~CChildTestComponent() {}
+
+		virtual Cry::Entity::EventFlags GetEventMask() const override { return Cry::Entity::EEvent::TransformChanged; }
+
+		virtual void ProcessEvent(const SEntityEvent& event) override
+		{
+			if (event.event == Cry::Entity::EEvent::TransformChanged)
+			{
+				m_TransformChangeCount++;
+			}
+		}
+
+		int m_TransformChangeCount = 0;
+	};
+
+	class CTestEntityAttachment
+	{
+	public:
+		CTestEntityAttachment() {}
+		~CTestEntityAttachment() {}
+
+		bool Update()
+		{
+			if (!pParentEntity)
+				Start();
+
+			// Generate a random position, rotation and scale
+			Vec3 pos(cry_random(-100.f, 100.f), cry_random(-100.f, 100.f), cry_random(-100.f, 100.f));
+			Quat rot = Quat::CreateRotationAA(cry_random(-100.f, 100.f), Vec3(1.f,0.f,0.f));
+			Vec3 scale(cry_random(0.1f, 10.f), cry_random(0.1f, 10.f), cry_random(0.1f, 10.f));
+			
+			pParentEntity->SetPosRotScale(pos, rot, scale);
+			
+			CheckTransform();
+			if (steps != 20)
+			{
+				steps++;
+				return false;
+			}
+			else
+			{
+				gEnv->pEntitySystem->RemoveEntity(pParentEntity->GetId());
+
+				return true;
+			}
+		}
+
+		void CheckTransform()
+		{
+			// The transformation of the parent and child should be equal, because they were spawn with the same transformation
+			CRY_TEST_CHECK_EQUAL(pParentEntity->GetWorldTM(), pChildEntity->GetWorldTM());
+		}
+
+		void Start()
+		{
+			SEntitySpawnParams spawnParams;
+			pParentEntity = gEnv->pEntitySystem->SpawnEntity(spawnParams);
+
+			SEntitySpawnParams spawnParams2;
+			pChildEntity = gEnv->pEntitySystem->SpawnEntity(spawnParams2);
+			pChildComponent = pChildEntity->CreateComponentClass<CChildTestComponent>();
+
+			pParentEntity->AttachChild(pChildEntity);
+
+			CRY_TEST_CHECK_EQUAL(pParentEntity->GetChildCount(), 1);
+			CRY_TEST_CHECK_DIFFERENT(pParentEntity->GetChild(0), nullptr);
+			CRY_TEST_CHECK_DIFFERENT(pChildEntity->GetParent(), nullptr);
+
+			pParentEntity->SetPos(Vec3(0, 0, 0));
+
+			// We should already got multiple transform events at this point
+			CRY_TEST_CHECK_DIFFERENT(pChildComponent->m_TransformChangeCount, 0);
+		}
+
+		IEntity* pParentEntity = nullptr;
+		IEntity* pChildEntity = nullptr;
+		CChildTestComponent* pChildComponent = nullptr;
+		int steps = 0;
+	};
+
+	CRY_TEST(TestEntityAttachment, timeout = 60)
+	{
+		commands = {
+			CryTest::CCommand(CTestEntityAttachment()),
+		};
+	}
+
 }
 
 void RegisterUnitTestComponents(Schematyc::IEnvRegistrar& registrar)

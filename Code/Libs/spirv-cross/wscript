@@ -6,10 +6,12 @@ def build(bld):
 		target       = 'spirv-cross', 
 		vs_filter    = 'Libs',
 		file_list    = 'spirv-cross.waf_files',
-		win_defines  = [ '_HAS_EXCEPTIONS=0' ], # cpp locale used
+		win_defines  = [ '_CRT_SECURE_NO_WARNINGS' ], # cpp locale used
 		win_cxxflags = [ '/W0' ],               # conversion warnings, sprintf warnings
 		
 		exclude_from_static_code_analyzer = True,
+		
+		android_cxxflags = ['-fcxx-exceptions'],
 
 		module_provides = dict(
 			includes = [ Path('Code/SDKs/spirv-cross'), ],

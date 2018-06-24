@@ -11,7 +11,6 @@
 
 #pragma once
 
-#include <CrySystem/Testing/IReporter.h>
 #include <CryString/CryString.h>
 #include <CrySystem/ILog.h>
 #include <CrySerialization/IArchive.h>
@@ -21,8 +20,28 @@
 
 namespace CryTest
 {
+struct SRunContext
+{
+	int testCount = 0;
+	int failedTestCount = 0;
+	int succedTestCount = 0;
+};
+struct SError
+{
+	string message;
+	string fileName;
+	int    lineNumber;
+
+	void   Serialize(Serialization::IArchive& ar)
+	{
+		ar(message, "message");
+		ar(fileName, "fileName");
+		ar(lineNumber, "lineNumber");
+	}
+};
+
 //! Writes multiple excel documents for detailed results
-class CTestExcelReporter : public CExcelExportBase, public IReporter
+class CTestExcelReporter : public CExcelExportBase
 {
 public:
 	explicit CTestExcelReporter(ILog& log) : m_log(log) {}
@@ -32,16 +51,28 @@ public:
 		ar(m_results, "m_results");
 	}
 
-protected:
-	virtual void OnStartTesting(const SRunContext& context) override {}
-	virtual void OnFinishTesting(const SRunContext& context) override;
-	virtual void OnSingleTestStart(const STestInfo& testInfo) override;
-	virtual void OnSingleTestFinish(const STestInfo& testInfo, float fRunTimeInMs, bool bSuccess, const std::vector<SError>& failures) override;
-	virtual void OnBreakTesting(const SRunContext& context) override;
-	virtual void OnRecoverTesting(const SRunContext& context) override;
+	//! Notify reporter the test system started
+	void OnStartTesting(const SRunContext& context) {}
 
-	virtual void PostFinishTesting(const SRunContext& context, bool bSavedReports) const {}
+	//! Notify reporter the test system finished
+	void OnFinishTesting(const SRunContext& context, bool openReport);
 
+	//! Notify reporter one test started
+	void OnSingleTestStart(const STestInfo& testInfo);
+
+	//! Notify reporter one test finished, along with necessary results
+	void OnSingleTestFinish(const STestInfo& testInfo, float fRunTimeInMs, bool bSuccess, const std::vector<SError>& failures);
+
+	//! Save the test instance to prepare for possible time out or other unrecoverable errors
+	void SaveTemporaryReport();
+
+	//! Recover from last save
+	void RecoverTemporaryReport();
+
+	//! Returns whether the report contains certain test
+	bool HasTest(const STestInfo& testInfo) const;
+
+private:
 	ILog& m_log;
 
 	struct STestResult
@@ -60,14 +91,5 @@ protected:
 		}
 	};
 	std::vector<STestResult> m_results;
-};
-
-//! Extends Excel reporter by opening failed report
-class CTestExcelNotificationReporter : public CTestExcelReporter
-{
-public:
-	using CTestExcelReporter::CTestExcelReporter;
-protected:
-	virtual void PostFinishTesting(const SRunContext& context, bool bSavedReports) const override;
 };
 }

@@ -1750,20 +1750,7 @@ void CShaderMan::_PrecacheShaderList(bool bStatsOnly)
 				if (!c)
 					continue;
 				m_szShaderPrecache = &c[1];
-				/*if (!stricmp(m_szShaderPrecache, "IlluminationVS") && cmba->nRT == 0x10050000)
-				   {
-				   int nnn = 0;
-				   }*/
-				//if (!stricmp(pSH->GetName(), "ParticlesNoMat"))*/
-				/*if (!stricmp(cmba->CacheName.c_str(), "Cloth@Common_SG_VS(%STAT_BRANCHING|%WIND_BENDING)(%_RT_ALPHATEST|%_RT_QUALITY1|%_RT_INSTANCING_ROT|%_RT_INSTANCING_ATTR|%_RT_PSM|%_RT_HW_PCF_COMPARE)(0)(0)(800)(vs_2_0)"))
-				   {
-				   int nnn = 0;
-				   }*/
-				/*if ((cmba->nRT == 0x10902200402)) // && cmba->nLT == 0)
-				   {
-				   int nnn = 0;
-				   }
-				   }*/
+
 				for (int m = 0; m < pSH->m_HWTechniques.Num(); m++)
 				{
 					SShaderTechnique* pTech = pSH->m_HWTechniques[m];

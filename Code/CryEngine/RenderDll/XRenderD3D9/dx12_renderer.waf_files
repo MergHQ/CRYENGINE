@@ -8,6 +8,7 @@
   },
   "CryRenderer_uber_5_dx12_dx12.cpp":{
     "DeviceManager/D3D12":[
+      "DeviceManager/D3D12/DeviceObjects_D3D12.inl",
       "DeviceManager/D3D12/DeviceObjects_D3D12.cpp",
       "DeviceManager/D3D12/DeviceResources_D3D12.inl",
       "DeviceManager/D3D12/DeviceCommandList_D3D12.h",

@@ -8,7 +8,7 @@ class CSwapChain
 {
 private:
 	_smart_ptr<DXGISwapChain> m_pSwapChain;
-	DXGI_SURFACE_DESC         m_swapChainDesc;
+	DXGI_SURFACE_DESC         m_surfaceDesc;
 
 #if defined(SUPPORT_DEVICE_INFO)
 	uint32                   m_refreshRateNumerator = 0;
@@ -24,7 +24,7 @@ public:
 
 	CSwapChain(CSwapChain &&o) noexcept
 		: m_pSwapChain(std::move(o.m_pSwapChain))
-		, m_swapChainDesc(std::move(o.m_swapChainDesc))
+		, m_surfaceDesc(std::move(o.m_surfaceDesc))
 #if defined(SUPPORT_DEVICE_INFO)
 		, m_refreshRateNumerator(o.m_refreshRateNumerator)
 		, m_refreshRateDenominator(o.m_refreshRateDenominator)
@@ -33,7 +33,7 @@ public:
 	CSwapChain &operator=(CSwapChain &&o) noexcept
 	{
 		m_pSwapChain = std::move(o.m_pSwapChain);
-		m_swapChainDesc = std::move(o.m_swapChainDesc);
+		m_surfaceDesc = std::move(o.m_surfaceDesc);
 #if defined(SUPPORT_DEVICE_INFO)
 		m_refreshRateNumerator = o.m_refreshRateNumerator;
 		m_refreshRateDenominator = o.m_refreshRateDenominator;
@@ -42,8 +42,8 @@ public:
 		return *this;
 	}
 
-	void                     ResizeSwapChain(uint32_t width, uint32_t height, bool isMainContext, bool bResizeTarget = false);
-#if !CRY_PLATFORM_ORBIS && !CRY_PLATFORM_DURANGO
+	void ResizeSwapChain(uint32_t buffers, uint32_t width, uint32_t height, bool isMainContext, bool bResizeTarget = false);
+#if !CRY_PLATFORM_CONSOLE
 	void                     SetFullscreenState(bool isFullscreen, IDXGIOutput *output = nullptr)
 	{
 		m_pSwapChain->SetFullscreenState(isFullscreen, output);
@@ -57,7 +57,12 @@ public:
 #endif
 
 	_smart_ptr<DXGISwapChain> GetSwapChain() const     { return m_pSwapChain; }
-	const DXGI_SURFACE_DESC&  GetSwapChainDesc() const { return m_swapChainDesc; }
+
+	const DXGI_SURFACE_DESC&  GetSurfaceDesc() const { return m_surfaceDesc; }
+
+#if (CRY_RENDERER_DIRECT3D >= 110) || (CRY_RENDERER_VULKAN >= 10)
+	DXGI_SWAP_CHAIN_DESC      GetDesc() const { DXGI_SWAP_CHAIN_DESC scDesc; ZeroStruct(scDesc); m_pSwapChain->GetDesc(&scDesc); return scDesc; }
+#endif
 
 #if defined(SUPPORT_DEVICE_INFO)
 	uint32                   GetRefreshRateNumerator() const { return m_refreshRateNumerator; }

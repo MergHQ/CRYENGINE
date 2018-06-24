@@ -93,13 +93,13 @@ void CScriptGraphStateNode::CreateLayout(CScriptGraphNodeLayout& layout)
 
 	CScriptView scriptView(m_stateGUID);
 
-	auto visitScriptSignal = [&layout, &scriptView](const IScriptSignal& scriptSignal)
+	auto visitScriptSignal = [&layout](const IScriptSignal& scriptSignal)
 	{
 		layout.AddOutput(CUniqueId::FromGUID(scriptSignal.GetGUID()), scriptSignal.GetName(), scriptSignal.GetGUID(), { EScriptGraphPortFlags::Signal, EScriptGraphPortFlags::Begin });
 	};
 	scriptView.VisitEnclosedSignals(visitScriptSignal);
 
-	auto visitScriptTimer = [&layout, &scriptView](const IScriptTimer& scriptTimer)
+	auto visitScriptTimer = [&layout](const IScriptTimer& scriptTimer)
 	{
 		layout.AddOutput(CUniqueId::FromGUID(scriptTimer.GetGUID()), scriptTimer.GetName(), scriptTimer.GetGUID(), { EScriptGraphPortFlags::Signal, EScriptGraphPortFlags::Begin });
 	};

@@ -147,7 +147,7 @@ enum ETextureFlags : uint32
 	FT_USAGE_MSAA              = BIT32(10), // R: use as MSAA render-target
 	FT_FORCE_MIPS              = BIT32(11), // TR: always allocate mips (even if normally this would be optimized away)
 	FT_USAGE_RENDERTARGET      = BIT32(12), // R: use as render-target
-	FT______________________02 = BIT32(13), // UNUSED
+	FT_USAGE_TEMPORARY         = BIT32(13), // TR: indicate that the resource is used for just one or at most a couple of frames
 	FT_STAGE_READBACK          = BIT32(14), // R: allow read-back of the texture contents by the CPU through a persistent staging texture (otherwise the staging is dynamic)
 	FT_STAGE_UPLOAD            = BIT32(15), // R: allow up-load of the texture contents by the CPU through a persistent staging texture (otherwise the staging is dynamic)
 	FT_DONT_RELEASE            = BIT32(16), // TR: texture will not be freed automatically when ref counter goes to 0. Use ReleaseForce() to free the texture.
@@ -164,7 +164,7 @@ enum ETextureFlags : uint32
 	FT_SPLITTED                = BIT32(27), // T: indicator that the texture is available splitted on disk
 	FT_STREAMED_PREPARE        = BIT32(28), // REMOVE
 	FT_STREAMED_FADEIN         = BIT32(29), // T: smoothly fade the texture in after MIPs have been added
-	FT______________________03 = BIT32(30), // UNUSED
+	FT_USAGE_UAV_OVERLAP       = BIT32(30), // R: disable compute-serialization when concurrently using this UAV
 	FT_USAGE_UAV_RWTEXTURE     = BIT32(31), // R: enable RW usage for the UAV, otherwise UAVs are write-only (see FT_USAGE_UNORDERED_ACCESS)
 };
 

@@ -158,6 +158,7 @@ private:
 		static void AllocatePredefined ## TypeName ## s();                                                                                                                                                      \
 		static void Reset   ## TypeName ## s() { s_ ## TypeName ## s.Release(PreAllocated); }                                                                                                                   \
 		static void Release ## TypeName ## s() { s_ ## TypeName ## s.Release(0); }                                                                                                                              \
+		static size_t Count ## TypeName ## s() { return s_ ## TypeName ## s.Size(); }                                                                                                                           \
 		                                                                                                                                                                                                        \
 		static TypeName ## Handle Get         ## TypeName ## Handle(const S ## TypeName & pState) { return s_ ## TypeName ## s.GetHandle        (pState); }                                                     \
 		static TypeName ## Handle GetOrCreate ## TypeName ## Handle(const S ## TypeName & pState) { return s_ ## TypeName ## s.GetOrCreateHandle(pState); }                                                     \
@@ -342,8 +343,9 @@ private:
 #define PlaceComposedDeviceObjectManagementAPI(TypeName, bRetryable, TypeCreator, PreAllocated)                                                                                                                 \
 	public:                                                                                                                                                                                                     \
 		void AllocatePredefined ## TypeName ## s();                                                                                                                                                             \
-		void Reset ## TypeName ## s() { m_ ## TypeName ## s.Release(PreAllocated); }                                                                                                                            \
+		void Reset   ## TypeName ## s() { m_ ## TypeName ## s.Release(PreAllocated); }                                                                                                                          \
 		void Release ## TypeName ## s() { m_ ## TypeName ## s.Release(0); }                                                                                                                                     \
+		size_t Count ## TypeName ## s() { return m_ ## TypeName ## s.Size(); }                                                                                                                                  \
 		                                                                                                                                                                                                        \
 		TypeName ## Handle Get         ## TypeName ## Handle(const S ## TypeName pDesc) const { return m_ ## TypeName ## s.GetHandle        (pDesc); }                                                          \
 		TypeName ## Handle GetOrCreate ## TypeName ## Handle(const S ## TypeName pDesc)       { return m_ ## TypeName ## s.GetOrCreateHandle(pDesc); }                                                          \

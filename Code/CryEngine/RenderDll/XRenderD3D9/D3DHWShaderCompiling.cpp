@@ -2211,6 +2211,10 @@ SDeviceShaderEntry CHWShader_D3D::mfGetCacheItem(CShader* pFX, const char *name,
 	const CDirEntry* de = rfOpenGuard.getHandle()->mfGetEntry(name, &bAsync);
 	if (de)
 	{
+		// Validate
+		if (mfValidateCache(*cache) != cacheValidationResult::ok)
+			return {};
+
 		m_pCurInst->m_bAsyncActivating = false;
 		auto entity = mfShaderEntryFromCache(pFX, *de, rfOpenGuard, *cache);
 		if (cache->GetType() == cacheSource::user)
@@ -2480,7 +2484,7 @@ bool SDiskShaderCache::mfOptimiseCacheFile(SOptimiseStats* pStats)
 		iLog->Log(" Optimising shaders resource '%s' (%" PRISIZE_T " items)...", m_pRes->mfGetFileName(), Data.size() - 1);
 
 		m_pRes->mfClose();
-		m_pRes->mfOpen(RA_CREATE | (CParserBin::m_bEndians ? RA_ENDIANS : 0), &gRenDev->m_cEF.m_ResLookupDataMan[static_cast<int>(cacheSource::user)]);
+		m_pRes->mfOpen(RA_CREATE | (CParserBin::m_bEndians ? RA_ENDIANS : 0), &gRenDev->m_cEF.m_ResLookupDataMan[static_cast<int>(GetType())]);
 
 		float fVersion = FX_CACHE_VER;
 		uint32 nMinor = (int)(((float)fVersion - (float)(int)fVersion) * 10.1f);

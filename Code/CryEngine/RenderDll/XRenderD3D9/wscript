@@ -152,16 +152,16 @@ def build(bld):
 		target      = 'CryRenderVulkan',
 		vs_filter   = 'CryEngine',
 
-		file_list   = ['core_renderer.waf_files', 'Vulkan/vulkan_renderer.waf_files'],
+		file_list   = ['core_renderer.waf_files', 'vulkan.waf_files'],
 		pch         = '../StdAfx.cpp',
 		includes    = [ '..', Path('Code/SDKs/squish-ccr'), Path('Code/SDKs/VulkanSDK/Include') ],
-		defines     = [ 'CRY_RENDERER_VULKAN=10', 'DO_RENDERSTATS', '_RENDERER' ] ,
+		defines     = [ 'CRY_RENDERER_VULKAN=10', 'DO_RENDERSTATS', '_RENDERER', 'SPIRV_CROSS_EXCEPTIONS_TO_ASSERTIONS' ] ,
 		use_module  = [ 'lzma', 'lzss', 'lz4', 'zlib', 'spirv-cross' ],
 		module_extensions = [ 'sdl2', 'sdl2_ext' ],
 		
 		android_cxxflags = ['-fms-extensions', '-D_MSC_EXTENSIONS=1'],
 
-		win_file_list     = ['mesh_baker.waf_files'],
+		win_file_list     = ['mesh_baker.waf_files', 'vulkan_win.waf_files'],
 		win_lib           = ['Ole32', 'Gdi32', 'wininet', 'Shell32', 'dxguid', 'vulkan-1' ], 
 		win_linkflags     = ['/NODEFAULTLIB:libcmt.lib' ], ## AMD AGS static lib references this
 		win_libpath       = [ Path('Code/SDKs/VulkanSDK/Lib') ],

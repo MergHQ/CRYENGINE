@@ -77,7 +77,7 @@ class winrc(Task.Task):
 	"""
 	Task for compiling resource files
 	"""
-	run_str = '${WINRC} ${WINRCFLAGS} ${CPPPATH_ST:INCPATHS} ${DEFINES_ST:DEFINES} ${WINRC_TGT_F} ${TGT} ${WINRC_SRC_F} ${SRC}'
+	run_str = '${WINRC} ${WINRCFLAGS} ${CPPPATH_ST:INCPATHS} ${CPPPATH_SYSTEM_ST:SYSINCPATHS} ${DEFINES_ST:DEFINES} ${WINRC_TGT_F} ${TGT} ${WINRC_SRC_F} ${SRC}'
 	color   = 'BLUE'
 
 	def scan(self):

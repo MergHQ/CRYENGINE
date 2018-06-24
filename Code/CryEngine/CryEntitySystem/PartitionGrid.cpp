@@ -320,7 +320,7 @@ void CPartitionGrid::BeginReset()
 //////////////////////////////////////////////////////////////////////////
 // Unit Testing of Patritition grid
 //////////////////////////////////////////////////////////////////////////
-#ifdef CRY_UNIT_TESTING
+#ifdef CRY_TESTING
 
 CRY_TEST(CUT_PartitionGrid)
 {
@@ -360,4 +360,4 @@ CRY_TEST(CUT_PartitionGrid)
 	pGrid->DeallocateGrid();
 }
 
-#endif //CRY_UNIT_TESTING
+#endif //CRY_TESTING

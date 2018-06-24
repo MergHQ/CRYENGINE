@@ -588,7 +588,7 @@ namespace Schematyc2
 	}
 
 	//////////////////////////////////////////////////////////////////////////
-	IScriptStateMachine* CScriptFile::AddStateMachine(const SGUID& scopeGUID, const char* szName, EScriptStateMachineLifetime lifetime, const SGUID& contextGUID, const SGUID& partnerGUID)
+	IScriptStateMachine* CScriptFile::AddStateMachine(const SGUID& scopeGUID, const char* szName, EStateMachineLifetime lifetime, const SGUID& contextGUID, const SGUID& partnerGUID)
 	{
 		SCHEMATYC2_SYSTEM_ASSERT(gEnv->IsEditor());
 		if(gEnv->IsEditor())

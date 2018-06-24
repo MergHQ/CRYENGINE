@@ -125,6 +125,11 @@ if (NOT EXISTS "${CMAKE_BINARY_DIR}/ProjectCVarOverrides.h")
 endif ()
 list(APPEND global_defines "CRY_CVAR_OVERRIDE_FILE=\"${CMAKE_BINARY_DIR}/ProjectCVarOverrides.h\"")
 
+if (NOT EXISTS "${CMAKE_BINARY_DIR}/ProjectEngineDefineOverrides.h")
+	file(WRITE "${CMAKE_BINARY_DIR}/ProjectEngineDefineOverrides.h" "")
+endif ()
+list(APPEND global_defines "CRY_ENGINE_DEFINE_OVERRIDE_FILE=\"${CMAKE_BINARY_DIR}/ProjectEngineDefineOverrides.h\"")
+
 # Print current project settings
 MESSAGE(STATUS "CMAKE_SYSTEM_NAME = ${CMAKE_SYSTEM_NAME}")
 MESSAGE(STATUS "CMAKE_GENERATOR = ${CMAKE_GENERATOR}")

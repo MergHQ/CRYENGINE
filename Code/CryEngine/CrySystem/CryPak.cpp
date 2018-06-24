@@ -65,55 +65,7 @@ FILE* CCryPak::m_pPatchObbExpFile = NULL;
 FILE* CCryPak::m_pAssetFile = NULL;
 AAssetManager* CCryPak::m_pAssetManager = NULL;
 #endif
-static bool IsShippedLevel(const char* str)
-{
-	return false; // TODO: fix me!
-}
 
-#if defined(PURE_CLIENT)
-
-	#pragma warning( disable : 6240 )// (<expression> && <non-zero constant>) always evaluates to the result of <expression>
-
-	#define IsModPath(xxx) (false)                    // Removes functionality for PC client release and consoles. ANTI TAMPER
-
-#else
-
-inline bool IsModPath(const char* originalPath)
-{
-	// create copy of path and replace slashes
-	CryPathString path = originalPath;
-	path.replace('\\', '/');
-
-	// check if field lies inside of mods/ folder
-	CryStackStringT<char, 32> modsStr("m");
-	modsStr += "o";
-	modsStr += "d";
-	modsStr += "s";
-	modsStr += "/";
-	const size_t modsStrLen = modsStr.length();
-
-	if (strnicmp(path.c_str(), modsStr.c_str(), modsStrLen) == 0)
-		return true;
-
-	// check for custom SP/MP levels inside of gamecrysis2/levels/ folder
-	CryStackStringT<char, 32> levelsStr("c");
-	levelsStr += "3";
-	levelsStr += "/";
-	levelsStr += "l";
-	levelsStr += "e";
-	levelsStr += "v";
-	levelsStr += "e";
-	levelsStr += "l";
-	levelsStr += "s";
-	levelsStr += "/";
-	const size_t levelsStrLen = levelsStr.length();
-	const bool startsWithLevels = strnicmp(path.c_str(), levelsStr.c_str(), levelsStrLen) == 0;
-	if (startsWithLevels && !IsShippedLevel(path.c_str() + levelsStrLen))
-		return true;
-
-	return false;
-}
-#endif
 
 static const size_t s_defaultOpenFileSlots = 128;
 static const size_t s_openFileSlotsGrowNumber = 32;
@@ -588,21 +540,22 @@ void CCryPak::SetGameFolderWritable(bool bWritable)
 }
 
 //////////////////////////////////////////////////////////////////////////
-void CCryPak::AddMod(const char* szMod)
+void CCryPak::AddMod(const char* szMod, EModAccessPriority modAccessPriority)
 {
 	// remember the prefix to use to convert the file names
 	CryPathString strPrepend = szMod;
 	strPrepend.replace(g_cNativeSlash, g_cNonNativeSlash);
 	strPrepend.MakeLower();
 
-	std::vector<string>::iterator strit;
-	for (strit = m_arrMods.begin(); strit != m_arrMods.end(); ++strit)
+	for (auto &mod : m_arrMods)
 	{
-		string& sMOD = *strit;
-		if (stricmp(sMOD.c_str(), strPrepend.c_str()) == 0)
+		if (mod.path.compareNoCase(strPrepend.c_str()) == 0)
 			return; // already added
 	}
-	m_arrMods.push_back(strPrepend);
+	SModFolder modFolder;
+	modFolder.priority = modAccessPriority;
+	modFolder.path = strPrepend.c_str();
+	m_arrMods.push_back(modFolder);
 }
 
 //////////////////////////////////////////////////////////////////////////
@@ -612,11 +565,9 @@ void CCryPak::RemoveMod(const char* szMod)
 	strPrepend.replace(g_cNativeSlash, g_cNonNativeSlash);
 	strPrepend.MakeLower();
 
-	std::vector<string>::iterator it;
-	for (it = m_arrMods.begin(); it != m_arrMods.end(); ++it)
+	for (auto it = m_arrMods.begin(); it != m_arrMods.end(); ++it)
 	{
-		string& sMOD = *it;
-		if (stricmp(sMOD.c_str(), strPrepend.c_str()) == 0)
+		if (it->path.compareNoCase(strPrepend.c_str()) == 0)
 		{
 			m_arrMods.erase(it);
 			break;
@@ -627,7 +578,7 @@ void CCryPak::RemoveMod(const char* szMod)
 //////////////////////////////////////////////////////////////////////////
 const char* CCryPak::GetMod(int index)
 {
-	return index >= 0 && index < (int)m_arrMods.size() ? m_arrMods[index].c_str() : NULL;
+	return index >= 0 && index < (int)m_arrMods.size() ? m_arrMods[index].path.c_str() : NULL;
 }
 
 //////////////////////////////////////////////////////////////////////////
@@ -1041,12 +992,30 @@ inline bool CheckFileExistOnDisk(const char* filename)
 };
 
 //////////////////////////////////////////////////////////////////////////
+bool CCryPak::IsModPath(const char* szPath)
+{
+#if !defined(PURE_CLIENT)
+	CryPathString path = szPath;
+	path.replace(g_cNativeSlash, g_cNonNativeSlash);
+	for (auto it = m_arrMods.begin(); it != m_arrMods.end(); ++it)
+	{
+		if (filehelpers::CheckPrefix(path.c_str(), it->path.c_str()))
+		{
+			return true;
+		}
+	}
+#endif //!defined(PURE_CLIENT)
+	return false;
+}
+
+//////////////////////////////////////////////////////////////////////////
 
 const char* CCryPak::AdjustFileName(const char* src, char dst[g_nMaxPath], unsigned nFlags)
 {
+	CRY_PROFILE_FUNCTION(PROFILE_SYSTEM);
 	CRY_ASSERT(src);
 
-	bool bSkipMods = false;
+	bool bSkipMods = m_arrMods.empty();
 
 	if (g_cvars.sys_filesystemCaseSensitivity > 0)
 	{
@@ -1054,17 +1023,24 @@ const char* CCryPak::AdjustFileName(const char* src, char dst[g_nMaxPath], unsig
 	}
 
 	if (!bSkipMods &&
+			!IsAbsPath(src) &&
+			!IsModPath(src) &&
 	    ((nFlags & FLAGS_PATH_REAL) == 0) &&
 	    ((nFlags & FLAGS_FOR_WRITING) == 0) &&
-	    (!m_arrMods.empty()) &&
 	    (*src != '%') &&                                                                   // If path starts with '%' it is a special alias.
+			(*src != '.') &&                                                                   // If path starts with '.' it is assuming starting from the game root folder.
 	    ((m_pPakVars->nPriority != ePakPriorityPakOnly) || (nFlags & FLAGS_NEVER_IN_PAK) || (*src == '%'))) // When priority is Pak only, we only check Mods directories if we're looking for a file that can't be in a pak
 	{
-		// Scan mod folders
-		std::vector<string>::reverse_iterator it;
-		for (it = m_arrMods.rbegin(); it != m_arrMods.rend(); ++it)
+		if (filehelpers::CheckPrefix(src, m_strDataRootWithSlash.c_str()))
 		{
-			CryPathString modPath = (*it).c_str();
+			src += m_strDataRootWithSlash.length();
+		}
+
+		// Scan mod folders
+		for (auto it = m_arrMods.rbegin(); it != m_arrMods.rend(); ++it)
+		{
+			const SModFolder &mod = *it;
+			CryPathString modPath = mod.path.c_str();
 			modPath.append(1, '/');
 			modPath += src;
 			const char* szFinalPath = AdjustFileNameInternal(modPath, dst, nFlags | FLAGS_PATH_REAL);
@@ -1086,10 +1062,29 @@ const char* CCryPak::AdjustFileName(const char* src, char dst[g_nMaxPath], unsig
 				case ePakPriorityFileFirstModsOnly:
 				case ePakPriorityFileFirst:
 					{
-						if (filehelpers::CheckFileExistOnDisk(szFinalPath))
-							return szFinalPath;
-						if (FindPakFileEntry(szFinalPath))
-							return szFinalPath;
+						if (mod.priority == EModAccessPriority::BeforeSource)
+						{
+							if (filehelpers::CheckFileExistOnDisk(szFinalPath))
+								return szFinalPath;
+							if (FindPakFileEntry(szFinalPath))
+								return szFinalPath;
+						}
+						else if (mod.priority == EModAccessPriority::AfterSource)
+						{
+							char szTempString[g_nMaxPath] = {};
+							const char* szUnmodifiedPath = AdjustFileNameInternal(src, szTempString, nFlags);
+							if (filehelpers::CheckFileExistOnDisk(szUnmodifiedPath))
+							{
+								cry_strcpy(dst,g_nMaxPath,szTempString,g_nMaxPath);
+								return dst;
+							}
+							if (filehelpers::CheckFileExistOnDisk(szFinalPath))
+							{
+								return szFinalPath;
+							}
+							if (FindPakFileEntry(szFinalPath))
+								return szFinalPath;
+						}
 					}
 					break;
 				case ePakPriorityPakFirst:
@@ -1237,7 +1232,7 @@ const char* CCryPak::AdjustFileNameInternal(const char* src, char* dst, unsigned
 	}
 	//////////////////////////////////////////////////////////////////////////
 
-	if (!isAbsolutePath && !(nFlags & FLAGS_PATH_REAL) && !bAliasWasUsed)
+	if (!isAbsolutePath && !(nFlags & FLAGS_PATH_REAL) && !bAliasWasUsed && !IsModPath(szNewSrc))
 	{
 		// This is a relative filename.
 		// 1) /root/system.cfg
@@ -1410,6 +1405,8 @@ bool CCryPak::IsFolder(const char* sPath)
 
 ICryPak::SignedFileSize CCryPak::GetFileSizeOnDisk(const char* filename)
 {
+	CRY_PROFILE_FUNCTION(PROFILE_SYSTEM);
+
 #if CRY_PLATFORM_ORBIS
 	char buf[512];
 	filename = ConvertFileName(buf, sizeof(buf), filename);
@@ -2282,14 +2279,22 @@ intptr_t CCryPak::FindFirst(const char* pDir, _finddata_t* fd,
 	{
 		// now scan mod folders as well
 
-		std::vector<string>::reverse_iterator it;
-		for (it = m_arrMods.rbegin(); it != m_arrMods.rend(); ++it)
+		for (auto it = m_arrMods.rbegin(); it != m_arrMods.rend(); ++it)
 		{
-			if (m_pPakVars->nPriority == ePakPriorityFileFirstModsOnly && !IsModPath(it->c_str()))
+			if (m_pPakVars->nPriority == ePakPriorityFileFirstModsOnly && !IsModPath(it->path.c_str()))
 				continue;
-			CryPathString modPath = (*it).c_str();
+
+			char szTempDir[g_nMaxPath];
+			cry_strcpy(szTempDir, pDir);
+			BeautifyPath(szTempDir,false);
+			const char* szBeautifiedSrc = szTempDir;
+			if (filehelpers::CheckPrefix(szBeautifiedSrc, m_strDataRootWithSlash.c_str()))
+			{
+				szBeautifiedSrc += m_strDataRootWithSlash.length();
+			}
+			CryPathString modPath = it->path.c_str();
 			modPath.append(1, '/');
-			modPath += pDir;
+			modPath += szBeautifiedSrc;
 			const char* szFullModPath = AdjustFileName(modPath, szFullPathBuf, nPathFlags | FLAGS_PATH_REAL);
 			if (szFullModPath)
 			{
@@ -3277,7 +3282,7 @@ void CCryPakFindData::Scan(class CCryPak* pPak, const char* szDir, bool bAllowUs
 		// first, find the zip files
 		ScanZips(pPak, szDir);
 		if (bAllowUseFS ||
-		    (nVarPakPriority != ePakPriorityPakOnly && (nVarPakPriority != ePakPriorityFileFirstModsOnly || IsModPath(szDir))))
+		    (nVarPakPriority != ePakPriorityPakOnly && (nVarPakPriority != ePakPriorityFileFirstModsOnly || pPak->IsModPath(szDir))))
 		{
 			ScanFS(pPak, szDir);
 		}
@@ -4386,11 +4391,9 @@ void CCryPak::SetLog(IMiniLog* pLog)
 {
 	m_pLog = pLog;
 
-	std::vector<string>::iterator stringVecIt;
-	for (stringVecIt = m_arrMods.begin(); stringVecIt != m_arrMods.end(); ++stringVecIt)
+	for (const auto &mod : m_arrMods)
 	{
-		string& sMOD = *stringVecIt;
-		m_pLog->Log("Added MOD directory <%s> to CryPak", sMOD.c_str());
+		m_pLog->Log("Added MOD directory <%s> to CryPak", mod.path.c_str());
 	}
 }
 

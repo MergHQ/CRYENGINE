@@ -878,7 +878,7 @@ bool GlobalAnimationHeaderCAFStreamContent::ReadController(IChunkFile::ChunkDesc
 		pData += sizeof(CONTROLLER_CHUNK_DESC_0832);
 
 		// Consumes bytesCount of input data and returns a pointer to the consumed buffer. Takes care of all memory-related logic.
-		auto consumeData = [&pData, &pStorage, &controllerChunk](size_t bytesCount) -> char*
+		auto consumeData = [&pData, &pStorage](size_t bytesCount) -> char*
 		{
 			char* out = nullptr;
 			if (pStorage)

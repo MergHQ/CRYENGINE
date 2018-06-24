@@ -663,6 +663,17 @@ function(CryGameModule target)
 		endif()
 	endif()
 
+	file(READ "${CMAKE_BINARY_DIR}/ProjectEngineDefineOverrides.h" project_engine_define_overrides_h_content)
+	if(EXISTS "${game_folder}/EngineDefineOverrides.h")
+		if(NOT project_engine_define_overrides_h_content STREQUAL "#include \"${game_folder}/EngineDefineOverrides.h\"")
+			file(WRITE "${CMAKE_BINARY_DIR}/ProjectEngineDefineOverrides.h" "#include \"${game_folder}/EngineDefineOverrides.h\"")
+		endif()
+	else()
+		if(NOT project_engine_define_overrides_h_content STREQUAL "")
+			file(WRITE "${CMAKE_BINARY_DIR}/ProjectEngineDefineOverrides.h" "")
+		endif()
+	endif()
+
 endfunction()
 
 function(CreateDynamicModule target)

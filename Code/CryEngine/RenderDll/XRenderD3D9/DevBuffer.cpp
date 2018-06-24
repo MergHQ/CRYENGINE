@@ -585,6 +585,7 @@ public:
 		const SBufferLayout LayoutW =
 		{
 			DXGI_FORMAT_UNKNOWN, s_PoolConfig.m_pool_bank_size, 1,
+			CDeviceObjectFactory::USAGE_HIFREQ_HEAP |
 #if (CRY_RENDERER_DIRECT3D >= 120)
 			CDeviceObjectFactory::USAGE_CPU_WRITE /* BIND_FLAGS */ // NOTE: this is a staging buffer, no bind-flags are allowed
 #else
@@ -595,6 +596,7 @@ public:
 		const SBufferLayout LayoutR =
 		{
 			DXGI_FORMAT_UNKNOWN, s_PoolConfig.m_pool_bank_size, 1,
+			CDeviceObjectFactory::USAGE_HIFREQ_HEAP |
 #if (CRY_RENDERER_DIRECT3D >= 120)
 			CDeviceObjectFactory::USAGE_CPU_READ /* BIND_FLAGS */ // NOTE: this is a staging buffer, no bind-flags are allowed
 #else
@@ -821,6 +823,7 @@ public:
 		const SBufferLayout LayoutW =
 		{
 			DXGI_FORMAT_UNKNOWN, s_PoolConfig.m_pool_bank_size, 1,
+			CDeviceObjectFactory::USAGE_HIFREQ_HEAP |
 #if (CRY_RENDERER_DIRECT3D >= 120)
 			CDeviceObjectFactory::USAGE_CPU_WRITE /* BIND_FLAGS */ // NOTE: this is a staging buffer, no bind-flags are allowed
 #else
@@ -831,6 +834,7 @@ public:
 		const SBufferLayout LayoutR =
 		{
 			DXGI_FORMAT_UNKNOWN, s_PoolConfig.m_pool_bank_size, 1,
+			CDeviceObjectFactory::USAGE_HIFREQ_HEAP |
 #if (CRY_RENDERER_DIRECT3D >= 120)
 			CDeviceObjectFactory::USAGE_CPU_READ /* BIND_FLAGS */ // NOTE: this is a staging buffer, no bind-flags are allowed
 #else
@@ -1482,6 +1486,7 @@ retry:
 			const SBufferLayout Layout =
 			{
 				DXGI_FORMAT_UNKNOWN, s_PoolConfig.m_cb_bank_size, 1,
+				CDeviceObjectFactory::USAGE_HIFREQ_HEAP |
 #if (CRY_PLATFORM_CONSOLE) // UMA
 				CDeviceObjectFactory::USAGE_DIRECT_ACCESS |
 				CDeviceObjectFactory::USAGE_DIRECT_ACCESS_CPU_COHERENT |
@@ -1620,21 +1625,7 @@ struct CBufferPoolImpl final
 	// The current fence of the device
 	DeviceFenceHandle m_current_fence;
 
-	// The current fence of the device
-	DeviceFenceHandle m_lockstep_fence;
-
 	/////////////////////////////////////////////////////////////////////////////////////////////////////
-	// Syncs to gpu should (debugging only)
-	void SyncToGPU(bool block)
-	{
-#if !defined(_RELEASE)
-		if (m_lockstep_fence && block)
-		{
-			GetDeviceObjectFactory().IssueFence(m_lockstep_fence);
-			GetDeviceObjectFactory().SyncFence(m_lockstep_fence, true);
-		}
-#endif
-	}
 
 	// The list of moves we need to perform
 	struct SPendingMove
@@ -1736,6 +1727,7 @@ struct CBufferPoolImpl final
 			const SBufferLayout Layout =
 			{
 				DXGI_FORMAT_UNKNOWN, s_PoolConfig.m_pool_bank_size, 1,
+				CDeviceObjectFactory::USAGE_HIFREQ_HEAP |
 #if !BUFFER_USE_STAGED_UPDATES && (CRY_PLATFORM_CONSOLE) // UMA
 				CDeviceObjectFactory::USAGE_DIRECT_ACCESS |
 #endif
@@ -1790,6 +1782,7 @@ struct CBufferPoolImpl final
 			const SBufferLayout Layout =
 			{
 				DXGI_FORMAT_UNKNOWN, s_PoolConfig.m_pool_bank_size, 1,
+				CDeviceObjectFactory::USAGE_HIFREQ_HEAP |
 #if !BUFFER_USE_STAGED_UPDATES && (CRY_PLATFORM_CONSOLE) // UMA
 				CDeviceObjectFactory::USAGE_DIRECT_ACCESS |
 #endif
@@ -1981,7 +1974,6 @@ public:
 		, m_banks()
 		, m_current_frame()
 		, m_current_fence()
-		, m_lockstep_fence()
 		, m_pending_moves()
 	{}
 	virtual ~CBufferPoolImpl() {}
@@ -2158,11 +2150,6 @@ retry:
 				return false;
 			}
 		}
-		if (GetDeviceObjectFactory().CreateFence(m_lockstep_fence) != S_OK)
-		{
-			CryLogAlways("Could not create lockstep debugging fence");
-			return false;
-		}
 		return true;
 	}
 
@@ -2176,8 +2163,6 @@ retry:
 			return false;
 		for (size_t i = 0, end = m_banks.size(); i < end; ++i)
 			m_bank_table.Free((item_handle_t)m_banks[i]);
-		if (m_lockstep_fence && GetDeviceObjectFactory().ReleaseFence(m_lockstep_fence) != S_OK)
-			return false;
 		stl::free_container(m_banks);
 		stl::free_container(m_pending_moves);
 		return true;
@@ -2246,7 +2231,7 @@ retry:
 	// Buffer IO methods
 	void* BeginRead(SBufferPoolItem* item) final
 	{
-		SyncToGPU(CRenderer::CV_r_enable_full_gpu_sync != 0);
+		GetDeviceObjectFactory().SyncToGPU();
 
 		DEVBUFFERMAN_ASSERT(item->m_used);
 		IF (item->m_bank != ~0u, 1)
@@ -2333,7 +2318,7 @@ private:
 
 	void WriteStaged(SBufferPoolItem* item_, const void* src, buffer_size_t size, buffer_size_t offset)
 	{
-		SyncToGPU(CRenderer::CV_r_enable_full_gpu_sync != 0);
+		GetDeviceObjectFactory().SyncToGPU();
 		SBufferPoolItem* item = item_;
 
 		IF(item->m_bank != ~0u, 1)
@@ -2348,13 +2333,13 @@ private:
 		IF(item->m_bank != ~0u, 1)
 			m_allocator.UnpinItem(item);
 
-		SyncToGPU(CRenderer::CV_r_enable_full_gpu_sync != 0);
+		GetDeviceObjectFactory().SyncToGPU();
 	}
 
 #if !BUFFER_USE_STAGED_UPDATES
 	void WriteUnstaged(SBufferPoolItem* item_, const void* src, buffer_size_t size, buffer_size_t offset)
 	{
-		SyncToGPU(CRenderer::CV_r_enable_full_gpu_sync != 0);
+		GetDeviceObjectFactory().SyncToGPU();
 		SBufferPoolItem* item = item_;
 		uint8* item_base_ptr = nullptr;
 		const bool requires_flush = false;
@@ -2411,14 +2396,14 @@ private:
 			}
 		}
 
-		SyncToGPU(CRenderer::CV_r_enable_full_gpu_sync != 0);
+		GetDeviceObjectFactory().SyncToGPU();
 	}
 #endif
 
 public:
 	void* BeginWrite(SBufferPoolItem* item) final
 	{
-		SyncToGPU(CRenderer::CV_r_enable_full_gpu_sync != 0);
+		GetDeviceObjectFactory().SyncToGPU();
 
 		IF(item->m_bank != ~0u, 1)
 			m_allocator.PinItem(item);
@@ -2488,7 +2473,7 @@ public:
 
 		m_updater.EndReadWrite(item->m_buffer, item->m_size, item->m_offset);
 
-		SyncToGPU(CRenderer::CV_r_enable_full_gpu_sync != 0);
+		GetDeviceObjectFactory().SyncToGPU();
 	}
 
 	void Write(SBufferPoolItem* item, const void* src, buffer_size_t size, buffer_size_t offset) final
@@ -2510,7 +2495,7 @@ public:
 		DEVBUFFERMAN_ASSERT(item->m_bank == ~0u);
 		DEVBUFFERMAN_ASSERT(item->m_cow_handle == ~0u);
 
-		SyncToGPU(gRenDev->CV_r_enable_full_gpu_sync != 0);
+		GetDeviceObjectFactory().SyncToGPU();
 
 		item->m_used = 1u;
 
@@ -2524,7 +2509,7 @@ public:
 			cursor += sz;
 		}
 
-		SyncToGPU(gRenDev->CV_r_enable_full_gpu_sync != 0);
+		GetDeviceObjectFactory().SyncToGPU();
 	}
 };
 
@@ -2664,6 +2649,7 @@ public:
 		const SBufferLayout Layout =
 		{
 			DXGI_FORMAT_UNKNOWN, s_PoolConfig.m_transient_pool_size, 1,
+			CDeviceObjectFactory::USAGE_HIFREQ_HEAP |
 			CDeviceObjectFactory::USAGE_CPU_WRITE |
 			BIND_FLAGS
 		};
@@ -4173,7 +4159,7 @@ SResourceView SResourceView::ShaderResourceRawView(DXGI_FORMAT nFormat, int nFir
 
 	result.m_Desc.eViewType = eShaderResourceView;
 	result.m_Desc.nFormat = nFormat;
-	result.m_Desc.nOffsetBits = IntegerLog2_RoundUp(uint32(nFirstElement));
+	result.m_Desc.nOffsetBits = IntegerLog2_RoundUp(uint32(nFirstElement + 1));
 	result.m_Desc.nOffsetAndSize = uint64(nFirstElement) << (46 - result.m_Desc.nOffsetBits);
 	result.m_Desc.nOffsetAndSize |= uint64(nElementCount) & MASK64(46 - result.m_Desc.nOffsetBits);
 	result.m_Desc.nFlags = nFlags;
@@ -4190,7 +4176,7 @@ SResourceView SResourceView::RenderTargetRawView(DXGI_FORMAT nFormat, int nFirst
 
 	result.m_Desc.eViewType = eRenderTargetView;
 	result.m_Desc.nFormat = nFormat;
-	result.m_Desc.nOffsetBits = IntegerLog2_RoundUp(uint32(nFirstElement));
+	result.m_Desc.nOffsetBits = IntegerLog2_RoundUp(uint32(nFirstElement + 1));
 	result.m_Desc.nOffsetAndSize = uint64(nFirstElement) << (46 - result.m_Desc.nOffsetBits);
 	result.m_Desc.nOffsetAndSize |= uint64(nElementCount) & MASK64(46 - result.m_Desc.nOffsetBits);
 
@@ -4206,7 +4192,7 @@ SResourceView SResourceView::DepthStencilRawView(DXGI_FORMAT nFormat, int nFirst
 
 	result.m_Desc.eViewType = eDepthStencilView;
 	result.m_Desc.nFormat = nFormat;
-	result.m_Desc.nOffsetBits = IntegerLog2_RoundUp(uint32(nFirstElement));
+	result.m_Desc.nOffsetBits = IntegerLog2_RoundUp(uint32(nFirstElement + 1));
 	result.m_Desc.nOffsetAndSize = uint64(nFirstElement) << (46 - result.m_Desc.nOffsetBits);
 	result.m_Desc.nOffsetAndSize |= uint64(nElementCount) & MASK64(46 - result.m_Desc.nOffsetBits);
 	result.m_Desc.nFlags = nFlags;
@@ -4223,7 +4209,7 @@ SResourceView SResourceView::UnorderedAccessRawView(DXGI_FORMAT nFormat, int nFi
 
 	result.m_Desc.eViewType = eUnorderedAccessView;
 	result.m_Desc.nFormat = nFormat;
-	result.m_Desc.nOffsetBits = IntegerLog2_RoundUp(uint32(nFirstElement));
+	result.m_Desc.nOffsetBits = IntegerLog2_RoundUp(uint32(nFirstElement + 1));
 	result.m_Desc.nOffsetAndSize = uint64(nFirstElement) << (46 - result.m_Desc.nOffsetBits);
 	result.m_Desc.nOffsetAndSize |= uint64(nElementCount) & MASK64(46 - result.m_Desc.nOffsetBits);
 	result.m_Desc.nFlags = nFlags;
@@ -4283,11 +4269,6 @@ void CGpuBuffer::Release()
 	if (m_pDeviceBuffer)
 	{
 		ReleaseDeviceBuffer(m_pDeviceBuffer);
-		while (!m_deviceBufferPool.empty())
-		{
-			ReleaseDeviceBuffer(m_deviceBufferPool.front().pDeviceBuffer);
-			m_deviceBufferPool.pop();
-		}
 	}
 
 	m_elementCount = 0;
@@ -4308,6 +4289,9 @@ void CGpuBuffer::Create(uint32 elementCount, uint32 elementSize, DXGI_FORMAT ele
 		((eFlags & CDeviceObjectFactory::BIND_VERTEX_BUFFER   ) ? D3D11_MAP_WRITE_NO_OVERWRITE_VB :
 		((eFlags & CDeviceObjectFactory::BIND_INDEX_BUFFER    ) ? D3D11_MAP_WRITE_NO_OVERWRITE_IB :
 		((eFlags & CDeviceObjectFactory::BIND_UNORDERED_ACCESS) ? D3D11_MAP_WRITE_NO_OVERWRITE_UA : D3D11_MAP(0)))));
+
+	if (!((m_eFlags & CDeviceObjectFactory::USAGE_CPU_WRITE) && (m_eMapMode == D3D11_MAP_WRITE_DISCARD)))
+		eFlags |= CDeviceObjectFactory::USAGE_HIFREQ_HEAP;
 	// *INDENT-ON*
 
 	m_elementSize  = elementFormat == DXGI_FORMAT_UNKNOWN ? elementSize : DeviceFormats::GetStride(elementFormat);
@@ -4360,31 +4344,21 @@ void CGpuBuffer::PrepareUnusedBuffer()
 {
 	CRY_ASSERT(m_pDeviceBuffer);
 
-	m_deviceBufferPool.emplace(m_pDeviceBuffer);
-
-	if (!m_deviceBufferPool.front().IsInUse())
+	if (!((m_eFlags & CDeviceObjectFactory::USAGE_CPU_WRITE) && (m_eMapMode == D3D11_MAP_WRITE_DISCARD)))
 	{
-		m_pDeviceBuffer = m_deviceBufferPool.front().pDeviceBuffer;
-		m_deviceBufferPool.pop();
+		if (m_pDeviceBuffer->SubstituteUsedResource() == CDeviceResource::eSubResult_Substituted)
+			InvalidateDeviceResource(this, eDeviceResourceDirty);
 	}
-	else
-	{
-		m_pDeviceBuffer = AllocateDeviceBuffer(nullptr);
-	}
-
-	InvalidateDeviceResource(this, eDeviceResourceDirty);
-
-	CRY_ASSERT(m_MaxBufferCopies < 0 || m_deviceBufferPool.size() <= m_MaxBufferCopies);
 }
 
 void CGpuBuffer::UpdateBufferContent(const void* pData, uint32 nSize)
 {
 	CRY_ASSERT(!m_bLocked);
 
-	PrepareUnusedBuffer();
-
 	if (nSize)
 	{
+		PrepareUnusedBuffer();
+
 		if (m_eFlags & CDeviceObjectFactory::USAGE_CPU_WRITE)
 		{
 			// Transfer sub-set of GPU resource to CPU, also allows graphics debugger and multi-gpu broadcaster to do the right thing

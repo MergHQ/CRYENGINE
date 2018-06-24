@@ -34,10 +34,10 @@ namespace Schematyc2
 
 	private:
 
-		SGUID          m_guid;
-		string         m_name;
-		TVariantVector m_variantInputs;
-		TVariantVector m_variantOutputs;
+		SGUID			m_guid;
+		string			m_name;
+		TVariantVector	m_variantInputs;
+		TVariantVector	m_variantOutputs;
 	};
 
 	DECLARE_SHARED_POINTERS(CLibAbstractInterfaceFunction)
@@ -57,7 +57,7 @@ namespace Schematyc2
 
 	private:
 
-		SGUID		m_guid;
+		SGUID	m_guid;
 		string	m_name;
 	};
 
@@ -69,12 +69,13 @@ namespace Schematyc2
 	{
 	public:
 
-		CLibStateMachine(const SGUID& guid, const char* name, ELibStateMachineLifetime lifetime);
+		CLibStateMachine(const SGUID& guid, const char* name, const EStateMachineLifetime lifetime, const EStateMachineNetAuthority netType);
 
 		// ILibStateMachine
 		virtual SGUID GetGUID() const override;
 		virtual const char* GetName() const override;
-		virtual ELibStateMachineLifetime GetLifetime() const override;
+		virtual EStateMachineLifetime GetLifetime() const override;
+		virtual EStateMachineNetAuthority GetNetAuthority() const override;
 		virtual size_t GetPartner() const override;
 		virtual size_t GetListenerCount() const override;
 		virtual size_t GetListener(size_t iListener) const override;
@@ -93,14 +94,15 @@ namespace Schematyc2
 
 	private:
 
-		SGUID											m_guid;
-		string										m_name;
-		ELibStateMachineLifetime	m_lifetime;
-		size_t										m_iPartner;
-		TSizeTVector							m_listeners;
-		TSizeTVector							m_variables;
-		TSizeTVector							m_containers;
-		LibFunctionId							m_beginFunctionId;
+		SGUID						m_guid;
+		string						m_name;
+		EStateMachineLifetime		m_lifetime;
+		EStateMachineNetAuthority	m_netAuthority;
+		size_t						m_iPartner;
+		TSizeTVector				m_listeners;
+		TSizeTVector				m_variables;
+		TSizeTVector				m_containers;
+		LibFunctionId				m_beginFunctionId;
 	};
 
 	// Library state.
@@ -149,11 +151,11 @@ namespace Schematyc2
 
 	private:
 
-		SGUID					m_guid;
-		string				m_name;
-		size_t				m_iParent;
-		size_t				m_iPartner;
-		size_t				m_iStateMachine;
+		SGUID			m_guid;
+		string			m_name;
+		size_t			m_iParent;
+		size_t			m_iPartner;
+		size_t			m_iStateMachine;
 		TSizeTVector	m_variables;
 		TSizeTVector	m_containers;
 		TSizeTVector	m_timers;
@@ -186,13 +188,13 @@ namespace Schematyc2
 
 	private:
 
-		SGUID             m_guid;
-		string            m_name;
-		EOverridePolicy   m_overridePolicy;
-		IAnyPtr           m_pValue;
-		size_t            m_variantPos;
-		size_t            m_variantCount;
-		ELibVariableFlags m_flags;
+		SGUID				m_guid;
+		string				m_name;
+		EOverridePolicy		m_overridePolicy;
+		IAnyPtr				m_pValue;
+		size_t				m_variantPos;
+		size_t				m_variantCount;
+		ELibVariableFlags	m_flags;
 	};
 
 	typedef std::vector<CLibVariable> LibVariables;
@@ -213,9 +215,9 @@ namespace Schematyc2
 
 	private:
 
-		SGUID		m_guid;
+		SGUID	m_guid;
 		string	m_name;
-		SGUID		m_typeGUID;
+		SGUID	m_typeGUID;
 	};
 
 	// Library timer.
@@ -234,8 +236,8 @@ namespace Schematyc2
 
 	private:
 
-		SGUID					m_guid;
-		string				m_name;
+		SGUID			m_guid;
+		string			m_name;
 		STimerParams	m_params;
 	};
 
@@ -264,15 +266,15 @@ namespace Schematyc2
 		{
 			SFunction(const SGUID& _guid, const LibFunctionId& _functionId);
 
-			SGUID					guid;
+			SGUID			guid;
 			LibFunctionId	functionId;
 		};
 
 		typedef std::vector<SFunction> TFunctionVector;
 
-		SGUID						m_guid;
-		string					m_name;
-		SGUID						m_interfaceGUID;
+		SGUID			m_guid;
+		string			m_name;
+		SGUID			m_interfaceGUID;
 		TFunctionVector	m_functions;
 	};
 
@@ -343,7 +345,7 @@ namespace Schematyc2
 
 	private:
 
-		SGUID					m_guid;
+		SGUID			m_guid;
 		LibFunctionId	m_functionId;
 	};
 
@@ -362,7 +364,7 @@ namespace Schematyc2
 
 	private:
 
-		SGUID					m_guid;
+		SGUID			m_guid;
 		LibFunctionId	m_functionId;
 	};
 
@@ -382,8 +384,8 @@ namespace Schematyc2
 
 	private:
 
-		SGUID					m_guid;
-		SGUID					m_contextGUID;
+		SGUID			m_guid;
+		SGUID			m_contextGUID;
 		LibFunctionId	m_functionId;
 	};
 
@@ -403,8 +405,8 @@ namespace Schematyc2
 
 	private:
 
-		SGUID					m_guid;
-		SGUID					m_contextGUID;
+		SGUID			m_guid;
+		SGUID			m_contextGUID;
 		LibFunctionId	m_functionId;
 	};
 
@@ -481,25 +483,25 @@ namespace Schematyc2
 		static const size_t	MIN_CAPACITY;
 		static const size_t	GROWTH_FACTOR;
 
-		SGUID													m_guid;
-		SGUID													m_classGUID;
-		string												m_name;
-		string												m_scope;
-		string												m_fileName;
-		string												m_author;
-		string												m_textDesc;
-		TParamVector									m_inputs;
-		TVariantVector								m_variantInputs;
-		TParamVector									m_outputs;
-		TVariantVector								m_variantOutputs;
-		TVariantVector								m_variantConsts;
-		GlobalFunctionTable						m_globalFunctionTable;
+		SGUID							m_guid;
+		SGUID							m_classGUID;
+		string							m_name;
+		string							m_scope;
+		string							m_fileName;
+		string							m_author;
+		string							m_textDesc;
+		TParamVector					m_inputs;
+		TVariantVector					m_variantInputs;
+		TParamVector					m_outputs;
+		TVariantVector					m_variantOutputs;
+		TVariantVector					m_variantConsts;
+		GlobalFunctionTable				m_globalFunctionTable;
 		ComponentMemberFunctionTable	m_componentMemberFunctionTable;
-		ActionMemberFunctionTable			m_actionMemberFunctionTable;
-		size_t												m_capacity;
-		size_t												m_size;
-		size_t												m_lastOpPos;
-		uint8*												m_pBegin;
+		ActionMemberFunctionTable		m_actionMemberFunctionTable;
+		size_t							m_capacity;
+		size_t							m_size;
+		size_t							m_lastOpPos;
+		uint8*							m_pBegin;
 		EGraphExecutionFilter         m_executionFilter;
 	};
 
@@ -610,7 +612,7 @@ namespace Schematyc2
 		virtual IAnyConstPtr GetPrecacheResource(size_t ressourceIdx) const override;
 		// ~ILibClass
 
-		size_t AddStateMachine(const SGUID& guid, const char* name, ELibStateMachineLifetime lifetime);
+		size_t AddStateMachine(const SGUID& guid, const char* name, EStateMachineLifetime lifetime, EStateMachineNetAuthority netType);
 		CLibStateMachine* GetStateMachine(size_t iStateMachine);
 		size_t AddState(const SGUID& guid, const char* name);
 		CLibState* GetState(size_t iState);
@@ -748,11 +750,11 @@ namespace Schematyc2
 		typedef std::unordered_map<SGUID, CLibAbstractInterfaceFunctionPtr>	TAbstractInterfaceFunctionMap;
 		typedef std::unordered_map<SGUID, CLibClassPtr>											TClassMap;
 
-		string												m_name;
-		TSignalMap										m_signals;
-		TAbstractInterfaceMap					m_abstractInterfaces;
+		string							m_name;
+		TSignalMap						m_signals;
+		TAbstractInterfaceMap			m_abstractInterfaces;
 		TAbstractInterfaceFunctionMap	m_abstractInterfaceFunctions;
-		TClassMap											m_classes;
+		TClassMap						m_classes;
 	};
 
 	DECLARE_SHARED_POINTERS(CLib)

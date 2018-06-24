@@ -26,9 +26,6 @@ public:
 	ILINE CRootSignatureCache&       GetRootSignatureCache()       { return m_RootSignatureCache; }
 	ILINE const CRootSignatureCache& GetRootSignatureCache() const { return m_RootSignatureCache; }
 
-	// TODO: Move this outside
-	void RequestUploadHeapMemory(UINT64 size, DX12_PTR(ID3D12Resource) & result);
-
 	#ifdef DX12_LINKEDADAPTER
 	bool                      IsMultiAdapter() const;
 
@@ -67,6 +64,7 @@ public:
 	UINT                        GetNodeMask() const     { return m_nodeMask; }
 
 	CCommandScheduler&          GetScheduler() { return m_Scheduler; }
+	const CCommandScheduler&    GetScheduler() const { return m_Scheduler; }
 
 	D3D12_CPU_DESCRIPTOR_HANDLE CacheSampler(const D3D12_SAMPLER_DESC* pDesc) threadsafe;
 	D3D12_CPU_DESCRIPTOR_HANDLE CacheShaderResourceView(const D3D12_SHADER_RESOURCE_VIEW_DESC* pDesc, ID3D12Resource* pResource) threadsafe;
@@ -181,8 +179,8 @@ private:
 		UINT64          fenceValues[CMDQUEUE_NUM];
 	};
 
-	typedef std::unordered_map<ID3D12Resource*, ReleaseInfo> TReleaseHeap;
-	typedef std::unordered_multimap<THash, RecycleInfo>      TRecycleHeap;
+	typedef std::unordered_map<ID3D12Resource*, ReleaseInfo>   TReleaseHeap;
+	typedef std::unordered_map<THash, std::deque<RecycleInfo>> TRecycleHeap;
 
 	TReleaseHeap m_ReleaseHeap;
 	TRecycleHeap m_RecycleHeap;

@@ -112,10 +112,11 @@ namespace Schematyc2
 	}
 
 	//////////////////////////////////////////////////////////////////////////
-	CLibStateMachine::CLibStateMachine(const SGUID& guid, const char* szName, ELibStateMachineLifetime lifetime)
+	CLibStateMachine::CLibStateMachine(const SGUID& guid, const char* szName, const EStateMachineLifetime lifetime, const EStateMachineNetAuthority netType)
 		: m_guid(guid)
 		, m_name(szName)
 		, m_lifetime(lifetime)
+		, m_netAuthority(netType)
 		, m_iPartner(INVALID_INDEX)
 	{}
 
@@ -132,9 +133,14 @@ namespace Schematyc2
 	}
 
 	//////////////////////////////////////////////////////////////////////////
-	ELibStateMachineLifetime CLibStateMachine::GetLifetime() const
+	EStateMachineLifetime CLibStateMachine::GetLifetime() const
 	{
 		return m_lifetime;
+	}
+
+	Schematyc2::EStateMachineNetAuthority CLibStateMachine::GetNetAuthority() const
+	{
+		return m_netAuthority;
 	}
 
 	//////////////////////////////////////////////////////////////////////////
@@ -1526,9 +1532,9 @@ namespace Schematyc2
 	}
 
 	//////////////////////////////////////////////////////////////////////////
-	size_t CLibClass::AddStateMachine(const SGUID& guid, const char* name, ELibStateMachineLifetime lifetime)
+	size_t CLibClass::AddStateMachine(const SGUID& guid, const char* name, EStateMachineLifetime lifetime, EStateMachineNetAuthority netType)
 	{
-		m_stateMachines.push_back(CLibStateMachine(guid, name, lifetime));
+		m_stateMachines.push_back(CLibStateMachine(guid, name, lifetime, netType));
 		return m_stateMachines.size() - 1;
 	}
 
