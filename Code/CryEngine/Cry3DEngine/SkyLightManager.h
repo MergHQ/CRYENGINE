@@ -19,6 +19,8 @@
 #include <memory>
 #include <vector>
 
+#include <CryCore/optional.h>
+
 class CSkyLightNishita;
 struct ITimer;
 
@@ -97,7 +99,7 @@ private:
 	int32 m_numSkyDomeColorsComputed;
 	int32 m_curBackBuffer;
 
-	int32 m_lastFrameID;
+	stl::optional<int32> m_lastFrameID;
 	int32 m_needRenderParamUpdate;
 
 	Vec3 m_curSkyHemiColor[5];

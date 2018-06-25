@@ -229,9 +229,6 @@ CTexture* CRendererResources::s_ptexCurLumTexture;
 CTexture* CRendererResources::s_ptexHDRToneMaps[NUM_HDR_TONEMAP_TEXTURES];
 CTexture* CRendererResources::s_ptexHDRMeasuredLuminance[MAX_GPU_NUM];
 CTexture* CRendererResources::s_ptexHDRMeasuredLuminanceDummy;
-CTexture* CRendererResources::s_ptexSkyDomeMie;
-CTexture* CRendererResources::s_ptexSkyDomeRayleigh;
-CTexture* CRendererResources::s_ptexSkyDomeMoon;
 CTexture* CRendererResources::s_ptexColorChart;
 
 CTexture* CRendererResources::s_ptexFlaresOcclusionRing[MAX_OCCLUSION_READBACK_TEXTURES] = { NULL };
@@ -332,9 +329,6 @@ void CRendererResources::UnloadDefaultSystemTextures(bool bFinalRelease)
 
 	SAFE_RELEASE_FORCE(s_ptexMipColors_Diffuse);
 	SAFE_RELEASE_FORCE(s_ptexMipColors_Bump);
-	SAFE_RELEASE_FORCE(s_ptexSkyDomeMie);
-	SAFE_RELEASE_FORCE(s_ptexSkyDomeRayleigh);
-	SAFE_RELEASE_FORCE(s_ptexSkyDomeMoon);
 	SAFE_RELEASE_FORCE(s_ptexRT_ShadowPool);
 	SAFE_RELEASE_FORCE(s_ptexFarPlane);
 
@@ -573,10 +567,6 @@ void CRendererResources::LoadDefaultSystemTextures()
 		}
 
 		s_ptexColorChart = CTexture::GetOrCreateTextureObject("$ColorChart", 0, 0, 1, eTT_2D, FT_DONT_RELEASE | FT_DONT_STREAM | FT_USAGE_RENDERTARGET, eTF_Unknown, TO_COLORCHART);
-
-		s_ptexSkyDomeMie = CTexture::GetOrCreateTextureObject("$SkyDomeMie", 0, 0, 1, eTT_2D, FT_DONT_RELEASE | FT_DONT_STREAM | FT_USAGE_RENDERTARGET, eTF_Unknown, TO_SKYDOME_MIE);
-		s_ptexSkyDomeRayleigh = CTexture::GetOrCreateTextureObject("$SkyDomeRayleigh", 0, 0, 1, eTT_2D, FT_DONT_RELEASE | FT_DONT_STREAM | FT_USAGE_RENDERTARGET, eTF_Unknown, TO_SKYDOME_RAYLEIGH);
-		s_ptexSkyDomeMoon = CTexture::GetOrCreateTextureObject("$SkyDomeMoon", 0, 0, 1, eTT_2D, FT_DONT_RELEASE | FT_DONT_STREAM | FT_USAGE_RENDERTARGET, eTF_Unknown, TO_SKYDOME_MOON);
 
 		for (i = 0; i < EFTT_MAX; i++)
 		{
