@@ -973,20 +973,19 @@ void CRenderView::ChangeRenderResolution(uint32_t renderWidth, uint32_t renderHe
 	if (renderWidth == GetOutputResolution()[0] && renderHeight == GetOutputResolution()[1] && m_pRenderOutput) 
 	{
 		m_pColorTarget = m_pRenderOutput->GetColorTarget();
-		m_pDepthTarget = m_pRenderOutput->GetDepthTarget();
-
-		if (m_pRenderOutput->RequiresTemporaryDepthBuffer())
-		{
-			m_pDepthTarget = nullptr;
-			m_pDepthTarget.Assign_NoAddRef(CRendererResources::CreateDepthTarget(renderWidth, renderHeight, Clr_Empty, eTF_Unknown));
-		}
+		m_pDepthTarget = !m_pRenderOutput->RequiresTemporaryDepthBuffer() ?
+			m_pRenderOutput->GetDepthTarget() :
+			nullptr;
 	}
 	else
 	{
 		m_pColorTarget = CRendererResources::s_ptexHDRTarget;
 		m_pDepthTarget = nullptr;
-		m_pDepthTarget.Assign_NoAddRef(CRendererResources::CreateDepthTarget(renderWidth, renderHeight, Clr_Empty, eTF_Unknown));
 	}
+
+	// Allocate temporary depth target
+	if (!m_pDepthTarget)
+		m_pDepthTarget.Assign_NoAddRef(CRendererResources::CreateDepthTarget(renderWidth, renderHeight, Clr_Empty, eTF_Unknown));
 
 	CRY_ASSERT(m_pColorTarget->GetWidth() >= renderWidth && m_pColorTarget->GetHeight() >= renderHeight);
 }
@@ -1001,7 +1000,7 @@ void CRenderView::UnsetRenderOutput()
 //////////////////////////////////////////////////////////////////////////
 CRenderView::RenderItems& CRenderView::GetRenderItems(int nRenderList)
 {
-	assert(m_usageMode != eUsageModeWriting || (nRenderList == EFSLIST_PREPROCESS)); // While writing we must not read back items.
+	CRY_ASSERT(m_usageMode != eUsageModeWriting || nRenderList == EFSLIST_PREPROCESS); // While writing we must not read back items.
 
 	m_renderItems[nRenderList].CoalesceMemory();
 	return m_renderItems[nRenderList];
@@ -1015,7 +1014,7 @@ uint32 CRenderView::GetBatchFlags(int nRenderList) const
 //////////////////////////////////////////////////////////////////////////
 void CRenderView::AddPermanentObjectImpl(CPermanentRenderObject* pObject, const SRenderingPassInfo& passInfo)
 {
-	uint32 passId = IsShadowGenView() ? 1 : 0;
+	const int passId = IsShadowGenView() ? 1 : 0;
 	
 	SPermanentObjectRecord rec;
 	rec.pRenderObject = pObject;
@@ -1036,9 +1035,7 @@ void CRenderView::AddPermanentObjectImpl(CPermanentRenderObject* pObject, const 
 		if (m_shadows.m_pShadowFrustumOwner->IsCached())
 		{
 			if (IRenderNode* pNode = pObject->m_pRenderNode)
-			{
 				m_shadows.m_pShadowFrustumOwner->MarkNodeAsCached(pNode);
-			}
 		}
 	}
 }
