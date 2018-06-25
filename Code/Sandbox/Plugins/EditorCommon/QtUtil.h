@@ -32,6 +32,11 @@ inline CryStringT<char> ToString(const QString& str)
 	return Unicode::Convert<CryStringT<char>>(str);
 }
 
+inline const char* ToConstCharPtr(const QString& str)
+{
+	return str.toLocal8Bit();
+}
+
 // From CryString to QString
 inline QString ToQString(const CryStringT<char>& str)
 {
@@ -124,11 +129,11 @@ EDITOR_COMMON_API QScrollArea* MakeScrollable(QWidget* widget);
 EDITOR_COMMON_API QScrollArea* MakeScrollable(QLayout* widget);
 
 //! Opens an Explorer/Finder window at specific location, selects file if exists
-EDITOR_COMMON_API void         OpenInExplorer(const char* path);
+EDITOR_COMMON_API void OpenInExplorer(const char* path);
 //! Lets the operating system open the file for edit with the associated application
-EDITOR_COMMON_API void		   OpenFileForEdit(const char* filePath);
+EDITOR_COMMON_API void OpenFileForEdit(const char* filePath);
 
-EDITOR_COMMON_API void         RecursiveInstallEventFilter(QWidget* pListener, QWidget* pWatched);
+EDITOR_COMMON_API void RecursiveInstallEventFilter(QWidget* pListener, QWidget* pWatched);
 
 //! Will create the menu action based on the path separated by '/'. Last section of the path will be the action text.
 EDITOR_COMMON_API QAction* AddActionFromPath(const QString& menuPath, QMenu* parentMenu);
@@ -182,4 +187,3 @@ EDITOR_COMMON_API bool MapFromSourceIndirect(const QAbstractItemModel* pProxyMod
 //! Takes a source model index and returns an index in the view's model
 EDITOR_COMMON_API bool MapFromSourceIndirect(const QAbstractItemView* pView, const QModelIndex& sourceIndexIn, QModelIndex& viewIndexOut);
 }
-

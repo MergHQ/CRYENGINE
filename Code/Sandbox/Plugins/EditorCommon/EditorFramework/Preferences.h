@@ -7,6 +7,7 @@
 #include "QtViewPane.h"
 
 #include "PreferencesDialog.h"
+#include "Util/UserDataUtil.h"
 
 #include <CrySerialization/Enum.h>
 #include <CryString/CryString.h>
@@ -17,40 +18,40 @@ class CPreferences;
 typedef CAutoRegister<CPreferences> CAutoRegisterPreferencesHelper;
 
 #define REGISTER_PREFERENCES_PAGE(Type)                                                               \
-  namespace Internal                                                                                  \
-  {                                                                                                   \
-  void RegisterPreferencesPage ## Type()                                                              \
-  {                                                                                                   \
-    GetIEditor()->GetPreferences()->RegisterPage<Type>();                                             \
-  }                                                                                                   \
-  CAutoRegisterPreferencesHelper g_AutoRegPreferencesHelper ## Type(RegisterPreferencesPage ## Type); \
-  }
+	namespace Internal                                                                                  \
+	{                                                                                                   \
+	void RegisterPreferencesPage ## Type()                                                              \
+	{                                                                                                   \
+		GetIEditor()->GetPreferences()->RegisterPage<Type>();                                             \
+	}                                                                                                   \
+	CAutoRegisterPreferencesHelper g_AutoRegPreferencesHelper ## Type(RegisterPreferencesPage ## Type); \
+	}
 
 #define REGISTER_PREFERENCES_PAGE_PTR(Type, TypePtr)                                                  \
-  namespace Internal                                                                                  \
-  {                                                                                                   \
-  void RegisterPreferencesPage ## Type()                                                              \
-  {                                                                                                   \
-    GetIEditor()->GetPreferences()->RegisterPage<Type>(TypePtr);                                      \
-  }                                                                                                   \
-  CAutoRegisterPreferencesHelper g_AutoRegPreferencesHelper ## Type(RegisterPreferencesPage ## Type); \
-  }
+	namespace Internal                                                                                  \
+	{                                                                                                   \
+	void RegisterPreferencesPage ## Type()                                                              \
+	{                                                                                                   \
+		GetIEditor()->GetPreferences()->RegisterPage<Type>(TypePtr);                                      \
+	}                                                                                                   \
+	CAutoRegisterPreferencesHelper g_AutoRegPreferencesHelper ## Type(RegisterPreferencesPage ## Type); \
+	}
 
 #define ADD_PREFERENCE_PAGE_PROPERTY(type, accessor, mutator) \
-  public:                                                     \
-    void mutator(const type val)                              \
-    {                                                         \
-      if (m_ ## accessor != val)                              \
-      {                                                       \
-        m_ ## accessor = val;                                 \
-        accessor ## Changed();                                \
-        signalSettingsChanged();                              \
-      }                                                       \
-    }                                                         \
-    const type& accessor() const { return m_ ## accessor; }   \
-    CCrySignal<void()> accessor ## Changed;                   \
-  private:                                                    \
-    type m_ ## accessor;                                      \
+public:                                                       \
+	void mutator(const type val)                                \
+	{                                                           \
+		if (m_ ## accessor != val)                                \
+		{                                                         \
+			m_ ## accessor = val;                                   \
+			accessor ## Changed();                                  \
+			signalSettingsChanged();                                \
+		}                                                         \
+	}                                                           \
+	const type& accessor() const { return m_ ## accessor; }     \
+	CCrySignal<void()> accessor ## Changed;                     \
+private:                                                      \
+	type m_ ## accessor;                                        \
 
 struct SPreferencePage;
 
@@ -103,9 +104,9 @@ private:
 	string             m_path;
 };
 
-class EDITOR_COMMON_API CPreferences
+class EDITOR_COMMON_API CPreferences : public CUserData
 {
-	friend yasli::Serializer;
+	friend yasli ::Serializer;
 public:
 	CPreferences();
 	virtual ~CPreferences();
@@ -155,7 +156,7 @@ public:
 
 private:
 	void         Load();
-	void         Load(const QString& path);
+	void         SetState(const QVariant& state);
 	void         AddPage(SPreferencePage* pPreferencePage);
 
 	virtual bool Serialize(yasli::Archive& ar);

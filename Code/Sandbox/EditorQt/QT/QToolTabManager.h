@@ -9,6 +9,7 @@ class CWnd;
 #include <QFrame>
 #include <QDir>
 #include "Controls/SandboxWindowing.h"
+#include <Util/UserDataUtil.h>
 
 //Internal class for IPane management.
 class QTabPane : public QBaseTabPane
@@ -30,7 +31,7 @@ protected:
 	virtual QSize minimumSizeHint() const { return m_minimumSize; }
 };
 
-class SANDBOX_API CTabPaneManager
+class SANDBOX_API CTabPaneManager : public CUserData
 {
 	friend class QTabPane;
 public:

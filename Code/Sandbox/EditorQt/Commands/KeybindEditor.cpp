@@ -43,6 +43,9 @@ REGISTER_HIDDEN_VIEWPANE_FACTORY(CKeybindEditor, "Keyboard Shortcuts", "Settings
 
 namespace Private_KeybindEditor
 {
+
+const char* szKeybindsPath = "Keybinds.json";
+
 QString KeySequenceListToString(const QList<QKeySequence>& list)
 {
 	QString string(QKeySequence::listToString(list, QKeySequence::NativeText));
@@ -540,18 +543,18 @@ class CKeybindEditor::KeybindItemDelegate : public QStyledItemDelegate
 			case QEvent::Shortcut:
 			case QEvent::ShortcutOverride:
 			case QEvent::KeyPress:
-			{
-				QKeyEvent* keyEvent = static_cast<QKeyEvent*>(event);
-				keyPressEvent(keyEvent);
-				keyEvent->accept();
-				return true;
-			}
+				{
+					QKeyEvent* keyEvent = static_cast<QKeyEvent*>(event);
+					keyPressEvent(keyEvent);
+					keyEvent->accept();
+					return true;
+				}
 			case QEvent::FocusOut:
-			{
-				// Destroy the in-place editing widget when focus is lost so we don't have a non-focused
-				// line edit in the Keybinds view
-				deleteLater();
-			}
+				{
+					// Destroy the in-place editing widget when focus is lost so we don't have a non-focused
+					// line edit in the Keybinds view
+					deleteLater();
+				}
 			default:
 				return false;
 			}
@@ -657,6 +660,7 @@ public:
 
 CKeybindEditor::CKeybindEditor(QWidget* parent)
 	: CDockableWidget(parent)
+	, CUserData({ Private_KeybindEditor::szKeybindsPath })
 	, m_treeView(new QAdvancedTreeView())
 {
 	m_model = CommandModelFactory::Create<KeybindModel>();
@@ -901,7 +905,7 @@ void CKeybindEditor::SetState(const QVariant& state)
 			QCommandAction* action = comMgr->GetCommandAction(commandStr);
 			if (action)
 			{
-				if (shortcutsVar.isValid())//read valid shortcuts even if shortcutsAsKeySeq is empty
+				if (shortcutsVar.isValid()) //read valid shortcuts even if shortcutsAsKeySeq is empty
 					action->setShortcuts(shortcutsAsKeySeq);
 			}
 		}
@@ -941,7 +945,11 @@ void CKeybindEditor::LoadKeybindsFromFile(const char* filename)
 		SetState(keybindsVariant);
 		GetIEditorImpl()->GetCommandManager()->signalChanged();
 	}
-	//TODO : error message
+	else
+	{
+		CryWarning(VALIDATOR_MODULE_EDITOR, VALIDATOR_COMMENT, "Failed to load corrupted Keybinds file: %s", filename);
+		return;
+	}
 }
 
 void CKeybindEditor::OnKeybindsChanged()
@@ -951,28 +959,16 @@ void CKeybindEditor::OnKeybindsChanged()
 
 void CKeybindEditor::SaveUserKeybinds()
 {
-	QString userKeybinds = QtUtil::GetAppDataFolder();
-	QDir(userKeybinds).mkpath(userKeybinds);
-	userKeybinds += "/Keybinds.json";
-	SaveKeybindsToFile(userKeybinds.toStdString().c_str());
+	QJsonDocument doc(QJsonDocument::fromVariant(GetState()));
+	UserDataUtil::Save(Private_KeybindEditor::szKeybindsPath, doc.toJson());
 }
 
 void CKeybindEditor::LoadUserKeybinds()
 {
-	QString userKeybinds = QtUtil::GetAppDataFolder();
-	userKeybinds += "/Keybinds.json";
-	QFile file(userKeybinds);
-
-	// If there's no user keybinds, try and load project keybinds
-	if (file.exists())
-		return LoadKeybindsFromFile(userKeybinds.toStdString().c_str());
-
-	QString projKeybinds(GetIEditorImpl()->GetProjectManager()->GetCurrentProjectDirectoryAbsolute());
-	projKeybinds = projKeybinds + "/Editor/Keybinds.json";
-
-	if (QFile(projKeybinds).exists())
-		return LoadKeybindsFromFile(projKeybinds.toUtf8());
-
-	LoadKeybindsFromFile(PathUtil::Make(PathUtil::GetEnginePath(), "%EDITOR%/Keybinds.json").c_str());
+	QVariant keybindsVariant = UserDataUtil::Load(Private_KeybindEditor::szKeybindsPath);
+	if (keybindsVariant.isValid())
+	{
+		SetState(keybindsVariant);
+		GetIEditorImpl()->GetCommandManager()->signalChanged();
+	}
 }
-

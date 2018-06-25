@@ -8,7 +8,7 @@
 
 class CEditorMainFrame;
 
-class QMainToolBarManager : public QObject
+class QMainToolBarManager : public QObject, public CUserData
 {
 	Q_OBJECT
 public:
@@ -123,7 +123,7 @@ public:
 
 		// If a command is deprecated or replaced, the toolbar should be serialized back to disk and updated
 		bool RequiresUpdate() const;
-		void MarkAsUpdated() { updated = true; }
+		void MarkAsUpdated()    { updated = true; }
 
 		void OnCommandChanged() { toolBarChangedSignal(this); }
 		CCrySignal<void(const QToolBarDesc*)> toolBarChangedSignal;
@@ -154,14 +154,13 @@ public:
 	void                                                CreateToolBar(const std::shared_ptr<QToolBarDesc> toolBarDesc, QToolBar* pToolBar);
 
 protected:
-	QString GetToolBarPath(const QString& name) const;
-	void    SaveToolBar(const QString& name) const;
-	void    LoadAll();
-	void    LoadToolBarsFromDir(const QString& dirPath);
-	void    UpdateToolBarOnDisk(const QString& name, const std::shared_ptr<QToolBarDesc> toolBarDesc) const;
+	void SaveToolBar(const QString& name) const;
+	void LoadAll();
+	void LoadToolBarsFromDir(const QString& dirPath);
+	void UpdateToolBarOnDisk(const QString& name, const std::shared_ptr<QToolBarDesc> toolBarDesc) const;
 
-	void    OnCVarActionDestroyed(ICVar* pCVar, QAction* pObject);
-	void    OnCVarChanged(ICVar* pCVar);
+	void OnCVarActionDestroyed(ICVar* pCVar, QAction* pObject);
+	void OnCVarChanged(ICVar* pCVar);
 
 protected:
 	QMap<QString, std::shared_ptr<QToolBarDesc>> m_ToolBarsDesc;
@@ -169,4 +168,3 @@ protected:
 	QHash<ICVar*, std::vector<QAction*>>         m_pCVarActions;
 	std::vector<QMetaObject::Connection>         m_cvarActionConnections;
 };
-

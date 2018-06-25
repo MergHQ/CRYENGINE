@@ -12,8 +12,13 @@
 #include <QFile>
 #include <QEvent>
 
+namespace Private_Personalization
+{
+const char* szPersonalizationPath = "Personalization.json";
+}
 
 CPersonalizationManager::CPersonalizationManager()
+	: CUserData({ Private_Personalization::szPersonalizationPath })
 {
 	m_saveSharedStateTimer.setInterval(5000);
 	m_saveSharedStateTimer.setSingleShot(true);
@@ -121,38 +126,13 @@ CPersonalizationManager::ModuleStateMap CPersonalizationManager::FromVariant(con
 
 void CPersonalizationManager::SaveSharedState() const
 {
-	QString path = QtUtil::GetAppDataFolder();
-	QDir(path).mkpath(path);
-	path += "/Personalization.json";
-
-	QFile file(path);
-	if (!file.open(QIODevice::WriteOnly))
-	{
-		QString msg = "Failed to open path: " + path;
-		CryWarning(VALIDATOR_MODULE_EDITOR, VALIDATOR_ERROR, msg.toLocal8Bit());
-		return;
-	}
-
 	QJsonDocument doc(QJsonDocument::fromVariant(ToVariant(m_sharedState)));
-	file.write(doc.toJson());
+	UserDataUtil::Save(Private_Personalization::szPersonalizationPath, doc.toJson());
 }
 
 void CPersonalizationManager::LoadSharedState()
 {
-	QString path = QtUtil::GetAppDataFolder();
-	path += "/Personalization.json";
-
-	QFile file(path);
-	if (!file.open(QIODevice::ReadOnly))
-	{
-		QString msg = "Failed to open path: " + path;
-		CryWarning(VALIDATOR_MODULE_EDITOR, VALIDATOR_COMMENT, msg.toLocal8Bit());
-		return;
-	}
-
-	QJsonDocument doc(QJsonDocument::fromJson(file.readAll()));
-	QVariant variant = doc.toVariant();
-	m_sharedState = FromVariant(variant);
+	m_sharedState = FromVariant(UserDataUtil::Load(Private_Personalization::szPersonalizationPath));
 }
 
 void CPersonalizationManager::LoadProjectState()
@@ -190,4 +170,3 @@ void CPersonalizationManager::SaveProjectState() const
 	QJsonDocument doc(QJsonDocument::fromVariant(ToVariant(m_projectState)));
 	file.write(doc.toJson());
 }
-
