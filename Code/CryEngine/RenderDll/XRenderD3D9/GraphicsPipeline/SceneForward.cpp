@@ -1138,6 +1138,7 @@ void CSceneForwardStage::ExecuteSky(CTexture* pColorTex, CTexture* pDepthTex)
 	CTexture* pSkyDomeTex = CRendererResources::s_ptexBlack;
 
 	// Update sky dome texture if new data is available
+	int timestamp = 0;
 	if (m_pHDRSkyRE)
 	{
 		if (m_pHDRSkyRE->m_skyDomeTextureLastTimeStamp != m_pHDRSkyRE->m_pRenderParams->m_skyDomeTextureTimeStamp)
@@ -1150,6 +1151,7 @@ void CSceneForwardStage::ExecuteSky(CTexture* pColorTex, CTexture* pDepthTex)
 			// Update time stamp of last update
 			m_pHDRSkyRE->m_skyDomeTextureLastTimeStamp = m_pHDRSkyRE->m_pRenderParams->m_skyDomeTextureTimeStamp;
 		}
+		timestamp = m_pHDRSkyRE->m_skyDomeTextureLastTimeStamp;
 	}
 	else if (m_pSkyRE)
 	{
@@ -1173,14 +1175,25 @@ void CSceneForwardStage::ExecuteSky(CTexture* pColorTex, CTexture* pDepthTex)
 
 	const bool bFog = pRenderView->IsGlobalFogEnabled() && !(GetGraphicsPipeline().IsPipelineFlag(CGraphicsPipeline::EPipelineFlags::NO_SHADER_FOG));
 
-	//if (m_skyPass.IsDirty(pDepthTex->GetTextureID()))
+	m_pSkyDomeTextureMie = CRendererResources::s_ptexBlack;
+	m_pSkyDomeTextureRayleigh = CRendererResources::s_ptexBlack;
+	m_pSkyMoonTex = CRendererResources::s_ptexBlack;
+	if (m_pHDRSkyRE)
 	{
-		SSamplerState      samplerDescLinearWrapU(FILTER_LINEAR, eSamplerAddressMode_Wrap, eSamplerAddressMode_Clamp, eSamplerAddressMode_Clamp, 0);
-		SamplerStateHandle samplerStateLinearWrapU = GetDeviceObjectFactory().GetOrCreateSamplerStateHandle(samplerDescLinearWrapU);
+		m_pSkyDomeTextureMie = m_pHDRSkyRE->m_pSkyDomeTextureMie;
+		m_pSkyDomeTextureRayleigh = m_pHDRSkyRE->m_pSkyDomeTextureRayleigh;
+		if (m_pHDRSkyRE->m_moonTexId > 0)
+			m_pSkyMoonTex = CTexture::GetByID(m_pHDRSkyRE->m_moonTexId);
+	}
 
-		uint64 rtMask = 0;
-		rtMask |= m_pSkyRE ? g_HWSR_MaskBit[HWSR_SAMPLE0] : 0;
-		rtMask |= bFog ? g_HWSR_MaskBit[HWSR_FOG] : 0;
+	uint64 rtMask = 0;
+	rtMask |= m_pSkyRE ? g_HWSR_MaskBit[HWSR_SAMPLE0] : 0;
+	rtMask |= bFog ? g_HWSR_MaskBit[HWSR_FOG] : 0;
+
+	if (m_skyPass.IsDirty(rtMask, timestamp, !m_pHDRSkyRE))
+	{
+		const SSamplerState      samplerDescLinearWrapU(FILTER_LINEAR, eSamplerAddressMode_Wrap, eSamplerAddressMode_Clamp, eSamplerAddressMode_Clamp, 0);
+		const SamplerStateHandle samplerStateLinearWrapU = GetDeviceObjectFactory().GetOrCreateSamplerStateHandle(samplerDescLinearWrapU);
 
 		static CCryNameTSCRC techSkyPass("SkyPass");
 		m_skyPass.SetPrimitiveFlags(CRenderPrimitive::eFlags_ReflectShaderConstants_PS);
@@ -1192,27 +1205,10 @@ void CSceneForwardStage::ExecuteSky(CTexture* pColorTex, CTexture* pDepthTex)
 		m_skyPass.SetTexture(0, pSkyDomeTex);
 		m_skyPass.SetSampler(0, EDefaultSamplerStates::LinearClamp);
 
-		CTexture *pSkyDomeTextureMie = CRendererResources::s_ptexBlack;
-		CTexture *pSkyDomeTextureRayleigh = CRendererResources::s_ptexBlack;
-		CTexture *pSkyMoonTex = CRendererResources::s_ptexBlack;
-		if (m_pHDRSkyRE)
-		{
-			pSkyDomeTextureMie = m_pHDRSkyRE->m_pSkyDomeTextureMie;
-			pSkyDomeTextureRayleigh = m_pHDRSkyRE->m_pSkyDomeTextureRayleigh;
-			if (m_pHDRSkyRE->m_moonTexId > 0)
-			{
-				pSkyMoonTex = CTexture::GetByID(m_pHDRSkyRE->m_moonTexId);
-			}
-		}
-
-		m_skyPass.SetTexture(1, pSkyDomeTextureMie);
-		m_skyPass.SetTexture(2, pSkyDomeTextureRayleigh);
-		m_skyPass.SetTexture(3, pSkyMoonTex);
+		m_skyPass.SetTexture(1, m_pSkyDomeTextureMie);
+		m_skyPass.SetTexture(2, m_pSkyDomeTextureRayleigh);
+		m_skyPass.SetTexture(3, m_pSkyMoonTex);
 		m_skyPass.SetSampler(1, samplerStateLinearWrapU);
-
-		m_pSkyDomeTextureMie = pSkyDomeTextureMie;
-		m_pSkyDomeTextureRayleigh = pSkyDomeTextureRayleigh;
-		m_pSkyMoonTex = pSkyMoonTex;
 	}
 
 	m_skyPass.SetInlineConstantBuffer(eConstantBufferShaderSlot_PerPass, m_pPerPassCB, EShaderStage_AllWithoutCompute);

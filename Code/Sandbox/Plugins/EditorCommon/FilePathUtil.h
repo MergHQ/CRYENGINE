@@ -20,15 +20,13 @@ EDITOR_COMMON_API bool RemoveDirectory(const char* szPath, bool bRecursive = tru
 //! Sets the file permission from read only to read-write.
 EDITOR_COMMON_API bool MakeFileWritable(const char* szFilePath);
 
-
 //! Extracts all the files from a pak file. The pak should already be open by GetISystem()->GetIPak()->OpenPack();
 //! The function will silently overwrite existing files.
 //! \param szArchivePath Path to the existing pak file to be unpacked.
 //! \param szDestPath Path to the destination folder.
 //! \param progress. A function object that is called each time another portion of the pak file has been extracted. The progress value is in the range 0..1 inclusive.
 //! \see ICryPak::OpenPack()
-EDITOR_COMMON_API void Unpak(const char* szArchivePath, const char* szDestPath, std::function<void(float)> progress);
-
+EDITOR_COMMON_API void   Unpak(const char* szArchivePath, const char* szDestPath, std::function<void(float)> progress);
 
 EDITOR_COMMON_API string GetAudioLocalizationFolder();
 
@@ -96,9 +94,9 @@ EDITOR_COMMON_API string GetGameProjectAssetsPath();
 //! GameSDK/Objects/bird.cgf -> Objects/bird.cgf
 //! Objects/bird.cgf -> Objects/bird.cgf
 //! where project root is A:/p4, and game directory is GameSDK.
-EDITOR_COMMON_API string ToGamePath(const string& path);
+EDITOR_COMMON_API string  ToGamePath(const string& path);
 EDITOR_COMMON_API QString ToGamePath(const QString& path);
-EDITOR_COMMON_API string ToGamePath(const char* path);
+EDITOR_COMMON_API string  ToGamePath(const char* path);
 
 EDITOR_COMMON_API QString ToUnixPath(const QString& path);
 
@@ -112,4 +110,3 @@ EDITOR_COMMON_API bool IsValidFileName(const QString& name);
 //! Returns current platform specific folder name, used when the user wants to store platform specific data.
 EDITOR_COMMON_API string GetCurrentPlatformFolder();
 }
-

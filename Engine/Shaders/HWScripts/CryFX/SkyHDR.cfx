@@ -15,12 +15,9 @@ float Script : STANDARDSGLOBAL
 
 ///////////////// samplers //////////////////
 
-sampler2D skyDomeSamplerMie : register(s0) = sampler_state
-{ Texture = $SkyDomeMie; };
-sampler2D skyDomeSamplerRayleigh : register(s1) = sampler_state
-{ Texture = $SkyDomeRayleigh; };
-sampler2D moonSampler : register(s2) = sampler_state
-{ Texture = $SkyDomeMoon; };
+sampler2D skyDomeSamplerMie : register(s0);
+sampler2D skyDomeSamplerRayleigh : register(s1);
+sampler2D moonSampler : register(s2);
 
 ///////////////// io signatures //////////////////
  

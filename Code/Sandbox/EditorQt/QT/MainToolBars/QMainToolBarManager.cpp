@@ -15,12 +15,20 @@
 #include "Commands/QCommandAction.h"
 #include "Commands/CustomCommand.h"
 #include <CryIcon.h>
-#include <CrySystem/IProjectManager.h>
+#include <Util/UserDataUtil.h>
+#include <FilePathUtil.h>
 
+#include <CrySystem/IProjectManager.h>
+#include <CryString/CryPath.h>
+
+namespace Private_ToolbarManager
+{
+static const char* szUserToolbarsPath = "Toolbars";
 static const char* s_defaultPath = "Editor/ToolBars";
 static const char* s_actionPropertyName = "cvarDescValue";
 static const char* s_actionCVarBitFlagName = "cvarDescIsBitFlag";
 static const int s_version = 2;
+}
 
 #define ADD_TO_VARIANT_MAP(var, map) map[ # var] = var
 
@@ -254,7 +262,7 @@ int QMainToolBarManager::QToolBarDesc::IndexOfCommand(const CCommand* pCommand)
 
 void QMainToolBarManager::QToolBarDesc::InsertItem(const QVariant& itemVariant, int idx)
 {
-	InsertItem(CreateItem(itemVariant, s_version), idx);
+	InsertItem(CreateItem(itemVariant, Private_ToolbarManager::s_version), idx);
 }
 
 void QMainToolBarManager::QToolBarDesc::InsertItem(std::shared_ptr<QItemDesc> pItem, int idx)
@@ -335,6 +343,7 @@ bool QMainToolBarManager::QToolBarDesc::RequiresUpdate() const
 
 QMainToolBarManager::QMainToolBarManager(CEditorMainFrame* pMainFrame)
 	: QObject(pMainFrame)
+	, CUserData({ Private_ToolbarManager::szUserToolbarsPath })
 	, m_pMainFrame(pMainFrame)
 {
 	LoadAll();
@@ -363,9 +372,8 @@ void QMainToolBarManager::RemoveToolBar(const QString& name)
 {
 	m_ToolBarsDesc.remove(name);
 
-	QString path = QtUtil::GetAppDataFolder();
-	path += "/ToolBars/" + name + ".json";
-	QFile::remove(path);
+	QString fullPath(UserDataUtil::GetUserPath(PathUtil::Make(Private_ToolbarManager::szUserToolbarsPath, QtUtil::ToConstCharPtr(name), ".json").c_str()));
+	PathUtil::Remove(QtUtil::ToConstCharPtr(fullPath));
 
 	CEditorMainFrame* pMainFrame = CEditorMainFrame::GetInstance();
 	QToolBar* pToolBar = pMainFrame->findChild<QToolBar*>(name + "ToolBar");
@@ -378,45 +386,29 @@ void QMainToolBarManager::RemoveToolBar(const QString& name)
 
 void QMainToolBarManager::SaveToolBar(const QString& name) const
 {
-	QString path = QtUtil::GetAppDataFolder();
-	path += "/ToolBars";
-	QDir dir(path);
-	if (!dir.exists())
-		dir.mkdir(path);
-
 	const std::shared_ptr<QMainToolBarManager::QToolBarDesc> toolBar = m_ToolBarsDesc[name];
-	QString toolBarPath = path + "/" + name + ".json";
-	QFile file(toolBarPath);
-	if (!file.open(QIODevice::WriteOnly))
-	{
-		QString msg = "Failed to open path: " + path;
-		CryWarning(VALIDATOR_MODULE_EDITOR, VALIDATOR_ERROR, msg.toLocal8Bit());
-		return;
-	}
-
 	QVariantMap toDisk;
-	toDisk["version"] = s_version;
+	toDisk["version"] = Private_ToolbarManager::s_version;
 	toDisk["toolBar"] = toolBar->ToVariant();
 
+	QString path(PathUtil::Make(Private_ToolbarManager::szUserToolbarsPath, QtUtil::ToConstCharPtr(name), ".json").c_str());
+
 	QJsonDocument doc(QJsonDocument::fromVariant(toDisk));
-	file.write(doc.toJson());
+	UserDataUtil::Save(path.toLocal8Bit(), doc.toJson());
 }
 
 void QMainToolBarManager::LoadAll()
 {
 	// Load built in toolbars
-	LoadToolBarsFromDir(PathUtil::Make(PathUtil::GetEnginePath(), s_defaultPath).c_str());
+	LoadToolBarsFromDir(PathUtil::Make(PathUtil::GetEnginePath(), Private_ToolbarManager::s_defaultPath).c_str());
 
 	// Load game project specific toolbars
 	QString projectPath(GetIEditorImpl()->GetProjectManager()->GetCurrentProjectDirectoryAbsolute());
-	projectPath = projectPath + "/" + s_defaultPath;
+	projectPath = projectPath + "/" + Private_ToolbarManager::s_defaultPath;
 	LoadToolBarsFromDir(projectPath);
 
 	// Load user toolbars
-	QString userPath = QtUtil::GetAppDataFolder();
-	userPath += "/ToolBars";
-
-	LoadToolBarsFromDir(userPath);
+	LoadToolBarsFromDir(UserDataUtil::GetUserPath("ToolBars"));
 }
 
 void QMainToolBarManager::LoadToolBarsFromDir(const QString& dirPath)
@@ -488,12 +480,6 @@ void QMainToolBarManager::CreateMainFrameToolBars()
 	{
 		return;
 	}
-	
-	QString msg = "Some of the actions used in your toolbars have been replaced.\nWould you like Sandbox to patch your toolbars?";
-	if (CQuestionDialog::SQuestion("Old Commands Used in Toolbars", msg) != QDialogButtonBox::Yes)
-	{
-		return;
-	}
 
 	for (QMap<QString, std::shared_ptr<QToolBarDesc>>::const_iterator ite = m_ToolBarsDesc.begin(); ite != m_ToolBarsDesc.end(); ++ite)
 	{
@@ -508,59 +494,14 @@ void QMainToolBarManager::CreateMainFrameToolBars()
 	}
 }
 
-QString QMainToolBarManager::GetToolBarPath(const QString& name) const
-{
-	// First check if there's a suer toolbar for the given name
-	QString path = QtUtil::GetAppDataFolder();
-	path += QString("/ToolBars/%1.json").arg(name);
-
-	if (QFileInfo::exists(path))
-	{
-		return path;
-	}
-
-	// If the file doesn't exist, check for a project toolbar
-	path = GetIEditorImpl()->GetProjectManager()->GetCurrentProjectDirectoryAbsolute();
-	path += QString("/%1/%2.json").arg(s_defaultPath).arg(name);
-	if (QFileInfo::exists(path))
-	{
-		return path;
-	}
-
-	// If not, then check the install folder for the toolbar
-	path = PathUtil::Make(PathUtil::GetEnginePath(), s_defaultPath).c_str();
-	path += QString("/%2.json").arg(name);
-	if (QFileInfo::exists(path))
-	{
-		return path;
-	}
-
-	return "";
-}
-
 void QMainToolBarManager::UpdateToolBarOnDisk(const QString& name, const std::shared_ptr<QToolBarDesc> toolBarDesc) const
 {
-	QString path = GetToolBarPath(name);
-
-	if (path.isEmpty())
-	{
-		CryWarning(VALIDATOR_MODULE_EDITOR, VALIDATOR_ERROR, "Trying to update missing Toolbar: %s", name.toLocal8Bit());
-		return;
-	}
-
-	QFile file(path);
-	if (!file.open(QIODevice::WriteOnly))
-	{
-		CryWarning(VALIDATOR_MODULE_EDITOR, VALIDATOR_ERROR, "Couldn't update Toolbar: %s", name.toLocal8Bit());
-		return;
-	}
-
 	QVariantMap toDisk;
-	toDisk["version"] = s_version;
+	toDisk["version"] = Private_ToolbarManager::s_version;
 	toDisk["toolBar"] = toolBarDesc->ToVariant();
 
 	QJsonDocument doc(QJsonDocument::fromVariant(toDisk));
-	file.write(doc.toJson());
+	UserDataUtil::Save(PathUtil::Make(Private_ToolbarManager::szUserToolbarsPath, QtUtil::ToConstCharPtr(name), ".json").c_str(), doc.toJson());
 }
 
 void QMainToolBarManager::CreateMainFrameToolBar(const QString& name, const std::shared_ptr<QToolBarDesc> toolBarDesc)
@@ -632,10 +573,13 @@ void QMainToolBarManager::CreateToolBar(const std::shared_ptr<QToolBarDesc> tool
 					if (ite != m_pCVarActions.end())
 						actions = ite.value();
 					else
-						pCVar->AddOnChangeFunctor(SFunctor([this, pCVar] { this->OnCVarChanged(pCVar); }));
+						pCVar->AddOnChangeFunctor(SFunctor([this, pCVar]
+						{
+							this->OnCVarChanged(pCVar);
+						}));
 
-					pAction->setProperty(s_actionPropertyName, pCVarDesc->GetValue());
-					pAction->setProperty(s_actionCVarBitFlagName, pCVarDesc->IsBitFlag());
+					pAction->setProperty(Private_ToolbarManager::s_actionPropertyName, pCVarDesc->GetValue());
+					pAction->setProperty(Private_ToolbarManager::s_actionCVarBitFlagName, pCVarDesc->IsBitFlag());
 					actions.push_back(pAction);
 					m_pCVarActions.insert(pCVar, actions);
 
@@ -656,17 +600,17 @@ void QMainToolBarManager::CreateToolBar(const std::shared_ptr<QToolBarDesc> tool
 					switch (pCVar->GetType())
 					{
 					case ECVarType::Int:
-					{
-						int currValue = pCVar->GetIVal();
-						int newValue = variant.toInt();
+						{
+						  int currValue = pCVar->GetIVal();
+						  int newValue = variant.toInt();
 
-						bool isBitFlag = pCVarDesc->IsBitFlag();
+						  bool isBitFlag = pCVarDesc->IsBitFlag();
 
-						if (isBitFlag)
-							pCVar->Set(currValue & newValue ? currValue & ~newValue : currValue | newValue);
-						else
-							pCVar->Set(pCVar->GetIVal() == newValue ? 0 : newValue);
-					}
+						  if (isBitFlag)
+								pCVar->Set(currValue & newValue ? currValue & ~newValue : currValue | newValue);
+						  else
+								pCVar->Set(pCVar->GetIVal() == newValue ? 0 : newValue);
+						}
 						break;
 					case ECVarType::Float:
 						pCVar->Set(pCVar->GetFVal() == variant.toFloat() ? 0.0f : variant.toFloat());
@@ -721,18 +665,18 @@ void QMainToolBarManager::OnCVarChanged(ICVar* pCVar)
 	case ECVarType::Int:
 		for (QAction* pAction : actions)
 		{
-			bool isBitFlag = pAction->property(s_actionCVarBitFlagName).toBool();
-			int value = pAction->property(s_actionPropertyName).toInt();
-			pAction->setChecked(isBitFlag ?  value & pCVar->GetIVal() : value == pCVar->GetIVal());
+			bool isBitFlag = pAction->property(Private_ToolbarManager::s_actionCVarBitFlagName).toBool();
+			int value = pAction->property(Private_ToolbarManager::s_actionPropertyName).toInt();
+			pAction->setChecked(isBitFlag ? value & pCVar->GetIVal() : value == pCVar->GetIVal());
 		}
 		break;
 	case ECVarType::Float:
 		for (QAction* pAction : actions)
-			pAction->setChecked(pAction->property(s_actionPropertyName) == pCVar->GetFVal());
+			pAction->setChecked(pAction->property(Private_ToolbarManager::s_actionPropertyName) == pCVar->GetFVal());
 		break;
 	case ECVarType::String:
 		for (QAction* pAction : actions)
-			pAction->setChecked(pAction->property(s_actionPropertyName) == QString(pCVar->GetString()));
+			pAction->setChecked(pAction->property(Private_ToolbarManager::s_actionPropertyName) == QString(pCVar->GetString()));
 	case ECVarType::Int64:
 		CRY_ASSERT_MESSAGE(false, "QMainToolBarManager::OnCVarChanged int64 cvar not implemented");
 		break;
@@ -740,4 +684,3 @@ void QMainToolBarManager::OnCVarChanged(ICVar* pCVar)
 		break;
 	}
 }
-

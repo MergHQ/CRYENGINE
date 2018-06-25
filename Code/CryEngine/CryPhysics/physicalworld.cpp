@@ -468,7 +468,7 @@ void CPhysicalWorld::Init()
 #endif
 		m_prevGEABBox[i][0].Set(1E10f,1E10f,1E10f); m_prevGEABBox[i][1].zero();
 		m_prevGEAobjtypes[i]=m_nprevGEAEnts[i] = 0;
-		m_BBoxPlayerGroup[i][0]=m_BBoxPlayerGroup[i][1] = Vec3(1e10f);
+		MARK_UNUSED m_BBoxPlayerGroup[i][0];
 	}
 
 	for(i=0; i<EVENT_TYPES_NUM; i++) {
@@ -2336,12 +2336,12 @@ void CPhysicalWorld::ProcessNextLivingEntity(float time_interval, int bSkipFlagg
 			do {
 				do {
 					ReadLock lockr(m_lockPlayerGroups);
-					for(i=0; i<m_nWorkerThreads+FIRST_WORKER_THREAD && (i==iCaller || !AABB_overlap(m_BBoxPlayerGroup[i],BBox)); i++);
+					for(i=0; i<m_nWorkerThreads+FIRST_WORKER_THREAD && (i==iCaller || is_unused(m_BBoxPlayerGroup[i][0]) || !AABB_overlap(m_BBoxPlayerGroup[i],BBox)); i++);
 					if (i>=m_nWorkerThreads+FIRST_WORKER_THREAD)
 						break;
 				} while(true);
 				{ WriteLock lockw(m_lockPlayerGroups);
-					for(i=0; i<m_nWorkerThreads+FIRST_WORKER_THREAD && (i==iCaller || !AABB_overlap(m_BBoxPlayerGroup[i],BBox)); i++);
+					for(i=0; i<m_nWorkerThreads+FIRST_WORKER_THREAD && (i==iCaller || is_unused(m_BBoxPlayerGroup[i][0]) || !AABB_overlap(m_BBoxPlayerGroup[i],BBox)); i++);
 					if (i>=m_nWorkerThreads+FIRST_WORKER_THREAD) {
 						m_BBoxPlayerGroup[iCaller][0] = BBox[0];
 						m_BBoxPlayerGroup[iCaller][1] = BBox[1];
@@ -2358,7 +2358,7 @@ void CPhysicalWorld::ProcessNextLivingEntity(float time_interval, int bSkipFlagg
 		}	while (pent=pent->m_next);
 		if (m_nWorkerThreads>0) {
 			WriteLock lock(m_lockPlayerGroups);
-			m_BBoxPlayerGroup[iCaller][0]=m_BBoxPlayerGroup[iCaller][1] = Vec3(1e10f);
+			MARK_UNUSED m_BBoxPlayerGroup[iCaller][0];
 		}
 	} while(true);
 }

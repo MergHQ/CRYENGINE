@@ -54,7 +54,7 @@ namespace PathUtil
 bool Remove(const char* szPath)
 {
 	QFileInfo info(szPath);
-	
+
 	if (info.isDir())
 		return RemoveDirectory(szPath);
 	else
@@ -90,19 +90,19 @@ EDITOR_COMMON_API bool CopyFileAllowOverwrite(const char* szSourceFilePath, cons
 	return QFile::remove(szDestinationFilePath) && QFile::copy(szSourceFilePath, szDestinationFilePath);
 }
 
-bool RemoveDirectory(const char* szPath, bool bRecursive/* = true*/)
+bool RemoveDirectory(const char* szPath, bool bRecursive /* = true*/)
 {
 	QDir dir(szPath);
 
 	if (!bRecursive)
 	{
-		const QString dirName =  dir.dirName();
+		const QString dirName = dir.dirName();
 		if (dir.cdUp())
 		{
 			CryWarning(VALIDATOR_MODULE_EDITOR, VALIDATOR_WARNING, "Unable to remove directory: %s", szPath);
 			return false;
 		}
-		
+
 		if (dir.remove(dirName))
 			return true;
 	}
@@ -137,41 +137,41 @@ void Unpak(const char* szArchivePath, const char* szDestPath, std::function<void
 		stack.pop();
 
 		GetISystem()->GetIPak()->ForEachArchiveFolderEntry(szArchivePath, mask, [szDestPath, &pakFolder, &stack, &folder, &buffer, &progressValue, progress](const ICryPak::ArchiveEntryInfo& entry)
-		{
-			const CryPathString path(PathUtil::Make(folder.c_str(), entry.szName));
-			if (entry.bIsFolder)
 			{
-				stack.push(path);
-				return;
-			}
+				const CryPathString path(PathUtil::Make(folder.c_str(), entry.szName));
+				if (entry.bIsFolder)
+				{
+				  stack.push(path);
+				  return;
+				}
 
-			ICryPak* const pPak = GetISystem()->GetIPak();
-			FILE* file = pPak->FOpen(PathUtil::Make(pakFolder, path), "rbx");
-			if (!file)
-			{
-				return;
-			}
+				ICryPak* const pPak = GetISystem()->GetIPak();
+				FILE* file = pPak->FOpen(PathUtil::Make(pakFolder, path), "rbx");
+				if (!file)
+				{
+				  return;
+				}
 
-			if (!pPak->MakeDir(PathUtil::Make(szDestPath, folder)))
-			{
-				return;
-			}
+				if (!pPak->MakeDir(PathUtil::Make(szDestPath, folder)))
+				{
+				  return;
+				}
 
-			buffer.resize(pPak->FGetSize(file));
-			const size_t numberOfBytesRead = pPak->FReadRawAll(buffer.data(), buffer.size(), file);
-			pPak->FClose(file);
+				buffer.resize(pPak->FGetSize(file));
+				const size_t numberOfBytesRead = pPak->FReadRawAll(buffer.data(), buffer.size(), file);
+				pPak->FClose(file);
 
-			CryPathString destPath(PathUtil::Make(szDestPath, path));
-			QFile destFile(QtUtil::ToQString(destPath.c_str()));
-			destFile.open(QIODevice::WriteOnly | QIODevice::Truncate);
-			destFile.write(buffer.data(), numberOfBytesRead);
+				CryPathString destPath(PathUtil::Make(szDestPath, path));
+				QFile destFile(QtUtil::ToQString(destPath.c_str()));
+				destFile.open(QIODevice::WriteOnly | QIODevice::Truncate);
+				destFile.write(buffer.data(), numberOfBytesRead);
 
-			if (progress)
-			{
-				progressValue = std::min(1.0f, progressValue + 0.01f);
-				progress(progressValue);
-			}
-		});
+				if (progress)
+				{
+				  progressValue = std::min(1.0f, progressValue + 0.01f);
+				  progress(progressValue);
+				}
+			});
 	}
 }
 
@@ -291,7 +291,6 @@ string GetGameProjectAssetsPath()
 	return gEnv->pSystem->GetIProjectManager()->GetCurrentAssetDirectoryAbsolute();
 }
 
-
 string GetCurrentPlatformFolder()
 {
 #ifdef CRY_PLATFORM_WINDOWS
@@ -384,7 +383,7 @@ EDITOR_COMMON_API string GetUniqueName(const string& fileName, const string& fol
 	QDirIterator iterator(QtUtil::ToQString(absFolder), QStringList() << mask.c_str(), QDir::Files);
 	while (iterator.hasNext())
 	{
-		string filePath = QtUtil::ToString(iterator.next()).substr(absFolderLen); 																				  
+		string filePath = QtUtil::ToString(iterator.next()).substr(absFolderLen);
 		PathUtil::RemoveExtension(filePath);
 		PathUtil::RemoveExtension(filePath);
 		resultSet.push_back(filePath);
@@ -434,7 +433,6 @@ inline string AbsoluteToRelativePath(const string& absolutePath, const char* dir
 		return path;
 }
 
-
 inline string AbsolutePathToCryPakPath(const string& path)
 {
 	if (path.empty())
@@ -445,7 +443,6 @@ inline string AbsolutePathToCryPakPath(const string& path)
 
 	return AbsoluteToRelativePath(path, rootpath);
 }
-
 
 string AbsolutePathToGamePath(const string& path)
 {
@@ -475,7 +472,6 @@ string GamePathToCryPakPath(const string& path, bool bForWriting /*= false*/)
 
 	return szAdjustedFile;
 }
-
 
 QString ToGamePath(const QString& path)
 {
@@ -542,4 +538,3 @@ EDITOR_COMMON_API bool IsValidFileName(const QString& name)
 }
 
 }
-

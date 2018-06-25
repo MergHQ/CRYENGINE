@@ -2,12 +2,13 @@
 
 #pragma once
 
+#include <Util/UserDataUtil.h>
 #include <QWidget>
 
 class QAdvancedTreeView;
 class CCustomCommand;
 
-class CKeybindEditor : public CDockableWidget
+class CKeybindEditor : public CDockableWidget, public CUserData
 {
 	Q_OBJECT
 
@@ -35,7 +36,7 @@ public:
 
 	virtual void customEvent(QEvent* event) override;
 protected:
-	static void OnKeybindsChanged();
+	static void  OnKeybindsChanged();
 
 private:
 
@@ -43,7 +44,6 @@ private:
 	void OnAddCustomCommand() const;
 	void OnRemoveCustomCommand(CCustomCommand* command) const;
 
-	KeybindModel* m_model;
-	QAdvancedTreeView*    m_treeView;
+	KeybindModel*      m_model;
+	QAdvancedTreeView* m_treeView;
 };
-

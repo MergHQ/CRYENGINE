@@ -53,6 +53,7 @@ CTabPaneManager* s_pGlobalToolTabManager = 0;
 static const char* szAppDataLayoutDir = "Layouts";
 static const char* szDefaultLayoutDir = "Editor/Layouts";
 static const char* szDefaultLayout = "Editor/Layouts/Default Layout.json";
+static const char* szUserLayout = "Layout.json";
 
 void PyLoadLayoutFromFile(const char* fullFilename)
 {
@@ -71,7 +72,7 @@ void PyResetLayout()
 
 void PyLoadLayoutDlg()
 {
-	QDir dir(QtUtil::GetAppDataFolder());
+	QDir dir(UserDataUtil::GetUserPath(""));
 	dir.cd(szAppDataLayoutDir);
 
 	CSystemFileDialog::RunParams runParams;
@@ -90,8 +91,9 @@ void PySaveLayoutAs()
 {
 	QDir dir(QtUtil::GetAppDataFolder());
 	// This will build the folder structure required if it doesn't exist yet
-	dir.mkpath(QtUtil::GetAppDataFolder() + "/" + szAppDataLayoutDir);
-	dir.cd(szAppDataLayoutDir);
+	QString userDataPath = UserDataUtil::GetUserPath(szAppDataLayoutDir);
+	dir.mkpath(userDataPath);
+	dir.cd(userDataPath);
 
 	CSystemFileDialog::RunParams runParams;
 	runParams.title = CEditorMainFrame::tr("Save Layout");
@@ -126,7 +128,8 @@ REGISTER_PYTHON_COMMAND_WITH_EXAMPLE(PySaveLayoutAs, layout, save_as,
 
 //////////////////////////////////////////////////////////////////////////
 CTabPaneManager::CTabPaneManager(QWidget* const pParent)
-	: m_pParent(pParent)
+	: CUserData({ szAppDataLayoutDir, szUserLayout })
+	, m_pParent(pParent)
 {
 	s_pGlobalToolTabManager = this;
 	m_bToolsDirty = false;
@@ -622,17 +625,21 @@ IPane* CTabPaneManager::FindPaneByTitle(const char* title)
 
 void CTabPaneManager::SaveLayout()
 {
-	QString userLayout = QtUtil::GetAppDataFolder();
-	QDir(userLayout).mkpath(userLayout);
-	userLayout += "/Layout.json";
-	SaveLayoutToFile(userLayout.toStdString().c_str());
+	QJsonDocument doc(QJsonDocument::fromVariant(GetState()));
+	UserDataUtil::Save(szUserLayout, doc.toJson());
 }
 
 bool CTabPaneManager::LoadUserLayout()
 {
-	QString userLayout = QtUtil::GetAppDataFolder();
-	userLayout += "/Layout.json";
-	return LoadLayoutFromFile(userLayout.toStdString().c_str());
+	QVariant state = UserDataUtil::Load(szUserLayout);
+
+	if (!state.isValid())
+		return false;
+
+	SetState(state);
+	m_layoutLoaded = true;
+
+	return true;
 }
 
 bool CTabPaneManager::LoadLayout(const char* filePath)
@@ -706,8 +713,8 @@ QFileInfoList CTabPaneManager::GetUserLayouts()
 	QStringList filter;
 	filter << "*.json";
 
-	QDir dir(QtUtil::GetAppDataFolder());
-	if (dir.cd(szAppDataLayoutDir))
+	QDir dir(UserDataUtil::GetUserPath(szAppDataLayoutDir));
+	if (dir.exists())
 	{
 		return dir.entryInfoList(filter, QDir::Files);
 	}
@@ -1028,4 +1035,3 @@ void QTabPane::closeEvent(QCloseEvent* event)
 QTabPane::~QTabPane()
 {
 }
-

@@ -324,6 +324,7 @@ ___
 
 You can see the list of supported countries below:
 
+|                         |                         |                         |                           |
 |-------------------------|-------------------------|-------------------------|---------------------------|
 |  Andorra                |  Finland                |  Malta                  |  Slovenia                 |
 |  Antarctica             |  France                 |  Martinique             |  South Africa             |

@@ -163,9 +163,6 @@ public:
 	static CTexture* s_ptexFromObj;                           // ?
 	static CTexture* s_ptexHDRMeasuredLuminanceDummy;         // ?
 	static CTexture* s_ptexCloudsLM;                          // ?
-	static CTexture* s_ptexSkyDomeMie;                        // ?
-	static CTexture* s_ptexSkyDomeRayleigh;                   // ?
-	static CTexture* s_ptexSkyDomeMoon;                       // ?
 	static CTexture* s_ptexColorChart;                        // ?
 
 	static CTexture* s_pTexNULL;
