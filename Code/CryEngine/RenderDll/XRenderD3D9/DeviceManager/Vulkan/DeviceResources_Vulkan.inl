@@ -226,8 +226,13 @@ CDeviceResource::ESubstitutionResult CDeviceResource::SubstituteUsedResource()
 	if (hVkResult != VK_SUCCESS) // Other Error
 		return eSubResult_Failed;
 
-	m_pNativeResource = pResource;
-	
+	if (pDynBuf)
+		m_pNativeResource = pDynBuf;
+	else if (pBuffer)
+		m_pNativeResource = pBuffer;
+	else if (pImage)
+		m_pNativeResource = pImage;
+
 	if (pDynBuf || pBuffer)
 	{
 		auto* const pPreviousBuffer = static_cast<NCryVulkan::CBufferResource*>(pResource);
