@@ -171,10 +171,12 @@ void CCommandScheduler::EndOfFrame(bool bWait)
 	if (CRendererCVars::CV_r_SyncToFrameFence)
 		SyncFrame();
 
-	GarbageCollect();
-
-	// TODO: Move this into GetDevice(), currently it is only allowed to be called once per frame!
+	// Function needs to be called on frame-boundaries, not more frequent! It
+	// implements untracked decaying resource-tracking (after N frames resource X
+	// can't be in use anymore because we don't buffer more than X frames.)
 	GetDevice()->TickDestruction();
+
+	GarbageCollect();
 
 	++m_FrameFenceCursor;
 	m_FrameFenceCursor %= FRAME_FENCES;
