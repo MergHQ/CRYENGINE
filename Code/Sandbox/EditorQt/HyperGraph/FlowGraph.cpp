@@ -98,7 +98,7 @@ protected:
 		return 0;
 	}
 
-	virtual const char* GetDescription() { return "FlowGraph Undo"; };
+	virtual const char* GetDescription() { return "FlowGraph Undo"; }
 
 	virtual void        Undo(bool bUndo)
 	{
@@ -825,4 +825,3 @@ void CHyperFlowGraph::ExtractObjectsPrefabIdToGlobalIdMappingFromPrefab(CObjectA
 		}
 	}
 }
-

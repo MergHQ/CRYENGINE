@@ -34,7 +34,7 @@ public:
 	}
 protected:
 
-	virtual const char* GetDescription() { return m_undoDescription; };
+	virtual const char* GetDescription() { return m_undoDescription; }
 
 	virtual void        Undo(bool bUndo)
 	{
@@ -1214,4 +1214,3 @@ void CEdMesh::DebugDraw(const SGeometryDebugDrawInfo& info)
 		m_pStatObj->DebugDraw(info);
 	}
 }
-

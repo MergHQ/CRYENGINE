@@ -34,14 +34,14 @@ class CMaterialEditorClass : public IViewPaneClass
 	//////////////////////////////////////////////////////////////////////////
 	// IClassDesc
 	//////////////////////////////////////////////////////////////////////////
-	virtual ESystemClassID SystemClassID()   override { return ESYSTEM_CLASS_VIEWPANE; };
-	virtual const char*    ClassName()       override { return MATERIAL_EDITOR_NAME; };
-	virtual const char*    Category()        override { return "Editor"; };
+	virtual ESystemClassID SystemClassID()   override { return ESYSTEM_CLASS_VIEWPANE; }
+	virtual const char*    ClassName()       override { return MATERIAL_EDITOR_NAME; }
+	virtual const char*    Category()        override { return "Editor"; }
 	virtual const char*    GetMenuPath()     override { return ""; }
 	//////////////////////////////////////////////////////////////////////////
-	virtual CRuntimeClass* GetRuntimeClass() override { return RUNTIME_CLASS(CMaterialDialog); };
-	virtual const char*    GetPaneTitle()    override { return _T(MATERIAL_EDITOR_NAME); };
-	virtual bool           SinglePane()      override { return true; };
+	virtual CRuntimeClass* GetRuntimeClass() override { return RUNTIME_CLASS(CMaterialDialog); }
+	virtual const char*    GetPaneTitle()    override { return _T(MATERIAL_EDITOR_NAME); }
+	virtual bool           SinglePane()      override { return true; }
 };
 
 REGISTER_CLASS_DESC(CMaterialEditorClass);
@@ -1293,7 +1293,7 @@ void CMaterialUI::SetToMaterial(CMaterial* mtl, int propagationFlags)
 class CMtlPickCallback : public IPickObjectCallback
 {
 public:
-	CMtlPickCallback() { m_bActive = true; };
+	CMtlPickCallback() { m_bActive = true; }
 	//! Called when object picked.
 	virtual void OnPick(CBaseObject* picked)
 	{
@@ -1318,7 +1318,7 @@ public:
 		else
 			return false;
 	}
-	static bool IsActive() { return m_bActive; };
+	static bool IsActive() { return m_bActive; }
 private:
 	static bool m_bActive;
 };
@@ -2237,4 +2237,3 @@ BOOL CMaterialDialog::PreTranslateMessage(MSG* pMsg)
 
 	return __super::PreTranslateMessage(pMsg);
 }
-

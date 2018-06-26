@@ -17,7 +17,7 @@ public:
 	virtual IViewPaneClass::EDockingDirection GetDockingDirection() const override { return IViewPaneClass::DOCK_FLOAT; }
 	virtual QRect                             GetPaneRect() override               { return QRect(0, 0, 500, 800); }
 
-	virtual const char*                       GetEditorName() const override       { return "Level Settings"; };
+	virtual const char*                       GetEditorName() const override       { return "Level Settings"; }
 	void                                      InitMenu();
 
 private:
@@ -31,4 +31,3 @@ private:
 	CVarBlockPtr   m_varBlock;
 	bool           m_bIgnoreEvent;
 };
-

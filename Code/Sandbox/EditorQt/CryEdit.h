@@ -29,11 +29,11 @@ public:
 
 	void                         LoadFile(const string& fileName);
 	void                         ForceNextIdleProcessing()      { m_bForceProcessIdle = true; }
-	void                         KeepEditorActive(bool bActive) { m_bKeepEditorActive = bActive; };
-	bool                         IsInTestMode()                 { return m_bTestMode; };
-	bool                         IsInPreviewMode()              { return m_bPreviewMode; };
-	bool                         IsInExportMode()               { return m_bExportMode; };
-	bool                         IsInConsoleMode()              { return m_bConsoleMode; };
+	void                         KeepEditorActive(bool bActive) { m_bKeepEditorActive = bActive; }
+	bool                         IsInTestMode()                 { return m_bTestMode; }
+	bool                         IsInPreviewMode()              { return m_bPreviewMode; }
+	bool                         IsInExportMode()               { return m_bExportMode; }
+	bool                         IsInConsoleMode()              { return m_bConsoleMode; }
 	bool                         IsInLevelLoadTestMode()        { return m_bLevelLoadTestMode; }
 	bool                         IsInRegularEditorMode();
 	bool                         IsExiting() const              { return m_bExiting; }
@@ -131,4 +131,3 @@ public:
 	static void SubObjectModeFace();
 	static void SubObjectModePivot();
 };
-

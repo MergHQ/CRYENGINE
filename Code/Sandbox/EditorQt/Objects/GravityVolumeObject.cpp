@@ -30,9 +30,9 @@ public:
 
 	virtual void   SetUserData(const char* key, void* userData);
 
-	virtual void   Display(SDisplayContext& dc)                                          {};
+	virtual void   Display(SDisplayContext& dc)                                          {}
 	virtual bool   OnKeyDown(CViewport* view, uint32 nChar, uint32 nRepCnt, uint32 nFlags);
-	virtual bool   OnKeyUp(CViewport* view, uint32 nChar, uint32 nRepCnt, uint32 nFlags) { return false; };
+	virtual bool   OnKeyUp(CViewport* view, uint32 nChar, uint32 nRepCnt, uint32 nFlags) { return false; }
 
 	void           OnManipulatorBeginDrag(IDisplayViewport*, ITransformManipulator*, const Vec2i&, int flags);
 	void           OnManipulatorDrag(IDisplayViewport*, ITransformManipulator*, const Vec2i&, const Vec3&, int);
@@ -47,7 +47,7 @@ public:
 protected:
 	virtual ~CEditGravityVolumeTool();
 	// Delete itself.
-	void DeleteThis() { delete this; };
+	void DeleteThis() { delete this; }
 
 private:
 	CGravityVolumeObject*  m_GravityVolume;
@@ -1422,4 +1422,3 @@ void CGravityVolumeObject::OnEvent(ObjectEvent event)
 		m_pEntity->SendEvent(ev);
 	}
 }
-

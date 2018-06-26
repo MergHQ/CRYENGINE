@@ -9,11 +9,9 @@
 class SANDBOX_API CPrefabLibrary : public CBaseLibrary
 {
 public:
-	CPrefabLibrary(CBaseLibraryManager* pManager) : CBaseLibrary(pManager) {};
+	CPrefabLibrary(CBaseLibraryManager* pManager) : CBaseLibrary(pManager) {}
 	virtual bool Save();
 	virtual bool Load(const string& filename);
 	virtual void Serialize(XmlNodeRef& node, bool bLoading);
 	void         UpdatePrefabObjects();
-private:
 };
-

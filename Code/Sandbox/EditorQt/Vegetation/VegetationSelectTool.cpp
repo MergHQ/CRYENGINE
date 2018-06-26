@@ -20,11 +20,11 @@ class CVegetationSelectTool_ClassDesc : public IClassDesc
 	virtual ESystemClassID SystemClassID() { return ESYSTEM_CLASS_EDITTOOL; }
 
 	//! This method returns the human readable name of the class.
-	virtual const char* ClassName() { return "EditTool.VegetationSelect"; };
+	virtual const char* ClassName() { return "EditTool.VegetationSelect"; }
 
 	//! This method returns Category of this class, Category is specifing where this plugin class fits best in
 	//! create panel.
-	virtual const char*    Category()        { return "Terrain"; };
+	virtual const char*    Category()        { return "Terrain"; }
 
 	virtual CRuntimeClass* GetRuntimeClass() { return RUNTIME_CLASS(CVegetationSelectTool); }
 };
@@ -790,4 +790,3 @@ QEditToolButtonPanel::SButtonInfo CVegetationSelectTool::CreateSelectToolButtonI
 	selectToolButtonInfo.icon = "icons:Vegetation/Vegetation_Select.ico";
 	return selectToolButtonInfo;
 }
-

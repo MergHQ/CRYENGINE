@@ -24,11 +24,11 @@ class CObjectCreateTool_ClassDesc : public IClassDesc
 	virtual ESystemClassID SystemClassID() { return ESYSTEM_CLASS_EDITTOOL; }
 
 	//! This method returns the human readable name of the class.
-	virtual const char* ClassName() { return "EditTool.ObjectCreate2"; };
+	virtual const char* ClassName() { return "EditTool.ObjectCreate2"; }
 
 	//! This method returns Category of this class, Category is specifing where this plugin class fits best in
 	//! create panel.
-	virtual const char*    Category()        { return "Object"; };
+	virtual const char*    Category()        { return "Object"; }
 	virtual CRuntimeClass* GetRuntimeClass() { return RUNTIME_CLASS(CObjectCreateTool); }
 	//////////////////////////////////////////////////////////////////////////
 };
@@ -277,4 +277,3 @@ bool CObjectCreateTool::CanStartCreation()
 {
 	return GetIEditorImpl()->GetObjectManager()->GetLayersManager() && GetIEditorImpl()->GetObjectManager()->CanCreateObject();
 }
-

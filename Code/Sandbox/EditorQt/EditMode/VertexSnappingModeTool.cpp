@@ -36,8 +36,8 @@ int VertexSnappingCVars::ed_vert_snapping_show_spatial_partition = 0;
 class CVertexSnappingModeToolClassDesc : public IClassDesc
 {
 	ESystemClassID SystemClassID()   { return ESYSTEM_CLASS_EDITTOOL; }
-	const char*    ClassName()       { return "EditTool.VertexSnappingMode"; };
-	const char*    Category()        { return "Select"; };
+	const char*    ClassName()       { return "EditTool.VertexSnappingMode"; }
+	const char*    Category()        { return "Select"; }
 	CRuntimeClass* GetRuntimeClass() { return RUNTIME_CLASS(CVertexSnappingModeTool); }
 };
 
@@ -359,4 +359,3 @@ CKDTree* CVertexSnappingModeTool::GetKDTree(CBaseObject* pObject)
 
 	return pTree;
 }
-

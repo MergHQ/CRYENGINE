@@ -20,7 +20,7 @@ public:
 	~CUndoSelectLibraryUndo(){}
 
 protected:
-	const char* GetDescription() { return "Select database library."; };
+	const char* GetDescription() { return "Select database library."; }
 	void        Undo(bool bUndo)
 	{
 		SelectLibrary(bUndo);
@@ -944,4 +944,3 @@ void CDatabaseFrameWnd::OnEditorNotifyEvent(EEditorNotifyEvent event)
 		break;
 	}
 }
-

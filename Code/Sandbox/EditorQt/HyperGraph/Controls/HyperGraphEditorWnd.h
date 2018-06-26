@@ -37,7 +37,7 @@ public:
 	BOOL Create(DWORD dwStyle, const RECT& rect, CWnd* pParentWnd);
 
 	//! Get the viewport that displays the graph nodes and edges.
-	CHyperGraphView*      GetGraphView() { return &m_view; };
+	CHyperGraphView*      GetGraphView() { return &m_view; }
 	//! Get the panel with the tree list of the available graphs.
 	CHyperGraphsTreeCtrl* GetGraphsTreeCtrl() { return &m_graphsTreeCtrl; }
 	//! Get the panel with the input and options for searching.
@@ -266,4 +266,3 @@ private:
 
 	bool                              m_bIgnoreObjectEvents; //! All level contents and graphs are being created or deleted. Ignore certain types of events.
 };
-

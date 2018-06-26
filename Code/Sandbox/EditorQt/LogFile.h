@@ -26,8 +26,8 @@ class SANDBOX_API CLogFile : public ILogCallback
 {
 public:
 	static const char* GetLogFileName();
-	static void        AttachListBox(HWND hWndListBox) { m_hWndListBox = hWndListBox; };
-	static void        AttachEditBox(HWND hWndEditBox) { m_hWndEditBox = hWndEditBox; };
+	static void        AttachListBox(HWND hWndListBox) { m_hWndListBox = hWndListBox; }
+	static void        AttachEditBox(HWND hWndEditBox) { m_hWndEditBox = hWndEditBox; }
 
 	//! Write to log spanpshot of current process memory usage.
 	static string GetMemUsage();
@@ -56,5 +56,3 @@ private:
 	static HWND m_hWndEditBox;
 	static bool m_bShowMemUsage;
 };
-
-

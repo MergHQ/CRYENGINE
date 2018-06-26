@@ -27,7 +27,7 @@ public:
 	CDecalObjectTool();
 
 	virtual string GetDisplayName() const override { return "Decal Object"; }
-	virtual void   Display(SDisplayContext& dc)    {};
+	virtual void   Display(SDisplayContext& dc)    {}
 	virtual bool   MouseCallback(CViewport* view, EMouseEvent event, CPoint& point, int flags);
 	virtual bool   OnKeyDown(CViewport* view, uint32 nChar, uint32 nRepCnt, uint32 nFlags);
 	virtual bool   OnKeyUp(CViewport* view, uint32 nChar, uint32 nRepCnt, uint32 nFlags);
@@ -35,7 +35,7 @@ public:
 
 protected:
 	virtual ~CDecalObjectTool();
-	void DeleteThis() { delete this; };
+	void DeleteThis() { delete this; }
 
 private:
 	CDecalObject* m_pDecalObj;
@@ -641,4 +641,3 @@ bool CDecalObject::HitTest(HitContext& hc)
 
 	return false;
 }
-

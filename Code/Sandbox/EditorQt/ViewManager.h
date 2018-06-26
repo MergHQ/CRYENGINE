@@ -29,14 +29,14 @@ public:
 	//////////////////////////////////////////////////////////////////////////
 	// IClassDesc
 	//////////////////////////////////////////////////////////////////////////
-	virtual ESystemClassID SystemClassID()   { return ESYSTEM_CLASS_VIEWPANE; };
-	virtual const char*    ClassName()       { return m_className.c_str(); };
-	virtual const char*    Category()        { return "Viewport"; };
-	virtual const char*    GetMenuPath()     { return "Viewport"; };
+	virtual ESystemClassID SystemClassID()   { return ESYSTEM_CLASS_VIEWPANE; }
+	virtual const char*    ClassName()       { return m_className.c_str(); }
+	virtual const char*    Category()        { return "Viewport"; }
+	virtual const char*    GetMenuPath()     { return "Viewport"; }
 	//////////////////////////////////////////////////////////////////////////
-	virtual CRuntimeClass* GetRuntimeClass() { return 0; };
-	virtual const char*    GetPaneTitle()    { return name.c_str(); };
-	virtual bool           SinglePane()      { return false; };
+	virtual CRuntimeClass* GetRuntimeClass() { return 0; }
+	virtual const char*    GetPaneTitle()    { return name.c_str(); }
+	virtual bool           SinglePane()      { return false; }
 	virtual IPane*         CreatePane() const override;
 	//////////////////////////////////////////////////////////////////////////
 
@@ -162,4 +162,3 @@ private:
 
 	std::vector<ICameraDelegate*>    m_cameraDelegates;
 };
-

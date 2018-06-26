@@ -49,9 +49,9 @@ public:
 		void flip() {* p ^= mask; }
 	};
 
-	CBitArray() { m_base = NULL; m_bits = NULL; m_size = 0; m_numBits = 0; };
-	CBitArray(int numBits)  { resize(numBits); };
-	~CBitArray()  { if (m_base) free(m_base); };
+	CBitArray() { m_base = NULL; m_bits = NULL; m_size = 0; m_numBits = 0; }
+	CBitArray(int numBits)  { resize(numBits); }
+	~CBitArray()  { if (m_base) free(m_base); }
 
 	void resize(int c)
 	{
@@ -60,8 +60,8 @@ public:
 		if (newSize > m_size)
 			Alloc(newSize);
 	}
-	int  size() const  { return m_numBits; };
-	bool empty() const { return m_numBits == 0; };
+	int  size() const  { return m_numBits; }
+	bool empty() const { return m_numBits == 0; }
 
 	//////////////////////////////////////////////////////////////////////////
 	void set()
@@ -137,7 +137,7 @@ public:
 		return *this;
 	}
 
-	bool checkByte(int pos) const { return reinterpret_cast<char*>(m_bits)[pos] != 0; };
+	bool checkByte(int pos) const { return reinterpret_cast<char*>(m_bits)[pos] != 0; }
 
 	//////////////////////////////////////////////////////////////////////////
 	// Compresses this bit array into the specified one.
@@ -264,4 +264,3 @@ inline int concatBitarray(CBitArray& b1, CBitArray& b2, CBitArray& test, CBitArr
 	}
 	return any;
 }
-

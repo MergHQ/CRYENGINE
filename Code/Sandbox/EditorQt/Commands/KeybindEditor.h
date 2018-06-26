@@ -30,7 +30,7 @@ public:
 	//////////////////////////////////////////////////////////
 	// CDockableWidget implementation
 	virtual IViewPaneClass::EDockingDirection GetDockingDirection() const override { return IViewPaneClass::DOCK_FLOAT; }
-	virtual const char*                       GetPaneTitle() const override        { return "Keyboard Shortcuts"; };
+	virtual const char*                       GetPaneTitle() const override        { return "Keyboard Shortcuts"; }
 	virtual QRect                             GetPaneRect() override               { return QRect(0, 0, 800, 500); }
 	//////////////////////////////////////////////////////////
 

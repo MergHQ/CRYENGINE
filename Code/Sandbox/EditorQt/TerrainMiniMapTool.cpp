@@ -65,7 +65,7 @@ public:
 		m_Undo = GetIEditorImpl()->GetDocument()->GetCurrentMission()->GetMinimap();
 	}
 protected:
-	virtual const char* GetDescription() { return "MiniMap Params"; };
+	virtual const char* GetDescription() { return "MiniMap Params"; }
 
 	virtual void        Undo(bool bUndo)
 	{

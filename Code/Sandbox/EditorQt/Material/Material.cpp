@@ -172,9 +172,9 @@ void CMaterial::RenameSubMaterial(CMaterial* pSubMaterial, const string& newName
 		}
 
 	protected:
-		virtual void Release() { delete this; };
+		virtual void Release() { delete this; }
 
-		virtual const char* GetDescription() { return "Rename Sub-Material"; };
+		virtual const char* GetDescription() { return "Rename Sub-Material"; }
 
 		virtual void        Undo(bool bUndo)
 		{
@@ -1904,9 +1904,9 @@ public:
 	}
 
 protected:
-	virtual void Release() { delete this; };
+	virtual void Release() { delete this; }
 
-	virtual const char* GetDescription() { return m_undoDescription; };
+	virtual const char* GetDescription() { return m_undoDescription; }
 
 	virtual void        Undo(bool bUndo)
 	{
@@ -2101,4 +2101,3 @@ void CMaterial::SetHighlightFlags(int highlightFlags)
 
 	UpdateHighlighting();
 }
-

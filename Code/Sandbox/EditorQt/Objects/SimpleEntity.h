@@ -29,11 +29,10 @@ private:
 class CSimpleEntityClassDesc : public CObjectClassDesc
 {
 public:
-	ObjectType          GetObjectType()                     { return OBJTYPE_ENTITY; };
-	const char*         ClassName()                         { return "SimpleEntity"; };
-	const char*         Category()                          { return ""; };
-	CRuntimeClass*      GetRuntimeClass()                   { return RUNTIME_CLASS(CSimpleEntity); };
-	const char*         GetFileSpec()                       { return "*.cgf;*.chr;*.cga;*.cdf"; };
+	ObjectType          GetObjectType()                     { return OBJTYPE_ENTITY; }
+	const char*         ClassName()                         { return "SimpleEntity"; }
+	const char*         Category()                          { return ""; }
+	CRuntimeClass*      GetRuntimeClass()                   { return RUNTIME_CLASS(CSimpleEntity); }
+	const char*         GetFileSpec()                       { return "*.cgf;*.chr;*.cga;*.cdf"; }
 	virtual const char* GetDataFilesFilterString() override { return GetFileSpec(); }
 };
-

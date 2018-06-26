@@ -6,7 +6,7 @@
 #include <CrySystem/XML/IXml.h>
 #include "EntityObject.h"
 #include "SafeObjectsArray.h"
-#include "Gizmos\AxisHelper.h"
+#include "Gizmos/AxisHelper.h"
 
 #include <CryGame/IGameFramework.h>
 #include <CryGame/IGameVolumes.h>
@@ -83,7 +83,7 @@ public:
 	void ResetShape();
 
 	void SelectPoint(int index);
-	int  GetSelectedPoint() const { return m_selectedPoint; };
+	int  GetSelectedPoint() const { return m_selectedPoint; }
 
 	//! Get shape height.
 	float GetHeight() const { return mv_height; }
@@ -257,10 +257,10 @@ protected:
 class CShapeObjectClassDesc : public CObjectClassDesc
 {
 public:
-	ObjectType     GetObjectType()   { return OBJTYPE_SHAPE; };
-	const char*    ClassName()       { return "Shape"; };
-	const char*    Category()        { return "Area"; };
-	CRuntimeClass* GetRuntimeClass() { return RUNTIME_CLASS(CShapeObject); };
+	ObjectType     GetObjectType()   { return OBJTYPE_SHAPE; }
+	const char*    ClassName()       { return "Shape"; }
+	const char*    Category()        { return "Area"; }
+	CRuntimeClass* GetRuntimeClass() { return RUNTIME_CLASS(CShapeObject); }
 };
 
 //////////////////////////////////////////////////////////////////////////
@@ -297,7 +297,7 @@ public:
 	CAIPathObject();
 
 	virtual void       Display(CObjectRenderHelper& objRenderHelper) override;
-	virtual XmlNodeRef Export(const string& levelPath, XmlNodeRef& xmlNode) override { return 0; };
+	virtual XmlNodeRef Export(const string& levelPath, XmlNodeRef& xmlNode) override { return 0; }
 
 	virtual void       RemovePoint(int index) override;
 	virtual int        InsertPoint(int index, const Vec3& point, bool const bModifying) override;
@@ -712,4 +712,3 @@ public:
 	const char*    Category()        { return ""; }
 	CRuntimeClass* GetRuntimeClass() { return RUNTIME_CLASS(CAITerritoryObject); }
 };
-

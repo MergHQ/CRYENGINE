@@ -10,7 +10,7 @@ struct CMissionScriptMethodsDump : public IScriptTableDumpSink
 {
 	std::vector<CString> methods;
 	std::vector<CString> events;
-	void         OnElementFound(int nIdx, ScriptVarType type) { /*ignore non string indexed values*/ };
+	void         OnElementFound(int nIdx, ScriptVarType type) { /*ignore non string indexed values*/ }
 	virtual void OnElementFound(const char* sName, ScriptVarType type)
 	{
 		if (type == svtFunction)
@@ -92,4 +92,3 @@ void CMissionScript::SetScriptFile(const CString& file)
 {
 	m_sFilename = file;
 }
-
