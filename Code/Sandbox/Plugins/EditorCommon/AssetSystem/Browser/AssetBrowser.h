@@ -76,6 +76,8 @@ protected:
 	virtual void dragEnterEvent(QDragEnterEvent* pEvent) override;
 	virtual void dropEvent(QDropEvent* pEvent) override;
 	virtual void dragMoveEvent(QDragMoveEvent* pEvent) override;
+	virtual void dragLeaveEvent(QDragLeaveEvent* pEvent) override;
+
 	virtual void mouseReleaseEvent(QMouseEvent* pEvent) override;
 
 	//! Returns whether there is a folder under the mouse cursor. If there is, \p folder is assigned its path.
@@ -152,32 +154,32 @@ private:
 	//////////////////////////////////////////////////////////////////////////
 
 	//ui components
-	QAdvancedTreeView* m_detailsView;
-	QThumbnailsView* m_thumbnailView;
-	std::unique_ptr<CLineEditDelegate> m_detailsViewNewNameDelegate; // Note that delegates are not owned by view.
-	std::unique_ptr<CLineEditDelegate> m_thumbnailViewNewNameDelegate;
-	QItemSelectionModel* m_selection;
-	QSplitter* m_mainViewSplitter;
-	QFilteringPanel* m_filterPanel;
-	QSplitter* m_foldersSplitter;
-	CAssetFoldersView* m_foldersView;
+	QAdvancedTreeView*                          m_detailsView;
+	QThumbnailsView*                            m_thumbnailView;
+	std::unique_ptr<CLineEditDelegate>          m_detailsViewNewNameDelegate; // Note that delegates are not owned by view.
+	std::unique_ptr<CLineEditDelegate>          m_thumbnailViewNewNameDelegate;
+	QItemSelectionModel*                        m_selection;
+	QSplitter*                                  m_mainViewSplitter;
+	QFilteringPanel*                            m_filterPanel;
+	QSplitter*                                  m_foldersSplitter;
+	CAssetFoldersView*                          m_foldersView;
 	std::unique_ptr<QAttributeFilterProxyModel> m_pAttributeFilterProxyModel;
-	std::unique_ptr<CAssetFolderFilterModel> m_pFolderFilterModel;
-	std::unique_ptr<CAssetDropHandler> m_pAssetDropHandler;
-	QToolButton* m_backButton;
-	QToolButton* m_forwardButton;
-	CBreadcrumbsBar* m_breadcrumbs;
+	std::unique_ptr<CAssetFolderFilterModel>    m_pFolderFilterModel;
+	std::unique_ptr<CAssetDropHandler>          m_pAssetDropHandler;
+	QToolButton*                                m_backButton;
+	QToolButton*                                m_forwardButton;
+	CBreadcrumbsBar*                            m_breadcrumbs;
 	QLabel* m_multipleFoldersLabel;
-	QButtonGroup* m_viewModeButtons;
-	std::unique_ptr<CAbstractMenu> m_thumbnailSizeMenu;
+	QButtonGroup*                               m_viewModeButtons;
+	std::unique_ptr<CAbstractMenu>              m_thumbnailSizeMenu;
 
 	//state variables
-	ViewMode m_viewMode;
-	bool m_recursiveView;
-	bool m_recursiveSearch;
+	ViewMode             m_viewMode;
+	bool                 m_recursiveView;
+	bool                 m_recursiveSearch;
 	QVector<QStringList> m_navigationHistory;
-	int m_navigationIndex;             //-1 is "all assets"
-	bool m_dontPushNavHistory;         //true when folder changes are triggered by back/forward buttons
+	int                  m_navigationIndex;    //-1 is "all assets"
+	bool                 m_dontPushNavHistory; //true when folder changes are triggered by back/forward buttons
 
 #if ASSET_BROWSER_USE_PREVIEW_WIDGET
 	QContainer* m_previewWidget;

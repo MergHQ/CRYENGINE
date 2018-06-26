@@ -5,6 +5,7 @@
 
 #include "Asset.h"
 #include "AssetType.h"
+#include "AssetConverter.h"
 
 class CAssetImporter;
 class CDependencyTracker;
@@ -14,7 +15,7 @@ struct SStaticAssetSelectorEntry;
 struct IUIContext
 {
 	//! Returns pointer to the newly created asset, or nullptr if the operation is canceled by user.
-	//! \param type Reference to instance of the asset type to be created. 
+	//! \param type Reference to instance of the asset type to be created.
 	//! \param pTypeSpecificParameter Pointer to an extra parameter, can be nullptr.
 	//! \sa CAssetType::Create
 	virtual CAsset* QueryNewAsset(const CAssetType& type, const void* pTypeSpecificParameter) = 0;
@@ -33,15 +34,21 @@ public:
 	static CAssetManager* GetInstance() { return s_instance; }
 
 	//Must be called after IEditor has been initialized and plugins have been loaded
-	void Init();
+	void                                Init();
 
-	int GetAssetsCount() const { return m_assets.size(); }
+	int                                 GetAssetsCount() const { return m_assets.size(); }
 
-	CAssetType* FindAssetType(const char* name) const;
+	CAssetType*                         FindAssetType(const char* name) const;
 
-	const std::vector<CAssetType*>& GetAssetTypes() const;
+	const std::vector<CAssetType*>&     GetAssetTypes() const;
 	const std::vector<CAssetImporter*>& GetAssetImporters() const;
-	CAssetImporter* GetAssetImporter(const string& ext, const string& assetTypeName) const;
+	CAssetImporter*                     GetAssetImporter(const string& ext, const string& assetTypeName) const;
+
+	//! Find the correct Asset Converter for this kind of mime data
+	CAssetConverter* GetAssetConverter(const QMimeData& data) const;
+
+	//! Find if an Asset Converter  exists for this  kind of mime data
+	bool HasAssetConverter(const QMimeData& data) const;
 
 	//! Finds an asset with matching metadata file path
 	//! \param szFilePath Relative to the assets root directory.
@@ -55,15 +62,15 @@ public:
 	//! \param guid.
 	CAsset* FindAssetById(const CryGUID& guid);
 
-	void InsertAssets(const std::vector<CAsset*>& assets);
+	void    InsertAssets(const std::vector<CAsset*>& assets);
 
 	//! MergeAssets updates an asset if it already exists, and inserts a new one, otherwise.
 	void MergeAssets(std::vector<CAsset*> assets);
 
 	//! Removes specified assets from the asset browser. Deletes asset files if requested.
 	//! \param assets A collection of assets to be deleted. The assets pointers are invalid after this operation.
-	//! \param bDeleteAssetsFiles a boolean value.  
-	//! \sa CAsset::IsReadOnly 
+	//! \param bDeleteAssetsFiles a boolean value.
+	//! \sa CAsset::IsReadOnly
 	//! \sa CAssetType::DeleteAssetFiles
 	//! \sa CAssetManager::signalBeforeAssetsRemoved
 	//! \sa CAssetManager::signalAfterAssetsRemoved
@@ -77,13 +84,13 @@ public:
 	//! Renames an existing asset.
 	//! \param pAsset The asset to be renamed.
 	//! \param szNewName The new name for the asset. The asset must not already exist.
-	bool RenameAsset(CAsset* pAsset, const char* szNewName);
+	bool                RenameAsset(CAsset* pAsset, const char* szNewName);
 
-	CAssetModel* GetAssetModel() { return m_assetModel; }
+	CAssetModel*        GetAssetModel()        { return m_assetModel; }
 	CAssetFoldersModel* GetAssetFoldersModel() { return m_assetFoldersModel; }
-	bool IsScanning() const { return m_isScanning; }
+	bool                IsScanning() const     { return m_isScanning; }
 
-	//! Applies a function to each asset. 
+	//! Applies a function to each asset.
 	//! \param function Function object to be applied to every asset. The signature of the function should be equivalent void f(CAsset*).
 	template<typename F>
 	void ForeachAsset(F&& function)
@@ -100,13 +107,13 @@ public:
 
 	//! Returns a list of assets that use the given asset.
 	//! \param asset The asset to enumerate reverse dependencies.
-	//! \return Returns a collection of pairs, where	
-	//! the first element points to the dependant asset, and 
+	//! \return Returns a collection of pairs, where
+	//! the first element points to the dependant asset, and
 	//! the second element contains the instance count for the dependency or 0 if such information is not available.
 	//! \sa CAsset::GetDependencies to get a list of forward dependencies.
 	std::vector<std::pair<CAsset*, int32>> GetReverseDependencies(const CAsset& asset) const;
 
-	//! Returns a list of assets that use the given assets. 
+	//! Returns a list of assets that use the given assets.
 	//! The assets in the given collection are not considered as dependent assets.
 	//! \param assets The collection of assets to enumerate reverse dependencies.
 	//! \return Returns a collection of asset pointers.
@@ -136,7 +143,7 @@ public:
 	//! Returns a list of known asset root aliases.
 	std::vector<const char*> GetAliases() const;
 
-	//! Generates/repairs cryasset files for all known asset types in game content directory of active project. 
+	//! Generates/repairs cryasset files for all known asset types in game content directory of active project.
 	//! This process intended to be non destructive and should never break or remove any valid asset metadata.
 	//! It runs asynchronously and then calls finalize on the main thread.
 	void GenerateCryassetsAsync(const std::function<void()>& finalize);
@@ -154,7 +161,7 @@ public:
 	//! Returns a collection of assets that belong to the directory (including child directories).
 	std::vector<CAssetPtr> GetAssetsFromDirectory(const string& directory) const;
 
-	void AppendContextMenuActions(CAbstractMenu& menu, const std::vector<CAsset*>& assets, const std::shared_ptr<IUIContext>& context) const;
+	void                   AppendContextMenuActions(CAbstractMenu& menu, const std::vector<CAsset*>& assets, const std::shared_ptr<IUIContext>& context) const;
 
 	//! Braces the invalidation of all assets.
 	CCrySignal<void()> signalBeforeAssetsUpdated;
@@ -166,50 +173,52 @@ public:
 
 	//! Braces the removing of existing assets.
 	CCrySignal<void(const std::vector<CAsset*>&)> signalBeforeAssetsRemoved;
-	CCrySignal<void()> signalAfterAssetsRemoved;
+	CCrySignal<void()>                            signalAfterAssetsRemoved;
 
 	//! Called when any asset changes. Equivalent to CAsset::signalChanged
 	//! \sa AssetChangeFlags
 	CCrySignal<void(CAsset&, int /*changeFlags*/)> signalAssetChanged;
 
-	CCrySignal<void()> signalScanningCompleted;
+	CCrySignal<void()>                             signalScanningCompleted;
 
 	CCrySignal<void(CAbstractMenu&, const std::vector<CAsset*>&, const std::shared_ptr<IUIContext>&)> signalContextMenuRequested;
 
 private:
 	void UpdateAssetTypes();
 	void UpdateAssetImporters();
+	void UpdateAssetConverters();
 	void RegisterAssetResourceSelectors();
 	//Init and update asset registry
 	void AsyncScanForAssets();
 	void RemoveAssets(const std::vector<CAsset*>& assets, bool bDeleteAssetsFiles);
 
-	// Returns true if the specified asset shares the source file with any other assets. 
+	// Returns true if the specified asset shares the source file with any other assets.
 	// \sa CAsset::GetSourceFile
 	bool HasSharedSourceFile(const CAsset& asset) const;
 
 private:
-	std::vector<CAssetType*> m_assetTypes;
+	std::vector<CAssetType*>               m_assetTypes;
 	std::vector<SStaticAssetSelectorEntry> m_resourceSelectors;
-	std::vector<CAssetImporter*> m_assetImporters;
+	std::vector<CAssetImporter*>           m_assetImporters;
+	std::vector<CAssetConverter*>          m_assetConverters;
 
-	std::vector<CAssetPtr> m_assets;
+	std::vector<CAssetPtr>                 m_assets;
 
 	std::unordered_map<string, CAsset*, stl::hash_stricmp<string>, stl::hash_stricmp<string>> m_fileToAssetMap;
-	
+
 	// There might be assets inserted while the initial scan for assets is still running (e.g., by the file monitor).
 	// Every asset inserted before the initial scanning is completed is added to a batch that will be inserted once scanning is completed.
 	std::vector<CAsset*> m_deferredInsertBatch;
-	
-	bool m_isScanning;
+
+	bool                 m_isScanning;
 
 	// The asset collection can be sorted by guids on demand of FindAssetById.
 	bool m_orderedByGUID;
 
 	//Managing of asset models for optimization, all views should refer to those
 	//Keep model logic in the models themselves, i.e. models observe the manager. Do not call models methods within AssetManager
-	CAssetModel* m_assetModel;
-	CAssetFoldersModel* m_assetFoldersModel;
+	CAssetModel*                        m_assetModel;
+	CAssetFoldersModel*                 m_assetFoldersModel;
 
 	std::unique_ptr<CDependencyTracker> m_pDependencyTracker;
 
@@ -219,5 +228,3 @@ private:
 	//For convenience and speed, do not expose, only accessible to internals of the asset system through friend status
 	static CAssetManager* s_instance;
 };
-
-
