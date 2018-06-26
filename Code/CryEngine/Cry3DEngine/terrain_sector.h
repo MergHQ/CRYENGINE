@@ -58,7 +58,7 @@ struct SSurfaceTypeLocal
 	const SSurfaceTypeLocal& operator=(int nSurfType)
 	{
 		ZeroStruct(*this);
-		assert(nSurfType >= 0 && nSurfType <= kMaxSurfaceTypeId);
+		CRY_MATH_ASSERT(nSurfType >= 0 && nSurfType <= kMaxSurfaceTypeId);
 		we[0] = kMaxVal;
 		ty[0] = nSurfType;
 		return *this;
@@ -80,15 +80,15 @@ struct SSurfaceTypeLocal
 
 		for (int i = 0; i < kMaxSurfaceTypesNum; i++)
 		{
-			assert(si.we[i] <= kMaxVal);
-			assert(si.ty[i] <= kMaxVal);
+			CRY_MATH_ASSERT(si.we[i] <= kMaxVal);
+			CRY_MATH_ASSERT(si.ty[i] <= kMaxVal);
 		}
 
 		p[0] = (si.ty[0] & kMaxVal) | ((si.ty[1] & kMaxVal) << 4);
 		p[1] = (si.ty[2] & kMaxVal) | ((si.we[1] & kMaxVal) << 4);
 		p[2] = (si.we[2] & kMaxVal) | (p[2] & (kMaxVal << 4));
 
-		assert((si.we[0] + si.we[1] + si.we[2]) == kMaxVal);
+		CRY_MATH_ASSERT((si.we[0] + si.we[1] + si.we[2]) == kMaxVal);
 	}
 
 	static void DecodeFromUint32(const uint32& rTypes, SSurfaceTypeLocal& si)
@@ -102,7 +102,7 @@ struct SSurfaceTypeLocal
 		si.we[2] = (((int)p[2])) & kMaxVal;
 		si.we[0] = CLAMP(kMaxVal - si.we[1] - si.we[2], 0, kMaxVal);
 
-		assert((si.we[0] + si.we[1] + si.we[2]) == kMaxVal);
+		CRY_MATH_ASSERT((si.we[0] + si.we[1] + si.we[2]) == kMaxVal);
 	}
 
 	uint8 ty[kMaxSurfaceTypesNum] = { 0 };
@@ -110,27 +110,30 @@ struct SSurfaceTypeLocal
 };
 
 // heightmap item containing packed surface types and elevation
-struct SHeightMapItem
+union SHeightMapItem
 {
+	static const uint SurfaceBits = 20;
+	static const uint HeightBits =  12;
+
+	uint32 raw;
+	struct
+	{
+		uint32 surface : SurfaceBits;
+		uint32 height  : HeightBits;
+	};
+
 	SHeightMapItem()
+		: raw(0) {}
+	SHeightMapItem(uint32 height, uint32 surface)
+		: height(height), surface(surface) {}
+
+	bool operator==(const SHeightMapItem& other)
 	{
-		SetRaw(0);
+		return raw == other.raw;
 	}
-
-	uint32 surface : 20;
-	uint32 height  : 12;
-
-	uint32 GetRaw()           { return *(uint32*) this; }
-	void   SetRaw(uint32 raw) { *(uint32*) this = raw; }
-
-	bool   operator==(const SHeightMapItem& other)
-	{
-		return memcmp(this, &other, sizeof(SHeightMapItem)) == 0;
-	}
-
 	bool operator!=(const SHeightMapItem& other)
 	{
-		return memcmp(this, &other, sizeof(SHeightMapItem)) != 0;
+		return raw != other.raw;
 	}
 
 	AUTO_STRUCT_INFO;
@@ -163,17 +166,17 @@ struct SRangeInfo
 
 	inline SHeightMapItem GetRawDataByIndex(uint32 i) const
 	{
-		//		assert(i < nSize*nSize);
-		assert(pHMData);
+		CRY_MATH_ASSERT(i < nSize*nSize);
+		CRY_MATH_ASSERT(pHMData);
 
 		return pHMData[i];
 	}
 
 	inline SHeightMapItem GetRawData(uint32 x, uint32 y) const
 	{
-		assert(x < nSize);
-		assert(y < nSize);
-		assert(pHMData);
+		CRY_MATH_ASSERT(x < nSize);
+		CRY_MATH_ASSERT(y < nSize);
+		CRY_MATH_ASSERT(pHMData);
 
 		return GetRawDataByIndex(x * nSize + y);
 	}
@@ -182,28 +185,34 @@ struct SRangeInfo
 	{
 		return fOffset + float(data.height) * fRange;
 	}
+#ifdef CRY_PLATFORM_SSE2
+	inline f32v4 RawDataToHeight(u32v4 data) const
+	{
+		return convert<f32v4>(data >> Scalar(SHeightMapItem::SurfaceBits)) * to_v4(fRange) + to_v4(fOffset);
+	}
+#endif
 
 	inline float GetHeightByIndex(uint32 i) const
 	{
-		//		assert(i < nSize*nSize);
-		assert(pHMData);
+		CRY_MATH_ASSERT(i < nSize*nSize);
+		CRY_MATH_ASSERT(pHMData);
 
 		return RawDataToHeight(pHMData[i]);
 	}
 
 	inline float GetHeight(uint32 x, uint32 y) const
 	{
-		assert(x < nSize);
-		assert(y < nSize);
-		assert(pHMData);
+		CRY_MATH_ASSERT(x < nSize);
+		CRY_MATH_ASSERT(y < nSize);
+		CRY_MATH_ASSERT(pHMData);
 
 		return GetHeightByIndex(x * nSize + y);
 	}
 
 	inline uint32 GetSurfaceTypeByIndex(uint32 i) const
 	{
-		//		assert(i < nSize*nSize);
-		assert(pHMData);
+		CRY_MATH_ASSERT(i < nSize*nSize);
+		CRY_MATH_ASSERT(pHMData);
 
 		SSurfaceTypeLocal si;
 		SSurfaceTypeLocal::DecodeFromUint32(pHMData[i].surface, si);
@@ -213,18 +222,18 @@ struct SRangeInfo
 
 	inline uint32 GetSurfaceType(uint32 x, uint32 y) const
 	{
-		assert(x < nSize);
-		assert(y < nSize);
-		assert(pHMData);
+		CRY_MATH_ASSERT(x < nSize);
+		CRY_MATH_ASSERT(y < nSize);
+		CRY_MATH_ASSERT(pHMData);
 
 		return GetSurfaceTypeByIndex(x * nSize + y);
 	}
 
 	inline void SetDataLocal(int nX, int nY, SHeightMapItem usValue)
 	{
-		assert(nX >= 0 && nX < (int)nSize);
-		assert(nY >= 0 && nY < (int)nSize);
-		assert(pHMData);
+		CRY_MATH_ASSERT(nX >= 0 && nX < (int)nSize);
+		CRY_MATH_ASSERT(nY >= 0 && nY < (int)nSize);
+		CRY_MATH_ASSERT(pHMData);
 		pHMData[nX * nSize + nY] = usValue;
 	}
 

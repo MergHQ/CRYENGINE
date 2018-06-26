@@ -42,6 +42,7 @@ template<typename F> struct Vec4H
 	explicit ILINE Vec4H(F s)                       { v = convert<V>(s); CRY_MATH_ASSERT(IsValid()); }
 	ILINE Vec4H(F x_, F y_, F z_, F w_)             { v = convert<V>(x_, y_, z_, w_); CRY_MATH_ASSERT(IsValid()); }
 	ILINE Vec4H& operator()(F x_, F y_, F z_, F w_) { v = convert<V>(x_, y_, z_, w_); CRY_MATH_ASSERT(IsValid()); return *this; }
+	template<typename F2> ILINE Vec4H(Vec4H<F2> v_) { v = convert<V>(v_.v); }
 
 	// Conversions
 	ILINE Vec4H(V v_)        { v = v_; }

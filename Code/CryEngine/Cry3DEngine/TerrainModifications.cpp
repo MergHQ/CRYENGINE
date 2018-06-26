@@ -109,7 +109,7 @@ void CTerrainModifications::MakeCrater(const STerrainMod& ref, const uint32 dwCh
 					fHeight = fOceanLevel;
 			}
 
-			m_pModifiedTerrain->m_bHeightMapModified = 1;
+			m_pModifiedTerrain->SetHeightMapModified();
 
 			m_pModifiedTerrain->SetZ(x, y, fHeight);
 		}

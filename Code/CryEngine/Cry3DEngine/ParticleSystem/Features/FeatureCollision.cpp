@@ -226,7 +226,7 @@ bool RayWorldIntersection(SContactPoint& contact, const Vec3& startIn, const Vec
 	if ((objectFilter & ent_terrain) && !(C3DEngine::GetCVars()->e_ParticlesDebug & AlphaBit('t')))
 	{
 		objectFilter &= ~ent_terrain;
-		CHeightMap::SRayTrace rt;
+		CTerrain::SRayTrace rt;
 		if (Cry3DEngineBase::GetTerrain()->RayTrace(start, start + ray, &rt, false))
 		{
 			contact.m_point = rt.vHit;
@@ -321,6 +321,55 @@ ILINE bool Bounces(float acc, float vel)
 	return timeBounce && distBounce;
 }
 
+void CFeatureCollision::Collide(SContactPoint &contact, QuadPath &path, float accNorm, float velNorm) const
+{
+	CRY_PFX2_PROFILE_DETAIL
+
+	if (bAdjustPos)
+		// Adjust contact point to actual path point
+		contact.m_point = path.Pos(contact.m_time);
+
+	path.timeD -= contact.m_time;
+	path.pos0 = contact.m_point;
+	path.vel0 = path.Vel(contact.m_time);
+
+	// Collision response
+	if (velNorm > 0.0f)
+	{
+		// Left sliding surface
+		contact.m_state.collided = contact.m_state.sliding = 0;
+		return;
+	}
+
+	contact.m_speedIn = -velNorm;
+	contact.m_totalCollisions += contact.m_state.collided;
+
+	// Sliding occurs when the bounce distance would be less than the collide buffer.
+	// d = - v^2 / 2a <= dmax
+	// v^2 <= -dmax*2a
+	// Or when bounce time is less than limit
+	// t = -2v/a
+	// v <= -tmax*a/2
+	float velBounce = -velNorm * m_elasticity;
+	if (Bounces(accNorm, velBounce))
+	{
+		// Bounce
+		contact.m_state.sliding = 0;
+	}
+	else
+	{
+		// Slide
+		contact.m_state.sliding = 1;
+		velBounce = 0.0f;
+		path.pos0 += contact.m_normal * kMinBounceDist;
+	}
+
+	Vec3 velocityDelta = contact.m_normal * (velBounce - velNorm);
+	path.vel0 += velocityDelta;
+	path.vel1 += velocityDelta;
+	path.pos1 = path.Pos(path.timeD);
+}
+
 bool CFeatureCollision::DoCollision(SContactPoint& contact, QuadPath& path, int objectFilter, bool doSliding) const
 {
 	CRY_PROFILE_FUNCTION(PROFILE_PARTICLE);
@@ -393,50 +442,7 @@ bool CFeatureCollision::DoCollision(SContactPoint& contact, QuadPath& path, int 
 		return false;
 	}
 
-	if (bAdjustPos)
-		// Adjust contact point to actual path point
-		contact.m_point = path.Pos(contact.m_time);
-
-	path.timeD -= contact.m_time;
-	path.pos0 = contact.m_point;
-	path.vel0 = path.Vel(contact.m_time);
-
-	// Collision response
-	if (velNorm > 0.0f)
-	{
-		// Left sliding surface
-		contact.m_state.collided = contact.m_state.sliding = 0;
-		return true;
-	}
-
-	contact.m_speedIn = -velNorm;
-	contact.m_totalCollisions += contact.m_state.collided;
-
-	// Sliding occurs when the bounce distance would be less than the collide buffer.
-	// d = - v^2 / 2a <= dmax
-	// v^2 <= -dmax*2a
-	// Or when bounce time is less than limit
-	// t = -2v/a
-	// v <= -tmax*a/2
-	float velBounce = -velNorm * m_elasticity;
-	if (Bounces(accNorm, velBounce))
-	{
-		// Bounce
-		contact.m_state.sliding = 0;
-	}
-	else
-	{
-		// Slide
-		contact.m_state.sliding = 1;
-		velBounce = 0.0f;
-		path.pos0 += contact.m_normal * kMinBounceDist;
-	}
-
-	Vec3 velocityDelta = contact.m_normal * (velBounce - velNorm);
-	path.vel0 += velocityDelta;
-	path.vel1 += velocityDelta;
-	path.pos1 = path.Pos(path.timeD);
-
+	Collide(contact, path, accNorm, velNorm);
 	return true;
 }
 

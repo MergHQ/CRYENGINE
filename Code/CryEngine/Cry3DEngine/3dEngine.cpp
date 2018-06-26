@@ -3777,7 +3777,7 @@ IMaterialManager* C3DEngine::GetMaterialManager()
 
 bool C3DEngine::IsTerrainHightMapModifiedByGame()
 {
-	return m_pTerrain ? (m_pTerrain->m_bHeightMapModified != 0) : 0;
+	return m_pTerrain && m_pTerrain->IsHeightMapModified();
 }
 
 void C3DEngine::CheckPhysicalized(const Vec3& vBoxMin, const Vec3& vBoxMax)

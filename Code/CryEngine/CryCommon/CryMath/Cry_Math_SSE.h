@@ -93,10 +93,6 @@ template<> struct SIMD_traits<u32v4>
 	using scalar_t = uint32;
 };
 
-// Template conversions
-template<typename S> ILINE vector4_t<S> to_vector4(S s) { return convert<vector4_t<S>>(s); }
-template<typename V> ILINE scalar_t<V>  to_scalar(V v)  { return convert<scalar_t<V>>(v); }
-
 ///////////////////////////////////////////////////////////////////////////
 
 template<class T, class V> ILINE void check_range(V v, T lo, T hi);
