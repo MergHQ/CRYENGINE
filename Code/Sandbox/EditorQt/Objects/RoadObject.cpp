@@ -859,11 +859,10 @@ void CRoadObject::SetPhysics(bool isPhysics)
 class CRoadObjectClassDesc : public CObjectClassDesc
 {
 public:
-	ObjectType     GetObjectType()   { return OBJTYPE_ROAD; };
-	const char*    ClassName()       { return "Road"; };
-	const char*    Category()        { return "Misc"; };
-	CRuntimeClass* GetRuntimeClass() { return RUNTIME_CLASS(CRoadObject); };
+	ObjectType     GetObjectType()   { return OBJTYPE_ROAD; }
+	const char*    ClassName()       { return "Road"; }
+	const char*    Category()        { return "Misc"; }
+	CRuntimeClass* GetRuntimeClass() { return RUNTIME_CLASS(CRoadObject); }
 };
 
 REGISTER_CLASS_DESC(CRoadObjectClassDesc);
-

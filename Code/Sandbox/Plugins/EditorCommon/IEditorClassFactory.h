@@ -17,6 +17,7 @@ enum ESystemClassID
 	ESYSTEM_CLASS_SCM_PROVIDER    = 0x0022,
 	ESYSTEM_CLASS_ASSET_TYPE      = 0x0023,
 	ESYSTEM_CLASS_ASSET_IMPORTER  = 0x0024,
+	ESYSTEM_CLASS_ASSET_COVERTER  = 0x0025,
 	ESYSTEM_CLASS_UITOOLS         = 0x0050,         //Still used by UI Emulator
 	ESYSTEM_CLASS_USER            = 0x1000
 };
@@ -72,14 +73,14 @@ typedef CAutoRegister<IClassDesc> CAutoRegisterClassHelper;
 
 // Use this define to automatically register a new class description.
 #define REGISTER_CLASS_DESC(ClassDesc)                                             \
-  namespace Private_Plugin                                                         \
-  {                                                                                \
-  ClassDesc g_classDesc ## ClassDesc;                                              \
-  CAutoRegisterClassHelper g_AutoRegHelper ## ClassDesc(                           \
-    [](){                                                                          \
-      GetIEditor()->GetClassFactory()->RegisterClass(&g_classDesc ## ClassDesc);   \
-    },                                                                             \
-    [](){                                                                          \
-      GetIEditor()->GetClassFactory()->UnregisterClass(&g_classDesc ## ClassDesc); \
-    });                                                                            \
-  }
+	namespace Private_Plugin                                                         \
+	{                                                                                \
+	ClassDesc g_classDesc ## ClassDesc;                                              \
+	CAutoRegisterClassHelper g_AutoRegHelper ## ClassDesc(                           \
+		[](){                                                                          \
+			GetIEditor()->GetClassFactory()->RegisterClass(&g_classDesc ## ClassDesc);   \
+		},                                                                             \
+		[](){                                                                          \
+			GetIEditor()->GetClassFactory()->UnregisterClass(&g_classDesc ## ClassDesc); \
+		});                                                                            \
+	}

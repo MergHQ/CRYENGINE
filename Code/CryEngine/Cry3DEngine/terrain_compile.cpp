@@ -501,7 +501,7 @@ bool CTerrain::Load_T(T*& f, int& nDataSize, STerrainChunkHeader* pTerrainChunkH
 	m_fInvUnitSize = 1.f / m_fUnitSize;
 	m_nTerrainSize = int(pTerrainChunkHeader->TerrainInfo.heightMapSize_InUnits * pTerrainChunkHeader->TerrainInfo.unitSize_InMeters);
 
-	m_nTerrainSizeDiv = int((m_nTerrainSize * m_fInvUnitSize) - 1);
+	m_nTerrainUnits = pTerrainChunkHeader->TerrainInfo.heightMapSize_InUnits;
 	m_nSectorSize = pTerrainChunkHeader->TerrainInfo.sectorSize_InMeters;
 	m_nSectorsTableSize = pTerrainChunkHeader->TerrainInfo.sectorsTableSize_InSectors;
 	m_fHeightmapZRatio = pTerrainChunkHeader->TerrainInfo.heightmapZRatio;

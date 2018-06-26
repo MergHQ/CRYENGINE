@@ -51,7 +51,7 @@ public:
 	//////////////////////////////////////////////////////////
 	// CDockableWidget implementation
 	virtual IViewPaneClass::EDockingDirection GetDockingDirection() const override { return IViewPaneClass::DOCK_FLOAT; }
-	virtual const char*                       GetPaneTitle() const override        { return "Console Commands"; };
+	virtual const char*                       GetPaneTitle() const override        { return "Console Commands"; }
 	virtual QRect                             GetPaneRect() override               { return QRect(0, 0, 800, 500); }
 	//////////////////////////////////////////////////////////
 
@@ -59,4 +59,3 @@ private:
 	std::unique_ptr<CommandModel> m_pModel;
 	QAdvancedTreeView*            m_pTreeView;
 };
-

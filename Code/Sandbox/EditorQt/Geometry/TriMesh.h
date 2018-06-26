@@ -180,7 +180,7 @@ public:
 
 	void ReallocStream(int stream, int nNewCount);
 	void GetStreamInfo(int stream, void*& pStream, int& nElementSize) const;
-	int  GetStreamSize(int stream) const { return m_streamSize[stream]; };
+	int  GetStreamSize(int stream) const { return m_streamSize[stream]; }
 
 	void SetFromMesh(CMesh& mesh);
 	void UpdateIndexedMesh(IIndexedMesh* pIndexedMesh) const;
@@ -206,7 +206,7 @@ public:
 	// Clear all selections, return true if something was selected.
 	bool       ClearSelection();
 	void       SoftSelection(const SSubObjSelOptions& options);
-	CBitArray* GetStreamSelection(int nStream)  { return m_streamSel[nStream]; };
+	CBitArray* GetStreamSelection(int nStream)  { return m_streamSel[nStream]; }
 	// Returns true if specified stream have any selected elements.
 	bool       StreamHaveSelection(int nStream) { return (streamSelMask & (1 << nStream)) != 0; }
 	void       GetEdgesByVertex(MeshElementsArray& inVertices, MeshElementsArray& outEdges);
@@ -220,4 +220,3 @@ private:
 	int        m_streamSize[LAST_STREAM];
 	CBitArray* m_streamSel[LAST_STREAM];
 };
-

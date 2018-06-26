@@ -71,7 +71,7 @@ public:
 
 	// Check if loading or saving.
 	bool IsLoading() const          { return m_bLoading; }
-	void SelectLoaded(bool bEnable) { m_bSelectLoaded = bEnable; };
+	void SelectLoaded(bool bEnable) { m_bSelectLoaded = bEnable; }
 
 	void SaveNode(CHyperNode* pNode, bool bSaveEdges = true);
 	void SaveEdge(CHyperEdge* pEdge);
@@ -133,9 +133,9 @@ public:
 	virtual bool                   Load(const char* filename);
 	virtual bool                   Migrate(XmlNodeRef& node);
 	virtual bool                   Import(const char* filename);
-	virtual const char*            GetName() const            { return m_name; };
-	virtual void                   SetName(const char* sName) { m_name = sName; if (m_name.IsEmpty()) m_filename.Empty(); };
-	virtual IHyperGraph*           Clone()                    { return 0; };
+	virtual const char*            GetName() const            { return m_name; }
+	virtual void                   SetName(const char* sName) { m_name = sName; if (m_name.IsEmpty()) m_filename.Empty(); }
+	virtual IHyperGraph*           Clone()                    { return 0; }
 	virtual void                   PostClone(CBaseObject* pFromObject, CObjectCloneContext& ctx);
 	//////////////////////////////////////////////////////////////////////////
 
@@ -168,13 +168,13 @@ public:
 	CHyperEdge*  FindEdge(CHyperNode* pNode, CHyperNodePort* pPort) const;
 
 	// Check if graph have any nodes.
-	bool IsEmpty() const { return m_nodesMap.empty(); };
+	bool IsEmpty() const { return m_nodesMap.empty(); }
 
 	// Mark hyper graph as modified.
 	void                   SetModified(bool bModified = true);
 	bool                   IsModified() const      { return m_bModified; }
 
-	HyperNodeID            AllocateId()            { return m_nextNodeId++; };
+	HyperNodeID            AllocateId()            { return m_nextNodeId++; }
 
 	virtual IAIAction*     GetAIAction() const     { return NULL; }
 
@@ -184,11 +184,11 @@ public:
 	bool                   GetViewPosition(CPoint& point, float& zoom);
 
 	//////////////////////////////////////////////////////////////////////////
-	virtual void    SetGroupName(const CString& sName)   { m_groupName = sName; };
-	virtual CString GetGroupName() const                 { return m_groupName; };
+	virtual void    SetGroupName(const CString& sName)   { m_groupName = sName; }
+	virtual CString GetGroupName() const                 { return m_groupName; }
 
-	virtual void    SetDescription(const CString& sDesc) { m_description = sDesc; };
-	virtual CString GetDescription() const               { return m_description; };
+	virtual void    SetDescription(const CString& sDesc) { m_description = sDesc; }
+	virtual CString GetDescription() const               { return m_description; }
 
 	virtual void    SetEnabled(bool bEnable)             { m_bEnabled = bEnable; }
 	virtual bool    IsEnabled() const                    { return m_bEnabled; }
@@ -259,4 +259,3 @@ protected:
 private:
 	friend class CHyperGraphSerializer;
 };
-

@@ -67,6 +67,7 @@ public:
 private:
 	void DoCollisions(CParticleComponentRuntime& runtime) const;
 	bool DoCollision(SContactPoint& contact, QuadPath& path, int objectFilter, bool doSliding = true) const;
+	void Collide(SContactPoint &contact, QuadPath &path, float accNorm, float velNorm) const;
 
 	template<typename TCollisionLimit>
 	void UpdateCollisionLimit(CParticleComponentRuntime& runtime) const;

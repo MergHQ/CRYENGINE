@@ -131,11 +131,11 @@ public:
 	//////////////////////////////////////////////////////////////////////////
 	virtual IHyperGraph* GetGraph() const override;
 	virtual HyperNodeID  GetId() const override   { return m_id; }
-	virtual const char*  GetName() const override { return m_name; };
+	virtual const char*  GetName() const override { return m_name; }
 	virtual void         SetName(const char* sName) override;
 	//////////////////////////////////////////////////////////////////////////
 
-	virtual const char*            GetClassName() const   { return m_classname; };
+	virtual const char*            GetClassName() const   { return m_classname; }
 	virtual const char*            GetDescription() const { return "No description available."; }
 	virtual const char*            GetInfoAsString() const;
 	virtual void                   Serialize(XmlNodeRef& node, bool bLoading, CObjectArchive* ar = 0);
@@ -236,7 +236,7 @@ public:
 
 	//////////////////////////////////////////////////////////////////////////
 	virtual void SetSelected(bool bSelected);
-	bool         IsSelected() const { return m_bSelected; };
+	bool         IsSelected() const { return m_bSelected; }
 
 	void         SelectInputPort(int nPort, bool bSelected);
 	void         SelectOutputPort(int nPort, bool bSelected);
@@ -358,7 +358,7 @@ public:
 		m_end(end)
 	{
 	}
-	virtual void        Release() { delete this; };
+	virtual void        Release() { delete this; }
 	virtual IHyperNode* GetFirst()
 	{
 		if (m_begin != m_end)
@@ -389,7 +389,7 @@ public:
 		: m_pNextNode(pParent)
 	{
 	}
-	virtual void        Release() { delete this; };
+	virtual void        Release() { delete this; }
 	virtual IHyperNode* GetFirst()
 	{
 		return Iterate();
@@ -439,4 +439,3 @@ private:
 		return pNode;
 	}
 };
-

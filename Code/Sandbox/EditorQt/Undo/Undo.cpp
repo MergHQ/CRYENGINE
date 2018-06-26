@@ -14,7 +14,7 @@
 class CUndoStep
 {
 public:
-	CUndoStep() {};
+	CUndoStep() {}
 	virtual ~CUndoStep() { ClearObjects(); }
 
 	//! Set undo object name.

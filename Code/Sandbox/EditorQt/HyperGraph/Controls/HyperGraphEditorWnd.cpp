@@ -102,12 +102,12 @@ class CHyperGraphViewClass : public IViewPaneClass
 	//////////////////////////////////////////////////////////////////////////
 	// IClassDesc
 	//////////////////////////////////////////////////////////////////////////
-	virtual ESystemClassID SystemClassID()   override { return ESYSTEM_CLASS_VIEWPANE; };
-	virtual const char*    ClassName()       override { return "Flow Graph"; };
-	virtual const char*    Category()        override { return "Game"; };
-	virtual CRuntimeClass* GetRuntimeClass() override { return RUNTIME_CLASS(CHyperGraphDialog); };
-	virtual const char*    GetPaneTitle()    override { return _T("Flow Graph"); };
-	virtual bool           SinglePane()      override { return true; };
+	virtual ESystemClassID SystemClassID()   override { return ESYSTEM_CLASS_VIEWPANE; }
+	virtual const char*    ClassName()       override { return "Flow Graph"; }
+	virtual const char*    Category()        override { return "Game"; }
+	virtual CRuntimeClass* GetRuntimeClass() override { return RUNTIME_CLASS(CHyperGraphDialog); }
+	virtual const char*    GetPaneTitle()    override { return _T("Flow Graph"); }
+	virtual bool           SinglePane()      override { return true; }
 };
 
 REGISTER_CLASS_DESC(CHyperGraphViewClass)
@@ -3120,4 +3120,3 @@ void CHyperGraphDialog::GetGraphPrettyName(CHyperGraph* pGraph, CString& compute
 		}
 	}
 }
-

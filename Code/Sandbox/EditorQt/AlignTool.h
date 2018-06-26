@@ -1,11 +1,22 @@
 // Copyright 2001-2018 Crytek GmbH / Crytek Group. All rights reserved.
 
 #pragma once
+#include <Grid.h>
 
 class CAlignPickCallback : public IPickObjectCallback
 {
 public:
-	CAlignPickCallback() { m_bActive = true; }
+	CAlignPickCallback()
+	{ 
+		m_bActive = true; 
+	}
+
+	~CAlignPickCallback() 
+	{ 
+		m_bActive = false; 
+		gSnappingPreferences.EnablePivotSnapping(false);
+	}
+
 	//! Called when object picked.
 	virtual void OnPick(CBaseObject* picked);
 	//! Called when pick mode cancelled.

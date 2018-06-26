@@ -61,7 +61,7 @@ class CGameTokenTypeCombo : public CComboBox
 public:
 	CGameTokenDialog* m_pDlg;
 
-	CGameTokenTypeCombo(CGameTokenDialog* pDlg) : m_pDlg(pDlg) {};
+	CGameTokenTypeCombo(CGameTokenDialog* pDlg) : m_pDlg(pDlg) {}
 	BOOL Create(DWORD dwStyle, const CRect& rc, CWnd* pParentWnd, UINT nID)
 	{
 		BOOL bRes = __super::Create(dwStyle | CBS_HASSTRINGS | CBS_DROPDOWNLIST, rc, pParentWnd, nID);
@@ -105,7 +105,7 @@ class CGameTokenValueEdit : public CEdit
 public:
 	CGameTokenDialog* m_pDlg;
 
-	CGameTokenValueEdit(CGameTokenDialog* pDlg) : m_pDlg(pDlg) {};
+	CGameTokenValueEdit(CGameTokenDialog* pDlg) : m_pDlg(pDlg) {}
 	BOOL Create(DWORD dwStyle, const CRect& rc, CWnd* pParentWnd, UINT nID)
 	{
 		BOOL bRes = __super::Create(dwStyle, rc, pParentWnd, nID);
@@ -1077,4 +1077,3 @@ void CGameTokenDialog::OnTokenLocalOnlyChange()
 
 	UpdateField(IDC_TOKEN_LOCAL_ONLY, "", m_tokenLocalOnlyCheck.GetCheck() == BST_CHECKED);
 }
-

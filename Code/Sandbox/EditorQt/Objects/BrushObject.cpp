@@ -41,7 +41,7 @@ public:
 	CUndoSetGeometryFile(CBrushObject* pObject, const char* pUndoDescription);
 protected:
 	virtual int         GetSize()                 { return sizeof(*this); }
-	virtual const char* GetDescription() override { return m_undoDescription; };
+	virtual const char* GetDescription() override { return m_undoDescription; }
 	virtual const char* GetObjectName() override;
 	virtual void        Undo(bool bUndo) override;
 	virtual void        Redo() override;
@@ -1276,4 +1276,3 @@ string CBrushObject::GetMouseOverStatisticsText() const
 
 	return triangleCountText;
 }
-

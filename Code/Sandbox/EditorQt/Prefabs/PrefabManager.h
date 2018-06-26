@@ -62,7 +62,7 @@ public:
 	void ClearAll();
 
 	IDataBaseItem*  CreateItem(const string& filename);
-	//virtual IDataBaseItem* CreateItem(IDataBaseLibrary* pLibrary) override { return CBaseLibraryManager::CreateItem(pLibrary); };
+	//virtual IDataBaseItem* CreateItem(IDataBaseLibrary* pLibrary) override { return CBaseLibraryManager::CreateItem(pLibrary); }
 
 	//! Delete item from library and manager.
 	void           DeleteItem(IDataBaseItem* pItem);
@@ -134,4 +134,3 @@ private:
 	CPrefabEvents* m_pPrefabEvents;
 	bool           m_skipPrefabUpdate;
 };
-

@@ -172,7 +172,7 @@ private:
 class CParticlePickCallback : public IPickObjectCallback
 {
 public:
-	CParticlePickCallback() { m_bActive = true; };
+	CParticlePickCallback() { m_bActive = true; }
 	//! Called when object picked.
 	virtual void OnPick(CBaseObject* picked)
 	{
@@ -1359,4 +1359,3 @@ void EditParticle(const SResourceSelectorContext& context, const char* szAssetPa
 
 REGISTER_RESOURCE_EDITING_SELECTOR_WITH_LEGACY_SUPPORT("ParticleLegacy", ParticleSelector, ValidateParticlePath, EditParticle, "")
 REGISTER_RESOURCE_EDITING_SELECTOR("Particle", ParticleSelector, ValidateParticlePath, EditParticle, "")
-

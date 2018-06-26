@@ -93,7 +93,7 @@ std::vector<string> CollectCryLevels()
 		{
 			return stricmp(PathUtil::GetExt(x.c_str()), "cry") != 0
 			|| GetISystem()->GetIPak()->IsFileExist(PathUtil::ReplaceExtension(x, "level"), ICryPak::eFileLocation_OnDisk);
-	  }), levels.end());
+		}), levels.end());
 
 	return levels;
 }
@@ -178,16 +178,16 @@ public:
 		const QString link("http://docs.cryengine.com/pages/viewpage.action?pageId=29800625#CRYENGINE5.5.0Preview(s)-NewLevelFileFormat");
 
 		const QString text =
-		  tr("<p>"
-		     "This change fully integrates the levels into the CRYENGINE Sandbox asset system and allows for a proper collaborative workflow.<br>"
-		     "To benefit from this the editor will have to convert all levels of this project.<br>"
-		     "Before you continue you should <span style = \"color:%1\">quit the editor and manually backup your project</span>.<br>"
-		     "Please refer to the CRYENGINE documentation for more details:"
-		     "<a style = \"color:%2;\" href=\"%3\"> New Level File Format </a>"
-		     "</p>")
-		  .arg(GetStyleHelper()->warningColor().name())
-		  .arg(GetStyleHelper()->selectedIconTint().name())
-		  .arg(link);
+			tr("<p>"
+			   "This change fully integrates the levels into the CRYENGINE Sandbox asset system and allows for a proper collaborative workflow.<br>"
+			   "To benefit from this the editor will have to convert all levels of this project.<br>"
+			   "Before you continue you should <span style = \"color:%1\">quit the editor and manually backup your project</span>.<br>"
+			   "Please refer to the CRYENGINE documentation for more details:"
+			   "<a style = \"color:%2;\" href=\"%3\"> New Level File Format </a>"
+			   "</p>")
+			.arg(GetStyleHelper()->warningColor().name())
+			.arg(GetStyleHelper()->selectedIconTint().name())
+			.arg(link);
 
 		dialog.SetupWarning(tr("New Level File Format"), text, QDialogButtonBox::Yes | QDialogButtonBox::No, QDialogButtonBox::No);
 		dialog.m_buttons->button(QDialogButtonBox::Yes)->setText(tr("Convert all levels"));
@@ -253,7 +253,7 @@ void CLevelEditor::customEvent(QEvent* pEvent)
 		{
 			if (command == "snap_to_grid")
 			{
-				const bool bEnable = (params[0])[1] != 0; // Argument is expected to be 0 or 1 enclosed by ''.
+				const bool bEnable = (params[0])[1].digitValue() != 0; // Argument is expected to be 0 or 1 enclosed by ''.
 				EnableGridSnapping(bEnable);
 			}
 			else if (command == "toggle_snap_to_grid")
@@ -263,7 +263,7 @@ void CLevelEditor::customEvent(QEvent* pEvent)
 			}
 			else if (command == "snap_to_angle")
 			{
-				const bool bEnable = (params[0])[1] != 0; // Argument is expected to be 0 or 1 enclosed by ''.
+				const bool bEnable = (params[0])[1].digitValue() != 0; // Argument is expected to be 0 or 1 enclosed by ''.
 				EnableAngleSnapping(bEnable);
 			}
 			else if (command == "toggle_snap_to_angle")
@@ -273,7 +273,7 @@ void CLevelEditor::customEvent(QEvent* pEvent)
 			}
 			else if (command == "snap_to_scale")
 			{
-				const bool bEnable = (params[0])[1] != 0; // Argument is expected to be 0 or 1 enclosed by ''.
+				const bool bEnable = (params[0])[1].digitValue() != 0; // Argument is expected to be 0 or 1 enclosed by ''.
 				EnableScaleSnapping(bEnable);
 			}
 			else if (command == "toggle_snap_to_scale")
@@ -283,7 +283,7 @@ void CLevelEditor::customEvent(QEvent* pEvent)
 			}
 			else if (command == "snap_to_vertex")
 			{
-				const bool bEnable = (params[0])[1] != 0; // Argument is expected to be 0 or 1 enclosed by ''.
+				const bool bEnable = (params[0])[1].digitValue() != 0; // Argument is expected to be 0 or 1 enclosed by ''.
 				EnableVertexSnapping(bEnable);
 			}
 			else if (command == "toggle_snap_to_vertex")
@@ -293,7 +293,7 @@ void CLevelEditor::customEvent(QEvent* pEvent)
 			}
 			else if (command == "snap_to_pivot")
 			{
-				const bool bEnable = (params[0])[1] != 0; // Argument is expected to be 0 or 1 enclosed by ''.
+				const bool bEnable = (params[0])[1].digitValue() != 0; // Argument is expected to be 0 or 1 enclosed by ''.
 				EnablePivotSnapping(bEnable);
 			}
 			else if (command == "toggle_snap_to_pivot")
@@ -303,7 +303,7 @@ void CLevelEditor::customEvent(QEvent* pEvent)
 			}
 			else if (command == "snap_to_terrain")
 			{
-				const bool bEnable = (params[0])[1] != 0; // Argument is expected to be 0 or 1 enclosed by ''.
+				const bool bEnable = (params[0])[1].digitValue() != 0; // Argument is expected to be 0 or 1 enclosed by ''.
 				EnableTerrainSnapping(bEnable);
 			}
 			else if (command == "toggle_snap_to_terrain")
@@ -313,7 +313,7 @@ void CLevelEditor::customEvent(QEvent* pEvent)
 			}
 			else if (command == "snap_to_geometry")
 			{
-				const bool bEnable = (params[0])[1] != 0; // Argument is expected to be 0 or 1 enclosed by ''.
+				const bool bEnable = (params[0])[1].digitValue() != 0; // Argument is expected to be 0 or 1 enclosed by ''.
 				EnableGeometrySnapping(bEnable);
 			}
 			else if (command == "toggle_snap_to_geometry")
@@ -323,7 +323,7 @@ void CLevelEditor::customEvent(QEvent* pEvent)
 			}
 			else if (command == "snap_to_surface_normal")
 			{
-				const bool bEnable = (params[0])[1] != 0; // Argument is expected to be 0 or 1 enclosed by ''.
+				const bool bEnable = (params[0])[1].digitValue() != 0; // Argument is expected to be 0 or 1 enclosed by ''.
 				EnableSurfaceNormalSnapping(bEnable);
 			}
 			else if (command == "toggle_snap_to_surface_normal")
@@ -423,7 +423,7 @@ void CLevelEditor::OnEditorNotifyEvent(EEditorNotifyEvent event)
 				  QTimer::singleShot(0, []()
 					{
 						GetIEditor()->ExecuteCommand("general.exit");
-				  });
+					});
 				  return;
 				}
 
@@ -441,7 +441,7 @@ void CLevelEditor::OnEditorNotifyEvent(EEditorNotifyEvent event)
 						  if (i > 0)
 						  {
 						    fileName = fileName.left(i + 1).append(CLevelType::GetFileExtensionStatic());
-						  }
+							}
 						}
 						SetProjectProperty("Recent Files", recent);
 					});
@@ -487,7 +487,7 @@ void CLevelEditor::EnableVertexSnapping(bool bEnable)
 
 void CLevelEditor::EnablePivotSnapping(bool bEnable)
 {
-	bEnable ? GetIEditorImpl()->GetLevelEditorSharedState()->PickObject(new CAlignPickCallback) : GetIEditorImpl()->GetLevelEditorSharedState()->SetEditTool(NULL);
+	bEnable ? GetIEditorImpl()->GetLevelEditorSharedState()->PickObject(new CAlignPickCallback()) : GetIEditorImpl()->GetLevelEditorSharedState()->SetEditTool(NULL);
 
 	gSnappingPreferences.EnablePivotSnapping(bEnable);
 
@@ -611,10 +611,10 @@ bool CLevelEditor::ConvertEditorXmlToLevelAssetType(const string& levelFolder, c
 		CAsset asset(pType->GetTypeName(), CryGUID::Create(), PathUtil::GetFile(cryassetPath));
 		CEditableAsset editAsset(asset);
 		editAsset.SetMetadataFile(cryassetPath);
-		
+
 		const string rootFolder = PathUtil::GetParentDirectory(path);
 		editAsset.AddFile(PathUtil::AbsoluteToRelativePath(newFilename, rootFolder));
-		
+
 		editAsset.WriteToFile();
 
 		return true;
@@ -973,4 +973,3 @@ bool CLevelEditor::OnPaste()
 
 	return true;
 }
-

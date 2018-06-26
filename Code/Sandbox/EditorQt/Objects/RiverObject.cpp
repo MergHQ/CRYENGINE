@@ -364,11 +364,10 @@ XmlNodeRef CRiverObject::Export(const string& levelPath, XmlNodeRef& xmlNode)
 class CRiverObjectClassDesc : public CObjectClassDesc
 {
 public:
-	ObjectType     GetObjectType()   { return OBJTYPE_ROAD; };
-	const char*    ClassName()       { return "River"; };
-	const char*    Category()        { return "Misc"; };
-	CRuntimeClass* GetRuntimeClass() { return RUNTIME_CLASS(CRiverObject); };
+	ObjectType     GetObjectType()   { return OBJTYPE_ROAD; }
+	const char*    ClassName()       { return "River"; }
+	const char*    Category()        { return "Misc"; }
+	CRuntimeClass* GetRuntimeClass() { return RUNTIME_CLASS(CRiverObject); }
 };
 
 REGISTER_CLASS_DESC(CRiverObjectClassDesc);
-

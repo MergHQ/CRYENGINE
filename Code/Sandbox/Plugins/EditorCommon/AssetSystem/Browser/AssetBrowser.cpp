@@ -690,6 +690,11 @@ void CAssetBrowser::dragEnterEvent(QDragEnterEvent* pEvent)
 	{
 		pEvent->acceptProposedAction();
 	}
+	else if (CAssetManager::GetInstance()->HasAssetConverter(*pDragDropData))
+	{
+		pEvent->acceptProposedAction();
+	}
+
 }
 
 void CAssetBrowser::dragMoveEvent(QDragMoveEvent* pEvent)
@@ -713,6 +718,20 @@ void CAssetBrowser::dragMoveEvent(QDragMoveEvent* pEvent)
 			}
 		}
 	}
+	else 
+	{
+		CAssetConverter * pConverter =  CAssetManager::GetInstance()->GetAssetConverter(*pEvent->mimeData());
+		if (pConverter)
+		{
+			CDragDropData::ShowDragText(qApp->widgetAt(QCursor::pos()), QString(pConverter->ConversionInfo(*pEvent->mimeData()).c_str()));
+			pEvent->acceptProposedAction();
+		}
+	}
+}
+
+void CAssetBrowser::dragLeaveEvent(QDragLeaveEvent* pEvent)
+{
+	CDragDropData::ClearDragTooltip(qApp->widgetAt(QCursor::pos()));
 }
 
 bool DiscardChanges(const QString& what)
@@ -767,6 +786,22 @@ void CAssetBrowser::dropEvent(QDropEvent* pEvent)
 		}
 		pEvent->acceptProposedAction();
 	}
+	else if (bHasFolderPath)
+	{
+		CAssetConverter* pConverter = CAssetManager::GetInstance()->GetAssetConverter(*pEvent->mimeData());
+
+		if (pConverter)
+		{
+			SAssetConverterConversionInfo info{ folderPath, this };
+			//we need to select the actual folder where the conversion is going to take place
+			m_foldersView->SelectFolder(QString(folderPath));
+			pEvent->acceptProposedAction();
+			pConverter->Convert(*pEvent->mimeData(), info);
+		}
+	}
+
+	CDragDropData::ClearDragTooltip(qApp->widgetAt(QCursor::pos()));
+
 }
 
 void CAssetBrowser::mouseReleaseEvent(QMouseEvent* pEvent)
@@ -1340,7 +1375,6 @@ CAsset* CAssetBrowser::QueryNewAsset(const CAssetType& type, const void* pTypeSp
 	BeginCreateAsset(type, pTypeSpecificParameter);
 
 	CNewAssetModel* const pModel = CNewAssetModel::GetInstance();
-
 	while (CNewAssetModel::GetInstance()->IsEditing())
 	{
 		qApp->processEvents();

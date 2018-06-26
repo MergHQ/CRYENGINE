@@ -94,9 +94,8 @@ protected:
 class CWaterShapeObjectClassDesc : public CObjectClassDesc
 {
 public:
-	ObjectType     GetObjectType()     { return OBJTYPE_VOLUME; };
-	const char*    ClassName()         { return "WaterVolume"; };
-	const char*    Category()          { return "Area"; };
-	CRuntimeClass* GetRuntimeClass()   { return RUNTIME_CLASS(CWaterShapeObject); };
+	ObjectType     GetObjectType()     { return OBJTYPE_VOLUME; }
+	const char*    ClassName()         { return "WaterVolume"; }
+	const char*    Category()          { return "Area"; }
+	CRuntimeClass* GetRuntimeClass()   { return RUNTIME_CLASS(CWaterShapeObject); }
 };
-

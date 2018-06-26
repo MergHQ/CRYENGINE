@@ -24,7 +24,7 @@ public:
 	}
 
 protected:
-	virtual const char* GetDescription() { return m_description; };
+	virtual const char* GetDescription() { return m_description; }
 
 	virtual void        Undo(bool bUndo)
 	{

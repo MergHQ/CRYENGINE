@@ -39,7 +39,7 @@ public:
 		m_node->Serialize(m_undo, false);
 	}
 protected:
-	virtual const char* GetDescription() { return "HyperNodeUndo"; };
+	virtual const char* GetDescription() { return "HyperNodeUndo"; }
 
 	virtual void        Undo(bool bUndo)
 	{
@@ -615,4 +615,3 @@ CHyperNode* CHyperNode::GetBlackBox() const
 	}
 	return NULL;
 }
-

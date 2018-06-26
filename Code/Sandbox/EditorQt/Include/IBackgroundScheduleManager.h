@@ -99,7 +99,7 @@ struct IBackgroundScheduleItemWork
 	virtual void Release() = 0;
 
 protected:
-	virtual ~IBackgroundScheduleItemWork() {};
+	virtual ~IBackgroundScheduleItemWork() {}
 };
 
 struct IBackgroundScheduleItem
@@ -107,7 +107,7 @@ struct IBackgroundScheduleItem
 	// Get name of the schedule (debug & display)
 	virtual const char* GetDescription() const = 0;
 
-	// Get interal state
+	// Get internal state
 	virtual EScheduleItemState GetState() const = 0;
 
 	// Get overall progress of this schedule item
@@ -127,7 +127,7 @@ struct IBackgroundScheduleItem
 	virtual void Release() = 0;
 
 protected:
-	virtual ~IBackgroundScheduleItem() {};
+	virtual ~IBackgroundScheduleItem() {}
 };
 
 struct IBackgroundSchedule
@@ -164,12 +164,12 @@ struct IBackgroundSchedule
 	virtual void Release() = 0;
 
 protected:
-	virtual ~IBackgroundSchedule() {};
+	virtual ~IBackgroundSchedule() {}
 };
 
 struct IBackgroundScheduleManager
 {
-	virtual ~IBackgroundScheduleManager() {};
+	virtual ~IBackgroundScheduleManager() {}
 
 	// Create empty schedule
 	virtual IBackgroundSchedule* CreateSchedule(const char* szName) = 0;
@@ -189,4 +189,3 @@ struct IBackgroundScheduleManager
 	// Advance work on the schedules
 	virtual void Update() = 0;
 };
-

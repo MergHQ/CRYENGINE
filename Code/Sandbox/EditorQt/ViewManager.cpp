@@ -143,25 +143,25 @@ IPane* CViewportClassDesc::CreatePane() const
 struct CViewportClassDesc_Top : public CViewportClassDesc
 {
 	CViewportClassDesc_Top() : CViewportClassDesc(ET_ViewportXY, "Top") {}
-	virtual CViewport* CreateViewport() const { return new C2DViewport; };
+	virtual CViewport* CreateViewport() const { return new C2DViewport; }
 };
 
 struct CViewportClassDesc_Front : public CViewportClassDesc
 {
 	CViewportClassDesc_Front() : CViewportClassDesc(ET_ViewportXZ, "Front") {}
-	virtual CViewport* CreateViewport() const { return new C2DViewport; };
+	virtual CViewport* CreateViewport() const { return new C2DViewport; }
 };
 
 struct CViewportClassDesc_Left : public CViewportClassDesc
 {
 	CViewportClassDesc_Left() : CViewportClassDesc(ET_ViewportYZ, "Left") {}
-	virtual CViewport* CreateViewport() const { return new C2DViewport; };
+	virtual CViewport* CreateViewport() const { return new C2DViewport; }
 };
 
 struct CViewportClassDesc_Perspective : public CViewportClassDesc
 {
 	CViewportClassDesc_Perspective() : CViewportClassDesc(ET_ViewportCamera, "Perspective") {}
-	virtual CViewport* CreateViewport() const { return new CLevelEditorViewport; };
+	virtual CViewport* CreateViewport() const { return new CLevelEditorViewport; }
 	virtual IPane*     CreatePane() const override
 	{
 		CLevelEditorViewport* pViewport = (CLevelEditorViewport*)CreateViewport();
@@ -178,7 +178,7 @@ struct CViewportClassDesc_Perspective : public CViewportClassDesc
 struct CViewportClassDesc_Map : public CViewportClassDesc
 {
 	CViewportClassDesc_Map() : CViewportClassDesc(ET_ViewportMap, "Map") {}
-	virtual CViewport* CreateViewport() const { return new CTopRendererWnd; };
+	virtual CViewport* CreateViewport() const { return new CTopRendererWnd; }
 };
 
 //////////////////////////////////////////////////////////////////////
@@ -488,4 +488,3 @@ void CViewManager::UnregisterCameraDelegate(ICameraDelegate* pCameraDelegate)
 {
 	stl::find_and_erase(m_cameraDelegates, pCameraDelegate);
 }
-

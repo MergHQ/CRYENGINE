@@ -18,7 +18,7 @@ public:
 
 	virtual bool            IsEditorSpecialNode() const override { return true; }
 	virtual bool            IsFlowNode() const override          { return false; }
-	virtual const char*     GetClassName() const override        { return MISSING_NODE_CLASS; };
+	virtual const char*     GetClassName() const override        { return MISSING_NODE_CLASS; }
 	virtual const char*     GetDescription() const override      { return "This node class no longer exists in the code base"; }
 	virtual const char*     GetInfoAsString() const override;
 
@@ -32,4 +32,3 @@ private:
 	CryGUID m_entityGuid;
 	int     m_iOrgFlags;
 };
-

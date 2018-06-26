@@ -122,8 +122,8 @@ bool CMaterialPickTool::OnMouseMove(CViewport* view, UINT nFlags, CPoint point)
 class CMaterialPickTool_ClassDesc : public IClassDesc
 {
 	virtual ESystemClassID SystemClassID()   { return ESYSTEM_CLASS_EDITTOOL; }
-	virtual const char*    ClassName()       { return "EditTool.PickMaterial"; };
-	virtual const char*    Category()        { return "Material"; };
+	virtual const char*    ClassName()       { return "EditTool.PickMaterial"; }
+	virtual const char*    Category()        { return "Material"; }
 	virtual CRuntimeClass* GetRuntimeClass() { return RUNTIME_CLASS(CMaterialPickTool); }
 };
 
@@ -152,4 +152,3 @@ void CMaterialPickTool::SetMaterial(IMaterial* pMaterial)
 		m_displayString += sfType;
 	}
 }
-

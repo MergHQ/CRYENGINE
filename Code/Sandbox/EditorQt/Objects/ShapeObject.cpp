@@ -76,7 +76,7 @@ public:
 
 	virtual bool   IsNeedMoveTool() override                 { return true; }
 
-	virtual void   Display(SDisplayContext& dc)              {};
+	virtual void   Display(SDisplayContext& dc)              {}
 	virtual bool   OnKeyDown(CViewport* view, uint32 nChar, uint32 nRepCnt, uint32 nFlags);
 	bool           IsNeedToSkipPivotBoxForObjects() override { return true; }
 	bool           IsDisplayGrid()                           { return false; }
@@ -93,7 +93,7 @@ public:
 
 protected:
 	virtual ~CEditShapeTool();
-	void DeleteThis() { delete this; };
+	void DeleteThis() { delete this; }
 
 private:
 	CShapeObject*          m_shape;
@@ -468,12 +468,12 @@ public:
 	virtual string GetDisplayName() const override { return "Merge Shapes"; }
 	bool           MouseCallback(CViewport* view, EMouseEvent event, CPoint& point, int flags);
 	virtual void   SetUserData(const char* key, void* userData);
-	virtual void   Display(SDisplayContext& dc) {};
+	virtual void   Display(SDisplayContext& dc) {}
 	virtual bool   OnKeyDown(CViewport* view, uint32 nChar, uint32 nRepCnt, uint32 nFlags);
 
 protected:
 	virtual ~CMergeShapesTool();
-	void DeleteThis() { delete this; };
+	void DeleteThis() { delete this; }
 
 	int           m_curPoint;
 	CShapeObject* m_shape;
@@ -611,7 +611,7 @@ public:
 
 protected:
 	virtual ~CSplitShapeTool();
-	void DeleteThis() { delete this; };
+	void DeleteThis() { delete this; }
 
 private:
 	CShapeObject* m_shape;
@@ -823,9 +823,9 @@ public:
 	}
 
 protected:
-	virtual void        Release()        { delete this; };
-	virtual const char* GetDescription() { return "Shape Target"; };
-	virtual const char* GetObjectName()  { return ""; };
+	virtual void        Release()        { delete this; }
+	virtual const char* GetDescription() { return "Shape Target"; }
+	virtual const char* GetObjectName()  { return ""; }
 
 	virtual void        Undo(bool bUndo)
 	{
@@ -4887,4 +4887,3 @@ static void PyInsertPoint(const char* objName, int idx, float xPos, float yPos, 
 }
 
 REGISTER_PYTHON_COMMAND(PyInsertPoint, general, nav_insert_point, "Added a point at the given position to the given nav area");
-

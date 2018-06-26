@@ -28,7 +28,7 @@
     m_node = node;
    }
    protected:
-   virtual const char* GetDescription() { return "HyperNodeUndoCreate"; };
+   virtual const char* GetDescription() { return "HyperNodeUndoCreate"; }
 
    virtual void Undo( bool bUndo )
    {
@@ -383,7 +383,7 @@ public:
 		m_pGraph->Serialize(m_undo, false);
 	}
 protected:
-	virtual const char* GetDescription() { return "HyperNodeUndoCreate"; };
+	virtual const char* GetDescription() { return "HyperNodeUndoCreate"; }
 
 	virtual void        Undo(bool bUndo)
 	{
@@ -421,7 +421,7 @@ public:
 		m_pMap = pMap;
 		m_iterator = m_pMap->begin();
 	}
-	virtual void        Release() { delete this; };
+	virtual void        Release() { delete this; }
 	virtual IHyperNode* GetFirst()
 	{
 		m_iterator = m_pMap->begin();
@@ -1232,4 +1232,3 @@ bool CHyperGraph::GetViewPosition(CPoint& point, float& zoom)
 	zoom = m_fViewZoom;
 	return m_bViewPosInitialized;
 }
-

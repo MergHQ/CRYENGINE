@@ -65,7 +65,7 @@ public:
 	void Stop(CMaterial* pMaterial, int modeFlag);
 	void GetHighlightColor(ColorF* color, float* intensity, int flags);
 
-	void ClearMaterials() { m_materials.clear(); };
+	void ClearMaterials() { m_materials.clear(); }
 	void RestoreMaterials();
 	void Update();
 private:
@@ -1717,4 +1717,3 @@ void CMaterialManager::CreateTerrainLayerFromMaterial(CMaterial* pMaterial)
 	pLayer->SetSelected(true);
 	GetIEditorImpl()->Notify(eNotify_OnInvalidateControls);
 }
-

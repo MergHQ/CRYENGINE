@@ -45,12 +45,11 @@ protected:
 class CGeomEntityClassDesc : public CObjectClassDesc
 {
 public:
-	virtual ObjectType     GetObjectType() override { return OBJTYPE_ENTITY; };
-	virtual const char*    ClassName() override { return "GeomEntity"; };
-	virtual const char*    Category() override { return "Geom Entity"; };
-	virtual CRuntimeClass* GetRuntimeClass() override { return RUNTIME_CLASS(CGeomEntity); };
-	virtual const char*    GetFileSpec()  override { return "*.cgf;*.chr;*.cga;*.cdf"; };
+	virtual ObjectType     GetObjectType() override { return OBJTYPE_ENTITY; }
+	virtual const char*    ClassName() override { return "GeomEntity"; }
+	virtual const char*    Category() override { return "Geom Entity"; }
+	virtual CRuntimeClass* GetRuntimeClass() override { return RUNTIME_CLASS(CGeomEntity); }
+	virtual const char*    GetFileSpec()  override { return "*.cgf;*.chr;*.cga;*.cdf"; }
 	virtual const char*    GetDataFilesFilterString() override { return GetFileSpec(); }
 	virtual bool           IsCreatable() const override { return CObjectClassDesc::IsEntityClassAvailable(); }
 };
-

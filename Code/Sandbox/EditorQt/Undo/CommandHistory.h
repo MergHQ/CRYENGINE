@@ -11,7 +11,6 @@ public:
 	~CHistoryPanel();
 
 	virtual IViewPaneClass::EDockingDirection GetDockingDirection() const override { return IViewPaneClass::DOCK_RIGHT; }
-	virtual const char*                       GetPaneTitle() const override        { return "Undo History"; };
+	virtual const char*                       GetPaneTitle() const override        { return "Undo History"; }
 	virtual QRect                             GetPaneRect() override               { return QRect(0, 0, 800, 500); }
 };
-

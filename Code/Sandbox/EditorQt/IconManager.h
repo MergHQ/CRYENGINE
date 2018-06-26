@@ -37,10 +37,10 @@ public:
 
 	virtual void OnEditorNotifyEvent(EEditorNotifyEvent event) override;
 
-	virtual void OnNewDocument()   { Reset(); };
-	virtual void OnLoadDocument()  { Reset(); };
-	virtual void OnCloseDocument() { Reset(); };
-	virtual void OnMissionChange() { Reset(); };
+	virtual void OnNewDocument()   { Reset(); }
+	virtual void OnLoadDocument()  { Reset(); }
+	virtual void OnCloseDocument() { Reset(); }
+	virtual void OnMissionChange() { Reset(); }
 	//////////////////////////////////////////////////////////////////////////
 
 private:
@@ -57,4 +57,3 @@ private:
 	typedef std::map<string, CBitmap*> IconsMap;
 	IconsMap m_iconBitmapsMap;
 };
-

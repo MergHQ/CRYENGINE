@@ -191,6 +191,9 @@ void CSwapChainBackedRenderDisplayContext::ReleaseResources()
 
 void CSwapChainBackedRenderDisplayContext::ReleaseBackBuffers()
 {
+	// NOTE: Because we want to delete objects referencing swap-chain
+	// resources immediately we have to wait for the GPU to finish using it.
+	GetDeviceObjectFactory().FlushToGPU(true, false);
 	GetDeviceObjectFactory().GetCoreCommandList().GetGraphicsInterface()->ClearState(true);
 
 	m_pBackBufferPresented = nullptr;
@@ -349,25 +352,35 @@ void CSwapChainBackedRenderDisplayContext::CreateOutput()
 
 void CSwapChainBackedRenderDisplayContext::ChangeOutputIfNecessary(bool isFullscreen, bool vsync)
 {
-	bool recreatedSwapChain = false;
-
+	bool isWindowOnExistingOutputMonitor = false;
 #if CRY_PLATFORM_WINDOWS
 	HMONITOR hMonitor = MonitorFromWindow(m_hWnd, MONITOR_DEFAULTTONEAREST);
 
-	bool isWindowOnExistingOutputMonitor = false;
 	DXGI_OUTPUT_DESC outputDesc;
 	if (m_pOutput != nullptr && SUCCEEDED(m_pOutput->GetDesc(&outputDesc)))
 		isWindowOnExistingOutputMonitor = outputDesc.Monitor == hMonitor;
+#endif
+
+	// Recreate output only if the window has been moved to another monitor
+	if (!isWindowOnExistingOutputMonitor)
+		CreateOutput();
 
 #if !CRY_PLATFORM_CONSOLE
+	bool recreateSwapChain = (!isWindowOnExistingOutputMonitor && isFullscreen);
+
+#if (CRY_RENDERER_DIRECT3D >= 120)
+	recreateSwapChain |= ((m_swapChain.GetDesc().Flags & DXGI_SWAP_CHAIN_FLAG_FRAME_LATENCY_WAITABLE_OBJECT) && isFullscreen);
+#elif CRY_RENDERER_VULKAN
+	recreateSwapChain |= (m_bVSync != vsync);
+#endif
+
 	// Output will need to be recreated if we switched to fullscreen on a different monitor
-	if (!isWindowOnExistingOutputMonitor && isFullscreen)
+	if (recreateSwapChain)
 	{
 		ReleaseBackBuffers();
 
 		// Swap chain needs to be recreated with the new output in mind
 		CreateSwapChain(GetWindowHandle(), m_pOutput, GetDisplayResolution().x, GetDisplayResolution().y, IsMainContext(), isFullscreen, vsync);
-		recreatedSwapChain = true;
 
 		if (m_pOutput != nullptr)
 		{
@@ -376,25 +389,9 @@ void CSwapChainBackedRenderDisplayContext::ChangeOutputIfNecessary(bool isFullsc
 			m_pOutput = nullptr;
 		}
 	}
-#endif
 
-	CreateOutput();
+	m_bVSync = vsync;
 #endif
-
-	// Handle vSync changes
-	if (vsync != m_bVSync)
-	{
-#if CRY_RENDERER_VULKAN
-		if (!recreatedSwapChain)
-		{
-			// For Vulkan only: Recreate swapchain when vsync flag changes
-			CreateSwapChain(GetWindowHandle(), m_pOutput, GetDisplayResolution().x, GetDisplayResolution().y, IsMainContext(), isFullscreen, vsync);
-			recreatedSwapChain = true;
-		}
-#endif
-
-		m_bVSync = vsync;
-	}
 
 #ifdef SUPPORT_DEVICE_INFO
 	// Disable automatic DXGI alt + enter behavior
@@ -404,6 +401,7 @@ void CSwapChainBackedRenderDisplayContext::ChangeOutputIfNecessary(bool isFullsc
 	if (m_fullscreen)
 		SetFullscreenState(isFullscreen);
 }
+
 void CSwapChainBackedRenderDisplayContext::ChangeDisplayResolution(uint32_t displayWidth, uint32_t displayHeight, const SRenderViewport& vp)
 {
 	SetDisplayResolutionAndRecreateTargets(displayWidth, displayHeight, vp);

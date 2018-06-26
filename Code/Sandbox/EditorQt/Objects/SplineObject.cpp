@@ -391,12 +391,12 @@ public:
 	virtual string GetDisplayName() const override { return "Split Spline"; }
 	bool           MouseCallback(CViewport* view, EMouseEvent event, CPoint& point, int flags);
 	virtual void   SetUserData(const char* key, void* userData);
-	virtual void   Display(SDisplayContext& dc) {};
+	virtual void   Display(SDisplayContext& dc) {}
 	virtual bool   OnKeyDown(CViewport* view, uint32 nChar, uint32 nRepCnt, uint32 nFlags);
 
 protected:
 	virtual ~CSplitSplineObjectTool();
-	void DeleteThis() { delete this; };
+	void DeleteThis() { delete this; }
 
 private:
 	CSplineObject* m_pSpline;
@@ -507,12 +507,12 @@ public:
 	virtual string GetDisplayName() const override { return "Merge Splines"; }
 	bool           MouseCallback(CViewport* view, EMouseEvent event, CPoint& point, int flags);
 	virtual void   SetUserData(const char* key, void* userData);
-	virtual void   Display(SDisplayContext& dc) {};
+	virtual void   Display(SDisplayContext& dc) {}
 	virtual bool   OnKeyDown(CViewport* view, uint32 nChar, uint32 nRepCnt, uint32 nFlags);
 
 protected:
 	virtual ~CMergeSplineObjectsTool();
-	void DeleteThis() { delete this; };
+	void DeleteThis() { delete this; }
 
 	int            m_curPoint;
 	CSplineObject* m_pSpline;
@@ -1690,4 +1690,3 @@ void CSplineObject::EditSpline()
 		pEditTool->SetUserData("object", this);
 	}
 }
-
