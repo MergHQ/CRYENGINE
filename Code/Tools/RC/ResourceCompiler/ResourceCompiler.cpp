@@ -3189,7 +3189,7 @@ void ResourceCompiler::CopyFiles(const std::vector<RcFile>& files)
 			++numFilesMissing;
 			if (!bSkipMissing)
 			{
-				RCLog("Source file %s does not exist", srcFilename.c_str());
+				RCLogWarning("Source file %s does not exist", srcFilename.c_str());
 			}
 			continue;
 		}
@@ -3197,10 +3197,7 @@ void ResourceCompiler::CopyFiles(const std::vector<RcFile>& files)
 		{
 			if (!FileUtil::EnsureDirectoryExists(PathHelpers::GetDirectory(trgFilename).c_str()))
 			{
-				RCLog("Failed creating directory for %s", trgFilename.c_str());
-				++numFilesFailed;
-				RCLog("Failed to copy %s to %s", srcFilename.c_str(), trgFilename.c_str());
-				continue;
+				RCLogWarning("Failed creating directory for %s", trgFilename.c_str());
 			}
 
 			//////////////////////////////////////////////////////////////////////////
@@ -3241,7 +3238,8 @@ void ResourceCompiler::CopyFiles(const std::vector<RcFile>& files)
 			else
 			{
 				++numFilesFailed;
-				RCLog("Failed to copy %s to %s: %s.", srcFilename.c_str(), trgFilename.c_str(), copyFileErrorString.c_str());
+				RCLogError("Failed to copy %s to %s: %s.", srcFilename.c_str(), trgFilename.c_str(), copyFileErrorString.c_str());
+				continue;
 			}
 		}
 
