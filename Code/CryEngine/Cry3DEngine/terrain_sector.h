@@ -166,7 +166,7 @@ struct SRangeInfo
 
 	inline SHeightMapItem GetRawDataByIndex(uint32 i) const
 	{
-		CRY_MATH_ASSERT(i < nSize*nSize);
+		CRY_MATH_ASSERT(i < uint32(nSize*nSize));
 		CRY_MATH_ASSERT(pHMData);
 
 		return pHMData[i];
@@ -194,7 +194,7 @@ struct SRangeInfo
 
 	inline float GetHeightByIndex(uint32 i) const
 	{
-		CRY_MATH_ASSERT(i < nSize*nSize);
+		CRY_MATH_ASSERT(i < uint32(nSize*nSize));
 		CRY_MATH_ASSERT(pHMData);
 
 		return RawDataToHeight(pHMData[i]);
@@ -211,7 +211,7 @@ struct SRangeInfo
 
 	inline uint32 GetSurfaceTypeByIndex(uint32 i) const
 	{
-		CRY_MATH_ASSERT(i < nSize*nSize);
+		CRY_MATH_ASSERT(i < uint32(nSize*nSize));
 		CRY_MATH_ASSERT(pHMData);
 
 		SSurfaceTypeLocal si;

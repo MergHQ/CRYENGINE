@@ -175,8 +175,8 @@ void CTerrain::InitHeightfieldPhysics()
 	hf.typehole = SRangeInfo::e_hole;
 	hf.heightmask = ~SRangeInfo::e_index_hole; // hf.heightmask does not appear to be used anywhere. What is it for?
 
-	hf.fpGetHeightCallback = [](int x, int y) { return Cry3DEngineBase::GetTerrain()->GetHeightFromUnits(x, y); };
-	hf.fpGetSurfTypeCallback = [](int x, int y) { return Cry3DEngineBase::GetTerrain()->GetSurfaceTypeFromUnits(x, y); };
+	hf.fpGetHeightCallback = GetHeightFromUnits_Callback;
+	hf.fpGetSurfTypeCallback = GetSurfaceTypeFromUnits_Callback;
 
 	int arrMatMapping[SRangeInfo::e_max_surface_types];
 	memset(arrMatMapping, 0, sizeof(arrMatMapping));

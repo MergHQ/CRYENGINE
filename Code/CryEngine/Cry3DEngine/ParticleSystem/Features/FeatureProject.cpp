@@ -229,7 +229,6 @@ private:
 			position.z = -waterPlane.d - waterPlane.n.x * position.x - waterPlane.n.y * position.y;
 			if (m_highAccuracy && waterPlane == oceanPlane)
 				position.z = gEnv->p3DEngine->GetAccurateOceanHeight(position);
-			CRY_PFX2_ASSERT(abs(position.z) < 10000.f);
 			if (positionOnly)
 				posZ[particleId] = position.z + m_offset;
 			else

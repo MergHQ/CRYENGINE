@@ -217,7 +217,7 @@ public:
 
 	ILINE static bool InsideTerrainUnits(int xu, int yu)
 	{
-		return min(xu, yu) >= 0 && max(xu, yu) <= m_nTerrainSize;
+		return min(xu, yu) >= 0 && max(xu, yu) < m_nTerrainSize;
 	}
 	ILINE void ClampUnits(int& xu, int& yu) const
 	{
@@ -428,16 +428,9 @@ public:
 
 	int ReloadModifiedHMData(FILE* f);
 
-	void ResetHeightMapCache()
-	{
-		memset(m_arrCacheHeight, 0, sizeof(m_arrCacheHeight));
-		assert(sizeof(m_arrCacheHeight[0]) == 8);
-		memset(m_arrCacheSurfType, 0, sizeof(m_arrCacheSurfType));
-		assert(sizeof(m_arrCacheSurfType[0]) == 8);
-	}
-	
-	bool         IsHeightMapModified() const    { return m_bHeightMapModified; }
-	void         SetHeightMapModified()         { m_bHeightMapModified = true; }
+	bool IsHeightMapModified() const { return m_bHeightMapModified; }
+	void SetHeightMapModified()      { m_bHeightMapModified = true; }
+	static void ResetHeightMapCache();
 	
 protected:
 
@@ -451,8 +444,6 @@ protected:
 	Vec4             Get4ZUnits(int nX_units, int nY_units) const;
 	uint8            GetSurfTypeFromUnits(int nX_units, int nY_units) const;
 	SSurfaceTypeItem GetSurfTypeItemfromUnits(int nX_units, int nY_units) const;
-	float            GetHeightFromUnits(int ix, int iy);
-	uint8            GetSurfaceTypeFromUnits(int ix, int iy);
 	bool             IsPointUnderGround(int nX_units, int nY_units, float fTestZ);
 
 	ILINE CTerrainNode* GetSecInfoUnits(int xu, int yu) const
@@ -568,8 +559,11 @@ protected:
 		{}
 	};
 
-	CRY_ALIGN(128) SCachedHeight m_arrCacheHeight[nHMCacheSize * nHMCacheSize];
-	CRY_ALIGN(128) SCachedSurfType m_arrCacheSurfType[nHMCacheSize * nHMCacheSize];
+	static CRY_ALIGN(128) SCachedHeight   m_arrCacheHeight[nHMCacheSize * nHMCacheSize];
+	static CRY_ALIGN(128) SCachedSurfType m_arrCacheSurfType[nHMCacheSize * nHMCacheSize];
+	
+	static float GetHeightFromUnits_Callback(int ix, int iy);
+	static uint8 GetSurfaceTypeFromUnits_Callback(int ix, int iy);
 
 #if defined(FEATURE_SVO_GI)
 	PodArray<ColorB>* m_pTerrainRgbLowResSystemCopy;

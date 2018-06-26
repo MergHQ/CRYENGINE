@@ -203,7 +203,7 @@ Vec4 CTerrain::GetNormalAndZ(float x, float y, float size) const
 
 	if (min(wRect.x, wRect.y) < 0.0f || max(wRect.z, wRect.w) >= (float)m_nTerrainSize)
 	{
-		wRect = crymath::clamp(wRect, Vec4(0.0f), Vec4((float)m_nTerrainSize));
+		wRect = crymath::clamp(wRect, Vec4(0.0f), Vec4((float)m_nTerrainSize - 1.0f));
 		size = min(wRect.z - wRect.x, wRect.w - wRect.y);
 		if (size < 0.0f)
 			return vNoTerrain;
@@ -784,7 +784,10 @@ bool CTerrain::IsPointUnderGround(int nX_units, int nY_units, float fTestZ)
 	return fTestZ < fZ;
 }
 
-float CTerrain::GetHeightFromUnits(int ix, int iy)
+CTerrain::SCachedHeight CTerrain::m_arrCacheHeight[nHMCacheSize * nHMCacheSize];
+CTerrain::SCachedSurfType CTerrain::m_arrCacheSurfType[nHMCacheSize * nHMCacheSize];
+
+float CTerrain::GetHeightFromUnits_Callback(int ix, int iy)
 {
 	const uint32 idx = encodeby1(ix & ((nHMCacheSize - 1))) | (encodeby1(iy & ((nHMCacheSize - 1))) << 1);
 	SCachedHeight& rCache = m_arrCacheHeight[idx];
@@ -798,7 +801,7 @@ float CTerrain::GetHeightFromUnits(int ix, int iy)
 
 	cacheCopy.x = ix;
 	cacheCopy.y = iy;
-	cacheCopy.fHeight = GetZfromUnits(ix, iy);
+	cacheCopy.fHeight = Cry3DEngineBase::GetTerrain() ? Cry3DEngineBase::GetTerrain()->GetZfromUnits(ix, iy) : 0.0f;
 
 	// Update cache by new value
 	rCache.packedValue = cacheCopy.packedValue;
@@ -806,7 +809,7 @@ float CTerrain::GetHeightFromUnits(int ix, int iy)
 	return cacheCopy.fHeight;
 }
 
-unsigned char CTerrain::GetSurfaceTypeFromUnits(int ix, int iy)
+uint8 CTerrain::GetSurfaceTypeFromUnits_Callback(int ix, int iy)
 {
 	const uint32 idx = encodeby1(ix & ((nHMCacheSize - 1))) | (encodeby1(iy & ((nHMCacheSize - 1))) << 1);
 	SCachedSurfType& rCache = m_arrCacheSurfType[idx];
@@ -820,10 +823,18 @@ unsigned char CTerrain::GetSurfaceTypeFromUnits(int ix, int iy)
 
 	cacheCopy.x = ix;
 	cacheCopy.y = iy;
-	cacheCopy.surfType = GetSurfTypeFromUnits(ix, iy);
+	cacheCopy.surfType = Cry3DEngineBase::GetTerrain() ? Cry3DEngineBase::GetTerrain()->GetSurfTypeFromUnits(ix, iy) : 0;
 
 	// Update cache by new value
 	rCache.packedValue = cacheCopy.packedValue;
 
 	return cacheCopy.surfType;
+}
+
+void CTerrain::ResetHeightMapCache()
+{
+	memset(m_arrCacheHeight, 0, sizeof(m_arrCacheHeight));
+	assert(sizeof(m_arrCacheHeight[0]) == 8);
+	memset(m_arrCacheSurfType, 0, sizeof(m_arrCacheSurfType));
+	assert(sizeof(m_arrCacheSurfType[0]) == 8);
 }
