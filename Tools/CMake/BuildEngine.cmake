@@ -28,13 +28,15 @@ option(OPTION_DEVELOPER_CONSOLE_IN_RELEASE "Enables the developer console in Rel
 #The remote console is useful in development, but it is a potential security vulnerability, therefore opt-in
 option(OPTION_REMOTE_CONSOLE "Allows remote console connection" OFF)
 
-if(EXISTS "${SDK_DIR}/googletest_CE_Support")
-	option(OPTION_UNIT_TEST "Unit Tests" ON)
-elseif(OPTION_UNIT_TEST)
-	message(STATUS "Google Test not found in ${SDK_DIR}/googletest_CE_Support - disabling unit tests.")
+if(NOT ANDROID) # Unit test is disabled for Android until fully supported
+	if(EXISTS "${SDK_DIR}/googletest_CE_Support")
+		option(OPTION_UNIT_TEST "Unit Tests" ON)
+	elseif(OPTION_UNIT_TEST)
+		message(STATUS "Google Test not found in ${SDK_DIR}/googletest_CE_Support - disabling unit tests.")
 
-	# Disables the OPTION_UNIT_TEST option but also updates the message in the cache that is then used in the GUI as a tooltip.
-	set(OPTION_UNIT_TEST OFF CACHE BOOL "OPTION_UNIT_TEST was previously set but Google Test is not available. Check bootstrap settings." FORCE)
+		# Disables the OPTION_UNIT_TEST option but also updates the message in the cache that is then used in the GUI as a tooltip.
+		set(OPTION_UNIT_TEST OFF CACHE BOOL "OPTION_UNIT_TEST was previously set but Google Test is not available. Check bootstrap settings." FORCE)
+	endif()
 endif()
 
 #Plugins
