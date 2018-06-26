@@ -30,6 +30,12 @@ ILINE LONG CryInterlockedAdd(volatile LONG* pDst, LONG add)
 }
 
 // Returns the resulting added value
+ILINE int64 CryInterlockedAdd(volatile int64* pDst, int64 add)
+{
+	return __sync_add_and_fetch(pDst, add);
+}
+
+// Returns the resulting added value
 ILINE size_t CryInterlockedAdd(volatile size_t* pDst, size_t add)
 {
 	return __sync_add_and_fetch(pDst, add);
