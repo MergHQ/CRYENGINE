@@ -26,11 +26,11 @@ class CVegetationPaintTool_ClassDesc : public IClassDesc
 	virtual ESystemClassID SystemClassID() { return ESYSTEM_CLASS_EDITTOOL; }
 
 	//! This method returns the human readable name of the class.
-	virtual const char* ClassName() { return "EditTool.VegetationPaint"; };
+	virtual const char* ClassName() { return "EditTool.VegetationPaint"; }
 
 	//! This method returns Category of this class, Category is specifing where this plugin class fits best in
 	//! create panel.
-	virtual const char*    Category()        { return "Terrain"; };
+	virtual const char*    Category()        { return "Terrain"; }
 
 	virtual CRuntimeClass* GetRuntimeClass() { return RUNTIME_CLASS(CVegetationPaintTool); }
 };
@@ -350,4 +350,3 @@ void CVegetationPaintTool::SetModified(AABB& bounds, bool notifySW)
 {
 	GetIEditorImpl()->UpdateViews(eUpdateStatObj, &bounds);
 }
-
