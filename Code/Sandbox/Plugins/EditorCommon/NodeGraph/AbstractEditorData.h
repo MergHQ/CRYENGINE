@@ -11,6 +11,7 @@ class EDITOR_COMMON_API CAbstractEditorData
 {
 public:
 	CAbstractEditorData(QVariant id);
+	virtual ~CAbstractEditorData() {}
 
 	QVariant           GetId() const { return m_id; }
 
@@ -21,7 +22,6 @@ public:
 
 private:
 	QVariant           m_id;
-
 };
 
 } // namespace CryGraphEditor

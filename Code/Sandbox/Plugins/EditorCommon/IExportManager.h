@@ -31,6 +31,7 @@ struct IExporter
 // IExportManager: interface to export manager
 struct IExportManager
 {
+	virtual ~IExportManager() {}
 	//! Register exporter
 	//! return true if succeed, otherwise false
 	virtual bool       RegisterExporter(IExporter* pExporter) = 0;

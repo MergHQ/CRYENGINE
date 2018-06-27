@@ -9,13 +9,12 @@
 #include "IEditor.h"
 #include "ICommandManager.h"
 
-struct SPythonModule;
-struct SPythonModule;
 struct SPythonCommand;
+struct SPythonModule;
 
-class IPythonManager
+struct IPythonManager
 {
-public:
+	virtual ~IPythonManager() {}
 	virtual void  RegisterPythonCommand(const SPythonCommand& command) = 0;
 	virtual void  RegisterPythonModule(const SPythonModule& module) = 0;
 	virtual void  Execute(const char* command) = 0;
@@ -51,8 +50,6 @@ struct SPythonModule
 	{
 		return m_name == other.m_name;
 	}
-
-	void RegisterFunctions();
 
 	string                      m_name;
 	std::vector<SPythonCommand> m_commands;
@@ -170,4 +167,3 @@ typedef CAutoRegister<SPythonCommand> CAutoRegisterPythonCommandHelper;
 	#define REGISTER_PYTHON_ENUM_END
 
 #endif // USE_PYTHON_SCRIPTING
-

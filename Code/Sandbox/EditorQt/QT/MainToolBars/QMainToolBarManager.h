@@ -23,6 +23,7 @@ public:
 			Separator
 		};
 
+		virtual ~QItemDesc() {}
 		virtual QVariant ToVariant() const = 0;
 		virtual Type     GetType() const = 0;
 	};
