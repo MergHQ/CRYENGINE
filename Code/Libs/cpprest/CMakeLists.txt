@@ -64,7 +64,8 @@ target_compile_definitions(${THIS_PROJECT} PUBLIC
 )
 
 if ("${CMAKE_CXX_COMPILER_ID}" STREQUAL "Clang")
-  target_compile_options(${THIS_PROJECT} PRIVATE "-fexceptions -Wno-everything")
+  target_compile_options(${THIS_PROJECT} PRIVATE "-fexceptions")
+  target_compile_options(${THIS_PROJECT} PRIVATE "-w")
 elseif ("${CMAKE_CXX_COMPILER_ID}" STREQUAL "MSVC")
   target_compile_options(${THIS_PROJECT} PRIVATE /EHsc)
 endif()
