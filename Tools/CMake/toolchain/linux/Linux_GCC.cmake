@@ -7,13 +7,22 @@ set(LINUX 1)
 set(LINUX64 1)
 set(OUTPUT_DIRECTORY_NAME "linux_x64_gcc")
 
+if(NOT CRYENGINE_DIR)
+    set(CRYENGINE_DIR ${CMAKE_SOURCE_DIR})
+endif()
+
+if(EXISTS "${CRYENGINE_DIR}/linux_bootstrap")
+    set(LINUX_BOOTSTRAP_FOLDER "${CRYENGINE_DIR}/linux_bootstrap/Code/SDKs")
+else()
+    set(LINUX_BOOTSTRAP_FOLDER "${CRYENGINE_DIR}/Code/SDKs")
+endif()
 
 # QtCreator requires selection of a "kit", which includes these, so don't force them.
 if (NOT CMAKE_C_COMPILER)
-	set(CMAKE_C_COMPILER gcc-7)
+    set(CMAKE_C_COMPILER gcc-7)
 endif()
 if (NOT CMAKE_CXX_COMPILER)
-	set(CMAKE_CXX_COMPILER g++-7)
+    set(CMAKE_CXX_COMPILER g++-7)
 endif()
 
 message(STATUS "CMAKE_C_COMPILER = ${CMAKE_C_COMPILER}")

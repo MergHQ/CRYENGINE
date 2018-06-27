@@ -264,6 +264,8 @@ if(CMAKE_CXX_COMPILER_ID MATCHES "[Cc]lang")
         -Wno-unused-value
         -Wno-invalid-offsetof
         -Wno-multichar
+        -Wno-char-subscripts
+        -Wno-null-conversion
         -Wno-empty-body
         -Wno-unused-lambda-capture
         -Wno-unused-function
