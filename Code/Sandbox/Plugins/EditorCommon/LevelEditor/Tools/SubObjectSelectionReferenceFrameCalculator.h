@@ -2,13 +2,14 @@
 
 #pragma once
 
-#include "Objects\SubObjSelection.h"
+#include "Objects/SubObjSelection.h"
 
 class SubObjectSelectionReferenceFrameCalculator
 {
 public:
 	SubObjectSelectionReferenceFrameCalculator(ESubObjElementType selectionType);
 
+	virtual ~SubObjectSelectionReferenceFrameCalculator() {}
 	virtual void SetExplicitFrame(bool bAnySelected, const Matrix34& refFrame);
 	bool         GetFrame(Matrix34& refFrame);
 
@@ -23,4 +24,3 @@ private:
 	bool               bUseExplicitFrame;
 	bool               bExplicitAnySelected;
 };
-

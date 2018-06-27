@@ -252,9 +252,11 @@ if (OPTION_ENGINE)
 	if(NOT TARGET SDL2)
 		include("${TOOLS_CMAKE_DIR}/modules/SDL2.cmake")
 	endif()
+	if(NOT TARGET ncursesw)
+	   include("${TOOLS_CMAKE_DIR}/modules/ncurses.cmake")
+   endif()
 endif()
 include("${TOOLS_CMAKE_DIR}/modules/Boost.cmake")
-include("${TOOLS_CMAKE_DIR}/modules/ncurses.cmake")
 
 # Apply global defines
 set_property(DIRECTORY "${CRYENGINE_DIR}" PROPERTY COMPILE_DEFINITIONS ${global_defines})

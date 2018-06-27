@@ -34,7 +34,7 @@ private:
 	HANDLE m_handle;
 };
 
-class CResourceTracker
+class CResourceTracker final
 {
 public:
 	CResourceTracker(size_t maxOpenFilesCount, size_t maxMemoryUsageBytes)
@@ -61,7 +61,7 @@ public:
 		++m_openFilesCount;
 	}
 
-	// Signal a free file slot/memoty is available.
+	// Signal a free file slot/memory is available.
 	void Signal(size_t freedSizeInBytes)
 	{
 		{
@@ -76,7 +76,7 @@ public:
 		m_condition.notify_one();
 	}
 
-	virtual void WaitForIdle()
+	void WaitForIdle()
 	{
 		std::unique_lock<std::mutex> lock(m_mutex);
 		m_condition.wait(lock, [this]()

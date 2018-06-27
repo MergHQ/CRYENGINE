@@ -45,9 +45,9 @@ public:
 //! It will also log any asserts (even if asserts are ignored)
 //! User can also show any additional info with the provided functions
 
-class EDITOR_COMMON_API INotificationCenter
+struct EDITOR_COMMON_API INotificationCenter
 {
-public:
+	virtual ~INotificationCenter() {}
 	virtual void Init() = 0;
 
 	virtual int  ShowInfo(const QString& title, const QString& message) = 0;
@@ -55,4 +55,3 @@ public:
 	virtual int  ShowCritical(const QString& title, const QString& message) = 0;
 	virtual int  ShowProgress(const QString& title, const QString& message, bool bShowProgress = false) = 0;
 };
-

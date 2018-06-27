@@ -10,9 +10,8 @@ typedef void (* TPfnDeleter)(void*);
 
 class QAction;
 
-class ICommandManager
+struct ICommandManager
 {
-public:
 	virtual           ~ICommandManager() {}
 	virtual bool      AddCommand(CCommand* pCommand, TPfnDeleter deleter = nullptr) = 0;
 	virtual bool      AddCommandModule(CCommandModuleDescription* pCommand) = 0;

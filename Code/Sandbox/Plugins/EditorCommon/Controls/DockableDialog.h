@@ -4,7 +4,7 @@
 #include "Controls/EditorDialog.h"
 #include "Controls/SandboxWindowing.h"
 
-class IPane;
+struct IPane;
 
 //! Used to spawn a dockable as a dialog. This is used in very rare cases as you lose the docking capabilities, but it enables treating
 //! a dockable pane as a dialog which does not influence the layout or the docking system

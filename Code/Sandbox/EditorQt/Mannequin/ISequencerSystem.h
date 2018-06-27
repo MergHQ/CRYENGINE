@@ -63,6 +63,7 @@ struct CSequencerKey
 	{
 	}
 
+	virtual ~CSequencerKey() {}
 	virtual ETimelineAlignment GetTimelineAlignment() const { return ETimelineAlignment::Default; }
 
 	virtual bool IsFileInsidePak() const { return m_fileState & eIsInsidePak; }

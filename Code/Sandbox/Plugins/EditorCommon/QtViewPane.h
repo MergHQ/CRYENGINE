@@ -15,7 +15,7 @@
 #include <IEditor.h>
 #include <ICommandManager.h>
 
-class IPane;
+struct IPane;
 
 struct IViewPaneClass : public IClassDesc
 {
@@ -50,7 +50,7 @@ struct IViewPaneClass : public IClassDesc
 	virtual IPane* CreatePane() const { return 0; }
 };
 
-class IPane : public IStateSerializable
+struct IPane : public IStateSerializable
 {
 public:
 	virtual ~IPane() {}

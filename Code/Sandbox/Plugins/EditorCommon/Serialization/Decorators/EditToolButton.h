@@ -41,6 +41,8 @@ struct SEditToolButton
 	{
 	}
 
+	virtual ~SEditToolButton() {}
+
 	virtual const char* Icon() const
 	{
 		return icon.c_str();

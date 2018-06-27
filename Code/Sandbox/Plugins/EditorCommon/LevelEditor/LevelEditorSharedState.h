@@ -18,6 +18,7 @@ struct CRuntimeClass;
 //! Callback class passed to PickObject.
 struct IPickObjectCallback
 {
+	virtual ~IPickObjectCallback() {}
 	//! Called when object picked.
 	virtual void OnPick(CBaseObject* picked) = 0;
 	//! Called when pick mode cancelled.

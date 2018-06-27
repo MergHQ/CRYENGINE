@@ -17,9 +17,9 @@ using CCommentEditorDataByIndex = std::vector<CCommentEditorData*>;
 class EDITOR_COMMON_API CGraphEditorData
 {
 public:
+	virtual ~CGraphEditorData() {}
 	virtual void                Serialize(Serialization::IArchive& archive);
 
-public:
 	virtual uint32_t            GetNodeEditorDataCount() const;
 	virtual CNodeEditorData*    CreateNodeEditorData(const QVariant& id);
 	virtual void                RemoveNodeEditorDataById(const QVariant& id);

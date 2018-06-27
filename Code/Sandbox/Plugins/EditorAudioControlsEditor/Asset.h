@@ -24,6 +24,7 @@ CRY_CREATE_ENUM_FLAG_OPERATORS(EAssetFlags);
 class CAsset
 {
 public:
+	virtual ~CAsset() {}
 
 	EAssetType    GetType() const   { return m_type; }
 

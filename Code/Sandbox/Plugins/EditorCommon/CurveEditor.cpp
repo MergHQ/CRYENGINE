@@ -443,6 +443,7 @@ bool ArePointsAligned(const Vec2& p0, const Vec2& p1, const Vec2& p2, const Vec2
 
 struct CCurveEditor::SMouseHandler
 {
+	virtual ~SMouseHandler() {}
 	virtual void mousePressEvent(QMouseEvent* pEvent)       {}
 	virtual void mouseDoubleClickEvent(QMouseEvent* pEvent) {}
 	virtual void mouseMoveEvent(QMouseEvent* pEvent)        {}
