@@ -115,6 +115,7 @@ CRigidEntity::CRigidEntity(CPhysicalWorld *pWorld, IGeneralMemoryHeap* pHeap)
 	, m_lockContacts(0)
 	, m_lockStep(0)
 	, m_iLastChecksum(0)
+	, m_sweepGap(m_pWorld ? m_pWorld->m_vars.maxContactGap*0.5f : 0.01f)
 #if USE_IMPROVED_RIGID_ENTITY_SYNCHRONISATION
 	, m_pNetStateHistory(nullptr)
 	, m_sequenceOffset(0)
