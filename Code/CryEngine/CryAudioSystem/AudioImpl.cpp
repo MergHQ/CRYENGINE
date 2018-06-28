@@ -16,7 +16,7 @@ struct SEvent final : IEvent
 
 struct SListener final : IListener
 {
-	virtual ERequestStatus Set3DAttributes(SObject3DAttributes const& attributes) override { return ERequestStatus::Success; }
+	virtual void SetTransformation(CObjectTransformation const& transformation) override {}
 };
 
 struct STrigger final : ITrigger
@@ -30,7 +30,7 @@ struct STrigger final : ITrigger
 struct SObject final : IObject
 {
 	virtual ERequestStatus Update() override                                                                    { return ERequestStatus::Success; }
-	virtual ERequestStatus Set3DAttributes(SObject3DAttributes const& attributes) override                      { return ERequestStatus::Success; }
+	virtual void           SetTransformation(CObjectTransformation const& transformation) override              {}
 	virtual ERequestStatus SetEnvironment(IEnvironment const* const pIEnvironment, float const amount) override { return ERequestStatus::Success; }
 	virtual ERequestStatus SetParameter(IParameter const* const pIParameter, float const value) override        { return ERequestStatus::Success; }
 	virtual ERequestStatus SetSwitchState(ISwitchState const* const pISwitchState) override                     { return ERequestStatus::Success; }

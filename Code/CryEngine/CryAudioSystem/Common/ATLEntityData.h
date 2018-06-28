@@ -16,8 +16,6 @@ namespace CryAudio
  */
 namespace Impl
 {
-struct SObject3DAttributes;
-
 /**
  * An implementation may use this interface to define a class for storing implementation-specific
  * data needed for identifying and using the corresponding CryAudio::IListener object (e.g. a middleware-specific unique ID)
@@ -29,11 +27,11 @@ struct IListener
 	/** @endcond */
 
 	/**
-	 * Set the world position of the listener inside the audio middleware
-	 * @param attributes - a struct containing the audio listener's transformation and velocity
-	 * @return ERequestStatus::Success if the AudioListener's position has been successfully set, ERequestStatus::Failure otherwise
+	 * Sets the listener's transformation.
+	 * @param transformation - a class containing the listener's position and rotation
+	 * @return void
 	 */
-	virtual ERequestStatus Set3DAttributes(SObject3DAttributes const& attributes) = 0;
+	virtual void SetTransformation(CObjectTransformation const& transformation) = 0;
 };
 
 /**
@@ -192,11 +190,11 @@ struct IObject
 	virtual ERequestStatus Update() = 0;
 
 	/**
-	 * Set the 3D attributes of the audio object
-	 * @param attributes   - a struct containing the audio object's transformation and velocity
-	 * @return ERequestStatus::Success if the AudioObject's position has been successfully set, ERequestStatus::Failure otherwise
+	 * Set the the object's transformation.
+	 * @param transformation - a class containing the object's position and rotation
+	 * @return void
 	 */
-	virtual ERequestStatus Set3DAttributes(SObject3DAttributes const& attributes) = 0;
+	virtual void SetTransformation(CObjectTransformation const& transformation) = 0;
 
 	/**
 	 * Set the provided value for the specified environment on the audio object
@@ -211,7 +209,7 @@ struct IObject
 	 * @param pIParameter - implementation-specific parameter to set
 	 * @param value       - the value to set the parameter to
 	 * @return ERequestStatus::Success if the provided value has been successfully set on the passed IAudioParameter, ERequestStatus::Failure otherwise
-	 * @see ExecuteTrigger, SetSwitchState, SetEnvironment, SetListener3DAttributes
+	 * @see ExecuteTrigger, SetSwitchState, SetEnvironment, SetTransformation
 	 */
 	virtual ERequestStatus SetParameter(IParameter const* const pIParameter, float const value) = 0;
 
@@ -219,7 +217,7 @@ struct IObject
 	 * Set the provided state (on a switch) on the audio object
 	 * @param pISwitchState - implementation-specific state to set
 	 * @return ERequestStatus::Success if the provided ISwitchState has been successfully set, ERequestStatus::Failure otherwise
-	 * @see ExecuteTrigger, SetParameter, SetEnvironment, Set3DAttributes
+	 * @see ExecuteTrigger, SetParameter, SetEnvironment, SetTransformation
 	 */
 	virtual ERequestStatus SetSwitchState(ISwitchState const* const pISwitchState) = 0;
 

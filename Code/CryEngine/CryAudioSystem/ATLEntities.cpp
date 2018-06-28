@@ -45,38 +45,38 @@ void CATLListener::Update(float const deltaTime)
 {
 	if (m_isMovingOrDecaying)
 	{
-		Vec3 const deltaPos(m_attributes.transformation.GetPosition() - m_previousAttributes.transformation.GetPosition());
+		Vec3 const deltaPos(m_transformation.GetPosition() - m_previousPositionForVelocityCalculation);
 
 		if (!deltaPos.IsZero())
 		{
-			m_attributes.velocity = deltaPos / deltaTime;
-			m_previousAttributes.transformation.SetPosition(m_attributes.transformation.GetPosition());
+			m_velocity = deltaPos / deltaTime;
+			m_previousPositionForVelocityCalculation = m_transformation.GetPosition();
 		}
-		else if (!m_attributes.velocity.IsZero())
+		else if (!m_velocity.IsZero())
 		{
 			// We did not move last frame, begin exponential decay towards zero.
 			float const decay = std::max(1.0f - deltaTime / 0.05f, 0.0f);
-			m_attributes.velocity *= decay;
+			m_velocity *= decay;
 
-			if (m_attributes.velocity.GetLengthSquared() < FloatEpsilon)
+			if (m_velocity.GetLengthSquared() < FloatEpsilon)
 			{
-				m_attributes.velocity = ZERO;
+				m_velocity = ZERO;
 				m_isMovingOrDecaying = false;
 			}
 		}
 
-		m_pImplData->Set3DAttributes(m_attributes);
+		// TODO: propagate listener velocity down to the middleware.
 	}
 }
 
 //////////////////////////////////////////////////////////////////////////
 void CATLListener::HandleSetTransformation(CObjectTransformation const& transformation)
 {
-	m_attributes.transformation = transformation;
+	m_transformation = transformation;
 	m_isMovingOrDecaying = true;
 
-	// Immediately propagate the new transformation down to the middleware calculation of velocity can be safely delayed to next audio frame.
-	m_pImplData->Set3DAttributes(m_attributes);
+	// Immediately propagate the new transformation down to the middleware, calculation of velocity can be safely delayed to next audio frame.
+	m_pImplData->SetTransformation(m_transformation);
 }
 
 //////////////////////////////////////////////////////////////////////////

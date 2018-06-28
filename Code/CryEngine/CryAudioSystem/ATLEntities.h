@@ -105,6 +105,7 @@ class CATLListener final : public CryAudio::IListener
 {
 public:
 
+	CATLListener() = delete;
 	CATLListener(CATLListener const&) = delete;
 	CATLListener(CATLListener&&) = delete;
 	CATLListener& operator=(CATLListener const&) = delete;
@@ -120,9 +121,10 @@ public:
 	virtual void SetName(char const* const szName, SRequestUserData const& userData = SRequestUserData::GetEmptyObject()) override;
 	// ~CryAudio::IListener
 
-	void                             Update(float const deltaTime);
-	void                             HandleSetTransformation(CObjectTransformation const& transformation);
-	Impl::SObject3DAttributes const& Get3DAttributes() const { return m_attributes; }
+	void                         Update(float const deltaTime);
+	void                         HandleSetTransformation(CObjectTransformation const& transformation);
+	CObjectTransformation const& GetTransformation() const { return m_transformation; }
+	Vec3 const&                  GetVelocity() const       { return m_velocity; }
 
 	Impl::IListener* m_pImplData;
 
@@ -133,9 +135,10 @@ public:
 
 private:
 
-	bool                      m_isMovingOrDecaying;
-	Impl::SObject3DAttributes m_attributes;
-	Impl::SObject3DAttributes m_previousAttributes;
+	bool                  m_isMovingOrDecaying;
+	CObjectTransformation m_transformation;
+	Vec3                  m_previousPositionForVelocityCalculation{ ZERO };
+	Vec3                  m_velocity{ ZERO };
 };
 
 class CATLControlImpl
@@ -160,8 +163,8 @@ class CATLTriggerImpl : public CATLControlImpl
 public:
 
 	explicit CATLTriggerImpl(
-	  TriggerImplId const audioTriggerImplId,
-	  Impl::ITrigger const* const pImplData = nullptr)
+		TriggerImplId const audioTriggerImplId,
+		Impl::ITrigger const* const pImplData = nullptr)
 		: m_audioTriggerImplId(audioTriggerImplId)
 		, m_pImplData(pImplData)
 	{}
@@ -181,10 +184,10 @@ public:
 	using ImplPtrVec = std::vector<CATLTriggerImpl const*>;
 
 	explicit CATLTrigger(
-	  ControlId const audioTriggerId,
-	  EDataScope const dataScope,
-	  ImplPtrVec const& implPtrs,
-	  float const maxRadius)
+		ControlId const audioTriggerId,
+		EDataScope const dataScope,
+		ImplPtrVec const& implPtrs,
+		float const maxRadius)
 		: ATLControl(audioTriggerId, dataScope)
 		, m_implPtrs(implPtrs)
 		, m_maxRadius(maxRadius)
@@ -269,9 +272,9 @@ public:
 	using ImplPtrVec = std::vector<IAudioSwitchStateImpl const*>;
 
 	explicit CATLSwitchState(
-	  ControlId const audioSwitchId,
-	  SwitchStateId const audioSwitchStateId,
-	  ImplPtrVec const& implPtrs)
+		ControlId const audioSwitchId,
+		SwitchStateId const audioSwitchStateId,
+		ImplPtrVec const& implPtrs)
 		: m_audioSwitchStateId(audioSwitchStateId)
 		, m_audioSwitchId(audioSwitchId)
 		, m_implPtrs(implPtrs)
@@ -429,10 +432,10 @@ public:
 	using FileEntryIds = std::vector<FileEntryId>;
 
 	explicit CATLPreloadRequest(
-	  PreloadRequestId const audioPreloadRequestId,
-	  EDataScope const dataScope,
-	  bool const bAutoLoad,
-	  FileEntryIds const& fileEntryIds)
+		PreloadRequestId const audioPreloadRequestId,
+		EDataScope const dataScope,
+		bool const bAutoLoad,
+		FileEntryIds const& fileEntryIds)
 		: CATLEntity<PreloadRequestId>(audioPreloadRequestId, dataScope)
 		, m_bAutoLoad(bAutoLoad)
 		, m_fileEntryIds(fileEntryIds)
@@ -441,11 +444,4 @@ public:
 	bool const   m_bAutoLoad;
 	FileEntryIds m_fileEntryIds;
 };
-
-//-------------------- ATLObject container typedefs --------------------------
-using AudioTriggerLookup = std::map<ControlId, CATLTrigger const*>;
-using AudioParameterLookup = std::map<ControlId, CParameter const*>;
-using AudioSwitchLookup = std::map<ControlId, CATLSwitch const*>;
-using AudioPreloadRequestLookup = std::map<PreloadRequestId, CATLPreloadRequest*>;
-using AudioEnvironmentLookup = std::map<EnvironmentId, CATLAudioEnvironment const*>;
 } // namespace CryAudio

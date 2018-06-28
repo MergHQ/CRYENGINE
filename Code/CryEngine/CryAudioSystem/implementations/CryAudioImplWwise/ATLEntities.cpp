@@ -26,11 +26,11 @@ void EndEventCallback(AkCallbackType callbackType, AkCallbackInfo* pCallbackInfo
 }
 
 void PrepareEventCallback(
-  AkUniqueID eventId,
-  void const* pBankPtr,
-  AKRESULT wwiseResult,
-  AkMemPoolId memPoolId,
-  void* pCookie)
+	AkUniqueID eventId,
+	void const* pBankPtr,
+	AKRESULT wwiseResult,
+	AkMemPoolId memPoolId,
+	void* pCookie)
 {
 	CEvent* const pEvent = static_cast<CEvent* const>(pCookie);
 
@@ -63,20 +63,17 @@ ERequestStatus CObject::Update()
 }
 
 //////////////////////////////////////////////////////////////////////////
-ERequestStatus CObject::Set3DAttributes(SObject3DAttributes const& attributes)
+void CObject::SetTransformation(CObjectTransformation const& transformation)
 {
 	AkSoundPosition soundPos;
-	FillAKObjectPosition(attributes.transformation, soundPos);
+	FillAKObjectPosition(transformation, soundPos);
 
 	AKRESULT const wwiseResult = AK::SoundEngine::SetPosition(m_id, soundPos);
 
 	if (!IS_WWISE_OK(wwiseResult))
 	{
-		Cry::Audio::Log(ELogType::Warning, "Wwise - SetPosition failed with AKRESULT: %d", wwiseResult);
-		return ERequestStatus::Failure;
+		Cry::Audio::Log(ELogType::Warning, "Wwise - CObject::SetTransformation failed with AKRESULT: %d", wwiseResult);
 	}
-
-	return ERequestStatus::Success;
 }
 
 //////////////////////////////////////////////////////////////////////////
@@ -132,11 +129,11 @@ ERequestStatus CObject::SetEnvironment(IEnvironment const* const pIEnvironment, 
 				else
 				{
 					Cry::Audio::Log(
-					  ELogType::Warning,
-					  "Wwise - failed to set the Rtpc %u to value %f on object %u in SetEnvironement()",
-					  pEnvironment->rtpcId,
-					  rtpcValue,
-					  m_id);
+						ELogType::Warning,
+						"Wwise - failed to set the Rtpc %u to value %f on object %u in SetEnvironement()",
+						pEnvironment->rtpcId,
+						rtpcValue,
+						m_id);
 				}
 
 				break;
@@ -174,11 +171,11 @@ ERequestStatus CObject::SetParameter(IParameter const* const pIParameter, float 
 		else
 		{
 			Cry::Audio::Log(
-			  ELogType::Warning,
-			  "Wwise - failed to set the Rtpc %" PRISIZE_T " to value %f on object %" PRISIZE_T,
-			  pParameter->id,
-			  static_cast<AkRtpcValue>(value),
-			  m_id);
+				ELogType::Warning,
+				"Wwise - failed to set the Rtpc %" PRISIZE_T " to value %f on object %" PRISIZE_T,
+				pParameter->id,
+				static_cast<AkRtpcValue>(value),
+				m_id);
 		}
 	}
 	else
@@ -202,8 +199,8 @@ ERequestStatus CObject::SetSwitchState(ISwitchState const* const pISwitchState)
 		case ESwitchType::StateGroup:
 			{
 				AKRESULT const wwiseResult = AK::SoundEngine::SetState(
-				  pSwitchState->stateOrSwitchGroupId,
-				  pSwitchState->stateOrSwitchId);
+					pSwitchState->stateOrSwitchGroupId,
+					pSwitchState->stateOrSwitchId);
 
 				if (IS_WWISE_OK(wwiseResult))
 				{
@@ -212,10 +209,10 @@ ERequestStatus CObject::SetSwitchState(ISwitchState const* const pISwitchState)
 				else
 				{
 					Cry::Audio::Log(
-					  ELogType::Warning,
-					  "Wwise failed to set the StateGroup %" PRISIZE_T "to state %" PRISIZE_T,
-					  pSwitchState->stateOrSwitchGroupId,
-					  pSwitchState->stateOrSwitchId);
+						ELogType::Warning,
+						"Wwise failed to set the StateGroup %" PRISIZE_T "to state %" PRISIZE_T,
+						pSwitchState->stateOrSwitchGroupId,
+						pSwitchState->stateOrSwitchId);
 				}
 
 				break;
@@ -223,9 +220,9 @@ ERequestStatus CObject::SetSwitchState(ISwitchState const* const pISwitchState)
 		case ESwitchType::SwitchGroup:
 			{
 				AKRESULT const wwiseResult = AK::SoundEngine::SetSwitch(
-				  pSwitchState->stateOrSwitchGroupId,
-				  pSwitchState->stateOrSwitchId,
-				  m_id);
+					pSwitchState->stateOrSwitchGroupId,
+					pSwitchState->stateOrSwitchId,
+					m_id);
 
 				if (IS_WWISE_OK(wwiseResult))
 				{
@@ -234,11 +231,11 @@ ERequestStatus CObject::SetSwitchState(ISwitchState const* const pISwitchState)
 				else
 				{
 					Cry::Audio::Log(
-					  ELogType::Warning,
-					  "Wwise - failed to set the SwitchGroup %" PRISIZE_T " to state %" PRISIZE_T " on object %" PRISIZE_T,
-					  pSwitchState->stateOrSwitchGroupId,
-					  pSwitchState->stateOrSwitchId,
-					  m_id);
+						ELogType::Warning,
+						"Wwise - failed to set the SwitchGroup %" PRISIZE_T " to state %" PRISIZE_T " on object %" PRISIZE_T,
+						pSwitchState->stateOrSwitchGroupId,
+						pSwitchState->stateOrSwitchId,
+						m_id);
 				}
 
 				break;
@@ -246,9 +243,9 @@ ERequestStatus CObject::SetSwitchState(ISwitchState const* const pISwitchState)
 		case ESwitchType::Rtpc:
 			{
 				AKRESULT const wwiseResult = AK::SoundEngine::SetRTPCValue(
-				  pSwitchState->stateOrSwitchGroupId,
-				  static_cast<AkRtpcValue>(pSwitchState->rtpcValue),
-				  m_id);
+					pSwitchState->stateOrSwitchGroupId,
+					static_cast<AkRtpcValue>(pSwitchState->rtpcValue),
+					m_id);
 
 				if (IS_WWISE_OK(wwiseResult))
 				{
@@ -257,11 +254,11 @@ ERequestStatus CObject::SetSwitchState(ISwitchState const* const pISwitchState)
 				else
 				{
 					Cry::Audio::Log(
-					  ELogType::Warning,
-					  "Wwise - failed to set the Rtpc %" PRISIZE_T " to value %f on object %" PRISIZE_T,
-					  pSwitchState->stateOrSwitchGroupId,
-					  static_cast<AkRtpcValue>(pSwitchState->rtpcValue),
-					  m_id);
+						ELogType::Warning,
+						"Wwise - failed to set the Rtpc %" PRISIZE_T " to value %f on object %" PRISIZE_T,
+						pSwitchState->stateOrSwitchGroupId,
+						static_cast<AkRtpcValue>(pSwitchState->rtpcValue),
+						m_id);
 				}
 
 				break;
@@ -294,10 +291,10 @@ ERequestStatus CObject::SetObstructionOcclusion(float const obstruction, float c
 	if (g_listenerId != AK_INVALID_GAME_OBJECT)
 	{
 		AKRESULT const wwiseResult = AK::SoundEngine::SetObjectObstructionAndOcclusion(
-		  m_id,
-		  g_listenerId,                     // Set obstruction/occlusion for only the default listener for now.
-		  static_cast<AkReal32>(occlusion), // The occlusion value is currently used on obstruction as well until a correct obstruction value is calculated.
-		  static_cast<AkReal32>(occlusion));
+			m_id,
+			g_listenerId,                     // Set obstruction/occlusion for only the default listener for now.
+			static_cast<AkReal32>(occlusion), // The occlusion value is currently used on obstruction as well until a correct obstruction value is calculated.
+			static_cast<AkReal32>(occlusion));
 
 		if (IS_WWISE_OK(wwiseResult))
 		{
@@ -306,11 +303,11 @@ ERequestStatus CObject::SetObstructionOcclusion(float const obstruction, float c
 		else
 		{
 			Cry::Audio::Log(
-			  ELogType::Warning,
-			  "Wwise - failed to set Obstruction %f and Occlusion %f on object %" PRISIZE_T,
-			  obstruction,
-			  occlusion,
-			  m_id);
+				ELogType::Warning,
+				"Wwise - failed to set Obstruction %f and Occlusion %f on object %" PRISIZE_T,
+				obstruction,
+				occlusion,
+				m_id);
 		}
 	}
 	else
@@ -409,13 +406,13 @@ ERequestStatus CObject::PostEnvironmentAmounts()
 		}
 
 		m_auxSendValues.erase(
-		  std::remove_if(
-		    m_auxSendValues.begin(),
-		    m_auxSendValues.end(),
-		    [](AkAuxSendValue const& auxSendValue) -> bool { return auxSendValue.fControlValue == 0.0f; }
-		    ),
-		  m_auxSendValues.end()
-		  );
+			std::remove_if(
+				m_auxSendValues.begin(),
+				m_auxSendValues.end(),
+				[](AkAuxSendValue const& auxSendValue) -> bool { return auxSendValue.fControlValue == 0.0f; }
+				),
+			m_auxSendValues.end()
+			);
 	}
 
 	m_bNeedsToUpdateEnvironments = false;
@@ -444,21 +441,17 @@ ERequestStatus CEvent::Stop()
 }
 
 //////////////////////////////////////////////////////////////////////////
-ERequestStatus CListener::Set3DAttributes(SObject3DAttributes const& attributes)
+void CListener::SetTransformation(CObjectTransformation const& transformation)
 {
-	ERequestStatus result = ERequestStatus::Success;
 	AkListenerPosition listenerPos;
-	FillAKListenerPosition(attributes.transformation, listenerPos);
+	FillAKListenerPosition(transformation, listenerPos);
 
 	AKRESULT const wwiseResult = AK::SoundEngine::SetPosition(m_id, listenerPos);
 
 	if (!IS_WWISE_OK(wwiseResult))
 	{
-		Cry::Audio::Log(ELogType::Warning, "Wwise - CListener::Set3DAttributes failed with AKRESULT: %d", wwiseResult);
-		result = ERequestStatus::Failure;
+		Cry::Audio::Log(ELogType::Warning, "Wwise - CListener::SetTransformation failed with AKRESULT: %d", wwiseResult);
 	}
-
-	return result;
 }
 
 //////////////////////////////////////////////////////////////////////////
@@ -499,11 +492,11 @@ ERequestStatus CTrigger::SetLoaded(bool const bLoad) const
 	else
 	{
 		Cry::Audio::Log(
-		  ELogType::Warning,
-		  "Wwise - PrepareEvent with %s failed for Wwise event %" PRISIZE_T " with AKRESULT: %d",
-		  bLoad ? "Preparation_Load" : "Preparation_Unload",
-		  m_id,
-		  wwiseResult);
+			ELogType::Warning,
+			"Wwise - PrepareEvent with %s failed for Wwise event %" PRISIZE_T " with AKRESULT: %d",
+			bLoad ? "Preparation_Load" : "Preparation_Unload",
+			m_id,
+			wwiseResult);
 	}
 
 	return result;
@@ -520,11 +513,11 @@ ERequestStatus CTrigger::SetLoadedAsync(IEvent* const pIEvent, bool const bLoad)
 	{
 		AkUniqueID id = m_id;
 		AKRESULT const wwiseResult = AK::SoundEngine::PrepareEvent(
-		  bLoad ? AK::SoundEngine::Preparation_Load : AK::SoundEngine::Preparation_Unload,
-		  &id,
-		  1,
-		  &PrepareEventCallback,
-		  pEvent);
+			bLoad ? AK::SoundEngine::Preparation_Load : AK::SoundEngine::Preparation_Unload,
+			&id,
+			1,
+			&PrepareEventCallback,
+			pEvent);
 
 		if (IS_WWISE_OK(wwiseResult))
 		{
@@ -535,11 +528,11 @@ ERequestStatus CTrigger::SetLoadedAsync(IEvent* const pIEvent, bool const bLoad)
 		else
 		{
 			Cry::Audio::Log(
-			  ELogType::Warning,
-			  "Wwise - PrepareEvent with %s failed for Wwise event %" PRISIZE_T " with AKRESULT: %d",
-			  bLoad ? "Preparation_Load" : "Preparation_Unload",
-			  m_id,
-			  wwiseResult);
+				ELogType::Warning,
+				"Wwise - PrepareEvent with %s failed for Wwise event %" PRISIZE_T " with AKRESULT: %d",
+				bLoad ? "Preparation_Load" : "Preparation_Unload",
+				m_id,
+				wwiseResult);
 		}
 	}
 	else

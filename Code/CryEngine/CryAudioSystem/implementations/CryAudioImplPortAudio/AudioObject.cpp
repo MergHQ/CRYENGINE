@@ -48,9 +48,8 @@ ERequestStatus CObject::Update()
 }
 
 //////////////////////////////////////////////////////////////////////////
-ERequestStatus CObject::Set3DAttributes(SObject3DAttributes const& attributes)
+void CObject::SetTransformation(CObjectTransformation const& transformation)
 {
-	return ERequestStatus::Success;
 }
 
 //////////////////////////////////////////////////////////////////////////
@@ -89,10 +88,10 @@ ERequestStatus CObject::ExecuteTrigger(ITrigger const* const pITrigger, IEvent* 
 		if (pTrigger->eventType == EEventType::Start)
 		{
 			requestResult = pEvent->Execute(
-			  pTrigger->numLoops,
-			  pTrigger->sampleRate,
-			  pTrigger->filePath,
-			  pTrigger->streamParameters) ? ERequestStatus::Success : ERequestStatus::Failure;
+				pTrigger->numLoops,
+				pTrigger->sampleRate,
+				pTrigger->filePath,
+				pTrigger->streamParameters) ? ERequestStatus::Success : ERequestStatus::Failure;
 
 			if (requestResult == ERequestStatus::Success)
 			{

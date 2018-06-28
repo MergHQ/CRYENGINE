@@ -20,24 +20,25 @@ namespace Impl
 namespace Fmod
 {
 ///////////////////////////////////////////////////////////////////////////
-inline void FillFmodObjectPosition(SObject3DAttributes const& inAttributes, FMOD_3D_ATTRIBUTES& outAttributes)
+inline void FillFmodObjectPosition(CObjectTransformation const& transformation, FMOD_3D_ATTRIBUTES& outAttributes)
 {
-	outAttributes.forward.x = inAttributes.transformation.GetForward().x;
-	outAttributes.forward.z = inAttributes.transformation.GetForward().y;
-	outAttributes.forward.y = inAttributes.transformation.GetForward().z;
+	outAttributes.forward.x = transformation.GetForward().x;
+	outAttributes.forward.z = transformation.GetForward().y;
+	outAttributes.forward.y = transformation.GetForward().z;
 
-	outAttributes.position.x = inAttributes.transformation.GetPosition().x;
-	outAttributes.position.z = inAttributes.transformation.GetPosition().y;
-	outAttributes.position.y = inAttributes.transformation.GetPosition().z;
+	outAttributes.position.x = transformation.GetPosition().x;
+	outAttributes.position.z = transformation.GetPosition().y;
+	outAttributes.position.y = transformation.GetPosition().z;
 
-	outAttributes.up.x = inAttributes.transformation.GetUp().x;
-	outAttributes.up.z = inAttributes.transformation.GetUp().y;
-	outAttributes.up.y = inAttributes.transformation.GetUp().z;
+	outAttributes.up.x = transformation.GetUp().x;
+	outAttributes.up.z = transformation.GetUp().y;
+	outAttributes.up.y = transformation.GetUp().z;
 
-	outAttributes.velocity.x = inAttributes.velocity.x;
-	outAttributes.velocity.z = inAttributes.velocity.y;
-	outAttributes.velocity.y = inAttributes.velocity.z;
+	// Use CE object parameters "absolute_velocity" and "relative_velocity" instead.
+	outAttributes.velocity.x = 0.0f;
+	outAttributes.velocity.z = 0.0f;
+	outAttributes.velocity.y = 0.0f;
 }
-}
-}
-}
+} // namespace Fmod
+} // namespace Impl
+} // namespace CryAudio

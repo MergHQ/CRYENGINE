@@ -31,15 +31,15 @@ class CTrigger final : public ITrigger
 public:
 
 	explicit CTrigger(
-	  EEventType const type,
-	  SampleId const sampleId,
-	  float const attenuationMinDistance = s_defaultMinAttenuationDist,
-	  float const attenuationMaxDistance = s_defaultMaxAttenuationDist,
-	  int const volume = 128,
-	  int const numLoops = 1,
-	  int const fadeInTime = 0,
-	  int const fadeOutTime = 0,
-	  bool const isPanningEnabled = true)
+		EEventType const type,
+		SampleId const sampleId,
+		float const attenuationMinDistance = s_defaultMinAttenuationDist,
+		float const attenuationMaxDistance = s_defaultMaxAttenuationDist,
+		int const volume = 128,
+		int const numLoops = 1,
+		int const fadeInTime = 0,
+		int const fadeOutTime = 0,
+		bool const isPanningEnabled = true)
 		: m_type(type)
 		, m_sampleId(sampleId)
 		, m_attenuationMinDistance(attenuationMinDistance)
@@ -93,10 +93,10 @@ class CParameter final : public IParameter
 public:
 
 	explicit CParameter(
-	  SampleId const sampleId,
-	  float const multiplier,
-	  float const shift,
-	  char const* const szName)
+		SampleId const sampleId,
+		float const multiplier,
+		float const shift,
+		char const* const szName)
 		: m_sampleId(sampleId)
 		, m_multiplier(multiplier)
 		, m_shift(shift)
@@ -129,9 +129,9 @@ class CSwitchState final : public ISwitchState
 public:
 
 	explicit CSwitchState(
-	  SampleId const sampleId,
-	  float const value,
-	  char const* const szName)
+		SampleId const sampleId,
+		float const value,
+		char const* const szName)
 		: m_sampleId(sampleId)
 		, m_value(value)
 		, m_name(szName)
@@ -231,7 +231,7 @@ public:
 
 	// CryAudio::Impl::IObject
 	virtual ERequestStatus Update() override;
-	virtual ERequestStatus Set3DAttributes(SObject3DAttributes const& attributes) override;
+	virtual void           SetTransformation(CObjectTransformation const& transformation) override;
 	virtual ERequestStatus SetEnvironment(IEnvironment const* const pIEnvironment, float const amount) override;
 	virtual ERequestStatus SetParameter(IParameter const* const pIParameter, float const value) override;
 	virtual ERequestStatus SetSwitchState(ISwitchState const* const pISwitchState) override;
@@ -265,7 +265,7 @@ public:
 	CListener& operator=(CListener&&) = delete;
 
 	// CryAudio::Impl::IListener
-	virtual ERequestStatus Set3DAttributes(SObject3DAttributes const& attributes) override;
+	virtual void SetTransformation(CObjectTransformation const& transformation) override;
 	// ~CryAudio::Impl::IListener
 
 	const ListenerId m_id;

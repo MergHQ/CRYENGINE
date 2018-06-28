@@ -145,12 +145,11 @@ public:
 		       m_up.IsEquivalent(transformation.GetColumn2(), epsilon);
 	}
 
-	void                                SetPosition(Vec3 const& position) { m_position = position; }
-	ILINE Vec3 const&                   GetPosition() const               { return m_position; }
-	ILINE Vec3 const&                   GetForward() const                { return m_forward; }
-	ILINE Vec3 const&                   GetUp() const                     { return m_up; }
+	ILINE Vec3 const&                   GetPosition() const { return m_position; }
+	ILINE Vec3 const&                   GetForward() const  { return m_forward; }
+	ILINE Vec3 const&                   GetUp() const       { return m_up; }
 
-	static CObjectTransformation const& GetEmptyObject()                  { static CObjectTransformation const emptyInstance; return emptyInstance; }
+	static CObjectTransformation const& GetEmptyObject()    { static CObjectTransformation const emptyInstance; return emptyInstance; }
 
 private:
 
@@ -162,10 +161,10 @@ private:
 struct SRequestUserData
 {
 	explicit SRequestUserData(
-	  ERequestFlags const flags_ = ERequestFlags::None,
-	  void* const pOwner_ = nullptr,
-	  void* const pUserData_ = nullptr,
-	  void* const pUserDataOwner_ = nullptr)
+		ERequestFlags const flags_ = ERequestFlags::None,
+		void* const pOwner_ = nullptr,
+		void* const pUserData_ = nullptr,
+		void* const pUserDataOwner_ = nullptr)
 		: flags(flags_)
 		, pOwner(pOwner_)
 		, pUserData(pUserData_)
@@ -205,9 +204,9 @@ struct STriggerData
 struct SPlayFileInfo
 {
 	explicit SPlayFileInfo(
-	  char const* const _szFile,
-	  bool const _bLocalized = true,
-	  ControlId const _usedPlaybackTrigger = InvalidControlId)
+		char const* const _szFile,
+		bool const _bLocalized = true,
+		ControlId const _usedPlaybackTrigger = InvalidControlId)
 		: szFile(_szFile)
 		, bLocalized(_bLocalized)
 		, usedTriggerForPlayback(_usedPlaybackTrigger)

@@ -33,7 +33,7 @@ public:
 
 	// CryAudio::Impl::IObject
 	virtual ERequestStatus Update() override;
-	virtual ERequestStatus Set3DAttributes(SObject3DAttributes const& attributes) override;
+	virtual void           SetTransformation(CObjectTransformation const& transformation) override;
 	virtual ERequestStatus ExecuteTrigger(ITrigger const* const pITrigger, IEvent* const pIEvent) override;
 	virtual ERequestStatus StopAllTriggers() override;
 	virtual ERequestStatus PlayFile(IStandaloneFile* const pIStandaloneFile) override;

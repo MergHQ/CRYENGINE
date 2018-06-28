@@ -39,7 +39,7 @@ void CAudioListenerManager::SetImpl(Impl::IImpl* const pIImpl)
 			pListener->m_pImplData = m_pIImpl->ConstructListener();
 #endif  // INCLUDE_AUDIO_PRODUCTION_CODE
 
-			pListener->HandleSetTransformation(pListener->Get3DAttributes().transformation);
+			pListener->HandleSetTransformation(pListener->GetTransformation());
 		}
 	}
 	else
@@ -126,15 +126,27 @@ size_t CAudioListenerManager::GetNumActiveListeners() const
 }
 
 //////////////////////////////////////////////////////////////////////////
-Impl::SObject3DAttributes const& CAudioListenerManager::GetActiveListenerAttributes() const
+CObjectTransformation const& CAudioListenerManager::GetActiveListenerTransformation() const
 {
 	for (auto const pListener : m_activeListeners)
 	{
 		// Only one listener supported currently!
-		return pListener->Get3DAttributes();
+		return pListener->GetTransformation();
 	}
 
-	return Impl::SObject3DAttributes::GetEmptyObject();
+	return CObjectTransformation::GetEmptyObject();
+}
+
+//////////////////////////////////////////////////////////////////////////
+Vec3 const& CAudioListenerManager::GetActiveListenerVelocity() const
+{
+	for (auto const pListener : m_activeListeners)
+	{
+		// Only one listener supported currently!
+		return pListener->GetVelocity();
+	}
+
+	return Vec3Constants<float>::fVec3_Zero;
 }
 
 #if defined(INCLUDE_AUDIO_PRODUCTION_CODE)

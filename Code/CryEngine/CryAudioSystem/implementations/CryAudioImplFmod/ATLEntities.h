@@ -32,12 +32,11 @@ public:
 	ILINE FMOD_3D_ATTRIBUTES& Get3DAttributes() { return m_attributes; }
 
 	// CryAudio::Impl::IListener
-	virtual ERequestStatus Set3DAttributes(SObject3DAttributes const& attributes) override
+	virtual void SetTransformation(CObjectTransformation const& transformation) override
 	{
-		FillFmodObjectPosition(attributes, m_attributes);
+		FillFmodObjectPosition(transformation, m_attributes);
 		FMOD_RESULT const fmodResult = s_pSystem->setListenerAttributes(m_id, &m_attributes);
 		ASSERT_FMOD_OK;
-		return ERequestStatus::Success;
 	}
 	// ~CryAudio::Impl::IListener
 
@@ -63,10 +62,10 @@ class CTrigger final : public ITrigger
 public:
 
 	explicit CTrigger(
-	  uint32 const id,
-	  EEventType const eventType,
-	  FMOD::Studio::EventDescription* const pEventDescription,
-	  FMOD_GUID const guid)
+		uint32 const id,
+		EEventType const eventType,
+		FMOD::Studio::EventDescription* const pEventDescription,
+		FMOD_GUID const guid)
 		: m_id(id)
 		, m_eventType(eventType)
 		, m_pEventDescription(pEventDescription)
@@ -112,11 +111,11 @@ class CParameter : public IParameter
 public:
 
 	explicit CParameter(
-	  uint32 const id,
-	  float const multiplier,
-	  float const shift,
-	  char const* const szName,
-	  EParameterType const type)
+		uint32 const id,
+		float const multiplier,
+		float const shift,
+		char const* const szName,
+		EParameterType const type)
 		: m_id(id)
 		, m_multiplier(multiplier)
 		, m_shift(shift)
@@ -151,11 +150,11 @@ class CVcaParameter final : public CParameter
 public:
 
 	explicit CVcaParameter(
-	  uint32 const id,
-	  float const multiplier,
-	  float const shift,
-	  char const* const szName,
-	  FMOD::Studio::VCA* const vca)
+		uint32 const id,
+		float const multiplier,
+		float const shift,
+		char const* const szName,
+		FMOD::Studio::VCA* const vca)
 		: CParameter(id, multiplier, shift, szName, EParameterType::VCA)
 		, m_vca(vca)
 	{}
@@ -179,10 +178,10 @@ class CSwitchState : public ISwitchState
 public:
 
 	explicit CSwitchState(
-	  uint32 const id,
-	  float const value,
-	  char const* const szName,
-	  EStateType const type)
+		uint32 const id,
+		float const value,
+		char const* const szName,
+		EStateType const type)
 		: m_id(id)
 		, m_value(value)
 		, m_name(szName)
@@ -214,10 +213,10 @@ class CVcaState final : public CSwitchState
 public:
 
 	explicit CVcaState(
-	  uint32 const id,
-	  float const value,
-	  char const* const szName,
-	  FMOD::Studio::VCA* const vca)
+		uint32 const id,
+		float const value,
+		char const* const szName,
+		FMOD::Studio::VCA* const vca)
 		: CSwitchState(id, value, szName, EStateType::VCA)
 		, m_vca(vca)
 	{}
@@ -263,8 +262,8 @@ class CEnvironmentBus final : public CEnvironment
 public:
 
 	explicit CEnvironmentBus(
-	  FMOD::Studio::EventDescription* const pEventDescription,
-	  FMOD::Studio::Bus* const pBus)
+		FMOD::Studio::EventDescription* const pEventDescription,
+		FMOD::Studio::Bus* const pBus)
 		: CEnvironment(EEnvironmentType::Bus)
 		, m_pEventDescription(pEventDescription)
 		, m_pBus(pBus)
@@ -286,10 +285,10 @@ class CEnvironmentParameter final : public CEnvironment
 public:
 
 	explicit CEnvironmentParameter(
-	  uint32 const id,
-	  float const multiplier,
-	  float const shift,
-	  char const* const szName)
+		uint32 const id,
+		float const multiplier,
+		float const shift,
+		char const* const szName)
 		: CEnvironment(EEnvironmentType::Parameter)
 		, m_id(id)
 		, m_multiplier(multiplier)

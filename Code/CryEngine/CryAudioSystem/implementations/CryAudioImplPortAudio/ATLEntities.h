@@ -21,7 +21,7 @@ public:
 	CListener& operator=(CListener&&) = delete;
 
 	// CryAudio::Impl::IListener
-	virtual ERequestStatus Set3DAttributes(SObject3DAttributes const& attributes) override { return ERequestStatus::Success; }
+	virtual void SetTransformation(CObjectTransformation const& transformation) override {}
 	// ~CryAudio::Impl::IListener
 };
 
