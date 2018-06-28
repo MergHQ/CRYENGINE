@@ -565,6 +565,7 @@ struct CRY_ALIGN(16) SAddParticlesToSceneJob
 	IParticleVertexCreator* pVertexCreator = nullptr;
 	gpu_pfx2::IParticleComponentRuntime* pGpuRuntime = nullptr;
 	int16 nCustomTexId;
+	AABB aabb;
 };
 
 #ifdef SUPPORT_HW_MOUSE_CURSOR

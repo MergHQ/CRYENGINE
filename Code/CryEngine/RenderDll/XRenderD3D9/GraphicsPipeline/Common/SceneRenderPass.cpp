@@ -222,6 +222,29 @@ void CSceneRenderPass::EndExecution()
 	s_recursionCounter -= 1;
 }
 
+inline TRect_tpl<uint16> ComputeResolveViewport(const SRenderViewport &viewport, const AABB &aabb, const CCamera &camera, bool forceFullscreenUpdate)
+{
+	TRect_tpl<uint16> resolveViewport;
+	if (CRenderer::CV_r_RefractionPartialResolves && !forceFullscreenUpdate)
+	{
+		int iOut[4];
+
+		camera.CalcScreenBounds(&iOut[0], &aabb, viewport.width, viewport.height);
+		resolveViewport.Min.x = iOut[0];
+		resolveViewport.Min.y = iOut[1];
+		resolveViewport.Max.x = iOut[2];
+		resolveViewport.Max.y = iOut[3];
+	}
+	else
+	{
+		resolveViewport.Min.x = 0;
+		resolveViewport.Min.y = 0;
+		resolveViewport.Max.x = viewport.width;
+		resolveViewport.Max.y = viewport.height;
+	}
+
+	return resolveViewport;
+}
 
 void CSceneRenderPass::DrawRenderItems(CRenderView* pRenderView, ERenderListID list, int listStart, int listEnd, int profilingListID)
 {
@@ -255,8 +278,10 @@ void CSceneRenderPass::DrawRenderItems(CRenderView* pRenderView, ERenderListID l
 		passContext.pDrawCallInfoPerMesh = gcpRendD3D->GetGraphicsPipeline().GetDrawCallInfoPerMesh();
 #endif
 
+	const auto refractionMask = FB_REFRACTION | FB_RESOLVE_FULL;
+
 	std::vector<SGraphicsPipelinePassContext> passes;
-	if (!transparent || !(nBatchFlags & FB_REFRACTION) || !CRendererCVars::CV_r_Refraction)
+	if (!transparent || !(nBatchFlags & refractionMask) || !CRendererCVars::CV_r_Refraction)
 	{
 		passContext.rendItems.start = listStart;
 		passContext.rendItems.end = listEnd;
@@ -269,18 +294,22 @@ void CSceneRenderPass::DrawRenderItems(CRenderView* pRenderView, ERenderListID l
 		// Render consecutive segments of render items that do not need resolve
 		for (auto i = listStart; i != listEnd;)
 		{
-			const bool needsResolve = !!(renderItems[i].nBatchFlags & FB_REFRACTION);
-			const auto& bounds = renderItems[i].pCompiledObject->m_pRO->GetObjData()->m_screenBounds;
+			const auto& item = renderItems[i];
+			const bool needsResolve = !!(item.nBatchFlags & refractionMask);
 
 			passContext.rendItems.start = i;
 			// Render till, and not including, next item that needs resolve.
 			while (++i != listEnd &&
-				!(renderItems[i].nBatchFlags & FB_REFRACTION)) 
-			{}
+				!(renderItems[i].nBatchFlags & refractionMask)) {}
 			passContext.rendItems.end = i;
 
 			if (needsResolve)
 			{
+				const auto& aabb = item.pCompiledObject->m_aabb;
+				const auto& camera = pRenderView->GetCamera(pRenderView->GetCurrentEye());
+				const bool forceFullResolve = !!(item.nBatchFlags & FB_RESOLVE_FULL);
+	 			const auto& bounds = ComputeResolveViewport(pRenderView->GetViewport(), aabb, camera, forceFullResolve);
+
 				// Inject resolve pass
 				passes.emplace_back(GraphicsPipelinePassType::resolve, pRenderView, this);
 				passes.back().profilerSectionIndex = m_profilerSectionIndex;
@@ -289,22 +318,19 @@ void CSceneRenderPass::DrawRenderItems(CRenderView* pRenderView, ERenderListID l
 				passes.back().renderItemGroup = m_numRenderItemGroups++;
 
 				// Query resolve screen bounds
-				const int16 shift16 = 4;
-				passes.back().resolveScreenBounds[0] = bounds.Min.x << shift16;
-				passes.back().resolveScreenBounds[1] = bounds.Min.y << shift16;
-				passes.back().resolveScreenBounds[2] = bounds.Max.x << shift16;
-				passes.back().resolveScreenBounds[3] = bounds.Max.y << shift16;
+				passes.back().resolveScreenBounds[0] = bounds.Min.x;
+				passes.back().resolveScreenBounds[1] = bounds.Min.y;
+				passes.back().resolveScreenBounds[2] = bounds.Max.x;
+				passes.back().resolveScreenBounds[3] = bounds.Max.y;
 
 				if (CRendererCVars::CV_r_RefractionPartialResolvesDebug)
 				{
-					const auto w = static_cast<float>(pRenderView->GetRenderOutput()->GetOutputResolution()[0]);
-					const auto h = static_cast<float>(pRenderView->GetRenderOutput()->GetOutputResolution()[1]);
 					RenderResolveDebug(Vec4
 					{
 						static_cast<float>(passes.back().resolveScreenBounds[0]),
-						std::min(static_cast<float>(passes.back().resolveScreenBounds[1]), w),
+						static_cast<float>(passes.back().resolveScreenBounds[1]),
 						static_cast<float>(passes.back().resolveScreenBounds[2]),
-						std::min(static_cast<float>(passes.back().resolveScreenBounds[3]), h)
+						static_cast<float>(passes.back().resolveScreenBounds[3])
 					});
 				}
  			}
@@ -359,7 +385,7 @@ void CSceneRenderPass::RenderResolveDebug(const Vec4 &bounds)
 		auxFlags.SetAlphaBlendMode(e_AlphaBlended);
 
 		IRenderAuxGeom::GetAux()->SetRenderFlags(auxFlags);
-		IRenderAuxGeom::GetAux()->DrawLines(points.data(), points.size(), ColorB(255, 0, 255, 92));
+		IRenderAuxGeom::GetAux()->DrawLines(points.data(), points.size(), ColorB(255, 0, 255, 128));
 
 		IRenderAuxGeom::GetAux()->SetRenderFlags(oldAuxFlags);
 	}

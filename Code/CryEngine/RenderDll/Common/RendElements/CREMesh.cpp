@@ -23,7 +23,7 @@ void CREMeshImpl::mfCenter(Vec3& Pos, CRenderObject* pObj, const SRenderingPassI
 		Pos += pObj->GetMatrix(passInfo).GetTranslation();
 }
 
-void CREMeshImpl::mfGetBBox(Vec3& vMins, Vec3& vMaxs)
+void CREMeshImpl::mfGetBBox(Vec3& vMins, Vec3& vMaxs) const
 {
 	vMins = m_pRenderMesh->_GetVertexContainer()->m_vBoxMin;
 	vMaxs = m_pRenderMesh->_GetVertexContainer()->m_vBoxMax;

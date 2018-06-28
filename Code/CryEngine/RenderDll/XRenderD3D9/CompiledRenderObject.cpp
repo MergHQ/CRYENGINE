@@ -478,7 +478,7 @@ void CCompiledRenderObject::TrackStats(const SGraphicsPipelinePassContext& RESTR
 #endif
 
 //////////////////////////////////////////////////////////////////////////
-bool CCompiledRenderObject::Compile(const EObjectCompilationOptions& compilationOptions, CRenderView *pRenderView)
+bool CCompiledRenderObject::Compile(const EObjectCompilationOptions& compilationOptions, const AABB &localAABB, CRenderView *pRenderView)
 {
 	CRY_PROFILE_FUNCTION(PROFILE_RENDERER);
 
@@ -501,6 +501,13 @@ bool CCompiledRenderObject::Compile(const EObjectCompilationOptions& compilation
 	{
 		if (!bMuteWarnings) Warning("[CCompiledRenderObject] Compile failed, no render element");
 		return true;
+	}
+
+	if (compilationOptions & eObjCompilationOption_PerInstanceConstantBuffer)
+	{
+		// Update AABB by tranforming from local space
+		const auto& camera = pRenderView->GetCamera(pRenderView->GetCurrentEye());
+		m_aabb = pRenderObject->TransformAABB(localAABB, camera.GetPosition(), gcpRendD3D->GetObjectAccessorThreadConfig());
 	}
 
 	EDataType reType = m_pRenderElement->mfGetType();

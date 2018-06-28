@@ -72,7 +72,7 @@ public:
 	virtual bool               mfIsHWSkinned() = 0;
 	virtual CRenderElement*      mfCopyConstruct(void) = 0;
 	virtual void               mfCenter(Vec3& centr, CRenderObject* pObj, const SRenderingPassInfo& passInfo) = 0;
-	virtual void               mfGetBBox(Vec3& vMins, Vec3& vMaxs) = 0;
+	virtual void               mfGetBBox(Vec3& vMins, Vec3& vMaxs) const = 0;
 
 	virtual bool  mfUpdate(InputLayoutHandle eVertFormat, int Flags, bool bTessellation = false) = 0;
 
@@ -214,7 +214,7 @@ public:
 	virtual bool               mfIsHWSkinned() { return false; }
 	virtual CRenderElement*    mfCopyConstruct(void);
 	virtual void               mfCenter(Vec3& centr, CRenderObject* pObj, const SRenderingPassInfo& passInfo);
-	virtual void               mfGetBBox(Vec3& vMins, Vec3& vMaxs)
+	virtual void               mfGetBBox(Vec3& vMins, Vec3& vMaxs) const
 	{
 		vMins.Set(0, 0, 0);
 		vMaxs.Set(0, 0, 0);

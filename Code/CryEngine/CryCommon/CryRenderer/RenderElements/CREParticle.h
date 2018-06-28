@@ -122,6 +122,9 @@ public:
 	bool                     AddedToView() const { return m_addedToView != 0; }
 	void                     SetAddedToView() { m_addedToView = 1; }
 
+	void                     mfGetBBox(Vec3& vMins, Vec3& vMaxs) const override  { vMins = m_AABBmin; vMaxs = m_AABBmax; }
+	void                     SetBBox(const Vec3& vMins, const Vec3& vMaxs)       { m_AABBmin = vMins; m_AABBmax = vMaxs; }
+
 private:
 	CDeviceGraphicsPSOPtr GetGraphicsPSO(CRenderObject* pRenderObject, const struct SGraphicsPipelinePassContext& context) const;
 	void                  PrepareDataToRender(CRenderView *pRenderView,CRenderObject* pRenderObject);
@@ -138,6 +141,8 @@ private:
 	uint32                               m_allocId;
 	uint16                               m_nThreadId;
 	uint8                                m_addedToView;
+
+	Vec3                                 m_AABBmin, m_AABBmax;
 };
 
 #endif  // __CREPARTICLE_H__

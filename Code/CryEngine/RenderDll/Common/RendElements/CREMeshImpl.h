@@ -30,7 +30,7 @@ public:
 
 	void* mfGetPointer(ESrcPointer ePT, int* Stride, EParamType Type, ESrcPointer Dst, int Flags);
 	bool  mfUpdate(InputLayoutHandle eVertFormat, int Flags, bool bTessellation = false);
-	void  mfGetBBox(Vec3& vMins, Vec3& vMaxs);
+	void  mfGetBBox(Vec3& vMins, Vec3& vMaxs) const;
 
 	int   Size()
 	{

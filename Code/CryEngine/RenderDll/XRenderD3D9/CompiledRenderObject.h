@@ -107,6 +107,8 @@ public:
 		uint32                 m_nRenderList : 8; //!< Defines in which render list this compiled object belongs to, see ERenderListID
 		CCompiledRenderObject* m_pCompiledObject; //!< Compiled object with precompiled PSO
 		CRenderElement*        m_pRenderElement;  //!< Mesh subset, or a special rendering object
+
+		AABB                   m_aabb;            //!< AABB in local space
 	};
 	//! Persistent object record all items added to the object for the general and for shadow pass.
 	//! These items are then efficiently expanded adding render items to CRenderView lists.
@@ -228,6 +230,9 @@ public:
 	uint32 m_bCustomRenderElement       : 1; //!< When dealing with not known render element, will cause Draw be redirected to the RenderElement itself
 	/////////////////////////////////////////////////////////////////////////////
 
+	// AABB in world space
+	AABB m_aabb;
+
 	//////////////////////////////////////////////////////////////////////////
 	// Members used in submitting in the draw submission, sorted by access order
 	// This area should be smaller than 128 bytes (2x 64byte cache-lines)
@@ -300,7 +305,7 @@ public:
 
 	// Compile(): Returns true if the compilation is fully finished, false if compilation should be retriggered later
 
-	bool Compile(const EObjectCompilationOptions& compilationOptions, CRenderView *pRenderView);
+	bool Compile(const EObjectCompilationOptions& compilationOptions, const AABB &localAABB, CRenderView *pRenderView);
 	void PrepareForUse(CDeviceCommandListRef RESTRICT_REFERENCE commandList, bool bInstanceOnly) const;
 
 	void DrawToCommandList(const SGraphicsPipelinePassContext& RESTRICT_REFERENCE passContext, CConstantBuffer* pDynamicInstancingBuffer = nullptr, uint32 dynamicInstancingCount = 0) const;

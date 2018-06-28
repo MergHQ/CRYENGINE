@@ -371,6 +371,9 @@ void CRenderer::PrepareParticleRenderObjects(Array<const SAddParticlesToSceneJob
 		size_t ij = &job - aJobs.data();
 		CREParticle* pRE = static_cast<CREParticle*>(pRenderObject->m_pRE);
 
+		if (pRenderObject->m_pCompiledObject)
+			pRenderObject->m_pCompiledObject->m_aabb = AABB{ job.aabb.min, job.aabb.max };
+
 		// generate the RenderItem entries for this Particle Element
 		assert(pRenderObject->m_bPermanent);
 		EF_GetParticleListAndBatchFlags(
@@ -378,6 +381,9 @@ void CRenderer::PrepareParticleRenderObjects(Array<const SAddParticlesToSceneJob
 			shaderItem, passInfo);
 		if (!pRE->AddedToView())
 		{
+			// Update particle AABB
+			pRE->SetBBox(job.aabb.min, job.aabb.max);
+
 			passInfo.GetRenderView()->AddRenderItem(
 				pRE, pRenderObject, shaderItem, nList, nBatchFlags, 
 				passInfo, passInfo.GetRendItemSorter(), passInfo.IsShadowPass(), 

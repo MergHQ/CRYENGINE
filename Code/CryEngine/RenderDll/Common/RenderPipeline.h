@@ -159,7 +159,6 @@ enum EStencilStateOp
 #define STENC_MAX_REF                 ((1 << STENC_VALID_BITS_NUM) - 1)
 
 //Batch flags.
-// - When adding/removing batch flags, please, update sBatchList static list in D3DRendPipeline.cpp
 enum EBatchFlags
 {
 	FB_GENERAL         = 0x1,
@@ -174,7 +173,7 @@ enum EBatchFlags
 	FB_MULTILAYERS     = 0x200,
 	FB_COMPILED_OBJECT = 0x400,
 	FB_CUSTOM_RENDER   = 0x800,
-//	FB________________ = 0x1000,
+	FB_RESOLVE_FULL    = 0x1000,
 	FB_LAYER_EFFECT    = 0x2000,
 	FB_WATER_REFL      = 0x4000,
 	FB_WATER_CAUSTIC   = 0x8000,

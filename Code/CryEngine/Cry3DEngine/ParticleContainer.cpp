@@ -806,12 +806,11 @@ void CParticleContainer::Render(SRendParams const& RenParams, SPartRenderParams 
 		//
 
 		job.pShaderItem = &pParams->pMaterial->GetShaderItem();
-		if (job.pShaderItem->m_pShader && (job.pShaderItem->m_pShader->GetFlags() & EF_REFRACTIVE))
-			SetScreenBounds(passInfo.GetCamera(), pOD->m_screenBounds);
 		if (pParams->fTexAspect == 0.f)
 			non_const(*m_pParams).UpdateTextureAspect();
 
 		job.nCustomTexId = RenParams.nTextureID;
+		job.aabb = m_bbWorld;
 
 		int passId = passInfo.IsShadowPass() ? 1 : 0;
 		int passMask = BIT(passId);
@@ -873,35 +872,6 @@ void CParticleContainer::ResetRenderObjects()
 		m_pAfterWaterRO[threadId] = nullptr;
 		m_pBeforeWaterRO[threadId] = nullptr;
 		m_pRecursiveRO[threadId] = nullptr;
-	}
-}
-
-void CParticleContainer::SetScreenBounds(const CCamera& cam, TRect_tpl<uint16> &bounds)
-{
-	const int32 align16 = (16 - 1);
-	const int32 shift16 = 4;
-	int iOut[4];
-	int nWidth = cam.GetViewSurfaceX();
-	int nHeight = cam.GetViewSurfaceZ();
-	AABB posAABB = AABB(cam.GetPosition(), 1.00f);
-	if (!posAABB.IsIntersectBox(m_bbWorld))
-	{
-		cam.CalcScreenBounds(&iOut[0], &m_bbWorld, nWidth, nHeight);
-		if (((iOut[2] - iOut[0]) == nWidth) && ((iOut[3] - iOut[1]) == nHeight))
-		{
-			iOut[2] += 16;  // Split fullscreen particles and fullscreen geometry. Better to use some sort of ID/Flag, but this will do the job for now
-		}
-		bounds.Min.x = iOut[0] >> shift16;
-		bounds.Min.y = iOut[1] >> shift16;
-		bounds.Max.x = (iOut[2] + align16) >> shift16;
-		bounds.Max.y = (iOut[3] + align16) >> shift16;
-	}
-	else
-	{
-		bounds.Min.x = 0;
-		bounds.Min.y = 0;
-		bounds.Max.x = (nWidth >> shift16) + 1;
-		bounds.Max.y = (nHeight >> shift16) + 1;
 	}
 }
 
