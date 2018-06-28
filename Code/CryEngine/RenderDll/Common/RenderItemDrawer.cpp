@@ -26,8 +26,9 @@ void DrawCompiledRenderItemsToCommandList(
 	FUNCTION_PROFILER_RENDERER();
 
 	SGraphicsPipelinePassContext passContext = *pInputPassContext;
-	const bool shouldIssueStartTimeStamp = passContext.renderItemGroup == 0 && startRenderItem == passContext.rendItems.start;
-	const bool shouldIssueEndTimeStamp = passContext.renderItemGroup == passContext.pSceneRenderPass->GetNumRenderItemGroups() - 1 && endRenderItem == passContext.rendItems.end;
+	const bool shouldIssueStartTimeStamp = startRenderItem == passContext.rendItems.start;
+	const bool shouldIssueEndTimeStamp = endRenderItem == passContext.rendItems.end;
+	CTimeValue deltaTimestamp(0LL);
 
 	// Prepare command list
 	passContext.pCommandList = commandList;
@@ -36,10 +37,14 @@ void DrawCompiledRenderItemsToCommandList(
 	// Start profile section
 #if defined(ENABLE_PROFILING_CODE)
 	if (gcpRendD3D->m_pPipelineProfiler)
-		gcpRendD3D->m_pPipelineProfiler->UpdateMultithreadedSection(passContext.profilerSectionIndex, true, 0, 0, shouldIssueStartTimeStamp, commandList);
+	{
+		gcpRendD3D->m_pPipelineProfiler->UpdateMultithreadedSection(passContext.profilerSectionIndex, true, 0, 0, shouldIssueStartTimeStamp, deltaTimestamp, commandList);
+		deltaTimestamp = gEnv->pTimer->GetAsyncTime();
+	}
 
 	commandList->BeginProfilingSection();
 #endif
+
 	if (shouldIssueStartTimeStamp)
 		commandList->GetGraphicsInterface()->BeginProfilerEvent(passContext.pSceneRenderPass->GetLabel());
 
@@ -117,8 +122,8 @@ void DrawCompiledRenderItemsToCommandList(
 							dynamicInstancingCount++;
 
 #if defined(ENABLE_PROFILING_CODE)
-							CryInterlockedAdd(&SRenderStatistics::Write().m_nInsts, dynamicInstancingCount);
-							CryInterlockedIncrement(&SRenderStatistics::Write().m_nInstCalls);
+							CryInterlockedAdd(&SRenderStatistics::Write().m_nAsynchNumInsts, dynamicInstancingCount);
+							CryInterlockedIncrement(&SRenderStatistics::Write().m_nAsynchNumInstCalls);
 #endif //ENABLE_PROFILING_CODE
 
 							tempInstancingCB->UpdateBuffer(&dynamicInstancingBuffer[0], dynamicInstancingCount * sizeof(CCompiledRenderObject::SPerInstanceShaderData));
@@ -144,11 +149,13 @@ void DrawCompiledRenderItemsToCommandList(
 	// End profile section
 	if (shouldIssueEndTimeStamp)
 		commandList->GetGraphicsInterface()->EndProfilerEvent(passContext.pSceneRenderPass->GetLabel());
+
 #if defined(ENABLE_PROFILING_CODE)
 	if (gcpRendD3D->m_pPipelineProfiler)
 	{
+		deltaTimestamp = gEnv->pTimer->GetAsyncTime() - deltaTimestamp;
 		gcpRendD3D->m_pPipelineProfiler->UpdateMultithreadedSection(passContext.profilerSectionIndex, false, commandList->EndProfilingSection().numDIPs,
-			commandList->EndProfilingSection().numPolygons, shouldIssueEndTimeStamp, commandList);
+			commandList->EndProfilingSection().numPolygons, shouldIssueEndTimeStamp, deltaTimestamp, commandList);
 	}
 
 	gcpRendD3D->AddRecordedProfilingStats(commandList->EndProfilingSection(), passContext.pSceneRenderPass->GetRenderList(), true);

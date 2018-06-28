@@ -33,6 +33,8 @@ CRenderView::CRenderView(const char* name, EViewType type, CRenderView* pParentV
 {
 	for (int i = 0; i < EFSLIST_NUM; i++)
 	{
+		m_BatchFlags[i] = 0;
+
 		m_renderItems[i].Init();
 		m_renderItems[i].SetNoneWorkerThreadID(gEnv->mMainThreadId);
 	}

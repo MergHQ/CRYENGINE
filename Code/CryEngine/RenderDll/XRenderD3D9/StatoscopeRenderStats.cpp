@@ -93,15 +93,21 @@ void CDetailedRenderTimesDG::Write(IStatoscopeFrameRecord& fr)
 	for (auto it = m_stats->begin(); it != m_stats->end(); ++it)
 	{
 		const RPProfilerDetailedStats& st = *it;
-		while (curRecLevel > st.recLevel)
+		if (st.recLevel < 0)
+			continue;
+
+		if (st.recLevel > 0)
 		{
-			recLevelStack.pop();
-			curRecLevel--;
-		}
-		if (curRecLevel < st.recLevel)
-		{
-			recLevelStack.push(strlen(buf));
-			curRecLevel++;
+			while (curRecLevel > st.recLevel)
+			{
+				recLevelStack.pop();
+				curRecLevel--;
+			}
+			if (curRecLevel < st.recLevel)
+			{
+				recLevelStack.push(strlen(buf));
+				curRecLevel++;
+			}
 		}
 
 		// Ensure nodes at the same place in the tree have unique names
@@ -117,15 +123,8 @@ void CDetailedRenderTimesDG::Write(IStatoscopeFrameRecord& fr)
 		}
 
 		fr.AddValue(buf);
-		fr.AddValue(st.gpuTimeSmoothed);
-		if (!(st.flags & CRenderPipelineProfiler::eProfileSectionFlags_MultithreadedSection))
-		{
-			fr.AddValue(st.cpuTimeSmoothed);
-		}
-		else
-		{
-			fr.AddValue(0);
-		}
+		fr.AddValue(st.gpuTime);
+		fr.AddValue(st.cpuTime);
 		fr.AddValue(st.numDIPs);
 		fr.AddValue(st.numPolys);
 	}
@@ -241,7 +240,8 @@ void CGraphicsDG::Write(IStatoscopeFrameRecord& fr)
 	fr.AddValue(numTris);
 
 	int numDrawCalls, numShadowDrawCalls, numGeneralDrawCalls, numTransparentDrawCalls;
-	m_pRenderer->GetCurrentNumberOfDrawCalls(numDrawCalls, numShadowDrawCalls);
+	numDrawCalls = m_pRenderer->GetCurrentNumberOfDrawCalls();
+	numShadowDrawCalls = m_pRenderer->GetCurrentNumberOfDrawCalls(1 << EFSLIST_SHADOW_GEN);
 	numGeneralDrawCalls = m_pRenderer->GetCurrentNumberOfDrawCalls(1 << EFSLIST_GENERAL);
 	numTransparentDrawCalls = m_pRenderer->GetCurrentNumberOfDrawCalls(1 << EFSLIST_TRANSP);
 	fr.AddValue(numDrawCalls);

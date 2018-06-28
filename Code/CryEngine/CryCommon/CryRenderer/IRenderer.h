@@ -844,9 +844,10 @@ struct RPProfilerDetailedStats
 	char            name[31];
 	float           gpuTime;
 	float           gpuTimeSmoothed;
+	float           cpuTime;
 	float           cpuTimeSmoothed;
 	CTimeValue      startTimeCPU, endTimeCPU;
-	uint32          startTimestamp, endTimestamp;
+	uint64          startTimeGPU, endTimeGPU;
 	int             numDIPs, numPolys;
 	int8            recLevel;   // Negative value means error in stack
 	uint8           flags;

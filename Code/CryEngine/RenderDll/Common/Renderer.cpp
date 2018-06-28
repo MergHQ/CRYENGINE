@@ -289,6 +289,7 @@ void CRenderer::InitRenderer()
 	ZeroArray(m_streamZonesRoundId);
 
 	SRenderStatistics::s_pCurrentOutput = &m_frameRenderStats[0];
+	memset(SRenderStatistics::s_pCurrentOutput, 0, sizeof(m_frameRenderStats));
 }
 
 CRenderer::~CRenderer()
@@ -3194,60 +3195,65 @@ ERenderType CRenderer::GetRenderType() const
 #endif
 }
 
+int CRenderer::GetPolyCount()
+{
+#if defined(ENABLE_PROFILING_CODE)
+	return m_frameRenderStats[m_pRT->GetThreadList()].GetNumberOfPolygons();
+#else
+	return 0;
+#endif
+}
+
+void CRenderer::GetPolyCount(int& nPolygons, int& nShadowPolys)
+{
+#if defined(ENABLE_PROFILING_CODE)
+	nPolygons    = m_frameRenderStats[m_pRT->GetThreadList()].GetNumberOfPolygons();
+	nShadowPolys = m_frameRenderStats[m_pRT->GetThreadList()].GetNumberOfPolygons(1 << EFSLIST_SHADOW_GEN);
+#endif
+}
+
 int CRenderer::GetNumGeomInstances()
 {
-	return m_frameRenderStats[m_nProcessThreadID].m_nInsts;
+#if defined(ENABLE_PROFILING_CODE)
+	return m_frameRenderStats[m_pRT->GetThreadList()].GetNumGeomInstances();
+#else
+	return 0;
+#endif
 }
 
 int CRenderer::GetNumGeomInstanceDrawCalls()
 {
-	return m_frameRenderStats[m_nProcessThreadID].m_nInstCalls;
+#if defined(ENABLE_PROFILING_CODE)
+	return m_frameRenderStats[m_pRT->GetThreadList()].GetNumGeomInstanceDrawCalls();
+#else
+	return 0;
+#endif
 }
 
 int CRenderer::GetCurrentNumberOfDrawCalls()
 {
-	int nDIPs = 0;
 #if defined(ENABLE_PROFILING_CODE)
-	int nThr = m_pRT->GetThreadList();
-	for (int i = 0; i < EFSLIST_NUM; i++)
-	{
-		nDIPs += m_frameRenderStats[nThr].m_nDIPs[i];
-	}
+	return m_frameRenderStats[m_pRT->GetThreadList()].GetNumberOfDrawCalls();
+#else
+	return 0;
 #endif
-	return nDIPs;
 }
 
 void CRenderer::GetCurrentNumberOfDrawCalls(int& nGeneral, int& nShadowGen)
 {
-	int nDIPs = 0;
 #if defined(ENABLE_PROFILING_CODE)
-	int nThr = m_pRT->GetThreadList();
-	for (int i = 0; i < EFSLIST_NUM; i++)
-	{
-		if (i == EFSLIST_SHADOW_GEN)
-			continue;
-		nDIPs += m_frameRenderStats[nThr].m_nDIPs[i];
-	}
-	nGeneral   = nDIPs;
-	nShadowGen = m_frameRenderStats[nThr].m_nDIPs[EFSLIST_SHADOW_GEN];
+	nGeneral   = m_frameRenderStats[m_pRT->GetThreadList()].GetNumberOfDrawCalls();
+	nShadowGen = m_frameRenderStats[m_pRT->GetThreadList()].GetNumberOfDrawCalls(1 << EFSLIST_SHADOW_GEN);
 #endif
-	return;
 }
 
 int CRenderer::GetCurrentNumberOfDrawCalls(const uint32 EFSListMask)
 {
-	int nDIPs = 0;
 #if defined(ENABLE_PROFILING_CODE)
-	int nThr = m_pRT->GetThreadList();
-	for (uint32 i = 0; i < EFSLIST_NUM; i++)
-	{
-		if ((1 << i) & EFSListMask)
-		{
-			nDIPs += m_frameRenderStats[nThr].m_nDIPs[i];
-		}
-	}
+	return m_frameRenderStats[m_pRT->GetThreadList()].GetNumberOfDrawCalls(EFSListMask);
+#else
+	return 0;
 #endif
-	return nDIPs;
 }
 
 void CRenderer::SetDebugRenderNode(IRenderNode* pRenderNode)
@@ -3259,6 +3265,100 @@ bool CRenderer::IsDebugRenderNode(IRenderNode* pRenderNode) const
 {
 	return (m_pDebugRenderNode && m_pDebugRenderNode == pRenderNode);
 }
+
+/////////////////////////////////////////////////////////////////////////////////////////////////////
+void SRenderStatistics::Begin(const SRenderStatistics* prevData)
+{
+#if defined(_DEBUG)
+	memcpy(this, prevData, sizeof(SRenderStatistics));
+#else
+	memset(this, 0, sizeof(SRenderStatistics));
+#endif
+}
+
+void SRenderStatistics::Finish()
+{
+#if defined(ENABLE_PROFILING_CODE)
+	m_nNumInsts               += m_nAsynchNumInsts;
+	m_nNumInstCalls           += m_nAsynchNumInstCalls;
+
+	m_nNumPSOSwitches         += m_nAsynchNumPSOSwitches;
+	m_nNumLayoutSwitches      += m_nAsynchNumLayoutSwitches;
+	m_nNumResourceSetSwitches += m_nAsynchNumResourceSetSwitches;
+	m_nNumInlineSets          += m_nAsynchNumInlineSets;
+	m_nNumTopologySets        += m_nAsynchNumTopologySets;
+
+	for (int i = 0; i < EFSLIST_NUM; i++)
+	{
+		m_nDIPs    [i] += m_nAsynchDIPs    [i];
+		m_nPolygons[i] += m_nAsynchPolygons[i];
+
+		for (int j = 0; j < EVCT_NUM; j++)
+		{
+			m_nPolygonsByTypes[i][j][0] += m_nAsynchPolygonsByTypes[i][j][0];
+			m_nPolygonsByTypes[i][j][1] += m_nAsynchPolygonsByTypes[i][j][1];
+		}
+	}
+#endif
+}
+
+#if defined(ENABLE_PROFILING_CODE)
+int SRenderStatistics::GetNumGeomInstances() const
+{
+	return m_nNumInsts; // +m_nAsynchNumInsts; impossible because of non-atomicity of stat-collection
+}
+
+int SRenderStatistics::GetNumGeomInstanceDrawCalls() const
+{
+	return m_nNumInstCalls; // +m_nAsynchNumInstCalls; impossible because of non-atomicity of stat-collection
+}
+
+int SRenderStatistics::GetNumberOfDrawCalls() const
+{
+	int nDIPs = 0;
+	for (int i = 0; i < EFSLIST_NUM; i++)
+	{
+		nDIPs += m_nDIPs[i]; // +m_nAsynchDIPs[i]; impossible because of non-atomicity of stat-collection
+	}
+	return nDIPs;
+}
+
+int SRenderStatistics::GetNumberOfDrawCalls(const uint32 EFSListMask) const
+{
+	int nDIPs = 0;
+	for (uint32 i = 0; i < EFSLIST_NUM; i++)
+	{
+		if ((1 << i) & EFSListMask)
+		{
+			nDIPs += m_nDIPs[i]; // +m_nAsynchDIPs[i]; impossible because of non-atomicity of stat-collection
+		}
+	}
+	return nDIPs;
+}
+
+int SRenderStatistics::GetNumberOfPolygons() const
+{
+	int nDIPs = 0;
+	for (int i = 0; i < EFSLIST_NUM; i++)
+	{
+		nDIPs += m_nPolygons[i]; // +m_nAsynchPolygons[i]; impossible because of non-atomicity of stat-collection
+	}
+	return nDIPs;
+}
+
+int SRenderStatistics::GetNumberOfPolygons(const uint32 EFSListMask) const
+{
+	int nDIPs = 0;
+	for (uint32 i = 0; i < EFSLIST_NUM; i++)
+	{
+		if ((1 << i) & EFSListMask)
+		{
+			nDIPs += m_nPolygons[i]; // +m_nAsynchPolygons[i]; impossible because of non-atomicity of stat-collection
+		}
+	}
+	return nDIPs;
+}
+#endif
 
 /////////////////////////////////////////////////////////////////////////////////////////////////////
 #if defined(DO_RENDERSTATS)
@@ -4186,46 +4286,6 @@ float CRenderer::GetShadowJittering() const
 	return m_shadowJittering;
 }
 
-void CRenderer::GetPolyCount(int& nPolygons, int& nShadowPolys)
-{
-#if defined(ENABLE_PROFILING_CODE)
-	nPolygons     = GetPolyCount();
-	nShadowPolys  = m_frameRenderStats[m_nFillThreadID].m_nPolygons[EFSLIST_SHADOW_GEN];
-	nShadowPolys += m_frameRenderStats[m_nFillThreadID].m_nPolygons[EFSLIST_SHADOW_PASS];
-	nPolygons    -= nShadowPolys;
-#endif
-}
-
-int CRenderer::GetPolyCount()
-{
-#if defined(ENABLE_PROFILING_CODE)
-	ASSERT_IS_MAIN_THREAD(m_pRT);
-	int nPolys = 0;
-	for (int i = 0; i < EFSLIST_NUM; i++)
-	{
-		nPolys += m_frameRenderStats[m_nFillThreadID].m_nPolygons[i];
-	}
-	return nPolys;
-#else
-	return 0;
-#endif
-}
-
-int CRenderer::RT_GetPolyCount()
-{
-#if defined(ENABLE_PROFILING_CODE)
-	ASSERT_IS_RENDER_THREAD(m_pRT);
-	int nPolys = 0;
-	for (int i = 0; i < EFSLIST_NUM; i++)
-	{
-		nPolys += SRenderStatistics::Write().m_nPolygons[i];
-	}
-	return nPolys;
-#else
-	return 0;
-#endif
-}
-
 void CRenderer::SyncMainWithRender()
 {
 	// Update timing of the graphics pipeline
@@ -4358,21 +4418,31 @@ void CRenderer::ClearDrawCallsInfo()
 #endif
 
 #ifdef ENABLE_PROFILING_CODE
-void CRenderer::AddRecordedProfilingStats(const SProfilingStats& stats, ERenderListID renderList, bool bScenePass)
+void CRenderer::AddRecordedProfilingStats(const SProfilingStats& stats, ERenderListID renderList, bool bAsynchronous)
 {
 	SRenderStatistics& pipelineStats = SRenderStatistics::Write();
 
-	CryInterlockedAdd(&pipelineStats.m_nNumPSOSwitches, stats.numPSOSwitches);
-	CryInterlockedAdd(&pipelineStats.m_nNumLayoutSwitches, stats.numLayoutSwitches);
-	CryInterlockedAdd(&pipelineStats.m_nNumResourceSetSwitches, stats.numResourceSetSwitches);
-	CryInterlockedAdd(&pipelineStats.m_nNumInlineSets, stats.numInlineSets);
-	CryInterlockedAdd(&pipelineStats.m_nPolygons[renderList], stats.numPolygons);
-	CryInterlockedAdd(&pipelineStats.m_nDIPs[renderList], stats.numDIPs);
-
-	if (bScenePass)
+	// Asynchronously recorded stats (accumulation to available stats is deferred until end-frame)
+	if (bAsynchronous)
 	{
-		CryInterlockedAdd(&pipelineStats.m_nScenePassDIPs, stats.numDIPs);
-		CryInterlockedAdd(&pipelineStats.m_nScenePassPolygons, stats.numPolygons);
+		CryInterlockedAdd(&pipelineStats.m_nAsynchNumPSOSwitches        , stats.numPSOSwitches);
+		CryInterlockedAdd(&pipelineStats.m_nAsynchNumLayoutSwitches     , stats.numLayoutSwitches);
+		CryInterlockedAdd(&pipelineStats.m_nAsynchNumResourceSetSwitches, stats.numResourceSetSwitches);
+		CryInterlockedAdd(&pipelineStats.m_nAsynchNumInlineSets         , stats.numInlineSets);
+		CryInterlockedAdd(&pipelineStats.m_nAsynchNumTopologySets       , stats.numTopologySets);
+		CryInterlockedAdd(&pipelineStats.m_nAsynchDIPs[renderList]      , stats.numDIPs);
+		CryInterlockedAdd(&pipelineStats.m_nAsynchPolygons[renderList]  , stats.numPolygons);
+	}
+	// Synchronously recorded stats
+	else
+	{
+		pipelineStats.m_nNumPSOSwitches         += stats.numPSOSwitches;
+		pipelineStats.m_nNumLayoutSwitches      += stats.numLayoutSwitches;
+		pipelineStats.m_nNumResourceSetSwitches += stats.numResourceSetSwitches;
+		pipelineStats.m_nNumInlineSets          += stats.numInlineSets;
+		pipelineStats.m_nNumTopologySets        += stats.numTopologySets;
+		pipelineStats.m_nDIPs[renderList]       += stats.numDIPs;
+		pipelineStats.m_nPolygons[renderList]   += stats.numPolygons;
 	}
 }
 #endif

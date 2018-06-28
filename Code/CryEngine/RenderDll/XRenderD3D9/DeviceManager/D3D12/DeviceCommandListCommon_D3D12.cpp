@@ -12,6 +12,7 @@ CDeviceTimestampGroup::CDeviceTimestampGroup()
 	, m_groupIndex(0xFFFFFFFF)
 	, m_fence(0)
 	, m_frequency(0)
+	, m_measurable(false)
 {
 	m_timeValues.fill(0);
 }
@@ -43,24 +44,26 @@ void CDeviceTimestampGroup::Init()
 void CDeviceTimestampGroup::BeginMeasurement()
 {
 	m_numTimestamps = 0;
+	m_frequency = 0;
+	m_measurable = false;
 }
 
 void CDeviceTimestampGroup::EndMeasurement()
 {
 	GetDeviceObjectFactory().IssueFence(m_fence);
-
-	CCryDX12DeviceContext* m_pDeviceContext = (CCryDX12DeviceContext*)gcpRendD3D->GetDeviceContext().GetRealDeviceContext();
-	m_frequency = m_pDeviceContext->GetTimestampFrequency();
+	m_measurable = true;
 }
 
-uint32 CDeviceTimestampGroup::IssueTimestamp(void* pCommandList)
+uint32 CDeviceTimestampGroup::IssueTimestamp(CDeviceCommandList* pCommandList)
 {
 	assert(m_numTimestamps < kMaxTimestamps);
 
 	uint32 timestampIndex = m_groupIndex * kMaxTimestamps + m_numTimestamps;
 
+	// Passing a nullptr means we want to use the current core command-list
+	CDeviceCommandListRef deviceCommandList = pCommandList ? *pCommandList : GetDeviceObjectFactory().GetCoreCommandList();
 	CCryDX12DeviceContext* m_pDeviceContext = (CCryDX12DeviceContext*)gcpRendD3D->GetDeviceContext().GetRealDeviceContext();
-	m_pDeviceContext->InsertTimestamp(timestampIndex, 0, pCommandList ? reinterpret_cast<CDeviceCommandList*>(pCommandList)->GetDX12CommandList() : nullptr);
+	m_pDeviceContext->InsertTimestamp(timestampIndex, deviceCommandList.GetDX12CommandList());
 
 	++m_numTimestamps;
 	return timestampIndex;
@@ -68,6 +71,8 @@ uint32 CDeviceTimestampGroup::IssueTimestamp(void* pCommandList)
 
 bool CDeviceTimestampGroup::ResolveTimestamps()
 {
+	if (!m_measurable)
+		return false;
 	if (m_numTimestamps == 0)
 		return true;
 
@@ -75,6 +80,7 @@ bool CDeviceTimestampGroup::ResolveTimestamps()
 		return false;
 
 	CCryDX12DeviceContext* m_pDeviceContext = (CCryDX12DeviceContext*)gcpRendD3D->GetDeviceContext().GetRealDeviceContext();
+	m_frequency = m_pDeviceContext->GetTimestampFrequency();
 	m_pDeviceContext->ResolveTimestamps();
 	m_pDeviceContext->QueryTimestamps(m_groupIndex * kMaxTimestamps, m_numTimestamps, &m_timeValues[0]);
 

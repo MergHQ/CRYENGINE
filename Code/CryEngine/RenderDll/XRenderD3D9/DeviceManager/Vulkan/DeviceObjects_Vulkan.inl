@@ -11,8 +11,13 @@ public:
 	void BeginMeasurement();
 	void EndMeasurement();
 
-	uint32 IssueTimestamp(void* pCommandList);
+	uint32 IssueTimestamp(CDeviceCommandList* pCommandList);
 	bool ResolveTimestamps();
+
+	uint64 GetTime(uint32 timestamp)
+	{
+		return m_timestampData[timestamp];
+	}
 
 	float GetTimeMS(uint32 timestamp0, uint32 timestamp1);
 
@@ -21,6 +26,8 @@ private:
 	VkQueryPool                         m_queryPool;
 	DeviceFenceHandle                   m_fence;
 	std::array<uint64, kMaxTimestamps>  m_timestampData;
+
+	bool                                m_measurable;
 };
 
 ////////////////////////////////////////////////////////////////////////////

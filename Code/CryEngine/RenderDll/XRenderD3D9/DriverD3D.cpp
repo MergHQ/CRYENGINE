@@ -949,6 +949,28 @@ void CD3D9Renderer::RT_BeginFrame(const SDisplayContextKey& displayContextKey)
 	}
 #endif
 
+	//////////////////////////////////////////////////////////////////////
+	// Profiling and statistics
+	//////////////////////////////////////////////////////////////////////
+	{
+		SRenderStatistics::s_pCurrentOutput = &m_frameRenderStats[m_nProcessThreadID];
+		SRenderStatistics::s_pCurrentOutput->Begin(&m_frameRenderStats[m_nFillThreadID]);
+
+		m_renderTargetStats.resize(0);
+
+#if !defined(_RELEASE)
+		m_pGraphicsPipeline->GetDrawCallInfoPerMesh()->clear();
+		m_pGraphicsPipeline->GetDrawCallInfoPerNode()->clear();
+#endif
+
+		if (m_pPipelineProfiler)
+			m_pPipelineProfiler->BeginFrame(gRenDev->GetRenderFrameID());
+	}
+
+	//////////////////////////////////////////////////////////////////////
+	// Pre-Frame management
+	//////////////////////////////////////////////////////////////////////
+
 	// Delete resources scheduled for deletion.
 	RT_DelayedDeleteResources(false);
 
@@ -962,9 +984,6 @@ void CD3D9Renderer::RT_BeginFrame(const SDisplayContextKey& displayContextKey)
 	// Render updated dynamic flash textures
 	CFlashTextureSourceSharedRT::TickRT();
 	CFlashTextureSourceBase::RenderLights();
-
-	if (m_pPipelineProfiler)
-		m_pPipelineProfiler->BeginFrame(gRenDev->GetRenderFrameID());
 
 	//////////////////////////////////////////////////////////////////////
 	// Build the matrices
@@ -1075,18 +1094,6 @@ void CD3D9Renderer::RT_BeginFrame(const SDisplayContextKey& displayContextKey)
 	}
 
 	m_nStencilMaskRef = STENCIL_VALUE_OUTDOORS + 1;
-
-	//if (!IsRecursiveRenderView())
-	{
-		memset(&m_frameRenderStats[m_nProcessThreadID], 0, sizeof(SRenderStatistics));
-		SRenderStatistics::s_pCurrentOutput = &m_frameRenderStats[m_nProcessThreadID];
-		m_renderTargetStats.resize(0);
-
-#if !defined(_RELEASE)
-		m_pGraphicsPipeline->GetDrawCallInfoPerMesh()->clear();
-		m_pGraphicsPipeline->GetDrawCallInfoPerNode()->clear();
-#endif
-	}
 
 	{
 		static float fWaitForGPU;
@@ -1489,7 +1496,7 @@ void CD3D9Renderer::DebugDrawStats1(const SRenderStatistics& RStats)
 	IRenderAuxText::Draw2dLabel(nX, nY += nYstep, fFSize, &col.r, false, "Imposters: %d (Updates: %d)", RStats.m_NumCloudImpostersDraw, RStats.m_NumCloudImpostersUpdates);
 	IRenderAuxText::Draw2dLabel(nX, nY += nYstep, fFSize, &col.r, false, "Sprites: %d (%d dips, %d updates, %d altases, %d cells, %d polys)", RStats.m_NumSprites, RStats.m_NumSpriteDIPS, RStats.m_NumSpriteUpdates, RStats.m_NumSpriteAltasesUsed, RStats.m_NumSpriteCellsUsed, RStats.m_NumSpritePolys);
 
-	IRenderAuxText::Draw2dLabel(nX - 5, nY + 20, 1.4f, &col.r, false, "Total: %d (%d polys)", GetCurrentNumberOfDrawCalls(), RT_GetPolyCount());
+	IRenderAuxText::Draw2dLabel(nX - 5, nY + 20, 1.4f, &col.r, false, "Total: %d (%d polys)", RStats.GetNumberOfDrawCalls(), RStats.GetNumberOfPolygons());
 
 	col = Col_Yellow;
 	nX -= 5;
@@ -2056,7 +2063,7 @@ void CD3D9Renderer::DebugPerfBars(const SRenderStatistics& RStats,int nX, int nY
 	float fMaxBar = 200;
 	float fOffs = 180.0f;
 
-	IRenderAuxText::Draw2dLabel(nX + 30, nY, 1.6f, &colP.r, false, "Instances: %d, GeomBatches: %d, MatBatches: %d, DrawCalls: %d, Text: %d, Stat: %d, PShad: %d, VShad: %d", RStats.m_NumRendInstances, RStats.m_NumRendGeomBatches, RStats.m_NumRendMaterialBatches, GetCurrentNumberOfDrawCalls(), RStats.m_NumTextChanges, RStats.m_NumStateChanges, RStats.m_NumPShadChanges, RStats.m_NumVShadChanges);
+	IRenderAuxText::Draw2dLabel(nX + 30, nY, 1.6f, &colP.r, false, "Instances: %d, GeomBatches: %d, MatBatches: %d, DrawCalls: %d, Text: %d, Stat: %d, PShad: %d, VShad: %d", RStats.m_NumRendInstances, RStats.m_NumRendGeomBatches, RStats.m_NumRendMaterialBatches, RStats.GetNumberOfDrawCalls(), RStats.m_NumTextChanges, RStats.m_NumStateChanges, RStats.m_NumPShadChanges, RStats.m_NumVShadChanges);
 	nY += 30;
 
 	ColorF colT = Col_Gray;
@@ -2301,7 +2308,7 @@ void CD3D9Renderer::DebugDrawStats8(const SRenderStatistics& RStats)
 {
 #if !defined(_RELEASE) && defined(ENABLE_PROFILING_CODE)
 	ColorF col = Col_White;
-	IRenderAuxText::Draw2dLabel(30, 50, 1.2f, &col.r, false, "%d total instanced DIPs in %d batches", RStats.m_nInsts, RStats.m_nInstCalls);
+	IRenderAuxText::Draw2dLabel(30, 50, 1.2f, &col.r, false, "%d total instanced DIPs in %d batches", RStats.GetNumGeomInstances(), RStats.GetNumGeomInstanceDrawCalls());
 #endif
 }
 
@@ -3214,7 +3221,11 @@ void CD3D9Renderer::RT_EndFrame()
 	const ESystemGlobalState systemState = iSystem->GetSystemGlobalState();
 	if (systemState > ESYSTEM_GLOBAL_STATE_LEVEL_LOAD_END)
 	{
+		CTimeValue time0 = iTimer->GetAsyncTime();
+
 		CTexture::Update();
+
+		SRenderStatistics::Write().m_fTexUploadTime += (iTimer->GetAsyncTime() - time0).GetSeconds();
 	}
 
 	// Rnder-thread Aux
@@ -3227,17 +3238,12 @@ void CD3D9Renderer::RT_EndFrame()
 	// Hardware mouse
 	if (gEnv->pHardwareMouse)
 		gEnv->pHardwareMouse->Render();
-	//////////////////////////////////////////////////////////////////////////
 
 	EF_RemoveParticlesFromScene();
 
-	//FX_SetState(GS_NODEPTHTEST);
-
-	//char str[1024];
-	//cry_sprintf(str, "Frame: %d", gRenDev->GetRenderFrameID());
-	//PrintToScreen(5,50, 16, str);
-
-	//PROFILE_LABEL_POP_SKIP_GPU("Frame");
+	//////////////////////////////////////////////////////////////////////
+	// Profiling and statistics
+	//////////////////////////////////////////////////////////////////////
 
 	bool bProfilerOnSocialScreen = false;
 #if !CRY_PLATFORM_ORBIS  // PSVR currently does not use a custom social screen
@@ -3253,6 +3259,8 @@ void CD3D9Renderer::RT_EndFrame()
 
 	if (m_pPipelineProfiler && bProfilerOnSocialScreen)
 		m_pPipelineProfiler->EndFrame();
+
+	SRenderStatistics::Write().Finish();
 
 #ifdef DO_RENDERLOG
 	if (CRenderer::CV_r_log)
@@ -3507,8 +3515,8 @@ void CD3D9Renderer::RT_EndFrame()
 	m_fTimeProcessedGPU[gRenDev->GetRenderThreadID()] = m_fTimeProcessedRT[gRenDev->GetRenderThreadID()];
 	#else
 	RPProfilerStats profileStats = m_pPipelineProfiler->GetBasicStats(eRPPSTATS_OverallFrame, gRenDev->GetRenderThreadID());
-	m_fTimeProcessedGPU[gRenDev->GetRenderThreadID()] = profileStats.gpuTime / 1000.0f;
-	#endif
+	m_fTimeProcessedGPU[gRenDev->GetRenderThreadID()] = profileStats.gpuTime / 1000.0f; // Store in "seconds"
+#endif
 #endif
 
 #if defined(USE_GEOM_CACHES)
@@ -3658,7 +3666,7 @@ bool CD3D9Renderer::RT_ScreenShot(const char* filename, CRenderDisplayContext* p
 	gEnv->pConsole->ExecuteString("goto");  // output position and angle, can be used with "goto" command from console
 
 	iLog->LogWithType(ILog::eInputResponse, " ");
-	iLog->LogWithType(ILog::eInputResponse, "$5Drawcalls: %d", gEnv->pRenderer->GetCurrentNumberOfDrawCalls());
+	iLog->LogWithType(ILog::eInputResponse, "$5Drawcalls: %d", SRenderStatistics::Write().GetNumberOfDrawCalls());
 	iLog->LogWithType(ILog::eInputResponse, "$5FPS: %.1f (%.1f ms)", gEnv->pTimer->GetFrameRate(), gEnv->pTimer->GetFrameTime() * 1000.0f);
 
 	int nPolygons, nShadowVolPolys;
@@ -5151,7 +5159,11 @@ const DynArray<RPProfilerDetailedStats>* CD3D9Renderer::GetRPPDetailedStatsArray
 
 int CD3D9Renderer::GetPolygonCountByType(uint32 EFSList, EVertexCostTypes vct, uint32 z, bool bCalledFromMainThread /*= true*/)
 {
-	return m_frameRenderStats[bCalledFromMainThread ? m_nFillThreadID : m_nProcessThreadID].m_nPolygonsByTypes[EFSList][vct][z];
+#if defined(ENABLE_PROFILING_CODE)
+	return m_frameRenderStats[bCalledFromMainThread ? gRenDev->GetMainThreadID() : gRenDev->GetRenderThreadID()].m_nPolygonsByTypes[EFSList][vct][z];
+#else
+	return 0;
+#endif
 }
 
 //====================================================================

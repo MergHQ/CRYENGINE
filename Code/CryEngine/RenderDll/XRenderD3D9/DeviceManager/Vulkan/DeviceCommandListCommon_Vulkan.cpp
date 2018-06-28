@@ -28,6 +28,7 @@ CDeviceTimestampGroup::CDeviceTimestampGroup()
 	: m_numTimestamps(0)
 	, m_queryPool(VK_NULL_HANDLE)
 	, m_fence(0)
+	, m_measurable(false)
 {}
 
 CDeviceTimestampGroup::~CDeviceTimestampGroup()
@@ -65,18 +66,20 @@ void CDeviceTimestampGroup::BeginMeasurement()
 	vkCmdResetQueryPool(coreCommandList.GetVKCommandList()->GetVkCommandList(), m_queryPool, 0, kMaxTimestamps);
 
 	m_numTimestamps = 0;
+	m_measurable = false;
 }
 
 void CDeviceTimestampGroup::EndMeasurement()
 {
 	GetDeviceObjectFactory().IssueFence(m_fence);
+	m_measurable = true;
 }
 
-uint32 CDeviceTimestampGroup::IssueTimestamp(void* pCommandList)
+uint32 CDeviceTimestampGroup::IssueTimestamp(CDeviceCommandList* pCommandList)
 {
 	CRY_ASSERT(m_numTimestamps < kMaxTimestamps);
 
-	CDeviceCommandListRef deviceCommandList = pCommandList ? *reinterpret_cast<CDeviceCommandList*>(pCommandList) : GetDeviceObjectFactory().GetCoreCommandList();
+	CDeviceCommandListRef deviceCommandList = pCommandList ? *pCommandList : GetDeviceObjectFactory().GetCoreCommandList();
 	vkCmdWriteTimestamp(deviceCommandList.GetVKCommandList()->GetVkCommandList(), VK_PIPELINE_STAGE_ALL_COMMANDS_BIT, m_queryPool, m_numTimestamps);
 
 	return m_numTimestamps++;
@@ -84,16 +87,17 @@ uint32 CDeviceTimestampGroup::IssueTimestamp(void* pCommandList)
 
 bool CDeviceTimestampGroup::ResolveTimestamps()
 {
+	if (!m_measurable)
+		return false;
 	if (m_numTimestamps == 0)
 		return true;
 
-	if (GetDeviceObjectFactory().SyncFence(m_fence, false, true) == S_OK)
-	{
-		if (vkGetQueryPoolResults(GetDevice()->GetVkDevice(), m_queryPool, 0, m_numTimestamps, sizeof(m_timestampData), m_timestampData.data(), sizeof(uint64), VK_QUERY_RESULT_64_BIT) == VK_SUCCESS)
-			return true;
-	}
-
-	return false;
+	if (GetDeviceObjectFactory().SyncFence(m_fence, false, true) != S_OK)
+		return false;
+	if (vkGetQueryPoolResults(GetDevice()->GetVkDevice(), m_queryPool, 0, m_numTimestamps, sizeof(m_timestampData), m_timestampData.data(), sizeof(uint64), VK_QUERY_RESULT_64_BIT) != VK_SUCCESS)
+		return false;
+	
+	return true;
 }
 
 float CDeviceTimestampGroup::GetTimeMS(uint32 timestamp0, uint32 timestamp1)

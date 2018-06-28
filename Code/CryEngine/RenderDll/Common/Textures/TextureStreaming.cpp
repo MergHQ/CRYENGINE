@@ -1456,7 +1456,6 @@ bool CTexture::StartStreaming(CTexture* pTex, STexPoolItem* pNewPoolItem, const 
 void CTexture::StreamUploadMips(int nStartMip, int nEndMip, STexPoolItem* pNewPoolItem)
 {
 	assert(pNewPoolItem);
-	CTimeValue time0 = iTimer->GetAsyncTime();
 
 	StreamCopyMipsTexToMem(nStartMip, nEndMip, true, pNewPoolItem);
 
@@ -1471,8 +1470,6 @@ void CTexture::StreamUploadMips(int nStartMip, int nEndMip, STexPoolItem* pNewPo
 
 	if (s_bStreamDontKeepSystem)
 		StreamReleaseMipsData(nStartMip, nEndMip);
-
-	SRenderStatistics::Write().m_fTexUploadTime += (iTimer->GetAsyncTime() - time0).GetSeconds();
 }
 
 void CTexture::InitStreaming()
@@ -1625,6 +1622,8 @@ void CTexture::RT_FlushStreaming(bool bAbort)
 
 void CTexture::RT_FlushAllStreamingTasks(const bool bAbort /* = false*/)
 {
+	CTimeValue time0 = iTimer->GetAsyncTime();
+
 	// flush all tasks globally
 	CHK_RENDTH;
 	iLog->Log("Flushing pended textures...");
@@ -1694,6 +1693,8 @@ void CTexture::RT_FlushAllStreamingTasks(const bool bAbort /* = false*/)
 
 	assert(s_nBytesSubmittedToStreaming == 0);
 	iLog->Log("Finished flushing pended textures...");
+
+	SRenderStatistics::Write().m_fTexUploadTime += (iTimer->GetAsyncTime() - time0).GetSeconds();
 }
 
 void CTexture::AbortStreamingTasks(CTexture* pTex)
