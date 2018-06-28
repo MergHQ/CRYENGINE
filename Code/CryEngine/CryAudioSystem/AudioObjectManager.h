@@ -2,17 +2,23 @@
 
 #pragma once
 
-#include "ATLEntities.h"
-#include <CryAudio/IAudioInterfacesCommonData.h>
+#include "GlobalTypedefs.h"
+
+#if defined(INCLUDE_AUDIO_PRODUCTION_CODE)
+struct IRenderAuxGeom;
+#endif // INCLUDE_AUDIO_PRODUCTION_CODE
 
 namespace CryAudio
 {
 class CATLAudioObject;
+class CATLStandaloneFile;
+class CATLEvent;
+class CAudioRequest;
 
 namespace Impl
 {
-struct SObject3DAttributes;
-}
+struct IImpl;
+} // namespace Impl
 
 class CObjectManager final
 {
@@ -31,7 +37,7 @@ public:
 	void            Init(uint32 const poolSize);
 	void            SetImpl(Impl::IImpl* const pIImpl);
 	void            Release();
-	void            Update(float const deltaTime, Impl::SObject3DAttributes const& listenerAttributes);
+	void            Update(float const deltaTime, CObjectTransformation const& listenerTransformation, Vec3 const& listenerVelocity);
 	void            RegisterObject(CATLAudioObject* const pObject);
 
 	void            ReportStartedEvent(CATLEvent* const pEvent);
@@ -46,13 +52,13 @@ public:
 	size_t                    GetNumActiveAudioObjects() const;
 	ConstructedObjects const& GetAudioObjects() const { return m_constructedObjects; }
 	void                      DrawPerObjectDebugInfo(
-	  IRenderAuxGeom& auxGeom,
-	  Vec3 const& listenerPos,
-	  AudioTriggerLookup const& triggers,
-	  AudioParameterLookup const& parameters,
-	  AudioSwitchLookup const& switches,
-	  AudioPreloadRequestLookup const& preloadRequests,
-	  AudioEnvironmentLookup const& environments) const;
+		IRenderAuxGeom& auxGeom,
+		Vec3 const& listenerPos,
+		AudioTriggerLookup const& triggers,
+		AudioParameterLookup const& parameters,
+		AudioSwitchLookup const& switches,
+		AudioPreloadRequestLookup const& preloadRequests,
+		AudioEnvironmentLookup const& environments) const;
 	void DrawDebugInfo(IRenderAuxGeom& auxGeom, Vec3 const& listenerPosition, float const posX, float posY) const;
 
 #endif // INCLUDE_AUDIO_PRODUCTION_CODE

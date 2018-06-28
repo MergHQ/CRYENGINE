@@ -127,7 +127,7 @@ void ProcessChannelFinishedRequests(ChannelFinishedRequests& queue)
 			if (pAudioObject)
 			{
 				EventInstanceList::iterator eventsEnd = pAudioObject->m_events.end();
-				for (EventInstanceList::iterator eventsIt = pAudioObject->m_events.begin(); eventsIt != eventsEnd; )
+				for (EventInstanceList::iterator eventsIt = pAudioObject->m_events.begin(); eventsIt != eventsEnd;)
 				{
 					CEvent* pEventInstance = *eventsIt;
 					EventInstanceList::iterator eventsCurrent = eventsIt;
@@ -152,7 +152,7 @@ void ProcessChannelFinishedRequests(ChannelFinishedRequests& queue)
 					}
 				}
 				StandAloneFileInstanceList::iterator standaloneFilesEnd = pAudioObject->m_standaloneFiles.end();
-				for (StandAloneFileInstanceList::iterator standaloneFilesIt = pAudioObject->m_standaloneFiles.begin(); standaloneFilesIt != standaloneFilesEnd; )
+				for (StandAloneFileInstanceList::iterator standaloneFilesIt = pAudioObject->m_standaloneFiles.begin(); standaloneFilesIt != standaloneFilesEnd;)
 				{
 					CStandaloneFile* pStandaloneFileInstance = *standaloneFilesIt;
 					StandAloneFileInstanceList::iterator standaloneFilesCurrent = standaloneFilesIt;
@@ -850,7 +850,7 @@ bool SoundEngine::StopFile(CObject* const pObject, CStandaloneFile* const pStand
 }
 
 //////////////////////////////////////////////////////////////////////////
-bool SoundEngine::SetListenerPosition(ListenerId const listenerId, CObjectTransformation const& transformation)
+bool SoundEngine::SetListenerTransformation(ListenerId const listenerId, CObjectTransformation const& transformation)
 {
 	g_listenerTransformation = transformation;
 	g_bListenerPosChanged = true;

@@ -945,19 +945,25 @@ void CTexture::RT_Precache(const bool isFinalPrecache)
 			});
 		}
 
-		while (s_StreamPrepTasks.GetNumLive())
 		{
-			if (gRenDev->m_pRT->IsRenderThread() && !gRenDev->m_pRT->IsRenderLoadingThread() && !gRenDev->m_pRT->IsLevelLoadingThread())
+			CTimeValue time0 = iTimer->GetAsyncTime();
+
+			while (s_StreamPrepTasks.GetNumLive())
 			{
-				StreamState_Update();
-				StreamState_UpdatePrep();
-			}
-			else if (gRenDev->m_pRT->IsRenderLoadingThread() || gRenDev->m_pRT->IsLevelLoadingThread())
-			{
-				StreamState_UpdatePrep();
+				if (gRenDev->m_pRT->IsRenderThread() && !gRenDev->m_pRT->IsRenderLoadingThread() && !gRenDev->m_pRT->IsLevelLoadingThread())
+				{
+					StreamState_Update();
+					StreamState_UpdatePrep();
+				}
+				else if (gRenDev->m_pRT->IsRenderLoadingThread() || gRenDev->m_pRT->IsLevelLoadingThread())
+				{
+					StreamState_UpdatePrep();
+				}
+
+				CrySleep(1);
 			}
 
-			CrySleep(1);
+			SRenderStatistics::Write().m_fTexUploadTime += (iTimer->GetAsyncTime() - time0).GetSeconds();
 		}
 
 		// Trigger the texture(s)'s load without holding the resource-library lock to evade dead-locks

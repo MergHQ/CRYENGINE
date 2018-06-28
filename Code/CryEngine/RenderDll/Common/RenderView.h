@@ -352,10 +352,7 @@ private:
 	void                   AddRenderItemToRenderLists(const SRendItem& ri, int nRenderList, CRenderObject* RESTRICT_POINTER pObj, const SShaderItem& shaderItem) threadsafe;
 
 	CCompiledRenderObject* AllocCompiledObject(CRenderObject* pObj, CRenderElement* pElem, const SShaderItem& shaderItem);
-	CCompiledRenderObject* AllocCompiledObjectTemporary(CRenderObject* pObj, CRenderElement* pElem, const SShaderItem& shaderItem);
-
-	TRect_tpl<uint16>      ComputeResolveViewport(const SRenderViewport &viewport, const CRenderObject* obj, const CCamera &camera, bool forceFullscreenUpdate = false) const;
-
+	
 private:
 	EUsageMode       m_usageMode;
 	const EViewType  m_viewType;
@@ -452,13 +449,18 @@ private:
 	// Render objects modified by this view.
 	struct SPermanentRenderObjectCompilationData
 	{
-		CPermanentRenderObject* pObject;
-		EObjectCompilationOptions     compilationFlags;
+		CPermanentRenderObject*    pObject;
+		EObjectCompilationOptions  compilationFlags;
 	};
 	lockfree_add_vector<SPermanentRenderObjectCompilationData> m_permanentRenderObjectsToCompile;
 
 	// Temporary compiled objects for this frame
-	lockfree_add_vector<CCompiledRenderObject*> m_temporaryCompiledObjects;
+	struct STemporaryRenderObjectCompilationData
+	{
+		CCompiledRenderObject* pObject;
+		AABB                   localAABB;
+	};
+	lockfree_add_vector<STemporaryRenderObjectCompilationData> m_temporaryCompiledObjects;
 
 	// shader items that need to be updated
 	lockfree_add_vector<std::pair<CShaderResources*, CShader*>> m_shaderItemsToUpdate;

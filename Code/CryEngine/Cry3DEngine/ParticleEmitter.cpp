@@ -1220,52 +1220,6 @@ void CParticleEmitter::RenderDebugInfo()
 				}
 			}
 		}
-
-#if REFRACTION_PARTIAL_RESOLVE_DEBUG_VIEWS
-		// Render refraction partial resolve bounding boxes
-		static ICVar* pRefractionPartialResolvesDebugCVar = gEnv->pConsole->GetCVar("r_RefractionPartialResolvesDebug");
-		if (pRefractionPartialResolvesDebugCVar && pRefractionPartialResolvesDebugCVar->GetIVal() == eRPR_DEBUG_VIEW_3D_BOUNDS)
-		{
-			if (IRenderAuxGeom* pAuxRenderer = gEnv->pRenderer->GetIRenderAuxGeom())
-			{
-				SAuxGeomRenderFlags oldRenderFlags = pAuxRenderer->GetRenderFlags();
-
-				SAuxGeomRenderFlags newRenderFlags;
-				newRenderFlags.SetDepthTestFlag(e_DepthTestOff);
-				newRenderFlags.SetAlphaBlendMode(e_AlphaBlended);
-				pAuxRenderer->SetRenderFlags(newRenderFlags);
-
-				// Render all bounding boxes for containers that have refractive particles
-				for (auto& c : m_Containers)
-				{
-					if (c.WasRenderedPrevFrame())
-					{
-						const ResourceParticleParams& params = c.GetParams();
-
-						IMaterial* pMatToUse = params.pMaterial;
-
-						if (pMatToUse)
-						{
-							IShader* pShader = pMatToUse->GetShaderItem().m_pShader;
-							if (pShader && (pShader->GetFlags() & EF_REFRACTIVE))
-							{
-								const AABB& aabb = c.GetBounds();
-								const bool bSolid = true;
-								const ColorB solidColor(64, 64, 255, 64);
-								pAuxRenderer->DrawAABB(aabb, bSolid, solidColor, eBBD_Faceted);
-
-								const ColorB wireframeColor(255, 0, 0, 255);
-								pAuxRenderer->DrawAABB(aabb, !bSolid, wireframeColor, eBBD_Faceted);
-							}
-						}
-					}
-
-					// Set previous Aux render flags back again
-					pAuxRenderer->SetRenderFlags(oldRenderFlags);
-				}
-			}
-		}
-#endif
 	}
 }
 #if defined(__GNUC__)

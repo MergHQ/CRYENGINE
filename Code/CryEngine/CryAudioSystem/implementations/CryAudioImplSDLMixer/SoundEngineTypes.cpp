@@ -27,10 +27,9 @@ ERequestStatus CObject::Update()
 }
 
 //////////////////////////////////////////////////////////////////////////
-ERequestStatus CObject::Set3DAttributes(SObject3DAttributes const& attributes)
+void CObject::SetTransformation(CObjectTransformation const& transformation)
 {
-	SoundEngine::SetObjectTransformation(this, attributes.transformation);
-	return ERequestStatus::Success;
+	SoundEngine::SetObjectTransformation(this, transformation);
 }
 
 //////////////////////////////////////////////////////////////////////////
@@ -130,10 +129,9 @@ ERequestStatus CObject::SetName(char const* const szName)
 }
 
 //////////////////////////////////////////////////////////////////////////
-ERequestStatus CListener::Set3DAttributes(SObject3DAttributes const& attributes)
+void CListener::SetTransformation(CObjectTransformation const& transformation)
 {
-	SoundEngine::SetListenerPosition(m_id, attributes.transformation);
-	return ERequestStatus::Success;
+	SoundEngine::SetListenerTransformation(m_id, transformation);
 }
 } // namespace SDL_mixer
 } // namespace Impl

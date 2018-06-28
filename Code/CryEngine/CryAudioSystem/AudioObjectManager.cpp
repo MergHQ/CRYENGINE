@@ -67,7 +67,7 @@ void CObjectManager::Release()
 }
 
 //////////////////////////////////////////////////////////////////////////
-void CObjectManager::Update(float const deltaTime, Impl::SObject3DAttributes const& listenerAttributes)
+void CObjectManager::Update(float const deltaTime, CObjectTransformation const& listenerTransformation, Vec3 const& listenerVelocity)
 {
 #if defined(INCLUDE_AUDIO_PRODUCTION_CODE)
 	CPropagationProcessor::s_totalAsyncPhysRays = 0;
@@ -76,8 +76,7 @@ void CObjectManager::Update(float const deltaTime, Impl::SObject3DAttributes con
 
 	if (deltaTime > 0.0f)
 	{
-		bool const listenerMoved = listenerAttributes.velocity.GetLengthSquared() > FloatEpsilon;
-
+		bool const listenerMoved = listenerVelocity.GetLengthSquared() > FloatEpsilon;
 		auto iter = m_constructedObjects.begin();
 		auto iterEnd = m_constructedObjects.end();
 
@@ -87,7 +86,7 @@ void CObjectManager::Update(float const deltaTime, Impl::SObject3DAttributes con
 
 			CObjectTransformation const& transformation = pObject->GetTransformation();
 
-			float const distance = transformation.GetPosition().GetDistance(listenerAttributes.transformation.GetPosition());
+			float const distance = transformation.GetPosition().GetDistance(listenerTransformation.GetPosition());
 			float const radius = pObject->GetMaxRadius();
 
 			if (radius <= 0.0f || distance < radius)
@@ -110,7 +109,7 @@ void CObjectManager::Update(float const deltaTime, Impl::SObject3DAttributes con
 
 			if (IsActive(pObject))
 			{
-				pObject->Update(deltaTime, distance, listenerAttributes.transformation.GetPosition(), listenerAttributes.velocity, listenerMoved);
+				pObject->Update(deltaTime, distance, listenerTransformation.GetPosition(), listenerVelocity, listenerMoved);
 			}
 			else if (pObject->CanBeReleased())
 			{
@@ -277,26 +276,26 @@ size_t CObjectManager::GetNumActiveAudioObjects() const
 
 //////////////////////////////////////////////////////////////////////////
 void CObjectManager::DrawPerObjectDebugInfo(
-  IRenderAuxGeom& auxGeom,
-  Vec3 const& listenerPos,
-  AudioTriggerLookup const& triggers,
-  AudioParameterLookup const& parameters,
-  AudioSwitchLookup const& switches,
-  AudioPreloadRequestLookup const& preloadRequests,
-  AudioEnvironmentLookup const& environments) const
+	IRenderAuxGeom& auxGeom,
+	Vec3 const& listenerPos,
+	AudioTriggerLookup const& triggers,
+	AudioParameterLookup const& parameters,
+	AudioSwitchLookup const& switches,
+	AudioPreloadRequestLookup const& preloadRequests,
+	AudioEnvironmentLookup const& environments) const
 {
 	for (auto const pObject : m_constructedObjects)
 	{
 		if (IsActive(pObject))
 		{
 			pObject->DrawDebugInfo(
-			  auxGeom,
-			  listenerPos,
-			  triggers,
-			  parameters,
-			  switches,
-			  preloadRequests,
-			  environments);
+				auxGeom,
+				listenerPos,
+				triggers,
+				parameters,
+				switches,
+				preloadRequests,
+				environments);
 		}
 	}
 }

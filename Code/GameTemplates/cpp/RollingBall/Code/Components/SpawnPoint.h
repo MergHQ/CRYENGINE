@@ -1,6 +1,7 @@
 #pragma once
 #include <CryEntitySystem/IEntityComponent.h>
 #include <CryEntitySystem/IEntity.h>
+#include <CryEntitySystem/IEntitySystem.h>
 
 ////////////////////////////////////////////////////////
 // Spawn point to spawn the player

@@ -2831,11 +2831,10 @@ void CRendererCVars::InitCVars()
 
 	DefineConstIntCVar3("r_RefractionPartialResolvesDebug", CV_r_RefractionPartialResolvesDebug, 0, VF_NULL,
 	                    "Toggle refraction partial resolves debug display\n"
-	                    "Usage: r_RefractionPartialResolvesDebug [0/1]\n"
+	                    "Usage: r_RefractionPartialResolvesDebug\n"
 	                    "0: disable \n"
-	                    "1: Additive 2d area \n"
-	                    "2: Bounding boxes \n"
-	                    "3: Alpha overlay with varying colours \n");
+	                    "1: Statistics \n"
+	                    "2: Bounding boxes \n");
 
 	DefineConstIntCVar3("r_Batching", CV_r_Batching, 1, VF_NULL,
 	                    "Enable/disable render items batching\n"

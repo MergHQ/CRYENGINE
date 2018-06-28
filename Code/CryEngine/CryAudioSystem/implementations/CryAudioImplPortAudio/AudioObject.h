@@ -27,7 +27,7 @@ public:
 
 	// CryAudio::Impl::IObject
 	virtual ERequestStatus Update() override;
-	virtual ERequestStatus Set3DAttributes(SObject3DAttributes const& attributes) override;
+	virtual void           SetTransformation(CObjectTransformation const& transformation) override;
 	virtual ERequestStatus SetEnvironment(IEnvironment const* const pIEnvironment, float const amount) override;
 	virtual ERequestStatus SetParameter(IParameter const* const pIParameter, float const value) override;
 	virtual ERequestStatus SetSwitchState(ISwitchState const* const pISwitchState) override;

@@ -974,12 +974,13 @@ void CShadowMapStage::Execute()
 	const int nThreadID = gRenDev->GetRenderThreadID();
 	CRenderItemDrawer& rendItemDrawer = RenderView()->GetDrawer();
 
-	rendItemDrawer.InitDrawSubmission();
-
+	// Cached shadow maps cannot run concurrent due to CopyShadowMap pass
 	for (auto& curPass : m_ShadowMapPasses[ePass_DirectionalLightCached])
 	{
 		if (curPass.m_bRequiresRender)
 		{
+			rendItemDrawer.InitDrawSubmission();
+
 			CRenderView* pShadowsView = reinterpret_cast<CRenderView*>(curPass.GetFrustum()->pShadowsView.get());
 
 			curPass.PreRender();
@@ -987,11 +988,12 @@ void CShadowMapStage::Execute()
 			curPass.BeginExecution();
 			curPass.DrawRenderItems(pShadowsView, (ERenderListID)curPass.m_nShadowFrustumSide, -1, -1, EFSLIST_SHADOW_GEN);
 			curPass.EndExecution();
+
+			rendItemDrawer.JobifyDrawSubmission();
+			rendItemDrawer.WaitForDrawSubmission();
 		}
 	}
 
-	// Cached shadow maps cannot be jobified currently due to CopyShadowMap pass
-	rendItemDrawer.JobifyDrawSubmission(true);
 	rendItemDrawer.InitDrawSubmission();
 
 	for (auto passGroup  = ePass_DirectionalLight; passGroup != ePass_Count; passGroup  = EPass(passGroup+1))

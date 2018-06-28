@@ -2,7 +2,7 @@
 
 #pragma once
 
-#include "ATLEntities.h"
+#include "GlobalTypedefs.h"
 #include "PropagationProcessor.h"
 #include <PoolObject.h>
 #include <CryAudio/IObject.h>
@@ -21,8 +21,7 @@ static constexpr SwitchStateId OcclusionTypeStateIds[IntegralValue(EOcclusionTyp
 	AdaptiveStateId,
 	LowStateId,
 	MediumStateId,
-	HighStateId
-};
+	HighStateId };
 
 class CSystem;
 class CEventManager;
@@ -51,9 +50,9 @@ struct SUserDataBase
 	SUserDataBase() = default;
 
 	explicit SUserDataBase(
-	  void* const pOwnerOverride_,
-	  void* const pUserData_,
-	  void* const pUserDataOwner_)
+		void* const pOwnerOverride_,
+		void* const pUserData_,
+		void* const pUserDataOwner_)
 		: pOwnerOverride(pOwnerOverride_)
 		, pUserData(pUserData_)
 		, pUserDataOwner(pUserDataOwner_)
@@ -96,7 +95,7 @@ public:
 
 	ERequestStatus   HandleExecuteTrigger(CATLTrigger const* const pTrigger, void* const pOwner = nullptr, void* const pUserData = nullptr, void* const pUserDataOwner = nullptr, ERequestFlags const flags = ERequestFlags::None);
 	ERequestStatus   HandleStopTrigger(CATLTrigger const* const pTrigger);
-	ERequestStatus   HandleSetTransformation(CObjectTransformation const& transformation, float const distanceToListener);
+	void             HandleSetTransformation(CObjectTransformation const& transformation, float const distanceToListener);
 	ERequestStatus   HandleSetParameter(CParameter const* const pParameter, float const value);
 	ERequestStatus   HandleSetSwitchState(CATLSwitch const* const pSwitch, CATLSwitchState const* const pState);
 	ERequestStatus   HandleSetEnvironment(CATLAudioEnvironment const* const pEnvironment, float const amount);
@@ -131,7 +130,7 @@ public:
 	void                           SetImplDataPtr(Impl::IObject* const pImplData) { m_pImplData = pImplData; }
 	Impl::IObject*                 GetImplDataPtr() const                         { return m_pImplData; }
 
-	CObjectTransformation const&   GetTransformation()                            { return m_attributes.transformation; }
+	CObjectTransformation const&   GetTransformation()                            { return m_transformation; }
 
 	// Flags / Properties
 	EObjectFlags GetFlags() const { return m_flags; }
@@ -140,11 +139,11 @@ public:
 	float        GetMaxRadius() const { return m_maxRadius; }
 
 	void         Update(
-	  float const deltaTime,
-	  float const distanceToListener,
-	  Vec3 const& listenerPosition,
-	  Vec3 const& listenerVelocity,
-	  bool const listenerMoved);
+		float const deltaTime,
+		float const distanceToListener,
+		Vec3 const& listenerPosition,
+		Vec3 const& listenerVelocity,
+		bool const listenerMoved);
 	bool CanBeReleased() const;
 
 	void IncrementSyncCallbackCounter() { CryInterlockedIncrement(&m_numPendingSyncCallbacks); }
@@ -176,52 +175,54 @@ private:
 	void PushRequest(SAudioRequestData const& requestData, SRequestUserData const& userData);
 	bool HasActiveData(CATLAudioObject const* const pAudioObject) const;
 	void UpdateControls(
-	  float const deltaTime,
-	  float const distanceToListener,
-	  Vec3 const& listenerPosition,
-	  Vec3 const& listenerVelocity,
-	  bool const listenerMoved);
+		float const deltaTime,
+		float const distanceToListener,
+		Vec3 const& listenerPosition,
+		Vec3 const& listenerVelocity,
+		bool const listenerMoved);
 	void TryToSetRelativeVelocity(float const relativeVelocity);
 
-	ObjectStandaloneFileMap   m_activeStandaloneFiles;
-	ObjectEventSet            m_activeEvents;
-	ObjectTriggerStates       m_triggerStates;
-	ObjectTriggerImplStates   m_triggerImplStates;
-	ObjectParameterMap        m_parameters;
-	ObjectEnvironmentMap      m_environments;
-	ObjectStateMap            m_switchStates;
-	Impl::IObject*            m_pImplData;
-	float                     m_maxRadius;
-	EObjectFlags              m_flags;
-	float                     m_previousRelativeVelocity;
-	float                     m_previousAbsoluteVelocity;
-	Impl::SObject3DAttributes m_attributes;
-	Impl::SObject3DAttributes m_previousAttributes;
-	CPropagationProcessor     m_propagationProcessor;
-	EntityId                  m_entityId;
-	volatile int              m_numPendingSyncCallbacks;
+	ObjectStandaloneFileMap  m_activeStandaloneFiles;
+	ObjectEventSet           m_activeEvents;
+	ObjectTriggerStates      m_triggerStates;
+	ObjectTriggerImplStates  m_triggerImplStates;
+	ObjectParameterMap       m_parameters;
+	ObjectEnvironmentMap     m_environments;
+	ObjectStateMap           m_switchStates;
+	Impl::IObject*           m_pImplData;
+	float                    m_maxRadius;
+	EObjectFlags             m_flags;
+	float                    m_previousRelativeVelocity;
+	float                    m_previousAbsoluteVelocity;
+	CObjectTransformation    m_transformation;
+	Vec3                     m_positionForVelocityCalculation;
+	Vec3                     m_previousPositionForVelocityCalculation;
+	Vec3                     m_velocity;
+	CPropagationProcessor    m_propagationProcessor;
+	EntityId                 m_entityId;
+	volatile int             m_numPendingSyncCallbacks;
 
-	static TriggerInstanceId  s_triggerInstanceIdCounter;
+	static TriggerInstanceId s_triggerInstanceIdCounter;
 
 #if defined(INCLUDE_AUDIO_PRODUCTION_CODE)
 public:
 
 	void DrawDebugInfo(
-	  IRenderAuxGeom& auxGeom,
-	  Vec3 const& listenerPosition,
-	  AudioTriggerLookup const& triggers,
-	  AudioParameterLookup const& parameters,
-	  AudioSwitchLookup const& switches,
-	  AudioPreloadRequestLookup const& preloadRequests,
-	  AudioEnvironmentLookup const& environments) const;
+		IRenderAuxGeom& auxGeom,
+		Vec3 const& listenerPosition,
+		AudioTriggerLookup const& triggers,
+		AudioParameterLookup const& parameters,
+		AudioSwitchLookup const& switches,
+		AudioPreloadRequestLookup const& preloadRequests,
+		AudioEnvironmentLookup const& environments) const;
 	void ResetObstructionRays() { m_propagationProcessor.ResetRayData(); }
 
 	void ForceImplementationRefresh(
-	  AudioTriggerLookup const& triggers,
-	  AudioParameterLookup const& parameters,
-	  AudioSwitchLookup const& switches,
-	  AudioEnvironmentLookup const& environments,
-	  bool const bSet3DAttributes);
+		AudioTriggerLookup const& triggers,
+		AudioParameterLookup const& parameters,
+		AudioSwitchLookup const& switches,
+		AudioEnvironmentLookup const& environments,
+		bool const bSet3DAttributes);
 
 	ERequestStatus HandleSetName(char const* const szName);
 

@@ -3229,11 +3229,17 @@ void ResourceCompiler::CopyFiles(const std::vector<RcFile>& files)
 			}
 
 			string copyFileErrorString;
-			const bool bCopied = FileUtil::CopyFileAllowOverwrite(srcFilename, trgFilename, copyFileErrorString);
-			if (bCopied)
+			const int numberOfAdditionalAttempts = 2;
+			const bool copied = FileUtil::CopyFileAllowOverwrite(srcFilename, trgFilename, copyFileErrorString, numberOfAdditionalAttempts);
+			if (copied)
 			{
 				++numFilesCopied;
 				FileUtil::SetFileTimes(trgFilename,ftSource);
+
+				if (!copyFileErrorString.empty() && GetVerbosityLevel() >= 1)
+				{
+					RCLogWarning("The copy operation completed successfully after several attempts with the intermediate error: %s", copyFileErrorString.c_str());
+				}
 			}
 			else
 			{

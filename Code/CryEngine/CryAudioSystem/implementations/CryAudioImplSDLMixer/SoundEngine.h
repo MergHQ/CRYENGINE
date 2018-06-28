@@ -50,7 +50,7 @@ bool PauseEvent(CEvent const* const pEvent);
 bool ResumeEvent(CEvent const* const pEvent);
 
 // Listeners
-bool SetListenerPosition(ListenerId const listenerId, CObjectTransformation const& transformation);
+bool SetListenerTransformation(ListenerId const listenerId, CObjectTransformation const& transformation);
 
 // Audio Objects
 bool RegisterObject(CObject* const pObject);

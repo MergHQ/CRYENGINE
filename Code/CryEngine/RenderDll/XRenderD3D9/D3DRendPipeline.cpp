@@ -710,8 +710,6 @@ void CD3D9Renderer::RT_RenderScene(CRenderView* pRenderView)
 
 	////////////////////////////////////////////////
 
-	SRenderStatistics::Write().m_fRenderTime += iTimer->GetAsyncTime().GetDifferenceInSeconds(Time);
-
 	CV_r_nodrawnear            = nSaveDrawNear;
 	CV_r_watercaustics         = nSaveDrawCaustics;
 
@@ -719,6 +717,8 @@ void CD3D9Renderer::RT_RenderScene(CRenderView* pRenderView)
 		PROFILE_FRAME(RenderViewEndFrame);
 		pRenderView->SwitchUsageMode(CRenderView::eUsageModeReadingDone);
 	}
+
+	SRenderStatistics::Write().m_fRenderTime += iTimer->GetAsyncTime().GetDifferenceInSeconds(Time);
 
 	if (CRendererCVars::CV_r_FlushToGPU >= 1)
 		GetDeviceObjectFactory().FlushToGPU();

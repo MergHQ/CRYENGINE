@@ -31,7 +31,10 @@ CATLAudioObject::CATLAudioObject()
 	, m_flags(EObjectFlags::InUse)
 	, m_previousRelativeVelocity(0.0f)
 	, m_previousAbsoluteVelocity(0.0f)
-	, m_propagationProcessor(m_attributes.transformation)
+	, m_positionForVelocityCalculation(ZERO)
+	, m_previousPositionForVelocityCalculation(ZERO)
+	, m_velocity(ZERO)
+	, m_propagationProcessor(m_transformation)
 	, m_entityId(INVALID_ENTITYID)
 	, m_numPendingSyncCallbacks(0)
 {}
@@ -63,11 +66,11 @@ void CATLAudioObject::ReportStartingTriggerInstance(TriggerInstanceId const audi
 
 ///////////////////////////////////////////////////////////////////////////
 void CATLAudioObject::ReportStartedTriggerInstance(
-  TriggerInstanceId const audioTriggerInstanceId,
-  void* const pOwnerOverride,
-  void* const pUserData,
-  void* const pUserDataOwner,
-  ERequestFlags const flags)
+	TriggerInstanceId const audioTriggerInstanceId,
+	void* const pOwnerOverride,
+	void* const pUserData,
+	void* const pUserDataOwner,
+	ERequestFlags const flags)
 {
 	ObjectTriggerStates::iterator iter(m_triggerStates.find(audioTriggerInstanceId));
 
@@ -264,10 +267,10 @@ void CATLAudioObject::GetStartedStandaloneFileRequestData(CATLStandaloneFile* co
 
 //////////////////////////////////////////////////////////////////////////
 void CATLAudioObject::ReportStartedStandaloneFile(
-  CATLStandaloneFile* const pStandaloneFile,
-  void* const pOwner,
-  void* const pUserData,
-  void* const pUserDataOwner)
+	CATLStandaloneFile* const pStandaloneFile,
+	void* const pOwner,
+	void* const pUserData,
+	void* const pUserDataOwner)
 {
 	m_activeStandaloneFiles.emplace(pStandaloneFile, SUserDataBase(pOwner, pUserData, pUserDataOwner));
 }
@@ -293,11 +296,11 @@ void CATLAudioObject::ReportFinishedLoadingTriggerImpl(TriggerImplId const audio
 
 ///////////////////////////////////////////////////////////////////////////
 ERequestStatus CATLAudioObject::HandleExecuteTrigger(
-  CATLTrigger const* const pTrigger,
-  void* const pOwner,
-  void* const pUserData,
-  void* const pUserDataOwner,
-  ERequestFlags const flags)
+	CATLTrigger const* const pTrigger,
+	void* const pOwner,
+	void* const pUserData,
+	void* const pUserDataOwner,
+	ERequestFlags const flags)
 {
 	ERequestStatus result = ERequestStatus::Failure;
 
@@ -633,11 +636,11 @@ bool CATLAudioObject::HasActiveData(CATLAudioObject const* const pAudioObject) c
 
 ///////////////////////////////////////////////////////////////////////////
 void CATLAudioObject::Update(
-  float const deltaTime,
-  float const distanceToListener,
-  Vec3 const& listenerPosition,
-  Vec3 const& listenerVelocity,
-  bool const listenerMoved)
+	float const deltaTime,
+	float const distanceToListener,
+	Vec3 const& listenerPosition,
+	Vec3 const& listenerVelocity,
+	bool const listenerMoved)
 {
 	m_propagationProcessor.Update(distanceToListener, listenerPosition, m_flags);
 
@@ -659,21 +662,24 @@ void CATLAudioObject::ProcessPhysicsRay(CAudioRayInfo* const pAudioRayInfo)
 }
 
 ///////////////////////////////////////////////////////////////////////////
-ERequestStatus CATLAudioObject::HandleSetTransformation(CObjectTransformation const& transformation, float const distanceToListener)
+void CATLAudioObject::HandleSetTransformation(CObjectTransformation const& transformation, float const distanceToListener)
 {
+	if ((m_flags & (EObjectFlags::TrackAbsoluteVelocity | EObjectFlags::TrackRelativeVelocity)) != 0)
+	{
+		m_positionForVelocityCalculation = transformation.GetPosition();
+		m_flags |= EObjectFlags::MovingOrDecaying;
+	}
+
 	float const threshold = distanceToListener * g_cvars.m_positionUpdateThresholdMultiplier;
 
-	if (!m_attributes.transformation.IsEquivalent(transformation, threshold))
+	if (!m_transformation.IsEquivalent(transformation, threshold))
 	{
-		m_attributes.transformation = transformation;
-		m_flags |= EObjectFlags::MovingOrDecaying;
+		m_transformation = transformation;
 
 		// Immediately propagate the new transformation down to the middleware to prevent executing a trigger before its transformation was set.
 		// Calculation of potentially tracked absolute and relative velocities can be safely delayed to next audio frame.
-		m_pImplData->Set3DAttributes(m_attributes);
+		m_pImplData->SetTransformation(m_transformation);
 	}
-
-	return ERequestStatus::Success;
 }
 
 ///////////////////////////////////////////////////////////////////////////
@@ -769,7 +775,7 @@ ERequestStatus CATLAudioObject::HandleStopFile(char const* const szFile)
 
 				Cry::Audio::Log(ELogType::Warning, R"(Request to stop a standalone audio file that is not playing! State: "%s")", szState);
 			}
-#endif  //INCLUDE_AUDIO_PRODUCTION_CODE
+#endif  // INCLUDE_AUDIO_PRODUCTION_CODE
 
 			ERequestStatus const tempStatus = m_pImplData->StopFile(pStandaloneFile->m_pImplData);
 
@@ -801,7 +807,7 @@ void CATLAudioObject::Init(char const* const szName, Impl::IObject* const pImplD
 {
 #if defined(INCLUDE_AUDIO_PRODUCTION_CODE)
 	m_name = szName;
-#endif  // INCLUDE_AUDIO_PRODUCTION_CODE
+#endif // INCLUDE_AUDIO_PRODUCTION_CODE
 
 	m_entityId = entityId;
 	m_pImplData = pImplData;
@@ -810,39 +816,37 @@ void CATLAudioObject::Init(char const* const szName, Impl::IObject* const pImplD
 
 ///////////////////////////////////////////////////////////////////////////
 void CATLAudioObject::UpdateControls(
-  float const deltaTime,
-  float const distanceToListener,
-  Vec3 const& listenerPosition,
-  Vec3 const& listenerVelocity,
-  bool const listenerMoved)
+	float const deltaTime,
+	float const distanceToListener,
+	Vec3 const& listenerPosition,
+	Vec3 const& listenerVelocity,
+	bool const listenerMoved)
 {
 	if ((m_flags& EObjectFlags::MovingOrDecaying) != 0)
 	{
-		Vec3 const deltaPos(m_attributes.transformation.GetPosition() - m_previousAttributes.transformation.GetPosition());
+		Vec3 const deltaPos(m_positionForVelocityCalculation - m_previousPositionForVelocityCalculation);
 
 		if (!deltaPos.IsZero())
 		{
-			m_attributes.velocity = deltaPos / deltaTime;
-			m_previousAttributes.transformation.SetPosition(m_attributes.transformation.GetPosition());
+			m_velocity = deltaPos / deltaTime;
+			m_previousPositionForVelocityCalculation = m_positionForVelocityCalculation;
 		}
-		else if (!m_attributes.velocity.IsZero())
+		else if (!m_velocity.IsZero())
 		{
 			// We did not move last frame, begin exponential decay towards zero.
 			float const decay = std::max(1.0f - deltaTime / 0.05f, 0.0f);
-			m_attributes.velocity *= decay;
+			m_velocity *= decay;
 
-			if (m_attributes.velocity.GetLengthSquared() < FloatEpsilon)
+			if (m_velocity.GetLengthSquared() < FloatEpsilon)
 			{
-				m_attributes.velocity = ZERO;
+				m_velocity = ZERO;
 				m_flags &= ~EObjectFlags::MovingOrDecaying;
 			}
 		}
 
-		m_pImplData->Set3DAttributes(m_attributes);
-
 		if ((m_flags& EObjectFlags::TrackAbsoluteVelocity) != 0)
 		{
-			float const absoluteVelocity = m_attributes.velocity.GetLength();
+			float const absoluteVelocity = m_velocity.GetLength();
 
 			if (absoluteVelocity == 0.0f || fabs(absoluteVelocity - m_previousAbsoluteVelocity) > g_cvars.m_velocityTrackingThreshold)
 			{
@@ -862,12 +866,12 @@ void CATLAudioObject::UpdateControls(
 
 			if ((m_flags& EObjectFlags::MovingOrDecaying) != 0 && !listenerMoved)
 			{
-				relativeVelocity = -m_attributes.velocity.Dot((m_attributes.transformation.GetPosition() - listenerPosition).GetNormalized());
+				relativeVelocity = -m_velocity.Dot((m_positionForVelocityCalculation - listenerPosition).GetNormalized());
 			}
 			else if ((m_flags& EObjectFlags::MovingOrDecaying) != 0 && listenerMoved)
 			{
-				Vec3 const relativeVelocityVec(m_attributes.velocity - listenerVelocity);
-				relativeVelocity = -relativeVelocityVec.Dot((m_attributes.transformation.GetPosition() - listenerPosition).GetNormalized());
+				Vec3 const relativeVelocityVec(m_velocity - listenerVelocity);
+				relativeVelocity = -relativeVelocityVec.Dot((m_positionForVelocityCalculation - listenerPosition).GetNormalized());
 			}
 
 			TryToSetRelativeVelocity(relativeVelocity);
@@ -878,7 +882,7 @@ void CATLAudioObject::UpdateControls(
 		// Approaching positive, departing negative value.
 		if (listenerMoved)
 		{
-			float const relativeVelocity = listenerVelocity.Dot((m_attributes.transformation.GetPosition() - listenerPosition).GetNormalized());
+			float const relativeVelocity = listenerVelocity.Dot((m_positionForVelocityCalculation - listenerPosition).GetNormalized());
 			TryToSetRelativeVelocity(relativeVelocity);
 		}
 		else if (m_previousRelativeVelocity != 0.0f)
@@ -955,15 +959,15 @@ using TriggerCountMap = std::map<ControlId const, size_t>;
 
 ///////////////////////////////////////////////////////////////////////////
 void CATLAudioObject::DrawDebugInfo(
-  IRenderAuxGeom& auxGeom,
-  Vec3 const& listenerPosition,
-  AudioTriggerLookup const& triggers,
-  AudioParameterLookup const& parameters,
-  AudioSwitchLookup const& switches,
-  AudioPreloadRequestLookup const& preloadRequests,
-  AudioEnvironmentLookup const& environments) const
+	IRenderAuxGeom& auxGeom,
+	Vec3 const& listenerPosition,
+	AudioTriggerLookup const& triggers,
+	AudioParameterLookup const& parameters,
+	AudioSwitchLookup const& switches,
+	AudioPreloadRequestLookup const& preloadRequests,
+	AudioEnvironmentLookup const& environments) const
 {
-	Vec3 const& position = m_attributes.transformation.GetPosition();
+	Vec3 const& position = m_transformation.GetPosition();
 	Vec3 screenPos(ZERO);
 
 	if (IRenderer* const pRenderer = gEnv->pRenderer)
@@ -1191,13 +1195,13 @@ void CATLAudioObject::DrawDebugInfo(
 
 			// Check if any object info text matches text filter.
 			bool const drawObjectDebugInfo =
-			  isTextFilterDisabled ||
-			  doesObjectNameMatchFilter ||
-			  doesTriggerMatchFilter ||
-			  doesStandaloneFileMatchFilter ||
-			  doesStateSwitchMatchFilter ||
-			  doesParameterMatchFilter ||
-			  doesEnvironmentMatchFilter;
+				isTextFilterDisabled ||
+				doesObjectNameMatchFilter ||
+				doesTriggerMatchFilter ||
+				doesStandaloneFileMatchFilter ||
+				doesStateSwitchMatchFilter ||
+				doesParameterMatchFilter ||
+				doesEnvironmentMatchFilter;
 
 			if (drawObjectDebugInfo)
 			{
@@ -1221,13 +1225,13 @@ void CATLAudioObject::DrawDebugInfo(
 						bool const isVirtual = (pAudioObject->GetFlags() & EObjectFlags::Virtual) != 0;
 
 						auxGeom.Draw2dLabel(
-						  screenPos.x,
-						  screenPos.y + offsetOnY,
-						  Debug::g_objectFontSize,
-						  isVirtual ? Debug::g_objectColorVirtual.data() : (hasActiveData ? Debug::g_objectColorActive.data() : Debug::g_objectColorInactive.data()),
-						  false,
-						  "%s",
-						  szObjectName);
+							screenPos.x,
+							screenPos.y + offsetOnY,
+							Debug::g_objectFontSize,
+							isVirtual ? Debug::g_objectColorVirtual.data() : (hasActiveData ? Debug::g_objectColorActive.data() : Debug::g_objectColorInactive.data()),
+							false,
+							"%s",
+							szObjectName);
 
 						offsetOnY += Debug::g_objectLineHeight;
 					}
@@ -1238,13 +1242,13 @@ void CATLAudioObject::DrawDebugInfo(
 					for (auto const& debugText : triggerInfo)
 					{
 						auxGeom.Draw2dLabel(
-						  screenPos.x,
-						  screenPos.y + offsetOnY,
-						  Debug::g_objectFontSize,
-						  Debug::g_objectColorTrigger.data(),
-						  false,
-						  "%s",
-						  debugText.c_str());
+							screenPos.x,
+							screenPos.y + offsetOnY,
+							Debug::g_objectFontSize,
+							Debug::g_objectColorTrigger.data(),
+							false,
+							"%s",
+							debugText.c_str());
 
 						offsetOnY += Debug::g_objectLineHeight;
 					}
@@ -1255,13 +1259,13 @@ void CATLAudioObject::DrawDebugInfo(
 					for (auto const& debugText : standaloneFileInfo)
 					{
 						auxGeom.Draw2dLabel(
-						  screenPos.x,
-						  screenPos.y + offsetOnY,
-						  Debug::g_objectFontSize,
-						  Debug::g_objectColorStandaloneFile.data(),
-						  false,
-						  "%s",
-						  debugText.c_str());
+							screenPos.x,
+							screenPos.y + offsetOnY,
+							Debug::g_objectFontSize,
+							Debug::g_objectColorStandaloneFile.data(),
+							false,
+							"%s",
+							debugText.c_str());
 
 						offsetOnY += Debug::g_objectLineHeight;
 					}
@@ -1279,14 +1283,14 @@ void CATLAudioObject::DrawDebugInfo(
 						float const switchTextColor[4] = { 0.8f, 0.3f, 0.6f, drawData.m_currentAlpha };
 
 						auxGeom.Draw2dLabel(
-						  screenPos.x,
-						  screenPos.y + offsetOnY,
-						  Debug::g_objectFontSize,
-						  switchTextColor,
-						  false,
-						  "%s: %s\n",
-						  pSwitch->m_name.c_str(),
-						  pSwitchState->m_name.c_str());
+							screenPos.x,
+							screenPos.y + offsetOnY,
+							Debug::g_objectFontSize,
+							switchTextColor,
+							false,
+							"%s: %s\n",
+							pSwitch->m_name.c_str(),
+							pSwitchState->m_name.c_str());
 
 						offsetOnY += Debug::g_objectLineHeight;
 					}
@@ -1297,14 +1301,14 @@ void CATLAudioObject::DrawDebugInfo(
 					for (auto const& parameterPair : parameterInfo)
 					{
 						auxGeom.Draw2dLabel(
-						  screenPos.x,
-						  screenPos.y + offsetOnY,
-						  Debug::g_objectFontSize,
-						  Debug::g_objectColorParameter.data(),
-						  false,
-						  "%s: %2.2f\n",
-						  parameterPair.first,
-						  parameterPair.second);
+							screenPos.x,
+							screenPos.y + offsetOnY,
+							Debug::g_objectFontSize,
+							Debug::g_objectColorParameter.data(),
+							false,
+							"%s: %2.2f\n",
+							parameterPair.first,
+							parameterPair.second);
 
 						offsetOnY += Debug::g_objectLineHeight;
 					}
@@ -1315,14 +1319,14 @@ void CATLAudioObject::DrawDebugInfo(
 					for (auto const& environmentPair : environmentInfo)
 					{
 						auxGeom.Draw2dLabel(
-						  screenPos.x,
-						  screenPos.y + offsetOnY,
-						  Debug::g_objectFontSize,
-						  Debug::g_objectColorEnvironment.data(),
-						  false,
-						  "%s: %.2f\n",
-						  environmentPair.first,
-						  environmentPair.second);
+							screenPos.x,
+							screenPos.y + offsetOnY,
+							Debug::g_objectFontSize,
+							Debug::g_objectColorEnvironment.data(),
+							false,
+							"%s: %.2f\n",
+							environmentPair.first,
+							environmentPair.second);
 
 						offsetOnY += Debug::g_objectLineHeight;
 					}
@@ -1333,13 +1337,13 @@ void CATLAudioObject::DrawDebugInfo(
 					bool const isVirtual = (pAudioObject->GetFlags() & EObjectFlags::Virtual) != 0;
 
 					auxGeom.Draw2dLabel(
-					  screenPos.x,
-					  screenPos.y + offsetOnY,
-					  Debug::g_objectFontSize,
-					  isVirtual ? Debug::g_objectColorVirtual.data() : Debug::g_objectColorActive.data(),
-					  false,
-					  "Dist: %4.1fm",
-					  distance);
+						screenPos.x,
+						screenPos.y + offsetOnY,
+						Debug::g_objectFontSize,
+						isVirtual ? Debug::g_objectColorVirtual.data() : Debug::g_objectColorActive.data(),
+						false,
+						"Dist: %4.1fm",
+						distance);
 
 					offsetOnY += Debug::g_objectLineHeight;
 				}
@@ -1362,9 +1366,9 @@ void CATLAudioObject::DrawDebugInfo(
 							if (occlusionType == EOcclusionType::Adaptive)
 							{
 								debugText.Format(
-								  "%s(%s)",
-								  s_szOcclusionTypes[IntegralValue(occlusionType)],
-								  s_szOcclusionTypes[IntegralValue(m_propagationProcessor.GetOcclusionTypeWhenAdaptive())]);
+									"%s(%s)",
+									s_szOcclusionTypes[IntegralValue(occlusionType)],
+									s_szOcclusionTypes[IntegralValue(m_propagationProcessor.GetOcclusionTypeWhenAdaptive())]);
 							}
 							else
 							{
@@ -1380,14 +1384,14 @@ void CATLAudioObject::DrawDebugInfo(
 						float const activeRayLabelColor[4] = { propagationData.occlusion, 1.0f - propagationData.occlusion, 0.0f, 0.9f };
 
 						auxGeom.Draw2dLabel(
-						  screenPos.x,
-						  screenPos.y + offsetOnY,
-						  Debug::g_objectFontSize,
-						  ((occlusionType != EOcclusionType::None) && (occlusionType != EOcclusionType::Ignore)) ? (isVirtual ? Debug::g_objectColorVirtual.data() : activeRayLabelColor) : Debug::g_objectColorInactive.data(),
-						  false,
-						  "Occl: %3.2f | Type: %s", // Add obstruction again once the engine supports it.
-						  propagationData.occlusion,
-						  debugText.c_str());
+							screenPos.x,
+							screenPos.y + offsetOnY,
+							Debug::g_objectFontSize,
+							((occlusionType != EOcclusionType::None) && (occlusionType != EOcclusionType::Ignore)) ? (isVirtual ? Debug::g_objectColorVirtual.data() : activeRayLabelColor) : Debug::g_objectColorInactive.data(),
+							false,
+							"Occl: %3.2f | Type: %s", // Add obstruction again once the engine supports it.
+							propagationData.occlusion,
+							debugText.c_str());
 
 						offsetOnY += Debug::g_objectLineHeight;
 					}
@@ -1401,15 +1405,15 @@ void CATLAudioObject::DrawDebugInfo(
 
 ///////////////////////////////////////////////////////////////////////////
 void CATLAudioObject::ForceImplementationRefresh(
-  AudioTriggerLookup const& triggers,
-  AudioParameterLookup const& parameters,
-  AudioSwitchLookup const& switches,
-  AudioEnvironmentLookup const& environments,
-  bool const bSet3DAttributes)
+	AudioTriggerLookup const& triggers,
+	AudioParameterLookup const& parameters,
+	AudioSwitchLookup const& switches,
+	AudioEnvironmentLookup const& environments,
+	bool const bSet3DAttributes)
 {
 	if (bSet3DAttributes)
 	{
-		m_pImplData->Set3DAttributes(m_attributes);
+		m_pImplData->SetTransformation(m_transformation);
 	}
 
 	// Parameters

@@ -270,6 +270,9 @@ void CMatInfo::UpdateMaterialFlags()
 			GetVisAreaManager()->MarkAllSectorsAsUncompiled();
 			nLastUpdateFrameId = GetRenderer()->GetFrameID();
 		}
+
+		if (m_shaderItem.m_pShader && !!(m_shaderItem.m_pShader->GetFlags() & (EF_REFRACTIVE | EF_FORCEREFRACTIONUPDATE)))
+			SetFlags(GetFlags() | MTL_FLAG_REFRACTIVE);
 	}
 }
 
@@ -468,6 +471,14 @@ void CMatInfo::SetSubMtl(int nSlot, IMaterial* pMtl)
 {
 	assert(nSlot >= 0 && nSlot < (int)m_subMtls.size());
 	m_subMtls[nSlot] = (CMatInfo*)pMtl;
+
+	if (pMtl)
+	{
+		const auto& shaderItem = pMtl->GetShaderItem();
+		CRY_ASSERT(shaderItem.m_pShader);
+		if (shaderItem.m_pShader && !!(shaderItem.m_pShader->GetFlags() & (EF_REFRACTIVE | EF_FORCEREFRACTIONUPDATE)))
+			SetFlags(GetFlags() | MTL_FLAG_REFRACTIVE);
+	}
 }
 
 //////////////////////////////////////////////////////////////////////////

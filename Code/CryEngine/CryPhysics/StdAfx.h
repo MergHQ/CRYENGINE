@@ -177,7 +177,9 @@ void MarkAsPhysWorkerThread(int*);
 inline int set_extCaller(int slot) { TLS_SET(g_idxExtThread, slot); return slot; }
 inline int alloc_extCaller() {
 	extern volatile int *g_pLockIntersect;
-	return set_extCaller(-(-*g_pLockIntersect>>31));
+	int iCaller;
+	for(iCaller=MAX_EXT_THREADS-1; iCaller>0 && g_pLockIntersect[iCaller]; iCaller--);
+	return set_extCaller(iCaller);
 }
 inline int get_iCaller_int() {
 	int dummy = MAX_PHYS_THREADS;

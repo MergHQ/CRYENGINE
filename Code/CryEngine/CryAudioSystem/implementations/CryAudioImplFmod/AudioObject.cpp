@@ -265,10 +265,10 @@ ERequestStatus CObjectBase::Update()
 }
 
 //////////////////////////////////////////////////////////////////////////
-ERequestStatus CObjectBase::Set3DAttributes(SObject3DAttributes const& attributes)
+void CObjectBase::SetTransformation(CObjectTransformation const& transformation)
 {
 	FMOD_RESULT fmodResult = FMOD_ERR_UNINITIALIZED;
-	FillFmodObjectPosition(attributes, m_attributes);
+	FillFmodObjectPosition(transformation, m_attributes);
 
 	for (auto const pEvent : m_events)
 	{
@@ -280,8 +280,6 @@ ERequestStatus CObjectBase::Set3DAttributes(SObject3DAttributes const& attribute
 	{
 		pFile->Set3DAttributes(m_attributes);
 	}
-
-	return ERequestStatus::Success;
 }
 
 //////////////////////////////////////////////////////////////////////////

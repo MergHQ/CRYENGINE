@@ -2,7 +2,8 @@
 
 #pragma once
 
-#include "ATLEntities.h"
+#include "GlobalTypedefs.h"
+#include <CryAudio/IAudioSystem.h>
 #include <CrySystem/IStreamEngine.h>
 
 #if defined(INCLUDE_AUDIO_PRODUCTION_CODE)
@@ -13,6 +14,11 @@ namespace CryAudio
 {
 struct ICustomMemoryHeap;
 class CATLAudioFileEntry;
+
+namespace Impl
+{
+struct IImpl;
+} // namespace Impl
 
 // Filter for drawing debug info to the screen
 enum class EAudioFileCacheManagerDebugFilter : EnumFlagsType

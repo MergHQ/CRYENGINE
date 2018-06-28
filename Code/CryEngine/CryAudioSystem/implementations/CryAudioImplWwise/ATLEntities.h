@@ -32,7 +32,7 @@ public:
 
 	// CryAudio::Impl::IObject
 	virtual ERequestStatus Update() override;
-	virtual ERequestStatus Set3DAttributes(SObject3DAttributes const& attributes) override;
+	virtual void           SetTransformation(CObjectTransformation const& transformation) override;
 	virtual ERequestStatus SetEnvironment(IEnvironment const* const pIEnvironment, float const amount) override;
 	virtual ERequestStatus SetParameter(IParameter const* const pIParameter, float const value) override;
 	virtual ERequestStatus SetSwitchState(ISwitchState const* const pISwitchState) override;
@@ -67,7 +67,7 @@ public:
 	CListener& operator=(CListener&&) = delete;
 
 	// CryAudio::Impl::IListener
-	virtual ERequestStatus Set3DAttributes(SObject3DAttributes const& attributes) override;
+	virtual void SetTransformation(CObjectTransformation const& transformation) override;
 	// ~CryAudio::Impl::IListener
 
 	AkGameObjectID const m_id;
@@ -130,10 +130,10 @@ enum class ESwitchType : EnumFlagsType
 struct SSwitchState final : public ISwitchState
 {
 	explicit SSwitchState(
-	  ESwitchType const type_,
-	  AkUInt32 const stateOrSwitchGroupId_,
-	  AkUInt32 const stateOrSwitchId_,
-	  float const rtpcValue_ = s_defaultStateValue)
+		ESwitchType const type_,
+		AkUInt32 const stateOrSwitchGroupId_,
+		AkUInt32 const stateOrSwitchId_,
+		float const rtpcValue_ = s_defaultStateValue)
 		: type(type_)
 		, stateOrSwitchGroupId(stateOrSwitchGroupId_)
 		, stateOrSwitchId(stateOrSwitchId_)
@@ -168,10 +168,10 @@ struct SEnvironment final : public IEnvironment
 	}
 
 	explicit SEnvironment(
-	  EEnvironmentType const type_,
-	  AkRtpcID const rtpcId_,
-	  float const multiplier_,
-	  float const shift_)
+		EEnvironmentType const type_,
+		AkRtpcID const rtpcId_,
+		float const multiplier_,
+		float const shift_)
 		: type(type_)
 		, rtpcId(rtpcId_)
 		, multiplier(multiplier_)

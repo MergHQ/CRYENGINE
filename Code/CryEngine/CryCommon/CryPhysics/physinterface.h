@@ -139,7 +139,9 @@ IPhysicalEntity* const WORLD_ENTITY = (IPhysicalEntity*)-10;
 		#define MAX_EXT_THREADS  1
 	#else
 		#define MAX_PHYS_THREADS 4
-		#define MAX_EXT_THREADS  2 // the amount of concurrent thread slots for external world queries; currently only 1 and 2 are supported
+		#ifndef MAX_EXT_THREADS
+			#define MAX_EXT_THREADS  2 // the amount of concurrent thread slots for external world queries
+		#endif
 	#endif
 #endif
 

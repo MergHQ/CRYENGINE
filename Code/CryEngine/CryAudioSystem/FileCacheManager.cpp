@@ -2,6 +2,7 @@
 
 #include "stdafx.h"
 #include "FileCacheManager.h"
+#include "ATLEntities.h"
 #include "AudioCVars.h"
 #include "Common/Logger.h"
 #include "Common.h"
@@ -650,11 +651,11 @@ void CFileCacheManager::UpdateLocalizedFileEntryData(CATLAudioFileEntry* const p
 
 ///////////////////////////////////////////////////////////////////////////
 bool CFileCacheManager::TryCacheFileCacheEntryInternal(
-  CATLAudioFileEntry* const pAudioFileEntry,
-  FileEntryId const audioFileEntryId,
-  bool const bLoadSynchronously,
-  bool const bOverrideUseCount /*= false*/,
-  size_t const useCount /*= 0*/)
+	CATLAudioFileEntry* const pAudioFileEntry,
+	FileEntryId const audioFileEntryId,
+	bool const bLoadSynchronously,
+	bool const bOverrideUseCount /*= false*/,
+	size_t const useCount /*= 0*/)
 {
 	bool bSuccess = false;
 

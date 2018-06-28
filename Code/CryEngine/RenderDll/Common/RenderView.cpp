@@ -33,6 +33,8 @@ CRenderView::CRenderView(const char* name, EViewType type, CRenderView* pParentV
 {
 	for (int i = 0; i < EFSLIST_NUM; i++)
 	{
+		m_BatchFlags[i] = 0;
+
 		m_renderItems[i].Init();
 		m_renderItems[i].SetNoneWorkerThreadID(gEnv->mMainThreadId);
 	}
@@ -240,22 +242,6 @@ CCompiledRenderObject* CRenderView::AllocCompiledObject(CRenderObject* pObj, CRe
 	pObj->m_pCompiledObject = pCompiledObject;
 	pCompiledObject->m_pRO = pObj;
 
-	return pCompiledObject;
-}
-
-// Helper function
-CCompiledRenderObject* CRenderView::AllocCompiledObjectTemporary(CRenderObject* pObj, CRenderElement* pElem, const SShaderItem& shaderItem)
-{
-	CCompiledRenderObject* pCompiledObject = CCompiledRenderObject::AllocateFromPool();
-	pCompiledObject->Init(shaderItem, pElem);
-
-	// Assign any compiled object to the RenderObject, just to be used as a root reference for constant buffer sharing
-	pObj->m_pCompiledObject = pCompiledObject;
-	pCompiledObject->m_pRO = pObj;
-
-	m_temporaryCompiledObjects.push_back(pCompiledObject);
-
-	// Temporary object is not linked to the RenderObject owner
 	return pCompiledObject;
 }
 
@@ -1498,26 +1484,23 @@ void CRenderView::AddRenderItem(CRenderElement* pElem, CRenderObject* RESTRICT_P
 		}
 	}
 
-	nBatchFlags |= (shaderItem.m_nPreprocessFlags & FSPR_MASK);
+	// Calculate AABB
+	Vec3 aabb_min, aabb_max;
+	pElem->mfGetBBox(aabb_min, aabb_max);
+	const auto aabb = AABB{ aabb_min, aabb_max };
+	const auto transformed_aabb = pObj->TransformAABB(aabb, passInfo.GetCamera().GetPosition(), passInfo);
+
+	nBatchFlags |= shaderItem.m_nPreprocessFlags & FSPR_MASK;
 
 	const uint32 nMaterialLayers = pObj->m_nMaterialLayers;
 	// Need to differentiate between something rendered with cloak layer material, and sorted with cloak.
 	// e.g. ironsight glows on gun should be sorted with cloak to not write depth - can be inconsistent with no depth from gun.
 	const uint32 nCloakRenderedMask = shaderItem.m_pShaderResources && mask_nz_zr(nMaterialLayers & MTL_LAYER_BLEND_CLOAK, static_cast<CShaderResources*>(shaderItem.m_pShaderResources)->CShaderResources::GetMtlLayerNoDrawFlags() & MTL_LAYER_CLOAK);
 
-	if (pShader->m_Flags & (EF_REFRACTIVE | EF_FORCEREFRACTIONUPDATE) || nCloakRenderedMask)
-	{
-		SRenderObjData* pOD = pObj->GetObjData();
-
-		if (pObj->m_pRenderNode && pOD)
-		{
-			const auto& viewport = passInfo.GetRenderView()->GetViewport();
-			const bool forceFullscreenUpdate = !!(pShader->m_Flags & EF_FORCEREFRACTIONUPDATE);
-			pOD->m_screenBounds = ComputeResolveViewport(viewport, pObj, passInfo.GetCamera(), forceFullscreenUpdate);
-		}
-
+	if ((pShader->m_Flags & EF_REFRACTIVE) || nCloakRenderedMask)
 		nBatchFlags |= FB_REFRACTION;
-	}
+	if (pShader->m_Flags & EF_FORCEREFRACTIONUPDATE)
+		nBatchFlags |= FB_RESOLVE_FULL;
 
 	// objects with FOB_NEAREST go to EFSLIST_NEAREST in shadow pass and general
 	if ((pObj->m_ObjFlags & FOB_NEAREST) && (bShadowPass || (nList == EFSLIST_GENERAL && CRenderer::CV_r_GraphicsPipeline > 0)))
@@ -1554,7 +1537,8 @@ void CRenderView::AddRenderItem(CRenderElement* pElem, CRenderObject* RESTRICT_P
 	case EFSLIST_HALFRES_PARTICLES:
 	case EFSLIST_LENSOPTICS:
 	case EFSLIST_EYE_OVERLAY:
-		ri.fDist = SRendItem::EncodeDistanceSortingValue(pObj);
+		// Use the (possibly) tighter AABB extracted from the render element and store distance squared.
+		ri.fDist = Distance::Point_AABBSq(passInfo.GetCamera().GetPosition(), transformed_aabb) * passInfo.GetZoomFactor() + pObj->m_fSort;
 		break;
 	fallthrough:
 	default:
@@ -1587,6 +1571,8 @@ void CRenderView::AddRenderItem(CRenderElement* pElem, CRenderObject* RESTRICT_P
 
 		pri.m_pCompiledObject = ri.pCompiledObject;
 		pri.m_nBatchFlags |= ri.pCompiledObject ? FB_COMPILED_OBJECT : 0;
+
+		pri.m_aabb = aabb;
 
 		pri.m_pRenderElement = pElem;
 
@@ -1621,8 +1607,11 @@ void CRenderView::AddRenderItem(CRenderElement* pElem, CRenderObject* RESTRICT_P
 		if (bMeshCompatibleRenderElement || bCompiledRenderElement) // temporary disable for these types
 		{
 			// Allocate new CompiledRenderObject.
-			ri.pCompiledObject = AllocCompiledObjectTemporary(pObj, pElem, shaderItem);
+			ri.pCompiledObject = AllocCompiledObject(pObj, pElem, shaderItem);
 			ri.nBatchFlags |= FB_COMPILED_OBJECT;
+
+			// Add to temporary objects to compile
+			m_temporaryCompiledObjects.push_back(STemporaryRenderObjectCompilationData{ ri.pCompiledObject, aabb });
 		}
 		else if (bCustomRenderLoop)
 		{
@@ -1722,63 +1711,6 @@ inline void CRenderView::AddRenderItemToRenderLists(const SRendItem& ri, int nRe
 			UpdateRenderListBatchFlags<bConcurrent>(m_BatchFlags[EFSLIST_HIGHLIGHT], nBatchFlags);
 		}
 	}
-}
-
-TRect_tpl<uint16> CRenderView::ComputeResolveViewport(const SRenderViewport &viewport, const CRenderObject* obj, const CCamera &camera, bool forceFullscreenUpdate) const {
-	const int32 align16 = (16 - 1);
-	const int32 shift16 = 4;
-
-	TRect_tpl<uint16> resolveViewport;
-	if (CRenderer::CV_r_RefractionPartialResolves)
-	{
-		AABB aabb;
-		IRenderNode* pRenderNode = obj->m_pRenderNode;
-		pRenderNode->FillBBox(aabb);
-
-		int iOut[4];
-
-		camera.CalcScreenBounds(&iOut[0], &aabb, viewport.width, viewport.height);
-		resolveViewport.Min.x = iOut[0] >> shift16;
-		resolveViewport.Min.y = iOut[1] >> shift16;
-		resolveViewport.Max.x = (iOut[2] + align16) >> shift16;
-		resolveViewport.Max.y = (iOut[3] + align16) >> shift16;
-
-#if REFRACTION_PARTIAL_RESOLVE_DEBUG_VIEWS
-		if (CRenderer::CV_r_RefractionPartialResolvesDebug == eRPR_DEBUG_VIEW_3D_BOUNDS)
-		{
-			// Debug bounding box view for refraction partial resolves
-			IRenderAuxGeom* pAuxRenderer = gEnv->pRenderer->GetIRenderAuxGeom();
-			if (pAuxRenderer)
-			{
-				SAuxGeomRenderFlags oldRenderFlags = pAuxRenderer->GetRenderFlags();
-
-				SAuxGeomRenderFlags newRenderFlags;
-				newRenderFlags.SetDepthTestFlag(e_DepthTestOff);
-				newRenderFlags.SetAlphaBlendMode(e_AlphaBlended);
-				pAuxRenderer->SetRenderFlags(newRenderFlags);
-
-				const bool bSolid = true;
-				const ColorB solidColor(64, 64, 255, 64);
-				pAuxRenderer->DrawAABB(aabb, bSolid, solidColor, eBBD_Faceted);
-
-				const ColorB wireframeColor(255, 0, 0, 255);
-				pAuxRenderer->DrawAABB(aabb, !bSolid, wireframeColor, eBBD_Faceted);
-
-				// Set previous Aux render flags back again
-				pAuxRenderer->SetRenderFlags(oldRenderFlags);
-			}
-		}
-#endif
-	}
-	else if (forceFullscreenUpdate)
-	{
-		resolveViewport.Min.x = 0;
-		resolveViewport.Min.y = 0;
-		resolveViewport.Max.x = (viewport.width) >> shift16;
-		resolveViewport.Max.y = (viewport.height) >> shift16;
-	}
-
-	return resolveViewport;
 }
 
 void CRenderView::ExpandPermanentRenderObjects()
@@ -2007,7 +1939,7 @@ void CRenderView::CompileModifiedRenderObjects()
 			auto& pri = items[i];
 			if (!pri.m_pCompiledObject)
 				continue;
-			if (!pri.m_pCompiledObject->Compile(compilationFlags, this))
+			if (!pri.m_pCompiledObject->Compile(compilationFlags, pri.m_aabb, this))
 				bAllCompiled = false;
 		}
 
@@ -2029,15 +1961,14 @@ void CRenderView::CompileModifiedRenderObjects()
 	// Compile all temporary compiled objects
 	m_temporaryCompiledObjects.CoalesceMemory();
 	int numTempObjects = m_temporaryCompiledObjects.size();
-	for (int i = 0; i < numTempObjects; i++)
+	for (const auto &t : m_temporaryCompiledObjects)
 	{
-		auto* pCompiledObject = m_temporaryCompiledObjects[i];
-		const bool isCompiled = pCompiledObject->Compile(eObjCompilationOption_All, this);
+		const bool isCompiled = t.pObject->Compile(eObjCompilationOption_All, t.localAABB, this);
 
 		if (IsShadowGenView())
 		{
 			// NOTE: this can race with the the main thread but the worst outcome will be that the object is rendered multiple times into the shadow cache
-			ShadowMapFrustum::ForceMarkNodeAsUncached(pCompiledObject->m_pRO->m_pRenderNode);
+			ShadowMapFrustum::ForceMarkNodeAsUncached(t.pObject->m_pRO->m_pRenderNode);
 		}
 	}
 
@@ -2146,12 +2077,8 @@ void CRenderView::ClearTemporaryCompiledObjects()
 
 	/////////////////////////////////////////////////////////////////////////////
 	// Clean up non permanent compiled objects
-	size_t numObjects = m_temporaryCompiledObjects.size();
-	for (size_t i = 0; i < numObjects; i++)
-	{
-		auto* pCompiledObject = m_temporaryCompiledObjects[i];
-		CCompiledRenderObject::FreeToPool(pCompiledObject);
-	}
+	for (const auto &t : m_temporaryCompiledObjects)
+		CCompiledRenderObject::FreeToPool(t.pObject);
 	m_temporaryCompiledObjects.clear();
 	/////////////////////////////////////////////////////////////////////////////
 }

@@ -11,8 +11,15 @@ public:
 	void BeginMeasurement();
 	void EndMeasurement();
 
-	uint32 IssueTimestamp(void* pCommandList);
+	uint32 IssueTimestamp(CDeviceCommandList* pCommandList);
 	bool ResolveTimestamps();
+
+	uint64 GetTime(uint32 timestamp)
+	{
+		timestamp -= m_groupIndex * kMaxTimestamps;
+
+		return m_timeValues[timestamp];
+	}
 
 	float GetTimeMS(uint32 timestamp0, uint32 timestamp1)
 	{
@@ -30,6 +37,8 @@ protected:
 	DeviceFenceHandle                   m_fence;
 	UINT64                              m_frequency;
 	std::array<uint64, kMaxTimestamps>  m_timeValues;
+
+	bool                                m_measurable;
 
 protected:
 	static bool                         s_reservedGroups[4];

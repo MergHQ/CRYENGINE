@@ -17,6 +17,7 @@ CDeviceTimestampGroup::CDeviceTimestampGroup()
 	: m_numTimestamps(0)
 	, m_pDisjointQuery(nullptr)
 	, m_frequency(0L)
+	, m_measurable(false)
 {
 	m_timestampQueries.fill(nullptr);
 	m_timeValues.fill(0);
@@ -46,41 +47,56 @@ void CDeviceTimestampGroup::Init()
 void CDeviceTimestampGroup::BeginMeasurement()
 {
 	m_numTimestamps = 0;
+	m_frequency = 0;
+	m_measurable = false;
 	gcpRendD3D->GetDeviceContext().Begin(m_pDisjointQuery);
 }
 
 void CDeviceTimestampGroup::EndMeasurement()
 {
 	gcpRendD3D->GetDeviceContext().End(m_pDisjointQuery);
+	m_measurable = true;
 }
 
-uint32 CDeviceTimestampGroup::IssueTimestamp(void* pCommandList)
+uint32 CDeviceTimestampGroup::IssueTimestamp(CDeviceCommandList* pCommandList)
 {
 	assert(m_numTimestamps < m_timestampQueries.size());
 	gcpRendD3D->GetDeviceContext().End(m_timestampQueries[m_numTimestamps]);
+	m_timeValues[m_numTimestamps] = 0;
 	return m_numTimestamps++;
 }
 
 bool CDeviceTimestampGroup::ResolveTimestamps()
 {
-	if (m_numTimestamps == 0)
-		return true;
-
-	D3D11_QUERY_DATA_TIMESTAMP_DISJOINT disjointData;
-	if (gcpRendD3D->GetDeviceContext().GetData(m_pDisjointQuery, &disjointData, m_pDisjointQuery->GetDataSize(), 0) == S_OK)
-	{
-		m_frequency = disjointData.Frequency;
-	}
-	else
-	{
+	if (!m_measurable)
 		return false;
+
+	// Don't ask twice (API violation)
+	if (!m_frequency)
+	{
+		D3D11_QUERY_DATA_TIMESTAMP_DISJOINT disjointData;
+		if (gcpRendD3D->GetDeviceContext().GetData(m_pDisjointQuery, &disjointData, m_pDisjointQuery->GetDataSize(), 0) == S_OK)
+		{
+			m_frequency = disjointData.Frequency;
+		}
+		else
+		{
+			m_frequency = 0;
+			return false;
+		}
 	}
 
-	for (int i = m_numTimestamps - 1; i >= 0; i--)
+	int i = m_numTimestamps;
+	while (--i >= 0)
 	{
-		if (gcpRendD3D->GetDeviceContext().GetData(m_timestampQueries[i], &m_timeValues[i], m_timestampQueries[i]->GetDataSize(), 0) != S_OK)
+		// Don't ask twice (API violation)
+		if (!m_timeValues[i])
 		{
-			return false;
+			if (gcpRendD3D->GetDeviceContext().GetData(m_timestampQueries[i], &m_timeValues[i], m_timestampQueries[i]->GetDataSize(), 0) != S_OK)
+			{
+				m_timeValues[i] = 0;
+				return false;
+			}
 		}
 	}
 

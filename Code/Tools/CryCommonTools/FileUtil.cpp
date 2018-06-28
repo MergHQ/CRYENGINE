@@ -7,6 +7,7 @@
 
 #include <io.h>
 #include <CryString/CryPath.h>
+#include <thread>
 
 namespace Private_FileUtil
 {
@@ -87,7 +88,7 @@ static bool IsSubdirOrSameDir( const char* dir, const char* baseDir )
 	}
 }
 
-bool FileUtil::CopyFileAllowOverwrite(const string& existingFilename, const string& newFilename, string& errorString)
+bool FileUtil::CopyFileAllowOverwrite(const string& existingFilename, const string& newFilename, string& errorString, int numberOfAdditionalAttempts /*= 0*/)
 {
 	wstring wideExistingFilename;
 	Unicode::Convert(wideExistingFilename, existingFilename);
@@ -95,14 +96,24 @@ bool FileUtil::CopyFileAllowOverwrite(const string& existingFilename, const stri
 	wstring wideNewFilename;
 	Unicode::Convert(wideNewFilename, newFilename);
 
-	SetFileAttributesW(wideNewFilename.c_str(), FILE_ATTRIBUTE_ARCHIVE);
-
-	if (::CopyFileW(wideExistingFilename.c_str(), wideNewFilename.c_str(), false) != 0)
+	for (int i = 0; i <= numberOfAdditionalAttempts; ++i)
 	{
-		return true;
+		SetFileAttributesW(wideNewFilename.c_str(), FILE_ATTRIBUTE_ARCHIVE);
+
+		if (::CopyFileW(wideExistingFilename.c_str(), wideNewFilename.c_str(), false) != 0)
+		{
+			return true;
+		}
+
+		if (!i)
+		{
+			errorString = Private_FileUtil::GetLastErrorString();
+		}
+
+		using namespace std::chrono_literals;
+		std::this_thread::sleep_for(300ms);
 	}
 
-	errorString = Private_FileUtil::GetLastErrorString();
 	return false;
 }
 

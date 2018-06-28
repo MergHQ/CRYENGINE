@@ -34,8 +34,9 @@ struct SProfilingStats
 	int  numLayoutSwitches;
 	int  numResourceSetSwitches;
 	int  numInlineSets;
-	int  numPolygons;
+	int  numTopologySets;
 	int  numDIPs;
+	int  numPolygons;
 	int  numInvalidDIPs;
 
 	void Reset()
@@ -49,8 +50,9 @@ struct SProfilingStats
 		CryInterlockedAdd(&numLayoutSwitches, other.numLayoutSwitches);
 		CryInterlockedAdd(&numResourceSetSwitches, other.numResourceSetSwitches);
 		CryInterlockedAdd(&numInlineSets, other.numInlineSets);
-		CryInterlockedAdd(&numPolygons, other.numPolygons);
+		CryInterlockedAdd(&numTopologySets, other.numTopologySets);
 		CryInterlockedAdd(&numDIPs, other.numDIPs);
+		CryInterlockedAdd(&numPolygons, other.numPolygons);
 		CryInterlockedAdd(&numInvalidDIPs, other.numInvalidDIPs);
 	}
 };

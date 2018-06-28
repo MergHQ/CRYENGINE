@@ -87,6 +87,9 @@ protected:
 
 protected:
 	static int               s_recursionCounter;  // For asserting Begin/EndExecution get called on pass
+
+private:
+	static void RenderResolveDebug(const Vec4 &bounds);
 };
 
 DEFINE_ENUM_FLAG_OPERATORS(CSceneRenderPass::EPassFlags)

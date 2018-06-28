@@ -22,7 +22,8 @@ ERequestStatus COcclusionObstructionState::Set(CATLAudioObject& audioObject) con
 {
 	if (&audioObject != &m_globalAudioObject)
 	{
-		Vec3 const& audioListenerPosition = m_audioListenerManager.GetActiveListenerAttributes().transformation.GetPosition();
+		Vec3 const& audioListenerPosition = m_audioListenerManager.GetActiveListenerTransformation().GetPosition();
+
 		if (m_stateId == IgnoreStateId)
 		{
 			audioObject.HandleSetOcclusionType(EOcclusionType::Ignore, audioListenerPosition);
