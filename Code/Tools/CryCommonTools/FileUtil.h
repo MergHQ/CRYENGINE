@@ -182,7 +182,7 @@ namespace FileUtil
 	}
 
 	// If the new file already exists, the function overwrites the file.
-	bool CopyFileAllowOverwrite(const string& existingFilename, const string& newFilename, string& errorString);
+	bool CopyFileAllowOverwrite(const string& existingFilename, const string& newFilename, string& errorString, int numberOfAdditionalAttempts = 0);
 
 	void FindFiles(
 		std::vector<string>& resultFiles,
