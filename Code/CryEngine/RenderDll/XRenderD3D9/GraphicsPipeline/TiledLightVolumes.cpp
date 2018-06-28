@@ -766,6 +766,30 @@ void CTiledLightVolumesStage::GenerateLightList()
 		CRenderer::CV_r_DeferredShadingLights ? &defLights : NULL
 	};
 
+	// Add sun
+	if (pRenderView->HaveSunLight())
+	{
+		STiledLightInfo& lightInfo = m_tileLights[numTileLights];
+		STiledLightShadeInfo& lightShadeInfo = tileLightsShade[numTileLights];
+
+		lightInfo.volumeType = tlVolumeSun;
+		lightInfo.posRad = Vec4(0, 0, 0, 100000);
+		lightInfo.depthBoundsVS = Vec2(-100000, 100000);
+
+		lightShadeInfo.lightType = tlTypeSun;
+		lightShadeInfo.attenuationParams = Vec2(TiledShading_SunSourceDiameter, TiledShading_SunSourceDiameter);
+		lightShadeInfo.shadowParams = Vec2(1, 0);
+		lightShadeInfo.shadowMaskIndex = 0;
+		lightShadeInfo.stencilID0 = lightShadeInfo.stencilID1 = STENCIL_VALUE_OUTDOORS;
+
+		Vec3 sunColor;
+		gEnv->p3DEngine->GetGlobalParameter(E3DPARAM_SUN_COLOR, sunColor);
+		sunColor *= rd->m_fAdaptedSceneScaleLBuffer;  // Apply LBuffers range rescale
+		lightShadeInfo.color = Vec4(sunColor.x, sunColor.y, sunColor.z, gEnv->p3DEngine->GetGlobalParameter(E3DPARAM_SUN_SPECULAR_MULTIPLIER));
+
+		++numTileLights;
+	}
+
 	for (uint32 lightListIdx = 0; lightListIdx < lightArraySize; ++lightListIdx)
 	{
 		if (lightLists[lightListIdx] == NULL)
@@ -1047,37 +1071,6 @@ void CTiledLightVolumesStage::GenerateLightList()
 	}
 
 	numSkipLights = numRenderLights - numValidRenderLights;
-
-	// Add sun
-	if (pRenderView->HaveSunLight())
-	{
-		if (numTileLights < MaxNumTileLights)
-		{
-			STiledLightInfo& lightInfo = m_tileLights[numTileLights];
-			STiledLightShadeInfo& lightShadeInfo = tileLightsShade[numTileLights];
-
-			lightInfo.volumeType = tlVolumeSun;
-			lightInfo.posRad = Vec4(0, 0, 0, 100000);
-			lightInfo.depthBoundsVS = Vec2(-100000, 100000);
-
-			lightShadeInfo.lightType = tlTypeSun;
-			lightShadeInfo.attenuationParams = Vec2(TiledShading_SunSourceDiameter, TiledShading_SunSourceDiameter);
-			lightShadeInfo.shadowParams = Vec2(1, 0);
-			lightShadeInfo.shadowMaskIndex = 0;
-			lightShadeInfo.stencilID0 = lightShadeInfo.stencilID1 = STENCIL_VALUE_OUTDOORS;
-
-			Vec3 sunColor;
-			gEnv->p3DEngine->GetGlobalParameter(E3DPARAM_SUN_COLOR, sunColor);
-			sunColor *= rd->m_fAdaptedSceneScaleLBuffer;  // Apply LBuffers range rescale
-			lightShadeInfo.color = Vec4(sunColor.x, sunColor.y, sunColor.z, gEnv->p3DEngine->GetGlobalParameter(E3DPARAM_SUN_SPECULAR_MULTIPLIER));
-
-			++numTileLights;
-		}
-		else
-		{
-			numSkipLights += 1;
-		}
-	}
 
 #if defined(ENABLE_PROFILING_CODE)
 	SRenderStatistics::Write().m_NumTiledShadingSkippedLights = numSkipLights;
