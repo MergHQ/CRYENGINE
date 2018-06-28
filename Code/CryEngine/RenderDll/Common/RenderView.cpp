@@ -1742,33 +1742,6 @@ TRect_tpl<uint16> CRenderView::ComputeResolveViewport(const SRenderViewport &vie
 		resolveViewport.Min.y = iOut[1] >> shift16;
 		resolveViewport.Max.x = (iOut[2] + align16) >> shift16;
 		resolveViewport.Max.y = (iOut[3] + align16) >> shift16;
-
-#if REFRACTION_PARTIAL_RESOLVE_DEBUG_VIEWS
-		if (CRenderer::CV_r_RefractionPartialResolvesDebug == eRPR_DEBUG_VIEW_3D_BOUNDS)
-		{
-			// Debug bounding box view for refraction partial resolves
-			IRenderAuxGeom* pAuxRenderer = gEnv->pRenderer->GetIRenderAuxGeom();
-			if (pAuxRenderer)
-			{
-				SAuxGeomRenderFlags oldRenderFlags = pAuxRenderer->GetRenderFlags();
-
-				SAuxGeomRenderFlags newRenderFlags;
-				newRenderFlags.SetDepthTestFlag(e_DepthTestOff);
-				newRenderFlags.SetAlphaBlendMode(e_AlphaBlended);
-				pAuxRenderer->SetRenderFlags(newRenderFlags);
-
-				const bool bSolid = true;
-				const ColorB solidColor(64, 64, 255, 64);
-				pAuxRenderer->DrawAABB(aabb, bSolid, solidColor, eBBD_Faceted);
-
-				const ColorB wireframeColor(255, 0, 0, 255);
-				pAuxRenderer->DrawAABB(aabb, !bSolid, wireframeColor, eBBD_Faceted);
-
-				// Set previous Aux render flags back again
-				pAuxRenderer->SetRenderFlags(oldRenderFlags);
-			}
-		}
-#endif
 	}
 	else if (forceFullscreenUpdate)
 	{

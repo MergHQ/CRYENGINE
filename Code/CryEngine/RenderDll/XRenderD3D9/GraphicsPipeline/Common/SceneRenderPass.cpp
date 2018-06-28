@@ -294,7 +294,20 @@ void CSceneRenderPass::DrawRenderItems(CRenderView* pRenderView, ERenderListID l
 				passes.back().resolveScreenBounds[1] = bounds.Min.y << shift16;
 				passes.back().resolveScreenBounds[2] = bounds.Max.x << shift16;
 				passes.back().resolveScreenBounds[3] = bounds.Max.y << shift16;
-			}
+
+				if (CRendererCVars::CV_r_RefractionPartialResolvesDebug)
+				{
+					const auto w = static_cast<float>(pRenderView->GetRenderOutput()->GetOutputResolution()[0]);
+					const auto h = static_cast<float>(pRenderView->GetRenderOutput()->GetOutputResolution()[1]);
+					RenderResolveDebug(Vec4
+					{
+						static_cast<float>(passes.back().resolveScreenBounds[0]),
+						std::min(static_cast<float>(passes.back().resolveScreenBounds[1]), w),
+						static_cast<float>(passes.back().resolveScreenBounds[2]),
+						std::min(static_cast<float>(passes.back().resolveScreenBounds[3]), h)
+					});
+				}
+ 			}
 
 			passContext.renderItemGroup = m_numRenderItemGroups++;
 
@@ -321,4 +334,38 @@ void CSceneRenderPass::Execute()
 {
 	for (const auto& passContext : m_passContexts)
 		passContext.pRenderView->DrawCompiledRenderItems(passContext);
+}
+
+void CSceneRenderPass::RenderResolveDebug(const Vec4 &bounds)
+{
+	if (CRendererCVars::CV_r_RefractionPartialResolvesDebug == 2)
+	{
+		// Render resolve screen-space bounding box
+		std::vector<Vec3> points =
+		{
+			{ bounds[0], bounds[1], .0f },
+			{ bounds[2], bounds[1], .0f },
+			{ bounds[2], bounds[1], .0f },
+			{ bounds[2], bounds[3], .0f },
+			{ bounds[2], bounds[3], .0f },
+			{ bounds[0], bounds[3], .0f },
+			{ bounds[0], bounds[3], .0f },
+			{ bounds[0], bounds[1], .0f },
+		};
+
+		const auto oldAuxFlags = IRenderAuxGeom::GetAux()->GetRenderFlags();
+		SAuxGeomRenderFlags auxFlags;
+		auxFlags.SetMode2D3DFlag(e_Mode2D);
+		auxFlags.SetAlphaBlendMode(e_AlphaBlended);
+
+		IRenderAuxGeom::GetAux()->SetRenderFlags(auxFlags);
+		IRenderAuxGeom::GetAux()->DrawLines(points.data(), points.size(), ColorB(255, 0, 255, 92));
+
+		IRenderAuxGeom::GetAux()->SetRenderFlags(oldAuxFlags);
+	}
+
+	// Write statstics
+	SRenderStatistics& stats = SRenderStatistics::Write();
+	++stats.m_refractionPartialResolveCount;
+	stats.m_refractionPartialResolvePixelCount += std::max(0, static_cast<int>((bounds[3] - bounds[1]) * (bounds[2] - bounds[0])));
 }

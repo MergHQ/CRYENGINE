@@ -658,28 +658,6 @@ enum EDrawTextFlags : uint32
 	eDrawText_LegacyBehavior = BIT32(11)  //!< Reserved for internal system use.
 };
 
-// Debug stats/views for Partial resolves
-// if REFRACTION_PARTIAL_RESOLVE_DEBUG_VIEWS is enabled, make sure REFRACTION_PARTIAL_RESOLVE_STATS is too
-#if defined(PERFORMANCE_BUILD)
-	#define REFRACTION_PARTIAL_RESOLVE_STATS       1
-	#define REFRACTION_PARTIAL_RESOLVE_DEBUG_VIEWS 0
-#elif defined(_RELEASE) // note: _RELEASE is defined in PERFORMANCE_BUILD, so this check must come second
-	#define REFRACTION_PARTIAL_RESOLVE_STATS       0
-	#define REFRACTION_PARTIAL_RESOLVE_DEBUG_VIEWS 0
-#else
-	#define REFRACTION_PARTIAL_RESOLVE_STATS       1
-	#define REFRACTION_PARTIAL_RESOLVE_DEBUG_VIEWS 1
-#endif
-
-#if REFRACTION_PARTIAL_RESOLVE_DEBUG_VIEWS
-enum ERefractionPartialResolvesDebugViews
-{
-	eRPR_DEBUG_VIEW_2D_AREA = 1,
-	eRPR_DEBUG_VIEW_3D_BOUNDS,
-	eRPR_DEBUG_VIEW_2D_AREA_OVERLAY
-};
-#endif
-
 //! \cond INTERNAL
 //! This structure used in DrawText method of renderer.
 //! It provide all necessary information of how to render text on screen.

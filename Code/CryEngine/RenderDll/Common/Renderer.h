@@ -636,11 +636,9 @@ struct CRY_ALIGN(128) SRenderStatistics
 	float m_fEnvCMapUpdateTime;
 	float m_fEnvTextUpdateTime;
 
-#if REFRACTION_PARTIAL_RESOLVE_STATS
 	float m_fRefractionPartialResolveEstimatedCost;
 	int m_refractionPartialResolveCount;
 	int m_refractionPartialResolvePixelCount;
-#endif
 
 	int m_NumRendMaterialBatches;
 	int m_NumRendGeomBatches;

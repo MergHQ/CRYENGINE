@@ -1106,39 +1106,6 @@ void CD3D9Renderer::RT_BeginFrame(const SDisplayContextKey& displayContextKey)
 		else if (CV_r_batchtype == 1)
 			m_bUseGPUFriendlyBatching[gRenDev->GetRenderThreadID()] = true;
 	}
-
-#if REFRACTION_PARTIAL_RESOLVE_DEBUG_VIEWS
-	// Refraction Partial Resolves debug views
-	if (CRenderer::CV_r_RefractionPartialResolvesDebug == eRPR_DEBUG_VIEW_2D_AREA)
-	{
-		// Clear the screen for the partial resolve debug view 1
-		IRenderAuxGeom* pAuxRenderer = gEnv->pRenderer->GetIRenderAuxGeom();
-		if (pAuxRenderer)
-		{
-			SAuxGeomRenderFlags oldRenderFlags = pAuxRenderer->GetRenderFlags();
-
-			SAuxGeomRenderFlags newRenderFlags;
-			newRenderFlags.SetDepthTestFlag(e_DepthTestOff);
-			newRenderFlags.SetAlphaBlendMode(e_AlphaNone);
-			newRenderFlags.SetMode2D3DFlag(e_Mode2D);
-			pAuxRenderer->SetRenderFlags(newRenderFlags);
-
-			const bool bConsoleVisible = GetISystem()->GetIConsole()->GetStatus();
-			const float screenTop = (bConsoleVisible) ? 0.5f : 0.0f;
-
-			// Draw full screen black triangle
-			const uint vertexCount = 3;
-			Vec3 vert[vertexCount] = {
-				Vec3(0.0f, screenTop, 0.0f),
-				Vec3(0.0f, 2.0f,      0.0f),
-				Vec3(2.0f, screenTop, 0.0f)
-			};
-
-			pAuxRenderer->DrawTriangles(vert, vertexCount, Col_Black);
-			pAuxRenderer->SetRenderFlags(oldRenderFlags);
-		}
-	}
-#endif
 }
 
 bool CD3D9Renderer::CheckDeviceLost()
@@ -2525,7 +2492,6 @@ void CD3D9Renderer::RT_RenderDebug(bool bRenderStats)
 		gEnv->pRenderer->GetIRenderAuxGeom(/*eType*/)->SetCurrentDisplayContext(displayContextKey);
 	}
 
-	#if REFRACTION_PARTIAL_RESOLVE_DEBUG_VIEWS
 	if (CV_r_RefractionPartialResolvesDebug)
 	{
 		const float xPos = 0.0f;
@@ -2545,10 +2511,7 @@ void CD3D9Renderer::RT_RenderDebug(bool bRenderStats)
 		IRenderAuxText::Draw2dLabel(xPos, yPos, size, &textColor.r, bCentre, "Pixels: %d", RStats.m_refractionPartialResolvePixelCount);
 		yPos += textYSpacing;
 		IRenderAuxText::Draw2dLabel(xPos, yPos, size, &textColor.r, bCentre, "Percentage of Screen area: %d", (int) (RStats.m_refractionPartialResolvePixelCount * fInvScreenArea * 100.0f));
-		yPos += textYSpacing;
-		IRenderAuxText::Draw2dLabel(xPos, yPos, size, &textColor.r, bCentre, "Estimated cost: %.2fms", RStats.m_fRefractionPartialResolveEstimatedCost);
 	}
-	#endif
 
 	#ifndef EXCLUDE_DOCUMENTATION_PURPOSE
 	if (CV_r_DebugFontRendering)

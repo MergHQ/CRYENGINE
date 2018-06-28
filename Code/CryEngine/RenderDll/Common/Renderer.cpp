@@ -1237,14 +1237,6 @@ void CRenderer::EF_StartEf (const SRenderingPassInfo& passInfo)
 	}
 #endif
 
-#if REFRACTION_PARTIAL_RESOLVE_DEBUG_VIEWS
-	// Refraction Partial Resolves debug views
-	if (CRenderer::CV_r_RefractionPartialResolvesDebug == eRPR_DEBUG_VIEW_3D_BOUNDS)
-	{
-		gEnv->pParticleManager->RenderDebugInfo();
-	}
-#endif
-
 	pRenderView->PrepareForWriting();
 	//EF_PushObjectsList(nID);
 
