@@ -104,6 +104,7 @@ void MarkAsPhysThread() {
 		*g_lastPtr = MAX_PHYS_THREADS; *ptr = 0;
 		TLS_SET(g_pidxPhysThread, g_lastPtr=ptr);
 	}
+	set_extCaller(0);
 }
 void MarkAsPhysWorkerThread(int *pidx) {
 	TLS_SET(g_pidxPhysThread, pidx);

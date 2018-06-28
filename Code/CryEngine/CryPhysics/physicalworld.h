@@ -1116,11 +1116,11 @@ inline void OnStructQueued(pe_geomparams *params, CPhysicalWorld *pWorld, void *
 
 template<class T> struct ChangeRequest {
 	CPhysicalWorld *m_pWorld;
-	int m_bQueued,m_bLocked,m_bLockedCaller;
+	int m_bQueued,m_bLocked,m_bLockedCaller,m_iCaller;
 	T *m_pQueued;
 
 	ChangeRequest(CPhysicalPlaceholder *pent, CPhysicalWorld *pWorld, T *params, int bInactive, void *ptrAux=0,int iAux=0) :
-	m_pWorld(pWorld),m_bQueued(0),m_bLocked(0),m_bLockedCaller(0)
+	m_pWorld(pWorld),m_bQueued(0),m_bLocked(0),m_bLockedCaller(0),m_iCaller(MAX_PHYS_THREADS)
 	{
 		if (pent->m_iSimClass==-1 && ((CPhysicalEntity*)pent)->m_iDeletionTime==3)
 			bInactive |= bInactive-1>>31;
@@ -1164,15 +1164,16 @@ template<class T> struct ChangeRequest {
 					m_bQueued = 1;
 					isProcessed = 1;
 				}	else {
-					if (!isPODthread) {
-						if (AtomicCAS(&m_pWorld->m_lockCaller[MAX_PHYS_THREADS], WRITE_LOCK_VAL, 0)) {
+					m_iCaller = get_iCaller(1);
+					if (!isPODthread && m_iCaller>=MAX_PHYS_THREADS) {
+						if (AtomicCAS(&m_pWorld->m_lockCaller[m_iCaller], WRITE_LOCK_VAL, 0)) {
 							continue;
 						}
 						m_bLockedCaller = WRITE_LOCK_VAL;
 					}
 					if (AtomicCAS(&m_pWorld->m_lockStep, WRITE_LOCK_VAL, 0)) {
-						if (!isPODthread) {
-							AtomicAdd(&m_pWorld->m_lockCaller[MAX_PHYS_THREADS], -m_bLockedCaller);
+						if (!isPODthread && m_iCaller>=MAX_PHYS_THREADS) {
+							AtomicAdd(&m_pWorld->m_lockCaller[m_iCaller], -m_bLockedCaller);
 							m_bLockedCaller=0;
 						}
 						continue;
@@ -1185,7 +1186,7 @@ template<class T> struct ChangeRequest {
 		if (StructChangesPos(params) && !(pent->m_bProcessed & PENT_SETPOSED))
 			AtomicAdd(&pent->m_bProcessed, PENT_SETPOSED);
 	}
-	~ChangeRequest() { AtomicAdd(&m_pWorld->m_lockStep,-m_bLocked);AtomicAdd(&m_pWorld->m_lockCaller[MAX_PHYS_THREADS],-m_bLockedCaller); }
+	~ChangeRequest() { AtomicAdd(&m_pWorld->m_lockStep,-m_bLocked);AtomicAdd(&m_pWorld->m_lockCaller[m_iCaller],-m_bLockedCaller); }
 	int IsQueued() { return m_bQueued; }
 	T *GetQueuedStruct() { return m_pQueued; }
 };
