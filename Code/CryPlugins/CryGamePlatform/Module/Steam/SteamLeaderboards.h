@@ -1,6 +1,10 @@
+// Copyright 2001-2018 Crytek GmbH / Crytek Group. All rights reserved.
+
 #pragma once
 
 #include "IPlatformLeaderboards.h"
+#include "SteamTypes.h"
+#include <steam/isteamuserstats.h>
 
 namespace Cry
 {
@@ -26,6 +30,7 @@ namespace Cry
 					string name;
 				};
 
+				explicit CLeaderboards(CService& steamService);
 				virtual ~CLeaderboards() = default;
 
 				// ILeaderboards
@@ -47,6 +52,8 @@ namespace Cry
 				CCallResult<CLeaderboards, LeaderboardScoresDownloaded_t> m_callResultEntriesDownloaded;
 
 			protected:
+				CService& m_service;
+
 				std::unique_ptr<SQueuedEntryRequest> m_pQueuedEntryRequest;
 				std::vector<SQueuedUpdateRequest> m_queuedUpdateRequests;
 

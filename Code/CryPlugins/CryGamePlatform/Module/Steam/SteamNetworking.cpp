@@ -1,9 +1,9 @@
+// Copyright 2001-2018 Crytek GmbH / Crytek Group. All rights reserved.
+
 #include "StdAfx.h"
 
-#include <steam/steam_api.h>
-#include <steam/steam_gameserver.h>
-
 #include "SteamNetworking.h"
+#include "SteamUserIdentifier.h"
 
 namespace Cry
 {
@@ -26,24 +26,24 @@ namespace Cry
 #endif
 			}
 
-			bool CNetworking::SendPacket(IUser::Identifier remoteUser, void* pData, uint32 dataLength)
+			bool CNetworking::SendPacket(const AccountIdentifier& remoteUser, void* pData, uint32 dataLength)
 			{
 				ISteamNetworking* pSteamNetworking = GetSteamNetworking();
 				if (!pSteamNetworking)
 				{
 					return false;
 				}
-				return pSteamNetworking->SendP2PPacket(remoteUser, pData, dataLength, k_EP2PSendReliable);
+				return pSteamNetworking->SendP2PPacket(ExtractSteamID(remoteUser), pData, dataLength, k_EP2PSendReliable);
 			}
 
-			bool CNetworking::CloseSession(IUser::Identifier remoteUser)
+			bool CNetworking::CloseSession(const AccountIdentifier& remoteUser)
 			{
 				ISteamNetworking* pSteamNetworking = GetSteamNetworking();
 				if (!pSteamNetworking)
 				{
 					return false;
 				}
-				return pSteamNetworking->CloseP2PSessionWithUser(remoteUser);
+				return pSteamNetworking->CloseP2PSessionWithUser(ExtractSteamID(remoteUser));
 			}
 
 			bool CNetworking::IsPacketAvailable(uint32* pPacketSizeOut) const
@@ -56,7 +56,7 @@ namespace Cry
 				return pSteamNetworking->IsP2PPacketAvailable(pPacketSizeOut);
 			}
 
-			bool CNetworking::ReadPacket(void* pDest, uint32 destLength, uint32* pMessageSizeOut, IUser::Identifier* pRemoteIdOut)
+			bool CNetworking::ReadPacket(void* pDest, uint32 destLength, uint32* pMessageSizeOut, AccountIdentifier* pRemoteIdOut)
 			{
 				ISteamNetworking* pSteamNetworking = GetSteamNetworking();
 				if (!pSteamNetworking)

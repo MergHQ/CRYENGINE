@@ -1,6 +1,9 @@
+// Copyright 2001-2018 Crytek GmbH / Crytek Group. All rights reserved.
+
 #pragma once
 
 #include "IPlatformAchievement.h"
+#include "SteamTypes.h"
 
 namespace Cry
 {
@@ -8,12 +11,12 @@ namespace Cry
 	{
 		namespace Steam
 		{
-			class CAchivement
+			class CAchievement
 				: public IAchievement
 			{
 			public:
-				CAchivement(const char* name, bool bAchieved);
-				virtual ~CAchivement() = default;
+				CAchievement(CStatistics& steamStats, const char* name, bool bAchieved);
+				virtual ~CAchievement() = default;
 
 				// IAchievement
 				virtual const char* GetName() const override { return m_name.c_str(); }
@@ -24,6 +27,7 @@ namespace Cry
 				// ~IAchievement
 
 			protected:
+				CStatistics& m_stats;
 				string m_name;
 				bool m_bAchieved;
 			};

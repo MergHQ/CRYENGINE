@@ -1,6 +1,9 @@
+// Copyright 2001-2018 Crytek GmbH / Crytek Group. All rights reserved.
+
 #pragma once
 
 #include "IPlatformStatistics.h"
+#include "SteamTypes.h"
 
 namespace Cry
 {
@@ -12,7 +15,7 @@ namespace Cry
 				: public IStatistics
 			{
 			public:
-				CStatistics();
+				explicit CStatistics(CService& steamService);
 				virtual ~CStatistics();
 
 				// IStatistics
@@ -42,6 +45,8 @@ namespace Cry
 				STEAM_CALLBACK(CStatistics, OnUserStatsStored, UserStatsStored_t, m_callbackUserStatsStored);
 				STEAM_CALLBACK(CStatistics, OnStatsUnloaded, UserStatsUnloaded_t, m_callbackStatsUnloaded);
 				STEAM_CALLBACK(CStatistics, OnAchievementStored, UserAchievementStored_t, m_callbackAchievementStored);
+
+				CService& m_service;
 
 				uint32 m_appId;
 				bool m_bInitialized;

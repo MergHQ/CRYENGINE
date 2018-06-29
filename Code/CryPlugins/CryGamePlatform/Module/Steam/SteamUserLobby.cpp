@@ -1,18 +1,12 @@
+// Copyright 2001-2018 Crytek GmbH / Crytek Group. All rights reserved.
+
 #include "StdAfx.h"
 
-#include <steam/steam_api.h>
-
 #include "SteamUserLobby.h"
-
-#include "SteamPlatform.h"
-#include "SteamMatchmaking.h"
+#include "SteamService.h"
+#include "SteamUserIdentifier.h"
 
 #include <CryGame/IGameFramework.h>
-#include <CryCore/Platform/IPlatformOS.h>
-
-#include <../CryAction/IActorSystem.h>
-
-#include <CryNetwork/CrySocks.h>
 
 namespace Cry
 {
@@ -64,8 +58,9 @@ namespace Cry
 				return v;
 			}
 
-			CUserLobby::CUserLobby(IUserLobby::Identifier lobbyId)
-				: m_steamLobbyId(lobbyId)
+			CUserLobby::CUserLobby(CService& steamService, const LobbyIdentifier& lobbyId)
+				: m_service(steamService)
+				, m_steamLobbyId(ExtractSteamID(lobbyId))
 				, m_callbackChatDataUpdate(this, &CUserLobby::OnLobbyChatUpdate)
 				, m_callbackDataUpdate(this, &CUserLobby::OnLobbyDataUpdate)
 				, m_callbackChatMessage(this, &CUserLobby::OnLobbyChatMessage)
@@ -91,7 +86,7 @@ namespace Cry
 
 				if (gEnv->bMultiplayer)
 				{
-					IServer* pPlatformServer = CPlugin::GetInstance()->GetLocalServer();
+					CServer* pPlatformServer = m_service.GetLocalServer();
 					ISteamMatchmaking* pSteamMatchmaking = SteamMatchmaking();
 					if (pPlatformServer == nullptr || pSteamMatchmaking == nullptr)
 					{
@@ -164,6 +159,26 @@ namespace Cry
 				return nullptr;
 			}
 
+			const char* CUserLobby::GetMemberData(const AccountIdentifier& userId, const char* szKey)
+			{
+				ISteamMatchmaking* pSteamMatchmaking = SteamMatchmaking();
+				if (pSteamMatchmaking)
+				{
+					const CSteamID steamUserId = ExtractSteamID(userId);
+					return pSteamMatchmaking->GetLobbyMemberData(m_steamLobbyId, steamUserId, szKey);
+				}
+				return nullptr;
+			}
+
+			void CUserLobby::SetMemberData(const char* szKey, const char* szValue)
+			{
+				ISteamMatchmaking* pSteamMatchmaking = SteamMatchmaking();
+				if (pSteamMatchmaking)
+				{
+					pSteamMatchmaking->SetLobbyMemberData(m_steamLobbyId, szKey, szValue);
+				}
+			}
+
 			bool CUserLobby::HostServer(const char* szLevel, bool isLocal)
 			{
 				ISteamMatchmaking* pSteamMatchmaking = SteamMatchmaking();
@@ -177,7 +192,7 @@ namespace Cry
 				if (!pSteamUser || ownerId != pSteamUser->GetSteamID())
 					return false;
 
-				IServer* pPlatformServer = CPlugin::GetInstance()->CreateServer(isLocal);
+				CServer* pPlatformServer = m_service.CreateServer(isLocal);
 				if (pPlatformServer == nullptr)
 				{
 					CryWarning(VALIDATOR_MODULE_SYSTEM, VALIDATOR_ERROR, "Failed to create server!");
@@ -211,7 +226,7 @@ namespace Cry
 				return 0;
 			}
 
-			IUser::Identifier CUserLobby::GetMemberAtIndex(int index) const
+			AccountIdentifier CUserLobby::GetMemberAtIndex(int index) const
 			{
 				CSteamID result = k_steamIDNil;
 				ISteamMatchmaking* pSteamMatchmaking = SteamMatchmaking();
@@ -219,12 +234,13 @@ namespace Cry
 				{
 					result = pSteamMatchmaking->GetLobbyMemberByIndex(m_steamLobbyId, index);
 				}
-				return result.ConvertToUint64();
+
+				return CreateAccountIdentifier(result);
 			}
 
 			void CUserLobby::Leave()
 			{
-				constexpr Identifier invalidLobby = 0;
+				const CSteamID invalidLobby = k_steamIDNil;
 				if (m_steamLobbyId != invalidLobby)
 				{
 					for (IListener* pListener : m_listeners)
@@ -248,12 +264,12 @@ namespace Cry
 
 					if (!isShuttingDown)
 					{
-						static_cast<CMatchmaking*>(CPlugin::GetInstance()->GetMatchmaking())->OnLobbyRemoved(this);
+						m_service.GetMatchmaking()->OnLobbyRemoved(this);
 					}
 				}
 			}
 
-			IUser::Identifier CUserLobby::GetOwnerId() const
+			AccountIdentifier CUserLobby::GetOwnerId() const
 			{
 				CSteamID result = k_steamIDNil;
 				ISteamMatchmaking* pSteamMatchmaking = SteamMatchmaking();
@@ -261,7 +277,8 @@ namespace Cry
 				{
 					result = pSteamMatchmaking->GetLobbyOwner(m_steamLobbyId);
 				}
-				return result.ConvertToUint64();
+
+				return CreateAccountIdentifier(result);
 			}
 
 			bool CUserLobby::SendChatMessage(const char* message) const
@@ -284,7 +301,7 @@ namespace Cry
 
 			void CUserLobby::OnLobbyChatUpdate(LobbyChatUpdate_t* pCallback)
 			{
-				if (pCallback->m_ulSteamIDLobby != m_steamLobbyId)
+				if (CSteamID(pCallback->m_ulSteamIDLobby) != m_steamLobbyId)
 					return;
 
 				switch (pCallback->m_rgfChatMemberStateChange)
@@ -293,7 +310,7 @@ namespace Cry
 					{
 						for (IListener* pListener : m_listeners)
 						{
-							pListener->OnPlayerEntered(pCallback->m_ulSteamIDUserChanged);
+							pListener->OnPlayerEntered(CreateAccountIdentifier(pCallback->m_ulSteamIDUserChanged));
 						}
 					}
 					break;
@@ -301,7 +318,7 @@ namespace Cry
 					{
 						for (IListener* pListener : m_listeners)
 						{
-							pListener->OnPlayerLeft(pCallback->m_ulSteamIDUserChanged);
+							pListener->OnPlayerLeft(CreateAccountIdentifier(pCallback->m_ulSteamIDUserChanged));
 						}
 					}
 					break;
@@ -309,7 +326,7 @@ namespace Cry
 					{
 						for (IListener* pListener : m_listeners)
 						{
-							pListener->OnPlayerDisconnected(pCallback->m_ulSteamIDUserChanged);
+							pListener->OnPlayerDisconnected(CreateAccountIdentifier(pCallback->m_ulSteamIDUserChanged));
 						}
 					}
 					break;
@@ -317,7 +334,8 @@ namespace Cry
 					{
 						for (IListener* pListener : m_listeners)
 						{
-							pListener->OnPlayerKicked(pCallback->m_ulSteamIDUserChanged, pCallback->m_ulSteamIDMakingChange);
+							pListener->OnPlayerKicked(CreateAccountIdentifier(pCallback->m_ulSteamIDUserChanged), 
+							                          CreateAccountIdentifier(pCallback->m_ulSteamIDMakingChange));
 						}
 					}
 					break;
@@ -325,7 +343,8 @@ namespace Cry
 					{
 						for (IListener* pListener : m_listeners)
 						{
-							pListener->OnPlayerBanned(pCallback->m_ulSteamIDUserChanged, pCallback->m_ulSteamIDMakingChange);
+							pListener->OnPlayerBanned(CreateAccountIdentifier(pCallback->m_ulSteamIDUserChanged), 
+							                          CreateAccountIdentifier(pCallback->m_ulSteamIDMakingChange));
 						}
 					}
 					break;
@@ -349,15 +368,25 @@ namespace Cry
 					}
 				}
 
-				for (IListener* pListener : m_listeners)
+				if (pCallback->m_ulSteamIDLobby == pCallback->m_ulSteamIDMember)
 				{
-					pListener->OnDataUpdate(pCallback->m_ulSteamIDMember);
+					for (IListener* pListener : m_listeners)
+					{
+						pListener->OnLobbyDataUpdate(CreateLobbyIdentifier(pCallback->m_ulSteamIDLobby));
+					}
+				}
+				else
+				{
+					for (IListener* pListener : m_listeners)
+					{
+						pListener->OnUserDataUpdate(CreateAccountIdentifier(pCallback->m_ulSteamIDMember));
+					}
 				}
 			}
 
 			void CUserLobby::OnLobbyChatMessage(LobbyChatMsg_t* pCallback)
 			{
-				if (pCallback->m_ulSteamIDLobby != m_steamLobbyId)
+				if (CSteamID(pCallback->m_ulSteamIDLobby) != m_steamLobbyId)
 					return;
 
 				CSteamID userId;
@@ -379,7 +408,7 @@ namespace Cry
 					{
 						for (IListener* pListener : m_listeners)
 						{
-							pListener->OnChatMessage(userId.ConvertToUint64(), message);
+							pListener->OnChatMessage(CreateAccountIdentifier(userId), message);
 						}
 					}
 				}
@@ -392,7 +421,7 @@ namespace Cry
 				{
 					for (IListener* pListener : m_listeners)
 					{
-						pListener->OnGameCreated(pCallback->m_ulSteamIDGameServer, pCallback->m_unIP, pCallback->m_usPort, pSteamUser->GetSteamID() == GetOwnerId());
+						pListener->OnGameCreated(pCallback->m_ulSteamIDGameServer, pCallback->m_unIP, pCallback->m_usPort, CreateAccountIdentifier(pSteamUser->GetSteamID()) == GetOwnerId());
 					}
 				}
 				else
@@ -416,7 +445,7 @@ namespace Cry
 				m_serverId = serverId;
 
 				// Ignore the local server
-				if (IServer* pServer = CPlugin::GetInstance()->GetLocalServer())
+				if (CServer* pServer = m_service.GetLocalServer())
 				{
 					if (pServer->GetIdentifier() == serverId)
 						return;
@@ -425,7 +454,7 @@ namespace Cry
 				char conReq[2];
 				conReq[0] = 'C';
 				conReq[1] = 'T';
-				CPlugin::GetInstance()->GetNetworking()->SendPacket(GetOwnerId(), &conReq, 2);
+				m_service.GetNetworking()->SendPacket(GetOwnerId(), &conReq, 2);
 
 				IGameFramework* pGameFramework = gEnv->pGameFramework;
 				IConsole* pConsole = gEnv->pConsole;

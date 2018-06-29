@@ -1,6 +1,8 @@
+// Copyright 2001-2018 Crytek GmbH / Crytek Group. All rights reserved.
+
 #pragma once
 
-#include "IPlatformUser.h"
+#include "PlatformTypes.h"
 
 namespace Cry
 {
@@ -12,9 +14,9 @@ namespace Cry
 			virtual ~INetworking() {}
 
 			//! Sends a packet to the specified user, identified by their platform-specific user id
-			virtual bool SendPacket(IUser::Identifier remoteUser, void* pData, uint32 dataLength) = 0;
+			virtual bool SendPacket(const AccountIdentifier& remoteUser, void* pData, uint32 dataLength) = 0;
 			//! Closes a session opened with SendPacket
-			virtual bool CloseSession(IUser::Identifier remoteUser) = 0;
+			virtual bool CloseSession(const AccountIdentifier& remoteUser) = 0;
 			//! Checks whether there is data available to read
 			virtual bool IsPacketAvailable(uint32* pPacketSizeOut) const = 0;
 			//! Reads a packet, if there is one available
@@ -23,7 +25,7 @@ namespace Cry
 			//! \param pMessageSizeOut Updated after a successful packet read with the actual size of the packet, does not necessarily match the provided buffer
 			//! \param pRemoteIdOut Updated after a successful packet read with the unique platform-specific identifier of the user that sent the packet
 			//! \returns True if the packet was read, otherwise false.
-			virtual bool ReadPacket(void* pDest, uint32 destLength, uint32* pMessageSizeOut, IUser::Identifier* pRemoteIdOut) = 0;
+			virtual bool ReadPacket(void* pDest, uint32 destLength, uint32* pMessageSizeOut, AccountIdentifier* pRemoteIdOut) = 0;
 		};
 	}
 }

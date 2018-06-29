@@ -1,9 +1,9 @@
+// Copyright 2001-2018 Crytek GmbH / Crytek Group. All rights reserved.
+
 #include "StdAfx.h"
 
-#include <steam/steam_api.h>
-
-#include "SteamPlatform.h"
 #include "SteamRemoteFile.h"
+#include "SteamService.h"
 
 namespace Cry
 {
@@ -11,8 +11,9 @@ namespace Cry
 	{
 		namespace Steam
 		{
-			CRemoteFile::CRemoteFile(const char* name)
-				: m_name(name)
+			CRemoteFile::CRemoteFile(CService& steamService, const char* name)
+				: m_service(steamService)
+				, m_name(name)
 				, m_sharedHandle(0)
 			{
 			}
@@ -34,7 +35,7 @@ namespace Cry
 					SteamAPICall_t hSteamAPICall = pSteamRemoteStorage->FileShare(m_name.c_str());
 					m_callResultFileShared.Set(hSteamAPICall, this, &CRemoteFile::OnFileShared);
 
-					CPlugin::GetInstance()->SetAwaitingCallback(1);
+					m_service.SetAwaitingCallback(1);
 
 					return true;
 				}
@@ -107,7 +108,7 @@ namespace Cry
 			// Steam callbacks
 			void CRemoteFile::OnFileShared(RemoteStorageFileShareResult_t* pResult, bool bIOFailure)
 			{
-				CPlugin::GetInstance()->SetAwaitingCallback(-1);
+				m_service.SetAwaitingCallback(-1);
 
 				if (pResult->m_eResult == k_EResultOK)
 				{

@@ -1,8 +1,9 @@
+// Copyright 2001-2018 Crytek GmbH / Crytek Group. All rights reserved.
+
 #pragma once
 
-#include "IPlatformUserGeneratedContent.h"
-
-#include <steam/steam_api.h>
+#include "SteamTypes.h"
+#include "UserGeneratedContent.h"
 
 namespace Cry
 {
@@ -24,7 +25,7 @@ namespace Cry
 				: public IUserGeneratedContentManager
 			{
 			public:
-				CUserGeneratedContentManager() = default;
+				explicit CUserGeneratedContentManager(CService& steamService);
 				virtual ~CUserGeneratedContentManager() = default;
 
 				// IUserGeneratedContentManager
@@ -39,6 +40,7 @@ namespace Cry
 				// ~IUserGeneratedContentManager
 
 			protected:
+				CService& m_service;
 				std::vector<IListener*> m_listeners;
 
 				void OnContentCreated(CreateItemResult_t* pResult, bool bIOFailure);

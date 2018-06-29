@@ -1,10 +1,8 @@
+// Copyright 2001-2018 Crytek GmbH / Crytek Group. All rights reserved.
+
 #include "StdAfx.h"
 
-#include <steam/steam_api.h>
-
-#include "SteamUser.h"
-
-#include <CryRenderer/IRenderer.h>
+#include "SteamAccount.h"
 
 namespace Cry
 {
@@ -12,17 +10,17 @@ namespace Cry
 	{
 		namespace Steam
 		{
-			CUser::CUser(CSteamID id)
+			CAccount::CAccount(CSteamID id)
 				: m_id(id)
 			{
 			}
 
-			CUser::~CUser()
+			CAccount::~CAccount()
 			{
 				m_id.Clear();
 			}
 
-			const char* CUser::GetNickname() const
+			const char* CAccount::GetNickname() const
 			{
 				ISteamFriends* pSteamFriends = SteamFriends();
 				if (!pSteamFriends)
@@ -32,12 +30,12 @@ namespace Cry
 				return pSteamFriends->GetFriendPersonaName(m_id);
 			}
 
-			IUser::Identifier CUser::GetIdentifier() const
+			AccountIdentifier CAccount::GetIdentifier() const
 			{
-				return m_id.ConvertToUint64();
+				return AccountIdentifier(SteamServiceID, m_id.ConvertToUint64());
 			}
 
-			void CUser::SetStatus(const char* status)
+			void CAccount::SetStatus(const char* status)
 			{
 				ISteamUser* pSteamUser = SteamUser();
 				ISteamFriends* pSteamFriends = SteamFriends();
@@ -49,7 +47,7 @@ namespace Cry
 				pSteamFriends->SetRichPresence("status", status);
 			}
 
-			const char* CUser::GetStatus() const
+			const char* CAccount::GetStatus() const
 			{
 				ISteamFriends* pSteamFriends = SteamFriends();
 				if (!pSteamFriends)
@@ -59,7 +57,12 @@ namespace Cry
 				return pSteamFriends->GetFriendRichPresence(m_id, "status");
 			}
 
-			ITexture* CUser::GetAvatar(EAvatarSize size) const
+			const DynArray<Cry::GamePlatform::AccountIdentifier>& CAccount::GetConnectedAccounts() const
+			{
+				return m_connectedAccounts;
+			}
+
+			ITexture* CAccount::GetAvatar(EAvatarSize size) const
 			{
 				int imageId = -1;
 				ISteamFriends* pSteamFriends = SteamFriends();
@@ -93,7 +96,7 @@ namespace Cry
 					return nullptr;
 				}
 
-				int imageSize = width*  height*  4;
+				const size_t imageSize = width * height * 4;
 				std::vector<unsigned char> imageBuffer;
 				imageBuffer.resize(imageSize);
 				if (!pSteamUtils->GetImageRGBA(imageId, imageBuffer.data(), imageSize))
@@ -102,7 +105,7 @@ namespace Cry
 				}
 
 				ETEX_Format format = eTF_R8G8B8A8;
-				int textureId = gEnv->pRenderer->UploadToVideoMemory(imageBuffer.data(), width, height, format, format, 1);
+				const int textureId = gEnv->pRenderer->UploadToVideoMemory(imageBuffer.data(), width, height, format, format, 1);
 
 				return gEnv->pRenderer->EF_GetTextureByID(textureId);
 			}

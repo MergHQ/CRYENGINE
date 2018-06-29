@@ -3,29 +3,30 @@
 #pragma once
 
 #include "PlatformTypes.h"
-#include "PlatformUserIdentifier.h"
+#include <CryCore/Containers/CryArray.h>
 
 namespace Cry
 {
 	namespace GamePlatform
 	{
-		//! Interface to access information for all of a user's accounts
-		struct IUser
+		//! Interface to a service account. 
+		//! Each user is identified on a specific service by means of his account.
+		struct IAccount
 		{
-			virtual ~IUser() {}
+			virtual ~IAccount() {}
 
 			//! Gets the public nickname of the user
 			virtual const char* GetNickname() const = 0;
-			//! Gets unique identifier of user
-			virtual UserIdentifier GetIdentifier() const = 0;
+			//! Gets the unique identifier of the user
+			virtual AccountIdentifier GetIdentifier() const = 0;
 			//! Sets the user's rich status
 			virtual void SetStatus(const char* szStatus) = 0;
 			//! Gets the user's rich status
 			virtual const char* GetStatus() const = 0;
 			//! Gets the user's avatar of the requested size as a texture
 			virtual ITexture* GetAvatar(EAvatarSize size) const = 0;
-			//! Gets the account associated with a specific service, if any
-			virtual IAccount* GetAccount(const ServiceIdentifier& svcId) const = 0;
+			//! Gets other services' accounts that were linked to this account
+			virtual const DynArray<AccountIdentifier>& GetConnectedAccounts() const = 0;
 		};
 	}
 }

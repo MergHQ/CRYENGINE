@@ -1,15 +1,13 @@
+// Copyright 2001-2018 Crytek GmbH / Crytek Group. All rights reserved.
+
 #include "StdAfx.h"
 
-#include <steam/steam_api.h>
-#include <steam/isteamgameserver.h>
-
-#include <steam/steam_gameserver.h>
-
 #include "SteamServer.h"
+#include "SteamUserIdentifier.h"
 
 #include <CrySystem/IProjectManager.h>
-#include <CrySystem/ISystem.h>
-#include <CrySystem/IConsole.h>
+
+#include <steam/steam_gameserver.h>
 
 namespace Cry
 {
@@ -106,14 +104,14 @@ namespace Cry
 				return pPortVar->GetIVal();
 			}
 
-			bool CServer::AuthenticateUser(uint32 clientIP, char* authData, int authDataLength, IUser::Identifier &userId)
+			bool CServer::AuthenticateUser(uint32 clientIP, char* authData, int authDataLength, AccountIdentifier &userId)
 			{
 				if (ISteamGameServer* pGameServer = SteamGameServer())
 				{
 					CSteamID steamUserId;
 					if (pGameServer->SendUserConnectAndAuthenticate(clientIP, authData, authDataLength, &steamUserId))
 					{
-						userId = steamUserId.ConvertToUint64();
+						userId = CreateAccountIdentifier(steamUserId);
 						return true;
 					}
 					else
@@ -125,10 +123,12 @@ namespace Cry
 				return false;
 			}
 
-			void CServer::SendUserDisconnect(IUser::Identifier userId)
+			void CServer::SendUserDisconnect(const AccountIdentifier& userId)
 			{
 				if (ISteamGameServer* pGameServer = SteamGameServer())
-					pGameServer->SendUserDisconnect(CSteamID(userId));
+				{
+					pGameServer->SendUserDisconnect(ExtractSteamID(userId));
+				}
 			}
 		}
 	}

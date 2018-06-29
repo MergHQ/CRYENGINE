@@ -1,6 +1,8 @@
+// Copyright 2001-2018 Crytek GmbH / Crytek Group. All rights reserved.
+
 #pragma once
 
-#include "IPlatformUser.h"
+#include "PlatformTypes.h"
 
 namespace Cry
 {
@@ -31,9 +33,9 @@ namespace Cry
 			//! \param authDataLength Length of the auth token
 			//! \param userId Assigned on success to the user's platform-specific identifier
 			//! \returns True if the authentication was successful, otherwise false
-			virtual bool AuthenticateUser(uint32 clientIP, char* szAuthData, int authDataLength, IUser::Identifier& userId) = 0;
+			virtual bool AuthenticateUser(uint32 clientIP, char* szAuthData, int authDataLength, AccountIdentifier& userId) = 0;
 			//! Should be called whenever a user leaves the game server, allowing the platform services to track what users are on which servers.
-			virtual void SendUserDisconnect(IUser::Identifier userId) = 0;
+			virtual void SendUserDisconnect(const AccountIdentifier& userId) = 0;
 		};
 	}
 }

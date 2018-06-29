@@ -1,10 +1,10 @@
-#include "StdAfx.h"
+// Copyright 2001-2018 Crytek GmbH / Crytek Group. All rights reserved.
 
-#include <steam/steam_api.h>
+#include "StdAfx.h"
 
 #include "SteamStatistics.h"
 #include "SteamAchievement.h"
-#include "SteamPlatform.h"
+#include "SteamService.h"
 
 namespace Cry
 {
@@ -12,8 +12,9 @@ namespace Cry
 	{
 		namespace Steam
 		{
-			CStatistics::CStatistics()
-				: m_callbackUserStatsReceived(this, &CStatistics::OnUserStatsReceived)
+			CStatistics::CStatistics(CService& steamService)
+				: m_service(steamService)
+				, m_callbackUserStatsReceived(this, &CStatistics::OnUserStatsReceived)
 				, m_callbackUserStatsStored(this, &CStatistics::OnUserStatsStored)
 				, m_callbackAchievementStored(this, &CStatistics::OnAchievementStored)
 				, m_callbackStatsUnloaded(this, &CStatistics::OnStatsUnloaded)
@@ -78,7 +79,7 @@ namespace Cry
 
 			bool CStatistics::Download()
 			{
-				CPlugin::GetInstance()->SetAwaitingCallback(1);
+				m_service.SetAwaitingCallback(1);
 
 				if (ISteamUserStats* pUserStats = SteamUserStats())
 					return pUserStats->RequestCurrentStats();
@@ -88,7 +89,7 @@ namespace Cry
 
 			bool CStatistics::Upload()
 			{
-				CPlugin::GetInstance()->SetAwaitingCallback(1);
+				m_service.SetAwaitingCallback(1);
 
 				if (ISteamUserStats* pUserStats = SteamUserStats())
 					return pUserStats->StoreStats();
@@ -168,14 +169,14 @@ namespace Cry
 					}
 				}
 
-				m_achievements.emplace_back(stl::make_unique<CAchivement>(name, bAchieved));
+				m_achievements.emplace_back(stl::make_unique<CAchievement>(*this, name, bAchieved));
 				return m_achievements.back().get();
 			}
 
 			// Steam API callbacks
 			void CStatistics::OnUserStatsReceived(UserStatsReceived_t* pCallback)
 			{
-				CPlugin::GetInstance()->SetAwaitingCallback(-1);
+				m_service.SetAwaitingCallback(-1);
 
 				// we may get callbacks for other games' stats arriving, ignore them
 				if (m_appId != pCallback->m_nGameID)

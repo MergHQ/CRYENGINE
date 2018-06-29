@@ -1,11 +1,10 @@
+// Copyright 2001-2018 Crytek GmbH / Crytek Group. All rights reserved.
+
 #include "StdAfx.h"
 
-#include <steam/steam_api.h>
-
 #include "SteamRemoteStorage.h"
-#include "SteamRemoteFile.h"
 #include "SteamSharedRemoteFile.h"
-
+#include "SteamRemoteFile.h"
 #include "UserGeneratedContentManager.h"
 
 namespace Cry
@@ -14,9 +13,10 @@ namespace Cry
 	{
 		namespace Steam
 		{
-			CRemoteStorage::CRemoteStorage()
+			CRemoteStorage::CRemoteStorage(CService& steamService)
+				: m_service(steamService)
 			{
-				m_pUGCManager = stl::make_unique<CUserGeneratedContentManager>();
+				m_pUGCManager = stl::make_unique<CUserGeneratedContentManager>(m_service);
 			}
 
 			bool CRemoteStorage::IsEnabled() const
@@ -34,7 +34,7 @@ namespace Cry
 					if (!IsEnabled())
 						return nullptr;
 
-					return std::make_shared<CRemoteFile>(name);
+					return std::make_shared<CRemoteFile>(m_service, name);
 				}
 
 				return nullptr;
@@ -45,7 +45,7 @@ namespace Cry
 				if (id == 0)
 					return nullptr;
 
-				return std::make_shared<CSharedRemoteFile>(id);
+				return std::make_shared<CSharedRemoteFile>(m_service, id);
 			}
 		}
 	}
