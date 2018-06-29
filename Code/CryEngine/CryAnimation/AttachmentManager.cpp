@@ -1146,7 +1146,7 @@ int CAttachmentManager::UpdatePhysicalizedAttachment(int idx, IPhysicalEntity* p
 		return 0;
 
 	if (!(pIAttachment = GetInterfaceByIndex(idx)) || pIAttachment->GetType() != CA_BONE || !(pIAttachment->GetFlags() & FLAGS_ATTACH_PHYSICALIZED) ||
-	    !pIAttachment->GetIAttachmentObject() || !(pStatObj = pIAttachment->GetIAttachmentObject()->GetIStatObj()) || !pStatObj->GetPhysGeom())
+	    !pIAttachment->GetIAttachmentObject() || !(pStatObj = pIAttachment->GetIAttachmentObject()->GetIStatObj()) || !pStatObj->GetPhysGeom() && !(pStatObj->GetFlags() & STATIC_OBJECT_COMPOUND))
 		return 0;
 
 	int changed = 0;
@@ -1159,14 +1159,37 @@ int CAttachmentManager::UpdatePhysicalizedAttachment(int idx, IPhysicalEntity* p
 	if (!pent->GetStatus(&sa))
 	{
 		int iJoint = pIAttachment->GetJointID();
-		pe_params_part pp;
+		pe_params_part pp, ppget;
 		Matrix34 mtx = Matrix34(offset * pIAttachment->GetAttModelRelative());
 		int id = (pIAttachment->GetFlags() & FLAGS_ATTACH_ID_MASK) >> idbit;
-		pp.partid = m_pSkelInstance->m_pDefaultSkeleton->GetJointCount() + id;
+		int partid = m_pSkelInstance->m_pDefaultSkeleton->GetJointCount() + id;
 		pp.pMtx3x4 = &mtx;
 		const CDefaultSkeleton::SJoint* pJoint = m_pSkelInstance->m_SkeletonPose.m_physics.GetModelJointPointer(iJoint);
 		pp.bRecalcBBox = !pJoint->m_PhysInfoRef[0].pPhysGeom;
-		pent->SetParams(&pp);
+		if (pStatObj->GetFlags() & STATIC_OBJECT_COMPOUND)
+		{
+			Matrix34 mtxSub;
+			pp.pMtx3x4 = &mtxSub;
+			partid = EntityPhysicsUtils::AllocPartIdRange(partid, pStatObj->GetSubObjectCount());
+			for(int i = 0; i < pStatObj->GetSubObjectCount(); i++)
+			{
+				pp.partid = partid + i;
+				mtxSub = mtx * pStatObj->GetSubObject(i)->tm;
+				pent->SetParams(&pp);
+			}
+		}
+		else if (!pStatObj->GetPhysGeom(1))
+		{	// statobj has a single phys proxy
+			pp.partid = partid;
+			pent->SetParams(&pp);
+		}
+		else for(ppget.ipart = 0; pent->GetParams(&ppget); ppget.ipart++)
+		{	// iterate over all statobj's phys proxies by index (they have the same phys part id)
+			if (ppget.partid != partid)
+				continue;
+			pp.ipart = ppget.ipart;
+			pent->SetParams(&pp);
+		}
 	}
 	return changed;
 }
