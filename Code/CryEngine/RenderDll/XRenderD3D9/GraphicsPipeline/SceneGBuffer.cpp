@@ -579,6 +579,8 @@ void CSceneGBufferStage::ExecuteMinimumZpass()
 	passFlags |= CSceneRenderPass::ePassFlags_ReverseDepth;
 	m_depthPrepass.SetFlags(passFlags | CSceneRenderPass::ePassFlags_RenderNearest);
 
+	auto& RESTRICT_REFERENCE commandList = GetDeviceObjectFactory().GetCoreCommandList();
+	m_depthPrepass.PrepareRenderPassForUse(commandList);
 	{
 		rendItemDrawer.InitDrawSubmission();
 
