@@ -3665,9 +3665,11 @@ bool CD3D9Renderer::RT_ScreenShot(const char* filename, CRenderDisplayContext* p
 	iLog->LogWithType(ILog::eInputResponse, "Screenshot: %s", path);
 	gEnv->pConsole->ExecuteString("goto");  // output position and angle, can be used with "goto" command from console
 
+#if defined(ENABLE_PROFILING_CODE)
 	iLog->LogWithType(ILog::eInputResponse, " ");
 	iLog->LogWithType(ILog::eInputResponse, "$5Drawcalls: %d", SRenderStatistics::Write().GetNumberOfDrawCalls());
 	iLog->LogWithType(ILog::eInputResponse, "$5FPS: %.1f (%.1f ms)", gEnv->pTimer->GetFrameRate(), gEnv->pTimer->GetFrameTime() * 1000.0f);
+#endif
 
 	int nPolygons, nShadowVolPolys;
 	GetPolyCount(nPolygons, nShadowVolPolys);
