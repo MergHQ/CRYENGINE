@@ -355,6 +355,9 @@ bool CSceneForwardStage::CreatePipelineState(const SGraphicsPipelineStateDescrip
 	psoDesc.m_pResourceLayout = pSceneRenderPass->GetResourceLayout();
 	psoDesc.m_pRenderPass     = pSceneRenderPass->GetRenderPass();
 
+	if (!psoDesc.m_pResourceLayout || !psoDesc.m_pRenderPass)
+		return false;
+
 	outPSO = GetDeviceObjectFactory().CreateGraphicsPSO(psoDesc);
 	return outPSO != nullptr;
 }
