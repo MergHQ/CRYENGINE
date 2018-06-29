@@ -65,7 +65,7 @@ public:
 	// ~IOpenVRDevice
 
 	// ISystemEventListener
-	virtual void OnSystemEvent(ESystemEvent event, UINT_PTR wparam, UINT_PTR lparam);
+    virtual void OnSystemEvent(ESystemEvent event, UINT_PTR wparam, UINT_PTR lparam) override;
 	// ~ISystemEventListener
 
 	// IHmdEventListener

@@ -40,9 +40,7 @@ if(NOT ANDROID) # Unit test is disabled for Android until fully supported
 endif()
 
 #Plugins
-option(PLUGIN_FPSPLUGIN "Frames per second sample plugin" OFF)
 if(WIN32 OR WIN64)
-	option(PLUGIN_USERANALYTICS "Enable User Analytics" ON)
 	
 	if(EXISTS "${SDK_DIR}/OculusSDK")
 		option(PLUGIN_VR_OCULUS "Oculus support" ON)
@@ -50,25 +48,27 @@ if(WIN32 OR WIN64)
 		option(PLUGIN_VR_OCULUS "Oculus support" OFF)
 	endif()
 
+	option(OPTION_CRYMONO "C# support" OFF)
+
+	if (OPTION_CRYMONO)
+		option(OPTION_CRYMONO_SWIG "Expose C++ API to C# with SWIG" ON)
+	endif()
 	if(EXISTS "${SDK_DIR}/OSVR")
 		option(PLUGIN_VR_OSVR "OSVR support" ON)
 	else()
 		option(PLUGIN_VR_OSVR "OSVR support" OFF)
 	endif()
 
+	option(OPTION_PHYSDBGR "Include standalone physics debugger in the build" OFF)
+endif()
+
+if(WIN32 OR WIN64 OR LINUX)
+	option(PLUGIN_USERANALYTICS "Enable User Analytics" ON)
 	if(EXISTS "${SDK_DIR}/OpenVR")
 		option(PLUGIN_VR_OPENVR "OpenVR support" ON)
 	else()
 		option(PLUGIN_VR_OPENVR "OpenVR support" OFF)
 	endif()
-
-	option(OPTION_CRYMONO "C# support" OFF)
-	
-	if (OPTION_CRYMONO)
-		option(OPTION_CRYMONO_SWIG "Expose C++ API to C# with SWIG" ON)
-	endif()
-	
-	option(OPTION_PHYSDBGR "Include standalone physics debugger in the build" OFF)
 endif()
 
 option(OPTION_UNSIGNED_PAKS_IN_RELEASE "Allow unsigned PAK files to be used for release builds" ON)
@@ -433,7 +433,7 @@ if (OPTION_ENGINE)
 		add_subdirectory("Code/Libs/oculus")
 	endif()
 	
-	if (WIN32)
+	if (WIN32 OR WIN64 OR LINUX)
 		add_subdirectory ("Code/Libs/curl")
 	endif ()
 	add_subdirectory ("Code/Libs/freetype")
