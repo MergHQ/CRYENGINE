@@ -1,14 +1,13 @@
+// Copyright 2001-2018 Crytek GmbH / Crytek Group. All rights reserved.
+
 #pragma once
 
-#include "IPlatformUser.h"
 #include "IPlatformLobby.h"
 
 namespace Cry
 {
 	namespace GamePlatform
 	{
-		struct IUserLobby;
-
 		//! Interface to access the platform's matchmaking functionality, allowing finding lobbies with servers based on certain properties
 		struct IMatchmaking
 		{
@@ -22,7 +21,7 @@ namespace Cry
 				//! Called when the local user joins a lobby
 				virtual void OnJoinedLobby(IUserLobby* pLobby) = 0;
 				//! Called if the local user fails to join a specific lobby
-				virtual void OnLobbyJoinFailed(IUserLobby::Identifier lobbyId) = 0;
+				virtual void OnLobbyJoinFailed(const LobbyIdentifier& lobbyId) = 0;
 			};
 
 			virtual ~IMatchmaking() {}
@@ -36,9 +35,10 @@ namespace Cry
 			//! \param maxMemberCount Maximum amount of users that can join the lobby, including the local user
 			virtual void CreateLobby(IUserLobby::EVisbility visibility, int maxMemberCount) = 0;
 			//! Retrieves the lobby that the specified user is in, if any
-			virtual IUserLobby* GetUserLobby(IUser::Identifier user) const = 0;
+			virtual IUserLobby* GetUserLobby(const AccountIdentifier& user) const = 0;
 			//! Retrieves a lobby by its unique platform-specific identifier
-			virtual IUserLobby* GetLobbyById(IUserLobby::Identifier id) = 0;
+			virtual IUserLobby* GetLobbyById(const LobbyIdentifier& id) = 0;
+
 			//! Adds a filter to be applied to the next call to QueryLobbies, querying lobbies that match the specified comparison
 			//! The keys are set using IUserLobby::SetData
 			//! \param szKey The key of the filter to match
@@ -48,9 +48,9 @@ namespace Cry
 			//! Queries available lobbies, triggering matchmaking listeners for each result.
 			virtual void QueryLobbies() = 0;
 			//! Retrieves a queried lobby found via QueryLobbies (and notified via IListener::OnLobbyQueryComplete).
-			virtual IUserLobby::Identifier GetQueriedLobbyIdByIndex(int index) const = 0;
+			virtual LobbyIdentifier GetQueriedLobbyIdByIndex(int index) const = 0;
 			//! Joins a specific lobby as the local user
-			virtual void JoinLobby(IUserLobby::Identifier lobbyId) = 0;
+			virtual void JoinLobby(const LobbyIdentifier& lobbyId) = 0;
 		};
 	}
 }

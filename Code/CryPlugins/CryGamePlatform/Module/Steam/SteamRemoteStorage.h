@@ -1,6 +1,9 @@
+// Copyright 2001-2018 Crytek GmbH / Crytek Group. All rights reserved.
+
 #pragma once
 
 #include "IPlatformRemoteStorage.h"
+#include "SteamTypes.h"
 
 namespace Cry
 {
@@ -12,7 +15,7 @@ namespace Cry
 				: public IRemoteStorage
 			{
 			public:
-				CRemoteStorage();
+				CRemoteStorage(CService& steamService);
 				virtual ~CRemoteStorage() = default;
 
 				// IRemoteStorage
@@ -25,6 +28,7 @@ namespace Cry
 				// ~IRemoteStorage
 
 			protected:
+				CService& m_service;
 				std::unique_ptr<IUserGeneratedContentManager> m_pUGCManager;
 			};
 		}

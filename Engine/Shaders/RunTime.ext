@@ -103,6 +103,7 @@ Property
   Precache = ShadowGenVS
   Precache = ShadowGenPS
   Precache = DebugPassPS
+  Precache = GlassPS
 }
 
 Property

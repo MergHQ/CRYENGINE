@@ -133,7 +133,11 @@ bool CSceneGBufferStage::CreatePipelineState(const SGraphicsPipelineStateDescrip
 	{
 		psoDesc.m_RenderState = ReverseDepthHelper::ConvertDepthFunc(psoDesc.m_RenderState);
 	}
+
 	psoDesc.m_pRenderPass = pSceneRenderPass->GetRenderPass();
+
+	if (!psoDesc.m_pRenderPass)
+		return false;
 
 	outPSO = GetDeviceObjectFactory().CreateGraphicsPSO(psoDesc);
 	return outPSO != nullptr;
@@ -219,68 +223,80 @@ bool CSceneGBufferStage::SetAndBuildPerPassResources(bool bOnInit)
 
 void CSceneGBufferStage::Update()
 {
+	CRenderView* pRenderView = RenderView();
+
+	CStandardGraphicsPipeline* p = static_cast<CStandardGraphicsPipeline*>(&GetGraphicsPipeline());
+	EShaderRenderingFlags flags = (EShaderRenderingFlags)p->GetRenderFlags();
+	const bool isForwardMinimal = (flags & SHDF_FORWARD_MINIMAL) != 0;
+
 	SetAndBuildPerPassResources(false);
 
-	CTexture* pZTexture = RenderView()->GetDepthTarget();
+	{
+		CTexture* pZTexture = pRenderView->GetDepthTarget();
 
-	// Depth pre-pass
-	m_depthPrepass.SetRenderTargets(
-		// Depth
-		pZTexture,
-		// Color 0
-		NULL
-	);
+		// Depth pre-pass
+		m_depthPrepass.SetRenderTargets(
+			// Depth
+			pZTexture,
+			// Color 0
+			NULL
+		);
+	}
 
-	CTexture* pSceneSpecular = CRendererResources::s_ptexSceneSpecular;
+	if (!isForwardMinimal)
+	{
+		CTexture* pZTexture = pRenderView->GetDepthTarget();
+		CTexture* pSceneSpecular = CRendererResources::s_ptexSceneSpecular;
 #if defined(DURANGO_USE_ESRAM)
-	pSceneSpecular = CRendererResources::s_ptexSceneSpecularESRAM;
+		pSceneSpecular = CRendererResources::s_ptexSceneSpecularESRAM;
 #endif
 
-	// Opaque Pass
-	m_opaquePass.SetRenderTargets(
-		// Depth
-		pZTexture,
-		// Color 0
-		CRendererResources::s_ptexSceneNormalsMap,
-		// Color 1
-		CRendererResources::s_ptexSceneDiffuse,
-		// Color 2
-		pSceneSpecular
-	);
+		// Opaque Pass
+		m_opaquePass.SetRenderTargets(
+			// Depth
+			pZTexture,
+			// Color 0
+			CRendererResources::s_ptexSceneNormalsMap,
+			// Color 1
+			CRendererResources::s_ptexSceneDiffuse,
+			// Color 2
+			pSceneSpecular
+		);
 
-	// Opaque with Velocity Pass
-	m_opaqueVelocityPass.SetRenderTargets(
-		// Depth
-		pZTexture,
-		// Color 0
-		CRendererResources::s_ptexSceneNormalsMap,
-		// Color 1
-		CRendererResources::s_ptexSceneDiffuse,
-		// Color 2
-		pSceneSpecular,
-		// Color 3
-		CRendererResources::s_ptexVelocityObjects[0]
-	);
+		// Opaque with Velocity Pass
+		m_opaqueVelocityPass.SetRenderTargets(
+			// Depth
+			pZTexture,
+			// Color 0
+			CRendererResources::s_ptexSceneNormalsMap,
+			// Color 1
+			CRendererResources::s_ptexSceneDiffuse,
+			// Color 2
+			pSceneSpecular,
+			// Color 3
+			CRendererResources::s_ptexVelocityObjects[0]
+		);
 
-	// Overlay Pass
-	m_overlayPass.SetRenderTargets(
-		// Depth
-		pZTexture,
-		// Color 0
-		CRendererResources::s_ptexSceneNormalsMap,
-		// Color 1
-		CRendererResources::s_ptexSceneDiffuse,
-		// Color 2
-		pSceneSpecular
-	);
+		// Overlay Pass
+		m_overlayPass.SetRenderTargets(
+			// Depth
+			pZTexture,
+			// Color 0
+			CRendererResources::s_ptexSceneNormalsMap,
+			// Color 1
+			CRendererResources::s_ptexSceneDiffuse,
+			// Color 2
+			pSceneSpecular
+		);
 
-	// Micro GBuffer Pass
-	m_microGBufferPass.SetRenderTargets(
-		// Depth
-		pZTexture,
-		// Color 0
-		CRendererResources::s_ptexSceneNormalsMap
-	);
+		// Micro GBuffer Pass
+		m_microGBufferPass.SetRenderTargets(
+			// Depth
+			pZTexture,
+			// Color 0
+			CRendererResources::s_ptexSceneNormalsMap
+		);
+	}
 }
 
 void CSceneGBufferStage::Prepare(bool bPostLinearize)
@@ -579,6 +595,8 @@ void CSceneGBufferStage::ExecuteMinimumZpass()
 	passFlags |= CSceneRenderPass::ePassFlags_ReverseDepth;
 	m_depthPrepass.SetFlags(passFlags | CSceneRenderPass::ePassFlags_RenderNearest);
 
+	auto& RESTRICT_REFERENCE commandList = GetDeviceObjectFactory().GetCoreCommandList();
+	m_depthPrepass.PrepareRenderPassForUse(commandList);
 	{
 		rendItemDrawer.InitDrawSubmission();
 

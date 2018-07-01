@@ -41,8 +41,9 @@ public:
 
 	bool IsStageActive(EShaderRenderingFlags flags) const final
 	{
-		if (flags & EShaderRenderingFlags::SHDF_FORWARD_MINIMAL)
-			return false;
+		// TODO: GBuffer shouldn't be responsible for ZPrePass
+	//	if (flags & EShaderRenderingFlags::SHDF_FORWARD_MINIMAL)
+	//		return false;
 
 		return true;
 	}

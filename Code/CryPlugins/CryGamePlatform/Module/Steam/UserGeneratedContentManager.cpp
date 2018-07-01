@@ -1,9 +1,10 @@
+// Copyright 2001-2018 Crytek GmbH / Crytek Group. All rights reserved.
+
 #include "StdAfx.h"
 
 #include "UserGeneratedContentManager.h"
-
-#include "SteamPlatform.h"
 #include "UserGeneratedContent.h"
+#include "SteamService.h"
 
 namespace Cry
 {
@@ -11,6 +12,11 @@ namespace Cry
 	{
 		namespace Steam
 		{
+			CUserGeneratedContentManager::CUserGeneratedContentManager(CService& steamService)
+				: m_service(steamService)
+			{
+			}
+
 			void CUserGeneratedContentManager::Create(unsigned int appId, IUserGeneratedContent::EType type)
 			{
 				m_lastUsedId = appId;
@@ -41,23 +47,23 @@ namespace Cry
 					SteamAPICall_t result = pSteamUGC->CreateItem(appId, (EWorkshopFileType)type);
 					m_callResultContentCreated.Set(result, this, &CUserGeneratedContentManager::OnContentCreated);
 
-					CPlugin::GetInstance()->SetAwaitingCallback(1);
+					m_service.SetAwaitingCallback(1);
 				}
 			}
 
 			void CUserGeneratedContentManager::OnContentCreated(CreateItemResult_t* pResult, bool bIOError)
 			{
-				CPlugin::GetInstance()->SetAwaitingCallback(-1);
+				m_service.SetAwaitingCallback(-1);
 
 				if (pResult->m_eResult == k_EResultOK)
 				{
 					if (pResult->m_bUserNeedsToAcceptWorkshopLegalAgreement)
 					{
-						CPlugin::GetInstance()->OpenBrowser("http://steamcommunity.com/sharedfiles/workshoplegalagreement");
+						m_service.OpenBrowser("http://steamcommunity.com/sharedfiles/workshoplegalagreement");
 						CrySleep(10000);
 					}
 
-					m_content.emplace_back(stl::make_unique<CUserGeneratedContent>(m_lastUsedId, pResult->m_nPublishedFileId));
+					m_content.emplace_back(stl::make_unique<CUserGeneratedContent>(m_service, m_lastUsedId, pResult->m_nPublishedFileId));
 					IUserGeneratedContent* pContent = m_content.back().get();
 
 					if (m_pWaitingParameters != nullptr)

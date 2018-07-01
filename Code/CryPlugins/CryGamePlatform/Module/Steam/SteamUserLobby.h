@@ -1,8 +1,9 @@
+// Copyright 2001-2018 Crytek GmbH / Crytek Group. All rights reserved.
+
 #pragma once
 
 #include "IPlatformLobby.h"
-
-#include <CrySystem/ISystem.h>
+#include "SteamTypes.h"
 
 namespace Cry
 {
@@ -15,7 +16,7 @@ namespace Cry
 				, public ISystemEventListener
 			{
 			public:
-				CUserLobby(IUserLobby::Identifier lobbyId);
+				CUserLobby(CService& steamService, const LobbyIdentifier& lobbyId);
 				virtual ~CUserLobby();
 
 				// IUserLobby
@@ -26,20 +27,22 @@ namespace Cry
 
 				virtual int GetMemberLimit() const override;
 				virtual int GetNumMembers() const override;
-				virtual IUser::Identifier GetMemberAtIndex(int index) const override;
+				virtual AccountIdentifier GetMemberAtIndex(int index) const override;
 
 				virtual bool IsInServer() const override { return m_serverIP != 0; }
 				virtual void Leave() override;
 
-				virtual IUser::Identifier GetOwnerId() const override;
-				virtual IUserLobby::Identifier GetIdentifier() const override { return m_steamLobbyId; }
+				virtual AccountIdentifier GetOwnerId() const override;
+				virtual LobbyIdentifier GetIdentifier() const override { return CreateLobbyIdentifier(m_steamLobbyId); }
 
 				virtual bool SendChatMessage(const char* message) const override;
-				
+
 				virtual void ShowInviteDialog() const override;
 
 				virtual bool SetData(const char* key, const char* value) override;
 				virtual const char* GetData(const char* key) const override;
+				virtual const char* GetMemberData(const AccountIdentifier& userId, const char* szKey) override;
+				virtual void SetMemberData(const char* szKey, const char* szValue) override;
 				// ~IUserLobby
 
 				// ISystemEventListener
@@ -56,8 +59,10 @@ namespace Cry
 
 				STEAM_CALLBACK(CUserLobby, OnLobbyGameCreated, LobbyGameCreated_t, m_callbackGameCreated);
 
+				CService& m_service;
+
 				std::vector<IListener*> m_listeners;
-				IUserLobby::Identifier m_steamLobbyId;
+				CSteamID m_steamLobbyId;
 
 				uint32 m_serverIP;
 				uint16 m_serverPort;

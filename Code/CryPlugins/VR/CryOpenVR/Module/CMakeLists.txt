@@ -56,4 +56,40 @@ if(WIN32 OR WIN64 OR APPLE OR LINUX)
 	if(LINUX)
 		target_compile_options(${THIS_PROJECT} PRIVATE -fPIC)
 	endif()
+	if(CMAKE_CXX_COMPILER_ID MATCHES "[Cc]lang")
+		target_compile_options(${THIS_PROJECT} PRIVATE
+			-Wno-unused-function
+			-Wno-unused-private-field
+			-Wno-unused-variable
+			-Wno-unused-value
+			-Wno-unknown-pragmas
+			-Wno-format
+			-Wno-reorder
+			-Wno-switch
+		)
+    elseif(CMAKE_CXX_COMPILER_ID STREQUAL "GNU")
+        target_compile_options(${THIS_PROJECT} PRIVATE
+            -Wno-unused-function
+            -Wno-unused-value
+            -Wno-unused-variable
+            -Wno-aligned-new
+            -Wno-int-in-bool-context
+            -Wno-invalid-offsetof
+            -Wno-comment
+            -Wno-sign-compare
+            -Wno-unused-but-set-variable
+            -Wno-maybe-uninitialized
+            -Wno-misleading-indentation
+            -Wno-unused-result
+            -Wno-unknown-pragmas
+            -Wno-multichar
+            -Wno-strict-aliasing
+            -Wno-char-subscripts
+            -Wno-conversion-null
+            -Wno-reorder
+            -Wno-parentheses
+            -Wno-format
+            -Wno-switch
+        )
+    endif()
 endif()

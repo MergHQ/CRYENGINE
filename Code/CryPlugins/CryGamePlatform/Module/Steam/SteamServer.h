@@ -1,6 +1,9 @@
+// Copyright 2001-2018 Crytek GmbH / Crytek Group. All rights reserved.
+
 #pragma once
 
 #include "IPlatformServer.h"
+#include "SteamTypes.h"
 
 namespace Cry
 {
@@ -12,7 +15,7 @@ namespace Cry
 				: public IServer
 			{
 			public:
-				CServer(bool bLocal);
+				explicit CServer(bool bLocal);
 				virtual ~CServer();
 
 				// IServer
@@ -25,8 +28,8 @@ namespace Cry
 
 				virtual bool IsLocal() const override { return m_bLocal; }
 
-				virtual bool AuthenticateUser(uint32 clientIP, char* authData, int authDataLength, IUser::Identifier &userId) override;
-				virtual void SendUserDisconnect(IUser::Identifier userId) override;
+				virtual bool AuthenticateUser(uint32 clientIP, char* authData, int authDataLength, AccountIdentifier &userId) override;
+				virtual void SendUserDisconnect(const AccountIdentifier& userId) override;
 				// ~IServer
 
 			protected:

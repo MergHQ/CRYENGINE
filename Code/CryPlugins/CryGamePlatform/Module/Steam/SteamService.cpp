@@ -1,29 +1,16 @@
+// Copyright 2001-2018 Crytek GmbH / Crytek Group. All rights reserved.
+
 #include "StdAfx.h"
 
-#include <steam/steam_api.h>
-#include <steam/steam_gameserver.h>
+#include "SteamService.h"
+#include "IGamePlatform.h"
 
-#include <steam/isteamuser.h>
-
-#include "SteamPlatform.h"
-
-#include "SteamStatistics.h"
-#include "SteamLeaderboards.h"
-#include "SteamRemoteStorage.h"
-#include "SteamMatchmaking.h"
-
-#include "SteamUser.h"
-#include "SteamServer.h"
-
-#include "SteamNetworking.h"
-#include "SteamUserLobby.h"
+#include "SteamUserIdentifier.h"
 
 #include <CrySystem/ICmdLine.h>
-#include <CryInput/IInput.h>
 
 // Included only once per DLL module.
 #include <CryCore/Platform/platform_impl.inl>
-#include <CrySystem/ISystem.h>
 
 namespace Cry
 {
@@ -31,95 +18,6 @@ namespace Cry
 	{
 		namespace Steam
 		{
-
-			// Bug Description: (Steamworks 1.44)
-			//
-			// Note: While the Steam Overlay is open when the application is in "fullscreen" mode, 
-			// the Win32 ::ShowCursor() count will be increased by 1 each time the game windows gets focus again after loosing it
-			//
-			// Example scenario:
-			// User opens Steam Overlay (Alt+Shift) when in fullscreen mode
-			// User then loses focus of the game window e.g. Alt+Tab
-			// User gains back focus of the game window
-			// User closes the Steam Overlay
-			// The Win32 ::ShowCursor() count will have increased by 1
-
-			class BugFix_SteamOverlay_CursorCount : public IPlugin::IListener, ISystemEventListener
-			{
-			public:
-				BugFix_SteamOverlay_CursorCount(CPlugin* steamPlugin)
-					: m_overlayIsActive(false)
-					, m_fixCursorBugCount(0)
-				{
-					if (gEnv->pSystem)
-					{
-						gEnv->pSystem->GetISystemEventDispatcher()->RegisterListener(this, "SteamPlatform");
-					}
-
-					steamPlugin->AddListener(*this);
-				}
-
-				~BugFix_SteamOverlay_CursorCount()
-				{
-					if (gEnv->pSystem)
-					{
-						gEnv->pSystem->GetISystemEventDispatcher()->RemoveListener(this);
-					}
-				}
-
-				bool IsFullscreen()
-				{
-					CRY_ASSERT(gEnv);
-					CRY_ASSERT(gEnv->pRenderer || gEnv->IsDedicated());
-
-					bool bFullScreen = false;
-					if (gEnv->pRenderer)
-					{
-						gEnv->pRenderer->EF_Query(EFQ_Fullscreen, bFullScreen);
-					}
-					return bFullScreen;
-				}
-
-				virtual void OnOverlayActivated(bool active)
-				{
-					m_overlayIsActive = active;
-
-					if (!active && m_fixCursorBugCount)
-					{
-						// Force decrement the mouse cursor depending how often we lost focus while the steam overlay was active in fullscreen
-						for (int i = 0; i < m_fixCursorBugCount; ++i)
-						{
-							gEnv->pInput->ShowCursor(false);
-							CryLogAlways("GamePlatform: Applied Steam cursor bug fix");
-						}
-						m_fixCursorBugCount = 0;
-					}
-				}
-
-				virtual void OnSystemEvent(ESystemEvent event, UINT_PTR wparam, UINT_PTR lparam)
-				{
-					if (event == ESYSTEM_EVENT_CHANGE_FOCUS || event == ESYSTEM_EVENT_GAMEWINDOW_ACTIVATE)
-					{
-						if (m_overlayIsActive)
-						{
-							const bool isInFocus = (wparam != 0);
-							const bool isFullscreen = IsFullscreen();
-							if (isFullscreen && !isInFocus)
-							{
-								// Increment counter each time we lose focus in fullscreen mode while the overlay is open
-								++m_fixCursorBugCount;
-							}
-						}
-					}
-				}
-
-			private:
-				bool m_overlayIsActive;
-				int  m_fixCursorBugCount;
-			};
-
-			CPlugin* CPlugin::s_pInstance = nullptr;
-
 			//-----------------------------------------------------------------------------
 			// Purpose: callback hook for debug text emitted from the Steam API
 			//-----------------------------------------------------------------------------
@@ -130,14 +28,13 @@ namespace Cry
 				CryWarning(VALIDATOR_MODULE_SYSTEM, VALIDATOR_WARNING, "[Steam] %s", pchDebugText);
 			}
 
-			CPlugin::CPlugin()
-				: m_callbackGameOverlayActivated(this, &CPlugin::OnGameOverlayActivated)
+			CService::CService()
+				: m_callbackGameOverlayActivated(this, &CService::OnGameOverlayActivated)
+				, m_onAvatarImageLoadedCallback(this, &CService::OnAvatarImageLoaded)
 				, m_pServer(nullptr)
 				, m_awaitingCallbacks(0)
 				, m_authTicketHandle(k_HAuthTicketInvalid)
 			{
-				s_pInstance = this;
-
 				// Map Steam API language codes to engine
 				// Full list of Steam API language codes can be found here: https://partner.steamgames.com/doc/store/localization
 				m_translationMappings["arabic"] = ILocalizationManager::ePILID_Arabic;
@@ -162,7 +59,17 @@ namespace Cry
 				m_translationMappings["turkish"] = ILocalizationManager::ePILID_Turkish;
 			}
 
-			bool CPlugin::Initialize(SSystemGlobalEnvironment& env, const SSystemInitParams& initParams)
+			CService::~CService()
+			{
+				for (IListener* pListener : m_listeners)
+				{
+					pListener->OnShutdown(SteamServiceID);
+				}
+
+				m_listeners.clear();
+			}
+
+			bool CService::Initialize(SSystemGlobalEnvironment& env, const SSystemInitParams& initParams)
 			{
 				if (env.IsEditor())
 				{
@@ -183,7 +90,7 @@ namespace Cry
 				fclose(pSteamAppID);
 #endif // !defined(RELEASE)
 
-				m_isInitialized = SteamAPI_Init();
+				const bool isInitialized = SteamAPI_Init();
 
 #if defined(RELEASE)
 				// Validate that the application was started through Steam,
@@ -200,7 +107,7 @@ namespace Cry
 
 				gEnv->pConsole->UnregisterVariable("steam_appId");
 
-				if (!m_isInitialized)
+				if (!isInitialized)
 				{
 					CryWarning(VALIDATOR_MODULE_SYSTEM, VALIDATOR_ERROR, "[Steam] SteamApi_Init failed");
 
@@ -213,17 +120,15 @@ namespace Cry
 #endif
 				}
 
-				EnableUpdate(IPlugin::EUpdateStep::MainUpdate, true);
+				EnableUpdate(Cry::IEnginePlugin::EUpdateStep::MainUpdate, true);
 
-				m_pStatistics = std::make_shared<CStatistics>();
-				m_pSteamLeaderboards = std::make_shared<CLeaderboards>();
+				m_pStatistics = stl::make_unique<CStatistics>(*this);
+				m_pSteamLeaderboards = stl::make_unique<CLeaderboards>(*this);
 
-				m_pMatchmaking = std::make_shared<CMatchmaking>();
-				m_pNetworking = std::make_shared<CNetworking>();
+				m_pMatchmaking = stl::make_unique<CMatchmaking>(*this);
+				m_pNetworking = stl::make_unique<CNetworking>();
 
-				m_pRemoteStorage = std::make_shared<CRemoteStorage>();
-
-				m_steamOverlayFix = std::make_shared<BugFix_SteamOverlay_CursorCount>(this);
+				m_pRemoteStorage = stl::make_unique<CRemoteStorage>(*this);
 
 				ICmdLine* pCmdLine = gEnv->pSystem->GetICmdLine();
 
@@ -241,6 +146,11 @@ namespace Cry
 
 				CryLogAlways("[Steam] Successfully initialized Steam API, running build id %i", pSteamApps->GetAppBuildId());
 
+				if (Cry::GamePlatform::IPlugin* pPlugin = gEnv->pSystem->GetIPluginManager()->QueryPlugin<Cry::GamePlatform::IPlugin>())
+				{
+					pPlugin->RegisterMainService(*this);
+				}
+
 				// Check if user requested to join a lobby right away
 				if (const ICmdLineArg* pCmdArg = pCmdLine->FindArg(eCLAT_Post, "connect_lobby"))
 				{
@@ -248,7 +158,7 @@ namespace Cry
 					CSteamID lobbyId = CSteamID((uint64)atoll(pCmdArg->GetValue()));
 					if (lobbyId.IsValid())
 					{
-						m_pMatchmaking->JoinLobby(lobbyId.ConvertToUint64());
+						m_pMatchmaking->JoinLobby(CreateLobbyIdentifier(lobbyId));
 					}
 				}
 
@@ -293,10 +203,11 @@ namespace Cry
 						}
 					}
 				}
+
 				return true;
 			}
 
-			void CPlugin::MainUpdate(float frameTime)
+			void CService::MainUpdate(float frameTime)
 			{
 				CRY_PROFILE_FUNCTION(PROFILE_SYSTEM);
 
@@ -306,7 +217,12 @@ namespace Cry
 				}
 			}
 
-			int CPlugin::GetBuildIdentifier() const
+			ServiceIdentifier CService::GetServiceIdentifier() const
+			{
+				return SteamServiceID;
+			}
+
+			int CService::GetBuildIdentifier() const
 			{
 				if (ISteamApps* pSteamApps = SteamApps())
 				{
@@ -315,35 +231,38 @@ namespace Cry
 				return 0;
 			}
 
-			IUser* CPlugin::GetLocalClient()
+			CAccount* CService::GetLocalAccount() const
 			{
 				if (ISteamUser* pSteamUser = SteamUser())
 				{
-					return TryGetUser(pSteamUser->GetSteamID());
+					return TryGetAccount(pSteamUser->GetSteamID());
 				}
 
 				return nullptr;
 			}
-
-			IUser* CPlugin::GetUserById(IUser::Identifier id)
-			{
-				return TryGetUser(id);
-			}
-
-			void CPlugin::OnGameOverlayActivated(GameOverlayActivated_t* pData)
+			
+			void CService::OnGameOverlayActivated(GameOverlayActivated_t* pData)
 			{
 				// Upload statistics added during gameplay
 				m_pStatistics->Upload();
 
 				for (IListener* pListener : m_listeners)
 				{
-					pListener->OnOverlayActivated(pData->m_bActive != 0);
+					pListener->OnOverlayActivated(SteamServiceID, pData->m_bActive != 0);
 				}
 
 				m_awaitingCallbacks -= 1;
 			}
 
-			bool CPlugin::OwnsApplication(ApplicationIdentifier id) const
+			void CService::OnAvatarImageLoaded(AvatarImageLoaded_t* pCallback)
+			{
+				for (IListener* pListener : m_listeners)
+				{
+					pListener->OnAvatarImageLoaded(CreateAccountIdentifier(pCallback->m_steamID));
+				}
+			}
+
+			bool CService::OwnsApplication(ApplicationIdentifier id) const
 			{
 				if (ISteamApps* pSteamApps = SteamApps())
 				{
@@ -353,7 +272,7 @@ namespace Cry
 				return false;
 			}
 
-			ApplicationIdentifier CPlugin::GetApplicationIdentifier() const
+			ApplicationIdentifier CService::GetApplicationIdentifier() const
 			{
 				if (ISteamUtils* pSteamUtils = SteamUtils())
 				{
@@ -363,55 +282,57 @@ namespace Cry
 				return 0;
 			}
 
-			bool CPlugin::OpenDialog(EDialog dialog) const
+			bool CService::OpenDialog(EDialog dialog) const
 			{
 				switch (dialog)
 				{
 				case EDialog::Friends:
-					return OpenDialog("friends");
+					return OpenDialog("Friends");
 				case EDialog::Community:
-					return OpenDialog("community");
+					return OpenDialog("Community");
 				case EDialog::Players:
-					return OpenDialog("players");
+					return OpenDialog("Players");
 				case EDialog::Settings:
-					return OpenDialog("settings");
+					return OpenDialog("Settings");
 				case EDialog::Group:
-					return OpenDialog("officialgamegroup");
+					return OpenDialog("OfficialGameGroup");
 				case EDialog::Achievements:
-					return OpenDialog("achievements");
+					return OpenDialog("Achievements");
 				}
 
 				return false;
 			}
 
-			bool CPlugin::OpenDialogWithTargetUser(EUserTargetedDialog dialog, IUser::Identifier targetUserId) const
+			bool CService::OpenDialogWithTargetUser(EUserTargetedDialog dialog, const AccountIdentifier& accountId) const
 			{
+				const CSteamID steamID = ExtractSteamID(accountId);
+
 				switch (dialog)
 				{
 				case EUserTargetedDialog::UserInfo:
-					return OpenDialogWithTargetUser("steamid", targetUserId);
+					return OpenDialogWithTargetUser("steamid", accountId);
 				case EUserTargetedDialog::FriendAdd:
-					return OpenDialogWithTargetUser("friendadd", targetUserId);
+					return OpenDialogWithTargetUser("friendadd", accountId);
 				case EUserTargetedDialog::FriendRemove:
-					return OpenDialogWithTargetUser("friendremove", targetUserId);
+					return OpenDialogWithTargetUser("friendremove", accountId);
 				case EUserTargetedDialog::FriendRequestAccept:
-					return OpenDialogWithTargetUser("friendrequestaccept", targetUserId);
+					return OpenDialogWithTargetUser("friendrequestaccept", accountId);
 				case EUserTargetedDialog::FriendRequestIgnore:
-					return OpenDialogWithTargetUser("friendrequestignore", targetUserId);
+					return OpenDialogWithTargetUser("friendrequestignore", accountId);
 				case EUserTargetedDialog::Chat:
-					return OpenDialogWithTargetUser("chat", targetUserId);
+					return OpenDialogWithTargetUser("chat", accountId);
 				case EUserTargetedDialog::JoinTrade:
-					return OpenDialogWithTargetUser("jointrade", targetUserId);
+					return OpenDialogWithTargetUser("jointrade", accountId);
 				case EUserTargetedDialog::Stats:
-					return OpenDialogWithTargetUser("stats", targetUserId);
+					return OpenDialogWithTargetUser("stats", accountId);
 				case EUserTargetedDialog::Achievements:
-					return OpenDialogWithTargetUser("achievements", targetUserId);
+					return OpenDialogWithTargetUser("achievements", accountId);
 				}
 
 				return false;
 			}
 
-			bool CPlugin::OpenDialog(const char* szPage) const
+			bool CService::OpenDialog(const char* szPage) const
 			{
 				if (ISteamFriends* pSteamFriends = SteamFriends())
 				{
@@ -422,18 +343,19 @@ namespace Cry
 				return false;
 			}
 
-			bool CPlugin::OpenDialogWithTargetUser(const char* szPage, IUser::Identifier targetUserId) const
+			bool CService::OpenDialogWithTargetUser(const char* szPage, const AccountIdentifier& accountId) const
 			{
 				if (ISteamFriends* pSteamFriends = SteamFriends())
 				{
-					pSteamFriends->ActivateGameOverlayToUser(szPage, targetUserId);
+					const CSteamID steamID = ExtractSteamID(accountId);
+					pSteamFriends->ActivateGameOverlayToUser(szPage, steamID);
 					return true;
 				}
 
 				return false;
 			}
 
-			bool CPlugin::OpenBrowser(const char* szURL) const
+			bool CService::OpenBrowser(const char* szURL) const
 			{
 				if (ISteamFriends* pSteamFriends = SteamFriends())
 				{
@@ -444,8 +366,7 @@ namespace Cry
 				return false;
 			}
 
-
-			bool CPlugin::CanOpenPurchaseOverlay() const
+			bool CService::CanOpenPurchaseOverlay() const
 			{
 				if (ISteamUtils* pSteamUtils = SteamUtils())
 				{
@@ -455,7 +376,7 @@ namespace Cry
 				return false;
 			}
 
-			const DynArray<IUser*>& CPlugin::GetFriends()
+			const DynArray<IAccount*>& CService::GetFriendAccounts() const
 			{
 				if (ISteamFriends* const pSteamFriends = SteamFriends())
 				{
@@ -466,28 +387,35 @@ namespace Cry
 					for (int i = 0; i < friendCount; ++i)
 					{
 						CSteamID friendId = pSteamFriends->GetFriendByIndex(i, friendFlags);
-						m_friends.push_back(TryGetUser(friendId));
+						m_friends.push_back(TryGetAccount(friendId));
 					}
 				}
 
 				return m_friends;
 			}
 
-			bool CPlugin::IsFriendWith(IUser::Identifier otherUserId) const
+			CAccount* CService::GetAccountById(const AccountIdentifier& accountId) const
 			{
-				if (auto* pSteamFriends = SteamFriends())
+				return TryGetAccount(accountId);
+			}
+			
+			bool CService::IsFriendWith(const AccountIdentifier& accountId) const
+			{
+				if (ISteamFriends* pSteamFriends = SteamFriends())
 				{
-					return pSteamFriends->HasFriend(otherUserId, k_EFriendFlagImmediate);
+					const CSteamID steamId = ExtractSteamID(accountId);
+					return pSteamFriends->HasFriend(steamId, k_EFriendFlagImmediate);
 				}
-
+			
 				return false;
 			}
 
-			EFriendRelationship CPlugin::GetFriendRelationship(IUser::Identifier otherUserId) const
+			EFriendRelationship CService::GetFriendRelationship(const AccountIdentifier& accountId) const
 			{
-				if (auto pSteamFriends = SteamFriends())
+				if (ISteamFriends* pSteamFriends = SteamFriends())
 				{
-					switch (pSteamFriends->GetFriendRelationship(otherUserId))
+					const CSteamID steamId = ExtractSteamID(accountId);
+					switch (pSteamFriends->GetFriendRelationship(steamId))
 					{
 					case k_EFriendRelationshipNone:
 						return EFriendRelationship::None;
@@ -511,41 +439,38 @@ namespace Cry
 
 				return EFriendRelationship::None;
 			}
-
-			ApplicationIdentifier CPlugin::GetAppId() const
-			{
-				if (ISteamUtils* pSteamUtils = SteamUtils())
-					return pSteamUtils->GetAppID();
-				return k_uAppIdInvalid;
-			}
-
-			IServer* CPlugin::CreateServer(bool bLocal)
+			
+			CServer* CService::CreateServer(bool bLocal)
 			{
 				if (m_pServer == nullptr)
 				{
-					m_pServer = std::make_shared<CServer>(bLocal);
+					m_pServer = stl::make_unique<CServer>(bLocal);
 				}
 
 				return m_pServer.get();
 			}
 
-			IUser* CPlugin::TryGetUser(CSteamID id)
+			CAccount* CService::TryGetAccount(CSteamID id) const
 			{
-				uint64 cleanId = id.ConvertToUint64();
-
-				for (const std::unique_ptr<IUser>& pUser : m_users)
+				for (const std::unique_ptr<CAccount>& pUser : m_accounts)
 				{
-					if (pUser->GetIdentifier() == cleanId)
+					if (pUser->GetSteamID() == id)
 					{
 						return pUser.get();
 					}
 				}
 
-				m_users.emplace_back(stl::make_unique<CUser>(id));
-				return m_users.back().get();
+				m_accounts.emplace_back(stl::make_unique<CAccount>(id));
+				return m_accounts.back().get();
 			}
 
-			bool CPlugin::GetAuthToken(string &tokenOut, int &issuerId)
+			CAccount* CService::TryGetAccount(const AccountIdentifier& accountId) const
+			{
+				const CSteamID steamId = ExtractSteamID(accountId);
+				return TryGetAccount(steamId);
+			}
+
+			bool CService::GetAuthToken(string &tokenOut, int &issuerId)
 			{
 				char rgchToken[2048];
 				uint32 unTokenLen = 0;
@@ -570,9 +495,18 @@ namespace Cry
 				return true;
 			}
 
-			CRYREGISTER_SINGLETON_CLASS(CPlugin)
+			bool CService::RequestUserInformation(const AccountIdentifier& accountId, UserInformationMask info)
+			{
+				if (ISteamFriends* pFriends = SteamFriends())
+				{
+					const bool requireNameOnly = info == eUIF_Name;
+					return pFriends->RequestUserInformation(ExtractSteamID(accountId), requireNameOnly);
+				}
+
+				return false;
+			}
+
+			CRYREGISTER_SINGLETON_CLASS(CService)
 		}
 	}
 }
-
-#include <CryCore/CrtDebugStats.h>

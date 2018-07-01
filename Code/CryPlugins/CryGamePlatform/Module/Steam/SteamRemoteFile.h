@@ -1,6 +1,9 @@
+// Copyright 2001-2018 Crytek GmbH / Crytek Group. All rights reserved.
+
 #pragma once
 
 #include "IPlatformRemoteStorage.h"
+#include "SteamTypes.h"
 
 namespace Cry
 {
@@ -12,7 +15,7 @@ namespace Cry
 				: public IRemoteFile
 			{
 			public:
-				CRemoteFile(const char* name);
+				CRemoteFile(CService& steamService, const char* name);
 				virtual ~CRemoteFile() = default;
 
 				// IRemoteFile
@@ -37,6 +40,8 @@ namespace Cry
 				CCallResult<CRemoteFile, RemoteStorageFileShareResult_t> m_callResultFileShared;
 
 			protected:
+				CService & m_service;
+
 				std::vector<IListener*> m_listeners;
 				string m_name;
 

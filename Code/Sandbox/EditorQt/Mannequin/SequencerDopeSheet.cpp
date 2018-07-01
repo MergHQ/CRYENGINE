@@ -304,6 +304,9 @@ void CSequencerDopeSheet::DrawKeys(const CSequencerTrack* track, CDC* dc, const 
 					case SEQUENCER_PARAM_TRANSITIONPROPS:
 						imgType = SEQBMP_PARAMS;
 						break;
+					case SEQUENCER_PARAM_FRAGMENTPROPS:
+						imgType = SEQBMP_PARAMS;
+						break;
 					}
 					;
 				}

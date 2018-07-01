@@ -1,6 +1,7 @@
+// Copyright 2001-2018 Crytek GmbH / Crytek Group. All rights reserved.
+
 #pragma once
 
-#include "IPlatformUser.h"
 #include "IPlatformServer.h"
 
 namespace Cry
@@ -10,9 +11,6 @@ namespace Cry
 		//! Represents a lobby containing users interested in a multiplayer match
 		struct IUserLobby
 		{
-			// Platform-specific identifier for a lobby
-			using Identifier = uint64;
-
 			//! Determines the visibility of the lobby to other users
 			enum class EVisbility
 			{
@@ -47,23 +45,25 @@ namespace Cry
 			struct IListener
 			{
 				//! Sent when a new player has entered the lobby
-				virtual void OnPlayerEntered(IUser::Identifier userId) = 0;
+				virtual void OnPlayerEntered(const AccountIdentifier& userId) = 0;
 				//! Sent when a player has left the lobby
-				virtual void OnPlayerLeft(IUser::Identifier userId) = 0;
+				virtual void OnPlayerLeft(const AccountIdentifier& userId) = 0;
 				//! Sent when a player disconnected
-				virtual void OnPlayerDisconnected(IUser::Identifier userId) = 0;
+				virtual void OnPlayerDisconnected(const AccountIdentifier& userId) = 0;
 				//! Sent when a player was kicked from the lobby
-				virtual void OnPlayerKicked(IUser::Identifier userId, IUser::Identifier moderatorId) = 0;
+				virtual void OnPlayerKicked(const AccountIdentifier& userId, const AccountIdentifier& moderatorId) = 0;
 				//! Sent when a player was banned from the lobby
-				virtual void OnPlayerBanned(IUser::Identifier userId, IUser::Identifier moderatorId) = 0;
+				virtual void OnPlayerBanned(const AccountIdentifier& userId, const AccountIdentifier& moderatorId) = 0;
 				//! Sent to the local player upon leaving the lobby
 				virtual void OnLeave() = 0;
 				//! Sent when a server / game session is started, expecting clients to connect
 				virtual void OnGameCreated(IServer::Identifier serverId, uint32 ipAddress, uint16 port, bool bLocal) = 0;
 				//! Sent when a chat message is received from another user
-				virtual void OnChatMessage(IUser::Identifier userId, const char* message) = 0;
+				virtual void OnChatMessage(const AccountIdentifier& userId, const char* message) = 0;
 				//! Sent when lobby metadata has changed
-				virtual void OnDataUpdate(IUser::Identifier userId) = 0;
+				virtual void OnLobbyDataUpdate(const LobbyIdentifier& lobbyId) = 0;
+				//! Sent when user-specific lobby metadata has changed
+				virtual void OnUserDataUpdate(const AccountIdentifier& userId) = 0;
 			};
 
 			virtual ~IUserLobby() {}
@@ -82,7 +82,7 @@ namespace Cry
 			//! Gets the current number of players in the lobby
 			virtual int GetNumMembers() const = 0;
 			//! Gets the specified user at the index, where max is GetNumMembers() - 1
-			virtual IUser::Identifier GetMemberAtIndex(int index) const = 0;
+			virtual AccountIdentifier GetMemberAtIndex(int index) const = 0;
 
 			//! Checks whether the lobby is currently connected to a server
 			virtual bool IsInServer() const = 0;
@@ -90,9 +90,9 @@ namespace Cry
 			virtual void Leave() = 0;
 
 			//! Gets the user identifier of the creator / owner of the lobby
-			virtual IUser::Identifier GetOwnerId() const = 0;
+			virtual AccountIdentifier GetOwnerId() const = 0;
 			//! Gets the unique platform-specific identifier of the lobby
-			virtual IUserLobby::Identifier GetIdentifier() const = 0;
+			virtual LobbyIdentifier GetIdentifier() const = 0;
 
 			//! Sends a chat message to other users in the lobby
 			virtual bool SendChatMessage(const char* szMessage) const = 0;
@@ -105,6 +105,10 @@ namespace Cry
 			virtual bool SetData(const char* szKey, const char* szValue) = 0;
 			//! Retrieves a specific value by key, set using SetData
 			virtual const char* GetData(const char* szKey) const = 0;
+			//! Retrieves per-user metadata for someone in this lobby
+			virtual const char* GetMemberData(const AccountIdentifier& userId, const char* szKey) = 0;
+			//! Sets local user's metadata
+			virtual void SetMemberData(const char* szKey, const char* szValue) = 0;
 		};
 	}
 }

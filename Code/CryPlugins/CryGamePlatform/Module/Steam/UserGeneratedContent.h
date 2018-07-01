@@ -1,8 +1,9 @@
+// Copyright 2001-2018 Crytek GmbH / Crytek Group. All rights reserved.
+
 #pragma once
 
 #include "IPlatformUserGeneratedContent.h"
-
-#include <steam/steam_api.h>
+#include "SteamTypes.h"
 
 namespace Cry
 {
@@ -14,7 +15,7 @@ namespace Cry
 				: public IUserGeneratedContent
 			{
 			public:
-				CUserGeneratedContent(ApplicationIdentifier appId, IUserGeneratedContent::Identifier id);
+				CUserGeneratedContent(CService& steamService, ApplicationIdentifier appId, IUserGeneratedContent::Identifier id);
 				virtual ~CUserGeneratedContent() = default;
 
 				// IUserGeneratedContent
@@ -33,6 +34,7 @@ namespace Cry
 				void StartPropertyUpdate();
 
 			protected:
+				CService& m_service;
 				ApplicationIdentifier m_appId;
 				IUserGeneratedContent::Identifier m_id;
 

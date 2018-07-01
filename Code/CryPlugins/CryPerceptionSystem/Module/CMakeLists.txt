@@ -39,7 +39,7 @@ PUBLIC
 )
 
 if(LINUX)
-        target_compile_options(${THIS_PROJECT} PRIVATE -fPIC)
+	target_compile_options(${THIS_PROJECT} PRIVATE -fPIC)
 endif()
 
 if (ORBIS OR CMAKE_CXX_COMPILER_ID STREQUAL "Clang")
