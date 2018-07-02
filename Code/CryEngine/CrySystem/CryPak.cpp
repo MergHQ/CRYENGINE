@@ -1243,6 +1243,7 @@ const char* CCryPak::AdjustFileNameInternal(const char* src, char* dst, unsigned
 		if (filehelpers::CheckPrefix(szNewSrc, "localization/") ||
 		    (!filehelpers::CheckPrefix(szNewSrc, m_strDataRootWithSlash.c_str()) &&
 		     !filehelpers::CheckPrefix(szNewSrc, "./") &&
+		     !filehelpers::CheckPrefix(szNewSrc, "engineassets/" ) &&
 		     !filehelpers::CheckPrefix(szNewSrc, "engine/")))
 #else
 		if (filehelpers::CheckPrefix(szNewSrc, "localization" CRY_NATIVE_PATH_SEPSTR) ||
@@ -1251,6 +1252,7 @@ const char* CCryPak::AdjustFileNameInternal(const char* src, char* dst, unsigned
 		     !filehelpers::CheckPrefix(szNewSrc, ".." CRY_NATIVE_PATH_SEPSTR) &&
 		     !filehelpers::CheckPrefix(szNewSrc, "editor" CRY_NATIVE_PATH_SEPSTR) &&
 		     !filehelpers::CheckPrefix(szNewSrc, "mods" CRY_NATIVE_PATH_SEPSTR) &&
+		     !filehelpers::CheckPrefix(szNewSrc, "engineassets" CRY_NATIVE_PATH_SEPSTR) &&
 		     !filehelpers::CheckPrefix(szNewSrc, "engine" CRY_NATIVE_PATH_SEPSTR)))
 #endif
 		{
@@ -1263,6 +1265,14 @@ const char* CCryPak::AdjustFileNameInternal(const char* src, char* dst, unsigned
 			size_t len = std::min<size_t>(sizeof(szNewSrc), strlen(szNewSrc) - 2);
 			memmove(szNewSrc, szNewSrc + 2, len);
 			szNewSrc[len] = 0;
+		}
+		else if (filehelpers::CheckPrefix(szNewSrc, "engineassets"))
+		{
+			char szTempSrc[g_nMaxPath];
+			cry_strcpy(szTempSrc,"%engine%" CRY_NATIVE_PATH_SEPSTR);
+			cry_strcat(szTempSrc,szNewSrc);
+			AdjustAliases(szTempSrc);
+			cry_strcpy(szNewSrc,szTempSrc);
 		}
 	}
 

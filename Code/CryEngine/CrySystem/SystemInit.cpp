@@ -2019,9 +2019,6 @@ bool CSystem::InitFileSystem(const SSystemInitParams& startupParams)
 			m_env.pCryPak->ParseAliases(pakalias->GetValue());
 	}
 
-	// Create Engine folder mod mapping only for Engine assets
-	pCryPak->AddMod("%ENGINEROOT%/" CRYENGINE_ENGINE_FOLDER);
-
 #if CRY_PLATFORM_ANDROID
 	pCryPak->AddMod(CryGetProjectStoragePath());
 	#if defined(ANDROID_OBB)
