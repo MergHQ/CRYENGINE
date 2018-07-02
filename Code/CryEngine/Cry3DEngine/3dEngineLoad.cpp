@@ -854,13 +854,16 @@ I3DEngine::ELevelLoadStatus C3DEngineLevelLoadTimeslicer::DoStep()
 			// Preload materials.
 			m_owner.GetMatMan()->PreloadDecalMaterials();
 		}
-
+#if !CRY_PLATFORM_DURANGO
 		if (IRenderer* pRenderer = m_owner.GetRenderer())
 		{
 			pRenderer->PrecachePostponedTextures();
 			// Let RT to process shaders and textures requested by preloaded materials
 			pRenderer->TryFlush();
 		}
+#else
+		m_owner.Warning("Disabling level texture precaching on Durango");
+#endif
 	}
 
 	NEXT_STEP(EStep::PreloadMergedMeshes)
