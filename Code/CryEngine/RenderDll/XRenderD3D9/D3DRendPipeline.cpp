@@ -609,12 +609,15 @@ void CD3D9Renderer::RT_RenderScene(CRenderView* pRenderView)
 		pRenderView->SwitchUsageMode(CRenderView::eUsageModeReading);
 	}
 
-	const uint32 shaderRenderingFlags = pRenderView->GetShaderRenderingFlags();
+	uint32 shaderRenderingFlags = pRenderView->GetShaderRenderingFlags();
 
 	const bool bRecurse = pRenderView->IsRecursive();
 	const bool bSecondaryViewport = (shaderRenderingFlags & SHDF_SECONDARY_VIEWPORT) != 0;
+	const bool bFullRendering = (shaderRenderingFlags & SHDF_ZPASS) && (shaderRenderingFlags & SHDF_ALLOWPOSTPROCESS);
 	const bool bAllowPostProcess = pRenderView->IsPostProcessingEnabled();
 	const CTimeValue Time = iTimer->GetAsyncTime();
+
+	shaderRenderingFlags |= (!bFullRendering || bRecurse || bSecondaryViewport) * SHDF_FORWARD_MINIMAL;
 
 	// Only Billboard rendering doesn't use CRenderOutput
 	if (!pRenderView->GetRenderOutput() && !pRenderView->IsBillboardGenView())
@@ -669,7 +672,7 @@ void CD3D9Renderer::RT_RenderScene(CRenderView* pRenderView)
 		{
 			GetGraphicsPipeline().ExecuteBillboards();
 		}
-		else if (bRecurse || bSecondaryViewport)
+		else if (shaderRenderingFlags & SHDF_FORWARD_MINIMAL)
 		{
 			GetGraphicsPipeline().ExecuteMinimumForwardShading();
 		}
@@ -677,15 +680,9 @@ void CD3D9Renderer::RT_RenderScene(CRenderView* pRenderView)
 		{
 			GetGraphicsPipeline().ExecuteDebugger();
 		}
-		else if ((shaderRenderingFlags & SHDF_ZPASS) && (shaderRenderingFlags & SHDF_ALLOWPOSTPROCESS))
-		{
-			GetGraphicsPipeline().Execute();
-		}
 		else
 		{
-			CRY_ASSERT((shaderRenderingFlags & SHDF_ZPASS) == 0);
-			CRY_ASSERT((shaderRenderingFlags & SHDF_ALLOWPOSTPROCESS) == 0);
-			GetGraphicsPipeline().ExecuteMinimumForwardShading();
+			GetGraphicsPipeline().Execute();
 		}
 
 		//////////////////////////////////////////////////////////////////////////

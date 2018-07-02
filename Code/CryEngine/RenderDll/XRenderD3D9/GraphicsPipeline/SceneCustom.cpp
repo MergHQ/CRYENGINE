@@ -87,11 +87,16 @@ bool CSceneCustomStage::CreatePipelineState(const SGraphicsPipelineStateDescript
 	{
 		psoDesc.m_RenderState = ReverseDepthHelper::ConvertDepthFunc(psoDesc.m_RenderState);
 	}
+
 	if (!pSceneRenderPass)
 	{
 		return false;
 	}
+
 	psoDesc.m_pRenderPass = pSceneRenderPass->GetRenderPass();
+
+	if (!psoDesc.m_pRenderPass)
+		return false;
 
 	outPSO = GetDeviceObjectFactory().CreateGraphicsPSO(psoDesc);
 	return outPSO != nullptr;
