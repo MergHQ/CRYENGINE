@@ -13,11 +13,8 @@ namespace
 //Get help from CVar values with prefix e_svo/e_svoTI_ for Total Illumination
 void AddHelp(Serialization::IArchive& ar, const char* name, const char* refix)
 {
-	//CVar value = e_svoTI_ + name
-	std::string svotiName(refix);
-	svotiName += name;
-	ICVar* cvar = gEnv->pConsole->GetCVar(svotiName.c_str());
-	ar.doc(cvar->GetHelp());
+	if (ICVar* cvar = gEnv->pConsole->GetCVar(string(refix) + name))
+		ar.doc(cvar->GetHelp());
 }
 
 template<typename T>
