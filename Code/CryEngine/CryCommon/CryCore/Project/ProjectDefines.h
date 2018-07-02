@@ -227,7 +227,6 @@ extern void SliceAndSleep(const char* pFunc, int line);
 #endif
 
 //! These enable and disable certain net features to give compatibility between PCs and consoles / profile and performance builds.
-#define PC_CONSOLE_NET_COMPATIBLE          0
 #define PROFILE_PERFORMANCE_NET_COMPATIBLE 0
 
 #if (!defined(_RELEASE) || defined(PERFORMANCE_BUILD)) && !PROFILE_PERFORMANCE_NET_COMPATIBLE
