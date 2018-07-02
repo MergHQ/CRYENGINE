@@ -24,6 +24,8 @@
 				"path": "CryGamePlatform",
 				"platforms": [ "Windows", "PS4" ]
 			},
+			{ "type": "EPluginType::Native", "path": "CryGamePlatformSteam", "platforms": [ "Windows" ] },
+			{ "type": "EPluginType::Native", "path": "CryGamePlatformPSN", "platforms": [ "PS4" ] },
 			{ "type": "EPluginType::Native", "path": "CryLobby" }
 		]
 	},

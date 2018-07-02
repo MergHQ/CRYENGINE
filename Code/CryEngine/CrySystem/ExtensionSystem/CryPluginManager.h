@@ -62,7 +62,7 @@ public:
 	// Gets the plug-ins, along with the version that they were made default in
 	// This is called in order to update the default plug-ins for projects on upgrade
 	// These are also built with the engine, thus will be statically linked in for monolithic builds.
-	static std::array<TDefaultPluginPair, 4> GetDefaultPlugins()
+	static std::array<TDefaultPluginPair, 5> GetDefaultPlugins()
 	{
 		return 
 		{
@@ -73,6 +73,7 @@ public:
 				{ 1, SPluginDefinition { EType::Native, "CryPerceptionSystem" } },
 				// Plug-ins made default with version 3
 				{ 3, SPluginDefinition { EType::Native, "CryGamePlatform", { EPlatform::PS4 } } },
+				{ 3, SPluginDefinition { EType::Native, "CryGamePlatformPSN", { EPlatform::PS4 } } },
 			}
 		};
 	}

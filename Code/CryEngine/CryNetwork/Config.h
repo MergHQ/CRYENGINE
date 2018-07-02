@@ -108,11 +108,8 @@
 #define USE_CHANNEL_TIMERS 0
 
 // Set to use arithmetic compression or simple bit packing in CNetOutputSerializeImpl and CNetInputSerializeImpl
-#if CRY_PLATFORM_DESKTOP && !PC_CONSOLE_NET_COMPATIBLE
-	#define USE_ARITHSTREAM 1
-#else
-	#define USE_ARITHSTREAM 0
-#endif
+#define USE_ARITHSTREAM 1
+
 // When not using the arith stream, the below will reduce memory/cpu footprint still further (seperate define at present
 //to aid finding bugs introduced)
 #define USE_MEMENTO_PREDICTORS (0 || USE_ARITHSTREAM)
@@ -205,23 +202,14 @@
 
 #define VERBOSE_MALFORMED_PACKET_REPORTS 1
 
-#if !PC_CONSOLE_NET_COMPATIBLE
 // Using rijndael cipher will pad data to multiple of 16 bytes
 // Using stream cipher there is no padding
-	#define ENCRYPTION_RIJNDAEL     1
-	#define ENCRYPTION_STREAMCIPHER 0
-#else
-	#define ENCRYPTION_RIJNDAEL     0
-	#define ENCRYPTION_STREAMCIPHER 0
-#endif
+#define ENCRYPTION_RIJNDAEL     1
+#define ENCRYPTION_STREAMCIPHER 0
 
 // this is here so that console and pc can talk to each other with the online services
 // enabled. once the platform specific services are up and running this shouldn't be needed
-#if defined(PC_CONSOLE_NET_COMPATIBLE) && (PC_CONSOLE_NET_COMPATIBLE)
-	#define ENABLE_PLATFORM_PROTOCOL 1
-#else
-	#define ENABLE_PLATFORM_PROTOCOL 1
-#endif
+#define ENABLE_PLATFORM_PROTOCOL 1
 
 #define ALLOW_ENCRYPTION (ENCRYPTION_RIJNDAEL || ENCRYPTION_STREAMCIPHER)
 

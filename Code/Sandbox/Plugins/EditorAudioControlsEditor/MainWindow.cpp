@@ -138,6 +138,7 @@ void CMainWindow::InitToolbar(QVBoxLayout* const pWindowLayout)
 	QObject::connect(pRefreshAudioSystemAction, &QAction::triggered, this, &CMainWindow::RefreshAudioSystem);
 
 	pToolBarsLayout->addWidget(m_pToolBar, 0, Qt::AlignLeft);
+	pToolBarsLayout->addWidget(m_pImplNameLabel, 0, Qt::AlignRight);
 
 	pWindowLayout->addLayout(pToolBarsLayout);
 }

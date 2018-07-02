@@ -817,9 +817,11 @@ HRESULT CDeviceObjectFactory::CreateBuffer(
 
 		void* BufBasePtr;
 
-		if (!IsAligned(nSize * elemSize, 4096))
+		size_t alignedSize = nSize * elemSize;
+		if (!IsAligned(alignedSize, 4096))
 		{
-			CryFatalError("Memory Allocation Size for Direct Video Memory Access must be a multiple of 4 KB but the supplied size is %u", nSize * elemSize);
+			CryComment("Memory Allocation Size for Direct Video Memory Access must be a multiple of 4 KB but the supplied size is %u, allocating next multiple of 4 KB", alignedSize);
+			alignedSize = (alignedSize + 4095ULL) & ~4096ULL; // Get next multiple of 4KB
 		}
 
 		D3D11_GRAPHICS_MEMORY_ACCESS_FLAG access_flag = D3D11_GRAPHICS_MEMORY_ACCESS_CPU_WRITECOMBINE_NONCOHERENT;
@@ -830,7 +832,7 @@ HRESULT CDeviceObjectFactory::CreateBuffer(
 		}
 		{
 			hr = D3DAllocateGraphicsMemory(
-				nSize * elemSize,
+				alignedSize,
 				0, 0
 				, access_flag
 				, &BufBasePtr);

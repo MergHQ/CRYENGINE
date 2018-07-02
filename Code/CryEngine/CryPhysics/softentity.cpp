@@ -1492,6 +1492,8 @@ int CSoftEntity::Step(float time_interval)
 		waterPlane.origin = pb[i].waterPlane.origin; waterPlane.n = pb[i].waterPlane.n;
 		waterFlow = pb[i].waterFlow; waterDensity=pb[i].waterDensity;
 	}
+	if (!m_wind0.len2())
+		m_wind0 = m_wind1 = w;
 
 	if ((m_windTimer+=time_interval*4)>1.0f) {
 		m_windTimer = 0; m_wind0 = m_wind1;
@@ -1648,7 +1650,7 @@ int CSoftEntity::Step(float time_interval)
 		BBox[0] = min(BBox[0], m_vtx[i].pos);
 		BBox[1] = max(BBox[1], m_vtx[i].pos);
 	}
-	if (m_wind.len2()*m_airResistance>0 || rmax>m_Emin) {
+	if ((m_wind0+m_wind1).len2()*m_airResistance>0 || rmax>m_Emin) {
 		m_nSlowFrames = 0; m_bAwake = 1;
 	} else if (++m_nSlowFrames>=3) {
 		m_bAwake = 0;
