@@ -809,6 +809,10 @@ void CLevelExplorer::OnDoubleClick(const QModelIndex& index)
 					if (index.column() != ELayerColumns::eLayerColumns_Frozen) // freezing
 					{
 						GetIEditorImpl()->GetObjectManager()->ClearSelection();
+						if (!pObject->GetLayer())
+						{
+							return;
+						}
 						GetIEditorImpl()->GetObjectManager()->SelectObject(pObject);
 						CViewport* vp = GetIEditorImpl()->GetActiveView();
 						if (vp)
