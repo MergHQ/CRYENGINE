@@ -26,7 +26,6 @@ bool CGeomEntity::Init(CBaseObject* prev, const string& file)
 	{
 		bRes = Super::Init(prev, "");
 		SetClass("GeomEntity");
-		SpawnEntity();
 	}
 	else
 	{
@@ -230,27 +229,3 @@ XmlNodeRef CGeomEntity::Export(const string& levelPath, XmlNodeRef& xmlNode)
 
 	return node;
 }
-
-//Temp. workaround to enforce LoadGeometry when CEntityObject::Reload happens.
-void CGeomEntity::SpawnEntity()
-{
-	Super::SpawnEntity();
-
-	if (m_pEntity)
-	{
-		string path = mv_geometry;
-		if (!path.IsEmpty())
-		{
-			const char* szExt = PathUtil::GetExt(path);
-			if (stricmp(szExt, CRY_SKEL_FILE_EXT) == 0 || stricmp(szExt, CRY_CHARACTER_DEFINITION_FILE_EXT) == 0 || stricmp(szExt, CRY_ANIM_GEOMETRY_FILE_EXT) == 0)
-			{
-				m_pEntity->LoadCharacter(0, path, IEntity::EF_AUTO_PHYSICALIZE);
-			}
-			else
-			{
-				m_pEntity->LoadGeometry(0, path, nullptr, IEntity::EF_AUTO_PHYSICALIZE);
-			}
-		}
-	}
-}
-
