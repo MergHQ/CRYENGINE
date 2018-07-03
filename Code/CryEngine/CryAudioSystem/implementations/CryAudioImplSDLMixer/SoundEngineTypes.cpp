@@ -21,9 +21,8 @@ ERequestStatus CEvent::Stop()
 }
 
 //////////////////////////////////////////////////////////////////////////
-ERequestStatus CObject::Update()
+void CObject::Update()
 {
-	return ERequestStatus::Success;
 }
 
 //////////////////////////////////////////////////////////////////////////
@@ -33,16 +32,13 @@ void CObject::SetTransformation(CObjectTransformation const& transformation)
 }
 
 //////////////////////////////////////////////////////////////////////////
-ERequestStatus CObject::SetEnvironment(IEnvironment const* const pIEnvironment, float const amount)
+void CObject::SetEnvironment(IEnvironment const* const pIEnvironment, float const amount)
 {
-	return ERequestStatus::Success;
 }
 
 //////////////////////////////////////////////////////////////////////////
-ERequestStatus CObject::SetParameter(IParameter const* const pIParameter, float const value)
+void CObject::SetParameter(IParameter const* const pIParameter, float const value)
 {
-	ERequestStatus result = ERequestStatus::Failure;
-
 	if (pIParameter != nullptr)
 	{
 		auto const pParameter = static_cast<CParameter const* const>(pIParameter);
@@ -50,33 +46,26 @@ ERequestStatus CObject::SetParameter(IParameter const* const pIParameter, float 
 		parameterValue = crymath::clamp(parameterValue, 0.0f, 1.0f);
 		SampleId const sampleId = pParameter->GetSampleId();
 		m_volumeMultipliers[sampleId] = parameterValue;
-		result = SoundEngine::SetVolume(this, sampleId);
+		SoundEngine::SetVolume(this, sampleId);
 	}
-
-	return result;
 }
 
 //////////////////////////////////////////////////////////////////////////
-ERequestStatus CObject::SetSwitchState(ISwitchState const* const pISwitchState)
+void CObject::SetSwitchState(ISwitchState const* const pISwitchState)
 {
-	ERequestStatus result = ERequestStatus::Failure;
-
 	if (pISwitchState != nullptr)
 	{
 		auto const pSwitchState = static_cast<CSwitchState const* const>(pISwitchState);
 		float const switchValue = pSwitchState->GetValue();
 		SampleId const sampleId = pSwitchState->GetSampleId();
 		m_volumeMultipliers[sampleId] = switchValue;
-		result = SoundEngine::SetVolume(this, sampleId);
+		SoundEngine::SetVolume(this, sampleId);
 	}
-
-	return result;
 }
 
 //////////////////////////////////////////////////////////////////////////
-ERequestStatus CObject::SetObstructionOcclusion(float const obstruction, float const occlusion)
+void CObject::SetObstructionOcclusion(float const obstruction, float const occlusion)
 {
-	return ERequestStatus::Success;
 }
 
 //////////////////////////////////////////////////////////////////////////
@@ -93,31 +82,20 @@ ERequestStatus CObject::ExecuteTrigger(ITrigger const* const pITrigger, IEvent* 
 }
 
 //////////////////////////////////////////////////////////////////////////
-ERequestStatus CObject::StopAllTriggers()
+void CObject::StopAllTriggers()
 {
-	return ERequestStatus::Success;
 }
 
 //////////////////////////////////////////////////////////////////////////
 ERequestStatus CObject::PlayFile(IStandaloneFile* const pIStandaloneFile)
 {
-	if (SoundEngine::PlayFile(this, static_cast<CStandaloneFile*>(pIStandaloneFile)))
-	{
-		return ERequestStatus::Success;
-	}
-
-	return ERequestStatus::Failure;
+	return SoundEngine::PlayFile(this, static_cast<CStandaloneFile*>(pIStandaloneFile));
 }
 
 //////////////////////////////////////////////////////////////////////////
 ERequestStatus CObject::StopFile(IStandaloneFile* const pIStandaloneFile)
 {
-	if (SoundEngine::StopFile(this, static_cast<CStandaloneFile*>(pIStandaloneFile)))
-	{
-		return ERequestStatus::Pending;
-	}
-
-	return ERequestStatus::Failure;
+	return SoundEngine::StopFile(this, static_cast<CStandaloneFile*>(pIStandaloneFile));
 }
 
 //////////////////////////////////////////////////////////////////////////

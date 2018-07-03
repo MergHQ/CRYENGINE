@@ -2,17 +2,16 @@
 
 #include "stdafx.h"
 #include "AudioInternalInterfaces.h"
-#include "Common/Logger.h"
 
 namespace CryAudio
 {
-#define REQUEST_CASE_BLOCK(CLASS, ENUM, P_SOURCE, P_RESULT)                        \
-  case ENUM:                                                                       \
-    {                                                                              \
-      P_RESULT = new CLASS<ENUM>(static_cast<CLASS<ENUM> const* const>(P_SOURCE)); \
-                                                                                   \
-      break;                                                                       \
-    }
+#define REQUEST_CASE_BLOCK(CLASS, ENUM, P_SOURCE, P_RESULT)                      \
+case ENUM:                                                                       \
+	{                                                                              \
+		P_RESULT = new CLASS<ENUM>(static_cast<CLASS<ENUM> const* const>(P_SOURCE)); \
+                                                                                 \
+		break;                                                                       \
+	}
 
 #define AM_REQUEST_BLOCK(ENUM)  REQUEST_CASE_BLOCK(SAudioManagerRequestData, ENUM, pRequestData, pResult)
 #define ACM_REQUEST_BLOCK(ENUM) REQUEST_CASE_BLOCK(SAudioCallbackManagerRequestData, ENUM, pRequestData, pResult)
@@ -56,8 +55,7 @@ SAudioRequestData* AllocateRequestData(SAudioRequestData const* const pRequestDa
 				AM_REQUEST_BLOCK(EAudioManagerRequestType::GetImplInfo)
 			default:
 				{
-					Cry::Audio::Log(ELogType::Error, "Unknown audio manager request type (%u)", pBase->type);
-					CRY_ASSERT(false);
+					CRY_ASSERT_MESSAGE(false, "Unknown audio manager request type (%u)", pBase->type);
 
 					break;
 				}
@@ -91,8 +89,7 @@ SAudioRequestData* AllocateRequestData(SAudioRequestData const* const pRequestDa
 				AO_REQUEST_BLOCK(EAudioObjectRequestType::SetName)
 			default:
 				{
-					Cry::Audio::Log(ELogType::Error, "Unknown audio object request type (%u)", pBase->type);
-					CRY_ASSERT(false);
+					CRY_ASSERT_MESSAGE(false, "Unknown audio object request type (%u)", pBase->type);
 
 					break;
 				}
@@ -111,8 +108,7 @@ SAudioRequestData* AllocateRequestData(SAudioRequestData const* const pRequestDa
 				AL_REQUEST_BLOCK(EAudioListenerRequestType::SetName)
 			default:
 				{
-					Cry::Audio::Log(ELogType::Error, "Unknown audio listener request type (%u)", pBase->type);
-					CRY_ASSERT(false);
+					CRY_ASSERT_MESSAGE(false, "Unknown audio listener request type (%u)", pBase->type);
 
 					break;
 				}
@@ -135,8 +131,7 @@ SAudioRequestData* AllocateRequestData(SAudioRequestData const* const pRequestDa
 				ACM_REQUEST_BLOCK(EAudioCallbackManagerRequestType::ReportPhysicalizedEvent)
 			default:
 				{
-					Cry::Audio::Log(ELogType::Error, "Unknown audio callback manager request type (%u)", pBase->type);
-					CRY_ASSERT(false);
+					CRY_ASSERT_MESSAGE(false, "Unknown audio callback manager request type (%u)", pBase->type);
 
 					break;
 				}
@@ -146,8 +141,7 @@ SAudioRequestData* AllocateRequestData(SAudioRequestData const* const pRequestDa
 		}
 	default:
 		{
-			Cry::Audio::Log(ELogType::Error, "Unknown audio request type (%u)", requestType);
-			CRY_ASSERT(false);
+			CRY_ASSERT_MESSAGE(false, "Unknown audio request type (%u)", requestType);
 
 			break;
 		}

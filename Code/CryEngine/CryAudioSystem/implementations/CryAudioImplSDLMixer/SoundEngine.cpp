@@ -704,7 +704,7 @@ ERequestStatus SoundEngine::ExecuteEvent(CObject* const pObject, CTrigger const*
 }
 
 //////////////////////////////////////////////////////////////////////////
-ERequestStatus SoundEngine::SetVolume(CObject* const pObject, SampleId const sampleId)
+void SoundEngine::SetVolume(CObject* const pObject, SampleId const sampleId)
 {
 	if (!g_bMuted)
 	{
@@ -725,8 +725,6 @@ ERequestStatus SoundEngine::SetVolume(CObject* const pObject, SampleId const sam
 			}
 		}
 	}
-
-	return ERequestStatus::Success;
 }
 
 //////////////////////////////////////////////////////////////////////////
@@ -751,102 +749,108 @@ int SoundEngine::GetAbsoluteVolume(int const triggerVolume, float const multipli
 	return absoluteVolume;
 }
 //////////////////////////////////////////////////////////////////////////
-bool SoundEngine::PlayFile(CObject* const pObject, CStandaloneFile* const pStandaloneFile)
+ERequestStatus SoundEngine::PlayFile(CObject* const pObject, CStandaloneFile* const pStandaloneFile)
 {
-	SampleId idForThisFile = pStandaloneFile->m_sampleId;
+	ERequestStatus status = ERequestStatus::Failure;
+	SampleId const idForThisFile = pStandaloneFile->m_sampleId;
 	Mix_Chunk* pSample = stl::find_in_map(g_sampleData, idForThisFile, nullptr);
 
-	if (!pSample)
+	if (pSample == nullptr)
 	{
 		if (LoadSampleImpl(idForThisFile, pStandaloneFile->m_name.c_str()))
 		{
 			pSample = stl::find_in_map(g_sampleData, idForThisFile, nullptr);
 		}
-		if (!pSample)
+	}
+
+	if (pSample != nullptr)
+	{
+		SampleIdUsageCounterMap::iterator it = g_usageCounters.find(idForThisFile);
+
+		if (it != g_usageCounters.end())
 		{
-			return false;
-		}
-	}
-
-	SampleIdUsageCounterMap::iterator it = g_usageCounters.find(idForThisFile);
-	if (it != g_usageCounters.end())
-	{
-		++it->second;
-	}
-	else
-	{
-		g_usageCounters[idForThisFile] = 1;
-	}
-
-	if (!g_freeChannels.empty())
-	{
-		int channelId = Mix_PlayChannel(g_freeChannels.front(), pSample, 1);
-		if (channelId >= 0)
-		{
-			g_freeChannels.pop();
-			Mix_Volume(channelId, g_bMuted ? 0 : 128);
-
-			// Get distance and angle from the listener to the audio object
-			float distance = 0.0f;
-			float angle = 0.0f;
-			GetDistanceAngleToObject(g_listenerTransformation, pObject->m_transformation, distance, angle);
-
-			// Assuming a max distance of 100.0
-			uint8 sldMixerDistance = static_cast<uint8>((std::min((distance / 100.0f), 1.0f) * 255) + 0.5f);
-
-			Mix_SetDistance(channelId, sldMixerDistance);
-
-			float const absAngle = fabs(angle);
-			float const frontAngle = (angle > 0.0f ? 1.0f : -1.0f) * (absAngle > 90.0f ? 180.f - absAngle : absAngle);
-			float const rightVolume = (frontAngle + 90.0f) / 180.0f;
-			float const leftVolume = 1.0f - rightVolume;
-			Mix_SetPanning(channelId, static_cast<uint8>(255.0f * leftVolume), static_cast<uint8>(255.0f * rightVolume));
-
-			g_channels[channelId].pObject = pObject;
-			pStandaloneFile->m_channels.push_back(channelId);
+			++it->second;
 		}
 		else
 		{
-			Cry::Audio::Log(ELogType::Error, "Could not play sample. Error: %s", Mix_GetError());
+			g_usageCounters[idForThisFile] = 1;
+		}
+
+		if (!g_freeChannels.empty())
+		{
+			int const channelId = Mix_PlayChannel(g_freeChannels.front(), pSample, 1);
+
+			if (channelId >= 0)
+			{
+				g_freeChannels.pop();
+				Mix_Volume(channelId, g_bMuted ? 0 : 128);
+
+				// Get distance and angle from the listener to the audio object
+				float distance = 0.0f;
+				float angle = 0.0f;
+				GetDistanceAngleToObject(g_listenerTransformation, pObject->m_transformation, distance, angle);
+
+				// Assuming a max distance of 100.0
+				uint8 sldMixerDistance = static_cast<uint8>((std::min((distance / 100.0f), 1.0f) * 255) + 0.5f);
+
+				Mix_SetDistance(channelId, sldMixerDistance);
+
+				float const absAngle = fabs(angle);
+				float const frontAngle = (angle > 0.0f ? 1.0f : -1.0f) * (absAngle > 90.0f ? 180.f - absAngle : absAngle);
+				float const rightVolume = (frontAngle + 90.0f) / 180.0f;
+				float const leftVolume = 1.0f - rightVolume;
+				Mix_SetPanning(channelId, static_cast<uint8>(255.0f * leftVolume), static_cast<uint8>(255.0f * rightVolume));
+
+				g_channels[channelId].pObject = pObject;
+				pStandaloneFile->m_channels.push_back(channelId);
+			}
+			else
+			{
+				Cry::Audio::Log(ELogType::Error, "Could not play sample. Error: %s", Mix_GetError());
+			}
+		}
+		else
+		{
+			Cry::Audio::Log(ELogType::Error, "Ran out of free audio channels. Are you trying to play more than %d samples?", s_numMixChannels);
+		}
+
+		if (!pStandaloneFile->m_channels.empty())
+		{
+			pObject->m_standaloneFiles.push_back(pStandaloneFile);
+			status = ERequestStatus::Success;
 		}
 	}
-	else
-	{
-		Cry::Audio::Log(ELogType::Error, "Ran out of free audio channels. Are you trying to play more than %d samples?", s_numMixChannels);
-	}
 
-	if (!pStandaloneFile->m_channels.empty())
-	{
-		// if any sample was added then add the event to the audio object
-		pObject->m_standaloneFiles.push_back(pStandaloneFile);
-	}
-
-	return true;
+	return status;
 }
 
 //////////////////////////////////////////////////////////////////////////
-bool SoundEngine::StopFile(CObject* const pObject, CStandaloneFile* const pStandaloneFile)
+ERequestStatus SoundEngine::StopFile(CObject* const pObject, CStandaloneFile* const pStandaloneFile)
 {
-	bool bResult = false;
+	ERequestStatus status = ERequestStatus::Failure;
 
 	if (pObject != nullptr)
 	{
-		for (CStandaloneFile* const pTempStandaloneFile : pObject->m_standaloneFiles)
+		for (auto const pTempStandaloneFile : pObject->m_standaloneFiles)
 		{
 			if (pTempStandaloneFile == pStandaloneFile)
 			{
 				// need to make a copy because the callback
 				// registered with Mix_ChannelFinished can edit the list
-				ChannelList channels = pStandaloneFile->m_channels;
-				for (int channel : channels)
+				ChannelList const channels = pStandaloneFile->m_channels;
+
+				for (auto const channel : channels)
 				{
 					Mix_HaltChannel(channel);
 				}
-				bResult = true;
+
+				status = ERequestStatus::Pending;
+				break;
 			}
 		}
 	}
-	return bResult;
+
+	return status;
 }
 
 //////////////////////////////////////////////////////////////////////////

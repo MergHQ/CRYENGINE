@@ -376,92 +376,49 @@ ERequestStatus CATLAudioObject::HandleStopTrigger(CATLTrigger const* const pTrig
 }
 
 ///////////////////////////////////////////////////////////////////////////
-ERequestStatus CATLAudioObject::HandleSetSwitchState(CATLSwitch const* const pSwitch, CATLSwitchState const* const pState)
+void CATLAudioObject::HandleSetSwitchState(CATLSwitch const* const pSwitch, CATLSwitchState const* const pState)
 {
-	ERequestStatus result = ERequestStatus::Failure;
-
 	for (auto const pSwitchStateImpl : pState->m_implPtrs)
 	{
-		result = pSwitchStateImpl->Set(*this);
+		pSwitchStateImpl->Set(*this);
 	}
 
-	if (result == ERequestStatus::Success)
-	{
-		m_switchStates[pSwitch->GetId()] = pState->GetId();
-	}
-#if defined(INCLUDE_AUDIO_PRODUCTION_CODE)
-	else
-	{
-		Cry::Audio::Log(ELogType::Warning, R"(Failed to set the ATLSwitch "%s" to ATLSwitchState "%s" on AudioObject "%s")", pSwitch->m_name.c_str(), pState->m_name.c_str(), m_name.c_str());
-	}
-#endif // INCLUDE_AUDIO_PRODUCTION_CODE
-
-	return result;
-
+	m_switchStates[pSwitch->GetId()] = pState->GetId();
 }
 
 ///////////////////////////////////////////////////////////////////////////
-ERequestStatus CATLAudioObject::HandleSetParameter(CParameter const* const pParameter, float const value)
+void CATLAudioObject::HandleSetParameter(CParameter const* const pParameter, float const value)
 {
-	ERequestStatus result = ERequestStatus::Failure;
-
 	for (auto const pParameterImpl : pParameter->m_implPtrs)
 	{
-		result = pParameterImpl->Set(*this, value);
+		pParameterImpl->Set(*this, value);
 	}
 
-	if (result == ERequestStatus::Success)
-	{
-		m_parameters[pParameter->GetId()] = value;
-	}
-#if defined(INCLUDE_AUDIO_PRODUCTION_CODE)
-	else
-	{
-		Cry::Audio::Log(ELogType::Warning, R"(Failed to set the Audio Parameter "%s" to %f on Audio Object "%s")", pParameter->m_name.c_str(), value, m_name.c_str());
-	}
-#endif // INCLUDE_AUDIO_PRODUCTION_CODE
-
-	return result;
+	m_parameters[pParameter->GetId()] = value;
 }
 
 ///////////////////////////////////////////////////////////////////////////
-ERequestStatus CATLAudioObject::HandleSetEnvironment(CATLAudioEnvironment const* const pEnvironment, float const amount)
+void CATLAudioObject::HandleSetEnvironment(CATLAudioEnvironment const* const pEnvironment, float const amount)
 {
-	ERequestStatus result = ERequestStatus::Failure;
-
 	for (auto const pEnvImpl : pEnvironment->m_implPtrs)
 	{
-		if (m_pImplData->SetEnvironment(pEnvImpl->m_pImplData, amount) == ERequestStatus::Success)
-		{
-			result = ERequestStatus::Success;
-		}
+		m_pImplData->SetEnvironment(pEnvImpl->m_pImplData, amount);
 	}
 
-	if (result == ERequestStatus::Success)
+	if (amount > 0.0f)
 	{
-		if (amount > 0.0f)
-		{
-			m_environments[pEnvironment->GetId()] = amount;
-		}
-		else
-		{
-			m_environments.erase(pEnvironment->GetId());
-		}
+		m_environments[pEnvironment->GetId()] = amount;
 	}
-#if defined(INCLUDE_AUDIO_PRODUCTION_CODE)
 	else
 	{
-		Cry::Audio::Log(ELogType::Warning, R"(Failed to set the ATLAudioEnvironment "%s" to %f on AudioObject "%s")", pEnvironment->m_name.c_str(), amount, m_name.c_str());
+		m_environments.erase(pEnvironment->GetId());
 	}
-#endif // INCLUDE_AUDIO_PRODUCTION_CODE
-
-	return result;
 }
 
 ///////////////////////////////////////////////////////////////////////////
-ERequestStatus CATLAudioObject::StopAllTriggers()
+void CATLAudioObject::StopAllTriggers()
 {
-	return m_pImplData->StopAllTriggers();
+	m_pImplData->StopAllTriggers();
 }
 
 ///////////////////////////////////////////////////////////////////////////
@@ -535,11 +492,10 @@ ERequestStatus CATLAudioObject::LoadTriggerAsync(CATLTrigger const* const pTrigg
 }
 
 ///////////////////////////////////////////////////////////////////////////
-ERequestStatus CATLAudioObject::HandleResetEnvironments(AudioEnvironmentLookup const& environmentsLookup)
+void CATLAudioObject::HandleResetEnvironments(AudioEnvironmentLookup const& environmentsLookup)
 {
-	// Needs to be a copy as SetEnvironment removes from the map that we are iterating over.
+	// Needs to be a copy as HandleSetEnvironment removes from the map that we are iterating over.
 	ObjectEnvironmentMap const environments = m_environments;
-	ERequestStatus result = ERequestStatus::Success;
 
 	for (auto const& environmentPair : environments)
 	{
@@ -547,26 +503,11 @@ ERequestStatus CATLAudioObject::HandleResetEnvironments(AudioEnvironmentLookup c
 
 		if (pEnvironment != nullptr)
 		{
-			if (HandleSetEnvironment(pEnvironment, 0.0f) != ERequestStatus::Success)
-			{
-				// If setting at least one Environment fails, we consider this a failure.
-				result = ERequestStatus::Failure;
-			}
+			HandleSetEnvironment(pEnvironment, 0.0f);
 		}
 	}
 
-	if (result == ERequestStatus::Success)
-	{
-		m_environments.clear();
-	}
-#if defined(INCLUDE_AUDIO_PRODUCTION_CODE)
-	else
-	{
-		Cry::Audio::Log(ELogType::Warning, R"(Failed to Reset AudioEnvironments on AudioObject "%s")", m_name.c_str());
-	}
-#endif // INCLUDE_AUDIO_PRODUCTION_CODE
-
-	return result;
+	CRY_ASSERT_MESSAGE(m_environments.empty(), "m_environments not empty after reset");
 }
 
 ///////////////////////////////////////////////////////////////////////////
@@ -696,19 +637,17 @@ void CATLAudioObject::ReleasePendingRays()
 }
 
 //////////////////////////////////////////////////////////////////////////
-ERequestStatus CATLAudioObject::HandlePlayFile(CATLStandaloneFile* const pFile, void* const pOwner, void* const pUserData, void* const pUserDataOwner)
+void CATLAudioObject::HandlePlayFile(CATLStandaloneFile* const pFile, void* const pOwner, void* const pUserData, void* const pUserDataOwner)
 {
-	ERequestStatus status = ERequestStatus::Failure;
+	ERequestStatus const status = m_pImplData->PlayFile(pFile->m_pImplData);
 
-	ERequestStatus const tempStatus = m_pImplData->PlayFile(pFile->m_pImplData);
-
-	if (tempStatus == ERequestStatus::Success || tempStatus == ERequestStatus::Pending)
+	if (status == ERequestStatus::Success || status == ERequestStatus::Pending)
 	{
-		if (tempStatus == ERequestStatus::Success)
+		if (status == ERequestStatus::Success)
 		{
 			pFile->m_state = EAudioStandaloneFileState::Playing;
 		}
-		else if (tempStatus == ERequestStatus::Pending)
+		else if (status == ERequestStatus::Pending)
 		{
 			pFile->m_state = EAudioStandaloneFileState::Loading;
 		}
@@ -722,42 +661,36 @@ ERequestStatus CATLAudioObject::HandlePlayFile(CATLStandaloneFile* const pFile, 
 #endif //INCLUDE_AUDIO_PRODUCTION_CODE
 
 		ReportStartedStandaloneFile(pFile, pOwner, pUserData, pUserDataOwner);
-
-		// It's a success in both cases.
-		status = ERequestStatus::Success;
 	}
 	else
 	{
 #if defined(INCLUDE_AUDIO_PRODUCTION_CODE)
-		Cry::Audio::Log(ELogType::Warning, R"(PlayFile failed with "%s" on AudioObject "%s")", pFile->m_hashedFilename.GetText().c_str(), m_name.c_str());
+		Cry::Audio::Log(ELogType::Warning, R"(PlayFile failed with "%s" on object "%s")", pFile->m_hashedFilename.GetText().c_str(), m_name.c_str());
 #endif //INCLUDE_AUDIO_PRODUCTION_CODE
 
 		s_pStandaloneFileManager->ReleaseStandaloneFile(pFile);
 	}
-
-	return status;
 }
 
 //////////////////////////////////////////////////////////////////////////
-ERequestStatus CATLAudioObject::HandleStopFile(char const* const szFile)
+void CATLAudioObject::HandleStopFile(char const* const szFile)
 {
-	ERequestStatus status = ERequestStatus::Failure;
 	CHashedString const hashedFilename(szFile);
 	auto iter = m_activeStandaloneFiles.cbegin();
 	auto iterEnd = m_activeStandaloneFiles.cend();
 
 	while (iter != iterEnd)
 	{
-		CATLStandaloneFile* const pStandaloneFile = iter->first;
+		CATLStandaloneFile* const pFile = iter->first;
 
-		if (pStandaloneFile != nullptr && pStandaloneFile->m_hashedFilename == hashedFilename)
+		if (pFile != nullptr && pFile->m_hashedFilename == hashedFilename)
 		{
 #if defined(INCLUDE_AUDIO_PRODUCTION_CODE)
-			if (pStandaloneFile->m_state != EAudioStandaloneFileState::Playing)
+			if (pFile->m_state != EAudioStandaloneFileState::Playing)
 			{
 				char const* szState = "unknown";
 
-				switch (pStandaloneFile->m_state)
+				switch (pFile->m_state)
 				{
 				case EAudioStandaloneFileState::Playing:
 					szState = "playing";
@@ -777,14 +710,12 @@ ERequestStatus CATLAudioObject::HandleStopFile(char const* const szFile)
 			}
 #endif  // INCLUDE_AUDIO_PRODUCTION_CODE
 
-			ERequestStatus const tempStatus = m_pImplData->StopFile(pStandaloneFile->m_pImplData);
+			ERequestStatus const status = m_pImplData->StopFile(pFile->m_pImplData);
 
-			status = ERequestStatus::Success;
-
-			if (tempStatus != ERequestStatus::Pending)
+			if (status != ERequestStatus::Pending)
 			{
-				ReportFinishedStandaloneFile(pStandaloneFile);
-				s_pStandaloneFileManager->ReleaseStandaloneFile(pStandaloneFile);
+				ReportFinishedStandaloneFile(pFile);
+				s_pStandaloneFileManager->ReleaseStandaloneFile(pFile);
 
 				iter = m_activeStandaloneFiles.begin();
 				iterEnd = m_activeStandaloneFiles.end();
@@ -792,14 +723,12 @@ ERequestStatus CATLAudioObject::HandleStopFile(char const* const szFile)
 			}
 			else
 			{
-				pStandaloneFile->m_state = EAudioStandaloneFileState::Stopping;
+				pFile->m_state = EAudioStandaloneFileState::Stopping;
 			}
 		}
 
 		++iter;
 	}
-
-	return status;
 }
 
 //////////////////////////////////////////////////////////////////////////
@@ -1425,12 +1354,7 @@ void CATLAudioObject::ForceImplementationRefresh(
 
 		if (pParameter != nullptr)
 		{
-			ERequestStatus const result = HandleSetParameter(pParameter, parameterPair.second);
-
-			if (result != ERequestStatus::Success)
-			{
-				Cry::Audio::Log(ELogType::Warning, R"(Parameter "%s" failed during audio middleware switch on AudioObject "%s")", pParameter->m_name.c_str(), m_name.c_str());
-			}
+			HandleSetParameter(pParameter, parameterPair.second);
 		}
 	}
 
@@ -1447,12 +1371,7 @@ void CATLAudioObject::ForceImplementationRefresh(
 
 			if (pState != nullptr)
 			{
-				ERequestStatus const result = HandleSetSwitchState(pSwitch, pState);
-
-				if (result != ERequestStatus::Success)
-				{
-					Cry::Audio::Log(ELogType::Warning, R"(SwitchStateImpl "%s" : "%s" failed during audio middleware switch on AudioObject "%s")", pSwitch->m_name.c_str(), pState->m_name.c_str(), m_name.c_str());
-				}
+				HandleSetSwitchState(pSwitch, pState);
 			}
 		}
 	}
@@ -1466,12 +1385,7 @@ void CATLAudioObject::ForceImplementationRefresh(
 
 		if (pEnvironment != nullptr)
 		{
-			ERequestStatus const result = HandleSetEnvironment(pEnvironment, environmentPair.second);
-
-			if (result != ERequestStatus::Success)
-			{
-				Cry::Audio::Log(ELogType::Warning, R"(Environment "%s" failed during audio middleware switch on AudioObject "%s")", pEnvironment->m_name.c_str(), m_name.c_str());
-			}
+			HandleSetEnvironment(pEnvironment, environmentPair.second);
 		}
 	}
 
@@ -1540,29 +1454,12 @@ void CATLAudioObject::ForceImplementationRefresh(
 
 	for (auto const& standaloneFilePair : activeStandaloneFiles)
 	{
-		CATLStandaloneFile* const pStandaloneFile = standaloneFilePair.first;
+		CATLStandaloneFile* const pFile = standaloneFilePair.first;
 
-		if (pStandaloneFile != nullptr)
+		if (pFile != nullptr)
 		{
-			CRY_ASSERT(pStandaloneFile->m_state == EAudioStandaloneFileState::Playing);
-
-			ERequestStatus const status = HandlePlayFile(pStandaloneFile, pStandaloneFile->m_pOwner, pStandaloneFile->m_pUserData, pStandaloneFile->m_pUserDataOwner);
-
-			if (status == ERequestStatus::Success || status == ERequestStatus::Pending)
-			{
-				if (status == ERequestStatus::Success)
-				{
-					pStandaloneFile->m_state = EAudioStandaloneFileState::Playing;
-				}
-				else if (status == ERequestStatus::Pending)
-				{
-					pStandaloneFile->m_state = EAudioStandaloneFileState::Loading;
-				}
-			}
-			else
-			{
-				Cry::Audio::Log(ELogType::Warning, R"(PlayFile failed with "%s" on AudioObject "%s")", pStandaloneFile->m_hashedFilename.GetText().c_str(), m_name.c_str());
-			}
+			CRY_ASSERT(pFile->m_state == EAudioStandaloneFileState::Playing);
+			HandlePlayFile(pFile, pFile->m_pOwner, pFile->m_pUserData, pFile->m_pUserDataOwner);
 		}
 		else
 		{
