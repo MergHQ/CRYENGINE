@@ -194,8 +194,6 @@ void CParserBin::Init()
 	fxTokenKey("%_DS", eT__DS);
 	fxTokenKey("%_CS", eT__CS);
 
-	FX_REGISTER_TOKEN(_g_SkinQuat);
-
 	FX_REGISTER_TOKEN(tex2D);
 	FX_REGISTER_TOKEN(tex2Dproj);
 	FX_REGISTER_TOKEN(tex3D);

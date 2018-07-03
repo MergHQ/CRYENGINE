@@ -335,14 +335,14 @@ void CSceneCustomStage::ExecuteDebugger()
 	}
 
 	CTexture* pTargetRT = pRenderView->GetColorTarget();
-	CTexture* pTargetDS = CRendererResources::CreateDepthTarget(pTargetRT->GetWidth(), pTargetRT->GetHeight(), Clr_FarPlane_R, eTF_Unknown);
+	CTexture* pTargetDS = CRendererResources::CreateDepthTarget(pTargetRT->GetWidth(), pTargetRT->GetHeight(), ColorF(Clr_FarPlane_Rev.r, 1, 0, 0), eTF_Unknown);
 
 	m_debugViewPass.ExchangeRenderTarget(0, pTargetRT);
 	m_debugViewPass.ExchangeDepthTarget(pTargetDS);
 
 	SetAndBuildPerPassResources(false);
 
-	CClearSurfacePass::Execute(pTargetDS, CLEAR_ZBUFFER | CLEAR_STENCIL, Clr_FarPlane_R.r, 1);
+	CClearSurfacePass::Execute(pTargetDS, CLEAR_ZBUFFER | CLEAR_STENCIL, Clr_FarPlane_Rev.r, 1);
 	CClearSurfacePass::Execute(pTargetRT, ColorF(0.2, 0.2, 0.2, 1));
 
 	if (!bViewWireframe)
@@ -386,14 +386,14 @@ void CSceneCustomStage::ExecuteDebugOverlay()
 	}
 
 	CTexture* pTargetRT = pRenderView->GetRenderOutput()->GetColorTarget();
-	CTexture* pTargetDS = CRendererResources::CreateDepthTarget(pTargetRT->GetWidth(), pTargetRT->GetHeight(), Clr_FarPlane_R, eTF_Unknown);
+	CTexture* pTargetDS = CRendererResources::CreateDepthTarget(pTargetRT->GetWidth(), pTargetRT->GetHeight(), ColorF(Clr_FarPlane_Rev.r, 1, 0, 0), eTF_Unknown);
 
 	m_debugViewPass.ExchangeRenderTarget(0, pTargetRT);
 	m_debugViewPass.ExchangeDepthTarget(pTargetDS);
 
 	SetAndBuildPerPassResources(false);
 
-	CClearSurfacePass::Execute(pTargetDS, CLEAR_ZBUFFER | CLEAR_STENCIL, Clr_FarPlane_R.r, 1);
+	CClearSurfacePass::Execute(pTargetDS, CLEAR_ZBUFFER | CLEAR_STENCIL, Clr_FarPlane_Rev.r, 1);
 
 	m_debugViewPass.SetupPassContext(m_stageID, ePass_DebugViewDrawModes, TTYPE_DEBUG, FB_DEBUG);
 	m_debugViewPass.SetFlags(CSceneRenderPass::ePassFlags_VrProjectionPass);
@@ -430,7 +430,7 @@ void CSceneCustomStage::ExecuteSelectionHighlight()
 
 	// update our depth texture here
 	CTexture* pTargetRT = CRendererResources::s_ptexSceneSelectionIDs;
-	CTexture* pTargetDS = CRendererResources::CreateDepthTarget(pTargetRT->GetWidth(), pTargetRT->GetHeight(), Clr_FarPlane_R, eTF_Unknown);
+	CTexture* pTargetDS = CRendererResources::CreateDepthTarget(pTargetRT->GetWidth(), pTargetRT->GetHeight(), ColorF(Clr_FarPlane_Rev.r, 1, 0, 0), eTF_Unknown);
 
 	m_selectionIDPass.SetLabel("EDITOR_SELECTION_HIGHLIGHT");
 	m_selectionIDPass.SetViewport(D3DViewPort{
@@ -444,7 +444,7 @@ void CSceneCustomStage::ExecuteSelectionHighlight()
 
 	SetAndBuildPerPassResources(false);
 
-	CClearSurfacePass::Execute(pTargetDS, CLEAR_ZBUFFER | CLEAR_STENCIL, Clr_FarPlane_R.r, 1);
+	CClearSurfacePass::Execute(pTargetDS, CLEAR_ZBUFFER | CLEAR_STENCIL, Clr_FarPlane_Rev.r, 1);
 	CClearSurfacePass::Execute(pTargetRT, ColorF(0.0f, 0.0f, 0.0f, 0.0f));
 
 	m_selectionIDPass.SetFlags(CSceneRenderPass::ePassFlags_None);

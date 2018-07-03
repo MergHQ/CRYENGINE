@@ -8,6 +8,7 @@
 #include "Common/FullscreenPass.h"
 #include "Common/PrimitiveRenderPass.h"
 #include "Common/SceneRenderPass.h"
+#include "SceneGBuffer.h"
 
 class CWaterStage : public CGraphicsPipelineStage
 {
@@ -36,38 +37,39 @@ public:
 	// default for water volume and ocean
 	enum EPerInstanceTexture
 	{
-		ePerInstanceTexture_PerlinNoise = 14,
-		ePerInstanceTexture_Jitter      = 15,
+		ePerInstanceTexture_Foam              = 14,
+		ePerInstanceTexture_RainRipple        = 16,
 
 		ePerInstanceTexture_Count
 	};
 
 	enum EPerPassTexture
 	{
-		ePerPassTexture_WaterGloss            = 16,
-		ePerPassTexture_Foam                  = 17,
-		ePerPassTexture_RainRipple            = 18,
+		ePerPassTexture_VolFogShadow          = 21,
+		ePerPassTexture_VolumetricFog         = 22,
+		ePerPassTexture_VolFogGlobalEnvProbe0 = 23,
+		ePerPassTexture_VolFogGlobalEnvProbe1 = 24,
 
-		ePerPassTexture_ShadowMap0            = 19,
-		ePerPassTexture_ShadowMap1            = 20,
-		ePerPassTexture_ShadowMap2            = 21,
-		ePerPassTexture_ShadowMap3            = 22,
-
-		ePerPassTexture_VolFogShadow          = 23,
-		ePerPassTexture_VolumetricFog         = 24,
-		ePerPassTexture_VolFogGlobalEnvProbe0 = 25,
-		ePerPassTexture_VolFogGlobalEnvProbe1 = 26,
+		ePerPassTexture_PerlinNoiseMap        = 25,
+		ePerPassTexture_Jitter                = 26,
 
 		ePerPassTexture_WaterRipple           = 27,
 		ePerPassTexture_WaterNormal           = 28,
-		ePerPassTexture_SceneDepth            = 29,
+		ePerPassTexture_WaterGloss            = 29,
 		ePerPassTexture_Refraction            = 30,
 		ePerPassTexture_Reflection            = 31,
 
+		ePerPassTexture_SceneDepth            = 32,
+		
+		ePerPassTexture_ShadowMap0            = 33,
+		ePerPassTexture_ShadowMap1            = 34,
+		ePerPassTexture_ShadowMap2            = 35,
+		ePerPassTexture_ShadowMap3            = 36,
+
 		ePerPassTexture_Count
 	};
-	// NOTE: DXOrbis only supports 32 shader slots at this time, don't use t32 or higher if DXOrbis support is desired!
-	static_assert(ePerPassTexture_Count <= 32, "Bind slot too high for DXOrbis");
+	static_assert(int32(ePerPassTexture_PerlinNoiseMap) == int32(CSceneGBufferStage::ePerPassTexture_PerlinNoiseMap), "Per instance texture count must be same in water stage to ensure using same resource layout.");
+	static_assert(int32(ePerPassTexture_SceneDepth) == int32(CSceneGBufferStage::ePerPassTexture_SceneLinearDepth), "Per instance texture count must be same in water stage to ensure using same resource layout.");
 
 	enum EPerPassSampler
 	{
@@ -92,9 +94,9 @@ public:
 public:
 	CWaterStage();
 
-	void  Init() final;
-	void  Update() final;
-	void  Prepare();
+	void Init() final;
+	void Update() final;
+	void Prepare();
 	void Resize(int renderWidth, int renderHeight) override final;
 	bool IsStageActive(EShaderRenderingFlags flags) const final
 	{
@@ -119,7 +121,7 @@ public:
 	bool  IsNormalGenActive() const { return m_bWaterNormalGen; }
 
 private:
-	bool  PrepareResourceLayout();
+	CDeviceResourceLayoutPtr CreateScenePassLayout(const CDeviceResourceSetDesc& perPassResources);
 	bool  PrepareDefaultPerInstanceResources();
 	bool  SetAndBuildPerPassResources(bool bOnInit, EPass passId);
 	void  UpdatePerPassResources(EPass passId);
@@ -136,7 +138,6 @@ private:
 
 private:
 	_smart_ptr<CTexture>                      m_pFoamTex;
-	_smart_ptr<CTexture>                      m_pPerlinNoiseTex;
 	_smart_ptr<CTexture>                      m_pJitterTex;
 	_smart_ptr<CTexture>                      m_pWaterGlossTex;
 	_smart_ptr<CTexture>                      m_pOceanWavesTex;
@@ -181,4 +182,6 @@ private:
 
 	bool              m_bWaterNormalGen;
 	bool              m_bOceanMaskGen;
+
+	static constexpr int32 nGridSize = 64;
 };

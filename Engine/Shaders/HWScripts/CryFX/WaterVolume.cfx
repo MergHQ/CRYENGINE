@@ -449,7 +449,7 @@ v2f WaterVS(a2v IN)
 
 	SWaterVolumeParams params = GetWaterVolumeParams();
 
-	float4x4 InstMatrix = cbWaterVolume.PerInstanceWorldMatrix;
+	float4x4 InstMatrix = cbWaterVolume.WorldMatrix;
 
 	vPos.xyz = mul( InstMatrix, float4(vPos.xyz, 1) );
 	float4 vPosOrig = vPos; 
@@ -878,10 +878,16 @@ void SunSpecular(half fNdotL, half3 vNormal, half3 vView, half cSmoothness, inou
 
 #include "TiledShading.cfi"
 
-Buffer<uint>                           Water_TileLightMask : register(t32);
-StructuredBuffer<STiledLightShadeInfo> Water_TiledLightsShadeInfo : register(t33);
-TextureCubeArray<float4>               Water_SpecCubeArray : register(t34);
-Texture2D<float4>                      Water_EnvironmentBRDF : register(t40);
+// TODO: drop these and use the one of tiled shading instead
+Buffer<uint>                             Water_TileLightMask : register(t17);
+StructuredBuffer<STiledLightShadeInfo>   Water_TiledLightsShadeInfo : register(t18);
+//StructuredBuffer<STiledClipVolumeInfo> Water_TiledClipVolumeInfo : register(t19);
+TextureCubeArray<float4>                 Water_SpecCubeArray : register(t20);
+//TextureCubeArray<float4>               Water_DiffuseCubeArray : register(t21);
+//Texture2DArray<float4>                 Water_SpotTexArray : register(t22);
+//Texture2D<float4>                      Water_ShadowPool : register(t23);
+//Texture2D<float4>                      Water_RandomRotations : register(t24);
+//Texture2D<float4>                      Water_EnvironmentBRDF : register(t40);
 
 float3 GatherCubemapSpecular(float2 screenTC, float3 worldPos, float3 normal, float smoothness)
 {

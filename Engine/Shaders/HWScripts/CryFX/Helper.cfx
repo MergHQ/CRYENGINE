@@ -51,7 +51,7 @@ pixout HelperPS(v2f IN)
 
 	const float HDRDynamicMultiplier = 2.0f;
 
-	uint ambColorPacked = asuint(PerInstanceCustomData2.y);
+	uint ambColorPacked = asuint(CD_CustomData2.y);
 	float4 outputColor;
 	outputColor.r = saturate(((ambColorPacked >> 24) & 0xFF) / 255.0f);
 	outputColor.g = saturate(((ambColorPacked >> 16) & 0xFF) / 255.0f);

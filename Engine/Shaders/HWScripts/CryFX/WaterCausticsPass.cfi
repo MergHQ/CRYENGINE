@@ -24,7 +24,7 @@ v2fCaustic WaterCausticVS(a2v IN)
 	float4 vPos = IN.Position;
 	vPos.w = 1;
 
-	float4x4 InstMatrix = cbWaterVolume.PerInstanceWorldMatrix;
+	float4x4 InstMatrix = cbWaterVolume.WorldMatrix;
 	vPos.xyz = mul( InstMatrix, float4(vPos.xyz, 1) );
 	
 	float4 vPosOrig = vPos; 

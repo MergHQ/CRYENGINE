@@ -26,7 +26,8 @@ public:
 
 public:
 	void Init() final;
-	void Update() final;
+	void Resize(int renderWidth, int renderHeight) final;
+	void OnCVarsChanged(const CCVarUpdateRecorder& cvarUpdater) final;
 	void Execute();
 
 	void FillForwardParams(SForwardParams& forwardParams, bool enable = true) const;
@@ -34,6 +35,7 @@ public:
 private:
 	void ExecuteVolumetricFogShadow();
 	f32  GetFogCullDistance() const;
+	void ResizeResource(int resourceWidth, int resourceHeight);
 
 private:
 	_smart_ptr<CTexture> m_pTexInterleaveSamplePattern;

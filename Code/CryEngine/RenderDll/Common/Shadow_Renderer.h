@@ -136,6 +136,7 @@ public:
 	//atlas parameters
 	int                             nTextureWidth;
 	int                             nTextureHeight;
+	ColorF                          clearValue;
 	int                             nShadowMapSize;
 	int                             nResetID;
 	float                           fFrustrumSize;
@@ -191,6 +192,7 @@ public:
 		, nTexSize(0)
 		, nTextureWidth(0)
 		, nTextureHeight(0)
+		, clearValue(Clr_FarPlane)
 		, nShadowMapSize(0)
 		, nResetID(0)
 		, fFrustrumSize(0)

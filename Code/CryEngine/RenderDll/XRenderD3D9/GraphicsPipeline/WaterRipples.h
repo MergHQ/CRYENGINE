@@ -98,4 +98,6 @@ private:
 #if !defined(_RELEASE)
 	std::vector<SWaterRippleRecord> m_debugRippleInfos;
 #endif
+
+	static constexpr int32 nGridSize = 256;
 };

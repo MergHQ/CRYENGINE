@@ -196,7 +196,7 @@ void CTiledLightVolumesStage::Init()
 
 	for (uint32 i = 0; i < CRY_ARRAY_COUNT(m_volumePasses); i++)
 	{
-		m_volumePasses[i].AllocateTypedConstantBuffer(eConstantBufferShaderSlot_PerBatch, sizeof(HLSL_VolumeLightListGenConstants), EShaderStage_Vertex | EShaderStage_Pixel);
+		m_volumePasses[i].AllocateTypedConstantBuffer(eConstantBufferShaderSlot_PerPrimitive, sizeof(HLSL_VolumeLightListGenConstants), EShaderStage_Vertex | EShaderStage_Pixel);
 	}
 }
 
@@ -1311,7 +1311,7 @@ void CTiledLightVolumesStage::ExecuteVolumeListGen(uint32 dispatchSizeX, uint32 
 				primitive.Compile(m_passLightVolumes);
 
 				{
-					auto constants = primitive.GetConstantManager().BeginTypedConstantUpdate<HLSL_VolumeLightListGenConstants>(eConstantBufferShaderSlot_PerBatch, EShaderStage_Vertex | EShaderStage_Pixel);
+					auto constants = primitive.GetConstantManager().BeginTypedConstantUpdate<HLSL_VolumeLightListGenConstants>(eConstantBufferShaderSlot_PerPrimitive, EShaderStage_Vertex | EShaderStage_Pixel);
 
 					constants->screenScale = Vec4((float)pDepthRT->GetWidth(), (float)pDepthRT->GetHeight(), 0, 0);
 

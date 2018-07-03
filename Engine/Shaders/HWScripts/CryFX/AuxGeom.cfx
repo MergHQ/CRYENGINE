@@ -4,7 +4,7 @@
 
 
 // Uniform data
-cbuffer CB_AuxGeom : register(b0)
+cbuffer CBAuxGeom : register(b0)
 {
 	struct
 	{
@@ -13,7 +13,7 @@ cbuffer CB_AuxGeom : register(b0)
 	} cbAuxGeom;
 };
 
-cbuffer CB_AuxGeomObject : register(b0)
+cbuffer CBAuxGeomObject : register(b0)
 {
 	struct
 	{

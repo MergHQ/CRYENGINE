@@ -11,13 +11,13 @@ float Script : STANDARDSGLOBAL
 >;
 
 //////////////////////////////////////////////////////////////////////////
-// Per instance constant buffer for fog volume.
+// Per draw constant buffer for fog volume.
 
-cbuffer CBFogVolume : register(b12)
+cbuffer CBFogVolume : register(b0)
 {
 	struct
 	{
-		float4x4 objMatrix; // this doesn't include non-uniform scaling, vertex positions are scaled on CPU. originally passed by PI_TransObjMatrix
+		float4x4 objMatrix; // this doesn't include non-uniform scaling, vertex positions are scaled on CPU
 		float3x4 invObjSpaceMatrix; // this includes non-uniform scaling.
 		float4   globalDensity;
 		float4   densityOffset;

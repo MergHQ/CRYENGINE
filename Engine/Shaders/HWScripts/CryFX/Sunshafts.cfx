@@ -93,7 +93,6 @@ vtxOutAAOpt EdgeAAOptVS(uint VertexID : SV_VertexID)
 
 /// Constants ////////////////////////////
 
-float4 PI_sunShaftsParams < psregister = c0; >;
 float4x4 SunShafts_ViewProj;
 float4 SunShafts_SunPos;
 float4 SunShafts_SunCol;

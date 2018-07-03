@@ -27,28 +27,56 @@ void CFogStage::Init()
 	m_pTexInterleaveSamplePattern = CTexture::ForNamePtr("%ENGINE%/EngineAssets/Textures/FogVolShadowJitter.tif", FT_DONT_STREAM | FT_NOMIPS, eTF_Unknown);
 }
 
-void CFogStage::Update()
+void CFogStage::ResizeResource(int resourceWidth, int resourceHeight)
 {
 #if defined(VOLUMETRIC_FOG_SHADOWS)
-	const CRenderView* pRenderView = RenderView();
-	const int32 renderWidth  = pRenderView->GetRenderResolution()[0];
-	const int32 renderHeight = pRenderView->GetRenderResolution()[1];
+	const uint32 flags = FT_NOMIPS | FT_DONT_STREAM | FT_USAGE_RENDERTARGET;
 
-	// Recreate render targets if quality was changed
-	int32 resolutionScale = (CRenderer::CV_r_FogShadows == 1) ? 2 : 4;
-
-	int32 width = renderWidth / resolutionScale;
-	int32 height = renderHeight / resolutionScale;
-
-	if (CRendererResources::s_ptexVolFogShadowBuf[0]->GetWidth() != width || CRendererResources::s_ptexVolFogShadowBuf[0]->GetHeight() != height)
+	for (uint32 i = 0; i < 2; ++i)
 	{
-		for (uint32 i = 0; i < 2; ++i)
+		if (CRendererResources::s_ptexVolFogShadowBuf[i])
 		{
-			ETEX_Format fmt = CRendererResources::s_ptexVolFogShadowBuf[i]->GetDstFormat();
+			const bool shouldApplyFog = true;
 
-			CRendererResources::s_ptexVolFogShadowBuf[i]->Invalidate(width, height, fmt);
-			CRendererResources::s_ptexVolFogShadowBuf[i]->CreateRenderTarget(fmt, Clr_Transparent);
+			// Create/release the displacement texture on demand
+			if (!shouldApplyFog && CTexture::IsTextureExist(CRendererResources::s_ptexVolFogShadowBuf[i]))
+				CRendererResources::s_ptexVolFogShadowBuf[i]->ReleaseDeviceTexture(false);
+			else if (shouldApplyFog && (CRendererResources::s_ptexVolFogShadowBuf[i]->Invalidate(resourceWidth, resourceHeight, eTF_R8G8B8A8) || !CTexture::IsTextureExist(CRendererResources::s_ptexVolFogShadowBuf[i])))
+				CRendererResources::s_ptexVolFogShadowBuf[i]->CreateRenderTarget(eTF_R8G8B8A8, Clr_Unused);
 		}
+	}
+#endif
+}
+
+void CFogStage::Resize(int renderWidth, int renderHeight)
+{
+#if defined(VOLUMETRIC_FOG_SHADOWS)
+	// Recreate render targets if quality was changed
+	const int32 resolutionScale = (CRenderer::CV_r_FogShadows == 1) ? 2 : 4;
+
+	const int32 width  = renderWidth  / resolutionScale;
+	const int32 height = renderHeight / resolutionScale;
+
+	ResizeResource(width, height);
+#endif
+}
+
+void CFogStage::OnCVarsChanged(const CCVarUpdateRecorder& cvarUpdater)
+{
+#if defined(VOLUMETRIC_FOG_SHADOWS)
+	if (auto pVar = cvarUpdater.GetCVar("r_FogShadows"))
+	{
+		const CRenderView* pRenderView = RenderView();
+		const int32 renderWidth  = pRenderView->GetRenderResolution()[0];
+		const int32 renderHeight = pRenderView->GetRenderResolution()[1];
+
+		// Recreate render targets if quality was changed
+		const int32 resolutionScale = (pVar->intValue == 1 ? 2 : 4);
+
+		const int32 width  = renderWidth  / resolutionScale;
+		const int32 height = renderHeight / resolutionScale;
+
+		ResizeResource(width, height);
 	}
 #endif
 }

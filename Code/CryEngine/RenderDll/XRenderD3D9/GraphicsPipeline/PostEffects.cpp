@@ -910,7 +910,7 @@ void CFlashBangPass::Execute(const CPostEffectContext& context)
 			SAFE_DELETE(postEffect.m_pGhostImage);
 
 			const int flags = FT_USAGE_RENDERTARGET | FT_NOMIPS;
-			postEffect.m_pGhostImage = new SDynTexture(pSrcTex->GetWidth() >> 1, pSrcTex->GetHeight() >> 1, eTF_R8G8B8A8, eTT_2D, flags, "GhostImageTempRT");
+			postEffect.m_pGhostImage = new SDynTexture(pSrcTex->GetWidth() >> 1, pSrcTex->GetHeight() >> 1, Clr_Transparent, eTF_R8G8B8A8, eTT_2D, flags, "GhostImageTempRT");
 			postEffect.m_pGhostImage->Update(pSrcTex->GetWidth() >> 1, pSrcTex->GetHeight() >> 1);
 
 			if (postEffect.m_pGhostImage && postEffect.m_pGhostImage->m_pTexture)

@@ -27,7 +27,7 @@ CSceneRenderPass::CSceneRenderPass()
 void CSceneRenderPass::SetupPassContext(uint32 stageID, uint32 stagePassID, EShaderTechniqueID technique, uint32 filter, ERenderListID renderList, uint32 excludeFilter, bool drawCompiledRenderObject)
 {
 	// the scene render passes which draw CCompiledRenderObject must follow the strict rule of PSOs array and PSO cache in CCompiledRenderObject
-	const bool drawable = (drawCompiledRenderObject && stageID < MAX_PIPELINE_SCENE_STAGES) || !drawCompiledRenderObject;
+	const bool drawable = (drawCompiledRenderObject && stageID < eStage_SCENE_NUM) || !drawCompiledRenderObject;
 	assert(drawable);
 	m_stageID = stageID;
 	m_passID = stagePassID;
@@ -39,6 +39,8 @@ void CSceneRenderPass::SetupPassContext(uint32 stageID, uint32 stagePassID, ESha
 
 void CSceneRenderPass::SetPassResources(CDeviceResourceLayoutPtr pResourceLayout, CDeviceResourceSetPtr pPerPassResources)
 {
+	CRY_ASSERT_MESSAGE(!!pResourceLayout, "Layout to be set turns out to be invalid!");
+
 	m_pResourceLayout = pResourceLayout;
 	m_pPerPassResourceSet = pPerPassResources;
 }

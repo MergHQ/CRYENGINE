@@ -381,7 +381,7 @@ Texture3D CloudShadowNoiseTex : register(t0);
 Texture3D CloudShadowEdgeNoiseTex : register(t1);
 SamplerState CloudShadowTrilinearWrapSState : register(s0) = SS_TrilinearWrap;
 
-cbuffer CloudShadowConstantBuffer : register(b3)
+cbuffer CBCloudShadow : register(b3)
 {
 	struct
 	{
@@ -558,7 +558,7 @@ SamplerState VolCloudTrilinearWrapSState : register(s1) = SS_TrilinearWrap;
 SamplerState VolCloudTrilinearClampSState : register(s2) = SS_TrilinearClamp;
 SamplerState VolCloudPointClampSState : register(s3) = SS_PointClamp;
 
-cbuffer VolumetricCloudsConstantBuffer : register(b3)
+cbuffer CBVolumetricClouds : register(b3)
 {
 	struct SVolumetricCloudsParams
 	{
@@ -2650,7 +2650,7 @@ Texture2D prevDepthBuffer : register(t4);
 
 SamplerState vcTemporalReprojectionSState : register(s0) = SS_TrilinearClamp;
 
-cbuffer ReprojectionConstantBuffer : register(b3)
+cbuffer CBReprojection : register(b3)
 {
 	struct SReprojectionParams
 	{

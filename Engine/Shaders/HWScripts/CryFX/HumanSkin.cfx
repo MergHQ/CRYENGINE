@@ -195,9 +195,9 @@ half ComputeWrinkleBlendingWeight(float2 maskCoord)
 	DecodeBlendMask(customSecondaryTex, maskCoord, mask0, mask1, mask2);
 	
 	half weight =
-		dot(mask0, PerInstanceWrinklesMask0) + 
-		dot(mask1, PerInstanceWrinklesMask1) + 
-		dot(mask2, PerInstanceWrinklesMask2);
+		dot(mask0, CD_WrinklesMask0) + 
+		dot(mask1, CD_WrinklesMask1) + 
+		dot(mask2, CD_WrinklesMask2);
 
 	weight *= WrinklesBlend;
 

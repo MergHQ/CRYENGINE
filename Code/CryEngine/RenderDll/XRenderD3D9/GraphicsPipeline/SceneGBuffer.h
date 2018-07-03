@@ -11,18 +11,17 @@ struct SGraphicsPipelineStateDescription;
 
 class CSceneGBufferStage : public CGraphicsPipelineStage
 {
+public:
 	enum EPerPassTexture
 	{
 		ePerPassTexture_PerlinNoiseMap = 25,
-		ePerPassTexture_TerrainElevMap,
 		ePerPassTexture_WindGrid,
+		ePerPassTexture_TerrainElevMap,
 		ePerPassTexture_TerrainNormMap,
 		ePerPassTexture_TerrainBaseMap,
 		ePerPassTexture_NormalsFitting,
 		ePerPassTexture_DissolveNoise,
 		ePerPassTexture_SceneLinearDepth,
-
-		ePerPassTexture_Count
 	};
 
 	enum EPass
@@ -32,7 +31,6 @@ class CSceneGBufferStage : public CGraphicsPipelineStage
 		ePass_MicroGBufferFill = 2,
 	};
 
-public:
 	CSceneGBufferStage();
 
 	void Init() final;

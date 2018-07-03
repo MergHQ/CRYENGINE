@@ -440,7 +440,7 @@ class CHWShader_D3D : public CHWShader
 		int                        m_nUsed;
 		int                        m_nUsedFrame;
 		int                        m_nFrameSubmit;
-		int                        m_nMaxVecs[3];
+		int                        m_nMaxVecs[CB_NUM];
 		short                      m_nInstMatrixID;
 		short                      m_nInstIndex;
 		short                      m_nInstructions;
@@ -493,7 +493,6 @@ class CHWShader_D3D : public CHWShader
 			m_nParams[1] = -1;
 			m_nMaxVecs[0] = 0;
 			m_nMaxVecs[1] = 0;
-			m_nMaxVecs[2] = 0;
 
 			m_Shader.m_nDataSize = 0;
 			m_Shader.m_pShaderData = nullptr;

@@ -15,6 +15,8 @@ public:
 
 	void Init() final;
 	void Update() final;
+	void Resize(int renderWidth, int renderHeight) final;
+	void OnCVarsChanged(const CCVarUpdateRecorder& cvarUpdater) final;
 
 	void         ExecuteDeferredSnowGBuffer();
 	void         ExecuteDeferredSnowDisplacement();
@@ -55,6 +57,8 @@ private:
 	};
 
 private:
+	void ResizeResource(int renderWidth, int renderHeight);
+
 	bool GenerateSnowClusterVertex();
 	void CreateSnowClusters();
 	void UpdateSnowClusters();

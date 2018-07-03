@@ -64,7 +64,7 @@ IrisShafts::IrisShafts(const char* name)
 
 	m_meshDirty = true;
 
-	m_primitive.AllocateTypedConstantBuffer(eConstantBufferShaderSlot_PerBatch, sizeof(SShaderParams), EShaderStage_Vertex | EShaderStage_Pixel);
+	m_primitive.AllocateTypedConstantBuffer(eConstantBufferShaderSlot_PerPrimitive, sizeof(SShaderParams), EShaderStage_Vertex | EShaderStage_Pixel);
 }
 
 void IrisShafts::Load(IXmlNode* pNode)
@@ -261,7 +261,7 @@ bool IrisShafts::PreparePrimitives(const SPreparePrimitivesContext& context)
 
 	// update constants
 	{
-		auto constants = m_primitive.GetConstantManager().BeginTypedConstantUpdate<SShaderParams>(eConstantBufferShaderSlot_PerBatch, EShaderStage_Vertex | EShaderStage_Pixel);
+		auto constants = m_primitive.GetConstantManager().BeginTypedConstantUpdate<SShaderParams>(eConstantBufferShaderSlot_PerPrimitive, EShaderStage_Vertex | EShaderStage_Pixel);
 
 		for (int i = 0; i < context.viewInfoCount; ++i)
 		{

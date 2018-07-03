@@ -66,12 +66,13 @@ struct GDTriangleNB
 
 // animation bones
 #define MAX_BONES 768
-cbuffer CB_SkinQuat_Cur : register(b9)
+
+cbuffer CB_SkinQuat_Cur : register(b2)
 {
 	float2x4 _g_SkinQuat_Cur[MAX_BONES];
 };
 
-cbuffer CB_SkinQuat_Prev : register(b10)
+cbuffer CB_SkinQuat_Prev : register(b3)
 {
 	float2x4 _g_SkinQuat_Prev[MAX_BONES];
 };

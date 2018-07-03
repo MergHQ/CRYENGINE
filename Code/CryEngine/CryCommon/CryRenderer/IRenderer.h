@@ -938,7 +938,7 @@ struct IRenderer//: public IRendererCallbackServer
 		HWND handle  = 0; // WIN_HWND
 
 		ColorF clearColor               = Clr_Empty;
-		ColorF clearDepthStencil        = Clr_FarPlane;
+		ColorF clearDepthStencil        = Clr_FarPlane_Rev;
 		Vec2i  superSamplingFactor      = { 1, 1 };
 		Vec2i  screenResolution         = { 0, 0 };
 

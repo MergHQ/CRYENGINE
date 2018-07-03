@@ -54,9 +54,10 @@ enum EStandardGraphicsPipelineStage
 	eStage_SceneGBuffer,
 	eStage_SceneForward,
 	eStage_SceneCustom,
+	eStage_SCENE_NUM,
 
 	// Regular stages supporting async compute
-	eStage_FIRST_ASYNC_COMPUTE,
+	eStage_FIRST_ASYNC_COMPUTE = eStage_SCENE_NUM,
 	eStage_ComputeSkinning = eStage_FIRST_ASYNC_COMPUTE,
 	eStage_ComputeParticles,
 	eStage_TiledLightVolumes,
@@ -137,8 +138,8 @@ public:
 	CConstantBufferPtr                       GetMainViewConstantBuffer()                { return m_mainViewConstantBuffer.GetDeviceConstantBuffer(); }
 	const CDeviceResourceSetDesc&            GetDefaultMaterialBindPoints()       const { return m_defaultMaterialBindPoints; }
 	std::array<SamplerStateHandle, EFSS_MAX> GetDefaultMaterialSamplers()         const;
-	const CDeviceResourceSetDesc&            GetDefaultInstanceExtraResources()   const { return m_defaultInstanceExtraResources; }
-	CDeviceResourceSetPtr                    GetDefaultInstanceExtraResourceSet() const { return m_pDefaultInstanceExtraResourceSet; }
+	const CDeviceResourceSetDesc&            GetDefaultDrawExtraResourceLayout()  const { return m_defaultDrawExtraRL; }
+	CDeviceResourceSetPtr                    GetDefaulDrawExtraResourceSet()      const { return m_pDefaultDrawExtraRS; }
 
 	CPostAAStage*             GetPostAAStage()                   const { return m_pPostAAStage; }
 	CSceneGBufferStage*       GetGBufferStage()                        { return m_pSceneGBufferStage; }
@@ -207,8 +208,8 @@ private:
 
 	CTypedConstantBuffer<HLSL_PerViewGlobalConstantBuffer, 256> m_mainViewConstantBuffer;
 	CDeviceResourceSetDesc                                      m_defaultMaterialBindPoints;
-	CDeviceResourceSetDesc                                      m_defaultInstanceExtraResources;
-	CDeviceResourceSetPtr                                       m_pDefaultInstanceExtraResourceSet;
+	CDeviceResourceSetDesc                                      m_defaultDrawExtraRL;
+	CDeviceResourceSetPtr                                       m_pDefaultDrawExtraRS;
 
 	EShaderRenderingFlags         m_renderingFlags = EShaderRenderingFlags(0);
 

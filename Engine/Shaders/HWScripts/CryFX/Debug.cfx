@@ -168,7 +168,7 @@ technique InstructionsGrad
 
 /// Constants ////////////////////////////
 
-cbuffer CB_DebugRenderTarget : register(b0)
+cbuffer CBDebugRenderTarget : register(b0)
 {
 	struct
 	{

@@ -1,7 +1,5 @@
 // Copyright 2001-2018 Crytek GmbH / Crytek Group. All rights reserved.
 
-float4 MaterialLayersParamsSG : PI_MaterialLayersParams;//x=frozen, y=wet, z = cloak, w = unuse
-
 ///////////////// vertex shader //////////////////
 v2f_sh Common_SG_VS(app2vertSGGeneral IN_common)
 {
@@ -132,7 +130,7 @@ pixout_shadow Common_SG_PS(v2f_sh IN)
 		OUT.Depth = IN.Depth + min( fSlopeScale * max( abs(ddx(IN.Depth)), abs(ddy(IN.Depth)) ), fSlopeClamp);
 #elif %_RT_CUBEMAP0 // Local light shadows: linear depth
 		OUT.Depth = IN.Depth;
-	#endif
+#endif
 
 #if %_RT_ALPHATEST || %_RT_ALPHABLEND || %_RT_SAMPLE4
 	#if !%TEMP_TERRAIN
@@ -146,19 +144,19 @@ pixout_shadow Common_SG_PS(v2f_sh IN)
 	clip(baseColor.a - Get_MaterialAlphaTest());
 #endif
 
-	#if (!ENABLE_TESSELLATION || %_RT_NO_TESSELLATION) && %_RT_SAMPLE4
-		// output RSM color component
-		#if !%TEMP_TERRAIN
+#if (!ENABLE_TESSELLATION || %_RT_NO_TESSELLATION) && %_RT_SAMPLE4
+	// output RSM color component
+	#if !%TEMP_TERRAIN
 		OUT.Color.rgb = baseColor.rgb * MatDifColor.rgb;
-		#else
-			OUT.Color.rgb = baseColor.rgb;
-		#endif
+	#else
+		OUT.Color.rgb = baseColor.rgb;
+	#endif
 
-		#if	%TEMP_VEGETATION
-			OUT.Color.a = CP_ShadowGen_VegetationAlphaClamp.x;
-		#else
-			OUT.Color.a = 1.f;
-		#endif
+	#if	%TEMP_VEGETATION
+		OUT.Color.a = CP_ShadowGen_VegetationAlphaClamp.x;
+	#else
+		OUT.Color.a = 1.f;
+	#endif
 
 	OUT.Normal.xyz = normalize(half3(IN.Normal.xyz))*.5h+.5h;
 	OUT.Normal.w = 1;

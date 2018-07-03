@@ -27,7 +27,7 @@ public:
 
 private:
 	void PrepareForUse(watervolume::SCompiledWaterVolume& RESTRICT_REFERENCE compiledObj, bool bInstanceOnly, CDeviceCommandList& RESTRICT_REFERENCE commandList) const;
-	void UpdatePerInstanceCB(watervolume::SCompiledWaterVolume& RESTRICT_REFERENCE compiledObj, const CRenderObject& renderObj, bool bRenderFogShadowWater, bool bCaustics,CRenderView *pRenderView) const;
+	void UpdatePerDrawCB(watervolume::SCompiledWaterVolume& RESTRICT_REFERENCE compiledObj, const CRenderObject& renderObj, bool bRenderFogShadowWater, bool bCaustics,CRenderView *pRenderView) const;
 	void UpdateVertex(watervolume::SCompiledWaterVolume& RESTRICT_REFERENCE compiledObj, bool bFullscreen);
 
 public:

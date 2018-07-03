@@ -141,7 +141,7 @@ void Streaks::UpdateMeshes()
 
 		mesh.MarkDirty();
 		mesh.ValidateMesh();
-		mesh.primitive.SetInlineConstantBuffer(eConstantBufferShaderSlot_PerBatch, m_constantBuffer, EShaderStage_Vertex | EShaderStage_Pixel);
+		mesh.primitive.SetInlineConstantBuffer(eConstantBufferShaderSlot_PerPrimitive, m_constantBuffer, EShaderStage_Vertex | EShaderStage_Pixel);
 	}
 
 	// index buffer is shared
@@ -166,7 +166,7 @@ bool Streaks::PreparePrimitives(const SPreparePrimitivesContext& context)
 	// update shared constant buffer
 	{
 		auto& firstPrimitive = m_separatedMeshList.front().primitive;
-		auto constants = firstPrimitive.GetConstantManager().BeginTypedConstantUpdate<SShaderParams>(eConstantBufferShaderSlot_PerBatch, EShaderStage_Vertex | EShaderStage_Pixel);
+		auto constants = firstPrimitive.GetConstantManager().BeginTypedConstantUpdate<SShaderParams>(eConstantBufferShaderSlot_PerPrimitive, EShaderStage_Vertex | EShaderStage_Pixel);
 
 		for (int i = 0; i < context.viewInfoCount; ++i)
 		{
