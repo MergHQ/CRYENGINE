@@ -18,7 +18,7 @@ COcclusionObstructionState::COcclusionObstructionState(SwitchStateId const state
 }
 
 //////////////////////////////////////////////////////////////////////////
-ERequestStatus COcclusionObstructionState::Set(CATLAudioObject& audioObject) const
+void COcclusionObstructionState::Set(CATLAudioObject& audioObject) const
 {
 	if (&audioObject != &m_globalAudioObject)
 	{
@@ -51,8 +51,6 @@ ERequestStatus COcclusionObstructionState::Set(CATLAudioObject& audioObject) con
 			audioObject.SetObstructionOcclusion(0.0f, 0.0f);
 		}
 	}
-
-	return ERequestStatus::Success;
 }
 
 //////////////////////////////////////////////////////////////////////////
@@ -63,7 +61,7 @@ CRelativeVelocityTrackingState::CRelativeVelocityTrackingState(SwitchStateId con
 }
 
 //////////////////////////////////////////////////////////////////////////
-ERequestStatus CRelativeVelocityTrackingState::Set(CATLAudioObject& audioObject) const
+void CRelativeVelocityTrackingState::Set(CATLAudioObject& audioObject) const
 {
 	if (&audioObject != &m_globalAudioObject)
 	{
@@ -80,8 +78,6 @@ ERequestStatus CRelativeVelocityTrackingState::Set(CATLAudioObject& audioObject)
 			CRY_ASSERT(false);
 		}
 	}
-
-	return ERequestStatus::Success;
 }
 
 //////////////////////////////////////////////////////////////////////////
@@ -92,7 +88,7 @@ CAbsoluteVelocityTrackingState::CAbsoluteVelocityTrackingState(SwitchStateId con
 }
 
 //////////////////////////////////////////////////////////////////////////
-ERequestStatus CAbsoluteVelocityTrackingState::Set(CATLAudioObject& audioObject) const
+void CAbsoluteVelocityTrackingState::Set(CATLAudioObject& audioObject) const
 {
 	if (&audioObject != &m_globalAudioObject)
 	{
@@ -109,8 +105,6 @@ ERequestStatus CAbsoluteVelocityTrackingState::Set(CATLAudioObject& audioObject)
 			CRY_ASSERT(false);
 		}
 	}
-
-	return ERequestStatus::Success;
 }
 
 //////////////////////////////////////////////////////////////////////////
@@ -210,14 +204,12 @@ ERequestStatus CResumeAllTrigger::Execute(Impl::IObject* const pImplObject, Impl
 }
 
 //////////////////////////////////////////////////////////////////////////
-ERequestStatus CAbsoluteVelocityParameter::Set(CATLAudioObject& audioObject, float const value) const
+void CAbsoluteVelocityParameter::Set(CATLAudioObject& audioObject, float const value) const
 {
-	return ERequestStatus::Success;
 }
 
 //////////////////////////////////////////////////////////////////////////
-ERequestStatus CRelativeVelocityParameter::Set(CATLAudioObject& audioObject, float const value) const
+void CRelativeVelocityParameter::Set(CATLAudioObject& audioObject, float const value) const
 {
-	return ERequestStatus::Success;
 }
 } // namespace CryAudio

@@ -256,23 +256,29 @@ Texture2D ReflectionSampler : register(t0)
 >;
 
 //////////////////////////////////////////////////////////////////////////
-// Per instance constant buffer for water ocean.
+// Per draw constant buffer for water ocean.
 
 struct SWaterParams
 {
 	float4x4 mReflProj;
+
+	// ocean related parameters
 	float4   OceanParams0;
 	float4   OceanParams1;
+
 	float4   cOceanFogColorDensity;
 };
 
-cbuffer CBWater : register(b12)
+cbuffer CBWater : register(b0)
 {
 	struct
 	{
 		float4x4 mReflProj;
+
+		// ocean related parameters
 		float4   OceanParams0;
 		float4   OceanParams1;
+
 		float4   cOceanFogColorDensity;
 	} cbWater;
 };

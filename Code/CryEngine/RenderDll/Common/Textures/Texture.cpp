@@ -487,7 +487,6 @@ bool CTexture::CreateShaderResource(STexData& td)
 	m_fAvgBrightness = td.m_fAvgBrightness;
 	m_cMinColor = td.m_cMinColor;
 	m_cMaxColor = td.m_cMaxColor;
-	m_cClearColor = ColorF(0.0f, 0.0f, 0.0f, 1.0f);
 	m_bUseDecalBorderCol = (td.m_nFlags & FIM_DECAL) != 0;
 	m_bIsSRGB = (td.m_nFlags & FIM_SRGB_READ) != 0;
 
@@ -3246,7 +3245,7 @@ CFlashTextureSource::CFlashTextureSource(const char* pFlashFileName, const IRend
 	: CFlashTextureSourceBase(pFlashFileName, pArgs)
 {
 	// create render-target with mip-maps
-	m_pDynTexture = new SDynTexture(GetWidth(), GetHeight(), eTF_R8G8B8A8, eTT_2D, FT_USAGE_RENDERTARGET | FT_STATE_CLAMP | FT_FORCE_MIPS | FT_USAGE_ALLOWREADSRGB, "FlashTextureSourceUniqueRT");
+	m_pDynTexture = new SDynTexture(GetWidth(), GetHeight(), Clr_Transparent, eTF_R8G8B8A8, eTT_2D, FT_USAGE_RENDERTARGET | FT_STATE_CLAMP | FT_FORCE_MIPS | FT_USAGE_ALLOWREADSRGB, "FlashTextureSourceUniqueRT");
 	m_pMipMapper = nullptr;
 }
 
@@ -3293,7 +3292,7 @@ CFlashTextureSourceSharedRT::CFlashTextureSourceSharedRT(const char* pFlashFileN
 	if (!ms_pDynTexture)
 	{
 		// create render-target with mip-maps
-		ms_pDynTexture = new SDynTexture(ms_sharedRTWidth, ms_sharedRTHeight, eTF_R8G8B8A8, eTT_2D, FT_USAGE_RENDERTARGET | FT_STATE_CLAMP | FT_FORCE_MIPS | FT_USAGE_ALLOWREADSRGB, "FlashTextureSourceSharedRT");
+		ms_pDynTexture = new SDynTexture(ms_sharedRTWidth, ms_sharedRTHeight, Clr_Transparent, eTF_R8G8B8A8, eTT_2D, FT_USAGE_RENDERTARGET | FT_STATE_CLAMP | FT_FORCE_MIPS | FT_USAGE_ALLOWREADSRGB, "FlashTextureSourceSharedRT");
 		ms_pMipMapper = nullptr;
 	}
 }

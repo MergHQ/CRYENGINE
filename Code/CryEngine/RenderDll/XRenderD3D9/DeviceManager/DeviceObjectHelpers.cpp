@@ -228,7 +228,7 @@ void SDeviceObjectHelpers::CShaderConstantManager::InitShaderReflection(CDeviceG
 	{
 		auto& updateContext = m_pShaderReflection->bufferUpdateContexts[i];
 		CHWShader_D3D::SHWSInstance* pInstance = reinterpret_cast<CHWShader_D3D::SHWSInstance*>(pipelineState.m_pHwShaderInstances[updateContext.shaderClass]);
-		maxVectorCount = max(maxVectorCount, pInstance->m_nMaxVecs[eConstantBufferShaderSlot_PerBatch]);
+		maxVectorCount = max(maxVectorCount, pInstance->m_nMaxVecs[eConstantBufferShaderSlot_PerDraw]);
 	}
 
 	CryStackAllocWithSizeVectorCleared(Vec4, maxVectorCount, zeroMem, CDeviceBufferManager::AlignBufferSizeForStreaming);
@@ -242,12 +242,11 @@ void SDeviceObjectHelpers::CShaderConstantManager::InitShaderReflection(CDeviceG
 		CRY_ASSERT(pipelineState.m_pHwShaderInstances[updateContext.shaderClass]);
 		
 		CHWShader_D3D::SHWSInstance* pInstance = reinterpret_cast<CHWShader_D3D::SHWSInstance*>(pipelineState.m_pHwShaderInstances[updateContext.shaderClass]);
-		CRY_ASSERT(pInstance->m_nMaxVecs[eConstantBufferShaderSlot_PerInstanceLegacy] == 0); // Legacy per instance constants are not supported anymore
-		CRY_ASSERT(pInstance->m_nMaxVecs[eConstantBufferShaderSlot_PerBatch] > 0);           // No per batch shader constants. Shader reflection not required.
+		CRY_ASSERT(pInstance->m_nMaxVecs[eConstantBufferShaderSlot_PerDraw] > 0);           // No per batch shader constants. Shader reflection not required.
 
 		updateContext.pShaderInstance = pInstance;
 
-		const size_t bufferSize = sizeof(Vec4) * pInstance->m_nMaxVecs[eConstantBufferShaderSlot_PerBatch];
+		const size_t bufferSize = sizeof(Vec4) * pInstance->m_nMaxVecs[eConstantBufferShaderSlot_PerDraw];
 		const size_t updateSize = CDeviceBufferManager::AlignBufferSizeForStreaming(bufferSize);
 
 		if (bufferSize)
@@ -270,14 +269,13 @@ void SDeviceObjectHelpers::CShaderConstantManager::InitShaderReflection(CDeviceC
 	CHWShader_D3D::SHWSInstance* pInstance = reinterpret_cast<CHWShader_D3D::SHWSInstance*>(pipelineState.m_pHwShaderInstance);
 	updateContext.pShaderInstance = pInstance;
 
-	CRY_ASSERT(pInstance->m_nMaxVecs[eConstantBufferShaderSlot_PerInstanceLegacy] == 0); // Legacy per instance constants are not supported anymore
-	CRY_ASSERT(pInstance->m_nMaxVecs[eConstantBufferShaderSlot_PerBatch] > 0);           // No per batch shader constants. Shader reflection not required.
+	CRY_ASSERT(pInstance->m_nMaxVecs[eConstantBufferShaderSlot_PerDraw] > 0);           // No per batch shader constants. Shader reflection not required.
 
-	if (pInstance->m_nMaxVecs[eConstantBufferShaderSlot_PerBatch] > 0)
+	if (pInstance->m_nMaxVecs[eConstantBufferShaderSlot_PerDraw] > 0)
 	{
-		CryStackAllocWithSizeVectorCleared(Vec4, pInstance->m_nMaxVecs[eConstantBufferShaderSlot_PerBatch], zeroMem, CDeviceBufferManager::AlignBufferSizeForStreaming);
+		CryStackAllocWithSizeVectorCleared(Vec4, pInstance->m_nMaxVecs[eConstantBufferShaderSlot_PerDraw], zeroMem, CDeviceBufferManager::AlignBufferSizeForStreaming);
 
-		const size_t bufferSize = sizeof(Vec4) * pInstance->m_nMaxVecs[eConstantBufferShaderSlot_PerBatch];
+		const size_t bufferSize = sizeof(Vec4) * pInstance->m_nMaxVecs[eConstantBufferShaderSlot_PerDraw];
 		const size_t updateSize = CDeviceBufferManager::AlignBufferSizeForStreaming(bufferSize);
 
 		m_constantBuffers[updateContext.bufferIndex].pBuffer = gcpRendD3D->m_DevBufMan.CreateConstantBuffer(bufferSize);

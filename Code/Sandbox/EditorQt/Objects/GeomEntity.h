@@ -25,7 +25,6 @@ public:
 	virtual void       GetScriptProperties(XmlNodeRef xmlProperties) override;
 	virtual void       InvalidateGeometryFile(const string& file) override;
 	virtual XmlNodeRef Export(const string& levelPath, XmlNodeRef& xmlNode) override;
-	virtual void       SpawnEntity() override;
 
 	virtual void CreateInspectorWidgets(CInspectorWidgetCreator& creator) override;
 	//////////////////////////////////////////////////////////////////////////

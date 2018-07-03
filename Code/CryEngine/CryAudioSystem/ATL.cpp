@@ -741,7 +741,8 @@ ERequestStatus CAudioTranslationLayer::ProcessAudioObjectRequest(CAudioRequest c
 				}
 
 				CATLStandaloneFile* const pFile = m_audioStandaloneFileMgr.ConstructStandaloneFile(pRequestData->file.c_str(), pRequestData->bLocalized, pITrigger);
-				result = pObject->HandlePlayFile(pFile, request.pOwner, request.pUserData, request.pUserDataOwner);
+				pObject->HandlePlayFile(pFile, request.pOwner, request.pUserData, request.pUserDataOwner);
+				result = ERequestStatus::Success;
 			}
 
 			break;
@@ -753,7 +754,8 @@ ERequestStatus CAudioTranslationLayer::ProcessAudioObjectRequest(CAudioRequest c
 
 			if (pRequestData != nullptr && !pRequestData->file.empty())
 			{
-				result = pObject->HandleStopFile(pRequestData->file.c_str());
+				pObject->HandleStopFile(pRequestData->file.c_str());
+				result = ERequestStatus::Success;
 			}
 
 			break;
@@ -812,7 +814,7 @@ ERequestStatus CAudioTranslationLayer::ProcessAudioObjectRequest(CAudioRequest c
 
 						if (pState != nullptr)
 						{
-							result = pNewObject->HandleSetSwitchState(pSwitch, pState);
+							pNewObject->HandleSetSwitchState(pSwitch, pState);
 						}
 					}
 				}
@@ -847,7 +849,8 @@ ERequestStatus CAudioTranslationLayer::ProcessAudioObjectRequest(CAudioRequest c
 		}
 	case EAudioObjectRequestType::StopAllTriggers:
 		{
-			result = pObject->StopAllTriggers();
+			pObject->StopAllTriggers();
+			result = ERequestStatus::Success;
 
 			break;
 		}
@@ -880,7 +883,8 @@ ERequestStatus CAudioTranslationLayer::ProcessAudioObjectRequest(CAudioRequest c
 
 			if (pParameter != nullptr)
 			{
-				result = pObject->HandleSetParameter(pParameter, pRequestData->value);
+				pObject->HandleSetParameter(pParameter, pRequestData->value);
+				result = ERequestStatus::Success;
 			}
 
 			break;
@@ -899,7 +903,8 @@ ERequestStatus CAudioTranslationLayer::ProcessAudioObjectRequest(CAudioRequest c
 
 				if (pState != nullptr)
 				{
-					result = pObject->HandleSetSwitchState(pSwitch, pState);
+					pObject->HandleSetSwitchState(pSwitch, pState);
+					result = ERequestStatus::Success;
 				}
 			}
 
@@ -926,7 +931,8 @@ ERequestStatus CAudioTranslationLayer::ProcessAudioObjectRequest(CAudioRequest c
 
 				if (pEnvironment != nullptr)
 				{
-					result = pObject->HandleSetEnvironment(pEnvironment, pRequestData->amount);
+					pObject->HandleSetEnvironment(pEnvironment, pRequestData->amount);
+					result = ERequestStatus::Success;
 				}
 			}
 			else
@@ -938,7 +944,9 @@ ERequestStatus CAudioTranslationLayer::ProcessAudioObjectRequest(CAudioRequest c
 		}
 	case EAudioObjectRequestType::ResetEnvironments:
 		{
-			result = pObject->HandleResetEnvironments(m_environments);
+			pObject->HandleResetEnvironments(m_environments);
+			result = ERequestStatus::Success;
+
 			break;
 		}
 	case EAudioObjectRequestType::RegisterObject:
@@ -970,14 +978,14 @@ ERequestStatus CAudioTranslationLayer::ProcessAudioObjectRequest(CAudioRequest c
 
 					if (pState != nullptr)
 					{
-						result = pObject->HandleSetSwitchState(pSwitch, pState);
-						CRY_ASSERT(result == ERequestStatus::Success);
+						pObject->HandleSetSwitchState(pSwitch, pState);
 					}
 				}
 			}
 
 			m_objectMgr.RegisterObject(pObject);
 			result = ERequestStatus::Success;
+
 			break;
 		}
 	case EAudioObjectRequestType::ReleaseObject:

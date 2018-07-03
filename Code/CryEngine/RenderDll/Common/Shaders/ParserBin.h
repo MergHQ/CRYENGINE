@@ -608,8 +608,6 @@ enum EToken
 	eT__DS,
 	eT__CS,
 
-	eT__g_SkinQuat,
-
 	eT_x,
 	eT_y,
 	eT_z,

@@ -484,7 +484,7 @@ void CD3D9Renderer::SF_HandleClear(const SSF_GlobalDrawParams& __restrict params
 		if (rCurOutput.bRenderTargetClear)
 			rCurOutput.clearPass.Execute(rCurOutput.pRenderTarget, Clr_Transparent, 1, &rect);
 		if (rCurOutput.bStencilTargetClear)
-			rCurOutput.clearPass.Execute(rCurOutput.pStencilTarget, CLEAR_STENCIL, Clr_Unused.r, 0, 1, &rect);
+			rCurOutput.clearPass.Execute(rCurOutput.pStencilTarget, CLEAR_STENCIL, Clr_Unused.r, Val_Stencil, 1, &rect);
 	}
 
 	rCurOutput.bRenderTargetClear = false;

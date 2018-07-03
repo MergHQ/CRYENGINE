@@ -473,10 +473,9 @@ void CSceneGBufferStage::ExecuteMicroGBuffer()
 
 	m_microGBufferPass.SetViewport(GetViewport());
 
-	const bool bReverseDepth = true;
-	CClearSurfacePass::Execute(RenderView()->GetDepthTarget(), CLEAR_ZBUFFER | CLEAR_STENCIL, bReverseDepth ? 0.0f : 1.0f, 1);
+	CClearSurfacePass::Execute(RenderView()->GetDepthTarget(), CLEAR_ZBUFFER | CLEAR_STENCIL, Clr_FarPlane_Rev.r, STENCIL_VALUE_OUTDOORS);
 
-	m_microGBufferPass.SetFlags(bReverseDepth ? CSceneRenderPass::ePassFlags_ReverseDepth : CSceneRenderPass::ePassFlags_None);
+	m_microGBufferPass.SetFlags(CSceneRenderPass::ePassFlags_ReverseDepth);
 
 	Prepare(false);
 	
@@ -508,18 +507,15 @@ void CSceneGBufferStage::Execute()
 
 	{
 		// Clear depth (stencil initialized to STENCIL_VALUE_OUTDOORS)
-		bool bReverseDepth = true;
-
 		if (CVrProjectionManager::Instance()->GetProjectionType() == CVrProjectionManager::eVrProjection_LensMatched)
 		{
 			// use inverse depth here
-			bReverseDepth = !bReverseDepth;
-			CClearSurfacePass::Execute(pZTexture, CLEAR_ZBUFFER | CLEAR_STENCIL, bReverseDepth ? 0.0f : 1.0f, STENCIL_VALUE_OUTDOORS);
+			CClearSurfacePass::Execute(pZTexture, CLEAR_ZBUFFER | CLEAR_STENCIL, 1.0f - Clr_FarPlane_Rev.r, STENCIL_VALUE_OUTDOORS);
 			CVrProjectionManager::Instance()->ExecuteLensMatchedOctagon(pRenderView->GetDepthTarget());
 		}
 		else
 		{
-			CClearSurfacePass::Execute(pZTexture, CLEAR_ZBUFFER | CLEAR_STENCIL, bReverseDepth ? 0.0f : 1.0f, STENCIL_VALUE_OUTDOORS);
+			CClearSurfacePass::Execute(pZTexture, CLEAR_ZBUFFER | CLEAR_STENCIL, 0.0f + Clr_FarPlane_Rev.r, STENCIL_VALUE_OUTDOORS);
 		}
 
 		// Clear velocity target
@@ -597,6 +593,12 @@ void CSceneGBufferStage::ExecuteMinimumZpass()
 
 	auto& RESTRICT_REFERENCE commandList = GetDeviceObjectFactory().GetCoreCommandList();
 	m_depthPrepass.PrepareRenderPassForUse(commandList);
+	{
+		auto& RESTRICT_REFERENCE commandList = GetDeviceObjectFactory().GetCoreCommandList();
+
+		m_depthPrepass.PrepareRenderPassForUse(commandList);
+	}
+
 	{
 		rendItemDrawer.InitDrawSubmission();
 

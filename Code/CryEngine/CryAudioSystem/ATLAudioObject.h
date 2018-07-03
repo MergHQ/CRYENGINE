@@ -96,13 +96,13 @@ public:
 	ERequestStatus   HandleExecuteTrigger(CATLTrigger const* const pTrigger, void* const pOwner = nullptr, void* const pUserData = nullptr, void* const pUserDataOwner = nullptr, ERequestFlags const flags = ERequestFlags::None);
 	ERequestStatus   HandleStopTrigger(CATLTrigger const* const pTrigger);
 	void             HandleSetTransformation(CObjectTransformation const& transformation, float const distanceToListener);
-	ERequestStatus   HandleSetParameter(CParameter const* const pParameter, float const value);
-	ERequestStatus   HandleSetSwitchState(CATLSwitch const* const pSwitch, CATLSwitchState const* const pState);
-	ERequestStatus   HandleSetEnvironment(CATLAudioEnvironment const* const pEnvironment, float const amount);
-	ERequestStatus   HandleResetEnvironments(AudioEnvironmentLookup const& environmentsLookup);
+	void             HandleSetParameter(CParameter const* const pParameter, float const value);
+	void             HandleSetSwitchState(CATLSwitch const* const pSwitch, CATLSwitchState const* const pState);
+	void             HandleSetEnvironment(CATLAudioEnvironment const* const pEnvironment, float const amount);
+	void             HandleResetEnvironments(AudioEnvironmentLookup const& environmentsLookup);
 	void             HandleSetOcclusionType(EOcclusionType const calcType, Vec3 const& listenerPosition);
-	ERequestStatus   HandlePlayFile(CATLStandaloneFile* const pFile, void* const pOwner = nullptr, void* const pUserData = nullptr, void* const pUserDataOwner = nullptr);
-	ERequestStatus   HandleStopFile(char const* const szFile);
+	void             HandlePlayFile(CATLStandaloneFile* const pFile, void* const pOwner = nullptr, void* const pUserData = nullptr, void* const pUserDataOwner = nullptr);
+	void             HandleStopFile(char const* const szFile);
 
 	void             Init(char const* const szName, Impl::IObject* const pImplData, Vec3 const& listenerPosition, EntityId entityId);
 	void             Release();
@@ -117,7 +117,7 @@ public:
 	void                           ReportFinishedLoadingTriggerImpl(TriggerImplId const audioTriggerImplId, bool const bLoad);
 	void                           GetStartedStandaloneFileRequestData(CATLStandaloneFile* const pStandaloneFile, CAudioRequest& request);
 
-	ERequestStatus                 StopAllTriggers();
+	void                           StopAllTriggers();
 	ObjectEventSet const&          GetActiveEvents() const { return m_activeEvents; }
 	ERequestStatus                 LoadTriggerAsync(CATLTrigger const* const pTrigger, bool const bLoad);
 

@@ -113,9 +113,9 @@ void CATLEvent::Release()
 }
 
 //////////////////////////////////////////////////////////////////////////
-ERequestStatus CParameterImpl::Set(CATLAudioObject& audioObject, float const value) const
+void CParameterImpl::Set(CATLAudioObject& audioObject, float const value) const
 {
-	return audioObject.GetImplDataPtr()->SetParameter(m_pImplData, value);
+	audioObject.GetImplDataPtr()->SetParameter(m_pImplData, value);
 }
 
 //////////////////////////////////////////////////////////////////////////
@@ -126,9 +126,9 @@ CParameterImpl::~CParameterImpl()
 }
 
 //////////////////////////////////////////////////////////////////////////
-ERequestStatus CExternalAudioSwitchStateImpl::Set(CATLAudioObject& audioObject) const
+void CExternalAudioSwitchStateImpl::Set(CATLAudioObject& audioObject) const
 {
-	return audioObject.GetImplDataPtr()->SetSwitchState(m_pImplData);
+	audioObject.GetImplDataPtr()->SetSwitchState(m_pImplData);
 }
 
 //////////////////////////////////////////////////////////////////////////

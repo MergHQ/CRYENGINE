@@ -60,8 +60,8 @@ private:
 
 	void PrepareForUse(water::SCompiledWaterOcean& compiledObj, bool bInstanceOnly, CDeviceCommandList& RESTRICT_REFERENCE commandList) const;
 
-	void UpdatePerInstanceResourceSet(water::SCompiledWaterOcean& RESTRICT_REFERENCE compiledObj, const SWaterOceanParam& oceanParam, const CWaterStage& waterStage);
-	void UpdatePerInstanceCB(water::SCompiledWaterOcean& RESTRICT_REFERENCE compiledObj, const CRenderObject& renderObj) const;
+	void UpdatePerDrawRS(water::SCompiledWaterOcean& RESTRICT_REFERENCE compiledObj, const SWaterOceanParam& oceanParam, const CWaterStage& waterStage);
+	void UpdatePerDrawCB(water::SCompiledWaterOcean& RESTRICT_REFERENCE compiledObj, const CRenderObject& renderObj) const;
 	void UpdateVertex(water::SCompiledWaterOcean& compiledObj, int32 primType);
 
 private:

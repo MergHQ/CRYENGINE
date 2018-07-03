@@ -386,7 +386,7 @@ struct SDeviceObjectHelpers
 
 	struct SConstantBufferBindInfo
 	{
-		EConstantBufferShaderSlot   shaderSlot   = eConstantBufferShaderSlot_PerBatch;
+		EConstantBufferShaderSlot   shaderSlot   = eConstantBufferShaderSlot_PerDraw;
 		EShaderStage                shaderStages = EShaderStage_All;
 		_smart_ptr<CConstantBuffer> pBuffer;
 
@@ -454,8 +454,8 @@ struct SDeviceObjectHelpers
 
 	class CShaderConstantManager
 	{
-		static const EConstantBufferShaderSlot ReflectedBufferShaderSlot = eConstantBufferShaderSlot_PerBatch;  // Which constant buffer is used for reflection
-		static const int                       MaxReflectedBuffers       = 2;                                   // Currently at most vertex and pixel stages required
+		static const EConstantBufferShaderSlot ReflectedBufferShaderSlot = eConstantBufferShaderSlot_PerDraw;  // Which constant buffer is used for reflection
+		static const int                       MaxReflectedBuffers       = 2;                                  // Currently at most vertex and pixel stages required
 
 	public:
 		CShaderConstantManager();

@@ -203,7 +203,7 @@ class IParameterImpl : public CATLControlImpl
 public:
 
 	virtual ~IParameterImpl() = default;
-	virtual ERequestStatus Set(CATLAudioObject& audioObject, float const value) const = 0;
+	virtual void Set(CATLAudioObject& audioObject, float const value) const = 0;
 };
 
 // Class for a parameter associated with a middleware parameter
@@ -217,7 +217,7 @@ public:
 
 	virtual ~CParameterImpl() override;
 
-	virtual ERequestStatus Set(CATLAudioObject& audioObject, float const value) const override;
+	virtual void Set(CATLAudioObject& audioObject, float const value) const override;
 
 private:
 
@@ -243,7 +243,7 @@ class IAudioSwitchStateImpl : public CATLControlImpl
 public:
 
 	virtual ~IAudioSwitchStateImpl() = default;
-	virtual ERequestStatus Set(CATLAudioObject& audioObject) const = 0;
+	virtual void Set(CATLAudioObject& audioObject) const = 0;
 };
 
 class CExternalAudioSwitchStateImpl final : public IAudioSwitchStateImpl
@@ -257,7 +257,7 @@ public:
 	virtual ~CExternalAudioSwitchStateImpl() override;
 
 	// IAudioSwitchStateImpl
-	virtual ERequestStatus Set(CATLAudioObject& audioObject) const override;
+	virtual void Set(CATLAudioObject& audioObject) const override;
 	// ~IAudioSwitchStateImpl
 
 private:

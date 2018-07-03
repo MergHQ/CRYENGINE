@@ -50,16 +50,12 @@ CObject::CObject(AkGameObjectID const id)
 }
 
 //////////////////////////////////////////////////////////////////////////
-ERequestStatus CObject::Update()
+void CObject::Update()
 {
-	ERequestStatus result = ERequestStatus::Failure;
-
 	if (m_bNeedsToUpdateEnvironments)
 	{
-		result = PostEnvironmentAmounts();
+		PostEnvironmentAmounts();
 	}
-
-	return result;
 }
 
 //////////////////////////////////////////////////////////////////////////
@@ -77,10 +73,9 @@ void CObject::SetTransformation(CObjectTransformation const& transformation)
 }
 
 //////////////////////////////////////////////////////////////////////////
-ERequestStatus CObject::SetEnvironment(IEnvironment const* const pIEnvironment, float const amount)
+void CObject::SetEnvironment(IEnvironment const* const pIEnvironment, float const amount)
 {
 	static float const envEpsilon = 0.0001f;
-	ERequestStatus result = ERequestStatus::Failure;
 	SEnvironment const* const pEnvironment = static_cast<SEnvironment const* const>(pIEnvironment);
 
 	if (pEnvironment != nullptr)
@@ -114,7 +109,6 @@ ERequestStatus CObject::SetEnvironment(IEnvironment const* const pIEnvironment, 
 					m_bNeedsToUpdateEnvironments = true;
 				}
 
-				result = ERequestStatus::Success;
 				break;
 			}
 		case EEnvironmentType::Rtpc:
@@ -122,11 +116,7 @@ ERequestStatus CObject::SetEnvironment(IEnvironment const* const pIEnvironment, 
 				AkRtpcValue const rtpcValue = static_cast<AkRtpcValue>(pEnvironment->multiplier * amount + pEnvironment->shift);
 				AKRESULT const wwiseResult = AK::SoundEngine::SetRTPCValue(pEnvironment->rtpcId, rtpcValue, m_id);
 
-				if (IS_WWISE_OK(wwiseResult))
-				{
-					result = ERequestStatus::Success;
-				}
-				else
+				if (!IS_WWISE_OK(wwiseResult))
 				{
 					Cry::Audio::Log(
 						ELogType::Warning,
@@ -148,14 +138,11 @@ ERequestStatus CObject::SetEnvironment(IEnvironment const* const pIEnvironment, 
 	{
 		Cry::Audio::Log(ELogType::Error, "Wwise - Invalid EnvironmentData passed to the Wwise implementation of SetEnvironment");
 	}
-
-	return result;
 }
 
 //////////////////////////////////////////////////////////////////////////
-ERequestStatus CObject::SetParameter(IParameter const* const pIParameter, float const value)
+void CObject::SetParameter(IParameter const* const pIParameter, float const value)
 {
-	ERequestStatus result = ERequestStatus::Failure;
 	SParameter const* const pParameter = static_cast<SParameter const* const>(pIParameter);
 
 	if (pParameter != nullptr)
@@ -164,11 +151,7 @@ ERequestStatus CObject::SetParameter(IParameter const* const pIParameter, float 
 
 		AKRESULT const wwiseResult = AK::SoundEngine::SetRTPCValue(pParameter->id, rtpcValue, m_id);
 
-		if (IS_WWISE_OK(wwiseResult))
-		{
-			result = ERequestStatus::Success;
-		}
-		else
+		if (!IS_WWISE_OK(wwiseResult))
 		{
 			Cry::Audio::Log(
 				ELogType::Warning,
@@ -182,14 +165,11 @@ ERequestStatus CObject::SetParameter(IParameter const* const pIParameter, float 
 	{
 		Cry::Audio::Log(ELogType::Error, "Wwise - Invalid RtpcData passed to the Wwise implementation of SetParameter");
 	}
-
-	return result;
 }
 
 //////////////////////////////////////////////////////////////////////////
-ERequestStatus CObject::SetSwitchState(ISwitchState const* const pISwitchState)
+void CObject::SetSwitchState(ISwitchState const* const pISwitchState)
 {
-	ERequestStatus result = ERequestStatus::Failure;
 	SSwitchState const* const pSwitchState = static_cast<SSwitchState const* const>(pISwitchState);
 
 	if (pSwitchState != nullptr)
@@ -202,11 +182,7 @@ ERequestStatus CObject::SetSwitchState(ISwitchState const* const pISwitchState)
 					pSwitchState->stateOrSwitchGroupId,
 					pSwitchState->stateOrSwitchId);
 
-				if (IS_WWISE_OK(wwiseResult))
-				{
-					result = ERequestStatus::Success;
-				}
-				else
+				if (!IS_WWISE_OK(wwiseResult))
 				{
 					Cry::Audio::Log(
 						ELogType::Warning,
@@ -224,11 +200,7 @@ ERequestStatus CObject::SetSwitchState(ISwitchState const* const pISwitchState)
 					pSwitchState->stateOrSwitchId,
 					m_id);
 
-				if (IS_WWISE_OK(wwiseResult))
-				{
-					result = ERequestStatus::Success;
-				}
-				else
+				if (!IS_WWISE_OK(wwiseResult))
 				{
 					Cry::Audio::Log(
 						ELogType::Warning,
@@ -247,11 +219,7 @@ ERequestStatus CObject::SetSwitchState(ISwitchState const* const pISwitchState)
 					static_cast<AkRtpcValue>(pSwitchState->rtpcValue),
 					m_id);
 
-				if (IS_WWISE_OK(wwiseResult))
-				{
-					result = ERequestStatus::Success;
-				}
-				else
+				if (!IS_WWISE_OK(wwiseResult))
 				{
 					Cry::Audio::Log(
 						ELogType::Warning,
@@ -279,15 +247,11 @@ ERequestStatus CObject::SetSwitchState(ISwitchState const* const pISwitchState)
 	{
 		Cry::Audio::Log(ELogType::Error, "Wwise - Invalid SwitchState passed to the Wwise implementation of SetSwitchState");
 	}
-
-	return result;
 }
 
 //////////////////////////////////////////////////////////////////////////
-ERequestStatus CObject::SetObstructionOcclusion(float const obstruction, float const occlusion)
+void CObject::SetObstructionOcclusion(float const obstruction, float const occlusion)
 {
-	ERequestStatus result = ERequestStatus::Failure;
-
 	if (g_listenerId != AK_INVALID_GAME_OBJECT)
 	{
 		AKRESULT const wwiseResult = AK::SoundEngine::SetObjectObstructionAndOcclusion(
@@ -296,11 +260,7 @@ ERequestStatus CObject::SetObstructionOcclusion(float const obstruction, float c
 			static_cast<AkReal32>(occlusion), // The occlusion value is currently used on obstruction as well until a correct obstruction value is calculated.
 			static_cast<AkReal32>(occlusion));
 
-		if (IS_WWISE_OK(wwiseResult))
-		{
-			result = ERequestStatus::Success;
-		}
-		else
+		if (!IS_WWISE_OK(wwiseResult))
 		{
 			Cry::Audio::Log(
 				ELogType::Warning,
@@ -314,8 +274,6 @@ ERequestStatus CObject::SetObstructionOcclusion(float const obstruction, float c
 	{
 		Cry::Audio::Log(ELogType::Warning, "Wwise - invalid listener Id during SetObjectObstructionAndOcclusion!");
 	}
-
-	return result;
 }
 
 //////////////////////////////////////////////////////////////////////////
@@ -360,12 +318,23 @@ ERequestStatus CObject::ExecuteTrigger(ITrigger const* const pITrigger, IEvent* 
 }
 
 //////////////////////////////////////////////////////////////////////////
-ERequestStatus CObject::StopAllTriggers()
+void CObject::StopAllTriggers()
 {
 	// If the user wants to stop all triggers on the global object we want to stop them only on that particular object and not globally!
 	AkGameObjectID const objectId = (m_id != AK_INVALID_GAME_OBJECT) ? m_id : g_globalObjectId;
 	AK::SoundEngine::StopAll(objectId);
-	return ERequestStatus::Success;
+}
+
+//////////////////////////////////////////////////////////////////////////
+ERequestStatus CObject::PlayFile(IStandaloneFile* const pIStandaloneFile)
+{
+	return ERequestStatus::Failure;
+}
+
+//////////////////////////////////////////////////////////////////////////
+ERequestStatus CObject::StopFile(IStandaloneFile* const pIStandaloneFile)
+{
+	return ERequestStatus::Failure;
 }
 
 //////////////////////////////////////////////////////////////////////////
@@ -387,20 +356,15 @@ ERequestStatus CObject::SetName(char const* const szName)
 }
 
 //////////////////////////////////////////////////////////////////////////
-ERequestStatus CObject::PostEnvironmentAmounts()
+void CObject::PostEnvironmentAmounts()
 {
-	ERequestStatus result = ERequestStatus::Failure;
 	std::size_t const numEnvironments = m_auxSendValues.size();
 
 	if (numEnvironments > 0)
 	{
 		AKRESULT const wwiseResult = AK::SoundEngine::SetGameObjectAuxSendValues(m_id, &m_auxSendValues[0], static_cast<AkUInt32>(numEnvironments));
 
-		if (IS_WWISE_OK(wwiseResult))
-		{
-			result = ERequestStatus::Success;
-		}
-		else
+		if (!IS_WWISE_OK(wwiseResult))
 		{
 			Cry::Audio::Log(ELogType::Warning, "Wwise - SetGameObjectAuxSendValues failed on object %" PRISIZE_T " with AKRESULT: %d", m_id, wwiseResult);
 		}
@@ -416,7 +380,6 @@ ERequestStatus CObject::PostEnvironmentAmounts()
 	}
 
 	m_bNeedsToUpdateEnvironments = false;
-	return result;
 }
 
 //////////////////////////////////////////////////////////////////////////

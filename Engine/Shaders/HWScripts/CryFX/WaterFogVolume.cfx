@@ -138,7 +138,7 @@ v2f WaterVolumeIntoVS( a2v IN )
 	OUT.hPos.z *= params.cViewerColorToWaterPlane.x; // effectively prevent any clipping and depth test rejection by muliplying homogeneous z by zero (if close enough to water surface)
 #endif
 
-	OUT.viewDir = mul( (float3x4)params.PerInstanceWorldMatrix, vPos ).xyz - g_VS_WorldViewPos.xyz;
+	OUT.viewDir = mul( (float3x4)params.WorldMatrix, vPos ).xyz - g_VS_WorldViewPos.xyz;
 
 	return OUT;
 }

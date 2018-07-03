@@ -52,11 +52,8 @@ enum ECGParam
 	ECGP_Unknown,
 
 	ECGP_Matr_PI_ObjOrigComposite,
-	ECGP_PI_VisionParams,
 	ECGP_PB_VisionMtlParams,
 	ECGP_PI_EffectLayerParams,
-	ECGP_PI_MaterialLayersParams,
-	ECGP_PI_AvgFogVolumeContrib,
 	ECGP_PI_NumInstructions,
 
 	ECGP_PI_WrinklesMask0,

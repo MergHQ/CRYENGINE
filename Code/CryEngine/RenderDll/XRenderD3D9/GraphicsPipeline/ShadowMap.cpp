@@ -119,7 +119,7 @@ void CShadowMapStage::ReAllocateResources()
 		++reallocationCount;
 #endif
 
-		CRendererResources::s_ptexRT_ShadowPool->CreateDepthStencil(eTF_Unknown, Clr_FarPlane);
+		CRendererResources::s_ptexRT_ShadowPool->CreateDepthStencil(eTF_Unknown, ColorF(Clr_FarPlane.r, 5.f, 0.f, 0.f));
 	}
 
 	// allocate shadow maps for dynamic frustums
@@ -130,7 +130,7 @@ void CShadowMapStage::ReAllocateResources()
 		{
 			for (int i = 0; i < MAX_GSM_LODS_NUM; ++i)
 			{
-				SDynTexture_Shadow* pNewShadow = new SDynTexture_Shadow(0, 0, texFormat, eTT_2D, FT_USAGE_DEPTHSTENCIL | FT_STATE_CLAMP, "ShadowRT");
+				SDynTexture_Shadow* pNewShadow = new SDynTexture_Shadow(0, 0, Clr_FarPlane, texFormat, eTT_2D, FT_USAGE_DEPTHSTENCIL | FT_STATE_CLAMP, "ShadowRT");
 
 				char name[64];
 				cry_sprintf(name, "$Dyn_%s_2D_%s_%d", "ShadowRT", CTexture::NameForTextureFormat(texFormat), pNewShadow->m_nUniqueID);
@@ -144,7 +144,7 @@ void CShadowMapStage::ReAllocateResources()
 	if (!CTexture::IsTextureExist(CRendererResources::s_ptexFarPlane))
 	{
 		CRendererResources::s_ptexFarPlane->CreateDepthStencil(eTF_Unknown, Clr_FarPlane);
-		CClearSurfacePass::Execute(CRendererResources::s_ptexFarPlane, CLEAR_ZBUFFER, Clr_FarPlane.r, 0);
+		CClearSurfacePass::Execute(CRendererResources::s_ptexFarPlane, CLEAR_ZBUFFER, Clr_FarPlane.r, Val_Unused);
 	}
 }
 
@@ -546,6 +546,7 @@ void CShadowMapStage::UpdateShadowFrustumFromPass(const CShadowMapPass& sourcePa
 	targetFrustum.pDepthTex      = pDepthTarget;
 	targetFrustum.nTextureWidth  = pDepthTarget->GetWidth();
 	targetFrustum.nTextureHeight = pDepthTarget->GetHeight();
+	targetFrustum.clearValue     = pDepthTarget->GetClearColor();
 
 	targetFrustum.mLightViewMatrix = sourcePass.m_ViewProjMatrix;
 	targetFrustum.mLightProjMatrix.SetIdentity();
@@ -819,7 +820,7 @@ void CShadowMapStage::CopyShadowMap(const CShadowMapPass& sourcePass, CShadowMap
 	{
 		if (bEmptySrcFrustum)
 		{
-			CClearSurfacePass::Execute(depthTarget.pTexture, CLEAR_ZBUFFER | CLEAR_STENCIL, Clr_FarPlane.r, 0);
+			CClearSurfacePass::Execute(depthTarget.pTexture, CLEAR_ZBUFFER | CLEAR_STENCIL, Clr_FarPlane.r, Val_Stencil);
 		}
 		else
 		{
@@ -878,6 +879,7 @@ void CShadowMapStage::CopyShadowMap(const CShadowMapPass& sourcePass, CShadowMap
 		pDst->nTexSize = pSrc->nTexSize;
 		pDst->nTextureWidth = pSrc->nTextureWidth;
 		pDst->nTextureHeight = pSrc->nTextureHeight;
+		pDst->clearValue = pSrc->clearValue;
 	}
 
 	pDst->bIncrementalUpdate = true;
@@ -947,7 +949,7 @@ void CShadowMapStage::ClearShadowMaps(PassGroupList& shadowMapPasses)
 			{
 				const auto& depthTarget = curPass.GetPassDesc().GetDepthTarget();
 
-				CClearSurfacePass::Execute(depthTarget.pTexture, CLEAR_ZBUFFER, Clr_FarPlane.r, 0);
+				CClearSurfacePass::Execute(depthTarget.pTexture, CLEAR_ZBUFFER, Clr_FarPlane.r, Val_Unused);
 
 				for (const auto& colorTarget : curPass.GetPassDesc().GetRenderTargets())
 				{

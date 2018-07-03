@@ -31,7 +31,7 @@ public:
 	explicit COcclusionObstructionState(SwitchStateId const stateId, CAudioListenerManager const& audioListenerManager, CATLAudioObject const& globalAudioObject);
 
 	// IAudioSwitchStateImpl
-	virtual ERequestStatus Set(CATLAudioObject& audioObject) const override;
+	virtual void Set(CATLAudioObject& audioObject) const override;
 	// ~IAudioSwitchStateImpl
 
 	COcclusionObstructionState(COcclusionObstructionState const&) = delete;
@@ -53,7 +53,7 @@ public:
 	explicit CRelativeVelocityTrackingState(SwitchStateId const stateId, CATLAudioObject const& globalAudioObject);
 
 	// IAudioSwitchStateImpl
-	virtual ERequestStatus Set(CATLAudioObject& audioObject) const override;
+	virtual void Set(CATLAudioObject& audioObject) const override;
 	// ~IAudioSwitchStateImpl
 
 	CRelativeVelocityTrackingState(CRelativeVelocityTrackingState const&) = delete;
@@ -74,7 +74,7 @@ public:
 	explicit CAbsoluteVelocityTrackingState(SwitchStateId const stateId, CATLAudioObject const& globalAudioObject);
 
 	// IAudioSwitchStateImpl
-	virtual ERequestStatus Set(CATLAudioObject& audioObject) const override;
+	virtual void Set(CATLAudioObject& audioObject) const override;
 	// ~IAudioSwitchStateImpl
 
 	CAbsoluteVelocityTrackingState(CAbsoluteVelocityTrackingState const&) = delete;
@@ -195,7 +195,7 @@ public:
 	explicit CAbsoluteVelocityParameter() = default;
 
 	// IParameterImpl
-	virtual ERequestStatus Set(CATLAudioObject& audioObject, float const value) const override;
+	virtual void Set(CATLAudioObject& audioObject, float const value) const override;
 	// ~IParameterImpl
 };
 
@@ -206,7 +206,7 @@ public:
 	explicit CRelativeVelocityParameter() = default;
 
 	// IParameterImpl
-	virtual ERequestStatus Set(CATLAudioObject& audioObject, float const value) const override;
+	virtual void Set(CATLAudioObject& audioObject, float const value) const override;
 	// ~IParameterImpl
 };
 } // namespace CryAudio

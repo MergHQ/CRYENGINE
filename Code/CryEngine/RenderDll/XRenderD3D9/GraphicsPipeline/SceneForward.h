@@ -7,6 +7,7 @@
 #include "Common/SceneRenderPass.h"
 #include "Common/FullscreenPass.h"
 #include "Common/UtilityPasses.h"
+#include "SceneGBuffer.h"
 
 class CRESky;
 class CREHDRSky;
@@ -22,16 +23,14 @@ public:
 
 	enum EPerPassTexture
 	{
-		ePerPassTexture_PerlinNoiseMap = 25,
-		ePerPassTexture_TerrainElevMap,
-		ePerPassTexture_WindGrid,
-		ePerPassTexture_TerrainNormMap,
-		ePerPassTexture_TerrainBaseMap,
-		ePerPassTexture_NormalsFitting,
-		ePerPassTexture_DissolveNoise,
-		ePerPassTexture_SceneLinearDepth,
-
-		ePerPassTexture_Count
+		ePerPassTexture_PerlinNoiseMap   = CSceneGBufferStage::ePerPassTexture_PerlinNoiseMap,
+		ePerPassTexture_TerrainElevMap   = CSceneGBufferStage::ePerPassTexture_TerrainElevMap,
+		ePerPassTexture_WindGrid         = CSceneGBufferStage::ePerPassTexture_WindGrid,
+		ePerPassTexture_TerrainNormMap   = CSceneGBufferStage::ePerPassTexture_TerrainNormMap,
+		ePerPassTexture_TerrainBaseMap   = CSceneGBufferStage::ePerPassTexture_TerrainBaseMap,
+		ePerPassTexture_NormalsFitting   = CSceneGBufferStage::ePerPassTexture_NormalsFitting,
+		ePerPassTexture_DissolveNoise    = CSceneGBufferStage::ePerPassTexture_DissolveNoise,
+		ePerPassTexture_SceneLinearDepth = CSceneGBufferStage::ePerPassTexture_SceneLinearDepth,
 	};
 
 public:

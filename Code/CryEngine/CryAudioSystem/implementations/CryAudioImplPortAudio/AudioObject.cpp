@@ -37,14 +37,12 @@ void CObject::UnregisterEvent(CEvent* const pEvent)
 }
 
 //////////////////////////////////////////////////////////////////////////
-ERequestStatus CObject::Update()
+void CObject::Update()
 {
 	for (auto const pEvent : m_activeEvents)
 	{
 		pEvent->Update();
 	}
-
-	return ERequestStatus::Success;
 }
 
 //////////////////////////////////////////////////////////////////////////
@@ -53,27 +51,23 @@ void CObject::SetTransformation(CObjectTransformation const& transformation)
 }
 
 //////////////////////////////////////////////////////////////////////////
-ERequestStatus CObject::SetEnvironment(IEnvironment const* const pIEnvironment, float const amount)
+void CObject::SetEnvironment(IEnvironment const* const pIEnvironment, float const amount)
 {
-	return ERequestStatus::Success;
 }
 
 //////////////////////////////////////////////////////////////////////////
-ERequestStatus CObject::SetParameter(IParameter const* const pIParameter, float const value)
+void CObject::SetParameter(IParameter const* const pIParameter, float const value)
 {
-	return ERequestStatus::Success;
 }
 
 //////////////////////////////////////////////////////////////////////////
-ERequestStatus CObject::SetSwitchState(ISwitchState const* const pISwitchState)
+void CObject::SetSwitchState(ISwitchState const* const pISwitchState)
 {
-	return ERequestStatus::Success;
 }
 
 //////////////////////////////////////////////////////////////////////////
-ERequestStatus CObject::SetObstructionOcclusion(float const obstruction, float const occlusion)
+void CObject::SetObstructionOcclusion(float const obstruction, float const occlusion)
 {
-	return ERequestStatus::Success;
 }
 
 //////////////////////////////////////////////////////////////////////////
@@ -117,21 +111,20 @@ ERequestStatus CObject::ExecuteTrigger(ITrigger const* const pITrigger, IEvent* 
 }
 
 //////////////////////////////////////////////////////////////////////////
-ERequestStatus CObject::StopAllTriggers()
+void CObject::StopAllTriggers()
 {
-	return ERequestStatus::Success;
 }
 
 //////////////////////////////////////////////////////////////////////////
 ERequestStatus CObject::PlayFile(IStandaloneFile* const pIStandaloneFile)
 {
-	return ERequestStatus::Success;
+	return ERequestStatus::Failure;
 }
 
 //////////////////////////////////////////////////////////////////////////
 ERequestStatus CObject::StopFile(IStandaloneFile* const pIStandaloneFile)
 {
-	return ERequestStatus::Success;
+	return ERequestStatus::Failure;
 }
 
 //////////////////////////////////////////////////////////////////////////

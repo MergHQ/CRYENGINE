@@ -3,7 +3,6 @@
 #pragma once
 #include "../../DeviceManager/DeviceObjects.h" // CDeviceGraphicsPSOPtr, CDeviceGraphicsPSOWPtr
 
-const uint32 MAX_PIPELINE_SCENE_STAGES = 4;
 const uint32 MAX_PIPELINE_SCENE_STAGE_PASSES = 5;
 
 struct SGraphicsPipelineStateDescription

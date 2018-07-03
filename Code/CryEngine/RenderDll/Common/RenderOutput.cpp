@@ -125,7 +125,7 @@ void CRenderOutput::BeginRendering(CRenderView* pRenderView, stl::optional<uint3
 	uint32 clearTargetFlag = overrideClearFlags.value_or(m_clearTargetFlag);
 	ColorF clearColor = m_clearColor;
 
-	if (pRenderView && pRenderView->IsClearTarget())
+	if (pRenderView && pRenderView->IsClearTarget() && CRendererCVars::CV_r_wireframe)
 	{
 		// Override clear color from the Render View if given
 		clearTargetFlag |= FRT_CLEAR_COLOR;
@@ -134,10 +134,12 @@ void CRenderOutput::BeginRendering(CRenderView* pRenderView, stl::optional<uint3
 
 	if ((clearTargetFlag = clearTargetFlag & ~m_hasBeenCleared))
 	{
-		const bool reverseDepth = true;
-		const auto depthClearFlags = clearTargetFlag & (FRT_CLEAR_DEPTH | FRT_CLEAR_STENCIL);
-		if (depthClearFlags)
-			CClearSurfacePass::Execute(m_pDepthTarget, depthClearFlags, reverseDepth ? 1.0f - m_clearDepth : m_clearDepth, 1);
+		if (clearTargetFlag & (FRT_CLEAR_DEPTH | FRT_CLEAR_STENCIL))
+			CClearSurfacePass::Execute(m_pDepthTarget,
+				(clearTargetFlag & FRT_CLEAR_DEPTH   ? CLEAR_ZBUFFER : 0) |
+				(clearTargetFlag & FRT_CLEAR_STENCIL ? CLEAR_STENCIL : 0),
+				Clr_FarPlane_Rev.r,
+				Val_Stencil);
 
 		if (clearTargetFlag & FRT_CLEAR_COLOR)
 			CClearSurfacePass::Execute(m_pColorTarget, clearColor);
@@ -303,8 +305,8 @@ void CRenderOutput::AllocateDepthTarget()
 		gRenDev->GetDepthBpp() == 24 ? eTF_D24S8  :
 		gRenDev->GetDepthBpp() ==  8 ? eTF_D16S8  : eTF_D16;
 
-	const float  clearDepth   = CRenderer::CV_r_ReverseDepth ? 0.f : 1.f;
-	const uint   clearStencil = 1;
+	const float  clearDepth   = Clr_FarPlane_Rev.r;
+	const uint8  clearStencil = Val_Stencil;
 	const ColorF clearValues  = ColorF(clearDepth, FLOAT(clearStencil), 0.f, 0.f);
 
 	// Create the native resolution depth stencil buffer for overlay rendering if needed

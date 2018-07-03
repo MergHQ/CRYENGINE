@@ -59,6 +59,7 @@ void CRenderDisplayContext::SetDisplayResolutionAndRecreateTargets(uint32_t disp
 	AllocateColorTarget();
 	AllocateDepthTarget();
 }
+
 void CRenderDisplayContext::ChangeDisplayResolution(uint32_t displayWidth, uint32_t displayHeight, const SRenderViewport& vp)
 {
 	SetDisplayResolutionAndRecreateTargets(displayWidth, displayHeight, vp);
@@ -91,8 +92,8 @@ void CRenderDisplayContext::AllocateDepthTarget()
 		gRenDev->GetDepthBpp() == 24 ? eTF_D24S8  :
 		gRenDev->GetDepthBpp() ==  8 ? eTF_D16S8  : eTF_D16;
 
-	const float  clearDepth   = CRenderer::CV_r_ReverseDepth ? 0.f : 1.f;
-	const uint   clearStencil = 1;
+	const float  clearDepth   = Clr_FarPlane_Rev.r;
+	const uint8  clearStencil = Val_Stencil;
 	const ColorF clearValues  = ColorF(clearDepth, FLOAT(clearStencil), 0.f, 0.f);
 
 	// Create the native resolution depth stencil buffer for overlay rendering if needed

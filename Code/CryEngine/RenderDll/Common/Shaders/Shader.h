@@ -28,8 +28,8 @@
 
 // bump this value up if you want to invalidate shader cache (e.g. changed some code or .ext file)
 // #### VIP NOTE ####: DON'T USE MORE THAN ONE DECIMAL PLACE!!!! else it doesn't work...
-#define FX_CACHE_VER     0.2
-#define FX_SER_CACHE_VER 1.1    // Shader serialization version (FX_CACHE_VER + FX_SER_CACHE_VER)
+#define FX_CACHE_VER     0.3
+#define FX_SER_CACHE_VER 1.2    // Shader serialization version (FX_CACHE_VER + FX_SER_CACHE_VER)
 
 // Maximum 1 digit here
 // The version determines the parse logic in the shader cache gen, these values cannot overlap
@@ -40,12 +40,9 @@
 
 #define SHADERS_SERIALIZING 1 // Enables shaders serializing (Export/Import) to/from .fxb files
 
-#define CB_PER_BATCH        0
-#define CB_PER_INSTANCE     1
-#define CB_PER_MATERIAL     3
-#define CB_SKIN_DATA        6
-#define CB_INSTANCE_DATA    7
-#define CB_NUM              8
+#define CB_PER_DRAW         eConstantBufferShaderSlot_PerDraw           // Non-Scene-Pass only
+#define CB_PER_MATERIAL     eConstantBufferShaderSlot_PerMaterial       // Scene-Pass only
+#define CB_NUM              2
 
 //====================================================================
 // Fixed Per-Material constants

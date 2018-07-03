@@ -13,13 +13,13 @@ namespace CryAudio
 
 //////////////////////////////////////////////////////////////////////////
 CAudioXMLProcessor::CAudioXMLProcessor(
-  AudioTriggerLookup& triggers,
-  AudioParameterLookup& parameters,
-  AudioSwitchLookup& switches,
-  AudioEnvironmentLookup& environments,
-  AudioPreloadRequestLookup& preloadRequests,
-  CFileCacheManager& fileCacheMgr,
-  SInternalControls const& internalControls)
+	AudioTriggerLookup& triggers,
+	AudioParameterLookup& parameters,
+	AudioSwitchLookup& switches,
+	AudioEnvironmentLookup& environments,
+	AudioPreloadRequestLookup& preloadRequests,
+	CFileCacheManager& fileCacheMgr,
+	SInternalControls const& internalControls)
 	: m_triggers(triggers)
 	, m_parameters(parameters)
 	, m_switches(switches)
@@ -859,18 +859,18 @@ void CAudioXMLProcessor::ParseDefaultParameters(XmlNodeRef const pXMLParameterRo
 			{
 				Cry::Audio::Log(ELogType::Error, R"(Parameter "%s" already exists!)", szParameterName);
 			}
-#endif      // INCLUDE_AUDIO_PRODUCTION_CODE
+#endif  // INCLUDE_AUDIO_PRODUCTION_CODE
 
 			int const numConnections = pParameterNode->getChildCount();
 			CParameter::ImplPtrVec connections;
 
 			if (numConnections == 0)
 			{
-				IParameterImpl const* const pDefaultParamater = stl::find_in_map(m_internalControls.m_parameterConnections, parameterId, nullptr);
+				IParameterImpl const* const pDefaultParameter = stl::find_in_map(m_internalControls.m_parameterConnections, parameterId, nullptr);
 
-				if (pDefaultParamater != nullptr)
+				if (pDefaultParameter != nullptr)
 				{
-					connections.push_back(pDefaultParamater);
+					connections.push_back(pDefaultParameter);
 				}
 				else
 				{
@@ -908,7 +908,7 @@ void CAudioXMLProcessor::ParseDefaultParameters(XmlNodeRef const pXMLParameterRo
 
 #if defined(INCLUDE_AUDIO_PRODUCTION_CODE)
 				pParameter->m_name = szParameterName;
-#endif      // INCLUDE_AUDIO_PRODUCTION_CODE
+#endif    // INCLUDE_AUDIO_PRODUCTION_CODE
 			}
 			else
 			{

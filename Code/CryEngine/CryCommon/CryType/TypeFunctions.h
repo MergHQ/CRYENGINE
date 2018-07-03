@@ -19,10 +19,11 @@ template<class T>
 using HasToStringFunc = decltype(std::declval<T>().ToString());
 
 template<class TYPE>
-constexpr bool HasToString()
+struct HasToString
 {
-	return stl::is_detected<HasToStringFunc, TYPE>::value;
-}
+	static constexpr bool value = stl::is_detected_exact<string, HasToStringFunc, TYPE>::value;
+};
+
 }
 // ~TODO
 
@@ -198,7 +199,7 @@ private:
 
 // ->ToString()
 template<typename TYPE>
-class CAdapter_ToString<TYPE, typename std::enable_if<Helpers::HasToString<TYPE>()>::type> : public CToStringFunction
+class CAdapter_ToString<TYPE, typename std::enable_if<Helpers::HasToString<TYPE>::value>::type> : public CToStringFunction
 {
 public:
 	CAdapter_ToString()

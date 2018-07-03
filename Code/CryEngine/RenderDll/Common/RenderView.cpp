@@ -1608,7 +1608,7 @@ void CRenderView::AddRenderItem(CRenderElement* pElem, CRenderObject* RESTRICT_P
 		{
 			// Allocate new CompiledRenderObject.
 			ri.pCompiledObject = AllocCompiledObject(pObj, pElem, shaderItem);
-			ri.nBatchFlags |= FB_COMPILED_OBJECT;
+			ri.nBatchFlags |= ri.pCompiledObject ? FB_COMPILED_OBJECT : 0;
 
 			// Add to temporary objects to compile
 			m_temporaryCompiledObjects.push_back(STemporaryRenderObjectCompilationData{ ri.pCompiledObject, aabb });
@@ -1792,7 +1792,7 @@ void CRenderView::ExpandPermanentRenderObjects()
 							if (((volatile CCompiledRenderObject*)pri.m_pCompiledObject) == nullptr)
 							{
 								pri.m_pCompiledObject = AllocCompiledObject(pRenderObject, pri.m_pRenderElement, shaderItem); // Allocate new CompiledRenderObject.
-								pri.m_nBatchFlags |= FB_COMPILED_OBJECT;
+								pri.m_nBatchFlags |= pri.m_pCompiledObject ? FB_COMPILED_OBJECT : 0;
 								needsCompilation = true;
 							}
 						}

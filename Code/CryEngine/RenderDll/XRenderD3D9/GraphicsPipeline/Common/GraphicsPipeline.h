@@ -114,7 +114,6 @@ protected:
 	// Their stage ID is used to index into the PSO cache.
 	template<class T, uint32 stageID> void RegisterSceneStage(T*& pPipelineStage)
 	{
-		static_assert(stageID < MAX_PIPELINE_SCENE_STAGES, "Invalid ID for scene stage");
 		RegisterStage<T>(pPipelineStage, stageID);
 	}
 

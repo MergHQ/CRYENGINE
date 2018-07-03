@@ -54,16 +54,6 @@ Texture2D corneaBumpTex : register(t9)
   UIDescription = "Bump map for the cornea";
 > = TM_Custom;
 
-sampler2D sceneDiffuseMapSampler = sampler_state
-{
-  Texture = $SceneDiffuse;
-  MinFilter = POINT;
-  MagFilter = POINT;
-  MipFilter = POINT;
-  AddressU = Clamp;
-  AddressV = Clamp;
-};
-
 Texture2DArray<float4> sunShadowMask : register(t38) = TS_ShadowMask;
 
 // Tweakables /////////////////

@@ -29,14 +29,14 @@ struct STrigger final : ITrigger
 
 struct SObject final : IObject
 {
-	virtual ERequestStatus Update() override                                                                    { return ERequestStatus::Success; }
+	virtual void           Update() override                                                                    {}
 	virtual void           SetTransformation(CObjectTransformation const& transformation) override              {}
-	virtual ERequestStatus SetEnvironment(IEnvironment const* const pIEnvironment, float const amount) override { return ERequestStatus::Success; }
-	virtual ERequestStatus SetParameter(IParameter const* const pIParameter, float const value) override        { return ERequestStatus::Success; }
-	virtual ERequestStatus SetSwitchState(ISwitchState const* const pISwitchState) override                     { return ERequestStatus::Success; }
-	virtual ERequestStatus SetObstructionOcclusion(float const obstruction, float const occlusion) override     { return ERequestStatus::Success; }
+	virtual void           SetEnvironment(IEnvironment const* const pIEnvironment, float const amount) override {}
+	virtual void           SetParameter(IParameter const* const pIParameter, float const value) override        {}
+	virtual void           SetSwitchState(ISwitchState const* const pISwitchState) override                     {}
+	virtual void           SetObstructionOcclusion(float const obstruction, float const occlusion) override     {}
 	virtual ERequestStatus ExecuteTrigger(ITrigger const* const pITrigger, IEvent* const pIEvent) override      { return ERequestStatus::Success; }
-	virtual ERequestStatus StopAllTriggers() override                                                           { return ERequestStatus::Success; }
+	virtual void           StopAllTriggers() override                                                           {}
 	virtual ERequestStatus PlayFile(IStandaloneFile* const pIStandaloneFile) override                           { return ERequestStatus::Success; }
 	virtual ERequestStatus StopFile(IStandaloneFile* const pIStandaloneFile) override                           { return ERequestStatus::Success; }
 	virtual ERequestStatus SetName(char const* const szName) override                                           { return ERequestStatus::Success; }
@@ -163,7 +163,7 @@ IObject* CImpl::ConstructGlobalObject()
 ///////////////////////////////////////////////////////////////////////////
 IObject* CImpl::ConstructObject(char const* const szName /*= nullptr*/)
 {
-	return new SObject();
+	return static_cast<IObject*>(new SObject());
 }
 
 ///////////////////////////////////////////////////////////////////////////

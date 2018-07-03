@@ -805,8 +805,12 @@ vert2fragCustomRender Hair_CustomRenderPassVS(app2vertCustomViews IN)
 
 	streamPos vertPassPos = (streamPos)0;
 	streamPos_FromCustomViews(IN, vertPassPos);
-
-	OUT.cVision = PerInstanceCustomData1;
+	
+#if !%_RT_ENVIRONMENT_CUBEMAP
+	OUT.cVision = CD_CustomData1;
+#else
+	OUT.cVision = 0.0f;
+#endif
 
 	OUT.HPosition = Pos_VS_General(g_VS_ViewProjZeroMatr, vertPassPos);
 	OUT.vView.xyz = vertPassPos.WorldPos.xyz;

@@ -49,30 +49,12 @@ void CSnowStage::Init()
 
 	CRY_ASSERT(m_pSnowFrostBumpTex == nullptr);
 	m_pSnowFrostBumpTex = CTexture::ForNamePtr("%ENGINE%/EngineAssets/Textures/Frozen/frost_noise3.dds", FT_DONT_STREAM, eTF_Unknown);
-
-	CRY_ASSERT(m_pSnowDisplacementTex == nullptr);
-	m_pSnowDisplacementTex = CTexture::GetOrCreateTextureObject("$SnowDisplacement", 0, 0, 0, eTT_2D, FT_DONT_STREAM | FT_USAGE_RENDERTARGET, eTF_R8G8B8A8);
 }
 
 void CSnowStage::Update()
 {
 	CD3D9Renderer* const RESTRICT_POINTER rd = gcpRendD3D;
 	const CRenderView* pRenderView = RenderView();
-
-	const bool bSnowDisplacement = (CRenderer::CV_r_snow > 0) && (CRenderer::CV_r_snow_displacement > 0);
-
-	if (!bSnowDisplacement && CTexture::IsTextureExist(m_pSnowDisplacementTex))
-	{
-		m_pSnowDisplacementTex->ReleaseDeviceTexture(false);
-	}
-
-	if (bSnowDisplacement && !CTexture::IsTextureExist(m_pSnowDisplacementTex))
-	{
-		const int32 renderWidth  = pRenderView->GetRenderResolution()[0];
-		const int32 renderHeight = pRenderView->GetRenderResolution()[1];
-
-		m_pSnowDisplacementTex->Create2DTexture(renderWidth, renderHeight, 1, FT_DONT_STREAM | FT_USAGE_RENDERTARGET, nullptr, eTF_R8G8B8A8);
-	}
 
 	if (pRenderView->GetCurrentEye() != CCamera::eEye_Right)
 	{
@@ -84,6 +66,46 @@ void CSnowStage::Update()
 		m_RainVolParams = rainVolParams;
 		m_SnowVolParams = snowVolParams;
 	}
+}
+
+void CSnowStage::ResizeResource(int resourceWidth, int resourceHeight)
+{
+	const uint32 flags = FT_NOMIPS | FT_DONT_STREAM | FT_USAGE_RENDERTARGET;
+
+	m_pSnowDisplacementTex = CTexture::GetOrCreateTextureObjectPtr("$SnowDisplacement", resourceWidth, resourceHeight, 1, eTT_2D, flags, eTF_R8);
+	if (m_pSnowDisplacementTex)
+	{
+		const bool shouldApplyDisplacement = (CRenderer::CV_r_snow > 0) && (CRenderer::CV_r_snow_displacement > 0);
+
+		// Create/release the displacement texture on demand
+		if (!shouldApplyDisplacement && CTexture::IsTextureExist(m_pSnowDisplacementTex))
+			m_pSnowDisplacementTex->ReleaseDeviceTexture(false);
+		else if (shouldApplyDisplacement && (m_pSnowDisplacementTex->Invalidate(resourceWidth, resourceHeight, eTF_R8G8B8A8) || !CTexture::IsTextureExist(m_pSnowDisplacementTex)))
+			m_pSnowDisplacementTex->CreateRenderTarget(eTF_R8G8B8A8, Clr_Transparent);
+	}
+}
+
+void CSnowStage::Resize(int renderWidth, int renderHeight)
+{
+#if defined(VOLUMETRIC_FOG_SHADOWS)
+	ResizeResource(renderWidth, renderHeight);
+#endif
+}
+
+void CSnowStage::OnCVarsChanged(const CCVarUpdateRecorder& cvarUpdater)
+{
+#if defined(VOLUMETRIC_FOG_SHADOWS)
+	auto pVar1 = cvarUpdater.GetCVar("r_snow");
+	auto pVar2 = cvarUpdater.GetCVar("r_snow_displacement");
+	if (pVar1 || pVar2)
+	{
+		const CRenderView* pRenderView = RenderView();
+		const int32 renderWidth  = pRenderView->GetRenderResolution()[0];
+		const int32 renderHeight = pRenderView->GetRenderResolution()[1];
+
+		ResizeResource(renderWidth, renderHeight);
+	}
+#endif
 }
 
 void CSnowStage::ExecuteDeferredSnowGBuffer()
@@ -599,7 +621,7 @@ void CSnowStage::CreateSnowClusters()
 
 			cluster.m_pPrimitive = stl::make_unique<CRenderPrimitive>();
 
-			cluster.m_pPrimitive->AllocateTypedConstantBuffer(eConstantBufferShaderSlot_PerBatch, sizeof(SSnowClusterCB), EShaderStage_Vertex | EShaderStage_Pixel);
+			cluster.m_pPrimitive->AllocateTypedConstantBuffer(eConstantBufferShaderSlot_PerPrimitive, sizeof(SSnowClusterCB), EShaderStage_Vertex | EShaderStage_Pixel);
 		}
 
 		m_nNumClusters = numClusters;
@@ -776,7 +798,7 @@ void CSnowStage::RenderSnowClusters()
 		// update constant buffer
 		{
 
-			auto constants = pPrim->GetConstantManager().BeginTypedConstantUpdate<SSnowClusterCB>(eConstantBufferShaderSlot_PerBatch, EShaderStage_Vertex | EShaderStage_Pixel);
+			auto constants = pPrim->GetConstantManager().BeginTypedConstantUpdate<SSnowClusterCB>(eConstantBufferShaderSlot_PerPrimitive, EShaderStage_Vertex | EShaderStage_Pixel);
 
 			constants->vWaterLevel = vWaterLevel;
 			constants->vSnowFlakeParams = vSnowFlakeParams;

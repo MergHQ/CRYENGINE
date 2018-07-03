@@ -44,7 +44,8 @@ struct vert2FragGeneral
 {  
 #if %_GS || %_DS || %_PS || !ENABLE_TESSELLATION || %_RT_NO_TESSELLATION
   OUT_HPOS_IN_WPOS
-#endif  
+#endif
+
   float4 baseTC     : TEXCOORDN;
   float4 vTangent  : TEXCOORDN;
   float4 vBinormal : TEXCOORDN;
@@ -56,10 +57,6 @@ struct vert2FragGeneral
 #if %_RT_DECAL_TEXGEN_2D 
   float3 DistAtten : TEXCOORDN;
 #endif  
-
-#if %_RT_FOG && !%_RT_DECAL_TEXGEN_2D
-  float4 AvgFogVolumeContrib : TEXCOORDN;
-#endif
 
 #if ENABLE_TESSELLATION && !%_RT_NO_TESSELLATION
   half4 vNormal    : TEXCOORDN;
@@ -164,11 +161,18 @@ float4x4 Matrix_Inst_General_Prev(inout streamPos IN)
 	float4x4 matInstPrev;
 
 	// Instancing support
-
-	matInstPrev[0] = PerInstancePrevWorldMatrix[0];
-	matInstPrev[1] = PerInstancePrevWorldMatrix[1];
-	matInstPrev[2] = PerInstancePrevWorldMatrix[2];
+	
+#if !%_RT_ENVIRONMENT_CUBEMAP
+	matInstPrev[0] = CD_PrevWorldMatrix[0];
+	matInstPrev[1] = CD_PrevWorldMatrix[1];
+	matInstPrev[2] = CD_PrevWorldMatrix[2];
 	matInstPrev[3] = float4(0, 0, 0, 1);
+#else
+	matInstPrev[0] = float4(1,0,0,0);
+	matInstPrev[1] = float4(0,1,0,0);
+	matInstPrev[2] = float4(0,0,1,0);
+	matInstPrev[3] = float4(0,0,0,1);
+#endif
 
 	// Compose matrixes
 #if %_RT_NEAREST	
@@ -183,9 +187,9 @@ float4x4 Matrix_Inst_General_Prev(inout streamPos IN)
 // Output previous view space position (If skinning used, position is skinned)
 float4 Pos_Prev_VS_General(float4x4 VPMatrix, inout streamPos IN)
 {
-  float4 HPosition;
+	float4 HPosition;
 
-  static const float4x4 MatrixIdentity =
+	static const float4x4 MatrixIdentity =
 	{
 		float4(1,0,0,0),
 		float4(0,1,0,0),
@@ -193,10 +197,10 @@ float4 Pos_Prev_VS_General(float4x4 VPMatrix, inout streamPos IN)
 		float4(0,0,0,1)
 	};
   
-  Matrix_Inst_General_Prev(IN);	// Apply instanced matrix 
-  HPosition = _pos_Modificators(IN.InstMatrix, MatrixIdentity, IN, true, true, 1.f);
+	Matrix_Inst_General_Prev(IN);	// Apply instanced matrix 
+	HPosition = _pos_Modificators(IN.InstMatrix, MatrixIdentity, IN, true, true, 1.f);
    
-  return HPosition;
+	return HPosition;
 }
 
 ///////////////// Shared vertex shader computations //////////////////

@@ -105,7 +105,7 @@ cbuffer PerMaterialConstants : register()
 
 #define PS_HDR_RANGE_ADAPT_MAX 1.0
 
-cbuffer CBPerViewGlobal : register(b13)
+cbuffer CBPerViewGlobal : register(b6)
 {
 	float4x4  CV_ViewProjZeroMatr;
 	float4    CV_AnimGenParams;
@@ -182,11 +182,12 @@ cbuffer CBPerPassCustom : register(b5)
 #define g_PS_FogColor              CV_FogColor
 #define g_PS_TerrainInfo           CV_TerrainInfo
 
-cbuffer CB_SkinQuat_Cur : register(b9)
+cbuffer CB_SkinQuat_Cur : register(b2)
 {
 	float2x4 _g_SkinQuat_Cur[MAX_BONES];
 };
-cbuffer CB_SkinQuat_Prev : register(b10)
+
+cbuffer CB_SkinQuat_Prev : register(b3)
 {
 	float2x4 _g_SkinQuat_Prev[MAX_BONES];
 };
@@ -195,7 +196,6 @@ cbuffer CB_SkinQuat_Prev : register(b10)
 // Frequently used parameters
 
 float4 FogInfo              : PB_Fog;
-float4 AvgFogVolumeContrib  : PI_AvgFogVolumeContrib;
 float4 PS_NearFarClipDist   : PB_NearFarDist;
 float4 PS_WorldViewPos      : PB_CameraPos;
 float4 PS_ScreenSize        : PB_ScreenSize;

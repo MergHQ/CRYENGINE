@@ -115,15 +115,15 @@ public:
 	CCompiledParticle()
 	{
 		auto& graphicsPipeline = gcpRendD3D->GetGraphicsPipeline();
-		m_pInstanceCB = gcpRendD3D->m_DevBufMan.CreateConstantBuffer(sizeof(SParticleInstanceCB), true);
+		m_pPerDrawCB = gcpRendD3D->m_DevBufMan.CreateConstantBuffer(sizeof(SParticleInstanceCB), true);
 		m_pShaderDataCB = gcpRendD3D->m_DevBufMan.CreateConstantBuffer(sizeof(SParticleShaderData));
-		m_pPerInstanceExtraRS = GetDeviceObjectFactory().CreateResourceSet(CDeviceResourceSet::EFlags_ForceSetAllState);
+		m_pPerDrawExtraRS = GetDeviceObjectFactory().CreateResourceSet(CDeviceResourceSet::EFlags_ForceSetAllState);
 	}
 
 // private:
 	CDeviceGraphicsPSOPtr m_pGraphicsPSOs[uint(EParticlePSOMode::Count)];
-	CDeviceResourceSetPtr m_pPerInstanceExtraRS;
-	CConstantBufferPtr    m_pInstanceCB;
+	CDeviceResourceSetPtr m_pPerDrawExtraRS;
+	CConstantBufferPtr    m_pPerDrawCB;
 	CConstantBufferPtr    m_pShaderDataCB;
 	Vec4                  m_glowParams = Vec4(ZERO);
 };
@@ -510,6 +510,7 @@ bool CREParticle::Compile(CRenderObject* pRenderObject, CRenderView *pRenderView
 	{
 		// Fast path
 		PrepareDataToRender(pRenderView, pRenderObject);
+		// NOTE: Works only because CB's resource state doesn't change (is reverted or UPLOAD-heap)
 		return true;
 	}
 
@@ -678,25 +679,33 @@ bool CREParticle::Compile(CRenderObject* pRenderObject, CRenderView *pRenderView
 
 	m_pCompiledParticle->m_pShaderDataCB->UpdateBuffer(objectData.m_pParticleShaderData, sizeof(*objectData.m_pParticleShaderData));
 
-	CDeviceResourceSetDesc perInstanceExtraResources(graphicsPipeline.GetDefaultInstanceExtraResources(), nullptr, nullptr);
+	CDeviceResourceSetDesc perInstanceExtraResources(graphicsPipeline.GetDefaultDrawExtraResourceLayout(), nullptr, nullptr);
 
-	const uint shaderDataIdx = 9;
 	perInstanceExtraResources.SetConstantBuffer(
-		shaderDataIdx, m_pCompiledParticle->m_pShaderDataCB,
-		EShaderStage_Vertex | EShaderStage_Hull | EShaderStage_Domain | EShaderStage_Pixel);
+		eConstantBufferShaderSlot_PerGroup,
+		m_pCompiledParticle->m_pShaderDataCB,
+		EShaderStage_Vertex | EShaderStage_Hull);
+
 	if (isGpuParticles)
 	{
 		perInstanceExtraResources.SetBuffer(
 			EReservedTextureSlot_GpuParticleStream,
 			&m_pGpuRuntime->GetContainer()->GetDefaultParticleDataBuffer(),
-			EDefaultResourceViews::Default, EShaderStage_Vertex | EShaderStage_Hull | EShaderStage_Domain | EShaderStage_Pixel);
+			EDefaultResourceViews::Default,
+			EShaderStage_Vertex);
 	}
-	m_pCompiledParticle->m_pPerInstanceExtraRS->Update(perInstanceExtraResources);
 
-	commandInterface.PrepareResourcesForUse(EResourceLayoutSlot_PerMaterialRS, pShaderResources->m_pCompiledResourceSet.get());
-	commandInterface.PrepareResourcesForUse(EResourceLayoutSlot_PerInstanceExtraRS, m_pCompiledParticle->m_pPerInstanceExtraRS.get());
+	m_pCompiledParticle->m_pPerDrawExtraRS->Update(perInstanceExtraResources);
 
 	PrepareDataToRender(pRenderView, pRenderObject);
+
+	CD3D9Renderer* const RESTRICT_POINTER rd = gcpRendD3D;
+	const EShaderStage perDrawInlineShaderStages = (EShaderStage_Vertex | EShaderStage_Pixel | EShaderStage_Domain);
+
+	commandInterface.PrepareResourcesForUse(EResourceLayoutSlot_PerMaterialRS, pShaderResources->m_pCompiledResourceSet.get());
+	commandInterface.PrepareResourcesForUse(EResourceLayoutSlot_PerDrawExtraRS, m_pCompiledParticle->m_pPerDrawExtraRS.get());
+
+	commandInterface.PrepareInlineConstantBufferForUse(EResourceLayoutSlot_PerDrawCB, m_pCompiledParticle->m_pPerDrawCB, eConstantBufferShaderSlot_PerDraw, perDrawInlineShaderStages);
 
 	return true;
 }
@@ -784,21 +793,22 @@ void CREParticle::PrepareDataToRender(CRenderView *pRenderView, CRenderObject* p
 	instanceCB.m_lightVolumeId = lightVolumeId;
 	instanceCB.m_glowParams = m_pCompiledParticle->m_glowParams;
 
-	m_pCompiledParticle->m_pInstanceCB->UpdateBuffer(&instanceCB, sizeof(instanceCB));
+	m_pCompiledParticle->m_pPerDrawCB->UpdateBuffer(&instanceCB, sizeof(instanceCB));
 }
 
 void CREParticle::BindPipeline(CRenderObject* pRenderObject, CDeviceGraphicsCommandInterface& commandInterface, CDeviceGraphicsPSOPtr pGraphicsPSO)
 {
+	CD3D9Renderer* const RESTRICT_POINTER rd = gcpRendD3D;
+
 	const SShaderItem& shaderItem = pRenderObject->m_pCurrMaterial->GetShaderItem();
 	const CShaderResources* pShaderResources = static_cast<CShaderResources*>(shaderItem.m_pShaderResources);
+	const EShaderStage perDrawInlineShaderStages = (EShaderStage_Vertex | EShaderStage_Domain | EShaderStage_Pixel);
 
 	commandInterface.SetPipelineState(pGraphicsPSO.get());
 	commandInterface.SetResources(EResourceLayoutSlot_PerMaterialRS, pShaderResources->m_pCompiledResourceSet.get());
-	commandInterface.SetResources(EResourceLayoutSlot_PerInstanceExtraRS, m_pCompiledParticle->m_pPerInstanceExtraRS.get());
+	commandInterface.SetResources(EResourceLayoutSlot_PerDrawExtraRS, m_pCompiledParticle->m_pPerDrawExtraRS.get());
 
-	commandInterface.SetInlineConstantBuffer(
-		EResourceLayoutSlot_PerInstanceCB, m_pCompiledParticle->m_pInstanceCB,
-		eConstantBufferShaderSlot_PerInstance, EShaderStage_Vertex | EShaderStage_Domain | EShaderStage_Pixel);
+	commandInterface.SetInlineConstantBuffer(EResourceLayoutSlot_PerDrawCB, m_pCompiledParticle->m_pPerDrawCB, eConstantBufferShaderSlot_PerDraw, perDrawInlineShaderStages);
 }
 
 void CREParticle::DrawParticles(CRenderObject* pRenderObject, CDeviceGraphicsCommandInterface& commandInterface)

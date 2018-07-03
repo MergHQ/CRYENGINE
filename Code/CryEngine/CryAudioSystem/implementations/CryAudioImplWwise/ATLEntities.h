@@ -31,16 +31,16 @@ public:
 	CObject& operator=(CObject&&) = delete;
 
 	// CryAudio::Impl::IObject
-	virtual ERequestStatus Update() override;
+	virtual void           Update() override;
 	virtual void           SetTransformation(CObjectTransformation const& transformation) override;
-	virtual ERequestStatus SetEnvironment(IEnvironment const* const pIEnvironment, float const amount) override;
-	virtual ERequestStatus SetParameter(IParameter const* const pIParameter, float const value) override;
-	virtual ERequestStatus SetSwitchState(ISwitchState const* const pISwitchState) override;
-	virtual ERequestStatus SetObstructionOcclusion(float const obstruction, float const occlusion) override;
+	virtual void           SetEnvironment(IEnvironment const* const pIEnvironment, float const amount) override;
+	virtual void           SetParameter(IParameter const* const pIParameter, float const value) override;
+	virtual void           SetSwitchState(ISwitchState const* const pISwitchState) override;
+	virtual void           SetObstructionOcclusion(float const obstruction, float const occlusion) override;
 	virtual ERequestStatus ExecuteTrigger(ITrigger const* const pITrigger, IEvent* const pIEvent) override;
-	virtual ERequestStatus StopAllTriggers() override;
-	virtual ERequestStatus PlayFile(IStandaloneFile* const pIStandaloneFile) override { return ERequestStatus::Failure; }
-	virtual ERequestStatus StopFile(IStandaloneFile* const pIStandaloneFile) override { return ERequestStatus::Failure; }
+	virtual void           StopAllTriggers() override;
+	virtual ERequestStatus PlayFile(IStandaloneFile* const pIStandaloneFile) override;
+	virtual ERequestStatus StopFile(IStandaloneFile* const pIStandaloneFile) override;
 	virtual ERequestStatus SetName(char const* const szName) override;
 	// ~CryAudio::Impl::IObject
 
@@ -50,7 +50,7 @@ public:
 
 private:
 
-	ERequestStatus PostEnvironmentAmounts();
+	void PostEnvironmentAmounts();
 };
 
 class CListener final : public IListener

@@ -143,7 +143,7 @@ bool CD3D9Renderer::FX_DrawToRenderTarget(
 			char name[128];
 			cry_sprintf(name, "$RT_ENV_2D_%d", m_TexGenID++);
 			int flags = FT_NOMIPS | FT_STATE_CLAMP | FT_DONT_STREAM | FT_USAGE_RENDERTARGET;
-			pEnvTex->m_pTex = new SDynTexture(nWidth, nHeight, eTF, eTT_2D, flags, name);
+			pEnvTex->m_pTex = new SDynTexture(nWidth, nHeight, Clr_Transparent, eTF, eTT_2D, flags, name);
 			pEnvTex->m_pTex->Update(nWidth, nHeight);
 			pRT->m_nWidth = nWidth;
 			pRT->m_nHeight = nHeight;
@@ -221,7 +221,7 @@ bool CD3D9Renderer::FX_DrawToRenderTarget(
 		char name[128];
 		cry_sprintf(name, "$RT_2D_%d", m_TexGenID++);
 		int flags = FT_NOMIPS | FT_STATE_CLAMP | FT_DONT_STREAM;
-		pEnvTex->m_pTex = new SDynTexture(nWidth, nHeight, eTF, eTT_2D, flags, name);
+		pEnvTex->m_pTex = new SDynTexture(nWidth, nHeight, Clr_Transparent, eTF, eTT_2D, flags, name);
 		assert(nWidth > 0 && nWidth <= m_d3dsdBackBuffer.Width);
 		assert(nHeight > 0 && nHeight <= m_d3dsdBackBuffer.Height);
 		pEnvTex->m_pTex->Update(nWidth, nHeight);

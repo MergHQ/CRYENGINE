@@ -2514,7 +2514,7 @@ inline bool CompareVars(const SFXParam* a, const SFXParam* b)
 	return (nReg0 < nReg1);
 }
 
-EToken dwNamesCB[CB_NUM] = { eT_PER_BATCH, eT_PER_INSTANCE, eT_unknown, eT_PER_MATERIAL, eT_unknown, eT_unknown, eT_SKIN_DATA, eT_INSTANCE_DATA };
+EToken dwNamesCB[CB_NUM] = { eT_PER_BATCH, eT_PER_MATERIAL };
 
 void CShaderManBin::AddParameterToScript(CParserBin& Parser, SFXParam* pr, PodArray<uint32>& SHData, EHWShaderClass eSHClass, int nCB)
 {
@@ -4017,32 +4017,17 @@ bool CShaderManBin::ParseBinFX(SShaderBin* pBin, CShader* ef, uint64 nMaskGen)
 					if (nTokAssign)
 					{
 						const char* assign = Parser.GetString(nTokAssign);
-						if (!strnicmp(assign, "SK_", 3))
-							Pr.m_nCB = CB_SKIN_DATA;
-						else if (!assign[0] || !strnicmp(assign, "PB_", 3))
-							Pr.m_nCB = CB_PER_BATCH;
-						else if (!strnicmp(assign, "PI_", 3) || !strnicmp(assign, "SI_", 3))
-							Pr.m_nCB = CB_PER_INSTANCE;
-						else if (!strnicmp(assign, "PM_", 3))
+						if (assign[0] && !strnicmp(assign, "PM_", 3))
 							Pr.m_nCB = CB_PER_MATERIAL;
-						else if (!strnicmp(assign, "register", 8))
-							Pr.m_nCB = CB_PER_BATCH;
 						else
-							Pr.m_nCB = CB_PER_BATCH;
+							Pr.m_nCB = CB_PER_DRAW;
 					}
 					else if (CParserBin::m_nPlatform & (SF_D3D11 | SF_ORBIS | SF_DURANGO | SF_GL4 | SF_GLES3 | SF_VULKAN))
 					{
 						uint32 nTokName = Parser.GetToken(Parser.m_Name);
-						if (nTokName == eT__g_SkinQuat)
-							Pr.m_nCB = CB_SKIN_DATA;
-						else
-						{
-							const char* name = Parser.GetString(nTokName);
-							if (!strncmp(name, "PI_", 3))
-								Pr.m_nCB = CB_PER_INSTANCE;
-							else
-								Pr.m_nCB = CB_PER_BATCH;
-						}
+						const char* name = Parser.GetString(nTokName);
+						
+						Pr.m_nCB = CB_PER_DRAW;
 					}
 
 					Pr.PostLoad(Parser, Parser.m_Name, Parser.m_Annotations, Parser.m_Value, Parser.m_Assign);

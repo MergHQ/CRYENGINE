@@ -10,12 +10,6 @@ float Script : STANDARDSGLOBAL
 >;
 
 
-// Non-Tweakables
-
-
-//float4 objColor : PI_ObjColor;
-
-
 // Structs
 
 
@@ -35,7 +29,7 @@ struct SDebugLightVS2PS
 
 
 SDebugLightVS2PS
-DebugLightVS( SDebugLightApp2VS IN )
+DebugLightVS( SDebugLightApp2VS IN)
 {
   SDebugLightVS2PS OUT = (SDebugLightVS2PS) 0;
   OUT.pos = mul( CV_ViewProjMatr, IN.pos );

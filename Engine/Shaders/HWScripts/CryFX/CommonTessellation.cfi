@@ -4,9 +4,7 @@
 
 #define MAX_TESS_FACTOR 32.0
 
-Buffer<float2> txtCoords : register(t15); // 12 texture coordinates per triangle
-// this probably needs to be converted to per-instance constant: AI AndreyK
-Buffer<int> patchIDOffset : register(t15);
+Buffer<float2> txtCoords : register(t16); // 12 texture coordinates per triangle
 
 
 //--------------------------------------------------------------------------------------
@@ -185,10 +183,6 @@ struct HS_CONTROL_POINT_OUTPUT_ILLUM
 	float4 vTangent  : TEXCOORDN;
 	float4 vBinormal : TEXCOORDN;
 	
-#if %_RT_FOG && !%_RT_DECAL_TEXGEN_2D
-	float4 AvgFogVolumeContrib : TEXCOORDN;
-#endif
-
 #if %VERTCOLORS || %DIRTLAYER || %BLENDLAYER
 	float4 Color      : COLOR0;
 #endif

@@ -25,7 +25,7 @@ CLensGhost::CLensGhost(const char* name, CTexture* externalTex)
 {
 	CConstantBufferPtr pcb = gcpRendD3D->m_DevBufMan.CreateConstantBuffer(sizeof(SShaderParams), true, true);
 
-	m_primitive.SetInlineConstantBuffer(eConstantBufferShaderSlot_PerBatch, pcb, EShaderStage_Vertex | EShaderStage_Pixel);
+	m_primitive.SetInlineConstantBuffer(eConstantBufferShaderSlot_PerPrimitive, pcb, EShaderStage_Vertex | EShaderStage_Pixel);
 }
 
 void CLensGhost::Load(IXmlNode* pNode)
@@ -77,7 +77,7 @@ bool CLensGhost::PreparePrimitives(const SPreparePrimitivesContext& context)
 
 	// update constants
 	{
-		auto constants = m_primitive.GetConstantManager().BeginTypedConstantUpdate<SShaderParams>(eConstantBufferShaderSlot_PerBatch, EShaderStage_Vertex | EShaderStage_Pixel);
+		auto constants = m_primitive.GetConstantManager().BeginTypedConstantUpdate<SShaderParams>(eConstantBufferShaderSlot_PerPrimitive, EShaderStage_Vertex | EShaderStage_Pixel);
 
 		if (m_globalOcclusionBokeh)
 			ApplyOcclusionPattern(constants, m_primitive);
