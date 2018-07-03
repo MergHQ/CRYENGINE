@@ -21,7 +21,7 @@ using HasToStringFunc = decltype(std::declval<T>().ToString());
 template<class TYPE>
 struct HasToString
 {
-	static constexpr bool value = stl::is_detected<HasToStringFunc, TYPE>::value;
+	static constexpr bool value = stl::is_detected_exact<string, HasToStringFunc, TYPE>::value;
 };
 
 }

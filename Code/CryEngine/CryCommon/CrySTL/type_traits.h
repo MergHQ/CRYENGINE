@@ -56,4 +56,10 @@ namespace stl
 	//! static_assert(stl::is_detected<SerializationFunc, MyClass>::value, "Must provide member function void Serialize(Serialization::IArchive& ar) !!");
 	template <template <class...> class Op, class... Args>
 	using is_detected = typename detail::detector<detail::nonesuch, void, Op, Args...>::value_t;
+
+	template <template <class...> class Op, class... Args>
+	using detected_t = typename detail::detector<detail::nonesuch, void, Op, Args...>::type;
+
+	template <class Expected, template<class...> class Op, class... Args>
+	using is_detected_exact = std::is_same<Expected, detected_t<Op, Args...>>;
 }
