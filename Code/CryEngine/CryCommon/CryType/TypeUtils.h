@@ -76,7 +76,7 @@ struct SCompileTime_TypeInfo
 private:
 	constexpr static uint32 ComputeCrc(const CCompileTime_String str)
 	{
-		return CCrc32::Compute_CompileTime(str.c_str(), str.length());
+		return CCrc32::Compute_CompileTime(str.c_str(), str.length(), 0);
 	}
 
 	constexpr static CCompileTime_String TypeName()
