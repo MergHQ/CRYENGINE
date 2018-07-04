@@ -139,9 +139,9 @@ inline CRadianAngleDecorator<TRangeMin_X, TRangeMax_X> RadianAngleDecorator(Ang3
 	return CRadianAngleDecorator<TRangeMin_X, TRangeMax_X>(value);
 }
 
-inline SGameResourceFile GeometryPath(string& value)
+inline SGameResourceFileWithType GeometryPath(string& value)
 {
-	return SGameResourceFile(value, "Geometry (cgf)|*.cgf");
+	return SGameResourceFileWithType(value, "Model", "Geometry (cgf)|*.cgf");
 }
 
 inline SGameResourceFile GeometryPath(string& value, const char* szFilter, const char* szStartFolder)
