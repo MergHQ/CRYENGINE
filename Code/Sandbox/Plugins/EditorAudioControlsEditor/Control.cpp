@@ -102,6 +102,8 @@ void CControl::Serialize(Serialization::IArchive& ar)
 			scopeList.emplace_back(scopeInfo.name);
 		}
 
+		std::sort(scopeList.begin(), scopeList.end());
+
 		Serialization::StringListValue const selectedScope(scopeList, g_assetsManager.GetScopeInfo(m_scope).name);
 		ar(selectedScope, "scope", "Scope");
 		scope = g_assetsManager.GetScope(scopeList[selectedScope.index()]);

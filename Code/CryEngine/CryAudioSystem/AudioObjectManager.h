@@ -15,11 +15,6 @@ class CATLStandaloneFile;
 class CATLEvent;
 class CAudioRequest;
 
-namespace Impl
-{
-struct IImpl;
-} // namespace Impl
-
 class CObjectManager final
 {
 public:
@@ -35,7 +30,7 @@ public:
 	CObjectManager& operator=(CObjectManager&&) = delete;
 
 	void            Init(uint32 const poolSize);
-	void            SetImpl(Impl::IImpl* const pIImpl);
+	void            OnAfterImplChanged();
 	void            Release();
 	void            Update(float const deltaTime, CObjectTransformation const& listenerTransformation, Vec3 const& listenerVelocity);
 	void            RegisterObject(CATLAudioObject* const pObject);
@@ -67,7 +62,6 @@ private:
 
 	bool HasActiveData(CATLAudioObject const* const pAudioObject) const;
 
-	Impl::IImpl*       m_pIImpl = nullptr;
 	ConstructedObjects m_constructedObjects;
 };
 } // namespace CryAudio

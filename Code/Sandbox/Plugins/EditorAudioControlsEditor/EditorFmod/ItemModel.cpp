@@ -29,6 +29,9 @@ CItemModelAttribute* GetAttributeForColumn(CItemModel::EColumns const column)
 	case CItemModel::EColumns::Connected:
 		pAttribute = &ModelUtils::s_connectedAttribute;
 		break;
+	case CItemModel::EColumns::Localized:
+		pAttribute = &ModelUtils::s_localizedAttribute;
+		break;
 	case CItemModel::EColumns::Name:
 		pAttribute = &Attributes::s_nameAttribute;
 		break;
@@ -109,11 +112,19 @@ QVariant CItemModel::data(QModelIndex const& index, int role) const
 							{
 								variant = ModelUtils::GetItemNotificationIcon(ModelUtils::EItemStatus::NoConnection);
 							}
+							else if ((flags& EItemFlags::IsLocalized) != 0)
+							{
+								variant = ModelUtils::GetItemNotificationIcon(ModelUtils::EItemStatus::Localized);
+							}
 							break;
 						case Qt::ToolTipRole:
 							if ((flags & (EItemFlags::IsConnected | EItemFlags::IsContainer)) == 0)
 							{
 								variant = TypeToString(pItem->GetType()) + tr(" is not connected to any audio system control");
+							}
+							else if ((flags& EItemFlags::IsLocalized) != 0)
+							{
+								variant = TypeToString(pItem->GetType()) + tr(" is localized");
 							}
 							break;
 						case static_cast<int>(ModelUtils::ERoles::Id):
@@ -128,6 +139,12 @@ QVariant CItemModel::data(QModelIndex const& index, int role) const
 					if ((role == Qt::CheckStateRole) && ((flags& EItemFlags::IsContainer) == 0))
 					{
 						variant = ((flags& EItemFlags::IsConnected) != 0) ? Qt::Checked : Qt::Unchecked;
+					}
+					break;
+				case static_cast<int>(EColumns::Localized):
+					if ((role == Qt::CheckStateRole) && ((flags& EItemFlags::IsContainer) == 0))
+					{
+						variant = ((flags& EItemFlags::IsLocalized) != 0) ? Qt::Checked : Qt::Unchecked;
 					}
 					break;
 				case static_cast<int>(EColumns::Name):

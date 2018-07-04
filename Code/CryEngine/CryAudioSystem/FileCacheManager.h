@@ -43,7 +43,6 @@ public:
 
 	// Public methods
 	void           Init();
-	void           SetImpl(Impl::IImpl* const pIImpl);
 	void           Release();
 	FileEntryId    TryAddFileCacheEntry(XmlNodeRef const pFileNode, EDataScope const dataScope, bool const bAutoLoad);
 	bool           TryRemoveFileCacheEntry(FileEntryId const audioFileEntryId, EDataScope const dataScope);
@@ -78,7 +77,6 @@ private:
 	bool TryCacheFileCacheEntryInternal(CATLAudioFileEntry* const pAudioFileEntry, FileEntryId const audioFileEntryId, bool const bLoadSynchronously, bool const bOverrideUseCount = false, size_t const useCount = 0);
 
 	// Internal members
-	Impl::IImpl*                    m_pIImpl;
 	AudioPreloadRequestLookup&      m_preloadRequests;
 	AudioFileEntries                m_audioFileEntries;
 	_smart_ptr<::ICustomMemoryHeap> m_pMemoryHeap;

@@ -42,6 +42,57 @@ FMOD_RESULT F_CALLBACK EventCallback(FMOD_STUDIO_EVENT_CALLBACK_TYPE type, FMOD_
 }
 
 //////////////////////////////////////////////////////////////////////////
+FMOD_RESULT F_CALLBACK ProgrammerSoundCallback(FMOD_STUDIO_EVENT_CALLBACK_TYPE type, FMOD_STUDIO_EVENTINSTANCE* pEventInst, void* pInOutParameters)
+{
+	if (pEventInst != nullptr)
+	{
+		auto const pEventInstance = reinterpret_cast<FMOD::Studio::EventInstance*>(pEventInst);
+		CEvent* pEvent = nullptr;
+		FMOD_RESULT fmodResult = pEventInstance->getUserData(reinterpret_cast<void**>(&pEvent));
+		ASSERT_FMOD_OK;
+
+		if ((pEvent != nullptr) && (pEvent->GetTrigger() != nullptr))
+		{
+			if (type == FMOD_STUDIO_EVENT_CALLBACK_CREATE_PROGRAMMER_SOUND)
+			{
+				CRY_ASSERT_MESSAGE(pInOutParameters != nullptr, "pInOutParameters is null pointer");
+				auto const pInOutProperties = reinterpret_cast<FMOD_STUDIO_PROGRAMMER_SOUND_PROPERTIES*>(pInOutParameters);
+				char const* const szKey = pEvent->GetTrigger()->GetKey().c_str();
+
+				FMOD_STUDIO_SOUND_INFO soundInfo;
+				fmodResult = CObjectBase::s_pSystem->getSoundInfo(szKey, &soundInfo);
+				ASSERT_FMOD_OK;
+
+				FMOD::Sound* pSound = nullptr;
+				FMOD_MODE const mode = FMOD_CREATECOMPRESSEDSAMPLE | FMOD_NONBLOCKING | FMOD_3D | soundInfo.mode;
+				fmodResult = CStandaloneFileBase::s_pLowLevelSystem->createSound(soundInfo.name_or_data, mode, &soundInfo.exinfo, &pSound);
+				ASSERT_FMOD_OK;
+
+				pInOutProperties->sound = reinterpret_cast<FMOD_SOUND*>(pSound);
+				pInOutProperties->subsoundIndex = soundInfo.subsoundindex;
+			}
+			else if (type == FMOD_STUDIO_EVENT_CALLBACK_DESTROY_PROGRAMMER_SOUND)
+			{
+				CRY_ASSERT_MESSAGE(pInOutParameters != nullptr, "pInOutParameters is null pointer");
+				auto const pInOutProperties = reinterpret_cast<FMOD_STUDIO_PROGRAMMER_SOUND_PROPERTIES*>(pInOutParameters);
+
+				auto* pSound = reinterpret_cast<FMOD::Sound*>(pInOutProperties->sound);
+
+				fmodResult = pSound->release();
+				ASSERT_FMOD_OK;
+			}
+			else if ((type == FMOD_STUDIO_EVENT_CALLBACK_START_FAILED) || (type == FMOD_STUDIO_EVENT_CALLBACK_STOPPED))
+			{
+				ASSERT_FMOD_OK;
+				gEnv->pAudioSystem->ReportFinishedEvent(pEvent->GetATLEvent(), true);
+			}
+		}
+	}
+
+	return FMOD_OK;
+}
+
+//////////////////////////////////////////////////////////////////////////
 CObjectBase::CObjectBase()
 {
 	ZeroStruct(m_attributes);
@@ -102,7 +153,6 @@ bool CObjectBase::SetEvent(CEvent* const pEvent)
 	if (pEvent->PrepareForOcclusion())
 	{
 		m_events.push_back(pEvent);
-		FMOD_RESULT fmodResult = FMOD_ERR_UNINITIALIZED;
 
 		FMOD::Studio::EventInstance* const pEventInstance = pEvent->GetInstance();
 		CRY_ASSERT_MESSAGE(pEventInstance != nullptr, "Event instance doesn't exist.");
@@ -110,7 +160,7 @@ bool CObjectBase::SetEvent(CEvent* const pEvent)
 		CRY_ASSERT_MESSAGE(pTrigger != nullptr, "Trigger doesn't exist.");
 
 		FMOD::Studio::EventDescription* pEventDescription = nullptr;
-		fmodResult = pEventInstance->getDescription(&pEventDescription);
+		FMOD_RESULT fmodResult = pEventInstance->getDescription(&pEventDescription);
 		ASSERT_FMOD_OK;
 
 		if (g_triggerToParameterIndexes.find(pTrigger) != g_triggerToParameterIndexes.end())
@@ -314,7 +364,16 @@ ERequestStatus CObjectBase::ExecuteTrigger(ITrigger const* const pITrigger, IEve
 					fmodResult = pEventDescription->createInstance(&pInstance);
 					ASSERT_FMOD_OK;
 					pEvent->SetInstance(pInstance);
-					fmodResult = pEvent->GetInstance()->setCallback(EventCallback, FMOD_STUDIO_EVENT_CALLBACK_START_FAILED | FMOD_STUDIO_EVENT_CALLBACK_STOPPED);
+
+					if (pTrigger->HasProgrammerSound())
+					{
+						fmodResult = pEvent->GetInstance()->setCallback(ProgrammerSoundCallback);
+					}
+					else
+					{
+						fmodResult = pEvent->GetInstance()->setCallback(EventCallback, FMOD_STUDIO_EVENT_CALLBACK_START_FAILED | FMOD_STUDIO_EVENT_CALLBACK_STOPPED);
+					}
+
 					ASSERT_FMOD_OK;
 					fmodResult = pEvent->GetInstance()->setUserData(pEvent);
 					ASSERT_FMOD_OK;

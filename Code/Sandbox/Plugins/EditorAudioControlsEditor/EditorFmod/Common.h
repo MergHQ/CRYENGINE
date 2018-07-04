@@ -15,6 +15,7 @@ static CryIcon s_errorIcon;
 static CryIcon s_bankIcon;
 static CryIcon s_editorFolderIcon;
 static CryIcon s_eventIcon;
+static CryIcon s_keyIcon;
 static CryIcon s_folderIcon;
 static CryIcon s_mixerGroupIcon;
 static CryIcon s_ParameterIcon;
@@ -26,6 +27,7 @@ static QString const s_emptyTypeName("");
 static QString const s_bankTypeName("Bank");
 static QString const s_editorFolderTypeName("Editor Folder");
 static QString const s_eventTypeName("Event");
+static QString const s_keyTypeName("Key");
 static QString const s_folderTypeName("Folder");
 static QString const s_mixerGroupTypeName("Mixer Group");
 static QString const s_parameterTypeName("Parameter");
@@ -40,6 +42,7 @@ inline void InitIcons()
 	s_bankIcon = CryIcon("icons:audio/impl/fmod/bank.ico");
 	s_editorFolderIcon = CryIcon("icons:General/Folder.ico");
 	s_eventIcon = CryIcon("icons:audio/impl/fmod/event.ico");
+	s_keyIcon = CryIcon("icons:audio/impl/fmod/key.ico");
 	s_folderIcon = CryIcon("icons:audio/impl/fmod/folder_closed.ico");
 	s_mixerGroupIcon = CryIcon("icons:audio/impl/fmod/group.ico");
 	s_ParameterIcon = CryIcon("icons:audio/impl/fmod/tag.ico");
@@ -73,6 +76,9 @@ inline CryIcon const& GetTypeIcon(EItemType const type)
 		break;
 	case EItemType::Return:
 		return s_returnIcon;
+		break;
+	case EItemType::Key:
+		return s_keyIcon;
 		break;
 	case EItemType::Snapshot:
 		return s_snapshotIcon;
@@ -111,6 +117,9 @@ inline QString const& TypeToString(EItemType const type)
 		break;
 	case EItemType::Return:
 		return s_returnTypeName;
+		break;
+	case EItemType::Key:
+		return s_keyTypeName;
 		break;
 	case EItemType::Snapshot:
 		return s_snapshotTypeName;

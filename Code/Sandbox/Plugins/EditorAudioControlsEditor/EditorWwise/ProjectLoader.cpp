@@ -125,13 +125,13 @@ CProjectLoader::CProjectLoader(string const& projectPath, string const& soundban
 
 	char const* const szLanguage = gEnv->pSystem->GetLocalizationManager()->GetLanguage();
 	string const locaFolder =
-	  PathUtil::GetLocalizationFolder() +
-	  "/" +
-	  szLanguage +
-	  "/" AUDIO_SYSTEM_DATA_ROOT "/" +
-	  CryAudio::Impl::Wwise::s_szImplFolderName +
-	  "/" +
-	  CryAudio::s_szAssetsFolderName;
+		PathUtil::GetLocalizationFolder() +
+		"/" +
+		szLanguage +
+		"/" AUDIO_SYSTEM_DATA_ROOT "/" +
+		CryAudio::Impl::Wwise::s_szImplFolderName +
+		"/" +
+		CryAudio::s_szAssetsFolderName;
 	LoadSoundBanks(locaFolder, true, *pSoundBanks);
 
 	if (pSoundBanks->GetNumChildren() == 0)
@@ -156,6 +156,8 @@ void CProjectLoader::LoadSoundBanks(string const& folderPath, bool const isLocal
 
 	if (handle != -1)
 	{
+		EItemFlags const flags = isLocalized ? EItemFlags::IsLocalized : EItemFlags::None;
+
 		do
 		{
 			string const name = fd.name;
@@ -172,12 +174,6 @@ void CProjectLoader::LoadSoundBanks(string const& folderPath, bool const isLocal
 
 						if (pItem == nullptr)
 						{
-							EItemFlags flags = EItemFlags::None;
-
-							if (isLocalized)
-							{
-								flags = EItemFlags::IsLocalized;
-							}
 
 							EPakStatus const pakStatus = gEnv->pCryPak->IsFileExist(fullname.c_str(), ICryPak::eFileLocation_OnDisk) ? EPakStatus::OnDisk : EPakStatus::None;
 							auto const pSoundBank = new CItem(name, id, EItemType::SoundBank, flags, pakStatus, fullname);

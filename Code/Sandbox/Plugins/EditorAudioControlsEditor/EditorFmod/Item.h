@@ -18,6 +18,7 @@ enum class EItemType
 	Return,
 	VCA,
 	Parameter,
+	Key,
 	Event,
 	MixerGroup,
 	Folder,
@@ -29,12 +30,12 @@ class CItem final : public IItem
 public:
 
 	explicit CItem(
-	  string const& name,
-	  ControlId const id,
-	  EItemType const type,
-	  EItemFlags const flags = EItemFlags::None,
-	  EPakStatus const pakStatus = EPakStatus::None,
-	  string const& filePath = "")
+		string const& name,
+		ControlId const id,
+		EItemType const type,
+		EItemFlags const flags = EItemFlags::None,
+		EPakStatus const pakStatus = EPakStatus::None,
+		string const& filePath = "")
 		: m_name(name)
 		, m_id(id)
 		, m_type(type)
@@ -86,4 +87,3 @@ using ItemCache = std::map<ControlId, CItem*>;
 } // namespace Fmod
 } // namespace Impl
 } // namespace ACE
-

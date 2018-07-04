@@ -164,7 +164,6 @@ void CEvent::TrySetEnvironment(CEnvironment const* const pEnvironment, float con
 		{
 			CEnvironmentParameter const* const pEnvParam = static_cast<CEnvironmentParameter const* const>(pEnvironment);
 			uint32 const parameterId = pEnvParam->GetId();
-			FMOD_RESULT fmodResult = FMOD_ERR_UNINITIALIZED;
 
 			FMOD::Studio::EventInstance* const pEventInstance = GetInstance();
 			CRY_ASSERT_MESSAGE(pEventInstance != nullptr, "Event instance doesn't exist.");
@@ -172,7 +171,7 @@ void CEvent::TrySetEnvironment(CEnvironment const* const pEnvironment, float con
 			CRY_ASSERT_MESSAGE(pTrigger != nullptr, "Trigger doesn't exist.");
 
 			FMOD::Studio::EventDescription* pEventDescription = nullptr;
-			fmodResult = pEventInstance->getDescription(&pEventDescription);
+			FMOD_RESULT fmodResult = pEventInstance->getDescription(&pEventDescription);
 			ASSERT_FMOD_OK;
 
 			if (g_triggerToParameterIndexes.find(pTrigger) != g_triggerToParameterIndexes.end())

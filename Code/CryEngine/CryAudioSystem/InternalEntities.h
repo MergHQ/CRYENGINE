@@ -10,11 +10,6 @@ class CAudioListenerManager;
 class CATLAudioObject;
 class CAudioTranslationLayer;
 
-namespace Impl
-{
-struct IImpl;
-} // namespace Impl
-
 struct SInternalControls
 {
 	using SwitchState = std::pair<ControlId const, SwitchStateId const>;
@@ -92,7 +87,11 @@ class CDoNothingTrigger final : public CATLTriggerImpl
 {
 public:
 
-	explicit CDoNothingTrigger(TriggerImplId const id);
+	explicit CDoNothingTrigger(TriggerImplId const id)
+		: CATLTriggerImpl(id)
+	{}
+
+	CDoNothingTrigger() = delete;
 
 	// CATLTriggerImpl
 	virtual ERequestStatus Execute(Impl::IObject* const pImplObject, Impl::IEvent* const pImplEvent) const override;
@@ -103,89 +102,90 @@ class CLoseFocusTrigger final : public CATLTriggerImpl
 {
 public:
 
-	explicit CLoseFocusTrigger(TriggerImplId const id, Impl::IImpl& iimpl);
+	explicit CLoseFocusTrigger(TriggerImplId const id)
+		: CATLTriggerImpl(id)
+	{}
+
+	CLoseFocusTrigger() = delete;
 
 	// CATLTriggerImpl
 	virtual ERequestStatus Execute(Impl::IObject* const pImplObject, Impl::IEvent* const pImplEvent) const override;
 	// ~CATLTriggerImpl
-
-private:
-
-	Impl::IImpl& m_iimpl;
 };
 
 class CGetFocusTrigger final : public CATLTriggerImpl
 {
 public:
 
-	explicit CGetFocusTrigger(TriggerImplId const id, Impl::IImpl& iimpl);
+	explicit CGetFocusTrigger(TriggerImplId const id)
+		: CATLTriggerImpl(id)
+	{}
+
+	CGetFocusTrigger() = delete;
 
 	// CATLTriggerImpl
 	virtual ERequestStatus Execute(Impl::IObject* const pImplObject, Impl::IEvent* const pImplEvent) const override;
 	// ~CATLTriggerImpl
-
-private:
-
-	Impl::IImpl& m_iimpl;
 };
 
 class CMuteAllTrigger final : public CATLTriggerImpl
 {
 public:
 
-	explicit CMuteAllTrigger(TriggerImplId const id, Impl::IImpl& iimpl);
+	explicit CMuteAllTrigger(TriggerImplId const id)
+		: CATLTriggerImpl(id)
+	{}
+
+	CMuteAllTrigger() = delete;
 
 	// CATLTriggerImpl
 	virtual ERequestStatus Execute(Impl::IObject* const pImplObject, Impl::IEvent* const pImplEvent) const override;
 	// ~CATLTriggerImpl
-
-private:
-
-	Impl::IImpl& m_iimpl;
 };
 
 class CUnmuteAllTrigger final : public CATLTriggerImpl
 {
 public:
 
-	explicit CUnmuteAllTrigger(TriggerImplId const id, Impl::IImpl& iimpl);
+	explicit CUnmuteAllTrigger(TriggerImplId const id)
+		: CATLTriggerImpl(id)
+	{}
+
+	CUnmuteAllTrigger() = delete;
 
 	// CATLTriggerImpl
 	virtual ERequestStatus Execute(Impl::IObject* const pImplObject, Impl::IEvent* const pImplEvent) const override;
 	// ~CATLTriggerImpl
-
-private:
-	Impl::IImpl& m_iimpl;
 };
 
 class CPauseAllTrigger final : public CATLTriggerImpl
 {
 public:
 
-	explicit CPauseAllTrigger(TriggerImplId const id, Impl::IImpl& iimpl);
+	explicit CPauseAllTrigger(TriggerImplId const id)
+		: CATLTriggerImpl(id)
+	{}
+
+	CPauseAllTrigger() = delete;
 
 	// CATLTriggerImpl
 	virtual ERequestStatus Execute(Impl::IObject* const pImplObject, Impl::IEvent* const pImplEvent) const override;
 	// ~CATLTriggerImpl
-
-private:
-
-	Impl::IImpl& m_iimpl;
 };
 
 class CResumeAllTrigger final : public CATLTriggerImpl
 {
 public:
 
-	explicit CResumeAllTrigger(TriggerImplId const id, Impl::IImpl& iimpl);
+	explicit CResumeAllTrigger(TriggerImplId const id)
+		: CATLTriggerImpl(id)
+	{}
+
+	CResumeAllTrigger() = delete;
 
 	// CATLTriggerImpl
 	virtual ERequestStatus Execute(Impl::IObject* const pImplObject, Impl::IEvent* const pImplEvent) const override;
 	// ~CATLTriggerImpl
-
-private:
-
-	Impl::IImpl& m_iimpl;
 };
 
 class CAbsoluteVelocityParameter final : public IParameterImpl

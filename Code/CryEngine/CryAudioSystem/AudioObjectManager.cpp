@@ -18,7 +18,7 @@ namespace CryAudio
 //////////////////////////////////////////////////////////////////////////
 CObjectManager::~CObjectManager()
 {
-	if (m_pIImpl != nullptr)
+	if (g_pIImpl != nullptr)
 	{
 		Release();
 	}
@@ -38,17 +38,15 @@ void CObjectManager::Init(uint32 const poolSize)
 }
 
 //////////////////////////////////////////////////////////////////////////
-void CObjectManager::SetImpl(Impl::IImpl* const pIImpl)
+void CObjectManager::OnAfterImplChanged()
 {
-	m_pIImpl = pIImpl;
-
 	for (auto const pObject : m_constructedObjects)
 	{
 		CRY_ASSERT(pObject->GetImplDataPtr() == nullptr);
 #if defined(INCLUDE_AUDIO_PRODUCTION_CODE)
-		pObject->SetImplDataPtr(m_pIImpl->ConstructObject(pObject->m_name.c_str()));
+		pObject->SetImplDataPtr(g_pIImpl->ConstructObject(pObject->m_name.c_str()));
 #else
-		pObject->SetImplDataPtr(m_pIImpl->ConstructObject());
+		pObject->SetImplDataPtr(g_pIImpl->ConstructObject());
 #endif // INCLUDE_AUDIO_PRODUCTION_CODE
 	}
 }
@@ -59,11 +57,9 @@ void CObjectManager::Release()
 	// Don't clear m_constructedObjects here as we need the objects to survive a middleware switch!
 	for (auto const pObject : m_constructedObjects)
 	{
-		m_pIImpl->DestructObject(pObject->GetImplDataPtr());
+		g_pIImpl->DestructObject(pObject->GetImplDataPtr());
 		pObject->Release();
 	}
-
-	m_pIImpl = nullptr;
 }
 
 //////////////////////////////////////////////////////////////////////////
@@ -113,7 +109,7 @@ void CObjectManager::Update(float const deltaTime, CObjectTransformation const& 
 			}
 			else if (pObject->CanBeReleased())
 			{
-				m_pIImpl->DestructObject(pObject->GetImplDataPtr());
+				g_pIImpl->DestructObject(pObject->GetImplDataPtr());
 				pObject->SetImplDataPtr(nullptr);
 				delete pObject;
 

@@ -6,11 +6,6 @@
 
 namespace CryAudio
 {
-namespace Impl
-{
-struct IImpl;
-}
-
 class CATLListener;
 
 class CAudioListenerManager final
@@ -25,7 +20,7 @@ public:
 	CAudioListenerManager&       operator=(CAudioListenerManager const&) = delete;
 	CAudioListenerManager&       operator=(CAudioListenerManager&&) = delete;
 
-	void                         SetImpl(Impl::IImpl* const pIImpl);
+	void                         OnAfterImplChanged();
 	void                         Release();
 	void                         Update(float const deltaTime);
 	CATLListener*                CreateListener(char const* const szName = nullptr);
@@ -41,6 +36,5 @@ public:
 private:
 
 	std::vector<CATLListener*> m_activeListeners;
-	Impl::IImpl*               m_pIImpl = nullptr;
 };
 } // namespace CryAudio

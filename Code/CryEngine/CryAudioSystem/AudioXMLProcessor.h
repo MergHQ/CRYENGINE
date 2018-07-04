@@ -13,21 +13,18 @@ class CAudioXMLProcessor final
 public:
 
 	explicit CAudioXMLProcessor(
-	  AudioTriggerLookup& triggers,
-	  AudioParameterLookup& parameters,
-	  AudioSwitchLookup& switches,
-	  AudioEnvironmentLookup& environments,
-	  AudioPreloadRequestLookup& preloadRequests,
-	  CFileCacheManager& fileCacheMgr,
-	  SInternalControls const& internalControls);
+		AudioTriggerLookup& triggers,
+		AudioParameterLookup& parameters,
+		AudioSwitchLookup& switches,
+		AudioEnvironmentLookup& environments,
+		AudioPreloadRequestLookup& preloadRequests,
+		CFileCacheManager& fileCacheMgr,
+		SInternalControls const& internalControls);
 
 	CAudioXMLProcessor(CAudioXMLProcessor const&) = delete;
 	CAudioXMLProcessor(CAudioXMLProcessor&&) = delete;
 	CAudioXMLProcessor& operator=(CAudioXMLProcessor const&) = delete;
 	CAudioXMLProcessor& operator=(CAudioXMLProcessor&&) = delete;
-
-	void                SetImpl(Impl::IImpl* const pIImpl);
-	void                Release();
 
 	void                ParseControlsData(char const* const szFolderPath, EDataScope const dataScope);
 	void                ClearControlsData(EDataScope const dataScope);
@@ -61,6 +58,5 @@ private:
 	TriggerImplId              m_triggerImplIdCounter;
 	CFileCacheManager&         m_fileCacheMgr;
 	SInternalControls const&   m_internalControls;
-	Impl::IImpl*               m_pIImpl;
 };
 } // namespace CryAudio

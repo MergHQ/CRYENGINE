@@ -22,6 +22,10 @@ namespace Impl
 {
 namespace Wwise
 {
+class CImpl;
+
+extern CImpl* g_pImpl;
+
 //////////////////////////////////////////////////////////////////////////
 inline void FillAKVector(Vec3 const& vCryVector, AkVector& vAKVector)
 {

@@ -3,68 +3,54 @@
 #include "stdafx.h"
 #include "Common.h"
 
+#include <IAudioImpl.h>
+
 #if defined(INCLUDE_AUDIO_PRODUCTION_CODE)
 	#include <array>
 #endif // INCLUDE_AUDIO_PRODUCTION_CODE
 
 namespace CryAudio
 {
+Impl::IImpl* g_pIImpl = nullptr;
+
 #if defined(INCLUDE_AUDIO_PRODUCTION_CODE)
 namespace Debug
 {
 DebugColor const g_colorWhite {
 	{
-		1.0f, 1.0f, 1.0f, 0.9f
-	}
-};
+		1.0f, 1.0f, 1.0f, 0.9f } };
 
 DebugColor const g_colorRed {
 	{
-		1.0f, 0.0f, 0.0f, 0.7f
-	}
-};
+		1.0f, 0.0f, 0.0f, 0.7f } };
 
 DebugColor const g_colorGreen {
 	{
-		0.0f, 0.8f, 0.0f, 0.7f
-	}
-};
+		0.0f, 0.8f, 0.0f, 0.7f } };
 
 DebugColor const g_colorBlue {
 	{
-		0.4f, 0.4f, 1.0f, 1.0f
-	}
-};
+		0.4f, 0.4f, 1.0f, 1.0f } };
 
 DebugColor const g_colorGreyBright {
 	{
-		0.9f, 0.9f, 0.9f, 0.9f
-	}
-};
+		0.9f, 0.9f, 0.9f, 0.9f } };
 
 DebugColor const g_colorGreyDark {
 	{
-		0.5f, 0.5f, 0.5f, 0.9f
-	}
-};
+		0.5f, 0.5f, 0.5f, 0.9f } };
 
 DebugColor const g_colorOrange {
 	{
-		9.0f, 0.5f, 0.0f, 0.7f
-	}
-};
+		9.0f, 0.5f, 0.0f, 0.7f } };
 
 DebugColor const g_colorYellow {
 	{
-		0.9f, 0.9f, 0.0f, 0.7f
-	}
-};
+		0.9f, 0.9f, 0.0f, 0.7f } };
 
 DebugColor const g_colorCyan {
 	{
-		0.1f, 0.8f, 0.8f, 0.9f
-	}
-};
+		0.1f, 0.8f, 0.8f, 0.9f } };
 
 // Debug draw style for audio system info.
 float const g_systemFontSize = 1.35f;

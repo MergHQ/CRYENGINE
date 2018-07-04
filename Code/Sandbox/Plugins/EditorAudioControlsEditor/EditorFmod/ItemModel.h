@@ -20,6 +20,7 @@ public:
 	{
 		Notification,
 		Connected,
+		Localized,
 		Name,
 		Count,
 	};
@@ -57,4 +58,3 @@ private:
 } // namespace Fmod
 } // namespace Impl
 } // namespace ACE
-

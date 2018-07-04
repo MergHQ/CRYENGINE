@@ -16,7 +16,7 @@
 struct IDebugHistory
 {
 	// <interfuscator:shuffle>
-	virtual ~IDebugHistory(){}
+	virtual ~IDebugHistory() {}
 	virtual void SetVisibility(bool show) = 0;
 
 	virtual void SetName(const char* newName) = 0;
@@ -28,6 +28,7 @@ struct IDebugHistory
 	//    virtual void SetupGrid(int x, int y) = 0;
 	virtual void SetupColors(ColorF curvenormal, ColorF curveclamped, ColorF box, ColorF gridline, ColorF gridnumber, ColorF name) = 0;
 	virtual void SetGridlineCount(int nGridlinesX, int nGridlinesY) = 0;
+	virtual void AddLevel(float value, const ColorF& color, const char* szName) = 0;
 
 	virtual void AddValue(float value) = 0;
 	virtual void ClearHistory() = 0;
@@ -39,7 +40,7 @@ struct IDebugHistory
 struct IDebugHistoryManager
 {
 	// <interfuscator:shuffle>
-	virtual ~IDebugHistoryManager(){}
+	virtual ~IDebugHistoryManager() {}
 	virtual IDebugHistory* CreateHistory(const char* id, const char* name = 0) = 0;
 	virtual void           RemoveHistory(const char* name) = 0;
 	virtual IDebugHistory* GetHistory(const char* name) = 0;

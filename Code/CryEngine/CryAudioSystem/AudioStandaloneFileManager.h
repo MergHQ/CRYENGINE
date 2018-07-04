@@ -12,7 +12,6 @@ namespace CryAudio
 {
 namespace Impl
 {
-struct IImpl;
 struct ITrigger;
 } // namespace Impl
 
@@ -28,7 +27,6 @@ public:
 	CAudioStandaloneFileManager& operator=(CAudioStandaloneFileManager const&) = delete;
 	CAudioStandaloneFileManager& operator=(CAudioStandaloneFileManager&&) = delete;
 
-	void                         SetImpl(Impl::IImpl* const pIImpl);
 	void                         Release();
 
 	CATLStandaloneFile*          ConstructStandaloneFile(char const* const szFile, bool const bLocalized, Impl::ITrigger const* const pITrigger = nullptr);
@@ -37,7 +35,6 @@ public:
 private:
 
 	std::list<CATLStandaloneFile*> m_constructedStandaloneFiles;
-	Impl::IImpl*                   m_pIImpl = nullptr;
 
 #if defined(INCLUDE_AUDIO_PRODUCTION_CODE)
 public:

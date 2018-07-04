@@ -37,8 +37,8 @@ class CShadowMapStage : public CGraphicsPipelineStage
 public:
 	CShadowMapStage();
 
-	void Init() final;
-	void Prepare();
+	void Init()   final;
+	void Update() final;
 
 	void ReAllocateResources();
 	void Execute();
