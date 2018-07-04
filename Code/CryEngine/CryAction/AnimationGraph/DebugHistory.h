@@ -15,6 +15,15 @@ extern void Draw2DLine(float x1, float y1, float x2, float y2, ColorF color, flo
 
 class CDebugHistory : public IDebugHistory
 {
+private:
+	struct SLevelInfo
+	{
+		SLevelInfo(float v, ColorF c) : val(v), color(c) {};
+		float  val { 0.0f };
+		ColorF color { ColorF(1.0f, 1.0f, 1.0f, 1.0f) };
+	};
+	typedef std::map<string, SLevelInfo> TLevels;
+
 public:
 
 	CDebugHistory(const char* name, int size);
@@ -30,6 +39,7 @@ public:
 	virtual void SetupScopeExtent(float outermin, float outermax);
 	virtual void SetupColors(ColorF curvenormal, ColorF curveclamped, ColorF box, ColorF gridline, ColorF gridnumber, ColorF name);
 	virtual void SetGridlineCount(int nGridlinesX, int nGridlinesY);
+	virtual void AddLevel(float value, const ColorF& color, const char* szName);
 
 	virtual void AddValue(float value);
 	virtual void ClearHistory();
@@ -87,6 +97,8 @@ private:
 	bool               m_hasDefaultValue;
 	float              m_defaultValue;
 	bool               m_gotValue;
+
+	TLevels            m_levels;
 };
 
 //--------------------------------------------------------------------------------
@@ -139,12 +151,11 @@ public:
 	virtual void GetMemoryUsage(ICrySizer* s) const;
 
 	static void  RenderAll();
-	static void  SetupRenderer();
 
 	void         LayoutHelper(const char* id, const char* name, bool visible, float minout, float maxout, float minin, float maxin, float x, float y, float w = 1.0f, float h = 1.0f);
 
 private:
-	void Render(bool bSetupRenderer = false);
+	void Render();
 
 	Map m_histories;
 	static std::set<CDebugHistoryManager*>* m_allhistory;
