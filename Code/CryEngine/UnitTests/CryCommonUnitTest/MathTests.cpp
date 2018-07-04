@@ -280,6 +280,7 @@ void QuadraticTest(int mode = 2)
 
 TEST(CryMathTest, Quadratic)
 {
+	MathRand = {};
 	QuadraticTest<f32>();
 	QuadraticTest<f64>();
 }
@@ -495,20 +496,20 @@ void VectorTest(TestMode mode)
 	VECTOR_TEST_CODE(e.v0 == e.v1, bool());
 	VECTOR_TEST_CODE(IsEquivalent(e.v0, e.v1, Tolerance), bool());
 	VECTOR_TEST_CODE(IsEquivalent(e.v0, e.v1, Tolerance), bool());
-	VECTOR_TEST_CODE(e.v0 | e.v1, Tolerance);
+	VECTOR_TEST_CODE(e.v0 | e.v1, Tolerance * 10.0f);
 	VECTOR_TEST_CODE(e.v0 + e.v1, 0.0f);
 	VECTOR_TEST_CODE(e.v0 * e.f0, Tolerance);
 	VECTOR_TEST_CODE(e.v0.GetLength(), Tolerance);
 	VECTOR_TEST_CODE(e.v0.GetNormalized(), Tolerance);
-	VECTOR_TEST_CODE(e.v0.ProjectionOn(e.v1), Tolerance);
+	VECTOR_TEST_CODE(e.v0.ProjectionOn(e.v1), Tolerance * 10.0f);
 
 	VECTOR_TEST_CODE(e.m0, 0.0f);
 	VECTOR_TEST_CODE(e.m0 == e.m1, bool());
 	VECTOR_TEST_CODE(IsEquivalent(e.m0, e.m1, Tolerance), bool());
 	VECTOR_TEST_CODE(IsEquivalent(e.m0, e.m1, Tolerance), bool());
 	VECTOR_TEST_CODE(e.m0.GetTransposed(), 0.0f);
-	VECTOR_TEST_CODE(e.m0.GetInverted(), Tolerance);
-	VECTOR_TEST_CODE(e.m0.Determinant(), Tolerance);
+	VECTOR_TEST_CODE(e.m0.GetInverted(), Tolerance * 10.0f);
+	VECTOR_TEST_CODE(e.m0.Determinant(), Tolerance * 10.0f);
 
 	VECTOR_TEST_CODE(e.v0 * e.m0, Tolerance);
 	VECTOR_TEST_CODE(e.m0 * e.v0, Tolerance);
@@ -519,6 +520,8 @@ void VectorTest(TestMode mode)
 
 TEST(CryMathTest, Vector)
 {
+	MathRand = {};
+
 	// Init test to equivalent values
 	for (int i = 0; i < VCount; ++i)
 	{
