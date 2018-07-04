@@ -315,7 +315,7 @@ bool CShadowMapStage::CreatePipelineStates(DevicePipelineStatesArray* pStateArra
 	return true;
 }
 
-void CShadowMapStage::Prepare()
+void CShadowMapStage::Update()
 {
 	CRenderView* pRenderView = RenderView();
 

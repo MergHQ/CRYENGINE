@@ -734,11 +734,6 @@ void CStandardGraphicsPipeline::ExecuteMobilePipeline()
 	else
 		m_pSceneGBufferStage->ExecuteMicroGBuffer();
 
-	if (pRenderView->GetCurrentEye() != CCamera::eEye_Right)
-	{
-		m_pShadowMapStage->Prepare();
-	}
-
 	pRenderView->GetDrawer().WaitForDrawSubmission();
 
 	// Deferred shading
@@ -792,12 +787,6 @@ void CStandardGraphicsPipeline::Execute()
 
 	// GBuffer
 	m_pSceneGBufferStage->Execute();
-
-	if (pRenderView->GetCurrentEye() != CCamera::eEye_Right)
-	{
-		// NOTE: only compute and copy workloads are allowed to overlap multi-threaded drawing
-		m_pShadowMapStage->Prepare();
-	}
 
 	// Wait for GBuffer draw jobs to finish
 	renderItemDrawer.WaitForDrawSubmission();
