@@ -5,6 +5,7 @@
 #include "AudioSystem.h"
 #include "ATLAudioObject.h"
 #include "Common/IAudioImpl.h"
+#include "Common.h"
 
 namespace CryAudio
 {
@@ -25,8 +26,6 @@ char const* const SATLXMLTags::szPlatform = "linux";
 #else
 	#error "Undefined platform."
 #endif
-
-Impl::IImpl* CATLControlImpl::s_pIImpl = nullptr;
 
 //////////////////////////////////////////////////////////////////////////
 void CATLListener::SetTransformation(CObjectTransformation const& transformation, SRequestUserData const& userData /* = SAudioRequestUserData::GetEmptyObject() */)
@@ -121,8 +120,8 @@ void CParameterImpl::Set(CATLAudioObject& audioObject, float const value) const
 //////////////////////////////////////////////////////////////////////////
 CParameterImpl::~CParameterImpl()
 {
-	CRY_ASSERT(s_pIImpl != nullptr);
-	s_pIImpl->DestructParameter(m_pImplData);
+	CRY_ASSERT(g_pIImpl != nullptr);
+	g_pIImpl->DestructParameter(m_pImplData);
 }
 
 //////////////////////////////////////////////////////////////////////////
@@ -134,15 +133,15 @@ void CExternalAudioSwitchStateImpl::Set(CATLAudioObject& audioObject) const
 //////////////////////////////////////////////////////////////////////////
 CExternalAudioSwitchStateImpl::~CExternalAudioSwitchStateImpl()
 {
-	CRY_ASSERT(s_pIImpl != nullptr);
-	s_pIImpl->DestructSwitchState(m_pImplData);
+	CRY_ASSERT(g_pIImpl != nullptr);
+	g_pIImpl->DestructSwitchState(m_pImplData);
 }
 
 //////////////////////////////////////////////////////////////////////////
 CATLTriggerImpl::~CATLTriggerImpl()
 {
-	CRY_ASSERT(s_pIImpl != nullptr);
-	s_pIImpl->DestructTrigger(m_pImplData);
+	CRY_ASSERT(g_pIImpl != nullptr);
+	g_pIImpl->DestructTrigger(m_pImplData);
 }
 
 //////////////////////////////////////////////////////////////////////////
@@ -154,7 +153,7 @@ ERequestStatus CATLTriggerImpl::Execute(Impl::IObject* const pImplObject, Impl::
 //////////////////////////////////////////////////////////////////////////
 CATLEnvironmentImpl::~CATLEnvironmentImpl()
 {
-	CRY_ASSERT(s_pIImpl != nullptr);
-	s_pIImpl->DestructEnvironment(m_pImplData);
+	CRY_ASSERT(g_pIImpl != nullptr);
+	g_pIImpl->DestructEnvironment(m_pImplData);
 }
 } // namespace CryAudio

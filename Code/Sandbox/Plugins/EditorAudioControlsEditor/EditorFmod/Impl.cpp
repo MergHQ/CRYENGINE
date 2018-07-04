@@ -6,6 +6,7 @@
 #include "Common.h"
 #include "BankConnection.h"
 #include "EventConnection.h"
+#include "KeyConnection.h"
 #include "ParameterConnection.h"
 #include "ParameterToStateConnection.h"
 #include "SnapshotConnection.h"
@@ -23,6 +24,8 @@ namespace Impl
 {
 namespace Fmod
 {
+std::vector<string> CImpl::s_programmerSoundEvents;
+
 //////////////////////////////////////////////////////////////////////////
 EItemType TagToType(char const* const szTag)
 {
@@ -35,6 +38,10 @@ EItemType TagToType(char const* const szTag)
 	else if (_stricmp(szTag, CryAudio::Impl::Fmod::s_szParameterTag) == 0)
 	{
 		type = EItemType::Parameter;
+	}
+	else if (_stricmp(szTag, CryAudio::Impl::Fmod::s_szKeyTag) == 0)
+	{
+		type = EItemType::Key;
 	}
 	else if (_stricmp(szTag, CryAudio::Impl::Fmod::s_szSnapshotTag) == 0)
 	{
@@ -99,6 +106,9 @@ char const* TypeToTag(EItemType const type)
 	case EItemType::Event:
 		szTag = CryAudio::s_szEventTag;
 		break;
+	case EItemType::Key:
+		szTag = CryAudio::Impl::Fmod::s_szKeyTag;
+		break;
 	case EItemType::Parameter:
 		szTag = CryAudio::Impl::Fmod::s_szParameterTag;
 		break;
@@ -131,6 +141,9 @@ string TypeToEditorFolderName(EItemType const type)
 	{
 	case EItemType::Event:
 		folderName = s_eventsFolderName + "/";
+		break;
+	case EItemType::Key:
+		folderName = s_keysFolderName + "/";
 		break;
 	case EItemType::Parameter:
 		folderName = s_parametersFolderName + "/";
@@ -309,7 +322,7 @@ bool CImpl::IsTypeCompatible(EAssetType const assetType, IItem const* const pIIt
 		switch (assetType)
 		{
 		case EAssetType::Trigger:
-			isCompatible = (implType == EItemType::Event) || (implType == EItemType::Snapshot);
+			isCompatible = (implType == EItemType::Event) || (implType == EItemType::Key) || (implType == EItemType::Snapshot);
 			break;
 		case EAssetType::Parameter:
 			isCompatible = (implType == EItemType::Parameter) || (implType == EItemType::VCA);
@@ -345,14 +358,13 @@ EAssetType CImpl::ImplTypeToAssetType(IItem const* const pIItem) const
 		switch (implType)
 		{
 		case EItemType::Event:
+		case EItemType::Key:
+		case EItemType::Snapshot:
 			assetType = EAssetType::Trigger;
 			break;
 		case EItemType::Parameter:
 		case EItemType::VCA:
 			assetType = EAssetType::Parameter;
-			break;
-		case EItemType::Snapshot:
-			assetType = EAssetType::Trigger;
 			break;
 		case EItemType::Bank:
 			assetType = EAssetType::Preload;
@@ -382,6 +394,10 @@ ConnectionPtr CImpl::CreateConnectionToControl(EAssetType const assetType, IItem
 		if (type == EItemType::Event)
 		{
 			pConnection = std::make_shared<CEventConnection>(pItem->GetId());
+		}
+		else if (type == EItemType::Key)
+		{
+			pConnection = std::make_shared<CKeyConnection>(pItem->GetId());
 		}
 		else if (type == EItemType::Snapshot)
 		{
@@ -502,6 +518,14 @@ ConnectionPtr CImpl::CreateConnectionFromXMLNode(XmlNodeRef pNode, EAssetType co
 					pConnectionPtr = pConnection;
 				}
 				break;
+			case EItemType::Key:
+				{
+					string const eventName = pNode->getAttr(CryAudio::Impl::Fmod::s_szEventAttribute);
+
+					auto const pConnection = std::make_shared<CKeyConnection>(pItem->GetId(), eventName);
+					pConnectionPtr = pConnection;
+				}
+				break;
 			case EItemType::Snapshot:
 				{
 					string actionType = pNode->getAttr(CryAudio::s_szTypeAttribute);
@@ -604,29 +628,42 @@ XmlNodeRef CImpl::CreateXMLNodeFromConnection(ConnectionPtr const pConnection, E
 		case EItemType::Event:
 			{
 				pNode->setAttr(CryAudio::s_szNameAttribute, Utils::GetPathName(pItem, m_rootItem));
-				auto const pEventConnection = static_cast<const CEventConnection*>(pConnection.get());
+				auto const pEventConnection = static_cast<CEventConnection const*>(pConnection.get());
 
 				if (pEventConnection != nullptr)
 				{
-					if (pEventConnection->GetActionType() == CEventConnection::EActionType::Stop)
+					CEventConnection::EActionType const actionType = pEventConnection->GetActionType();
+
+					if (actionType == CEventConnection::EActionType::Stop)
 					{
 						pNode->setAttr(CryAudio::s_szTypeAttribute, CryAudio::Impl::Fmod::s_szStopValue);
 					}
-					else if (pEventConnection->GetActionType() == CEventConnection::EActionType::Pause)
+					else if (actionType == CEventConnection::EActionType::Pause)
 					{
 						pNode->setAttr(CryAudio::s_szTypeAttribute, CryAudio::Impl::Fmod::s_szPauseValue);
 					}
-					else if (pEventConnection->GetActionType() == CEventConnection::EActionType::Resume)
+					else if (actionType == CEventConnection::EActionType::Resume)
 					{
 						pNode->setAttr(CryAudio::s_szTypeAttribute, CryAudio::Impl::Fmod::s_szResumeValue);
 					}
 				}
 			}
 			break;
+		case EItemType::Key:
+			{
+				pNode->setAttr(CryAudio::s_szNameAttribute, pItem->GetName());
+				auto const pKeyConnection = static_cast<CKeyConnection const*>(pConnection.get());
+
+				if (pKeyConnection != nullptr)
+				{
+					pNode->setAttr(CryAudio::Impl::Fmod::s_szEventAttribute, pKeyConnection->GetEvent());
+				}
+			}
+			break;
 		case EItemType::Snapshot:
 			{
 				pNode->setAttr(CryAudio::s_szNameAttribute, Utils::GetPathName(pItem, m_rootItem));
-				auto const pEventConnection = static_cast<const CSnapshotConnection*>(pConnection.get());
+				auto const pEventConnection = static_cast<CSnapshotConnection const*>(pConnection.get());
 
 				if ((pEventConnection != nullptr) && (pEventConnection->GetActionType() == CSnapshotConnection::EActionType::Stop))
 				{
@@ -646,7 +683,7 @@ XmlNodeRef CImpl::CreateXMLNodeFromConnection(ConnectionPtr const pConnection, E
 
 				if (assetType == EAssetType::State)
 				{
-					auto const pStateConnection = static_cast<const CParameterToStateConnection*>(pConnection.get());
+					auto const pStateConnection = static_cast<CParameterToStateConnection const*>(pConnection.get());
 
 					if (pStateConnection != nullptr)
 					{
@@ -655,7 +692,7 @@ XmlNodeRef CImpl::CreateXMLNodeFromConnection(ConnectionPtr const pConnection, E
 				}
 				else if ((assetType == EAssetType::Parameter) || (assetType == EAssetType::Environment))
 				{
-					auto const pParamConnection = static_cast<const CParameterConnection*>(pConnection.get());
+					auto const pParamConnection = static_cast<CParameterConnection const*>(pConnection.get());
 
 					if (pParamConnection->GetMultiplier() != CryAudio::Impl::Fmod::s_defaultParamMultiplier)
 					{
@@ -762,6 +799,7 @@ void CImpl::Clear()
 		delete itemPair.second;
 	}
 
+	s_programmerSoundEvents.clear();
 	m_itemCache.clear();
 	m_rootItem.Clear();
 }

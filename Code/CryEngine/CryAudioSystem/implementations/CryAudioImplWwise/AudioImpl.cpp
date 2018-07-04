@@ -105,18 +105,18 @@ void APUFreeHook(void* in_pMemAddress)
 
 #if !defined(WWISE_FOR_RELEASE)
 static void ErrorMonitorCallback(
-  AK::Monitor::ErrorCode in_eErrorCode,   ///< Error code number value
-  const AkOSChar* in_pszError,            ///< Message or error string to be displayed
-  AK::Monitor::ErrorLevel in_eErrorLevel, ///< Specifies whether it should be displayed as a message or an error
-  AkPlayingID in_playingID,               ///< Related Playing ID if applicable, AK_INVALID_PLAYING_ID otherwise
-  AkGameObjectID in_gameObjID             ///< Related Game Object ID if applicable, AK_INVALID_GAME_OBJECT otherwise
-  )
+	AK::Monitor::ErrorCode in_eErrorCode,   ///< Error code number value
+	const AkOSChar* in_pszError,            ///< Message or error string to be displayed
+	AK::Monitor::ErrorLevel in_eErrorLevel, ///< Specifies whether it should be displayed as a message or an error
+	AkPlayingID in_playingID,               ///< Related Playing ID if applicable, AK_INVALID_PLAYING_ID otherwise
+	AkGameObjectID in_gameObjID             ///< Related Game Object ID if applicable, AK_INVALID_GAME_OBJECT otherwise
+	)
 {
 	char* szTemp = nullptr;
 	CONVERT_OSCHAR_TO_CHAR(in_pszError, szTemp);
 	Cry::Audio::Log(
-	  ((in_eErrorLevel& AK::Monitor::ErrorLevel_Error) != 0) ? CryAudio::ELogType::Error : CryAudio::ELogType::Comment,
-	  "<Wwise> %s ErrorCode: %d PlayingID: %u GameObjID: %" PRISIZE_T, szTemp, in_eErrorCode, in_playingID, in_gameObjID);
+		((in_eErrorLevel& AK::Monitor::ErrorLevel_Error) != 0) ? CryAudio::ELogType::Error : CryAudio::ELogType::Comment,
+		"<Wwise> %s ErrorCode: %d PlayingID: %u GameObjID: %" PRISIZE_T, szTemp, in_eErrorCode, in_playingID, in_gameObjID);
 }
 #endif // WWISE_FOR_RELEASE
 
@@ -131,8 +131,7 @@ class CAuxWwiseAudioThread final : public IThread
 public:
 
 	CAuxWwiseAudioThread()
-		: m_pImpl(nullptr)
-		, m_bQuit(false)
+		: m_bQuit(false)
 		, m_threadState(EAuxWwiseAudioThreadState::Wait)
 	{}
 
@@ -145,10 +144,8 @@ public:
 		Stop,
 	};
 
-	void Init(CImpl* const pImpl)
+	void Init()
 	{
-		m_pImpl = pImpl;
-
 		if (!gEnv->pThreadManager->SpawnThread(this, "AuxWwiseAudioThread"))
 		{
 			CryFatalError(R"(Error spawning "AuxWwiseAudioThread" thread.)");
@@ -179,7 +176,7 @@ public:
 				break;
 			}
 
-			m_pImpl->Update();
+			g_pImpl->Update();
 		}
 	}
 
@@ -198,7 +195,6 @@ public:
 		return !gEnv->pThreadManager->JoinThread(this, eJM_TryJoin);
 	}
 
-	CImpl*                    m_pImpl;
 	volatile bool             m_bQuit;
 	EAuxWwiseAudioThreadState m_threadState;
 	CryMutex                  m_lock;
@@ -218,6 +214,7 @@ CImpl::CImpl()
 	, m_pOculusSpatializerLibrary(nullptr)
 #endif // WWISE_USE_OCULUS
 {
+	g_pImpl = this;
 	m_regularSoundBankFolder = AUDIO_SYSTEM_DATA_ROOT "/";
 	m_regularSoundBankFolder += s_szImplFolderName;
 	m_regularSoundBankFolder += "/";
@@ -225,9 +222,9 @@ CImpl::CImpl()
 
 #if defined(INCLUDE_WWISE_IMPL_PRODUCTION_CODE)
 	m_name.Format(
-	  "%s (Build: %d)",
-	  WWISE_IMPL_INFO_STRING,
-	  AK_WWISESDK_VERSION_BUILD);
+		"%s (Build: %d)",
+		WWISE_IMPL_INFO_STRING,
+		AK_WWISESDK_VERSION_BUILD);
 #endif  // INCLUDE_WWISE_IMPL_PRODUCTION_CODE
 }
 
@@ -378,7 +375,7 @@ ERequestStatus CImpl::Init(uint32 const objectPoolSize, uint32 const eventPoolSi
 	// We need this additional thread during bank unloading if the user decided to run Wwise without the EventManager thread.
 	if (g_cvars.m_enableEventManagerThread == 0)
 	{
-		g_auxAudioThread.Init(this);
+		g_auxAudioThread.Init();
 	}
 
 	AkPlatformInitSettings platformInitSettings;
@@ -492,7 +489,7 @@ ERequestStatus CImpl::Init(uint32 const objectPoolSize, uint32 const eventPoolSi
 		  AkCreateParamCallback& out_funcParam);
 
 		AkGetSoundEngineCallbacksType AkGetSoundEngineCallbacks =
-		  (AkGetSoundEngineCallbacksType)CryGetProcAddress(m_pOculusSpatializerLibrary, "AkGetSoundEngineCallbacks");
+			(AkGetSoundEngineCallbacksType)CryGetProcAddress(m_pOculusSpatializerLibrary, "AkGetSoundEngineCallbacks");
 
 		if (AkGetSoundEngineCallbacks != nullptr)
 		{
@@ -561,8 +558,6 @@ ERequestStatus CImpl::Init(uint32 const objectPoolSize, uint32 const eventPoolSi
 		Cry::Audio::Log(ELogType::Error, "Wwise failed to load Init.bnk, returned the AKRESULT: %d", wwiseResult);
 		m_initBankId = AK_INVALID_BANK_ID;
 	}
-
-	g_cvars.SetImpl(this);
 
 	return ERequestStatus::Success;
 }
@@ -669,7 +664,7 @@ ERequestStatus CImpl::ShutDown()
 ERequestStatus CImpl::Release()
 {
 	delete this;
-	g_cvars.SetImpl(nullptr);
+	g_pImpl = nullptr;
 	g_cvars.UnregisterVariables();
 
 	CObject::FreeMemoryPool();
@@ -735,16 +730,16 @@ ERequestStatus CImpl::RegisterInMemoryFile(SFileInfo* const pFileInfo)
 
 	if (pFileInfo != nullptr)
 	{
-		SFile* const pFileData = static_cast<SFile*>(pFileInfo->pImplData);
+		auto const pFileData = static_cast<SFile*>(pFileInfo->pImplData);
 
 		if (pFileData != nullptr)
 		{
 			AkBankID bankId = AK_INVALID_BANK_ID;
 
 			AKRESULT const wwiseResult = AK::SoundEngine::LoadBank(
-			  pFileInfo->pFileData,
-			  static_cast<AkUInt32>(pFileInfo->size),
-			  bankId);
+				pFileInfo->pFileData,
+				static_cast<AkUInt32>(pFileInfo->size),
+				bankId);
 
 			if (IS_WWISE_OK(wwiseResult))
 			{
@@ -773,7 +768,7 @@ ERequestStatus CImpl::UnregisterInMemoryFile(SFileInfo* const pFileInfo)
 
 	if (pFileInfo != nullptr)
 	{
-		SFile* const pFileData = static_cast<SFile*>(pFileInfo->pImplData);
+		auto const pFileData = static_cast<SFile*>(pFileInfo->pImplData);
 
 		if (pFileData != nullptr)
 		{
@@ -907,7 +902,7 @@ IObject* CImpl::ConstructObject(char const* const szName /*= nullptr*/)
 ///////////////////////////////////////////////////////////////////////////
 void CImpl::DestructObject(IObject const* const pIObject)
 {
-	CObject const* pObject = static_cast<CObject const*>(pIObject);
+	auto const pObject = static_cast<CObject const*>(pIObject);
 	AkGameObjectID const objectID = pObject->m_id == AK_INVALID_GAME_OBJECT ? g_globalObjectId : pObject->m_id;
 	AKRESULT const wwiseResult = AK::SoundEngine::UnregisterGameObj(objectID);
 
@@ -958,7 +953,7 @@ IListener* CImpl::ConstructListener(char const* const szName /*= nullptr*/)
 ///////////////////////////////////////////////////////////////////////////
 void CImpl::DestructListener(IListener* const pIListener)
 {
-	CListener const* const pListener = static_cast<CListener const* const>(pIListener);
+	auto const pListener = static_cast<CListener const* const>(pIListener);
 	AKRESULT const wwiseResult = AK::SoundEngine::UnregisterGameObj(pListener->m_id);
 
 	if (!IS_WWISE_OK(wwiseResult))
@@ -1255,9 +1250,9 @@ bool CImpl::ParseSwitchOrState(XmlNodeRef const pNode, AkUInt32& outStateOrSwitc
 	else
 	{
 		Cry::Audio::Log(
-		  ELogType::Warning,
-		  "A Wwise SwitchGroup or StateGroup %s inside ATLSwitchState needs to have exactly one WwiseValue.",
-		  szStateOrSwitchGroupName);
+			ELogType::Warning,
+			"A Wwise SwitchGroup or StateGroup %s inside ATLSwitchState needs to have exactly one WwiseValue.",
+			szStateOrSwitchGroupName);
 	}
 
 	return bSuccess;
@@ -1283,9 +1278,9 @@ SSwitchState const* CImpl::ParseWwiseRtpcSwitch(XmlNodeRef const pNode)
 	else
 	{
 		Cry::Audio::Log(
-		  ELogType::Warning,
-		  "The Wwise Rtpc %s inside ATLSwitchState does not have a valid name.",
-		  szName);
+			ELogType::Warning,
+			"The Wwise Rtpc %s inside ATLSwitchState does not have a valid name.",
+			szName);
 	}
 
 	return pSwitchStateImpl;

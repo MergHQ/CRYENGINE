@@ -3,6 +3,7 @@
 #include "stdafx.h"
 #include "AudioImplCVars.h"
 
+#include "Common.h"
 #include "AudioImpl.h"
 #include <CrySystem/IConsole.h>
 
@@ -12,16 +13,14 @@ namespace Impl
 {
 namespace Wwise
 {
-CImpl* CCVars::s_pImpl = nullptr;
-
 //////////////////////////////////////////////////////////////////////////
 void SetPanningRule(ICVar* const pPanningRule)
 {
 	pPanningRule->Set(crymath::clamp(pPanningRule->GetIVal(), 0, 1));
 
-	if (CCVars::s_pImpl != nullptr)
+	if (g_pImpl != nullptr)
 	{
-		CCVars::s_pImpl->SetPanningRule(pPanningRule->GetIVal());
+		g_pImpl->SetPanningRule(pPanningRule->GetIVal());
 	}
 }
 

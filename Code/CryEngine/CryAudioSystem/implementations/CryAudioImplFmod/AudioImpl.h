@@ -74,11 +74,13 @@ private:
 	static char const* const s_szBusPrefix;
 	static char const* const s_szVcaPrefix;
 
-	void CreateVersionString(CryFixedStringT<MaxInfoStringLength>& stringOut) const;
-	bool LoadMasterBanks();
-	void UnloadMasterBanks();
-	void MuteMasterBus(bool const shouldMute);
-	void PauseMasterBus(bool const shouldPause);
+	void        CreateVersionString(CryFixedStringT<MaxInfoStringLength>& stringOut) const;
+	bool        LoadMasterBanks();
+	void        UnloadMasterBanks();
+	void        MuteMasterBus(bool const shouldMute);
+	void        PauseMasterBus(bool const shouldPause);
+
+	FMOD_RESULT LoadBankCustom(char const* const szFileName, FMOD::Studio::Bank** ppBank);
 
 	bool                                  m_isMuted;
 
@@ -86,6 +88,9 @@ private:
 
 	CryFixedStringT<MaxFilePathLength>    m_regularSoundBankFolder;
 	CryFixedStringT<MaxFilePathLength>    m_localizedSoundBankFolder;
+
+	CryFixedStringT<MaxFileNameLength>    m_masterBankPath;
+	CryFixedStringT<MaxFileNameLength>    m_masterBankStringsPath;
 
 	FMOD::Studio::System*                 m_pSystem;
 	FMOD::System*                         m_pLowLevelSystem;

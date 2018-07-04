@@ -4,6 +4,7 @@
 
 #include "AudioEvent.h"
 #include "AudioObject.h"
+#include "GlobalData.h"
 
 namespace CryAudio
 {
@@ -65,11 +66,15 @@ public:
 		uint32 const id,
 		EEventType const eventType,
 		FMOD::Studio::EventDescription* const pEventDescription,
-		FMOD_GUID const guid)
+		FMOD_GUID const guid,
+		bool const hasProgrammerSound = false,
+		char const* const szKey = "")
 		: m_id(id)
 		, m_eventType(eventType)
 		, m_pEventDescription(pEventDescription)
 		, m_guid(guid)
+		, m_hasProgrammerSound(hasProgrammerSound)
+		, m_key(szKey)
 	{}
 
 	virtual ~CTrigger() override = default;
@@ -86,17 +91,21 @@ public:
 	virtual ERequestStatus UnloadAsync(IEvent* const pIEvent) const override { return ERequestStatus::Success; }
 	// ~CryAudio::Impl::ITrigger
 
-	uint32                          GetId() const               { return m_id; }
-	EEventType                      GetEventType() const        { return m_eventType; }
-	FMOD::Studio::EventDescription* GetEventDescription() const { return m_pEventDescription; }
-	FMOD_GUID                       GetGuid() const             { return m_guid; }
+	uint32                                       GetId() const               { return m_id; }
+	EEventType                                   GetEventType() const        { return m_eventType; }
+	FMOD::Studio::EventDescription*              GetEventDescription() const { return m_pEventDescription; }
+	FMOD_GUID                                    GetGuid() const             { return m_guid; }
+	bool                                         HasProgrammerSound() const  { return m_hasProgrammerSound; }
+	CryFixedStringT<MaxControlNameLength> const& GetKey() const              { return m_key; }
 
 private:
 
-	uint32 const                          m_id;
-	EEventType const                      m_eventType;
-	FMOD::Studio::EventDescription* const m_pEventDescription;
-	FMOD_GUID const                       m_guid;
+	uint32 const                                m_id;
+	EEventType const                            m_eventType;
+	FMOD::Studio::EventDescription* const       m_pEventDescription;
+	FMOD_GUID const                             m_guid;
+	bool const                                  m_hasProgrammerSound;
+	CryFixedStringT<MaxControlNameLength> const m_key;
 };
 
 enum class EParameterType : EnumFlagsType
@@ -127,22 +136,22 @@ public:
 
 	CParameter(CParameter const&) = delete;
 	CParameter(CParameter&&) = delete;
-	CParameter&                                            operator=(CParameter const&) = delete;
-	CParameter&                                            operator=(CParameter&&) = delete;
+	CParameter&                                  operator=(CParameter const&) = delete;
+	CParameter&                                  operator=(CParameter&&) = delete;
 
-	uint32                                                 GetId() const              { return m_id; }
-	float                                                  GetValueMultiplier() const { return m_multiplier; }
-	float                                                  GetValueShift() const      { return m_shift; }
-	EParameterType                                         GetType() const            { return m_type; }
-	CryFixedStringT<CryAudio::MaxControlNameLength> const& GetName() const            { return m_name; }
+	uint32                                       GetId() const              { return m_id; }
+	float                                        GetValueMultiplier() const { return m_multiplier; }
+	float                                        GetValueShift() const      { return m_shift; }
+	EParameterType                               GetType() const            { return m_type; }
+	CryFixedStringT<MaxControlNameLength> const& GetName() const            { return m_name; }
 
 private:
 
-	uint32 const         m_id;
-	float const          m_multiplier;
-	float const          m_shift;
-	EParameterType const m_type;
-	CryFixedStringT<CryAudio::MaxControlNameLength> const m_name;
+	uint32 const                                m_id;
+	float const                                 m_multiplier;
+	float const                                 m_shift;
+	EParameterType const                        m_type;
+	CryFixedStringT<MaxControlNameLength> const m_name;
 };
 
 class CVcaParameter final : public CParameter
@@ -192,20 +201,20 @@ public:
 
 	CSwitchState(CSwitchState const&) = delete;
 	CSwitchState(CSwitchState&&) = delete;
-	CSwitchState&                                          operator=(CSwitchState const&) = delete;
-	CSwitchState&                                          operator=(CSwitchState&&) = delete;
+	CSwitchState&                                operator=(CSwitchState const&) = delete;
+	CSwitchState&                                operator=(CSwitchState&&) = delete;
 
-	uint32                                                 GetId() const    { return m_id; }
-	float                                                  GetValue() const { return m_value; }
-	EStateType                                             GetType() const  { return m_type; }
-	CryFixedStringT<CryAudio::MaxControlNameLength> const& GetName() const  { return m_name; }
+	uint32                                       GetId() const    { return m_id; }
+	float                                        GetValue() const { return m_value; }
+	EStateType                                   GetType() const  { return m_type; }
+	CryFixedStringT<MaxControlNameLength> const& GetName() const  { return m_name; }
 
 private:
 
-	uint32 const     m_id;
-	float const      m_value;
-	EStateType const m_type;
-	CryFixedStringT<CryAudio::MaxControlNameLength> const m_name;
+	uint32 const                                m_id;
+	float const                                 m_value;
+	EStateType const                            m_type;
+	CryFixedStringT<MaxControlNameLength> const m_name;
 };
 
 class CVcaState final : public CSwitchState
@@ -298,17 +307,17 @@ public:
 
 	virtual ~CEnvironmentParameter() override = default;
 
-	uint32                                                 GetId() const              { return m_id; }
-	float                                                  GetValueMultiplier() const { return m_multiplier; }
-	float                                                  GetValueShift() const      { return m_shift; }
-	CryFixedStringT<CryAudio::MaxControlNameLength> const& GetName() const            { return m_name; }
+	uint32                                       GetId() const              { return m_id; }
+	float                                        GetValueMultiplier() const { return m_multiplier; }
+	float                                        GetValueShift() const      { return m_shift; }
+	CryFixedStringT<MaxControlNameLength> const& GetName() const            { return m_name; }
 
 private:
 
 	uint32 const m_id;
 	float const  m_multiplier;
 	float const  m_shift;
-	CryFixedStringT<CryAudio::MaxControlNameLength> const m_name;
+	CryFixedStringT<MaxControlNameLength> const m_name;
 };
 
 class CFile final : public IFile
@@ -342,10 +351,10 @@ public:
 	void         ReportFileStarted();
 	void         ReportFileFinished();
 
-	CATLStandaloneFile&                          m_atlStandaloneFile;
-	CryFixedStringT<CryAudio::MaxFilePathLength> m_fileName;
-	CObjectBase* m_pObject = nullptr;
-	static FMOD::System*                         s_pLowLevelSystem;
+	CATLStandaloneFile&                m_atlStandaloneFile;
+	CryFixedStringT<MaxFilePathLength> m_fileName;
+	CObjectBase*                       m_pObject = nullptr;
+	static FMOD::System*               s_pLowLevelSystem;
 
 };
 

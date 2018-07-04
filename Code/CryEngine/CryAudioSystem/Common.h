@@ -4,6 +4,13 @@
 
 namespace CryAudio
 {
+namespace Impl
+{
+struct IImpl;
+} // namespace Impl
+
+extern Impl::IImpl* g_pIImpl;
+
 #if defined(INCLUDE_AUDIO_PRODUCTION_CODE)
 namespace Debug
 {

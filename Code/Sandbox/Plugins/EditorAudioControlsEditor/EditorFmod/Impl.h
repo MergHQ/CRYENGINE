@@ -58,6 +58,8 @@ public:
 
 	void         Serialize(Serialization::IArchive& ar);
 
+	static std::vector<string> s_programmerSoundEvents;
+
 private:
 
 	void   Clear();

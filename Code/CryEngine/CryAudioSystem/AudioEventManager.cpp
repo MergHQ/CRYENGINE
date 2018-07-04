@@ -16,7 +16,7 @@ namespace CryAudio
 //////////////////////////////////////////////////////////////////////////
 CEventManager::~CEventManager()
 {
-	if (m_pIImpl != nullptr)
+	if (g_pIImpl != nullptr)
 	{
 		Release();
 	}
@@ -29,9 +29,8 @@ void CEventManager::Init(uint32 const poolSize)
 }
 
 //////////////////////////////////////////////////////////////////////////
-void CEventManager::SetImpl(Impl::IImpl* const pIImpl)
+void CEventManager::OnAfterImplChanged()
 {
-	m_pIImpl = pIImpl;
 	CRY_ASSERT(m_constructedEvents.empty());
 }
 
@@ -46,22 +45,20 @@ void CEventManager::Release()
 	{
 		for (auto const pEvent : m_constructedEvents)
 		{
-			m_pIImpl->DestructEvent(pEvent->m_pImplData);
+			g_pIImpl->DestructEvent(pEvent->m_pImplData);
 			pEvent->Release();
 			delete pEvent;
 		}
 
 		m_constructedEvents.clear();
 	}
-
-	m_pIImpl = nullptr;
 }
 
 //////////////////////////////////////////////////////////////////////////
 CATLEvent* CEventManager::ConstructEvent()
 {
 	auto const pEvent = new CATLEvent;
-	pEvent->m_pImplData = m_pIImpl->ConstructEvent(*pEvent);
+	pEvent->m_pImplData = g_pIImpl->ConstructEvent(*pEvent);
 	m_constructedEvents.push_back(pEvent);
 
 	return pEvent;
@@ -89,7 +86,7 @@ void CEventManager::DestructEvent(CATLEvent* const pEvent)
 		}
 	}
 
-	m_pIImpl->DestructEvent(pEvent->m_pImplData);
+	g_pIImpl->DestructEvent(pEvent->m_pImplData);
 	pEvent->Release();
 	delete pEvent;
 }

@@ -157,6 +157,7 @@ struct SFileInfo
 	size_t      memoryBlockAlignment; // memory alignment to be used for storing this file's contents in memory
 	size_t      size;                 // file size
 	char const* szFileName;           // file name
+	char const* szFilePath;           // file path
 	bool        bLocalized;           // is the file localized
 	IFile*      pImplData;            // pointer to the implementation-specific data needed for this AudioFileEntry
 };

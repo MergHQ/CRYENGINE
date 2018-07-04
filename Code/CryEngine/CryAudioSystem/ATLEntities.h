@@ -31,7 +31,6 @@ struct IEnvironment;
 struct IEvent;
 struct IFile;
 struct IStandaloneFile;
-struct IImpl;
 } // namespace Impl
 
 enum class EObjectFlags : EnumFlagsType
@@ -150,12 +149,6 @@ public:
 	CATLControlImpl(CATLControlImpl&&) = delete;
 	CATLControlImpl& operator=(CATLControlImpl const&) = delete;
 	CATLControlImpl& operator=(CATLControlImpl&&) = delete;
-
-	static void      SetImpl(Impl::IImpl* const pIImpl) { s_pIImpl = pIImpl; }
-
-protected:
-
-	static Impl::IImpl* s_pIImpl;
 };
 
 class CATLTriggerImpl : public CATLControlImpl

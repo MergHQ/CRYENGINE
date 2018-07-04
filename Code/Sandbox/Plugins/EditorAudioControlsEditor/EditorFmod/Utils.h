@@ -12,6 +12,7 @@ namespace Fmod
 {
 static string const s_soundBanksFolderName = "Banks";
 static string const s_eventsFolderName = "Events";
+static string const s_keysFolderName = "Keys";
 static string const s_parametersFolderName = "Parameters";
 static string const s_snapshotsFolderName = "Snapshots";
 static string const s_returnsFolderName = "Returns";
@@ -26,4 +27,3 @@ string    GetTypeName(EItemType const type);
 } // namespace Fmod
 } // namespace Impl
 } // namespace ACE
-

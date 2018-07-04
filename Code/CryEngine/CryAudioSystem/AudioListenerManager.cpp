@@ -3,6 +3,7 @@
 #include "stdafx.h"
 #include "AudioListenerManager.h"
 #include "ATLEntities.h"
+#include "Common.h"
 #include <ATLEntityData.h>
 #include <IAudioImpl.h>
 #include <algorithm>
@@ -25,18 +26,16 @@ CAudioListenerManager::~CAudioListenerManager()
 }
 
 //////////////////////////////////////////////////////////////////////////
-void CAudioListenerManager::SetImpl(Impl::IImpl* const pIImpl)
+void CAudioListenerManager::OnAfterImplChanged()
 {
-	m_pIImpl = pIImpl;
-
 	if (!m_activeListeners.empty())
 	{
 		for (auto const pListener : m_activeListeners)
 		{
 #if defined(INCLUDE_AUDIO_PRODUCTION_CODE)
-			pListener->m_pImplData = m_pIImpl->ConstructListener(pListener->m_name.c_str());
+			pListener->m_pImplData = g_pIImpl->ConstructListener(pListener->m_name.c_str());
 #else
-			pListener->m_pImplData = m_pIImpl->ConstructListener();
+			pListener->m_pImplData = g_pIImpl->ConstructListener();
 #endif  // INCLUDE_AUDIO_PRODUCTION_CODE
 
 			pListener->HandleSetTransformation(pListener->GetTransformation());
@@ -54,11 +53,9 @@ void CAudioListenerManager::Release()
 {
 	for (auto const pListener : m_activeListeners)
 	{
-		m_pIImpl->DestructListener(pListener->m_pImplData);
+		g_pIImpl->DestructListener(pListener->m_pImplData);
 		pListener->m_pImplData = nullptr;
 	}
-
-	m_pIImpl = nullptr;
 }
 
 //////////////////////////////////////////////////////////////////////////
@@ -89,7 +86,7 @@ CATLListener* CAudioListenerManager::CreateListener(char const* const szName /*=
 		return pListener;
 	}
 
-	CATLListener* const pListener = new CATLListener(m_pIImpl->ConstructListener(szName));
+	auto const pListener = new CATLListener(g_pIImpl->ConstructListener(szName));
 
 #if defined(INCLUDE_AUDIO_PRODUCTION_CODE)
 	pListener->m_name = szName;
@@ -109,7 +106,7 @@ void CAudioListenerManager::ReleaseListener(CATLListener* const pListener)
 	   {
 	   if (pRegisteredListener == pListener)
 	   {
-	    m_pIImpl->DestructListener(pListener->m_pImplData);
+	    g_pIImpl->DestructListener(pListener->m_pImplData);
 	    delete pListener;
 	    return true;
 	   }

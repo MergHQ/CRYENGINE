@@ -99,7 +99,6 @@ private:
 
 	// Utility members
 	EInternalStates                    m_flags = EInternalStates::None;
-	Impl::IImpl*                       m_pIImpl = nullptr;
 	SImplInfo                          m_implInfo;
 	CryFixedStringT<MaxFilePathLength> m_configPath;
 
