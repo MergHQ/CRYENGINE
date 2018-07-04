@@ -75,6 +75,8 @@ private:
 
 	void ExecuteVolumeListGen(uint32 dispatchSizeX, uint32 dispatchSizeY);
 
+	void InjectSunIntoTiledLights(uint32_t& counter);
+
 private:
 	typedef _smart_ptr<CTexture> TexSmartPtr;
 

@@ -723,6 +723,29 @@ AABB RotateAABB(const AABB& aabb, const Matrix33& mat)
 	return AABB(pos - sz, pos + sz);
 }
 
+void CTiledLightVolumesStage::InjectSunIntoTiledLights(uint32_t& counter)
+{
+	STiledLightInfo& lightInfo = m_tileLights[counter];
+	STiledLightShadeInfo& lightShadeInfo = tileLightsShade[counter];
+
+	lightInfo.volumeType = tlVolumeSun;
+	lightInfo.posRad = Vec4(0, 0, 0, 100000);
+	lightInfo.depthBoundsVS = Vec2(-100000, 100000);
+
+	lightShadeInfo.lightType = tlTypeSun;
+	lightShadeInfo.attenuationParams = Vec2(TiledShading_SunSourceDiameter, TiledShading_SunSourceDiameter);
+	lightShadeInfo.shadowParams = Vec2(1, 0);
+	lightShadeInfo.shadowMaskIndex = 0;
+	lightShadeInfo.stencilID0 = lightShadeInfo.stencilID1 = STENCIL_VALUE_OUTDOORS;
+
+	Vec3 sunColor;
+	gEnv->p3DEngine->GetGlobalParameter(E3DPARAM_SUN_COLOR, sunColor);
+	sunColor *= gcpRendD3D->m_fAdaptedSceneScaleLBuffer;  // Apply LBuffers range rescale
+	lightShadeInfo.color = Vec4(sunColor.x, sunColor.y, sunColor.z, gEnv->p3DEngine->GetGlobalParameter(E3DPARAM_SUN_SPECULAR_MULTIPLIER));
+
+	++counter;
+}
+
 void CTiledLightVolumesStage::GenerateLightList()
 {
 	CRY_PROFILE_FUNCTION(PROFILE_RENDERER);
@@ -765,30 +788,6 @@ void CTiledLightVolumesStage::GenerateLightList()
 		CRenderer::CV_r_DeferredShadingAmbientLights ? &ambientLights : NULL,
 		CRenderer::CV_r_DeferredShadingLights ? &defLights : NULL
 	};
-
-	// Add sun
-	if (pRenderView->HaveSunLight())
-	{
-		STiledLightInfo& lightInfo = m_tileLights[numTileLights];
-		STiledLightShadeInfo& lightShadeInfo = tileLightsShade[numTileLights];
-
-		lightInfo.volumeType = tlVolumeSun;
-		lightInfo.posRad = Vec4(0, 0, 0, 100000);
-		lightInfo.depthBoundsVS = Vec2(-100000, 100000);
-
-		lightShadeInfo.lightType = tlTypeSun;
-		lightShadeInfo.attenuationParams = Vec2(TiledShading_SunSourceDiameter, TiledShading_SunSourceDiameter);
-		lightShadeInfo.shadowParams = Vec2(1, 0);
-		lightShadeInfo.shadowMaskIndex = 0;
-		lightShadeInfo.stencilID0 = lightShadeInfo.stencilID1 = STENCIL_VALUE_OUTDOORS;
-
-		Vec3 sunColor;
-		gEnv->p3DEngine->GetGlobalParameter(E3DPARAM_SUN_COLOR, sunColor);
-		sunColor *= rd->m_fAdaptedSceneScaleLBuffer;  // Apply LBuffers range rescale
-		lightShadeInfo.color = Vec4(sunColor.x, sunColor.y, sunColor.z, gEnv->p3DEngine->GetGlobalParameter(E3DPARAM_SUN_SPECULAR_MULTIPLIER));
-
-		++numTileLights;
-	}
 
 	for (uint32 lightListIdx = 0; lightListIdx < lightArraySize; ++lightListIdx)
 	{
@@ -1061,6 +1060,10 @@ void CTiledLightVolumesStage::GenerateLightList()
 			++numTileLights;
 			++numValidRenderLights;
 		}
+
+		// Add sun after cubemaps
+		if (lightListIdx == 1 && pRenderView->HaveSunLight())
+			InjectSunIntoTiledLights(numTileLights);
 	}
 
 	// Invalidate last light in case it got skipped
