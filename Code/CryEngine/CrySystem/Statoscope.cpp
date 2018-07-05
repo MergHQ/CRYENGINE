@@ -902,19 +902,22 @@ struct SVertexCostDG : public IStatoscopeDataGroup
 
 		int32 nPolyCountZ = pRenderer->GetPolygonCountByType(EFSLIST_GENERAL, EVCT_STATIC, 1);
 		nPolyCountZ += pRenderer->GetPolygonCountByType(EFSLIST_SHADOW_GEN, EVCT_STATIC, 1);
-		nPolyCountZ += pRenderer->GetPolygonCountByType(EFSLIST_TRANSP, EVCT_STATIC, 1);
+		nPolyCountZ += pRenderer->GetPolygonCountByType(EFSLIST_TRANSP_AW, EVCT_STATIC, 1);
+		nPolyCountZ += pRenderer->GetPolygonCountByType(EFSLIST_TRANSP_BW, EVCT_STATIC, 1);
 		nPolyCountZ += pRenderer->GetPolygonCountByType(EFSLIST_DECAL, EVCT_STATIC, 1);
 		fr.AddValue(nPolyCountZ);
 
 		nPolyCountZ = pRenderer->GetPolygonCountByType(EFSLIST_GENERAL, EVCT_SKINNED, 1);
 		nPolyCountZ += pRenderer->GetPolygonCountByType(EFSLIST_SHADOW_GEN, EVCT_SKINNED, 1);
-		nPolyCountZ += pRenderer->GetPolygonCountByType(EFSLIST_TRANSP, EVCT_SKINNED, 1);
+		nPolyCountZ += pRenderer->GetPolygonCountByType(EFSLIST_TRANSP_AW, EVCT_SKINNED, 1);
+		nPolyCountZ += pRenderer->GetPolygonCountByType(EFSLIST_TRANSP_BW, EVCT_SKINNED, 1);
 		nPolyCountZ += pRenderer->GetPolygonCountByType(EFSLIST_DECAL, EVCT_SKINNED, 1);
 		fr.AddValue(nPolyCountZ);
 
 		nPolyCountZ = pRenderer->GetPolygonCountByType(EFSLIST_GENERAL, EVCT_VEGETATION, 1);
 		nPolyCountZ += pRenderer->GetPolygonCountByType(EFSLIST_SHADOW_GEN, EVCT_VEGETATION, 1);
-		nPolyCountZ += pRenderer->GetPolygonCountByType(EFSLIST_TRANSP, EVCT_VEGETATION, 1);
+		nPolyCountZ += pRenderer->GetPolygonCountByType(EFSLIST_TRANSP_AW, EVCT_VEGETATION, 1);
+		nPolyCountZ += pRenderer->GetPolygonCountByType(EFSLIST_TRANSP_BW, EVCT_VEGETATION, 1);
 		nPolyCountZ += pRenderer->GetPolygonCountByType(EFSLIST_DECAL, EVCT_VEGETATION, 1);
 		fr.AddValue(nPolyCountZ);
 	}

@@ -865,7 +865,7 @@ void CRenderView::AddPolygon(const SRenderPolygonDescription& poly, const SRende
 			if ((poly.pRenderObject && poly.pRenderObject->m_fAlpha < 1.0f)
 					|| (pShaderResources && pShaderResources->IsTransparent()))
 			{
-				renderListId = EFSLIST_TRANSP;
+				renderListId = !(poly.pRenderObject->m_ObjFlags & FOB_AFTER_WATER) ? EFSLIST_TRANSP_BW : EFSLIST_TRANSP_BW;
 				batchFlags |= FB_TRANSPARENT;
 			}
 		}
@@ -1205,7 +1205,7 @@ static inline uint32 CalculateRenderItemBatchFlags(SShaderItem& SH, CRenderObjec
 	const uint32 nCloakMask = mask_nz_zr(pObj->m_nMaterialLayers & MTL_LAYER_BLEND_CLOAK, (pR ? static_cast<CShaderResources*>(pR)->CShaderResources::GetMtlLayerNoDrawFlags() & MTL_LAYER_CLOAK : 0));
 
 	int nShaderFlags = (SH.m_pShader ? SH.m_pShader->GetFlags() : 0);
-	if ((CRenderer::CV_r_RefractionPartialResolves && nShaderFlags & EF_REFRACTIVE) || (nShaderFlags & EF_FORCEREFRACTIONUPDATE) || nCloakMask)
+	if ((CRenderer::CV_r_Refraction && nShaderFlags & EF_REFRACTIVE) || (nShaderFlags & EF_FORCEREFRACTIONUPDATE) || nCloakMask)
 		pObj->m_ObjFlags |= FOB_REQUIRES_RESOLVE;
 
 	return nFlags;
@@ -1270,7 +1270,7 @@ static inline void AddEf_HandleForceFlags(int& nList, int& nAW, uint32& nBatchFl
 		mb3 = msb2mask(mb3);
 
 		const uint32 mask = mb1 | mb2 | mb3;
-		mb1 &= EFSLIST_TRANSP;
+		mb1 &= EFSLIST_TRANSP_AW;
 		mb2 &= EFSLIST_GENERAL;
 		mb3 &= EFSLIST_WATER;
 
@@ -1367,6 +1367,8 @@ void CRenderView::AddRenderObject(CRenderElement* re, SShaderItem& SH, CRenderOb
 	const uint32 nRenderlistsFlags = (FB_PREPROCESS | FB_MULTILAYERS | FB_TRANSPARENT);
 	if (nBatchFlags & nRenderlistsFlags || nCloakLayerMask)
 	{
+		const auto transparentList = !!(nBatchFlags & FB_BELOW_WATER) ? EFSLIST_TRANSP_BW : EFSLIST_TRANSP_AW;
+
 		// branchless version of:
 		//if      (pSH->m_Flags & FB_REFRACTIVE || nCloakLayerMask)           nList = EFSLIST_TRANSP, nBatchFlags &= ~FB_Z;
 		//else if((nBatchFlags & FB_TRANSPARENT) && nList == EFSLIST_GENERAL) nList = EFSLIST_TRANSP;
@@ -1378,7 +1380,7 @@ void CRenderView::AddRenderObject(CRenderElement* re, SShaderItem& SH, CRenderOb
 		uint32 mx2 = mask_nz_zr(nBatchFlags & FB_TRANSPARENT, (nList ^ EFSLIST_GENERAL) | mx1);
 
 		nBatchFlags &= iselmask(mx1 = nz2mask(mx1), ~FB_Z, nBatchFlags);
-		nList = iselmask(mx1 | mx2, (mx1 & EFSLIST_TRANSP) | (mx2 & EFSLIST_TRANSP), nList);
+		nList = iselmask(mx1 | mx2, (mx1 & transparentList) | (mx2 & transparentList), nList);
 	}
 
 	// FogVolume contribution for transparencies isn't needed when volumetric fog is turned on.
@@ -1473,9 +1475,10 @@ void CRenderView::AddRenderItem(CRenderElement* pElem, CRenderObject* RESTRICT_P
 		const bool bTransparent = shaderItem.m_pShaderResources && static_cast<CShaderResources*>(shaderItem.m_pShaderResources)->IsTransparent();
 
 		if ((nList == EFSLIST_GENERAL && (bHair || bTransparent)) || 
-		   (nList == EFSLIST_TRANSP && bRefractive))
+		   ((nList == EFSLIST_TRANSP_BW || nList == EFSLIST_TRANSP_AW) && bRefractive))
 		{
-			nList = (pObj->m_ObjFlags & FOB_NEAREST) ? EFSLIST_TRANSP_NEAREST : EFSLIST_TRANSP;
+			const auto transparentList = !(pObj->m_ObjFlags & FOB_AFTER_WATER) ? EFSLIST_TRANSP_BW : EFSLIST_TRANSP_AW;
+			nList = (pObj->m_ObjFlags & FOB_NEAREST) ? EFSLIST_TRANSP_NEAREST : transparentList;
 		}
 		else if (nList == EFSLIST_GENERAL && (!(pShader->m_Flags & EF_SUPPORTSDEFERREDSHADING_FULL) || bForceOpaqueForward))
 		{
@@ -1531,7 +1534,8 @@ void CRenderView::AddRenderItem(CRenderElement* pElem, CRenderObject* RESTRICT_P
 		if (CRenderer::CV_r_ZPassDepthSorting != 2)
 			goto fallthrough;
 	case EFSLIST_WATER_VOLUMES:
-	case EFSLIST_TRANSP:
+	case EFSLIST_TRANSP_AW:
+	case EFSLIST_TRANSP_BW:
 	case EFSLIST_TRANSP_NEAREST:
 	case EFSLIST_WATER:
 	case EFSLIST_HALFRES_PARTICLES:
@@ -1658,7 +1662,7 @@ inline void CRenderView::AddRenderItemToRenderLists(const SRendItem& ri, int nRe
 	{
 		const bool bForwardOpaqueFlags = (nBatchFlags & (FB_DEBUG | FB_TILED_FORWARD)) != 0;
 		const bool bIsMaterialEmissive = (shaderItem.m_pShaderResources && shaderItem.m_pShaderResources->IsEmissive());
-		const bool bIsTransparent = (nRenderList == EFSLIST_TRANSP) || (nRenderList == EFSLIST_TRANSP_NEAREST);
+		const bool bIsTransparent = nRenderList == EFSLIST_TRANSP_BW || nRenderList == EFSLIST_TRANSP_AW || nRenderList == EFSLIST_TRANSP_NEAREST;
 		const bool bIsSelectable = pObj->m_editorSelectionID > 0;
 		const bool bNearest = (pObj->m_ObjFlags & FOB_NEAREST) != 0;
 
@@ -1824,7 +1828,7 @@ void CRenderView::ExpandPermanentRenderObjects()
 					ri.pElem = pri.m_pRenderElement;
 					//ri.nStencRef = pRenderObject->m_nClipVolumeStencilRef + 1; // + 1, we start at 1. 0 is reserved for MSAAed areas.
 
-					if (renderList == EFSLIST_TRANSP || renderList == EFSLIST_TRANSP_NEAREST || renderList == EFSLIST_HALFRES_PARTICLES)
+					if (renderList == EFSLIST_TRANSP_BW || renderList == EFSLIST_TRANSP_AW || renderList == EFSLIST_TRANSP_NEAREST || renderList == EFSLIST_HALFRES_PARTICLES)
 						ri.fDist = SRendItem::EncodeDistanceSortingValue(pRenderObject);
 					AddRenderItemToRenderLists<false>(ri, renderList, pRenderObject, shaderItem);
 
@@ -2224,7 +2228,8 @@ void CRenderView::Job_SortRenderItemsInList(ERenderListID list)
 		break;
 
 	case EFSLIST_WATER_VOLUMES:
-	case EFSLIST_TRANSP:
+	case EFSLIST_TRANSP_BW:
+	case EFSLIST_TRANSP_AW:
 	case EFSLIST_TRANSP_NEAREST:
 	case EFSLIST_WATER:
 	case EFSLIST_HALFRES_PARTICLES:
@@ -2332,7 +2337,7 @@ int CRenderView::FindRenderListSplit(ERenderListID nList, uint32 objFlag)
 	FUNCTION_PROFILER_RENDERER();
 
 	CRY_ASSERT_MESSAGE(CRenderer::CV_r_ZPassDepthSorting == 1, "RendItem sorting has been overwritten and are not sorted by ObjFlags, this function can't be used!");;
-	CRY_ASSERT_MESSAGE(!(nList == EFSLIST_TRANSP || nList == EFSLIST_TRANSP_NEAREST || nList == EFSLIST_HALFRES_PARTICLES), "The requested list isn't sorted by ObjFlags!");
+	CRY_ASSERT_MESSAGE(!(nList == EFSLIST_TRANSP_BW || nList == EFSLIST_TRANSP_AW || nList == EFSLIST_TRANSP_NEAREST || nList == EFSLIST_HALFRES_PARTICLES), "The requested list isn't sorted by ObjFlags!");
 	CRY_ASSERT_MESSAGE(objFlag & FOB_MASK_AFFECTS_MERGING, "The requested objFlag isn't used for sorting!");
 
 	// Binary search, assumes that list is sorted by objFlag
@@ -2863,4 +2868,32 @@ Matrix44 SRenderViewInfo::GetNearestProjection(float nearestFOV, float farPlane,
 	}
 
 	return result;
+}
+
+TRect_tpl<uint16> CRenderView::ComputeResolveViewport(const AABB &aabb, bool forceFullscreenUpdate) const
+{
+	// TODO: Re-evaluate camera selection for multiviewport rendering
+	const auto& camera = GetCamera(GetCurrentEye());
+	const auto& viewport = GetViewport();
+
+	TRect_tpl<uint16> resolveViewport;
+	if (!forceFullscreenUpdate)
+	{
+		int iOut[4];
+
+		camera.CalcScreenBounds(&iOut[0], &aabb, viewport.x, viewport.y, viewport.width, viewport.height);
+		resolveViewport.Min.x = iOut[0];
+		resolveViewport.Min.y = iOut[1];
+		resolveViewport.Max.x = iOut[2];
+		resolveViewport.Max.y = iOut[3];
+	}
+	else
+	{
+		resolveViewport.Min.x = static_cast<uint16>(viewport.x);
+		resolveViewport.Min.y = static_cast<uint16>(viewport.y);
+		resolveViewport.Max.x = static_cast<uint16>(viewport.width);
+		resolveViewport.Max.y = static_cast<uint16>(viewport.height);
+	}
+
+	return resolveViewport;
 }

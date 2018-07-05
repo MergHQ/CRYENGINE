@@ -691,21 +691,21 @@ void CCompiledRenderObject::PrepareForUse(CDeviceCommandListRef RESTRICT_REFEREN
 }
 
 //////////////////////////////////////////////////////////////////////////
-void CCompiledRenderObject::DrawToCommandList(const SGraphicsPipelinePassContext& RESTRICT_REFERENCE passContext,
+void CCompiledRenderObject::DrawToCommandList(const SGraphicsPipelinePassContext& RESTRICT_REFERENCE passContext, 
+	                                          CDeviceCommandList* commandList,
                                               CConstantBuffer* pDynamicInstancingBuffer,
-                                              uint32 dynamicInstancingCount
-                                              ) const
+                                              uint32 dynamicInstancingCount) const
 {
 	//	Alternative: "perDrawInstancingSR != gcpRendD3D->m_DevBufMan.GetNullBufferStructured()->GetDevBuffer();"
 	const bool bEnabledInstancing = dynamicInstancingCount > 1;
 
 	if (m_bCustomRenderElement)
 	{
-		m_pRenderElement->DrawToCommandList(m_pRO, passContext);
+		m_pRenderElement->DrawToCommandList(m_pRO, passContext, commandList);
 		return;
 	}
 
-	CDeviceGraphicsCommandInterface& RESTRICT_REFERENCE commandInterface = *passContext.pCommandList->GetGraphicsInterface();
+	CDeviceGraphicsCommandInterface& RESTRICT_REFERENCE commandInterface = *commandList->GetGraphicsInterface();
 
 	const bool bIncompleteResourceSets =
 		!m_materialResourceSet || !m_materialResourceSet->IsValid() ||

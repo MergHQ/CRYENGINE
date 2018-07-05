@@ -360,7 +360,8 @@ void CSceneCustomStage::ExecuteDebugger()
 
 		m_debugViewPass.BeginExecution();
 		m_debugViewPass.DrawRenderItems(pRenderView, EFSLIST_GENERAL);
-		m_debugViewPass.DrawRenderItems(pRenderView, EFSLIST_TRANSP);
+		m_debugViewPass.DrawTransparentRenderItems(pRenderView, EFSLIST_TRANSP_BW);
+		m_debugViewPass.DrawTransparentRenderItems(pRenderView, EFSLIST_TRANSP_AW);
 		m_debugViewPass.EndExecution();
 
 		renderItemDrawer.JobifyDrawSubmission();
@@ -406,7 +407,8 @@ void CSceneCustomStage::ExecuteDebugOverlay()
 
 		m_debugViewPass.BeginExecution();
 		m_debugViewPass.DrawRenderItems(pRenderView, EFSLIST_GENERAL);
-		m_debugViewPass.DrawRenderItems(pRenderView, EFSLIST_TRANSP);
+		m_debugViewPass.DrawTransparentRenderItems(pRenderView, EFSLIST_TRANSP_BW);
+		m_debugViewPass.DrawTransparentRenderItems(pRenderView, EFSLIST_TRANSP_AW);
 		m_debugViewPass.EndExecution();
 
 		renderItemDrawer.JobifyDrawSubmission();

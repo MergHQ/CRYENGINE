@@ -1489,7 +1489,8 @@ void CD3D9Renderer::DebugDrawStats1(const SRenderStatistics& RStats)
 	IRenderAuxText::Draw2dLabel(nX, nY += nYstep, fFSize, &col.r, false, "General: %d (%d polys)", RStats.m_nDIPs[EFSLIST_GENERAL], RStats.m_nPolygons[EFSLIST_GENERAL]);
 	IRenderAuxText::Draw2dLabel(nX, nY += nYstep, fFSize, &col.r, false, "Decals: %d (%d polys)", RStats.m_nDIPs[EFSLIST_DECAL], RStats.m_nPolygons[EFSLIST_DECAL]);
 	IRenderAuxText::Draw2dLabel(nX, nY += nYstep, fFSize, &col.r, false, "Terrain layers: %d (%d polys)", RStats.m_nDIPs[EFSLIST_TERRAINLAYER], RStats.m_nPolygons[EFSLIST_TERRAINLAYER]);
-	IRenderAuxText::Draw2dLabel(nX, nY += nYstep, fFSize, &col.r, false, "Transparent: %d (%d polys)", RStats.m_nDIPs[EFSLIST_TRANSP], RStats.m_nPolygons[EFSLIST_TRANSP]);
+	IRenderAuxText::Draw2dLabel(nX, nY += nYstep, fFSize, &col.r, false, "Transparent aw: %d (%d polys)", RStats.m_nDIPs[EFSLIST_TRANSP_AW], RStats.m_nPolygons[EFSLIST_TRANSP_AW]);
+	IRenderAuxText::Draw2dLabel(nX, nY += nYstep, fFSize, &col.r, false, "Transparent bw: %d (%d polys)", RStats.m_nDIPs[EFSLIST_TRANSP_BW], RStats.m_nPolygons[EFSLIST_TRANSP_BW]);
 	IRenderAuxText::Draw2dLabel(nX, nY += nYstep, fFSize, &col.r, false, "Shadow-gen: %d (%d polys)", RStats.m_nDIPs[EFSLIST_SHADOW_GEN], RStats.m_nPolygons[EFSLIST_SHADOW_GEN]);
 	IRenderAuxText::Draw2dLabel(nX, nY += nYstep, fFSize, &col.r, false, "Shadow-pass: %d (%d polys)", RStats.m_nDIPs[EFSLIST_SHADOW_PASS], RStats.m_nPolygons[EFSLIST_SHADOW_PASS]);
 	IRenderAuxText::Draw2dLabel(nX, nY += nYstep, fFSize, &col.r, false, "Water: %d (%d polys)", RStats.m_nDIPs[EFSLIST_WATER], RStats.m_nPolygons[EFSLIST_WATER]);
@@ -2079,7 +2080,7 @@ void CD3D9Renderer::DebugPerfBars(const SRenderStatistics& RStats,int nX, int nY
 	AuxDrawQuad(nX + fOffs, nY + 4, nX + fOffs + fMaxBar, nY + 12, Col_Cyan, 1.0f);
 	nY += nYst + 5;
 
-	float fTimeDIPSum = fTimeDIPZ + fTimeDIP[EFSLIST_GENERAL] + fTimeDIP[EFSLIST_TERRAINLAYER] + fTimeDIP[EFSLIST_SHADOW_GEN] + fTimeDIP[EFSLIST_DECAL] + fTimeDIPAO + fTimeDIPRAIN + fTimeDIPLayers + fTimeDIP[EFSLIST_WATER_VOLUMES] + fTimeDIP[EFSLIST_TRANSP] + fTimeDIPSprites;
+	float fTimeDIPSum = fTimeDIPZ + fTimeDIP[EFSLIST_GENERAL] + fTimeDIP[EFSLIST_TERRAINLAYER] + fTimeDIP[EFSLIST_SHADOW_GEN] + fTimeDIP[EFSLIST_DECAL] + fTimeDIPAO + fTimeDIPRAIN + fTimeDIPLayers + fTimeDIP[EFSLIST_WATER_VOLUMES] + fTimeDIP[EFSLIST_TRANSP_AW] + fTimeDIP[EFSLIST_TRANSP_BW] + fTimeDIPSprites;
 	IRenderAuxText::Draw2dLabel(nX, nY, fFSize, &colF.r, false, "Sum all passes: %.3fms", fTimeDIPSum * 1000.0f);
 
 	AuxDrawQuad(nX + fOffs, nY + 4, nX + fOffs + fTimeDIPSum / fFrameTime * fMaxBar, nY + 12, Col_Yellow, 1.0f);

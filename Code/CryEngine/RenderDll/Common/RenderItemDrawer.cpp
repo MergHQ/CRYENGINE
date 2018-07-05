@@ -16,22 +16,20 @@
 #define PREFETCH_STRIDE	512
 
 void DrawCompiledRenderItemsToCommandList(
-  const SGraphicsPipelinePassContext* pInputPassContext,
-  const CRenderView::RenderItems* renderItems,
-  CDeviceCommandList* commandList,
-  int startRenderItem,
-  int endRenderItem
-  )
+	const SGraphicsPipelinePassContext* pInputPassContext,
+	const CRenderView::RenderItems* renderItems,
+	CDeviceCommandList* commandList,
+	int startRenderItem,
+	int endRenderItem)
 {
 	FUNCTION_PROFILER_RENDERER();
 
-	SGraphicsPipelinePassContext passContext = *pInputPassContext;
+	const SGraphicsPipelinePassContext &passContext = *pInputPassContext;
 	const bool shouldIssueStartTimeStamp = startRenderItem == passContext.rendItems.start;
 	const bool shouldIssueEndTimeStamp = endRenderItem == passContext.rendItems.end;
 	CTimeValue deltaTimestamp(0LL);
 
 	// Prepare command list
-	passContext.pCommandList = commandList;
 	commandList->Reset();
 
 	// Start profile section
@@ -79,11 +77,12 @@ void DrawCompiledRenderItemsToCommandList(
 		// NOTE: doesn't load-balance well when the conditions for the draw mask lots of draws
 		for (int32 i = startRenderItem, e = endRenderItem - 1; i <= e; ++i)
 		{
-			// Accessing content of further away rendItem for prefetching also precaches the rendItem itself
-			const SRendItem& rif = (*renderItems)[std::min<int32>(i + PREFETCH_STRIDE / sizeof(SRendItem), e)];
-
-			// Last cache-line is the tail of the PSO array
-			PrefetchLine(rif.pCompiledObject, 128);
+			{
+				// Accessing content of further away rendItem for prefetching also precaches the rendItem itself
+				const SRendItem& rif = (*renderItems)[std::min<int32>(i + PREFETCH_STRIDE / sizeof(SRendItem), e)];
+				// Last cache-line is the tail of the PSO array
+				PrefetchLine(rif.pCompiledObject, 128);
+			}
 
 			const SRendItem& ri = (*renderItems)[i];
 			if ((ri.nBatchFlags & batchExcludeFilter) == alwaysRequiredFlags)
@@ -94,13 +93,15 @@ void DrawCompiledRenderItemsToCommandList(
 					{
 						for (int32 j = i + 1; j <= e; ++j)
 						{
-							// Accessing content of further away rendItem for prefetching also precaches the rendItem itself
-							const SRendItem& nextrif = (*renderItems)[std::min<int32>(j + PREFETCH_STRIDE / sizeof(SRendItem), e)];
-							// Last cache-line is the tail of the PSO array
-							PrefetchLine(nextrif.pCompiledObject, 128);
+							{
+								// Accessing content of further away rendItem for prefetching also precaches the rendItem itself
+								const SRendItem& nextrif = (*renderItems)[std::min<int32>(j + PREFETCH_STRIDE / sizeof(SRendItem), e)];
+								// Last cache-line is the tail of the PSO array
+								PrefetchLine(nextrif.pCompiledObject, 128);
+							}
 
 							// Look ahead to see if we can instance multiple sequential draw calls that have same draw parameters, with only difference in per instance constant buffer
-							const SRendItem& nextri = (*renderItems)[i];
+							const SRendItem& nextri = (*renderItems)[j];
 							if (nextri.nBatchFlags & (nextri.nBatchFlags & passContext.batchExcludeFilter ? 0 : passContext.batchFilter))
 							{
 								if (ri.pCompiledObject->CheckDynamicInstancing(passContext, nextri.pCompiledObject))
@@ -130,7 +131,7 @@ void DrawCompiledRenderItemsToCommandList(
 
 							// Draw object with dynamic instancing
 							// TODO: remove this special case and fall through to below
-							ri.pCompiledObject->DrawToCommandList(passContext, tempInstancingCB.get(), dynamicInstancingCount);
+							ri.pCompiledObject->DrawToCommandList(passContext, commandList, tempInstancingCB.get(), dynamicInstancingCount);
 
 							dynamicInstancingCount = 0;
 							continue;
@@ -138,7 +139,7 @@ void DrawCompiledRenderItemsToCommandList(
 					}
 
 					// Draw single instance
-					ri.pCompiledObject->DrawToCommandList(passContext);
+					ri.pCompiledObject->DrawToCommandList(passContext, commandList);
 				}
 			}
 		}
@@ -189,16 +190,15 @@ void ListDrawCommandRecorderJob(
 			auto& RESTRICT_REFERENCE renderItems = passContext->pRenderView->GetRenderItems(passContext->renderListId);
 
 			DrawCompiledRenderItemsToCommandList(
-			  passContext,
-			  &renderItems,
-			  (*commandList).get(),
-			  passContext->rendItems.start + offset,
-			  passContext->rendItems.start + offset + count
-			  );
+				passContext,
+				&renderItems,
+				(*commandList).get(),
+				offset,
+				offset + count);
 		}
 
 		cursor += length;
-		passContext += 1;
+		++passContext;
 	}
 	while (cursor < endRenderItem);
 
@@ -252,10 +252,10 @@ void CRenderItemDrawer::JobifyDrawSubmission(bool bForceImmediateExecution)
 	while (pCursor != pEnd)
 	{
 		numItems += pCursor->rendItems.Length();
-		pCursor += 1;
+		++pCursor;
 	}
 
-	if (numItems <= 0)
+	if (numItems == 0)
 		return;
 
 #if (CRY_RENDERER_DIRECT3D >= 120) || CRY_RENDERER_GNM || CRY_RENDERER_VULKAN
@@ -321,14 +321,13 @@ void CRenderItemDrawer::JobifyDrawSubmission(bool bForceImmediateExecution)
 			auto& RESTRICT_REFERENCE commandList = GetDeviceObjectFactory().GetCoreCommandList();
 
 			DrawCompiledRenderItemsToCommandList(
-			  &passContext,
-			  &renderItems,
-			  &commandList,
-			  passContext.rendItems.start,
-			  passContext.rendItems.end
-			  );
+				&passContext,
+				&renderItems,
+				&commandList,
+				passContext.rendItems.start,
+				passContext.rendItems.end);
 
-			pCursor += 1;
+			++pCursor;
 		}
 	}
 }

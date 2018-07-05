@@ -979,7 +979,8 @@ void CBreakableGlassRenderNode::Render(const SRendParams& renderParams, const SR
 				pRenderObject->m_nTextureID = renderParams.nTextureID;
 
 				// Add render element and render object to render list
-				passInfo.GetIRenderView()->AddRenderObject(m_pBreakableGlassRE, pMaterial->GetShaderItem(), pRenderObject, passInfo, EFSLIST_TRANSP, beforeWater);
+				const auto transparentList = !(pRenderObject->m_ObjFlags & FOB_AFTER_WATER) ? EFSLIST_TRANSP_BW : EFSLIST_TRANSP_AW;
+				passInfo.GetIRenderView()->AddRenderObject(m_pBreakableGlassRE, pMaterial->GetShaderItem(), pRenderObject, passInfo, transparentList, beforeWater);
 			}
 
 			// Submit render object for plane
@@ -1007,7 +1008,8 @@ void CBreakableGlassRenderNode::Render(const SRendParams& renderParams, const SR
 				pRenderObject->m_nTextureID = renderParams.nTextureID;
 
 				// Add render element and render object to render list
-				passInfo.GetIRenderView()->AddRenderObject(m_pBreakableGlassRE, pMaterial->GetShaderItem(), pRenderObject, passInfo, EFSLIST_TRANSP, afterWater);
+				const auto transparentList = !(pRenderObject->m_ObjFlags & FOB_AFTER_WATER) ? EFSLIST_TRANSP_BW : EFSLIST_TRANSP_AW;
+				passInfo.GetIRenderView()->AddRenderObject(m_pBreakableGlassRE, pMaterial->GetShaderItem(), pRenderObject, passInfo, transparentList, afterWater);
 			}
 		}
 
@@ -1045,7 +1047,8 @@ void CBreakableGlassRenderNode::Render(const SRendParams& renderParams, const SR
 					pRenderObject->m_nTextureID = renderParams.nTextureID;
 
 					// Add render element and render object to render list
-					passInfo.GetIRenderView()->AddRenderObject(m_pBreakableGlassRE, pMaterial->GetShaderItem(), pRenderObject, passInfo, EFSLIST_TRANSP, afterWater);
+					const auto transparentList = !(pRenderObject->m_ObjFlags & FOB_AFTER_WATER) ? EFSLIST_TRANSP_BW : EFSLIST_TRANSP_AW;
+					passInfo.GetIRenderView()->AddRenderObject(m_pBreakableGlassRE, pMaterial->GetShaderItem(), pRenderObject, passInfo, transparentList, afterWater);
 				}
 
 #ifdef GLASS_DEBUG_MODE

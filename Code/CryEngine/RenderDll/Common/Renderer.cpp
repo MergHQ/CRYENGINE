@@ -1428,7 +1428,7 @@ void CRenderer::EF_CheckLightMaterial(SRenderLight* pLight, uint16 nRenderLightI
 			pRO->m_ObjFlags     |= FOB_TRANS_MASK;
 
 			CRenderElement* pRE = pRendElemBase->Get(0);
-			const int32 nList     = (pRE->mfGetType() != eDATA_LensOptics) ? EFSLIST_TRANSP : EFSLIST_LENSOPTICS;
+			const int32 nList     = (pRE->mfGetType() != eDATA_LensOptics) ? EFSLIST_TRANSP_AW : EFSLIST_LENSOPTICS;
 
 			const float fWaterLevel = gEnv->p3DEngine->GetWaterLevel();
 			const float fCamZ       = passInfo.GetCamera().GetPosition().z;

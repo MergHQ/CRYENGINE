@@ -269,7 +269,7 @@ bool CREFogVolume::Compile(CRenderObject* pObj,CRenderView *pRenderView, bool up
 	return true;
 }
 
-void CREFogVolume::DrawToCommandList(CRenderObject* pObj, const struct SGraphicsPipelinePassContext& ctx)
+void CREFogVolume::DrawToCommandList(CRenderObject* pObj, const struct SGraphicsPipelinePassContext& ctx, CDeviceCommandList* commandList)
 {
 	if (!m_pCompiledObject)
 	{
@@ -309,8 +309,8 @@ void CREFogVolume::DrawToCommandList(CRenderObject* pObj, const struct SGraphics
 
 	CRY_ASSERT(compiledObj.m_pPerDrawCB);
 
+	CDeviceGraphicsCommandInterface& RESTRICT_REFERENCE commandInterface = *(commandList->GetGraphicsInterface());
 	// Set states
-	CDeviceGraphicsCommandInterface& RESTRICT_REFERENCE commandInterface = *(ctx.pCommandList->GetGraphicsInterface());
 	const EShaderStage perDrawInlineShaderStages = (EShaderStage_Vertex | EShaderStage_Pixel);
 
 	commandInterface.SetPipelineState(pPso.get());

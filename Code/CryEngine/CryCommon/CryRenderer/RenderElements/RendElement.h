@@ -92,7 +92,7 @@ public:
 
 	//! Custom Drawing for the non mesh render elements.
 	//! Must be thread safe for the parallel recording
-	virtual void          DrawToCommandList(CRenderObject* pObj, const struct SGraphicsPipelinePassContext& ctx) = 0;
+	virtual void          DrawToCommandList(CRenderObject* pObj, const struct SGraphicsPipelinePassContext& ctx, class CDeviceCommandList* commandList) = 0;
 
 	//////////////////////////////////////////////////////////////////////////
 	// ~Pipeline 2.0 methods.
@@ -243,7 +243,7 @@ public:
 
 	//! Custom Drawing for the non mesh render elements.
 	//! Must be thread safe for the parallel recording
-	virtual void          DrawToCommandList(CRenderObject* pObj, const struct SGraphicsPipelinePassContext& ctx)  {};
+	virtual void          DrawToCommandList(CRenderObject* pObj, const struct SGraphicsPipelinePassContext& ctx, class CDeviceCommandList* commandList)  {};
 	
 	//////////////////////////////////////////////////////////////////////////
 	// ~Pipeline 2.0 methods.

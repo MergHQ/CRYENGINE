@@ -392,7 +392,9 @@ public:
 	DeclareStaticConstIntCVar(CV_e_DebugTexelDensity, 0);
 	DeclareStaticConstIntCVar(CV_e_DebugDraw, 0);
 	static int CV_r_RainDropsEffect;
-	DeclareStaticConstIntCVar(CV_r_RefractionPartialResolves, 2);
+	DeclareStaticConstIntCVar(CV_r_RefractionPartialResolveMode, 2);
+	DeclareStaticConstIntCVar(CV_r_RefractionPartialResolveMinimalResolveArea, 0);
+	DeclareStaticConstIntCVar(CV_r_RefractionPartialResolveMaxResolveCount, 0);
 	DeclareStaticConstIntCVar(CV_r_RefractionPartialResolvesDebug, 0);
 	DeclareStaticConstIntCVar(CV_r_Batching, 1);
 	DeclareStaticConstIntCVar(CV_r_Unlit, 0);

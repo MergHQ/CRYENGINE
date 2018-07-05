@@ -104,6 +104,13 @@ public:
 		eShadowFrustumRenderType_First = eShadowFrustumRenderType_SunCached
 	};
 
+	struct STransparentSegment
+	{
+		std::vector<TRect_tpl<std::uint16_t>> resolveRects;
+		TRange<int>                           rendItems = { 0 };
+	};
+	using STransparentSegments = std::vector<STransparentSegment>;
+
 	//typedef CThreadSafeWorkerContainer<SRendItem> RenderItems;
 	typedef lockfree_add_vector<SRendItem>       RenderItems;
 	typedef std::vector<SShadowFrustumToRender>  ShadowFrustums;
@@ -337,6 +344,22 @@ public:
 	void                   CompileModifiedRenderObjects();
 	void                   CalculateViewInfo();
 
+	void                   StartOptimizeTransparentRenderItemsResolvesJob();
+	void                   WaitForOptimizeTransparentRenderItemsResolvesJob() const;
+	bool                   HasResolveForList(ERenderListID list) const
+	{
+		const auto refractionMask = FB_REFRACTION | FB_RESOLVE_FULL;
+		const auto flags = GetBatchFlags(list);
+		return (list == EFSLIST_TRANSP_BW || list == EFSLIST_TRANSP_AW || list == EFSLIST_TRANSP_NEAREST) && 
+			!!(flags & refractionMask) && CRendererCVars::CV_r_Refraction;
+	}
+	const STransparentSegments& GetTransparentSegments(ERenderListID list) const
+	{
+		CRY_ASSERT_MESSAGE(list == EFSLIST_TRANSP_BW || list == EFSLIST_TRANSP_AW || list == EFSLIST_TRANSP_NEAREST, "'list' does not name a transparent list");
+		const int idx = static_cast<int>(list - EFSLIST_TRANSP_BW);
+		return m_transparentSegments[idx];
+	}
+
 private:
 	void                   DeleteThis() const override;
 
@@ -346,12 +369,20 @@ private:
 	void                   ExpandPermanentRenderObjects();
 	void                   UpdateModifiedShaderItems();
 	void                   ClearTemporaryCompiledObjects();
-	void                   PrepareNearestShadows();
 	void                   CheckAndScheduleForUpdate(const SShaderItem& shaderItem) threadsafe;
 	template<bool bConcurrent>
 	void                   AddRenderItemToRenderLists(const SRendItem& ri, int nRenderList, CRenderObject* RESTRICT_POINTER pObj, const SShaderItem& shaderItem) threadsafe;
 
 	CCompiledRenderObject* AllocCompiledObject(CRenderObject* pObj, CRenderElement* pElem, const SShaderItem& shaderItem);
+
+	std::size_t            OptimizeTransparentRenderItemsResolves(STransparentSegments &segments, RenderItems &renderItems, std::size_t total_resolve_count) const;
+	TRect_tpl<uint16>      ComputeResolveViewport(const AABB &aabb, bool forceFullscreenUpdate) const;
+	STransparentSegments&  GetTransparentSegments(ERenderListID list)
+	{
+		CRY_ASSERT_MESSAGE(list == EFSLIST_TRANSP_BW || list == EFSLIST_TRANSP_AW || list == EFSLIST_TRANSP_NEAREST, "'list' does not name a transparent list");
+		const int idx = static_cast<int>(list - EFSLIST_TRANSP_BW);
+		return m_transparentSegments[idx];
+	}
 	
 private:
 	EUsageMode       m_usageMode;
@@ -374,6 +405,10 @@ private:
 	// For general passes initialized as a pointers to the m_BatchFlags
 	// But for shadow pass it will be a pointer to the shadow frustum side mask
 	//volatile uint32* m_pFlagsPointer[EFSLIST_NUM];
+
+	// Resolve passes information
+	STransparentSegments m_transparentSegments[3];
+	mutable CryJobState  m_optimizeTransparentRenderItemsResolvesJobStatus;
 
 	// Temporary render objects storage
 	struct STempObjects
