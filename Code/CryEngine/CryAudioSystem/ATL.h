@@ -81,8 +81,6 @@ private:
 	AudioPreloadRequestLookup m_preloadRequests;
 	AudioEnvironmentLookup    m_environments;
 
-	CATLAudioObject*          m_pGlobalAudioObject = nullptr;
-
 	// Components
 	CAudioStandaloneFileManager m_audioStandaloneFileMgr;
 	CEventManager               m_eventMgr;

@@ -9,7 +9,10 @@ namespace Impl
 struct IImpl;
 } // namespace Impl
 
+class CATLAudioObject;
+
 extern Impl::IImpl* g_pIImpl;
+extern CATLAudioObject* g_pObject;
 
 #if defined(INCLUDE_AUDIO_PRODUCTION_CODE)
 namespace Debug

@@ -8,7 +8,6 @@ namespace CryAudio
 {
 class CAudioListenerManager;
 class CATLAudioObject;
-class CAudioTranslationLayer;
 
 struct SInternalControls
 {
@@ -23,7 +22,7 @@ class COcclusionObstructionState final : public IAudioSwitchStateImpl
 {
 public:
 
-	explicit COcclusionObstructionState(SwitchStateId const stateId, CAudioListenerManager const& audioListenerManager, CATLAudioObject const& globalAudioObject);
+	explicit COcclusionObstructionState(SwitchStateId const stateId, CAudioListenerManager const& audioListenerManager);
 
 	// IAudioSwitchStateImpl
 	virtual void Set(CATLAudioObject& audioObject) const override;
@@ -38,14 +37,13 @@ private:
 
 	SwitchStateId const          m_stateId;
 	CAudioListenerManager const& m_audioListenerManager;
-	CATLAudioObject const&       m_globalAudioObject;
 };
 
 class CRelativeVelocityTrackingState final : public IAudioSwitchStateImpl
 {
 public:
 
-	explicit CRelativeVelocityTrackingState(SwitchStateId const stateId, CATLAudioObject const& globalAudioObject);
+	explicit CRelativeVelocityTrackingState(SwitchStateId const stateId);
 
 	// IAudioSwitchStateImpl
 	virtual void Set(CATLAudioObject& audioObject) const override;
@@ -58,15 +56,14 @@ public:
 
 private:
 
-	SwitchStateId const    m_stateId;
-	CATLAudioObject const& m_globalAudioObject;
+	SwitchStateId const m_stateId;
 };
 
 class CAbsoluteVelocityTrackingState final : public IAudioSwitchStateImpl
 {
 public:
 
-	explicit CAbsoluteVelocityTrackingState(SwitchStateId const stateId, CATLAudioObject const& globalAudioObject);
+	explicit CAbsoluteVelocityTrackingState(SwitchStateId const stateId);
 
 	// IAudioSwitchStateImpl
 	virtual void Set(CATLAudioObject& audioObject) const override;
@@ -79,8 +76,7 @@ public:
 
 private:
 
-	SwitchStateId const    m_stateId;
-	CATLAudioObject const& m_globalAudioObject;
+	SwitchStateId const m_stateId;
 };
 
 class CDoNothingTrigger final : public CATLTriggerImpl
