@@ -103,6 +103,7 @@ private:
 
 	void EnableBrushes(bool isEnable);
 	void EnableEntities(bool isEnable);
+	void EnableEntity(CEntity& entity, EntityProp& property, bool isEnable);
 	void ReEvalNeedForHeap();
 	void NotifyActivationToListeners(bool bActivated);
 
