@@ -54,7 +54,8 @@ void CGeomEntity::SpawnEntity()
 	CEntityObject::SpawnEntity();
 
 	// Now that the entity was spawned, add the geometry
-	if (!mv_geometry.IsEmpty())
+	const string& geometry = mv_geometry;
+	if (!geometry.empty())
 	{
 		SetGeometryFile(mv_geometry);
 	}
