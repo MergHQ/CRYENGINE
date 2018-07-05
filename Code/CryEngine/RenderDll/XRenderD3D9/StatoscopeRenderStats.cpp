@@ -243,7 +243,7 @@ void CGraphicsDG::Write(IStatoscopeFrameRecord& fr)
 	numDrawCalls = m_pRenderer->GetCurrentNumberOfDrawCalls();
 	numShadowDrawCalls = m_pRenderer->GetCurrentNumberOfDrawCalls(1 << EFSLIST_SHADOW_GEN);
 	numGeneralDrawCalls = m_pRenderer->GetCurrentNumberOfDrawCalls(1 << EFSLIST_GENERAL);
-	numTransparentDrawCalls = m_pRenderer->GetCurrentNumberOfDrawCalls(1 << EFSLIST_TRANSP);
+	numTransparentDrawCalls = m_pRenderer->GetCurrentNumberOfDrawCalls(1 << EFSLIST_TRANSP_AW) + m_pRenderer->GetCurrentNumberOfDrawCalls(1 << EFSLIST_TRANSP_BW);
 	fr.AddValue(numDrawCalls);
 	fr.AddValue(numShadowDrawCalls);
 	fr.AddValue(numGeneralDrawCalls);

@@ -25,7 +25,7 @@ public:
 	}
 
 	virtual bool Compile(CRenderObject* pObj, CRenderView *pRenderView, bool updateInstanceDataOnly) override;
-	virtual void DrawToCommandList(CRenderObject* pObj, const struct SGraphicsPipelinePassContext& ctx) override;
+	virtual void DrawToCommandList(CRenderObject* pObj, const struct SGraphicsPipelinePassContext& ctx, CDeviceCommandList* commandList) override;
 
 public:
 	std::unique_ptr<render_element::fogvolume::SCompiledFogVolume> m_pCompiledObject;

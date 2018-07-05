@@ -7,6 +7,9 @@
 
 #include "CompiledRenderObject.h"
 
+#include <functional>
+#include <vector>
+
 ///////////////////////////////////////////////////////////////////////////////
 // sort operators for render items
 struct SCompareItemPreprocess

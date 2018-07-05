@@ -12,6 +12,7 @@
 namespace CryAudio
 {
 Impl::IImpl* g_pIImpl = nullptr;
+CATLAudioObject* g_pObject = nullptr;
 
 #if defined(INCLUDE_AUDIO_PRODUCTION_CODE)
 namespace Debug

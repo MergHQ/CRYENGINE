@@ -290,12 +290,6 @@ struct ICryPak
 		eInMemoryPakLocale_GPU,
 	};
 
-	enum class EModAccessPriority
-	{
-		BeforeSource = 0,           //!< Files in Mod folder will be looked at before accessing file in the original source location (Used for the source asset override folders)
-		AfterSource                 //!< Files in Mod folder will be looked at after accessing file in the original source location (Used for the compiled asset cache folder)
-	};
-
 	struct PakInfo
 	{
 		struct Pak
@@ -364,10 +358,8 @@ struct ICryPak
 	virtual bool LoadPakToMemory(const char* pName, EInMemoryPakLocation eLoadToMemory, IMemoryBlock* pMemoryBlock = NULL) = 0;
 	virtual void LoadPaksToMemory(int nMaxPakSize, bool bLoadToMemory) = 0;
 
-	//! Adds a path modification folder.
-	//! MOD folders will be used to lookup files in the additional OS directories besides normal asset folder.
-	//! Depending on the value of the modAccessPriority parameter, the order for file lookup relative to the source asset folder will be different.
-	virtual void AddMod(const char* szMod, EModAccessPriority modAccessPriority=EModAccessPriority::BeforeSource) = 0;
+	//! Adds a mod to the list.
+	virtual void AddMod(const char* szMod) = 0;
 
 	//! Removes a mod from the list.
 	virtual void RemoveMod(const char* szMod) = 0;

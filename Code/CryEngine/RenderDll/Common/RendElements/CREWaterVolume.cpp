@@ -319,7 +319,7 @@ bool CREWaterVolume::Compile(CRenderObject* pObj,CRenderView *pRenderView, bool 
 	return true;
 }
 
-void CREWaterVolume::DrawToCommandList(CRenderObject* pObj, const struct SGraphicsPipelinePassContext& ctx)
+void CREWaterVolume::DrawToCommandList(CRenderObject* pObj, const struct SGraphicsPipelinePassContext& ctx, CDeviceCommandList* commandList)
 {
 	if (!m_pCompiledObject || !(m_pCompiledObject->m_bValid))
 		return;
@@ -347,7 +347,7 @@ void CREWaterVolume::DrawToCommandList(CRenderObject* pObj, const struct SGraphi
 	CRY_ASSERT(compiledObj.m_pPerDrawRS && compiledObj.m_pPerDrawRS->IsValid());
 
 	CD3D9Renderer* const RESTRICT_POINTER rd = gcpRendD3D;
-	CDeviceGraphicsCommandInterface& RESTRICT_REFERENCE commandInterface = *(ctx.pCommandList->GetGraphicsInterface());
+	CDeviceGraphicsCommandInterface& RESTRICT_REFERENCE commandInterface = *(commandList->GetGraphicsInterface());
 
 	// Set states
 	commandInterface.SetPipelineState(pPso.get());

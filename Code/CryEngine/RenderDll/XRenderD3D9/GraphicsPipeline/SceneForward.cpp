@@ -98,7 +98,7 @@ void CSceneForwardStage::Update()
 
 		// Transparent forward scene passes
 		m_forwardTransparentBWPass.SetLabel("FORWARD_TRANSPARENT_BW");
-		m_forwardTransparentBWPass.SetupPassContext(m_stageID, ePass_Forward, TTYPE_GENERAL, FB_BELOW_WATER, EFSLIST_TRANSP, 0);
+		m_forwardTransparentBWPass.SetupPassContext(m_stageID, ePass_Forward, TTYPE_GENERAL, FB_GENERAL, EFSLIST_TRANSP_BW, 0);
 		m_forwardTransparentBWPass.SetPassResources(m_pTransparentResourceLayout, m_pTransparentPassResourceSet);
 		m_forwardTransparentBWPass.SetRenderTargets(
 			// Depth
@@ -108,7 +108,7 @@ void CSceneForwardStage::Update()
 		);
 
 		m_forwardTransparentAWPass.SetLabel("FORWARD_TRANSPARENT_AW");
-		m_forwardTransparentAWPass.SetupPassContext(m_stageID, ePass_Forward, TTYPE_GENERAL, FB_GENERAL, EFSLIST_TRANSP, FB_BELOW_WATER);
+		m_forwardTransparentAWPass.SetupPassContext(m_stageID, ePass_Forward, TTYPE_GENERAL, FB_GENERAL, EFSLIST_TRANSP_AW, FB_BELOW_WATER);
 		m_forwardTransparentAWPass.SetPassResources(m_pTransparentResourceLayout, m_pTransparentPassResourceSet);
 		m_forwardTransparentAWPass.SetRenderTargets(
 			// Depth
@@ -176,7 +176,7 @@ void CSceneForwardStage::Update()
 		);
 
 		m_forwardTransparentRecursivePass.SetLabel("FORWARD_TRANSPARENT_AW_RECURSIVE");
-		m_forwardTransparentRecursivePass.SetupPassContext(m_stageID, ePass_ForwardRecursive, TTYPE_GENERAL, FB_GENERAL, EFSLIST_TRANSP, FB_BELOW_WATER);
+		m_forwardTransparentRecursivePass.SetupPassContext(m_stageID, ePass_ForwardRecursive, TTYPE_GENERAL, FB_GENERAL, EFSLIST_TRANSP_AW, FB_BELOW_WATER);
 		m_forwardTransparentRecursivePass.SetPassResources(m_pTransparentResourceLayout, m_pTransparentPassResourceSet);
 		m_forwardTransparentRecursivePass.SetRenderTargets(
 			// Depth
@@ -731,8 +731,8 @@ void CSceneForwardStage::ExecuteTransparent(bool bBelowWater)
 	renderItemDrawer.InitDrawSubmission();
 
 	scenePass.BeginExecution();
-	scenePass.DrawRenderItems(pRenderView, EFSLIST_TRANSP);
-	scenePass.DrawRenderItems(pRenderView, EFSLIST_TRANSP_NEAREST);
+	scenePass.DrawTransparentRenderItems(pRenderView, bBelowWater ? EFSLIST_TRANSP_BW : EFSLIST_TRANSP_AW);
+	scenePass.DrawTransparentRenderItems(pRenderView, EFSLIST_TRANSP_NEAREST);
 	scenePass.EndExecution();
 
 	renderItemDrawer.JobifyDrawSubmission();
@@ -971,8 +971,8 @@ void CSceneForwardStage::ExecuteMinimum(CTexture* pColorTex, CTexture* pDepthTex
 		renderItemDrawer.InitDrawSubmission();
 
 		m_forwardTransparentRecursivePass.BeginExecution();
-		m_forwardTransparentRecursivePass.DrawRenderItems(pRenderView, EFSLIST_TRANSP);
-		m_forwardTransparentRecursivePass.DrawRenderItems(pRenderView, EFSLIST_TRANSP_NEAREST);
+		m_forwardTransparentRecursivePass.DrawTransparentRenderItems(pRenderView, EFSLIST_TRANSP_AW);
+		m_forwardTransparentRecursivePass.DrawTransparentRenderItems(pRenderView, EFSLIST_TRANSP_NEAREST);
 		m_forwardTransparentRecursivePass.EndExecution();
 
 		renderItemDrawer.JobifyDrawSubmission();

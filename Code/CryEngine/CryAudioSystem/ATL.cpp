@@ -87,7 +87,7 @@ CAudioTranslationLayer::~CAudioTranslationLayer()
 		ShutDown();
 	}
 
-	CRY_ASSERT_MESSAGE(!m_pGlobalAudioObject, "Global audio object should have been destroyed in the audio thread, before the ATL is destructed.");
+	CRY_ASSERT_MESSAGE(g_pObject == nullptr, "<Audio> Global object should have been destroyed before the ATL is destructed.");
 }
 
 ///////////////////////////////////////////////////////////////////////////
@@ -177,7 +177,7 @@ void CAudioTranslationLayer::Update(float const deltaTime)
 	if (g_pIImpl != nullptr)
 	{
 		m_audioListenerMgr.Update(deltaTime);
-		m_pGlobalAudioObject->GetImplDataPtr()->Update();
+		g_pObject->GetImplDataPtr()->Update();
 		m_objectMgr.Update(deltaTime, m_audioListenerMgr.GetActiveListenerTransformation(), m_audioListenerMgr.GetActiveListenerVelocity());
 		g_pIImpl->Update();
 	}
@@ -222,13 +222,13 @@ ERequestStatus CAudioTranslationLayer::ClearPreloadsData(EDataScope const dataSc
 ///////////////////////////////////////////////////////////////////////////
 void CAudioTranslationLayer::IncrementGlobalObjectSyncCallbackCounter()
 {
-	m_pGlobalAudioObject->IncrementSyncCallbackCounter();
+	g_pObject->IncrementSyncCallbackCounter();
 }
 
 ///////////////////////////////////////////////////////////////////////////
 void CAudioTranslationLayer::DecrementGlobalObjectSyncCallbackCounter()
 {
-	m_pGlobalAudioObject->DecrementSyncCallbackCounter();
+	g_pObject->DecrementSyncCallbackCounter();
 }
 
 //////////////////////////////////////////////////////////////////////////
@@ -561,13 +561,13 @@ ERequestStatus CAudioTranslationLayer::ProcessAudioCallbackManagerRequest(CAudio
 
 			audioEvent.m_state = EEventState::PlayingDelayed;
 
-			if (audioEvent.m_pAudioObject != m_pGlobalAudioObject)
+			if (audioEvent.m_pAudioObject != g_pObject)
 			{
 				m_objectMgr.ReportStartedEvent(&audioEvent);
 			}
 			else
 			{
-				m_pGlobalAudioObject->ReportStartedEvent(&audioEvent);
+				g_pObject->ReportStartedEvent(&audioEvent);
 			}
 
 			result = ERequestStatus::Success;
@@ -580,13 +580,13 @@ ERequestStatus CAudioTranslationLayer::ProcessAudioCallbackManagerRequest(CAudio
 				static_cast<SAudioCallbackManagerRequestData<EAudioCallbackManagerRequestType::ReportFinishedEvent> const* const>(request.GetData());
 			CATLEvent& event = pRequestData->audioEvent;
 
-			if (event.m_pAudioObject != m_pGlobalAudioObject)
+			if (event.m_pAudioObject != g_pObject)
 			{
 				m_objectMgr.ReportFinishedEvent(&event, pRequestData->bSuccess);
 			}
 			else
 			{
-				m_pGlobalAudioObject->ReportFinishedEvent(&event, pRequestData->bSuccess);
+				g_pObject->ReportFinishedEvent(&event, pRequestData->bSuccess);
 			}
 
 			m_eventMgr.DestructEvent(&event);
@@ -640,13 +640,13 @@ ERequestStatus CAudioTranslationLayer::ProcessAudioCallbackManagerRequest(CAudio
 
 			m_objectMgr.GetStartedStandaloneFileRequestData(&audioStandaloneFile, request);
 
-			if (audioStandaloneFile.m_pAudioObject != m_pGlobalAudioObject)
+			if (audioStandaloneFile.m_pAudioObject != g_pObject)
 			{
 				m_objectMgr.ReportFinishedStandaloneFile(&audioStandaloneFile);
 			}
 			else
 			{
-				m_pGlobalAudioObject->ReportFinishedStandaloneFile(&audioStandaloneFile);
+				g_pObject->ReportFinishedStandaloneFile(&audioStandaloneFile);
 			}
 
 			m_audioStandaloneFileMgr.ReleaseStandaloneFile(&audioStandaloneFile);
@@ -678,7 +678,7 @@ ERequestStatus CAudioTranslationLayer::ProcessAudioCallbackManagerRequest(CAudio
 ERequestStatus CAudioTranslationLayer::ProcessAudioObjectRequest(CAudioRequest const& request)
 {
 	ERequestStatus result = ERequestStatus::Failure;
-	CATLAudioObject* const pObject = (request.pObject != nullptr) ? request.pObject : m_pGlobalAudioObject;
+	CATLAudioObject* const pObject = (request.pObject != nullptr) ? request.pObject : g_pObject;
 
 	SAudioObjectRequestDataBase const* const pBaseRequestData =
 		static_cast<SAudioObjectRequestDataBase const* const>(request.GetData());
@@ -856,7 +856,7 @@ ERequestStatus CAudioTranslationLayer::ProcessAudioObjectRequest(CAudioRequest c
 		}
 	case EAudioObjectRequestType::SetTransformation:
 		{
-			if (pObject != m_pGlobalAudioObject)
+			if (pObject != g_pObject)
 			{
 				float const distanceToListener = (m_audioListenerMgr.GetActiveListenerTransformation().GetPosition() - pObject->GetTransformation().GetPosition()).GetLength();
 				SAudioObjectRequestData<EAudioObjectRequestType::SetTransformation> const* const pRequestData =
@@ -921,7 +921,7 @@ ERequestStatus CAudioTranslationLayer::ProcessAudioObjectRequest(CAudioRequest c
 		}
 	case EAudioObjectRequestType::SetEnvironment:
 		{
-			if (pObject != m_pGlobalAudioObject)
+			if (pObject != g_pObject)
 			{
 				result = ERequestStatus::FailureInvalidControlId;
 				SAudioObjectRequestData<EAudioObjectRequestType::SetEnvironment> const* const pRequestData =
@@ -990,7 +990,7 @@ ERequestStatus CAudioTranslationLayer::ProcessAudioObjectRequest(CAudioRequest c
 		}
 	case EAudioObjectRequestType::ReleaseObject:
 		{
-			if (pObject != m_pGlobalAudioObject)
+			if (pObject != g_pObject)
 			{
 				pObject->RemoveFlag(EObjectFlags::InUse);
 				result = ERequestStatus::Success;
@@ -1154,17 +1154,17 @@ ERequestStatus CAudioTranslationLayer::SetImpl(Impl::IImpl* const pIImpl)
 		g_pIImpl = static_cast<Impl::IImpl*>(pImpl);
 	}
 
-	if (m_pGlobalAudioObject == nullptr)
+	if (g_pObject == nullptr)
 	{
-		m_pGlobalAudioObject = new CATLAudioObject;
+		g_pObject = new CATLAudioObject;
 
 #if defined(INCLUDE_AUDIO_PRODUCTION_CODE)
-		m_pGlobalAudioObject->m_name = "Global Audio Object";
+		g_pObject->m_name = "Global Object";
 #endif // INCLUDE_AUDIO_PRODUCTION_CODE
 	}
 
-	CRY_ASSERT(m_pGlobalAudioObject->GetImplDataPtr() == nullptr);
-	m_pGlobalAudioObject->SetImplDataPtr(g_pIImpl->ConstructGlobalObject());
+	CRY_ASSERT_MESSAGE(g_pObject->GetImplDataPtr() == nullptr, "<Audio> The global object's impl-data must be nullptr during initialization.");
+	g_pObject->SetImplDataPtr(g_pIImpl->ConstructGlobalObject());
 
 	m_objectMgr.OnAfterImplChanged();
 	m_eventMgr.OnAfterImplChanged();
@@ -1189,11 +1189,11 @@ void CAudioTranslationLayer::ReleaseImpl()
 	m_objectMgr.Release();
 	m_audioListenerMgr.Release();
 
-	g_pIImpl->DestructObject(m_pGlobalAudioObject->GetImplDataPtr());
-	m_pGlobalAudioObject->SetImplDataPtr(nullptr);
+	g_pIImpl->DestructObject(g_pObject->GetImplDataPtr());
+	g_pObject->SetImplDataPtr(nullptr);
 
-	delete m_pGlobalAudioObject;
-	m_pGlobalAudioObject = nullptr;
+	delete g_pObject;
+	g_pObject = nullptr;
 
 	m_xmlProcessor.ClearControlsData(EDataScope::All);
 	m_xmlProcessor.ClearPreloadsData(EDataScope::All);
@@ -1304,33 +1304,33 @@ void CAudioTranslationLayer::CreateInternalControls()
 	m_internalControls.m_parameterConnections.clear();
 
 	// Occlusion switch
-	COcclusionObstructionState const* const pOcclusionIgnore = new COcclusionObstructionState(IgnoreStateId, m_audioListenerMgr, *m_pGlobalAudioObject);
+	COcclusionObstructionState const* const pOcclusionIgnore = new COcclusionObstructionState(IgnoreStateId, m_audioListenerMgr);
 	m_internalControls.m_switchStates[std::make_pair(OcclusionCalcSwitchId, IgnoreStateId)] = pOcclusionIgnore;
 
-	COcclusionObstructionState const* const pOcclusionAdaptive = new COcclusionObstructionState(AdaptiveStateId, m_audioListenerMgr, *m_pGlobalAudioObject);
+	COcclusionObstructionState const* const pOcclusionAdaptive = new COcclusionObstructionState(AdaptiveStateId, m_audioListenerMgr);
 	m_internalControls.m_switchStates[std::make_pair(OcclusionCalcSwitchId, AdaptiveStateId)] = pOcclusionAdaptive;
 
-	COcclusionObstructionState const* const pOcclusionLow = new COcclusionObstructionState(LowStateId, m_audioListenerMgr, *m_pGlobalAudioObject);
+	COcclusionObstructionState const* const pOcclusionLow = new COcclusionObstructionState(LowStateId, m_audioListenerMgr);
 	m_internalControls.m_switchStates[std::make_pair(OcclusionCalcSwitchId, LowStateId)] = pOcclusionLow;
 
-	COcclusionObstructionState const* const pOcclusionMedium = new COcclusionObstructionState(MediumStateId, m_audioListenerMgr, *m_pGlobalAudioObject);
+	COcclusionObstructionState const* const pOcclusionMedium = new COcclusionObstructionState(MediumStateId, m_audioListenerMgr);
 	m_internalControls.m_switchStates[std::make_pair(OcclusionCalcSwitchId, MediumStateId)] = pOcclusionMedium;
 
-	COcclusionObstructionState const* const pOcclusionHigh = new COcclusionObstructionState(HighStateId, m_audioListenerMgr, *m_pGlobalAudioObject);
+	COcclusionObstructionState const* const pOcclusionHigh = new COcclusionObstructionState(HighStateId, m_audioListenerMgr);
 	m_internalControls.m_switchStates[std::make_pair(OcclusionCalcSwitchId, HighStateId)] = pOcclusionHigh;
 
 	// Relative Velocity Tracking switch
-	CRelativeVelocityTrackingState const* const pRelativeVelocityTrackingOn = new CRelativeVelocityTrackingState(OnStateId, *m_pGlobalAudioObject);
+	CRelativeVelocityTrackingState const* const pRelativeVelocityTrackingOn = new CRelativeVelocityTrackingState(OnStateId);
 	m_internalControls.m_switchStates[std::make_pair(RelativeVelocityTrackingSwitchId, OnStateId)] = pRelativeVelocityTrackingOn;
 
-	CRelativeVelocityTrackingState const* const pRelativeVelocityTrackingOff = new CRelativeVelocityTrackingState(OffStateId, *m_pGlobalAudioObject);
+	CRelativeVelocityTrackingState const* const pRelativeVelocityTrackingOff = new CRelativeVelocityTrackingState(OffStateId);
 	m_internalControls.m_switchStates[std::make_pair(RelativeVelocityTrackingSwitchId, OffStateId)] = pRelativeVelocityTrackingOff;
 
 	// Absolute Velocity Tracking switch
-	CAbsoluteVelocityTrackingState const* const pAbsoluteVelocityTrackingOn = new CAbsoluteVelocityTrackingState(OnStateId, *m_pGlobalAudioObject);
+	CAbsoluteVelocityTrackingState const* const pAbsoluteVelocityTrackingOn = new CAbsoluteVelocityTrackingState(OnStateId);
 	m_internalControls.m_switchStates[std::make_pair(AbsoluteVelocityTrackingSwitchId, OnStateId)] = pAbsoluteVelocityTrackingOn;
 
-	CAbsoluteVelocityTrackingState const* const pAbsoluteVelocityTrackingOff = new CAbsoluteVelocityTrackingState(OffStateId, *m_pGlobalAudioObject);
+	CAbsoluteVelocityTrackingState const* const pAbsoluteVelocityTrackingOff = new CAbsoluteVelocityTrackingState(OffStateId);
 	m_internalControls.m_switchStates[std::make_pair(AbsoluteVelocityTrackingSwitchId, OffStateId)] = pAbsoluteVelocityTrackingOff;
 
 	// Do Nothing trigger
@@ -1731,7 +1731,7 @@ void CAudioTranslationLayer::RetriggerAudioControls()
 		pAudioObject->ForceImplementationRefresh(m_triggers, m_parameters, m_switches, m_environments, true);
 	}
 
-	m_pGlobalAudioObject->ForceImplementationRefresh(m_triggers, m_parameters, m_switches, m_environments, false);
+	g_pObject->ForceImplementationRefresh(m_triggers, m_parameters, m_switches, m_environments, false);
 }
 
 ///////////////////////////////////////////////////////////////////////////

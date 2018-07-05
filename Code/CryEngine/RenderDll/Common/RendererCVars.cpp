@@ -574,7 +574,9 @@ int CRendererCVars::CV_r_FogShadowsWater;
 
 int CRendererCVars::CV_r_RainDropsEffect;
 
-AllocateConstIntCVar(CRendererCVars, CV_r_RefractionPartialResolves);
+AllocateConstIntCVar(CRendererCVars, CV_r_RefractionPartialResolveMode);
+AllocateConstIntCVar(CRendererCVars, CV_r_RefractionPartialResolveMinimalResolveArea);
+AllocateConstIntCVar(CRendererCVars, CV_r_RefractionPartialResolveMaxResolveCount);
 AllocateConstIntCVar(CRendererCVars, CV_r_RefractionPartialResolvesDebug);
 
 AllocateConstIntCVar(CRendererCVars, CV_r_Batching);
@@ -2819,14 +2821,18 @@ void CRendererCVars::InitCVars()
 	                    "0: force off\n"
 	                    "1: on (default)\n"
 	                    "2: on (forced)");
-
-	DefineConstIntCVar3("r_RefractionPartialResolves", CV_r_RefractionPartialResolves, 2, VF_NULL,
-	                    "Do a partial screen resolve before refraction\n"
-	                    "Usage: r_RefractionPartialResolves [0/1]\n"
-	                    "0: disable \n"
-	                    "1: enable conservatively (non-optimal)\n"
-	                    "2: enable (default)");
-
+	
+	DefineConstIntCVar3("r_RefractionPartialResolveMode", CV_r_RefractionPartialResolveMode, 2, VF_NULL,
+	                    "Specifies mode of operation of partial screen resolves before refraction\n"
+	                    "Usage: r_RefractionPartialResolveMode [0/1/2]\n"
+		                "0: Static approach: Single resolve pass before transparent forward pass.\n"
+	                    "1: Simple iterative approach: Resolve pass before every refractive render items that requires resolve.\n"
+	                    "2: Topological sorting of overlaping resolve regions (default)");
+	DefineConstIntCVar3("r_RefractionPartialResolveMinimalResolveArea", CV_r_RefractionPartialResolveMinimalResolveArea, 0, VF_NULL,
+	                    "Minimal resolve area, in pixels, required to inject a partial resolve (default: 0).");
+	DefineConstIntCVar3("r_RefractionPartialResolveMaxResolveCount", CV_r_RefractionPartialResolveMaxResolveCount, 0, VF_NULL,
+	                    "Provides an upper limit on partial screen resolves per render-items list.\n"
+		                "(Unlimited if a non-positive integer is provided)");
 	DefineConstIntCVar3("r_RefractionPartialResolvesDebug", CV_r_RefractionPartialResolvesDebug, 0, VF_NULL,
 	                    "Toggle refraction partial resolves debug display\n"
 	                    "Usage: r_RefractionPartialResolvesDebug\n"

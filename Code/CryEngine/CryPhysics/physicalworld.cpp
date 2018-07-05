@@ -1377,7 +1377,10 @@ int CPhysicalWorld::DestroyPhysicalEntity(IPhysicalEntity* _pent,int mode,int bT
 		QueueData(mode);
 		return 1;
 	}
-	WriteLockCond lock0(m_lockCaller[MAX_PHYS_THREADS], m_vars.bMultithreaded && !bThreadSafe && !IsPODThread(this));
+	int lockExtThreads = (m_vars.bMultithreaded && !bThreadSafe && !IsPODThread(this))*MAX_EXT_THREADS;
+	for(int i=0; i<lockExtThreads; i++)
+		CrySpinLock(&m_lockCaller[MAX_PHYS_THREADS+i], 0, WRITE_LOCK_VAL);
+	ScopeExitCall unlockCallers([&]() { for(int i=lockExtThreads-1;i>=0;i--) CryInterlockedAdd(&m_lockCaller[MAX_PHYS_THREADS+i],-WRITE_LOCK_VAL); });
 	WriteLockCond lock(m_lockStep, m_vars.bMultithreaded && !bThreadSafe && !IsPODThread(this));
 
 	if (ppc->m_iSimClass==5) {

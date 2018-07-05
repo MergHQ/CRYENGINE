@@ -472,7 +472,7 @@ void CRenderer::EF_GetParticleListAndBatchFlags(uint32& nBatchFlags, int& nList,
 	if (shaderItem.m_pShader && (((CShader*)shaderItem.m_pShader)->m_Flags & EF_REFRACTIVE))
 	{
 		nBatchFlags |= FB_TRANSPARENT;
-		if (CRenderer::CV_r_RefractionPartialResolves)
+		if (CRenderer::CV_r_Refraction)
 			pRenderObject->m_ObjFlags |= FOB_REQUIRES_RESOLVE;
 
 		bHalfRes = false;
@@ -499,7 +499,8 @@ void CRenderer::EF_GetParticleListAndBatchFlags(uint32& nBatchFlags, int& nList,
 	else if (bVolumeFog)
 		nList = EFSLIST_FOG_VOLUME;
 	else if (pRenderObject->m_RState & OS_TRANSPARENT)
-		nList = bNearest ? EFSLIST_TRANSP_NEAREST : EFSLIST_TRANSP;
+		nList = bNearest ? EFSLIST_TRANSP_NEAREST : 
+			(!!(nBatchFlags & FB_BELOW_WATER) ? EFSLIST_TRANSP_BW : EFSLIST_TRANSP_AW);
 	else
 		nList = EFSLIST_GENERAL;
 }
@@ -710,7 +711,7 @@ bool CREParticle::Compile(CRenderObject* pRenderObject, CRenderView *pRenderView
 	return true;
 }
 
-void CREParticle::DrawToCommandList(CRenderObject* pRenderObject, const struct SGraphicsPipelinePassContext& context)
+void CREParticle::DrawToCommandList(CRenderObject* pRenderObject, const struct SGraphicsPipelinePassContext& context, CDeviceCommandList* commandList)
 {
 	auto pGraphicsPSO = GetGraphicsPSO(pRenderObject, context);
 	if (!pGraphicsPSO || !pGraphicsPSO->IsValid())
@@ -723,7 +724,7 @@ void CREParticle::DrawToCommandList(CRenderObject* pRenderObject, const struct S
 
 	const bool isLegacy = m_pGpuRuntime == nullptr && (pRenderObject->m_ParticleObjFlags & CREParticle::ePOF_USE_VERTEX_PULL_MODEL) == 0;
 
-	CDeviceGraphicsCommandInterface& commandInterface = *context.pCommandList->GetGraphicsInterface();
+	CDeviceGraphicsCommandInterface& commandInterface = *commandList->GetGraphicsInterface();
 	BindPipeline(pRenderObject, commandInterface, pGraphicsPSO);
 	if (isLegacy)
 		DrawParticlesLegacy(pRenderObject, commandInterface);

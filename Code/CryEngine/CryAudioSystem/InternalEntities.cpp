@@ -11,17 +11,16 @@
 namespace CryAudio
 {
 //////////////////////////////////////////////////////////////////////////
-COcclusionObstructionState::COcclusionObstructionState(SwitchStateId const stateId, CAudioListenerManager const& audioListenerManager, CATLAudioObject const& globalAudioObject)
+COcclusionObstructionState::COcclusionObstructionState(SwitchStateId const stateId, CAudioListenerManager const& audioListenerManager)
 	: m_stateId(stateId)
 	, m_audioListenerManager(audioListenerManager)
-	, m_globalAudioObject(globalAudioObject)
 {
 }
 
 //////////////////////////////////////////////////////////////////////////
 void COcclusionObstructionState::Set(CATLAudioObject& audioObject) const
 {
-	if (&audioObject != &m_globalAudioObject)
+	if (&audioObject != g_pObject)
 	{
 		Vec3 const& audioListenerPosition = m_audioListenerManager.GetActiveListenerTransformation().GetPosition();
 
@@ -55,16 +54,15 @@ void COcclusionObstructionState::Set(CATLAudioObject& audioObject) const
 }
 
 //////////////////////////////////////////////////////////////////////////
-CRelativeVelocityTrackingState::CRelativeVelocityTrackingState(SwitchStateId const stateId, CATLAudioObject const& globalAudioObject)
+CRelativeVelocityTrackingState::CRelativeVelocityTrackingState(SwitchStateId const stateId)
 	: m_stateId(stateId)
-	, m_globalAudioObject(globalAudioObject)
 {
 }
 
 //////////////////////////////////////////////////////////////////////////
 void CRelativeVelocityTrackingState::Set(CATLAudioObject& audioObject) const
 {
-	if (&audioObject != &m_globalAudioObject)
+	if (&audioObject != g_pObject)
 	{
 		if (m_stateId == OnStateId)
 		{
@@ -82,16 +80,15 @@ void CRelativeVelocityTrackingState::Set(CATLAudioObject& audioObject) const
 }
 
 //////////////////////////////////////////////////////////////////////////
-CAbsoluteVelocityTrackingState::CAbsoluteVelocityTrackingState(SwitchStateId const stateId, CATLAudioObject const& globalAudioObject)
+CAbsoluteVelocityTrackingState::CAbsoluteVelocityTrackingState(SwitchStateId const stateId)
 	: m_stateId(stateId)
-	, m_globalAudioObject(globalAudioObject)
 {
 }
 
 //////////////////////////////////////////////////////////////////////////
 void CAbsoluteVelocityTrackingState::Set(CATLAudioObject& audioObject) const
 {
-	if (&audioObject != &m_globalAudioObject)
+	if (&audioObject != g_pObject)
 	{
 		if (m_stateId == OnStateId)
 		{

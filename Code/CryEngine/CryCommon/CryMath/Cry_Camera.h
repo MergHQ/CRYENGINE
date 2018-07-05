@@ -126,6 +126,7 @@ public:
 	ILINE void            SetPositionNoUpdate(const Vec3& p)     { m_Matrix.SetTranslation(p); }
 	ILINE bool            Project(const Vec3& p, Vec3& result, Vec2i topLeft = Vec2i(0, 0), Vec2i widthHeight = Vec2i(0, 0)) const;
 	ILINE bool            Unproject(const Vec3& viewportPos, Vec3& result, Vec2i topLeft = Vec2i(0, 0), Vec2i widthHeight = Vec2i(0, 0)) const;
+	ILINE void            CalcScreenBounds(int* vOut, const AABB* pAABB, int x, int y, int nWidth, int nHeight) const;
 	ILINE void            CalcScreenBounds(int* vOut, const AABB* pAABB, int nWidth, int nHeight) const;
 	ILINE Vec3            GetUp() const { return m_Matrix.GetColumn2(); }
 
@@ -524,7 +525,7 @@ inline bool CCamera::Unproject(const Vec3& viewportPos, Vec3& result, Vec2i topL
 	return true;
 }
 
-inline void CCamera::CalcScreenBounds(int* vOut, const AABB* pAABB, int nWidth, int nHeight) const
+inline void CCamera::CalcScreenBounds(int* vOut, const AABB* pAABB, int x, int y, int nWidth, int nHeight) const
 {
 	Matrix44A mProj, mView, mVP;
 	mathMatrixPerspectiveFov(&mProj, GetFov(), GetProjRatio(), GetNearPlane(), GetFarPlane());
@@ -533,9 +534,9 @@ inline void CCamera::CalcScreenBounds(int* vOut, const AABB* pAABB, int nWidth, 
 
 	Vec3 verts[8];
 
-	Vec2i topLeft = Vec2i(0, 0);
+	Vec2i topLeft = Vec2i(x, y);
 	Vec2i widthHeight = Vec2i(nWidth, nHeight);
-	float pViewport[4] = { 0.0f, 0.0f, (float)widthHeight.x, (float)widthHeight.y };
+	float pViewport[4] = { (float)topLeft.x, (float)topLeft.y, (float)widthHeight.x, (float)widthHeight.y };
 
 	float x0 = 9999.9f, x1 = -9999.9f, y0 = 9999.9f, y1 = -9999.9f;
 	float fIntersect = 1.0f;
@@ -593,10 +594,15 @@ inline void CCamera::CalcScreenBounds(int* vOut, const AABB* pAABB, int nWidth, 
 		y1 = max(y1, result.y);
 	}
 
-	vOut[0] = (int)max(0.0f, min(pViewport[2], x0));
-	vOut[1] = (int)max(0.0f, min(pViewport[3], y0));
-	vOut[2] = (int)max(0.0f, min(pViewport[2], x1));
-	vOut[3] = (int)max(0.0f, min(pViewport[3], y1));
+	vOut[0] = (int)max(pViewport[0], min(pViewport[2], x0));
+	vOut[1] = (int)max(pViewport[1], min(pViewport[3], y0));
+	vOut[2] = (int)max(pViewport[0], min(pViewport[2], x1));
+	vOut[3] = (int)max(pViewport[1], min(pViewport[3], y1));
+}
+
+inline void CCamera::CalcScreenBounds(int* vOut, const AABB* pAABB, int nWidth, int nHeight) const
+{
+	return CalcScreenBounds(vOut, pAABB, 0, 0, nWidth, nHeight);
 }
 
 inline void CCamera::SetFrustum(int nWidth, int nHeight, f32 FOV, f32 nearplane, f32 farpane, f32 fPixelAspectRatio)

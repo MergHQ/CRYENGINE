@@ -215,7 +215,7 @@ bool CREGeomCache::GetGeometryInfo(SGeometryInfo& streams, bool bSupportTessella
 	return true;
 }
 
-void CREGeomCache::DrawToCommandList(CRenderObject* pObj, const SGraphicsPipelinePassContext& ctx)
+void CREGeomCache::DrawToCommandList(CRenderObject* pObj, const SGraphicsPipelinePassContext& ctx, CDeviceCommandList* commandList)
 {
 	//mfUpdate(0, FCEF_TRANSFORM, false); //TODO: check if correct
 

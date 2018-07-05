@@ -162,7 +162,7 @@ SEnv *gEnv = &env;
 
 void ResetProfiler(ProfilerData *pd, int threads=-1)
 {
-	for(int i=0; i<=MAX_PHYS_THREADS; i++) if (threads & 1<<i) {
+	for(int i=0; i<MAX_PHYS_THREADS+MAX_EXT_THREADS; i++) if (threads & 1<<i) {
 		pd[i].iLevel = 0;
 		pd[i].sec0.m_iCurCode = 0;
 		pd[i].sec0.m_iCurSlot = pd[i].iLastSampleSlot = pd[i].iLastTimeSample = 0;
@@ -752,7 +752,7 @@ void RenderWorld(HWND hWnd, HDC hDC)
 		if (!g_sync)
 			WaitForSingleObject(g_hThreadActive,INFINITE);
 		DrawProfileNode(offsx+40,20,tm.tmHeight, g_pPhysProfilerData,0);
-		ResetProfiler(g_pPhysProfilerData, 1<<MAX_PHYS_THREADS);
+		ResetProfiler(g_pPhysProfilerData, ((1<<MAX_EXT_THREADS)-1)<<MAX_PHYS_THREADS);
 	}
 	if (g_bShowProfiler & 1 || g_sync) 
 		ReleaseMutex(g_hThreadActive);

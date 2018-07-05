@@ -171,7 +171,7 @@ bool CREMeshImpl::GetGeometryInfo(SGeometryInfo& geomInfo, bool bSupportTessella
 	return true;
 }
 
-void CREMeshImpl::DrawToCommandList(CRenderObject* pObj, const SGraphicsPipelinePassContext& ctx)
+void CREMeshImpl::DrawToCommandList(CRenderObject* pObj, const SGraphicsPipelinePassContext& ctx, CDeviceCommandList* commandList)
 {
 	//@TODO: implement
 

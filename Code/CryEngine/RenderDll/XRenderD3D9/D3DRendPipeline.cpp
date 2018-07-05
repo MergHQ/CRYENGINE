@@ -668,6 +668,10 @@ void CD3D9Renderer::RT_RenderScene(CRenderView* pRenderView)
 		// If some pipeline stage manages/retires resources used in compiled objects, they should also be handled in Update()
 		pRenderView->CompileModifiedRenderObjects();
 
+		// Sort transparent lists that might have refractive items that will require resolve passes.
+		// This is done after the CompileModifiedRenderObjects we need to project render itemss AABB.
+		pRenderView->StartOptimizeTransparentRenderItemsResolvesJob();
+
 		if (pRenderView->IsBillboardGenView())
 		{
 			GetGraphicsPipeline().ExecuteBillboards();

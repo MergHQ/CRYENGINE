@@ -47,7 +47,7 @@ public:
 	bool          GetGeometryInfo(SGeometryInfo& geomInfo, bool bSupportTessellation = false);
 	InputLayoutHandle GetVertexFormat() const;
 	bool          Compile(CRenderObject* pObj,CRenderView *pRenderView, bool updateInstanceDataOnly);
-	void          DrawToCommandList(CRenderObject* pObj, const SGraphicsPipelinePassContext& ctx);
+	void          DrawToCommandList(CRenderObject* pObj, const SGraphicsPipelinePassContext& ctx, CDeviceCommandList* commandList);
 
 	//protected:
 	//	CREMeshImpl(CREMeshImpl&);

@@ -37,14 +37,15 @@ public:
 	void EndExecution();
 	void Execute();
 
-	void DrawRenderItems(CRenderView* pRenderView, ERenderListID list, int listStart = -1, int listEnd = -1, int profilingListID = -1);
+	void DrawRenderItems(CRenderView* pRenderView, ERenderListID list, int listStart = -1, int listEnd = -1);
+	void DrawTransparentRenderItems(CRenderView* pRenderView, ERenderListID list);
 
 	// Called from rendering backend (has to be threadsafe)
 	void                PrepareRenderPassForUse(CDeviceCommandListRef RESTRICT_REFERENCE commandList);
 	void                BeginRenderPass(CDeviceCommandListRef RESTRICT_REFERENCE commandList, bool bNearest) const;
 	void                EndRenderPass(CDeviceCommandListRef RESTRICT_REFERENCE commandList, bool bNearest) const;
 
-	void                ResolvePass(CDeviceCommandListRef RESTRICT_REFERENCE commandList, const uint16* screenBounds) const;
+	void                ResolvePass(CDeviceCommandListRef RESTRICT_REFERENCE commandList, const std::vector<TRect_tpl<uint16>>& screenBounds) const;
 
 	uint32              GetStageID()             const { return m_stageID; }
 	uint32              GetPassID()              const { return m_passID; }
@@ -87,9 +88,6 @@ protected:
 
 protected:
 	static int               s_recursionCounter;  // For asserting Begin/EndExecution get called on pass
-
-private:
-	static void RenderResolveDebug(const Vec4 &bounds);
 };
 
 DEFINE_ENUM_FLAG_OPERATORS(CSceneRenderPass::EPassFlags)
