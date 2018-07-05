@@ -2019,6 +2019,9 @@ bool CSystem::InitFileSystem(const SSystemInitParams& startupParams)
 			m_env.pCryPak->ParseAliases(pakalias->GetValue());
 	}
 
+	// Create Engine folder mod mapping only for Engine assets
+	pCryPak->AddMod("%ENGINEROOT%/" CRYENGINE_ENGINE_FOLDER);
+
 #if CRY_PLATFORM_ANDROID
 	pCryPak->AddMod(CryGetProjectStoragePath());
 	#if defined(ANDROID_OBB)
@@ -2197,9 +2200,12 @@ bool CSystem::InitFileSystem_LoadEngineFolders()
 			m_env.pCryPak->AddMod(modPath.c_str());
 		}
 	}
-#endif // !defined(_RELEASE)
 
-	InitResourceCacheFolder();
+	// Resource cache folder is used to store locally compiled resources.
+	// Its content is managed by Sandbox. For consistent testing we need it in game.
+	m_env.pCryPak->AddMod(m_sys_resource_cache_folder->GetString());
+
+#endif // !defined(_RELEASE)
 
 	// simply open all paks if fast load pak can't be found
 	if (!g_cvars.sys_intromoviesduringinit || !m_pResourceManager->LoadFastLoadPaks(true))
@@ -2219,44 +2225,6 @@ bool CSystem::InitFileSystem_LoadEngineFolders()
 #endif
 	return (true);
 }
-
-/////////////////////////////////////////////////////////////////////////////////
-void CSystem::InitResourceCacheFolder()
-{
-	// Resource Cache folder is not enabled in the release configuration
-#if !defined(_RELEASE)
-	const char* szResourceCacheFolder = m_sys_resource_cache_folder->GetString();
-
-	if (0 == strlen(szResourceCacheFolder))
-		return;
-
-	CryPathString cacheFolder(szResourceCacheFolder);
-	//////////////////////////////////////////////////////////////////////////
-	// Open Paks from Engine folder
-	//////////////////////////////////////////////////////////////////////////
-	// After game paks to have same search order as with files on disk
-	{
-		CryPathString cacheFolderParentFolder;
-		auto slashPos = cacheFolder.rfind('/');
-		if (slashPos != string::npos)
-		{
-			cacheFolderParentFolder = cacheFolder.substr(0,slashPos);
-		}
-		if (!cacheFolderParentFolder.empty())
-		{
-			const char* szBindRoot = m_env.pCryPak->GetAlias("%ENGINE%", false);
-			CryPathString paksFolder = cacheFolderParentFolder + "/Engine/*.pak";
-			// Will open engine specific paks in the parent of the resource ccache folder /engine folder.
-			m_env.pCryPak->OpenPacks(szBindRoot, paksFolder.c_str());
-		}
-	}
-
-	// Resource cache folder is used to store locally compiled resources (or precompiled asset cache folder).
-	m_env.pCryPak->AddMod(szResourceCacheFolder, ICryPak::EModAccessPriority::AfterSource);
-
-#endif // !defined(_RELEASE)
-}
-
 
 //////////////////////////////////////////////////////////////////////////
 bool CSystem::InitStreamEngine()
