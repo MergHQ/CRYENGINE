@@ -31,7 +31,7 @@ bool CGeomEntity::Init(CBaseObject* prev, const string& file)
 	{
 		bRes = Super::Init(prev, "GeomEntity");
 		SetClass("GeomEntity");
-		SetGeometryFile(file);
+		mv_geometry.Set(file.c_str());
 		string name = PathUtil::GetFileName(file);
 		if (!name.IsEmpty())
 			SetUniqName(name);
@@ -46,6 +46,18 @@ bool CGeomEntity::Init(CBaseObject* prev, const string& file)
 		}
 	}
 	return bRes;
+}
+
+//////////////////////////////////////////////////////////////////////////
+void CGeomEntity::SpawnEntity()
+{
+	CEntityObject::SpawnEntity();
+
+	// Now that the entity was spawned, add the geometry
+	if (!mv_geometry.IsEmpty())
+	{
+		SetGeometryFile(mv_geometry);
+	}
 }
 
 //////////////////////////////////////////////////////////////////////////
@@ -75,25 +87,19 @@ void CGeomEntity::CreateInspectorWidgets(CInspectorWidgetCreator& creator)
 //////////////////////////////////////////////////////////////////////////
 void CGeomEntity::SetGeometryFile(const string& filename)
 {
-	if (m_pEntity == nullptr)
-	{
-		SpawnEntity();
-	}
-
-	if (m_pEntity != nullptr)
-	{
-		if (auto* pGeometryComponent = m_pEntity->GetComponent<IGeometryEntityComponent>())
-		{
-			pGeometryComponent->SetGeometry(filename);
-			CalcBBox();
-			return;
-		}
-	}
-
 	mv_geometry.Set(filename.c_str());
 
-	if (!m_pEntity)
+	if (m_pEntity == nullptr)
 	{
+		// Entity was not spawned yet (most likely called during load time)
+		// The value of mv_geometry will be used to call this function again after CGeomEntity::SpawnEntity is called.
+		return;
+	}
+
+	if (auto* pGeometryComponent = m_pEntity->GetComponent<IGeometryEntityComponent>())
+	{
+		pGeometryComponent->SetGeometry(filename);
+		CalcBBox();
 		return;
 	}
 
@@ -195,8 +201,8 @@ void CGeomEntity::GetScriptProperties(XmlNodeRef xmlProperties)
 {
 	Super::GetScriptProperties(xmlProperties);
 
-	string value = mv_geometry;
-	if (value.GetLength() > 0)
+	const string value = mv_geometry;
+	if (!value.empty())
 	{
 		SetGeometryFile(value);
 	}
@@ -204,17 +210,11 @@ void CGeomEntity::GetScriptProperties(XmlNodeRef xmlProperties)
 
 void CGeomEntity::InvalidateGeometryFile(const string& file)
 {
-	string val = mv_geometry;
-	if (val == file)
+	const string value = mv_geometry;
+	if (value == file && m_pEntity != nullptr)
 	{
-		if (m_pEntity)
-		{
-			DeleteEntity();
-			SpawnEntity();
-		}
-
-		CalcBBox();
-		InvalidateTM(0);
+		// Refresh geometry in entity
+		SetGeometryFile(file);
 	}
 }
 

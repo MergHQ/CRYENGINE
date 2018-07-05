@@ -18,6 +18,7 @@ public:
 	// CEntity
 	//////////////////////////////////////////////////////////////////////////
 	virtual bool       Init(CBaseObject* prev, const string& file) override;
+	virtual void       SpawnEntity() override;
 	virtual void       InitVariables() override;
 	virtual bool       ConvertFromObject(CBaseObject* object) override;
 	virtual bool       HasMeasurementAxis() const override { return true; }
