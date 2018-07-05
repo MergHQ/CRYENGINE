@@ -969,4 +969,10 @@ ILINE const char* numbered_tag(const char *s,unsigned int num)
 	return str;
 }
 
+struct ScopeExitCall {
+	std::function<void(void)> callback;
+	ScopeExitCall(std::function<void(void)> func) : callback(func) {}
+	~ScopeExitCall() { callback(); }
+};
+
 #endif
