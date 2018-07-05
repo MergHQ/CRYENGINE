@@ -63,6 +63,41 @@ uint64 CDecalComponent::GetEventMask() const
 	return bitFlags;
 }
 
+#ifndef RELEASE
+void CDecalComponent::Render(const IEntity& entity, const IEntityComponent& component, SEntityPreviewContext& context) const
+{
+	if (context.bSelected)
+	{
+		const ColorB color = context.debugDrawInfo.color;
+
+		IRenderAuxGeom* pAuxRenderer = gEnv->pAuxGeomRenderer;
+		const Matrix34& wtm(m_pEntity->GetWorldTM());
+
+		const Vec3 x1(wtm.TransformPoint(Vec3(-1, 0, 0)));
+		const Vec3 x2(wtm.TransformPoint(Vec3(1, 0, 0)));
+		const Vec3 y1(wtm.TransformPoint(Vec3(0, -1, 0)));
+		const Vec3 y2(wtm.TransformPoint(Vec3(0, 1, 0)));
+		const Vec3 p(wtm.TransformPoint(Vec3(0, 0, 0)));
+		const Vec3 n(wtm.TransformPoint(Vec3(0, 0, 1)));
+
+		pAuxRenderer->DrawLine(p, color, n, color);
+		pAuxRenderer->DrawLine(x1, color, x2, color);
+		pAuxRenderer->DrawLine(y1, color, y2, color);
+
+		const Vec3 p0 = wtm.TransformPoint(Vec3(-1, -1, 0));
+		const Vec3 p1 = wtm.TransformPoint(Vec3(-1, 1, 0));
+		const Vec3 p2 = wtm.TransformPoint(Vec3(1, 1, 0));
+		const Vec3 p3 = wtm.TransformPoint(Vec3(1, -1, 0));
+		pAuxRenderer->DrawLine(p0, color, p1, color);
+		pAuxRenderer->DrawLine(p1, color, p2, color);
+		pAuxRenderer->DrawLine(p2, color, p3, color);
+		pAuxRenderer->DrawLine(p3, color, p0, color);
+		pAuxRenderer->DrawLine(p0, color, p2, color);
+		pAuxRenderer->DrawLine(p1, color, p3, color);
+	}
+}
+#endif
+
 void CDecalComponent::SetMaterialFileName(const char* szPath)
 {
 	m_materialFileName = szPath;
