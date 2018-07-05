@@ -2020,7 +2020,10 @@ void CRenderView::CompileModifiedRenderObjects()
 			if (!pri.m_pCompiledObject)
 				continue;
 			if (!pri.m_pCompiledObject->Compile(compilationFlags, this))
+			{
+				CryInterlockedExchangeAnd((volatile LONG*)&pRenderObject->m_passReadyMask, ~passMask); // reset passReadyMask if compilation failed
 				bAllCompiled = false;
+			}
 		}
 
 		if (bAllCompiled)
