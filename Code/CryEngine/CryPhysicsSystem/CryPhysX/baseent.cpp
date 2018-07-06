@@ -522,7 +522,7 @@ int PhysXEnt::Action(pe_action* _action, int bThreadSafe)
 		if (!joint)
 			return 0;
 		PxD6Motion::Enum defMotion = action->flags & constraint_no_rotation ? PxD6Motion::eLOCKED : PxD6Motion::eFREE;
-		if (!is_unused(action->xlimits[0]) && !action->xlimits[0] && !action->xlimits[1] && !is_unused(action->yzlimits[0] && !action->yzlimits[1])) {
+		if (!is_unused(action->xlimits[0]) && !action->xlimits[0] && !action->xlimits[1] && !is_unused(action->yzlimits[0]) && !action->yzlimits[1]) {
 			joint->setMotion(PxD6Axis::eTWIST, defMotion);
 			joint->setMotion(PxD6Axis::eSWING1, defMotion);
 			joint->setMotion(PxD6Axis::eSWING2, defMotion);

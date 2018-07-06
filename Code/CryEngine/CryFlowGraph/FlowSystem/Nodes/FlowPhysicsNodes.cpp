@@ -1170,7 +1170,7 @@ public:
 				if (m_id == -2)
 					m_id = id;
 				ActivateOutput(pActInfo, OUT_ID, id);
-				if (!is_unused(aac.maxPullForce || !is_unused(aac.maxBendTorque)) && !(aac.flags & constraint_no_tears))
+				if ((!is_unused(aac.maxPullForce) || !is_unused(aac.maxBendTorque)) && !(aac.flags & constraint_no_tears))
 				{
 					if (!pRec)
 						pRec = new SConstraintRec;
