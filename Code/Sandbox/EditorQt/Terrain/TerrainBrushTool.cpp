@@ -523,7 +523,7 @@ void CFlattenTool::Serialize(Serialization::IArchive& ar)
 		ar(Serialization::Range(inRadius, 0.0f, MAX_BRUSH_SIZE), "inradius", "Radius (inside)");
 		ar(Serialization::Range(GetBrush().hardness, 0.0f, MAX_BRUSH_HARDNESS), "hardness", "Hardness");
 
-		if (ar.openBlock("height", "Height"))
+		if (ar.openBlock("height", "Height Target"))
 		{
 			ar(Serialization::Range(GetBrush().height, -MAX_TERRAIN_HEIGHT, MAX_TERRAIN_HEIGHT), "height", "^");
 			ar(Serialization::ActionButton([this]
@@ -720,8 +720,6 @@ void CRiseLowerTool::Serialize(Serialization::IArchive& ar)
 		ar(Serialization::Range(inRadius, 0.0f, MAX_BRUSH_SIZE), "inradius", "Radius (inside)");
 		ar(Serialization::Range(GetBrush().hardness, 0.0f, 1.0f), "hardness", "Hardness");
 
-		//#Sandbox_TODO: need to ask Falk: this is different height, than in "Flatten" tool. It is probably should named differently:
-		// in "Shared mode" they will not be the same after switch between these 2 tools
 		ar(Serialization::Range(GetBrush().riseHeight, -MAX_RISE_HEIGHT, MAX_RISE_HEIGHT), "height", "Height");
 
 		if (ar.isInput())
