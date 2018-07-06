@@ -270,6 +270,7 @@ CSystem::CSystem(const SSystemInitParams& startupParams)
 	m_pIFont = nullptr;
 	m_pTestSystem = nullptr;
 	m_pVisRegTest = nullptr;
+	m_rIntialWindowSizeRatio = nullptr;
 	m_rWidth = nullptr;
 	m_rHeight = nullptr;
 	m_rColorBits = nullptr;
@@ -747,6 +748,7 @@ void CSystem::ShutDown()
 	// Release console variables.
 
 	SAFE_RELEASE(m_pCVarQuit);
+	SAFE_RELEASE(m_rIntialWindowSizeRatio);
 	SAFE_RELEASE(m_rWidth);
 	SAFE_RELEASE(m_rHeight);
 	SAFE_RELEASE(m_rColorBits);

@@ -1035,12 +1035,20 @@ void CSystem::AutoDetectSpec(const bool detectResolution)
 
 	if (detectResolution)
 	{
-		if ((m_rWidth->GetFlags() & VF_WASINCONFIG) == 0)
-			m_rWidth->Set(GetSystemMetrics(SM_CXFULLSCREEN));
-		if ((m_rHeight->GetFlags() & VF_WASINCONFIG) == 0)
-			m_rHeight->Set(GetSystemMetrics(SM_CYFULLSCREEN));
-		if ((m_rFullscreen->GetFlags() & VF_WASINCONFIG) == 0)
-			m_rFullscreen->Set(1);
+		if (gEnv->pRenderer)
+		{
+			HMONITOR hMonitor = MonitorFromWindow(reinterpret_cast<HWND>(gEnv->pRenderer->GetHWND()), MONITOR_DEFAULTTOPRIMARY);
+			MONITORINFO monitorInfo;
+			monitorInfo.cbSize = sizeof(monitorInfo);
+			GetMonitorInfo(hMonitor, &monitorInfo);
+
+			if ((m_rWidth->GetFlags() & VF_WASINCONFIG) == 0)
+				m_rWidth->Set(static_cast<int>(monitorInfo.rcMonitor.right - monitorInfo.rcMonitor.left));
+			if ((m_rHeight->GetFlags() & VF_WASINCONFIG) == 0)
+				m_rHeight->Set(static_cast<int>(monitorInfo.rcMonitor.bottom - monitorInfo.rcMonitor.top));
+			if ((m_rFullscreen->GetFlags() & VF_WASINCONFIG) == 0)
+				m_rFullscreen->Set(1);
+		}
 	}
 }
 

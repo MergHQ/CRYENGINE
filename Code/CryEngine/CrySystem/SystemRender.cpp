@@ -80,6 +80,11 @@ void OnWindowStateChanged(ICVar* pCVar)
 /////////////////////////////////////////////////////////////////////////////////
 void CSystem::CreateRendererVars(const SSystemInitParams& startupParams)
 {
+	m_rIntialWindowSizeRatio = REGISTER_FLOAT("r_InitialWindowSizeRatio", 0.666f, VF_DUMPTODISK,
+		"Sets the size ratio of the initial application window in relation to the primary monitor resolution.\n"
+		"Usage: r_InitialWindowSizeRatio [1.0/0.666/..]");
+	const float initialWindowSizeRatio = m_rIntialWindowSizeRatio->GetFVal();
+
 	int iFullScreenDefault  = 1;
 	int iDisplayInfoDefault = 1;
 	int iWidthDefault       = 1280;
@@ -92,8 +97,8 @@ void CSystem::CreateRendererVars(const SSystemInitParams& startupParams)
 	iHeightDefault = 1080;
 #elif CRY_PLATFORM_WINDOWS
 	iFullScreenDefault = 0;
-	iWidthDefault      = GetSystemMetrics(SM_CXFULLSCREEN) * 2 / 3;
-	iHeightDefault     = GetSystemMetrics(SM_CYFULLSCREEN) * 2 / 3;
+	iWidthDefault = static_cast<int>(GetSystemMetrics(SM_CXSCREEN) * initialWindowSizeRatio);
+	iHeightDefault = static_cast<int>(GetSystemMetrics(SM_CYSCREEN) * initialWindowSizeRatio);
 #elif CRY_PLATFORM_LINUX || CRY_PLATFORM_APPLE
 	iFullScreenDefault = 0;
 #endif

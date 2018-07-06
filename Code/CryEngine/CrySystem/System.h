@@ -793,6 +793,7 @@ private: // ------------------------------------------------------
 	ICVar* m_sys_menupreloadpacks;
 
 	ICVar* m_cvAIUpdate;
+	ICVar* m_rIntialWindowSizeRatio;
 	ICVar* m_rWidth;
 	ICVar* m_rHeight;
 	ICVar* m_rColorBits;
