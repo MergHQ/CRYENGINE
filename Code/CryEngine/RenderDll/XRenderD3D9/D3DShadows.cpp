@@ -288,6 +288,7 @@ bool CD3D9Renderer::PrepareShadowGenForFrustum(CRenderView* pRenderView, ShadowM
 
 	pCurFrustum->nTextureWidth = pCurFrustum->nTexSize;
 	pCurFrustum->nTextureHeight = pCurFrustum->nTexSize;
+	pCurFrustum->clearValue = pCurFrustum->clearValue;
 	pCurFrustum->nShadowMapSize = pCurFrustum->nTexSize;
 
 	//////////////////////////////////////////////////////////////////////////

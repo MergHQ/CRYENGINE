@@ -149,7 +149,7 @@ SDynTexture::SDynTexture(const char* szSource)
 	AdjustRealSize();
 }
 
-SDynTexture::SDynTexture(int nWidth, int nHeight, ETEX_Format eTF, ETEX_Type eTT, int nTexFlags, const char* szSource)
+SDynTexture::SDynTexture(int nWidth, int nHeight, ColorF clearValue, ETEX_Format eTF, ETEX_Type eTT, int nTexFlags, const char* szSource)
 {
 	CRY_ASSERT(nTexFlags & (FT_USAGE_DEPTHSTENCIL | FT_USAGE_RENDERTARGET));
 	m_nWidth = nWidth;
@@ -159,6 +159,7 @@ SDynTexture::SDynTexture(int nWidth, int nHeight, ETEX_Format eTF, ETEX_Type eTT
 	m_pTexture = NULL;
 	m_eTF = eTF;
 	m_eTT = eTT;
+	m_clearValue = clearValue;
 	m_nTexFlags = nTexFlags;
 	cry_strcpy(m_sSource, szSource);
 	m_bLocked = false;
@@ -783,13 +784,13 @@ CTexture* SDynTexture::CreateDynamicRT()
 	CTexture* pNewTexture = nullptr;
 	if (m_nTexFlags & FT_USAGE_DEPTHSTENCIL)
 	{
-		pNewTexture = CTexture::GetOrCreateDepthStencil(name, m_nWidth, m_nHeight, Clr_Unknown, m_eTT, m_nTexFlags, m_eTF);
-		CClearSurfacePass::Execute(pNewTexture, CLEAR_ZBUFFER | CLEAR_STENCIL, 0.0f, 1);
+		pNewTexture = CTexture::GetOrCreateDepthStencil(name, m_nWidth, m_nHeight, m_clearValue, m_eTT, m_nTexFlags, m_eTF);
+		CClearSurfacePass::Execute(pNewTexture, CLEAR_ZBUFFER | CLEAR_STENCIL, m_clearValue.r, uint8(m_clearValue.g));
 	}
 	else
 	{
-		pNewTexture = CTexture::GetOrCreateRenderTarget(name, m_nWidth, m_nHeight, Clr_Unknown, m_eTT, m_nTexFlags, m_eTF);
-		CClearSurfacePass::Execute(pNewTexture, Clr_Transparent);
+		pNewTexture = CTexture::GetOrCreateRenderTarget(name, m_nWidth, m_nHeight, m_clearValue, m_eTT, m_nTexFlags, m_eTF);
+		CClearSurfacePass::Execute(pNewTexture, m_clearValue);
 	}
 
 	auto subset = pSet->find(m_nWidth);
@@ -937,11 +938,8 @@ SDynTexture_Shadow::SDynTexture_Shadow(const char* szSource) : SDynTexture(szSou
 		LinkShadow(&s_RootShadow);
 }
 
-SDynTexture_Shadow::SDynTexture_Shadow(int nWidth, int nHeight, ETEX_Format eTF, ETEX_Type eTT, int nTexFlags, const char* szSource) : SDynTexture(nWidth, nHeight, eTF, eTT, nTexFlags, szSource)
+SDynTexture_Shadow::SDynTexture_Shadow(int nWidth, int nHeight, ColorF clearValue, ETEX_Format eTF, ETEX_Type eTT, int nTexFlags, const char* szSource) : SDynTexture(nWidth, nHeight, clearValue, eTF, eTT, nTexFlags, szSource)
 {
-	m_nWidth = nWidth;
-	m_nHeight = nHeight;
-
 	if (gRenDev)
 		m_nUniqueID = gRenDev->m_TexGenID++;
 	else
@@ -1034,7 +1032,7 @@ SDynTexture_Shadow* SDynTexture_Shadow::GetForFrustum(const ShadowMapFrustum* pF
 	//check after freeing texture
 	if (!pDynTX)
 	{
-		pDynTX = new SDynTexture_Shadow(pFrustum->nTextureWidth, pFrustum->nTextureHeight, pFrustum->m_eReqTF, pFrustum->m_eReqTT, FT_USAGE_DEPTHSTENCIL | FT_STATE_CLAMP, "ShadowRT");
+		pDynTX = new SDynTexture_Shadow(pFrustum->nTextureWidth, pFrustum->nTextureHeight, pFrustum->clearValue, pFrustum->m_eReqTF, pFrustum->m_eReqTT, FT_USAGE_DEPTHSTENCIL | FT_STATE_CLAMP, "ShadowRT");
 		CRY_ASSERT(pFrustum->nTextureWidth == pDynTX->m_nWidth && pFrustum->nTextureHeight == pDynTX->m_nHeight);
 	}
 

@@ -131,7 +131,7 @@ bool CDeviceRenderPass::InitVkRenderPass(const CDeviceRenderPassDesc& passDesc)
 
 bool CDeviceRenderPass::InitVkFrameBuffer(const CDeviceRenderPassDesc& passDesc)
 {
-	m_renderTargetCount = 0;
+	m_RenderTargetCount = 0;
 	m_pDepthStencilTarget = nullptr;
 
 	int renderTargetCount;
@@ -153,7 +153,7 @@ bool CDeviceRenderPass::InitVkFrameBuffer(const CDeviceRenderPassDesc& passDesc)
 	for (int i = 0; i < renderTargetCount; ++i)
 	{
 		imageViews[imageViewCount++] = rendertargetViews[i]->GetHandle();
-		m_renderTargets[m_renderTargetCount++] = renderTargets[i].pTexture->GetDevTexture()->Get2DTexture();
+		m_renderTargets[m_RenderTargetCount++] = renderTargets[i].pTexture->GetDevTexture()->Get2DTexture();
 	}
 
 	if (pDepthStencilView)

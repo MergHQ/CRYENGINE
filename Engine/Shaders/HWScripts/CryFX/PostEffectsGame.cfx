@@ -727,7 +727,7 @@ pixout BinocularViewPS(vtxOutBinocularView IN)
 #endif
 
 	edges = edges > 0;
-	half fSilhouete = dot(edges, 1.333); // 1.333 = 0.333 avg * 4.0 for overbrighting
+	half fSilhouette = dot(edges, 1.333); // 1.333 = 0.333 avg * 4.0 for overbrighting
 
 #if %_RT_SAMPLE0
 	half4 cSilhouetteColor = (c + c0 + c1 + c2) * 0.25f;
@@ -736,21 +736,21 @@ pixout BinocularViewPS(vtxOutBinocularView IN)
 	float d0 = GetDeviceDepth(texBinocularView_1, IN.baseTC1).x;
 	float d1 = GetDeviceDepth(texBinocularView_1, IN.baseTC2).x;
 	float d2 = GetDeviceDepth(texBinocularView_1, IN.baseTC3).x;
-	float3 cSilhoueteMask = float3(d0, d1, d2) < d;
+	float3 cSilhouetteMask = float3(d0, d1, d2) < d;
 
-	// Silhouete color masking - need to make sure to get correct color for silhouette
+	// Silhouette color masking - need to make sure to get correct color for silhouette
 	half4 cSilhouetteColor = 0;
-	cSilhouetteColor +=  c0 * cSilhoueteMask.x;
-	cSilhouetteColor +=  c1 * cSilhoueteMask.y;
-	cSilhouetteColor +=  c2 * cSilhoueteMask.z;
-	cSilhouetteColor.xyz /= dot(cSilhoueteMask.xyz, 1) + 0.0001;
+	cSilhouetteColor +=  c0 * cSilhouetteMask.x;
+	cSilhouetteColor +=  c1 * cSilhouetteMask.y;
+	cSilhouetteColor +=  c2 * cSilhouetteMask.z;
+	cSilhouetteColor.xyz /= dot(cSilhouetteMask.xyz, 1) + 0.0001;
 	
 	half fOpacity = saturate( dot( c.xyz + c0.xyz + c1.xyz + c2.xyz, 10) ); 
-	fSilhouete *= fOpacity * 0.5f;
+	fSilhouette *= fOpacity * 0.5f;
 	c.xyz *= 0.2f;
 #endif
 
-	OUT.Color.xyz = fSilhouete * cSilhouetteColor + c.xyz * psParams[0].w;
+	OUT.Color.xyz = fSilhouette * cSilhouetteColor + c.xyz * psParams[0].w;
 
 	return OUT;
 }
@@ -1411,7 +1411,7 @@ SamplerState rnTrilinearWrapSampler : register(s0) = SS_TrilinearWrap;
 SamplerState rnTrilinearClampSampler : register(s1) = SS_TrilinearClamp;
 SamplerState rnPointClampSampler : register(s2) = SS_PointClamp;
 
-cbuffer SceneRainCB : register(b0)
+cbuffer CBSceneRain : register(b0)
 {
 	float4x4 sceneRainMtx;
 	float4 unscaledFactor;
@@ -1537,7 +1537,7 @@ technique SceneRain
 ////////////////////////////////////////////////////////////////////////////////////////////////////
 /// SceneSnow technique //////////////////////////////////////////////////////////////////////
 
-cbuffer SnowClusterCB : register(b0)
+cbuffer CBSnowCluster : register(b0)
 {
 	float4   vWaterLevel;
 	float4   vSnowFlakeParams;

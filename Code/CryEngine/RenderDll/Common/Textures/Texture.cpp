@@ -134,6 +134,8 @@ static inline uint32 ConvertFromTextureFlags(ETextureFlags eFlags)
 		( (eFlags & FT_STAGE_READBACK        ) ? (CDeviceObjectFactory::USAGE_STAGE_ACCESS | CDeviceObjectFactory::USAGE_CPU_READ ) : 0) |
 		( (eFlags & FT_STAGE_UPLOAD          ) ? (CDeviceObjectFactory::USAGE_STAGE_ACCESS | CDeviceObjectFactory::USAGE_CPU_WRITE) : 0) |
 		( (eFlags & FT_FORCE_MIPS            ) ?  CDeviceObjectFactory::USAGE_AUTOGENMIPS                                           : 0) |
+		( (eFlags & FT_USAGE_TEMPORARY       ) ?  CDeviceObjectFactory::USAGE_HIFREQ_HEAP                                           : 0) |
+		( (eFlags & FT_USAGE_UAV_OVERLAP     ) ?  CDeviceObjectFactory::USAGE_UAV_OVERLAP                                           : 0) |
 		( (eFlags & FT_USAGE_UAV_RWTEXTURE   ) ?  CDeviceObjectFactory::USAGE_UAV_READWRITE                                         : 0);
 	// *INDENT-ON*
 }
@@ -158,6 +160,8 @@ static inline ETextureFlags ConvertToTextureFlags(uint32 eFlags)
 		( (eFlags & (CDeviceObjectFactory::USAGE_STAGE_ACCESS | CDeviceObjectFactory::USAGE_CPU_READ )) ? FT_STAGE_READBACK         : 0) |
 		( (eFlags & (CDeviceObjectFactory::USAGE_STAGE_ACCESS | CDeviceObjectFactory::USAGE_CPU_WRITE)) ? FT_STAGE_UPLOAD           : 0) |
 		( (eFlags &  CDeviceObjectFactory::USAGE_AUTOGENMIPS                                          ) ? FT_FORCE_MIPS             : 0) |
+		( (eFlags &  CDeviceObjectFactory::USAGE_HIFREQ_HEAP                                          ) ? FT_USAGE_TEMPORARY        : 0) |
+		( (eFlags &  CDeviceObjectFactory::USAGE_UAV_OVERLAP                                          ) ? FT_USAGE_UAV_OVERLAP      : 0) |
 		( (eFlags &  CDeviceObjectFactory::USAGE_UAV_READWRITE                                        ) ? FT_USAGE_UAV_RWTEXTURE    : 0));
 	// *INDENT-ON*
 }
@@ -483,7 +487,6 @@ bool CTexture::CreateShaderResource(STexData& td)
 	m_fAvgBrightness = td.m_fAvgBrightness;
 	m_cMinColor = td.m_cMinColor;
 	m_cMaxColor = td.m_cMaxColor;
-	m_cClearColor = ColorF(0.0f, 0.0f, 0.0f, 1.0f);
 	m_bUseDecalBorderCol = (td.m_nFlags & FIM_DECAL) != 0;
 	m_bIsSRGB = (td.m_nFlags & FIM_SRGB_READ) != 0;
 
@@ -938,19 +941,25 @@ void CTexture::RT_Precache()
 			});
 		}
 
-		while (s_StreamPrepTasks.GetNumLive())
 		{
-			if (gRenDev->m_pRT->IsRenderThread() && !gRenDev->m_pRT->IsRenderLoadingThread() && !gRenDev->m_pRT->IsLevelLoadingThread())
+			CTimeValue time0 = iTimer->GetAsyncTime();
+
+			while (s_StreamPrepTasks.GetNumLive())
 			{
-				StreamState_Update();
-				StreamState_UpdatePrep();
-			}
-			else if (gRenDev->m_pRT->IsRenderLoadingThread() || gRenDev->m_pRT->IsLevelLoadingThread())
-			{
-				StreamState_UpdatePrep();
+				if (gRenDev->m_pRT->IsRenderThread() && !gRenDev->m_pRT->IsRenderLoadingThread() && !gRenDev->m_pRT->IsLevelLoadingThread())
+				{
+					StreamState_Update();
+					StreamState_UpdatePrep();
+				}
+				else if (gRenDev->m_pRT->IsRenderLoadingThread() || gRenDev->m_pRT->IsLevelLoadingThread())
+				{
+					StreamState_UpdatePrep();
+				}
+
+				CrySleep(1);
 			}
 
-			CrySleep(1);
+			SRenderStatistics::Write().m_fTexUploadTime += (iTimer->GetAsyncTime() - time0).GetSeconds();
 		}
 
 		// Trigger the texture(s)'s load without holding the resource-library lock to evade dead-locks
@@ -3230,7 +3239,7 @@ CFlashTextureSource::CFlashTextureSource(const char* pFlashFileName, const IRend
 	: CFlashTextureSourceBase(pFlashFileName, pArgs)
 {
 	// create render-target with mip-maps
-	m_pDynTexture = new SDynTexture(GetWidth(), GetHeight(), eTF_R8G8B8A8, eTT_2D, FT_USAGE_RENDERTARGET | FT_STATE_CLAMP | FT_FORCE_MIPS | FT_USAGE_ALLOWREADSRGB, "FlashTextureSourceUniqueRT");
+	m_pDynTexture = new SDynTexture(GetWidth(), GetHeight(), Clr_Transparent, eTF_R8G8B8A8, eTT_2D, FT_USAGE_RENDERTARGET | FT_STATE_CLAMP | FT_FORCE_MIPS | FT_USAGE_ALLOWREADSRGB, "FlashTextureSourceUniqueRT");
 	m_pMipMapper = nullptr;
 }
 
@@ -3277,7 +3286,7 @@ CFlashTextureSourceSharedRT::CFlashTextureSourceSharedRT(const char* pFlashFileN
 	if (!ms_pDynTexture)
 	{
 		// create render-target with mip-maps
-		ms_pDynTexture = new SDynTexture(ms_sharedRTWidth, ms_sharedRTHeight, eTF_R8G8B8A8, eTT_2D, FT_USAGE_RENDERTARGET | FT_STATE_CLAMP | FT_FORCE_MIPS | FT_USAGE_ALLOWREADSRGB, "FlashTextureSourceSharedRT");
+		ms_pDynTexture = new SDynTexture(ms_sharedRTWidth, ms_sharedRTHeight, Clr_Transparent, eTF_R8G8B8A8, eTT_2D, FT_USAGE_RENDERTARGET | FT_STATE_CLAMP | FT_FORCE_MIPS | FT_USAGE_ALLOWREADSRGB, "FlashTextureSourceSharedRT");
 		ms_pMipMapper = nullptr;
 	}
 }

@@ -13,6 +13,7 @@
 #include "Common/CommonRender.h"            // SResourceView, SSamplerState, SInputLayout
 #include "Common/Shaders/ShaderCache.h"     // UPipelineState
 
+class CRendererCVars;
 class CHWShader_D3D;
 class CShader;
 class CTexture;
@@ -114,8 +115,12 @@ public:
 
 	void OnEndFrame()
 	{
-#if CRY_PLATFORM_DURANGO && (CRY_RENDERER_DIRECT3D >= 110) && (CRY_RENDERER_DIRECT3D < 120)
+#if (CRY_RENDERER_DIRECT3D >= 110) && (CRY_RENDERER_DIRECT3D < 120)
+		m_pDX11Scheduler->EndOfFrame(false);
+
+	#if CRY_PLATFORM_DURANGO
 		m_texturePool.RT_Tick();
+	#endif
 #endif
 	}
 
@@ -136,12 +141,9 @@ public:
 	HRESULT IssueFence(DeviceFenceHandle query);
 	HRESULT SyncFence(DeviceFenceHandle query, bool block, bool flush = true);
 
-	void    SyncToGPU();
-	void    IssueFrameFences();
-	void    ReleaseFrameFences();
-
-	uint32  GetCurrentFrameCounter()   const { return m_frameFenceCounter; }
-	uint32  GetCompletedFrameCounter() const { return m_completedFrameFenceCounter; }
+	template<typename S = CRendererCVars>
+	void    SyncToGPU() const { if (S::CV_r_enable_full_gpu_sync) FlushToGPU(true); }
+	void    FlushToGPU(bool bWait = false, bool bGarbageCollect = false) const;
 
 	////////////////////////////////////////////////////////////////////////////
 	// SamplerState API
@@ -199,6 +201,7 @@ public:
 	void UnRegisterEncodedResourceLayout(uint64 layoutHash);
 	uint32 GetEncodedResourceLayoutSize(const std::vector<uint8>& encodedLayout);
 	VkDescriptorSetLayout     GetInlineConstantBufferLayout();
+	VkDescriptorSetLayout     GetInlineShaderResourceLayout();
 #endif
 
 	////////////////////////////////////////////////////////////////////////////
@@ -254,7 +257,7 @@ public:
 		USAGE_CPU_READ                   = BIT(29),
 		USAGE_CPU_WRITE                  = BIT(30),
 
-		USAGE_HIFREQ_HEAP = BIT(31)  // Resource is reallocated every frame or multiple times each frame, use a recycling heap with delayed deletes
+		USAGE_HIFREQ_HEAP                = BIT(31)  // Resource is reallocated every frame or multiple times each frame, use a recycling heap with delayed deletes
 	};
 
 	// Resource Usage	| Default	| Dynamic	| Immutable	| Staging
@@ -276,6 +279,9 @@ public:
 	D3DResource*   AllocateStagingResource(D3DResource* pForTex, bool bUpload, void*& pMappedAddress); // address is only set if the staging resource is persistently mapped
 	void           ReleaseStagingResource(D3DResource* pStagingTex);
 #endif
+
+	void           ReleaseResource(D3DResource* pResource);
+	void           RecycleResource(D3DResource* pResource);
 
 #define SKIP_ESRAM	-1
 	HRESULT        Create2DTexture(uint32 nWidth, uint32 nHeight, uint32 nMips, uint32 nArraySize, uint32 nUsage, const ColorF& cClearValue, D3DFormat Format, LPDEVICETEXTURE* ppDevTexture, const STexturePayload* pTI = nullptr, int32 nESRAMOffset = SKIP_ESRAM);
@@ -337,8 +343,11 @@ public:
 	void ForfeitCommandLists(std::vector<CDeviceCommandListUPtr> pCommandLists, EQueueType eQueueType = eQueue_Graphics);
 
 #if (CRY_RENDERER_DIRECT3D >= 120)
-	NCryDX12::CDevice*           GetDX12Device   () const { return m_pDX12Device; }
-	NCryDX12::CCommandScheduler* GetDX12Scheduler() const { return m_pDX12Scheduler; }
+	NCryDX12::CDevice*             GetDX12Device() const { return m_pDX12Device; }
+	NCryDX12::CCommandScheduler*   GetDX12Scheduler() const { return m_pDX12Scheduler; }
+#elif (CRY_RENDERER_DIRECT3D >= 110)
+	NCryDX11::CDevice*             GetDX11Device() const { return m_pDX11Device; }
+	NCryDX11::CCommandScheduler*   GetDX11Scheduler() const { return m_pDX11Scheduler; }
 #elif (CRY_RENDERER_VULKAN >= 10)
 	NCryVulkan::CDevice*           GetVKDevice   () const { return m_pVKDevice; }
 	NCryVulkan::CCommandScheduler* GetVKScheduler() const { return m_pVKScheduler; }
@@ -361,12 +370,16 @@ private:
 	void TrimResources();
 
 #if (CRY_RENDERER_DIRECT3D >= 120)
-	NCryDX12::CDevice*           m_pDX12Device;
-	NCryDX12::CCommandScheduler* m_pDX12Scheduler;
+	NCryDX12::CDevice*               m_pDX12Device;
+	NCryDX12::CCommandScheduler*     m_pDX12Scheduler;
+#elif (CRY_RENDERER_DIRECT3D >= 110)
+	NCryDX11::CDevice*               m_pDX11Device;
+	NCryDX11::CCommandScheduler*     m_pDX11Scheduler;
 #elif (CRY_RENDERER_VULKAN >= 10)
 	NCryVulkan::CDevice*             m_pVKDevice;
 	NCryVulkan::CCommandScheduler*   m_pVKScheduler;
 	VkDescriptorSetLayout            m_inlineConstantBufferLayout;
+	VkDescriptorSetLayout            m_inlineShaderResourceLayout;
 	std::map<uint64, std::vector<uint8>> m_encodedResourceLayouts;
 
 	struct SDeferredUploadData
@@ -382,16 +395,6 @@ private:
 #elif CRY_RENDERER_GNM 
 	sce::Gnm::OwnerHandle            m_resourceOwnerHandle;
 #endif
-
-	////////////////////////////////////////////////////////////////////////////
-	// Fence API (TODO: offload all to CDeviceFenceHandle)
-
-	// Internal handle for debugging
-	DeviceFenceHandle m_fence_handle;
-
-	uint32 m_frameFenceCounter;
-	uint32 m_completedFrameFenceCounter;
-	DeviceFenceHandle m_frameFences[MAX_FRAMES_IN_FLIGHT - 1]; // -1 because we issue/wait at end of frame
 
 	////////////////////////////////////////////////////////////////////////////
 	// SamplerState API

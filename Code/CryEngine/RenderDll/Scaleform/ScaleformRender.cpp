@@ -150,7 +150,6 @@ SSF_ResourcesD3D::SSF_ResourcesD3D(CD3D9Renderer* pRenderer)
 	, m_shTech_ShadowonlyMulHighlight_Box2("ShadowonlyMulHighlight_Box2")
 
 	, m_pShader(0)
-	, m_fence(0)
 {
 	m_vertexDecls[IScaleformPlayback::Vertex_None     ] = InputLayoutHandle::Unspecified;
 	m_vertexDecls[IScaleformPlayback::Vertex_XY16i    ] = InputLayoutHandle::Unspecified;
@@ -229,12 +228,10 @@ SSF_ResourcesD3D::~SSF_ResourcesD3D()
 	SAFE_RELEASE(m_pVertexDecls[IScaleformPlayback::Vertex_XY16iCF32]);
 	SAFE_RELEASE(m_pVertexDecls[IScaleformPlayback::Vertex_Glyph    ]);
 
-	GetDeviceObjectFactory().ReleaseFence(m_fence);
-
 	m_PrimitiveHeap.Clear();
 
-	for (auto& pTexture : m_renderTargets)
-		SAFE_RELEASE(pTexture);
+	FreeColorSurfaces();
+	FreeStencilSurfaces();
 }
 
 CShader* SSF_ResourcesD3D::GetShader(CD3D9Renderer* pRenderer)
@@ -242,11 +239,27 @@ CShader* SSF_ResourcesD3D::GetShader(CD3D9Renderer* pRenderer)
 	return pRenderer->m_cEF.s_ShaderScaleForm;
 }
 
+void SSF_ResourcesD3D::FreeColorSurfaces()
+{
+	for (auto& pTexture : m_renderTargets)
+		SAFE_RELEASE(pTexture);
+
+	m_renderTargets.clear();
+}
+
+void SSF_ResourcesD3D::FreeStencilSurfaces()
+{
+	for (auto& pTexture : m_depthTargets)
+		SAFE_RELEASE(pTexture);
+
+	m_depthTargets.clear();
+}
+
 CTexture* SSF_ResourcesD3D::GetColorSurface(CD3D9Renderer* pRenderer, int nWidth, int nHeight, ETEX_Format eFormat, int nMaxWidth, int nMaxHeight)
 {
 	CryCriticalSectionNonRecursive threadSafePool;
 
-	CTexture* pTex = NULL;
+	CTexture* pTex = nullptr;
 	uint32 i;
 	int nBestX = -1;
 	int nBestY = -1;
@@ -308,11 +321,7 @@ CTexture* SSF_ResourcesD3D::GetColorSurface(CD3D9Renderer* pRenderer, int nWidth
 
 	if (i == m_renderTargets.size())
 	{
-		//allocate new RT
-		int texID = CRendererResources::CreateRenderTarget(nWidth, nHeight, Clr_Transparent, eFormat);
-		pTex = static_cast<CTexture*>(pRenderer->EF_GetTextureByID(texID));
-
-		CClearSurfacePass::Execute(pTex, Clr_Transparent);
+		pTex = CRendererResources::CreateRenderTarget(nWidth, nHeight, Clr_Transparent, eFormat);
 
 		m_renderTargets.push_back(pTex);
 	}
@@ -320,11 +329,40 @@ CTexture* SSF_ResourcesD3D::GetColorSurface(CD3D9Renderer* pRenderer, int nWidth
 	return pTex;
 }
 
-CD3D9Renderer::CTempTexture SSF_ResourcesD3D::GetStencilSurface(CD3D9Renderer* pRenderer, int nWidth, int nHeight, ETEX_Format eFormat)
+CTexture* SSF_ResourcesD3D::GetStencilSurface(CD3D9Renderer* pRenderer, int nWidth, int nHeight, ETEX_Format eFormat)
 {
 	CryCriticalSectionNonRecursive threadSafePool;
 
-	return pRenderer->GetTempDepthSurface(pRenderer->GetFrameID(), nWidth, nHeight);
+	CTexture* pTex = nullptr;
+	uint32 i;
+	int nBestX = -1;
+	int nBestY = -1;
+	for (i = 0; i < m_depthTargets.size(); i++)
+	{
+		pTex = m_depthTargets[i];
+		if ((pTex->GetRefCounter() <= 1))
+		{
+			if (pTex->GetWidth() == nWidth && pTex->GetHeight() == nHeight)
+			{
+				nBestX = i;
+				nBestY = i;
+				break;
+			}
+		}
+	}
+	if (nBestX >= 0)
+		return m_depthTargets[nBestX];
+	if (nBestY >= 0)
+		return m_depthTargets[nBestY];
+
+	if (i == m_depthTargets.size())
+	{
+		pTex = CRendererResources::CreateDepthTarget(nWidth, nHeight, Clr_Transparent, eFormat);
+
+		m_depthTargets.push_back(pTex);
+	}
+
+	return pTex;
 }
 
 //////////////////////////////////////////////////////////////////////////
@@ -344,10 +382,6 @@ SSF_ResourcesD3D& CD3D9Renderer::SF_GetResources()
 
 void CD3D9Renderer::SF_ResetResources()
 {
-	if (m_pSFResD3D && m_pSFResD3D->m_fence)
-	{
-		GetDeviceObjectFactory().ReleaseFence(m_pSFResD3D->m_fence);
-	}
 }
 
 void CD3D9Renderer::SF_DestroyResources()
@@ -361,9 +395,6 @@ void CD3D9Renderer::SF_PrecacheShaders()
 	CShader* pShader(Res.GetShader(this));
 	if (!pShader)
 		return;
-
-	SShaderCombination cmb;
-	pShader->mfPrecache(cmb, true, NULL);
 
 	SDeviceObjectHelpers::THwShaderInfo shaderInfoXY16i;
 	SDeviceObjectHelpers::THwShaderInfo shaderInfoXY16iC32;
@@ -454,7 +485,7 @@ void CD3D9Renderer::SF_HandleClear(const SSF_GlobalDrawParams& __restrict params
 		if (rCurOutput.bRenderTargetClear)
 			rCurOutput.clearPass.Execute(rCurOutput.pRenderTarget, Clr_Transparent, 1, &rect);
 		if (rCurOutput.bStencilTargetClear)
-			rCurOutput.clearPass.Execute(rCurOutput.pStencilTarget, CLEAR_STENCIL, Clr_Unused.r, 0, 1, &rect);
+			rCurOutput.clearPass.Execute(rCurOutput.pStencilTarget, CLEAR_STENCIL, Clr_Unused.r, Val_Stencil, 1, &rect);
 	}
 
 	rCurOutput.bRenderTargetClear = false;
@@ -685,25 +716,6 @@ void CD3D9Renderer::SF_DrawBlurRect(const IScaleformPlayback::DeviceData* vtxDat
 
 		primPass.AddPrimitive(primInit);
 	}
-}
-
-//////////////////////////////////////////////////////////////////////////
-void CD3D9Renderer::SF_Flush()
-{
-	if (IsDeviceLost())
-		return;
-
-	SSF_ResourcesD3D& sfRes(SF_GetResources());
-	if (!sfRes.m_fence)
-	{
-		if (FAILED(GetDeviceObjectFactory().CreateFence(sfRes.m_fence)))
-		{
-			return;
-		}
-	}
-
-	GetDeviceObjectFactory().IssueFence(sfRes.m_fence);
-	GetDeviceObjectFactory().SyncFence(sfRes.m_fence, true);
 }
 
 //////////////////////////////////////////////////////////////////////////

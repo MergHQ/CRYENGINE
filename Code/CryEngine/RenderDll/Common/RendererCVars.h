@@ -10,6 +10,7 @@
 
 struct ICVar;
 struct IConsole;
+struct IConsoleCmdArgs;
 
 class CRendererCVars
 {
@@ -129,7 +130,7 @@ public:
 	static int CV_r_shadersasyncactivation;
 	static int CV_r_shadersasyncmaxthreads;
 	static int CV_r_shaderscachedeterministic;
-	static int CV_r_shaderscacheinmemory;
+	static int CV_r_ShadersCachePrecacheAll;
 	static int CV_r_shaderssubmitrequestline;
 	static int CV_r_shaderslogcachemisses;
 	static int CV_r_shadersImport;
@@ -180,7 +181,7 @@ public:
 	static int CV_r_VkBatchResourceBarriers;
 	static int CV_r_VkHardwareComputeQueue;
 	static int CV_r_VkHardwareCopyQueue;
-	static int CV_r_ReverseDepth;
+	static int CV_r_FlushToGPU;
 	static int CV_r_EnableDebugLayer;
 	static int CV_r_NoDraw;
 	static int CV_r_UpdateInstances;
@@ -392,7 +393,9 @@ public:
 	DeclareStaticConstIntCVar(CV_e_DebugTexelDensity, 0);
 	DeclareStaticConstIntCVar(CV_e_DebugDraw, 0);
 	static int CV_r_RainDropsEffect;
-	DeclareStaticConstIntCVar(CV_r_RefractionPartialResolves, 2);
+	DeclareStaticConstIntCVar(CV_r_RefractionPartialResolveMode, 2);
+	DeclareStaticConstIntCVar(CV_r_RefractionPartialResolveMinimalResolveArea, 0);
+	DeclareStaticConstIntCVar(CV_r_RefractionPartialResolveMaxResolveCount, 0);
 	DeclareStaticConstIntCVar(CV_r_RefractionPartialResolvesDebug, 0);
 	DeclareStaticConstIntCVar(CV_r_Batching, 1);
 	DeclareStaticConstIntCVar(CV_r_Unlit, 0);

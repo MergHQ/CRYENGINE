@@ -364,13 +364,13 @@ CSunShadows::CSunShadows(const CShadowMaskStage& stage)
 
 void CSunShadows::InitPrimitives()
 {
-	for (auto& prim : cachedSamplingPrimitives) prim.AllocateTypedConstantBuffer(eConstantBufferShaderSlot_PerBatch, sizeof(STypedConstants), EShaderStage_Vertex | EShaderStage_Pixel);
-	for (auto& prim : cachedSamplingPrimitives) prim.AllocateTypedConstantBuffer(eConstantBufferShaderSlot_PerBatch, sizeof(STypedConstants), EShaderStage_Vertex | EShaderStage_Pixel);
-	for (auto& prim : cachedStencilPrimitives)  prim.AllocateTypedConstantBuffer(eConstantBufferShaderSlot_PerBatch, sizeof(STypedConstants), EShaderStage_Vertex | EShaderStage_Pixel);
+	for (auto& prim : cachedSamplingPrimitives) prim.AllocateTypedConstantBuffer(eConstantBufferShaderSlot_PerPrimitive, sizeof(STypedConstants), EShaderStage_Vertex | EShaderStage_Pixel);
+	for (auto& prim : cachedSamplingPrimitives) prim.AllocateTypedConstantBuffer(eConstantBufferShaderSlot_PerPrimitive, sizeof(STypedConstants), EShaderStage_Vertex | EShaderStage_Pixel);
+	for (auto& prim : cachedStencilPrimitives)  prim.AllocateTypedConstantBuffer(eConstantBufferShaderSlot_PerPrimitive, sizeof(STypedConstants), EShaderStage_Vertex | EShaderStage_Pixel);
 	for (auto& prim : cachedDebugPrimitives)    prim.SetFlags(CRenderPrimitive::eFlags_ReflectShaderConstants_PS);
 
-	nearestShadowPrimitive.AllocateTypedConstantBuffer(eConstantBufferShaderSlot_PerBatch, sizeof(STypedConstants), EShaderStage_Vertex | EShaderStage_Pixel);
-	customShadowPrimitive.AllocateTypedConstantBuffer(eConstantBufferShaderSlot_PerBatch, sizeof(SCloudShadowConstants), EShaderStage_Pixel);
+	nearestShadowPrimitive.AllocateTypedConstantBuffer(eConstantBufferShaderSlot_PerPrimitive, sizeof(STypedConstants), EShaderStage_Vertex | EShaderStage_Pixel);
+	customShadowPrimitive.AllocateTypedConstantBuffer(eConstantBufferShaderSlot_PerPrimitive, sizeof(SCloudShadowConstants), EShaderStage_Pixel);
 }
 
 void CSunShadows::ResetPrimitives()
@@ -866,7 +866,7 @@ void CSunShadows::PreparePerObjectPrimitives(CRenderPrimitive& primStencil0, CRe
 
 void CSunShadows::PrepareStencilPassConstants(CRenderPrimitive& primitive, ShadowMapFrustum* pFrustum) const
 {
-	auto constants = primitive.GetConstantManager().BeginTypedConstantUpdate<STypedConstants>(eConstantBufferShaderSlot_PerBatch, EShaderStage_Vertex | EShaderStage_Pixel);
+	auto constants = primitive.GetConstantManager().BeginTypedConstantUpdate<STypedConstants>(eConstantBufferShaderSlot_PerPrimitive, EShaderStage_Vertex | EShaderStage_Pixel);
 
 	constants->unitMeshTransform = pFrustum->mLightViewMatrix.GetInverted() * shadowMaskStage.m_viewInfo[0].cameraProjMatrix;
 
@@ -889,7 +889,7 @@ void CSunShadows::PrepareConstantBuffers(CRenderPrimitive& primitive, ShadowMapF
 	constantManager.SetTypedConstantBuffer(eConstantBufferShaderSlot_PerView, shadowMaskStage.m_pPerViewConstantBuffer, EShaderStage_Vertex | EShaderStage_Pixel);
 
 	// update typed constants
-	auto constants = constantManager.BeginTypedConstantUpdate<STypedConstants>(eConstantBufferShaderSlot_PerBatch, EShaderStage_Vertex | EShaderStage_Pixel);
+	auto constants = constantManager.BeginTypedConstantUpdate<STypedConstants>(eConstantBufferShaderSlot_PerPrimitive, EShaderStage_Vertex | EShaderStage_Pixel);
 
 	for (int i = 0; i < shadowMaskStage.m_viewInfoCount; ++i)
 	{
@@ -1002,7 +1002,7 @@ void CSunShadows::PrepareCustomShadowsPrimitive(CRenderPrimitive& primitive, _sm
 
 	// cloud shadow specific constants
 	SRenderViewShaderConstants& PF = shadowMaskStage.RenderView()->GetShaderConstants();
-	auto constants = constantManager.BeginTypedConstantUpdate<SCloudShadowConstants>(eConstantBufferShaderSlot_PerBatch);
+	auto constants = constantManager.BeginTypedConstantUpdate<SCloudShadowConstants>(eConstantBufferShaderSlot_PerPrimitive);
 	constants->params = PF.pCloudShadowParams;
 	constants->animParams = PF.pCloudShadowAnimParams;
 
@@ -1070,13 +1070,13 @@ void CLocalLightShadows::InitPrimitives()
 	for (auto& prim : volumePrimitives)
 	{
 		CConstantBufferPtr pCB = gcpRendD3D->m_DevBufMan.CreateConstantBuffer(sizeof(STypedConstants));
-		prim.SetConstantBuffer(eConstantBufferShaderSlot_PerBatch, pCB, EShaderStage_Vertex | EShaderStage_Pixel);
+		prim.SetConstantBuffer(eConstantBufferShaderSlot_PerPrimitive, pCB, EShaderStage_Vertex | EShaderStage_Pixel);
 	}
 
 	for (auto& prim : quadPrimitives)
 	{
 		CConstantBufferPtr pCB = gcpRendD3D->m_DevBufMan.CreateConstantBuffer(sizeof(STypedConstants));
-		prim.SetConstantBuffer(eConstantBufferShaderSlot_PerBatch, pCB, EShaderStage_Vertex | EShaderStage_Pixel);
+		prim.SetConstantBuffer(eConstantBufferShaderSlot_PerPrimitive, pCB, EShaderStage_Vertex | EShaderStage_Pixel);
 	}
 }
 
@@ -1317,7 +1317,7 @@ void CLocalLightShadows::PrepareConstantBuffersForPrimitives(SLocalLightPrimitiv
 	// update custom constants.NOTE: constant buffer is shared by all three primitives
 	auto& constantManager = primitives.sampling.GetConstantManager();
 
-	auto constants = constantManager.BeginTypedConstantUpdate<STypedConstants>(eConstantBufferShaderSlot_PerBatch, EShaderStage_Vertex | EShaderStage_Pixel);
+	auto constants = constantManager.BeginTypedConstantUpdate<STypedConstants>(eConstantBufferShaderSlot_PerPrimitive, EShaderStage_Vertex | EShaderStage_Pixel);
 	constants->unitMeshTransform = mUnitVolumeToWorld;
 	constants->lightVolumeSphereAdjust = vSphereAdjust;
 	constants->lightShadowProj = shadowMat[0];

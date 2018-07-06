@@ -477,7 +477,8 @@ bool SDeviceResourceLayoutDesc::IsValid() const
 	};
 
 	std::set<uint32> usedLayoutBindSlots;
-	std::map<int16, SResourceBinding> usedShaderBindSlots[(uint8)SResourceBindPoint::ESlotType::Count][eHWSC_Num]; // used slot numbers per slot type and shader stage
+	std::map<int16, SResourceBinding> usedShaderBindSlotsS[(uint8)SResourceBindPoint::ESlotType::Count][eHWSC_Num]; // used slot numbers per slot type and shader stage
+	std::map<int16, SResourceBinding> usedShaderBindSlotsL[(uint8)SResourceBindPoint::ESlotType::Count][EResourceLayoutSlot_Max + 1];
 
 	auto validateLayoutSlot = [&](uint32 layoutSlot)
 	{
@@ -490,7 +491,7 @@ bool SDeviceResourceLayoutDesc::IsValid() const
 		return true;
 	};
 
-	auto validateResourceBindPoint = [&](SResourceBindPoint bindPoint, const SResourceBinding& resource)
+	auto validateResourceBindPoint = [&](uint8 layoutSlot, SResourceBindPoint bindPoint, const SResourceBinding& resource)
 	{
 		// Shader stages are ordered by usage-frequency and loop exists according to usage-frequency (VS+PS fast, etc.)
 		int validShaderStages = bindPoint.stages;
@@ -498,18 +499,32 @@ bool SDeviceResourceLayoutDesc::IsValid() const
 		{
 			if (validShaderStages & 1)
 			{
-				auto insertResult = usedShaderBindSlots[uint8(bindPoint.slotType)][shaderClass].insert(std::make_pair(bindPoint.slotNumber, resource));
-				if (insertResult.second == false)
+				// Across all layouts, no stage-local slot can be referenced twice
+				auto insertResultS = usedShaderBindSlotsS[uint8(bindPoint.slotType)][shaderClass].insert(std::make_pair(bindPoint.slotNumber, resource));
+				if (insertResultS.second == false)
 				{
-					auto& existingResource = insertResult.first->second;
+					auto& existingResource = insertResultS.first->second;
 					auto& currentResource = resource;
 
-					CRY_ASSERT_TRACE(false, ("Invalid Resource Layout : Multiple resources bound to shader slot %s: A: %s - B: %s",
+					CRY_ASSERT_TRACE(false, ("Invalid Resource Layout : Multiple resources bound to shader slot %s across multiple layoutSlots: A: %s - B: %s",
 						GetBindPointName(bindPoint), GetResourceName(existingResource), GetResourceName(currentResource)));
 
 					return false;
 				}
 			}
+		}
+
+		// Across all stages, no layout-local slot can be referenced twice
+		auto insertResultL = usedShaderBindSlotsL[uint8(bindPoint.slotType)][layoutSlot].insert(std::make_pair(bindPoint.slotNumber, resource));
+		if (insertResultL.second == false)
+		{
+			auto& existingResource = insertResultL.first->second;
+			auto& currentResource = resource;
+
+			CRY_ASSERT_TRACE(false, ("Invalid Resource Layout : Multiple resources bound to shader slot %s within the same layoutSlot: A: %s - B: %s",
+				GetBindPointName(bindPoint), GetResourceName(existingResource), GetResourceName(currentResource)));
+
+			return false;
 		}
 
 		return true;
@@ -523,7 +538,7 @@ bool SDeviceResourceLayoutDesc::IsValid() const
 
 		for (auto itResource : itLayoutBinding.second)
 		{
-			if (!validateResourceBindPoint(itResource.first, itResource.second))
+			if (!validateResourceBindPoint(itLayoutBinding.first.layoutSlot, itResource.first, itResource.second))
 				return false;
 		}
 	}

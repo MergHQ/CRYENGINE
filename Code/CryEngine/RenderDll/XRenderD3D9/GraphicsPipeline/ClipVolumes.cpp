@@ -58,13 +58,13 @@ void CClipVolumesStage::Init()
 		{
 			CConstantBufferPtr pCB = gcpRendD3D->m_DevBufMan.CreateConstantBuffer(sizeof(SPrimitiveConstants));
 
-			m_stencilPrimitives[2 * i + 0].SetInlineConstantBuffer(eConstantBufferShaderSlot_PerBatch, pCB, EShaderStage_Vertex);
-			m_stencilPrimitives[2 * i + 1].SetInlineConstantBuffer(eConstantBufferShaderSlot_PerBatch, pCB, EShaderStage_Vertex);
+			m_stencilPrimitives[2 * i + 0].SetInlineConstantBuffer(eConstantBufferShaderSlot_PerPrimitive, pCB, EShaderStage_Vertex);
+			m_stencilPrimitives[2 * i + 1].SetInlineConstantBuffer(eConstantBufferShaderSlot_PerPrimitive, pCB, EShaderStage_Vertex);
 
 #ifdef FEATURE_RENDER_CLIPVOLUME_GEOMETRY_SHADER
 			pCB = gcpRendD3D->m_DevBufMan.CreateConstantBuffer(sizeof(SPrimitiveVolFogConstants));
-			m_stencilPrimitivesVolFog[2 * i + 0].SetInlineConstantBuffer(eConstantBufferShaderSlot_PerBatch, pCB, EShaderStage_Geometry | EShaderStage_Vertex);
-			m_stencilPrimitivesVolFog[2 * i + 1].SetInlineConstantBuffer(eConstantBufferShaderSlot_PerBatch, pCB, EShaderStage_Geometry | EShaderStage_Vertex);
+			m_stencilPrimitivesVolFog[2 * i + 0].SetInlineConstantBuffer(eConstantBufferShaderSlot_PerPrimitive, pCB, EShaderStage_Geometry | EShaderStage_Vertex);
+			m_stencilPrimitivesVolFog[2 * i + 1].SetInlineConstantBuffer(eConstantBufferShaderSlot_PerPrimitive, pCB, EShaderStage_Geometry | EShaderStage_Vertex);
 #endif
 		}
 
@@ -72,7 +72,7 @@ void CClipVolumesStage::Init()
 		{
 			CConstantBufferPtr pCB = gcpRendD3D->m_DevBufMan.CreateConstantBuffer(sizeof(SPrimitiveConstants));
 
-			m_blendPrimitives[i].SetInlineConstantBuffer(eConstantBufferShaderSlot_PerBatch, pCB, EShaderStage_Pixel | EShaderStage_Vertex);
+			m_blendPrimitives[i].SetInlineConstantBuffer(eConstantBufferShaderSlot_PerPrimitive, pCB, EShaderStage_Pixel | EShaderStage_Vertex);
 		}
 
 	}
@@ -275,7 +275,7 @@ void CClipVolumesStage::Prepare()
 					// Update constant buffer. NOTE: buffer is assigned to preallocated primitives
 					auto& constantManager = primInit.GetConstantManager();
 
-					auto constants = constantManager.BeginTypedConstantUpdate<SPrimitiveConstants>(eConstantBufferShaderSlot_PerBatch, EShaderStage_Vertex);
+					auto constants = constantManager.BeginTypedConstantUpdate<SPrimitiveConstants>(eConstantBufferShaderSlot_PerPrimitive, EShaderStage_Vertex);
 					constants->transformMatrix = Matrix44(volume.mWorldTM.GetTransposed()) * viewInfo[0].cameraProjMatrix;
 
 					if (viewInfoCount > 1)
@@ -329,7 +329,7 @@ void CClipVolumesStage::Prepare()
 							// Update constant buffer. NOTE: buffer is assigned to preallocated primitives
 							auto& constantManager = primInit.GetConstantManager();
 
-							auto constants = constantManager.BeginTypedConstantUpdate<SPrimitiveVolFogConstants>(eConstantBufferShaderSlot_PerBatch, EShaderStage_Geometry | EShaderStage_Vertex);
+							auto constants = constantManager.BeginTypedConstantUpdate<SPrimitiveVolFogConstants>(eConstantBufferShaderSlot_PerPrimitive, EShaderStage_Geometry | EShaderStage_Vertex);
 							constants->transformMatrix = Matrix44(volume.mWorldTM.GetTransposed()) * viewInfo[0].cameraProjMatrix;
 
 							// calculate max depth index of volumetric fog coordinate.
@@ -394,7 +394,7 @@ void CClipVolumesStage::Prepare()
 				primBlend.Compile(m_blendValuesPass);
 
 				auto& constantManager = primBlend.GetConstantManager();
-				auto constants = constantManager.BeginTypedConstantUpdate<SPrimitiveConstants>(eConstantBufferShaderSlot_PerBatch, EShaderStage_Pixel | EShaderStage_Vertex);
+				auto constants = constantManager.BeginTypedConstantUpdate<SPrimitiveConstants>(eConstantBufferShaderSlot_PerPrimitive, EShaderStage_Pixel | EShaderStage_Vertex);
 
 				constants->projRatioScreenScale = Vec4(projRatio.x, projRatio.y, 1.0f / m_pBlendValuesRT->GetWidth(), 1.0f / m_pBlendValuesRT->GetHeight());
 				constants->blendPlane0 = viewInfo[0].invCameraProjMatrix * volume.blendInfo[0].blendPlane;
@@ -720,7 +720,7 @@ void CClipVolumesStage::ExecuteVolumetricFog()
 		if (m_cleared > 0)
 		{
 			// Faster to clear the whole resource than to clear the individual slices one by one
-			CClearSurfacePass::Execute(m_depthTargetVolFog, CLEAR_ZBUFFER | CLEAR_STENCIL, 0.0f, 0);
+			CClearSurfacePass::Execute(m_depthTargetVolFog, CLEAR_ZBUFFER | CLEAR_STENCIL, Clr_Empty.r, Val_Stencil);
 
 			// write jittering depth.
 			for (int32 i = 0; i < maxDSVCount; ++i)
@@ -749,7 +749,7 @@ void CClipVolumesStage::ExecuteVolumetricFog()
 		}
 		else
 		{
-			CClearSurfacePass::Execute(m_depthTargetVolFog, CLEAR_STENCIL, Clr_Unused.r, 0);
+			CClearSurfacePass::Execute(m_depthTargetVolFog, CLEAR_STENCIL, Clr_Unused.r, Val_Stencil);
 		}
 
 		// Render clip volumes to single DSV for depth stencil texture array.
@@ -763,7 +763,7 @@ void CClipVolumesStage::ExecuteVolumetricFog()
 				auto& depthTarget = m_depthTargetArrayVolFog[i];
 				auto& pass = m_jitteredDepthPassArray[i];
 
-				CClearSurfacePass::Execute(pTex, CLEAR_ZBUFFER | CLEAR_STENCIL, 0.0f, 0);
+				CClearSurfacePass::Execute(pTex, CLEAR_ZBUFFER | CLEAR_STENCIL, Clr_Empty.r, Val_Stencil);
 
 				// write jittering depth.
 				static CCryNameTSCRC shaderName("StoreJitteringDepthToClipVolumeDepth");
@@ -788,7 +788,7 @@ void CClipVolumesStage::ExecuteVolumetricFog()
 		{
 			for (int32 i = 0; i < maxDSVCount; ++i)
 			{
-				CClearSurfacePass::Execute(m_pClipVolumeStencilVolumeTexArray[i], CLEAR_STENCIL, 0.0f, 0);
+				CClearSurfacePass::Execute(m_pClipVolumeStencilVolumeTexArray[i], CLEAR_STENCIL, Clr_Unused.r, Val_Stencil);
 			}
 		}
 

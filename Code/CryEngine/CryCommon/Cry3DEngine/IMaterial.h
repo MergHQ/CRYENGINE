@@ -70,6 +70,7 @@ enum EMaterialFlags
 	MTL_FLAG_CONSOLE_MAT               = 0x400000,
 	MTL_FLAG_BLEND_TERRAIN             = 0x1000000,
 	MTL_FLAG_TRACEABLE_TEXTURE         = 0x2000000,      //!< Diffuse texture keeps low-res copy for raytracing (in decals, for instance)
+	MTL_FLAG_REFRACTIVE                = 0x4000000,      //!< Refractive shader or has a sum-material with a refractive shader
 };
 
 #define MTL_FLAGS_SAVE_MASK     (MTL_FLAG_WIRE | MTL_FLAG_2SIDED | MTL_FLAG_ADDITIVE | MTL_FLAG_DETAIL_DECAL | MTL_FLAG_LIGHTING | MTL_FLAG_TRACEABLE_TEXTURE | \

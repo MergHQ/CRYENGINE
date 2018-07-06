@@ -34,9 +34,9 @@ ImageSpaceShafts::ImageSpaceShafts(const char* name)
 	// share one constant buffer between both primitives
 	CConstantBufferPtr pSharedCB = gcpRendD3D->m_DevBufMan.CreateConstantBuffer(sizeof(SShaderParams));
 
-	m_occlusionPrimitive.SetInlineConstantBuffer(eConstantBufferShaderSlot_PerBatch, pSharedCB, EShaderStage_Vertex | EShaderStage_Pixel);
-	m_shaftGenPrimitive .SetInlineConstantBuffer(eConstantBufferShaderSlot_PerBatch, pSharedCB, EShaderStage_Vertex | EShaderStage_Pixel);
-	m_blendPrimitive    .SetInlineConstantBuffer(eConstantBufferShaderSlot_PerBatch, pSharedCB, EShaderStage_Vertex | EShaderStage_Pixel);
+	m_occlusionPrimitive.SetInlineConstantBuffer(eConstantBufferShaderSlot_PerPrimitive, pSharedCB, EShaderStage_Vertex | EShaderStage_Pixel);
+	m_shaftGenPrimitive .SetInlineConstantBuffer(eConstantBufferShaderSlot_PerPrimitive, pSharedCB, EShaderStage_Vertex | EShaderStage_Pixel);
+	m_blendPrimitive    .SetInlineConstantBuffer(eConstantBufferShaderSlot_PerPrimitive, pSharedCB, EShaderStage_Vertex | EShaderStage_Pixel);
 }
 
 void ImageSpaceShafts::Load(IXmlNode* pNode)
@@ -194,7 +194,7 @@ bool ImageSpaceShafts::PreparePrimitives(const SPreparePrimitivesContext& contex
 
 	// update constants first
 	{
-		auto constants = m_occlusionPrimitive.GetConstantManager().BeginTypedConstantUpdate<SShaderParams>(eConstantBufferShaderSlot_PerBatch, EShaderStage_Vertex | EShaderStage_Pixel);
+		auto constants = m_occlusionPrimitive.GetConstantManager().BeginTypedConstantUpdate<SShaderParams>(eConstantBufferShaderSlot_PerPrimitive, EShaderStage_Vertex | EShaderStage_Pixel);
 
 		ColorF c = m_globalColor;
 		c.NormalizeCol(c);

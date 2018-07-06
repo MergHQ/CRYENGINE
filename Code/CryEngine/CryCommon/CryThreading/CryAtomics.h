@@ -16,6 +16,9 @@ LONG CryInterlockedDecrement(int volatile* pDst);
 LONG CryInterlockedAdd(volatile LONG* pVal, LONG add);
 
 // Returns the resulting added value
+int64 CryInterlockedAdd(volatile int64* pVal, int64 add);
+
+// Returns the resulting added value
 size_t CryInterlockedAdd(volatile size_t* pVal, size_t add);
 
 //////////////////////////////////////////////////////////////////////////

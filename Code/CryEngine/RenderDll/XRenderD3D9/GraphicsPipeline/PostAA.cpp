@@ -168,7 +168,7 @@ void CPostAAStage::Init()
 	m_lastFrameID = -1;
 
 	m_passTemporalAA.SetPrimitiveFlags(CRenderPrimitive::eFlags_ReflectShaderConstants_VS);
-	m_passTemporalAA.AllocateTypedConstantBuffer<PostAAConstants>(eConstantBufferShaderSlot_PerBatch, EShaderStage_Pixel);
+	m_passTemporalAA.AllocateTypedConstantBuffer<PostAAConstants>(eConstantBufferShaderSlot_PerPrimitive, EShaderStage_Pixel);
 }
 
 void CPostAAStage::ApplySMAA(CTexture*& pCurrRT)
@@ -334,7 +334,7 @@ void CPostAAStage::ApplyTemporalAA(CTexture*& pCurrRT, CTexture*& pMgpuRT, uint3
 	{
 		size_t viewInfoCount = RenderView()->GetViewInfoCount();
 	
-		auto constants = m_passTemporalAA.BeginTypedConstantUpdate<PostAAConstants>(eConstantBufferShaderSlot_PerBatch, EShaderStage_Pixel);
+		auto constants = m_passTemporalAA.BeginTypedConstantUpdate<PostAAConstants>(eConstantBufferShaderSlot_PerPrimitive, EShaderStage_Pixel);
 		
 		auto screenResolution = Vec2i(CRendererResources::s_renderWidth, CRendererResources::s_renderHeight);
 		const float rcpWidth = 1.0f / (float)screenResolution.x;

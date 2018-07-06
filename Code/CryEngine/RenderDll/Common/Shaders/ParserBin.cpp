@@ -194,8 +194,6 @@ void CParserBin::Init()
 	fxTokenKey("%_DS", eT__DS);
 	fxTokenKey("%_CS", eT__CS);
 
-	FX_REGISTER_TOKEN(_g_SkinQuat);
-
 	FX_REGISTER_TOKEN(tex2D);
 	FX_REGISTER_TOKEN(tex2Dproj);
 	FX_REGISTER_TOKEN(tex3D);
@@ -734,7 +732,7 @@ void CParserBin::Init()
 		uint32 Macro[64];
 		if (pr->m_szMacro[0])
 		{
-			char* szBuf = (char*)pr->m_szMacro.c_str();
+			const char* szBuf = (char*)pr->m_szMacro.c_str();
 			SkipCharacters(&szBuf, " ");
 			if (!szBuf[0])
 				break;
@@ -925,6 +923,31 @@ uint32 CParserBin::NewUserToken(uint32 nToken, const char* psToken, bool bUseFin
 	return nToken;
 }
 
+uint32 CParserBin::NextToken(const char*& buf, char* com, bool& bKey)
+{
+	char ch;
+	int n = 0;
+	while ((ch = *buf) != 0)
+	{
+		if (SkipChar(ch))
+			break;
+		com[n++] = ch;
+		++buf;
+		if (ch == '/')
+			break;
+	}
+	if (!n)
+	{
+		if (ch != ' ')
+		{
+			com[n++] = ch;
+			++buf;
+		}
+	}
+	com[n] = 0;
+	uint32 dwToken = fxToken(com, &bKey);
+	return dwToken;
+}
 uint32 CParserBin::NextToken(char*& buf, char* com, bool& bKey)
 {
 	char ch;
@@ -1056,9 +1079,8 @@ string CParserBin::GetString(SParserFrame& Frame)
 	return string(Str.c_str());
 }
 
-const char* CParserBin::GetString(uint32 nToken, FXShaderToken& Table, bool bOnlyKey)
+const char* CParserBin::GetString(uint32 nToken, const FXShaderToken& Table, bool bOnlyKey)
 {
-	FXShaderTokenItor it;
 	if (nToken < eT_max)
 	{
 		assert(g_KeyTokens[nToken]);
@@ -1066,11 +1088,9 @@ const char* CParserBin::GetString(uint32 nToken, FXShaderToken& Table, bool bOnl
 	}
 	if (!bOnlyKey)
 	{
-		it = std::lower_bound(Table.begin(), Table.end(), nToken, SortByToken());
-		if (it != Table.end() && (*it).Token == nToken)
-		{
-			return (*it).SToken.c_str();
-		}
+		auto it = std::lower_bound(Table.begin(), Table.end(), nToken, SortByToken());
+		if (it != Table.end() && it->Token == nToken)
+			return it->SToken.c_str();
 	}
 
 	assert(0);
@@ -1126,7 +1146,7 @@ bool CParserBin::CorrectScript(uint32* pTokens, uint32& i, uint32 nT, TArray<cha
 	return false;
 }
 
-bool CParserBin::ConvertToAscii(uint32* pTokens, uint32 nT, FXShaderToken& Table, TArray<char>& Text, bool bInclSkipTokens)
+bool CParserBin::ConvertToAscii(uint32* pTokens, uint32 nT, const FXShaderToken& Table, TArray<char>& Text, bool bInclSkipTokens)
 {
 	uint32 i;
 	bool bRes = true;
@@ -1831,7 +1851,7 @@ bool CParserBin::PreprocessTokens(ShaderTokensVec& Tokens, int nPass, PodArray<u
 	return bRet;
 }
 
-bool CParserBin::Preprocess(int nPass, ShaderTokensVec& Tokens, FXShaderToken* pSrcTable)
+bool CParserBin::Preprocess(int nPass, ShaderTokensVec& Tokens, const FXShaderToken& srcTable)
 {
 	m_IfAffectMask.Reserve(5);
 	m_IfAffectMask.SetUse(0);
@@ -1846,7 +1866,7 @@ bool CParserBin::Preprocess(int nPass, ShaderTokensVec& Tokens, FXShaderToken* p
 
 	PodArray<uint32> tokensBuffer(TOKENS_BUFFER_SIZE);
 
-	m_TokenTable = *pSrcTable;
+	m_TokenTable = srcTable;
 	bool bRes = PreprocessTokens(Tokens, nPass, tokensBuffer);
 #ifndef _RELEASE
 	if (tokensBuffer.Size() > TOKENS_BUFFER_SIZE)

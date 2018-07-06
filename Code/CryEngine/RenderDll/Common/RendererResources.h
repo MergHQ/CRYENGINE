@@ -3,8 +3,6 @@
 #pragma once
 
 #include <CryRenderer/ITexture.h>
-#include <Common/Textures/TempDepthTexture.h>
-#include <Common/ResourcePool.h>
 
 class CTexture;
 struct SEnvTexture;
@@ -95,29 +93,15 @@ enum
 
 class CRendererResources
 {
-	using tempTexturePool_t = CResourcePool<STempDepthTexture>;
-
-public:
-	using CTempTexture = tempTexturePool_t::value_type;
 
 public:
 	void InitResources() {}
 
 public:
-	static tempTexturePool_t m_TempDepths;
-	static std::vector<CTexture*> m_RTargets;
-	static size_t m_RTallocs;
+	static size_t m_RTallocs, m_DTallocs;
 
-	static CTempTexture  GetTempDepthSurface(int currentFrameID, int nWidth, int nHeight, bool bExactMatch = true);
-	static size_t        SizeofTempDepthSurfaces();
-	static void          ReleaseTempDepthSurfaces();
-
-	// Erases temporaries that have been unused for a specified frames count
-	static void          TrimTempDepthSurfaces(int currentFrameID, int delayFrames);
-
-	static SDepthTexture CreateDepthSurface(int nWidth, int nHeight, bool bAA);
-	static int           CreateRenderTarget(int nWidth, int nHeight, const ColorF& cClear, ETEX_Format eTF);
-	static bool          ReleaseRenderTarget(int nHandle);
+	static CTexture* CreateDepthTarget(int nWidth, int nHeight, const ColorF& cClear, ETEX_Format eTF);
+	static CTexture* CreateRenderTarget(int nWidth, int nHeight, const ColorF& cClear, ETEX_Format eTF);
 
 public:
 	static bool m_bLoadedSystem;
@@ -179,9 +163,6 @@ public:
 	static CTexture* s_ptexFromObj;                           // ?
 	static CTexture* s_ptexHDRMeasuredLuminanceDummy;         // ?
 	static CTexture* s_ptexCloudsLM;                          // ?
-	static CTexture* s_ptexSkyDomeMie;                        // ?
-	static CTexture* s_ptexSkyDomeRayleigh;                   // ?
-	static CTexture* s_ptexSkyDomeMoon;                       // ?
 	static CTexture* s_ptexColorChart;                        // ?
 
 	static CTexture* s_pTexNULL;

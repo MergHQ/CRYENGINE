@@ -21,11 +21,11 @@ void CSunShaftsStage::Init()
 	m_passShaftsGen0.SetFlags(CPrimitiveRenderPass::ePassFlags_VrProjectionPass);
 	m_passShaftsGen0.SetPrimitiveFlags(CRenderPrimitive::eFlags_None);
 	m_passShaftsGen0.SetRequirePerViewConstantBuffer(true);
-	m_passShaftsGen0.AllocateTypedConstantBuffer<SSunShaftConstants>(eConstantBufferShaderSlot_PerBatch, EShaderStage_Pixel);
+	m_passShaftsGen0.AllocateTypedConstantBuffer<SSunShaftConstants>(eConstantBufferShaderSlot_PerPrimitive, EShaderStage_Pixel);
 
 	m_passShaftsGen1.SetFlags(CPrimitiveRenderPass::ePassFlags_VrProjectionPass);
 	m_passShaftsGen1.SetPrimitiveFlags(CRenderPrimitive::eFlags_None);
-	m_passShaftsGen1.AllocateTypedConstantBuffer<SSunShaftConstants>(eConstantBufferShaderSlot_PerBatch, EShaderStage_Pixel);
+	m_passShaftsGen1.AllocateTypedConstantBuffer<SSunShaftConstants>(eConstantBufferShaderSlot_PerPrimitive, EShaderStage_Pixel);
 	m_passShaftsGen1.SetRequirePerViewConstantBuffer(true);
 }
 
@@ -124,7 +124,7 @@ void CSunShaftsStage::Execute()
 				m_passShaftsGen0.SetSampler(0, EDefaultSamplerStates::LinearClamp);
 			}
 
-			auto constants = m_passShaftsGen0.BeginTypedConstantUpdate<SSunShaftConstants>(eConstantBufferShaderSlot_PerBatch);
+			auto constants = m_passShaftsGen0.BeginTypedConstantUpdate<SSunShaftConstants>(eConstantBufferShaderSlot_PerPrimitive);
 			constants->sunPos = sunPosScreen[0];
 			constants->params = Vec4(0.1f, rayAttenuation, 0, 0);
 			
@@ -152,7 +152,7 @@ void CSunShaftsStage::Execute()
 				m_passShaftsGen1.SetSampler(0, EDefaultSamplerStates::LinearClamp);
 			}
 
-			auto constants = m_passShaftsGen1.BeginTypedConstantUpdate<SSunShaftConstants>(eConstantBufferShaderSlot_PerBatch);
+			auto constants = m_passShaftsGen1.BeginTypedConstantUpdate<SSunShaftConstants>(eConstantBufferShaderSlot_PerPrimitive);
 			constants->sunPos = sunPosScreen[0];
 			constants->params = Vec4(0.025f, rayAttenuation, 0, 0);
 

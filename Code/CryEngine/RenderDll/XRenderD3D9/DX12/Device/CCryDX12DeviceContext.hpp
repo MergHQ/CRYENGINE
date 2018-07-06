@@ -789,10 +789,9 @@ public:
 		return TimestampIndex(m_Scheduler.GetCommandList(CMDQUEUE_GRAPHICS));
 	}
 
-	ILINE void InsertTimestamp(INT index, INT commandQueue, NCryDX12::CCommandList* pCommandList)
+	ILINE void InsertTimestamp(INT index, NCryDX12::CCommandList* pCommandList)
 	{
-		assert(commandQueue >= CMDQUEUE_GRAPHICS && commandQueue <= CMDQUEUE_COPY);
-		InsertTimestamp(m_Scheduler.GetCommandList(commandQueue), index);
+		InsertTimestamp(pCommandList, index);
 	}
 
 	ILINE void ResolveTimestamps()
@@ -800,7 +799,7 @@ public:
 		ResolveTimestamps(m_Scheduler.GetCommandList(CMDQUEUE_GRAPHICS));
 	}
 
-	ILINE void InsertTimestamp(INT index, void* mem)
+	ILINE void QueryTimestamp(INT index, void* mem)
 	{
 		QueryTimestamp(m_Scheduler.GetCommandList(CMDQUEUE_GRAPHICS), index, mem);
 	}

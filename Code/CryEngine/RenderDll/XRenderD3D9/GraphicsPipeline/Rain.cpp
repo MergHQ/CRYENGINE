@@ -79,7 +79,7 @@ void CRainStage::Init()
 			prim.SetDrawInfo(eptTriangleStrip, 0, 0, totalVertexCount);
 			prim.SetRenderState(GS_NODEPTHTEST | GS_BLSRC_SRCALPHA | GS_BLDST_ONEMINUSSRCALPHA);
 
-			prim.AllocateTypedConstantBuffer(eConstantBufferShaderSlot_PerBatch, sizeof(SSceneRainCB), EShaderStage_Vertex | EShaderStage_Pixel);
+			prim.AllocateTypedConstantBuffer(eConstantBufferShaderSlot_PerPrimitive, sizeof(SSceneRainCB), EShaderStage_Vertex | EShaderStage_Pixel);
 		}
 
 		// update vertex buffer
@@ -154,7 +154,7 @@ void CRainStage::Update()
 	if (!shouldApplyOcclusion && CTexture::IsTextureExist(CRendererResources::s_ptexRainOcclusion))
 		CRendererResources::s_ptexRainOcclusion->ReleaseDeviceTexture(false);
 	else if (shouldApplyOcclusion && !CTexture::IsTextureExist(CRendererResources::s_ptexRainOcclusion))
-		CRendererResources::s_ptexRainOcclusion->Create2DTexture(RAIN_OCC_MAP_SIZE, RAIN_OCC_MAP_SIZE, 1, FT_DONT_RELEASE | FT_DONT_STREAM | FT_USAGE_RENDERTARGET, nullptr, eTF_R8G8B8A8);
+		CRendererResources::s_ptexRainOcclusion->CreateRenderTarget(eTF_R8G8B8A8, Clr_Neutral);
 
 	if (RenderView()->GetCurrentEye() != CCamera::eEye_Right)
 	{
@@ -445,7 +445,7 @@ void CRainStage::Execute()
 
 		// update constant buffer
 		{
-			auto constants = prim.GetConstantManager().BeginTypedConstantUpdate<SSceneRainCB>(eConstantBufferShaderSlot_PerBatch, EShaderStage_Vertex | EShaderStage_Pixel);
+			auto constants = prim.GetConstantManager().BeginTypedConstantUpdate<SSceneRainCB>(eConstantBufferShaderSlot_PerPrimitive, EShaderStage_Vertex | EShaderStage_Pixel);
 
 			constants->sceneRainMtx = Matrix44(Matrix33(rainVolParams.qRainRotation));
 
@@ -506,11 +506,11 @@ void CRainStage::ExecuteRainOcclusionGen()
 	SRainParams& rainVolParams = m_RainVolParams;
 
 	// Get temp depth buffer
-	auto pTmpDepthSurface = rd->GetTempDepthSurface(rd->GetFrameID(), RAIN_OCC_MAP_SIZE, RAIN_OCC_MAP_SIZE);
+	CTexture* pTmpDepthSurface = rd->CreateDepthTarget(RAIN_OCC_MAP_SIZE, RAIN_OCC_MAP_SIZE, Clr_FarPlane, eTF_Unknown);
 
 	// clear buffers
 	CClearSurfacePass::Execute(CRendererResources::s_ptexRainOcclusion, Clr_Neutral);
-	CClearSurfacePass::Execute(pTmpDepthSurface->texture.pTexture, CLEAR_ZBUFFER, Clr_FarPlane.r, 0);
+	CClearSurfacePass::Execute(pTmpDepthSurface, CLEAR_ZBUFFER, Clr_FarPlane.r, Val_Unused);
 
 	// render occluders to rain occlusion texture
 	{
@@ -525,7 +525,7 @@ void CRainStage::ExecuteRainOcclusionGen()
 		viewport.MaxDepth = 1.0f;
 
 		pass.SetRenderTarget(0, CRendererResources::s_ptexRainOcclusion);
-		pass.SetDepthTarget(pTmpDepthSurface->texture.pTexture);
+		pass.SetDepthTarget(pTmpDepthSurface);
 		pass.SetViewport(viewport);
 		pass.BeginAddingPrimitives();
 
@@ -558,7 +558,7 @@ void CRainStage::ExecuteRainOcclusionGen()
 					{
 						m_rainOccluderPrimitives.emplace_back(stl::make_unique<CRenderPrimitive>());
 
-						m_rainOccluderPrimitives[index].get()->AllocateTypedConstantBuffer(eConstantBufferShaderSlot_PerBatch, sizeof(SRainOccluderCB), EShaderStage_Vertex);
+						m_rainOccluderPrimitives[index].get()->AllocateTypedConstantBuffer(eConstantBufferShaderSlot_PerPrimitive, sizeof(SRainOccluderCB), EShaderStage_Vertex);
 					}
 
 					CRY_ASSERT(m_rainOccluderPrimitives[index]);
@@ -579,7 +579,7 @@ void CRainStage::ExecuteRainOcclusionGen()
 
 					// update constant buffer
 					{
-						auto constants = prim.GetConstantManager().BeginTypedConstantUpdate<SRainOccluderCB>(eConstantBufferShaderSlot_PerBatch, EShaderStage_Vertex);
+						auto constants = prim.GetConstantManager().BeginTypedConstantUpdate<SRainOccluderCB>(eConstantBufferShaderSlot_PerPrimitive, EShaderStage_Vertex);
 
 						Matrix44A matWorld(it.m_WorldMat);
 						constants->matRainOccluder = matTrans * matWorld;
@@ -594,4 +594,6 @@ void CRainStage::ExecuteRainOcclusionGen()
 
 		pass.Execute();
 	}
+
+	SAFE_RELEASE(pTmpDepthSurface);
 }

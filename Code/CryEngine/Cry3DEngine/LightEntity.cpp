@@ -2121,6 +2121,7 @@ void CLightEntity::ProcessPerObjectFrustum(ShadowMapFrustum* pFr, struct SPerObj
 	pFr->nTexSize = 1 << IntegerLog2(nTexSize);
 	pFr->nTextureWidth = pFr->nTexSize;
 	pFr->nTextureHeight = pFr->nTexSize;
+	pFr->clearValue = pFr->clearValue;
 	pFr->bBlendFrustum = false;
 
 	// now update frustum params based on object box

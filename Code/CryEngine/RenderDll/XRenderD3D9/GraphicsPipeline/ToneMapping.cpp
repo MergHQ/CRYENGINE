@@ -228,8 +228,8 @@ void CToneMappingStage::DisplayDebugInfo()
 		fIlluminance = CryConvertHalfToFloat(pDataHalf[1]);
 		return true;
 	};
-	pSrcDevTex->DownloadToStagingResource(0);
-	pSrcDevTex->AccessCurrStagingResource(0, false, readbackData);
+
+	pSrcDevTex->DownloadToStagingResource(0, readbackData);
 
 	// Display data
 	char str[256];

@@ -313,7 +313,7 @@ void CDebugRenderTargetsStage::ExecuteShowTargets()
 		for (int i = m_debugPrimitives.size(); i < tileCount; ++i)
 		{
 			CRenderPrimitive prim;
-			prim.AllocateTypedConstantBuffer(eConstantBufferShaderSlot_PerBatch, sizeof(SDebugRenderTargetConstants), EShaderStage_Vertex | EShaderStage_Pixel);
+			prim.AllocateTypedConstantBuffer(eConstantBufferShaderSlot_PerPrimitive, sizeof(SDebugRenderTargetConstants), EShaderStage_Vertex | EShaderStage_Pixel);
 
 			m_debugPrimitives.push_back(std::move(prim));
 		}
@@ -364,7 +364,7 @@ void CDebugRenderTargetsStage::ExecuteShowTargets()
 				showRTFlags.y = rtInfo.bRGBKEncoded ? 1.0f : 0.0f;
 				showRTFlags.z = rtInfo.bAliased ? 1.0f : 0.0f;
 
-				auto constants = prim.GetConstantManager().BeginTypedConstantUpdate<SDebugRenderTargetConstants>(eConstantBufferShaderSlot_PerBatch, EShaderStage_Vertex | EShaderStage_Pixel);
+				auto constants = prim.GetConstantManager().BeginTypedConstantUpdate<SDebugRenderTargetConstants>(eConstantBufferShaderSlot_PerPrimitive, EShaderStage_Vertex | EShaderStage_Pixel);
 
 				constants->colorMultiplier = rtInfo.channelWeight;
 				constants->showRTFlags = showRTFlags;

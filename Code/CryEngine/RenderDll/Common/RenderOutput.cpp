@@ -115,12 +115,8 @@ void CRenderOutput::BeginRendering(CRenderView* pRenderView, stl::optional<uint3
 	//////////////////////////////////////////////////////////////////////////
 	if (m_bUseTempDepthBuffer)
 	{
-		m_pTempDepthTexture = CRendererResources::GetTempDepthSurface(gcpRendD3D->GetFrameID(), m_OutputWidth, m_OutputHeight, true);
-		CRY_ASSERT(m_pTempDepthTexture);
-
-		m_pDepthTarget = m_pTempDepthTexture->texture.pTexture;
-		m_pDepthTarget->Lock();
-		m_pDepthTarget->m_nUpdateFrameID = gRenDev->GetRenderFrameID();
+		m_pDepthTarget = nullptr;
+		m_pDepthTarget.Assign_NoAddRef(CRendererResources::CreateDepthTarget(m_OutputWidth, m_OutputHeight, Clr_Empty, eTF_Unknown));
 	}
 
 	//////////////////////////////////////////////////////////////////////////
@@ -129,7 +125,7 @@ void CRenderOutput::BeginRendering(CRenderView* pRenderView, stl::optional<uint3
 	uint32 clearTargetFlag = overrideClearFlags.value_or(m_clearTargetFlag);
 	ColorF clearColor = m_clearColor;
 
-	if (pRenderView && pRenderView->IsClearTarget())
+	if (pRenderView && pRenderView->IsClearTarget() && CRendererCVars::CV_r_wireframe)
 	{
 		// Override clear color from the Render View if given
 		clearTargetFlag |= FRT_CLEAR_COLOR;
@@ -138,10 +134,12 @@ void CRenderOutput::BeginRendering(CRenderView* pRenderView, stl::optional<uint3
 
 	if ((clearTargetFlag = clearTargetFlag & ~m_hasBeenCleared))
 	{
-		const bool reverseDepth = true;
-		const auto depthClearFlags = clearTargetFlag & (FRT_CLEAR_DEPTH | FRT_CLEAR_STENCIL);
-		if (depthClearFlags)
-			CClearSurfacePass::Execute(m_pDepthTarget, depthClearFlags, reverseDepth ? 1.0f - m_clearDepth : m_clearDepth, 1);
+		if (clearTargetFlag & (FRT_CLEAR_DEPTH | FRT_CLEAR_STENCIL))
+			CClearSurfacePass::Execute(m_pDepthTarget,
+				(clearTargetFlag & FRT_CLEAR_DEPTH   ? CLEAR_ZBUFFER : 0) |
+				(clearTargetFlag & FRT_CLEAR_STENCIL ? CLEAR_STENCIL : 0),
+				Clr_FarPlane_Rev.r,
+				Val_Stencil);
 
 		if (clearTargetFlag & FRT_CLEAR_COLOR)
 			CClearSurfacePass::Execute(m_pColorTarget, clearColor);
@@ -168,13 +166,9 @@ void CRenderOutput::EndRendering(CRenderView* pRenderView)
 {
 	CRY_ASSERT(gcpRendD3D->m_pRT->IsRenderThread());
 
-	if (m_pTempDepthTexture)
+	if (m_bUseTempDepthBuffer)
 	{
-		if (m_pTempDepthTexture->texture.pTexture)
-		{
-			m_pTempDepthTexture->texture.pTexture->Unlock();
-		}
-		m_pTempDepthTexture = nullptr;
+		m_pDepthTarget = nullptr;
 	}
 
 	if (m_pDisplayContext)
@@ -299,7 +293,8 @@ void CRenderOutput::AllocateColorTarget()
 	// NOTE: Actual device texture allocation happens just before rendering.
 	const uint32 renderTargetFlags = FT_NOMIPS | /* FT_DONT_RELEASE | */FT_DONT_STREAM | FT_USAGE_RENDERTARGET;
 
-	m_pColorTarget = CTexture::GetOrCreateRenderTarget("$HDR-Output", m_OutputWidth, m_OutputHeight, clearValue, eTT_2D, renderTargetFlags, eHDRFormat);
+	m_pColorTarget = nullptr;
+	m_pColorTarget.Assign_NoAddRef(CTexture::GetOrCreateRenderTarget("$HDR-Output", m_OutputWidth, m_OutputHeight, clearValue, eTT_2D, renderTargetFlags, eHDRFormat));
 }
 
 //////////////////////////////////////////////////////////////////////////
@@ -310,12 +305,13 @@ void CRenderOutput::AllocateDepthTarget()
 		gRenDev->GetDepthBpp() == 24 ? eTF_D24S8  :
 		gRenDev->GetDepthBpp() ==  8 ? eTF_D16S8  : eTF_D16;
 
-	const float  clearDepth   = CRenderer::CV_r_ReverseDepth ? 0.f : 1.f;
-	const uint   clearStencil = 1;
+	const float  clearDepth   = Clr_FarPlane_Rev.r;
+	const uint8  clearStencil = Val_Stencil;
 	const ColorF clearValues  = ColorF(clearDepth, FLOAT(clearStencil), 0.f, 0.f);
 
 	// Create the native resolution depth stencil buffer for overlay rendering if needed
 	const uint32 renderTargetFlags = FT_NOMIPS | /* FT_DONT_RELEASE | */FT_DONT_STREAM | FT_USAGE_DEPTHSTENCIL;
 
-	m_pDepthTarget = CTexture::GetOrCreateDepthStencil("$Z-Output", m_OutputWidth, m_OutputHeight, clearValues, eTT_2D, renderTargetFlags, eZFormat);
+	m_pDepthTarget = nullptr;
+	m_pDepthTarget.Assign_NoAddRef(CTexture::GetOrCreateDepthStencil("$Z-Output", m_OutputWidth, m_OutputHeight, clearValues, eTT_2D, renderTargetFlags, eZFormat));
 }

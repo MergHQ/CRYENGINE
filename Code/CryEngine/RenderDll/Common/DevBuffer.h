@@ -45,11 +45,10 @@ typedef uintptr_t buffer_handle_t;
 typedef uint32    item_handle_t;
 
 ////////////////////////////////////////////////////////////////////////////////////////
-struct SDescriptorBlock : SUsageTrackedItem<DEVRES_TRACK_LATENCY>
+struct SDescriptorBlock
 {
 	SDescriptorBlock(uint32 id)
-		: SUsageTrackedItem(0)
-		, blockID(id)
+		: blockID(id)
 		, pBuffer(NULL)
 		, size(0)
 		, offset(~0u)
@@ -63,7 +62,7 @@ struct SDescriptorBlock : SUsageTrackedItem<DEVRES_TRACK_LATENCY>
 };
 
 #if (CRY_RENDERER_VULKAN >= 10)
-struct SDescriptorSet : SUsageTrackedItem<DEVRES_TRACK_LATENCY>
+struct SDescriptorSet
 {
 	SDescriptorSet()
 		: vkDescriptorSet(VK_NULL_HANDLE)
@@ -497,25 +496,15 @@ public:
 
 class CGpuBuffer : NoCopy, public CResourceBindingInvalidator
 {
-private:
-	struct STrackedDeviceBuffer : public SUsageTrackedItem<DEVRES_TRACK_LATENCY>
-	{
-		STrackedDeviceBuffer(CDeviceBuffer* pBuffer) 
-			: pDeviceBuffer(pBuffer)
-		{}
-
-		CDeviceBuffer* pDeviceBuffer;
-	};
 
 public:
-	CGpuBuffer(int maxBufferCopies = -1, CDeviceBuffer* devBufToOwn = nullptr)
+	CGpuBuffer(CDeviceBuffer* devBufToOwn = nullptr)
 		: m_pDeviceBuffer(nullptr)
 		, m_elementCount(0)
 		, m_elementSize(0)
 		, m_eFlags(0)
 		, m_eMapMode(D3D11_MAP(0))
 		, m_bLocked(false)
-		, m_MaxBufferCopies(maxBufferCopies)
 	{
 		if (devBufToOwn)
 		{
@@ -547,7 +536,6 @@ private:
 
 	void               PrepareUnusedBuffer();
 
-	std::queue<STrackedDeviceBuffer> m_deviceBufferPool;
 	CDeviceBuffer*                   m_pDeviceBuffer;
 
 	buffer_size_t                    m_elementCount;
@@ -558,7 +546,6 @@ private:
 	DXGI_FORMAT                      m_eFormat;
 	
 	bool                             m_bLocked;
-	int                              m_MaxBufferCopies;
 
 };
 

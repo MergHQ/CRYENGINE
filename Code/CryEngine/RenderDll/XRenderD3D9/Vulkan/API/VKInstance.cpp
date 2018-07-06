@@ -51,6 +51,8 @@ bool CreateSDLWindowContext(SDL_Window*& kWindowContext, const char* szTitle, ui
 #endif
 	}
 
+	uWindowFlags |= SDL_WINDOW_VULKAN;
+
 //	SDL_VideoInit("dummy");
 	kWindowContext = SDL_CreateWindow(szTitle, SDL_WINDOWPOS_CENTERED, SDL_WINDOWPOS_CENTERED, uWidth, uHeight, uWindowFlags);
 #if !defined(_DEBUG)

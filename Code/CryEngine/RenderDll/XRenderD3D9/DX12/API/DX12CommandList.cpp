@@ -804,7 +804,7 @@ void CCommandList::ClearDepthStencilView(const CView& view, D3D12_CLEAR_FLAGS cl
 	// TODO: if we know early that the resource(s) will be PRESENT we can begin the barrier early and end it here
 	TrackResourceDSVUsage(resource, view);
 
-#if !defined(RELEASE) && defined(_DEBUG) && 0 // will break a lot currently, won't really be coherent in the future
+#if !defined(RELEASE) && defined(_DEBUG) // will break a lot currently, won't really be coherent in the future
 	UINT len = 512;
 	char str[512] = "-";
 	UINT cen = 20;
@@ -834,7 +834,7 @@ void CCommandList::ClearRenderTargetView(const CView& view, const FLOAT rgba[4],
 	// TODO: if we know early that the resource(s) will be PRESENT we can begin the barrier early and end it here
 	TrackResourceRTVUsage(resource, view);
 
-#if !defined(RELEASE) && defined(_DEBUG) && 0 // will break a lot currently, won't really be coherent in the future
+#if !defined(RELEASE) && defined(_DEBUG) // will break a lot currently, won't really be coherent in the future
 	UINT len = 512;
 	char str[512] = "-";
 	UINT cen = 20;

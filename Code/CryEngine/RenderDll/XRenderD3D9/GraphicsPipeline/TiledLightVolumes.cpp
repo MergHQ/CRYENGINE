@@ -197,7 +197,7 @@ void CTiledLightVolumesStage::Init()
 
 	for (uint32 i = 0; i < CRY_ARRAY_COUNT(m_volumePasses); i++)
 	{
-		m_volumePasses[i].AllocateTypedConstantBuffer(eConstantBufferShaderSlot_PerBatch, sizeof(HLSL_VolumeLightListGenConstants), EShaderStage_Vertex | EShaderStage_Pixel);
+		m_volumePasses[i].AllocateTypedConstantBuffer(eConstantBufferShaderSlot_PerPrimitive, sizeof(HLSL_VolumeLightListGenConstants), EShaderStage_Vertex | EShaderStage_Pixel);
 	}
 }
 
@@ -730,6 +730,29 @@ AABB RotateAABB(const AABB& aabb, const Matrix33& mat)
 	return AABB(pos - sz, pos + sz);
 }
 
+void CTiledLightVolumesStage::InjectSunIntoTiledLights(uint32_t& counter)
+{
+	STiledLightInfo& lightInfo = m_tileLights[counter];
+	STiledLightShadeInfo& lightShadeInfo = tileLightsShade[counter];
+
+	lightInfo.volumeType = tlVolumeSun;
+	lightInfo.posRad = Vec4(0, 0, 0, 100000);
+	lightInfo.depthBoundsVS = Vec2(-100000, 100000);
+
+	lightShadeInfo.lightType = tlTypeSun;
+	lightShadeInfo.attenuationParams = Vec2(TiledShading_SunSourceDiameter, TiledShading_SunSourceDiameter);
+	lightShadeInfo.shadowParams = Vec2(1, 0);
+	lightShadeInfo.shadowMaskIndex = 0;
+	lightShadeInfo.stencilID0 = lightShadeInfo.stencilID1 = STENCIL_VALUE_OUTDOORS;
+
+	Vec3 sunColor;
+	gEnv->p3DEngine->GetGlobalParameter(E3DPARAM_SUN_COLOR, sunColor);
+	sunColor *= gcpRendD3D->m_fAdaptedSceneScaleLBuffer;  // Apply LBuffers range rescale
+	lightShadeInfo.color = Vec4(sunColor.x, sunColor.y, sunColor.z, gEnv->p3DEngine->GetGlobalParameter(E3DPARAM_SUN_SPECULAR_MULTIPLIER));
+
+	++counter;
+}
+
 void CTiledLightVolumesStage::GenerateLightList()
 {
 	CRY_PROFILE_FUNCTION(PROFILE_RENDERER);
@@ -1044,6 +1067,10 @@ void CTiledLightVolumesStage::GenerateLightList()
 			++numTileLights;
 			++numValidRenderLights;
 		}
+
+		// Add sun after cubemaps
+		if (lightListIdx == 1 && pRenderView->HaveSunLight())
+			InjectSunIntoTiledLights(numTileLights);
 	}
 
 	// Invalidate last light in case it got skipped
@@ -1054,37 +1081,6 @@ void CTiledLightVolumesStage::GenerateLightList()
 	}
 
 	numSkipLights = numRenderLights - numValidRenderLights;
-
-	// Add sun
-	if (pRenderView->HaveSunLight())
-	{
-		if (numTileLights < MaxNumTileLights)
-		{
-			STiledLightInfo& lightInfo = m_tileLights[numTileLights];
-			STiledLightShadeInfo& lightShadeInfo = tileLightsShade[numTileLights];
-
-			lightInfo.volumeType = tlVolumeSun;
-			lightInfo.posRad = Vec4(0, 0, 0, 100000);
-			lightInfo.depthBoundsVS = Vec2(-100000, 100000);
-
-			lightShadeInfo.lightType = tlTypeSun;
-			lightShadeInfo.attenuationParams = Vec2(TiledShading_SunSourceDiameter, TiledShading_SunSourceDiameter);
-			lightShadeInfo.shadowParams = Vec2(1, 0);
-			lightShadeInfo.shadowMaskIndex = 0;
-			lightShadeInfo.stencilID0 = lightShadeInfo.stencilID1 = STENCIL_VALUE_OUTDOORS;
-
-			Vec3 sunColor;
-			gEnv->p3DEngine->GetGlobalParameter(E3DPARAM_SUN_COLOR, sunColor);
-			sunColor *= rd->m_fAdaptedSceneScaleLBuffer;  // Apply LBuffers range rescale
-			lightShadeInfo.color = Vec4(sunColor.x, sunColor.y, sunColor.z, gEnv->p3DEngine->GetGlobalParameter(E3DPARAM_SUN_SPECULAR_MULTIPLIER));
-
-			++numTileLights;
-		}
-		else
-		{
-			numSkipLights += 1;
-		}
-	}
 
 #if defined(ENABLE_PROFILING_CODE)
 	SRenderStatistics::Write().m_NumTiledShadingSkippedLights = numSkipLights;
@@ -1325,7 +1321,7 @@ void CTiledLightVolumesStage::ExecuteVolumeListGen(uint32 dispatchSizeX, uint32 
 				primitive.Compile(m_passLightVolumes);
 
 				{
-					auto constants = primitive.GetConstantManager().BeginTypedConstantUpdate<HLSL_VolumeLightListGenConstants>(eConstantBufferShaderSlot_PerBatch, EShaderStage_Vertex | EShaderStage_Pixel);
+					auto constants = primitive.GetConstantManager().BeginTypedConstantUpdate<HLSL_VolumeLightListGenConstants>(eConstantBufferShaderSlot_PerPrimitive, EShaderStage_Vertex | EShaderStage_Pixel);
 
 					constants->screenScale = Vec4((float)pDepthRT->GetWidth(), (float)pDepthRT->GetHeight(), 0, 0);
 

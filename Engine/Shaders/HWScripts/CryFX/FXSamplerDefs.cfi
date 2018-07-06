@@ -17,14 +17,14 @@
 #define OPACITYMAP            Texture2D   opacityTex          : register(t11)                                   = TM_Opacity;
 #define TRANSLUCENCYMAP       Texture2D   translucencyTex     : register(t12)                                   = TM_Translucency;
 #define EMITTANCEMAP          Texture2D   emittanceTex        : register(t13)                                   = TM_Emittance;
-#define	flowTex               detailTex  
+#define flowTex               detailTex  
 
 // GBuffer per pass textures.
-#define	PERLIN_NOISE_MAP      Texture2D   perlinNoiseTex      : register(t25)                                   = "%ENGINE%/EngineAssets/Textures/perlinNoise2D.dds";
-#define	TERRAIN_ELEV_MAP      Texture2D   terrainElevTex      : register(t26)                                   = TS_TerrainElevMap;
-#define WIND_GRID_MAP         Texture2D   windGridTex         : register(t27)                                   = TS_WindGrid;  
-#define	TERRAIN_NORM_MAP      Texture2D   terrainNormTex      : register(t28)                                   = TS_TerrainNormMap;
-#define	TERRAIN_BASE_MAP      Texture2D   terrainBaseTex      : register(t29)                                   = TS_TerrainBaseMap;
+#define PERLIN_NOISE_MAP      Texture2D   perlinNoiseTex      : register(t25)                                   = "%ENGINE%/EngineAssets/Textures/perlinNoise2D.dds";
+#define WIND_GRID_MAP         Texture2D   windGridTex         : register(t26)                                   = TS_WindGrid;  
+#define TERRAIN_ELEV_MAP      Texture2D   terrainElevTex      : register(t27)                                   = TS_TerrainElevMap;
+#define TERRAIN_NORM_MAP      Texture2D   terrainNormTex      : register(t28)                                   = TS_TerrainNormMap;
+#define TERRAIN_BASE_MAP      Texture2D   terrainBaseTex      : register(t29)                                   = TS_TerrainBaseMap;
 #define NORMALS_FITTING_MAP   Texture2D   normalsFittingTex   : register(t30)                                   = "%ENGINE%/EngineAssets/ScreenSpace/NormalsFitting.dds";
 #define DISSOLVE_NOISE_MAP    Texture2D   dissolveNoiseTex    : register(t31)                                   = "%ENGINE%/EngineAssets/Textures/noise.dds";  
 

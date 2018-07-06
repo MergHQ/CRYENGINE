@@ -25,7 +25,7 @@ vert2fragZ Common_ZPassVS(app2vertGBuffer IN_common)
 	vertPassPos.Position.xyz += SilPomDispl * -HeightBias;
 #endif
 
-  float4 HPosition = Pos_VS_General(g_VS_ViewProjZeroMatr, vertPassPos);
+	float4 HPosition = Pos_VS_General(g_VS_ViewProjZeroMatr, vertPassPos);
 
 #if %_RT_MOTION_BLUR && !%_RT_ALPHABLEND
 	vertPassPosPrev.PositionCurr = vertPassPos.Position;
@@ -193,20 +193,18 @@ void ApplyDirtAndBlendLayer(vert2fragZ IN, half blendFac, inout half3 diffCol, i
 
 void ApplyVegetationTerrainColor(vert2fragZ IN, inout MaterialAttribsCommon attribs)
 {
-	#if %TEMP_VEGETATION
-		#if %_RT_BLEND_WITH_TERRAIN_COLOR
-			const float3 TERRAIN_BASE_SPEC_COLOR = 0.001f;
-			const float TERRAIN_BASE_SMOOTHNESS = 0.1f;
+	#if (%TEMP_VEGETATION && %_RT_BLEND_WITH_TERRAIN_COLOR)
+		const float3 TERRAIN_BASE_SPEC_COLOR = 0.001f;
+		const float TERRAIN_BASE_SMOOTHNESS = 0.1f;
 
-			half4 terrainCol = GetTerrainTex(terrainBaseTex, IN.terrainParams0.xy);
-			float3 terrainNor = float3(0,0,1);//GetTerrainNormal(terrainNormTex, IN.terrainParams0.xy); // disabled until levels re-exported
+		half4 terrainCol = GetTerrainTex(terrainBaseTex, IN.terrainParams0.xy);
+		float3 terrainNor = float3(0,0,1);//GetTerrainNormal(terrainNormTex, IN.terrainParams0.xy); // disabled until levels re-exported
 
-			attribs.NormalWorld		= lerp(attribs.NormalWorld,		terrainNor,								IN.terrainParams0.z);
-			attribs.Albedo				= lerp(attribs.Albedo,				terrainCol.xyz,						IN.terrainParams0.z);
-			attribs.Reflectance		= lerp(attribs.Reflectance,		TERRAIN_BASE_SPEC_COLOR,	IN.terrainParams0.z);
-			attribs.Smoothness		= lerp(attribs.Smoothness,		TERRAIN_BASE_SMOOTHNESS,	IN.terrainParams0.z);
-			attribs.Transmittance = lerp(attribs.Transmittance, 0,												IN.terrainParams0.z);
-		#endif
+		attribs.NormalWorld		= lerp(attribs.NormalWorld,		terrainNor,								IN.terrainParams0.z);
+		attribs.Albedo			= lerp(attribs.Albedo,			terrainCol.xyz,						IN.terrainParams0.z);
+		attribs.Reflectance		= lerp(attribs.Reflectance,		TERRAIN_BASE_SPEC_COLOR,	IN.terrainParams0.z);
+		attribs.Smoothness		= lerp(attribs.Smoothness,		TERRAIN_BASE_SMOOTHNESS,	IN.terrainParams0.z);
+		attribs.Transmittance = lerp(attribs.Transmittance, 0,												IN.terrainParams0.z);
 	#endif
 }
 

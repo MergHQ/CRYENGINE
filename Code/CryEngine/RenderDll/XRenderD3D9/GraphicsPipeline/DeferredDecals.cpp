@@ -65,7 +65,7 @@ void CDeferredDecalsStage::ResizeDecalBuffers(size_t requiredDecalCount)
 			CConstantBufferPtr pCB = gcpRendD3D->m_DevBufMan.CreateConstantBuffer(sizeof(SDecalConstants));
 
 			m_decalPrimitives.emplace_back();
-			m_decalPrimitives.back().SetInlineConstantBuffer(eConstantBufferShaderSlot_PerBatch, pCB, EShaderStage_Pixel | EShaderStage_Vertex);
+			m_decalPrimitives.back().SetInlineConstantBuffer(eConstantBufferShaderSlot_PerPrimitive, pCB, EShaderStage_Pixel | EShaderStage_Vertex);
 
 			m_decalShaderResources.emplace_back();
 		}
@@ -172,7 +172,7 @@ void CDeferredDecalsStage::SetupDecalPrimitive(const SDeferredDecal& decal, CRen
 	// Update constants
 	{
 		auto& constantManager = primitive.GetConstantManager();
-		auto constants = constantManager.BeginTypedConstantUpdate<SDecalConstants>(eConstantBufferShaderSlot_PerBatch, EShaderStage_Pixel | EShaderStage_Vertex);
+		auto constants = constantManager.BeginTypedConstantUpdate<SDecalConstants>(eConstantBufferShaderSlot_PerPrimitive, EShaderStage_Pixel | EShaderStage_Vertex);
 
 		SRenderViewInfo viewInfo[2];
 		size_t viewInfoCount = GetGraphicsPipeline().GenerateViewInfo(viewInfo);

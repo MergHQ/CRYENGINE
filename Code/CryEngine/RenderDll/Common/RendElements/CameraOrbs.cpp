@@ -77,8 +77,8 @@ CameraOrbs::CameraOrbs(const char* name, const int numOrbs)
 
 	// share one constant buffer between both primitives
 	CConstantBufferPtr pSharedCB = gcpRendD3D->m_DevBufMan.CreateConstantBuffer(sizeof(SShaderParams), true, true);
-	m_GlowPrimitive.SetInlineConstantBuffer(eConstantBufferShaderSlot_PerBatch,       pSharedCB, EShaderStage_Vertex | EShaderStage_Pixel);
-	m_CameraLensPrimitive.SetInlineConstantBuffer(eConstantBufferShaderSlot_PerBatch, pSharedCB, EShaderStage_Vertex | EShaderStage_Pixel);
+	m_GlowPrimitive.SetInlineConstantBuffer(eConstantBufferShaderSlot_PerPrimitive,       pSharedCB, EShaderStage_Vertex | EShaderStage_Pixel);
+	m_CameraLensPrimitive.SetInlineConstantBuffer(eConstantBufferShaderSlot_PerPrimitive, pSharedCB, EShaderStage_Vertex | EShaderStage_Pixel);
 }
 
 void CameraOrbs::Load(IXmlNode* pNode)
@@ -291,7 +291,7 @@ bool CameraOrbs::PreparePrimitives(const SPreparePrimitivesContext& context)
 
 	// update constants
 	{
-		auto constants = m_GlowPrimitive.GetConstantManager().BeginTypedConstantUpdate<SShaderParams>(eConstantBufferShaderSlot_PerBatch, EShaderStage_Vertex | EShaderStage_Pixel);
+		auto constants = m_GlowPrimitive.GetConstantManager().BeginTypedConstantUpdate<SShaderParams>(eConstantBufferShaderSlot_PerPrimitive, EShaderStage_Vertex | EShaderStage_Pixel);
 
 		ApplyCommonParams(constants, context.pViewInfo->viewport, context.lightScreenPos[0], Vec2(m_globalSize));
 		constants->lensDetailParams = Vec4(1, 1, GetLensDetailBumpiness(), 0);

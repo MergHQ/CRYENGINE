@@ -51,14 +51,8 @@ D3D12_DESCRIPTOR_RANGE_TYPE mapDescriptorRange[size_t(SResourceBindPoint::ESlotT
 
 ///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 CDeviceObjectFactory::CDeviceObjectFactory()
-	: m_fence_handle(0)
 {
 	memset(m_NullResources, 0, sizeof(m_NullResources));
-
-	m_frameFenceCounter = 0;
-	m_completedFrameFenceCounter = 0;
-	for (uint32 i = 0; i < CRY_ARRAY_COUNT(m_frameFences); i++)
-		m_frameFences[i] = NULL;
 
 	m_pCoreCommandList.reset(new CDeviceCommandList());
 	m_pCoreCommandList->m_sharedState.pCommandList = nullptr;
@@ -478,10 +472,25 @@ void CDeviceObjectFactory::ReleaseStagingResource(D3DResource* pStagingTex)
 {
 	if (pStagingTex)
 	{
+		if (false /* TODO: rResource.IsPersistentMappable() */) // Resources on D3D12_HEAP_TYPE_READBACK heaps do not support persistent map.
+		{
+			gcpRendD3D->GetDeviceContext_Unsynchronized().UnmapStagingResource(pStagingTex, true);
+		}
+
 		gcpRendD3D->GetDevice_Unsynchronized().ReleaseStagingResource(pStagingTex);
 	}
 }
 #endif
+
+void CDeviceObjectFactory::ReleaseResource(D3DResource* pResource)
+{
+	pResource->Release(); // Tracking embedded in destructor of wrapped object
+}
+
+void CDeviceObjectFactory::RecycleResource(D3DResource* pResource)
+{
+	gcpRendD3D->GetDevice_Unsynchronized().ReleaseStagingResource(pResource);
+}
 
 //=============================================================================
 

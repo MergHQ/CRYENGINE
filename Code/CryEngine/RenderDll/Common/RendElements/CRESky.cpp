@@ -27,7 +27,7 @@ bool CRESky::Compile(CRenderObject* pObj, CRenderView *pRenderView, bool updateI
 	return true;
 }
 
-void CRESky::DrawToCommandList(CRenderObject* pObj, const struct SGraphicsPipelinePassContext& ctx)
+void CRESky::DrawToCommandList(CRenderObject* pObj, const struct SGraphicsPipelinePassContext& ctx, CDeviceCommandList* commandList)
 {
 	gcpRendD3D->GetGraphicsPipeline().GetSceneForwardStage()->SetSkyRE(this, nullptr);
 }
@@ -99,7 +99,7 @@ bool CREHDRSky::Compile(CRenderObject* pObj, CRenderView *pRenderView, bool upda
 	return true;
 }
 
-void CREHDRSky::DrawToCommandList(CRenderObject* pObj, const struct SGraphicsPipelinePassContext& ctx)
+void CREHDRSky::DrawToCommandList(CRenderObject* pObj, const struct SGraphicsPipelinePassContext& ctx, CDeviceCommandList* commandList)
 {
 	gcpRendD3D->GetGraphicsPipeline().GetSceneForwardStage()->SetSkyRE(nullptr, this);
 }

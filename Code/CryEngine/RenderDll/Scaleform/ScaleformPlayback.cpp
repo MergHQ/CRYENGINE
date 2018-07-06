@@ -816,18 +816,13 @@ void CScaleformPlayback::PopOutputTarget()
 		params.m_bScaleformRenderParametersDirty = true;
 	}
 
-	pCurOutput->pRenderTarget->Release();
-	if (pCurOutput->pStencilTarget)
-	{
-		pCurOutput->pStencilTarget->Release();
-	}
-
-	pCurOutput->tempDepthTexture = nullptr;
-
 	m_renderTargetStack.pop_back();
 
 	// Graphics pipeline >= 1
 	params.pRenderOutput = nullptr;
+
+	m_pRenderer->SF_GetResources().FreeColorSurfaces();
+	m_pRenderer->SF_GetResources().FreeStencilSurfaces();
 }
 
 void CScaleformPlayback::PushOutputTarget(const Viewport &viewport)
@@ -852,12 +847,6 @@ void CScaleformPlayback::PushOutputTarget(const Viewport &viewport)
 	{
 		sNewOutput.pRenderTarget  = m_pRenderOutput->GetColorTarget();
 		sNewOutput.pStencilTarget = m_pRenderOutput->GetDepthTarget();
-	}
-
-	sNewOutput.pRenderTarget->AddRef();
-	if (sNewOutput.pStencilTarget)
-	{
-		sNewOutput.pStencilTarget->AddRef();
 	}
 
 	// Graphics pipeline >= 1
@@ -915,15 +904,6 @@ void CScaleformPlayback::PopRenderTarget()
 		params.m_bScaleformRenderParametersDirty = true;
 	}
 
-	pCurOutput->pRenderTarget->Release();
-	if (pCurOutput->pStencilTarget)
-	{
-		pCurOutput->pStencilTarget->Unlock();
-		pCurOutput->pStencilTarget->Release();
-	}
-
-	pCurOutput->tempDepthTexture = nullptr;
-
 	//clear texture slot, may not be required
 	ApplyTextureInfo(0);
 //	ApplyTextureInfo(1);
@@ -964,8 +944,8 @@ int32 CScaleformPlayback::PushTempRenderTarget(const RectF& frameRect, uint32 ta
 		RTHeight = 1 << log2;
 	}
 
-	auto		   pNewTempST = wantStencil ? m_pRenderer->SF_GetResources().GetStencilSurface(m_pRenderer, RTWidth, RTHeight, eTF_D24S8) : nullptr;
-	CTexture*      pNewTempRT = m_pRenderer->SF_GetResources().GetColorSurface(m_pRenderer, RTWidth, RTHeight, eTF_R8G8B8A8, RTWidth, RTHeight);// TODO: allow larger RTs upto ST (needs viewport adjustment), pNewTempST->pTexture->GetWidth(), pNewTempST->pTexture->GetHeight());
+	CTexture* pNewTempRT = m_pRenderer->SF_GetResources().GetColorSurface(m_pRenderer, RTWidth, RTHeight, eTF_R8G8B8A8, RTWidth, RTHeight);// TODO: allow larger RTs upto ST (needs viewport adjustment), pNewTempST->pTexture->GetWidth(), pNewTempST->pTexture->GetHeight());
+	CTexture* pNewTempST = wantStencil ? m_pRenderer->SF_GetResources().GetStencilSurface(m_pRenderer, pNewTempRT->GetWidth(), pNewTempRT->GetHeight(), eTF_D24S8) : nullptr;
 
 	m_renderTargetStack.emplace_back();
 	SSF_GlobalDrawParams::OutputParams& sNewOutput = m_renderTargetStack.back();
@@ -974,18 +954,10 @@ int32 CScaleformPlayback::PushTempRenderTarget(const RectF& frameRect, uint32 ta
 	sNewOutput.oldViewMat = m_matViewport;
 	sNewOutput.oldViewportHeight = 0; // Previous width
 	sNewOutput.oldViewportWidth = 0;  // Previous height
-	sNewOutput.tempDepthTexture = pNewTempST;
 	sNewOutput.pRenderTarget = pNewTempRT;
-	sNewOutput.pStencilTarget = pNewTempST ? pNewTempST->texture.pTexture : nullptr;
+	sNewOutput.pStencilTarget = pNewTempST;
 	sNewOutput.bRenderTargetClear = pNewTempRT && wantClear;
 	sNewOutput.bStencilTargetClear = pNewTempST && false;
-
-	sNewOutput.pRenderTarget->AddRef();
-	if (sNewOutput.pStencilTarget)
-	{
-		sNewOutput.pStencilTarget->AddRef();
-		sNewOutput.pStencilTarget->Lock();
-	}
 
 	// Graphics pipeline >= 1
 	{

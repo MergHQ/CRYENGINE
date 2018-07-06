@@ -230,11 +230,11 @@ SShaderBin* CShaderManBin::SaveBinShader(
 				macro[n] = 0;
 				n--;
 			}
-			char* b = &macro[0];
+			const char* b = &macro[0];
 			while (*b)
 			{
 				SkipCharacters(&b, kWhiteSpace);
-				SkipComments(&b, true);
+				SkipComments((char**)&b, true);
 				if (!b[0])
 					break;
 				bKey = false;
@@ -1087,7 +1087,7 @@ SShaderBin* CShaderManBin::GetBinShader(const char* szName, bool bInclude, uint3
 
 			if (bValid)
 			{
-				LogWarningEngineOnly("%s", acTemp);
+				LogWarningEngineOnly(acTemp);
 			}
 
 			if (fpDst)
@@ -1129,8 +1129,8 @@ SShaderBin* CShaderManBin::GetBinShader(const char* szName, bool bInclude, uint3
 						*pbChanged = true;
 
 					// remove the entries in the looupdata, to be sure that level and global caches have also become invalid for these shaders!
-					gRenDev->m_cEF.m_ResLookupDataMan[CACHE_READONLY].RemoveData(Header[0].m_CRC32);
-					gRenDev->m_cEF.m_ResLookupDataMan[CACHE_USER].RemoveData(Header[1].m_CRC32);
+					gRenDev->m_cEF.m_ResLookupDataMan[static_cast<int>(cacheSource::readonly)].RemoveData(Header[0].m_CRC32);
+					gRenDev->m_cEF.m_ResLookupDataMan[static_cast<int>(cacheSource::user)].RemoveData(Header[1].m_CRC32);
 
 					// has the shader been successfully written to the dest address
 					fpDst = gEnv->pCryPak->FOpen(szDst.c_str(), "rb", ICryPak::FLAGS_NEVER_IN_PAK | ICryPak::FLAGS_PATH_REAL | ICryPak::FOPEN_ONDISK);
@@ -2515,7 +2515,7 @@ inline bool CompareVars(const SFXParam* a, const SFXParam* b)
 	return (nReg0 < nReg1);
 }
 
-EToken dwNamesCB[CB_NUM] = { eT_PER_BATCH, eT_PER_INSTANCE, eT_unknown, eT_PER_MATERIAL, eT_unknown, eT_unknown, eT_SKIN_DATA, eT_INSTANCE_DATA };
+EToken dwNamesCB[CB_NUM] = { eT_PER_BATCH, eT_PER_MATERIAL };
 
 void CShaderManBin::AddParameterToScript(CParserBin& Parser, SFXParam* pr, PodArray<uint32>& SHData, EHWShaderClass eSHClass, int nCB)
 {
@@ -3049,7 +3049,7 @@ bool CShaderManBin::ParseBinFX_Technique_Pass_LoadShader(CParserBin& Parser, FXM
 	{
 		char str[1024];
 		cry_sprintf(str, "%s@%s", Parser.m_pCurShader->m_NameShader.c_str(), szName);
-		pSH = CHWShader::mfForName(str, Parser.m_pCurShader->m_NameFile, Parser.m_pCurShader->m_CRC32, szName, eSHClass, SHData, &Parser.m_TokenTable, dwSHType, Parser.m_pCurShader, nGenMask, Parser.m_pCurShader->m_nMaskGenFX);
+		pSH = CHWShader::mfForName(str, Parser.m_pCurShader->m_NameFile, Parser.m_pCurShader->m_CRC32, szName, eSHClass, SHData, Parser.m_TokenTable, dwSHType, Parser.m_pCurShader, nGenMask, Parser.m_pCurShader->m_nMaskGenFX);
 	}
 	if (pSH)
 	{
@@ -3738,7 +3738,7 @@ bool CShaderManBin::ParseBinFX(SShaderBin* pBin, CShader* ef, uint64 nMaskGen)
 		AddGenMacros(efGen->m_ShaderGenParams, Parser, nMaskGen);
 
 	pBin->Lock();
-	Parser.Preprocess(0, pBin->m_Tokens, &pBin->m_TokenTable);
+	Parser.Preprocess(0, pBin->m_Tokens, pBin->m_TokenTable);
 	ef->m_CRC32 = pBin->m_CRC32;
 	ef->m_SourceCRC32 = pBin->m_SourceCRC32;
 	pBin->Unlock();
@@ -4018,32 +4018,17 @@ bool CShaderManBin::ParseBinFX(SShaderBin* pBin, CShader* ef, uint64 nMaskGen)
 					if (nTokAssign)
 					{
 						const char* assign = Parser.GetString(nTokAssign);
-						if (!strnicmp(assign, "SK_", 3))
-							Pr.m_nCB = CB_SKIN_DATA;
-						else if (!assign[0] || !strnicmp(assign, "PB_", 3))
-							Pr.m_nCB = CB_PER_BATCH;
-						else if (!strnicmp(assign, "PI_", 3) || !strnicmp(assign, "SI_", 3))
-							Pr.m_nCB = CB_PER_INSTANCE;
-						else if (!strnicmp(assign, "PM_", 3))
+						if (assign[0] && !strnicmp(assign, "PM_", 3))
 							Pr.m_nCB = CB_PER_MATERIAL;
-						else if (!strnicmp(assign, "register", 8))
-							Pr.m_nCB = CB_PER_BATCH;
 						else
-							Pr.m_nCB = CB_PER_BATCH;
+							Pr.m_nCB = CB_PER_DRAW;
 					}
 					else if (CParserBin::m_nPlatform & (SF_D3D11 | SF_ORBIS | SF_DURANGO | SF_GL4 | SF_GLES3 | SF_VULKAN))
 					{
 						uint32 nTokName = Parser.GetToken(Parser.m_Name);
-						if (nTokName == eT__g_SkinQuat)
-							Pr.m_nCB = CB_SKIN_DATA;
-						else
-						{
-							const char* name = Parser.GetString(nTokName);
-							if (!strncmp(name, "PI_", 3))
-								Pr.m_nCB = CB_PER_INSTANCE;
-							else
-								Pr.m_nCB = CB_PER_BATCH;
-						}
+						const char* name = Parser.GetString(nTokName);
+						
+						Pr.m_nCB = CB_PER_DRAW;
 					}
 
 					Pr.PostLoad(Parser, Parser.m_Name, Parser.m_Annotations, Parser.m_Value, Parser.m_Assign);
@@ -4413,7 +4398,7 @@ bool CShaderManBin::ParseBinFX_Dummy(SShaderBin* pBin, std::vector<string>& Shad
 	CParserBin Parser(pBin, NULL);
 
 	pBin->Lock();
-	Parser.Preprocess(0, pBin->m_Tokens, &pBin->m_TokenTable);
+	Parser.Preprocess(0, pBin->m_Tokens, pBin->m_TokenTable);
 	pBin->Unlock();
 
 	SParserFrame Frame(0, Parser.m_Tokens.size() - 1);

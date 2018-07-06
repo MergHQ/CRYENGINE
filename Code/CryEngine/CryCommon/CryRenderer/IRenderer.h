@@ -565,6 +565,7 @@ struct CRY_ALIGN(16) SAddParticlesToSceneJob
 	IParticleVertexCreator* pVertexCreator = nullptr;
 	gpu_pfx2::IParticleComponentRuntime* pGpuRuntime = nullptr;
 	int16 nCustomTexId;
+	AABB aabb;
 };
 
 #ifdef SUPPORT_HW_MOUSE_CURSOR
@@ -657,28 +658,6 @@ enum EDrawTextFlags
 	eDrawText_IgnoreOverscan = BIT(10), //!< Ignore the overscan borders, text should be drawn at the location specified.
 	eDrawText_LegacyBehavior = BIT(11)  //!< Reserved for internal system use.
 };
-
-// Debug stats/views for Partial resolves
-// if REFRACTION_PARTIAL_RESOLVE_DEBUG_VIEWS is enabled, make sure REFRACTION_PARTIAL_RESOLVE_STATS is too
-#if defined(PERFORMANCE_BUILD)
-	#define REFRACTION_PARTIAL_RESOLVE_STATS       1
-	#define REFRACTION_PARTIAL_RESOLVE_DEBUG_VIEWS 0
-#elif defined(_RELEASE) // note: _RELEASE is defined in PERFORMANCE_BUILD, so this check must come second
-	#define REFRACTION_PARTIAL_RESOLVE_STATS       0
-	#define REFRACTION_PARTIAL_RESOLVE_DEBUG_VIEWS 0
-#else
-	#define REFRACTION_PARTIAL_RESOLVE_STATS       1
-	#define REFRACTION_PARTIAL_RESOLVE_DEBUG_VIEWS 1
-#endif
-
-#if REFRACTION_PARTIAL_RESOLVE_DEBUG_VIEWS
-enum ERefractionPartialResolvesDebugViews
-{
-	eRPR_DEBUG_VIEW_2D_AREA = 1,
-	eRPR_DEBUG_VIEW_3D_BOUNDS,
-	eRPR_DEBUG_VIEW_2D_AREA_OVERLAY
-};
-#endif
 
 //! \cond INTERNAL
 //! This structure used in DrawText method of renderer.
@@ -866,9 +845,10 @@ struct RPProfilerDetailedStats
 	char            name[31];
 	float           gpuTime;
 	float           gpuTimeSmoothed;
+	float           cpuTime;
 	float           cpuTimeSmoothed;
 	CTimeValue      startTimeCPU, endTimeCPU;
-	uint32          startTimestamp, endTimestamp;
+	uint64          startTimeGPU, endTimeGPU;
 	int             numDIPs, numPolys;
 	int8            recLevel;   // Negative value means error in stack
 	uint8           flags;
@@ -958,7 +938,7 @@ struct IRenderer//: public IRendererCallbackServer
 		HWND handle  = 0; // WIN_HWND
 
 		ColorF clearColor               = Clr_Empty;
-		ColorF clearDepthStencil        = Clr_FarPlane;
+		ColorF clearDepthStencil        = Clr_FarPlane_Rev;
 		Vec2i  superSamplingFactor      = { 1, 1 };
 		Vec2i  screenResolution         = { 0, 0 };
 

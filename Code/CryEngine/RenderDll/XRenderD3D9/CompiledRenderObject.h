@@ -109,6 +109,8 @@ public:
 		uint32                 m_nRenderList : 8; //!< Defines in which render list this compiled object belongs to, see ERenderListID
 		CCompiledRenderObject* m_pCompiledObject; //!< Compiled object with precompiled PSO
 		CRenderElement*        m_pRenderElement;  //!< Mesh subset, or a special rendering object
+
+		AABB                   m_aabb;            //!< AABB in local space
 	};
 	//! Persistent object record all items added to the object for the general and for shadow pass.
 	//! These items are then efficiently expanded adding render items to CRenderView lists.
@@ -138,8 +140,8 @@ class CRenderObjectsPools
 public:
 	CRenderObjectsPools();
 	~CRenderObjectsPools();
-	CConstantBufferPtr AllocatePerInstanceConstantBuffer();
-	void               FreePerInstanceConstantBuffer(CConstantBufferPtr&& buffer);
+	CConstantBufferPtr AllocatePerDrawConstantBuffer();
+	void               FreePerDrawConstantBuffer(CConstantBufferPtr&& buffer);
 
 public:
 
@@ -169,7 +171,8 @@ enum EObjectCompilationOptions : uint8
 	eObjCompilationOption_InputStreams              = BIT(3), // e.g. geometry streams (vertex, index buffers)
 
 	eObjCompilationOption_None                = 0,
-	eObjCompilationOption_PerInstanceDataOnly = eObjCompilationOption_PerInstanceConstantBuffer | eObjCompilationOption_PerInstanceExtraResources,
+	eObjCompilationOption_PerIntanceDataOnly  = eObjCompilationOption_PerInstanceConstantBuffer |
+	                                            eObjCompilationOption_PerInstanceExtraResources,
 	eObjCompilationOption_All                 = eObjCompilationOption_PipelineState             | 
 	                                            eObjCompilationOption_PerInstanceConstantBuffer | 
 	                                            eObjCompilationOption_PerInstanceExtraResources | 
@@ -193,9 +196,11 @@ public:
 		float dissolve;
 		float tesselationPatchId;
 	};
+
 	struct SRootConstants
 	{
 	};
+
 	struct SDrawParams
 	{
 		int32 m_nVerticesCount;
@@ -208,6 +213,7 @@ public:
 			, m_nNumIndices(0)
 		{}
 	};
+
 	enum EDrawParams
 	{
 		eDrawParam_Shadow,
@@ -230,6 +236,9 @@ public:
 	uint32 m_bCustomRenderElement       : 1; //!< When dealing with not known render element, will cause Draw be redirected to the RenderElement itself
 	/////////////////////////////////////////////////////////////////////////////
 
+	// AABB in world space
+	AABB m_aabb;
+
 	//////////////////////////////////////////////////////////////////////////
 	// Members used in submitting in the draw submission, sorted by access order
 	// This area should be smaller than 128 bytes (2x 64byte cache-lines)
@@ -238,17 +247,17 @@ public:
 	CDeviceResourceSetPtr m_materialResourceSet;
 
 	// Per instance constant buffer contain transformation matrix and other potentially not often changed data.
-	CConstantBufferPtr    m_perInstanceCB;
+	CConstantBufferPtr    m_perDrawCB;
 
 	// Per instance extra data
-	CDeviceResourceSetPtr m_perInstanceExtraResources;
+	CDeviceResourceSetPtr m_perDrawExtraResources;
 
 	// Streams data.
 	const CDeviceInputStream* m_vertexStreamSet;
 	const CDeviceInputStream* m_indexStreamSet;
 
-	CConstantBufferPtr  m_pInstancingConstBuffer;    //!< Constant Buffer with all instances
-	uint32              m_nInstances;                //!< Number of instances.
+	uint32                m_perDrawInstances;
+	CConstantBufferPtr    m_pInstancingConstBuffer;    //!< Constant Buffer with all instances
 
 	// DrawCall parameters, store separate values for merged shadow-gen draw calls
 	SDrawParams m_drawParams[eDrawParam_Count];
@@ -256,7 +265,7 @@ public:
 	// Array of the PSOs for every ERenderableTechnique.
 	// Sub array of PSO is defined inside the pass, and indexed by an integer passed inside the SGraphicsPipelinePassContext
 	// This data-blob alone is 200 bytes (the head of the array lies within the first 128 bytes)
-	DevicePipelineStatesArray m_pso[MAX_PIPELINE_SCENE_STAGES];
+	DevicePipelineStatesArray m_pso[eStage_SCENE_NUM];
 
 	// / / / / / / / / / / / / / / / / / / / / / / / / / / / / / / / / / / / /
 	// These 2 members must be initialized prior to calling Compile
@@ -270,12 +279,12 @@ public:
 	// Optimized access to constants that can be directly bound to the root signature.
 	SRootConstants         m_rootConstants;
 
-	// Used for dynamic instancing.
-	SPerInstanceShaderData m_instanceShaderData;
-
 	int                    m_TessellationPatchIDOffset; // for tessellation only
 	CGpuBuffer*            m_pTessellationAdjacencyBuffer;
 	CGpuBuffer*            m_pExtraSkinWeights; // eight weight skinning
+
+	// Used for instancing.
+	SPerInstanceShaderData m_instanceData;
 
 	//////////////////////////////////////////////////////////////////////////
 public:
@@ -288,12 +297,11 @@ public:
 		, m_bIncomplete(true)
 		, m_bHasTessellation(false)
 		, m_bSharedWithShadow(false)
-		, m_bDynamicInstancingPossible(false)
 		, m_bCustomRenderElement(false)
-		, m_nInstances(0)
+		, m_perDrawInstances(1)
 		, m_TessellationPatchIDOffset(-1)
 	{
-		for (int i = 0; i < MAX_PIPELINE_SCENE_STAGES; ++i)
+		for (int i = 0; i < eStage_SCENE_NUM; ++i)
 		{
 			std::fill(m_pso[i].begin(), m_pso[i].end(), nullptr);
 		}
@@ -302,33 +310,35 @@ public:
 
 	// Compile(): Returns true if the compilation is fully finished, false if compilation should be retriggered later
 
-	bool Compile(const EObjectCompilationOptions& compilationOptions, CRenderView *pRenderView);
+	bool Compile(const EObjectCompilationOptions& compilationOptions, const AABB &localAABB, CRenderView *pRenderView);
 	void PrepareForUse(CDeviceCommandListRef RESTRICT_REFERENCE commandList, bool bInstanceOnly) const;
 
-	void DrawToCommandList(const SGraphicsPipelinePassContext& RESTRICT_REFERENCE passContext, CConstantBuffer* pDynamicInstancingBuffer = nullptr, uint32 dynamicInstancingCount = 0) const;
+	void DrawToCommandList(const SGraphicsPipelinePassContext& RESTRICT_REFERENCE passContext, CDeviceCommandList* commandList, CConstantBuffer* pDynamicInstancingBuffer = nullptr, uint32 dynamicInstancingCount = 1) const;
 
 	void Init(const SShaderItem& shaderItem, CRenderElement* pRE);
 
 	// Check if on the fly instancing can be used between this and next object
 	// If instancing is possible writes current object instance data to the outputInstanceData parameter.
-	bool CheckDynamicInstancing(const SGraphicsPipelinePassContext& RESTRICT_REFERENCE passContext,CCompiledRenderObject* pNextObject) const;
+	bool CheckDynamicInstancing(const SGraphicsPipelinePassContext& RESTRICT_REFERENCE passContext, const CCompiledRenderObject* RESTRICT_POINTER pNextObject) const;
 
 	// Returns cached data used to fill dynamic instancing buffer
-	const SPerInstanceShaderData& GetInstancingData() const { return m_instanceShaderData; };
+	const SPerInstanceShaderData& GetInstancingData() const { return m_instanceData; };
 
-public:
 	static CCompiledRenderObject* AllocateFromPool();
 	static void FreeToPool(CCompiledRenderObject* ptr);
 	static void SetStaticPools(CRenderObjectsPools* pools) { s_pPools = pools; }
 
 private:
-	void CompilePerInstanceConstantBuffer(CRenderObject* pRenderObject);
-	void CompilePerInstanceExtraResources(CRenderObject* pRenderObject);
-	void CompileInstancingData(CRenderObject* pRenderObject, bool bForce);
-	void UpdatePerInstanceCB(void* pData, size_t size);
+	void CompilePerDrawCB(CRenderObject* pRenderObject);
+	void CompilePerInstanceCB(CRenderObject* pRenderObject, bool bForce);
+	void CompilePerDrawExtraResources(CRenderObject* pRenderObject);
+
+	void UpdatePerDrawCB(void* pData, size_t size);
+
 #ifdef DO_RENDERSTATS
 	void TrackStats(const SGraphicsPipelinePassContext& RESTRICT_REFERENCE passContext, CRenderObject* pRenderObject) const;
 #endif
+
 private:
 	static CRenderObjectsPools* s_pPools;
 	static CryCriticalSectionNonRecursive m_drawCallInfoLock;

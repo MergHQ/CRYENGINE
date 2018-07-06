@@ -15,8 +15,6 @@
 	#include "Redirections/D3D12Device.inl"
 #endif
 
-#include <atlbase.h>
-
 namespace NCryDX12 {
 
 //---------------------------------------------------------------------------------------------------------------------
@@ -31,13 +29,18 @@ CDevice* CDevice::Create(CCryDX12GIAdapter* pAdapter, D3D_FEATURE_LEVEL* pFeatur
 		{
 			debugInterface->EnableDebugLayer();
 
+#ifndef CRY_PLATFORM_CONSOLE
 			if (CRenderer::CV_r_EnableDebugLayer == 2)
 			{
 				// Enable DX12 GBV as well
-				CComPtr<ID3D12Debug1> spDebugController1;
+				ID3D12Debug1* spDebugController1;
 				if (SUCCEEDED(debugInterface->QueryInterface(IID_PPV_ARGS(&spDebugController1))))
+				{
 					spDebugController1->SetEnableGPUBasedValidation(true);
+					spDebugController1->Release();
+				}
 			}
+#endif
 		}
 	}
 
@@ -349,27 +352,6 @@ CDevice::~CDevice()
 
 	// Kill all entries in the allocation cache
 	FlushReleaseHeap(clearFences, clearFences);
-}
-
-//---------------------------------------------------------------------------------------------------------------------
-void CDevice::RequestUploadHeapMemory(UINT64 size, DX12_PTR(ID3D12Resource)& result)
-{
-	ID3D12Resource* resource = NULL;
-
-	if (S_OK != CreateOrReuseCommittedResource(
-	      &CD3DX12_HEAP_PROPERTIES(D3D12_HEAP_TYPE_UPLOAD),
-	      D3D12_HEAP_FLAG_NONE,
-	      &CD3DX12_RESOURCE_DESC::Buffer(size),
-	      D3D12_RESOURCE_STATE_GENERIC_READ,
-	      nullptr,
-	      IID_GFX_ARGS(&resource)) || !resource)
-	{
-		DX12_ASSERT(0, "Could not create upload heap memory buffer!");
-		return;
-	}
-
-	result = resource;
-	resource->Release();
 }
 
 //---------------------------------------------------------------------------------------------------------------------
@@ -818,6 +800,8 @@ HRESULT STDMETHODCALLTYPE CDevice::CreateOrReuseCommittedResource(
 	}
 	hashableBlob;
 
+	ZeroMemory(&hashableBlob, sizeof(hashableBlob));
+
 	hashableBlob.sHeapProperties = *pHeapProperties;
 	hashableBlob.sResourceDesc = *pResourceDesc;
 	hashableBlob.sHeapFlags = HeapFlags;
@@ -840,9 +824,12 @@ HRESULT STDMETHODCALLTYPE CDevice::CreateOrReuseCommittedResource(
 		{
 			if (ppvResource)
 			{
-				*ppvResource = result->second.pObject;
+				// Guaranteed O(1) lookup
+				*ppvResource = result->second.front().pObject;
 
-				m_RecycleHeap.erase(result);
+				result->second.pop_front();
+				if (!result->second.size())
+					m_RecycleHeap.erase(result);
 			}
 
 			return S_OK;
@@ -857,6 +844,10 @@ HRESULT STDMETHODCALLTYPE CDevice::CreateOrReuseCommittedResource(
 //---------------------------------------------------------------------------------------------------------------------
 void CDevice::FlushReleaseHeap(const UINT64 (&completedFenceValues)[CMDQUEUE_NUM], const UINT64(&pruneFenceValues)[CMDQUEUE_NUM]) threadsafe
 {
+	uint32 releases = 0;
+	uint32 recyclations = 0;
+	uint32 evictions = 0;
+
 	{
 		CryAutoLock<CryCriticalSectionNonRecursive> lThreadSafeScope(m_ReleaseHeapTheadSafeScope);
 
@@ -877,16 +868,30 @@ void CDevice::FlushReleaseHeap(const UINT64 (&completedFenceValues)[CMDQUEUE_NUM
 					RecycleInfo recycleInfo;
 
 					recycleInfo.pObject = it->first;
-					recycleInfo.fenceValues[CMDQUEUE_GRAPHICS] = completedFenceValues[CMDQUEUE_GRAPHICS];
-					recycleInfo.fenceValues[CMDQUEUE_COMPUTE] = completedFenceValues[CMDQUEUE_COMPUTE];
-					recycleInfo.fenceValues[CMDQUEUE_COPY] = completedFenceValues[CMDQUEUE_COPY];
+					recycleInfo.fenceValues[CMDQUEUE_GRAPHICS] = it->second.fenceValues[CMDQUEUE_GRAPHICS];
+					recycleInfo.fenceValues[CMDQUEUE_COMPUTE] = it->second.fenceValues[CMDQUEUE_COMPUTE];
+					recycleInfo.fenceValues[CMDQUEUE_COPY] = it->second.fenceValues[CMDQUEUE_COPY];
 
 					// TODO: could be accumulated to a local list and batch-merged in the next code-block to prevent the locking
-					m_RecycleHeap.emplace(it->second.hHash, std::move(recycleInfo));
+					auto& sorted = m_RecycleHeap[it->second.hHash];
+#if OUT_OF_ODER_RELEASE_LATER
+					if (sorted.size())
+					{
+						auto insertionpoint = sorted.begin();
+						while (insertionpoint->fenceValue > recycleInfo.fenceValue)
+							++insertionpoint;
+						sorted.insert(insertionpoint, std::move(recycleInfo));
+					}
+					else
+#endif
+						sorted.push_front(std::move(recycleInfo));
+
+					recyclations++;
 				}
 				else
 				{
 					it->first->Release();
+					releases++;
 				}
 
 				m_ReleaseHeap.erase(it);
@@ -904,19 +909,133 @@ void CDevice::FlushReleaseHeap(const UINT64 (&completedFenceValues)[CMDQUEUE_NUM
 			nx = it;
 			++nx;
 
-			if (((it->second.fenceValues[CMDQUEUE_GRAPHICS]) <= pruneFenceValues[CMDQUEUE_GRAPHICS]) &&
-			    ((it->second.fenceValues[CMDQUEUE_COMPUTE]) <= pruneFenceValues[CMDQUEUE_COMPUTE]) &&
-			    ((it->second.fenceValues[CMDQUEUE_COPY]) <= pruneFenceValues[CMDQUEUE_COPY]))
+			while (((it->second.back().fenceValues[CMDQUEUE_GRAPHICS]) <= pruneFenceValues[CMDQUEUE_GRAPHICS]) &&
+			       ((it->second.back().fenceValues[CMDQUEUE_COMPUTE]) <= pruneFenceValues[CMDQUEUE_COMPUTE]) &&
+			       ((it->second.back().fenceValues[CMDQUEUE_COPY]) <= pruneFenceValues[CMDQUEUE_COPY]))
 			{
 				// NOTE: some of the objects are referenced by multiple classes,
 				// so even when the CResource is destructed and the d3d resource
 				// given up for release, they can continue being in use
 				// This means the ref-count here doesn't necessarily need to be 0
-				ULONG counter = it->second.pObject->Release();
+				ULONG counter = it->second.back().pObject->Release();
 				DX12_ASSERT(counter == 0, "Ref-Counter of D3D12 resource is not 0, memory will leak!");
-				m_RecycleHeap.erase(it);
+
+				it->second.pop_back();
+				evictions++;
+
+				if (!it->second.size())
+				{
+					m_RecycleHeap.erase(it);
+					break;
+				}
 			}
 		}
+	}
+
+	evictions = evictions - m_RecycleHeap.size();
+
+	// Output debug information
+	if (CRendererCVars::CV_r_ShowVideoMemoryStats)
+	{
+		float fontSize = 1.7f;
+		float fontSizeSmall = 1.2f;
+		int rowHeight = 35;
+		int rowHeightSmall = 13;
+		int rowPos = 25;
+		int rowMax = 25;
+		float colPos = 20;
+		size_t releaseSize = 0;
+		size_t recycleSize = 0;
+		size_t releaseNums = 0;
+		size_t recycleNums = 0; 
+
+		const auto& fenceManager = GetScheduler().GetFenceManager();
+
+		IRenderAuxText::Draw2dLabel(colPos, float(rowPos += rowHeight), 2.0f, Col_Blue, false, "GPU Resource Heap Debug");
+		IRenderAuxText::Draw2dLabel(colPos, float(rowPos += rowHeight), fontSize, Col_Blue, false, "Fences: Current %lli, Submitted %lli, Completed %lli",
+			fenceManager.GetCurrentValue(CMDQUEUE_GRAPHICS), fenceManager.GetSubmittedValue(CMDQUEUE_GRAPHICS), fenceManager.GetLastCompletedFenceValue(CMDQUEUE_GRAPHICS));
+		IRenderAuxText::Draw2dLabel(colPos, float(rowPos += rowHeight), fontSize, Col_Blue, false, "Movements: Releases %lli, Recyclations %lli, Evictions %lli",
+			releases, recyclations, evictions);
+
+		IRenderAuxText::Draw2dLabel(colPos, float(rowPos += rowHeight), 2.0f, Col_Yellow, false, "Recycle-heap:");
+
+		rowPos += (rowHeight - rowHeightSmall);
+		int rowReset = rowPos;
+		float colReset = colPos;
+
+		CryAutoLock<CryCriticalSectionNonRecursive> lThreadSafeScope(m_RecycleHeapTheadSafeScope);
+		TRecycleHeap::iterator it, nx;
+		for (it = m_RecycleHeap.begin(); it != m_RecycleHeap.end(); it = nx)
+		{
+			nx = it;
+			++nx;
+
+			int counter = it->second.size();
+			ID3D12Resource* pInputResource = it->second.front().pObject;
+
+			D3D12_RESOURCE_DESC   sDesc;
+			D3D12_HEAP_FLAGS      sHeapFlags;
+			D3D12_HEAP_PROPERTIES sHeapProperties;
+
+			sDesc = pInputResource->GetDesc();
+			pInputResource->GetHeapProperties(&sHeapProperties, &sHeapFlags);
+
+			if (sDesc.Dimension == D3D12_RESOURCE_DIMENSION_BUFFER)
+			{
+				uint32 size = uint32(sDesc.Width);
+				recycleSize += counter * size;
+				recycleNums += counter;
+
+				IRenderAuxText::Draw2dLabel /* Ex */(colPos, float(rowPos += rowHeightSmall), fontSizeSmall, Col_Yellow, false /* eDrawText_Monospace */,
+					"%2x: BUF %8d bytes [%2x %2x %1x %1x]", counter, size,
+					sHeapFlags, sDesc.Flags, sHeapProperties.CPUPageProperty, sHeapProperties.Type);
+			}
+			else if (sDesc.Dimension == D3D12_RESOURCE_DIMENSION_TEXTURE1D)
+			{
+				uint32 size = CTexture::TextureDataSize(uint32(sDesc.Width), 1, 1, sDesc.MipLevels, sDesc.DepthOrArraySize, DeviceFormats::ConvertToTexFormat(sDesc.Format));
+				recycleSize += counter * size;
+				recycleNums += counter;
+
+				IRenderAuxText::Draw2dLabel /* Ex */(colPos, float(rowPos += rowHeightSmall), fontSizeSmall, Col_Yellow, false /* eDrawText_Monospace */,
+					"%2x: T1D %8d bytes [%2x %2x %1x %1x], %d[%d]*%d", counter, size,
+					sHeapFlags, sDesc.Flags, sHeapProperties.CPUPageProperty, sHeapProperties.Type,
+					uint32(sDesc.Width), sDesc.DepthOrArraySize, sDesc.MipLevels);
+			}
+			else if (sDesc.Dimension == D3D12_RESOURCE_DIMENSION_TEXTURE2D)
+			{
+				uint32 size = CTexture::TextureDataSize(uint32(sDesc.Width), sDesc.Height, 1, sDesc.MipLevels, sDesc.DepthOrArraySize, DeviceFormats::ConvertToTexFormat(sDesc.Format));
+				recycleSize += counter * size;
+				recycleNums += counter;
+
+				IRenderAuxText::Draw2dLabel /* Ex */(colPos, float(rowPos += rowHeightSmall), fontSizeSmall, Col_Yellow, false /* eDrawText_Monospace */,
+					"%2x: T2D %8d bytes [%2x %2x %1x %1x], %dx%d[%d]*%d", counter, size,
+					sHeapFlags, sDesc.Flags, sHeapProperties.CPUPageProperty, sHeapProperties.Type,
+					uint32(sDesc.Width), sDesc.Height, sDesc.DepthOrArraySize, sDesc.MipLevels);
+			}
+			else if (sDesc.Dimension == D3D12_RESOURCE_DIMENSION_TEXTURE3D)
+			{
+				uint32 size = CTexture::TextureDataSize(uint32(sDesc.Width), sDesc.Height, sDesc.DepthOrArraySize, sDesc.MipLevels, 1, DeviceFormats::ConvertToTexFormat(sDesc.Format));
+				recycleSize += counter * size;
+				recycleNums += counter;
+
+				IRenderAuxText::Draw2dLabel /* Ex */(colPos, float(rowPos += rowHeightSmall), fontSizeSmall, Col_Yellow, false /* eDrawText_Monospace */,
+					"%2x: T3D %8d bytes [%2x %2x %1x %1x], %dx%dx%d*%d", counter, size,
+					sHeapFlags, sDesc.Flags, sHeapProperties.CPUPageProperty, sHeapProperties.Type,
+					uint32(sDesc.Width), sDesc.Height, sDesc.DepthOrArraySize, sDesc.MipLevels);
+			}
+
+			if (rowPos >= (400 - rowHeightSmall))
+			{
+				rowMax = std::max(rowMax, rowPos);
+				rowPos = rowReset;
+				colPos += 300;
+			}
+		}
+
+		rowPos = std::max(rowMax, rowPos);
+		colPos = colReset;
+
+		IRenderAuxText::Draw2dLabel(colPos + 150, float(rowReset - (rowHeight - rowHeightSmall)), 2.0f, Col_Orange, false, "%d bytes, %d elements", recycleSize, recycleNums);
 	}
 }
 
@@ -947,16 +1066,51 @@ void CDevice::ReleaseLater(const FVAL64 (&fenceValues)[CMDQUEUE_NUM], ID3D12Reso
 		void* ptr2 = ((char*)&hashableBlob.sResourceDesc.Flags) + sizeof(hashableBlob.sResourceDesc.Flags);
 		ZeroMemory(ptr2, sizeof(hashableBlob.sResourceDesc) - offsetof(D3D12_RESOURCE_DESC, Flags) - sizeof(hashableBlob.sResourceDesc.Flags));
 
-		ReleaseInfo releaseInfo;
+		THash hHash = ComputeSmallHash<sizeof(hashableBlob)>(&hashableBlob);
+		const bool isGPUOnly =
+			hashableBlob.sHeapProperties.Type == D3D11_USAGE_DEFAULT;
 
-		releaseInfo.hHash = ComputeSmallHash<sizeof(hashableBlob)>(&hashableBlob);
-		releaseInfo.bFlags = bReusable ? 1 : 0;
-		releaseInfo.fenceValues[CMDQUEUE_GRAPHICS] = fenceValues[CMDQUEUE_GRAPHICS];
-		releaseInfo.fenceValues[CMDQUEUE_COMPUTE] = fenceValues[CMDQUEUE_COMPUTE];
-		releaseInfo.fenceValues[CMDQUEUE_COPY] = fenceValues[CMDQUEUE_COPY];
+		// GPU-only resources can't race each other when they are managed by ref-counts/pools
+		if (isGPUOnly && bReusable)
+		{
+			CryAutoLock<CryCriticalSectionNonRecursive> lThreadSafeScope(m_RecycleHeapTheadSafeScope);
 
+			RecycleInfo recycleInfo;
+
+			recycleInfo.pObject = pObject;
+			recycleInfo.fenceValues[CMDQUEUE_GRAPHICS] = fenceValues[CMDQUEUE_GRAPHICS];
+			recycleInfo.fenceValues[CMDQUEUE_COMPUTE] = fenceValues[CMDQUEUE_COMPUTE];
+			recycleInfo.fenceValues[CMDQUEUE_COPY] = fenceValues[CMDQUEUE_COPY];
+
+			auto& sorted = m_RecycleHeap[hHash];
+#if OUT_OF_ODER_RELEASE_LATER
+			if (sorted.size())
+			{
+				auto insertionpoint = sorted.begin();
+				while (insertionpoint->fenceValue > recycleInfo.fenceValue)
+					++insertionpoint;
+				sorted.insert(insertionpoint, std::move(recycleInfo));
+			}
+			else
+#endif
+				sorted.push_front(std::move(recycleInfo));
+
+			// Only count if insertion happened
+			{
+				pObject->AddRef();
+			}
+		}
+		else
 		{
 			CryAutoLock<CryCriticalSectionNonRecursive> lThreadSafeScope(m_ReleaseHeapTheadSafeScope);
+
+			ReleaseInfo releaseInfo;
+
+			releaseInfo.hHash = ComputeSmallHash<sizeof(hashableBlob)>(&hashableBlob);
+			releaseInfo.bFlags = bReusable ? 1 : 0;
+			releaseInfo.fenceValues[CMDQUEUE_GRAPHICS] = fenceValues[CMDQUEUE_GRAPHICS];
+			releaseInfo.fenceValues[CMDQUEUE_COMPUTE] = fenceValues[CMDQUEUE_COMPUTE];
+			releaseInfo.fenceValues[CMDQUEUE_COPY] = fenceValues[CMDQUEUE_COPY];
 
 			std::pair<TReleaseHeap::iterator, bool> result = m_ReleaseHeap.emplace(pObject, std::move(releaseInfo));
 

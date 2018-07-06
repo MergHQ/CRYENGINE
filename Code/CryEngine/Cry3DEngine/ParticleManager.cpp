@@ -1235,15 +1235,7 @@ IParticleEffectIteratorPtr CParticleManager::GetEffectIterator()
 
 void CParticleManager::RenderDebugInfo()
 {
-	bool bRefractivePartialResolveDebugView = false;
-#if REFRACTION_PARTIAL_RESOLVE_DEBUG_VIEWS
-	static ICVar* pRefractionPartialResolvesDebugCVar = gEnv->pConsole->GetCVar("r_RefractionPartialResolvesDebug");
-	if (pRefractionPartialResolvesDebugCVar && pRefractionPartialResolvesDebugCVar->GetIVal() == eRPR_DEBUG_VIEW_3D_BOUNDS)
-	{
-		bRefractivePartialResolveDebugView = true;
-	}
-#endif
-	if ((GetCVars()->e_ParticlesDebug & AlphaBit('b')) || gEnv->IsEditing() || bRefractivePartialResolveDebugView)
+	if ((GetCVars()->e_ParticlesDebug & AlphaBit('b')) || gEnv->IsEditing())
 	{
 		// Debug particle BBs.
 		CRY_PROFILE_FUNCTION(PROFILE_PARTICLE);

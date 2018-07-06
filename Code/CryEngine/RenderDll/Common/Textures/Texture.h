@@ -95,6 +95,7 @@ struct SDynTexture : public IDynTexture
 	uint32             m_nReqHeight;
 	uint32             m_nTexFlags;
 	uint32             m_nFrameReset;
+	ColorF             m_clearValue;
 
 	bool               m_bLocked;
 	byte               m_nUpdateMask;
@@ -113,7 +114,7 @@ struct SDynTexture : public IDynTexture
 	//////////////////////////////////////////////////////////////////////////
 
 	SDynTexture(const char* szSource);
-	SDynTexture(int nWidth, int nHeight, ETEX_Format eTF, ETEX_Type eTT, int nTexFlags, const char* szSource);
+	SDynTexture(int nWidth, int nHeight, ColorF clearValue, ETEX_Format eTF, ETEX_Type eTT, int nTexFlags, const char* szSource);
 	~SDynTexture();
 
 	//////////////////////////////////////////////////////////////////////////
@@ -455,7 +456,7 @@ struct SDynTexture_Shadow : public SDynTexture
 	static SDynTexture_Shadow s_RootShadow;
 
 	//////////////////////////////////////////////////////////////////////////
-	SDynTexture_Shadow(int nWidth, int nHeight, ETEX_Format eTF, ETEX_Type eTT, int nTexFlags, const char* szSource);
+	SDynTexture_Shadow(int nWidth, int nHeight, ColorF clearValue, ETEX_Format eTF, ETEX_Type eTT, int nTexFlags, const char* szSource);
 	SDynTexture_Shadow(const char* szSource);
 	~SDynTexture_Shadow();
 

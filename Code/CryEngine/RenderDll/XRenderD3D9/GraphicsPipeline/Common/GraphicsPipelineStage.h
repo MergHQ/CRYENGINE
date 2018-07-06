@@ -60,14 +60,13 @@ struct SGraphicsPipelinePassContext
 	// rend items
 	CRenderView* pRenderView;
 
-	uint16 resolveScreenBounds[4];
+	std::vector<TRect_tpl<uint16>> resolveScreenBounds;
 
+	// Uses the range if rendItems is empty, otherwise uses the rendItems vector
 	TRange<int>        rendItems;
+
 	bool               renderNearest = false;
 	EShaderTechniqueID techniqueID;
-
-	// Output command list.
-	CDeviceCommandList* pCommandList = nullptr;
 
 	std::map<struct IRenderNode*, IRenderer::SDrawCallCountInfo>* pDrawCallInfoPerNode = nullptr;
 	std::map<struct IRenderMesh*, IRenderer::SDrawCallCountInfo>* pDrawCallInfoPerMesh = nullptr;

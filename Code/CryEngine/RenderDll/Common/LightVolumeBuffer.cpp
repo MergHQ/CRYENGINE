@@ -13,9 +13,9 @@ const uint maxNumLightInfos = 2048;
 }
 
 CLightVolumeBuffer::CLightVolumeBuffer()
-	: m_numVolumes(0)
-	, m_lightInfosBuffer(4) // two buffers per frame: regular + recursive rendering
-	, m_lightRangesBuffer(4)
+	: m_lightInfosBuffer()
+	, m_lightRangesBuffer()
+	, m_numVolumes(0)
 {
 }
 

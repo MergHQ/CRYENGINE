@@ -30,7 +30,7 @@ public:
 
 	void* mfGetPointer(ESrcPointer ePT, int* Stride, EParamType Type, ESrcPointer Dst, int Flags);
 	bool  mfUpdate(InputLayoutHandle eVertFormat, int Flags, bool bTessellation = false);
-	void  mfGetBBox(Vec3& vMins, Vec3& vMaxs);
+	void  mfGetBBox(Vec3& vMins, Vec3& vMaxs) const;
 
 	int   Size()
 	{
@@ -47,7 +47,7 @@ public:
 	bool          GetGeometryInfo(SGeometryInfo& geomInfo, bool bSupportTessellation = false);
 	InputLayoutHandle GetVertexFormat() const;
 	bool          Compile(CRenderObject* pObj,CRenderView *pRenderView, bool updateInstanceDataOnly);
-	void          DrawToCommandList(CRenderObject* pObj, const SGraphicsPipelinePassContext& ctx);
+	void          DrawToCommandList(CRenderObject* pObj, const SGraphicsPipelinePassContext& ctx, CDeviceCommandList* commandList);
 
 	//protected:
 	//	CREMeshImpl(CREMeshImpl&);

@@ -601,10 +601,13 @@ struct CRY_ALIGN(128) SRenderStatistics
 	int m_NumImpostersDraw;
 	int m_NumCloudImpostersDraw;
 	int m_NumTextures;
+
+#if defined(ENABLE_PROFILING_CODE)
 	uint32 m_NumShadowPoolFrustums;
 	uint32 m_NumShadowPoolAllocsThisFrame;
 	uint32 m_NumShadowMaskChannels;
 	uint32 m_NumTiledShadingSkippedLights;
+#endif
 
 	int m_NumPSInstructions;
 	int m_NumVSInstructions;
@@ -637,33 +640,45 @@ struct CRY_ALIGN(128) SRenderStatistics
 	float m_fEnvCMapUpdateTime;
 	float m_fEnvTextUpdateTime;
 
-#if REFRACTION_PARTIAL_RESOLVE_STATS
 	float m_fRefractionPartialResolveEstimatedCost;
 	int m_refractionPartialResolveCount;
 	int m_refractionPartialResolvePixelCount;
-#endif
 
 	int m_NumRendMaterialBatches;
 	int m_NumRendGeomBatches;
 	int m_NumRendInstances;
 
-	int m_nDIPs[EFSLIST_NUM];
-	int m_nInsts;
-	int m_nInstCalls;
-	int m_nPolygons[EFSLIST_NUM];
-	int m_nPolygonsByTypes[EFSLIST_NUM][EVCT_NUM][2];
+#if defined(ENABLE_PROFILING_CODE)
+	// Synchronously recorded stats
+	int m_nNumInsts;
+	int m_nNumInstCalls;
 
-	int m_nScenePassDIPs;
-	int m_nScenePassPolygons;
-
-	int m_nModifiedCompiledObjects;
-	int m_nTempCompiledObjects;
-	int m_nIncompleteCompiledObjects;
 	int m_nNumPSOSwitches;
 	int m_nNumLayoutSwitches;
 	int m_nNumResourceSetSwitches;
 	int m_nNumInlineSets;
 	int m_nNumTopologySets;
+	int m_nDIPs[EFSLIST_NUM];
+	int m_nPolygons[EFSLIST_NUM];
+	int m_nPolygonsByTypes[EFSLIST_NUM][EVCT_NUM][2];
+
+	// Asynchronously recorded stats
+	int m_nAsynchNumInsts;
+	int m_nAsynchNumInstCalls;
+
+	int m_nAsynchNumPSOSwitches;
+	int m_nAsynchNumLayoutSwitches;
+	int m_nAsynchNumResourceSetSwitches;
+	int m_nAsynchNumInlineSets;
+	int m_nAsynchNumTopologySets;
+	int m_nAsynchDIPs[EFSLIST_NUM];
+	int m_nAsynchPolygons[EFSLIST_NUM];
+	int m_nAsynchPolygonsByTypes[EFSLIST_NUM][EVCT_NUM][2];
+#endif
+
+	int m_nModifiedCompiledObjects;
+	int m_nTempCompiledObjects;
+	int m_nIncompleteCompiledObjects;
 
 	int m_nNumBoundVertexBuffers[2];   // Local=0,PCIe=1 - or in tech-speak, L1=0 and L0=1
 	int m_nNumBoundIndexBuffers[2];    // Local=0,PCIe=1 - or in tech-speak, L1=0 and L0=1
@@ -673,6 +688,19 @@ struct CRY_ALIGN(128) SRenderStatistics
 	int m_nNumBoundUniformTextures[2]; // Local=0,PCIe=1 - or in tech-speak, L1=0 and L0=1
 
 	static SRenderStatistics* s_pCurrentOutput;
+
+	void Begin(const SRenderStatistics* prevData);
+	void Finish();
+
+#if defined(ENABLE_PROFILING_CODE)
+	int  GetNumGeomInstances() const;
+	int  GetNumGeomInstanceDrawCalls() const;
+
+	int  GetNumberOfDrawCalls() const;
+	int  GetNumberOfDrawCalls(const uint32 EFSListMask) const;
+	int  GetNumberOfPolygons() const;
+	int  GetNumberOfPolygons(const uint32 EFSListMask) const;
+#endif
 };
 
 //////////////////////////////////////////////////////////////////////
@@ -856,9 +884,7 @@ public:
 	void                 DeleteRenderViews();
 
 	void             GetPolyCount(int& nPolygons, int& nShadowPolys) override;
-
 	int              GetPolyCount() override;
-	int              RT_GetPolyCount();
 
 	virtual bool     WriteDDS(byte* dat, int wdt, int hgt, int Size, const char* name, ETEX_Format eF, int NumMips) override;
 	virtual bool     WriteTGA(byte* dat, int wdt, int hgt, const char* name, int src_bits_per_pixel, int dest_bits_per_pixel) override;
@@ -1272,7 +1298,7 @@ public:
 	void ClearDrawCallsInfo();
 #endif
 #ifdef ENABLE_PROFILING_CODE
-	void         AddRecordedProfilingStats(const struct SProfilingStats& stats, ERenderListID renderList, bool bScenePass);
+	void         AddRecordedProfilingStats(const struct SProfilingStats& stats, ERenderListID renderList, bool bAsynchronous);
 #endif
 
 	virtual void                CollectDrawCallsInfo(bool status) override;
@@ -1319,7 +1345,7 @@ public:
 	CStandardGraphicsPipeline&     GetGraphicsPipeline() { return *m_pGraphicsPipeline; }
 
 	template<typename RenderThreadCallback>
-	void ExecuteRenderThreadCommand(RenderThreadCallback&& callback, ERenderCommandFlags flags)
+	void ExecuteRenderThreadCommand(RenderThreadCallback&& callback, ERenderCommandFlags flags = ERenderCommandFlags::None)
 	{
 		m_pRT->ExecuteRenderThreadCommand(std::forward<RenderThreadCallback>(callback), flags);
 	}
@@ -1603,7 +1629,7 @@ protected:
 	SMSAA    m_MSAAData;
 
 	// Render frame statistics
-	SRenderStatistics         m_frameRenderStats[RT_COMMAND_BUF_COUNT];
+	SRenderStatistics m_frameRenderStats[RT_COMMAND_BUF_COUNT];
 
 	// Render target statistics
 	std::vector<SRTargetStat> m_renderTargetStats;

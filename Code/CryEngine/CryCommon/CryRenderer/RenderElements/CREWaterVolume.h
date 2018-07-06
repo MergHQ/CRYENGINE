@@ -23,11 +23,11 @@ public:
 	}
 
 	virtual bool Compile(CRenderObject* pObj, CRenderView *pRenderView, bool updateInstanceDataOnly) override;
-	virtual void DrawToCommandList(CRenderObject* pObj, const struct SGraphicsPipelinePassContext& ctx) override;
+	virtual void DrawToCommandList(CRenderObject* pObj, const struct SGraphicsPipelinePassContext& ctx, CDeviceCommandList* commandList) override;
 
 private:
 	void PrepareForUse(watervolume::SCompiledWaterVolume& RESTRICT_REFERENCE compiledObj, bool bInstanceOnly, CDeviceCommandList& RESTRICT_REFERENCE commandList) const;
-	void UpdatePerInstanceCB(watervolume::SCompiledWaterVolume& RESTRICT_REFERENCE compiledObj, const CRenderObject& renderObj, bool bRenderFogShadowWater, bool bCaustics,CRenderView *pRenderView) const;
+	void UpdatePerDrawCB(watervolume::SCompiledWaterVolume& RESTRICT_REFERENCE compiledObj, const CRenderObject& renderObj, bool bRenderFogShadowWater, bool bCaustics,CRenderView *pRenderView) const;
 	void UpdateVertex(watervolume::SCompiledWaterVolume& RESTRICT_REFERENCE compiledObj, bool bFullscreen);
 
 public:

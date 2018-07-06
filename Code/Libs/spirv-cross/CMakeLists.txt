@@ -31,5 +31,11 @@ if (WIN32 OR WIN64)
 		/wd4530 # C++ exception handler used, but unwind semantics are not enabled. Specify /EHsc
 		/wd4267 # 'initializing': conversion from 'size_t' to 'uint32_t', possible loss of data
 		/wd4244 # '=': conversion from '__int64' to 'uint32_t', possible loss of data
+		/WX-    # disabling warnings treated as errors
+	)
+elseif(LINUX OR ANDROID)
+	target_compile_options(${THIS_PROJECT} PRIVATE
+		-Wno-return-type
+		-Werror
 	)
 endif()

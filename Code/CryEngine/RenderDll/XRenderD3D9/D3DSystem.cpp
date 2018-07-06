@@ -534,7 +534,7 @@ int CD3D9Renderer::EnumDisplayFormats(SDispFormat* formats)
 
 	auto* pDC = gcpRendD3D->GetActiveDisplayContext();
 	auto* swapDC = pDC->IsSwapChainBacked() ? static_cast<CSwapChainBackedRenderDisplayContext*>(pDC) : gcpRendD3D->GetBaseDisplayContext();
-	const DXGI_SURFACE_DESC& swapChainDesc = swapDC->GetSwapChain().GetSwapChainDesc();
+	const DXGI_SURFACE_DESC& swapChainDesc = swapDC->GetSwapChain().GetSurfaceDesc();
 
 	unsigned int numModes = 0;
 	if (SUCCEEDED(swapDC->m_pOutput->GetDisplayModeList(swapChainDesc.Format, 0, &numModes, 0)) && numModes)
@@ -822,7 +822,6 @@ void CD3D9Renderer::RT_ShutDown(uint32 nFlags)
 	GetDeviceObjectFactory().ReleaseInputLayouts();
 	GetDeviceObjectFactory().ReleaseSamplerStates();
 	GetDeviceObjectFactory().ReleaseNullResources();
-	GetDeviceObjectFactory().ReleaseFrameFences();
 
 #if defined(SUPPORT_DEVICE_INFO)
 	//m_devInfo.Release();
@@ -1077,7 +1076,9 @@ bool CD3D9Renderer::SetWindow(int width, int height)
 			SetForegroundWindow(m_hWnd);
 		}
 	}
+#endif
 
+#if CRY_PLATFORM_WINDOWS || CRY_PLATFORM_ANDROID || CRY_PLATFORM_LINUX
 	m_VSync = !IsEditorMode() ? CV_r_vsync : 0;
 
 	// Update base context hWnd and key
@@ -2242,7 +2243,6 @@ HRESULT CALLBACK CD3D9Renderer::OnD3D11PostCreateDevice(D3DDevice* pd3dDevice)
 	pDC->m_nSSSamplesX = CV_r_Supersampling;
 	pDC->m_nSSSamplesY = CV_r_Supersampling;
 	pDC->m_bMainViewport = true;
-	pDC->SetBackBufferCount(CV_r_MaxFrameLatency + 1);
 
 #if DX11_WRAPPABLE_INTERFACE && CAPTURE_REPLAY_LOG
 	rd->MemReplayWrapD3DDevice();
@@ -2256,7 +2256,7 @@ HRESULT CALLBACK CD3D9Renderer::OnD3D11PostCreateDevice(D3DDevice* pd3dDevice)
 	pDC->ChangeDisplayResolution(displayWidth, displayHeight);
 
 	// Copy swap chain surface desc back to global var
-	rd->m_d3dsdBackBuffer = pDC->GetSwapChain().GetSwapChainDesc();
+	rd->m_d3dsdBackBuffer = pDC->GetSwapChain().GetSurfaceDesc();
 
 	rd->ReleaseAuxiliaryMeshes();
 	rd->CreateAuxiliaryMeshes();

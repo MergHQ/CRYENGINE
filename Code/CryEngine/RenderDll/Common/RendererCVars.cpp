@@ -81,7 +81,7 @@ int CRendererCVars::CV_r_VkHardwareComputeQueue;
 int CRendererCVars::CV_r_VkHardwareCopyQueue;
 int CRendererCVars::CV_r_ReprojectOnlyStaticObjects;
 int CRendererCVars::CV_r_ReadZBufferDirectlyFromVMEM;
-int CRendererCVars::CV_r_ReverseDepth;
+int CRendererCVars::CV_r_FlushToGPU;
 
 int CRendererCVars::CV_r_EnableDebugLayer;
 int CRendererCVars::CV_r_NoDraw;
@@ -286,7 +286,7 @@ int CRendererCVars::CV_r_shadersasynccompiling;
 int CRendererCVars::CV_r_shadersasyncactivation;
 int CRendererCVars::CV_r_shadersasyncmaxthreads;
 int CRendererCVars::CV_r_shaderscachedeterministic;
-int CRendererCVars::CV_r_shaderscacheinmemory;
+int CRendererCVars::CV_r_ShadersCachePrecacheAll;
 AllocateConstIntCVar(CRendererCVars, CV_r_shadersprecachealllights);
 AllocateConstIntCVar(CRendererCVars, CV_r_ReflectTextureSlots);
 int CRendererCVars::CV_r_shaderssubmitrequestline;
@@ -575,7 +575,9 @@ int CRendererCVars::CV_r_FogShadowsWater;
 
 int CRendererCVars::CV_r_RainDropsEffect;
 
-AllocateConstIntCVar(CRendererCVars, CV_r_RefractionPartialResolves);
+AllocateConstIntCVar(CRendererCVars, CV_r_RefractionPartialResolveMode);
+AllocateConstIntCVar(CRendererCVars, CV_r_RefractionPartialResolveMinimalResolveArea);
+AllocateConstIntCVar(CRendererCVars, CV_r_RefractionPartialResolveMaxResolveCount);
 AllocateConstIntCVar(CRendererCVars, CV_r_RefractionPartialResolvesDebug);
 
 AllocateConstIntCVar(CRendererCVars, CV_r_Batching);
@@ -946,15 +948,6 @@ static void ShadersPrecacheList(IConsoleCmdArgs* Cmd)
 static void ShadersStatsList(IConsoleCmdArgs* Cmd)
 {
 	gRenDev->m_cEF.mfPrecacheShaders(true);
-}
-
-static void ShadersOptimise(IConsoleCmdArgs* Cmd)
-{
-	string userFolderCache = PathUtil::Make(gRenDev->m_cEF.m_szUserPath.c_str(), gRenDev->m_cEF.m_ShadersCache);
-	CParserBin::SetupForPlatform(CRenderer::ShaderTargetFlag);
-	CryLogAlways("\nStarting shaders optimizing for %s...", CRenderer::CV_r_ShaderTarget->GetString());
-	iLog->Log("Optimize user folder: '%s'", userFolderCache.c_str());
-	gRenDev->m_cEF.mfOptimiseShaders(userFolderCache.c_str(), false);
 }
 
 #endif
@@ -2257,7 +2250,7 @@ void CRendererCVars::InitCVars()
 
 	REGISTER_CVAR3("r_ShadersAsyncMaxThreads", CV_r_shadersasyncmaxthreads, 1, VF_DUMPTODISK, "");
 	REGISTER_CVAR3("r_ShadersCacheDeterministic", CV_r_shaderscachedeterministic, 1, VF_NULL, "Ensures that 2 shaderCaches built from the same source are binary equal");
-	REGISTER_CVAR3("r_ShadersCacheInMemory", CV_r_shaderscacheinmemory, 1, VF_NULL, "Caches compressed compiled shaders in memory");
+	REGISTER_CVAR3("r_ShadersCachePrecacheAll", CV_r_ShadersCachePrecacheAll, 1, VF_NULL, "Precaches all possible combinations for every shader instance");
 	DefineConstIntCVar3("r_ShadersPrecacheAllLights", CV_r_shadersprecachealllights, 1, VF_NULL, "");
 	REGISTER_CVAR3("r_ShadersSubmitRequestline", CV_r_shaderssubmitrequestline, 1, VF_NULL, "");
 
@@ -2689,7 +2682,10 @@ void CRendererCVars::InitCVars()
 
 	REGISTER_CVAR3("r_ReprojectOnlyStaticObjects", CV_r_ReprojectOnlyStaticObjects, 1, VF_NULL, "Forces a split in the zpass, to prevent moving object from beeing reprojected");
 	REGISTER_CVAR3("r_ReadZBufferDirectlyFromVMEM", CV_r_ReadZBufferDirectlyFromVMEM, 0, VF_NULL, "Uses direct VMEM reads instead of a staging buffer on durango for the reprojection ZBuffer");
-	REGISTER_CVAR3("r_ReverseDepth", CV_r_ReverseDepth, 1, VF_NULL, "Use 1-z depth rendering for increased depth precision");
+	REGISTER_CVAR3("r_FlushToGPU", CV_r_FlushToGPU, 1, VF_NULL,
+		"Configure gpu-work flushing behaviour"
+		"0: Flush at end-frame only"
+		"1: Flush at positions where the character of the work changes drastically (Flash vs. Scene vs. Post vs. Uploads etc.)");
 
 	REGISTER_CVAR3("r_EnableDebugLayer", CV_r_EnableDebugLayer, 0, VF_NULL, 
 		"Enable Graphics API specific debug layer"
@@ -2781,7 +2777,6 @@ void CRendererCVars::InitCVars()
 #if CRY_PLATFORM_DESKTOP
 	REGISTER_COMMAND("r_PrecacheShaderList", &ShadersPrecacheList, VF_NULL, "");
 	REGISTER_COMMAND("r_StatsShaderList", &ShadersStatsList, VF_NULL, "");
-	REGISTER_COMMAND("r_OptimiseShaders", &ShadersOptimise, VF_NULL, "");
 #endif
 
 	DefineConstIntCVar3("r_TextureCompressor", CV_r_TextureCompressor, 1, VF_DUMPTODISK,
@@ -2818,21 +2813,24 @@ void CRendererCVars::InitCVars()
 	                    "0: force off\n"
 	                    "1: on (default)\n"
 	                    "2: on (forced)");
-
-	DefineConstIntCVar3("r_RefractionPartialResolves", CV_r_RefractionPartialResolves, 2, VF_NULL,
-	                    "Do a partial screen resolve before refraction\n"
-	                    "Usage: r_RefractionPartialResolves [0/1]\n"
-	                    "0: disable \n"
-	                    "1: enable conservatively (non-optimal)\n"
-	                    "2: enable (default)");
-
+	
+	DefineConstIntCVar3("r_RefractionPartialResolveMode", CV_r_RefractionPartialResolveMode, 2, VF_NULL,
+	                    "Specifies mode of operation of partial screen resolves before refraction\n"
+	                    "Usage: r_RefractionPartialResolveMode [0/1/2]\n"
+		                "0: Static approach: Single resolve pass before transparent forward pass.\n"
+	                    "1: Simple iterative approach: Resolve pass before every refractive render items that requires resolve.\n"
+	                    "2: Topological sorting of overlaping resolve regions (default)");
+	DefineConstIntCVar3("r_RefractionPartialResolveMinimalResolveArea", CV_r_RefractionPartialResolveMinimalResolveArea, 0, VF_NULL,
+	                    "Minimal resolve area, in pixels, required to inject a partial resolve (default: 0).");
+	DefineConstIntCVar3("r_RefractionPartialResolveMaxResolveCount", CV_r_RefractionPartialResolveMaxResolveCount, 0, VF_NULL,
+	                    "Provides an upper limit on partial screen resolves per render-items list.\n"
+		                "(Unlimited if a non-positive integer is provided)");
 	DefineConstIntCVar3("r_RefractionPartialResolvesDebug", CV_r_RefractionPartialResolvesDebug, 0, VF_NULL,
 	                    "Toggle refraction partial resolves debug display\n"
-	                    "Usage: r_RefractionPartialResolvesDebug [0/1]\n"
+	                    "Usage: r_RefractionPartialResolvesDebug\n"
 	                    "0: disable \n"
-	                    "1: Additive 2d area \n"
-	                    "2: Bounding boxes \n"
-	                    "3: Alpha overlay with varying colours \n");
+	                    "1: Statistics \n"
+	                    "2: Bounding boxes \n");
 
 	DefineConstIntCVar3("r_Batching", CV_r_Batching, 1, VF_NULL,
 	                    "Enable/disable render items batching\n"

@@ -8,31 +8,30 @@ void CSwapChain::ReadSwapChainSurfaceDesc()
 	CRY_ASSERT(m_pSwapChain);
 
 	HRESULT hr = S_OK;
-	ZeroMemory(&m_swapChainDesc, sizeof(DXGI_SURFACE_DESC));
+	ZeroMemory(&m_surfaceDesc, sizeof(DXGI_SURFACE_DESC));
 
 	//////////////////////////////////////////////////////////////////////////
 	// Read Back Buffers Surface description from the Swap Chain
 #if CRY_RENDERER_GNM
 	CGnmSwapChain::SDesc desc = m_pSwapChain->GnmGetDesc();
-	m_swapChainDesc.Width = desc.width;
-	m_swapChainDesc.Height = desc.height;
-	m_swapChainDesc.Format = desc.format;
-	m_swapChainDesc.SampleDesc.Count = 1;
-	m_swapChainDesc.SampleDesc.Quality = 0;
+	m_surfaceDesc.Width = desc.width;
+	m_surfaceDesc.Height = desc.height;
+	m_surfaceDesc.Format = desc.format;
+	m_surfaceDesc.SampleDesc.Count = 1;
+	m_surfaceDesc.SampleDesc.Quality = 0;
 	hr = m_pSwapChain->GnmIsValid() ? S_OK : E_FAIL;
 #else
-	DXGI_SWAP_CHAIN_DESC backBufferSurfaceDesc;
-	hr = m_pSwapChain->GetDesc(&backBufferSurfaceDesc);
+	DXGI_SWAP_CHAIN_DESC backBufferSurfaceDesc = GetDesc();
 
-	m_swapChainDesc.Width = (UINT)backBufferSurfaceDesc.BufferDesc.Width;
-	m_swapChainDesc.Height = (UINT)backBufferSurfaceDesc.BufferDesc.Height;
+	m_surfaceDesc.Width = (UINT)backBufferSurfaceDesc.BufferDesc.Width;
+	m_surfaceDesc.Height = (UINT)backBufferSurfaceDesc.BufferDesc.Height;
 #if defined(SUPPORT_DEVICE_INFO) || CRY_RENDERER_VULKAN
-	m_swapChainDesc.Format = backBufferSurfaceDesc.BufferDesc.Format;
-	m_swapChainDesc.SampleDesc = backBufferSurfaceDesc.SampleDesc;
+	m_surfaceDesc.Format = backBufferSurfaceDesc.BufferDesc.Format;
+	m_surfaceDesc.SampleDesc = backBufferSurfaceDesc.SampleDesc;
 #elif CRY_PLATFORM_DURANGO
-	m_swapChainDesc.Format = DXGI_FORMAT_R8G8B8A8_TYPELESS;
-	m_swapChainDesc.SampleDesc.Count = 1;
-	m_swapChainDesc.SampleDesc.Quality = 0;
+	m_surfaceDesc.Format = DXGI_FORMAT_R8G8B8A8_TYPELESS;
+	m_surfaceDesc.SampleDesc.Count = 1;
+	m_surfaceDesc.SampleDesc.Quality = 0;
 #endif
 #endif
 	//////////////////////////////////////////////////////////////////////////
@@ -48,22 +47,11 @@ CSwapChain CSwapChain::CreateSwapChain(HWND hWnd, DXGIOutput* pOutput, uint32_t 
 	const DXGI_FORMAT fmt = DXGI_FORMAT_R8G8B8A8_UNORM;
 #endif
 
-#if (CRY_RENDERER_DIRECT3D >= 120)
-	const int defaultBufferCount = 4;
-#else
-	const int defaultBufferCount = 2;
-#endif
-
-	const int backbufferWidth = width;
-	const int backbufferHeight = height;
-
-	const bool windowed = !isFullscreen;
-
 	IDXGISwapChain* piSwapChain = nullptr;
 	DXGI_SWAP_CHAIN_DESC scDesc;
 
-	scDesc.BufferDesc.Width = backbufferWidth;
-	scDesc.BufferDesc.Height = backbufferHeight;
+	scDesc.BufferDesc.Width = width;
+	scDesc.BufferDesc.Height = height;
 	scDesc.BufferDesc.RefreshRate.Numerator = 0;
 	scDesc.BufferDesc.RefreshRate.Denominator = 1;
 	scDesc.BufferDesc.Format = fmt;
@@ -74,8 +62,7 @@ CSwapChain CSwapChain::CreateSwapChain(HWND hWnd, DXGIOutput* pOutput, uint32_t 
 	scDesc.SampleDesc.Quality = 0;
 
 	scDesc.BufferUsage = DXGI_USAGE_RENDER_TARGET_OUTPUT | DXGI_USAGE_SHADER_INPUT;
-	const bool bWaitable = (isMainContext && CRenderer::CV_r_D3D12WaitableSwapChain && windowed);
-	scDesc.BufferCount = (isMainContext || bWaitable) ? MAX_FRAMES_IN_FLIGHT : defaultBufferCount;
+	scDesc.BufferCount = CRenderer::CV_r_MaxFrameLatency + 1;
 	scDesc.OutputWindow = hWnd;
 
 	// Always create a swapchain for windowed mode as per Microsoft recommendations here: https://msdn.microsoft.com/en-us/library/windows/desktop/bb174579(v=vs.85).aspx
@@ -89,19 +76,19 @@ CSwapChain CSwapChain::CreateSwapChain(HWND hWnd, DXGIOutput* pOutput, uint32_t 
 #endif
 
 #if (CRY_RENDERER_DIRECT3D >= 120)
+	const bool bWaitable = (isMainContext && CRenderer::CV_r_D3D12WaitableSwapChain && !isFullscreen);
 	if (bWaitable)
 	{
 		// Set this flag to create a waitable object you can use to ensure rendering does not begin while a
 		// frame is still being presented. When this flag is used, the swapchain's latency must be set with
 		// the IDXGISwapChain2::SetMaximumFrameLatency API instead of IDXGIDevice1::SetMaximumFrameLatency.
-		scDesc.BufferCount = MAX_FRAMES_IN_FLIGHT + 1;
 		scDesc.Flags |= DXGI_SWAP_CHAIN_FLAG_FRAME_LATENCY_WAITABLE_OBJECT;
 	}
 #endif
 
 	DXGI_RATIONAL desktopRefreshRate = scDesc.BufferDesc.RefreshRate;
 
-	if (!windowed)
+	if (isFullscreen)
 	{
 		DXGI_MODE_DESC match;
 		if (SUCCEEDED(pOutput->FindClosestMatchingMode(&scDesc.BufferDesc, &match, gcpRendD3D.DevInfo().Device())))
@@ -131,7 +118,7 @@ CSwapChain CSwapChain::CreateSwapChain(HWND hWnd, DXGIOutput* pOutput, uint32_t 
 
 	CSwapChain sc = { std::move(pSmartSwapChain) };
 #if defined(SUPPORT_DEVICE_INFO)
-	auto refreshRate = !windowed ? scDesc.BufferDesc.RefreshRate : desktopRefreshRate;
+	auto refreshRate = isFullscreen ? scDesc.BufferDesc.RefreshRate : desktopRefreshRate;
 	sc.m_refreshRateNumerator = refreshRate.Numerator;
 	sc.m_refreshRateDenominator = refreshRate.Denominator;
 #endif
@@ -259,24 +246,21 @@ void CSwapChain::UserOverrideDisplayProperties(DXGI_MODE_DESC& desc)
 }
 #endif
 
-void CSwapChain::ResizeSwapChain(uint32_t width, uint32_t height, bool isMainContext, bool bResizeTarget)
+void CSwapChain::ResizeSwapChain(uint32_t buffers, uint32_t width, uint32_t height, bool isMainContext, bool bResizeTarget /*= false*/)
 {
 #if !CRY_PLATFORM_DURANGO && !CRY_RENDERER_GNM
 	// Wait for GPU to finish occupying the resources
 	GetDeviceObjectFactory().GetCoreCommandList().GetGraphicsInterface()->ClearState(true);
 
-	const int backbufferWidth = width;
-	const int backbufferHeight = height;
-
-	m_swapChainDesc.Width = backbufferWidth;
-	m_swapChainDesc.Height = backbufferHeight;
+	m_surfaceDesc.Width = width;
+	m_surfaceDesc.Height = height;
 
 #if (CRY_RENDERER_DIRECT3D >= 110) || (CRY_RENDERER_VULKAN >= 10)
-	DXGI_SWAP_CHAIN_DESC scDesc;
-	m_pSwapChain->GetDesc(&scDesc);
+	DXGI_SWAP_CHAIN_DESC scDesc = GetDesc();
 
-	scDesc.BufferDesc.Width = backbufferWidth;
-	scDesc.BufferDesc.Height = backbufferHeight;
+	scDesc.BufferCount = buffers;
+	scDesc.BufferDesc.Width = width;
+	scDesc.BufferDesc.Height = height;
 
 #if defined(SUPPORT_DEVICE_INFO_USER_DISPLAY_OVERRIDES)
 	if (isMainContext)
@@ -298,8 +282,13 @@ void CSwapChain::ResizeSwapChain(uint32_t width, uint32_t height, bool isMainCon
 
 	// Resize the Resources associated with the SwapChain
 	{
-		HRESULT hr = m_pSwapChain->ResizeBuffers(0, scDesc.BufferDesc.Width, scDesc.BufferDesc.Height, DXGI_FORMAT_UNKNOWN, scDesc.Flags);
+		HRESULT hr = m_pSwapChain->ResizeBuffers(scDesc.BufferCount, scDesc.BufferDesc.Width, scDesc.BufferDesc.Height, DXGI_FORMAT_UNKNOWN, scDesc.Flags);
 		CRY_ASSERT(SUCCEEDED(hr));
+
+#if (CRY_RENDERER_DIRECT3D >= 120)
+		if (scDesc.Flags & DXGI_SWAP_CHAIN_FLAG_FRAME_LATENCY_WAITABLE_OBJECT)
+			m_pSwapChain->SetMaximumFrameLatency(CRendererCVars::CV_r_MaxFrameLatency);
+#endif
 	}
 #endif
 

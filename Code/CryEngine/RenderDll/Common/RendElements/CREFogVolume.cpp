@@ -21,7 +21,7 @@ enum class EPsoId : uint32
 	ViewerInsideVolumeNearCutoff,
 };
 
-struct SPerInstanceConstantBuffer
+struct SPerDrawConstantBuffer
 {
 	Matrix44 objMatrix;
 	Matrix34 invObjSpaceMatrix;
@@ -46,13 +46,13 @@ struct SCompiledFogVolume : NoCopy
 	void ReleaseDeviceResources()
 	{
 		m_pMaterialResourceSet.reset();
-		m_pPerInstanceResourceSet.reset();
-		m_pPerInstanceCB.reset();
+		m_pPerDrawRS.reset();
+		m_pPerDrawCB.reset();
 	}
 
 	CDeviceResourceSetPtr     m_pMaterialResourceSet = nullptr;
-	CDeviceResourceSetPtr     m_pPerInstanceResourceSet = nullptr;
-	CConstantBufferPtr        m_pPerInstanceCB = nullptr;
+	CDeviceResourceSetPtr     m_pPerDrawRS = nullptr;
+	CConstantBufferPtr        m_pPerDrawCB = nullptr;
 
 	const CDeviceInputStream* m_vertexStreamSet = nullptr;
 	const CDeviceInputStream* m_indexStreamSet = nullptr;
@@ -165,8 +165,8 @@ bool CREFogVolume::Compile(CRenderObject* pObj,CRenderView *pRenderView, bool up
 		return false;
 	}
 
-	auto& cro = *(m_pCompiledObject);
-	cro.m_bValid = false;
+	auto& compiledObj = *(m_pCompiledObject);
+	compiledObj.m_bValid = false;
 
 	CD3D9Renderer* const RESTRICT_POINTER rd = gcpRendD3D;
 	auto* pForwardStage = rd->GetGraphicsPipeline().GetSceneForwardStage();
@@ -202,10 +202,10 @@ bool CREFogVolume::Compile(CRenderObject* pObj,CRenderView *pRenderView, bool up
 	  eptTriangleList
 	  );
 
-	cro.m_bViewerInsideVolume = m_viewerInsideVolume ? true : false;
-	cro.m_bNearCutoff = m_nearCutoff ? true : false;
+	compiledObj.m_bViewerInsideVolume = m_viewerInsideVolume ? true : false;
+	compiledObj.m_bNearCutoff = m_nearCutoff ? true : false;
 
-	if (!render_element::fogvolume::CreatePipelineStates(*pForwardStage, cro.m_psoArray, psoDescription, pResources->m_pipelineStateCache.get()))
+	if (!render_element::fogvolume::CreatePipelineStates(*pForwardStage, compiledObj.m_psoArray, psoDescription, pResources->m_pipelineStateCache.get()))
 	{
 		if (!CRenderer::CV_r_shadersAllowCompilation)
 		{
@@ -217,15 +217,15 @@ bool CREFogVolume::Compile(CRenderObject* pObj,CRenderView *pRenderView, bool up
 		}
 	}
 
-	UpdateVertex(cro);
+	UpdateVertex(compiledObj);
 
-	// UpdatePerInstanceCB uses not thread safe functions like CreateConstantBuffer(),
+	// UpdatePerDrawCB uses not thread safe functions like CreateConstantBuffer(),
 	// so this needs to be called here instead of DrawToCommandList().
-	UpdatePerInstanceCB(cro, *pObj);
+	UpdatePerDrawCB(compiledObj, *pObj);
 
 	// this is dummy resource to match this render element with the resource layout of forward pass.
 	{
-		if (!cro.m_pMaterialResourceSet)
+		if (!compiledObj.m_pMaterialResourceSet)
 		{
 			CDeviceResourceSetDesc materialResources;
 			for (const auto& res : rd->GetGraphicsPipeline().GetDefaultMaterialBindPoints().GetResources())
@@ -246,46 +246,47 @@ bool CREFogVolume::Compile(CRenderObject* pObj,CRenderView *pRenderView, bool up
 				}
 			}
 
-			cro.m_pMaterialResourceSet = GetDeviceObjectFactory().CreateResourceSet();
-			cro.m_pMaterialResourceSet->Update(materialResources);
+			compiledObj.m_pMaterialResourceSet = GetDeviceObjectFactory().CreateResourceSet();
+			compiledObj.m_pMaterialResourceSet->Update(materialResources);
 		}
 
-		if (!cro.m_pPerInstanceResourceSet)
+		if (!compiledObj.m_pPerDrawRS)
 		{
-			cro.m_pPerInstanceResourceSet = rd->GetGraphicsPipeline().GetDefaultInstanceExtraResourceSet();
+			compiledObj.m_pPerDrawRS = rd->GetGraphicsPipeline().GetDefaulDrawExtraResourceSet();
 		}
 	}
 
-	CRY_ASSERT(cro.m_pMaterialResourceSet);
-	CRY_ASSERT(cro.m_pPerInstanceResourceSet);
-	CRY_ASSERT(cro.m_pPerInstanceCB);
-	CRY_ASSERT(cro.m_vertexStreamSet);
-	CRY_ASSERT(cro.m_indexStreamSet);
+	CRY_ASSERT(compiledObj.m_pMaterialResourceSet);
+	CRY_ASSERT(compiledObj.m_pPerDrawRS);
+	CRY_ASSERT(compiledObj.m_pPerDrawCB);
+	CRY_ASSERT(compiledObj.m_vertexStreamSet);
+	CRY_ASSERT(compiledObj.m_indexStreamSet);
 
 	// Issue the barriers on the core command-list, which executes directly before the Draw()s in multi-threaded jobs
-	PrepareForUse(cro, false, GetDeviceObjectFactory().GetCoreCommandList());
+	PrepareForUse(compiledObj, false, GetDeviceObjectFactory().GetCoreCommandList());
 
-	cro.m_bValid = true;
+	compiledObj.m_bValid = true;
 	return true;
 }
 
-void CREFogVolume::DrawToCommandList(CRenderObject* pObj, const struct SGraphicsPipelinePassContext& ctx)
+void CREFogVolume::DrawToCommandList(CRenderObject* pObj, const struct SGraphicsPipelinePassContext& ctx, CDeviceCommandList* commandList)
 {
 	if (!m_pCompiledObject)
 	{
 		return;
 	}
 
-	auto& RESTRICT_REFERENCE cobj = *m_pCompiledObject;
+	auto& RESTRICT_REFERENCE compiledObj = *m_pCompiledObject;
+	CD3D9Renderer* const RESTRICT_POINTER rd = gcpRendD3D;
 
 #if defined(ENABLE_PROFILING_CODE)
-	if (!cobj.m_bValid)
+	if (!compiledObj.m_bValid)
 	{
 		CryInterlockedIncrement(&SRenderStatistics::Write().m_nIncompleteCompiledObjects);
 	}
 #endif
 
-	if (!cobj.m_bValid)
+	if (!compiledObj.m_bValid)
 	{
 		return;
 	}
@@ -295,66 +296,66 @@ void CREFogVolume::DrawToCommandList(CRenderObject* pObj, const struct SGraphics
 		return;
 	}
 
-	uint32 psoId = cobj.m_bViewerInsideVolume
-	               ? (cobj.m_bNearCutoff ? uint32(render_element::fogvolume::EPsoId::ViewerInsideVolumeNearCutoff) : uint32(render_element::fogvolume::EPsoId::ViewerInsideVolume))
+	uint32 psoId = compiledObj.m_bViewerInsideVolume
+	               ? (compiledObj.m_bNearCutoff ? uint32(render_element::fogvolume::EPsoId::ViewerInsideVolumeNearCutoff) : uint32(render_element::fogvolume::EPsoId::ViewerInsideVolume))
 	               : uint32(render_element::fogvolume::EPsoId::ViewerOustideVolume);
 
-	const CDeviceGraphicsPSOPtr& pPso = cobj.m_psoArray[psoId];
+	const CDeviceGraphicsPSOPtr& pPso = compiledObj.m_psoArray[psoId];
 
 	if (!pPso || !pPso->IsValid())
 	{
 		return;
 	}
 
-	CRY_ASSERT(cobj.m_pPerInstanceCB);
+	CRY_ASSERT(compiledObj.m_pPerDrawCB);
 
-	CDeviceGraphicsCommandInterface& RESTRICT_REFERENCE commandInterface = *(ctx.pCommandList->GetGraphicsInterface());
-
+	CDeviceGraphicsCommandInterface& RESTRICT_REFERENCE commandInterface = *(commandList->GetGraphicsInterface());
 	// Set states
-	commandInterface.SetPipelineState(pPso.get());
-	commandInterface.SetResources(EResourceLayoutSlot_PerMaterialRS, cobj.m_pMaterialResourceSet.get());
-	commandInterface.SetResources(EResourceLayoutSlot_PerInstanceExtraRS, cobj.m_pPerInstanceResourceSet.get());
+	const EShaderStage perDrawInlineShaderStages = (EShaderStage_Vertex | EShaderStage_Pixel);
 
-	EShaderStage perInstanceCBShaderStages = (EShaderStage_Vertex | EShaderStage_Pixel);
-	commandInterface.SetInlineConstantBuffer(EResourceLayoutSlot_PerInstanceCB, cobj.m_pPerInstanceCB, eConstantBufferShaderSlot_PerInstance, perInstanceCBShaderStages);
+	commandInterface.SetPipelineState(pPso.get());
+	commandInterface.SetResources(EResourceLayoutSlot_PerMaterialRS, compiledObj.m_pMaterialResourceSet.get());
+	commandInterface.SetResources(EResourceLayoutSlot_PerDrawExtraRS, compiledObj.m_pPerDrawRS.get());
+
+	commandInterface.SetInlineConstantBuffer(EResourceLayoutSlot_PerDrawCB, compiledObj.m_pPerDrawCB, eConstantBufferShaderSlot_PerDraw, perDrawInlineShaderStages);
 
 	if (CRenderer::CV_r_NoDraw != 3)
 	{
-		commandInterface.SetVertexBuffers(1, 0, cobj.m_vertexStreamSet);
-		commandInterface.SetIndexBuffer(cobj.m_indexStreamSet);
-		commandInterface.DrawIndexed(cobj.m_nNumIndices, 1, cobj.m_nStartIndex, 0, 0);
+		commandInterface.SetVertexBuffers(1, 0, compiledObj.m_vertexStreamSet);
+		commandInterface.SetIndexBuffer(compiledObj.m_indexStreamSet);
+		commandInterface.DrawIndexed(compiledObj.m_nNumIndices, 1, compiledObj.m_nStartIndex, 0, 0);
 	}
 }
 
 void CREFogVolume::PrepareForUse(render_element::fogvolume::SCompiledFogVolume& RESTRICT_REFERENCE compiledObj, bool bInstanceOnly, CDeviceCommandList& RESTRICT_REFERENCE commandList) const
 {
-	CDeviceGraphicsCommandInterface* pCommandInterface = commandList.GetGraphicsInterface();
+	CDeviceGraphicsCommandInterface* RESTRICT_REFERENCE pCommandInterface = commandList.GetGraphicsInterface();
+	const EShaderStage perDrawInlineShaderStages = (EShaderStage_Vertex | EShaderStage_Pixel);
 
 	pCommandInterface->PrepareResourcesForUse(EResourceLayoutSlot_PerMaterialRS, compiledObj.m_pMaterialResourceSet.get());
-	pCommandInterface->PrepareResourcesForUse(EResourceLayoutSlot_PerInstanceExtraRS, compiledObj.m_pPerInstanceResourceSet.get());
+	pCommandInterface->PrepareResourcesForUse(EResourceLayoutSlot_PerDrawExtraRS, compiledObj.m_pPerDrawRS.get());
 
-	EShaderStage perInstanceCBShaderStages = (EShaderStage_Vertex | EShaderStage_Pixel);
-	pCommandInterface->PrepareInlineConstantBufferForUse(EResourceLayoutSlot_PerInstanceCB, compiledObj.m_pPerInstanceCB, eConstantBufferShaderSlot_PerInstance, perInstanceCBShaderStages);
+	pCommandInterface->PrepareInlineConstantBufferForUse(EResourceLayoutSlot_PerDrawCB, compiledObj.m_pPerDrawCB, eConstantBufferShaderSlot_PerDraw, perDrawInlineShaderStages);
 
 	pCommandInterface->PrepareVertexBuffersForUse(1, 0, compiledObj.m_vertexStreamSet);
 	pCommandInterface->PrepareIndexBufferForUse(compiledObj.m_indexStreamSet);
 }
 
-void CREFogVolume::UpdatePerInstanceCB(render_element::fogvolume::SCompiledFogVolume& RESTRICT_REFERENCE compiledObj, const CRenderObject& renderObj) const
+void CREFogVolume::UpdatePerDrawCB(render_element::fogvolume::SCompiledFogVolume& RESTRICT_REFERENCE compiledObj, const CRenderObject& renderObj) const
 {
 	CD3D9Renderer* const RESTRICT_POINTER rd = gcpRendD3D;
 
-	if (!compiledObj.m_pPerInstanceCB)
+	if (!compiledObj.m_pPerDrawCB)
 	{
-		compiledObj.m_pPerInstanceCB = rd->m_DevBufMan.CreateConstantBuffer(sizeof(render_element::fogvolume::SPerInstanceConstantBuffer));
+		compiledObj.m_pPerDrawCB = rd->m_DevBufMan.CreateConstantBuffer(sizeof(render_element::fogvolume::SPerDrawConstantBuffer));
 	}
 
-	if (!compiledObj.m_pPerInstanceCB)
+	if (!compiledObj.m_pPerDrawCB)
 	{
 		return;
 	}
 
-	CryStackAllocWithSize(render_element::fogvolume::SPerInstanceConstantBuffer, cb, CDeviceBufferManager::AlignBufferSizeForStreaming);
+	CryStackAllocWithSize(render_element::fogvolume::SPerDrawConstantBuffer, cb, CDeviceBufferManager::AlignBufferSizeForStreaming);
 
 	cb->objMatrix = renderObj.GetMatrix(gcpRendD3D->GetObjectAccessorThreadConfig());
 	cb->invObjSpaceMatrix = m_matWSInv;
@@ -366,7 +367,7 @@ void CREFogVolume::UpdatePerInstanceCB(render_element::fogvolume::SCompiledFogVo
 	cb->heightFallOffBasePoint = Vec4(m_heightFallOffBasePoint, 0);
 	cb->heightFallOffDirScaled = Vec4(m_heightFallOffDirScaled, 0);
 
-	compiledObj.m_pPerInstanceCB->UpdateBuffer(cb, cbSize);
+	compiledObj.m_pPerDrawCB->UpdateBuffer(cb, cbSize);
 }
 
 bool CREFogVolume::UpdateVertex(render_element::fogvolume::SCompiledFogVolume& RESTRICT_REFERENCE compiledObj)

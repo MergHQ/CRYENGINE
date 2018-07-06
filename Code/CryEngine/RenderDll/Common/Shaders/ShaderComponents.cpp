@@ -104,14 +104,11 @@ static SParamDB sParams[] =
 	SParamDB(PARAM(PB_HDRParams,                             ECGP_PB_HDRParams),                             0),
 	SParamDB(PARAM(PB_StereoParams,                          ECGP_PB_StereoParams),                          0),
 
-	SParamDB(PARAM(PI_VisionParams,                          ECGP_PI_VisionParams),                          0),
 	SParamDB(PARAM(PB_VisionMtlParams,                       ECGP_PB_VisionMtlParams),                       0),
 	SParamDB(PARAM(PI_EffectLayerParams,                     ECGP_PI_EffectLayerParams),                     0),
 
 	SParamDB(PARAM(PB_IrregKernel,                           ECGP_PB_IrregKernel),                           0),
 	SParamDB(PARAM(PB_RegularKernel,                         ECGP_PB_RegularKernel),                         0),
-
-	SParamDB(PARAM(PI_MaterialLayersParams,                  ECGP_PI_MaterialLayersParams),                  0),
 
 	SParamDB(PARAM(PB_VolumetricFogParams,                   ECGP_PB_VolumetricFogParams),                   0),
 	SParamDB(PARAM(PB_VolumetricFogRampParams,               ECGP_PB_VolumetricFogRampParams),               0),
@@ -131,7 +128,6 @@ static SParamDB sParams[] =
 	SParamDB(PARAM(PB_VolumetricFogDistanceParams,           ECGP_PB_VolumetricFogDistanceParams),           0),
 	SParamDB(PARAM(PB_VolumetricFogGlobalEnvProbe0,          ECGP_PB_VolumetricFogGlobalEnvProbe0),          0),
 	SParamDB(PARAM(PB_VolumetricFogGlobalEnvProbe1,          ECGP_PB_VolumetricFogGlobalEnvProbe1),          0),
-	SParamDB(PARAM(PI_AvgFogVolumeContrib,                   ECGP_PI_AvgFogVolumeContrib),                   0),
 	SParamDB(PARAM(PI_NumInstructions,                       ECGP_PI_NumInstructions),                       PD_INDEXED),
 
 	SParamDB(PARAM(PB_FromRE,                                ECGP_PB_FromRE),                                PD_INDEXED | 0),

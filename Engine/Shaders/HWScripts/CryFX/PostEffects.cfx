@@ -1561,7 +1561,7 @@ technique UnderwaterGodRaysFinal
 Texture2D WaterRipplesTexture : register(t0);
 SamplerState WaterRipplesSState : register(s0);
 
-cbuffer CB_WaterRipples : register(b0)
+cbuffer CBWaterRipples : register(b0)
 {
 	struct
 	{

@@ -528,7 +528,7 @@ void CD3D9Renderer::RT_PreRenderScene(CRenderView* pRenderView)
 	CMotionBlur::InsertNewElements();
 	CRenderMesh::UpdateModified();
 
-	// Calcualte AA jitter
+	// Calculate AA jitter
 	if (bAllowPostAA)
 	{
 		if (GetS3DRend().IsStereoEnabled())
@@ -576,7 +576,6 @@ void CD3D9Renderer::RT_PreRenderScene(CRenderView* pRenderView)
 
 void CD3D9Renderer::RT_PostRenderScene(CRenderView* pRenderView)
 {
-
 	{
 		PROFILE_FRAME(ShadowViewsEndFrame);
 		for (auto& fr : pRenderView->m_shadows.m_renderFrustums)
@@ -668,6 +667,10 @@ void CD3D9Renderer::RT_RenderScene(CRenderView* pRenderView)
 		// If some pipeline stage manages/retires resources used in compiled objects, they should also be handled in Update()
 		pRenderView->CompileModifiedRenderObjects();
 
+		// Sort transparent lists that might have refractive items that will require resolve passes.
+		// This is done after the CompileModifiedRenderObjects we need to project render itemss AABB.
+		pRenderView->StartOptimizeTransparentRenderItemsResolvesJob();
+
 		if (pRenderView->IsBillboardGenView())
 		{
 			GetGraphicsPipeline().ExecuteBillboards();
@@ -707,10 +710,6 @@ void CD3D9Renderer::RT_RenderScene(CRenderView* pRenderView)
 
 	////////////////////////////////////////////////
 
-	CFlashTextureSourceBase::RenderLights();
-
-	SRenderStatistics::Write().m_fRenderTime += iTimer->GetAsyncTime().GetDifferenceInSeconds(Time);
-
 	CV_r_nodrawnear            = nSaveDrawNear;
 	CV_r_watercaustics         = nSaveDrawCaustics;
 
@@ -718,6 +717,11 @@ void CD3D9Renderer::RT_RenderScene(CRenderView* pRenderView)
 		PROFILE_FRAME(RenderViewEndFrame);
 		pRenderView->SwitchUsageMode(CRenderView::eUsageModeReadingDone);
 	}
+
+	SRenderStatistics::Write().m_fRenderTime += iTimer->GetAsyncTime().GetDifferenceInSeconds(Time);
+
+	if (CRendererCVars::CV_r_FlushToGPU >= 1)
+		GetDeviceObjectFactory().FlushToGPU();
 }
 
 //======================================================================================================

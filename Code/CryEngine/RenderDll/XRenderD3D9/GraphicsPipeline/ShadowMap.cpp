@@ -120,7 +120,7 @@ void CShadowMapStage::ReAllocateResources()
 		++reallocationCount;
 #endif
 
-		CRendererResources::s_ptexRT_ShadowPool->CreateDepthStencil(eTF_Unknown, Clr_FarPlane);
+		CRendererResources::s_ptexRT_ShadowPool->CreateDepthStencil(eTF_Unknown, ColorF(Clr_FarPlane.r, 5.f, 0.f, 0.f));
 	}
 
 	// allocate shadow maps for dynamic frustums
@@ -131,7 +131,7 @@ void CShadowMapStage::ReAllocateResources()
 		{
 			for (int i = 0; i < MAX_GSM_LODS_NUM; ++i)
 			{
-				SDynTexture_Shadow* pNewShadow = new SDynTexture_Shadow(0, 0, texFormat, eTT_2D, FT_USAGE_DEPTHSTENCIL | FT_STATE_CLAMP, "ShadowRT");
+				SDynTexture_Shadow* pNewShadow = new SDynTexture_Shadow(0, 0, Clr_FarPlane, texFormat, eTT_2D, FT_USAGE_DEPTHSTENCIL | FT_STATE_CLAMP, "ShadowRT");
 
 				char name[64];
 				cry_sprintf(name, "$Dyn_%s_2D_%s_%d", "ShadowRT", CTexture::NameForTextureFormat(texFormat), pNewShadow->m_nUniqueID);
@@ -145,7 +145,7 @@ void CShadowMapStage::ReAllocateResources()
 	if (!CTexture::IsTextureExist(CRendererResources::s_ptexFarPlane))
 	{
 		CRendererResources::s_ptexFarPlane->CreateDepthStencil(eTF_Unknown, Clr_FarPlane);
-		CClearSurfacePass::Execute(CRendererResources::s_ptexFarPlane, CLEAR_ZBUFFER, Clr_FarPlane.r, 0);
+		CClearSurfacePass::Execute(CRendererResources::s_ptexFarPlane, CLEAR_ZBUFFER, Clr_FarPlane.r, Val_Unused);
 	}
 }
 
@@ -316,7 +316,7 @@ bool CShadowMapStage::CreatePipelineStates(DevicePipelineStatesArray* pStateArra
 	return true;
 }
 
-void CShadowMapStage::Prepare()
+void CShadowMapStage::Update()
 {
 	CRenderView* pRenderView = RenderView();
 
@@ -547,6 +547,7 @@ void CShadowMapStage::UpdateShadowFrustumFromPass(const CShadowMapPass& sourcePa
 	targetFrustum.pDepthTex      = pDepthTarget;
 	targetFrustum.nTextureWidth  = pDepthTarget->GetWidth();
 	targetFrustum.nTextureHeight = pDepthTarget->GetHeight();
+	targetFrustum.clearValue     = pDepthTarget->GetClearColor();
 
 	targetFrustum.mLightViewMatrix = sourcePass.m_ViewProjMatrix;
 	targetFrustum.mLightProjMatrix.SetIdentity();
@@ -820,7 +821,7 @@ void CShadowMapStage::CopyShadowMap(const CShadowMapPass& sourcePass, CShadowMap
 	{
 		if (bEmptySrcFrustum)
 		{
-			CClearSurfacePass::Execute(depthTarget.pTexture, CLEAR_ZBUFFER | CLEAR_STENCIL, Clr_FarPlane.r, 0);
+			CClearSurfacePass::Execute(depthTarget.pTexture, CLEAR_ZBUFFER | CLEAR_STENCIL, Clr_FarPlane.r, Val_Stencil);
 		}
 		else
 		{
@@ -879,6 +880,7 @@ void CShadowMapStage::CopyShadowMap(const CShadowMapPass& sourcePass, CShadowMap
 		pDst->nTexSize = pSrc->nTexSize;
 		pDst->nTextureWidth = pSrc->nTextureWidth;
 		pDst->nTextureHeight = pSrc->nTextureHeight;
+		pDst->clearValue = pSrc->clearValue;
 	}
 
 	pDst->bIncrementalUpdate = true;
@@ -948,7 +950,7 @@ void CShadowMapStage::ClearShadowMaps(PassGroupList& shadowMapPasses)
 			{
 				const auto& depthTarget = curPass.GetPassDesc().GetDepthTarget();
 
-				CClearSurfacePass::Execute(depthTarget.pTexture, CLEAR_ZBUFFER, Clr_FarPlane.r, 0);
+				CClearSurfacePass::Execute(depthTarget.pTexture, CLEAR_ZBUFFER, Clr_FarPlane.r, Val_Unused);
 
 				for (const auto& colorTarget : curPass.GetPassDesc().GetRenderTargets())
 				{
@@ -975,24 +977,26 @@ void CShadowMapStage::Execute()
 	const int nThreadID = gRenDev->GetRenderThreadID();
 	CRenderItemDrawer& rendItemDrawer = RenderView()->GetDrawer();
 
-	rendItemDrawer.InitDrawSubmission();
-
+	// Cached shadow maps cannot run concurrent due to CopyShadowMap pass
 	for (auto& curPass : m_ShadowMapPasses[ePass_DirectionalLightCached])
 	{
 		if (curPass.m_bRequiresRender)
 		{
+			rendItemDrawer.InitDrawSubmission();
+
 			CRenderView* pShadowsView = reinterpret_cast<CRenderView*>(curPass.GetFrustum()->pShadowsView.get());
 
 			curPass.PreRender();
 			curPass.SetPassResources(m_pResourceLayout, curPass.GetResources());
 			curPass.BeginExecution();
-			curPass.DrawRenderItems(pShadowsView, (ERenderListID)curPass.m_nShadowFrustumSide, -1, -1, EFSLIST_SHADOW_GEN);
+			curPass.DrawRenderItems(pShadowsView, (ERenderListID)curPass.m_nShadowFrustumSide);
 			curPass.EndExecution();
+
+			rendItemDrawer.JobifyDrawSubmission();
+			rendItemDrawer.WaitForDrawSubmission();
 		}
 	}
 
-	// Cached shadow maps cannot be jobified currently due to CopyShadowMap pass
-	rendItemDrawer.JobifyDrawSubmission(true);
 	rendItemDrawer.InitDrawSubmission();
 
 	for (auto passGroup  = ePass_DirectionalLight; passGroup != ePass_Count; passGroup  = EPass(passGroup+1))
@@ -1009,7 +1013,7 @@ void CShadowMapStage::Execute()
 				curPass.PreRender();
 				curPass.SetPassResources(m_pResourceLayout, curPass.GetResources());
 				curPass.BeginExecution();
-				curPass.DrawRenderItems(pShadowsView, (ERenderListID)curPass.m_nShadowFrustumSide, -1, -1, EFSLIST_SHADOW_GEN);
+				curPass.DrawRenderItems(pShadowsView, (ERenderListID)curPass.m_nShadowFrustumSide);
 				curPass.EndExecution();
 			}
 		}

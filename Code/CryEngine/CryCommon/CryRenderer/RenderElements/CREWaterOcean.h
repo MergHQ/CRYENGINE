@@ -31,7 +31,7 @@ public:
 	}
 
 	virtual bool            Compile(CRenderObject* pObj, CRenderView *pRenderView, bool updateInstanceDataOnly) override;
-	virtual void            DrawToCommandList(CRenderObject* pObj, const struct SGraphicsPipelinePassContext& ctx) override;
+	virtual void            DrawToCommandList(CRenderObject* pObj, const struct SGraphicsPipelinePassContext& ctx, CDeviceCommandList* commandList) override;
 
 	virtual bool            RequestVerticesBuffer(SVF_P3F_C4B_T2F** pOutputVertices, uint8** pOutputIndices, uint32 nVerticesCount, uint32 nIndicesCount, uint32 nIndexSizeof);
 	virtual bool            SubmitVerticesBuffer(uint32 nVerticesCount, uint32 nIndicesCount, uint32 nIndexSizeof, SVF_P3F_C4B_T2F* pVertices, uint8* pIndices);
@@ -60,8 +60,8 @@ private:
 
 	void PrepareForUse(water::SCompiledWaterOcean& compiledObj, bool bInstanceOnly, CDeviceCommandList& RESTRICT_REFERENCE commandList) const;
 
-	void UpdatePerInstanceResourceSet(water::SCompiledWaterOcean& RESTRICT_REFERENCE compiledObj, const SWaterOceanParam& oceanParam, const CWaterStage& waterStage);
-	void UpdatePerInstanceCB(water::SCompiledWaterOcean& RESTRICT_REFERENCE compiledObj, const CRenderObject& renderObj) const;
+	void UpdatePerDrawRS(water::SCompiledWaterOcean& RESTRICT_REFERENCE compiledObj, const SWaterOceanParam& oceanParam, const CWaterStage& waterStage);
+	void UpdatePerDrawCB(water::SCompiledWaterOcean& RESTRICT_REFERENCE compiledObj, const CRenderObject& renderObj) const;
 	void UpdateVertex(water::SCompiledWaterOcean& compiledObj, int32 primType);
 
 private:

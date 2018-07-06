@@ -106,6 +106,11 @@ public:
 		m_lValue = val;
 	}
 
+	ILINE void AddValueThreadSafe(int64 val)
+	{
+		CryInterlockedAdd(&m_lValue, val);
+	}
+
 	//! Useful for periodic events (e.g. water wave, blinking).
 	//! Changing TimePeriod can results in heavy changes in the returned value.
 	//! \return [0..1]

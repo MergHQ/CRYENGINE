@@ -107,11 +107,19 @@ int32 CDeviceResource::Cleanup()
 	int32 nRef = m_resourceElements ? -1 : 0; // -!!bool
 	if (m_pNativeResource)
 	{
-		nRef = m_pNativeResource->Release();
+		const bool bRecycle = m_eFlags & CDeviceObjectFactory::USAGE_HIFREQ_HEAP ? true : false;
+
+		if (bRecycle)
+			nRef = 0;
+		else
+			nRef = m_pNativeResource->Release();
 
 		// NOTE: CDeviceResource might be shared, take care the texture-pointer stays valid for the other aliases
 		if (!nRef)
 		{
+			if (bRecycle)
+				GetDeviceObjectFactory().RecycleResource(m_pNativeResource);
+
 			m_pNativeResource = nullptr;
 		}
 	}
@@ -197,11 +205,11 @@ int32 CDeviceBuffer::Cleanup()
 {
 	Unbind();
 
-#if CRY_PLATFORM_DURANGO
+#if CRY_PLATFORM_DURANGO && (CRY_RENDERER_DIRECT3D >= 110) && (CRY_RENDERER_DIRECT3D < 120)
 	void* pBackingStorage = m_pNativeResource ? CDeviceObjectFactory::GetBackingStorage((ID3D11Buffer*)m_pNativeResource) : nullptr;
 #endif
 	int32 nRef = CDeviceResource::Cleanup();
-#if CRY_PLATFORM_DURANGO
+#if CRY_PLATFORM_DURANGO && (CRY_RENDERER_DIRECT3D >= 110) && (CRY_RENDERER_DIRECT3D < 120)
 	if (!nRef && pBackingStorage)
 	{
 		CDeviceObjectFactory::FreeBackingStorage(pBackingStorage);
@@ -258,6 +266,8 @@ CDeviceTexture* CDeviceTexture::Create(const STextureLayout& pLayout, const STex
 		eFlags |= CDeviceObjectFactory::BIND_DEPTH_STENCIL;
 	if (pLayout.m_eFlags & FT_USAGE_RENDERTARGET)
 		eFlags |= CDeviceObjectFactory::BIND_RENDER_TARGET;
+	if (pLayout.m_eFlags & FT_USAGE_TEMPORARY)
+		eFlags |= CDeviceObjectFactory::USAGE_HIFREQ_HEAP;
 	if (pLayout.m_eFlags & FT_STAGE_READBACK)
 		stagingFlags |= CDeviceObjectFactory::USAGE_STAGE_ACCESS | CDeviceObjectFactory::USAGE_CPU_READ;
 	if (pLayout.m_eFlags & FT_STAGE_UPLOAD)

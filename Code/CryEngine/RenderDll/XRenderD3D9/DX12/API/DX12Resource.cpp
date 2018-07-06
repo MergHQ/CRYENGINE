@@ -72,6 +72,7 @@ CResource::CResource(CDevice* pDevice)
 	, m_pD3D12Resource(nullptr)
 	, m_pD3D12UploadBuffer(nullptr)
 	, m_pD3D12DownloadBuffer(nullptr)
+	, m_eInitialState(D3D12_RESOURCE_STATE_COMMON)
 	, m_eCurrentState(D3D12_RESOURCE_STATE_COMMON)
 	, m_eAnnouncedState((D3D12_RESOURCE_STATES)-1)
 	, m_InitialData(nullptr)
@@ -92,6 +93,7 @@ CResource::CResource(CResource&& r)
 	, m_pD3D12Resource(std::move(r.m_pD3D12Resource))
 	, m_pD3D12UploadBuffer(std::move(r.m_pD3D12UploadBuffer))
 	, m_pD3D12DownloadBuffer(std::move(r.m_pD3D12DownloadBuffer))
+	, m_eInitialState(std::move(r.m_eInitialState))
 	, m_eCurrentState(std::move(r.m_eCurrentState))
 	, m_eAnnouncedState(std::move(r.m_eAnnouncedState))
 	, m_InitialData(std::move(r.m_InitialData))
@@ -122,6 +124,7 @@ CResource& CResource::operator=(CResource&& r)
 	m_pD3D12Resource = std::move(r.m_pD3D12Resource);
 	m_pD3D12UploadBuffer = std::move(r.m_pD3D12UploadBuffer);
 	m_pD3D12DownloadBuffer = std::move(r.m_pD3D12DownloadBuffer);
+	m_eInitialState = std::move(r.m_eInitialState);
 	m_eCurrentState = std::move(r.m_eCurrentState);
 	m_eAnnouncedState = std::move(r.m_eAnnouncedState);
 	m_InitialData = std::move(r.m_InitialData);
@@ -149,8 +152,38 @@ CResource& CResource::operator=(CResource&& r)
 CResource::~CResource()
 {
 	const auto& fVals = GetFenceValues(CMDTYPE_ANY);
+	const bool bResuable = !m_pSwapChainOwner && m_bReusableResource;
 
-	GetDevice()->ReleaseLater(fVals, m_pD3D12Resource, !m_pSwapChainOwner && m_bReusableResource);
+	if (bResuable && (m_eInitialState != m_eCurrentState))
+	{
+		auto& pCmdScheduler = GetDevice()->GetScheduler();
+		auto* pCmdList = pCmdScheduler.GetCommandList(CMDQUEUE_GRAPHICS);
+		CRY_ASSERT(pCmdList);
+
+		D3D12_RESOURCE_BARRIER barrierDesc = {};
+		barrierDesc.Flags = D3D12_RESOURCE_BARRIER_FLAG_NONE;
+		barrierDesc.Type = D3D12_RESOURCE_BARRIER_TYPE_TRANSITION;
+		barrierDesc.Transition.pResource = m_pD3D12Resource;
+		barrierDesc.Transition.Subresource = D3D12_RESOURCE_BARRIER_ALL_SUBRESOURCES;
+		barrierDesc.Transition.StateBefore = m_eCurrentState;
+		barrierDesc.Transition.StateAfter = m_eInitialState;
+
+		pCmdList->ResourceBarrier(1, &barrierDesc);
+
+		// Issuing a transition-barrier is a modification and needs to be tracked
+		FVAL64 uVals[CMDQUEUE_NUM];
+
+		uVals[CMDQUEUE_GRAPHICS] = std::max(fVals[CMDQUEUE_COMPUTE].load(), pCmdScheduler.GetFenceManager().GetCurrentValue(CMDQUEUE_GRAPHICS));
+		uVals[CMDQUEUE_COMPUTE] = fVals[CMDQUEUE_COMPUTE].load();
+		uVals[CMDQUEUE_COPY] = fVals[CMDQUEUE_COPY].load();
+
+		GetDevice()->ReleaseLater(uVals, m_pD3D12Resource, bResuable);
+	}
+	else
+	{
+		GetDevice()->ReleaseLater(fVals, m_pD3D12Resource, bResuable);
+	}
+
 	GetDevice()->ReleaseLater(fVals, m_pD3D12UploadBuffer);
 	GetDevice()->ReleaseLater(fVals, m_pD3D12DownloadBuffer);
 
@@ -200,7 +233,7 @@ bool CResource::Init(ID3D12Resource* pResource, D3D12_RESOURCE_STATES eInitialSt
 		if (m_pD3D12Resource->GetHeapProperties(&sHeap, nullptr) == S_OK)
 		{
 			m_HeapType = sHeap.Type;
-			m_eCurrentState = eInitialState;
+			m_eInitialState = m_eCurrentState = eInitialState;
 
 			m_NodeMasks.creationMask = sHeap.CreationNodeMask;
 			m_NodeMasks.visibilityMask = sHeap.VisibleNodeMask;
@@ -223,15 +256,15 @@ bool CResource::Init(ID3D12Resource* pResource, D3D12_RESOURCE_STATES eInitialSt
 	else
 	{
 		m_HeapType = D3D12_HEAP_TYPE_UPLOAD; // Null resource put on the UPLOAD heap to prevent attempts to transition the resource.
-		m_eCurrentState = eInitialState;
+		m_eInitialState = m_eCurrentState = eInitialState;
 	}
 
 	// Certain heaps are restricted to certain D3D12_RESOURCE_STATES states, and cannot be changed.
 	// D3D12_HEAP_TYPE_UPLOAD requires D3D12_RESOURCE_STATE_GENERIC_READ.
 	if (m_HeapType == D3D12_HEAP_TYPE_UPLOAD)
-		m_eCurrentState = D3D12_RESOURCE_STATE_GENERIC_READ;
+		m_eInitialState = m_eCurrentState = D3D12_RESOURCE_STATE_GENERIC_READ;
 	else if (m_HeapType == D3D12_HEAP_TYPE_READBACK)
-		m_eCurrentState = D3D12_RESOURCE_STATE_COPY_DEST;
+		m_eInitialState = m_eCurrentState = D3D12_RESOURCE_STATE_COPY_DEST;
 
 	m_pSwapChainOwner = NULL;
 	m_bCompressed = IsDXGIFormatCompressed(desc.Format);

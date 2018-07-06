@@ -132,7 +132,7 @@ enum ETEX_TileMode : uint8
 
 //! T = applies to texture objects read from disk.
 //! R = applies to texture objects allocated for render-targets.
-enum ETextureFlags
+enum ETextureFlags : uint32
 {
 	FT_NOMIPS                  = BIT(0),  // TR: don't allocate or use any mip-maps (even if they exist)
 	FT_TEX_NORMAL_MAP          = BIT(1),  // T: indicator that a texture contains normal vectors (used for tracking statistics, debug messages and the default texture)
@@ -147,7 +147,7 @@ enum ETextureFlags
 	FT_USAGE_MSAA              = BIT(10), // R: use as MSAA render-target
 	FT_FORCE_MIPS              = BIT(11), // TR: always allocate mips (even if normally this would be optimized away)
 	FT_USAGE_RENDERTARGET      = BIT(12), // R: use as render-target
-	FT______________________02 = BIT(13), // UNUSED
+	FT_USAGE_TEMPORARY         = BIT(13), // TR: indicate that the resource is used for just one or at most a couple of frames
 	FT_STAGE_READBACK          = BIT(14), // R: allow read-back of the texture contents by the CPU through a persistent staging texture (otherwise the staging is dynamic)
 	FT_STAGE_UPLOAD            = BIT(15), // R: allow up-load of the texture contents by the CPU through a persistent staging texture (otherwise the staging is dynamic)
 	FT_DONT_RELEASE            = BIT(16), // TR: texture will not be freed automatically when ref counter goes to 0. Use ReleaseForce() to free the texture.
@@ -164,7 +164,7 @@ enum ETextureFlags
 	FT_SPLITTED                = BIT(27), // T: indicator that the texture is available splitted on disk
 	FT_STREAMED_PREPARE        = BIT(28), // REMOVE
 	FT_STREAMED_FADEIN         = BIT(29), // T: smoothly fade the texture in after MIPs have been added
-	FT______________________03 = BIT(30), // UNUSED
+	FT_USAGE_UAV_OVERLAP       = BIT(30), // R: disable compute-serialization when concurrently using this UAV
 	FT_USAGE_UAV_RWTEXTURE     = BIT(31), // R: enable RW usage for the UAV, otherwise UAVs are write-only (see FT_USAGE_UNORDERED_ACCESS)
 };
 

@@ -663,7 +663,7 @@ void CPrimitiveRenderPass::Execute()
 
 	if (m_clearMask & CPrimitiveRenderPass::eClear_Stencil)
 	{
-		CClearSurfacePass::Execute(GetDepthTarget(), CLEAR_STENCIL, Clr_Unused.r, 0);
+		CClearSurfacePass::Execute(GetDepthTarget(), CLEAR_STENCIL, Clr_Unused.r, Val_Stencil);
 	}
 	if (m_clearMask & CPrimitiveRenderPass::eClear_Color0)
 	{

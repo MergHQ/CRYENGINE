@@ -6,7 +6,7 @@
 //////////////////////////////////////////////////
 // shader constants
 
-cbuffer ScaleformMeshAttributes : register(b0)
+cbuffer CBScaleformMeshAttributes : register(b0)
 {
 	// VS
 	float4x4 cCompositeMat;
@@ -16,7 +16,7 @@ cbuffer ScaleformMeshAttributes : register(b0)
 	float2   cPad;
 };
 
-cbuffer ScaleformRenderParameters : register(b0)
+cbuffer CBScaleformRenderParameters : register(b0)
 {
 	// PS
 	float2x4 cBitmapColorTransform;

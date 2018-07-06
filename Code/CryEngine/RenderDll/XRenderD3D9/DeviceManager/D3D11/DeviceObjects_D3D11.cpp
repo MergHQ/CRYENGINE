@@ -169,20 +169,20 @@ uint32 CDeviceStatesManagerDX11::GetOrCreateDepthState(const D3D11_DEPTH_STENCIL
 
 ///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 CDeviceObjectFactory::CDeviceObjectFactory()
-	: m_fence_handle(0)
 {
 	memset(m_NullResources, 0, sizeof(m_NullResources));
 
-	m_frameFenceCounter = 0;
-	m_completedFrameFenceCounter = 0;
-	for (uint32 i = 0; i < CRY_ARRAY_COUNT(m_frameFences); i++)
-		m_frameFences[i] = NULL;
-
 	m_pCoreCommandList.reset(new CDeviceCommandList());
+
+	m_pDX11Device = nullptr;
+	m_pDX11Scheduler = nullptr;
 }
 
 void CDeviceObjectFactory::AssignDevice(D3DDevice* pDevice)
 {
+	CRY_ASSERT(!m_pDX11Device);
+	CRY_ASSERT(!m_pDX11Scheduler);
+
 #if CRY_PLATFORM_DURANGO
 	D3D11_DMA_ENGINE_CONTEXT_DESC dmaDesc = { 0 };
 	dmaDesc.CreateFlags = D3D11_DMA_ENGINE_CONTEXT_CREATE_SDMA_1;
@@ -207,6 +207,9 @@ void CDeviceObjectFactory::AssignDevice(D3DDevice* pDevice)
 
 	m_textureStagingRing.Init(m_pDMA1, 128 * 1024 * 1024);
 #endif
+
+	m_pDX11Device = NCryDX11::CDevice::Create(pDevice, D3D_FEATURE_LEVEL_11_0);
+	m_pDX11Scheduler = &m_pDX11Device->GetScheduler();
 }
 
 ///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
@@ -551,60 +554,6 @@ void CDeviceObjectFactory::ReleaseNullResources()
 
 //=============================================================================
 
-#ifdef DEVRES_USE_STAGING_POOL
-D3DResource* CDeviceObjectFactory::AllocateStagingResource(D3DResource* pForTex, bool bUpload, void*& pMappedAddress)
-{
-	D3D11_TEXTURE2D_DESC Desc;
-	memset(&Desc, 0, sizeof(Desc));
-
-	((D3DTexture*)pForTex)->GetDesc(&Desc);
-	Desc.Usage = bUpload ? D3D11_USAGE_DYNAMIC : D3D11_USAGE_STAGING;
-	Desc.CPUAccessFlags = bUpload ? D3D11_CPU_ACCESS_WRITE : D3D11_CPU_ACCESS_READ;
-	Desc.BindFlags = bUpload ? D3D11_BIND_SHADER_RESOURCE : 0;
-	Desc.SampleDesc.Count = 1;
-	Desc.SampleDesc.Quality = 0;
-	Desc.MiscFlags = 0;
-
-	StagingPoolVec::iterator it = std::find(m_stagingPool.begin(), m_stagingPool.end(), Desc);
-	it = it != m_stagingPool.end() && ((it->lastUsedFrameID - GetCompletedFrameCounter()) > CRendererCVars::CV_r_MaxFrameLatency) ? it : m_stagingPool.end();
-
-	if (it == m_stagingPool.end())
-	{
-		D3DTexture* pStagingTexture = NULL;
-
-		gcpRendD3D->GetDevice().CreateTexture2D(&Desc, NULL, &pStagingTexture);
-
-#ifndef _RELEASE
-		if (pStagingTexture)
-		{
-			D3D11_TEXTURE2D_DESC stagingDesc;
-			memset(&stagingDesc, 0, sizeof(stagingDesc));
-
-			pStagingTexture->GetDesc(&stagingDesc);
-			stagingDesc.Usage = bUpload ? D3D11_USAGE_DYNAMIC : D3D11_USAGE_STAGING;
-			stagingDesc.CPUAccessFlags = bUpload ? D3D11_CPU_ACCESS_WRITE : D3D11_CPU_ACCESS_READ;
-			stagingDesc.BindFlags = bUpload ? D3D11_BIND_SHADER_RESOURCE : 0;
-
-			if (memcmp(&stagingDesc, &Desc, sizeof(Desc)) != 0)
-			{
-				assert(0);
-			}
-		}
-#endif
-
-		return pStagingTexture;
-	}
-	else
-	{
-		D3DTexture* pStagingResource = NULL;
-
-		pStagingResource = it->pStagingResource;
-		m_stagingPool.erase(it);
-
-		return pStagingResource;
-	}
-}
-
 #if USE_NV_API
 	#include NV_API_HEADER
 #endif
@@ -612,20 +561,32 @@ D3DResource* CDeviceObjectFactory::AllocateStagingResource(D3DResource* pForTex,
 	#include AMD_API_HEADER
 #endif
 
+#ifdef DEVRES_USE_STAGING_POOL
+D3DResource* CDeviceObjectFactory::AllocateStagingResource(D3DResource* pForTex, bool bUpload, void*& pMappedAddress)
+{
+	D3DResource* pStaging = nullptr;
+	HRESULT result = GetDX11Device()->CreateOrReuseStagingResource(pForTex, &pStaging, bUpload);
+	return pStaging;
+}
+
 void CDeviceObjectFactory::ReleaseStagingResource(D3DResource* pStagingRes)
 {
-	D3D11_TEXTURE2D_DESC Desc;
-	memset(&Desc, 0, sizeof(Desc));
-
-	((D3DTexture*)pStagingRes)->GetDesc(&Desc);
-
-	StagingTextureDef def;
-	def.desc = Desc;
-	def.lastUsedFrameID = GetCurrentFrameCounter();
-	def.pStagingResource = (D3DTexture*)pStagingRes;
-	m_stagingPool.push_back(def);
+	// NOTE: Poor man's resource tracking (take current time as last-used moment)
+	GetDX11Device()->ReleaseLater(GetDX11Scheduler()->GetFenceManager().GetCurrentValues(), pStagingRes, true);
 }
 #endif
+
+void CDeviceObjectFactory::ReleaseResource(D3DResource* pResource)
+{
+	// NOTE: Poor man's resource tracking (take current time as last-used moment)
+	GetDX11Device()->ReleaseLater(GetDX11Scheduler()->GetFenceManager().GetCurrentValues(), pResource, false);
+}
+
+void CDeviceObjectFactory::RecycleResource(D3DResource* pResource)
+{
+	// NOTE: Poor man's resource tracking (take current time as last-used moment)
+	GetDX11Device()->ReleaseLater(GetDX11Scheduler()->GetFenceManager().GetCurrentValues(), pResource, true);
+}
 
 //=============================================================================
 
@@ -739,7 +700,23 @@ HRESULT CDeviceObjectFactory::Create2DTexture(const D3D11_TEXTURE2D_DESC& Desc, 
 {
 	D3D11_SUBRESOURCE_DATA SRD[g_nD3D10MaxSupportedSubres];
 	D3DTexture* pD3DTex = NULL; assert(!pPayload || (((Desc.MipLevels * Desc.ArraySize) <= g_nD3D10MaxSupportedSubres)));
-	HRESULT hr = gcpRendD3D->GetDevice().CreateTexture2D(&Desc, ConvertToDX11Data(Desc.MipLevels, pPayload, SRD), &pD3DTex);
+	HRESULT hr;
+
+	if ((Desc.MiscFlags & D3D11_RESOURCE_MISC_HIFREQ_HEAP) && !pPayload)
+	{
+		D3D11_BIND_FLAG       heapFlags = D3D11_BIND_FLAG(Desc.BindFlags);
+		D3D11_HEAP_PROPERTIES heapProperties = { Desc.Usage, D3D11_CPU_ACCESS_FLAG(Desc.CPUAccessFlags) };
+		D3D11_RESOURCE_DESC   resourceDesc = { D3D11_RESOURCE_DIMENSION_TEXTURE2D, 0, Desc.Width, Desc.Height, Desc.ArraySize, Desc.MipLevels, Desc.Format, 0, Desc.SampleDesc, D3D11_RESOURCE_MISC_FLAG(Desc.MiscFlags & ~D3D11_RESOURCE_MISC_HIFREQ_HEAP) };
+
+		hr = GetDX11Device()->CreateOrReuseCommittedResource(&heapProperties, heapFlags, &resourceDesc, IID_GFX_ARGS(&pD3DTex));
+	}
+	else
+	{
+		D3D11_TEXTURE2D_DESC _Desc = Desc; _Desc.MiscFlags &= ~D3D11_RESOURCE_MISC_HIFREQ_HEAP;
+
+		// TODO: no data on creation, then use GetDX11Device()->CreateCommittedResource()
+		hr = gcpRendD3D->GetDevice().CreateTexture2D(&_Desc, ConvertToDX11Data(Desc.MipLevels, pPayload, SRD), &pD3DTex);
+	}
 
 	if (SUCCEEDED(hr) && pD3DTex)
 	{
@@ -761,7 +738,23 @@ HRESULT CDeviceObjectFactory::CreateCubeTexture(const D3D11_TEXTURE2D_DESC& Desc
 {
 	D3D11_SUBRESOURCE_DATA SRD[g_nD3D10MaxSupportedSubres];
 	D3DCubeTexture* pD3DTex = NULL; assert(!pPayload || (((Desc.MipLevels * Desc.ArraySize) <= g_nD3D10MaxSupportedSubres) && !(Desc.ArraySize % 6)));
-	HRESULT hr = gcpRendD3D->GetDevice().CreateTexture2D(&Desc, ConvertToDX11Data(Desc.MipLevels * Desc.ArraySize, pPayload, SRD), &pD3DTex);
+	HRESULT hr;
+
+	if ((Desc.MiscFlags & D3D11_RESOURCE_MISC_HIFREQ_HEAP) && !pPayload)
+	{
+		D3D11_BIND_FLAG       heapFlags = D3D11_BIND_FLAG(Desc.BindFlags);
+		D3D11_HEAP_PROPERTIES heapProperties = { Desc.Usage, D3D11_CPU_ACCESS_FLAG(Desc.CPUAccessFlags) };
+		D3D11_RESOURCE_DESC   resourceDesc = { D3D11_RESOURCE_DIMENSION_TEXTURE2D, 0, Desc.Width, Desc.Height, Desc.ArraySize, Desc.MipLevels, Desc.Format, 0, Desc.SampleDesc, D3D11_RESOURCE_MISC_FLAG(Desc.MiscFlags & ~D3D11_RESOURCE_MISC_HIFREQ_HEAP) };
+
+		hr = GetDX11Device()->CreateOrReuseCommittedResource(&heapProperties, heapFlags, &resourceDesc, IID_GFX_ARGS(&pD3DTex));
+	}
+	else
+	{
+		D3D11_TEXTURE2D_DESC _Desc = Desc; _Desc.MiscFlags &= ~D3D11_RESOURCE_MISC_HIFREQ_HEAP;
+
+		// TODO: no data on creation, then use GetDX11Device()->CreateCommittedResource()
+		hr = gcpRendD3D->GetDevice().CreateTexture2D(&_Desc, ConvertToDX11Data(Desc.MipLevels * Desc.ArraySize, pPayload, SRD), &pD3DTex);
+	}
 
 	if (SUCCEEDED(hr) && pD3DTex)
 	{
@@ -784,7 +777,23 @@ HRESULT CDeviceObjectFactory::CreateVolumeTexture(const D3D11_TEXTURE3D_DESC& De
 {
 	D3D11_SUBRESOURCE_DATA SRD[g_nD3D10MaxSupportedSubres];
 	D3DVolumeTexture* pD3DTex = NULL;
-	HRESULT hr = gcpRendD3D->GetDevice().CreateTexture3D(&Desc, ConvertToDX11Data(Desc.MipLevels, pPayload, SRD), &pD3DTex);
+	HRESULT hr;
+
+	if ((Desc.MiscFlags & D3D11_RESOURCE_MISC_HIFREQ_HEAP) && !pPayload)
+	{
+		D3D11_BIND_FLAG       heapFlags = D3D11_BIND_FLAG(Desc.BindFlags);
+		D3D11_HEAP_PROPERTIES heapProperties = { Desc.Usage, D3D11_CPU_ACCESS_FLAG(Desc.CPUAccessFlags) };
+		D3D11_RESOURCE_DESC   resourceDesc = { D3D11_RESOURCE_DIMENSION_TEXTURE3D, 0, Desc.Width, Desc.Height, Desc.Depth, Desc.MipLevels, Desc.Format, 0, {1,0}, D3D11_RESOURCE_MISC_FLAG(Desc.MiscFlags & ~D3D11_RESOURCE_MISC_HIFREQ_HEAP) };
+
+		hr = GetDX11Device()->CreateOrReuseCommittedResource(&heapProperties, heapFlags, &resourceDesc, IID_GFX_ARGS(&pD3DTex));
+	}
+	else
+	{
+		D3D11_TEXTURE3D_DESC _Desc = Desc; _Desc.MiscFlags &= ~D3D11_RESOURCE_MISC_HIFREQ_HEAP;
+
+		// TODO: no data on creation, then use GetDX11Device()->CreateCommittedResource()
+		hr = gcpRendD3D->GetDevice().CreateTexture3D(&_Desc, ConvertToDX11Data(Desc.MipLevels, pPayload, SRD), &pD3DTex);
+	}
 
 	if (SUCCEEDED(hr) && pD3DTex)
 	{
@@ -819,8 +828,19 @@ HRESULT CDeviceObjectFactory::CreateBuffer(
 	// bit groups are mutually exclusive).
 #endif
 
-	D3D11_BUFFER_DESC BufDesc;
-	ZeroStruct(BufDesc);
+	D3D11_BUFFER_DESC Desc;
+	ZeroStruct(Desc);
+
+	Desc.StructureByteStride = elemSize;
+	Desc.ByteWidth = nSize * elemSize;
+	if ((nUsage & USAGE_CPU_WRITE))
+		Desc.ByteWidth = CDeviceBufferManager::AlignElementCountForStreaming(nSize, elemSize) * elemSize;
+
+	Desc.BindFlags = ConvertToDX11BindFlags(nBindFlags);
+	if (nBindFlags & (BIND_STREAM_OUTPUT | BIND_RENDER_TARGET | BIND_DEPTH_STENCIL))
+	{
+		CryFatalError("trying to create (currently) unsupported buffer type");
+	}
 
 #if CRY_PLATFORM_DURANGO && BUFFER_USE_STAGED_UPDATES == 0
 	if (nUsage & USAGE_DIRECT_ACCESS)
@@ -830,19 +850,9 @@ HRESULT CDeviceObjectFactory::CreateBuffer(
 	//		CryFatalError("staging buffers not supported if BUFFER_USE_STAGED_UPDATES not defined");
 	//	}
 
-		BufDesc.StructureByteStride = elemSize;
-		BufDesc.ByteWidth = nSize;
-		if ((nUsage & USAGE_CPU_WRITE))
-			BufDesc.ByteWidth = CDeviceBufferManager::AlignElementCountForStreaming(nSize, elemSize) * elemSize;
-
-		BufDesc.Usage = (D3D11_USAGE)D3D11_USAGE_DEFAULT;
-		BufDesc.MiscFlags = 0;
-		BufDesc.CPUAccessFlags = ConvertToDX11CPUAccessFlags(nUsage);
-		BufDesc.BindFlags = ConvertToDX11BindFlags(nBindFlags);
-		if (nBindFlags & (BIND_STREAM_OUTPUT | BIND_RENDER_TARGET | BIND_DEPTH_STENCIL))
-		{
-			CryFatalError("trying to create (currently) unsupported buffer type");
-		}
+		Desc.CPUAccessFlags = ConvertToDX11CPUAccessFlags(nUsage);
+		Desc.Usage = (D3D11_USAGE)D3D11_USAGE_DEFAULT;
+		Desc.MiscFlags = 0;
 
 		void* BufBasePtr;
 
@@ -866,7 +876,8 @@ HRESULT CDeviceObjectFactory::CreateBuffer(
 		}
 		assert(hr == S_OK);
 
-		hr = gcpRendD3D->GetPerformanceDevice().CreatePlacementBuffer(&BufDesc, BufBasePtr, ppBuff);
+		// TODO: use GetDX11Device()->CreatePlacedResource()
+		hr = gcpRendD3D->GetPerformanceDevice().CreatePlacementBuffer(&Desc, BufBasePtr, ppBuff);
 		assert(hr == S_OK);
 
 		UINT size = sizeof(BufBasePtr);
@@ -882,29 +893,14 @@ HRESULT CDeviceObjectFactory::CreateBuffer(
 	}
 #endif
 
-	BufDesc.StructureByteStride = elemSize;
-	BufDesc.ByteWidth = nSize * elemSize;
-	if ((nUsage & USAGE_CPU_WRITE))
-		BufDesc.ByteWidth = CDeviceBufferManager::AlignElementCountForStreaming(nSize, elemSize) * elemSize;
-	
-	BufDesc.CPUAccessFlags = ConvertToDX11CPUAccessFlags(nUsage);
-	BufDesc.Usage = ConvertToDX11Usage(nUsage);
-	BufDesc.MiscFlags = ConvertToDX11MiscFlags(nUsage);
+	Desc.CPUAccessFlags = ConvertToDX11CPUAccessFlags(nUsage);
+	Desc.Usage = ConvertToDX11Usage(nUsage);
+	Desc.MiscFlags = ConvertToDX11MiscFlags(nUsage);
 
 #if !CRY_RENDERER_OPENGL
-	if (BufDesc.Usage != D3D11_USAGE_STAGING)
-#endif
+	if (Desc.Usage == D3D11_USAGE_STAGING)
 	{
-		BufDesc.BindFlags = ConvertToDX11BindFlags(nBindFlags);
-		if (nBindFlags & (BIND_STREAM_OUTPUT | BIND_RENDER_TARGET | BIND_DEPTH_STENCIL))
-		{
-			CryFatalError("trying to create (currently) unsupported buffer type");
-		}
-	}
-#if !CRY_RENDERER_OPENGL
-	else
-	{
-		BufDesc.BindFlags = 0;
+		Desc.BindFlags = 0;
 	}
 #endif
 
@@ -915,11 +911,26 @@ HRESULT CDeviceObjectFactory::CreateBuffer(
 		pSRD = &SRD;
 
 		SRD.pSysMem = pData;
-		SRD.SysMemPitch = BufDesc.ByteWidth;
-		SRD.SysMemSlicePitch = BufDesc.ByteWidth;
+		SRD.SysMemPitch = Desc.ByteWidth;
+		SRD.SysMemSlicePitch = Desc.ByteWidth;
 	}
 
-	hr = gcpRendD3D->GetDevice().CreateBuffer(&BufDesc, pSRD, ppBuff);
+	if ((Desc.MiscFlags & D3D11_RESOURCE_MISC_HIFREQ_HEAP) && !pData)
+	{
+		D3D11_BIND_FLAG       heapFlags = D3D11_BIND_FLAG(Desc.BindFlags);
+		D3D11_HEAP_PROPERTIES heapProperties = { Desc.Usage, D3D11_CPU_ACCESS_FLAG(Desc.CPUAccessFlags) };
+		D3D11_RESOURCE_DESC   resourceDesc = { D3D11_RESOURCE_DIMENSION_BUFFER, 0, Desc.ByteWidth, 1, 1, 1, DXGI_FORMAT_UNKNOWN, Desc.StructureByteStride, { 1,0 }, D3D11_RESOURCE_MISC_FLAG(Desc.MiscFlags & ~D3D11_RESOURCE_MISC_HIFREQ_HEAP) };
+
+		hr = GetDX11Device()->CreateOrReuseCommittedResource(&heapProperties, heapFlags, &resourceDesc, IID_GFX_ARGS(ppBuff));
+	}
+	else
+	{
+		Desc.MiscFlags &= ~D3D11_RESOURCE_MISC_HIFREQ_HEAP;
+
+		// TODO: no data on creation, then use GetDX11Device()->CreateCommittedResource()
+		hr = gcpRendD3D->GetDevice().CreateBuffer(&Desc, pSRD, ppBuff);
+	}
+
 	return hr;
 }
 

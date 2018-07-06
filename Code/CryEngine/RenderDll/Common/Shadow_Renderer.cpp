@@ -64,9 +64,15 @@ std::bitset<6> ShadowMapFrustum::GenerateTimeSlicedUpdateCacheMask(uint32 frameI
 
 void CRenderer::PrepareShadowFrustumForShadowPool(ShadowMapFrustum* pFrustum, uint32 frameID, const SRenderLight& light, uint32 *timeSlicedShadowsUpdated)
 {
+#if defined(ENABLE_PROFILING_CODE)
+	uint32& numShadowPoolAllocsThisFrame = m_frameRenderStats[m_nFillThreadID].m_NumShadowPoolAllocsThisFrame;
+#else
+	uint32  numShadowPoolAllocsThisFrame = 0;
+#endif
+
 	pFrustum->PrepareForShadowPool(
 		frameID,
-		m_frameRenderStats[m_nFillThreadID].m_NumShadowPoolAllocsThisFrame,
+		numShadowPoolAllocsThisFrame,
 		CDeferredShading::Instance().m_blockPack, 
 		CDeferredShading::Instance().m_shadowPoolAlloc, 
 		light, 
@@ -75,7 +81,7 @@ void CRenderer::PrepareShadowFrustumForShadowPool(ShadowMapFrustum* pFrustum, ui
 }
 
 //////////////////////////////////////////////////////////////////////////
-void ShadowMapFrustum::PrepareForShadowPool(uint32 frameID, uint32 &numShadowPoolAllocsThisFrame, CPowerOf2BlockPacker& blockPacker, TArray<SShadowAllocData>& shadowPoolAlloc, const SRenderLight& light, uint32 timeSlicedShadowUpdatesLimit, uint32 *timeSlicedShadowsUpdated)
+void ShadowMapFrustum::PrepareForShadowPool(uint32 frameID, uint32& numShadowPoolAllocsThisFrame, CPowerOf2BlockPacker& blockPacker, TArray<SShadowAllocData>& shadowPoolAlloc, const SRenderLight& light, uint32 timeSlicedShadowUpdatesLimit, uint32 *timeSlicedShadowsUpdated)
 {
 	if (!bUseShadowsPool)
 	{

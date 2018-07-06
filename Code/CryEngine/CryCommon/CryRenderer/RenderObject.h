@@ -144,8 +144,6 @@ struct SRenderObjData
 
 	uint16                            m_LightVolumeId;
 
-	TRect_tpl<uint16>                 m_screenBounds;
-
 	//@ see ERenderObjectCustomFlags
 	uint16 m_nCustomFlags;
 	uint8  m_nCustomData;
@@ -169,7 +167,6 @@ struct SRenderObjData
 		m_LightVolumeId = 0;
 		m_pSkinningData = NULL;
 		m_scissorX = m_scissorY = m_scissorWidth = m_scissorHeight = 0;
-		m_screenBounds = { 0,0,0,0 };
 		m_nCustomData = 0;
 		m_nCustomFlags = 0;
 		m_nHUDSilhouetteParams = m_nVisionParams = 0;
@@ -398,7 +395,18 @@ public:
 	ILINE SRenderObjData*         GetObjData()       { return &m_data; }
 	ILINE const SRenderObjData*   GetObjData() const { return &m_data; }
 
-	ILINE CRenderElement*     GetRE() const       { return m_pRE; }
+	ILINE CRenderElement*         GetRE() const      { return m_pRE; }
+
+	template <typename ObjectAccessor>
+	AABB TransformAABB(const AABB &aabb, const Vec3 &cameraPosition, ObjectAccessor &&accessor) const
+	{
+		auto m = GetMatrix(std::forward<ObjectAccessor>(accessor));
+		// Convert from camera space to world space for nearest
+		if (m_ObjFlags & FOB_NEAREST)
+			m.AddTranslation(cameraPosition);
+
+		return AABB::CreateTransformedAABB(m, aabb);
+	}
 
 protected:
 	// Disallow copy (potential bugs with PERMANENT objects)

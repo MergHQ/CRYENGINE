@@ -484,7 +484,8 @@ void CFogVolumeRenderNode::Render(const SRendParams& rParam, const SRenderingPas
 		pRenderObject->m_pCurrMaterial = pMaterial;
 
 		// add to renderer
-		pRenderView->AddRenderObject(m_pFogVolumeRenderElement[fillThreadID], shaderItem, pRenderObject, passInfo, EFSLIST_TRANSP, nAfterWater);
+		const auto transparentList = !(pRenderObject->m_ObjFlags & FOB_AFTER_WATER) ? EFSLIST_TRANSP_BW : EFSLIST_TRANSP_AW;
+		pRenderView->AddRenderObject(m_pFogVolumeRenderElement[fillThreadID], shaderItem, pRenderObject, passInfo, transparentList, nAfterWater);
 	}
 }
 

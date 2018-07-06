@@ -5,7 +5,7 @@
 
 #define HALFRES_DEBUG_COLOR half3(0.3h, 3.h, 0.3h)
 
-cbuffer ParticleInstance : register(b12)
+cbuffer ParticleInstance : register(b0)
 {
 	struct
 	{
@@ -17,7 +17,7 @@ cbuffer ParticleInstance : register(b12)
 	} particleInstance;
 };
 
-cbuffer ParticleParamsCB : register (b9)
+cbuffer ParticleParamsCB : register (b4)
 {
 	struct
 	{

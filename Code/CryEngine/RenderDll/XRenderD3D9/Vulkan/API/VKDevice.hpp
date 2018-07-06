@@ -117,8 +117,8 @@ private:
 	std::vector<SRenderPass>     m_deferredRenderPasses[kDeferTicks];
 
 	// Objects that should be released when they are not in use anymore
-	static CryCriticalSectionNonRecursive m_ReleaseHeapTheadSafeScope[2];
-	static CryCriticalSectionNonRecursive m_RecycleHeapTheadSafeScope[2];
+	static CryCriticalSectionNonRecursive m_ReleaseHeapTheadSafeScope[3];
+	static CryCriticalSectionNonRecursive m_RecycleHeapTheadSafeScope[3];
 
 	template<class CResource> CryCriticalSectionNonRecursive& GetReleaseHeapCriticalSection();
 	template<class CResource> CryCriticalSectionNonRecursive& GetRecycleHeapCriticalSection();
@@ -138,12 +138,16 @@ private:
 	};
 
 	template<class CResource> using TReleaseHeap = std::unordered_map<CResource*, ReleaseInfo>;
-	template<class CResource> using TRecycleHeap = std::unordered_multimap<THash, RecycleInfo<CResource>>;
+	template<class CResource> using TRecycleHeap = std::unordered_map<THash, std::deque<RecycleInfo<CResource>>>;
 
 	TReleaseHeap<CBufferResource> m_BufferReleaseHeap;
-	TReleaseHeap<CImageResource > m_ImageReleaseHeap;
 	TRecycleHeap<CBufferResource> m_BufferRecycleHeap;
-	TRecycleHeap<CImageResource > m_ImageRecycleHeap;
+
+	TReleaseHeap<CDynamicOffsetBufferResource> m_DynamicOffsetBufferReleaseHeap;
+	TRecycleHeap<CDynamicOffsetBufferResource> m_DynamicOffsetBufferRecycleHeap;
+
+	TReleaseHeap<CImageResource> m_ImageReleaseHeap;
+	TRecycleHeap<CImageResource> m_ImageRecycleHeap;
 
 	template<class CResource> TReleaseHeap<CResource>& GetReleaseHeap();
 	template<class CResource> TRecycleHeap<CResource>& GetRecycleHeap();

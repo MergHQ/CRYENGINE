@@ -272,7 +272,7 @@ void CComputeSkinningStage::Prepare()
 
 		////////////////////////////////////////////////////////////////////////////////////////////
 		// bind output skinning
-		ir->passDeform.SetOutputUAV(0, &ir->verticesOut.GetBuffer());
+		ir->passDeform          .SetOutputUAV(0, &ir->verticesOut.GetBuffer());
 		ir->passDeformWithMorphs.SetOutputUAV(0, &ir->verticesOut.GetBuffer());
 
 		// bind input skinning buffers
@@ -285,8 +285,8 @@ void CComputeSkinningStage::Prepare()
 		ir->passDeformWithMorphs.SetBuffer(2, &mr->skinningVectorMap.GetBuffer());
 
 		// bind transform bones
-		ir->passDeform.SetInlineConstantBuffer(9, alias_cast<CD3D9Renderer::SCharacterInstanceCB*>(pSD->pCharInstCB)->boneTransformsBuffer);
-		ir->passDeformWithMorphs.SetInlineConstantBuffer(9, alias_cast<CD3D9Renderer::SCharacterInstanceCB*>(pSD->pCharInstCB)->boneTransformsBuffer);
+		ir->passDeform          .SetInlineConstantBuffer(eConstantBufferShaderSlot_SkinQuat, alias_cast<CD3D9Renderer::SCharacterInstanceCB*>(pSD->pCharInstCB)->boneTransformsBuffer);
+		ir->passDeformWithMorphs.SetInlineConstantBuffer(eConstantBufferShaderSlot_SkinQuat, alias_cast<CD3D9Renderer::SCharacterInstanceCB*>(pSD->pCharInstCB)->boneTransformsBuffer);
 
 		CD3D9Renderer::SCharacterInstanceCB* cicb = alias_cast<CD3D9Renderer::SCharacterInstanceCB*>(pSD->pCharInstCB);
 

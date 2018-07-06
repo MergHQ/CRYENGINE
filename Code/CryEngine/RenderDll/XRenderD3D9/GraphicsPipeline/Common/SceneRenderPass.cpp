@@ -32,7 +32,7 @@ CSceneRenderPass::CSceneRenderPass()
 void CSceneRenderPass::SetupPassContext(uint32 stageID, uint32 stagePassID, EShaderTechniqueID technique, uint32 filter, ERenderListID renderList, uint32 excludeFilter, bool drawCompiledRenderObject)
 {
 	// the scene render passes which draw CCompiledRenderObject must follow the strict rule of PSOs array and PSO cache in CCompiledRenderObject
-	const bool drawable = (drawCompiledRenderObject && stageID < MAX_PIPELINE_SCENE_STAGES) || !drawCompiledRenderObject;
+	const bool drawable = (drawCompiledRenderObject && stageID < eStage_SCENE_NUM) || !drawCompiledRenderObject;
 	assert(drawable);
 	m_stageID = stageID;
 	m_passID = stagePassID;
@@ -44,6 +44,8 @@ void CSceneRenderPass::SetupPassContext(uint32 stageID, uint32 stagePassID, ESha
 
 void CSceneRenderPass::SetPassResources(CDeviceResourceLayoutPtr pResourceLayout, CDeviceResourceSetPtr pPerPassResources)
 {
+	CRY_ASSERT_MESSAGE(!!pResourceLayout, "Layout to be set turns out to be invalid!");
+
 	m_pResourceLayout = pResourceLayout;
 	m_pPerPassResourceSet = pPerPassResources;
 }
@@ -136,25 +138,47 @@ void CSceneRenderPass::PrepareRenderPassForUse(CDeviceCommandListRef RESTRICT_RE
 	}
 }
 
-void CSceneRenderPass::BeginRenderPass(CDeviceCommandListRef RESTRICT_REFERENCE commandList, bool bNearest, uint32 profilerSectionIndex, bool bIssueGPUTimestamp) const
+void CSceneRenderPass::ResolvePass(CDeviceCommandListRef RESTRICT_REFERENCE commandList, const std::vector<TRect_tpl<uint16>>& screenBounds) const
+{
+	CDeviceGraphicsCommandInterface* pCommandInterface = commandList.GetGraphicsInterface();
+
+	const auto textureWidth = CRendererResources::s_ptexHDRTarget->GetWidth();
+	const auto textureHeight = CRendererResources::s_ptexHDRTarget->GetHeight();
+
+	for (const auto &bounds : screenBounds)
+	{
+		const auto x = bounds.Min.x;
+		const auto y = bounds.Min.y;
+		const auto w = bounds.Max.x - x;
+		const auto h = bounds.Max.y - y;
+
+		SResourceCoordinate region = { x, y, 0, 0 };
+		SResourceRegionMapping mapping =
+		{
+			region,   // src position
+			region,   // dst position
+			{
+				static_cast<UINT>(std::max<int>(0, std::min<int>(w, textureWidth - x))),
+				static_cast<UINT>(std::max<int>(0, std::min<int>(h, textureHeight - y))),
+				1, 1
+			},    // size
+			D3D11_COPY_NO_OVERWRITE_CONC // This is being done from job threads
+		};
+
+		if (mapping.Extent.Width && mapping.Extent.Height && mapping.Extent.Depth)
+			commandList.GetCopyInterface()->Copy(CRendererResources::s_ptexHDRTarget->GetDevTexture(), CRendererResources::s_ptexSceneTarget->GetDevTexture(), mapping);
+	}
+}
+
+void CSceneRenderPass::BeginRenderPass(CDeviceCommandListRef RESTRICT_REFERENCE commandList, bool bNearest) const
 {
 	// Note: Function has to be threadsafe since it can be called from several worker threads
 
-#if defined(ENABLE_PROFILING_CODE)
-	if (gcpRendD3D->m_pPipelineProfiler)
-		gcpRendD3D->m_pPipelineProfiler->UpdateMultithreadedSection(profilerSectionIndex, true, 0, 0, bIssueGPUTimestamp, &commandList);
-
-	commandList.BeginProfilingSection();
-#endif
 
 	D3D11_VIEWPORT viewport = GetViewport(bNearest);
 	bool bViewportSet = false;
 
-	commandList.Reset();
-
 	CDeviceGraphicsCommandInterface* pCommandInterface = commandList.GetGraphicsInterface();
-	if (bIssueGPUTimestamp)
-		pCommandInterface->BeginProfilerEvent(GetLabel());
 	pCommandInterface->BeginRenderPass(*m_pRenderPass, m_scissorRect);
 
 	if (m_passFlags & ePassFlags_VrProjectionPass)
@@ -177,64 +201,15 @@ void CSceneRenderPass::BeginRenderPass(CDeviceCommandListRef RESTRICT_REFERENCE 
 #endif
 }
 
-void CSceneRenderPass::ResolvePass(CDeviceCommandListRef RESTRICT_REFERENCE commandList, const uint16* screenBounds, uint32 profilerSectionIndex, bool bIssueGPUTimestamp) const
-{
-#if defined(ENABLE_PROFILING_CODE)
-	if (gcpRendD3D->m_pPipelineProfiler)
-		gcpRendD3D->m_pPipelineProfiler->UpdateMultithreadedSection(profilerSectionIndex, true, 0, 0, bIssueGPUTimestamp, &commandList);
-#endif
-
-	CDeviceGraphicsCommandInterface* pCommandInterface = commandList.GetGraphicsInterface();
-
-	if (bIssueGPUTimestamp)
-		pCommandInterface->BeginProfilerEvent(GetLabel());
-
-	const auto textureWidth = CRendererResources::s_ptexHDRTarget->GetWidth();
-	const auto textureHeight = CRendererResources::s_ptexHDRTarget->GetHeight();
-	SResourceCoordinate region = { screenBounds[0], screenBounds[1], 0, 0 };
-	SResourceRegionMapping mapping =
-	{
-		region,   // src position
-		region,   // dst position
-		{ 
-			static_cast<UINT>(std::max<int>(0, std::min<int>(screenBounds[2] - screenBounds[0], textureWidth - screenBounds[0]))),
-			static_cast<UINT>(std::max<int>(0, std::min<int>(screenBounds[3] - screenBounds[1], textureHeight - screenBounds[1]))), 
-			1, 1 
-		},    // size
-		D3D11_COPY_NO_OVERWRITE_CONC // This is being done from job threads
-	};
-
-	if (mapping.Extent.Width && mapping.Extent.Height && mapping.Extent.Depth)
-		commandList.GetCopyInterface()->Copy(CRendererResources::s_ptexHDRTarget->GetDevTexture(), CRendererResources::s_ptexSceneTarget->GetDevTexture(), mapping);
-
-#if defined(ENABLE_PROFILING_CODE)
-	if (gcpRendD3D->m_pPipelineProfiler)
-		gcpRendD3D->m_pPipelineProfiler->UpdateMultithreadedSection(profilerSectionIndex, false, 0, 0, false, &commandList);
-	gcpRendD3D->AddRecordedProfilingStats(commandList.EndProfilingSection(), m_renderList, true);
-#endif
-}
-
-void CSceneRenderPass::EndRenderPass(CDeviceCommandListRef RESTRICT_REFERENCE commandList, bool bNearest, uint32 profilerSectionIndex, bool bIssueGPUTimestamp) const
+void CSceneRenderPass::EndRenderPass(CDeviceCommandListRef RESTRICT_REFERENCE commandList, bool bNearest) const
 {
 	// Note: Function has to be threadsafe since it can be called from several worker threads
 
 	CDeviceGraphicsCommandInterface* pCommandInterface = commandList.GetGraphicsInterface();
-	if (bIssueGPUTimestamp)
-		pCommandInterface->EndProfilerEvent(GetLabel());
 	pCommandInterface->EndRenderPass(*m_pRenderPass);
 
 #if (CRY_RENDERER_DIRECT3D < 120)
 	pCommandInterface->SetDepthBias(0.0f, 0.0f, 0.0f);
-#endif
-
-#if defined(ENABLE_PROFILING_CODE)
-	if (gcpRendD3D->m_pPipelineProfiler)
-	{
-		gcpRendD3D->m_pPipelineProfiler->UpdateMultithreadedSection(profilerSectionIndex, false, commandList.EndProfilingSection().numDIPs,
-		                                                            commandList.EndProfilingSection().numPolygons, bIssueGPUTimestamp, &commandList);
-	}
-	
-	gcpRendD3D->AddRecordedProfilingStats(commandList.EndProfilingSection(), m_renderList, true);
 #endif
 
 	if (m_passFlags & ePassFlags_UseVrProjectionState)
@@ -263,14 +238,105 @@ void CSceneRenderPass::EndExecution()
 	s_recursionCounter -= 1;
 }
 
-
-void CSceneRenderPass::DrawRenderItems(CRenderView* pRenderView, ERenderListID list, int listStart, int listEnd, int profilingListID)
+inline void DebugDrawRenderResolve(const std::vector<TRect_tpl<uint16>> &ns, const std::size_t count)
 {
-	assert(s_recursionCounter == 1);
-	
+	// Color table for debug draw
+	const auto a = 64;
+	ColorB colors[] = {
+		ColorB(255, 0, 0, a)    , // Red
+		ColorB(0, 255, 0, a)    , // Green
+		ColorB(0, 0, 255, a)    , // Blue
+		ColorB(255, 255, 0, a)  , // Yellow
+		ColorB(255, 0, 255, a)  , // Magenta
+		ColorB(0, 255, 255, a)  , // Cyan
+		ColorB(128, 0, 0, a)	,
+		ColorB(0, 128, 0, a)	,
+		ColorB(0, 0, 128, a)	,
+		ColorB(128, 128, 0, a)	,
+		ColorB(128, 0, 128, a)	,
+		ColorB(0, 128, 128, a)	,
+		ColorB(192, 192, 192, a),
+		ColorB(128, 128, 128, a),
+		ColorB(153, 153, 255, a),
+		ColorB(153, 51, 102, a)	,
+		ColorB(255, 255, 204, a),
+		ColorB(204, 255, 255, a),
+		ColorB(102, 0, 102, a)	,
+		ColorB(255, 128, 128, a),
+		ColorB(0, 102, 204, a)	,
+		ColorB(204, 204, 255, a),
+		ColorB(0, 0, 128, a)	,
+		ColorB(255, 0, 255, a)	,
+		ColorB(255, 255, 0, a)	,
+		ColorB(0, 255, 255, a)	,
+		ColorB(128, 0, 128, a)	,
+		ColorB(128, 0, 0, a)	,
+		ColorB(0, 128, 128, a)	,
+		ColorB(0, 0, 255, a)	,
+		ColorB(0, 204, 255, a)	,
+		ColorB(204, 255, 255, a),
+		ColorB(204, 255, 204, a),
+		ColorB(255, 255, 153, a),
+		ColorB(153, 204, 255, a),
+		ColorB(255, 153, 204, a),
+		ColorB(204, 153, 255, a),
+		ColorB(255, 204, 153, a),
+		ColorB(51, 102, 255, a)	,
+		ColorB(51, 204, 204, a)	,
+		ColorB(153, 204, 0, a)	,
+		ColorB(255, 204, 0, a)	,
+		ColorB(255, 153, 0, a)	,
+		ColorB(255, 102, 0, a)	,
+		ColorB(102, 102, 153, a),
+		ColorB(150, 150, 150, a),
+		ColorB(0, 51, 102, a)	,
+		ColorB(51, 153, 102, a)	,
+		ColorB(0, 51, 0, a)		,
+		ColorB(51, 51, 0, a)	,
+		ColorB(153, 51, 0, a)	,
+		ColorB(153, 51, 102, a)	,
+		ColorB(51, 51, 153, a)	,
+		ColorB(51, 51, 51, a)	,
+		ColorB(0, 0, 0, a)		,
+		ColorB(255, 255, 255, a),
+	};
+
+	if (CRendererCVars::CV_r_RefractionPartialResolvesDebug == 2)
+	{
+		const auto oldAuxFlags = IRenderAuxGeom::GetAux()->GetRenderFlags();
+		IRenderAuxGeom::GetAux()->SetRenderFlags(e_AlphaBlended | e_DepthWriteOff | e_DepthTestOff | e_Mode2D);
+
+		for (const auto& n : ns)
+		{
+			// Render resolve screen-space bounding box
+			Vec3 v0 = { static_cast<float>(n.Min.x), static_cast<float>(n.Min.y), .0f };
+			Vec3 v1 = { static_cast<float>(n.Max.x), static_cast<float>(n.Min.y), .0f };
+			Vec3 v2 = { static_cast<float>(n.Max.x), static_cast<float>(n.Max.y), .0f };
+			Vec3 v3 = { static_cast<float>(n.Min.x), static_cast<float>(n.Max.y), .0f };
+
+			const auto c = colors[count % (sizeof(colors) / sizeof(colors[0]))];
+			IRenderAuxGeom::GetAux()->DrawQuad(v0, c, v1, c, v2, c, v3, c);
+		}
+
+		IRenderAuxGeom::GetAux()->SetRenderFlags(oldAuxFlags);
+	}
+
+#if defined(ENABLE_PROFILING_CODE)
+	// Write statstics
+	SRenderStatistics& stats = SRenderStatistics::Write();
+	++stats.m_refractionPartialResolveCount;
+	for (const auto& n : ns)
+		stats.m_refractionPartialResolvePixelCount += std::max(0, (n.Max.x - n.Min.x) * (n.Max.y - n.Min.y));
+#endif
+}
+
+void CSceneRenderPass::DrawRenderItems(CRenderView* pRenderView, ERenderListID list, int listStart, int listEnd)
+{
+	CRY_ASSERT(s_recursionCounter == 1);
+	CRY_ASSERT(list != EFSLIST_TRANSP_BW && list != EFSLIST_TRANSP_AW && list != EFSLIST_TRANSP_NEAREST);
+
 	const uint32 nBatchFlags = pRenderView->GetBatchFlags(list);
-	const bool bNearest = (list == EFSLIST_NEAREST_OBJECTS) || (list == EFSLIST_FORWARD_OPAQUE_NEAREST) || (list == EFSLIST_TRANSP_NEAREST);
-	const bool transparent = list == EFSLIST_TRANSP || list == EFSLIST_TRANSP_NEAREST;
+	const bool bNearest = (list == EFSLIST_NEAREST_OBJECTS) || (list == EFSLIST_FORWARD_OPAQUE_NEAREST);
 
 	if (m_batchFilter != FB_MASK && !(nBatchFlags & m_batchFilter))
 		return;
@@ -286,63 +352,120 @@ void CSceneRenderPass::DrawRenderItems(CRenderView* pRenderView, ERenderListID l
 	passContext.renderNearest = bNearest && (m_passFlags & CSceneRenderPass::ePassFlags_RenderNearest);
 	passContext.renderListId = list;
 	passContext.profilerSectionIndex = m_profilerSectionIndex;
-
+	passContext.rendItems.start = listStart;
+	passContext.rendItems.end = listEnd;
+	passContext.renderItemGroup = m_numRenderItemGroups++;
 #if defined(DO_RENDERSTATS)
-	CD3D9Renderer* pRenderer = gcpRendD3D;
-
-	if (pRenderer->CV_r_stats == 6 || pRenderer->m_pDebugRenderNode || pRenderer->m_bCollectDrawCallsInfoPerNode)
+	if (gcpRendD3D->CV_r_stats == 6 || gcpRendD3D->m_pDebugRenderNode || gcpRendD3D->m_bCollectDrawCallsInfoPerNode)
 		passContext.pDrawCallInfoPerNode = gcpRendD3D->GetGraphicsPipeline().GetDrawCallInfoPerNode();
-	if (pRenderer->m_bCollectDrawCallsInfo)
+	if (gcpRendD3D->m_bCollectDrawCallsInfo)
 		passContext.pDrawCallInfoPerMesh = gcpRendD3D->GetGraphicsPipeline().GetDrawCallInfoPerMesh();
 #endif
 
-	std::vector<SGraphicsPipelinePassContext> passes;
-	if (!transparent || !(nBatchFlags & FB_REFRACTION) || !CRendererCVars::CV_r_Refraction)
+	if (gcpRendD3D->GetGraphicsPipeline().GetRenderPassScheduler().IsActive())
 	{
-		passContext.rendItems.start = listStart;
-		passContext.rendItems.end = listEnd;
-		passContext.renderItemGroup = m_numRenderItemGroups++;
+		m_passContexts.emplace_back(std::move(passContext));
+		return;
+	}
 
-		passes.push_back(passContext);
+	if (!CRenderer::CV_r_NoDraw)
+		pRenderView->DrawCompiledRenderItems(passContext);
+}
+
+void CSceneRenderPass::DrawTransparentRenderItems(CRenderView* pRenderView, ERenderListID list)
+{
+	CRY_ASSERT(s_recursionCounter == 1);
+	CRY_ASSERT(list == EFSLIST_TRANSP_BW || list == EFSLIST_TRANSP_AW || list == EFSLIST_TRANSP_NEAREST);
+
+	std::vector<SGraphicsPipelinePassContext> passes;
+
+	const uint32 nBatchFlags = pRenderView->GetBatchFlags(list);
+	const bool bNearest = list == EFSLIST_TRANSP_NEAREST;
+
+	if (m_batchFilter != FB_MASK && !(nBatchFlags & m_batchFilter))
+		return;
+
+	SGraphicsPipelinePassContext passContext(pRenderView, this, m_technique, m_batchFilter, m_excludeFilter);
+	passContext.stageID = m_stageID;
+	passContext.passID = m_passID;
+	passContext.renderNearest = bNearest && (m_passFlags & CSceneRenderPass::ePassFlags_RenderNearest);
+	passContext.renderListId = list;
+	passContext.profilerSectionIndex = m_profilerSectionIndex;
+#if defined(DO_RENDERSTATS)
+	if (gcpRendD3D->CV_r_stats == 6 || gcpRendD3D->m_pDebugRenderNode || gcpRendD3D->m_bCollectDrawCallsInfoPerNode)
+		passContext.pDrawCallInfoPerNode = gcpRendD3D->GetGraphicsPipeline().GetDrawCallInfoPerNode();
+	if (gcpRendD3D->m_bCollectDrawCallsInfo)
+		passContext.pDrawCallInfoPerMesh = gcpRendD3D->GetGraphicsPipeline().GetDrawCallInfoPerMesh();
+#endif
+
+	// Wait for the transparent items' refractive passes sort job (if any)
+	pRenderView->WaitForOptimizeTransparentRenderItemsResolvesJob();
+
+	if (!pRenderView->HasResolveForList(list))
+	{
+		passContext.rendItems = { 0, static_cast<int>(pRenderView->GetRenderItems(list).size()) };
+		passContext.renderItemGroup = m_numRenderItemGroups++;
+		passes.emplace_back(std::move(passContext));
 	}
 	else
 	{
-		// Render consecutive segments of render items that do not need resolve
-		for (auto i = listStart; i != listEnd;)
+		if (CRendererCVars::CV_r_RefractionPartialResolveMode == 0)
 		{
-			const bool needsResolve = !!(renderItems[i].nBatchFlags & FB_REFRACTION);
-			const auto& bounds = renderItems[i].pCompiledObject->m_pRO->GetObjData()->m_screenBounds;
+			// Fast static mode
+			// Single fullscreen Resolve the full screen once, before submitting transparent items.
 
-			passContext.rendItems.start = i;
-			// Render till, and not including, next item that needs resolve.
-			while (++i != listEnd &&
-				!(renderItems[i].nBatchFlags & FB_REFRACTION)) 
-			{}
-			passContext.rendItems.end = i;
+			const auto &vp = pRenderView->GetViewport();
 
-			if (needsResolve)
-			{
-				// Inject resolve pass
-				passes.emplace_back(GraphicsPipelinePassType::resolve, pRenderView, this);
-				passes.back().profilerSectionIndex = m_profilerSectionIndex;
-				passes.back().stageID = m_stageID;
-				passes.back().passID = m_passID;
-				passes.back().renderItemGroup = m_numRenderItemGroups++;
+			SGraphicsPipelinePassContext resolvePass = { GraphicsPipelinePassType::resolve, pRenderView, this };
+			resolvePass.profilerSectionIndex = m_profilerSectionIndex;
+			resolvePass.stageID = m_stageID;
+			resolvePass.passID = m_passID;
+			resolvePass.renderItemGroup = m_numRenderItemGroups++;
+			resolvePass.resolveScreenBounds.push_back(TRect_tpl<uint16>{ static_cast<uint16>(vp.x), static_cast<uint16>(vp.y), static_cast<uint16>(vp.width), static_cast<uint16>(vp.height) });
 
-				// Query resolve screen bounds
-				const int16 shift16 = 4;
-				passes.back().resolveScreenBounds[0] = bounds.Min.x << shift16;
-				passes.back().resolveScreenBounds[1] = bounds.Min.y << shift16;
-				passes.back().resolveScreenBounds[2] = bounds.Max.x << shift16;
-				passes.back().resolveScreenBounds[3] = bounds.Max.y << shift16;
-			}
+			if (CRendererCVars::CV_r_RefractionPartialResolvesDebug)
+				DebugDrawRenderResolve(resolvePass.resolveScreenBounds, 0);
 
+			passContext.rendItems = { 0, static_cast<int>(pRenderView->GetRenderItems(list).size()) };
 			passContext.renderItemGroup = m_numRenderItemGroups++;
 
-			passes.push_back(passContext);
+			passes.emplace_back(std::move(resolvePass));
+			passes.emplace_back(std::move(passContext));
+		}
+		else
+		{
+			// Segments were percomputed in job "OptimizeTransparentRenderItemsResolvesJob"
+
+			const auto& segments = static_cast<const CRenderView*>(pRenderView)->GetTransparentSegments(list);
+
+			std::size_t count = 0;
+			for (const auto &s : segments)
+			{
+				if (s.rendItems.IsEmpty())
+					continue;
+
+				if (s.resolveRects.size())
+				{
+					SGraphicsPipelinePassContext ctx = { GraphicsPipelinePassType::resolve, pRenderView, this };
+					ctx.profilerSectionIndex = m_profilerSectionIndex;
+					ctx.stageID = m_stageID;
+					ctx.passID = m_passID;
+					ctx.renderItemGroup = m_numRenderItemGroups++;
+					ctx.resolveScreenBounds = s.resolveRects;
+					passes.emplace_back(std::move(ctx));
+
+					if (CRendererCVars::CV_r_RefractionPartialResolvesDebug)
+						DebugDrawRenderResolve(s.resolveRects, count++);
+				}
+
+				passContext.rendItems = s.rendItems;
+				passContext.renderItemGroup = m_numRenderItemGroups++;
+				passes.push_back(passContext);
+
+			}
 		}
 	}
-	
+
 	if (gcpRendD3D->GetGraphicsPipeline().GetRenderPassScheduler().IsActive())
 	{
 		m_passContexts.reserve(m_passContexts.size() + passes.size());
