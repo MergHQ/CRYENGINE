@@ -4754,6 +4754,122 @@ void CAISystem::DebugDrawSelectedTargets()
 	}
 }
 
+void CAISystem::DebugDrawPhysicsAccess()
+{
+	auto rstats = gAIEnv.pRayCaster->GetContentionStats();
+	stack_string text;
+
+	text.Format(
+		"RayCaster\n"
+		"---------\n"
+		"Quota: %u\n"
+		"Queue Size: %u / %u\n"
+		"Immediate Count: %u / %u\n"
+		"Immediate Average: %.1f\n"
+		"Deferred Count: %u / %u\n"
+		"Deferred Average: %.1f",
+		rstats.quota,
+		rstats.queueSize,
+		rstats.peakQueueSize,
+		rstats.immediateCount,
+		rstats.peakImmediateCount,
+		rstats.immediateAverage,
+		rstats.deferredCount,
+		rstats.peakDeferredCount,
+		rstats.deferredAverage);
+
+	bool warning = (rstats.immediateCount + rstats.deferredCount) > rstats.quota;
+	warning = warning || (rstats.immediateAverage + rstats.deferredAverage) > rstats.quota;
+	warning = warning || rstats.queueSize > (3 * rstats.quota);
+
+	CDebugDrawContext dc;
+	dc->Draw2dLabel((float)dc->GetWidth() * 0.1f, (float)dc->GetHeight() * 0.25f, 1.25f, warning ? Col_Red : Col_DarkTurquoise, false, "%s", text.c_str());
+
+#if AIRAYCAST_EXTENDED_STATS
+	struct SRayCastRequestInfo
+	{
+		uint32 pendingCount = 0;
+		uint32 completedCount = 0;
+
+		int64  peakCompletionTime = 0;
+		int64  totalCompletionTime = 0;
+		uint32 totalCompletedCount = 0;
+	};
+	static std::unordered_map<std::string, SRayCastRequestInfo> sRequestsMap;
+
+	for (auto& keyValue : sRequestsMap)
+	{
+		keyValue.second.pendingCount = 0;
+		keyValue.second.completedCount = 0;
+	}
+
+	for (const AIRayCast::SRequestDebugInfo& requestInfo : rstats.pendingRequests)
+	{
+		sRequestsMap[requestInfo.requesterString.c_str()].pendingCount += 1;
+	}
+	for (const AIRayCast::SRequestDebugInfo& completedInfo : rstats.recentlyCompletedRequests)
+	{
+		SRayCastRequestInfo& rayCastRequestInfo = sRequestsMap[completedInfo.requesterString.c_str()];
+
+		const int64 completionTime = (completedInfo.completedTime - completedInfo.queuedTime).GetMilliSecondsAsInt64();
+		rayCastRequestInfo.completedCount += 1;
+		rayCastRequestInfo.totalCompletedCount += 1;
+		rayCastRequestInfo.peakCompletionTime = max(completionTime, rayCastRequestInfo.peakCompletionTime);
+		rayCastRequestInfo.totalCompletionTime += completionTime;
+	}
+
+	float yPos = dc->GetHeight() * 0.25f;
+	const float xPosColumns[5] = { 400.0f, 700.0f, 800.0f, 900.0f, 1000.0f };
+	const ColorB color = warning ? Col_Red : Col_DarkTurquoise;
+
+	dc->Draw2dLabel(xPosColumns[0], yPos, 1.25f, color, false, "Requester");
+	dc->Draw2dLabel(xPosColumns[1], yPos, 1.25f, color, false, "Pending");
+	dc->Draw2dLabel(xPosColumns[2], yPos, 1.25f, color, false, "Completed");
+	dc->Draw2dLabel(xPosColumns[3], yPos, 1.25f, color, false, "Average Time");
+	dc->Draw2dLabel(xPosColumns[4], yPos, 1.25f, color, false, "Peak Time");
+	yPos += 20.0f;
+
+	for (const auto& keyValue : sRequestsMap)
+	{
+		const SRayCastRequestInfo& info = keyValue.second;
+
+		dc->Draw2dLabel(xPosColumns[0], yPos, 1.25f, color, false, "%s", keyValue.first.c_str());
+		dc->Draw2dLabel(xPosColumns[1], yPos, 1.25f, color, false, "%u", info.pendingCount);
+		dc->Draw2dLabel(xPosColumns[2], yPos, 1.25f, color, false, "%u", info.completedCount);
+		dc->Draw2dLabel(xPosColumns[3], yPos, 1.25f, color, false, "%li ms", info.totalCompletedCount ? info.totalCompletionTime / info.totalCompletedCount : 0);
+		dc->Draw2dLabel(xPosColumns[4], yPos, 1.25f, color, false, "%li ms", info.peakCompletionTime);
+
+		yPos += 20.0f;
+	}
+#endif //AIRAYCAST_EXTENDED_STATS
+
+	IAISystem::GlobalIntersectionTester::ContentionStats istats = gAIEnv.pIntersectionTester->GetContentionStats();
+	text.Format(
+		"IntersectionTester\n"
+		"------------------\n"
+		"Quota: %u\n"
+		"Queue Size: %u / %u\n"
+		"Immediate Count: %u / %u\n"
+		"Immediate Average: %.1f\n"
+		"Deferred Count: %u / %u\n"
+		"Deferred Average: %.1f",
+		istats.quota,
+		istats.queueSize,
+		istats.peakQueueSize,
+		istats.immediateCount,
+		istats.peakImmediateCount,
+		istats.immediateAverage,
+		istats.deferredCount,
+		istats.peakDeferredCount,
+		istats.deferredAverage);
+
+	warning = (istats.immediateCount + istats.deferredCount) > istats.quota;
+	warning = warning || (istats.immediateAverage + istats.deferredAverage) > istats.quota;
+	warning = warning || istats.queueSize > (3 * istats.quota);
+
+	dc->Draw2dLabel(600.0, 745.0f, 1.25f, warning ? Col_Red : Col_DarkTurquoise, false, "%s", text.c_str());
+}
+
 #endif //CRYAISYSTEM_DEBUG
 
 //-----------------------------------------------------------------------------------------------------------

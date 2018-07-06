@@ -908,6 +908,7 @@ public:
 	void DEBUG_AddFakeDamageIndicator(CAIActor* pShooter, float t);
 
 	void DebugDrawSelectedTargets();
+	void DebugDrawPhysicsAccess();
 
 	struct SDebugLine
 	{

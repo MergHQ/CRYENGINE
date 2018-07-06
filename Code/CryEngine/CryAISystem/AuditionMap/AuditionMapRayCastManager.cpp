@@ -221,7 +221,9 @@ QueuedRayID CAuditionMapRayCastManager::QueueRay(const SRayCastRequestInfo& requ
 	    physicsRayCastConfigMask,
 	    &skipList.at(0), skipList.size(),
 	    (int)RayCastResult::MaxHitCount),
-	  functor(*this, &CAuditionMapRayCastManager::OnRayCastComplete));
+	  functor(*this, &CAuditionMapRayCastManager::OnRayCastComplete),
+	  nullptr,
+	  AIRayCast::SRequesterDebugInfo("CAuditionMapRayCastManager::QueueRay"));
 	assert(queuedRayId != 0);
 
 	std::pair<PendingRays::iterator, bool> result = m_pendingRays.insert(

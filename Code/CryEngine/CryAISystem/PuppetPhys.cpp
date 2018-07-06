@@ -206,12 +206,15 @@ bool CPuppet::CheckLineOfFire(const Vec3& vTargetPos, float fDistance, float fSo
 				}
 			}
 
-			m_lineOfFireState.rayID = gAIEnv.pRayCaster->Queue(RayCastRequest::HighestPriority,
-			                                                   RayCastRequest(
-			                                                     firePos, dir, COVER_OBJECT_TYPES,
-			                                                     AI_VISION_RAY_CAST_FLAG_BLOCKED_BY_SOLID_COVER,
-			                                                     &skipList[0], skipList.size()),
-			                                                   functor(const_cast<CPuppet&>(*this), &CPuppet::LineOfFireRayComplete));
+			m_lineOfFireState.rayID = gAIEnv.pRayCaster->Queue(
+				RayCastRequest::HighestPriority,
+				RayCastRequest(
+					firePos, dir, COVER_OBJECT_TYPES,
+					AI_VISION_RAY_CAST_FLAG_BLOCKED_BY_SOLID_COVER,
+					&skipList[0], skipList.size()),
+				functor(const_cast<CPuppet&>(*this), &CPuppet::LineOfFireRayComplete),
+				nullptr,
+				AIRayCast::SRequesterDebugInfo("CPuppet::CheckLineOfFire", GetEntityID()));
 		}
 
 		return m_lineOfFireState.result;
@@ -595,12 +598,14 @@ void CPuppet::QueueFireTargetValidRay(const CAIObject* targetObj, const Vec3& fi
 	}
 
 	m_validTargetState.rayID = gAIEnv.pRayCaster->Queue(
-	  RayCastRequest::HighestPriority,
-	  RayCastRequest(
-	    firePos, fireDir, COVER_OBJECT_TYPES,
-	    AI_VISION_RAY_CAST_FLAG_BLOCKED_BY_SOLID_COVER,
-	    &skipList[0], skipList.size()),
-	  functor(*this, &CPuppet::FireTargetValidRayComplete));
+		RayCastRequest::HighestPriority,
+		RayCastRequest(
+			firePos, fireDir, COVER_OBJECT_TYPES,
+			AI_VISION_RAY_CAST_FLAG_BLOCKED_BY_SOLID_COVER,
+			&skipList[0], skipList.size()),
+		functor(*this, &CPuppet::FireTargetValidRayComplete),
+		nullptr,
+		AIRayCast::SRequesterDebugInfo("CPuppet::QueueFireTargetValidRay", GetEntityID()));
 }
 
 void CPuppet::FireTargetValidRayComplete(const QueuedRayID& rayID, const RayCastResult& result)

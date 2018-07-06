@@ -2,8 +2,8 @@
 
 #pragma once
 
-#include <CryPhysics/RayCastQueue.h>
 #include <CryPhysics/IntersectionTestQueue.h>
+#include <CryAISystem/AIRayCastQueue.h>
 
 #include <CryNetwork/SerializeFwd.h>
 #include <CryAISystem/IAIRecorder.h>  // <> required for Interfuscator
@@ -11,6 +11,12 @@
 #include <CryPhysics/IPhysics.h>
 #include <CryCore/Containers/CryFixedArray.h>
 #include <CryEntitySystem/IEntity.h>
+
+#if !defined(_RELEASE)
+#define AIRAYCAST_EXTENDED_STATS 1
+#else
+#define AIRAYCAST_EXTENDED_STATS 0
+#endif
 
 struct AgentPathfindingProperties;
 struct INavigation;
@@ -440,7 +446,12 @@ struct IAISystemCallbacks
 //! Interface to AI system. Defines functions to control the AI system.
 struct IAISystem
 {
-	typedef RayCastQueue<41>                    GlobalRayCaster;
+#if AIRAYCAST_EXTENDED_STATS
+	typedef AIRayCast::CQueue<41, true>         GlobalRayCaster;
+#else
+	typedef AIRayCast::CQueue<41>               GlobalRayCaster;
+#endif
+	
 	typedef IntersectionTestQueue<43>           GlobalIntersectionTester;
 	
 	//! Flags used by the GetGroupCount.
