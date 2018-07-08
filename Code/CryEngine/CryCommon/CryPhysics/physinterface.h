@@ -363,6 +363,8 @@ public:
 	unused_marker&                     operator,(double& x) CRY_GCC48_AVOID_OPTIMIZE;
 	unused_marker&                     operator,(int& x) CRY_GCC48_AVOID_OPTIMIZE;
 	unused_marker&                     operator,(unsigned int& x) CRY_GCC48_AVOID_OPTIMIZE;
+	unused_marker&                     operator,(bool& x) CRY_GCC48_AVOID_OPTIMIZE;
+	template<class T> unused_marker&   operator,(T& x) = delete; // prevent accidental use with unimplemented type
 	template<class ref> unused_marker& operator,(ref*& x)                        { x = (ref*)-1; return *this; }
 	template<class F> unused_marker&   operator,(Vec3_tpl<F>& x)                 { return *this, x.x; }
 	template<class F> unused_marker&   operator,(Quat_tpl<F>& x)                 { return *this, x.w; }
@@ -374,6 +376,7 @@ inline unused_marker& unused_marker::operator,(float& x)        { *alias_cast<in
 inline unused_marker& unused_marker::operator,(double& x)       { (alias_cast<int*>(&x))[false ? 1 : 0] = 0xFFF7FFFF; return *this; }
 inline unused_marker& unused_marker::operator,(int& x)          { x = 1 << 31; return *this; }
 inline unused_marker& unused_marker::operator,(unsigned int& x) { x = 1u << 31; return *this; }
+inline unused_marker& unused_marker::operator,(bool& x)         { *alias_cast<char*>(&x) = 0x77; return *this; }
 
 #undef CRY_GCC48_AVOID_OPTIMIZE
 
@@ -381,6 +384,8 @@ inline bool              is_unused(const float& x)         { unused_marker::f2i 
 
 inline bool              is_unused(int x)                  { return x == 1 << 31; }
 inline bool              is_unused(unsigned int x)         { return x == 1u << 31; }
+inline bool              is_unused(const bool& x)          { return *alias_cast<uint8*>(&x) == 0x77; }
+template <class T> bool  is_unused(T x) = delete;          // prevent accidental use with unimplemented type
 template<class ref> bool is_unused(ref* x)                 { return x == (ref*)-1; }
 template<class ref> bool is_unused(strided_pointer<ref> x) { return is_unused(x.data); }
 template<class F> bool   is_unused(const Ang3_tpl<F>& x)   { return is_unused(x.x); }

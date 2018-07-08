@@ -2077,7 +2077,9 @@ ETacticalPointDeferredState CTacticalPointSystem::DeferredBoolTestInternal(TTact
 				                                             RayCastRequest(
 				                                               vWaistPos, vDelta, COVER_OBJECT_TYPES,
 				                                               AI_VISION_RAY_CAST_FLAG_BLOCKED_BY_SOLID_COVER),
-				                                             functor(*const_cast<CTacticalPointSystem*>(this), &CTacticalPointSystem::VisibleRayComplete));
+				                                             functor(*const_cast<CTacticalPointSystem*>(this), &CTacticalPointSystem::VisibleRayComplete),
+				                                             nullptr,
+					                                         AIRayCast::SRequesterDebugInfo("TacticalPointSystem", pObject ? pObject->GetEntityID() : INVALID_ENTITYID));
 
 				if (CVars.DebugTacticalPoints != 0 && gAIEnv.CVars.DebugDraw != 0)
 				{
@@ -2121,7 +2123,9 @@ ETacticalPointDeferredState CTacticalPointSystem::DeferredBoolTestInternal(TTact
 					                                              RayCastRequest(
 					                                                vPoint, vDelta, COVER_OBJECT_TYPES,
 					                                                AI_VISION_RAY_CAST_FLAG_BLOCKED_BY_SOLID_COVER),
-					                                              functor(*const_cast<CTacticalPointSystem*>(this), &CTacticalPointSystem::CanShootRayComplete));
+					                                              functor(*const_cast<CTacticalPointSystem*>(this), &CTacticalPointSystem::CanShootRayComplete),
+						                                          nullptr,
+						                                          AIRayCast::SRequesterDebugInfo("TacticalPointSystem", pObject ? pObject->GetEntityID() : INVALID_ENTITYID));
 
 					if (CVars.DebugTacticalPoints != 0 && gAIEnv.CVars.DebugDraw != 0)
 					{
@@ -2201,14 +2205,17 @@ ETacticalPointDeferredState CTacticalPointSystem::DeferredBoolTestInternal(TTact
 				                                              RayCastRequest(
 				                                                vPointLeft, vDeltaLeft, COVER_OBJECT_TYPES,
 				                                                AI_VISION_RAY_CAST_FLAG_BLOCKED_BY_SOLID_COVER),
-				                                              functor(*const_cast<CTacticalPointSystem*>(this), &CTacticalPointSystem::CanShootRayComplete));
+				                                              functor(*const_cast<CTacticalPointSystem*>(this), &CTacticalPointSystem::CanShootRayComplete),
+				                                              nullptr,
+					                                          AIRayCast::SRequesterDebugInfo("TacticalPointSystem", pObject ? pObject->GetEntityID() : INVALID_ENTITYID));
 
 				eval.canShootSecondRayID = gAIEnv.pRayCaster->Queue(RayCastRequest::HighestPriority,
 				                                                    RayCastRequest(
 				                                                      vPointRight, vDeltaRight, COVER_OBJECT_TYPES,
 				                                                      AI_VISION_RAY_CAST_FLAG_BLOCKED_BY_SOLID_COVER),
-				                                                    functor(*const_cast<CTacticalPointSystem*>(this), &CTacticalPointSystem::CanShootSecondRayComplete));
-
+				                                                    functor(*const_cast<CTacticalPointSystem*>(this), &CTacticalPointSystem::CanShootSecondRayComplete),
+				                                                    nullptr,
+					                                                AIRayCast::SRequesterDebugInfo("TacticalPointSystem", pObject ? pObject->GetEntityID() : INVALID_ENTITYID));
 				if (CVars.DebugTacticalPoints != 0 && gAIEnv.CVars.DebugDraw != 0)
 				{
 					IPersistantDebug* debug = gEnv->pGameFramework->GetIPersistantDebug();

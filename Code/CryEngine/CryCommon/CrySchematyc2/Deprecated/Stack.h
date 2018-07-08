@@ -44,7 +44,7 @@ namespace Schematyc2
 			if(capacity > m_capacity)
 			{
 				capacity = std::max(std::max(capacity, m_capacity * growthFactor), minCapacity);
-				CVariant* pData = static_cast<CVariant*>(CryModuleMalloc(sizeof(CVariant) * capacity));
+				CVariant* pData = static_cast<CVariant*>(CryModuleCalloc(capacity, sizeof(CVariant)));
 				Move(pData, m_pData, m_pData + m_size);
 				if(m_pFreeFunction)
 				{

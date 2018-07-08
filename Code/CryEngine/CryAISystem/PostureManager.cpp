@@ -230,6 +230,7 @@ PostureManager::PostureQueryID PostureManager::QueryPosture(const PostureQuery& 
 	}
 
 	CAIActor* actorPerformingQuery = postureQuery.actor;
+	const EntityId actorEntityId = actorPerformingQuery ? actorPerformingQuery->GetEntityID() : INVALID_ENTITYID;
 
 	if (postureQuery.stickyStance && actorPerformingQuery)
 	{
@@ -396,10 +397,12 @@ PostureManager::PostureQueryID PostureManager::QueryPosture(const PostureQuery& 
 		{
 			Vec3 eyeDir = postureQuery.target - posture.eye;
 
-			visibilityRayID = gAIEnv.pRayCaster->Queue(RayCastRequest::HighPriority,
-			                                           RayCastRequest(posture.eye, eyeDir * postureQuery.distancePercent, COVER_OBJECT_TYPES,
-			                                                          AI_VISION_RAY_CAST_FLAG_BLOCKED_BY_SOLID_COVER, skipListArray, skipListSize),
-			                                           functor(*this, &PostureManager::RayComplete));
+			visibilityRayID = gAIEnv.pRayCaster->Queue(
+				RayCastRequest::HighPriority,          
+				RayCastRequest(posture.eye, eyeDir * postureQuery.distancePercent, COVER_OBJECT_TYPES, AI_VISION_RAY_CAST_FLAG_BLOCKED_BY_SOLID_COVER, skipListArray, skipListSize),
+			    functor(*this, &PostureManager::RayComplete),
+				nullptr,
+				AIRayCast::SRequesterDebugInfo("PostureManager::CheckVisibility", actorEntityId));
 			++awaitingResultCount;
 		}
 		else
@@ -407,10 +410,12 @@ PostureManager::PostureQueryID PostureManager::QueryPosture(const PostureQuery& 
 
 		if (postureQuery.checks & CheckAimability)
 		{
-			aimabilityRayID = gAIEnv.pRayCaster->Queue(RayCastRequest::HighPriority,
-			                                           RayCastRequest(posture.weapon, weaponDir * postureQuery.distancePercent, COVER_OBJECT_TYPES,
-			                                                          AI_VISION_RAY_CAST_FLAG_BLOCKED_BY_SOLID_COVER, skipListArray, skipListSize),
-			                                           functor(*this, &PostureManager::RayComplete));
+			aimabilityRayID = gAIEnv.pRayCaster->Queue(
+				RayCastRequest::HighPriority,
+			    RayCastRequest(posture.weapon, weaponDir * postureQuery.distancePercent, COVER_OBJECT_TYPES, AI_VISION_RAY_CAST_FLAG_BLOCKED_BY_SOLID_COVER, skipListArray, skipListSize),
+			    functor(*this, &PostureManager::RayComplete),
+				nullptr,
+				AIRayCast::SRequesterDebugInfo("PostureManager::CheckAimability", actorEntityId));
 			++awaitingResultCount;
 		}
 		else
@@ -447,10 +452,12 @@ PostureManager::PostureQueryID PostureManager::QueryPosture(const PostureQuery& 
 						const Vec3 eyeToParentEye = parentPosture.eye - posture.eye;
 						if (!eyeToParentEye.IsZero())
 						{
-							leanabilityRayID = gAIEnv.pRayCaster->Queue(RayCastRequest::HighPriority,
-							                                            RayCastRequest(parentPosture.eye, eyeToParentEye, COVER_OBJECT_TYPES,
-							                                                           AI_VISION_RAY_CAST_FLAG_BLOCKED_BY_SOLID_COVER, skipListArray, skipListSize),
-							                                            functor(*this, &PostureManager::RayComplete));
+							leanabilityRayID = gAIEnv.pRayCaster->Queue(
+								RayCastRequest::HighPriority,
+								RayCastRequest(parentPosture.eye, eyeToParentEye, COVER_OBJECT_TYPES, AI_VISION_RAY_CAST_FLAG_BLOCKED_BY_SOLID_COVER, skipListArray, skipListSize),
+							    functor(*this, &PostureManager::RayComplete),
+								nullptr,
+								AIRayCast::SRequesterDebugInfo("PostureManager::CheckLeanability", actorEntityId));
 
 							--positiveResultCount;
 							++awaitingResultCount;

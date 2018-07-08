@@ -2899,97 +2899,10 @@ void CAISystem::Update(CTimeValue frameStartTime, float frameDeltaTime)
 
 		if (gAIEnv.CVars.DebugDrawPhysicsAccess)
 		{
-			IAISystem::GlobalRayCaster::ContentionStats rstats = gAIEnv.pRayCaster->GetContentionStats();
-			stack_string text;
-
-			text.Format(
-			  "RayCaster\n"
-			  "---------\n"
-			  "Quota: %u\n"
-			  "Queue Size: %u / %u\n"
-			  "Immediate Count: %u / %u\n"
-			  "Immediate Average: %.1f\n"
-			  "Deferred Count: %u / %u\n"
-			  "Deferred Average: %.1f",
-			  rstats.quota,
-			  rstats.queueSize,
-			  rstats.peakQueueSize,
-			  rstats.immediateCount,
-			  rstats.peakImmediateCount,
-			  rstats.immediateAverage,
-			  rstats.deferredCount,
-			  rstats.peakDeferredCount,
-			  rstats.deferredAverage);
-
-			bool warning = (rstats.immediateCount + rstats.deferredCount) > rstats.quota;
-			warning = warning || (rstats.immediateAverage + rstats.deferredAverage) > rstats.quota;
-			warning = warning || rstats.queueSize > (3 * rstats.quota);
-
-			CDebugDrawContext dc;
-			dc->Draw2dLabel((float)dc->GetWidth() * 0.1f, (float)dc->GetHeight() * 0.25f, 1.25f, warning ? Col_Red : Col_DarkTurquoise, false, "%s", text.c_str());
-
-			IAISystem::GlobalIntersectionTester::ContentionStats istats = gAIEnv.pIntersectionTester->GetContentionStats();
-			text.Format(
-			  "IntersectionTester\n"
-			  "------------------\n"
-			  "Quota: %u\n"
-			  "Queue Size: %u / %u\n"
-			  "Immediate Count: %u / %u\n"
-			  "Immediate Average: %.1f\n"
-			  "Deferred Count: %u / %u\n"
-			  "Deferred Average: %.1f",
-			  istats.quota,
-			  istats.queueSize,
-			  istats.peakQueueSize,
-			  istats.immediateCount,
-			  istats.peakImmediateCount,
-			  istats.immediateAverage,
-			  istats.deferredCount,
-			  istats.peakDeferredCount,
-			  istats.deferredAverage);
-
-			warning = (istats.immediateCount + istats.deferredCount) > istats.quota;
-			warning = warning || (istats.immediateAverage + istats.deferredAverage) > istats.quota;
-			warning = warning || istats.queueSize > (3 * istats.quota);
-
-			dc->Draw2dLabel(600.0, 745.0f, 1.25f, warning ? Col_Red : Col_DarkTurquoise, false, "%s", text.c_str());
+#ifdef CRYAISYSTEM_DEBUG
+			DebugDrawPhysicsAccess();
+#endif //CRYAISYSTEM_DEBUG
 		}
-		/*
-		    static Vec3 LastFrom(0.0f, 0.0f, 0.0f);
-		    static Vec3 LastTo(0.0f, 0.0f, 0.0f);
-
-		    IAIObject* fromObject = gAIEnv.pAIObjectManager->GetAIObjectByName("CheckWalkabilityFrom");
-		    IAIObject* toObject = gAIEnv.pAIObjectManager->GetAIObjectByName("CheckWalkabilityTo");
-
-		    if (fromObject && toObject)
-		    {
-		      if (((LastFrom-fromObject->GetPos()).len2() > 0.001f) || ((LastTo-toObject->GetPos()).len2() > 0.001f))
-		      {
-		        AccurateStopTimer fast;
-		        AccurateStopTimer normal;
-
-		        {
-		          ScopedAutoTimer __fast(fast);
-		          CheckWalkabilityFast(fromObject->GetPos(), toObject->GetPos(), 0.4, AICE_ALL);
-		        }
-
-		        {
-		          ScopedAutoTimer __normal(normal);
-		          ListPositions b;
-		          CheckWalkability(SWalkPosition(fromObject->GetPos()), SWalkPosition(toObject->GetPos()), 0.15, false,
-		            b, AICE_ALL);
-		        }
-
-		        LastFrom = fromObject->GetPos();
-		        LastTo = toObject->GetPos();
-
-		        if (fast.GetTime() < normal.GetTime())
-		          CryLogAlways("$3Fast: %.5f  // Normal: %.5f", fast.GetTime().GetMilliSeconds(), normal.GetTime().GetMilliSeconds());
-		        else
-		          CryLogAlways("$4Fast: %.5f  // Normal: %.5f", fast.GetTime().GetMilliSeconds(), normal.GetTime().GetMilliSeconds());
-		      }
-		    }
-		 */
 	}
 
 	// Update asynchronous TPS processing

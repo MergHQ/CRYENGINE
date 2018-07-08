@@ -17,16 +17,17 @@ struct NoContention
 protected:
 	NoContention(uint32 quota) {}
 
-	void PerformedSync()  {}
-	void PerformedAsync() {}
+	uint32 GetQuota() const { return UINT_MAX; }
 
-	bool CanPerformAsync()
-	{
-		return true;
-	}
+	void PerformedImmediate()  {}
+	void PerformedDeferred(const uint32 queuedID) {}
+	void CompletedDeferred(const uint32 queuedID) {}
+	void Canceled(const uint32 queuedID) {}
 
-	void UpdateStart()    {}
-	void UpdateComplete() {}
+	bool CanPerformDeferred() const { return true; }
+
+	void UpdateStart(const uint32 queueSize)    {}
+	void UpdateComplete(const uint32 queueSize) {}
 };
 
 struct DefaultContention
@@ -68,8 +69,7 @@ struct DefaultContention
 		uint32 immSum = 0;
 		uint32 defSum = 0;
 
-		uint32 count = std::min<uint32>(AverageWindowWidth, m_averageHead - 5);
-		for (uint32 i = 0; i < count; ++i)
+		for (uint32 i = 0; i < AverageWindowWidth; ++i)
 		{
 			immSum += m_immWindow[i];
 			defSum += m_defWindow[i];
@@ -124,12 +124,18 @@ protected:
 		++m_immCount;
 	}
 
-	inline void PerformedDeferred()
+	inline void PerformedDeferred(const uint32 queuedID)
 	{
 		++m_defCount;
 	}
 
-	inline bool CanPerformDeferred()
+	inline void CompletedDeferred(const uint32 queuedID) 
+	{}
+
+	inline void Canceled(const uint32 queuedID)
+	{}
+
+	inline bool CanPerformDeferred() const
 	{
 		return m_defCount < m_quota;
 	}
@@ -276,6 +282,8 @@ public:
 
 	inline void Cancel(const uint32& queuedID)
 	{
+		ContentionPolicy::Canceled(queuedID);
+		
 		typename Submitted::iterator it = m_submitted.find(queuedID);
 		if (it == m_submitted.end())
 		{
@@ -316,6 +324,8 @@ public:
 
 					if (!queued.submitCallback(queuedID, queued.request))
 					{
+						ContentionPolicy::Canceled(queuedID);
+						
 						Caster::Release(requestCopy);
 
 						m_priorityQueue.pop_front();
@@ -424,7 +434,7 @@ protected:
 
 		SubmitQueuedCast(m_slotGenID, queuedID, queued);
 
-		ContentionPolicy::PerformedDeferred();
+		ContentionPolicy::PerformedDeferred(queuedID);
 	}
 
 	inline void SubmitQueuedCast(uint32 slotID, const uint32& queuedID, const QueuedRequest& queued)
@@ -438,6 +448,8 @@ protected:
 		if (it != m_slots.end())
 		{
 			const Slot& slot = it->second;
+
+			ContentionPolicy::CompletedDeferred(slot.queuedID);
 
 			slot.callback(slot.queuedID, result);
 			m_submitted.erase(slot.queuedID);

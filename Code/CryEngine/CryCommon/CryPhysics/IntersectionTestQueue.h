@@ -8,6 +8,7 @@
 #include <type_traits>
 #include <CryCore/StlUtils.h>
 #include "DeferredActionQueue.h"
+#include <CryPhysics/physinterface.h>
 
 struct IntersectionTestResult
 {

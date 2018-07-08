@@ -768,9 +768,10 @@ void CVisionMap::QueueRay(const ObserverInfo& observerInfo, PVSEntry& pvsEntry)
 	assert(!pvsEntry.pendingRayID);
 
 	const QueuedRayID queuedRayID = gAIEnv.pRayCaster->Queue(
-	  pvsEntry.priority,
-	  functor(*this, &CVisionMap::RayCastComplete),
-	  functor(*this, &CVisionMap::RayCastSubmit));
+		pvsEntry.priority,
+		functor(*this, &CVisionMap::RayCastComplete),
+		functor(*this, &CVisionMap::RayCastSubmit),
+		AIRayCast::SRequesterDebugInfo("CVisionMap::QueueRay", observerInfo.observerParams.entityId));
 	assert(queuedRayID);
 
 	std::pair<PendingRays::iterator, bool> result = m_pendingRays.insert(

@@ -168,7 +168,9 @@ void CAIPlayer::CollectExposedCover()
 			m_exposedCoverState.rayID = gAIEnv.pRayCaster->Queue(
 			  RayCastRequest::MediumPriority,
 			  RayCastRequest(pos, dir, ent_static, flags),
-			  functor(*this, &CAIPlayer::CollectExposedCoverRayComplete));
+			  functor(*this, &CAIPlayer::CollectExposedCoverRayComplete),
+				nullptr,
+				AIRayCast::SRequesterDebugInfo("CAIPlayer::CollectExposedCover", GetEntityID()));
 		}
 	}
 }
