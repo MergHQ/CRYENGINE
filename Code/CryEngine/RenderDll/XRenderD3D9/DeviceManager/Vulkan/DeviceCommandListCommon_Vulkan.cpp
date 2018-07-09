@@ -889,6 +889,12 @@ void CDeviceCopyCommandInterfaceImpl::CopyImage(CImageResource* pSrc, CImageReso
 	uint32_t dstX = mapping.DestinationOffset.Left;
 	uint32_t dstY = mapping.DestinationOffset.Top;
 	uint32_t dstZ = mapping.DestinationOffset.Front;
+	
+	UINT          CopyFlags          = mapping.Flags;
+	VkImageLayout prevSrcLayout      = pSrc->GetLayout();
+	VkAccessFlags prevSrcAccessFlags = pSrc->GetAccess();
+	VkImageLayout prevDstLayout      = pDst->GetLayout();
+	VkAccessFlags prevDstAccessFlags = pDst->GetAccess();
 
 	uint32_t srcBlockWidth = 1, srcBlockHeight = 1, srcBlockBytes;
 	uint32_t dstBlockWidth = 1, dstBlockHeight = 1, dstBlockBytes;
@@ -984,6 +990,26 @@ void CDeviceCopyCommandInterfaceImpl::CopyImage(CImageResource* pSrc, CImageReso
 
 	vkCmdCopyImage(GetVKCommandList()->GetVkCommandList(), pSrc->GetHandle(), pSrc->GetLayout(), pDst->GetHandle(), pDst->GetLayout(), mipIndex, batch);
 	GetVKCommandList()->m_nCommands += CLCOUNT_COPY;
+
+	const bool revertstate = !!(CopyFlags & DX12_COPY_REVERTSTATE_MARKER);
+	if (revertstate)
+	{
+		for (auto& layout : { &prevSrcLayout, &prevDstLayout })
+		{
+			if (*layout == VK_IMAGE_LAYOUT_UNDEFINED || *layout == VK_IMAGE_LAYOUT_PREINITIALIZED)
+				*layout = VK_IMAGE_LAYOUT_GENERAL;
+		}
+
+		if (pSrc == pDst)
+		{
+			RequestTransition(pSrc, prevSrcLayout, prevSrcAccessFlags);
+		}
+		else
+		{
+			RequestTransition(pSrc, prevSrcLayout, prevSrcAccessFlags);
+			RequestTransition(pDst, prevDstLayout, prevDstAccessFlags);
+		}
+	}
 }
 
 bool CDeviceCopyCommandInterfaceImpl::FillBuffer(const void* pSrc, CBufferResource* pDst, const SResourceMemoryMapping& mapping)

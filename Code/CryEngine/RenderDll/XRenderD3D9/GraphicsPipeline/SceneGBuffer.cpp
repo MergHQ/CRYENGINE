@@ -323,30 +323,23 @@ void CSceneGBufferStage::ExecuteDepthPrepass()
 {
 	CRenderView* pRenderView = RenderView();
 	
+	ERenderListID efListNearest = EFSLIST_NEAREST_OBJECTS;
+	ERenderListID efList = EFSLIST_INVALID;
+
 	if (CRenderer::CV_r_DeferredShadingTiled == 4 && !CRenderer::CV_r_GraphicsPipelineMobile)
-	{
-		m_depthPrepass.BeginExecution();
-
-		m_depthPrepass.SetupPassContext(m_stageID, ePass_DepthPrepass, TTYPE_ZPREPASS, FB_ZPREPASS);
-		m_depthPrepass.DrawRenderItems(pRenderView, EFSLIST_NEAREST_OBJECTS);
-
-		m_depthPrepass.SetupPassContext(m_stageID, ePass_DepthPrepass, TTYPE_ZPREPASS, FB_ZPREPASS | FB_GENERAL);
-		m_depthPrepass.DrawRenderItems(pRenderView, EFSLIST_GENERAL);
-
-		m_depthPrepass.EndExecution();
-	}
+		efList = EFSLIST_GENERAL;
 	else if (CRenderer::CV_r_usezpass == 2)
-	{
-		m_depthPrepass.BeginExecution();
+		efList = EFSLIST_ZPREPASS;
 
-		m_depthPrepass.SetupPassContext(m_stageID, ePass_DepthPrepass, TTYPE_ZPREPASS, FB_ZPREPASS);
-		m_depthPrepass.DrawRenderItems(pRenderView, EFSLIST_NEAREST_OBJECTS);
+	m_depthPrepass.BeginExecution();
 
-		m_depthPrepass.SetupPassContext(m_stageID, ePass_DepthPrepass, TTYPE_ZPREPASS, FB_ZPREPASS | FB_GENERAL);
-		m_depthPrepass.DrawRenderItems(pRenderView, EFSLIST_ZPREPASS);
+	m_depthPrepass.SetupPassContext(m_stageID, ePass_DepthPrepass, TTYPE_ZPREPASS, FB_ZPREPASS);
+	m_depthPrepass.DrawRenderItems(pRenderView, efListNearest);
 
-		m_depthPrepass.EndExecution();
-	}
+	m_depthPrepass.SetupPassContext(m_stageID, ePass_DepthPrepass, TTYPE_ZPREPASS, FB_ZPREPASS | FB_GENERAL);
+	m_depthPrepass.DrawRenderItems(pRenderView, efList);
+
+	m_depthPrepass.EndExecution();
 }
 
 void CSceneGBufferStage::ExecuteSceneOpaque()
@@ -591,14 +584,13 @@ void CSceneGBufferStage::ExecuteMinimumZpass()
 	passFlags |= CSceneRenderPass::ePassFlags_ReverseDepth;
 	m_depthPrepass.SetFlags(passFlags | CSceneRenderPass::ePassFlags_RenderNearest);
 
-	auto& RESTRICT_REFERENCE commandList = GetDeviceObjectFactory().GetCoreCommandList();
-	m_depthPrepass.PrepareRenderPassForUse(commandList);
 	{
 		auto& RESTRICT_REFERENCE commandList = GetDeviceObjectFactory().GetCoreCommandList();
 
 		m_depthPrepass.PrepareRenderPassForUse(commandList);
 	}
 
+	// TODO: Fold into "ExecuteDepthPrepass();"
 	{
 		rendItemDrawer.InitDrawSubmission();
 
