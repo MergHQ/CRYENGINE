@@ -50,7 +50,7 @@ public:
 	bool         CreatePipelineState(const SGraphicsPipelineStateDescription& desc,
 	                                 CDeviceGraphicsPSOPtr& outPSO,
 	                                 EPass passId = ePass_Forward,
-	                                 std::function<void(CDeviceGraphicsPSODesc& psoDesc, const SGraphicsPipelineStateDescription& desc)> customState = nullptr);
+	                                 const std::function<void(CDeviceGraphicsPSODesc& psoDesc, const SGraphicsPipelineStateDescription& desc)> &customState = nullptr);
 
 	void         ExecuteOpaque();
 	void         ExecuteTransparentBelowWater();
