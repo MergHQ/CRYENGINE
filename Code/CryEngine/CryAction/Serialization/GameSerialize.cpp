@@ -232,7 +232,7 @@ void CGameSerialize::OnLoadingStart(ILevelInfo* pLevelInfo)
 	//	This creates a list of ids which will be fully serialized.
 
 	m_dynamicEntities.clear();
-	m_serializeEntities.clear();
+	m_serializedEntityGUIDs.clear();
 
 	if (pLevelInfo)
 	{
@@ -242,14 +242,26 @@ void CGameSerialize::OnLoadingStart(ILevelInfo* pLevelInfo)
 		if (node)
 		{
 			int count = node->getChildCount();
-			m_serializeEntities.reserve(count);
-			for (int i = 0; i < count; ++i)
-			{
-				XmlNodeRef child = node->getChild(i);
-				EntityId id = 0;
-				child->getAttr("id", id);
+			m_serializedEntityGUIDs.reserve(count);
 
-				m_serializeEntities.push_back(id);
+			if (count > 0)
+			{
+				// Validate that the first item is a valid guid
+				// This is necessary as in the past the serialization XML used entity ids, and not GUIDs
+				if (!node->getChild(0)->haveAttr("guid"))
+				{
+					CryMessageBox("Level serialization XML contained legacy entity identifiers, please re-export the level and try again!", "Level Load Warning", eMB_Info);
+					return;
+				}
+
+				for (int i = 0; i < count; ++i)
+				{
+					XmlNodeRef child = node->getChild(i);
+					CryGUID id;
+					child->getAttr("guid", id);
+
+					m_serializedEntityGUIDs.push_back(id);
+				}
 			}
 		}
 	}
@@ -257,7 +269,7 @@ void CGameSerialize::OnLoadingStart(ILevelInfo* pLevelInfo)
 
 void CGameSerialize::OnUnloadComplete(ILevelInfo* pLevel)
 {
-	stl::free_container(m_serializeEntities);
+	stl::free_container(m_serializedEntityGUIDs);
 	stl::free_container(m_dynamicEntities);
 }
 
@@ -1096,6 +1108,7 @@ bool CGameSerialize::SaveEntities(SSaveEnvironment& savEnv)
 				SBasicEntityData bed;
 				bed.pEntity = pEntity;
 				bed.id = pEntity->GetId();
+				bed.guid = pEntity->GetGuid();
 
 				// if we're not going to serialize these, don't bother fetching them
 				if (!(flags & ENTITY_FLAG_UNREMOVABLE) || !CCryActionCVars::Get().g_saveLoadBasicEntityOptimization)
@@ -1214,7 +1227,7 @@ bool CGameSerialize::SaveGameData(SSaveEnvironment& savEnv, TSerialize& gameStat
 
 	for (int pass = 0; pass < 2; pass++) // save (and thus load) ropes after other entities (during pass 1) to make sure attachments are ready during loading
 		// fall back on the previous save code if no list is present
-		if (m_serializeEntities.empty() || CCryActionCVars::Get().g_saveLoadUseExportedEntityList == 0)
+		if (m_serializedEntityGUIDs.empty() || CCryActionCVars::Get().g_saveLoadUseExportedEntityList == 0)
 		{
 			for (TEntitiesToSerialize::const_iterator iter = entities.begin(), end = entities.end(); iter != end; ++iter)
 			{
@@ -1252,9 +1265,9 @@ bool CGameSerialize::SaveGameData(SSaveEnvironment& savEnv, TSerialize& gameStat
 		}
 		else
 		{
-			for (TEntityVector::iterator iter = m_serializeEntities.begin(), end = m_serializeEntities.end(); iter != end; ++iter)
+			for (const CryGUID& entityGUID : m_serializedEntityGUIDs)
 			{
-				EntityId id = *iter;
+				EntityId id = gEnv->pEntitySystem->FindEntityByGuid(entityGUID);;
 				IEntity* pEntity = gEnv->pEntitySystem->GetEntity(id);
 
 				if (pEntity)
@@ -1695,6 +1708,7 @@ void CGameSerialize::LoadBasicEntityData(SLoadEnvironment& loadEnv)
 
 			SEntitySpawnParams params;
 			params.id = bed.id;
+			params.guid = bed.guid;
 			assert(!bed.ignorePosRotScl);
 			//this will also be set in RepositionEntities
 			params.vPosition = bed.pos;

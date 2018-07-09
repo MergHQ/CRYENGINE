@@ -60,6 +60,7 @@ class CArea final : public IArea
 public:
 
 	using a2DPoint = Vec2;
+	using EntityIdVector = std::vector<std::pair<EntityId, EntityGUID>>;
 
 	struct a2DBBox
 	{
@@ -154,8 +155,8 @@ public:
 	explicit CArea(CAreaManager* pManager);
 
 	//IArea
-	virtual size_t         GetEntityAmount() const override                  { return m_entityIds.size(); }
-	virtual const EntityId GetEntityByIdx(size_t const index) const override { return m_entityIds[index]; }
+	virtual size_t         GetEntityAmount() const override                  { return m_entityIdentifiers.size(); }
+	virtual const EntityId GetEntityByIdx(size_t const index) const override { return m_entityIdentifiers[index].first; }
 	virtual int GetGroup() const override    { return m_areaGroupId; }
 	virtual int GetPriority() const override { return m_priority; }
 	virtual int GetID() const override       { return m_areaId; }
@@ -205,8 +206,7 @@ public:
 	void                    AddEntity(const EntityId entId);
 	void                    AddEntity(const EntityGUID entGuid);
 	void                    AddEntities(const EntityIdVector& entIDs);
-	const EntityIdVector*   GetEntities() const     { return &m_entityIds; }
-	const EntityGuidVector* GetEntitiesGuid() const { return &m_entityGuids; }
+	const EntityIdVector&   GetEntityIdentifiers() const { return m_entityIdentifiers; }
 
 	void                    RemoveEntity(EntityId const entId);
 	void                    RemoveEntity(EntityGUID const entGuid);
@@ -343,9 +343,8 @@ private:
 	float               m_greatestFadeDistance;
 	float               m_innerFadeDistance;
 
-	// attached entities IDs list
-	EntityIdVector   m_entityIds;
-	EntityGuidVector m_entityGuids;
+	// Vector containing entity identifiers and GUIDs for entities attached to this area
+	EntityIdVector m_entityIdentifiers;
 
 	using CachedEvents = std::vector<SEntityEvent>;
 	CachedEvents             m_cachedEvents;

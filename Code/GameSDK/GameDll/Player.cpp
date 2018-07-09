@@ -3459,7 +3459,7 @@ void CPlayer::SpawnCorpse()
 				params.vPosition = pEntity->GetPos();
 				params.qRotation = pEntity->GetRotation();
 
-				params.nFlags |= (ENTITY_FLAG_NEVER_NETWORK_STATIC|ENTITY_FLAG_CLIENT_ONLY);
+				params.nFlags |= ENTITY_FLAG_CLIENT_ONLY;
 
 				IEntity *pCloneEntity = gEnv->pEntitySystem->SpawnEntity(params, true);
 				assert(pCloneEntity);

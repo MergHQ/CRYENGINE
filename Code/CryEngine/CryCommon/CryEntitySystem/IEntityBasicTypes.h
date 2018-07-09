@@ -13,10 +13,6 @@ using EntityId = uint32;
 //! Entity salt signifies the number of times an entity index has been re-used, incremented once per use (initially 0)
 //! The EntitySalt can at most take up half the bits of an entity id (32 bits)
 using EntitySalt = uint16;
-//! Entity index signifies the position of an entity in the internal array
-//! Must be the same size as EntityId as the number of bits signifying index in an id might exceed half of EntityId.
-using EntityIndex = EntityId;
-
 static_assert(std::numeric_limits<EntitySalt>::digits == std::numeric_limits<EntityId>::digits / 2, "Entity Salt must be exactly half the size of EntityId, identifier consists of both index and salt");
 
 //! Number of bits to use for the entity index, determining how many entities can be in the scene
@@ -26,12 +22,22 @@ static_assert(EntityIndexBitCount < (std::numeric_limits<EntityId>::digits - 1),
 //! Number of reserved entity ids, currently 0 and the last two identifiers
 //! These are only used internally and cannot be given to a spawned entity
 constexpr size_t InternalEntityIndexCount = 3;
-//! Number of entities that can be stored in the entity array
-constexpr size_t EntityArraySize = 1ULL << EntityIndexBitCount;
+//! Maximum number of entities that can be represented by an entity index
+//! Note that this is always higher than the maximum number of logical entities
+//! See MaximumEntityCount for the technical limit
+constexpr size_t MaximumEntityDigits = 1ULL << EntityIndexBitCount;
 //! Maximum number of entities that can be spawned by the game, either dynamically or through exported entities in a level
-constexpr size_t MaximumEntityCount = EntityArraySize - InternalEntityIndexCount;
+//! This does not include INVALID_ENTITYID
+constexpr size_t MaximumEntityCount = MaximumEntityDigits - InternalEntityIndexCount;
+//! Number of entities that can be stored in the entity array
+//! Note that this includes [0] being INVALID_ENTITYID!
+constexpr size_t EntityArraySize = MaximumEntityCount + 1;
 //! Number of bits to use for the entity salt, dynamically calculated based on the EntityIndexBitCount value
 constexpr size_t EntitySaltBitCount = std::numeric_limits<EntityId>::digits - EntityIndexBitCount;
+
+//! Entity index signifies the position of an entity in the internal array
+//! Same size as EntitySalt when bit count equals the index count, otherwise EntityId is used (2x EntitySalt) as index requires more than half of the bits.
+using EntityIndex = typename std::conditional<EntitySaltBitCount == EntityIndexBitCount, EntitySalt, EntityId>::type;
 
 //! The entity identifier '0' is always invalid, the minimum valid id is 1.
 constexpr EntityId INVALID_ENTITYID = 0;
@@ -45,10 +51,10 @@ struct SEntityIdentifier
 
 	constexpr bool operator==(const SEntityIdentifier& rhs) const { return id == rhs.id; }
 	constexpr bool operator!=(const SEntityIdentifier& rhs) const { return !(*this == rhs); }
-	constexpr operator bool() const { return id != 0; }
+	constexpr operator bool() const { return id != INVALID_ENTITYID; }
 
-	//! Extracts the index from an entity identifier, givng the position of the entity in the internal array
-	constexpr EntityId GetIndex() const { return id & (EntityArraySize - 1U); }
+	//! Extracts the index from an entity identifier, giving the position of the entity in the internal array
+	constexpr EntityId GetIndex() const { return id & (MaximumEntityDigits - 1U); }
 	//! Extracts the salt from an entity salt handle,
 	constexpr EntityIndex GetSalt() const { return id >> EntitySaltBitCount; }
 	constexpr EntityId GetId() const { return id; }

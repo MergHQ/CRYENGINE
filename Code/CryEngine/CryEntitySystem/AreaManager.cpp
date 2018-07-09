@@ -109,21 +109,20 @@ bool CAreaManager::GetLinkedAreas(EntityId linkedId, EntityId* pOutArray, int& o
 	{
 		if (CArea* pArea = m_areas[aIdx])
 		{
-			const std::vector<EntityId>& ids = *pArea->GetEntities();
+			const CArea::EntityIdVector& ids = pArea->GetEntityIdentifiers();
 
 			if (!ids.empty())
 			{
-				size_t const nidCount = ids.size();
-
-				for (size_t eIdx = 0; eIdx < nidCount; eIdx++)
+				for(const std::pair<EntityId, EntityGUID>& identifierPair : ids)
 				{
-					if (ids[eIdx] == linkedId)
+					if (identifierPair.first == linkedId)
 					{
 						if (nArrayIndex < nMaxResults)
 						{
 							EntityId areaId = pArea->GetEntityID();
 							pOutArray[nArrayIndex] = areaId;
 							nArrayIndex++;
+							break;
 						}
 						else
 						{
@@ -149,18 +148,18 @@ size_t CAreaManager::GetLinkedAreas(EntityId linkedId, int areaId, std::vector<C
 	{
 		if (CArea* pArea = m_areas[aIdx])
 		{
-			const std::vector<EntityId>& ids = *pArea->GetEntities();
+			const CArea::EntityIdVector& ids = pArea->GetEntityIdentifiers();
 
 			if (!ids.empty())
 			{
-				size_t const nidCount = ids.size();
-
-				for (size_t eIdx = 0; eIdx < nidCount; eIdx++)
+				for (const std::pair<EntityId, EntityGUID>& identifierPair : ids)
 				{
-					if (ids[eIdx] == linkedId)
+					if (identifierPair.first == linkedId)
 					{
 						if (areaId == -1 || areaId == pArea->GetID())
 							areas.push_back(pArea);
+
+						break;
 					}
 				}
 			}

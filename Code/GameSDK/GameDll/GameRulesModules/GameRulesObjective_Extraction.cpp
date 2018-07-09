@@ -1088,7 +1088,7 @@ void CGameRulesObjective_Extraction::SpawnAllPickups()
 					params.sName = "MagicHammer"; 
 					params.vPosition = zeroVec;
 					params.qRotation = Quat(zeroAng);
-					params.nFlags = ENTITY_FLAG_NO_PROXIMITY|ENTITY_FLAG_NEVER_NETWORK_STATIC;	
+					params.nFlags = ENTITY_FLAG_NO_PROXIMITY;	
 					IEntity *spawnedMagicHammer = gEnv->pEntitySystem->SpawnEntity(params, true);
 					CRY_ASSERT_MESSAGE(spawnedMagicHammer, "failed to spawn magic hammer. This shouldn't happen");
 					if (spawnedMagicHammer)
@@ -1346,7 +1346,6 @@ IEntity *CGameRulesObjective_Extraction::SpawnEntity( EntityId spawnAt, IEntityC
 		//rotation.y += m_spawnRotation.y;
 		//rotation.z += m_spawnRotation.z;
 		params.qRotation = Quat(rotation);
-		params.nFlags = ENTITY_FLAG_NEVER_NETWORK_STATIC;
 
 		pSpawnedEntity = gEnv->pEntitySystem->SpawnEntity(params, true);
 		if (pSpawnedEntity)

@@ -2944,7 +2944,7 @@ void CRecordingSystem::OnPlaybackStart(void)
 					params.vPosition.Set(0.f, 0.f, 0.f);
 					params.qRotation.SetIdentity();
 
-					params.nFlags |= (ENTITY_FLAG_NEVER_NETWORK_STATIC | ENTITY_FLAG_CLIENT_ONLY);
+					params.nFlags |= ENTITY_FLAG_CLIENT_ONLY;
 
 					IEntity* pCloneEntity = gEnv->pEntitySystem->SpawnEntity(params, true);
 					if (pCloneEntity)
@@ -4028,7 +4028,7 @@ void CRecordingSystem::UpdateBulletPosition()
 			params.vPosition = m_bulletOrigin;
 			params.qRotation = m_bulletOrientation * Quat::CreateRotationZ(gf_PI);
 
-			params.nFlags |= (ENTITY_FLAG_NEVER_NETWORK_STATIC | ENTITY_FLAG_CLIENT_ONLY);
+			params.nFlags |= ENTITY_FLAG_CLIENT_ONLY;
 
 			IEntity* pBulletEntity = gEnv->pEntitySystem->SpawnEntity(params, true);
 			pBulletEntity->LoadGeometry(0, m_bulletGeometryName);

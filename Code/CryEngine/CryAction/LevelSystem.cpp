@@ -20,6 +20,7 @@
 #include <CryCore/Platform/IPlatformOS.h>
 #include <CryAction/ICustomActions.h>
 #include "CustomEvents/CustomEventsManager.h"
+#include "GameVolumes/GameVolumesManager.h"
 
 #include <CryGame/IGameVolumes.h>
 
@@ -1453,6 +1454,9 @@ public:
 
 					gEnv->pEntitySystem->LoadEntities(objectsNode, true);
 				}
+
+				CGameVolumesManager* pGameVolumes = static_cast<CGameVolumesManager*>(CCryAction::GetCryAction()->GetIGameVolumesManager());
+				pGameVolumes->ResolveEntityIdsFromGUIDs();
 			}
 		}
 

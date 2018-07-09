@@ -11,37 +11,42 @@ struct IEntity;
 class CEntityItMap final : public IEntityIt
 {
 public:
-	CEntityItMap()
+	CEntityItMap(const CEntitySystem::SEntityArray& array)
+		: m_array(array)
 	{
-		m_nRefCount = 0;
+		m_referenceCount = 0;
 		MoveFirst();
 	}
-	virtual ~CEntityItMap() {}
+	virtual ~CEntityItMap() = default;
 
 	virtual bool IsEnd() override
 	{
-		uint32 dwMaxUsed = (uint32)g_pIEntitySystem->m_EntitySaltBuffer.GetMaxUsed();
+		const CEntitySystem::SEntityArray::const_iterator end = m_array.end();
 
 		// jump over gaps
-		while (m_id <= (int)dwMaxUsed)
+		while (m_it != end)
 		{
-			if (g_pIEntitySystem->m_EntityArray[m_id] != 0)
+			if (*m_it != nullptr)
 				return false;
 
-			++m_id;
+			++m_it;
 		}
 
-		return m_id > (int)dwMaxUsed; // we passed the last element
+		// Check if we passed the last element
+		return m_it == end;
 	}
 
-	virtual IEntity* This() override      { return !IsEnd() ? g_pIEntitySystem->m_EntityArray[m_id] : nullptr; }
-	virtual IEntity* Next() override      { return !IsEnd() ? g_pIEntitySystem->m_EntityArray[m_id++] : nullptr; }
-	virtual void     MoveFirst() override { m_id = 0; };
-	virtual void     AddRef() override    { m_nRefCount++; }
-	virtual void     Release() override   { --m_nRefCount; if (m_nRefCount <= 0) { delete this; } }
+	virtual IEntity* This() override { return !IsEnd() ? *m_it : nullptr; }
+	virtual IEntity* Next() override { return !IsEnd() ? *m_it++ : nullptr; }
+	virtual void     MoveFirst() override { m_it = m_array.begin(); };
+	virtual void     AddRef() override { m_referenceCount++; }
+	virtual void     Release() override { if (--m_referenceCount <= 0) { delete this; } }
 
-protected: // ---------------------------------------------------
+	// Only needed for unit tests
+	int GetReferenceCount() const { return m_referenceCount; }
 
-	int m_nRefCount;                          //
-	int m_id;                                 //
+protected:
+	int m_referenceCount;
+	const CEntitySystem::SEntityArray& m_array;
+	CEntitySystem::SEntityArray::const_iterator m_it;
 };

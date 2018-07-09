@@ -192,7 +192,7 @@ enum ELoadGameResult
 	eLGR_CantQuick_NeedFullLoad
 };
 
-static const EntityId LOCAL_PLAYER_ENTITY_ID = 0x7777u; //!< 30583 between static and dynamic EntityIDs.
+static const EntityId LOCAL_PLAYER_ENTITY_ID = 2;
 
 struct SGameContextParams
 {

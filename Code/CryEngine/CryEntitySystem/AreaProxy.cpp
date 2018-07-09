@@ -423,11 +423,10 @@ void CEntityComponentArea::LegacySerializeXML(XmlNodeRef& entityNode, XmlNodeRef
 			for (int i = 0; i < entitiesNode->getChildCount(); i++)
 			{
 				XmlNodeRef entNode = entitiesNode->getChild(i);
-				EntityId entityId;
-				EntityGUID entityGuid;
-				if (entNode->getAttr("Id", entityId) && (entityId != INVALID_ENTITYID))
+				CryGUID entityGuid;
+				if (entNode->getAttr("GUID", entityGuid))
 				{
-					m_pArea->AddEntity(entityId);
+					m_pArea->AddEntity(entityGuid);
 				}
 			}
 		}
@@ -526,16 +525,18 @@ void CEntityComponentArea::LegacySerializeXML(XmlNodeRef& entityNode, XmlNodeRef
 			}
 		}
 
-		const std::vector<EntityId>& entIDs = *m_pArea->GetEntities();
+		const CArea::EntityIdVector& entityIdentifiers = m_pArea->GetEntityIdentifiers();
 		// Export Entities.
-		if (!entIDs.empty())
+		if (!entityIdentifiers.empty())
 		{
 			XmlNodeRef nodes = areaNode->newChild("Entities");
-			for (uint32 i = 0; i < entIDs.size(); i++)
+			for (const std::pair<EntityId, EntityGUID>& identifierPair : entityIdentifiers)
 			{
-				int entityId = entIDs[i];
+				const IEntity* pEntity = gEnv->pEntitySystem->GetEntity(identifierPair.first);
+				CRY_ASSERT(pEntity != nullptr);
+
 				XmlNodeRef entNode = nodes->newChild("Entity");
-				entNode->setAttr("Id", entityId);
+				entNode->setAttr("GUID", pEntity->GetGuid());
 			}
 		}
 	}

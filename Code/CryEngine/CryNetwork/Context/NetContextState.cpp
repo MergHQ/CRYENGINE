@@ -1951,7 +1951,7 @@ EntityId CNetContextState::AddReservedUnboundEntityMapEntry(uint16 partialNetID,
 		{
 			if (eID == 0)
 			{
-				eID = gEnv->pEntitySystem->ReserveUnknownEntityId();
+				eID = gEnv->pEntitySystem->ReserveNewEntityId();
 			}
 			if (eID)
 			{
@@ -2924,10 +2924,10 @@ void CNetContextState::NetDump(ENetDumpType type)
 				IEntity* pEntity = gEnv->pEntitySystem->GetEntity(iterNetIDs->first);
 				if (pEntity)
 				{
-					bool bIsDynamic = (pEntity->GetFlags() & ENTITY_FLAG_NEVER_NETWORK_STATIC) || (pEntity->GetId() >= LOCAL_PLAYER_ENTITY_ID);
-					const char* name = pEntity ? pEntity->GetName() : "<<no name>>";
+					const bool isDynamicEntity = !pEntity->IsLoadedFromLevelFile();
+					const char* szEntityName = pEntity->GetName();
 
-					if (((nLoop == 0) && !bIsDynamic) || ((nLoop == 1) && bIsDynamic))
+					if (((nLoop == 0) && !isDynamicEntity) || ((nLoop == 1) && isDynamicEntity))
 					{
 						string nom(pEntity->GetClass() ? pEntity->GetClass()->GetName() : "Unknown");
 						classesMap[nom]++;
@@ -2941,13 +2941,13 @@ void CNetContextState::NetDump(ENetDumpType type)
 							TNetChannelID chanid = pChan ? pChan->GetLocalChannelID() : 0;
 
 							NetLog("  %d %s %s flags(alc,ctrl,stc,own):%d%d%d%d aspects:%.2x class %s channel=%p controlchan %d",
-							       iterNetIDs->first, iterNetIDs->second.GetText(), name,
+							       iterNetIDs->first, iterNetIDs->second.GetText(), szEntityName,
 							       obj.main->bAllocated, obj.main->bControlled, obj.main->spawnType, obj.main->bOwned,
 							       obj.xtra->nAspectsEnabled, nom.c_str(), pChan, chanid);
 						}
 						else
 						{
-							NetLog("  %d %s %s class %s", iterNetIDs->first, iterNetIDs->second.GetText(), name, nom.c_str());
+							NetLog("  %d %s %s class %s", iterNetIDs->first, iterNetIDs->second.GetText(), szEntityName, nom.c_str());
 						}
 					}
 				}

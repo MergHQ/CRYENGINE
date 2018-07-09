@@ -403,8 +403,9 @@ struct IEntitySystem
 	//! \param id Must not be 0.
 	virtual void ReserveEntityId(const EntityId id) = 0;
 
-	//! Reserves a dynamic entity id.
-	virtual EntityId ReserveUnknownEntityId() = 0;
+	//! Generates a new available entity id, and reserves it for usage.
+	//! Can be set to SEntitySpawnParams::id at a later point to spawn with the reserved identifier
+	virtual EntityId ReserveNewEntityId() = 0;
 
 	//! Removes an entity by ID.
 	//! \param entity          Id of the entity to be removed.
@@ -619,6 +620,23 @@ struct IEntitySystem
 
 	virtual IBSPTree3D* CreateBSPTree3D(const IBSPTree3D::FaceList& faceList) = 0;
 	virtual void        ReleaseBSPTree3D(IBSPTree3D*& pTree) = 0;
+
+#if MaximumEntityCount <= UINT16_MAX
+	//! Represents a unique identifier for a static entity loaded from disk
+	//! Used to quickly identify static entities over the network, instead of needing to send over long GUIDs
+	using StaticEntityNetworkIdentifier = uint16;
+#else
+	using StaticEntityNetworkIdentifier = uint32;
+#endif
+
+#ifndef PURE_CLIENT
+	//! Queries a static entities unique network identifier
+	//! Only to be called from the server in order to send the network id to clients
+	virtual StaticEntityNetworkIdentifier GetStaticEntityNetworkId(EntityId id) const = 0;
+#endif
+
+	//! Queries an entity identifier from its static entity network id, most likely sent by the server
+	virtual EntityId GetEntityIdFromStaticEntityNetworkId(StaticEntityNetworkIdentifier id) const = 0;
 	// </interfuscator:shuffle>
 
 	//! Registers Entity Event's listeners.

@@ -159,8 +159,6 @@ CEntitySystem::CEntitySystem(ISystem* pSystem)
 		sinkListeners.reserve(8);
 	}
 
-	m_EntityArray.fill(nullptr);
-
 	m_pISystem = pSystem;
 	m_pClassRegistry = 0;
 	m_pEntityScriptBinding = NULL;
@@ -343,8 +341,6 @@ void CEntitySystem::Reset()
 
 	PurgeDeferredCollisionEvents(true);
 
-	CheckInternalConsistency();
-
 	ClearLayers();
 	m_mapEntityNames.clear();
 
@@ -356,22 +352,20 @@ void CEntitySystem::Reset()
 	// Delete entities that have already been added to the delete list.
 	DeletePendingEntities();
 
-	uint32 dwMaxUsed = static_cast<uint32>(m_EntitySaltBuffer.GetMaxUsed() + 1);
-
-	for (auto it = m_EntityArray.begin(), end = m_EntityArray.begin() + dwMaxUsed; it != end; ++it)
+	for(CEntity* pEntity : m_entityArray)
 	{
-		if (CEntity* pEntity = *it)
+		if (pEntity == nullptr)
+			continue;
+
+		if (!pEntity->IsGarbage())
 		{
-			if (!pEntity->IsGarbage())
-			{
-				pEntity->m_flags &= ~ENTITY_FLAG_UNREMOVABLE;
-				pEntity->m_keepAliveCounter = 0;
-				RemoveEntity(pEntity, false, true);
-			}
-			else
-			{
-				stl::push_back_unique(m_deletedEntities, pEntity);
-			}
+			pEntity->m_flags &= ~ENTITY_FLAG_UNREMOVABLE;
+			pEntity->m_keepAliveCounter = 0;
+			RemoveEntity(pEntity, false, true);
+		}
+		else
+		{
+			stl::push_back_unique(m_deletedEntities, pEntity);
 		}
 	}
 	// Delete entity that where added to delete list.
@@ -387,18 +381,20 @@ void CEntitySystem::Reset()
 
 	ResetAreas();
 
-	m_EntitySaltBuffer.Reset();
+	m_entityArray.Reset();
+	m_staticEntityIds.clear();
 
 	// Always reserve the legacy game rules and local player entity id's
 	ReserveEntityId(1);
+	// Game rules is always considered as a static entity
+	m_staticEntityIds.push_back(1);
+
 	ReserveEntityId(LOCAL_PLAYER_ENTITY_ID);
 
 	m_timersMap.clear();
 
 	m_pProximityTriggerSystem->Reset();
 	m_pPartitionGrid->Reset();
-
-	CheckInternalConsistency();
 
 	m_pEntityLoadManager->Reset();
 }
@@ -455,19 +451,6 @@ void CEntitySystem::OnEntityReused(IEntity* pEntity, SEntitySpawnParams& params)
 	{
 		pSink->OnReused(pEntity, params);
 	}
-}
-
-//////////////////////////////////////////////////////////////////////
-EntityId CEntitySystem::GenerateEntityId(bool bStaticId)
-{
-	EntityId returnId = INVALID_ENTITYID;
-
-	if (bStaticId)
-		returnId = HandleToId(m_EntitySaltBuffer.InsertStatic());
-	else
-		returnId = HandleToId(m_EntitySaltBuffer.InsertDynamic());
-
-	return returnId;
 }
 
 bool CEntitySystem::ValidateSpawnParameters(SEntitySpawnParams& params)
@@ -542,34 +525,34 @@ IEntity* CEntitySystem::SpawnPreallocatedEntity(CEntity* pPrecreatedEntity, SEnt
 
 	CEntity* pEntity = nullptr;
 
-	if (!params.id) // entityid wasn't given
+	// Most common case, entity id was not provided
+	if (params.id == INVALID_ENTITYID)
 	{
 		// get entity id and mark it
-		params.id = GenerateEntityId(params.bStaticEntityId);
+		params.id = GenerateEntityId();
 
 		if (!params.id)
 		{
-			EntityWarning("CEntitySystem::SpawnEntity Failed, Can't spawn entity %s. ID range is full (internal error)", (const char*)params.sName);
-			CheckInternalConsistency();
-			return NULL;
+			EntityWarning("CEntitySystem::SpawnEntity Failed, Can't spawn entity %s. ID range is full (internal error)", params.sName);
+			return nullptr;
 		}
 	}
 	else
 	{
-		if (m_EntitySaltBuffer.IsUsed(IdToHandle(params.id).GetIndex()))
+		if (m_entityArray.IsUsed(IdToHandle(params.id).GetIndex()))
 		{
 			// was reserved or was existing already
 
-			pEntity = m_EntityArray[IdToHandle(params.id).GetIndex()];
+			pEntity = m_entityArray[IdToHandle(params.id)];
 
 			if (pEntity)
 				EntityWarning("Entity with id=%d, %s already spawned on this client...override", pEntity->GetId(), pEntity->GetEntityTextDescription().c_str());
 			else
-				m_EntitySaltBuffer.InsertKnownHandle(IdToHandle(params.id));
+				m_entityArray.InsertKnownHandle(IdToHandle(params.id));
 		}
 		else
 		{
-			m_EntitySaltBuffer.InsertKnownHandle(IdToHandle(params.id));
+			m_entityArray.InsertKnownHandle(IdToHandle(params.id));
 		}
 	}
 
@@ -594,7 +577,7 @@ IEntity* CEntitySystem::SpawnPreallocatedEntity(CEntity* pPrecreatedEntity, SEnt
 		}
 
 		// put it into the entity map
-		m_EntityArray[IdToHandle(params.id).GetIndex()] = pEntity;
+		m_entityArray[IdToHandle(params.id)] = pEntity;
 
 		RegisterEntityGuid(params.guid, params.id);
 
@@ -694,8 +677,8 @@ void CEntitySystem::DeleteEntity(CEntity* pEntity)
 
 		pEntity->ShutDown();
 
-		m_EntityArray[IdToHandle(pEntity->GetId()).GetIndex()] = 0;
-		m_EntitySaltBuffer.Remove(IdToHandle(pEntity->GetId()));
+		m_entityArray[IdToHandle(pEntity->GetId())] = 0;
+		m_entityArray.Remove(IdToHandle(pEntity->GetId()));
 
 		if (!pEntity->m_guid.IsNull())
 			UnregisterEntityGuid(pEntity->m_guid);
@@ -714,17 +697,13 @@ void CEntitySystem::DeleteEntity(CEntity* pEntity)
 //////////////////////////////////////////////////////////////////////
 void CEntitySystem::ClearEntityArray()
 {
-	CheckInternalConsistency();
-
-	for (CEntity* pEntity : m_EntityArray)
+	for(const CEntity* const pEntity : m_entityArray)
 	{
 		CRY_ASSERT_TRACE(pEntity == nullptr, ("About to \"leak\" entity id %d (%s)", pEntity->GetId(), pEntity->GetName()));
 	}
 
-	m_EntityArray.fill(nullptr);
+	m_entityArray.fill_nullptr();
 	m_bSupportLegacy64bitGuids = false;
-
-	CheckInternalConsistency();
 }
 
 //////////////////////////////////////////////////////////////////////
@@ -739,7 +718,7 @@ void CEntitySystem::RemoveEntity(EntityId entity, bool forceRemoveImmediately)
 			CRY_ASSERT(false);
 
 			EntityWarning("Trying to remove entity with mismatching salts. id1=%d id2=%d", entity, pEntity->GetId());
-			CheckInternalConsistency();
+
 			if (ICVar* pVar = gEnv->pConsole->GetCVar("net_assertlogging"))
 			{
 				if (pVar->GetIVal())
@@ -859,18 +838,18 @@ IEntity* CEntitySystem::GetEntity(EntityId id) const
 
 CEntity* CEntitySystem::GetEntityFromID(EntityId id) const
 {
-	uint32 dwMaxUsed = m_EntitySaltBuffer.GetMaxUsed();
-	uint32 hdl = IdToIndex(id);
+	const EntityId maxUsedEntityIndex = m_entityArray.GetMaxUsedEntityIndex();
+	EntityId index = static_cast<EntityId>(IdToIndex(id));
 
-	assert(hdl <= dwMaxUsed);   // bad input id parameter
+	EntityId hd1cond = index <= maxUsedEntityIndex;
+	using SignedIndexType = std::make_signed<EntityId>::type;
+	hd1cond = static_cast<EntityId>(static_cast<SignedIndexType>(hd1cond) | -static_cast<SignedIndexType>(hd1cond));  //0 for hdl>dwMaxUsed, 0xFFFFFFFF for hdl<=dwMaxUsed
+	index = hd1cond & index;
 
-	uint32 hd1cond = hdl <= dwMaxUsed;
-	hd1cond = static_cast<uint32>((int32)hd1cond | -(int32)hd1cond);  //0 for hdl>dwMaxUsed, 0xFFFFFFFF for hdl<=dwMaxUsed
-	hdl = hd1cond & hdl;
-
-	if (CEntity* const pEntity = m_EntityArray[hdl])
+	if (CEntity* const pEntity = m_entityArray[index])
 	{
-		if (pEntity->CEntity::GetId() == id)
+		// An entity at a specific index is considered identical if the salt (use count) matches
+		if (IdToHandle(pEntity->GetId()).GetSalt() == IdToHandle(id).GetSalt())
 		{
 			return pEntity;
 		}
@@ -907,14 +886,13 @@ IEntity* CEntitySystem::FindEntityByName(const char* sEntityName) const
 uint32 CEntitySystem::GetNumEntities() const
 {
 	uint32 dwRet = 0;
-	uint32 dwMaxUsed = static_cast<uint32>(m_EntitySaltBuffer.GetMaxUsed() + 1);
 
-	for (auto it = m_EntityArray.cbegin(), end = m_EntityArray.cbegin() + dwMaxUsed; it != end; ++it)
+	for(const CEntity* const pEntity : m_entityArray)
 	{
-		if (const CEntity* const ce = *it)
-		{
-			++dwRet;
-		}
+		if (pEntity == nullptr)
+			continue;
+
+		++dwRet;
 	}
 
 	return dwRet;
@@ -1434,47 +1412,26 @@ void CEntitySystem::UpdateEntityComponents(float fFrameTime)
 }
 
 //////////////////////////////////////////////////////////////////////////
-void CEntitySystem::CheckInternalConsistency() const
-{
-	// slow - code should be kept commented out unless specific problems needs to be tracked
-	/*
-	   std::map<EntityId,CEntity*>::const_iterator it, end=m_mapActiveEntities.end();
-
-	   for(it=m_mapActiveEntities.begin(); it!=end; ++it)
-	   {
-	   CEntity *ce= it->second;
-	   EntityId id=it->first;
-
-	   CEntity *pSaltBufferEntitiyPtr = GetEntityFromID(id);
-
-	   assert(ce==pSaltBufferEntitiyPtr);		// internal consistency is broken
-	   }
-	 */
-}
-
-//////////////////////////////////////////////////////////////////////////
 IEntityItPtr CEntitySystem::GetEntityIterator()
 {
-	return IEntityItPtr(new CEntityItMap());
+	return IEntityItPtr(new CEntityItMap(m_entityArray));
 }
 
 //////////////////////////////////////////////////////////////////////////
 bool CEntitySystem::IsIDUsed(EntityId nID) const
 {
-	return m_EntitySaltBuffer.IsUsed(nID);
+	return m_entityArray.IsUsed(nID);
 }
 
 //////////////////////////////////////////////////////////////////////////
 void CEntitySystem::SendEventToAll(SEntityEvent& event)
 {
-	uint32 dwMaxUsed = static_cast<uint32>(m_EntitySaltBuffer.GetMaxUsed() + 1);
-
-	for (auto it = m_EntityArray.cbegin(), end = m_EntityArray.cbegin() + dwMaxUsed; it != end; ++it)
+	for (CEntity* const pEntity : m_entityArray)
 	{
-		if (CEntity* pEntity = *it)
-		{
-			pEntity->SendEvent(event);
-		}
+		if (pEntity == nullptr)
+			continue;
+
+		pEntity->SendEvent(event);
 	}
 }
 
@@ -1493,13 +1450,12 @@ void CEntitySystem::OnEditorSimulationModeChanged(EEditorSimulationMode mode)
 		m_entityComponentsCache->RestoreEntities();
 	}
 
-	const uint32 dwMaxUsed = static_cast<uint32>(m_EntitySaltBuffer.GetMaxUsed() + 1);
-	for (auto it = m_EntityArray.cbegin(), end = m_EntityArray.cbegin() + dwMaxUsed; it != end; ++it)
+	for (CEntity* const pEntity : m_entityArray)
 	{
-		if (CEntity* pEntity = *it)
-		{
-			pEntity->OnEditorGameModeChanged(isSimulating);
-		}
+		if (pEntity == nullptr)
+			continue;
+
+		pEntity->OnEditorGameModeChanged(isSimulating);
 	}
 
 	SEntityEvent event;
@@ -1520,20 +1476,19 @@ void CEntitySystem::OnLevelLoaded()
 {
 	LOADING_TIME_PROFILE_SECTION;
 
-	SEntityEvent event(ENTITY_EVENT_LEVEL_LOADED);
+	const SEntityEvent event(ENTITY_EVENT_LEVEL_LOADED);
 
-	uint32 dwMaxUsed = static_cast<uint32>(m_EntitySaltBuffer.GetMaxUsed() + 1);
-	for (auto it = m_EntityArray.cbegin(), end = m_EntityArray.cbegin() + dwMaxUsed; it != end; ++it)
+	for (CEntity* const pEntity : m_entityArray)
 	{
-		if (CEntity* pEntity = *it)
-		{
-			// After level load we set the simulation mode but don't start simulation yet. Mean we
-			// fully prepare the object for the simulation to start. Simulation will be started with
-			// the ENTITY_EVENT_START_GAME event.
-			pEntity->SetSimulationMode(gEnv->IsEditor() ? EEntitySimulationMode::Editor : EEntitySimulationMode::Game);
+		if (pEntity == nullptr)
+			continue;
 
-			pEntity->SendEvent(event);
-		}
+		// After level load we set the simulation mode but don't start simulation yet. Mean we
+		// fully prepare the object for the simulation to start. Simulation will be started with
+		// the ENTITY_EVENT_START_GAME event.
+		pEntity->SetSimulationMode(gEnv->IsEditor() ? EEntitySimulationMode::Editor : EEntitySimulationMode::Game);
+
+		pEntity->SendEvent(event);
 	}
 }
 
@@ -1542,17 +1497,16 @@ void CEntitySystem::OnLevelGameplayStart()
 {
 	LOADING_TIME_PROFILE_SECTION;
 
-	SEntityEvent event(ENTITY_EVENT_START_GAME);
+	const SEntityEvent event(ENTITY_EVENT_START_GAME);
 
-	uint32 dwMaxUsed = static_cast<uint32>(m_EntitySaltBuffer.GetMaxUsed() + 1);
-	for (auto it = m_EntityArray.cbegin(), end = m_EntityArray.cbegin() + dwMaxUsed; it != end; ++it)
+	for (CEntity* const pEntity : m_entityArray)
 	{
-		if (CEntity* pEntity = *it)
-		{
-			pEntity->SetSimulationMode(gEnv->IsEditor() ? EEntitySimulationMode::Editor : EEntitySimulationMode::Game);
+		if (pEntity == nullptr)
+			continue;
 
-			pEntity->SendEvent(event);
-		}
+		pEntity->SetSimulationMode(gEnv->IsEditor() ? EEntitySimulationMode::Editor : EEntitySimulationMode::Game);
+
+		pEntity->SendEvent(event);
 	}
 }
 
@@ -1788,17 +1742,17 @@ void CEntitySystem::ReserveEntityId(const EntityId id)
 	assert(id);
 
 	const SEntityIdentifier hdl = IdToHandle(id);
-	if (m_EntitySaltBuffer.IsUsed(hdl.GetIndex())) // Do not reserve if already used.
+	if (m_entityArray.IsUsed(hdl.GetIndex())) // Do not reserve if already used.
 		return;
 	//assert(m_EntitySaltBuffer.IsUsed(hdl.GetIndex()) == false);	// don't reserve twice or overriding in used one
 
-	m_EntitySaltBuffer.InsertKnownHandle(hdl);
+	m_entityArray.InsertKnownHandle(hdl);
 }
 
 //////////////////////////////////////////////////////////////////////////
-EntityId CEntitySystem::ReserveUnknownEntityId()
+EntityId CEntitySystem::ReserveNewEntityId()
 {
-	return GenerateEntityId(false);
+	return GenerateEntityId();
 }
 
 //////////////////////////////////////////////////////////////////////////
@@ -1814,9 +1768,6 @@ void CEntitySystem::LoadEntities(XmlNodeRef& objectsNode, bool bIsLoadingLevelFi
 {
 	LOADING_TIME_PROFILE_SECTION;
 	MEMSTAT_CONTEXT(EMemStatContextTypes::MSC_Other, 0, "LoadEntities");
-
-	//Update loading screen and important tick functions
-	SYNCHRONOUS_LOADING_TICK();
 
 	//Update loading screen and important tick functions
 	SYNCHRONOUS_LOADING_TICK();
@@ -1898,29 +1849,28 @@ void CEntitySystem::DebugDraw()
 	// Check if we have to iterate through all entities to debug draw information.
 	if (drawMode != CVar::EEntityDebugDrawType::Off)
 	{
-		const uint32 maxUsed = static_cast<uint32>(m_EntitySaltBuffer.GetMaxUsed() + 1);
-		for (auto it = m_EntityArray.begin(), end = m_EntityArray.begin() + maxUsed; it != end; ++it)
+		for (CEntity* const pEntity : m_entityArray)
 		{
-			if (CEntity* const pEntity = *it)
+			if (pEntity == nullptr)
+				continue;
+
+			switch (drawMode)
 			{
-				switch (drawMode)
-				{
-				// All cases for bounding boxes
-				case CVar::EEntityDebugDrawType::BoundingBoxWithName:
-				case CVar::EEntityDebugDrawType::BoundingBoxWithPositionPhysics:
-				case CVar::EEntityDebugDrawType::BoundingBoxWithEntityId:
-					DebugDrawBBox(*pEntity, drawMode);
-					break;
-				case CVar::EEntityDebugDrawType::Hierarchies:
-					DebugDrawHierachies(*pEntity);
-					break;
-				case CVar::EEntityDebugDrawType::Links:
-					DebugDrawEntityLinks(*pEntity);
-					break;
-				case CVar::EEntityDebugDrawType::Components:
-					DebugDrawComponents(*pEntity);
-					break;
-				}
+			// All cases for bounding boxes
+			case CVar::EEntityDebugDrawType::BoundingBoxWithName:
+			case CVar::EEntityDebugDrawType::BoundingBoxWithPositionPhysics:
+			case CVar::EEntityDebugDrawType::BoundingBoxWithEntityId:
+				DebugDrawBBox(*pEntity, drawMode);
+				break;
+			case CVar::EEntityDebugDrawType::Hierarchies:
+				DebugDrawHierachies(*pEntity);
+				break;
+			case CVar::EEntityDebugDrawType::Links:
+				DebugDrawEntityLinks(*pEntity);
+				break;
+			case CVar::EEntityDebugDrawType::Components:
+				DebugDrawComponents(*pEntity);
+				break;
 			}
 		}
 	}
@@ -2123,12 +2073,10 @@ void CEntitySystem::DebugDrawEntityUsage()
 		debuggedEntityClasses.clear();
 		debuggedEntityClasses.reserve(GetClassRegistry()->GetClassCount());
 
-		for (CEntity* pEntity : m_EntityArray)
+		for (const CEntity* const pEntity : m_entityArray)
 		{
 			if (pEntity == nullptr)
-			{
 				continue;
-			}
 
 			IEntityClass* pEntityClass = pEntity->GetClass();
 
@@ -2959,17 +2907,17 @@ void CEntitySystem::LoadInternalState(IDataReadStream& reader)
 		// get current entities on the level
 		typedef std::set<EntityGUID> TEntitySet;
 		TEntitySet currentEntities;
-		for (const CEntity* const pEntity : m_EntityArray)
+		for (const CEntity* const pEntity : m_entityArray)
 		{
-			if (pEntity != nullptr)
-			{
-				gEnv->pLog->LogAlways("ExistingEntity: '%s' '%s' (ID=%d, GUID=%s, Flags=0x%X) %i",
-				                      pEntity->GetName(), pEntity->GetClass()->GetName(),
-				                      pEntity->GetId(), pEntity->GetGuid().ToDebugString(),
-				                      pEntity->GetFlags(), pEntity->IsLoadedFromLevelFile());
+			if (pEntity == nullptr)
+				continue;
 
-				currentEntities.insert(pEntity->GetGuid());
-			}
+			gEnv->pLog->LogAlways("ExistingEntity: '%s' '%s' (ID=%d, GUID=%s, Flags=0x%X) %i",
+				pEntity->GetName(), pEntity->GetClass()->GetName(),
+				pEntity->GetId(), pEntity->GetGuid().ToDebugString(),
+				pEntity->GetFlags(), pEntity->IsLoadedFromLevelFile());
+
+			currentEntities.insert(pEntity->GetGuid());
 		}
 
 		// create update packet
@@ -3590,6 +3538,40 @@ bool CEntitySystem::CreateEntity(XmlNodeRef& entityNode, SEntitySpawnParams& pPa
 void CEntitySystem::EndCreateEntities()
 {
 	m_pEntityLoadManager->OnBatchCreationCompleted();
+}
+
+#ifndef PURE_CLIENT
+CEntitySystem::StaticEntityNetworkIdentifier CEntitySystem::GetStaticEntityNetworkId(const EntityId id) const
+{
+	CRY_ASSERT_MESSAGE(gEnv->bServer, "Static entity network identifier should only be queried by the server!");
+
+	// Look up index for the specified static (loaded from level) entity in the vector
+	// The entry has to be contained here, or it shows a severe issue in the entity system
+	auto it = std::lower_bound(m_staticEntityIds.begin(), m_staticEntityIds.end(), id);
+	CRY_ASSERT_MESSAGE(it != m_staticEntityIds.end(), "Static entity was not present in the static entity vector! This indicates a severe system error!");
+
+	return static_cast<StaticEntityNetworkIdentifier>(std::distance(m_staticEntityIds.begin(), it));
+}
+#endif
+
+EntityId CEntitySystem::GetEntityIdFromStaticEntityNetworkId(const StaticEntityNetworkIdentifier id) const
+{
+	CRY_ASSERT_MESSAGE(gEnv->IsClient(), "Retrieving entity id from static entity network identifier should only be done by the client!");
+	CRY_ASSERT_MESSAGE(id < m_staticEntityIds.size(), "Static entity identifier exceeded range! Probable level mismatch detected!");
+	if (id < m_staticEntityIds.size())
+	{
+		return m_staticEntityIds[id];
+	}
+
+	// Note: If this is triggered, chances are we need to find a better way of detecting level mismatches and disconnecting + alerting player early.
+	EntityWarning("Attempted to access static entity id from network with out of range index! This is a sign of a probable level mismatch between server and client.");
+	return INVALID_ENTITYID;
+}
+
+void CEntitySystem::AddStaticEntityId(const EntityId id)
+{
+	CRY_ASSERT_MESSAGE(m_staticEntityIds.empty() || m_staticEntityIds.back() < id, "Static entity identifiers must be added sequentially!");
+	m_staticEntityIds.emplace_back(id);
 }
 
 void CEntitySystem::PurgeDeferredCollisionEvents(bool force)

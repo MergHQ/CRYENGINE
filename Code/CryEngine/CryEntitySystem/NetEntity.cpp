@@ -128,13 +128,11 @@ bool CNetEntity::BindToNetworkWithParent(EBindToNetworkMode mode, EntityId paren
 			gEnv->pGameFramework->SetServerChannelPlayerId(GetChannelId(), m_pEntity->GetId());
 		}
 
-		bool isStatic = gEnv->pGameFramework->IsInLevelLoad();
-		if (m_pEntity->GetFlags() & ENTITY_FLAG_NEVER_NETWORK_STATIC)
-			isStatic = false;
+		const bool isStatic = m_pEntity->IsLoadedFromLevelFile() || m_pEntity->GetId() == 1;
 
-		auto eid = m_pEntity->GetId();
-		gEnv->pNetContext->BindObject(eid, parentId, CombineAspects(), isStatic);
-		gEnv->pNetContext->SetDelegatableMask(eid, m_delegatableAspects);
+		const EntityId entityId = m_pEntity->GetId();
+		gEnv->pNetContext->BindObject(entityId, parentId, CombineAspects(), isStatic);
+		gEnv->pNetContext->SetDelegatableMask(entityId, m_delegatableAspects);
 	}
 
 	m_isBoundToNetwork = true;

@@ -107,6 +107,46 @@ typedef std::vector<SEntityLoadParams>              TEntityLoadParamsContainer;
 class CEntitySystem final : public IEntitySystem
 {
 public:
+	struct SEntityArray final : public SSaltBufferArray
+	{
+		SEntityArray()
+		{
+			m_array.fill(nullptr);
+		}
+
+		// Note +1, reason being that currently m_array[0] is always null and an invalid index
+		// This is consistent with INVALID_ENTITYID
+		using Array = std::array<CEntity*, EntityArraySize>;
+		using iterator = Array::iterator;
+		using const_iterator = Array::const_iterator;
+
+		//! Returns an iterator referring to the start of the entity array
+		//! + 1 is used to skip past m_array[0], which is always nullptr as it is INVALID_ENTITYID
+		iterator begin() { return m_array.begin() + 1; }
+		//! Returns an iterator referring to the start of the entity array
+		//! + 1 is used to skip past m_array[0], which is always nullptr as it is INVALID_ENTITYID
+		const_iterator begin() const { return m_array.begin() + 1; }
+		//! Returns an iterator referring to the past-the-end element of active entities
+		//! This is not the "true" end of the array, as we check the maximum possible used index
+		iterator end() { return begin() + GetMaxUsedEntityIndex(); }
+		//! Returns an iterator referring to the past-the-end element of active entities
+		//! This is not the "true" end of the array, as we check the maximum epossible used index
+		const_iterator end() const { return begin() + GetMaxUsedEntityIndex(); }
+
+		CEntity*& operator[](const SEntityIdentifier id) { return m_array[id.GetIndex()]; }
+		CEntity*  operator[](const SEntityIdentifier id) const { return m_array[id.GetIndex()]; }
+		CEntity*& operator[](const EntityIndex index) { return m_array[index]; }
+		CEntity*  operator[](const EntityIndex index) const { return m_array[index]; }
+
+		void fill_nullptr()
+		{
+			m_array.fill(nullptr);
+		}
+
+	protected:
+		Array m_array;
+	};
+
 	explicit CEntitySystem(ISystem* pSystem);
 	~CEntitySystem();
 
@@ -126,7 +166,7 @@ public:
 	virtual IEntity*                          GetEntity(EntityId id) const final;
 	virtual IEntity*                          FindEntityByName(const char* sEntityName) const final;
 	virtual void                              ReserveEntityId(const EntityId id) final;
-	virtual EntityId                          ReserveUnknownEntityId() final;
+	virtual EntityId                          ReserveNewEntityId() final;
 	virtual void                              RemoveEntity(EntityId entity, bool bForceRemoveNow = false) final;
 	virtual uint32                            GetNumEntities() const final;
 	virtual IEntityItPtr                      GetEntityIterator() final;
@@ -229,6 +269,12 @@ public:
 	virtual bool CreateEntity(XmlNodeRef& entityNode, SEntitySpawnParams& pParams, EntityId& outUsingId) final;
 	virtual void EndCreateEntities() final;
 
+#ifndef PURE_CLIENT
+	virtual StaticEntityNetworkIdentifier GetStaticEntityNetworkId(EntityId id) const final;
+#endif
+
+	virtual EntityId GetEntityIdFromStaticEntityNetworkId(StaticEntityNetworkIdentifier id) const final;
+
 	IEntity*     SpawnPreallocatedEntity(CEntity* pPrecreatedEntity, SEntitySpawnParams& params, bool bAutoInit);
 
 	// Access to class that binds script to entity functions.
@@ -250,7 +296,7 @@ public:
 	static SEntityIdentifier   IdToHandle(const EntityId id) { return SEntityIdentifier::GetHandleFromId(id); }
 	static EntityId            HandleToId(const SEntityIdentifier id) { return id.GetId(); }
 
-	EntityId                         GenerateEntityId(bool bStaticId);
+	EntityId                         GenerateEntityId() { return HandleToId(m_entityArray.Insert()); }
 
 	void                             RegisterEntityGuid(const EntityGUID& guid, EntityId id);
 	void                             UnregisterEntityGuid(const EntityGUID& guid);
@@ -275,6 +321,9 @@ public:
 	void                             EnableComponentUpdates(IEntityComponent* pComponent, bool bEnable);
 	void                             EnableComponentPrePhysicsUpdates(IEntityComponent* pComponent, bool bEnable);
 
+	void                             ReserveStaticEntityIds(size_t count) { m_staticEntityIds.reserve(count); }
+	void                             AddStaticEntityId(EntityId id);
+
 private:
 	bool ValidateSpawnParameters(SEntitySpawnParams& params);
 
@@ -293,13 +342,9 @@ private:
 	void DebugDrawComponents(const CEntity& entity);
 #endif // ~INCLUDE_DEBUG_ENTITY_DRAWING
 
-
 	void ClearEntityArray();
 
 	void DumpEntity(CEntity* pEntity);
-
-	// slow - to find specific problems
-	void CheckInternalConsistency() const;
 
 	//////////////////////////////////////////////////////////////////////////
 	// Variables.
@@ -325,14 +370,15 @@ private:
 	std::array<std::vector<IEntitySystemSink*>, (size_t)SinkEventSubscriptions::Count> m_sinks;
 
 	ISystem*              m_pISystem;
-	std::array<CEntity*, CSaltBufferArray::GetTSize()> m_EntityArray;                    // [id.GetIndex()]=CEntity
+	SEntityArray          m_entityArray;
+	// Vector containing entity ids of all static entities
+	// This is guaranteed to be the same across clients connecting using the same level
+	// Used to allow referencing static entities very quickly over the network (using an index)
+	std::vector<EntityId> m_staticEntityIds;
 	DeletedEntities       m_deletedEntities;
 	std::vector<CEntity*> m_deferredUsedEntities;
 
 	EntityNamesMap        m_mapEntityNames;            // Map entity name to entity ID.
-
-	CSaltBufferArray    m_EntitySaltBuffer;               // used to create new entity ids (with uniqueid=salt)
-	//////////////////////////////////////////////////////////////////////////
 
 	CEntityComponentsVector<SMinimalEntityComponentRecord> m_updatedEntityComponents;
 	CEntityComponentsVector<SMinimalEntityComponentRecord> m_prePhysicsUpdatedEntityComponents;

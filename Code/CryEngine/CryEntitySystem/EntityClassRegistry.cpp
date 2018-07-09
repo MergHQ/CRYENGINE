@@ -629,7 +629,6 @@ bool CEntityClassRegistry::OnClientConnectionReceived(int channelId, bool bIsRes
 			SEntitySpawnParams spawnParams;
 			spawnParams.pClass = classPair.second;
 			spawnParams.sName = "Client";
-			spawnParams.nFlags |= ENTITY_FLAG_NEVER_NETWORK_STATIC;
 
 			// Set local player details
 			if (channelId == 1 && !gEnv->IsDedicated() && g_pIEntitySystem->GetEntityFromID(LOCAL_PLAYER_ENTITY_ID) == nullptr)

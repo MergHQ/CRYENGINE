@@ -1892,12 +1892,9 @@ void CEntityObject::SpawnEntity()
 
 	IEntitySystem* pEntitySystem = GetIEditorImpl()->GetSystem()->GetIEntitySystem();
 
-	if (m_entityId != 0)
+	if (m_entityId != INVALID_ENTITYID && pEntitySystem->IsIDUsed(m_entityId))
 	{
-		if (pEntitySystem->IsIDUsed(m_entityId))
-		{
-			m_entityId = 0;
-		}
+		m_entityId = INVALID_ENTITYID;
 	}
 
 	SEntitySpawnParams params;
@@ -1938,11 +1935,6 @@ void CEntityObject::SpawnEntity()
 		}
 
 		params.nFlagsExtended = (params.nFlagsExtended & ~ENTITY_FLAG_EXTENDED_GI_MODE_BIT_MASK) | ((((int)mv_giMode) << ENTITY_FLAG_EXTENDED_GI_MODE_BIT_OFFSET) & ENTITY_FLAG_EXTENDED_GI_MODE_BIT_MASK);
-	}
-
-	if (params.id == 0)
-	{
-		params.bStaticEntityId = true; // Tells to Entity system to generate new static id.
 	}
 
 	params.guid = ToEntityGuid(GetId());

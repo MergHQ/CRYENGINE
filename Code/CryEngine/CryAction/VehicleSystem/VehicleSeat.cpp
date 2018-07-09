@@ -314,7 +314,7 @@ void CVehicleSeat::OnSpawnComplete()
 
 		SEntitySpawnParams params;
 		params.sName = name.c_str();
-		params.nFlags = ENTITY_FLAG_NEVER_NETWORK_STATIC | ENTITY_FLAG_NO_SAVE;
+		params.nFlags = ENTITY_FLAG_NO_SAVE;
 		params.pClass = gEnv->pEntitySystem->GetClassRegistry()->FindClass("VehicleSeatSerializer");
 
 		if (!params.pClass)

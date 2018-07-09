@@ -1344,7 +1344,7 @@ void CBreakableManager::ClonePartRemovedEntitiesByIndex(int32* pBrokenObjIndicie
 				createParams.fScale = worldTM.GetColumn0().len();
 				createParams.pCustomMtl = pRenderNode->GetMaterial();
 				createParams.nMatLayers = pRenderNode->GetMaterialLayers();
-				createParams.nEntityFlagsAdd = (ENTITY_FLAG_NEVER_NETWORK_STATIC | ENTITY_FLAG_CLIENT_ONLY);
+				createParams.nEntityFlagsAdd = ENTITY_FLAG_CLIENT_ONLY;
 				createParams.nRenderNodeFlags = pRenderNode->GetRndFlags();
 				createParams.pSrcStaticRenderNode = pRenderNode;
 				createParams.pName = pRenderNode->GetName();

@@ -4538,7 +4538,7 @@ void CActionGame::CloneBrokenObjectsByIndex(uint16* pBreakEventIndices, int32& i
 				//          createParams.fScale = worldTM.GetColumn0().len();
 				//          createParams.pCustomMtl = pRenderNode->GetMaterial();
 				//          createParams.nMatLayers = pRenderNode->GetMaterialLayers();
-				//          createParams.nEntityFlagsAdd = (ENTITY_FLAG_NEVER_NETWORK_STATIC|ENTITY_FLAG_CLIENT_ONLY);
+				//          createParams.nEntityFlagsAdd = ENTITY_FLAG_CLIENT_ONLY;
 				//          //createParams.nEntitySlotFlagsAdd;
 				//          createParams.nRenderNodeFlags = pRenderNode->GetRndFlags();
 				//          createParams.pSrcStaticRenderNode = pRenderNode;

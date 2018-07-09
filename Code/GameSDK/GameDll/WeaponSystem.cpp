@@ -593,11 +593,6 @@ CProjectile *CWeaponSystem::DoSpawnAmmo(IEntityClass* pAmmoType, bool isRemote, 
 	spawnParams.pClass = pAmmoType;
 	spawnParams.sName = "ammo";
 	spawnParams.nFlags = pAmmoParams->flags | ENTITY_FLAG_NO_PROXIMITY; // No proximity for this entity.
-	if (pAmmoParams->serverSpawn)
-	{
-		// This projectile is going to be bound to the network, make sure we know it's a dynamic entity
-		spawnParams.nFlags |= ENTITY_FLAG_NEVER_NETWORK_STATIC;
-	}
 	
 	IEntity *pEntity = NULL;
 

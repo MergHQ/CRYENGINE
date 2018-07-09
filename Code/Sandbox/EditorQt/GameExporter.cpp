@@ -311,15 +311,19 @@ bool CGameExporter::DoExport(unsigned int flags, const char* subdirectory)
 	//////////////////////////////////////////////////////////////////////////
 	// Export list of entities to save/load during gameplay
 	//////////////////////////////////////////////////////////////////////////
+	string pakFilename = PathUtil::RemoveSlash(sLevelPath.GetString()) + "Level.pak";
+
 	CLogFile::WriteLine("Exporting serialization list");
 	XmlNodeRef entityList = XmlHelpers::CreateXmlNode("EntitySerialization");
-	pGameEngine->BuildEntitySerializationList(entityList);
-	string levelDataFile = sLevelPath + "Serialize.xml";
-	string pakFilename = PathUtil::RemoveSlash(sLevelPath.GetString()) + "Level.pak";
-	XmlString xmlData = entityList->getXML();
-	CCryMemFile file;
-	file.Write(xmlData.c_str(), xmlData.length());
-	m_levelPak.m_pakFile.UpdateFile(levelDataFile, file);
+	const bool hasSerializationList = pGameEngine->BuildEntitySerializationList(entityList);
+	if (hasSerializationList)
+	{
+		string levelDataFile = sLevelPath + "Serialize.xml";
+		XmlString xmlData = entityList->getXML();
+		CCryMemFile file;
+		file.Write(xmlData.c_str(), xmlData.length());
+		m_levelPak.m_pakFile.UpdateFile(levelDataFile, file);
+	}
 
 	//////////////////////////////////////////////////////////////////////////
 	// End Exporting Game data.

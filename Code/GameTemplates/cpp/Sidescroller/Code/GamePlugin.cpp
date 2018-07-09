@@ -86,7 +86,6 @@ bool CGamePlugin::OnClientConnectionReceived(int channelId, bool bIsReset)
 	SEntitySpawnParams spawnParams;
 	spawnParams.pClass = gEnv->pEntitySystem->GetClassRegistry()->GetDefaultClass();
 	spawnParams.sName = "Player";
-	spawnParams.nFlags |= ENTITY_FLAG_NEVER_NETWORK_STATIC;
 	
 	// Set local player details
 	if (m_players.size() == 0 && !gEnv->IsDedicated())

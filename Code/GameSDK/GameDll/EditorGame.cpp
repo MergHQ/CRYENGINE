@@ -1072,7 +1072,7 @@ bool CEditorGame::BuildEntitySerializationList(XmlNodeRef output)
 		if (it->second != eST_NotSerialized)
 		{
 			XmlNodeRef child = output->createNode("Entity");
-			child->setAttr("id", it->first);
+			child->setAttr("guid", pEntity->GetGuid());
 			//child->setAttr("class", pEntity->GetClass()->GetName());	// debug check
 			//child->setAttr("name", pEntity->GetName());								// debug check
 			output->addChild(child);
