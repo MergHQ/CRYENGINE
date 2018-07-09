@@ -64,6 +64,7 @@ struct SQueuedObjectSignal
 };
 
 typedef std::deque<SQueuedObjectSignal> ObjectSignalQueue;
+typedef std::vector<IObjectSignalListener*> SignalListener;
 
 class CObject : public IObject
 {
@@ -149,6 +150,9 @@ public:
 	virtual IEntity*             GetEntity() const final           { return m_pEntity; };
 
 	virtual IObjectPropertiesPtr GetObjectProperties() const final { return m_pProperties; };
+
+	virtual void                 AddSignalListener(IObjectSignalListener& signalListener) override;
+	virtual void                 RemoveSignalListener(IObjectSignalListener& signalListener) override;
 	// ~IObject
 
 	CScratchpad&      GetScratchpad();
@@ -223,6 +227,8 @@ private:
 
 	bool                  m_bQueueSignals;
 	ObjectSignalQueue     m_signalQueue;
+
+	SignalListener        m_signalListener;
 
 	CConnectionScope      m_connectionScope;
 

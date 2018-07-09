@@ -427,6 +427,9 @@ public:
 	}
 	bool HasInternalFlag(EInternalFlag flag) const { return m_internalFlags.Check(flag); }
 
+	void RemoveSchematycObject() { m_pLegacySchematycData.reset(); };
+	void CreateSchematycObject(const SEntitySpawnParams& params);
+
 protected:
 	//////////////////////////////////////////////////////////////////////////
 	// Attachment.
@@ -441,8 +444,6 @@ private:
 	}
 	// Fetch the IA object from the AIObjectID, if any
 	IAIObject* GetAIObject() const;
-
-	void       CreateSchematycObject(const SEntitySpawnParams& params);
 
 	void       AddComponentInternal(std::shared_ptr<IEntityComponent> pComponent, const CryGUID& componentTypeID, IEntityComponent::SInitParams* pInitParams, const CEntityComponentClassDesc* pClassDescription);
 

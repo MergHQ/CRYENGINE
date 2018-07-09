@@ -6,6 +6,8 @@
 #include "EntitySystem.h"
 #include "EntityUnitTests.h"
 #include "EntityClassRegistry.h"
+#include "EntityCVars.h"
+#include "FlowGraphComponent.h"
 
 #include "Schematyc/EntitySchematycActions.h"
 #include "Schematyc/EntitySchematycUtilFunctions.h"
@@ -39,32 +41,92 @@ public:
 			}
 			break;
 		case ESYSTEM_EVENT_REGISTER_SCHEMATYC_ENV:
+		{
+
+			auto entitySchematycRegistration = [](Schematyc::IEnvRegistrar& registrar)
 			{
+				Schematyc::CEntityTimerAction::Register(registrar);
+				Schematyc::CEntityDebugTextAction::Register(registrar);
+				Schematyc::Entity::RegisterUtilFunctions(registrar);
+				Schematyc::CEntityUtilsComponent::Register(registrar);
 
-				auto entitySchematycRegistration = [](Schematyc::IEnvRegistrar& registrar)
+				if (gEnv->bTesting)
 				{
-					Schematyc::CEntityTimerAction::Register(registrar);
-					Schematyc::CEntityDebugTextAction::Register(registrar);
-					Schematyc::Entity::RegisterUtilFunctions(registrar);
-					Schematyc::CEntityUtilsComponent::Register(registrar);
+					RegisterUnitTestComponents(registrar);
+				}
+			};
 
-					if (gEnv->bTesting)
+			gEnv->pSchematyc->GetEnvRegistry().RegisterPackage(
+				stl::make_unique<Schematyc::CEnvPackage>(
+					SchematyEntityComponentsPackageGUID,
+					"EntityComponents",
+					"Crytek GmbH",
+					"CRYENGINE Default Entity Components",
+					entitySchematycRegistration
+					)
+			);
+
+			// Check if flowgraph components are enabled
+			if (CVar::pFlowgraphComponents->GetIVal() != 0)
+			{
+				// Create signal flow nodes
+				gEnv->pSchematyc->GetEnvRegistry().VisitSignals([](const Schematyc::IEnvSignal& signal) -> Schematyc::EVisitStatus
+				{
+					const Schematyc::IEnvElement* pEnvElement = signal.GetParent();
+
+					if (Schematyc::EEnvElementType::Component == pEnvElement->GetType())
 					{
-						RegisterUnitTestComponents(registrar);
-					}
-				};
+						const Schematyc::IEnvComponent* pEnvComponent = static_cast<const Schematyc::IEnvComponent*>(pEnvElement);
 
-				gEnv->pSchematyc->GetEnvRegistry().RegisterPackage(
-				  stl::make_unique<Schematyc::CEnvPackage>(
-				    SchematyEntityComponentsPackageGUID,
-				    "EntityComponents",
-				    "Crytek GmbH",
-				    "CRYENGINE Default Entity Components",
-				    entitySchematycRegistration
-				    )
-				  );
+						stack_string  nodeName = stack_string("EntityComponents:") + pEnvComponent->GetName() + ":" + "Signals:" + signal.GetName();
+
+						_smart_ptr<CEntityComponentFlowNodeFactorySignal> pSignalFactory = new CEntityComponentFlowNodeFactorySignal(*pEnvComponent, signal);
+						gEnv->pFlowSystem->RegisterType(nodeName.c_str(), pSignalFactory);
+					}
+
+					return Schematyc::EVisitStatus::Continue;
+				});
+
+				gEnv->pSchematyc->GetEnvRegistry().VisitComponents([](const Schematyc::IEnvComponent& component) -> Schematyc::EVisitStatus
+				{
+					stack_string  typeName = stack_string("EntityComponents:") + component.GetName();
+					stack_string  nodeName;
+
+					// Create getter flow node
+					nodeName = typeName + ':' + "Get:" + "GetParameter";
+					_smart_ptr<CEntityComponentFlowNodeFactoryGetter> pGetterFactory = new CEntityComponentFlowNodeFactoryGetter(component, component.GetDesc().GetMembers());
+					gEnv->pFlowSystem->RegisterType(nodeName.c_str(), pGetterFactory);
+
+					// Create setter flow node
+					nodeName = typeName + ':' + "Set:" + "SetParameter";
+					_smart_ptr<CEntityComponentFlowNodeFactorySetter> pSetterFactory = new CEntityComponentFlowNodeFactorySetter(component, component.GetDesc().GetMembers());
+					gEnv->pFlowSystem->RegisterType(nodeName.c_str(), pSetterFactory);
+
+					// Create function flow node
+					component.VisitChildren([typeName, &component](const Schematyc::IEnvElement& element) -> Schematyc::EVisitStatus
+					{
+						switch (element.GetType())
+						{
+						case Schematyc::EEnvElementType::Function:
+						{
+							const Schematyc::CEnvFunction& function = static_cast<const Schematyc::CEnvFunction&>(element);
+
+							stack_string nodeName = typeName + ':' + "Functions:" + function.GetName();
+
+							_smart_ptr<CEntityComponentFlowNodeFactory> pFactory = new CEntityComponentFlowNodeFactory(component, function);
+							gEnv->pFlowSystem->RegisterType(nodeName.c_str(), pFactory);
+						}
+						break;
+						}
+
+						return Schematyc::EVisitStatus::Continue;
+					});
+
+					return Schematyc::EVisitStatus::Continue;
+				});
 			}
-			break;
+		}
+		break;
 		case ESYSTEM_EVENT_FULL_SHUTDOWN:
 		case ESYSTEM_EVENT_FAST_SHUTDOWN:
 			{

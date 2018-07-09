@@ -9,23 +9,24 @@
 #include <CryEntitySystem/IEntityComponent.h>
 #include <CryAISystem/IAISystem.h>
 
-ICVar* CVar::pUpdateScript = NULL;
-ICVar* CVar::pUpdateEntities = NULL;
-ICVar* CVar::pEntityBBoxes = NULL;
-ICVar* CVar::pMinImpulseVel = NULL;
-ICVar* CVar::pImpulseScale = NULL;
-ICVar* CVar::pMaxImpulseAdjMass = NULL;
-ICVar* CVar::pDebrisLifetimeScale = NULL;
-ICVar* CVar::pHitCharacters = NULL;
-ICVar* CVar::pHitDeadBodies = NULL;
-ICVar* CVar::pEnableFullScriptSave = NULL;
-ICVar* CVar::pLogCollisions = NULL;
-ICVar* CVar::pDrawAreas = NULL;
-ICVar* CVar::pDrawAreaGrid = NULL;
-ICVar* CVar::pDrawAreaGridCells = NULL;
-ICVar* CVar::pDrawAreaDebug = NULL;
+ICVar* CVar::pUpdateScript = nullptr;
+ICVar* CVar::pUpdateEntities = nullptr;
+ICVar* CVar::pEntityBBoxes = nullptr;
+ICVar* CVar::pMinImpulseVel = nullptr;
+ICVar* CVar::pImpulseScale = nullptr;
+ICVar* CVar::pMaxImpulseAdjMass = nullptr;
+ICVar* CVar::pDebrisLifetimeScale = nullptr;
+ICVar* CVar::pHitCharacters = nullptr;
+ICVar* CVar::pHitDeadBodies = nullptr;
+ICVar* CVar::pEnableFullScriptSave = nullptr;
+ICVar* CVar::pLogCollisions = nullptr;
+ICVar* CVar::pDrawAreas = nullptr;
+ICVar* CVar::pDrawAreaGrid = nullptr;
+ICVar* CVar::pDrawAreaGridCells = nullptr;
+ICVar* CVar::pDrawAreaDebug = nullptr;
+ICVar* CVar::pFlowgraphComponents = nullptr;
 
-ICVar* CVar::pSysSpecLight = NULL;
+ICVar* CVar::pSysSpecLight = nullptr;
 
 CVar::EEntityDebugDrawType CVar::es_EntityDebugDraw = CVar::EEntityDebugDrawType::Off;
 
@@ -235,10 +236,16 @@ void CVar::Init()
 
 	REGISTER_CVAR(es_MaxJointFx, 8, 0, "Sets the maximum number of joint break fx per frame");
 
-	REGISTER_CVAR(es_profileComponentUpdates, 0, 0, "Enables profiling of components that are updated per frame.\n"
-	                                                "Default: 0 (off)\n"
-	                                                "1 - Simple profiling, shows cost of all components per frame\n"
-	                                                "2 - Component type cost breakdown, shows cost of each component type per frame");
+	REGISTER_CVAR(es_profileComponentUpdates, 0, 0, 
+	              "Enables profiling of components that are updated per frame.\n"
+	              "Default: 0 (off)\n"
+	              "1 - Simple profiling, shows cost of all components per frame\n"
+	              "2 - Component type cost breakdown, shows cost of each component type per frame");
+
+	pFlowgraphComponents = REGISTER_INT("es_EnableFlowgraphComponents", 0, VF_CHEAT,
+	              "Toggles flowgraph components. Requires restart of the engine.\n"
+	              "Usage: es_UpdateEntities [0/1]\n"
+	              "Default is 0 (off). Set to 1 to enable flowgraph components.");
 
 	// Call mapping in case the cvar was already set
 	MapEntityBBoxesCVar(pEntityBBoxes);
