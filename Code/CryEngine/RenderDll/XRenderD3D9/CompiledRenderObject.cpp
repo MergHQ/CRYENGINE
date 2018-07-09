@@ -528,7 +528,6 @@ bool CCompiledRenderObject::Compile(const EObjectCompilationOptions& compilation
 	}
 
 	CRenderElement::SGeometryInfo geomInfo;
-	ZeroStruct(geomInfo);
 
 	if (!bInstanceDataUpdateOnly) // first update only: needed for per instance buffers
 	{

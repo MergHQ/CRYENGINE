@@ -53,9 +53,9 @@ typedef uintptr_t stream_handle_t;
 
 struct SStreamInfo
 {
-	stream_handle_t hStream;
-	uint32          nStride; // NOTE: for index buffers this needs to contain the index format
-	uint32          nSlot;
+	stream_handle_t hStream = ~0u;
+	uint32          nStride =  0u; // NOTE: for index buffers this needs to contain the index format
+	uint32          nSlot   =  0u;
 };
 
 
@@ -128,24 +128,24 @@ public:
 public:
 	struct SGeometryInfo
 	{
-		uint32        bonesRemapGUID; // Input parameter to fetch correct skinning stream.
+		uint32        bonesRemapGUID               = 0u; // Input parameter to fetch correct skinning stream.
 
-		int           primitiveType; //!< \see eRenderPrimitiveType
-		InputLayoutHandle eVertFormat;
+		int           primitiveType                = 0; //!< \see eRenderPrimitiveType
+		InputLayoutHandle eVertFormat              = EDefaultInputLayouts::Empty;
 
-		int32         nFirstIndex;
-		int32         nNumIndices;
-		uint32        nFirstVertex;
-		uint32        nNumVertices;
+		int32         nFirstIndex                  = 0;
+		int32         nNumIndices                  = 0;
+		uint32        nFirstVertex                 = 0u;
+		uint32        nNumVertices                 = 0u;
 
-		uint32        nNumVertexStreams;
+		uint32        nNumVertexStreams            = 0u;
 
 		SStreamInfo   indexStream;
 		SStreamInfo   vertexStreams[VSF_NUM]; // contains only nNumVertexStreams elements
 
-		void*         pTessellationAdjacencyBuffer;
-		void*         pSkinningExtraBonesBuffer;
-		uint32        nTessellationPatchIDOffset;
+		void*         pTessellationAdjacencyBuffer = nullptr;
+		void*         pSkinningExtraBonesBuffer    = nullptr;
+		uint32        nTessellationPatchIDOffset   = 0u;
 
 		inline uint32 CalcStreamMask()
 		{

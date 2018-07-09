@@ -653,6 +653,7 @@ void CREWaterVolume::UpdateVertex(watervolume::SCompiledWaterVolume& compiledObj
 		geomInfo.nFirstVertex = 0;
 		geomInfo.nNumVertices = vertexNum;
 		geomInfo.nNumVertexStreams = 1;
+		geomInfo.indexStream.hStream = watervolume::invalidBufferHandle;
 		geomInfo.vertexStreams[0].hStream = m_vertexBuffer.handle;
 		geomInfo.vertexStreams[0].nStride = vertexBufferStride;
 		geomInfo.vertexStreams[0].nSlot = 0;
@@ -661,7 +662,7 @@ void CREWaterVolume::UpdateVertex(watervolume::SCompiledWaterVolume& compiledObj
 
 	// Fill stream pointers.
 	compiledObj.m_indexStreamSet = nullptr;
-	if (geomInfo.indexStream.hStream != ~0)
+	if (geomInfo.indexStream.hStream != watervolume::invalidBufferHandle)
 		compiledObj.m_indexStreamSet = GetDeviceObjectFactory().CreateIndexStreamSet(&geomInfo.indexStream);
 
 	compiledObj.m_vertexStreamSet = GetDeviceObjectFactory().CreateVertexStreamSet(geomInfo.nNumVertexStreams, &geomInfo.vertexStreams[0]);
