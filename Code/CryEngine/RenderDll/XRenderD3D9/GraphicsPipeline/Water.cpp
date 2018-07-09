@@ -1009,7 +1009,7 @@ bool CWaterStage::SetAndBuildPerPassResources(bool bOnInit, EPass passId)
 		resources.SetTexture(ePerPassTexture_Jitter, m_pJitterTex, EDefaultResourceViews::Default, EShaderStage_Pixel);
 
 		resources.SetTexture(ePerPassTexture_WaterRipple, pRippleStage->GetWaterRippleTex(), EDefaultResourceViews::Default, EShaderStage_Vertex | EShaderStage_Pixel | EShaderStage_Domain);
-		resources.SetTexture(ePerPassTexture_WaterNormal, pWaterNormalTex, EDefaultResourceViews::Default, EShaderStage_Pixel | EShaderStage_Domain);
+		resources.SetTexture(ePerPassTexture_WaterNormal, pWaterNormalTex, EDefaultResourceViews::Default, EShaderStage_Vertex | EShaderStage_Pixel | EShaderStage_Domain);
 
 		if (passId == ePass_FogVolume)
 		{
