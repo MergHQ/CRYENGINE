@@ -1951,10 +1951,15 @@ void CRenderView::CompileModifiedRenderObjects()
 		{
 			CryInterlockedExchangeOr((volatile LONG*)&pRenderObject->m_compiledReadyMask, passMask);
 		}
-		else if(IsShadowGenView())
+		else
 		{
-			// NOTE: this can race with the the main thread but the worst outcome will be that the object is rendered multiple times into the shadow cache
-			ShadowMapFrustum::ForceMarkNodeAsUncached(pRenderObject->m_pRenderNode);
+			CryInterlockedExchangeAnd((volatile LONG*)&pRenderObject->m_passReadyMask, ~passMask); // reset passReadyMask if compilation failed
+
+			if (IsShadowGenView())
+			{
+				// NOTE: this can race with the the main thread but the worst outcome will be that the object is rendered multiple times into the shadow cache
+				ShadowMapFrustum::ForceMarkNodeAsUncached(pRenderObject->m_pRenderNode);
+			}
 		}
 
 		pRenderObject->m_lastCompiledFrame = nFrameId;

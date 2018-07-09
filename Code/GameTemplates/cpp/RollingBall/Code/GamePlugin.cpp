@@ -89,7 +89,6 @@ bool CGamePlugin::OnClientConnectionReceived(int channelId, bool bIsReset)
 	spawnParams.pClass = gEnv->pEntitySystem->GetClassRegistry()->GetDefaultClass();
 	string player_name = string().Format("Player%" PRISIZE_T, m_players.size());
 	spawnParams.sName = player_name;
-	spawnParams.nFlags |= ENTITY_FLAG_NEVER_NETWORK_STATIC;
 	spawnParams.vPosition = CSpawnPointComponent::GetFirstSpawnPointPos();
 
 	// Set local player details

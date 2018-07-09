@@ -198,6 +198,11 @@ void CObject::ProcessSignal(const SObjectSignal& signal)
 	{
 		m_bQueueSignals = true;
 
+		for (IObjectSignalListener* pListener : m_signalListener)
+		{
+			pListener->ProcessSignal(signal);
+		}
+
 		ExecuteSignalReceivers(signal);
 
 		const uint32 stateMachineCount = m_stateMachines.size();
@@ -304,6 +309,19 @@ void CObject::Dump(IObjectDump& dump, const ObjectDumpFlags& flags) const
 			dump(dumpTimer);
 		}
 	}
+}
+
+void CObject::AddSignalListener(IObjectSignalListener& signalListener)
+{
+	if (!stl::find(m_signalListener, &signalListener))
+	{
+		m_signalListener.push_back(&signalListener);
+	}
+}
+
+void CObject::RemoveSignalListener(IObjectSignalListener& signalListener)
+{
+	stl::find_and_erase(m_signalListener, &signalListener);
 }
 
 CScratchpad& CObject::GetScratchpad()

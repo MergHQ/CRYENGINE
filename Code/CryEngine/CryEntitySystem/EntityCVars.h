@@ -31,6 +31,8 @@ struct CVar
 	static ICVar*      pUpdateEntities;
 	static ICVar*      pEntityBBoxes;
 
+	static ICVar*      pFlowgraphComponents;
+
 	static EEntityDebugDrawType es_EntityDebugDraw;
 
 	static int         es_DebugFindEntity;

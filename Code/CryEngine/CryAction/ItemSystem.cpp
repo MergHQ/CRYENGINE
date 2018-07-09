@@ -668,7 +668,7 @@ EntityId CItemSystem::GiveItem(IActor* pActor, const char* item, bool sound, boo
 	SEntitySpawnParams params;
 	params.sName = itemName;
 	params.pClass = m_pEntitySystem->GetClassRegistry()->FindClass(item);
-	params.nFlags |= (ENTITY_FLAG_NO_PROXIMITY | ENTITY_FLAG_NEVER_NETWORK_STATIC | entityFlags);
+	params.nFlags |= (ENTITY_FLAG_NO_PROXIMITY | entityFlags);
 	if (!params.pClass)
 	{
 		GameWarning("Trying to spawn item of class '%s' which is unknown!", item);

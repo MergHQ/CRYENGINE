@@ -62,7 +62,7 @@ void CGameVolumesManager::Load(const char* fileName)
 		file.ReadType(&nFileVersion);
 
 		// Verify version...
-		if ((nFileVersion >= 1) && (nFileVersion <= GAME_VOLUMES_FILE_VERSION))
+		if (nFileVersion == GAME_VOLUMES_FILE_VERSION)
 		{
 			const uint32 maxVertices = 512;
 			Vec3 readVertexBuffer[maxVertices];
@@ -78,11 +78,12 @@ void CGameVolumesManager::Load(const char* fileName)
 				EntityVolume& volumeInfo = m_volumesData[i];
 
 				uint32 nVertexCount = 0;
-				uint32 nEntityId = 0;
 				f32 fHeight = 0;
 				bool bClosed = false;
 
-				file.ReadType(&nEntityId);
+				file.ReadType(&volumeInfo.entityGUID.hipart);
+				file.ReadType(&volumeInfo.entityGUID.lopart);
+
 				file.ReadType(&fHeight);
 				if (nFileVersion > 1)
 				{
@@ -90,7 +91,6 @@ void CGameVolumesManager::Load(const char* fileName)
 				}
 				file.ReadType(&nVertexCount);
 
-				volumeInfo.entityId = (EntityId)nEntityId;
 				volumeInfo.height = fHeight;
 				volumeInfo.closed = bClosed;
 				volumeInfo.vertices.resize(nVertexCount);
@@ -112,7 +112,6 @@ void CGameVolumesManager::Load(const char* fileName)
 
 		file.Close();
 	}
-	RebuildIndex();
 }
 
 void CGameVolumesManager::Reset()
@@ -123,6 +122,11 @@ void CGameVolumesManager::Reset()
 
 void CGameVolumesManager::SetVolume(EntityId entityId, const IGameVolumes::VolumeInfo& volumeInfo)
 {
+	IEntity* pEntity = gEnv->pEntitySystem->GetEntity(entityId);
+	CRY_ASSERT_MESSAGE(pEntity != nullptr, "Invalid entity for game volume passed in!");
+	if (pEntity == nullptr)
+		return;
+
 	TEntityToIndexMap::iterator indexIt = m_entityToIndexMap.find(entityId);
 	if (indexIt == m_entityToIndexMap.end())
 	{
@@ -132,7 +136,7 @@ void CGameVolumesManager::SetVolume(EntityId entityId, const IGameVolumes::Volum
 	}
 
 	EntityVolume& entityVolume = m_volumesData[indexIt->second];
-	entityVolume.entityId = entityId;
+	entityVolume.entityGUID = pEntity->GetGuid();
 	entityVolume.height = volumeInfo.volumeHeight;
 	entityVolume.closed = volumeInfo.closed;
 	entityVolume.vertices.resize(volumeInfo.verticesCount);
@@ -144,8 +148,14 @@ void CGameVolumesManager::SetVolume(EntityId entityId, const IGameVolumes::Volum
 
 void CGameVolumesManager::DestroyVolume(EntityId entityId)
 {
-	stl::find_and_erase(m_volumesData, entityId);
-	RebuildIndex(); // That's a bit costly, but it only happens in editor when a designer actually deletes a volume
+	IEntity* pEntity = gEnv->pEntitySystem->GetEntity(entityId);
+	CRY_ASSERT_MESSAGE(pEntity != nullptr, "Attempting to destroy game volume for invalid entity!");
+
+	if (pEntity != nullptr)
+	{
+		stl::find_and_erase(m_volumesData, pEntity->GetGuid());
+		ResolveEntityIdsFromGUIDs(); // That's a bit costly, but it only happens in editor when a designer actually deletes a volume
+	}
 }
 
 void CGameVolumesManager::RegisterEntityClass(const char* className)
@@ -195,11 +205,11 @@ void CGameVolumesManager::Export(const char* fileName) const
 			CRY_ASSERT(volumeInfo.vertices.size() < maxVertices);
 
 			uint32 nVertexCount = min((uint32)volumeInfo.vertices.size(), maxVertices);
-			uint32 nEntityId = volumeInfo.entityId;
 			f32 fHeight = volumeInfo.height;
 			bool bClosed = volumeInfo.closed;
 
-			file.Write(&nEntityId, sizeof(nEntityId));
+			file.Write(&volumeInfo.entityGUID.hipart, sizeof(volumeInfo.entityGUID.hipart));
+			file.Write(&volumeInfo.entityGUID.lopart, sizeof(volumeInfo.entityGUID.lopart));
 			file.Write(&fHeight, sizeof(fHeight));
 			if (nFileVersion > 1)
 			{
@@ -221,14 +231,15 @@ void CGameVolumesManager::Export(const char* fileName) const
 	}
 }
 
-void CGameVolumesManager::RebuildIndex()
+void CGameVolumesManager::ResolveEntityIdsFromGUIDs()
 {
 	m_entityToIndexMap.clear();
 	m_entityToIndexMap.reserve(m_volumesData.size());
 	const uint32 count = static_cast<uint32>(m_volumesData.size());
 	for (uint32 index = 0; index < count; ++index)
 	{
-		const EntityId entityId = m_volumesData[index].entityId;
+		const EntityId entityId = gEnv->pEntitySystem->FindEntityByGuid(m_volumesData[index].entityGUID);
+		CRY_ASSERT(entityId != INVALID_ENTITYID);
 		m_entityToIndexMap[entityId] = index;
 	}
 }

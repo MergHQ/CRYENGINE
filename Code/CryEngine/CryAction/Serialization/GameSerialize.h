@@ -144,9 +144,8 @@ private:
 	std::map<string, SaveGameFactory> m_saveGameFactories;
 	std::map<string, LoadGameFactory> m_loadGameFactories;
 
-	typedef std::vector<EntityId> TEntityVector;
 	typedef std::set<EntityId>    TEntitySet;
-	TEntityVector m_serializeEntities;
+	std::vector<CryGUID> m_serializedEntityGUIDs;
 	TEntitySet    m_dynamicEntities;
 };
 

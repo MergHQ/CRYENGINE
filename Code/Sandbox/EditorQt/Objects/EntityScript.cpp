@@ -1273,8 +1273,12 @@ void CEntityScriptRegistry::OnEntityClassRegistryEvent(EEntityClassRegistryEvent
 					m_scriptChanged(pEntityScript.get());
 				}
 			}
-
-			m_needsScriptReload = true;
+			
+			// We only need to reload entities in case a script class was changed, since schematyc handles reloading themself.
+			if (pEntityClass->GetScriptFile() != nullptr && pEntityClass->GetScriptFile()[0] != '\0')
+			{
+				m_needsScriptReload = true;
+			}
 		}
 		break;
 	case ECRE_CLASS_UNREGISTERED:

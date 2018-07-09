@@ -186,8 +186,6 @@ IActor* CActorSystem::CreateActor(uint16 channelId, const char* name, const char
 	params.nFlags = ENTITY_FLAG_TRIGGER_AREAS;
 	params.nFlagsExtended = ENTITY_FLAG_EXTENDED_NEEDS_MOVEINSIDE; // ensures the audio triggered on the actor entity will get proper environment values
 
-	if (channelId)
-		params.nFlags |= ENTITY_FLAG_NEVER_NETWORK_STATIC;
 	params.pClass = pEntityClass;
 
 	IEntity* pEntity = m_pEntitySystem->SpawnEntity(params);

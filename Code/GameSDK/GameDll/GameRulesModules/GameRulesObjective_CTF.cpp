@@ -955,7 +955,6 @@ void CGameRulesObjective_CTF::Server_ResetAll()
 						spawnParams.sName = flagName.c_str();
 						spawnParams.vPosition = pEntity->GetWorldPos();
 						Ang3 rotation = pEntity->GetWorldAngles();
-						spawnParams.nFlags = ENTITY_FLAG_NEVER_NETWORK_STATIC;
 
 						IEntity *pFlagEntity = gEnv->pEntitySystem->SpawnEntity(spawnParams, true);
 						FATAL_ASSERT(pFlagEntity);
@@ -979,7 +978,7 @@ void CGameRulesObjective_CTF::Server_ResetAll()
 								SEntitySpawnParams weaponSpawnParams;
 								weaponSpawnParams.pClass = m_pFallbackWeaponClass;
 								weaponSpawnParams.sName = weaponName.c_str();
-								weaponSpawnParams.nFlags = ENTITY_FLAG_NO_PROXIMITY | ENTITY_FLAG_NEVER_NETWORK_STATIC;
+								weaponSpawnParams.nFlags = ENTITY_FLAG_NO_PROXIMITY;
 								IEntity *pWeapon = gEnv->pEntitySystem->SpawnEntity(weaponSpawnParams, true);
 								FATAL_ASSERT(pWeapon);
 								if (pWeapon)

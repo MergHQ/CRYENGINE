@@ -1185,7 +1185,7 @@ void CTurret::InitWeapons()
 
 	SEntitySpawnParams entitySpawnParams;
 	entitySpawnParams.sName = itemName;
-	entitySpawnParams.nFlags |= ( ENTITY_FLAG_NO_PROXIMITY | ENTITY_FLAG_NEVER_NETWORK_STATIC | ENTITY_FLAG_NO_SAVE );
+	entitySpawnParams.nFlags |= ENTITY_FLAG_NO_PROXIMITY | ENTITY_FLAG_NO_SAVE;
 
 	IEntitySystem* const pEntitySystem = GetEntitySystem();
 	assert( pEntitySystem != NULL );

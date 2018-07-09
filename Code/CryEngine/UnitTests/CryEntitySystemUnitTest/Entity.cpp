@@ -14,6 +14,7 @@
 #endif
 #include "EntityClassRegistry.h"
 #include "ScriptBind_Entity.h"
+#include "EntityIt.h"
 #include "CryGame/IGameFramework.h"
 #include "CryAnimation/ICryMannequin.h"
 #include <CryEntitySystem/IEntityComponent.h>
@@ -836,6 +837,127 @@ TEST(EntityId, RecoverElements)
 
 	REQUIRE(handle.GetSalt() == salt);
 	REQUIRE(handle.GetIndex() == index);
+}
+
+TEST(SSaltBufferArray, RecoverUsedIndices)
+{
+	SSaltBufferArray saltBuffer;
+
+	// Reserve entity id 1 and 2, ensure that GetMaxUsedEntityIndex is adjusted
+	saltBuffer.InsertKnownHandle(1);
+	REQUIRE(saltBuffer.GetMaxUsedEntityIndex() == 1);
+	saltBuffer.InsertKnownHandle(2);
+	REQUIRE(saltBuffer.GetMaxUsedEntityIndex() == 2);
+
+	// Request the next available entity id
+	const SEntityIdentifier firstIdentifier = saltBuffer.Insert();
+	REQUIRE(firstIdentifier.GetIndex() == 3);
+	// Use count must be 0
+	REQUIRE(firstIdentifier.GetSalt() == 0);
+	REQUIRE(saltBuffer.GetMaxUsedEntityIndex() == 3);
+
+	// Request the next available entity id again
+	const SEntityIdentifier secondIdentifier = saltBuffer.Insert();
+	REQUIRE(secondIdentifier.GetIndex() == 4);
+	REQUIRE(secondIdentifier.GetSalt() == 0);
+	REQUIRE(saltBuffer.GetMaxUsedEntityIndex() == 4);
+
+	// Remove the first id we requested, first checking if validity works
+	REQUIRE(saltBuffer.IsValid(firstIdentifier));
+	saltBuffer.Remove(firstIdentifier);
+	REQUIRE(!saltBuffer.IsValid(firstIdentifier));
+
+	// Now request the next available entity id, should be same as what was removed
+	const SEntityIdentifier thirdIdentifier = saltBuffer.Insert();
+	REQUIRE(thirdIdentifier.GetIndex() == firstIdentifier.GetIndex());
+	REQUIRE(thirdIdentifier.GetSalt() == firstIdentifier.GetSalt() + 1);
+
+	// Request a final identifier, ensuring that we resume from where we were before removal
+	const SEntityIdentifier fourthIdentifier = saltBuffer.Insert();
+	REQUIRE(fourthIdentifier.GetIndex() == 5);
+	REQUIRE(fourthIdentifier.GetSalt() == 0);
+	REQUIRE(saltBuffer.GetMaxUsedEntityIndex() == 5);
+}
+
+TEST(SSaltBufferArray, UseAllIndices)
+{
+	CEntitySystem::SEntityArray entityArray;
+	REQUIRE(!entityArray.IsFull());
+	REQUIRE(entityArray[0] == nullptr);
+
+	for (EntityIndex i = 0; i < MaximumEntityCount; ++i)
+	{
+		const SEntityIdentifier identifier = entityArray.Insert();
+		REQUIRE(entityArray[identifier.GetIndex()] == nullptr);
+		REQUIRE(identifier.GetIndex() == (i + 1));
+		REQUIRE(identifier.GetSalt() == 0);
+		REQUIRE(entityArray.GetMaxUsedEntityIndex() == (i + 1));
+
+		entityArray[identifier.GetIndex()] = reinterpret_cast<CEntity*>(identifier.GetIndex());
+	}
+
+	REQUIRE(entityArray[0] == nullptr);
+	REQUIRE(entityArray.IsFull());
+}
+
+TEST(CEntityItMap, IterateEmpty)
+{
+	CEntitySystem::SEntityArray entityArray;
+	REQUIRE(entityArray.GetMaxUsedEntityIndex() == 0);
+	REQUIRE(entityArray.begin() == entityArray.end());
+
+	_smart_ptr<CEntityItMap> pIterator = new CEntityItMap(entityArray);
+	REQUIRE(pIterator->IsEnd());
+}
+
+TEST(CEntityItMap, SpawnAndIterate)
+{
+	CEntitySystem::SEntityArray entityArray;
+
+	const uint8 numTestedEntities = 3;
+	for (uint8 i = 0; i < numTestedEntities; ++i)
+	{
+		const SEntityIdentifier entityId = entityArray.Insert();
+		entityArray[entityId.GetIndex()] = reinterpret_cast<CEntity*>(entityId.GetId());
+	}
+
+	_smart_ptr<CEntityItMap> pIterator = new CEntityItMap(entityArray);
+
+	REQUIRE(!pIterator->IsEnd());
+
+	for (uint8 i = 0; i < numTestedEntities; ++i)
+	{
+		REQUIRE(pIterator->Next() == entityArray[i + 1]);
+	}
+
+	REQUIRE(pIterator->IsEnd());
+	REQUIRE(pIterator->GetReferenceCount() == 1);
+}
+
+TEST(CEntityItMap, SkipNullElements)
+{
+	CEntitySystem::SEntityArray entityArray;
+
+	const uint8 numTestedEntities = 3;
+	for (uint8 i = 0; i < numTestedEntities; ++i)
+	{
+		const SEntityIdentifier entityId = entityArray.Insert();
+		entityArray[entityId.GetIndex()] = reinterpret_cast<CEntity*>(entityId.GetId());
+	}
+
+	// Remove the entity in the middle
+	entityArray.Remove(SEntityIdentifier(2));
+	entityArray[2] = nullptr;
+
+	_smart_ptr<CEntityItMap> pIterator = new CEntityItMap(entityArray);
+
+	REQUIRE(!pIterator->IsEnd());
+	REQUIRE(pIterator->Next() == entityArray[1]);
+	// Ensure that we skip 2, since it is now null
+	REQUIRE(pIterator->Next() == entityArray[3]);
+
+	REQUIRE(pIterator->IsEnd());
+	REQUIRE(pIterator->GetReferenceCount() == 1);
 }
 
 #pragma warning(pop)

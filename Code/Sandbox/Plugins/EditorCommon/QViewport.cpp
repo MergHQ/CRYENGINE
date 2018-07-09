@@ -872,8 +872,6 @@ void QViewport::Render(SDisplayContext& context)
 	rc.renderParams = &rp;
 	rc.pAuxGeom = aux;
 
-	for (size_t i = 0; i < m_consumers.size(); ++i)
-		m_consumers[i]->OnViewportRender(rc);
 	SignalRender(rc);
 
 	m_gizmoManager.Display(context);
@@ -900,6 +898,9 @@ void QViewport::Render(SDisplayContext& context)
 		DrawOrigin(50, m_height - 50, 20.0f, m_camera->GetMatrix());
 		aux->SetOrthographicProjection(false);
 	}
+
+	for (size_t i = 0; i < m_consumers.size(); ++i)
+		m_consumers[i]->OnViewportRender(rc);
 
 	aux->Submit();
 	aux->SetRenderFlags(oldFlags);

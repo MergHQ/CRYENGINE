@@ -786,7 +786,7 @@ bool CMannequinDialog::InitialiseToPreviewFile(const char* previewFile)
 				params.sName = name;
 				params.vPosition.Set(0.0f, 0.0f, 0.0f);
 				params.qRotation.SetIdentity();
-				params.nFlags |= (ENTITY_FLAG_NEVER_NETWORK_STATIC | ENTITY_FLAG_CLIENT_ONLY);
+				params.nFlags |= ENTITY_FLAG_CLIENT_ONLY;
 
 				context.viewData[em].entity = gEnv->pEntitySystem->SpawnEntity(params, true);
 				assert(context.viewData[em].entity);

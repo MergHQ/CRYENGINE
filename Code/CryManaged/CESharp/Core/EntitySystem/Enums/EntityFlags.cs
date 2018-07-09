@@ -103,12 +103,7 @@ namespace CryEngine
 		/// Whether update of game logic should be skipped when the <see cref="Entity"/> is hidden. This does *not* disable update of components unless they specifically request it.
 		/// </summary>
 		UpdateHidden = Common.EEntityFlags.ENTITY_FLAG_UPDATE_HIDDEN,
-
-		/// <summary>
-		/// The <see cref="Entity"/> should never be considered a static entity by the network system.
-		/// </summary>
-		NeverNetworkStatic = Common.EEntityFlags.ENTITY_FLAG_NEVER_NETWORK_STATIC,
-
+        
 		/// <summary>
 		/// Used by the Editor only, don't set.
 		/// </summary>

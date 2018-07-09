@@ -16,6 +16,7 @@
 #include <CrySystem/ITimer.h>
 #include "VoiceContext.h"
 #include <CryNetwork/INetworkService.h>
+#include <CryEntitySystem/IEntitySystem.h>
 #include "Protocol/NullSendable.h"
 
 #include "CET_Server.h"
@@ -24,6 +25,7 @@
 
 #include "BreakagePlayback.h"
 #include "PerformBreakage.h"
+
 
 class CServerContextView::CBindObjectMessage : public CUpdateMessage
 {
@@ -128,8 +130,10 @@ private:
 					}
 					else if (obj.main->spawnType == eST_Static)
 					{
-						EntityId nUserID = obj.main->userID;
-						pSender->ser.Value("userID", nUserID);
+#ifndef PURE_CLIENT
+						IEntitySystem::StaticEntityNetworkIdentifier id = gEnv->pEntitySystem->GetStaticEntityNetworkId(obj.main->userID);
+						pSender->ser.Value("userID", id);
+#endif
 					}
 					NetworkAspectType nAspectsEnabled = obj.xtra->nAspectsEnabled;
 					NetworkAspectType delegatableMask = obj.xtra->delegatableMask;

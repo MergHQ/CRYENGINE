@@ -279,7 +279,6 @@ IEntity* CVehicleSeatActionWeapons::SpawnWeapon(SVehicleWeapon& weapon, IEntity*
 
 		spawnParams.sName = pWeaponName;
 		spawnParams.vPosition.zero();
-		spawnParams.nFlags = ENTITY_FLAG_NEVER_NETWORK_STATIC;
 
 		if (bClientOnly)
 		{

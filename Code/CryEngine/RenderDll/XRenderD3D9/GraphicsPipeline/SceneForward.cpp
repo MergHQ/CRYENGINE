@@ -77,7 +77,7 @@ void CSceneForwardStage::Update()
 
 		// Overlay forward scene pass
 		m_forwardEyeOverlayPass.SetLabel("FORWARD_EYE_AO_OVERLAY");
-		m_forwardEyeOverlayPass.SetupPassContext(m_stageID, ePass_Forward, TTYPE_GENERAL, FB_GENERAL, EFSLIST_EYE_OVERLAY, 0);
+		m_forwardEyeOverlayPass.SetupPassContext(m_stageID, ePass_Forward, TTYPE_GENERAL, FB_GENERAL, EFSLIST_EYE_OVERLAY);
 		m_forwardEyeOverlayPass.SetPassResources(m_pEyeOverlayResourceLayout, m_pEyeOverlayPassResourceSet);
 		m_forwardEyeOverlayPass.SetRenderTargets(
 			// Depth
@@ -98,7 +98,7 @@ void CSceneForwardStage::Update()
 
 		// Transparent forward scene passes
 		m_forwardTransparentBWPass.SetLabel("FORWARD_TRANSPARENT_BW");
-		m_forwardTransparentBWPass.SetupPassContext(m_stageID, ePass_Forward, TTYPE_GENERAL, FB_GENERAL, EFSLIST_TRANSP_BW, 0);
+		m_forwardTransparentBWPass.SetupPassContext(m_stageID, ePass_Forward, TTYPE_GENERAL, FB_GENERAL, EFSLIST_TRANSP_BW);
 		m_forwardTransparentBWPass.SetPassResources(m_pTransparentResourceLayout, m_pTransparentPassResourceSet);
 		m_forwardTransparentBWPass.SetRenderTargets(
 			// Depth
@@ -108,7 +108,7 @@ void CSceneForwardStage::Update()
 		);
 
 		m_forwardTransparentAWPass.SetLabel("FORWARD_TRANSPARENT_AW");
-		m_forwardTransparentAWPass.SetupPassContext(m_stageID, ePass_Forward, TTYPE_GENERAL, FB_GENERAL, EFSLIST_TRANSP_AW, FB_BELOW_WATER);
+		m_forwardTransparentAWPass.SetupPassContext(m_stageID, ePass_Forward, TTYPE_GENERAL, FB_GENERAL, EFSLIST_TRANSP_AW);
 		m_forwardTransparentAWPass.SetPassResources(m_pTransparentResourceLayout, m_pTransparentPassResourceSet);
 		m_forwardTransparentAWPass.SetRenderTargets(
 			// Depth
@@ -118,7 +118,7 @@ void CSceneForwardStage::Update()
 		);
 
 		m_forwardTransparentLoResPass.SetLabel("FORWARD_TRANSPARENT_SUBRES");
-		m_forwardTransparentLoResPass.SetupPassContext(m_stageID, ePass_Forward, TTYPE_GENERAL, FB_GENERAL, EFSLIST_HALFRES_PARTICLES, 0);
+		m_forwardTransparentLoResPass.SetupPassContext(m_stageID, ePass_Forward, TTYPE_GENERAL, FB_GENERAL, EFSLIST_HALFRES_PARTICLES);
 		m_forwardTransparentLoResPass.SetPassResources(m_pTransparentResourceLayout, m_pTransparentPassResourceSet);
 		m_forwardTransparentLoResPass.SetRenderTargets(
 			// Depth
@@ -128,7 +128,7 @@ void CSceneForwardStage::Update()
 		);
 
 		m_forwardHDRPass.SetLabel("FORWARD_AFTER_POSTFX_HDR");
-		m_forwardHDRPass.SetupPassContext(m_stageID, ePass_Forward, TTYPE_GENERAL, FB_GENERAL, EFSLIST_AFTER_HDRPOSTPROCESS, 0);
+		m_forwardHDRPass.SetupPassContext(m_stageID, ePass_Forward, TTYPE_GENERAL, FB_GENERAL, EFSLIST_AFTER_HDRPOSTPROCESS);
 		m_forwardHDRPass.SetPassResources(m_pTransparentResourceLayout, m_pTransparentPassResourceSet);
 		m_forwardHDRPass.SetRenderTargets(
 			// Depth
@@ -138,7 +138,7 @@ void CSceneForwardStage::Update()
 		);
 
 		m_forwardLDRPass.SetLabel("FORWARD_AFTER_POSTFX_LDR");
-		m_forwardLDRPass.SetupPassContext(m_stageID, ePass_Forward, TTYPE_GENERAL, FB_GENERAL, EFSLIST_AFTER_POSTPROCESS, 0);
+		m_forwardLDRPass.SetupPassContext(m_stageID, ePass_Forward, TTYPE_GENERAL, FB_GENERAL, EFSLIST_AFTER_POSTPROCESS);
 		m_forwardLDRPass.SetPassResources(m_pTransparentResourceLayout, m_pTransparentPassResourceSet);
 		m_forwardLDRPass.SetRenderTargets(
 			// Depth
@@ -176,7 +176,7 @@ void CSceneForwardStage::Update()
 		);
 
 		m_forwardTransparentRecursivePass.SetLabel("FORWARD_TRANSPARENT_AW_RECURSIVE");
-		m_forwardTransparentRecursivePass.SetupPassContext(m_stageID, ePass_ForwardRecursive, TTYPE_GENERAL, FB_GENERAL, EFSLIST_TRANSP_AW, FB_BELOW_WATER);
+		m_forwardTransparentRecursivePass.SetupPassContext(m_stageID, ePass_ForwardRecursive, TTYPE_GENERAL, FB_GENERAL, EFSLIST_TRANSP_AW);
 		m_forwardTransparentRecursivePass.SetPassResources(m_pTransparentResourceLayout, m_pTransparentPassResourceSet);
 		m_forwardTransparentRecursivePass.SetRenderTargets(
 			// Depth
@@ -190,7 +190,7 @@ void CSceneForwardStage::Update()
 bool CSceneForwardStage::CreatePipelineState(const SGraphicsPipelineStateDescription& desc,
                                              CDeviceGraphicsPSOPtr& outPSO,
                                              EPass passId,
-                                             std::function<void(CDeviceGraphicsPSODesc& psoDesc, const SGraphicsPipelineStateDescription& desc)> customState)
+                                             const std::function<void(CDeviceGraphicsPSODesc& psoDesc, const SGraphicsPipelineStateDescription& desc)> &customState)
 {
 	CD3D9Renderer* pRenderer = gcpRendD3D;
 

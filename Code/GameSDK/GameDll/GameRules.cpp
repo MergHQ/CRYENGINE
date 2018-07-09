@@ -3358,7 +3358,7 @@ void CGameRules::RevivePlayerMP(IActor *pActor, IEntity *pSpawnPoint, int teamId
 		SEntitySpawnParams params;
 		params.sName = g_pGameCVars->g_forceHeavyWeapon->GetString();
 		params.pClass = gEnv->pEntitySystem->GetClassRegistry()->FindClass(params.sName);
-		params.nFlags |= (ENTITY_FLAG_NO_PROXIMITY|ENTITY_FLAG_NEVER_NETWORK_STATIC);
+		params.nFlags |= ENTITY_FLAG_NO_PROXIMITY;
 
 		if(IEntity *pHeavyWeaponEntity = gEnv->pEntitySystem->SpawnEntity(params))
 		{
@@ -6836,7 +6836,7 @@ void CGameRules::DoEntityRespawn(EntityId id)
 		params.qRotation=pData->rotation;
 		params.vPosition=pData->position;
 		params.vScale=pData->scale;
-		params.nFlags=pData->flags | ENTITY_FLAG_NEVER_NETWORK_STATIC;
+		params.nFlags=pData->flags;
 
 		string name;
 #ifdef _DEBUG
@@ -7869,7 +7869,7 @@ void CGameRules::HostMigrationFindDynamicEntities(TEntityIdVec &results)
 	
 	while (IEntity *pEntity = pEntityIt->Next())
 	{
-		if (pEntity->GetFlags() & ENTITY_FLAG_NEVER_NETWORK_STATIC)
+		if (!pEntity->IsLoadedFromLevelFile())
 		{
 			results.push_back(pEntity->GetId());
 			CryLog("    found dynamic entity %i '%s'", pEntity->GetId(), pEntity->GetName());
