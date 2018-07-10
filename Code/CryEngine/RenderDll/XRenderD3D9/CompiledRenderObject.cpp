@@ -705,7 +705,7 @@ void CCompiledRenderObject::DrawToCommandList(const SGraphicsPipelinePassContext
                                               uint32 dynamicInstancingCount) const
 {
 	//	Alternative: "perDrawInstancingSR != gcpRendD3D->m_DevBufMan.GetNullBufferStructured()->GetDevBuffer();"
-	const bool bEnabledInstancing = dynamicInstancingCount > 1;
+	const bool bEnabledInstancing = m_perDrawInstances > 1;
 
 	if (m_bCustomRenderElement)
 	{
@@ -784,7 +784,7 @@ void CCompiledRenderObject::DrawToCommandList(const SGraphicsPipelinePassContext
 
 		if (CRenderer::CV_r_NoDraw != 3)
 		{
-			if (!bEnabledInstancing && m_pInstancingConstBuffer)
+			if (bEnabledInstancing && m_pInstancingConstBuffer)
 			{
 				perDrawCB = m_pInstancingConstBuffer;
 				dynamicInstancingCount = m_perDrawInstances;
