@@ -2736,7 +2736,7 @@ int CTriMesh::Intersect(IGeometry *pCollider, geom_world_data *pdata1,geom_world
 			ipt[1].set(float2int(pt[1].x*m_hashgrid[iPlane].stepr.x-0.5f), float2int(pt[1].y*m_hashgrid[iPlane].stepr.y-0.5f));
 			irect[0].set(max(0,min(ipt[0].x,ipt[1].x)), max(0,min(ipt[0].y,ipt[1].y)));
 			irect[1].set(min(m_hashgrid[iPlane].size.x-1,max(ipt[0].x,ipt[1].x)), min(m_hashgrid[iPlane].size.y-1,max(ipt[0].y,ipt[1].y)));
-			if (bNoBackoff-1 & (irect[0].x+1-irect[1].x>>31 | irect[0].x+1-irect[1].x>>31)) // can be ineffective for long rays
+			if (bNoBackoff-1 & (irect[0].x+1-irect[1].x>>31 | irect[0].y+1-irect[1].y>>31)) // can be ineffective for long rays
 				goto skiphashes;
 
 			nTris[iListPlane = inc_mod3[iListRes]] = 0; iListTmp = inc_mod3[iListPlane];
