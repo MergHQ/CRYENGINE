@@ -2048,15 +2048,15 @@ void CSystem::InitLog(const SSystemInitParams& startupParams)
 
 		string sLogFileName = startupParams.sLogFileName != nullptr ? startupParams.sLogFileName : DEFAULT_LOG_FILENAME;
 
-#if CRY_PLATFORM_WINDOWS
-		if (sLogFileName.size() > 0)
+#if CRY_PLATFORM_WINDOWS || CRY_PLATFORM_LINUX
+		if (!sLogFileName.empty())
 		{
-			int instance = GetApplicationInstance();
-			if (instance != 0)
+			const int instance = GetApplicationInstance();
+			if (instance > 0)
 			{
 				string logFileExtension;
-				size_t extensionIndex = sLogFileName.find_last_of('.');
 				string logFileNamePrefix = sLogFileName;
+				const size_t extensionIndex = sLogFileName.find_last_of('.');
 				if (extensionIndex != string::npos)
 				{
 					logFileExtension = sLogFileName.substr(extensionIndex, sLogFileName.length() - extensionIndex);
