@@ -38,6 +38,7 @@ public:
 	enum EPerInstanceTexture
 	{
 		ePerInstanceTexture_Foam              = 14,
+		ePerInstanceTexture_Displacement      = 15,
 		ePerInstanceTexture_RainRipple        = 16,
 
 		ePerInstanceTexture_Count

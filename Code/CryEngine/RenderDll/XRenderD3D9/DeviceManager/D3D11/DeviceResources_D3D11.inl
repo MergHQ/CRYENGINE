@@ -831,6 +831,8 @@ void CDeviceTexture::UploadFromStagingResource(const uint32 nSubRes, StagingHook
 
 	D3D11_MAPPED_SUBRESOURCE lrct;
 	HRESULT hr = gcpRendD3D->GetDeviceContext_ForMapAndUnmap().Map(pStagingResource, nSubRes, D3D11_MAP_WRITE_NO_OVERWRITE_SR, 0, &lrct);
+	if (S_OK != hr)
+		hr = gcpRendD3D->GetDeviceContext_ForMapAndUnmap().Map(pStagingResource, nSubRes, D3D11_MAP_WRITE_DISCARD_SR, 0, &lrct);
 
 	if (S_OK == hr)
 	{

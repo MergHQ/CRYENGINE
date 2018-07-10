@@ -357,7 +357,7 @@ Texture2D RainRipplesTex : register(t16) = "%ENGINE%/EngineAssets/Textures/Rain/
 // per instance textures for water ocean
 
 // eTF_A32B32G32R32F
-Texture2D WaterDisplMapSampler : register(t14) = TS_WaterOceanMap;
+Texture2D WaterDisplMapSampler : register(t15) = TS_WaterOceanMap;
 
 Texture2D oceanReflectionTex : register(t16);
 

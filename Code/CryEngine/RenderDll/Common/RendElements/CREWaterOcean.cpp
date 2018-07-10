@@ -21,7 +21,8 @@ const uint32 passIdAboveWater = CWaterStage::ePass_CausticsGen;
 // per instance texture slot for water ocean
 enum EPerInstanceTexture
 {
-	ePerInstanceTexture_OceanDisplacement = CWaterStage::ePerInstanceTexture_Foam,
+	ePerInstanceTexture_OceanFoam         = CWaterStage::ePerInstanceTexture_Foam,
+	ePerInstanceTexture_OceanDisplacement = CWaterStage::ePerInstanceTexture_Displacement,
 	ePerInstanceTexture_OceanReflection   = CWaterStage::ePerInstanceTexture_RainRipple,
 
 	ePerInstanceTexture_Count
@@ -345,7 +346,7 @@ void CREWaterOcean::FrameUpdate()
 	// Update Vertex Texture
 	if (!CTexture::IsTextureExist(CRendererResources::s_ptexWaterOcean))
 	{
-		CRendererResources::s_ptexWaterOcean->Create2DTexture(nGridSize, nGridSize, 1, FT_DONT_RELEASE | FT_NOMIPS | FT_STAGE_UPLOAD, 0, eTF_R32G32B32A32F);
+		CRendererResources::s_ptexWaterOcean->Create2DTexture(nGridSize, nGridSize, 1, FT_DONT_RELEASE | FT_NOMIPS, 0, eTF_R32G32B32A32F);
 	}
 
 	CTexture* pTexture = CRendererResources::s_ptexWaterOcean;
@@ -658,7 +659,9 @@ void CREWaterOcean::UpdatePerDrawRS(water::SCompiledWaterOcean& RESTRICT_REFEREN
 	CDeviceResourceSetDesc perInstanceResources(waterStage.GetDefaultPerInstanceResources(), nullptr, nullptr);
 
 	auto* pDisplacementTex = (oceanParam.bWaterOceanFFT) ? CRendererResources::s_ptexWaterOcean : CRendererResources::s_ptexBlack;
-	perInstanceResources.SetTexture(water::ePerInstanceTexture_OceanDisplacement, pDisplacementTex, EDefaultResourceViews::Default, EShaderStage_Pixel | EShaderStage_Vertex | EShaderStage_Domain);
+
+//	perInstanceResources.SetTexture(water::ePerInstanceTexture_OceanFoam, CWaterStage::m_pFoamTex, EDefaultResourceViews::Default, EShaderStage_Pixel);
+	perInstanceResources.SetTexture(water::ePerInstanceTexture_OceanDisplacement, pDisplacementTex, EDefaultResourceViews::Default, EShaderStage_Vertex | EShaderStage_Domain);
 
 	// get ocean reflection texture from render target.
 	auto* pReflectionTex = CRendererResources::s_ptexBlack;
