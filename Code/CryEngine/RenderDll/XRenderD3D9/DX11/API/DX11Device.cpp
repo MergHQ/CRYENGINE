@@ -119,6 +119,9 @@ HRESULT STDMETHODCALLTYPE CDevice::CreateOrReuseStagingResource(
 	else
 		return E_FAIL;
 
+	// Remove flags incompatible with staging resources
+	clearableBlob.sResourceDesc.Flags = D3D11_RESOURCE_MISC_FLAG(clearableBlob.sResourceDesc.Flags & ~D3D11_RESOURCE_MISC_RESOURCE_CLAMP);
+
 	ID3D11Resource* stagingResource = nullptr;
 	HRESULT result = CreateOrReuseCommittedResource(
 		&clearableBlob.sHeap,
