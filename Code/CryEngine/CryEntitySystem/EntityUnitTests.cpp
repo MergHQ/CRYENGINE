@@ -792,15 +792,52 @@ CRY_TEST_SUITE(EntityTestsSuit)
 		IEntity* m_pEntity = nullptr;
 	};
 
-	CRY_TEST_WITH_FIXTURE(EventPriority, CTestComponentEventPriority, editor=false, timeout = 20)
+	CRY_TEST_WITH_FIXTURE(EventPriority, CTestComponentEventPriority, editor = false, timeout = 20)
 	{
-		commands = {
+		commands =
+		{
 			CryTest::CCommandLoadLevel("woodland"),
 			CryTest::CCommandFunction(this, &CTestComponentEventPriority::Start),
 			CryTest::CCommandFunction(this, &CTestComponentEventPriority::RemoveAndReAddComponents),
 			CryTest::CCommandWait(4.f),
 			CryTest::CCommandFunction(this, &CTestComponentEventPriority::RemoveAndReAddComponents),
 			CryTest::CCommandWait(4.f),
+		};
+	}
+
+	void CheckLoadedEntities()
+	{
+		// Find the entity in the "NotLoadedInGame" layer
+		// This is exported but should not be visible by default
+		{
+			IEntity* pNotLoadedEntity = gEnv->pEntitySystem->FindEntityByName("NotLoadedEntity");
+			CRY_TEST_ASSERT(pNotLoadedEntity != nullptr && pNotLoadedEntity->IsHidden());
+		}
+
+		// Find the entity in the "LoadedInGameFromLayerActivation" layer
+		// This is not loaded by default, but should be made visible from FG thus visible
+		{
+			IEntity* pLoadedFromFGEntity = gEnv->pEntitySystem->FindEntityByName("LoadedInGameFromFG");
+			CRY_TEST_ASSERT(pLoadedFromFGEntity != nullptr && !pLoadedFromFGEntity->IsHidden());
+		}
+
+		// Finally, find the entity in the "LoadedInGame" layer
+		// This is loaded by default
+		{
+			IEntity* pLoadedFromLevelEntity = gEnv->pEntitySystem->FindEntityByName("LoadedInGameByDefault");
+			CRY_TEST_ASSERT(pLoadedFromLevelEntity != nullptr && !pLoadedFromLevelEntity->IsHidden());
+		}
+	}
+
+	CRY_TEST(EntityLayerActivation, editor = false, timeout = 20)
+	{
+		commands =
+		{
+			CryTest::CCommandLoadLevel("EntityFeatureTests"),
+			// Give time for flowgraph controlled layer activation to be invoked
+			CryTest::CCommandWait(4.f),
+			// Now check if the correct layers (and the entities inside them) were activated
+			CryTest::CCommand(CheckLoadedEntities),
 		};
 	}
 
