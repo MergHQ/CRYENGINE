@@ -279,7 +279,6 @@ struct SDeviceResourceLayoutDesc
 	void            SetConstantBuffer(uint32 bindSlot, EConstantBufferShaderSlot shaderSlot, EShaderStage shaderStages);
 	void            SetResourceSet(uint32 bindSlot, const CDeviceResourceSetDesc& resourceSet);
 
-	bool            IsValid() const;
 	UsedBindSlotSet GetRequiredResourceBindings() const;
 
 	uint64          GetHash() const;

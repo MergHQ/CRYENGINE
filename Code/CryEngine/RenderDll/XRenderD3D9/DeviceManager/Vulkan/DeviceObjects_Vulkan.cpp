@@ -52,6 +52,8 @@ CDeviceObjectFactory::CDeviceObjectFactory()
 
 	m_pVKDevice    = nullptr;
 	m_pVKScheduler = nullptr;
+
+	m_objectValidator = CDeviceObjectValidator::Create();
 }
 
 void CDeviceObjectFactory::AssignDevice(D3DDevice* pDevice)

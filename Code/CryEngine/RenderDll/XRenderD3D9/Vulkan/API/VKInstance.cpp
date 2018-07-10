@@ -110,6 +110,10 @@ _smart_ptr<CDevice> CInstance::CreateDevice(size_t physicalDeviceIndex)
 	VkAllocationCallbacks allocationCallbacks;
 	m_Allocator.GetCpuHeapCallbacks(allocationCallbacks);
 
+	// check for required device features
+	if (!ValidateDeviceFeatures(pDeviceInfo))
+		return nullptr;
+
 	// filter out extensions which are not available
 	std::vector<const char*> extensions;
 	for (const auto& requestedExtension : m_enabledPhysicalDeviceExtensions)
@@ -544,6 +548,45 @@ VkResult CInstance::InitializeDebugLayerCallback()
 	}
 
 	return VK_SUCCESS;
+}
+
+bool CInstance::ValidateDeviceFeatures(const SPhysicalDeviceInfo& deviceInfo) const
+{
+#if !CRY_PLATFORM_MOBILE
+
+#define VALIDATE_LIMIT(requiredValue, supportedValue)                                                                          \
+	if (deviceInfo.deviceProperties.limits.supportedValue < requiredValue)                                                       \
+	{                                                                                                                            \
+		VK_ERROR("Device failed feature validation: 'VkPhysicalDeviceLimits::" #supportedValue "': %d available, %d required",   \
+	              deviceInfo.deviceProperties.limits.supportedValue, requiredValue);                                             \
+	    return false;                                                                                                            \
+	}
+
+	const auto& validator = GetDeviceObjectFactory().GetObjectValidator();
+	VALIDATE_LIMIT(validator.Limits.PerDraw.NumBindings, maxBoundDescriptorSets);
+	VALIDATE_LIMIT(validator.Limits.PerDraw.NumSamplers, maxDescriptorSetSamplers);
+	VALIDATE_LIMIT(validator.Limits.PerDraw.NumConstantBuffers, maxDescriptorSetUniformBuffers);
+	VALIDATE_LIMIT(validator.Limits.PerDraw.NumInlineConstantBuffers, maxDescriptorSetUniformBuffersDynamic);
+	VALIDATE_LIMIT(validator.Limits.PerDraw.NumBuffers, maxDescriptorSetStorageBuffers);
+	VALIDATE_LIMIT(validator.Limits.PerDraw.NumBufferSRVs, maxDescriptorSetStorageBuffers);
+	VALIDATE_LIMIT(validator.Limits.PerDraw.NumBufferUAVs, maxDescriptorSetStorageBuffers);
+	VALIDATE_LIMIT(validator.Limits.PerDraw.NumTextureSRVs, maxDescriptorSetSampledImages);
+	VALIDATE_LIMIT(validator.Limits.PerDraw.NumTextureUAVs, maxDescriptorSetStorageImages);
+
+	VALIDATE_LIMIT(validator.Limits.PerDraw.PerShaderStage.NumResources, maxPerStageResources);
+	VALIDATE_LIMIT(validator.Limits.PerDraw.PerShaderStage.NumSamplers, maxPerStageDescriptorSamplers);
+	VALIDATE_LIMIT(validator.Limits.PerDraw.PerShaderStage.NumConstantBuffers, maxPerStageDescriptorUniformBuffers);
+	VALIDATE_LIMIT(validator.Limits.PerDraw.PerShaderStage.NumBuffers, maxPerStageDescriptorStorageBuffers);
+	VALIDATE_LIMIT(validator.Limits.PerDraw.PerShaderStage.NumBufferSRVs, maxPerStageDescriptorStorageBuffers);
+	VALIDATE_LIMIT(validator.Limits.PerDraw.PerShaderStage.NumBufferUAVs, maxPerStageDescriptorStorageBuffers);
+	VALIDATE_LIMIT(validator.Limits.PerDraw.PerShaderStage.NumTextureSRVs, maxPerStageDescriptorSampledImages);
+	VALIDATE_LIMIT(validator.Limits.PerDraw.PerShaderStage.NumTextureUAVs, maxPerStageDescriptorStorageImages);
+
+#undef VALIDATE_LIMIT
+
+#endif
+
+	return true;
 }
 
 }
