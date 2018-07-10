@@ -267,7 +267,7 @@ void CWaterStage::Update()
 	// then they will not make it into the first draw of the shader, and are 0 instead
 	if (!isEmpty && !CTexture::IsTextureExist(CRendererResources::s_ptexWaterOcean))
 	{
-		CRendererResources::s_ptexWaterOcean->Create2DTexture(nGridSize, nGridSize, 1, FT_DONT_RELEASE | FT_NOMIPS | FT_STAGE_UPLOAD, nullptr, eTF_R32G32B32A32F);
+		CRendererResources::s_ptexWaterOcean->Create2DTexture(nGridSize, nGridSize, 1, FT_DONT_RELEASE | FT_NOMIPS, nullptr, eTF_R32G32B32A32F);
 	}
 
 	// Activate normal generation
@@ -919,6 +919,7 @@ bool CWaterStage::PrepareDefaultPerInstanceResources()
 	// default textures for water volume
 	{
 		res.SetTexture(ePerInstanceTexture_Foam, m_pFoamTex, EDefaultResourceViews::Default, EShaderStage_Pixel);
+		res.SetTexture(ePerInstanceTexture_Displacement, CRendererResources::s_ptexBlack, EDefaultResourceViews::Default, EShaderStage_Vertex | EShaderStage_Domain);
 
 		if (!pRenderer->m_bPauseTimer)
 		{
@@ -931,6 +932,7 @@ bool CWaterStage::PrepareDefaultPerInstanceResources()
 
 		CRY_ASSERT(m_rainRippleTexIndex < m_pRainRippleTex.size());
 		res.SetTexture(ePerInstanceTexture_RainRipple, m_pRainRippleTex[m_rainRippleTexIndex], EDefaultResourceViews::Default, EShaderStage_Pixel);
+		// NOTE ePerInstanceTexture_OceanReflection maps to ePerInstanceTexture_RainRipple (both are EShaderStage_Pixel)
 	}
 
 	return m_pDefaultPerInstanceResourceSet->Update(m_defaultPerInstanceResources);
