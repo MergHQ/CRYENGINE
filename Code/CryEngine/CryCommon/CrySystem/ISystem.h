@@ -1839,20 +1839,20 @@ extern std::vector<const char*> g_moduleCVars;
 
 struct ConsoleRegistrationHelper
 {
-	static CRY_FORCE_INLINE void AddCommand(const char* szCommand, ConsoleCommandFunc func, int flags = 0, const char* szHelp = nullptr, bool bIsManagedExternally = false)
+	static void AddCommand(const char* szCommand, ConsoleCommandFunc func, int flags = 0, const char* szHelp = nullptr, bool bIsManagedExternally = false)
 	{
 		CRY_ASSERT(gEnv && gEnv->pConsole);
 		MODULE_REGISTER_COMMAND(szCommand);
 		gEnv->pConsole->AddCommand(szCommand, func, flags, szHelp, bIsManagedExternally);
 	}
-	static CRY_FORCE_INLINE void AddCommand(const char* szName, const char* szScriptFunc, int flags = 0, const char* szHelp = nullptr)
+	static void AddCommand(const char* szName, const char* szScriptFunc, int flags = 0, const char* szHelp = nullptr)
 	{
 		CRY_ASSERT(gEnv && gEnv->pConsole);
 		MODULE_REGISTER_COMMAND(szName);
 		gEnv->pConsole->AddCommand(szName, szScriptFunc, flags, szHelp);
 	}
 
-	static CRY_FORCE_INLINE ICVar* RegisterString(const char* szName, const char* szValue, int flags, const char* szHelp = "", ConsoleVarFunc pChangeFunc = nullptr)
+	static ICVar* RegisterString(const char* szName, const char* szValue, int flags, const char* szHelp = "", ConsoleVarFunc pChangeFunc = nullptr)
 	{
 		CRY_ASSERT(gEnv && gEnv->pConsole);
 		if (gEnv && gEnv->pConsole)
@@ -1865,7 +1865,7 @@ struct ConsoleRegistrationHelper
 			return nullptr;
 		}
 	}
-	static CRY_FORCE_INLINE ICVar* RegisterInt(const char* szName, int value, int flags, const char* szHelp = "", ConsoleVarFunc pChangeFunc = nullptr)
+	static ICVar* RegisterInt(const char* szName, int value, int flags, const char* szHelp = "", ConsoleVarFunc pChangeFunc = nullptr)
 	{
 		CRY_ASSERT(gEnv && gEnv->pConsole);
 		if (gEnv && gEnv->pConsole)
@@ -1878,7 +1878,7 @@ struct ConsoleRegistrationHelper
 			return nullptr;
 		}
 	}
-	static CRY_FORCE_INLINE ICVar* RegisterInt64(const char* szName, int64 value, int flags, const char* szHelp = "", ConsoleVarFunc pChangeFunc = nullptr)
+	static ICVar* RegisterInt64(const char* szName, int64 value, int flags, const char* szHelp = "", ConsoleVarFunc pChangeFunc = nullptr)
 	{
 		CRY_ASSERT(gEnv && gEnv->pConsole);
 		if (gEnv && gEnv->pConsole)
@@ -1891,7 +1891,7 @@ struct ConsoleRegistrationHelper
 			return nullptr;
 		}
 	}
-	static CRY_FORCE_INLINE ICVar* RegisterFloat(const char* szName, float value, int flags, const char* szHelp = "", ConsoleVarFunc pChangeFunc = nullptr)
+	static ICVar* RegisterFloat(const char* szName, float value, int flags, const char* szHelp = "", ConsoleVarFunc pChangeFunc = nullptr)
 	{
 		CRY_ASSERT(gEnv && gEnv->pConsole);
 		if (gEnv && gEnv->pConsole)
@@ -1906,12 +1906,12 @@ struct ConsoleRegistrationHelper
 	}
 
 	template<class T, class U>
-	static CRY_FORCE_INLINE ICVar* Register(const char* szName, T* pSrc, U defaultValue, int flags = 0, const char* szHelp = "", ConsoleVarFunc pChangeFunc = nullptr, bool bAllowModify = true)
+	static ICVar* Register(const char* szName, T* pSrc, U defaultValue, int flags = 0, const char* szHelp = "", ConsoleVarFunc pChangeFunc = nullptr, bool bAllowModify = true)
 	{
 		return RegisterImpl(get_enum_tag<T>(), szName, pSrc, defaultValue, flags, szHelp, pChangeFunc, bAllowModify);
 	}
 
-	static CRY_FORCE_INLINE ICVar* Register(ICVar* pVar)
+	static ICVar* Register(ICVar* pVar)
 	{
 		CRY_ASSERT(gEnv && gEnv->pConsole);
 		if (gEnv && gEnv->pConsole)
@@ -1933,7 +1933,7 @@ private:
 	struct get_enum_tag : std::conditional<std::is_enum<T>::value, enum_tag, non_enum_tag>::type {};
 
 	template<class T, class U>
-	static CRY_FORCE_INLINE ICVar* RegisterImpl(enum_tag, const char* szName, T* pSrc, U defaultValue, int flags = 0, const char* szHelp = "", ConsoleVarFunc pChangeFunc = nullptr, bool bAllowModify = true)
+	static ICVar* RegisterImpl(enum_tag, const char* szName, T* pSrc, U defaultValue, int flags = 0, const char* szHelp = "", ConsoleVarFunc pChangeFunc = nullptr, bool bAllowModify = true)
 	{
 		using ET = typename std::underlying_type<T>::type;
 		static_assert(std::is_same<ET, int>::value, "Invalid template type!");
@@ -1942,7 +1942,7 @@ private:
 
 
 	template<class T, class U>
-	static CRY_FORCE_INLINE ICVar* RegisterImpl(non_enum_tag, const char* szName, T* pSrc, U defaultValue, int flags = 0, const char* szHelp = "", ConsoleVarFunc pChangeFunc = nullptr, bool bAllowModify = true)
+	static ICVar* RegisterImpl(non_enum_tag, const char* szName, T* pSrc, U defaultValue, int flags = 0, const char* szHelp = "", ConsoleVarFunc pChangeFunc = nullptr, bool bAllowModify = true)
 	{
 		static_assert(std::is_same<T, int>::value || std::is_same<T, float>::value || std::is_same<T, const char*>::value, "Invalid template type!");
 		static_assert(std::is_convertible<U, T>::value, "Invalid default value type!");
