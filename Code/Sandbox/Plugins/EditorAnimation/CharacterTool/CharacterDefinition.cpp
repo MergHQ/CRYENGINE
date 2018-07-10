@@ -1869,6 +1869,7 @@ bool CharacterDefinition::LoadFromXml(const XmlNodeRef& root)
 		if (!Serialization::LoadXmlNode(*modifiers, root))
 			return false;
 	}
+	m_physEdit = false;
 
 	return true;
 }
