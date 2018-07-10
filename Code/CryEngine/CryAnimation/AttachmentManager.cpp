@@ -14,6 +14,7 @@
 #include <memory>
 #include "Command_Commands.h"
 #include "Command_Buffer.h"
+#include "DrawHelper.h"
 
 bool IsSkinFile(const string& fileName)
 {
@@ -1817,6 +1818,17 @@ void CAttachmentManager::DrawAttachments(SRendParams& rParams, const Matrix34& r
 				Matrix34 FinalMat34 = (((rParams.dwFObjFlags & FOB_NEAREST) != 0) ? *rParams.pNearestMatrix : rWorldMat34) * Matrix34(pCAttachmentBone->m_AttModelRelative * pCAttachmentBone->m_addTransformation);
 				rParams.pMatrix = &FinalMat34;
 				pIAttachmentObject->RenderAttachment(rParams, passInfo);
+
+				if ((m_pSkelInstance->m_CharEditMode & CA_CharacterTool) && (Console::GetInst().ca_DrawWireframe))
+				{
+					if (IStatObj* pStaticObject = pIAttachmentObject->GetIStatObj())
+					{
+						if (IRenderMesh* pRenderMesh = pStaticObject->GetRenderMesh())
+						{
+							DrawHelper::Wireframe(*pRenderMesh, *rParams.pMatrix, ColorB{ 0x00, 0xff, 0x00, 0x00 });
+						}
+					}
+				}
 			}
 		}
 
@@ -1856,6 +1868,17 @@ void CAttachmentManager::DrawAttachments(SRendParams& rParams, const Matrix34& r
 
 			pCAttachmentBone->m_pIAttachmentObject->RenderAttachment(rParams, passInfo);
 
+			if ((m_pSkelInstance->m_CharEditMode & CA_CharacterTool) && (Console::GetInst().ca_DrawWireframe))
+			{
+				if (IStatObj* pStaticObject = pCAttachmentBone->m_pIAttachmentObject->GetIStatObj())
+				{
+					if (IRenderMesh* pRenderMesh = pStaticObject->GetRenderMesh())
+					{
+						DrawHelper::Wireframe(*pRenderMesh, *rParams.pMatrix, ColorB{ 0x00, 0xff, 0x00, 0x00 });
+					}
+				}
+			}
+
 			// restore rParams.pNearestMatrix
 			rParams.pNearestMatrix = pNearestMatrixOld;
 		}
@@ -1878,6 +1901,18 @@ void CAttachmentManager::DrawAttachments(SRendParams& rParams, const Matrix34& r
 			Matrix34 FinalMat34 = (((rParams.dwFObjFlags & FOB_NEAREST) != 0) ? *rParams.pNearestMatrix : rWorldMat34) * Matrix34(pCAttachmentFace->m_AttModelRelative * pCAttachmentFace->m_addTransformation);
 			rParams.pMatrix = &FinalMat34;
 			pCAttachmentFace->m_pIAttachmentObject->RenderAttachment(rParams, passInfo);
+
+			if ((m_pSkelInstance->m_CharEditMode & CA_CharacterTool) && (Console::GetInst().ca_DrawWireframe))
+			{
+				if (IStatObj* pStaticObject = pCAttachmentFace->m_pIAttachmentObject->GetIStatObj())
+				{
+					if (IRenderMesh* pRenderMesh = pStaticObject->GetRenderMesh())
+					{
+						DrawHelper::Wireframe(*pRenderMesh, *rParams.pMatrix, ColorB{ 0x00, 0xff, 0x00, 0x00 });
+					}
+				}
+			}
+
 		}
 	}
 #if !defined(_RELEASE)

@@ -410,7 +410,15 @@ ICharacterInstance* CharacterManager::CreateSKELInstance(const char* strFilePath
 			}
 		}
 	}
-	return new CCharInstance(strFilePath, pModelSKEL);
+
+	const auto pNewCharacter = new CCharInstance(strFilePath, pModelSKEL);
+
+	if (nLoadingFlags & CA_CharEditModel)
+	{
+		pNewCharacter->m_CharEditMode |= CA_CharacterTool;
+	}
+
+	return pNewCharacter;
 }
 
 //////////////////////////////////////////////////////////////////////////

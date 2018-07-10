@@ -88,7 +88,7 @@ public:
 
 #ifdef EDITOR_PCDEBUGCODE
 	void ExportModel(IRenderMesh* pIRenderMesh);
-	void DrawWireframeStatic(const Matrix34& m34, uint32 color);
+	void DrawWireframeStatic(const Matrix34& renderMatrix, const ColorB& color);
 #endif
 
 	size_t SizeOfModelMesh() const;

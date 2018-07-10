@@ -91,4 +91,10 @@ void CurvedArrow(const QuatT& location, float moveSpeed, float travelAngle, floa
 
 void Pose(const CDefaultSkeleton& rDefaultSkeleton, const Skeleton::CPoseData& poseData, const QuatT& location, ColorB color);
 
+//! Performs a wireframe draw of the specified IRenderMesh instance using the debug renderer (auxiliary geometry renderer).
+//! \param mesh IRenderMesh instance to be drawn.
+//! \param renderMatrix World-space transform specifying where to draw the wireframe.
+//! \param color Color in which to draw the wireframe.
+void Wireframe(IRenderMesh& mesh, const Matrix34& renderMatrix, const ColorB& color);
+
 } // namespace DrawHelper

@@ -3,6 +3,7 @@
 #include "stdafx.h"
 #include "DrawHelper.h"
 
+#include <CryCore/ScopeGuard.h>
 #include <CryRenderer/IRenderAuxGeom.h>
 #include "CharacterManager.h"
 #include "Model.h"
@@ -303,6 +304,62 @@ void Pose(const CDefaultSkeleton& rDefaultSkeleton, const Skeleton::CPoseData& p
 
 		Frame(jointLocation, Vec3(length * 0.25f));
 	}
+}
+
+void Wireframe(IRenderMesh& mesh, const Matrix34& renderMatrix, const ColorB& color)
+{
+	const uint32 indexCount = mesh.GetIndicesCount();
+	const uint32 vertexCount = mesh.GetVerticesCount();
+	assert(vertexCount > 0);
+
+	static std::vector<Vec3> transformedPositions;
+	if (transformedPositions.size() != vertexCount)
+	{
+		transformedPositions.resize(vertexCount);
+	}
+
+	static std::vector<vtx_idx> indices;
+	if (indices.size() != indexCount)
+	{
+		indices.resize(indexCount);
+	}
+
+	{
+		IRenderMesh::ThreadAccessLock threadLock{ &mesh };
+
+		const vtx_idx* const pIndices = mesh.GetIndexPtr(FSL_READ);
+		if (!pIndices)
+		{
+			return;
+		}
+		ScopeGuard indexStreamGuard{ [&mesh]() { mesh.UnlockIndexStream(); } };
+
+		int32 positionStride;
+		const uint8* const pPositions = mesh.GetPosPtr(positionStride, FSL_READ);
+		if (!pPositions)
+		{
+			return;
+		}
+		ScopeGuard generalStreamGuard{ [&mesh]() { mesh.UnlockStream(VSF_GENERAL); } };
+
+		for (uint32 i = 0; i < vertexCount; ++i)
+		{
+			const Vec3 v = *(Vec3*)(pPositions + i * positionStride);
+			transformedPositions[i] = renderMatrix * v;
+		}
+
+		for (uint32 i = 0; i < indexCount; ++i)
+		{
+			indices[i] = pIndices[i];
+		}
+	}
+
+	SAuxGeomRenderFlags renderFlags(e_Def3DPublicRenderflags);
+	renderFlags.SetFillMode(e_FillModeWireframe);
+	renderFlags.SetDrawInFrontMode(e_DrawInFrontOn);
+	renderFlags.SetAlphaBlendMode(e_AlphaAdditive);
+	g_pAuxGeom->SetRenderFlags(renderFlags);
+	g_pAuxGeom->DrawTriangles(transformedPositions.data(), vertexCount, indices.data(), indexCount, color);
 }
 
 } // namespace DrawHelper
