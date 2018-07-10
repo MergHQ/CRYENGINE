@@ -362,6 +362,8 @@
       "DeviceManager/DeviceObjects.cpp",
       "DeviceManager/DeviceObjectHelpers.h",
       "DeviceManager/DeviceObjectHelpers.cpp",
+	  "DeviceManager/DeviceObjectValidation.h",
+	  "DeviceManager/DeviceObjectValidation.cpp",
       "DeviceManager/DeviceResources.h",
       "DeviceManager/DeviceResources.cpp",
       "DeviceManager/DeviceFormats.h",

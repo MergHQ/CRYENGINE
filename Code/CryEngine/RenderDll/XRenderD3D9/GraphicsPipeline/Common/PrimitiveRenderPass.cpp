@@ -48,10 +48,9 @@ CRenderPrimitive::SPrimitiveGeometry::SPrimitiveGeometry()
 	, vertexBaseOffset(0)
 	, vertexOrIndexCount(0)
 	, vertexOrIndexOffset(0)
+	, vertexStream()
+	, indexStream()
 {
-	SStreamInfo emptyStream = { ~0u, 0, 0 };
-	vertexStream = emptyStream;
-	indexStream = emptyStream;
 }
 
 CRenderPrimitive::CRenderPrimitive(CRenderPrimitive&& other)

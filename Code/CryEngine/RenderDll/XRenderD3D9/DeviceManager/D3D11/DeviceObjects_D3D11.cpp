@@ -135,6 +135,8 @@ CDeviceObjectFactory::CDeviceObjectFactory()
 
 	m_pCoreCommandList.reset(new CDeviceCommandList());
 
+	m_objectValidator = CDeviceObjectValidator::CreateForMobile();
+
 	m_pDX11Device = nullptr;
 	m_pDX11Scheduler = nullptr;
 }

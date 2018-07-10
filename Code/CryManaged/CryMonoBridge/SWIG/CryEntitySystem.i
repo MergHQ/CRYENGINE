@@ -118,6 +118,7 @@
 //TODO: %include "../../../CryEngine/CryCommon/IEntitySerialize.h"
 
 %ignore CreateEntitySystem;
+%ignore IEntitySystem::GetStaticEntityNetworkId;
 %feature("director") IEntityEventListener;
 %feature("director") IEntitySystemSink;
 %feature("director") IAreaManagerEventListener;

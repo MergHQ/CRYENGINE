@@ -56,6 +56,8 @@ CDeviceObjectFactory::CDeviceObjectFactory()
 	m_pCoreCommandList.reset(new CDeviceCommandList());
 	m_pCoreCommandList->m_sharedState.pCommandList = nullptr;
 
+	m_objectValidator = CDeviceObjectValidator::Create();
+
 	m_pDX12Device    = nullptr;
 	m_pDX12Scheduler = nullptr;
 }

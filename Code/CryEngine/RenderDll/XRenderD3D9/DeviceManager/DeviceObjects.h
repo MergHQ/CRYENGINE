@@ -10,6 +10,7 @@
 #include <atomic>
 
 #include "DeviceResources.h"                // CDeviceBuffer, CDeviceTexture, CDeviceInputStream
+#include "DeviceObjectValidation.h"
 
 class CRendererCVars;
 class CHWShader_D3D;
@@ -210,6 +211,12 @@ public:
 	void                         EraseRenderPass(CDeviceRenderPass* pPass, bool bRemoveInvalidateCallbacks=true);
 	void                         TrimRenderPasses();
 	////////////////////////////////////////////////////////////////////////////
+
+	////////////////////////////////////////////////////////////////////////////
+	// Object validation API
+	const CDeviceObjectValidator& GetObjectValidator() { return m_objectValidator; }
+	////////////////////////////////////////////////////////////////////////////
+
 
 	// Low-level resource management API (TODO: remove D3D-dependency by abstraction)
 	enum EResourceAllocationFlags : uint32
@@ -534,6 +541,8 @@ private:
 	// Renderpass API
 	std::unordered_map<CDeviceRenderPassDesc, CDeviceRenderPassPtr, CDeviceRenderPassDesc::SHash, CDeviceRenderPassDesc::SEqual>  m_RenderPassCache; 
 	CryCriticalSectionNonRecursive m_RenderPassCacheLock;
+
+	CDeviceObjectValidator m_objectValidator;
 
 public:
 	////////////////////////////////////////////////////////////////////////////

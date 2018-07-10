@@ -8,7 +8,7 @@
 CEntityLayer::CEntityLayer(const char* name, uint16 id, bool havePhysics, int specs, bool defaultLoaded, TGarbageHeaps& garbageHeaps)
 	: m_name(name)
 	, m_id(id)
-	, m_isEnabled(false)
+	, m_isEnabled(true)
 	, m_isEnabledBrush(false)
 	, m_isSerialized(true)
 	, m_wasReEnabled(false)

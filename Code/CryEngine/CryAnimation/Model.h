@@ -270,7 +270,13 @@ struct CryBonePhysicsLinked : CryBonePhysics
 	static CryBonePhysicsLinked  g_empty;
 	CryBonePhysicsLinked* next = nullptr;
 	int                   refCount = 0;
-	CryBonePhysicsLinked() 	{	pPhysGeom = nullptr; }
+	CryBonePhysicsLinked() { pPhysGeom = nullptr; }
+	CryBonePhysicsLinked(const CryBonePhysics *src) 
+	{ 
+		*static_cast<CryBonePhysics*>(this) = *src;
+		if ((INT_PTR)pPhysGeom > 0x400)	// if used when pPhysGeom is still a chunk index, don't addref
+			++pPhysGeom->nRefCount; 
+	}
 	~CryBonePhysicsLinked() { if (next) delete next; }
 	int AddRef()  { return ++refCount; }
 	int Release() 
@@ -287,8 +293,8 @@ struct SBonePhysicsRef
 	_smart_ptr<CryBonePhysicsLinked> data = &CryBonePhysicsLinked::g_empty;
 	CryBonePhysics& operator()(int i) // unlike [], allocates lod info if necessary
 	{ 
-		CryBonePhysicsLinked *ptr = data == &CryBonePhysicsLinked::g_empty ? (data = new CryBonePhysicsLinked) : data;
-		for(; i>0; --i, ptr = ptr->next ? ptr->next : (ptr->next = new CryBonePhysicsLinked))
+		CryBonePhysicsLinked *ptr = data == &CryBonePhysicsLinked::g_empty ? (data = new CryBonePhysicsLinked(CryBonePhysicsLinked::g_empty)) : data;
+		for(; i>0; --i, ptr = ptr->next ? ptr->next : (ptr->next = new CryBonePhysicsLinked(data)))
 			;
 		return *ptr;
 	}
@@ -305,8 +311,7 @@ struct SBonePhysicsRef
 		if (src.pPhysGeom && src.pPhysGeom != (phys_geometry*)(INT_PTR)-1)
 		{
 			if (data == &CryBonePhysicsLinked::g_empty)
-				data = new CryBonePhysicsLinked;
-			*(CryBonePhysics*)data = src;
+				data = new CryBonePhysicsLinked(&src);
 		}
 		else 
 			data = &CryBonePhysicsLinked::g_empty;

@@ -520,7 +520,7 @@ void CRendererResources::LoadDefaultSystemTextures()
 
 			// fixme: get texture resolution from CREWaterOcean
 			// TODO: make s_ptexWaterVolumeTemp an array texture
-			s_ptexWaterOcean = CTexture::GetOrCreateTextureObject("$WaterOceanMap", 64, 64, 1, eTT_2D, FT_DONT_RELEASE | FT_NOMIPS | FT_STAGE_UPLOAD | FT_DONT_STREAM, eTF_Unknown, TO_WATEROCEANMAP);
+			s_ptexWaterOcean = CTexture::GetOrCreateTextureObject("$WaterOceanMap", 64, 64, 1, eTT_2D, FT_DONT_RELEASE | FT_NOMIPS | FT_DONT_STREAM, eTF_Unknown, TO_WATEROCEANMAP);
 			s_ptexWaterVolumeTemp[0] = CTexture::GetOrCreateTextureObject("$WaterVolumeTemp_0", 64, 64, 1, eTT_2D, /*FT_DONT_RELEASE |*/ FT_NOMIPS | FT_DONT_STREAM, eTF_Unknown);
 			s_ptexWaterVolumeTemp[1] = CTexture::GetOrCreateTextureObject("$WaterVolumeTemp_1", 64, 64, 1, eTT_2D, /*FT_DONT_RELEASE |*/ FT_NOMIPS | FT_DONT_STREAM, eTF_Unknown);
 			s_ptexWaterVolumeDDN = CTexture::GetOrCreateTextureObject("$WaterVolumeDDN", 64, 64, 1, eTT_2D, /*FT_DONT_RELEASE |*/ FT_DONT_STREAM | FT_USAGE_RENDERTARGET | FT_FORCE_MIPS, eTF_Unknown, TO_WATERVOLUMEMAP);
