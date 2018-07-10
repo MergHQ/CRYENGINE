@@ -1237,7 +1237,7 @@ public:
 	float                GetMipDistFactor(uint32 twidth, uint32 theight) { float ratio = std::max(twidth, theight) / float(CRendererResources::s_renderMinDim); return ratio * ratio; }
 //	float                GetMipDistFactor(uint32 twidth, uint32 theight) { return ((TANGENT30_2 * TANGENT30_2) / (m_rheight * m_rheight)) * std::max(twidth, theight) * std::max(twidth, theight); }
 
-	static int           GetTexturesStreamPoolSize();
+	static size_t           GetTexturesStreamPoolSize();
 
 protected:
 	void EF_AddParticle(CREParticle* pParticle, SShaderItem& shaderItem, CRenderObject* pRO, const SRenderingPassInfo& passInfo);

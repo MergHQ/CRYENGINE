@@ -4113,11 +4113,11 @@ void CRenderer::EF_EnqueueComputeSkinningData(IRenderView* pRenderView, SSkinnin
 	static_cast<CRenderView*>(pRenderView)->GetSkinningDataPools().pDataComputeSkinning->push_back(pData);
 }
 
-int CRenderer::GetTexturesStreamPoolSize()
+size_t CRenderer::GetTexturesStreamPoolSize()
 {
-	int poolSize = CV_r_TexturesStreamPoolSize + CV_r_TexturesStreamPoolSecondarySize;
+	size_t poolSize = CV_r_TexturesStreamPoolSize + CV_r_TexturesStreamPoolSecondarySize;
 	return gEnv->IsEditor()
-		   ? max(poolSize, 512)
+		   ? max(poolSize, static_cast<size_t>(512))
 		   : poolSize;
 }
 
