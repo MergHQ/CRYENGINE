@@ -16,9 +16,9 @@ InputLayoutHandle CRESky::GetVertexFormat() const
 
 bool CRESky::GetGeometryInfo(SGeometryInfo& streams, bool bSupportTessellation)
 {
-	ZeroStruct(streams);
 	streams.eVertFormat = GetVertexFormat();
 	streams.primitiveType = eptTriangleList;
+
 	return true;
 }
 
@@ -70,9 +70,9 @@ InputLayoutHandle CREHDRSky::GetVertexFormat() const
 
 bool CREHDRSky::GetGeometryInfo(SGeometryInfo& streams, bool bSupportTessellation)
 {
-	ZeroStruct(streams);
 	streams.eVertFormat = GetVertexFormat();
 	streams.primitiveType = eptTriangleList;
+
 	return true;
 }
 

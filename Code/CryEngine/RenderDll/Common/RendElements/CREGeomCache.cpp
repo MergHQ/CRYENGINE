@@ -206,12 +206,12 @@ InputLayoutHandle CREGeomCache::GetVertexFormat() const
 
 bool CREGeomCache::GetGeometryInfo(SGeometryInfo& streams, bool bSupportTessellation)
 {
-	ZeroStruct(streams);
 	streams.eVertFormat = GetVertexFormat();
 	streams.nFirstIndex = 0;
 	streams.nFirstVertex = 0;
 	streams.nNumIndices = 0;
 	streams.primitiveType = eptTriangleList;
+
 	return true;
 }
 
