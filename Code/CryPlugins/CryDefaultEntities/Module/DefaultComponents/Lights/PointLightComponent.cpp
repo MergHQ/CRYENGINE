@@ -81,6 +81,28 @@ namespace Cry
 
 			m_pEntity->UpdateLightClipBounds(light);
 
+			if (!m_optics.m_lensFlareName.empty() && m_optics.m_flareEnable)
+			{
+				int32 opticsIndex = 0;
+				if (gEnv->pOpticsManager->Load(m_optics.m_lensFlareName.c_str(), opticsIndex))
+				{
+					IOpticsElementBase* pOpticsElement = gEnv->pOpticsManager->GetOptics(opticsIndex);
+					light.SetLensOpticsElement(pOpticsElement);
+
+					const int32 modularAngle = m_optics.m_flareFOV % 360;
+					if (modularAngle == 0)
+						light.m_LensOpticsFrustumAngle = 255;
+					else
+						light.m_LensOpticsFrustumAngle = (uint8)(m_optics.m_flareFOV * (255.0f / 360.0f));
+
+					if (m_optics.m_attachToSun)
+					{
+						light.m_Flags |= DLF_ATTACH_TO_SUN | DLF_FAKE | DLF_IGNORES_VISAREAS;
+						light.m_Flags &= ~DLF_THIS_AREA_ONLY;
+					}
+				}
+			}
+
 			// Load the light source into the entity
 			const int slot = m_pEntity->LoadLight(GetOrMakeEntitySlotId(), &light);
 
@@ -93,6 +115,10 @@ namespace Cry
 				int viewDistance = static_cast<int>((m_viewDistance / 100.0f) * 255.0f);
 				pRenderNode->SetViewDistRatio(viewDistance);
 			}
+
+			IMaterial* pMaterial = gEnv->p3DEngine->GetMaterialManager()->LoadMaterial(g_szDefaultLensFlareMaterialName);
+			if(pMaterial && m_optics.m_flareEnable)
+				m_pEntity->SetSlotMaterial(slot, pMaterial);
 		}
 
 		void CPointLightComponent::ProcessEvent(const SEntityEvent& event)

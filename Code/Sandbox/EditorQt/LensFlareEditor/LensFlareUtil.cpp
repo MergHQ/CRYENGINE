@@ -5,6 +5,7 @@
 #include "LensFlareUtil.h"
 #include "Util/Clipboard.h"
 #include "Objects/EntityObject.h"
+#include <../../CryPlugins/CryDefaultEntities/Module/DefaultComponents/Lights/ILightComponent.h>
 
 namespace LensFlareUtil
 {
@@ -467,6 +468,32 @@ void GetSelectedLightEntities(std::vector<CEntityObject*>& outLightEntities)
 		outLightEntities.push_back(pEntity);
 	}
 }
+
+// Workaround: This is a workaround for new light components to also be able to be selected in the lens flare editor
+void ApplyOpticsToSelectedEntityWithComponent(const string& opticsFullName, IOpticsElementBasePtr pOptics)
+{
+	const CSelectionGroup* pSelectionGroup = GetIEditorImpl()->GetSelection();
+	if (pSelectionGroup == nullptr)
+		return;
+
+	const int32 selectionCount = pSelectionGroup->GetCount();
+	for (int32 i = 0; i < selectionCount; ++i)
+	{
+		CBaseObject* pSelectedObj = pSelectionGroup->GetObject(i);
+
+		// Get either the point32 light component or projector light component
+		IEntityComponent* pLightComponent = pSelectedObj->GetIEntity()->GetComponentByTypeId("0A86908D-642F-4590-ACEF-484E8E39F31B"_cry_guid);
+		pLightComponent = pLightComponent == nullptr ? pSelectedObj->GetIEntity()->GetComponentByTypeId("07D0CAD1-8E79-4177-9ADD-A2464A009FA5"_cry_guid) : pLightComponent;
+
+		if (pLightComponent)
+		{ 
+			static_cast<Cry::DefaultComponents::ILightComponent*>(pLightComponent)->SetOptics(opticsFullName);
+		}
+	}
+
+	GetIEditor()->GetObjectManager()->EmitPopulateInspectorEvent();
+}
+//~Workaround
 
 IOpticsElementBasePtr GetSelectedLightOptics()
 {
