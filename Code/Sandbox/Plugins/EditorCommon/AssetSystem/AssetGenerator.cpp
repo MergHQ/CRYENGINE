@@ -146,6 +146,12 @@ CAssetGenerator::CAssetGenerator()
 			continue;
 		}
 
+		// Ignore substance types, since we cannot regenerate import setting for them.
+		if (strcmp(pType->GetTypeName(), "SubstanceDefinition") == 0 || strcmp(pType->GetTypeName(), "SubstanceInstance") == 0)
+		{
+			continue;
+		}
+
 		m_rcSettings.AppendFormat("%s,%s;", pType->GetFileExtension(), pType->GetTypeName());
 		GetIEditor()->GetFileMonitor()->RegisterListener(this, "", pType->GetFileExtension());
 	}
