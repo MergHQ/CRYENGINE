@@ -42,7 +42,7 @@ void CWaterRipplesStage::Init()
 	const int32 flags = FT_FORCE_MIPS | FT_DONT_STREAM | FT_USAGE_RENDERTARGET;
 
 	CRY_ASSERT(m_pTexWaterRipplesDDN == nullptr);
-	m_pTexWaterRipplesDDN = CTexture::GetOrCreateTextureObjectPtr("$WaterRipplesDDN_0", nGridSize, nGridSize, 1, eTT_2D, flags, eTF_R8G8B8A8);
+	m_pTexWaterRipplesDDN = CTexture::GetOrCreateTextureObjectPtr("$WaterRipplesDDN_0", nGridSize, nGridSize, 1, eTT_2D, flags, eTF_R8G8B8A8S);
 
 	CRY_ASSERT(m_pTempTexture == nullptr);
 	m_pTempTexture = CTexture::GetOrCreateTextureObjectPtr("$WaterRippleGenTemp", nGridSize, nGridSize, 1, eTT_2D, flags, eTF_R8G8B8A8);
@@ -80,7 +80,7 @@ void CWaterRipplesStage::Update()
 	if (!shouldApplyRipples && CTexture::IsTextureExist(m_pTexWaterRipplesDDN))
 		m_pTexWaterRipplesDDN->ReleaseDeviceTexture(false);
 	else if (shouldApplyRipples && !CTexture::IsTextureExist(m_pTexWaterRipplesDDN))
-		m_pTexWaterRipplesDDN->CreateRenderTarget(eTF_R8G8B8A8, Clr_Transparent);
+		m_pTexWaterRipplesDDN->CreateRenderTarget(eTF_R8G8B8A8S, Clr_Transparent);
 
 	// Create/release the occlusion texture on demand
 	if (!shouldApplyRipples && CTexture::IsTextureExist(m_pTempTexture))
