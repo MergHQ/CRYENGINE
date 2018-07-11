@@ -655,7 +655,7 @@ public:
 	CFunctionCreator(FUNCTION_PTR pFunction)
 	{
 		// TODO: This is currently missing the function name.
-		m_fullQualifiedName.assign(Cry::Type::Utils::SCompileTime_TypeInfo<FUNCTION_PTR>::GetName().c_str(), Cry::Type::Utils::SCompileTime_TypeInfo<FUNCTION_PTR>::GetName().length());
+		m_fullQualifiedName.assign(Cry::Type::Utils::SCompileTime_TypeInfo<FUNCTION_PTR>::GetName().GetBegin(), Cry::Type::Utils::SCompileTime_TypeInfo<FUNCTION_PTR>::GetName().GetLength());
 		// ~TODO
 		m_returnTypeId = Utils::SReturnType<typename FunctionDesc::ReturnType>();
 

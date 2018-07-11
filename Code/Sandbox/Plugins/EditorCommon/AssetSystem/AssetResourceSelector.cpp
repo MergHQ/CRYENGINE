@@ -12,6 +12,21 @@
 
 namespace Private_AssetSelector
 {
+
+	struct SImmediateCallbackResourceSelectorContext : public IResourceSelectionCallback
+	{
+		void SetValue(const char* newValue) override;
+		std::function<void(const char* newValue)> callback;
+	};
+
+	void SImmediateCallbackResourceSelectorContext::SetValue(const char* newValue)
+	{
+		if (callback)
+		{
+			callback(newValue);
+		}
+	}
+
 	dll_string SelectAssetLegacy(const SResourceSelectorContext& selectorContext, const char* previousValue)
 	{
 		CRY_ASSERT(selectorContext.resourceSelectorEntry->IsAssetSelector());
@@ -270,4 +285,15 @@ dll_string SStaticAssetSelectorEntry::SelectFromAsset(const SResourceSelectorCon
 	}
 
 	return previousValue;
+}
+
+dll_string SStaticAssetSelectorEntry::SelectFromAsset(std::function<void(const char* newValue)> onValueChangedCallback, const std::vector<string>& types, const char* previousValue)
+{
+	Private_AssetSelector::SImmediateCallbackResourceSelectorContext callback;
+	callback.callback = onValueChangedCallback;
+
+	SResourceSelectorContext ctx;
+	ctx.callback = &callback;
+
+	return SStaticAssetSelectorEntry::SelectFromAsset(ctx, types, previousValue);
 }

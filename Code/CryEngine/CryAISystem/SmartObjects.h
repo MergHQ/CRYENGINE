@@ -1,34 +1,17 @@
 // Copyright 2001-2018 Crytek GmbH / Crytek Group. All rights reserved.
 
-/********************************************************************
-   -------------------------------------------------------------------------
-   File name:   SmartObjects.h
-   $Id$
-   Description:
-
-   -------------------------------------------------------------------------
-   History:
-   - ?							: Created by ?
-
- *********************************************************************/
-#ifndef _SMARTOBJECTS_H_
-#define _SMARTOBJECTS_H_
-
-#if _MSC_VER > 1000
-	#pragma once
-#endif
+#pragma once
 
 #include <CryEntitySystem/IEntitySystem.h>
 #include <CryMemory/STLPoolAllocator.h>
-#include <CryAISystem/NavigationSystem/OffMeshLink.h>
 
 // forward declaration
 class CAIActor;
 class CSmartObject;
 class CSmartObjectClass;
 struct CCondition;
-
 struct OffMeshLink_SmartObject;
+class CSmartObjectOffMeshNavigation;
 
 typedef std::vector<CSmartObjectClass*> CSmartObjectClasses;
 
@@ -925,6 +908,7 @@ private:
 	};
 
 	typedef VectorMap<CSmartObject*, float> SmartObjectFloatMap;
+	CSmartObjectOffMeshNavigation*           m_pOffMeshNavigation;
 	SmartObjectFloatMap                      m_bannedNavSmartObjects;
 	std::map<string, string>                 m_MappingSOUserPathType;
 	static std::map<EntityId, CSmartObject*> g_smartObjectEntityMap;
@@ -1053,58 +1037,3 @@ CAIObject* CSmartObjectBase::GetAI() const
 	return NULL;
 }
 
-//////////////////////////////////////////////////////////////////////////
-/// MNM integration
-
-struct OffMeshLink_SmartObject : public MNM::OffMeshLink
-{
-	OffMeshLink_SmartObject()
-		: MNM::OffMeshLink(eLinkType_SmartObject, 0)
-		, m_pSmartObject(NULL)
-		, m_pSmartObjectClass(NULL)
-		, m_pFromHelper(NULL)
-		, m_pToHelper(NULL)
-	{
-	}
-
-	OffMeshLink_SmartObject(const EntityId objectId, CSmartObject* _smartObject, CSmartObjectClass* _smartObjectClass, SmartObjectHelper* _fromHelper, SmartObjectHelper* _toHelper)
-		: MNM::OffMeshLink(eLinkType_SmartObject, objectId)
-		, m_pSmartObject(_smartObject)
-		, m_pSmartObjectClass(_smartObjectClass)
-		, m_pFromHelper(_fromHelper)
-		, m_pToHelper(_toHelper)
-	{
-
-	}
-
-	virtual ~OffMeshLink_SmartObject() {};
-
-	virtual MNM::OffMeshLink* Clone() const
-	{
-		return new OffMeshLink_SmartObject(GetEntityIdForOffMeshLink(), m_pSmartObject, m_pSmartObjectClass, m_pFromHelper, m_pToHelper);
-	}
-
-	virtual Vec3 GetStartPosition() const
-	{
-		return m_pSmartObject->GetHelperPos(m_pFromHelper);
-	}
-
-	virtual Vec3 GetEndPosition() const
-	{
-		return m_pSmartObject->GetHelperPos(m_pToHelper);
-	}
-
-	virtual bool CanUse(const IEntity* pRequester, float* costMultiplier) const
-	{
-		return gAIEnv.pSmartObjectManager->GetSmartObjectLinkCostFactorForMNM(this, pRequester, costMultiplier);
-	}
-
-	static LinkType GetType() { return eLinkType_SmartObject; }
-
-	CSmartObject*      m_pSmartObject;
-	CSmartObjectClass* m_pSmartObjectClass;
-	SmartObjectHelper* m_pFromHelper;
-	SmartObjectHelper* m_pToHelper;
-};
-
-#endif

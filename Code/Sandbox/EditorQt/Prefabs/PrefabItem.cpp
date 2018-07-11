@@ -271,8 +271,14 @@ void CPrefabItem::UpdateObjects()
 {
 	std::vector<CBaseObject*> pPrefabObjects;
 	GetIEditorImpl()->GetObjectManager()->FindObjectsOfType(RUNTIME_CLASS(CPrefabObject), pPrefabObjects);
-	for (int i = 0, iObjListSize(pPrefabObjects.size()); i < iObjListSize; ++i)
+	for (int i = 0; i < pPrefabObjects.size(); ++i)
 	{
+		//SetPrefab actually changes the prefabs hierarchy, some objects wont be prefabs anymore
+		if (!pPrefabObjects[i]->IsKindOf(RUNTIME_CLASS(CPrefabObject)))
+		{
+			continue;
+		}
+
 		CPrefabObject* pPrefabObject = (CPrefabObject*)pPrefabObjects[i];
 		if (pPrefabObject->GetPrefabGuid() == GetGUID())
 		{
@@ -512,6 +518,71 @@ XmlNodeRef CPrefabItem::FindObjectByGuid(const CryGUID& guid, bool forwardSearch
 	}
 
 	return nullptr;
+}
+
+std::set<CryGUID> CPrefabItem::FindPrefabsGUIDsInChildren()
+{
+	std::set<CryGUID> guids;
+	for (int i = 0, count = m_objectsNode->getChildCount(); i < count; ++i)
+	{
+		string type;
+		m_objectsNode->getChild(i)->getAttr("Type", type);
+		if (type == "Prefab")
+		{
+			CryGUID guid;
+			m_objectsNode->getChild(i)->getAttr("PrefabGUID", guid);
+			guids.insert(guid);
+		}
+	}
+
+	return guids;
+}
+
+std::set<CPrefabItem *> CPrefabItem::FindPrefabItemsInChildren()
+{
+	std::set<CryGUID> guids = FindPrefabsGUIDsInChildren();
+	std::set<CPrefabItem *> items;
+
+	for (CryGUID guid : guids)
+	{
+		IDataBaseItem* pItem = GetIEditor()->GetPrefabManager()->LoadItem(guid);
+		//This can happen if the asset is in the asset browser but the prefab object has been deleted
+		//(for example undo after creation)
+		if (!pItem)
+		{
+			continue;
+		}
+		CPrefabItem * pPrefabItem = static_cast<CPrefabItem*>(pItem);
+		items.insert(pPrefabItem);
+	}
+
+	return items;
+}
+
+std::set<CryGUID> CPrefabItem::FindAllPrefabsGUIDsInChildren(const std::set<CryGUID> & toIgnore)
+{
+	std::set<CryGUID> finalGuids = FindPrefabsGUIDsInChildren();
+	std::set<CryGUID> guids = FindPrefabsGUIDsInChildren();
+	for (const CryGUID & guid : guids)
+	{
+		if (std::find(toIgnore.begin(), toIgnore.end(), guid) != toIgnore.end())
+		{
+			continue;
+		}
+
+		IDataBaseItem* pItem = GetIEditor()->GetPrefabManager()->LoadItem(guid);
+		//This can happen if the asset is in the asset browser but the prefab object has been deleted
+		//(for example undo after creation)
+		if (!pItem)
+		{
+			continue;
+		}
+		CPrefabItem * pPrefabItem = static_cast<CPrefabItem*>(pItem);
+		std::set<CryGUID> childGuids = pPrefabItem->FindAllPrefabsGUIDsInChildren(toIgnore);
+		finalGuids.insert(childGuids.begin(), childGuids.end());
+	}
+
+	return finalGuids;
 }
 
 //////////////////////////////////////////////////////////////////////////

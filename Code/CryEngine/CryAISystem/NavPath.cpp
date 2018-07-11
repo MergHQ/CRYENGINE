@@ -25,9 +25,10 @@
 #include <CrySystem/IConsole.h>
 #include "DebugDrawContext.h"
 
-#include "Navigation/NavigationSystem/OffMeshNavigationManager.h"
+#include "SmartObjects.h"
+#include "SmartObjectOffMeshNavigation.h"
+
 #include "Navigation/NavigationSystem/NavigationSystem.h"
-#include "Navigation/MNM/OffGridLinks.h"
 
 #include <numeric>
 #include <algorithm>

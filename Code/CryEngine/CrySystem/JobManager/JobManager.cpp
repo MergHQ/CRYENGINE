@@ -10,7 +10,6 @@
 #include <CryRenderer/IRenderAuxGeom.h>
 #include <CryThreading/IJobManager.h>
 
-#include "FallbackBackend/FallBackBackend.h"
 #include "PCBackEnd/ThreadBackEnd.h"
 #include "BlockingBackend/BlockingBackEnd.h"
 
@@ -358,7 +357,6 @@ extern "C"
 
 JobManager::CJobManager::CJobManager()
 	: m_Initialized(false),
-	m_pFallBackBackEnd(NULL),
 	m_pThreadBackEnd(NULL),
 	m_pBlockingBackEnd(NULL),
 	m_nJobIdCounter(0),
@@ -389,7 +387,6 @@ JobManager::CJobManager::CJobManager()
 	memset(m_pRegularWorkerFallbacks, 0, sizeof(JobManager::SInfoBlock*) * m_nRegularWorkerThreads);
 
 	m_pBlockingBackEnd = CryAlignedNew<BlockingBackEnd::CBlockingBackEnd>(m_pRegularWorkerFallbacks, m_nRegularWorkerThreads);
-	m_pFallBackBackEnd = new FallBackBackEnd::CFallBackBackEnd();
 
 #if defined(JOBMANAGER_SUPPORT_PROFILING)
 	m_profilingData.nFrameIdx = 0;
@@ -397,9 +394,6 @@ JobManager::CJobManager::CJobManager()
 
 	memset(m_arrJobInvokers, 0, sizeof(m_arrJobInvokers));
 	m_nJobInvokerIdx = 0;
-
-	// init fallback backend early to be able to handle jobs before jobmanager is initialized
-	if (m_pFallBackBackEnd)  m_pFallBackBackEnd->Init(-1 /*not used for fallback*/);
 }
 
 const bool JobManager::CJobManager::WaitForJob(JobManager::SJobState& rJobState) const
@@ -574,18 +568,14 @@ void JobManager::CJobManager::AddJob(JobManager::CJobDelegator& crJob, const Job
 #endif
 
 	// == dispatch to the right BackEnd == //
-	IF (crJob.IsBlocking() == false && (bUseJobSystem == false || m_Initialized == false), 0)
-		return static_cast<FallBackBackEnd::CFallBackBackEnd*>(m_pFallBackBackEnd)->FallBackBackEnd::CFallBackBackEnd::AddJob(crJob, cJobHandle, infoBlock);
-
-	IF (m_pBlockingBackEnd && crJob.IsBlocking(), 0)
-		return static_cast<BlockingBackEnd::CBlockingBackEnd*>(m_pBlockingBackEnd)->BlockingBackEnd::CBlockingBackEnd::AddJob(crJob, cJobHandle, infoBlock);
-
 	// default case is the threadbackend
-	if (m_pThreadBackEnd)
-		return static_cast<ThreadBackEnd::CThreadBackEnd*>(m_pThreadBackEnd)->ThreadBackEnd::CThreadBackEnd::AddJob(crJob, cJobHandle, infoBlock);
-
-	// last resort - fallback backend
-	return static_cast<FallBackBackEnd::CFallBackBackEnd*>(m_pFallBackBackEnd)->FallBackBackEnd::CFallBackBackEnd::AddJob(crJob, cJobHandle, infoBlock);
+	if (m_pThreadBackEnd && !crJob.IsBlocking())
+	{
+		return static_cast<ThreadBackEnd::CThreadBackEnd*>(m_pThreadBackEnd)->AddJob(crJob, cJobHandle, infoBlock);
+	}
+	
+	CRY_ASSERT(m_pBlockingBackEnd);
+	return static_cast<BlockingBackEnd::CBlockingBackEnd*>(m_pBlockingBackEnd)->AddJob(crJob, cJobHandle, infoBlock);
 }
 
 void JobManager::CJobManager::AddLambdaJob(const char* jobName, const std::function<void()>& callback, TPriorityLevel priority, SJobState* pJobState)
@@ -599,7 +589,6 @@ void JobManager::CJobManager::AddLambdaJob(const char* jobName, const std::funct
 
 void JobManager::CJobManager::ShutDown()
 {
-	if (m_pFallBackBackEnd) m_pFallBackBackEnd->ShutDown();
 	if (m_pThreadBackEnd) m_pThreadBackEnd->ShutDown();
 	if (m_pBlockingBackEnd) m_pBlockingBackEnd->ShutDown();
 }
@@ -1615,13 +1604,6 @@ bool JobManager::CJobManager::OnInputEvent(const SInputEvent& event)
 }
 
 ///////////////////////////////////////////////////////////////////////////////
-void JobManager::CJobManager::AddBlockingFallbackJob(JobManager::SInfoBlock* pInfoBlock, uint32 nWorkerThreadID)
-{
-	assert(m_pFallBackBackEnd);
-	static_cast<BlockingBackEnd::CBlockingBackEnd*>(m_pBlockingBackEnd)->AddBlockingFallbackJob(pInfoBlock, nWorkerThreadID);
-}
-
-///////////////////////////////////////////////////////////////////////////////
 void JobManager::CJobManager::KickTempWorker() const
 {
 	CRY_ASSERT(m_pThreadBackEnd);
@@ -1661,51 +1643,4 @@ uint32 JobManager::detail::GetWorkerThreadId()
 {
 	uint32 nID = (uint32)TLS_GET(uintptr_t, gWorkerThreadId);
 	return is_marked_worker_thread_id(nID) ? unmark_worker_thread_id(nID) : ~0;
-}
-
-static BoundMPMC<JobManager::SInfoBlock*> gFallbackInfoBlocks_ThreadBackend(JobManager::detail::GetFallbackJobListSize());
-static BoundMPMC<JobManager::SInfoBlock*> gFallbackInfoBlocks_BlockingBackend(JobManager::detail::GetFallbackJobListSize());
-static BoundMPMC<JobManager::SInfoBlock*> gFallbackInfoBlocks_FallbackBackend(JobManager::detail::GetFallbackJobListSize());
-
-///////////////////////////////////////////////////////////////////////////////
-void JobManager::detail::PushToFallbackJobList(EBackEndType type, JobManager::SInfoBlock* pInfoBlock)
-{
-	bool ret = false;
-	switch (type)
-	{
-	case eBET_Thread:
-		ret = gFallbackInfoBlocks_ThreadBackend.enqueue(pInfoBlock);
-		break;
-	case eBET_Blocking:
-		ret = gFallbackInfoBlocks_BlockingBackend.enqueue(pInfoBlock);
-		break;
-	case eBET_Fallback:
-		ret = gFallbackInfoBlocks_FallbackBackend.enqueue(pInfoBlock);
-		break;
-	default:
-		CRY_ASSERT(false);
-	}
-	
-	CRY_ASSERT_MESSAGE(ret, "JobSystem: Fallback info block limit reached");
-}
-
-JobManager::SInfoBlock* JobManager::detail::PopFromFallbackJobList(EBackEndType type)
-{
-	JobManager::SInfoBlock* pInfoBlock = nullptr;
-	bool ret = false;
-	switch (type)
-	{
-	case eBET_Thread:
-		return gFallbackInfoBlocks_ThreadBackend.dequeue(pInfoBlock) ? pInfoBlock : nullptr;
-		break;
-	case eBET_Blocking:
-		return gFallbackInfoBlocks_BlockingBackend.dequeue(pInfoBlock) ? pInfoBlock : nullptr;
-		break;
-	case eBET_Fallback:
-		return gFallbackInfoBlocks_FallbackBackend.dequeue(pInfoBlock) ? pInfoBlock : nullptr;
-		break;
-	default:
-		CRY_ASSERT(false);
-	}
-	return nullptr;
 }

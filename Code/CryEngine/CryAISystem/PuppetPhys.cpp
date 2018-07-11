@@ -21,7 +21,6 @@
 #include "Leader.h"
 #include "CAISystem.h"
 #include "AICollision.h"
-#include "SmartObjects.h"
 #include "PathFollower.h"
 #include "AIVehicle.h"
 

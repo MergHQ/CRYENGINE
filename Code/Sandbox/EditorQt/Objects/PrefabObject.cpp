@@ -2,6 +2,7 @@
 
 #include "StdAfx.h"
 #include "PrefabObject.h"
+#include "PrefabPicker.h"
 
 #include "HyperGraph/FlowGraphManager.h"
 #include "HyperGraph/Controls/HyperGraphEditorWnd.h"
@@ -44,7 +45,6 @@ IMPLEMENT_DYNCREATE(CPrefabObject, CGroup)
 
 namespace Private_PrefabObject
 {
-
 class CScopedPrefabEventsDelay
 {
 public:
@@ -87,7 +87,7 @@ public:
 protected:
 	virtual const char* GetDescription() { return "Change GUIDs"; }
 
-	virtual void Undo(bool bUndo)
+	virtual void        Undo(bool bUndo)
 	{
 		SetGuid(m_newGuid, m_oldGuid);
 	}
@@ -361,6 +361,12 @@ void CPrefabObject::OnContextMenu(CPopupMenuItem* menu)
 
 	menu->Add("Find in FlowGraph", [=](void) { OnShowInFG(); });
 	menu->Add("Convert to Procedural Object", [=](void) { ConvertToProceduralObject(); });
+
+	menu->Add("Swap Prefab...", [this](void)
+	{
+		CPrefabPicker picker;
+		picker.SwapPrefab(this);
+	});
 
 }
 
@@ -788,7 +794,8 @@ void CPrefabObject::SerializeMembers(Serialization::IArchive& ar)
 			pickButton.SetToolClass(RUNTIME_CLASS(PrefabLinkTool), nullptr, this);
 
 			ar(pickButton, "picker", "^Pick");
-			ar(Serialization::ActionButton([ = ] {
+			ar(Serialization::ActionButton([=]
+			{
 				CUndo undo("Clear targets");
 
 				bool hasDeleted = false;
@@ -907,7 +914,7 @@ void CPrefabObject::CreateInspectorWidgets(CInspectorWidgetCreator& creator)
 		    ar(Serialization::ActionButton(std::bind(&CPrefabManager::ExtractAllFromSelection, pPrefabManager)), "extract_all", "^Extract All");
 		    ar(Serialization::ActionButton(std::bind(&CPrefabManager::CloneAllFromSelection, pPrefabManager)), "clone_all", "^Clone All");
 		    ar.closeBlock();
-		  }
+			}
 
 		  if (ar.openBlock("edit", "Edit"))
 		  {
@@ -915,20 +922,20 @@ void CPrefabObject::CreateInspectorWidgets(CInspectorWidgetCreator& creator)
 		    {
 		      ar(Serialization::ActionButton(std::bind(&CPrefabManager::CloseSelected, pPrefabManager)), "close", "^Close");
 		      ar(Serialization::ActionButton(std::bind(&CPrefabManager::OpenSelected, pPrefabManager)), "open", "^Open");
-		    }
+				}
 		    else
 		    {
 		      if (pObject->m_opened)
 		      {
 		        ar(Serialization::ActionButton(std::bind(&CPrefabManager::CloseSelected, pPrefabManager)), "close", "^Close");
-		      }
+					}
 		      else
 		      {
 		        ar(Serialization::ActionButton(std::bind(&CPrefabManager::OpenSelected, pPrefabManager)), "open", "^Open");
-		      }
-		    }
+					}
+				}
 		    ar.closeBlock();
-		  }
+			}
 		  ar.closeBlock();
 		}
 
@@ -937,6 +944,32 @@ void CPrefabObject::CreateInspectorWidgets(CInspectorWidgetCreator& creator)
 		  pObject->SerializeMembers(ar);
 		}
 	});
+}
+
+bool CPrefabObject::ApplyAsset(const CAsset& asset, HitContext* pHitContext /*= nullptr*/)
+{
+	string emptyOutString;
+	if (CBaseObject::CanApplyAsset(asset, &emptyOutString))
+	{
+		return CBaseObject::ApplyAsset(asset, pHitContext);
+	}
+	else if (CanApplyAsset(asset, &emptyOutString))
+	{
+		return CPrefabPicker::SetPrefabFromAsset(this, &asset);
+	}
+	return false;
+}
+
+bool CPrefabObject::CanApplyAsset(const CAsset& asset, string* pApplyTextOut /*= nullptr*/) const
+{
+	bool canApply = CBaseObject::CanApplyAsset(asset, pApplyTextOut);
+	if (!canApply && CPrefabPicker::IsValidAssetForPrefab(this, asset))
+	{
+		*pApplyTextOut = QtUtil::ToString(QObject::tr("Assign Prefab"));
+		canApply = true;
+	}
+
+	return canApply;
 }
 
 void CPrefabObject::CloneAll(std::vector<CBaseObject*>& extractedObjects)
@@ -1067,7 +1100,7 @@ void CPrefabObject::AddMembers(std::vector<CBaseObject*>& objects, bool shouldKe
 
 	std::vector<CBaseObject*> objectsToAttach;
 	objectsToAttach.reserve(objects.size());
-	std::copy_if(objects.cbegin(), objects.cend(), std::back_inserter(objectsToAttach), [](CBaseObject* pObject)
+	std::copy_if(objects.cbegin(), objects.cend(), std::back_inserter(objectsToAttach), [this](CBaseObject* pObject)
 	{
 		return !pObject->GetParent();
 	});
@@ -1556,17 +1589,17 @@ static std::vector<std::string> PyGetPrefabItems()
 	const CAssetType* const pPrefabAssetType = GetIEditor()->GetAssetManager()->FindAssetType("Prefab");
 	if (!pPrefabAssetType)
 	{
-		return{};
+		return {};
 	}
 
 	std::vector<std::string> results;
 	pAssetManager->ForeachAsset([&results, pPrefabAssetType](CAsset* pAsset)
-	{
-		if (pAsset->GetType() == pPrefabAssetType)
 		{
-			results.push_back(pAsset->GetFile(0));
-		}
-	});
+			if (pAsset->GetType() == pPrefabAssetType)
+			{
+			  results.push_back(pAsset->GetFile(0));
+			}
+		});
 
 	return results;
 }
@@ -1623,4 +1656,3 @@ REGISTER_ONLY_PYTHON_COMMAND_WITH_EXAMPLE(PyGetPrefabChildWorldPos, prefab, get_
 REGISTER_ONLY_PYTHON_COMMAND_WITH_EXAMPLE(PyHasPrefabItem, prefab, has_item,
                                           "Return true if in the specified prefab library, and in the specified group, the specified item exists.",
                                           "prefab.has_item()");
-

@@ -16,7 +16,7 @@
 
 ///////////////////////////////////////////////////////////////////////////////
 JobManager::BlockingBackEnd::CBlockingBackEnd::CBlockingBackEnd(JobManager::SInfoBlock** pRegularWorkerFallbacks, uint32 nRegularWorkerThreads) :
-	m_Semaphore(SJobQueue_BlockingBackEnd::eMaxWorkQueueJobsSize + JobManager::detail::GetFallbackJobListSize()),
+	m_Semaphore(SJobQueue_BlockingBackEnd::eMaxWorkQueueJobsSize),
 	m_pRegularWorkerFallbacks(pRegularWorkerFallbacks),
 	m_nRegularWorkerThreads(nRegularWorkerThreads),
 	m_pWorkerThreads(NULL),
@@ -120,26 +120,13 @@ void JobManager::BlockingBackEnd::CBlockingBackEnd::AddJob(JobManager::CJobDeleg
 	// Acquire Infoblock to use
 	uint32 jobSlot;
 
-	JobManager::SInfoBlock* pFallbackInfoBlock = NULL;
-	// only wait for a jobslot if we are submitting from a regular thread, or if we are submitting
-	// a blocking job from a regular worker thread
-	bool bWaitForFreeJobSlot = (JobManager::IsWorkerThread() == false);
-
-	const JobManager::detail::EAddJobRes cEnqRes = m_JobQueue.GetJobSlot(jobSlot, nJobPriority, bWaitForFreeJobSlot);
+	m_JobQueue.GetJobSlot(jobSlot, nJobPriority);
 
 #if !defined(_RELEASE)
 	pJobManager->IncreaseRunJobs();
-	if (cEnqRes == JobManager::detail::eAJR_NeedFallbackJobInfoBlock)
-		pJobManager->IncreaseRunFallbackJobs();
 #endif
-	// allocate fallback infoblock if needed
-	IF (cEnqRes == JobManager::detail::eAJR_NeedFallbackJobInfoBlock, 0)
-		pFallbackInfoBlock = new JobManager::SInfoBlock();
-
 	// copy info block into job queue
-	PREFAST_ASSUME(pFallbackInfoBlock);
-	JobManager::SInfoBlock& RESTRICT_REFERENCE rJobInfoBlock = (cEnqRes == JobManager::detail::eAJR_NeedFallbackJobInfoBlock ?
-	                                                            *pFallbackInfoBlock : m_JobQueue.jobInfoBlocks[nJobPriority][jobSlot]);
+	JobManager::SInfoBlock& RESTRICT_REFERENCE rJobInfoBlock = m_JobQueue.jobInfoBlocks[nJobPriority][jobSlot];
 
 	// since we will use the whole InfoBlock, and it is aligned to 128 bytes, clear the cacheline, this is faster than a cachemiss on write
 #if CRY_PLATFORM_64BIT
@@ -182,17 +169,9 @@ void JobManager::BlockingBackEnd::CBlockingBackEnd::AddJob(JobManager::CJobDeleg
 	FlushLine128(&rJobInfoBlock, 384);
 #endif
 
-	IF (cEnqRes == JobManager::detail::eAJR_NeedFallbackJobInfoBlock, 0)
-	{
-		// in case of a fallback job, add self to per thread list (thus no synchronization needed)
-		JobManager::detail::PushToFallbackJobList(eBET_Blocking, &rJobInfoBlock);
-	}
-	else
-	{
-		//CryLogAlways("Add Job to Slot 0x%x, priority 0x%x", jobSlot, nJobPriority );
-		MemoryBarrier();
-		m_JobQueue.jobInfoBlockStates[nJobPriority][jobSlot].SetReady();
-	}
+	//CryLogAlways("Add Job to Slot 0x%x, priority 0x%x", jobSlot, nJobPriority );
+	MemoryBarrier();
+	m_JobQueue.jobInfoBlockStates[nJobPriority][jobSlot].SetReady();
 
 	// Release semaphore count to signal the workers that work is available
 	m_Semaphore.Release();
@@ -223,108 +202,94 @@ void JobManager::BlockingBackEnd::CBlockingBackEndWorkerThread::ThreadEntry()
 		IF (m_bStop == true, 0)
 			break;
 
-		if (JobManager::SInfoBlock* pFallbackInfoBlock = JobManager::detail::PopFromFallbackJobList(eBET_Blocking))
+		bool bFoundBlockingFallbackJob = false;
+
+		// handle fallbacks added by other worker threads
+		for (uint32 i = 0; i < m_nRegularWorkerThreads; ++i)
 		{
-			CRY_PROFILE_REGION(PROFILE_SYSTEM, "JobWorkerThread: Fallback");
-
-			// in case of a fallback job, just get it from the global per thread list
-			pFallbackInfoBlock->AssignMembersTo(&infoBlock);
-			JobManager::CJobManager::CopyJobParameter(infoBlock.paramSize << 4, infoBlock.GetParamAddress(), pFallbackInfoBlock->GetParamAddress());
-
-			// free temp info block again
-			delete pFallbackInfoBlock;
-		}
-		else
-		{
-			bool bFoundBlockingFallbackJob = false;
-
-			// handle fallbacks added by other worker threads
-			for (uint32 i = 0; i < m_nRegularWorkerThreads; ++i)
+			if (m_pRegularWorkerFallbacks[i])
 			{
-				if (m_pRegularWorkerFallbacks[i])
-				{
-					JobManager::SInfoBlock* pRegularWorkerFallback = NULL;
-					do
-					{
-						pRegularWorkerFallback = const_cast<JobManager::SInfoBlock*>(*(const_cast<volatile JobManager::SInfoBlock**>(&m_pRegularWorkerFallbacks[i])));
-					}
-					while (CryInterlockedCompareExchangePointer(alias_cast<void* volatile*>(&m_pRegularWorkerFallbacks[i]), pRegularWorkerFallback->pNext, alias_cast<void*>(pRegularWorkerFallback)) != pRegularWorkerFallback);
-
-					// in case of a fallback job, just get it from the global per thread list
-					pRegularWorkerFallback->AssignMembersTo(&infoBlock);
-					JobManager::CJobManager::CopyJobParameter(infoBlock.paramSize << 4, infoBlock.GetParamAddress(), pRegularWorkerFallback->GetParamAddress());
-
-					// free temp info block again
-					delete pRegularWorkerFallback;
-
-					bFoundBlockingFallbackJob = true;
-					break;
-				}
-			}
-
-			// in case we didn't find a fallback, try the regular queue
-			if (bFoundBlockingFallbackJob == false)
-			{
-				///////////////////////////////////////////////////////////////////////////
-				// multiple steps to get a job of the queue
-				// 1. get our job slot index
-				uint64 currentPushIndex = ~0;
-				uint64 currentPullIndex = ~0;
-				uint64 newPullIndex = ~0;
-				uint32 nPriorityLevel = ~0;
+				JobManager::SInfoBlock* pRegularWorkerFallback = NULL;
 				do
 				{
-#if CRY_PLATFORM_WINDOWS || CRY_PLATFORM_APPLE || CRY_PLATFORM_LINUX || CRY_PLATFORM_ANDROID // emulate a 64bit atomic read on PC platfom
-					currentPullIndex = CryInterlockedCompareExchange64(alias_cast<volatile int64*>(&m_rJobQueue.pull.index), 0, 0);
-					currentPushIndex = CryInterlockedCompareExchange64(alias_cast<volatile int64*>(&m_rJobQueue.push.index), 0, 0);
-#else
-					currentPullIndex = *const_cast<volatile uint64*>(&m_rJobQueue.pull.index);
-					currentPushIndex = *const_cast<volatile uint64*>(&m_rJobQueue.push.index);
-#endif
-					// spin if the updated push ptr didn't reach us yet
-					if (currentPushIndex == currentPullIndex)
-						continue;
-
-					// compute priority level from difference between push/pull
-					if (!JobManager::SJobQueuePos::IncreasePullIndex(currentPullIndex, currentPushIndex, newPullIndex, nPriorityLevel,
-					                                                 m_rJobQueue.GetMaxWorkerQueueJobs(eHighPriority), m_rJobQueue.GetMaxWorkerQueueJobs(eRegularPriority), m_rJobQueue.GetMaxWorkerQueueJobs(eLowPriority), m_rJobQueue.GetMaxWorkerQueueJobs(eStreamPriority)))
-						continue;
-
-					// stop spinning when we succesfull got the index
-					if (CryInterlockedCompareExchange64(alias_cast<volatile int64*>(&m_rJobQueue.pull.index), newPullIndex, currentPullIndex) == currentPullIndex)
-						break;
-
+					pRegularWorkerFallback = const_cast<JobManager::SInfoBlock*>(*(const_cast<volatile JobManager::SInfoBlock**>(&m_pRegularWorkerFallbacks[i])));
 				}
-				while (true);
+				while (CryInterlockedCompareExchangePointer(alias_cast<void* volatile*>(&m_pRegularWorkerFallbacks[i]), pRegularWorkerFallback->pNext, alias_cast<void*>(pRegularWorkerFallback)) != pRegularWorkerFallback);
 
-				// compute our jobslot index from the only increasing publish index
-				uint32 nExtractedCurIndex = static_cast<uint32>(JobManager::SJobQueuePos::ExtractIndex(currentPullIndex, nPriorityLevel));
-				uint32 nNumWorkerQUeueJobs = m_rJobQueue.GetMaxWorkerQueueJobs(nPriorityLevel);
-				uint32 nJobSlot = nExtractedCurIndex & (nNumWorkerQUeueJobs - 1);
+				// in case of a fallback job, just get it from the global per thread list
+				pRegularWorkerFallback->AssignMembersTo(&infoBlock);
+				JobManager::CJobManager::CopyJobParameter(infoBlock.paramSize << 4, infoBlock.GetParamAddress(), pRegularWorkerFallback->GetParamAddress());
 
-				//CryLogAlways("Got Job From Slot 0x%x nPriorityLevel 0x%x", nJobSlot, nPriorityLevel );
-				// 2. Wait still the produces has finished writing all data to the SInfoBlock
-				JobManager::detail::SJobQueueSlotState* pJobInfoBlockState = &m_rJobQueue.jobInfoBlockStates[nPriorityLevel][nJobSlot];
-				int iter = 0;
-				while (!pJobInfoBlockState->IsReady())
-				{
-					CrySleep(iter++ > 10 ? 1 : 0);
-				}
-				;
+				// free temp info block again
+				delete pRegularWorkerFallback;
 
-				// 3. Get a local copy of the info block as asson as it is ready to be used
-				JobManager::SInfoBlock* pCurrentJobSlot = &m_rJobQueue.jobInfoBlocks[nPriorityLevel][nJobSlot];
-				pCurrentJobSlot->AssignMembersTo(&infoBlock);
-				JobManager::CJobManager::CopyJobParameter(infoBlock.paramSize << 4, infoBlock.GetParamAddress(), pCurrentJobSlot->GetParamAddress());
-
-				// 4. Remark the job state as suspended
-				MemoryBarrier();
-				pJobInfoBlockState->SetNotReady();
-
-				// 5. Mark the jobslot as free again
-				MemoryBarrier();
-				pCurrentJobSlot->Release((1 << JobManager::SJobQueuePos::eBitsPerPriorityLevel) / m_rJobQueue.GetMaxWorkerQueueJobs(nPriorityLevel));
+				bFoundBlockingFallbackJob = true;
+				break;
 			}
+		}
+
+		// in case we didn't find a fallback, try the regular queue
+		if (bFoundBlockingFallbackJob == false)
+		{
+			///////////////////////////////////////////////////////////////////////////
+			// multiple steps to get a job of the queue
+			// 1. get our job slot index
+			uint64 currentPushIndex = ~0;
+			uint64 currentPullIndex = ~0;
+			uint64 newPullIndex = ~0;
+			uint32 nPriorityLevel = ~0;
+			do
+			{
+#if CRY_PLATFORM_WINDOWS || CRY_PLATFORM_APPLE || CRY_PLATFORM_LINUX || CRY_PLATFORM_ANDROID // emulate a 64bit atomic read on PC platfom
+				currentPullIndex = CryInterlockedCompareExchange64(alias_cast<volatile int64*>(&m_rJobQueue.pull.index), 0, 0);
+				currentPushIndex = CryInterlockedCompareExchange64(alias_cast<volatile int64*>(&m_rJobQueue.push.index), 0, 0);
+#else
+				currentPullIndex = *const_cast<volatile uint64*>(&m_rJobQueue.pull.index);
+				currentPushIndex = *const_cast<volatile uint64*>(&m_rJobQueue.push.index);
+#endif
+				// spin if the updated push ptr didn't reach us yet
+				if (currentPushIndex == currentPullIndex)
+					continue;
+
+				// compute priority level from difference between push/pull
+				if (!JobManager::SJobQueuePos::IncreasePullIndex(currentPullIndex, currentPushIndex, newPullIndex, nPriorityLevel,
+				                                                 m_rJobQueue.GetMaxWorkerQueueJobs(eHighPriority), m_rJobQueue.GetMaxWorkerQueueJobs(eRegularPriority), m_rJobQueue.GetMaxWorkerQueueJobs(eLowPriority), m_rJobQueue.GetMaxWorkerQueueJobs(eStreamPriority)))
+					continue;
+
+				// stop spinning when we succesfull got the index
+				if (CryInterlockedCompareExchange64(alias_cast<volatile int64*>(&m_rJobQueue.pull.index), newPullIndex, currentPullIndex) == currentPullIndex)
+					break;
+
+			}
+			while (true);
+
+			// compute our jobslot index from the only increasing publish index
+			uint32 nExtractedCurIndex = static_cast<uint32>(JobManager::SJobQueuePos::ExtractIndex(currentPullIndex, nPriorityLevel));
+			uint32 nNumWorkerQUeueJobs = m_rJobQueue.GetMaxWorkerQueueJobs(nPriorityLevel);
+			uint32 nJobSlot = nExtractedCurIndex & (nNumWorkerQUeueJobs - 1);
+
+			//CryLogAlways("Got Job From Slot 0x%x nPriorityLevel 0x%x", nJobSlot, nPriorityLevel );
+			// 2. Wait still the produces has finished writing all data to the SInfoBlock
+			JobManager::detail::SJobQueueSlotState* pJobInfoBlockState = &m_rJobQueue.jobInfoBlockStates[nPriorityLevel][nJobSlot];
+			int iter = 0;
+			while (!pJobInfoBlockState->IsReady())
+			{
+				CrySleep(iter++ > 10 ? 1 : 0);
+			}
+			;
+
+			// 3. Get a local copy of the info block as asson as it is ready to be used
+			JobManager::SInfoBlock* pCurrentJobSlot = &m_rJobQueue.jobInfoBlocks[nPriorityLevel][nJobSlot];
+			pCurrentJobSlot->AssignMembersTo(&infoBlock);
+			JobManager::CJobManager::CopyJobParameter(infoBlock.paramSize << 4, infoBlock.GetParamAddress(), pCurrentJobSlot->GetParamAddress());
+
+			// 4. Remark the job state as suspended
+			MemoryBarrier();
+			pJobInfoBlockState->SetNotReady();
+
+			// 5. Mark the jobslot as free again
+			MemoryBarrier();
+			pCurrentJobSlot->Release((1 << JobManager::SJobQueuePos::eBitsPerPriorityLevel) / m_rJobQueue.GetMaxWorkerQueueJobs(nPriorityLevel));
 		}
 
 		///////////////////////////////////////////////////////////////////////////

@@ -10,13 +10,9 @@
 #include <CryAISystem/INavigationSystem.h>
 #include <CryAISystem/IOffMeshNavigationManager.h>
 
-class CSmartObject;
-class CSmartObjectClass;
-
 //////////////////////////////////////////////////////////////////////////
 /// OffMesh Navigation Manager
 /// Keeps track of off-mesh navigation objects associated to each navigation mesh
-/// and all the smart-objects which can generate off-mesh connections
 ///
 /// Interfaces also with the Navigation System, to update the right objects
 /// when meshes are created, updated or deleted
@@ -45,25 +41,6 @@ private:
 		MNM::OffMeshLinkPtr offMeshLink;
 	};
 
-	struct SObjectMeshInfo
-	{
-		SObjectMeshInfo(NavigationMeshID _meshId)
-			: meshID(_meshId)
-		{
-
-		}
-
-		bool operator==(const NavigationMeshID _meshID)
-		{
-			return (meshID == _meshID);
-		}
-
-		typedef std::vector<MNM::TriangleID> TTriangleList;
-		TTriangleList    triangleList;
-		NavigationMeshID meshID;
-	};
-	typedef std::vector<SObjectMeshInfo> TObjectInfo;
-
 public:
 #if DEBUG_MNM_ENABLED
 	struct ProfileMemoryStats
@@ -84,9 +61,6 @@ public:
 
 	const MNM::OffMeshNavigation& GetOffMeshNavigationForMesh(const NavigationMeshID& meshID) const;
 
-	void                    RegisterSmartObject(CSmartObject* pSmartObject, CSmartObjectClass* pSmartObjectClass);
-	void                    UnregisterSmartObjectForAllClasses(CSmartObject* pSmartObject);
-
 	void                    RefreshConnections(const NavigationMeshID meshID, const MNM::TileID tileID);
 	void                    Clear();
 	void                    Enable();
@@ -94,8 +68,6 @@ public:
 	void                    OnNavigationMeshCreated(const NavigationMeshID& meshID);
 	void                    OnNavigationMeshDestroyed(const NavigationMeshID& meshID);
 	void                    OnNavigationLoadedComplete();
-
-	bool                    IsObjectLinkedWithNavigationMesh(const EntityId objectId) const;
 
 	// IOffMeshNavigationManager
 	virtual void                    QueueCustomLinkAddition(const MNM::LinkAdditionRequest& request) override;
@@ -105,15 +77,13 @@ public:
 	virtual void                    RegisterListener(IOffMeshNavigationListener* pListener, const char* listenerName) override;
 	virtual void                    UnregisterListener(IOffMeshNavigationListener* pListener) override;
 	virtual void                    RemoveAllQueuedAdditionRequestForEntity(const EntityId requestOwner) override;
+	virtual bool                    IsRegisteringEnabled() const override { return m_objectRegistrationEnabled; }
 	// ~IOffMeshNavigationManager
 
 	void ProcessQueuedRequests();
 
 #if DEBUG_MNM_ENABLED
-	void               UpdateEditorDebugHelpers();
 	ProfileMemoryStats GetMemoryStats(ICrySizer* pSizer, const NavigationMeshID meshID) const;
-#else
-	void               UpdateEditorDebugHelpers() {};
 #endif
 
 private:
@@ -122,12 +92,8 @@ private:
 
 	bool       IsLinkRemovalRequested(const MNM::OffMeshLinkID& linkID) const;
 
-	void       UnregisterSmartObject(CSmartObject* pSmartObject, const string& smartObjectClassName);
-
-	bool       ObjectRegistered(const EntityId objectId, const string& smartObjectClassName) const;
 	ILINE bool CanRegisterObject() const { return m_objectRegistrationEnabled; };
 
-	void       NotifyAllListenerAboutLinkAddition(const MNM::OffMeshLinkID& linkID);
 	void       NotifyAllListenerAboutLinkDeletion(const MNM::OffMeshLinkID& linkID);
 
 	// For every navigation mesh, there will be always an off-mesh navigation object
@@ -135,49 +101,6 @@ private:
 	TOffMeshMap            m_offMeshMap;
 
 	MNM::OffMeshNavigation m_emptyOffMeshNavigation;
-
-	// Tracking of objects registered
-	// All registered objects are stored here, and some additional data
-	// like to witch mesh they belong (only one), or bound triangles/tiles
-	struct OffMeshLinkIDList
-	{
-		typedef std::vector<MNM::OffMeshLinkID> TLinkIDList;
-
-		TLinkIDList&       GetLinkIDList()       { return offMeshLinkIDList; }
-		const TLinkIDList& GetLinkIDList() const { return offMeshLinkIDList; }
-
-		void               OnLinkAdditionRequestForSmartObjectServiced(const MNM::SOffMeshOperationCallbackData& callbackData)
-		{
-			if (callbackData.operationSucceeded)
-			{
-				assert(callbackData.linkID != MNM::Constants::eOffMeshLinks_InvalidOffMeshLinkID);
-				offMeshLinkIDList.push_back(callbackData.linkID);
-			}
-		}
-		void               OnLinkRepairRequestForSmartObjectServiced(const MNM::SOffMeshOperationCallbackData& callbackData)
-		{
-			if (!callbackData.operationSucceeded)
-			{
-				auto it = std::find(offMeshLinkIDList.begin(), offMeshLinkIDList.end(), callbackData.linkID);
-				assert(it != offMeshLinkIDList.end());
-				if (it != offMeshLinkIDList.end())
-				{
-					offMeshLinkIDList.erase(it);
-				}
-			}
-		}
-
-	private:
-		TLinkIDList offMeshLinkIDList;
-	};
-
-	typedef stl::STLPoolAllocator<std::pair<const uint32, OffMeshLinkIDList>, stl::PoolAllocatorSynchronizationSinglethreaded> TSOClassInfoAllocator;
-	typedef std::map<uint32, OffMeshLinkIDList, std::less<uint32>, TSOClassInfoAllocator>             TSOClassInfo;
-	typedef std::map<EntityId, TSOClassInfo>                                                          TRegisteredObjects;
-
-	OffMeshLinkIDList* GetClassInfoFromLinkInfo(const SLinkInfo& linkInfo);
-
-	TRegisteredObjects m_registeredObjects;
 
 	// List of registered links
 	typedef std::map<MNM::OffMeshLinkID, SLinkInfo> TLinkInfoMap;

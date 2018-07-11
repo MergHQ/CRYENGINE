@@ -559,8 +559,8 @@ void ApplyVertexDisplacement( inout float4 vPos, inout v2f OUT)
 	float4 ripplesTC = GetWaterRipplesUvs( vPos, perPassParams );
 
 	#if !%_RT_QUALITY && %_RT_QUALITY1
-		vtxDispl = WaterDynRipplesTex.SampleLevel(ssMaterialTrilinear, ripplesTC.xy, 0.0f);
-		vPos.z -= ( vtxDispl.z ) * ripplesTC.w;
+		float fRipplesDisp = WaterDynRipplesTex.SampleLevel(ssMaterialTrilinear, ripplesTC.xy, 0.0f).z;
+		vPos.z -= fRipplesDisp * ripplesTC.w;
 	#endif
 
 #if !%_RT_SAMPLE3
@@ -838,8 +838,8 @@ v2f_hs WaterDS(HS_CONSTANT_DATA_OUTPUT IN,float3 BarycentricCoords : SV_DomainLo
 #if %_RT_SAMPLE4
 	SPerPassWaterParams perPassParams = GetPerPassWaterParams();
 	float4 ripplesTC = GetWaterRipplesUvs( vWorldPos, perPassParams );
-	float fRipplesDisp = 0.5f * GetTexture2DLod(WaterDynRipplesTex, ssMaterialTrilinearClamp, float4(ripplesTC.xy, 0.0f, 0.0f)).z;
-	vtxDispl -= fRipplesDisp * ripplesTC.w ;
+	float fRipplesDisp = GetTexture2DLod(WaterDynRipplesTex, ssMaterialTrilinearClamp, float4(ripplesTC.xy, 0.0f, 0.0f)).z;
+	vtxDispl -= fRipplesDisp * ripplesTC.w;
 
 #if !%_RT_SAMPLE3
 	OUT.ripplesTC = ripplesTC;
@@ -894,7 +894,7 @@ half3 BumpGen( in v2f_hs IN, float2 vParalaxOffset )
 	
 #if %_RT_SAMPLE4
 	// dynamic ripples
-	half2 cRipples = EXPAND(GetTexture2D(WaterDynRipplesTex, ssMaterialTrilinearClamp, IN.ripplesTC.xy).xy);
+	half2 cRipples = GetTexture2D(WaterDynRipplesTex, ssMaterialTrilinearClamp, IN.ripplesTC.xy).xy;
 	bumpNormal.xy += cRipples * IN.ripplesTC.w;
 #endif
 
@@ -960,7 +960,7 @@ float2 GetParalaxOffset(in v2f_hs IN, half3 vView)
 #if %_RT_SAMPLE4
 	// Finally add water ripples to paralax offset
 	half fSimSize = WATER_RIPPLES_SIM_GRID_SIZE;
-	half4 cRipples = EXPAND(GetTexture2D(WaterDynRipplesTex, ssMaterialTrilinearClamp, IN.ripplesTC.xy + vParalax / fSimSize));
+	half4 cRipples = GetTexture2D(WaterDynRipplesTex, ssMaterialTrilinearClamp, IN.ripplesTC.xy + vParalax / fSimSize);
 
 	cRipples.xy = lGradientScale * cRipples.xy;
 	cRipples.z  = lHeightScale   * cRipples.z;

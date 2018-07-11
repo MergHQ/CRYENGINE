@@ -48,7 +48,14 @@ public:
 	void       UpdateObjects();
 
 	//! Searches and finds the XmlNode with a specified Id in m_objectsNode (the XML representation of this prefab in the prefab library)
-	XmlNodeRef FindObjectByGuid(const CryGUID& guid, bool fowardSearch = true);
+	XmlNodeRef             FindObjectByGuid(const CryGUID& guid, bool fowardSearch = true);
+	//!Returns the guids of all the direct children of this prefab that are also prefabs
+	std::set<CryGUID>      FindPrefabsGUIDsInChildren();
+	//!Like FindPrefabsGUIDsInChildren, but also loads the CPrefabItem 
+	std::set<CPrefabItem*> FindPrefabItemsInChildren();
+	//!Recursively goes through the whole hierarchy of children 
+	//!@param toIgnore the list of children GUIDs to exclude from the search (with all their children)
+	std::set<CryGUID> FindAllPrefabsGUIDsInChildren(const std::set<CryGUID> & toIgnore);
 
 private:
 	//! Function to serialize changes to the main prefab lib (this changes only the internal XML representation m_objectsNode)

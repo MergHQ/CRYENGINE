@@ -25,10 +25,6 @@ namespace JobManager
 /////////////////////////////////////////////////////////////////////////////
 // Util Functions to get access Thread local data (needs to be unique per worker thread)
 namespace detail {
-// function to manipulate the per thread fallback job freelist
-void                    PushToFallbackJobList(EBackEndType type, JobManager::SInfoBlock* pInfoBlock);
-JobManager::SInfoBlock* PopFromFallbackJobList(EBackEndType type);
-constexpr int    GetFallbackJobListSize() { return 2048; }
 
 // functions to access the per thread worker thread id
 void   SetWorkerThreadId(uint32 nWorkerThreadId);
@@ -137,7 +133,6 @@ public:
 	virtual ~CJobManager()
 	{
 		delete m_pThreadBackEnd;
-		delete m_pFallBackBackEnd;
 		CryAlignedDelete(m_pBlockingBackEnd);
 	}
 
@@ -166,8 +161,6 @@ public:
 			return m_pThreadBackEnd;
 		case eBET_Blocking:
 			return m_pBlockingBackEnd;
-		case eBET_Fallback:
-			return m_pFallBackBackEnd;
 		default:
 			CRY_ASSERT_MESSAGE(0, "Unsupported EBackEndType encountered.");
 			__debugbreak();
@@ -262,8 +255,6 @@ public:
 	void IncreaseRunJobs();
 	void IncreaseRunFallbackJobs();
 
-	void AddBlockingFallbackJob(JobManager::SInfoBlock * pInfoBlock, uint32 nWorkerThreadID);
-
 	const char* GetJobName(JobManager::Invoker invoker);
 
 private:
@@ -283,7 +274,6 @@ private:
 
 	bool m_Initialized;                                     //true if JobManager have been initialized
 
-	IBackend* m_pFallBackBackEnd;               // Backend for development, jobs are executed in their calling thread
 	IBackend* m_pThreadBackEnd;                 // Backend for regular jobs, available on PC/XBOX. on Xbox threads are polling with a low priority
 	IBackend* m_pBlockingBackEnd;               // Backend for tasks which can block to prevent stalling regular jobs in this case
 
@@ -334,12 +324,6 @@ inline void JobManager::CJobManager::CopyJobParameter(const uint32 cJobParamSize
 inline void JobManager::CJobManager::IncreaseRunJobs()
 {
 	CryInterlockedIncrement((int volatile*)&m_nJobsRunCounter);
-}
-
-///////////////////////////////////////////////////////////////////////////////
-inline void JobManager::CJobManager::IncreaseRunFallbackJobs()
-{
-	CryInterlockedIncrement((int volatile*)&m_nFallbackJobsRunCounter);
 }
 
 #endif //__JOB_MANAGER_H__

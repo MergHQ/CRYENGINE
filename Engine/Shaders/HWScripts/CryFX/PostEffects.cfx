@@ -1653,9 +1653,9 @@ pixout WaterRipplesPS(vtxOut IN)
 	half3 vNormal = half3( -(vWeights.x - vWeights.y), -(vWeights.x - vWeights.z), 0.05); 
 	vNormal = normalize(vNormal.xyz);                                               
  
-	OUT.Color.xy = vNormal.xy*0.5+0.5;
+	OUT.Color.xy = vNormal.xy;
 	
-	half4 clampEdge = half4(0.5h, 0.5h, 0.0h, 0.0h);
+	half4 clampEdge = half4(0.0h, 0.0h, 0.0h, 0.0h);
 	
 	// Add 2 pixel border with no normals + flat heights (emulating clamp to border at earliest spot)
 	OUT.Color.xyzw = (IN.baseTC.x< fHalfTexelOffset*4.0)? clampEdge.xyzw:OUT.Color.xyzw;
@@ -1685,7 +1685,6 @@ technique WaterRipplesGen
   {
     VertexShader = FullscreenTriVS() PostEffectsVS;
     PixelShader  = WaterRipplesPS()  PostEffectsPS;    
- 
   }
 }
 

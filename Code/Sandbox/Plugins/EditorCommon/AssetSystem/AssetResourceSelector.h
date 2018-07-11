@@ -22,6 +22,7 @@ struct EDITOR_COMMON_API SStaticAssetSelectorEntry : public SStaticResourceSelec
 
 	//This helper method is here for special selectors that cannot use SStaticAssetSelectorEntry directly
 	static dll_string SelectFromAsset(const SResourceSelectorContext& context, const std::vector<string>& types, const char* previousValue);
+	static dll_string SelectFromAsset(std::function<void(const char* newValue)> onValueChangedCallback, const std::vector<string>& types, const char* previousValue);
 
 private:
 	std::vector<string> assetTypeNames;

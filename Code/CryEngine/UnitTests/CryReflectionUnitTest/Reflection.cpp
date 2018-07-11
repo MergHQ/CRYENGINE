@@ -11,7 +11,6 @@
 
 #include "Module.h"
 #include "ReflectionBase.h"
-#include "../CrySystem/System.h"
 #include "../CrySystem/Serialization/ArchiveHost.h"
 
 YASLI_ENUM_BEGIN(EBankType, "BankType")
@@ -31,9 +30,7 @@ protected:
 		gEnv->ignoreAllAsserts = true;
 		gEnv->noAssertDialog = true;
 #endif
-		SSystemInitParams params;
-		m_pSystem = new CSystem(params);
-		gEnv->pSystem = m_pSystem;
+		m_pArchiveHost = Serialization::CreateArchiveHost();
 
 		m_pModule = new Cry::Reflection::CModule();
 		gEnv->pReflection = m_pModule;
@@ -43,11 +40,12 @@ protected:
 
 		// Prepare TypeDesc for test use.
 		constexpr Cry::CTypeId typeIdUint64 = Cry::Type::IdOf<uint64>();
+		constexpr Cry::CTypeId typeIdInt64 = Cry::Type::IdOf<int64>();
 		constexpr Cry::CTypeId typeIdCVault = Cry::Type::IdOf<CVault>();
 		constexpr Cry::CTypeId typeIdCBank = Cry::Type::IdOf<CBank>();
 
-
 		m_pTypeDescUint64 = Cry::Reflection::CoreRegistry::GetTypeById(typeIdUint64);
+		m_pTypeDescInt64 = Cry::Reflection::CoreRegistry::GetTypeById(typeIdInt64);
 		m_pTypeDescCVault = Cry::Reflection::CoreRegistry::GetTypeById(typeIdCVault);
 		m_pTypeDescCBank = Cry::Reflection::CoreRegistry::GetTypeById(typeIdCBank);
 	}
@@ -56,10 +54,11 @@ protected:
 	{
 	}
 
-	CSystem*                  m_pSystem;
 	Cry::Reflection::IModule* m_pModule;
+	Serialization::IArchiveHost* m_pArchiveHost;
 
 	const Cry::Reflection::ITypeDesc* m_pTypeDescUint64;
+	const Cry::Reflection::ITypeDesc* m_pTypeDescInt64;
 	const Cry::Reflection::ITypeDesc* m_pTypeDescCVault;
 	const Cry::Reflection::ITypeDesc* m_pTypeDescCBank;
 
@@ -69,6 +68,7 @@ protected:
 TEST_F(CReflectionUnitTest, ReflectionTypeDescs)
 {
 	REQUIRE(m_pTypeDescUint64);
+	REQUIRE(m_pTypeDescInt64);
 	REQUIRE(m_pTypeDescCVault);
 	REQUIRE(m_pTypeDescCBank);
 }
@@ -78,6 +78,22 @@ namespace TypeIdUnitTests
 	constexpr Cry::Type::CTypeId typeId; // constexpr default constructible
 	constexpr Cry::Type::CTypeId typeId2 = typeId; // constexpr copy constructible
 	constexpr Cry::Type::CTypeId typeIdUint64 = Cry::Type::IdOf<uint64>(); // constexpr IdOf
+}
+
+// Compile time tests
+namespace SCompileTimeUnitTests
+{
+	// TODO: This should work for all compilers. Enable it, as soon as the GCC workaround in Type\TypeUtils.h is removed.
+#if defined (CRY_COMPILER_MSVC) || (defined(CRY_COMPILER_CLANG) && !defined(CRY_PLATFORM_ORBIS))
+	constexpr bool CompareCompileTimeString(const char* a, const char* b, int64 len = 1)
+	{
+		return *a == *b && (len - 1 <= 0 || CompareCompileTimeString(a + 1, b + 1, len - 1));
+	}
+	static_assert(CompareCompileTimeString("bool",
+		Cry::Type::Utils::SCompileTime_TypeInfo<bool>::GetName().GetBegin(),
+		Cry::Type::Utils::SCompileTime_TypeInfo<bool>::GetName().GetLength()), "TypeInfo name doesn't match expected name.");
+#endif
+	// ~TODO
 }
 
 // Cry::Type::TypeDesc
@@ -547,9 +563,8 @@ TEST_F(CReflectionUnitTest, CTypeDescEqualOperator)
 
 TEST_F(CReflectionUnitTest, CTypeDescSerialize)
 {
-	Serialization::IArchiveHost* pArchiveHost = gEnv->pSystem->GetArchiveHost();
-	REQUIRE(pArchiveHost);
-	if (pArchiveHost)
+	REQUIRE(m_pArchiveHost);
+	if (m_pArchiveHost)
 	{
 		DynArray<char> buffer;
 		Cry::Type::CTypeDesc typeDesc = Cry::Type::DescOf<CBank>();
@@ -563,8 +578,8 @@ TEST_F(CReflectionUnitTest, CTypeDescSerialize)
 		REQUIRE(serializeFunction);
 		if (serializeFunction)
 		{
-			pArchiveHost->SaveBinaryBuffer(buffer, Serialization::SStruct(sourceBank));
-			pArchiveHost->LoadBinaryBuffer(Serialization::SStruct(targetBank), buffer.data(), buffer.size());
+			m_pArchiveHost->SaveBinaryBuffer(buffer, Serialization::SStruct(sourceBank));
+			m_pArchiveHost->LoadBinaryBuffer(Serialization::SStruct(targetBank), buffer.data(), buffer.size());
 
 			REQUIRE(targetBank.GetAccount() == sourceBank.GetAccount());
 			REQUIRE(targetBank.m_type == sourceBank.m_type);
@@ -800,8 +815,11 @@ TEST_F(CReflectionUnitTest, ReflectedMemberFunction)
 			REQUIRE(pFunctionDesc);
 			if (pFunctionDesc)
 			{
+				REQUIRE(cry_strcmp("GetAccount", pFunctionDesc->GetLabel()) == 0);
 				Cry::Reflection::CDelegate getAccountDelegate(static_cast<void*>(pBank), *pFunctionDesc);
 				Cry::Reflection::CAny ret = getAccountDelegate.Invoke();
+				REQUIRE(ret.GetTypeIndex() == m_pTypeDescInt64->GetIndex());
+
 				const int64* pDestination = ret.GetConstPointer<int64>();
 				REQUIRE(pDestination);
 				if (pDestination)
@@ -836,6 +854,50 @@ TEST_F(CReflectionUnitTest, CMemberVariablePointer)
 
 			delete pVault;
 		}
+	}
+}
+
+TEST_F(CReflectionUnitTest, CAnyCopyConstructor)
+{
+	if (m_pTypeDescInt64)
+	{
+		const int64 source = 0xeeffc0;
+		Cry::Reflection::CAny anySource(*m_pTypeDescInt64);
+		anySource.AssignValue(source, false);
+
+		Cry::Reflection::CAny anyTarget(anySource);
+
+		REQUIRE(anySource.IsEqual(anyTarget));
+	}
+}
+
+TEST_F(CReflectionUnitTest, CAnyCopyAssign)
+{
+	if (m_pTypeDescInt64)
+	{
+		const int64 source = 0xeeffc0;
+		Cry::Reflection::CAny anySource(*m_pTypeDescInt64);
+		anySource.AssignValue(source, false);
+
+		Cry::Reflection::CAny anyTarget = anySource;
+
+		REQUIRE(anySource.IsEqual(anyTarget));
+	}
+}
+
+TEST_F(CReflectionUnitTest, CAnyMoveAssign)
+{
+	if (m_pTypeDescInt64)
+	{
+		const int64 source = 0xeeffc0;
+		Cry::Reflection::CAny anySource(*m_pTypeDescInt64);
+		Cry::Reflection::CAny anyValue(*m_pTypeDescInt64);
+		anySource.AssignValue(source, false);
+		anyValue.AssignValue(source, false);
+
+		Cry::Reflection::CAny anyTarget = std::move(anyValue);
+
+		REQUIRE(anySource.IsEqual(anyTarget));
 	}
 }
 
@@ -1216,16 +1278,15 @@ TEST_F(CReflectionUnitTest, CAnyIsEqual)
 
 TEST_F(CReflectionUnitTest, CAnySerialize)
 {
-	Serialization::IArchiveHost* pArchiveHost = gEnv->pSystem->GetArchiveHost();
-	REQUIRE(pArchiveHost);
-	if (pArchiveHost)
+	REQUIRE(m_pArchiveHost);
+	if (m_pArchiveHost)
 	{
 		DynArray<char> buffer;
 
 		Cry::Reflection::CAny anyTarget;
 		Cry::Reflection::CAny anySource((uint64)0xeeffc0);
-		pArchiveHost->SaveBinaryBuffer(buffer, Serialization::SStruct(anySource));
-		pArchiveHost->LoadBinaryBuffer(Serialization::SStruct(anyTarget), buffer.data(), buffer.size());
+		m_pArchiveHost->SaveBinaryBuffer(buffer, Serialization::SStruct(anySource));
+		m_pArchiveHost->LoadBinaryBuffer(Serialization::SStruct(anyTarget), buffer.data(), buffer.size());
 
 		REQUIRE(anySource.IsPointer() == anyTarget.IsPointer());
 		REQUIRE(anySource.IsConst() == anyTarget.IsConst());
@@ -1238,8 +1299,8 @@ TEST_F(CReflectionUnitTest, CAnySerialize)
 		anyTarget.Destruct();
 
 		anySource.AssignValue(CVault());
-		pArchiveHost->SaveBinaryBuffer(buffer, Serialization::SStruct(anySource));
-		pArchiveHost->LoadBinaryBuffer(Serialization::SStruct(anyTarget), buffer.data(), buffer.size());
+		m_pArchiveHost->SaveBinaryBuffer(buffer, Serialization::SStruct(anySource));
+		m_pArchiveHost->LoadBinaryBuffer(Serialization::SStruct(anyTarget), buffer.data(), buffer.size());
 
 		REQUIRE(anySource.IsPointer() == anyTarget.IsPointer());
 		REQUIRE(anySource.IsConst() == anyTarget.IsConst());
@@ -1978,9 +2039,8 @@ TEST_F(CReflectionUnitTest, CAnyArrayRemove)
 
 TEST_F(CReflectionUnitTest, CAnyArraySerialization)
 {
-	Serialization::IArchiveHost* pArchiveHost = gEnv->pSystem->GetArchiveHost();
-	REQUIRE(pArchiveHost);
-	if (pArchiveHost)
+	REQUIRE(m_pArchiveHost);
+	if (m_pArchiveHost)
 	{
 		const Cry::Reflection::ITypeDesc* pTypeDesc = Cry::Reflection::CoreRegistry::GetTypeById(Cry::Type::IdOf<uint64>());
 		REQUIRE(pTypeDesc);
@@ -2004,8 +2064,8 @@ TEST_F(CReflectionUnitTest, CAnyArraySerialization)
 				}
 			}
 
-			pArchiveHost->SaveBinaryBuffer(buffer, Serialization::SStruct(anySource));
-			pArchiveHost->LoadBinaryBuffer(Serialization::SStruct(anyTarget), buffer.data(), buffer.size());
+			m_pArchiveHost->SaveBinaryBuffer(buffer, Serialization::SStruct(anySource));
+			m_pArchiveHost->LoadBinaryBuffer(Serialization::SStruct(anyTarget), buffer.data(), buffer.size());
 
 			REQUIRE(anySource.GetTypeIndex() == anyTarget.GetTypeIndex());
 			REQUIRE(anySource.IsPointer() == anyTarget.IsPointer());

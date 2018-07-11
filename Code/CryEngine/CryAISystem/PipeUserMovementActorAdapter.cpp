@@ -4,6 +4,9 @@
 #include "PipeUserMovementActorAdapter.h"
 #include "PipeUser.h"
 
+#include "SmartObjects.h"
+#include "SmartObjectOffMeshNavigation.h"
+
 void PipeUserMovementActorAdapter::OnMovementPlanProduced()
 {
 	m_attachedPipeUser.SetSignal(AISIGNAL_DEFAULT, "MovementPlanProduced");

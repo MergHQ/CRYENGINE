@@ -47,7 +47,7 @@ bool JobManager::ThreadBackEnd::CThreadBackEnd::Init(uint32 nSysMaxWorker)
 		CryWarning(VALIDATOR_MODULE_SYSTEM, VALIDATOR_WARNING, "Failed to get physical core count.");
 	}
 
-	// 2 cores are reserved for main thread and render thread, 
+	// 2 cores are reserved for main thread and render thread,
 	// and we still make sure at least one persistent worker thread is created
 	const uint32 numAvailableCores = std::max(numPhysicalCores - 2, 1);
 #endif
@@ -75,7 +75,7 @@ bool JobManager::ThreadBackEnd::CThreadBackEnd::Init(uint32 nSysMaxWorker)
 		if (!gEnv->pThreadManager->SpawnThread(m_arrWorkerThreads[i], "JobSystem_%s_%u", name, i))
 		{
 			CryFatalError("Error spawning \"JobSystem_%s_%u\" thread.", name, i);
-		}		
+		}
 	}
 #if defined(JOBMANAGER_SUPPORT_FRAMEPROFILER)
 	m_pBackEndWorkerProfiler = new JobManager::CWorkerBackEndProfiler;
@@ -130,25 +130,14 @@ void JobManager::ThreadBackEnd::CThreadBackEnd::AddJob(JobManager::CJobDelegator
 	/////////////////////////////////////////////////////////////////////////////
 	// Acquire Infoblock to use
 	uint32 jobSlot;
-	JobManager::SInfoBlock* pFallbackInfoBlock = NULL;
-	// only wait for a jobslot if we are submitting from a regular thread, or if we are submitting
-	// a blocking job from a regular worker thread
-	bool bWaitForFreeJobSlot = (JobManager::IsWorkerThread() == false) && (JobManager::IsBlockingWorkerThread() == false);
-	JobManager::detail::EAddJobRes cEnqRes = m_JobQueue.GetJobSlot(jobSlot, nJobPriority, bWaitForFreeJobSlot);
+	m_JobQueue.GetJobSlot(jobSlot, nJobPriority);
 
 #if !defined(_RELEASE)
 	pJobManager->IncreaseRunJobs();
-	if (cEnqRes == JobManager::detail::eAJR_NeedFallbackJobInfoBlock)
-		pJobManager->IncreaseRunFallbackJobs();
 #endif
-	// allocate fallback infoblock if needed
-	IF (cEnqRes == JobManager::detail::eAJR_NeedFallbackJobInfoBlock, 0)
-		pFallbackInfoBlock = new JobManager::SInfoBlock();
 
 	// copy info block into job queue
-	PREFAST_ASSUME(pFallbackInfoBlock);
-	JobManager::SInfoBlock& RESTRICT_REFERENCE rJobInfoBlock = (cEnqRes == JobManager::detail::eAJR_NeedFallbackJobInfoBlock ?
-	                                                            *pFallbackInfoBlock : m_JobQueue.jobInfoBlocks[nJobPriority][jobSlot]);
+	JobManager::SInfoBlock& RESTRICT_REFERENCE rJobInfoBlock = m_JobQueue.jobInfoBlocks[nJobPriority][jobSlot];
 
 	// since we will use the whole InfoBlock, and it is aligned to 128 bytes, clear the cacheline, this is faster than a cachemiss on write
 #if CRY_PLATFORM_64BIT
@@ -191,23 +180,9 @@ void JobManager::ThreadBackEnd::CThreadBackEnd::AddJob(JobManager::CJobDelegator
 	FlushLine128(&rJobInfoBlock, 384);
 #endif
 
-	IF (cEnqRes == JobManager::detail::eAJR_NeedFallbackJobInfoBlock, 0)
-	{
-		// catch submission from regular workers to the blocking backend
-		if (crJob.IsBlocking())
-		{
-			pJobManager->AddBlockingFallbackJob(pFallbackInfoBlock, JobManager::GetWorkerThreadId());
-		}
-		else
-		{
-			JobManager::detail::PushToFallbackJobList(eBET_Thread, &rJobInfoBlock);
-		}
-	}
-	else
-	{
-		MemoryBarrier();
-		m_JobQueue.jobInfoBlockStates[nJobPriority][jobSlot].SetReady();
-	}
+	MemoryBarrier();
+	m_JobQueue.jobInfoBlockStates[nJobPriority][jobSlot].SetReady();
+
 	// Release semaphore count to signal the workers that work is available
 	m_Semaphore.ReleaseAndSignal();
 }
@@ -315,120 +290,106 @@ void JobManager::ThreadBackEnd::CThreadBackEndWorkerThread::ThreadEntry()
 		}
 
 		{
-			if (JobManager::SInfoBlock* pFallbackInfoBlock = JobManager::detail::PopFromFallbackJobList(eBET_Thread))
+
+			//CRY_PROFILE_REGION(PROFILE_SYSTEM, "Get Job (Normal)");
+
+			///////////////////////////////////////////////////////////////////////////
+			// multiple steps to get a job of the queue
+			// 1. get our job slot index
+			uint64 currentPushIndex = ~0;
+			uint64 currentPullIndex = ~0;
+			uint64 newPullIndex = ~0;
+
+			uint attemptToGetJobCount = 0;
+
+			do
 			{
-				//CRY_PROFILE_REGION(PROFILE_SYSTEM, "Get Job (Fallback)");
-
-				// in case of a fallback job, just get it from the global per thread list
-				pFallbackInfoBlock->AssignMembersTo(&infoBlock);
-				JobManager::CJobManager::CopyJobParameter(infoBlock.paramSize << 4, infoBlock.GetParamAddress(), pFallbackInfoBlock->GetParamAddress());
-				hasJob = true;
-
-				// free temp info block
-				delete pFallbackInfoBlock;
-				pFallbackInfoBlock = nullptr;
-			}
-			else
-			{
-				//CRY_PROFILE_REGION(PROFILE_SYSTEM, "Get Job (Normal)");
-
-				///////////////////////////////////////////////////////////////////////////
-				// multiple steps to get a job of the queue
-				// 1. get our job slot index
-				uint64 currentPushIndex = ~0;
-				uint64 currentPullIndex = ~0;
-				uint64 newPullIndex = ~0;
-
-				uint attemptToGetJobCount = 0;
-
-				do
+				// Check if we have a job or we failed often enough to believe that there is no more work available.
+				// We cannot Wait() here on the semaphore as there might be work on the fallback queue
+				if (hasJob || attemptToGetJobCount++ > 5)
 				{
-					// Check if we have a job or we failed often enough to believe that there is no more work available.
-					// We cannot Wait() here on the semaphore as there might be work on the fallback queue
-					if (hasJob || attemptToGetJobCount++ > 5)
-					{
-						break;
-					}
+					break;
+				}
 
-					// volatile load
+				// volatile load
 #if CRY_PLATFORM_WINDOWS || CRY_PLATFORM_APPLE || CRY_PLATFORM_LINUX || CRY_PLATFORM_ANDROID// emulate a 64bit atomic read on PC platfom
-					currentPullIndex = CryInterlockedCompareExchange64(alias_cast<volatile int64*>(&m_rJobQueue.pull.index), 0, 0);
-					currentPushIndex = CryInterlockedCompareExchange64(alias_cast<volatile int64*>(&m_rJobQueue.push.index), 0, 0);
+				currentPullIndex = CryInterlockedCompareExchange64(alias_cast<volatile int64*>(&m_rJobQueue.pull.index), 0, 0);
+				currentPushIndex = CryInterlockedCompareExchange64(alias_cast<volatile int64*>(&m_rJobQueue.push.index), 0, 0);
 #else
-					currentPullIndex = *const_cast<volatile uint64*>(&m_rJobQueue.pull.index);
-					currentPushIndex = *const_cast<volatile uint64*>(&m_rJobQueue.push.index);
+				currentPullIndex = *const_cast<volatile uint64*>(&m_rJobQueue.pull.index);
+				currentPushIndex = *const_cast<volatile uint64*>(&m_rJobQueue.push.index);
 #endif
-					// spin if the updated push ptr didn't reach us yet
-					if (currentPushIndex == currentPullIndex)
-					{
-						continue;
-					}
-
-					// compute priority level from difference between push/pull
-					if (!JobManager::SJobQueuePos::IncreasePullIndex(currentPullIndex, currentPushIndex, newPullIndex, nPriorityLevel,
-					                                                 m_rJobQueue.GetMaxWorkerQueueJobs(eHighPriority), m_rJobQueue.GetMaxWorkerQueueJobs(eRegularPriority), m_rJobQueue.GetMaxWorkerQueueJobs(eLowPriority), m_rJobQueue.GetMaxWorkerQueueJobs(eStreamPriority)))
-					{
-						continue;
-					}
-
-					// stop spinning when we successfully got the index
-					hasJob = CryInterlockedCompareExchange64(alias_cast<volatile int64*>(&m_rJobQueue.pull.index), newPullIndex, currentPullIndex) == currentPullIndex;
-
-				}
-				while (true);
-
-				if (hasJob)
+				// spin if the updated push ptr didn't reach us yet
+				if (currentPushIndex == currentPullIndex)
 				{
-					// We got a job, reduce the counter
-					//CRY_PROFILE_REGION(PROFILE_SYSTEM, "Aquire");
-					m_rWorkSyncVar.Aquire();
-				}
-				else
-				{					
-					// Wait for new work
-					{
-						//CRY_PROFILE_REGION(PROFILE_SYSTEM, "Wait for work");
-						// We failed to get a job. Check if there is still work available or wait for new work
-						m_rWorkSyncVar.Wait();
-					}
-
-					// Try acquire work
 					continue;
 				}
 
-				if (hasJob)
+				// compute priority level from difference between push/pull
+				if (!JobManager::SJobQueuePos::IncreasePullIndex(currentPullIndex, currentPushIndex, newPullIndex, nPriorityLevel,
+				                                                 m_rJobQueue.GetMaxWorkerQueueJobs(eHighPriority), m_rJobQueue.GetMaxWorkerQueueJobs(eRegularPriority), m_rJobQueue.GetMaxWorkerQueueJobs(eLowPriority), m_rJobQueue.GetMaxWorkerQueueJobs(eStreamPriority)))
 				{
-					// compute our jobslot index from the only increasing publish index
-					uint32 nExtractedCurIndex = static_cast<uint32>(JobManager::SJobQueuePos::ExtractIndex(currentPullIndex, nPriorityLevel));
-					uint32 nNumWorkerQUeueJobs = m_rJobQueue.GetMaxWorkerQueueJobs(nPriorityLevel);
-					uint32 nJobSlot = nExtractedCurIndex & (nNumWorkerQUeueJobs - 1);
-
-					// 2. Wait till the produces has finished writing all data to the SInfoBlock
-					JobManager::detail::SJobQueueSlotState* pJobInfoBlockState = &m_rJobQueue.jobInfoBlockStates[nPriorityLevel][nJobSlot];
-					int iter = 0;
-					while (!pJobInfoBlockState->IsReady())
-					{
-						//CRY_PROFILE_REGION(PROFILE_SYSTEM, "JobWorkerThread: About to sleep");
-						CrySleep(0);
-					}
-
-					// 3. Get a local copy of the info block as as soon as it is ready to be used
-					JobManager::SInfoBlock* pCurrentJobSlot = &m_rJobQueue.jobInfoBlocks[nPriorityLevel][nJobSlot];
-					pCurrentJobSlot->AssignMembersTo(&infoBlock);
-					JobManager::CJobManager::CopyJobParameter(infoBlock.paramSize << 4, infoBlock.GetParamAddress(), pCurrentJobSlot->GetParamAddress());
-
-					// 4. Remark the job state as suspended
-					MemoryBarrier();
-					pJobInfoBlockState->SetNotReady();
-
-					// 5. Mark the jobslot as free again
-					MemoryBarrier();
-					pCurrentJobSlot->Release((1 << JobManager::SJobQueuePos::eBitsPerPriorityLevel) / m_rJobQueue.GetMaxWorkerQueueJobs(nPriorityLevel));
+					continue;
 				}
+
+				// stop spinning when we successfully got the index
+				hasJob = CryInterlockedCompareExchange64(alias_cast<volatile int64*>(&m_rJobQueue.pull.index), newPullIndex, currentPullIndex) == currentPullIndex;
+
 			}
+			while (true);
+
+			if (hasJob)
+			{
+				// We got a job, reduce the counter
+				//CRY_PROFILE_REGION(PROFILE_SYSTEM, "Aquire");
+				m_rWorkSyncVar.Aquire();
+			}
+			else
+			{
+				// Wait for new work
+				{
+					//CRY_PROFILE_REGION(PROFILE_SYSTEM, "Wait for work");
+					// We failed to get a job. Check if there is still work available or wait for new work
+					m_rWorkSyncVar.Wait();
+				}
+
+				// Try acquire work
+				continue;
+			}
+
+			if (hasJob)
+			{
+				// compute our jobslot index from the only increasing publish index
+				uint32 nExtractedCurIndex = static_cast<uint32>(JobManager::SJobQueuePos::ExtractIndex(currentPullIndex, nPriorityLevel));
+				uint32 nNumWorkerQUeueJobs = m_rJobQueue.GetMaxWorkerQueueJobs(nPriorityLevel);
+				uint32 nJobSlot = nExtractedCurIndex & (nNumWorkerQUeueJobs - 1);
+
+				// 2. Wait till the produces has finished writing all data to the SInfoBlock
+				JobManager::detail::SJobQueueSlotState* pJobInfoBlockState = &m_rJobQueue.jobInfoBlockStates[nPriorityLevel][nJobSlot];
+				int iter = 0;
+				while (!pJobInfoBlockState->IsReady())
+				{
+					//CRY_PROFILE_REGION(PROFILE_SYSTEM, "JobWorkerThread: About to sleep");
+					CrySleep(0);
+				}
+
+				// 3. Get a local copy of the info block as as soon as it is ready to be used
+				JobManager::SInfoBlock* pCurrentJobSlot = &m_rJobQueue.jobInfoBlocks[nPriorityLevel][nJobSlot];
+				pCurrentJobSlot->AssignMembersTo(&infoBlock);
+				JobManager::CJobManager::CopyJobParameter(infoBlock.paramSize << 4, infoBlock.GetParamAddress(), pCurrentJobSlot->GetParamAddress());
+
+				// 4. Remark the job state as suspended
+				MemoryBarrier();
+				pJobInfoBlockState->SetNotReady();
+
+				// 5. Mark the jobslot as free again
+				MemoryBarrier();
+				pCurrentJobSlot->Release((1 << JobManager::SJobQueuePos::eBitsPerPriorityLevel) / m_rJobQueue.GetMaxWorkerQueueJobs(nPriorityLevel));
+			}
+
 		}
 
-			//CRY_PROFILE_REGION(PROFILE_SYSTEM, "JobWorkerThread: Execute Job");
+		//CRY_PROFILE_REGION(PROFILE_SYSTEM, "JobWorkerThread: Execute Job");
 
 		///////////////////////////////////////////////////////////////////////////
 		// now we have a valid SInfoBlock to start work on it
@@ -515,7 +476,7 @@ bool JobManager::ThreadBackEnd::CThreadBackEndWorkerThread::KickTempWorker()
 			m_pTempWorkerInfo->doWork = true; // Signal worker to stop work
 			m_pTempWorkerInfo->doWorkCnd.Notify();
 			return true;
-		}		
+		}
 	}
 	return false;
 }
@@ -528,7 +489,7 @@ bool JobManager::ThreadBackEnd::CThreadBackEndWorkerThread::StopTempWorker()
 		return false;
 	}
 
-	// Find an active worker 
+	// Find an active worker
 	if (m_pTempWorkerInfo->doWork)
 	{
 		CryAutoLock<CryMutexFast>(m_pTempWorkerInfo->doWorkLock);

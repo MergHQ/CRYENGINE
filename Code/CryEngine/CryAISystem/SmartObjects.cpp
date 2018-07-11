@@ -12,6 +12,8 @@
 
  *********************************************************************/
 #include "StdAfx.h"
+#include "SmartObjects.h"
+
 #include <CrySystem/ISystem.h>
 #include <CrySystem/XML/IXml.h>
 #include <CryAnimation/ICryAnimation.h>
@@ -23,7 +25,7 @@
 #include "DebugDrawContext.h"
 
 #include "AIActions.h"
-#include "SmartObjects.h"
+#include "SmartObjectOffMeshNavigation.h"
 
 #include "Navigation/NavigationSystem/NavigationSystem.h"
 #include "Navigation/MNM/MNM.h"
@@ -851,6 +853,8 @@ CSmartObjectManager::CSmartObjectManager()
 	CSmartObject::CState("Dead");
 
 	gEnv->pEntitySystem->AddSink(this, IEntitySystem::AllSinkEvents & (~IEntitySystem::OnBeforeSpawn));
+
+	m_pOffMeshNavigation = new CSmartObjectOffMeshNavigation();
 }
 
 CSmartObjectManager::~CSmartObjectManager()
@@ -859,6 +863,8 @@ CSmartObjectManager::~CSmartObjectManager()
 	gEnv->pEntitySystem->RemoveSink(this);
 
 	stl::free_container(m_statesToExcludeForPathfinding);
+
+	SAFE_DELETE(m_pOffMeshNavigation);
 }
 
 void CSmartObjectManager::Serialize(TSerialize ser)
@@ -3099,6 +3105,8 @@ void CSmartObjectManager::RemoveSmartObjectState(IEntity* pEntity, const char* s
 }
 void CSmartObjectManager::DebugDraw()
 {
+	m_pOffMeshNavigation->UpdateEditorDebugHelpers();
+	
 	CDebugDrawContext dc;
 	dc->SetAlphaBlended(true);
 
@@ -3471,7 +3479,7 @@ void CSmartObjectManager::OnEntityEvent(IEntity* pEntity, const SEntityEvent& ev
 							CSmartObjectClass* pSmartObjectClass = *it;
 
 							//Register again when moving
-							gAIEnv.pNavigationSystem->GetOffMeshNavigationManager()->RegisterSmartObject(pSmartObject, pSmartObjectClass);
+							m_pOffMeshNavigation->RegisterSmartObject(pSmartObject, pSmartObjectClass);
 						}
 					}
 				}
@@ -3490,7 +3498,7 @@ void CSmartObjectManager::OnEntityEvent(IEntity* pEntity, const SEntityEvent& ev
 						//Register again when moving
 						if (!hasAI)
 						{
-							gAIEnv.pNavigationSystem->GetOffMeshNavigationManager()->RegisterSmartObject(pSmartObject, pSmartObjectClass);
+							m_pOffMeshNavigation->RegisterSmartObject(pSmartObject, pSmartObjectClass);
 						}
 
 						// update the SmartObject in the lookup table based on its x-position
@@ -3588,13 +3596,13 @@ bool CSmartObjectManager::RegisterInNavigation(CSmartObject* pSmartObject, CSmar
 	if (!pSmartObject)
 		return false;
 
-	gAIEnv.pNavigationSystem->GetOffMeshNavigationManager()->RegisterSmartObject(pSmartObject, pClass);
+	m_pOffMeshNavigation->RegisterSmartObject(pSmartObject, pClass);
 	return true;
 }
 
 void CSmartObjectManager::UnregisterFromNavigation(CSmartObject* pSmartObject) const
 {
-	gAIEnv.pNavigationSystem->GetOffMeshNavigationManager()->UnregisterSmartObjectForAllClasses(pSmartObject);
+	m_pOffMeshNavigation->UnregisterSmartObjectForAllClasses(pSmartObject);
 }
 
 void CSmartObjectManager::GetTemplateIStatObj(IEntity* pEntity, std::vector<IStatObj*>& statObjects)
@@ -3782,9 +3790,7 @@ void CSmartObjectManager::DrawTemplate(CSmartObject* pSmartObject, bool bStaticO
 
 	const bool checkAgainstMNM = gAIEnv.pNavigationSystem->IsInUse();
 
-	const bool validMNMLink = checkAgainstMNM ?
-	                          gAIEnv.pNavigationSystem->GetOffMeshNavigationManager()->IsObjectLinkedWithNavigationMesh(pSmartObject->GetEntityId()) :
-	                          false;
+	const bool validMNMLink = checkAgainstMNM ? m_pOffMeshNavigation->IsObjectLinkedWithNavigationMesh(pSmartObject->GetEntityId()) : false;
 
 	ValidateTemplate(pSmartObject, bStaticOnly);
 

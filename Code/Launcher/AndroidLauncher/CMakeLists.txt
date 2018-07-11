@@ -89,9 +89,97 @@ if(ANDROID)
 	target_link_libraries(${THIS_PROJECT} PRIVATE SDL2)
 	target_link_libraries(${THIS_PROJECT} PRIVATE SDLExt)
 
-	wrap_whole_archive(${THIS_PROJECT} WRAPPED_MODULES MODULES)
-	wrap_whole_archive(${THIS_PROJECT} WRAPPED_GAME_MODULES GAME_MODULES)
-	target_link_libraries(${THIS_PROJECT} PRIVATE ${WRAPPED_MODULES} ${WRAPPED_GAME_MODULES})
+	if(${CMAKE_GENERATOR} MATCHES "Visual Studio")
+		# HACK: Bypass incorrect handling of linker flags in Nvidia NSight Tegra MSBuild toolchain
+		# In order for the linker to not throw away all of the engine code because it doesn't know it's being used,
+		# we rely on the linker flag --whole-archive to preserve the full contents of each module.
+		# CMake specifies that target_link_libraries will accept linker flags just fine, so normally, we just surround our modules with that linker flag.
+		# Unfortunately, the NSight Tegra toolchain will indiscriminately prepend -l to every item in the list,
+		# including the flag, which mans the linker can't understand the command-line.
+		# To bypass this and get a working build, we need to just set a raw list of linker flags, which involves handling dependencies, etc. ourselves.
+
+		macro(link_dependencies proj)
+			string(SUBSTRING "${proj}" 0 1 firstChar)
+			if(firstChar STREQUAL "-") #linker flag
+				set_property(TARGET ${THIS_PROJECT} APPEND_STRING PROPERTY LINK_FLAGS " ${proj}")
+			else()
+				if(TARGET ${proj}) # CMake target (engine module, imported library, etc)
+					get_property(libdir TARGET ${proj} PROPERTY BINARY_DIR)
+					get_property(outname TARGET ${proj} PROPERTY OUTPUT_NAME)
+					if(NOT outname)
+						set(outname ${proj})
+					endif()
+					string(SUBSTRING "${outname}" 0 3 prefix)
+					get_property(location TARGET ${proj} PROPERTY IMPORTED_LOCATION)
+					if(location)
+						# we already have the location, just use that
+					elseif(prefix STREQUAL "lib")
+						# already has a lib prefix, so keep it
+						set(location "\"${libdir}/$(Configuration)/${outname}.a\"")
+					else()
+						# add lib prefix
+						set(location "\"${libdir}/$(Configuration)/lib${outname}.a\"")
+					endif()
+					set_property(TARGET ${THIS_PROJECT} APPEND_STRING PROPERTY LINK_FLAGS " ${location}")
+					get_property(extradeps TARGET ${proj} PROPERTY LINK_LIBRARIES)
+					foreach(dep ${extradeps})
+						list(FIND processList ${dep} temp)
+						if (TARGET ${dep} OR temp EQUAL -1)
+							list(APPEND processList ${dep})
+						endif()
+					endforeach()
+				else() # external library
+					# Handle debug/optimized flags from target_link_libraries
+					string(REGEX REPLACE "\\$<\\$<NOT:\\$<OR:\\$<CONFIG:DEBUG>,\\$<CONFIG:PROFILE>>>:(.*)>" "\\1" release_configs_library ${proj})
+					string(REGEX REPLACE "\\$<\\$<OR:\\$<CONFIG:DEBUG>,\\$<CONFIG:PROFILE>>:(.*)>" "\\1" debug_configs_library ${proj})
+					string(REGEX MATCH "[\\\\\\/]" is_path ${proj})
+					if (NOT "${debug_configs_library}" STREQUAL "${proj}") # debug flag was applied to library
+						string(REPLACE "$<CONFIG>" "$(Configuration)" debug_configs_library ${debug_configs_library})
+						if(is_path)
+							set_property(TARGET ${THIS_PROJECT} APPEND_STRING PROPERTY LINK_FLAGS_DEBUG " ${debug_configs_library}")
+							set_property(TARGET ${THIS_PROJECT} APPEND_STRING PROPERTY LINK_FLAGS_PROFILE " ${debug_configs_library}")
+						else()
+							set_property(TARGET ${THIS_PROJECT} APPEND_STRING PROPERTY LINK_FLAGS_DEBUG " -l${debug_configs_library}")
+							set_property(TARGET ${THIS_PROJECT} APPEND_STRING PROPERTY LINK_FLAGS_PROFILE " -l${debug_configs_library}")							
+						endif()
+					elseif (NOT "${release_configs_library}" STREQUAL "${proj}") # optimized flag was applied to library
+						string(REPLACE "$<CONFIG>" "$(Configuration)" release_configs_library ${release_configs_library})
+						if(is_path)
+							set_property(TARGET ${THIS_PROJECT} APPEND_STRING PROPERTY LINK_FLAGS_RELEASE " ${release_configs_library}")
+						else()
+							set_property(TARGET ${THIS_PROJECT} APPEND_STRING PROPERTY LINK_FLAGS_RELEASE " -l${release_configs_library}")
+						endif()
+					else() # library used in all configurations
+						string(REPLACE "$<CONFIG>" "$(Configuration)" temp ${proj})
+						if(is_path)
+							set_property(TARGET ${THIS_PROJECT} APPEND_STRING PROPERTY LINK_FLAGS " ${temp}")
+						else()
+							set_property(TARGET ${THIS_PROJECT} APPEND_STRING PROPERTY LINK_FLAGS " -l${temp}")
+						endif()
+					endif()
+				endif()
+			endif()
+		endmacro()
+
+		add_dependencies(${THIS_PROJECT} ${MODULES} ${GAME_MODULES})
+		wrap_whole_archive(${THIS_PROJECT} WRAPPED_MODULES MODULES)
+		wrap_whole_archive(${THIS_PROJECT} WRAPPED_GAME_MODULES GAME_MODULES)
+		set(processList ${WRAPPED_MODULES} ${WRAPPED_GAME_MODULES})
+		set(c 0)
+		while(TRUE)
+			list(GET processList ${c} p)		
+			link_dependencies(${p})
+			math(EXPR c "${c}+1")
+			list(LENGTH processList length)
+			if(NOT c LESS length)
+				break()
+			endif()
+		endwhile()
+	else()
+		wrap_whole_archive(${THIS_PROJECT} WRAPPED_MODULES MODULES)
+		wrap_whole_archive(${THIS_PROJECT} WRAPPED_GAME_MODULES GAME_MODULES)
+		target_link_libraries(${THIS_PROJECT} PRIVATE ${WRAPPED_MODULES} ${WRAPPED_GAME_MODULES})
+	endif()
 	
 	if (CMAKE_CXX_COMPILER_ID STREQUAL "Clang")
 	target_compile_options(${THIS_PROJECT} PRIVATE
@@ -108,4 +196,5 @@ if(ANDROID)
 else()
 	CryFileContainer(AndroidLauncher SOLUTION_FOLDER "Launcher")
 endif()
+
 

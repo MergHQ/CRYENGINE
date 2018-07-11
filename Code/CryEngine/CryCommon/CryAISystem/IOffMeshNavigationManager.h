@@ -1,11 +1,9 @@
 // Copyright 2001-2018 Crytek GmbH / Crytek Group. All rights reserved.
 
-#ifndef IOFFMESHNAVIGATIONMANAGER_H__
-#define IOFFMESHNAVIGATIONMANAGER_H__
-
 #pragma once
 
-#include "INavigationSystem.h"
+#include "NavigationSystem/NavigationIdTypes.h"
+#include "NavigationSystem/MNMBaseTypes.h"
 #include "NavigationSystem/OffMeshLink.h"
 
 namespace MNM
@@ -144,6 +142,8 @@ struct LinkRemovalRequest : OffMeshOperationRequestBase
 struct IOffMeshNavigationListener
 {
 	virtual void OnOffMeshLinkGoingToBeRemoved(const MNM::OffMeshLinkID& linkID) = 0;
+	virtual void OnOffMeshLinkGoingToBeRefreshed(MNM::LinkAdditionRequest& request) {}
+	virtual void OnRefreshConnections(const NavigationMeshID meshID, const MNM::TileID tileID) {}
 };
 
 struct IOffMeshNavigationManager
@@ -157,6 +157,6 @@ struct IOffMeshNavigationManager
 	virtual void                    RegisterListener(IOffMeshNavigationListener* pListener, const char* listenerName) = 0;
 	virtual void                    UnregisterListener(IOffMeshNavigationListener* pListener) = 0;
 	virtual void                    RemoveAllQueuedAdditionRequestForEntity(const EntityId requestOwner) = 0;
+	virtual bool                    IsRegisteringEnabled() const = 0;
 };
 
-#endif // IOFFMESHNAVIGATIONMANAGER_H__
