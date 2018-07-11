@@ -343,7 +343,7 @@ int CRenderMesh::Release()
 		}
 #   endif
 		m_nFlags |= FRM_RELEASED;
-		int nFrame = GetCurrentFrameID();
+		int nFrame = gRenDev->m_pRT ? GetCurrentFrameID() : gEnv->nMainFrameID;
 		util::list<CRenderMesh>* garbage = &CRenderMesh::s_MeshGarbageList[nFrame & (MAX_RELEASED_MESH_FRAMES - 1)];
 		m_Chain.relink_tail(garbage);
 	}
