@@ -177,7 +177,6 @@ enum  : uint32
 enum EBackEndType
 {
 	eBET_Thread,
-	eBET_Fallback,
 	eBET_Blocking
 };
 
