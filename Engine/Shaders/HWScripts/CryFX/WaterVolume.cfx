@@ -792,7 +792,7 @@ half3 BumpGen( in v2f_hs IN, float2 vParalaxOffset, inout half cSmoothness, inou
 
 #if %_RT_SAMPLE4
 	// dynamic ripples
-	half2 cRipples = EXPAND(GetTexture2D(WaterDynRipplesTex, ssMaterialTrilinearClamp, IN.ripplesTC.xy).xy);
+	half2 cRipples = GetTexture2D(WaterDynRipplesTex, ssMaterialTrilinearClamp, IN.ripplesTC.xy).xy;
 	#if %WATER_TESSELLATION_DX11 && !%_RT_NO_TESSELLATION
 		bumpNormal.xy -= cRipples * IN.ripplesTC.w;// displacement outwards
 	#else
