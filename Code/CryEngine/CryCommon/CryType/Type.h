@@ -23,7 +23,7 @@ public:
 	template<typename TYPE>
 	constexpr static CTypeId Create()
 	{
-		return CTypeId(Utils::Explicit<typename PureType<TYPE>::Type>());
+		return CTypeId(Utils::SExplicit<typename PureType<TYPE>::Type>());
 	}
 
 	constexpr CTypeId() = default;
@@ -62,14 +62,14 @@ protected:
 	friend class CTypeDesc;
 
 	template<typename TYPE>
-	friend constexpr inline const Cry::Type::CTypeId IdOf();
+	friend constexpr inline CTypeId IdOf();
 
 	constexpr CTypeId(ValueType typeNameCrc)
 		: m_typeNameCrc(typeNameCrc)
 	{}
 
 	template<typename TYPE>
-	constexpr CTypeId(Utils::Explicit<TYPE> )
+	constexpr CTypeId(Utils::SExplicit<TYPE> )
 		: m_typeNameCrc(Utils::SCompileTime_TypeInfo<TYPE>::GetCrc32())
 	{}
 
@@ -84,13 +84,13 @@ public:
 	template<typename TYPE>
 	static CTypeDesc Create()
 	{
-		return CTypeDesc(Utils::Explicit<typename PureType<TYPE>::Type>(), 0);
+		return CTypeDesc(Utils::SExplicit<typename PureType<TYPE>::Type>(), 0);
 	}
 
 	template<typename TYPE, size_t ARRAY_LENGTH>
 	static CTypeDesc Create()
 	{
-		return CTypeDesc(Utils::Explicit<typename PureType<TYPE>::Type>(), ARRAY_LENGTH);
+		return CTypeDesc(Utils::SExplicit<typename PureType<TYPE>::Type>(), ARRAY_LENGTH);
 	}
 
 	CTypeDesc()
@@ -171,8 +171,8 @@ public:
 
 private:
 	template<typename TYPE>
-	CTypeDesc(Utils::Explicit<TYPE>, size_t arrayLength)
-		: m_fullQualifiedName(Utils::SCompileTime_TypeInfo<TYPE>::GetName().c_str(), Utils::SCompileTime_TypeInfo<TYPE>::GetName().length())
+	CTypeDesc(Utils::SExplicit<TYPE>, size_t arrayLength)
+		: m_fullQualifiedName(Utils::SCompileTime_TypeInfo<TYPE>::GetName().GetBegin(), Utils::SCompileTime_TypeInfo<TYPE>::GetName().GetLength())
 		, m_typeId(CTypeId::Create<TYPE>())
 		, m_arrayLength(arrayLength)
 		, m_size(sizeof(TYPE))
@@ -257,16 +257,16 @@ inline bool operator!=(CTypeId lh, const CTypeDesc& rh)
 }
 
 template<typename TYPE>
-constexpr const Cry::Type::CTypeId IdOf()
+constexpr CTypeId IdOf()
 {
-	typedef typename Cry::Type::PureType<TYPE>::Type T;
-	return CTypeId(Cry::Type::Utils::SCompileTime_TypeInfo<T>::GetCrc32());
+	typedef typename PureType<TYPE>::Type T;
+	return CTypeId(Utils::SCompileTime_TypeInfo<T>::GetCrc32());
 }
 
 template<typename TYPE>
-static const Cry::Type::CTypeDesc& DescOf()
+static const CTypeDesc& DescOf()
 {
-	static const Cry::Type::CTypeDesc typeDesc = Cry::Type::CTypeDesc::Create<TYPE>();
+	static const CTypeDesc typeDesc = CTypeDesc::Create<TYPE>();
 	return typeDesc;
 }
 

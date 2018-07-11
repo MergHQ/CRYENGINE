@@ -11,12 +11,12 @@ public:
 	~CVault();
 	CVault(const CVault& other);
 
-	bool Serialize(Serialization::IArchive& archive);
-	string ToString() const;
+	bool    Serialize(Serialization::IArchive& archive);
+	string  ToString() const;
 
 	CVault& operator=(CVault&& other);
 	CVault& operator=(const CVault& other);
-	bool operator==(const CVault& other) const;
+	bool    operator==(const CVault& other) const;
 
 public:
 	char   m_legacy[17];
@@ -29,8 +29,8 @@ private:
 
 enum EBankType
 {
-	eBankType_Retail = 3,
-	eBankType_Buisness = 7,
+	eBankType_Retail     = 3,
+	eBankType_Buisness   = 7,
 	eBankType_Investment = 9
 };
 
@@ -44,15 +44,15 @@ public:
 	CBank(CBank&& other);
 	CBank(const CBank& other);
 
-	bool Serialize(Serialization::IArchive& archive);
+	bool   Serialize(Serialization::IArchive& archive);
 	string ToString() const;
 
-	void    SetAccount(int64 account) { m_account = account; }
-	int64_t GetAccount() const { return m_account; }
+	void   SetAccount(int64 account) { m_account = account; }
+	int64  GetAccount() const        { return m_account; }
 
 	CBank& operator=(const CBank& other);
 	CBank& operator=(CBank&& other);
-	bool operator==(const CBank& other) const;
+	bool   operator==(const CBank& other) const;
 
 public:
 	EBankType           m_type;

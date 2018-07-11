@@ -1034,16 +1034,17 @@ inline CAny& CAny::operator=(CAny&& other)
 {
 	if (this != &other)
 	{
-		Destruct();
 		m_data = other.m_data;
 		m_isSmallValue = other.m_isSmallValue;
 		m_isPointer = other.m_isPointer;
 		m_isConst = other.m_isConst;
+		m_typeIndex = other.m_typeIndex;
 
 		other.m_data = 0;
 		other.m_isSmallValue = false;
 		other.m_isPointer = false;
 		other.m_isConst = false;
+		other.m_typeIndex = TypeIndex::Invalid;
 	}
 	return *this;
 }
