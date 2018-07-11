@@ -3547,7 +3547,7 @@ CEntitySystem::StaticEntityNetworkIdentifier CEntitySystem::GetStaticEntityNetwo
 
 	// Look up index for the specified static (loaded from level) entity in the vector
 	// The entry has to be contained here, or it shows a severe issue in the entity system
-	auto it = std::lower_bound(m_staticEntityIds.begin(), m_staticEntityIds.end(), id);
+	auto it = std::find(m_staticEntityIds.begin(), m_staticEntityIds.end(), id);
 	CRY_ASSERT_MESSAGE(it != m_staticEntityIds.end(), "Static entity was not present in the static entity vector! This indicates a severe system error!");
 
 	return static_cast<StaticEntityNetworkIdentifier>(std::distance(m_staticEntityIds.begin(), it));
@@ -3568,10 +3568,13 @@ EntityId CEntitySystem::GetEntityIdFromStaticEntityNetworkId(const StaticEntityN
 	return INVALID_ENTITYID;
 }
 
-void CEntitySystem::AddStaticEntityId(const EntityId id)
+void CEntitySystem::AddStaticEntityId(const EntityId id, StaticEntityNetworkIdentifier networkIdentifier)
 {
 	CRY_ASSERT_MESSAGE(m_staticEntityIds.empty() || m_staticEntityIds.back() < id, "Static entity identifiers must be added sequentially!");
-	m_staticEntityIds.emplace_back(id);
+	CRY_ASSERT(networkIdentifier < m_staticEntityIds.size());
+
+	// Static entity identifiers start at index 1, 0 being game rules
+	m_staticEntityIds[networkIdentifier + 1] = id;
 }
 
 void CEntitySystem::PurgeDeferredCollisionEvents(bool force)

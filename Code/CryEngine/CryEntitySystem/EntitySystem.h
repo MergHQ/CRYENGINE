@@ -85,6 +85,7 @@ struct SEntityAttachment
 struct SEntityLoadParams
 {
 	SEntitySpawnParams spawnParams;
+	IEntitySystem::StaticEntityNetworkIdentifier networkIdentifier;
 	size_t             allocationSize;
 
 	SEntityLoadParams();
@@ -321,8 +322,9 @@ public:
 	void                             EnableComponentUpdates(IEntityComponent* pComponent, bool bEnable);
 	void                             EnableComponentPrePhysicsUpdates(IEntityComponent* pComponent, bool bEnable);
 
-	void                             ReserveStaticEntityIds(size_t count) { m_staticEntityIds.reserve(count); }
-	void                             AddStaticEntityId(EntityId id);
+	// Reserve space for the static entity identifiers, note +1 being due to game rules being considered a static entity
+	void                             ReserveStaticEntityIds(size_t count) { m_staticEntityIds.resize(count + 1); }
+	void                             AddStaticEntityId(EntityId id, StaticEntityNetworkIdentifier networkIdentifier);
 
 private:
 	bool ValidateSpawnParameters(SEntitySpawnParams& params);

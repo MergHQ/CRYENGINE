@@ -160,7 +160,10 @@ bool CEntityLoadManager::ParseEntities(XmlNodeRef& entitiesNode, bool bIsLoading
 				INDENT_LOG_DURING_SCOPE(true, "Parsing entity '%s'", entityNode->getAttr("Name"));
 
 				loadParameterStorage.emplace_back();
-				if (!ExtractEntityLoadParams(entityNode, loadParameterStorage.back(), segmentOffset, true))
+				SEntityLoadParams& loadParams = loadParameterStorage.back();
+				loadParams.networkIdentifier = static_cast<IEntitySystem::StaticEntityNetworkIdentifier>(i);
+
+				if (!ExtractEntityLoadParams(entityNode, loadParams, segmentOffset, true))
 				{
 					loadParameterStorage.pop_back();
 
@@ -169,7 +172,7 @@ bool CEntityLoadManager::ParseEntities(XmlNodeRef& entitiesNode, bool bIsLoading
 				}
 				else
 				{
-					requiredAllocationSize += loadParameterStorage.back().allocationSize;
+					requiredAllocationSize += loadParams.allocationSize;
 				}
 			}
 		}
@@ -403,12 +406,7 @@ bool CEntityLoadManager::CreateEntity(XmlNodeRef& entityNode, SEntitySpawnParams
 	loadParams.spawnParams = pParams;
 	loadParams.spawnParams.entityNode = entityNode;
 
-	if (loadParams.spawnParams.id == 0)
-	{
-		// Generate a new id if not set
-		loadParams.spawnParams.id = g_pIEntitySystem->GenerateEntityId();
-	}
-	return CreateEntity(nullptr, loadParams, outUsingId, true);
+	return CreateEntity(nullptr, loadParams, outUsingId, false);
 }
 
 //////////////////////////////////////////////////////////////////////////
@@ -417,18 +415,19 @@ bool CEntityLoadManager::CreateEntity(CEntity* pPreallocatedEntity, SEntityLoadP
 	CRY_ASSERT_MESSAGE(loadParams.spawnParams.pClass != nullptr, "Create Entity was called without an entity class! This will lead to a crash!");
 	MEMSTAT_CONTEXT_FMT(EMemStatContextTypes::MSC_Entity, 0, "Entity %s", loadParams.spawnParams.pClass->GetName());
 
-	bool bResult = true;
-	outUsingId = 0;
+	outUsingId = INVALID_ENTITYID;
 
 	XmlNodeRef& entityNode = loadParams.spawnParams.entityNode;
 	SEntitySpawnParams& spawnParams = loadParams.spawnParams;
 
-	CEntity* pSpawnedEntity = static_cast<CEntity*>(g_pIEntitySystem->SpawnPreallocatedEntity(pPreallocatedEntity, spawnParams, false));
-
-	if (bResult && pSpawnedEntity)
+	if (CEntity* pSpawnedEntity = static_cast<CEntity*>(g_pIEntitySystem->SpawnPreallocatedEntity(pPreallocatedEntity, spawnParams, false)))
 	{
 		g_pIEntitySystem->AddEntityToLayer(spawnParams.sLayerName, pSpawnedEntity->GetId());
-		g_pIEntitySystem->AddStaticEntityId(pSpawnedEntity->GetId());
+
+		if (bIsLoadingLevellFile)
+		{
+			g_pIEntitySystem->AddStaticEntityId(pSpawnedEntity->GetId(), loadParams.networkIdentifier);
+		}
 
 		pSpawnedEntity->SetLoadedFromLevelFile(bIsLoadingLevellFile);
 
@@ -563,11 +562,9 @@ bool CEntityLoadManager::CreateEntity(CEntity* pPreallocatedEntity, SEntityLoadP
 			}
 		}
 
-		const bool bInited = g_pIEntitySystem->InitEntity(pSpawnedEntity, spawnParams);
-		if (!bInited)
+		if (!g_pIEntitySystem->InitEntity(pSpawnedEntity, spawnParams))
 		{
-			// Failed to initialise an entity, need to bail or we'll crash
-			return true;
+			return false;
 		}
 
 		if (entityNode)
@@ -619,16 +616,13 @@ bool CEntityLoadManager::CreateEntity(CEntity* pPreallocatedEntity, SEntityLoadP
 			if (bHiddenInGame)
 				pSpawnedEntity->Hide(true);
 		}
+
+		outUsingId = pSpawnedEntity->GetId();
+		return true;
 	}
 
-	if (!bResult)
-	{
-		EntityWarning("[CEntityLoadManager::CreateEntity] Entity Load Failed: %s (%s)", spawnParams.sName, spawnParams.pClass->GetName());
-	}
-
-	outUsingId = (pSpawnedEntity ? pSpawnedEntity->GetId() : 0);
-
-	return bResult;
+	EntityWarning("[CEntityLoadManager::CreateEntity] Entity Load Failed: %s (%s)", spawnParams.sName, spawnParams.pClass->GetName());
+	return false;
 }
 
 //////////////////////////////////////////////////////////////////////////

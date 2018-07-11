@@ -311,7 +311,7 @@ bool CClientContextView::DoBeginBind(TSerialize ser, CEnumFlags<EBeginBindFlags>
 				return false;
 			}
 		}
-		if (flags & EBeginBindFlags::ReadEntityID)
+		else if (flags & EBeginBindFlags::ReadEntityID)
 		{
 			ser.Value("userID", nUserID);
 			ContextState()->SpawnedObject(nUserID);
