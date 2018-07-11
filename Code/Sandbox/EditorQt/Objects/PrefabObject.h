@@ -43,10 +43,11 @@ public:
 	DECLARE_DYNCREATE(CPrefabObject)
 	static void CreateFrom(std::vector<CBaseObject*>& objects, Vec3 center, CPrefabItem* pItem);
 
-	//////////////////////////////////////////////////////////////////////////
-	// CGroup overrides.
-	//////////////////////////////////////////////////////////////////////////
-	bool               CreateFrom(std::vector<CBaseObject*>& objects) override;
+	//! CBaseObject overrides.
+	virtual float              GetCreationOffsetFromTerrain() const override { return 0.0f; }
+
+	//! CGroup overrides.
+	virtual bool       CreateFrom(std::vector<CBaseObject*>& objects) override;
 
 	virtual bool       Init(CBaseObject* prev, const string& file) override;
 	virtual void       PostInit(const string& file) override;
@@ -98,6 +99,11 @@ public:
 	void         SetAutoUpdatePrefab(bool autoUpdate);
 	bool         GetAutoUpdatePrefab() const { return m_autoUpdatePrefabs; }
 
+	//! Assigns the specified asset to the object, in this case a material or a prefab can be assigned
+	//! \param pHitContext Specifies raycast context, if we are applying the asset via a drag action
+	virtual bool ApplyAsset(const CAsset& asset, HitContext* pHitContext = nullptr) override;
+	virtual bool CanApplyAsset(const CAsset& asset, string* pApplyTextOut = nullptr) const override;
+
 
 	// Extract all objects inside.
 	void         CloneAll(std::vector<CBaseObject*>& extractedObjects);
@@ -113,10 +119,9 @@ public:
 	void         SetObjectPrefabFlagAndLayer(CBaseObject* object);
 	void         SetChangePivotMode(bool changePivotMode) { m_bChangePivotPoint = changePivotMode; }
 	virtual void OnContextMenu(CPopupMenuItem* menu);
-
 protected:
-	void         SerializeMembers(Serialization::IArchive& ar);
-	virtual void RemoveChild(CBaseObject* child);
+	void                      SerializeMembers(Serialization::IArchive& ar);
+	virtual void              RemoveChild(CBaseObject* child);
 
 	CPrefabObject();
 
@@ -136,7 +141,6 @@ protected:
 
 private:
 	void DeleteChildrenWithoutUpdating();
-
 	void AttachLoadedChildrenToPrefab(CObjectArchive& ar, IObjectLayer* pThisLayer);
 
 protected:
@@ -186,4 +190,3 @@ public:
 	virtual const char* GetTextureIcon()                    { return "%EDITOR%/ObjectIcons/prefab.bmp"; }
 	virtual bool        IsCreatable() const override;
 };
-
