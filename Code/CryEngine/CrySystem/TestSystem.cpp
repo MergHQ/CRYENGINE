@@ -351,7 +351,7 @@ template<typename F> void CTestSystem::RunTestsFilter(F&& predicate)
 		if (!m_pReporter->HasTest(lastErrorTestInfo))
 		{
 			m_pReporter->OnSingleTestFinish(lastErrorTestInfo, 0, false, {
-				{ "Crash", nullptr, 0 } });
+				{ "Incomplete from previous run", nullptr, 0 } });
 		}
 		
 	}
