@@ -6,8 +6,8 @@
 #include "Puppet.h"
 
 #include "Navigation/NavigationSystem/NavigationSystem.h"
-#include "Navigation/NavigationSystem/OffMeshNavigationManager.h"
-#include "Navigation/MNM/OffGridLinks.h"
+#include "SmartObjects.h"
+#include "SmartObjectOffMeshNavigation.h"
 
 PathFollowResult::TPredictedStates COPTrace::s_tmpPredictedStates;
 int COPTrace::s_instanceCount;
@@ -1607,7 +1607,7 @@ void COPTrace::TriggerExactPositioning(CPipeUser* pPipeUser, bool* pbForceRegene
 
 			if (smartObject)
 			{
-				MNM::OffMeshLink* pOffMeshLink = gAIEnv.pNavigationSystem->GetOffMeshNavigationManager()->GetOffMeshLink(pSmartObjectMNMData->offMeshLinkID);
+				MNM::OffMeshLink* pOffMeshLink = gAIEnv.pNavigationSystem->GetIOffMeshNavigationManager().GetOffMeshLink(pSmartObjectMNMData->offMeshLinkID);
 				OffMeshLink_SmartObject* pSOLink = pOffMeshLink ? pOffMeshLink->CastTo<OffMeshLink_SmartObject>() : NULL;
 
 				assert(pSOLink);

@@ -4137,11 +4137,6 @@ void NavigationSystemDebugDraw::DebugDraw(NavigationSystem& navigationSystem)
 		DebugDrawTriangleOnCursor(navigationSystem);
 
 		m_progress.Draw();
-
-		if (navigationSystem.IsInUse())
-		{
-			navigationSystem.m_offMeshNavigationManager.UpdateEditorDebugHelpers();
-		}
 	}
 
 	DebugDrawNavigationSystemState(navigationSystem);

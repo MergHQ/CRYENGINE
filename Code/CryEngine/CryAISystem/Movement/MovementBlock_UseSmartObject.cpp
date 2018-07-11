@@ -3,12 +3,14 @@
 #include "StdAfx.h"
 #include "MovementBlock_UseSmartObject.h"
 #include "MovementActor.h"
-#include <CryAISystem/MovementUpdateContext.h>
 #include "MovementHelpers.h"
 #include "Navigation/NavigationSystem/NavigationSystem.h"
-#include "Navigation/MNM/OffGridLinks.h"
 #include "PipeUser.h"
 #include "AIBubblesSystem/AIBubblesSystem.h"
+
+#include "SmartObjectOffMeshNavigation.h"
+
+#include <CryAISystem/MovementUpdateContext.h>
 
 namespace Movement
 {
@@ -61,7 +63,7 @@ void UseSmartObject::OnTraverseStarted(const MovementUpdateContext& context)
 
 UseExactPositioningBase::TryRequestingExactPositioningResult UseSmartObject::TryRequestingExactPositioning(const MovementUpdateContext& context)
 {
-	MNM::OffMeshLink* pOffMeshLink = gAIEnv.pNavigationSystem->GetOffMeshNavigationManager()->GetOffMeshLink(m_smartObjectMNMData.offMeshLinkID);
+	MNM::OffMeshLink* pOffMeshLink = gAIEnv.pNavigationSystem->GetIOffMeshNavigationManager().GetOffMeshLink(m_smartObjectMNMData.offMeshLinkID);
 	OffMeshLink_SmartObject* pSOLink = pOffMeshLink ? pOffMeshLink->CastTo<OffMeshLink_SmartObject>() : NULL;
 
 	if (pSOLink)
@@ -172,7 +174,7 @@ void UseSmartObject::HandleExactPositioningError(const MovementUpdateContext& co
 
 Vec3 UseSmartObject::GetSmartObjectEndPosition() const
 {
-	MNM::OffMeshLink* pOffMeshLink = gAIEnv.pNavigationSystem->GetOffMeshNavigationManager()->GetOffMeshLink(m_smartObjectMNMData.offMeshLinkID);
+	MNM::OffMeshLink* pOffMeshLink = gAIEnv.pNavigationSystem->GetIOffMeshNavigationManager().GetOffMeshLink(m_smartObjectMNMData.offMeshLinkID);
 	OffMeshLink_SmartObject* pSOLink = pOffMeshLink ? pOffMeshLink->CastTo<OffMeshLink_SmartObject>() : NULL;
 
 	assert(pSOLink);

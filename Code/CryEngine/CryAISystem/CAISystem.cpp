@@ -370,11 +370,6 @@ bool CAISystem::Init()
 
 	AILogProgress("[AISYSTEM] Initialization finished.");
 
-	if (!gAIEnv.pNavigationSystem)
-	{
-		gAIEnv.pNavigationSystem = new NavigationSystem("Scripts/AI/Navigation.xml");
-	}
-
 	if (gEnv->IsEditor())
 	{
 		if (!gAIEnv.pNavigation)
@@ -500,6 +495,11 @@ void CAISystem::SetAIHacksConfiguration()
 void CAISystem::SetupAIEnvironment()
 {
 	SetAIHacksConfiguration();
+
+	if (!gAIEnv.pNavigationSystem)
+	{
+		gAIEnv.pNavigationSystem = new NavigationSystem("Scripts/AI/Navigation.xml");
+	}
 
 	//TODO make these members of CAISystem that are pointed to, NOT allocated!
 

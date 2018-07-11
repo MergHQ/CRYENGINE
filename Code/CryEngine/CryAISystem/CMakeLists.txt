@@ -260,6 +260,8 @@ add_sources("CryAISystem_uber_0.cpp"
 	SOURCE_GROUP "SmartObjects"
 		"SmartObjects.cpp"
 		"SmartObjects.h"
+		"SmartObjectOffMeshNavigation.cpp"
+		"SmartObjectOffMeshNavigation.h"
 )
 
 add_sources("CryAISystem_uber_1.cpp"
