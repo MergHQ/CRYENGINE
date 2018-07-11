@@ -183,10 +183,13 @@ ECryLobbyError CCrySteamLobbyService::Initialise(ECryLobbyServiceFeatures featur
 	if (SteamUser() == NULL)
 	{
 		Cry::GamePlatform::IPlugin* pPlugin = gEnv->pSystem->GetIPluginManager()->QueryPlugin<Cry::GamePlatform::IPlugin>();
-		CRY_ASSERT(
-			(pPlugin != nullptr) &&
-			(pPlugin->GetMainService() != nullptr) &&
-			(pPlugin->GetMainService()->GetServiceIdentifier() == Cry::GamePlatform::SteamServiceID));
+		
+		if ((pPlugin == nullptr) ||
+			(pPlugin->GetMainService() == nullptr) || 
+			(pPlugin->GetMainService()->GetServiceIdentifier() != Cry::GamePlatform::SteamServiceID))
+		{
+			ret = eCLE_NotInitialised;
+		}
 
 		if (ret != eCLE_Success)
 		{
