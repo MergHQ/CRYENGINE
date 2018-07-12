@@ -196,6 +196,7 @@ macro(configure_android_launcher name)
 	file(TO_CMAKE_PATH "$ENV{ANDROID_HOME}" ANDROID_SDK_DIR)
 
 	file(TO_NATIVE_PATH "${OUTPUT_DIRECTORY}" NATIVE_OUTDIR)
+	file(TO_NATIVE_PATH "${NDKROOT}" NATIVE_NDKROOT)
 	file(TO_NATIVE_PATH "${apk_folder}" apk_folder_native)
 
 	#Copy sources
@@ -238,6 +239,7 @@ ${name}")
 		${shared_copy}
 		${java_copy}
 		COMMAND copy /Y "${NATIVE_OUTDIR}\\lib${name}.so" ${so_paths} "${apk_folder_native}\\lib\\${CMAKE_ANDROID_ARCH}\\"
+		COMMAND copy /Y "$<$<CONFIG:Release>:nul>$<$<NOT:$<CONFIG:Release>>:${NATIVE_NDKROOT}\\sources\\third_party\\vulkan\\src\\build-android\\jniLibs\\${CMAKE_ANDROID_ARCH_ABI}\\lib*>" "${apk_folder_native}\\lib\\${CMAKE_ANDROID_ARCH_ABI}"
 		COMMAND call "$ENV{ANT_HOME}/bin/ant" clean
 		COMMAND call "$ENV{ANT_HOME}/bin/ant" debug
 		COMMAND copy /Y "${apk_folder_native}\\bin\\${name}-debug.apk" "${NATIVE_OUTDIR}\\${name}.apk" WORKING_DIRECTORY "${apk_folder}")	
