@@ -176,6 +176,12 @@ public:
 	//! Makes cryasset filename from asset name.
 	string MakeMetadataFilename(const char* szAssetName) const;
 
+	//! Returns an instance of instant editor or nullptr if there is no active instance.
+	CAssetEditor* GetInstantEditor() const { return m_pInstantEditor; }
+
+	//! Assign the editor as the instant editor.
+	void SetInstantEditor(CAssetEditor* pEditor);
+
 protected:
 	//! Helper function that parses a string and returns a variant of a type corresponding to \p pAttrib->GetType().
 	//! If conversion fails, a default-constructed varient of that type is returned. (see QVariant::value).
@@ -190,12 +196,13 @@ private:
 	virtual bool OnCreate(INewAsset& asset, const void* pTypeSpecificParameter) const { CRY_ASSERT(0); /*not implemented*/ return false; }
 
 private:
-	CryIcon m_icon;
+	CryIcon       m_icon;
+	CAssetEditor* m_pInstantEditor = nullptr;
 };
 
 //Helper macro for declaring IClassDesc.
 #define DECLARE_ASSET_TYPE_DESC(type)                         \
-  virtual const char* ClassName() override { return # type; } \
-  virtual void* CreateObject() override { return nullptr; }
+	virtual const char* ClassName() override { return # type; } \
+	virtual void* CreateObject() override { return nullptr; }
 
 #define REGISTER_ASSET_TYPE(type) REGISTER_CLASS_DESC(type)

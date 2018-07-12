@@ -62,6 +62,7 @@ public:
 
 	IPane* FindPaneByClass(const char* paneClassName);
 	IPane* FindPaneByTitle(const char* title);
+	IPane* FindPane(const std::function<bool(IPane*, const string& /*className*/)>& predicate);
 
 	void   Close(IPane* pane);
 	void   BringToFront(IPane* pane);

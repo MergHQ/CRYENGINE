@@ -109,9 +109,31 @@ void CAssetManager::Init()
 	CPakImporter::RegisterFileListener();
 
 	REGISTER_INT("ed_enableAssetPickers", 1, 0,
-	             "Value of 1 enables asset pickers for recommended types."
-	             "Value of 2 enables asset pickers for all types."
-	             "Any other value disables asset pickers for all types.");
+		"Value of 1 enables asset pickers for recommended types."
+		"Value of 2 enables asset pickers for all types."
+		"Any other value disables asset pickers for all types.");
+
+	GetIEditor()->GetGlobalBroadcastManager()->Connect(BroadcastEvent::AboutToQuit, [this](BroadcastEvent& event)
+	{
+		CRY_ASSERT(event.type() == BroadcastEvent::AboutToQuit);
+		
+		std::vector<string> changedFiles;
+		for (CAsset* pAsset : m_assets)
+		{
+			if (pAsset->IsModified() && !pAsset->IsBeingEdited())
+			{
+				changedFiles.push_back(pAsset->GetName());
+			}
+		}
+		if (!changedFiles.empty())
+		{
+			AboutToQuitEvent& aboutToQuitEvent = static_cast<AboutToQuitEvent&>(event);
+			aboutToQuitEvent.AddChangeList("Asset browser", changedFiles);
+
+			event.ignore();
+		}
+		
+	}, (uintptr_t)this);
 }
 
 CAssetType* CAssetManager::FindAssetType(const char* name) const
@@ -772,11 +794,11 @@ void CAssetManager::SaveAll(std::function<void(float)> progress)
 		CAssetPtr& pAsset = m_assets[i];
 
 		// TODO: not all asset editors maintain the IsModified() state properly.
-		if (/* pAsset->IsModified() &&*/ pAsset->GetCurrentEditor())
+		if (pAsset->IsModified())
 		{
-			pAsset->GetCurrentEditor()->Save();
 			progress(float(i) / n);
 		}
+		pAsset->Save();
 	}
 	progress(1.0f);
 }

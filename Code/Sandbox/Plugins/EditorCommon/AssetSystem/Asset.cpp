@@ -2,10 +2,11 @@
 #include "StdAfx.h"
 #include "Asset.h"
 
-#include "AssetType.h"
-#include "AssetManager.h"
 #include "AssetEditor.h"
+#include "AssetManager.h"
+#include "AssetType.h"
 #include "DependencyTracker.h"
+#include "EditableAsset.h"
 #include "Loader/Metadata.h"
 
 #include "FilePathUtil.h"
@@ -13,6 +14,7 @@
 #include "ThreadingUtils.h"
 
 #include <CryString/CryPath.h>
+
 
 namespace Private_Asset
 {
@@ -78,7 +80,7 @@ static uint64 GetModificationTime(const string& filePath)
 CAsset::CAsset(const char* type, const CryGUID& guid, const char* name)
 	: m_name(name)
 	, m_guid(guid)
-	, m_editor(nullptr)
+	, m_pEditor(nullptr)
 {
 	m_flags.bitField = 0;
 	m_type = GetIEditor()->GetAssetManager()->FindAssetType(type);
@@ -163,10 +165,16 @@ void CAsset::Edit(CAssetEditor* pEditor)
 	if (!CanBeEdited())
 		return;
 
-	if (m_editor)
+	// Special handling for switching from a shared instant editor to a dedicated one.
+	if (!pEditor && m_pEditor && m_pEditor == GetType()->GetInstantEditor())
 	{
-		m_editor->Raise();
-		m_editor->Highlight();
+		m_pEditor->Close();
+	}
+
+	if (m_pEditor)
+	{
+		m_pEditor->Raise();
+		m_pEditor->Highlight();
 	}
 	else if (pEditor != nullptr)
 	{
@@ -181,21 +189,32 @@ void CAsset::Edit(CAssetEditor* pEditor)
 void CAsset::OnOpenedInEditor(CAssetEditor* pEditor)
 {
 	CRY_ASSERT(pEditor);
-	if (m_editor != pEditor)
+	if (m_pEditor != pEditor)
 	{
-		m_editor = pEditor;
+		m_pEditor = pEditor;
 		m_flags.open = true;
-
-		m_editor->signalAssetClosed.Connect(std::function<void(CAsset*)>([this, pEditor](CAsset* pAsset)
+		if (!m_pEditingSession)
 		{
-			if (pAsset == this && pEditor == m_editor)
+			m_pEditingSession = std::move(m_pEditor->CreateEditingSession());
+		}
+
+		m_pEditor->signalAssetClosed.Connect(std::function<void(CAsset*)>([this, pEditor](CAsset* pAsset)
+		{
+			if (pAsset == this && pEditor == m_pEditor)
 			{
-				m_editor = nullptr;
+				m_pEditor->signalAssetClosed.DisconnectById((uintptr_t)this);
+
+				m_pEditor = nullptr;
 				m_flags.open = false;
+
+				if (!IsModified())
+				{
+					m_pEditingSession.reset();
+				}
 
 				NotifyChanged(eAssetChangeFlags_Open);
 			}
-		}));
+		}), (uintptr_t)this);
 
 		NotifyChanged(eAssetChangeFlags_Open);
 	}
@@ -213,8 +232,30 @@ void CAsset::SetModified(bool bModified)
 
 void CAsset::Save()
 {
-	if (m_editor)
-		m_editor->Save();
+	if (m_pEditingSession)
+	{
+		CEditableAsset editAsset(*this);
+		if (m_pEditingSession->OnSaveAsset(editAsset))
+		{
+			InvalidateThumbnail();
+			WriteToFile();
+			SetModified(false);
+		}
+	}
+	else if (m_pEditor)
+	{
+		m_pEditor->Save();
+	}
+}
+
+void CAsset::Reload()
+{
+	if (m_pEditingSession)
+	{
+		CEditableAsset editAsset(*this);
+		m_pEditingSession->DiscardChanges(editAsset);
+		SetModified(false);
+	}
 }
 
 QIcon CAsset::GetThumbnail() const

@@ -90,6 +90,11 @@ protected:
 			ScrollToSelected();
 		});
 	}
+
+	virtual void UpdatePreview(const QModelIndex& currentIndex) override
+	{
+		// The dialog does not do quick edit/preview. 
+	}
 };
 
 CAssetBrowserDialog::CAssetBrowserDialog(const std::vector<string>& assetTypeNames, Mode mode, QWidget* pParent)

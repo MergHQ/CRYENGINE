@@ -23,6 +23,7 @@ public:
 	virtual QColor                            GetThumbnailColor() const override { return QColor(187, 191, 63); }
 	virtual std::vector<CItemModelAttribute*> GetDetails() const override;
 	virtual QVariant                          GetDetailValue(const CAsset* pAsset, const CItemModelAttribute* pDetail) const override;
+	virtual const char*                       GetEditorName() const { return "Material Editor"; }
 
 	virtual void                              GenerateThumbnail(const CAsset* pAsset) const override;
 	virtual CAssetEditor*                     Edit(CAsset* pAsset) const override;
@@ -37,4 +38,3 @@ private:
 	static CItemModelAttribute s_subMaterialCountAttribute;
 	static CItemModelAttribute s_textureCountAttribute;
 };
-

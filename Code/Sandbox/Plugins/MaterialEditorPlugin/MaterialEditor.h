@@ -14,17 +14,20 @@ class CMaterialEditor : public CAssetEditor, public IAutoEditorNotifyListener, p
 {
 public:
 	CMaterialEditor();
+
 	~CMaterialEditor();
 
-	virtual const char* GetEditorName() const override { return "Material Editor"; }
+	virtual const char*                           GetEditorName() const override { return "Material Editor"; }
 
-	virtual bool OnOpenAsset(CAsset* pAsset) override;
-	virtual bool OnSaveAsset(CEditableAsset& editAsset) override;
-	virtual void OnCloseAsset() override;
-	virtual void OnDiscardAssetChanges() override;
+	virtual bool                                  OnOpenAsset(CAsset* pAsset) override;
+	virtual bool                                  OnSaveAsset(CEditableAsset& editAsset) override;
+	virtual void                                  OnCloseAsset() override;
+	virtual void                                  OnDiscardAssetChanges() override;
 
-	void SetMaterial(CMaterial* pMaterial);
-	void SelectMaterialForEdit(CMaterial* pMaterial);
+	virtual std::unique_ptr<IAssetEditingSession> CreateEditingSession() override;
+
+	void                                          SetMaterial(CMaterial* pMaterial);
+	void                                          SelectMaterialForEdit(CMaterial* pMaterial);
 
 	//! Returns main material that is loaded
 	CMaterial* GetLoadedMaterial() { return m_pMaterial; }
@@ -32,7 +35,7 @@ public:
 	//! Returns material for editing, can be a sub material of the main material
 	CMaterial* GetMaterialSelectedForEdit() { return m_pEditedMaterial; }
 
-	void FillMaterialMenu(CAbstractMenu* menu);
+	void       FillMaterialMenu(CAbstractMenu* menu);
 
 	//! The main material that is loaded, may be composed of submaterials
 	CCrySignal<void(CMaterial*)> signalMaterialLoaded;
@@ -50,23 +53,24 @@ public:
 
 private:
 
-	void InitMenuBar();
+	void         InitMenuBar();
+	void         CreateToolbar();
 	virtual void CreateDefaultLayout(CDockableContainer* sender) override;
 	virtual void OnLayoutChange(const QVariantMap& state) override;
-	void BroadcastPopulateInspector();
+	void         BroadcastPopulateInspector();
 
-	void OnConvertToMultiMaterial();
-	void OnConvertToSingleMaterial();
-	void OnAddSubMaterial();
-	void OnSetSubMaterialSlotCount();
-	void OnPickMaterial();
+	void         OnConvertToMultiMaterial();
+	void         OnConvertToSingleMaterial();
+	void         OnAddSubMaterial();
+	void         OnSetSubMaterialSlotCount();
+	void         OnPickMaterial();
 
 	virtual void OnEditorNotifyEvent(EEditorNotifyEvent event) override;
 	virtual void OnDataBaseItemEvent(IDataBaseItem* pItem, EDataBaseItemEvent event) override;
-	void OnSubMaterialsChanged(CMaterial::SubMaterialChange change);
-	void OnReadOnlyChanged() override;
+	void         OnSubMaterialsChanged(CMaterial::SubMaterialChange change);
+	void         OnReadOnlyChanged() override;
 
-	_smart_ptr<CMaterial> m_pMaterial;
-	_smart_ptr<CMaterial> m_pEditedMaterial;
+	_smart_ptr<CMaterial>           m_pMaterial;
+	_smart_ptr<CMaterial>           m_pEditedMaterial;
 	_smart_ptr<CMaterialSerializer> m_pMaterialSerializer;
 };
