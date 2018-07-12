@@ -124,13 +124,13 @@ def execute_waf_via_ib(bld):
 		allow_local = "/AvoidLocal=On"
 		
 	# Get correct incredibuild installation folder to not depend on PATH
-	ib_folder = get_ib_folder()
-	if (has_dev_tools_acceleration_license and not has_make_and_build_license)  or 'linux' in bld.variant or 'android' in bld.variant or 'cppcheck' in bld.variant:
+	ib_folder = get_ib_folder()	
+	if (has_dev_tools_acceleration_license and not has_make_and_build_license) or 'cppcheck' in bld.variant:
 		try:			
 			p = subprocess.Popen ([str(ib_folder) + '/xgconsole.exe', "/command=" + command, "/profile=Code\\Tools\\waf-1.7.13\\profile.xml", "/useidemonitor", "/nologo", allow_local])
 		except:
 			raise BuildError()
-	else:
+	else:	
 		try:
 			p = subprocess.Popen ([ str(ib_folder) + '/BuildConsole.exe', "/command=" + command, "/useidemonitor", "/nologo", allow_local])
 		except:
