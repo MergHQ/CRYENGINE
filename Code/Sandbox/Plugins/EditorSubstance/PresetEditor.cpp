@@ -143,7 +143,7 @@ CSubstancePresetEditor::CSubstancePresetEditor(QWidget* pParent /*= nullptr*/)
 	}
 	);
 	SetPreviewResolution();
-	m_pResolutionWidget->hide();
+	m_pScrollBox->hide();
 
 }
 
@@ -195,7 +195,7 @@ bool CSubstancePresetEditor::OnOpenAsset(CAsset* pAsset)
 		m_pOutputsWidget->deleteLater();
 		m_pOutputsWidget = nullptr;
 	}
-	m_pResolutionWidget->show();
+	m_pScrollBox->show();
 	m_pPreset = CManager::Instance()->GetSubstancePreset(pAsset);
 	if (!m_pPreset)
 	{
@@ -242,7 +242,7 @@ bool CSubstancePresetEditor::OnSaveAsset(CEditableAsset& editAsset)
 void CSubstancePresetEditor::OnCloseAsset()
 {
 	CManager::Instance()->PresetEditEnded(m_pPreset);
-	m_pResolutionWidget->hide();
+	m_pScrollBox->hide();
 }
 
 void CSubstancePresetEditor::PushPresetToRender()
