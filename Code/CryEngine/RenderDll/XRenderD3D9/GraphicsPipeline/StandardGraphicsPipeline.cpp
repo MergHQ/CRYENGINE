@@ -65,7 +65,11 @@ void CStandardGraphicsPipeline::Init()
 
 		for (EEfResTextures texType = EFTT_DIFFUSE; texType < EFTT_MAX; texType = EEfResTextures(texType + 1))
 		{
-			m_defaultMaterialBindPoints.SetTexture(texType, CRendererResources::s_pTexNULL, EDefaultResourceViews::Default, EShaderStage_AllWithoutCompute);
+			if (TextureHelpers::IsSlotAvailable(texType))
+			{
+				EShaderStage shaderStages = TextureHelpers::GetShaderStagesForTexSlot(texType);
+				m_defaultMaterialBindPoints.SetTexture(texType, CRendererResources::s_pTexNULL, EDefaultResourceViews::Default, shaderStages);
+			}
 		}
 	}
 
@@ -93,9 +97,12 @@ void CStandardGraphicsPipeline::Init()
 	RegisterSceneStage<CShadowMapStage   , eStage_ShadowMap   >(m_pShadowMapStage);
 	RegisterSceneStage<CSceneGBufferStage, eStage_SceneGBuffer>(m_pSceneGBufferStage);
 	RegisterSceneStage<CSceneForwardStage, eStage_SceneForward>(m_pSceneForwardStage);
+#if !defined(CRY_PLATFORM_MOBILE)
 	RegisterSceneStage<CSceneCustomStage , eStage_SceneCustom >(m_pSceneCustomStage);
+#endif
 
 	// Register all other stages that don't need the global PSO cache
+#if !defined(CRY_PLATFORM_MOBILE)
 	RegisterStage<CTiledLightVolumesStage     >(m_pTiledLightVolumesStage     , eStage_TiledLightVolumes);
 	RegisterStage<CHeightMapAOStage           >(m_pHeightMapAOStage           , eStage_HeightMapAO);
 	RegisterStage<CScreenSpaceObscuranceStage >(m_pScreenSpaceObscuranceStage , eStage_ScreenSpaceObscurance);
@@ -128,6 +135,10 @@ void CStandardGraphicsPipeline::Init()
 	RegisterStage<CMobileCompositionStage     >(m_pMobileCompositionStage     , eStage_MobileComposition);
 	RegisterStage<COmniCameraStage            >(m_pOmniCameraStage            , eStage_OmniCamera);
 	RegisterStage<CDebugRenderTargetsStage    >(m_pDebugRenderTargetsStage    , eStage_DebugRenderTargets);
+#else
+	RegisterStage<CTiledShadingStage>(m_pTiledShadingStage, eStage_TiledShading);
+	RegisterStage<CMobileCompositionStage>(m_pMobileCompositionStage, eStage_MobileComposition);
+#endif
 
 	// Now init stages
 	InitStages();
@@ -218,11 +229,13 @@ bool CStandardGraphicsPipeline::CreatePipelineStates(DevicePipelineStatesArray* 
 		bFullyCompiled &= m_pSceneForwardStage->CreatePipelineStates(pStateArray, stateDesc, pStateCache);
 	}
 
+#if !defined(CRY_PLATFORM_MOBILE)
 	// Custom
 	{
 		stateDesc.technique = TTYPE_DEBUG;
 		bFullyCompiled &= m_pSceneCustomStage->CreatePipelineStates(pStateArray, stateDesc, pStateCache);
 	}
+#endif
 
 	return bFullyCompiled;
 }
@@ -746,6 +759,9 @@ void CStandardGraphicsPipeline::ExecuteMobilePipeline()
 			m_pTiledShadingStage->Execute();
 		}
 	}
+
+	// Opaque forward passes
+	m_pSceneForwardStage->ExecuteMobile();
 
 	m_pMobileCompositionStage->Execute();
 

@@ -38,6 +38,7 @@ public:
 	{
 		ePass_Forward = 0,
 		ePass_ForwardRecursive,
+		ePass_ForwardMobile
 	};
 
 public:
@@ -59,6 +60,7 @@ public:
 	void         ExecuteTransparentLoRes(int subRes);
 	void         ExecuteAfterPostProcessHDR();
 	void         ExecuteAfterPostProcessLDR();
+	void         ExecuteMobile();
 	void         ExecuteMinimum(CTexture* pColorTex, CTexture* pDepthTex);
 
 	void         SetSkyRE(CRESky* pSkyRE, CREHDRSky* pHDRSkyRE);
@@ -80,11 +82,14 @@ private:
 	_smart_ptr<CTexture> m_pSkyMoonTex;
 
 	CDeviceResourceLayoutPtr m_pOpaqueResourceLayout;
+	CDeviceResourceLayoutPtr m_pOpaqueResourceLayoutMobile;
 	CDeviceResourceLayoutPtr m_pTransparentResourceLayout;
 	CDeviceResourceLayoutPtr m_pEyeOverlayResourceLayout;
 
 	CDeviceResourceSetDesc   m_opaquePassResources;
 	CDeviceResourceSetPtr    m_pOpaquePassResourceSet;
+	CDeviceResourceSetDesc   m_opaquePassResourcesMobile;
+	CDeviceResourceSetPtr    m_pOpaquePassResourceSetMobile;
 	CDeviceResourceSetDesc   m_transparentPassResources;
 	CDeviceResourceSetPtr    m_pTransparentPassResourceSet;
 	CDeviceResourceSetDesc   m_eyeOverlayPassResources;
@@ -92,6 +97,7 @@ private:
 	CConstantBufferPtr       m_pPerPassCB;
 
 	CSceneRenderPass         m_forwardOpaquePass;
+	CSceneRenderPass         m_forwardOpaquePassMobile;
 	CSceneRenderPass         m_forwardOverlayPass;
 	CSceneRenderPass         m_forwardTransparentBWPass;
 	CSceneRenderPass         m_forwardTransparentAWPass;

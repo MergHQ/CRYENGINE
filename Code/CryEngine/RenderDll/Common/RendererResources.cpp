@@ -622,7 +622,8 @@ void CRendererResources::CreateSystemTargets(int resourceWidth, int resourceHeig
 
 	if (!gcpRendD3D->m_bSystemTargetsInit)
 	{
-		ETEX_Format nHDRFormat = CRenderer::CV_r_HDRTexFormat == 0 ? eTF_R11G11B10F : eTF_R16G16B16A16F;
+		const bool bR11G11B10FAvailable = s_hwTexFormatSupport.IsFormatSupported(eTF_R11G11B10F);
+		ETEX_Format nHDRFormat = CRenderer::CV_r_HDRTexFormat == 0 && bR11G11B10FAvailable ? eTF_R11G11B10F : eTF_R16G16B16A16F;
 
 		// Create ZTarget
 		CreateDepthMaps(resourceWidth, resourceHeight);
@@ -670,8 +671,8 @@ void CRendererResources::ResizeSystemTargets(int renderWidth, int renderHeight)
 		resourceWidth  = renderWidth;
 		resourceHeight = renderHeight;
 #endif
-
-		ETEX_Format nHDRFormat = CRenderer::CV_r_HDRTexFormat == 0 ? eTF_R11G11B10F : eTF_R16G16B16A16F;
+		const bool bR11G11B10FAvailable = s_hwTexFormatSupport.IsFormatSupported(eTF_R11G11B10F);
+		ETEX_Format nHDRFormat = (CRenderer::CV_r_HDRTexFormat == 0 && bR11G11B10FAvailable) ? eTF_R11G11B10F : eTF_R16G16B16A16F;
 
 		// Resize ZTarget
 		CreateDepthMaps(resourceWidth, resourceHeight);
@@ -976,9 +977,6 @@ void CRendererResources::DestroyDeferredMaps()
 
 void CRendererResources::CreateHDRMaps(int resourceWidth, int resourceHeight)
 {
-	int i;
-	char szName[256];
-
 	CD3D9Renderer* r = gcpRendD3D;
 	SRenderTargetPool* pHDRPostProcess = SRenderTargetPool::GetInstance();
 
@@ -987,11 +985,14 @@ void CRendererResources::CreateHDRMaps(int resourceWidth, int resourceHeight)
 
 	pHDRPostProcess->ClearRenderTargetList();
 
-	ETEX_Format nHDRFormat = CRenderer::CV_r_HDRTexFormat == 0 ? eTF_R11G11B10F : eTF_R16G16B16A16F;
+	const bool bR11G11B10FAvailable = s_hwTexFormatSupport.IsFormatSupported(eTF_R11G11B10F);
+	ETEX_Format nHDRFormat = (CRenderer::CV_r_HDRTexFormat == 0 && bR11G11B10FAvailable) ? eTF_R11G11B10F : eTF_R16G16B16A16F;
 
 	uint32 nHDRTargetFlags = FT_DONT_RELEASE;
 	uint32 nHDRTargetFlagsUAV = nHDRTargetFlags | (FT_USAGE_UNORDERED_ACCESS);  // UAV required for tiled deferred shading
 	pHDRPostProcess->AddRenderTarget(width, height, Clr_Unknown, nHDRFormat, 1.0f, "$HDRTarget", &s_ptexHDRTarget, nHDRTargetFlagsUAV);
+
+#if !CRY_MOBILE_PIPELINE && !defined(CRY_PLATFORM_MOBILE)
 	pHDRPostProcess->AddRenderTarget(width, height, Clr_Unknown, eTF_R11G11B10F, 1.0f, "$HDRTargetPrev", &s_ptexHDRTargetPrev);
 
 	// Scaled versions of the HDR scene texture
@@ -1014,33 +1015,39 @@ void CRendererResources::CreateHDRMaps(int resourceWidth, int resourceHeight)
 	pHDRPostProcess->AddRenderTarget(width_r16, height_r16, Clr_Unknown, nHDRFormat, 0.9f, "$HDRTargetScaledTmp3", &s_ptexHDRTargetScaledTmp[3], FT_DONT_RELEASE);
 	pHDRPostProcess->AddRenderTarget(width_r16, height_r16, Clr_Unknown, nHDRFormat, 0.9f, "$HDRTargetScaledTempRT3", &s_ptexHDRTargetScaledTempRT[3], FT_DONT_RELEASE);
 
-	for (i = 0; i < 8; i++)
+	for (int i = 0; i < 8; i++)
 	{
+		char szName[256];
 		sprintf(szName, "$HDRAdaptedLuminanceCur_%d", i);
 		pHDRPostProcess->AddRenderTarget(1, 1, Clr_White, eTF_R16G16F, 0.1f, szName, &s_ptexHDRAdaptedLuminanceCur[i], FT_DONT_RELEASE);
 	}
 
 	pHDRPostProcess->AddRenderTarget(width, height, Clr_Unknown, eTF_R11G11B10F, 1.0f, "$SceneTargetR11G11B10F_0", &s_ptexSceneTargetR11G11B10F[0], nHDRTargetFlagsUAV);
 	pHDRPostProcess->AddRenderTarget(width, height, Clr_Unknown, eTF_R11G11B10F, 1.0f, "$SceneTargetR11G11B10F_1", &s_ptexSceneTargetR11G11B10F[1], nHDRTargetFlags);
+#endif
 
 	pHDRPostProcess->AddRenderTarget(width, height, Clr_Unknown, eTF_R8G8B8A8, 0.1f, "$Velocity", &s_ptexVelocity, FT_DONT_RELEASE);
 	pHDRPostProcess->AddRenderTarget(20, height, Clr_Unknown, eTF_R8G8B8A8, 0.1f, "$VelocityTilesTmp0", &s_ptexVelocityTiles[0], FT_DONT_RELEASE);
 	pHDRPostProcess->AddRenderTarget(20, 20, Clr_Unknown, eTF_R8G8B8A8, 0.1f, "$VelocityTilesTmp1", &s_ptexVelocityTiles[1], FT_DONT_RELEASE);
 	pHDRPostProcess->AddRenderTarget(20, 20, Clr_Unknown, eTF_R8G8B8A8, 0.1f, "$VelocityTiles", &s_ptexVelocityTiles[2], FT_DONT_RELEASE);
 
+
+#if !CRY_MOBILE_PIPELINE && !defined(CRY_PLATFORM_MOBILE)
 	pHDRPostProcess->AddRenderTarget(width_r2, height_r2, Clr_Unknown, nHDRFormat, 0.9f, "$HDRDofLayerNear", &s_ptexHDRDofLayers[0], FT_DONT_RELEASE);
 	pHDRPostProcess->AddRenderTarget(width_r2, height_r2, Clr_Unknown, nHDRFormat, 0.9f, "$HDRDofLayerFar", &s_ptexHDRDofLayers[1], FT_DONT_RELEASE);
 	pHDRPostProcess->AddRenderTarget(width_r2, height_r2, Clr_Unknown, eTF_R16G16F, 1.0f, "$MinCoC_0_Temp", &s_ptexSceneCoCTemp, FT_DONT_RELEASE);
-	for (i = 0; i < MIN_DOF_COC_K; i++)
+	for (int i = 0; i < MIN_DOF_COC_K; i++)
 	{
+		char szName[256];
 		cry_sprintf(szName, "$MinCoC_%d", i);
 		pHDRPostProcess->AddRenderTarget(width_r2 / (i + 1), height_r2 / (i + 1), Clr_Unknown, eTF_R16G16F, 0.1f, szName, &s_ptexSceneCoC[i], FT_DONT_RELEASE, -1, true);
 	}
 
 	// TODO: make it a MIP-mapped resource and/or use compute
 	// Luminance rt
-	for (i = 0; i < NUM_HDR_TONEMAP_TEXTURES; i++)
+	for (int i = 0; i < NUM_HDR_TONEMAP_TEXTURES; i++)
 	{
+		char szName[256];
 		int iSampleLen = 1 << (2 * i);
 		cry_sprintf(szName, "$HDRToneMap_%d", i);
 
@@ -1048,11 +1055,13 @@ void CRendererResources::CreateHDRMaps(int resourceWidth, int resourceHeight)
 	}
 
 	s_ptexHDRMeasuredLuminanceDummy = CTexture::GetOrCreateTextureObject("$HDRMeasuredLum_Dummy", 0, 0, 1, eTT_2D, FT_DONT_RELEASE | FT_DONT_STREAM, eTF_R16G16F, TO_HDR_MEASURED_LUMINANCE);
-	for (i = 0; i < MAX_GPU_NUM; ++i)
+	for (int i = 0; i < MAX_GPU_NUM; ++i)
 	{
+		char szName[256];
 		cry_sprintf(szName, "$HDRMeasuredLum_%d", i);
 		s_ptexHDRMeasuredLuminance[i] = CTexture::GetOrCreate2DTexture(szName, 1, 1, 0, FT_DONT_RELEASE | FT_DONT_STREAM, NULL, eTF_R16G16F);
 	}
+#endif
 
 	pHDRPostProcess->CreateRenderTargetList();
 
@@ -1119,6 +1128,7 @@ void CRendererResources::DestroyHDRMaps()
 
 bool CRendererResources::CreatePostFXMaps(int resourceWidth, int resourceHeight)
 {
+#if !defined(CRY_PLATFORM_MOBILE)
 	const bool bCreateCaustics = (CRenderer::CV_r_watervolumecaustics && CRenderer::CV_r_watercaustics && CRenderer::CV_r_watercausticsdeferred) && !CTexture::IsTextureExist(s_ptexWaterCaustics[0]);
 
 	const int width = resourceWidth, width_r2 = (width + 1) / 2, width_r4 = (width_r2 + 1) / 2, width_r8 = (width_r4 + 1) / 2;
@@ -1196,7 +1206,7 @@ bool CRendererResources::CreatePostFXMaps(int resourceWidth, int resourceHeight)
 		SPostEffectsUtils::GetOrCreateRenderTarget("$WaterVolumeDDN", s_ptexWaterVolumeDDN, 64, 64, Clr_Unknown, 1, true, eTF_R16G16B16A16F, TO_WATERVOLUMEMAP);
 		//s_ptexWaterVolumeDDN->DisableMgpuSync();
 	}
-
+#endif
 
 	return 1;
 }

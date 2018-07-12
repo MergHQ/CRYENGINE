@@ -104,8 +104,19 @@ VkResult CSampler::Init(const SSamplerState& state)
 	info.addressModeV = MapAddressMode(static_cast<ESamplerAddressMode>(state.m_nAddressV));
 	info.addressModeW = MapAddressMode(static_cast<ESamplerAddressMode>(state.m_nAddressW));
 	info.mipLodBias = state.m_fMipLodBias;
-	info.maxAnisotropy = MapAnisotropy(state.m_nAnisotropy, impliedAniso);
-	info.anisotropyEnable = info.maxAnisotropy > 1.0f ? VK_TRUE : VK_FALSE;
+
+	if (GetDevice()->GetPhysicalDeviceInfo()->deviceFeatures.samplerAnisotropy)
+	{
+		info.anisotropyEnable = VK_FALSE;
+		info.maxAnisotropy = 0;
+	}
+	else
+	{
+		float anisotropy = std::min(GetDevice()->GetPhysicalDeviceInfo()->deviceProperties.limits.maxSamplerAnisotropy, static_cast<float>(state.m_nAnisotropy));
+		info.maxAnisotropy = MapAnisotropy(anisotropy, impliedAniso);
+		info.anisotropyEnable = info.maxAnisotropy > 1.0f ? VK_TRUE : VK_FALSE;
+	}
+
 	info.compareEnable = state.m_bComparison ? VK_TRUE : VK_FALSE;
 	info.compareOp = VK_COMPARE_OP_LESS;
 	info.minLod = 0.0f;
