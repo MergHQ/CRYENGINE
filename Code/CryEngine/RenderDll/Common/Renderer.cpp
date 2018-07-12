@@ -1101,9 +1101,9 @@ _smart_ptr<IImageFile> CRenderer::EF_LoadImage(const char* szFileName, uint32 nF
 	return CImageFile::mfLoad_file(szFileName, nFlags);
 }
 
-bool CRenderer::EF_RenderEnvironmentCubeHDR (int size, const Vec3& Pos, TArray<unsigned short>& vecData)
+DynArray<uint16_t> CRenderer::EF_RenderEnvironmentCubeHDR (std::size_t size, const Vec3& Pos)
 {
-	return CTexture::RenderEnvironmentCMHDR(size, Pos, vecData);
+	return CTexture::RenderEnvironmentCMHDR(size, Pos);
 }
 
 bool CRenderer::WriteTIFToDisk(const void* pData, int width, int height, int bytesPerChannel, int numChannels, bool bFloat, const char* szPreset, const char* szFileName)
