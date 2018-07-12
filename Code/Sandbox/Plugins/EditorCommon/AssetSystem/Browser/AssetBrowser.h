@@ -8,21 +8,22 @@
 #include "EditorFramework/Editor.h"
 #include "ProxyModels/ItemModelAttribute.h"
 
-class QSplitter;
-class QThumbnailsView;
-class QAdvancedTreeView;
-class QFilteringPanel;
-class QAttributeFilterProxyModel;
-class QItemSelectionModel;
-class QToolButton;
-class QMenu;
 class CAsset;
-class CAssetType;
 class CAssetDropHandler;
-class CAssetFoldersView;
 class CAssetFolderFilterModel;
+class CAssetFoldersView;
+class CAssetType;
 class CBreadcrumbsBar;
 class CLineEditDelegate;
+class QAdvancedTreeView;
+class QAttributeFilterProxyModel;
+class QFilteringPanel;
+class QItemSelectionModel;
+class QMenu;
+class QSplitter;
+class QThumbnailsView;
+class QTimer;
+class QToolButton;
 
 //Thumbnails should now be used, leaving for now in case it is temporarily useful
 #define ASSET_BROWSER_USE_PREVIEW_WIDGET 0
@@ -94,9 +95,12 @@ protected:
 	// The widget has to be visible.
 	void         ScrollToSelected();
 
+	bool         ValidatePath(const QString);
+
 	virtual void OnDoubleClick(CAsset* pAsset);
 	virtual void OnDoubleClick(const QString& folder);
-	bool         ValidatePath(const QString);
+
+	virtual void UpdatePreview(const QModelIndex& currentIndex);
 private:
 
 	void               InitNewNameDelegates();
@@ -140,7 +144,6 @@ private:
 
 	void GenerateThumbnailsAsync(const QString& folder, const std::function<void()>& finalize = std::function<void()>());
 
-	void UpdatePreview(const QModelIndex& currentIndex);
 	void UpdateModels();
 	void UpdateNavigation(bool clearHistory);
 	void UpdateBreadcrumbsBar(const QString& path);
@@ -151,6 +154,7 @@ private:
 	// CEditor impl
 	bool OnFind() override;
 	bool OnDelete() override;
+	bool OnOpen() override;
 	//////////////////////////////////////////////////////////////////////////
 
 	//ui components
@@ -182,6 +186,7 @@ private:
 	bool                 m_dontPushNavHistory; //true when folder changes are triggered by back/forward buttons
 
 #if ASSET_BROWSER_USE_PREVIEW_WIDGET
-	QContainer* m_previewWidget;
+	QContainer*             m_previewWidget;
 #endif
+	std::unique_ptr<QTimer> m_pQuickEditTimer;
 };

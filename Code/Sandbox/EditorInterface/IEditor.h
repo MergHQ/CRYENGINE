@@ -322,7 +322,9 @@ struct IEditor
 	virtual bool          IsDevModeEnabled() const = 0; //should go to preferences?
 
 	//Dockable pane management
-	virtual IPane* CreateDockable(const char* className) = 0;
+	virtual IPane* CreateDockable(const char* szClassName) = 0;
+	virtual IPane* FindDockable(const char* szClassName) = 0;
+	virtual IPane* FindDockableIf(const std::function<bool(IPane*, const string& /*className*/)>& predicate) = 0;
 	virtual void   RaiseDockable(IPane* pPane) = 0;
 
 	//!Creates a preview widget for any file type, returns null if cannot be previewed

@@ -53,7 +53,11 @@ CDeviceObjectFactory::CDeviceObjectFactory()
 	m_pVKDevice    = nullptr;
 	m_pVKScheduler = nullptr;
 
+#if defined(CRY_PLATFORM_MOBILE)
+	m_objectValidator = CDeviceObjectValidator::CreateForMobile();
+#else
 	m_objectValidator = CDeviceObjectValidator::Create();
+#endif
 }
 
 void CDeviceObjectFactory::AssignDevice(D3DDevice* pDevice)

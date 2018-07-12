@@ -263,9 +263,11 @@ public:
 	void                      AddTemplate(const string& templateName, XmlNodeRef& tmpl);
 	virtual void              OpenAndFocusDataBase(EDataBaseItemType type, IDataBaseItem* pItem) override;
 	CBaseLibraryDialog*       OpenDataBaseLibrary(EDataBaseItemType type, IDataBaseItem* pItem = NULL);
-	CWnd*                     OpenView(const char* sViewClassName) override;
-	CWnd*                     FindView(const char* sViewClassName) override;
-	IPane*                    CreateDockable(const char* className) override;
+	CWnd*                     OpenView(const char* szViewClassName) override;
+	CWnd*                     FindView(const char* szViewClassName) override;
+	virtual IPane*            CreateDockable(const char* szClassName) override;
+	virtual IPane*            FindDockable(const char* szClassName) override;
+	virtual IPane*            FindDockableIf(const std::function<bool(IPane*, const string& /*className*/)>& predicate) override;
 	void                      RaiseDockable(IPane* pPane) override;
 	QWidget*                  CreatePreviewWidget(const QString& file, QWidget* pParent = nullptr) override;
 	virtual void              PostOnMainThread(std::function<void()> task) override;

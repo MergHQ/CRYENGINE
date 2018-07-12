@@ -27,6 +27,8 @@ const char*    LookupTexSuffix(EEfResTextures texSlot);
 int8           LookupTexPriority(EEfResTextures texSlot);
 CTexture*      LookupTexDefault(EEfResTextures texSlot);
 CTexture*      LookupTexNeutral(EEfResTextures texSlot);
+bool           IsSlotAvailable(EEfResTextures texSlot);
+EShaderStage   GetShaderStagesForTexSlot(EEfResTextures texSlot);
 }
 
 #endif

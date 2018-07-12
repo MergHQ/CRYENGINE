@@ -469,7 +469,17 @@ void CInstance::GatherInstanceLayersToEnable()
 {
 	if (CRendererCVars::CV_r_EnableDebugLayer)
 	{
+#if   CRY_PLATFORM_WINDOWS || CRY_PLATFORM_LINUX
 		m_enabledInstanceLayers.push_back("VK_LAYER_LUNARG_standard_validation");
+#elif CRY_PLATFORM_ANDROID
+		m_enabledInstanceLayers.push_back("VK_LAYER_GOOGLE_threading");
+		m_enabledInstanceLayers.push_back("VK_LAYER_GOOGLE_unique_objects");
+		m_enabledInstanceLayers.push_back("VK_LAYER_LUNARG_parameter_validation");
+		m_enabledInstanceLayers.push_back("VK_LAYER_LUNARG_object_tracker");
+		m_enabledInstanceLayers.push_back("VK_LAYER_LUNARG_core_validation");
+		m_enabledInstanceLayers.push_back("VK_LAYER_LUNARG_swapchain");
+		m_enabledInstanceLayers.push_back("VK_LAYER_LUNARG_image");
+#endif
 	}
 }
 
@@ -497,7 +507,17 @@ void CInstance::GatherPhysicalDeviceLayersToEnable()
 {
 	if (CRendererCVars::CV_r_EnableDebugLayer)
 	{
-		m_enabledPhysicalDeviceLayers.push_back("VK_LAYER_LUNARG_standard_validation");
+#if   CRY_PLATFORM_WINDOWS || CRY_PLATFORM_LINUX
+		m_enabledInstanceLayers.push_back("VK_LAYER_LUNARG_standard_validation");
+#elif CRY_PLATFORM_ANDROID
+		m_enabledInstanceLayers.push_back("VK_LAYER_GOOGLE_threading");
+		m_enabledInstanceLayers.push_back("VK_LAYER_GOOGLE_unique_objects");
+		m_enabledInstanceLayers.push_back("VK_LAYER_LUNARG_parameter_validation");
+		m_enabledInstanceLayers.push_back("VK_LAYER_LUNARG_object_tracker");
+		m_enabledInstanceLayers.push_back("VK_LAYER_LUNARG_core_validation");
+		m_enabledInstanceLayers.push_back("VK_LAYER_LUNARG_swapchain");
+		m_enabledInstanceLayers.push_back("VK_LAYER_LUNARG_image");
+#endif
 	}
 }
 
@@ -508,7 +528,22 @@ void CInstance::GatherPhysicalDeviceExtensionsToEnable()
 #if !defined(_RELEASE) && VK_EXT_debug_marker
 	m_enabledPhysicalDeviceExtensions.emplace_back(VK_EXT_DEBUG_MARKER_EXTENSION_NAME, false);
 #endif
+}
 
+const char* DebugLevelToString(VkDebugReportFlagsEXT flags)
+{
+	if      (flags & VK_DEBUG_REPORT_INFORMATION_BIT_EXT)
+		return "Info";
+	else if (flags & VK_DEBUG_REPORT_WARNING_BIT_EXT)
+		return "Warning";
+	else if (flags & VK_DEBUG_REPORT_PERFORMANCE_WARNING_BIT_EXT)
+		return "Performance";
+	else if (flags & VK_DEBUG_REPORT_ERROR_BIT_EXT)
+		return "Error";
+	else if (flags & VK_DEBUG_REPORT_DEBUG_BIT_EXT)
+		return "Debug";
+	else
+		return "Unknown";
 }
 
 VKAPI_ATTR VkBool32 VKAPI_CALL CInstance::DebugLayerCallback(VkDebugReportFlagsEXT flags, VkDebugReportObjectTypeEXT objType, uint64_t obj,
@@ -516,7 +551,7 @@ VKAPI_ATTR VkBool32 VKAPI_CALL CInstance::DebugLayerCallback(VkDebugReportFlagsE
 {
 	if (flags & (VK_DEBUG_REPORT_WARNING_BIT_EXT | VK_DEBUG_REPORT_PERFORMANCE_WARNING_BIT_EXT | VK_DEBUG_REPORT_ERROR_BIT_EXT))
 	{
-		CryLog("[Vulkan DebugLayer, %s, %d]: %s", layerPrefix, code, msg);
+		CryLog("[Vulkan DebugLayer, %s, %s, %d]: %s", DebugLevelToString(flags), layerPrefix, code, msg);
 	}
 	return VK_FALSE;
 }

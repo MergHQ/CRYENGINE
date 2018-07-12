@@ -891,19 +891,29 @@ CVegetationMap* CEditorImpl::GetVegetationMap()
 	return m_pVegetationMap;
 }
 
-CWnd* CEditorImpl::OpenView(const char* sViewClassName)
+CWnd* CEditorImpl::OpenView(const char* szViewClassName)
 {
-	return CTabPaneManager::GetInstance()->OpenMFCPane(sViewClassName);
+	return CTabPaneManager::GetInstance()->OpenMFCPane(szViewClassName);
 }
 
-CWnd* CEditorImpl::FindView(const char* sViewClassName)
+CWnd* CEditorImpl::FindView(const char* szViewClassName)
 {
-	return CTabPaneManager::GetInstance()->FindMFCPane(sViewClassName);
+	return CTabPaneManager::GetInstance()->FindMFCPane(szViewClassName);
 }
 
-IPane* CEditorImpl::CreateDockable(const char* className)
+IPane* CEditorImpl::CreateDockable(const char* szClassName)
 {
-	return CTabPaneManager::GetInstance()->CreatePane(className);
+	return CTabPaneManager::GetInstance()->CreatePane(szClassName);
+}
+
+IPane* CEditorImpl::FindDockable(const char* szClassName)
+{
+	return CTabPaneManager::GetInstance()->FindPaneByClass(szClassName);
+}
+
+IPane* CEditorImpl::FindDockableIf(const std::function<bool(IPane*, const string& /*className*/)>& predicate)
+{
+	return CTabPaneManager::GetInstance()->FindPane(predicate);
 }
 
 void CEditorImpl::RaiseDockable(IPane* pPane)

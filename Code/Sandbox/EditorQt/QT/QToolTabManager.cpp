@@ -623,6 +623,20 @@ IPane* CTabPaneManager::FindPaneByTitle(const char* title)
 		return nullptr;
 }
 
+IPane* CTabPaneManager::FindPane(const std::function<bool(IPane*, const string& /*className*/)>& predicate)
+{
+	QList<QTabPane*> tools = FindTabPanes();
+	for (int i = 0; i < tools.count(); i++)
+	{
+		QTabPane* tool = tools.at(i);
+		if (tool->m_pane && predicate(tool->m_pane, tool->m_class))
+		{
+			return tool->m_pane;
+		}
+	}
+	return nullptr;
+}
+
 void CTabPaneManager::SaveLayout()
 {
 	QJsonDocument doc(QJsonDocument::fromVariant(GetState()));

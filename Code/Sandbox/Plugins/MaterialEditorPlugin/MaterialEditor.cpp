@@ -24,12 +24,79 @@
 
 #include <CryCore/CryTypeInfo.h>
 
+namespace Private_MaterialEditor
+{
+
 REGISTER_VIEWPANE_FACTORY(CMaterialEditor, "Material Editor", "Tools", false);
+
+class CSession : public IAssetEditingSession
+{
+public:
+	CSession(CMaterial* pMaterial) : m_pMaterial(pMaterial) {}
+
+	virtual const char* GetEditorName() const override
+	{
+		return "Material Editor";
+	}
+
+	virtual bool OnSaveAsset(IEditableAsset& asset) override
+	{
+		if (!m_pMaterial || !m_pMaterial->Save(false))
+		{
+			return false;
+		}
+
+		//Fill metadata and dependencies to update cryasset file
+		asset.SetFiles({ m_pMaterial->GetFilename() });
+
+		std::vector<SAssetDependencyInfo> filenames;
+
+		//TODO : not all dependencies are found, some paths are relative to same folder which is not good ...
+		int textureCount = m_pMaterial->GetTextureDependencies(filenames);
+
+		std::vector<std::pair<string, string>> details;
+		details.push_back(std::pair<string, string>("subMaterialCount", ToString(m_pMaterial->GetSubMaterialCount())));
+		details.push_back(std::pair<string, string>("textureCount", ToString(textureCount)));
+
+		asset.SetDetails(details);
+		asset.SetDependencies(filenames);
+		return true;
+	}
+
+	virtual void DiscardChanges(IEditableAsset& asset) override
+	{
+		if (!m_pMaterial)
+		{
+			return;
+		}
+
+		m_pMaterial->Reload();
+	}
+
+	static CMaterial* GetSessionMaterial(CAsset* pAsset)
+	{
+		IAssetEditingSession* pSession = pAsset->GetEditingSession();
+		if (!pSession || strcmp(pSession->GetEditorName(), "Material Editor") != 0)
+		{
+			return nullptr;
+		}
+		return static_cast<CSession*>(pSession)->GetMaterial();
+	}
+
+private:
+	CMaterial* GetMaterial() { return m_pMaterial; }
+
+	_smart_ptr<CMaterial> m_pMaterial;
+};
+
+}
 
 CMaterialEditor::CMaterialEditor()
 	: CAssetEditor("Material")
 	, m_pMaterial(nullptr)
 {
+	InitMenuBar();
+	CreateToolbar();
 	EnableDockingSystem();
 
 	RegisterDockableWidget("Properties", [&]() 
@@ -42,9 +109,23 @@ CMaterialEditor::CMaterialEditor()
 	RegisterDockableWidget("Material", [&]() { return new CSubMaterialView(this); }, true);
 	RegisterDockableWidget("Preview", [&]() { return new CMaterialPreviewWidget(this); });
 
-	InitMenuBar();
-
 	GetIEditor()->GetMaterialManager()->AddListener(this);
+}
+
+void CMaterialEditor::CreateToolbar()
+{
+	const auto pToolbar = new QWidget;
+	const auto pSpacer = new QWidget();
+	pSpacer->setSizePolicy(QSizePolicy::Expanding, QSizePolicy::Fixed);
+	auto toolbarLayout = new QHBoxLayout(pToolbar);
+	toolbarLayout->addWidget(pSpacer);
+	toolbarLayout->addWidget(CreateLockButton());
+	toolbarLayout->setContentsMargins(0, 0, 0, 0);
+
+	QVBoxLayout* pMainLayout = new QVBoxLayout();
+	pMainLayout->setContentsMargins(1, 1, 1, 1);
+	pMainLayout->addWidget(pToolbar);
+	SetContent(pMainLayout);
 }
 
 CMaterialEditor::~CMaterialEditor()
@@ -201,47 +282,41 @@ void CMaterialEditor::OnLayoutChange(const QVariantMap& state)
 
 bool CMaterialEditor::OnOpenAsset(CAsset* pAsset)
 {
+	using namespace Private_MaterialEditor;
+
 	const auto& filename = pAsset->GetFile(0);
 	CRY_ASSERT(filename && *filename);
 
 	const auto materialName = GetIEditor()->GetMaterialManager()->FilenameToMaterial(filename);
 
-	CMaterial* material = (CMaterial*)GetIEditor()->GetMaterialManager()->FindItemByName(materialName);
-	if (!material)
-		material = GetIEditor()->GetMaterialManager()->LoadMaterial(materialName, false);
-	else
-		material->Reload(); //Enforce loading from file every time as we cannot assume the file has not changed compared to in-memory material
+	CMaterial* pMaterial = CSession::GetSessionMaterial(pAsset);
+	if (!pMaterial)
+	{
+		pMaterial = static_cast<CMaterial*>(GetIEditor()->GetMaterialManager()->FindItemByName(materialName));
+	}
 
-	CRY_ASSERT(material);
+	if (!pMaterial)
+	{
+		pMaterial = GetIEditor()->GetMaterialManager()->LoadMaterial(materialName, false);
+	}
+	else if (!pAsset->IsModified())
+	{
+		pMaterial->Reload(); //Enforce loading from file every time as we cannot assume the file has not changed compared to in-memory material
+	}
 
-	SetMaterial(material);
+	if (!pMaterial)
+	{
+		return false;
+	}
+
+	SetMaterial(pMaterial);
 
 	return true;
 }
 
 bool CMaterialEditor::OnSaveAsset(CEditableAsset& editAsset)
 {
-	bool ret = m_pMaterial->Save(false);
-
-	//Fill metadata and dependencies to update cryasset file
-	if (ret)
-	{
-		editAsset.SetFiles({ m_pMaterial->GetFilename() });
-
-		std::vector<SAssetDependencyInfo> filenames;
-
-		//TODO : not all dependencies are found, some paths are relative to same folder which is not good ...
-		int textureCount = m_pMaterial->GetTextureDependencies(filenames);
-
-		std::vector<std::pair<string, string>> details;
-		details.push_back(std::pair<string, string>("subMaterialCount" , ToString(m_pMaterial->GetSubMaterialCount())));
-		details.push_back(std::pair<string, string>( "textureCount", ToString(textureCount) ));
-
-		editAsset.SetDetails(details);
-		editAsset.SetDependencies(filenames);
-	}
-
-	return ret;
+	return GetAssetBeingEdited()->GetEditingSession()->OnSaveAsset(editAsset);
 }
 
 void CMaterialEditor::OnCloseAsset()
@@ -252,6 +327,19 @@ void CMaterialEditor::OnCloseAsset()
 void CMaterialEditor::OnDiscardAssetChanges()
 {
 	m_pMaterial->Reload();
+}
+
+std::unique_ptr<IAssetEditingSession> CMaterialEditor::CreateEditingSession()
+{
+	using namespace Private_MaterialEditor;
+
+	if (!m_pMaterial)
+	{
+		return nullptr;
+	}
+
+	CSession* pSession = new CSession(m_pMaterial);
+	return std::unique_ptr<IAssetEditingSession>(pSession);
 }
 
 void CMaterialEditor::SelectMaterialForEdit(CMaterial* pMaterial)
@@ -414,6 +502,3 @@ void CMaterialEditor::OnRemoveSubMaterial(int slot)
 	CRY_ASSERT(m_pMaterial && m_pMaterial->IsMultiSubMaterial());
 	m_pMaterial->SetSubMaterial(slot, nullptr);
 }
-
-
-

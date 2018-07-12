@@ -109,14 +109,14 @@ public:
 
 };
 
-CAssetEditor* CAssetEditor::OpenAssetForEdit(const char* editorClassName, CAsset* asset)
+CAssetEditor* CAssetEditor::OpenAssetForEdit(const char* szEditorClassName, CAsset* pAsset)
 {
-	CRY_ASSERT(asset);
-	IPane* pane = GetIEditor()->CreateDockable(editorClassName);
-	if (pane)
+	CRY_ASSERT(pAsset);
+	IPane* pPane = GetIEditor()->CreateDockable(szEditorClassName);
+	if (pPane)
 	{
-		CAssetEditor* assetEditor = static_cast<CAssetEditor*>(pane);
-		if (assetEditor->OpenAsset(asset))
+		CAssetEditor* assetEditor = static_cast<CAssetEditor*>(pPane);
+		if (assetEditor->OpenAsset(pAsset))
 		{
 			return assetEditor;
 		}
@@ -188,10 +188,15 @@ bool CAssetEditor::OpenAsset(CAsset* pAsset)
 
 bool CAssetEditor::CanOpenAsset(CAsset* pAsset)
 {
-	if (!pAsset)
+	return pAsset && CanOpenAsset(pAsset->GetType());
+}
+
+bool CAssetEditor::CanOpenAsset(const CAssetType* pType)
+{
+	if (!pType)
 		return false;
 
-	return std::find(m_supportedAssetTypes.begin(), m_supportedAssetTypes.end(), pAsset->GetType()) != m_supportedAssetTypes.end();
+	return std::find(m_supportedAssetTypes.begin(), m_supportedAssetTypes.end(), pType) != m_supportedAssetTypes.end();
 }
 
 void CAssetEditor::InitGenericMenu()
@@ -288,6 +293,11 @@ bool CAssetEditor::OnAboutToCloseAssetInternal(string& reason) const
 	reason.clear();
 
 	if (!m_assetBeingEdited)
+	{
+		return true;
+	}
+
+	if (m_assetBeingEdited->GetEditingSession())
 	{
 		return true;
 	}
@@ -429,6 +439,9 @@ bool CAssetEditor::OnNew()
 
 void CAssetEditor::InternalNewAsset(CAssetType* pAssetType)
 {
+	if (!Close())
+		return;
+
 	const string assetTypeName = pAssetType->GetTypeName();
 
 	const string assetBasePath = CAssetBrowserDialog::CreateSingleAssetForType(assetTypeName, CAssetBrowserDialog::OverwriteMode::NoOverwrite);
@@ -436,9 +449,6 @@ void CAssetEditor::InternalNewAsset(CAssetType* pAssetType)
 	{
 		return; // Operation cancelled by user.
 	}
-
-	if (!Close())
-		return;
 
 	const string assetPath = assetBasePath + string().Format(".%s.cryasset", pAssetType->GetFileExtension());
 	if (pAssetType->Create(assetPath))
@@ -515,6 +525,14 @@ void CAssetEditor::closeEvent(QCloseEvent* pEvent)
 	else
 	{
 		pEvent->ignore();
+	}
+
+	for (CAssetType* pAssetType : m_supportedAssetTypes)
+	{
+		if (pAssetType->GetInstantEditor() == this)
+		{
+			pAssetType->SetInstantEditor(nullptr);
+		}
 	}
 }
 
@@ -638,6 +656,33 @@ void CAssetEditor::dropEvent(QDropEvent* pEvent)
 			}
 		}
 	}
+}
+
+QToolButton* CAssetEditor::CreateLockButton()
+{
+	if (m_pLockButton)
+	{
+		return m_pLockButton;
+	}
+
+	m_pLockButton = new QToolButton();
+	m_pLockButton->setCheckable(true);
+	m_pLockButton->setIcon(CryIcon("icons:General/Instant_Editing.ico"));
+	m_pLockButton->setToolTip(tr("Instant Editing"));
+
+	connect(m_pLockButton, &QToolButton::toggled, this, &CAssetEditor::SetInstantEditingMode);
+
+	const bool foundInstantEditor = std::any_of(m_supportedAssetTypes.cbegin(), m_supportedAssetTypes.cend(), [](const CAssetType* pType)
+	{
+		return pType->GetInstantEditor() != nullptr;
+	});
+
+	if (!foundInstantEditor)
+	{
+		SetInstantEditingMode(true);
+	}
+
+	return m_pLockButton;
 }
 
 bool CAssetEditor::InternalSaveAsset(CAsset* pAsset)
@@ -801,5 +846,40 @@ bool CAssetEditor::SaveBackup(const string& backupFolder)
 bool CAssetEditor::IsReadOnly() const
 {
 	return GetAssetBeingEdited() != nullptr ? GetAssetBeingEdited()->IsReadOnly() : false;
+}
+
+void CAssetEditor::SetInstantEditingMode(bool isActive)
+{
+	if (isActive)
+	{
+		for (CAssetType* pAssetType : m_supportedAssetTypes)
+		{
+			if (pAssetType->GetInstantEditor() == this)
+			{
+				continue;
+			}
+
+			if (pAssetType->GetInstantEditor())
+			{
+				pAssetType->GetInstantEditor()->SetInstantEditingMode(false);
+			}
+			pAssetType->SetInstantEditor(this);
+		}
+	}
+	else
+	{
+		for (CAssetType* pAssetType : m_supportedAssetTypes)
+		{
+			if (pAssetType->GetInstantEditor() == this)
+			{
+				pAssetType->SetInstantEditor(nullptr);
+			}
+		}
+	}
+
+	if (m_pLockButton && m_pLockButton->isChecked() != isActive)
+	{
+		m_pLockButton->setChecked(isActive);
+	}
 }
 

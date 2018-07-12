@@ -17,6 +17,7 @@ namespace AssetLoader
 //! Everybody else is supposed to use the read-only CAsset interface.
 class EDITOR_COMMON_API CEditableAsset : public IEditableAsset
 {
+	friend class CAsset;
 	friend class CAssetType;
 	friend class CAssetBrowser;
 	friend class CAssetEditor;

@@ -833,6 +833,9 @@ void CShaderResources::RT_UpdateResourceSet()
 	bool bContainsInvalidTexture = false;
 	for (EEfResTextures texType = EFTT_DIFFUSE; texType < EFTT_MAX; texType = EEfResTextures(texType + 1))
 	{
+		if (!TextureHelpers::IsSlotAvailable(texType))
+			continue;
+
 		ResourceViewHandle hView = EDefaultResourceViews::Default;
 		CTexture* pTex = nullptr;
 
@@ -871,7 +874,7 @@ void CShaderResources::RT_UpdateResourceSet()
 		}
 
 		bContainsInvalidTexture |= !CTexture::IsTextureExist(pTex);
-		m_resources.SetTexture(IShader::GetTextureSlot(texType), pTex, hView, EShaderStage_AllWithoutCompute);
+		m_resources.SetTexture(IShader::GetTextureSlot(texType), pTex, hView, TextureHelpers::GetShaderStagesForTexSlot(texType));
 	}
 
 	// TODO: default material created first doesn't have a constant buffer

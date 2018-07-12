@@ -8,6 +8,8 @@
 
 #include <CrySandbox/CrySignal.h>
 
+class QToolButton;
+
 //! Base class for editors integrated with the asset system.
 //! One editor window should edit one asset at a time
 //TODO : this should handle drag&drop of an asset onto it
@@ -16,8 +18,9 @@ class EDITOR_COMMON_API CAssetEditor : public CDockableEditor
 public:
 	//! Use this for your implementation of CAssetType::Edit for convenience.
 	//! This should handle most if not all cases, and all asset types should try to follow this model
-	//! editorClassName will use the name with which the editor was registered as a view pane to create it
-	static CAssetEditor* OpenAssetForEdit(const char* editorClassName, CAsset* asset);
+	//! \param szEditorClassName will use the name with which the editor was registered as a view pane to create it
+	//! \param pAsset the asset instance to edit
+	static CAssetEditor* OpenAssetForEdit(const char* szEditorClassName, CAsset* pAsset);
 
 	//! Must declare which asset type can be handled by this editor
 	CAssetEditor(const char* assetType, QWidget* pParent = nullptr);
@@ -33,25 +36,35 @@ public:
 	//! Returns true if this asset is of a type that is supported by this editor
 	bool CanOpenAsset(CAsset* pAsset);
 
-	//! Closes the currently edited asset. Returns false if the user refused closing in case of unsaved changess
+	//! Returns true if this asset type is supported by this editor
+	bool CanOpenAsset(const CAssetType* pType);
+
+	//! Closes the currently edited asset. Returns false if the user refused closing in case of unsaved changes.
 	bool Close();
 
 	//! Saves the currently edited asset.
+	// \sa CAsset::Save
+	// \sa IAssetEditingSession
 	bool Save();
 
 	//! Returns true if this editor is editing an asset
-	bool IsAssetOpened() { return m_assetBeingEdited != nullptr; }
+	bool          IsAssetOpened()             { return m_assetBeingEdited != nullptr; }
 
-	CAsset* GetAssetBeingEdited() { return m_assetBeingEdited; }
+	CAsset*       GetAssetBeingEdited()       { return m_assetBeingEdited; }
 	const CAsset* GetAssetBeingEdited() const { return m_assetBeingEdited; }
 
-	virtual bool OnSave() override;    // #TODO Make this method final.
-	virtual bool OnSaveAs() override;  // #TODO Make this method final.
+	virtual bool  OnSave() override;   // #TODO Make this method final.
+	virtual bool  OnSaveAs() override; // #TODO Make this method final.
 
-	bool SaveBackup(const string& backupFolder);
+	bool          SaveBackup(const string& backupFolder);
 
 	//! Returns true if the asset being edited is read-only
 	bool IsReadOnly() const;
+
+	//! Creates a new instance of asset editing state and returns the IAssetEditingSession interface to manage it.
+	//! \return pointer to IAssetEditingSession interface. Can return nullptr if there is no asset in the edit, or if the editor does not support sessions.
+	//! \note If the editor supports sessions, it can be closed without losing unsaved changes. In this case, the editing session can be continued later, even in another instance of the editor.
+	virtual std::unique_ptr<IAssetEditingSession> CreateEditingSession() { return nullptr; }
 
 	CCrySignal<void(CAsset*)> signalAssetClosed;
 
@@ -64,12 +77,12 @@ protected:
 	//! Note that editAsset may not have all of its metadata cleared before passing. TODO:improve this!
 	virtual bool OnSaveAsset(CEditableAsset& editAsset) = 0;
 
-	//! Called when the asset changes are discarded, 
-	//!if the memory model of the asset still exists after closing, 
+	//! Called when the asset changes are discarded,
+	//!if the memory model of the asset still exists after closing,
 	//!it needs to be reloaded from file in this method so changes are reverted
 	virtual void OnDiscardAssetChanges() {}
 
-	//! A good place to clean up the editor's internal data. The implementation must unconditionally give up all asset changes, if any. 
+	//! A good place to clean up the editor's internal data. The implementation must unconditionally give up all asset changes, if any.
 	virtual void OnCloseAsset() = 0;
 
 	//! OnAboutToCloseAsset returns true if this editor can be safely closed; or false, otherwise.
@@ -79,7 +92,7 @@ protected:
 	//! to add additional checks. The default implementation returns true, which means there are no
 	//! additional checks.
 	//! OnAboutToCloseAsset is guaranteed to precede every call to OnCloseAsset.
-	//! Note that an editor might be closed even when this 
+	//! Note that an editor might be closed even when this
 	//! \param reason Reason that prevents this editor from closing safely.
 	virtual bool OnAboutToCloseAsset(string& reason) const { return true; }
 
@@ -102,11 +115,13 @@ protected:
 	virtual void dragEnterEvent(QDragEnterEvent* pEvent) override;
 	virtual void dropEvent(QDropEvent* pEvent) override;
 
+	QToolButton* CreateLockButton();
+
 private:
 	void Init();
 	void InitGenericMenu();
 	void InitNewMenu();
-	int GetNewableAssetCount() const;
+	int  GetNewableAssetCount() const;
 
 	void InternalNewAsset(CAssetType* pAssetType);
 	bool InternalSaveAsset(CAsset* pAsset);
@@ -123,13 +138,16 @@ private:
 	//! \param reason Reason that prevents this editor from closing safely.
 	bool OnAboutToCloseAssetInternal(string& reason) const;
 
+	//! Allows you to use this editor as an instant editor. There can be only one instance of the active instance editor for each asset type.
+	void SetInstantEditingMode(bool isActive);
+
 	//Methods implemented generically are set to final on purpose
 	virtual bool OnNew() override final;
 	virtual bool OnOpen() override final;
 	virtual bool OnOpenFile(const QString& path) override final;
 	virtual bool OnClose() override final;
 
-	CAsset* m_assetBeingEdited;
+	CAsset*                  m_assetBeingEdited;
 	std::vector<CAssetType*> m_supportedAssetTypes;
+	QToolButton*             m_pLockButton = nullptr;
 };
-

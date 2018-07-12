@@ -614,9 +614,31 @@ private:
 	QMetaObject::Connection m_connection;
 };
 
+void TryInstantEditing(CAsset* pAsset)
+{
+	if (!pAsset)
+	{
+		return;
+	}
+
+	CAssetEditor* pAssetEditor = pAsset->GetType()->GetInstantEditor();
+	if (!pAssetEditor)
+	{
+		return;
+	}
+
+	CRY_ASSERT(pAssetEditor->CanOpenAsset(pAsset));
+
+	CRY_ASSERT(GetIEditor()->FindDockableIf([pAssetEditor, pAsset](IPane* pPane, const string& className) -> bool
+	{
+		return pAssetEditor == pPane && pAsset->GetType()->GetInstantEditor() == static_cast<CAssetEditor*>(pPane);
+	}));
+
+	pAsset->Edit(pAssetEditor);
+
 }
 
-//////////////////////////////////////////////////////////////////////////
+}
 
 CAssetBrowser::CAssetBrowser(bool bHideEngineFolder /*= false*/, QWidget* pParent /*= nullptr*/)
 	: CDockableEditor(pParent)
@@ -1679,37 +1701,68 @@ void CAssetBrowser::OnContextMenu()
 
 	if (assets.length() != 0)
 	{
-		bool bCanReimport = false;
-		bool bReadOnly = false;
+		bool canReimport = false;
+		bool isReadOnly = false;
+		bool isModified = false;
 		QMap<const CAssetType*, std::vector<CAsset*>> assetsByType;
 
 		for (CAsset* asset : assets)
 		{
 			if (asset->GetType()->IsImported() && !asset->IsReadOnly() && asset->HasSourceFile())
 			{
-				bCanReimport = true;
+				canReimport = true;
 			}
 
 			if (asset->IsReadOnly() || !GetISystem()->GetIPak()->IsFileExist(assets.front()->GetFile(0), ICryPak::eFileLocation_OnDisk))
 			{
-				bReadOnly = true;
+				isReadOnly = true;
 			}
+
+			isModified = isModified || asset->IsModified();
 
 			assetsByType[asset->GetType()].push_back(asset);
 		}
 
 		int section = abstractMenu.FindSectionByName("Assets");
 
-		if (bCanReimport)
+		if (canReimport)
 		{
 			auto action = abstractMenu.CreateAction(tr("Reimport"), section);
 			connect(action, &QAction::triggered, [this, assets]() { OnReimport(assets); });
 		}
 
-		if (!bReadOnly)
+		if (!isReadOnly)
 		{
 			auto action = abstractMenu.CreateAction(tr("Delete"));
 			connect(action, &QAction::triggered, [this, assets]() { OnDelete(assets); });
+		}
+
+		if (isModified)
+		{
+			auto action = abstractMenu.CreateAction(tr("Save"));
+			connect(action, &QAction::triggered, [this, assets]() 
+			{  
+				for (CAsset* pAsset : assets)
+				{
+					pAsset->Save();
+				}
+			});
+
+			action = abstractMenu.CreateAction(tr("Discard Changes"));
+			connect(action, &QAction::triggered, [this, assets]()
+			{
+				const QString title(tr("Discard Changes"));
+				const QString text(tr("Are you sure you want to discard the changes in the selected assets?"));
+
+				const auto button = CQuestionDialog::SQuestion(title, text, QDialogButtonBox::Discard | QDialogButtonBox::Cancel, QDialogButtonBox::Cancel);
+				if (QDialogButtonBox::Discard == button)
+				{
+					for (CAsset* pAsset : assets)
+					{
+						pAsset->Reload();
+					}
+				}
+			});
 		}
 
 		//TODO : source control
@@ -1849,6 +1902,10 @@ void CAssetBrowser::OnDoubleClick(const QModelIndex& index)
 
 void CAssetBrowser::OnDoubleClick(CAsset* pAsset)
 {
+	if (m_pQuickEditTimer)
+	{
+		m_pQuickEditTimer->stop();
+	}
 	pAsset->Edit();
 }
 
@@ -1870,6 +1927,32 @@ void CAssetBrowser::OnCurrentChanged(const QModelIndex& current, const QModelInd
 
 void CAssetBrowser::UpdatePreview(const QModelIndex& currentIndex)
 {
+
+	using namespace Private_AssetBrowser;
+
+	if (IsAsset(currentIndex))
+	{
+		CAsset* const pAsset = ToAsset(currentIndex);
+		if (pAsset && pAsset->GetType()->GetInstantEditor())
+		{
+			if (!m_pQuickEditTimer)
+			{
+				m_pQuickEditTimer.reset(new QTimer());
+				m_pQuickEditTimer->setSingleShot(true);
+				m_pQuickEditTimer->setInterval(200);
+
+				connect(m_pQuickEditTimer.get(), &QTimer::timeout, [this]()
+				{
+					QModelIndex currentIndex = m_selection->currentIndex();
+					CAsset* pAsset = currentIndex.isValid() ? ToAsset(currentIndex) : nullptr;
+					TryInstantEditing(pAsset);
+				});
+			}
+
+			m_pQuickEditTimer->start();
+		}
+	}
+
 #if ASSET_BROWSER_USE_PREVIEW_WIDGET
 	if (m_previewWidget->isVisible())
 	{
@@ -2009,6 +2092,21 @@ void CAssetBrowser::OnDelete(const QVector<CAsset*>& assets)
 	// Physically delete asset files.
 	const bool bDeleteAssetFiles(true);
 	pAssetManager->DeleteAssets(assetsToDelete, bDeleteAssetFiles);
+}
+
+bool CAssetBrowser::OnOpen()
+{
+	const QVector<CAsset*> assets = GetSelectedAssets();
+	if (assets.empty())
+	{
+		return false;
+	}
+
+	for (CAsset* pAsset : assets)
+	{
+		OnDoubleClick(pAsset);
+	}
+	return true;
 }
 
 void CAssetBrowser::OnMove(const QVector<CAsset*>& assets, const QString& destinationFolder)

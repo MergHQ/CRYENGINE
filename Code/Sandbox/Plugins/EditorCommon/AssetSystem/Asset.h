@@ -13,6 +13,7 @@
 class CAssetType;
 class CAssetEditor;
 class CEditableAsset;
+struct IEditableAsset;
 
 //! Values that can be passed to CAsset::signalChanged and CAssetManager::signalAssetChanged
 enum AssetChangeFlags
@@ -36,6 +37,25 @@ struct SAssetDependencyInfo
 
 	string path;        //!< The path is relative to the assets root directory.
 	int32  usageCount;  //!< The instance count for the path or 0 if such information is not available.
+};
+
+// IAssetEditingSession Provides methods to manage state of unsaved changes of asset on editing.
+// Editing session is owned by asset.
+// \sa CAsset::GetEditingSession
+// \sa CAssetEditor::CreateEditingSession
+struct EDITOR_COMMON_API IAssetEditingSession
+{
+	virtual ~IAssetEditingSession() {}
+
+	// Returns name of the editor that created the session object.
+	virtual const char* GetEditorName() const = 0;
+
+	// The implementation should save asset data files and update the asset by the IEditableAsset interface.
+	//! \sa CAssetEditor::OnSaveAsset
+	virtual bool OnSaveAsset(IEditableAsset& asset) = 0;
+
+	//! The implementation must unconditionally give up all asset changes, if any.
+	virtual void DiscardChanges(IEditableAsset& asset) = 0;
 };
 
 //! Assets are the "unit of work" of CRYENGINE Asset Sytem and represent one or several files on disk, as well as a *.cryasset metadata file to carry extra information relevant to this asset.
@@ -125,9 +145,19 @@ public:
 	void Edit(CAssetEditor* pEditor = nullptr);
 
 	//! Returns the current editor that has this asset opened
-	CAssetEditor* GetCurrentEditor() const { return m_editor; }
+	CAssetEditor* GetCurrentEditor() const { return m_pEditor; }
 
+	//! returns IAssetEditingSession interface to the current editing state or nullptr if the asset is not editing or the active editor does not support sessions.
+	//! \sa IsBeingEdited()
+	IAssetEditingSession* GetEditingSession() const { return m_pEditingSession.get(); }
+
+	//! Saves asset. 
+	// \sa CAssetEditor::Save
+	// \sa IAssetEditingSession::OnSaveAsset
 	void Save();
+
+	//! Discards all unsaved changes, if any, and reloads the asset.
+	void Reload();
 
 	//! Returns true if the thumbnail is loaded, GetThumbnail will return a valid thumbnail
 	bool IsThumbnailLoaded() const;
@@ -207,8 +237,9 @@ private:
 	//Editor-only metadata
 
 	//Editor instance that is currently opening this asset
-	//TODO : deal with an asset opened in several editors at once
-	CAssetEditor*		m_editor;
+	CAssetEditor*			m_pEditor;
+
+	std::unique_ptr<IAssetEditingSession> m_pEditingSession;
 
 	//Optimizations: caching some data to avoid computing it too often
 	mutable QString		m_filterString;

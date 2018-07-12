@@ -108,7 +108,7 @@ public:
 
 		string filename(PathUtil::ToGamePath(szFilepath));
 
-		if (strncmp(m_folder.c_str(), filename.c_str(), m_folder.size()) == 0)
+		if (strnicmp(m_folder.c_str(), filename.c_str(), m_folder.size()) == 0)
 		{
 			filename.erase(0, m_folder.size());
 		}
@@ -141,9 +141,9 @@ public:
 		});
 	}
 
-	const AssetLoader::SAssetMetadata& GetMetadata() 
-	{ 
-		return m_metadata; 
+	const AssetLoader::SAssetMetadata& GetMetadata()
+	{
+		return m_metadata;
 	}
 
 	virtual const char* GetMetadataFile() const override
@@ -163,9 +163,9 @@ public:
 
 private:
 	AssetLoader::SAssetMetadata m_metadata;
-	const string m_metadataFile;
-	const string m_name;
-	const string m_folder;
+	const string                m_metadataFile;
+	const string                m_name;
+	const string                m_folder;
 };
 
 }
@@ -183,7 +183,7 @@ string CAssetType::MakeMetadataFilename(const char* szAssetName) const
 QVariant CAssetType::GetVariantFromDetail(const string& detailValue, const CItemModelAttribute* pAttrib)
 {
 	CRY_ASSERT(pAttrib);
-	return 	pAttrib->GetType()->ToQVariant(detailValue);
+	return pAttrib->GetType()->ToQVariant(detailValue);
 }
 
 bool CAssetType::Create(const char* szFilepath, const void* pTypeSpecificParameter) const
@@ -254,7 +254,7 @@ std::vector<CAsset*> CAssetType::Import(const string& sourceFilePath, const stri
 	return pAssetImporter->Import({ GetTypeName() }, ctx);
 }
 
-std::vector<string> CAssetType::GetAssetFiles(const CAsset& asset, bool includeSourceFile, bool makeAbsolute/* = false*/) const
+std::vector<string> CAssetType::GetAssetFiles(const CAsset& asset, bool includeSourceFile, bool makeAbsolute /* = false*/) const
 {
 	std::vector<string> files;
 	files.reserve(asset.GetFilesCount() + 3);
@@ -349,6 +349,11 @@ bool CAssetType::DeleteAssetFiles(const CAsset& asset, bool bDeleteSourceFile, s
 	}
 
 	return numberOfFilesDeleted == filesToRemove.size();
+}
+
+void CAssetType::SetInstantEditor(CAssetEditor* pEditor)
+{
+	m_pInstantEditor = pEditor;
 }
 
 bool CAssetType::RenameAsset(CAsset* pAsset, const char* szNewName) const
@@ -489,7 +494,7 @@ bool CAssetType::MoveAsset(CAsset* pAsset, const char* szDestinationFolder, bool
 
 	Private_AssetType::RenameAssetFile(oldThumbnailPath, pAsset->GetThumbnailPath());
 
-	// Copy or move the source. 
+	// Copy or move the source.
 	if (pAsset->GetSourceFile() && *pAsset->GetSourceFile())
 	{
 		const string oldSourceFile = pAsset->GetSourceFile();
@@ -591,7 +596,6 @@ bool CAssetType::CopyAsset(CAsset* pAsset, const char* szNewPath) const
 	return true;
 }
 
-
 //////////////////////////////////////////////////////////////////////////
 
 // Fallback asset type if the actual type is not registered.
@@ -600,14 +604,13 @@ class CCryAssetType : public CAssetType
 public:
 	DECLARE_ASSET_TYPE_DESC(CCryAssetType);
 
-	virtual const char* GetTypeName() const override { return "cryasset"; }
-	virtual const char* GetUiTypeName() const override { return "cryasset"; }
+	virtual const char* GetTypeName() const override      { return "cryasset"; }
+	virtual const char* GetUiTypeName() const override    { return "cryasset"; }
 	virtual const char* GetFileExtension() const override { return "unregistered"; }
-	virtual bool        IsImported() const override { return false; }
-	virtual bool        CanBeEdited() const override { return false; }
+	virtual bool        IsImported() const override       { return false; }
+	virtual bool        CanBeEdited() const override      { return false; }
 
 	//Cannot be picked
 	virtual bool IsUsingGenericPropertyTreePicker() const override { return false; }
 };
 REGISTER_ASSET_TYPE(CCryAssetType)
-

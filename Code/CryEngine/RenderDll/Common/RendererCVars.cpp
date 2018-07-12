@@ -978,10 +978,10 @@ void CRendererCVars::InitCVars()
 		OnChange_CV_r_ShaderTarget(CV_r_ShaderTarget);
 #endif
 #if CRY_RENDERER_VULKAN
-		CV_r_VkShaderCompiler = REGISTER_STRING("r_VkShaderCompiler", "HLSLCC", VF_DUMPTODISK,
+		CV_r_VkShaderCompiler = REGISTER_STRING("r_VkShaderCompiler", "DXC", VF_DUMPTODISK,
 			"Vulkan renderer only CVar."
 			"Sets the HLSL to SPIRV compiler to use for local/remote shader comilation ( HLSLCC/DXC/GLSLANG ).\n"
-			"Specify in system.cfg like this: r_VkShaderCompiler = \"HLSLCC\"");
+			"Specify in system.cfg like this: r_VkShaderCompiler = \"DXC\"");
 #endif
 
 	REGISTER_CVAR3("r_DeferredShadingTiled", CV_r_DeferredShadingTiled, 3, VF_DUMPTODISK,

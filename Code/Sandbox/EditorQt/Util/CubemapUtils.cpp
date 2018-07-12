@@ -118,38 +118,30 @@ bool CubemapUtils::GenCubemapWithObjectPathAndSize(string& filename, CBaseObject
 }
 
 //////////////////////////////////////////////////////////////////////////
-void CubemapUtils::GenHDRCubemapTiff(const string& fileName, int nDstSize, Vec3& pos)
+void CubemapUtils::GenHDRCubemapTiff(const string& fileName, std::size_t nDstSize, Vec3& pos)
 {
-	int nSrcSize = nDstSize * 4; // Render 16x bigger cubemap (4x4) - 16x SSAA
+	const auto nSrcSize = nDstSize * 4; // Render 16x bigger cubemap (4x4) - 16x SSAA
+	const auto srcPitch = nSrcSize * 4;
+	const auto dstPitch = nSrcSize;
+	const auto srcSideSize = nSrcSize * srcPitch;
+	const auto sides = 6;
 
-	TArray<unsigned short> vecData;
-	vecData.Reserve(nSrcSize * nSrcSize * 6 * 4);
-	vecData.SetUse(0);
-
-	if (!GetIEditorImpl()->GetRenderer()->EF_RenderEnvironmentCubeHDR(nSrcSize, pos, vecData))
-	{
-		assert(0);
+	const auto& vecData = GetIEditorImpl()->GetRenderer()->EF_RenderEnvironmentCubeHDR(nSrcSize, pos);
+	CRY_ASSERT_MESSAGE(vecData.size() == srcSideSize * sides, "TIFF data does not match expected size");
+	if (vecData.size() < srcSideSize * sides)
 		return;
-	}
-
-	assert(vecData.size() == nSrcSize * nSrcSize * 6 * 4);
 
 	// todo: such big downsampling should be on gpu
 
 	// save data to tiff
 	// resample the image at the original size
 	CWordImage img;
-	img.Allocate(nDstSize * 4 * 6, nDstSize);
-
-	size_t srcPitch = nSrcSize * 4;
-	size_t srcSlideSize = nSrcSize * srcPitch;
-
-	size_t dstPitch = nDstSize * 4;
-	for (int side = 0; side < 6; ++side)
+	img.Allocate(nSrcSize * sides, nDstSize);
+	for (int side = 0; side < sides; ++side)
 	{
 		for (uint32 y = 0; y < nDstSize; ++y)
 		{
-			CryHalf4* pSrcSide = (CryHalf4*)&vecData[side * srcSlideSize];
+			CryHalf4* pSrcSide = (CryHalf4*)&vecData[side * srcSideSize];
 			CryHalf4* pDst = (CryHalf4*)&img.ValueAt(side * dstPitch, y);
 			for (uint32 x = 0; x < nDstSize; ++x)
 			{
