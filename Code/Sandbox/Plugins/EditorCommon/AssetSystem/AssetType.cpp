@@ -108,7 +108,7 @@ public:
 
 		string filename(PathUtil::ToGamePath(szFilepath));
 
-		if (strncmp(m_folder.c_str(), filename.c_str(), m_folder.size()) == 0)
+		if (strnicmp(m_folder.c_str(), filename.c_str(), m_folder.size()) == 0)
 		{
 			filename.erase(0, m_folder.size());
 		}
