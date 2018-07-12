@@ -1650,7 +1650,7 @@ public:
 	static ETEX_Format  TextureFormatForName(const char* str)    { return CImageExtensionHelper::TextureFormatForName(str); }
 	static ETEX_Type    TextureTypeForName(const char* str)      { return CImageExtensionHelper::TextureTypeForName(str); }
 
-	static bool         RenderEnvironmentCMHDR(int size, const Vec3& Pos, TArray<unsigned short>& vecData);
+	static DynArray<std::uint16_t> RenderEnvironmentCMHDR(std::size_t size, const Vec3& Pos);
 
 public:
 

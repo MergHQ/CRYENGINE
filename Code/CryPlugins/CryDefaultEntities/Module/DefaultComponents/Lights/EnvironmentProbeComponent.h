@@ -176,13 +176,13 @@ namespace Cry
 
 				// Now generate the cube map
 				// Render 16x bigger cube map (4x4) - 16x SSAA
-				int renderResolution = (int)m_generation.m_resolution * 4;
+				const auto renderResolution = static_cast<std::size_t>(m_generation.m_resolution) * 4;
+				const auto srcPitch = renderResolution * 4;
+				const auto srcSideSize = renderResolution * srcPitch;
+				const auto sides = 6;
 
-				TArray<unsigned short> vecData;
-				vecData.Reserve(renderResolution * renderResolution * 6 * 4);
-				vecData.SetUse(0);
-
-				if (gEnv->pRenderer->EF_RenderEnvironmentCubeHDR(renderResolution, m_pEntity->GetWorldPos(), vecData))
+				const auto& vecData = gEnv->pRenderer->EF_RenderEnvironmentCubeHDR(renderResolution, m_pEntity->GetWorldPos());
+				if (vecData.size() < srcSideSize * sides)
 				{
 					TArray<unsigned short> downsampledImageData;
 
@@ -191,15 +191,12 @@ namespace Cry
 
 					downsampledImageData.resize(width * height);
 
-					size_t srcPitch = renderResolution * 4;
-					size_t srcSlideSize = renderResolution * srcPitch;
-
 					size_t dstPitch = (int)m_generation.m_resolution * 4;
-					for (int side = 0; side < 6; ++side)
+					for (int side = 0; side < sides; ++side)
 					{
 						for (uint32 y = 0; y < (uint32)m_generation.m_resolution; ++y)
 						{
-							CryHalf4* pSrcSide = (CryHalf4*)&vecData[side * srcSlideSize];
+							CryHalf4* pSrcSide = (CryHalf4*)&vecData[side * srcSideSize];
 							CryHalf4* pDst = (CryHalf4*)&downsampledImageData[side * dstPitch + y * width];
 							for (uint32 x = 0; x < (uint32)m_generation.m_resolution; ++x)
 							{

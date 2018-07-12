@@ -23,6 +23,9 @@
 #include "DeviceManager/DeviceFormats.h" // SPixFormat
 #include <Common/RenderDisplayContext.h>
 
+#include <algorithm>
+#include <iterator>
+
 #undef min
 #undef max
 
@@ -775,15 +778,16 @@ private:
 	ICVar*                 m_pCVar;
 };
 
-bool CTexture::RenderEnvironmentCMHDR(int size, const Vec3& Pos, TArray<unsigned short>& vecData)
+DynArray<std::uint16_t> CTexture::RenderEnvironmentCMHDR(std::size_t size, const Vec3& Pos)
 {
+	bool result = true;
+	DynArray<std::uint16_t> vecData;
+
 #if CRY_PLATFORM_DESKTOP
 
 	float timeStart = gEnv->pTimer->GetAsyncTime().GetSeconds();
 
 	iLog->Log("Start generating a cubemap (%d x %d) at position (%.1f, %.1f, %.1f)", size, size, Pos.x, Pos.y, Pos.z);
-
-	vecData.SetUse(0);
 
 	bool bFullScreen = gcpRendD3D->IsFullscreen();
 
@@ -793,7 +797,7 @@ bool CTexture::RenderEnvironmentCMHDR(int size, const Vec3& Pos, TArray<unsigned
 		iLog->Log("Failed generating a cubemap: out of video memory");
 
 		SAFE_RELEASE(ptexGenEnvironmentCM);
-		return false;
+		return DynArray<std::uint16_t>{};
 	}
 
 	// Disable/set cvars that can affect cube map generation.
@@ -829,69 +833,69 @@ bool CTexture::RenderEnvironmentCMHDR(int size, const Vec3& Pos, TArray<unsigned
 		gcpRendD3D->GetGraphicsPipeline().Resize(size, size);
 	}, ERenderCommandFlags::None);
 
+	vecData.reserve(size * size * 6 * 4);
 	for (int nSide = 0; nSide < 6; nSide++)
 	{
-		auto pStreamEngine = gEnv->pSystem->GetStreamEngine();
-		bool bStreamingTasksInProgress = false;
-
-		uint32 waitFrames = 0;
-		const uint32 maxWaitFrames = max(0, CRendererCVars::CV_r_CubemapGenerationTimeout);
-
-		do
+		int32 waitFrames = max(0, CRendererCVars::CV_r_CubemapGenerationTimeout);
+		while (waitFrames-->0)
 		{
 #if defined(FEATURE_SVO_GI)
-			bool bSvoTasksInProgress = !gEnv->p3DEngine->IsSvoReady(true);
+			const bool is_svo_ready_pre_draw = gEnv->p3DEngine->IsSvoReady(true);
 #endif
 
 			gEnv->nMainFrameID++;
-
 			DrawSceneToCubeSide(pRenderOutput, Pos, size, nSide);
 
 			SStreamEngineOpenStats streamStats;
-			pStreamEngine->GetStreamingOpenStatistics(streamStats);
-
-			bStreamingTasksInProgress =
-				streamStats.nOpenRequestCountByType[eStreamTaskTypeGeometry] > 0 ||
-				streamStats.nOpenRequestCountByType[eStreamTaskTypeTexture] > 0;
-
+			gEnv->pSystem->GetStreamEngine()->GetStreamingOpenStatistics(streamStats);
+			if (streamStats.nOpenRequestCountByType[eStreamTaskTypeGeometry] == 0
+				&& streamStats.nOpenRequestCountByType[eStreamTaskTypeTexture] == 0
+				&& streamStats.nOpenRequestCountByType[eStreamTaskTypeTerrain] == 0
 #if defined(FEATURE_SVO_GI)
-			bStreamingTasksInProgress |= bSvoTasksInProgress | !gEnv->p3DEngine->IsSvoReady(true);
+				&& gEnv->p3DEngine->IsSvoReady(true)
+				&& is_svo_ready_pre_draw
 #endif
+				)
+				break;
 
-			if (bStreamingTasksInProgress)
-			{
-				CrySleep(10);
-			}
-			gcpRendD3D->ExecuteRenderThreadCommand([&]
-			{
-				if (!bStreamingTasksInProgress)
-				{
-					CDeviceTexture* pDstDevTex = ptexGenEnvironmentCM->GetDevTexture();
-					pDstDevTex->DownloadToStagingResource(0, [&](void* pData, uint32 rowPitch, uint32 slicePitch)
-					{
-						unsigned short* pTarg = (unsigned short*)pData;
-						const uint32 nLineStride = CTexture::TextureDataSize(size, 1, 1, 1, 1, eTF_R16G16B16A16F) / sizeof(unsigned short);
+			// Update streaming engine
+			CrySleep(10);
+			gEnv->pSystem->GetStreamEngine()->Update(eStreamTaskTypeTerrain | eStreamTaskTypeTexture | eStreamTaskTypeGeometry);
 
-						// Copy vertically flipped image
-						for (uint32 nLine = 0; nLine < size; ++nLine)
-							vecData.Copy(&pTarg[((size - 1) - nLine) * nLineStride], nLineStride);
-
-						return true;
-					});
-				}
-
-				// After download clean up temporal memory pools
+			// Flush and garbage collect
+			gcpRendD3D->ExecuteRenderThreadCommand([&] {
 				GetDeviceObjectFactory().FlushToGPU(false, true);
 			}, ERenderCommandFlags::FlushAndWait);
+		}
 
-		} while (++waitFrames <= maxWaitFrames && bStreamingTasksInProgress);
-
-		if (maxWaitFrames>0 && waitFrames > maxWaitFrames)
+		if (waitFrames<0)
 		{
 			CryWarning(VALIDATOR_MODULE_RENDERER, VALIDATOR_WARNING, 
 			    "Cubemap generation timeout: some outstanding tasks didn't finish on time, generated cubemap might be incorrect.\n" \
 			    "Consider increasing r_CubemapGenerationTimeout");
 		}
+
+		gcpRendD3D->ExecuteRenderThreadCommand([&]
+		{
+			CDeviceTexture* pDstDevTex = ptexGenEnvironmentCM->GetDevTexture();
+			pDstDevTex->DownloadToStagingResource(0, [&](void* pData, uint32 rowPitch, uint32 slicePitch)
+			{
+				const auto* pTarg = reinterpret_cast<const std::uint16_t*>(pData);
+				const uint32 nLineStride = CTexture::TextureDataSize(size, 1, 1, 1, 1, eTF_R16G16B16A16F) / sizeof(*pTarg);
+
+				// Copy vertically flipped image
+				for (uint32 nLine = 0; nLine < size; ++nLine)
+				{
+					const auto src = pTarg + ((size - 1) - nLine) * nLineStride;
+					std::copy(src, src + nLineStride, std::back_inserter(vecData));
+				}
+
+				return true;
+			});
+
+			// After download clean up temporal memory pools
+			GetDeviceObjectFactory().FlushToGPU(false, true);
+		}, ERenderCommandFlags::FlushAndWait);
 	}
 
 	SAFE_RELEASE(ptexGenEnvironmentCM);
@@ -906,7 +910,7 @@ bool CTexture::RenderEnvironmentCMHDR(int size, const Vec3& Pos, TArray<unsigned
 	iLog->Log("Successfully finished generating a cubemap in %.1f sec", timeUsed);
 #endif
 
-	return true;
+	return vecData;
 }
 
 //////////////////////////////////////////////////////////////////////////
