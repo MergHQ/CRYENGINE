@@ -124,7 +124,7 @@ CAssetEditor* CTextureType::Edit(CAsset* pAsset) const
 	// A texture can have as a source different file formats than tif, so we check first if 
 	// by any chance the source isn't editable asset itself
 	CAsset* potentialAsset = CAssetManager::GetInstance()->FindAssetForFile(pAsset->GetSourceFile());
-	if (potentialAsset)
+	if (potentialAsset && strcmp(potentialAsset->GetType()->GetTypeName(), "SubstanceInstance") == 0)
 	{
 		return CAssetEditor::OpenAssetForEdit("Substance Instance Editor", potentialAsset);
 	}
