@@ -1585,8 +1585,10 @@ struct ISystem
 	//! \note For debugging use only!, queries current C++ call stack.
 	virtual void debug_LogCallStack(int nMaxFuncs = 32, int nFlags = 0) = 0;
 
+#ifdef CRY_TESTING
 	//! \return 0 if not activated, activate through #System.ApplicationTest.
 	virtual CryTest::ITestSystem* GetITestSystem() = 0;
+#endif
 
 	//! Execute command line arguments. Should be after init game.
 	//! Example: +g_gametype ASSAULT +map "testy"

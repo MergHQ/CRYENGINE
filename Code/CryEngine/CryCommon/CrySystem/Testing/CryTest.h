@@ -124,22 +124,28 @@ ILINE bool  AreInequal(const char(&str1)[M], const char(&str2)[N]) { return strc
 
 inline void ReportError(const char* file, int line, const char* conditionExpression)
 {
+#ifdef CRY_TESTING
 	gEnv->pSystem->GetITestSystem()->ReportNonCriticalError(conditionExpression, file, line);
+#endif // CRY_TESTING
 }
 
 inline void ReportError(const char* file, int line, string conditionExpression, const string& message)
 {
+#ifdef CRY_TESTING
 	conditionExpression.append(" message:");
 	conditionExpression.append(message);
 	gEnv->pSystem->GetITestSystem()->ReportNonCriticalError(conditionExpression.c_str(), file, line);
+#endif // CRY_TESTING
 }
 
 template<typename ... ArgsT>
 void ReportError(const char* file, int line, string conditionExpression, const char* format, ArgsT&& ... args)
 {
+#ifdef CRY_TESTING
 	conditionExpression.append(" message:");
 	conditionExpression.AppendFormat(format, std::forward<ArgsT>(args) ...);
 	gEnv->pSystem->GetITestSystem()->ReportNonCriticalError(conditionExpression.c_str(), file, line);
+#endif // CRY_TESTING
 }
 
 }

@@ -38,7 +38,9 @@
 #include <CryNetwork/INotificationNetwork.h>
 #include <CrySystem/ICodeCheckpointMgr.h>
 #include <CrySystem/Profilers/IStatoscope.h>
-#include "TestSystem.h"             // CTestSystem
+#ifdef CRY_TESTING
+#include "TestSystem.h"
+#endif // CRY_TESTING
 #include "VisRegTest.h"
 #include <CryDynamicResponseSystem/IDynamicResponseSystem.h>
 #include <Cry3DEngine/ITimeOfDay.h>
@@ -268,7 +270,9 @@ CSystem::CSystem(const SSystemInitParams& startupParams)
 	m_PhysThread = nullptr;
 
 	m_pIFont = nullptr;
+#ifdef CRY_TESTING
 	m_pTestSystem = nullptr;
+#endif
 	m_pVisRegTest = nullptr;
 	m_rIntialWindowSizeRatio = nullptr;
 	m_rWidth = nullptr;
@@ -400,7 +404,9 @@ CSystem::CSystem(const SSystemInitParams& startupParams)
 
 	InitThreadSystem();
 
+#ifdef CRY_TESTING
 	m_pTestSystem = stl::make_unique<CryTest::CTestSystem>(this);
+#endif
 
 	LOADING_TIME_PROFILE_SECTION_NAMED("CSystem Boot");
 
@@ -474,7 +480,9 @@ CSystem::~CSystem()
 	//	SAFE_DELETE(m_pMemoryManager);
 	SAFE_DELETE(m_pNULLRenderAuxGeom);
 
+#ifdef CRY_TESTING
 	m_pTestSystem.reset();
+#endif
 
 	gEnv->pThreadManager->UnRegisterThirdPartyThread("Main");
 	ShutDownThreadSystem();
@@ -1865,10 +1873,10 @@ bool CSystem::Update(CEnumFlags<ESystemUpdateFlags> updateFlags, int nPauseMode)
 		}
 	}
 
-#ifndef EXCLUDE_UPDATE_ON_CONSOLE
+#if defined (CRY_TESTING) && !defined(EXCLUDE_UPDATE_ON_CONSOLE)
 	if (m_pTestSystem)
 		m_pTestSystem->Update();
-#endif //EXCLUDE_UPDATE_ON_CONSOLE
+#endif
 	if (nPauseMode != 0)
 		m_bPaused = true;
 	else

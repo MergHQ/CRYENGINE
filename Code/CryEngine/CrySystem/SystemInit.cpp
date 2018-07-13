@@ -74,7 +74,9 @@
 #include "DiskProfiler.h"
 #include "Watchdog.h"
 #include "Statoscope.h"
+#ifdef CRY_TESTING
 #include "TestSystem.h"
+#endif // CRY_TESTING
 #include "VisRegTest.h"
 #include "MTSafeAllocator.h"
 #include "NotificationNetwork.h"
@@ -2918,6 +2920,7 @@ bool CSystem::Initialize(SSystemInitParams& startupParams)
 		//////////////////////////////////////////////////////////////////////////
 
 		//notify test system to init logs (since file system is setup).
+#ifdef CRY_TESTING
 		if (m_pTestSystem)
 		{
 			m_pTestSystem->InitLog();
@@ -2927,6 +2930,7 @@ bool CSystem::Initialize(SSystemInitParams& startupParams)
 		{
 			CryTest::CTestSystem::InitCommands();
 		}
+#endif // CRY_TESTING
 
 		// Initialise after pLog and CPU feature initialization
 		// AND after console creation (Editor only)
