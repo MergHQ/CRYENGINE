@@ -182,6 +182,11 @@ public:
 	//! Assign the editor as the instant editor.
 	void SetInstantEditor(CAssetEditor* pEditor);
 
+	//! Returns true if the asset type supports automatic generation and repairing missing or broken *.cryasset file. 
+	//! The default implementation returns true.
+	//! \sa CAssetGenerator::GenerateCryasset
+	virtual bool CanAutoRepairMetadata() const { return true; }
+
 protected:
 	//! Helper function that parses a string and returns a variant of a type corresponding to \p pAttrib->GetType().
 	//! If conversion fails, a default-constructed varient of that type is returned. (see QVariant::value).

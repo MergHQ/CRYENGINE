@@ -134,20 +134,7 @@ CAssetGenerator::CAssetGenerator()
 	m_rcSettings.Append("/overwriteextension=cryasset /assettypes=\"");
 	for (CAssetType* pType : types)
 	{
-		// Ignore fallback asset type.
-		if (strcmp(pType->GetTypeName(), "cryasset") == 0)
-		{
-			continue;
-		}
-
-		// Ignore deprecated asset types.
-		if (strcmp(pType->GetTypeName(), "Xml") == 0 || strcmp(pType->GetTypeName(), "Script") == 0)
-		{
-			continue;
-		}
-
-		// Ignore levels, since this is a special case when the cryasset is next to the level folder.
-		if (strcmp(pType->GetTypeName(), "Level") == 0)
+		if (!pType->CanAutoRepairMetadata())
 		{
 			continue;
 		}
@@ -187,6 +174,8 @@ void CAssetGenerator::GenerateCryasset(const string& filePath)
 
 		if (GetISystem()->GetIPak()->IsFileExist(filePath))
 		{
+			// TODO: Move the implementation to a virtual function of CAssetType. Thus, each asset would override the default implementation.
+
 			CResourceCompilerHelper::CallResourceCompiler(
 				filePath.c_str(),
 				m_rcSettings.c_str(),

@@ -9,12 +9,13 @@ class CScriptType : public CAssetType
 public:
 	DECLARE_ASSET_TYPE_DESC(CScriptType);
 
-	virtual const char* GetTypeName() const override       { return "Script"; }
-	virtual const char* GetUiTypeName() const override     { return QT_TR_NOOP("Script"); }
-	virtual const char* GetFileExtension() const override  { return "lua"; }
-	virtual bool        IsImported() const override        { return false; }
-	virtual bool        CanBeEdited() const override       { return false; }
-	virtual QColor      GetThumbnailColor() const override { return QColor(201, 96, 191); }
+	virtual const char* GetTypeName() const override           { return "Script"; }
+	virtual const char* GetUiTypeName() const override         { return QT_TR_NOOP("Script"); }
+	virtual const char* GetFileExtension() const override      { return "lua"; }
+	virtual bool        IsImported() const override            { return false; }
+	virtual bool        CanBeEdited() const override           { return false; }
+	virtual bool        CanAutoRepairMetadata() const override { return false; }
+	virtual QColor      GetThumbnailColor() const override     { return QColor(201, 96, 191); }
 
 private:
 	virtual CryIcon GetIconInternal() const override
@@ -30,12 +31,13 @@ class CXmlType : public CAssetType
 public:
 	DECLARE_ASSET_TYPE_DESC(CXmlType);
 
-	virtual const char* GetTypeName() const override       { return "Xml"; }
-	virtual const char* GetUiTypeName() const override     { return QT_TR_NOOP("Xml"); }
-	virtual const char* GetFileExtension() const override  { return "xml"; }
-	virtual bool        IsImported() const override        { return false; }
-	virtual bool        CanBeEdited() const override       { return true; }
-	virtual QColor      GetThumbnailColor() const override { return QColor(201, 96, 191); }
+	virtual const char* GetTypeName() const override           { return "Xml"; }
+	virtual const char* GetUiTypeName() const override         { return QT_TR_NOOP("Xml"); }
+	virtual const char* GetFileExtension() const override      { return "xml"; }
+	virtual bool        IsImported() const override            { return false; }
+	virtual bool        CanBeEdited() const override           { return true; }
+	virtual bool        CanAutoRepairMetadata() const override { return false; }
+	virtual QColor      GetThumbnailColor() const override     { return QColor(201, 96, 191); }
 
 private:
 	virtual CryIcon GetIconInternal() const override
@@ -94,4 +96,3 @@ private:
 		return CryIcon("icons:common/assets_animation.ico");
 	}
 };
-
