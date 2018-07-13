@@ -274,7 +274,10 @@ void CParticleComponentRuntime::UpdateFeatures(const SUpdateContext& context, CD
 	for (int i = 0; i < eConstantBufferSlot_COUNT; ++i)
 	{
 		if (m_updateConstantBuffers[i])
-			m_passFeatureUpdate.SetInlineConstantBuffer(i, m_updateConstantBuffers[i]);
+		{
+			CRY_ASSERT(i != eConstantBufferSlot_Base); // make sure we don't bind eConstantBufferSlot_Base twice
+			m_passFeatureUpdate.SetConstantBuffer(i, m_updateConstantBuffers[i]);
+		}
 	}
 
 	m_parameters.CopyToDevice();

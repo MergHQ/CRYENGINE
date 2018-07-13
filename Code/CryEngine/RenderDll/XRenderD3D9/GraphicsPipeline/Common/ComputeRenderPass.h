@@ -43,6 +43,7 @@ public:
 	void SetBuffer(uint32 slot, CGpuBuffer* pBuffer);
 	void SetSampler(uint32 slot, SamplerStateHandle sampler);
 	void SetInlineConstantBuffer(uint32 slot, CConstantBuffer* pConstantBuffer);
+	void SetConstantBuffer(uint32 slot, CConstantBuffer* pConstantBuffer);
 	void SetConstant(const CCryNameR& paramName, const Vec4 &param);
 	void SetConstant(const CCryNameR& paramName, const Matrix44 &param);
 	void SetConstantArray(const CCryNameR& paramName, const Vec4 params[], uint32 numParams);
@@ -127,6 +128,11 @@ inline void CComputeRenderPass::SetInlineConstantBuffer(uint32 slot, CConstantBu
 {
 	if (m_constantManager.SetTypedConstantBuffer(EConstantBufferShaderSlot(slot), pConstantBuffer, EShaderStage_Compute))
 		m_dirtyMask |= eDirty_ResourceLayout;
+}
+
+inline void CComputeRenderPass::SetConstantBuffer(uint32 slot, CConstantBuffer* pConstantBuffer)
+{	
+	m_resourceDesc.SetConstantBuffer(EConstantBufferShaderSlot(slot), pConstantBuffer, EShaderStage_Compute);
 }
 
 inline void CComputeRenderPass::SetConstant(const CCryNameR& paramName, const Vec4 &param)
