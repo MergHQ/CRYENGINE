@@ -1971,16 +1971,17 @@ void CTimeDemoRecorder::StartSession()
 	// remember old profiling settings
 	m_bEnabledProfiling = gEnv->pFrameProfileSystem->IsEnabled();
 	m_bVisibleProfiling = gEnv->pFrameProfileSystem->IsVisible();
+	m_oldPeakTolerance = GetConsoleVar("profile_peak");
 
 	if (m_demo_profile)
 	{
 		gEnv->pFrameProfileSystem->Enable(true, gEnv->pFrameProfileSystem->IsVisible());
-	}
-	gEnv->pFrameProfileSystem->AddPeaksListener(this);
 
-	// Profile
-	m_oldPeakTolerance = GetConsoleVar("profile_peak");
-	SetConsoleVar("profile_peak", 50);
+		// Profile peaks by registering a listener.
+		// Enable peaks profiling only if "demo_profile == 1".
+		gEnv->pFrameProfileSystem->AddPeaksListener(this);
+		SetConsoleVar("profile_peak", 50);
+	}
 
 	m_fixedTimeStep = GetConsoleVar("t_FixedStep");
 	if (m_demo_fixed_timestep > 0)
@@ -2020,8 +2021,8 @@ void CTimeDemoRecorder::StopSession()
 		pClientActor->EnableTimeDemo(false);
 
 	gEnv->pGameFramework->GetIGameplayRecorder()->EnableGameStateRecorder(false, this, false);
-
-	// Profile.
+	
+	// Revert the profiling CVAR-s and UI.
 	SetConsoleVar("profile_peak", m_oldPeakTolerance);
 	gEnv->pFrameProfileSystem->RemovePeaksListener(this);
 
@@ -2029,6 +2030,7 @@ void CTimeDemoRecorder::StopSession()
 	{
 		gEnv->pFrameProfileSystem->Enable(m_bEnabledProfiling, m_bVisibleProfiling);
 	}
+
 	m_lastPlayedTotalTime = m_totalDemoTime.GetSeconds();
 }
 
