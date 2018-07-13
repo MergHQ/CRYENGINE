@@ -696,6 +696,9 @@ void CTimeDemoRecorder::Play(bool bEnable)
 
 		if (m_records.empty())
 		{
+			//Prevent the timedemo from exiting to the game menu if the file is not found.
+			m_bDemoEnded = true;
+			
 			m_bDemoFinished = true;
 			return;
 		}
