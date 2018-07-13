@@ -173,7 +173,6 @@
 #include <CryGame/IGameVolumes.h>
 
 #include <CryLiveCreate/ILiveCreateHost.h>
-#include <CryCore/SFunctor.h>
 
 #include "WorldBuilder.h"
 
@@ -542,9 +541,7 @@ CGame::CGame()
 	if (pStereoOutput)
 	{
 		SetRenderingToHMD(pStereoOutput->GetIVal() == 7);// 7 means HMD.
-		SFunctor oFunctor;
-		oFunctor.Set(OnChangedStereoRenderDevice, pStereoOutput);
-		m_stereoOutputFunctorId = pStereoOutput->AddOnChangeFunctor(oFunctor);
+		m_stereoOutputFunctorId = pStereoOutput->AddOnChange(OnChangedStereoRenderDevice);
 	}
 	else
 	{
@@ -1047,7 +1044,7 @@ bool CGame::Init(/*IGameFramework* pFramework*/)
 	ICVar* pMaxPlayers = gEnv->pConsole->GetCVar("sv_maxplayers");
 	if (pMaxPlayers)
 	{
-		m_maxPlayerCallbackIndex = pMaxPlayers->AddOnChangeFunctor(SFunctor([pMaxPlayers]() { VerifyMaxPlayers(pMaxPlayers); })); // this needs to be set 1st, if MAX_PLAYER_LIMIT is greater than 32 we'll clamp it otherwise
+		m_maxPlayerCallbackIndex = pMaxPlayers->AddOnChange(VerifyMaxPlayers); // this needs to be set 1st, if MAX_PLAYER_LIMIT is greater than 32 we'll clamp it otherwise
 		pMaxPlayers->Set(MAX_PLAYER_LIMIT);
 	}
 
@@ -4378,7 +4375,7 @@ void CGame::SetHostMigrationStateAndTime(EHostMigrationState newState, float tim
 
 		ICVar* pTimeoutCVar = gEnv->pConsole->GetCVar("net_migrate_timeout");
 		m_hostMigrationNetTimeoutLength = pTimeoutCVar->GetFVal();
-		m_migrationTimeoutCallbackIndex = pTimeoutCVar->AddOnChangeFunctor(SFunctor([pTimeoutCVar]() { OnHostMigrationNetTimeoutChanged(pTimeoutCVar); }));
+		m_migrationTimeoutCallbackIndex = pTimeoutCVar->AddOnChange(OnHostMigrationNetTimeoutChanged);
 	}
 
 	m_hostMigrationState = newState;

@@ -2820,17 +2820,8 @@ void CPlaylistManager::LoadOptionRestrictions()
 					SOptionRestriction restriction;
 					if (LoadOperand(xmlOperand1, restriction.m_operand1) && LoadOperand(xmlOperand2, restriction.m_operand2))
 					{
-						{
-							SFunctor functor;
-							functor.Set(OnCustomOptionCVarChanged, restriction.m_operand1.m_pVar);
-							restriction.m_operand1.m_pVar->AddOnChangeFunctor(functor);
-						}
-						{
-							SFunctor functor;
-							functor.Set(OnCustomOptionCVarChanged, restriction.m_operand2.m_pVar);
-							restriction.m_operand2.m_pVar->AddOnChangeFunctor(functor);
-						}
-
+						restriction.m_operand1.m_pVar->AddOnChange(OnCustomOptionCVarChanged);
+						restriction.m_operand2.m_pVar->AddOnChange(OnCustomOptionCVarChanged);
 						m_optionRestrictions.push_back(restriction);
 					}
 					else

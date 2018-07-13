@@ -12,6 +12,30 @@ int PlainFunction(int x)
 	return x * x;
 }
 
+void PlainFunctionVoidNoArg() {}
+
+// Helper interface to test function behaviors for type conversions and virtual methods
+struct IInterface
+{
+	virtual ~IInterface() = default;
+	virtual int Method() const = 0;
+};
+
+class CImpl : public IInterface
+{
+public:
+	explicit CImpl(int value) : m_value(value) {}
+private:
+	virtual int Method() const override
+	{
+		return m_value;
+	}
+
+	int m_value;
+};
+
+// Helper class to detect object copying and destruction behavior
+// Can detect leaks through comparing number of instances before and after scope
 struct SInstancesDetector
 {
 	static std::set<SInstancesDetector*> sInstances;
@@ -22,9 +46,18 @@ struct SInstancesDetector
 
 std::set<SInstancesDetector*> SInstancesDetector::sInstances;
 
-//Meta test
+// Creates a function object capturing exactly one instance detector
+SmallFunction<void()> CreateSmallFunctionCaptureInstanceDetector()
+{
+	SInstancesDetector::sInstances.clear();
+	SInstancesDetector instance;
+	return [instance] {};
+}
+
+// Meta test
 static_assert(!std::has_virtual_destructor<SmallFunction<void()>>::value, "SmallFunction is designed to be without virtual table");
 
+// Tests certain invariants when default constructed
 TEST(SmallFunctionTest, DefaultConstruction)
 {
 	SmallFunction<void()> f;
@@ -32,18 +65,21 @@ TEST(SmallFunctionTest, DefaultConstruction)
 	REQUIRE(f == nullptr);
 }
 
+// Tests that a function can be constructed from a function pointer of matching signature
 TEST(SmallFunctionTest, ConstructionFromFunctionPointer)
 {
 	SmallFunction<int(int)> f = &PlainFunction;
 	REQUIRE(f(4) == 16);
 }
 
+// Tests that a function can be constructed from a reference to function of matching signature
 TEST(SmallFunctionTest, ConstructionFromFunctionReference)
 {
 	SmallFunction<int(int)> f = PlainFunction;
 	REQUIRE(f(4) == 16);
 }
 
+// Tests that a function can be constructed from a lambda
 TEST(SmallFunctionTest, ConstructionFromLambda)
 {
 	int v = 0;
@@ -57,6 +93,17 @@ TEST(SmallFunctionTest, ConstructionFromLambda)
 	REQUIRE(v == 42);
 }
 
+// Tests that a function object can be constructed from a function that is contra-variance to the signature,
+// i.e. SmallFunction<void(Derived*)> can be assigned a function void(Base*), but not vice versa
+TEST(SmallFunctionTest, ConstructionContravariance)
+{
+	SmallFunction<int(CImpl*)> f = [](const IInterface* pObject) { return pObject->Method(); };
+	CImpl* pObject = new CImpl(1024);
+	REQUIRE(f(pObject) == 1024);
+	delete pObject;
+}
+
+// Tests that a function can be assigned a function pointer of matching signature
 TEST(SmallFunctionTest, AssignFunctionPointer)
 {
 	SmallFunction<int(int)> f;
@@ -64,6 +111,7 @@ TEST(SmallFunctionTest, AssignFunctionPointer)
 	REQUIRE(f(4) == 16);
 }
 
+// Tests that a function can be assigned a reference to function of matching signature
 TEST(SmallFunctionTest, AssignFunctionReference)
 {
 	SmallFunction<int(int)> f;
@@ -71,6 +119,7 @@ TEST(SmallFunctionTest, AssignFunctionReference)
 	REQUIRE(f(4) == 16);
 }
 
+// Tests that a function can be assigned a lambda
 TEST(SmallFunctionTest, AssignLambda)
 {
 	int v = 0;
@@ -85,33 +134,68 @@ TEST(SmallFunctionTest, AssignLambda)
 	REQUIRE(v == 42);
 }
 
+// Tests that when a non-empty function is assigned to a new function pointer, 
+// the previous object is properly released.
+TEST(SmallFunctionTest, AssignFunctionPointerNoLeak)
+{
+	SInstancesDetector::sInstances.clear();
+	SmallFunction<void()> f = CreateSmallFunctionCaptureInstanceDetector();
+	REQUIRE(SInstancesDetector::sInstances.size() == 1);
+	f = &PlainFunctionVoidNoArg;
+	REQUIRE(SInstancesDetector::sInstances.size() == 0);
+}
+
+// Tests that when a non-empty function is assigned to a new reference of function, 
+// the previous object is properly released.
+TEST(SmallFunctionTest, AssignFunctionReferenceNoLeak)
+{
+	SInstancesDetector::sInstances.clear();
+	SmallFunction<void()> f = CreateSmallFunctionCaptureInstanceDetector();
+	REQUIRE(SInstancesDetector::sInstances.size() == 1);
+	f = PlainFunctionVoidNoArg;
+	REQUIRE(SInstancesDetector::sInstances.size() == 0);
+}
+
+// Tests that when a non-empty function is assigned to a new lambda,
+// the previous object is properly released.
+TEST(SmallFunctionTest, AssignLambdaNoLeak)
+{
+	SInstancesDetector::sInstances.clear();
+	SmallFunction<void()> f = CreateSmallFunctionCaptureInstanceDetector();
+	REQUIRE(SInstancesDetector::sInstances.size() == 1);
+	f = [] {};
+	REQUIRE(SInstancesDetector::sInstances.size() == 0);
+}
+
+// Tests that when a non-empty function is destructed, the captured object is properly released.
 TEST(SmallFunctionTest, Destruction)
 {
 	SInstancesDetector::sInstances.clear();
 
 	{
-		SInstancesDetector instance;
-		SmallFunction<void()> f = [instance] {};
-		REQUIRE(SInstancesDetector::sInstances.size() == 2);
+		SmallFunction<void()> f = CreateSmallFunctionCaptureInstanceDetector();
+		REQUIRE(SInstancesDetector::sInstances.size() == 1);
 	}
 	REQUIRE(SInstancesDetector::sInstances.size() == 0);
 }
 
+// Tests that copy-constructing a function copies the captured object.
+// Tests that destructing function copies work independently from each other and release the captured objects respectively.
 TEST(SmallFunctionTest, CopyConstruction)
 {
 	SInstancesDetector::sInstances.clear();
-	SInstancesDetector instance;
 	{
-		SmallFunction<void()> f1 = [instance] {};
+		SmallFunction<void()> f1 = CreateSmallFunctionCaptureInstanceDetector();
 		{
 			SmallFunction<void()> f2 = f1;
-			REQUIRE(SInstancesDetector::sInstances.size() == 3);
+			REQUIRE(SInstancesDetector::sInstances.size() == 2);
 		}
-		REQUIRE(SInstancesDetector::sInstances.size() == 2);
+		REQUIRE(SInstancesDetector::sInstances.size() == 1);
 	}
-	REQUIRE(SInstancesDetector::sInstances.size() == 1);
+	REQUIRE(SInstancesDetector::sInstances.size() == 0);
 }
 
+// Tests that copy-assigning a function copies the captured object.
 TEST(SmallFunctionTest, CopyAssignNonEmptyToEmpty)
 {
 	int v = 0;
@@ -132,6 +216,8 @@ TEST(SmallFunctionTest, CopyAssignNonEmptyToEmpty)
 	REQUIRE(v == 42);
 }
 
+// Tests that copy-assigning a function copies the captured object.
+// Tests that copy-assigning a non-empty function properly releases the previous captured object.
 TEST(SmallFunctionTest, CopyAssignNonEmptyToNonEmpty)
 {
 	SInstancesDetector::sInstances.clear();
@@ -151,16 +237,11 @@ TEST(SmallFunctionTest, CopyAssignNonEmptyToNonEmpty)
 	REQUIRE(SInstancesDetector::sInstances.size() == 1);
 }
 
-SmallFunction<void()> GetMovedFromFunction()
-{
-	SInstancesDetector::sInstances.clear();
-	SInstancesDetector instance;
-	return [instance] {};
-}
-
+// Tests that move-constructing a function transfers the captured object and the function object 
+// that is moved-from is empty.
 TEST(SmallFunctionTest, MoveConstruction)
 {
-	SmallFunction<void()> f1 = GetMovedFromFunction();
+	SmallFunction<void()> f1 = CreateSmallFunctionCaptureInstanceDetector();
 	REQUIRE(SInstancesDetector::sInstances.size() == 1);
 	SmallFunction<void()> f2 = std::move(f1);
 	REQUIRE(!f1);
@@ -168,9 +249,11 @@ TEST(SmallFunctionTest, MoveConstruction)
 	REQUIRE(SInstancesDetector::sInstances.size() == 1);
 }
 
+// Tests that move-assigning a function transfers the captured object and the function object
+// that is moved-from is empty.
 TEST(SmallFunctionTest, MoveAssignment)
 {
-	SmallFunction<void()> f1 = GetMovedFromFunction();
+	SmallFunction<void()> f1 = CreateSmallFunctionCaptureInstanceDetector();
 	REQUIRE(SInstancesDetector::sInstances.size() == 1);
 	SmallFunction<void()> f2;
 	f2 = std::move(f1);
@@ -179,6 +262,7 @@ TEST(SmallFunctionTest, MoveAssignment)
 	REQUIRE(SInstancesDetector::sInstances.size() == 1);
 }
 
+// Tests that a function object's non-emptiness can be tested as a bool
 TEST(SmallFunctionTest, ExplicitBool)
 {
 	SmallFunction<void()> f;
@@ -188,6 +272,7 @@ TEST(SmallFunctionTest, ExplicitBool)
 	REQUIRE(f2);
 }
 
+// Tests that a function object's non-emptiness always matches the inequality to nullptr
 TEST(SmallFunctionTest, Null)
 {
 	//Construct from nullptr
@@ -207,12 +292,14 @@ TEST(SmallFunctionTest, Null)
 	REQUIRE(!f2);
 }
 
+// Tests that function object can return value
 TEST(SmallFunctionTest, CallReturn)
 {
 	SmallFunction<float()> f = [] { return 3.14f; };
 	REQUIRE(f() == 3.14f);
 }
 
+// Tests that a function object can return non-copyable object
 TEST(SmallFunctionTest, CallReturnNonCopyable)
 {
 	SmallFunction<std::unique_ptr<int>()> f = [] { return stl::make_unique<int>(33); };
@@ -220,6 +307,24 @@ TEST(SmallFunctionTest, CallReturnNonCopyable)
 	REQUIRE(*result == 33);
 }
 
+// Tests that a function object can be called with arguments different but convertible to the signature
+// Simple types
+TEST(SmallFunctionTest, CallWithConvertibleArgumentsSimple)
+{
+	SmallFunction<double(double)> f = [](double x) { return x * x; };
+	REQUIRE(f(10L) == 100.0);
+}
+
+// Tests that a function object can be called with arguments different but convertible to the signature
+// Complex types and const-ness
+TEST(SmallFunctionTest, CallWithConvertibleArgumentsComplex)
+{
+	SmallFunction<int(const IInterface*)> f = [](const IInterface* pObject) { return pObject->Method(); };
+	CImpl pObject{ 1024 };
+	REQUIRE(f(&pObject) == 1024); // conversion from CImpl* to const IInterface*
+}
+
+// Tests that a function object can be converted from and to std::function of same signature
 TEST(SmallFunctionTest, ConversionFromToSTDFunction)
 {
 	int v = 0;

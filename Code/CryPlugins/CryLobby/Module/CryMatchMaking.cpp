@@ -123,19 +123,19 @@ CCryMatchMaking::CCryMatchMaking(CCryLobby* lobby, CCryLobbyService* service, EC
 	#if NETWORK_HOST_MIGRATION
 	if (ICVar* pVar = gEnv->pConsole->GetCVar("net_hostHintingNATTypeOverride"))
 	{
-		pVar->AddOnChangeFunctor(SFunctor([pVar]() { HostHintingOverrideChanged(pVar); }));
+		pVar->AddOnChange(HostHintingOverrideChanged);
 	}
 	if (ICVar* pVar = gEnv->pConsole->GetCVar("net_hostHintingActiveConnectionsOverride"))
 	{
-		pVar->AddOnChangeFunctor(SFunctor([pVar]() { HostHintingOverrideChanged(pVar); }));
+		pVar->AddOnChange(HostHintingOverrideChanged);
 	}
 	if (ICVar* pVar = gEnv->pConsole->GetCVar("net_hostHintingPingOverride"))
 	{
-		pVar->AddOnChangeFunctor(SFunctor([pVar]() { HostHintingOverrideChanged(pVar); }));
+		pVar->AddOnChange(HostHintingOverrideChanged);
 	}
 	if (ICVar* pVar = gEnv->pConsole->GetCVar("net_hostHintingUpstreamBPSOverride"))
 	{
-		pVar->AddOnChangeFunctor(SFunctor([pVar]() { HostHintingOverrideChanged(pVar); }));
+		pVar->AddOnChange(HostHintingOverrideChanged);
 	}
 		#if ENABLE_HOST_MIGRATION_STATE_CHECK
 	m_hostMigrationStateCheckSession = CryLobbyInvalidSessionHandle;

@@ -3834,11 +3834,11 @@ void CMergedMeshesManager::Init()
 	s_GeomManager.Initialize(gEnv->pJobManager->GetNumWorkerThreads());
 	if (ICVar* pVar = gEnv->pConsole->GetCVar("e_MergedMeshesLodRatio"))
 	{
-		m_lodRatioCallbackIndex = pVar->AddOnChangeFunctor(SFunctor([pVar]() { UpdateRatios(pVar); }));
+		m_lodRatioCallbackIndex = pVar->AddOnChange(UpdateRatios);
 	}
 	if (ICVar* pVar = gEnv->pConsole->GetCVar("e_MergedMeshesViewDistRatio"))
 	{
-		m_viewDistRatioCallbackIndex = pVar->AddOnChangeFunctor(SFunctor([pVar]() { UpdateRatios(pVar); }));
+		m_viewDistRatioCallbackIndex = pVar->AddOnChange(UpdateRatios);
 	}
 
 	if (!s_MergedMeshPool)

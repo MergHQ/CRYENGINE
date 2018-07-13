@@ -451,7 +451,7 @@ void CGameEffectsSystem::SetPostEffectCVarCallbacks()
 			postEffectCvar = gEnv->pConsole->GetCVar(postEffectNames[i]);
 			if(postEffectCvar)
 			{
-				postEffectCvar->AddOnChangeFunctor(SFunctor([postEffectCvar]() { PostEffectCVarCallback(postEffectCvar); }));
+				postEffectCvar->AddOnChange(PostEffectCVarCallback);
 			}
 		}
 	}

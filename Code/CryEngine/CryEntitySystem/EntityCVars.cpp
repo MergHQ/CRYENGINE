@@ -214,7 +214,7 @@ void CVar::Init()
 	pSysSpecLight = gEnv->pConsole->GetCVar("sys_spec_light");
 	if (pSysSpecLight && gEnv->IsEditor())
 	{
-		pSysSpecLight->AddOnChangeFunctor(SFunctor([]() { OnSysSpecLightChange(pSysSpecLight); }));
+		pSysSpecLight->AddOnChange(OnSysSpecLightChange);
 	}
 
 	REGISTER_CVAR(es_debugEntityLifetime, 0, 0,

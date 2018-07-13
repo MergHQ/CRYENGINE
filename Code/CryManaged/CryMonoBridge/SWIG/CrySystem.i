@@ -78,7 +78,6 @@ using JobManager::SJobStateBase;
 %include "../../../../CryEngine/CryCommon/CrySystem/ICmdLine.h"
 
 %feature("director") IRemoteConsoleListener;
-%include "../../../../CryEngine/CryCommon/CryCore/SFunctor.h"
 %typemap(cscode) ICVar %{
 	public static System.IntPtr GetIntPtr(ICVar icvar)
 	{

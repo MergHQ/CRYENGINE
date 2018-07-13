@@ -18,9 +18,6 @@
 #include "Commands/QPythonAction.h"
 #include "QT/QToolTabManager.h"
 #include "QControls.h"
-
-#include <CryCore/SFunctor.h>
-
 #include <QToolButton>
 #include <QPushButton>
 #include <QWidget>

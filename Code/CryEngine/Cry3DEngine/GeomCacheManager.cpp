@@ -48,7 +48,7 @@ CGeomCacheManager::CGeomCacheManager()
 
 	if (ICVar* pGeomCacheBufferSizeCVar = gEnv->pConsole->GetCVar("e_GeomCacheBufferSize"))
 	{
-		pGeomCacheBufferSizeCVar->AddOnChangeFunctor(SFunctor([pGeomCacheBufferSizeCVar]() { OnChangeBufferSize(pGeomCacheBufferSizeCVar); }));
+		pGeomCacheBufferSizeCVar->AddOnChange(OnChangeBufferSize);
 	}
 }
 
