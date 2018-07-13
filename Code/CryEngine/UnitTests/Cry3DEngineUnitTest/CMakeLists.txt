@@ -1,4 +1,6 @@
 start_sources()
+
+# -- cry3dengineunittest.waf_files --
 sources_platform(ALL)
 add_sources("NoUberFile"
 	SOURCE_GROUP "Source Files"

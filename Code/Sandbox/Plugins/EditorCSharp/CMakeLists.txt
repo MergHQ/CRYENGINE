@@ -1,4 +1,6 @@
 start_sources()
+
+# -- csharpeditor.waf_files --
 sources_platform(ALL)
 add_sources("Uber_CSharpEditor.cpp"
 	SOURCE_GROUP "Main"
