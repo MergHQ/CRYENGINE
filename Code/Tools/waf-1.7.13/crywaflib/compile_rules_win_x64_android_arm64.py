@@ -5,7 +5,7 @@ from waflib.TaskGen import after_method, before_method, feature, extension
 from waflib import Utils
 import os.path
 
-android_target_version = 23
+android_target_version = 24
 android_gcc_version = 4.9
 android_app_name = "CRYENGINE SDK"
 android_launcher_name = "AndroidLauncher"
@@ -274,7 +274,7 @@ def load_win_x64_android_arm64_common_settings(conf):
 
 	# LLVM STL
 	android_stl_home = android_ndk_home + '/sources/cxx-stl/llvm-libc++'
-	android_stl_include_paths =  [android_stl_home + '/libcxx/include']
+	android_stl_include_paths =  [android_stl_home + '/include']
 	android_stl_lib_name = 'c++_shared'
 	v['DEFINES'] += ['HAVE_SYS_PARAM_H']
 
@@ -314,20 +314,28 @@ def load_win_x64_android_arm64_common_settings(conf):
 	v['cstlib_PATTERN']     = 'lib%s.a'
 	v['cxxstlib_PATTERN']   = 'lib%s.a'
 
-	v['DEFINES'] += ['_LINUX', 'LINUX', 'LINUX32', 'ANDROID', '_HAS_C9X' ]
+	v['DEFINES'] += ['_LINUX', 'LINUX', 'LINUX32', 'ANDROID', '_HAS_C9X', '_MSC_EXTENSIONS=1' ]
 	
 	if android_target_version >= 21:
 		v['DEFINES'] += ['HAS_STPCPY=1', 'HAVE_LROUND']
 
 	# Setup global include paths
-	v['INCLUDES'] += android_stl_include_paths + [ 
+	v['SYSTEM_INCLUDES'] += android_stl_include_paths + [ 
 		android_ndk_platform_compiler_target + '/usr/include', 
-		android_stl_home + '/include', 
-		android_stl_home + '/libs/arm64-v8a/include',
 		android_ndk_home + '/sources/android/support/include',
-		android_ndk_home + '/sources/android/native_app_glue'
+		#android_ndk_home + '/sources/android/native_app_glue',
+		android_ndk_home + '/sysroot/usr/include',
+		#android_ndk_home + '/sysroot/usr/include/android',
+		android_ndk_home + '/sysroot/usr/include/aarch64-linux-android',		
+		#android_ndk_home + '/sysroot/usr/include/vulkan'
 		]
 		
+		#-isystem ../Code/SDKs/android-ndk/sources/cxx-stl/llvm-libc++/include 
+		#-isystem ../Code/SDKs/android-ndk/sources/android/support/include 
+		#-isystem ../Code/SDKs/android-ndk/sources/cxx-stl/llvm-libc++abi/include 
+		#-isystem ../Code/SDKs/android-ndk/sysroot/usr/include 
+		#-isystem ../Code/SDKs/android-ndk/sysroot/usr/include/aarch64-linux-android
+
 	# Setup global library search path
 	v['LIBPATH'] += [
 		android_stl_home + '/libs/arm64-v8a',
@@ -362,7 +370,53 @@ def load_win_x64_android_arm64_common_settings(conf):
 	
 	compiler_flags = common_flag +[
 	'-g',
-	'-fpic'
+	'-fpic',
+	'-Wno-nonportable-include-path',
+	'-Wno-deprecated',
+	'-fno-exceptions',
+    '-fms-extensions',
+	'-Wno-unused-lambda-capture',
+	'-Wno-undefined-var-template'
+	'-fdata-sections',
+	'-ffunction-sections',
+	'-fno-omit-frame-pointer',
+	'-fno-strict-aliasing',
+	'-funwind-tables',
+	'-gfull',
+	'-ffast-math',
+	'-fno-rtti',
+	'-Wno-unknown-warning-option',
+	'-Wno-delete-non-virtual-dtor',
+	'-Wno-reorder',
+	'-Wno-unknown-pragmas',
+	'-Wno-unused-variable',
+	'-Wno-undefined-var-template',
+	'-Wno-parentheses',
+	'-Wno-unused-private-field',
+	'-Wno-switch',
+	'-Wno-empty-body',
+	'-Wno-format',
+	'-Wno-logical-op-parentheses', 
+	'-Wno-multichar', 
+	'-Wno-invalid-offsetof', 
+	'-Wno-unused-function', 
+	'-Wno-unused-value', 
+	'-Wno-sometimes-uninitialized', 
+	'-Wno-tautological-constant-out-of-range-compare',
+	'-Wno-empty-body',
+	'-Wno-unused-const-variable', 
+	'-Wno-switch', 
+	'-Wno-unused-function', 
+	'-Wno-char-subscripts', 
+	'-Wno-c++11-narrowing', 
+	'-Wno-address-of-packed-member', 
+	'-Wno-invalid-offsetof', 
+	'-Wno-dynamic-class-memaccess', 
+	'-Wno-overloaded-virtual', 
+	'-Wno-writable-strings', 
+	'-Wno-comment'
+	
+	
 	]
 		
 	
@@ -874,7 +928,7 @@ def add_android_lib_copy(self):
 			bld.env['ANDROID_SDL_LIB_PATH'],
 			bld.env['ANDROID_NDK_HOME'] + '/prebuilt/android-arm/gdbserver/gdbserver',
 			bld.CreateRootRelativePath('Code/Tools/SDLExtension/lib/android-arm64-v8a/libSDL2Ext.so'),
-			bld.CreateRootRelativePath('Code/SDKs/SDL2/lib/android-arm64-v8a/libSDL2.so')
+			bld.CreateRootRelativePath('Code/SDKs/SDL2/android/arm64-v8a/libSDL2.so')
 		]}
 	else:
 		android_shared_libs = {'arm64-v8a': [] }

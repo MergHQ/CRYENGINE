@@ -125,6 +125,10 @@ def apply_incpaths(self):
 	lst = self.to_incnodes(self.to_list(getattr(self, 'includes', [])) + self.env['INCLUDES'])
 	self.includes_nodes = lst
 	self.env['INCPATHS'] = [x.abspath() for x in lst]
+	
+	sys_lst = self.to_incnodes(self.to_list(getattr(self, 'system_includes', [])) + self.env['SYSTEM_INCLUDES'])
+	self.includes_nodes += sys_lst
+	self.env['SYSINCPATHS'] = [x.abspath() for x in sys_lst]
 
 class link_task(Task.Task):
 	"""
