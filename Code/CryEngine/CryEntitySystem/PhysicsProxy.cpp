@@ -808,7 +808,9 @@ void CEntityPhysics::Physicalize(SEntityPhysicalizeParams& params)
 		if (previousPhysType != PE_LIVING)
 		{
 			CreatePhysicalEntity(params);
+#if defined(USE_GEOM_CACHES)
 			PhysicalizeGeomCache(params);
+#endif
 			PhysicalizeCharacter(params);
 
 			// Apply joint velocities if desired
@@ -1073,11 +1075,13 @@ int CEntityPhysics::AddSlotGeometry(int nSlot, SEntityPhysicalizeParams& params,
 		PhysicalizeCharacter(params);
 		return -1;
 	}
+#if defined(USE_GEOM_CACHES)
 	else if (pSlot && pSlot->GetRenderNode() && pSlot->GetRenderNode()->GetRenderNodeType() == eERType_GeomCache)
 	{
 		PhysicalizeGeomCache(params);
 		return -1;
 	}
+#endif
 
 	IStatObj* pStatObj = GetEntity()->GetStatObj(nSlot | ENTITY_SLOT_ACTUAL & - bNoSubslots);
 	if (!pStatObj)
@@ -1602,6 +1606,7 @@ void CEntityPhysics::PhysicalizeArea(SEntityPhysicalizeParams& params)
 	}
 }
 
+#if defined(USE_GEOM_CACHES)
 /////////////////////////////////////////////////////////////////////////
 bool CEntityPhysics::PhysicalizeGeomCache(SEntityPhysicalizeParams& params)
 {
@@ -1632,6 +1637,7 @@ bool CEntityPhysics::PhysicalizeGeomCache(SEntityPhysicalizeParams& params)
 
 	return true;
 }
+#endif
 
 //////////////////////////////////////////////////////////////////////////
 bool CEntityPhysics::PhysicalizeCharacter(SEntityPhysicalizeParams& params)

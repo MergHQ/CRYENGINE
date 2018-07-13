@@ -49,6 +49,7 @@ namespace Cry
 
 		void CAlembicComponent::Initialize()
 		{
+#if defined(USE_GEOM_CACHES)
 			if (m_filePath.value.size() > 0)
 			{
 				m_pEntity->LoadGeomCache(GetOrMakeEntitySlotId(), m_filePath.value);
@@ -61,6 +62,9 @@ namespace Cry
 					}
 				}
 			}
+#else
+			CryWarning(VALIDATOR_MODULE_GAME, VALIDATOR_WARNING, "Unable to load alembic component as GeomCaches are not supported by this CE build. (%s)", m_filePath.value.c_str());
+#endif
 		}
 
 		void CAlembicComponent::ProcessEvent(const SEntityEvent& event)
@@ -68,7 +72,7 @@ namespace Cry
 			if (event.event == ENTITY_EVENT_COMPONENT_PROPERTY_CHANGED)
 			{
 				Initialize();
-
+#ifdef USE_GEOM_CACHES
 				// Update Editor UI to show the default object material
 				if (m_materialPath.value.empty())
 				{
@@ -80,6 +84,7 @@ namespace Cry
 						}
 					}
 				}
+#endif
 			}
 		}
 
@@ -90,45 +95,54 @@ namespace Cry
 
 		void CAlembicComponent::Enable(bool bEnable)
 		{
+#if defined(USE_GEOM_CACHES)
 			if (IGeomCacheRenderNode* pRenderNode = m_pEntity->GetGeomCacheRenderNode(GetEntitySlotId()))
 			{
 				pRenderNode->SetDrawing(bEnable);
 			}
+#endif
 		}
 
 		void CAlembicComponent::SetLooping(bool bLooping)
 		{
+#if defined(USE_GEOM_CACHES)
 			if (IGeomCacheRenderNode* pRenderNode = m_pEntity->GetGeomCacheRenderNode(GetEntitySlotId()))
 			{
 				pRenderNode->SetLooping(bLooping);
 			}
+#endif
 		}
 
 		bool CAlembicComponent::IsLooping() const
 		{
+#if defined(USE_GEOM_CACHES)
 			if (IGeomCacheRenderNode* pRenderNode = m_pEntity->GetGeomCacheRenderNode(GetEntitySlotId()))
 			{
 				return pRenderNode->IsLooping();
 			}
+#endif
 
 			return false;
 		}
 
 		void CAlembicComponent::SetPlaybackTime(float time)
 		{
+#if defined(USE_GEOM_CACHES)
 			if (IGeomCacheRenderNode* pRenderNode = m_pEntity->GetGeomCacheRenderNode(GetEntitySlotId()))
 			{
 				pRenderNode->SetPlaybackTime(time);
 			}
+#endif
 		}
 
 		float CAlembicComponent::GetPlaybackTime() const
 		{
+#if defined(USE_GEOM_CACHES)
 			if (IGeomCacheRenderNode* pRenderNode = m_pEntity->GetGeomCacheRenderNode(GetEntitySlotId()))
 			{
 				return pRenderNode->GetPlaybackTime();
 			}
-
+#endif
 			return 0.f;
 		}
 

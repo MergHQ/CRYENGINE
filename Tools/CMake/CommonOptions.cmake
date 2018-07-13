@@ -9,6 +9,8 @@ option(OPTION_UNITY_BUILD "Enable Unity Build" ON)
 
 option(OPTION_PCH "Enable Precompiled Headers" ON)
 
+option(OPTION_GEOM_CACHES "Enable Geom Cache" ON)
+
 if(ORBIS OR ANDROID)
 	set(OPTION_STATIC_LINKING TRUE)
 else()
@@ -25,6 +27,10 @@ if(OPTION_UQS_SCHEMATYC_SUPPORT)
 	list(APPEND global_defines UQS_SCHEMATYC_SUPPORT=1)
 else()
 	list(APPEND global_defines UQS_SCHEMATYC_SUPPORT=0)
+endif()
+
+if(OPTION_GEOM_CACHES)
+	list(APPEND global_defines USE_GEOM_CACHES=1)
 endif()
 
 if (WIN32 OR WIN64 OR LINUX)

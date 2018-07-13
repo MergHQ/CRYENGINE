@@ -7,7 +7,9 @@
 
 REGISTER_CLASS_DESC(CWindAreaEntityClassDesc);
 REGISTER_CLASS_DESC(CConstraintEntityClassDesc);
+#if defined(USE_GEOM_CACHES)
 REGISTER_CLASS_DESC(CGeomCacheEntityClassDesc);
+#endif
 REGISTER_CLASS_DESC(CJointGenEntityClassDesc);
 
 IMPLEMENT_DYNCREATE(CConstraintEntity, CEntityObject)

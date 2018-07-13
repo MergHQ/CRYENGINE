@@ -283,8 +283,6 @@ extern void SliceAndSleep(const char* pFunc, int line);
 	#endif // TESSELLATION
 #endif   // !CRY_PLATFORM_MOBILE
 
-#define USE_GEOM_CACHES
-
 //------------------------------------------------------
 // SVO GI
 //------------------------------------------------------

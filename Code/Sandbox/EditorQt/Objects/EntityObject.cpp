@@ -1428,6 +1428,7 @@ bool CEntityObject::HitTestEntity(HitContext& hc, bool& bHavePhysics)
 				return true;
 			}
 		}
+#if defined(USE_GEOM_CACHES)
 		else if (IGeomCacheRenderNode* pGeomCache = m_pEntity->GetGeomCacheRenderNode(i))
 		{
 			if (pGeomCache->RayIntersection(hitInfo))
@@ -1439,6 +1440,7 @@ bool CEntityObject::HitTestEntity(HitContext& hc, bool& bHavePhysics)
 				return true;
 			}
 		}
+#endif
 	}
 
 	IPhysicalEntity* pPhysicalEntity = m_pEntity->GetPhysicalEntity();
@@ -4626,6 +4628,7 @@ bool CEntityObject::ApplyAsset(const CAsset& asset, HitContext* pHitContext)
 						}
 					}
 				}
+#ifdef USE_GEOM_CACHES
 				else if (IGeomCacheRenderNode* pGeomCache = m_pEntity->GetGeomCacheRenderNode(slotIndex))
 				{
 					if (pGeomCache->RayIntersection(hitInfo))
@@ -4638,6 +4641,7 @@ bool CEntityObject::ApplyAsset(const CAsset& asset, HitContext* pHitContext)
 						}
 					}
 				}
+#endif
 			}
 
 			if (!isneg(hitSlotIndex))
@@ -5779,6 +5783,7 @@ string CEntityObject::GetMouseOverStatisticsText() const
 				}
 			}
 
+#if defined(USE_GEOM_CACHES)
 			IGeomCacheRenderNode* pGeomCacheRenderNode = m_pEntity->GetGeomCacheRenderNode(slot);
 
 			if (pGeomCacheRenderNode)
@@ -5805,6 +5810,7 @@ string CEntityObject::GetMouseOverStatisticsText() const
 					statsText += "\n  " + FormatWithThousandsSeperator(stats.m_memoryAnimationDataSize) + " Bytes Memory Animation Data";
 				}
 			}
+#endif
 
 			ICharacterInstance* pCharacter = m_pEntity->GetCharacter(slot);
 			if (pCharacter)

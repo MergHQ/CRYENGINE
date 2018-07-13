@@ -1179,6 +1179,7 @@ void CVars::Init()
 	REGISTER_CVAR(e_MergedMeshesMaxTriangles, 600, VF_NULL, "Do not merge meshes containing too many triangles. It's more efficient to render them without merging");
 	REGISTER_CVAR(e_CheckOctreeObjectsBoxSize, 1, VF_NULL, "CryWarning for crazy sized COctreeNode m_objectsBoxes");
 	REGISTER_CVAR(e_DebugGeomPrep, 0, VF_NULL, "enable logging of Geom preparation");
+	DefineConstIntCVar(e_GeomCacheEnabled, 1, VF_REQUIRE_APP_RESTART, "Enable Geom Caches");
 	DefineConstIntCVar(e_GeomCaches, 1, VF_NULL, "Activates drawing of geometry caches");
 	REGISTER_CVAR(e_GeomCacheBufferSize, 128, VF_CHEAT, "Geometry cache stream buffer upper limit size in MB. Default: 128");
 	REGISTER_CVAR(e_GeomCacheMaxPlaybackFromMemorySize, 16, VF_CHEAT,

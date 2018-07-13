@@ -301,7 +301,9 @@ public:
 	virtual IStatObj*                  GetStatObj(int nSlot) final;
 	virtual int                        SetStatObj(IStatObj* pStatObj, int nSlot, bool bUpdatePhysics, float mass = -1.0f) final;
 	virtual IParticleEmitter*          GetParticleEmitter(int nSlot) final;
+#if defined(USE_GEOM_CACHES)
 	virtual IGeomCacheRenderNode*      GetGeomCacheRenderNode(int nSlot) final;
+#endif
 	virtual IRenderNode*               GetRenderNode(int nSlot = -1) const final;
 	virtual bool                       IsRendered() const final;
 	virtual void                       PreviewRender(SEntityPreviewContext& context) final;

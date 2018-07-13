@@ -530,6 +530,7 @@ struct CVars : public Cry3DEngineBase
 	int    e_MergedMeshesOutdoorOnly;
 	int    e_MergedMeshesMaxTriangles;
 	int    e_CheckOctreeObjectsBoxSize;
+	DeclareConstIntCVar(e_GeomCacheEnabled, 1);
 	DeclareConstIntCVar(e_GeomCaches, 1);
 	int    e_GeomCacheBufferSize;
 	int    e_GeomCacheMaxPlaybackFromMemorySize;

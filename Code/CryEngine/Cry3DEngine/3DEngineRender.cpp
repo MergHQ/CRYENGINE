@@ -1302,13 +1302,16 @@ void C3DEngine::PrintDebugInfo(const SRenderingPassInfo& passInfo)
 
 #if defined(USE_GEOM_CACHES)
 	#ifndef _RELEASE
-	if (GetCVars()->e_GeomCacheDebug)
+	if (m_pGeomCacheManager)
 	{
-		m_pGeomCacheManager->DrawDebugInfo();
-	}
-	else
-	{
-		m_pGeomCacheManager->ResetDebugInfo();
+		if (GetCVars()->e_GeomCacheDebug)
+		{
+			m_pGeomCacheManager->DrawDebugInfo();
+		}
+		else
+		{
+			m_pGeomCacheManager->ResetDebugInfo();
+		}
 	}
 	#endif
 #endif
