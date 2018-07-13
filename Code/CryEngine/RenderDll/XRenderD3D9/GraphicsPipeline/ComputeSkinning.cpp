@@ -16,6 +16,22 @@ const int kMaterialFlagComputeSkinningWithMorphs = 0x04;
 // if it is useful
 const int kMaterialFlagComputeSkinningWithMorphsPostSkinning = 0x08;
 
+void SPerCharacterResources::PushWeights(const int numWeights, const int numWeightsMap, const compute_skinning::SSkinning* w, const compute_skinning::SSkinningMap* weightsMap)
+{
+	skinningVector.UpdateBufferContent(w, numWeights);
+	skinningVectorMap.UpdateBufferContent(weightsMap, numWeightsMap);
+
+	m_hasWeights = true;
+}
+
+size_t SPerCharacterResources::GetSizeBytesGpuBuffers()
+{
+	size_t total = 0;
+	total += sizeof(compute_skinning::SSkinning) * skinningVector.GetSize();
+	total += sizeof(compute_skinning::SSkinningMap) * skinningVectorMap.GetSize();
+	return total;
+}
+
 void SPerMeshResources::PushMorphs(const int numMorphs, const int numMorphsBitField, const Vec4* pMorphDeltas, const uint64* pMorphsBitField)
 {
 	morphsDeltas.UpdateBufferContent(pMorphDeltas, numMorphs);
@@ -33,19 +49,10 @@ void SPerMeshResources::PushBindPoseBuffers(const int numVertices, const int num
 	uploadState |= sState_PosesInitialized;
 }
 
-void SPerMeshResources::PushWeights(const int numWeights, const int numWeightsMap, const compute_skinning::SSkinning* w, const compute_skinning::SSkinningMap* weightsMap)
-{
-	skinningVector.UpdateBufferContent(w, numWeights);
-	skinningVectorMap.UpdateBufferContent(weightsMap, numWeightsMap);
-
-	uploadState |= sState_WeightsInitialized;
-}
-
-size_t SPerMeshResources::GetSizeBytes()
+size_t SPerMeshResources::GetSizeBytesGpuBuffers()
 {
 	size_t total = 0;
-	total += sizeof(compute_skinning::SSkinning) * skinningVector.GetSize();
-	total += sizeof(compute_skinning::SSkinningMap) * skinningVectorMap.GetSize();
+	for (const auto& it : m_perCharacterResources) total += it.second->GetSizeBytesGpuBuffers();
 	total += sizeof(compute_skinning::SSkinVertexIn) * verticesIn.GetSize();
 	total += sizeof(vtx_idx) * verticesIn.GetSize();
 	total += sizeof(uint32) * adjTriangles.GetSize();
@@ -87,7 +94,7 @@ SPerInstanceResources::~SPerInstanceResources()
 	passVertexTangents.Reset();
 }
 
-size_t SPerInstanceResources::GetSizeBytes()
+size_t SPerInstanceResources::GetSizeBytesGpuBuffers()
 {
 	size_t total = 0;
 	total += sizeof(SComputeShaderSkinVertexOut) * verticesOut.GetSize();
@@ -95,7 +102,7 @@ size_t SPerInstanceResources::GetSizeBytes()
 	return total;
 }
 
-std::shared_ptr<compute_skinning::IPerMeshDataSupply> CStorage::GetOrCreateComputeSkinningPerMeshData(const CRenderMesh* pMesh)
+std::shared_ptr<compute_skinning::IPerMeshDataSupply> CStorage::GetOrCreatePerMeshResources(const CRenderMesh* pMesh)
 {
 	CryAutoLock<CryCriticalSectionNonRecursive> lock(m_csMesh);
 	auto it = m_perMeshResources.find(pMesh);
@@ -107,7 +114,7 @@ std::shared_ptr<compute_skinning::IPerMeshDataSupply> CStorage::GetOrCreateCompu
 	return m_perMeshResources[pMesh];
 }
 
-std::shared_ptr<SPerInstanceResources> CStorage::GetOrCreatePerInstanceResources(int64 frameId,const void* pCustomTag, const int numVertices, const int numTriangles)
+std::shared_ptr<SPerInstanceResources> const& CStorage::GetOrCreatePerInstanceResources(int64 frameId,const void* pCustomTag, const int numVertices, const int numTriangles)
 {
 	CryAutoLock<CryCriticalSectionNonRecursive> lock(m_csInstance);
 	auto it = m_perInstanceResources.find(pCustomTag);
@@ -126,10 +133,37 @@ std::shared_ptr<SPerMeshResources> CStorage::GetPerMeshResources(CRenderMesh* pM
 	CryAutoLock<CryCriticalSectionNonRecursive> lock(m_csMesh);
 	auto it = m_perMeshResources.find(pMesh);
 	if (it != m_perMeshResources.end())
+	{
 		return m_perMeshResources[pMesh];
+	}
 
 	// return empty ptr
 	return std::shared_ptr<SPerMeshResources>();
+}
+
+std::shared_ptr<compute_skinning::IPerCharacterDataSupply> SPerMeshResources::GetOrCreatePerCharacterResources(const uint32 guid)
+{
+	CryAutoLock<CryCriticalSectionNonRecursive> lock(m_csCharacter);
+	auto it = m_perCharacterResources.find(guid);
+	if (it == m_perCharacterResources.end())
+	{
+		std::shared_ptr<SPerCharacterResources> element(std::make_shared<SPerCharacterResources>());
+		m_perCharacterResources[guid] = element;
+	}
+	return m_perCharacterResources[guid];
+}
+
+std::shared_ptr<SPerCharacterResources> SPerMeshResources::GetPerCharacterResources(const uint32 guid)
+{
+	CryAutoLock<CryCriticalSectionNonRecursive> lock(m_csCharacter);
+	auto it = m_perCharacterResources.find(guid);
+	if (it != m_perCharacterResources.end())
+	{
+		return m_perCharacterResources[guid];
+	}
+
+	// return empty ptr
+	return std::shared_ptr<SPerCharacterResources>();
 }
 
 void CStorage::RetirePerMeshResources()
@@ -142,7 +176,9 @@ void CStorage::RetirePerMeshResources()
 		const CRenderMesh* pMesh = iter->first;
 		++iter;
 		if (pRes.use_count() == 1)
+		{
 			m_perMeshResources.erase(pMesh);
+		}
 	}
 }
 
@@ -157,7 +193,9 @@ void CStorage::RetirePerInstanceResources(int64 frameId)
 		const void* pCustom = iter->first;
 		++iter;
 		if (pRes.use_count() == 1 && pRes->lastFrameInUse < curFrameID - 1)
+		{
 			m_perInstanceResources.erase(pCustom);
+		}
 	}
 }
 
@@ -170,14 +208,14 @@ void CStorage::DebugDraw()
 
 	for (auto iter = m_perInstanceResources.begin(); iter != m_perInstanceResources.end(); ++iter)
 	{
-		totalPerInstance += iter->second->GetSizeBytes();
+		totalPerInstance += iter->second->GetSizeBytesGpuBuffers();
 	}
 
 	uint32 totalPerMesh = 0;
 
 	for (auto iter = m_perMeshResources.begin(); iter != m_perMeshResources.end(); ++iter)
 	{
-		totalPerMesh += iter->second->GetSizeBytes();
+		totalPerMesh += iter->second->GetSizeBytesGpuBuffers();
 	}
 
 	IRenderAuxText::Draw2dLabel(1, 20.0f, 2.0f, c1, false, "[Compute Skinning]");
@@ -214,9 +252,8 @@ void CComputeSkinningStage::Update()
 	m_oldFrameIdExecute = CurrentFrameID;
 #endif
 
-	// Delete resources which weren't used last frame.
-	m_storage.RetirePerMeshResources();
-	m_storage.RetirePerInstanceResources(frameId);
+	m_storage.RetirePerMeshResources(); // Delete unused resources
+	m_storage.RetirePerInstanceResources(frameId); // Delete resources which weren't used last frame.
 
 	// TODO:/NOTE: possibly multi-threadable recording
 	auto* pList = RenderView()->GetSkinningDataPools().pDataComputeSkinning;
@@ -227,7 +264,7 @@ void CComputeSkinningStage::Update()
 
 		auto mr = m_storage.GetPerMeshResources(pRenderMesh);
 
-		if (!mr || !mr->IsInitialized(compute_skinning::SPerMeshResources::sState_PosesInitialized | compute_skinning::SPerMeshResources::sState_WeightsInitialized))
+		if (!mr || !mr->IsInitialized(compute_skinning::SPerMeshResources::sState_PosesInitialized))
 		{
 			// the mesh didn't get any compute skinning resources allocated at loading time
 			// compute skinning can not be performed on this instance
@@ -253,7 +290,17 @@ void CComputeSkinningStage::Prepare()
 
 		auto mr = m_storage.GetPerMeshResources(pRenderMesh);
 
-		if (!mr || !mr->IsInitialized(compute_skinning::SPerMeshResources::sState_PosesInitialized | compute_skinning::SPerMeshResources::sState_WeightsInitialized))
+		if (!mr || !mr->IsInitialized(compute_skinning::SPerMeshResources::sState_PosesInitialized))
+		{
+			// the mesh didn't get any compute skinning resources allocated at loading time
+			// compute skinning can not be performed on this instance
+			// or the mesh did not supply all required data yet
+			continue;
+		}
+
+		const uint32 guid = pSD->remapGUID;
+		auto cr = mr->GetPerCharacterResources(guid);
+		if (!cr || !cr->HasWeights())
 		{
 			// the mesh didn't get any compute skinning resources allocated at loading time
 			// compute skinning can not be performed on this instance
@@ -276,12 +323,12 @@ void CComputeSkinningStage::Prepare()
 
 		// bind input skinning buffers
 		ir->passDeform.SetBuffer(0, &mr->verticesIn.GetBuffer());
-		ir->passDeform.SetBuffer(1, &mr->skinningVector.GetBuffer());
-		ir->passDeform.SetBuffer(2, &mr->skinningVectorMap.GetBuffer());
+		ir->passDeform.SetBuffer(1, &cr->skinningVector.GetBuffer());
+		ir->passDeform.SetBuffer(2, &cr->skinningVectorMap.GetBuffer());
 
 		ir->passDeformWithMorphs.SetBuffer(0, &mr->verticesIn.GetBuffer());
-		ir->passDeformWithMorphs.SetBuffer(1, &mr->skinningVector.GetBuffer());
-		ir->passDeformWithMorphs.SetBuffer(2, &mr->skinningVectorMap.GetBuffer());
+		ir->passDeformWithMorphs.SetBuffer(1, &cr->skinningVector.GetBuffer());
+		ir->passDeformWithMorphs.SetBuffer(2, &cr->skinningVectorMap.GetBuffer());
 
 		// bind transform bones
 		ir->passDeform          .SetInlineConstantBuffer(eConstantBufferShaderSlot_SkinQuat, alias_cast<CD3D9Renderer::SCharacterInstanceCB*>(pSD->pCharInstCB)->boneTransformsBuffer);
@@ -411,7 +458,7 @@ void CComputeSkinningStage::Execute()
 
 			auto mr = m_storage.GetPerMeshResources(pRenderMesh);
 
-			if (!mr || !mr->IsInitialized(compute_skinning::SPerMeshResources::sState_PosesInitialized | compute_skinning::SPerMeshResources::sState_WeightsInitialized))
+			if (!mr || !mr->IsInitialized(compute_skinning::SPerMeshResources::sState_PosesInitialized))
 			{
 				// the mesh didn't get any compute skinning resources allocated at loading time
 				// compute skinning can not be performed on this instance
@@ -477,7 +524,7 @@ void CComputeSkinningStage::PreDraw()
 
 		auto mr = m_storage.GetPerMeshResources(pRenderMesh);
 
-		if (!mr || !mr->IsInitialized(compute_skinning::SPerMeshResources::sState_PosesInitialized | compute_skinning::SPerMeshResources::sState_WeightsInitialized))
+		if (!mr || !mr->IsInitialized(compute_skinning::SPerMeshResources::sState_PosesInitialized))
 		{
 			// the mesh didn't get any compute skinning resources allocated at loading time
 			// compute skinning can not be performed on this instance

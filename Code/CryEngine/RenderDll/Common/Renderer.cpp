@@ -4080,7 +4080,7 @@ SSkinningData* CRenderer::EF_CreateRemappedSkinningData(IRenderView* pRenderView
 	SSkinningData* pSkinningRenderData = alias_cast<SSkinningData*>(pData);
 	pData += Align(sizeof(SSkinningData), 16);
 
-	pSkinningRenderData->pRemapTable = NULL;
+	pSkinningRenderData->pRemapTable = pSourceSkinningData->pRemapTable;
 
 	pSkinningRenderData->pCustomData = nCustomDataSize ? alias_cast<void*>(pData) : NULL;
 	pData += nCustomDataSize ? Align(nCustomDataSize, 16) : 0;
@@ -4093,12 +4093,12 @@ SSkinningData* CRenderer::EF_CreateRemappedSkinningData(IRenderView* pRenderView
 
 	// use actual bone information from original skinning data
 	pSkinningRenderData->pBoneQuatsS    = pSourceSkinningData->pBoneQuatsS;
-	pSkinningRenderData->pActiveMorphs = pSourceSkinningData->pActiveMorphs;
+	pSkinningRenderData->pActiveMorphs  = pSourceSkinningData->pActiveMorphs;
 	pSkinningRenderData->pAsyncJobs     = pSourceSkinningData->pAsyncJobs;
 	pSkinningRenderData->pAsyncDataJobs = pSourceSkinningData->pAsyncDataJobs;
-	pSkinningRenderData->pRenderMesh = pSourceSkinningData->pRenderMesh;
+	pSkinningRenderData->pRenderMesh    = pSourceSkinningData->pRenderMesh;
 
-	pSkinningRenderData->pCharInstCB = pSourceSkinningData->pCharInstCB;
+	pSkinningRenderData->pCharInstCB    = pSourceSkinningData->pCharInstCB;
 
 	pSkinningRenderData->remapGUID               = pairGuid;
 	pSkinningRenderData->pNextSkinningData       = NULL;

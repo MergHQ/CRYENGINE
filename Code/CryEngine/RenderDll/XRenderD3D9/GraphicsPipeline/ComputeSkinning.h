@@ -71,11 +71,24 @@ private:
 	CGpuBuffer m_buffer;
 };
 
-struct SPerMeshResources : public compute_skinning::IPerMeshDataSupply
+struct SPerCharacterResources : public compute_skinning::IPerCharacterDataSupply
 {
+	SPerCharacterResources() : m_hasWeights(false) {}
+
 	CTypedReadResource<compute_skinning::SSkinning>     skinningVector;
 	CTypedReadResource<compute_skinning::SSkinningMap>  skinningVectorMap;
 
+	void PushWeights(const int numWeights, const int numWeightsMap, const compute_skinning::SSkinning* weights, const compute_skinning::SSkinningMap* weightsMap) override;
+	bool HasWeights() { return m_hasWeights; }
+
+	size_t GetSizeBytesGpuBuffers();
+
+private:
+	bool m_hasWeights;
+};
+
+struct SPerMeshResources : public compute_skinning::IPerMeshDataSupply
+{
 	CTypedReadResource<compute_skinning::SSkinVertexIn> verticesIn;
 	CTypedReadResource<vtx_idx>                         indicesIn;
 	CTypedReadResource<uint32>                          adjTriangles;
@@ -84,25 +97,31 @@ struct SPerMeshResources : public compute_skinning::IPerMeshDataSupply
 	CTypedReadResource<Vec4>   morphsDeltas;
 	CTypedReadResource<uint64> morphsBitField;
 
-	size_t GetSizeBytes();
+	size_t GetSizeBytesGpuBuffers();
 
 	enum SState
 	{
 		sState_NonInitialized     = 0,
 
 		sState_PosesInitialized   = BIT(0),
-		sState_WeightsInitialized = BIT(1),
-		sState_MorphsInitialized  = BIT(2)
+		sState_MorphsInitialized  = BIT(1)
 	};
 
 	std::atomic<uint32> uploadState;
 	SPerMeshResources() : uploadState(sState_NonInitialized) {}
+	
 	bool IsInitialized(uint32 wantedState) const { return (uploadState & wantedState) == wantedState; }
 
 	// per mesh data supply implementation
 	virtual void PushMorphs(const int numMorps, const int numMorphsBitField, const Vec4* morphsDeltas, const uint64* morphsBitField) override;
 	virtual void PushBindPoseBuffers(const int numVertices, const int numIndices, const int numAdjTriangles, const compute_skinning::SSkinVertexIn* vertices, const vtx_idx* indices, const uint32* adjTriangles) override;
-	virtual void PushWeights(const int numWeights, const int numWeightsMap, const compute_skinning::SSkinning* weights, const compute_skinning::SSkinningMap* weightsMap) override;
+
+	std::shared_ptr<IPerCharacterDataSupply> GetOrCreatePerCharacterResources(const uint32 guid) override;
+	std::shared_ptr<SPerCharacterResources> GetPerCharacterResources(const uint32 guid);
+
+private:
+	CryCriticalSectionNonRecursive m_csCharacter;
+	std::unordered_map<uint32, std::shared_ptr<SPerCharacterResources> > m_perCharacterResources;
 };
 
 struct SPerInstanceResources
@@ -116,7 +135,7 @@ struct SPerInstanceResources
 	CComputeRenderPass passVertexTangents;
 	int64              lastFrameInUse;
 
-	size_t             GetSizeBytes();
+	size_t             GetSizeBytesGpuBuffers();
 
 	// output data
 	gpu::CStructuredResource<SComputeShaderSkinVertexOut, gpu::BufferFlagsReadWrite> verticesOut;
@@ -126,13 +145,16 @@ struct SPerInstanceResources
 class CStorage : public compute_skinning::IComputeSkinningStorage
 {
 public:
-	std::shared_ptr<IPerMeshDataSupply>    GetOrCreateComputeSkinningPerMeshData(const CRenderMesh* pMesh) override;
+	std::shared_ptr<IPerMeshDataSupply> GetOrCreatePerMeshResources(const CRenderMesh* pMesh) override;
+	std::shared_ptr<SPerMeshResources> GetPerMeshResources(CRenderMesh* pMesh);
+	//! Erase any unused perMesh resources, i.e. no instance of CRenderMesh is using this resource anymore (via CRenderMesh::m_computeSkinningDataSupply).
+	void                                   RetirePerMeshResources();
+
+	std::shared_ptr<SPerInstanceResources> const& GetOrCreatePerInstanceResources(int64 frameId,const void* pCustomTag, const int numVertices, const int numTriangles);
+	void                                   RetirePerInstanceResources(int64 frameId);
+
 	virtual CGpuBuffer*                    GetOutputVertices(const void* pCustomTag) override;
 
-	void                                   RetirePerMeshResources();
-	void                                   RetirePerInstanceResources(int64 frameId);
-	std::shared_ptr<SPerMeshResources>     GetPerMeshResources(CRenderMesh* pMesh);
-	std::shared_ptr<SPerInstanceResources> GetOrCreatePerInstanceResources(int64 frameId,const void* pCustomTag, const int numVertices, const int numTriangles);
 	void                                   DebugDraw();
 
 private:

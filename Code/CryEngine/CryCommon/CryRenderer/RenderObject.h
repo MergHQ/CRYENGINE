@@ -104,6 +104,26 @@ struct SSkinningData
 	Vec3                             vecAdditionalOffset;     //!< Contains MeshNode translation and in case of floats with 16bit precision: an additional precision-offset-correction
 
 	IRenderMesh*                     pRenderMesh;
+
+	SSkinningData()
+		: nNumBones(0)
+		, nHWSkinningFlags(0)
+		, pBoneQuatsS(nullptr)
+		, pActiveMorphs(nullptr)
+		, nNumActiveMorphs(0)
+		, pRemapTable(nullptr)
+		, pAsyncJobs(nullptr)
+		, pAsyncDataJobs(nullptr)
+		, pPreviousSkinningRenderData(nullptr)
+		, pCustomTag(nullptr)
+		, remapGUID(0)
+		, pCharInstCB(nullptr)
+		, pCustomData(nullptr)
+		, pMasterSkinningDataList(nullptr)
+		, pNextSkinningData(nullptr)
+		, vecAdditionalOffset(ZERO)
+		, pRenderMesh(nullptr)
+	{}
 };
 
 //////////////////////////////////////////////////////////////////////////
