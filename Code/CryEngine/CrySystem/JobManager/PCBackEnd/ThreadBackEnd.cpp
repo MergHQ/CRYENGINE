@@ -281,12 +281,13 @@ void JobManager::ThreadBackEnd::CThreadBackEndWorkerThread::ThreadEntry()
 		if (m_pTempWorkerInfo && !m_pTempWorkerInfo->doWork)
 		{
 			m_pTempWorkerInfo->doWorkLock.Lock();
-			while (!m_pTempWorkerInfo->doWork)
+			while (!m_pTempWorkerInfo->doWork && !m_bStop)
 			{
 				//CRY_PROFILE_REGION(PROFILE_SYSTEM, "TempWorker - In DISABLED state");
 				m_pTempWorkerInfo->doWorkCnd.Wait(m_pTempWorkerInfo->doWorkLock);
 			}
 			m_pTempWorkerInfo->doWorkLock.Unlock();
+			continue;
 		}
 
 		{
