@@ -93,8 +93,6 @@ add_sources("NoUberFile"
 		"CryCore/Platform/Android32Specific.h"
 		"CryCore/Platform/Android64Specific.h"
 		"CryCore/Platform/platform_impl_android.inl"
-		"CryCore/Platform/AndroidJNI.h"
-		"CryCore/Platform/AndroidJNI.inl"
 )
 
 # -- crycommon_sce.waf_files --
