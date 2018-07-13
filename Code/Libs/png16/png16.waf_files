@@ -1,30 +1,28 @@
 {
-	"NoUberFile": 
-	{
-		"Root":
-		[
-			"pnglibconf.h",
-			 "../../SDKs/png16/pngconf.h",
-			 "../../SDKs/png16/pnginfo.h",
-			 "../../SDKs/png16/pngstruct.h",
-			 "../../SDKs/png16/pngdebug.h",
-			 "../../SDKs/png16/png.h",
-			 "../../SDKs/png16/pngpriv.h",
-			 "../../SDKs/png16/pngset.c",
-			 "../../SDKs/png16/pngrtran.c",
-			 "../../SDKs/png16/png.c",
-			 "../../SDKs/png16/pngtrans.c",
-			 "../../SDKs/png16/pngwio.c",
-			 "../../SDKs/png16/pngget.c",
-			 "../../SDKs/png16/pngerror.c",
-			 "../../SDKs/png16/pngrio.c",
-			 "../../SDKs/png16/pngwrite.c",
-			 "../../SDKs/png16/pngmem.c",
-			 "../../SDKs/png16/pngwtran.c",
-			 "../../SDKs/png16/pngpread.c",
-			 "../../SDKs/png16/pngrutil.c",
-			 "../../SDKs/png16/pngread.c",
-			 "../../SDKs/png16/pngwutil.c"
-		]
-	}
+    "NoUberFile": {
+        "Root": [
+            "pnglibconf.h",
+            "../../SDKs/png16/pngconf.h",
+            "../../SDKs/png16/pnginfo.h",
+            "../../SDKs/png16/pngstruct.h",
+            "../../SDKs/png16/pngdebug.h",
+            "../../SDKs/png16/png.h",
+            "../../SDKs/png16/pngpriv.h",
+            "../../SDKs/png16/pngset.c",
+            "../../SDKs/png16/pngrtran.c",
+            "../../SDKs/png16/png.c",
+            "../../SDKs/png16/pngtrans.c",
+            "../../SDKs/png16/pngwio.c",
+            "../../SDKs/png16/pngget.c",
+            "../../SDKs/png16/pngerror.c",
+            "../../SDKs/png16/pngrio.c",
+            "../../SDKs/png16/pngwrite.c",
+            "../../SDKs/png16/pngmem.c",
+            "../../SDKs/png16/pngwtran.c",
+            "../../SDKs/png16/pngpread.c",
+            "../../SDKs/png16/pngrutil.c",
+            "../../SDKs/png16/pngread.c",
+            "../../SDKs/png16/pngwutil.c"
+        ]
+    }
 }

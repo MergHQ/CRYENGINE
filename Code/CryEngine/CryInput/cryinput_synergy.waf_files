@@ -1,12 +1,12 @@
 {
-  "CryInput_synergy_uber.cpp":{
-    "Synergy":[
-      "Synergy/SynergyContext.cpp",
-      "Synergy/SynergyKeyboard.cpp",
-      "Synergy/SynergyMouse.cpp",
-      "Synergy/SynergyContext.h",
-      "Synergy/SynergyKeyboard.h",
-      "Synergy/SynergyMouse.h"
-    ]
-  }
+    "CryInput_synergy_uber.cpp": {
+        "Synergy": [
+            "Synergy/SynergyContext.cpp",
+            "Synergy/SynergyKeyboard.cpp",
+            "Synergy/SynergyMouse.cpp",
+            "Synergy/SynergyContext.h",
+            "Synergy/SynergyKeyboard.h",
+            "Synergy/SynergyMouse.h"
+        ]
+    }
 }

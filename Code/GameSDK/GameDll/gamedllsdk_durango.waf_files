@@ -1,12 +1,10 @@
 {
-	"NoUberFile":
-	{
-      "XboxOneLive":
-      [
-         "XboxOneLive/CryEngineSDK_XBLiveEvents.h",
-         "XboxOneLive/XboxLiveGameEvents.cpp",
-         "XboxOneLive/XboxLiveGameEvents.h",
-         "XboxOneLive/CryEngineSDK_XBLiveEvents.man"
-      ]
-	}
+    "NoUberFile": {
+        "XboxOneLive": [
+            "XboxOneLive/CryEngineSDK_XBLiveEvents.h",
+            "XboxOneLive/XboxLiveGameEvents.cpp",
+            "XboxOneLive/XboxLiveGameEvents.h",
+            "XboxOneLive/CryEngineSDK_XBLiveEvents.man"
+        ]
+    }
 }

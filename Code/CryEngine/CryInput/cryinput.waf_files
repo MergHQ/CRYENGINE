@@ -1,26 +1,4 @@
 {
-    "CryInput_durango_uber.cpp": {
-        "Durango": [],
-        "Durango/Kinect": [],
-        "Kinect": [],
-        "Kinect/Filters": []
-    },
-    "CryInput_dx_uber.cpp": {
-        "DX": []
-    },
-    "CryInput_orbis_shared_uber.cpp": {
-        "Orbis": []
-    },
-    "CryInput_orbis_uber.cpp": {
-        "Orbis": []
-    },
-    "CryInput_sdl_uber.cpp": {
-        "Linux": [],
-        "SDL": []
-    },
-    "CryInput_synergy_uber.cpp": {
-        "Synergy": []
-    },
     "CryInput_uber.cpp": {
         "EyeTracker": [
             "EyeTrackerInput.cpp",

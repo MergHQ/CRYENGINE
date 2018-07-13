@@ -1,0 +1,44 @@
+{
+    "CryGamePlatform_uber_0.cpp": {
+        "Root": [
+            "resource.h",
+            "StdAfx.cpp",
+            "StdAfx.h"
+        ]
+    },
+    "CryGamePlatform_uber_1.cpp": {
+        "Interface": [
+            "../../Interface/IGamePlatform.h",
+            "../../Interface/IPlatformAccount.h",
+            "../../Interface/IPlatformAchievement.h",
+            "../../Interface/IPlatformBase.h",
+            "../../Interface/IPlatformLeaderboards.h",
+            "../../Interface/IPlatformLobby.h",
+            "../../Interface/IPlatformMatchmaking.h",
+            "../../Interface/IPlatformNetworking.h",
+            "../../Interface/IPlatformRemoteStorage.h",
+            "../../Interface/IPlatformServer.h",
+            "../../Interface/IPlatformService.h",
+            "../../Interface/IPlatformStatistics.h",
+            "../../Interface/IPlatformUser.h",
+            "../../Interface/IPlatformUserGeneratedContent.h",
+            "../../Interface/PlatformTypes.h",
+            "../../Interface/PlatformIdentifier.h",
+            "../../Interface/PlatformUserIdentifier.h"
+        ],
+        "Root": [
+            "User.h",
+            "User.cpp",
+            "GamePlatform.h",
+            "GamePlatform.cpp",
+            "resource.h",
+            "StdAfx.cpp",
+            "StdAfx.h"
+        ]
+    },
+    "NoUberFile": {
+        "Root": [
+            "StdAfx.cpp"
+        ]
+    }
+}

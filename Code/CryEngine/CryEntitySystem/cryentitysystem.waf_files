@@ -22,7 +22,9 @@
         ],
         "Components/FlowGraph": [
             "FlowGraphProxy.cpp",
-            "FlowGraphProxy.h"
+            "FlowGraphProxy.h",
+            "FlowGraphComponent.cpp",
+            "FlowGraphComponent.h"
         ],
         "Components/Physics": [
             "PhysicsEventListener.cpp",
@@ -113,7 +115,9 @@
             "GeomCacheAttachmentManager.h",
             "GeomCacheAttachmentManager.cpp",
             "EntityUnitTests.cpp",
-            "EntityUnitTests.h"
+            "EntityUnitTests.h",
+            "ReflectionRegistry.cpp",
+            "ReflectionRegistry.h"
         ]
     },
     "CryEntitySystem_uber_1.cpp": {

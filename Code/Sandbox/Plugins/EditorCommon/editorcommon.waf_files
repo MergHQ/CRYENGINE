@@ -43,7 +43,9 @@
             "AssetSystem/AssetFileMonitor.cpp",
             "AssetSystem/PakImporter.h",
             "AssetSystem/PakImporter.cpp",
-            "AssetSystem/EditorCommands_Assets.cpp"
+            "AssetSystem/EditorCommands_Assets.cpp",
+            "AssetSystem/AssetConverter.cpp",
+            "AssetSystem/AssetConverter.h"
         ],
         "AssetSystem/Browser": [
             "AssetSystem/Browser/AssetBrowser.h",
@@ -90,6 +92,12 @@
             "AssetSystem/Loader/CompletionPortFileReader.cpp",
             "AssetSystem/Loader/AssetLoaderBackgroundTask.h",
             "AssetSystem/Loader/AssetLoaderBackgroundTask.cpp"
+        ]
+    },
+    "Uber_Debug.cpp": {
+        "Debug": [
+            "Debug/ReflectionRegistryWidget.cpp",
+            "Debug/ReflectionRegistryWidget.h"
         ]
     },
     "Uber_Deprecated.cpp": {
@@ -390,10 +398,22 @@
             "NodeGraph/NodeGraphItemPropertiesWidget.cpp",
             "NodeGraph/NodeGraphItemPropertiesWidget.h"
         ],
+        "NodeGraph/EditorData": [
+            "NodeGraph/CommentEditorData.cpp",
+            "NodeGraph/CommentEditorData.h",
+            "NodeGraph/GroupEditorData.cpp",
+            "NodeGraph/GroupEditorData.h",
+            "NodeGraph/NodeEditorData.cpp",
+            "NodeGraph/NodeEditorData.h",
+            "NodeGraph/AbstractEditorData.cpp",
+            "NodeGraph/AbstractEditorData.h",
+            "NodeGraph/GraphEditorData.cpp",
+            "NodeGraph/GraphEditorData.h"
+        ],
         "NodeGraph/Interfaces": [
             "NodeGraph/ICryGraphEditor.h"
         ],
-        "NodeGraph/Models": [
+        "NodeGraph/Model": [
             "NodeGraph/AbstractNodeGraphViewModel.cpp",
             "NodeGraph/AbstractNodeGraphViewModel.h",
             "NodeGraph/AbstractNodeGraphViewModelItem.cpp",
@@ -423,7 +443,9 @@
             "NodeGraph/NodeGraphViewGraphicsWidget.cpp",
             "NodeGraph/NodeGraphViewGraphicsWidget.h",
             "NodeGraph/NodeGraphViewBackground.cpp",
-            "NodeGraph/NodeGraphViewBackground.h"
+            "NodeGraph/NodeGraphViewBackground.h",
+            "NodeGraph/NodeGraphViewPreferences.cpp",
+            "NodeGraph/NodeGraphViewPreferences.h"
         ],
         "NodeGraph/View/Style": [
             "NodeGraph/NodeGraphStyleUtils.cpp",
@@ -434,14 +456,20 @@
             "NodeGraph/NodeGraphViewStyle.h",
             "NodeGraph/NodeWidgetStyle.cpp",
             "NodeGraph/NodeWidgetStyle.h",
-            "NodeGraph/NodeHeaderWidgetStyle.cpp",
-            "NodeGraph/NodeHeaderWidgetStyle.h",
+            "NodeGraph/TextWidgetStyle.cpp",
+            "NodeGraph/TextWidgetStyle.h",
+            "NodeGraph/HeaderWidgetStyle.cpp",
+            "NodeGraph/HeaderWidgetStyle.h",
             "NodeGraph/NodeContentWidgetStyle.cpp",
             "NodeGraph/NodeContentWidgetStyle.h",
             "NodeGraph/NodePinWidgetStyle.cpp",
             "NodeGraph/NodePinWidgetStyle.h",
             "NodeGraph/NodeInfoWidgetStyle.cpp",
             "NodeGraph/NodeInfoWidgetStyle.h",
+            "NodeGraph/GroupWidgetStyle.cpp",
+            "NodeGraph/GroupWidgetStyle.h",
+            "NodeGraph/CommentWidgetStyle.cpp",
+            "NodeGraph/CommentWidgetStyle.h",
             "NodeGraph/ConnectionWidgetStyle.cpp",
             "NodeGraph/ConnectionWidgetStyle.h"
         ],
@@ -450,6 +478,8 @@
             "NodeGraph/GraphicsSceneIcon.h"
         ],
         "NodeGraph/View/Widgets": [
+            "NodeGraph/CommentWidget.cpp",
+            "NodeGraph/CommentWidget.h",
             "NodeGraph/NodeWidget.cpp",
             "NodeGraph/NodeWidget.h",
             "NodeGraph/PinWidget.cpp",
@@ -464,12 +494,12 @@
             "NodeGraph/AbstractNodeContentWidget.h",
             "NodeGraph/PinGridNodeContentWidget.cpp",
             "NodeGraph/PinGridNodeContentWidget.h",
-            "NodeGraph/NodeNameWidget.cpp",
-            "NodeGraph/NodeNameWidget.h",
-            "NodeGraph/NodeHeaderWidget.cpp",
-            "NodeGraph/NodeHeaderWidget.h",
-            "NodeGraph/NodeHeaderIconWidget.cpp",
-            "NodeGraph/NodeHeaderIconWidget.h",
+            "NodeGraph/TextWidget.cpp",
+            "NodeGraph/TextWidget.h",
+            "NodeGraph/HeaderWidget.cpp",
+            "NodeGraph/HeaderWidget.h",
+            "NodeGraph/HeaderIconWidget.cpp",
+            "NodeGraph/HeaderIconWidget.h",
             "NodeGraph/NodeInfoWidget.cpp",
             "NodeGraph/NodeInfoWidget.h"
         ]
@@ -742,6 +772,8 @@
             "Util/XmlArchive.h",
             "Util/NamedData.cpp",
             "Util/NamedData.h",
+            "Util/UserDataUtil.cpp",
+            "Util/UserDataUtil.h",
             "QtUtil.h",
             "QtUtil.cpp",
             "FilePathUtil.h",

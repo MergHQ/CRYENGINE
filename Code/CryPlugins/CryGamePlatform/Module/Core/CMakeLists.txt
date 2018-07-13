@@ -1,4 +1,6 @@
 start_sources()
+
+# -- crygameplatform.waf_files --
 sources_platform(ALL)
 add_sources("CryGamePlatform_uber_0.cpp"
 	SOURCE_GROUP "Root"

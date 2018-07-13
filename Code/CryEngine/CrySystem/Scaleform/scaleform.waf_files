@@ -1,34 +1,34 @@
 {
-  "Scaleform_uber.cpp":{
-    "Scaleform":[
-      "Scaleform/FlashPlayerInstance.cpp",
-      "Scaleform/GAllocatorCryMem.cpp",
-      "Scaleform/GFileCryPak.cpp",
-      "Scaleform/GFxVideoSoundCrySound.cpp",
-      "Scaleform/GFxVideoWrapper.cpp",
-      "Scaleform/SharedResources.cpp",
-      "Scaleform/SharedStates.cpp",
-      "Scaleform/FlashPlayerInstance.h",
-      "Scaleform/GAllocatorCryMem.h",
-      "Scaleform/GFileCryPak.h",
-      "Scaleform/GFxVideoSoundCrySound.h",
-      "Scaleform/GFxVideoWrapper.h",
-      "Scaleform/SharedResources.h",
-      "Scaleform/SharedStates.h",
-      "Scaleform/GImeHelper.h",
-      "Scaleform/GImeHelper.cpp",
-      "Scaleform/GTexture_Impl.h",
-      "Scaleform/GTexture_Impl.cpp",
-      "Scaleform/GImageInfo_Impl.h",
-      "Scaleform/GImageInfo_Impl.cpp"
-    ]
-  },
-  "NoUberFile":{
-    "Scaleform":[
-      "Scaleform/ScaleformHelper.cpp",
-      "Scaleform/ScaleformHelper.h",
-      "Scaleform/ScaleformRecording.h",
-      "Scaleform/ScaleformRecording.cpp"
-    ]
-  }
+    "NoUberFile": {
+        "Scaleform": [
+            "Scaleform/ScaleformHelper.cpp",
+            "Scaleform/ScaleformHelper.h",
+            "Scaleform/ScaleformRecording.h",
+            "Scaleform/ScaleformRecording.cpp"
+        ]
+    },
+    "Scaleform_uber.cpp": {
+        "Scaleform": [
+            "Scaleform/FlashPlayerInstance.cpp",
+            "Scaleform/GAllocatorCryMem.cpp",
+            "Scaleform/GFileCryPak.cpp",
+            "Scaleform/GFxVideoSoundCrySound.cpp",
+            "Scaleform/GFxVideoWrapper.cpp",
+            "Scaleform/SharedResources.cpp",
+            "Scaleform/SharedStates.cpp",
+            "Scaleform/FlashPlayerInstance.h",
+            "Scaleform/GAllocatorCryMem.h",
+            "Scaleform/GFileCryPak.h",
+            "Scaleform/GFxVideoSoundCrySound.h",
+            "Scaleform/GFxVideoWrapper.h",
+            "Scaleform/SharedResources.h",
+            "Scaleform/SharedStates.h",
+            "Scaleform/GImeHelper.h",
+            "Scaleform/GImeHelper.cpp",
+            "Scaleform/GTexture_Impl.h",
+            "Scaleform/GTexture_Impl.cpp",
+            "Scaleform/GImageInfo_Impl.h",
+            "Scaleform/GImageInfo_Impl.cpp"
+        ]
+    }
 }

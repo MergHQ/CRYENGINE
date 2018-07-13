@@ -1,16 +1,5 @@
 {
     "NoUberFile": {
-        "3rdParty/concqueue": [
-            "3rdParty/concqueue/concqueue.hpp",
-            "3rdParty/concqueue/concqueue-mpmc-bounded.hpp",
-            "3rdParty/concqueue/concqueue-mpsc.hpp",
-            "3rdParty/concqueue/concqueue-spsc-bounded.hpp",
-            "3rdParty/concqueue/concqueue-spsc.hpp"
-        ],
-        "3rdParty/fasthash": [
-            "3rdParty/fasthash/fasthash.inl",
-            "3rdParty/fasthash/fasthash.h"
-        ],
         "Cry3DEngine": [
             "Cry3DEngine/I3DEngine.h",
             "Cry3DEngine/I3DEngine_info.h",
@@ -90,7 +79,8 @@
             "CryAISystem/MovementStyle.h",
             "CryAISystem/IMovementPlanner.h",
             "CryAISystem/IAIBubblesSystem.h",
-            "CryAISystem/ValueHistory.h"
+            "CryAISystem/ValueHistory.h",
+            "CryAISystem/AIRayCastQueue.h"
         ],
         "CryAISystem/BehaviorTree": [
             "CryAISystem/BehaviorTree/IBehaviorTree.h",
@@ -159,7 +149,6 @@
             "CryAnimation/ICryMannequinTagDefs.h",
             "CryAnimation/ICryMannequinUserParams.h"
         ],
-        "CryAssert": [],
         "CryAudio": [
             "CryAudio/IAudioInterfacesCommonData.h",
             "CryAudio/IAudioSystem.h",
@@ -252,7 +241,6 @@
         ],
         "CryCore/Project": [
             "CryCore/Project/ProjectDefines.h",
-            "CryCore/Project/ProjectDefinesInclude.h",
             "CryCore/Project/CryModuleDefs.h",
             "CryCore/Project/Version.h",
             "CryCore/Project/Version_override.h"
@@ -270,19 +258,6 @@
             "CryDynamicResponseSystem/IDynamicResponseSystem.h",
             "CryDynamicResponseSystem/IDynamicResponseAction.h",
             "CryDynamicResponseSystem/IDynamicResponseCondition.h"
-        ],
-        "CryEntitySystem": [
-            "CryEntitySystem/IEntityBasicTypes.h",
-            "CryEntitySystem/IEntityComponent.h",
-            "CryEntitySystem/IEntitySystem.h",
-            "CryEntitySystem/IEntity.h",
-            "CryEntitySystem/IEntityClass.h",
-            "CryEntitySystem/IEntityLayer.h",
-            "CryEntitySystem/IEntitySerialize.h",
-            "CryEntitySystem/EntityDesc.h",
-            "CryEntitySystem/IBitStream.h",
-            "CryEntitySystem/IBreakableManager.h",
-            "CryEntitySystem/IBreakableGlassSystem.h"
         ],
         "CryExtension": [
             "CryExtension/CryCreateClassInstance.h",
@@ -479,18 +454,44 @@
         ],
         "CryReflection": [
             "CryReflection/Any.h",
-            "CryReflection/CryReflection.h",
-            "CryReflection/IReflection.h",
-            "CryReflection/Function.h",
-            "CryReflection/IObject.h",
+            "CryReflection/Any_impl.inl",
+            "CryReflection/AnyArray.h",
+            "CryReflection/AnyArray_impl.inl",
+            "CryReflection/Framework.h",
+            "CryReflection/Framework_impl.inl",
+            "CryReflection/IBaseTypeDesc.h",
+            "CryReflection/ICoreRegistry.h",
             "CryReflection/IDescExtension.h",
             "CryReflection/IFunctionDesc.h",
+            "CryReflection/IModule.h",
+            "CryReflection/IObject.h",
+            "CryReflection/IRegistry.h",
             "CryReflection/ITypeDesc.h",
             "CryReflection/IVariableDesc.h",
-            "CryReflection/TypeRegistrar.h",
-            "CryReflection/TypeRegistrar_impl.inl",
-            "CryReflection/SystemTypeRegistry.h",
-            "CryReflection/SystemTypeRegistry_impl.inl"
+            "CryReflection/IEnumValueDesc.h"
+        ],
+        "CryReflection/Debug": [
+            "CryReflection/Debug/NatVisWriter.h",
+            "CryReflection/Debug/NatVisWriter_impl.inl"
+        ],
+        "CryReflection/Framework": [
+            "CryReflection/Framework/Common.h"
+        ],
+        "CryReflection/Function": [
+            "CryReflection/Function/Delegate.h",
+            "CryReflection/Function/Function.h",
+            "CryReflection/Function/FunctionDelegate.h",
+            "CryReflection/Function/FunctionExecutionContext.h"
+        ],
+        "CryReflection/Register": [
+            "CryReflection/Register/Object.h",
+            "CryReflection/Register/Object_impl.inl",
+            "CryReflection/Register/Registry.h",
+            "CryReflection/Register/Registry_impl.inl",
+            "CryReflection/Register/TypeRegistrationChain.h"
+        ],
+        "CryReflection/Variable": [
+            "CryReflection/Variable/MemberVariablePointer.h"
         ],
         "CryRenderer": [
             "CryRenderer/IRenderer.h",
@@ -530,7 +531,8 @@
             "CryRenderer/RenderElements/RendElement.h"
         ],
         "CrySTL": [
-            "CrySTL/type_traits.h"
+            "CrySTL/type_traits.h",
+            "CrySTL/utility.h"
         ],
         "CrySandbox": [
             "CrySandbox/ScopedVariableSetter.h",
@@ -1007,8 +1009,8 @@
         "CrySystem/Testing": [
             "CrySystem/Testing/Command.h",
             "CrySystem/Testing/CryTest.h",
+            "CrySystem/Testing/CryTestCommands.h",
             "CrySystem/Testing/ITestSystem.h",
-            "CrySystem/Testing/IReporter.h",
             "CrySystem/Testing/TestInfo.h"
         ],
         "CrySystem/UserAnalytics": [
@@ -1046,9 +1048,16 @@
         ],
         "CryType": [
             "CryType/Type.h",
+            "CryType/TypeFunctions.h",
             "CryType/TypeOperators.h",
             "CryType/TypeTraits.h",
             "CryType/TypeUtils.h"
+        ],
+        "CryUtils": [
+            "CryUtils/CompileTime.h",
+            "CryUtils/Debug.h",
+            "CryUtils/Flags.h",
+            "CryUtils/Index.h"
         ],
         "Root": [
             "CryEngine.natvis"

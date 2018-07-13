@@ -1,32 +1,26 @@
 {
-	"NoUberFile" :
-	{
-		"Root" :
-		[
-		  "StdAfx.cpp"
-		]
-	},
-	"CryOculusVR_uber_0.cpp" :
-	{
-		"Interface" :
-		[
-		  "../Interface/IHmdOculusRiftDevice.h",
-		  "../Interface/IOculusVRPlugin.h"
-		],
-
-		"Root" :
-		[
-		  "PluginDll.cpp",
-		  "PluginDll.h",
-		  "OculusTouchController.cpp",
-		  "OculusTouchController.h",
-		  "OculusDevice.cpp",
-		  "OculusDevice.h",
-		  "OculusResources.cpp",
-		  "OculusResources.h",
-		  "resource.h",
-		  "StdAfx.cpp",
-		  "StdAfx.h"
-		]
-	}
+    "CryOculusVR_uber_0.cpp": {
+        "Interface": [
+            "../Interface/IHmdOculusRiftDevice.h",
+            "../Interface/IOculusVRPlugin.h"
+        ],
+        "Root": [
+            "PluginDll.cpp",
+            "PluginDll.h",
+            "OculusTouchController.cpp",
+            "OculusTouchController.h",
+            "OculusDevice.cpp",
+            "OculusDevice.h",
+            "OculusResources.cpp",
+            "OculusResources.h",
+            "resource.h",
+            "StdAfx.cpp",
+            "StdAfx.h"
+        ]
+    },
+    "NoUberFile": {
+        "Root": [
+            "StdAfx.cpp"
+        ]
+    }
 }

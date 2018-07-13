@@ -349,7 +349,9 @@
             "LevelEditor/LevelEditorViewport.cpp",
             "LevelEditor/LevelEditorViewport.h",
             "LevelEditor/TagLocations.cpp",
-            "LevelEditor/TagLocations.h"
+            "LevelEditor/TagLocations.h",
+            "LevelEditor/ObjectToPrefabAssetConverter.h",
+            "LevelEditor/ObjectToPrefabAssetConverter.cpp"
         ],
         "LevelEditor/Dialogs": [
             "LevelEditor/NewLevelDialog.cpp",
@@ -401,6 +403,8 @@
             "Objects/SubObjSelection.h",
             "Objects/PrefabObject.cpp",
             "Objects/PrefabObject.h",
+            "Objects/PrefabPicker.cpp",
+            "Objects/PrefabPicker.h",
             "Objects/SafeObjectsArray.cpp",
             "Objects/SafeObjectsArray.h",
             "Objects/ObjectLayer.cpp",
@@ -1211,24 +1215,26 @@
         "Vegetation": [
             "Vegetation/VegetationMap.cpp",
             "Vegetation/VegetationObject.cpp",
-            "Vegetation/VegetationPaintTool.cpp",
-            "Vegetation/VegetationEraseTool.cpp",
-            "Vegetation/VegetationSelectTool.cpp",
-            "Vegetation/VegetationPlaceTool.cpp",
             "Vegetation/VegetationEditor.cpp",
             "Vegetation/VegetationModel.cpp",
             "Vegetation/VegetationTreeView.cpp",
             "Vegetation/VegetationDragDropData.cpp",
             "Vegetation/VegetationMap.h",
             "Vegetation/VegetationObject.h",
-            "Vegetation/VegetationPaintTool.h",
-            "Vegetation/VegetationEraseTool.h",
-            "Vegetation/VegetationSelectTool.h",
-            "Vegetation/VegetationPlaceTool.h",
             "Vegetation/VegetationEditor.h",
             "Vegetation/VegetationModel.h",
             "Vegetation/VegetationTreeView.h",
             "Vegetation/VegetationDragDropData.h"
+        ],
+        "Vegetation/Tools": [
+            "Vegetation/VegetationEraseTool.cpp",
+            "Vegetation/VegetationEraseTool.h",
+            "Vegetation/VegetationPaintTool.cpp",
+            "Vegetation/VegetationPaintTool.h",
+            "Vegetation/VegetationPlaceTool.cpp",
+            "Vegetation/VegetationPlaceTool.h",
+            "Vegetation/VegetationSelectTool.cpp",
+            "Vegetation/VegetationSelectTool.h"
         ]
     },
     "Editor_Uber_Viewports.cpp": {

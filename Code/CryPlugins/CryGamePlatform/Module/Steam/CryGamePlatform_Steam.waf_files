@@ -1,0 +1,77 @@
+{
+    "CryGamePlatform_Steam_uber_0.cpp": {
+        "Root": [
+            "resource.h",
+            "StdAfx.cpp",
+            "StdAfx.h"
+        ]
+    },
+    "CryGamePlatform_Steam_uber_1.cpp": {
+        "Interface": [
+            "../../Interface/IGamePlatform.h",
+            "../../Interface/IPlatformAccount.h",
+            "../../Interface/IPlatformAchievement.h",
+            "../../Interface/IPlatformBase.h",
+            "../../Interface/IPlatformLeaderboards.h",
+            "../../Interface/IPlatformLobby.h",
+            "../../Interface/IPlatformMatchmaking.h",
+            "../../Interface/IPlatformNetworking.h",
+            "../../Interface/IPlatformRemoteStorage.h",
+            "../../Interface/IPlatformServer.h",
+            "../../Interface/IPlatformService.h",
+            "../../Interface/IPlatformStatistics.h",
+            "../../Interface/IPlatformUser.h",
+            "../../Interface/IPlatformUserGeneratedContent.h",
+            "../../Interface/PlatformTypes.h",
+            "../../Interface/PlatformIdentifier.h",
+            "../../Interface/PlatformUserIdentifier.h"
+        ]
+    },
+    "CryGamePlatform_Steam_uber_2.cpp": {
+        "Multiplayer": [
+            "SteamMatchmaking.cpp",
+            "SteamMatchmaking.h",
+            "SteamNetworking.cpp",
+            "SteamNetworking.h",
+            "SteamUserLobby.cpp",
+            "SteamUserLobby.h",
+            "SteamServer.cpp",
+            "SteamServer.h"
+        ],
+        "Profile": [
+            "SteamStatistics.cpp",
+            "SteamStatistics.h",
+            "SteamUserIdentifier.h",
+            "SteamAccount.cpp",
+            "SteamAccount.h",
+            "SteamAchievement.cpp",
+            "SteamAchievement.h",
+            "SteamLeaderboards.cpp",
+            "SteamLeaderboards.h"
+        ],
+        "RemoteStorage": [
+            "SteamRemoteFile.cpp",
+            "SteamRemoteFile.h",
+            "SteamRemoteStorage.cpp",
+            "SteamRemoteStorage.h",
+            "SteamSharedRemoteFile.cpp",
+            "SteamSharedRemoteFile.h"
+        ],
+        "Root": [
+            "SteamService.cpp",
+            "SteamService.h",
+            "SteamTypes.h"
+        ],
+        "UserGeneratedContent": [
+            "UserGeneratedContent.cpp",
+            "UserGeneratedContent.h",
+            "UserGeneratedContentManager.cpp",
+            "UserGeneratedContentManager.h"
+        ]
+    },
+    "NoUberFile": {
+        "Root": [
+            "StdAfx.cpp"
+        ]
+    }
+}

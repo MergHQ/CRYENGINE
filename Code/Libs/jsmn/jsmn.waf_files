@@ -1,12 +1,10 @@
 {
-	"NoUberFile": 
-	{
-		"Root":
-		[
-			"../../SDKs/jsmn/jsmn.c",
-			"../../SDKs/jsmn/jsmn.h",
-			"jsmnutil.h",
-			"jsmnutil.c"
-		]
-	}
+    "NoUberFile": {
+        "Root": [
+            "../../SDKs/jsmn/jsmn.c",
+            "../../SDKs/jsmn/jsmn.h",
+            "jsmnutil.h",
+            "jsmnutil.c"
+        ]
+    }
 }

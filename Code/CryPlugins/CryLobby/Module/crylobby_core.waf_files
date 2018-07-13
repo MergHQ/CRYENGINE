@@ -1,10 +1,4 @@
 {
-    "CryLobby_durango_live_uber.cpp": {
-        "DurangoLive": []
-    },
-    "CryLobby_steam_uber.cpp": {
-        "Steam": []
-    },
     "CryLobby_uber_0.cpp": {
         "Interface": [
             "../Interface/CryLobby/ICryLobby.h",

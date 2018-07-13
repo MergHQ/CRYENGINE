@@ -58,7 +58,7 @@ def build(bld):
 		includes    = [ '..', Path('Code/SDKs/squish-ccr') ],
 		defines     = [ 'CRY_RENDERER_DIRECT3D=110', 'DO_RENDERSTATS', '_RENDERER' ] + additional_defines,
 		use_module  = [ 'lzma', 'lzss', 'lz4', 'zlib' ],
-		module_extensions = [ 'sdl2', 'sdl2_ext' ],
+		module_extensions = [ 'sdl2' ],
 		
 
 		win_file_list    = ['mesh_baker.waf_files', 'opengl_loader_gl.waf_files', 'opengl_loader_wgl.waf_files' ],
@@ -157,9 +157,10 @@ def build(bld):
 		includes    = [ '..', Path('Code/SDKs/squish-ccr'), Path('Code/SDKs/VulkanSDK/Include') ],
 		defines     = [ 'CRY_RENDERER_VULKAN=10', 'DO_RENDERSTATS', '_RENDERER', 'SPIRV_CROSS_EXCEPTIONS_TO_ASSERTIONS' ] ,
 		use_module  = [ 'lzma', 'lzss', 'lz4', 'zlib', 'spirv-cross' ],
-		module_extensions = [ 'sdl2', 'sdl2_ext' ],
+		module_extensions = [ 'sdl2' ],
 		
 		android_cxxflags = ['-fms-extensions', '-D_MSC_EXTENSIONS=1'],
+		android_lib = ['vulkan'],
 
 		win_file_list     = ['mesh_baker.waf_files', 'vulkan_win.waf_files'],
 		win_lib           = ['Ole32', 'Gdi32', 'wininet', 'Shell32', 'dxguid', 'vulkan-1' ], 

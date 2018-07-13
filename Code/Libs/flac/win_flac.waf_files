@@ -1,8 +1,7 @@
 {
-	"NoUberFile": 
-	{
-		"Root": [
-			"../../SDKs/flac/src/share/win_utf8_io/win_utf8_io.c"
-		]
-	}
+    "NoUberFile": {
+        "Root": [
+            "../../SDKs/flac/src/share/win_utf8_io/win_utf8_io.c"
+        ]
+    }
 }

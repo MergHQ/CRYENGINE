@@ -1,0 +1,16 @@
+{
+    "NoUberFile": {
+        "Root": [
+            "FBXExporter.cpp",
+            "FBXExporter.h",
+            "FBXPlugin.cpp",
+            "FBXPlugin.h",
+            "FBXPlugin.rc",
+            "FBXSettingsDlg.cpp",
+            "FBXSettingsDlg.h",
+            "resource.h",
+            "StdAfx.cpp",
+            "StdAfx.h"
+        ]
+    }
+}

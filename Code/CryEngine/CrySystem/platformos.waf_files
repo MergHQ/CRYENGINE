@@ -1,10 +1,8 @@
 {
-	"CrySystem_uber_platform_os.cpp":
-	{
-		"PlatformOS":
-		[
-			"PlatformOS/PlatformOS_PC.cpp",	
-			"PlatformOS/PlatformOS_PC.h"
-		]
-	}
+    "NoUberFile": {
+        "PlatformOS": [
+            "PlatformOS/PlatformOS_PC.cpp",
+            "PlatformOS/PlatformOS_PC.h"
+        ]
+    }
 }

@@ -1,21 +1,19 @@
 {
-	"CryLobby_steam_uber.cpp":
-	{
-		"Steam":
-		[		
-			"Steam/CrySteamVoice.h",
-			"Steam/CrySteamFriends.cpp",
-			"Steam/CrySteamFriendsManagement.cpp",
-			"Steam/CrySteamLobby.cpp",
-			"Steam/CrySteamMatchMaking.cpp",
-			"Steam/CrySteamStats.cpp",
-			"Steam/CrySteamFriends.h",
-			"Steam/CrySteamFriendsManagement.h",
-			"Steam/CrySteamLobby.h",
-			"Steam/CrySteamMatchMaking.h",
-			"Steam/CrySteamStats.h",
-			"Steam/CrySteamReward.h",
-			"Steam/CrySteamReward.cpp"			
-		]
-	}
+    "CryLobby_steam_uber.cpp": {
+        "Steam": [
+            "Steam/CrySteamVoice.h",
+            "Steam/CrySteamFriends.cpp",
+            "Steam/CrySteamFriendsManagement.cpp",
+            "Steam/CrySteamLobby.cpp",
+            "Steam/CrySteamMatchMaking.cpp",
+            "Steam/CrySteamStats.cpp",
+            "Steam/CrySteamFriends.h",
+            "Steam/CrySteamFriendsManagement.h",
+            "Steam/CrySteamLobby.h",
+            "Steam/CrySteamMatchMaking.h",
+            "Steam/CrySteamStats.h",
+            "Steam/CrySteamReward.h",
+            "Steam/CrySteamReward.cpp"
+        ]
+    }
 }

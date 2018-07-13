@@ -71,7 +71,6 @@
         ]
     },
     "CrySystem_uber_1.cpp": {
-        "Header Files": [],
         "Source Files": [
             "SystemRender.cpp",
             "NotificationNetwork.cpp",
@@ -109,6 +108,13 @@
             "SystemScheduler.h",
             "UnixConsole.h",
             "WindowsConsole.h"
+        ]
+    },
+    "CrySystem_uber_10.cpp": {
+        "Reflection": [
+            "Reflection/FundamentalTypes.cpp",
+            "Reflection/MathTypes.cpp",
+            "Reflection/CommonTypes.cpp"
         ]
     },
     "CrySystem_uber_2.cpp": {
@@ -333,15 +339,12 @@
         "JobManager": [
             "JobManager/JobManager.cpp",
             "JobManager/JobManager.h",
-            "JobManager/JobStructs.h"
+            "JobManager/JobStructs.h",
+            "JobManager/JobSystemTests.cpp"
         ],
         "JobManager/BlockingBackend": [
             "JobManager/BlockingBackend/BlockingBackEnd.cpp",
             "JobManager/BlockingBackend/BlockingBackEnd.h"
-        ],
-        "JobManager/FallbackBackend": [
-            "JobManager/FallbackBackend/FallbackBackend.cpp",
-            "JobManager/FallbackBackend/FallBackBackend.h"
         ],
         "JobManager/ThreadBackEnd": [
             "JobManager/PCBackEnd/ThreadBackEnd.cpp",
@@ -403,18 +406,13 @@
             "SystemUtilsApple.h",
             "SystemUtilsApple.mm"
         ],
-        "PlatformOS": [],
         "Root": [
             "CrashHandler.rc",
             "StdAfx.cpp",
             "StdAfx.h"
         ],
-        "Scaleform": [],
         "Source Files": [
             "CryDLMalloc.c"
         ]
-    },
-    "Scaleform_uber.cpp": {
-        "Scaleform": []
     }
 }
