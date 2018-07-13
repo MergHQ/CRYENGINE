@@ -93,6 +93,8 @@ add_sources("NoUberFile"
 		"CryCore/Platform/Android32Specific.h"
 		"CryCore/Platform/Android64Specific.h"
 		"CryCore/Platform/platform_impl_android.inl"
+		"CryCore/Platform/AndroidJNI.h"
+		"CryCore/Platform/AndroidJNI.inl"
 )
 
 # -- crycommon_sce.waf_files --
@@ -124,7 +126,7 @@ add_sources("NoUberFile"
 )
 
 # -- crycommon_darwin.waf_files --
-sources_platform(APPLE WIN32)
+sources_platform(APPLE)
 add_sources("NoUberFile"
 	PROJECTS CryCommon
 	SOURCE_GROUP "CryAssert"
@@ -1163,7 +1165,7 @@ add_sources("NoUberFile"
 )
 
 # -- crycommon_posix.waf_files --
-sources_platform(ANDROID APPLE LINUX ORBIS WIN32)
+sources_platform(ANDROID APPLE LINUX ORBIS)
 add_sources("NoUberFile"
 	PROJECTS CryCommon
 	SOURCE_GROUP "CryCore"

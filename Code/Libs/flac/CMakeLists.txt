@@ -1,4 +1,6 @@
 start_sources()
+
+# -- flac.waf_files --
 sources_platform(ALL)
 add_sources("NoUberFile"
 	PROJECTS flac_static
@@ -35,7 +37,8 @@ add_sources("NoUberFile"
 		"../../SDKs/flac/src/libFLAC/window.c"
 )
 
-sources_platform(WIN32 WIN64)
+# -- win_flac.waf_files --
+sources_platform(WIN32)
 add_sources("NoUberFile"
 	PROJECTS flac_static
 	SOURCE_GROUP "Root"

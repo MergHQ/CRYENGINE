@@ -9,6 +9,7 @@ if (NOT PLUGIN_HTTP)
 endif()
 
 start_sources()
+# -- cryhttp.waf_files --
 sources_platform(ALL)
 add_sources("CryHTTP_uber_0.cpp"
 	SOURCE_GROUP "Root"
