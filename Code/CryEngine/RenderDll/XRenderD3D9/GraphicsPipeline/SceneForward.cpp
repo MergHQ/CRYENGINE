@@ -1293,7 +1293,7 @@ void CSceneForwardStage::ExecuteSky(CTexture* pColorTex, CTexture* pDepthTex)
 	rtMask |= m_pSkyRE ? g_HWSR_MaskBit[HWSR_SAMPLE0] : 0;
 	rtMask |= bFog ? g_HWSR_MaskBit[HWSR_FOG] : 0;
 
-	if (m_skyPass.IsDirty(rtMask, timestamp, !m_pHDRSkyRE))
+	if (m_skyPass.IsDirty(rtMask, timestamp, !m_pHDRSkyRE), pDepthTex->GetTextureID())
 	{
 		const SSamplerState      samplerDescLinearWrapU(FILTER_LINEAR, eSamplerAddressMode_Wrap, eSamplerAddressMode_Clamp, eSamplerAddressMode_Clamp, 0);
 		const SamplerStateHandle samplerStateLinearWrapU = GetDeviceObjectFactory().GetOrCreateSamplerStateHandle(samplerDescLinearWrapU);
