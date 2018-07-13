@@ -591,6 +591,7 @@ void JobManager::CJobManager::ShutDown()
 {
 	if (m_pThreadBackEnd) m_pThreadBackEnd->ShutDown();
 	if (m_pBlockingBackEnd) m_pBlockingBackEnd->ShutDown();
+	m_Initialized = false;
 }
 
 void JobManager::CJobManager::Init(uint32 nSysMaxWorker)
