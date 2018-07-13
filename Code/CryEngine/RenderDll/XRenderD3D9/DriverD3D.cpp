@@ -850,6 +850,7 @@ void CD3D9Renderer::FillFrame(ColorF clearColor)
 
 		if (GetS3DRend().IsStereoEnabled())
 		{
+			GetS3DRend().PrepareFrame();
 			GetS3DRend().ClearEyes(clearColor);
 			GetS3DRend().ClearVrQuads(Clr_Transparent);   // Force transparent clear for VR quads
 		}
