@@ -35,20 +35,21 @@ class CJobSystemTest : public ::testing::Test
 protected:
 	virtual void SetUp() override
 	{
-		gEnv->pJobManager = GetJobManagerInterface();
 		gEnv->pTimer = new CTimer();
+		if (!gEnv->pThreadManager)
+			gEnv->pThreadManager = CreateThreadManager();
+		gEnv->pJobManager = GetJobManagerInterface();
 
 		auto pseudoProfilerCallback = [](class CFrameProfilerSection* pSection) {};
 		gEnv->callbackStartSection = pseudoProfilerCallback;
 		gEnv->callbackEndSection = pseudoProfilerCallback;
-		gEnv->pThreadManager = CreateThreadManager();
 		gEnv->pJobManager->Init(8);
 	}
 
 	virtual void TearDown() override
 	{
-		delete gEnv->pTimer;
-		delete gEnv->pThreadManager;
+		gEnv->pJobManager->ShutDown();
+		SAFE_DELETE(gEnv->pTimer);
 	}
 };
 
