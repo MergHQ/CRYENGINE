@@ -571,11 +571,10 @@ int CSystem::GetApplicationInstance()
 #elif CRY_PLATFORM_LINUX
 	if (m_iApplicationInstance == -1)
 	{
-		const uint32 userId = getuid();
 		string path;
-		for (int i = 0; ; ++i)
+		for (int i = 0; i < std::numeric_limits<int>::max(); ++i)
 		{
-			path.Format("/run/user/%u/CrytekApplication%d.pid", userId, i);
+			path.Format("/tmp/CrytekApplication%d.lock", i);
 
 			int fd = open(path.c_str(), O_CREAT | O_RDWR, 0666);
 			CRY_ASSERT_MESSAGE(fd >= 0, "Failed to create mutex file, errno %d", errno);
@@ -590,7 +589,7 @@ int CSystem::GetApplicationInstance()
 				if (fcntl(fd, F_SETLK, &lock) != -1)
 				{
 					// We're not calling close in case of success as
-					// that would release the lock on the .pid file
+					// that would release the lock on the file
 					m_iApplicationInstance = i;
 					break;
 				}
@@ -600,6 +599,13 @@ int CSystem::GetApplicationInstance()
 				}
 			}
 		}
+	}
+
+	// Set a valid value in case something went wrong
+	if (m_iApplicationInstance == -1)
+	{
+		m_iApplicationInstance = 0;
+		CryWarning(VALIDATOR_MODULE_SYSTEM, VALIDATOR_ERROR, "Unable to tetermine application ID");
 	}
 
 	return m_iApplicationInstance;

@@ -2049,8 +2049,6 @@ void CSystem::InitLog(const SSystemInitParams& startupParams)
 		}
 
 		string sLogFileName = startupParams.sLogFileName != nullptr ? startupParams.sLogFileName : DEFAULT_LOG_FILENAME;
-
-#if CRY_PLATFORM_WINDOWS || CRY_PLATFORM_LINUX
 		if (!sLogFileName.empty())
 		{
 			const int instance = GetApplicationInstance();
@@ -2067,7 +2065,6 @@ void CSystem::InitLog(const SSystemInitParams& startupParams)
 				sLogFileName.Format("%s(%d)%s", logFileNamePrefix.c_str(), instance, logFileExtension.c_str());
 			}
 		}
-#endif
 
 		const ICmdLineArg* logfile = m_pCmdLine->FindArg(eCLAT_Pre, "logfile");
 		if (logfile && strlen(logfile->GetValue()) > 0)

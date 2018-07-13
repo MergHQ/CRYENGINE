@@ -856,23 +856,17 @@ void CSystem::ShutDown()
 #endif
 
 #if CRY_PLATFORM_LINUX
-	// Delete pid file
+	// Delete lock file
 	if (m_iApplicationInstance != -1)
 	{
 		// In case of a crash this will not get called
 		// but the OS clears the directory on reboot so
 		// "leaking" the file is not that bad
 
-		const uint32 userId = getuid();
 		string path;
-		path.Format("/run/user/%u/CrytekApplication%d.pid", userId, m_iApplicationInstance);
-
-		int fd = open(path.c_str(), O_RDWR);
-		if (fd >= 0)
-		{
-			remove(path.c_str());
-			m_iApplicationInstance = -1;
-		}
+		path.Format("/tmp/CrytekApplication%d.lock", m_iApplicationInstance);
+		remove(path.c_str());
+		m_iApplicationInstance = -1;
 	}
 #endif // CRY_PLATFORM_LINUX
 
