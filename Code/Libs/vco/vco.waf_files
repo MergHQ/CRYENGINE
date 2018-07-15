@@ -1,10 +1,8 @@
 {
-	"NoUberFile":
-	{
-		"Root":
-		[
-			"vco.h",
-			"vco.cpp"
-		]
-	}
+    "NoUberFile": {
+        "Root": [
+            "vco.h",
+            "vco.cpp"
+        ]
+    }
 }

@@ -616,7 +616,7 @@ void CXConsole::RegisterVar(ICVar* pCVar, ConsoleVarFunc pChangeFunc)
 
 	if (pChangeFunc)
 	{
-		pCVar->AddOnChangeFunctor(SFunctor([pChangeFunc, pCVar]() { pChangeFunc(pCVar); }));
+		pCVar->AddOnChange(pChangeFunc);
 	}
 
 	ConsoleVariablesMapItor::value_type value = ConsoleVariablesMapItor::value_type(pCVar->GetName(), pCVar);

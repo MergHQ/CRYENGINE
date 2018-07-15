@@ -1,4 +1,6 @@
 start_sources()
+
+# -- cryqt.waf_files --
 sources_platform(ALL)
 add_sources("NoUberFile"
 	SOURCE_GROUP "QToolWindowManager"

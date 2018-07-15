@@ -124,7 +124,7 @@ add_sources("NoUberFile"
 )
 
 # -- crycommon_darwin.waf_files --
-sources_platform(APPLE WIN32)
+sources_platform(APPLE)
 add_sources("NoUberFile"
 	PROJECTS CryCommon
 	SOURCE_GROUP "CryAssert"
@@ -362,10 +362,6 @@ add_sources("NoUberFile"
 		"CryCore/BitMask.h"
 		"CryCore/FindZeroRanges.h"
 		"CryCore/StaticInstanceList.h"
-		"CryCore/SFunctor.h"
-		"CryCore/FunctorBaseFunction.h"
-		"CryCore/IFunctorBase.h"
-		"CryCore/FunctorBaseMember.h"
 		"CryCore/functor.h"
 		"CryCore/Dispatcher.h"
 		"CryCore/Base64.h"
@@ -1163,7 +1159,7 @@ add_sources("NoUberFile"
 )
 
 # -- crycommon_posix.waf_files --
-sources_platform(ANDROID APPLE LINUX ORBIS WIN32)
+sources_platform(ANDROID APPLE LINUX ORBIS)
 add_sources("NoUberFile"
 	PROJECTS CryCommon
 	SOURCE_GROUP "CryCore"

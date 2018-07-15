@@ -15,8 +15,6 @@
 #include <Serialization/Decorators/EditorActionButton.h>
 #include <CrySerialization/Decorators/Range.h>
 
-#include <CryCore/SFunctor.h>
-
 #define LEAVE_FLAGS (RENDER_FLAG_BBOX)
 
 static CPanelDisplayRender* s_pPanelDisplayRender = 0;
@@ -477,10 +475,8 @@ void CPanelDisplayRender::RegisterChangeCallback(const char* szVariableName, Con
 	{
 		if (m_varCallbackMap.find(pVar) == m_varCallbackMap.end())
 		{
-			SFunctor onChangeFunctor;
-			onChangeFunctor.Set(fnCallbackFunction, pVar);
 			uint64 index = pVar->GetNumberOfOnChangeFunctors();
-			pVar->AddOnChangeFunctor(onChangeFunctor);
+			pVar->AddOnChange(fnCallbackFunction);
 			m_varCallbackMap[pVar] = index;
 		}
 		else

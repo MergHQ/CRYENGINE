@@ -550,7 +550,7 @@ technique General
 
 
 
-vert2fragCustomRender Vegetation_CustomRenderPassVS(app2vertGeneral IN)
+vert2fragCustomRender Vegetation_CustomRenderPassVS(app2vertCustomViews IN)
 {
 	vert2fragCustomRender OUT = (vert2fragCustomRender)0;
 

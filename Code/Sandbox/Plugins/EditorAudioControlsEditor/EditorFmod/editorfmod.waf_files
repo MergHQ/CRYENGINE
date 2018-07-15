@@ -7,6 +7,8 @@
             "BaseConnection.h",
             "EventConnection.cpp",
             "EventConnection.h",
+            "KeyConnection.cpp",
+            "KeyConnection.h",
             "ParameterConnection.cpp",
             "ParameterConnection.h",
             "ParameterToStateConnection.cpp",

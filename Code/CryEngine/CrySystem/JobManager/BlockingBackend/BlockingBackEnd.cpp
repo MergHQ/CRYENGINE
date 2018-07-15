@@ -63,42 +63,26 @@ bool JobManager::BlockingBackEnd::CBlockingBackEnd::Init(uint32 nSysMaxWorker)
 ///////////////////////////////////////////////////////////////////////////////
 bool JobManager::BlockingBackEnd::CBlockingBackEnd::ShutDown()
 {
-	// On Exit: Full loop over all threads until each thread has stopped running.
-	// Reason: It is unknown if all threads or just some might be woken up on a post
-	// to the semaphore on all platforms.
-	// ToDo for the ambitious: CHECK!
-	do
+	for (uint32 i = 0; i < m_nNumWorker; ++i)
 	{
-		bool allFinished = true;
+		if (m_pWorkerThreads[i] == NULL)
+			continue;
 
-		for (uint32 i = 0; i < m_nNumWorker; ++i)
-		{
-			if (m_pWorkerThreads[i] == NULL)
-				continue;
-
-			m_pWorkerThreads[i]->SignalStopWork();
-			allFinished = false;
-		}
-
-		if (allFinished)
-			break;
-
+		m_pWorkerThreads[i]->SignalStopWork();
 		m_Semaphore.Release();
-
-		for (uint32 i = 0; i < m_nNumWorker; ++i)
-		{
-			if (m_pWorkerThreads[i] == NULL)
-				continue;
-
-			if (gEnv->pThreadManager->JoinThread(m_pWorkerThreads[i], eJM_TryJoin))
-			{
-				delete m_pWorkerThreads[i];
-				m_pWorkerThreads[i] = NULL;
-			}
-		}
-
 	}
-	while (true);
+
+	for (uint32 i = 0; i < m_nNumWorker; ++i)
+	{
+		if (m_pWorkerThreads[i] == NULL)
+			continue;
+
+		if (gEnv->pThreadManager->JoinThread(m_pWorkerThreads[i], eJM_TryJoin))
+		{
+			delete m_pWorkerThreads[i];
+			m_pWorkerThreads[i] = NULL;
+		}
+	}
 
 	m_pWorkerThreads = NULL;
 	m_nNumWorker = 0;

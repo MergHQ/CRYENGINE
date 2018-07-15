@@ -2607,18 +2607,17 @@ IParticleEmitter* CEntity::GetParticleEmitter(int nSlot)
 }
 
 //////////////////////////////////////////////////////////////////////////
+#if defined(USE_GEOM_CACHES)
 IGeomCacheRenderNode* CEntity::GetGeomCacheRenderNode(int nSlot)
 {
-#if defined(USE_GEOM_CACHES)
 	if (m_render.IsSlotValid(nSlot))
 	{
 		return m_render.Slot(nSlot)->GetGeomCacheRenderNode();
 	}
-#endif
 
 	return NULL;
 }
-
+#endif
 //////////////////////////////////////////////////////////////////////////
 IRenderNode* CEntity::GetRenderNode(int nSlot) const
 {

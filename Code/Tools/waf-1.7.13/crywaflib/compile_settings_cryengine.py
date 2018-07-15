@@ -9,6 +9,7 @@ def init_compiler_settings(conf):
 	# Create empty env values to ensure appending always works
 	v['DEFINES'] = []
 	v['INCLUDES'] = []
+	v['SYSTEM_INCLUDES'] = []
 	v['CXXFLAGS'] = []
 	v['LIB'] = []
 	v['LIBPATH'] = []

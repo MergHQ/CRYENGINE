@@ -2680,11 +2680,11 @@ void CRendererCVars::InitCVars()
 #if (CRY_RENDERER_DIRECT3D >= 120)
 	if (ICVar* pVar = gEnv->pConsole->GetCVar("r_D3D12HardwareComputeQueue"))
 	{
-		pVar->AddOnChangeFunctor(SFunctor([pVar]() { OnChange_CV_D3D12HardwareComputeQueue(pVar); }));
+		pVar->AddOnChange(OnChange_CV_D3D12HardwareComputeQueue);
 	}
 	if (ICVar* pVar = gEnv->pConsole->GetCVar("r_D3D12HardwareCopyQueue"))
 	{
-		pVar->AddOnChangeFunctor(SFunctor([pVar]() { OnChange_CV_D3D12HardwareCopyQueue(pVar); }));
+		pVar->AddOnChange(OnChange_CV_D3D12HardwareCopyQueue);
 	}
 #endif
 
@@ -3046,9 +3046,9 @@ void CRendererCVars::InitCVars()
 	REGISTER_CVAR2("d3d11_debugBreakOnce", &CV_d3d11_debugBreakOnce, 1, VF_NULL,
 	               "If enabled, D3D debug runtime break on message/error will be enabled only for 1 frame since last change.\n");
 
-	CV_d3d11_debugMuteSeverity->AddOnChangeFunctor(SFunctor([]() { OnChange_CV_d3d11_debugMuteMsgID(CV_d3d11_debugMuteSeverity); }));
-	CV_d3d11_debugMuteMsgID->AddOnChangeFunctor(SFunctor([]() { OnChange_CV_d3d11_debugMuteMsgID(CV_d3d11_debugMuteMsgID); }));
-	CV_d3d11_debugBreakOnMsgID->AddOnChangeFunctor(SFunctor([]() { OnChange_CV_d3d11_debugMuteMsgID(CV_d3d11_debugBreakOnMsgID); }));
+	CV_d3d11_debugMuteSeverity->AddOnChange(OnChange_CV_d3d11_debugMuteMsgID);
+	CV_d3d11_debugMuteMsgID->AddOnChange(OnChange_CV_d3d11_debugMuteMsgID);
+	CV_d3d11_debugBreakOnMsgID->AddOnChange(OnChange_CV_d3d11_debugMuteMsgID);
 #endif
 
 #if defined(CRY_PLATFORM_WINDOWS)

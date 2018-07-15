@@ -6,7 +6,6 @@
 #include <CrySystem/CVarOverride.h>
 #include <CryCore/BaseTypes.h>
 #include <CryCore/BitFiddling.h>
-#include <CryCore/SFunctor.h>
 
 #include <cstdlib>
 

@@ -3,10 +3,9 @@
 #ifndef _ICONSOLE_H_
 #define _ICONSOLE_H_
 
-#include <CryCore/SFunctor.h>
 #include <CryString/CryString.h>
+#include <CryCore/SmallFunction.h>
 #include <initializer_list>
-#include <functional>
 #include <type_traits>
 
 struct ConsoleBind;
@@ -27,43 +26,49 @@ enum class ECVarType
 
 namespace ECVarTypeHelper
 {
-	template <typename T>
-	constexpr ECVarType GetTypeForT();
-	template<>
-	constexpr ECVarType GetTypeForT<int>() { return ECVarType::Int; }
-	template<>
-	constexpr ECVarType GetTypeForT<float>() { return ECVarType::Float; }
-	template<>
-	constexpr ECVarType GetTypeForT<const char*>() { return ECVarType::String; }
-	template<>
-	constexpr ECVarType GetTypeForT<int64>() { return ECVarType::Int64; }
+template<typename T>
+constexpr ECVarType GetTypeForT();
+template<>
+constexpr ECVarType GetTypeForT<int>()         { return ECVarType::Int; }
+template<>
+constexpr ECVarType GetTypeForT<float>()       { return ECVarType::Float; }
+template<>
+constexpr ECVarType GetTypeForT<const char*>() { return ECVarType::String; }
+template<>
+constexpr ECVarType GetTypeForT<int64>()       { return ECVarType::Int64; }
 
-	template <typename T>
-	constexpr const char* GetNameForT();
-	template<>
-	constexpr const char* GetNameForT<int>() { return "int"; }
-	template<>
-	constexpr const char* GetNameForT<float>() { return "float"; }
-	template<>
-	constexpr const char* GetNameForT<const char*>() { return "string"; }
-	
-	inline const char* GetNameForECVar(ECVarType type)
+template<typename T>
+constexpr const char* GetNameForT();
+template<>
+constexpr const char* GetNameForT<int>()         { return "int"; }
+template<>
+constexpr const char* GetNameForT<float>()       { return "float"; }
+template<>
+constexpr const char* GetNameForT<const char*>() { return "string"; }
+
+inline const char*    GetNameForECVar(ECVarType type)
+{
+	switch (type)
 	{
-		switch (type)
-		{
-		case ECVarType::Invalid:    return "?";
-		case ECVarType::Int:        return "int";
-		case ECVarType::Float:      return "float";
-		case ECVarType::String:     return "string";
-		default: CRY_ASSERT(false); return "?";
-		}
+	case ECVarType::Invalid:
+		return "?";
+	case ECVarType::Int:
+		return "int";
+	case ECVarType::Float:
+		return "float";
+	case ECVarType::String:
+		return "string";
+	default:
+		CRY_ASSERT(false);
+		return "?";
 	}
+}
 }
 
 // Defines for backwards compatibility
-#define CVAR_INT     ECVarType::Int
-#define CVAR_FLOAT   ECVarType::Float
-#define CVAR_STRING  ECVarType::String
+#define CVAR_INT    ECVarType::Int
+#define CVAR_FLOAT  ECVarType::Float
+#define CVAR_STRING ECVarType::String
 
 #if defined(_RELEASE)
 	#define ALLOW_AUDIT_CVARS    0
@@ -412,14 +417,14 @@ struct IConsole
 	virtual const char* GetHistoryElement(const bool bUpOrDown) = 0;
 
 	//! \param szCommand Must not be 0.
-	virtual void                   AddCommandToHistory(const char* szCommand) = 0;
+	virtual void AddCommandToHistory(const char* szCommand) = 0;
 
 	//! Sets the value of a CVar as loaded from a config
 	//! Will defer setting of the value until the CVar is registered if it hasn't been already
-	virtual void                   LoadConfigVar(const char* sVariable, const char* sValue) = 0;
+	virtual void LoadConfigVar(const char* sVariable, const char* sValue) = 0;
 	//! Executes a command with optional arguments
 	//! Will defer setting of the value until the command is registered if it hasn't been already
-	virtual void                   LoadConfigCommand(const char* szCommand, const char* szArguments = nullptr) = 0;
+	virtual void LoadConfigCommand(const char* szCommand, const char* szArguments = nullptr) = 0;
 
 	// Sets how to treat calls to LoadConfigVar, return previous configuration type.
 	virtual ELoadConfigurationType SetCurrentConfigType(ELoadConfigurationType configType) = 0;
@@ -585,7 +590,6 @@ struct ICVar
 		eCLM_FileOnly,          //!< Normal info to file only.
 		eCLM_FullInfo           //!< Full info to file only.
 	};
-	typedef std::function<void(void)> CallbackFunction;
 
 	// <interfuscator:shuffle>
 	// TODO make protected;
@@ -656,21 +660,22 @@ struct ICVar
 	virtual const char* GetHelp() const = 0;
 
 	//! \return true if the variable may be modified in config files.
-	virtual bool IsConstCVar() const = 0;
+	virtual bool  IsConstCVar() const = 0;
 
-	//! Adds a new on change functor to the list.
-	//! It will add from index 1 on (0 is reserved).
-	virtual uint64 AddOnChangeFunctor(const SFunctor& pChangeFunctor) = 0;
+	inline uint64 AddOnChange(ConsoleVarFunc pCallback)
+	{
+		return AddOnChange([this, pCallback] { pCallback(this); });
+	}
 
 	//! Adds a new on change callback function to the cvar.
 	//! It will add from index 1 on (0 is reserved).
-	uint64 AddOnChange(const CallbackFunction &callback) { return AddOnChangeFunctor(SFunctor(callback)); };
+	virtual uint64 AddOnChange(SmallFunction<void()> callback) = 0;
 
 	//!  \return The number of registered on change functos.
 	virtual uint64 GetNumberOfOnChangeFunctors() const = 0;
 
 	//! Returns the number of registered on change functors.
-	virtual const SFunctor& GetOnChangeFunctor(uint64 nFunctorIndex) const = 0;
+	virtual const SmallFunction<void()>& GetOnChangeFunctor(uint64 nFunctorIndex) const = 0;
 
 	//! Removes an on change functor.
 	//! \return true if removal was successful.
@@ -693,7 +698,7 @@ struct ICVar
 	virtual void SetDataProbeString(const char* pDataProbeString) = 0;
 #endif
 
-	//! Set the minimum value that is allowed for this CVar. 
+	//! Set the minimum value that is allowed for this CVar.
 	virtual void SetMinValue(int min) = 0;
 	virtual void SetMinValue(int64 min) = 0;
 	virtual void SetMinValue(float min) = 0;
@@ -750,7 +755,7 @@ public:
 	{
 		m_pConsole = pConsole;
 	}
-	
+
 	virtual bool IsOwnedByConsole() const override { return false; }
 
 protected:
@@ -775,47 +780,47 @@ protected:
 		pConsole->Register(this);
 	}
 
-	virtual void Release() override                { m_pConsole->UnregisterVariable(m_szName, false); }
-	virtual void Set(const char* s) override       { CRY_ASSERT(false); return; }
-	virtual void Set(float f) override             { CRY_ASSERT(false); return; }
-	virtual void Set(int i) override               { CRY_ASSERT(false); return; }
-	virtual void Set(int64 i) override             { CRY_ASSERT(false); return; }
-	virtual void ForceSet(const char* s) override  { CRY_ASSERT(false); return; }
-	virtual int SetFlags(int flags) override       { m_nFlags = flags; return m_nFlags; }
-	virtual void SetMinValue(int min) override     { CRY_ASSERT(false); return; }
-	virtual void SetMinValue(int64 min) override   { CRY_ASSERT(false); return; }
-	virtual void SetMinValue(float min) override   { CRY_ASSERT(false); return; }
-	virtual void SetMaxValue(int max) override     { CRY_ASSERT(false); return; }
-	virtual void SetMaxValue(int64 max) override   { CRY_ASSERT(false); return; }
-	virtual void SetMaxValue(float max) override   { CRY_ASSERT(false); return; }
+	virtual void        Release() override                                                            { m_pConsole->UnregisterVariable(m_szName, false); }
+	virtual void        Set(const char* s) override                                                   { CRY_ASSERT(false); return; }
+	virtual void        Set(float f) override                                                         { CRY_ASSERT(false); return; }
+	virtual void        Set(int i) override                                                           { CRY_ASSERT(false); return; }
+	virtual void        Set(int64 i) override                                                         { CRY_ASSERT(false); return; }
+	virtual void        ForceSet(const char* s) override                                              { CRY_ASSERT(false); return; }
+	virtual int         SetFlags(int flags) override                                                  { m_nFlags = flags; return m_nFlags; }
+	virtual void        SetMinValue(int min) override                                                 { CRY_ASSERT(false); return; }
+	virtual void        SetMinValue(int64 min) override                                               { CRY_ASSERT(false); return; }
+	virtual void        SetMinValue(float min) override                                               { CRY_ASSERT(false); return; }
+	virtual void        SetMaxValue(int max) override                                                 { CRY_ASSERT(false); return; }
+	virtual void        SetMaxValue(int64 max) override                                               { CRY_ASSERT(false); return; }
+	virtual void        SetMaxValue(float max) override                                               { CRY_ASSERT(false); return; }
 
-	virtual int GetIVal() const override           { CRY_ASSERT(false); return 0; }
-	virtual int64 GetI64Val() const override       { CRY_ASSERT(false); return 0; }
-	virtual float GetFVal() const override         { CRY_ASSERT(false); return 0; }
-	virtual const char *GetString() const override { CRY_ASSERT(false); return "NULL"; }
-	virtual int GetRealIVal() const override       { return GetIVal(); }
-	virtual ECVarType GetType() const override     { CRY_ASSERT(false); return ECVarType::Int; }
-	virtual const char* GetName() const override final { return m_szName; }
-	virtual const char* GetHelp() const override   { return m_psHelp; }
-	virtual int GetFlags() const override          { return m_nFlags; }
-	virtual bool IsConstCVar() const override      { return (m_nFlags & VF_CONST_CVAR) != 0; }
-	virtual void ClearFlags(int flags) override    { m_nFlags &= ~flags; }
+	virtual int         GetIVal() const override                                                      { CRY_ASSERT(false); return 0; }
+	virtual int64       GetI64Val() const override                                                    { CRY_ASSERT(false); return 0; }
+	virtual float       GetFVal() const override                                                      { CRY_ASSERT(false); return 0; }
+	virtual const char* GetString() const override                                                    { CRY_ASSERT(false); return "NULL"; }
+	virtual int         GetRealIVal() const override                                                  { return GetIVal(); }
+	virtual ECVarType   GetType() const override                                                      { CRY_ASSERT(false); return ECVarType::Int; }
+	virtual const char* GetName() const override final                                                { return m_szName; }
+	virtual const char* GetHelp() const override                                                      { return m_psHelp; }
+	virtual int         GetFlags() const override                                                     { return m_nFlags; }
+	virtual bool        IsConstCVar() const override                                                  { return (m_nFlags & VF_CONST_CVAR) != 0; }
+	virtual void        ClearFlags(int flags) override                                                { m_nFlags &= ~flags; }
 
-	virtual void SetAllowedValues(std::initializer_list<int> values) override    { CRY_ASSERT(false); return; }
-	virtual void SetAllowedValues(std::initializer_list<int64> values) override  { CRY_ASSERT(false); return; }
-	virtual void SetAllowedValues(std::initializer_list<float> values) override  { CRY_ASSERT(false); return; }
-	virtual void SetAllowedValues(std::initializer_list<string> values) override { CRY_ASSERT(false); return; }
-	virtual void GetMemoryUsage(class ICrySizer* pSizer) const override          { CRY_ASSERT(false); return; }
-	virtual void DebugLog(const int iExpectedValue, const EConsoleLogMode mode) const override { CRY_ASSERT(false); }
+	virtual void        SetAllowedValues(std::initializer_list<int> values) override                  { CRY_ASSERT(false); return; }
+	virtual void        SetAllowedValues(std::initializer_list<int64> values) override                { CRY_ASSERT(false); return; }
+	virtual void        SetAllowedValues(std::initializer_list<float> values) override                { CRY_ASSERT(false); return; }
+	virtual void        SetAllowedValues(std::initializer_list<string> values) override               { CRY_ASSERT(false); return; }
+	virtual void        GetMemoryUsage(class ICrySizer* pSizer) const override                        { CRY_ASSERT(false); return; }
+	virtual void        DebugLog(const int iExpectedValue, const EConsoleLogMode mode) const override { CRY_ASSERT(false); }
 
-	virtual uint64 AddOnChangeFunctor(const SFunctor& pChangeFunctor) override 
-	{ 
-		m_cpChangeFunctors.push_back(pChangeFunctor);
+	virtual uint64      AddOnChange(SmallFunction<void()> changeFunctor) override
+	{
+		m_cpChangeFunctors.emplace_back(std::move(changeFunctor));
 		return m_cpChangeFunctors.size() - 1;
 	}
 
-	virtual bool RemoveOnChangeFunctor(const uint64 nElement) override 
-	{ 
+	virtual bool RemoveOnChangeFunctor(const uint64 nElement) override
+	{
 		if (nElement < m_cpChangeFunctors.size())
 		{
 			m_cpChangeFunctors.erase(m_cpChangeFunctors.begin() + (size_t)nElement);
@@ -824,18 +829,18 @@ protected:
 		return false;
 	}
 
-	virtual uint64 GetNumberOfOnChangeFunctors() const override 
-	{ 
+	virtual uint64 GetNumberOfOnChangeFunctors() const override
+	{
 		return m_cpChangeFunctors.size();
 	}
 
-	virtual const SFunctor& GetOnChangeFunctor(uint64 nFunctorIndex) const override 
-	{ 
+	virtual const SmallFunction<void()>& GetOnChangeFunctor(uint64 nFunctorIndex) const override
+	{
 		if (nFunctorIndex < m_cpChangeFunctors.size())
 		{
 			return m_cpChangeFunctors[(uint)nFunctorIndex];
 		}
-		static SFunctor sDummyFunctor;
+		static SmallFunction<void()> sDummyFunctor;
 		CRY_ASSERT_MESSAGE(false, "[CTCVarBase::GetOnChangeFunctor] Functor index out of range");
 		return sDummyFunctor;
 	}
@@ -845,7 +850,7 @@ protected:
 		size_t nTotal(m_cpChangeFunctors.size());
 		for (size_t nCount(0); nCount < nTotal; ++nCount)
 		{
-			m_cpChangeFunctors[nCount].Call();
+			m_cpChangeFunctors[nCount]();
 		}
 	}
 
@@ -871,14 +876,14 @@ protected:
 
 protected:
 
-	const char* m_szName = nullptr;
-	const char* m_psHelp = nullptr;
+	const char*                        m_szName = nullptr;
+	const char*                        m_psHelp = nullptr;
 #if defined(DEDICATED_SERVER)
-	char* m_pDataProbeString = nullptr;
+	char*                              m_pDataProbeString = nullptr;
 #endif
-	int m_nFlags = 0;
-	std::vector<SFunctor> m_cpChangeFunctors;
-	IConsole* m_pConsole = nullptr;
+	int                                m_nFlags = 0;
+	std::vector<SmallFunction<void()>> m_cpChangeFunctors;
+	IConsole*                          m_pConsole = nullptr;
 
 	int& m_sys_cvar_logging()
 	{
@@ -889,7 +894,7 @@ protected:
 
 #include <CrySystem/ISystem.h> // for CryWarning
 
-template <typename T>
+template<typename T>
 class TCVar;
 
 template<>
@@ -948,18 +953,18 @@ public:
 			m_pConsole->OnAfterVarChange(this);
 		}
 	}
-	virtual void SetAllowedValues(std::initializer_list<int> allowed) override 
-	{ 
+	virtual void SetAllowedValues(std::initializer_list<int> allowed) override
+	{
 		m_allowedValues = allowed;
 		if (!m_allowedValues.empty() && std::find(m_allowedValues.begin(), m_allowedValues.end(), m_val) == m_allowedValues.end())
 		{
 			Set(m_allowedValues[0]);
 		}
 	}
-	virtual void SetMinValue(int min) override { m_min = min; if (m_val < m_min) Set(m_min); }
-	virtual void SetMaxValue(int max) override { m_max = max; if (m_val > m_max) Set(m_max); }
+	virtual void        SetMinValue(int min) override { m_min = min; if (m_val < m_min) Set(m_min); }
+	virtual void        SetMaxValue(int max) override { m_max = max; if (m_val > m_max) Set(m_max); }
 
-	virtual int GetIVal() const override { return m_val; }
+	virtual int         GetIVal() const override      { return m_val; }
 	virtual const char* GetString() const override
 	{
 		static thread_local string str;
@@ -969,24 +974,24 @@ public:
 
 	virtual ECVarType GetType() const override { return m_type; }
 
-	TCVar<int>& operator=(int val)  { Set(val); return *this; }
-	TCVar<int>& operator*=(int val) { Set(m_val * val); return *this; }
-	TCVar<int>& operator/=(int val) { Set(m_val / val); return *this; }
-	TCVar<int>& operator+=(int val) { Set(m_val + val); return *this; }
-	TCVar<int>& operator-=(int val) { Set(m_val - val); return *this; }
-	TCVar<int>& operator&=(int val) { Set(m_val & val); return *this; }
-	TCVar<int>& operator|=(int val) { Set(m_val | val); return *this; }
-	TCVar<int>& operator++()        { Set(m_val + 1); return *this; }
-	TCVar<int>& operator--()        { Set(m_val - 1); return *this; }
-	operator int() const            { return m_val; }
+	TCVar<int>&       operator=(int val)       { Set(val); return *this; }
+	TCVar<int>&       operator*=(int val)      { Set(m_val * val); return *this; }
+	TCVar<int>&       operator/=(int val)      { Set(m_val / val); return *this; }
+	TCVar<int>&       operator+=(int val)      { Set(m_val + val); return *this; }
+	TCVar<int>&       operator-=(int val)      { Set(m_val - val); return *this; }
+	TCVar<int>&       operator&=(int val)      { Set(m_val & val); return *this; }
+	TCVar<int>&       operator|=(int val)      { Set(m_val | val); return *this; }
+	TCVar<int>&       operator++()             { Set(m_val + 1); return *this; }
+	TCVar<int>&       operator--()             { Set(m_val - 1); return *this; }
+	operator int() const { return m_val; }
 
 private:
 
-	const ECVarType m_type;
+	const ECVarType  m_type;
 
-	int m_val;
-	int m_min;
-	int m_max;
+	int              m_val;
+	int              m_min;
+	int              m_max;
 	std::vector<int> m_allowedValues;
 };
 
@@ -1014,7 +1019,7 @@ public:
 
 	virtual void SetFromString(const char* s) override { Set(atoll(s)); }
 
-	virtual void Set(int val) override { Set((int64)val); }
+	virtual void Set(int val) override                 { Set((int64)val); }
 	virtual void Set(int64 val) override
 	{
 		if (val == m_val && !(m_nFlags & VF_ALWAYSONCHANGE))
@@ -1056,11 +1061,11 @@ public:
 			Set(m_allowedValues[0]);
 		}
 	}
-	virtual void SetMinValue(int64 min) override { m_min = min; if (m_val < m_min) Set(m_min); }
-	virtual void SetMaxValue(int64 max) override { m_max = max; if (m_val > m_max) Set(m_max); }
+	virtual void        SetMinValue(int64 min) override { m_min = min; if (m_val < m_min) Set(m_min); }
+	virtual void        SetMaxValue(int64 max) override { m_max = max; if (m_val > m_max) Set(m_max); }
 
-	virtual int GetIVal() const override { return (int)m_val; } // Might eventually want remove this?
-	virtual int64 GetI64Val() const override { return m_val; }
+	virtual int         GetIVal() const override        { return (int)m_val; } // Might eventually want remove this?
+	virtual int64       GetI64Val() const override      { return m_val; }
 	virtual const char* GetString() const override
 	{
 		static thread_local string str;
@@ -1070,27 +1075,26 @@ public:
 
 	virtual ECVarType GetType() const override { return m_type; }
 
-	TCVar<int64>& operator=(int64 val) { Set(val); return *this; }
-	TCVar<int64>& operator*=(int64 val) { Set(m_val * val); return *this; }
-	TCVar<int64>& operator/=(int64 val) { Set(m_val / val); return *this; }
-	TCVar<int64>& operator+=(int64 val) { Set(m_val + val); return *this; }
-	TCVar<int64>& operator-=(int64 val) { Set(m_val - val); return *this; }
-	TCVar<int64>& operator&=(int64 val) { Set(m_val & val); return *this; }
-	TCVar<int64>& operator|=(int64 val) { Set(m_val | val); return *this; }
-	TCVar<int64>& operator++() { Set(m_val + 1); return *this; }
-	TCVar<int64>& operator--() { Set(m_val - 1); return *this; }
+	TCVar<int64>&     operator=(int64 val)     { Set(val); return *this; }
+	TCVar<int64>&     operator*=(int64 val)    { Set(m_val * val); return *this; }
+	TCVar<int64>&     operator/=(int64 val)    { Set(m_val / val); return *this; }
+	TCVar<int64>&     operator+=(int64 val)    { Set(m_val + val); return *this; }
+	TCVar<int64>&     operator-=(int64 val)    { Set(m_val - val); return *this; }
+	TCVar<int64>&     operator&=(int64 val)    { Set(m_val & val); return *this; }
+	TCVar<int64>&     operator|=(int64 val)    { Set(m_val | val); return *this; }
+	TCVar<int64>&     operator++()             { Set(m_val + 1); return *this; }
+	TCVar<int64>&     operator--()             { Set(m_val - 1); return *this; }
 	operator int64() const { return m_val; }
 
 private:
 
-	const ECVarType m_type;
+	const ECVarType    m_type;
 
-	int64 m_val;
-	int64 m_min;
-	int64 m_max;
+	int64              m_val;
+	int64              m_min;
+	int64              m_max;
 	std::vector<int64> m_allowedValues;
 };
-
 
 template<>
 class TCVar<float> : public CTCVarBase // Final because of virtual call in destructor by UnregisterVariable
@@ -1103,7 +1107,7 @@ public:
 		, m_max(std::numeric_limits<float>::max())
 	{}
 
-	virtual ~TCVar() 
+	virtual ~TCVar()
 	{
 		m_pConsole->UnregisterVariable(GetName(), false);
 	}
@@ -1115,7 +1119,7 @@ public:
 	}
 
 	virtual void SetFromString(const char* s) override { Set((float)atof(s)); }
-	virtual void Set(float val) override 
+	virtual void Set(float val) override
 	{
 		if (val == m_val && !(m_nFlags & VF_ALWAYSONCHANGE))
 		{
@@ -1133,10 +1137,10 @@ public:
 			m_pConsole->OnAfterVarChange(this);
 		}
 	}
-	virtual void SetMinValue(float min) override { m_min = min; if (m_val < m_min) Set(m_min); }
-	virtual void SetMaxValue(float max) override { m_max = max; if (m_val > m_max) Set(m_max); }
+	virtual void        SetMinValue(float min) override { m_min = min; if (m_val < m_min) Set(m_min); }
+	virtual void        SetMaxValue(float max) override { m_max = max; if (m_val > m_max) Set(m_max); }
 
-	virtual float GetFVal() const override { return m_val; }
+	virtual float       GetFVal() const override        { return m_val; }
 	virtual const char* GetString() const override
 	{
 		static thread_local string str;
@@ -1145,20 +1149,20 @@ public:
 	}
 	virtual ECVarType GetType() const override { return m_type; }
 
-	TCVar<float>& operator=(float val)  { Set(val);  return *this; }
-	TCVar<float>& operator*=(float val) { Set(m_val * val); return *this; }
-	TCVar<float>& operator/=(float val) { Set(m_val / val); return *this; }
-	TCVar<float>& operator+=(float val) { Set(m_val + val); return *this; }
-	TCVar<float>& operator-=(float val) { Set(m_val - val); return *this; }
+	TCVar<float>&     operator=(float val)     { Set(val);  return *this; }
+	TCVar<float>&     operator*=(float val)    { Set(m_val * val); return *this; }
+	TCVar<float>&     operator/=(float val)    { Set(m_val / val); return *this; }
+	TCVar<float>&     operator+=(float val)    { Set(m_val + val); return *this; }
+	TCVar<float>&     operator-=(float val)    { Set(m_val - val); return *this; }
 	operator float() const { return m_val; }
 
 private:
 
 	const ECVarType m_type;
 
-	float m_val;
-	float m_min;
-	float m_max;
+	float           m_val;
+	float           m_min;
+	float           m_max;
 };
 
 template<>
@@ -1169,7 +1173,7 @@ public:
 	TCVar()
 		: m_type(ECVarTypeHelper::GetTypeForT<const char*>())
 	{}
-	virtual ~TCVar() 
+	virtual ~TCVar()
 	{
 		m_pConsole->UnregisterVariable(GetName(), false);
 	}
@@ -1181,8 +1185,8 @@ public:
 	}
 
 	virtual void SetFromString(const char* s) override { Set(s); }
-	virtual void Set(const char* val) override 
-	{ 
+	virtual void Set(const char* val) override
+	{
 		if (string(val) == m_val && !(m_nFlags & VF_ALWAYSONCHANGE))
 		{
 			return;
@@ -1199,24 +1203,24 @@ public:
 		}
 	}
 	virtual const char* GetString() const override { return m_val.c_str(); }
-	virtual void SetAllowedValues(std::initializer_list<string> allowed) override 
-	{ 
+	virtual void        SetAllowedValues(std::initializer_list<string> allowed) override
+	{
 		m_allowedValues = allowed;
 		if (!m_allowedValues.empty() && std::find(m_allowedValues.begin(), m_allowedValues.end(), m_val) == m_allowedValues.end())
 		{
 			Set(m_allowedValues[0]);
 		}
 	}
-	virtual ECVarType GetType() const override { return m_type; }
+	virtual ECVarType   GetType() const override   { return m_type; }
 
 	TCVar<const char*>& operator=(const char* val) { Set(val); return *this; }
 	operator const string&() { return m_val; }
 
 private:
 
-	const ECVarType m_type;
+	const ECVarType     m_type;
 
-	string m_val;
+	string              m_val;
 	std::vector<string> m_allowedValues;
 };
 
@@ -1302,32 +1306,32 @@ public:
 
 	// interface ICVar --------------------------------------------------------------------------------------
 
-	virtual void            ClearFlags(int flags) override
+	virtual void ClearFlags(int flags) override
 	{
 		m_flags &= ~flags;
 	}
-	virtual int             GetFlags() const override
+	virtual int GetFlags() const override
 	{
 		return m_flags;
 	}
-	virtual int             SetFlags(int flags) override
+	virtual int SetFlags(int flags) override
 	{
 		m_flags = flags;
 		return m_flags;
 	}
-	virtual const char*     GetName() const override
+	virtual const char* GetName() const override
 	{
 		return m_szName;
 	}
-	virtual const char*     GetHelp() const override
+	virtual const char* GetHelp() const override
 	{
 		return m_szHelp;
 	}
-	virtual void            Release() override
+	virtual void Release() override
 	{
 		m_pConsole->UnregisterVariable(m_szName);
 	}
-	virtual void            ForceSet(const char* szValue) override
+	virtual void ForceSet(const char* szValue) override
 	{
 		const int excludeFlags = (VF_CHEAT | VF_READONLY | VF_NET_SYNCED);
 		const int oldFlags = (m_flags & excludeFlags);
@@ -1336,12 +1340,12 @@ public:
 
 		m_flags |= oldFlags;
 	}
-	virtual uint64          AddOnChangeFunctor(const SFunctor& pChangeFunctor) override
+	virtual uint64 AddOnChange(SmallFunction<void()> changeFunctor) override
 	{
-		m_changeFunctors.push_back(pChangeFunctor);
+		m_changeFunctors.emplace_back(std::move(changeFunctor));
 		return m_changeFunctors.size() - 1;
 	}
-	virtual bool            RemoveOnChangeFunctor(const uint64 functorIndex) override
+	virtual bool RemoveOnChangeFunctor(const uint64 functorIndex) override
 	{
 		CRY_ASSERT_MESSAGE(functorIndex < m_changeFunctors.size(), "Trying to remove a functor that does not exist");
 
@@ -1353,22 +1357,22 @@ public:
 		return false;
 	}
 
-	virtual uint64          GetNumberOfOnChangeFunctors() const override
+	virtual uint64 GetNumberOfOnChangeFunctors() const override
 	{
 		return m_changeFunctors.size();
 	}
-	virtual const SFunctor& GetOnChangeFunctor(uint64 functorIndex) const override
+	virtual const SmallFunction<void()>& GetOnChangeFunctor(uint64 functorIndex) const override
 	{
 		CRY_ASSERT_MESSAGE(functorIndex < m_changeFunctors.size(), "Trying to get a functor that does not exist");
 
-		static SFunctor dummyFunctor;
+		static SmallFunction<void()> dummyFunctor;
 		return functorIndex < m_changeFunctors.size() ? m_changeFunctors[static_cast<size_t>(functorIndex)] : dummyFunctor;
 	}
 
-	virtual int             GetRealIVal() const override { return GetIVal(); }
-	virtual bool            IsConstCVar() const override { return (m_flags & VF_CONST_CVAR) != 0; }
+	virtual int  GetRealIVal() const override { return GetIVal(); }
+	virtual bool IsConstCVar() const override { return (m_flags & VF_CONST_CVAR) != 0; }
 #if defined(DEDICATED_SERVER)
-	virtual void            SetDataProbeString(const char* pDataProbeString) override
+	virtual void SetDataProbeString(const char* pDataProbeString) override
 	{
 		CRY_ASSERT(m_szDataProbeString == nullptr);
 		m_szDataProbeString = new char[strlen(pDataProbeString) + 1];
@@ -1397,23 +1401,25 @@ protected: // ------------------------------------------------------------------
 
 	void CallOnChangeFunctions()
 	{
-		for (SFunctor& it : m_changeFunctors)
-			it.Call();
+		for (SmallFunction<void()>& func : m_changeFunctors)
+		{
+			func();
+		}
 	}
 
-	char*                 m_szName;                 // if VF_COPYNAME then this data need to be deleteed, otherwise it's pointer to .dll/.exe
+	char*                              m_szName;    // if VF_COPYNAME then this data need to be deleteed, otherwise it's pointer to .dll/.exe
 
-	char*                 m_szHelp;                 // pointer to the help string, might be 0
+	char*                              m_szHelp;    // pointer to the help string, might be 0
 #if defined(DEDICATED_SERVER)
-	char*                 m_szDataProbeString;       // value client is required to have for data probes
+	char*                              m_szDataProbeString; // value client is required to have for data probes
 #endif
-	int                   m_flags;                 // e.g. VF_CHEAT, ...
+	int                                m_flags;    // e.g. VF_CHEAT, ...
 
-	std::vector<SFunctor> m_changeFunctors;
+	std::vector<SmallFunction<void()>> m_changeFunctors;
 
-	IConsole*             m_pConsole;               // used for the callback OnBeforeVarChange()
+	IConsole*                          m_pConsole;  // used for the callback OnBeforeVarChange()
 
-	const bool            m_ownedByConsole;
+	const bool                         m_ownedByConsole;
 };
 
 template<class T>
@@ -1578,8 +1584,8 @@ protected:
 	static constexpr ECVarType GetTypeInternal()
 	{
 		return std::is_integral<base_type>::value
-			? (sizeof(base_type) == sizeof(int) ? ECVarType::Int : ECVarType::Int64)
-			: ECVarType::Float;
+		       ? (sizeof(base_type) == sizeof(int) ? ECVarType::Int : ECVarType::Int64)
+		       : ECVarType::Float;
 	}
 
 	static int64 TextToInt64(const char* szText, int64 currentValue, bool isBitfield)
@@ -1596,7 +1602,7 @@ protected:
 				else
 					value = std::strtoll(szText, &pEnd, 10); // Full number
 
-															 // Check letter codes.
+				// Check letter codes.
 				while ((*pEnd >= 'a' && *pEnd <= 'z') || (*pEnd >= 'A' && *pEnd <= 'Z'))
 				{
 					value |= AlphaBit64(*pEnd);
@@ -1627,14 +1633,14 @@ protected:
 	typename std::enable_if<std::is_same<base_type, U>::value>::type SetAllowedValuesInternal(std::initializer_list<U> values)
 	{
 		CRY_ASSERT_MESSAGE(values.size() == 0 || (m_maxValue == std::numeric_limits<base_type>::max() && m_minValue == std::numeric_limits<base_type>::lowest()),
-			"SetAllowedValues() called after SetMinValue() and/or SetMinValue(), minimum and maximum will be ignored (%s)", GetName());
+		                   "SetAllowedValues() called after SetMinValue() and/or SetMinValue(), minimum and maximum will be ignored (%s)", GetName());
 		m_allowedValues = values;
 	}
 	template<class U>
 	typename std::enable_if<!std::is_same<base_type, U>::value>::type SetAllowedValuesInternal(std::initializer_list<U> values)
 	{
 		CRY_ASSERT_MESSAGE(values.size() == 0 || (m_maxValue == std::numeric_limits<base_type>::max() && m_minValue == std::numeric_limits<base_type>::lowest()),
-			"SetAllowedValues() called after SetMinValue() and/or SetMinValue(), minimum and maximum will be ignored (%s)", GetName());
+		                   "SetAllowedValues() called after SetMinValue() and/or SetMinValue(), minimum and maximum will be ignored (%s)", GetName());
 
 		if (values.size() > 0)
 		{
@@ -1738,10 +1744,10 @@ protected:
 		}
 	}
 
-	value_type m_value;
+	value_type             m_value;
 
-	base_type m_maxValue;
-	base_type m_minValue;
+	base_type              m_maxValue;
+	base_type              m_minValue;
 	std::vector<base_type> m_allowedValues;
 };
 
@@ -1797,7 +1803,7 @@ public:
 		if (!m_allowedValues.empty())
 		{
 			if (std::find_if(m_allowedValues.cbegin(), m_allowedValues.cend(),
-				[szValue](const string& allowedValue) { return stricmp(allowedValue.c_str(), szValue) == 0; }) == m_allowedValues.cend())
+			                 [szValue](const string& allowedValue) { return stricmp(allowedValue.c_str(), szValue) == 0; }) == m_allowedValues.cend())
 			{
 				if (ICVar* pCVarLogging = gEnv->pConsole->GetCVar("sys_cvar_logging"))
 				{
@@ -1856,19 +1862,19 @@ public:
 		Set(szValue);
 	}
 
-	virtual void SetMinValue(int min) override { CRY_ASSERT_MESSAGE(false, "Trying to set a minimum value on a string CVar."); }
-	virtual void SetMinValue(int64 min) override { CRY_ASSERT_MESSAGE(false, "Trying to set a minimum value on a string CVar."); }
-	virtual void SetMinValue(float min) override { CRY_ASSERT_MESSAGE(false, "Trying to set a minimum value on a string CVar."); }
-	virtual void SetMaxValue(int max) override { CRY_ASSERT_MESSAGE(false, "Trying to set a maximum value on a string CVar."); }
-	virtual void SetMaxValue(int64 max) override { CRY_ASSERT_MESSAGE(false, "Trying to set a maximum value on a string CVar."); }
-	virtual void SetMaxValue(float max) override { CRY_ASSERT_MESSAGE(false, "Trying to set a maximum value on a string CVar."); }
+	virtual void      SetMinValue(int min) override                                   { CRY_ASSERT_MESSAGE(false, "Trying to set a minimum value on a string CVar."); }
+	virtual void      SetMinValue(int64 min) override                                 { CRY_ASSERT_MESSAGE(false, "Trying to set a minimum value on a string CVar."); }
+	virtual void      SetMinValue(float min) override                                 { CRY_ASSERT_MESSAGE(false, "Trying to set a minimum value on a string CVar."); }
+	virtual void      SetMaxValue(int max) override                                   { CRY_ASSERT_MESSAGE(false, "Trying to set a maximum value on a string CVar."); }
+	virtual void      SetMaxValue(int64 max) override                                 { CRY_ASSERT_MESSAGE(false, "Trying to set a maximum value on a string CVar."); }
+	virtual void      SetMaxValue(float max) override                                 { CRY_ASSERT_MESSAGE(false, "Trying to set a maximum value on a string CVar."); }
 
-	virtual void SetAllowedValues(std::initializer_list<int> values) override { CRY_ASSERT_MESSAGE(false, "Trying to set allowed int values on a string CVar."); }
-	virtual void SetAllowedValues(std::initializer_list<int64> values) override { CRY_ASSERT_MESSAGE(false, "Trying to set allowed int values on a string CVar."); }
-	virtual void SetAllowedValues(std::initializer_list<float> values) override { CRY_ASSERT_MESSAGE(false, "Trying to set allowed float values on a string CVar."); }
-	virtual void SetAllowedValues(std::initializer_list<string> values) override { m_allowedValues = values; }
+	virtual void      SetAllowedValues(std::initializer_list<int> values) override    { CRY_ASSERT_MESSAGE(false, "Trying to set allowed int values on a string CVar."); }
+	virtual void      SetAllowedValues(std::initializer_list<int64> values) override  { CRY_ASSERT_MESSAGE(false, "Trying to set allowed int values on a string CVar."); }
+	virtual void      SetAllowedValues(std::initializer_list<float> values) override  { CRY_ASSERT_MESSAGE(false, "Trying to set allowed float values on a string CVar."); }
+	virtual void      SetAllowedValues(std::initializer_list<string> values) override { m_allowedValues = values; }
 
-	virtual ECVarType GetType() const override { return ECVarType::String; }
+	virtual ECVarType GetType() const override                                        { return ECVarType::String; }
 
 	virtual void GetMemoryUsage(class ICrySizer* pSizer) const override;
 
@@ -1876,7 +1882,7 @@ private:
 	base_type m_value;
 	typename base_type::const_pointer* const m_pUserBuffer;
 
-	std::vector<base_type> m_allowedValues;
+	std::vector<base_type>                   m_allowedValues;
 };
 
 using CXConsoleVariableInt = CXNumericConsoleVariable<int>;

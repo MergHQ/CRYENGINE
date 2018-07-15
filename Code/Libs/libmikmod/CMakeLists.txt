@@ -1,4 +1,6 @@
 start_sources()
+
+# -- libmikmod.waf_files --
 sources_platform(ALL)
 add_sources("NoUberFile"
 	PROJECTS libmikmod_static

@@ -1,5 +1,6 @@
 start_sources()
 
+# -- sandboxpythonbridge.waf_files --
 sources_platform(ALL)
 add_sources("NoUberFile"
 	SOURCE_GROUP "Root"

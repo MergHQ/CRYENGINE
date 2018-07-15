@@ -1,0 +1,20 @@
+{
+    "EditorDynamicResponseSystem_uber_0.cpp": {
+        "Root": [
+            "StdAfx.h",
+            "StdAfx.cpp",
+            "EditorDynamicResponseSystemPlugin.h",
+            "EditorDynamicResponseSystemPlugin.cpp",
+            "DrsEditorMainWindow.h",
+            "DrsEditorMainWindow.cpp",
+            "DialogLinesEditorWidget.h",
+            "DialogLinesEditorWidget.cpp",
+            "DrsSpokenLinesWindow.h",
+            "DrsSpokenLinesWindow.cpp",
+            "DrsResponseEditorWindow.h",
+            "DrsResponseEditorWindow.cpp",
+            "QDialogLineDatabaseModel.h",
+            "QDialogLineDatabaseModel.cpp"
+        ]
+    }
+}

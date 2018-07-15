@@ -10,6 +10,7 @@
             "AudioSystem.h",
             "AudioImpl.h",
             "FileCacheManager.h",
+            "GlobalTypedefs.h",
             "resource.h",
             "AudioCVars.h",
             "PropagationProcessor.h",

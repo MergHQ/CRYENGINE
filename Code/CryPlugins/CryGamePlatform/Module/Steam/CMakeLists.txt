@@ -9,6 +9,8 @@ if (NOT PLUGIN_GAMEPLATFORM_STEAM)
 endif()
 
 start_sources()
+
+# -- CryGamePlatform_Steam.waf_files --
 sources_platform(ALL)
 add_sources("CryGamePlatform_Steam_uber_0.cpp"
 	SOURCE_GROUP "Root"

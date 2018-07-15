@@ -24,7 +24,8 @@ def build(bld):
 		file_list = 'libmodplug.waf_files',
 		exclude_from_static_code_analyzer = True,
 
-		includes = [ Path('Code/SDKs/libmodplug/src'),
+		includes = [ 
+			Path('Code/SDKs/libmodplug/src'),
 			Path('Code/SDKs/libmodplug/src/libmodplug')
 		],
 

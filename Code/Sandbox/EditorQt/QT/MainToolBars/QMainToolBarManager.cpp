@@ -573,10 +573,10 @@ void QMainToolBarManager::CreateToolBar(const std::shared_ptr<QToolBarDesc> tool
 					if (ite != m_pCVarActions.end())
 						actions = ite.value();
 					else
-						pCVar->AddOnChangeFunctor(SFunctor([this, pCVar]
+						pCVar->AddOnChange([this, pCVar]
 						{
 							this->OnCVarChanged(pCVar);
-						}));
+						});
 
 					pAction->setProperty(Private_ToolbarManager::s_actionPropertyName, pCVarDesc->GetValue());
 					pAction->setProperty(Private_ToolbarManager::s_actionCVarBitFlagName, pCVarDesc->IsBitFlag());
@@ -650,7 +650,6 @@ void QMainToolBarManager::OnCVarActionDestroyed(ICVar* pCVar, QAction* pObject)
 		actions.erase(actionIte);
 }
 
-// SFunctor doesn't have a setter that takes more than two arguments, so we need to get our CVar again
 void QMainToolBarManager::OnCVarChanged(ICVar* pCVar)
 {
 	auto ite = m_pCVarActions.find(pCVar);

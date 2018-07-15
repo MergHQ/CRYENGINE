@@ -1,10 +1,8 @@
 {
-	"NoUberFile": 
-	{
-		"Root":
-		[
-			"../../SDKs/libogg/src/bitwise.c",
-			"../../SDKs/libogg/src/framing.c"
-		]
-	}
+    "NoUberFile": {
+        "Root": [
+            "../../SDKs/libogg/src/bitwise.c",
+            "../../SDKs/libogg/src/framing.c"
+        ]
+    }
 }

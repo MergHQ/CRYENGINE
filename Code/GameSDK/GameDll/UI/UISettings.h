@@ -16,7 +16,6 @@
 #include <CrySystem/Scaleform/IFlashUI.h>
 #include <CryGame/IGameFramework.h>
 #include <CryAudio/IAudioSystem.h>
-#include <CryCore/SFunctor.h>
 
 struct SNullCVar : public ICVar
 {
@@ -56,10 +55,10 @@ struct SNullCVar : public ICVar
 	virtual const char* GetHelp() const override { return "NULL"; }
 	virtual bool IsConstCVar() const override { return 0; }
 
-	virtual uint64 AddOnChangeFunctor(const SFunctor& pChangeFunctor) override { return 0; }
+	virtual uint64 AddOnChange(SmallFunction<void()> changeFunctor) override { return 0; }
 	virtual bool RemoveOnChangeFunctor(const uint64 nElement) override { return true; }
 	virtual uint64 GetNumberOfOnChangeFunctors() const override { return 0; }
-	virtual const SFunctor& GetOnChangeFunctor(uint64 nFunctorIndex) const override { static SFunctor oDummy; return oDummy; }
+	virtual const SmallFunction<void()>& GetOnChangeFunctor(uint64 nFunctorIndex) const override { static SmallFunction<void()> oDummy; return oDummy; }
 
 	virtual void GetMemoryUsage( class ICrySizer* pSizer ) const override { return; }
 	virtual int GetRealIVal() const override { return 0; }

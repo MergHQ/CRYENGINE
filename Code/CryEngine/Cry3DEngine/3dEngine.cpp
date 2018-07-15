@@ -390,7 +390,10 @@ C3DEngine::C3DEngine(ISystem* pSystem)
 	m_pDeferredPhysicsEventManager = new CDeferredPhysicsEventManager();
 
 #if defined(USE_GEOM_CACHES)
-	m_pGeomCacheManager = new CGeomCacheManager();
+	if (m_pCVars->e_GeomCacheEnabled)
+	{
+		m_pGeomCacheManager = new CGeomCacheManager();
+	}
 #endif
 
 	m_LightVolumesMgr.Init();
@@ -869,8 +872,7 @@ void C3DEngine::ShutDown()
 	UnloadLevel();
 
 #if defined(USE_GEOM_CACHES)
-	delete m_pGeomCacheManager;
-	m_pGeomCacheManager = 0;
+	SAFE_DELETE(m_pGeomCacheManager);
 #endif
 
 	DestroyParticleManager(m_pPartManager);
@@ -2458,10 +2460,15 @@ float C3DEngine::GetBottomLevel(const Vec3& referencePos, int objflags)
 #if defined(USE_GEOM_CACHES)
 IGeomCache* C3DEngine::LoadGeomCache(const char* szFileName)
 {
+	if (!m_pGeomCacheManager)
+	{
+		return nullptr;
+	}
+
 	if (!szFileName || !szFileName[0])
 	{
 		m_pSystem->Warning(VALIDATOR_MODULE_3DENGINE, VALIDATOR_ERROR, 0, 0, "I3DEngine::LoadGeomCache: filename is not specified");
-		return 0;
+		return nullptr;
 	}
 
 	return m_pGeomCacheManager->LoadGeomCache(szFileName);
@@ -2469,9 +2476,9 @@ IGeomCache* C3DEngine::LoadGeomCache(const char* szFileName)
 
 IGeomCache* C3DEngine::FindGeomCacheByFilename(const char* szFileName)
 {
-	if (!szFileName || szFileName[0] == 0)
+	if (!m_pGeomCacheManager || !szFileName || szFileName[0] == 0)
 	{
-		return NULL;
+		return nullptr;
 	}
 
 	return m_pGeomCacheManager->FindGeomCacheByFilename(szFileName);

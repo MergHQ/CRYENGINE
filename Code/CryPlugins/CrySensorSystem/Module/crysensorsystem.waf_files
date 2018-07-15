@@ -1,36 +1,31 @@
 {
-	"CrySensorSystem_uber_0.cpp" :
-	{
-		"Interface" :
-		[
-			"../Interface/ICrySensorSystemPlugin.h",
-			"../Interface/ISensorMap.h",
-			"../Interface/ISensorSystem.h",
-			"../Interface/ISensorTagLibrary.h",
-			"../Interface/SensorBounds.h"
-		],
-		"Module" :
-		[
-			"CrySensorSystemPluginDLL.cpp",
-		  	"CrySensorSystemPluginDLL.h",
-			"OctreePlotter.inl",
-			"OctreePlotter.h",
-			"SchematycEntitySensorVolumeComponent.cpp",
-			"SchematycEntitySensorVolumeComponent.h",
-			"SensorMap.cpp",
-			"SensorMap.h",
-			"SensorSystem.cpp",
-			"SensorSystem.h",
-			"SensorTagLibrary.cpp",
-			"SensorTagLibrary.h"
-		]
-	},
-	"NoUberFile" :
-	{
-		"Module" :
-		[
-			"StdAfx.cpp",
-			"StdAfx.h"
-		]
-	}
+    "CrySensorSystem_uber_0.cpp": {
+        "Interface": [
+            "../Interface/ICrySensorSystemPlugin.h",
+            "../Interface/ISensorMap.h",
+            "../Interface/ISensorSystem.h",
+            "../Interface/ISensorTagLibrary.h",
+            "../Interface/SensorBounds.h"
+        ],
+        "Module": [
+            "CrySensorSystemPluginDLL.cpp",
+            "CrySensorSystemPluginDLL.h",
+            "OctreePlotter.inl",
+            "OctreePlotter.h",
+            "SchematycEntitySensorVolumeComponent.cpp",
+            "SchematycEntitySensorVolumeComponent.h",
+            "SensorMap.cpp",
+            "SensorMap.h",
+            "SensorSystem.cpp",
+            "SensorSystem.h",
+            "SensorTagLibrary.cpp",
+            "SensorTagLibrary.h"
+        ]
+    },
+    "NoUberFile": {
+        "Module": [
+            "StdAfx.cpp",
+            "StdAfx.h"
+        ]
+    }
 }

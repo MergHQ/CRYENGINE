@@ -6,36 +6,36 @@
         ],
         "Header Files/Gpu/Particles": [
             "Gpu/Particles/GpuParticleComponentRuntime.h",
-			"Gpu/Particles/GpuParticleManager.h",
-			"Gpu/Particles/GpuParticleContainer.h",
-			"Gpu/Particles/GpuParticleFeatureBase.h",
-			"Gpu/Particles/GpuParticleFeatureFactory.h",
-			"Gpu/Particles/GpuParticleFeatureColor.h",
-			"Gpu/Particles/GpuParticleFeatureCollision.h",
-			"Gpu/Particles/GpuParticleFeatureField.h",
-			"Gpu/Particles/GpuParticleFeatureMotion.h",
-			"Gpu/Particles/GpuParticleFeatureFluidDynamics.h"
+            "Gpu/Particles/GpuParticleManager.h",
+            "Gpu/Particles/GpuParticleContainer.h",
+            "Gpu/Particles/GpuParticleFeatureBase.h",
+            "Gpu/Particles/GpuParticleFeatureFactory.h",
+            "Gpu/Particles/GpuParticleFeatureColor.h",
+            "Gpu/Particles/GpuParticleFeatureCollision.h",
+            "Gpu/Particles/GpuParticleFeatureField.h",
+            "Gpu/Particles/GpuParticleFeatureMotion.h",
+            "Gpu/Particles/GpuParticleFeatureFluidDynamics.h"
         ],
         "Header Files/Gpu/Physics": [
             "Gpu/Physics/GpuPhysicsParticleFluid.h"
         ],
-		 "Source Files/Gpu": [
+        "Source Files/Gpu": [
             "Gpu/GpuComputeBackend.cpp",
-			"Gpu/GpuBitonicSort.cpp",
-			"Gpu/GpuMergeSort.cpp"
+            "Gpu/GpuBitonicSort.cpp",
+            "Gpu/GpuMergeSort.cpp"
         ],
-		 "Source Files/Gpu/Particles": [
+        "Source Files/Gpu/Particles": [
             "Gpu/Particles/GpuParticleComponentRuntime.cpp",
-			"Gpu/Particles/GpuParticleManager.cpp",
-			"Gpu/Particles/GpuParticleContainer.cpp",
-			"Gpu/Particles/GpuParticleFeatureFactory.cpp",
-			"Gpu/Particles/GpuParticleFeatureColor.cpp",
-			"Gpu/Particles/GpuParticleFeatureCollision.cpp",
-			"Gpu/Particles/GpuParticleFeatureField.cpp",
-			"Gpu/Particles/GpuParticleFeatureMotion.cpp",
-			"Gpu/Particles/GpuParticleFeatureFluidDynamics.cpp"
+            "Gpu/Particles/GpuParticleManager.cpp",
+            "Gpu/Particles/GpuParticleContainer.cpp",
+            "Gpu/Particles/GpuParticleFeatureFactory.cpp",
+            "Gpu/Particles/GpuParticleFeatureColor.cpp",
+            "Gpu/Particles/GpuParticleFeatureCollision.cpp",
+            "Gpu/Particles/GpuParticleFeatureField.cpp",
+            "Gpu/Particles/GpuParticleFeatureMotion.cpp",
+            "Gpu/Particles/GpuParticleFeatureFluidDynamics.cpp"
         ],
-		"Source Files/Gpu/Physics": [
+        "Source Files/Gpu/Physics": [
             "Gpu/Physics/GpuPhysicsParticleFluid.cpp"
         ]
     },
@@ -126,7 +126,6 @@
             "../Common/Textures/StatoscopeTextureStreaming.cpp",
             "../Common/Textures/DynTexture.cpp",
             "../Common/Textures/PowerOf2BlockPacker.cpp",
-            "../Common/Textures/DepthTexture.cpp",
             "../Common/Textures/Texture.cpp",
             "../Common/Textures/TextureManager.cpp",
             "../Common/Textures/TextureStreaming.cpp",
@@ -136,8 +135,6 @@
             "../Common/Textures/TextureCompiler.h",
             "../Common/Textures/TextureStreamPool.h",
             "../Common/Textures/PowerOf2BlockPacker.h",
-            "../Common/Textures/DepthTexture.h",
-            "../Common/Textures/TempDepthTexture.h",
             "../Common/Textures/Texture.h",
             "../Common/Textures/TextureManager.h",
             "../Common/Textures/TextureHelpers.cpp",
@@ -244,6 +241,7 @@
             "../Common/TextMessages.h",
             "../Common/Include_HLSL_CPP_Shared.h",
             "../Common/RenderView.cpp",
+            "../Common/OptimizeTransparentRenderItemsResolves.cpp",
             "../Common/RenderOutput.cpp",
             "../Common/RenderOutput.h",
             "../Common/RenderDisplayContext.cpp",
@@ -262,7 +260,6 @@
             "../Common/Renderer.h",
             "../Common/RendererCVars.h",
             "../Common/RendererResources.h",
-            "../Common/ResourcePool.h",
             "../Common/RenderThread.h",
             "../Common/Shadow_Renderer.h",
             "../Common/ShadowUtils.h",
@@ -274,9 +271,11 @@
         ],
         "Header Files": [
             "ShadowTextureGroupManager.h",
+            "DeviceManager/D3D11/DeviceSubmissionQueue_D3D11.inl",
             "../Common/Textures/ITextureStreamer.h",
             "../Common/Shaders/ShaderAllocator.h",
             "../Common/CryNameR.h",
+            "DeviceManager/D3D11/DeviceWrapper_D3D11.h",
             "../Common/ISmartGlassContext.h",
             "../Common/LightVolumeBuffer.h",
             "../Common/ParticleBuffer.h",
@@ -352,34 +351,33 @@
             "../Common/Shaders/ShaderPublicParams.cpp"
         ]
     },
-  "CryRenderer_uber_5.cpp": {
-    "DeviceManager": [
-      "DevBuffer.cpp",
-      "../Common/DevBuffer.h",
-      "DeviceManager/TempDynBuffer.h",
-      "DeviceManager/DeviceObjects.h",
-      "DeviceManager/DeviceObjects.inl",
-      "DeviceManager/DeviceObjects.cpp",
-      "DeviceManager/DeviceObjectHelpers.h",
-      "DeviceManager/DeviceObjectHelpers.cpp",
-	  "DeviceManager/DeviceObjectValidation.h",
-	  "DeviceManager/DeviceObjectValidation.cpp",
-      "DeviceManager/DeviceResources.h",
-      "DeviceManager/DeviceResources.cpp",
-      "DeviceManager/DeviceFormats.h",
-      "DeviceManager/DeviceFormats.cpp",
-      "DeviceManager/DeviceCommandList.inl",
-      "DeviceManager/DeviceResourceSet.h",
-      "DeviceManager/DeviceResourceSet.cpp",
-      "DeviceManager/DeviceCommandListCommon.h",
-      "DeviceManager/DeviceCommandListCommon.cpp",
-      "DeviceManager/DevicePSO.h",
-      "DeviceManager/DevicePSO.cpp",
-      "DeviceManager/DeviceRenderPass.h",
-      "DeviceManager/DeviceRenderPass.cpp"
-    ]
-  },
-
+    "CryRenderer_uber_5.cpp": {
+        "DeviceManager": [
+            "DevBuffer.cpp",
+            "../Common/DevBuffer.h",
+            "DeviceManager/TempDynBuffer.h",
+            "DeviceManager/DeviceObjects.h",
+            "DeviceManager/DeviceObjects.inl",
+            "DeviceManager/DeviceObjects.cpp",
+            "DeviceManager/DeviceObjectHelpers.h",
+            "DeviceManager/DeviceObjectHelpers.cpp",
+            "DeviceManager/DeviceObjectValidation.h",
+            "DeviceManager/DeviceObjectValidation.cpp",
+            "DeviceManager/DeviceResources.h",
+            "DeviceManager/DeviceResources.cpp",
+            "DeviceManager/DeviceFormats.h",
+            "DeviceManager/DeviceFormats.cpp",
+            "DeviceManager/DeviceCommandList.inl",
+            "DeviceManager/DeviceResourceSet.h",
+            "DeviceManager/DeviceResourceSet.cpp",
+            "DeviceManager/DeviceCommandListCommon.h",
+            "DeviceManager/DeviceCommandListCommon.cpp",
+            "DeviceManager/DevicePSO.h",
+            "DeviceManager/DevicePSO.cpp",
+            "DeviceManager/DeviceRenderPass.h",
+            "DeviceManager/DeviceRenderPass.cpp"
+        ]
+    },
     "CryRenderer_uber_6.cpp": {
         "GraphicsPipeline": [
             "GraphicsPipeline/AutoExposure.h",
@@ -480,11 +478,6 @@
         ]
     },
     "NoUberFile": {
-        "DX11": [
-            "DX11/CryDX11.cpp",
-            "DX11/CryDX11.hpp"
-        ],
-      
         "Root": [
             "../StdAfx.cpp",
             "../StdAfx.h",

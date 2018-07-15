@@ -1,36 +1,33 @@
 {
-	"NoUberFile":
-	{
-		"Root":
-		[
-			"DLLMain.cpp",
-			"StdAfx.cpp",
-			"StdAfx.h"
-		],
-		"Editor":
-		[
-			"Editor/MainEditorWindow.cpp",
-			"Editor/MainEditorWindow.h",
-			"Editor/Blueprints.cpp",
-			"Editor/Blueprints.h",
-			"Editor/Document.cpp",
-			"Editor/Document.h",
-			"Editor/DocSerializationContext.cpp",
-			"Editor/DocSerializationContext.h",
-			"Editor/ItemTypeName.cpp",
-			"Editor/ItemTypeName.h",
-			"Editor/SerializationHelpers.cpp",
-			"Editor/SerializationHelpers.h",
-			"Editor/Settings.cpp",
-			"Editor/Settings.h",
-			"Editor/QueryListProvider.cpp",
-			"Editor/QueryListProvider.h",
-			"Editor/EditorContext.cpp",
-			"Editor/EditorContext.h",
-			"Editor/QuerySimulator.cpp",
-			"Editor/QuerySimulator.h",
-			"Editor/CentralEventManager.h",
-			"Editor/CentralEventManager.cpp"
-		]
-	}
+    "NoUberFile": {
+        "Editor": [
+            "Editor/MainEditorWindow.cpp",
+            "Editor/MainEditorWindow.h",
+            "Editor/Blueprints.cpp",
+            "Editor/Blueprints.h",
+            "Editor/Document.cpp",
+            "Editor/Document.h",
+            "Editor/DocSerializationContext.cpp",
+            "Editor/DocSerializationContext.h",
+            "Editor/ItemTypeName.cpp",
+            "Editor/ItemTypeName.h",
+            "Editor/SerializationHelpers.cpp",
+            "Editor/SerializationHelpers.h",
+            "Editor/Settings.cpp",
+            "Editor/Settings.h",
+            "Editor/QueryListProvider.cpp",
+            "Editor/QueryListProvider.h",
+            "Editor/EditorContext.cpp",
+            "Editor/EditorContext.h",
+            "Editor/QuerySimulator.cpp",
+            "Editor/QuerySimulator.h",
+            "Editor/CentralEventManager.h",
+            "Editor/CentralEventManager.cpp"
+        ],
+        "Root": [
+            "DLLMain.cpp",
+            "StdAfx.cpp",
+            "StdAfx.h"
+        ]
+    }
 }

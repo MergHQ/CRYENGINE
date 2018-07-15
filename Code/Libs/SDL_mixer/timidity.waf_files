@@ -1,27 +1,25 @@
 {
-	"NoUberFile": 
-	{
-		"Root":
-		[
-			"../../SDKs/SDL_mixer/timidity/common.c",
-			"../../SDKs/SDL_mixer/timidity/common.h",
-			"../../SDKs/SDL_mixer/timidity/instrum.c",
-			"../../SDKs/SDL_mixer/timidity/instrum.h",
-			"../../SDKs/SDL_mixer/timidity/mix.c",
-			"../../SDKs/SDL_mixer/timidity/mix.h",
-			"../../SDKs/SDL_mixer/timidity/options.h",
-			"../../SDKs/SDL_mixer/timidity/output.c",
-			"../../SDKs/SDL_mixer/timidity/output.h",
-			"../../SDKs/SDL_mixer/timidity/playmidi.c",
-			"../../SDKs/SDL_mixer/timidity/playmidi.h",
-			"../../SDKs/SDL_mixer/timidity/readmidi.c",
-			"../../SDKs/SDL_mixer/timidity/readmidi.h",
-			"../../SDKs/SDL_mixer/timidity/resample.c",
-			"../../SDKs/SDL_mixer/timidity/resample.h",
-			"../../SDKs/SDL_mixer/timidity/tables.c",
-			"../../SDKs/SDL_mixer/timidity/tables.h",
-			"../../SDKs/SDL_mixer/timidity/timidity.c",
-			"../../SDKs/SDL_mixer/timidity/timidity.h"
-		]
-	}  
-}    
+    "NoUberFile": {
+        "Root": [
+            "../../SDKs/SDL_mixer/timidity/common.c",
+            "../../SDKs/SDL_mixer/timidity/common.h",
+            "../../SDKs/SDL_mixer/timidity/instrum.c",
+            "../../SDKs/SDL_mixer/timidity/instrum.h",
+            "../../SDKs/SDL_mixer/timidity/mix.c",
+            "../../SDKs/SDL_mixer/timidity/mix.h",
+            "../../SDKs/SDL_mixer/timidity/options.h",
+            "../../SDKs/SDL_mixer/timidity/output.c",
+            "../../SDKs/SDL_mixer/timidity/output.h",
+            "../../SDKs/SDL_mixer/timidity/playmidi.c",
+            "../../SDKs/SDL_mixer/timidity/playmidi.h",
+            "../../SDKs/SDL_mixer/timidity/readmidi.c",
+            "../../SDKs/SDL_mixer/timidity/readmidi.h",
+            "../../SDKs/SDL_mixer/timidity/resample.c",
+            "../../SDKs/SDL_mixer/timidity/resample.h",
+            "../../SDKs/SDL_mixer/timidity/tables.c",
+            "../../SDKs/SDL_mixer/timidity/tables.h",
+            "../../SDKs/SDL_mixer/timidity/timidity.c",
+            "../../SDKs/SDL_mixer/timidity/timidity.h"
+        ]
+    }
+}

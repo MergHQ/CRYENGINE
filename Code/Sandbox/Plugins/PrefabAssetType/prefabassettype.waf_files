@@ -1,0 +1,12 @@
+{
+    "NoUberFile": {
+        "Root": [
+            "PrefabAssetType.cpp",
+            "PrefabAssetType.h",
+            "PrefabPlugin.cpp",
+            "PrefabPlugin.h",
+            "StdAfx.h",
+            "StdAfx.cpp"
+        ]
+    }
+}

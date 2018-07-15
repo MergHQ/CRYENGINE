@@ -1,13 +1,13 @@
 {
     "NoUberFile": {
-        "CryFX////Deferred": [
+        "CryFX/Deferred": [
             "HWScripts/CryFX/DeferredCaustics.cfx",
             "HWScripts/CryFX/DeferredRain.cfx",
             "HWScripts/CryFX/DeferredShading.cfx",
             "HWScripts/CryFX/DeferredSnow.cfx",
             "HWScripts/CryFX/VolumeLighting.cfi"
         ],
-        "CryFX////Effects////Atmospheric": [
+        "CryFX/Effects/Atmospheric": [
             "HWScripts/CryFX/Clouds.cfx",
             "HWScripts/CryFX/Common.cfx",
             "HWScripts/CryFX/DistanceClouds.cfx",
@@ -17,12 +17,12 @@
             "HWScripts/CryFX/Stars.cfx",
             "HWScripts/CryFX/TemplBeamProc.cfx"
         ],
-        "CryFX////Effects////Game": [],
-        "CryFX////Effects////Optic": [
+        "CryFX/Effects/Game": [],
+        "CryFX/Effects/Optic": [
             "HWScripts/CryFX/LensOptics.cfx",
             "HWScripts/CryFX/Light.cfx"
         ],
-        "CryFX////Effects////Water": [
+        "CryFX/Effects/Water": [
             "HWScripts/CryFX/Water.cfx",
             "HWScripts/CryFX/WaterCausticsPass.cfi",
             "HWScripts/CryFX/WaterCommon.cfi",
@@ -31,7 +31,7 @@
             "HWScripts/CryFX/WaterReflectionsPass.cfi",
             "HWScripts/CryFX/WaterVolume.cfx"
         ],
-        "CryFX////Extensions": [
+        "CryFX/Extensions": [
             "DistanceClouds.ext",
             "Eye.ext",
             "Glass.ext",
@@ -49,7 +49,7 @@
             "Water.ext",
             "WaterVolume.ext"
         ],
-        "CryFX////ForwardShading": [
+        "CryFX/ForwardShading": [
             "HWScripts/CryFX/Eye.cfx",
             "HWScripts/CryFX/Glass.cfx",
             "HWScripts/CryFX/Hair.cfx",
@@ -58,7 +58,7 @@
             "HWScripts/CryFX/Terrain.cfx",
             "HWScripts/CryFX/Vegetation.cfx"
         ],
-        "CryFX////ForwardShading////Include": [
+        "CryFX/ForwardShading/Include": [
             "HWScripts/CryFX/ForwardShading.cfi",
             "HWScripts/CryFX/HumanSkinTess.cfi",
             "HWScripts/CryFX/IllumTess.cfi",
@@ -66,12 +66,12 @@
             "HWScripts/CryFX/VegetationTess.cfi",
             "HWScripts/CryFX/vertexLib.cfi"
         ],
-        "CryFX////ForwardShading////Validations": [
+        "CryFX/ForwardShading/Validations": [
             "HWScripts/CryFX/HumanSkinValidations.cfi",
             "HWScripts/CryFX/IllumValidations.cfi",
             "HWScripts/CryFX/VegetationValidations.cfi"
         ],
-        "CryFX////Include": [
+        "CryFX/Include": [
             "HWScripts/CryFX/Common.cfi",
             "HWScripts/CryFX/FXConstantDefs.cfi",
             "HWScripts/CryFX/FXSamplerDefs.cfi",
@@ -83,7 +83,7 @@
             "HWScripts/CryFX/shadeLib.cfi",
             "HWScripts/CryFX/VolumetricFog.cfi"
         ],
-        "CryFX////Include////CommonPasses": [
+        "CryFX/Include/CommonPasses": [
             "HWScripts/CryFX/CommonDebugPass.cfi",
             "HWScripts/CryFX/CommonEffectLayerPass.cfi",
             "HWScripts/CryFX/CommonMotionBlurPass.cfi",
@@ -96,7 +96,7 @@
             "HWScripts/CryFX/CommonZPassTess.cfi",
             "HWScripts/CryFX/CommonZPrePass.cfi"
         ],
-        "CryFX////Misc": [
+        "CryFX/Misc": [
             "HWScripts/CryFX/AuxGeom.cfx",
             "HWScripts/CryFX/ComputeSkinning.cfx",
             "HWScripts/CryFX/ComputeSkinningUtils.cfi",
@@ -116,14 +116,14 @@
             "HWScripts/CryFX/Scaleform.cfx",
             "HWScripts/CryFX/SoftOcclusionQuery.cfx"
         ],
-        "CryFX////Particles": [
+        "CryFX/Particles": [
             "HWScripts/CryFX/ParticleImposter.cfx",
             "HWScripts/CryFX/Particles.cfx",
             "HWScripts/CryFX/GpuMergeSort.cfx",
             "HWScripts/CryFX/GpuParticles.cfx",
             "HWScripts/CryFX/GpuPhysicsParticleFluid.cfx"
         ],
-        "CryFX////Particles////Include": [
+        "CryFX/Particles/Include": [
             "HWScripts/CryFX/Particles.cfi",
             "HWScripts/CryFX/ParticleVT.cfi",
             "HWScripts/CryFX/GpuCollisionScreenSpace.cfi",
@@ -132,7 +132,7 @@
             "HWScripts/CryFX/GpuRand.cfi",
             "HWScripts/CryFX/GpuSNoise.cfi"
         ],
-        "CryFX////PostProcess": [
+        "CryFX/PostProcess": [
             "HWScripts/CryFX/DepthOfField.cfx",
             "HWScripts/CryFX/HDRPostProcess.cfx",
             "HWScripts/CryFX/Hud3D.cfx",
@@ -144,18 +144,18 @@
             "HWScripts/CryFX/Stereo.cfx",
             "HWScripts/CryFX/Sunshafts.cfx"
         ],
-        "CryFX////PostProcess////Include": [
+        "CryFX/PostProcess/Include": [
             "HWScripts/CryFX/PostEffectsLib.cfi"
         ],
-        "CryFX////SVO": [
+        "CryFX/SVO": [
             "HWScripts/CryFX/CommonSVO.cfi",
             "HWScripts/CryFX/Total_Illumination.cfx"
         ],
-        "CryFX////Shadows": [
+        "CryFX/Shadows": [
             "HWScripts/CryFX/ShadowBlur.cfx",
             "HWScripts/CryFX/ShadowMaskGen.cfx"
         ],
-        "CryFX////Shadows////Include": [
+        "CryFX/Shadows/Include": [
             "HWScripts/CryFX/CommonShadowGenPass.cfi",
             "HWScripts/CryFX/DeferredShadows.cfi",
             "HWScripts/CryFX/ShadowCommon.cfi"

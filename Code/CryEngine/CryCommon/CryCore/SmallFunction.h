@@ -1,8 +1,9 @@
 // Copyright 2001-2018 Crytek GmbH / Crytek Group. All rights reserved.
 
 #pragma once
-#include <type_traits> // std::aligned_storage
-#include <utility>     // std::forward
+#include <type_traits>        // std::aligned_storage
+#include <utility>            // std::forward
+#include <CryCore/StlUtils.h> // stl::conjunction
 
 //! Flat callable wrapper
 //! SmallFunction can store, copy and invoke functions, callable objects and lambdas similar to std::function.
@@ -35,32 +36,16 @@ struct SmallFunction<ReturnType(ArgType ...), BufferSize> final
 	>
 	SmallFunction& operator= (F&& callable) noexcept
 	{
-		using CallableType = typename std::remove_reference<F>::type;
-		static_assert(sizeof(CallableType) <= BufferSize, "Callable object is too large to fit in the buffer, try increasing the function buffer size.");
-		new(&m_Storage) CallableType(std::forward<F>(callable));
-
-		m_Call = [](void* storage, const ArgType& ... args) -> ReturnType
-		{
-			CallableType* pCallable = reinterpret_cast<CallableType*>(storage);
-			return (*pCallable)(args ...);
-		};
-		m_Dtor = [](void* storage)
-		{
-			CallableType* pCallable = reinterpret_cast<CallableType*>(storage);
-			pCallable->~CallableType();
-		};
-		m_Clone = [](const void* srcStorage, void* dstStorage)
-		{
-			const CallableType* pCallable = reinterpret_cast<const CallableType*>(srcStorage);
-			new(dstStorage) CallableType(*pCallable);
-		};
+		m_Dtor(&m_Storage);
+		Init(std::forward<F>(callable));
 		return *this;
 	}
 
 	template<typename F, typename = typename std::enable_if<std::is_function<F>::value>::type>
 	SmallFunction& operator= (F& function) noexcept
 	{
-		*this = &function;
+		m_Dtor(&m_Storage);
+		Init(&function);
 		return *this;
 	}
 
@@ -70,13 +55,14 @@ struct SmallFunction<ReturnType(ArgType ...), BufferSize> final
 		>
 	SmallFunction(F&& callable) noexcept
 	{
-		*this = std::forward<F>(callable);
+		Init(std::forward<F>(callable));
 	}
 
 	template<typename F, typename = typename std::enable_if<std::is_function<F>::value>::type>
 	SmallFunction(F& function)
-		: SmallFunction(&function)
-	{}
+	{
+		Init(&function);
+	}
 
 	~SmallFunction()
 	{
@@ -137,6 +123,30 @@ struct SmallFunction<ReturnType(ArgType ...), BufferSize> final
 	}
 
 private:
+
+	template<typename F>
+	void Init(F&& callable) noexcept
+	{
+		using CallableType = typename std::remove_reference<F>::type;
+		static_assert(sizeof(CallableType) <= BufferSize, "Callable object is too large to fit in the buffer, try increasing the function buffer size.");
+		new(&m_Storage) CallableType(std::forward<F>(callable));
+
+		m_Call = [](void* storage, const ArgType& ... args) -> ReturnType
+		{
+			CallableType* pCallable = reinterpret_cast<CallableType*>(storage);
+			return (*pCallable)(args ...);
+		};
+		m_Dtor = [](void* storage)
+		{
+			CallableType* pCallable = reinterpret_cast<CallableType*>(storage);
+			pCallable->~CallableType();
+		};
+		m_Clone = [](const void* srcStorage, void* dstStorage)
+		{
+			const CallableType* pCallable = reinterpret_cast<const CallableType*>(srcStorage);
+			new(dstStorage) CallableType(*pCallable);
+		};
+	}
 
 	void Destroy() noexcept
 	{

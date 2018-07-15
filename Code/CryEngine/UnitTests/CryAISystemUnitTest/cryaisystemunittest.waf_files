@@ -1,0 +1,7 @@
+{
+    "NoUberFile": {
+        "Navigation": [
+            "Navigation/NavMeshTests.cpp"
+        ]
+    }
+}

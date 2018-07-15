@@ -1,31 +1,25 @@
 {
-	"Framework_Uber.cpp":
-	{
-		"Interface":
-		[
-			"../Interface/CryLink/CryLink.h",
-			"../Interface/CryLink/IFramework.h"
-		],
-		"Module":
-		[
-			"CryLinkFramework.h",
-			"CryLinkFramework.cpp",
-			"CryLinkService.h",
-			"CryLinkService.cpp",
-			"CryLinkCVars.h",
-			"CryLinkCVars.cpp"
-		],
-		"Module/Utils":
-		[
-			"Utils/HttpRPC.h"
-		]
-	},
-	"NoUberFile":
-	{
-		"Root":
-		[
-			"StdAfx.cpp",
-			"StdAfx.h"
-		]
-	}
+    "Framework_Uber.cpp": {
+        "Interface": [
+            "../Interface/CryLink/CryLink.h",
+            "../Interface/CryLink/IFramework.h"
+        ],
+        "Module": [
+            "CryLinkFramework.h",
+            "CryLinkFramework.cpp",
+            "CryLinkService.h",
+            "CryLinkService.cpp",
+            "CryLinkCVars.h",
+            "CryLinkCVars.cpp"
+        ],
+        "Module/Utils": [
+            "Utils/HttpRPC.h"
+        ]
+    },
+    "NoUberFile": {
+        "Root": [
+            "StdAfx.cpp",
+            "StdAfx.h"
+        ]
+    }
 }

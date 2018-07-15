@@ -1,7 +1,7 @@
 {
-    "CrySystem_uber_6.cpp":{
-	"Threading":[
-	   "CryThreadUtil_posix.h"
-		]
-	}
+    "CrySystem_uber_6.cpp": {
+        "Threading": [
+            "CryThreadUtil_posix.h"
+        ]
+    }
 }

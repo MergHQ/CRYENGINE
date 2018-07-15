@@ -1,4 +1,6 @@
 start_sources()
+
+# -- libogg.waf_files --
 sources_platform(ALL)
 add_sources("NoUberFile"
 	PROJECTS libogg_dynamic libogg_static

@@ -4,8 +4,7 @@
 
 #include <CryPhysics/RayCastQueue.h>
 #include <CryEntitySystem/IEntityBasicTypes.h>
-
-#include <type_traits>
+#include <CrySystem/ITimer.h>
 
 namespace AIRayCast
 {

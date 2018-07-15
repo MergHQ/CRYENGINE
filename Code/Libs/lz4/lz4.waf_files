@@ -1,17 +1,15 @@
 {
-	"NoUberFile": 
-	{
-		"Root":
-		[
-			"../../SDKs/lz4/lib/lz4.c",
-			"../../SDKs/lz4/lib/lz4.h",
-			"../../SDKs/lz4/lib/lz4frame.c",
-			"../../SDKs/lz4/lib/lz4frame.h",
-			"../../SDKs/lz4/lib/lz4frame_static.h",
-			"../../SDKs/lz4/lib/lz4hc.c",
-			"../../SDKs/lz4/lib/lz4hc.h",
-			"../../SDKs/lz4/lib/xxhash.c",
-			"../../SDKs/lz4/lib/xxhash.h"
-		]
-	}
+    "NoUberFile": {
+        "Root": [
+            "../../SDKs/lz4/lib/lz4.c",
+            "../../SDKs/lz4/lib/lz4.h",
+            "../../SDKs/lz4/lib/lz4frame.c",
+            "../../SDKs/lz4/lib/lz4frame.h",
+            "../../SDKs/lz4/lib/lz4frame_static.h",
+            "../../SDKs/lz4/lib/lz4hc.c",
+            "../../SDKs/lz4/lib/lz4hc.h",
+            "../../SDKs/lz4/lib/xxhash.c",
+            "../../SDKs/lz4/lib/xxhash.h"
+        ]
+    }
 }

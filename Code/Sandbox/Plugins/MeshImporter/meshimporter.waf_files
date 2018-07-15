@@ -100,7 +100,7 @@
             "../../../CryEngine/Cry3DEngine/MeshCompiler/MeshCompiler.h",
             "../../../CryEngine/Cry3DEngine/MeshCompiler/MeshCompiler.cpp",
             "../../../CryEngine/Cry3DEngine/MeshCompiler/ForsythFaceReorderer.h",
-            "../../../CryEngine/Cry3DEngine/MeshCompiler/ForsythFaceReorderer.cpp" 
+            "../../../CryEngine/Cry3DEngine/MeshCompiler/ForsythFaceReorderer.cpp"
         ],
         "Model": [
             "SceneModelCommon.h",

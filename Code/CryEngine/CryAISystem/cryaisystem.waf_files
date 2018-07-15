@@ -278,7 +278,9 @@
         ],
         "SmartObjects": [
             "SmartObjects.cpp",
-            "SmartObjects.h"
+            "SmartObjects.h",
+            "SmartObjectOffMeshNavigation.cpp",
+            "SmartObjectOffMeshNavigation.h"
         ]
     },
     "CryAISystem_uber_1.cpp": {

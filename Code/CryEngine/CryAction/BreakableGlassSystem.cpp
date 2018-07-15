@@ -83,7 +83,7 @@ CBreakableGlassSystem::CBreakableGlassSystem()
 	if (pSysEnabledCvar)
 	{
 		m_enabled = (pSysEnabledCvar->GetIVal() != 0);
-		m_enableCallbackIndex = pSysEnabledCvar->AddOnChangeFunctor(SFunctor([pSysEnabledCvar]() { OnEnabledCVarChange(pSysEnabledCvar); }));
+		m_enableCallbackIndex = pSysEnabledCvar->AddOnChange(OnEnabledCVarChange);
 	}
 }//-------------------------------------------------------------------------------------------------
 

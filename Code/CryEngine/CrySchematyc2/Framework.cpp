@@ -125,11 +125,11 @@ namespace Schematyc2
 			}
 			m_pLogFileOutput = m_log.CreateFileOutput(logFileName.c_str());
 			SCHEMATYC2_SYSTEM_ASSERT(m_pLogFileOutput);
-			CVars::sc_LogToFile->AddOnChangeFunctor(SFunctor([]() { OnLogToFileChange(CVars::sc_LogToFile); }));
+			CVars::sc_LogToFile->AddOnChange(OnLogToFileChange);
 			RefreshLogFileStreams();
-			CVars::sc_LogFileStreams->AddOnChangeFunctor(SFunctor([]() { OnLogFileStreamsChange(CVars::sc_LogFileStreams); }));
+			CVars::sc_LogFileStreams->AddOnChange(OnLogFileStreamsChange);
 			RefreshLogFileMessageTypes();
-			CVars::sc_LogFileMessageTypes->AddOnChangeFunctor(SFunctor([]() { OnLogFileMessageTypesChange(CVars::sc_LogFileMessageTypes); }));
+			CVars::sc_LogFileMessageTypes->AddOnChange(OnLogFileMessageTypesChange);
 		}
 		SCHEMATYC2_SYSTEM_COMMENT("Initializing Schematyc framework");
 		// Refresh environment.

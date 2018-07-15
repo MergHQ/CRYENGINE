@@ -72,7 +72,7 @@ void CHmdManager::SetupAction(EHmdSetupAction cmd)
 					m_pHmdDevice = nullptr;
 
 					const char *selectedHmdName = CryVR::CVars::pSelectedHmdNameVar->GetString();
-					TDeviceMap::iterator hmdIt;
+					TDeviceMap::iterator hmdIt = m_availableDeviceMap.end();
 
 					if (strlen(selectedHmdName) > 0)
 					{
@@ -90,9 +90,22 @@ void CHmdManager::SetupAction(EHmdSetupAction cmd)
 							return;
 						}
 					}
-					else // No HMD explicitly selected, opt for first available (since sys_vr_support was 1)
+					else // No HMD explicitly selected, find a suitable one (since sys_vr_support was 1)
 					{
-						hmdIt = m_availableDeviceMap.begin();
+						const char* vrPluginPriorities[] = {
+							"Plugin_OculusVR",
+							"Plugin_OpenVR"
+						};
+
+						for (const auto *plug : vrPluginPriorities)
+						{
+							if ((hmdIt = m_availableDeviceMap.find(plug)) != m_availableDeviceMap.end())
+								break;
+						}
+
+						// Resort to whatever is available
+						if (hmdIt == m_availableDeviceMap.end())
+							hmdIt = m_availableDeviceMap.begin();
 						if (hmdIt == m_availableDeviceMap.end())
 						{
 							pVrSupportVar->Set(0);

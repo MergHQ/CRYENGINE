@@ -596,19 +596,18 @@ bool CAssetType::CopyAsset(CAsset* pAsset, const char* szNewPath) const
 	return true;
 }
 
-//////////////////////////////////////////////////////////////////////////
-
 // Fallback asset type if the actual type is not registered.
 class CCryAssetType : public CAssetType
 {
 public:
 	DECLARE_ASSET_TYPE_DESC(CCryAssetType);
 
-	virtual const char* GetTypeName() const override      { return "cryasset"; }
-	virtual const char* GetUiTypeName() const override    { return "cryasset"; }
-	virtual const char* GetFileExtension() const override { return "unregistered"; }
-	virtual bool        IsImported() const override       { return false; }
-	virtual bool        CanBeEdited() const override      { return false; }
+	virtual const char* GetTypeName() const override           { return "cryasset"; }
+	virtual const char* GetUiTypeName() const override         { return "cryasset"; }
+	virtual const char* GetFileExtension() const override      { return "unregistered"; }
+	virtual bool        IsImported() const override            { return false; }
+	virtual bool        CanBeEdited() const override           { return false; }
+	virtual bool        CanAutoRepairMetadata() const override { return false; }
 
 	//Cannot be picked
 	virtual bool IsUsingGenericPropertyTreePicker() const override { return false; }

@@ -175,6 +175,7 @@ CTestSystem::~CTestSystem()
 //////////////////////////////////////////////////////////////////////////
 void RunTests(IConsoleCmdArgs* pArgs)
 {
+#ifdef CRY_TESTING
 	string singleTestName = nullptr;
 
 	for (int i = 1; i < pArgs->GetArgCount(); i++)
@@ -192,6 +193,7 @@ void RunTests(IConsoleCmdArgs* pArgs)
 		pTestSystem->RunSingle(singleTestName.c_str());
 	else
 		pTestSystem->Run();
+#endif // CRY_TESTING
 }
 
 //////////////////////////////////////////////////////////////////////////

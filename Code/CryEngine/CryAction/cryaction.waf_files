@@ -383,12 +383,6 @@
             "SharedParams/SharedParamsTypeInfo.h"
         ]
     },
-    "CryAction_main_uber_durango.cpp": {
-        "Player Profiles": []
-    },
-    "CryAction_main_uber_orbis.cpp": {
-        "Player Profiles": []
-    },
     "CryAction_mannequin_uber.cpp": {
         "Interfaces": [
             "ICryMannequinProceduralClipFactory.h"

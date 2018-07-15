@@ -1,30 +1,25 @@
 {
-	"NoUberFile":
-	{
-		"datasource_xml":
-		[
-			"datasource_xml/StdAfx.cpp",
-			"datasource_xml/StdAfx.h"
-		]
-	},
-	"UQS_uber_datasource_xml.cpp":
-	{
-		"Root":
-		[
-			"DataSource_XML_Includes.h"
-		],
-		"datasource_xml":
-		[
-			"datasource_xml/SyntaxErrorCollector_XML.h",
-			"datasource_xml/SyntaxErrorCollector_XML.cpp",
-			"datasource_xml/QueryBlueprintLoader_XML.h",
-			"datasource_xml/QueryBlueprintLoader_XML.cpp",
-			"datasource_xml/QueryBlueprintSaver_XML.h",
-			"datasource_xml/QueryBlueprintSaver_XML.cpp",
-			"datasource_xml/QueryBlueprintFileLibrary.h",
-			"datasource_xml/QueryBlueprintFileLibrary.cpp",
-			"datasource_xml/XMLDatasource.h",
-			"datasource_xml/XMLDatasource.cpp"
-		]
-	}
+    "NoUberFile": {
+        "datasource_xml": [
+            "datasource_xml/StdAfx.cpp",
+            "datasource_xml/StdAfx.h"
+        ]
+    },
+    "UQS_uber_datasource_xml.cpp": {
+        "Root": [
+            "DataSource_XML_Includes.h"
+        ],
+        "datasource_xml": [
+            "datasource_xml/SyntaxErrorCollector_XML.h",
+            "datasource_xml/SyntaxErrorCollector_XML.cpp",
+            "datasource_xml/QueryBlueprintLoader_XML.h",
+            "datasource_xml/QueryBlueprintLoader_XML.cpp",
+            "datasource_xml/QueryBlueprintSaver_XML.h",
+            "datasource_xml/QueryBlueprintSaver_XML.cpp",
+            "datasource_xml/QueryBlueprintFileLibrary.h",
+            "datasource_xml/QueryBlueprintFileLibrary.cpp",
+            "datasource_xml/XMLDatasource.h",
+            "datasource_xml/XMLDatasource.cpp"
+        ]
+    }
 }

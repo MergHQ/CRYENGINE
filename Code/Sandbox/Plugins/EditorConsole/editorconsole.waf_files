@@ -1,0 +1,28 @@
+{
+    "EditorConsole_uber.cpp": {
+        "Code": [
+            "AutoCompletePopup.h",
+            "AutoCompletePopup.cpp",
+            "ConsolePlugin.h",
+            "ConsolePlugin.cpp",
+            "ConsoleWindow.h",
+            "ConsoleWindow.cpp",
+            "CVarWindow.h",
+            "CVarWindow.cpp",
+            "EngineListener.h",
+            "EngineListener.cpp",
+            "Messages.h",
+            "StdAfx.cpp",
+            "StdAfx.h",
+            "TabLineEdit.h",
+            "TabLineEdit.cpp"
+        ],
+        "Resources": [
+            "Resources.qrc",
+            "float.png",
+            "function.png",
+            "int.png",
+            "string.png"
+        ]
+    }
+}

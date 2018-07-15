@@ -1144,12 +1144,12 @@ public:
 	//! \param nSlot Index of the slot.
 	//! \return IParticleEmitter pointer or NULL if stat object with this slot does not exist.
 	virtual IParticleEmitter* GetParticleEmitter(int nSlot) = 0;
-
+#if defined(USE_GEOM_CACHES)
 	//! Fast method to get the geom cache render cache at the specified slot.
 	//! \param nSlot Index of the slot.
 	//! \return IGeomCacheRenderNode pointer or NULL if stat object with this slot does not exist.
 	virtual IGeomCacheRenderNode* GetGeomCacheRenderNode(int nSlot) = 0;
-
+#endif
 	//! Moves the contents of a render slot from one entity to another, will also move any associated physics.
 	//! \param targetIEnt Entity to receive the new slot info.
 	//! \param nSlot Index of the slot.

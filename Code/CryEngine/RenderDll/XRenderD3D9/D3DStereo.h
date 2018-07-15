@@ -209,7 +209,7 @@ private:
 	float         m_nearGeoScale;
 	float         m_gammaAdjustment;
 
-	bool          m_frameRendered{ false };
+	bool          m_framePrepared{ false };
 	bool          m_resourcesPatched;
 	bool          m_needClearVrQuadLayer;
 

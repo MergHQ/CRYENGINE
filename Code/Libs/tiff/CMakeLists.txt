@@ -3,7 +3,7 @@ cmake_minimum_required(VERSION 3.6)
 start_sources()
 # -- tiff.waf_files --
 
-sources_platform(WIN32 or WIN64)
+sources_platform(WIN32)
 add_sources("NoUberFile"
 	SOURCE_GROUP "Config"
 	    "include_win/tif_config.h"

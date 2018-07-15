@@ -1,28 +1,24 @@
 {
-	"NoUberFile":
-	{
-		"Root":
-		[
-			"DialogEditorPlugin.cpp",
-			"DialogEditorPlugin.h",
-			"StdAfx.h",
-			"StdAfx.cpp",
-			"Resource.h",
-			"DialogEditor.rc"
-		]
-	},
-	"Editor_Uber_Audio.cpp":
-	{
-		"Root":
-		[
-			"DialogEditorDialog.cpp",
-			"DialogManager.cpp",
-			"DialogScriptRecord.cpp",
-			"DialogScriptView.cpp",
-			"DialogEditorDialog.h",
-			"DialogManager.h",
-			"DialogScriptRecord.h",
-			"DialogScriptView.h"
-		]
-	}
+    "Editor_Uber_Audio.cpp": {
+        "Root": [
+            "DialogEditorDialog.cpp",
+            "DialogManager.cpp",
+            "DialogScriptRecord.cpp",
+            "DialogScriptView.cpp",
+            "DialogEditorDialog.h",
+            "DialogManager.h",
+            "DialogScriptRecord.h",
+            "DialogScriptView.h"
+        ]
+    },
+    "NoUberFile": {
+        "Root": [
+            "DialogEditorPlugin.cpp",
+            "DialogEditorPlugin.h",
+            "StdAfx.h",
+            "StdAfx.cpp",
+            "Resource.h",
+            "DialogEditor.rc"
+        ]
+    }
 }

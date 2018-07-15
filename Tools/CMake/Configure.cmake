@@ -255,6 +255,12 @@ if (OPTION_ENGINE)
 	if(NOT TARGET ncursesw)
 	   include("${TOOLS_CMAKE_DIR}/modules/ncurses.cmake")
    endif()
+
+	option(OPTION_GEOM_CACHES "Enable Geom Cache" ON)
+
+	if(OPTION_GEOM_CACHES)
+		list(APPEND global_defines USE_GEOM_CACHES=1)
+	endif()
 endif()
 include("${TOOLS_CMAKE_DIR}/modules/Boost.cmake")
 
