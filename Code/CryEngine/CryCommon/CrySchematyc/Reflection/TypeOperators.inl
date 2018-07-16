@@ -3,6 +3,7 @@
 #pragma once
 
 #include "CrySchematyc/Utils/TypeUtils.h"
+#include <CryNetwork/ISerialize.h>
 
 namespace Schematyc
 {
@@ -138,6 +139,42 @@ template<typename TYPE> struct SSerialize<TYPE, true>
 template<typename TYPE> struct SSerialize<TYPE, false>
 {
 	static inline STypeOperators::Serialize Select()
+	{
+		return nullptr;
+	}
+};
+
+template<typename T, typename... Rest>
+struct is_any : std::false_type {};
+
+template<typename T, typename First>
+struct is_any<T, First> : std::is_same<T, First> {};
+
+template<typename T, typename First, typename... Rest>
+struct is_any<T, First, Rest...>
+	: std::integral_constant<bool, std::is_same<T, First>::value || is_any<T, Rest...>::value>
+{};
+
+template<typename TYPE, bool TYPE_IS_NETSERIALIZEABLE = 
+	is_any<TYPE, bool, int, Vec2, Vec3, Quat, Ang3>::value> struct SNetSerialize;
+
+template<typename TYPE> struct SNetSerialize<TYPE, true>
+{
+	static inline void NetSerialize(TSerialize& ser, const char* szName, void* pValue, int32 policy)
+	{
+		TYPE& value = *static_cast<TYPE*>(pValue);
+		ser.Value(szName, value,policy);
+	}
+
+	static inline STypeOperators::NetSerialize Select()
+	{
+		return &NetSerialize;
+	}
+};
+
+template<typename TYPE> struct SNetSerialize<TYPE, false>
+{
+	static inline STypeOperators::NetSerialize Select()
 	{
 		return nullptr;
 	}
