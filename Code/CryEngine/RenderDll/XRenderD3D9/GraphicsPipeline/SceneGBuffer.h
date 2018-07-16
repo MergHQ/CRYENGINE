@@ -20,8 +20,8 @@ public:
 		ePerPassTexture_TerrainNormMap,
 		ePerPassTexture_TerrainBaseMap,
 		ePerPassTexture_NormalsFitting,
-		ePerPassTexture_DissolveNoise,
-		ePerPassTexture_SceneLinearDepth,
+
+		ePerPassTexture_SceneLinearDepth = 32,
 	};
 
 	enum EPass

@@ -79,7 +79,6 @@ Texture2D emittanceTex : register(t13)
 > = TM_Emittance;
 
 ENVIRONMENTCUBEMAP
-DISSOLVE_NOISE_MAP
 
 #include "ShadeLib.cfi"
 

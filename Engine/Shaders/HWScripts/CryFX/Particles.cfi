@@ -1,7 +1,5 @@
 // Copyright 2001-2018 Crytek GmbH / Crytek Group. All rights reserved.
 
-DISSOLVE_NOISE_MAP
-
 //////////////////////////////////////////////////////////////////////////////////////////////////
 
 struct OutputVS
@@ -46,6 +44,8 @@ struct pixoutParticle
 
 //////////////////////////////////////////////////////////////////////////////////////////////////
 
+Texture2D texelPerMeterTex : register(t33) = "%ENGINE%/EngineAssets/Textures/TexelsPerMeterGrad.dds";
+
 void ParticlesDebugVertex(inout SParticleVertex OUT, float4 debugColor)
 {
 #if %_RT_DEBUG0
@@ -81,7 +81,7 @@ bool ParticlesDebugPixel(inout pixoutParticle OUT, OutputVS IN)
 		// Sample diffuse tex so texture modificator in VS gets properly applied
 		// Multiply by very small number and use result so compiler doesn't optimize tex fetch away
 		float3 c = GetDiffuseTex(diffuseTex, IN.baseTC.xy) * 0.0001;
-		c += GetTexture2D(dissolveNoiseTex, ssMaterialBilinearClamp, float2(t, 0.25));
+		c += GetTexture2D(texelPerMeterTex, ssMaterialBilinearClamp, float2(t, 0.25));
 
 		OUT.Color = float4(c * checker, 1);
 	}

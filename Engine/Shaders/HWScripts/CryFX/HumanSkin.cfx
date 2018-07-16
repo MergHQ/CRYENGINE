@@ -37,7 +37,6 @@ SUBSURFACEMAP
 DECALMAP
 OPACITYMAP
 ENVIRONMENTCUBEMAP
-DISSOLVE_NOISE_MAP
 
 Texture2D customTex          : register(t9)  = TM_Custom;
 Texture2D customSecondaryTex : register(t10) = TM_CustomSecondary; 
@@ -443,15 +442,8 @@ pixout_gbuffer SkinZPassPS(vert2fragZ_C IN)
 	clip(fDiffuseAlpha - IN.baseTC.w);
 #endif
 
-#if %_RT_DISSOLVE
-	half2 noiseTC = IN.WPos.xy/(100.0f*CV_HPosScale.xy);
+	ApplyDissolve(IN.baseTC.z, (int2)IN.WPos.xy, 33);
 
-	half fNoise = GetDissolveTex(dissolveNoiseTex, noiseTC).g;
-
-	clip((fNoise-IN.baseTC.z));
-#endif
-	
-	
 	////////////////////////////////////////////////////////////////////////////////////////////////
   // Gather material attributes
 	
