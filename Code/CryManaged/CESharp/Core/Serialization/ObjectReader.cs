@@ -304,7 +304,7 @@ namespace CryEngine.Serialization
 				var existingObject = canWrite ? fieldInfo.GetValue(obj) : null;
 				var fieldValue = ReadInternal(existingObject, false, fieldInfo?.FieldType);
 
-				if((fieldValue == null && fieldInfo.FieldType.IsValueType) || (fieldValue != null && fieldValue.GetType() != fieldInfo.FieldType))
+				if ((fieldInfo == null) || (fieldValue == null && fieldInfo.FieldType.IsValueType) || (fieldValue != null && fieldValue.GetType() != fieldInfo.FieldType))
 				{
 					// The type of the field has changed, so setting the value would be dangerous.
 					continue;
