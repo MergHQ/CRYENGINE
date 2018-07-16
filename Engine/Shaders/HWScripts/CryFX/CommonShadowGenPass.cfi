@@ -83,7 +83,7 @@ bool instanceMatrixToWorldSpace = false;
 
 float4 OutBaseTC;
 #if !%TEMP_TERRAIN
- #if %_RT_ALPHATEST || %_RT_ALPHABLEND || %_RT_DISSOLVE
+ #if %_RT_ALPHATEST || %_RT_ALPHABLEND
   _TCModify(vertPassPos.baseTC, OutBaseTC, vertPassPos.Position, vertPassPos.ObjToTangentSpace[2], TS_DIFFUSE);
 	OUT.baseTC.xy = OutBaseTC;
  #endif
@@ -162,10 +162,7 @@ pixout_shadow Common_SG_PS(v2f_sh IN)
 	OUT.Normal.w = 1;
 #endif
 
-#if %_RT_DISSOLVE
-    half fNoise = GetDissolveTex(dissolveNoiseTex, IN.baseTC.xy*6.h).x;
-	clip(fNoise - Get_SPI_Dissolve());
-#endif
+	ApplyDissolve(Get_SPI_Dissolve(), (int2)IN.HPosition.xy, 33);
 
 	return OUT;
 }

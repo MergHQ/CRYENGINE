@@ -46,7 +46,6 @@ struct CustomForwardShadingAttribs
 Texture2D Fwd_EyeOverlayTex : register(t41);
 
 ENVIRONMENTCUBEMAP
-DISSOLVE_NOISE_MAP
 
 Texture2D corneaBumpTex : register(t9)
 <

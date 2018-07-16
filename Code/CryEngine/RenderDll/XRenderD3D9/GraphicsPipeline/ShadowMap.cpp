@@ -55,7 +55,6 @@ void CShadowMapStage::Init()
 		m_perPassResources.SetTexture(EPerPassTexture_WindGrid, CRendererResources::s_pTexNULL, EDefaultResourceViews::Default, EShaderStage_Vertex);
 		m_perPassResources.SetTexture(EPerPassTexture_TerrainElevMap, CRendererResources::s_pTexNULL, EDefaultResourceViews::Default, EShaderStage_Vertex);
 		m_perPassResources.SetTexture(EPerPassTexture_TerrainBaseMap, CRendererResources::s_pTexNULL, EDefaultResourceViews::sRGB, EShaderStage_Pixel);
-		m_perPassResources.SetTexture(EPerPassTexture_DissolveNoise, CRendererResources::s_pTexNULL, EDefaultResourceViews::Default, EShaderStage_Pixel);
 
 		m_perPassResources.SetConstantBuffer(eConstantBufferShaderSlot_PerPass, CDeviceBufferManager::GetNullConstantBuffer(), shaderStages);
 		m_perPassResources.SetConstantBuffer(eConstantBufferShaderSlot_PerView, CDeviceBufferManager::GetNullConstantBuffer(), shaderStages);
@@ -740,7 +739,6 @@ bool CShadowMapStage::CShadowMapPass::PrepareResources(const CRenderView* pMainV
 		m_perPassResources.SetTexture(EPerPassTexture_WindGrid, CRendererResources::s_ptexWindGrid, EDefaultResourceViews::Default, EShaderStage_Vertex);
 		m_perPassResources.SetTexture(EPerPassTexture_TerrainBaseMap, CTexture::GetByID(nTerrainTex0), EDefaultResourceViews::sRGB, EShaderStage_Pixel);
 		m_perPassResources.SetTexture(EPerPassTexture_TerrainElevMap, CTexture::GetByID(nTerrainTex2), EDefaultResourceViews::Default, EShaderStage_Vertex);
-		m_perPassResources.SetTexture(EPerPassTexture_DissolveNoise, CRendererResources::s_ptexDissolveNoiseMap, EDefaultResourceViews::Default, EShaderStage_Pixel);
 	}
 
 	// per pass CB

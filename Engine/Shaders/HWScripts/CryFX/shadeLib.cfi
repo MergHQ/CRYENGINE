@@ -57,6 +57,77 @@ struct ForwardLightParams
 	float3  illuminance;
 };
 
+////////////////////////////////////////////////////////////////////////////////////////////////////
+
+float GetDissolveThreshold5(int2 sc)
+{
+	// 4 transparency levels for a 2x2 quad. We're using dot/abs instead, since rsx doens't support array indexing.
+	return abs(dot(half4(0.0h, 0.76h, 0.5h,-1.0h), sc.xxyy % 2));
+}
+
+float GetDissolveThreshold9(int2 sc)
+{
+	float tm[2][4] =
+	{
+		{  0.0f / 16,  4.0f / 16,  2.0f / 16,  6.0f / 16 },
+		{  3.0f / 16,  7.0f / 16,  1.0f / 16,  5.0f / 16 }
+	};
+
+	return tm[sc.y & 1][sc.x & 3];
+}
+float GetDissolveThreshold17(int2 sc)
+{
+	float tm[4][4] =
+	{
+		{  0.0f / 16,  12.0f / 16,   3.0f / 16,  15.0f / 16 },
+		{  8.0f / 16,   4.0f / 16,  11.0f / 16,   7.0f / 16 },
+		{  2.0f / 16,  14.0f / 16,   1.0f / 16,  13.0f / 16 },
+		{ 10.0f / 16,   6.0f / 16,   9.0f / 16,   5.0f / 16 }
+	};
+
+	return tm[sc.y & 3][sc.x & 3];
+}
+
+float GetDissolveThreshold33(int2 sc)
+{
+	float tm[4][8] =
+	{
+		{  0.0f / 32,  16.0f / 32,   8.0f / 32,  24.0f / 32,   2.0f / 32,  18.0f / 32,  10.0f / 32,  26.0f / 32 },
+		{ 12.0f / 32,  28.0f / 32,   4.0f / 32,  20.0f / 32,  14.0f / 32,  30.0f / 32,   6.0f / 32,  22.0f / 32 },
+		{  3.0f / 32,  19.0f / 32,  11.0f / 32,  27.0f / 32,   1.0f / 32,  17.0f / 32,   9.0f / 32,  25.0f / 32 },
+		{ 15.0f / 32,  31.0f / 32,   7.0f / 32,  23.0f / 32,  13.0f / 32,  29.0f / 32,   5.0f / 32,  21.0f / 32 }
+	};
+
+	return tm[sc.y & 7][sc.x & 3];
+}
+
+float TestDissolve(float fDissolve, int2 sc, int levels = 17)
+{
+#if %_RT_DISSOLVE
+	float fThreshold = 0;
+	if (levels <= 5)
+		fThreshold = GetDissolveThreshold5(sc);
+	else if (levels <= 9)
+		fThreshold = GetDissolveThreshold9(sc);
+	else if (levels <= 17)
+		fThreshold = GetDissolveThreshold17(sc);
+	else if (levels <= 33)
+		fThreshold = GetDissolveThreshold33(sc);
+	else
+		fThreshold = 0;
+
+	return (fDissolve > 0 ? 1 : -1) * (fThreshold - abs(fDissolve));
+#else
+	return 0.0f;
+#endif
+}
+
+void ApplyDissolve(float fDissolve, int2 sc, int levels = 17)
+{
+#if %_RT_DISSOLVE
+	clip(TestDissolve(fDissolve, sc, levels));
+#endif
+}
 
 //////////////////////////////// Common shading utilities ////////////////
 

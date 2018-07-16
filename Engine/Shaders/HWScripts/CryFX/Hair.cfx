@@ -57,7 +57,6 @@ SUBSURFACEMAP
 DECALMAP
 OPACITYMAP
 ENVIRONMENTCUBEMAP
-DISSOLVE_NOISE_MAP
 
 sampler2D avgLumSampler = sampler_state
 {
@@ -592,10 +591,7 @@ pixout_gbuffer ZPassPS(vert2fragZ_C IN)
 	clip(fDiffuseAlpha - IN.baseTC.w);
 #endif
 
-//#if %_RT_DISSOLVE
-//	const int2 vPixQuadIdx = (int2)IN.WPos.xy % 2;
-//	clip(IN.vBinormal.w * (abs(dot(half4(0.0h, 0.76h, 0.5h,-1.0h), vPixQuadIdx.xxyy)) - IN.baseTC.z));
-//#endif
+//	ApplyDissolve(IN.baseTC.z, (int2)IN.WPos.xy);
 
   ////////////////////////////////////////////////////////////////////////////////////////////////
   // Normals processing
@@ -690,7 +686,7 @@ v2f_sh HairSG_VS(app2vertGeneral IN)
 	OUT.Depth += CP_ShadowGen_DepthTestBias.x;
 #endif
 
-#if %_RT_ALPHATEST || %_RT_ALPHABLEND || %_RT_DISSOLVE
+#if %_RT_ALPHATEST || %_RT_ALPHABLEND
 	OUT.baseTC.xy = vertPassPos.baseTC.xy;
 #endif
 

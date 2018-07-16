@@ -1,7 +1,6 @@
 // Copyright 2001-2018 Crytek GmbH / Crytek Group. All rights reserved.
 
 SCENE_DEPTH_MAP
-DISSOLVE_NOISE_MAP
 
 struct vert2fragDebug
 {
@@ -70,11 +69,7 @@ pixout Common_DebugPassPS(vert2fragDebug IN)
 	alphatested = (alpha - alphaTest) < 0.0f; //need to perform texkill just like in regular passes
 #endif 
 
-	bool dissolved = false;
-#if %_RT_DISSOLVE
-	half fNoise = GetDissolveTex(dissolveNoiseTex, IN.baseTC.xy*6.h).x;
-	dissolved = (fNoise - Get_SPI_Dissolve()) < 0.0f;
-#endif
+	bool dissolved = TestDissolve(Get_SPI_Dissolve(), IN.WPos.xy, 33) < 0.0f;
 
 #if %_RT_ALPHATEST || %_RT_DISSOLVE
 	clip((alphatested || dissolved) ? -1 : +1);

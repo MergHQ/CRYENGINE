@@ -20,7 +20,7 @@ class CSceneCustomStage : public CGraphicsPipelineStage
 		ePerPassTexture_TerrainNormMap   = CSceneGBufferStage::ePerPassTexture_TerrainNormMap,
 		ePerPassTexture_TerrainBaseMap   = CSceneGBufferStage::ePerPassTexture_TerrainBaseMap,
 		ePerPassTexture_NormalsFitting   = CSceneGBufferStage::ePerPassTexture_NormalsFitting,
-		ePerPassTexture_DissolveNoise    = CSceneGBufferStage::ePerPassTexture_DissolveNoise,
+
 		ePerPassTexture_SceneLinearDepth = CSceneGBufferStage::ePerPassTexture_SceneLinearDepth,
 
 		ePerPassTexture_PaletteTexelsPerMeter = 33,

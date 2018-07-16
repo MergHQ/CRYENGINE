@@ -84,12 +84,7 @@ pixout_zprepass Common_ZPrepassPS(vert2fragZPrepass IN)
 	clip(diffuseMapAlpha - IN.baseTC.w);
 #endif
 	
-#if %_RT_DISSOLVE
-	float fDissolve = Get_SPI_Dissolve();
-	const int2 vPixQuadIdx = (int2)IN.WPos.xy % 2; // 4 transparency levels for a 2x2 quad. We're using dot/abs instead, since rsx doens't support array indexing.
-
-	clip((fDissolve > 0 ? 1 : -1) * (abs(dot(half4(0.0h, 0.76h, 0.5h,-1.0h), vPixQuadIdx.xxyy)) - abs(fDissolve))); // todo: try using coverage mask when in MSAA mode.
-#endif
+	ApplyDissolve(Get_SPI_Dissolve(), (int2)IN.WPos.xy);
 
 	return OUT;
 }

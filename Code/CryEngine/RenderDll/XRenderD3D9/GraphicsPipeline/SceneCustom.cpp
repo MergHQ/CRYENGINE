@@ -163,7 +163,6 @@ bool CSceneCustomStage::SetAndBuildPerPassResources(bool bOnInit)
 		m_perPassResources.SetTexture(ePerPassTexture_TerrainNormMap, CTexture::GetByID(nTerrainTex1), EDefaultResourceViews::Default, EShaderStage_Pixel);
 		m_perPassResources.SetTexture(ePerPassTexture_TerrainBaseMap, CTexture::GetByID(nTerrainTex0), EDefaultResourceViews::sRGB, EShaderStage_Pixel);
 		m_perPassResources.SetTexture(ePerPassTexture_NormalsFitting, CRendererResources::s_ptexNormalsFitting, EDefaultResourceViews::Default, EShaderStage_Pixel);
-		m_perPassResources.SetTexture(ePerPassTexture_DissolveNoise, CRendererResources::s_ptexDissolveNoiseMap, EDefaultResourceViews::Default, EShaderStage_Pixel);
 		m_perPassResources.SetTexture(ePerPassTexture_SceneLinearDepth, CRendererResources::s_ptexLinearDepth, EDefaultResourceViews::Default, EShaderStage_Pixel);
 		m_perPassResources.SetTexture(ePerPassTexture_PaletteTexelsPerMeter, CRendererResources::s_ptexPaletteTexelsPerMeter, EDefaultResourceViews::Default, EShaderStage_Pixel);
 	}

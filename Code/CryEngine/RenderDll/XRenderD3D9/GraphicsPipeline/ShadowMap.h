@@ -19,7 +19,6 @@ class CShadowMapStage : public CGraphicsPipelineStage
 		EPerPassTexture_WindGrid       = CSceneGBufferStage::ePerPassTexture_WindGrid,
 		EPerPassTexture_TerrainElevMap = CSceneGBufferStage::ePerPassTexture_TerrainElevMap,
 		EPerPassTexture_TerrainBaseMap = CSceneGBufferStage::ePerPassTexture_TerrainBaseMap,
-		EPerPassTexture_DissolveNoise  = CSceneGBufferStage::ePerPassTexture_DissolveNoise,
 	};
 
 	enum EPass
