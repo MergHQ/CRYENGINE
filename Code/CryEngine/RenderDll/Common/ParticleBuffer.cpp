@@ -4,7 +4,7 @@
 #include "ParticleBuffer.h"
 #include <CryRenderer/RenderElements/CREParticle.h>
 
-#if CRY_PLATFORM_WINDOWS || CRY_PLATFORM_LINUX || CRY_PLATFORM_APPLE
+#if CRY_PLATFORM_DESKTOP || CRY_PLATFORM_CONSOLE
 	#define PFX_32BIT_IB
 #else
 	#define PFX_16BIT_IB
