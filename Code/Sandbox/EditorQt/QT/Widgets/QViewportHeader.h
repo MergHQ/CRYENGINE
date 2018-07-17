@@ -130,5 +130,4 @@ private:
 	QToolButton* m_currentToolExit;
 
 	string       m_viewPaneClass;
-	uint64       m_displayInfoFuncIdx;
 };
