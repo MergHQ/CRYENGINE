@@ -234,7 +234,7 @@ void CDecal::Render(const float fCurTime, int nAfterWater, float fDistanceFading
 
 				if (pVegetation && pBody && bUseBending)
 				{
-					pVegetation->FillBendingData(pObj);
+					pVegetation->FillBendingData(pObj, passInfo);
 				}
 				IMaterial* pMat = m_ownerInfo.pRenderNode->GetMaterial();
 				pMat = pMat->GetSubMtl(m_ownerInfo.nMatID);
@@ -446,7 +446,7 @@ void CDecal::AddDecalToRenderView(float fDistance,
 		IStatObj* pEntObject = pVegetation->GetEntityStatObj(0, &objMat);
 		pRenderObject->SetMatrix(objMat, passInfo);
 		pRenderObject->m_ObjFlags |= FOB_TRANS_MASK;
-		pVegetation->FillBendingData(pRenderObject);
+		pVegetation->FillBendingData(pRenderObject, passInfo);
 		assert(pEntObject);
 		if (pEntObject)
 		{

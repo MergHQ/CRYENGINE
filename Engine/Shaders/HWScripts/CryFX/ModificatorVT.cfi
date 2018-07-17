@@ -30,11 +30,11 @@ cbuffer CBPerDraw : register(b0)
 	float4    CD_CustomData1;      // [xyzw=ShilouetteColor]
 	// TODO: Should be moved after all the data below
 	float4    CD_CustomData2;      // [x=selectionIDs in debug pass, y=AmbientColor, zw=Not used]
-
-#if %TEMP_TERRAIN || %TEMP_VEGETATION
+	
+#if %TEMP_TERRAIN || (%TEMP_VEGETATION && %_RT_BLEND_WITH_TERRAIN_COLOR)
 	float4    CD_BlendTerrainColInfo;
 	float4x4  CD_TerrainLayerInfo;
-#elif %WRINKLE_BLENDING || %_RT_SKELETON_SSD_LINEAR || %_RT_SKELETON_SSD || %_RT_COMPUTE_SKINNING
+#elif %WRINKLE_BLENDING || %_RT_SKELETON_SSD_LINEAR || %_RT_SKELETON_SSD
 	float4    CD_SkinningInfo;     // Additional offset
 	float4    CD_WrinklesMask0;
 	float4    CD_WrinklesMask1;
@@ -43,34 +43,38 @@ cbuffer CBPerDraw : register(b0)
 #endif
 };
 
-#if %TEMP_VEGETATION || %TEMP_TERRAIN
-	float4 Get_SPI_BlendWithTerrainColInfo()
-	{
- #if %_RT_ENVIRONMENT_CUBEMAP
-	return 1;
- #else
-	return CD_BlendTerrainColInfo;
-#endif
-	}
-#endif
-
-#if %TEMP_TERRAIN
-	float4x4 Get_SPI_TerrainLayerInfo()
-	{
+float4 Get_SPI_BlendWithTerrainColInfo()
+{
+#if %TEMP_TERRAIN || (%TEMP_VEGETATION && %_RT_BLEND_WITH_TERRAIN_COLOR)
 	#if %_RT_ENVIRONMENT_CUBEMAP
-		return float4x4(0);
+	return 1;
 	#else
-		return CD_TerrainLayerInfo;
+	return CD_BlendTerrainColInfo;
 	#endif
-	}
+#else
+	return (float4)0;
 #endif
+}
+
+float4x4 Get_SPI_TerrainLayerInfo()
+{
+#if %TEMP_TERRAIN
+	#if %_RT_ENVIRONMENT_CUBEMAP
+	return float4x4(0);
+	#else
+	return CD_TerrainLayerInfo;
+	#endif
+#else
+	return float4x4(0);
+#endif
+}
 
 float4 Get_SPI_SkinningInfo()
 {
-#if !%TEMP_TERRAIN && !%TEMP_VEGETATION && (%_RT_SKELETON_SSD || %_RT_SKELETON_SSD_LINEAR || %_RT_COMPUTE_SKINNING)
+#if !%TEMP_TERRAIN && !%TEMP_VEGETATION && (%_RT_SKELETON_SSD || %_RT_SKELETON_SSD_LINEAR)
 	return CD_SkinningInfo;
 #else
-	return float4(0, 0, 0, 0);
+	return (float4)0;
 #endif
 }
 
@@ -113,11 +117,15 @@ float4 DecodeBending(float3 vPos, float bendingRadius,float bendingScale)
 
 float4 Get_SPI_BendInfo(int nIndex, float3 worldPos)
 {
-#if %_RT_ENVIRONMENT_CUBEMAP
+#if %_VT_BEND
+	#if %_RT_ENVIRONMENT_CUBEMAP
 	return DecodeBending(worldPos, SInstancingData[nIndex].CI_CustomData.x,SInstancingData[nIndex].CI_CustomData.y);
-#else
+	#else
 	return DecodeBending(worldPos, CD_CustomData.x,CD_CustomData.y); 
- #endif
+	#endif
+#else
+	return (float4)0;
+#endif
 }
 
 float4 Get_SPI_RainLayerParams(int nIndex)
