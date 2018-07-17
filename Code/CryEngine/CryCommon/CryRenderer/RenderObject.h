@@ -237,18 +237,23 @@ public:
 		eRenderPass_NumTypes = 2
 	};
 
-	struct SInstanceInfo
+	// Structure used to pass information about vegetation bending to the shaders.
+	struct SBendingData
 	{
-		Matrix34 m_Matrix;
-		ColorF   m_AmbColor;
-		ColorF   m_FogVolumeContribution;
+		float scale;
+		float verticalRadius;
+
+		bool operator != (const SBendingData& that) const
+		{ return (scale != that.scale) | (verticalRadius != that.verticalRadius); }
 	};
 
-	// Structure used to pass information about vegetation bending to the shaders.
-	struct SVegetationBendingData
+	struct SInstanceInfo
 	{
-		float scale = 0.0f;
-		float verticalRadius = 0.0f;
+		Matrix34     m_Matrix;
+		ColorF       m_AmbColor;
+		ColorF       m_FogVolumeContribution;
+
+		SBendingData m_Bending;
 	};
 
 public:
@@ -271,6 +276,11 @@ public:
 		m_II[roThreadAccessThreadCfg.objAccessorThreadId].m_AmbColor = ambColor;
 	}
 
+	ILINE void SetBendingData(const SBendingData& vbend, const SRenderObjectAccessThreadConfig& roThreadAccessThreadCfg)
+	{
+		m_II[roThreadAccessThreadCfg.objAccessorThreadId].m_Bending = vbend;
+	}
+
 	ILINE const Matrix34& GetMatrix(const SRenderObjectAccessThreadConfig& roThreadAccessThreadCfg) const
 	{
 		return m_II[roThreadAccessThreadCfg.objAccessorThreadId].m_Matrix;
@@ -279,6 +289,11 @@ public:
 	ILINE const ColorF& GetAmbientColor(const SRenderObjectAccessThreadConfig& roThreadAccessThreadCfg) const
 	{
 		return m_II[roThreadAccessThreadCfg.objAccessorThreadId].m_AmbColor;
+	}
+
+	ILINE const SBendingData& GetBendingData(const SRenderObjectAccessThreadConfig& roThreadAccessThreadCfg) const
+	{
+		return m_II[roThreadAccessThreadCfg.objAccessorThreadId].m_Bending;
 	}
 
 	uint64 m_ObjFlags;                 //!< Combination of FOB_ flags.
@@ -331,8 +346,6 @@ public:
 	// Array of instances, cannot be bigger then MAX_INSTANCING_ELEMENTS
 	std::vector<SInstanceInfo> m_Instances;
 
-	SVegetationBendingData m_vegetationBendingData;        //!< Vegetation Bending parameters
-
 	uint32 m_editorSelectionID;                            //!< SelectionID for the editor
 
 protected:
@@ -364,6 +377,7 @@ public:
 	{
 		m_ObjFlags = 0;
 		SetInstanceDataDirty(false);
+
 		m_bPermanent = false;
 		m_nRenderQuality = 65535;
 
@@ -377,8 +391,6 @@ public:
 		m_nMDV = 0;
 		m_fSort = 0;
 
-		m_II[0].m_AmbColor = Col_White;
-		m_II[1].m_AmbColor = Col_White;
 		m_fAlpha = 1.0f;
 		m_nTextureID = -1;
 		m_pCurrMaterial = nullptr;
@@ -398,8 +410,10 @@ public:
 		m_data.Init();
 
 		m_II[0].m_Matrix.SetIdentity();
-		m_II[1].m_Matrix.SetIdentity();
-		m_vegetationBendingData = SVegetationBendingData();
+		m_II[0].m_AmbColor = Col_White;
+		m_II[0].m_Bending = { 0.0f, 0.0f };
+
+		m_II[1] = m_II[0];
 
 		m_editorSelectionID = 0;
 	}

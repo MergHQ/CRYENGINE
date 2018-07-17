@@ -195,8 +195,11 @@ void CStatObj::FillRenderObject(const SRendParams& rParams, IRenderNode* pRender
 	if (pRenderNode && pRenderNode->GetRndFlags() & ERF_RECVWIND)
 	{
 		// This can be different for CVegetation class render nodes
-		pObj->m_vegetationBendingData.scale = 1.0f; //#TODO Read it from RenderNode?
-		pObj->m_vegetationBendingData.verticalRadius = GetRadiusVert();
+		pObj->SetBendingData({ 1.0f, GetRadiusVert() }, passInfo);
+	}
+	else
+	{
+		pObj->SetBendingData({ 0.0f, 0.0f }, passInfo);
 	}
 
 	////////////////////////////////////////////////////////////////////////////////////////////////////

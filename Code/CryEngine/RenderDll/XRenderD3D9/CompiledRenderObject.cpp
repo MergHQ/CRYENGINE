@@ -114,9 +114,8 @@ bool CCompiledRenderObject::CheckDynamicInstancing(const SGraphicsPipelinePassCo
 		return false;
 
 	// Check that vegetation bending match
-	if (m_pRO->m_vegetationBendingData.scale != pNextObject->m_pRO->m_vegetationBendingData.scale)
-		return false;
-	if (m_pRO->m_vegetationBendingData.verticalRadius != pNextObject->m_pRO->m_vegetationBendingData.verticalRadius)
+	const auto accessorConfig = gcpRendD3D->GetObjectAccessorThreadConfig();
+	if (m_pRO->GetBendingData(accessorConfig) != pNextObject->m_pRO->GetBendingData(accessorConfig))
 		return false;
 
 	// Do not instance vegetation across different terrain sectors
@@ -176,13 +175,6 @@ void CCompiledRenderObject::CompilePerDrawCB(CRenderObject* pRenderObject)
 
 	float tessellationPatchIDOffset = alias_cast<float>(m_TessellationPatchIDOffset);
 
-	// wrinkle blending
-	bool bHasWrinkleBending = false;
-	if (m_shaderItem.m_pShader)
-	{
-		bHasWrinkleBending = (m_shaderItem.m_pShader->GetFlags2() & EF2_WRINKLE_BLENDING) != 0;
-	}
-
 	// silhouette color
 	const uint32 params = pRenderObject->m_data.m_nHUDSilhouetteParams;
 	const Vec4 silhouetteColor(
@@ -197,39 +189,60 @@ void CCompiledRenderObject::CompilePerDrawCB(CRenderObject* pRenderObject)
 		m_bDynamicInstancingPossible = false;
 
 	// Common shader per instance data.
-	m_instanceData.matrix = pRenderObject->GetMatrix(gcpRendD3D->GetObjectAccessorThreadConfig());
+	const auto accessorConfig = gcpRendD3D->GetObjectAccessorThreadConfig();
+	const auto& matrix = pRenderObject->GetMatrix(accessorConfig);
+	const auto& bendingData = pRenderObject->GetBendingData(accessorConfig);
+
+	m_instanceData.matrix = matrix;
 	m_instanceData.dissolve = dissolve;
 	m_instanceData.tesselationPatchId = tessellationPatchIDOffset;
-	m_instanceData.vegetationBendingRadius = pRenderObject->m_vegetationBendingData.verticalRadius;
-	m_instanceData.vegetationBendingScale = pRenderObject->m_vegetationBendingData.scale;
-	//////////////////////////////////////////////////////////////////////////
+	m_instanceData.vegetationBendingScale = bendingData.scale;
+	m_instanceData.vegetationBendingRadius = bendingData.verticalRadius;
 
-	if (pRenderObject->m_data.m_pTerrainSectorTextureInfo) // (%TEMP_TERRAIN || %TEMP_VEGETATION)
+	//////////////////////////////////////////////////////////////////////////
+	// wrinkle blending
+	bool bHasWrinkleBending = false;
+	if (m_shaderItem.m_pShader)
+		bHasWrinkleBending = (m_shaderItem.m_pShader->GetFlags2() & EF2_WRINKLE_BLENDING) != 0;
+
+	// NOTE: Hack-fix to match CB/SR data to the shader
+	// m_pSCGFlagLegacyFix.insert(MapNameFlagsItor::value_type("%TEMP_TERRAIN"   , (uint64)0x200000000ULL));
+	// m_pSCGFlagLegacyFix.insert(MapNameFlagsItor::value_type("%TEMP_VEGETATION", (uint64)0x400000000ULL));
+	const uint64 nMaskGenFX = (*((CShader*)this->m_shaderItem.m_pShader)).m_nMaskGenFX;
+
+	// (%TEMP_TERRAIN || (%TEMP_VEGETATION && %_RT_BLEND_WITH_TERRAIN_COLOR))
+	if ((nMaskGenFX & 0x200000000ULL) ||
+		(nMaskGenFX & 0x400000000ULL && pRenderObject->m_ObjFlags & FOB_BLEND_WITH_TERRAIN_COLOR))
 	{
 		m_bDynamicInstancingPossible = false; //#TODO fix support of dynamic instancing for vegetation
 
 		// NOTE: Get aligned stack-space (pointer and size aligned to manager's alignment requirement)
 		CryStackAllocWithSize(HLSL_PerDrawConstantBuffer_TeVe, cb, CDeviceBufferManager::AlignBufferSizeForStreaming);
 
-		cb->CD_WorldMatrix = pRenderObject->GetMatrix(gcpRendD3D->GetObjectAccessorThreadConfig());
+		cb->CD_WorldMatrix = matrix;
 		cb->CD_PrevWorldMatrix = Matrix34(objPrevMatr);
 
 		// [x=VegetationBendingVerticalRadius, y=VegetationBendingScale, z=tessellation patch id offset, w=dissolve]
 		cb->CD_CustomData =
-		  Vec4(
-		    pRenderObject->m_vegetationBendingData.verticalRadius,
-		    pRenderObject->m_vegetationBendingData.scale,
-		    tessellationPatchIDOffset,
-		    dissolve
-		    );
+			Vec4(
+				bendingData.verticalRadius,
+				bendingData.scale,
+				tessellationPatchIDOffset,
+				dissolve
+			);
 
-		cb->CD_CustomData1 = silhouetteColor;
+		if (SRenderObjData* pOD = pRenderObject->GetObjData())
+		{
+			SSectorTextureSet TerrainSectorTextureInfo;
+			if (pOD->m_pTerrainSectorTextureInfo)
+				TerrainSectorTextureInfo = *pOD->m_pTerrainSectorTextureInfo;
 
-		// Fill terrain texture info if present
-		cb->CD_BlendTerrainColInfo[0] = pRenderObject->m_data.m_pTerrainSectorTextureInfo->fTexOffsetX;
-		cb->CD_BlendTerrainColInfo[1] = pRenderObject->m_data.m_pTerrainSectorTextureInfo->fTexOffsetY;
-		cb->CD_BlendTerrainColInfo[2] = pRenderObject->m_data.m_pTerrainSectorTextureInfo->fTexScale;
-		cb->CD_BlendTerrainColInfo[3] = pRenderObject->m_data.m_fMaxViewDistance; // Obj view max distance
+			// Fill terrain texture info if present
+			cb->CD_BlendTerrainColInfo[0] = pRenderObject->m_data.m_pTerrainSectorTextureInfo->fTexOffsetX;
+			cb->CD_BlendTerrainColInfo[1] = pRenderObject->m_data.m_pTerrainSectorTextureInfo->fTexOffsetY;
+			cb->CD_BlendTerrainColInfo[2] = pRenderObject->m_data.m_pTerrainSectorTextureInfo->fTexScale;
+			cb->CD_BlendTerrainColInfo[3] = pRenderObject->m_data.m_fMaxViewDistance; // Obj view max distance
+		}
 
 		// Fill terrain layer info if present
 		if (float* pData = (float*)m_pRenderElement->m_CustomData)
@@ -237,23 +250,24 @@ void CCompiledRenderObject::CompilePerDrawCB(CRenderObject* pRenderObject)
 			cb->CD_TerrainLayerInfo = *(Matrix44f*)pData;
 		}
 
+		cb->CD_CustomData1 = silhouetteColor;
 		cb->CD_CustomData2.x = alias_cast<float>(pRenderObject->m_editorSelectionID);
 
 		UpdatePerDrawCB(cb, sizeof(HLSL_PerDrawConstantBuffer_TeVe));
 	}
-	else if ((pRenderObject->m_ObjFlags & FOB_SKINNED) || bHasWrinkleBending) // (%_RT_SKELETON_SSD || %_RT_SKELETON_SSD_LINEAR || %WRINKLE_BLENDING)
+	// (%_RT_SKELETON_SSD || %_RT_SKELETON_SSD_LINEAR || %WRINKLE_BLENDING)
+	else if ((pRenderObject->m_ObjFlags & FOB_SKINNED) || bHasWrinkleBending)
 	{
 		m_bDynamicInstancingPossible = false;
+
 		// NOTE: Get aligned stack-space (pointer and size aligned to manager's alignment requirement)
 		CryStackAllocWithSizeCleared(HLSL_PerDrawConstantBuffer_Skin, cb, CDeviceBufferManager::AlignBufferSizeForStreaming);
 
-		cb->CD_WorldMatrix = pRenderObject->GetMatrix(gcpRendD3D->GetObjectAccessorThreadConfig());
+		cb->CD_WorldMatrix = matrix;
 		cb->CD_PrevWorldMatrix = Matrix34(objPrevMatr);
 
 		// [x=VegetationBendingVerticalRadius, y=VegetationBendingScale, z=tessellation patch id offset, w=dissolve]
 		cb->CD_CustomData = Vec4(0, 0, tessellationPatchIDOffset, dissolve);
-
-		cb->CD_CustomData1 = silhouetteColor;
 
 		if (SRenderObjData* pOD = pRenderObject->GetObjData())
 		{
@@ -277,31 +291,33 @@ void CCompiledRenderObject::CompilePerDrawCB(CRenderObject* pRenderObject)
 			cb->CD_SkinningInfo[3] = ((CREMeshImpl*)m_pRenderElement)->m_pRenderMesh->m_extraBonesBuffer.IsNullBuffer() ? 0.0f : 1.0f;
 		}
 
+		cb->CD_CustomData1 = silhouetteColor;
 		cb->CD_CustomData2.x = alias_cast<float>(pRenderObject->m_editorSelectionID);
 
 		UpdatePerDrawCB(cb, sizeof(HLSL_PerDrawConstantBuffer_Skin));
 	}
-	else // default base per instance buffer
+	// default base per instance buffer
+	else
 	{
 		// NOTE: Get aligned stack-space (pointer and size aligned to manager's alignment requirement)
 		CryStackAllocWithSize(HLSL_PerDrawConstantBuffer_Base, cb, CDeviceBufferManager::AlignBufferSizeForStreaming);
 
-		cb->CD_WorldMatrix = pRenderObject->GetMatrix(gcpRendD3D->GetObjectAccessorThreadConfig());
+		cb->CD_WorldMatrix = matrix;
 		cb->CD_PrevWorldMatrix = Matrix34(objPrevMatr);
+
 		// [x=VegetationBendingVerticalRadius, y=VegetationBendingScale, z=tessellation patch id offset, w=dissolve]
 		cb->CD_CustomData =
-		  Vec4(
-		    pRenderObject->m_vegetationBendingData.verticalRadius,
-		    pRenderObject->m_vegetationBendingData.scale,
-		    tessellationPatchIDOffset,
-		    dissolve
-		    );
+			Vec4(
+				bendingData.verticalRadius,
+				bendingData.scale,
+				tessellationPatchIDOffset,
+				dissolve
+			);
 
 		cb->CD_CustomData1 = silhouetteColor;
-
 		cb->CD_CustomData2.x = alias_cast<float>(pRenderObject->m_editorSelectionID);
 
-		ColorF ambColor = pRenderObject->GetAmbientColor(gcpRendD3D->GetObjectAccessorThreadConfig());
+		ColorF ambColor = pRenderObject->GetAmbientColor(accessorConfig);
 		uint32 ambColorPacked =
 			((static_cast<uint32>(ambColor.r * 255.0f) & 0xFF) << 24)
 			| ((static_cast<uint32>(ambColor.g * 255.0f) & 0xFF) << 16)
@@ -616,7 +632,8 @@ bool CCompiledRenderObject::Compile(const EObjectCompilationOptions& compilation
 	{
 		SGraphicsPipelineStateDescription psoDescription(pRenderObject, pRenderElement, m_shaderItem, TTYPE_GENERAL, geomInfo.eVertFormat, 0 /*geomInfo.CalcStreamMask()*/, ERenderPrimitiveType(geomInfo.primitiveType));
 
-		if (m_pInstancingConstBuffer)
+		const bool bEnabledInstancing = m_perDrawInstances > 1;
+		if (bEnabledInstancing && m_pInstancingConstBuffer)
 		{
 			//#TODO: Rename HWSR_ENVIRONMENT_CUBEMAP to HWSR_GEOM_INSTANCING
 			psoDescription.objectRuntimeMask |= g_HWSR_MaskBit[HWSR_ENVIRONMENT_CUBEMAP];  // Enable flag to use static instancing

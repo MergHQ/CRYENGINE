@@ -199,22 +199,20 @@ CLodValue CVegetation::ComputeLod(int wantedLod, const SRenderingPassInfo& passI
 
 	return CLodValue(nLodA, nDissolveRefA, nLodB);
 }
-
+	
 //////////////////////////////////////////////////////////////////////////
-void CVegetation::FillBendingData(CRenderObject* pObj) const
+void CVegetation::FillBendingData(CRenderObject* pObj, const SRenderingPassInfo& passInfo) const
 {
 	const StatInstGroup& vegetGroup = GetStatObjGroup();
 
 	if (GetCVars()->e_VegetationBending && vegetGroup.fBending)
 	{
-		pObj->m_vegetationBendingData.scale = 0.1f * vegetGroup.fBending;
-		pObj->m_vegetationBendingData.verticalRadius = vegetGroup.GetStatObj() ? vegetGroup.GetStatObj()->GetRadiusVert() : 1.0f;
+		pObj->SetBendingData({ 0.1f * vegetGroup.fBending, vegetGroup.GetStatObj() ? vegetGroup.GetStatObj()->GetRadiusVert() : 1.0f }, passInfo);
 		pObj->m_ObjFlags |= FOB_BENDED | FOB_DYNAMIC_OBJECT;
 	}
 	else
 	{
-		pObj->m_vegetationBendingData.scale = 0.0f;
-		pObj->m_vegetationBendingData.verticalRadius = 0.0f;
+		pObj->SetBendingData({ 0.0f, 0.0f }, passInfo);
 	}
 }
 
@@ -264,7 +262,7 @@ void CVegetation::Render(const SRenderingPassInfo& passInfo, const CLodValue& lo
 	if (!pStatObj)
 		return;
 
-	FillBendingData(pRenderObject);
+	FillBendingData(pRenderObject, passInfo);
 
 	const Vec3 vCamPos = passInfo.GetCamera().GetPosition();
 	const Vec3 vObjCenter = GetBBox().GetCenter();
