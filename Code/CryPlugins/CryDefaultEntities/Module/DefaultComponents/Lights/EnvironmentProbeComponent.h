@@ -182,7 +182,7 @@ namespace Cry
 				const auto sides = 6;
 
 				const auto& vecData = gEnv->pRenderer->EF_RenderEnvironmentCubeHDR(renderResolution, m_pEntity->GetWorldPos());
-				if (vecData.size() < srcSideSize * sides)
+				if (vecData.size() >= srcSideSize * sides)
 				{
 					TArray<unsigned short> downsampledImageData;
 
