@@ -4316,7 +4316,6 @@ CDeviceBuffer* CGpuBuffer::AllocateDeviceBuffer(const void* pInitialData) const
 
 	// persistent map on dx12
 #if (CRY_RENDERER_DIRECT3D >= 120)
-
 	if (m_eFlags & CDeviceObjectFactory::USAGE_CPU_WRITE)
 	{
 		uint8* base_ptr;
@@ -4346,8 +4345,23 @@ void CGpuBuffer::PrepareUnusedBuffer()
 
 	if (!((m_eFlags & CDeviceObjectFactory::USAGE_CPU_WRITE) && (m_eMapMode == D3D11_MAP_WRITE_DISCARD)))
 	{
+#if (CRY_RENDERER_DIRECT3D >= 120)
+		if (m_eFlags & CDeviceObjectFactory::USAGE_CPU_WRITE)
+		{
+			CDeviceObjectFactory::ReleaseBasePointer(m_pDeviceBuffer->GetBuffer());
+		}
+#endif
+
 		if (m_pDeviceBuffer->SubstituteUsedResource() == CDeviceResource::eSubResult_Substituted)
 			InvalidateDeviceResource(this, eDeviceResourceDirty);
+
+#if (CRY_RENDERER_DIRECT3D >= 120)
+		if (m_eFlags & CDeviceObjectFactory::USAGE_CPU_WRITE)
+		{
+			uint8* base_ptr;
+			CDeviceObjectFactory::ExtractBasePointer(m_pDeviceBuffer->GetBuffer(), m_eMapMode, base_ptr);
+		}
+#endif
 	}
 }
 
