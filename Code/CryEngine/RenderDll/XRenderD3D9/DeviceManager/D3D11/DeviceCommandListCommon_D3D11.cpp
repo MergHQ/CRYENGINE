@@ -18,6 +18,7 @@ CDeviceTimestampGroup::CDeviceTimestampGroup()
 	, m_pDisjointQuery(nullptr)
 	, m_frequency(0L)
 	, m_measurable(false)
+	, m_measured(false)
 {
 	m_timestampQueries.fill(nullptr);
 	m_timeValues.fill(0);
@@ -49,12 +50,15 @@ void CDeviceTimestampGroup::BeginMeasurement()
 	m_numTimestamps = 0;
 	m_frequency = 0;
 	m_measurable = false;
+	m_measured = false;
+
 	gcpRendD3D->GetDeviceContext().Begin(m_pDisjointQuery);
 }
 
 void CDeviceTimestampGroup::EndMeasurement()
 {
 	gcpRendD3D->GetDeviceContext().End(m_pDisjointQuery);
+
 	m_measurable = true;
 }
 
@@ -70,6 +74,8 @@ bool CDeviceTimestampGroup::ResolveTimestamps()
 {
 	if (!m_measurable)
 		return false;
+	if (m_measured)
+		return true;
 
 	// Don't ask twice (API violation)
 	if (!m_frequency)
@@ -100,7 +106,7 @@ bool CDeviceTimestampGroup::ResolveTimestamps()
 		}
 	}
 
-	return true;
+	return m_measured = true;
 }
 
 #endif

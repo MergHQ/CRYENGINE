@@ -564,6 +564,28 @@ struct SRTargetStat
 struct CRY_ALIGN(128) SRenderStatistics
 {
 	static SRenderStatistics& Write() { return *s_pCurrentOutput; }
+	static const SRenderStatistics& Read() { return *s_pPreviousOutput; }
+
+	struct SFrameSummary
+	{
+		float idleLoading = 0;
+		float busyLoading = 0;
+
+		float waitForMain = 0;
+		float waitForRender = 0;
+		float waitForGPU = 0;
+		float gpuIdlePerc = 0;
+
+		float gpuFrameTime = 0.0166667f;
+		float frameTime = 0.0166667f;
+		float renderTime = 0.0166667f;
+
+		float sceneTime = 0;
+		float flashTime = 0;
+		float miscTime = 0;
+		float endTime = 0;
+	}
+	m_Summary;
 
 	int m_NumRendHWInstances;
 	int m_RendHWInstancesPolysAll;
@@ -687,6 +709,7 @@ struct CRY_ALIGN(128) SRenderStatistics
 	int m_nNumBoundUniformTextures[2]; // Local=0,PCIe=1 - or in tech-speak, L1=0 and L0=1
 
 	static SRenderStatistics* s_pCurrentOutput;
+	static SRenderStatistics* s_pPreviousOutput;
 
 	void Begin(const SRenderStatistics* prevData);
 	void Finish();
@@ -1372,18 +1395,6 @@ public:
 	//=============================================================================================================
 
 	CIntroMovieRenderer* m_pIntroMovieRenderer;
-
-	float                m_fTimeWaitForMain[RT_COMMAND_BUF_COUNT];
-	float                m_fTimeWaitForRender[RT_COMMAND_BUF_COUNT];
-	float                m_fTimeProcessedRT[RT_COMMAND_BUF_COUNT];
-	float                m_fTimeProcessedGPU[RT_COMMAND_BUF_COUNT];
-	float                m_fTimeWaitForGPU[RT_COMMAND_BUF_COUNT];
-	float                m_fTimeGPUIdlePercent[RT_COMMAND_BUF_COUNT];
-
-	float                m_fRTTimeEndFrame;
-	float                m_fRTTimeFlashRender;
-	float                m_fRTTimeSceneRender;
-	float                m_fRTTimeMiscRender;
 
 	int                  m_CurVertBufferSize;
 	int                  m_CurIndexBufferSize;

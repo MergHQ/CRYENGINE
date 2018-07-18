@@ -63,57 +63,13 @@ CCryDX12DeviceContext::CCryDX12DeviceContext(CCryDX12Device* pDevice, UINT nodeM
 	, m_pDevice(pDevice)
 	, m_pDX12Device(pDevice->GetDX12Device())
 	, m_Scheduler(pDevice->GetDX12Device()->GetScheduler())
-	, m_TimestampHeap(pDevice->GetDX12Device())
-	, m_OcclusionHeap(pDevice->GetDX12Device())
 {
 	DX12_FUNC_LOG
 
 	//	g_nPrintDX12 = true;
 
-	m_TimestampIndex = 0;
-	m_OcclusionIndex = 0;
-
-	// Timer query heap
-	{
-		D3D12_QUERY_HEAP_DESC desc = { D3D12_QUERY_HEAP_TYPE_TIMESTAMP, 4096, m_nodeMask };
-		m_TimestampHeap.Init(m_pDX12Device, desc);
-	}
-
-	// Occlusion query heap
-	{
-		D3D12_QUERY_HEAP_DESC desc = { D3D12_QUERY_HEAP_TYPE_OCCLUSION, 64, m_nodeMask };
-		m_OcclusionHeap.Init(m_pDX12Device, desc);
-	}
-
-	if (S_OK != m_pDX12Device->CreateOrReuseCommittedResource(
-	      &CD3DX12_HEAP_PROPERTIES(D3D12_HEAP_TYPE_READBACK, blsi(m_nodeMask), m_nodeMask),
-	      D3D12_HEAP_FLAG_NONE,
-	      &CD3DX12_RESOURCE_DESC::Buffer(sizeof(UINT64) * m_TimestampHeap.GetCapacity()),
-	      D3D12_RESOURCE_STATE_COPY_DEST,
-	      nullptr,
-	      IID_GFX_ARGS(&m_TimestampDownloadBuffer)))
-	{
-		DX12_ERROR("Could not create intermediate timestamp download buffer!");
-	}
-
-	if (S_OK != m_pDX12Device->CreateOrReuseCommittedResource(
-	      &CD3DX12_HEAP_PROPERTIES(D3D12_HEAP_TYPE_READBACK, blsi(m_nodeMask), m_nodeMask),
-	      D3D12_HEAP_FLAG_NONE,
-	      &CD3DX12_RESOURCE_DESC::Buffer(sizeof(UINT64) * m_OcclusionHeap.GetCapacity()),
-	      D3D12_RESOURCE_STATE_COPY_DEST,
-	      nullptr,
-	      IID_GFX_ARGS(&m_OcclusionDownloadBuffer)))
-	{
-		DX12_ERROR("Could not create intermediate occlusion download buffer!");
-	}
-
 	m_pSamplerHeap = NULL;
 	m_pResourceHeap = NULL;
-
-	m_TimestampMemory = nullptr;
-	m_OcclusionMemory = nullptr;
-	m_TimestampMapValid = false;
-	m_OcclusionMapValid = false;
 
 	m_bCmdListBegins[CMDQUEUE_GRAPHICS] = true;
 	m_bCmdListBegins[CMDQUEUE_COMPUTE] = true;
@@ -126,19 +82,6 @@ CCryDX12DeviceContext::CCryDX12DeviceContext(CCryDX12Device* pDevice, UINT nodeM
 CCryDX12DeviceContext::~CCryDX12DeviceContext()
 {
 	DX12_FUNC_LOG
-
-	D3D12_RANGE sNoWrite = { 0, 0 };
-	if (m_TimestampMemory)
-	{
-		m_TimestampDownloadBuffer->Unmap(0, &sNoWrite);
-	}
-	if (m_OcclusionMemory)
-	{
-		m_OcclusionDownloadBuffer->Unmap(0, &sNoWrite);
-	}
-
-	m_TimestampDownloadBuffer->Release();
-	m_OcclusionDownloadBuffer->Release();
 }
 
 bool CCryDX12DeviceContext::PrepareGraphicsPSO()
@@ -740,98 +683,6 @@ void CCryDX12DeviceContext::Finish()
 
 ///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
-UINT CCryDX12DeviceContext::TimestampIndex(NCryDX12::CCommandList* pCmdList)
-{
-	UINT index = m_TimestampIndex;
-	m_TimestampIndex = (m_TimestampIndex + 1) % m_TimestampHeap.GetCapacity();
-	return index;
-}
-
-void CCryDX12DeviceContext::InsertTimestamp(NCryDX12::CCommandList* pCmdList, UINT index)
-{
-	pCmdList->EndQuery(m_TimestampHeap, D3D12_QUERY_TYPE_TIMESTAMP, index);
-}
-
-void CCryDX12DeviceContext::ResolveTimestamps(NCryDX12::CCommandList* pCmdList)
-{
-	if (m_TimestampMemory)
-	{
-		const D3D12_RANGE sNoWrite = { 0, 0 };
-		m_TimestampDownloadBuffer->Unmap(0, &sNoWrite);
-		m_TimestampMemory = nullptr;
-	}
-
-	pCmdList->ResolveQueryData(m_TimestampHeap, D3D12_QUERY_TYPE_TIMESTAMP, 0, m_TimestampHeap.GetCapacity(), m_TimestampDownloadBuffer, 0);
-}
-
-void CCryDX12DeviceContext::QueryTimestamp(NCryDX12::CCommandList* pCmdList, UINT index, void* mem)
-{
-	if (mem)
-	{
-		if (!m_TimestampMemory)
-		{
-			// Resources on D3D12_HEAP_TYPE_READBACK heaps do not support persistent map.
-			const D3D12_RANGE sFullRead = { 0, sizeof(UINT64) * m_TimestampHeap.GetCapacity() };
-			m_TimestampDownloadBuffer->Map(0, &sFullRead, &m_TimestampMemory);
-		}
-
-		memcpy(mem, (char*)m_TimestampMemory + index * sizeof(UINT64), sizeof(UINT64));
-	}
-}
-
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
-
-UINT CCryDX12DeviceContext::OcclusionIndex(NCryDX12::CCommandList* pCmdList, bool counter)
-{
-	UINT index = m_OcclusionIndex;
-	m_OcclusionIndex = (m_OcclusionIndex + 1) % m_OcclusionHeap.GetCapacity();
-	return index;
-}
-
-void CCryDX12DeviceContext::InsertOcclusionStart(NCryDX12::CCommandList* pCmdList, UINT index, bool counter)
-{
-	pCmdList->BeginQuery(m_OcclusionHeap, counter ? D3D12_QUERY_TYPE_OCCLUSION : D3D12_QUERY_TYPE_BINARY_OCCLUSION, index);
-}
-
-void CCryDX12DeviceContext::InsertOcclusionStop(NCryDX12::CCommandList* pCmdList, UINT index, bool counter)
-{
-	// TODO: investigate! ResolveQueryData() should not needed to be called. Bug in DX12 API?
-	pCmdList->EndQuery(m_OcclusionHeap, counter ? D3D12_QUERY_TYPE_OCCLUSION : D3D12_QUERY_TYPE_BINARY_OCCLUSION, index);
-	pCmdList->ResolveQueryData(m_OcclusionHeap, counter ? D3D12_QUERY_TYPE_OCCLUSION : D3D12_QUERY_TYPE_BINARY_OCCLUSION, index, 1, m_OcclusionDownloadBuffer, index * 8);
-
-	m_OcclusionMapValid = false;
-}
-
-void CCryDX12DeviceContext::ResolveOcclusion(NCryDX12::CCommandList* pCmdList, UINT index, void* mem)
-{
-	if (mem)
-	{
-		if (!m_OcclusionMapValid)
-		{
-			pCmdList->ResolveQueryData(m_OcclusionHeap, D3D12_QUERY_TYPE_OCCLUSION, 0, m_OcclusionHeap.GetCapacity(), m_OcclusionDownloadBuffer, 0);
-			m_OcclusionMapValid = true;
-		}
-
-		if (!m_OcclusionMemory)
-		{
-			// Resources on D3D12_HEAP_TYPE_READBACK heaps do not support persistent map.
-			const D3D12_RANGE sFullRead = { 0, sizeof(UINT64) * m_OcclusionHeap.GetCapacity() };
-			m_OcclusionDownloadBuffer->Map(0, &sFullRead, &m_OcclusionMemory);
-		}
-
-		memcpy(mem, (char*)m_OcclusionMemory + index * sizeof(UINT64), sizeof(UINT64));
-
-		if (m_OcclusionMemory)
-		{
-			const D3D12_RANGE sNoWrite = { 0, 0 };
-			m_OcclusionDownloadBuffer->Unmap(0, &sNoWrite);
-			m_OcclusionMemory = nullptr;
-		}
-	}
-}
-
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
-
 #pragma region /* ID3D11DeviceChild implementation */
 
 void STDMETHODCALLTYPE CCryDX12DeviceContext::GetDevice(
@@ -1260,9 +1111,9 @@ void STDMETHODCALLTYPE CCryDX12DeviceContext::Begin(
 
 		auto pOcclusionQuery = reinterpret_cast<CCryDX12ResourceQuery*>(pAsync);
 		pOcclusionQuery->SetFenceValue(InsertFence());
-		pOcclusionQuery->SetQueryIndex(OcclusionIndex(m_Scheduler.GetCommandList(CMDQUEUE_GRAPHICS), desc.Query == D3D11_QUERY_OCCLUSION));
+		pOcclusionQuery->SetQueryIndex(m_OcclusionIndex++);
 
-		InsertOcclusionStart(m_Scheduler.GetCommandList(CMDQUEUE_GRAPHICS), pOcclusionQuery->GetQueryIndex(), desc.Query == D3D11_QUERY_OCCLUSION);
+		m_pDX12Device->InsertOcclusionStart(m_Scheduler.GetCommandList(CMDQUEUE_GRAPHICS), pOcclusionQuery->GetQueryIndex(), desc.Query == D3D11_QUERY_OCCLUSION);
 	}
 	else
 	{
@@ -1293,9 +1144,10 @@ void STDMETHODCALLTYPE CCryDX12DeviceContext::End(
 	{
 		auto pOcclusionQuery = reinterpret_cast<CCryDX12ResourceQuery*>(pAsync);
 		pOcclusionQuery->SetFenceValue(InsertFence());
-		pOcclusionQuery->SetQueryResource(m_OcclusionDownloadBuffer);
+		pOcclusionQuery->SetQueryResource(nullptr);
 
-		InsertOcclusionStop(m_Scheduler.GetCommandList(CMDQUEUE_GRAPHICS), pOcclusionQuery->GetQueryIndex(), desc.Query == D3D11_QUERY_OCCLUSION);
+		m_pDX12Device->InsertOcclusionStop(m_Scheduler.GetCommandList(CMDQUEUE_GRAPHICS), pOcclusionQuery->GetQueryIndex(), desc.Query == D3D11_QUERY_OCCLUSION);
+		m_pDX12Device->IssueOcclusionResolve(m_Scheduler.GetCommandList(CMDQUEUE_GRAPHICS), pOcclusionQuery->GetQueryIndex(), 1);
 
 #ifdef DX12_SUBMISSION_LOWLATENCY
 		// TODO: group time-stamp queries
@@ -1352,7 +1204,7 @@ HRESULT STDMETHODCALLTYPE CCryDX12DeviceContext::GetData(
 
 		if (bComplete)
 		{
-			ResolveOcclusion(m_Scheduler.GetCommandList(CMDQUEUE_GRAPHICS), pOcclusionQuery->GetQueryIndex(), pData);
+			m_pDX12Device->QueryOcclusions(pOcclusionQuery->GetQueryIndex(), 1, pData);
 		}
 
 		return (bComplete) ? S_OK : S_FALSE;

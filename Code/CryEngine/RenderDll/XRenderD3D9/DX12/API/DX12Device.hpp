@@ -66,6 +66,17 @@ public:
 	CCommandScheduler&          GetScheduler() { return m_Scheduler; }
 	const CCommandScheduler&    GetScheduler() const { return m_Scheduler; }
 
+	UINT64                      GetTimestampFrequency();
+
+	void                        InsertTimestamp(NCryDX12::CCommandList* pCmdList, UINT index);
+	void                        IssueTimestampResolve(NCryDX12::CCommandList* pCmdList, UINT firstIndex, UINT numIndices);
+	void                        QueryTimestamps(UINT firstIndex, UINT numIndices, void* mem);
+		                        
+	void                        InsertOcclusionStart(NCryDX12::CCommandList* pCmdList, UINT index, bool counter);
+	void                        InsertOcclusionStop(NCryDX12::CCommandList* pCmdList, UINT index, bool counter);
+	void                        IssueOcclusionResolve(NCryDX12::CCommandList* pCmdList, UINT firstIndex, UINT numIndices);
+	void                        QueryOcclusions(UINT firstIndex, UINT numIndices, void* mem);
+
 	D3D12_CPU_DESCRIPTOR_HANDLE CacheSampler(const D3D12_SAMPLER_DESC* pDesc) threadsafe;
 	D3D12_CPU_DESCRIPTOR_HANDLE CacheShaderResourceView(const D3D12_SHADER_RESOURCE_VIEW_DESC* pDesc, ID3D12Resource* pResource) threadsafe;
 	D3D12_CPU_DESCRIPTOR_HANDLE CacheUnorderedAccessView(const D3D12_UNORDERED_ACCESS_VIEW_DESC* pDesc, ID3D12Resource* pResource) threadsafe;
@@ -130,6 +141,16 @@ public:
 	void FlushAndWaitForGPU();
 
 private:
+	// Queries ------------------------------------------------------------------------------------
+	// TODO: group in a class
+	CQueryHeap      m_TimestampHeap;
+	CQueryHeap      m_OcclusionHeap;
+	ID3D12Resource* m_TimestampDownloadBuffer;
+	ID3D12Resource* m_OcclusionDownloadBuffer;
+	void*           m_TimestampMemory;
+	void*           m_OcclusionMemory;
+
+	// Caches ------------------------------------------------------------------------------------
 	CDescriptorHeap m_SamplerCache;
 	CDescriptorHeap m_ShaderResourceDescriptorCache;
 	CDescriptorHeap m_UnorderedAccessDescriptorCache;
@@ -162,7 +183,7 @@ private:
 	static CryCriticalSectionNonRecursive                  m_RenderTargetThreadSafeScope;
 	static CryCriticalSectionNonRecursive                  m_DescriptorAllocatorTheadSafeScope;
 
-	// Objects that should be released when they are not in use anymore
+	// Objects that should be released when they are not in use anymore ---------------------------
 	static CryCriticalSectionNonRecursive                  m_ReleaseHeapTheadSafeScope;
 	static CryCriticalSectionNonRecursive                  m_RecycleHeapTheadSafeScope;
 

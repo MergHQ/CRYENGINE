@@ -34,11 +34,12 @@ void DrawCompiledRenderItemsToCommandList(
 
 	// Start profile section
 #if defined(ENABLE_PROFILING_CODE)
-	if (gcpRendD3D->m_pPipelineProfiler)
+	#if defined(ENABLE_SIMPLE_GPU_TIMERS)
 	{
 		gcpRendD3D->m_pPipelineProfiler->UpdateMultithreadedSection(passContext.profilerSectionIndex, true, 0, 0, shouldIssueStartTimeStamp, deltaTimestamp, commandList);
 		deltaTimestamp = gEnv->pTimer->GetAsyncTime();
 	}
+	#endif
 
 	commandList->BeginProfilingSection();
 #endif
@@ -152,12 +153,13 @@ void DrawCompiledRenderItemsToCommandList(
 		commandList->GetGraphicsInterface()->EndProfilerEvent(passContext.pSceneRenderPass->GetLabel());
 
 #if defined(ENABLE_PROFILING_CODE)
-	if (gcpRendD3D->m_pPipelineProfiler)
+	#if defined(ENABLE_SIMPLE_GPU_TIMERS)
 	{
 		deltaTimestamp = gEnv->pTimer->GetAsyncTime() - deltaTimestamp;
 		gcpRendD3D->m_pPipelineProfiler->UpdateMultithreadedSection(passContext.profilerSectionIndex, false, commandList->EndProfilingSection().numDIPs,
 			commandList->EndProfilingSection().numPolygons, shouldIssueEndTimeStamp, deltaTimestamp, commandList);
 	}
+	#endif
 
 	gcpRendD3D->AddRecordedProfilingStats(commandList->EndProfilingSection(), passContext.pSceneRenderPass->GetRenderList(), true);
 #endif

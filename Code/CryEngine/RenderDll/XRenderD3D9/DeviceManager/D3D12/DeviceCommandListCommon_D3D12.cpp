@@ -5,7 +5,7 @@
 #include "DevicePSO_D3D12.h"
 
 ///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
-bool CDeviceTimestampGroup::s_reservedGroups[4] = { false, false, false, false };
+bool CDeviceTimestampGroup::s_reservedGroups[MAX_FRAMES_IN_FLIGHT] = { false, false, false, false };
 
 CDeviceTimestampGroup::CDeviceTimestampGroup()
 	: m_numTimestamps(0)
@@ -13,6 +13,7 @@ CDeviceTimestampGroup::CDeviceTimestampGroup()
 	, m_fence(0)
 	, m_frequency(0)
 	, m_measurable(false)
+	, m_measured(false)
 {
 	m_timeValues.fill(0);
 }
@@ -46,24 +47,31 @@ void CDeviceTimestampGroup::BeginMeasurement()
 	m_numTimestamps = 0;
 	m_frequency = 0;
 	m_measurable = false;
+	m_measured = false;
 }
 
 void CDeviceTimestampGroup::EndMeasurement()
 {
-	GetDeviceObjectFactory().IssueFence(m_fence);
+	auto* pDX12Device = GetDeviceObjectFactory().GetDX12Device();
+	auto* pDX12Scheduler = GetDeviceObjectFactory().GetDX12Scheduler();
+	auto* pDX12CmdList = GetDeviceObjectFactory().GetCoreCommandList().GetDX12CommandList();
+
+	pDX12Device->IssueTimestampResolve(pDX12CmdList, m_groupIndex * kMaxTimestamps, m_numTimestamps);
+	m_fence = (DeviceFenceHandle)pDX12Scheduler->InsertFence();
+
 	m_measurable = true;
 }
 
 uint32 CDeviceTimestampGroup::IssueTimestamp(CDeviceCommandList* pCommandList)
 {
+	// Passing a nullptr means we want to use the current core command-list
+	auto* pDX12Device = GetDeviceObjectFactory().GetDX12Device();
+	auto* pDX12CmdList = (pCommandList ? *pCommandList : GetDeviceObjectFactory().GetCoreCommandList()).GetDX12CommandList();
+
 	assert(m_numTimestamps < kMaxTimestamps);
 
-	uint32 timestampIndex = m_groupIndex * kMaxTimestamps + m_numTimestamps;
-
-	// Passing a nullptr means we want to use the current core command-list
-	CDeviceCommandListRef deviceCommandList = pCommandList ? *pCommandList : GetDeviceObjectFactory().GetCoreCommandList();
-	CCryDX12DeviceContext* m_pDeviceContext = (CCryDX12DeviceContext*)gcpRendD3D->GetDeviceContext().GetRealDeviceContext();
-	m_pDeviceContext->InsertTimestamp(timestampIndex, deviceCommandList.GetDX12CommandList());
+	const uint32 timestampIndex = m_groupIndex * kMaxTimestamps + m_numTimestamps;
+	pDX12Device->InsertTimestamp(pDX12CmdList, timestampIndex);
 
 	++m_numTimestamps;
 	return timestampIndex;
@@ -73,18 +81,19 @@ bool CDeviceTimestampGroup::ResolveTimestamps()
 {
 	if (!m_measurable)
 		return false;
-	if (m_numTimestamps == 0)
+	if (m_measured || m_numTimestamps == 0)
 		return true;
 
-	if (GetDeviceObjectFactory().SyncFence(m_fence, false, true) != S_OK)
+	auto* pDX12Device = GetDeviceObjectFactory().GetDX12Device();
+	auto* pDX12Scheduler = GetDeviceObjectFactory().GetDX12Scheduler();
+
+	if (pDX12Scheduler->TestForFence(m_fence) != S_OK)
 		return false;
 
-	CCryDX12DeviceContext* m_pDeviceContext = (CCryDX12DeviceContext*)gcpRendD3D->GetDeviceContext().GetRealDeviceContext();
-	m_frequency = m_pDeviceContext->GetTimestampFrequency();
-	m_pDeviceContext->ResolveTimestamps();
-	m_pDeviceContext->QueryTimestamps(m_groupIndex * kMaxTimestamps, m_numTimestamps, &m_timeValues[0]);
+	m_frequency = pDX12Device->GetTimestampFrequency();
+	pDX12Device->QueryTimestamps(m_groupIndex * kMaxTimestamps, m_numTimestamps, &m_timeValues[0]);
 
-	return true;
+	return m_measured = true;
 }
 
 ///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////

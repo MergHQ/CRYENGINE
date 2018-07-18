@@ -27,7 +27,8 @@ private:
 	DeviceFenceHandle                   m_fence;
 	std::array<uint64, kMaxTimestamps>  m_timestampData;
 
-	bool                                m_measurable;
+	bool                                m_measurable : 1;
+	bool                                m_measured   : 1;
 };
 
 ////////////////////////////////////////////////////////////////////////////

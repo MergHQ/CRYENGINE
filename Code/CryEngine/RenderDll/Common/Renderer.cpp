@@ -110,6 +110,7 @@ CRenderer* gRenDev = NULL;
 int CRenderer::m_iGeomInstancingThreshold = 0;      // 0 means not set yet
 
 SRenderStatistics* SRenderStatistics::s_pCurrentOutput = nullptr;
+SRenderStatistics* SRenderStatistics::s_pPreviousOutput = nullptr;
 
 #define RENDERER_DEFAULT_FONT "Fonts/default.xml"
 
@@ -289,6 +290,7 @@ void CRenderer::InitRenderer()
 	ZeroArray(m_streamZonesRoundId);
 
 	SRenderStatistics::s_pCurrentOutput = &m_frameRenderStats[0];
+	SRenderStatistics::s_pPreviousOutput = &m_frameRenderStats[1];
 	memset(SRenderStatistics::s_pCurrentOutput, 0, sizeof(m_frameRenderStats));
 }
 
@@ -3153,8 +3155,8 @@ void CRenderer::PostLevelLoading()
 		m_bStartLevelLoading = false;
 		if (m_pRT->IsMultithreaded())
 		{
-			iLog->Log("-- Render thread was idle during level loading: %.3f secs", gRenDev->m_pRT->m_fTimeIdleDuringLoading);
-			iLog->Log("-- Render thread was busy during level loading: %.3f secs", gRenDev->m_pRT->m_fTimeBusyDuringLoading);
+			iLog->Log("-- Render thread was idle during level loading: %.3f secs", SRenderStatistics::Write().m_Summary.idleLoading);
+			iLog->Log("-- Render thread was busy during level loading: %.3f secs", SRenderStatistics::Write().m_Summary.busyLoading);
 		}
 
 		m_cEF.mfSortResources();
@@ -3278,6 +3280,24 @@ void SRenderStatistics::Begin(const SRenderStatistics* prevData)
 
 void SRenderStatistics::Finish()
 {
+	// Finish filling the current frame's global timings
+	{
+		m_Summary.frameTime = iTimer->GetRealFrameTime();
+		m_Summary.renderTime += m_Summary.miscTime;
+		m_Summary.renderTime += m_Summary.flashTime;
+
+		// BK: We need a way of getting gpu frame time in release, without gpu timers
+		// for now we just use overall frame time
+#if CRY_PLATFORM_ORBIS && !CRY_RENDERER_GNM
+		m_Summary.gpuIdlePerc  = DXOrbis::Device()->GetGPUIdlePercentage();
+		m_Summary.waitForGPU   = DXOrbis::Device()->GetCPUWaitOnGPUTime();
+		m_Summary.gpuFrameTime = DXOrbis::Device()->GetCPUFrameTime();
+#else
+		m_Summary.gpuIdlePerc = 0;
+		m_Summary.gpuFrameTime = m_Summary.renderTime;
+#endif
+	}
+
 #if defined(ENABLE_PROFILING_CODE)
 	m_nNumInsts               += m_nAsynchNumInsts;
 	m_nNumInstCalls           += m_nAsynchNumInstCalls;
@@ -3750,24 +3770,26 @@ void CRenderer::RemoveAsyncTextureCompileListener(IAsyncTextureCompileListener* 
 //////////////////////////////////////////////////////////////////////////
 float CRenderer::GetGPUFrameTime()
 {
-	int nThr       = m_pRT->GetThreadList();
-	float fGPUidle = m_fTimeGPUIdlePercent[nThr] * 0.01f;        // normalise %
-	float fGPUload = 1.0f - fGPUidle;                            // normalised non-idle time
-	float fGPUtime = (m_fTimeProcessedGPU[nThr] * fGPUload);     //GPU time in seconds
+	const SRenderStatistics::SFrameSummary& rtSummary = SRenderStatistics::Read().m_Summary;
+
+	float fGPUidle = rtSummary.gpuIdlePerc * 0.01f;     // normalise %
+	float fGPUload = 1.0f - fGPUidle;                   // normalised non-idle time
+	float fGPUtime = rtSummary.gpuFrameTime * fGPUload; // GPU time in seconds
 	return fGPUtime;
 }
 
 void CRenderer::GetRenderTimes(SRenderTimes& outTimes)
 {
-	int nThr = m_pRT->GetThreadList();
-	//Query render times on main thread
-	outTimes.fWaitForMain          = m_fTimeWaitForMain[nThr];
-	outTimes.fWaitForRender        = m_fTimeWaitForRender[nThr];
-	outTimes.fWaitForGPU           = m_fTimeWaitForGPU[nThr];
-	outTimes.fTimeProcessedRT      = m_fTimeProcessedRT[nThr];
-	outTimes.fTimeProcessedRTScene = m_frameRenderStats[nThr].m_fRenderTime;
-	outTimes.fTimeProcessedGPU     = m_fTimeProcessedGPU[nThr];
-	outTimes.fTimeGPUIdlePercent   = m_fTimeGPUIdlePercent[nThr];
+	const SRenderStatistics::SFrameSummary& rtSummary = SRenderStatistics::Read().m_Summary;
+
+	// Query render times on main thread
+	outTimes.fWaitForMain          = rtSummary.waitForMain;
+	outTimes.fWaitForRender        = rtSummary.waitForRender;
+	outTimes.fWaitForGPU           = rtSummary.waitForGPU;
+	outTimes.fTimeProcessedRT      = rtSummary.renderTime;
+	outTimes.fTimeProcessedRTScene = rtSummary.sceneTime;
+	outTimes.fTimeProcessedGPU     = rtSummary.gpuFrameTime;
+	outTimes.fTimeGPUIdlePercent   = rtSummary.gpuIdlePerc;
 }
 
 //////////////////////////////////////////////////////////////////////////

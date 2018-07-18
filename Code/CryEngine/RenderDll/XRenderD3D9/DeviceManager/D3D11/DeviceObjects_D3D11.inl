@@ -32,15 +32,17 @@ public:
 	}
 
 protected:
-	uint32                                    m_numTimestamps;
+	uint32                                   m_numTimestamps;
 	
-	std::array<ID3D11Query*, kMaxTimestamps>  m_timestampQueries;
-	ID3D11Query*                              m_pDisjointQuery;
+	std::array<ID3D11Query*, kMaxTimestamps> m_timestampQueries;
+	ID3D11Query*                             m_pDisjointQuery;
 
-	UINT64                                    m_frequency;
-	std::array<uint64, kMaxTimestamps>        m_timeValues;
+	UINT64                                   m_frequency;
+	std::array<uint64, kMaxTimestamps>       m_timeValues;
 
-	bool                                      m_measurable;
+
+	bool                                     m_measurable : 1;
+	bool                                     m_measured   : 1;
 };
 
 #else

@@ -112,8 +112,7 @@ void CD3D9Renderer::InitRenderer()
 	m_pStereoRenderer = new CD3DStereoRenderer();
 	m_pGraphicsPipeline.reset(new CStandardGraphicsPipeline);
 
-	m_pPipelineProfiler = NULL;
-
+	m_pPipelineProfiler = nullptr;
 #if defined(ENABLE_SIMPLE_GPU_TIMERS)
 	m_pPipelineProfiler = new CRenderPipelineProfiler();
 #endif
@@ -927,7 +926,7 @@ void CD3D9Renderer::RT_BeginFrame(const SDisplayContextKey& displayContextKey)
 		                          && snowVolParams.m_fRadius > 0.05f
 		                          && CV_r_snow > 0);
 
-		const auto& arrOccluders = m_p3DEngineCommon.m_RainOccluders.m_arrCurrOccluders[gRenDev->GetRenderThreadID()];
+		const auto& arrOccluders = m_p3DEngineCommon.m_RainOccluders.m_arrCurrOccluders[GetRenderThreadID()];
 		m_bDeferredRainOcclusionEnabled = (rainVolParams.bApplyOcclusion
 		                                   && ((CV_r_snow == 2 && m_bDeferredSnowEnabled) || (CV_r_rain == 2 && m_bDeferredRainEnabled))
 		                                   && !arrOccluders.empty());
@@ -954,9 +953,6 @@ void CD3D9Renderer::RT_BeginFrame(const SDisplayContextKey& displayContextKey)
 	// Profiling and statistics
 	//////////////////////////////////////////////////////////////////////
 	{
-		SRenderStatistics::s_pCurrentOutput = &m_frameRenderStats[m_nProcessThreadID];
-		SRenderStatistics::s_pCurrentOutput->Begin(&m_frameRenderStats[m_nFillThreadID]);
-
 		m_renderTargetStats.resize(0);
 
 #if !defined(_RELEASE)
@@ -964,8 +960,30 @@ void CD3D9Renderer::RT_BeginFrame(const SDisplayContextKey& displayContextKey)
 		m_pGraphicsPipeline->GetDrawCallInfoPerNode()->clear();
 #endif
 
-		if (m_pPipelineProfiler)
+		{
+#if defined(ENABLE_SIMPLE_GPU_TIMERS)
 			m_pPipelineProfiler->BeginFrame(gRenDev->GetRenderFrameID());
+#endif
+
+			// NOTE: takes un-smoothed last frame's times
+			const auto& lastTimings = m_frameRenderStats[m_nFillThreadID].m_Summary;
+			static float fWaitForGPU;
+			float fSmooth = 5.0f;
+			fWaitForGPU = (lastTimings.gpuFrameTime + fWaitForGPU * fSmooth) / (fSmooth + 1.0f);
+			if (fWaitForGPU >= 0.004f)
+			{
+				if (m_nGPULimited < 1000)
+					m_nGPULimited++;
+			}
+			else
+				m_nGPULimited = 0;
+
+			m_bUseGPUFriendlyBatching[GetRenderThreadID()] = m_nGPULimited > 10; // On PC if we are GPU limited use z-pass distance sorting and disable instancing
+			if (CV_r_batchtype == 0)
+				m_bUseGPUFriendlyBatching[GetRenderThreadID()] = false;
+			else if (CV_r_batchtype == 1)
+				m_bUseGPUFriendlyBatching[GetRenderThreadID()] = true;
+		}
 	}
 
 	//////////////////////////////////////////////////////////////////////
@@ -1095,25 +1113,6 @@ void CD3D9Renderer::RT_BeginFrame(const SDisplayContextKey& displayContextKey)
 	}
 
 	m_nStencilMaskRef = STENCIL_VALUE_OUTDOORS + 1;
-
-	{
-		static float fWaitForGPU;
-		float fSmooth = 5.0f;
-		fWaitForGPU = (m_fTimeWaitForGPU[gRenDev->GetMainThreadID()] + fWaitForGPU * fSmooth) / (fSmooth + 1.0f);
-		if (fWaitForGPU >= 0.004f)
-		{
-			if (m_nGPULimited < 1000)
-				m_nGPULimited++;
-		}
-		else
-			m_nGPULimited = 0;
-
-		m_bUseGPUFriendlyBatching[gRenDev->GetRenderThreadID()] = m_nGPULimited > 10; // On PC if we are GPU limited use z-pass distance sorting and disable instancing
-		if (CV_r_batchtype == 0)
-			m_bUseGPUFriendlyBatching[gRenDev->GetRenderThreadID()] = false;
-		else if (CV_r_batchtype == 1)
-			m_bUseGPUFriendlyBatching[gRenDev->GetRenderThreadID()] = true;
-	}
 }
 
 bool CD3D9Renderer::CheckDeviceLost()
@@ -1461,6 +1460,33 @@ static int DebugIndexBufferSize(D3DIndexBuffer* pIB)
 #endif
 }
 
+#if defined(ENABLE_SIMPLE_GPU_TIMERS)
+float CD3D9Renderer::GetGPUFrameTime()
+{
+	// NOTE: returning un-smoothed data, smoothed can be requested using ID "RT_COMMAND_BUF_COUNT"
+	const SRenderStatistics::SFrameSummary& rtSummary = m_pPipelineProfiler->GetFrameSummary(GetMainThreadID());
+
+	float fGPUidle = rtSummary.gpuIdlePerc * 0.01f;     // normalise %
+	float fGPUload = 1.0f - fGPUidle;                   // normalised non-idle time
+	float fGPUtime = rtSummary.gpuFrameTime * fGPUload; // GPU time in seconds
+	return fGPUtime;
+}
+
+void CD3D9Renderer::GetRenderTimes(SRenderTimes& outTimes)
+{
+	// NOTE: returning un-smoothed data, smoothed can be requested using ID "RT_COMMAND_BUF_COUNT"
+	const SRenderStatistics::SFrameSummary& rtSummary = m_pPipelineProfiler->GetFrameSummary(GetMainThreadID());
+
+	// Query render times on main thread
+	outTimes.fWaitForMain          = rtSummary.waitForMain;
+	outTimes.fWaitForRender        = rtSummary.waitForRender;
+	outTimes.fWaitForGPU           = rtSummary.waitForGPU;
+	outTimes.fTimeProcessedRT      = rtSummary.renderTime;
+	outTimes.fTimeProcessedRTScene = rtSummary.sceneTime;
+	outTimes.fTimeProcessedGPU     = rtSummary.gpuFrameTime;
+	outTimes.fTimeGPUIdlePercent   = rtSummary.gpuIdlePerc;
+}
+#endif
 
 void CD3D9Renderer::DebugDrawStats1(const SRenderStatistics& RStats)
 {
@@ -2034,6 +2060,7 @@ void CD3D9Renderer::DebugPerfBars(const SRenderStatistics& RStats,int nX, int nY
 	ColorF col = Col_Yellow;
 	ColorF colP = Col_Cyan;
 
+	const SRenderStatistics::SFrameSummary& rtTimings = RStats.m_Summary;
 	CRenderDisplayContext* pDC = GetActiveDisplayContext();
 	SRenderViewport vp = pDC->GetViewport();
 
@@ -2087,32 +2114,32 @@ void CD3D9Renderer::DebugPerfBars(const SRenderStatistics& RStats,int nX, int nY
 	AuxDrawQuad(nX + fOffs, nY + 4, nX + fOffs + fTimeDIPSum / fFrameTime * fMaxBar, nY + 12, Col_Yellow, 1.0f);
 	nY += nYst + 5;
 
-	fRTTimeProcess = (m_fTimeProcessedRT[gRenDev->GetMainThreadID()] + fRTTimeProcess * fSmooth) / (fSmooth + 1.0f);
+	fRTTimeProcess = (rtTimings.renderTime + fRTTimeProcess * fSmooth) / (fSmooth + 1.0f);
 	IRenderAuxText::Draw2dLabel(nX, nY, fFSize, &colT.r, false, "RT process time: %.3fms", fRTTimeProcess * 1000.0f);
 
 	AuxDrawQuad(nX + fOffs, nY + 4, nX + fOffs + fRTTimeProcess / fFrameTime * fMaxBar, nY + 12, Col_Gray, 1.0f);
 	nY += nYst;
 	nX += 5;
 
-	fRTTimeEndFrame = (m_fRTTimeEndFrame + fRTTimeEndFrame * fSmooth) / (fSmooth + 1.0f);
+	fRTTimeEndFrame = (rtTimings.endTime + fRTTimeEndFrame * fSmooth) / (fSmooth + 1.0f);
 	IRenderAuxText::Draw2dLabel(nX, nY, fFSize, &colT.r, false, "RT end frame: %.3fms", fRTTimeEndFrame * 1000.0f);
 
 	AuxDrawQuad(nX + fOffs, nY + 4, nX + fOffs + fRTTimeEndFrame / fFrameTime * fMaxBar, nY + 12, Col_Gray, 1.0f);
 	nY += nYst;
 
-	fRTTimeFlashRender = (m_fRTTimeFlashRender + fRTTimeFlashRender * fSmooth) / (fSmooth + 1.0f);
+	fRTTimeFlashRender = (rtTimings.flashTime + fRTTimeFlashRender * fSmooth) / (fSmooth + 1.0f);
 	IRenderAuxText::Draw2dLabel(nX, nY, fFSize, &colT.r, false, "RT flash render: %.3fms", fRTTimeFlashRender * 1000.0f);
 
 	AuxDrawQuad(nX + fOffs, nY + 4, nX + fOffs + fRTTimeFlashRender / fFrameTime * fMaxBar, nY + 12, Col_Gray, 1.0f);
 	nY += nYst;
 
-	fRTTimeMiscRender = (m_fRTTimeMiscRender + fRTTimeMiscRender * fSmooth) / (fSmooth + 1.0f);
+	fRTTimeMiscRender = (rtTimings.miscTime + fRTTimeMiscRender * fSmooth) / (fSmooth + 1.0f);
 	IRenderAuxText::Draw2dLabel(nX, nY, fFSize, &colT.r, false, "RT misc render: %.3fms", fRTTimeMiscRender * 1000.0f);
 
 	AuxDrawQuad(nX + fOffs, nY + 4, nX + fOffs + fRTTimeMiscRender / fFrameTime * fMaxBar, nY + 12, Col_Gray, 1.0f);
 	nY += nYst;
 
-	fRTTimeSceneRender = (m_fRTTimeSceneRender + fRTTimeSceneRender * fSmooth) / (fSmooth + 1.0f);
+	fRTTimeSceneRender = (rtTimings.sceneTime + fRTTimeSceneRender * fSmooth) / (fSmooth + 1.0f);
 	IRenderAuxText::Draw2dLabel(nX, nY, fFSize, &colT.r, false, "RT scene render: %.3fms", fRTTimeSceneRender * 1000.0f);
 
 	AuxDrawQuad(nX + fOffs, nY + 4, nX + fOffs + fRTTimeSceneRender / fFrameTime * fMaxBar, nY + 12, Col_Gray, 1.0f);
@@ -2125,7 +2152,7 @@ void CD3D9Renderer::DebugPerfBars(const SRenderStatistics& RStats,int nX, int nY
 	nY += nYst + 5;
 	nX -= 5;
 
-	fWaitForGPU = (m_fTimeWaitForGPU[gRenDev->GetMainThreadID()] + fWaitForGPU * fSmooth) / (fSmooth + 1.0f);
+	fWaitForGPU = (rtTimings.waitForGPU + fWaitForGPU * fSmooth) / (fSmooth + 1.0f);
 	IRenderAuxText::Draw2dLabel(nX, nY, fFSize, &colF.r, false, "Wait for GPU: %.3fms", fWaitForGPU * 1000.0f);
 
 	AuxDrawQuad(nX + fOffs, nY + 4, nX + fOffs + fWaitForGPU / fFrameTime * fMaxBar, nY + 12, Col_Blue, 1.0f);
@@ -3230,6 +3257,10 @@ void CD3D9Renderer::RT_EndFrame()
 		SRenderStatistics::Write().m_fTexUploadTime += (iTimer->GetAsyncTime() - time0).GetSeconds();
 	}
 
+#if defined(ENABLE_SIMPLE_GPU_TIMERS)
+	m_pPipelineProfiler->Display();
+#endif
+
 	// Rnder-thread Aux
 	RenderAux_RT();
 
@@ -3253,16 +3284,18 @@ void CD3D9Renderer::RT_EndFrame()
 		bProfilerOnSocialScreen = pSocialScreenCVar->GetIVal() >= 0;
 #endif
 
-	if (m_pPipelineProfiler && !bProfilerOnSocialScreen)
+#if defined(ENABLE_SIMPLE_GPU_TIMERS)
+	if (!bProfilerOnSocialScreen)
 		m_pPipelineProfiler->EndFrame();
+#endif
 
 	CTimeValue timePresentBegin = iTimer->GetAsyncTime();
 	GetS3DRend().SubmitFrameToHMD();
 
-	if (m_pPipelineProfiler && bProfilerOnSocialScreen)
+#if defined(ENABLE_SIMPLE_GPU_TIMERS)
+	if (bProfilerOnSocialScreen)
 		m_pPipelineProfiler->EndFrame();
-
-	SRenderStatistics::Write().Finish();
+#endif
 
 #ifdef DO_RENDERLOG
 	if (CRenderer::CV_r_log)
@@ -3287,7 +3320,7 @@ void CD3D9Renderer::RT_EndFrame()
 	gRenDev->m_DevMan.RT_Tick();
 	GetDeviceObjectFactory().OnEndFrame();
 
-	gRenDev->m_fRTTimeEndFrame = iTimer->GetAsyncTime().GetDifferenceInSeconds(TimeEndF);
+	SRenderStatistics::Write().m_Summary.endTime = iTimer->GetAsyncTime().GetDifferenceInSeconds(TimeEndF);
 
 	// Update downscaled viewport
 	m_PrevViewportScale = m_CurViewportScale;
@@ -3453,7 +3486,7 @@ void CD3D9Renderer::RT_EndFrame()
 		m_nFrameSwapID++;
 	}
 
-	m_fTimeWaitForGPU[gRenDev->GetRenderThreadID()] += iTimer->GetAsyncTime().GetDifferenceInSeconds(timePresentBegin);
+	SRenderStatistics::Write().m_Summary.waitForGPU += iTimer->GetAsyncTime().GetDifferenceInSeconds(timePresentBegin);
 
 #ifdef ENABLE_BENCHMARK_SENSOR
 	m_benchmarkRendererSensor->afterSwapBuffers(GetDevice(), GetDeviceContext());
@@ -3504,23 +3537,6 @@ void CD3D9Renderer::RT_EndFrame()
 		gRenDev->LockParticleVideoMemory();
 	}
 
-#if CRY_PLATFORM_ORBIS && !CRY_RENDERER_GNM
-	m_fTimeGPUIdlePercent[gRenDev->GetRenderThreadID()] = DXOrbis::Device()->GetGPUIdlePercentage();
-	m_fTimeWaitForGPU[gRenDev->GetRenderThreadID()] = DXOrbis::Device()->GetCPUWaitOnGPUTime();
-	m_fTimeProcessedGPU[gRenDev->GetRenderThreadID()] = DXOrbis::Device()->GetCPUFrameTime();
-#else
-	m_fTimeGPUIdlePercent[gRenDev->GetRenderThreadID()] = 0;
-
-	#if !defined(ENABLE_SIMPLE_GPU_TIMERS)
-	// BK: We need a way of getting gpu frame time in release, without gpu timers
-	// for now we just use overall frame time
-	m_fTimeProcessedGPU[gRenDev->GetRenderThreadID()] = m_fTimeProcessedRT[gRenDev->GetRenderThreadID()];
-	#else
-	RPProfilerStats profileStats = m_pPipelineProfiler->GetBasicStats(eRPPSTATS_OverallFrame, gRenDev->GetRenderThreadID());
-	m_fTimeProcessedGPU[gRenDev->GetRenderThreadID()] = profileStats.gpuTime / 1000.0f; // Store in "seconds"
-#endif
-#endif
-
 #if defined(USE_GEOM_CACHES)
 	if (m_SceneRecurseCount == 1)
 	{
@@ -3539,7 +3555,7 @@ void CD3D9Renderer::RT_EndFrame()
 	m_DevBufMan.ReleaseEmptyBanks(gRenDev->GetRenderFrameID());
 
 	// Free render objects that could have been used for this frame
-	FreePermanentRenderObjects(gRenDev->GetRenderThreadID());
+	FreePermanentRenderObjects(GetRenderThreadID());
 
 	if (m_bStopRendererAtFrameEnd)
 	{
@@ -3551,6 +3567,14 @@ void CD3D9Renderer::RT_EndFrame()
 		}
 		m_mtxStopAtRenderFrameEnd.Unlock();
 	}
+}
+
+void CD3D9Renderer::RT_EndMeasurement()
+{
+	SRenderStatistics::Write().Finish();
+#if defined(ENABLE_SIMPLE_GPU_TIMERS)
+	m_pPipelineProfiler->Finish();
+#endif
 }
 
 void CD3D9Renderer::RT_PresentFast()
@@ -4088,10 +4112,10 @@ void CD3D9Renderer::CaptureFrameBufferPrepare(void)
 				int currentFrame = gRenDev->GetMainFrameID();
 
 				//Currently we only support one screen capture request per frame
-				if (m_nScreenCaptureRequestFrame[gRenDev->GetMainThreadID()] != currentFrame)
+				if (m_nScreenCaptureRequestFrame[GetMainThreadID()] != currentFrame)
 				{
-					m_screenCapTexHandle[gRenDev->GetMainThreadID()] = texHandle;
-					m_nScreenCaptureRequestFrame[gRenDev->GetMainThreadID()] = currentFrame;
+					m_screenCapTexHandle[GetMainThreadID()] = texHandle;
+					m_nScreenCaptureRequestFrame[GetMainThreadID()] = currentFrame;
 				}
 				else
 				{
@@ -4846,16 +4870,6 @@ unsigned int CD3D9Renderer::UploadToVideoMemory3D(unsigned char* data, int w, in
 	return UploadToVideoMemory(data, w, h, d, eTFSrc, eTFDst, nummipmap, eTT_3D, repeat, filter, Id, szCacheName, flags, eEndian, pRegion, bAsyncDevTexCreation);
 }
 
-float CD3D9Renderer::GetGPUFrameTime()
-{
-	return CRenderer::GetGPUFrameTime();
-}
-
-void CD3D9Renderer::GetRenderTimes(SRenderTimes& outTimes)
-{
-	CRenderer::GetRenderTimes(outTimes);
-}
-
 const char* sStreamNames[] = {
 	"VSF_GENERAL",
 	"VSF_TANGENTS",
@@ -5146,29 +5160,27 @@ bool CD3D9Renderer::IsStereoEnabled() const
 	return m_pStereoRenderer != nullptr ? m_pStereoRenderer->IsStereoEnabled() : false;
 }
 
+#if defined(ENABLE_SIMPLE_GPU_TIMERS)
 const RPProfilerStats* CD3D9Renderer::GetRPPStats(ERenderPipelineProfilerStats eStat, bool bCalledFromMainThread /*= true */)
 {
-	return m_pPipelineProfiler ? &m_pPipelineProfiler->GetBasicStats(eStat, bCalledFromMainThread ? gRenDev->GetMainThreadID() : gRenDev->GetRenderThreadID()) : nullptr;	
+	return &m_pPipelineProfiler->GetBasicStats(eStat, bCalledFromMainThread ? GetMainThreadID() : GetRenderThreadID());	
 }
 
 const RPProfilerStats* CD3D9Renderer::GetRPPStatsArray(bool bCalledFromMainThread /*= true */)
 {
-	return m_pPipelineProfiler ? m_pPipelineProfiler->GetBasicStatsArray(bCalledFromMainThread ? gRenDev->GetMainThreadID() : gRenDev->GetRenderThreadID()) : nullptr;
+	return m_pPipelineProfiler->GetBasicStatsArray(bCalledFromMainThread ? GetMainThreadID() : GetRenderThreadID());
 }
 
 const DynArray<RPProfilerDetailedStats>* CD3D9Renderer::GetRPPDetailedStatsArray(bool bCalledFromMainThread /*= true */)
 {
-	return m_pPipelineProfiler ? m_pPipelineProfiler->GetDetailedStatsArray(bCalledFromMainThread ? gRenDev->GetMainThreadID() : gRenDev->GetRenderThreadID()) : nullptr;
+	return m_pPipelineProfiler->GetDetailedStatsArray(bCalledFromMainThread ? GetMainThreadID() : GetRenderThreadID());
 }
 
 int CD3D9Renderer::GetPolygonCountByType(uint32 EFSList, EVertexCostTypes vct, uint32 z, bool bCalledFromMainThread /*= true*/)
 {
-#if defined(ENABLE_PROFILING_CODE)
-	return m_frameRenderStats[bCalledFromMainThread ? gRenDev->GetMainThreadID() : gRenDev->GetRenderThreadID()].m_nPolygonsByTypes[EFSList][vct][z];
-#else
-	return 0;
-#endif
+	return m_frameRenderStats[bCalledFromMainThread ? GetMainThreadID() : GetRenderThreadID()].m_nPolygonsByTypes[EFSList][vct][z];
 }
+#endif
 
 //====================================================================
 
@@ -5254,11 +5266,6 @@ public:
 						gRenDev->m_bStartLevelLoading = true;
 					}
 					gRenDev->m_bInLevel = true;
-					if (gRenDev->m_pRT)
-					{
-						gRenDev->m_pRT->m_fTimeIdleDuringLoading = 0;
-						gRenDev->m_pRT->m_fTimeBusyDuringLoading = 0;
-					}
 				}
 				if (CRenderer::CV_r_texpostponeloading)
 					CTexture::s_bPrecachePhase = true;

@@ -6,9 +6,12 @@
 
 CRenderPipelineProfiler::CRenderPipelineProfiler()
 {
+	memset(m_frameData, 0, sizeof(m_frameData));
+
 	m_frameDataIndex = 0;
 	m_frameDataRT = m_frameData + m_frameDataIndex + 0;
 	m_frameDataLRU = m_frameData + m_frameDataIndex + 1;
+
 	m_avgFrameTime = 0;
 	m_enabled = false;
 	m_recordData = false;
@@ -82,22 +85,23 @@ void CRenderPipelineProfiler::EndFrame()
 		CRY_ASSERT(m_stack.empty());
 		m_stack.resize(0);
 	}
+}
+
+void CRenderPipelineProfiler::Finish()
+{
+	if (!m_recordData)
+		return;
+
+	m_recordData = false;
 
 	// Backup current CPU and GPU counters
 	{
 		// All the current frame's information has to be stored and associated with the current index
 		// Otherwise global statistics and detailed statistics can be from entirely different frames (and utilization >100%)
-		const uint32 fillThreadID = (uint32)gRenDev->GetMainThreadID();
+		const uint32 processThreadID = (uint32)gRenDev->GetRenderThreadID();
 		SFrameData& frameData = *m_frameDataRT;
 
-		frameData.fTimeRealFrameTime  = iTimer->GetRealFrameTime();
-		frameData.fTimeWaitForMain    = gcpRendD3D->m_fTimeWaitForMain   [fillThreadID];
-		frameData.fTimeWaitForRender  = gcpRendD3D->m_fTimeWaitForRender [fillThreadID];
-		frameData.fTimeProcessedRT    = gcpRendD3D->m_fTimeProcessedRT   [fillThreadID];
-		frameData.fTimeProcessedGPU   = gcpRendD3D->m_fTimeProcessedGPU  [fillThreadID];
-		frameData.fTimeWaitForGPU     = gcpRendD3D->m_fTimeWaitForGPU    [fillThreadID];
-		frameData.fTimeGPUIdlePercent = gcpRendD3D->m_fTimeGPUIdlePercent[fillThreadID];
-
+		frameData.m_frameTimings = SRenderStatistics::Write().m_Summary;
 		frameData.m_timestampGroup.EndMeasurement();
 	}
 
@@ -118,35 +122,42 @@ void CRenderPipelineProfiler::EndFrame()
 	// The very first frame may not have any accessible measures
 	if (prevFrameIndex >= 0)
 	{
-		CRY_ASSERT(m_frameData[prevFrameIndex].m_frameID != 0);
-
 		UpdateSectionTimesAndStats(prevFrameIndex);
 		UpdateStats(prevFrameIndex);
 		UpdateThreadTimings(prevFrameIndex);
 
-		// Display UI
-		if (CRenderer::CV_r_profiler == 1)
-			DisplayOverviewStats(prevFrameIndex);
-		if (CRenderer::CV_r_profiler == 2)
-			DisplayDetailedPassStats(prevFrameIndex);
-
 		m_frameDataLRU = m_frameData + prevFrameIndex;
 	}
 
-	m_recordData = false;
+	// Put back corrected/adjusted/overwritten CPU and GPU counters
+	SRenderStatistics::Write().m_Summary = m_frameDataLRU->m_frameTimings;
+}
+
+void CRenderPipelineProfiler::Display()
+{
+	// Get newest timestamps completed on gpu
+	int prevFrameIndex = int(m_frameDataLRU - m_frameData);
+
+	// Display UI
+	if (CRenderer::CV_r_profiler == 1)
+		DisplayOverviewStats(prevFrameIndex);
+	if (CRenderer::CV_r_profiler == 2)
+		DisplayDetailedPassStats(prevFrameIndex);
 }
 
 bool CRenderPipelineProfiler::FilterLabel(const char* name)
 {
 	return
 		(strcmp(name, "UpdateTextureRegion") == 0) ||
+		(strcmp(name, "DOWNSAMPLE_DEPTH") == 0) ||
 		(strcmp(name, "SCREEN_STRETCH_RECT") == 0) ||
 		(strcmp(name, "STRETCHRECT") == 0) ||
 		(strcmp(name, "STENCIL_VOLUME") == 0) ||
 		(strcmp(name, "DRAWSTRINGW") == 0) ||
-	  (strcmp(name, "DRAWSTRINGU") == 0);
+		(strcmp(name, "DRAWSTRINGU") == 0);
 }
 
+#define TIMESTAMP_SKIP	~0U
 #define SECTION_SKIP	~0U
 
 uint32 CRenderPipelineProfiler::InsertSection(const char* name, uint32 profileSectionFlags)
@@ -193,8 +204,8 @@ uint32 CRenderPipelineProfiler::InsertSection(const char* name, uint32 profileSe
 	#endif
 		section.startTimeCPU.SetValue(0);
 		section.endTimeCPU.SetValue(0);
-		section.startTimestamp = ~0u;
-		section.endTimestamp = ~0u;
+		section.startTimestamp = TIMESTAMP_SKIP;
+		section.endTimestamp = TIMESTAMP_SKIP;
 	}
 
 	m_stack.push_back(sectionPos);
@@ -293,16 +304,33 @@ void CRenderPipelineProfiler::UpdateSectionTimesAndStats(uint32 frameDataIndex)
 	if (frameData.m_updated)
 		return;
 
-	for (uint32 i = 0, n = frameData.m_numSections; i < n; ++i)
+	for (int32 i = frameData.m_numSections - 1; i >= 0; --i)
 	{
 		SProfilerSection& section = frameData.m_sections[i];
 
-		if (section.startTimestamp != ~0u && section.endTimestamp != ~0u)
+		// Skips "~0u < ~0u"(manual marker) and "0u < 0u" (memset(0)) and any "??? < 0u" (missing end)
+		if (section.startTimestamp < section.endTimestamp && section.endTimestamp != TIMESTAMP_SKIP)
 			section.gpuTime = frameData.m_timestampGroup.GetTimeMS(section.startTimestamp, section.endTimestamp);
 		else
 			section.gpuTime = 0.0f;
 
 		section.cpuTime = section.endTimeCPU.GetDifferenceInSeconds(section.startTimeCPU) * 1000.0f;
+	}
+
+	// Refresh the list every 3 seconds to clear out old data and reduce gaps
+	CTimeValue currentTime = gEnv->pTimer->GetAsyncTime();
+	static CTimeValue lastClearTime = currentTime;
+
+	if (currentTime.GetDifferenceInSeconds(lastClearTime) > 3.0f)
+	{
+		lastClearTime = currentTime;
+		m_staticNameList.clear();
+	}
+
+	// Reset the used flag
+	for (std::multimap<CCryNameTSCRC, SStaticElementInfo>::iterator it = m_staticNameList.begin(); it != m_staticNameList.end(); ++it)
+	{
+		it->second.bUsed = false;
 	}
 
 	// Propagate values in multi-threaded sections up the hierarchy
@@ -313,6 +341,19 @@ void CRenderPipelineProfiler::UpdateSectionTimesAndStats(uint32 frameDataIndex)
 	for (int32 i = frameData.m_numSections - 1; i >= 0; --i)
 	{
 		SProfilerSection& section = frameData.m_sections[i];
+
+		// find the slot we should render to according to the static list - if not found, insert
+		std::multimap<CCryNameTSCRC, SStaticElementInfo>::iterator it = m_staticNameList.lower_bound(section.path);
+		while (it != m_staticNameList.end() && it->second.bUsed)
+			++it;
+
+		// not found: either a new element or a duplicate - insert at correct position and render there
+		if (it == m_staticNameList.end() || it->first != section.path)
+			it = m_staticNameList.insert(std::make_pair(section.path, i));
+
+		it->second.bUsed = true;
+
+		section.pos = uint16(it->second.nPos);
 
 		if (section.recLevel >= static_cast<int8>(CRY_ARRAY_COUNT(drawcallSum)))
 		{
@@ -355,18 +396,22 @@ void CRenderPipelineProfiler::UpdateThreadTimings(uint32 frameDataIndex)
 	// (1-a) * oldVal  + a * newVal
 	// Range of "a": [0.0,1.0]
 	const float smoothWeightDataOld = 1.f - CRenderer::CV_r_profilerSmoothingWeight;
-	const float smoothWeightDataNew = CRenderer::CV_r_profilerSmoothingWeight;
+	const float smoothWeightDataNew = 0.f + CRenderer::CV_r_profilerSmoothingWeight;
 
-	SThreadTimings& currThreadTimings = m_frameTimings[gRenDev->GetRenderThreadID()];
-	SThreadTimings& prevThreadTimings = m_frameTimings[gRenDev->GetMainThreadID()];
+	SRenderStatistics::SFrameSummary& currThreadTimings = m_frameTimings[gRenDev->GetRenderThreadID()];
+	SRenderStatistics::SFrameSummary& prevThreadTimings = m_frameTimings[gRenDev->GetMainThreadID()];
+	SRenderStatistics::SFrameSummary& smthThreadTimings = m_frameTimingsSmoothed;
 
-	currThreadTimings.waitForMain    = (frameData.fTimeWaitForMain    * smoothWeightDataOld + prevThreadTimings.waitForMain   * smoothWeightDataNew);
-	currThreadTimings.waitForRender  = (frameData.fTimeWaitForRender  * smoothWeightDataOld + prevThreadTimings.waitForRender * smoothWeightDataNew);
-	currThreadTimings.waitForGPU     = (frameData.fTimeWaitForGPU     * smoothWeightDataOld + prevThreadTimings.waitForGPU    * smoothWeightDataNew);
-	currThreadTimings.gpuIdlePerc    = (frameData.fTimeGPUIdlePercent * smoothWeightDataOld + prevThreadTimings.gpuIdlePerc   * smoothWeightDataNew);
-	currThreadTimings.gpuFrameTime   = (frameData.fTimeProcessedGPU   * smoothWeightDataOld + prevThreadTimings.gpuFrameTime  * smoothWeightDataNew);
-	currThreadTimings.frameTime      = (frameData.fTimeRealFrameTime  * smoothWeightDataOld + prevThreadTimings.frameTime     * smoothWeightDataNew);
-	currThreadTimings.renderTime = min((frameData.fTimeProcessedRT    * smoothWeightDataOld + prevThreadTimings.renderTime    * smoothWeightDataNew), prevThreadTimings.frameTime);
+	// Pick up statistics of last successfully measured frame
+	currThreadTimings = frameData.m_frameTimings;
+
+	smthThreadTimings.waitForMain    = (currThreadTimings.waitForMain    * smoothWeightDataNew + smthThreadTimings.waitForMain   * smoothWeightDataOld);
+	smthThreadTimings.waitForRender  = (currThreadTimings.waitForRender  * smoothWeightDataNew + smthThreadTimings.waitForRender * smoothWeightDataOld);
+	smthThreadTimings.waitForGPU     = (currThreadTimings.waitForGPU     * smoothWeightDataNew + smthThreadTimings.waitForGPU    * smoothWeightDataOld);
+	smthThreadTimings.gpuIdlePerc    = (currThreadTimings.gpuIdlePerc    * smoothWeightDataNew + smthThreadTimings.gpuIdlePerc   * smoothWeightDataOld);
+	smthThreadTimings.gpuFrameTime   = (currThreadTimings.gpuFrameTime   * smoothWeightDataNew + smthThreadTimings.gpuFrameTime  * smoothWeightDataOld);
+	smthThreadTimings.frameTime      = (currThreadTimings.frameTime      * smoothWeightDataNew + smthThreadTimings.frameTime     * smoothWeightDataOld);
+	smthThreadTimings.renderTime = min((currThreadTimings.renderTime     * smoothWeightDataNew + smthThreadTimings.renderTime    * smoothWeightDataOld), prevThreadTimings.frameTime);
 }
 
 void CRenderPipelineProfiler::ResetBasicStats(RPProfilerStats* pBasicStats, bool bResetAveragedStats)
@@ -440,7 +485,7 @@ void CRenderPipelineProfiler::ComputeAverageStats(SFrameData& currData, SFrameDa
 	// (1-a) * oldVal  + a * newVal
 	// Range of "a": [0.0,1.0]
 	const float smoothWeightDataOld = 1.f - CRenderer::CV_r_profilerSmoothingWeight;
-	const float smoothWeightDataNew = CRenderer::CV_r_profilerSmoothingWeight;
+	const float smoothWeightDataNew = 0.f + CRenderer::CV_r_profilerSmoothingWeight;
 
 	// GPU times
 	for (uint32 i = 0; i < RPPSTATS_NUM; ++i)
@@ -494,6 +539,10 @@ void CRenderPipelineProfiler::ComputeAverageStats(SFrameData& currData, SFrameDa
 		m_detailedStats[processThreadID][i].cpuTimeSmoothed = currentSection.cpuTimeSmoothed;
 	}
 
+	m_avgFrameTime =
+		smoothWeightDataOld * currData.m_frameTimings.renderTime +
+		smoothWeightDataNew * m_avgFrameTime; // exponential moving average for frame time
+
 	s_frameCounter += 1;
 }
 
@@ -545,59 +594,55 @@ void CRenderPipelineProfiler::UpdateStats(uint32 frameDataIndex)
 		{
 			AddToStats(pBasicStats[eRPPSTATS_SceneOverall], section);
 		}
-		else if (strcmp(section.name, "DECALS") == 0)
-		{
-			AddToStats(pBasicStats[eRPPSTATS_SceneDecals], section);
-		}
 		else if (strcmp(section.name, "DEFERRED_DECALS") == 0)
 		{
 			AddToStats(pBasicStats[eRPPSTATS_SceneOverall], section);
 			AddToStats(pBasicStats[eRPPSTATS_SceneDecals], section);
-		}
-		else if (strcmp(section.name, "OPAQUE_PASSES") == 0)
-		{
-			AddToStats(pBasicStats[eRPPSTATS_SceneOverall], section);
-			AddToStats(pBasicStats[eRPPSTATS_SceneForward], section);
 		}
 		else if (strcmp(section.name, "WATER") == 0)
 		{
 			AddToStats(pBasicStats[eRPPSTATS_SceneOverall], section);
 			AddToStats(pBasicStats[eRPPSTATS_SceneWater], section);
 		}
+		else if (
+			strcmp(section.name, "FORWARD_OPAQUE") == 0)
+		{
+			AddToStats(pBasicStats[eRPPSTATS_SceneOverall], section);
+			AddToStats(pBasicStats[eRPPSTATS_SceneForward], section);
+		}
+		else if (
+			strcmp(section.name, "FORWARD_TRANSPARENT_AW") == 0 ||
+			strcmp(section.name, "FORWARD_TRANSPARENT_BW") == 0)
+		{
+			AddToStats(pBasicStats[eRPPSTATS_SceneOverall], section);
+			AddToStats(pBasicStats[eRPPSTATS_SceneTransparent], section);
+		}
 		// Shadows
-		else if (strstr(section.name, "SUN PER OBJECT ") == section.name)
+		else if (
+			strcmp(section.name, "SHADOWMAPS") == 0 ||
+			strcmp(section.name, "SHADOWMAP_PREPARE") == 0)
 		{
 			AddToStats(pBasicStats[eRPPSTATS_ShadowsOverall], section);
+		}
+		else if (strstr(section.name, "SUN PER OBJECT ") == section.name)
+		{
 			AddToStats(pBasicStats[eRPPSTATS_ShadowsSunCustom], section);
 		}
 		else if (strstr(section.name, "SUN ") == section.name)
 		{
-			AddToStats(pBasicStats[eRPPSTATS_ShadowsOverall], section);
 			AddToStats(pBasicStats[eRPPSTATS_ShadowsSun], section);
 		}
 		else if (strstr(section.name, "LOCAL LIGHT ") == section.name)
 		{
-			AddToStats(pBasicStats[eRPPSTATS_ShadowsOverall], section);
 			AddToStats(pBasicStats[eRPPSTATS_ShadowsLocal], section);
 		}
 		// Lighting
-		else if (strcmp(section.name, "TILED_SHADING") == 0)
-		{
-			AddToStats(pBasicStats[eRPPSTATS_LightingOverall], section);
-		}
-		else if (strcmp(section.name, "DEFERRED_SHADING") == 0)
-		{
-			AddToStats(pBasicStats[eRPPSTATS_LightingOverall], section);
-		}
-		else if (strcmp(section.name, "DEFERRED_CUBEMAPS") == 0)
-		{
-			AddToStats(pBasicStats[eRPPSTATS_LightingOverall], section);
-		}
-		else if (strcmp(section.name, "DEFERRED_LIGHTS") == 0)
-		{
-			AddToStats(pBasicStats[eRPPSTATS_LightingOverall], section);
-		}
-		else if (strcmp(section.name, "AMBIENT_PASS") == 0)
+		else if (
+			strcmp(section.name, "TILED_LIGHT_VOLUMES") == 0 ||
+			strcmp(section.name, "SS_REFLECTIONS") == 0 ||
+			strcmp(section.name, "HEIGHTMAP_OCC") == 0 ||
+			strcmp(section.name, "DIRECTIONAL_OCC") == 0 ||
+			strcmp(section.name, "DEFERRED_LIGHTING") == 0)
 		{
 			AddToStats(pBasicStats[eRPPSTATS_LightingOverall], section);
 		}
@@ -607,114 +652,123 @@ void CRenderPipelineProfiler::UpdateStats(uint32 frameDataIndex)
 			AddToStats(pBasicStats[eRPPSTATS_LightingGI], section);
 		}
 		// VFX
-		else if (strcmp(section.name, "TRANSPARENT_BW") == 0 || strcmp(section.name, "TRANSPARENT_AW") == 0)
-		{
-			AddToStats(pBasicStats[eRPPSTATS_VfxOverall], section);
-			AddToStats(pBasicStats[eRPPSTATS_VfxTransparent], section);
-		}
-		else if (strcmp(section.name, "FOG_GLOBAL") == 0)
+		else if (
+			strcmp(section.name, "FOG_GLOBAL") == 0 ||
+			strcmp(section.name, "VOLUMETRIC FOG") == 0)
 		{
 			AddToStats(pBasicStats[eRPPSTATS_VfxOverall], section);
 			AddToStats(pBasicStats[eRPPSTATS_VfxFog], section);
-		}
-		else if (strcmp(section.name, "VOLUMETRIC FOG") == 0)
-		{
-			AddToStats(pBasicStats[eRPPSTATS_VfxOverall], section);
-			AddToStats(pBasicStats[eRPPSTATS_VfxFog], section);
-		}
-		else if (strcmp(section.name, "DEFERRED_RAIN") == 0 || strcmp(section.name, "RAIN") == 0)
-		{
-			AddToStats(pBasicStats[eRPPSTATS_VfxOverall], section);
 		}
 		else if (strcmp(section.name, "LENS_OPTICS") == 0)
 		{
 			AddToStats(pBasicStats[eRPPSTATS_VfxOverall], section);
 			AddToStats(pBasicStats[eRPPSTATS_VfxFlares], section);
 		}
-		else if (strcmp(section.name, "OCEAN CAUSTICS") == 0)
+		else if (
+			strcmp(section.name, "DEFERRED_RAIN") == 0 ||
+			strcmp(section.name, "RAIN") == 0 ||
+			strcmp(section.name, "OCEAN CAUSTICS") == 0 ||
+			strcmp(section.name, "WATERVOLUME_CAUSTICS") == 0 ||
+			strcmp(section.name, "GPU_PARTICLES") == 0)
 		{
 			AddToStats(pBasicStats[eRPPSTATS_VfxOverall], section);
 		}
-		else if (strcmp(section.name, "WATERVOLUME_CAUSTICS") == 0)
+		else if (strcmp(section.name, "FLASH_RENDERING") == 0)
 		{
-			AddToStats(pBasicStats[eRPPSTATS_VfxOverall], section);
+			AddToStats(pBasicStats[eRPPSTATS_UIFlash], section);
 		}
-		else if (strcmp(section.name, "GPU_PARTICLES") == 0)
+		else if (strcmp(section.name, "AuxGeom_Flush") == 0)
 		{
-			AddToStats(pBasicStats[eRPPSTATS_VfxOverall], section);
+			AddToStats(pBasicStats[eRPPSTATS_Aux], section);
 		}
 		// Extra TI states
-		else if (strcmp(section.name, "TI_INJECT_CLEAR") == 0)
+		else if (strncmp(section.name, "TI_", 3) == 0)
 		{
-			AddToStats(pBasicStats[eRPPSTATS_TI_INJECT_CLEAR], section);
+			if (strcmp(section.name, "TI_INJECT_CLEAR") == 0)
+			{
+				AddToStats(pBasicStats[eRPPSTATS_TI_INJECT_CLEAR], section);
+			}
+			else if (strcmp(section.name, "TI_VOXELIZE") == 0)
+			{
+				AddToStats(pBasicStats[eRPPSTATS_TI_VOXELIZE], section);
+			}
+			else if (strcmp(section.name, "TI_INJECT_LIGHT") == 0)
+			{
+				AddToStats(pBasicStats[eRPPSTATS_TI_INJECT_LIGHT], section);
+			}
+			else if (strcmp(section.name, "TI_INJECT_AIR") == 0)
+			{
+				AddToStats(pBasicStats[eRPPSTATS_TI_INJECT_AIR], section);
+			}
+			else if (strcmp(section.name, "TI_INJECT_REFL0") == 0)
+			{
+				AddToStats(pBasicStats[eRPPSTATS_TI_INJECT_REFL0], section);
+			}
+			else if (strcmp(section.name, "TI_INJECT_REFL1") == 0)
+			{
+				AddToStats(pBasicStats[eRPPSTATS_TI_INJECT_REFL1], section);
+			}
+			else if (strcmp(section.name, "TI_INJECT_DYNL") == 0)
+			{
+				AddToStats(pBasicStats[eRPPSTATS_TI_INJECT_DYNL], section);
+			}
+			else if (strcmp(section.name, "TI_NID_DIFF") == 0)
+			{
+				AddToStats(pBasicStats[eRPPSTATS_TI_NID_DIFF], section);
+			}
+			else if (strcmp(section.name, "TI_GEN_DIFF") == 0)
+			{
+				AddToStats(pBasicStats[eRPPSTATS_TI_GEN_DIFF], section);
+			}
+			else if (strcmp(section.name, "TI_GEN_SPEC") == 0)
+			{
+				AddToStats(pBasicStats[eRPPSTATS_TI_GEN_SPEC], section);
+			}
+			else if (strcmp(section.name, "TI_GEN_AIR") == 0)
+			{
+				AddToStats(pBasicStats[eRPPSTATS_TI_GEN_AIR], section);
+			}
+			else if (strcmp(section.name, "TI_UPSCALE_DIFF") == 0)
+			{
+				AddToStats(pBasicStats[eRPPSTATS_TI_UPSCALE_DIFF], section);
+			}
+			else if (strcmp(section.name, "TI_UPSCALE_SPEC") == 0)
+			{
+				AddToStats(pBasicStats[eRPPSTATS_TI_UPSCALE_SPEC], section);
+			}
+			else if (strcmp(section.name, "TI_DEMOSAIC_DIFF") == 0)
+			{
+				AddToStats(pBasicStats[eRPPSTATS_TI_DEMOSAIC_DIFF], section);
+			}
+			else if (strcmp(section.name, "TI_DEMOSAIC_SPEC") == 0)
+			{
+				AddToStats(pBasicStats[eRPPSTATS_TI_DEMOSAIC_SPEC], section);
+			}
 		}
-		else if (strcmp(section.name, "TI_VOXELIZE") == 0)
+		else if (
+			strcmp(section.name, "FRAME") != 0 &&
+			strcmp(section.name, "SCENE") != 0 &&
+			strcmp(section.name, "GRAPHICS_PIPELINE") != 0)
 		{
-			AddToStats(pBasicStats[eRPPSTATS_TI_VOXELIZE], section);
-		}
-		else if (strcmp(section.name, "TI_INJECT_LIGHT") == 0)
-		{
-			AddToStats(pBasicStats[eRPPSTATS_TI_INJECT_LIGHT], section);
-		}
-		else if (strcmp(section.name, "TI_INJECT_AIR") == 0)
-		{
-			AddToStats(pBasicStats[eRPPSTATS_TI_INJECT_AIR], section);
-		}
-		else if (strcmp(section.name, "TI_INJECT_REFL0") == 0)
-		{
-			AddToStats(pBasicStats[eRPPSTATS_TI_INJECT_REFL0], section);
-		}
-		else if (strcmp(section.name, "TI_INJECT_REFL1") == 0)
-		{
-			AddToStats(pBasicStats[eRPPSTATS_TI_INJECT_REFL1], section);
-		}
-		else if (strcmp(section.name, "TI_INJECT_DYNL") == 0)
-		{
-			AddToStats(pBasicStats[eRPPSTATS_TI_INJECT_DYNL], section);
-		}
-		else if (strcmp(section.name, "TI_NID_DIFF") == 0)
-		{
-			AddToStats(pBasicStats[eRPPSTATS_TI_NID_DIFF], section);
-		}
-		else if (strcmp(section.name, "TI_GEN_DIFF") == 0)
-		{
-			AddToStats(pBasicStats[eRPPSTATS_TI_GEN_DIFF], section);
-		}
-		else if (strcmp(section.name, "TI_GEN_SPEC") == 0)
-		{
-			AddToStats(pBasicStats[eRPPSTATS_TI_GEN_SPEC], section);
-		}
-		else if (strcmp(section.name, "TI_GEN_AIR") == 0)
-		{
-			AddToStats(pBasicStats[eRPPSTATS_TI_GEN_AIR], section);
-		}
-		else if (strcmp(section.name, "TI_UPSCALE_DIFF") == 0)
-		{
-			AddToStats(pBasicStats[eRPPSTATS_TI_UPSCALE_DIFF], section);
-		}
-		else if (strcmp(section.name, "TI_UPSCALE_SPEC") == 0)
-		{
-			AddToStats(pBasicStats[eRPPSTATS_TI_UPSCALE_SPEC], section);
-		}
-		else if (strcmp(section.name, "TI_DEMOSAIC_DIFF") == 0)
-		{
-			AddToStats(pBasicStats[eRPPSTATS_TI_DEMOSAIC_DIFF], section);
-		}
-		else if (strcmp(section.name, "TI_DEMOSAIC_SPEC") == 0)
-		{
-			AddToStats(pBasicStats[eRPPSTATS_TI_DEMOSAIC_SPEC], section);
+			// CRY_ASSERT_MESSAGE(false, "Label %s not added to known summary sections!", section.name);
 		}
 
 		// Update detailed stats
 		memcpy(detailedStats[i].name, section.name, 31);
+
 		detailedStats[i].cpuTime = section.cpuTime;
 		detailedStats[i].gpuTime = section.gpuTime;
 		detailedStats[i].cpuTimeSmoothed = section.cpuTimeSmoothed;
 		detailedStats[i].gpuTimeSmoothed = section.gpuTimeSmoothed;
 		detailedStats[i].startTimeCPU = section.startTimeCPU;
 		detailedStats[i].endTimeCPU = section.endTimeCPU;
-		detailedStats[i].startTimeGPU = section.startTimestamp!= ~0u ? frameData.m_timestampGroup.GetTime(section.startTimestamp) : 0;
-		detailedStats[i].endTimeGPU = section.endTimestamp != ~0u ? frameData.m_timestampGroup.GetTime(section.endTimestamp) : 0;
+		detailedStats[i].startTimeGPU = 0;
+		detailedStats[i].endTimeGPU = 0;
+		if (section.startTimestamp < section.endTimestamp && section.endTimestamp != TIMESTAMP_SKIP)
+		{
+			detailedStats[i].startTimeGPU = frameData.m_timestampGroup.GetTime(section.startTimestamp);
+			detailedStats[i].endTimeGPU = frameData.m_timestampGroup.GetTime(section.endTimestamp);
+		}
 		detailedStats[i].numDIPs = section.numDIPs;
 		detailedStats[i].numPolys = section.numPolys;
 		detailedStats[i].recLevel = section.recLevel;
@@ -723,10 +777,12 @@ void CRenderPipelineProfiler::UpdateStats(uint32 frameDataIndex)
 
 	AddToStats(pBasicStats[eRPPSTATS_OverallFrame], frameData.m_sections[0]);
 
+	frameData.m_frameTimings.gpuFrameTime = frameData.m_sections[0].gpuTime / 1000.0f;
+
 	ComputeAverageStats(frameData, *m_frameDataLRU);
 }
 
-void CRenderPipelineProfiler::DisplayDetailedPassStats(uint32 frameDataIndex)
+void CRenderPipelineProfiler::DisplayDetailedPassStats(uint32 frameDataIndex) const
 {
 #ifndef _RELEASE
 	if (gEnv->pConsole->IsOpened())
@@ -734,8 +790,9 @@ void CRenderPipelineProfiler::DisplayDetailedPassStats(uint32 frameDataIndex)
 
 	CD3D9Renderer* rd = gcpRendD3D;
 	CRenderDisplayContext* pDC = rd->GetActiveDisplayContext();
-	SFrameData& frameData = m_frameData[frameDataIndex];
+	const SFrameData& frameData = m_frameData[frameDataIndex];
 	CRY_ASSERT(&frameData != m_frameDataRT);
+	const SRenderStatistics::SFrameSummary& smthThreadTimings = m_frameTimingsSmoothed;
 	uint32 elemsPerColumn = (pDC->GetDisplayResolution()[1] - 60) / 16;
 
 	// TODO: relative/normalized coordinate system in screen-space
@@ -746,8 +803,6 @@ void CRenderPipelineProfiler::DisplayDetailedPassStats(uint32 frameDataIndex)
 	IRenderAuxImage::Draw2dImage(0, 0, sx, sy, CRendererResources::s_ptexWhite->GetID(), 0, 0, 1, 1, 0, ColorF(0.05f, 0.05f, 0.05f, 0.5f));
 
 	ColorF color = frameData.m_numSections >= SFrameData::kMaxNumSections ? Col_Red : ColorF(1.0f, 1.0f, 0.2f, 1);
-	m_avgFrameTime = 0.8f * frameData.fTimeRealFrameTime + 0.2f * m_avgFrameTime; // exponential moving average for frame time
-
 	int frameDist = m_frameDataIndex - frameDataIndex;
 	frameDist += frameDist < 0 ? kNumPendingFrames : 0;
 	color = ColorF(0.35f, 0.35f, 0.35f);
@@ -765,22 +820,6 @@ void CRenderPipelineProfiler::DisplayDetailedPassStats(uint32 frameDataIndex)
 		IRenderAuxText::Draw2dLabel(520 + 600, 10, 1.5f, &color.r, false, "Polys");
 	}
 
-	// Refresh the list every 3 seconds to clear out old data and reduce gaps
-	CTimeValue currentTime = gEnv->pTimer->GetAsyncTime();
-	static CTimeValue lastClearTime = currentTime;
-
-	if (currentTime.GetDifferenceInSeconds(lastClearTime) > 3.0f)
-	{
-		lastClearTime = currentTime;
-		m_staticNameList.clear();
-	}
-
-	// Reset the used flag
-	for (std::multimap<CCryNameTSCRC, SStaticElementInfo>::iterator it = m_staticNameList.begin(); it != m_staticNameList.end(); ++it)
-	{
-		it->second.bUsed = false;
-	}
-
 	// Find median of GPU times
 	float medianTimeGPU = 0;
 	if (frameData.m_numSections > 0)
@@ -795,28 +834,16 @@ void CRenderPipelineProfiler::DisplayDetailedPassStats(uint32 frameDataIndex)
 		medianTimeGPU = s_arrayTimes[frameData.m_numSections / 2];
 	}
 
-	SThreadTimings& currThreadTimings = m_frameTimings[gRenDev->GetRenderThreadID()];
-	float frameTimeGPU = max(currThreadTimings.gpuFrameTime * 1000.0f, 0.0f);
+	float frameTimeGPU = max(smthThreadTimings.gpuFrameTime * 1000.0f, 0.0f);
 
 	for (uint32 i = 0, n = frameData.m_numSections; i < n; ++i)
 	{
-		SProfilerSection& section = frameData.m_sections[i];
-
-		// find the slot we should render to according to the static list - if not found, insert
-		std::multimap<CCryNameTSCRC, SStaticElementInfo>::iterator it = m_staticNameList.lower_bound(section.path);
-		while (it != m_staticNameList.end() && it->second.bUsed)
-			++it;
-
-		// not found: either a new element or a duplicate - insert at correct position and render there
-		if (it == m_staticNameList.end() || it->first != section.path)
-			it = m_staticNameList.insert(std::make_pair(section.path, i));
-
-		it->second.bUsed = true;
+		const SProfilerSection& section = frameData.m_sections[i];
 
 		float gpuTimeSmoothed = section.gpuTimeSmoothed;
 		float cpuTimeSmoothed = section.cpuTimeSmoothed;
-		float ypos = 30.0f + (it->second.nPos % elemsPerColumn) * 16.0f;
-		float xpos = 20.0f + ((int)(it->second.nPos / elemsPerColumn)) * 600.0f;
+		float ypos = 30.0f +       (section.pos % elemsPerColumn)  *  16.0f;
+		float xpos = 20.0f + ((int)(section.pos / elemsPerColumn)) * 600.0f;
 
 		if (section.recLevel < 0)   // Label stack error
 		{
@@ -903,52 +930,56 @@ void DrawTableBar(float x, float tableY, int columnIndex, float percentage, Colo
 }
 }
 
-void CRenderPipelineProfiler::DisplayOverviewStats(uint32 frameDataIndex)
+void CRenderPipelineProfiler::DisplayOverviewStats(uint32 frameDataIndex) const
 {
 #ifndef _RELEASE
 	if (gEnv->pConsole->IsOpened())
 		return;
 
+	const SRenderStatistics::SFrameSummary& smthThreadTimings = m_frameTimingsSmoothed;
+
 	struct StatsGroup
 	{
 		char                         name[32];
 		ERenderPipelineProfilerStats statIndex;
+		bool                         partialSum;
 	};
 
+	// NOTE: It's all smoothed times
 	StatsGroup statsGroups[] = {
-		{ "Frame",               eRPPSTATS_OverallFrame     },
-		{ "  Ocean Reflections", eRPPSTATS_Recursion        },
-		{ "  Scene",             eRPPSTATS_SceneOverall     },
-		{ "    Decals",          eRPPSTATS_SceneDecals      },
-		{ "    Forward",         eRPPSTATS_SceneForward     },
-		{ "    Water",           eRPPSTATS_SceneWater       },
-		{ "  Shadows",           eRPPSTATS_ShadowsOverall   },
-		{ "    Sun",             eRPPSTATS_ShadowsSun       },
-		{ "    Per-Object",      eRPPSTATS_ShadowsSunCustom },
-		{ "    Local",           eRPPSTATS_ShadowsLocal     },
-		{ "  Lighting",          eRPPSTATS_LightingOverall  },
-		{ "    Voxel GI",        eRPPSTATS_LightingGI       },
-		{ "  VFX",               eRPPSTATS_VfxOverall       },
-		{ "    Particles/Glass", eRPPSTATS_VfxTransparent   },
-		{ "    Fog",             eRPPSTATS_VfxFog           },
-		{ "    Flares",          eRPPSTATS_VfxFlares        },
+		{ "Frame",               eRPPSTATS_OverallFrame    , false },
+		{ "  UI / Flash",        eRPPSTATS_UIFlash         , true  },
+		{ "  Ocean Reflections", eRPPSTATS_Recursion       , true  },
+		{ "  Scene",             eRPPSTATS_SceneOverall    , true  },
+		{ "    Decals",          eRPPSTATS_SceneDecals     , false },
+		{ "    Forward",         eRPPSTATS_SceneForward    , false },
+		{ "    Water",           eRPPSTATS_SceneWater      , false },
+		{ "    Particles/Glass", eRPPSTATS_SceneTransparent, false },
+		{ "  Shadows",           eRPPSTATS_ShadowsOverall  , true  },
+		{ "    Sun",             eRPPSTATS_ShadowsSun      , false },
+		{ "    Per-Object",      eRPPSTATS_ShadowsSunCustom, false },
+		{ "    Local",           eRPPSTATS_ShadowsLocal    , false },
+		{ "  Lighting",          eRPPSTATS_LightingOverall , true  },
+		{ "    Voxel GI",        eRPPSTATS_LightingGI      , false },
+		{ "  VFX",               eRPPSTATS_VfxOverall      , true  },
+		{ "    Fog",             eRPPSTATS_VfxFog          , false },
+		{ "    Flares",          eRPPSTATS_VfxFlares       , false },
+		{ "  Aux",               eRPPSTATS_Aux             , true  },
 	};
 
 	// Threading info
 	{
-		SThreadTimings& currThreadTimings = m_frameTimings[gRenDev->GetRenderThreadID()];
-
 		DebugUI::DrawTable(0.05f, 0.1f, 0.45f, 4, "Overview");
 
-		float frameTime = currThreadTimings.frameTime;
-		float mainThreadTime = max(currThreadTimings.frameTime - currThreadTimings.waitForRender, 0.0f);
-		float renderThreadTime = max(currThreadTimings.renderTime - currThreadTimings.waitForGPU, 0.0f);
+		float frameTime = smthThreadTimings.frameTime;
+		float mainThreadTime = max(smthThreadTimings.frameTime - smthThreadTimings.waitForRender, 0.0f);
+		float renderThreadTime = max(smthThreadTimings.renderTime - smthThreadTimings.waitForGPU, 0.0f);
 	#ifdef CRY_PLATFORM_ORBIS
-		float gpuTime = max((100.0f - currThreadTimings.gpuIdlePerc) * frameTime * 0.01f, 0.0f);
+		float gpuTime = max((100.0f - smthThreadTimings.gpuIdlePerc) * frameTime * 0.01f, 0.0f);
 	#else
-		float gpuTime = max(currThreadTimings.gpuFrameTime, 0.0f);
+		float gpuTime = max(smthThreadTimings.gpuFrameTime, 0.0f);
 	#endif
-		float waitForGPU = max(currThreadTimings.waitForGPU, 0.0f);
+		float waitForGPU = max(smthThreadTimings.waitForGPU, 0.0f);
 
 		DebugUI::DrawTableBar(0.335f, 0.1f, 0, mainThreadTime / frameTime, Col_Yellow);
 		DebugUI::DrawTableBar(0.335f, 0.1f, 1, renderThreadTime / frameTime, Col_Green);
@@ -964,21 +995,26 @@ void CRenderPipelineProfiler::DisplayOverviewStats(uint32 frameDataIndex)
 	// GPU times
 	{
 		const float targetFrameTime = 1000.0f / CRenderer::CV_r_profilerTargetFPS;
+		float gpuTimeSmoothed = 0.0f;
 
-		int numColumns = sizeof(statsGroups) / sizeof(StatsGroup);
-		DebugUI::DrawTable(0.05f, 0.27f, 0.45f, numColumns, "GPU Time");
+		int numRows = sizeof(statsGroups) / sizeof(StatsGroup);
+		DebugUI::DrawTable(0.05f, 0.27f, 0.45f, numRows + 1, "GPU Time");
 
-		RPProfilerStats* pBasicStats = m_basicStats[gRenDev->GetRenderThreadID()];
-		for (uint32 i = 0; i < numColumns; ++i)
+		const RPProfilerStats* pBasicStats = m_basicStats[gRenDev->m_nFillThreadID];
+		for (uint32 i = 0; i < numRows; ++i)
 		{
 			const RPProfilerStats& stats = pBasicStats[statsGroups[i].statIndex];
+			if (statsGroups[i].partialSum) gpuTimeSmoothed += stats.gpuTimeSmoothed;
 			DebugUI::DrawTableColumn(0.05f, 0.27f, i, "%-20s  %4.1f ms  %2.0f %%", statsGroups[i].name, stats.gpuTimeSmoothed, stats.gpuTimeSmoothed / targetFrameTime * 100.0f);
 		}
+
+		gpuTimeSmoothed = smthThreadTimings.gpuFrameTime * 1000.0f - gpuTimeSmoothed;
+		DebugUI::DrawTableColumn(0.05f, 0.27f, numRows, "%-20s  %4.1f ms  %2.0f %%", "Unlabeled", gpuTimeSmoothed, gpuTimeSmoothed / targetFrameTime * 100.0f);
 	}
 #endif
 }
 
-bool CRenderPipelineProfiler::IsEnabled()
+bool CRenderPipelineProfiler::IsEnabled() const
 {
-	return m_enabled || CRenderer::CV_r_profiler || gcpRendD3D->m_CVDisplayInfo->GetIVal() == 3;
+	return (!m_paused) & (m_enabled | (CRenderer::CV_r_profiler ? true : false) | (gcpRendD3D->m_CVDisplayInfo->GetIVal() == 3));
 }

@@ -221,8 +221,9 @@ void CSceneRenderPass::BeginExecution()
 	
 	m_numRenderItemGroups = 0;
 	
-	if (gcpRendD3D->m_pPipelineProfiler)
-		m_profilerSectionIndex = gcpRendD3D->m_pPipelineProfiler->InsertMultithreadedSection(GetLabel());
+#if defined(ENABLE_SIMPLE_GPU_TIMERS)
+	m_profilerSectionIndex = gcpRendD3D->m_pPipelineProfiler->InsertMultithreadedSection(GetLabel());
+#endif
 
 	if (gcpRendD3D->GetGraphicsPipeline().GetRenderPassScheduler().IsActive())
 		gcpRendD3D->GetGraphicsPipeline().GetRenderPassScheduler().AddPass(this);

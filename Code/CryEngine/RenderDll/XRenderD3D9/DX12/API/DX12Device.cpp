@@ -166,27 +166,21 @@ HRESULT STDMETHODCALLTYPE CDevice::DuplicateNativeCommittedResource(
 	pInputResource->GetHeapProperties(&sHeap, nullptr);
 
 	D3D12_RESOURCE_STATES initialState =
-	  (sHeap.Type == D3D12_HEAP_TYPE_DEFAULT ? D3D12_RESOURCE_STATE_PIXEL_SHADER_RESOURCE :
-	   (sHeap.Type == D3D12_HEAP_TYPE_READBACK ? D3D12_RESOURCE_STATE_COPY_DEST :
-	    (sHeap.Type == D3D12_HEAP_TYPE_UPLOAD ? D3D12_RESOURCE_STATE_GENERIC_READ :
-	     D3D12_RESOURCE_STATE_GENERIC_READ)));
+	  (sHeap.Type == D3D12_HEAP_TYPE_DEFAULT  ? D3D12_RESOURCE_STATE_PIXEL_SHADER_RESOURCE :
+	  (sHeap.Type == D3D12_HEAP_TYPE_READBACK ? D3D12_RESOURCE_STATE_COPY_DEST :
+	  (sHeap.Type == D3D12_HEAP_TYPE_UPLOAD   ? D3D12_RESOURCE_STATE_GENERIC_READ :
+	                                            D3D12_RESOURCE_STATE_GENERIC_READ)));
 
 	if (sHeap.Type == D3D12_HEAP_TYPE_DEFAULT)
 	{
 		if (resourceDesc.Flags & D3D12_RESOURCE_FLAG_ALLOW_UNORDERED_ACCESS)
-		{
 			initialState = D3D12_RESOURCE_STATE_UNORDERED_ACCESS;
-		}
 
 		if (resourceDesc.Flags & D3D12_RESOURCE_FLAG_ALLOW_DEPTH_STENCIL)
-		{
 			initialState = D3D12_RESOURCE_STATE_DEPTH_WRITE;
-		}
 
 		if (resourceDesc.Flags & D3D12_RESOURCE_FLAG_ALLOW_RENDER_TARGET)
-		{
 			initialState = D3D12_RESOURCE_STATE_RENDER_TARGET;
-		}
 	}
 
 	sHeap.CreationNodeMask = creationMask;
@@ -222,6 +216,8 @@ CDevice::CDevice(ID3D12Device* d3d12Device, D3D_FEATURE_LEVEL featureLevel, UINT
 	, m_featureLevel(featureLevel)
 	, m_nodeCount(nodeCount)
 	, m_nodeMask(nodeMask)
+	, m_TimestampHeap(this)
+	, m_OcclusionHeap(this)
 	, m_SamplerCache(this)
 	, m_ShaderResourceDescriptorCache(this)
 	, m_UnorderedAccessDescriptorCache(this)
@@ -270,6 +266,46 @@ CDevice::CDevice(ID3D12Device* d3d12Device, D3D_FEATURE_LEVEL featureLevel, UINT
 	m_GlobalDescriptorHeaps.emplace_back(this);
 #endif
 
+	// Queries ------------------------------------------------------------------------------------
+
+	// Timer query heap
+	{
+		D3D12_QUERY_HEAP_DESC desc = { D3D12_QUERY_HEAP_TYPE_TIMESTAMP, 4096, m_nodeMask };
+		m_TimestampHeap.Init(this, desc);
+	}
+
+	// Occlusion query heap
+	{
+		D3D12_QUERY_HEAP_DESC desc = { D3D12_QUERY_HEAP_TYPE_OCCLUSION, 64, m_nodeMask };
+		m_OcclusionHeap.Init(this, desc);
+	}
+
+	if (S_OK != CreateOrReuseCommittedResource(
+		&CD3DX12_HEAP_PROPERTIES(D3D12_HEAP_TYPE_READBACK, blsi(m_nodeMask), m_nodeMask),
+		D3D12_HEAP_FLAG_NONE,
+		&CD3DX12_RESOURCE_DESC::Buffer(sizeof(UINT64) * m_TimestampHeap.GetCapacity()),
+		D3D12_RESOURCE_STATE_COPY_DEST,
+		nullptr,
+		IID_GFX_ARGS(&m_TimestampDownloadBuffer)))
+	{
+		DX12_ERROR("Could not create intermediate timestamp download buffer!");
+	}
+
+	if (S_OK != CreateOrReuseCommittedResource(
+		&CD3DX12_HEAP_PROPERTIES(D3D12_HEAP_TYPE_READBACK, blsi(m_nodeMask), m_nodeMask),
+		D3D12_HEAP_FLAG_NONE,
+		&CD3DX12_RESOURCE_DESC::Buffer(sizeof(UINT64) * m_OcclusionHeap.GetCapacity()),
+		D3D12_RESOURCE_STATE_COPY_DEST,
+		nullptr,
+		IID_GFX_ARGS(&m_OcclusionDownloadBuffer)))
+	{
+		DX12_ERROR("Could not create intermediate occlusion download buffer!");
+	}
+
+	m_TimestampMemory = nullptr;
+	m_OcclusionMemory = nullptr;
+
+	// Caches ------------------------------------------------------------------------------------
 	m_PSOCache.Init(this);
 	m_RootSignatureCache.Init(this);
 
@@ -349,6 +385,16 @@ CDevice::CDevice(ID3D12Device* d3d12Device, D3D_FEATURE_LEVEL featureLevel, UINT
 CDevice::~CDevice()
 {
 	UINT64 clearFences[CMDQUEUE_NUM] = { 0ULL, 0ULL, 0ULL };
+
+	D3D12_RANGE sNoWrite = { 0, 0 };
+
+	if (m_TimestampMemory)
+		m_TimestampDownloadBuffer->Unmap(0, &sNoWrite);
+	if (m_OcclusionMemory)
+		m_OcclusionDownloadBuffer->Unmap(0, &sNoWrite);
+
+	m_TimestampDownloadBuffer->Release();
+	m_OcclusionDownloadBuffer->Release();
 
 	// Kill all entries in the allocation cache
 	FlushReleaseHeap(clearFences, clearFences);
@@ -478,6 +524,90 @@ void CDevice::InvalidateRenderTargetView(const D3D12_RENDER_TARGET_VIEW_DESC* pD
 	{
 		m_RenderTargetDescriptorFreeTable.push_back(itCachedRTV->second);
 		m_RenderTargetDescriptorLookupTable.erase(itCachedRTV);
+	}
+}
+
+//---------------------------------------------------------------------------------------------------------------------
+
+UINT64 CDevice::GetTimestampFrequency()
+{
+	// D3D12 WARNING: ID3D12CommandQueue::ID3D12CommandQueue::GetTimestampFrequency: Use
+	// ID3D12Device::SetStablePowerstate for reliable timestamp queries [ EXECUTION WARNING #736: UNSTABLE_POWER_STATE]
+	UINT64 Frequency = 0;
+	m_Scheduler.GetCommandList(CMDQUEUE_GRAPHICS)->GetD3D12CommandQueue()->GetTimestampFrequency(&Frequency);
+	return Frequency;
+}
+
+void CDevice::InsertTimestamp(NCryDX12::CCommandList* pCmdList, UINT index)
+{
+	pCmdList->EndQuery(m_TimestampHeap, D3D12_QUERY_TYPE_TIMESTAMP, index);
+}
+
+void CDevice::IssueTimestampResolve(NCryDX12::CCommandList* pCmdList, UINT firstIndex, UINT numIndices)
+{
+	if (m_TimestampMemory)
+	{
+		// Resources on D3D12_HEAP_TYPE_READBACK heaps do not support persistent map.
+		const D3D12_RANGE sNoWrite = { 0, 0 };
+		m_TimestampDownloadBuffer->Unmap(0, &sNoWrite);
+		m_TimestampMemory = nullptr;
+	}
+
+	pCmdList->ResolveQueryData(m_TimestampHeap, D3D12_QUERY_TYPE_TIMESTAMP, firstIndex, numIndices, m_TimestampDownloadBuffer, firstIndex * sizeof(UINT64));
+}
+
+void CDevice::QueryTimestamps(UINT firstIndex, UINT numIndices, void* mem)
+{
+	if (!m_TimestampMemory)
+	{
+		// Resources on D3D12_HEAP_TYPE_READBACK heaps do not support persistent map.
+		const D3D12_RANGE sPartRead = { firstIndex * sizeof(UINT64), (firstIndex + numIndices) * sizeof(UINT64) };
+		m_TimestampDownloadBuffer->Map(0, &sPartRead, &m_TimestampMemory);
+	}
+
+	if (mem)
+	{
+		memcpy(mem, (char*)m_TimestampMemory + firstIndex * sizeof(UINT64), numIndices * sizeof(UINT64));
+	}
+}
+
+///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+
+void CDevice::InsertOcclusionStart(NCryDX12::CCommandList* pCmdList, UINT index, bool counter)
+{
+	pCmdList->BeginQuery(m_OcclusionHeap, counter ? D3D12_QUERY_TYPE_OCCLUSION : D3D12_QUERY_TYPE_BINARY_OCCLUSION, index);
+}
+
+void CDevice::InsertOcclusionStop(NCryDX12::CCommandList* pCmdList, UINT index, bool counter)
+{
+	pCmdList->EndQuery(m_OcclusionHeap, counter ? D3D12_QUERY_TYPE_OCCLUSION : D3D12_QUERY_TYPE_BINARY_OCCLUSION, index);
+}
+
+void CDevice::IssueOcclusionResolve(NCryDX12::CCommandList* pCmdList, UINT firstIndex, UINT numIndices)
+{
+	if (m_OcclusionMemory)
+	{
+		// Resources on D3D12_HEAP_TYPE_READBACK heaps do not support persistent map.
+		const D3D12_RANGE sNoWrite = { 0, 0 };
+		m_OcclusionDownloadBuffer->Unmap(0, &sNoWrite);
+		m_OcclusionMemory = nullptr;
+	}
+
+	pCmdList->ResolveQueryData(m_TimestampHeap, D3D12_QUERY_TYPE_OCCLUSION, firstIndex, numIndices, m_OcclusionDownloadBuffer, firstIndex * sizeof(UINT64));
+}
+
+void CDevice::QueryOcclusions(UINT firstIndex, UINT numIndices, void* mem)
+{
+	if (!m_OcclusionMemory)
+	{
+		// Resources on D3D12_HEAP_TYPE_READBACK heaps do not support persistent map.
+		const D3D12_RANGE sPartRead = { firstIndex * sizeof(UINT64), (firstIndex + numIndices) * sizeof(UINT64) };
+		m_OcclusionDownloadBuffer->Map(0, &sPartRead, &m_OcclusionMemory);
+	}
+
+	if (mem)
+	{
+		memcpy(mem, (char*)m_OcclusionMemory + firstIndex * sizeof(UINT64), numIndices * sizeof(UINT64));
 	}
 }
 

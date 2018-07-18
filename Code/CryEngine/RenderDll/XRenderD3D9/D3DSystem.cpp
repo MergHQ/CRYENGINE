@@ -1629,7 +1629,7 @@ iLog->Log(" %s shader quality: %s", # name, sGetSQuality("q_Shader" # name)); } 
 #endif
 
 #if defined(ENABLE_SIMPLE_GPU_TIMERS)
-	if (m_pPipelineProfiler && !IsShaderCacheGenMode())
+	if (!IsShaderCacheGenMode())
 	{
 		m_pPipelineProfiler->Init();
 	}

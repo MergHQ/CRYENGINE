@@ -785,12 +785,15 @@ enum ERenderPipelineProfilerStats
 {
 	eRPPSTATS_OverallFrame = 0,
 	eRPPSTATS_Recursion,
+	eRPPSTATS_UIFlash,
+	eRPPSTATS_Aux,
 
 	// Scene
 	eRPPSTATS_SceneOverall,
 	eRPPSTATS_SceneDecals,
 	eRPPSTATS_SceneForward,
 	eRPPSTATS_SceneWater,
+	eRPPSTATS_SceneTransparent,
 
 	// Shadows
 	eRPPSTATS_ShadowsOverall,
@@ -804,7 +807,6 @@ enum ERenderPipelineProfilerStats
 
 	// VFX
 	eRPPSTATS_VfxOverall,
-	eRPPSTATS_VfxTransparent,
 	eRPPSTATS_VfxFog,
 	eRPPSTATS_VfxFlares,
 

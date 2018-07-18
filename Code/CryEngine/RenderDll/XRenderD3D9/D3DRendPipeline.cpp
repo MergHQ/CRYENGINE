@@ -791,7 +791,7 @@ void CD3D9Renderer::SubmitRenderViewForRendering(int nFlags, const SRenderingPas
 			}
 		}
 
-		m_fRTTimeSceneRender += iTimer->GetAsyncTime().GetDifferenceInSeconds(timeRenderSceneBegin);
+		SRenderStatistics::Write().m_Summary.sceneTime += iTimer->GetAsyncTime().GetDifferenceInSeconds(timeRenderSceneBegin);
 	}, ERenderCommandFlags::None);
 }
 
@@ -925,8 +925,7 @@ bool CD3D9Renderer::StoreGBufferToAtlas(const RectI& rcDst, int nSrcWidth, int n
 void CD3D9Renderer::EnablePipelineProfiler(bool bEnable)
 {
 #if defined(ENABLE_SIMPLE_GPU_TIMERS)
-	if (m_pPipelineProfiler)
-		m_pPipelineProfiler->SetEnabled(bEnable);
+	m_pPipelineProfiler->SetEnabled(bEnable);
 #endif
 }
 
