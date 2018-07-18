@@ -1203,10 +1203,8 @@ static inline uint32 CalculateRenderItemBatchFlags(SShaderItem& SH, CRenderObjec
 
 	// Cloak also requires resolve
 	const uint32 nCloakMask = mask_nz_zr(pObj->m_nMaterialLayers & MTL_LAYER_BLEND_CLOAK, (pR ? static_cast<CShaderResources*>(pR)->CShaderResources::GetMtlLayerNoDrawFlags() & MTL_LAYER_CLOAK : 0));
-
-	int nShaderFlags = (SH.m_pShader ? SH.m_pShader->GetFlags() : 0);
-	if ((CRenderer::CV_r_Refraction && nShaderFlags & EF_REFRACTIVE) || (nShaderFlags & EF_FORCEREFRACTIONUPDATE) || nCloakMask)
-		pObj->m_ObjFlags |= FOB_REQUIRES_RESOLVE;
+	if (nCloakMask)
+		nFlags |= FB_REFRACTION;
 
 	return nFlags;
 }

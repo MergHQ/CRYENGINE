@@ -618,7 +618,7 @@ public:
 	// This method takes CRenderView prepared by 3D engine after it fully finished,and send it to the Renderer for drawing.
 	void             SubmitRenderViewForRendering(int nFlags, const SRenderingPassInfo& passInfo);
 
-	virtual void     EF_EndEf3D(const int nFlags, const int nPrecacheUpdateId, const int nNearPrecacheUpdateId, const SRenderingPassInfo& passInfo) override;
+	virtual void     EF_EndEf3D(const int nPrecacheUpdateId, const int nNearPrecacheUpdateId, const SRenderingPassInfo& passInfo) override;
 	virtual void     EF_EndEf2D(const bool bSort) override; // 2d only
 
 	virtual WIN_HWND GetHWND() override { return m_hWnd; }

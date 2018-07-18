@@ -513,6 +513,7 @@ bool CPreviewModelCtrl::RenderInternal(SDisplayContext& context)
 
 	// Render object.
 	SRenderingPassInfo passInfo = SRenderingPassInfo::CreateGeneralPassRenderingInfo(m_camera, SRenderingPassInfo::DEFAULT_FLAGS, true, context.GetDisplayContextKey());
+	passInfo.GetIRenderView()->SetShaderRenderingFlags(SHDF_NOASYNC | SHDF_ALLOWHDR | SHDF_SECONDARY_VIEWPORT);
 	m_pRenderer->EF_StartEf(passInfo);
 
 	{
@@ -574,7 +575,7 @@ bool CPreviewModelCtrl::RenderInternal(SDisplayContext& context)
 		if (m_bShowObject)
 			RenderObject(pMaterial, passInfo);
 
-		m_pRenderer->EF_EndEf3D(SHDF_NOASYNC | SHDF_ALLOWHDR | SHDF_SECONDARY_VIEWPORT, -1, -1, passInfo);
+		m_pRenderer->EF_EndEf3D(-1, -1, passInfo);
 
 		if (true)
 			RenderEffect(pMaterial, passInfo);

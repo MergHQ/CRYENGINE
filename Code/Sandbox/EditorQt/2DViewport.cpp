@@ -501,11 +501,11 @@ void C2DViewport::Render()
 			gEnv->pRenderer->UpdateAuxDefaultCamera(m_camera);
 
 			SRenderingPassInfo passInfo = SRenderingPassInfo::CreateGeneralPassRenderingInfo(GetIEditorImpl()->GetSystem()->GetViewCamera(), SRenderingPassInfo::DEFAULT_FLAGS, false, dc.GetDisplayContextKey());
-
+			passInfo.GetIRenderView()->SetShaderRenderingFlags(SHDF_ALLOWHDR | SHDF_SECONDARY_VIEWPORT);
 			gEnv->pRenderer->EF_StartEf(passInfo);
 			dc.SetState(e_Mode3D | e_AlphaBlended | e_FillModeSolid | e_CullModeBack | e_DepthWriteOff | e_DepthTestOn);
 			Draw(CObjectRenderHelper { dc, passInfo });
-			gEnv->pRenderer->EF_EndEf3D(SHDF_ALLOWHDR | SHDF_SECONDARY_VIEWPORT, -1, -1, passInfo);
+			gEnv->pRenderer->EF_EndEf3D(-1, -1, passInfo);
 
 			// Return back from 2D mode.
 			gEnv->pRenderer->GetIRenderAuxGeom()->SetOrthographicProjection(false);

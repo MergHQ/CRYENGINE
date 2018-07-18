@@ -348,10 +348,11 @@ public:
 	void                   WaitForOptimizeTransparentRenderItemsResolvesJob() const;
 	bool                   HasResolveForList(ERenderListID list) const
 	{
+		const bool bSecondaryViewport = (m_shaderRenderingFlags & SHDF_SECONDARY_VIEWPORT) != 0;
 		const auto refractionMask = FB_REFRACTION | FB_RESOLVE_FULL;
 		const auto flags = GetBatchFlags(list);
-		return (list == EFSLIST_TRANSP_BW || list == EFSLIST_TRANSP_AW || list == EFSLIST_TRANSP_NEAREST) && 
-			!!(flags & refractionMask) && CRendererCVars::CV_r_Refraction;
+		return (list == EFSLIST_TRANSP_BW || list == EFSLIST_TRANSP_AW || list == EFSLIST_TRANSP_NEAREST) &&
+			 !!(flags & refractionMask) && CRendererCVars::CV_r_Refraction && !bSecondaryViewport;
 	}
 	const STransparentSegments& GetTransparentSegments(ERenderListID list) const
 	{

@@ -796,10 +796,12 @@ void CD3D9Renderer::SubmitRenderViewForRendering(int nFlags, const SRenderingPas
 }
 
 // Process all render item lists
-void CD3D9Renderer::EF_EndEf3D(const int nFlags, const int nPrecacheUpdateIdSlow, const int nPrecacheUpdateIdFast, const SRenderingPassInfo& passInfo)
+void CD3D9Renderer::EF_EndEf3D(const int nPrecacheUpdateIdSlow, const int nPrecacheUpdateIdFast, const SRenderingPassInfo& passInfo)
 {
 	ASSERT_IS_MAIN_THREAD(m_pRT)
 	auto nThreadID = gRenDev->GetMainThreadID();
+
+	const int nFlags = passInfo.GetIRenderView()->GetShaderRenderingFlags();
 
 	m_beginFrameCount--;
 
