@@ -1435,7 +1435,7 @@ void CRendererResources::Clear()
 	{
 		if (CTexture::IsTextureExist(pTex))
 		{
-			CClearSurfacePass::Execute(pTex, Clr_Empty);
+			CClearSurfacePass::Execute(pTex, pTex->GetClearColor());
 		}
 	}
 }
