@@ -17,20 +17,19 @@ IStatoscopeDataGroup::SDescription CGPUTimesDG::GetDescription() const
 {
 	return IStatoscopeDataGroup::SDescription('i', "GPU Times",
 		"['/GPUTimes/' (float Frame) (float OceanReflections) "
-		"(float Scene/Overall) (float Scene/Decals) (float Scene/Forward) (float Scene/Water) "
+		"(float Scene/Overall) (float Scene/Decals) (float Scene/Forward) (float Scene/Water) (float Scene/Particles&Glass) "
 		"(float Shadows/Overall) (float Shadows/Sun) (float Shadows/Per-Object) (float Shadows/Local) "
 		"(float Lighting/Overall) (float Lighting/VoxelGI) "
-		"(float VFX/Overall) (float VFX/Particles&Glass) (float VFX/Fog) (float VFX/Flares)]");
+		"(float VFX/Overall) (float VFX/Fog) (float VFX/Flares)]");
 }
 
 void CGPUTimesDG::Enable()
 {
 	IStatoscopeDataGroup::Enable();
 
-	if (m_pRenderer->m_pPipelineProfiler)
-	{
-		m_pRenderer->m_pPipelineProfiler->SetEnabled(true);
-	}
+#if defined(ENABLE_SIMPLE_GPU_TIMERS)
+	m_pRenderer->m_pPipelineProfiler->SetEnabled(true);
+#endif
 }
 
 void CGPUTimesDG::Write(IStatoscopeFrameRecord& fr)
@@ -45,6 +44,7 @@ void CGPUTimesDG::Write(IStatoscopeFrameRecord& fr)
 		fr.AddValue(pRPPStats[eRPPSTATS_SceneDecals].gpuTime);
 		fr.AddValue(pRPPStats[eRPPSTATS_SceneForward].gpuTime);
 		fr.AddValue(pRPPStats[eRPPSTATS_SceneWater].gpuTime);
+		fr.AddValue(pRPPStats[eRPPSTATS_SceneTransparent].gpuTime);
 
 		fr.AddValue(pRPPStats[eRPPSTATS_ShadowsOverall].gpuTime);
 		fr.AddValue(pRPPStats[eRPPSTATS_ShadowsSun].gpuTime);
@@ -55,7 +55,6 @@ void CGPUTimesDG::Write(IStatoscopeFrameRecord& fr)
 		fr.AddValue(pRPPStats[eRPPSTATS_LightingGI].gpuTime);
 
 		fr.AddValue(pRPPStats[eRPPSTATS_VfxOverall].gpuTime);
-		fr.AddValue(pRPPStats[eRPPSTATS_VfxTransparent].gpuTime);
 		fr.AddValue(pRPPStats[eRPPSTATS_VfxFog].gpuTime);
 		fr.AddValue(pRPPStats[eRPPSTATS_VfxFlares].gpuTime);
 	}
@@ -76,10 +75,9 @@ void CDetailedRenderTimesDG::Enable()
 {
 	IStatoscopeDataGroup::Enable();
 
-	if (m_pRenderer->m_pPipelineProfiler)
-	{
-		m_pRenderer->m_pPipelineProfiler->SetEnabled(true);
-	}
+#if defined(ENABLE_SIMPLE_GPU_TIMERS)
+	m_pRenderer->m_pPipelineProfiler->SetEnabled(true);
+#endif
 }
 
 void CDetailedRenderTimesDG::Write(IStatoscopeFrameRecord& fr)

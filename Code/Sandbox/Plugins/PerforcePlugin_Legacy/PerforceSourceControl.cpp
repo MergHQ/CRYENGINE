@@ -800,6 +800,30 @@ bool CPerforceSourceControl::IsFileCheckedOutByUser(const char* sFilename, bool*
 	return bRet;
 }
 
+bool CPerforceSourceControl::IsFileExlusiveCheckedOutOrLocked(const char* sFilename)
+{
+	if (!Reconnect())
+		return false;
+
+	bool bRet = false;
+
+	char fl[MAX_PATH];
+	cry_strcpy(fl, sFilename);
+	char* argv[] = { "-a", fl };
+	m_ui.Init();
+	m_client.SetArgv(2, argv);
+	m_client.Run("opened", &m_ui);
+	m_client.WaitTag();
+
+	string output(m_ui.m_output);
+
+	if ((output.find("*locked*") != -1 || output.find("*exclusive*") != -1) && !m_ui.m_e.Test())
+		bRet = true;
+
+	m_ui.m_e.Clear();
+	return bRet;
+}
+
 bool CPerforceSourceControl::IsFileLatestVersion(const char* sFilename)
 {
 	if (!Reconnect())
@@ -821,7 +845,7 @@ bool CPerforceSourceControl::IsFileLatestVersion(const char* sFilename)
 	return bRet;
 }
 
-uint32 CPerforceSourceControl::GetFileAttributesAndFileName(const char* filename, char* FullFileName)
+uint32 CPerforceSourceControl::GetFileAttributesAndFullFileName(const char* filename, char* FullFileName)
 {
 	//	g_pSystem->GetILog()->Log("\n checking connection");
 	if (!Reconnect())
@@ -867,7 +891,14 @@ uint32 CPerforceSourceControl::GetFileAttributesAndFileName(const char* filename
 			if (IsFileCheckedOutByUser(sFullFilename, &isByAnotherUser))
 				attributes |= SCC_FILE_ATTRIBUTE_CHECKEDOUT;
 			if (isByAnotherUser)
+			{
 				attributes |= SCC_FILE_ATTRIBUTE_BYANOTHER;
+				if (IsFileExlusiveCheckedOutOrLocked(sFullFilename))
+				{
+					attributes |= SCC_FILE_ATTRIBUTE_EXCLUSIVE_CHECKEDOUT_OR_LOCKED_BYANOTHER;
+				}
+			}
+
 		}
 	}
 	else
@@ -897,6 +928,11 @@ uint32 CPerforceSourceControl::GetFileAttributesAndFileName(const char* filename
 					{
 						//					g_pSystem->GetILog()->Log("\n by another user");
 						attributes |= SCC_FILE_ATTRIBUTE_BYANOTHER;
+						if (IsFileExlusiveCheckedOutOrLocked(sFullFilename))
+						{
+							attributes |= SCC_FILE_ATTRIBUTE_EXCLUSIVE_CHECKEDOUT_OR_LOCKED_BYANOTHER;
+						}
+
 					}
 				}
 				else
@@ -923,7 +959,13 @@ uint32 CPerforceSourceControl::GetFileAttributesAndFileName(const char* filename
 				if (IsFileCheckedOutByUser(sFullFilename, &isByAnotherUser))
 					attributes |= SCC_FILE_ATTRIBUTE_CHECKEDOUT;
 				if (isByAnotherUser)
+				{
 					attributes |= SCC_FILE_ATTRIBUTE_BYANOTHER;
+					if (IsFileExlusiveCheckedOutOrLocked(sFullFilename))
+					{
+						attributes |= SCC_FILE_ATTRIBUTE_EXCLUSIVE_CHECKEDOUT_OR_LOCKED_BYANOTHER;
+					}
+				}
 			}
 			else
 			{
@@ -946,7 +988,7 @@ uint32 CPerforceSourceControl::GetFileAttributesAndFileName(const char* filename
 
 void CPerforceSourceControl::GetFileAttributesThread(const char* filename)
 {
-	uint32 unRetValue = GetFileAttributesAndFileName(filename, 0);
+	uint32 unRetValue = GetFileAttributesAndFullFileName(filename, 0);
 
 	AUTO_LOCK(g_cPerforceValues);
 	m_unRetValue = unRetValue;
@@ -962,7 +1004,7 @@ uint32 CPerforceSourceControl::GetFileAttributes(const char* filename)
 	if (m_bIsWorkOffline || dwTime - m_dwLastAccessTime < 1000)
 	{
 		m_dwLastAccessTime = dwTime;
-		return GetFileAttributesAndFileName(filename, 0);
+		return GetFileAttributesAndFullFileName(filename, 0);
 	}
 
 	m_isSkipThread = false;
@@ -1189,7 +1231,7 @@ bool CPerforceSourceControl::Reopen(const char* filename, char* changeid)
 	{
 		if (file.Trim().IsEmpty())
 			continue;
-		uint32 attrib = GetFileAttributesAndFileName(file, FullFileName);
+		uint32 attrib = GetFileAttributesAndFullFileName(file, FullFileName);
 
 		if ((attrib != SCC_FILE_ATTRIBUTE_INVALID) && (attrib & SCC_FILE_ATTRIBUTE_MANAGED) && (attrib & SCC_FILE_ATTRIBUTE_CHECKEDOUT))
 		{
@@ -1221,7 +1263,7 @@ bool CPerforceSourceControl::Add(const char* filename, const char* desc, int nFl
 	{
 		if (file.Trim().IsEmpty())
 			continue;
-		uint32 attrib = GetFileAttributesAndFileName(file, FullFileName);
+		uint32 attrib = GetFileAttributesAndFullFileName(file, FullFileName);
 		char sFullFilename[ICryPak::g_nMaxPath];
 		if (attrib & SCC_FILE_ATTRIBUTE_FOLDER)
 		{
@@ -1292,7 +1334,7 @@ bool CPerforceSourceControl::CheckIn(const char* filename, const char* desc, int
 	{
 		if (file.Trim().IsEmpty())
 			continue;
-		uint32 attrib = GetFileAttributesAndFileName(file, FullFileName);
+		uint32 attrib = GetFileAttributesAndFullFileName(file, FullFileName);
 
 		if ((attrib & SCC_FILE_ATTRIBUTE_FOLDER) || ((attrib != SCC_FILE_ATTRIBUTE_INVALID) && (attrib & SCC_FILE_ATTRIBUTE_MANAGED) && (attrib & SCC_FILE_ATTRIBUTE_CHECKEDOUT)))
 		{
@@ -1334,7 +1376,7 @@ bool CPerforceSourceControl::CheckOut(const char* filename, int nFlags, char* ch
 	{
 		if (file.Trim().IsEmpty())
 			continue;
-		uint32 attrib = GetFileAttributesAndFileName(file, FullFileName);
+		uint32 attrib = GetFileAttributesAndFullFileName(file, FullFileName);
 
 		if ((attrib & SCC_FILE_ATTRIBUTE_FOLDER) || ((attrib & SCC_FILE_ATTRIBUTE_MANAGED) && !(attrib & SCC_FILE_ATTRIBUTE_CHECKEDOUT)))
 		{
@@ -1374,7 +1416,7 @@ bool CPerforceSourceControl::UndoCheckOut(const char* filename, int nFlags)
 	{
 		if (file.Trim().IsEmpty())
 			continue;
-		uint32 attrib = GetFileAttributesAndFileName(file, FullFileName);
+		uint32 attrib = GetFileAttributesAndFullFileName(file, FullFileName);
 
 		if ((attrib & SCC_FILE_ATTRIBUTE_FOLDER) || ((attrib & SCC_FILE_ATTRIBUTE_MANAGED) && (attrib & SCC_FILE_ATTRIBUTE_CHECKEDOUT)))
 		{
@@ -1395,7 +1437,7 @@ bool CPerforceSourceControl::Rename(const char* filename, const char* newname, c
 
 	bool bRet = false;
 	char FullFileName[MAX_PATH];
-	uint32 attrib = GetFileAttributesAndFileName(filename, FullFileName);
+	uint32 attrib = GetFileAttributesAndFullFileName(filename, FullFileName);
 
 	if (!(attrib & SCC_FILE_ATTRIBUTE_MANAGED))
 		return true;
@@ -1453,7 +1495,7 @@ bool CPerforceSourceControl::Delete(const char* filename, const char* desc, int 
 
 	bool bRet = false;
 	char FullFileName[MAX_PATH];
-	uint32 attrib = GetFileAttributesAndFileName(filename, FullFileName);
+	uint32 attrib = GetFileAttributesAndFullFileName(filename, FullFileName);
 
 	if (!(attrib & SCC_FILE_ATTRIBUTE_MANAGED))
 		return true;
@@ -1672,7 +1714,7 @@ bool CPerforceSourceControl::GetLatestVersion(const char* filename, int nFlags)
 	{
 		if (file.Trim().IsEmpty())
 			continue;
-		uint32 attrib = GetFileAttributesAndFileName(file, FullFileName);
+		uint32 attrib = GetFileAttributesAndFullFileName(file, FullFileName);
 
 		if (!(attrib & SCC_FILE_ATTRIBUTE_MANAGED))
 			continue;
@@ -1711,7 +1753,7 @@ bool CPerforceSourceControl::GetInternalPath(const char* filename, char* outPath
 	if (!filename || !outPath)
 		return false;
 
-	uint32 attrib = GetFileAttributesAndFileName(filename, 0);
+	uint32 attrib = GetFileAttributesAndFullFileName(filename, 0);
 
 	if (attrib & SCC_FILE_ATTRIBUTE_MANAGED && *m_ui.m_depotFile)
 	{
@@ -1726,7 +1768,7 @@ bool CPerforceSourceControl::GetOtherUser(const char* filename, char* outUser, i
 	if (!filename || !outUser)
 		return false;
 
-	uint32 attrib = GetFileAttributesAndFileName(filename, 0);
+	uint32 attrib = GetFileAttributesAndFullFileName(filename, 0);
 
 	if (attrib & SCC_FILE_ATTRIBUTE_MANAGED && *m_ui.m_otherUser)
 	{
@@ -1741,7 +1783,7 @@ bool CPerforceSourceControl::History(const char* filename)
 	if (!filename)
 		return false;
 
-	uint32 attrib = GetFileAttributesAndFileName(filename, 0);
+	uint32 attrib = GetFileAttributesAndFullFileName(filename, 0);
 
 	if (attrib & SCC_FILE_ATTRIBUTE_MANAGED && *m_ui.m_depotFile)
 	{
@@ -1772,7 +1814,7 @@ bool CPerforceSourceControl::GetOtherLockOwner(const char* filename, char* outUs
 	if (NULL == filename || NULL == outUser)
 		return false;
 
-	uint32 attrib = GetFileAttributesAndFileName(filename, 0);
+	uint32 attrib = GetFileAttributesAndFullFileName(filename, 0);
 	if (attrib & SCC_FILE_ATTRIBUTE_LOCKEDBYANOTHER && *m_ui.m_lockedBy)
 	{
 		cry_strcpy(outUser, nOutUserSize, m_ui.m_lockedBy);
@@ -1815,7 +1857,7 @@ bool CPerforceSourceControl::Lock(const char* filename, int nFlags)
 {
 	Reconnect();
 	char fullFileName[MAX_PATH];
-	uint32 attrib = GetFileAttributesAndFileName(filename, fullFileName);
+	uint32 attrib = GetFileAttributesAndFullFileName(filename, fullFileName);
 
 	if (!(attrib & SCC_FILE_ATTRIBUTE_MANAGED))
 		return false;
@@ -1839,7 +1881,7 @@ bool CPerforceSourceControl::Unlock(const char* filename, int nFlags)
 {
 	Reconnect();
 	char fullFileName[MAX_PATH];
-	uint32 attrib = GetFileAttributesAndFileName(filename, fullFileName);
+	uint32 attrib = GetFileAttributesAndFullFileName(filename, fullFileName);
 
 	if (!(attrib & SCC_FILE_ATTRIBUTE_MANAGED))
 		return false;
@@ -1902,7 +1944,7 @@ bool CPerforceSourceControl::GetRevision(const char* filename, int64 nRev, int n
 	{
 		if (file.Trim().IsEmpty())
 			continue;
-		uint32 attrib = GetFileAttributesAndFileName(file, FullFileName);
+		uint32 attrib = GetFileAttributesAndFullFileName(file, FullFileName);
 
 		cry_sprintf(&FullFileName[strlen(FullFileName)], sizeof(FullFileName) - strlen(FullFileName), "#%I64d", nRev);
 

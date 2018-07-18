@@ -473,7 +473,7 @@ void CRenderer::EF_GetParticleListAndBatchFlags(uint32& nBatchFlags, int& nList,
 	{
 		nBatchFlags |= FB_TRANSPARENT;
 		if (CRenderer::CV_r_Refraction)
-			pRenderObject->m_ObjFlags |= FOB_REQUIRES_RESOLVE;
+			nBatchFlags |= FB_REFRACTION;
 
 		bHalfRes = false;
 	}

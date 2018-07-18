@@ -38,7 +38,8 @@ protected:
 	UINT64                              m_frequency;
 	std::array<uint64, kMaxTimestamps>  m_timeValues;
 
-	bool                                m_measurable;
+	bool                                m_measurable : 1;
+	bool                                m_measured   : 1;
 
 protected:
 	static bool                         s_reservedGroups[4];

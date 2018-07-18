@@ -316,10 +316,10 @@ void CryModuleMemalignFree(void* ptr) noexcept
 	MEMREPLAY_SCOPE_FREE(ptr);
 };
 
-void* CryModuleCalloc(size_t a, size_t b) noexcept
+void* CryModuleCalloc(size_t num, size_t size) noexcept
 {
-	void* p = CryModuleMalloc(a * b);
-	memset(p, 0, a * b);
+	void* p = CryModuleMalloc(num * size);
+	memset(p, 0, num * size);
 	return p;
 }
 

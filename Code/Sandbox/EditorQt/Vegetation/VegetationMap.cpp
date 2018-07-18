@@ -2821,6 +2821,7 @@ void CVegetationMap::GenerateBillboards(IConsoleCmdArgs*)
 			IRenderView* pView = passInfo.GetIRenderView();
 			pView->SetCameras(&tmpCam, 1);
 
+			passInfo.GetIRenderView()->SetShaderRenderingFlags(nRenderingFlags | SHDF_NOASYNC | SHDF_BILLBOARDS);
 			gEnv->pRenderer->EF_StartEf(passInfo);
 
 			Matrix34A matTrans;
@@ -2844,7 +2845,7 @@ void CVegetationMap::GenerateBillboards(IConsoleCmdArgs*)
 
 			pView->SwitchUsageMode(IRenderView::eUsageModeWritingDone);
 
-			gEnv->pRenderer->EF_EndEf3D(nRenderingFlags | SHDF_NOASYNC | SHDF_BILLBOARDS, 0, 0, passInfo);
+			gEnv->pRenderer->EF_EndEf3D(0, 0, passInfo);
 
 			RectI rcDst;
 			rcDst.x = (j % nLine) * nSpriteResFinal;

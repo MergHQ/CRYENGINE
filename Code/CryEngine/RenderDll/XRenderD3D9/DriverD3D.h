@@ -265,33 +265,36 @@ public:
 	static HRESULT CALLBACK OnD3D11PostCreateDevice(D3DDevice* pd3dDevice);
 
 public:
-	// Multithreading support
-	virtual void RT_BeginFrame(const SDisplayContextKey& displayContextKey) override;
-	virtual void RT_EndFrame() override;
+	//===============================================================================
+	// Multi-threading support
 
-	virtual void RT_Init() override;
-	virtual bool RT_CreateDevice() override;
-	virtual void RT_Reset() override;
-	virtual void RT_PreRenderScene(CRenderView* pRenderView);
-	virtual void RT_RenderScene(CRenderView* pRenderView) override;
-	virtual void RT_PostRenderScene(CRenderView* pRenderView);
+	virtual void RT_BeginFrame(const SDisplayContextKey& displayContextKey) final;
+	virtual void RT_EndFrame() final;
+	virtual void RT_EndMeasurement() final;
 
-	virtual void RT_ReleaseRenderResources(uint32 nFlags) override;
+	virtual void RT_Init() final;
+	virtual bool RT_CreateDevice() final;
+	virtual void RT_Reset() final;
+	virtual void RT_PreRenderScene(CRenderView* pRenderView) final;
+	virtual void RT_RenderScene(CRenderView* pRenderView) final;
+	virtual void RT_PostRenderScene(CRenderView* pRenderView) final;
 
-	virtual void RT_CreateRenderResources() override;
-	virtual void RT_PrecacheDefaultShaders() override;
-	virtual bool RT_ReadTexture(void* pDst, int destinationWidth, int destinationHeight, EReadTextureFormat dstFormat, CTexture* pSrc) override;
-	virtual bool RT_StoreTextureToFile(const char* szFilePath, CTexture* pSrc) override;
+	virtual void RT_ReleaseRenderResources(uint32 nFlags) final;
+
+	virtual void RT_CreateRenderResources() final;
+	virtual void RT_PrecacheDefaultShaders() final;
+	virtual bool RT_ReadTexture(void* pDst, int destinationWidth, int destinationHeight, EReadTextureFormat dstFormat, CTexture* pSrc) final;
+	virtual bool RT_StoreTextureToFile(const char* szFilePath, CTexture* pSrc) final;
 	
-	virtual void RT_RenderDebug(bool bRenderStats = true) override;
+	virtual void RT_RenderDebug(bool bRenderStats = true) final;
 
-	virtual void RT_PresentFast() override;
+	virtual void RT_PresentFast() final;
 
 	//===============================================================================
 
-	virtual void RT_FlashRenderInternal(std::shared_ptr<IFlashPlayer> &&pPlayer) override;
-	virtual void RT_FlashRenderInternal(std::shared_ptr<IFlashPlayer_RenderProxy> &&pPlayer, bool bDoRealRender) override;
-	virtual void RT_FlashRenderPlaybackLocklessInternal(std::shared_ptr<IFlashPlayer_RenderProxy> &&pPlayer, int cbIdx, bool bFinalPlayback, bool bDoRealRender) override;
+	virtual void RT_FlashRenderInternal(std::shared_ptr<IFlashPlayer> &&pPlayer) final;
+	virtual void RT_FlashRenderInternal(std::shared_ptr<IFlashPlayer_RenderProxy> &&pPlayer, bool bDoRealRender) final;
+	virtual void RT_FlashRenderPlaybackLocklessInternal(std::shared_ptr<IFlashPlayer_RenderProxy> &&pPlayer, int cbIdx, bool bFinalPlayback, bool bDoRealRender) final;
 
 	//===============================================================================
 
@@ -574,11 +577,13 @@ public:
 
 	bool FX_HDRScene(CRenderView *pRenderView, bool bEnable, bool bClear = true);
 
+#if defined(ENABLE_SIMPLE_GPU_TIMERS)
 	// Performance queries
 	//=======================================================================
 
-	virtual float GetGPUFrameTime() override;
-	virtual void  GetRenderTimes(SRenderTimes& outTimes) override;
+	virtual float GetGPUFrameTime() final;
+	virtual void  GetRenderTimes(SRenderTimes& outTimes) final;
+#endif
 
 	// Shaders pipeline
 	//=======================================================================
@@ -618,7 +623,7 @@ public:
 	// This method takes CRenderView prepared by 3D engine after it fully finished,and send it to the Renderer for drawing.
 	void             SubmitRenderViewForRendering(int nFlags, const SRenderingPassInfo& passInfo);
 
-	virtual void     EF_EndEf3D(const int nFlags, const int nPrecacheUpdateId, const int nNearPrecacheUpdateId, const SRenderingPassInfo& passInfo) override;
+	virtual void     EF_EndEf3D(const int nPrecacheUpdateId, const int nNearPrecacheUpdateId, const SRenderingPassInfo& passInfo) override;
 	virtual void     EF_EndEf2D(const bool bSort) override; // 2d only
 
 	virtual WIN_HWND GetHWND() override { return m_hWnd; }
@@ -681,11 +686,13 @@ public:
 	CD3DStereoRenderer&            GetS3DRend() const    { return *m_pStereoRenderer; }
 	virtual bool                   IsStereoEnabled() const override;
 
-	virtual const RPProfilerStats*                   GetRPPStats(ERenderPipelineProfilerStats eStat, bool bCalledFromMainThread = true) override;
-	virtual const RPProfilerStats*                   GetRPPStatsArray(bool bCalledFromMainThread = true) override;
-	virtual const DynArray<RPProfilerDetailedStats>* GetRPPDetailedStatsArray(bool bCalledFromMainThread = true) override;
+#if defined(ENABLE_SIMPLE_GPU_TIMERS)
+	virtual const RPProfilerStats*                   GetRPPStats(ERenderPipelineProfilerStats eStat, bool bCalledFromMainThread = true) final;
+	virtual const RPProfilerStats*                   GetRPPStatsArray(bool bCalledFromMainThread = true) final;
+	virtual const DynArray<RPProfilerDetailedStats>* GetRPPDetailedStatsArray(bool bCalledFromMainThread = true) final;
 
-	virtual int                    GetPolygonCountByType(uint32 EFSList, EVertexCostTypes vct, uint32 z, bool bCalledFromMainThread = true) override;
+	virtual int                                      GetPolygonCountByType(uint32 EFSList, EVertexCostTypes vct, uint32 z, bool bCalledFromMainThread = true) final;
+#endif
 
 	virtual void                   LogShaderImportMiss(const CShader* pShader) override;
 

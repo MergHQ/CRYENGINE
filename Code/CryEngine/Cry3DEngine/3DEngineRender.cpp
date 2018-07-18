@@ -1583,7 +1583,7 @@ void C3DEngine::RenderScene(const int nRenderFlags, const SRenderingPassInfo& pa
 	////////////////////////////////////////////////////////////////////////////////////////
 	// From here we add render elements of main scene
 	////////////////////////////////////////////////////////////////////////////////////////
-
+	passInfo.GetIRenderView()->SetShaderRenderingFlags(IsShadersSyncLoad() ? (nRenderFlags | SHDF_NOASYNC) : nRenderFlags);
 	GetRenderer()->EF_StartEf(passInfo);
 
 	////////////////////////////////////////////////////////////////////////////////////////
@@ -1885,7 +1885,7 @@ void C3DEngine::RenderScene(const int nRenderFlags, const SRenderingPassInfo& pa
 
 	{
 		CRY_PROFILE_REGION(PROFILE_RENDERER, "Renderer::EF_EndEf3D");
-		GetRenderer()->EF_EndEf3D(IsShadersSyncLoad() ? (nRenderFlags | SHDF_NOASYNC) : nRenderFlags, GetObjManager()->m_nUpdateStreamingPrioriryRoundId, GetObjManager()->m_nUpdateStreamingPrioriryRoundIdFast, passInfo);
+		GetRenderer()->EF_EndEf3D(GetObjManager()->m_nUpdateStreamingPrioriryRoundId, GetObjManager()->m_nUpdateStreamingPrioriryRoundIdFast, passInfo);
 	}
 
 	if (passInfo.IsGeneralPass())

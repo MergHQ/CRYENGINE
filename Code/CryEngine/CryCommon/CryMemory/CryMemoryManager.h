@@ -542,6 +542,14 @@ CRYMM_INLINE void CryModuleFree(void* memblock) noexcept
 	MEMREPLAY_SCOPE_FREE(memblock);
 }
 
+CRYMM_INLINE void* CryModuleCalloc(size_t num, size_t size) noexcept
+{
+	MEMREPLAY_SCOPE(EMemReplayAllocClass::C_UserPointer, EMemReplayUserPointerClass::C_CryMalloc);
+	void* ptr = calloc(num, size);
+	MEMREPLAY_SCOPE_ALLOC(ptr, num * size, 0);
+	return ptr;
+}
+
 CRYMM_INLINE void CryModuleMemalignFree(void* memblock) noexcept
 {
 	MEMREPLAY_SCOPE(EMemReplayAllocClass::C_UserPointer, EMemReplayUserPointerClass::C_CryMalloc);

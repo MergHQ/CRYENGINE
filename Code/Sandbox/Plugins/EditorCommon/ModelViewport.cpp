@@ -1004,6 +1004,8 @@ void CModelViewport::DrawModel(const SRenderingPassInfo& passInfo)
 	CRY_PROFILE_FUNCTION(PROFILE_EDITOR);
 
 	IRenderAuxGeom* pAuxGeom = m_renderer->GetIRenderAuxGeom();
+
+	passInfo.GetIRenderView()->SetShaderRenderingFlags(SHDF_ALLOWHDR | SHDF_SECONDARY_VIEWPORT);
 	m_renderer->EF_StartEf(passInfo);
 
 	//////////////////////////////////////////////////////////////////////////
@@ -1112,7 +1114,7 @@ void CModelViewport::DrawModel(const SRenderingPassInfo& passInfo)
 	if (GetCharacterBase())
 		DrawCharacter(GetCharacterBase(), rp, passInfo);
 
-	m_renderer->EF_EndEf3D(SHDF_ALLOWHDR | SHDF_SECONDARY_VIEWPORT, -1, -1, passInfo);
+	m_renderer->EF_EndEf3D(-1, -1, passInfo);
 }
 
 void CModelViewport::DrawLights(const SRenderingPassInfo& passInfo)

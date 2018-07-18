@@ -105,7 +105,7 @@ pixout SSDO_Blur_PS(vtxOut IN)
 	return OUT;
 }
 
-#define MAX_CLIPVOLUMES 64
+#define MAX_CLIPVOLUMES 63
 #define CLIPVOLUME_IGNORE_OUTDOOR_AO	(1<<5)
 
 float4 HMAO_ClipVolumeData[MAX_CLIPVOLUMES];

@@ -101,7 +101,7 @@ SamplerState           ssShadowPointWrap      : register(s7) = SS_PointWrap;
 #define CLIPVOLUME_BLEND                (1<<3)
 
 #define AFFECTS_EVERYTHING_STENCILREF	0xFF
-#define MAX_CLIPVOLUMES 64
+#define MAX_CLIPVOLUMES 63
 
 float4 g_vVisAreasParams[MAX_CLIPVOLUMES];
 

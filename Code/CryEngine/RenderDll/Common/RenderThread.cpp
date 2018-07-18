@@ -83,9 +83,6 @@ HWND SRenderThread::GetRenderWindowHandle()
 }
 #endif
 
-
-#define LOADINGLOCK_COMMANDQUEUE (void)0;
-
 void CRenderThread::ThreadEntry()
 {
 	SetRenderThreadLocalStorage(&g_renderThreadLocalStorage);
@@ -167,8 +164,6 @@ void SRenderThread::Init()
 	m_nMainThread = m_nRenderThread;
 	m_bSuccessful = true;
 	m_pThread = NULL;
-	m_fTimeIdleDuringLoading = 0;
-	m_fTimeBusyDuringLoading = 0;
 #if !defined(STRIP_RENDER_THREAD)
 	SSystemGlobalEnvironment* pEnv = iSystem->GetGlobalEnvironment();
 	//if (pEnv && !pEnv->bTesting && !pEnv->IsDedicated() && !pEnv->IsEditor() && pEnv->pi.numCoresAvailableToProcess > 1 && CRenderer::CV_r_multithreaded > 0)
@@ -194,11 +189,8 @@ void SRenderThread::Init()
 		m_Commands[i].Free();
 		m_Commands[i].Create(300 * 1024); // 300 to stop growing in MP levels
 		m_Commands[i].SetUse(0);
-		gRenDev->m_fTimeWaitForMain[i] = 0;
-		gRenDev->m_fTimeWaitForRender[i] = 0;
-		gRenDev->m_fTimeProcessedRT[i] = 0;
-		gRenDev->m_fTimeProcessedGPU[i] = 0;
 	}
+
 	m_eVideoThreadMode = eVTM_Disabled;
 }
 
@@ -216,13 +208,12 @@ bool SRenderThread::RC_CreateDevice()
 	LOADING_TIME_PROFILE_SECTION;
 
 #if CRY_PLATFORM_WINDOWS || CRY_PLATFORM_APPLE || CRY_PLATFORM_LINUX || CRY_PLATFORM_ANDROID
-	return gRenDev->RT_CreateDevice();
+	return gcpRendD3D->RT_CreateDevice();
 #else
 	if (IsRenderThread())
 	{
-		return gRenDev->RT_CreateDevice();
+		return gcpRendD3D->RT_CreateDevice();
 	}
-	LOADINGLOCK_COMMANDQUEUE
 	byte* p = AddCommand(eRC_CreateDevice, 0);
 	EndCommand(p);
 
@@ -235,14 +226,13 @@ bool SRenderThread::RC_CreateDevice()
 void SRenderThread::RC_ResetDevice()
 {
 #if CRY_PLATFORM_WINDOWS || CRY_PLATFORM_LINUX || CRY_PLATFORM_ANDROID || CRY_PLATFORM_APPLE
-	gRenDev->RT_Reset();
+	gcpRendD3D->RT_Reset();
 #else
 	if (IsRenderThread())
 	{
-		gRenDev->RT_Reset();
+		gcpRendD3D->RT_Reset();
 		return;
 	}
-	LOADINGLOCK_COMMANDQUEUE
 	byte* p = AddCommand(eRC_ResetDevice, 0);
 	EndCommand(p);
 
@@ -271,9 +261,8 @@ void SRenderThread::RC_SuspendDevice()
 
 	if (IsRenderThread())
 	{
-		return gRenDev->RT_SuspendDevice();
+		return gcpRendD3D->RT_SuspendDevice();
 	}
-	LOADINGLOCK_COMMANDQUEUE
 	byte* p = AddCommand(eRC_SuspendDevice, 0);
 	EndCommand(p);
 
@@ -295,9 +284,8 @@ void SRenderThread::RC_ResumeDevice()
 
 	if (IsRenderThread())
 	{
-		return gRenDev->RT_ResumeDevice();
+		return gcpRendD3D->RT_ResumeDevice();
 	}
-	LOADINGLOCK_COMMANDQUEUE
 	byte* p = AddCommand(eRC_ResumeDevice, 0);
 	EndCommand(p);
 
@@ -309,11 +297,11 @@ void SRenderThread::RC_BeginFrame(const SDisplayContextKey& displayContextKey)
 {
 	if (IsRenderThread())
 	{
-		gRenDev->RT_BeginFrame(displayContextKey);
+		// NOTE: bypasses time measurement!
+		gcpRendD3D->RT_BeginFrame(displayContextKey);
 		return;
 	}
 
-	LOADINGLOCK_COMMANDQUEUE
 	byte* p = AddCommand(eRC_BeginFrame, sizeof(displayContextKey));
 	if (sizeof(displayContextKey) == 8)
 		AddQWORD(p, *reinterpret_cast<const uint64*>(&displayContextKey));
@@ -331,14 +319,14 @@ void SRenderThread::RC_EndFrame(bool bWait)
 {
 	if (IsRenderThread())
 	{
-		gRenDev->RT_EndFrame();
-		SyncMainWithRender();
+		// NOTE: bypasses time measurement!
+		gcpRendD3D->RT_EndFrame();
+		SyncMainWithRender(true);
 		return;
 	}
 	if (!bWait && CheckFlushCond())
 		return;
 
-	LOADINGLOCK_COMMANDQUEUE
 	if (m_eVideoThreadMode == eVTM_Disabled)
 	{
 		AUTO_LOCK_T(CryCriticalSectionNonRecursive, m_CommandsLoadingLock); 
@@ -353,7 +341,7 @@ void SRenderThread::RC_EndFrame(bool bWait)
 
 	byte* p = AddCommand(eRC_EndFrame, 0);
 	EndCommand(p);
-	SyncMainWithRender();
+	SyncMainWithRender(true);
 }
 
 void SRenderThread::RC_PrecacheResource(ITexture* pTP, float fMipFactor, float fTimeToReady, int Flags, int nUpdateId, int nCounter)
@@ -363,6 +351,7 @@ void SRenderThread::RC_PrecacheResource(ITexture* pTP, float fMipFactor, float f
 
 	if (IsRenderThread())
 	{
+		// NOTE: bypasses time measurement!
 		gRenDev->PrecacheTexture(pTP, fMipFactor, fTimeToReady, Flags, nUpdateId, nCounter);
 		return;
 	}
@@ -385,26 +374,26 @@ void SRenderThread::RC_TryFlush()
 	if (CheckFlushCond())
 		return;
 
-	LOADINGLOCK_COMMANDQUEUE
 	gRenDev->GetIRenderAuxGeom()->Submit(); // need to be submitted in main thread's aux cb before EndFrame (otherwise it is processed after p3dDev->EndScene())
-	SyncMainWithRender();
+	
+	FlushAndWait();
 }
 
 void SRenderThread::RC_FlashRenderPlayer(std::shared_ptr<IFlashPlayer> &&pPlayer)
 {
 	assert(IsRenderThread());
-	gRenDev->RT_FlashRenderInternal(std::move(pPlayer));
+	gcpRendD3D->RT_FlashRenderInternal(std::move(pPlayer));
 }
 
 void SRenderThread::RC_FlashRender(std::shared_ptr<IFlashPlayer_RenderProxy> &&pPlayer)
 {
 	if (IsRenderThread())
 	{
-		gRenDev->RT_FlashRenderInternal(std::move(pPlayer), true);
+		// NOTE: bypasses time measurement!
+		gcpRendD3D->RT_FlashRenderInternal(std::move(pPlayer), true);
 		return;
 	}
 
-	LOADINGLOCK_COMMANDQUEUE
 	byte* p = AddCommand(eRC_FlashRender, sizeof(std::shared_ptr<IFlashPlayer_RenderProxy>));
 
 	// Write the shared_ptr without releasing a reference.
@@ -419,11 +408,11 @@ void SRenderThread::RC_FlashRenderPlaybackLockless(std::shared_ptr<IFlashPlayer_
 {
 	if (IsRenderThread())
 	{
-		gRenDev->RT_FlashRenderPlaybackLocklessInternal(std::move(pPlayer), cbIdx, finalPlayback, true);
+		// NOTE: bypasses time measurement!
+		gcpRendD3D->RT_FlashRenderPlaybackLocklessInternal(std::move(pPlayer), cbIdx, finalPlayback, true);
 		return;
 	}
 
-	LOADINGLOCK_COMMANDQUEUE
 	byte* p = AddCommand(eRC_FlashRenderLockless, 12 + sizeof(std::shared_ptr<IFlashPlayer_RenderProxy>));
 
 	// Write the shared_ptr without releasing a reference.
@@ -455,11 +444,13 @@ void SRenderThread::RC_StopVideoThread()
 //===========================================================================================
 
 #ifdef DO_RENDERSTATS
-	#define START_PROFILE_RT Time = iTimer->GetAsyncTime();
+	#define START_PROFILE_RT_SCOPE() CTimeValue Time = iTimer->GetAsyncTime();
+	#define START_PROFILE_RT() Time = iTimer->GetAsyncTime();
 	#define END_PROFILE_PLUS_RT(Dst) Dst += iTimer->GetAsyncTime().GetDifferenceInSeconds(Time);
 	#define END_PROFILE_RT(Dst)      Dst = iTimer->GetAsyncTime().GetDifferenceInSeconds(Time);
 #else
-	#define START_PROFILE_RT
+	#define START_PROFILE_RT_SCOPE()
+	#define START_PROFILE_RT()
 	#define END_PROFILE_PLUS_RT(Dst)
 	#define END_PROFILE_RT(Dst)
 #endif
@@ -489,9 +480,10 @@ void SRenderThread::ProcessCommands()
 		#endif
 	#endif //CRY_RENDERER_OPENGL && !DXGL_FULL_EMULATION
 
-	#ifdef DO_RENDERSTATS
+#if DO_RENDERSTATS
 	CTimeValue Time;
-	#endif
+#endif
+
 	int threadId = m_nCurThreadProcess;
 
 	#if CRY_PLATFORM_DURANGO
@@ -521,33 +513,41 @@ void SRenderThread::ProcessCommands()
 		case eRC_CreateDevice:
 		{
 			CRY_PROFILE_REGION(PROFILE_RENDERER, "SRenderThread: eRC_CreateDevice");
-			m_bSuccessful &= gRenDev->RT_CreateDevice();
+			START_PROFILE_RT();
+			m_bSuccessful &= gcpRendD3D->RT_CreateDevice();
+			END_PROFILE_PLUS_RT(SRenderStatistics::Write().m_Summary.miscTime);
 		}
 			break;
 		case eRC_ResetDevice:
 		{
 			CRY_PROFILE_REGION(PROFILE_RENDERER, "SRenderThread: eRC_ResetDevice");
+			START_PROFILE_RT();
 			if (m_eVideoThreadMode == eVTM_Disabled)
-				gRenDev->RT_Reset();
+				gcpRendD3D->RT_Reset();
+			END_PROFILE_PLUS_RT(SRenderStatistics::Write().m_Summary.miscTime);
 		}
 			break;
 	#if CRY_PLATFORM_DURANGO
 		case eRC_SuspendDevice:
 		{
 			CRY_PROFILE_REGION(PROFILE_RENDERER, "SRenderThread: eRC_SuspendDevice");
+			START_PROFILE_RT();
 			if (m_eVideoThreadMode == eVTM_Disabled)
-				gRenDev->RT_SuspendDevice();
+				gcpRendD3D->RT_SuspendDevice();
+			END_PROFILE_PLUS_RT(SRenderStatistics::Write().m_Summary.miscTime);
 		}
 			break;
 		case eRC_ResumeDevice:
 		{
 			CRY_PROFILE_REGION(PROFILE_RENDERER, "SRenderThread: eRC_ResumeDevice");
+			START_PROFILE_RT();
 			if (m_eVideoThreadMode == eVTM_Disabled)
 			{
-				gRenDev->RT_ResumeDevice();
+				gcpRendD3D->RT_ResumeDevice();
 				//Now we really want to resume the device
 				bSuspendDevice = false;
-			}
+		}
+			END_PROFILE_PLUS_RT(SRenderStatistics::Write().m_Summary.miscTime);
 		}
 			break;
 	#endif
@@ -555,24 +555,27 @@ void SRenderThread::ProcessCommands()
 		case eRC_BeginFrame:
 		{
 			CRY_PROFILE_REGION(PROFILE_RENDERER, "SRenderThread: eRC_BeginFrame");
+			START_PROFILE_RT();
 			m_displayContextKey = ReadCommand<SDisplayContextKey>(n);
 			if (m_eVideoThreadMode == eVTM_Disabled)
 			{
-				gRenDev->RT_BeginFrame(m_displayContextKey);
+				gcpRendD3D->RT_BeginFrame(m_displayContextKey);
 				m_bBeginFrameCalled = false;
 			}
 			else
 			{
 				m_bBeginFrameCalled = true;
 			}
+			END_PROFILE_PLUS_RT(SRenderStatistics::Write().m_Summary.renderTime);
 		}
 			break;
 		case eRC_EndFrame:
 		{
 			CRY_PROFILE_REGION(PROFILE_RENDERER, "SRenderThread: eRC_EndFrame");
+			START_PROFILE_RT();
 			if (m_eVideoThreadMode == eVTM_Disabled)
 			{
-				gRenDev->RT_EndFrame();
+				gcpRendD3D->RT_EndFrame();
 				m_bEndFrameCalled = false;
 			}
 			else
@@ -583,31 +586,35 @@ void SRenderThread::ProcessCommands()
 				CTexture::RLT_LoadingUpdate();
 
 				m_bEndFrameCalled = true;
-				gRenDev->m_nFrameSwapID++;
+				gcpRendD3D->m_nFrameSwapID++;
 			}
+			END_PROFILE_PLUS_RT(SRenderStatistics::Write().m_Summary.renderTime);
 		}
 			break;
 
 		case eRC_FlashRender:
 			{
-				START_PROFILE_RT;
+				START_PROFILE_RT();
 				std::shared_ptr<IFlashPlayer_RenderProxy> pPlayer = ReadCommand<std::shared_ptr<IFlashPlayer_RenderProxy>>(n);
-				gRenDev->RT_FlashRenderInternal(std::move(pPlayer), m_eVideoThreadMode == eVTM_Disabled);
-				END_PROFILE_PLUS_RT(gRenDev->m_fRTTimeFlashRender);
+				gcpRendD3D->RT_FlashRenderInternal(std::move(pPlayer), m_eVideoThreadMode == eVTM_Disabled);
+				END_PROFILE_PLUS_RT(SRenderStatistics::Write().m_Summary.flashTime);
 			}
 			break;
 		case eRC_FlashRenderLockless:
 			{
+				START_PROFILE_RT();
 				std::shared_ptr<IFlashPlayer_RenderProxy> pPlayer = ReadCommand<std::shared_ptr<IFlashPlayer_RenderProxy>>(n);
 				int cbIdx = ReadCommand<int>(n);
 				bool finalPlayback = ReadCommand<int>(n) != 0;
-				gRenDev->RT_FlashRenderPlaybackLocklessInternal(std::move(pPlayer), cbIdx, finalPlayback, m_eVideoThreadMode == eVTM_Disabled);
-			}
+				gcpRendD3D->RT_FlashRenderPlaybackLocklessInternal(std::move(pPlayer), cbIdx, finalPlayback, m_eVideoThreadMode == eVTM_Disabled);
+				END_PROFILE_PLUS_RT(SRenderStatistics::Write().m_Summary.flashTime);
+		}
 			break;
 
 		case eRC_LambdaCall:
 		{
 			CRY_PROFILE_REGION(PROFILE_RENDERER, "SRenderThread: eRC_LambdaCall");
+			START_PROFILE_RT();
 			SRenderThreadLambdaCallback* pRTCallback = ReadCommand<SRenderThreadLambdaCallback*>(n);
 			bool bSkipCommand = (m_eVideoThreadMode != eVTM_Disabled) && (uint32(pRTCallback->flags & ERenderCommandFlags::SkipDuringLoading) != 0);
 			// Execute lambda callback on a render thread
@@ -617,6 +624,7 @@ void SRenderThread::ProcessCommands()
 			}
 
 			m_lambdaCallbacksPool.Delete(pRTCallback);
+			END_PROFILE_PLUS_RT(SRenderStatistics::Write().m_Summary.renderTime);
 		}
 			break;
 
@@ -630,8 +638,7 @@ void SRenderThread::ProcessCommands()
 
 	if (m_eVideoThreadMode == eVTM_Disabled)
 		gcpRendD3D->BindContextToThread(nDeviceOwningThreadID);
-
-#endif//STRIP_RENDER_THREAD
+#endif //STRIP_RENDER_THREAD
 }
 #pragma warning(pop)
 
@@ -652,35 +659,19 @@ void SRenderThread::Process()
 			break;//put it here to safely shut down
 		}
 
-		CTimeValue TimeAfterWait = iTimer->GetAsyncTime();
-		gRenDev->m_fTimeWaitForMain[m_nCurThreadProcess] += TimeAfterWait.GetDifferenceInSeconds(Time);
-		if (gRenDev->m_bStartLevelLoading)
-			m_fTimeIdleDuringLoading += TimeAfterWait.GetDifferenceInSeconds(Time);
-
-		float fT = 0.f;
-
 		if (m_eVideoThreadMode == eVTM_Disabled)
 		{
-			//gRenDev->m_fRTTimeBeginFrame = 0;
-			//gRenDev->m_fRTTimeEndFrame = 0;
-			gRenDev->m_fRTTimeSceneRender = 0;
-			gRenDev->m_fRTTimeFlashRender = 0;
-			gRenDev->m_fRTTimeMiscRender = 0;
+			CTimeValue TimeAfterWait = iTimer->GetAsyncTime();
+			if (gRenDev->m_bStartLevelLoading)
+				SRenderStatistics::Write().m_Summary.idleLoading += TimeAfterWait.GetDifferenceInSeconds(Time);
+
 			ProcessCommands();
-
-			CTimeValue TimeAfterProcess = iTimer->GetAsyncTime();
-			fT = TimeAfterProcess.GetDifferenceInSeconds(TimeAfterWait);
-			gRenDev->m_fTimeProcessedRT[m_nCurThreadProcess] += fT;
-
-			if (m_eVideoThreadMode == eVTM_RequestStart)
-			{
-			}
-
 			SignalFlushFinishedCond();
-		}
 
-		if (gRenDev->m_bStartLevelLoading)
-			m_fTimeBusyDuringLoading += fT;
+			float fT = iTimer->GetAsyncTime().GetDifferenceInSeconds(TimeAfterWait);
+			if (gRenDev->m_bStartLevelLoading)
+				SRenderStatistics::Write().m_Summary.busyLoading += fT;
+		}
 
 		if (m_eVideoThreadMode == eVTM_RequestStart)
 		{
@@ -688,7 +679,9 @@ void SRenderThread::Process()
 			DWORD nDeviceOwningThreadID = gcpRendD3D->GetBoundThreadID();
 			gcpRendD3D->BindContextToThread(CryGetCurrentThreadId());
 			gRenDev->m_DevBufMan.Sync(frameId); // make sure no request are flying when switching to render loading thread
-
+#if defined(ENABLE_SIMPLE_GPU_TIMERS)
+			gcpRendD3D->m_pPipelineProfiler->SetPaused(true);
+#endif
 			// Create another render thread;
 			SwitchMode(true);
 
@@ -705,12 +698,12 @@ void SRenderThread::Process()
 						DWORD result = SuspendThread(hHandle);
 
 						CryLogAlways("SuspendWhileLoading: Suspend result = %d", result);
-						gRenDev->RT_SuspendDevice();
+						gcpRendD3D->RT_SuspendDevice();
 
 						m_suspendWhileLoadingFlag = 0;     //notify main thread, so suspending deferral can be completed
 						m_suspendWhileLoadingEvent.Wait(); //wait until 'resume' will be received
 
-						gRenDev->RT_ResumeDevice();
+						gcpRendD3D->RT_ResumeDevice();
 
 						result = ResumeThread(hHandle);
 						CryLogAlways("SuspendWhileLoading: Resume result = %d", result);
@@ -735,7 +728,7 @@ void SRenderThread::Process()
 
 						gRenDev->m_DevBufMan.ReleaseEmptyBanks(frameId);
 
-						gRenDev->RT_PresentFast();
+						gcpRendD3D->RT_PresentFast();
 						CRenderMesh::Tick();
 						CTexture::RT_LoadingUpdate();
 						m_rdldLock.Unlock();
@@ -753,16 +746,21 @@ void SRenderThread::Process()
 				QuitRenderLoadingThread();
 			m_eVideoThreadMode = eVTM_Disabled;
 
+			// NOTE: bypasses time measurement!
 			if (m_bBeginFrameCalled)
 			{
 				m_bBeginFrameCalled = false;
-				gRenDev->RT_BeginFrame(m_displayContextKey);
+				gcpRendD3D->RT_BeginFrame(m_displayContextKey);
 			}
 			if (m_bEndFrameCalled)
 			{
 				m_bEndFrameCalled = false;
-				gRenDev->RT_EndFrame();
+				gcpRendD3D->RT_EndFrame();
 			}
+
+#if defined(ENABLE_SIMPLE_GPU_TIMERS)
+			gcpRendD3D->m_pPipelineProfiler->SetPaused(false);
+#endif
 			gcpRendD3D->BindContextToThread(nDeviceOwningThreadID);
 		}
 
@@ -784,22 +782,28 @@ void SRenderThread::ProcessLoading()
 	while (true)
 	{
 		float fTime = iTimer->GetAsyncCurTime();
+
 		WaitFlushCond();
 		if (m_bQuitLoading)
 		{
 			SignalFlushFinishedCond();
 			break;//put it here to safely shut down
 		}
-		float fTimeAfterWait = iTimer->GetAsyncCurTime();
-		gRenDev->m_fTimeWaitForMain[m_nCurThreadProcess] += fTimeAfterWait - fTime;
-		if (gRenDev->m_bStartLevelLoading)
-			m_fTimeIdleDuringLoading += fTimeAfterWait - fTime;
-		ProcessCommands();
-		SignalFlushFinishedCond();
-		float fTimeAfterProcess = iTimer->GetAsyncCurTime();
-		gRenDev->m_fTimeProcessedRT[m_nCurThreadProcess] += fTimeAfterProcess - fTimeAfterWait;
-		if (gRenDev->m_bStartLevelLoading)
-			m_fTimeBusyDuringLoading += fTimeAfterProcess - fTimeAfterWait;
+		
+		{
+			float fTimeAfterWait = iTimer->GetAsyncCurTime();
+			if (gRenDev->m_bStartLevelLoading)
+				SRenderStatistics::Write().m_Summary.idleLoading += fTimeAfterWait - fTime;
+
+			// NOTE:
+			ProcessCommands();
+			SignalFlushFinishedCond();
+
+			float fTimeAfterProcess = iTimer->GetAsyncCurTime();
+			if (gRenDev->m_bStartLevelLoading)
+				SRenderStatistics::Write().m_Summary.busyLoading += fTimeAfterProcess - fTimeAfterWait;
+		}
+
 		if (m_eVideoThreadMode == eVTM_RequestStop)
 		{
 			// Switch to general render thread
@@ -831,13 +835,14 @@ void SRenderThread::FlushAndWait()
 	if (!m_pThread)
 		return;
 
+	// NOTE: Execute twice to make the Process-/Fill-ThreadID toggle invisible too the outside
 	SyncMainWithRender();
 	SyncMainWithRender();
 }
 #endif//STRIP_RENDER_THREAD
 
 // Flush current frame without waiting (should be called from main thread)
-void SRenderThread::SyncMainWithRender()
+void SRenderThread::SyncMainWithRender(bool bFrameToFrame)
 {
 	CRY_PROFILE_REGION_WAITING(PROFILE_RENDERER, "Wait - SyncMainWithRender");
 	CRYPROFILE_SCOPE_PROFILE_MARKER("SyncMainWithRender");
@@ -845,37 +850,47 @@ void SRenderThread::SyncMainWithRender()
 	if (!IsMultithreaded())
 	{
 		gRenDev->SyncMainWithRender();
-		gRenDev->m_fTimeProcessedRT[m_nCurThreadProcess] = 0;
-		gRenDev->m_fTimeWaitForMain[m_nCurThreadProcess] = 0;
-		gRenDev->m_fTimeWaitForGPU[m_nCurThreadProcess] = 0;
 		return;
 	}
-#ifndef STRIP_RENDER_THREAD
 
-	CTimeValue time = iTimer->GetAsyncTime();
+#ifndef STRIP_RENDER_THREAD
 	WaitFlushFinishedCond();
 
-	CPostEffectsMgr* pPostEffectMgr = PostEffectMgr();
-	if (pPostEffectMgr)
 	{
-		// Must be called before the thread ID's get swapped
-		pPostEffectMgr->SyncMainWithRender();
+		START_PROFILE_RT_SCOPE();
+		CPostEffectsMgr* pPostEffectMgr = PostEffectMgr();
+		if (pPostEffectMgr)
+		{
+			// Must be called before the thread ID's get swapped
+			pPostEffectMgr->SyncMainWithRender();
+		}
+
+		gRenDev->SyncMainWithRender();
+		END_PROFILE_PLUS_RT(SRenderStatistics::Write().m_Summary.miscTime);
 	}
 
-	gRenDev->SyncMainWithRender();
+	// Register all times of this frame (including from two lines above)
+	if (bFrameToFrame)
+	{
+		gcpRendD3D->RT_EndMeasurement();
+	}
 
-	gRenDev->m_fTimeWaitForRender[m_nCurThreadFill] = iTimer->GetAsyncTime().GetDifferenceInSeconds(time);
 	//	gRenDev->ToggleMainThreadAuxGeomCB();
 	gRenDev->m_nRenderThreadFrameID = gRenDev->GetMainFrameID();
 
 	m_nCurThreadProcess = m_nCurThreadFill;
-	m_nCurThreadFill = (m_nCurThreadProcess + 1) & 1;
+	m_nCurThreadFill    = (m_nCurThreadProcess + 1) & 1;
 	gRenDev->m_nProcessThreadID = threadID(m_nCurThreadProcess);
-	gRenDev->m_nFillThreadID = threadID(m_nCurThreadFill);
+	gRenDev->m_nFillThreadID    = threadID(m_nCurThreadFill);
 	m_Commands[m_nCurThreadFill].SetUse(0);
-	gRenDev->m_fTimeProcessedRT[m_nCurThreadProcess] = 0;
-	gRenDev->m_fTimeWaitForMain[m_nCurThreadProcess] = 0;
-	gRenDev->m_fTimeWaitForGPU[m_nCurThreadProcess] = 0;
+
+	// Open a new timing-scope after all times have been registered (see RT_EndMeasurement)
+	if (bFrameToFrame)
+	{
+		SRenderStatistics::s_pCurrentOutput  = &gRenDev->m_frameRenderStats[m_nCurThreadProcess];
+		SRenderStatistics::s_pPreviousOutput = &gRenDev->m_frameRenderStats[m_nCurThreadFill   ];
+		SRenderStatistics::s_pCurrentOutput->Begin(SRenderStatistics::s_pPreviousOutput);
+	}
 
 	// Switches current command buffers in local thread storage.
 	g_systemThreadLocalStorage.currentCommandBuffer = m_nCurThreadFill;
@@ -998,8 +1013,8 @@ bool CRenderer::ForceFlushRTCommands()
 // Must be executed from main thread
 void SRenderThread::WaitFlushFinishedCond()
 {
-
-	CTimeValue time = iTimer->GetAsyncTime();
+	CRY_PROFILE_FUNCTION(PROFILE_RENDERER);
+	START_PROFILE_RT_SCOPE();
 
 #ifdef USE_LOCKS_FOR_FLUSH_SYNC
 	m_LockFlushNotify.Lock();
@@ -1023,14 +1038,16 @@ void SRenderThread::WaitFlushFinishedCond()
 		READ_WRITE_BARRIER
 	}
 #endif
+
+	END_PROFILE_PLUS_RT(SRenderStatistics::Write().m_Summary.waitForRender);
 }
 
 // Must be executed from render thread
 void SRenderThread::WaitFlushCond()
 {
 	CRY_PROFILE_FUNCTION(PROFILE_RENDERER);
+	START_PROFILE_RT_SCOPE();
 
-	CTimeValue time = iTimer->GetAsyncTime();
 #ifdef USE_LOCKS_FOR_FLUSH_SYNC
 	m_LockFlushNotify.Lock();
 	while (!*(volatile int*)&m_nFlush)
@@ -1048,6 +1065,8 @@ void SRenderThread::WaitFlushCond()
 		READ_WRITE_BARRIER
 	}
 #endif
+
+	END_PROFILE_PLUS_RT(SRenderStatistics::Write().m_Summary.waitForMain);
 }
 
 #undef m_nCurThreadFill

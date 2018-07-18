@@ -791,15 +791,17 @@ void CD3D9Renderer::SubmitRenderViewForRendering(int nFlags, const SRenderingPas
 			}
 		}
 
-		m_fRTTimeSceneRender += iTimer->GetAsyncTime().GetDifferenceInSeconds(timeRenderSceneBegin);
+		SRenderStatistics::Write().m_Summary.sceneTime += iTimer->GetAsyncTime().GetDifferenceInSeconds(timeRenderSceneBegin);
 	}, ERenderCommandFlags::None);
 }
 
 // Process all render item lists
-void CD3D9Renderer::EF_EndEf3D(const int nFlags, const int nPrecacheUpdateIdSlow, const int nPrecacheUpdateIdFast, const SRenderingPassInfo& passInfo)
+void CD3D9Renderer::EF_EndEf3D(const int nPrecacheUpdateIdSlow, const int nPrecacheUpdateIdFast, const SRenderingPassInfo& passInfo)
 {
 	ASSERT_IS_MAIN_THREAD(m_pRT)
 	auto nThreadID = gRenDev->GetMainThreadID();
+
+	const int nFlags = passInfo.GetIRenderView()->GetShaderRenderingFlags();
 
 	m_beginFrameCount--;
 
@@ -923,8 +925,7 @@ bool CD3D9Renderer::StoreGBufferToAtlas(const RectI& rcDst, int nSrcWidth, int n
 void CD3D9Renderer::EnablePipelineProfiler(bool bEnable)
 {
 #if defined(ENABLE_SIMPLE_GPU_TIMERS)
-	if (m_pPipelineProfiler)
-		m_pPipelineProfiler->SetEnabled(bEnable);
+	m_pPipelineProfiler->SetEnabled(bEnable);
 #endif
 }
 

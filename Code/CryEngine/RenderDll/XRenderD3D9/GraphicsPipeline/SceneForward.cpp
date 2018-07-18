@@ -198,8 +198,8 @@ void CSceneForwardStage::Update()
 			pColorTexture
 		);
 
-		m_forwardTransparentRecursivePass.SetLabel("FORWARD_TRANSPARENT_AW_RECURSIVE");
-		m_forwardTransparentRecursivePass.SetupPassContext(m_stageID, ePass_ForwardRecursive, TTYPE_GENERAL, FB_GENERAL, EFSLIST_TRANSP_AW);
+		m_forwardTransparentRecursivePass.SetLabel("FORWARD_TRANSPARENT_RECURSIVE");
+		m_forwardTransparentRecursivePass.SetupPassContext(m_stageID, ePass_ForwardRecursive, TTYPE_GENERAL, FB_GENERAL);
 		m_forwardTransparentRecursivePass.SetPassResources(m_pTransparentResourceLayout, m_pTransparentPassResourceSet);
 		m_forwardTransparentRecursivePass.SetRenderTargets(
 			// Depth
@@ -219,20 +219,13 @@ bool CSceneForwardStage::CreatePipelineState(const SGraphicsPipelineStateDescrip
 
 	outPSO = nullptr;
 
-	const bool bRecursive = (passId == ePass_ForwardRecursive);
+	const bool bRecursive = (passId == ePass_ForwardRecursive);	
 	CSceneRenderPass* pSceneRenderPass = bRecursive ? &m_forwardTransparentRecursivePass : &m_forwardTransparentBWPass;
 
-	if (bRecursive && desc.objectFlags & FOB_REQUIRES_RESOLVE)
-	{
-		// recursive pass doesn't support refractive render object.
-		return true;
-	}
-	
 	CDeviceGraphicsPSODesc psoDesc(nullptr, desc);
 	
 	if (bRecursive)
 		psoDesc.m_ShaderFlags_RT |= g_HWSR_MaskBit[HWSR_SECONDARY_VIEW];
-
 
 	if (customState)
 	{
@@ -1089,6 +1082,7 @@ void CSceneForwardStage::ExecuteMinimum(CTexture* pColorTex, CTexture* pDepthTex
 		renderItemDrawer.InitDrawSubmission();
 
 		m_forwardTransparentRecursivePass.BeginExecution();
+		m_forwardTransparentRecursivePass.DrawTransparentRenderItems(pRenderView, EFSLIST_TRANSP_BW);
 		m_forwardTransparentRecursivePass.DrawTransparentRenderItems(pRenderView, EFSLIST_TRANSP_AW);
 		m_forwardTransparentRecursivePass.DrawTransparentRenderItems(pRenderView, EFSLIST_TRANSP_NEAREST);
 		m_forwardTransparentRecursivePass.EndExecution();

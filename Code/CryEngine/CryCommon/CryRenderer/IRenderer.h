@@ -785,12 +785,15 @@ enum ERenderPipelineProfilerStats
 {
 	eRPPSTATS_OverallFrame = 0,
 	eRPPSTATS_Recursion,
+	eRPPSTATS_UIFlash,
+	eRPPSTATS_Aux,
 
 	// Scene
 	eRPPSTATS_SceneOverall,
 	eRPPSTATS_SceneDecals,
 	eRPPSTATS_SceneForward,
 	eRPPSTATS_SceneWater,
+	eRPPSTATS_SceneTransparent,
 
 	// Shadows
 	eRPPSTATS_ShadowsOverall,
@@ -804,7 +807,6 @@ enum ERenderPipelineProfilerStats
 
 	// VFX
 	eRPPSTATS_VfxOverall,
-	eRPPSTATS_VfxTransparent,
 	eRPPSTATS_VfxFog,
 	eRPPSTATS_VfxFlares,
 
@@ -1261,7 +1263,7 @@ struct IRenderer//: public IRendererCallbackServer
 	virtual CRenderObject* EF_DuplicateRO(CRenderObject* pObj, const SRenderingPassInfo& passInfo) = 0;
 
 	//! Draw all shaded REs in the list
-	virtual void EF_EndEf3D(const int nFlags, const int nPrecacheUpdateId, const int nNearPrecacheUpdateId, const SRenderingPassInfo& passInfo) = 0;
+	virtual void EF_EndEf3D(const int nPrecacheUpdateId, const int nNearPrecacheUpdateId, const SRenderingPassInfo& passInfo) = 0;
 
 	virtual void EF_InvokeShadowMapRenderJobs(const SRenderingPassInfo& passInfo, const int nFlags) = 0;
 	virtual IRenderView* GetNextAvailableShadowsView(IRenderView* pMainRenderView, ShadowMapFrustum* pOwnerFrustum) = 0;

@@ -150,7 +150,7 @@ public:
 	}
 
 	// Apply bending parameters to the CRenderObject
-	void FillBendingData(CRenderObject* pObj) const;
+	void FillBendingData(CRenderObject* pObj, const SRenderingPassInfo& passInfo) const;
 };
 
 #endif // _CVegetation_H_

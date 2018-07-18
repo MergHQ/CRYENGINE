@@ -29,6 +29,7 @@ CDeviceTimestampGroup::CDeviceTimestampGroup()
 	, m_queryPool(VK_NULL_HANDLE)
 	, m_fence(0)
 	, m_measurable(false)
+	, m_measured(false)
 {}
 
 CDeviceTimestampGroup::~CDeviceTimestampGroup()
@@ -62,16 +63,18 @@ void CDeviceTimestampGroup::Init()
 
 void CDeviceTimestampGroup::BeginMeasurement()
 {
-	CDeviceCommandListRef coreCommandList = GetDeviceObjectFactory().GetCoreCommandList();
-	vkCmdResetQueryPool(coreCommandList.GetVKCommandList()->GetVkCommandList(), m_queryPool, 0, kMaxTimestamps);
-
 	m_numTimestamps = 0;
 	m_measurable = false;
+	m_measured = false;
+
+	CDeviceCommandListRef coreCommandList = GetDeviceObjectFactory().GetCoreCommandList();
+	vkCmdResetQueryPool(coreCommandList.GetVKCommandList()->GetVkCommandList(), m_queryPool, 0, kMaxTimestamps);
 }
 
 void CDeviceTimestampGroup::EndMeasurement()
 {
 	GetDeviceObjectFactory().IssueFence(m_fence);
+
 	m_measurable = true;
 }
 
@@ -89,7 +92,7 @@ bool CDeviceTimestampGroup::ResolveTimestamps()
 {
 	if (!m_measurable)
 		return false;
-	if (m_numTimestamps == 0)
+	if (m_measured || m_numTimestamps == 0)
 		return true;
 
 	if (GetDeviceObjectFactory().SyncFence(m_fence, false, true) != S_OK)
@@ -97,7 +100,7 @@ bool CDeviceTimestampGroup::ResolveTimestamps()
 	if (vkGetQueryPoolResults(GetDevice()->GetVkDevice(), m_queryPool, 0, m_numTimestamps, sizeof(m_timestampData), m_timestampData.data(), sizeof(uint64), VK_QUERY_RESULT_64_BIT) != VK_SUCCESS)
 		return false;
 	
-	return true;
+	return m_measured = true;
 }
 
 float CDeviceTimestampGroup::GetTimeMS(uint32 timestamp0, uint32 timestamp1)

@@ -650,7 +650,7 @@ void CD3DStereoRenderer::PrepareFrame()
 
 	CTimeValue timePresentBegin = gEnv->pTimer->GetAsyncTime();
 	m_pHmdRenderer->PrepareFrame(static_cast<uint64_t>(gcpRendD3D->GetRenderFrameID()));
-	gRenDev->m_fTimeWaitForGPU[gRenDev->GetRenderThreadID()] += gEnv->pTimer->GetAsyncTime().GetDifferenceInSeconds(timePresentBegin);
+	SRenderStatistics::Write().m_Summary.waitForGPU += gEnv->pTimer->GetAsyncTime().GetDifferenceInSeconds(timePresentBegin);
 
 	m_framePrepared = true;
 }

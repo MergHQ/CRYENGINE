@@ -87,7 +87,8 @@ public:
 	bool CheckConnection();
 
 	// from ISourceControl
-	uint32 GetFileAttributes(const char* filename);
+	virtual uint32 GetFileAttributes(const char* filename) override;
+	virtual uint32 GetFileAttributesAndFullFileName(const char* filename, char* fullFileName) override;
 
 	// Thread processing
 	void           GetFileAttributesThread(const char* filename);
@@ -119,7 +120,6 @@ public:
 	bool           Reopen(const char* filename, char* changeid = NULL);
 
 	bool           Run(const char* func, int nArgs, char* argv[], bool bOnlyFatal = false);
-	uint32         GetFileAttributesAndFileName(const char* filename, char* FullFileName);
 	bool           IsFolder(const char* filename, char* FullFileName);
 
 	// from IClassDesc
@@ -136,6 +136,7 @@ protected:
 	bool        IsFileManageable(const char* sFilename, bool bCheckFatal = true);
 	bool        IsFileExistsInDatabase(const char* sFilename);
 	bool        IsFileCheckedOutByUser(const char* sFilename, bool* pIsByAnotherUser = 0);
+	bool        IsFileExlusiveCheckedOutOrLocked(const char* sFilename);
 	bool        IsFileLatestVersion(const char* sFilename);
 	void        ConvertFileNameCS(char* sDst, const char* sSrcFilename);
 	void        MakePathCS(char* sDst, const char* sSrcFilename);

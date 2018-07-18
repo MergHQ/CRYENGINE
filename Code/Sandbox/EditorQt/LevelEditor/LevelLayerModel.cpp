@@ -542,7 +542,7 @@ bool CLevelLayerModel::canDropMimeData(const QMimeData* pData, Qt::DropAction ac
 				return true;
 
 			// If not a group check if it's a valid link target
-			if (!object->CanLinkTo(pTargetObject))
+			if (!GetIEditorImpl()->IsCGroup(pTargetObject) && !object->CanLinkTo(pTargetObject))
 				return true;
 
 			return false;

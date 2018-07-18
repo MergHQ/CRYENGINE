@@ -828,6 +828,7 @@ bool QPreviewWidget::Render()
 
 		// Render object.
 		SRenderingPassInfo passInfo = SRenderingPassInfo::CreateGeneralPassRenderingInfo(m_camera, SRenderingPassInfo::DEFAULT_FLAGS, true, m_displayContextKey);
+		passInfo.GetIRenderView()->SetShaderRenderingFlags(SHDF_NOASYNC | SHDF_ALLOWHDR | SHDF_SECONDARY_VIEWPORT);
 		m_pRenderer->EF_StartEf(passInfo);
 
 		{
@@ -918,7 +919,7 @@ bool QPreviewWidget::Render()
 				RenderObject(pMaterial, passInfo);
 			}
 
-			m_pRenderer->EF_EndEf3D(SHDF_NOASYNC | SHDF_ALLOWHDR | SHDF_SECONDARY_VIEWPORT, -1, -1, passInfo);
+			m_pRenderer->EF_EndEf3D(-1, -1, passInfo);
 		}
 
 		m_pRenderer->RenderDebug(false);
