@@ -220,6 +220,7 @@ void JobManager::ThreadBackEnd::CThreadBackEndWorkerThread::SignalStopWork()
 
 	if (m_pTempWorkerInfo)
 	{
+		CryAutoLock<CryMutexFast>(m_pTempWorkerInfo->doWorkLock);
 		m_pTempWorkerInfo->doWorkCnd.Notify();
 	}
 }
