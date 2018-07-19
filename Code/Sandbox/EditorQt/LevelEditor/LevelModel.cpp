@@ -1030,7 +1030,10 @@ void CLevelModel::OnLayerUpdate(const CLayerChangeEvent& event)
 	case CLayerChangeEvent::LE_AFTER_PARENT_CHANGE:
 		endMoveRows();
 		break;
-	case CLayerChangeEvent::LE_MODIFY:
+	case CLayerChangeEvent::LE_RENAME:
+	case CLayerChangeEvent::LE_LAYERCOLOR:
+	case CLayerChangeEvent::LE_VISIBILITY:
+	case CLayerChangeEvent::LE_FROZEN:
 		dataChanged(index(layerIdx.row(), 0, parentIdx), index(layerIdx.row(), columnCount(parentIdx) - 1, parentIdx));
 		break;
 	case CLayerChangeEvent::LE_UPDATE_ALL:
