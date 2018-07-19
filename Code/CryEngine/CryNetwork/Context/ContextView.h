@@ -295,6 +295,8 @@ public:
 
 	CMementoMemoryManager& GetMMM() { return *m_pMMM; }
 
+	static const char* GetStateName(EContextViewState state);
+
 protected:
 	void Init(
 	  CNetChannel* pParent,
@@ -309,7 +311,6 @@ protected:
 	virtual void OnViewStateDisconnect(const char* message);
 	// ~CContextViewStateManager
 
-	static const char* GetStateName(EContextViewState state);
 	static const char* GetWaitStateName(EContextViewState state);
 
 	// enable synchronization of an object

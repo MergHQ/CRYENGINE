@@ -232,6 +232,10 @@ public:
 
 	int net_profile_deep_bandwidth_logging;
 
+#if LOG_CONTEXT_ESTABLISHMENT
+	int net_log_context_establishment;
+#endif
+
 	static ILINE CNetCVars& Get()
 	{
 		NET_ASSERT(s_pThis);

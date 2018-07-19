@@ -75,26 +75,28 @@ bool CContextEstablisher::StepTo(SContextEstablishState& state)
 
 	while (m_offset < (int)m_tasks.size() && m_tasks[m_offset].state <= state.contextState)
 	{
-#ifndef _RELEASE
+#if LOG_CONTEXT_ESTABLISHMENT
 		m_tasks[m_offset].numRuns++;
 #endif
 		switch (m_tasks[m_offset].pTask->OnStep(state))
 		{
 		case eCETR_Ok:
-#ifndef _RELEASE
+#if LOG_CONTEXT_ESTABLISHMENT
 			m_tasks[m_offset].done = gEnv->pTimer->GetAsyncTime();
 #endif
-#if ENABLE_DEBUG_KIT
+#if LOG_CONTEXT_ESTABLISHMENT
 			m_tasks[m_offset].done = gEnv->pTimer->GetAsyncTime();
-			if (m_tasks[m_offset].pTask->GetName()[0] && CVARS.LogLevel > 0)
-				NetLog("Establishment: Did %s on %s in %.2fms", m_tasks[m_offset].pTask->GetName(), state.pSender ? state.pSender->GetName() : "Context",
-				       (m_tasks[m_offset].done - (m_offset ? m_tasks[m_offset - 1].done : m_begin)).GetMilliSeconds());
+			if (CVARS.net_log_context_establishment > 0)
+				NetLogEstablishment(1, "Establishment: Did %s on %s in %.2fms, state %d:%s", m_tasks[m_offset].pTask->GetName(), state.pSender ? state.pSender->GetName() : "Context",
+					(m_tasks[m_offset].done - (m_offset ? m_tasks[m_offset - 1].done : m_begin)).GetMilliSeconds(), 
+					m_tasks[m_offset].state, CContextView::GetStateName(m_tasks[m_offset].state));
 #endif
 			m_offset++;
-#if ENABLE_DEBUG_KIT
+#if LOG_CONTEXT_ESTABLISHMENT
 			if (m_offset < m_tasks.size())
-				if (m_tasks[m_offset].pTask->GetName()[0] && CVARS.LogLevel > 0)
-					NetLog("Establishment: Beginning %s on %s", m_tasks[m_offset].pTask->GetName(), state.pSender ? state.pSender->GetName() : "Context");
+				if (CVARS.net_log_context_establishment > 0)
+					NetLogEstablishment(1, "Establishment: Beginning %s on %s, state %d:%s", m_tasks[m_offset].pTask->GetName(), state.pSender ? state.pSender->GetName() : "Context", 
+						m_tasks[m_offset].state, CContextView::GetStateName(m_tasks[m_offset].state));
 #endif
 			break;
 		case eCETR_Failed:
@@ -102,9 +104,10 @@ bool CContextEstablisher::StepTo(SContextEstablishState& state)
 			Fail(eDC_GameError, string().Format("Couldn't establish context: %s failed", m_tasks[m_offset - 1].pTask->GetName()));
 			return false;
 		case eCETR_Wait:
-#if ENABLE_DEBUG_KIT
-			NetLog("Establishment: Waiting on task [%s], state %d", m_tasks[m_offset].pTask->GetName(), m_tasks[m_offset].state);
-#endif // ENABLE_DEBUG_KIT
+#if LOG_CONTEXT_ESTABLISHMENT
+			NetLogEstablishment(2, "Establishment: Waiting on task [%s], state %d:%s", m_tasks[m_offset].pTask->GetName(), 
+				m_tasks[m_offset].state, CContextView::GetStateName(m_tasks[m_offset].state));
+#endif // LOG_CONTEXT_ESTABLISHMENT
 			return true;
 		}
 	}
@@ -115,7 +118,13 @@ void CContextEstablisher::Fail(EDisconnectionCause cause, const string& reason)
 {
 	// for mp, this can legitimately happen in non-fatal cases, a client losing connection during loading, for example
 	if (!gEnv->bMultiplayer)
-		CryWarning(VALIDATOR_MODULE_NETWORK, VALIDATOR_WARNING, "!Failed to establish context! %s", reason.c_str());
+		CryWarning(VALIDATOR_MODULE_NETWORK, VALIDATOR_WARNING, "!Failed to establish context! cause %d, %s", (int)cause, reason.c_str());
+	else
+	{
+#if LOG_CONTEXT_ESTABLISHMENT
+		NetWarnEstablishment("Establishment: Failed to establish context, cause %d, reason: %s", (int)cause, reason.c_str());
+#endif
+	}
 
 	m_failureReason = reason;
 	for (size_t i = 0; i < m_tasks.size(); i++)
@@ -167,7 +176,7 @@ void CContextEstablisher::DebugDraw()
 }
 #endif
 
-#ifndef _RELEASE
+#if LOG_CONTEXT_ESTABLISHMENT
 void CContextEstablisher::OutputTiming(void)
 {
 	CryComment("-- OutputTiming");
@@ -185,6 +194,32 @@ void CContextEstablisher::OutputTiming(void)
 			}
 			CryComment("%d: %s [%d @ %.2f] started at %." PRId64, m_tasks[i].state, m_tasks[i].pTask->GetName(), m_tasks[i].numRuns, tm, beg.GetValue());
 		}
+	}
+}
+#endif
+
+#if LOG_CONTEXT_ESTABLISHMENT
+
+void NetWarnEstablishment(const char* szFormat, ...)
+{
+	if (CVARS.net_log_context_establishment > 0)
+	{
+		va_list args;
+		va_start(args, szFormat);
+		gEnv->pLog->LogV(ILog::eWarningAlways, szFormat, args);
+		va_end(args);
+	}
+}
+
+
+void NetLogEstablishment(int level, const char* szFormat, ...)
+{
+	if (level <= CVARS.net_log_context_establishment)
+	{
+		va_list args;
+		va_start(args, szFormat);
+		gEnv->pLog->LogV(ILog::eAlways, szFormat, args);
+		va_end(args);
 	}
 }
 #endif

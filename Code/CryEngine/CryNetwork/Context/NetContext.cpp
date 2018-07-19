@@ -80,6 +80,8 @@ string GetEventName(ENetObjectEvent evt)
 		return "ChangeContext";
 	case eNOE_EstablishedContext:
 		return "EstablishedContext";
+	case eNOE_StartedEstablishingContext:
+		return "StartedEstablishingContext";
 	case eNOE_ReconfiguredObject:
 		return "ReconfiguredObject";
 	case eNOE_BindAspects:
@@ -389,6 +391,14 @@ bool CNetContext::ChangeContext()
 	m_pState = pNewState;
 	TO_GAME_LAZY(&CNetContextState::GC_BeginContext, &*m_pState, g_time);
 	return true;
+}
+
+void CNetContext::StartedEstablishingContext(int establishToken)
+{
+	SCOPED_GLOBAL_LOCK;
+	if (m_pState->GetToken() != establishToken)
+		return;
+	m_pState->StartedEstablishingContext();
 }
 
 void CNetContext::EstablishedContext(int establishToken)
