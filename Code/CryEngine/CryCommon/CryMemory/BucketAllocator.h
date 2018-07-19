@@ -7,6 +7,14 @@
 
 	#if CRY_PLATFORM_DURANGO
 		#include <CryCore/Assert/CryAssert.h>
+		#ifndef _RELEASE
+			#define PIX_RECORD_ALLOCATION
+		#endif
+	#endif
+
+	#ifdef PIX_RECORD_ALLOCATION
+		#include <pixmemory.h>
+		#define PIX_BUCKET_ALLOCATOR_ID 1
 	#endif
 
 	#ifndef _RELEASE
@@ -215,6 +223,10 @@ public:
 
 			this->PushOnto(m_freeLists[bucket * NumGenerations + generation], reinterpret_cast<AllocHeader*>(ptr));
 			m_bucketTouched[bucket] = 1;
+
+	#ifdef PIX_RECORD_ALLOCATION
+			PIXRecordMemoryFreeEvent(static_cast<USHORT>(PIX_BUCKET_ALLOCATOR_ID), ptr, 0, reinterpret_cast<UINT64>(ptr));
+	#endif
 		}
 		else if (TraitsT::FallbackOnCRTAllowed)
 		{
@@ -511,6 +523,13 @@ private:
 	#ifdef BUCKET_ALLOCATOR_TRACK_CONSUMED
 		CryInterlockedAdd(&m_consumed, TraitsT::GetSizeForBucket(TraitsT::GetBucketForSize(sz)));
 	#endif // BUCKET_ALLOCATOR_TRACK_CONSUMED
+
+	#ifdef PIX_RECORD_ALLOCATION
+		if (ptr)
+		{
+			PIXRecordMemoryAllocationEvent(static_cast<USHORT>(PIX_BUCKET_ALLOCATOR_ID), ptr, sz, reinterpret_cast<UINT64>(ptr));
+		}
+	#endif
 
 		return ptr;
 	}
