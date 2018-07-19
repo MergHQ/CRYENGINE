@@ -43,7 +43,7 @@ public:
 
 	virtual EImFileError  mfGet_error() const = 0;
 
-	virtual byte*         mfGet_image(const int nSide) = 0;
+	virtual byte*         mfGet_image(const int nSide, const bool bMove = false) = 0;
 	virtual bool          mfIs_image(const int nSide) const = 0;
 
 	virtual ETEX_Format   mfGetFormat() const = 0;

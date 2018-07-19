@@ -477,15 +477,15 @@ bool STexStreamInState::TryCommit()
 
 bool STexStreamPrepState::Commit()
 {
-	_smart_ptr<CImageFile> pNextImage;
+	CImageFilePtr pNextImage;
 
 	if (!m_bFailed)
 	{
-		if (m_pImage)
+		if (CImageFilePtr pImage = std::move(m_pImage))
 		{
 			if (m_pTexture->IsStreamed())
 			{
-				if (m_pTexture->StreamPrepare(&*m_pImage))
+				if (m_pTexture->StreamPrepare(std::move(pImage)))
 				{
 					m_bNeedsFinalise = true;
 				}
@@ -496,12 +496,12 @@ bool STexStreamPrepState::Commit()
 					// StreamPrepare failed, so presumably the image can't be streamed. Since we only have an image assuming it was streamed,
 					// load it again, with all mips.
 					// StreamPrepare failure will mark the texture as non-streamable.
-					pNextImage = CImageFile::mfStream_File(m_pImage->mfGet_filename(), m_pImage->mfGet_Flags() & ~FIM_STREAM_PREPARE, this);
+					pNextImage = CImageFile::mfStream_File(pImage->mfGet_filename(), pImage->mfGet_Flags() & ~FIM_STREAM_PREPARE, this);
 				}
 			}
 			else
 			{
-				m_pTexture->Load(&*m_pImage);
+				m_pTexture->Load(std::move(pImage));
 			}
 		}
 
@@ -516,14 +516,12 @@ bool STexStreamPrepState::Commit()
 		m_pTexture->SetNoTexture();
 	}
 
-	m_pImage = pNextImage;
-
-	if (!m_pImage && !m_bNeedsFinalise && m_pTexture)
+	if (!(m_pImage = std::move(pNextImage)) && !m_bNeedsFinalise && m_pTexture)
 	{
 		m_pTexture->PostCreate();
 	}
 
-	return !m_pImage && !m_bNeedsFinalise;
+	return !pNextImage && !m_bNeedsFinalise;
 }
 
 void STexStreamPrepState::OnImageFileStreamComplete(CImageFile* pImFile)
@@ -623,8 +621,7 @@ void CTexture::StreamLoadFromCache(const int Flags)
 			// ignore error for optional attached alpha channel
 			if (!m_bNoTexture && !(m_eFlags & FT_ALPHA) && (m_eFlags & FT_FROMIMAGE))
 			{
-				bool bRes = Reload();
-				assert(bRes);
+				Reload();
 			}
 		}
 	}
@@ -672,15 +669,15 @@ bool CTexture::StreamPrepare(bool bFromLoad)
 		                     | ((m_eFlags & FT_ALPHA) ? FIM_ALPHA : 0)
 		                     | ((m_eFlags & FT_STREAMED_PREPARE) ? FIM_READ_VIA_STREAMS : 0);
 
-		_smart_ptr<CImageFile> pIM(CImageFile::mfLoad_file(m_SrcName, nImageFlags));
-		if (!pIM || !StreamPrepare(&*pIM))
+		CImageFilePtr pIM(CImageFile::mfLoad_file(m_SrcName, nImageFlags));
+		if (!StreamPrepare(std::move(pIM)))
 			return false;
 	}
 
 	return StreamPrepare_Finalise(bFromLoad);
 }
 
-bool CTexture::StreamPrepare(CImageFile* pIM)
+bool CTexture::StreamPrepare(CImageFilePtr&& pIM)
 {
 	if (!pIM)
 		return false;
@@ -1650,7 +1647,7 @@ void CTexture::RT_FlushAllStreamingTasks(const bool bAbort /* = false*/)
 			STexStreamPrepState*& ps = *s_StreamPrepTasks.GetPtrFromIdx(i);
 			if (ps)
 			{
-				_smart_ptr<CImageFile> pFile = ps->m_pImage;
+				CImageFilePtr pFile = std::move(ps->m_pImage);
 
 				if (pFile)
 					pFile->mfAbortStreaming();

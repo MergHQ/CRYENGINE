@@ -27,7 +27,7 @@ public:
 }
 #endif
 
-bool WritePNG(byte* data, int width, int height, const char* file_name)
+bool WritePNG(const byte* data, int width, int height, const char* file_name)
 {
 #ifdef CRY_PLATFORM_WINDOWS
 	FILE *fp = fopen(file_name, "wb+");
@@ -86,7 +86,7 @@ bool WritePNG(byte* data, int width, int height, const char* file_name)
 
 	png_bytep* row_pointers = (png_bytep*)malloc(sizeof(png_bytep) * height);
 	for (int i = 0; i < height; ++i)
-		row_pointers[i] = &data[i * width * 3];
+		row_pointers[i] = (png_bytep)&data[i * width * 3];
 
 	png_write_image(png_ptr, row_pointers);
 

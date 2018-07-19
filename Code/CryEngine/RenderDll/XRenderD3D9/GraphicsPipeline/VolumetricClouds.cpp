@@ -490,7 +490,8 @@ void CVolumetricCloudsStage::Update()
 
 		if (w != width || h != height || !exist)
 		{
-			if (!CRendererResources::s_ptexVolCloudShadow->Create3DTexture(w, h, d, 1, nRTFlags, nullptr, shadowTexFormat))
+			CRendererResources::s_ptexVolCloudShadow->Create3DTexture(w, h, d, 1, nRTFlags, nullptr, shadowTexFormat);
+			if (CRendererResources::s_ptexVolCloudShadow->GetFlags() & FT_FAILED)
 			{
 				CryFatalError("Couldn't allocate texture.");
 			}
@@ -513,7 +514,8 @@ void CVolumetricCloudsStage::Update()
 		        || !CTexture::IsTextureExist(pTex))
 		    && cond)
 		{
-			if (!pTex->Create2DTexture(scaledWidth, scaledHeight, 1, flags, nullptr, texFormat))
+			pTex->Create2DTexture(scaledWidth, scaledHeight, 1, flags, nullptr, texFormat);
+			if (pTex->GetFlags() & FT_FAILED)
 			{
 				CryFatalError("Couldn't allocate texture.");
 			}
@@ -563,7 +565,8 @@ void CVolumetricCloudsStage::Update()
 		        || depth != pTex->GetDepth()
 		        || !CTexture::IsTextureExist(pTex)))
 		{
-			if (!pTex->Create3DTexture(scaledWidth, scaledHeight, depth, 1, rtFlags, nullptr, texFormat))
+			pTex->Create3DTexture(scaledWidth, scaledHeight, depth, 1, rtFlags, nullptr, texFormat);
+			if (pTex->GetFlags() & FT_FAILED)
 			{
 				CryFatalError("Couldn't allocate texture.");
 			}

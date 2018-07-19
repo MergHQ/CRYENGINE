@@ -4828,14 +4828,13 @@ unsigned int CD3D9Renderer::UploadToVideoMemory(unsigned char* pSrcData, int w, 
 			else if (eTT == eTT_CubeArray)
 				assert(!"Not supported");   // tp = CTexture::CreateCubeTexture(name, w, h, nummipmap, flags, data, eTFSrc);
 
-			pTex->m_bAsyncDevTexCreation = bAsyncDevTexCreation;
 			pTex->m_eSrcFormat = eSrcFormat;
 			pTex->m_nMips = nummipmap;
 
 			auto asyncTextureCreateCallback = [=]
 			{
-				const void* pData[] = { pImgData ? pImgData->data() : nullptr, nullptr, nullptr, nullptr };
-				pTex->CreateDeviceTexture(pData);
+				SSubresourceData pLocalData(pImgData ? pImgData->data() : nullptr);
+				pTex->CreateDeviceTexture(std::move(pLocalData));
 			};
 
 			ExecuteRenderThreadCommand(asyncTextureCreateCallback, ERenderCommandFlags::LevelLoadingThread_executeDirect);

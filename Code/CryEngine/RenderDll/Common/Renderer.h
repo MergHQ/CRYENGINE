@@ -862,8 +862,8 @@ public:
 	virtual unsigned int UploadToVideoMemory3D(unsigned char* data, int w, int h, int d, ETEX_Format eTFSrc, ETEX_Format eTFDst, int nummipmap, bool repeat = true, int filter = FILTER_BILINEAR, int Id = 0, const char* szCacheName = NULL, int flags = 0, EEndian eEndian = eLittleEndian, RectI* pRegion = NULL, bool bAsynDevTexCreation = false) override = 0;
 	virtual unsigned int UploadToVideoMemoryCube(unsigned char* data, int w, int h, ETEX_Format eTFSrc, ETEX_Format eTFDst, int nummipmap, bool repeat = true, int filter = FILTER_BILINEAR, int Id = 0, const char* szCacheName = NULL, int flags = 0, EEndian eEndian = eLittleEndian, RectI* pRegion = NULL, bool bAsynDevTexCreation = false) override = 0;
 
-	virtual bool         DXTCompress(byte* raw_data, int nWidth, int nHeight, ETEX_Format eTF, bool bUseHW, bool bGenMips, int nSrcBytesPerPix, MIPDXTcallback callback) override;
-	virtual bool         DXTDecompress(byte* srcData, const size_t srcFileSize, byte* dstData, int nWidth, int nHeight, int nMips, ETEX_Format eSrcTF, bool bUseHW, int nDstBytesPerPix) override;
+	virtual bool         DXTCompress(const byte* raw_data, int nWidth, int nHeight, ETEX_Format eTF, bool bUseHW, bool bGenMips, int nSrcBytesPerPix, MIPDXTcallback callback) override;
+	virtual bool         DXTDecompress(const byte* srcData, const size_t srcFileSize, byte* dstData, int nWidth, int nHeight, int nMips, ETEX_Format eSrcTF, bool bUseHW, int nDstBytesPerPix) override;
 
 	virtual bool         SetGammaDelta(const float fGamma) override = 0;
 
@@ -908,9 +908,9 @@ public:
 	void             GetPolyCount(int& nPolygons, int& nShadowPolys) override;
 	int              GetPolyCount() override;
 
-	virtual bool     WriteDDS(byte* dat, int wdt, int hgt, int Size, const char* name, ETEX_Format eF, int NumMips) override;
-	virtual bool     WriteTGA(byte* dat, int wdt, int hgt, const char* name, int src_bits_per_pixel, int dest_bits_per_pixel) override;
-	virtual bool     WriteJPG(byte* dat, int wdt, int hgt, char* name, int src_bits_per_pixel, int nQuality = 100) override;
+	virtual bool     WriteDDS(const byte* dat, int wdt, int hgt, int Size, const char* name, ETEX_Format eF, int NumMips) override;
+	virtual bool     WriteTGA(const byte* dat, int wdt, int hgt, const char* name, int src_bits_per_pixel, int dest_bits_per_pixel) override;
+	virtual bool     WriteJPG(const byte* dat, int wdt, int hgt, char* name, int src_bits_per_pixel, int nQuality = 100) override;
 
 	virtual void     GetMemoryUsage(ICrySizer* Sizer) override;
 
@@ -1113,8 +1113,8 @@ public:
 	//////////////////////////////////////////////////////////////////////
 	// Replacement functions for the Font engine ( vlad: for font can be used old functions )
 	virtual bool FontUploadTexture(class CFBitmap*, ETEX_Format eSrcFormat = eTF_R8G8B8A8) override = 0;
-	virtual int  FontCreateTexture(int Width, int Height, byte* pSrcData, ETEX_Format eSrcFormat = eTF_R8G8B8A8, bool genMips = false) override = 0;
-	virtual bool FontUpdateTexture(int nTexId, int X, int Y, int USize, int VSize, byte* pSrcData) override = 0;
+	virtual int  FontCreateTexture(int Width, int Height, const byte* pSrcData, ETEX_Format eSrcFormat = eTF_R8G8B8A8, bool genMips = false) override = 0;
+	virtual bool FontUpdateTexture(int nTexId, int X, int Y, int USize, int VSize, const byte* pSrcData) override = 0;
 	virtual void FontReleaseTexture(class CFBitmap* pBmp) override = 0;
 
 	//////////////////////////////////////////////////////////////////////

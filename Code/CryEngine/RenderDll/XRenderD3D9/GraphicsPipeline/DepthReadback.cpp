@@ -149,7 +149,9 @@ bool CDepthReadbackStage::CreateResources(uint32 sourceWidth, uint32 sourceHeigh
 			pTarget->SetFlags(downsampleFlags);
 			pTarget->SetWidth(width);
 			pTarget->SetHeight(height);
-			bFailed |= !pTarget->CreateRenderTarget(CRendererResources::s_eTFZ, Clr_Unused);
+			pTarget->CreateRenderTarget(CRendererResources::s_eTFZ, Clr_Unused);
+
+			bFailed |= pTarget->GetFlags() & FT_FAILED ? true : false;
 		}
 	}
 
@@ -188,7 +190,9 @@ bool CDepthReadbackStage::CreateResources(uint32 sourceWidth, uint32 sourceHeigh
 			pTarget->SetFlags(readbackFlags);
 			pTarget->SetWidth(CULL_SIZEX);
 			pTarget->SetHeight(CULL_SIZEY);
-			bFailed |= !pTarget->CreateRenderTarget(eTF_R32F, Clr_Unused);
+			pTarget->CreateRenderTarget(eTF_R32F, Clr_Unused);
+
+			bFailed |= pTarget->GetFlags() & FT_FAILED ? true : false;
 		}
 	}
 

@@ -1494,27 +1494,15 @@ CTexture* CRendererResources::CreateDepthTarget(int nWidth, int nHeight, const C
 		gRenDev->GetDepthBpp() == 8  ? eTF_D16S8 : eTF_D16 : eTF;
 
 	char pName[128]; // Create unique names for every allocation, otherwise name-matches would occur in GetOrCreateDepthStencil()
-	cry_sprintf(pName, "$DepthStencil%8x", ++m_DTallocs);
-	auto pTarget = CTexture::GetOrCreateDepthStencil(pName, nWidth, nHeight, cClear, eTT_2D, FT_USAGE_TEMPORARY | FT_NOMIPS, preferredDepthFormat);
-
-#if !defined(RELEASE) && CRY_PLATFORM_WINDOWS
-	pTarget->GetDevTexture()->Get2DTexture()->SetPrivateData(WKPDID_D3DDebugObjectName, strlen("Dynamically requested Depth-Target"), "Dynamically requested Depth-Target");
-#endif
-
-	return pTarget;
+	cry_sprintf(pName, "$DynDepthStencil%8x", ++m_DTallocs);
+	return CTexture::GetOrCreateDepthStencil(pName, nWidth, nHeight, cClear, eTT_2D, FT_USAGE_TEMPORARY | FT_NOMIPS, preferredDepthFormat);
 }
 
 CTexture* CRendererResources::CreateRenderTarget(int nWidth, int nHeight, const ColorF& cClear, ETEX_Format eTF)
 {
 	char pName[128]; // Create unique names for every allocation, otherwise name-matches would occur in GetOrCreateRenderTarget()
-	cry_sprintf(pName, "$RenderTarget%8x", ++m_RTallocs);
-	auto pTarget = CTexture::GetOrCreateRenderTarget(pName, nWidth, nHeight, cClear, eTT_2D, FT_USAGE_TEMPORARY | FT_NOMIPS, eTF);
-
-#if !defined(RELEASE) && CRY_PLATFORM_WINDOWS
-	pTarget->GetDevTexture()->Get2DTexture()->SetPrivateData(WKPDID_D3DDebugObjectName, strlen("Dynamically requested Color-Target"), "Dynamically requested Color-Target");
-#endif
-
-	return pTarget;
+	cry_sprintf(pName, "$DynRenderTarget%8x", ++m_RTallocs);
+	return CTexture::GetOrCreateRenderTarget(pName, nWidth, nHeight, cClear, eTT_2D, FT_USAGE_TEMPORARY | FT_NOMIPS, eTF);
 }
 
 ////////////////////////////////////////////////////////////////////////////////////////////////////

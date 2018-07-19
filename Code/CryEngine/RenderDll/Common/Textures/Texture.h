@@ -800,7 +800,7 @@ public: // IImageFileStreamCallback Members
 
 public:
 	_smart_ptr<CTexture>   m_pTexture;
-	_smart_ptr<CImageFile> m_pImage;
+	CImageFilePtr          m_pImage;
 	volatile bool          m_bCompleted;
 	volatile bool          m_bFailed;
 	volatile bool          m_bNeedsFinalise;
@@ -1024,7 +1024,6 @@ private:
 	bool                m_bIsSRGB               : 1;
 
 	bool                m_bNoDevTexture         : 1;
-	bool                m_bAsyncDevTexCreation  : 1;
 	bool                m_bInDistanceSortedList : 1;
 	bool                m_bCreatedInLevel       : 1;
 	bool                m_bUsedRecently         : 1;
@@ -1094,16 +1093,16 @@ private:
 	};
 	typedef std::map<const CTexture*, SLowResSystemCopy> LowResSystemCopyType;
 	static LowResSystemCopyType s_LowResSystemCopy;
-	void          PrepareLowResSystemCopy(byte* pTexData, bool bTexDataHasAllMips);
+	void          PrepareLowResSystemCopy(const byte* pTexData, bool bTexDataHasAllMips);
 	const ColorB* GetLowResSystemCopy(uint16& nWidth, uint16& nHeight, int** ppLowResSystemCopyAtlasId);
 #endif
 
 	static CCryNameTSCRC GenName(const char* name, uint32 nFlags = 0);
 	static CTexture*     FindOrRegisterTextureObject(const char* name, uint32 nFlags, ETEX_Format eTFDst, bool& bFound); // NOTE: increases refcount
 
-	ETEX_Format          FormatFixup(ETEX_Format eFormat);
-	bool                 FormatFixup(STexData& td);
-	bool                 ImagePreprocessing(STexData& td);
+	static ETEX_Format   FormatFixup(ETEX_Format eFormat);
+	static STexDataPtr   FormatFixup(STexDataPtr&& td);
+	static STexDataPtr   ImagePreprocessing(STexDataPtr&& td, ETEX_Format eDstFormat);
 
 #ifndef _RELEASE
 	static void OutputDebugInfo();
@@ -1336,7 +1335,6 @@ public:
 	void            RefDevTexture(CDeviceTexture* pDeviceTex);
 	void            SetDevTexture(CDeviceTexture* pDeviceTex);
 	void            OwnDevTexture(CDeviceTexture* pDeviceTex);
-	bool            IsAsyncDevTexCreation() const { return m_bAsyncDevTexCreation; }
 
 	// note: render target should be created with FT_FORCE_MIPS flag
 	bool               GenerateMipMaps(bool bSetOrthoProj = false, bool bUseHW = true, bool bNormalMap = false);
@@ -1536,7 +1534,7 @@ public:
 	void                       StreamActivateLod(int nMinMip);
 	void                       StreamLoadFromCache(const int nFlags);
 	bool                       StreamPrepare(bool bFromLoad);
-	bool                       StreamPrepare(CImageFile* pImage);
+	bool                       StreamPrepare(CImageFilePtr&& pImage);
 	bool                       StreamPrepare_Platform();
 	bool                       StreamPrepare_Finalise(bool bFromLoad);
 	STexPool*                  StreamGetPool(int nStartMip, int nMips);
@@ -1573,8 +1571,8 @@ public:
 	static void                 RT_FlushStreaming(bool bAbort);
 	static void                 ShutDown();
 
-	static bool                 ReloadFile(const char* szFileName) threadsafe;
-	static bool                 ReloadFile_Request(const char* szFileName);
+	static void                 ReloadFile(const char* szFileName) threadsafe;
+	static void                 ReloadFile_Request(const char* szFileName);
 	static void                 ReloadTextures() threadsafe;
 	static void                 ToggleTexturesStreaming() threadsafe;
 	static void                 LogTextures(ILog* pLog) threadsafe;
@@ -1583,30 +1581,30 @@ public:
 	static void                 RLT_LoadingUpdate();
 
 	// Loading/creating functions
-	bool  Load(ETEX_Format eFormat);
-	bool  Load(CImageFile* pImage);
-	bool  LoadFromImage(const char* name, ETEX_Format eFormat = eTF_Unknown);
-	bool  Reload();
-	bool  ToggleStreaming(const bool bEnable);
-	virtual void UpdateData(STexData &td, int flags);
+	void  Load(ETEX_Format eFormat);
+	void  Load(CImageFilePtr&& pImage);
+	void  LoadFromImage(const char* name, ETEX_Format eFormat = eTF_Unknown);
+	void  Reload();
+	void  ToggleStreaming(const bool bEnable);
+	virtual void UpdateData(STexDataPtr&& td, int flags);
 
 	byte* GetSubImageData32(int nX, int nY, int nW, int nH, int& nOutTexDim);
 
 	//=======================================================
 	// Lowest-level functions calling into the API-specific implementation
-	bool               RT_CreateDeviceTexture(const void* pData[]);
+	bool               RT_CreateDeviceTexture(const SSubresourceData& pData);
 
-	bool               CreateDeviceTexture(const void* pData[]);
+	void               CreateDeviceTexture(SSubresourceData&& pData);
 	void               ReleaseDeviceTexture(bool bKeepLastMips, bool bFromUnload = false);
 
 	// Low-level functions calling CreateDeviceTexture()
-	bool               CreateRenderTarget(ETEX_Format eFormat, const ColorF& cClear);
-	bool               CreateDepthStencil(ETEX_Format eFormat, const ColorF& cClear);
-	bool               CreateShaderResource(STexData& td);
+	void               CreateRenderTarget(ETEX_Format eFormat, const ColorF& cClear);
+	void               CreateDepthStencil(ETEX_Format eFormat, const ColorF& cClear);
+	void               CreateShaderResource(STexDataPtr&& td);
 
 	// Mid-level functions calling Create...()
-	bool               Create2DTexture(int nWidth, int nHeight, int nMips, int nFlags, byte* pData, ETEX_Format eSrcFormat);
-	bool               Create3DTexture(int nWidth, int nHeight, int nDepth, int nMips, int nFlags, byte* pData, ETEX_Format eTFSrc);
+	void               Create2DTexture(int nWidth, int nHeight, int nMips, int nFlags, const byte* pData, ETEX_Format eSrcFormat);
+	void               Create3DTexture(int nWidth, int nHeight, int nDepth, int nMips, int nFlags, const byte* pData, ETEX_Format eTFSrc);
 
 	// High-level functions calling Create...()
 	static CTexture*              GetOrCreateTextureObject(const char* name, uint32 nWidth, uint32 nHeight, int nDepth, ETEX_Type eTT, uint32 nFlags, ETEX_Format eFormat, int nCustomID = -1);
@@ -1616,24 +1614,24 @@ public:
 	// High-level functions calling GetOrCreate...() and Create...()
 	static CTexture*   GetOrCreateRenderTarget(const char* name, uint32 nWidth, uint32 nHeight, const ColorF& cClear, ETEX_Type eTT, uint32 nFlags, ETEX_Format eSrcFormat, int nCustomID = -1);
 	static CTexture*   GetOrCreateDepthStencil(const char* name, uint32 nWidth, uint32 nHeight, const ColorF& cClear, ETEX_Type eTT, uint32 nFlags, ETEX_Format eSrcFormat, int nCustomID = -1);
-	static CTexture*   GetOrCreate2DTexture(const char* szName, int nWidth, int nHeight, int nMips, int nFlags, byte* pData, ETEX_Format eSrcFormat, bool bAsyncDevTexCreation = false);
-	static CTexture*   GetOrCreate3DTexture(const char* szName, int nWidth, int nHeight, int nDepth, int nMips, int nFlags, byte* pData, ETEX_Format eSrcFormat);
+	static CTexture*   GetOrCreate2DTexture(const char* szName, int nWidth, int nHeight, int nMips, int nFlags, const byte* pData, ETEX_Format eSrcFormat, bool bAsyncDevTexCreation = false);
+	static CTexture*   GetOrCreate3DTexture(const char* szName, int nWidth, int nHeight, int nDepth, int nMips, int nFlags, const byte* pData, ETEX_Format eSrcFormat);
 	//=======================================================
 
 	// API depended functions
 	bool               Resolve(int nTarget = 0, bool bUseViewportSize = false);
 	
-	void               UpdateTextureRegion(byte* pSrcData, int X, int Y, int Z, int USize, int VSize, int ZSize, ETEX_Format eSrcFormat);
-	void               RT_UpdateTextureRegion(byte* pSrcData, int X, int Y, int Z, int USize, int VSize, int ZSize, ETEX_Format eSrcFormat);
+	void               UpdateTextureRegion(const byte* pSrcData, int X, int Y, int Z, int USize, int VSize, int ZSize, ETEX_Format eSrcFormat);
+	void               RT_UpdateTextureRegion(const byte* pSrcData, int X, int Y, int Z, int USize, int VSize, int ZSize, ETEX_Format eSrcFormat);
 	bool               SetNoTexture(CTexture* pDefaultTexture = CRendererResources::s_ptexNoTexture);
 
 #if defined(TEXTURE_GET_SYSTEM_COPY_SUPPORT)
-	static byte*        Convert(byte* pSrc, int nWidth, int nHeight, int nMips, ETEX_Format eSrcFormat, ETEX_Format eDstFormat, int nOutMips, int& nOutSize, bool bLinear);
+	static const byte*  Convert(const byte* pSrc, int nWidth, int nHeight, int nMips, ETEX_Format eSrcFormat, ETEX_Format eDstFormat, int nOutMips, int& nOutSize, bool bLinear);
 #endif
 	static int          CalcNumMips(int nWidth, int nHeight);
 	// upload mip data from file regarding to platform specifics
 	static bool         IsInPlaceFormat(const ETEX_Format fmt);
-	static void         ExpandMipFromFile(byte* dest, const int destSize, const byte* src, const int srcSize, const ETEX_Format srcFmt, const ETEX_Format dstFmt);
+	static void         ExpandMipFromFile(byte* dst, const int destSize, const byte* src, const int srcSize, const ETEX_Format srcFmt, const ETEX_Format dstFmt);
 	static uint32       TextureDataSize(uint32 nWidth, uint32 nHeight, uint32 nDepth, uint32 nMips, uint32 nSlices, const ETEX_Format eTF, ETEX_TileMode eTM = eTM_None);
 
 	static const SPixFormat* GetPixFormat(ETEX_Format eTFDst);
@@ -1660,11 +1658,11 @@ public:
 
 };
 
-bool  WriteTGA(byte* dat, int wdt, int hgt, const char* name, int src_bits_per_pixel, int dest_bits_per_pixel);
-bool  WritePNG(byte* dat, int wdt, int hgt, const char* name);
-bool  WriteJPG(byte* dat, int wdt, int hgt, const char* name, int bpp, int nQuality = 100);
+bool  WriteTGA(const byte* dat, int wdt, int hgt, const char* name, int src_bits_per_pixel, int dest_bits_per_pixel);
+bool  WritePNG(const byte* dat, int wdt, int hgt, const char* name);
+bool  WriteJPG(const byte* dat, int wdt, int hgt, const char* name, int bpp, int nQuality = 100);
 #if CRY_PLATFORM_WINDOWS
-byte* WriteDDS(byte* dat, int wdt, int hgt, int dpth, const char* name, ETEX_Format eTF, int nMips, ETEX_Type eTT, bool bToMemory = false, int* nSize = NULL);
+byte* WriteDDS(const byte* dat, int wdt, int hgt, int dpth, const char* name, ETEX_Format eTF, int nMips, ETEX_Type eTT, bool bToMemory = false, int* nSize = NULL);
 #endif
 bool  WriteTIF(const void* dat, int wdth, int hgt, int bytesPerChannel, int numChannels, bool bFloat, const char* szPreset, const char* szFileName);
 

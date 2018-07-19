@@ -888,12 +888,12 @@ EScreenAspectRatio CRenderer::GetScreenAspect(int nWidth, int nHeight)
 	return eSA;
 }
 
-bool CRenderer::WriteTGA(byte* dat, int wdt, int hgt, const char* name, int src_bits_per_pixel, int dest_bits_per_pixel)
+bool CRenderer::WriteTGA(const byte* dat, int wdt, int hgt, const char* name, int src_bits_per_pixel, int dest_bits_per_pixel)
 {
 	return ::WriteTGA((byte*)dat, wdt, hgt, name, src_bits_per_pixel, dest_bits_per_pixel);
 }
 
-bool CRenderer::WriteDDS(byte* dat, int wdt, int hgt, int Size, const char* nam, ETEX_Format eFDst, int NumMips)
+bool CRenderer::WriteDDS(const byte* dat, int wdt, int hgt, int Size, const char* nam, ETEX_Format eFDst, int NumMips)
 {
 #if CRY_PLATFORM_WINDOWS
 	bool bRet = true;
@@ -916,7 +916,7 @@ bool CRenderer::WriteDDS(byte* dat, int wdt, int hgt, int Size, const char* nam,
 	if (NumMips != 1)
 		bMips = true;
 	int nDxtSize;
-	byte* dst = CTexture::Convert(dat, wdt, hgt, NumMips, eTF_R8G8B8A8, eFDst, NumMips, nDxtSize, true);
+	const byte* dst = CTexture::Convert(dat, wdt, hgt, NumMips, eTF_R8G8B8A8, eFDst, NumMips, nDxtSize, true);
 	if (dst)
 	{
 		char name[256];
@@ -994,7 +994,7 @@ SShaderItem CRenderer::EF_LoadShaderItem (const char* szName, bool bShare, int f
 }
 
 //////////////////////////////////////////////////////////////////////////
-bool CRenderer::EF_ReloadFile_Request (const char* szFileName)
+bool CRenderer::EF_ReloadFile_Request(const char* szFileName)
 {
 	// Replace .tif extensions with .dds extensions.
 	char realName[MAX_PATH + 1];
@@ -1023,10 +1023,9 @@ bool CRenderer::EF_ReloadFile_Request (const char* szFileName)
 	//TODO replace this with a single function get file type
 	//function should return and enum and the following code replaced with a switch statement
 	if (!stricmp(extn, ".dds"))
-	{
-		return CTexture::ReloadFile_Request(realName);
-	}
-	return false;
+		CTexture::ReloadFile_Request(realName);
+
+	return true; // Still, it can fail later, check FT_FAILED
 }
 
 bool CRenderer::EF_ReloadFile (const char* szFileName)
@@ -1061,11 +1060,13 @@ bool CRenderer::EF_ReloadFile (const char* szFileName)
 		string correctedName = PathUtil::ReplaceExtension(szFileName, "dds");
 
 #if !defined(CRY_ENABLE_RC_HELPER)
-		return CTexture::ReloadFile(correctedName);
+		CTexture::ReloadFile(correctedName);
+		return true; // Still, it can fail later, check FT_FAILED
 #else 
 		if (ITexture* pTexture = gcpRendD3D->EF_GetTextureByName(correctedName))
 		{
-			return CTexture::ReloadFile(correctedName);
+			CTexture::ReloadFile(correctedName);
+			return true; // Still, it can fail later, check FT_FAILED
 		}
 		else
 		{
@@ -2577,7 +2578,7 @@ struct SCompressRowData
 {
 	struct squish::sqio* pSqio;
 	byte*  destinationData;
-	byte*  sourceData;
+	const byte* sourceData;
 	int row;
 	int width;
 	int height;
@@ -2738,7 +2739,7 @@ DECLARE_JOB("DXTCompressRowFloat", TDXTCompressRowFloat, DXTCompressRowFloat);
 
 #endif // #if !defined(__RECODE__) && !defined(EXCLUDE_SQUISH_SDK)
 
-bool CRenderer::DXTDecompress(byte* sourceData, const size_t srcFileSize, byte* destinationData, int width, int height, int mips, ETEX_Format sourceFormat, bool bUseHW, int nDstBytesPerPix)
+bool CRenderer::DXTDecompress(const byte* sourceData, const size_t srcFileSize, byte* destinationData, int width, int height, int mips, ETEX_Format sourceFormat, bool bUseHW, int nDstBytesPerPix)
 {
 	FUNCTION_PROFILER_RENDERER();
 
@@ -2896,7 +2897,7 @@ bool CRenderer::DXTDecompress(byte* sourceData, const size_t srcFileSize, byte* 
 #endif
 }
 
-bool CRenderer::DXTCompress(byte* sourceData, int width, int height, ETEX_Format destinationFormat, bool bUseHW, bool bGenMips, int nSrcBytesPerPix, MIPDXTcallback callback)
+bool CRenderer::DXTCompress(const byte* sourceData, int width, int height, ETEX_Format destinationFormat, bool bUseHW, bool bGenMips, int nSrcBytesPerPix, MIPDXTcallback callback)
 {
 	FUNCTION_PROFILER_RENDERER();
 
@@ -3073,7 +3074,7 @@ bool CRenderer::DXTCompress(byte* sourceData, int width, int height, ETEX_Format
 #endif
 }
 
-bool CRenderer::WriteJPG(byte* dat, int wdt, int hgt, char* name, int src_bits_per_pixel, int nQuality)
+bool CRenderer::WriteJPG(const byte* dat, int wdt, int hgt, char* name, int src_bits_per_pixel, int nQuality)
 {
 	return ::WriteJPG(dat, wdt, hgt, name, src_bits_per_pixel, nQuality);
 }

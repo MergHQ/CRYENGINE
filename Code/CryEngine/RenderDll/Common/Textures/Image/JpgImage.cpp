@@ -410,7 +410,7 @@ bool jo_write_jpg(const char* filename, const void* data, int width, int height,
 
 //////////////////////////////////////////////////////////////////////////
 
-bool WriteJPG(byte* dat, int wdt, int hgt, const char* name, int bpp, int nQuality)
+bool WriteJPG(const byte* dat, int wdt, int hgt, const char* name, int bpp, int nQuality)
 {
 #if CRY_PLATFORM_LINUX || CRY_PLATFORM_ANDROID || CRY_PLATFORM_APPLE
 	return false;

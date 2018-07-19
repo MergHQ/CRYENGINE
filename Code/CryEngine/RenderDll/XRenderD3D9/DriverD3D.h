@@ -512,8 +512,8 @@ public:
 	//////////////////////////////////////////////////////////////////////
 	// Replacement functions for the Font engine
 	virtual bool FontUploadTexture(class CFBitmap*, ETEX_Format eTF = eTF_R8G8B8A8) override;
-	virtual int  FontCreateTexture(int Width, int Height, byte* pData, ETEX_Format eTF = eTF_R8G8B8A8, bool genMips = false) override;
-	virtual bool FontUpdateTexture(int nTexId, int X, int Y, int USize, int VSize, byte* pData) override;
+	virtual int  FontCreateTexture(int Width, int Height, const byte* pData, ETEX_Format eTF = eTF_R8G8B8A8, bool genMips = false) override;
+	virtual bool FontUpdateTexture(int nTexId, int X, int Y, int USize, int VSize, const byte* pData) override;
 	virtual void FontReleaseTexture(class CFBitmap* pBmp) override;
 
 #if RENDERER_SUPPORT_SCALEFORM

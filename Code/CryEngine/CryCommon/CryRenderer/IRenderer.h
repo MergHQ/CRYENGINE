@@ -1135,16 +1135,16 @@ struct IRenderer//: public IRendererCallbackServer
 	  float sx, float sy, float sz,
 	  float* px, float* py, float* pz) = 0;
 
-	virtual bool WriteDDS(byte* dat, int wdt, int hgt, int Size, const char* name, ETEX_Format eF, int NumMips) = 0;
-	virtual bool WriteTGA(byte* dat, int wdt, int hgt, const char* name, int src_bits_per_pixel, int dest_bits_per_pixel) = 0;
-	virtual bool WriteJPG(byte* dat, int wdt, int hgt, char* name, int src_bits_per_pixel, int nQuality = 100) = 0;
+	virtual bool WriteDDS(const byte* dat, int wdt, int hgt, int Size, const char* name, ETEX_Format eF, int NumMips) = 0;
+	virtual bool WriteTGA(const byte* dat, int wdt, int hgt, const char* name, int src_bits_per_pixel, int dest_bits_per_pixel) = 0;
+	virtual bool WriteJPG(const byte* dat, int wdt, int hgt, char* name, int src_bits_per_pixel, int nQuality = 100) = 0;
 
 	/////////////////////////////////////////////////////////////////////////////////
 	//Replacement functions for Font
 
 	virtual bool FontUploadTexture(class CFBitmap*, ETEX_Format eTF = eTF_R8G8B8A8) = 0;
-	virtual int  FontCreateTexture(int Width, int Height, byte* pData, ETEX_Format eTF = eTF_R8G8B8A8, bool genMips = false) = 0;
-	virtual bool FontUpdateTexture(int nTexId, int X, int Y, int USize, int VSize, byte* pData) = 0;
+	virtual int  FontCreateTexture(int Width, int Height, const byte* pData, ETEX_Format eTF = eTF_R8G8B8A8, bool genMips = false) = 0;
+	virtual bool FontUpdateTexture(int nTexId, int X, int Y, int USize, int VSize, const byte* pData) = 0;
 	virtual void FontReleaseTexture(class CFBitmap* pBmp) = 0;
 
 	virtual bool FlushRTCommands(bool bWait, bool bImmediatelly, bool bForce) = 0;
@@ -1400,8 +1400,8 @@ struct IRenderer//: public IRendererCallbackServer
 	virtual void         UpdateTextureInVideoMemory(uint32 tnum, unsigned char* newdata, int posx, int posy, int w, int h, ETEX_Format eTFSrc = eTF_B8G8R8, int posz = 0, int sizez = 1) = 0;
 
 	// NB: Without header.
-	virtual bool DXTCompress(byte* raw_data, int nWidth, int nHeight, ETEX_Format eTF, bool bUseHW, bool bGenMips, int nSrcBytesPerPix, MIPDXTcallback callback) = 0;
-	virtual bool DXTDecompress(byte* srcData, const size_t srcFileSize, byte* dstData, int nWidth, int nHeight, int nMips, ETEX_Format eSrcTF, bool bUseHW, int nDstBytesPerPix) = 0;
+	virtual bool DXTCompress  (const byte* raw_data, int nWidth, int nHeight, ETEX_Format eTF, bool bUseHW, bool bGenMips, int nSrcBytesPerPix, MIPDXTcallback callback) = 0;
+	virtual bool DXTDecompress(const byte* srcData, const size_t srcFileSize, byte* dstData, int nWidth, int nHeight, int nMips, ETEX_Format eSrcTF, bool bUseHW, int nDstBytesPerPix) = 0;
 	virtual void RemoveTexture(unsigned int TextureId) = 0;
 
 	virtual bool BakeMesh(const SMeshBakingInputParams* pInputParams, SMeshBakingOutput* pReturnValues) = 0;
