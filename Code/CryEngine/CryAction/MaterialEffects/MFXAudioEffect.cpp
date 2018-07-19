@@ -7,13 +7,12 @@
 
 namespace MaterialEffectsUtils
 {
-	static constexpr CryAudio::ControlId switchId = CryAudio::StringToId("1stOr3rdP");
-	static constexpr CryAudio::SwitchStateId fpStateId = CryAudio::StringToId("1stP");
-	static constexpr CryAudio::SwitchStateId tpStateId = CryAudio::StringToId("3rdP");
-
 	void PrepareForAudioTriggerExecution(CryAudio::IObject* pIAudioObject, const SMFXAudioEffectParams& audioParams, const SMFXRunTimeEffectParams& runtimeParams)
 	{
-		pIAudioObject->SetSwitchState(switchId, runtimeParams.playSoundFP ? fpStateId : tpStateId);
+		for (auto const& switchStatePair : runtimeParams.audioSwitchStates)
+		{
+			pIAudioObject->SetSwitchState(switchStatePair.first, switchStatePair.second);
+		}
 
 		for (auto const& switchWrapper : audioParams.triggerSwitches)
 		{
@@ -34,7 +33,10 @@ namespace MaterialEffectsUtils
 
 	void PrepareForAudioTriggerExecution(IEntityAudioComponent* pAudioComponent, const SMFXAudioEffectParams& audioParams, const SMFXRunTimeEffectParams& runtimeParams)
 	{
-		pAudioComponent->SetSwitchState(switchId, runtimeParams.playSoundFP ? fpStateId : tpStateId);
+		for (auto const& switchStatePair : runtimeParams.audioSwitchStates)
+		{
+			pAudioComponent->SetSwitchState(switchStatePair.first, switchStatePair.second);
+		}
 
 		for (auto const& switchWrapper : audioParams.triggerSwitches)
 		{
