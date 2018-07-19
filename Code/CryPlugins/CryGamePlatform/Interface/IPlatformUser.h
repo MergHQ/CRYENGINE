@@ -26,6 +26,8 @@ namespace Cry
 			virtual ITexture* GetAvatar(EAvatarSize size) const = 0;
 			//! Gets the account associated with a specific service, if any
 			virtual IAccount* GetAccount(const ServiceIdentifier& svcId) const = 0;
+			//! Checks if an account belongs to this user
+			virtual bool HasAccount(const IAccount& account) const = 0;
 		};
 	}
 }

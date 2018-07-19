@@ -5,8 +5,6 @@
 
 #include "User.h"
 
-#include <CrySystem/ICmdLine.h>
-
 // Included only once per DLL module.
 #include <CryCore/Platform/platform_impl.inl>
 
@@ -14,6 +12,28 @@ namespace Cry
 {
 	namespace GamePlatform
 	{
+		namespace Predicate
+		{
+			struct SWithServiceId
+			{
+				explicit SWithServiceId(const ServiceIdentifier& svcId) : m_svcId(svcId) {}
+				bool operator()(const IService* pService) const { return pService && pService->GetServiceIdentifier() == m_svcId; }
+				bool operator()(const IAccount* pAccount) const { return pAccount->GetServiceIdentifier() == m_svcId; }
+
+			private:
+				ServiceIdentifier m_svcId;
+			};
+
+			struct SWithAccount
+			{
+				explicit SWithAccount(const IAccount& acc) : m_acc(acc) {}
+				bool operator()(const std::unique_ptr<CUser>& pUser) const { return pUser->HasAccount(m_acc); }
+
+			private:
+				const IAccount& m_acc;
+			};
+		}
+
 		CPlugin::CPlugin()
 		{
 			// First element is reserved for main service
@@ -36,12 +56,9 @@ namespace Cry
 
 		IUser* CPlugin::GetLocalClient() const
 		{
-			if (const IService* pMainService = GetMainService())
+			if (IAccount* pMainAccount = GetMainLocalAccount())
 			{
-				if (IAccount* pMainAccount = pMainService->GetLocalAccount())
-				{
-					return TryGetUser(*pMainAccount);
-				}
+				return TryGetUser(*pMainAccount);
 			}
 
 			return nullptr;
@@ -64,15 +81,6 @@ namespace Cry
 			if (const IService* pMainService = GetMainService())
 			{
 				const DynArray<IAccount*>& accounts = pMainService->GetFriendAccounts();
-				for (IAccount* pAccount : accounts)
-				{
-					m_friends.push_back(TryGetUser(*pAccount));
-				}
-			}
-
-			for (const IService* pService : m_services)
-			{
-				const DynArray<IAccount*>& accounts = pService->GetFriendAccounts();
 				for (IAccount* pAccount : accounts)
 				{
 					m_friends.push_back(TryGetUser(*pAccount));
@@ -161,114 +169,179 @@ namespace Cry
 					return pUser.get();
 				}
 			}
-
-			if (const IService* pMainService = GetMainService())
-			{
-				if (id.HasAccount(pMainService->GetServiceIdentifier()))
-				{
-					const AccountIdentifier accountId = id.GetAccount(pMainService->GetServiceIdentifier());
-					if (IAccount* pUserAccount = pMainService->GetAccountById(accountId))
-					{
-						return AddUser(*pUserAccount);
-					}
-				}
-			}
+			
+			CryWarning(VALIDATOR_MODULE_SYSTEM, VALIDATOR_WARNING, "[GamePlatform::TryGetUser] no user '%s' was found", id.ToDebugString());
 
 			return nullptr;
 		}
 
 		IUser* CPlugin::TryGetUser(const AccountIdentifier& id) const
 		{
-			const IService* pMainService = GetMainService();
-			if (pMainService == nullptr)
-			{
-				return nullptr;
-			}
-
 			const ServiceIdentifier& svcId = id.Service();
-			if (pMainService->GetServiceIdentifier() == svcId)
+			
+			for (const std::unique_ptr<CUser>& pUser : m_users)
 			{
-				for (const std::unique_ptr<CUser>& pUser : m_users)
+				if (const IAccount* pAccount = pUser->GetAccount(svcId))
 				{
-					if (const IAccount* pAccount = pUser->GetAccount(svcId))
+					if (pAccount->GetIdentifier() == id)
 					{
-						if (pAccount->GetIdentifier() == id)
-						{
-							return pUser.get();
-						}
+						return pUser.get();
 					}
 				}
-
-				if (IAccount* pAccount = pMainService->GetAccountById(id))
-				{
-					return AddUser(*pAccount);
-				}
-
-				CryWarning(VALIDATOR_MODULE_SYSTEM, VALIDATOR_WARNING, "[GamePlatform] Account '%s' not found by '%s'!", id.ToDebugString(), pMainService->GetName());
-
-				return nullptr;
 			}
 
-			CryWarning(VALIDATOR_MODULE_SYSTEM, VALIDATOR_WARNING, "[GamePlatform] Attempt to use account for service '%s' that is not the main one!", svcId.ToDebugString());
+			if (IAccount* pAccount = GetAccount(id))
+			{
+				return AddUser(*pAccount);
+			}
 
 			return nullptr;
 		}
 
 		IUser* CPlugin::TryGetUser(IAccount& account) const
 		{
-			if (const IService* pMainService = GetMainService())
+			const ServiceIdentifier& svcId = account.GetServiceIdentifier();
+			if (GetMainServiceIdentifier() == svcId)
 			{
-				const ServiceIdentifier& svcId = account.GetIdentifier().Service();
-				if (pMainService->GetServiceIdentifier() == svcId)
+				for (const std::unique_ptr<CUser>& pUser : m_users)
 				{
-					for (const std::unique_ptr<CUser>& pUser : m_users)
+					if (pUser->GetAccount(svcId) == &account)
 					{
-						if (pUser->GetAccount(svcId) == &account)
-						{
-							return pUser.get();
-						}
+						return pUser.get();
 					}
-
-					return AddUser(account);
 				}
-
-				CryWarning(VALIDATOR_MODULE_SYSTEM, VALIDATOR_WARNING, "[GamePlatform] Attempt to use account for service '%s' that is not the main one!", svcId.ToDebugString());
 			}
 
-			return nullptr;
+			CryWarning(VALIDATOR_MODULE_SYSTEM, VALIDATOR_WARNING, "[GamePlatform] Attempt to use account for service '%s' that is not the main one!", svcId.ToDebugString());
+
+			return AddUser(account);
 		}
 
 		IUser* CPlugin::AddUser(IAccount& account) const
 		{
-			DynArray<IAccount*> connectedAccounts;
+			DynArray<IAccount*> userAccounts;
+			CollectConnectedAccounts(account, userAccounts);
 
-			CollectConnectedAccounts(account, connectedAccounts);
-
-			for (size_t idx = 0; idx < connectedAccounts.size(); ++idx)
+			if (EnsureMainAccountFirst(userAccounts))
 			{
-				// This call can increase the size of connectedAccounts, thus it is very important to use
-				// index-based looping and not caching the DynArray's size
-				CollectConnectedAccounts(*connectedAccounts[idx], connectedAccounts);
+				m_users.emplace_back(stl::make_unique<CUser>(userAccounts));
 			}
-
-			m_users.emplace_back(stl::make_unique<CUser>(account, connectedAccounts));
+			else
+			{
+				CryWarning(VALIDATOR_MODULE_SYSTEM, VALIDATOR_WARNING, "[GamePlatform::AddUser] main account not found for '%s'", account.GetIdentifier().ToDebugString());
+				return nullptr;
+			}
 
 			return m_users.back().get();
 		}
 
-		void CPlugin::CollectConnectedAccounts(IAccount& account, DynArray<IAccount*>& connectedAccounts) const
+		void CPlugin::CollectConnectedAccounts(IAccount& account, DynArray<IAccount*>& userAccounts) const
+		{
+			userAccounts.clear();
+			userAccounts.push_back(&account); // Beware: we rely on userAccounts never being empty
+
+			// Assume all local accounts are connected, even if no connection info is available
+			if (account.IsLocal())
+			{
+				for (IService* pSvc : m_services)
+				{
+					IAccount* pSvcLocalAccount = pSvc ? pSvc->GetLocalAccount() : nullptr;
+
+					if (pSvcLocalAccount && pSvcLocalAccount != &account)
+					{
+						userAccounts.push_back(pSvcLocalAccount);
+					}
+				}
+			}
+
+			for (size_t idx = 0; idx < userAccounts.size(); ++idx)
+			{
+				// This call can increase the size of userAccounts, thus it is very important to use
+				// index-based looping and not caching the DynArray's size
+				AddAccountConnections(*userAccounts[idx], userAccounts);
+			}
+		}
+
+		void CPlugin::AddAccountConnections(const IAccount& account, DynArray<IAccount*>& userAccounts) const
 		{
 			const DynArray<AccountIdentifier>& connAccIds = account.GetConnectedAccounts();
 			for (const AccountIdentifier& accId : connAccIds)
 			{
-				if (const IService* pService = GetService(accId.Service()))
+				if (IAccount* pAccount = GetAccount(accId))
 				{
-					if (IAccount* pAccount = pService->GetAccountById(accId))
-					{
-						stl::push_back_unique(connectedAccounts, pAccount);
-					}
+					stl::push_back_unique(userAccounts, pAccount);
 				}
 			}
+		}
+
+		DynArray<IAccount*>::iterator CPlugin::FindMainAccount(DynArray<IAccount*>& userAccounts) const
+		{
+			return std::find_if(userAccounts.begin(), userAccounts.end(), Predicate::SWithServiceId(GetMainServiceIdentifier()));
+		}
+
+		bool CPlugin::EnsureMainAccountFirst(DynArray<IAccount*>& userAccounts) const
+		{
+			if (userAccounts.empty())
+			{
+				return false;
+			}
+
+			if (userAccounts[0]->GetServiceIdentifier() == GetMainServiceIdentifier())
+			{
+				return true;
+			}
+
+			DynArray<IAccount*>::iterator mainAccPos = FindMainAccount(userAccounts);
+			if (mainAccPos == userAccounts.end())
+			{
+				return false;
+			}
+
+			std::swap(userAccounts[0], *mainAccPos);
+
+			return true;
+		}
+
+		void CPlugin::AddOrUpdateUser(DynArray<IAccount*> userAccounts)
+		{
+			if (EnsureMainAccountFirst(userAccounts))
+			{
+				IAccount* pMainAcc = userAccounts[0];
+				
+				auto userPos = std::find_if(m_users.begin(), m_users.end(), Predicate::SWithAccount(*pMainAcc));
+				if (userPos != m_users.end())
+				{
+					(*userPos)->SetAccounts(userAccounts);
+				}
+				else
+				{
+					AddUser(*pMainAcc);
+				}
+			}
+			else
+			{
+				CryWarning(VALIDATOR_MODULE_SYSTEM, VALIDATOR_WARNING, "[GamePlatform::AddOrUpdateUser] main account not found for '%s'", userAccounts[0]->GetIdentifier().ToDebugString());
+			}
+		}
+
+		IAccount* CPlugin::GetAccount(const AccountIdentifier& id) const
+		{
+			if (IService* pSvc = GetService(id.Service()))
+			{
+				return pSvc->GetAccountById(id);
+			}
+
+			return nullptr;
+		}
+		
+		IAccount* CPlugin::GetMainLocalAccount() const
+		{
+			if (IService* pMainSvc = GetMainService())
+			{
+				return pMainSvc->GetLocalAccount();
+			}
+
+			return nullptr;
 		}
 
 		bool CPlugin::GetAuthToken(string &tokenOut, int &issuerId)
@@ -294,6 +367,33 @@ namespace Cry
 		void CPlugin::OnShutdown(const ServiceIdentifier& serviceId)
 		{
 			UnregisterService(serviceId);
+		}
+
+		void CPlugin::OnAccountAdded(IAccount& account)
+		{
+			DynArray<IAccount*> userAccounts;
+			CollectConnectedAccounts(account, userAccounts);
+
+			AddOrUpdateUser(std::move(userAccounts));
+		}
+
+		void CPlugin::OnAccountRemoved(IAccount& account)
+		{
+			auto usrPos = std::find_if(m_users.begin(), m_users.end(), Predicate::SWithAccount(account));
+			if (usrPos != m_users.end())
+			{
+				CUser* const pUser = usrPos->get();
+
+				if (account.GetServiceIdentifier() == GetMainServiceIdentifier())
+				{
+					stl::find_and_erase(m_friends, pUser);
+					m_users.erase(usrPos);
+				}
+				else
+				{
+					pUser->RemoveAccount(account);
+				}
+			}
 		}
 
 		void CPlugin::RegisterMainService(IService& service)
@@ -328,7 +428,7 @@ namespace Cry
 			}
 			else
 			{
-				stl::find_and_erase_if(m_services, [&service](IService* pSvc) { return pSvc && pSvc->GetServiceIdentifier() == service; });
+				stl::find_and_erase_if(m_services, Predicate::SWithServiceId(service));
 			}
 		}
 
@@ -340,15 +440,8 @@ namespace Cry
 
 		IService* CPlugin::GetService(const ServiceIdentifier& svcId) const
 		{
-			for (IService* pService : m_services)
-			{
-				if (pService && pService->GetServiceIdentifier() == svcId)
-				{
-					return pService;
-				}
-			}
-
-			return nullptr;
+			auto svcPos = std::find_if(m_services.begin(), m_services.end(), Predicate::SWithServiceId(svcId));
+			return svcPos != m_services.end() ? *svcPos : nullptr;
 		}
 
 		CRYREGISTER_SINGLETON_CLASS(CPlugin)

@@ -62,6 +62,8 @@ namespace Cry
 			virtual void OnOverlayActivated(const ServiceIdentifier& serviceId, bool active) override {}
 			virtual void OnAvatarImageLoaded(const AccountIdentifier& accountId) override {}
 			virtual void OnShutdown(const ServiceIdentifier& serviceId) override;
+			virtual void OnAccountAdded(IAccount& account) override;
+			virtual void OnAccountRemoved(IAccount& account) override;
 			// ~IService::IListener
 
 			virtual void RegisterMainService(IService& service) override;
@@ -76,7 +78,15 @@ namespace Cry
 			IUser* TryGetUser(IAccount& account) const;
 			IUser* AddUser(IAccount& account) const;
 
-			void CollectConnectedAccounts(IAccount& account, DynArray<IAccount*>& connectedAccounts) const;
+			void AddOrUpdateUser(DynArray<IAccount*> userAccounts);
+
+			IAccount* GetAccount(const AccountIdentifier& id) const;
+			IAccount* GetMainLocalAccount() const;
+
+			void CollectConnectedAccounts(IAccount &account, DynArray<IAccount *>& userAccounts) const;
+			void AddAccountConnections(const IAccount& account, DynArray<IAccount*>& userAccounts) const;
+			DynArray<IAccount*>::iterator FindMainAccount(DynArray<IAccount*>& userAccounts) const;
+			bool EnsureMainAccountFirst(DynArray<IAccount*>& userAccounts) const;
 
 		private:
 			// Index '0' is reserved for main service

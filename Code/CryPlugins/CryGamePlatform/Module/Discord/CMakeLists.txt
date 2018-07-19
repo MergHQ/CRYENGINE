@@ -1,25 +1,23 @@
-if (((WIN32 OR LINUX OR APPLE) AND EXISTS "${SDK_DIR}/Steamworks") AND OPTION_ENGINE)
-	option(PLUGIN_GAMEPLATFORM_STEAM "Enable Game platform integration plug-in for Steam" ON)
+if ((WIN32 AND EXISTS "${SDK_DIR}/discord-rpc") AND OPTION_ENGINE)
+	option(PLUGIN_GAMEPLATFORM_DISCORD "Enable Discord Rich Presence integration plug-in" ON)
 else()
-	option(PLUGIN_GAMEPLATFORM_STEAM "Enable Game platform integration plug-in for Steam" OFF)
+	option(PLUGIN_GAMEPLATFORM_DISCORD "Enable Discord Rich Presence integration plug-in" OFF)
 endif()
 	
-if (NOT PLUGIN_GAMEPLATFORM_STEAM)
+if (NOT PLUGIN_GAMEPLATFORM_DISCORD)
 	return()
 endif()
 
 start_sources()
-
-# -- CryGamePlatform_Steam.waf_files --
-sources_platform(ALL)
-add_sources("CryGamePlatform_Steam_uber_0.cpp"
+sources_platform(WIN32)
+add_sources("CryGamePlatform_Discord_uber_0.cpp"
 	SOURCE_GROUP "Root"
 		"resource.h"
 		"StdAfx.cpp"
 		"StdAfx.h"
 )
 
-add_sources("CryGamePlatform_Steam_uber_1.cpp"
+add_sources("CryGamePlatform_Discord_uber_1.cpp"
 	SOURCE_GROUP "Interface"
 		"../../Interface/IGamePlatform.h"
 		"../../Interface/IPlatformAccount.h"
@@ -40,43 +38,15 @@ add_sources("CryGamePlatform_Steam_uber_1.cpp"
 		"../../Interface/PlatformUserIdentifier.h"
 )
 
-sources_platform(WIN32 LINUX APPLE)
-add_sources("CryGamePlatform_Steam_uber_2.cpp"
+add_sources("CryGamePlatform_Discord_uber_2.cpp"
 	SOURCE_GROUP "Root"
-		"SteamService.cpp"
-		"SteamService.h"
-		"SteamTypes.h"
+		"DiscordService.cpp"
+		"DiscordService.h"
+		"DiscordTypes.h"
 	SOURCE_GROUP "Profile"
-		"SteamStatistics.cpp"
-		"SteamStatistics.h"
-		"SteamUserIdentifier.h"
-		"SteamAccount.cpp"
-		"SteamAccount.h"
-		"SteamAchievement.cpp"
-		"SteamAchievement.h"
-		"SteamLeaderboards.cpp"
-		"SteamLeaderboards.h"
-	SOURCE_GROUP "Multiplayer"
-		"SteamMatchmaking.cpp"
-		"SteamMatchmaking.h"
-		"SteamNetworking.cpp"
-		"SteamNetworking.h"
-		"SteamUserLobby.cpp"
-		"SteamUserLobby.h"
-		"SteamServer.cpp"
-		"SteamServer.h"
-	SOURCE_GROUP "RemoteStorage"
-		"SteamRemoteFile.cpp"
-		"SteamRemoteFile.h"
-		"SteamRemoteStorage.cpp"
-		"SteamRemoteStorage.h"
-		"SteamSharedRemoteFile.cpp"
-		"SteamSharedRemoteFile.h"
-	SOURCE_GROUP "UserGeneratedContent"
-		"UserGeneratedContent.cpp"
-		"UserGeneratedContent.h"
-		"UserGeneratedContentManager.cpp"
-		"UserGeneratedContentManager.h"
+		"DiscordUserIdentifier.h"
+		"DiscordAccount.cpp"
+		"DiscordAccount.h"
 )
 
 add_sources("NoUberFile"
@@ -86,7 +56,7 @@ add_sources("NoUberFile"
 
 end_sources()
 
-CryEngineModule(CryGamePlatformSteam PCH "StdAfx.cpp" SOLUTION_FOLDER "CryPlugins")
+CryEngineModule(CryGamePlatformDiscord PCH "StdAfx.cpp" SOLUTION_FOLDER "CryPlugins")
 
 target_include_directories(${THIS_PROJECT}
 PRIVATE 
@@ -96,10 +66,10 @@ PUBLIC
 	../../Common
 )
 
-if(WIN32 OR LINUX OR APPLE)
-	include(${TOOLS_CMAKE_DIR}/modules/Steamworks.cmake)
+if(WIN32)
+	include(${TOOLS_CMAKE_DIR}/modules/discord-rpc.cmake)
 
-	target_link_libraries(${THIS_PROJECT} PRIVATE Steamworks)
+	target_link_libraries(${THIS_PROJECT} PRIVATE discord-rpc)
 endif()
 
 if (CMAKE_CXX_COMPILER_ID STREQUAL "Clang")

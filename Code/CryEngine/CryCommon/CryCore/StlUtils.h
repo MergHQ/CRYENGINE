@@ -250,8 +250,8 @@ template<class CONTAINER, class PREDICATE> inline bool find_and_erase_if(CONTAIN
 //! Find and erase all elements matching value from container.
 //! Assume that this will invalidate any exiting iterators.
 //! Commonly used for removing NULL pointers from collections.
-template<class Container>
-inline void find_and_erase_all(Container& container, const typename Container::value_type& value)
+template<class Container, class ValueType>
+inline void find_and_erase_all(Container& container, const ValueType& value)
 {
 	// Shuffles all elements == value to the end and returns the start of the removed elements.
 	typename Container::iterator endIter(container.end());

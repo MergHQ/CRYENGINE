@@ -36,6 +36,8 @@ namespace Cry
 			virtual void CreateLobby(IUserLobby::EVisbility visibility, int maxMemberCount) = 0;
 			//! Retrieves the lobby that the specified user is in, if any
 			virtual IUserLobby* GetUserLobby(const AccountIdentifier& user) const = 0;
+			//! Retrieves the lobby that the specified user is in, if any
+			virtual IUserLobby* GetUserLobby(const IUser& user) const = 0;
 			//! Retrieves a lobby by its unique platform-specific identifier
 			virtual IUserLobby* GetLobbyById(const LobbyIdentifier& id) = 0;
 

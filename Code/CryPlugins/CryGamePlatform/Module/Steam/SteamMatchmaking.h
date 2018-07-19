@@ -25,7 +25,7 @@ namespace Cry
 
 				virtual void CreateLobby(IUserLobby::EVisbility visibility, int maxMemberCount) override;
 				virtual CUserLobby* GetUserLobby(const AccountIdentifier& user) const override;
-
+				virtual CUserLobby* GetUserLobby(const IUser& user) const override;
 				virtual CUserLobby* GetLobbyById(const LobbyIdentifier& id) override;
 
 				virtual void QueryLobbies() override;

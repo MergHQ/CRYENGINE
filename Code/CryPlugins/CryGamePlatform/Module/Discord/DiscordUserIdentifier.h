@@ -3,13 +3,13 @@
 #pragma once
 
 #include "PlatformUserIdentifier.h"
-#include "SteamTypes.h"
+#include "DiscordTypes.h"
 
 namespace Cry
 {
 	namespace GamePlatform
 	{
-		namespace Steam
+		namespace Discord
 		{
 			namespace Detail
 			{
@@ -17,7 +17,6 @@ namespace Cry
 				{
 					SUserIdentifierResolver()
 						: Serialization::IArchive(Serialization::IArchive::INPUT)
-						, steamId(k_steamIDNil)
 					{
 					}
 
@@ -25,12 +24,21 @@ namespace Cry
 
 					using Serialization::IArchive::operator ();
 
-					virtual bool operator()(AccountIdentifierValue& value, const char* szName = "", const char* szLabel = nullptr) override
+					virtual bool operator()(yasli::StringInterface& value, const char* name = "", const char* label = nullptr) override
 					{
-						steamId = value;
-						return true;
+						if (strlen(value.get()) < discordId.MAX_SIZE)
+						{
+							discordId = value.get();
+							return true;
+						}
+
+						return false;
 					}
 
+					virtual bool operator()(yasli::u64& value, const char* name = "", const char* label = nullptr) override
+					{
+						return false;
+					}
 
 					virtual bool operator () (const Serialization::SStruct& value, const char* szName = "", const char* szLabel = nullptr) override
 					{
@@ -40,24 +48,16 @@ namespace Cry
 
 					// ~Serialization::IArchive
 
-					CSteamID steamId;
+					AccountIdentifierValue discordId;
 				};
-			}			
+			}
 
-			inline CSteamID ExtractSteamID(const AccountIdentifier& accountId)
+			inline AccountIdentifierValue ExtractDiscordID(const AccountIdentifier& accountId)
 			{
 				Detail::SUserIdentifierResolver userSer;
 				userSer(accountId);
 
-				return userSer.steamId;
-			}
-
-			inline CSteamID ExtractSteamID(const LobbyIdentifier& lobbyId)
-			{
-				Detail::SUserIdentifierResolver userSer;
-				userSer(lobbyId);
-
-				return userSer.steamId;
+				return userSer.discordId;
 			}
 		}
 	}

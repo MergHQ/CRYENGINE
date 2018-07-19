@@ -22,17 +22,22 @@ namespace Cry
 
 			const char* CAccount::GetNickname() const
 			{
-				ISteamFriends* pSteamFriends = SteamFriends();
-				if (!pSteamFriends)
+				if (ISteamFriends* pSteamFriends = SteamFriends())
 				{
-					return nullptr;
+					return pSteamFriends->GetFriendPersonaName(m_id);
 				}
-				return pSteamFriends->GetFriendPersonaName(m_id);
+
+				return nullptr;
 			}
 
 			AccountIdentifier CAccount::GetIdentifier() const
 			{
 				return AccountIdentifier(SteamServiceID, m_id.ConvertToUint64());
+			}
+
+			ServiceIdentifier CAccount::GetServiceIdentifier() const
+			{
+				return SteamServiceID;
 			}
 
 			void CAccount::SetStatus(const char* status)
@@ -44,17 +49,19 @@ namespace Cry
 					return;
 				}
 
+				CryComment("[Steam] Setting rich presence '%s'", status);
+
 				pSteamFriends->SetRichPresence("status", status);
 			}
 
 			const char* CAccount::GetStatus() const
 			{
-				ISteamFriends* pSteamFriends = SteamFriends();
-				if (!pSteamFriends)
+				if (ISteamFriends* pSteamFriends = SteamFriends())
 				{
-					return nullptr;
+					return pSteamFriends->GetFriendRichPresence(m_id, "status");
 				}
-				return pSteamFriends->GetFriendRichPresence(m_id, "status");
+
+				return nullptr;
 			}
 
 			const DynArray<Cry::GamePlatform::AccountIdentifier>& CAccount::GetConnectedAccounts() const
@@ -62,11 +69,21 @@ namespace Cry
 				return m_connectedAccounts;
 			}
 
+			bool CAccount::IsLocal() const
+			{
+				if (ISteamUser* pSteamUser = SteamUser())
+				{
+					return pSteamUser->GetSteamID() == m_id;
+				}
+
+				return false;
+			}
+
 			ITexture* CAccount::GetAvatar(EAvatarSize size) const
 			{
 				int imageId = -1;
-				ISteamFriends* pSteamFriends = SteamFriends();
-				if (pSteamFriends)
+
+				if (ISteamFriends* pSteamFriends = SteamFriends())
 				{
 					switch (size)
 					{

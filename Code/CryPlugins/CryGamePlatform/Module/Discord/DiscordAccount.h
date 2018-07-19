@@ -3,19 +3,19 @@
 #pragma once
 
 #include "IPlatformAccount.h"
-#include "SteamTypes.h"
+#include "DiscordTypes.h"
 
 namespace Cry
 {
 	namespace GamePlatform
 	{
-		namespace Steam
+		namespace Discord
 		{
 			class CAccount
 				: public IAccount
 			{
 			public:
-				CAccount(CSteamID id);
+				explicit CAccount(const DiscordUser& user);
 				virtual ~CAccount();
 
 				// IAccount
@@ -29,10 +29,15 @@ namespace Cry
 				virtual bool IsLocal() const override;
 				// ~IAccount
 
-				const CSteamID& GetSteamID() const { return m_id; }
+				const AccountIdentifierValue& GetDiscordID() const { return m_id; }
+				void SetDiscordUser(const DiscordUser& user);
 
 			protected:
-				CSteamID m_id;
+				AccountIdentifierValue m_id;
+				string m_nickname;
+				string m_avatarHash;
+				string m_status;
+
 				DynArray<AccountIdentifier> m_connectedAccounts;
 			};
 		}

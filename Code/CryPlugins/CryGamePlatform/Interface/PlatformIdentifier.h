@@ -21,7 +21,7 @@ namespace Cry
 			using ValueType = typename Traits::ValueType;
 			using ServiceType = typename Traits::ServiceType;
 		public:
-			Identifier(const ServiceType& svcId, ValueType accountId)
+			Identifier(const ServiceType& svcId, const ValueType& accountId)
 				: m_svcId(svcId)
 				, m_value(accountId)
 			{
@@ -29,7 +29,6 @@ namespace Cry
 
 			Identifier()
 				: m_svcId(CryGUID::Null())
-				, m_value(0)
 			{
 			}
 
@@ -72,7 +71,7 @@ namespace Cry
 		template <typename Traits>
 		bool Serialize(Serialization::IArchive& archive, Identifier<Traits>& value, const char* szName, const char* szLabel)
 		{
-			return archive(value.m_value, szName, szLabel);
+			return Traits::Serialize(archive, value.m_value, szName, szLabel);
 		}
 	}
 }
