@@ -182,6 +182,7 @@ QToolsMenuToolWindowArea::QToolsMenuToolWindowArea(QToolWindowManager* manager, 
 	m_menuButton->setObjectName("QuickAccessButton");
 	m_menuButton->setPopupMode(QToolButton::InstantPopup);
 	m_menuButton->setVisible(false);
+	m_menuButton->setIcon(CryIcon("icons:common/general_corner_menu.ico"));
 	//Create temporary custom tab frame to be able to access m_layout
 	QToolsMenuWindowSingleTabAreaFrame* customTabFrame = new QToolsMenuWindowSingleTabAreaFrame(manager, this);
 	m_menuButton->setSizePolicy(QSizePolicy::Expanding, QSizePolicy::Preferred);

@@ -1246,7 +1246,6 @@ QToolButton#QuickAccessButton {
 	max-width: 16;
 	max-height: 16;
 	qproperty-iconSize: 16px;
-	image: url(icons:common/general_corner_menu.ico);
 }
 
 /*Hide the ugly menu indicator as the button image already has a menu' arrow*/
