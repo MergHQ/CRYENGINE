@@ -14,7 +14,7 @@
 class CClipVolumesStage : public CGraphicsPipelineStage
 {
 public:
-	static const uint32 MaxDeferredClipVolumes = BIT_STENCIL_INSIDE_CLIPVOLUME - 1;
+	static const uint32 MaxDeferredClipVolumes = BIT_STENCIL_INSIDE_CLIPVOLUME - 1; // Keep in sync with MAX_CLIPVOLUMES in DeferredShading.cfx / ShadowBlur.cfx
 
 public:
 	CClipVolumesStage();
