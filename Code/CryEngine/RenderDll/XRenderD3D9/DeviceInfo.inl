@@ -490,7 +490,7 @@ bool DeviceInfo::CreateDevice(int zbpp, OnCreateDeviceCallback pCreateDeviceCall
 		case NVAPI_ERROR:
 		default:
 			cry_sprintf(m_buildBranchVersion, strlen(m_buildBranchVersion), "Unavailable (NVAPI error)");
-			CryLogAlways("NvAPI_SYS_GetDriverAndBranchVersion() failed with error code: %d", static_cast<int>(opStatus));
+			CryWarning(VALIDATOR_MODULE_RENDERER, VALIDATOR_WARNING, "NvAPI_SYS_GetDriverAndBranchVersion() failed with error code: %d", static_cast<int>(opStatus));
 		}
 	}
 #else
