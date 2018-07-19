@@ -174,6 +174,8 @@ bool CObjectCreateTool::OnDragEvent(CViewport* view, EDragEvent eventId, QEvent*
 			{
 				auto action = drop->proposedAction();
 				drop->acceptProposedAction();
+				CPoint point(drop->pos().x(), drop->pos().y());
+				m_createdObject->MouseCreateCallback(view, eMouseLDown, point, flags);
 				FinishCreation(flags & MK_CONTROL);
 				drop->accept();
 				return true;
