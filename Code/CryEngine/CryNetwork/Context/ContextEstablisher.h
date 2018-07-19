@@ -32,7 +32,7 @@ public:
 		pSizer->AddContainer(m_tasks);
 	}
 
-#ifndef _RELEASE
+#if LOG_CONTEXT_ESTABLISHMENT
 	void OutputTiming(void);
 #endif
 #if ENABLE_DEBUG_KIT
@@ -47,14 +47,14 @@ private:
 	struct STask
 	{
 		STask() : state(eCVS_Initial), pTask(0)
-#ifndef _RELEASE
+#if LOG_CONTEXT_ESTABLISHMENT
 			, numRuns(0)
 			, done(0.0f)
 #endif
 		{
 		}
 		STask(EContextViewState s, IContextEstablishTask* p) : state(s), pTask(p)
-#ifndef _RELEASE
+#if LOG_CONTEXT_ESTABLISHMENT
 			, numRuns(0)
 			, done(0.0f)
 #endif
@@ -64,7 +64,7 @@ private:
 		EContextViewState      state;
 		IContextEstablishTask* pTask;
 
-#ifndef _RELEASE
+#if LOG_CONTEXT_ESTABLISHMENT
 		int        numRuns;
 		CTimeValue done;
 #endif
@@ -88,5 +88,16 @@ private:
 };
 
 typedef _smart_ptr<CContextEstablisher> CContextEstablisherPtr;
+
+#if LOG_CONTEXT_ESTABLISHMENT
+void NetWarnEstablishment(const char* szFormat, ...) PRINTF_PARAMS(1, 2);
+void NetLogEstablishment(int level, const char* szFormat, ...) PRINTF_PARAMS(2, 3);
+#else
+inline void NetWarnEstablishment(const char* szFormat, ...) PRINTF_PARAMS(1, 2);
+inline void NetWarnEstablishment(const char* szFormat, ...) {}
+inline void NetLogEstablishment(int level, const char* szFormat, ...) PRINTF_PARAMS(2, 3);
+inline void NetLogEstablishment(int level, const char* szFormat, ...) {}
+#endif
+
 
 #endif

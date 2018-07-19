@@ -30,10 +30,10 @@
 
 //===============================================================================
 
-static bool DecompressSubresourcePayload(const STextureLayout& pLayout, const ETEX_TileMode eSrcTileMode, const void* pData[], STexturePayload& pPayload)
+static bool DecompressSubresourcePayload(const STextureLayout& pLayout, const ETEX_TileMode eSrcTileMode, const SSubresourceData& pData, STexturePayload& pPayload)
 {
 	assert(!pPayload.m_pSysMemSubresourceData);
-	if (!pData || !pData[0])
+	if (!pData.m_subresourcePointers)
 	{
 		pPayload.m_pSysMemSubresourceData = nullptr;
 		pPayload.m_eSysMemTileMode = eTM_Unspecified;
@@ -49,7 +49,7 @@ static bool DecompressSubresourcePayload(const STextureLayout& pLayout, const ET
 	// Contrary to hardware here the sub-resources are sorted by mips, then by slices.
 	// In hardware it's sorted by slices, then by mips (so same mips are consecutive).
 	const byte* pAutoData = nullptr;
-	const void** pDataCursor = pData;
+	const uint8** pDataCursor = pData.m_subresourcePointers;
 
 	PREFAST_ASSUME(*pDataCursor != nullptr);
 
@@ -83,7 +83,7 @@ static bool DecompressSubresourcePayload(const STextureLayout& pLayout, const ET
 
 		// reset to face 0
 		if (pLayout.m_eFlags & FT_REPLICATE_TO_ALL_SIDES)
-			pDataCursor = pData;
+			pDataCursor = pData.m_subresourcePointers;
 		// each face is nullptr-terminated
 		else if (!*pDataCursor)
 			pDataCursor++;
@@ -96,7 +96,7 @@ static bool DecompressSubresourcePayload(const STextureLayout& pLayout, const ET
 }
 
 #if defined(TEXTURE_GET_SYSTEM_COPY_SUPPORT)
-byte* CTexture::Convert(byte* pSrc, int nWidth, int nHeight, int nMips, ETEX_Format eTFSrc, ETEX_Format eTFDst, int nOutMips, int& nOutSize, bool bLinear)
+const byte* CTexture::Convert(const byte* pSrc, int nWidth, int nHeight, int nMips, ETEX_Format eTFSrc, ETEX_Format eTFDst, int nOutMips, int& nOutSize, bool bLinear)
 {
 	nOutSize = 0;
 	byte* pDst = NULL;
@@ -143,17 +143,17 @@ byte* CTexture::Convert(byte* pSrc, int nWidth, int nHeight, int nMips, ETEX_For
 					wdt = 1;
 				if (hgt <= 0)
 					hgt = 1;
-				void* outSrc = &pSrc[nOffsSRC];
+				const byte* outSrc = &pSrc[nOffsSRC];
 				DWORD outSize = CTexture::TextureDataSize(wdt, hgt, 1, 1, 1, eTFDst);
 
 				nOffsSRC += CTexture::TextureDataSize(wdt, hgt, 1, 1, 1, eTFSrc);
 
 				{
-					byte* src = (byte*)outSrc;
+					const byte* src = outSrc;
 
 					for (uint32 n = 0; n < outSize / 16; n++)     // for each block
 					{
-						uint8* pSrcBlock = &src[n * 16];
+						const uint8* pSrcBlock = &src[n * 16];
 						uint8* pDstBlock = &pDst[nOffsDST + n * 16];
 
 						ConvertBlock3DcToDXT5(pDstBlock, pSrcBlock);
@@ -248,19 +248,34 @@ bool CTexture::Resolve(int nTarget, bool bUseViewportSize)
 	return true;
 }
 
-bool CTexture::CreateDeviceTexture(const void* pData[])
+void CTexture::CreateDeviceTexture(SSubresourceData&& pData)
 {
 	CRY_ASSERT(m_eDstFormat != eTF_Unknown);
-	CRY_ASSERT(!pData || !*pData || m_eSrcTileMode != eTM_Unspecified);
+	CRY_ASSERT(!pData.m_subresourcePointers || m_eSrcTileMode != eTM_Unspecified);
 
-	bool bResult = false;
-	gRenDev->ExecuteRenderThreadCommand([=, &bResult] {
-		bResult = this->RT_CreateDeviceTexture(pData); }, ERenderCommandFlags::LevelLoadingThread_executeDirect | ERenderCommandFlags::FlushAndWait);
+	const bool bAsync = pData.m_owned;
+	const uint8** pSRP = pData.m_subresourcePointers;
 
-	return bResult;
+	this->AddRef();
+	gRenDev->ExecuteRenderThreadCommand([=] {
+		// Compensate for no move-capturing
+		SSubresourceData pLocalData(pSRP, bAsync);
+
+		bool bResult = this->RT_CreateDeviceTexture(pLocalData);
+		if (!bResult)
+			this->m_eFlags |=  FT_FAILED;
+		else
+			this->m_eFlags &= ~FT_FAILED;
+		this->Release();
+
+	}, ERenderCommandFlags::LevelLoadingThread_executeDirect
+	| (bAsync ? ERenderCommandFlags::None : ERenderCommandFlags::FlushAndWait));
+
+	pData.m_subresourcePointers = nullptr;
+	pData.m_owned = true;
 }
 
-bool CTexture::RT_CreateDeviceTexture(const void* pData[])
+bool CTexture::RT_CreateDeviceTexture(const SSubresourceData& pData)
 {
 	CRY_PROFILE_REGION(PROFILE_RENDERER, "CTexture::RT_CreateDeviceTexture");
 	MEMSTAT_CONTEXT(EMemStatContextTypes::MSC_Texture, 0, "Creating Texture");
@@ -282,7 +297,7 @@ bool CTexture::RT_CreateDeviceTexture(const void* pData[])
 	STextureLayout TL = GetLayout();
 	STexturePayload TI;
 
-	CRY_ASSERT(!pData || !*pData || m_eSrcTileMode != eTM_Unspecified);
+	CRY_ASSERT(!pData.m_subresourcePointers || m_eSrcTileMode != eTM_Unspecified);
 	bool bHasPayload = DecompressSubresourcePayload(TL, m_eSrcTileMode, pData, TI);
 	if (!(m_pDevTexture = CDeviceTexture::Create(TL, bHasPayload ? &TI : nullptr)))
 		return false;
@@ -314,7 +329,7 @@ bool CTexture::RT_CreateDeviceTexture(const void* pData[])
 	// Notify that resource is dirty
 	InvalidateDeviceResource(this, eDeviceResourceDirty | eDeviceResourceViewDirty);
 
-	if (!pData || !pData[0])
+	if (!bHasPayload)
 		return true;
 
 	if (m_eTT == eTT_3D)
@@ -513,7 +528,7 @@ void CTexture::ValidateSRVs()
 }
 #endif
 
-void CTexture::UpdateTextureRegion(byte* pSrcData, int nX, int nY, int nZ, int USize, int VSize, int ZSize, ETEX_Format eSrcFormat)
+void CTexture::UpdateTextureRegion(const byte* pSrcData, int nX, int nY, int nZ, int USize, int VSize, int ZSize, ETEX_Format eSrcFormat)
 {
 	if (gRenDev->m_pRT->IsRenderThread())
 	{
@@ -540,7 +555,7 @@ void CTexture::UpdateTextureRegion(byte* pSrcData, int nX, int nY, int nZ, int U
 	}
 }
 
-void CTexture::RT_UpdateTextureRegion(byte* pSrcData, int nX, int nY, int nZ, int USize, int VSize, int ZSize, ETEX_Format eSrcFormat)
+void CTexture::RT_UpdateTextureRegion(const byte* pSrcData, int nX, int nY, int nZ, int USize, int VSize, int ZSize, ETEX_Format eSrcFormat)
 {
 	CRY_PROFILE_REGION(PROFILE_RENDERER, "CTexture::RT_UpdateTextureRegion");
 	PROFILE_FRAME(UpdateTextureRegion);

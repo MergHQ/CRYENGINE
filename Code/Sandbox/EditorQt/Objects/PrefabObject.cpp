@@ -370,6 +370,47 @@ void CPrefabObject::OnContextMenu(CPopupMenuItem* menu)
 
 }
 
+int CPrefabObject::MouseCreateCallback(IDisplayViewport* view, EMouseEvent event, CPoint& point, int flags)
+{
+	int creationState = CBaseObject::MouseCreateCallback(view, event, point, flags);
+
+	if (creationState == MOUSECREATE_CONTINUE)
+	{
+		CSelectionGroup children;
+		GetAllChildren(children);
+		for (int i = 0; i < children.GetCount(); i++)
+		{
+			if (children.GetObject(i)->GetCollisionEntity())
+			{
+				IPhysicalEntity * collisionEntity = children.GetObject(i)->GetCollisionEntity();
+				pe_params_part collision;
+				collisionEntity->GetParams(&collision);
+				collision.flagsAND &= ~(geom_colltype_ray);
+				collisionEntity->SetParams(&collision);
+			}
+		}
+	}
+	
+	if (creationState == MOUSECREATE_OK)
+	{
+		CSelectionGroup children;
+		GetAllChildren(children);
+		for (int i = 0; i < children.GetCount(); i++)
+		{
+			if (children.GetObject(i)->GetCollisionEntity())
+			{
+				IPhysicalEntity * collisionEntity = children.GetObject(i)->GetCollisionEntity();
+				pe_params_part collision;
+				collisionEntity->GetParams(&collision);
+				collision.flagsOR |= (geom_colltype_ray);
+				collisionEntity->SetParams(&collision);
+			}
+		}
+	}
+
+	return creationState;
+}
+
 void CPrefabObject::Display(CObjectRenderHelper& objRenderHelper)
 {
 	SDisplayContext& dc = objRenderHelper.GetDisplayContextRef();

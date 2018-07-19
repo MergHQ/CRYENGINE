@@ -256,9 +256,79 @@ struct STextureStreamingStats
 	const bool bComputeReuquiredTexturesPerFrame;
 };
 
+struct SSubresourceData
+{
+	// Semi-consecutive data: {{slice,0},{slice,0},{0,0}}
+	const uint8** m_subresourcePointers = nullptr;
+	bool          m_owned = false;
+
+	SSubresourceData(const uint8** ptr, bool owned)
+	{
+		m_owned = !ptr || owned;
+		m_subresourcePointers = ptr;
+	}
+
+	SSubresourceData(const uint8* ptr)
+	{
+		m_owned = !ptr;
+		m_subresourcePointers = ptr ? new const uint8*[3] : nullptr;
+
+		if (m_subresourcePointers)
+		{
+			m_subresourcePointers[0] = ptr;
+			m_subresourcePointers[1] = nullptr;
+			m_subresourcePointers[2] = nullptr;
+		}
+	}
+
+	~SSubresourceData()
+	{
+		if (m_owned && m_subresourcePointers)
+		{
+			size_t pos = 0;
+			while (m_subresourcePointers[pos])
+			{
+				SAFE_DELETE_ARRAY(m_subresourcePointers[pos]);
+				++pos;
+
+				// each face is nullptr-terminated
+				if (!m_subresourcePointers[pos])
+					++pos;
+			}
+		}
+
+		SAFE_DELETE_ARRAY(m_subresourcePointers);
+	}
+
+#if !defined(SWIG) && !defined(CryMonoBridge_EXPORTS)
+	SSubresourceData(const SSubresourceData&  other) = delete;
+	SSubresourceData(      SSubresourceData&& other)
+	{
+		memcpy(this, &other, sizeof(*this));
+		memset(&other, 0, sizeof(*this));
+	}
+
+	SSubresourceData& operator= (const SSubresourceData&  other) = delete;
+	SSubresourceData& operator= (      SSubresourceData&& other)
+	{
+		memcpy(this, &other, sizeof(*this));
+		memset(&other, 0, sizeof(*this));
+		return *this;
+	}
+#else
+	SSubresourceData(const SSubresourceData&  other) { abort(); }
+	SSubresourceData(      SSubresourceData&& other) { abort(); }
+	
+	SSubresourceData& operator= (const SSubresourceData&  other) { abort(); }
+	SSubresourceData& operator= (      SSubresourceData&& other) { abort(); }
+#endif
+};
+
+typedef SSubresourceData* SSubresourceDataPtr;
+
 struct STexData
 {
-	uint8*      m_pData[6];
+	const uint8* m_pData[6];
 	uint16      m_nWidth;
 	uint16      m_nHeight;
 	uint16      m_nDepth;
@@ -266,6 +336,7 @@ protected:
 	uint8       m_reallocated;
 public:
 	ETEX_Format m_eFormat;
+	ETEX_TileMode m_eTileMode;
 	uint8       m_nMips;
 	int         m_nFlags;
 	float       m_fAvgBrightness;
@@ -281,6 +352,7 @@ public:
 		m_nDepth = 1;
 		m_reallocated = 0;
 		m_eFormat = eTF_Unknown;
+		m_eTileMode = eTM_None;
 		m_nMips = 0;
 		m_nFlags = 0;
 		m_fAvgBrightness = 1.0f;
@@ -288,11 +360,73 @@ public:
 		m_cMaxColor = 1.0f;
 		m_pFilePath = 0;
 	}
-	void AssignData(unsigned int i, uint8* pNewData)
+	~STexData()
+	{
+		for (int i = 0; i < 6; i++)
+			if (WasReallocated(i))
+				delete[] m_pData[i];
+	}
+
+#if !defined(SWIG) && !defined(CryMonoBridge_EXPORTS)
+	STexData(const STexData&  other) = delete;
+	STexData(      STexData&& other)
+	{
+		memcpy(this, &other, sizeof(*this));
+		memset(&other, 0, sizeof(*this));
+	}
+
+	STexData& operator= (const STexData&  other) = delete;
+	STexData& operator= (      STexData&& other)
+	{
+		memcpy(this, &other, sizeof(*this));
+		memset(&other, 0, sizeof(*this));
+		return *this;
+	}
+#else
+	STexData(const STexData&  other) { abort(); }
+	STexData(      STexData&& other) { abort(); }
+	
+	STexData& operator= (const STexData&  other) { abort(); }
+	STexData& operator= (      STexData&& other) { abort(); }
+#endif
+
+	SSubresourceData Transfer()
+	{
+		if (!m_pData[0])
+		{
+			SSubresourceData ret = { nullptr, true };
+			return ret;
+		}
+
+		// Semi-consecutive data: {{slice,0},{slice,0},{0,0}}
+		// Move data out from TexData into void-Array
+		const bool bMovable = IsOwned();
+		const uint8** pData = new const uint8*[6 * 2 + 2];
+		memset(pData, 0, sizeof(const uint8*) * (6 * 2 + 2));
+
+		if (bMovable)
+			for (uint32 i = 0; i < 6; i++)
+				std::swap(pData[i * 2 + 0], m_pData[i]);
+		else
+			for (uint32 i = 0; i < 6; i++)
+				pData[i * 2 + 0] = m_pData[i];
+
+		SSubresourceData ret = { pData, bMovable };
+		return ret;
+	}
+
+	bool IsOwned()
+	{
+		for (int i = 0; i < 6; i++)
+			if (m_pData[i] && !WasReallocated(i))
+				return false;
+		return true;
+	}
+	void AssignData(unsigned int i, const uint8* pNewData)
 	{
 		assert(i < 6);
 		if (WasReallocated(i))
-			delete[] m_pData[i];
+			SAFE_DELETE_ARRAY(m_pData[i]);
 		m_pData[i] = pNewData;
 		SetReallocated(i);
 	}
@@ -305,6 +439,8 @@ public:
 		m_reallocated |= (1 << i);
 	}
 };
+
+typedef STexData* STexDataPtr;
 
 //! Texture object interface.
 class ITexture
@@ -363,7 +499,7 @@ public:
 	//! Get low res system memory (used for CPU voxelization).
 	virtual const ColorB* GetLowResSystemCopy(uint16& nWidth, uint16& nHeight, int** ppLowResSystemCopyAtlasId) { return 0; }
 
-	virtual void UpdateData(STexData &td, int flags) = 0;
+	virtual void UpdateData(STexDataPtr&& td, int flags) = 0;
 	// </interfuscator:shuffle>
 
 	void         GetMemoryUsage(ICrySizer* pSizer) const

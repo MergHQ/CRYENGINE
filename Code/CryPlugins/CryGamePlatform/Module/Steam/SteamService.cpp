@@ -18,6 +18,18 @@ namespace Cry
 	{
 		namespace Steam
 		{
+			namespace Predicate
+			{
+				struct SWithSteamID
+				{
+					explicit SWithSteamID(const CSteamID& id) : m_id(id) {}
+					bool operator()(const std::unique_ptr<CAccount>& pUser) const { return pUser->GetSteamID() == m_id; }
+
+				private:
+					CSteamID m_id;
+				};
+			}
+
 			//-----------------------------------------------------------------------------
 			// Purpose: callback hook for debug text emitted from the Steam API
 			//-----------------------------------------------------------------------------
@@ -31,6 +43,7 @@ namespace Cry
 			CService::CService()
 				: m_callbackGameOverlayActivated(this, &CService::OnGameOverlayActivated)
 				, m_onAvatarImageLoadedCallback(this, &CService::OnAvatarImageLoaded)
+				, m_onFriendStateChangeCallback(this, &CService::OnFriendStateChange)
 				, m_pServer(nullptr)
 				, m_awaitingCallbacks(0)
 				, m_authTicketHandle(k_HAuthTicketInvalid)
@@ -65,8 +78,6 @@ namespace Cry
 				{
 					pListener->OnShutdown(SteamServiceID);
 				}
-
-				m_listeners.clear();
 			}
 
 			bool CService::Initialize(SSystemGlobalEnvironment& env, const SSystemInitParams& initParams)
@@ -256,9 +267,32 @@ namespace Cry
 
 			void CService::OnAvatarImageLoaded(AvatarImageLoaded_t* pCallback)
 			{
+				const AccountIdentifier accountId = CreateAccountIdentifier(pCallback->m_steamID);
 				for (IListener* pListener : m_listeners)
 				{
-					pListener->OnAvatarImageLoaded(CreateAccountIdentifier(pCallback->m_steamID));
+					pListener->OnAvatarImageLoaded(accountId);
+				}
+			}
+
+			void CService::OnFriendStateChange(PersonaStateChange_t* pCallback)
+			{
+				if (pCallback->m_nChangeFlags & k_EPersonaChangeComeOnline)
+				{
+					IAccount* pFriendAccount = TryGetAccount(pCallback->m_ulSteamID);
+					for (IListener* pListener : m_listeners)
+					{
+						pListener->OnAccountAdded(*pFriendAccount);
+					}
+				}
+				else if (pCallback->m_nChangeFlags & k_EPersonaChangeGoneOffline)
+				{
+					if (auto pRemovedAccount = RemoveAccount(pCallback->m_ulSteamID))
+					{
+						for (IListener* pListener : m_listeners)
+						{
+							pListener->OnAccountRemoved(*pRemovedAccount);
+						}
+					}
 				}
 			}
 
@@ -468,6 +502,20 @@ namespace Cry
 			{
 				const CSteamID steamId = ExtractSteamID(accountId);
 				return TryGetAccount(steamId);
+			}
+
+			std::unique_ptr<CAccount> CService::RemoveAccount(CSteamID id)
+			{
+				std::unique_ptr<CAccount> removedAccount;
+
+				auto accPos = std::find_if(m_accounts.begin(), m_accounts.end(), Predicate::SWithSteamID(id));
+				if (accPos != m_accounts.end())
+				{
+					removedAccount.swap(*accPos);
+					m_accounts.erase(accPos);
+				}
+
+				return removedAccount;
 			}
 
 			bool CService::GetAuthToken(string &tokenOut, int &issuerId)

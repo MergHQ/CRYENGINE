@@ -154,6 +154,7 @@ public:
 	bool                   DoSetAspectProfile(EntityId id, NetworkAspectType aspectBit, uint8 profile, bool checkOwnership, bool informedGame, bool unlockUpdate);
 	void                   BroadcastChannelEvent(INetChannel* pFrom, SNetChannelEvent* pEvent);
 	bool                   SendEventToChannelListener(INetChannel* pChannel, SNetObjectEvent* pEvent);
+	bool                   IsStartedEstablishingContext() const { return m_startedEstablishingContext; }
 	bool                   IsContextEstablished() const { return m_established; }
 	SNetObjectID           GetNetID(EntityId userID, bool ensureNotUnbinding = true);
 	EntityId               GetEntityID(SNetObjectID netID);
@@ -196,6 +197,7 @@ public:
 	void          ChangedTransform(EntityId id, const Vec3& pos, const Quat& rot, float drawDist);
 	void          ChangedFov(EntityId id, float fov);
 #endif
+	void          StartedEstablishingContext();
 	void          EstablishedContext();
 	void          DisableAspectsUntilObjectUpdated(EntityId idDisable, NetworkAspectType aspectBits, EntityId idReference, INetChannel* pChannel);
 	void          SpawnedObject(EntityId userID);
@@ -419,6 +421,7 @@ private:
 	CNetContextPtr m_pContext;
 	IGameContext*  m_pGameContext;
 	bool           m_multiplayer;
+	bool           m_startedEstablishingContext;
 	bool           m_established;
 	// in PerformRegularCleanup
 	bool           m_bInCleanup;

@@ -594,7 +594,7 @@ QToolWindowArea > QTabBar::tab {
 	margin:0px;
 	border:0px;
 	padding-left:6px;
-	min-height:23px;
+	min-height:24px;
 	border-radius:0px;
 	padding-bottom:0px;
 	border-radius:0px;
@@ -768,13 +768,13 @@ QPropertySplitter {
 }
 
 /* Top widget of the property tree */
-QPropertyTree2 { 
+QPropertyTree2 {
 	qproperty-collapsedIcon: url(icons:General/Pointer_Right.ico);
 	qproperty-expandedIcon: url(icons:General/Pointer_Down_Expanded.ico);
 	qproperty-dragHandleIcon: url(icons:General/Drag_Handle.ico);
 }
 
-/* Inner widget of the property tree. Contains rows and possibly other FormWidgets inside. 
+/* Inner widget of the property tree. Contains rows and possibly other FormWidgets inside.
 Use the nesting property value to style differently for different nesting levels.*/
 PropertyTree2--CFormWidget {
 	qproperty-margins: rect(0 0 0 0);
@@ -1243,10 +1243,9 @@ QToolWindowSingleTabAreaFrame > QLabel {
 }
 
 QToolButton#QuickAccessButton {
-	min-width: 15;
-	min-height: 15;
+	max-width: 16;
+	max-height: 16;
 	qproperty-iconSize: 16px;
-	image: url(icons:common/general_corner_menu.ico);
 }
 
 /*Hide the ugly menu indicator as the button image already has a menu' arrow*/
@@ -1259,7 +1258,7 @@ QToolWindowSingleTabAreaFrame > #closeButton {
 	background-color: transparent;
 	qproperty-iconSize: 16px;
 	width:16px;
-	height:23px;
+	height:24px;
 	padding-right:2px;
 }
 
@@ -2124,7 +2123,7 @@ CAssetBrowser CBreadcrumbsBar QLineEdit[error=true]
     border: 1px solid rgb(193,70,70) outset;
 }
 
-CAssetBrowser QToolButton::menu-indicator 
+CAssetBrowser QToolButton::menu-indicator
 {
 	image: url("icons:common/general_dropdown_triangle.ico");
 	subcontrol-position: right bottom;
@@ -2144,7 +2143,7 @@ QWidget#HoverWidget:hover
     border-radius: 3px;
 }
 
-QToolButton#Filter::menu-indicator 
+QToolButton#Filter::menu-indicator
 {
 	image: url("icons:common/general_dropdown_triangle.ico");
 	subcontrol-position: right bottom;

@@ -27,6 +27,8 @@ struct SRGBPixel
 };
 
 class CImageFile;
+typedef _smart_ptr<CImageFile> CImageFilePtr;
+
 namespace DDSSplitted {
 struct DDSDesc;
 }
@@ -145,7 +147,7 @@ public:
 
 	EImFileError                 mfGet_error() const    { return m_eError; }
 
-	byte*                        mfGet_image(const int nSide);
+	byte*                        mfGet_image(const int nSide, const bool bMove = false);
 	void                         mfFree_image(const int nSide);
 	bool                         mfIs_image(const int nSide) const              { return m_pByteImage[nSide] != NULL; }
 
@@ -194,8 +196,9 @@ public:
 		Skipped,
 	};
 
-	static _smart_ptr<CImageFile>  mfLoad_file(const string& filename, const uint32 nFlags);
-	static _smart_ptr<CImageFile>  mfStream_File(const string& filename, const uint32 nFlags, IImageFileStreamCallback* pCallback);
+	static CImageFilePtr mfLoad_file(const string& filename, const uint32 nFlags);
+	static CImageFilePtr mfStream_File(const string& filename, const uint32 nFlags, IImageFileStreamCallback* pCallback);
+
 	static EResourceCompilerResult mfInvokeRC(const string& fileToLoad, const string& filename, char* extOut, size_t extOutCapacity, bool immediate);
 };
 

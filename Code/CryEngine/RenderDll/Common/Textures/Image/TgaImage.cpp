@@ -86,7 +86,7 @@ static void WritePixel(int depth, unsigned long a, unsigned long r, unsigned lon
 	}
 }
 
-static void GetPixel(unsigned char* data, int depth, unsigned long& a, unsigned long& r, unsigned long& g, unsigned long& b)
+static void GetPixel(const unsigned char* data, int depth, unsigned long& a, unsigned long& r, unsigned long& g, unsigned long& b)
 {
 	switch (depth)
 	{
@@ -110,7 +110,7 @@ static void GetPixel(unsigned char* data, int depth, unsigned long& a, unsigned 
 	}
 }
 
-bool WriteTGA(byte* data, int width, int height, const char* filename, int src_bits_per_pixel, int dest_bits_per_pixel)
+bool WriteTGA(const byte* data, int width, int height, const char* filename, int src_bits_per_pixel, int dest_bits_per_pixel)
 {
 #if CRY_PLATFORM_LINUX || CRY_PLATFORM_ANDROID || CRY_PLATFORM_APPLE
 	return false;

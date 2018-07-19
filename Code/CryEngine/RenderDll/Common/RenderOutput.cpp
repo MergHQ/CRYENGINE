@@ -158,8 +158,8 @@ void CRenderOutput::BeginRendering(CRenderView* pRenderView, stl::optional<uint3
 
 	//////////////////////////////////////////////////////////////////////////
 	// TODO: make color and/or depth|stencil optional (currently it's enforced to have all of them)
-	CRY_ASSERT(m_pColorTarget && CTexture::IsTextureExist(m_pColorTarget));
-	CRY_ASSERT(m_pDepthTarget && CTexture::IsTextureExist(m_pDepthTarget));
+	CRY_ASSERT(m_pColorTarget /* && CTexture::IsTextureExist(m_pColorTarget) */);
+	CRY_ASSERT(m_pDepthTarget /* && CTexture::IsTextureExist(m_pDepthTarget) */);
 }
 
 void CRenderOutput::EndRendering(CRenderView* pRenderView)
@@ -191,7 +191,7 @@ CTexture* CRenderOutput::GetColorTarget() const
 	if (m_pDisplayContext)
 		return m_pDisplayContext->GetCurrentColorOutput();
 
-	CRY_ASSERT(m_pColorTarget && CTexture::IsTextureExist(m_pColorTarget));
+	CRY_ASSERT(m_pColorTarget /* && CTexture::IsTextureExist(m_pColorTarget) */);
 	return m_pColorTarget.get();
 }
 
@@ -200,7 +200,7 @@ CTexture* CRenderOutput::GetDepthTarget() const
 	if (m_pDisplayContext)
 		return m_pDisplayContext->GetCurrentDepthOutput();
 
-	CRY_ASSERT(m_pDepthTarget && CTexture::IsTextureExist(m_pDepthTarget));
+	CRY_ASSERT(m_pDepthTarget /* && CTexture::IsTextureExist(m_pDepthTarget) */);
 	return m_pDepthTarget.get();
 }
 
@@ -255,7 +255,7 @@ void CRenderOutput::ChangeOutputResolution(int outputWidth, int outputHeight)
 		}
 	}
 
-	if (!m_pColorTarget || !CTexture::IsTextureExist(m_pColorTarget) ||
+	if (!m_pColorTarget || /* !CTexture::IsTextureExist(m_pColorTarget) || */
 		 m_OutputWidth  != m_pColorTarget->GetWidth() ||
 		 m_OutputHeight != m_pColorTarget->GetHeight())
 	{
@@ -264,7 +264,7 @@ void CRenderOutput::ChangeOutputResolution(int outputWidth, int outputHeight)
 
 	if (!m_bUseTempDepthBuffer)
 	{
-		if (!m_pDepthTarget || !CTexture::IsTextureExist(m_pDepthTarget) ||
+		if (!m_pDepthTarget || /* !CTexture::IsTextureExist(m_pDepthTarget) || */
 			m_OutputWidth  != m_pDepthTarget->GetWidth() ||
 			m_OutputHeight != m_pDepthTarget->GetHeight())
 		{
@@ -273,8 +273,8 @@ void CRenderOutput::ChangeOutputResolution(int outputWidth, int outputHeight)
 	}
 
 	// TODO: make color and/or depth|stencil optional (currently it's enforced to have all of them)
-	CRY_ASSERT(m_pColorTarget && CTexture::IsTextureExist(m_pColorTarget));
-	CRY_ASSERT(m_pDepthTarget && CTexture::IsTextureExist(m_pDepthTarget) || m_bUseTempDepthBuffer);
+	CRY_ASSERT(m_pColorTarget /* && CTexture::IsTextureExist(m_pColorTarget) */);
+	CRY_ASSERT(m_pDepthTarget /* && CTexture::IsTextureExist(m_pDepthTarget) */ || m_bUseTempDepthBuffer);
 }
 
 Vec2_tpl<uint32_t> CRenderOutput::GetDisplayResolution() const

@@ -22,6 +22,10 @@ namespace Cry
 				virtual void OnAvatarImageLoaded(const AccountIdentifier& accountId) = 0;
 				//! Called when the service is about to shut down
 				virtual void OnShutdown(const ServiceIdentifier& serviceId) = 0;
+				//! Called when an account has been added
+				virtual void OnAccountAdded(IAccount& account) = 0;
+				//! Called right before removing an account
+				virtual void OnAccountRemoved(IAccount& account) = 0;
 			};
 
 			virtual ~IService() {}

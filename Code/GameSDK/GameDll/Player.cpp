@@ -207,6 +207,13 @@ const float SMOKE_ENTER_TIME	= 0.1f;
 
 const float FLASHBANG_REACT_TIME = 5.0f;
 
+namespace PlayerAudioUtils
+{
+	static constexpr CryAudio::ControlId playerViewSwitchId = CryAudio::StringToId("1stOr3rdP");
+	static constexpr CryAudio::SwitchStateId fpViewSwitchStateId = CryAudio::StringToId("1stP");
+	static constexpr CryAudio::SwitchStateId tpViewSwitchStateId = CryAudio::StringToId("3rdP");
+}
+
 CPlayer::SReactionAnim CPlayer::m_reactionAnims[EReaction_Total] = 
 {
 	{NULL,												0,											0.0f, -1},
@@ -6091,8 +6098,8 @@ void CPlayer::ExecuteFootStep(ICharacterInstance* pCharacter, const float frameT
 		//params.soundSemantic = eSoundSemantic_Physics_Footstep;
 		params.audioProxyOffset = GetEntity()->GetWorldTM().GetInverted().TransformVector(params.pos - GetEntity()->GetWorldPos());
 
-
-		params.playSoundFP = !IsThirdPerson();
+		CryAudio::SwitchStateId playerViewSwitchStateId = IsThirdPerson() ? PlayerAudioUtils::tpViewSwitchStateId : PlayerAudioUtils::fpViewSwitchStateId;
+		params.audioSwitchStates.emplace_back(PlayerAudioUtils::playerViewSwitchId, playerViewSwitchStateId);
 
 		//create effects
 		IMaterialEffects* pMaterialEffects = gEnv->pMaterialEffects;
@@ -6288,7 +6295,8 @@ void CPlayer::ExecuteFoleySignal(ICharacterInstance* pCharacter, const float fra
 	//params.soundSemantic = eSoundSemantic_Animation;
 	params.audioProxyOffset = GetEntity()->GetWorldTM().GetInverted().TransformVector(params.pos - GetEntity()->GetWorldPos());
 
-	params.playSoundFP = !IsThirdPerson();
+	CryAudio::SwitchStateId playerViewSwitchStateId = IsThirdPerson() ? PlayerAudioUtils::tpViewSwitchStateId : PlayerAudioUtils::fpViewSwitchStateId;
+	params.audioSwitchStates.emplace_back(PlayerAudioUtils::playerViewSwitchId, playerViewSwitchStateId);
 
 	//create effects
 	IMaterialEffects* pMaterialEffects = gEnv->pMaterialEffects;
@@ -6361,7 +6369,8 @@ void CPlayer::ExecuteGroundEffectAnimEvent(ICharacterInstance* pCharacter, const
 	//params.soundSemantic = eSoundSemantic_Animation;
 	params.audioProxyOffset = GetEntity()->GetWorldTM().GetInverted().TransformVector(params.pos - GetEntity()->GetWorldPos());
 
-	params.playSoundFP = !IsThirdPerson();
+	CryAudio::SwitchStateId playerViewSwitchStateId = IsThirdPerson() ? PlayerAudioUtils::tpViewSwitchStateId : PlayerAudioUtils::fpViewSwitchStateId;
+	params.audioSwitchStates.emplace_back(PlayerAudioUtils::playerViewSwitchId, playerViewSwitchStateId);
 
 	//create effects
 	IMaterialEffects* pMaterialEffects = gEnv->pMaterialEffects;

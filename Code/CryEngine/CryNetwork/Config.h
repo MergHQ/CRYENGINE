@@ -300,6 +300,9 @@
 // Optimisation to prevent dirtying all the aspects when binding
 #define ENABLE_THIN_BINDS 0
 
+// Support for logs of context establishments
+#define LOG_CONTEXT_ESTABLISHMENT 1
+
 /*
  * from here on is validation of the above
  */
@@ -360,6 +363,7 @@
 	#undef LOG_MESSAGE_DROPS
 	#undef ENABLE_NETWORK_MEM_INFO
 	#undef ENABLE_SERIALIZATION_LOGGING
+	#undef LOG_CONTEXT_ESTABLISHMENT
 
 	#define USUAL_DEBUG_STUFF 0
 
@@ -423,6 +427,7 @@
 	#define LOG_ENTITYID_ERRORS                        0
 	#define LOG_MESSAGE_DROPS                          0
 	#define ENABLE_SERIALIZATION_LOGGING               0
+	#define LOG_CONTEXT_ESTABLISHMENT                  0
 
 #endif
 

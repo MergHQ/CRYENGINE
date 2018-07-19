@@ -19,6 +19,8 @@ namespace Cry
 			virtual const char* GetNickname() const = 0;
 			//! Gets the unique identifier of the user
 			virtual AccountIdentifier GetIdentifier() const = 0;
+			//! Gets the unique identifier of the service (shorthand for GetIdentifier().Service())
+			virtual ServiceIdentifier GetServiceIdentifier() const = 0;
 			//! Sets the user's rich status
 			virtual void SetStatus(const char* szStatus) = 0;
 			//! Gets the user's rich status
@@ -27,6 +29,8 @@ namespace Cry
 			virtual ITexture* GetAvatar(EAvatarSize size) const = 0;
 			//! Gets other services' accounts that were linked to this account
 			virtual const DynArray<AccountIdentifier>& GetConnectedAccounts() const = 0;
+			//! Returns true if this is the local player's account
+			virtual bool IsLocal() const = 0;
 		};
 	}
 }

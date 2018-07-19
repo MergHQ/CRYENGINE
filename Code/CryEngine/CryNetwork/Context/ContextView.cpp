@@ -58,6 +58,7 @@ static const unsigned TopLevelMessages =
   //#endif
   eNOE_Reset |
   eNOE_ChangeContext |
+  eNOE_StartedEstablishingContext |
   eNOE_SendVoicePackets |
   eNOE_RemoveRMIListener |
   eNOE_DebugEvent |
@@ -892,8 +893,8 @@ void CContextView::GC_GetEstablishmentOrder()
 	InitChannelEstablishmentTasks(pEstablisher);
 	// +1 is a small hack to get things working - we should change ChangeContext to return a serial number and arrange to have
 	// that passed around in GameContext
-#if ENABLE_DEBUG_KIT
-	NetLog("Request channel establishment tasks for CTXSERIAL:%d", ContextState()->GetToken());
+#if LOG_CONTEXT_ESTABLISHMENT
+	NetLogEstablishment(1, "Request channel establishment tasks for CTXSERIAL:%d", ContextState()->GetToken());
 #endif
 	ContextState()->GetGameContext()->InitChannelEstablishmentTasks(pEstablisher, Parent(), ContextState()->GetToken());
 
@@ -910,6 +911,8 @@ void CContextView::GC_GetEstablishmentOrder()
 
 bool CContextView::EnterState(EContextViewState state)
 {
+	NetLogEstablishment(1, "CContextView::EnterState %d %s, view %s %p", state, GetStateName(state), GetName().c_str(), (INetContextListener*)this);
+
 	if (state == eCVS_Initial)
 	{
 		ContextState()->ChangeSubscription(this, FilterEventMask(ContextViewEvents[state], state) & m_eventMask);
@@ -963,6 +966,8 @@ bool CContextView::EnterState(EContextViewState state)
 
 void CContextView::ExitState(EContextViewState state)
 {
+	NetLogEstablishment(1, "CContextView::ExitState %d %s, view %s %p", state, GetStateName(state), GetName().c_str(), (INetContextListener*)this);
+
 	if (!m_forcedStates.empty())
 	{
 		state = m_forcedStates.front();

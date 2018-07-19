@@ -281,6 +281,10 @@ CNetCVars::CNetCVars()
 
 	REGISTER_STRING_DEV_ONLY("net_profile_deep_bandwidth_logname", "profile_messages.log", VF_NULL, "log name for net deep bandwidth");
 	REGISTER_CVAR2_DEV_ONLY("net_profile_deep_bandwidth_logging", &net_profile_deep_bandwidth_logging, 0, VF_NULL, "enable/disable logging");
+
+#if LOG_CONTEXT_ESTABLISHMENT
+	REGISTER_CVAR2("net_log_context_establishment", &net_log_context_establishment, 0, VF_NULL, "Logging of context establishment. 0 - disabled; 1 - enabled; 2 - verbose.");
+#endif
 }
 
 CNetCVars::~CNetCVars()

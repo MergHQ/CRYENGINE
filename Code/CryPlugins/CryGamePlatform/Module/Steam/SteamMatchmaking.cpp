@@ -5,6 +5,7 @@
 #include "SteamMatchmaking.h"
 #include "SteamService.h"
 #include "SteamUserIdentifier.h"
+#include "IPlatformUser.h"
 
 namespace Cry
 {
@@ -44,6 +45,16 @@ namespace Cry
 							return pLobby.get();
 						}
 					}
+				}
+
+				return nullptr;
+			}
+
+			CUserLobby* CMatchmaking::GetUserLobby(const IUser& user) const
+			{
+				if (IAccount* pAccount = user.GetAccount(SteamServiceID))
+				{
+					return GetUserLobby(pAccount->GetIdentifier());
 				}
 
 				return nullptr;

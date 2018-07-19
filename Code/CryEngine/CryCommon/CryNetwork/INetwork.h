@@ -1064,6 +1064,9 @@ struct INetContext
 	//! \note Destroy all objects, and cause all channels to load a new level, and reinitialize state.
 	virtual bool ChangeContext() = 0;
 
+	//! Context establishment has started
+	virtual void StartedEstablishingContext(int establishToken) = 0;
+
 	//! The level has finished loading
 	//! Example: The slow part of context establishment is complete.
 	//! \note Call this after a call to IGameContext::EstablishContext.

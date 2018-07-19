@@ -6,7 +6,7 @@
 
 #include "../CryFont/FBitmap.h"
 
-bool CD3D9Renderer::FontUpdateTexture(int nTexId, int nX, int nY, int USize, int VSize, byte* pSrcData)
+bool CD3D9Renderer::FontUpdateTexture(int nTexId, int nX, int nY, int USize, int VSize, const byte* pSrcData)
 {
 	CTexture* tp = CTexture::GetByID(nTexId);
 	assert(tp);
@@ -40,7 +40,7 @@ bool CD3D9Renderer::FontUploadTexture(class CFBitmap* pBmp, ETEX_Format eSrcForm
 	cry_sprintf(szName, "$AutoFont_%d", m_TexGenID++);
 
 	int iFlags = FT_TEX_FONT | FT_DONT_STREAM | FT_DONT_RELEASE;
-	CTexture* tp = CTexture::GetOrCreate2DTexture(szName, pBmp->GetWidth(), pBmp->GetHeight(), 1, iFlags, (unsigned char*)pSrcData, eSrcFormat);
+	CTexture* tp = CTexture::GetOrCreate2DTexture(szName, pBmp->GetWidth(), pBmp->GetHeight(), 1, iFlags, (const byte*)pSrcData, eSrcFormat);
 
 	SAFE_DELETE_ARRAY(pSrcData);
 
@@ -49,7 +49,7 @@ bool CD3D9Renderer::FontUploadTexture(class CFBitmap* pBmp, ETEX_Format eSrcForm
 	return true;
 }
 
-int CD3D9Renderer::FontCreateTexture(int Width, int Height, byte* pSrcData, ETEX_Format eSrcFormat, bool genMips)
+int CD3D9Renderer::FontCreateTexture(int Width, int Height, const byte* pSrcData, ETEX_Format eSrcFormat, bool genMips)
 {
 	if (!pSrcData)
 		return -1;
@@ -60,7 +60,7 @@ int CD3D9Renderer::FontCreateTexture(int Width, int Height, byte* pSrcData, ETEX
 	int iFlags = FT_TEX_FONT | FT_DONT_STREAM | FT_DONT_RELEASE;
 	if (genMips)
 		iFlags |= FT_FORCE_MIPS;
-	CTexture* tp = CTexture::GetOrCreate2DTexture(szName, Width, Height, 1, iFlags, (unsigned char*)pSrcData, eSrcFormat);
+	CTexture* tp = CTexture::GetOrCreate2DTexture(szName, Width, Height, 1, iFlags, (const byte*)pSrcData, eSrcFormat);
 
 	return tp->GetID();
 }

@@ -26,15 +26,9 @@ namespace Cry
 			UserIdentifier& operator=(const UserIdentifier&) = default;
 			UserIdentifier& operator=(UserIdentifier&&) = default;
 
-			bool HasAccount(const ServiceIdentifier& svcId) const { return m_mainAccountId.Service() == svcId; }
-			AccountIdentifier GetAccount(const ServiceIdentifier& svcId) const
+			const char* ToDebugString() const
 			{
-				if (m_mainAccountId.Service() == svcId)
-				{
-					return m_mainAccountId;
-				}
-
-				return AccountIdentifier();
+				return m_mainAccountId.ToDebugString();
 			}
 
 			bool operator==(const UserIdentifier& other) const { return m_mainAccountId == other.m_mainAccountId; }

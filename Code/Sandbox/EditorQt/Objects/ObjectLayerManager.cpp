@@ -748,7 +748,11 @@ void CObjectLayerManager::Serialize(CObjectArchive& ar)
 				continue;
 			}
 
-			if (!gEditorGeneralPreferences.saveOnlyModified() || pLayer->IsModified() || !PathUtil::FileExists(pLayer->GetLayerFilepath()))
+			if (!gEditorGeneralPreferences.saveOnlyModified())
+			{
+				SaveLayer(&ar, pLayer);
+			}
+			else if (pLayer->IsModified() || !PathUtil::FileExists(pLayer->GetLayerFilepath()))
 			{
 				// Save external level to file.
 				SaveLayer(&ar, pLayer);

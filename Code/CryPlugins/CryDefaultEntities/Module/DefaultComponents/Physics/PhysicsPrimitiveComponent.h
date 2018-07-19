@@ -68,6 +68,12 @@ class CPhysicsPrimitiveComponent
 
 	virtual void Serialize(Serialization::IArchive& archive) override
 	{
+		// We're only reading legacy data here, so no reason to continue if we're not reading.
+		if (!archive.isInput())
+		{
+			return;
+		}
+
 		struct SProperties
 		{
 			void Serialize(Serialization::IArchive& archive)
@@ -85,7 +91,7 @@ class CPhysicsPrimitiveComponent
 		SProperties subData;
 		const bool read = archive(subData, "properties") && subData.hasData;
 
-		if (read && archive.isInput())
+		if (read)
 		{
 			float mass = subData.mass;
 			float density = subData.density;

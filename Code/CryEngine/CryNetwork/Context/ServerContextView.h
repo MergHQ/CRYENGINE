@@ -52,6 +52,7 @@ public:
 	virtual void        BindObject(SNetObjectID nID);
 	virtual void        UnbindObject(SNetObjectID nID);
 	virtual void        ChangeContext();
+	virtual void        StartedEstablishingContext();
 	virtual void        EstablishedContext();
 	virtual const char* ValidateMessage(const SNetMessageDef*, bool bNetworkMsg);
 	virtual bool        HasRemoteDef(const SNetMessageDef* pDef);
@@ -188,6 +189,7 @@ private:
 	// locks for establish context
 	CChangeStateLock m_lockRemoteMapLoaded;
 	CChangeStateLock m_lockLocalMapLoaded;
+	CChangeStateLock m_lockContextStateInitialized;
 
 	typedef std::map<EntityId, EntityId, std::less<EntityId>, STLMementoAllocator<std::pair<const EntityId, EntityId>>> TValidatedPredictionMap;
 	std::unique_ptr<TValidatedPredictionMap> m_pValidatedPredictions;

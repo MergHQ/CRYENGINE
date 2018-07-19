@@ -272,7 +272,7 @@ void CSmartGlassContext::CreateSwapChain()
 	m_viewport.MaxDepth = 1.0f;
 
 	m_pCryTexture = CTexture::GetOrCreateTextureObject("$SmartGlass", (uint32)m_viewport.Width, (uint32)m_viewport.Height, 1, eTT_2D, FT_DONT_RELEASE | FT_DONT_STREAM | FT_USAGE_RENDERTARGET, eTF_Unknown, TO_SMARTGLASS);
-	bool bRes = m_pCryTexture->CreateRenderTarget(eTF_R8G8B8A8, Clr_Empty); //
+	m_pCryTexture->CreateRenderTarget(eTF_R8G8B8A8, Clr_Empty); //
 	m_pPrevRenderTargetView = reinterpret_cast<D3DSurface*>(m_pCryTexture->m_pDeviceRTV);
 	m_pPrevDeviceTexture = m_pCryTexture->m_pDevTexture;
 	m_pCryTexture->m_pDeviceRTV = m_pRenderTargetView;

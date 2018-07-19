@@ -8,10 +8,9 @@ namespace Cry
 {
 	namespace GamePlatform
 	{
-		CUser::CUser(IAccount& account, const DynArray<IAccount*>& connectedAccounts)
-			: m_mainAccount(account)
-			, m_connectedAccounts(connectedAccounts)
+		CUser::CUser(DynArray<IAccount*> accounts)
 		{
+			SetAccounts(std::move(accounts));
 		}
 
 		CUser::~CUser()
@@ -20,19 +19,17 @@ namespace Cry
 
 		const char* CUser::GetNickname() const
 		{
-			return m_mainAccount.GetNickname();
+			return m_accounts.empty() ? m_accounts[0]->GetNickname() : "?Account?";
 		}
 
 		UserIdentifier CUser::GetIdentifier() const
 		{
-			return UserIdentifier(m_mainAccount.GetIdentifier());
+			return m_accounts.empty() ? UserIdentifier() : UserIdentifier(m_accounts[0]->GetIdentifier());
 		}
 
 		void CUser::SetStatus(const char* status)
 		{
-			m_mainAccount.SetStatus(status);
-
-			for (IAccount* pAccount : m_connectedAccounts)
+			for (IAccount* pAccount : m_accounts)
 			{
 				pAccount->SetStatus(status);
 			}
@@ -40,22 +37,43 @@ namespace Cry
 
 		const char* CUser::GetStatus() const
 		{
-			return m_mainAccount.GetStatus();
+			return m_accounts.empty() ? "?Account?" : m_accounts[0]->GetStatus();
 		}
 
 		ITexture* CUser::GetAvatar(EAvatarSize size) const
 		{
-			return m_mainAccount.GetAvatar(size);
+			return m_accounts.empty() ? nullptr : m_accounts[0]->GetAvatar(size);
 		}
 
 		IAccount* CUser::GetAccount(const ServiceIdentifier& svcId) const
 		{
-			if (m_mainAccount.GetIdentifier().Service() == svcId)
-			{
-				return &m_mainAccount;
-			}
+			auto pred = [&svcId](IAccount* pAcc) 
+			{ 
+				return pAcc->GetIdentifier().Service() == svcId; 
+			};
 
-			return nullptr;
+			auto accPos = std::find_if(m_accounts.begin(), m_accounts.end(), pred);
+			return accPos != m_accounts.end() ? *accPos : nullptr;
+		}
+
+		bool CUser::HasAccount(const IAccount& account) const
+		{
+			return std::find(m_accounts.begin(), m_accounts.end(), &account) != m_accounts.end();
+		}
+
+		void CUser::SetAccounts(DynArray<IAccount*> accounts)
+		{
+			m_accounts.swap(accounts);
+		}
+
+		void CUser::RemoveAccount(const IAccount& account)
+		{
+			stl::find_and_erase_all(m_accounts, &account);
+		}
+
+		const char* CUser::ToDebugString() const
+		{
+			return GetIdentifier().ToDebugString();
 		}
 	}
 }

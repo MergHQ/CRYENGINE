@@ -13,7 +13,7 @@ namespace Cry
 		class CUser final : public IUser
 		{
 		public:
-			explicit CUser(IAccount& account, const DynArray<IAccount*>& connectedAccounts);
+			explicit CUser(DynArray<IAccount*> accounts);
 			virtual ~CUser();
 
 			// IUser
@@ -25,11 +25,15 @@ namespace Cry
 
 			virtual ITexture* GetAvatar(EAvatarSize size) const override;
 			virtual IAccount* GetAccount(const ServiceIdentifier& svcId) const override;
+			virtual bool HasAccount(const IAccount& account) const override;
 			// ~IUser
 
+			void SetAccounts(DynArray<IAccount*> accounts);
+			void RemoveAccount(const IAccount& account);
+			const char* ToDebugString() const;
+
 		protected:
-			IAccount& m_mainAccount;
-			DynArray<IAccount*> m_connectedAccounts;
+			DynArray<IAccount*> m_accounts;
 		};
 	}
 }

@@ -44,7 +44,7 @@ public:
 	static void CreateFrom(std::vector<CBaseObject*>& objects, Vec3 center, CPrefabItem* pItem);
 
 	//! CBaseObject overrides.
-	virtual float              GetCreationOffsetFromTerrain() const override { return 0.0f; }
+	virtual float GetCreationOffsetFromTerrain() const override { return 0.0f; }
 
 	//! CGroup overrides.
 	virtual bool       CreateFrom(std::vector<CBaseObject*>& objects) override;
@@ -104,7 +104,6 @@ public:
 	virtual bool ApplyAsset(const CAsset& asset, HitContext* pHitContext = nullptr) override;
 	virtual bool CanApplyAsset(const CAsset& asset, string* pApplyTextOut = nullptr) const override;
 
-
 	// Extract all objects inside.
 	void         CloneAll(std::vector<CBaseObject*>& extractedObjects);
 	void         SyncPrefab(const SObjectChangedContext& context);
@@ -119,9 +118,10 @@ public:
 	void         SetObjectPrefabFlagAndLayer(CBaseObject* object);
 	void         SetChangePivotMode(bool changePivotMode) { m_bChangePivotPoint = changePivotMode; }
 	virtual void OnContextMenu(CPopupMenuItem* menu);
+	virtual int  MouseCreateCallback(IDisplayViewport* view, EMouseEvent event, CPoint& point, int flags) override;
 protected:
-	void                      SerializeMembers(Serialization::IArchive& ar);
-	virtual void              RemoveChild(CBaseObject* child);
+	void         SerializeMembers(Serialization::IArchive& ar);
+	virtual void RemoveChild(CBaseObject* child);
 
 	CPrefabObject();
 

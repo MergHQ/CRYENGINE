@@ -71,8 +71,7 @@ struct SMFXRunTimeEffectParams
 	static const int MAX_PARTICLE_PARAMS = 4;
 
 	SMFXRunTimeEffectParams()
-		: playSoundFP(false)
-		, playflags(eMFXPF_All)
+		: playflags(eMFXPF_All)
 		, fLastTime(0.0f)
 		, src(0)
 		, trg(0)
@@ -134,7 +133,6 @@ struct SMFXRunTimeEffectParams
 	}
 
 public:
-	uint16       playSoundFP; //!< Sets 1p/3p audio switch.
 	uint16       playflags;   //!< See EMFXPlayFlags.
 	float        fLastTime;   //!< Last time this effect was played.
 	float        fDecalPlacementTestMaxSize;
@@ -161,6 +159,7 @@ public:
 	EntityId              audioProxyEntityId; //!< If set, uses this Entity's audio proxy to execute audio triggers. otherwise creates independent sound.
 	CryAudio::AuxObjectId audioProxyId;       //!< If set, uses the specified audio proxy of the entity, otherwise the default proxy id will be used.
 	Vec3                  audioProxyOffset;   //!< In case of audio proxy, uses this offset.
+	std::vector<std::pair<CryAudio::ControlId, CryAudio::SwitchStateId>> audioSwitchStates;
 
 	SMFXAudioEffectRtpc   audioRtpcs[MAX_AUDIO_RTPCS];
 	uint32                numAudioRtpcs;

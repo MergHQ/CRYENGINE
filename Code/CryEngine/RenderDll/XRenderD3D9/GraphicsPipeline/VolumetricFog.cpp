@@ -427,7 +427,8 @@ void CVolumetricFogStage::Update()
 		        || !CTexture::IsTextureExist(pTex)
 		        || pTex->Invalidate(scaledWidth, scaledHeight, texFormat)))
 		{
-			if (!pTex->Create3DTexture(scaledWidth, scaledHeight, depth, 1, flags, nullptr, texFormat))
+			pTex->Create3DTexture(scaledWidth, scaledHeight, depth, 1, flags, nullptr, texFormat);
+			if (pTex->GetFlags() & FT_FAILED)
 			{
 				CryFatalError("Couldn't allocate texture.");
 			}
@@ -447,7 +448,8 @@ void CVolumetricFogStage::Update()
 		    && (!CTexture::IsTextureExist(pTex)
 		        || pTex->Invalidate(w, h, texFormat)))
 		{
-			if (!pTex->Create2DTexture(w, h, 1, flags, nullptr, texFormat))
+			pTex->Create2DTexture(w, h, 1, flags, nullptr, texFormat);
+			if (pTex->GetFlags() & FT_FAILED)
 			{
 				CryFatalError("Couldn't allocate texture.");
 			}

@@ -27,10 +27,13 @@ namespace Cry
 			class CUserGeneratedContentManager;
 			class CService;
 
-			inline AccountIdentifier CreateAccountIdentifier(const CSteamID& steamId) { return AccountIdentifier(SteamServiceID, steamId.ConvertToUint64()); }
-			inline AccountIdentifier CreateAccountIdentifier(uint64 rawSteamId)       { return AccountIdentifier(SteamServiceID, rawSteamId); }
-			inline LobbyIdentifier   CreateLobbyIdentifier(const CSteamID& steamId)   { return LobbyIdentifier(SteamServiceID, steamId.ConvertToUint64()); }
-			inline LobbyIdentifier   CreateLobbyIdentifier(uint64 rawSteamId)         { return LobbyIdentifier(SteamServiceID, rawSteamId); }
+			using AccountIdentifierValue = Cry::GamePlatform::Detail::NumericIdentifierValue;
+			
+			inline AccountIdentifier CreateAccountIdentifier(AccountIdentifierValue rawSteamId) { return AccountIdentifier(SteamServiceID, rawSteamId); }
+			inline LobbyIdentifier   CreateLobbyIdentifier(AccountIdentifierValue rawSteamId)   { return LobbyIdentifier(SteamServiceID, rawSteamId); }
+
+			inline AccountIdentifier CreateAccountIdentifier(const CSteamID& steamId)           { return CreateAccountIdentifier(steamId.ConvertToUint64()); }
+			inline LobbyIdentifier   CreateLobbyIdentifier(const CSteamID& steamId)             { return CreateLobbyIdentifier(steamId.ConvertToUint64()); }
 		}
 	}
 }

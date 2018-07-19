@@ -39,7 +39,6 @@ protected:
 			pLayer->SetVisible(m_undoIsVisible);
 			pLayer->SetFrozen(m_undoIsFrozen);
 			pLayer->SetColor(m_undoLayerColorOverride, m_undoUseColorOverride);
-			CLayerChangeEvent(CLayerChangeEvent::LE_MODIFY, pLayer).Send();
 		}
 	}
 
@@ -51,7 +50,6 @@ protected:
 			pLayer->SetVisible(m_redoIsVisible);
 			pLayer->SetFrozen(m_redoIsFrozen);
 			pLayer->SetColor(m_redoLayerColorOverride, m_redoUseColorOverride);
-			CLayerChangeEvent(CLayerChangeEvent::LE_MODIFY, pLayer).Send();
 		}
 	}
 
@@ -91,7 +89,6 @@ protected:
 				m_redoName = pLayer->GetName();
 			}
 			pLayer->SetName(m_undoName);
-			CLayerChangeEvent(CLayerChangeEvent::LE_MODIFY, pLayer).Send();
 		}
 	}
 
@@ -102,7 +99,6 @@ protected:
 		if (pLayer)
 		{
 			pLayer->SetName(m_redoName);
-			CLayerChangeEvent(CLayerChangeEvent::LE_MODIFY, pLayer).Send();
 		}
 	}
 
@@ -214,6 +210,7 @@ public:
 				m_parent->SetVisible(isVisible, false);
 			}
 		}
+		SetModified(true);
 	}
 
 	virtual void SetFrozen(bool isFrozen, bool isRecursive = false) override
@@ -242,7 +239,7 @@ CObjectLayer::CObjectLayer()
 	, m_defaultLoaded(false)
 	, m_expanded(false)
 	, m_havePhysics(true)
-	, m_isModified(true)
+	, m_isModified(false)
 	, m_nLayerId(0)
 	, m_useColorOverride(false)
 	, m_specs(eSpecType_All)
@@ -261,7 +258,7 @@ CObjectLayer::CObjectLayer(const char* szName, EObjectLayerType type)
 	, m_defaultLoaded(false)
 	, m_expanded(false)
 	, m_havePhysics(true)
-	, m_isModified(true)
+	, m_isModified(false)
 	, m_nLayerId(0)
 	, m_useColorOverride(false)
 	, m_specs(eSpecType_All)
@@ -419,8 +416,9 @@ void CObjectLayer::SetNameImpl(const string& name, bool IsUpdateDepends)
 	string oldName = m_name;
 	m_name = name;
 
-	CLayerChangeEvent(CLayerChangeEvent::LE_MODIFY, this).Send();
+	CLayerChangeEvent(CLayerChangeEvent::LE_RENAME, this).Send();
 	GetIEditorImpl()->GetFlowGraphManager()->UpdateLayerName(oldName.GetString(), name.GetString());
+	SetModified(true);
 }
 
 //////////////////////////////////////////////////////////////////////////
@@ -516,7 +514,7 @@ void CObjectLayer::SetVisible(bool isVisible, bool isRecursive)
 		m_hidden = !isVisible;
 
 		// Notify layer manager on layer modification.
-		CLayerChangeEvent(CLayerChangeEvent::LE_MODIFY, this).Send();
+		CLayerChangeEvent(CLayerChangeEvent::LE_VISIBILITY, this).Send();
 		GetIEditorImpl()->GetObjectManager()->InvalidateVisibleList();
 
 		// If turning visibility on in a child layer make sure the parent
@@ -532,6 +530,8 @@ void CObjectLayer::SetVisible(bool isVisible, bool isRecursive)
 			GetChild(i)->SetVisible(isVisible, isRecursive);
 		}
 	}
+
+	SetModified(true);
 }
 
 //////////////////////////////////////////////////////////////////////////
@@ -544,7 +544,7 @@ void CObjectLayer::SetFrozen(bool isFrozen, bool isRecursive)
 
 		m_frozen = isFrozen;
 
-		CLayerChangeEvent(CLayerChangeEvent::LE_MODIFY, this).Send();
+		CLayerChangeEvent(CLayerChangeEvent::LE_FROZEN, this).Send();
 		GetIEditorImpl()->GetObjectManager()->InvalidateVisibleList();
 
 		// If unfreezing a child layer make sure the parent is also unfrozen
@@ -559,6 +559,7 @@ void CObjectLayer::SetFrozen(bool isFrozen, bool isRecursive)
 		}
 	}
 	GetIEditorImpl()->GetFlowGraphManager()->SendNotifyEvent(EHG_GRAPH_UPDATE_FROZEN);
+	SetModified(true);
 }
 
 //////////////////////////////////////////////////////////////////////////
@@ -581,6 +582,11 @@ void CObjectLayer::SetModified(bool isModified)
 
 	CLayerChangeEvent(CLayerChangeEvent::LE_MODIFY, this).Send();
 	GetIEditorImpl()->Notify(eNotify_OnInvalidateControls);
+
+	if (m_isModified)
+	{
+		GetIEditorImpl()->SetModifiedFlag(true);
+	}
 }
 
 //////////////////////////////////////////////////////////////////////////
@@ -625,6 +631,8 @@ void CObjectLayer::SetColor(ColorB color, bool useColorOverride)
 	CUndo::Record(new CUndoLayerStates(this));
 	UseColorOverride(useColorOverride);
 	m_color = color;
+	CLayerChangeEvent(CLayerChangeEvent::LE_LAYERCOLOR, this).Send();
+	SetModified(true);
 }
 
 void CObjectLayer::UseColorOverride(bool useColorOverride)
@@ -636,6 +644,7 @@ void CObjectLayer::UseColorOverride(bool useColorOverride)
 	CUndo setColorColorOverrideUndo("Set Layer Color Override");
 	CUndo::Record(new CUndoLayerStates(this));
 	m_useColorOverride = useColorOverride;
+	CLayerChangeEvent(CLayerChangeEvent::LE_LAYERCOLOR, this).Send();
 }
 
 //////////////////////////////////////////////////////////////////////////

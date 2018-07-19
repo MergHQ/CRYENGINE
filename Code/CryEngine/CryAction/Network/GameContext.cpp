@@ -482,6 +482,7 @@ void AddWaitForPendingConnections(IContextEstablisher* pEst, EContextViewState s
 
 bool CGameContext::InitGlobalEstablishmentTasks(IContextEstablisher* pEst, int establishedToken)
 {
+	AddStartedEstablishingContext(pEst, eCVS_Initial, establishedToken);
 	AddSetValue(pEst, eCVS_Begin, &m_bStarted, false, "GameNotStarted");
 	AddWaitForPendingConnections(pEst, eCVS_Begin, m_pGame, m_pFramework);
 	if (gEnv->IsEditor())

@@ -214,6 +214,7 @@ bool CImageDDSFile::LoadFromFile(DDSSplitted::FileWrapper& file, uint32 nFlags, 
 			std::max(1, m_Depth  >> nImageIgnoreMips),
 			nMipsToLoad, 1, m_eFormat, m_eTileMode);
 
+		// TODO: remove the mem-copy and pull into the upload-buffer directly instead
 		size_t nImageSize = nImageSideSize * m_Sides;
 		pImageMemory = gEnv->pCryPak->PoolAllocMemoryBlock(nImageSize, "CImageDDSFile::LoadFromFile");
 
@@ -382,7 +383,7 @@ void CImageDDSFile::StreamAsyncOnComplete(IReadStream* pStream, uint32 nError)
 		{
 			if (nPending)
 				__debugbreak();
-			m_pStreamState->RaiseComplete(NULL);
+			m_pStreamState->RaiseComplete(nullptr);
 		}
 	}
 
@@ -540,6 +541,7 @@ bool CImageDDSFile::SetHeaderFromMemory(byte* pFileStart, byte* pFileAfterHeader
 
 bool CImageDDSFile::PostLoad()
 {
+	// TODO: remove the mem-copy and pull into the upload-buffer directly instead
 	const byte* ptrBuffer = (const byte*)m_pFileMemory->GetData();
 
 	int nSrcSideSize = mfGet_ImageSize();
@@ -612,7 +614,7 @@ void CImageDDSFile::AdjustFirstFileName(uint32& nFlags, const char* pFileName, D
 //////////////////////////////////////////////////////////////////////
 
 #if CRY_PLATFORM_WINDOWS
-byte* WriteDDS(byte* dat, int wdt, int hgt, int dpth, const char* name, ETEX_Format eTF, int nMips, ETEX_Type eTT, bool bToMemory, int* pSize)
+byte* WriteDDS(const byte* dat, int wdt, int hgt, int dpth, const char* name, ETEX_Format eTF, int nMips, ETEX_Type eTT, bool bToMemory, int* pSize)
 {
 	CImageExtensionHelper::DDS_FILE_DESC fileDesc;
 	memset(&fileDesc, 0, sizeof(fileDesc));
