@@ -3901,7 +3901,7 @@ pexpl->explDir = m_lastExplDir;	}
 			pents[nents]->ApplyVolumetricPressure(explLoc.epicenterImp,kr,pexpl->rmin);
 
 		m_pExplVictims[m_nExplVictims] = pents[nents];
-		m_pExplVictimsFrac[m_nExplVictims++] = sumV>0 ? sumFrac/sumV : 1.0f;
+		m_pExplVictimsFrac[m_nExplVictims++] = sumV>0 ? sumFrac/sumV : 0.0f;
 		if (bEntChanged && pents[nents]->UpdateStructure(0.01f,pexpl,-1,gravity) || bMarkDeforming)
 			MarkEntityAsDeforming(pents[nents]);
 	}
