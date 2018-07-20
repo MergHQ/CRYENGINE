@@ -46,11 +46,18 @@ public:
 
 	bool                HasActiveFilters() const;
 
-	//! Fills the provided menu with the names of the saved filters, 
+	//! Fills the provided menu with the names of the saved filters,
 	//! when user clicks on an element, the selected filter is applied.
 	//! \param pMenu An instance of menu to be filled in.
 	//! \param submenuName If not an empty string, the function will put all elements in a new submenu.
 	void FillMenu(CAbstractMenu* pMenu, const QString& submenuName = QString());
+
+	//! Adds a new filter with the provided parameters.
+	//! \sa CItemModelAttribute 
+	void AddFilter(const QString& attributeName, const QString& operatorName, const QString& filterValue);
+
+	bool IsExpanded() const;
+	void SetExpanded(bool expanded);
 
 	//! Called when the models are updated, after the filters are changed
 	CCrySignal<void()> signalOnFiltered;
@@ -69,9 +76,6 @@ private:
 	void                                     OnSearch();
 
 	void                                     OnModelUpdated();
-
-	bool                                     IsExpanded() const;
-	void                                     SetExpanded(bool expanded);
 
 	void                                     OnAddFilter(CFilterWidget* filter);
 	void                                     OnRemoveFilter(CFilterWidget* filter);
@@ -110,4 +114,3 @@ private:
 	const char*                       m_uniqueName;
 	CSavedFiltersWidget*              m_savedFiltersWidget;
 };
-

@@ -51,6 +51,7 @@ public:
 	virtual QVariantMap GetLayout() const override;
 
 	void                GrabFocusSearchBar() { OnFind(); }
+	QFilteringPanel*    GetFilterPanel();
 
 	enum ViewMode
 	{
@@ -126,6 +127,8 @@ private:
 	void ProcessSelection(QVector<CAsset*>& assets, QStringList& folders) const;
 
 	void OnContextMenu();
+	void AppendFilterDependenciesActions(CAbstractMenu* pAbstractMenu, const CAsset* pAsset);
+
 	void OnFolderSelectionChanged(const QStringList& selectedFolders);
 	void OnDoubleClick(const QModelIndex& index);
 	void OnCurrentChanged(const QModelIndex& current, const QModelIndex& previous);
