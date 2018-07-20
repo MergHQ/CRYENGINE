@@ -137,6 +137,7 @@ void CCompiledRenderObject::UpdatePerDrawCB(void* pData, size_t size)
 		CRY_ASSERT_MESSAGE(!m_bOwnPerInstanceCB, "CompiledRenderObject tagged as owning a buffer, but no buffer present");
 		if (!(m_perDrawCB = s_pPools->AllocatePerDrawConstantBuffer()))
 		{
+			CRY_ASSERT_MESSAGE(false, "Warning! Running out of memory for ConstantBuffers!");
 			return;
 		}
 		m_bOwnPerInstanceCB = true;
@@ -569,7 +570,7 @@ bool CCompiledRenderObject::Compile(const EObjectCompilationOptions& compilation
 		CompilePerDrawExtraResources(pRenderObject);
 
 	// Data may come in later
-	if (!m_perDrawExtraResources || !m_perDrawExtraResources->IsValid())
+	if (!m_perDrawCB || !m_perDrawExtraResources || !m_perDrawExtraResources->IsValid())
 	{
 		m_bIncomplete = true;
 		return false;
