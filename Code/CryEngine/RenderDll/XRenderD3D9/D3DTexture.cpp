@@ -814,9 +814,9 @@ DynArray<std::uint16_t> CTexture::RenderEnvironmentCMHDR(std::size_t size, const
 	bool bFullScreen = gcpRendD3D->IsFullscreen();
 
 	CTexture* ptexGenEnvironmentCM = CTexture::GetOrCreate2DTexture("$GenEnvironmentCM", size, size, 1, FT_DONT_STREAM | FT_USAGE_RENDERTARGET, nullptr, eTF_R16G16B16A16F);
-	if (!ptexGenEnvironmentCM || !ptexGenEnvironmentCM->GetDevTexture())
+	if (!ptexGenEnvironmentCM)
 	{
-		iLog->Log("Failed generating a cubemap: out of video memory");
+		iLog->Log("Failed generating the cubemap texture");
 
 		SAFE_RELEASE(ptexGenEnvironmentCM);
 		return DynArray<std::uint16_t>{};
@@ -897,9 +897,16 @@ DynArray<std::uint16_t> CTexture::RenderEnvironmentCMHDR(std::size_t size, const
 			    "Consider increasing r_CubemapGenerationTimeout");
 		}
 
+		bool success = false;
 		gcpRendD3D->ExecuteRenderThreadCommand([&]
 		{
 			CDeviceTexture* pDstDevTex = ptexGenEnvironmentCM->GetDevTexture();
+			if (!pDstDevTex)
+			{
+				iLog->Log("Failed generating a cubemap: out of video memory");
+				return;
+			}
+
 			pDstDevTex->DownloadToStagingResource(0, [&](void* pData, uint32 rowPitch, uint32 slicePitch)
 			{
 				const auto* pTarg = reinterpret_cast<const std::uint16_t*>(pData);
@@ -912,12 +919,16 @@ DynArray<std::uint16_t> CTexture::RenderEnvironmentCMHDR(std::size_t size, const
 					std::copy(src, src + nLineStride, std::back_inserter(vecData));
 				}
 
+				success = true;
 				return true;
 			});
 
 			// After download clean up temporal memory pools
 			GetDeviceObjectFactory().FlushToGPU(false, true);
 		}, ERenderCommandFlags::FlushAndWait);
+
+		if (!success)
+			return DynArray<std::uint16_t>{};
 	}
 
 	SAFE_RELEASE(ptexGenEnvironmentCM);
