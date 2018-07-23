@@ -186,15 +186,15 @@ bool CSceneCustomStage::SetAndBuildPerPassResources(bool bOnInit)
 			const CParticleBufferSet& particleBuffer = GetStdGraphicsPipeline().GetParticleBufferSet();
 			m_perPassResources.SetBuffer(
 				EReservedTextureSlot_ParticlePositionStream,
-				const_cast<CGpuBuffer*>(&particleBuffer.GetPositionStream()),
+				const_cast<CGpuBuffer*>(&particleBuffer.GetPositionStream(RenderView()->GetFrameId())),
 				EDefaultResourceViews::Default, EShaderStage_AllWithoutCompute);
 			m_perPassResources.SetBuffer(
 				EReservedTextureSlot_ParticleAxesStream,
-				const_cast<CGpuBuffer*>(&particleBuffer.GetAxesStream()),
+				const_cast<CGpuBuffer*>(&particleBuffer.GetAxesStream(RenderView()->GetFrameId())),
 				EDefaultResourceViews::Default, EShaderStage_AllWithoutCompute);
 			m_perPassResources.SetBuffer(
 				EReservedTextureSlot_ParticleColorSTStream,
-				const_cast<CGpuBuffer*>(&particleBuffer.GetColorSTsStream()),
+				const_cast<CGpuBuffer*>(&particleBuffer.GetColorSTsStream(RenderView()->GetFrameId())),
 				EDefaultResourceViews::Default, EShaderStage_AllWithoutCompute);
 		}
 	}

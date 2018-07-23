@@ -586,6 +586,7 @@ public:
 	static int    CV_r_buffer_pool_defrag_max_moves;
 
 	static int    CV_r_ParticleVerticePoolSize;
+	static int    CV_r_ParticleMaxVerticePoolSize;
 
 	static int    CV_r_GeomCacheInstanceThreshold;
 

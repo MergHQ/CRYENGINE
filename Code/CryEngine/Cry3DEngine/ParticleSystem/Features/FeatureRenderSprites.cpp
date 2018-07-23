@@ -183,7 +183,7 @@ void CFeatureRenderSprites::ComputeVertices(const CParticleComponentRuntime& run
 	if (spritesContext.m_particleIds.size() != 0)
 	{
 		SortSprites(spritesContext);
-		WriteToGPUMem(spritesContext);
+  		WriteToGPUMem(spritesContext);
 		stats.particles.rendered += spritesContext.m_particleIds.size();
 		stats.particles.culled += runtime.GetContainer().GetNumParticles() - spritesContext.m_particleIds.size();
 
@@ -293,7 +293,7 @@ void CFeatureRenderSprites::CullParticles(SSpritesContext& spritesContext)
 	}
 
 	particleIds.resize(numParticles);
-
+	
 	if (spritesContext.m_particleIds.size() && !emitter.GetSpawnParams().bIgnoreVisAreas)
 	{
 		// vis area clipping
@@ -543,7 +543,7 @@ void CFeatureRenderSprites::WriteToGPUMem(const SSpritesContext& spritesContext)
 	const CCamera& camera = *spritesContext.m_camInfo.pCamera;
 	const uint numSprites = spritesContext.m_particleIds.size();
 
-	SRenderVertices* pRenderVertices = spritesContext.m_pRE->AllocPullVertices(numSprites);
+	SRenderVertices *pRenderVertices = spritesContext.m_pRE->AllocPullVertices(numSprites);
 	pRenderVertices->fPixels = spritesContext.m_area * spritesContext.AreaToPixels();
 
 	switch (m_facingMode)
@@ -591,7 +591,7 @@ void CFeatureRenderSprites::WriteToGPUMem(const SSpritesContext& spritesContext,
 	const bool hasOffset = (m_offset != Vec2(ZERO)) || (m_cameraOffset != 0.0f);
 
 	const uint spritesPerChunk = 170;
-	const uint numChunks = (numSprites / spritesPerChunk) + 1;
+	const uint numChunks = ((numSprites + spritesPerChunk - 1) / spritesPerChunk);
 	CWriteCombinedBuffer<Vec3, vertexBufferSize, spritesPerChunk * sizeof(Vec3)> wcPositions(pRenderVertices->aPositions);
 	CWriteCombinedBuffer<SParticleAxes, vertexBufferSize, spritesPerChunk * sizeof(SParticleAxes)> wcAxes(pRenderVertices->aAxes);
 	CWriteCombinedBuffer<SParticleColorST, vertexBufferSize, spritesPerChunk * sizeof(SParticleColorST)> wcColorSTs(pRenderVertices->aColorSTs);
@@ -604,11 +604,7 @@ void CFeatureRenderSprites::WriteToGPUMem(const SSpritesContext& spritesContext,
 	for (uint chunk = 0, spriteIdx = 0; chunk < numChunks; ++chunk)
 	{
 		const uint chunkSprites = min(spritesPerChunk, numSprites - chunk * spritesPerChunk);
-		if (!wcPositions.CheckAvailable(chunkSprites))
-			break;
-		if (!wcAxes.CheckAvailable(chunkSprites))
-			break;
-		if (!wcColorSTs.CheckAvailable(chunkSprites))
+		if (!wcPositions.CheckAvailable(chunkSprites) || !wcAxes.CheckAvailable(chunkSprites) || !wcColorSTs.CheckAvailable(chunkSprites))
 			break;
 
 		for (uint sprite = 0; sprite < chunkSprites; ++sprite, ++spriteIdx)
@@ -651,7 +647,7 @@ void CFeatureRenderSprites::WriteToGPUMem(const SSpritesContext& spritesContext,
 				colorST.color = colors.Load(particleId);
 			colorST.color.a = FloatToUFrac8Saturate(spriteAlphas[particleId]);
 
-			wcColorSTs.Array().push_back(colorST);
+ 			wcColorSTs.Array().push_back(colorST);
 		}
 	}
 }

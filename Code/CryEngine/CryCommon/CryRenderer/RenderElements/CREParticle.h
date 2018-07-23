@@ -129,8 +129,8 @@ private:
 	CDeviceGraphicsPSOPtr GetGraphicsPSO(CRenderObject* pRenderObject, const struct SGraphicsPipelinePassContext& context) const;
 	void                  PrepareDataToRender(CRenderView *pRenderView,CRenderObject* pRenderObject);
 	void                  BindPipeline(CRenderObject* pRenderObject, CDeviceGraphicsCommandInterface& commandInterface, CDeviceGraphicsPSOPtr pGraphicsPSO);
-	void                  DrawParticles(CRenderObject* pRenderObject, CDeviceGraphicsCommandInterface& commandInterface);
-	void                  DrawParticlesLegacy(CRenderObject* pRenderObject, CDeviceGraphicsCommandInterface& commandInterface);
+	void                  DrawParticles(CRenderObject* pRenderObject, CDeviceGraphicsCommandInterface& commandInterface, int frameId);
+	void                  DrawParticlesLegacy(CRenderObject* pRenderObject, CDeviceGraphicsCommandInterface& commandInterface, int frameId);
 
 	TCompiledParticlePtr                 m_pCompiledParticle;
 	IParticleVertexCreator*              m_pVertexCreator;

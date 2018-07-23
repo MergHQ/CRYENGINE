@@ -230,19 +230,17 @@ void CREParticle::SetRuntime(gpu_pfx2::CParticleComponentRuntime* pRuntime)
 
 SRenderVertices* CREParticle::AllocVertices(int nAllocVerts, int nAllocInds)
 {
-	CParticleBufferSet::SAlloc alloc;
-
 	auto& particleBuffer = gcpRendD3D.GetGraphicsPipeline().GetParticleBufferSet();
 
-	particleBuffer.Alloc(m_allocId, CParticleBufferSet::EBT_Vertices, nAllocVerts, &alloc);
-	SVF_Particle* pVertexBuffer = alias_cast<SVF_Particle*>(alloc.m_pBase) + alloc.m_firstElem;
-	m_RenderVerts.aVertices.set(ArrayT(pVertexBuffer, int(alloc.m_numElemns)));
-	m_nFirstVertex = alloc.m_firstElem;
+	CParticleBufferSet::SAlloc vertAlloc = particleBuffer.AllocVertices(m_allocId, nAllocVerts);
+	SVF_Particle* pVertexBuffer = alias_cast<SVF_Particle*>(vertAlloc.m_pBase) + vertAlloc.m_firstElem;
+	m_RenderVerts.aVertices.set(ArrayT(pVertexBuffer, int(vertAlloc.m_numElemns)));
+	m_nFirstVertex = vertAlloc.m_firstElem;
 
-	particleBuffer.Alloc(m_allocId, CParticleBufferSet::EBT_Indices, nAllocInds, &alloc);
-	uint16* pIndexBuffer = alias_cast<uint16*>(alloc.m_pBase) + alloc.m_firstElem;
-	m_RenderVerts.aIndices.set(ArrayT(pIndexBuffer, int(alloc.m_numElemns)));
-	m_nFirstIndex = alloc.m_firstElem;
+	CParticleBufferSet::SAlloc indAlloc = particleBuffer.AllocIndices(m_allocId, nAllocInds);
+	uint16* pIndexBuffer = alias_cast<uint16*>(indAlloc.m_pBase) + indAlloc.m_firstElem;
+	m_RenderVerts.aIndices.set(ArrayT(pIndexBuffer, int(indAlloc.m_numElemns)));
+	m_nFirstIndex = indAlloc.m_firstElem;
 
 	m_RenderVerts.fPixels = 0.f;
 
@@ -253,8 +251,7 @@ SRenderVertices* CREParticle::AllocPullVertices(int nPulledVerts)
 {
 	auto& particleBuffer = gcpRendD3D.GetGraphicsPipeline().GetParticleBufferSet();
 
-	CParticleBufferSet::SAllocStreams streams;
-	particleBuffer.Alloc(m_allocId, nPulledVerts, &streams);
+	CParticleBufferSet::SAllocStreams streams = particleBuffer.AllocStreams(m_allocId, nPulledVerts);
 	m_RenderVerts.aPositions.set(ArrayT(streams.m_pPositions, int(streams.m_numElemns)));
 	m_RenderVerts.aAxes.set(ArrayT(streams.m_pAxes, int(streams.m_numElemns)));
 	m_RenderVerts.aColorSTs.set(ArrayT(streams.m_pColorSTs, int(streams.m_numElemns)));
@@ -312,7 +309,7 @@ void CRenderer::EF_AddMultipleParticlesToScene(const SAddParticlesToSceneJob* jo
 	auto& particleBuffer = gcpRendD3D.GetGraphicsPipeline().GetParticleBufferSet();
 
 	// skip particle rendering in rare cases (like after a resolution change)
-	if (!particleBuffer.IsValid())
+	if (!particleBuffer.IsValid(passInfo.GetFrameID()))
 		return;
 
 	// if we have jobs, set our sync variables to running before starting the jobs
@@ -331,20 +328,15 @@ void CRenderer::PrepareParticleRenderObjects(Array<const SAddParticlesToSceneJob
 
 	// == create list of non empty container to submit to the renderer == //
 	threadID threadList = passInfo.ThreadID();
-	const uint allocId = particleBuffer.GetAllocId();
+	const uint allocId = particleBuffer.GetAllocId(passInfo.GetFrameID());
 
 	// make sure the GPU doesn't use the VB/IB Buffer we are going to fill anymore
-	WaitForParticleBuffer();
+	WaitForParticleBuffer(passInfo.GetFrameID());
 
 	// == now create the render elements and start processing those == //
 	const bool useComputeVerticesJob = passInfo.IsGeneralPass();
-	if (useComputeVerticesJob)
-	{
-		m_ComputeVerticesJobState.SetRunning();
-	}
 
 	SCameraInfo camInfo(passInfo);
-
 	const bool bParticleTessellation = m_bDeviceSupportsTessellation && CV_r_ParticlesTessellation != 0;
 
 	for (auto& job : aJobs)
@@ -428,11 +420,6 @@ void CRenderer::PrepareParticleRenderObjects(Array<const SAddParticlesToSceneJob
 		}
 
 		passInfo.GetRendItemSorter().IncreaseParticleCounter();
-	}
-
-	if (useComputeVerticesJob)
-	{
-		m_ComputeVerticesJobState.SetStopped();
 	}
 }
 
@@ -727,9 +714,9 @@ void CREParticle::DrawToCommandList(CRenderObject* pRenderObject, const struct S
 	CDeviceGraphicsCommandInterface& commandInterface = *commandList->GetGraphicsInterface();
 	BindPipeline(pRenderObject, commandInterface, pGraphicsPSO);
 	if (isLegacy)
-		DrawParticlesLegacy(pRenderObject, commandInterface);
+		DrawParticlesLegacy(pRenderObject, commandInterface, context.pRenderView->GetFrameId());
 	else
-		DrawParticles(pRenderObject, commandInterface);
+		DrawParticles(pRenderObject, commandInterface, context.pRenderView->GetFrameId());
 }
 
 CDeviceGraphicsPSOPtr CREParticle::GetGraphicsPSO(CRenderObject* pRenderObject, const struct SGraphicsPipelinePassContext& context) const
@@ -812,7 +799,7 @@ void CREParticle::BindPipeline(CRenderObject* pRenderObject, CDeviceGraphicsComm
 	commandInterface.SetInlineConstantBuffer(EResourceLayoutSlot_PerDrawCB, m_pCompiledParticle->m_pPerDrawCB, eConstantBufferShaderSlot_PerDraw, perDrawInlineShaderStages);
 }
 
-void CREParticle::DrawParticles(CRenderObject* pRenderObject, CDeviceGraphicsCommandInterface& commandInterface)
+void CREParticle::DrawParticles(CRenderObject* pRenderObject, CDeviceGraphicsCommandInterface& commandInterface, int frameId)
 {
 	CRY_PROFILE_FUNCTION(PROFILE_PARTICLE);
 	const auto& particleBuffer = gcpRendD3D.GetGraphicsPipeline().GetParticleBufferSet();
@@ -839,7 +826,7 @@ void CREParticle::DrawParticles(CRenderObject* pRenderObject, CDeviceGraphicsCom
 	}
 }
 
-void CREParticle::DrawParticlesLegacy(CRenderObject* pRenderObject, CDeviceGraphicsCommandInterface& commandInterface)
+void CREParticle::DrawParticlesLegacy(CRenderObject* pRenderObject, CDeviceGraphicsCommandInterface& commandInterface, int frameId)
 {
 	CRY_PROFILE_FUNCTION(PROFILE_PARTICLE);
 	const auto& particleBuffer = gcpRendD3D.GetGraphicsPipeline().GetParticleBufferSet();
@@ -849,8 +836,8 @@ void CREParticle::DrawParticlesLegacy(CRenderObject* pRenderObject, CDeviceGraph
 	const bool isVolumeFog = (pRenderObject->m_ParticleObjFlags & CREParticle::ePOF_VOLUME_FOG) != 0;
 	const bool isTessellated = !isVolumeFog && (pRenderObject->m_ObjFlags & FOB_ALLOW_TESSELLATION) != 0;
 	
-	commandInterface.SetVertexBuffers(1, 0, particleBuffer.GetVertexStream());
-	commandInterface.SetIndexBuffer(particleBuffer.GetIndexStream());
+	commandInterface.SetVertexBuffers(1, 0, particleBuffer.GetVertexStream(frameId));
+	commandInterface.SetIndexBuffer(particleBuffer.GetIndexStream(frameId));
 
 	const uint numVertices = m_RenderVerts.aVertices.size();
 	const uint numIndices = m_RenderVerts.aIndices.size();

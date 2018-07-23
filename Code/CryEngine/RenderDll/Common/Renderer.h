@@ -793,7 +793,7 @@ public:
 	virtual void RT_FlashRenderPlaybackLocklessInternal(std::shared_ptr<IFlashPlayer_RenderProxy> &&pPlayer, int cbIdx, bool finalPlayback, bool doRealRender) = 0;
 	virtual bool FlushRTCommands(bool bWait, bool bImmediatelly, bool bForce) override;
 	virtual bool ForceFlushRTCommands();
-	virtual void WaitForParticleBuffer() = 0;
+	virtual void WaitForParticleBuffer(int frameId) = 0;
 
 	virtual void RequestFlushAllPendingTextureStreamingJobs(int nFrames) override { m_nFlushAllPendingTextureStreamingJobs = nFrames; }
 	virtual void SetTexturesStreamingGlobalMipFactor(float fFactor) override      { m_fTexturesStreamingGlobalMipFactor = fFactor; }
@@ -963,8 +963,8 @@ public:
 
 	virtual void                Set2DMode(bool enable, int ortox, int ortoy, float znear = -1e10f, float zfar = 1e10f) override = 0;
 
-	virtual void                LockParticleVideoMemory() override                            {}
-	virtual void                UnLockParticleVideoMemory() override                          {}
+	virtual void                LockParticleVideoMemory(int frameId) override           {}
+	virtual void                UnLockParticleVideoMemory(int frameId) override         {}
 
 	virtual void                ActivateLayer(const char* pLayerName, bool activate) override {}
 

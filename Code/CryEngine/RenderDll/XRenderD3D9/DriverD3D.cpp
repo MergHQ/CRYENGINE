@@ -3534,7 +3534,7 @@ void CD3D9Renderer::RT_EndFrame()
 		// we need to unlock it here in case we renderered a frame without any particles
 		// lock the VMEM buffer for the next frame here (to prevent a lock in the mainthread)
 		// NOTE: main thread is already working on buffer+1 and we want to prepare the next one => hence buffer+2
-		gRenDev->LockParticleVideoMemory();
+		gRenDev->LockParticleVideoMemory(gRenDev->GetRenderFrameID() + 2);
 	}
 
 #if defined(USE_GEOM_CACHES)
@@ -5376,21 +5376,21 @@ class CEngineModule_CryRenderer : public IRendererEngineModule
 CRYREGISTER_SINGLETON_CLASS(CEngineModule_CryRenderer)
 
 //=========================================================================================
-void CD3D9Renderer::LockParticleVideoMemory()
+void CD3D9Renderer::LockParticleVideoMemory(int frameId)
 {
 	CRY_PROFILE_REGION(PROFILE_RENDERER, "LockParticleVideoMemory");
 
-	gcpRendD3D.GetGraphicsPipeline().GetParticleBufferSet().Lock();
+	gcpRendD3D.GetGraphicsPipeline().GetParticleBufferSet().Lock(frameId);
 }
 
-void CD3D9Renderer::UnLockParticleVideoMemory()
+void CD3D9Renderer::UnLockParticleVideoMemory(int frameId)
 {
-	gcpRendD3D.GetGraphicsPipeline().GetParticleBufferSet().Unlock();
+	gcpRendD3D.GetGraphicsPipeline().GetParticleBufferSet().Unlock(frameId);
 }
 
-void CD3D9Renderer::InsertParticleVideoDataFence()
+void CD3D9Renderer::InsertParticleVideoDataFence(int frameId)
 {
-	gcpRendD3D.GetGraphicsPipeline().GetParticleBufferSet().SetFence();
+	gcpRendD3D.GetGraphicsPipeline().GetParticleBufferSet().SetFence(frameId);
 }
 //================================================================================================================================
 
