@@ -271,27 +271,18 @@ void CSwapChain::VerifyBufferCounters()
 	{
 		ID3D12Resource* pResource12 = m_BackBuffers[i].GetD3D12Resource();
 
-	#ifdef DX12_LINKEDADAPTER
-		if (pDevice->IsMultiAdapter())
-		{
-			;
-		}
-	#endif
-
-	#ifndef RELEASE
 		ULONG refCount = pResource12->AddRef() - 1;
 		pResource12->Release();
 		if (pDevice->IsMultiAdapter())
 		{
-			// 1x for m_BackBuffers, 1x for ReleaseHeap
-			DX12_ASSERT(refCount == 2, "RefCount corruption!");
+			// 1x for m_BackBuffers
+			DX12_ASSERT(refCount == 1, "RefCount corruption!");
 		}
 		else
 		{
-			// 1x for m_BackBuffers, 1x for ReleaseHeap + counter is shared
-			DX12_ASSERT(refCount == 2 * m_Desc.BufferCount, "RefCount corruption!");
+			// 1x for m_BackBuffers + counter is shared
+			DX12_ASSERT(refCount == 1 * m_Desc.BufferCount, "RefCount corruption!");
 		}
-	#endif
 	}
 #endif // !RELEASE
 }

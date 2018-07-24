@@ -536,6 +536,7 @@ void CDeviceObjectFactory::ReleaseStagingResource(D3DResource* pStagingRes)
 {
 	// NOTE: Poor man's resource tracking (take current time as last-used moment)
 	GetDX11Device()->ReleaseLater(GetDX11Scheduler()->GetFenceManager().GetCurrentValues(), pStagingRes, true);
+	pStagingRes->Release();
 }
 #endif
 
@@ -543,12 +544,14 @@ void CDeviceObjectFactory::ReleaseResource(D3DResource* pResource)
 {
 	// NOTE: Poor man's resource tracking (take current time as last-used moment)
 	GetDX11Device()->ReleaseLater(GetDX11Scheduler()->GetFenceManager().GetCurrentValues(), pResource, false);
+	pResource->Release();
 }
 
 void CDeviceObjectFactory::RecycleResource(D3DResource* pResource)
 {
 	// NOTE: Poor man's resource tracking (take current time as last-used moment)
 	GetDX11Device()->ReleaseLater(GetDX11Scheduler()->GetFenceManager().GetCurrentValues(), pResource, true);
+	pResource->Release();
 }
 
 //=============================================================================
