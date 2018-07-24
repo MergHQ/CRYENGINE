@@ -517,15 +517,15 @@ bool CSceneForwardStage::PreparePerPassResources(bool bOnInit, bool bShadowMask,
 
 				pResources->SetBuffer(
 					EReservedTextureSlot_ParticlePositionStream,
-					const_cast<CGpuBuffer*>(&particleBuffer.GetPositionStream()),
+					const_cast<CGpuBuffer*>(&particleBuffer.GetPositionStream(RenderView()->GetFrameId())),
 					EDefaultResourceViews::Default, EShaderStage_AllWithoutCompute);
 				pResources->SetBuffer(
 					EReservedTextureSlot_ParticleAxesStream,
-					const_cast<CGpuBuffer*>(&particleBuffer.GetAxesStream()),
+					const_cast<CGpuBuffer*>(&particleBuffer.GetAxesStream(RenderView()->GetFrameId())),
 					EDefaultResourceViews::Default, EShaderStage_AllWithoutCompute);
 				pResources->SetBuffer(
 					EReservedTextureSlot_ParticleColorSTStream,
-					const_cast<CGpuBuffer*>(&particleBuffer.GetColorSTsStream()),
+					const_cast<CGpuBuffer*>(&particleBuffer.GetColorSTsStream(RenderView()->GetFrameId())),
 					EDefaultResourceViews::Default, EShaderStage_AllWithoutCompute);
 			}
 		}

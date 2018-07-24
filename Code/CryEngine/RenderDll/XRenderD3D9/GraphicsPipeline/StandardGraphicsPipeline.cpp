@@ -75,7 +75,7 @@ void CStandardGraphicsPipeline::Init()
 	{
 		m_defaultDrawExtraRL.SetConstantBuffer(eConstantBufferShaderSlot_SkinQuat    , CDeviceBufferManager::GetNullConstantBuffer(), EShaderStage_Vertex);
 		m_defaultDrawExtraRL.SetConstantBuffer(eConstantBufferShaderSlot_SkinQuatPrev, CDeviceBufferManager::GetNullConstantBuffer(), EShaderStage_Vertex);
-		m_defaultDrawExtraRL.SetConstantBuffer(eConstantBufferShaderSlot_PerGroup    , CDeviceBufferManager::GetNullConstantBuffer(), EShaderStage_Vertex | EShaderStage_Hull);
+		m_defaultDrawExtraRL.SetConstantBuffer(eConstantBufferShaderSlot_PerGroup    , CDeviceBufferManager::GetNullConstantBuffer(), EShaderStage_Vertex | EShaderStage_Pixel | EShaderStage_Hull);
 
 		// Deliberately aliasing slots/use-cases here for visibility (e.g. EReservedTextureSlot_ComputeSkinVerts, EReservedTextureSlot_SkinExtraWeights and
 		// EReservedTextureSlot_GpuParticleStream). The resource layout will just pick the first.
@@ -138,12 +138,10 @@ void CStandardGraphicsPipeline::Init()
 	m_DownscalePass.reset(new CDownsamplePass);
 	m_UpscalePass  .reset(new CSharpeningUpsamplePass);
 
-	gRenDev->SyncComputeVerticesJobs();
-
 	// preallocate light volume buffer
 	GetLightVolumeBuffer().Create();
 	// preallocate video memory buffer for particles when using the job system
-	GetParticleBufferSet().Create(CRenderer::CV_r_ParticleVerticePoolSize);
+	GetParticleBufferSet().Create(CRenderer::CV_r_ParticleVerticePoolSize, CRenderer::CV_r_ParticleMaxVerticePoolSize);
 
 	m_bInitialized = true;
 }
@@ -674,12 +672,6 @@ void CStandardGraphicsPipeline::ExecuteMinimumForwardShading()
 		m_pComputeSkinningStage->Execute();
 	}
 
-	{
-		PROFILE_FRAME(WaitForParticleRendItems);
-		pRenderer->SyncComputeVerticesJobs();
-		pRenderer->UnLockParticleVideoMemory();
-	}
-
 	// recursive pass doesn't use deferred fog, instead uses forward shader fog.
 	SetPipelineFlags(GetPipelineFlags() & ~EPipelineFlags::NO_SHADER_FOG);
 
@@ -698,7 +690,7 @@ void CStandardGraphicsPipeline::ExecuteMinimumForwardShading()
 	m_pSceneForwardStage->ExecuteMinimum(pColorTex, pDepthTex);
 
 	// Insert fence which is used on consoles to prevent overwriting video memory
-	pRenderer->InsertParticleVideoDataFence();
+	pRenderer->InsertParticleVideoDataFence(pRenderer->GetRenderFrameID());
 
 	if (pRenderView->GetCurrentEye() == CCamera::eEye_Right ||
 		!pRenderer->GetS3DRend().IsStereoEnabled() ||
@@ -903,12 +895,6 @@ void CStandardGraphicsPipeline::Execute()
 		}
 	}
 
-	{
-		PROFILE_FRAME(WaitForParticleRendItems);
-		pRenderer->SyncComputeVerticesJobs();
-		pRenderer->UnLockParticleVideoMemory();
-	}
-
 	// Opaque forward passes
 	m_pSceneForwardStage->ExecuteOpaque();
 	// Deferred ocean caustics
@@ -942,7 +928,7 @@ void CStandardGraphicsPipeline::Execute()
 	}
 
 	// Insert fence which is used on consoles to prevent overwriting video memory
-	pRenderer->InsertParticleVideoDataFence();
+	pRenderer->InsertParticleVideoDataFence(pRenderer->GetRenderFrameID());
 
 	m_pSnowStage->ExecuteDeferredSnowDisplacement();
 

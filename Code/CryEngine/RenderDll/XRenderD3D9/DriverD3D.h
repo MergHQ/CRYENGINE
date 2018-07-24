@@ -153,8 +153,8 @@ public:
 	//	static unsigned int GetNumBackBufferIndices(const DXGI_SWAP_CHAIN_DESC& scDesc);
 	//	static unsigned int GetCurrentBackBufferIndex(SDisplayContext* pContext);
 
-	virtual void     LockParticleVideoMemory() override;
-	virtual void     UnLockParticleVideoMemory() override;
+	virtual void     LockParticleVideoMemory(int frameId) override;
+	virtual void     UnLockParticleVideoMemory(int frameId) override;
 	virtual void     ActivateLayer(const char* pLayerName, bool activate) override;
 
 	void             SetDefaultTexParams(bool bUseMips, bool bRepeat, bool bLoad);
@@ -552,8 +552,8 @@ public:
 	virtual float* PinOcclusionBuffer(Matrix44A& camera) override;
 	virtual void   UnpinOcclusionBuffer() override;
 
-	virtual void   WaitForParticleBuffer() override;
-	void           InsertParticleVideoDataFence();
+	virtual void   WaitForParticleBuffer(int frameId) override;
+	void           InsertParticleVideoDataFence(int frameId);
 
 	void           RT_UpdateSkinningConstantBuffers(CRenderView* pRenderView);
 

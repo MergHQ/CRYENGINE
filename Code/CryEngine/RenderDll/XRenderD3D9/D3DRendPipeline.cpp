@@ -663,6 +663,12 @@ void CD3D9Renderer::RT_RenderScene(CRenderView* pRenderView)
 
 		GetGraphicsPipeline().Update(pRenderView, EShaderRenderingFlags(shaderRenderingFlags));
 
+		{
+			PROFILE_FRAME(WaitForParticleRendItems);
+			SyncComputeVerticesJobs();
+			UnLockParticleVideoMemory(GetRenderFrameID());
+		}
+
 		// Creating CompiledRenederObjects should happen after Update() call of the GraphicsPipeline, as it requires access to initialized Render Targets
 		// If some pipeline stage manages/retires resources used in compiled objects, they should also be handled in Update()
 		pRenderView->CompileModifiedRenderObjects();
@@ -970,11 +976,11 @@ void CD3D9Renderer::LogShaderImportMiss(const CShader* pShader)
 }
 
 ///////////////////////////////////////////////////////////////////////////////
-void CD3D9Renderer::WaitForParticleBuffer()
+void CD3D9Renderer::WaitForParticleBuffer(int frameId)
 {
 	CRY_PROFILE_FUNCTION(PROFILE_PARTICLE);
 	
-	gcpRendD3D.GetGraphicsPipeline().GetParticleBufferSet().WaitForFence();
+	gcpRendD3D.GetGraphicsPipeline().GetParticleBufferSet().WaitForFence(frameId);
 }
 //========================================================================================================
 
