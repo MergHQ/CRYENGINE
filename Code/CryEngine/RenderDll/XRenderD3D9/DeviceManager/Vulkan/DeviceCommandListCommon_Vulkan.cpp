@@ -971,6 +971,9 @@ void CDeviceCopyCommandInterfaceImpl::CopyImage(CImageResource* pSrc, CImageReso
 		dstZ >>= 1;
 	}
 
+	auto prevSrcImgLayout = pSrc->GetLayout(), prevDstImgLayout = pDst->GetLayout();
+	auto prevSrcImgAccess = pSrc->GetAccess(), prevDstImgAccess = pDst->GetAccess();
+
 	if (pSrc == pDst)
 	{
 		RequestTransition(pSrc, VK_IMAGE_LAYOUT_GENERAL, VK_ACCESS_TRANSFER_READ_BIT | VK_ACCESS_TRANSFER_WRITE_BIT);
@@ -983,6 +986,17 @@ void CDeviceCopyCommandInterfaceImpl::CopyImage(CImageResource* pSrc, CImageReso
 	GetVKCommandList()->PendingResourceBarriers();
 
 	vkCmdCopyImage(GetVKCommandList()->GetVkCommandList(), pSrc->GetHandle(), pSrc->GetLayout(), pDst->GetHandle(), pDst->GetLayout(), mipIndex, batch);
+
+	if (pSrc == pDst)
+	{
+		RequestTransition(pSrc, prevSrcImgLayout, prevSrcImgAccess);
+	}
+	else
+	{
+		RequestTransition(pSrc, prevSrcImgLayout, prevSrcImgAccess);
+		RequestTransition(pDst, prevDstImgLayout, prevDstImgAccess);
+	}
+
 	GetVKCommandList()->m_nCommands += CLCOUNT_COPY;
 }
 
