@@ -13,6 +13,8 @@ using SNDFILE = struct SNDFILE_tag;
 
 namespace CryAudio
 {
+class CATLEvent;
+
 namespace Impl
 {
 namespace PortAudio
@@ -41,10 +43,10 @@ public:
 	CEvent& operator=(CEvent&&) = delete;
 
 	bool    Execute(
-	  int const numLoops,
-	  double const sampleRate,
-	  CryFixedStringT<MaxFilePathLength> const& filePath,
-	  PaStreamParameters const& streamParameters);
+		int const numLoops,
+		double const sampleRate,
+		CryFixedStringT<MaxFilePathLength> const& filePath,
+		PaStreamParameters const& streamParameters);
 	void Update();
 
 	// CryAudio::Impl::IEvent

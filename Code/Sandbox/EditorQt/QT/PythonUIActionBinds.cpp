@@ -47,8 +47,8 @@ public:
 REGISTER_EDITOR_COMMAND_MODULE_WITH_DESC(UiActionCommandModuleDescription, ui_action, "Menus and Toolbars", "");
 
 #define REGISTER_EDIT_APP_UI_ACTION(EditAppMemberFuncName, action_name)                  \
-  void PyBind_ui_action_ ## action_name() { GetEditApp()-> ## EditAppMemberFuncName(); } \
-  REGISTER_PYTHON_COMMAND(PyBind_ui_action_ ## action_name, ui_action, action_name, "");
+	void PyBind_ui_action_ ## action_name() { GetEditApp()-> ## EditAppMemberFuncName(); } \
+	REGISTER_PYTHON_COMMAND(PyBind_ui_action_ ## action_name, ui_action, action_name, "");
 
 REGISTER_EDIT_APP_UI_ACTION(OnFileEditLogFile, actionShow_Log_File);
 
@@ -70,9 +70,10 @@ std::vector<std::string> PyGetViewPaneClassNames()
 	pClassFactory->GetClassesBySystemID(ESYSTEM_CLASS_VIEWPANE, classDescs);
 
 	std::vector<std::string> classNames;
-	for (auto iter = classDescs.begin(); iter != classDescs.end(); ++iter)
+
+	for (auto const& classDesc : classDescs)
 	{
-		classNames.push_back((*iter)->ClassName());
+		classNames.emplace_back(classDesc->ClassName());
 	}
 
 	return classNames;
@@ -123,11 +124,11 @@ struct SAudioGeneralPreferences : public SPreferencePage
 		{
 			if (bMuteAudio)
 			{
-				gEnv->pAudioSystem->ExecuteTrigger(CryAudio::MuteAllTriggerId);
+				GetISystem()->GetISystemEventDispatcher()->OnSystemEvent(ESYSTEM_EVENT_AUDIO_MUTE, 0, 0);
 			}
 			else
 			{
-				gEnv->pAudioSystem->ExecuteTrigger(CryAudio::UnmuteAllTriggerId);
+				GetISystem()->GetISystemEventDispatcher()->OnSystemEvent(ESYSTEM_EVENT_AUDIO_UNMUTE, 0, 0);
 			}
 		}
 
@@ -162,13 +163,14 @@ void PyRefreshAudioSystem()
 void PyToggleMuteAudioSystem()
 {
 	gAudioGeneralPreferences.bMuteAudio = !gAudioGeneralPreferences.bMuteAudio;
+
 	if (gAudioGeneralPreferences.bMuteAudio)
 	{
-		gEnv->pAudioSystem->ExecuteTrigger(CryAudio::MuteAllTriggerId);
+		GetISystem()->GetISystemEventDispatcher()->OnSystemEvent(ESYSTEM_EVENT_AUDIO_MUTE, 0, 0);
 	}
 	else
 	{
-		gEnv->pAudioSystem->ExecuteTrigger(CryAudio::UnmuteAllTriggerId);
+		GetISystem()->GetISystemEventDispatcher()->OnSystemEvent(ESYSTEM_EVENT_AUDIO_UNMUTE, 0, 0);
 	}
 }
 };
@@ -186,4 +188,3 @@ void PyExecute(const char* pythonCmd)
 }
 
 REGISTER_ONLY_PYTHON_COMMAND_WITH_EXAMPLE(PyExecute, python, execute, "Executes python code", "");
-

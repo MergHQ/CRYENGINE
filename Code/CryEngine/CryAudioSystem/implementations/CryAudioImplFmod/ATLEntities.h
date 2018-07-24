@@ -8,6 +8,8 @@
 
 namespace CryAudio
 {
+class CATLStandaloneFile;
+
 namespace Impl
 {
 namespace Fmod

@@ -3,7 +3,6 @@
 #pragma once
 
 #include "IAudioInterfacesCommonData.h"
-#include "../CryCore/CryCrc32.h"
 #include "../CrySystem/IEngineModule.h"
 #include "../CryEntitySystem/IEntityBasicTypes.h"
 
@@ -28,90 +27,12 @@
  */
 namespace CryAudio
 {
-static constexpr char const* s_szRelativeVelocityTrackingSwitchName = "relative_velocity_tracking";
-static constexpr char const* s_szRelativeVelocityParameterName = "relative_velocity";
-static constexpr char const* s_szAbsoluteVelocityTrackingSwitchName = "absolute_velocity_tracking";
-static constexpr char const* s_szAbsoluteVelocityParameterName = "absolute_velocity";
-static constexpr char const* s_szLoseFocusTriggerName = "lose_focus";
-static constexpr char const* s_szGetFocusTriggerName = "get_focus";
-static constexpr char const* s_szMuteAllTriggerName = "mute_all";
-static constexpr char const* s_szUnmuteAllTriggerName = "unmute_all";
-static constexpr char const* s_szPauseAllTriggerName = "pause_all";
-static constexpr char const* s_szResumeAllTriggerName = "resume_all";
-static constexpr char const* s_szDoNothingTriggerName = "do_nothing";
-static constexpr char const* s_szOcclCalcSwitchName = "occlusion_calculation_type";
-static constexpr char const* s_szIgnoreStateName = "ignore";
-static constexpr char const* s_szAdaptiveStateName = "adaptive";
-static constexpr char const* s_szLowStateName = "low";
-static constexpr char const* s_szMediumStateName = "medium";
-static constexpr char const* s_szHighStateName = "high";
-static constexpr char const* s_szOnStateName = "on";
-static constexpr char const* s_szOffStateName = "off";
-static constexpr char const* s_szGlobalPreloadRequestName = "global_audio_system_preload";
-
-static constexpr char const* s_szDefaultLibraryName = "default_controls";
-static constexpr char const* s_szRootNodeTag = "AudioSystemData";
-static constexpr char const* s_szEditorDataTag = "EditorData";
-static constexpr char const* s_szTriggersNodeTag = "Triggers";
-static constexpr char const* s_szParametersNodeTag = "Parameters";
-static constexpr char const* s_szSwitchesNodeTag = "Switches";
-static constexpr char const* s_szPreloadsNodeTag = "Preloads";
-static constexpr char const* s_szEnvironmentsNodeTag = "Environments";
-
-static constexpr char const* s_szTriggerTag = "Trigger";
-static constexpr char const* s_szParameterTag = "Parameter";
-static constexpr char const* s_szSwitchTag = "Switch";
-static constexpr char const* s_szStateTag = "State";
-static constexpr char const* s_szEnvironmentTag = "Environment";
-static constexpr char const* s_szPreloadRequestTag = "PreloadRequest";
-static constexpr char const* s_szPlatformTag = "Platform";
-static constexpr char const* s_szEventTag = "Event";
-
-static constexpr char const* s_szNameAttribute = "name";
-static constexpr char const* s_szVersionAttribute = "version";
-static constexpr char const* s_szTypeAttribute = "type";
-static constexpr char const* s_szRadiusAttribute = "radius";
-
-static constexpr char const* s_szDataLoadType = "autoload";
-
-static constexpr char const* s_szConfigFolderName = "ace";
-static constexpr char const* s_szAssetsFolderName = "assets";
-static constexpr char const* s_szLevelsFolderName = "levels";
-
-/**
- * A utility function to convert a string value to an Id.
- * @param szSource - string to convert
- * @return a 32bit CRC computed on the lower case version of the passed string
- */
-static constexpr IdType StringToId(char const* const szSource)
-{
-	return static_cast<IdType>(CCrc32::ComputeLowercase_CompileTime(szSource));
-}
-
-static constexpr ControlId RelativeVelocityTrackingSwitchId = StringToId(s_szRelativeVelocityTrackingSwitchName);
-static constexpr ControlId RelativeVelocityParameterId = StringToId(s_szRelativeVelocityParameterName);
-static constexpr ControlId AbsoluteVelocityTrackingSwitchId = StringToId(s_szAbsoluteVelocityTrackingSwitchName);
-static constexpr ControlId AbsoluteVelocityParameterId = StringToId(s_szAbsoluteVelocityParameterName);
-static constexpr ControlId LoseFocusTriggerId = StringToId(s_szLoseFocusTriggerName);
-static constexpr ControlId GetFocusTriggerId = StringToId(s_szGetFocusTriggerName);
-static constexpr ControlId MuteAllTriggerId = StringToId(s_szMuteAllTriggerName);
-static constexpr ControlId UnmuteAllTriggerId = StringToId(s_szUnmuteAllTriggerName);
-static constexpr ControlId PauseAllTriggerId = StringToId(s_szPauseAllTriggerName);
-static constexpr ControlId ResumeAllTriggerId = StringToId(s_szResumeAllTriggerName);
-static constexpr ControlId DoNothingTriggerId = StringToId(s_szDoNothingTriggerName);
-static constexpr ControlId OcclusionCalcSwitchId = StringToId(s_szOcclCalcSwitchName);
-static constexpr SwitchStateId IgnoreStateId = StringToId(s_szIgnoreStateName);
-static constexpr SwitchStateId AdaptiveStateId = StringToId(s_szAdaptiveStateName);
-static constexpr SwitchStateId LowStateId = StringToId(s_szLowStateName);
-static constexpr SwitchStateId MediumStateId = StringToId(s_szMediumStateName);
-static constexpr SwitchStateId HighStateId = StringToId(s_szHighStateName);
-static constexpr SwitchStateId OnStateId = StringToId(s_szOnStateName);
-static constexpr SwitchStateId OffStateId = StringToId(s_szOffStateName);
-static constexpr PreloadRequestId GlobalPreloadRequestId = StringToId(s_szGlobalPreloadRequestName);
-static constexpr LibraryId DefaultLibraryId = StringToId(s_szDefaultLibraryName);
-
 // Forward declarations.
+struct IObject;
 struct IListener;
+class CATLEvent;
+class CATLStandaloneFile;
+
 namespace Impl
 {
 struct IImpl;
@@ -202,15 +123,15 @@ enum class ELogType : EnumFlagsType
 struct SRequestInfo
 {
 	explicit SRequestInfo(
-	  ERequestResult const requestResult_,
-	  void* const pOwner_,
-	  void* const pUserData_,
-	  void* const pUserDataOwner_,
-	  ESystemEvents const systemEvent_,
-	  ControlId const audioControlId_,
-	  IObject* const pAudioObject_,
-	  CATLStandaloneFile* pStandaloneFile_,
-	  CATLEvent* pAudioEvent_)
+		ERequestResult const requestResult_,
+		void* const pOwner_,
+		void* const pUserData_,
+		void* const pUserDataOwner_,
+		ESystemEvents const systemEvent_,
+		ControlId const audioControlId_,
+		IObject* const pAudioObject_,
+		CATLStandaloneFile* pStandaloneFile_,
+		CATLEvent* pAudioEvent_)
 		: requestResult(requestResult_)
 		, pOwner(pOwner_)
 		, pUserData(pUserData_)
@@ -241,11 +162,11 @@ struct SRequestInfo
 struct SCreateObjectData
 {
 	explicit SCreateObjectData(
-	  char const* const szName_ = nullptr,
-	  EOcclusionType const occlusionType_ = EOcclusionType::Ignore,
-	  CObjectTransformation const& transformation_ = CObjectTransformation::GetEmptyObject(),
-	  EntityId const entityId_ = INVALID_ENTITYID,
-	  bool const setCurrentEnvironments_ = false)
+		char const* const szName_ = nullptr,
+		EOcclusionType const occlusionType_ = EOcclusionType::Ignore,
+		CObjectTransformation const& transformation_ = CObjectTransformation::GetEmptyObject(),
+		EntityId const entityId_ = INVALID_ENTITYID,
+		bool const setCurrentEnvironments_ = false)
 		: szName(szName_)
 		, occlusionType(occlusionType_)
 		, transformation(transformation_)
@@ -271,14 +192,14 @@ struct SCreateObjectData
 struct SExecuteTriggerData : public SCreateObjectData
 {
 	explicit SExecuteTriggerData(
-	  ControlId const triggerId_,
-	  char const* const szName_ = nullptr,
-	  EOcclusionType const occlusionType_ = EOcclusionType::Ignore,
-	  CObjectTransformation const& transformation_ = CObjectTransformation::GetEmptyObject(),
-	  EntityId const entityId_ = INVALID_ENTITYID,
-	  bool const setCurrentEnvironments_ = false)
+		ControlId const triggerId_,
+		char const* const szName_ = nullptr,
+		EOcclusionType const occlusionType_ = EOcclusionType::Ignore,
+		CObjectTransformation const& transformation_ = CObjectTransformation::GetEmptyObject(),
+		EntityId const entityId_ = INVALID_ENTITYID,
+		bool const setCurrentEnvironments_ = false)
 		: SCreateObjectData(szName_, occlusionType_, transformation_, entityId_, setCurrentEnvironments_),
-		  triggerId(triggerId_)
+		triggerId(triggerId_)
 	{}
 
 	ControlId const triggerId;
@@ -478,7 +399,7 @@ struct IAudioSystem
 	 * @return void
 	 * @see RemoveRequestListener
 	 */
-	virtual void AddRequestListener(void (* func)(SRequestInfo const* const), void* const pObjectToListenTo, ESystemEvents const eventMask) = 0;
+	virtual void AddRequestListener(void (*func)(SRequestInfo const* const), void* const pObjectToListenTo, ESystemEvents const eventMask) = 0;
 
 	/**
 	 * Used to unregister a callback function.
@@ -487,7 +408,7 @@ struct IAudioSystem
 	 * @return void
 	 * @see AddRequestListener
 	 */
-	virtual void RemoveRequestListener(void (* func)(SRequestInfo const* const), void* const pObjectToListenTo) = 0;
+	virtual void RemoveRequestListener(void (*func)(SRequestInfo const* const), void* const pObjectToListenTo) = 0;
 
 	/**
 	 * Ideally called by the application's main thread.

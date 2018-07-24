@@ -3,10 +3,9 @@
 #include "stdafx.h"
 #include "AudioCVars.h"
 #include "AudioSystem.h"
-#include <CryAudio/IAudioSystem.h>
+#include "Common.h"
 #include <CryCore/Platform/platform_impl.inl>
 #include <CrySystem/IEngineModule.h>
-#include <CryMemory/BucketAllocatorImpl.h>
 #include <CryExtension/ICryFactory.h>
 #include <CryExtension/ClassWeaver.h>
 
@@ -50,12 +49,12 @@ public:
 						if (wparam == 0 || lparam != 0)
 						{
 							// lost focus
-							gEnv->pAudioSystem->ExecuteTrigger(LoseFocusTriggerId);
+							g_pLoseFocusTrigger->Execute();
 						}
 						else
 						{
 							// got focus
-							gEnv->pAudioSystem->ExecuteTrigger(GetFocusTriggerId);
+							g_pGetFocusTrigger->Execute();
 						}
 					}
 					break;
@@ -68,16 +67,22 @@ public:
 						if (wparam == 0)
 						{
 							// lost focus
-							gEnv->pAudioSystem->ExecuteTrigger(LoseFocusTriggerId);
+							g_pLoseFocusTrigger->Execute();
 						}
 						else
 						{
 							// got focus
-							gEnv->pAudioSystem->ExecuteTrigger(GetFocusTriggerId);
+							g_pGetFocusTrigger->Execute();
 						}
 					}
 					break;
 				}
+			case ESYSTEM_EVENT_AUDIO_MUTE:
+				g_pMuteAllTrigger->Execute();
+				break;
+			case ESYSTEM_EVENT_AUDIO_UNMUTE:
+				g_pUnmuteAllTrigger->Execute();
+				break;
 			}
 		}
 	}

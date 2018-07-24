@@ -478,6 +478,12 @@ enum ESystemEvent
 	//! Sent when a new audio implementation is loaded.
 	ESYSTEM_EVENT_AUDIO_IMPLEMENTATION_LOADED,
 
+	//! Sent to inform the audio system to mute.
+	ESYSTEM_EVENT_AUDIO_MUTE,
+
+	//! Sent to inform the audio system to unmute.
+	ESYSTEM_EVENT_AUDIO_UNMUTE,
+
 	//! Purpose of this event is to enable different modules to communicate with each other without knowing about each other.
 	ESYSTEM_EVENT_URI,
 

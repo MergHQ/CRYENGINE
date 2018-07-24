@@ -59,21 +59,21 @@ CAudioTranslationLayer::CAudioTranslationLayer()
 	if (g_cvars.m_audioObjectPoolSize < 1)
 	{
 		g_cvars.m_audioObjectPoolSize = 1;
-		Cry::Audio::Log(ELogType::Warning, R"(Audio Object pool size should be greater than zero. Forcing the cvar "s_AudioObjectPoolSize" to 1!)");
+		Cry::Audio::Log(ELogType::Warning, R"(Audio Object pool size must be at least 1. Forcing the cvar "s_AudioObjectPoolSize" to 1!)");
 	}
 	CATLAudioObject::CreateAllocator(g_cvars.m_audioObjectPoolSize);
 
 	if (g_cvars.m_audioEventPoolSize < 1)
 	{
 		g_cvars.m_audioEventPoolSize = 1;
-		Cry::Audio::Log(ELogType::Warning, R"(Audio Event pool size should be greater than zero. Forcing the cvar "s_AudioEventPoolSize" to 1!)");
+		Cry::Audio::Log(ELogType::Warning, R"(Audio Event pool size must be at least 1. Forcing the cvar "s_AudioEventPoolSize" to 1!)");
 	}
 	CATLEvent::CreateAllocator(g_cvars.m_audioEventPoolSize);
 
 	if (g_cvars.m_audioStandaloneFilePoolSize < 1)
 	{
 		g_cvars.m_audioStandaloneFilePoolSize = 1;
-		Cry::Audio::Log(ELogType::Warning, R"(Audio Standalone File pool size should be greater than zero. Forcing the cvar "s_AudioStandaloneFilePoolSize" to 1!)");
+		Cry::Audio::Log(ELogType::Warning, R"(Audio Standalone File pool size must be at least 1. Forcing the cvar "s_AudioStandaloneFilePoolSize" to 1!)");
 	}
 	CATLStandaloneFile::CreateAllocator(g_cvars.m_audioStandaloneFilePoolSize);
 }
@@ -99,9 +99,9 @@ void CAudioTranslationLayer::Initialize(CSystem* const pSystem)
 		&CPropagationProcessor::OnObstructionTest,
 		1);
 
-	CATLAudioObject::s_pEventManager = &m_eventMgr;
 	CATLAudioObject::s_pAudioSystem = pSystem;
-	CATLAudioObject::s_pStandaloneFileManager = &m_audioStandaloneFileMgr;
+	g_pEventManager = &m_eventMgr;
+	g_pFileManager = &m_audioStandaloneFileMgr;
 
 	m_objectPoolSize = std::max<uint32>(g_cvars.m_audioObjectPoolSize, 1);
 	m_eventPoolSize = std::max<uint32>(g_cvars.m_audioEventPoolSize, 1);
@@ -144,6 +144,7 @@ void CAudioTranslationLayer::ProcessRequest(CAudioRequest& request)
 		case EAudioRequestType::AudioListenerRequest:
 			{
 				result = ProcessAudioListenerRequest(request.GetData());
+
 				break;
 			}
 		case EAudioRequestType::AudioCallbackManagerRequest:
@@ -181,54 +182,6 @@ void CAudioTranslationLayer::Update(float const deltaTime)
 		m_objectMgr.Update(deltaTime, m_audioListenerMgr.GetActiveListenerTransformation(), m_audioListenerMgr.GetActiveListenerVelocity());
 		g_pIImpl->Update();
 	}
-}
-
-///////////////////////////////////////////////////////////////////////////
-ERequestStatus CAudioTranslationLayer::ParseControlsData(char const* const szFolderPath, EDataScope const dataScope)
-{
-	m_xmlProcessor.ParseControlsData(szFolderPath, dataScope);
-
-	return ERequestStatus::Success;
-}
-
-///////////////////////////////////////////////////////////////////////////
-ERequestStatus CAudioTranslationLayer::ParsePreloadsData(char const* const szFolderPath, EDataScope const dataScope)
-{
-	m_xmlProcessor.ParsePreloadsData(szFolderPath, dataScope);
-
-	return ERequestStatus::Success;
-}
-
-///////////////////////////////////////////////////////////////////////////
-ERequestStatus CAudioTranslationLayer::ClearControlsData(EDataScope const dataScope)
-{
-	m_xmlProcessor.ClearControlsData(dataScope);
-	if (dataScope == EDataScope::All || dataScope == EDataScope::Global)
-	{
-		CreateInternalControls();
-	}
-
-	return ERequestStatus::Success;
-}
-
-///////////////////////////////////////////////////////////////////////////
-ERequestStatus CAudioTranslationLayer::ClearPreloadsData(EDataScope const dataScope)
-{
-	m_xmlProcessor.ClearPreloadsData(dataScope);
-
-	return ERequestStatus::Success;
-}
-
-///////////////////////////////////////////////////////////////////////////
-void CAudioTranslationLayer::IncrementGlobalObjectSyncCallbackCounter()
-{
-	g_pObject->IncrementSyncCallbackCounter();
-}
-
-///////////////////////////////////////////////////////////////////////////
-void CAudioTranslationLayer::DecrementGlobalObjectSyncCallbackCounter()
-{
-	g_pObject->DecrementSyncCallbackCounter();
 }
 
 //////////////////////////////////////////////////////////////////////////
@@ -388,28 +341,41 @@ ERequestStatus CAudioTranslationLayer::ProcessAudioManagerRequest(CAudioRequest 
 	case EAudioManagerRequestType::ParseControlsData:
 		{
 			SAudioManagerRequestData<EAudioManagerRequestType::ParseControlsData> const* const pRequestData = static_cast<SAudioManagerRequestData<EAudioManagerRequestType::ParseControlsData> const*>(request.GetData());
-			result = ParseControlsData(pRequestData->folderPath.c_str(), pRequestData->dataScope);
+			m_xmlProcessor.ParseControlsData(pRequestData->folderPath.c_str(), pRequestData->dataScope);
+
+			result = ERequestStatus::Success;
 
 			break;
 		}
 	case EAudioManagerRequestType::ParsePreloadsData:
 		{
 			SAudioManagerRequestData<EAudioManagerRequestType::ParsePreloadsData> const* const pRequestData = static_cast<SAudioManagerRequestData<EAudioManagerRequestType::ParsePreloadsData> const*>(request.GetData());
-			result = ParsePreloadsData(pRequestData->folderPath.c_str(), pRequestData->dataScope);
+			m_xmlProcessor.ParsePreloadsData(pRequestData->folderPath.c_str(), pRequestData->dataScope);
+
+			result = ERequestStatus::Success;
 
 			break;
 		}
 	case EAudioManagerRequestType::ClearControlsData:
 		{
 			SAudioManagerRequestData<EAudioManagerRequestType::ClearControlsData> const* const pRequestData = static_cast<SAudioManagerRequestData<EAudioManagerRequestType::ClearControlsData> const*>(request.GetData());
-			result = ClearControlsData(pRequestData->dataScope);
+			m_xmlProcessor.ClearControlsData(pRequestData->dataScope);
+
+			if (pRequestData->dataScope == EDataScope::All || pRequestData->dataScope == EDataScope::Global)
+			{
+				ClearInternalControls();
+			}
+
+			result = ERequestStatus::Success;
 
 			break;
 		}
 	case EAudioManagerRequestType::ClearPreloadsData:
 		{
 			SAudioManagerRequestData<EAudioManagerRequestType::ClearPreloadsData> const* const pRequestData = static_cast<SAudioManagerRequestData<EAudioManagerRequestType::ClearPreloadsData> const*>(request.GetData());
-			result = ClearPreloadsData(pRequestData->dataScope);
+			m_xmlProcessor.ClearPreloadsData(pRequestData->dataScope);
+
+			result = ERequestStatus::Success;
 
 			break;
 		}
@@ -470,6 +436,7 @@ ERequestStatus CAudioTranslationLayer::ProcessAudioManagerRequest(CAudioRequest 
 		{
 #if defined(INCLUDE_AUDIO_PRODUCTION_CODE)
 			SAudioManagerRequestData<EAudioManagerRequestType::ReloadControlsData> const* const pRequestData = static_cast<SAudioManagerRequestData<EAudioManagerRequestType::ReloadControlsData> const*>(request.GetData());
+
 			for (auto const pObject : m_objectMgr.GetAudioObjects())
 			{
 				for (auto const pEvent : pObject->GetActiveEvents())
@@ -481,23 +448,18 @@ ERequestStatus CAudioTranslationLayer::ProcessAudioManagerRequest(CAudioRequest 
 				}
 			}
 
-			if (ClearControlsData(EDataScope::All) == ERequestStatus::Success)
+			m_xmlProcessor.ClearControlsData(EDataScope::All);
+			ClearInternalControls();
+			CreateInternalControls();
+
+			m_xmlProcessor.ParseControlsData(pRequestData->folderPath, EDataScope::Global);
+
+			if (strcmp(pRequestData->levelName, "") != 0)
 			{
-				if (ParseControlsData(pRequestData->folderPath, EDataScope::Global) == ERequestStatus::Success)
-				{
-					if (strcmp(pRequestData->levelName, "") != 0)
-					{
-						if (ParseControlsData(pRequestData->folderPath + pRequestData->levelName, EDataScope::LevelSpecific) == ERequestStatus::Success)
-						{
-							RetriggerAudioControls();
-						}
-					}
-					else
-					{
-						RetriggerAudioControls();
-					}
-				}
+				m_xmlProcessor.ParseControlsData(pRequestData->folderPath + pRequestData->levelName, EDataScope::LevelSpecific);
 			}
+
+			RetriggerAudioControls();
 
 			result = ERequestStatus::Success;
 #endif  // INCLUDE_AUDIO_PRODUCTION_CODE
@@ -690,11 +652,12 @@ ERequestStatus CAudioTranslationLayer::ProcessAudioObjectRequest(CAudioRequest c
 			SAudioObjectRequestData<EAudioObjectRequestType::LoadTrigger> const* const pRequestData =
 				static_cast<SAudioObjectRequestData<EAudioObjectRequestType::LoadTrigger> const* const>(request.GetData());
 
-			CATLTrigger const* const pTrigger = stl::find_in_map(m_triggers, pRequestData->audioTriggerId, nullptr);
+			CTrigger const* const pTrigger = stl::find_in_map(m_triggers, pRequestData->audioTriggerId, nullptr);
 
 			if (pTrigger != nullptr)
 			{
-				result = pObject->LoadTriggerAsync(pTrigger, true);
+				pTrigger->LoadAsync(*pObject, true);
+				result = ERequestStatus::Success;
 			}
 			else
 			{
@@ -708,11 +671,12 @@ ERequestStatus CAudioTranslationLayer::ProcessAudioObjectRequest(CAudioRequest c
 			SAudioObjectRequestData<EAudioObjectRequestType::UnloadTrigger> const* const pRequestData =
 				static_cast<SAudioObjectRequestData<EAudioObjectRequestType::UnloadTrigger> const* const>(request.GetData());
 
-			CATLTrigger const* const pTrigger = stl::find_in_map(m_triggers, pRequestData->audioTriggerId, nullptr);
+			CTrigger const* const pTrigger = stl::find_in_map(m_triggers, pRequestData->audioTriggerId, nullptr);
 
 			if (pTrigger != nullptr)
 			{
-				result = pObject->LoadTriggerAsync(pTrigger, false);
+				pTrigger->LoadAsync(*pObject, false);
+				result = ERequestStatus::Success;
 			}
 			else
 			{
@@ -728,20 +692,22 @@ ERequestStatus CAudioTranslationLayer::ProcessAudioObjectRequest(CAudioRequest c
 
 			if (pRequestData != nullptr && !pRequestData->file.empty())
 			{
-				Impl::ITrigger const* pITrigger = nullptr;
-
 				if (pRequestData->usedAudioTriggerId != InvalidControlId)
 				{
-					CATLTrigger const* const pTrigger = stl::find_in_map(m_triggers, pRequestData->usedAudioTriggerId, nullptr);
+					CTrigger const* const pTrigger = stl::find_in_map(m_triggers, pRequestData->usedAudioTriggerId, nullptr);
 
-					if (pTrigger != nullptr && !pTrigger->m_implPtrs.empty())
+					if (pTrigger != nullptr)
 					{
-						pITrigger = pTrigger->m_implPtrs[0]->m_pImplData;
+						pTrigger->PlayFile(
+							*pObject,
+							pRequestData->file.c_str(),
+							pRequestData->bLocalized,
+							request.pOwner,
+							request.pUserData,
+							request.pUserDataOwner);
 					}
 				}
 
-				CATLStandaloneFile* const pFile = m_audioStandaloneFileMgr.ConstructStandaloneFile(pRequestData->file.c_str(), pRequestData->bLocalized, pITrigger);
-				pObject->HandlePlayFile(pFile, request.pOwner, request.pUserData, request.pUserDataOwner);
 				result = ERequestStatus::Success;
 			}
 
@@ -765,11 +731,12 @@ ERequestStatus CAudioTranslationLayer::ProcessAudioObjectRequest(CAudioRequest c
 			SAudioObjectRequestData<EAudioObjectRequestType::ExecuteTrigger> const* const pRequestData =
 				static_cast<SAudioObjectRequestData<EAudioObjectRequestType::ExecuteTrigger> const* const>(request.GetData());
 
-			CATLTrigger const* const pTrigger = stl::find_in_map(m_triggers, pRequestData->audioTriggerId, nullptr);
+			CTrigger const* const pTrigger = stl::find_in_map(m_triggers, pRequestData->audioTriggerId, nullptr);
 
 			if (pTrigger != nullptr)
 			{
-				result = pObject->HandleExecuteTrigger(pTrigger, request.pOwner, request.pUserData, request.pUserDataOwner, request.flags);
+				pTrigger->Execute(*pObject, request.pOwner, request.pUserData, request.pUserDataOwner, request.flags);
+				result = ERequestStatus::Success;
 			}
 			else
 			{
@@ -783,7 +750,7 @@ ERequestStatus CAudioTranslationLayer::ProcessAudioObjectRequest(CAudioRequest c
 			SAudioObjectRequestData<EAudioObjectRequestType::ExecuteTriggerEx> const* const pRequestData =
 				static_cast<SAudioObjectRequestData<EAudioObjectRequestType::ExecuteTriggerEx> const* const>(request.GetData());
 
-			CATLTrigger const* const pTrigger = stl::find_in_map(m_triggers, pRequestData->triggerId, nullptr);
+			CTrigger const* const pTrigger = stl::find_in_map(m_triggers, pRequestData->triggerId, nullptr);
 
 			if (pTrigger != nullptr)
 			{
@@ -819,8 +786,9 @@ ERequestStatus CAudioTranslationLayer::ProcessAudioObjectRequest(CAudioRequest c
 					}
 				}
 
-				result = pNewObject->HandleExecuteTrigger(pTrigger, request.pOwner, request.pUserData, request.pUserDataOwner, request.flags);
+				pTrigger->Execute(*pNewObject, request.pOwner, request.pUserData, request.pUserDataOwner, request.flags);
 				pNewObject->RemoveFlag(EObjectFlags::InUse);
+				result = ERequestStatus::Success;
 			}
 			else
 			{
@@ -834,7 +802,7 @@ ERequestStatus CAudioTranslationLayer::ProcessAudioObjectRequest(CAudioRequest c
 			SAudioObjectRequestData<EAudioObjectRequestType::StopTrigger> const* const pRequestData =
 				static_cast<SAudioObjectRequestData<EAudioObjectRequestType::StopTrigger> const* const>(request.GetData());
 
-			CATLTrigger const* const pTrigger = stl::find_in_map(m_triggers, pRequestData->audioTriggerId, nullptr);
+			CTrigger const* const pTrigger = stl::find_in_map(m_triggers, pRequestData->audioTriggerId, nullptr);
 
 			if (pTrigger != nullptr)
 			{
@@ -856,26 +824,19 @@ ERequestStatus CAudioTranslationLayer::ProcessAudioObjectRequest(CAudioRequest c
 		}
 	case EAudioObjectRequestType::SetTransformation:
 		{
-			if (pObject != g_pObject)
-			{
-				float const distanceToListener = (m_audioListenerMgr.GetActiveListenerTransformation().GetPosition() - pObject->GetTransformation().GetPosition()).GetLength();
-				SAudioObjectRequestData<EAudioObjectRequestType::SetTransformation> const* const pRequestData =
-					static_cast<SAudioObjectRequestData<EAudioObjectRequestType::SetTransformation> const* const>(request.GetData());
+			CRY_ASSERT_MESSAGE(pObject != g_pObject, "Received a request to set a transformation on the global object.");
 
-				pObject->HandleSetTransformation(pRequestData->transformation, distanceToListener);
-				result = ERequestStatus::Success;
-			}
-			else
-			{
-				Cry::Audio::Log(ELogType::Warning, "ATL received a request to set a position on a global object");
-			}
+			float const distanceToListener = (m_audioListenerMgr.GetActiveListenerTransformation().GetPosition() - pObject->GetTransformation().GetPosition()).GetLength();
+			SAudioObjectRequestData<EAudioObjectRequestType::SetTransformation> const* const pRequestData =
+				static_cast<SAudioObjectRequestData<EAudioObjectRequestType::SetTransformation> const* const>(request.GetData());
+
+			pObject->HandleSetTransformation(pRequestData->transformation, distanceToListener);
+			result = ERequestStatus::Success;
 
 			break;
 		}
 	case EAudioObjectRequestType::SetParameter:
 		{
-			result = ERequestStatus::FailureInvalidControlId;
-
 			SAudioObjectRequestData<EAudioObjectRequestType::SetParameter> const* const pRequestData =
 				static_cast<SAudioObjectRequestData<EAudioObjectRequestType::SetParameter> const* const>(request.GetData());
 
@@ -883,8 +844,12 @@ ERequestStatus CAudioTranslationLayer::ProcessAudioObjectRequest(CAudioRequest c
 
 			if (pParameter != nullptr)
 			{
-				pObject->HandleSetParameter(pParameter, pRequestData->value);
+				pParameter->Set(*pObject, pRequestData->value);
 				result = ERequestStatus::Success;
+			}
+			else
+			{
+				result = ERequestStatus::FailureInvalidControlId;
 			}
 
 			break;
@@ -923,7 +888,6 @@ ERequestStatus CAudioTranslationLayer::ProcessAudioObjectRequest(CAudioRequest c
 		{
 			if (pObject != g_pObject)
 			{
-				result = ERequestStatus::FailureInvalidControlId;
 				SAudioObjectRequestData<EAudioObjectRequestType::SetEnvironment> const* const pRequestData =
 					static_cast<SAudioObjectRequestData<EAudioObjectRequestType::SetEnvironment> const* const>(request.GetData());
 
@@ -933,6 +897,10 @@ ERequestStatus CAudioTranslationLayer::ProcessAudioObjectRequest(CAudioRequest c
 				{
 					pObject->HandleSetEnvironment(pEnvironment, pRequestData->amount);
 					result = ERequestStatus::Success;
+				}
+				else
+				{
+					result = ERequestStatus::FailureInvalidControlId;
 				}
 			}
 			else
@@ -1185,9 +1153,9 @@ void CAudioTranslationLayer::ReleaseImpl()
 	g_pIImpl->OnBeforeShutDown();
 
 	m_audioStandaloneFileMgr.Release();
+	m_audioListenerMgr.Release();
 	m_eventMgr.Release();
 	m_objectMgr.Release();
-	m_audioListenerMgr.Release();
 
 	g_pIImpl->DestructObject(g_pObject->GetImplDataPtr());
 	g_pObject->SetImplDataPtr(nullptr);
@@ -1195,8 +1163,9 @@ void CAudioTranslationLayer::ReleaseImpl()
 	delete g_pObject;
 	g_pObject = nullptr;
 
-	m_xmlProcessor.ClearControlsData(EDataScope::All);
 	m_xmlProcessor.ClearPreloadsData(EDataScope::All);
+	m_xmlProcessor.ClearControlsData(EDataScope::All);
+	ClearInternalControls();
 
 	m_fileCacheMgr.Release();
 
@@ -1224,20 +1193,15 @@ ERequestStatus CAudioTranslationLayer::RefreshAudioSystem(char const* const szLe
 	result = m_fileCacheMgr.UnloadDataByScope(EDataScope::Global);
 	CRY_ASSERT(result == ERequestStatus::Success);
 
-	result = ClearControlsData(EDataScope::All);
-	CRY_ASSERT(result == ERequestStatus::Success);
-
-	result = ClearPreloadsData(EDataScope::All);
-	CRY_ASSERT(result == ERequestStatus::Success);
+	m_xmlProcessor.ClearPreloadsData(EDataScope::All);
+	m_xmlProcessor.ClearControlsData(EDataScope::All);
+	ClearInternalControls();
 
 	g_pIImpl->OnRefresh();
 
-	SetImplLanguage();
-
-	result = ParseControlsData(m_configPath.c_str(), EDataScope::Global);
-	CRY_ASSERT(result == ERequestStatus::Success);
-	result = ParsePreloadsData(m_configPath.c_str(), EDataScope::Global);
-	CRY_ASSERT(result == ERequestStatus::Success);
+	CreateInternalControls();
+	m_xmlProcessor.ParseControlsData(m_configPath.c_str(), EDataScope::Global);
+	m_xmlProcessor.ParsePreloadsData(m_configPath.c_str(), EDataScope::Global);
 
 	// The global preload might not exist if no preloads have been created, for that reason we don't check the result of this call
 	result = m_fileCacheMgr.TryLoadRequest(GlobalPreloadRequestId, true, true);
@@ -1248,11 +1212,8 @@ ERequestStatus CAudioTranslationLayer::RefreshAudioSystem(char const* const szLe
 		levelPath += s_szLevelsFolderName;
 		levelPath += "/";
 		levelPath += szLevelName;
-		result = ParseControlsData(levelPath.c_str(), EDataScope::LevelSpecific);
-		CRY_ASSERT(result == ERequestStatus::Success);
-
-		result = ParsePreloadsData(levelPath.c_str(), EDataScope::LevelSpecific);
-		CRY_ASSERT(result == ERequestStatus::Success);
+		m_xmlProcessor.ParseControlsData(levelPath.c_str(), EDataScope::LevelSpecific);
+		m_xmlProcessor.ParsePreloadsData(levelPath.c_str(), EDataScope::LevelSpecific);
 
 		PreloadRequestId const preloadRequestId = StringToId(szLevelName);
 		result = m_fileCacheMgr.TryLoadRequest(preloadRequestId, true, true);
@@ -1299,10 +1260,6 @@ bool CAudioTranslationLayer::OnInputEvent(SInputEvent const& event)
 //////////////////////////////////////////////////////////////////////////
 void CAudioTranslationLayer::CreateInternalControls()
 {
-	m_internalControls.m_switchStates.clear();
-	m_internalControls.m_triggerConnections.clear();
-	m_internalControls.m_parameterConnections.clear();
-
 	// Occlusion switch
 	COcclusionObstructionState const* const pOcclusionIgnore = new COcclusionObstructionState(IgnoreStateId, m_audioListenerMgr);
 	m_internalControls.m_switchStates[std::make_pair(OcclusionCalcSwitchId, IgnoreStateId)] = pOcclusionIgnore;
@@ -1333,41 +1290,6 @@ void CAudioTranslationLayer::CreateInternalControls()
 	CAbsoluteVelocityTrackingState const* const pAbsoluteVelocityTrackingOff = new CAbsoluteVelocityTrackingState(OffStateId);
 	m_internalControls.m_switchStates[std::make_pair(AbsoluteVelocityTrackingSwitchId, OffStateId)] = pAbsoluteVelocityTrackingOff;
 
-	// Do Nothing trigger
-	CDoNothingTrigger const* const pDoNothingTrigger = new CDoNothingTrigger(DoNothingTriggerId);
-
-	// Lose focus trigger
-	CLoseFocusTrigger const* const pLoseFocusTrigger = new CLoseFocusTrigger(LoseFocusTriggerId);
-	m_internalControls.m_triggerConnections[LoseFocusTriggerId] = pLoseFocusTrigger;
-
-	// Get focus trigger
-	CGetFocusTrigger const* const pGetFocusTrigger = new CGetFocusTrigger(GetFocusTriggerId);
-	m_internalControls.m_triggerConnections[GetFocusTriggerId] = pGetFocusTrigger;
-
-	// Mute all trigger
-	CMuteAllTrigger const* const pMuteAllTrigger = new CMuteAllTrigger(MuteAllTriggerId);
-	m_internalControls.m_triggerConnections[MuteAllTriggerId] = pMuteAllTrigger;
-
-	// Unmute all trigger
-	CUnmuteAllTrigger const* const pUnmuteAllTrigger = new CUnmuteAllTrigger(UnmuteAllTriggerId);
-	m_internalControls.m_triggerConnections[UnmuteAllTriggerId] = pUnmuteAllTrigger;
-
-	// Pause all trigger
-	CPauseAllTrigger const* const pPauseAllTrigger = new CPauseAllTrigger(PauseAllTriggerId);
-	m_internalControls.m_triggerConnections[PauseAllTriggerId] = pPauseAllTrigger;
-
-	// Resume all trigger
-	CResumeAllTrigger const* const pResumeAllTrigger = new CResumeAllTrigger(ResumeAllTriggerId);
-	m_internalControls.m_triggerConnections[ResumeAllTriggerId] = pResumeAllTrigger;
-
-	// Absolute Velocity parameter
-	CAbsoluteVelocityParameter const* const pAbsoluteVelocityParameter = new CAbsoluteVelocityParameter();
-	m_internalControls.m_parameterConnections[AbsoluteVelocityParameterId] = pAbsoluteVelocityParameter;
-
-	// Relative Velocity parameter
-	CRelativeVelocityParameter const* const pRelativeVelocityParameter = new CRelativeVelocityParameter();
-	m_internalControls.m_parameterConnections[RelativeVelocityParameterId] = pRelativeVelocityParameter;
-
 	// Create internal controls.
 	std::vector<char const*> const occlStates {
 		s_szIgnoreStateName, s_szAdaptiveStateName, s_szLowStateName, s_szMediumStateName, s_szHighStateName };
@@ -1378,21 +1300,28 @@ void CAudioTranslationLayer::CreateInternalControls()
 	CreateInternalSwitch(s_szRelativeVelocityTrackingSwitchName, RelativeVelocityTrackingSwitchId, onOffStates);
 	CreateInternalSwitch(s_szAbsoluteVelocityTrackingSwitchName, AbsoluteVelocityTrackingSwitchId, onOffStates);
 
+	// Do Nothing trigger
+	CDoNothingTrigger const* const pDoNothingTrigger = new CDoNothingTrigger(DoNothingTriggerId);
 	CreateInternalTrigger(s_szDoNothingTriggerName, DoNothingTriggerId, pDoNothingTrigger);
 }
 
 //////////////////////////////////////////////////////////////////////////
-void CAudioTranslationLayer::CreateInternalTrigger(char const* const szTriggerName, ControlId const triggerId, CATLTriggerImpl const* const pTriggerImpl)
+void CAudioTranslationLayer::ClearInternalControls()
 {
-	CATLTrigger::ImplPtrVec implPtrs;
-	implPtrs.push_back(pTriggerImpl);
+	m_internalControls.m_switchStates.clear();
+}
 
-	CATLTrigger* const pNewTrigger = new CATLTrigger(triggerId, EDataScope::Global, implPtrs, 0.0f);
+//////////////////////////////////////////////////////////////////////////
+void CAudioTranslationLayer::CreateInternalTrigger(char const* const szTriggerName, ControlId const triggerId, CATLTriggerImpl const* const pTriggerConnection)
+{
+	TriggerConnections connections;
+	connections.push_back(pTriggerConnection);
+
 #if defined(INCLUDE_AUDIO_PRODUCTION_CODE)
-	pNewTrigger->m_name = szTriggerName;
-#endif  // INCLUDE_AUDIO_PRODUCTION_CODE
-
-	m_triggers[triggerId] = pNewTrigger;
+	m_triggers[triggerId] = new CTrigger(triggerId, EDataScope::Global, connections, 0.0f, szTriggerName);
+#else
+	m_triggers[triggerId] = new CTrigger(triggerId, EDataScope::Global, connections, 0.0f);
+#endif // INCLUDE_AUDIO_PRODUCTION_CODE
 }
 
 //////////////////////////////////////////////////////////////////////////
@@ -1400,9 +1329,10 @@ void CAudioTranslationLayer::CreateInternalSwitch(char const* const szSwitchName
 {
 	if ((switchId != InvalidControlId) && (stl::find_in_map(m_switches, switchId, nullptr) == nullptr))
 	{
-		CATLSwitch* const pNewSwitch = new CATLSwitch(switchId, EDataScope::Global);
 #if defined(INCLUDE_AUDIO_PRODUCTION_CODE)
-		pNewSwitch->m_name = szSwitchName;
+		CATLSwitch* const pNewSwitch = new CATLSwitch(switchId, EDataScope::Global, szSwitchName);
+#else
+		CATLSwitch* const pNewSwitch = new CATLSwitch(switchId, EDataScope::Global);
 #endif  // INCLUDE_AUDIO_PRODUCTION_CODE
 
 		for (auto const szStateName : stateNames)
@@ -1421,11 +1351,13 @@ void CAudioTranslationLayer::CreateInternalSwitch(char const* const szSwitchName
 					switchStateImplVec.push_back(pSwitchStateImpl);
 				}
 
-				CATLSwitchState* const pNewState = new CATLSwitchState(switchId, stateId, switchStateImplVec);
-				pNewSwitch->audioSwitchStates[stateId] = pNewState;
 #if defined(INCLUDE_AUDIO_PRODUCTION_CODE)
-				pNewState->m_name = szStateName;
+				CATLSwitchState const* const pNewState = new CATLSwitchState(switchId, stateId, switchStateImplVec, szStateName);
+#else
+				CATLSwitchState const* const pNewState = new CATLSwitchState(switchId, stateId, switchStateImplVec);
 #endif    // INCLUDE_AUDIO_PRODUCTION_CODE
+
+				pNewSwitch->audioSwitchStates[stateId] = pNewState;
 			}
 		}
 
@@ -1684,11 +1616,11 @@ void CAudioTranslationLayer::DrawAudioSystemDebugInfo()
 ///////////////////////////////////////////////////////////////////////////
 void CAudioTranslationLayer::GetAudioTriggerData(ControlId const audioTriggerId, STriggerData& audioTriggerData) const
 {
-	CATLTrigger const* const pTrigger = stl::find_in_map(m_triggers, audioTriggerId, nullptr);
+	CTrigger const* const pTrigger = stl::find_in_map(m_triggers, audioTriggerId, nullptr);
 
 	if (pTrigger != nullptr)
 	{
-		audioTriggerData.radius = pTrigger->m_maxRadius;
+		audioTriggerData.radius = pTrigger->GetRadius();
 	}
 }
 

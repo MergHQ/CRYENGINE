@@ -38,24 +38,13 @@ public:
 	virtual bool OnInputEvent(SInputEvent const& event) override;
 	// ~IInputEventListener
 
-	void           Initialize(CSystem* const pSystem);
-	bool           ShutDown();
-	void           ProcessRequest(CAudioRequest& request);
-	void           Update(float const deltaTime);
-
-	bool           CanProcessRequests() const { return (m_flags& EInternalStates::AudioMiddlewareShuttingDown) == 0; }
-
-	ERequestStatus ParseControlsData(char const* const szFolderPath, EDataScope const dataScope);
-	ERequestStatus ClearControlsData(EDataScope const dataScope);
-	ERequestStatus ParsePreloadsData(char const* const szFolderPath, EDataScope const dataScope);
-	ERequestStatus ClearPreloadsData(EDataScope const dataScope);
-
-	void           NotifyListener(CAudioRequest const& request);
-
-	void           IncrementGlobalObjectSyncCallbackCounter();
-	void           DecrementGlobalObjectSyncCallbackCounter();
-
-	char const*    GetConfigPath() const;
+	void        Initialize(CSystem* const pSystem);
+	bool        ShutDown();
+	void        ProcessRequest(CAudioRequest& request);
+	void        Update(float const deltaTime);
+	bool        CanProcessRequests() const { return (m_flags& EInternalStates::AudioMiddlewareShuttingDown) == 0; }
+	void        NotifyListener(CAudioRequest const& request);
+	char const* GetConfigPath() const;
 
 private:
 
@@ -69,9 +58,10 @@ private:
 	ERequestStatus RefreshAudioSystem(char const* const szLevelName);
 	void           SetImplLanguage();
 	void           CreateInternalControls();
+	void           ClearInternalControls();
 	void           SetCurrentEnvironmentsOnObject(CATLAudioObject* const pObject, EntityId const entityToIgnore);
 
-	void           CreateInternalTrigger(char const* const szTriggerName, ControlId const triggerId, CATLTriggerImpl const* const pTriggerImpl);
+	void           CreateInternalTrigger(char const* const szTriggerName, ControlId const triggerId, CATLTriggerImpl const* const pTriggerConnection);
 	void           CreateInternalSwitch(char const* const szSwitchName, ControlId const switchId, std::vector<char const*> const& stateNames);
 
 	// ATLObject containers

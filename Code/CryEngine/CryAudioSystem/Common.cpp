@@ -12,7 +12,17 @@
 namespace CryAudio
 {
 Impl::IImpl* g_pIImpl = nullptr;
+CEventManager* g_pEventManager = nullptr;
+CAudioStandaloneFileManager* g_pFileManager = nullptr;
 CATLAudioObject* g_pObject = nullptr;
+CAbsoluteVelocityParameter* g_pAbsoluteVelocityParameter = nullptr;
+CRelativeVelocityParameter* g_pRelativeVelocityParameter = nullptr;
+CLoseFocusTrigger* g_pLoseFocusTrigger = nullptr;
+CGetFocusTrigger* g_pGetFocusTrigger = nullptr;
+CMuteAllTrigger* g_pMuteAllTrigger = nullptr;
+CUnmuteAllTrigger* g_pUnmuteAllTrigger = nullptr;
+CPauseAllTrigger* g_pPauseAllTrigger = nullptr;
+CResumeAllTrigger* g_pResumeAllTrigger = nullptr;
 
 #if defined(INCLUDE_AUDIO_PRODUCTION_CODE)
 namespace Debug

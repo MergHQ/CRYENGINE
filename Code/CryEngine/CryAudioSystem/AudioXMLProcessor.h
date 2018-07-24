@@ -30,7 +30,6 @@ public:
 	void                ClearControlsData(EDataScope const dataScope);
 	void                ParsePreloadsData(char const* const szFolderPath, EDataScope const dataScope);
 	void                ClearPreloadsData(EDataScope const dataScope);
-
 	void                ParseControlsFile(XmlNodeRef const pRootNode, EDataScope const dataScope);
 	void                ParseDefaultControlsFile(XmlNodeRef const pRootNode);
 
@@ -44,11 +43,9 @@ private:
 	void ParsePreloads(XmlNodeRef const pPreloadDataRoot, EDataScope const dataScope, char const* const szFolderName, uint const version);
 	void ParseEnvironments(XmlNodeRef const pAudioEnvironmentRoot, EDataScope const dataScope);
 
-	void DeleteAudioTrigger(CATLTrigger const* const pTrigger);
-	void DeleteAudioParameter(CParameter const* const pParameter);
-	void DeleteAudioSwitch(CATLSwitch const* const pSwitch);
-	void DeleteAudioPreloadRequest(CATLPreloadRequest const* const pPreloadRequest);
-	void DeleteAudioEnvironment(CATLAudioEnvironment const* const pEnvironment);
+	void DeleteSwitch(CATLSwitch const* const pSwitch);
+	void DeletePreloadRequest(CATLPreloadRequest const* const pPreloadRequest);
+	void DeleteEnvironment(CATLAudioEnvironment const* const pEnvironment);
 
 	AudioTriggerLookup&        m_triggers;
 	AudioParameterLookup&      m_parameters;

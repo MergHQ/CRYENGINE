@@ -2,7 +2,6 @@
 
 #pragma once
 
-#include "SharedAudioData.h"
 #include "ATLEntityData.h"
 #include <CrySystem/XML/IXml.h>
 
@@ -12,6 +11,12 @@
  */
 namespace CryAudio
 {
+// Forward declarations.
+struct IObject;
+struct IListener;
+class CATLEvent;
+class CATLStandaloneFile;
+
 using DeviceId = uint8;
 
 /**

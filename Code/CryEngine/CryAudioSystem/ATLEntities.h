@@ -5,6 +5,7 @@
 #include "ATLUtils.h"
 #include "AudioInternalInterfaces.h"
 #include "Common/SharedAudioData.h"
+#include "Common.h"
 #include <CryAudio/IListener.h>
 #include <CrySystem/IStreamEngine.h>
 #include <CrySystem/TimeValue.h>
@@ -13,7 +14,7 @@
 
 namespace CryAudio
 {
-class CATLAudioObject;
+struct SAudioTriggerInstanceState;
 
 struct SATLXMLTags
 {
@@ -65,34 +66,47 @@ class CATLEntity
 {
 public:
 
+#if defined(INCLUDE_AUDIO_PRODUCTION_CODE)
+	explicit CATLEntity(IDType const id, EDataScope const dataScope, char const* const szName)
+		: m_id(id)
+		, m_dataScope(dataScope)
+		, m_name(szName)
+	{}
+#else
 	explicit CATLEntity(IDType const id, EDataScope const dataScope)
 		: m_id(id)
 		, m_dataScope(dataScope)
 	{}
+#endif // INCLUDE_AUDIO_PRODUCTION_CODE
 
+	CATLEntity() = delete;
 	CATLEntity(CATLEntity const&) = delete;
 	CATLEntity(CATLEntity&&) = delete;
-	CATLEntity&        operator=(CATLEntity const&) = delete;
-	CATLEntity&        operator=(CATLEntity&&) = delete;
+	CATLEntity& operator=(CATLEntity const&) = delete;
+	CATLEntity& operator=(CATLEntity&&) = delete;
 
-	virtual IDType     GetId() const        { return m_id; }
-	virtual EDataScope GetDataScope() const { return m_dataScope; }
+	IDType      GetId() const        { return m_id; }
+	EDataScope  GetDataScope() const { return m_dataScope; }
 
 #if defined(INCLUDE_AUDIO_PRODUCTION_CODE)
-	CryFixedStringT<MaxControlNameLength> m_name;
+	char const* GetName() const { return m_name.c_str(); }
 #endif // INCLUDE_AUDIO_PRODUCTION_CODE
 
 protected:
 
 	~CATLEntity() = default;
-	EDataScope m_dataScope;
 
 private:
 
-	IDType const m_id;
+	IDType const     m_id;
+	EDataScope const m_dataScope;
+
+#if defined(INCLUDE_AUDIO_PRODUCTION_CODE)
+	CryFixedStringT<MaxControlNameLength> const m_name;
+#endif // INCLUDE_AUDIO_PRODUCTION_CODE
 };
 
-using ATLControl = CATLEntity<ControlId>;
+using Control = CATLEntity<ControlId>;
 
 struct SATLSoundPropagationData
 {
@@ -155,6 +169,12 @@ class CATLTriggerImpl : public CATLControlImpl
 {
 public:
 
+	CATLTriggerImpl() = delete;
+	CATLTriggerImpl(CATLTriggerImpl const&) = delete;
+	CATLTriggerImpl(CATLTriggerImpl&&) = delete;
+	CATLTriggerImpl& operator=(CATLTriggerImpl const&) = delete;
+	CATLTriggerImpl& operator=(CATLTriggerImpl&&) = delete;
+
 	explicit CATLTriggerImpl(
 		TriggerImplId const audioTriggerImplId,
 		Impl::ITrigger const* const pImplData = nullptr)
@@ -170,65 +190,383 @@ public:
 	Impl::ITrigger const* const m_pImplData;
 };
 
-class CATLTrigger final : public ATLControl
+using TriggerConnections = std::vector<CATLTriggerImpl const*>;
+
+class CTrigger final : public Control
 {
 public:
 
-	using ImplPtrVec = std::vector<CATLTriggerImpl const*>;
+	CTrigger() = delete;
+	CTrigger(CTrigger const&) = delete;
+	CTrigger(CTrigger&&) = delete;
+	CTrigger& operator=(CTrigger const&) = delete;
+	CTrigger& operator=(CTrigger&&) = delete;
 
-	explicit CATLTrigger(
-		ControlId const audioTriggerId,
+#if defined(INCLUDE_AUDIO_PRODUCTION_CODE)
+	explicit CTrigger(
+		ControlId const id,
 		EDataScope const dataScope,
-		ImplPtrVec const& implPtrs,
-		float const maxRadius)
-		: ATLControl(audioTriggerId, dataScope)
-		, m_implPtrs(implPtrs)
-		, m_maxRadius(maxRadius)
+		TriggerConnections const& connections,
+		float const radius,
+		char const* const szName)
+		: Control(id, dataScope, szName)
+		, m_connections(connections)
+		, m_radius(radius)
 	{}
+#else
+	explicit CTrigger(
+		ControlId const id,
+		EDataScope const dataScope,
+		TriggerConnections const& connections,
+		float const radius)
+		: Control(id, dataScope)
+		, m_connections(connections)
+		, m_radius(radius)
+	{}
+#endif // INCLUDE_AUDIO_PRODUCTION_CODE
 
-	ImplPtrVec const m_implPtrs;
-	float const      m_maxRadius;
+	~CTrigger();
+
+	void Execute(
+		CATLAudioObject& object,
+		void* const pOwner = nullptr,
+		void* const pUserData = nullptr,
+		void* const pUserDataOwner = nullptr,
+		ERequestFlags const flags = ERequestFlags::None) const;
+	void Execute(
+		CATLAudioObject& object,
+		TriggerInstanceId const triggerInstanceId,
+		SAudioTriggerInstanceState& triggerInstanceState) const;
+	void LoadAsync(CATLAudioObject& object, bool const doLoad) const;
+	void PlayFile(
+		CATLAudioObject& object,
+		char const* const szName,
+		bool const isLocalized,
+		void* const pOwner = nullptr,
+		void* const pUserData = nullptr,
+		void* const pUserDataOwner = nullptr) const;
+	float GetRadius() const { return m_radius; }
+
+#if defined(INCLUDE_AUDIO_PRODUCTION_CODE)
+	void PlayFile(CATLAudioObject& object, CATLStandaloneFile* const pFile) const;
+#endif // INCLUDE_AUDIO_PRODUCTION_CODE
+
+private:
+
+	TriggerConnections const m_connections;
+	float const              m_radius;
 };
 
-// Base class for a parameter implementation
-class IParameterImpl : public CATLControlImpl
+class CLoseFocusTrigger final : public Control
 {
 public:
 
-	virtual ~IParameterImpl() = default;
-	virtual void Set(CATLAudioObject& audioObject, float const value) const = 0;
+	CLoseFocusTrigger() = delete;
+	CLoseFocusTrigger(CLoseFocusTrigger const&) = delete;
+	CLoseFocusTrigger(CLoseFocusTrigger&&) = delete;
+	CLoseFocusTrigger& operator=(CLoseFocusTrigger const&) = delete;
+	CLoseFocusTrigger& operator=(CLoseFocusTrigger&&) = delete;
+
+#if defined(INCLUDE_AUDIO_PRODUCTION_CODE)
+	explicit CLoseFocusTrigger(TriggerConnections const& connections)
+		: Control(LoseFocusTriggerId, EDataScope::Global, s_szLoseFocusTriggerName)
+		, m_connections(connections)
+	{}
+#else
+	explicit CLoseFocusTrigger(TriggerConnections const& connections)
+		: Control(LoseFocusTriggerId, EDataScope::Global)
+		, m_connections(connections)
+	{}
+#endif // INCLUDE_AUDIO_PRODUCTION_CODE
+
+	~CLoseFocusTrigger();
+
+	void Execute() const;
+
+private:
+
+	TriggerConnections const m_connections;
+};
+
+class CGetFocusTrigger final : public Control
+{
+public:
+
+	CGetFocusTrigger() = delete;
+	CGetFocusTrigger(CGetFocusTrigger const&) = delete;
+	CGetFocusTrigger(CGetFocusTrigger&&) = delete;
+	CGetFocusTrigger& operator=(CGetFocusTrigger const&) = delete;
+	CGetFocusTrigger& operator=(CGetFocusTrigger&&) = delete;
+
+#if defined(INCLUDE_AUDIO_PRODUCTION_CODE)
+	explicit CGetFocusTrigger(TriggerConnections const& connections)
+		: Control(GetFocusTriggerId, EDataScope::Global, s_szGetFocusTriggerName)
+		, m_connections(connections)
+	{}
+#else
+	explicit CGetFocusTrigger(TriggerConnections const& connections)
+		: Control(GetFocusTriggerId, EDataScope::Global)
+		, m_connections(connections)
+	{}
+#endif // INCLUDE_AUDIO_PRODUCTION_CODE
+
+	~CGetFocusTrigger();
+
+	void Execute() const;
+
+private:
+
+	TriggerConnections const m_connections;
+};
+
+class CMuteAllTrigger final : public Control
+{
+public:
+
+	CMuteAllTrigger() = delete;
+	CMuteAllTrigger(CMuteAllTrigger const&) = delete;
+	CMuteAllTrigger(CMuteAllTrigger&&) = delete;
+	CMuteAllTrigger& operator=(CMuteAllTrigger const&) = delete;
+	CMuteAllTrigger& operator=(CMuteAllTrigger&&) = delete;
+
+#if defined(INCLUDE_AUDIO_PRODUCTION_CODE)
+	explicit CMuteAllTrigger(TriggerConnections const& connections)
+		: Control(MuteAllTriggerId, EDataScope::Global, s_szMuteAllTriggerName)
+		, m_connections(connections)
+	{}
+#else
+	explicit CMuteAllTrigger(TriggerConnections const& connections)
+		: Control(MuteAllTriggerId, EDataScope::Global)
+		, m_connections(connections)
+	{}
+#endif // INCLUDE_AUDIO_PRODUCTION_CODE
+
+	~CMuteAllTrigger();
+
+	void Execute() const;
+
+private:
+
+	TriggerConnections const m_connections;
+};
+
+class CUnmuteAllTrigger final : public Control
+{
+public:
+
+	CUnmuteAllTrigger() = delete;
+	CUnmuteAllTrigger(CUnmuteAllTrigger const&) = delete;
+	CUnmuteAllTrigger(CUnmuteAllTrigger&&) = delete;
+	CUnmuteAllTrigger& operator=(CUnmuteAllTrigger const&) = delete;
+	CUnmuteAllTrigger& operator=(CUnmuteAllTrigger&&) = delete;
+
+#if defined(INCLUDE_AUDIO_PRODUCTION_CODE)
+	explicit CUnmuteAllTrigger(TriggerConnections const& connections)
+		: Control(UnmuteAllTriggerId, EDataScope::Global, s_szUnmuteAllTriggerName)
+		, m_connections(connections)
+	{}
+#else
+	explicit CUnmuteAllTrigger(TriggerConnections const& connections)
+		: Control(UnmuteAllTriggerId, EDataScope::Global)
+		, m_connections(connections)
+	{}
+#endif // INCLUDE_AUDIO_PRODUCTION_CODE
+
+	~CUnmuteAllTrigger();
+
+	void Execute() const;
+
+private:
+
+	TriggerConnections const m_connections;
+};
+
+class CPauseAllTrigger final : public Control
+{
+public:
+
+	CPauseAllTrigger() = delete;
+	CPauseAllTrigger(CPauseAllTrigger const&) = delete;
+	CPauseAllTrigger(CPauseAllTrigger&&) = delete;
+	CPauseAllTrigger& operator=(CPauseAllTrigger const&) = delete;
+	CPauseAllTrigger& operator=(CPauseAllTrigger&&) = delete;
+
+#if defined(INCLUDE_AUDIO_PRODUCTION_CODE)
+	explicit CPauseAllTrigger(TriggerConnections const& connections)
+		: Control(PauseAllTriggerId, EDataScope::Global, s_szPauseAllTriggerName)
+		, m_connections(connections)
+	{}
+#else
+	explicit CPauseAllTrigger(TriggerConnections const& connections)
+		: Control(PauseAllTriggerId, EDataScope::Global)
+		, m_connections(connections)
+	{}
+#endif // INCLUDE_AUDIO_PRODUCTION_CODE
+
+	~CPauseAllTrigger();
+
+	void Execute() const;
+
+private:
+
+	TriggerConnections const m_connections;
+};
+
+class CResumeAllTrigger final : public Control
+{
+public:
+
+	CResumeAllTrigger() = delete;
+	CResumeAllTrigger(CResumeAllTrigger const&) = delete;
+	CResumeAllTrigger(CResumeAllTrigger&&) = delete;
+	CResumeAllTrigger& operator=(CResumeAllTrigger const&) = delete;
+	CResumeAllTrigger& operator=(CResumeAllTrigger&&) = delete;
+
+#if defined(INCLUDE_AUDIO_PRODUCTION_CODE)
+	explicit CResumeAllTrigger(TriggerConnections const& connections)
+		: Control(ResumeAllTriggerId, EDataScope::Global, s_szResumeAllTriggerName)
+		, m_connections(connections)
+	{}
+#else
+	explicit CResumeAllTrigger(TriggerConnections const& connections)
+		: Control(ResumeAllTriggerId, EDataScope::Global)
+		, m_connections(connections)
+	{}
+#endif // INCLUDE_AUDIO_PRODUCTION_CODE
+
+	~CResumeAllTrigger();
+
+	void Execute() const;
+
+private:
+
+	TriggerConnections const m_connections;
 };
 
 // Class for a parameter associated with a middleware parameter
-class CParameterImpl final : public IParameterImpl
+class CParameterImpl final : public CATLControlImpl
 {
 public:
 
-	explicit CParameterImpl(Impl::IParameter const* const pImplData = nullptr)
+	CParameterImpl() = default;
+	CParameterImpl(CParameterImpl const&) = delete;
+	CParameterImpl(CParameterImpl&&) = delete;
+	CParameterImpl& operator=(CParameterImpl const&) = delete;
+	CParameterImpl& operator=(CParameterImpl&&) = delete;
+
+	explicit CParameterImpl(Impl::IParameter const* const pImplData)
 		: m_pImplData(pImplData)
 	{}
 
-	virtual ~CParameterImpl() override;
+	virtual ~CParameterImpl();
 
-	virtual void Set(CATLAudioObject& audioObject, float const value) const override;
+	virtual void Set(CATLAudioObject const& audioObject, float const value) const;
 
 private:
 
 	Impl::IParameter const* const m_pImplData = nullptr;
 };
 
-class CParameter final : public ATLControl
+using ParameterConnections = std::vector<CParameterImpl const*>;
+
+class CParameter final : public Control
 {
 public:
 
-	using ImplPtrVec = std::vector<IParameterImpl const*>;
+	CParameter() = delete;
+	CParameter(CParameter const&) = delete;
+	CParameter(CParameter&&) = delete;
+	CParameter& operator=(CParameter const&) = delete;
+	CParameter& operator=(CParameter&&) = delete;
 
-	explicit CParameter(ControlId const parameterId, EDataScope const dataScope, ImplPtrVec const& cImplPtrs)
-		: ATLControl(parameterId, dataScope)
-		, m_implPtrs(cImplPtrs)
+#if defined(INCLUDE_AUDIO_PRODUCTION_CODE)
+	explicit CParameter(
+		ControlId const id,
+		EDataScope const dataScope,
+		ParameterConnections const& connections,
+		char const* const szName)
+		: Control(id, dataScope, szName)
+		, m_connections(connections)
 	{}
+#else
+	explicit CParameter(
+		ControlId const id,
+		EDataScope const dataScope,
+		ParameterConnections const& connections)
+		: Control(id, dataScope)
+		, m_connections(connections)
+	{}
+#endif // INCLUDE_AUDIO_PRODUCTION_CODE
 
-	ImplPtrVec const m_implPtrs;
+	~CParameter();
+
+	void Set(CATLAudioObject const& object, float const value) const;
+
+private:
+
+	ParameterConnections const m_connections;
+};
+
+class CAbsoluteVelocityParameter final : public Control
+{
+public:
+
+	CAbsoluteVelocityParameter() = delete;
+	CAbsoluteVelocityParameter(CAbsoluteVelocityParameter const&) = delete;
+	CAbsoluteVelocityParameter(CAbsoluteVelocityParameter&&) = delete;
+	CAbsoluteVelocityParameter& operator=(CAbsoluteVelocityParameter const&) = delete;
+	CAbsoluteVelocityParameter& operator=(CAbsoluteVelocityParameter&&) = delete;
+
+#if defined(INCLUDE_AUDIO_PRODUCTION_CODE)
+	explicit CAbsoluteVelocityParameter(ParameterConnections const& connections)
+		: Control(AbsoluteVelocityParameterId, EDataScope::Global, s_szAbsoluteVelocityParameterName)
+		, m_connections(connections)
+	{}
+#else
+	explicit CAbsoluteVelocityParameter(ParameterConnections const& connections)
+		: Control(AbsoluteVelocityParameterId, EDataScope::Global)
+		, m_connections(connections)
+	{}
+#endif // INCLUDE_AUDIO_PRODUCTION_CODE
+
+	~CAbsoluteVelocityParameter();
+
+	void Set(CATLAudioObject const& object, float const value) const;
+
+private:
+
+	ParameterConnections const m_connections;
+};
+
+class CRelativeVelocityParameter final : public Control
+{
+public:
+
+	CRelativeVelocityParameter() = delete;
+	CRelativeVelocityParameter(CRelativeVelocityParameter const&) = delete;
+	CRelativeVelocityParameter(CRelativeVelocityParameter&&) = delete;
+	CRelativeVelocityParameter& operator=(CRelativeVelocityParameter const&) = delete;
+	CRelativeVelocityParameter& operator=(CRelativeVelocityParameter&&) = delete;
+
+#if defined(INCLUDE_AUDIO_PRODUCTION_CODE)
+	explicit CRelativeVelocityParameter(ParameterConnections const& connections)
+		: Control(RelativeVelocityParameterId, EDataScope::Global, s_szRelativeVelocityParameterName)
+		, m_connections(connections)
+	{}
+#else
+	explicit CRelativeVelocityParameter(ParameterConnections const& connections)
+		: Control(RelativeVelocityParameterId, EDataScope::Global)
+		, m_connections(connections)
+	{}
+#endif // INCLUDE_AUDIO_PRODUCTION_CODE
+
+	~CRelativeVelocityParameter();
+
+	void Set(CATLAudioObject const& object, float const value) const;
+
+private:
+
+	ParameterConnections const m_connections;
 };
 
 class IAudioSwitchStateImpl : public CATLControlImpl
@@ -236,6 +574,7 @@ class IAudioSwitchStateImpl : public CATLControlImpl
 public:
 
 	virtual ~IAudioSwitchStateImpl() = default;
+
 	virtual void Set(CATLAudioObject& audioObject) const = 0;
 };
 
@@ -264,6 +603,24 @@ public:
 
 	using ImplPtrVec = std::vector<IAudioSwitchStateImpl const*>;
 
+	CATLSwitchState() = delete;
+	CATLSwitchState(CATLSwitchState const&) = delete;
+	CATLSwitchState(CATLSwitchState&&) = delete;
+	CATLSwitchState& operator=(CATLSwitchState const&) = delete;
+	CATLSwitchState& operator=(CATLSwitchState&&) = delete;
+
+#if defined(INCLUDE_AUDIO_PRODUCTION_CODE)
+	explicit CATLSwitchState(
+		ControlId const audioSwitchId,
+		SwitchStateId const audioSwitchStateId,
+		ImplPtrVec const& implPtrs,
+		char const* const szName)
+		: m_audioSwitchStateId(audioSwitchStateId)
+		, m_audioSwitchId(audioSwitchId)
+		, m_implPtrs(implPtrs)
+		, m_name(szName)
+	{}
+#else
 	explicit CATLSwitchState(
 		ControlId const audioSwitchId,
 		SwitchStateId const audioSwitchStateId,
@@ -272,34 +629,40 @@ public:
 		, m_audioSwitchId(audioSwitchId)
 		, m_implPtrs(implPtrs)
 	{}
+#endif // INCLUDE_AUDIO_PRODUCTION_CODE
 
-	CATLSwitchState(CATLSwitchState const&) = delete;
-	CATLSwitchState(CATLSwitchState&&) = delete;
-	CATLSwitchState& operator=(CATLSwitchState const&) = delete;
-	CATLSwitchState& operator=(CATLSwitchState&&) = delete;
-
-	SwitchStateId    GetId() const       { return m_audioSwitchStateId; }
-	SwitchStateId    GetParentId() const { return m_audioSwitchId; }
-
-	ImplPtrVec const m_implPtrs;
+	SwitchStateId GetId() const       { return m_audioSwitchStateId; }
+	SwitchStateId GetParentId() const { return m_audioSwitchId; }
 
 #if defined(INCLUDE_AUDIO_PRODUCTION_CODE)
-	CryFixedStringT<MaxControlNameLength> m_name;
+	char const* GetName() const { return m_name.c_str(); }
 #endif // INCLUDE_AUDIO_PRODUCTION_CODE
+
+	ImplPtrVec const m_implPtrs;
 
 private:
 
 	SwitchStateId const m_audioSwitchStateId;
 	ControlId const     m_audioSwitchId;
+
+#if defined(INCLUDE_AUDIO_PRODUCTION_CODE)
+	CryFixedStringT<MaxControlNameLength> const m_name;
+#endif // INCLUDE_AUDIO_PRODUCTION_CODE
 };
 
-class CATLSwitch final : public ATLControl
+class CATLSwitch final : public Control
 {
 public:
 
-	explicit CATLSwitch(ControlId const audioSwitchId, EDataScope const dataScope)
-		: ATLControl(audioSwitchId, dataScope)
+#if defined(INCLUDE_AUDIO_PRODUCTION_CODE)
+	explicit CATLSwitch(ControlId const audioSwitchId, EDataScope const dataScope, char const* const szName)
+		: Control(audioSwitchId, dataScope, szName)
 	{}
+#else
+	explicit CATLSwitch(ControlId const audioSwitchId, EDataScope const dataScope)
+		: Control(audioSwitchId, dataScope)
+	{}
+#endif // INCLUDE_AUDIO_PRODUCTION_CODE
 
 	using AudioStates = std::map<SwitchStateId, CATLSwitchState const*>;
 	AudioStates audioSwitchStates;
@@ -324,10 +687,17 @@ public:
 
 	using ImplPtrVec = std::vector<CATLEnvironmentImpl const*>;
 
+#if defined(INCLUDE_AUDIO_PRODUCTION_CODE)
+	explicit CATLAudioEnvironment(EnvironmentId const audioEnvironmentId, EDataScope const dataScope, ImplPtrVec const& implPtrs, char const* const szName)
+		: CATLEntity<EnvironmentId>(audioEnvironmentId, dataScope, szName)
+		, m_implPtrs(implPtrs)
+	{}
+#else
 	explicit CATLAudioEnvironment(EnvironmentId const audioEnvironmentId, EDataScope const dataScope, ImplPtrVec const& implPtrs)
 		: CATLEntity<EnvironmentId>(audioEnvironmentId, dataScope)
 		, m_implPtrs(implPtrs)
 	{}
+#endif // INCLUDE_AUDIO_PRODUCTION_CODE
 
 	ImplPtrVec const m_implPtrs;
 };
@@ -345,15 +715,11 @@ public:
 	EAudioStandaloneFileState m_state = EAudioStandaloneFileState::None;
 	CHashedString             m_hashedFilename;
 
-	// These variables are only needed when switching middleware
+	// Needed only during middleware switch.
 #if defined(INCLUDE_AUDIO_PRODUCTION_CODE)
-	bool                  m_bLocalized = true;
-	void*                 m_pOwner = nullptr;
-	void*                 m_pUserData = nullptr;
-	void*                 m_pUserDataOwner = nullptr;
-	Impl::ITrigger const* m_pITrigger = nullptr;
+	ControlId m_triggerId = InvalidControlId;
+	bool      m_isLocalized = true;
 #endif // INCLUDE_AUDIO_PRODUCTION_CODE
-
 };
 
 class CATLEvent final : public CPoolObject<CATLEvent, stl::PSyncNone>
@@ -362,23 +728,46 @@ public:
 
 	CATLEvent() = default;
 
-	void Release();
-	void Stop();
-	void SetDataScope(EDataScope const dataScope) { m_dataScope = dataScope; }
-	bool IsPlaying() const                        { return m_state == EEventState::Playing || m_state == EEventState::PlayingDelayed; }
+	void      Release();
+	void      Stop();
+	void      SetDataScope(EDataScope const dataScope) { m_dataScope = dataScope; }
+	bool      IsPlaying() const                        { return m_state == EEventState::Playing || m_state == EEventState::PlayingDelayed; }
+	void      SetTriggerId(ControlId const id)         { m_triggerId = id; }
+	ControlId GetTriggerId() const                     { return m_triggerId; }
+	void      SetTriggerRadius(float const radius)     { m_triggerRadius = radius; }
+	float     GetTriggerRadius() const                 { return m_triggerRadius; }
 
-	EDataScope         m_dataScope = EDataScope::None;
-	CATLAudioObject*   m_pAudioObject = nullptr;
-	CATLTrigger const* m_pTrigger = nullptr;
-	TriggerImplId      m_audioTriggerImplId = InvalidTriggerImplId;
-	TriggerInstanceId  m_audioTriggerInstanceId = InvalidTriggerInstanceId;
-	EEventState        m_state = EEventState::None;
-	Impl::IEvent*      m_pImplData = nullptr;
+#if defined(INCLUDE_AUDIO_PRODUCTION_CODE)
+	void              SetTriggerName(char const* const szTriggerName) { m_szTriggerName = szTriggerName; }
+	char const* const GetTriggerName() const                          { return m_szTriggerName; }
+#endif // INCLUDE_AUDIO_PRODUCTION_CODE
+
+	EDataScope        m_dataScope = EDataScope::None;
+	CATLAudioObject*  m_pAudioObject = nullptr;
+	TriggerImplId     m_audioTriggerImplId = InvalidTriggerImplId;
+	TriggerInstanceId m_audioTriggerInstanceId = InvalidTriggerInstanceId;
+	EEventState       m_state = EEventState::None;
+	Impl::IEvent*     m_pImplData = nullptr;
+
+private:
+
+	ControlId m_triggerId = InvalidControlId;
+	float     m_triggerRadius = 0.0f;
+
+#if defined(INCLUDE_AUDIO_PRODUCTION_CODE)
+	char const* m_szTriggerName = nullptr;
+#endif // INCLUDE_AUDIO_PRODUCTION_CODE
 };
 
 class CATLAudioFileEntry final
 {
 public:
+
+	CATLAudioFileEntry() = delete;
+	CATLAudioFileEntry(CATLAudioFileEntry const&) = delete;
+	CATLAudioFileEntry(CATLAudioFileEntry&&) = delete;
+	CATLAudioFileEntry& operator=(CATLAudioFileEntry const&) = delete;
+	CATLAudioFileEntry& operator=(CATLAudioFileEntry&&) = delete;
 
 	explicit CATLAudioFileEntry(char const* const szPath = nullptr, Impl::IFile* const pImplData = nullptr)
 		: m_path(szPath)
@@ -396,11 +785,6 @@ public:
 		m_timeCached.SetValue(0);
 #endif // INCLUDE_AUDIO_PRODUCTION_CODE
 	}
-
-	CATLAudioFileEntry(CATLAudioFileEntry const&) = delete;
-	CATLAudioFileEntry(CATLAudioFileEntry&&) = delete;
-	CATLAudioFileEntry& operator=(CATLAudioFileEntry const&) = delete;
-	CATLAudioFileEntry& operator=(CATLAudioFileEntry&&) = delete;
 
 	CryFixedStringT<MaxFilePathLength> m_path;
 	size_t                             m_size;
@@ -424,6 +808,18 @@ public:
 
 	using FileEntryIds = std::vector<FileEntryId>;
 
+#if defined(INCLUDE_AUDIO_PRODUCTION_CODE)
+	explicit CATLPreloadRequest(
+		PreloadRequestId const audioPreloadRequestId,
+		EDataScope const dataScope,
+		bool const bAutoLoad,
+		FileEntryIds const& fileEntryIds,
+		char const* const szName)
+		: CATLEntity<PreloadRequestId>(audioPreloadRequestId, dataScope, szName)
+		, m_bAutoLoad(bAutoLoad)
+		, m_fileEntryIds(fileEntryIds)
+	{}
+#else
 	explicit CATLPreloadRequest(
 		PreloadRequestId const audioPreloadRequestId,
 		EDataScope const dataScope,
@@ -433,6 +829,7 @@ public:
 		, m_bAutoLoad(bAutoLoad)
 		, m_fileEntryIds(fileEntryIds)
 	{}
+#endif // INCLUDE_AUDIO_PRODUCTION_CODE
 
 	bool const   m_bAutoLoad;
 	FileEntryIds m_fileEntryIds;

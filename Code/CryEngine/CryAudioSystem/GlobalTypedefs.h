@@ -6,13 +6,13 @@
 
 namespace CryAudio
 {
-class CATLTrigger;
+class CTrigger;
 class CParameter;
 class CATLSwitch;
 class CATLPreloadRequest;
 class CATLAudioEnvironment;
 
-using AudioTriggerLookup = std::map<ControlId, CATLTrigger const*>;
+using AudioTriggerLookup = std::map<ControlId, CTrigger const*>;
 using AudioParameterLookup = std::map<ControlId, CParameter const*>;
 using AudioSwitchLookup = std::map<ControlId, CATLSwitch const*>;
 using AudioPreloadRequestLookup = std::map<PreloadRequestId, CATLPreloadRequest*>;
