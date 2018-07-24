@@ -88,26 +88,64 @@ static void SetModulePath(const char* pModulePath)
 
 static HMODULE CryLoadLibrary(const char* libName, bool bLazy = false, bool bInModulePath = true)
 {
+	if (strlen(libName) == 0)
+	{
+		return NULL;
+	}
+
 	char finalPath[_MAX_PATH] = {};
 	CRY_ASSERT(strlen(libName) > CRY_ARRAY_COUNT(CrySharedLibraryPrefix));
 	CRY_ASSERT(strlen(libName) > CRY_ARRAY_COUNT(CrySharedLibraryExtension));
-	
+
+	const char* filePre = cry_strncmp(libName, CrySharedLibraryPrefix) != 0 ? CrySharedLibraryPrefix : "";
+	const char* fileExt = cry_strncmp(libName + strlen(libName) - (CRY_ARRAY_COUNT(CrySharedLibraryExtension) - 1), CrySharedLibraryExtension) != 0 ? CrySharedLibraryExtension : "";
+
 #if CRY_PLATFORM_ANDROID
-	const char* libPath = bInModulePath ? (CryGetSharedLibraryStoragePath() ? CryGetSharedLibraryStoragePath() : ".") : "";
+	// 1) Load dll via Java -> ensure JNI_OnLoad is called and all native exported functions are exposed to java
+	// Need to be called first to ensure JNI_OnLoad() is called the first time we load the library
+	if (Cry::JNI::JNI_IsAvailable())
+	{
+		// Call library via Java so we invoke JNI_OnLoad and load the library symbols into the global space
+		// Note: Also call dlopen(libName) so that we can get the handle ... the library should have been loaded via the JNI_LoadLibrary() call already.
+		char strippedLibName[128] = {};
+		const int lenFilePre = strlen(filePre) == 0 ? CRY_ARRAY_COUNT(CrySharedLibraryPrefix) - 1 : 0;
+		const int lenFileExt = strlen(fileExt) == 0 ? CRY_ARRAY_COUNT(CrySharedLibraryExtension) - 2 : 0;
+		const char* strippedNameBegin = &libName[lenFilePre];
+		cry_sprintf(strippedLibName, strlen(strippedNameBegin) - lenFileExt, "%s", strippedNameBegin);
+
+		if (!Cry::JNI::JNI_LoadLibrary(strippedLibName))
+		{
+			return NULL;  // mimic dlopen() return for failed load
+		}
+	}
+
+	// 2) We need the handle to the dll for dlsym() so we need to load it again
+
+	// Since Android 7.0 (SDK 24) dlopen()  does not require the full path qualifier anymore
+	HMODULE dllHandle = ::dlopen(libName, bLazy ? RTLD_LAZY : RTLD_NOW);
+	if (dllHandle)
+	{
+		return dllHandle;
+	}
+
+	// 3) Pre-Android 7.0 (SDK 24)  dlopen() required a full path qualifier to the lib directory
+	// Note: Only works if the JAVA Vm has been setup via a JNI_OnLoad() call in this calling library.
+	const char* libPath = "";
+	if (Cry::JNI::JNI_IsAvailable())
+	{
+		libPath = CryGetSharedLibraryStoragePath();
+	}
 #else
 	const char* libPath = bInModulePath ? (GetModulePath() ? GetModulePath() : ".") : "";
 #endif	
 
-	const char* filePre = strncmp(libName, CrySharedLibraryPrefix, CRY_ARRAY_COUNT(CrySharedLibraryPrefix) - 1) != 0 ? CrySharedLibraryPrefix : "";
-	const char* fileExt = strcmp(libName + strlen(libName) - (CRY_ARRAY_COUNT(CrySharedLibraryExtension) - 1), CrySharedLibraryExtension) != 0 ? CrySharedLibraryExtension : "";
-
 	cry_sprintf(finalPath, "%s%s%s%s%s", libPath, libPath ? "/" : "", filePre, libName, fileExt);
 
-	#if CRY_PLATFORM_LINUX
+#if CRY_PLATFORM_LINUX
 	return ::dlopen(finalPath, (bLazy ? RTLD_LAZY : RTLD_NOW) | RTLD_DEEPBIND);
-	#else
+#else
 	return ::dlopen(finalPath, bLazy ? RTLD_LAZY : RTLD_NOW);
-	#endif
+#endif	
 }
 #else
 	#define CrySharedLibrarySupported false

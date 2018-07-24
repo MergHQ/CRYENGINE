@@ -48,22 +48,6 @@ def module_extensions_sdl2(ctx, kw, entry_prefix, platform, configuration):
 	if not platform  == 'project_generator':
 		kw[entry_prefix + 'features'] += [ 'copy_sdl2_binaries' ]
 
-@module_extension('sdl2_ext')
-def module_extensions_sdl2_ext(ctx, kw, entry_prefix, platform, configuration):
-
-	if platform == 'android_arm':
-		kw[entry_prefix + 'includes'] += [ ctx.CreateRootRelativePath('Code/Tools/SDLExtension/src/include') ]
-		kw[entry_prefix + 'lib']      += [ 'SDL2Ext' ]
-		kw[entry_prefix + 'libpath']  += [ ctx.CreateRootRelativePath('Code/Tools/SDLExtension/lib/android-armeabi-v7a') ]
-
-	if platform == 'android_arm64':
-		kw[entry_prefix + 'includes'] += [ ctx.CreateRootRelativePath('Code/Tools/SDLExtension/src/include') ]
-		kw[entry_prefix + 'lib']      += [ 'SDL2Ext' ]
-		kw[entry_prefix + 'libpath']  += [ ctx.CreateRootRelativePath('Code/Tools/SDLExtension/lib/android-arm64-v8a') ]
-
-	else:
-		return		
-
 @feature('copy_sdl2_binaries')
 @run_once
 def feature_copy_sdl2_binaries(self):

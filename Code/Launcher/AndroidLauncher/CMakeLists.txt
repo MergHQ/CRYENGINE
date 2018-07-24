@@ -23,19 +23,13 @@ set( SOURCE_FILES_JAVA
 source_group("Java Files" FILES ${SOURCE_FILES_JAVA})
 
 if(ANDROID)
-	set( SOURCE_FILES_SDLEXT
-		${CRYENGINE_DIR}/Code/Tools/SDLExtension/src/jni/SDLExt_android.c
-		${CRYENGINE_DIR}/Code/Tools/SDLExtension/src/jni/SDLExt_android_init.c
-	)
-	source_group("SDL Extension" FILES ${SOURCE_FILES_SDLEXT})
 
 	set( CFilesForAndroidLauncher_SOURCES
 		${SOURCE_FILES_C}
-		${SOURCE_FILES_SDLEXT}
 	)
 	# All .c files will be compiled by a dedicated static library because CMake with Nvidia Nsight does not support mixing C/C++ in one project
 	#CryEngineStaticModule(CFilesForAndroidLauncher SOLUTION_FOLDER "Launcher")
-	#target_link_libraries(${THIS_PROJECT} PRIVATE SDL2 SDLExt)
+	#target_link_libraries(${THIS_PROJECT} PRIVATE SDL2)
 	add_library(CFilesForAndroidLauncher OBJECT ${CFilesForAndroidLauncher_SOURCES})
 	
 	set( AndroidLauncher_SOURCES
@@ -43,8 +37,7 @@ if(ANDROID)
 		${SOURCE_FILES_JAVA}
 	)
 
-	set_source_files_properties(${SOURCE_FILES_SDLEXT} PROPERTIES HEADER_FILE_ONLY true)
-	target_include_directories(CFilesForAndroidLauncher PRIVATE "${SDK_DIR}/SDL2/android/include" "${CRYENGINE_DIR}/Code/Tools/SDLExtension/src/include")
+	target_include_directories(CFilesForAndroidLauncher PRIVATE "${SDK_DIR}/SDL2/android/include")
 	target_compile_definitions(CFilesForAndroidLauncher PRIVATE USE_SDL2)
 	
 	#CryLauncher(AndroidLauncher SOLUTION_FOLDER Launcher)
@@ -87,7 +80,6 @@ if(ANDROID)
 	
 	target_link_libraries(${THIS_PROJECT} PRIVATE m log c android)
 	target_link_libraries(${THIS_PROJECT} PRIVATE SDL2)
-	target_link_libraries(${THIS_PROJECT} PRIVATE SDLExt)
 
 	if(${CMAKE_GENERATOR} MATCHES "Visual Studio")
 		# HACK: Bypass incorrect handling of linker flags in Nvidia NSight Tegra MSBuild toolchain

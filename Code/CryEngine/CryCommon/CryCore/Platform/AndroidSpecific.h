@@ -115,79 +115,16 @@ extern int wcsnicmp(const wchar_t* s1, const wchar_t* s2, size_t count);
 	#define fprintf(...) (void) 0
 #endif
 
+#include "AndroidJNI.h"
 
-////////////////////////////////////////
-// TEMPORARY HARDCODED PATHS
-// Could be pulled into CryCommon
-////////////////////////////////////////
-
-#include <cstdio>
 // Returns path to CRYENGINE and Crytek provided 3rd Party shared libraries 
-inline const char* CryGetSharedLibraryStoragePath()
-{
-	// 1) Try do get storage path via SDLExt from self
-	typedef const char* CB_SDLExt_GetSharedLibDirectory();
-	void* pFunc = ::dlsym(RTLD_DEFAULT, "SDLExt_GetSharedLibDirectory");
-	if (pFunc)
-		return ((CB_SDLExt_GetSharedLibDirectory*)(pFunc))();
-
-	// 2) Try to brute force find storage path (arm64-v8a) layout
-	static char tempPath[512] = "";
-	for (int i = 0; i < 10; i++)
-	{
-		sprintf(tempPath, "%s%i%s", "/data/app/com.crytek.cryengine-", i, "/lib/arm64");
-
-		// Does directory exist
-		struct stat info;
-		if (stat(tempPath, &info) == 0 && (info.st_mode & S_IFMT) == S_IFDIR)
-		{
-			return tempPath;
-		}
-	}
-
-	// 3) Try to brute force find storage path (arm-v7a) layout
-	struct stat info;
-	if (stat("/data/data/com.crytek.cryengine/lib", &info) == 0 && (info.st_mode & S_IFMT) == S_IFDIR)
-	{
-		return tempPath;
-	}
-
-	return "";
-}
+const char* CryGetSharedLibraryStoragePath();
 
 // Get path to user folder
-inline const char* CryGetUserStoragePath()
-{
-	// Could be JNI
-	return "/data/user/0/com.crytek.cryengine/files";
-}
+const char* CryGetUserStoragePath();
 
 // Get path to project root. i.e. assets are stored in a sub folder here
-inline const char* CryGetProjectStoragePath()
-{
-	// Could be JNI
-	return "/storage/emulated/0";
-}
+const char* CryGetProjectStoragePath();
 
-#include <dlfcn.h>
 // Returns a handle to the launcher
-inline void* CryGetLauncherModuleHandle()
-{
-	// Calling dlopen(NULL, RTLD_LAZY):
-	//   Native App: [might work]   
-	//   Java App: [doesn't work]: Java -> Native e.g. via SDL2: ::dlopen(NULL, RTLD_LAZY) does not return handle of launcher but of process that loaded the launcher's .so file
-
-	// TO DO:
-	// Could use JNI callback to activity which loaded the launcher .so file so the name does not need to be hardcoded
-
-	char tempPath[1024] = "";
-	sprintf(tempPath, "%s%s", CryGetSharedLibraryStoragePath(), "/libAndroidLauncher.so");
-	static void* hLauncherModule = ::dlopen(tempPath, RTLD_LAZY);
-	return hLauncherModule;
-
-	// On Linux
-	//return ::dlopen(NULL, RTLD_LAZY);
-
-	// On Windows
-	//GetModuleHandle(0)
-}
+void* CryGetLauncherModuleHandle();
