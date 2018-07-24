@@ -235,24 +235,28 @@ void CCompiledRenderObject::CompilePerDrawCB(CRenderObject* pRenderObject)
 				dissolve
 			);
 
+		// Fill terrain texture info if present
+		SSectorTextureSet TerrainSectorTextureInfo;
+		float RenderObjMaxViewDistance = 0.0f;
 		if (SRenderObjData* pOD = pRenderObject->GetObjData())
 		{
-			SSectorTextureSet TerrainSectorTextureInfo;
 			if (pOD->m_pTerrainSectorTextureInfo)
 				TerrainSectorTextureInfo = *pOD->m_pTerrainSectorTextureInfo;
-
-			// Fill terrain texture info if present
-			cb->CD_BlendTerrainColInfo[0] = pRenderObject->m_data.m_pTerrainSectorTextureInfo->fTexOffsetX;
-			cb->CD_BlendTerrainColInfo[1] = pRenderObject->m_data.m_pTerrainSectorTextureInfo->fTexOffsetY;
-			cb->CD_BlendTerrainColInfo[2] = pRenderObject->m_data.m_pTerrainSectorTextureInfo->fTexScale;
-			cb->CD_BlendTerrainColInfo[3] = pRenderObject->m_data.m_fMaxViewDistance; // Obj view max distance
+			
+			RenderObjMaxViewDistance = pOD->m_fMaxViewDistance; // Obj view max distance
 		}
+		cb->CD_BlendTerrainColInfo[0] = TerrainSectorTextureInfo.fTexOffsetX;
+		cb->CD_BlendTerrainColInfo[1] = TerrainSectorTextureInfo.fTexOffsetY;
+		cb->CD_BlendTerrainColInfo[2] = TerrainSectorTextureInfo.fTexScale;
+		cb->CD_BlendTerrainColInfo[3] = RenderObjMaxViewDistance;
 
 		// Fill terrain layer info if present
+		Matrix44f TerrainLayerInfo = Matrix44f(ZERO);
 		if (float* pData = (float*)m_pRenderElement->m_CustomData)
 		{
-			cb->CD_TerrainLayerInfo = *(Matrix44f*)pData;
+			TerrainLayerInfo = *(Matrix44f*)pData;
 		}
+		cb->CD_TerrainLayerInfo = TerrainLayerInfo;
 
 		cb->CD_CustomData1 = silhouetteColor;
 		cb->CD_CustomData2.x = alias_cast<float>(pRenderObject->m_editorSelectionID);
