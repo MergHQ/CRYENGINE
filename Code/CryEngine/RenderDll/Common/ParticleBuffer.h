@@ -24,7 +24,7 @@ public:
 	byte*   Lock();
 	void    Unlock(uint32 size);
 
-	const CGpuBuffer&         GetBuffer() const { return m_buffer; }
+	const CGpuBuffer*         GetBuffer() const { return &m_buffer; }
 	const CDeviceInputStream* GetStream() const { return m_stream; }
 
 private:
@@ -119,17 +119,19 @@ private:
 	}
 
 	template <typename Buffer>
-	const CGpuBuffer& GetGpuBuffer(Buffer &buffer, int frameId) const
+	const CGpuBuffer* GetGpuBuffer(Buffer &buffer, int frameId) const
 	{
 		const uint bindId = frameId % CREParticle::numBuffers;
-		CRY_ASSERT_MESSAGE(!buffer.m_pMemoryBase[bindId], "Cannot use buffer that wasn't unlocked.");
+		if (buffer.m_pMemoryBase[bindId])
+			return nullptr; // Cannot use buffer that wasn't unlocked
 		return buffer.m_buffers[bindId].GetBuffer();
 	}
 	template <typename Buffer>
 	const CDeviceInputStream* GetStreamBuffer(Buffer &buffer, int frameId) const
 	{
 		const uint bindId = frameId % CREParticle::numBuffers;
-		CRY_ASSERT_MESSAGE(!buffer.m_pMemoryBase[bindId], "Cannot use buffer that wasn't unlocked.");
+		if (buffer.m_pMemoryBase[bindId])
+			return nullptr; // Cannot use buffer that wasn't unlocked
 		return buffer.m_buffers[bindId].GetStream();
 	}
 
@@ -170,9 +172,9 @@ public:
 	SAllocStreams AllocStreams(uint index, uint numElems);
 
 	inline const CDeviceInputStream* GetSpriteIndexBuffer() const         { return m_spriteIndexBufferStream; }
-	inline const CGpuBuffer&         GetPositionStream(int frameId) const { return GetGpuBuffer(m_subBufferPositions, frameId); }
-	inline const CGpuBuffer&         GetAxesStream(int frameId) const     { return GetGpuBuffer(m_subBufferAxes, frameId); }
-	inline const CGpuBuffer&         GetColorSTsStream(int frameId) const { return GetGpuBuffer(m_subBufferColors, frameId); }
+	inline const CGpuBuffer*         GetPositionStream(int frameId) const { return GetGpuBuffer(m_subBufferPositions, frameId); }
+	inline const CGpuBuffer*         GetAxesStream(int frameId) const     { return GetGpuBuffer(m_subBufferAxes, frameId); }
+	inline const CGpuBuffer*         GetColorSTsStream(int frameId) const { return GetGpuBuffer(m_subBufferColors, frameId); }
 	inline const CDeviceInputStream* GetVertexStream(int frameId) const   { return GetStreamBuffer(m_subBufferVertices, frameId); }
 	inline const CDeviceInputStream* GetIndexStream(int frameId) const    { return GetStreamBuffer(m_subBufferIndices, frameId); }
 

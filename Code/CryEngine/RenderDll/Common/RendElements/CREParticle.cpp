@@ -835,9 +835,14 @@ void CREParticle::DrawParticlesLegacy(CRenderObject* pRenderObject, CDeviceGraph
 	const bool isOctagonal = (pRenderObject->m_ObjFlags & FOB_OCTAGONAL) != 0;
 	const bool isVolumeFog = (pRenderObject->m_ParticleObjFlags & CREParticle::ePOF_VOLUME_FOG) != 0;
 	const bool isTessellated = !isVolumeFog && (pRenderObject->m_ObjFlags & FOB_ALLOW_TESSELLATION) != 0;
-	
-	commandInterface.SetVertexBuffers(1, 0, particleBuffer.GetVertexStream(frameId));
-	commandInterface.SetIndexBuffer(particleBuffer.GetIndexStream(frameId));
+
+	const auto vertexStream = particleBuffer.GetVertexStream(frameId);
+	const auto indexStream = particleBuffer.GetIndexStream(frameId);
+	if (!indexStream || !vertexStream)
+		return;
+
+	commandInterface.SetVertexBuffers(1, 0, vertexStream);
+	commandInterface.SetIndexBuffer(indexStream);
 
 	const uint numVertices = m_RenderVerts.aVertices.size();
 	const uint numIndices = m_RenderVerts.aIndices.size();
