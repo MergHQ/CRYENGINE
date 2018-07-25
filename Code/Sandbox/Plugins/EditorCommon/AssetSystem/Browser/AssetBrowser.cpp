@@ -1888,7 +1888,7 @@ void CAssetBrowser::AppendFilterDependenciesActions(CAbstractMenu* pAbstractMenu
 	for (Attributes::IAttributeFilterOperator* pOperator : dependencyOperators)
 	{
 		QAction* pAction = pAbstractMenu->CreateAction(QString("%1 %2 '%3'").arg(tr("Show Assets"), pOperator->GetName(), pAsset->GetName()));
-		connect(pAction, &QAction::triggered, [this, pOperator, pAsset]()
+		connect(pAction, &QAction::triggered, [pOperator, pAsset]()
 		{
 			CAssetBrowser* const pAssetBrowser = static_cast<CAssetBrowser*>(GetIEditor()->CreateDockable("Asset Browser"));
 			if (pAssetBrowser)

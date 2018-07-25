@@ -60,7 +60,8 @@
 #define APPLICATION_USER_DIRECTORY      "/CryEngine"
 #define APPLICATION_USER_STATE_FILENAME "EditorState.json"
 
-namespace CryParticleEditor {
+namespace CryParticleEditor 
+{
 
 static const char* const s_szEffectAssetName = "Effect";
 static const char* const s_szCurveEditorPanelName = "Curve Editor";
@@ -79,7 +80,6 @@ static CCurveEditorPanel* CreateCurveEditorPanel(QWidget* pParent = nullptr)
 	return pCurveEditorPanel;
 }
 
-///////////////////////////////////////////////////////////////////////
 CParticleEditor::CParticleEditor()
 	: CAssetEditor("Particles")
 	, m_pEffectAssetModel(new CEffectAssetModel())
@@ -94,7 +94,6 @@ CParticleEditor::CParticleEditor()
 	InitMenu();
 	InitToolbar(pMainLayout);
 
-	// cppcheck-suppress leakReturnValNotUsed
 	RegisterDockingWidgets();
 }
 
@@ -177,12 +176,14 @@ void CParticleEditor::InitToolbar(QVBoxLayout* pWindowLayout)
 		ADD_BUTTON(OnShowEffectOptions, "Show Effect Options", 0, "icons:General/Options.ico")
 
 		pToolBarsLayout->addWidget(pToolBar, 0, Qt::AlignLeft);
-		QSpacerItem* pSpacer = new QSpacerItem(20, 0, QSizePolicy::Expanding, QSizePolicy::Minimum);
-		pToolBarsLayout->addSpacerItem(pSpacer);
-
 		m_pEffectToolBar = pToolBar;
 		m_pEffectToolBar->hide();
 	}
+
+	// Add instant editing button
+	QSpacerItem* pSpacer = new QSpacerItem(20, 0, QSizePolicy::Expanding, QSizePolicy::Minimum);
+	pToolBarsLayout->addSpacerItem(pSpacer);
+	pToolBarsLayout->addWidget(CreateLockButton(), 0, Qt::AlignRight);
 
 	pWindowLayout->addLayout(pToolBarsLayout);
 }
@@ -203,7 +204,7 @@ void CParticleEditor::RegisterDockingWidgets()
 
 CEffectAssetWidget* CParticleEditor::CreateEffectAssetWidget()
 {
-	CEffectAssetWidget* const pEffectAssetWidget = new CEffectAssetWidget(m_pEffectAssetModel, this);
+	CEffectAssetWidget* const pEffectAssetWidget = new CEffectAssetWidget(m_pEffectAssetModel.get(), this);
 	return pEffectAssetWidget;
 }
 
@@ -252,22 +253,33 @@ bool CParticleEditor::OnOpenAsset(CAsset* pAsset)
 
 bool CParticleEditor::OnSaveAsset(CEditableAsset& editAsset)
 {
-	SaveEffect(editAsset);
-
-	return true;
+	return GetAssetBeingEdited()->GetEditingSession()->OnSaveAsset(editAsset);
 }
 
-void CParticleEditor::OnDiscardAssetChanges()
+void CParticleEditor::OnDiscardAssetChanges(CEditableAsset& editAsset)
 {
-	// Reload from file
-	if (auto* pAffectAsset = m_pEffectAssetModel->GetEffectAsset())
-		if (auto* pAsset = pAffectAsset->GetAsset())
-			m_pEffectAssetModel->OpenAsset(pAsset);
+	CRY_ASSERT(GetAssetBeingEdited());
+	CRY_ASSERT(GetAssetBeingEdited()->GetEditingSession());
+
+	CAsset* const pAsset = GetAssetBeingEdited();
+	OnCloseAsset();
+	GetAssetBeingEdited()->GetEditingSession()->DiscardChanges(editAsset);
+	OnOpenAsset(pAsset);
 }
 
 void CParticleEditor::OnCloseAsset()
 {
 	m_pEffectAssetModel->ClearAsset();
+}
+
+std::unique_ptr<IAssetEditingSession> CParticleEditor::CreateEditingSession()
+{
+	if (!m_pEffectAssetModel)
+	{
+		return nullptr;
+	}
+
+	return m_pEffectAssetModel->CreateEditingSession();
 }
 
 bool LoadFile(std::vector<char>& content, const char* filename)
@@ -299,7 +311,7 @@ bool CParticleEditor::OnAboutToCloseAsset(string& reason) const
 	Serialization::SaveJsonBuffer(newPfx, *pEffect);
 
 	std::vector<char> oldPfx;
-	if (!LoadFile(oldPfx, pEffectAsset->GetAsset()->GetFile(0)))
+	if (!LoadFile(oldPfx, GetAssetBeingEdited()->GetFile(0)))
 	{
 		return true;
 	}
@@ -364,81 +376,20 @@ bool CParticleEditor::AssetSaveDialog(string* pOutputName)
 	return false;
 }
 
-///////////////////////////////////////////////////////////////////////
-// Actions
-
-void CParticleEditor::SaveEffect(CEditableAsset& editAsset)
-{
-	CEffectAsset* const pEffectAsset = m_pEffectAssetModel->GetEffectAsset();
-	if (!pEffectAsset)
-	{
-		return;
-	}
-
-	CRY_ASSERT(pEffectAsset->GetAsset() && pEffectAsset->GetAsset()->GetFilesCount());
-
-	const string basePath = PathUtil::RemoveExtension(PathUtil::RemoveExtension(editAsset.GetAsset().GetMetadataFile()));
-	const string pfxFilePath = PathUtil::ReplaceExtension(basePath, "pfx"); // Relative to asset directory.
-
-	pfx2::IParticleEffectPfx2* pEffect = pEffectAsset->GetEffect();
-	Serialization::SaveJsonFile(pfxFilePath.c_str(), *pEffect);
-
-	// Get effect dependency
-	{
-		std::vector<SAssetDependencyInfo> dependencies;
-		for (size_t component = 0, componentsCount = pEffect->GetNumComponents(); component < componentsCount; ++component)
-		{
-			const pfx2::IParticleComponent* pComponent = pEffect->GetComponent(component);
-			for (size_t feature = 0, featuresCount = pComponent->GetNumFeatures(); feature < featuresCount; ++feature)
-			{
-				const pfx2::IParticleFeature* pFeature = pComponent->GetFeature(feature);
-				for (size_t resource = 0, resourcesCount = pFeature->GetNumResources(); resource < resourcesCount; ++resource)
-				{
-					const char* szResourceFilename = pFeature->GetResourceName(resource);
-					auto it = std::find_if(dependencies.begin(), dependencies.end(), [szResourceFilename](const auto& x)
-					{
-						return x.path.CompareNoCase(szResourceFilename);
-					});
-
-					if (it == dependencies.end())
-					{
-						dependencies.emplace_back(szResourceFilename, 1);
-					}
-					else // increment instance count
-					{
-						++(it->usageCount);
-					}
-				}
-			}
-		}
-		editAsset.SetDependencies(dependencies);
-	}
-
-	editAsset.SetFiles({ pfxFilePath });
-}
-
 void CParticleEditor::OnReloadEffect()
 {
-	if (!m_pEffectAssetModel->GetEffectAsset())
+	CAsset* const pAsset = GetAssetBeingEdited();
+	if (!pAsset)
 	{
 		return;
 	}
 
-	CEffectAsset* const pEffectAsset = m_pEffectAssetModel->GetEffectAsset();
+	const char* szFxFilePath = pAsset->GetFile(0);
 
-	CAsset* const pAsset = pEffectAsset->GetAsset();
-	CRY_ASSERT(pAsset && pAsset->GetFilesCount());
-
-	const string pfxFilePath = pAsset->GetFile(0);
-
-	const QString questionText = QString("Reload effect ") + pfxFilePath + " and lose all changes?";
-	if (CQuestionDialog::SQuestion("Revert Effect", questionText) == QDialogButtonBox::Yes)
+	const QString questionText = tr("Reload effect %1 and lose all changes?").arg(szFxFilePath);
+	if (CQuestionDialog::SQuestion(tr("Revert Effect"), questionText) == QDialogButtonBox::Yes)
 	{
-		pfx2::IParticleEffectPfx2* pEffect = pEffectAsset->GetEffect();
-		if (pAsset)
-		{
-			OpenAsset(pAsset);
-		}
+		DiscardAssetChanges();
 	}
 }
 
@@ -515,16 +466,17 @@ void CParticleEditor::OnApplyToSelectedEntity()
 {
 	const ISelectionGroup* pSelection = GetIEditor()->GetISelectionGroup();
 	if (0 == pSelection->GetCount())
-		return;
-
-	CEffectAsset* const pEffectAsset = m_pEffectAssetModel->GetEffectAsset();
-	if (!pEffectAsset)
 	{
 		return;
 	}
 
-	const CAsset* const pAsset = pEffectAsset->GetAsset();
-	CRY_ASSERT(pAsset && pAsset->GetFilesCount());
+	if (!GetAssetBeingEdited())
+	{
+		return;
+	}
+
+	const CAsset* const pAsset = GetAssetBeingEdited();
+	CRY_ASSERT(pAsset->GetFilesCount());
 
 	const string& effectName = pAsset->GetFile(0);
 
@@ -593,12 +545,20 @@ void CParticleEditor::OnShowEffectOptions()
 
 void CParticleEditor::OnEffectOptionsChanged()
 {
+	if (!GetAssetBeingEdited())
+	{
+		return;
+	}
+
 	CEffectAsset* const pEffectAsset = m_pEffectAssetModel->GetEffectAsset();
 	if (!pEffectAsset)
+	{
 		return;
+	}
+
 	pfx2::IParticleEffectPfx2* pEffect = pEffectAsset->GetEffect();
-	pEffectAsset->SetModified(true);
 	pEffect->SetChanged();
+	GetAssetBeingEdited()->SetModified(true);
 }
 
 }

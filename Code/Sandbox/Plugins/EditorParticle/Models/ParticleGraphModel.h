@@ -73,6 +73,10 @@ public:
 	void                             ToggleSoloNode(CNodeItem& node);
 	CNodeItem*                       GetSoloNode() const { return m_pSolorNode; }
 
+	void                             OnNodeItemChanged(CryGraphEditor::CAbstractNodeItem* pItem);
+
+	CCrySignal<void()> signalChanged;
+
 protected:
 	void       ExtractConnectionsFromNodes();
 
@@ -90,4 +94,3 @@ private:
 };
 
 }
-

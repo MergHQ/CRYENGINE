@@ -16,21 +16,19 @@ class CEffectAssetWidget : public QWidget
 	Q_OBJECT
 
 public:
-	CEffectAssetWidget(std::shared_ptr<CEffectAssetModel>& pEffectAssetModel, QWidget* pParent = nullptr);
+	CEffectAssetWidget(CEffectAssetModel* pEffectAssetModel, QWidget* pParent = nullptr);
 	~CEffectAssetWidget();
 
 	const pfx2::IParticleEffectPfx2* GetEffect() const;
-	pfx2::IParticleEffectPfx2* GetEffect();
-	const char*                GetName() const;
+	pfx2::IParticleEffectPfx2*       GetEffect();
+	const char*                      GetName() const;
 
-	void                       SetModified();
-	void                       OnDeleteSelected();
-	void                       CopyComponents();
-	void                       OnPasteComponent();
-	void                       OnNewComponent();
-	void                       OnOptionsChanged();
+	void                             OnDeleteSelected();
+	void                             CopyComponents();
+	void                             OnPasteComponent();
+	void                             OnNewComponent();
 
-	bool                       MakeNewComponent(const char* szTemplateName);
+	bool                             MakeNewComponent(const char* szTemplateName);
 
 protected:
 	// QWidget
@@ -42,10 +40,9 @@ private:
 	void OnEndEffectAssetChange();
 
 private:
-	std::shared_ptr<CEffectAssetModel> m_pEffectAssetModel;
-	CEffectAsset* m_pEffectAsset;
-	CryParticleEditor::CGraphView*                          m_pGraphView;
+	CEffectAssetModel*             m_pEffectAssetModel;
+	CEffectAsset*                  m_pEffectAsset;
+	CryParticleEditor::CGraphView* m_pGraphView;
 };
 
 }
-

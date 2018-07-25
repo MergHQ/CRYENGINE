@@ -8,11 +8,6 @@
 namespace CryParticleEditor
 {
 
-CEffectAsset::CEffectAsset()
-	: m_pAsset(nullptr)
-{
-}
-
 const char* CEffectAsset::GetName() const
 {
 	/*
@@ -24,16 +19,6 @@ const char* CEffectAsset::GetName() const
 	return "STUFF";
 }
 
-bool CEffectAsset::IsModified() const
-{
-	return m_pAsset->IsModified();
-}
-
-CAsset* CEffectAsset::GetAsset()
-{
-	return m_pAsset;
-}
-
 pfx2::IParticleEffectPfx2* CEffectAsset::GetEffect()
 {
 	return m_pEffect;
@@ -42,11 +27,6 @@ pfx2::IParticleEffectPfx2* CEffectAsset::GetEffect()
 CryParticleEditor::CParticleGraphModel* CEffectAsset::GetModel()
 {
 	return m_pModel.get();
-}
-
-void CEffectAsset::SetAsset(CAsset* pAsset)
-{
-	m_pAsset = pAsset;
 }
 
 void CEffectAsset::SetEffect(pfx2::IParticleEffectPfx2* pEffect)
@@ -62,11 +42,6 @@ bool CEffectAsset::MakeNewComponent(const char* szTemplateName)
 		return m_pModel->CreateNode(szTemplateName, QPointF()) != nullptr;
 	}
 	return false;
-}
-
-void CEffectAsset::SetModified(bool bModified)
-{
-	m_pAsset->SetModified(bModified);
 }
 
 }

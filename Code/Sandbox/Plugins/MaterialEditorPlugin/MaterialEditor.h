@@ -22,7 +22,7 @@ public:
 	virtual bool                                  OnOpenAsset(CAsset* pAsset) override;
 	virtual bool                                  OnSaveAsset(CEditableAsset& editAsset) override;
 	virtual void                                  OnCloseAsset() override;
-	virtual void                                  OnDiscardAssetChanges() override;
+	virtual void                                  OnDiscardAssetChanges(CEditableAsset& editAsset) override;
 
 	virtual std::unique_ptr<IAssetEditingSession> CreateEditingSession() override;
 

@@ -9,11 +9,13 @@
 
 class QAdvancedPropertyTree;
 
-namespace CryParticleEditor {
+namespace CryParticleEditor 
+{
 
+class CFeatureItem;
 class CFeatureWidget;
 class CNodeItem;
-class CFeatureItem;
+class CParticleGraphModel;
 
 struct SFeatureMouseEventArgs : public CryGraphEditor::SMouseInputEventArgs
 {
@@ -44,6 +46,8 @@ public:
 	~CItemProperties();
 
 	void Serialize(Serialization::IArchive& archive);
+
+	CCrySignal<void()> signalItemsChanged;
 
 protected:
 	virtual void showEvent(QShowEvent* pEvent) override;
@@ -90,6 +94,7 @@ private:
 
 	bool MoveFeatureToIndex(CFeatureWidget& featureWidget, uint32 destIndex);
 
+	void OnItemsChanged();
 private:
 	CFeatureWidget* m_pMovingFeatureWidget;
 };

@@ -20,7 +20,8 @@
 #include <QAdvancedPropertyTree.h>
 #include <QControls.h>
 
-namespace CryParticleEditor {
+namespace CryParticleEditor 
+{
 
 void CItemProperties::SFeatureSerializer::Serialize(Serialization::IArchive& archive)
 {
@@ -168,6 +169,8 @@ void CItemProperties::OnItemsChanged()
 {
 	if (m_pPropertyTree && !m_isPushingUndo)
 		m_pPropertyTree->revertNoninterrupting();
+
+	signalItemsChanged();
 }
 
 void CItemProperties::OnItemsDeletion()
@@ -322,6 +325,11 @@ bool CGraphView::MoveFeatureToIndex(CFeatureWidget& featureWidget, uint32 destIn
 	return false;
 }
 
+void CGraphView::OnItemsChanged()
+{
+	static_cast<CParticleGraphModel*>(GetModel())->signalChanged();
+}
+
 void CGraphView::ShowFeatureContextMenu(CFeatureWidget* pFeatureWidget, QPointF screenPos)
 {
 	ICommandManager* pCommandManager = GetIEditor()->GetICommandManager();
@@ -364,7 +372,9 @@ void CGraphView::ShowFeatureContextMenu(CFeatureWidget* pFeatureWidget, QPointF 
 
 QWidget* CGraphView::CreatePropertiesWidget(CryGraphEditor::GraphItemSet& selectedItems)
 {
-	return new CItemProperties(selectedItems);
+	CItemProperties* const pItemProperties = new CItemProperties(selectedItems);
+	pItemProperties->signalItemsChanged.Connect(this, &CGraphView::OnItemsChanged);
+	return pItemProperties;
 }
 
 bool CGraphView::PopulateNodeContextMenu(CryGraphEditor::CAbstractNodeItem& node, QMenu& menu)

@@ -324,9 +324,12 @@ void CMaterialEditor::OnCloseAsset()
 	SetMaterial(nullptr);
 }
 
-void CMaterialEditor::OnDiscardAssetChanges()
+void CMaterialEditor::OnDiscardAssetChanges(CEditableAsset& editAsset)
 {
-	m_pMaterial->Reload();
+	CRY_ASSERT(GetAssetBeingEdited());
+	CRY_ASSERT(GetAssetBeingEdited()->GetEditingSession());
+
+	GetAssetBeingEdited()->GetEditingSession()->DiscardChanges(editAsset);
 }
 
 std::unique_ptr<IAssetEditingSession> CMaterialEditor::CreateEditingSession()

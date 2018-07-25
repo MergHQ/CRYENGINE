@@ -47,6 +47,10 @@ public:
 	// \sa IAssetEditingSession
 	bool Save();
 
+	//! Unconditionally discard all changes.
+	//! \sa OnDiscardAssetChanges 
+	void DiscardAssetChanges();
+
 	//! Returns true if this editor is editing an asset
 	bool          IsAssetOpened()             { return m_assetBeingEdited != nullptr; }
 
@@ -80,7 +84,7 @@ protected:
 	//! Called when the asset changes are discarded,
 	//!if the memory model of the asset still exists after closing,
 	//!it needs to be reloaded from file in this method so changes are reverted
-	virtual void OnDiscardAssetChanges() {}
+	virtual void OnDiscardAssetChanges(CEditableAsset& editAsset) {}
 
 	//! A good place to clean up the editor's internal data. The implementation must unconditionally give up all asset changes, if any.
 	virtual void OnCloseAsset() = 0;
