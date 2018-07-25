@@ -1513,7 +1513,7 @@ void CRenderMesh::SetSkinningDataCharacter(CMesh& mesh, uint32 flags, struct SMe
 
 void CRenderMesh::ComputeSkinningCreateBindPoseAndMorphBuffers(CMesh& mesh)
 {
-	if (!m_nVerts || !m_nInds)
+	if (!m_nVerts || !m_nInds || !mesh.m_pIndices)
 		return;
 
 	std::vector<uint32> buckets(m_nVerts, 0);
