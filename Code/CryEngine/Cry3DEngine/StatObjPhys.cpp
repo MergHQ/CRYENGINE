@@ -1960,7 +1960,7 @@ int CStatObj::Physicalize(IPhysicalEntity* pent, pe_geomparams* pgp, int id, con
 					pent->SetParams(&psj);
 			}
 		}
-		else if (nNoColl == 1 && m_arrPhysGeomInfo.GetGeomCount() == 2)
+		else if (nNoColl == 1 && m_arrPhysGeomInfo.GetGeomCount() == 2 && m_pParentObject)
 		{
 			// one solid, one obstruct or nocoll proxy -> use single part with ray proxy
 			res = pent->AddGeometry(m_arrPhysGeomInfo[iNoColl], pgp, id);
