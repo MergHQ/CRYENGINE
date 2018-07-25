@@ -3476,6 +3476,13 @@ void S3DEngineCommon::Update(const SRenderingPassInfo& passInfo)
 
 void S3DEngineCommon::UpdateRainInfo(const SRenderingPassInfo& passInfo)
 {
+	if (passInfo.IsAuxWindow())
+	{
+		// Secondary viewport: We only update rain for the primary viewport. Otherwise update will use wrong camera. This is needed as long as rain and snow are 
+		// global engine states, with no regard to output context.
+		return;
+	}
+
 	gEnv->p3DEngine->GetRainParams(m_RainInfo);
 
 	const Vec3  vCamPos          = passInfo.GetCamera().GetPosition();
@@ -3508,6 +3515,12 @@ void S3DEngineCommon::UpdateRainInfo(const SRenderingPassInfo& passInfo)
 
 void S3DEngineCommon::UpdateSnowInfo(const SRenderingPassInfo& passInfo)
 {
+	if (passInfo.IsAuxWindow())
+	{
+		// Secondary viewport: See UpdateRainInfo() comment.
+		return;
+	}
+
 	gEnv->p3DEngine->GetSnowSurfaceParams(m_SnowInfo.m_vWorldPos, m_SnowInfo.m_fRadius, m_SnowInfo.m_fSnowAmount, m_SnowInfo.m_fFrostAmount, m_SnowInfo.m_fSurfaceFreezing);
 	gEnv->p3DEngine->GetSnowFallParams(m_SnowInfo.m_nSnowFlakeCount, m_SnowInfo.m_fSnowFlakeSize, m_SnowInfo.m_fSnowFallBrightness, m_SnowInfo.m_fSnowFallGravityScale, m_SnowInfo.m_fSnowFallWindScale, m_SnowInfo.m_fSnowFallTurbulence, m_SnowInfo.m_fSnowFallTurbulenceFreq);
 
