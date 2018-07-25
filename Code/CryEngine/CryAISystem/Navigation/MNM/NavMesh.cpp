@@ -5,6 +5,8 @@
 #include "NavMeshQuery.h"
 #include "OffGridLinks.h"
 #include "Tile.h"
+#include "TileConnectivity.h"
+#include "WayQuery.h"
 #include "../NavigationSystem/OffMeshNavigationManager.h"
 
 #if defined(min)
@@ -24,7 +26,8 @@
 
 namespace MNM
 {
-bool CNavMesh::WayQueryRequest::CanUseOffMeshLink(const OffMeshLinkID linkID, float* costMultiplier) const
+
+bool CNavMesh::SWayQueryRequest::CanUseOffMeshLink(const OffMeshLinkID linkID, float* costMultiplier) const
 {
 	if (m_requesterEntityId)
 	{
@@ -36,18 +39,6 @@ bool CNavMesh::WayQueryRequest::CanUseOffMeshLink(const OffMeshLinkID linkID, fl
 			}
 		}
 	}
-	return true;    // Always allow by default
-}
-
-bool CNavMesh::WayQueryRequest::IsPointValidForAgent(const Vec3& pos, uint32 flags) const
-{
-	// TODO: Do we need replacement for this function before introducing new 'QueryFilter'? 
-	// All known implementations of m_pRequester (IAIPathAgent) were returning true in IsPointValidForAgent method.
-	/*if (m_pRequester)
-	{
-		return m_pRequester->IsPointValidForAgent(pos, flags);
-	}
-	*/
 	return true;    // Always allow by default
 }
 
@@ -873,7 +864,7 @@ void CNavMesh::PredictNextTriangleEntryPosition(const TriangleID bestNodeTriangl
 	}
 }
 
-CNavMesh::EWayQueryResult CNavMesh::FindWay(WayQueryRequest& inputRequest, WayQueryWorkingSet& workingSet, WayQueryResult& result) const
+CNavMesh::EWayQueryResult CNavMesh::FindWay(SWayQueryRequest& inputRequest, SWayQueryWorkingSet& workingSet, SWayQueryResult& result) const
 {
 	if (inputRequest.GetFilter())
 	{
@@ -886,8 +877,35 @@ CNavMesh::EWayQueryResult CNavMesh::FindWay(WayQueryRequest& inputRequest, WayQu
 	}
 }
 
+struct CostAccumulator
+{
+	CostAccumulator(const Vec3& locationToEval, const Vec3& startingLocation, real_t& totalCost)
+		: m_totalCost(totalCost)
+		, m_locationToEvaluate(locationToEval)
+		, m_startingLocation(startingLocation)
+	{}
+
+	void operator()(const DangerAreaConstPtr& dangerInfo)
+	{
+		m_totalCost += dangerInfo->GetDangerHeuristicCost(m_locationToEvaluate, m_startingLocation);
+	}
+private:
+	real_t & m_totalCost;
+	const Vec3& m_locationToEvaluate;
+	const Vec3& m_startingLocation;
+};
+
+real_t CalculateHeuristicCostForDangers(const vector3_t& locationToEval, const vector3_t& startingLocation, const Vec3& meshOrigin, const DangerousAreasList& dangersInfos)
+{
+	real_t totalCost(0.0f);
+	const Vec3 startingLocationInWorldSpace = startingLocation.GetVec3() + meshOrigin;
+	const Vec3 locationInWorldSpace = locationToEval.GetVec3() + meshOrigin;
+	std::for_each(dangersInfos.begin(), dangersInfos.end(), CostAccumulator(locationInWorldSpace, startingLocationInWorldSpace, totalCost));
+	return totalCost;
+}
+
 template<typename TFilter>
-CNavMesh::EWayQueryResult CNavMesh::FindWayInternal(WayQueryRequest& inputRequest, WayQueryWorkingSet& workingSet, const TFilter& filter, WayQueryResult& result) const
+CNavMesh::EWayQueryResult CNavMesh::FindWayInternal(SWayQueryRequest& inputRequest, SWayQueryWorkingSet& workingSet, const TFilter& filter, SWayQueryResult& result) const
 {
 	result.SetWaySize(0);
 	if (result.GetWayMaxSize() < 2)
@@ -1113,33 +1131,6 @@ CNavMesh::EWayQueryResult CNavMesh::FindWayInternal(WayQueryRequest& inputReques
 	return eWQR_Done;
 }
 
-struct CostAccumulator
-{
-	CostAccumulator(const Vec3& locationToEval, const Vec3& startingLocation, real_t& totalCost)
-		: m_totalCost(totalCost)
-		, m_locationToEvaluate(locationToEval)
-		, m_startingLocation(startingLocation)
-	{}
-
-	void operator()(const DangerAreaConstPtr& dangerInfo)
-	{
-		m_totalCost += dangerInfo->GetDangerHeuristicCost(m_locationToEvaluate, m_startingLocation);
-	}
-private:
-	real_t&     m_totalCost;
-	const Vec3& m_locationToEvaluate;
-	const Vec3& m_startingLocation;
-};
-
-real_t CNavMesh::CalculateHeuristicCostForDangers(const vector3_t& locationToEval, const vector3_t& startingLocation, const Vec3& meshOrigin, const DangerousAreasList& dangersInfos) const
-{
-	real_t totalCost(0.0f);
-	const Vec3 startingLocationInWorldSpace = startingLocation.GetVec3() + meshOrigin;
-	const Vec3 locationInWorldSpace = locationToEval.GetVec3() + meshOrigin;
-	std::for_each(dangersInfos.begin(), dangersInfos.end(), CostAccumulator(locationInWorldSpace, startingLocationInWorldSpace, totalCost));
-	return totalCost;
-}
-
 real_t CNavMesh::CalculateHeuristicCostForCustomRules(const vector3_t& locationComingFrom, const vector3_t& locationGoingTo, const Vec3& meshOrigin, const IMNMCustomPathCostComputer* pCustomPathCostComputer) const
 {
 	if (pCustomPathCostComputer)
@@ -1222,6 +1213,111 @@ void CNavMesh::PullString(const vector3_t& fromLocalPosition, const TriangleID f
 
 			middleLocalPosition = Lerp(fromVertices[vi0], fromVertices[vi1], s);
 		}
+	}
+}
+
+void CNavMesh::MarkTrianglesNotConnectedToSeeds(const MNM::AreaAnnotation::value_type markFlags)
+{
+	CRY_PROFILE_FUNCTION(PROFILE_AI);
+
+	for (TileMap::const_iterator it = m_tileMap.cbegin(); it != m_tileMap.cend(); ++it)
+	{
+		const TileID tileID = it->second;
+		const STile& tile = m_tiles[tileID - 1].tile;		
+		const uint16 triangleCount = tile.GetTrianglesCount();
+		
+		for (uint16 triIdx = 0; triIdx < triangleCount; ++triIdx)
+		{
+			Tile::STriangle& triangle = tile.triangles[triIdx];
+			if(triangle.islandID == MNM::Constants::eStaticIsland_InvalidIslandID)
+				continue;
+			
+			AreaAnnotation::value_type flags = triangle.areaAnnotation.GetFlags();			
+			if (m_islands.GetSeedConnectivityState(triangle.islandID) == CIslands::ESeedConnectivityState::Inaccessible)
+			{
+				flags |= markFlags;
+			}
+			else
+			{
+				flags &= ~markFlags;
+			}
+			triangle.areaAnnotation.SetFlags(flags);
+		}
+	}
+}
+
+void CNavMesh::RemoveTrianglesByFlags(const MNM::AreaAnnotation::value_type flags)
+{
+	CRY_PROFILE_FUNCTION(PROFILE_AI);
+	
+	Tile::STriangle newTriangles[MNM::Constants::TileTrianglesMaxCount];
+	Tile::Vertex newVertices[MNM::Constants::TileTrianglesMaxCount * 3];
+
+	// This array is used for two things:
+	// 1. Storing if the vertex is part of any triangle
+	// 2. Storing vertex indices offsets for remapping
+	uint16 verticesAuxArray[MNM::Constants::TileTrianglesMaxCount * 3];
+
+	for (TileMap::const_iterator tileIt = m_tileMap.cbegin(); tileIt != m_tileMap.cend(); ++tileIt)
+	{
+		const TileID tileId = tileIt->second;
+		STile& tile = m_tiles[tileId - 1].tile;
+
+		CRY_ASSERT_MESSAGE(tile.nodeCount == 0, "Removing triangles from tiles with BV Tree isn't supported");
+		CRY_ASSERT(tile.vertexCount <= MNM::Constants::TileTrianglesMaxCount * 3);
+		memset(verticesAuxArray, 0, sizeof(verticesAuxArray[0]) * tile.vertexCount);
+
+		// First copy all needed triangles and store whether the vertex is used in verticesAuxArray
+		uint16 newTrianglesCount = 0;
+		for (uint16 triangleIdx = 0; triangleIdx < tile.triangleCount; ++triangleIdx)
+		{
+			const Tile::STriangle& triangle = tile.triangles[triangleIdx];
+
+			if((triangle.areaAnnotation.GetFlags() & flags) != 0)
+				continue;
+
+			newTriangles[newTrianglesCount++] = triangle;
+			for (uint16 v = 0; v < 3; ++v)
+			{
+				verticesAuxArray[triangle.vertex[v]] = 1;
+			}
+		}
+
+		if (newTrianglesCount == tile.triangleCount)
+			continue; // No triangles were removed
+
+		// Copy used vertices and compute offsets of vertex indices
+		uint16 newVerticesCount = 0;
+		uint16 currentOffset = 0;
+		for (uint16 vertexIdx = 0; vertexIdx < tile.vertexCount; ++vertexIdx)
+		{
+			const bool isUsed = verticesAuxArray[vertexIdx] != 0;
+			if (isUsed)
+			{
+				newVertices[newVerticesCount++] = tile.vertices[vertexIdx];
+			}
+			else
+			{
+				++currentOffset;
+			}
+			verticesAuxArray[vertexIdx] = currentOffset;
+		}
+
+		// Offset indices of vertices
+		for (uint16 triangleIdx = 0; triangleIdx < newTrianglesCount; ++triangleIdx)
+		{
+			Tile::STriangle& triangle = newTriangles[triangleIdx];
+			for (uint16 triVertexIdx = 0; triVertexIdx < 3; ++triVertexIdx)
+			{
+				triangle.vertex[triVertexIdx] -= verticesAuxArray[triangle.vertex[triVertexIdx]];
+			}
+		}
+
+		tile.CopyTriangles(newTriangles, newTrianglesCount);
+		tile.CopyVertices(newVertices, newVerticesCount);
+
+		// Links aren't valid anymore after re-indexing triangles and need to be rebuilt
+		ConnectToNetwork(tileId, nullptr);
 	}
 }
 
@@ -1897,7 +1993,9 @@ CNavMesh::ERayCastResult CNavMesh::RayCast_v1(const vector3_t& fromLocalPosition
 						if (nextID)
 							break;   // link loop
 					}
-					if (IsTriangleAlreadyInWay(nextID, raycastRequest.way, triCount))
+
+					// Is triangle nextID already in a way?
+					if (std::find(raycastRequest.way, raycastRequest.way + triCount, nextID) != (raycastRequest.way + triCount))
 					{
 						assert(0);
 						nextID = 0;
@@ -2169,39 +2267,37 @@ void CNavMesh::CreateNetwork()
 	TileMap::iterator end = m_tileMap.end();
 
 	const real_t toleranceSq = square(real_t(std::max(m_params.voxelSize.x, m_params.voxelSize.z)));
+	const MNM::CTileConnectivityData* pNullConnectivityData = nullptr;
 
 	for (; it != end; ++it)
 	{
 		const TileID tileID = it->second;
 
 		TileContainer& container = m_tiles[tileID - 1];
-
-		ComputeAdjacency(container.x, container.y, container.z, toleranceSq, container.tile);
+		ComputeAdjacency(container.x, container.y, container.z, toleranceSq, container.tile, pNullConnectivityData);
 	}
 }
 
-void CNavMesh::ConnectToNetwork(TileID tileID)
+void CNavMesh::ConnectToNetwork(const TileID tileID, const CTileConnectivityData* pConnectivityData)
 {
 	CRY_PROFILE_FUNCTION(PROFILE_AI);
 
+	TileContainer& container = m_tiles[tileID - 1];
+
+	ComputeAdjacency(container.x, container.y, container.z, kAdjecencyCalculationToleranceSq, container.tile, pConnectivityData);
+
+	for (size_t side = 0; side < SideCount; ++side)
 	{
-		TileContainer& container = m_tiles[tileID - 1];
+		const size_t nx = container.x + NavMesh::GetNeighbourTileOffset(side)[0];
+		const size_t ny = container.y + NavMesh::GetNeighbourTileOffset(side)[1];
+		const size_t nz = container.z + NavMesh::GetNeighbourTileOffset(side)[2];
 
-		ComputeAdjacency(container.x, container.y, container.z, kAdjecencyCalculationToleranceSq, container.tile);
-
-		for (size_t side = 0; side < SideCount; ++side)
+		if (TileID neighbourID = GetTileID(nx, ny, nz))
 		{
-			size_t nx = container.x + NavMesh::GetNeighbourTileOffset(side)[0];
-			size_t ny = container.y + NavMesh::GetNeighbourTileOffset(side)[1];
-			size_t nz = container.z + NavMesh::GetNeighbourTileOffset(side)[2];
+			TileContainer& ncontainer = m_tiles[neighbourID - 1];
 
-			if (TileID neighbourID = GetTileID(nx, ny, nz))
-			{
-				TileContainer& ncontainer = m_tiles[neighbourID - 1];
-
-				ReComputeAdjacency(ncontainer.x, ncontainer.y, ncontainer.z, kAdjecencyCalculationToleranceSq, ncontainer.tile,
-				                   OppositeSide(side), container.x, container.y, container.z, tileID);
-			}
+			ReComputeAdjacency(ncontainer.x, ncontainer.y, ncontainer.z, kAdjecencyCalculationToleranceSq, ncontainer.tile,
+				OppositeSide(side), container.x, container.y, container.z, tileID);
 		}
 	}
 }
@@ -2283,96 +2379,6 @@ void CNavMesh::Draw(size_t drawFlags, const ITriangleColorSelector& colorSelecto
 const CNavMesh::ProfilerType& CNavMesh::GetProfiler() const
 {
 	return m_profiler;
-}
-
-struct Edge
-{
-	uint16 vertex[2];
-	uint16 triangle[2];
-};
-
-void ComputeTileTriangleAdjacency(const Tile::STriangle* triangles, const size_t triangleCount, const size_t vertexCount,
-                                  Edge* edges, uint16* adjacency)
-{
-	CRY_PROFILE_FUNCTION(PROFILE_AI);
-
-	{
-		enum { Unused = 0xffff, };
-
-		const size_t MaxLookUp = 4096;
-		uint16 edgeLookUp[MaxLookUp];
-		assert(MaxLookUp > vertexCount + triangleCount * 3);
-
-		std::fill(&edgeLookUp[0], &edgeLookUp[0] + vertexCount, static_cast<uint16>(Unused));
-
-		uint16 edgeCount = 0;
-
-		for (uint16 i = 0; i < triangleCount; ++i)
-		{
-			const Tile::STriangle& triangle = triangles[i];
-
-			for (size_t v = 0; v < 3; ++v)
-			{
-				uint16 i1 = triangle.vertex[v];
-				uint16 i2 = triangle.vertex[next_mod3(v)];
-
-				if (i1 < i2)
-				{
-					uint16 edgeIdx = edgeCount++;
-					adjacency[i * 3 + v] = edgeIdx;
-
-					Edge& edge = edges[edgeIdx];
-					edge.triangle[0] = i;
-					edge.triangle[1] = i;
-					edge.vertex[0] = i1;
-					edge.vertex[1] = i2;
-
-					edgeLookUp[vertexCount + edgeIdx] = edgeLookUp[i1];
-					edgeLookUp[i1] = edgeIdx;
-				}
-			}
-		}
-
-		for (uint16 i = 0; i < triangleCount; ++i)
-		{
-			const Tile::STriangle& triangle = triangles[i];
-
-			for (size_t v = 0; v < 3; ++v)
-			{
-				uint16 i1 = triangle.vertex[v];
-				uint16 i2 = triangle.vertex[next_mod3(v)];
-
-				if (i1 > i2)
-				{
-					uint16 edgeIndex = edgeLookUp[i2];
-
-					for (; edgeIndex != Unused; edgeIndex = edgeLookUp[vertexCount + edgeIndex])
-					{
-						Edge& edge = edges[edgeIndex];
-
-						if ((edge.vertex[1] == i1) && (edge.triangle[0] == edge.triangle[1]))
-						{
-							edge.triangle[1] = i;
-							adjacency[i * 3 + v] = edgeIndex;
-							break;
-						}
-					}
-
-					if (edgeIndex == Unused)
-					{
-						uint16 edgeIdx = edgeCount++;
-						adjacency[i * 3 + v] = edgeIdx;
-
-						Edge& edge = edges[edgeIdx];
-						edge.vertex[0] = i1;
-						edge.vertex[1] = i2;
-						edge.triangle[0] = i;
-						edge.triangle[1] = i;
-					}
-				}
-			}
-		}
-	}
 }
 
 TileID CNavMesh::GetNeighbourTileID(size_t x, size_t y, size_t z, size_t side) const
@@ -2476,8 +2482,6 @@ bool CNavMesh::GetTileData(const TileID tileId, Tile::STileData& outTileData) co
 	return false;
 }
 
-static const size_t MaxTriangleCount = 1024;
-
 struct SideTileInfo
 {
 	SideTileInfo()
@@ -2489,9 +2493,58 @@ struct SideTileInfo
 	vector3_t offset;
 };
 
+size_t CreateEdgeLinksWithNeighbors(const SideTileInfo* pSides, const uint16 sidesMask, const vector3_t edgeVertex0, const vector3_t edgeVertex1, const uint16 edgeIdx, const real_t toleranceSq, Tile::SLink* pLinks, size_t& linksCount)
+{
+	size_t addedLinks = 0;
+	
+	for (size_t sideIdx = 0; sideIdx < MNM::CNavMesh::SideCount; ++sideIdx)
+	{
+		if((sidesMask & BIT16(sideIdx)) == 0)
+			continue;
+		
+		const STile* pNeighbourTile = pSides[sideIdx].tile;
+		if(!pNeighbourTile)
+			continue;
+
+		const vector3_t& offset = pSides[sideIdx].offset;
+
+		const size_t neighborTrianglesCount = pNeighbourTile->GetTrianglesCount();
+		const Tile::STriangle* pNeighborTriangles = pNeighbourTile->GetTriangles();
+		const Tile::Vertex* pNeighborVertices = pNeighbourTile->GetVertices();
+
+		for (size_t neiTriangleIdx = 0; neiTriangleIdx < neighborTrianglesCount; ++neiTriangleIdx)
+		{
+			const Tile::STriangle& neighborTriangle = pNeighborTriangles[neiTriangleIdx];
+
+			for (size_t neiEdgeIdx = 0; neiEdgeIdx < 3; ++neiEdgeIdx)
+			{
+				const vector3_t neiEdgeVertex0 = offset + vector3_t(pNeighborVertices[neighborTriangle.vertex[neiEdgeIdx]]);
+				const vector3_t neiEdgeVertex1 = offset + vector3_t(pNeighborVertices[neighborTriangle.vertex[next_mod3(neiEdgeIdx)]]);
+
+				if (TestEdgeOverlap(sideIdx, toleranceSq, edgeVertex0, edgeVertex1, neiEdgeVertex0, neiEdgeVertex1))
+				{
+					Tile::SLink& link = pLinks[linksCount++];
+					link.side = sideIdx;
+					link.edge = edgeIdx;
+					link.triangle = neiTriangleIdx;
+
+#if DEBUG_MNM_DATA_CONSISTENCY_ENABLED
+					const TileID checkId = GetTileID(x + NavMesh::GetNeighbourTileOffset(sideIdx)[0], y + NavMesh::GetNeighbourTileOffset(sideIdx)[1], z + NavMesh::GetNeighbourTileOffset(sideIdx)[2]);
+					m_tiles.BreakOnInvalidTriangle(ComputeTriangleID(checkId, neiTriangleIdx));
+#endif
+
+					++addedLinks;
+					break;
+				}
+			}
+		}
+	}
+	return addedLinks;
+}
+
 #pragma warning (push)
 #pragma warning (disable: 6262)
-void CNavMesh::ComputeAdjacency(size_t x, size_t y, size_t z, const real_t& toleranceSq, STile& tile)
+void CNavMesh::ComputeAdjacency(size_t x, size_t y, size_t z, const real_t& toleranceSq, STile& tile, const CTileConnectivityData* pConnectivityData)
 {
 	CRY_PROFILE_FUNCTION(PROFILE_AI);
 
@@ -2504,23 +2557,18 @@ void CNavMesh::ComputeAdjacency(size_t x, size_t y, size_t z, const real_t& tole
 
 	m_profiler.StartTimer(NetworkConstruction);
 
-	assert(triCount <= MaxTriangleCount);
+	CRY_ASSERT(triCount <= MNM::Constants::TileTrianglesMaxCount);
 
-	Edge edges[MaxTriangleCount * 3];
-	uint16 adjacency[MaxTriangleCount * 3];
-	ComputeTileTriangleAdjacency(tile.GetTriangles(), triCount, vertexCount, edges, adjacency);
-
-	const size_t MaxLinkCount = MaxTriangleCount * 6;
+	const size_t MaxLinkCount = MNM::Constants::TileTrianglesMaxCount * 6;
 	Tile::SLink links[MaxLinkCount];
 	size_t linkCount = 0;
 
 	SideTileInfo sides[SideCount];
-
 	for (size_t s = 0; s < SideCount; ++s)
 	{
 		SideTileInfo& side = sides[s];
 
-		if (TileID id = GetTileID(x + NavMesh::GetNeighbourTileOffset(s)[0], y + NavMesh::GetNeighbourTileOffset(s)[1], z + NavMesh::GetNeighbourTileOffset(s)[2]))
+		if (const TileID id = GetTileID(x + NavMesh::GetNeighbourTileOffset(s)[0], y + NavMesh::GetNeighbourTileOffset(s)[1], z + NavMesh::GetNeighbourTileOffset(s)[2]))
 		{
 			side.tile = &GetTile(id);
 			side.offset = vector3_t(
@@ -2530,93 +2578,82 @@ void CNavMesh::ComputeAdjacency(size_t x, size_t y, size_t z, const real_t& tole
 		}
 	}
 
-	for (size_t i = 0; i < triCount; ++i)
+	if (!pConnectivityData)
 	{
-		size_t triLinkCount = 0;
+		// There are no precomputed adjacency data - generate them now
+		CTileConnectivityData::Edge edges[MNM::Constants::TileTrianglesMaxCount * 3];
+		uint16 adjacency[MNM::Constants::TileTrianglesMaxCount * 3];
+		CTileConnectivityData::ComputeTriangleAdjacency(tile.GetTriangles(), triCount, tile.GetVertices(), vertexCount, vector3_t(m_params.tileSize), *&edges, *&adjacency);
 
-		for (size_t e = 0; e < 3; ++e)
+		for (size_t triangleIdx = 0; triangleIdx < triCount; ++triangleIdx)
 		{
-			const size_t edgeIndex = adjacency[i * 3 + e];
-			const Edge& edge = edges[edgeIndex];
-			if ((edge.triangle[0] != i) && (edge.triangle[1] != i))
-				continue;
+			size_t triLinkCount = 0;
 
-			if (edge.triangle[0] != edge.triangle[1])
+			for (uint16 edgeIdx = 0; edgeIdx < 3; ++edgeIdx)
 			{
-				Tile::SLink& link = links[linkCount++];
-				link.side = Tile::SLink::Internal;
-				link.edge = e;
-				link.triangle = (edge.triangle[1] == i) ? edge.triangle[0] : edge.triangle[1];
-
-				++triLinkCount;
-			}
-		}
-
-		if (triLinkCount == 3)
-		{
-			Tile::STriangle& triangle = tile.triangles[i];
-			triangle.linkCount = triLinkCount;
-			triangle.firstLink = linkCount - triLinkCount;
-
-			continue;
-		}
-
-		for (size_t e = 0; e < 3; ++e)
-		{
-			const size_t edgeIndex = adjacency[i * 3 + e];
-			const Edge& edge = edges[edgeIndex];
-			if ((edge.triangle[0] != i) && (edge.triangle[1] != i))
-				continue;
-
-			if (edge.triangle[0] != edge.triangle[1])
-				continue;
-
-			const vector3_t a0 = vector3_t(vertices[edge.vertex[0]]);
-			const vector3_t a1 = vector3_t(vertices[edge.vertex[1]]);
-
-			for (size_t s = 0; s < SideCount; ++s)
-			{
-				if (const STile* stile = sides[s].tile)
+				const size_t edgeIndex = adjacency[CTileConnectivityData::GetAdjancencyIdx(triangleIdx, edgeIdx)];
+				const CTileConnectivityData::Edge& edge = edges[edgeIndex];
+				if (edge.IsInternalEdgeOfTriangle(triangleIdx))
 				{
-					const vector3_t& offset = sides[s].offset;
+					Tile::SLink& link = links[linkCount++];
+					link.side = Tile::SLink::Internal;
+					link.edge = edgeIdx;
+					link.triangle = (edge.triangleIndex[1] == triangleIdx) ? edge.triangleIndex[0] : edge.triangleIndex[1];
 
-					const size_t striangleCount = stile->triangleCount;
-					const Tile::STriangle* striangles = stile->GetTriangles();
-					const Tile::Vertex* svertices = stile->GetVertices();
+					++triLinkCount;
+				}
+			}
 
-					for (size_t k = 0; k < striangleCount; ++k)
+			if (triLinkCount < 3)
+			{
+				for (uint16 edgeIdx = 0; edgeIdx < 3; ++edgeIdx)
+				{
+					const size_t edgeIndex = adjacency[triangleIdx * 3 + edgeIdx];
+					const CTileConnectivityData::Edge& edge = edges[edgeIndex];
+					if (edge.IsBoundaryEdgeOfTriangle(triangleIdx))
 					{
-						const Tile::STriangle& striangle = striangles[k];
-
-						for (size_t ne = 0; ne < 3; ++ne)
-						{
-							const vector3_t b0 = offset + vector3_t(svertices[striangle.vertex[ne]]);
-							const vector3_t b1 = offset + vector3_t(svertices[striangle.vertex[next_mod3(ne)]]);
-
-							if (TestEdgeOverlap(s, toleranceSq, a0, a1, b0, b1))
-							{
-								Tile::SLink& link = links[linkCount++];
-								link.side = s;
-								link.edge = e;
-								link.triangle = k;
-
-#if DEBUG_MNM_DATA_CONSISTENCY_ENABLED
-								const TileID checkId = GetTileID(x + NavMesh::GetNeighbourTileOffset(s)[0], y + NavMesh::GetNeighbourTileOffset(s)[1], z + NavMesh::GetNeighbourTileOffset(s)[2]);
-								m_tiles.BreakOnInvalidTriangle(ComputeTriangleID(checkId, k));
-#endif
-
-								++triLinkCount;
-								break;
-							}
-						}
+						const vector3_t a0 = vector3_t(vertices[edge.vertexIndex[0]]);
+						const vector3_t a1 = vector3_t(vertices[edge.vertexIndex[1]]);
+						triLinkCount += CreateEdgeLinksWithNeighbors(sides, edge.sidesToCheckMask, a0, a1, edgeIdx, toleranceSq, links, linkCount);
 					}
 				}
 			}
-		}
 
-		Tile::STriangle& triangle = tile.triangles[i];
-		triangle.linkCount = triLinkCount;
-		triangle.firstLink = linkCount - triLinkCount;
+			Tile::STriangle& triangle = tile.triangles[triangleIdx];
+			triangle.linkCount = triLinkCount;
+			triangle.firstLink = linkCount - triLinkCount;
+		}
+	}
+	else
+	{
+		// There are precomputed adjacency data - use them.
+		// This also means that the tile internal links were already generated, so we just need to copy them and then create links to neighbor tiles		
+		for (size_t triangleIdx = 0; triangleIdx < triCount; ++triangleIdx)
+		{
+			Tile::STriangle& triangle = tile.triangles[triangleIdx];
+			size_t triLinksCount = triangle.linkCount;
+			for (size_t linkIdx = triangle.firstLink, linkend = triangle.firstLink + triLinksCount; linkIdx < linkend; ++linkIdx)
+			{
+				CRY_ASSERT(tile.links[linkIdx].side == Tile::SLink::Internal);
+				links[linkCount++] = tile.links[linkIdx];
+			}
+
+			if (triangle.linkCount < 3)
+			{
+				for (uint16 edgeIdx = 0; edgeIdx < 3; ++edgeIdx)
+				{
+					const CTileConnectivityData::Edge& edge = pConnectivityData->GetEdge(triangleIdx, edgeIdx);
+					if (edge.IsBoundaryEdgeOfTriangle(triangleIdx))
+					{
+						const vector3_t a0 = vector3_t(vertices[edge.vertexIndex[0]]);
+						const vector3_t a1 = vector3_t(vertices[edge.vertexIndex[1]]);
+						triLinksCount += CreateEdgeLinksWithNeighbors(sides, edge.sidesToCheckMask, a0, a1, edgeIdx, toleranceSq, links, linkCount);
+					}
+				}
+			}
+			triangle.linkCount = triLinksCount;
+			triangle.firstLink = linkCount - triLinksCount;
+		}
 	}
 
 	m_profiler.FreeMemory(LinkMemory, tile.linkCount * sizeof(Tile::SLink));
@@ -2644,7 +2681,10 @@ void CNavMesh::ReComputeAdjacency(size_t x, size_t y, size_t z, const real_t& to
 	m_profiler.StartTimer(NetworkConstruction);
 
 	if (!tile.linkCount)
-		ComputeAdjacency(x, y, z, toleranceSq, tile);
+	{
+		const MNM::CTileConnectivityData* pNullConnectivityData = nullptr;
+		ComputeAdjacency(x, y, z, toleranceSq, tile, pNullConnectivityData);
+	}
 	else
 	{
 		const vector3_t noffset = vector3_t(
@@ -2652,9 +2692,9 @@ void CNavMesh::ReComputeAdjacency(size_t x, size_t y, size_t z, const real_t& to
 		  NavMesh::GetNeighbourTileOffset(side)[1] * m_params.tileSize.y,
 		  NavMesh::GetNeighbourTileOffset(side)[2] * m_params.tileSize.z);
 
-		assert(originTriangleCount <= MaxTriangleCount);
+		CRY_ASSERT(originTriangleCount <= MNM::Constants::TileTrianglesMaxCount);
 
-		const size_t MaxLinkCount = MaxTriangleCount * 6;
+		const size_t MaxLinkCount = MNM::Constants::TileTrianglesMaxCount * 6;
 		Tile::SLink links[MaxLinkCount];
 		size_t linkCount = 0;
 
@@ -2887,120 +2927,4 @@ bool CNavMesh::FindNextIntersectingTriangleEdge(const vector3_t& rayStartPos3D, 
 	return bEndingInside;
 }
 
-//////////////////////////////////////////////////////////////////////////
-
-#if MNM_USE_EXPORT_INFORMATION
-
-void CNavMesh::ResetAccessibility(uint8 accessible)
-{
-	for (TileMap::iterator tileIt = m_tileMap.begin(); tileIt != m_tileMap.end(); ++tileIt)
-	{
-		STile& tile = m_tiles[tileIt->second - 1].tile;
-
-		tile.ResetConnectivity(accessible);
-	}
-}
-
-void CNavMesh::ComputeAccessibility(const AccessibilityRequest& inputRequest)
-{
-	struct Node
-	{
-		Node(TriangleID _id, TriangleID _previousID)
-			: id(_id)
-			, previousId(_previousID)
-		{
-
-		}
-
-		TriangleID id;
-		TriangleID previousId;
-	};
-
-	std::vector<TriangleID> nextTriangles;
-	nextTriangles.reserve(16);
-
-	std::vector<Node> openNodes;
-	openNodes.reserve(m_triangleCount);
-
-	if (const TileID startTileID = ComputeTileID(inputRequest.fromTriangle))
-	{
-		const uint16 startTriangleIdx = ComputeTriangleIndex(inputRequest.fromTriangle);
-		STile& startTile = m_tiles[startTileID - 1].tile;
-		startTile.SetTriangleAccessible(startTriangleIdx);
-
-		openNodes.push_back(Node(inputRequest.fromTriangle, 0));
-
-		while (!openNodes.empty())
-		{
-			const Node currentNode = openNodes.back();
-			openNodes.pop_back();
-
-			if (const TileID tileID = ComputeTileID(currentNode.id))
-			{
-				const uint16 triangleIdx = ComputeTriangleIndex(currentNode.id);
-
-				TileContainer& container = m_tiles[tileID - 1];
-				STile& tile = container.tile;
-
-				const Tile::STriangle& triangle = tile.triangles[triangleIdx];
-
-				nextTriangles.clear();
-
-				// Collect all accessible nodes from the current one
-				for (size_t l = 0; l < triangle.linkCount; ++l)
-				{
-					const Tile::SLink& link = tile.links[triangle.firstLink + l];
-
-					TriangleID nextTriangleID;
-
-					if (link.side == Tile::SLink::Internal)
-					{
-						nextTriangleID = ComputeTriangleID(tileID, link.triangle);
-					}
-					else if (link.side != Tile::SLink::OffMesh)
-					{
-						TileID neighbourTileID = GetNeighbourTileID(container.x, container.y, container.z, link.side);
-						nextTriangleID = ComputeTriangleID(neighbourTileID, link.triangle);
-					}
-					else
-					{
-						OffMeshNavigation::QueryLinksResult links = inputRequest.offMeshNavigation.GetLinksForTriangle(currentNode.id, link.triangle);
-						while (WayTriangleData nextLink = links.GetNextTriangle())
-						{
-							nextTriangles.push_back(nextLink.triangleID);
-						}
-						continue;
-					}
-
-					nextTriangles.push_back(nextTriangleID);
-				}
-
-				// Add them to the open list if not visited already
-				for (size_t t = 0; t < nextTriangles.size(); ++t)
-				{
-					const TriangleID nextTriangleID = nextTriangles[t];
-
-					// Skip if previous triangle
-					if (nextTriangleID == currentNode.previousId)
-						continue;
-
-					// Skip if already visited
-					if (const TileID nextTileID = ComputeTileID(nextTriangleID))
-					{
-						STile& nextTile = m_tiles[nextTileID - 1].tile;
-						const uint16 nextTriangleIndex = ComputeTriangleIndex(nextTriangleID);
-						if (nextTile.IsTriangleAccessible(nextTriangleIndex))
-							continue;
-
-						nextTile.SetTriangleAccessible(nextTriangleIndex);
-
-						openNodes.push_back(Node(nextTriangleID, currentNode.id));
-					}
-				}
-			}
-		}
-	}
-}
-
-#endif
 }

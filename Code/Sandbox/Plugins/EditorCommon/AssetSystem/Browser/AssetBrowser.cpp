@@ -310,7 +310,7 @@ public:
 class CUsedBy : public CDependenciesOperatorBase
 {
 public:
-	virtual QString GetName() override { return QWidget::tr("UsedBy"); }
+	virtual QString GetName() override { return QWidget::tr("used by"); }
 
 	virtual bool    Match(const QVariant& value, const QVariant& filterValue) override
 	{
@@ -339,7 +339,7 @@ public:
 class CUse : public CDependenciesOperatorBase
 {
 public:
-	virtual QString GetName() override { return QWidget::tr("Use"); }
+	virtual QString GetName() override { return QWidget::tr("that use"); }
 
 	virtual bool    Match(const QVariant& value, const QVariant& filterValue) override
 	{
@@ -374,9 +374,9 @@ public:
 		: CItemModelAttribute("Dependencies", &s_dependenciesAttributeType, CItemModelAttribute::AlwaysHidden, true, QVariant(), (int)CAssetModel::Roles::InternalPointerRole)
 	{
 		static CAssetModel::CAutoRegisterColumn column(this, [](const CAsset* pAsset, const CItemModelAttribute* /*pAttribute*/)
-		    {
-		       return QVariant();
-				});
+	    {
+			return QVariant();
+		});
 	}
 };
 
@@ -387,10 +387,10 @@ public:
 		: CItemModelAttribute("Usage count", &Attributes::s_stringAttributeType, CItemModelAttribute::StartHidden, false)
 	{
 		static CAssetModel::CAutoRegisterColumn column(this, [](const CAsset* pAsset, const CItemModelAttribute* pAttribute)
-		    {
-		       const CUsageCountAttribute* const pUsageCountAttribute = static_cast<const CUsageCountAttribute*>(pAttribute);
-		       return pUsageCountAttribute->GetValue(*pAsset);
-				});
+		{
+			const CUsageCountAttribute* const pUsageCountAttribute = static_cast<const CUsageCountAttribute*>(pAttribute);
+			return pUsageCountAttribute->GetValue(*pAsset);
+		});
 	}
 
 	void SetDetailContext(CAttributeFilter* pFilter)
@@ -1500,6 +1500,11 @@ QVariantMap CAssetBrowser::GetLayout() const
 	return state;
 }
 
+QFilteringPanel* CAssetBrowser::GetFilterPanel()
+{
+	return m_filterPanel;
+}
+
 QVector<CAsset*> CAssetBrowser::GetSelectedAssets() const
 {
 	QVector<CAsset*> assets;
@@ -1694,11 +1699,6 @@ void CAssetBrowser::OnContextMenu()
 	QStringList folders;
 	ProcessSelection(assets, folders);
 
-	CAssetManager::GetInstance()->AppendContextMenuActions(
-		abstractMenu,
-		assets.toStdVector(),
-		std::make_shared<Private_AssetBrowser::CContextMenuContext>(this));
-
 	if (assets.length() != 0)
 	{
 		bool canReimport = false;
@@ -1795,6 +1795,8 @@ void CAssetBrowser::OnContextMenu()
 			const string path = PathUtil::Make(PathUtil::GetGameProjectAssetsPath(), pAsset->GetFile(0));
 			QtUtil::OpenInExplorer(path);
 		});
+
+		AppendFilterDependenciesActions(&abstractMenu, assets.front());
 	}
 
 	if (folders.length() == 1)//only one folder selected
@@ -1864,12 +1866,38 @@ void CAssetBrowser::OnContextMenu()
 		}
 	}
 
+	CAssetManager::GetInstance()->AppendContextMenuActions(
+		abstractMenu,
+		assets.toStdVector(),
+		std::make_shared<Private_AssetBrowser::CContextMenuContext>(this));
+
 	QMenu menu;
 	abstractMenu.Build(MenuWidgetBuilders::CMenuBuilder(&menu));
 
 	if (menu.actions().count() > 0)
 	{
 		menu.exec(QCursor::pos());
+	}
+}
+
+void CAssetBrowser::AppendFilterDependenciesActions(CAbstractMenu* pAbstractMenu, const CAsset* pAsset)
+{
+	using namespace Private_AssetBrowser;
+
+	const auto dependencyOperators = s_dependenciesAttribute.GetType()->GetOperators();
+	for (Attributes::IAttributeFilterOperator* pOperator : dependencyOperators)
+	{
+		QAction* pAction = pAbstractMenu->CreateAction(QString("%1 %2 '%3'").arg(tr("Show Assets"), pOperator->GetName(), pAsset->GetName()));
+		connect(pAction, &QAction::triggered, [pOperator, pAsset]()
+		{
+			CAssetBrowser* const pAssetBrowser = static_cast<CAssetBrowser*>(GetIEditor()->CreateDockable("Asset Browser"));
+			if (pAssetBrowser)
+			{
+				pAssetBrowser->GetFilterPanel()->AddFilter(s_dependenciesAttribute.GetName(), pOperator->GetName(), QtUtil::ToQString(pAsset->GetFile(0)));
+				pAssetBrowser->GetFilterPanel()->SetExpanded(true);
+				pAssetBrowser->SetRecursiveView(true);
+			}
+		});
 	}
 }
 

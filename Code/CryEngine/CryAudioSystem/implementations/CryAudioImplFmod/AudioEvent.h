@@ -21,6 +21,8 @@ class ParameterInstance;
 
 namespace CryAudio
 {
+class CATLEvent;
+
 namespace Impl
 {
 namespace Fmod

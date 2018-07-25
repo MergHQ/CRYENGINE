@@ -1,5 +1,6 @@
 #include "StdAfx.h"
 #include "StaticMeshComponent.h"
+#include "DefaultComponents/ComponentHelpers/PhysicsParameters.h"
 
 #include <Cry3DEngine/IRenderNode.h>
 
@@ -64,9 +65,15 @@ void CStaticMeshComponent::SetObjectDirect(IStatObj* pObject, bool bSetDefaultMa
 
 	if (bSetDefaultMass)
 	{
-		if (!m_pCachedStatObj->GetPhysicalProperties(m_physics.m_mass, m_physics.m_density))
+		float mass = 0;
+		float density = 0;
+
+		// First get the mass or density from the statobj. If it's zero we should fall back to our default value/previous value.
+		if (m_pCachedStatObj->GetPhysicalProperties(mass, density) && (mass > 0 || density > 0))
 		{
-			m_physics.m_mass = 10;
+			m_physics.m_mass = mass;
+			m_physics.m_density = density;
+			m_physics.m_weightType = mass > 0 ? SPhysicsParameters::EWeightType::Mass : SPhysicsParameters::EWeightType::Density;
 		}
 	}
 
@@ -137,5 +144,26 @@ void CStaticMeshComponent::Render(const IEntity& entity, const IEntityComponent&
 void CStaticMeshComponent::SetFilePath(const char* szPath)
 {
 	m_filePath.value = szPath;
+}
+
+bool CStaticMeshComponent::SetMaterial(int slotId, const char* szMaterial)
+{
+	if (slotId == GetEntitySlotId())
+	{
+		if (IMaterial* pMaterial = gEnv->p3DEngine->GetMaterialManager()->LoadMaterial(szMaterial, false))
+		{
+			m_materialPath = szMaterial;
+			m_pEntity->SetSlotMaterial(GetEntitySlotId(), pMaterial);		
+		}
+		else if(szMaterial[0] == '\0')
+		{
+			m_materialPath.value.clear();
+			m_pEntity->SetSlotMaterial(GetEntitySlotId(), nullptr);
+		}
+
+		return true;
+	}
+
+	return false;
 }
 }} // namespace Cry::DefaultComponents

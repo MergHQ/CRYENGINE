@@ -166,6 +166,8 @@ struct SSystemCVars
 
 	int     sys_deferAudioUpdateOptim;
 	int     sys_filesystemCaseSensitivity;
+	
+	int sys_reflection_natvis;
 
 	PakVars pakVars;
 
@@ -223,6 +225,8 @@ struct CProfilingSystem : public IProfilingSystem
 	virtual void VTunePause();
 	//////////////////////////////////////////////////////////////////////////
 };
+
+IThreadManager* CreateThreadManager();
 
 /*
    ===========================================
@@ -351,7 +355,9 @@ public:
 	DRS::IDynamicResponseSystem* GetIDynamicResponseSystem()          { return m_env.pDynamicResponseSystem; }
 	IHardwareMouse*              GetIHardwareMouse() override         { return m_env.pHardwareMouse; }
 	ISystemEventDispatcher*      GetISystemEventDispatcher() override { return m_pSystemEventDispatcher; }
-	ITestSystem*                 GetITestSystem() override            { return m_pTestSystem.get(); }
+#ifdef CRY_TESTING
+	CryTest::ITestSystem*        GetITestSystem() override            { return m_pTestSystem.get(); }
+#endif
 	IUserAnalyticsSystem*        GetIUserAnalyticsSystem() override   { return m_pUserAnalyticsSystem; }
 	Cry::IPluginManager*         GetIPluginManager() override         { return m_pPluginManager; }
 	IProjectManager*             GetIProjectManager() override;
@@ -478,7 +484,6 @@ public:
 	// Get the current callstack in raw address form (more lightweight than the above functions)
 	// static as memReplay needs it before CSystem has been setup - expose a ISystem interface to this function if you need it outside CrySystem
 	static void                  debug_GetCallStackRaw(void** callstack, uint32& callstackLength);
-	virtual void                 ApplicationTest(const char* szParam) override;
 
 	virtual ICryFactoryRegistry* GetCryFactoryRegistry() const override;
 
@@ -535,7 +540,6 @@ private:
 	bool InitNetwork(const SSystemInitParams& startupParams);
 	bool InitInput(const SSystemInitParams& startupParams);
 
-	bool InitConsole();
 	bool InitRenderer(SSystemInitParams& startupParams);
 	bool InitPhysics(const SSystemInitParams& startupParams);
 	bool InitPhysicsRenderer(const SSystemInitParams& startupParams);
@@ -672,7 +676,6 @@ private: // ------------------------------------------------------
 	bool               m_bShaderCacheGenMode;   //!< true if the application runs in shader cache generation mode
 	bool               m_bRelaunch;             //!< relaunching the app or not (true beforerelaunch)
 	int                m_iLoadingMode;          //!< Game is loading w/o changing context (0 not, 1 quickloading, 2 full loading)
-	bool               m_bEditor;               //!< If running in Editor.
 	bool               m_bNoCrashDialog;
 	bool               m_bPreviewMode;          //!< If running in Preview mode.
 	bool               m_bUIFrameworkMode;
@@ -792,6 +795,7 @@ private: // ------------------------------------------------------
 	ICVar* m_sys_menupreloadpacks;
 
 	ICVar* m_cvAIUpdate;
+	ICVar* m_rIntialWindowSizeRatio;
 	ICVar* m_rWidth;
 	ICVar* m_rHeight;
 	ICVar* m_rColorBits;
@@ -822,7 +826,7 @@ private: // ------------------------------------------------------
 	ICVar* m_sys_job_system_enable;
 	ICVar* m_sys_job_system_profiler;
 	ICVar* m_sys_job_system_max_worker;
-	ICVar* m_sys_job_system_active_wait_enabled;
+	ICVar* m_sys_job_system_worker_boost_enabled;
 	ICVar* m_sys_spec;
 	ICVar* m_sys_firstlaunch;
 
@@ -979,7 +983,7 @@ public:
 
 	virtual bool IsLoading() override
 	{
-		return (m_systemGlobalState <= ESYSTEM_GLOBAL_STATE_LEVEL_LOAD_END);
+		return (m_systemGlobalState < ESYSTEM_GLOBAL_STATE_LEVEL_LOAD_END);
 	}
 
 	virtual ESystemGlobalState GetSystemGlobalState(void) override;
@@ -1001,9 +1005,10 @@ public:
 protected: // -------------------------------------------------------------
 	ILoadingProgressListener*                 m_pProgressListener;
 	CCmdLine*                                 m_pCmdLine;
-	std::unique_ptr<ITestSystem>              m_pTestSystem; // needed for external test application (0 if not activated yet)
+#ifdef CRY_TESTING
+	std::unique_ptr<CryTest::ITestSystem>     m_pTestSystem;
+#endif
 	CVisRegTest*                              m_pVisRegTest;
-	CThreadManager*                           m_pThreadManager;
 	CResourceManager*                         m_pResourceManager;
 	ITextModeConsole*                         m_pTextModeConsole;
 	INotificationNetwork*                     m_pNotificationNetwork;

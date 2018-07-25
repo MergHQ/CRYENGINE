@@ -841,7 +841,15 @@ void CPrefabManager::DeleteItem(IDataBaseItem* pItem)
 			pObjMan->DeleteObject(pObj);
 	}
 
-	__super::DeleteItem(pItem);
+	IDataBaseLibrary * pLibrary = pItem->GetLibrary();
+
+	CBaseLibraryManager::DeleteItem(pItem);
+
+	//cleanup the library when it's been emptied
+	if (pLibrary && !pLibrary->GetItemCount())
+	{
+		DeleteLibrary(pLibrary->GetName());
+	}
 }
 
 IDataBaseItem* CPrefabManager::LoadItem(const CryGUID& guid)

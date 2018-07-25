@@ -111,11 +111,11 @@ static void EnableAllSound(bool bIsEnabled)
 {
 	if (bIsEnabled)
 	{
-		gEnv->pAudioSystem->ExecuteTrigger(CryAudio::UnmuteAllTriggerId);
+		GetISystem()->GetISystemEventDispatcher()->OnSystemEvent(ESYSTEM_EVENT_AUDIO_UNMUTE, 0, 0);
 	}
 	else
 	{
-		gEnv->pAudioSystem->ExecuteTrigger(CryAudio::MuteAllTriggerId);
+		GetISystem()->GetISystemEventDispatcher()->OnSystemEvent(ESYSTEM_EVENT_AUDIO_MUTE, 0, 0);
 	}
 }
 

@@ -8,8 +8,6 @@ namespace Impl
 {
 namespace Wwise
 {
-class CImpl;
-
 class CCVars final
 {
 public:
@@ -22,7 +20,6 @@ public:
 
 	void    RegisterVariables();
 	void    UnregisterVariables();
-	void    SetImpl(CImpl* const pImpl) { s_pImpl = pImpl; }
 
 	int m_secondaryMemoryPoolSize = 0;
 	int m_prepareEventMemoryPoolSize = 0;
@@ -33,6 +30,8 @@ public:
 	int m_lowerEngineDefaultPoolSize = 0;
 	int m_enableEventManagerThread = 0;
 	int m_enableSoundBankManagerThread = 0;
+	int m_numSamplesPerFrame = 0;
+	int m_numRefillsInVoice = 0;
 	int m_panningRule = 0;
 
 #if defined(INCLUDE_WWISE_IMPL_PRODUCTION_CODE)
@@ -41,8 +40,6 @@ public:
 	int m_monitorMemoryPoolSize = 0;
 	int m_monitorQueueMemoryPoolSize = 0;
 #endif  // INCLUDE_WWISE_IMPL_PRODUCTION_CODE
-
-	static CImpl* s_pImpl;
 };
 
 extern CCVars g_cvars;

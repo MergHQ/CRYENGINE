@@ -48,7 +48,7 @@
 #include <CryScriptSystem/IScriptSystem.h>
 #include <CrySystem/ICmdLine.h>
 #include <CrySystem/IProcess.h>
-#include <CryReflection/IReflection.h>
+#include <CryReflection/Framework.h>
 
 #include "CryPak.h"
 #include "XConsole.h"
@@ -74,7 +74,9 @@
 #include "DiskProfiler.h"
 #include "Watchdog.h"
 #include "Statoscope.h"
-#include "TestSystemLegacy.h"
+#ifdef CRY_TESTING
+#include "TestSystem.h"
+#endif // CRY_TESTING
 #include "VisRegTest.h"
 #include "MTSafeAllocator.h"
 #include "NotificationNetwork.h"
@@ -533,7 +535,7 @@ struct SysSpecOverrideSink : public ILoadConfigurationEntrySink
 
 			if (applyCvar)
 			{
-				pCvar->Set(szValue);
+				pCvar->SetFromString(szValue);
 			}
 			else
 			{
@@ -1079,7 +1081,7 @@ bool CSystem::InitReflectionSystem(const SSystemInitParams& startupParams)
 {
 	LOADING_TIME_PROFILE_SECTION(GetISystem());
 
-	if (!InitializeEngineModule(startupParams, "CryReflection", cryiidof<Cry::Reflection::IReflection>(), true))
+	if (!InitializeEngineModule(startupParams, "CryReflection", cryiidof<Cry::Reflection::IModule>(), true))
 		return false;
 
 	if (!m_env.pReflection)
@@ -1095,10 +1097,6 @@ bool CSystem::InitReflectionSystem(const SSystemInitParams& startupParams)
 bool CSystem::InitSchematyc(const SSystemInitParams& startupParams)
 {
 	LOADING_TIME_PROFILE_SECTION(GetISystem());
-
-#ifdef USE_SCHEMATYC_EXPERIMENTAL
-	sys_SchematycPlugin = 2;
-#endif
 
 	if (sys_SchematycPlugin == 0 || sys_SchematycPlugin == 1)
 	{
@@ -1247,6 +1245,10 @@ void CSystem::InitGameFramework(SSystemInitParams& startupParams)
 		m_env.pGameFramework = nullptr;
 		return;
 	}
+
+#if !defined(CRY_IS_MONOLITHIC_BUILD)
+	m_gameLibrary.Free();
+#endif
 }
 
 //////////////////////////////////////////////////////////////////////////
@@ -1276,25 +1278,6 @@ bool CSystem::InitInput(const SSystemInitParams& startupParams)
 	}
 
 	return true;
-}
-
-/////////////////////////////////////////////////////////////////////////////////
-/////////////////////////////////////////////////////////////////////////////////
-bool CSystem::InitConsole()
-{
-	LOADING_TIME_PROFILE_SECTION(GetISystem());
-	MEMSTAT_CONTEXT(EMemStatContextTypes::MSC_Other, 0, "Init Console");
-
-	//	m_Console->Init(this);
-	// Ignore when run in Editor.
-	if (m_bEditor && !m_env.pRenderer)
-		return true;
-
-	// Ignore for dedicated server.
-	if (gEnv->IsDedicated())
-		return true;
-
-	return (true);
 }
 
 //////////////////////////////////////////////////////////////////////////
@@ -1344,7 +1327,7 @@ bool CSystem::InitRenderer(SSystemInitParams& startupParams)
 	if (m_pUserCallback)
 		m_pUserCallback->OnInitProgress("Initializing Renderer...");
 
-	if (m_bEditor)
+	if (m_env.IsEditor())
 	{
 		m_env.pConsole->GetCVar("r_Width");
 
@@ -1359,10 +1342,11 @@ bool CSystem::InitRenderer(SSystemInitParams& startupParams)
 
 	if (m_env.pRenderer)
 	{
-		if (m_env.pHardwareMouse)
-			m_env.pHardwareMouse->OnPreInitRenderer();
-
-		WIN_HWND hwnd = (startupParams.bEditor) ? (WIN_HWND)1 : m_hWnd;
+#ifndef RELEASE
+		const WIN_HWND hwnd = (startupParams.bEditor) ? (WIN_HWND)1 : m_hWnd;
+#else
+		const WIN_HWND hwnd = m_hWnd;
+#endif
 
 		int width = m_rWidth->GetIVal();
 		int height = m_rHeight->GetIVal();
@@ -1382,6 +1366,9 @@ bool CSystem::InitRenderer(SSystemInitParams& startupParams)
 
 		m_env.pAuxGeomRenderer = m_env.pRenderer->GetIRenderAuxGeom();
 		InitPhysicsRenderer(startupParams);
+
+		if (m_env.pHardwareMouse)
+			m_env.pHardwareMouse->OnPostInitRenderer();
 
 	#if CRY_PLATFORM_LINUX || CRY_PLATFORM_ANDROID || CRY_PLATFORM_APPLE || CRY_PLATFORM_ORBIS
 		return true;
@@ -1773,7 +1760,7 @@ bool CSystem::InitPhysics(const SSystemInitParams& startupParams)
 	pVars->flagsANDDebris = ~(geom_colltype_vehicle | geom_colltype6);
 	pVars->ticksPerSecond = gEnv->pTimer->GetTicksPerSecond();
 
-	if (m_bEditor)
+	if (m_env.IsEditor())
 	{
 		// Setup physical grid for Editor.
 		int nCellSize = 16;
@@ -1936,7 +1923,7 @@ bool CSystem::InitFileSystem(const SSystemInitParams& startupParams)
 			m_root = temp;
 	}
 
-	if (m_bEditor || bLvlRes)
+	if (m_env.IsEditor() || bLvlRes)
 		m_env.pCryPak->RecordFileOpen(ICryPak::RFOM_EngineStartup);
 
 	{
@@ -1949,7 +1936,7 @@ bool CSystem::InitFileSystem(const SSystemInitParams& startupParams)
 		m_env.pCryPak->SetAlias("%ENGINE%", engineDir.c_str(), true);
 
 #ifndef RELEASE
-		if (m_bEditor)
+		if (m_env.IsEditor())
 		{
 			const CryPathString editorDir = PathUtil::Make(CryPathString(engineRootDir.c_str()), CryPathString("Editor"));
 			m_env.pCryPak->SetAlias("%EDITOR%", editorDir.c_str(), true);
@@ -1958,6 +1945,15 @@ bool CSystem::InitFileSystem(const SSystemInitParams& startupParams)
 		}
 #endif
 	}
+
+	// Load value of sys_game_folder from system.cfg into the sys_project console variable
+	ILoadConfigurationEntrySink* pCVarsWhiteListConfigSink = GetCVarsWhiteListConfigSink();
+#if CRY_PLATFORM_ANDROID && !defined(ANDROID_OBB)
+	string path = string(CryGetProjectStoragePath()) + "/system.cfg";
+	LoadConfiguration(path.c_str(), pCVarsWhiteListConfigSink, eLoadConfigInit, ELoadConfigurationFlags::SuppressConfigNotFoundWarning);
+#else
+	LoadConfiguration("%ENGINEROOT%/system.cfg", pCVarsWhiteListConfigSink, eLoadConfigInit, ELoadConfigurationFlags::SuppressConfigNotFoundWarning);
+#endif
 
 	// Now set up the log
 	InitLog(startupParams);
@@ -1969,14 +1965,12 @@ bool CSystem::InitFileSystem(const SSystemInitParams& startupParams)
 	const char* szConfigPakPath = "%ENGINEROOT%/config.pak";
 	m_env.pCryPak->OpenPack(szConfigPakPath);
 
-	// Load value of sys_game_folder from system.cfg into the sys_game_folder console variable
-	ILoadConfigurationEntrySink* pCVarsWhiteListConfigSink = GetCVarsWhiteListConfigSink();
-#if CRY_PLATFORM_ANDROID && !defined(ANDROID_OBB)
-	string path = string(CryGetProjectStoragePath()) + "/system.cfg";
-	LoadConfiguration(path.c_str(), pCVarsWhiteListConfigSink, eLoadConfigInit, ELoadConfigurationFlags::SuppressConfigNotFoundWarning);
-#else
-	LoadConfiguration("%ENGINEROOT%/system.cfg", pCVarsWhiteListConfigSink, eLoadConfigInit, ELoadConfigurationFlags::SuppressConfigNotFoundWarning);
-#endif
+	// Initialize console before the project system
+	// This ensures that "exec" and other early commands can be executed immediately on parsing
+	if (m_env.pConsole != nullptr)
+	{
+		static_cast<CXConsole*>(m_env.pConsole)->PreProjectSystemInit();
+	}
 
 	if (!m_pProjectManager->ParseProjectFile())
 	{
@@ -2055,16 +2049,14 @@ void CSystem::InitLog(const SSystemInitParams& startupParams)
 		}
 
 		string sLogFileName = startupParams.sLogFileName != nullptr ? startupParams.sLogFileName : DEFAULT_LOG_FILENAME;
-
-#if CRY_PLATFORM_WINDOWS
-		if (sLogFileName.size() > 0)
+		if (!sLogFileName.empty())
 		{
-			int instance = GetApplicationInstance();
-			if (instance != 0)
+			const int instance = GetApplicationInstance();
+			if (instance > 0)
 			{
 				string logFileExtension;
-				size_t extensionIndex = sLogFileName.find_last_of('.');
 				string logFileNamePrefix = sLogFileName;
+				const size_t extensionIndex = sLogFileName.find_last_of('.');
 				if (extensionIndex != string::npos)
 				{
 					logFileExtension = sLogFileName.substr(extensionIndex, sLogFileName.length() - extensionIndex);
@@ -2073,7 +2065,6 @@ void CSystem::InitLog(const SSystemInitParams& startupParams)
 				sLogFileName.Format("%s(%d)%s", logFileNamePrefix.c_str(), instance, logFileExtension.c_str());
 			}
 		}
-#endif
 
 		const ICmdLineArg* logfile = m_pCmdLine->FindArg(eCLAT_Pre, "logfile");
 		if (logfile && strlen(logfile->GetValue()) > 0)
@@ -2621,7 +2612,7 @@ bool CSystem::Initialize(SSystemInitParams& startupParams)
 	}
 
 	// set unit test flag at start so multiple systems could handle initialization differently when needed
-	if (m_pCmdLine->FindArg(eCLAT_Pre, "run_unit_tests"))
+	if (m_pCmdLine->FindArg(eCLAT_Pre, "run_crytest"))
 	{
 		startupParams.bTesting = true;
 	}
@@ -2663,7 +2654,13 @@ bool CSystem::Initialize(SSystemInitParams& startupParams)
 	m_hWnd = (WIN_HWND)startupParams.hWnd;
 
 	m_binariesDir = startupParams.szBinariesDir;
-	m_bEditor = startupParams.bEditor;
+	
+#if CRY_PLATFORM_DESKTOP && !defined(_RELEASE)
+	m_env.SetIsEditor(startupParams.bEditor);
+	m_env.SetIsEditorGameMode(false);
+	m_env.SetIsEditorSimulationMode(false);
+#endif
+
 	m_bPreviewMode = startupParams.bPreview;
 	m_bUIFrameworkMode = startupParams.bUIFramework;
 	m_pUserCallback = startupParams.pUserCallback;
@@ -2709,12 +2706,6 @@ bool CSystem::Initialize(SSystemInitParams& startupParams)
 
 	memcpy(gEnv->pProtectedFunctions, startupParams.pProtectedFunctions, sizeof(startupParams.pProtectedFunctions));
 
-#if CRY_PLATFORM_DESKTOP
-	m_env.SetIsEditor(m_bEditor);
-	m_env.SetIsEditorGameMode(false);
-	m_env.SetIsEditorSimulationMode(false);
-#endif
-
 	m_env.bIsOutOfMemory = false;
 
 	{
@@ -2722,11 +2713,11 @@ bool CSystem::Initialize(SSystemInitParams& startupParams)
 
 #if defined(_RELEASE)
 		// disable devmode by default in release builds outside the editor
-		devModeEnable = m_bEditor;
+		devModeEnable = m_env.IsEditor();
 #endif
 
 		// disable devmode in launcher if someone really wants to (even in non release builds)
-		if (!m_bEditor && m_pCmdLine->FindArg(eCLAT_Pre, "nodevmode"))
+		if (!m_env.IsEditor() && m_pCmdLine->FindArg(eCLAT_Pre, "nodevmode"))
 		{
 			devModeEnable = false;
 		}
@@ -2892,7 +2883,7 @@ bool CSystem::Initialize(SSystemInitParams& startupParams)
 		m_pCpu->Detect();
 		m_env.pi.numCoresAvailableToProcess = m_pCpu->GetCPUCount();
 		m_env.pi.numLogicalProcessors = m_pCpu->GetLogicalCPUCount();
-		m_env.pi.processorType = m_pCpu->m_Cpu[0].mCpuType;
+		m_env.pi.szProcessorType = m_pCpu->m_Cpu[0].mCpuType;
 
 		// Check hard minimum CPU requirements
 		if (!CheckCPURequirements(m_pCpu, this))
@@ -2926,6 +2917,7 @@ bool CSystem::Initialize(SSystemInitParams& startupParams)
 		//////////////////////////////////////////////////////////////////////////
 
 		//notify test system to init logs (since file system is setup).
+#ifdef CRY_TESTING
 		if (m_pTestSystem)
 		{
 			m_pTestSystem->InitLog();
@@ -2933,15 +2925,16 @@ bool CSystem::Initialize(SSystemInitParams& startupParams)
 
 		if (m_env.pConsole != nullptr)
 		{
-			CTestSystemLegacy::InitCommands();
+			CryTest::CTestSystem::InitCommands();
 		}
+#endif // CRY_TESTING
 
 		// Initialise after pLog and CPU feature initialization
 		// AND after console creation (Editor only)
 		// May need access to engine folder .pak files
 		gEnv->pThreadManager->GetThreadConfigManager()->LoadConfig("%engine%/config/engine_core.thread_config");
 
-		if (m_bEditor)
+		if (m_env.IsEditor())
 			gEnv->pThreadManager->GetThreadConfigManager()->LoadConfig("%engine%/config/engine_sandbox.thread_config");
 
 		// Setup main thread
@@ -2960,6 +2953,8 @@ bool CSystem::Initialize(SSystemInitParams& startupParams)
 		{
 			return false;
 		}
+
+		Cry::Reflection::CTypeRegistrationChain::Execute(g_cvars.sys_reflection_natvis != 0);
 
 		m_pResourceManager->Init();
 
@@ -3322,8 +3317,10 @@ bool CSystem::Initialize(SSystemInitParams& startupParams)
 
 		InlineInitializationProcessing("CSystem::Init CSharedFlashPlayerResources::Init");
 
-		const bool bStartScreensAllowed = !startupParams.bEditor
-		                                  && !startupParams.bShaderCacheGen
+		const bool bStartScreensAllowed = !startupParams.bShaderCacheGen
+#ifndef RELEASE
+		                                  && !startupParams.bEditor
+#endif
 		                                  && !m_env.IsDedicated()
 		                                  && m_env.pRenderer;
 
@@ -3451,16 +3448,6 @@ bool CSystem::Initialize(SSystemInitParams& startupParams)
 		m_env.pRemoteCommandManager = new CRemoteCommandManager();
 
 		//////////////////////////////////////////////////////////////////////////
-		// CONSOLE
-		//////////////////////////////////////////////////////////////////////////
-		if (!startupParams.bShaderCacheGen)
-		{
-			CryLogAlways("Console initialization");
-			if (!InitConsole())
-				return false;
-		}
-
-		//////////////////////////////////////////////////////////////////////////
 		// THREAD PROFILER
 		//////////////////////////////////////////////////////////////////////////
 		m_pThreadProfiler = new CThreadProfiler;
@@ -3509,8 +3496,10 @@ bool CSystem::Initialize(SSystemInitParams& startupParams)
 
 		InlineInitializationProcessing("CSystem::Init InitMiniGUI");
 
-		if (m_env.pConsole != 0)
-			((CXConsole*)m_env.pConsole)->Init(this);
+		if (m_env.pConsole != nullptr)
+		{
+			static_cast<CXConsole*>(m_env.pConsole)->PostRendererInit();
+		}
 
 		//////////////////////////////////////////////////////////////////////////
 		// Init Animation system
@@ -3725,16 +3714,13 @@ bool CSystem::Initialize(SSystemInitParams& startupParams)
 		//////////////////////////////////////////////////////////////////////////
 
 #if defined(USE_PERFHUD)
-		if (!gEnv->bTesting)
+		MEMSTAT_CONTEXT(EMemStatContextTypes::MSC_Other, 0, "Init PerfHUD");
+		//Create late in Init so that associated CVars have already been created
+		ICryPerfHUDPtr pPerfHUD;
+		if (CryCreateClassInstanceForInterface(cryiidof<ICryPerfHUD>(), pPerfHUD))
 		{
-			MEMSTAT_CONTEXT(EMemStatContextTypes::MSC_Other, 0, "Init PerfHUD");
-			//Create late in Init so that associated CVars have already been created
-			ICryPerfHUDPtr pPerfHUD;
-			if (CryCreateClassInstanceForInterface(cryiidof<ICryPerfHUD>(), pPerfHUD))
-			{
-				m_pPerfHUD = pPerfHUD.get();
-				m_pPerfHUD->Init();
-			}
+			m_pPerfHUD = pPerfHUD.get();
+			m_pPerfHUD->Init();
 		}
 #endif
 
@@ -3801,7 +3787,7 @@ bool CSystem::Initialize(SSystemInitParams& startupParams)
 		m_env.pThreadManager->EnableFloatExceptions((EFPE_Severity)g_cvars.sys_float_exceptions);
 
 #if (CRY_PLATFORM_WINDOWS && CRY_PLATFORM_64BIT) && defined(SECUROM_64)
-		if (!m_bEditor && !IsDedicated())
+		if (!m_env.IsEditor() && !IsDedicated())
 		{
 			int res = TestSecurom64();
 			if (res != b64_ok)
@@ -4965,7 +4951,7 @@ void CSystem::CreateSystemVars()
 
 	//TODO this cvar should be replaced by fixed shutdown logic considering the particularities of each platform
 #if CRY_PLATFORM_WINDOWS || CRY_PLATFORM_LINUX
-	if (m_bEditor)
+	if (m_env.IsEditor())
 	{
 		// in editor we must exit on quit.
 		m_pCVarQuit = REGISTER_INT("ExitOnQuit", 1, VF_NULL, "");
@@ -4997,7 +4983,7 @@ void CSystem::CreateSystemVars()
 	m_cvMemStatsThreshold = REGISTER_INT("MemStatsThreshold", 32000, VF_NULL, "");
 	m_cvMemStatsMaxDepth = REGISTER_INT("MemStatsMaxDepth", 4, VF_NULL, "");
 
-	if (m_bEditor)
+	if (m_env.IsEditor())
 	{
 		// In Editor our Pak priority is always 0
 		g_cvars.pakVars.nPriority = ePakPriorityFileFirst;
@@ -5112,18 +5098,18 @@ void CSystem::CreateSystemVars()
 	                                         "0: Disable the profiler\n"
 	                                         "1: Show the full profiler\n"
 	                                         "2: Show only the execution graph\n");
-#if CRY_PLATFORM_WINDOWS || CRY_PLATFORM_DURANGO
-	const uint32 nJobSystemDefaultCoreNumber = 8;
-#else
+#if CRY_PLATFORM_CONSOLE || CRY_PLATFORM_MOBILE
 	const uint32 nJobSystemDefaultCoreNumber = 4;
+#else
+	const uint32 nJobSystemDefaultCoreNumber = 8;
 #endif
 	m_sys_job_system_max_worker = REGISTER_INT("sys_job_system_max_worker", nJobSystemDefaultCoreNumber, 0,
 	                                           "Sets the number of threads to use for the job system"
 	                                           "Defaults to 4 on consoles and 8 threads an PC"
 	                                           "Set to 0 to create as many threads as cores are available");
 
-	m_sys_job_system_active_wait_enabled = REGISTER_INT("sys_job_system_active_wait_enabled", 1, 0,
-                                                        "Fires up additional worker thread when the Main/Render-Thread are having to wait on a job state");
+	m_sys_job_system_worker_boost_enabled = REGISTER_INT("sys_job_system_worker_boost_enabled", 1, 0,
+                                                        "Kicks off anadditional worker thread when the Main/Render-Thread have to wait on a job state");
 
 	REGISTER_COMMAND("sys_job_system_dump_job_list", CmdDumpJobManagerJobList, VF_CHEAT, "Show a list of all registered job in the console");
 	REGISTER_COMMAND("sys_dump_cvars", CmdDumpCvars, VF_CHEAT, "Dump all cvars to file");
@@ -5304,7 +5290,15 @@ void CSystem::CreateSystemVars()
 
 	REGISTER_CVAR_CB(sys_ProfileLevelLoadingDump, 0, VF_CHEAT, "Output level loading dump stats into log\n", OnLevelLoadingDump);
 
-	REGISTER_CVAR(sys_SchematycPlugin, 1, VF_REQUIRE_APP_RESTART,
+#if defined(USE_SCHEMATYC) && defined(USE_SCHEMATYC_EXPERIMENTAL)
+	static const int default_sys_SchematycPlugin = 0;
+#elif defined(USE_SCHEMATYC_EXPERIMENTAL)
+	static const int default_sys_SchematycPlugin = 2;
+#else // default = USE_SCHEMATYC
+	static const int default_sys_SchematycPlugin = 1;
+#endif
+
+	REGISTER_CVAR(sys_SchematycPlugin, default_sys_SchematycPlugin, VF_REQUIRE_APP_RESTART,
 	              "Set whether default Schematyc and/or experimental plugin is loaded\n"
 	              "0 = Both plugins\n"
 	              "1 = Loads default Schematyc plugin only\n"
@@ -5443,6 +5437,10 @@ void CSystem::CreateSystemVars()
 
 #if CRY_PLATFORM_WINDOWS
 	REGISTER_CVAR2("sys_highrestimer", &g_cvars.sys_highrestimer, 0, VF_REQUIRE_APP_RESTART, "Enables high resolution system timer.");
+#endif
+
+#if CRY_PLATFORM_WINDOWS
+	REGISTER_CVAR2("sys_reflection_natvis", &g_cvars.sys_reflection_natvis, 0, VF_NULL, "Enables reflection .natvis file generation on startup.");
 #endif
 
 	g_cvars.sys_intromoviesduringinit = 0;

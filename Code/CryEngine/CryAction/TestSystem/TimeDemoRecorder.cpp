@@ -18,12 +18,10 @@
 #include <IActorSystem.h>
 #include <CryAISystem/IAgent.h>
 #include <ILevelSystem.h>
-#include <CrySystem/ITestSystem.h>
 #include <CryMovie/IMovieSystem.h>
 #include "IMovementController.h"
 #include <CrySystem/Profilers/IStatoscope.h>
 #include <Cry3DEngine/ITimeOfDay.h>
-#include <ITimeDemoRecorder.h>
 #include <CrySystem/VR/IHMDManager.h>
 #include <CrySystem/VR/IHMDDevice.h>
 #include <CryCore/Platform/CryWindows.h>
@@ -44,7 +42,7 @@
 
 #define TIMEDEMO_MAX_INPUT_EVENTS       16
 #define TIMEDEMO_MAX_GAME_EVENTS        1 // For now...
-#define TIMEDEMO_MAX_DESCRIPTION_LENGTH 64
+#define TIMEDEMO_MAX_DESCRIPTION_LENGTH 128
 
 #define FIXED_TIME_STEP                 (30) // Assume running at 30fps.
 
@@ -375,9 +373,10 @@ void CTimeDemoRecorder::cmd_Play(IConsoleCmdArgs* pArgs)
 void CTimeDemoRecorder::cmd_Stop(IConsoleCmdArgs* pArgs)
 {
 	if (s_pTimeDemoRecorder)
+	{
 		s_pTimeDemoRecorder->Record(false);
-	if (s_pTimeDemoRecorder)
 		s_pTimeDemoRecorder->Play(false);
+	}
 }
 
 //////////////////////////////////////////////////////////////////////////
@@ -525,6 +524,39 @@ CTimeDemoRecorder::CTimeDemoRecorder()
 //////////////////////////////////////////////////////////////////////////
 CTimeDemoRecorder::~CTimeDemoRecorder()
 {
+	IConsole* pConsole = gEnv->pConsole;
+
+	pConsole->UnregisterVariable("demo_file");
+	pConsole->UnregisterVariable("demo_game_state");
+	pConsole->UnregisterVariable("demo_profile");
+	pConsole->UnregisterVariable("demo_noinfo");
+
+	pConsole->RemoveCommand("record");
+	pConsole->RemoveCommand("stoprecording");
+	pConsole->RemoveCommand("demo");
+	pConsole->RemoveCommand("stopdemo");
+	pConsole->RemoveCommand("demo_StartDemoChain");
+	pConsole->RemoveCommand("demo_StartDemoLevel");
+
+	pConsole->UnregisterVariable("demo_num_runs");
+	pConsole->UnregisterVariable("demo_scroll_pause");
+	pConsole->UnregisterVariable("demo_quit");
+	pConsole->UnregisterVariable("demo_finish_memreplay_sizer");
+	pConsole->UnregisterVariable("demo_finish_memreplay_stop");
+	pConsole->UnregisterVariable("demo_screenshot_frame");
+	pConsole->UnregisterVariable("demo_max_frames");
+	pConsole->UnregisterVariable("demo_savestats");
+	pConsole->UnregisterVariable("demo_ai");
+	pConsole->UnregisterVariable("demo_restart_level");
+	pConsole->UnregisterVariable("demo_panoramic");
+	pConsole->UnregisterVariable("demo_fixed_timestep");
+	pConsole->UnregisterVariable("demo_vtune");
+	pConsole->UnregisterVariable("demo_time_of_day");
+	pConsole->UnregisterVariable("demo_save_every_frame");
+	pConsole->UnregisterVariable("demo_use_hmd_rotation");
+	pConsole->UnregisterVariable("demo_finish_cmd");
+	pConsole->UnregisterVariable("demo_num_orientations");
+
 	s_pTimeDemoRecorder = 0;
 }
 
@@ -573,9 +605,6 @@ std::array<EEntityEvent, 8> g_recordedEntityEvents =
 //////////////////////////////////////////////////////////////////////////
 void CTimeDemoRecorder::Record(bool bEnable)
 {
-	if (bEnable == m_bRecording)
-		return;
-
 	if (bEnable == m_bRecording)
 		return;
 
@@ -667,6 +696,9 @@ void CTimeDemoRecorder::Play(bool bEnable)
 
 		if (m_records.empty())
 		{
+			//Prevent the timedemo from exiting to the game menu if the file is not found.
+			m_bDemoEnded = true;
+			
 			m_bDemoFinished = true;
 			return;
 		}
@@ -1513,19 +1545,13 @@ bool CTimeDemoRecorder::RecordFrame()
 
 	rec.frameTime = (time - m_lastFrameTime).GetSeconds();
 
-	IEntity* pPlayerEntity = NULL;
-
-	IActor* pClientActor = gEnv->pGameFramework->GetClientActor();
-	if (pClientActor)
-	{
-		pPlayerEntity = pClientActor->GetEntity();
-	}
-
-	if (pPlayerEntity)
+	if (IEntity* pPlayerEntity = gEnv->pGameFramework->GetClientEntity())
 	{
 		rec.playerPosition = pPlayerEntity->GetPos();
 		rec.playerRotation = pPlayerEntity->GetRotation();
-		rec.playerViewRotation = pClientActor == NULL ? pPlayerEntity->GetRotation() : pClientActor->GetViewRotation();
+
+		IActor* pClientActor = gEnv->pGameFramework->GetClientActor();
+		rec.playerViewRotation = pClientActor ? pClientActor->GetViewRotation() : pPlayerEntity->GetRotation();
 	}
 
 	// Legacy
@@ -1635,20 +1661,13 @@ bool CTimeDemoRecorder::PlayFrame()
 		}
 	}
 	//////////////////////////////////////////////////////////////////////////
-
-	IEntity* pPlayer = NULL;
-	IActor* pClActor = gEnv->pGameFramework->GetClientActor();
-	if (pClActor)
+	
+	if (IEntity* pPlayerEntity = gEnv->pGameFramework->GetClientEntity())
 	{
-		pPlayer = pClActor->GetEntity();
-	}
-
-	if (pPlayer)
-	{
-		if (pPlayer->GetParent() == 0)
+		if (pPlayerEntity->GetParent() == 0)
 		{
 			// Only if player is not linked to anything.
-			pPlayer->SetPos(rec.playerPosition, ENTITY_XFORM_TIMEDEMO);
+			pPlayerEntity->SetPos(rec.playerPosition, ENTITY_XFORM_TIMEDEMO);
 
 			int orientationIndex = m_numLoops % m_numOrientations;
 			float zAngle = ((float)orientationIndex / m_numOrientations) * gf_PI2;
@@ -1657,7 +1676,7 @@ bool CTimeDemoRecorder::PlayFrame()
 			Quat adjustedPlayerRotation = Quat::CreateRotationZ(zAngle) * rotation;
 			CRY_ASSERT(adjustedPlayerRotation.IsValid());
 
-			pPlayer->SetRotation(adjustedPlayerRotation, ENTITY_XFORM_TIMEDEMO);
+			pPlayerEntity->SetRotation(adjustedPlayerRotation, ENTITY_XFORM_TIMEDEMO);
 		}
 	}
 
@@ -1955,16 +1974,17 @@ void CTimeDemoRecorder::StartSession()
 	// remember old profiling settings
 	m_bEnabledProfiling = gEnv->pFrameProfileSystem->IsEnabled();
 	m_bVisibleProfiling = gEnv->pFrameProfileSystem->IsVisible();
+	m_oldPeakTolerance = GetConsoleVar("profile_peak");
 
 	if (m_demo_profile)
 	{
 		gEnv->pFrameProfileSystem->Enable(true, gEnv->pFrameProfileSystem->IsVisible());
-	}
-	gEnv->pFrameProfileSystem->AddPeaksListener(this);
 
-	// Profile
-	m_oldPeakTolerance = GetConsoleVar("profile_peak");
-	SetConsoleVar("profile_peak", 50);
+		// Profile peaks by registering a listener.
+		// Enable peaks profiling only if "demo_profile == 1".
+		gEnv->pFrameProfileSystem->AddPeaksListener(this);
+		SetConsoleVar("profile_peak", 50);
+	}
 
 	m_fixedTimeStep = GetConsoleVar("t_FixedStep");
 	if (m_demo_fixed_timestep > 0)
@@ -2004,8 +2024,8 @@ void CTimeDemoRecorder::StopSession()
 		pClientActor->EnableTimeDemo(false);
 
 	gEnv->pGameFramework->GetIGameplayRecorder()->EnableGameStateRecorder(false, this, false);
-
-	// Profile.
+	
+	// Revert the profiling CVAR-s and UI.
 	SetConsoleVar("profile_peak", m_oldPeakTolerance);
 	gEnv->pFrameProfileSystem->RemovePeaksListener(this);
 
@@ -2013,6 +2033,7 @@ void CTimeDemoRecorder::StopSession()
 	{
 		gEnv->pFrameProfileSystem->Enable(m_bEnabledProfiling, m_bVisibleProfiling);
 	}
+
 	m_lastPlayedTotalTime = m_totalDemoTime.GetSeconds();
 }
 
@@ -2115,7 +2136,6 @@ void CTimeDemoRecorder::LogEndOfLoop()
 		pTD->maxFPS_Frame = m_maxFPS_Frame;
 		pTD->nTotalPolysRecorded = m_nTotalPolysRecorded;
 		pTD->nTotalPolysPlayed = m_nTotalPolysPlayed;
-		GetISystem()->GetITestSystem()->SetTimeDemoInfo(m_pTimeDemoInfo);
 	}
 
 	int numFrames = GetNumberOfFrames();//m_records.size();
@@ -2695,6 +2715,12 @@ void CTimeDemoRecorder::GetCurrentFrameRecord(STimeDemoFrameRecord& externalReco
 	externalRecord.playerViewRotation = record.playerViewRotation;
 	externalRecord.hmdPositionOffset = record.hmdPositionOffset;
 	externalRecord.hmdViewRotation = record.hmdViewRotation;
+}
+
+//////////////////////////////////////////////////////////////////////////
+STimeDemoInfo* CTimeDemoRecorder::GetLastPlayedTimeDemo() const
+{
+	return m_pTimeDemoInfo;
 }
 
 //////////////////////////////////////////////////////////////////////////

@@ -46,9 +46,9 @@ inline const EntityGUID& ToEntityGuid(CryGUID guid)
 	return guid;
 }
 
-class IEntityObjectListener
+struct IEntityObjectListener
 {
-public:
+	virtual ~IEntityObjectListener() {}
 	virtual void OnNameChanged(const char* pName) = 0;
 	virtual void OnSelectionChanged(const bool bSelected) = 0;
 	virtual void OnDone() = 0;
@@ -56,6 +56,7 @@ public:
 
 struct IPickEntitesOwner
 {
+	virtual ~IPickEntitesOwner() {}
 	virtual void         AddEntity(CBaseObject* const pBaseObject) = 0;
 	virtual CBaseObject* GetEntity(size_t const index) = 0;
 	virtual size_t       GetEntityCount() const = 0;
@@ -95,7 +96,9 @@ public:
 	void              SetEntityPropertyFloat(const char* name, float value);
 	void              SetEntityPropertyString(const char* name, const string& value);
 
-	virtual void      Display(DisplayContext& disp);
+	virtual void      Display(CObjectRenderHelper& objRenderHelper);
+	const ColorB&     GetSelectionPreviewHighlightColor() override;
+	void              DrawSelectionPreviewHighlight(SDisplayContext& dc) override;
 
 	virtual void      GetDisplayBoundBox(AABB& box);
 
@@ -143,6 +146,8 @@ public:
 	virtual void             SetMaterial(IEditorMaterial* mtl);
 	virtual IEditorMaterial* GetRenderMaterial() const;
 
+	virtual bool             ApplyAsset(const CAsset& asset, HitContext* pHitContext = nullptr) override;
+
 	virtual void             InvalidateGeometryFile(const string& gamePath) override;
 
 	//////////////////////////////////////////////////////////////////////////
@@ -179,6 +184,8 @@ public:
 
 	virtual IRenderNode* GetEngineNode() const;
 	virtual bool         HasMeasurementAxis() const { return false; }
+
+	virtual void StoreUndo(const char* undoDescription, bool minimal = false, int flags = 0) override;
 
 	//////////////////////////////////////////////////////////////////////////
 	// END CBaseObject
@@ -246,10 +253,10 @@ public:
 	float            GetRatioLod() const          { return (float)mv_ratioLOD; }
 	float            GetRatioViewDist() const     { return (float)mv_ratioViewDist; }
 
-	CVarBlock*       GetProperties() const        { return m_pLuaProperties; };
-	CVarBlock*       GetProperties2() const       { return m_pLuaProperties2; };
+	CVarBlock*       GetProperties() const        { return m_pLuaProperties; }
+	CVarBlock*       GetProperties2() const       { return m_pLuaProperties2; }
 
-	bool             IsLight()  const             { return m_bLight;    }
+	bool             IsLight()  const             { return m_bLight; }
 
 	void             Validate();
 
@@ -322,11 +329,11 @@ protected:
 	virtual void PostClone(CBaseObject* pFromObject, CObjectCloneContext& ctx);
 
 	//! Draw default object items.
-	virtual void DrawDefault(DisplayContext& dc, COLORREF labelColor = RGB(255, 255, 255)) override;
-	virtual void DrawTextureIcon(DisplayContext& dc, const Vec3& pos, float alpha, bool bDisplaySelectionHelper, float distanceSquared = 0) override;
-	void         DrawProjectorPyramid(DisplayContext& dc, float dist);
-	void         DrawProjectorFrustum(DisplayContext& dc, Vec2 size, float dist);
-	void         DrawEntityLinks(DisplayContext& dc);
+	virtual void DrawDefault(SDisplayContext& dc, COLORREF labelColor = RGB(255, 255, 255)) override;
+	virtual void DrawTextureIcon(SDisplayContext& dc, const Vec3& pos, float alpha, bool bDisplaySelectionHelper, float distanceSquared = 0) override;
+	void         DrawProjectorPyramid(SDisplayContext& dc, float dist);
+	void         DrawProjectorFrustum(SDisplayContext& dc, Vec2 size, float dist);
+	void         DrawEntityLinks(SDisplayContext& dc);
 
 	// !Recreates the icons buffer
 	void RenewTextureIconsBuffer();
@@ -381,7 +388,7 @@ protected:
 	virtual void BindIEntityChilds();
 	virtual void UnbindIEntity();
 
-	void         DrawAIInfo(DisplayContext& dc, struct IAIObject* aiObj);
+	void         DrawAIInfo(SDisplayContext& dc, IAIObject* aiObj);
 
 	//////////////////////////////////////////////////////////////////////////
 	// Callbacks.
@@ -428,7 +435,6 @@ protected:
 	void           OnMenuCreateFlowGraph();
 	void           OnMenuScriptEvent(int eventIndex);
 	void           OnMenuReloadAllScripts();
-	void           OnMenuConvertToPrefab();
 
 	virtual string GetMouseOverStatisticsText() const override;
 
@@ -614,4 +620,3 @@ public:
 	const char*         GetFileSpec()                       { return "*EntityClass"; }
 	virtual const char* GetDataFilesFilterString() override { return not_implemented; }
 };
-

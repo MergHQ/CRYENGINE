@@ -1624,7 +1624,7 @@ void CGameStats::ReportSession()
 
 	ReportGame();
 
-	if ((CCryAction::GetCryAction()->GetILevelSystem()->IsLevelLoaded() && CCryAction::GetCryAction()->IsGameStarted()) || m_startReportNeeded)//otherwise, OnLoadingStart will report it
+	if (gEnv->pGameFramework->GetILevelSystem()->IsLevelLoaded() && gEnv->pGameFramework->IsGameStarted() || m_startReportNeeded)//otherwise, OnLoadingStart will report it
 	{
 		if (m_serverReport && !m_reportStarted)//report now
 		{

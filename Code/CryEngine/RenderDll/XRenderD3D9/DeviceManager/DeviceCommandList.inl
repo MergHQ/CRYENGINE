@@ -199,8 +199,13 @@ inline void CDeviceGraphicsCommandInterface::SetInlineConstantBuffer(uint32 bind
 	{
 		//		m_pCurrentResources[bindSlot] = ((char*)pBuffer->m_base_ptr + pBuffer->m_offset);
 
-		m_graphicsState.validResourceBindings[bindSlot] = pBuffer != nullptr;
-		SetInlineConstantBufferImpl(bindSlot, pBuffer, shaderSlot, shaderClass);
+#if _RELEASE
+		m_graphicsState.validResourceBindings[bindSlot] = true;
+#else
+		CRY_ASSERT(pBuffer != nullptr);
+		if ((m_graphicsState.validResourceBindings[bindSlot] = (pBuffer != nullptr)))
+#endif
+			SetInlineConstantBufferImpl(bindSlot, pBuffer, shaderSlot, shaderClass);
 
 #if defined(ENABLE_PROFILING_CODE)
 		++m_profilingStats.numInlineSets;
@@ -216,8 +221,13 @@ inline void CDeviceGraphicsCommandInterface::SetInlineConstantBuffer(uint32 bind
 	{
 		//		m_pCurrentResources[bindSlot] = ((char*)pBuffer->m_base_ptr + pBuffer->m_offset);
 
-		m_graphicsState.validResourceBindings[bindSlot] = pBuffer != nullptr;
-		SetInlineConstantBufferImpl(bindSlot, pBuffer, shaderSlot, shaderStages);
+#if _RELEASE
+		m_graphicsState.validResourceBindings[bindSlot] = true;
+#else
+		CRY_ASSERT(pBuffer != nullptr);
+		if ((m_graphicsState.validResourceBindings[bindSlot] = (pBuffer != nullptr)))
+#endif
+			SetInlineConstantBufferImpl(bindSlot, pBuffer, shaderSlot, shaderStages);
 
 #if defined(ENABLE_PROFILING_CODE)
 		++m_profilingStats.numInlineSets;

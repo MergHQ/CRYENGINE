@@ -109,39 +109,36 @@ void CEventManager::DrawDebugInfo(IRenderAuxGeom& auxGeom, Vec3 const& listenerP
 
 	for (auto const pEvent : m_constructedEvents)
 	{
-		if (pEvent->m_pTrigger != nullptr)
+		Vec3 const& position = pEvent->m_pAudioObject->GetTransformation().GetPosition();
+		float const distance = position.GetDistance(listenerPosition);
+
+		if (g_cvars.m_debugDistance <= 0.0f || (g_cvars.m_debugDistance > 0.0f && distance < g_cvars.m_debugDistance))
 		{
-			Vec3 const& position = pEvent->m_pAudioObject->GetTransformation().GetPosition();
-			float const distance = position.GetDistance(listenerPosition);
+			char const* const szTriggerName = pEvent->GetTriggerName();
+			CryFixedStringT<MaxControlNameLength> lowerCaseTriggerName(szTriggerName);
+			lowerCaseTriggerName.MakeLower();
+			bool const draw = ((lowerCaseSearchString.empty() || (lowerCaseSearchString == "0")) || (lowerCaseTriggerName.find(lowerCaseSearchString) != CryFixedStringT<MaxControlNameLength>::npos));
 
-			if (g_cvars.m_debugDistance <= 0.0f || (g_cvars.m_debugDistance > 0.0f && distance < g_cvars.m_debugDistance))
+			if (draw)
 			{
-				char const* const szTriggerName = pEvent->m_pTrigger->m_name.c_str();
-				CryFixedStringT<MaxControlNameLength> lowerCaseTriggerName(szTriggerName);
-				lowerCaseTriggerName.MakeLower();
-				bool const draw = ((lowerCaseSearchString.empty() || (lowerCaseSearchString == "0")) || (lowerCaseTriggerName.find(lowerCaseSearchString) != CryFixedStringT<MaxControlNameLength>::npos));
+				float const* pColor = Debug::g_managerColorItemInactive.data();
 
-				if (draw)
+				if (pEvent->IsPlaying())
 				{
-					float const* pColor = Debug::g_managerColorItemInactive.data();
-
-					if (pEvent->IsPlaying())
-					{
-						pColor = Debug::g_managerColorItemActive.data();
-					}
-					else if (pEvent->m_state == EEventState::Loading)
-					{
-						pColor = Debug::g_managerColorItemLoading.data();
-					}
-					else if (pEvent->m_state == EEventState::Virtual)
-					{
-						pColor = Debug::g_managerColorItemVirtual.data();
-					}
-
-					auxGeom.Draw2dLabel(posX, posY, Debug::g_managerFontSize, pColor, false, "%s on %s", szTriggerName, pEvent->m_pAudioObject->m_name.c_str());
-
-					posY += Debug::g_managerLineHeight;
+					pColor = Debug::g_managerColorItemActive.data();
 				}
+				else if (pEvent->m_state == EEventState::Loading)
+				{
+					pColor = Debug::g_managerColorItemLoading.data();
+				}
+				else if (pEvent->m_state == EEventState::Virtual)
+				{
+					pColor = Debug::g_managerColorItemVirtual.data();
+				}
+
+				auxGeom.Draw2dLabel(posX, posY, Debug::g_managerFontSize, pColor, false, "%s on %s", szTriggerName, pEvent->m_pAudioObject->m_name.c_str());
+
+				posY += Debug::g_managerLineHeight;
 			}
 		}
 	}

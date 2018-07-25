@@ -38,7 +38,9 @@
 #include <CryNetwork/INotificationNetwork.h>
 #include <CrySystem/ICodeCheckpointMgr.h>
 #include <CrySystem/Profilers/IStatoscope.h>
-#include "TestSystemLegacy.h"             // CTestSystem
+#ifdef CRY_TESTING
+#include "TestSystem.h"
+#endif // CRY_TESTING
 #include "VisRegTest.h"
 #include <CryDynamicResponseSystem/IDynamicResponseSystem.h>
 #include <Cry3DEngine/ITimeOfDay.h>
@@ -76,7 +78,7 @@
 #include <CryLiveCreate/ILiveCreateManager.h>
 #include "OverloadSceneManager/OverloadSceneManager.h"
 #include <CryThreading/IThreadManager.h>
-#include <CryReflection/IReflection.h>
+#include <CryReflection/IModule.h>
 
 #include <CrySystem/ZLib/IZLibCompressor.h>
 #include <CrySystem/ZLib/IZlibDecompressor.h>
@@ -268,8 +270,11 @@ CSystem::CSystem(const SSystemInitParams& startupParams)
 	m_PhysThread = nullptr;
 
 	m_pIFont = nullptr;
+#ifdef CRY_TESTING
 	m_pTestSystem = nullptr;
+#endif
 	m_pVisRegTest = nullptr;
+	m_rIntialWindowSizeRatio = nullptr;
 	m_rWidth = nullptr;
 	m_rHeight = nullptr;
 	m_rColorBits = nullptr;
@@ -313,7 +318,7 @@ CSystem::CSystem(const SSystemInitParams& startupParams)
 	m_sys_job_system_enable = nullptr;
 	m_sys_job_system_profiler = nullptr;
 	m_sys_job_system_max_worker = nullptr;
-	m_sys_job_system_active_wait_enabled = nullptr;
+	m_sys_job_system_worker_boost_enabled = nullptr;
 	m_sys_spec = nullptr;
 	m_sys_firstlaunch = nullptr;
 	m_sys_enable_budgetmonitoring = nullptr;
@@ -338,7 +343,6 @@ CSystem::CSystem(const SSystemInitParams& startupParams)
 	m_bShaderCacheGenMode = false;
 	m_bRelaunch = false;
 	m_iLoadingMode = 0;
-	m_bEditor = false;
 	m_bPreviewMode = false;
 	m_bIgnoreUpdates = false;
 	m_bNoCrashDialog = false;
@@ -384,8 +388,6 @@ CSystem::CSystem(const SSystemInitParams& startupParams)
 	m_pXMLUtils = new CXmlUtils(this);
 	m_pArchiveHost = Serialization::CreateArchiveHost();
 
-	m_pTestSystem = stl::make_unique<CTestSystemLegacy>(this);
-
 	m_pMemoryManager = CryGetIMemoryManager();
 	m_pResourceManager = new CResourceManager;
 	m_pTextModeConsole = nullptr;
@@ -396,11 +398,15 @@ CSystem::CSystem(const SSystemInitParams& startupParams)
 #if defined(ENABLE_LOADING_PROFILER)
 	if (!startupParams.bShaderCacheGen)
 	{
-		CBootProfiler::GetInstance().Init(this);
+		CBootProfiler::GetInstance().Init(this, startupParams.szSystemCmdLine);
 	}
 #endif
 
 	InitThreadSystem();
+
+#ifdef CRY_TESTING
+	m_pTestSystem = stl::make_unique<CryTest::CTestSystem>(this);
+#endif
 
 	LOADING_TIME_PROFILE_SECTION_NAMED("CSystem Boot");
 
@@ -429,7 +435,7 @@ CSystem::CSystem(const SSystemInitParams& startupParams)
 	m_pImeManager = nullptr;
 	RegisterWindowMessageHandler(this);
 
-	m_env.pConsole = new CXConsole;
+	m_env.pConsole = new CXConsole(*this);
 	if (startupParams.pPrintSync)
 		m_env.pConsole->AddOutputPrintSink(startupParams.pPrintSync);
 
@@ -474,12 +480,14 @@ CSystem::~CSystem()
 	//	SAFE_DELETE(m_pMemoryManager);
 	SAFE_DELETE(m_pNULLRenderAuxGeom);
 
+#ifdef CRY_TESTING
+	m_pTestSystem.reset();
+#endif
+
 	gEnv->pThreadManager->UnRegisterThirdPartyThread("Main");
 	ShutDownThreadSystem();
 
 	SAFE_DELETE(g_pPakHeap);
-
-	m_pTestSystem.reset();
 
 	m_env.pSystem = nullptr;
 #if !defined(SYS_ENV_AS_STRUCT)
@@ -576,7 +584,7 @@ void CSystem::ShutDown()
 	if (m_sys_firstlaunch)
 		m_sys_firstlaunch->Set("0");
 
-	if (m_bEditor)
+	if (m_env.IsEditor())
 	{
 		// restore the old saved cvars
 		if (m_env.pConsole->GetCVar("r_Width"))
@@ -587,14 +595,14 @@ void CSystem::ShutDown()
 			m_env.pConsole->GetCVar("r_ColorBits")->Set(m_iColorBits);
 	}
 
-	if (m_bEditor && !m_bRelaunch)
+	if (m_env.IsEditor() && !m_bRelaunch)
 	{
 		SaveConfiguration();
 	}
 
 	//if (!m_bEditor && !bRelaunch)
 #if !CRY_PLATFORM_DURANGO && !CRY_PLATFORM_ORBIS
-	if (!m_bEditor)
+	if (!m_env.IsEditor())
 	{
 		if (m_pCVarQuit && m_pCVarQuit->GetIVal())
 		{
@@ -648,7 +656,13 @@ void CSystem::ShutDown()
 	//////////////////////////////////////////////////////////////////////////
 
 	if (m_env.pGameFramework)
+	{
 		m_env.pGameFramework->ShutDown();
+#if !defined(CRY_IS_MONOLITHIC_BUILD)
+		// This handle keeps gamedll loaded, it must be emptied on shutdown in order to properly clean up
+		m_gameLibrary.Set(nullptr); 
+#endif
+	}
 
 	if (m_env.pEntitySystem)
 		m_env.pEntitySystem->Unload();
@@ -742,6 +756,7 @@ void CSystem::ShutDown()
 	// Release console variables.
 
 	SAFE_RELEASE(m_pCVarQuit);
+	SAFE_RELEASE(m_rIntialWindowSizeRatio);
 	SAFE_RELEASE(m_rWidth);
 	SAFE_RELEASE(m_rHeight);
 	SAFE_RELEASE(m_rColorBits);
@@ -759,7 +774,7 @@ void CSystem::ShutDown()
 	SAFE_RELEASE(m_sys_job_system_enable);
 	SAFE_RELEASE(m_sys_job_system_profiler);
 	SAFE_RELEASE(m_sys_job_system_max_worker);
-	SAFE_RELEASE(m_sys_job_system_active_wait_enabled);
+	SAFE_RELEASE(m_sys_job_system_worker_boost_enabled);
 	SAFE_RELEASE(m_sys_spec);
 	SAFE_RELEASE(m_sys_firstlaunch);
 	SAFE_RELEASE(m_sys_enable_budgetmonitoring);
@@ -839,6 +854,21 @@ void CSystem::ShutDown()
 #if CAPTURE_REPLAY_LOG
 	CryGetIMemReplay()->Stop();
 #endif
+
+#if CRY_PLATFORM_LINUX
+	// Delete lock file
+	if (m_iApplicationInstance != -1)
+	{
+		// In case of a crash this will not get called
+		// but the OS clears the directory on reboot so
+		// "leaking" the file is not that bad
+
+		string path;
+		path.Format("/tmp/CrytekApplication%d.lock", m_iApplicationInstance);
+		remove(path.c_str());
+		m_iApplicationInstance = -1;
+	}
+#endif // CRY_PLATFORM_LINUX
 
 	// Fix to improve wait() time within third party APIs using sleep()
 #if CRY_PLATFORM_WINDOWS
@@ -1254,7 +1284,7 @@ void CSystem::SleepIfInactive()
 #endif
 
 	// ProcessSleep()
-	if (m_env.IsDedicated() || m_bEditor || gEnv->bMultiplayer)
+	if (m_env.IsDedicated() || m_env.IsEditor() || gEnv->bMultiplayer)
 		return;
 
 #if CRY_PLATFORM_WINDOWS
@@ -1550,8 +1580,11 @@ bool CSystem::DoFrame(const SDisplayContextKey& displayContextKey, CEnumFlags<ES
 	{
 		m_env.pGameFramework->PreSystemUpdate();
 	}
-
-	m_pPluginManager->UpdateBeforeSystem();
+	
+	if (!(updateFlags & ESYSUPDATE_EDITOR))
+	{
+		m_pPluginManager->UpdateBeforeSystem();
+	}
 
 	if (ITextModeConsole* pTextModeConsole = GetITextModeConsole())
 	{
@@ -1601,7 +1634,10 @@ bool CSystem::DoFrame(const SDisplayContextKey& displayContextKey, CEnumFlags<ES
 		}
 	}
 
-	m_pPluginManager->UpdateAfterSystem();
+	if (!(updateFlags & ESYSUPDATE_EDITOR))
+	{
+		m_pPluginManager->UpdateAfterSystem();
+	}
 
 	// Synchronize all animations so ensure that their computation have finished
 	// Has to be done before view update, in case camera depends on a joint
@@ -1615,7 +1651,10 @@ bool CSystem::DoFrame(const SDisplayContextKey& displayContextKey, CEnumFlags<ES
 		m_env.pGameFramework->PreFinalizeCamera(updateFlags);
 	}
 
-	m_pPluginManager->UpdateBeforeFinalizeCamera();
+	if (!(updateFlags & ESYSUPDATE_EDITOR))
+	{
+		m_pPluginManager->UpdateBeforeFinalizeCamera();
+	}
 
 	ICVar* pCameraFreeze = gEnv->pConsole->GetCVar("e_CameraFreeze");
 	const bool isCameraFrozen = pCameraFreeze && pCameraFreeze->GetIVal() != 0;
@@ -1628,7 +1667,10 @@ bool CSystem::DoFrame(const SDisplayContextKey& displayContextKey, CEnumFlags<ES
 		m_env.pGameFramework->PreRender();
 	}
 
-	m_pPluginManager->UpdateBeforeRender();
+	if (!(updateFlags & ESYSUPDATE_EDITOR))
+	{
+		m_pPluginManager->UpdateBeforeRender();
+	}
 
 	Render();
 
@@ -1637,7 +1679,10 @@ bool CSystem::DoFrame(const SDisplayContextKey& displayContextKey, CEnumFlags<ES
 		m_env.pGameFramework->PostRender(updateFlags);
 	}
 
-	m_pPluginManager->UpdateAfterRender();
+	if (!(updateFlags & ESYSUPDATE_EDITOR))
+	{
+		m_pPluginManager->UpdateAfterRender();
+	}
 
 	if (updateFlags & ESYSUPDATE_EDITOR_AI_PHYSICS)
 	{
@@ -1655,7 +1700,10 @@ bool CSystem::DoFrame(const SDisplayContextKey& displayContextKey, CEnumFlags<ES
 		m_env.pGameFramework->PostRenderSubmit();
 	}
 
-	m_pPluginManager->UpdateAfterRenderSubmit();
+	if (!(updateFlags & ESYSUPDATE_EDITOR))
+	{
+		m_pPluginManager->UpdateAfterRenderSubmit();
+	}
 
 	if (!(updateFlags & ESYSUPDATE_EDITOR))
 	{
@@ -1720,7 +1768,7 @@ bool CSystem::Update(CEnumFlags<ESystemUpdateFlags> updateFlags, int nPauseMode)
 	if (g_cvars.sys_keyboard_break && !g_breakListenerOn)
 	{
 	#if CRY_PLATFORM_WINDOWS
-		if (m_bEditor && !g_pBreakHotkeyThread)
+		if (m_env.IsEditor() && !g_pBreakHotkeyThread)
 		{
 			g_pBreakHotkeyThread = new SBreakHotKeyThread();
 			if (!gEnv->pThreadManager->SpawnThread(g_pBreakHotkeyThread, "WINAPI_BreakHotkeyListener"))
@@ -1819,10 +1867,10 @@ bool CSystem::Update(CEnumFlags<ESystemUpdateFlags> updateFlags, int nPauseMode)
 		}
 	}
 
-#ifndef EXCLUDE_UPDATE_ON_CONSOLE
+#if defined (CRY_TESTING) && !defined(EXCLUDE_UPDATE_ON_CONSOLE)
 	if (m_pTestSystem)
 		m_pTestSystem->Update();
-#endif //EXCLUDE_UPDATE_ON_CONSOLE
+#endif
 	if (nPauseMode != 0)
 		m_bPaused = true;
 	else
@@ -1950,7 +1998,7 @@ bool CSystem::Update(CEnumFlags<ESystemUpdateFlags> updateFlags, int nPauseMode)
 #if !CRY_PLATFORM_WINDOWS
 			m_env.pInput->Update(true);
 #else
-			bool bFocus = (::GetForegroundWindow() == m_hWnd) || m_bEditor;
+			bool bFocus = (::GetForegroundWindow() == m_hWnd) || m_env.IsEditor();
 			{
 				WriteLock lock(g_lockInput);
 				m_env.pInput->Update(bFocus);
@@ -2908,13 +2956,6 @@ void CSystem::debug_GetCallStackRaw(void** callstack, uint32& callstackLength)
 }
 
 //////////////////////////////////////////////////////////////////////////
-void CSystem::ApplicationTest(const char* szParam)
-{
-	assert(szParam);
-	if (m_pTestSystem)
-		m_pTestSystem->ApplicationTest(szParam);
-}
-
 void CSystem::ExecuteCommandLine()
 {
 	LOADING_TIME_PROFILE_SECTION;

@@ -12,7 +12,6 @@
 #define LOGE(...) ((void)__android_log_print(ANDROID_LOG_ERROR, LOG_TAG, __VA_ARGS__))
 
 #include <SDL.h>
-#include <SDL_Extension.h>
 
 #include <CryEntitySystem/IEntity.h>
 #include <CrySystem/IConsole.h>
@@ -152,7 +151,7 @@ int _main(int argc, char **argv)
 
 	// Try to figure out where the PAK files are stored
 	const char* paths[] = {
-		SDLExt_AndroidGetExternalStorageDirectory(),
+		Cry::JNI::JNI_GetExternalStorageDirectory(),
 		SDL_AndroidGetExternalStoragePath(),
 		SDL_AndroidGetInternalStoragePath()  // user folder files e.g. "/data/user/0/com.crytek.cryengine/files"
 	};

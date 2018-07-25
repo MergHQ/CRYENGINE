@@ -3671,7 +3671,16 @@ void CActor::AttemptToRecycleAIActor()
 				params.type = PE_NONE;
 				GetEntity()->Physicalize(params);
 			}
-			gEnv->pEntitySystem->RemoveEntity( GetEntityId() );
+			
+			const bool isEntityRemovable = !(GetEntity()->GetFlags() & ENTITY_FLAG_UNREMOVABLE);
+			if (isEntityRemovable)
+			{
+				gEnv->pEntitySystem->RemoveEntity(GetEntityId()); 
+			}
+			else
+			{
+				GetEntity()->Hide(true);
+			}
 		}
 	}
 	else

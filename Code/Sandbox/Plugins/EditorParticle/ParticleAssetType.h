@@ -22,6 +22,7 @@ public:
 	virtual bool          CanBeCreated() const override       { return true; }
 	virtual bool          IsImported() const override         { return false; }
 	virtual bool          CanBeEdited() const override        { return true; }
+	virtual const char*   GetEditorName() const               { return "Particle Editor"; }
 	virtual const char*   GetObjectClassName() const override { return "EntityWithParticleComponent"; }
 	virtual QColor        GetThumbnailColor() const override  { return QColor(207, 128, 80); }
 

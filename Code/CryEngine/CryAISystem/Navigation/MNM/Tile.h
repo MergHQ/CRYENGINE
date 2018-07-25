@@ -55,27 +55,6 @@ struct STile
 	vector3_t::value_type  GetTriangleArea(const TriangleID triangleID) const;
 	vector3_t::value_type  GetTriangleArea(const Tile::STriangle& triangle) const;
 
-#if MNM_USE_EXPORT_INFORMATION
-	void        ResetConnectivity(uint8 accessible);
-	inline bool IsTriangleAccessible(const uint16 triangleIdx) const
-	{
-		assert((triangleIdx >= 0) && (triangleIdx < connectivity.triangleCount));
-		return (connectivity.trianglesAccessible[triangleIdx] != 0);
-	}
-	inline bool IsTileAccessible() const
-	{
-		return (connectivity.tileAccessible != 0);
-	}
-
-	inline void SetTriangleAccessible(const uint16 triangleIdx)
-	{
-		assert((triangleIdx >= 0) && (triangleIdx < connectivity.triangleCount));
-
-		connectivity.tileAccessible = 1;
-		connectivity.trianglesAccessible[triangleIdx] = 1;
-	}
-#endif
-
 	enum DrawFlags
 	{
 		DrawTriangles         = BIT(0),
@@ -119,32 +98,8 @@ private:
 	uint16           linkCount;
 
 	uint32           hashValue;
-
-#if MNM_USE_EXPORT_INFORMATION
-
-private:
-	struct TileConnectivity
-	{
-		TileConnectivity()
-			: tileAccessible(1)
-			, trianglesAccessible(NULL)
-			, triangleCount(0)
-		{
-		}
-
-		uint8  tileAccessible;
-		uint8* trianglesAccessible;
-		uint16 triangleCount;
-	};
-
-	bool ConsiderExportInformation() const;
-	void InitConnectivity(uint16 oldTriangleCount, uint16 newTriangleCount);
-
-	TileConnectivity connectivity;
-
-#endif
 };
-}
+} // namespace MNM
 
 #if DEBUG_MNM_DATA_CONSISTENCY_ENABLED
 struct CompareLink

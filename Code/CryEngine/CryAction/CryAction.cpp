@@ -202,7 +202,7 @@ extern "C" IGameStartup * CreateGameStartup();
 
 CCryAction* CCryAction::m_pThis = 0;
 
-static const int s_saveGameFrameDelay = 3; // enough to render enough frames to display the save warning icon before the save generation
+static const int s_saveGameFrameDelay = 3; // Enough to render enough frames to display the save warning icon before the save generation.
 
 static const float s_loadSaveDelay = 0.5f;  // Delay between load/save operations.
 
@@ -251,7 +251,7 @@ void CCryAction::DumpMemInfo(const char* format, ...)
 	gEnv->pLog->LogWithType(ILog::eAlways, "Alloc=%" PRIu64 "d kb  String=%" PRIu64 " kb  STL-alloc=%" PRIu64 " kb  STL-wasted=%" PRIu64 " kb", (memInfo.allocated - memInfo.freed) >> 10, memInfo.CryString_allocated >> 10, memInfo.STL_allocated >> 10, memInfo.STL_wasted >> 10);
 }
 
-// no dot use iterators in first part because of calls of some listners may modify array of listeners (add new)
+// Do not use iterators in the first part. The array of listeners can be modified by calls to other listeners (they might add new listeners for example).
 #define CALL_FRAMEWORK_LISTENERS(func)                                  \
   {                                                                     \
     for (size_t n = 0; n < m_pGFListeners->size(); n++)                 \
@@ -383,6 +383,7 @@ CCryAction::CCryAction(SSystemInitParams& initParams)
 
 CCryAction::~CCryAction()
 {
+	gEnv->pGameFramework = nullptr;
 }
 
 //------------------------------------------------------------------------
@@ -901,11 +902,6 @@ void CCryAction::ConnectCmd(IConsoleCmdArgs* args)
 	params.hostname = tempHost.c_str();
 	params.pContextParams = NULL;
 	params.port = (gEnv->pLobby && gEnv->bMultiplayer) ? gEnv->pLobby->GetLobbyParameters().m_connectPort : pConsole->GetCVar("cl_serverport")->GetIVal();
-
-	if (!CCryAction::GetCryAction()->GetIGameRulesSystem()->GetCurrentGameRules())
-	{
-		params.flags |= eGSF_NoGameRules;
-	}
 
 	GetCryAction()->StartGameContext(&params);
 }
@@ -2311,20 +2307,26 @@ bool CCryAction::CompleteInit()
 		m_pRuntimeAreaManager = new CRuntimeAreaManager();
 	}
 
-#if defined(CRY_UNIT_TESTING)
+	InitCommands();
+
+#if defined(CRY_TESTING)
+	// Flag is set when testing is specified from command line arguments
+	// This means testing is started by running the testing target or automation, instead of the console command "crytest".
+	// In this case we run all tests and quit afterwards.
 	if (gEnv->bTesting)
 	{
-		//in local unit tests we pass in -unit_test_open_failed to notify the user, in automated tests we don't pass in.
-		CryUnitTest::EReporterType reporterType = m_pSystem->GetICmdLine()->FindArg(eCLAT_Pre, "unit_test_open_failed") ? 
-			CryUnitTest::EReporterType::ExcelWithNotification : CryUnitTest::EReporterType::Excel;
-		ITestSystem* pTestSystem = m_pSystem->GetITestSystem();
+		CryTest::ITestSystem* pTestSystem = m_pSystem->GetITestSystem();
 		CRY_ASSERT(pTestSystem != nullptr);
-		pTestSystem->GetIUnitTestManager()->RunAllTests(reporterType);
-		pTestSystem->QuitInNSeconds(1.f);
+
+		pTestSystem->SetQuitAfterTests(true);
+
+		// For manual testing we pass in -crytest_open_report to open the test report for the user, 
+		// in automated tests we don't. See Build.cmake.
+		pTestSystem->SetOpenReport(m_pSystem->GetICmdLine()->FindArg(eCLAT_Pre, "crytest_open_report") != nullptr);
+
+		pTestSystem->Run();
 	}
 #endif
-
-	InitCommands();
 
 	InlineInitializationProcessing("CCryAction::CompleteInit End");
 	return true;
@@ -2592,8 +2594,8 @@ void CCryAction::PreSystemUpdate()
 	CheckConnectRepeatedly();   // handle repeated connect mode - mainly for autotests to not get broken by timeouts on initial connect
 #endif
 
-	bool bGameIsPaused = !IsGameStarted() || IsGamePaused(); // slightly different from m_paused (check's gEnv->pTimer as well)
-	if (m_pTimeDemoRecorder && !IsGamePaused())
+	bool bGameIsPaused = !gEnv->pGameFramework->IsGameStarted() || gEnv->pGameFramework->IsGamePaused(); // slightly different from m_paused (check's gEnv->pTimer as well)
+	if (m_pTimeDemoRecorder && !gEnv->pGameFramework->IsGamePaused())
 		m_pTimeDemoRecorder->PreUpdate();
 
 	// update the callback system
@@ -2622,8 +2624,8 @@ bool CCryAction::PostSystemUpdate(bool haveFocus, CEnumFlags<ESystemUpdateFlags>
 	updateStart.QuadPart = 0;
 	updateEnd.QuadPart = 0;
 
-	bool isGamePaused = !IsGameStarted() || IsGamePaused(); // slightly different from m_paused (check's gEnv->pTimer as well)
-	bool isGameRunning = IsGameStarted();
+	bool isGamePaused = !gEnv->pGameFramework->IsGameStarted() || gEnv->pGameFramework->IsGamePaused(); // slightly different from m_paused (check's gEnv->pTimer as well)
+	bool isGameRunning = gEnv->pGameFramework->IsGameStarted();
 
 	// when we are updated by the editor, we should not update the system
 	if (!(updateFlags & ESYSUPDATE_EDITOR))
@@ -2638,8 +2640,15 @@ bool CCryAction::PostSystemUpdate(bool haveFocus, CEnumFlags<ESystemUpdateFlags>
 		OnActionEvent(SActionEvent(eAE_earlyPreUpdate));
 
 		// during m_pSystem->Update call the Game might have been paused or un-paused
-		isGameRunning = IsGameStarted() && m_pGame && m_pGame->IsInited();
-		isGamePaused = !isGameRunning || IsGamePaused();
+		if (m_pCryActionCVars->g_enableActionGame)
+		{
+			isGameRunning = gEnv->pGameFramework->IsGameStarted() && m_pGame && m_pGame->IsInited();
+		}
+		else
+		{
+			isGameRunning = gEnv->pGameFramework->IsGameStarted();
+		}
+		isGamePaused = !isGameRunning || gEnv->pGameFramework->IsGamePaused();
 
 		if (!isGamePaused && !wasGamePaused) // don't update gameplayrecorder if paused
 			if (m_pGameplayRecorder)
@@ -2775,7 +2784,7 @@ void CCryAction::PreFinalizeCamera(CEnumFlags<ESystemUpdateFlags> updateFlags)
 	}
 
 	float delta = gEnv->pTimer->GetFrameTime();
-	const bool bGameIsPaused = IsGamePaused(); // slightly different from m_paused (check's gEnv->pTimer as well)
+	const bool bGameIsPaused = gEnv->pGameFramework->IsGamePaused(); // slightly different from m_paused (check's gEnv->pTimer as well)
 
 	if (!bGameIsPaused)
 	{
@@ -2877,7 +2886,7 @@ void CCryAction::PostRenderSubmit()
 	if (CGameServerNub* pServerNub = GetGameServerNub())
 		pServerNub->Update();
 
-	if (m_pTimeDemoRecorder && !IsGamePaused())
+	if (m_pTimeDemoRecorder && !gEnv->pGameFramework->IsGamePaused())
 		m_pTimeDemoRecorder->PostUpdate();
 
 	if (m_delayedSaveCountDown)
@@ -3127,8 +3136,10 @@ void CCryAction::EndGameContext()
 		m_pScriptRMI->UnloadLevel();
 	}
 
-	if (gEnv && gEnv->IsEditor())
+	if (gEnv && gEnv->IsEditor() && m_pCryActionCVars->g_enableActionGame)
+	{
 		m_pGame = new CActionGame(m_pScriptRMI);
+	}
 
 	if (m_pActorSystem)
 	{
@@ -3759,6 +3770,7 @@ void CCryAction::InitCVars()
 	m_pDebugRangeSignaling = REGISTER_INT("ai_DebugRangeSignaling", 0, VF_CHEAT, "Enable Range Signaling Debug Screen");
 
 	m_pAsyncLevelLoad = REGISTER_INT("g_asynclevelload", 0, VF_CONST_CVAR, "Enable asynchronous level loading");
+	REGISTER_INT("g_levelLoadTimeSliced", 0, VF_NULL, "Enable time-sliced level loading");
 
 	REGISTER_INT("cl_packetRate", 30, 0, "Packet rate on client");
 	REGISTER_INT("sv_packetRate", 30, 0, "Packet rate on server");
@@ -3841,7 +3853,13 @@ void CCryAction::ReleaseCVars()
 void CCryAction::InitCommands()
 {
 	// create built-in commands
+	if (!m_pCryActionCVars->g_enableActionGame)
+	{
+		return;
+	}
+		
 	REGISTER_COMMAND("map", MapCmd, VF_BLOCKFRAME, "Load a map");
+	
 	// for testing purposes
 	REGISTER_COMMAND("readabilityReload", ReloadReadabilityXML, 0, "Reloads readability xml files.");
 	REGISTER_COMMAND("unload", UnloadCmd, 0, "Unload current map");
@@ -4724,10 +4742,13 @@ void CCryAction::PrefetchLevelAssets(const bool bEnforceAll)
 		m_pItemSystem->PrecacheLevel();
 }
 
-void CCryAction::ShowPageInBrowser(const char* URL)
+void CCryAction::ShowPageInBrowser(const char* szUrl)
 {
 #if CRY_PLATFORM_WINDOWS
-	ShellExecute(0, 0, URL, 0, 0, SW_SHOWNORMAL);
+	if (szUrl != nullptr && szUrl[0] != '\0')
+		ShellExecute(nullptr, nullptr, szUrl, nullptr, nullptr, SW_SHOWNORMAL);
+#else
+	CryWarning(VALIDATOR_MODULE_GAME, VALIDATOR_ERROR_DBGBRK, "CCryAction::ShowPageInBrowser is not implemented for this platform");
 #endif
 }
 
@@ -4917,17 +4938,7 @@ void CCryAction::SetGameGUID(const char* gameGUID)
 
 INetContext* CCryAction::GetNetContext()
 {
-	//return GetGameContext()->GetNetContext();
-
-	// Julien: This was crashing sometimes when exiting game!
-	// I've replaced with a safe pointer access and an assert so that anyone who
-	// knows why we were accessing this unsafe pointer->func() can fix it the correct way
-
-	CGameContext* pGameContext = GetGameContext();
-	//CRY_ASSERT(pGameContext); - GameContext can be NULL when the game is exiting
-	if (!pGameContext)
-		return NULL;
-	return pGameContext->GetNetContext();
+	return gEnv->pNetContext;
 }
 
 void CCryAction::EnableVoiceRecording(const bool enable)

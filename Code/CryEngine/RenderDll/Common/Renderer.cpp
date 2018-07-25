@@ -110,6 +110,7 @@ CRenderer* gRenDev = NULL;
 int CRenderer::m_iGeomInstancingThreshold = 0;      // 0 means not set yet
 
 SRenderStatistics* SRenderStatistics::s_pCurrentOutput = nullptr;
+SRenderStatistics* SRenderStatistics::s_pPreviousOutput = nullptr;
 
 #define RENDERER_DEFAULT_FONT "Fonts/default.xml"
 
@@ -289,6 +290,8 @@ void CRenderer::InitRenderer()
 	ZeroArray(m_streamZonesRoundId);
 
 	SRenderStatistics::s_pCurrentOutput = &m_frameRenderStats[0];
+	SRenderStatistics::s_pPreviousOutput = &m_frameRenderStats[1];
+	memset(SRenderStatistics::s_pCurrentOutput, 0, sizeof(m_frameRenderStats));
 }
 
 CRenderer::~CRenderer()
@@ -885,12 +888,12 @@ EScreenAspectRatio CRenderer::GetScreenAspect(int nWidth, int nHeight)
 	return eSA;
 }
 
-bool CRenderer::WriteTGA(byte* dat, int wdt, int hgt, const char* name, int src_bits_per_pixel, int dest_bits_per_pixel)
+bool CRenderer::WriteTGA(const byte* dat, int wdt, int hgt, const char* name, int src_bits_per_pixel, int dest_bits_per_pixel)
 {
 	return ::WriteTGA((byte*)dat, wdt, hgt, name, src_bits_per_pixel, dest_bits_per_pixel);
 }
 
-bool CRenderer::WriteDDS(byte* dat, int wdt, int hgt, int Size, const char* nam, ETEX_Format eFDst, int NumMips)
+bool CRenderer::WriteDDS(const byte* dat, int wdt, int hgt, int Size, const char* nam, ETEX_Format eFDst, int NumMips)
 {
 #if CRY_PLATFORM_WINDOWS
 	bool bRet = true;
@@ -913,7 +916,7 @@ bool CRenderer::WriteDDS(byte* dat, int wdt, int hgt, int Size, const char* nam,
 	if (NumMips != 1)
 		bMips = true;
 	int nDxtSize;
-	byte* dst = CTexture::Convert(dat, wdt, hgt, NumMips, eTF_R8G8B8A8, eFDst, NumMips, nDxtSize, true);
+	const byte* dst = CTexture::Convert(dat, wdt, hgt, NumMips, eTF_R8G8B8A8, eFDst, NumMips, nDxtSize, true);
 	if (dst)
 	{
 		char name[256];
@@ -991,7 +994,7 @@ SShaderItem CRenderer::EF_LoadShaderItem (const char* szName, bool bShare, int f
 }
 
 //////////////////////////////////////////////////////////////////////////
-bool CRenderer::EF_ReloadFile_Request (const char* szFileName)
+bool CRenderer::EF_ReloadFile_Request(const char* szFileName)
 {
 	// Replace .tif extensions with .dds extensions.
 	char realName[MAX_PATH + 1];
@@ -1020,10 +1023,9 @@ bool CRenderer::EF_ReloadFile_Request (const char* szFileName)
 	//TODO replace this with a single function get file type
 	//function should return and enum and the following code replaced with a switch statement
 	if (!stricmp(extn, ".dds"))
-	{
-		return CTexture::ReloadFile_Request(realName);
-	}
-	return false;
+		CTexture::ReloadFile_Request(realName);
+
+	return true; // Still, it can fail later, check FT_FAILED
 }
 
 bool CRenderer::EF_ReloadFile (const char* szFileName)
@@ -1058,11 +1060,13 @@ bool CRenderer::EF_ReloadFile (const char* szFileName)
 		string correctedName = PathUtil::ReplaceExtension(szFileName, "dds");
 
 #if !defined(CRY_ENABLE_RC_HELPER)
-		return CTexture::ReloadFile(correctedName);
+		CTexture::ReloadFile(correctedName);
+		return true; // Still, it can fail later, check FT_FAILED
 #else 
 		if (ITexture* pTexture = gcpRendD3D->EF_GetTextureByName(correctedName))
 		{
-			return CTexture::ReloadFile(correctedName);
+			CTexture::ReloadFile(correctedName);
+			return true; // Still, it can fail later, check FT_FAILED
 		}
 		else
 		{
@@ -1100,9 +1104,9 @@ _smart_ptr<IImageFile> CRenderer::EF_LoadImage(const char* szFileName, uint32 nF
 	return CImageFile::mfLoad_file(szFileName, nFlags);
 }
 
-bool CRenderer::EF_RenderEnvironmentCubeHDR (int size, const Vec3& Pos, TArray<unsigned short>& vecData)
+DynArray<uint16_t> CRenderer::EF_RenderEnvironmentCubeHDR (std::size_t size, const Vec3& Pos)
 {
-	return CTexture::RenderEnvironmentCMHDR(size, Pos, vecData);
+	return CTexture::RenderEnvironmentCMHDR(size, Pos);
 }
 
 bool CRenderer::WriteTIFToDisk(const void* pData, int width, int height, int bytesPerChannel, int numChannels, bool bFloat, const char* szPreset, const char* szFileName)
@@ -1234,14 +1238,6 @@ void CRenderer::EF_StartEf (const SRenderingPassInfo& passInfo)
 	{
 		CryLogAlways("nR (%d) >= MAX_REND_RECURSION_LEVELS (%d)\n", nR, MAX_REND_RECURSION_LEVELS);
 		__debugbreak(); // otherwise about to go out of bounds in the loop below
-	}
-#endif
-
-#if REFRACTION_PARTIAL_RESOLVE_DEBUG_VIEWS
-	// Refraction Partial Resolves debug views
-	if (CRenderer::CV_r_RefractionPartialResolvesDebug == eRPR_DEBUG_VIEW_3D_BOUNDS)
-	{
-		gEnv->pParticleManager->RenderDebugInfo();
 	}
 #endif
 
@@ -1435,7 +1431,7 @@ void CRenderer::EF_CheckLightMaterial(SRenderLight* pLight, uint16 nRenderLightI
 			pRO->m_ObjFlags     |= FOB_TRANS_MASK;
 
 			CRenderElement* pRE = pRendElemBase->Get(0);
-			const int32 nList     = (pRE->mfGetType() != eDATA_LensOptics) ? EFSLIST_TRANSP : EFSLIST_LENSOPTICS;
+			const int32 nList     = (pRE->mfGetType() != eDATA_LensOptics) ? EFSLIST_TRANSP_AW : EFSLIST_LENSOPTICS;
 
 			const float fWaterLevel = gEnv->p3DEngine->GetWaterLevel();
 			const float fCamZ       = passInfo.GetCamera().GetPosition().z;
@@ -2582,7 +2578,7 @@ struct SCompressRowData
 {
 	struct squish::sqio* pSqio;
 	byte*  destinationData;
-	byte*  sourceData;
+	const byte* sourceData;
 	int row;
 	int width;
 	int height;
@@ -2596,7 +2592,7 @@ struct SCompressRowData
 	int offs;
 };
 
-static void DXTDecompressRow(SCompressRowData data)
+void DXTDecompressRow(SCompressRowData data)
 {
 #if CRY_PLATFORM_WINDOWS
 	SCOPED_DISABLE_FLOAT_EXCEPTIONS();
@@ -2631,7 +2627,7 @@ static void DXTDecompressRow(SCompressRowData data)
 	}
 }
 
-static void DXTDecompressRowFloat(SCompressRowData data)
+void DXTDecompressRowFloat(SCompressRowData data)
 {
 #if CRY_PLATFORM_WINDOWS
 	SCOPED_DISABLE_FLOAT_EXCEPTIONS();
@@ -2666,7 +2662,7 @@ static void DXTDecompressRowFloat(SCompressRowData data)
 	}
 }
 
-static void DXTCompressRow(SCompressRowData data)
+void DXTCompressRow(SCompressRowData data)
 {
 #if CRY_PLATFORM_WINDOWS
 	SCOPED_DISABLE_FLOAT_EXCEPTIONS();
@@ -2701,7 +2697,7 @@ static void DXTCompressRow(SCompressRowData data)
 	}
 }
 
-static void DXTCompressRowFloat(SCompressRowData data)
+void DXTCompressRowFloat(SCompressRowData data)
 {
 #if CRY_PLATFORM_WINDOWS
 	SCOPED_DISABLE_FLOAT_EXCEPTIONS();
@@ -2743,7 +2739,7 @@ DECLARE_JOB("DXTCompressRowFloat", TDXTCompressRowFloat, DXTCompressRowFloat);
 
 #endif // #if !defined(__RECODE__) && !defined(EXCLUDE_SQUISH_SDK)
 
-bool CRenderer::DXTDecompress(byte* sourceData, const size_t srcFileSize, byte* destinationData, int width, int height, int mips, ETEX_Format sourceFormat, bool bUseHW, int nDstBytesPerPix)
+bool CRenderer::DXTDecompress(const byte* sourceData, const size_t srcFileSize, byte* destinationData, int width, int height, int mips, ETEX_Format sourceFormat, bool bUseHW, int nDstBytesPerPix)
 {
 	FUNCTION_PROFILER_RENDERER();
 
@@ -2901,7 +2897,7 @@ bool CRenderer::DXTDecompress(byte* sourceData, const size_t srcFileSize, byte* 
 #endif
 }
 
-bool CRenderer::DXTCompress(byte* sourceData, int width, int height, ETEX_Format destinationFormat, bool bUseHW, bool bGenMips, int nSrcBytesPerPix, MIPDXTcallback callback)
+bool CRenderer::DXTCompress(const byte* sourceData, int width, int height, ETEX_Format destinationFormat, bool bUseHW, bool bGenMips, int nSrcBytesPerPix, MIPDXTcallback callback)
 {
 	FUNCTION_PROFILER_RENDERER();
 
@@ -3078,7 +3074,7 @@ bool CRenderer::DXTCompress(byte* sourceData, int width, int height, ETEX_Format
 #endif
 }
 
-bool CRenderer::WriteJPG(byte* dat, int wdt, int hgt, char* name, int src_bits_per_pixel, int nQuality)
+bool CRenderer::WriteJPG(const byte* dat, int wdt, int hgt, char* name, int src_bits_per_pixel, int nQuality)
 {
 	return ::WriteJPG(dat, wdt, hgt, name, src_bits_per_pixel, nQuality);
 }
@@ -3160,8 +3156,8 @@ void CRenderer::PostLevelLoading()
 		m_bStartLevelLoading = false;
 		if (m_pRT->IsMultithreaded())
 		{
-			iLog->Log("-- Render thread was idle during level loading: %.3f secs", gRenDev->m_pRT->m_fTimeIdleDuringLoading);
-			iLog->Log("-- Render thread was busy during level loading: %.3f secs", gRenDev->m_pRT->m_fTimeBusyDuringLoading);
+			iLog->Log("-- Render thread was idle during level loading: %.3f secs", SRenderStatistics::Write().m_Summary.idleLoading);
+			iLog->Log("-- Render thread was busy during level loading: %.3f secs", SRenderStatistics::Write().m_Summary.busyLoading);
 		}
 
 		m_cEF.mfSortResources();
@@ -3169,7 +3165,8 @@ void CRenderer::PostLevelLoading()
 
 	{
 		LOADING_TIME_PROFILE_SECTION(iSystem);
-		CTexture::Precache();
+		const bool isBlocking = true;
+		CTexture::Precache(isBlocking);
 	}
 }
 
@@ -3201,60 +3198,65 @@ ERenderType CRenderer::GetRenderType() const
 #endif
 }
 
+int CRenderer::GetPolyCount()
+{
+#if defined(ENABLE_PROFILING_CODE)
+	return m_frameRenderStats[m_pRT->GetThreadList()].GetNumberOfPolygons();
+#else
+	return 0;
+#endif
+}
+
+void CRenderer::GetPolyCount(int& nPolygons, int& nShadowPolys)
+{
+#if defined(ENABLE_PROFILING_CODE)
+	nPolygons    = m_frameRenderStats[m_pRT->GetThreadList()].GetNumberOfPolygons();
+	nShadowPolys = m_frameRenderStats[m_pRT->GetThreadList()].GetNumberOfPolygons(1 << EFSLIST_SHADOW_GEN);
+#endif
+}
+
 int CRenderer::GetNumGeomInstances()
 {
-	return m_frameRenderStats[m_nProcessThreadID].m_nInsts;
+#if defined(ENABLE_PROFILING_CODE)
+	return m_frameRenderStats[m_pRT->GetThreadList()].GetNumGeomInstances();
+#else
+	return 0;
+#endif
 }
 
 int CRenderer::GetNumGeomInstanceDrawCalls()
 {
-	return m_frameRenderStats[m_nProcessThreadID].m_nInstCalls;
+#if defined(ENABLE_PROFILING_CODE)
+	return m_frameRenderStats[m_pRT->GetThreadList()].GetNumGeomInstanceDrawCalls();
+#else
+	return 0;
+#endif
 }
 
 int CRenderer::GetCurrentNumberOfDrawCalls()
 {
-	int nDIPs = 0;
 #if defined(ENABLE_PROFILING_CODE)
-	int nThr = m_pRT->GetThreadList();
-	for (int i = 0; i < EFSLIST_NUM; i++)
-	{
-		nDIPs += m_frameRenderStats[nThr].m_nDIPs[i];
-	}
+	return m_frameRenderStats[m_pRT->GetThreadList()].GetNumberOfDrawCalls();
+#else
+	return 0;
 #endif
-	return nDIPs;
 }
 
 void CRenderer::GetCurrentNumberOfDrawCalls(int& nGeneral, int& nShadowGen)
 {
-	int nDIPs = 0;
 #if defined(ENABLE_PROFILING_CODE)
-	int nThr = m_pRT->GetThreadList();
-	for (int i = 0; i < EFSLIST_NUM; i++)
-	{
-		if (i == EFSLIST_SHADOW_GEN)
-			continue;
-		nDIPs += m_frameRenderStats[nThr].m_nDIPs[i];
-	}
-	nGeneral   = nDIPs;
-	nShadowGen = m_frameRenderStats[nThr].m_nDIPs[EFSLIST_SHADOW_GEN];
+	nGeneral   = m_frameRenderStats[m_pRT->GetThreadList()].GetNumberOfDrawCalls();
+	nShadowGen = m_frameRenderStats[m_pRT->GetThreadList()].GetNumberOfDrawCalls(1 << EFSLIST_SHADOW_GEN);
 #endif
-	return;
 }
 
 int CRenderer::GetCurrentNumberOfDrawCalls(const uint32 EFSListMask)
 {
-	int nDIPs = 0;
 #if defined(ENABLE_PROFILING_CODE)
-	int nThr = m_pRT->GetThreadList();
-	for (uint32 i = 0; i < EFSLIST_NUM; i++)
-	{
-		if ((1 << i) & EFSListMask)
-		{
-			nDIPs += m_frameRenderStats[nThr].m_nDIPs[i];
-		}
-	}
+	return m_frameRenderStats[m_pRT->GetThreadList()].GetNumberOfDrawCalls(EFSListMask);
+#else
+	return 0;
 #endif
-	return nDIPs;
 }
 
 void CRenderer::SetDebugRenderNode(IRenderNode* pRenderNode)
@@ -3266,6 +3268,118 @@ bool CRenderer::IsDebugRenderNode(IRenderNode* pRenderNode) const
 {
 	return (m_pDebugRenderNode && m_pDebugRenderNode == pRenderNode);
 }
+
+/////////////////////////////////////////////////////////////////////////////////////////////////////
+void SRenderStatistics::Begin(const SRenderStatistics* prevData)
+{
+#if defined(_DEBUG)
+	memcpy(this, prevData, sizeof(SRenderStatistics));
+#else
+	memset(this, 0, sizeof(SRenderStatistics));
+#endif
+}
+
+void SRenderStatistics::Finish()
+{
+	// Finish filling the current frame's global timings
+	{
+		m_Summary.frameTime = iTimer->GetRealFrameTime();
+		m_Summary.renderTime += m_Summary.miscTime;
+		m_Summary.renderTime += m_Summary.flashTime;
+
+		// BK: We need a way of getting gpu frame time in release, without gpu timers
+		// for now we just use overall frame time
+#if CRY_PLATFORM_ORBIS && !CRY_RENDERER_GNM
+		m_Summary.gpuIdlePerc  = DXOrbis::Device()->GetGPUIdlePercentage();
+		m_Summary.waitForGPU   = DXOrbis::Device()->GetCPUWaitOnGPUTime();
+		m_Summary.gpuFrameTime = DXOrbis::Device()->GetCPUFrameTime();
+#else
+		m_Summary.gpuIdlePerc = 0;
+		m_Summary.gpuFrameTime = m_Summary.renderTime;
+#endif
+	}
+
+#if defined(ENABLE_PROFILING_CODE)
+	m_nNumInsts               += m_nAsynchNumInsts;
+	m_nNumInstCalls           += m_nAsynchNumInstCalls;
+
+	m_nNumPSOSwitches         += m_nAsynchNumPSOSwitches;
+	m_nNumLayoutSwitches      += m_nAsynchNumLayoutSwitches;
+	m_nNumResourceSetSwitches += m_nAsynchNumResourceSetSwitches;
+	m_nNumInlineSets          += m_nAsynchNumInlineSets;
+	m_nNumTopologySets        += m_nAsynchNumTopologySets;
+
+	for (int i = 0; i < EFSLIST_NUM; i++)
+	{
+		m_nDIPs    [i] += m_nAsynchDIPs    [i];
+		m_nPolygons[i] += m_nAsynchPolygons[i];
+
+		for (int j = 0; j < EVCT_NUM; j++)
+		{
+			m_nPolygonsByTypes[i][j][0] += m_nAsynchPolygonsByTypes[i][j][0];
+			m_nPolygonsByTypes[i][j][1] += m_nAsynchPolygonsByTypes[i][j][1];
+		}
+	}
+#endif
+}
+
+#if defined(ENABLE_PROFILING_CODE)
+int SRenderStatistics::GetNumGeomInstances() const
+{
+	return m_nNumInsts; // +m_nAsynchNumInsts; impossible because of non-atomicity of stat-collection
+}
+
+int SRenderStatistics::GetNumGeomInstanceDrawCalls() const
+{
+	return m_nNumInstCalls; // +m_nAsynchNumInstCalls; impossible because of non-atomicity of stat-collection
+}
+
+int SRenderStatistics::GetNumberOfDrawCalls() const
+{
+	int nDIPs = 0;
+	for (int i = 0; i < EFSLIST_NUM; i++)
+	{
+		nDIPs += m_nDIPs[i]; // +m_nAsynchDIPs[i]; impossible because of non-atomicity of stat-collection
+	}
+	return nDIPs;
+}
+
+int SRenderStatistics::GetNumberOfDrawCalls(const uint32 EFSListMask) const
+{
+	int nDIPs = 0;
+	for (uint32 i = 0; i < EFSLIST_NUM; i++)
+	{
+		if ((1 << i) & EFSListMask)
+		{
+			nDIPs += m_nDIPs[i]; // +m_nAsynchDIPs[i]; impossible because of non-atomicity of stat-collection
+		}
+	}
+	return nDIPs;
+}
+
+int SRenderStatistics::GetNumberOfPolygons() const
+{
+	int nDIPs = 0;
+	for (int i = 0; i < EFSLIST_NUM; i++)
+	{
+		nDIPs += m_nPolygons[i]; // +m_nAsynchPolygons[i]; impossible because of non-atomicity of stat-collection
+	}
+	return nDIPs;
+}
+
+int SRenderStatistics::GetNumberOfPolygons(const uint32 EFSListMask) const
+{
+	int nDIPs = 0;
+	for (uint32 i = 0; i < EFSLIST_NUM; i++)
+	{
+		if ((1 << i) & EFSListMask)
+		{
+			nDIPs += m_nPolygons[i]; // +m_nAsynchPolygons[i]; impossible because of non-atomicity of stat-collection
+		}
+	}
+	return nDIPs;
+}
+#endif
 
 /////////////////////////////////////////////////////////////////////////////////////////////////////
 #if defined(DO_RENDERSTATS)
@@ -3362,6 +3476,13 @@ void S3DEngineCommon::Update(const SRenderingPassInfo& passInfo)
 
 void S3DEngineCommon::UpdateRainInfo(const SRenderingPassInfo& passInfo)
 {
+	if (passInfo.IsAuxWindow())
+	{
+		// Secondary viewport: We only update rain for the primary viewport. Otherwise update will use wrong camera. This is needed as long as rain and snow are 
+		// global engine states, with no regard to output context.
+		return;
+	}
+
 	gEnv->p3DEngine->GetRainParams(m_RainInfo);
 
 	const Vec3  vCamPos          = passInfo.GetCamera().GetPosition();
@@ -3394,6 +3515,12 @@ void S3DEngineCommon::UpdateRainInfo(const SRenderingPassInfo& passInfo)
 
 void S3DEngineCommon::UpdateSnowInfo(const SRenderingPassInfo& passInfo)
 {
+	if (passInfo.IsAuxWindow())
+	{
+		// Secondary viewport: See UpdateRainInfo() comment.
+		return;
+	}
+
 	gEnv->p3DEngine->GetSnowSurfaceParams(m_SnowInfo.m_vWorldPos, m_SnowInfo.m_fRadius, m_SnowInfo.m_fSnowAmount, m_SnowInfo.m_fFrostAmount, m_SnowInfo.m_fSurfaceFreezing);
 	gEnv->p3DEngine->GetSnowFallParams(m_SnowInfo.m_nSnowFlakeCount, m_SnowInfo.m_fSnowFlakeSize, m_SnowInfo.m_fSnowFallBrightness, m_SnowInfo.m_fSnowFallGravityScale, m_SnowInfo.m_fSnowFallWindScale, m_SnowInfo.m_fSnowFallTurbulence, m_SnowInfo.m_fSnowFallTurbulenceFreq);
 
@@ -3657,24 +3784,26 @@ void CRenderer::RemoveAsyncTextureCompileListener(IAsyncTextureCompileListener* 
 //////////////////////////////////////////////////////////////////////////
 float CRenderer::GetGPUFrameTime()
 {
-	int nThr       = m_pRT->GetThreadList();
-	float fGPUidle = m_fTimeGPUIdlePercent[nThr] * 0.01f;        // normalise %
-	float fGPUload = 1.0f - fGPUidle;                            // normalised non-idle time
-	float fGPUtime = (m_fTimeProcessedGPU[nThr] * fGPUload);     //GPU time in seconds
+	const SRenderStatistics::SFrameSummary& rtSummary = SRenderStatistics::Read().m_Summary;
+
+	float fGPUidle = rtSummary.gpuIdlePerc * 0.01f;     // normalise %
+	float fGPUload = 1.0f - fGPUidle;                   // normalised non-idle time
+	float fGPUtime = rtSummary.gpuFrameTime * fGPUload; // GPU time in seconds
 	return fGPUtime;
 }
 
 void CRenderer::GetRenderTimes(SRenderTimes& outTimes)
 {
-	int nThr = m_pRT->GetThreadList();
-	//Query render times on main thread
-	outTimes.fWaitForMain          = m_fTimeWaitForMain[nThr];
-	outTimes.fWaitForRender        = m_fTimeWaitForRender[nThr];
-	outTimes.fWaitForGPU           = m_fTimeWaitForGPU[nThr];
-	outTimes.fTimeProcessedRT      = m_fTimeProcessedRT[nThr];
-	outTimes.fTimeProcessedRTScene = m_frameRenderStats[nThr].m_fRenderTime;
-	outTimes.fTimeProcessedGPU     = m_fTimeProcessedGPU[nThr];
-	outTimes.fTimeGPUIdlePercent   = m_fTimeGPUIdlePercent[nThr];
+	const SRenderStatistics::SFrameSummary& rtSummary = SRenderStatistics::Read().m_Summary;
+
+	// Query render times on main thread
+	outTimes.fWaitForMain          = rtSummary.waitForMain;
+	outTimes.fWaitForRender        = rtSummary.waitForRender;
+	outTimes.fWaitForGPU           = rtSummary.waitForGPU;
+	outTimes.fTimeProcessedRT      = rtSummary.renderTime;
+	outTimes.fTimeProcessedRTScene = rtSummary.sceneTime;
+	outTimes.fTimeProcessedGPU     = rtSummary.gpuFrameTime;
+	outTimes.fTimeGPUIdlePercent   = rtSummary.gpuIdlePerc;
 }
 
 //////////////////////////////////////////////////////////////////////////
@@ -3909,6 +4038,12 @@ void CRenderer::SetTexturePrecaching(bool stat)
 	CTexture::s_bPrecachePhase = stat;
 }
 
+void CRenderer::PrecachePostponedTextures()
+{
+	const bool isBlocking = false;
+	CTexture::Precache(isBlocking);
+}
+
 IOpticsElementBase* CRenderer::CreateOptics(EFlareType type) const
 {
 	return COpticsFactory::GetInstance()->Create(type);
@@ -3958,7 +4093,7 @@ SSkinningData* CRenderer::EF_CreateSkinningData(IRenderView* pRenderView, uint32
 	pSkinningRenderData->pPreviousSkinningRenderData = NULL;
 	pSkinningRenderData->pCharInstCB                 = FX_AllocateCharInstCB(pSkinningRenderData, m_nPoolIndex);
 	pSkinningRenderData->remapGUID                   = ~0u;
-	memset(pSkinningRenderData->vecPrecisionOffset, 0, sizeof(pSkinningRenderData->vecPrecisionOffset));
+	pSkinningRenderData->vecAdditionalOffset.zero();
 
 	pSkinningRenderData->pNextSkinningData       = NULL;
 	pSkinningRenderData->pMasterSkinningDataList = &pSkinningRenderData->pNextSkinningData;
@@ -3981,7 +4116,7 @@ SSkinningData* CRenderer::EF_CreateRemappedSkinningData(IRenderView* pRenderView
 	SSkinningData* pSkinningRenderData = alias_cast<SSkinningData*>(pData);
 	pData += Align(sizeof(SSkinningData), 16);
 
-	pSkinningRenderData->pRemapTable = NULL;
+	pSkinningRenderData->pRemapTable = pSourceSkinningData->pRemapTable;
 
 	pSkinningRenderData->pCustomData = nCustomDataSize ? alias_cast<void*>(pData) : NULL;
 	pData += nCustomDataSize ? Align(nCustomDataSize, 16) : 0;
@@ -3994,12 +4129,12 @@ SSkinningData* CRenderer::EF_CreateRemappedSkinningData(IRenderView* pRenderView
 
 	// use actual bone information from original skinning data
 	pSkinningRenderData->pBoneQuatsS    = pSourceSkinningData->pBoneQuatsS;
-	pSkinningRenderData->pActiveMorphs = pSourceSkinningData->pActiveMorphs;
+	pSkinningRenderData->pActiveMorphs  = pSourceSkinningData->pActiveMorphs;
 	pSkinningRenderData->pAsyncJobs     = pSourceSkinningData->pAsyncJobs;
 	pSkinningRenderData->pAsyncDataJobs = pSourceSkinningData->pAsyncDataJobs;
-	pSkinningRenderData->pRenderMesh = pSourceSkinningData->pRenderMesh;
+	pSkinningRenderData->pRenderMesh    = pSourceSkinningData->pRenderMesh;
 
-	pSkinningRenderData->pCharInstCB = pSourceSkinningData->pCharInstCB;
+	pSkinningRenderData->pCharInstCB    = pSourceSkinningData->pCharInstCB;
 
 	pSkinningRenderData->remapGUID               = pairGuid;
 	pSkinningRenderData->pNextSkinningData       = NULL;
@@ -4014,11 +4149,11 @@ void CRenderer::EF_EnqueueComputeSkinningData(IRenderView* pRenderView, SSkinnin
 	static_cast<CRenderView*>(pRenderView)->GetSkinningDataPools().pDataComputeSkinning->push_back(pData);
 }
 
-int CRenderer::GetTexturesStreamPoolSize()
+size_t CRenderer::GetTexturesStreamPoolSize()
 {
-	int poolSize = CV_r_TexturesStreamPoolSize + CV_r_TexturesStreamPoolSecondarySize;
+	size_t poolSize = CV_r_TexturesStreamPoolSize + CV_r_TexturesStreamPoolSecondarySize;
 	return gEnv->IsEditor()
-		   ? max(poolSize, 512)
+		   ? max(poolSize, static_cast<size_t>(512))
 		   : poolSize;
 }
 
@@ -4074,9 +4209,6 @@ void CRenderer::UpdateShaderItem(SShaderItem* pShaderItem, IMaterial* pMaterial)
 
 void CRenderer::RefreshShaderResourceConstants(SShaderItem* pShaderItem, IMaterial* pMaterial)
 {
-	_smart_ptr<CShader> pShader = static_cast<CShader*>(pShaderItem->m_pShader);
-	_smart_ptr<CShaderResources> pShaderResources = static_cast<CShaderResources*>(pShaderItem->m_pShaderResources);
-
 	ERenderCommandFlags flags = ERenderCommandFlags::LevelLoadingThread_executeDirect;
 	if (gcpRendD3D->m_pRT->m_eVideoThreadMode != SRenderThread::eVTM_Disabled)
 		flags |= ERenderCommandFlags::MainThread_defer;
@@ -4084,11 +4216,11 @@ void CRenderer::RefreshShaderResourceConstants(SShaderItem* pShaderItem, IMateri
 	ExecuteRenderThreadCommand(
 		[=]
 		{
-			if (pShader && pShaderResources)
+			if (pShaderItem->m_pShader && pShaderItem->m_pShaderResources)
 			{
 				CRY_PROFILE_REGION(PROFILE_RENDERER, "CRenderer::RefreshShaderResourceConstants");
 				if (pShaderItem->RefreshResourceConstants())
-					pShaderItem->m_pShaderResources->UpdateConstants(pShader);
+					pShaderItem->m_pShaderResources->UpdateConstants(pShaderItem->m_pShader);
 			}
 		},
 		flags
@@ -4097,20 +4229,17 @@ void CRenderer::RefreshShaderResourceConstants(SShaderItem* pShaderItem, IMateri
 
 void CRenderer::ForceUpdateShaderItem(SShaderItem* pShaderItem, IMaterial* pMaterial)
 {
-	_smart_ptr<CShader> pShader = static_cast<CShader*>(pShaderItem->m_pShader);
-	_smart_ptr<CShaderResources> pShaderResources = static_cast<CShaderResources*>(pShaderItem->m_pShaderResources);
-
 	ERenderCommandFlags flags = ERenderCommandFlags::LevelLoadingThread_defer;
 	if (gcpRendD3D->m_pRT->m_eVideoThreadMode != SRenderThread::eVTM_Disabled)
 		flags |= ERenderCommandFlags::MainThread_defer;
 
 	ExecuteRenderThreadCommand( 
 		[=]
-		{ 
-			if (pShader && pShaderResources)
+		{
+			if (pShaderItem->m_pShader && pShaderItem->m_pShaderResources)
 			{
 				CRY_PROFILE_REGION(PROFILE_RENDERER, "CRenderer::ForceUpdateShaderItem");
-				pShader->m_Flags &= ~EF_RELOADED;
+				static_cast<CShader*>(pShaderItem->m_pShader)->m_Flags &= ~EF_RELOADED;
 				pShaderItem->Update();
 			}
 		},
@@ -4191,46 +4320,6 @@ void CRenderer::SetShadowJittering(float shadowJittering)
 float CRenderer::GetShadowJittering() const
 {
 	return m_shadowJittering;
-}
-
-void CRenderer::GetPolyCount(int& nPolygons, int& nShadowPolys)
-{
-#if defined(ENABLE_PROFILING_CODE)
-	nPolygons     = GetPolyCount();
-	nShadowPolys  = m_frameRenderStats[m_nFillThreadID].m_nPolygons[EFSLIST_SHADOW_GEN];
-	nShadowPolys += m_frameRenderStats[m_nFillThreadID].m_nPolygons[EFSLIST_SHADOW_PASS];
-	nPolygons    -= nShadowPolys;
-#endif
-}
-
-int CRenderer::GetPolyCount()
-{
-#if defined(ENABLE_PROFILING_CODE)
-	ASSERT_IS_MAIN_THREAD(m_pRT);
-	int nPolys = 0;
-	for (int i = 0; i < EFSLIST_NUM; i++)
-	{
-		nPolys += m_frameRenderStats[m_nFillThreadID].m_nPolygons[i];
-	}
-	return nPolys;
-#else
-	return 0;
-#endif
-}
-
-int CRenderer::RT_GetPolyCount()
-{
-#if defined(ENABLE_PROFILING_CODE)
-	ASSERT_IS_RENDER_THREAD(m_pRT);
-	int nPolys = 0;
-	for (int i = 0; i < EFSLIST_NUM; i++)
-	{
-		nPolys += SRenderStatistics::Write().m_nPolygons[i];
-	}
-	return nPolys;
-#else
-	return 0;
-#endif
 }
 
 void CRenderer::SyncMainWithRender()
@@ -4365,21 +4454,31 @@ void CRenderer::ClearDrawCallsInfo()
 #endif
 
 #ifdef ENABLE_PROFILING_CODE
-void CRenderer::AddRecordedProfilingStats(const SProfilingStats& stats, ERenderListID renderList, bool bScenePass)
+void CRenderer::AddRecordedProfilingStats(const SProfilingStats& stats, ERenderListID renderList, bool bAsynchronous)
 {
 	SRenderStatistics& pipelineStats = SRenderStatistics::Write();
 
-	CryInterlockedAdd(&pipelineStats.m_nNumPSOSwitches, stats.numPSOSwitches);
-	CryInterlockedAdd(&pipelineStats.m_nNumLayoutSwitches, stats.numLayoutSwitches);
-	CryInterlockedAdd(&pipelineStats.m_nNumResourceSetSwitches, stats.numResourceSetSwitches);
-	CryInterlockedAdd(&pipelineStats.m_nNumInlineSets, stats.numInlineSets);
-	CryInterlockedAdd(&pipelineStats.m_nPolygons[renderList], stats.numPolygons);
-	CryInterlockedAdd(&pipelineStats.m_nDIPs[renderList], stats.numDIPs);
-
-	if (bScenePass)
+	// Asynchronously recorded stats (accumulation to available stats is deferred until end-frame)
+	if (bAsynchronous)
 	{
-		CryInterlockedAdd(&pipelineStats.m_nScenePassDIPs, stats.numDIPs);
-		CryInterlockedAdd(&pipelineStats.m_nScenePassPolygons, stats.numPolygons);
+		CryInterlockedAdd(&pipelineStats.m_nAsynchNumPSOSwitches        , stats.numPSOSwitches);
+		CryInterlockedAdd(&pipelineStats.m_nAsynchNumLayoutSwitches     , stats.numLayoutSwitches);
+		CryInterlockedAdd(&pipelineStats.m_nAsynchNumResourceSetSwitches, stats.numResourceSetSwitches);
+		CryInterlockedAdd(&pipelineStats.m_nAsynchNumInlineSets         , stats.numInlineSets);
+		CryInterlockedAdd(&pipelineStats.m_nAsynchNumTopologySets       , stats.numTopologySets);
+		CryInterlockedAdd(&pipelineStats.m_nAsynchDIPs[renderList]      , stats.numDIPs);
+		CryInterlockedAdd(&pipelineStats.m_nAsynchPolygons[renderList]  , stats.numPolygons);
+	}
+	// Synchronously recorded stats
+	else
+	{
+		pipelineStats.m_nNumPSOSwitches         += stats.numPSOSwitches;
+		pipelineStats.m_nNumLayoutSwitches      += stats.numLayoutSwitches;
+		pipelineStats.m_nNumResourceSetSwitches += stats.numResourceSetSwitches;
+		pipelineStats.m_nNumInlineSets          += stats.numInlineSets;
+		pipelineStats.m_nNumTopologySets        += stats.numTopologySets;
+		pipelineStats.m_nDIPs[renderList]       += stats.numDIPs;
+		pipelineStats.m_nPolygons[renderList]   += stats.numPolygons;
 	}
 }
 #endif

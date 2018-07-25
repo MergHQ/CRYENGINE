@@ -282,6 +282,7 @@ void CMFXParticleEffect::LoadParamsFromXml(const XmlNodeRef& paramsNode)
 		{
 			SMFXParticleEntry entry;
 			entry.name = child->getContent();
+			entry.name.Trim();
 
 			if (child->haveAttr("userdata"))
 				entry.userdata = child->getAttr("userdata");

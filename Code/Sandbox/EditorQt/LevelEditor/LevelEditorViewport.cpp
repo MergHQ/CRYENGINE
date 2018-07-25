@@ -8,7 +8,6 @@
 #include <CrySystem/IConsole.h>
 #include <CrySystem/ITimer.h>
 #include <CryInput/IInput.h>
-#include <CrySystem/ITestSystem.h>
 #include <CryRenderer/IRenderAuxGeom.h>
 #include "CryMath/Cry_GeoIntersect.h"
 #include <CryInput/IHardwareMouse.h>
@@ -27,7 +26,7 @@
 #include "IViewportManager.h"
 #include "IObjectManager.h"
 #include "ILevelEditor.h"
-#include "EditTool.h"
+#include "LevelEditor/Tools/EditTool.h"
 
 #include <QResizeEvent>
 #include "QtUtil.h"
@@ -78,11 +77,11 @@ static CPopupMenuItem& AddCheckbox(CPopupMenuItem& menu, const char* text, int* 
 
 namespace Private_AssetDrag
 {
-static bool TryAssetDragCreate(const CDragDropData* pDragDropData, string& className)
+static CAsset* GetAsset(const CDragDropData* pDragDropData)
 {
 	if (!pDragDropData->HasCustomData("Assets"))
 	{
-		return false;
+		return nullptr;
 	}
 
 	QVector<quintptr> assets;
@@ -96,22 +95,10 @@ static bool TryAssetDragCreate(const CDragDropData* pDragDropData, string& class
 	if (assets.size() > 1)
 	{
 		// We do not handle multi-asset drops.
-		return false;
+		return nullptr;
 	}
 
-	CAssetManager* const pAssetManager = GetIEditor()->GetAssetManager();
-
-	CAsset* const pAsset = (CAsset*)assets[0];
-	assert(pAsset);
-
-	const char* szClassName = pAsset->GetType()->GetObjectClassName();
-	if (!szClassName)
-	{
-		return false;
-	}
-
-	className = szClassName;
-	return true;
+	return reinterpret_cast<CAsset*>(assets[0]);
 }
 
 static bool TryObjectCreate(const CDragDropData* pDragDropData, string& className)
@@ -172,27 +159,77 @@ bool CLevelEditorViewport::DragEvent(EDragEvent eventId, QEvent* event, int flag
 	bool result = Super::DragEvent(eventId, event, flags);
 	if (!result)
 	{
-		return AssetDragCreate(eventId, event, flags);
+		return AssetDragEvent(eventId, event, flags);
 	}
 	return result;
 }
 
-bool CLevelEditorViewport::AssetDragCreate(EDragEvent eventId, QEvent* event, int flags)
+bool CLevelEditorViewport::AssetDragEvent(EDragEvent eventId, QEvent* event, int flags)
 {
 	using namespace Private_AssetDrag;
 
-	QDropEvent* const pDragEvent = (QDropEvent*)event;
-	const CDragDropData* const pDragDropData = CDragDropData::FromMimeData(pDragEvent->mimeData());
+	QDropEvent* const pDragEvent = eventId != EDragEvent::eDragLeave ? (QDropEvent*)event : nullptr;
+	const CDragDropData* const pDragDropData = pDragEvent != nullptr ? CDragDropData::FromMimeData(pDragEvent->mimeData()) : nullptr;
 
 	string className;
+	CAsset* pAsset = pDragDropData != nullptr ? GetAsset(pDragDropData) : nullptr;
+	if (pAsset != nullptr)
+	{
+		QDropEvent* drop = static_cast<QDropEvent*>(event);
+		CPoint point(drop->pos().x(), drop->pos().y());
+		HitContext hitContext;
+		string dragText;
+		if (HitTest(point, hitContext) && hitContext.object != nullptr && hitContext.object->CanApplyAsset(*pAsset, &dragText))
+		{
+			switch (eventId)
+			{
+				case eDragMove:
+				{
+					QDragMoveEvent* dragMove = static_cast<QDragMoveEvent*>(event);
 
-	if (!TryAssetDragCreate(pDragDropData, className) && !TryObjectCreate(pDragDropData, className))
+					CDragDropData::ShowDragText(GetViewWidget(), QString(dragText));
+				}
+				break;
+				case eDragLeave:
+				{
+					CDragDropData::ClearDragTooltip(GetViewWidget());
+				}
+				break;
+				case eDrop:
+				{
+					auto action = drop->proposedAction();
+					drop->acceptProposedAction();
+
+					CUndo undo("Apply asset");
+					hitContext.object->ApplyAsset(*pAsset, &hitContext);
+				}
+				break;
+			}
+
+			event->accept();
+
+			return true;
+		}
+
+		className = pAsset->GetType()->GetObjectClassName();
+		if (className.empty())
+		{
+			if (eventId == eDragEnter)
+			{
+				event->accept();
+				return true;
+			}
+
+			return false;
+		}
+	}
+	else if (pDragDropData != nullptr && !TryObjectCreate(pDragDropData, className))
 	{
 		return false;
 	}
 
 	GetIEditor()->StartObjectCreation(className.c_str(), nullptr);
-	CEditTool* const pEditTool = GetIEditor()->GetEditTool();
+	CEditTool* const pEditTool = GetIEditor()->GetLevelEditorSharedState()->GetEditTool();
 	if (!pEditTool)
 	{
 		return false;
@@ -202,7 +239,7 @@ bool CLevelEditorViewport::AssetDragCreate(EDragEvent eventId, QEvent* event, in
 	assert(pDrag);
 	QObject::connect(pDrag, &QObject::destroyed, [](auto)
 	{
-		CEditTool* editTool = GetIEditor()->GetEditTool();
+		CEditTool* editTool = GetIEditor()->GetLevelEditorSharedState()->GetEditTool();
 		CObjectCreateTool* objectCreateTool = editTool ? DYNAMIC_DOWNCAST(CObjectCreateTool, editTool) : nullptr;
 
 		if (objectCreateTool)
@@ -360,7 +397,7 @@ int CVarAutoSetAndRestore<int >::GetCVarValue()
 	return pCVar->GetIVal();
 }
 
-void CLevelEditorViewport::OnRender()
+void CLevelEditorViewport::OnRender(SDisplayContext& context)
 {
 	CRY_PROFILE_FUNCTION(PROFILE_EDITOR);
 
@@ -481,23 +518,25 @@ void CLevelEditorViewport::OnRender()
 			tmpCamera.SetFrustum(cubeRes, cubeRes, DEG2RAD(90), tmpCamera.GetNearPlane(), tmpCamera.GetFarPlane(), 1.0f);
 
 			// Display Context handle forces rendering of the world go to the current viewport output window.
+
 			SRenderingPassInfo passInfo = SRenderingPassInfo::CreateGeneralPassRenderingInfo(tmpCamera, SRenderingPassInfo::DEFAULT_FLAGS, false, this->m_displayContextKey);
 			m_engine->RenderWorld(renderFlags | SHDF_ALLOW_AO | SHDF_ALLOWPOSTPROCESS | SHDF_ALLOW_WATER | SHDF_ALLOWHDR | SHDF_ZPASS | SHDF_NOASYNC, passInfo, __FUNCTION__);
+			RenderAll(CObjectRenderHelper { context, passInfo });
 		}
 		m_renderer->EnableSwapBuffers(true);
 	}
 	else
 	{
 		GetIEditor()->GetSystem()->SetViewCamera(m_Camera);
-		if (ITestSystem* pTestSystem = GetISystem()->GetITestSystem())
-			pTestSystem->BeforeRender();
 
 		m_engine->Tick();
 		m_engine->Update();
 
 		// Display Context handle forces rendering of the world go to the current viewport output window.
+
 		SRenderingPassInfo passInfo = SRenderingPassInfo::CreateGeneralPassRenderingInfo(m_Camera, SRenderingPassInfo::DEFAULT_FLAGS, false, this->m_displayContextKey);
 		m_engine->RenderWorld(renderFlags | SHDF_ALLOW_AO | SHDF_ALLOWPOSTPROCESS | SHDF_ALLOW_WATER | SHDF_ALLOWHDR | SHDF_ZPASS, passInfo, __FUNCTION__);
+		RenderAll(CObjectRenderHelper { context, passInfo });
 	}
 
 	if (!m_renderer->IsStereoEnabled() && !m_Camera.m_bOmniCamera)
@@ -523,16 +562,8 @@ void CLevelEditorViewport::OnRender()
 		   light[0].SetRadius(1000000);
 		   m_renderer->EF_ADDDlight(&light[0], passInfo);
 
-		   light[1].m_Flags |= DLF_DIRECTIONAL;
-		   light[1].SetPosition(Vec3(100000, 100000, 100000));
-		   light[1].SetLightColor(ColorF(1, 1, 1, 1));
-		   light[1].SetSpecularMult(1.0f);
-		   light[1].SetRadius(1000000);
-		   m_renderer->EF_ADDDlight(&light[1], passInfo);
-		   //////////////////////////////////////////////////////////////////////////
-		 */
 
-		RenderAll();
+		 */
 
 		//m_renderer->EF_EndEf3D(renderFlags | SHDF_NOASYNC | SHDF_STREAM_SYNC | SHDF_ALLOWHDR, -1, -1, passInfo);
 
@@ -547,11 +578,11 @@ void CLevelEditorViewport::OnRender()
 		// Draw Axis arrow in lower left corner.
 		if (ge && ge->IsLevelLoaded())
 		{
-			DrawAxis();
+			DrawAxis(context);
 		}
 
 		// Draw 2D helpers.
-		m_displayContext.SetState(e_Mode3D | e_AlphaBlended | e_FillModeSolid | e_CullModeBack | e_DepthWriteOn | e_DepthTestOn);
+		context.SetState(e_Mode3D | e_AlphaBlended | e_FillModeSolid | e_CullModeBack | e_DepthWriteOn | e_DepthTestOn);
 
 		// Display cursor string.
 		RenderCursorString();
@@ -559,35 +590,30 @@ void CLevelEditorViewport::OnRender()
 		if (gViewportPreferences.showSafeFrame)
 		{
 			UpdateSafeFrame();
-			RenderSafeFrame();
+			RenderSafeFrame(context);
 		}
 
-		RenderSelectionRectangle();
+		RenderSelectionRectangle(context);
 	}
-
-	if (ITestSystem* pTestSystem = GetISystem()->GetITestSystem())
-		pTestSystem->AfterRender();
 }
 
-void CLevelEditorViewport::RenderAll()
+void CLevelEditorViewport::RenderAll(CObjectRenderHelper& displayInfo)
 {
 	// Draw physics helper/proxies, if requested
 #if !defined(_RELEASE) && !CRY_PLATFORM_DURANGO
 	if (m_bRenderStats) GetIEditor()->GetSystem()->RenderPhysicsHelpers();
 #endif
+	SDisplayContext& context = displayInfo.GetDisplayContextRef();
 
-	// Draw all objects.
-	DisplayContext& dctx = m_displayContext;
+	context.SetState(e_Mode3D | e_AlphaBlended | e_FillModeSolid | e_CullModeBack | e_DepthWriteOn | e_DepthTestOn);
+	GetIEditor()->GetObjectManager()->Display(displayInfo);
 
-	dctx.SetState(e_Mode3D | e_AlphaBlended | e_FillModeSolid | e_CullModeBack | e_DepthWriteOn | e_DepthTestOn);
-	GetIEditor()->GetObjectManager()->Display(dctx);
-
-	RenderSelectedRegion();
-	RenderSnapMarker();
+	RenderSelectedRegion(context);
+	RenderSnapMarker(context);
 
 	if (gViewportPreferences.showGridGuide
 	    && GetIEditor()->IsHelpersDisplayed())
-		RenderSnappingGrid();
+		RenderSnappingGrid(context);
 
 	IAISystem* aiSystem = GetIEditor()->GetSystem()->GetAISystem();
 	if (aiSystem)
@@ -606,32 +632,29 @@ void CLevelEditorViewport::RenderAll()
 	// Display editing tool.
 	if (GetEditTool() && m_bMouseInside)
 	{
-		GetEditTool()->Display(dctx);
+		GetEditTool()->Display(context);
 	}
 }
 
-void CLevelEditorViewport::RenderSnappingGrid()
+void CLevelEditorViewport::RenderSnappingGrid(SDisplayContext& context)
 {
 	// First, Check whether we should draw the grid or not.
 	const CSelectionGroup* pSelGroup = GetIEditorImpl()->GetSelection();
 	if (pSelGroup == NULL || pSelGroup->GetCount() != 1)
 		return;
-	if (GetIEditor()->GetEditMode() != eEditModeMove
-	    && GetIEditor()->GetEditMode() != eEditModeRotate)
+	if (GetIEditor()->GetLevelEditorSharedState()->GetEditMode() != CLevelEditorSharedState::EditMode::Move
+	    && GetIEditor()->GetLevelEditorSharedState()->GetEditMode() != CLevelEditorSharedState::EditMode::Rotate)
 		return;
 
 	if (gSnappingPreferences.gridSnappingEnabled() == false && gSnappingPreferences.angleSnappingEnabled() == false)
 		return;
-	if (GetIEditor()->GetEditTool() && !GetIEditor()->GetEditTool()->IsDisplayGrid() && !(GetIEditor()->GetGizmoManager()->GetHighlightedGizmo()
-	                                                                                      && GetIEditor()->GetGizmoManager()->GetHighlightedGizmo()->NeedsSnappingGrid()))
-	{
+
+	CEditTool* pTool = GetIEditor()->GetLevelEditorSharedState()->GetEditTool();
+	if (pTool && !pTool->IsDisplayGrid() && !(GetIEditor()->GetGizmoManager()->GetHighlightedGizmo() && GetIEditor()->GetGizmoManager()->GetHighlightedGizmo()->NeedsSnappingGrid()))
 		return;
-	}
 
-	DisplayContext& dc = m_displayContext;
-
-	int prevState = dc.GetState();
-	dc.DepthWriteOff();
+	int prevState = context.GetState();
+	context.DepthWriteOff();
 
 	Vec3 p = pSelGroup->GetObject(0)->GetWorldPos();
 
@@ -639,9 +662,9 @@ void CLevelEditorViewport::RenderSnappingGrid()
 	pSelGroup->GetObject(0)->GetBoundBox(bbox);
 	float size = 2 * bbox.GetRadius();
 	float alphaMax = 1.0f, alphaMin = 0.2f;
-	dc.SetLineWidth(3);
+	context.SetLineWidth(3);
 
-	if (GetIEditor()->GetEditMode() == eEditModeMove && gSnappingPreferences.gridSnappingEnabled())
+	if (GetIEditor()->GetLevelEditorSharedState()->GetEditMode() == CLevelEditorSharedState::EditMode::Move && gSnappingPreferences.gridSnappingEnabled())
 	// Draw the translation grid.
 	{
 		Vec3 u = m_constructionPlaneAxisX;
@@ -655,32 +678,34 @@ void CLevelEditorViewport::RenderSnappingGrid()
 		{
 			// Draw u lines.
 			float alphaCur = alphaMax - fabsf(float(i) / float(nSteps)) * (alphaMax - alphaMin);
-			dc.DrawLine(p + v * (step * i), p + u * size + v * (step * i),
-			            ColorF(0, 0, 0, alphaCur), ColorF(0, 0, 0, alphaMin));
-			dc.DrawLine(p + v * (step * i), p - u * size + v * (step * i),
-			            ColorF(0, 0, 0, alphaCur), ColorF(0, 0, 0, alphaMin));
+			context.DrawLine(p + v * (step * i), p + u * size + v * (step * i),
+			                 ColorF(0, 0, 0, alphaCur), ColorF(0, 0, 0, alphaMin));
+			context.DrawLine(p + v * (step * i), p - u * size + v * (step * i),
+			                 ColorF(0, 0, 0, alphaCur), ColorF(0, 0, 0, alphaMin));
 			// Draw v lines.
-			dc.DrawLine(p + u * (step * i), p + v * size + u * (step * i),
-			            ColorF(0, 0, 0, alphaCur), ColorF(0, 0, 0, alphaMin));
-			dc.DrawLine(p + u * (step * i), p - v * size + u * (step * i),
-			            ColorF(0, 0, 0, alphaCur), ColorF(0, 0, 0, alphaMin));
+			context.DrawLine(p + u * (step * i), p + v * size + u * (step * i),
+			                 ColorF(0, 0, 0, alphaCur), ColorF(0, 0, 0, alphaMin));
+			context.DrawLine(p + u * (step * i), p - v * size + u * (step * i),
+			                 ColorF(0, 0, 0, alphaCur), ColorF(0, 0, 0, alphaMin));
 		}
 	}
-	else if (GetIEditor()->GetEditMode() == eEditModeRotate && gSnappingPreferences.angleSnappingEnabled())
+	else if (GetIEditor()->GetLevelEditorSharedState()->GetEditMode() == CLevelEditorSharedState::EditMode::Rotate && gSnappingPreferences.angleSnappingEnabled())
 	// Draw the rotation grid.
 	{
-		int nAxis(GetAxisConstrain());
-		if (nAxis == AXIS_X || nAxis == AXIS_Y || nAxis == AXIS_Z)
+		CLevelEditorSharedState::Axis axisConstraint(GetIEditor()->GetLevelEditorSharedState()->GetAxisConstraint());
+		if (axisConstraint == CLevelEditorSharedState::Axis::X ||
+		    axisConstraint == CLevelEditorSharedState::Axis::Y ||
+		    axisConstraint == CLevelEditorSharedState::Axis::Z)
 		{
 			Vec3 xAxis(1, 0, 0);
 			Vec3 yAxis(0, 1, 0);
 			Vec3 zAxis(0, 0, 1);
 			Vec3 rotAxis;
-			if (nAxis == AXIS_X)
+			if (axisConstraint == CLevelEditorSharedState::Axis::X)
 				rotAxis = m_snappingMatrix.TransformVector(xAxis);
-			else if (nAxis == AXIS_Y)
+			else if (axisConstraint == CLevelEditorSharedState::Axis::Y)
 				rotAxis = m_snappingMatrix.TransformVector(yAxis);
-			else if (nAxis == AXIS_Z)
+			else if (axisConstraint == CLevelEditorSharedState::Axis::Z)
 				rotAxis = m_snappingMatrix.TransformVector(zAxis);
 			Vec3 anotherAxis = m_constructionPlane.n * size;
 			float step = gSnappingPreferences.angleSnap();
@@ -689,14 +714,14 @@ void CLevelEditorViewport::RenderSnappingGrid()
 			{
 				AngleAxis rot(i * step * gf_PI / 180.0, rotAxis);
 				Vec3 dir = rot * anotherAxis;
-				dc.DrawLine(p, p + dir,
-				            ColorF(0, 0, 0, alphaMax), ColorF(0, 0, 0, alphaMin));
-				dc.DrawLine(p, p - dir,
-				            ColorF(0, 0, 0, alphaMax), ColorF(0, 0, 0, alphaMin));
+				context.DrawLine(p, p + dir,
+				                 ColorF(0, 0, 0, alphaMax), ColorF(0, 0, 0, alphaMin));
+				context.DrawLine(p, p - dir,
+				                 ColorF(0, 0, 0, alphaMax), ColorF(0, 0, 0, alphaMin));
 			}
 		}
 	}
-	dc.SetState(prevState);
+	context.SetState(prevState);
 }
 
 void CLevelEditorViewport::OnCameraSpeedChanged()
@@ -959,7 +984,7 @@ Vec3 CLevelEditorViewport::ViewToWorld(POINT vp, bool* collideWithTerrain, bool 
 	}
 
 	int col = 0;
-	const int queryFlags = (onlyTerrain || GetIEditor()->IsSnapToTerrainEnabled()) ? ent_terrain : ent_all;
+	const int queryFlags = (onlyTerrain || gSnappingPreferences.IsSnapToTerrainEnabled()) ? ent_terrain : ent_all;
 	for (int chcnt = 0; chcnt < 3; chcnt++)
 	{
 		hit.pCollider = 0;
@@ -1093,7 +1118,7 @@ Vec3 CLevelEditorViewport::ViewToWorldNormal(POINT vp, bool onlyTerrain, bool bT
 	}
 
 	int col = 1;
-	const int queryFlags = (onlyTerrain || GetIEditor()->IsSnapToGeometryEnabled()) ? ent_terrain : ent_terrain | ent_static;
+	const int queryFlags = (onlyTerrain || gSnappingPreferences.IsSnapToGeometryEnabled()) ? ent_terrain : ent_terrain | ent_static;
 	while (col)
 	{
 		hit.pCollider = 0;

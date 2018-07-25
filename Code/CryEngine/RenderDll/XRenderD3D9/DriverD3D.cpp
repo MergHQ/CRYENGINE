@@ -77,10 +77,6 @@ void CD3D9Renderer::LimitFramerate(const int maxFPS, const bool bUseSleep)
 }
 
 CCryNameTSCRC CTexture::s_sClassName = CCryNameTSCRC("CTexture");
-
-CCryNameTSCRC CHWShader::s_sClassNameVS = CCryNameTSCRC("CHWShader_VS");
-CCryNameTSCRC CHWShader::s_sClassNamePS = CCryNameTSCRC("CHWShader_PS");
-
 CCryNameTSCRC CShader::s_sClassName = CCryNameTSCRC("CShader");
 
 CD3D9Renderer gcpRendD3D;
@@ -116,8 +112,7 @@ void CD3D9Renderer::InitRenderer()
 	m_pStereoRenderer = new CD3DStereoRenderer();
 	m_pGraphicsPipeline.reset(new CStandardGraphicsPipeline);
 
-	m_pPipelineProfiler = NULL;
-
+	m_pPipelineProfiler = nullptr;
 #if defined(ENABLE_SIMPLE_GPU_TIMERS)
 	m_pPipelineProfiler = new CRenderPipelineProfiler();
 #endif
@@ -200,9 +195,11 @@ void CD3D9Renderer::InitRenderer()
 
 #if ENABLE_STATOSCOPE
 	m_pGPUTimesDG = new CGPUTimesDG(this);
+	m_pDetailedRenderTimesDG = new CDetailedRenderTimesDG(this);
 	m_pGraphicsDG = new CGraphicsDG(this);
 	m_pPerformanceOverviewDG = new CPerformanceOverviewDG(this);
 	gEnv->pStatoscope->RegisterDataGroup(m_pGPUTimesDG);
+	gEnv->pStatoscope->RegisterDataGroup(m_pDetailedRenderTimesDG);
 	gEnv->pStatoscope->RegisterDataGroup(m_pGraphicsDG);
 	gEnv->pStatoscope->RegisterDataGroup(m_pPerformanceOverviewDG);
 #endif
@@ -594,6 +591,11 @@ void CD3D9Renderer::HandleDisplayPropertyChanges()
 
 		const int displayWidthBefore  = pDC->GetDisplayResolution()[0];
 		const int displayHeightBefore = pDC->GetDisplayResolution()[1];
+#if (CRY_RENDERER_DIRECT3D >= 110) || (CRY_RENDERER_VULKAN >= 10)
+		const int bufferCountBefore = pDC->IsSwapChainBacked() ? static_cast<const CSwapChainBackedRenderDisplayContext*>(pDC)->GetSwapChain().GetDesc                   ().BufferCount : CRendererCVars::CV_r_MaxFrameLatency + 1;
+#else
+		const int bufferCountBefore = pDC->IsSwapChainBacked() ? static_cast<const CSwapChainBackedRenderDisplayContext*>(pDC)->GetSwapChain().GetSwapChain()->GnmGetDesc().numBuffers  : CRendererCVars::CV_r_MaxFrameLatency + 1;
+#endif
 
 		// r_width and r_height are only honored when in game, otherwise
 		// the resolution is entirely controlled by dynamic window size
@@ -658,7 +660,7 @@ void CD3D9Renderer::HandleDisplayPropertyChanges()
 		if (m_cbpp != colorBits ||
 			m_VSync != vSync ||
 			wasFullscreen != IsFullscreen() ||
-			pDC->GetBackBufferCount() != CRendererCVars::CV_r_MaxFrameLatency + 1)
+			bufferCountBefore != (CRendererCVars::CV_r_MaxFrameLatency + 1))
 		{
 			bRecreateSwapchain = true;
 		}
@@ -846,6 +848,7 @@ void CD3D9Renderer::FillFrame(ColorF clearColor)
 
 		if (GetS3DRend().IsStereoEnabled())
 		{
+			GetS3DRend().PrepareFrame();
 			GetS3DRend().ClearEyes(clearColor);
 			GetS3DRend().ClearVrQuads(Clr_Transparent);   // Force transparent clear for VR quads
 		}
@@ -923,7 +926,7 @@ void CD3D9Renderer::RT_BeginFrame(const SDisplayContextKey& displayContextKey)
 		                          && snowVolParams.m_fRadius > 0.05f
 		                          && CV_r_snow > 0);
 
-		const auto& arrOccluders = m_p3DEngineCommon.m_RainOccluders.m_arrCurrOccluders[gRenDev->GetRenderThreadID()];
+		const auto& arrOccluders = m_p3DEngineCommon.m_RainOccluders.m_arrCurrOccluders[GetRenderThreadID()];
 		m_bDeferredRainOcclusionEnabled = (rainVolParams.bApplyOcclusion
 		                                   && ((CV_r_snow == 2 && m_bDeferredSnowEnabled) || (CV_r_rain == 2 && m_bDeferredRainEnabled))
 		                                   && !arrOccluders.empty());
@@ -946,11 +949,49 @@ void CD3D9Renderer::RT_BeginFrame(const SDisplayContextKey& displayContextKey)
 	}
 #endif
 
+	//////////////////////////////////////////////////////////////////////
+	// Profiling and statistics
+	//////////////////////////////////////////////////////////////////////
+	{
+		m_renderTargetStats.resize(0);
+
+#if !defined(_RELEASE)
+		m_pGraphicsPipeline->GetDrawCallInfoPerMesh()->clear();
+		m_pGraphicsPipeline->GetDrawCallInfoPerNode()->clear();
+#endif
+
+		{
+#if defined(ENABLE_SIMPLE_GPU_TIMERS)
+			m_pPipelineProfiler->BeginFrame(gRenDev->GetRenderFrameID());
+#endif
+
+			// NOTE: takes un-smoothed last frame's times
+			const auto& lastTimings = m_frameRenderStats[m_nFillThreadID].m_Summary;
+			static float fWaitForGPU;
+			float fSmooth = 5.0f;
+			fWaitForGPU = (lastTimings.gpuFrameTime + fWaitForGPU * fSmooth) / (fSmooth + 1.0f);
+			if (fWaitForGPU >= 0.004f)
+			{
+				if (m_nGPULimited < 1000)
+					m_nGPULimited++;
+			}
+			else
+				m_nGPULimited = 0;
+
+			m_bUseGPUFriendlyBatching[GetRenderThreadID()] = m_nGPULimited > 10; // On PC if we are GPU limited use z-pass distance sorting and disable instancing
+			if (CV_r_batchtype == 0)
+				m_bUseGPUFriendlyBatching[GetRenderThreadID()] = false;
+			else if (CV_r_batchtype == 1)
+				m_bUseGPUFriendlyBatching[GetRenderThreadID()] = true;
+		}
+	}
+
+	//////////////////////////////////////////////////////////////////////
+	// Pre-Frame management
+	//////////////////////////////////////////////////////////////////////
+
 	// Delete resources scheduled for deletion.
 	RT_DelayedDeleteResources(false);
-
-	// Trim temporary depth texture pool
-	CRendererResources::TrimTempDepthSurfaces(GetFrameID(), 5);
 
 	// Update PSOs
 	GetDeviceObjectFactory().UpdatePipelineStates();
@@ -959,8 +1000,9 @@ void CD3D9Renderer::RT_BeginFrame(const SDisplayContextKey& displayContextKey)
 	m_DevBufMan.Update(gRenDev->GetRenderFrameID(), false);
 	GetDeviceObjectFactory().OnBeginFrame();
 
-	if (m_pPipelineProfiler)
-		m_pPipelineProfiler->BeginFrame();
+	// Render updated dynamic flash textures
+	CFlashTextureSourceSharedRT::TickRT();
+	CFlashTextureSourceBase::RenderLights();
 
 	//////////////////////////////////////////////////////////////////////
 	// Build the matrices
@@ -1070,71 +1112,7 @@ void CD3D9Renderer::RT_BeginFrame(const SDisplayContextKey& displayContextKey)
 		m_SceneRecurseCount++;
 	}
 
-	m_nStencilMaskRef = 1;
-
-	//if (!IsRecursiveRenderView())
-	{
-		memset(&m_frameRenderStats[m_nProcessThreadID], 0, sizeof(SRenderStatistics));
-		SRenderStatistics::s_pCurrentOutput = &m_frameRenderStats[m_nProcessThreadID];
-		m_renderTargetStats.resize(0);
-
-#if !defined(_RELEASE)
-		m_pGraphicsPipeline->GetDrawCallInfoPerMesh()->clear();
-		m_pGraphicsPipeline->GetDrawCallInfoPerNode()->clear();
-#endif
-	}
-
-	{
-		static float fWaitForGPU;
-		float fSmooth = 5.0f;
-		fWaitForGPU = (m_fTimeWaitForGPU[gRenDev->GetMainThreadID()] + fWaitForGPU * fSmooth) / (fSmooth + 1.0f);
-		if (fWaitForGPU >= 0.004f)
-		{
-			if (m_nGPULimited < 1000)
-				m_nGPULimited++;
-		}
-		else
-			m_nGPULimited = 0;
-
-		m_bUseGPUFriendlyBatching[gRenDev->GetRenderThreadID()] = m_nGPULimited > 10; // On PC if we are GPU limited use z-pass distance sorting and disable instancing
-		if (CV_r_batchtype == 0)
-			m_bUseGPUFriendlyBatching[gRenDev->GetRenderThreadID()] = false;
-		else if (CV_r_batchtype == 1)
-			m_bUseGPUFriendlyBatching[gRenDev->GetRenderThreadID()] = true;
-	}
-
-#if REFRACTION_PARTIAL_RESOLVE_DEBUG_VIEWS
-	// Refraction Partial Resolves debug views
-	if (CRenderer::CV_r_RefractionPartialResolvesDebug == eRPR_DEBUG_VIEW_2D_AREA)
-	{
-		// Clear the screen for the partial resolve debug view 1
-		IRenderAuxGeom* pAuxRenderer = gEnv->pRenderer->GetIRenderAuxGeom();
-		if (pAuxRenderer)
-		{
-			SAuxGeomRenderFlags oldRenderFlags = pAuxRenderer->GetRenderFlags();
-
-			SAuxGeomRenderFlags newRenderFlags;
-			newRenderFlags.SetDepthTestFlag(e_DepthTestOff);
-			newRenderFlags.SetAlphaBlendMode(e_AlphaNone);
-			newRenderFlags.SetMode2D3DFlag(e_Mode2D);
-			pAuxRenderer->SetRenderFlags(newRenderFlags);
-
-			const bool bConsoleVisible = GetISystem()->GetIConsole()->GetStatus();
-			const float screenTop = (bConsoleVisible) ? 0.5f : 0.0f;
-
-			// Draw full screen black triangle
-			const uint vertexCount = 3;
-			Vec3 vert[vertexCount] = {
-				Vec3(0.0f, screenTop, 0.0f),
-				Vec3(0.0f, 2.0f,      0.0f),
-				Vec3(2.0f, screenTop, 0.0f)
-			};
-
-			pAuxRenderer->DrawTriangles(vert, vertexCount, Col_Black);
-			pAuxRenderer->SetRenderFlags(oldRenderFlags);
-		}
-	}
-#endif
+	m_nStencilMaskRef = STENCIL_VALUE_OUTDOORS + 1;
 }
 
 bool CD3D9Renderer::CheckDeviceLost()
@@ -1321,9 +1299,7 @@ void CD3D9Renderer::ResolveHighDynamicRangeDisplay()
 	PROFILE_LABEL_SCOPE("RESOLVE_HIGHDYNAMICRANGE");
 
 	const CRenderOutput* pOutput = GetGraphicsPipeline().GetCurrentRenderOutput();
-	CRenderDisplayContext* pDC = GetActiveDisplayContext();
-	
-	pDC->PostPresent();
+	CRenderDisplayContext* pDC = GetActiveDisplayContext(); pDC->PostPresent();
 
 	CRY_ASSERT(pOutput->GetColorTarget() == pDC->GetStorableColorOutput());
 	CRY_ASSERT(pOutput->GetColorTarget() != pDC->GetCurrentBackBuffer());
@@ -1484,6 +1460,33 @@ static int DebugIndexBufferSize(D3DIndexBuffer* pIB)
 #endif
 }
 
+#if defined(ENABLE_SIMPLE_GPU_TIMERS)
+float CD3D9Renderer::GetGPUFrameTime()
+{
+	// NOTE: returning un-smoothed data, smoothed can be requested using ID "RT_COMMAND_BUF_COUNT"
+	const SRenderStatistics::SFrameSummary& rtSummary = m_pPipelineProfiler->GetFrameSummary(GetMainThreadID());
+
+	float fGPUidle = rtSummary.gpuIdlePerc * 0.01f;     // normalise %
+	float fGPUload = 1.0f - fGPUidle;                   // normalised non-idle time
+	float fGPUtime = rtSummary.gpuFrameTime * fGPUload; // GPU time in seconds
+	return fGPUtime;
+}
+
+void CD3D9Renderer::GetRenderTimes(SRenderTimes& outTimes)
+{
+	// NOTE: returning un-smoothed data, smoothed can be requested using ID "RT_COMMAND_BUF_COUNT"
+	const SRenderStatistics::SFrameSummary& rtSummary = m_pPipelineProfiler->GetFrameSummary(GetMainThreadID());
+
+	// Query render times on main thread
+	outTimes.fWaitForMain          = rtSummary.waitForMain;
+	outTimes.fWaitForRender        = rtSummary.waitForRender;
+	outTimes.fWaitForGPU           = rtSummary.waitForGPU;
+	outTimes.fTimeProcessedRT      = rtSummary.renderTime;
+	outTimes.fTimeProcessedRTScene = rtSummary.sceneTime;
+	outTimes.fTimeProcessedGPU     = rtSummary.gpuFrameTime;
+	outTimes.fTimeGPUIdlePercent   = rtSummary.gpuIdlePerc;
+}
+#endif
 
 void CD3D9Renderer::DebugDrawStats1(const SRenderStatistics& RStats)
 {
@@ -1513,14 +1516,15 @@ void CD3D9Renderer::DebugDrawStats1(const SRenderStatistics& RStats)
 	IRenderAuxText::Draw2dLabel(nX, nY += nYstep, fFSize, &col.r, false, "General: %d (%d polys)", RStats.m_nDIPs[EFSLIST_GENERAL], RStats.m_nPolygons[EFSLIST_GENERAL]);
 	IRenderAuxText::Draw2dLabel(nX, nY += nYstep, fFSize, &col.r, false, "Decals: %d (%d polys)", RStats.m_nDIPs[EFSLIST_DECAL], RStats.m_nPolygons[EFSLIST_DECAL]);
 	IRenderAuxText::Draw2dLabel(nX, nY += nYstep, fFSize, &col.r, false, "Terrain layers: %d (%d polys)", RStats.m_nDIPs[EFSLIST_TERRAINLAYER], RStats.m_nPolygons[EFSLIST_TERRAINLAYER]);
-	IRenderAuxText::Draw2dLabel(nX, nY += nYstep, fFSize, &col.r, false, "Transparent: %d (%d polys)", RStats.m_nDIPs[EFSLIST_TRANSP], RStats.m_nPolygons[EFSLIST_TRANSP]);
+	IRenderAuxText::Draw2dLabel(nX, nY += nYstep, fFSize, &col.r, false, "Transparent aw: %d (%d polys)", RStats.m_nDIPs[EFSLIST_TRANSP_AW], RStats.m_nPolygons[EFSLIST_TRANSP_AW]);
+	IRenderAuxText::Draw2dLabel(nX, nY += nYstep, fFSize, &col.r, false, "Transparent bw: %d (%d polys)", RStats.m_nDIPs[EFSLIST_TRANSP_BW], RStats.m_nPolygons[EFSLIST_TRANSP_BW]);
 	IRenderAuxText::Draw2dLabel(nX, nY += nYstep, fFSize, &col.r, false, "Shadow-gen: %d (%d polys)", RStats.m_nDIPs[EFSLIST_SHADOW_GEN], RStats.m_nPolygons[EFSLIST_SHADOW_GEN]);
 	IRenderAuxText::Draw2dLabel(nX, nY += nYstep, fFSize, &col.r, false, "Shadow-pass: %d (%d polys)", RStats.m_nDIPs[EFSLIST_SHADOW_PASS], RStats.m_nPolygons[EFSLIST_SHADOW_PASS]);
 	IRenderAuxText::Draw2dLabel(nX, nY += nYstep, fFSize, &col.r, false, "Water: %d (%d polys)", RStats.m_nDIPs[EFSLIST_WATER], RStats.m_nPolygons[EFSLIST_WATER]);
 	IRenderAuxText::Draw2dLabel(nX, nY += nYstep, fFSize, &col.r, false, "Imposters: %d (Updates: %d)", RStats.m_NumCloudImpostersDraw, RStats.m_NumCloudImpostersUpdates);
 	IRenderAuxText::Draw2dLabel(nX, nY += nYstep, fFSize, &col.r, false, "Sprites: %d (%d dips, %d updates, %d altases, %d cells, %d polys)", RStats.m_NumSprites, RStats.m_NumSpriteDIPS, RStats.m_NumSpriteUpdates, RStats.m_NumSpriteAltasesUsed, RStats.m_NumSpriteCellsUsed, RStats.m_NumSpritePolys);
 
-	IRenderAuxText::Draw2dLabel(nX - 5, nY + 20, 1.4f, &col.r, false, "Total: %d (%d polys)", GetCurrentNumberOfDrawCalls(), RT_GetPolyCount());
+	IRenderAuxText::Draw2dLabel(nX - 5, nY + 20, 1.4f, &col.r, false, "Total: %d (%d polys)", RStats.GetNumberOfDrawCalls(), RStats.GetNumberOfPolygons());
 
 	col = Col_Yellow;
 	nX -= 5;
@@ -1711,12 +1715,12 @@ void CD3D9Renderer::DebugDrawStats1(const SRenderStatistics& RStats)
 				{
 					for (j = 0; j < (int)ShadersVS.Num(); j++)
 					{
-						if (ShadersVS[j] == pShInst->m_Handle.m_pShader->m_pHandle)
+						if (ShadersVS[j] == pShInst->m_Handle.m_pShader->GetHandle())
 							break;
 					}
 					if (j == ShadersVS.Num())
 					{
-						ShadersVS.AddElem(pShInst->m_Handle.m_pShader->m_pHandle);
+						ShadersVS.AddElem(pShInst->m_Handle.m_pShader->GetHandle());
 					}
 				}
 			}
@@ -1749,12 +1753,12 @@ void CD3D9Renderer::DebugDrawStats1(const SRenderStatistics& RStats)
 				{
 					for (j = 0; j < (int)ShadersPS.Num(); j++)
 					{
-						if (ShadersPS[j] == pShInst->m_Handle.m_pShader->m_pHandle)
+						if (ShadersPS[j] == pShInst->m_Handle.m_pShader->GetHandle())
 							break;
 					}
 					if (j == ShadersPS.Num())
 					{
-						ShadersPS.AddElem(pShInst->m_Handle.m_pShader->m_pHandle);
+						ShadersPS.AddElem(pShInst->m_Handle.m_pShader->GetHandle());
 					}
 				}
 			}
@@ -1765,23 +1769,6 @@ void CD3D9Renderer::DebugDrawStats1(const SRenderStatistics& RStats)
 	n = 0;
 	nSize = 0;
 	size_t nSizeD = 0;
-	size_t nSizeAll = 0;
-
-	FXShaderCacheItor FXitor;
-	size_t nCache = 0;
-	nSize = 0;
-	for (FXitor = CHWShader::m_ShaderCache.begin(); FXitor != CHWShader::m_ShaderCache.end(); FXitor++)
-	{
-		SShaderCache* sc = FXitor->second;
-		if (!sc)
-			continue;
-		nCache++;
-		nSize += sc->Size();
-	}
-	IRenderAuxText::Draw2dLabel(nX, nY += nYstep, fFSize, &col.r, false, "Shader Cache: %" PRISIZE_T " (size: %.3f Mb)", nCache, BYTES_TO_MB(nSize));
-
-	nSize = 0;
-	n = 0;
 	CRenderElement* pRE = CRenderElement::s_RootGlobal.m_NextGlobal;
 	while (pRE != &CRenderElement::s_RootGlobal)
 	{
@@ -1960,17 +1947,6 @@ void CD3D9Renderer::DebugVidResourcesBars(int nX, int nY)
 	AuxDrawQuad(nX + fOffs, nY + 1, nX + fOffs + (float)nSizeD2 / fMaxTextureMemory * fMaxBar, nY + 12, Col_Green, 1.0f);
 	nY += nYst;
 
-	// Currently this are the only resources allocated through "new CTexture" and not in the CBaseLibrary
-	size_t nSizeZRT = CRendererResources::SizeofTempDepthSurfaces();
-	size_t nSizeCRT = 0;
-
-	nSizeCRT += nSizeZRT;
-
-	IRenderAuxText::Draw2dLabel(nX, nY, fFSize, &col.r, false, "Temp targets: %.1f Mb", BYTES_TO_MB(nSizeCRT));
-
-	AuxDrawQuad(nX + fOffs, nY + 1, nX + fOffs + (float)nSizeCRT / fMaxTextureMemory * fMaxBar, nY + 12, Col_Green, 1.0f);
-	nY += nYst;
-
 	size_t nSAll = 0;
 	size_t nSOneMip = 0;
 	size_t nSNM = 0;
@@ -2067,7 +2043,7 @@ void CD3D9Renderer::DebugVidResourcesBars(int nX, int nY)
 	AuxDrawQuad(nX + fOffs, nY + 1, nX + fOffs + (float)nSizeDynM / fMaxTextureMemory * fMaxBar, nY + 12, Col_Green, 1.0f);
 	nY += nYst + 4;
 
-	size_t nSize = nSizeDynM + nSRT + nSizeCRT + nSizeSH + nSizeD + nSizeD2;
+	size_t nSize = nSizeDynM + nSRT + nSizeSH + nSizeD + nSizeD2;
 	ColorF colO = Col_Blue;
 	IRenderAuxText::Draw2dLabel(nX, nY, fFSize, &colO.r, false, "Overall (Pure): %.1f Mb", BYTES_TO_MB(nSize));
 
@@ -2084,6 +2060,7 @@ void CD3D9Renderer::DebugPerfBars(const SRenderStatistics& RStats,int nX, int nY
 	ColorF col = Col_Yellow;
 	ColorF colP = Col_Cyan;
 
+	const SRenderStatistics::SFrameSummary& rtTimings = RStats.m_Summary;
 	CRenderDisplayContext* pDC = GetActiveDisplayContext();
 	SRenderViewport vp = pDC->GetViewport();
 
@@ -2115,7 +2092,7 @@ void CD3D9Renderer::DebugPerfBars(const SRenderStatistics& RStats,int nX, int nY
 	float fMaxBar = 200;
 	float fOffs = 180.0f;
 
-	IRenderAuxText::Draw2dLabel(nX + 30, nY, 1.6f, &colP.r, false, "Instances: %d, GeomBatches: %d, MatBatches: %d, DrawCalls: %d, Text: %d, Stat: %d, PShad: %d, VShad: %d", RStats.m_NumRendInstances, RStats.m_NumRendGeomBatches, RStats.m_NumRendMaterialBatches, GetCurrentNumberOfDrawCalls(), RStats.m_NumTextChanges, RStats.m_NumStateChanges, RStats.m_NumPShadChanges, RStats.m_NumVShadChanges);
+	IRenderAuxText::Draw2dLabel(nX + 30, nY, 1.6f, &colP.r, false, "Instances: %d, GeomBatches: %d, MatBatches: %d, DrawCalls: %d, Text: %d, Stat: %d, PShad: %d, VShad: %d", RStats.m_NumRendInstances, RStats.m_NumRendGeomBatches, RStats.m_NumRendMaterialBatches, RStats.GetNumberOfDrawCalls(), RStats.m_NumTextChanges, RStats.m_NumStateChanges, RStats.m_NumPShadChanges, RStats.m_NumVShadChanges);
 	nY += 30;
 
 	ColorF colT = Col_Gray;
@@ -2131,38 +2108,38 @@ void CD3D9Renderer::DebugPerfBars(const SRenderStatistics& RStats,int nX, int nY
 	AuxDrawQuad(nX + fOffs, nY + 4, nX + fOffs + fMaxBar, nY + 12, Col_Cyan, 1.0f);
 	nY += nYst + 5;
 
-	float fTimeDIPSum = fTimeDIPZ + fTimeDIP[EFSLIST_GENERAL] + fTimeDIP[EFSLIST_TERRAINLAYER] + fTimeDIP[EFSLIST_SHADOW_GEN] + fTimeDIP[EFSLIST_DECAL] + fTimeDIPAO + fTimeDIPRAIN + fTimeDIPLayers + fTimeDIP[EFSLIST_WATER_VOLUMES] + fTimeDIP[EFSLIST_TRANSP] + fTimeDIPSprites;
+	float fTimeDIPSum = fTimeDIPZ + fTimeDIP[EFSLIST_GENERAL] + fTimeDIP[EFSLIST_TERRAINLAYER] + fTimeDIP[EFSLIST_SHADOW_GEN] + fTimeDIP[EFSLIST_DECAL] + fTimeDIPAO + fTimeDIPRAIN + fTimeDIPLayers + fTimeDIP[EFSLIST_WATER_VOLUMES] + fTimeDIP[EFSLIST_TRANSP_AW] + fTimeDIP[EFSLIST_TRANSP_BW] + fTimeDIPSprites;
 	IRenderAuxText::Draw2dLabel(nX, nY, fFSize, &colF.r, false, "Sum all passes: %.3fms", fTimeDIPSum * 1000.0f);
 
 	AuxDrawQuad(nX + fOffs, nY + 4, nX + fOffs + fTimeDIPSum / fFrameTime * fMaxBar, nY + 12, Col_Yellow, 1.0f);
 	nY += nYst + 5;
 
-	fRTTimeProcess = (m_fTimeProcessedRT[gRenDev->GetMainThreadID()] + fRTTimeProcess * fSmooth) / (fSmooth + 1.0f);
+	fRTTimeProcess = (rtTimings.renderTime + fRTTimeProcess * fSmooth) / (fSmooth + 1.0f);
 	IRenderAuxText::Draw2dLabel(nX, nY, fFSize, &colT.r, false, "RT process time: %.3fms", fRTTimeProcess * 1000.0f);
 
 	AuxDrawQuad(nX + fOffs, nY + 4, nX + fOffs + fRTTimeProcess / fFrameTime * fMaxBar, nY + 12, Col_Gray, 1.0f);
 	nY += nYst;
 	nX += 5;
 
-	fRTTimeEndFrame = (m_fRTTimeEndFrame + fRTTimeEndFrame * fSmooth) / (fSmooth + 1.0f);
+	fRTTimeEndFrame = (rtTimings.endTime + fRTTimeEndFrame * fSmooth) / (fSmooth + 1.0f);
 	IRenderAuxText::Draw2dLabel(nX, nY, fFSize, &colT.r, false, "RT end frame: %.3fms", fRTTimeEndFrame * 1000.0f);
 
 	AuxDrawQuad(nX + fOffs, nY + 4, nX + fOffs + fRTTimeEndFrame / fFrameTime * fMaxBar, nY + 12, Col_Gray, 1.0f);
 	nY += nYst;
 
-	fRTTimeFlashRender = (m_fRTTimeFlashRender + fRTTimeFlashRender * fSmooth) / (fSmooth + 1.0f);
+	fRTTimeFlashRender = (rtTimings.flashTime + fRTTimeFlashRender * fSmooth) / (fSmooth + 1.0f);
 	IRenderAuxText::Draw2dLabel(nX, nY, fFSize, &colT.r, false, "RT flash render: %.3fms", fRTTimeFlashRender * 1000.0f);
 
 	AuxDrawQuad(nX + fOffs, nY + 4, nX + fOffs + fRTTimeFlashRender / fFrameTime * fMaxBar, nY + 12, Col_Gray, 1.0f);
 	nY += nYst;
 
-	fRTTimeMiscRender = (m_fRTTimeMiscRender + fRTTimeMiscRender * fSmooth) / (fSmooth + 1.0f);
+	fRTTimeMiscRender = (rtTimings.miscTime + fRTTimeMiscRender * fSmooth) / (fSmooth + 1.0f);
 	IRenderAuxText::Draw2dLabel(nX, nY, fFSize, &colT.r, false, "RT misc render: %.3fms", fRTTimeMiscRender * 1000.0f);
 
 	AuxDrawQuad(nX + fOffs, nY + 4, nX + fOffs + fRTTimeMiscRender / fFrameTime * fMaxBar, nY + 12, Col_Gray, 1.0f);
 	nY += nYst;
 
-	fRTTimeSceneRender = (m_fRTTimeSceneRender + fRTTimeSceneRender * fSmooth) / (fSmooth + 1.0f);
+	fRTTimeSceneRender = (rtTimings.sceneTime + fRTTimeSceneRender * fSmooth) / (fSmooth + 1.0f);
 	IRenderAuxText::Draw2dLabel(nX, nY, fFSize, &colT.r, false, "RT scene render: %.3fms", fRTTimeSceneRender * 1000.0f);
 
 	AuxDrawQuad(nX + fOffs, nY + 4, nX + fOffs + fRTTimeSceneRender / fFrameTime * fMaxBar, nY + 12, Col_Gray, 1.0f);
@@ -2175,7 +2152,7 @@ void CD3D9Renderer::DebugPerfBars(const SRenderStatistics& RStats,int nX, int nY
 	nY += nYst + 5;
 	nX -= 5;
 
-	fWaitForGPU = (m_fTimeWaitForGPU[gRenDev->GetMainThreadID()] + fWaitForGPU * fSmooth) / (fSmooth + 1.0f);
+	fWaitForGPU = (rtTimings.waitForGPU + fWaitForGPU * fSmooth) / (fSmooth + 1.0f);
 	IRenderAuxText::Draw2dLabel(nX, nY, fFSize, &colF.r, false, "Wait for GPU: %.3fms", fWaitForGPU * 1000.0f);
 
 	AuxDrawQuad(nX + fOffs, nY + 4, nX + fOffs + fWaitForGPU / fFrameTime * fMaxBar, nY + 12, Col_Blue, 1.0f);
@@ -2324,7 +2301,7 @@ void CD3D9Renderer::DebugPrintShader(CHWShader_D3D* pSH, void* pI, int nX, int n
 	nY += 25;
 
 	SD3DShader* pHWS = pInst->m_Handle.m_pShader;
-	if (!pHWS || !pHWS->m_pHandle)
+	if (!pHWS || !pHWS->GetHandle())
 		return;
 	if (!pInst->m_Shader.m_pShaderData)
 		return;
@@ -2360,7 +2337,7 @@ void CD3D9Renderer::DebugDrawStats8(const SRenderStatistics& RStats)
 {
 #if !defined(_RELEASE) && defined(ENABLE_PROFILING_CODE)
 	ColorF col = Col_White;
-	IRenderAuxText::Draw2dLabel(30, 50, 1.2f, &col.r, false, "%d total instanced DIPs in %d batches", RStats.m_nInsts, RStats.m_nInstCalls);
+	IRenderAuxText::Draw2dLabel(30, 50, 1.2f, &col.r, false, "%d total instanced DIPs in %d batches", RStats.GetNumGeomInstances(), RStats.GetNumGeomInstanceDrawCalls());
 #endif
 }
 
@@ -2551,7 +2528,6 @@ void CD3D9Renderer::RT_RenderDebug(bool bRenderStats)
 		gEnv->pRenderer->GetIRenderAuxGeom(/*eType*/)->SetCurrentDisplayContext(displayContextKey);
 	}
 
-	#if REFRACTION_PARTIAL_RESOLVE_DEBUG_VIEWS
 	if (CV_r_RefractionPartialResolvesDebug)
 	{
 		const float xPos = 0.0f;
@@ -2571,10 +2547,7 @@ void CD3D9Renderer::RT_RenderDebug(bool bRenderStats)
 		IRenderAuxText::Draw2dLabel(xPos, yPos, size, &textColor.r, bCentre, "Pixels: %d", RStats.m_refractionPartialResolvePixelCount);
 		yPos += textYSpacing;
 		IRenderAuxText::Draw2dLabel(xPos, yPos, size, &textColor.r, bCentre, "Percentage of Screen area: %d", (int) (RStats.m_refractionPartialResolvePixelCount * fInvScreenArea * 100.0f));
-		yPos += textYSpacing;
-		IRenderAuxText::Draw2dLabel(xPos, yPos, size, &textColor.r, bCentre, "Estimated cost: %.2fms", RStats.m_fRefractionPartialResolveEstimatedCost);
 	}
-	#endif
 
 	#ifndef EXCLUDE_DOCUMENTATION_PURPOSE
 	if (CV_r_DebugFontRendering)
@@ -3277,9 +3250,16 @@ void CD3D9Renderer::RT_EndFrame()
 	const ESystemGlobalState systemState = iSystem->GetSystemGlobalState();
 	if (systemState > ESYSTEM_GLOBAL_STATE_LEVEL_LOAD_END)
 	{
+		CTimeValue time0 = iTimer->GetAsyncTime();
+
 		CTexture::Update();
+
+		SRenderStatistics::Write().m_fTexUploadTime += (iTimer->GetAsyncTime() - time0).GetSeconds();
 	}
-	CFlashTextureSourceSharedRT::TickRT();
+
+#if defined(ENABLE_SIMPLE_GPU_TIMERS)
+	m_pPipelineProfiler->Display();
+#endif
 
 	// Rnder-thread Aux
 	RenderAux_RT();
@@ -3291,17 +3271,12 @@ void CD3D9Renderer::RT_EndFrame()
 	// Hardware mouse
 	if (gEnv->pHardwareMouse)
 		gEnv->pHardwareMouse->Render();
-	//////////////////////////////////////////////////////////////////////////
 
 	EF_RemoveParticlesFromScene();
 
-	//FX_SetState(GS_NODEPTHTEST);
-
-	//char str[1024];
-	//cry_sprintf(str, "Frame: %d", gRenDev->GetRenderFrameID());
-	//PrintToScreen(5,50, 16, str);
-
-	//PROFILE_LABEL_POP_SKIP_GPU("Frame");
+	//////////////////////////////////////////////////////////////////////
+	// Profiling and statistics
+	//////////////////////////////////////////////////////////////////////
 
 	bool bProfilerOnSocialScreen = false;
 #if !CRY_PLATFORM_ORBIS  // PSVR currently does not use a custom social screen
@@ -3309,14 +3284,18 @@ void CD3D9Renderer::RT_EndFrame()
 		bProfilerOnSocialScreen = pSocialScreenCVar->GetIVal() >= 0;
 #endif
 
-	if (m_pPipelineProfiler && !bProfilerOnSocialScreen)
+#if defined(ENABLE_SIMPLE_GPU_TIMERS)
+	if (!bProfilerOnSocialScreen)
 		m_pPipelineProfiler->EndFrame();
+#endif
 
 	CTimeValue timePresentBegin = iTimer->GetAsyncTime();
 	GetS3DRend().SubmitFrameToHMD();
 
-	if (m_pPipelineProfiler && bProfilerOnSocialScreen)
+#if defined(ENABLE_SIMPLE_GPU_TIMERS)
+	if (bProfilerOnSocialScreen)
 		m_pPipelineProfiler->EndFrame();
+#endif
 
 #ifdef DO_RENDERLOG
 	if (CRenderer::CV_r_log)
@@ -3341,7 +3320,7 @@ void CD3D9Renderer::RT_EndFrame()
 	gRenDev->m_DevMan.RT_Tick();
 	GetDeviceObjectFactory().OnEndFrame();
 
-	gRenDev->m_fRTTimeEndFrame = iTimer->GetAsyncTime().GetDifferenceInSeconds(TimeEndF);
+	SRenderStatistics::Write().m_Summary.endTime = iTimer->GetAsyncTime().GetDifferenceInSeconds(TimeEndF);
 
 	// Update downscaled viewport
 	m_PrevViewportScale = m_CurViewportScale;
@@ -3361,6 +3340,11 @@ void CD3D9Renderer::RT_EndFrame()
 	//if (!m_bDeviceLost)
 		//FX_Commit();
 
+	// Capture previously presented back-buffer to not cause syncing CPU with GPU, lag is irrelevant because capturing is continuously going on
+	// Frame-capture works without a swap-chain, and without presenting, but rendering will serialize between CPU and GPU (TODO: rotate buffers even when not presenting)
+	CaptureFrameBuffer();
+	CaptureFrameBufferCallBack();
+
 	// Flip the back buffer to the front
 	bool bSetActive = false;
 	if (m_bSwapBuffers)
@@ -3368,9 +3352,6 @@ void CD3D9Renderer::RT_EndFrame()
 		CRenderDisplayContext* pDC = GetActiveDisplayContext();
 		CRY_ASSERT(pDC->IsSwapChainBacked());
 		auto swapDC = static_cast<CSwapChainBackedRenderDisplayContext*>(pDC);
-
-		CaptureFrameBuffer();
-		CaptureFrameBufferCallBack();
 
 		if (!IsEditorMode())
 		{
@@ -3393,6 +3374,7 @@ void CD3D9Renderer::RT_EndFrame()
 				}
 			}
 #endif
+
 #if CRY_RENDERER_GNM
 			auto* const pCommandList = GnmCommandList(GetDeviceObjectFactory().GetCoreCommandList().GetGraphicsInterfaceImpl());
 			const CGnmSwapChain::EFlipMode flipMode = m_VSync ? CGnmSwapChain::kFlipModeSequential : CGnmSwapChain::kFlipModeImmediate;
@@ -3504,9 +3486,7 @@ void CD3D9Renderer::RT_EndFrame()
 		m_nFrameSwapID++;
 	}
 
-	GetDeviceObjectFactory().IssueFrameFences();
-
-	m_fTimeWaitForGPU[gRenDev->GetRenderThreadID()] += iTimer->GetAsyncTime().GetDifferenceInSeconds(timePresentBegin);
+	SRenderStatistics::Write().m_Summary.waitForGPU += iTimer->GetAsyncTime().GetDifferenceInSeconds(timePresentBegin);
 
 #ifdef ENABLE_BENCHMARK_SENSOR
 	m_benchmarkRendererSensor->afterSwapBuffers(GetDevice(), GetDeviceContext());
@@ -3516,6 +3496,7 @@ void CD3D9Renderer::RT_EndFrame()
 	GetS3DRend().NotifyFrameFinished();
 
 	// Disable screenshot code path for pure release builds on consoles
+	// Capture currently presented back-buffer to be able to captures frames without capture-lag
 #if !defined(_RELEASE) || CRY_PLATFORM_WINDOWS || defined(ENABLE_LW_PROFILERS)
 	if (CV_r_GetScreenShot)
 	{
@@ -3553,25 +3534,8 @@ void CD3D9Renderer::RT_EndFrame()
 		// we need to unlock it here in case we renderered a frame without any particles
 		// lock the VMEM buffer for the next frame here (to prevent a lock in the mainthread)
 		// NOTE: main thread is already working on buffer+1 and we want to prepare the next one => hence buffer+2
-		gRenDev->LockParticleVideoMemory();
+		gRenDev->LockParticleVideoMemory(gRenDev->GetRenderFrameID() + 2);
 	}
-
-#if CRY_PLATFORM_ORBIS && !CRY_RENDERER_GNM
-	m_fTimeGPUIdlePercent[gRenDev->GetRenderThreadID()] = DXOrbis::Device()->GetGPUIdlePercentage();
-	m_fTimeWaitForGPU[gRenDev->GetRenderThreadID()] = DXOrbis::Device()->GetCPUWaitOnGPUTime();
-	m_fTimeProcessedGPU[gRenDev->GetRenderThreadID()] = DXOrbis::Device()->GetCPUFrameTime();
-#else
-	m_fTimeGPUIdlePercent[gRenDev->GetRenderThreadID()] = 0;
-
-	#if !defined(ENABLE_SIMPLE_GPU_TIMERS)
-	// BK: We need a way of getting gpu frame time in release, without gpu timers
-	// for now we just use overall frame time
-	m_fTimeProcessedGPU[gRenDev->GetRenderThreadID()] = m_fTimeProcessedRT[gRenDev->GetRenderThreadID()];
-	#else
-	RPProfilerStats profileStats = m_pPipelineProfiler->GetBasicStats(eRPPSTATS_OverallFrame, gRenDev->GetRenderThreadID());
-	m_fTimeProcessedGPU[gRenDev->GetRenderThreadID()] = profileStats.gpuTime / 1000.0f;
-	#endif
-#endif
 
 #if defined(USE_GEOM_CACHES)
 	if (m_SceneRecurseCount == 1)
@@ -3591,15 +3555,26 @@ void CD3D9Renderer::RT_EndFrame()
 	m_DevBufMan.ReleaseEmptyBanks(gRenDev->GetRenderFrameID());
 
 	// Free render objects that could have been used for this frame
-	FreePermanentRenderObjects(gRenDev->GetRenderThreadID());
+	FreePermanentRenderObjects(GetRenderThreadID());
 
 	if (m_bStopRendererAtFrameEnd)
 	{
 		m_mtxStopAtRenderFrameEnd.Lock();
 		m_condStopAtRenderFrameEnd.Notify();
-		m_condStopAtRenderFrameEnd.Wait(m_mtxStopAtRenderFrameEnd);
+		while (m_bStopRendererAtFrameEnd)
+		{
+			m_condStopAtRenderFrameEnd.Wait(m_mtxStopAtRenderFrameEnd);
+		}
 		m_mtxStopAtRenderFrameEnd.Unlock();
 	}
+}
+
+void CD3D9Renderer::RT_EndMeasurement()
+{
+	SRenderStatistics::Write().Finish();
+#if defined(ENABLE_SIMPLE_GPU_TIMERS)
+	m_pPipelineProfiler->Finish();
+#endif
 }
 
 void CD3D9Renderer::RT_PresentFast()
@@ -3634,7 +3609,6 @@ void CD3D9Renderer::RT_PresentFast()
 	assert(hReturn == S_OK);
 
 	m_nRenderThreadFrameID++;
-	swapDC->PostPresent();
 }
 
 //////////////////////////////////////////////////////////////////////////
@@ -3717,9 +3691,11 @@ bool CD3D9Renderer::RT_ScreenShot(const char* filename, CRenderDisplayContext* p
 	iLog->LogWithType(ILog::eInputResponse, "Screenshot: %s", path);
 	gEnv->pConsole->ExecuteString("goto");  // output position and angle, can be used with "goto" command from console
 
+#if defined(ENABLE_PROFILING_CODE)
 	iLog->LogWithType(ILog::eInputResponse, " ");
-	iLog->LogWithType(ILog::eInputResponse, "$5Drawcalls: %d", gEnv->pRenderer->GetCurrentNumberOfDrawCalls());
+	iLog->LogWithType(ILog::eInputResponse, "$5Drawcalls: %d", SRenderStatistics::Write().GetNumberOfDrawCalls());
 	iLog->LogWithType(ILog::eInputResponse, "$5FPS: %.1f (%.1f ms)", gEnv->pTimer->GetFrameRate(), gEnv->pTimer->GetFrameTime() * 1000.0f);
+#endif
 
 	int nPolygons, nShadowVolPolys;
 	GetPolyCount(nPolygons, nShadowVolPolys);
@@ -3785,15 +3761,15 @@ bool CD3D9Renderer::ScreenShot(const char* filename, const SDisplayContextKey& d
 	return ScreenShot(filename, FindDisplayContext(displayContextKey));
 }
 
-bool CD3D9Renderer::ReadFrameBuffer(uint32* pDstRGBA8, int destinationWidth, int destinationHeight)
+bool CD3D9Renderer::ReadFrameBuffer(uint32* pDstRGBA8, int destinationWidth, int destinationHeight, bool readPresentedBackBuffer, EReadTextureFormat format)
 {
 	bool bResult = false;
 
 	ExecuteRenderThreadCommand([=, &bResult]
 		{
-			if (CTexture* pSourceTexture = GetActiveDisplayContext()->GetPresentedBackBuffer())
+			if (CTexture* pSourceTexture = readPresentedBackBuffer ? GetActiveDisplayContext()->GetPresentedBackBuffer() : GetActiveDisplayContext()->GetCurrentBackBuffer())
 			{
-				bResult = gRenDev->RT_ReadTexture(pDstRGBA8, destinationWidth, destinationHeight, EReadTextureFormat::RGB8, pSourceTexture);
+				bResult = gRenDev->RT_ReadTexture(pDstRGBA8, destinationWidth, destinationHeight, format, pSourceTexture);
 			}
 		},
 		ERenderCommandFlags::FlushAndWait
@@ -3813,10 +3789,8 @@ bool CD3D9Renderer::RT_ReadTexture(void* pDst, int destinationWidth, int destina
 
 	if (destinationWidth != pSrc->GetWidth() || destinationHeight != pSrc->GetHeight() || pSrc->GetDstFormat() != dstTexFormat)
 	{
-		pTmpCopyTex = CTexture::GetOrCreate2DTexture("$TempCopyTex", destinationWidth, destinationHeight, 1, 0, nullptr, dstTexFormat);
-
+		pTmpCopyTex = CTexture::GetOrCreate2DTexture("$TempCopyTex", destinationWidth, destinationHeight, 1, FT_USAGE_RENDERTARGET, nullptr, dstTexFormat);
 		CStretchRectPass().Execute(pSrc, pTmpCopyTex);
-
 		pSrc = pTmpCopyTex;
 	}
 
@@ -4138,10 +4112,10 @@ void CD3D9Renderer::CaptureFrameBufferPrepare(void)
 				int currentFrame = gRenDev->GetMainFrameID();
 
 				//Currently we only support one screen capture request per frame
-				if (m_nScreenCaptureRequestFrame[gRenDev->GetMainThreadID()] != currentFrame)
+				if (m_nScreenCaptureRequestFrame[GetMainThreadID()] != currentFrame)
 				{
-					m_screenCapTexHandle[gRenDev->GetMainThreadID()] = texHandle;
-					m_nScreenCaptureRequestFrame[gRenDev->GetMainThreadID()] = currentFrame;
+					m_screenCapTexHandle[GetMainThreadID()] = texHandle;
+					m_nScreenCaptureRequestFrame[GetMainThreadID()] = currentFrame;
 				}
 				else
 				{
@@ -4837,7 +4811,11 @@ unsigned int CD3D9Renderer::UploadToVideoMemory(unsigned char* pSrcData, int w, 
 		{
 			// make texture without device texture and request it async creation
 			int nImgSize = CTexture::TextureDataSize(w, h, d, nummipmap, 1, eSrcFormat);
-			std::shared_ptr<std::vector<uint8>> pImgData = std::make_shared<std::vector<uint8>>((uint8*)pSrcData, (uint8*)pSrcData + nImgSize);
+			std::shared_ptr<std::vector<uint8>> pImgData;
+			if (pSrcData)
+			{
+				pImgData = std::make_shared<std::vector<uint8>>((uint8*)pSrcData, (uint8*)pSrcData + nImgSize);
+			}
 
 			if (eTT == eTT_3D)
 				pTex = CTexture::GetOrCreateTextureObject(name, w, h, d, eTT_3D, flags, eTFDst);
@@ -4850,14 +4828,13 @@ unsigned int CD3D9Renderer::UploadToVideoMemory(unsigned char* pSrcData, int w, 
 			else if (eTT == eTT_CubeArray)
 				assert(!"Not supported");   // tp = CTexture::CreateCubeTexture(name, w, h, nummipmap, flags, data, eTFSrc);
 
-			pTex->m_bAsyncDevTexCreation = bAsyncDevTexCreation;
 			pTex->m_eSrcFormat = eSrcFormat;
 			pTex->m_nMips = nummipmap;
 
 			auto asyncTextureCreateCallback = [=]
 			{
-				const void* pData[] = { pImgData->data(), nullptr, nullptr, nullptr };
-				pTex->CreateDeviceTexture(pData);
+				SSubresourceData pLocalData(pImgData ? pImgData->data() : nullptr);
+				pTex->CreateDeviceTexture(std::move(pLocalData));
 			};
 
 			ExecuteRenderThreadCommand(asyncTextureCreateCallback, ERenderCommandFlags::LevelLoadingThread_executeDirect);
@@ -4890,16 +4867,6 @@ unsigned int CD3D9Renderer::UploadToVideoMemoryCube(unsigned char* data, int w, 
 unsigned int CD3D9Renderer::UploadToVideoMemory3D(unsigned char* data, int w, int h, int d, ETEX_Format eTFSrc, ETEX_Format eTFDst, int nummipmap, bool repeat, int filter, int Id, const char* szCacheName, int flags, EEndian eEndian, RectI* pRegion, bool bAsyncDevTexCreation)
 {
 	return UploadToVideoMemory(data, w, h, d, eTFSrc, eTFDst, nummipmap, eTT_3D, repeat, filter, Id, szCacheName, flags, eEndian, pRegion, bAsyncDevTexCreation);
-}
-
-float CD3D9Renderer::GetGPUFrameTime()
-{
-	return CRenderer::GetGPUFrameTime();
-}
-
-void CD3D9Renderer::GetRenderTimes(SRenderTimes& outTimes)
-{
-	CRenderer::GetRenderTimes(outTimes);
 }
 
 const char* sStreamNames[] = {
@@ -4995,10 +4962,6 @@ void CD3D9Renderer::GetMemoryUsage(ICrySizer* Sizer)
 		{
 			SIZER_COMPONENT_NAME(Sizer, "Shader resources");
 			Sizer->AddObject(CShader::s_ShaderResources_known);
-		}
-		{
-			SIZER_COMPONENT_NAME(Sizer, "ShaderCache");
-			Sizer->AddObject(CHWShader::m_ShaderCache);
 		}
 		{
 			CryAutoReadLock<CryRWLock> lock(CBaseResource::s_cResLock);
@@ -5158,9 +5121,13 @@ void CD3D9Renderer::SetCurrentAuxGeomCollector(CAuxGeomCBCollector* auxGeomColle
 
 CAuxGeomCBCollector* CD3D9Renderer::GetOrCreateAuxGeomCollector(const CCamera &defaultCamera)
 {
+#if defined(ENABLE_RENDER_AUX_GEOM)
 	auto p = m_auxGeometryCollectorPool.GetOrCreateOneElement();
 	p->SetDefaultCamera(defaultCamera);
 	return p;
+#else
+	return nullptr;
+#endif
 }
 
 void CD3D9Renderer::ReturnAuxGeomCollector(CAuxGeomCBCollector* auxGeomCollector)
@@ -5192,20 +5159,27 @@ bool CD3D9Renderer::IsStereoEnabled() const
 	return m_pStereoRenderer != nullptr ? m_pStereoRenderer->IsStereoEnabled() : false;
 }
 
+#if defined(ENABLE_SIMPLE_GPU_TIMERS)
 const RPProfilerStats* CD3D9Renderer::GetRPPStats(ERenderPipelineProfilerStats eStat, bool bCalledFromMainThread /*= true */)
 {
-	return m_pPipelineProfiler ? &m_pPipelineProfiler->GetBasicStats(eStat, bCalledFromMainThread ? gRenDev->GetMainThreadID() : gRenDev->GetRenderThreadID()) : NULL;
+	return &m_pPipelineProfiler->GetBasicStats(eStat, bCalledFromMainThread ? GetMainThreadID() : GetRenderThreadID());	
 }
 
 const RPProfilerStats* CD3D9Renderer::GetRPPStatsArray(bool bCalledFromMainThread /*= true */)
 {
-	return m_pPipelineProfiler ? m_pPipelineProfiler->GetBasicStatsArray(bCalledFromMainThread ? gRenDev->GetMainThreadID() : gRenDev->GetRenderThreadID()) : NULL;
+	return m_pPipelineProfiler->GetBasicStatsArray(bCalledFromMainThread ? GetMainThreadID() : GetRenderThreadID());
+}
+
+const DynArray<RPProfilerDetailedStats>* CD3D9Renderer::GetRPPDetailedStatsArray(bool bCalledFromMainThread /*= true */)
+{
+	return m_pPipelineProfiler->GetDetailedStatsArray(bCalledFromMainThread ? GetMainThreadID() : GetRenderThreadID());
 }
 
 int CD3D9Renderer::GetPolygonCountByType(uint32 EFSList, EVertexCostTypes vct, uint32 z, bool bCalledFromMainThread /*= true*/)
 {
-	return m_frameRenderStats[bCalledFromMainThread ? m_nFillThreadID : m_nProcessThreadID].m_nPolygonsByTypes[EFSList][vct][z];
+	return m_frameRenderStats[bCalledFromMainThread ? GetMainThreadID() : GetRenderThreadID()].m_nPolygonsByTypes[EFSList][vct][z];
 }
+#endif
 
 //====================================================================
 
@@ -5215,7 +5189,6 @@ void CD3D9Renderer::PostLevelUnload()
 	{
 		ExecuteRenderThreadCommand( []{
 			CTexture::RT_FlushStreaming(false);
-			CRendererResources::ReleaseTempDepthSurfaces();
 
 			// reset post effects
 			if (gRenDev->m_pPostProcessMgr)
@@ -5292,11 +5265,6 @@ public:
 						gRenDev->m_bStartLevelLoading = true;
 					}
 					gRenDev->m_bInLevel = true;
-					if (gRenDev->m_pRT)
-					{
-						gRenDev->m_pRT->m_fTimeIdleDuringLoading = 0;
-						gRenDev->m_pRT->m_fTimeBusyDuringLoading = 0;
-					}
 				}
 				if (CRenderer::CV_r_texpostponeloading)
 					CTexture::s_bPrecachePhase = true;
@@ -5408,21 +5376,21 @@ class CEngineModule_CryRenderer : public IRendererEngineModule
 CRYREGISTER_SINGLETON_CLASS(CEngineModule_CryRenderer)
 
 //=========================================================================================
-void CD3D9Renderer::LockParticleVideoMemory()
+void CD3D9Renderer::LockParticleVideoMemory(int frameId)
 {
 	CRY_PROFILE_REGION(PROFILE_RENDERER, "LockParticleVideoMemory");
 
-	gcpRendD3D.GetGraphicsPipeline().GetParticleBufferSet().Lock();
+	gcpRendD3D.GetGraphicsPipeline().GetParticleBufferSet().Lock(frameId);
 }
 
-void CD3D9Renderer::UnLockParticleVideoMemory()
+void CD3D9Renderer::UnLockParticleVideoMemory(int frameId)
 {
-	gcpRendD3D.GetGraphicsPipeline().GetParticleBufferSet().Unlock();
+	gcpRendD3D.GetGraphicsPipeline().GetParticleBufferSet().Unlock(frameId);
 }
 
-void CD3D9Renderer::InsertParticleVideoDataFence()
+void CD3D9Renderer::InsertParticleVideoDataFence(int frameId)
 {
-	gcpRendD3D.GetGraphicsPipeline().GetParticleBufferSet().SetFence();
+	gcpRendD3D.GetGraphicsPipeline().GetParticleBufferSet().SetFence(frameId);
 }
 //================================================================================================================================
 
@@ -5482,8 +5450,7 @@ void CD3D9Renderer::BeginRenderDocCapture()
 			CRY_ASSERT(pDC->IsSwapChainBacked());
 			auto swapDC = static_cast<CSwapChainBackedRenderDisplayContext*>(pDC);
 
-			DXGI_SWAP_CHAIN_DESC desc = { 0 };
-			swapDC->GetSwapChain().GetSwapChain()->GetDesc(&desc);
+			DXGI_SWAP_CHAIN_DESC desc = swapDC->GetSwapChain().GetDesc();
 			fpStartFrameCap(desc.OutputWindow);
 			CryLogAlways("Started RenderDoc capture");
 		}
@@ -5505,8 +5472,7 @@ void CD3D9Renderer::EndRenderDocCapture()
 			CRY_ASSERT(pDC->IsSwapChainBacked());
 			auto swapDC = static_cast<CSwapChainBackedRenderDisplayContext*>(pDC);
 
-			DXGI_SWAP_CHAIN_DESC desc = { 0 };
-			swapDC->GetSwapChain().GetSwapChain()->GetDesc(&desc);
+			DXGI_SWAP_CHAIN_DESC desc = swapDC->GetSwapChain().GetDesc();
 			fpEndFrameCap(desc.OutputWindow);
 			CryLogAlways("Finished RenderDoc capture");
 		}

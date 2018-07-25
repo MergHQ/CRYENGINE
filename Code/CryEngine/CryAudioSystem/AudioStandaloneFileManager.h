@@ -10,6 +10,8 @@ struct IRenderAuxGeom;
 
 namespace CryAudio
 {
+class CATLStandaloneFile;
+
 namespace Impl
 {
 struct ITrigger;
@@ -28,7 +30,6 @@ public:
 	CAudioStandaloneFileManager& operator=(CAudioStandaloneFileManager&&) = delete;
 
 	void                         Release();
-
 	CATLStandaloneFile*          ConstructStandaloneFile(char const* const szFile, bool const bLocalized, Impl::ITrigger const* const pITrigger = nullptr);
 	void                         ReleaseStandaloneFile(CATLStandaloneFile* const pStandaloneFile);
 

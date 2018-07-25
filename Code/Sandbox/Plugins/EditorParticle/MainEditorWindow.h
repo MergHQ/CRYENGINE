@@ -31,7 +31,8 @@ namespace pfx2
 	struct IParticleEffectPfx2;
 }
 
-namespace CryParticleEditor {
+namespace CryParticleEditor 
+{
 
 class CEffectAssetModel;
 class CEffectAssetTabs;
@@ -60,9 +61,10 @@ protected:
 	// CAssetEditor
 	virtual bool OnOpenAsset(CAsset* pAsset) override;
 	virtual bool OnSaveAsset(CEditableAsset& editAsset) override;
-	virtual void OnDiscardAssetChanges() override;
+	virtual void OnDiscardAssetChanges(CEditableAsset& editAsset) override;
 	virtual bool OnAboutToCloseAsset(string& reason) const override;
 	virtual void OnCloseAsset() override;
+	virtual std::unique_ptr<IAssetEditingSession> CreateEditingSession() override;
 	// ~CAssetEditor
 
 	// CEditor
@@ -83,7 +85,6 @@ private:
 	virtual bool OnRedo() override;
 
 protected Q_SLOTS:
-	void SaveEffect(CEditableAsset& editAsset);
 	void OnReloadEffect();
 	void OnImportPfx1();
 	void OnLoadFromSelectedEntity();
@@ -97,7 +98,7 @@ private:
 	CEffectAssetWidget* CreateEffectAssetWidget();
 
 private:
-	std::shared_ptr<CEffectAssetModel> m_pEffectAssetModel;
+	std::unique_ptr<CEffectAssetModel> m_pEffectAssetModel;
 
 	//
 	QToolBar*           m_pEffectToolBar;

@@ -131,6 +131,9 @@
 #include "Material/MaterialManager.h"
 #include "AssetSystem/AssetManager.h"
 
+#include <CrySystem/Testing/CryTestCommands.h>
+#include <CrySystem/Testing/CryTest.h>
+
 //////////////////////////////////////////////////////////////////////////
 namespace
 {
@@ -1074,12 +1077,13 @@ bool CCryEditApp::IdleProcessing(bool bBackgroundUpdate)
 					m_pEditor->Update();
 				}
 
-				// syncronize all animations so ensure that their compuation have finished
+				// synchronize all animations to ensure that their computation has finished
 				GetIEditorImpl()->GetSystem()->GetIAnimationSystem()->SyncAllAnimations();
 			}
+
+			GetIEditorImpl()->Notify(eNotify_OnIdleUpdate);
 		}
 
-		GetIEditorImpl()->Notify(eNotify_OnIdleUpdate);
 		GetIEditorImpl()->GetSystem()->GetIProfileSystem()->EndFrame();
 	}
 	else if (GetIEditorImpl()->GetSystem() && GetIEditorImpl()->GetSystem()->GetILog())
@@ -1113,13 +1117,13 @@ void CCryEditApp::OnEditDuplicate()
 		return;
 	}
 
-	CEditTool* tool = GetIEditorImpl()->GetEditTool();
+	CEditTool* tool = GetIEditorImpl()->GetLevelEditorSharedState()->GetEditTool();
 	if (tool && tool->IsKindOf(RUNTIME_CLASS(CObjectCloneTool)))
 	{
 		((CObjectCloneTool*)tool)->Accept();
 	}
 
-	GetIEditorImpl()->SetEditTool(new CObjectCloneTool);
+	GetIEditorImpl()->GetLevelEditorSharedState()->SetEditTool(new CObjectCloneTool);
 	GetIEditorImpl()->SetModifiedFlag();
 }
 
@@ -1471,3 +1475,30 @@ REGISTER_ONLY_PYTHON_COMMAND_WITH_EXAMPLE(PyIdleWait, general, idle_wait,
                                           "Waits idling for a given seconds. Primarily used for auto-testing.",
                                           "general.idle_wait(double time)");
 
+CRY_TEST(EditorCreateLevelTest, editor = true, game = false, timeout = 60.f)
+{
+	auto KillLevel = []
+	{
+		char szFullPathBuf[ICryPak::g_nMaxPath];
+		const char* szFullPath = gEnv->pCryPak->AdjustFileName("examplelevel", szFullPathBuf, ICryPak::FOPEN_ONDISK);
+		PathUtil::RemoveDirectory(szFullPath);
+
+		gEnv->pCryPak->RemoveFile("examplelevel.level.cryasset");
+	};
+
+	commands =
+	{
+		KillLevel,
+		[] {
+			GetIEditor()->ExecuteCommand("general.create_level 'examplelevel' '1024' '1.0f' 'true'");
+		},
+		CryTest::CCommandWait(3.0f),
+		[] {
+			CHeightmap* heightMap = GetIEditorImpl()->GetTerrainManager()->GetHeightmap();
+			CRY_TEST_ASSERT(heightMap);
+			CRY_TEST_ASSERT(heightMap->GetHeight() == 1024);
+			CRY_TEST_ASSERT(heightMap->GetWidth() == 1024);
+			CRY_TEST_ASSERT(heightMap->GetUnitSize() == 1.0f);
+		},
+	};
+}

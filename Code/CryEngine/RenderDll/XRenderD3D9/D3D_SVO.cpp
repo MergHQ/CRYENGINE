@@ -1778,7 +1778,7 @@ void CSvoRenderer::BindTiledLights(PodArray<I3DEngine::SLightTI>& lightsTI, T& r
 
 		Vec4 worldViewPos = Vec4(viewInfo.cameraOrigin, 0);
 
-		for (uint32 lightIdx = 0; lightIdx < MaxNumTileLights && tiledLightShadeInfo[lightIdx].posRad != Vec4(0, 0, 0, 0); ++lightIdx)
+		for (uint32 lightIdx = 0; lightIdx < MaxNumTileLights && tiledLightShadeInfo[lightIdx].lightType != CTiledLightVolumesStage::tlTypeNone; ++lightIdx)
 		{
 			if ((tiledLightShadeInfo[lightIdx].lightType == CTiledLightVolumesStage::tlTypeRegularProjector) && svoLight.vPosR.IsEquivalent(tiledLightShadeInfo[lightIdx].posRad /*+ worldViewPos*/, .5f))
 			{

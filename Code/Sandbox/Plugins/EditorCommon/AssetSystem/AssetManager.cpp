@@ -502,12 +502,6 @@ std::vector<CAssetPtr> CAssetManager::GetAssetsFromDirectory(const string& direc
 
 void CAssetManager::AppendContextMenuActions(CAbstractMenu& menu, const std::vector<CAsset*>& assets, const std::shared_ptr<IUIContext>& context) const
 {
-	if (menu.FindSectionByName("Assets") == CAbstractMenu::eSections_Default)
-	{
-		int section = menu.GetNextEmptySection();
-		menu.SetSectionName(section, "Assets");
-	}
-
 	signalContextMenuRequested(menu, assets, context);
 }
 

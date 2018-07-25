@@ -148,7 +148,7 @@ int CScriptBind_Action::SaveXML(IFunctionHandler* pH, const char* definitionFile
 
 int CScriptBind_Action::IsGameStarted(IFunctionHandler* pH)
 {
-	return pH->EndFunction(m_pCryAction->IsGameStarted());
+	return pH->EndFunction(gEnv->pGameFramework->IsGameStarted());
 }
 
 int CScriptBind_Action::IsRMIServer(IFunctionHandler* pH)

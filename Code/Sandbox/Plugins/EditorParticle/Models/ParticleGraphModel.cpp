@@ -123,6 +123,11 @@ void CParticleGraphModel::ToggleSoloNode(CNodeItem& node)
 	}
 }
 
+void CParticleGraphModel::OnNodeItemChanged(CryGraphEditor::CAbstractNodeItem* pItem)
+{
+	signalChanged();
+}
+
 CryGraphEditor::CAbstractNodeItem* CParticleGraphModel::CreateNode(QVariant identifier, const QPointF& position)
 {
 	const string templateName = QtUtil::ToString(identifier.value<QString>());

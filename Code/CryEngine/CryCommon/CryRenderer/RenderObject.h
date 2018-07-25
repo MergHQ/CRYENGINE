@@ -101,9 +101,29 @@ struct SSkinningData
 	void*                            pCustomData;             // client specific data, used for example for sw-skinning on animation side
 	SSkinningData**                  pMasterSkinningDataList; // used by the SkinningData for a Character Instance, contains a list of all Skin Instances which need SW-Skinning
 	SSkinningData*                   pNextSkinningData;       // List to the next element which needs SW-Skinning
-	float                            vecPrecisionOffset[3];   // Special precision offset correction when 16bit precision floats used
+	Vec3                             vecAdditionalOffset;     //!< Contains MeshNode translation and in case of floats with 16bit precision: an additional precision-offset-correction
 
 	IRenderMesh*                     pRenderMesh;
+
+	SSkinningData()
+		: nNumBones(0)
+		, nHWSkinningFlags(0)
+		, pBoneQuatsS(nullptr)
+		, pActiveMorphs(nullptr)
+		, nNumActiveMorphs(0)
+		, pRemapTable(nullptr)
+		, pAsyncJobs(nullptr)
+		, pAsyncDataJobs(nullptr)
+		, pPreviousSkinningRenderData(nullptr)
+		, pCustomTag(nullptr)
+		, remapGUID(0)
+		, pCharInstCB(nullptr)
+		, pCustomData(nullptr)
+		, pMasterSkinningDataList(nullptr)
+		, pNextSkinningData(nullptr)
+		, vecAdditionalOffset(ZERO)
+		, pRenderMesh(nullptr)
+	{}
 };
 
 //////////////////////////////////////////////////////////////////////////
@@ -144,8 +164,6 @@ struct SRenderObjData
 
 	uint16                            m_LightVolumeId;
 
-	uint8                             m_screenBounds[4];
-
 	//@ see ERenderObjectCustomFlags
 	uint16 m_nCustomFlags;
 	uint8  m_nCustomData;
@@ -169,7 +187,6 @@ struct SRenderObjData
 		m_LightVolumeId = 0;
 		m_pSkinningData = NULL;
 		m_scissorX = m_scissorY = m_scissorWidth = m_scissorHeight = 0;
-		m_screenBounds[0] = m_screenBounds[1] = m_screenBounds[2] = m_screenBounds[3] = 0;
 		m_nCustomData = 0;
 		m_nCustomFlags = 0;
 		m_nHUDSilhouetteParams = m_nVisionParams = 0;
@@ -177,8 +194,7 @@ struct SRenderObjData
 		m_pShaderParams = NULL;
 		m_pTerrainSectorTextureInfo = 0;
 		m_fMaxViewDistance = 100000.f;
-		m_pParticleShaderData = nullptr;
-		m_FogVolumeContribIdx = (uint16) - 1;
+		m_FogVolumeContribIdx = ~(uint16)0;
 	}
 
 	void SetShaderParams(const DynArray<SShaderParam>* pShaderParams)
@@ -221,18 +237,23 @@ public:
 		eRenderPass_NumTypes = 2
 	};
 
-	struct SInstanceInfo
+	// Structure used to pass information about vegetation bending to the shaders.
+	struct SBendingData
 	{
-		Matrix34 m_Matrix;
-		ColorF   m_AmbColor;
-		ColorF   m_FogVolumeContribution;
+		float scale;
+		float verticalRadius;
+
+		bool operator != (const SBendingData& that) const
+		{ return (scale != that.scale) | (verticalRadius != that.verticalRadius); }
 	};
 
-	// Structure used to pass information about vegetation bending to the shaders.
-	struct SVegetationBendingData
+	struct SInstanceInfo
 	{
-		float scale = 0.0f;
-		float verticalRadius = 0.0f;
+		Matrix34     m_Matrix;
+		ColorF       m_AmbColor;
+		ColorF       m_FogVolumeContribution;
+
+		SBendingData m_Bending;
 	};
 
 public:
@@ -255,6 +276,11 @@ public:
 		m_II[roThreadAccessThreadCfg.objAccessorThreadId].m_AmbColor = ambColor;
 	}
 
+	ILINE void SetBendingData(const SBendingData& vbend, const SRenderObjectAccessThreadConfig& roThreadAccessThreadCfg)
+	{
+		m_II[roThreadAccessThreadCfg.objAccessorThreadId].m_Bending = vbend;
+	}
+
 	ILINE const Matrix34& GetMatrix(const SRenderObjectAccessThreadConfig& roThreadAccessThreadCfg) const
 	{
 		return m_II[roThreadAccessThreadCfg.objAccessorThreadId].m_Matrix;
@@ -263,6 +289,11 @@ public:
 	ILINE const ColorF& GetAmbientColor(const SRenderObjectAccessThreadConfig& roThreadAccessThreadCfg) const
 	{
 		return m_II[roThreadAccessThreadCfg.objAccessorThreadId].m_AmbColor;
+	}
+
+	ILINE const SBendingData& GetBendingData(const SRenderObjectAccessThreadConfig& roThreadAccessThreadCfg) const
+	{
+		return m_II[roThreadAccessThreadCfg.objAccessorThreadId].m_Bending;
 	}
 
 	uint64 m_ObjFlags;                 //!< Combination of FOB_ flags.
@@ -315,8 +346,6 @@ public:
 	// Array of instances, cannot be bigger then MAX_INSTANCING_ELEMENTS
 	std::vector<SInstanceInfo> m_Instances;
 
-	SVegetationBendingData m_vegetationBendingData;        //!< Vegetation Bending parameters
-
 	uint32 m_editorSelectionID;                            //!< SelectionID for the editor
 
 protected:
@@ -348,6 +377,7 @@ public:
 	{
 		m_ObjFlags = 0;
 		SetInstanceDataDirty(false);
+
 		m_bPermanent = false;
 		m_nRenderQuality = 65535;
 
@@ -361,8 +391,6 @@ public:
 		m_nMDV = 0;
 		m_fSort = 0;
 
-		m_II[0].m_AmbColor = Col_White;
-		m_II[1].m_AmbColor = Col_White;
 		m_fAlpha = 1.0f;
 		m_nTextureID = -1;
 		m_pCurrMaterial = nullptr;
@@ -382,8 +410,10 @@ public:
 		m_data.Init();
 
 		m_II[0].m_Matrix.SetIdentity();
-		m_II[1].m_Matrix.SetIdentity();
-		m_vegetationBendingData = SVegetationBendingData();
+		m_II[0].m_AmbColor = Col_White;
+		m_II[0].m_Bending = { 0.0f, 0.0f };
+
+		m_II[1] = m_II[0];
 
 		m_editorSelectionID = 0;
 	}
@@ -396,9 +426,21 @@ public:
 			m_bInstanceDataDirty[i] = dirty;
 	}
 
-	ILINE SRenderObjData*   GetObjData()        { return &m_data;  }
+	ILINE SRenderObjData*         GetObjData()       { return &m_data; }
+	ILINE const SRenderObjData*   GetObjData() const { return &m_data; }
 
-	ILINE CRenderElement*     GetRE() const       { return m_pRE; }
+	ILINE CRenderElement*         GetRE() const      { return m_pRE; }
+
+	template <typename ObjectAccessor>
+	AABB TransformAABB(const AABB &aabb, const Vec3 &cameraPosition, ObjectAccessor &&accessor) const
+	{
+		auto m = GetMatrix(std::forward<ObjectAccessor>(accessor));
+		// Convert from camera space to world space for nearest
+		if (m_ObjFlags & FOB_NEAREST)
+			m.AddTranslation(cameraPosition);
+
+		return AABB::CreateTransformedAABB(m, aabb);
+	}
 
 protected:
 	// Disallow copy (potential bugs with PERMANENT objects)

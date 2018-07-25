@@ -509,7 +509,16 @@ void CObjectLayer::SetVisible(bool isVisible, bool isRecursive)
 	if (m_hidden != !isVisible)
 	{
 		if (CUndo::IsRecording())
+		{
 			CUndo::Record(new CUndoLayerStates(this));
+		}
+		else
+		{
+			string title;
+			title.Format("Set Layer %s", (isVisible ? "Visible" : "Invisible"));
+			CUndo setVisibleUndo(title);
+			CUndo::Record(new CUndoLayerStates(this));
+		}
 
 		m_hidden = !isVisible;
 
@@ -540,7 +549,16 @@ void CObjectLayer::SetFrozen(bool isFrozen, bool isRecursive)
 	if (m_frozen != isFrozen)
 	{
 		if (CUndo::IsRecording())
+		{
 			CUndo::Record(new CUndoLayerStates(this));
+		}
+		else
+		{
+			string title;
+			title.Format("Set Layer %s", (isFrozen ? "Frozen" : "Unfrozen"));
+			CUndo setFrozenUndo(title);
+			CUndo::Record(new CUndoLayerStates(this));
+		}
 
 		m_frozen = isFrozen;
 

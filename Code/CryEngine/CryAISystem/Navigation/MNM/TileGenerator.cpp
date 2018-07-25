@@ -180,7 +180,8 @@ static const uint8 s_PaintPinchCornerTable[3][3][3] =
 	//*INDENT-ON* - disable uncrustify's indenting, as I want to preserve specific comment formatting.
 };
 
-}
+} // namespace PinchCornerTable
+
 
 /*static */ size_t CTileGenerator::BorderSizeH(const Params& params)
 {
@@ -406,6 +407,8 @@ bool CTileGenerator::Generate(const Params& params, STile& tile, SMetaData& tile
 		return false;
 
 	tile.SetHashValue(hashValue);
+
+	m_mesh.CreateConnectivityData();
 
 	m_mesh.CopyIntoTile(tile);
 	m_mesh.CopyMetaData(tileMetaData);
@@ -2699,7 +2702,7 @@ bool CTileGenerator::SimplifyContour(const Contour& contour, const real_t& toler
 		}
 		else
 		{
-			if (boundary && i && (simplified[simplifiedCount - 1] != (i - 1)))
+			if (boundary && i && simplifiedCount && (simplified[simplifiedCount - 1] != (i - 1)))
 				simplified[simplifiedCount++] = i - 1;
 
 			if (!ContourVertexRemovable(v))
@@ -3257,14 +3260,11 @@ size_t CTileGenerator::Triangulate(PolygonContour& contour, const size_t agentHe
 
 			triangle.linkCount = 0;
 			triangle.firstLink = 0;
-			triangle.islandID = 0;
+			triangle.islandID = MNM::Constants::eStaticIsland_InvalidIslandID;
 
 			triangle.vertex[0] = v0i;
 			triangle.vertex[1] = v1i;
 			triangle.vertex[2] = v2i;
-
-			// TODO pavloi 2016.03.15: Triangle::StaticIslandID contains garbage at this point. It's not initialized here
-			// and will be copied this way into Tile triangles
 
 			if (vertexCount < 3)
 				break;
@@ -3906,13 +3906,13 @@ void CTileGenerator::CGeneratedMesh::Clear()
 	Triangles().swap(m_triangles);
 	TileVertexIndexLookUp().swap(m_vertexIndexLookUp);
 
-	const size_t maxVertexCount = k_maxTriangleCount * 3;
+	const size_t maxVertexCount = MNM::Constants::TileTrianglesMaxCount * 3;
 	m_vertexIndexLookUp.reset(maxVertexCount, maxVertexCount);
 }
 
 void CTileGenerator::CGeneratedMesh::CopyIntoTile(STile& tile) const
 {
-	if (m_triangles.size() > k_maxTriangleCount)
+	if (m_triangles.size() > MNM::Constants::TileTrianglesMaxCount)
 	{
 		const Vec3 center = m_tileAabb.GetCenter();
 		AIWarning("[MNM] Too many triangles in one tile. Coords: [%.2f,%.2f,%.2f]", center.x, center.y, center.z);
@@ -3927,8 +3927,9 @@ void CTileGenerator::CGeneratedMesh::CopyIntoTile(STile& tile) const
 	}
 #endif // DEBUG_MNM_DATA_CONSISTENCY_ENABLED
 
-	tile.CopyTriangles(&m_triangles.front(), static_cast<uint16>(min<size_t>(k_maxTriangleCount, m_triangles.size())));
-	tile.CopyVertices(&m_vertices.front(), static_cast<uint16>(m_vertices.size()));
+	tile.CopyTriangles(m_triangles.data(), static_cast<uint16>(min<size_t>(MNM::Constants::TileTrianglesMaxCount, m_triangles.size())));
+	tile.CopyVertices(m_vertices.data(), static_cast<uint16>(m_vertices.size()));
+	tile.CopyLinks(m_links.data(), static_cast<uint16>(m_links.size()));
 
 	tile.ValidateTriangles();
 }
@@ -3972,8 +3973,8 @@ bool CTileGenerator::CGeneratedMesh::AddTrianglesWorld(const Triangle* pTriangle
 
 	const size_t existingTrianglesCount = m_triangles.size();
 	const size_t amountOfTrianglesLeft =
-	  (k_maxTriangleCount > existingTrianglesCount)
-	  ? k_maxTriangleCount - existingTrianglesCount
+	  (MNM::Constants::TileTrianglesMaxCount > existingTrianglesCount)
+	  ? MNM::Constants::TileTrianglesMaxCount - existingTrianglesCount
 	  : 0;
 	const size_t newTrianglesCount = count;
 	const size_t trianglesToAddCount = std::min(newTrianglesCount, amountOfTrianglesLeft);
@@ -4032,7 +4033,7 @@ bool CTileGenerator::CGeneratedMesh::AddTrianglesWorld(const Triangle* pTriangle
 		}
 	} // for triIdx
 
-	return m_triangles.size() < k_maxTriangleCount;
+	return m_triangles.size() < MNM::Constants::TileTrianglesMaxCount;
 }
 
 void CTileGenerator::CGeneratedMesh::AddStatsToProfiler(ProfilerType& profiler) const
@@ -4057,7 +4058,7 @@ uint32 CTileGenerator::CGeneratedMesh::CompleteAndGetHashValue()
 }
 
 
-void CTileGenerator::CGeneratedMesh::CopyMetaData(SMetaData& tileMetaData) const
+void CTileGenerator::CGeneratedMesh::CopyMetaData(SMetaData& tileMetaData)
 {
 	tileMetaData = std::move(m_metaData);
 }
@@ -4095,4 +4096,48 @@ void CTileGenerator::CGeneratedMesh::SetAnotationForTriangles(const size_t index
 	}
 }
 
+void CTileGenerator::CGeneratedMesh::CreateConnectivityData()
+{
+	const size_t vertexCount = m_vertices.size();
+	const size_t triCount = m_triangles.size();
+	if (!triCount)
+		return;
+
+	const size_t MaxLinkCount = MNM::Constants::TileTrianglesMaxCount * 6;
+	Tile::SLink links[MaxLinkCount];
+	size_t linkCount = 0;
+
+	const vector3_t tileSize(m_tileAabb.GetSize());
+
+	m_metaData.connectivityData.ComputeTriangleAdjacency(m_triangles.data(), triCount, m_vertices.data(), vertexCount, tileSize);
+	
+	// Create internal links
+	for (size_t triangleIdx = 0; triangleIdx < triCount; ++triangleIdx)
+	{
+		size_t triLinkCount = 0;
+		for (uint16 edgeIdx = 0; edgeIdx < 3; ++edgeIdx)
+		{
+			const CTileConnectivityData::Edge& edge = m_metaData.connectivityData.GetEdge(triangleIdx, edgeIdx);
+			if ((edge.triangleIndex[0] != triangleIdx) && (edge.triangleIndex[1] != triangleIdx))
+				continue;
+
+			if (edge.triangleIndex[0] != edge.triangleIndex[1])
+			{
+				Tile::SLink& link = links[linkCount++];
+				link.side = Tile::SLink::Internal;
+				link.edge = edgeIdx;
+				link.triangle = (edge.triangleIndex[1] == triangleIdx) ? edge.triangleIndex[0] : edge.triangleIndex[1];
+
+				++triLinkCount;
+			}
+		}
+
+		Tile::STriangle& triangle = m_triangles[triangleIdx];
+		triangle.linkCount = triLinkCount;
+		triangle.firstLink = linkCount - triLinkCount;
+	}
+
+	m_links.assign(links, links + linkCount);
 }
+
+} // namespace MNM

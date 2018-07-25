@@ -1654,8 +1654,8 @@ struct IRenderer//: public IRendererCallbackServer
 	virtual void SyncComputeVerticesJobs() = 0;
 
 	//! Lock/Unlock the video memory buffer used by particles when using the jobsystem.
-	virtual void  LockParticleVideoMemory() = 0;
-	virtual void  UnLockParticleVideoMemory() = 0;
+	virtual void  LockParticleVideoMemory(int frameId) = 0;
+	virtual void  UnLockParticleVideoMemory(int frameId) = 0;
 
 	virtual void  ActivateLayer(const char* pLayerName, bool activate) = 0;
 

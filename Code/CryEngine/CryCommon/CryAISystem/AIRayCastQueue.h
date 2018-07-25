@@ -127,8 +127,10 @@ protected:
 		if (m_isEnabled)
 		{
 			RequestsMap::iterator it = m_pendingRequestsMap.find(queuedId);
-			CRY_ASSERT(it != m_pendingRequestsMap.end());
-			it->second.state = SRequestDebugInfo::EState::Submitted;
+			if (it != m_pendingRequestsMap.end())
+			{
+				it->second.state = SRequestDebugInfo::EState::Submitted;
+			}
 		}
 		Base::PerformedDeferred(queuedId);
 	}
@@ -138,14 +140,15 @@ protected:
 		if (m_isEnabled)
 		{
 			RequestsMap::iterator it = m_pendingRequestsMap.find(queuedId);
-			CRY_ASSERT(it != m_pendingRequestsMap.end());
+			if (it != m_pendingRequestsMap.end())
+			{
+				SRequestDebugInfo& completedRequest = it->second;
+				completedRequest.completedTime = gEnv->pTimer->GetAsyncTime();
+				completedRequest.state = SRequestDebugInfo::EState::Completed;
+				m_completedRequests.push_back(completedRequest);
 
-			SRequestDebugInfo& completedRequest = it->second;
-			completedRequest.completedTime = gEnv->pTimer->GetAsyncTime();
-			completedRequest.state = SRequestDebugInfo::EState::Completed;
-			m_completedRequests.push_back(completedRequest);
-
-			m_pendingRequestsMap.erase(it);
+				m_pendingRequestsMap.erase(it);
+			}
 		}
 	}
 

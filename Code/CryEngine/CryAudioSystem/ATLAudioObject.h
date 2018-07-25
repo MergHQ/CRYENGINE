@@ -34,9 +34,8 @@ enum class ETriggerStatus : EnumFlagsType
 	Loaded                   = BIT(1),
 	Loading                  = BIT(2),
 	Unloading                = BIT(3),
-	Starting                 = BIT(4),
-	CallbackOnExternalThread = BIT(5),
-	CallbackOnAudioThread    = BIT(6),
+	CallbackOnExternalThread = BIT(4),
+	CallbackOnAudioThread    = BIT(5),
 };
 CRY_CREATE_ENUM_FLAG_OPERATORS(ETriggerStatus);
 
@@ -66,7 +65,7 @@ struct SUserDataBase
 struct SAudioTriggerInstanceState final : public SUserDataBase
 {
 	ETriggerStatus flags = ETriggerStatus::None;
-	ControlId      audioTriggerId = InvalidControlId;
+	ControlId      triggerId = InvalidControlId;
 	size_t         numPlayingEvents = 0;
 	size_t         numLoadingEvents = 0;
 	float          expirationTimeMS = 0.0f;
@@ -93,33 +92,26 @@ public:
 	CATLAudioObject& operator=(CATLAudioObject const&) = delete;
 	CATLAudioObject& operator=(CATLAudioObject&&) = delete;
 
-	ERequestStatus   HandleExecuteTrigger(CATLTrigger const* const pTrigger, void* const pOwner = nullptr, void* const pUserData = nullptr, void* const pUserDataOwner = nullptr, ERequestFlags const flags = ERequestFlags::None);
-	ERequestStatus   HandleStopTrigger(CATLTrigger const* const pTrigger);
+	ERequestStatus   HandleStopTrigger(CTrigger const* const pTrigger);
 	void             HandleSetTransformation(CObjectTransformation const& transformation, float const distanceToListener);
-	void             HandleSetParameter(CParameter const* const pParameter, float const value);
 	void             HandleSetSwitchState(CATLSwitch const* const pSwitch, CATLSwitchState const* const pState);
 	void             HandleSetEnvironment(CATLAudioEnvironment const* const pEnvironment, float const amount);
 	void             HandleResetEnvironments(AudioEnvironmentLookup const& environmentsLookup);
 	void             HandleSetOcclusionType(EOcclusionType const calcType, Vec3 const& listenerPosition);
-	void             HandlePlayFile(CATLStandaloneFile* const pFile, void* const pOwner = nullptr, void* const pUserData = nullptr, void* const pUserDataOwner = nullptr);
 	void             HandleStopFile(char const* const szFile);
 
 	void             Init(char const* const szName, Impl::IObject* const pImplData, Vec3 const& listenerPosition, EntityId entityId);
 	void             Release();
 
 	// Callbacks
-	void                           ReportStartingTriggerInstance(TriggerInstanceId const audioTriggerInstanceId, ControlId const audioTriggerId);
-	void                           ReportStartedTriggerInstance(TriggerInstanceId const audioTriggerInstanceId, void* const pOwnerOverride, void* const pUserData, void* const pUserDataOwner, ERequestFlags const flags);
 	void                           ReportStartedEvent(CATLEvent* const pEvent);
 	void                           ReportFinishedEvent(CATLEvent* const pEvent, bool const bSuccess);
-	void                           ReportStartedStandaloneFile(CATLStandaloneFile* const pStandaloneFile, void* const pOwner, void* const pUserData, void* const pUserDataOwner);
 	void                           ReportFinishedStandaloneFile(CATLStandaloneFile* const pStandaloneFile);
 	void                           ReportFinishedLoadingTriggerImpl(TriggerImplId const audioTriggerImplId, bool const bLoad);
 	void                           GetStartedStandaloneFileRequestData(CATLStandaloneFile* const pStandaloneFile, CAudioRequest& request);
 
 	void                           StopAllTriggers();
 	ObjectEventSet const&          GetActiveEvents() const { return m_activeEvents; }
-	ERequestStatus                 LoadTriggerAsync(CATLTrigger const* const pTrigger, bool const bLoad);
 
 	void                           SetObstructionOcclusion(float const obstruction, float const occlusion);
 	void                           ProcessPhysicsRay(CAudioRayInfo* const pAudioRayInfo);
@@ -149,9 +141,12 @@ public:
 	void IncrementSyncCallbackCounter() { CryInterlockedIncrement(&m_numPendingSyncCallbacks); }
 	void DecrementSyncCallbackCounter() { CRY_ASSERT(m_numPendingSyncCallbacks >= 1); CryInterlockedDecrement(&m_numPendingSyncCallbacks); }
 
-	static CSystem*                     s_pAudioSystem;
-	static CEventManager*               s_pEventManager;
-	static CAudioStandaloneFileManager* s_pStandaloneFileManager;
+	void AddEvent(CATLEvent* const pEvent);
+	void AddTriggerState(TriggerInstanceId const id, SAudioTriggerInstanceState const& audioTriggerInstanceState);
+	void AddStandaloneFile(CATLStandaloneFile* const pStandaloneFile, SUserDataBase const& userDataBase);
+	void SendFinishedTriggerInstanceRequest(SAudioTriggerInstanceState const& audioTriggerInstanceState);
+
+	static CSystem* s_pAudioSystem;
 
 private:
 
@@ -171,7 +166,7 @@ private:
 	virtual EntityId GetEntityId() const override { return m_entityId; }
 	// ~CryAudio::IObject
 
-	void ReportFinishedTriggerInstance(ObjectTriggerStates::iterator& iter);
+	void ReportFinishedTriggerInstance(ObjectTriggerStates::iterator const& iter);
 	void PushRequest(SAudioRequestData const& requestData, SRequestUserData const& userData);
 	bool HasActiveData(CATLAudioObject const* const pAudioObject) const;
 	void UpdateControls(
@@ -181,28 +176,27 @@ private:
 		Vec3 const& listenerVelocity,
 		bool const listenerMoved);
 	void TryToSetRelativeVelocity(float const relativeVelocity);
+	void SetDefaultParameterValue(ControlId const id, float const value) const;
+	void ExecuteDefaultTrigger(ControlId const id);
 
-	ObjectStandaloneFileMap  m_activeStandaloneFiles;
-	ObjectEventSet           m_activeEvents;
-	ObjectTriggerStates      m_triggerStates;
-	ObjectTriggerImplStates  m_triggerImplStates;
-	ObjectParameterMap       m_parameters;
-	ObjectEnvironmentMap     m_environments;
-	ObjectStateMap           m_switchStates;
-	Impl::IObject*           m_pImplData;
-	float                    m_maxRadius;
-	EObjectFlags             m_flags;
-	float                    m_previousRelativeVelocity;
-	float                    m_previousAbsoluteVelocity;
-	CObjectTransformation    m_transformation;
-	Vec3                     m_positionForVelocityCalculation;
-	Vec3                     m_previousPositionForVelocityCalculation;
-	Vec3                     m_velocity;
-	CPropagationProcessor    m_propagationProcessor;
-	EntityId                 m_entityId;
-	volatile int             m_numPendingSyncCallbacks;
-
-	static TriggerInstanceId s_triggerInstanceIdCounter;
+	ObjectStandaloneFileMap m_activeStandaloneFiles;
+	ObjectEventSet          m_activeEvents;
+	ObjectTriggerStates     m_triggerStates;
+	ObjectTriggerImplStates m_triggerImplStates;
+	ObjectEnvironmentMap    m_environments;
+	ObjectStateMap          m_switchStates;
+	Impl::IObject*          m_pImplData;
+	float                   m_maxRadius;
+	EObjectFlags            m_flags;
+	float                   m_previousRelativeVelocity;
+	float                   m_previousAbsoluteVelocity;
+	CObjectTransformation   m_transformation;
+	Vec3                    m_positionForVelocityCalculation;
+	Vec3                    m_previousPositionForVelocityCalculation;
+	Vec3                    m_velocity;
+	CPropagationProcessor   m_propagationProcessor;
+	EntityId                m_entityId;
+	volatile int            m_numPendingSyncCallbacks;
 
 #if defined(INCLUDE_AUDIO_PRODUCTION_CODE)
 public:
@@ -225,6 +219,7 @@ public:
 		bool const bSet3DAttributes);
 
 	ERequestStatus HandleSetName(char const* const szName);
+	void           StoreParameterValue(ControlId const id, float const value);
 
 	CryFixedStringT<MaxObjectNameLength> m_name;
 
@@ -253,9 +248,13 @@ private:
 		static int const   s_maxToMinUpdates;
 	};
 
+	char const* GetDefaultParameterName(ControlId const id) const;
+	char const* GetDefaultTriggerName(ControlId const id) const;
+
 	typedef std::map<ControlId, CStateDebugDrawData> StateDrawInfoMap;
 
 	mutable StateDrawInfoMap m_stateDrawInfoMap;
+	ObjectParameterMap       m_parameters;
 #endif // INCLUDE_AUDIO_PRODUCTION_CODE
 };
 } // namespace CryAudio

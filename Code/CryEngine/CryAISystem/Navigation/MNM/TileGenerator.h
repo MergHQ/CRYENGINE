@@ -9,6 +9,7 @@
 #include "MNMProfiler.h"
 #include "CompactSpanGrid.h"
 #include "Tile.h"
+#include "TileConnectivity.h"
 #include "BoundingVolume.h"
 #include "MarkupVolume.h"
 #include "HashComputer.h"
@@ -136,11 +137,13 @@ public:
 		struct SMarkupTriangles
 		{
 			SMarkupTriangles(uint16 markupIdx) : markupIdx(markupIdx) {}
-			
+
 			uint16 markupIdx;                 //Index of markup volume in markups array
 			std::vector<uint16> trianglesIdx; //Indices of triangles in generated tile
 		};
+
 		std::vector<SMarkupTriangles> markupTriangles;
+		CTileConnectivityData connectivityData;
 	};
 
 	enum ProfilerTimers
@@ -389,6 +392,7 @@ protected:
 		typedef simple_hash_lookup<TileVertexKey, Tile::VertexIndex> TileVertexIndexLookUp;
 		typedef std::vector<Tile::STriangle>                         Triangles;
 		typedef std::vector<Tile::Vertex>                            Vertices;
+		typedef std::vector<Tile::SLink>                             Links;
 
 	public:
 		void Clear();
@@ -396,7 +400,7 @@ protected:
 
 		bool IsEmpty() const                        { return m_triangles.empty(); }
 		void CopyIntoTile(STile& tile) const;
-		void CopyMetaData(SMetaData& tileMetaData) const;
+		void CopyMetaData(SMetaData& tileMetaData);
 
 		// Functions for Triangulate()
 		void             Reserve(size_t trianglesCount, size_t verticesCount);
@@ -418,15 +422,16 @@ protected:
 
 		static TileVertexKey GetKeyFromTileVertex(const Tile::Vertex& vtx);
 
-	private:
-		enum { k_maxTriangleCount = 1024 };
+		void                 CreateConnectivityData();
 
-		Triangles             m_triangles;
-		Vertices              m_vertices;
-		TileVertexIndexLookUp m_vertexIndexLookUp;
-		AABB                  m_tileAabb;
-		HashComputer          m_hashComputer;
-		SMetaData             m_metaData;
+	private:
+		Triangles                  m_triangles;
+		Vertices                   m_vertices;
+		Links                      m_links;
+		TileVertexIndexLookUp      m_vertexIndexLookUp;
+		AABB                       m_tileAabb;
+		HashComputer               m_hashComputer;
+		SMetaData                  m_metaData;
 	};
 
 	// Call this when reusing an existing TileGenerator for a second job.

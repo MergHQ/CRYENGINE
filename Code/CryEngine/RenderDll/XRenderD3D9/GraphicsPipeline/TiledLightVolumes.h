@@ -112,6 +112,7 @@ private:
 
 	enum ETiledLightTypes
 	{
+		tlTypeNone             = 0, 
 		tlTypeProbe            = 1,
 		tlTypeAmbientPoint     = 2,
 		tlTypeAmbientProjector = 3,

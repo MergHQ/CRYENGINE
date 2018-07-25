@@ -250,7 +250,11 @@ void CAsset::Save()
 
 void CAsset::Reload()
 {
-	if (m_pEditingSession)
+	if (m_pEditor)
+	{
+		m_pEditor->DiscardAssetChanges();
+	}
+	else if (m_pEditingSession)
 	{
 		CEditableAsset editAsset(*this);
 		m_pEditingSession->DiscardChanges(editAsset);

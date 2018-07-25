@@ -51,8 +51,12 @@ protected:
 	virtual void   Initialize() override;
 
 	virtual void   ProcessEvent(const SEntityEvent& event) override;
-	virtual uint64 GetEventMask() const override;
+	virtual Cry::Entity::EventFlags GetEventMask() const override;
 	// ~IEntityComponent
+
+	// IEditorEntityComponent
+	virtual bool SetMaterial(int slotId, const char* szMaterial) override;
+	// ~IEditorEntityComponent
 
 public:
 	struct SDefaultScopeSettings
@@ -82,8 +86,11 @@ public:
 		desc.SetIcon("icons:General/Mannequin.ico");
 		desc.SetComponentFlags({ IEntityComponent::EFlags::Transform, IEntityComponent::EFlags::Socket, IEntityComponent::EFlags::Attach });
 
+		desc.AddBase<IEditorEntityComponent>();
+
 		desc.AddMember(&CAdvancedAnimationComponent::m_type, 'type', "Type", "Type", "Determines the behavior of the static mesh", EMeshType::RenderAndCollider);
 		desc.AddMember(&CAdvancedAnimationComponent::m_characterFile, 'file', "Character", "Character", "Determines the character to load", "");
+		desc.AddMember(&CAdvancedAnimationComponent::m_materialPath, 'mat', "Material", "Material", "Specifies the override material for the selected object", "");
 		desc.AddMember(&CAdvancedAnimationComponent::m_renderParameters, 'rend', "Render", "Rendering Settings", "Settings for the rendered representation of the component", SRenderParameters());
 
 		desc.AddMember(&CAdvancedAnimationComponent::m_databasePath, 'dbpa', "DatabasePath", "Animation Database", "Path to the Mannequin .adb file", "");
@@ -146,6 +153,11 @@ public:
 		const int priority = 0;
 		m_pActiveAction = new TAction<SAnimationContext>(priority, fragmentId);
 		m_pActionController->Queue(*m_pActiveAction);
+	}
+	
+	virtual void QueueCustomFragment(IAction& action)
+	{
+		m_pActionController->Queue(action);
 	}
 
 	// TODO: Expose resource selector for tags
@@ -252,6 +264,15 @@ public:
 		}
 
 		m_pEntity->SetCharacter(m_pCachedCharacter, GetOrMakeEntitySlotId(), false);
+
+		if (!m_materialPath.value.empty())
+		{
+			if (IMaterial* pMaterial = gEnv->p3DEngine->GetMaterialManager()->LoadMaterial(m_materialPath.value, false))
+			{
+				m_pEntity->SetSlotMaterial(GetEntitySlotId(), pMaterial);
+			}
+		}
+
 		SetAnimationDrivenMotion(m_bAnimationDrivenMotion);
 
 		if (m_pControllerDefinition != nullptr)
@@ -319,6 +340,7 @@ protected:
 
 	Schematyc::CharacterFileName              m_characterFile;
 	Schematyc::MannequinAnimationDatabasePath m_databasePath;
+	Schematyc::MaterialFileName               m_materialPath;
 
 	SDefaultScopeSettings                     m_defaultScopeSettings;
 

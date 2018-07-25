@@ -146,6 +146,7 @@ void CNodeItem::SetDeactivated(bool isDeactivated)
 	{
 		m_component.SetEnabled(!isDeactivated);
 		SignalDeactivatedChanged(isDeactivated);
+		static_cast<CParticleGraphModel*>(&GetViewModel())->OnNodeItemChanged(this);
 	}
 }
 
@@ -344,6 +345,7 @@ void CNodeItem::SetVisible(bool isVisible)
 	{
 		m_component.SetVisible(isVisible);
 		SignalVisibleChanged(isVisible);
+		static_cast<CParticleGraphModel*>(&GetViewModel())->OnNodeItemChanged(this);
 	}
 }
 
@@ -414,6 +416,7 @@ void CFeatureItem::SetDeactivated(bool isDeactivated)
 		// Note: Property tree listens only to node properties changed
 		//			 events. So at least for now we need to invalidate the whole node.
 		m_node.SignalInvalidated();
+		static_cast<CParticleGraphModel*>(&GetViewModel())->OnNodeItemChanged(&m_node);
 	}
 }
 

@@ -42,9 +42,6 @@ STile::STile()
 	, nodeCount(0)
 	, linkCount(0)
 	, hashValue(0)
-#if MNM_USE_EXPORT_INFORMATION
-	, connectivity()
-#endif
 {
 }
 
@@ -119,10 +116,6 @@ void CopyTileData(const TData* pNewData, const TCount newCount, TData*& pOutData
 
 void STile::CopyTriangles(const Tile::STriangle* _triangles, uint16 count)
 {
-#if MNM_USE_EXPORT_INFORMATION
-	InitConnectivity(triangleCount, count);
-#endif
-
 	CopyTileData(_triangles, count, triangles, triangleCount);
 }
 
@@ -155,8 +148,7 @@ void STile::AddOffMeshLink(const TriangleID triangleID, const uint16 offMeshInde
 		//Off-mesh link is always the first if exists
 		Tile::STriangle& triangle = triangles[triangleIdx];
 
-		const size_t MaxLinkCount = 1024 * 6;
-		Tile::SLink tempLinks[MaxLinkCount];
+		Tile::SLink tempLinks[MNM::Constants::TileLinksMaxCount];
 
 		bool hasOffMeshLink = links && (triangle.linkCount > 0) && (triangle.firstLink < linkCount) && (links[triangle.firstLink].side == Tile::SLink::OffMesh);
 
@@ -249,8 +241,7 @@ void STile::RemoveOffMeshLink(const TriangleID triangleID)
 	{
 		assert(linkCount > 1);
 
-		const size_t MaxLinkCount = 1024 * 6;
-		Tile::SLink tempLinks[MaxLinkCount];
+		Tile::SLink tempLinks[MNM::Constants::TileLinksMaxCount];
 
 		if (linkToRemoveIdx)
 			memcpy(tempLinks, links, sizeof(Tile::SLink) * linkToRemoveIdx);
@@ -281,11 +272,6 @@ void STile::Swap(STile& other)
 	std::swap(vertices, other.vertices);
 	std::swap(nodes, other.nodes);
 	std::swap(links, other.links);
-
-#if MNM_USE_EXPORT_INFORMATION
-	InitConnectivity(triangleCount, other.triangleCount);
-#endif
-
 	std::swap(triangleCount, other.triangleCount);
 	std::swap(vertexCount, other.vertexCount);
 	std::swap(nodeCount, other.nodeCount);
@@ -308,11 +294,6 @@ void STile::Destroy()
 
 	delete[] links;
 	links = 0;
-
-#if MNM_USE_EXPORT_INFORMATION
-	SAFE_DELETE_ARRAY(connectivity.trianglesAccessible);
-	connectivity.tileAccessible = 0;
-#endif
 
 	triangleCount = 0;
 	vertexCount = 0;
@@ -379,19 +360,15 @@ void STile::Draw(size_t drawFlags, vector3_t origin, TileID tileID, const std::v
 			const Tile::STriangle& triangle = triangles[i];
 			
 			// Getting triangle color
-#if MNM_USE_EXPORT_INFORMATION
-			ColorB triangleColor = ((drawFlags & DrawAccessibility) && (connectivity.trianglesAccessible != NULL) && !connectivity.trianglesAccessible[i]) ? triangleColorDisconnected : triangleColorConnected;
-#else
 			ColorB triangleColor = triangleColorConnected;
-#endif
 
-			if (!(drawFlags & DrawAccessibility))
-			{
-				triangleColor = colorSelector.GetAnnotationColor(triangle.areaAnnotation);
-			}
 			if (drawFlags & DrawIslandsId)
 			{
 				triangleColor = CalculateColorFromMultipleItems(triangle.islandID, static_cast<uint32>(islandAreas.size()));
+			}
+			else
+			{
+				triangleColor = colorSelector.GetAnnotationColor(triangle.areaAnnotation);
 			}
 
 			if (triangleColor != currentColor)
@@ -636,54 +613,4 @@ vector3_t::value_type STile::GetTriangleArea(const Tile::STriangle& triangle) co
 	return sqrtf(s * (s - len0) * (s - len1) * (s - len2));
 }
 
-//////////////////////////////////////////////////////////////////////////
-
-#if MNM_USE_EXPORT_INFORMATION
-
-bool STile::ConsiderExportInformation() const
-{
-	// TODO FrancescoR: Remove if it's not necessary anymore or refactor it.
-	return true;
-}
-
-void STile::InitConnectivity(uint16 oldTriangleCount, uint16 newTriangleCount)
-{
-	if (ConsiderExportInformation())
-	{
-		// By default all is accessible
-		connectivity.tileAccessible = 1;
-		if (oldTriangleCount != newTriangleCount)
-		{
-			SAFE_DELETE_ARRAY(connectivity.trianglesAccessible);
-
-			if (newTriangleCount)
-			{
-				connectivity.trianglesAccessible = new uint8[newTriangleCount];
-			}
-		}
-
-		if (newTriangleCount)
-		{
-			memset(connectivity.trianglesAccessible, 1, sizeof(uint8) * newTriangleCount);
-		}
-		connectivity.triangleCount = newTriangleCount;
-	}
-}
-
-void STile::ResetConnectivity(uint8 accessible)
-{
-	if (ConsiderExportInformation())
-	{
-		assert(connectivity.triangleCount == triangleCount);
-
-		connectivity.tileAccessible = accessible;
-
-		if (connectivity.trianglesAccessible != NULL)
-		{
-			memset(connectivity.trianglesAccessible, accessible, sizeof(uint8) * connectivity.triangleCount);
-		}
-	}
-}
-
-#endif
 }

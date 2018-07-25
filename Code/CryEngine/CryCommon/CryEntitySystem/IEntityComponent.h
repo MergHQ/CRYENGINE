@@ -396,11 +396,11 @@ protected:
 
 public:
 	//! Return bit mask of the EEntityEvent flags that we want to receive in ProcessEvent
-	//! (ex: BIT64(ENTITY_EVENT_HIDE) | BIT64(ENTITY_EVENT_UNHIDE))
+	//! (ex: ENTITY_EVENT_HIDE | ENTITY_EVENT_UNHIDE)
 	//! Only events matching the returned bit mask will be sent to the ProcessEvent method
 	//! \par Example
 	//! \include CryEntitySystem/Examples/ComponentEvents.cpp
-	virtual uint64 GetEventMask() const { return 0; }
+	virtual Cry::Entity::EventFlags GetEventMask() const { return {}; }
 
 	//! Determines the order in which this component will receive entity events (including update). Lower number indicates a higher priority.
 	virtual ComponentEventPriority GetEventPriority() const { return (ComponentEventPriority)GetProxyType(); }
@@ -530,7 +530,7 @@ public:
 	//! \param receiving component
 	inline void SendEvent(const SEntityEvent& event)
 	{
-		if ((GetEventMask() & BIT64(event.event)) != 0)
+		if (GetEventMask().Check(event.event))
 		{
 			ProcessEvent(event);
 		}
@@ -982,4 +982,17 @@ struct IParticleEntityComponent : public IEntityComponent
 	CRY_ENTITY_COMPONENT_INTERFACE_GUID(IParticleEntityComponent, "68e3655d-ddd3-4390-aad5-448264e74461"_cry_guid)
 
 	virtual void SetParticleEffectName(const char* szEffectName) = 0;
+};
+
+//! Component interface in order for Editor actions such as material drag and drop to work
+struct IEditorEntityComponent : public IEntityComponent
+{
+	static void ReflectType(Schematyc::CTypeDesc<IEditorEntityComponent>& desc)
+	{
+		desc.SetGUID("{BB42BB62-E91A-4AD2-A75F-363C866A2332}"_cry_guid);
+	}
+
+	//! Called to permanently set the material on a slot
+	//! Only handle this if your component owns the specified slot
+	virtual bool SetMaterial(int slotId, const char* szMaterial) = 0;
 };

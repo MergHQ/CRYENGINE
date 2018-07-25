@@ -17,10 +17,11 @@
 #include "Util/Math.h"
 #include "Util/AffineParts.h"
 #include "Controls/DynamicPopupMenu.h"
-#include "EditTool.h"
+#include "LevelEditor/Tools/EditTool.h"
 #include "UsedResources.h"
 #include "IEditorMaterial.h"
 #include "Grid.h"
+#include "QtUtil.h"
 
 #include "IAIManager.h"
 #include "IUndoObject.h"
@@ -194,28 +195,6 @@ bool CalculateConvexEdgesForOBB(const CPoint* obb_p, const int maxSizeOfEdgeList
 
 //////////////////////////////////////////////////////////////////////////
 //////////////////////////////////////////////////////////////////////////
-//! Undo object for CBaseObject.
-class CUndoBaseObject : public IUndoObject
-{
-public:
-	CUndoBaseObject(CBaseObject* pObj, const char* undoDescription);
-
-protected:
-	virtual const char* GetDescription() override { return m_undoDescription; };
-	virtual const char* GetObjectName() override;
-
-	virtual void        Undo(bool bUndo) override;
-	virtual void        Redo() override;
-
-protected:
-	string     m_undoDescription;
-	CryGUID    m_guid;
-	XmlNodeRef m_undo;
-	XmlNodeRef m_redo;
-};
-
-//////////////////////////////////////////////////////////////////////////
-//////////////////////////////////////////////////////////////////////////
 //! Undo object for CBaseObject that only stores its transform, color, area and minSpec
 class CUndoBaseObjectMinimal : public IUndoObject
 {
@@ -288,83 +267,6 @@ private:
 	CryGUID m_objGuid;
 	CryGUID m_oldLayerGuid;
 	CryGUID m_newLayerGuid;
-};
-
-//////////////////////////////////////////////////////////////////////////
-//! Undo object for attach/detach changes
-class CUndoAttachBaseObject : public IUndoObject
-{
-public:
-	CUndoAttachBaseObject(CBaseObject* pAttachedObject, IObjectLayer* pOldLayer, bool bKeepPos, bool bPlaceOnRoot, bool bAttach)
-		: m_attachedObjectGUID(pAttachedObject->GetId())
-		, m_parentObjectGUID(pAttachedObject->GetParent()->GetId())
-		, m_bKeepPos(bKeepPos)
-		, m_bPlaceOnRoot(bPlaceOnRoot)
-		, m_bAttach(bAttach)
-	{
-		if (pOldLayer)
-			m_oldLayerGUID = pOldLayer->GetGUID();
-	}
-
-	virtual void Undo(bool bUndo) override
-	{
-		if (m_bAttach) Detach();
-		else Attach();
-	}
-
-	virtual void Redo() override
-	{
-		if (m_bAttach) Attach();
-		else Detach();
-	}
-
-private:
-	void Attach()
-	{
-		IObjectManager* pObjectManager = GetIEditor()->GetObjectManager();
-		CBaseObject* pObject = pObjectManager->FindObject(m_attachedObjectGUID);
-		CBaseObject* pParentObject = pObjectManager->FindObject(m_parentObjectGUID);
-
-		if (pObject && pParentObject)
-		{
-			if (GetIEditor()->IsCGroup(pParentObject))
-				pParentObject->AddMember(pObject, m_bKeepPos);
-			else
-				pParentObject->AttachChild(pObject, m_bKeepPos);
-
-			pObject->UpdatePrefab();
-		}
-	}
-
-	void Detach()
-	{
-		IObjectManager* pObjectManager = GetIEditor()->GetObjectManager();
-		CBaseObject* pObject = pObjectManager->FindObject(m_attachedObjectGUID);
-		CBaseObject* pParentObject = pObjectManager->FindObject(m_parentObjectGUID);
-		IObjectLayer* pOldLayer = pObjectManager->GetIObjectLayerManager()->FindLayer(m_oldLayerGUID);
-
-		if (pObject)
-		{
-			if (GetIEditor()->IsCGroup(pParentObject))
-				pParentObject->RemoveMember(pObject, m_bKeepPos, m_bPlaceOnRoot);
-			else
-				pObject->DetachThis(m_bKeepPos, m_bPlaceOnRoot);
-
-			if (pOldLayer != pObject->GetLayer())
-				pObject->SetLayer(pOldLayer);
-
-			pObject->UpdatePrefab();
-		}
-	}
-
-	virtual const char* GetDescription() override { return "Attachment Changed"; }
-
-	CryGUID m_attachedObjectGUID;
-	CryGUID m_parentObjectGUID;
-	CryGUID m_oldLayerGUID;
-	bool    m_bKeepPos;
-	bool    m_bPlaceOnRoot;
-	bool    m_bAttach;
 };
 
 //////////////////////////////////////////////////////////////////////////
@@ -1083,7 +985,7 @@ void CBaseObject::ChangeColor(ColorB color)
 void CBaseObject::SetColor(ColorB color)
 {
 	m_color = color;
-	GetIEditor()->GetObjectManager()->signalObjectsChanged({ this }, CObjectEvent(OBJECT_ON_COLOR_CHANGED));
+	GetIEditor()->GetObjectManager()->NotifyObjectListeners(this, OBJECT_ON_COLOR_CHANGED);
 }
 
 void CBaseObject::UseColorOverride(bool color)
@@ -1098,7 +1000,7 @@ void CBaseObject::UseColorOverride(bool color)
 		StoreUndo("Color Override", true);
 	}
 	m_useColorOverride = color;
-	GetIEditor()->GetObjectManager()->signalObjectsChanged({ this }, CObjectEvent(OBJECT_ON_COLOR_CHANGED));
+	GetIEditor()->GetObjectManager()->NotifyObjectListeners(this, OBJECT_ON_COLOR_CHANGED);
 }
 
 bool CBaseObject::IsUsingColorOverride() const
@@ -1171,7 +1073,7 @@ void CBaseObject::SetModified(bool boModifiedTransformOnly, bool bNotifyObjectMa
 		UpdatePrefab();
 }
 
-void CBaseObject::DrawDefault(DisplayContext& dc, COLORREF labelColor)
+void CBaseObject::DrawDefault(SDisplayContext& dc, COLORREF labelColor)
 {
 	using namespace BO_Private;
 	Vec3 wp = GetWorldPos();
@@ -1274,7 +1176,7 @@ void CBaseObject::DrawDefault(DisplayContext& dc, COLORREF labelColor)
 }
 
 //////////////////////////////////////////////////////////////////////////
-void CBaseObject::DrawDimensions(DisplayContext& dc, AABB* pMergedBoundBox)
+void CBaseObject::DrawDimensions(SDisplayContext& dc, AABB* pMergedBoundBox)
 {
 	if (HasMeasurementAxis() && gViewportPreferences.displayDimension)
 	{
@@ -1285,7 +1187,7 @@ void CBaseObject::DrawDimensions(DisplayContext& dc, AABB* pMergedBoundBox)
 }
 
 //////////////////////////////////////////////////////////////////////////
-void CBaseObject::DrawDimensionsImpl(DisplayContext& dc, const AABB& localBoundBox, AABB* pMergedBoundBox)
+void CBaseObject::DrawDimensionsImpl(SDisplayContext& dc, const AABB& localBoundBox, AABB* pMergedBoundBox)
 {
 	AABB boundBox;
 	Matrix34 rotatedTM;
@@ -1375,8 +1277,7 @@ void CBaseObject::DrawDimensionsImpl(DisplayContext& dc, const AABB& localBoundB
 		Vec3(boundBox.min.x, boundBox.min.y, boundBox.max.z),
 		Vec3(boundBox.min.x, boundBox.max.y, boundBox.max.z),
 		Vec3(boundBox.max.x, boundBox.max.y, boundBox.max.z),
-		Vec3(boundBox.max.x, boundBox.min.y, boundBox.max.z)
-	};
+		Vec3(boundBox.max.x, boundBox.min.y, boundBox.max.z) };
 	const int kElementSize(sizeof(basePoints) / sizeof(*basePoints));
 	Vec3 axisDirections[kElementSize] = { Vec3(1, 1, 1), Vec3(1, -1, 1), Vec3(-1, -1, 1), Vec3(-1, 1, 1), Vec3(1, 1, -1), Vec3(1, -1, -1), Vec3(-1, -1, -1), Vec3(-1, 1, -1) };
 	int nLoopCount = bHave2Axis ? (kElementSize / 2) : kElementSize;
@@ -1538,7 +1439,7 @@ void CBaseObject::DrawDimensionsImpl(DisplayContext& dc, const AABB& localBoundB
 }
 
 //////////////////////////////////////////////////////////////////////////
-void CBaseObject::DrawTextOn2DBox(DisplayContext& dc, const Vec3& pos, const char* text, float textScale, const ColorF& TextColor, const ColorF& TextBackColor)
+void CBaseObject::DrawTextOn2DBox(SDisplayContext& dc, const Vec3& pos, const char* text, float textScale, const ColorF& TextColor, const ColorF& TextBackColor)
 {
 	Vec3 worldPos = dc.ToWorldPos(pos);
 	int vx = 0, vy = 0, vw = dc.GetWidth(), vh = dc.GetHeight();
@@ -1559,8 +1460,7 @@ void CBaseObject::DrawTextOn2DBox(DisplayContext& dc, const Vec3& pos, const cha
 		Vec3(screenPos.x,             screenPos.y,              screenPos.z),
 		Vec3(screenPos.x + textwidth, screenPos.y,              screenPos.z),
 		Vec3(screenPos.x + textwidth, screenPos.y + textheight, screenPos.z),
-		Vec3(screenPos.x,             screenPos.y + textheight, screenPos.z)
-	};
+		Vec3(screenPos.x,             screenPos.y + textheight, screenPos.z) };
 
 	Vec3 textworldreign[4];
 	Matrix34 dcInvTm = dc.GetMatrix().GetInverted();
@@ -1599,8 +1499,31 @@ void CBaseObject::DrawTextOn2DBox(DisplayContext& dc, const Vec3& pos, const cha
 	dc.SetState(backupstate);
 }
 
+void CBaseObject::DrawSelectionPreviewHighlight(SDisplayContext& dc)
+{
+	AABB bbox;
+	GetBoundBox(bbox);
+
+	if (GetChildCount() > 0)
+	{
+		// Draw object name label on top of object
+		Vec3 vTopEdgeCenterPos = bbox.GetCenter();
+
+		dc.SetColor(gViewportSelectionPreferences.colorGroupBBox);
+		vTopEdgeCenterPos(vTopEdgeCenterPos.x, vTopEdgeCenterPos.y, bbox.max.z);
+		dc.DrawTextLabel(vTopEdgeCenterPos, 1.3f, GetName());
+		// Draw bounding box wireframe
+		dc.DrawWireBox(bbox.min, bbox.max);
+	}
+	else
+	{
+		dc.SetColor(Vec3(1, 1, 1));
+		dc.DrawTextLabel(ConvertToTextPos(bbox.GetCenter(), Matrix34::CreateIdentity(), dc.view, dc.flags & DISPLAY_2D), 1, GetName());
+	}
+}
+
 //////////////////////////////////////////////////////////////////////////
-void CBaseObject::DrawSelectionHelper(DisplayContext& dc, const Vec3& pos, COLORREF labelColor, float alpha)
+void CBaseObject::DrawSelectionHelper(SDisplayContext& dc, const Vec3& pos, COLORREF labelColor, float alpha)
 {
 	// Magic Number to offset the text from the selection box
 	// Can't use fixed value as we move in world space, so we need to use a fracture of the screenScaleFactor to always have a certain distance from the selection box in the viewport
@@ -1621,7 +1544,7 @@ void CBaseObject::DrawSelectionHelper(DisplayContext& dc, const Vec3& pos, COLOR
 }
 
 //////////////////////////////////////////////////////////////////////////
-void CBaseObject::SetDrawTextureIconProperties(DisplayContext& dc, const Vec3& pos, float alpha)
+void CBaseObject::SetDrawTextureIconProperties(SDisplayContext& dc, const Vec3& pos, float alpha)
 {
 	if (gViewportPreferences.showIcons || gViewportPreferences.showSizeBasedIcons)
 	{
@@ -1644,7 +1567,7 @@ void CBaseObject::SetDrawTextureIconProperties(DisplayContext& dc, const Vec3& p
 			AABB box;
 			GetBoundBox(box);
 			m_vDrawIconPos.z = (m_vDrawIconPos.z - objectPos.z) + box.max.z;
-			nIconFlags = DisplayContext::TEXICON_ALIGN_BOTTOM;
+			nIconFlags = SDisplayContext::TEXICON_ALIGN_BOTTOM;
 		}
 
 		m_nIconFlags = nIconFlags;
@@ -1652,7 +1575,7 @@ void CBaseObject::SetDrawTextureIconProperties(DisplayContext& dc, const Vec3& p
 }
 
 //////////////////////////////////////////////////////////////////////////
-void CBaseObject::DrawTextureIcon(DisplayContext& dc, const Vec3& pos, float alpha, bool bDisplaySelectionHelper, float distanceSquared)
+void CBaseObject::DrawTextureIcon(SDisplayContext& dc, const Vec3& pos, float alpha, bool bDisplaySelectionHelper, float distanceSquared)
 {
 	if (m_nTextureIcon && (gViewportPreferences.showIcons || gViewportPreferences.showSizeBasedIcons))
 	{
@@ -1662,7 +1585,7 @@ void CBaseObject::DrawTextureIcon(DisplayContext& dc, const Vec3& pos, float alp
 }
 
 //////////////////////////////////////////////////////////////////////////
-void CBaseObject::DrawWarningIcons(DisplayContext& dc, const Vec3& pos)
+void CBaseObject::DrawWarningIcons(SDisplayContext& dc, const Vec3& pos)
 {
 	// Don't draw warning icons if they are beyond draw distance
 	if ((dc.camera->GetPosition() - pos).GetLength() > gViewportDebugPreferences.warningIconsDrawDistance)
@@ -1701,7 +1624,7 @@ void CBaseObject::DrawWarningIcons(DisplayContext& dc, const Vec3& pos)
 }
 
 //////////////////////////////////////////////////////////////////////////
-void CBaseObject::DrawLabel(DisplayContext& dc, const Vec3& pos, COLORREF labelColor, float alpha, float size)
+void CBaseObject::DrawLabel(SDisplayContext& dc, const Vec3& pos, COLORREF labelColor, float alpha, float size)
 {
 	// Check if our group is not closed.
 	if (!GetGroup() || GetIEditor()->IsGroupOpen(GetGroup()))
@@ -1745,7 +1668,7 @@ void CBaseObject::DrawLabel(DisplayContext& dc, const Vec3& pos, COLORREF labelC
 }
 
 //////////////////////////////////////////////////////////////////////////
-void CBaseObject::DrawHighlight(DisplayContext& dc)
+void CBaseObject::DrawHighlight(SDisplayContext& dc)
 {
 	if (!m_nTextureIcon && m_bSupportsBoxHighlight)
 	{
@@ -1760,7 +1683,7 @@ void CBaseObject::DrawHighlight(DisplayContext& dc)
 }
 
 //////////////////////////////////////////////////////////////////////////
-bool CBaseObject::CanBeDrawn(const DisplayContext& dc, bool& outDisplaySelectionHelper) const
+bool CBaseObject::CanBeDrawn(const SDisplayContext& dc, bool& outDisplaySelectionHelper) const
 {
 	bool bResult = true;
 	outDisplaySelectionHelper = false;
@@ -1815,7 +1738,7 @@ int CBaseObject::MouseCreateCallback(IDisplayViewport* view, EMouseEvent event, 
 {
 	if (event == eMouseMove || event == eMouseLDown)
 	{
-		Vec3 pos = view->MapViewToCP(point, 0, true, GetCreationOffsetFromTerrain());
+		Vec3 pos = view->MapViewToCP(point, CLevelEditorSharedState::Axis::None, true, GetCreationOffsetFromTerrain());
 		SetPos(pos);
 
 		if (event == eMouseLDown)
@@ -1958,6 +1881,7 @@ void CBaseObject::SetFrozen(bool bFrozen)
 		else
 			ClearFlags(OBJFLAG_FROZEN);
 	}
+	GetIEditor()->GetObjectManager()->NotifyObjectListeners(this, OBJECT_ON_FREEZE);
 }
 
 //////////////////////////////////////////////////////////////////////////
@@ -2240,11 +2164,7 @@ void CBaseObject::Serialize(CObjectArchive& ar)
 			xmlNode->setAttr("Pos", GetPos());
 
 		xmlNode->setAttr("Rotate", m_rotate);
-
-		auto scale = GetScale();
-
-		if (scale != Vec3(1, 1, 1))
-			xmlNode->setAttr("Scale", scale);
+		xmlNode->setAttr("Scale", GetScale());
 
 		COLORREF colorToStore = RGB(m_color.r, m_color.g, m_color.b);
 		xmlNode->setAttr("ColorRGB", colorToStore);
@@ -2485,8 +2405,7 @@ bool CBaseObject::HitTestRectBounds(HitContext& hc, const AABB& box)
 		hc.view->WorldToView(Vec3(box.min.x, box.min.y, box.max.z)),
 		hc.view->WorldToView(Vec3(box.min.x, box.max.y, box.max.z)),
 		hc.view->WorldToView(Vec3(box.max.x, box.min.y, box.max.z)),
-		hc.view->WorldToView(Vec3(box.max.x, box.max.y, box.max.z))
-	};
+		hc.view->WorldToView(Vec3(box.max.x, box.max.y, box.max.z)) };
 
 	CRect objrc, temprc;
 	objrc.left = 10000;
@@ -2544,8 +2463,7 @@ bool CBaseObject::HitTestRectBounds(HitContext& hc, const AABB& box)
 			hc.view->WorldToView(ax - ay - az + tr),
 			hc.view->WorldToView(ax - ay + az + tr),
 			hc.view->WorldToView(ax + ay - az + tr),
-			hc.view->WorldToView(ax + ay + az + tr)
-		};
+			hc.view->WorldToView(ax + ay + az + tr) };
 
 		int nEdgeList1Count(kMaxSizeOfEdgeList1);
 		Edge2D edgelist1[kMaxSizeOfEdgeList1];
@@ -2557,8 +2475,7 @@ bool CBaseObject::HitTestRectBounds(HitContext& hc, const AABB& box)
 			Edge2D(Vec2(hc.rect.left,  hc.rect.top),    Vec2(hc.rect.right, hc.rect.top)),
 			Edge2D(Vec2(hc.rect.right, hc.rect.top),    Vec2(hc.rect.right, hc.rect.bottom)),
 			Edge2D(Vec2(hc.rect.right, hc.rect.bottom), Vec2(hc.rect.left,  hc.rect.bottom)),
-			Edge2D(Vec2(hc.rect.left,  hc.rect.bottom), Vec2(hc.rect.left,  hc.rect.top))
-		};
+			Edge2D(Vec2(hc.rect.left,  hc.rect.bottom), Vec2(hc.rect.left,  hc.rect.top)) };
 
 		ModifyConvexEdgeDirection(edgelist0, kMaxSizeOfEdgeList0);
 		ModifyConvexEdgeDirection(edgelist1, nEdgeList1Count);
@@ -3010,14 +2927,15 @@ const Matrix34& CBaseObject::GetWorldTM() const
 	return m_worldTM;
 }
 
-bool CBaseObject::GetManipulatorMatrix(RefCoordSys coordSys, Matrix34& tm) const
+bool CBaseObject::GetManipulatorMatrix(Matrix34& tm) const
 {
-	if (coordSys == COORDS_LOCAL)
+	CLevelEditorSharedState::CoordSystem coordSystem = GetIEditor()->GetLevelEditorSharedState()->GetCoordSystem();
+	if (coordSystem == CLevelEditorSharedState::CoordSystem::Local)
 	{
 		tm = GetWorldTM();
 		return true;
 	}
-	else if (coordSys == COORDS_PARENT)
+	else if (coordSystem == CLevelEditorSharedState::CoordSystem::Parent)
 	{
 		if (GetLinkedTo())
 		{
@@ -3033,7 +2951,7 @@ bool CBaseObject::GetManipulatorMatrix(RefCoordSys coordSys, Matrix34& tm) const
 		}
 		return true;
 	}
-	else if (coordSys == COORDS_WORLD)
+	else if (coordSystem == CLevelEditorSharedState::CoordSystem::World)
 	{
 		tm = GetWorldTM();
 		return true;
@@ -3460,6 +3378,40 @@ void CBaseObject::OnMtlResolved(uint32 id, bool success, const char* orgName, co
 }
 
 //////////////////////////////////////////////////////////////////////////
+bool CBaseObject::ApplyAsset(const CAsset& asset, HitContext* pHitContext)
+{
+	if (!strcmp(asset.GetType()->GetTypeName(), "Material"))
+	{
+		const char* szMaterialFileName = asset.GetFile(0);
+		if (szMaterialFileName == nullptr)
+		{
+			szMaterialFileName = "";
+		}
+
+		SetMaterial(szMaterialFileName);
+		return true;
+	}
+
+	return false;
+}
+
+//////////////////////////////////////////////////////////////////////////
+bool CBaseObject::CanApplyAsset(const CAsset& asset, string* pApplyTextOut) const
+{
+	if (!strcmp(asset.GetType()->GetTypeName(), "Material"))
+	{
+		if (pApplyTextOut != nullptr)
+		{
+			*pApplyTextOut = QtUtil::ToString(QObject::tr("Assign Material"));
+		}
+
+		return true;
+	}
+
+	return false;
+}
+
+//////////////////////////////////////////////////////////////////////////
 void CBaseObject::SetLayerModified()
 {
 	if (m_layer)
@@ -3551,7 +3503,7 @@ void CBaseObject::OnContextMenu(CPopupMenuItem* menu)
 	menu->AddCommand("Delete", "general.delete");
 
 	CPopupMenuItem& transformMenu = menu->Add("Transform");
-	transformMenu.Add("Clear Rotation", [ = ]
+	transformMenu.Add("Clear Rotation", [=]
 	{
 		BeginUndoAndEnsureSelection();
 		const ISelectionGroup* pGroup = GetIEditor()->GetISelectionGroup();
@@ -3564,7 +3516,7 @@ void CBaseObject::OnContextMenu(CPopupMenuItem* menu)
 		GetIEditor()->GetIUndoManager()->Accept("Clear Rotation");
 	});
 
-	transformMenu.Add("Clear Scale", [ = ]
+	transformMenu.Add("Clear Scale", [=]
 	{
 		BeginUndoAndEnsureSelection();
 		const ISelectionGroup* pGroup = GetIEditor()->GetISelectionGroup();
@@ -3577,7 +3529,7 @@ void CBaseObject::OnContextMenu(CPopupMenuItem* menu)
 		GetIEditor()->GetIUndoManager()->Accept("Clear Scale");
 	});
 
-	transformMenu.Add("Clear All", [ = ]
+	transformMenu.Add("Clear All", [=]
 	{
 		BeginUndoAndEnsureSelection();
 		const ISelectionGroup* pGroup = GetIEditor()->GetISelectionGroup();
@@ -3719,7 +3671,7 @@ ERotationWarningLevel CBaseObject::GetRotationWarningLevel() const
 
 bool CBaseObject::IsSkipSelectionHelper() const
 {
-	CEditTool* pEditTool(GetIEditor()->GetEditTool());
+	CEditTool* pEditTool(GetIEditor()->GetLevelEditorSharedState()->GetEditTool());
 	if (pEditTool && pEditTool->IsNeedToSkipPivotBoxForObjects())
 		return true;
 	return false;
@@ -4145,7 +4097,7 @@ void CBaseObject::SerializeGeneralProperties(Serialization::IArchive& ar, bool b
 		if (color != m_color)
 		{
 			objectChanged = true;
-			SetColor(color);
+			ChangeColor(color);
 		}
 
 		if (!name.empty() && strcmp(name.c_str(), (LPCSTR)m_name) != 0)
@@ -4238,4 +4190,3 @@ void CBaseObject::UnRegisterFromEngine()
 		GetIEditor()->UnRegisterEntityAsJob(pRenderNode);
 	}
 }
-

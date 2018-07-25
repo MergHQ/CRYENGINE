@@ -834,13 +834,9 @@ namespace Schematyc2
 
 	int32 CObject::GetStateMachineNetworkAspect(const ILibStateMachine& libStateMachine) const
 	{
-		if (libStateMachine.GetNetAuthority() == EStateMachineNetAuthority::Local)
-		{
-			const bool bObjectClientAuthority = m_pNetworkObject ? m_pNetworkObject->ClientAuthority() : false;
-			return bObjectClientAuthority ? m_clientAspect : m_serverAspect;
-		}
-
-		return m_serverAspect;
+		return (libStateMachine.GetNetAuthority() == EStateMachineNetAuthority::Local)
+			? m_clientAspect
+			: m_serverAspect;
 	}
 
 	//////////////////////////////////////////////////////////////////////////
@@ -1774,13 +1770,20 @@ namespace Schematyc2
 	//////////////////////////////////////////////////////////////////////////
 	void CObject::NetworkSerialize(TSerialize serialize, int32 aspects, uint8 profile, int flags)
 	{
-		if((m_flags & EObjectFlags::NetworkReplicateActions) != 0)
+		if ((m_flags & EObjectFlags::NetworkReplicateActions) != 0)
 		{
 			const bool isReading = serialize.IsReading();
+			const bool bObjectHasNetworkAuthority = HaveNetworkAuthority();
 
-			for(size_t stateMachineIdx = 0, stateMachineCount = m_stateMachines.size(); stateMachineIdx < stateMachineCount; ++ stateMachineIdx)
+			for (size_t stateMachineIdx = 0, stateMachineCount = m_stateMachines.size(); stateMachineIdx < stateMachineCount; ++stateMachineIdx)
 			{
 				SStateMachine& stateMachine = m_stateMachines[stateMachineIdx];
+				const ILibStateMachine& libStateMachine = *m_pLibClass->GetStateMachine(stateMachineIdx);
+
+				if (GetStateMachineNetworkAspect(libStateMachine) != aspects)
+				{
+					continue;
+				}
 
 				const CStateNetIdxMapper::StateNetIdx invalidStateIdx = CStateNetIdxMapper::INVALID_NET_IDX;
 				const CStateNetIdxMapper::StateNetIdx statesCount = m_stateNetIdxMapper.GetStateCount(stateMachineIdx);
@@ -1797,11 +1800,11 @@ namespace Schematyc2
 
 				serialize.IntegerWithRangeValue(m_pLibClass->GetStateMachine(stateMachineIdx)->GetName(), serializedStateIdx, invalidStateIdx, statesCount);
 
-				if(isReading)
+				if (isReading)
 				{
 					stateMachine.iRequestedState = m_stateNetIdxMapper.Decode(stateMachineIdx, serializedStateIdx);
 
-					if((m_simulationMode == ESimulationMode::Game) && (stateMachine.iRequestedState != stateMachine.iCurrentState))
+					if ((m_simulationMode == ESimulationMode::Game) && (stateMachine.iRequestedState != stateMachine.iCurrentState))
 					{
 						ChangeState(stateMachineIdx, stateMachine.iRequestedState, SEvent(), TVariantConstArray());
 					}

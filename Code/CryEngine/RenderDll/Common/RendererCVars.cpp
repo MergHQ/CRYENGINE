@@ -598,6 +598,7 @@ int CRendererCVars::CV_r_enableauxgeom;
 #endif
 
 int CRendererCVars::CV_r_ParticleVerticePoolSize;
+int CRendererCVars::CV_r_ParticleMaxVerticePoolSize;
 int CRendererCVars::CV_r_GeomCacheInstanceThreshold;
 int CRendererCVars::CV_r_VisAreaClipLightsPerPixel;
 
@@ -2907,7 +2908,8 @@ void CRendererCVars::InitCVars()
 	REGISTER_CVAR2("r_enableAuxGeom", &CV_r_enableauxgeom, defValAuxGeomEnable, VF_REQUIRE_APP_RESTART, "Enables aux geometry rendering.");
 #endif
 
-	REGISTER_CVAR2("r_ParticleVerticePoolSize", &CV_r_ParticleVerticePoolSize, 131072, VF_REQUIRE_APP_RESTART, "Max Number of Particle Vertices to support");
+	REGISTER_CVAR2("r_ParticleVerticePoolSize", &CV_r_ParticleVerticePoolSize, 131072, VF_REQUIRE_APP_RESTART, "Initial size Particles' buffers");
+	REGISTER_CVAR2("r_ParticleMaxVerticePoolSize", &CV_r_ParticleMaxVerticePoolSize, 131072*8, VF_REQUIRE_APP_RESTART, "Max size of Particles' buffers");
 
 	DefineConstIntCVar3("r_ParticlesDebug", CV_r_ParticlesDebug, 0, VF_NULL,
 	                    "Particles debugging\n"

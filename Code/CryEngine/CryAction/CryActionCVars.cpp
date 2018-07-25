@@ -82,6 +82,8 @@ CCryActionCVars::CCryActionCVars()
 
 	REGISTER_CVAR(g_useProfileManager, 1, 0, "Use player profiles manager system. \nDefault is 1.\n");
 	REGISTER_CVAR(g_legacyItemSystem,  1, 0, "Initialize Legacy Item System from GameSDK. \nDefault is 1.\n");
+
+	REGISTER_CVAR(g_enableActionGame,  1, 0, "Use CryAction ActionGame and GameContext functionality from GameSDK. \nDefault is 1.\n");
 }
 
 CCryActionCVars::~CCryActionCVars()

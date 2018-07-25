@@ -1,4 +1,4 @@
-using System;
+﻿using System;
 
 namespace CryEngine.Serialization
 {
@@ -31,7 +31,10 @@ namespace CryEngine.Serialization
 		ISerializable,
 		Array,
 		Type,
+        Assembly,
 		Enum,
-		MemberInfo
+		MemberInfo,
+
+        EntityComponent
 	}
 }

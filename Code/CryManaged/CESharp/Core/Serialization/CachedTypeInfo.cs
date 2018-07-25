@@ -1,3 +1,5 @@
+// Copyright 2001-2018 Crytek GmbH / Crytek Group. All rights reserved.
+
 using System;
 using System.Collections.Generic;
 using System.Reflection;
@@ -8,9 +10,6 @@ namespace CryEngine.Serialization
 {
 	internal class CachedTypeInfo
 	{
-		public Type _type;
-		public SerializedObjectType _serializedType;
-
 		public class IdentityEqualityComparer<T> : IEqualityComparer<T> where T : class
 		{
 			public int GetHashCode(T value)
@@ -24,24 +23,39 @@ namespace CryEngine.Serialization
 			}
 		}
 
-		Dictionary<object, int> _objects = new Dictionary<object, int>(new IdentityEqualityComparer<object>());
+		private readonly Dictionary<object, int> _objects = new Dictionary<object, int>(new IdentityEqualityComparer<object>());
 
-		public static Type _objectType = typeof(Object);
-		public static Type _delegateType = typeof(Delegate);
-		static Type _typeType = typeof(Type);
-		static Type _memberInfoType = typeof(MemberInfo);
-		static Type _stringType = typeof(String);
-		static Type _intptrType = typeof(IntPtr);
-		static Type _uintptrType = typeof(UIntPtr);
-		static Type _decimalType = typeof(Decimal);
+		
 
-		static Type _serializableType = typeof(ISerializable);
+		
+		private static readonly Type _objectType = typeof(object);
+		private static readonly Type _delegateType = typeof(Delegate);
+		private static readonly Type _typeType = typeof(Type);
+		private static readonly Type _assemblyType = typeof(Assembly);
+		private static readonly Type _memberInfoType = typeof(MemberInfo);
+		private static readonly Type _stringType = typeof(string);
+		private static readonly Type _intptrType = typeof(IntPtr);
+		private static readonly Type _uintptrType = typeof(UIntPtr);
+		private static readonly Type _decimalType = typeof(decimal);
 
-		static Type _monoType;
+		private static readonly Type _SerializeValueType = typeof(ISerializable);
+		private static readonly Type _entityComponentType = typeof(EntityComponent);
+
+		private static readonly Type _monoType;
+		private static readonly Type _monoAssemblyType;
+
+		private readonly Type _type;
+		private readonly SerializedObjectType _serializedType;
+
+		public static Type ObjectType { get { return _objectType; } }
+		public static Type DelegateType { get { return _delegateType; } }
+		public Type CachedType { get { return _type; } }
+		public SerializedObjectType SerializedType { get { return _serializedType; } }
 
 		static CachedTypeInfo()
 		{
 			_monoType = Type.GetType("System.MonoType");
+			_monoAssemblyType = Type.GetType("System.Reflection.MonoAssembly");
 		}
 
 		public CachedTypeInfo(Type type)
@@ -49,41 +63,49 @@ namespace CryEngine.Serialization
 			_type = type;
 
 			// Start by writing primitives, these cannot be references
-			if (type == _intptrType)
+			if(type == _intptrType)
 			{
 				_serializedType = SerializedObjectType.IntPtr;
 			}
-			else if (type == _uintptrType)
+			else if(type == _uintptrType)
 			{
 				_serializedType = SerializedObjectType.UIntPtr;
 			}
-			else if (_type.IsPrimitive || _type == _decimalType)
+			else if(_type.IsPrimitive || _type == _decimalType)
 			{
 				_serializedType = (SerializedObjectType)Type.GetTypeCode(_type);
 			}
-			else if (_type.IsEnum)
+			else if(_type.IsEnum)
 			{
 				_serializedType = SerializedObjectType.Enum;
 			}
-			else if (_typeType.IsAssignableFrom(_type) || _type == _monoType)
+			else if(_assemblyType.IsAssignableFrom(_type) || _type == _monoAssemblyType)
+			{
+				_serializedType = SerializedObjectType.Assembly;
+			}
+			else if(_typeType.IsAssignableFrom(_type) || _type == _monoType)
 			{
 				_serializedType = SerializedObjectType.Type;
 			}
-			else if (_type == _stringType)
+			else if(_type == _stringType)
 			{
 				_serializedType = SerializedObjectType.String;
 			}
-			else if (_type.IsArray)
+			else if(_type.IsArray)
 			{
 				_serializedType = SerializedObjectType.Array;
 			}
-			else if (_memberInfoType.IsAssignableFrom(_type))
+			else if(_memberInfoType.IsAssignableFrom(_type))
 			{
 				_serializedType = SerializedObjectType.MemberInfo;
 			}
-			else if (_serializableType.IsAssignableFrom(_type) && _type.GetCustomAttributes(typeof(SerializableAttribute), true).Length > 0)
+			else if(_SerializeValueType.IsAssignableFrom(_type) && _type.GetCustomAttributes<SerializeValueAttribute>(true) != null)
 			{
 				_serializedType = SerializedObjectType.ISerializable;
+			}
+			else if(_entityComponentType.IsAssignableFrom(type))
+			{
+				_serializedType = SerializedObjectType.EntityComponent;
 			}
 			else
 			{
@@ -92,14 +114,14 @@ namespace CryEngine.Serialization
 		}
 
 		/// <summary>
-		///  Gets the reference id of an object if it has already been written
+		/// Gets the reference id of an object if it has already been written
 		/// </summary>
-		/// <param name="obj"></param>
-		/// <param name="objectType"></param>
-		/// <returns></returns>
+		/// <returns><c>true</c>, if the reference was found, <c>false</c> otherwise.</returns>
+		/// <param name="obj">Key to the reference value.</param>
+		/// <param name="referenceId">ID of the reference.</param>
 		public bool HasWrittenReference(object obj, out int referenceId)
 		{
-			if (_objects.TryGetValue(obj, out referenceId))
+			if(_objects.TryGetValue(obj, out referenceId))
 			{
 				return true;
 			}

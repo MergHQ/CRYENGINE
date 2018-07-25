@@ -6,30 +6,28 @@
 
 #include <memory>
 
+struct IAssetEditingSession;
 class CAsset;
 
-namespace CryParticleEditor {
+namespace CryParticleEditor 
+{
 
 class CEffectAsset;
 
 class CEffectAssetModel
 {
 public:
-	CEffectAssetModel();
-
-	void MakeNewAsset();
-	bool OpenAsset(CAsset* pAsset);
-	void ClearAsset();
-
-	CEffectAsset* GetEffectAsset();
+	bool                                  OpenAsset(CAsset* pAsset);
+	void                                  ClearAsset();
+	CEffectAsset*                         GetEffectAsset();
+	std::unique_ptr<IAssetEditingSession> CreateEditingSession();
 
 public:
 	CCrySignal<void()> signalBeginEffectAssetChange;
 	CCrySignal<void()> signalEndEffectAssetChange;
 
 private:
-	std::unique_ptr<CEffectAsset> m_pEffectAsset; //!< There can be at most one active effect asset.
-	int m_nextUntitledAssetId;
+	std::unique_ptr<CEffectAsset> m_pEffectAsset;
 };
 
 }

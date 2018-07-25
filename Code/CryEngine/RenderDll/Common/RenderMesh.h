@@ -575,15 +575,13 @@ public:
 	CGpuBuffer m_adjBuffer;                // buffer containing adjacency information to fix displacement seams
 #endif
 
-	CGpuBuffer m_extraBonesBuffer;
-
-	// shared inputs
+	SMeshBoneMapping_uint16* m_pExtraBoneMapping; //!< 8 weight skinning - complementary data to 4 weight skinning: weights and boneIds for 4-7; i.e., cpu buffer
+	CGpuBuffer m_extraBonesBuffer;                //!< 8 weight skinning - gpu buffer for vertex skinning
 	std::shared_ptr<compute_skinning::IPerMeshDataSupply> m_computeSkinningDataSupply;
 	uint32 m_nMorphs;
 
-	void ComputeSkinningCreateSkinningBuffers(const SVF_W4B_I4S* pBoneMapping, const SMeshBoneMapping_uint16* pExtraBoneMapping);
+	void ComputeSkinningCreateSkinningBuffers(uint32 guid, const SVF_W4B_I4S* pBoneMapping, const SMeshBoneMapping_uint16* pExtraBoneMapping);
 	void ComputeSkinningCreateBindPoseAndMorphBuffers(CMesh& mesh);
-	SMeshBoneMapping_uint16* m_pExtraBoneMapping;
 
 	static void Initialize();
 	static void ShutDown();
@@ -598,6 +596,21 @@ public:
 	void operator delete(void* ptr);
 
 	static void RT_PerFrameTick();
+
+
+private:
+
+	//! Create buffers for 8 weight skinning and ensure they are filled with latest mapped boneIds.
+	//! Bones are remapped according to the remapping table m_arrRemapTable.
+	//! To ensure a correct mapping, the mapping table as well as the original (i.e., unmapped) boneIds are stored.
+	//! The unmapped ids are used in each invocation of mapping to ensure a correct mapping from original boneId to mapped boneId.
+	//! Thus, correct results are achieved for each subsequent invocation, independent of any previous mapping.
+	//! \param pExtraBoneMapping Initial bone mapping.
+	//! \param bDoRemapping Enables remapping according to actual mapping table (i.e., m_arrRemapTable).
+	void CreateExtraBoneMappingBuffers(struct SMeshBoneMapping_uint16 *pExtraBoneMapping, bool bDoRemapping = false);
+	
+	DynArray<JointIdType> m_arrRemapTable; //!< Mapping of skin's bone indices to skeleton's bone indices
+	DynArray<SMeshBoneMapping_uint16> m_arrOriginalBoneIds; //!< Original boneIds after loading / i.e., without remapping
 };
 
 //////////////////////////////////////////////////////////////////////

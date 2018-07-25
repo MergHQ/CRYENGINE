@@ -860,7 +860,7 @@ QVariantMap QFilteringPanel::GetState() const
 	//Getting filter state should be reused for save and load filters
 	if (!m_filters.empty())
 	{
-		state.insert("filterState", GetFilterState());
+		state.insert("filters", GetFilterState());
 	}
 
 	state.insert("expanded", IsExpanded());
@@ -952,6 +952,19 @@ QFilteringPanel::CFilterWidget* QFilteringPanel::AddFilter()
 	m_pFiltersLayout->insertWidget(m_pFiltersLayout->count() - 1, pFilterWidget);
 
 	return pFilterWidget;
+}
+
+void QFilteringPanel::AddFilter(const QString& attributeName, const QString& operatorName, const QString& filterValue)
+{
+	QVariantMap state;
+	state.insert("enabled", true);
+	state.insert("inverted", false);
+	state.insert("attributeName", attributeName);
+	state.insert("operator", operatorName);
+	state.insert("filterValue", filterValue);
+
+	auto filter = AddFilter();
+	filter->SetState(state);
 }
 
 void QFilteringPanel::SaveFilter(const char* filterName)

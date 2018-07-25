@@ -33,7 +33,6 @@
 
 #include "CrySizerStats.h"
 #include "CrySizerImpl.h"
-#include <CrySystem/ITestSystem.h>   // ITestSystem
 #include "VisRegTest.h"
 #include "ThreadProfiler.h"
 #include <CrySystem/Profilers/IDiskProfiler.h>
@@ -81,6 +80,11 @@ void OnWindowStateChanged(ICVar* pCVar)
 /////////////////////////////////////////////////////////////////////////////////
 void CSystem::CreateRendererVars(const SSystemInitParams& startupParams)
 {
+	m_rIntialWindowSizeRatio = REGISTER_FLOAT("r_InitialWindowSizeRatio", 0.666f, VF_DUMPTODISK,
+		"Sets the size ratio of the initial application window in relation to the primary monitor resolution.\n"
+		"Usage: r_InitialWindowSizeRatio [1.0/0.666/..]");
+	const float initialWindowSizeRatio = m_rIntialWindowSizeRatio->GetFVal();
+
 	int iFullScreenDefault  = 1;
 	int iDisplayInfoDefault = 1;
 	int iWidthDefault       = 1280;
@@ -93,8 +97,8 @@ void CSystem::CreateRendererVars(const SSystemInitParams& startupParams)
 	iHeightDefault = 1080;
 #elif CRY_PLATFORM_WINDOWS
 	iFullScreenDefault = 0;
-	iWidthDefault      = GetSystemMetrics(SM_CXFULLSCREEN) * 2 / 3;
-	iHeightDefault     = GetSystemMetrics(SM_CYFULLSCREEN) * 2 / 3;
+	iWidthDefault = static_cast<int>(GetSystemMetrics(SM_CXSCREEN) * initialWindowSizeRatio);
+	iHeightDefault = static_cast<int>(GetSystemMetrics(SM_CYSCREEN) * initialWindowSizeRatio);
 #elif CRY_PLATFORM_LINUX || CRY_PLATFORM_APPLE
 	iFullScreenDefault = 0;
 #endif
@@ -579,7 +583,7 @@ void CSystem::UpdateLoadingScreen()
 #endif
 	t0 = t;
 
-	if (!m_bEditor && !m_bQuit)
+	if (!m_env.IsEditor() && !m_bQuit)
 	{
 		if (m_pProgressListener)
 		{
@@ -689,12 +693,6 @@ void CSystem::Render()
 		{
 			if (!m_env.IsEditing())  // Editor calls it's own rendering update
 			{
-
-#if !defined(_RELEASE)
-				if (m_pTestSystem)
-					m_pTestSystem->BeforeRender();
-#endif
-
 				if (m_env.p3DEngine && !m_env.IsFMVPlaying())
 				{
 					if ((!IsEquivalent(m_ViewCamera.GetPosition(), Vec3(0, 0, 0), VEC_EPSILON) && (!IsLoading())) || // never pass undefined camera to p3DEngine->RenderWorld()
@@ -711,8 +709,6 @@ void CSystem::Render()
 #if !defined(_RELEASE)
 				if (m_pVisRegTest)
 					m_pVisRegTest->AfterRender();
-				if (m_pTestSystem)
-					m_pTestSystem->AfterRender();
 
 				//			m_pProcess->Draw();
 

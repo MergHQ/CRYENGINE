@@ -29,7 +29,7 @@ void MNM::OffMeshNavigation::TileLinks::CopyLinks(TriangleLink* links, uint16 li
 void MNM::OffMeshNavigation::AddLink(NavigationMesh& navigationMesh, const TriangleID startTriangleID, const TriangleID endTriangleID, OffMeshLinkID& linkID)
 {
 	// We only support 1024 links per tile
-	const int kMaxTileLinks = 1024;
+	const int kMaxTileLinks = MNM::Constants::TileOffmeshLinksMaxCount;
 
 	//////////////////////////////////////////////////////////////////////////
 	/// Figure out the tile to operate on.
@@ -126,8 +126,7 @@ void MNM::OffMeshNavigation::RemoveLink(NavigationMesh& navigationMesh, const Tr
 
 	if (tileLinksIt != m_tilesLinks.end())
 	{
-		const int maxTileLinks = 1024;
-		TriangleLink tempTriangleLinks[maxTileLinks];
+		TriangleLink tempTriangleLinks[MNM::Constants::TileOffmeshLinksMaxCount];
 
 		TileLinks& tileLinks = tileLinksIt->second;
 

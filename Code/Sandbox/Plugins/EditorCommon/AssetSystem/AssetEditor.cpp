@@ -337,8 +337,7 @@ bool CAssetEditor::TryCloseAsset()
 			bClose = true;
 			break;
 		case QDialogButtonBox::Discard:
-			OnDiscardAssetChanges();
-			GetAssetBeingEdited()->SetModified(false);
+			DiscardAssetChanges();
 			bClose = true;
 			break;
 		case QDialogButtonBox::No:
@@ -716,6 +715,17 @@ bool CAssetEditor::Save()
 	return InternalSaveAsset(m_assetBeingEdited);
 }
 
+void CAssetEditor::DiscardAssetChanges()
+{
+	CAsset* pAsset = GetAssetBeingEdited();
+	if (pAsset)
+	{
+		CEditableAsset editAsset(*pAsset);
+		OnDiscardAssetChanges(editAsset);
+		pAsset->SetModified(false);
+	}
+}
+
 bool CAssetEditor::OnSave()
 {
 	Save();
@@ -771,8 +781,7 @@ bool CAssetEditor::OnSaveAs()
 	if (pAsset)
 	{
 		// Close previous asset and unconditionally discard all changes.
-		OnDiscardAssetChanges();
-		GetAssetBeingEdited()->SetModified(false);
+		DiscardAssetChanges();
 		OnCloseAsset();
 		CRY_ASSERT(GetAssetBeingEdited() != nullptr);
 		signalAssetClosed(GetAssetBeingEdited());

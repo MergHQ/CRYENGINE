@@ -17,38 +17,29 @@ namespace CryAudio
 //////////////////////////////////////////////////////////////////////////
 CAudioStandaloneFileManager::~CAudioStandaloneFileManager()
 {
-	if (g_pIImpl != nullptr)
-	{
-		Release();
-	}
+	Release();
 }
 
 //////////////////////////////////////////////////////////////////////////
 void CAudioStandaloneFileManager::Release()
 {
-	if (!m_constructedStandaloneFiles.empty())
+	// Don't clear m_constructedStandaloneFiles here as we need the files to survive a middleware switch!
+	for (auto const pStandaloneFile : m_constructedStandaloneFiles)
 	{
-		for (auto const pStandaloneFile : m_constructedStandaloneFiles)
-		{
-			g_pIImpl->DestructStandaloneFile(pStandaloneFile->m_pImplData);
-			delete pStandaloneFile;
-		}
-
-		m_constructedStandaloneFiles.clear();
+		g_pIImpl->DestructStandaloneFile(pStandaloneFile->m_pImplData);
+		pStandaloneFile->m_pImplData = nullptr;
 	}
 }
 
 //////////////////////////////////////////////////////////////////////////
-CATLStandaloneFile* CAudioStandaloneFileManager::ConstructStandaloneFile(char const* const szFile, bool const bLocalized, Impl::ITrigger const* const pITrigger)
+CATLStandaloneFile* CAudioStandaloneFileManager::ConstructStandaloneFile(char const* const szFile, bool const isLocalized, Impl::ITrigger const* const pITrigger)
 {
-	auto pStandaloneFile = new CATLStandaloneFile();
-
-	pStandaloneFile->m_pImplData = g_pIImpl->ConstructStandaloneFile(*pStandaloneFile, szFile, bLocalized, pITrigger);
+	auto const pStandaloneFile = new CATLStandaloneFile();
+	pStandaloneFile->m_pImplData = g_pIImpl->ConstructStandaloneFile(*pStandaloneFile, szFile, isLocalized, pITrigger);
 	pStandaloneFile->m_hashedFilename = CHashedString(szFile);
 
 #if defined(INCLUDE_AUDIO_PRODUCTION_CODE)
-	pStandaloneFile->m_bLocalized = bLocalized;
-	pStandaloneFile->m_pITrigger = pITrigger;
+	pStandaloneFile->m_isLocalized = isLocalized;
 #endif // INCLUDE_AUDIO_PRODUCTION_CODE
 
 	m_constructedStandaloneFiles.push_back(pStandaloneFile);

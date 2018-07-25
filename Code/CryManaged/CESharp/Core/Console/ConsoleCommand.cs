@@ -1,72 +1,108 @@
+// Copyright 2001-2018 Crytek GmbH / Crytek Group. All rights reserved.
+
 using System;
 using System.Collections.Generic;
-using System.Runtime.CompilerServices;
-
-using System.Text;
 using CryEngine.Common;
 
 namespace CryEngine
 {
+	/// <summary>
+	/// Container for the arguments of console commands.
+	/// </summary>
 	public class ConsoleCommandArgumentsHolder
 	{
-		private List<string> m_arguments;
+		private readonly List<string> _arguments;
 
-		ConsoleCommandArgumentsHolder(int length)
+		/// <summary>
+		/// The amount of arguments this container can hold.
+		/// </summary>
+		public int Capacity{ get { return _arguments.Count; } }
+
+		private ConsoleCommandArgumentsHolder(int length)
 		{
-			m_arguments = new List<string>(length);
-		}
-		public void SetArgument(int index, String argument)
-		{
-			if (index >= m_arguments.Capacity)
+			_arguments = new List<string>(length);
+			for(int i = 0; i < length; ++i)
 			{
-				return;
+				_arguments.Add(string.Empty);
 			}
-			m_arguments.Add(argument);
 		}
 
+		/// <summary>
+		/// Set the value of an argument.
+		/// </summary>
+		/// <param name="index"></param>
+		/// <param name="argument"></param>
+		public void SetArgument(int index, string argument)
+		{
+			if(index >= _arguments.Count)
+			{
+				throw new ArgumentOutOfRangeException(nameof(index));
+			}
+			_arguments[index] = argument;
+		}
+
+		/// <summary>
+		/// Get the argument at the specified index.
+		/// </summary>
+		/// <param name="index"></param>
+		/// <returns></returns>
 		public string GetArgument(int index)
 		{
-			if (index >= m_arguments.Capacity)
+			if(index >= _arguments.Count)
 			{
-				return null;
+				throw new ArgumentOutOfRangeException(nameof(index));
 			}
-			return m_arguments[index];
+			return _arguments[index];
 		}
 
+		/// <summary>
+		/// Returns all arguments in an array.
+		/// </summary>
+		/// <returns></returns>
 		public string[] GetAllArguments()
 		{
-			string[] arguments = m_arguments.ToArray();
+			var arguments = _arguments.ToArray();
 			return arguments;
 		}
 	}
 
-	public class ConsoleCommand
+	/// <summary>
+	/// Managed wrapper for console commands that can be invoked through the console.
+	/// </summary>
+	internal class ConsoleCommand
 	{
-		//internal listener for console commands in C++
+		/// <summary>
+		/// internal listener for console commands in C++
+		/// </summary>
 		public delegate void ConsoleCommandFunctionDelegate(IntPtr consoleCommandArg);
 
-		//public listener for console commands in C#
+		/// <summary>
+		/// public listener for console commands in C#
+		/// </summary>
 		public delegate void ManagedConsoleCommandFunctionDelegate(params string[] arguments);
 
 		private static ConsoleCommandFunctionDelegate myDelegate = OnConsoleCommandFunctionInvoked;
 
-		private static IDictionary<string, ManagedConsoleCommandFunctionDelegate> m_commandsAndDelegates;
+		private static IDictionary<string, ManagedConsoleCommandFunctionDelegate> _commandsAndDelegates;
 
 		static ConsoleCommand()
 		{
 			myDelegate = OnConsoleCommandFunctionInvoked;
-			m_commandsAndDelegates = new Dictionary<string, ManagedConsoleCommandFunctionDelegate>();
+			_commandsAndDelegates = new Dictionary<string, ManagedConsoleCommandFunctionDelegate>();
 		}
 
+		/// <summary>
+		/// Destructor that handles cleaning up all console commands.
+		/// </summary>
 		~ConsoleCommand()
 		{
 			//try to unregister
-			foreach(string command in m_commandsAndDelegates.Keys)
+			foreach(string command in _commandsAndDelegates.Keys)
 			{
 				UnregisterManagedConsoleCommandFunction(command);
 			}
-			m_commandsAndDelegates.Clear();
-			m_commandsAndDelegates = null;  
+			_commandsAndDelegates.Clear();
+			_commandsAndDelegates = null;
 		}
 
 		/// <summary>
@@ -85,11 +121,11 @@ namespace CryEngine
 			bool ret = false;
 
 			//check if current console command exist
-			if(!m_commandsAndDelegates.ContainsKey(command))
+			if(!_commandsAndDelegates.ContainsKey(command))
 			{
-				m_commandsAndDelegates.Add(command, managedConsoleCmdDelegate);
+				_commandsAndDelegates.Add(command, managedConsoleCmdDelegate);
 
-				CryEngine.NativeInternals.IConsole.AddConsoleCommandFunction(System.Runtime.InteropServices.Marshal.GetFunctionPointerForDelegate(myDelegate), command, nFlags, commandHelp, true);
+				NativeInternals.IConsole.AddConsoleCommandFunction(System.Runtime.InteropServices.Marshal.GetFunctionPointerForDelegate(myDelegate), command, nFlags, commandHelp, true);
 				ret = true;
 			}
 			return ret;
@@ -98,19 +134,19 @@ namespace CryEngine
 		public static bool UnregisterManagedConsoleCommandFunction(string command)
 		{
 			bool ret = false;
-			if(m_commandsAndDelegates.ContainsKey(command))
+			if(_commandsAndDelegates.ContainsKey(command))
 			{
-				ret = m_commandsAndDelegates.Remove(command);
+				ret = _commandsAndDelegates.Remove(command);
 				Global.gEnv.pConsole.RemoveCommand(command);
 			}
 			return ret;
 		}
 
-		public static void NotifyManagedConsoleCommand(string command, int noArguments, ConsoleCommandArgumentsHolder argumentsHolder)
+		public static void NotifyManagedConsoleCommand(string command, ConsoleCommandArgumentsHolder argumentsHolder)
 		{
-			if(argumentsHolder!=null)
+			if(argumentsHolder != null)
 			{
-				ManagedConsoleCommandFunctionDelegate commandDelegate = m_commandsAndDelegates[command];
+				ManagedConsoleCommandFunctionDelegate commandDelegate = _commandsAndDelegates[command];
 				commandDelegate(argumentsHolder.GetAllArguments());
 			}
 		}
@@ -118,44 +154,6 @@ namespace CryEngine
 		private static void OnConsoleCommandFunctionInvoked(IntPtr arg)
 		{
 			//do nothing
-			
 		}
-
-		/*
-		/// <summary>
-		/// Register a new console command that the user can execute
-		/// </summary>
-		/// <param name="name">Command name.</param>
-		/// <param name="func">Delegate to the console command function to be called when command is invoked.</param>
-		/// <param name="comment">Help string, will be displayed when typing in console "command ?".</param>
-		/// <param name="flags">Bitfield consist of VF_ flags (e.g. VF_CHEAT)</param>
-		public static void Register(string name, ConsoleCommandDelegate func, string comment = "")
-		{
-			IConsole.ConsoleCommandDelegate wrappedFunc = args =>
-			{
-				func(new ConsoleCommandArguments(args));
-			};
-
-			Global.gEnv.pConsole.AddCommand(name, wrappedFunc, 0, comment);
-
-			_instance._commandMap.Add(name, wrappedFunc);
-		}
-
-		static ConsoleCommand()
-		{
-			_instance = new ConsoleCommand();
-		}
-		
-		internal ConsoleCommand()
-		{
-		}
-
-		~ConsoleCommand()
-		{
-			foreach(var command in _commandMap)
-			{
-				Global.gEnv.pConsole.RemoveCommand(command.Key);
-			}
-		}*/
 	}
 }

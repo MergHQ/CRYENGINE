@@ -5,6 +5,7 @@
 #include "AudioCVars.h"
 #include "ATLAudioObject.h"
 #include "PropagationProcessor.h"
+#include "Common.h"
 #include <CrySystem/ITimer.h>
 #include <CryString/CryPath.h>
 #include <CryEntitySystem/IEntitySystem.h>
@@ -101,7 +102,7 @@ CSystem::~CSystem()
 }
 
 //////////////////////////////////////////////////////////////////////////
-void CSystem::AddRequestListener(void (* func)(SRequestInfo const* const), void* const pObjectToListenTo, ESystemEvents const eventMask)
+void CSystem::AddRequestListener(void (*func)(SRequestInfo const* const), void* const pObjectToListenTo, ESystemEvents const eventMask)
 {
 	SAudioManagerRequestData<EAudioManagerRequestType::AddRequestListener> requestData(pObjectToListenTo, func, eventMask);
 	CAudioRequest request(&requestData);
@@ -111,7 +112,7 @@ void CSystem::AddRequestListener(void (* func)(SRequestInfo const* const), void*
 }
 
 //////////////////////////////////////////////////////////////////////////
-void CSystem::RemoveRequestListener(void (* func)(SRequestInfo const* const), void* const pObjectToListenTo)
+void CSystem::RemoveRequestListener(void (*func)(SRequestInfo const* const), void* const pObjectToListenTo)
 {
 	SAudioManagerRequestData<EAudioManagerRequestType::RemoveRequestListener> requestData(pObjectToListenTo, func);
 	CAudioRequest request(&requestData);
@@ -126,14 +127,15 @@ void CSystem::ExternalUpdate()
 	CRY_PROFILE_REGION(PROFILE_AUDIO, "Audio: External Update");
 
 	CRY_ASSERT(gEnv->mMainThreadId == CryGetCurrentThreadId());
-
 	CAudioRequest request;
+
 	while (m_syncCallbacks.dequeue(request))
 	{
 		m_atl.NotifyListener(request);
+
 		if (request.pObject == nullptr)
 		{
-			m_atl.DecrementGlobalObjectSyncCallbackCounter();
+			g_pObject->DecrementSyncCallbackCounter();
 		}
 		else
 		{
@@ -481,9 +483,9 @@ void CSystem::StopFile(char const* const szName, SRequestUserData const& userDat
 
 //////////////////////////////////////////////////////////////////////////
 void CSystem::ReportStartedFile(
-  CATLStandaloneFile& standaloneFile,
-  bool const bSuccessfullyStarted,
-  SRequestUserData const& userData /*= SRequestUserData::GetEmptyObject()*/)
+	CATLStandaloneFile& standaloneFile,
+	bool const bSuccessfullyStarted,
+	SRequestUserData const& userData /*= SRequestUserData::GetEmptyObject()*/)
 {
 	SAudioCallbackManagerRequestData<EAudioCallbackManagerRequestType::ReportStartedFile> requestData(standaloneFile, bSuccessfullyStarted);
 	CAudioRequest request(&requestData);
@@ -508,9 +510,9 @@ void CSystem::ReportStoppedFile(CATLStandaloneFile& standaloneFile, SRequestUser
 
 //////////////////////////////////////////////////////////////////////////
 void CSystem::ReportFinishedEvent(
-  CATLEvent& event,
-  bool const bSuccess,
-  SRequestUserData const& userData /*= SRequestUserData::GetEmptyObject()*/)
+	CATLEvent& event,
+	bool const bSuccess,
+	SRequestUserData const& userData /*= SRequestUserData::GetEmptyObject()*/)
 {
 	SAudioCallbackManagerRequestData<EAudioCallbackManagerRequestType::ReportFinishedEvent> requestData(event, bSuccess);
 	CAudioRequest request(&requestData);
@@ -547,9 +549,9 @@ void CSystem::Refresh(char const* const szLevelName, SRequestUserData const& use
 
 //////////////////////////////////////////////////////////////////////////
 void CSystem::ParseControlsData(
-  char const* const szFolderPath,
-  EDataScope const dataScope,
-  SRequestUserData const& userData /* = SAudioRequestUserData::GetEmptyObject() */)
+	char const* const szFolderPath,
+	EDataScope const dataScope,
+	SRequestUserData const& userData /* = SAudioRequestUserData::GetEmptyObject() */)
 {
 	SAudioManagerRequestData<EAudioManagerRequestType::ParseControlsData> requestData(szFolderPath, dataScope);
 	CAudioRequest request(&requestData);
@@ -562,9 +564,9 @@ void CSystem::ParseControlsData(
 
 //////////////////////////////////////////////////////////////////////////
 void CSystem::ParsePreloadsData(
-  char const* const szFolderPath,
-  EDataScope const dataScope,
-  SRequestUserData const& userData /* = SAudioRequestUserData::GetEmptyObject() */)
+	char const* const szFolderPath,
+	EDataScope const dataScope,
+	SRequestUserData const& userData /* = SAudioRequestUserData::GetEmptyObject() */)
 {
 	SAudioManagerRequestData<EAudioManagerRequestType::ParsePreloadsData> requestData(szFolderPath, dataScope);
 	CAudioRequest request(&requestData);
@@ -613,9 +615,9 @@ void CSystem::RetriggerAudioControls(SRequestUserData const& userData /* = SAudi
 
 //////////////////////////////////////////////////////////////////////////
 void CSystem::ReloadControlsData(
-  char const* const szFolderPath,
-  char const* const szLevelName,
-  SRequestUserData const& userData /* = SAudioRequestUserData::GetEmptyObject() */)
+	char const* const szFolderPath,
+	char const* const szLevelName,
+	SRequestUserData const& userData /* = SAudioRequestUserData::GetEmptyObject() */)
 {
 	SAudioManagerRequestData<EAudioManagerRequestType::ReloadControlsData> requestData(szFolderPath, szLevelName);
 	CAudioRequest request(&requestData);
@@ -847,7 +849,7 @@ void CSystem::ProcessRequests(AudioRequests& requestQueue)
 				{
 					if (m_request.pObject == nullptr)
 					{
-						m_atl.IncrementGlobalObjectSyncCallbackCounter();
+						g_pObject->IncrementSyncCallbackCounter();
 					}
 					else
 					{

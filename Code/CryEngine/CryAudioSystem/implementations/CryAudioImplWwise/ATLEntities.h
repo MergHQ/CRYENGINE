@@ -4,7 +4,7 @@
 
 #include "GlobalData.h"
 
-#include <ATLEntityData.h>
+#include <SharedAudioData.h>
 #include <IAudioImpl.h>
 #include <PoolObject.h>
 #include <AK/SoundEngine/Common/AkTypes.h>
@@ -215,6 +215,7 @@ public:
 		, m_atlEvent(atlEvent_)
 	{}
 
+	CEvent() = delete;
 	CEvent(CEvent const&) = delete;
 	CEvent(CEvent&&) = delete;
 	CEvent& operator=(CEvent const&) = delete;

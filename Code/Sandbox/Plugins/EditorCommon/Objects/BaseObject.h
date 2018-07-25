@@ -9,32 +9,35 @@
 #include "Util/Variable.h"
 #include "CryExtension/CryGUID.h"
 #include "Objects/DisplayContext.h"
+#include "IIconManager.h"
+#include <IUndoObject.h>
 
-//////////////////////////////////////////////////////////////////////////
-// forward declarations.
-class CUndoBaseObject;
-class CObjectArchive;
-struct IEditorMaterial;
+class CAsset;
 class CEdGeometry;
-struct ISelectionGroup;
-struct SRayHitInfo;
+class CGuidCollisionResolver;
+class CGroup;
+class CInspectorWidgetCreator;
+class CObjectArchive;
+class CObjectLayer;
+class CPopupMenuItem;
+class CUndoBaseObject;
+class SubObjectSelectionReferenceFrameCalculator;
+
 struct DisplayContext;
+struct HitContext;
+struct IDisplayViewport;
+struct IEditorMaterial;
+struct IObjectLayer;
 struct IObjectManager;
+struct ISelectionGroup;
 struct IStatObj;
 struct Ray;
-struct IDisplayViewport;
-struct IObjectLayer;
-class SubObjectSelectionReferenceFrameCalculator;
-class CPopupMenuItem;
-class CInspectorWidgetCreator;
-class CObjectLayer;
+struct SRayHitInfo;
+struct SDisplayContext;
 
 //////////////////////////////////////////////////////////////////////////
 typedef _smart_ptr<CBaseObject>     CBaseObjectPtr;
 typedef std::vector<CBaseObjectPtr> TBaseObjects;
-
-class CGroup;
-class CGuidCollisionResolver;
 
 //////////////////////////////////////////////////////////////////////////
 /*!
@@ -178,6 +181,31 @@ public:
 	virtual bool IsScaleDelegated(bool ignoreSelection) const = 0;
 };
 
+class CObjectRenderHelper
+{
+public:
+	CObjectRenderHelper(SDisplayContext& _displayContext, const SRenderingPassInfo& _passinfo) : displayContext(_displayContext), passInfo(_passinfo) {}
+
+	SDisplayContext& GetDisplayContextRef()
+	{
+		return displayContext;
+	}
+
+	const SRenderingPassInfo& GetPassInfo()
+	{
+		return passInfo;
+	}
+
+	void Render(const Matrix34& tm, int objType = eStatObject_Anchor)
+	{
+		displayContext.RenderObject(objType, tm, passInfo);
+	}
+
+private:
+	SDisplayContext&          displayContext;
+	const SRenderingPassInfo& passInfo;
+};
+
 /*!
  *	CBaseObject is the base class for all objects which can be placed in map.
  *	Every object belongs to class specified by ClassDesc.
@@ -198,23 +226,23 @@ public:
 	typedef std::vector<_smart_ptr<CBaseObject>> BaseObjectArray;
 
 	//! Retrieve class description of this object.
-	CObjectClassDesc* GetClassDesc() const { return m_classDesc; };
+	CObjectClassDesc* GetClassDesc() const { return m_classDesc; }
 
 	/** Check if both object are of same class.
 	 */
 	virtual bool       IsSameClass(CBaseObject* obj);
 
-	virtual ObjectType GetType() const { return m_classDesc->GetObjectType(); };
-	//	const char* GetTypeName() const { return m_classDesc->ClassName(); };
+	virtual ObjectType GetType() const { return m_classDesc->GetObjectType(); }
+	//	const char* GetTypeName() const { return m_classDesc->ClassName(); }
 	string             GetTypeName() const;
-	virtual string     GetTypeDescription() const { return m_classDesc->ClassName(); };
+	virtual string     GetTypeDescription() const { return m_classDesc->ClassName(); }
 
 	//////////////////////////////////////////////////////////////////////////
 	// Layer support.
 	//////////////////////////////////////////////////////////////////////////
 	void          SetLayer(string layerFullName);
 	void          SetLayer(IObjectLayer* layer);
-	IObjectLayer* GetLayer() const { return m_layer; };
+	IObjectLayer* GetLayer() const { return m_layer; }
 	void          SetLayerModified();
 
 	static bool   FilterByLayer(CBaseObject const& obj, void* pLayer);
@@ -222,10 +250,10 @@ public:
 	//////////////////////////////////////////////////////////////////////////
 	// Flags.
 	//////////////////////////////////////////////////////////////////////////
-	void SetFlags(int flags)         { m_flags |= flags; };
+	void SetFlags(int flags)         { m_flags |= flags; }
 	int  GetFlags() const            { return m_flags; }
-	void ClearFlags(int flags)       { m_flags &= ~flags; };
-	bool CheckFlags(int flags) const { return (m_flags & flags) != 0; };
+	void ClearFlags(int flags)       { m_flags &= ~flags; }
+	bool CheckFlags(int flags) const { return (m_flags & flags) != 0; }
 
 	//! Returns true if object visible.
 	bool IsVisible() const { return !IsHidden(); }
@@ -247,12 +275,12 @@ public:
 	bool IsSelectable() const;
 
 	// Return texture icon.
-	bool HaveTextureIcon() const      { return m_nTextureIcon != 0; };
+	bool HaveTextureIcon() const      { return m_nTextureIcon != 0; }
 	int  GetTextureIcon() const       { return m_nTextureIcon; }
 	void SetTextureIcon(int nTexIcon) { m_nTextureIcon = nTexIcon; }
 
 	//! Set the name of the entity script. (This is temporary workaround allowing to mark CEntityObject as light source before CEntityObject::InitVariables() call. TODO: Remove it when light object is converted into separate class.)
-	virtual void SetScriptName(const string& file, CBaseObject* pPrev) {};
+	virtual void SetScriptName(const string& file, CBaseObject* pPrev) {}
 
 	//! Set shared between missions flag.
 	virtual void SetShared(bool bShared);
@@ -264,7 +292,7 @@ public:
 	virtual void SetFrozen(bool bFrozen);
 
 	//! Return associated 3DEngine render node
-	virtual struct IRenderNode* GetEngineNode() const { return NULL; };
+	virtual struct IRenderNode* GetEngineNode() const { return nullptr; }
 	//! Set object highlighted (Note: not selected)
 	void                        SetHighlight(bool bHighlight);
 	//! Check if object is highlighted.
@@ -283,7 +311,7 @@ public:
 	//////////////////////////////////////////////////////////////////////////
 	//! Get unique object id.
 	//! Every object will have its own unique id assigned.
-	const CryGUID& GetId() const { return m_guid; };
+	const CryGUID& GetId() const { return m_guid; }
 
 	//////////////////////////////////////////////////////////////////////////
 	// Prefabs support
@@ -343,7 +371,7 @@ public:
 	//! Assign display color to the object.
 	virtual void ChangeColor(ColorB color);
 	//! Get object color.
-	ColorB       GetColor() const { return m_color; };
+	ColorB       GetColor() const { return m_color; }
 
 	//! Set current transform delegate. Pass nullptr to unset.
 	//! When this is set, the delegate takes over the transform of the object. Used for instance for preview with the TrackView.
@@ -371,9 +399,9 @@ public:
 	//! Get child by index.
 	CBaseObject*         GetChild(size_t const i) const;
 	//! Return parent node if exist.
-	CBaseObject*         GetParent() const   { return m_parent; };
+	CBaseObject*         GetParent() const   { return m_parent; }
 	//! Return object we're linked to
-	CBaseObject*         GetLinkedTo() const { return m_pLinkedTo; };
+	CBaseObject*         GetLinkedTo() const { return m_pLinkedTo; }
 	//! Scans hierarchy up to determine if we are a descendant of pObject
 	virtual bool         IsDescendantOf(const CBaseObject* pObject) const;
 	//! Find the link or the parent that owns this object, return null if none exist
@@ -397,10 +425,10 @@ public:
 	//! and if the object is a prefab object, the prefab object should be loaded from the prefab item.
 	//! @param bKeepPos if true Child node will keep its world space position.
 	virtual void AddMember(CBaseObject* pMember, bool bKeepPos = true);
-	virtual void RemoveMember(CBaseObject* pMember, bool bKeepPos = true, bool bPlaceOnRoot = false) {};
+	virtual void RemoveMember(CBaseObject* pMember, bool bKeepPos = true, bool bPlaceOnRoot = false) {}
 
 	//! Detach all children of this node.
-	virtual void DetachAll(bool bKeepPos = true, bool bPlaceOnRoot = false)                                                    {};
+	virtual void DetachAll(bool bKeepPos = true, bool bPlaceOnRoot = false)                                                    {}
 
 	virtual void AttachChildren(std::vector<CBaseObject*>& objects, bool shouldKeepPos = true, bool shouldInvalidateTM = true) {}
 	virtual void DetachChildren(std::vector<CBaseObject*>& objects, bool shouldKeepPos = true, bool shouldPlaceOnRoot = false) {}
@@ -429,7 +457,7 @@ public:
 	// MATRIX
 	//////////////////////////////////////////////////////////////////////////
 	//! Get objects' local transformation matrix.
-	Matrix34 GetLocalTM() const { Matrix34 tm; CalcLocalTM(tm); return tm; };
+	Matrix34 GetLocalTM() const { Matrix34 tm; CalcLocalTM(tm); return tm; }
 
 	//! Get objects' world-space transformation matrix.
 	const Matrix34& GetWorldTM() const;
@@ -442,7 +470,7 @@ public:
 	// Gets matrix of link attachment point
 	virtual Matrix34 GetLinkAttachPointWorldTM() const;
 
-	bool             GetManipulatorMatrix(RefCoordSys coordSys, Matrix34& tm) const;
+	bool             GetManipulatorMatrix(Matrix34& tm) const;
 	// Checks if the attachment point is valid
 	virtual bool     IsParentAttachmentValid() const;
 
@@ -450,7 +478,7 @@ public:
 	virtual void SetWorldPos(const Vec3& pos, int flags = 0);
 
 	//! Get position in world space.
-	Vec3 GetWorldPos() const { return GetWorldTM().GetTranslation(); };
+	Vec3 GetWorldPos() const { return GetWorldTM().GetTranslation(); }
 	Ang3 GetWorldAngles() const;
 
 	//! Set xform of object given in world space.
@@ -473,11 +501,14 @@ public:
 	virtual float GetCreationOffsetFromTerrain() const { return 1.f; }
 
 	//! Draw object to specified viewport.
-	virtual void Display(DisplayContext& disp) = 0;
-
+	virtual void          Display(CObjectRenderHelper& displayInfo) = 0;
+	//! Get selection preview highlight color
+	virtual const ColorB& GetSelectionPreviewHighlightColor() { CRY_ASSERT_MESSAGE(0, "Needs to be defined for specific object type"); return m_color; }
+	//! Draws selection preview highlight
+	virtual void          DrawSelectionPreviewHighlight(SDisplayContext& dc);
 	//! Perform intersection testing of this object.
 	//! Return true if was hit.
-	virtual bool HitTest(HitContext& hc) { return false; };
+	virtual bool HitTest(HitContext& hc) { return false; }
 
 	//! Perform intersection testing of this object with rectangle.
 	//! Return true if was hit.
@@ -510,9 +541,9 @@ public:
 	virtual void Serialize(CObjectArchive& ar);
 
 	//// Preload called before serialize after all objects where completely loaded.
-	//virtual void PreLoad( CObjectArchive &ar ) {};
+	//virtual void PreLoad( CObjectArchive &ar ) {}
 	// Post load called after all objects where completely loaded.
-	virtual void PostLoad(CObjectArchive& ar) {};
+	virtual void PostLoad(CObjectArchive& ar) {}
 
 	//! Export object to xml.
 	//! Return created object node in xml.
@@ -538,18 +569,18 @@ public:
 	// LookAt Target.
 	//////////////////////////////////////////////////////////////////////////
 	virtual void SetLookAt(CBaseObject* target);
-	CBaseObject* GetLookAt() const { return m_lookat; };
+	CBaseObject* GetLookAt() const { return m_lookat; }
 	//! Returns true if this object is a look-at target.
 	bool         IsLookAtTarget() const;
-	CBaseObject* GetLookAtSource() const { return m_lookatSource; };
+	CBaseObject* GetLookAtSource() const { return m_lookatSource; }
 
 	//! Gets physics collision entity of this object.
-	virtual struct IPhysicalEntity* GetCollisionEntity() const { return 0; };
+	virtual struct IPhysicalEntity* GetCollisionEntity() const { return nullptr; }
 
 	IObjectManager*                 GetObjectManager() const;
 
 	//! Store undo information for this object.
-	void StoreUndo(const char* undoDescription, bool minimal = false, int flags = 0);
+	virtual void StoreUndo(const char* undoDescription, bool minimal = false, int flags = 0);
 
 	//////////////////////////////////////////////////////////////////////////
 	//! Material handling for this base object.
@@ -560,11 +591,16 @@ public:
 	//! Assign new material to this object as a material name.
 	virtual void             SetMaterial(const string& materialName);
 	//! Get assigned material for this object.
-	virtual IEditorMaterial* GetMaterial() const       { return m_pMaterial; };
+	virtual IEditorMaterial* GetMaterial() const       { return m_pMaterial; }
 	// Get actual rendering material for this object.
-	virtual IEditorMaterial* GetRenderMaterial() const { return m_pMaterial; };
+	virtual IEditorMaterial* GetRenderMaterial() const { return m_pMaterial; }
 	// Get the material name. Even though the material pointer is null, the material name can exist separately.
 	virtual string           GetMaterialName() const;
+
+	//! Assigns the specified asset to the object, for example to apply material
+	//! \param pHitContext Specifies raycast context, if we are applying the asset via a drag action
+	virtual bool ApplyAsset(const CAsset& asset, HitContext* pHitContext = nullptr);
+	virtual bool CanApplyAsset(const CAsset& asset, string* pApplyTextOut = nullptr) const;
 
 	//////////////////////////////////////////////////////////////////////////
 	//! Analyze errors for this object.
@@ -586,7 +622,7 @@ public:
 	// Material Layers Mask.
 	//////////////////////////////////////////////////////////////////////////
 	virtual void SetMaterialLayersMask(uint32 nLayersMask) { m_nMaterialLayersMask = nLayersMask; }
-	uint32       GetMaterialLayersMask() const             { return m_nMaterialLayersMask; };
+	uint32       GetMaterialLayersMask() const             { return m_nMaterialLayersMask; }
 
 	//////////////////////////////////////////////////////////////////////////
 	// Object minimal usage spec (All/Low/Medium/High)
@@ -598,16 +634,16 @@ public:
 	// SubObj selection.
 	//////////////////////////////////////////////////////////////////////////
 	// Return true if object support selecting of this sub object element type.
-	virtual bool StartSubObjSelection(int elemType)                                                                 { return false; };
-	virtual void EndSubObjectSelection()                                                                            {};
-	virtual void CalculateSubObjectSelectionReferenceFrame(SubObjectSelectionReferenceFrameCalculator* pCalculator) {};
+	virtual bool StartSubObjSelection(int elemType)                                                                 { return false; }
+	virtual void EndSubObjectSelection()                                                                            {}
+	virtual void CalculateSubObjectSelectionReferenceFrame(SubObjectSelectionReferenceFrameCalculator* pCalculator) {}
 
 	// Request a geometry pointer from the object.
 	// Return NULL if geometry can not be retrieved or object does not support geometries.
-	virtual CEdGeometry* GetGeometry() { return 0; };
+	virtual CEdGeometry* GetGeometry() { return nullptr; }
 
 	//! In This function variables of the object must be initialized.
-	virtual void InitVariables() {};
+	virtual void InitVariables() {}
 
 	virtual void OnPropertyChanged(IVariable*);
 	virtual void OnMultiSelPropertyChanged(IVariable*);
@@ -622,9 +658,9 @@ public:
 	//////////////////////////////////////////////////////////////////////////
 	virtual string    GetMouseOverStatisticsText() const { return ""; }
 
-	virtual IStatObj* GetIStatObj()                      { return NULL; }
+	virtual IStatObj* GetIStatObj()                      { return nullptr; }
 	//! Display length of each axis.
-	void              DrawDimensionsImpl(DisplayContext& dc, const AABB& localBoundBox, AABB* pMergedBoundBox = NULL);
+	void              DrawDimensionsImpl(SDisplayContext& dc, const AABB& localBoundBox, AABB* pMergedBoundBox = NULL);
 
 	// Invalidates cached transformation matrix.
 	// nWhyFlags - Flags that indicate the reason for matrix invalidation.
@@ -640,7 +676,7 @@ public:
 	// Update UI variables.
 	void         UpdateUIVars();
 	//! update state to render nodes so that objects can be drawn for highlighting
-	virtual void UpdateHighlightPassState(bool bSelected, bool bHighlighted) {};
+	virtual void UpdateHighlightPassState(bool bSelected, bool bHighlighted) {}
 
 	//! Must be called after cloning the object on clone of object.
 	//! This will make sure object references are cloned correctly.
@@ -668,7 +704,7 @@ protected:
 	virtual void PostInit(const string& file) {}
 
 	//! Must be implemented by derived class to create game related objects.
-	virtual bool CreateGameObject() { return true; };
+	virtual bool CreateGameObject() { return true; }
 
 	/** Called when object is about to be deleted.
 	    All Game resources should be freed in this function.
@@ -677,7 +713,7 @@ protected:
 
 	/** Change current id of object.
 	 */
-	//virtual void SetId( uint32 objectId ) { m_id = objectId; };
+	//virtual void SetId( uint32 objectId ) { m_id = objectId; }
 
 	//! Call this to delete an object.
 	virtual void DeleteThis() = 0;
@@ -702,25 +738,25 @@ protected:
 	void SetColor(ColorB color);
 
 	//! Draw default object items.
-	virtual void DrawDefault(DisplayContext& dc, COLORREF labelColor = RGB(255, 255, 255));
+	virtual void DrawDefault(SDisplayContext& dc, COLORREF labelColor = RGB(255, 255, 255));
 	//! Draw object label.
-	void         DrawLabel(DisplayContext& dc, const Vec3& pos, COLORREF labelColor = RGB(255, 255, 255), float alpha = 1.0f, float size = 1.2f);
+	void         DrawLabel(SDisplayContext& dc, const Vec3& pos, COLORREF labelColor = RGB(255, 255, 255), float alpha = 1.0f, float size = 1.2f);
 	//! Draw selection helper.
-	void         DrawSelectionHelper(DisplayContext& dc, const Vec3& pos, COLORREF labelColor = RGB(255, 255, 255), float alpha = 1.0f);
+	void         DrawSelectionHelper(SDisplayContext& dc, const Vec3& pos, COLORREF labelColor = RGB(255, 255, 255), float alpha = 1.0f);
 	//! Draw helper icon.
-	virtual void DrawTextureIcon(DisplayContext& dc, const Vec3& pos, float alpha = 1.0f, bool bDisplaySelectionHelper = false, float distanceSquared = 0);
+	virtual void DrawTextureIcon(SDisplayContext& dc, const Vec3& pos, float alpha = 1.0f, bool bDisplaySelectionHelper = false, float distanceSquared = 0);
 	//! Draw warning icons
-	virtual void DrawWarningIcons(DisplayContext& dc, const Vec3& pos);
+	virtual void DrawWarningIcons(SDisplayContext& dc, const Vec3& pos);
 	//! Display text with a 3d world coordinate.
-	void         DrawTextOn2DBox(DisplayContext& dc, const Vec3& pos, const char* text, float textScale, const ColorF& TextColor, const ColorF& TextBackColor);
+	void         DrawTextOn2DBox(SDisplayContext& dc, const Vec3& pos, const char* text, float textScale, const ColorF& TextColor, const ColorF& TextBackColor);
 	//! Check if dimension's figures can be displayed before draw them.
-	virtual void DrawDimensions(DisplayContext& dc, AABB* pMergedBoundBox = NULL);
+	virtual void DrawDimensions(SDisplayContext& dc, AABB* pMergedBoundBox = NULL);
 
 	//! Draw highlight.
-	virtual void DrawHighlight(DisplayContext& dc);
+	virtual void DrawHighlight(SDisplayContext& dc);
 
 	//! Returns if the object can be drawn, and if its selection helper should also be drawn.
-	bool CanBeDrawn(const DisplayContext& dc, bool& outDisplaySelectionHelper) const;
+	bool CanBeDrawn(const SDisplayContext& dc, bool& outDisplaySelectionHelper) const;
 
 	//! Returns if object is in the camera view.
 	virtual bool  IsInCameraView(const CCamera& camera);
@@ -758,12 +794,12 @@ protected:
 	//////////////////////////////////////////////////////////////////////////
 	// May be overridden in derived classes to handle helpers scaling.
 	//////////////////////////////////////////////////////////////////////////
-	virtual void  SetHelperScale(float scale) {};
-	virtual float GetHelperScale()            { return 1; };
+	virtual void  SetHelperScale(float scale) {}
+	virtual float GetHelperScale()            { return 1; }
 
-	void          SetDrawTextureIconProperties(DisplayContext& dc, const Vec3& pos, float alpha = 1.0f);
-	const Vec3& GetTextureIconDrawPos() { return m_vDrawIconPos; };
-	int         GetTextureIconFlags()   { return m_nIconFlags; };
+	void          SetDrawTextureIconProperties(SDisplayContext& dc, const Vec3& pos, float alpha = 1.0f);
+	const Vec3& GetTextureIconDrawPos() { return m_vDrawIconPos; }
+	int         GetTextureIconFlags()   { return m_nIconFlags; }
 
 	Matrix33    GetWorldRotTM() const;
 	Matrix33    GetWorldScaleTM() const;
@@ -806,7 +842,7 @@ private:
 	void SetClassDesc(CObjectClassDesc* classDesc);
 
 	// From CObject, (not implemented)
-	virtual void          Serialize(CArchive& ar) {};
+	virtual void          Serialize(CArchive& ar) {}
 
 	EScaleWarningLevel    GetScaleWarningLevel() const;
 	ERotationWarningLevel GetRotationWarningLevel() const;
@@ -933,4 +969,27 @@ public:
 private:
 	//! List of objects that was displayed at last frame.
 	std::vector<_smart_ptr<CBaseObject>> m_objects;
+};
+
+//////////////////////////////////////////////////////////////////////////
+//////////////////////////////////////////////////////////////////////////
+//! Undo object for CBaseObject.
+class EDITOR_COMMON_API CUndoBaseObject : public IUndoObject
+{
+public:
+	CUndoBaseObject(CBaseObject* pObj, const char* undoDescription);
+
+protected:
+	virtual int         GetSize() { return sizeof(*this); }
+	virtual const char* GetDescription() override { return m_undoDescription; };
+	virtual const char* GetObjectName() override;
+
+	virtual void        Undo(bool bUndo) override;
+	virtual void        Redo() override;
+
+protected:
+	string     m_undoDescription;
+	CryGUID    m_guid;
+	XmlNodeRef m_undo;
+	XmlNodeRef m_redo;
 };

@@ -1,0 +1,14 @@
+{
+    "NoUberFile": {
+        "Root": [
+            "SampleAssetEditor.cpp",
+            "SampleAssetEditor.h",
+            "SampleAssetType.cpp",
+            "SampleAssetType.h",
+            "SamplePlugin.cpp",
+            "SamplePlugin.h",
+            "StdAfx.h",
+            "StdAfx.cpp"
+        ]
+    }
+}

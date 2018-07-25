@@ -13,9 +13,10 @@
 
 #include <CryIcon.h>
 
-namespace CryParticleEditor {
+namespace CryParticleEditor 
+{
 
-CEffectAssetWidget::CEffectAssetWidget(std::shared_ptr<CEffectAssetModel>& pEffectAssetModel, QWidget* pParent)
+CEffectAssetWidget::CEffectAssetWidget(CEffectAssetModel* pEffectAssetModel, QWidget* pParent)
 	: QWidget(pParent)
 	, m_pEffectAssetModel(pEffectAssetModel)
 	, m_pEffectAsset(nullptr)
@@ -74,12 +75,6 @@ const char* CEffectAssetWidget::GetName() const
 	return m_pEffectAsset->GetName();
 }
 
-void CEffectAssetWidget::SetModified()
-{
-	CRY_ASSERT(m_pEffectAsset);
-	m_pEffectAsset->SetModified(true);
-}
-
 void CEffectAssetWidget::OnDeleteSelected()
 {
 	if (m_pGraphView)
@@ -117,13 +112,6 @@ void CEffectAssetWidget::OnNewComponent()
 		return;
 
 	m_pEffectAsset->MakeNewComponent(templateFile.toStdString().c_str());
-}
-
-void CEffectAssetWidget::OnOptionsChanged()
-{
-	CRY_ASSERT(m_pEffectAsset);
-	SetModified();
-	m_pEffectAsset->GetEffect()->SetChanged();
 }
 
 bool CEffectAssetWidget::MakeNewComponent(const char* szTemplateName)
