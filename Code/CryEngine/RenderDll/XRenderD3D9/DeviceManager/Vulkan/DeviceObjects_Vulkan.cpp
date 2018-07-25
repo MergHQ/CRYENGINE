@@ -585,7 +585,7 @@ void CDeviceObjectFactory::ReleaseStagingResource(D3DResource* pStaging)
 
 void CDeviceObjectFactory::ReleaseResource(D3DResource* pResource)
 {
-	pResource->Release(); // trigger ReleaseLater with kResourceFlagReusable
+	pResource->Release(); // trigger ReleaseLater without kResourceFlagReusable
 }
 
 void CDeviceObjectFactory::RecycleResource(D3DResource* pResource)

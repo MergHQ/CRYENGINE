@@ -113,20 +113,6 @@ void CDeviceCommandListImpl::EndProfilerEvent(const char* label)
 
 void CDeviceCommandListImpl::ClearStateImpl(bool bOutputMergerOnly) const
 {
-	// TODO: remove when r_GraphicsPipeline=0 algorithms don't exist anymore (and no emulated device-context is used)
-	CD3D9Renderer* const __restrict rd = gcpRendD3D;
-
-	if (rd->GetDeviceContext().IsValid())
-	{
-		D3DDepthSurface* pDSV = 0;
-		D3DSurface*      pRTVs[D3D11_SIMULTANEOUS_RENDER_TARGET_COUNT] = { 0 };
-		D3DUAV*          pUAVs[D3D11_PS_CS_UAV_REGISTER_COUNT] = { 0 };
-
-		if (bOutputMergerOnly)
-			rd->GetDeviceContext().OMSetRenderTargets/*AndUnorderedAccessViews*/(D3D11_SIMULTANEOUS_RENDER_TARGET_COUNT, pRTVs, pDSV/*, 0, D3D11_PS_CS_UAV_REGISTER_COUNT, pUAVs, nullptr*/);
-		else
-			rd->GetDeviceContext().ClearState();
-	}
 }
 
 void CDeviceCommandListImpl::CeaseCommandListEvent(int nPoolId)

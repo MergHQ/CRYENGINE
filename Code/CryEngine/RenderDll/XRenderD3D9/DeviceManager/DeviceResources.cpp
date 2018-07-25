@@ -107,18 +107,19 @@ int32 CDeviceResource::Cleanup()
 	int32 nRef = m_resourceElements ? -1 : 0; // -!!bool
 	if (m_pNativeResource)
 	{
-		const bool bRecycle = m_eFlags & CDeviceObjectFactory::USAGE_HIFREQ_HEAP ? true : false;
-
-		if (bRecycle)
-			nRef = 0;
-		else
-			nRef = m_pNativeResource->Release();
+		nRef = m_pNativeResource->AddRef();
+		nRef = m_pNativeResource->Release();
 
 		// NOTE: CDeviceResource might be shared, take care the texture-pointer stays valid for the other aliases
-		if (!nRef)
+		if (nRef == 1)
 		{
-			if (bRecycle)
+			nRef = 0;
+
+			// NOTE: Heap are ref-counting (first register, then release yourself)
+			if (m_eFlags & CDeviceObjectFactory::USAGE_HIFREQ_HEAP)
 				GetDeviceObjectFactory().RecycleResource(m_pNativeResource);
+			else
+				GetDeviceObjectFactory().ReleaseResource(m_pNativeResource);
 
 			m_pNativeResource = nullptr;
 		}

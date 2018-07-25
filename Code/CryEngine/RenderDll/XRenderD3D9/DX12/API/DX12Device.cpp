@@ -17,6 +17,8 @@
 
 namespace NCryDX12 {
 
+auto GetDebugName = [](ID3D12Resource* pO) -> const char* { UINT len = 511; static char name[512] = "unknown"; pO->GetPrivateData(WKPDID_D3DDebugObjectName, &len, name); name[len] = '\0'; return name; };
+
 //---------------------------------------------------------------------------------------------------------------------
 CDevice* CDevice::Create(CCryDX12GIAdapter* pAdapter, D3D_FEATURE_LEVEL* pFeatureLevel)
 {
@@ -775,6 +777,7 @@ HRESULT STDMETHODCALLTYPE CDevice::SubstituteUsedCommittedResource(
 	if (result == S_OK && *ppSubstituteResource != nullptr)
 	{
 		ReleaseLater(fenceValues, pDisposableResource, true);
+	//	pDisposableResource->Release();
 
 		return S_OK;
 	}
@@ -890,7 +893,9 @@ void CDevice::FlushReleaseHeap(const UINT64 (&completedFenceValues)[CMDQUEUE_NUM
 				}
 				else
 				{
-					it->first->Release();
+					ULONG counter = it->first->Release();
+					DX12_ASSERT(counter == 0, "Ref-Counter of D3D12 resource %s is not 0, memory will leak!", GetDebugName(it->first));
+
 					releases++;
 				}
 
@@ -918,7 +923,7 @@ void CDevice::FlushReleaseHeap(const UINT64 (&completedFenceValues)[CMDQUEUE_NUM
 				// given up for release, they can continue being in use
 				// This means the ref-count here doesn't necessarily need to be 0
 				ULONG counter = it->second.back().pObject->Release();
-				DX12_ASSERT(counter == 0, "Ref-Counter of D3D12 resource is not 0, memory will leak!");
+				DX12_ASSERT(counter == 0, "Ref-Counter of D3D12 resource %s is not 0, memory will leak!", GetDebugName(it->second.back().pObject));
 
 				it->second.pop_back();
 				evictions++;

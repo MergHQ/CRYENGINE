@@ -192,6 +192,8 @@ void CSwapChainBackedRenderDisplayContext::ReleaseResources()
 
 void CSwapChainBackedRenderDisplayContext::ReleaseBackBuffers()
 {
+	// NOTE: Because we want to delete objects referencing swap-chain
+	// resources immediately we have to wait for the GPU to finish using it.
 	GetDeviceObjectFactory().GetCoreCommandList().GetGraphicsInterface()->ClearState(true);
 
 	m_pBackBufferPresented = nullptr;
@@ -205,6 +207,8 @@ void CSwapChainBackedRenderDisplayContext::ReleaseBackBuffers()
 		if (t)
 			t->SetDevTexture(nullptr);
 	}
+
+	GetDeviceObjectFactory().FlushToGPU(true, true);
 
 	m_bSwapProxy = true;
 }
