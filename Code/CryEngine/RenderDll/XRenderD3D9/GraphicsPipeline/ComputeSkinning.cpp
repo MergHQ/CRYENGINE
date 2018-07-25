@@ -16,7 +16,7 @@ const int kMaterialFlagComputeSkinningWithMorphs = 0x04;
 // if it is useful
 const int kMaterialFlagComputeSkinningWithMorphsPostSkinning = 0x08;
 
-void SPerCharacterResources::PushWeights(const int numWeights, const int numWeightsMap, const compute_skinning::SSkinning* w, const compute_skinning::SSkinningMap* weightsMap)
+void SPerCharacterResources::RT_PushWeights(const int numWeights, const int numWeightsMap, const compute_skinning::SSkinning* w, const compute_skinning::SSkinningMap* weightsMap)
 {
 	skinningVector.UpdateBufferContent(w, numWeights);
 	skinningVectorMap.UpdateBufferContent(weightsMap, numWeightsMap);
@@ -32,7 +32,7 @@ size_t SPerCharacterResources::GetSizeBytesGpuBuffers()
 	return total;
 }
 
-void SPerMeshResources::PushMorphs(const int numMorphs, const int numMorphsBitField, const Vec4* pMorphDeltas, const uint64* pMorphsBitField)
+void SPerMeshResources::RT_PushMorphs(const int numMorphs, const int numMorphsBitField, const Vec4* pMorphDeltas, const uint64* pMorphsBitField)
 {
 	morphsDeltas.UpdateBufferContent(pMorphDeltas, numMorphs);
 	morphsBitField.UpdateBufferContent(pMorphsBitField, numMorphsBitField);
@@ -40,7 +40,7 @@ void SPerMeshResources::PushMorphs(const int numMorphs, const int numMorphsBitFi
 	uploadState |= sState_MorphsInitialized;
 }
 
-void SPerMeshResources::PushBindPoseBuffers(const int numVertices, const int numIndices, const int numAdjTriangles, const compute_skinning::SSkinVertexIn* vertices, const vtx_idx* indices, const uint32* adjTris)
+void SPerMeshResources::RT_PushBindPoseBuffers(const int numVertices, const int numIndices, const int numAdjTriangles, const compute_skinning::SSkinVertexIn* vertices, const vtx_idx* indices, const uint32* adjTris)
 {
 	verticesIn.UpdateBufferContent(vertices, numVertices);
 	indicesIn.UpdateBufferContent(indices, numIndices);
