@@ -69,7 +69,7 @@ public:
 		GetThumbnailsView()->GetInternalView()->setDragEnabled(false);
 	}
 
-	virtual void OnDoubleClick(CAsset* pAsset) override
+	virtual void OnActivated(CAsset* pAsset) override
 	{
 		m_pOwner->OnAccept();
 	}

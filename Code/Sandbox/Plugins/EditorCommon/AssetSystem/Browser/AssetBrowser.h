@@ -98,8 +98,8 @@ protected:
 
 	bool         ValidatePath(const QString);
 
-	virtual void OnDoubleClick(CAsset* pAsset);
-	virtual void OnDoubleClick(const QString& folder);
+	virtual void OnActivated(CAsset* pAsset);
+	virtual void OnActivated(const QString& folder);
 
 	virtual void UpdatePreview(const QModelIndex& currentIndex);
 private:
@@ -130,7 +130,7 @@ private:
 	void AppendFilterDependenciesActions(CAbstractMenu* pAbstractMenu, const CAsset* pAsset);
 
 	void OnFolderSelectionChanged(const QStringList& selectedFolders);
-	void OnDoubleClick(const QModelIndex& index);
+	void OnActivated(const QModelIndex& index);
 	void OnCurrentChanged(const QModelIndex& current, const QModelIndex& previous);
 	void OnImport();
 	void OnReimport(const QVector<CAsset*>& assets);

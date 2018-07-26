@@ -1167,8 +1167,8 @@ void CAssetBrowser::InitAssetsView()
 	// Set up double-clicking.
 	{
 		typedef void (CAssetBrowser::* ResolveOverload)(const QModelIndex&);
-		connect(m_detailsView, &QAdvancedTreeView::doubleClicked, this, (ResolveOverload) & CAssetBrowser::OnDoubleClick);
-		connect(m_thumbnailView->GetInternalView(), &QAdvancedTreeView::doubleClicked, this, (ResolveOverload) & CAssetBrowser::OnDoubleClick);
+		connect(m_detailsView, &QAdvancedTreeView::activated, this, (ResolveOverload) & CAssetBrowser::OnActivated);
+		connect(m_thumbnailView->GetInternalView(), &QAbstractItemView::activated, this, (ResolveOverload) & CAssetBrowser::OnActivated);
 	}
 
 	InitNewNameDelegates();
@@ -1901,7 +1901,7 @@ void CAssetBrowser::AppendFilterDependenciesActions(CAbstractMenu* pAbstractMenu
 	}
 }
 
-void CAssetBrowser::OnDoubleClick(const QModelIndex& index)
+void CAssetBrowser::OnActivated(const QModelIndex& index)
 {
 	using namespace Private_AssetBrowser;
 
@@ -1913,13 +1913,13 @@ void CAssetBrowser::OnDoubleClick(const QModelIndex& index)
 			CAsset* pAsset = ToAsset(index);
 			if (pAsset)
 			{
-				OnDoubleClick(pAsset);
+				OnActivated(pAsset);
 			}
 			break;
 		}
 	case eAssetModelRow_Folder:
 		{
-			OnDoubleClick(ToFolderPath(index));
+		OnActivated(ToFolderPath(index));
 			break;
 		}
 	default:
@@ -1928,7 +1928,7 @@ void CAssetBrowser::OnDoubleClick(const QModelIndex& index)
 	}
 }
 
-void CAssetBrowser::OnDoubleClick(CAsset* pAsset)
+void CAssetBrowser::OnActivated(CAsset* pAsset)
 {
 	if (m_pQuickEditTimer)
 	{
@@ -1937,7 +1937,7 @@ void CAssetBrowser::OnDoubleClick(CAsset* pAsset)
 	pAsset->Edit();
 }
 
-void CAssetBrowser::OnDoubleClick(const QString& folder)
+void CAssetBrowser::OnActivated(const QString& folder)
 {
 	m_foldersView->SelectFolder(folder);
 }
@@ -2132,7 +2132,7 @@ bool CAssetBrowser::OnOpen()
 
 	for (CAsset* pAsset : assets)
 	{
-		OnDoubleClick(pAsset);
+		OnActivated(pAsset);
 	}
 	return true;
 }
