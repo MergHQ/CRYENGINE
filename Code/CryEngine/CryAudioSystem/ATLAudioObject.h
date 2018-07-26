@@ -142,8 +142,6 @@ public:
 	void AddStandaloneFile(CATLStandaloneFile* const pStandaloneFile, SUserDataBase const& userDataBase);
 	void SendFinishedTriggerInstanceRequest(SAudioTriggerInstanceState const& audioTriggerInstanceState);
 
-	static CSystem* s_pAudioSystem;
-
 private:
 
 	// CryAudio::IObject

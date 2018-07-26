@@ -82,7 +82,7 @@ CSystem::CSystem()
 	// For occasions such as unit tests pSystem isn't available, we need to skip the step
 	if (gEnv->pSystem != nullptr)
 	{
-		gEnv->pSystem->GetISystemEventDispatcher()->RegisterListener(this, "CryAudio::CSystem");
+		gEnv->pSystem->GetISystemEventDispatcher()->RegisterListener(g_pSystem, "CryAudio::CSystem");
 	}
 
 #if defined(INCLUDE_AUDIO_PRODUCTION_CODE)
@@ -97,7 +97,7 @@ CSystem::~CSystem()
 {
 	if (gEnv->pSystem != nullptr)
 	{
-		gEnv->pSystem->GetISystemEventDispatcher()->RemoveListener(this);
+		gEnv->pSystem->GetISystemEventDispatcher()->RemoveListener(g_pSystem);
 	}
 }
 
@@ -348,7 +348,7 @@ bool CSystem::Initialize()
 #endif // ENABLE_AUDIO_LOGGING
 
 		g_cvars.RegisterVariables();
-		m_atl.Initialize(this);
+		m_atl.Initialize();
 		CRY_ASSERT_MESSAGE(!m_mainThread.IsActive(), "AudioSystem thread active before initialization!");
 		m_mainThread.Init(this);
 		m_mainThread.Activate();
@@ -389,7 +389,8 @@ void CSystem::Release()
 #endif // ENABLE_AUDIO_LOGGING
 
 		m_isInitialized = false;
-		delete this;
+		delete g_pSystem;
+		g_pSystem = nullptr;
 	}
 	else
 	{
@@ -512,7 +513,7 @@ void CSystem::PlayFile(SPlayFileInfo const& playFileInfo, SRequestUserData const
 	SAudioObjectRequestData<EAudioObjectRequestType::PlayFile> requestData(playFileInfo.szFile, playFileInfo.usedTriggerForPlayback, playFileInfo.bLocalized);
 	CAudioRequest request(&requestData);
 	request.flags = userData.flags;
-	request.pOwner = (userData.pOwner != nullptr) ? userData.pOwner : this;
+	request.pOwner = (userData.pOwner != nullptr) ? userData.pOwner : g_pSystem;
 	request.pUserData = userData.pUserData;
 	request.pUserDataOwner = userData.pUserDataOwner;
 	PushRequest(request);

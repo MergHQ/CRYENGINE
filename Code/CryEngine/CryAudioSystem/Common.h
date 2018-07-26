@@ -20,6 +20,7 @@ namespace Impl
 struct IImpl;
 } // namespace Impl
 
+class CSystem;
 class CEventManager;
 class CFileManager;
 class CATLAudioObject;
@@ -33,6 +34,7 @@ class CPauseAllTrigger;
 class CResumeAllTrigger;
 
 extern Impl::IImpl* g_pIImpl;
+extern CSystem* g_pSystem;
 extern CEventManager* g_pEventManager;
 extern CFileManager* g_pFileManager;
 extern CATLAudioObject* g_pObject;

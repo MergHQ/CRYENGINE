@@ -87,7 +87,7 @@ int CPropagationProcessor::OnObstructionTest(EventPhys const* pEvent)
 			SAudioObjectRequestData<EAudioObjectRequestType::ProcessPhysicsRay> requestData(pRayInfo);
 			CAudioRequest request(&requestData);
 			request.pObject = pRayInfo->pObject;
-			CATLAudioObject::s_pAudioSystem->PushRequest(request);
+			g_pSystem->PushRequest(request);
 		}
 		else
 		{
@@ -819,8 +819,7 @@ void CPropagationProcessor::DrawDebugInfo(IRenderAuxGeom& auxGeom, EObjectFlags 
 				Vec3(listenerPosition + up * g_listenerHeadSizeHalf + side * g_listenerHeadSizeHalf),
 				Vec3(listenerPosition + up * -g_listenerHeadSizeHalf + side * g_listenerHeadSizeHalf),
 				Vec3(listenerPosition + up * g_listenerHeadSizeHalf + side * -g_listenerHeadSizeHalf),
-				Vec3(listenerPosition + up * -g_listenerHeadSizeHalf + side * -g_listenerHeadSizeHalf)
-			};
+				Vec3(listenerPosition + up * -g_listenerHeadSizeHalf + side * -g_listenerHeadSizeHalf) };
 
 			auxGeom.DrawTriangles(quadVertices, g_numPoints, g_auxIndices, g_numIndices, m_listenerOcclusionPlaneColor);
 			auxGeom.SetRenderFlags(previousRenderFlags);

@@ -19,8 +19,6 @@
 
 namespace CryAudio
 {
-CSystem* CryAudio::CATLAudioObject::s_pAudioSystem = nullptr;
-
 //////////////////////////////////////////////////////////////////////////
 CATLAudioObject::CATLAudioObject()
 	: m_pImplData(nullptr)
@@ -94,7 +92,7 @@ void CATLAudioObject::SendFinishedTriggerInstanceRequest(SAudioTriggerInstanceSt
 		request.flags = ERequestFlags::CallbackOnAudioThread;
 	}
 
-	s_pAudioSystem->PushRequest(request);
+	g_pSystem->PushRequest(request);
 }
 
 ///////////////////////////////////////////////////////////////////////////
@@ -330,7 +328,7 @@ void CATLAudioObject::ReportFinishedTriggerInstance(ObjectTriggerStates::iterato
 void CATLAudioObject::PushRequest(SAudioRequestData const& requestData, SRequestUserData const& userData)
 {
 	CAudioRequest const request(userData.flags, this, userData.pOwner, userData.pUserData, userData.pUserDataOwner, &requestData);
-	s_pAudioSystem->PushRequest(request);
+	g_pSystem->PushRequest(request);
 }
 
 //////////////////////////////////////////////////////////////////////////

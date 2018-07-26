@@ -103,7 +103,7 @@ void CATLListener::SetTransformation(CObjectTransformation const& transformation
 	request.pOwner = userData.pOwner;
 	request.pUserData = userData.pUserData;
 	request.pUserDataOwner = userData.pUserDataOwner;
-	CATLAudioObject::s_pAudioSystem->PushRequest(request);
+	g_pSystem->PushRequest(request);
 }
 
 //////////////////////////////////////////////////////////////////////////
@@ -154,7 +154,7 @@ void CATLListener::SetName(char const* const szName, SRequestUserData const& use
 	request.pOwner = userData.pOwner;
 	request.pUserData = userData.pUserData;
 	request.pUserDataOwner = userData.pUserDataOwner;
-	CATLAudioObject::s_pAudioSystem->PushRequest(request);
+	g_pSystem->PushRequest(request);
 }
 
 #if defined(INCLUDE_AUDIO_PRODUCTION_CODE)

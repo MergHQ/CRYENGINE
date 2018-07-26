@@ -27,10 +27,12 @@ CCVars g_cvars;
 ///////////////////////////////////////////////////////////////////////////
 bool CreateAudioSystem(SSystemGlobalEnvironment& env)
 {
-	bool bSuccess = false;
-	CSystem* const pSystem = new CSystem;
+	CRY_ASSERT_MESSAGE(g_pSystem == nullptr, "g_pSystem must be nullptr when calling CreateAudioSystem");
 
-	if (pSystem != nullptr)
+	bool bSuccess = false;
+	g_pSystem = new CSystem;
+
+	if (g_pSystem != nullptr)
 	{
 		if (env.pAudioSystem != nullptr)
 		{
@@ -38,8 +40,8 @@ bool CreateAudioSystem(SSystemGlobalEnvironment& env)
 			env.pAudioSystem = nullptr;
 		}
 
-		env.pAudioSystem = static_cast<IAudioSystem*>(pSystem);
-		bSuccess = pSystem->Initialize();
+		env.pAudioSystem = static_cast<IAudioSystem*>(g_pSystem);
+		bSuccess = g_pSystem->Initialize();
 	}
 
 	return bSuccess;

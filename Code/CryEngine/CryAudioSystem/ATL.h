@@ -20,8 +20,6 @@ enum class EInternalStates : EnumFlagsType
 };
 CRY_CREATE_ENUM_FLAG_OPERATORS(EInternalStates);
 
-class CSystem;
-
 class CAudioTranslationLayer final : public IInputEventListener
 {
 public:
@@ -38,7 +36,7 @@ public:
 	virtual bool OnInputEvent(SInputEvent const& event) override;
 	// ~IInputEventListener
 
-	void        Initialize(CSystem* const pSystem);
+	void        Initialize();
 	bool        ShutDown();
 	void        ProcessRequest(CAudioRequest& request);
 	void        Update(float const deltaTime);

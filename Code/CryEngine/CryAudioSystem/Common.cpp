@@ -12,6 +12,7 @@
 namespace CryAudio
 {
 Impl::IImpl* g_pIImpl = nullptr;
+CSystem* g_pSystem = nullptr;
 CEventManager* g_pEventManager = nullptr;
 CFileManager* g_pFileManager = nullptr;
 CATLAudioObject* g_pObject = nullptr;

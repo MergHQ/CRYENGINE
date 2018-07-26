@@ -91,7 +91,7 @@ CAudioTranslationLayer::~CAudioTranslationLayer()
 }
 
 ///////////////////////////////////////////////////////////////////////////
-void CAudioTranslationLayer::Initialize(CSystem* const pSystem)
+void CAudioTranslationLayer::Initialize()
 {
 	// Add the callback for the obstruction calculation.
 	gEnv->pPhysicalWorld->AddEventClient(
@@ -99,7 +99,6 @@ void CAudioTranslationLayer::Initialize(CSystem* const pSystem)
 		&CPropagationProcessor::OnObstructionTest,
 		1);
 
-	CATLAudioObject::s_pAudioSystem = pSystem;
 	g_pEventManager = &m_eventMgr;
 	g_pFileManager = &m_fileMgr;
 
@@ -1602,7 +1601,7 @@ void CAudioTranslationLayer::DrawAudioSystemDebugInfo()
 		DrawATLComponentDebugInfo(*pAuxGeom, posX, posY);
 	}
 
-	CATLAudioObject::s_pAudioSystem->ScheduleIRenderAuxGeomForRendering(pAuxGeom);
+	g_pSystem->ScheduleIRenderAuxGeomForRendering(pAuxGeom);
 }
 
 ///////////////////////////////////////////////////////////////////////////
