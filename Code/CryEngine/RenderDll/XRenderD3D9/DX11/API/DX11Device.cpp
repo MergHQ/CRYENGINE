@@ -5,7 +5,11 @@
 
 namespace NCryDX11 {
 
+#if !defined(RELEASE) && CRY_PLATFORM_WINDOWS
 auto GetDebugName = [](ID3D11Resource* pO) -> const char* { UINT len = 511; static char name[512] = "unknown"; pO->GetPrivateData(WKPDID_D3DDebugObjectName, &len, name); name[len] = '\0'; return name; };
+#else
+auto GetDebugName = [](ID3D11Resource* pO) -> const char* { return "unknown"; };
+#endif
 
 //---------------------------------------------------------------------------------------------------------------------
 CDevice* CDevice::Create(IDXGIAdapter* pAdapter, D3D_FEATURE_LEVEL* pFeatureLevel)
