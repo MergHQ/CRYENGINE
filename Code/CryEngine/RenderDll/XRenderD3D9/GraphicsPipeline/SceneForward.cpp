@@ -95,7 +95,7 @@ void CSceneForwardStage::Update()
 			// Depth
 			pDepthTexture,
 			// Color 0
-			CRendererResources::s_ptexHDRTarget
+			CRendererResources::s_ptexSceneDiffuse 
 		);
 
 		m_forwardOverlayPass.SetLabel("FORWARD_OVERLAY");
