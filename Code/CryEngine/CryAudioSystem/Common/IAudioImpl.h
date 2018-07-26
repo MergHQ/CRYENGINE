@@ -53,24 +53,17 @@ struct IImpl
 	/**
 	 * Shuts down all of the internal components and the audio middleware.
 	 * Note: After a call to ShutDown(), the system can still be reinitialized by calling Init().
-	 * @return ERequestStatus::Success if the shutdown was successful, ERequestStatus::Failure otherwise.
+	 * @return void
 	 * @see Release, Init
 	 */
-	virtual ERequestStatus ShutDown() = 0;
-
-	/**
-	 * Called before the middleware is shutdown to give it time to clean up. After this call all the ATL audio objects and events will be released.
-	 * @return ERequestStatus::Success if the action was successful, ERequestStatus::Failure otherwise.
-	 * @see ShutDown, Release, Init
-	 */
-	virtual ERequestStatus OnBeforeShutDown() = 0;
+	virtual void ShutDown() = 0;
 
 	/**
 	 * Frees all of the resources used by the class and destroys the instance. This action is not reversible.
-	 * @return ERequestStatus::Success if the action was successful, ERequestStatus::Failure otherwise.
+	 * @return void
 	 * @see ShutDown, Init
 	 */
-	virtual ERequestStatus Release() = 0;
+	virtual void Release() = 0;
 
 	/**
 	 * Perform a "hot restart" of the audio middleware. Reset all of the internal data.

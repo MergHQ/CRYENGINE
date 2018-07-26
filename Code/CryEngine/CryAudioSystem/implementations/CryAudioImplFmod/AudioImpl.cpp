@@ -136,37 +136,25 @@ ERequestStatus CImpl::Init(uint32 const objectPoolSize, uint32 const eventPoolSi
 }
 
 ///////////////////////////////////////////////////////////////////////////
-ERequestStatus CImpl::OnBeforeShutDown()
+void CImpl::ShutDown()
 {
-	return ERequestStatus::Success;
-}
-
-///////////////////////////////////////////////////////////////////////////
-ERequestStatus CImpl::ShutDown()
-{
-	FMOD_RESULT fmodResult = FMOD_OK;
-
 	if (m_pSystem != nullptr)
 	{
 		UnloadMasterBanks();
 
-		fmodResult = m_pSystem->release();
+		FMOD_RESULT const fmodResult = m_pSystem->release();
 		ASSERT_FMOD_OK;
 	}
-
-	return (fmodResult == FMOD_OK) ? ERequestStatus::Success : ERequestStatus::Failure;
 }
 
 ///////////////////////////////////////////////////////////////////////////
-ERequestStatus CImpl::Release()
+void CImpl::Release()
 {
 	delete this;
 	g_cvars.UnregisterVariables();
 
 	CObject::FreeMemoryPool();
 	CEvent::FreeMemoryPool();
-
-	return ERequestStatus::Success;
 }
 
 ///////////////////////////////////////////////////////////////////////////

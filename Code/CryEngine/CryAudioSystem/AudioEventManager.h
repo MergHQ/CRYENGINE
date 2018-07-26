@@ -23,6 +23,7 @@ public:
 
 	void           Init(uint32 const poolSize);
 	void           OnAfterImplChanged();
+	void           ReleaseImplData();
 	void           Release();
 
 	CATLEvent*     ConstructEvent();

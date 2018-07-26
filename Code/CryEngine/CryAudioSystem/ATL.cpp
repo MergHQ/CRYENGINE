@@ -101,7 +101,7 @@ void CAudioTranslationLayer::Initialize(CSystem* const pSystem)
 
 	CATLAudioObject::s_pAudioSystem = pSystem;
 	g_pEventManager = &m_eventMgr;
-	g_pFileManager = &m_audioStandaloneFileMgr;
+	g_pFileManager = &m_fileMgr;
 
 	m_objectPoolSize = std::max<uint32>(g_cvars.m_audioObjectPoolSize, 1);
 	m_eventPoolSize = std::max<uint32>(g_cvars.m_audioEventPoolSize, 1);
@@ -611,7 +611,7 @@ ERequestStatus CAudioTranslationLayer::ProcessAudioCallbackManagerRequest(CAudio
 				g_pObject->ReportFinishedStandaloneFile(&audioStandaloneFile);
 			}
 
-			m_audioStandaloneFileMgr.ReleaseStandaloneFile(&audioStandaloneFile);
+			m_fileMgr.ReleaseStandaloneFile(&audioStandaloneFile);
 
 			result = ERequestStatus::Success;
 
@@ -1114,8 +1114,7 @@ ERequestStatus CAudioTranslationLayer::SetImpl(Impl::IImpl* const pIImpl)
 		// There's no need to call Shutdown when the initialization failed as
 		// we expect the implementation to clean-up itself if it couldn't be initialized
 
-		result = g_pIImpl->Release(); // Release the engine specific data.
-		CRY_ASSERT(result == ERequestStatus::Success);
+		g_pIImpl->Release(); // Release the engine specific data.
 
 		auto const pImpl = new Impl::Null::CImpl();
 		CRY_ASSERT(pImpl != nullptr);
@@ -1147,15 +1146,14 @@ ERequestStatus CAudioTranslationLayer::SetImpl(Impl::IImpl* const pIImpl)
 ///////////////////////////////////////////////////////////////////////////
 void CAudioTranslationLayer::ReleaseImpl()
 {
-	// During audio middleware shutdown we do not allow for any new requests originating from the "dying" audio middleware!
+	// Reject new requests during shutdown.
 	m_flags |= EInternalStates::AudioMiddlewareShuttingDown;
 
-	g_pIImpl->OnBeforeShutDown();
-
-	m_audioStandaloneFileMgr.Release();
-	m_audioListenerMgr.Release();
-	m_eventMgr.Release();
-	m_objectMgr.Release();
+	// Release middleware specific data before its shutdown.
+	m_fileMgr.ReleaseImplData();
+	m_audioListenerMgr.ReleaseImplData();
+	m_eventMgr.ReleaseImplData();
+	m_objectMgr.ReleaseImplData();
 
 	g_pIImpl->DestructObject(g_pObject->GetImplDataPtr());
 	g_pObject->SetImplDataPtr(nullptr);
@@ -1167,15 +1165,16 @@ void CAudioTranslationLayer::ReleaseImpl()
 	m_xmlProcessor.ClearControlsData(EDataScope::All);
 	ClearInternalControls();
 
-	m_fileCacheMgr.Release();
-
-	ERequestStatus result = g_pIImpl->ShutDown(); // Shut down the audio middleware.
-	CRY_ASSERT(result == ERequestStatus::Success);
-
-	result = g_pIImpl->Release(); // Release the engine specific data.
-	CRY_ASSERT(result == ERequestStatus::Success);
-
+	g_pIImpl->ShutDown();
+	g_pIImpl->Release();
 	g_pIImpl = nullptr;
+
+	// Release engine specific data after impl shut down to prevent dangling data accesses during shutdown.
+	m_eventMgr.Release();
+	m_fileMgr.Release();
+	m_objectMgr.Release();
+	m_audioListenerMgr.Release();
+
 	m_flags &= ~EInternalStates::AudioMiddlewareShuttingDown;
 }
 
@@ -1649,7 +1648,7 @@ void CAudioTranslationLayer::DrawATLComponentDebugInfo(IRenderAuxGeom& auxGeom, 
 
 	if ((g_cvars.m_drawAudioDebug & Debug::EDrawFilter::StandaloneFiles) != 0)
 	{
-		m_audioStandaloneFileMgr.DrawDebugInfo(auxGeom, listenerPosition, posX, posY);
+		m_fileMgr.DrawDebugInfo(auxGeom, listenerPosition, posX, posY);
 	}
 }
 

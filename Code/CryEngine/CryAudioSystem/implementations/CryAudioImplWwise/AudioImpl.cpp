@@ -563,25 +563,7 @@ ERequestStatus CImpl::Init(uint32 const objectPoolSize, uint32 const eventPoolSi
 }
 
 ///////////////////////////////////////////////////////////////////////////
-ERequestStatus CImpl::OnBeforeShutDown()
-{
-	AK::SoundEngine::Query::AkGameObjectsList objectList;
-	AK::SoundEngine::Query::GetActiveGameObjects(objectList);
-	AkUInt32 const length = objectList.Length();
-
-	for (AkUInt32 i = 0; i < length; ++i)
-	{
-		// This call requires at least Wwise v2017.1.0.
-		AK::SoundEngine::CancelEventCallbackGameObject(objectList[i]);
-	}
-
-	objectList.Term();
-
-	return ERequestStatus::Success;
-}
-
-///////////////////////////////////////////////////////////////////////////
-ERequestStatus CImpl::ShutDown()
+void CImpl::ShutDown()
 {
 	AKRESULT wwiseResult = AK_Fail;
 
@@ -630,6 +612,17 @@ ERequestStatus CImpl::ShutDown()
 		//	Cry::Audio::Log(eALT_WARNING, "AK::SoundEngine::UnregisterGlobalCallback() returned AKRESULT %d", wwiseResult);
 		//}
 
+		AK::SoundEngine::Query::AkGameObjectsList objectList;
+		AK::SoundEngine::Query::GetActiveGameObjects(objectList);
+		AkUInt32 const length = objectList.Length();
+
+		for (AkUInt32 i = 0; i < length; ++i)
+		{
+			// This call requires at least Wwise v2017.1.0.
+			AK::SoundEngine::CancelEventCallbackGameObject(objectList[i]);
+		}
+
+		objectList.Term();
 		AK::SoundEngine::Term();
 	}
 
@@ -656,12 +649,10 @@ ERequestStatus CImpl::ShutDown()
 		m_pOculusSpatializerLibrary = nullptr;
 	}
 #endif  // WWISE_USE_OCULUS
-
-	return ERequestStatus::Success;
 }
 
 ///////////////////////////////////////////////////////////////////////////
-ERequestStatus CImpl::Release()
+void CImpl::Release()
 {
 	delete this;
 	g_pImpl = nullptr;
@@ -669,8 +660,6 @@ ERequestStatus CImpl::Release()
 
 	CObject::FreeMemoryPool();
 	CEvent::FreeMemoryPool();
-
-	return ERequestStatus::Success;
 }
 
 ///////////////////////////////////////////////////////////////////////////

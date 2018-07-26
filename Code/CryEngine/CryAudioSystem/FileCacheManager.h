@@ -35,7 +35,9 @@ class CFileCacheManager final : public IStreamCallback
 public:
 
 	explicit CFileCacheManager(AudioPreloadRequestLookup& preloadRequests);
+	~CFileCacheManager();
 
+	CFileCacheManager() = delete;
 	CFileCacheManager(CFileCacheManager const&) = delete;
 	CFileCacheManager(CFileCacheManager&&) = delete;
 	CFileCacheManager& operator=(CFileCacheManager const&) = delete;
@@ -43,7 +45,6 @@ public:
 
 	// Public methods
 	void           Init();
-	void           Release();
 	FileEntryId    TryAddFileCacheEntry(XmlNodeRef const pFileNode, EDataScope const dataScope, bool const bAutoLoad);
 	bool           TryRemoveFileCacheEntry(FileEntryId const audioFileEntryId, EDataScope const dataScope);
 	void           UpdateLocalizedFileCacheEntries();

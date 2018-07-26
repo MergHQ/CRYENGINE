@@ -97,25 +97,19 @@ ERequestStatus CImpl::Init(uint32 const objectPoolSize, uint32 const eventPoolSi
 		SoundEngine::RegisterStandaloneFileFinishedCallback(OnStandaloneFileFinished);
 		return ERequestStatus::Success;
 	}
+
 	return ERequestStatus::Failure;
 }
 
 ///////////////////////////////////////////////////////////////////////////
-ERequestStatus CImpl::OnBeforeShutDown()
+void CImpl::ShutDown()
 {
-	return ERequestStatus::Success;
 }
 
 ///////////////////////////////////////////////////////////////////////////
-ERequestStatus CImpl::ShutDown()
+void CImpl::Release()
 {
-	return ERequestStatus::Success;
-}
-
-///////////////////////////////////////////////////////////////////////////
-ERequestStatus CImpl::Release()
-{
-	if (m_pCVarFileExtension)
+	if (m_pCVarFileExtension != nullptr)
 	{
 		m_pCVarFileExtension->Release();
 		m_pCVarFileExtension = nullptr;
@@ -128,8 +122,6 @@ ERequestStatus CImpl::Release()
 
 	CObject::FreeMemoryPool();
 	CEvent::FreeMemoryPool();
-
-	return ERequestStatus::Success;
 }
 
 ///////////////////////////////////////////////////////////////////////////

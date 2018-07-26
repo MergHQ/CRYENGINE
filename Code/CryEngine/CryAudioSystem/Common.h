@@ -21,7 +21,7 @@ struct IImpl;
 } // namespace Impl
 
 class CEventManager;
-class CAudioStandaloneFileManager;
+class CFileManager;
 class CATLAudioObject;
 class CAbsoluteVelocityParameter;
 class CRelativeVelocityParameter;
@@ -34,7 +34,7 @@ class CResumeAllTrigger;
 
 extern Impl::IImpl* g_pIImpl;
 extern CEventManager* g_pEventManager;
-extern CAudioStandaloneFileManager* g_pFileManager;
+extern CFileManager* g_pFileManager;
 extern CATLAudioObject* g_pObject;
 extern CAbsoluteVelocityParameter* g_pAbsoluteVelocityParameter;
 extern CRelativeVelocityParameter* g_pRelativeVelocityParameter;

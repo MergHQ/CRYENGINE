@@ -26,15 +26,15 @@ CFileCacheManager::CFileCacheManager(AudioPreloadRequestLookup& preloadRequests)
 }
 
 //////////////////////////////////////////////////////////////////////////
-void CFileCacheManager::Init()
+CFileCacheManager::~CFileCacheManager()
 {
-	AllocateHeap(static_cast<size_t>(g_cvars.m_fileCacheManagerSize), "AudioFileCacheManager");
+	CRY_ASSERT_MESSAGE(m_audioFileEntries.empty(), "There are still file entries during CFileCacheManager destruction!");
 }
 
 //////////////////////////////////////////////////////////////////////////
-void CFileCacheManager::Release()
+void CFileCacheManager::Init()
 {
-	CRY_ASSERT(m_audioFileEntries.empty());
+	AllocateHeap(static_cast<size_t>(g_cvars.m_fileCacheManagerSize), "AudioFileCacheManager");
 }
 
 //////////////////////////////////////////////////////////////////////////

@@ -16,10 +16,7 @@ namespace CryAudio
 //////////////////////////////////////////////////////////////////////////
 CEventManager::~CEventManager()
 {
-	if (g_pIImpl != nullptr)
-	{
-		Release();
-	}
+	CRY_ASSERT_MESSAGE(m_constructedEvents.empty(), "There are still events during CEventManager destruction!");
 }
 
 //////////////////////////////////////////////////////////////////////////
@@ -35,23 +32,29 @@ void CEventManager::OnAfterImplChanged()
 }
 
 //////////////////////////////////////////////////////////////////////////
+void CEventManager::ReleaseImplData()
+{
+	for (auto const pEvent : m_constructedEvents)
+	{
+		g_pIImpl->DestructEvent(pEvent->m_pImplData);
+		pEvent->Release();
+	}
+}
+
+//////////////////////////////////////////////////////////////////////////
 void CEventManager::Release()
 {
 	// Events cannot survive a middleware switch because we cannot
 	// know which event types the new middleware backend will support so
 	// the existing ones have to be destroyed now and new ones created
 	// after the switch.
-	if (!m_constructedEvents.empty())
+	for (auto const pEvent : m_constructedEvents)
 	{
-		for (auto const pEvent : m_constructedEvents)
-		{
-			g_pIImpl->DestructEvent(pEvent->m_pImplData);
-			pEvent->Release();
-			delete pEvent;
-		}
-
-		m_constructedEvents.clear();
+		CRY_ASSERT_MESSAGE(pEvent->m_pImplData == nullptr, "An event cannot have valid impl data during CEventManager::Release!");
+		delete pEvent;
 	}
+
+	m_constructedEvents.clear();
 }
 
 //////////////////////////////////////////////////////////////////////////

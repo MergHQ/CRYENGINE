@@ -25,7 +25,7 @@ static constexpr SwitchStateId OcclusionTypeStateIds[IntegralValue(EOcclusionTyp
 
 class CSystem;
 class CEventManager;
-class CAudioStandaloneFileManager;
+class CFileManager;
 
 enum class ETriggerStatus : EnumFlagsType
 {

@@ -72,18 +72,18 @@ private:
 	AudioEnvironmentLookup    m_environments;
 
 	// Components
-	CAudioStandaloneFileManager m_audioStandaloneFileMgr;
-	CEventManager               m_eventMgr;
-	CObjectManager              m_objectMgr;
-	CAudioListenerManager       m_audioListenerMgr;
-	CFileCacheManager           m_fileCacheMgr;
-	CAudioEventListenerManager  m_audioEventListenerMgr;
-	CAudioXMLProcessor          m_xmlProcessor;
+	CFileManager               m_fileMgr;
+	CEventManager              m_eventMgr;
+	CObjectManager             m_objectMgr;
+	CAudioListenerManager      m_audioListenerMgr;
+	CFileCacheManager          m_fileCacheMgr;
+	CAudioEventListenerManager m_audioEventListenerMgr;
+	CAudioXMLProcessor         m_xmlProcessor;
 
-	SInternalControls           m_internalControls;
+	SInternalControls          m_internalControls;
 
-	uint32                      m_objectPoolSize = 0;
-	uint32                      m_eventPoolSize = 0;
+	uint32                     m_objectPoolSize = 0;
+	uint32                     m_eventPoolSize = 0;
 
 	// Utility members
 	EInternalStates                    m_flags = EInternalStates::None;

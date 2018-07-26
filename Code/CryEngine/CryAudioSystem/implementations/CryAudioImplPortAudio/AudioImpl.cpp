@@ -62,13 +62,7 @@ ERequestStatus CImpl::Init(uint32 const objectPoolSize, uint32 const eventPoolSi
 }
 
 ///////////////////////////////////////////////////////////////////////////
-ERequestStatus CImpl::OnBeforeShutDown()
-{
-	return ERequestStatus::Success;
-}
-
-///////////////////////////////////////////////////////////////////////////
-ERequestStatus CImpl::ShutDown()
+void CImpl::ShutDown()
 {
 	PaError const err = Pa_Terminate();
 
@@ -77,19 +71,16 @@ ERequestStatus CImpl::ShutDown()
 		Cry::Audio::Log(ELogType::Error, "Failed to shut down PortAudio: %s", Pa_GetErrorText(err));
 	}
 
-	return (err == paNoError) ? ERequestStatus::Success : ERequestStatus::Failure;
 }
 
 ///////////////////////////////////////////////////////////////////////////
-ERequestStatus CImpl::Release()
+void CImpl::Release()
 {
 	delete this;
 	g_cvars.UnregisterVariables();
 
 	CObject::FreeMemoryPool();
 	CEvent::FreeMemoryPool();
-
-	return ERequestStatus::Success;
 }
 
 ///////////////////////////////////////////////////////////////////////////
@@ -337,12 +328,12 @@ ITrigger const* CImpl::ConstructTrigger(XmlNodeRef const pRootNode)
 				}
 
 				pTrigger = new CTrigger(
-				  StringToId(path.c_str()),
-				  numLoops,
-				  static_cast<double>(sfInfo.samplerate),
-				  eventType,
-				  path.c_str(),
-				  streamParameters);
+					StringToId(path.c_str()),
+					numLoops,
+					static_cast<double>(sfInfo.samplerate),
+					eventType,
+					path.c_str(),
+					streamParameters);
 
 				int const failure = sf_close(pSndFile);
 

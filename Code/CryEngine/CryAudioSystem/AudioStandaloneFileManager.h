@@ -17,21 +17,22 @@ namespace Impl
 struct ITrigger;
 } // namespace Impl
 
-class CAudioStandaloneFileManager final
+class CFileManager final
 {
 public:
 
-	CAudioStandaloneFileManager() = default;
-	~CAudioStandaloneFileManager();
+	CFileManager() = default;
+	~CFileManager();
 
-	CAudioStandaloneFileManager(CAudioStandaloneFileManager const&) = delete;
-	CAudioStandaloneFileManager(CAudioStandaloneFileManager&&) = delete;
-	CAudioStandaloneFileManager& operator=(CAudioStandaloneFileManager const&) = delete;
-	CAudioStandaloneFileManager& operator=(CAudioStandaloneFileManager&&) = delete;
+	CFileManager(CFileManager const&) = delete;
+	CFileManager(CFileManager&&) = delete;
+	CFileManager&       operator=(CFileManager const&) = delete;
+	CFileManager&       operator=(CFileManager&&) = delete;
 
-	void                         Release();
-	CATLStandaloneFile*          ConstructStandaloneFile(char const* const szFile, bool const bLocalized, Impl::ITrigger const* const pITrigger = nullptr);
-	void                         ReleaseStandaloneFile(CATLStandaloneFile* const pStandaloneFile);
+	void                ReleaseImplData();
+	void                Release();
+	CATLStandaloneFile* ConstructStandaloneFile(char const* const szFile, bool const bLocalized, Impl::ITrigger const* const pITrigger = nullptr);
+	void                ReleaseStandaloneFile(CATLStandaloneFile* const pStandaloneFile);
 
 private:
 

@@ -22,9 +22,8 @@ public:
 	// CryAudio::Impl::IImpl
 	virtual void                Update() override;
 	virtual ERequestStatus      Init(uint32 const objectPoolSize, uint32 const eventPoolSize) override;
-	virtual ERequestStatus      OnBeforeShutDown() override;
-	virtual ERequestStatus      ShutDown() override;
-	virtual ERequestStatus      Release() override;
+	virtual void                ShutDown() override;
+	virtual void                Release() override;
 	virtual ERequestStatus      OnLoseFocus() override;
 	virtual ERequestStatus      OnGetFocus() override;
 	virtual ERequestStatus      MuteAll() override;
