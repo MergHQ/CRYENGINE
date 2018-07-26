@@ -49,12 +49,9 @@ bool CreateAudioSystem(SSystemGlobalEnvironment& env)
 void PrepareAudioSystem(CSystem* const pAudioSystem)
 {
 	CryFixedStringT<MaxFilePathLength> const temp(pAudioSystem->GetConfigPath());
-
-	// Must be blocking requests.
-	SRequestUserData const data(ERequestFlags::ExecuteBlocking);
-	pAudioSystem->ParseControlsData(temp.c_str(), EDataScope::Global, data);
-	pAudioSystem->ParsePreloadsData(temp.c_str(), EDataScope::Global, data);
-	pAudioSystem->PreloadSingleRequest(GlobalPreloadRequestId, false, data);
+	pAudioSystem->ParseControlsData(temp.c_str(), EDataScope::Global);
+	pAudioSystem->ParsePreloadsData(temp.c_str(), EDataScope::Global);
+	pAudioSystem->PreloadSingleRequest(GlobalPreloadRequestId, false);
 }
 
 //////////////////////////////////////////////////////////////////////////////////////////////
