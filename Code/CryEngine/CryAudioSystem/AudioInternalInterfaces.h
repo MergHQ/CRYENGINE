@@ -81,7 +81,6 @@ enum class EAudioObjectRequestType : EnumFlagsType
 	SetSwitchState,
 	SetCurrentEnvironments,
 	SetEnvironment,
-	ResetEnvironments,
 	RegisterObject,
 	ReleaseObject,
 	ProcessPhysicsRay,
@@ -1135,12 +1134,12 @@ public:
 
 	SAudioRequestData* GetData() const { return pData.get(); }
 
-	ERequestFlags flags = ERequestFlags::None;
+	ERequestFlags    flags = ERequestFlags::None;
 	CATLAudioObject* pObject = nullptr;
-	void* pOwner = nullptr;
-	void* pUserData = nullptr;
-	void* pUserDataOwner = nullptr;
-	ERequestStatus status = ERequestStatus::None;
+	void*            pOwner = nullptr;
+	void*            pUserData = nullptr;
+	void*            pUserDataOwner = nullptr;
+	ERequestStatus   status = ERequestStatus::None;
 
 private:
 

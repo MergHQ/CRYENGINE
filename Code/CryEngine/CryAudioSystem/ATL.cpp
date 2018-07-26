@@ -910,13 +910,6 @@ ERequestStatus CAudioTranslationLayer::ProcessAudioObjectRequest(CAudioRequest c
 
 			break;
 		}
-	case EAudioObjectRequestType::ResetEnvironments:
-		{
-			pObject->HandleResetEnvironments(m_environments);
-			result = ERequestStatus::Success;
-
-			break;
-		}
 	case EAudioObjectRequestType::RegisterObject:
 		{
 			SAudioObjectRequestData<EAudioObjectRequestType::RegisterObject> const* const pRequestData =

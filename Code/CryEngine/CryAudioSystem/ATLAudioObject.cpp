@@ -278,25 +278,22 @@ void CATLAudioObject::HandleSetSwitchState(CATLSwitch const* const pSwitch, CATL
 		pSwitchStateImpl->Set(*this);
 	}
 
-	m_switchStates[pSwitch->GetId()] = pState->GetId();
+#if defined(INCLUDE_AUDIO_PRODUCTION_CODE)
+	StoreSwitchValue(pSwitch->GetId(), pState->GetId());
+#endif   // INCLUDE_AUDIO_PRODUCTION_CODE
 }
 
 ///////////////////////////////////////////////////////////////////////////
-void CATLAudioObject::HandleSetEnvironment(CATLAudioEnvironment const* const pEnvironment, float const amount)
+void CATLAudioObject::HandleSetEnvironment(CATLAudioEnvironment const* const pEnvironment, float const value)
 {
 	for (auto const pEnvImpl : pEnvironment->m_implPtrs)
 	{
-		m_pImplData->SetEnvironment(pEnvImpl->m_pImplData, amount);
+		m_pImplData->SetEnvironment(pEnvImpl->m_pImplData, value);
 	}
 
-	if (amount > 0.0f)
-	{
-		m_environments[pEnvironment->GetId()] = amount;
-	}
-	else
-	{
-		m_environments.erase(pEnvironment->GetId());
-	}
+#if defined(INCLUDE_AUDIO_PRODUCTION_CODE)
+	StoreEnvironmentValue(pEnvironment->GetId(), value);
+#endif   // INCLUDE_AUDIO_PRODUCTION_CODE
 }
 
 ///////////////////////////////////////////////////////////////////////////
@@ -309,25 +306,6 @@ void CATLAudioObject::StopAllTriggers()
 void CATLAudioObject::SetObstructionOcclusion(float const obstruction, float const occlusion)
 {
 	m_pImplData->SetObstructionOcclusion(obstruction, occlusion);
-}
-
-///////////////////////////////////////////////////////////////////////////
-void CATLAudioObject::HandleResetEnvironments(AudioEnvironmentLookup const& environmentsLookup)
-{
-	// Needs to be a copy as HandleSetEnvironment removes from the map that we are iterating over.
-	ObjectEnvironmentMap const environments = m_environments;
-
-	for (auto const& environmentPair : environments)
-	{
-		CATLAudioEnvironment const* const pEnvironment = stl::find_in_map(environmentsLookup, environmentPair.first, nullptr);
-
-		if (pEnvironment != nullptr)
-		{
-			HandleSetEnvironment(pEnvironment, 0.0f);
-		}
-	}
-
-	CRY_ASSERT_MESSAGE(m_environments.empty(), "m_environments not empty after reset");
 }
 
 ///////////////////////////////////////////////////////////////////////////
@@ -1190,9 +1168,7 @@ void CATLAudioObject::ForceImplementationRefresh(
 	}
 
 	// Parameters
-	ObjectParameterMap const audioParameters = m_parameters;
-
-	for (auto const& parameterPair : audioParameters)
+	for (auto const& parameterPair : m_parameters)
 	{
 		auto const* const pParameter = stl::find_in_map(parameters, parameterPair.first, nullptr);
 
@@ -1207,9 +1183,7 @@ void CATLAudioObject::ForceImplementationRefresh(
 	}
 
 	// Switches
-	ObjectStateMap const audioSwitches = m_switchStates;
-
-	for (auto const& switchPair : audioSwitches)
+	for (auto const& switchPair : m_switchStates)
 	{
 		CATLSwitch const* const pSwitch = stl::find_in_map(switches, switchPair.first, nullptr);
 
@@ -1225,9 +1199,7 @@ void CATLAudioObject::ForceImplementationRefresh(
 	}
 
 	// Environments
-	ObjectEnvironmentMap const audioEnvironments = m_environments;
-
-	for (auto const& environmentPair : audioEnvironments)
+	for (auto const& environmentPair : m_environments)
 	{
 		CATLAudioEnvironment const* const pEnvironment = stl::find_in_map(environments, environmentPair.first, nullptr);
 
@@ -1286,6 +1258,18 @@ void CATLAudioObject::StoreParameterValue(ControlId const id, float const value)
 {
 	m_parameters[id] = value;
 }
+
+//////////////////////////////////////////////////////////////////////////
+void CATLAudioObject::StoreSwitchValue(ControlId const switchId, SwitchStateId const switchStateId)
+{
+	m_switchStates[switchId] = switchStateId;
+}
+
+//////////////////////////////////////////////////////////////////////////
+void CATLAudioObject::StoreEnvironmentValue(ControlId const id, float const value)
+{
+	m_environments[id] = value;
+}
 #endif // INCLUDE_AUDIO_PRODUCTION_CODE
 
 //////////////////////////////////////////////////////////////////////////
@@ -1342,13 +1326,6 @@ void CATLAudioObject::SetEnvironment(EnvironmentId const audioEnvironmentId, flo
 void CATLAudioObject::SetCurrentEnvironments(EntityId const entityToIgnore, SRequestUserData const& userData /* = SAudioRequestUserData::GetEmptyObject() */)
 {
 	SAudioObjectRequestData<EAudioObjectRequestType::SetCurrentEnvironments> requestData(entityToIgnore);
-	PushRequest(requestData, userData);
-}
-
-//////////////////////////////////////////////////////////////////////////
-void CATLAudioObject::ResetEnvironments(SRequestUserData const& userData /* = SAudioRequestUserData::GetEmptyObject() */)
-{
-	SAudioObjectRequestData<EAudioObjectRequestType::ResetEnvironments> requestData;
 	PushRequest(requestData, userData);
 }
 

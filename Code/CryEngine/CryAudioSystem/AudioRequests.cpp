@@ -82,7 +82,6 @@ SAudioRequestData* AllocateRequestData(SAudioRequestData const* const pRequestDa
 				AO_REQUEST_BLOCK(EAudioObjectRequestType::SetSwitchState)
 				AO_REQUEST_BLOCK(EAudioObjectRequestType::SetCurrentEnvironments)
 				AO_REQUEST_BLOCK(EAudioObjectRequestType::SetEnvironment)
-				AO_REQUEST_BLOCK(EAudioObjectRequestType::ResetEnvironments)
 				AO_REQUEST_BLOCK(EAudioObjectRequestType::RegisterObject)
 				AO_REQUEST_BLOCK(EAudioObjectRequestType::ReleaseObject)
 				AO_REQUEST_BLOCK(EAudioObjectRequestType::ProcessPhysicsRay)
