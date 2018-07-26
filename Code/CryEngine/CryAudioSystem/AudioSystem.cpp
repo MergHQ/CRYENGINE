@@ -237,8 +237,57 @@ void CSystem::OnSystemEvent(ESystemEvent event, UINT_PTR wparam, UINT_PTR lparam
 
 			break;
 		}
-	default:
+	case ESYSTEM_EVENT_ACTIVATE:
 		{
+			// When Alt+Tabbing out of the application while it's in full-screen mode
+			// ESYSTEM_EVENT_ACTIVATE is sent instead of ESYSTEM_EVENT_CHANGE_FOCUS.
+			if (g_cvars.m_ignoreWindowFocus == 0)
+			{
+				// wparam != 0 is active, wparam == 0 is inactive
+				// lparam != 0 is minimized, lparam == 0 is not minimized
+				if (wparam == 0 || lparam != 0)
+				{
+					// lost focus
+					g_pLoseFocusTrigger->Execute();
+				}
+				else
+				{
+					// got focus
+					g_pGetFocusTrigger->Execute();
+				}
+			}
+
+			break;
+		}
+	case ESYSTEM_EVENT_CHANGE_FOCUS:
+		{
+			if (g_cvars.m_ignoreWindowFocus == 0)
+			{
+				// wparam != 0 is focused, wparam == 0 is not focused
+				if (wparam == 0)
+				{
+					// lost focus
+					g_pLoseFocusTrigger->Execute();
+				}
+				else
+				{
+					// got focus
+					g_pGetFocusTrigger->Execute();
+				}
+			}
+
+			break;
+		}
+	case ESYSTEM_EVENT_AUDIO_MUTE:
+		{
+			g_pMuteAllTrigger->Execute();
+
+			break;
+		}
+	case ESYSTEM_EVENT_AUDIO_UNMUTE:
+		{
+			g_pUnmuteAllTrigger->Execute();
+
 			break;
 		}
 	}

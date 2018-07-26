@@ -24,72 +24,6 @@ namespace CryAudio
 // Define global objects.
 CCVars g_cvars;
 
-//////////////////////////////////////////////////////////////////////////
-class CSystemEventListener_Sound : public ISystemEventListener
-{
-public:
-
-	CSystemEventListener_Sound() = default;
-
-	virtual void OnSystemEvent(ESystemEvent event, UINT_PTR wparam, UINT_PTR lparam) override
-	{
-		if (gEnv->pAudioSystem != nullptr)
-		{
-			switch (event)
-			{
-			case ESYSTEM_EVENT_ACTIVATE:
-				{
-					// When Alt+Tabbing out of the application while it's in full-screen mode
-					// ESYSTEM_EVENT_ACTIVATE is sent instead of ESYSTEM_EVENT_CHANGE_FOCUS.
-
-					if (g_cvars.m_ignoreWindowFocus == 0)
-					{
-						// wparam != 0 is active, wparam == 0 is inactive
-						// lparam != 0 is minimized, lparam == 0 is not minimized
-						if (wparam == 0 || lparam != 0)
-						{
-							// lost focus
-							g_pLoseFocusTrigger->Execute();
-						}
-						else
-						{
-							// got focus
-							g_pGetFocusTrigger->Execute();
-						}
-					}
-					break;
-				}
-			case ESYSTEM_EVENT_CHANGE_FOCUS:
-				{
-					if (g_cvars.m_ignoreWindowFocus == 0)
-					{
-						// wparam != 0 is focused, wparam == 0 is not focused
-						if (wparam == 0)
-						{
-							// lost focus
-							g_pLoseFocusTrigger->Execute();
-						}
-						else
-						{
-							// got focus
-							g_pGetFocusTrigger->Execute();
-						}
-					}
-					break;
-				}
-			case ESYSTEM_EVENT_AUDIO_MUTE:
-				g_pMuteAllTrigger->Execute();
-				break;
-			case ESYSTEM_EVENT_AUDIO_UNMUTE:
-				g_pUnmuteAllTrigger->Execute();
-				break;
-			}
-		}
-	}
-};
-
-static CSystemEventListener_Sound g_system_event_listener_sound;
-
 ///////////////////////////////////////////////////////////////////////////
 bool CreateAudioSystem(SSystemGlobalEnvironment& env)
 {
@@ -187,8 +121,6 @@ class CEngineModule_CryAudioSystem : public ISystemModule
 				SRequestUserData const data(ERequestFlags::ExecuteBlocking);
 				static_cast<CSystem*>(env.pAudioSystem)->SetImpl(nullptr, data);
 			}
-
-			env.pSystem->GetISystemEventDispatcher()->RegisterListener(&g_system_event_listener_sound, "CSystemEventListener_Sound");
 
 			// As soon as the audio system was created we consider this a success (even if the NULL implementation was used)
 			bSuccess = true;
