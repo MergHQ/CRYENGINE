@@ -1494,14 +1494,14 @@ CTexture* CRendererResources::CreateDepthTarget(int nWidth, int nHeight, const C
 		gRenDev->GetDepthBpp() == 8  ? eTF_D16S8 : eTF_D16 : eTF;
 
 	char pName[128]; // Create unique names for every allocation, otherwise name-matches would occur in GetOrCreateDepthStencil()
-	cry_sprintf(pName, "$DynDepthStencil%8x", ++m_DTallocs);
+	cry_sprintf(pName, "$DynDepthStencil_%8_x%d", m_DTallocs + 1, m_DTallocs + 2); ++m_DTallocs;
 	return CTexture::GetOrCreateDepthStencil(pName, nWidth, nHeight, cClear, eTT_2D, FT_USAGE_TEMPORARY | FT_NOMIPS, preferredDepthFormat);
 }
 
 CTexture* CRendererResources::CreateRenderTarget(int nWidth, int nHeight, const ColorF& cClear, ETEX_Format eTF)
 {
 	char pName[128]; // Create unique names for every allocation, otherwise name-matches would occur in GetOrCreateRenderTarget()
-	cry_sprintf(pName, "$DynRenderTarget%8x", ++m_RTallocs);
+	cry_sprintf(pName, "$DynRenderTarget_%8_x%d", m_RTallocs + 1, m_RTallocs + 2); ++m_RTallocs;
 	return CTexture::GetOrCreateRenderTarget(pName, nWidth, nHeight, cClear, eTT_2D, FT_USAGE_TEMPORARY | FT_NOMIPS, eTF);
 }
 
