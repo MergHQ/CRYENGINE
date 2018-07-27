@@ -1796,6 +1796,12 @@ void ToggleGameMode()
 		return;
 	}
 
+	if (!GetIEditor()->GetDocument()->IsDocumentReady())
+	{
+		CryWarning(VALIDATOR_MODULE_GAME, VALIDATOR_WARNING, "Please load a level before going into game");
+		return;
+	}
+
 	bool inGame = !GetIEditorImpl()->IsInGameMode();
 
 	if (inGame)

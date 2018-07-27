@@ -9,6 +9,7 @@
 #include <Qt/Widgets/QWaitProgress.h>
 
 // Sandbox
+#include "CryEditDoc.h"
 #include "IEditorImpl.h"
 #include "Objects/ObjectManager.h"
 #include "Objects/ObjectLayerManager.h"
@@ -170,6 +171,12 @@ void ReloadTexturesAndShaders()
 
 void ReloadGeometry()
 {
+	if (!GetIEditor()->GetDocument()->IsDocumentReady())
+	{
+		CryWarning(VALIDATOR_MODULE_GAME, VALIDATOR_WARNING, "Please load a level before reloading all geometry");
+		return;
+	}
+
 	CWaitProgress wait("Reloading static geometry");
 
 	CVegetationMap* pVegetationMap = GetIEditorImpl()->GetVegetationMap();
