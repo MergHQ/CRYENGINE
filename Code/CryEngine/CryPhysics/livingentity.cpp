@@ -998,8 +998,7 @@ int CLivingEntity::SetStateFromSnapshot(TSerialize ser, int flags)
 float CLivingEntity::ShootRayDown(le_precomp_entity* pents, int nents, le_precomp_part *pparts, const Vec3 &pos,
 	Vec3 &nslope, float time_interval, bool bUseRotation,bool bUpdateGroundCollider,bool bIgnoreSmallObjects)
 {
-	int i,j,jbest,ncont,idbest,idbestAux=-1,iPrim=-1,bHasMatSubst=0;
-	int j1,iCaller=get_iCaller_int();
+	int i,j,jbest,ncont,idbest,idbestAux=-1,iPrim=-1,bHasMatSubst=0,j1;
 	Matrix33 R;
 	Vec3 pt,axis=m_qrot*Vec3(0,0,1);
 	float h=-1E10f,maxdim,maxarea,haux=-1E10f;
@@ -1307,7 +1306,7 @@ int CLivingEntity::Step(float time_interval)
 	time_interval = m_pWorld->m_bWorldStep==2 ? min(time_interval, dt) : dt;
 	time_interval = max(time_interval, 0.001f);
 
-	const int iCaller = get_iCaller_int();
+	const int iCaller = get_iCaller();
 	int i,j,jmin,ipartMin,nents,ncont,bFlying,bWasFlying,bUnprojected,idmat,iPrim, bHasExtraParts=0,
 		bHasFastPhys,icnt,nUnproj,bStaticUnproj,bDynUnproj,bMoving=0,nPrecompEnts=0,nPrecompParts=0, nUsedPartsCount=0,
 		&nNoResponseAllocLE=m_pWorld->m_threadData[iCaller].nNoResponseAllocLE,
