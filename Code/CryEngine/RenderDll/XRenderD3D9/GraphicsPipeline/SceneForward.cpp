@@ -803,7 +803,7 @@ void CSceneForwardStage::ExecuteTransparent(bool bBelowWater)
 	auto& RESTRICT_REFERENCE commandList = GetDeviceObjectFactory().GetCoreCommandList();
 
 	scenePass.PrepareRenderPassForUse(commandList);
-	scenePass.SetFlags(passFlags | CSceneRenderPass::ePassFlags_RenderNearest);
+	scenePass.SetFlags(passFlags | (!bBelowWater ? CSceneRenderPass::ePassFlags_RenderNearest : CSceneRenderPass::ePassFlags_None));
 	scenePass.SetViewport(RenderView()->GetViewport());
 
 	auto& renderItemDrawer = pRenderView->GetDrawer();
@@ -811,7 +811,10 @@ void CSceneForwardStage::ExecuteTransparent(bool bBelowWater)
 
 	scenePass.BeginExecution();
 	scenePass.DrawTransparentRenderItems(pRenderView, bBelowWater ? EFSLIST_TRANSP_BW : EFSLIST_TRANSP_AW);
-	scenePass.DrawTransparentRenderItems(pRenderView, EFSLIST_TRANSP_NEAREST);
+	if (!bBelowWater)
+	{
+		scenePass.DrawTransparentRenderItems(pRenderView, EFSLIST_TRANSP_NEAREST);
+	}
 	scenePass.EndExecution();
 
 	renderItemDrawer.JobifyDrawSubmission();
