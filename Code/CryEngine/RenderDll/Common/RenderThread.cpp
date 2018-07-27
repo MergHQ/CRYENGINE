@@ -214,8 +214,12 @@ bool SRenderThread::RC_CreateDevice()
 	{
 		return gcpRendD3D->RT_CreateDevice();
 	}
-	byte* p = AddCommand(eRC_CreateDevice, 0);
-	EndCommand(p);
+
+	{
+		AUTO_LOCK_T(CryCriticalSectionNonRecursive, m_CommandsLock);
+		byte* p = AddCommand(eRC_CreateDevice, 0);
+		EndCommand(p);
+	}
 
 	FlushAndWait();
 
@@ -233,8 +237,12 @@ void SRenderThread::RC_ResetDevice()
 		gcpRendD3D->RT_Reset();
 		return;
 	}
-	byte* p = AddCommand(eRC_ResetDevice, 0);
-	EndCommand(p);
+
+	{
+		AUTO_LOCK_T(CryCriticalSectionNonRecursive, m_CommandsLock);
+		byte* p = AddCommand(eRC_ResetDevice, 0);
+		EndCommand(p);
+	}
 
 	FlushAndWait();
 #endif
@@ -263,8 +271,12 @@ void SRenderThread::RC_SuspendDevice()
 	{
 		return gcpRendD3D->RT_SuspendDevice();
 	}
-	byte* p = AddCommand(eRC_SuspendDevice, 0);
-	EndCommand(p);
+
+	{
+		AUTO_LOCK_T(CryCriticalSectionNonRecursive, m_CommandsLock);
+		byte* p = AddCommand(eRC_SuspendDevice, 0);
+		EndCommand(p);
+	}
 
 	FlushAndWait();
 }
@@ -286,8 +298,12 @@ void SRenderThread::RC_ResumeDevice()
 	{
 		return gcpRendD3D->RT_ResumeDevice();
 	}
-	byte* p = AddCommand(eRC_ResumeDevice, 0);
-	EndCommand(p);
+
+	{
+		AUTO_LOCK_T(CryCriticalSectionNonRecursive, m_CommandsLock);
+		byte* p = AddCommand(eRC_ResumeDevice, 0);
+		EndCommand(p);
+	}
 
 	FlushAndWait();
 }
@@ -302,17 +318,20 @@ void SRenderThread::RC_BeginFrame(const SDisplayContextKey& displayContextKey)
 		return;
 	}
 
-	byte* p = AddCommand(eRC_BeginFrame, sizeof(displayContextKey));
-	if (sizeof(displayContextKey) == 8)
-		AddQWORD(p, *reinterpret_cast<const uint64*>(&displayContextKey));
-	else if (sizeof(displayContextKey) == 16)
 	{
-		AddQWORD(p, *reinterpret_cast<const uint64*>(&displayContextKey));
-		AddQWORD(p, *(reinterpret_cast<const uint64*>(&displayContextKey) + 1));
+		AUTO_LOCK_T(CryCriticalSectionNonRecursive, m_CommandsLock);
+		byte* p = AddCommand(eRC_BeginFrame, sizeof(displayContextKey));
+		if (sizeof(displayContextKey) == 8)
+			AddQWORD(p, *reinterpret_cast<const uint64*>(&displayContextKey));
+		else if (sizeof(displayContextKey) == 16)
+		{
+			AddQWORD(p, *reinterpret_cast<const uint64*>(&displayContextKey));
+			AddQWORD(p, *(reinterpret_cast<const uint64*>(&displayContextKey) + 1));
+		}
+		else
+			__debugbreak();
+		EndCommand(p);
 	}
-	else
-		__debugbreak();
-	EndCommand(p);
 }
 
 void SRenderThread::RC_EndFrame(bool bWait)
@@ -327,20 +346,25 @@ void SRenderThread::RC_EndFrame(bool bWait)
 	if (!bWait && CheckFlushCond())
 		return;
 
-	if (m_eVideoThreadMode == eVTM_Disabled)
 	{
-		AUTO_LOCK_T(CryCriticalSectionNonRecursive, m_CommandsLoadingLock); 
+		AUTO_LOCK_T(CryCriticalSectionNonRecursive, m_CommandsLock);
 
-		if (const unsigned int size = m_CommandsLoading.size())
+		if (m_eVideoThreadMode == eVTM_Disabled)
 		{
-			byte* buf = m_Commands[m_nCurThreadFill].Grow(size);
-			memcpy(buf, &m_CommandsLoading[0], size);
-			m_CommandsLoading.Free();
+			AUTO_LOCK_T(CryCriticalSectionNonRecursive, m_CommandsLoadingLock);
+
+			if (const unsigned int size = m_CommandsLoading.size())
+			{
+				byte* buf = m_Commands[m_nCurThreadFill].Grow(size);
+				memcpy(buf, &m_CommandsLoading[0], size);
+				m_CommandsLoading.Free();
+			}
 		}
+
+		byte* p = AddCommand(eRC_EndFrame, 0);
+		EndCommand(p);
 	}
 
-	byte* p = AddCommand(eRC_EndFrame, 0);
-	EndCommand(p);
 	SyncMainWithRender(true);
 }
 
@@ -394,14 +418,17 @@ void SRenderThread::RC_FlashRender(std::shared_ptr<IFlashPlayer_RenderProxy> &&p
 		return;
 	}
 
-	byte* p = AddCommand(eRC_FlashRender, sizeof(std::shared_ptr<IFlashPlayer_RenderProxy>));
+	{
+		AUTO_LOCK_T(CryCriticalSectionNonRecursive, m_CommandsLock);
+		byte* p = AddCommand(eRC_FlashRender, sizeof(std::shared_ptr<IFlashPlayer_RenderProxy>));
 
-	// Write the shared_ptr without releasing a reference.
-	StoreUnaligned<std::shared_ptr<IFlashPlayer_RenderProxy>>(p, pPlayer);
-	p += sizeof(std::shared_ptr<IFlashPlayer_RenderProxy>);
-	std::memset(&pPlayer, 0, sizeof(std::shared_ptr<IFlashPlayer_RenderProxy>));
+		// Write the shared_ptr without releasing a reference.
+		StoreUnaligned<std::shared_ptr<IFlashPlayer_RenderProxy>>(p, pPlayer);
+		p += sizeof(std::shared_ptr<IFlashPlayer_RenderProxy>);
+		std::memset(&pPlayer, 0, sizeof(std::shared_ptr<IFlashPlayer_RenderProxy>));
 
-	EndCommand(p);
+		EndCommand(p);
+	}
 }
 
 void SRenderThread::RC_FlashRenderPlaybackLockless(std::shared_ptr<IFlashPlayer_RenderProxy> &&pPlayer, int cbIdx, bool finalPlayback)
@@ -413,20 +440,24 @@ void SRenderThread::RC_FlashRenderPlaybackLockless(std::shared_ptr<IFlashPlayer_
 		return;
 	}
 
-	byte* p = AddCommand(eRC_FlashRenderLockless, 12 + sizeof(std::shared_ptr<IFlashPlayer_RenderProxy>));
+	{
+		AUTO_LOCK_T(CryCriticalSectionNonRecursive, m_CommandsLock);
+		byte* p = AddCommand(eRC_FlashRenderLockless, 12 + sizeof(std::shared_ptr<IFlashPlayer_RenderProxy>));
 
-	// Write the shared_ptr without releasing a reference.
-	StoreUnaligned<std::shared_ptr<IFlashPlayer_RenderProxy>>(p, pPlayer);
-	p += sizeof(std::shared_ptr<IFlashPlayer_RenderProxy>);
-	std::memset(&pPlayer, 0, sizeof(std::shared_ptr<IFlashPlayer_RenderProxy>));
+		// Write the shared_ptr without releasing a reference.
+		StoreUnaligned<std::shared_ptr<IFlashPlayer_RenderProxy>>(p, pPlayer);
+		p += sizeof(std::shared_ptr<IFlashPlayer_RenderProxy>);
+		std::memset(&pPlayer, 0, sizeof(std::shared_ptr<IFlashPlayer_RenderProxy>));
 
-	AddDWORD(p, (uint32) cbIdx);
-	AddDWORD(p, finalPlayback ? 1 : 0);
-	EndCommand(p);
+		AddDWORD(p, (uint32)cbIdx);
+		AddDWORD(p, finalPlayback ? 1 : 0);
+		EndCommand(p);
+	}
 }
 
 void SRenderThread::RC_StartVideoThread()
 {
+	AUTO_LOCK_T(CryCriticalSectionNonRecursive, m_CommandsLock);
 	byte* p = AddCommandTo(eRC_LambdaCall, sizeof(void*), m_Commands[m_nCurThreadFill]);
 	void* pCallbackPtr = ::new(m_lambdaCallbacksPool.Allocate()) SRenderThreadLambdaCallback{ [=] { this->m_eVideoThreadMode = eVTM_RequestStart; } , ERenderCommandFlags::None };
 	AddPointer(p, pCallbackPtr);
@@ -435,6 +466,7 @@ void SRenderThread::RC_StartVideoThread()
 
 void SRenderThread::RC_StopVideoThread()
 {
+	AUTO_LOCK_T(CryCriticalSectionNonRecursive, m_CommandsLock);
 	byte* p = AddCommandTo(eRC_LambdaCall, sizeof(void*), m_Commands[m_nCurThreadFill]);
 	void* pCallbackPtr = ::new(m_lambdaCallbacksPool.Allocate()) SRenderThreadLambdaCallback{ [=] { this->m_eVideoThreadMode = eVTM_RequestStop; } , ERenderCommandFlags::None };
 	AddPointer(p, pCallbackPtr);
