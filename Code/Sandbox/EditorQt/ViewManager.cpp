@@ -41,6 +41,15 @@ public:
 		return m_pViewport->GetName().c_str();
 	}
 
+	virtual QMenu* GetPaneMenu() const override
+	{
+		QMenu* pMenu = CDockableWidget::GetPaneMenu();
+		QMenu* pDisplayMenu = pMenu->addMenu("Display");
+		pDisplayMenu->addAction(GetIEditorImpl()->GetICommandManager()->GetAction("general.fullscreen"));
+
+		return pMenu;
+	}
+
 	virtual QVariantMap GetState() const
 	{
 		if (m_pViewport->IsRenderViewport())

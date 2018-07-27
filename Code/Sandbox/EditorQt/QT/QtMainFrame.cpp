@@ -526,7 +526,6 @@ public:
 		menuDisplay->AddCommand("camera.toggle_speed_height_relative");
 		menuDisplay->AddCommand("camera.toggle_terrain_collisions");
 		menuDisplay->AddCommand("camera.toggle_object_collisions");
-		menuDisplay->AddCommand("general.fullscreen");
 		menuLocation->addAction(menuRemember_Location->menuAction());
 		menuLocation->addAction(menuGoto_Location->menuAction());
 		for (auto i = 1; i <= 12; ++i)

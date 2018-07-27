@@ -75,11 +75,10 @@ public:
 	// Get pane menu
 	virtual QMenu* GetPaneMenu() const
 	{
-		QMenu* helpMenu = new QMenu();
-		helpMenu->setTitle("Help");
-		QMenu* menuItem = helpMenu->addMenu("Help");
-		menuItem->addAction(GetIEditor()->GetICommandManager()->GetAction("general.help"));
-		return helpMenu;
+		QMenu* pMainMenu = new QMenu();
+		QMenu* pHelpMenu = pMainMenu->addMenu("Help");
+		pHelpMenu->addAction(GetIEditor()->GetICommandManager()->GetAction("general.help"));
+		return pMainMenu;
 	}
 
 	// Restore transient state
