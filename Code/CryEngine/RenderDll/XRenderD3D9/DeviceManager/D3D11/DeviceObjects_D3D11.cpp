@@ -163,10 +163,10 @@ void CDeviceObjectFactory::AssignDevice(D3DDevice* pDevice)
 
 	m_texturePool.Init(
 		CRenderer::GetTexturesStreamPoolSize() * 1024ull * 1024ull,
-		512 * 1024 * 1024,
-		CRenderer::GetTexturesStreamPoolSize() * 1024ull * 1024ull,
+		256  * 1024ull * 1024ull,
+		512  * 1024ull * 1024ull,
 		poolMemModel,
-		false);
+		true);
 
 	m_textureStagingRing.Init(m_pDMA1, 128 * 1024 * 1024);
 #endif
