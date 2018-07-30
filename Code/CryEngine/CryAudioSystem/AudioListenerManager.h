@@ -22,7 +22,6 @@ public:
 
 	void                         OnAfterImplChanged();
 	void                         ReleaseImplData();
-	void                         Release();
 	void                         Update(float const deltaTime);
 	CATLListener*                CreateListener(char const* const szName = nullptr);
 	void                         ReleaseListener(CATLListener* const pListener);

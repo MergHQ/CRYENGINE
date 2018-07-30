@@ -1162,10 +1162,9 @@ void CAudioTranslationLayer::ReleaseImpl()
 	g_pIImpl = nullptr;
 
 	// Release engine specific data after impl shut down to prevent dangling data accesses during shutdown.
+	// Note: The object and listener managers are an exception as we need their data to survive in case the middleware is swapped out.
 	m_eventMgr.Release();
 	m_fileMgr.Release();
-	m_objectMgr.Release();
-	m_audioListenerMgr.Release();
 
 	m_flags &= ~EInternalStates::AudioMiddlewareShuttingDown;
 }

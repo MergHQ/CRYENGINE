@@ -18,7 +18,13 @@ namespace CryAudio
 //////////////////////////////////////////////////////////////////////////
 CObjectManager::~CObjectManager()
 {
-	CRY_ASSERT_MESSAGE(m_constructedObjects.empty(), "There are still objects during CObjectManager destruction!");
+	for (auto const pObject : m_constructedObjects)
+	{
+		CRY_ASSERT_MESSAGE(pObject->GetImplDataPtr() == nullptr, "An object cannot have valid impl data during CObjectManager destruction!");
+		delete pObject;
+	}
+
+	m_constructedObjects.clear();
 }
 
 //////////////////////////////////////////////////////////////////////////
@@ -44,24 +50,12 @@ void CObjectManager::OnAfterImplChanged()
 //////////////////////////////////////////////////////////////////////////
 void CObjectManager::ReleaseImplData()
 {
-	// Don't clear m_constructedObjects here as we need the objects to survive a middleware switch!
+	// Don't delete objects here as we need them to survive a middleware switch!
 	for (auto const pObject : m_constructedObjects)
 	{
 		g_pIImpl->DestructObject(pObject->GetImplDataPtr());
 		pObject->Release();
 	}
-}
-
-//////////////////////////////////////////////////////////////////////////
-void CObjectManager::Release()
-{
-	for (auto const pObject : m_constructedObjects)
-	{
-		CRY_ASSERT_MESSAGE(pObject->GetImplDataPtr() == nullptr, "An object cannot have valid impl data during CObjectManager destruction!");
-		delete pObject;
-	}
-
-	m_constructedObjects.clear();
 }
 
 //////////////////////////////////////////////////////////////////////////

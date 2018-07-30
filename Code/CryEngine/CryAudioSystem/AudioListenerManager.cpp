@@ -13,7 +13,13 @@ namespace CryAudio
 //////////////////////////////////////////////////////////////////////////
 CAudioListenerManager::~CAudioListenerManager()
 {
-	CRY_ASSERT_MESSAGE(m_activeListeners.empty(), "There are still listeners during CAudioListenerManager destruction!");
+	for (auto const pListener : m_activeListeners)
+	{
+		CRY_ASSERT_MESSAGE(pListener->m_pImplData == nullptr, "A listener cannot have valid impl data during CAudioListenerManager destruction!");
+		delete pListener;
+	}
+
+	m_activeListeners.clear();
 }
 
 //////////////////////////////////////////////////////////////////////////
@@ -47,18 +53,6 @@ void CAudioListenerManager::ReleaseImplData()
 		g_pIImpl->DestructListener(pListener->m_pImplData);
 		pListener->m_pImplData = nullptr;
 	}
-}
-
-//////////////////////////////////////////////////////////////////////////
-void CAudioListenerManager::Release()
-{
-	for (auto const pListener : m_activeListeners)
-	{
-		CRY_ASSERT_MESSAGE(pListener->m_pImplData == nullptr, "A listener cannot have valid impl data during CAudioListenerManager destruction!");
-		delete pListener;
-	}
-
-	m_activeListeners.clear();
 }
 
 //////////////////////////////////////////////////////////////////////////

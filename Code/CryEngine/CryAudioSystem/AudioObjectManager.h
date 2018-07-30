@@ -32,7 +32,6 @@ public:
 	void            Init(uint32 const poolSize);
 	void            OnAfterImplChanged();
 	void            ReleaseImplData();
-	void            Release();
 	void            Update(float const deltaTime, CObjectTransformation const& listenerTransformation, Vec3 const& listenerVelocity);
 	void            RegisterObject(CATLAudioObject* const pObject);
 
