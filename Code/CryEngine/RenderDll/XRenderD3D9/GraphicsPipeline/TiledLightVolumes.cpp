@@ -256,6 +256,12 @@ void CTiledLightVolumesStage::Destroy(bool destroyResolutionIndependentResources
 		m_diffuseProbeAtlas.items.clear();
 		m_spotTexAtlas.items.clear();
 
+#if DEVRES_USE_PINNING
+		m_specularProbeAtlas.texArray->GetDevTexture()->Unpin();
+		m_diffuseProbeAtlas.texArray->GetDevTexture()->Unpin();
+		m_spotTexAtlas.texArray->GetDevTexture()->Unpin();
+#endif
+
 		SAFE_RELEASE_FORCE(m_specularProbeAtlas.texArray);
 		SAFE_RELEASE_FORCE(m_diffuseProbeAtlas.texArray);
 		SAFE_RELEASE_FORCE(m_spotTexAtlas.texArray);

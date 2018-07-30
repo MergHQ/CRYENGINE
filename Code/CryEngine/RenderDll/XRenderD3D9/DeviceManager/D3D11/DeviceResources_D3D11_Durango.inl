@@ -549,6 +549,8 @@ void* CDeviceTexture::WeakPin()
 
 void* CDeviceTexture::Pin()
 {
+	m_Pinned = true;
+
 	// Can only pin pinnable resources
 	assert(m_gpuHdl.IsValid());
 	if (m_gpuHdl.IsValid())
@@ -557,7 +559,7 @@ void* CDeviceTexture::Pin()
 	}
 	else
 		__debugbreak();
-	
+
 	return NULL;
 }
 
@@ -571,6 +573,8 @@ void CDeviceTexture::Unpin()
 	}
 	else
 		__debugbreak();
+
+	m_Pinned = false;
 }
 
 void CDeviceTexture::GpuPin()

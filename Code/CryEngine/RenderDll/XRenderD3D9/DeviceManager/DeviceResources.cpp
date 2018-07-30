@@ -633,6 +633,11 @@ int CDeviceTexture::Cleanup()
 #if (CRY_RENDERER_DIRECT3D >= 110) && (CRY_RENDERER_DIRECT3D < 120) && DEVRES_USE_PINNING
 		if (nRef <= 0 && m_gpuHdl.IsValid())
 		{
+			if (m_Pinned)
+			{
+				CryWarning(VALIDATOR_MODULE_RENDERER, EValidatorSeverity::VALIDATOR_WARNING, "Freeing a texture from the texture pool while it is still pinned!");
+				__debugbreak();
+			}
 			GetDeviceObjectFactory().m_texturePool.Free(m_gpuHdl);
 			m_gpuHdl = SGPUMemHdl();
 		}
