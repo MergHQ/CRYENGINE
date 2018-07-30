@@ -23,7 +23,7 @@ void CComputeParticlesStage::Init()
 		m_pGpuParticleManager = std::unique_ptr<gpu_pfx2::CManager>(new gpu_pfx2::CManager());
 }
 
-void CComputeParticlesStage::Execute()
+void CComputeParticlesStage::Update()
 {
 	CRenderView* pRenderView = RenderView();
 	int CurrentFrameID = pRenderView->GetFrameId();
