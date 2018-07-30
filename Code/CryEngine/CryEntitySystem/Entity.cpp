@@ -116,7 +116,7 @@ void CEntity::SetFlagsExtended(uint32 flagsExtended)
 //////////////////////////////////////////////////////////////////////////
 bool CEntity::SendEvent(const SEntityEvent& event)
 {
-	if (!IsGarbage())
+	if (!HasInternalFlag(EInternalFlag::BlockEvents))
 	{
 		return SendEventInternal(event);
 	}

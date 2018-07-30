@@ -66,28 +66,29 @@ public:
 		Initialized         = 1 << 0,
 		InActiveList        = 1 << 1,
 		MarkedForDeletion   = 1 << 2,
-		Hidden              = 1 << 3,
-		Invisible           = 1 << 4,
-		LoadedFromLevelFile = 1 << 5,
-		SelectedInEditor    = 1 << 6,
-		HighlightedInEditor = 1 << 7,
+		BlockEvents         = 1 << 3,
+		Hidden              = 1 << 4,
+		Invisible           = 1 << 5,
+		LoadedFromLevelFile = 1 << 6,
+		SelectedInEditor    = 1 << 7,
+		HighlightedInEditor = 1 << 8,
 
 		// Start CEntityRender entries
 		// Bounding box should not be recalculated
-		FixedBounds  = 1 << 8,
-		ValidBounds  = 1 << 9,
-		HasParticles = 1 << 10,
+		FixedBounds  = 1 << 9,
+		ValidBounds  = 1 << 10,
+		HasParticles = 1 << 11,
 
 		// Start CEntityPhysics entries
-		FirstPhysicsFlag                   = 1 << 11,
+		FirstPhysicsFlag                   = 1 << 12,
 		PhysicsIgnoreTransformEvent        = FirstPhysicsFlag,
-		PhysicsDisabled                    = 1 << 12,
-		PhysicsSyncCharacter               = 1 << 13,
-		PhysicsHasCharacter                = 1 << 14,
-		PhysicsAwakeOnRender               = 1 << 15,
-		PhysicsAttachClothOnRender         = 1 << 16,
-		PhysicsDisableNetworkSerialization = 1 << 17,
-		PhysicsRemoved                     = 1 << 18,
+		PhysicsDisabled                    = 1 << 13,
+		PhysicsSyncCharacter               = 1 << 14,
+		PhysicsHasCharacter                = 1 << 15,
+		PhysicsAwakeOnRender               = 1 << 16,
+		PhysicsAttachClothOnRender         = 1 << 17,
+		PhysicsDisableNetworkSerialization = 1 << 18,
+		PhysicsRemoved                     = 1 << 19,
 		LastPhysicsFlag                    = PhysicsRemoved
 	};
 
