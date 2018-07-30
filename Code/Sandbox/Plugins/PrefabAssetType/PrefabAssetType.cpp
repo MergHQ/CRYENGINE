@@ -61,16 +61,15 @@ string CPrefabAssetType::GetObjectFilePath(const CAsset* pAsset) const
 	return pAsset ? pAsset->GetGUID().ToString() : string();
 }
 
-bool CPrefabAssetType::DeleteAssetFiles(const CAsset& asset, bool bDeleteSourceFile, size_t& numberOfFilesDeleted) const
+void CPrefabAssetType::PreDeleteAssetFiles(const CAsset& asset) const
 {
 	CPrefabManager* pManager = GetIEditor()->GetPrefabManager();
 	IDataBaseItem* item = pManager->FindItem(asset.GetGUID());
 	if (!item)
 	{
-		return false;
+		return;
 	}
 	pManager->DeleteItem(item);
-	return CAssetType::DeleteAssetFiles(asset, bDeleteSourceFile, numberOfFilesDeleted);
 }
 
 bool CPrefabAssetType::OnCreate(INewAsset& asset, const void* pCreateParams) const

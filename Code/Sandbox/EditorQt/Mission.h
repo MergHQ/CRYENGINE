@@ -21,8 +21,8 @@ struct SMinimapInfo
 };
 
 /*!
-    CMission represent single Game Mission on same map.
-    Multiple Missions share same map, and stored in one .cry file.
+	CMission represent single Game Mission on same map.
+	Multiple Missions share same map, and stored in one .cry file.
 
  */
 class SANDBOX_API CMission
@@ -32,6 +32,10 @@ public:
 	CMission(CCryEditDoc* doc);
 	//! Dtor of mission.
 	virtual ~CMission();
+
+	static const char* GetObjectivesFileName() { return "Objectives.xml"; }
+	static int GetDataFilesCount();
+	static const char* GetDataFilename(int i);
 
 	void           SetName(const CString& name)       { m_name = name; }
 	const CString& GetName() const                    { return m_name; }

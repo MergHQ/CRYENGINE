@@ -38,6 +38,18 @@ bool IsFileOpened(const string& path)
 	return false;
 }
 
+std::vector<string> GetListOfMetadataFiles(const std::vector<CAsset*>& assets)
+{
+	std::vector<string> result;
+	result.reserve(assets.size());
+	for (CAsset* pAsset : assets)
+	{
+		result.push_back(pAsset->GetMetadataFile());
+	}
+
+	return result;
+}
+
 void RCLogger::OnRCMessage(MessageSeverity severity, const char* szText)
 {
 	if (severity == MessageSeverity_Error)

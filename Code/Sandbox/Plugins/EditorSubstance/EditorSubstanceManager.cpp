@@ -374,7 +374,7 @@ void CManager::AddSubstanceArchiveContextMenu(CAsset* asset, CAbstractMenu* menu
 	{
 		QAction* newAct = subMenu->CreateAction(graphName.c_str());
 		QStringList info;
-		info << asset->GetMetadataFile() << graphName.c_str();
+		info << asset->GetMetadataFile().c_str() << graphName.c_str();
 		newAct->setData(QVariant(info));
 		QObject::connect(newAct, &QAction::triggered, this, &CManager::OnCreateInstance);
 	}

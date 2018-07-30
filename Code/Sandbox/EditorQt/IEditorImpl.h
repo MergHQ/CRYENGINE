@@ -417,10 +417,8 @@ protected:
 	CBroadcastManager*                m_pGlobalBroadcastManager;
 	CGameTokenManager*                m_pGameTokenManager;
 	CLensFlareManager*                m_pLensFlareManager;
-	//! Global instance of error report class.
-	//! Source control interface.
-	ISourceControl*                          m_pSourceControl;
-	CFlowGraphManager*                       m_pFlowGraphManager;
+	ISourceControl*                   m_pSourceControl;
+	CFlowGraphManager*                m_pFlowGraphManager;
 
 	CUIEnumsDatabase*                        m_pUIEnumsDatabase;
 	//! Currently used ruler

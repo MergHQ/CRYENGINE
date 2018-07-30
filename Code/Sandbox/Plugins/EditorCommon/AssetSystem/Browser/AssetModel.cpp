@@ -237,6 +237,24 @@ bool CAssetModel::AddColumn(const CItemModelAttribute* pAttribute, std::function
 	return true;
 }
 
+void CAssetModel::AddThumbnailIconProvider(const string& name, std::function<QIcon(const CAsset*)> iconProviderFunc)
+{
+	RemoveThumbnailIconProvider(name);
+	m_tumbnailIconProviders.push_back(std::make_pair(name, std::move(iconProviderFunc)));
+}
+
+void CAssetModel::RemoveThumbnailIconProvider(const string& name)
+{
+	auto it = std::find_if(m_tumbnailIconProviders.cbegin(), m_tumbnailIconProviders.cend(), [&name](const auto& pair)
+	{
+		return pair.first == name;
+	});
+	if (it != m_tumbnailIconProviders.cend())
+	{
+		m_tumbnailIconProviders.erase(it);
+	}
+}
+
 int CAssetModel::columnCount(const QModelIndex& parent) const
 {
 	return GetColumnCount();
@@ -321,6 +339,22 @@ QVariant CAssetModel::data(const QModelIndex& index, int role) const
 			case QThumbnailsView::s_ThumbnailTintedBackgroundRole:
 					// Use a tinted background only for the default type icons.
 					return !pAsset->GetType()->HasThumbnail() || !pAsset->IsThumbnailLoaded();
+			case QThumbnailsView::s_ThumbnailIconsRole:
+			{
+				QVariantList icons;
+				if (!m_tumbnailIconProviders.empty())
+				{
+					for (const auto& it : m_tumbnailIconProviders)
+					{
+						QIcon icon = it.second(pAsset);
+						if (!icon.isNull())
+						{
+							icons.push_back(std::move(icon));
+						}
+					}
+				}
+				return icons;
+			}
 			default:
 				break;
 			}
@@ -337,7 +371,7 @@ QVariant CAssetModel::data(const QModelIndex& index, int role) const
 	{
 		if (role == Qt::DisplayRole)
 		{
-			return pAsset->GetFolder();
+			return pAsset->GetFolder().c_str();
 		}
 		break;
 	}

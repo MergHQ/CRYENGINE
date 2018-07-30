@@ -198,7 +198,7 @@ bool CEditorAdapter::OnAboutToCloseAsset(string& reason) const
 {
 	if (GetAssetBeingEdited() && !m_pDialog->MayUnloadScene())
 	{
-		reason = QtUtil::ToString(tr("Asset '%1' has unsaved modifications.").arg(GetAssetBeingEdited()->GetName()));
+		reason = QtUtil::ToString(tr("Asset '%1' has unsaved modifications.").arg(GetAssetBeingEdited()->GetName().c_str()));
 		return false;
 	}
 	return true;

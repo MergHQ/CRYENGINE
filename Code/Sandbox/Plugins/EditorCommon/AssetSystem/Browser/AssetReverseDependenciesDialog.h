@@ -3,7 +3,6 @@
 #pragma once
 
 #include <Controls/EditorDialog.h>
-#include <QVector>
 
 class CAsset;
 class QWidget;
@@ -14,7 +13,7 @@ class CAssetReverseDependenciesDialog : public CEditorDialog
 {
 public:
 	CAssetReverseDependenciesDialog(
-		const QVector<CAsset*>& assets, 
+		const std::vector<CAsset*>& assets, 
 		const QString& assetsGroupTitle,
 		const QString& dependentAssetsGroupTitle,
 		const QString& dependentAssetsInfoText,

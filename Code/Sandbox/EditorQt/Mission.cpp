@@ -21,7 +21,7 @@
 #include <CryGame/IGame.h>
 
 
-namespace
+namespace Private_Mission
 {
 const char* kTimeOfDayFile = "TimeOfDay.xml";
 const char* kTimeOfDayRoot = "TimeOfDay";
@@ -59,6 +59,25 @@ CMission::~CMission()
 {
 	delete m_lighting;
 	delete m_pScript;
+}
+
+int CMission::GetDataFilesCount()
+{
+	return 2;
+}
+
+const char* CMission::GetDataFilename(int i)
+{
+	using namespace Private_Mission;
+	switch (i)
+	{
+	case 0:
+		return kTimeOfDayFile;
+	case 1:
+		return kEnvironmentFile;
+	default:
+		return nullptr;
+	}
 }
 
 //////////////////////////////////////////////////////////////////////////
@@ -428,6 +447,7 @@ void CMission::SetMinimap(const SMinimapInfo& minimap)
 //////////////////////////////////////////////////////////////////////////
 void CMission::SaveParts()
 {
+	using namespace Private_Mission;
 	// Save Time of Day
 	{
 		CTempFileHelper helper(GetIEditorImpl()->GetLevelDataFolder() + kTimeOfDayFile);
@@ -454,6 +474,7 @@ void CMission::SaveParts()
 //////////////////////////////////////////////////////////////////////////
 void CMission::LoadParts()
 {
+	using namespace Private_Mission;
 	// Load Time of Day
 	{
 		CString filename = GetIEditorImpl()->GetLevelDataFolder() + kTimeOfDayFile;

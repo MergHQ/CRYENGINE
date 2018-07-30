@@ -32,6 +32,7 @@ class CWaitProgress;
 class CWnd;
 class QString;
 class QWidget;
+class CVersionControl;
 
 struct AABB;
 struct I3DEngine;

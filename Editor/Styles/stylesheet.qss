@@ -580,15 +580,15 @@ QTabBar::tab:only-one{
 }
 
 
-QToolWindowArea QTabBar {						/* Docking tabs */
+QToolWindowArea QTabBar, CVersionControlMainWindow QTabBar {						/* Docking tabs */
 	border-bottom:0px solid rgb(97,172,236);
 }
 
-QToolWindowArea > QTabBar {
+QToolWindowArea > QTabBar, CVersionControlMainWindow > QTabBar {
 	background-color:rgb(35,35,35);
 }
 
-QToolWindowArea > QTabBar::tab {
+QToolWindowArea > QTabBar::tab, CVersionControlMainWindow > QTabBar::tab {
 	background-color: transparent;               /*inactive tabs*/
 	color:rgb(166,166,166);
 	margin:0px;
@@ -600,20 +600,20 @@ QToolWindowArea > QTabBar::tab {
 	border-radius:0px;
 }
 
-QToolWindowArea > QTabBar::tab:hover {
+QToolWindowArea > QTabBar::tab:hover, CVersionControlMainWindow > QTabBar::tab {
 	color:rgb(166,166,166);
 	background-color:rgb(45,45,45);
 	border: none;
 	border-radius: 0px;
 }
 
-QToolWindowArea > QTabBar::tab:first, QToolWindowArea > QTabBar::tab:middle, QToolWindowArea > QTabBar::tab:last{
+QToolWindowArea > QTabBar::tab:first, QToolWindowArea > QTabBar::tab:middle, QToolWindowArea > QTabBar::tab:last, CVersionControlMainWindow > QTabBar::tab:first, CVersionControlMainWindow > QTabBar::tab:middle, CVersionControlMainWindow > QTabBar::tab:last{
 	border-radius:0px;
 	margin:0px;
 	padding-bottom:0px;
 }
 
-QToolWindowArea > QTabBar::tab:selected {
+QToolWindowArea > QTabBar::tab:selected, CVersionControlMainWindow > QTabBar::tab:selected {
 	background-color: rgb(66,66,66);
 	color: rgb(97,172,236);
 	border: none;
@@ -647,7 +647,7 @@ QTabBar QToolButton::right-arrow, QToolButton::left-arrow
 	image: none;
 }
 
-QToolWindowArea > QTabBar > QToolButton {
+QToolWindowArea > QTabBar > QToolButton, CVersionControlMainWindow > QTabBar > QToolButton {
 	background-color: rgb(35,35,35);
 	padding: 0px 0px 7px 0px;
 	margin: 0px 0px 0px 0px;
@@ -878,7 +878,7 @@ QHeaderView {                       /*layers panel mostly*/
 	border-radius:0px;
 }
 
-QToolWindowArea > QFrame {
+QToolWindowArea > QFrame, CVersionControlMainWindow > QFrame {
 	background-color:rgb(66,66,66);          /*its the panels color*/
 	padding:0px;
 	margin:0px;
@@ -1307,7 +1307,7 @@ QTrackingTooltip {
 	background-color:rgb(35,35,35);
 }
 
-QToolWindowArea > QTabBar > QPushButton, QToolWindowArea > QTabBar > QPushButton::hover {
+QToolWindowArea > QTabBar > QPushButton, QToolWindowArea > QTabBar > QPushButton::hover, CVersionControlMainWindow > QTabBar > QPushButton, CVersionControlMainWindow > QTabBar > QPushButton::hover {
     background: transparent;
     border:solid;
     border:0px;
@@ -2147,4 +2147,12 @@ QToolButton#Filter::menu-indicator
 {
 	image: url("icons:common/general_dropdown_triangle.ico");
 	subcontrol-position: right bottom;
+}
+
+CVersionControlPendingChangesTab QPlainTextEdit
+{
+    margin-top: 0px;
+    margin-left: 2px;
+    border-radius: 3px;
+    background-color: rgb(50,50,50);
 }

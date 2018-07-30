@@ -102,7 +102,7 @@ StackSizeKB:
 		<Thread name ="LiveCreate_CheckPowerOn"/>	
 		
 		<!-- [SANDBOX] - Plug-ins -->
-		<Thread name ="PerforcePlugin"/>		
+		<Thread name ="VersionControl"/>		
 								
 		<!-- [SANDBOX] - Utility -->
 		<Thread name ="FileIndexing"/>	

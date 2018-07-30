@@ -18,7 +18,7 @@
 
 #include <Cry3DEngine/I3DEngine.h>
 
-namespace
+namespace Private_VegetationMap
 {
 
 #pragma pack(push,1)
@@ -146,8 +146,8 @@ protected:
 	CVegetationInstance* m_pInstance;
 
 private:
-	SVegInst m_undo;
-	SVegInst m_redo;
+	Private_VegetationMap::SVegInst m_undo;
+	Private_VegetationMap::SVegInst m_redo;
 };
 
 //////////////////////////////////////////////////////////////////////////
@@ -450,6 +450,12 @@ void CVegetationMap::RegisterInstance(CVegetationInstance* pInst)
 	UpdateGroundDecal(pInst);
 }
 
+const char* CVegetationMap::GetDataFilename() const
+{
+	using namespace Private_VegetationMap;
+	return kVegetationMapFile;
+}
+
 void CVegetationMap::UpdateGroundDecal(CVegetationInstance* pInst)
 {
 	SAFE_RELEASE_NODE(pInst->pRenderNodeGroundDecal);
@@ -539,6 +545,7 @@ void CVegetationMap::ClearSectors()
 
 void CVegetationMap::Allocate(int nMapSize, bool bKeepData)
 {
+	using namespace Private_VegetationMap;
 	CXmlArchive ar("Temp");
 	if (bKeepData)
 	{
@@ -1355,6 +1362,7 @@ void CVegetationMap::ClearBrush(CRect& rc, bool bCircle, CVegetationObject* pObj
 
 void CVegetationMap::ClearMask(const string& maskFile)
 {
+	using namespace Private_VegetationMap;
 	CLayer layer;
 	layer.SetAutoGen(false);
 	//	layer.SetSmooth(false);
@@ -1755,6 +1763,7 @@ void CVegetationMap::SerializeObjects(XmlNodeRef& vegetationNode)
 
 void CVegetationMap::SerializeInstances(CXmlArchive& xmlAr, CRect* saveRect)
 {
+	using namespace Private_VegetationMap;
 	if (xmlAr.bLoading)
 	{
 		Vec3 posofs(0, 0, 0);
@@ -1907,6 +1916,7 @@ void CVegetationMap::ClearSegment(const AABB& bb)
 
 void CVegetationMap::ImportSegment(CMemoryBlock& mem, const Vec3& vOfs)
 {
+	using namespace Private_VegetationMap;
 	//TODO: load vegetation objects info, update m_objects, remap indices
 	int iInstances = 0;
 
@@ -2018,6 +2028,7 @@ void CVegetationMap::ImportSegment(CMemoryBlock& mem, const Vec3& vOfs)
 
 void CVegetationMap::ExportSegment(CMemoryBlock& mem, const AABB& bb, const Vec3& vOfs)
 {
+	using namespace Private_VegetationMap;
 	//TODO: save vegetation objects info with number of instances per object
 
 	// Assign indices to objects.
@@ -2708,6 +2719,7 @@ void CVegetationMap::UpdateConfigSpec()
 
 void CVegetationMap::Save(bool bBackup)
 {
+	using namespace Private_VegetationMap;
 	LOADING_TIME_PROFILE_SECTION;
 	CTempFileHelper helper(GetIEditorImpl()->GetLevelDataFolder() + kVegetationMapFile);
 
@@ -2720,6 +2732,7 @@ void CVegetationMap::Save(bool bBackup)
 
 bool CVegetationMap::Load()
 {
+	using namespace Private_VegetationMap;
 	LOADING_TIME_PROFILE_SECTION;
 	string filename = GetIEditorImpl()->GetLevelDataFolder() + kVegetationMapFile;
 	CXmlArchive xmlAr;

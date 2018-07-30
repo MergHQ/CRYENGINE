@@ -88,7 +88,7 @@ namespace Private_AssetSelector
 			}
 		}
 
-		QObject::connect(&dialog, &CAssetBrowserDialog::SelectionChanged, [selectorContext](const QVector<CAsset*>& assets)
+		QObject::connect(&dialog, &CAssetBrowserDialog::SelectionChanged, [selectorContext](const std::vector<CAsset*>& assets)
 		{
 			CRY_ASSERT(assets.size() <= 1);
 			if (!assets.empty() && selectorContext.callback)
@@ -101,7 +101,7 @@ namespace Private_AssetSelector
 		{
 			if (CAsset* pSelectedAsset = dialog.GetSelectedAsset())
 			{
-				return pSelectedAsset->GetFile(0);
+				return pSelectedAsset->GetFile(0).c_str();
 			}
 		}
 
@@ -131,7 +131,7 @@ namespace Private_AssetSelector
 
 		if (fileInfo.suffix().isEmpty())
 		{
-			//Try to autocomplete it
+			//Try to auto complete it
 			if (selector->GetAssetTypes().size() == 1)
 			{
 				assetPath += ".";
@@ -139,7 +139,7 @@ namespace Private_AssetSelector
 			}
 			else
 			{
-				//cannot autocomplete, invalid
+				//cannot auto complete, invalid
 				return previousValue;
 			}
 		}
@@ -267,7 +267,7 @@ dll_string SStaticAssetSelectorEntry::SelectFromAsset(const SResourceSelectorCon
 		}
 	}
 
-	QObject::connect(&dialog, &CAssetBrowserDialog::SelectionChanged, [&context](const QVector<CAsset*>& assets)
+	QObject::connect(&dialog, &CAssetBrowserDialog::SelectionChanged, [&context](const std::vector<CAsset*>& assets)
 	{
 		CRY_ASSERT(assets.size() <= 1);
 		if (!assets.empty() && context.callback)
@@ -280,7 +280,7 @@ dll_string SStaticAssetSelectorEntry::SelectFromAsset(const SResourceSelectorCon
 	{
 		if (CAsset* pSelectedAsset = dialog.GetSelectedAsset())
 		{
-			return pSelectedAsset->GetFile(0);
+			return pSelectedAsset->GetFile(0).c_str();
 		}
 	}
 

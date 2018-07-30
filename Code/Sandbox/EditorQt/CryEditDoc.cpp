@@ -238,6 +238,34 @@ void CreateLevelIfNeeded()
 	}
 }
 
+std::vector<string> g_levelFiles;
+
+void CollectAllLevelFiles()
+{
+	if (!g_levelFiles.empty())
+	{
+		return;
+	}
+
+	g_levelFiles.reserve(8 + CMission::GetDataFilesCount());
+	g_levelFiles.push_back("filelist.xml");
+	g_levelFiles.push_back("level.pak");
+	g_levelFiles.push_back("tags.txt");
+	g_levelFiles.push_back("tags.json");
+	g_levelFiles.push_back("terraintexture.pak");
+
+	const string levelDataFolder = "LevelData/";
+	
+	g_levelFiles.push_back(levelDataFolder + CMission::GetObjectivesFileName());
+
+	for (int i = 0; i < CMission::GetDataFilesCount(); ++i)
+	{
+		g_levelFiles.push_back(levelDataFolder + CMission::GetDataFilename(i));
+	}
+	g_levelFiles.push_back(levelDataFolder + GetIEditorImpl()->GetGameTokenManager()->GetDataFilename());
+	g_levelFiles.push_back(levelDataFolder + GetIEditorImpl()->GetVegetationMap()->GetDataFilename());
+}
+
 }
 
 /////////////////////////////////////////////////////////////////////////////
@@ -283,6 +311,11 @@ CCryEditDoc::~CCryEditDoc()
 	ClearMissions();
 	GetIEditorImpl()->GetTerrainManager()->ClearLayers();
 	delete m_pLevelShaderCache;
+}
+
+const std::vector<string>& CCryEditDoc::GetLevelFilenames()
+{
+	return Private_CryEditDoc::g_levelFiles;
 }
 
 bool CCryEditDoc::Save()
@@ -942,8 +975,11 @@ static void GetUserSettingsFile(const string& levelFolder, string& userSettings)
 
 bool CCryEditDoc::SaveLevel(const string& filename)
 {
+	using namespace Private_CryEditDoc;
 	LOADING_TIME_PROFILE_SECTION;
 	CWaitCursor wait;
+
+	CollectAllLevelFiles();
 
 	CAutoCheckOutDialogEnableForAll enableForAll;
 

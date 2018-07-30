@@ -34,11 +34,6 @@ public:
 		setAcceptHoverEvents(false);
 	}
 
-	~CProxyWidget()
-	{
-		return;
-	}
-
 	void hoverEnterEvent(QGraphicsSceneHoverEvent* pEvent) override
 	{
 		pEvent->setAccepted(false);

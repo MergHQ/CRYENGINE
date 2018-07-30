@@ -17,6 +17,10 @@
 #include "Loader/AssetLoaderBackgroundTask.h"
 #include "Loader/AssetLoaderHelpers.h"
 #include "AssetResourceSelector.h"
+#include "SourceFilesTracker.h"
+#include "FileOperationsExecutor.h"
+#include "IFilesGroupProvider.h"
+#include "AssetFilesGroupProvider.h"
 
 #include <CrySystem/IConsole.h>
 #include <CryString/CryPath.h>
@@ -62,6 +66,51 @@ void InitializeFileToAssetMap(FileToAssetMap& fileToAssetMap, const std::vector<
 	const auto allocNum = numFiles * 1.1;   // buffer of 10%
 	fileToAssetMap.reserve(allocNum);
 }
+
+	std::future<void> g_asyncProcess;
+
+	std::vector<std::unique_ptr<IFilesGroupProvider>> ComposeFileGroupsForDeletion(std::vector<CAsset*>& assets)
+	{
+		std::vector<std::unique_ptr<IFilesGroupProvider>> fileGroups;
+		fileGroups.reserve(assets.size());
+
+		std::sort(assets.begin(), assets.end(), [](CAsset* pAsset1, CAsset* pAsset2)
+		{
+			return pAsset1->GetSourceFile() == pAsset2->GetSourceFile();
+		});
+
+		auto rangeStart = assets.begin();
+		auto rangeEnd = rangeStart + 1;
+		auto it = rangeStart;
+		string sourceFile = (*rangeStart)->GetSourceFile();
+		while (true)
+		{
+			if (rangeEnd == assets.end() || (*rangeEnd)->GetSourceFile() != sourceFile)
+			{
+				bool shouldIncludeSource = !sourceFile.empty();
+				if (shouldIncludeSource)
+				{
+					auto count = CSourceFilesTracker::GetInstance()->GetCount(sourceFile);
+					auto dist = std::distance(rangeStart, rangeEnd);
+					shouldIncludeSource = count == dist;
+				}
+				fileGroups.emplace_back(new CAssetFilesGroupProvider(*it, shouldIncludeSource));
+				if (rangeEnd == assets.end())
+				{
+					break;
+				}
+				rangeStart = rangeEnd;
+				sourceFile = (*rangeStart)->GetSourceFile();
+			}
+			else
+			{
+				fileGroups.emplace_back(new CAssetFilesGroupProvider(*it, false));
+			}
+			++rangeEnd;
+			++it;
+		}
+		return fileGroups;
+	}
 }
 
 const std::pair<const char*, const char*> CAssetManager::m_knownAliases[] =
@@ -358,48 +407,60 @@ void CAssetManager::MergeAssets(std::vector<CAsset*> assets)
 	}
 }
 
-void CAssetManager::DeleteAssets(const std::vector<CAsset*>& assets, bool bDeleteAssetsFiles)
+bool CAssetManager::DeleteAssetsWithFiles(std::vector<CAsset*> assets)
 {
 	using namespace Private_AssetManager;
-	MAKE_SURE(!m_assets.empty(), return );
-	MAKE_SURE(!assets.empty(), return );
+	MAKE_SURE(!m_assets.empty(), return false);
+	MAKE_SURE(!assets.empty(), return false);
+
+	auto fileGroups = ComposeFileGroupsForDeletion(assets);
 
 	signalBeforeAssetsRemoved(assets);
 
-	for (auto x : assets)
+	m_orderedByGUID = false;
+
+	for (auto pAsset : assets)
 	{
-		for (size_t i = 0, N = m_assets.size(); i < N; ++i)
-		{
-			if (x != m_assets[i])
-			{
-				continue;
-			}
-
-			// To prevent the function from being recalled again by CAssetManager::CAssetFileMonitor
-			// the asset need to be removed from the assets collection prior to delete the asset files.
-
-			const CAssetPtr pAssetToDelete = std::move(m_assets[i]);
-			m_assets[i] = std::move(m_assets[--N]);
-			m_assets.resize(N);
-			m_orderedByGUID = false;
-
-			if (bDeleteAssetsFiles)
-			{
-				const bool bDeleteSourceFile = !HasSharedSourceFile(*pAssetToDelete);
-				size_t numberOfFilesDeleted;
-				if (!pAssetToDelete->GetType()->DeleteAssetFiles(*pAssetToDelete, bDeleteSourceFile, numberOfFilesDeleted) && !numberOfFilesDeleted)
-				{
-					// Restore the asset if unable to delete.
-					m_assets.push_back(pAssetToDelete);
-					break;
-				}
-			}
-
-			DeleteAssetFilesFromMap(m_fileToAssetMap, pAssetToDelete);
-			break;
-		}
+		pAsset->GetType()->PreDeleteAssetFiles(*pAsset);
 	}
 
+	g_asyncProcess = ThreadingUtils::AsyncQueue([assets = std::move(assets), fileGroups = std::move(fileGroups), this]() mutable
+	{
+		CFileOperationExecutor::GetExecutor()->Delete(std::move(fileGroups));
+
+		ThreadingUtils::PostOnMainThread([this, assets = std::move(assets)]()
+		{
+			signalAfterAssetsRemoved();
+		});
+	});
+
+	return true;
+}
+
+void CAssetManager::DeleteAssetsOnlyFromData(const std::vector<CAsset*>& assets)
+{
+	MAKE_SURE(!m_assets.empty(), return );
+	MAKE_SURE(!assets.empty(), return );
+
+	using namespace Private_AssetManager;
+	signalBeforeAssetsRemoved(assets);
+	int newSize = m_assets.size();
+	for (auto pAsset : assets)
+	{
+		auto it = std::find(m_assets.cbegin(), m_assets.cend(), pAsset);
+		if (it == m_assets.cend())
+		{
+			continue;
+		}
+		
+		m_orderedByGUID = false;
+
+		int index = std::distance(m_assets.cbegin(), it);
+		const CAssetPtr pAssetToDelete = std::move(m_assets[index]);
+		m_assets[index] = std::move(m_assets[--newSize]);
+		m_assets.resize(newSize);
+		DeleteAssetFilesFromMap(m_fileToAssetMap, pAssetToDelete);
+	}
 	signalAfterAssetsRemoved();
 }
 
@@ -443,17 +504,7 @@ bool CAssetManager::HasSharedSourceFile(const CAsset& asset) const
 		return false;
 	}
 
-	// It could be possible that the source file of this asset is a regular asset file of another asset.
-	// For example this is so for substance instance asset.
-	if (FindAssetForFile(asset.GetSourceFile()))
-	{
-		return true;
-	}
-
-	return std::find_if(m_assets.begin(), m_assets.end(), [&asset](const CAssetPtr& x)
-	{
-		return (&asset != x) && (stricmp(x->GetSourceFile(), asset.GetSourceFile()) == 0);
-	}) != m_assets.end();
+	return CSourceFilesTracker::GetInstance()->GetCount(asset.GetSourceFile()) > 1;
 }
 
 //Reimport is implemented in asset manager to avoid adding dependency from CAsset to CAssetImporter
@@ -479,14 +530,14 @@ void CAssetManager::Reimport(CAsset* pAsset)
 	pAssetImporter->Reimport(pAsset);
 }
 
-std::vector<CAssetPtr> CAssetManager::GetAssetsFromDirectory(const string& directory) const
+std::vector<CAssetPtr> CAssetManager::GetAssetsFromDirectory(const string& directory, std::function<bool(CAsset*)> predicate /*={}*/) const
 {
 	std::vector<CAssetPtr> assets;
 	assets.reserve(GetAssetsCount() / 8); // just a non zero assumption
 
 	for (const CAssetPtr& pAsset : m_assets)
 	{
-		if (!pAsset->GetType()->HasThumbnail())
+		if (predicate && !predicate(pAsset))
 		{
 			continue;
 		}
@@ -500,9 +551,13 @@ std::vector<CAssetPtr> CAssetManager::GetAssetsFromDirectory(const string& direc
 	return assets;
 }
 
-void CAssetManager::AppendContextMenuActions(CAbstractMenu& menu, const std::vector<CAsset*>& assets, const std::shared_ptr<IUIContext>& context) const
+void CAssetManager::WaitAsyncProcess() const
 {
-	signalContextMenuRequested(menu, assets, context);
+	using namespace Private_AssetManager;
+	if (g_asyncProcess.valid())
+	{
+		g_asyncProcess.wait();
+	}
 }
 
 void CAssetManager::UpdateAssetTypes()

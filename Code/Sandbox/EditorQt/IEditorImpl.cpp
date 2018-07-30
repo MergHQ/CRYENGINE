@@ -1225,7 +1225,7 @@ IProjectManager* CEditorImpl::GetProjectManager()
 	return m_pSystem->GetIProjectManager();
 }
 
-bool CEditorImpl::IsSourceControlAvailable()
+bool CEditorImpl::IsSourceControlAvailable() 
 {
 	if (gEditorGeneralPreferences.enableSourceControl() && GetSourceControl())
 		return true;

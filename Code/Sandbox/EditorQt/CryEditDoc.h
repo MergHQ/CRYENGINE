@@ -18,6 +18,8 @@ public:
 	CCryEditDoc();
 	virtual ~CCryEditDoc();
 
+	static const std::vector<string>& GetLevelFilenames();
+
 	virtual BOOL OnOpenDocument(LPCTSTR lpszPathName);
 
 	//TODO: this modified flag is only the level, not the entire data, should be moved to assets-based modified flags instead
@@ -66,19 +68,19 @@ public:
 	void               SerializeMissions(TDocMultiArchive& arrXmlAr, string& currentMission, bool bPartsInXml);
 	void               SerializeShaderCache(CXmlArchive& xmlAr);
 	LightingSettings*  GetLighting();
-	void               SetWaterColor(COLORREF col) { m_waterColor = col; };
-	COLORREF           GetWaterColor()             { return m_waterColor; };
+	void               SetWaterColor(COLORREF col) { m_waterColor = col; }
+	COLORREF           GetWaterColor()             { return m_waterColor; }
 	void               ForceSkyUpdate();
 	BOOL               CanCloseFrame(CFrameWnd* pFrame);
 	void               GetMemoryUsage(ICrySizer* pSizer);
-	XmlNodeRef&        GetFogTemplate()         { return m_fogTemplate; };
-	XmlNodeRef&        GetEnvironmentTemplate() { return m_environmentTemplate; };
+	XmlNodeRef&        GetFogTemplate()         { return m_fogTemplate; }
+	XmlNodeRef&        GetEnvironmentTemplate() { return m_environmentTemplate; }
 	//! Return currently active Mission.
 	CMission*          GetCurrentMission(bool bSkipLoadingAIWhenSyncingContent = false);
 	//! Get number of missions on Map.
-	int                GetMissionCount() const     { return m_missions.size(); };
+	int                GetMissionCount() const     { return m_missions.size(); }
 	//! Get Mission by index.
-	CMission*          GetMission(int index) const { return m_missions[index]; };
+	CMission*          GetMission(int index) const { return m_missions[index]; }
 	//! Find Mission by name.
 	CMission*          FindMission(const string& name) const;
 	//! Makes specified mission current.
@@ -106,7 +108,7 @@ public:
 	BOOL         AfterSaveDocument(LPCTSTR lpszPathName, TSaveDocContext& context, bool bShowPrompt = true);
 
 	virtual void SetPathName(LPCTSTR lpszPathName, BOOL bAddToMRU = TRUE);
-	string      GetPathName() const { return m_pathName; };
+	string      GetPathName() const { return m_pathName; }
 	virtual BOOL DoSave(LPCTSTR lpszPathName, BOOL bReplace);//TODO : change the signature of this!
 	string      GetTitle() const;
 

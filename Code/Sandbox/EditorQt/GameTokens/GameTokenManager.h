@@ -30,6 +30,8 @@ public:
 	//////////////////////////////////////////////////////////////////////////
 	virtual void OnEditorNotifyEvent(EEditorNotifyEvent event);
 
+	const char* GetDataFilename() const;
+
 protected:
 	virtual CBaseLibraryItem* MakeNewItem();
 	virtual CBaseLibrary*     MakeNewLibrary();

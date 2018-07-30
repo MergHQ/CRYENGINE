@@ -6,6 +6,7 @@
 #include "AssetManager.h"
 #include "AssetType.h"
 #include "DependencyTracker.h"
+#include "SourceFilesTracker.h"
 #include "EditableAsset.h"
 #include "Loader/Metadata.h"
 
@@ -97,14 +98,17 @@ CAsset::CAsset(const char* type, const CryGUID& guid, const char* name)
 
 CAsset::~CAsset()
 {
-
+	if (HasSourceFile())
+	{
+		CSourceFilesTracker::GetInstance()->Remove(*this);
+	}
 }
 
-const char* CAsset::GetFolder() const
+const string& CAsset::GetFolder() const
 {
 	if (m_folder.empty())
 		m_folder = PathUtil::GetDirectory(m_metadataFile);
-	return m_folder.c_str();
+	return m_folder;
 }
 
 bool CAsset::HasSourceFile() const
@@ -335,7 +339,23 @@ void CAsset::SetMetadataFile(const char* szFilepath)
 
 void CAsset::SetSourceFile(const char* szFilepath)
 {
-	m_sourceFile = PathUtil::ToUnixPath(szFilepath);
+	using namespace Private_Asset;
+
+	string sourceFile = PathUtil::ToUnixPath(szFilepath);
+
+	bool newSourceFile = m_sourceFile != szFilepath;
+
+	if (newSourceFile && !m_sourceFile.empty())
+	{
+		CSourceFilesTracker::GetInstance()->Remove(*this);
+	}
+
+	m_sourceFile = std::move(sourceFile);
+
+	if (newSourceFile && !m_sourceFile.empty())
+	{
+		CSourceFilesTracker::GetInstance()->Add(*this);
+	}
 }
 
 void CAsset::AddFile(const string& file)

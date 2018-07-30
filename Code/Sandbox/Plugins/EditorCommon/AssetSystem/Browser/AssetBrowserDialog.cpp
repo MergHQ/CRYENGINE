@@ -136,7 +136,7 @@ CAssetBrowserDialog::CAssetBrowserDialog(const std::vector<string>& assetTypeNam
 		{
 			if (pAsset)
 			{
-				assetNames << pAsset->GetName();
+				assetNames << pAsset->GetName().c_str();
 			}
 		}
 		if (!assetNames.empty())
@@ -198,7 +198,7 @@ CAsset* CAssetBrowserDialog::GetSelectedAsset()
 
 std::vector<CAsset*> CAssetBrowserDialog::GetSelectedAssets()
 {
-	return m_pBrowser->GetSelectedAssets().toStdVector();
+	return m_pBrowser->GetSelectedAssets();
 }
 
 void CAssetBrowserDialog::SelectAsset(const CAsset& asset)

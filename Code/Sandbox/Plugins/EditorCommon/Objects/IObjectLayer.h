@@ -11,7 +11,7 @@ struct IObjectLayer
 	virtual string GetFullName() const = 0;
 
 	//! Get GUID assigned to this layer.
-	virtual CryGUID GetGUID() const = 0;
+	virtual const CryGUID& GetGUID() const = 0;
 
 	virtual ~IObjectLayer() {}
 	virtual void SetModified(bool isModified = true) = 0;

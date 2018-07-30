@@ -43,7 +43,6 @@ public:
 private:
 
 	void OnSelectionChanged();
-	void OnContextMenu(const QPoint &pos);
 	void OnCreateFolder(const QString& parentFolder);
 	void OnRenameFolder(const QString& folder);
 	void OnDeleteFolder(const QString& folder);

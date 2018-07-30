@@ -23,6 +23,8 @@ public:
 	CLevelExplorer(QWidget* pParent = nullptr);
 	~CLevelExplorer();
 
+	static CCrySignal<void(CAbstractMenu&, const std::vector<CBaseObject*>&, const std::vector<CObjectLayer*>& layers, const std::vector<CObjectLayer*>& folders)> s_signalContextMenuRequested;
+
 	//////////////////////////////////////////////////////////////////////////
 	// CEditor implementation
 	virtual const char* GetEditorName() const override { return "Level Explorer"; }
@@ -50,18 +52,13 @@ public:
 	void GrabFocusSearchBar() { OnFind(); }
 
 private:
-
-	struct SColorPreset
-	{
-		string name;
-		string icon;
-		ColorB value;
-	};
-
 	void         InitMenuBar();
 
 	virtual void OnContextMenu(const QPoint& pos) const;
-	void         OnContextMenuForSingleLayer(QMenu* menu, CObjectLayer* layer) const;
+
+	void         CreateContextMenuForLayers(CAbstractMenu &abstractMenu, const std::vector<CObjectLayer*>& layers) const;
+	void         CreateContextForSingleFolderLayer(CAbstractMenu &abstractMenu, const std::vector<CObjectLayer*>& layerFolders) const;
+	void         OnContextMenuForSingleLayer(CAbstractMenu& menu, CObjectLayer* layer) const;
 	void         OnClick(const QModelIndex& index);
 	void         OnDoubleClick(const QModelIndex& index);
 
@@ -96,8 +93,6 @@ private:
 	void        OnSelectionChanged(const QItemSelection& selected, const QItemSelection& deselected);
 	void        OnRename(const QModelIndex& index) const;
 	void        EditLayer(CObjectLayer* pLayer) const;
-	void        OnLayerColorMenu(CDynamicPopupMenu& menuVisitor, const std::vector<CObjectLayer*>& layers, const std::vector<SColorPreset>& presets) const;
-	ColorB      AskForColor(const ColorB& color, QWidget* pParent) const;
 
 	void        SetSourceModel(QAbstractItemModel* model);
 	void        SyncSelection();
@@ -111,10 +106,11 @@ private:
 	QModelIndex FindLayerIndexInModel(const CObjectLayer* layer) const;
 	QModelIndex FindObjectInHierarchy(const QModelIndex& parentIndex, const CBaseObject* object) const;
 
-	ModelType m_modelType;
-	QAdvancedTreeView* m_treeView;
-	QFilteringPanel* m_filterPanel;
+	ModelType                   m_modelType;
+	QAdvancedTreeView*          m_treeView;
+	QFilteringPanel*            m_filterPanel;
 	QAttributeFilterProxyModel* m_pAttributeFilterProxyModel;
+
 	bool m_syncSelection;
 	bool m_ignoreSelectionEvents;
 };

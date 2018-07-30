@@ -38,7 +38,7 @@ namespace EditorSubstance
 		m_pModalGuard->resize(size());
 		m_pModalGuard->hide();
 		m_foldersView = new CAssetFoldersView(this);
-		m_foldersView->SelectFolder(asset->GetFolder());
+		m_foldersView->SelectFolder(asset->GetFolder().c_str());
 		m_foldersView->setSelectionMode(QAbstractItemView::SingleSelection);
 		m_pPathEdit = new CFileNameLineEdit(this);
 		m_pPathEdit->setText(QString(PathUtil::GetUniqueName(string(asset->GetName()) + "." + CAssetManager::GetInstance()->FindAssetType("SubstanceInstance")->GetFileExtension(), asset->GetFolder()).c_str()));

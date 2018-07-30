@@ -137,6 +137,9 @@ public:
 	const char* GetSectionName(int section) const;
 	// Returns index of the section with the name equal to the szName value or eSections_Default if no such section is found. 
 	int FindSectionByName(const char* szName) const;
+	// Returns index of the section with the name equal to the szName value. 
+	// If the section is not found it will be created.
+	int FindOrCreateSectionByName(const char* szName);
 
 	CAbstractMenu* FindMenu(const char* szName);
 	CAbstractMenu* FindMenuRecursive(const char* szName);

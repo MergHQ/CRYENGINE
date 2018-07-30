@@ -138,7 +138,7 @@ bool CMainWindow::Open(CAsset* pAsset)
 		AddRecentFile(QString(pAsset->GetMetadataFile()));
 		m_pModel->OpenAsset(pAsset);
 
-		setWindowTitle(QString("%1: %2").arg(pAsset->GetType()->GetUiTypeName(), pAsset->GetName()));
+		setWindowTitle(QString("%1: %2").arg(pAsset->GetType()->GetUiTypeName(), pAsset->GetName().c_str()));
 	}
 	return true;
 }

@@ -263,7 +263,10 @@ std::vector<string> CAssetType::GetAssetFiles(const CAsset& asset, bool includeS
 		files.emplace_back(asset.GetFile(i));
 	}
 	files.emplace_back(asset.GetMetadataFile());
-	files.emplace_back(asset.GetThumbnailPath());
+	if (HasThumbnail())
+	{
+		files.emplace_back(asset.GetThumbnailPath());
+	}
 	if (includeSourceFile)
 	{
 		files.emplace_back(asset.GetSourceFile());
@@ -286,69 +289,17 @@ std::vector<string> CAssetType::GetAssetFiles(const CAsset& asset, bool includeS
 	return files;
 }
 
-bool CAssetType::DeleteAssetFiles(const CAsset& asset, bool bDeleteSourceFile, size_t& numberOfFilesDeleted) const
+bool CAssetType::IsInPakOnly(const CAsset& asset) const
 {
-	numberOfFilesDeleted = 0;
-
-	if (asset.IsReadOnly())
+	std::vector<string> filepaths(GetAssetFiles(asset, false, true));
+	for (string& path : filepaths)
 	{
-		CryWarning(EValidatorModule::VALIDATOR_MODULE_EDITOR, EValidatorSeverity::VALIDATOR_ERROR, "Unable to delete asset \"%s\": the asset is read only.", asset.GetName());
-		return false;
-	}
-
-	bool bReadOnly = false;
-	std::vector<string> filesToRemove;
-
-	{
-		const std::vector<string> files(GetAssetFiles(asset, bDeleteSourceFile, true));
-		filesToRemove.reserve(files.size());
-		for (const string& path : files)
+		if (PathUtil::IsFileInPakOnly(path))
 		{
-			QFileInfo fileInfo(QtUtil::ToQString(path));
-			if (!fileInfo.exists())
-			{
-				if (GetISystem()->GetIPak()->IsFileExist(PathUtil::AbsolutePathToGamePath(path), ICryPak::eFileLocation_InPak))
-				{
-					CryWarning(EValidatorModule::VALIDATOR_MODULE_EDITOR, EValidatorSeverity::VALIDATOR_ERROR, "Unable to delete asset. The file is in pak: \"%s\"", path.c_str());
-					bReadOnly = true;
-				}
-				continue;
-			}
-			else if (!fileInfo.isWritable())
-			{
-				CryWarning(EValidatorModule::VALIDATOR_MODULE_EDITOR, EValidatorSeverity::VALIDATOR_ERROR, "Unable to delete asset. The file is read-only: \"%s\"", path.c_str());
-				bReadOnly = true;
-				continue;
-			}
-
-			filesToRemove.push_back(path);
+			return true;
 		}
 	}
-
-	if (bReadOnly)
-	{
-		return false;
-	}
-
-	if (filesToRemove.empty())
-	{
-		// Expected result already reached.
-		return true;
-	}
-
-	for (const string& file : filesToRemove)
-	{
-		if (QFile::remove(QtUtil::ToQString(file.c_str())))
-		{
-			++numberOfFilesDeleted;
-		}
-		else
-		{
-			GetISystem()->GetILog()->LogWarning("Can not delete asset file %s", file.c_str());
-		}
-	}
-
-	return numberOfFilesDeleted == filesToRemove.size();
+	return false;
 }
 
 void CAssetType::SetInstantEditor(CAssetEditor* pEditor)

@@ -700,13 +700,10 @@ bool CLevelEditor::OnNew()
 			}
 		}
 	}
-	else if (!pLevelType->DeleteAssetFiles(*pAsset, false, filesDeleted))
+	else if (!CAssetManager::GetInstance()->DeleteAssetsWithFiles({ pAsset }))
 	{
-		if (filesDeleted)
-		{
-			auto messageText = tr("Failed to remove some files of the level that has to be overwritten:\n%1").arg(levelPath);
-			CQuestionDialog::SWarning(tr("New Level failed"), messageText);
-		}
+		auto messageText = tr("Failed to remove some files of the level that has to be overwritten:\n%1").arg(levelPath);
+		CQuestionDialog::SWarning(tr("New Level failed"), messageText);
 		return true;
 	}
 
@@ -868,7 +865,7 @@ void CLevelEditor::SaveCryassetFile(const string& levelPath)
 	if (pAsset)
 	{
 		CEditableAsset editAsset(*pAsset);
-		CLevelType::UpdateDependencies(editAsset);
+		CLevelType::UpdateFilesAndDependencies(editAsset);
 		editAsset.WriteToFile();
 		return;
 	}
@@ -881,8 +878,7 @@ void CLevelEditor::SaveCryassetFile(const string& levelPath)
 	CAsset asset(pType->GetTypeName(), CryGUID::Create(), PathUtil::GetFile(cryassetPath));
 	CEditableAsset editAsset(asset);
 	editAsset.SetMetadataFile(cryassetPath);
-	editAsset.AddFile(localLevelPath);
-	CLevelType::UpdateDependencies(editAsset);
+	CLevelType::UpdateFilesAndDependencies(editAsset);
 	editAsset.WriteToFile();
 }
 

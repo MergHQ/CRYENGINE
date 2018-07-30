@@ -1621,10 +1621,10 @@ static void PyDeletePrefabItem(const char* itemName)
 	{
 		return;
 	}
-	pAssetManager->DeleteAssets({ pAsset }, true);
+	pAssetManager->DeleteAssetsWithFiles({ pAsset });
 }
 
-static std::vector<std::string> PyGetPrefabItems()
+static std::vector<string> PyGetPrefabItems()
 {
 	CAssetManager* const pAssetManager = GetIEditor()->GetAssetManager();
 	const CAssetType* const pPrefabAssetType = GetIEditor()->GetAssetManager()->FindAssetType("Prefab");
@@ -1633,7 +1633,7 @@ static std::vector<std::string> PyGetPrefabItems()
 		return {};
 	}
 
-	std::vector<std::string> results;
+	std::vector<string> results;
 	pAssetManager->ForeachAsset([&results, pPrefabAssetType](CAsset* pAsset)
 		{
 			if (pAsset->GetType() == pPrefabAssetType)

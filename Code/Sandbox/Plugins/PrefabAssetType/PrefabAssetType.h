@@ -19,7 +19,7 @@ public:
 	virtual bool        CanAutoRepairMetadata() const override { return false; } //! Prefab assets use unique guids that can not be automatically restored.
 	virtual const char* GetObjectClassName() const             { return "Prefab"; }
 	virtual string      GetObjectFilePath(const CAsset* pAsset) const;
-	virtual bool        DeleteAssetFiles(const CAsset& asset, bool bDeleteSourceFile, size_t& numberOfFilesDeleted) const;
+	virtual void        PreDeleteAssetFiles(const CAsset& asset) const override;
 
 private:
 
