@@ -372,7 +372,10 @@ void CSelectionGroup::Rotate(const Matrix34& rotateTM) const
 
 		if (coordinateSystem == CLevelEditorSharedState::CoordSystem::UserDefined)
 		{
-			Matrix34 userTM = gSnappingPreferences.GetMatrix();
+			Matrix34 userTM = Matrix34::CreateIdentity();
+			GetManipulatorMatrix(userTM);
+			userTM.SetTranslation(Vec3(0, 0, 0));
+
 			Matrix34 invUserTM = userTM.GetInvertedFast();
 
 			ToOrigin = invUserTM * ToOrigin;

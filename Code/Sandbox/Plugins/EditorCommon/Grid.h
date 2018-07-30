@@ -40,7 +40,6 @@ struct EDITOR_COMMON_API SSnappingPreferences : public SPreferencePage
 	Vec3         Snap(const Vec3& vec, double fZoom) const;
 	double       SnapAngle(double angle) const;
 	Ang3         SnapAngle(const Ang3& vec) const;
-	Matrix34     GetMatrix() const;
 
 	uint16 GetSnapMode() const;
 

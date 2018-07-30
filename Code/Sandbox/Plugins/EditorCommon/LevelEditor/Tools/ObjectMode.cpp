@@ -470,7 +470,9 @@ bool CObjectMode::OnLButtonDown(CViewport* view, int nFlags, CPoint point)
 
 	if (coordSys == CLevelEditorSharedState::CoordSystem::UserDefined)
 	{
-		Matrix34 userTM = gSnappingPreferences.GetMatrix();
+		Matrix34 userTM = Matrix34::CreateIdentity();
+		GetIEditor()->GetISelectionGroup()->GetManipulatorMatrix(userTM);
+		userTM.SetTranslation(Vec3(0, 0, 0));
 		userTM.SetTranslation(gridPosition);
 		view->SetConstructionMatrix(userTM);
 	}
