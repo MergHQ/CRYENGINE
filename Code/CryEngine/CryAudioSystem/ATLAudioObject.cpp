@@ -1174,9 +1174,9 @@ void CATLAudioObject::ForceImplementationRefresh(
 		{
 			pParameter->Set(*this, parameterPair.second);
 		}
-		else
+		else if (!SetDefaultParameterValue(parameterPair.first, parameterPair.second))
 		{
-			SetDefaultParameterValue(parameterPair.first, parameterPair.second);
+			Cry::Audio::Log(ELogType::Warning, "Parameter \"%u\" does not exist!", parameterPair.first);
 		}
 	}
 
@@ -1216,9 +1216,9 @@ void CATLAudioObject::ForceImplementationRefresh(
 		{
 			pTrigger->Execute(*this, triggerStatePair.first, triggerStatePair.second);
 		}
-		else
+		else if (!ExecuteDefaultTrigger(triggerStatePair.second.triggerId))
 		{
-			ExecuteDefaultTrigger(triggerStatePair.second.triggerId);
+			Cry::Audio::Log(ELogType::Warning, "Trigger \"%u\" does not exist!", triggerStatePair.second.triggerId);
 		}
 	}
 
@@ -1359,8 +1359,12 @@ void CATLAudioObject::SetName(char const* const szName, SRequestUserData const& 
 }
 
 //////////////////////////////////////////////////////////////////////////
-void CATLAudioObject::SetDefaultParameterValue(ControlId const id, float const value) const
+bool CATLAudioObject::SetDefaultParameterValue(ControlId const id, float const value) const
 {
+	CRY_ASSERT_MESSAGE(this != g_pObject, "CATLAudioObject::SetDefaultParameterValue mustn't happen on the global object!");
+
+	bool wasSuccess = true;
+
 	switch (id)
 	{
 	case AbsoluteVelocityParameterId:
@@ -1370,15 +1374,19 @@ void CATLAudioObject::SetDefaultParameterValue(ControlId const id, float const v
 		g_pRelativeVelocityParameter->Set(*this, value);
 		break;
 	default:
-		CRY_ASSERT_MESSAGE(false, R"(The default parameter "%u" does not exist.)", id);
+		wasSuccess = false;
 		break;
 	}
+
+	return wasSuccess;
 }
 
 //////////////////////////////////////////////////////////////////////////
-void CATLAudioObject::ExecuteDefaultTrigger(ControlId const id)
+bool CATLAudioObject::ExecuteDefaultTrigger(ControlId const id)
 {
 	CRY_ASSERT_MESSAGE(this == g_pObject, "CATLAudioObject::ExecuteDefaultTrigger must happen only on the global object!");
+
+	bool wasSuccess = true;
 
 	switch (id)
 	{
@@ -1401,8 +1409,10 @@ void CATLAudioObject::ExecuteDefaultTrigger(ControlId const id)
 		g_pResumeAllTrigger->Execute();
 		break;
 	default:
-		CRY_ASSERT_MESSAGE(false, R"(The default trigger "%u" does not exist.)", id);
+		wasSuccess = false;
 		break;
 	}
+
+	return wasSuccess;
 }
 } // namespace CryAudio

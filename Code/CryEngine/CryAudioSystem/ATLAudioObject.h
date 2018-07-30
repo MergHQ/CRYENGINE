@@ -169,8 +169,8 @@ private:
 		Vec3 const& listenerVelocity,
 		bool const listenerMoved);
 	void TryToSetRelativeVelocity(float const relativeVelocity);
-	void SetDefaultParameterValue(ControlId const id, float const value) const;
-	void ExecuteDefaultTrigger(ControlId const id);
+	bool SetDefaultParameterValue(ControlId const id, float const value) const;
+	bool ExecuteDefaultTrigger(ControlId const id);
 
 	ObjectStandaloneFileMap m_activeStandaloneFiles;
 	ObjectEventSet          m_activeEvents;
