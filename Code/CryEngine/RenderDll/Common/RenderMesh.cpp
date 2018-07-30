@@ -1531,7 +1531,7 @@ void CRenderMesh::ComputeSkinningCreateBindPoseAndMorphBuffers(CMesh& mesh)
 	compute_skinning::SSkinVertexIn* vertices             = static_cast<compute_skinning::SSkinVertexIn*>(AllocateMeshDataUnpooled(sizeof(compute_skinning::SSkinVertexIn) * m_nVerts));
 	vtx_idx*                         indices              = static_cast<vtx_idx*>(AllocateMeshDataUnpooled(sizeof(vtx_idx) * m_nInds));
 	Vec4*                            vertexDeltas         = static_cast<Vec4*>(AllocateMeshDataUnpooled(sizeof(Vec4) * mesh.m_vertexDeltas.size()));
-	uint64*                          vertexMorphsBitfield = static_cast<uint64*>(AllocateMeshDataUnpooled(sizeof(uint64) * mesh.m_verticesDeltaOffsets.size()));
+	uint64*                          vertexMorphsBitfield = static_cast<uint64*>(AllocateMeshDataUnpooled(sizeof(uint64) * mesh.m_vertexMorphsBitfield.size()));
 	
 	memcpy(indices, mesh.m_pIndices, sizeof(vtx_idx) * m_nInds);
 	memcpy(vertexDeltas, mesh.m_vertexDeltas.data(), sizeof(Vec4) * mesh.m_vertexDeltas.size());
