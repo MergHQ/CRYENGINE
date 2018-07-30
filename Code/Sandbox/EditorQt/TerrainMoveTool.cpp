@@ -94,7 +94,7 @@ int CTerrainMoveTool::m_targetRot = 0.0f;
 
 CTerrainMoveTool::CTerrainMoveTool()
 	: m_archive(nullptr)
-	, m_isSyncHeight(false)
+	, m_isSyncHeight(true)
 	, m_onlyVegetation(false)
 	, m_onlyTerrain(false)
 	, m_moveObjects(false)
