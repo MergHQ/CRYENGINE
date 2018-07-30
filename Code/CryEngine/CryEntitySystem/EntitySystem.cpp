@@ -806,6 +806,8 @@ void CEntitySystem::RemoveEntity(CEntity* pEntity, bool forceRemoveImmediately, 
 					m_deferredUsedEntities.push_back(pEntity);
 				}
 			}
+
+			pEntity->SetInternalFlag(CEntity::EInternalFlag::BlockEvents, true);
 		}
 	}
 }
@@ -815,6 +817,7 @@ void CEntitySystem::ResurrectGarbageEntity(CEntity* pEntity)
 {
 	CRY_ASSERT(pEntity->HasInternalFlag(CEntity::EInternalFlag::MarkedForDeletion));
 	pEntity->SetInternalFlag(CEntity::EInternalFlag::MarkedForDeletion, false);
+	pEntity->SetInternalFlag(CEntity::EInternalFlag::BlockEvents, false);
 
 	// Entity may have been queued for deletion
 	stl::find_and_erase(m_deletedEntities, pEntity);
