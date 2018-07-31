@@ -364,4 +364,3 @@ void CFolderTreeCtrl::CTreeItem::RemoveChild(CTreeItem* item)
 	if (findIter != m_children.end())
 		m_children.erase(findIter);
 }
-

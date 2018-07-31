@@ -24,4 +24,3 @@ using Serialization::JointName;
 #include <CrySerialization/ClassFactory.h>
 #include <CrySerialization/Enum.h>
 using Serialization::IArchive;
-

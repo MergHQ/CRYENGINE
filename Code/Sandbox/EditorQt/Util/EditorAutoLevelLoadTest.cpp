@@ -29,4 +29,3 @@ void CEditorAutoLevelLoadTest::OnEditorNotifyEvent(EEditorNotifyEvent event)
 		break;
 	}
 }
-

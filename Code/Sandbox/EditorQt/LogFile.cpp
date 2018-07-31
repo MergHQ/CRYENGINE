@@ -482,4 +482,3 @@ void CLogFile::OnWriteToConsole(const char* sText, bool bNewLine)
 void CLogFile::OnWriteToFile(const char* sText, bool bNewLine)
 {
 }
-

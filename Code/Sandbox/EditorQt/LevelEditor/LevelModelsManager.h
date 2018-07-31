@@ -61,4 +61,3 @@ private:
 	int m_batchProcessStackIndex{ 0 };
 	bool m_ignoreLayerNotify{ false };
 };
-

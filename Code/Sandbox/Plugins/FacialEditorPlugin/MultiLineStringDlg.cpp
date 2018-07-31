@@ -46,4 +46,3 @@ BOOL CMultiLineStringDlg::OnInitDialog()
 
 	return res;  // return TRUE unless you set the focus to a control
 }
-

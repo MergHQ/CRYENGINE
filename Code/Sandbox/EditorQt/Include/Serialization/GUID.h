@@ -29,4 +29,3 @@ inline bool Serialize(Serialization::IArchive& ar, GUID& guid, const char* name,
 		guid = GuidUtil::FromString(str.c_str());
 	return true;
 }
-

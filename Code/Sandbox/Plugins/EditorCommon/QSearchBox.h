@@ -75,4 +75,3 @@ void QSearchBox::SetSearchFunction(Function function)
 {
 	SetSearchFunction(function_cast<void(const QString&)>(function));
 }
-

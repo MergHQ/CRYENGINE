@@ -54,4 +54,3 @@ private:
 	Vec3  m_initPosition;
 	Vec3  m_interactionOffset;
 };
-

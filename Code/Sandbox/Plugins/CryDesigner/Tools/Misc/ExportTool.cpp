@@ -93,4 +93,3 @@ void ExportTool::Serialize(Serialization::IArchive& ar)
 
 REGISTER_DESIGNER_TOOL_WITH_PROPERTYTREE_PANEL_AND_COMMAND(eDesigner_Export, eToolGroup_Misc, "Export", ExportTool,
                                                            export, "runs export tool", "designer.export")
-

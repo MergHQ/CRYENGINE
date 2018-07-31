@@ -51,5 +51,3 @@ void DesignerDockable::SetupUI()
 }
 
 }
-
-

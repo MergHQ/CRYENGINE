@@ -59,4 +59,3 @@ private:
 	string m_uiName;
 	string m_desription;
 };
-

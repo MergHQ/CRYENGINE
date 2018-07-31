@@ -51,4 +51,3 @@ protected:
 	QPoint m_cursorOffset;
 	static QSharedPointer<QTrackingTooltip> m_instance;
 };
-

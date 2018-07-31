@@ -762,4 +762,3 @@ bool GradientFillRect(HDC hDC, CRect& rRect, COLORREF aStartColor, COLORREF aEnd
 
 	return TRUE == GradientFill(hDC, vert, 2, &gRect, 1, aFillType);
 }
-

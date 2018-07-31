@@ -221,4 +221,3 @@ bool CAxisTranslateGizmo::HitTest(HitContext& hc)
 
 	return false;
 }
-

@@ -127,4 +127,3 @@ typedef PropertyRowLocalFrameImpl<Serialization::LocalFrame>       PropertyRowLo
 REGISTER_PROPERTY_ROW(Serialization::LocalPosition, PropertyRowLocalPosition);
 REGISTER_PROPERTY_ROW(Serialization::LocalOrientation, PropertyRowLocalOrientation);
 REGISTER_PROPERTY_ROW(Serialization::LocalFrame, PropertyRowLocalFrame);
-

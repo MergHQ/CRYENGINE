@@ -235,4 +235,3 @@ dll_string JointNameSelector(const SResourceSelectorContext& x, const char* prev
 	return jointName.c_str();
 }
 REGISTER_RESOURCE_SELECTOR("Joint", JointNameSelector, "icons:common/animation_bone.ico")
-

@@ -704,4 +704,3 @@ private:
 
 #define MODEL_SHELF_RECONSTRUCTOR_POSTFIX(pModel, nPostFix) Designer::CShelfIDReconstructor shelfIDReconstructor ## nPostFix(pModel);
 #define MODEL_SHELF_RECONSTRUCTOR(pModel)                   MODEL_SHELF_RECONSTRUCTOR_POSTFIX(pModel, 0);
-

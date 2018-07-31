@@ -34,4 +34,3 @@ private:
 	int           m_column;
 	Qt::SortOrder m_order;
 };
-

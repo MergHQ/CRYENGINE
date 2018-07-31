@@ -242,4 +242,3 @@ public:
 private:
 	SInputEvent* m_pInput;
 };
-

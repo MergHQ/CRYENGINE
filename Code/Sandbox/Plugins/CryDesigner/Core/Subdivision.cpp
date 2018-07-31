@@ -298,4 +298,3 @@ void Subdivision::CalculateNextLocations(
 	}
 }
 }
-

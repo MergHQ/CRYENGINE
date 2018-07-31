@@ -96,4 +96,3 @@ Schematyc::IScript* CLibraryAssetType::GetScript(const CAsset& asset) const
 	return nullptr;
 }
 }
-

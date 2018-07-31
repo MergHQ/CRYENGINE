@@ -63,4 +63,3 @@ public:
 	CRuntimeClass* GetRuntimeClass()            { return RUNTIME_CLASS(CSmartObject); }
 	virtual bool   IsCreatable() const override { return gEnv->pEntitySystem->GetClassRegistry()->FindClass("SmartObject") != nullptr; }
 };
-

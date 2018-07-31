@@ -316,4 +316,3 @@ struct PropertyRowCurves : PropertyRowCurve
 REGISTER_PROPERTY_ROW(ISplineEvaluator, PropertyRowCurve);
 
 REGISTER_PROPERTY_ROW(IMultiSplineEvaluator, PropertyRowCurves);
-

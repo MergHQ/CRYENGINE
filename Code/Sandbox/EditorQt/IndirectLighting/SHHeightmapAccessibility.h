@@ -399,4 +399,3 @@ protected: // ------------------------------------------------------------------
 	  const float cWedgeHorizonAngle
 	);
 }; // CHemisphereSink_SH
-

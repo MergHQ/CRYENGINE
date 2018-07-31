@@ -214,4 +214,3 @@ void QToolWindowWrapper::deferDeletion()
 	setParent(nullptr);
 	deleteLater();
 }
-

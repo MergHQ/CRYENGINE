@@ -17,4 +17,3 @@ public:
 	BrushVec3 SnapVertexToGrid(const BrushVec3& vPos);
 };
 }
-

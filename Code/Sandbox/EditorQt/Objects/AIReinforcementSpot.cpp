@@ -134,4 +134,3 @@ void CAIReinforcementSpot::GetLocalBounds(AABB& box)
 	box.min = -Vec3(r, r, r);
 	box.max = Vec3(r, r, r);
 }
-

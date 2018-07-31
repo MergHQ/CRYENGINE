@@ -177,4 +177,3 @@ bool CFileSortProxyModel::lessThan(const QModelIndex& sourceLeft, const QModelIn
 	CRY_ASSERT(false);
 	return false;
 }
-

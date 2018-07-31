@@ -79,5 +79,3 @@ struct PropertyTreeStyle
 		ar(Range(groupShade, -1.0f, 1.0f), "groupShade", "Group Shade");	ar.doc("Shade of the group.");
 	}
 };
-
-

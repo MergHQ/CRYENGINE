@@ -68,4 +68,3 @@ private:
 	QPropertyTree*           m_pPropertyTree;
 	std::vector<STrackViewPropertiesRoot> m_properties;
 };
-

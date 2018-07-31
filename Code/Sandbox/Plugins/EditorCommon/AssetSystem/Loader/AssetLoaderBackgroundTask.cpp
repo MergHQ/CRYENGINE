@@ -111,4 +111,3 @@ void Run(const std::vector<string>& assetRootPaths, std::function<void(const std
 }
 
 };
-

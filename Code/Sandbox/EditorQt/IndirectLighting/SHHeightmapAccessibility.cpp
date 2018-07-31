@@ -574,4 +574,3 @@ void CHemisphereSink_SH::AddSample
 		pSample->SetSampleLink(m_AddSamples.size());
 	m_AddSamples.push_back(addSample);
 }
-

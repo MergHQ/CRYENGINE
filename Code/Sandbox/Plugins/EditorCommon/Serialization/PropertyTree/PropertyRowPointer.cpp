@@ -283,4 +283,3 @@ void PropertyRowPointer::setValueAndContext(const yasli::PointerInterface& ptr, 
 }
 
 // vim:ts=4 sw=4:
-

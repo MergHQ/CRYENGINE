@@ -348,4 +348,3 @@ void SEditorSettings::LoadFrom(const QString& filename)
 	QDir dir(filename);
 	dir.remove(filename);
 }
-

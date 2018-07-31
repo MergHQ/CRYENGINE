@@ -290,4 +290,3 @@ void CGlobalImportSettings::SOutputSettings::Serialize(yasli::Archive& ar)
 	ar(bVertexPositionFormatF32, "use_32_bit_positions", "Use 32bit precision");
 	ar.doc("When this option is selected, the importer stores vertex positions using 32 bit per coordinate instead of 16 bit.");
 }
-

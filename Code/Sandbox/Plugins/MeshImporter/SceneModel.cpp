@@ -653,4 +653,3 @@ QVariant CSceneModel::GetToolTipForColumn(int column)
 	}
 	return QVariant();
 }
-

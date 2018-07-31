@@ -21,4 +21,3 @@ public:
 private:
 	SPhysProxies* m_pPhysProxies;
 };
-

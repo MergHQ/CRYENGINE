@@ -141,4 +141,3 @@ void CTrackViewKeysToolbar::OnSyncSelectedTracksFromBase()
 {
 	GetTrackViewCore()->OnSyncSelectedTracksFromBase();
 }
-

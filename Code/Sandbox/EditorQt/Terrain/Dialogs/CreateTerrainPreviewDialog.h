@@ -18,4 +18,3 @@ public:
 private:
 	CTerrainTextureDimensionsUi* m_pDimensions;
 };
-

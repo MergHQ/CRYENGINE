@@ -113,4 +113,3 @@ private:
 	string              m_assetFolderPath;
 };
 } // namespace ACE
-

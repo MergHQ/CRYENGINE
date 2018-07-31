@@ -380,4 +380,3 @@ double GetUnitSizeInCm(EUnitSetting unit, double fromFile)
 
 }   // namespace Units
 }
-

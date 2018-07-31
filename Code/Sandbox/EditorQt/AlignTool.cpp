@@ -204,4 +204,3 @@ bool CAlignPickCallback::OnPickFilter(CBaseObject* filterObject)
 {
 	return true;
 };
-

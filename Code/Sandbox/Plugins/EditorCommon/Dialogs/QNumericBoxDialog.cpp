@@ -86,5 +86,3 @@ void QNumericBoxDialog::accept()
 
 	CEditorDialog::accept();
 }
-
-

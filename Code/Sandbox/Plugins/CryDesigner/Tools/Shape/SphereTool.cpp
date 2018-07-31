@@ -66,4 +66,3 @@ void SphereTool::Register()
 
 REGISTER_DESIGNER_TOOL_WITH_PROPERTYTREE_PANEL_AND_COMMAND(eDesigner_Sphere, eToolGroup_Shape, "Sphere", SphereTool,
                                                            sphere, "runs sphere tool", "designer.sphere")
-

@@ -1617,4 +1617,3 @@ void CEditorImpl::SetPlayerViewMatrix(const Matrix34& tm, bool bEyePos /*= true*
 	if (GetGameEngine())
 		GetGameEngine()->SetPlayerViewMatrix(tm, bEyePos);
 }
-

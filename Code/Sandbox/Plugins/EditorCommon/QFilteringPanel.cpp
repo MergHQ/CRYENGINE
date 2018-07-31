@@ -1066,4 +1066,3 @@ void QFilteringPanel::OnSearch()
 	m_pModel->InvalidateFilter();
 	signalOnFiltered();
 }
-

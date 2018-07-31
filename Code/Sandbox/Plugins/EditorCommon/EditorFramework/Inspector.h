@@ -121,4 +121,3 @@ class CInspectorHeaderWidget : public QWidget
 public:
 	using QWidget::QWidget;
 };
-

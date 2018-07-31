@@ -48,4 +48,3 @@ private:
 
 	std::vector<SFileChangeCallback> m_vecFileChangeCallbacks;
 };
-

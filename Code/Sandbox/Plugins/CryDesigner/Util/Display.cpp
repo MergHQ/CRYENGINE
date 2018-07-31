@@ -277,4 +277,3 @@ void DisplayTriangulation(SDisplayContext& dc, MainContext& mc)
 }
 }
 }
-

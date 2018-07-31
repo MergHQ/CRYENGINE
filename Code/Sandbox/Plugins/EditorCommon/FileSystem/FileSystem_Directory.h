@@ -54,4 +54,3 @@ inline uint qHash(const DirectoryPtr& directory, uint seed)
 }
 
 } // namespace FileSystem
-

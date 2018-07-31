@@ -594,4 +594,3 @@ void CBreakpointsTreeCtrl::EnableTracepoint(HTREEITEM hItem, bool enable)
 }
 
 #undef VALIDATE_DEBUGGER
-

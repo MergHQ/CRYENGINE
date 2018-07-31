@@ -108,4 +108,3 @@ void QEditableComboBox::OnEditingFinished()
 	m_pLineEdit->setVisible(false);
 	m_pLineEdit->blockSignals(false);
 }
-

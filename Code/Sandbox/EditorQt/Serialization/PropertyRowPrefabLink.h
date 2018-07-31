@@ -69,4 +69,3 @@ public:
 	void onMenuClone();
 	void onMenuExtract();
 };
-

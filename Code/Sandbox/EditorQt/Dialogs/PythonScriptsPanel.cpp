@@ -101,4 +101,3 @@ void CPythonScriptsPanel::ExecuteScripts() const
 		}
 	}
 }
-

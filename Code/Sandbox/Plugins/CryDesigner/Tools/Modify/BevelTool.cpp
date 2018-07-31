@@ -1080,4 +1080,3 @@ void BevelTool::Display(SDisplayContext& dc)
 
 REGISTER_DESIGNER_TOOL_AND_COMMAND(eDesigner_Bevel, eToolGroup_Modify, "Bevel", BevelTool,
                                    bevel, "runs bevel tool", "designer.bevel")
-

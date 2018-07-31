@@ -60,4 +60,3 @@ protected:
 
 Q_DECLARE_METATYPE(FileSystem::SubTreeMonitorPtr)
 Q_DECLARE_METATYPE(FileSystem::SSubTreeMonitorUpdate)
-

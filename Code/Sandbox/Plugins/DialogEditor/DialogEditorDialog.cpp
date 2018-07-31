@@ -1548,4 +1548,3 @@ bool CDialogEditorDialog::DoSourceControlOp(CEditorDialogScript* pScript, ESourc
 	}
 	return bRes;
 }
-

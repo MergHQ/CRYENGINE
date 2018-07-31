@@ -711,4 +711,3 @@ bool ModelCompiler::IsValid() const
 	return m_pStatObj[0] || m_pStatObj[1];
 }
 };
-

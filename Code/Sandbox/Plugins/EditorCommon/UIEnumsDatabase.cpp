@@ -83,4 +83,3 @@ CUIEnumsDatabase_SEnum* CUIEnumsDatabase::FindEnum(const string& enumName) const
 	}
 	return pEnum;
 }
-

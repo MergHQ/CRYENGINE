@@ -328,4 +328,3 @@ void UVGizmo::RemoveCallback(IGizmoTransform* pGizmoTransform)
 
 }
 }
-

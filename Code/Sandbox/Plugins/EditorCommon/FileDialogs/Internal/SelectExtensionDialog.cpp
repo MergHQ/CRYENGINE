@@ -141,4 +141,3 @@ int CSelectExtensionDialog::exec()
 	}
 	return QDialog::exec();
 }
-

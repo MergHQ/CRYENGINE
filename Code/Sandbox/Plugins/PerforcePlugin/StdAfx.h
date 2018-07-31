@@ -7,4 +7,3 @@
 #include "EditorCommon.h"
 
 #include "QtUtil.h"
-

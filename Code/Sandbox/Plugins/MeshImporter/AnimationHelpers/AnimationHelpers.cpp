@@ -123,4 +123,3 @@ ICharacterInstance* CreateTemporaryCharacter(
 
 	return LoadCharacter(cdfFilePath);
 }
-

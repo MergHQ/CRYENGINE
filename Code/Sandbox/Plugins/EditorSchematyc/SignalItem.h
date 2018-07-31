@@ -9,4 +9,3 @@ namespace Schematyc {
 namespace CrySchematycEditor {
 
 }
-

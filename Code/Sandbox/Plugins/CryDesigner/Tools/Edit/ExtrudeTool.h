@@ -116,4 +116,3 @@ private:
 	PolygonPtr        m_pSelectedPolygon;
 };
 }
-

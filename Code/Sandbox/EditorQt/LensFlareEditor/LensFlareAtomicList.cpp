@@ -135,4 +135,3 @@ void CLensFlareAtomicList::OnDraggingItem(CPoint point)
 		pEditor->GetLensFlareItemTree()->UpdateDraggingFromOtherWindow();
 	}
 }
-

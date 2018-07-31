@@ -60,4 +60,3 @@ struct AnimationContent
 };
 
 }
-

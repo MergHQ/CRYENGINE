@@ -899,4 +899,3 @@ void CAssetEditor::SetInstantEditingMode(bool isActive)
 		m_pLockButton->setChecked(isActive);
 	}
 }
-

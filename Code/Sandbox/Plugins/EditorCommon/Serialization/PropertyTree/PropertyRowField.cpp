@@ -122,4 +122,3 @@ int PropertyRowField::hitButton(const PropertyTree* tree, const Point& point) co
 	}
 	return -1;
 }
-

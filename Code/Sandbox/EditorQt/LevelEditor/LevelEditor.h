@@ -94,4 +94,3 @@ private:
 	CDockableDialog* m_assetBrowser;
 	CTagLocations*   m_pTagLocations;
 };
-

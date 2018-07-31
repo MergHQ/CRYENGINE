@@ -6287,4 +6287,3 @@ REGISTER_ONLY_PYTHON_COMMAND_WITH_EXAMPLE(PySetEntityProperty, general, set_enti
 REGISTER_PYTHON_COMMAND_WITH_EXAMPLE(PyOpenEntityArchetype, entity, open_archetype,
                                      "Open archetype in a Entity Archetype editor",
                                      "entity.open_archetype archetypeName");
-

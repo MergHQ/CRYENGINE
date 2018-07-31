@@ -646,4 +646,3 @@ void CGraphViewModel::OnEndModelChange()
 
 	SignalInvalidated();
 }
-

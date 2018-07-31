@@ -909,4 +909,3 @@ const char* CompressionMachine::AnimationPathConsideringPreview(const char* inpu
 	return inputCaf;
 }
 }
-

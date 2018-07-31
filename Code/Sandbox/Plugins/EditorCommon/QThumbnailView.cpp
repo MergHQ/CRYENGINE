@@ -546,5 +546,3 @@ void QThumbnailsView::AddSizingButton(int size, int iconNumber)
 	m_button->setAutoRaise(true);
 	m_previewSizeButtons->addButton(m_button, size);
 }
-
-

@@ -166,4 +166,3 @@ void CGenerateHeightmapUi::SetupTerrainSize()
 	auto label = m_ui.m_pSizeValueLabel;
 	label->setText(labelText);
 }
-

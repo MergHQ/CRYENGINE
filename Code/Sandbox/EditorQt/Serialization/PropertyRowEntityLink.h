@@ -60,5 +60,3 @@ public:
 	void onMenuSelect();
 	void onMenuDelete();
 };
-
-

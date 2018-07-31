@@ -70,4 +70,3 @@ QModelIndex CSequenceEventsModel::parent(const QModelIndex& index) const
 {
 	return QModelIndex();
 }
-

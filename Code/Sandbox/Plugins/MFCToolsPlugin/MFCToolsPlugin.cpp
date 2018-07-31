@@ -27,4 +27,3 @@ PLUGIN_API void MFCToolsPlugin::Deinitialize()
 	g_editor = nullptr;
 	gEnv = nullptr;
 }
-

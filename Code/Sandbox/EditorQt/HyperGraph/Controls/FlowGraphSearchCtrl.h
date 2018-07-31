@@ -139,4 +139,3 @@ protected:
 	void GroupBy(CXTPReportColumn* pColumn); // pColumn may be 0 -> ungroup
 	CHyperGraphDialog* m_pDialog;
 };
-

@@ -56,4 +56,3 @@ private:
 
 	QAdvancedTreeView*             m_pEventsView;
 };
-

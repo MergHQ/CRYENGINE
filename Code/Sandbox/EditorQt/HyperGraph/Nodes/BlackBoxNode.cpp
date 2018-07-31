@@ -245,4 +245,3 @@ std::vector<CHyperNode*>* CBlackBoxNode::GetNodesSafe()
 
 	return &m_nodes;
 }
-

@@ -158,4 +158,3 @@ void CylinderTool::OnChangeParameter(bool continuous)
 
 REGISTER_DESIGNER_TOOL_WITH_PROPERTYTREE_PANEL_AND_COMMAND(eDesigner_Cylinder, eToolGroup_Shape, "Cylinder", CylinderTool,
                                                            cylinder, "runs cylinder tool", "designer.cylinder")
-

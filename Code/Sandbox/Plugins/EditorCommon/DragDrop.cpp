@@ -263,4 +263,3 @@ void CDragDropData::StartDrag(QObject* pDragSource, Qt::DropActions supportedAct
 	pDrag->exec(supportedActions);
 	tooltip.StopDrag();
 }
-

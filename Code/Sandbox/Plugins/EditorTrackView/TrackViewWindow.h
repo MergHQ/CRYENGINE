@@ -60,4 +60,3 @@ private:
 	CTrackViewCore*                       m_pTrackViewCore;
 	static std::vector<CTrackViewWindow*> ms_trackViewWindows;
 };
-

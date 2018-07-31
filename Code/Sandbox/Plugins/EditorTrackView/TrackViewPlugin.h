@@ -34,4 +34,3 @@ private:
 	static CAnimationContext*         ms_pAnimationContext;
 	static CTrackViewSequenceManager* ms_pSequenceManager;
 };
-

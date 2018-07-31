@@ -48,4 +48,3 @@ private:
 };
 
 #endif // __FacialSlidersDialog_h__
-

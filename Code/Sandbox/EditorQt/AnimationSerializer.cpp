@@ -97,4 +97,3 @@ void CAnimationSerializer::SerializeSequences(XmlNodeRef& xmlNode, bool bLoading
 		}
 	}
 }
-

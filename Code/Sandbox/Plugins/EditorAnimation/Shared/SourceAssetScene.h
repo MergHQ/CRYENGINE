@@ -53,4 +53,3 @@ struct Scene
 };
 
 }
-

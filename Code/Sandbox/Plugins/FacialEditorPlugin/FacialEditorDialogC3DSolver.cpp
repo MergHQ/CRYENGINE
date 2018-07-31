@@ -963,4 +963,3 @@ void CFacialEditorDialog::LoadC3DFile(const char* filename)
 	m_pContext->bSequenceModfied = true;
 	m_pContext->SendEvent(EFD_EVENT_SPLINE_CHANGE);
 }
-

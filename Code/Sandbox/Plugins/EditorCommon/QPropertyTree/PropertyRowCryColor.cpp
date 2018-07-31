@@ -431,4 +431,3 @@ typedef PropertyRowCryColor<SerializableColorF> PropertyRowCryColorF;
 REGISTER_PROPERTY_ROW(SerializableColorB, PropertyRowCryColorB);
 REGISTER_PROPERTY_ROW(Vec3AsColor, PropertyRowVec3AsColor);
 REGISTER_PROPERTY_ROW(SerializableColorF, PropertyRowCryColorF);
-

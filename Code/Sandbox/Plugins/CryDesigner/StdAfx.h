@@ -56,4 +56,3 @@
 #include "Core/Declaration.h"
 #include "Core/Common.h"
 #include "Util/DesignerSettings.h"
-

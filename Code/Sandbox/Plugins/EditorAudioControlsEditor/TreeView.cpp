@@ -227,4 +227,3 @@ void CTreeView::RestoreSelectionRecursively(QModelIndex const& index)
 	}
 }
 } // namespace ACE
-

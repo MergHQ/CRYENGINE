@@ -97,4 +97,3 @@ void CFacialPreviewOptionsDialog::SetContext(CFacialEdContext* pContext)
 {
 	m_pContext = pContext;
 }
-

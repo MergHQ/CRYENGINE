@@ -424,4 +424,3 @@ void CVehiclePaintsPanel::UpdateAssignMaterialButtonState()
 
 	m_applyMaterialButton.EnableWindow(materialSelected);
 }
-

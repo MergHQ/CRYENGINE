@@ -74,4 +74,3 @@ void CEditorPythonManager::RegisterPythonModule(const SPythonModule& module)
 	importStatement.Format("from sandbox import %s", module.m_name);
 	PyRun_SimpleString(importStatement.c_str());
 }
-

@@ -23,4 +23,3 @@ private:
 
 	CTrackViewAnimNode* m_pDirectorNode;
 };
-

@@ -374,4 +374,3 @@ QStandardItem* QObjectTreeWidget::FindOrCreate(const QString& itemName, QStandar
 
 	return pResult;
 }
-

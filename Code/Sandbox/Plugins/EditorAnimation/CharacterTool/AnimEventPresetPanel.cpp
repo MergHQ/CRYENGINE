@@ -199,4 +199,3 @@ void AnimEventPresetPanel::SavePresets()
 }
 
 }
-

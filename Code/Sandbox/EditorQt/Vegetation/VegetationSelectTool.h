@@ -98,4 +98,3 @@ private:
 	CVegetationMap*            m_pVegetationMap;
 	ITransformManipulator*     m_pManipulator;
 };
-

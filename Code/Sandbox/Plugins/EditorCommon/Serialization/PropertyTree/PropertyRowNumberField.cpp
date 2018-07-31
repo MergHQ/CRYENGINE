@@ -141,5 +141,3 @@ int PropertyRowNumberField::widgetSizeMin(const PropertyTree* tree) const
 }
 
 // ---------------------------------------------------------------------------
-
-

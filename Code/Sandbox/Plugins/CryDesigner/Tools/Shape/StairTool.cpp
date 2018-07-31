@@ -342,4 +342,3 @@ void StairTool::RegisterShape(PolygonPtr pFloorPolygon)
 
 REGISTER_DESIGNER_TOOL_WITH_PROPERTYTREE_PANEL_AND_COMMAND(eDesigner_Stair, eToolGroup_Shape, "Stair", StairTool,
                                                            stair, "runs stair tool", "designer.stair")
-

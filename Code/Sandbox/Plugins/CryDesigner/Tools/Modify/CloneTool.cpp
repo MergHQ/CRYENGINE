@@ -331,4 +331,3 @@ REGISTER_DESIGNER_TOOL_WITH_PROPERTYTREE_PANEL_AND_COMMAND(eDesigner_CircleClone
                                                            circleclone, "runs Circle Clone Tool", "designer.circleclone")
 REGISTER_DESIGNER_TOOL_WITH_PROPERTYTREE_PANEL_AND_COMMAND(eDesigner_ArrayClone, eToolGroup_Modify, "Array Clone", ArrayCloneTool,
                                                            arrayclone, "runs Array Clone Tool", "designer.arrayclone")
-

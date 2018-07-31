@@ -1203,4 +1203,3 @@ void ActionOutput::Show(QWidget* parent) const
 }
 
 }
-

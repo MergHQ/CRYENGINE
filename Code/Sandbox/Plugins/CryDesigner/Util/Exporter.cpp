@@ -402,4 +402,3 @@ void Exporter::ComputeAreaSolidMemoryStatistic(AreaSolidObject* pAreaSolid, Area
 	}
 }
 }
-

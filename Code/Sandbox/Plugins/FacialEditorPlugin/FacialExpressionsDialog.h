@@ -113,4 +113,3 @@ private:
 };
 
 #endif // __FacialExpressionsDialog_h__
-

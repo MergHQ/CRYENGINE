@@ -24,4 +24,3 @@ struct SCompressionPresetTable
 	bool Save(const char* tablePath);
 	void Serialize(Serialization::IArchive& ar);
 };
-

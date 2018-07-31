@@ -53,4 +53,3 @@ struct IIconManager
 	virtual int        GetIconTexture(const char* szIconName, CryIcon& icon) = 0;
 	virtual IMaterial* GetHelperMaterial() = 0;
 };
-

@@ -44,4 +44,3 @@ protected:
 };
 
 #endif // #ifndef _C_COLOREDBUTTON_H__INCLUDED
-

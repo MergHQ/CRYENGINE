@@ -65,5 +65,3 @@ protected:
 	ComboBoxClientRow* client_;
 	QPropertyTree* tree_;
 };
-
-

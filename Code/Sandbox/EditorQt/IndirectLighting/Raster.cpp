@@ -431,4 +431,3 @@ void CBBoxRaster::SaveTGA(const char* cpName) const
 			pixels[j * scRasterRes + i] = GetEntry(m_pRasterZX, scRasterRes - 1 - j, i) ? 0xFFFFFFFF : 0;
 	NQT::SaveTGA32(name + "ZX.tga", pixels, scRasterRes);
 }
-

@@ -192,4 +192,3 @@ void CVehicleMovementPanel::OnSize(UINT nType, int cx, int cy)
 	if (m_propsCtrl.m_hWnd)
 		m_propsCtrl.MoveWindow(0, 0, rc.right, rc.bottom, true);
 }
-

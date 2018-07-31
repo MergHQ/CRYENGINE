@@ -59,4 +59,3 @@ bool SubObjectSelectionReferenceFrameCalculator::GetFrame(Matrix34& refFrame)
 		return bAnySelected;
 	}
 }
-

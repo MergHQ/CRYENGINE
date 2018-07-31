@@ -372,4 +372,3 @@ void PropertyIArchive::closeRow(const char* name)
 	YASLI_ASSERT(!strcmp(currentNode_->name_, name));
 	currentNode_ = currentNode_->parent();
 }
-

@@ -83,4 +83,3 @@ private:
 
 	bool                               m_bApplyingMaterials;
 };
-

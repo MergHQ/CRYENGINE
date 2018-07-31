@@ -92,4 +92,3 @@ struct ISourceControl : public IClassDesc, public _i_reference_target_t
 	virtual bool           DeleteChangeList(char* changeid)                                                               { return false; }
 	virtual bool           Reopen(const char* filename, char* changeid = NULL)                                            { return false; }
 };
-

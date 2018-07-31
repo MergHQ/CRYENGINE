@@ -143,4 +143,3 @@ public:
 #undef STYLE_PROP
 
 EDITOR_COMMON_API EditorStyleHelper* GetStyleHelper();
-

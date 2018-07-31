@@ -385,4 +385,3 @@ Qt::CheckState QAdvancedItemDelegate::Check(QAbstractItemModel* model, const QMo
 
 	return returnVal;
 }
-

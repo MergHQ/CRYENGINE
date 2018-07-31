@@ -88,4 +88,3 @@ private:
 	CConnectionScope    m_connectionScope;
 };
 } // Schematyc
-

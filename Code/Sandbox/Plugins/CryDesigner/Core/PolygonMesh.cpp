@@ -144,4 +144,3 @@ void PolygonMesh::ApplyMaterial()
 }
 
 };
-

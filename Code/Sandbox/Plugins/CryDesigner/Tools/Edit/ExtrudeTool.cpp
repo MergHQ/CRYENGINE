@@ -580,4 +580,3 @@ void ExtrudeTool::OnEditorNotifyEvent(EEditorNotifyEvent event)
 
 REGISTER_DESIGNER_TOOL_WITH_PROPERTYTREE_PANEL_AND_COMMAND(eDesigner_Extrude, eToolGroup_Edit, "Extrude", ExtrudeTool,
                                                            extrude, "runs extrude tool", "designer.extrude")
-

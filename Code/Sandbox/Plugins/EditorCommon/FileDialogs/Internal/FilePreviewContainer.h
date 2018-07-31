@@ -32,4 +32,3 @@ private:
 	QAbstractButton* m_pToggleButton;
 	QWidget*         m_pPreviewWidget;
 };
-

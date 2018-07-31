@@ -20,4 +20,3 @@ struct STimeSliderOptions
 
 void DrawTimeSlider(QPainter& painter, const STimeSliderOptions& options);
 }
-

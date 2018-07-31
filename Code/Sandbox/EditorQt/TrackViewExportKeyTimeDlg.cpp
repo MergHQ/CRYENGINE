@@ -56,4 +56,3 @@ void CTrackViewExportKeyTimeDlg::SetChecks()
 	m_bAnimationTimeExport = m_animationTimeExport.GetCheck();
 	m_bSoundTimeExport = m_soundTimeExport.GetCheck();
 }
-

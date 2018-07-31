@@ -47,4 +47,3 @@ private:
 protected:
 	std::vector<AttributeFilterSharedPtr> m_filters;
 };
-

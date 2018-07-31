@@ -57,4 +57,3 @@ void SPhysProxies::Serialize(Serialization::IArchive& ar)
 	} advanced = { params };
 	ar(advanced, "advanced", "Advanced settings");
 }
-

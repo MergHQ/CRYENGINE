@@ -123,4 +123,3 @@ REGISTER_UVMAPPING_TOOL_AND_COMMAND(eUVMappingTool_Edge, eUVMappingToolGroup_Man
                                     edge, "runs edge tool", "uvmapping.edge")
 REGISTER_UVMAPPING_TOOL_AND_COMMAND(eUVMappingTool_Vertex, eUVMappingToolGroup_Manipulation, "Vertex", MoveVertexTool,
                                     vertex, "runs vertex tool", "uvmapping.vertex")
-

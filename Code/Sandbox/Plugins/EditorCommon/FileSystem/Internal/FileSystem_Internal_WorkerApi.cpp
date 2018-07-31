@@ -81,4 +81,3 @@ bool CWorkerApi::IsScannerActive() const
 
 } // namespace Internal
 } // namespace FileSystem
-

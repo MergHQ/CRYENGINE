@@ -518,4 +518,3 @@ void CConnectionItem::OnConnectionRemoved()
 }
 
 }
-

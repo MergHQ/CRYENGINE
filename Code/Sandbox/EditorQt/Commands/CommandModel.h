@@ -75,4 +75,3 @@ protected:
 
 	std::vector<CommandModule> m_modules;
 };
-

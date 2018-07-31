@@ -6,4 +6,3 @@ namespace PerforceConnection
 {
 bool OpenPasswordDlg(string& port, string& user, string& client, string& passwd, bool& bIsWorkOffline);
 }
-

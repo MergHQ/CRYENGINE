@@ -49,4 +49,3 @@ private:
 		return component;
 	}
 };
-

@@ -48,4 +48,3 @@ void ShowResaveAnimSettingsTool(AnimationList* animationList, QWidget* parent)
 }
 
 }
-

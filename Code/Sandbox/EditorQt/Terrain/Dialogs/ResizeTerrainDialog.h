@@ -27,4 +27,3 @@ private:
 	CGenerateHeightmapUi*      m_pHeightmap;
 	CGenerateTerrainTextureUi* m_pTexture;
 };
-

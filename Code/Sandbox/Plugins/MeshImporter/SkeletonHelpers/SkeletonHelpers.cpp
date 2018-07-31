@@ -230,4 +230,3 @@ void DrawHighlightedJoints(const ICharacterInstance& charIns, std::vector<float>
 		DrawHighlightedJoints(charIns.GetIDefaultSkeleton(), *charIns.GetISkeletonPose(), heat, eye);
 	}
 }
-

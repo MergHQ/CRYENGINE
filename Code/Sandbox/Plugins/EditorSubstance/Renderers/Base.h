@@ -42,5 +42,3 @@ protected:
 
 } // END namespace Renderers
 } // END namespace EditorSubstance
-
-

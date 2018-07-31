@@ -22,4 +22,3 @@
 
 // Surround text that needs localiation in this macro
 #define LOCALIZE(x) x
-

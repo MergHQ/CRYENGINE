@@ -204,4 +204,3 @@ private:
 bool YASLI_SERIALIZE_OVERRIDE(yasli::Archive& ar, TreeSelection &selection, const char* name, const char* label);
 
 // vim:ts=4 sw=4:
-

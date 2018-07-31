@@ -33,4 +33,3 @@ protected:
 };
 
 #endif // __SCROLLABLEWINDOW_H__
-

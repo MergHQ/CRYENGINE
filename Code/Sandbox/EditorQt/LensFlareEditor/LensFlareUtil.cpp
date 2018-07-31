@@ -976,4 +976,3 @@ int FindOpticsIndexUnderParentOptics(IOpticsElementBasePtr pOptics, IOpticsEleme
 	return -1;
 }
 }
-

@@ -98,4 +98,3 @@ void CollapseTool::Enter()
 
 REGISTER_DESIGNER_TOOL_AND_COMMAND(eDesigner_Collapse, eToolGroup_Edit, "Collapse", CollapseTool,
                                    collapse, "runs collapse tool", "designer.collapse");
-

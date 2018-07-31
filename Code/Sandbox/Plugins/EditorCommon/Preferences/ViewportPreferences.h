@@ -145,4 +145,3 @@ EDITOR_COMMON_API extern SViewportGeneralPreferences gViewportPreferences;
 EDITOR_COMMON_API extern SViewportDebugPreferences gViewportDebugPreferences;
 EDITOR_COMMON_API extern SViewportMovementPreferences gViewportMovementPreferences;
 EDITOR_COMMON_API extern SViewportSelectionPreferences gViewportSelectionPreferences;
-

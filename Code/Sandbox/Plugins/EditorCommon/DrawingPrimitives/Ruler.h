@@ -121,4 +121,3 @@ private:
 	int32              m_decimalDigits;
 };
 }
-

@@ -18,4 +18,3 @@ private:
 	Gdiplus::SolidBrush m_brushSolid;
 	Gdiplus::SolidBrush m_brushTransparent;
 };
-

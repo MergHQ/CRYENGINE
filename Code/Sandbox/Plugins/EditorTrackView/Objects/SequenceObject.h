@@ -51,4 +51,3 @@ public:
 	const char*    GetFileSpec()     { return ""; }
 	const char*    GetTextureIcon()  { return "%EDITOR%/ObjectIcons/sequence.bmp"; }
 };
-

@@ -247,4 +247,3 @@ EDITOR_COMMON_API void ConvexHull2DAndrew(std::vector<Vec3>& ptsOut, const std::
 	if (!ptsOut.empty() && ptEqual(ptsOut.front(), ptsOut.back()))
 		ptsOut.pop_back();
 }
-

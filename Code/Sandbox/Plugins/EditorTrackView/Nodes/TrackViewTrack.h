@@ -201,4 +201,3 @@ private:
 	CTrackViewAnimNode*    m_pTrackAnimNode;
 	std::vector<bool>      m_keySelectionStates;
 };
-

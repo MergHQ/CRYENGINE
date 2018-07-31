@@ -75,4 +75,3 @@ private:
 	std::vector<int>                     m_hotkeys;
 	bool m_addWithSingleClick;
 };
-

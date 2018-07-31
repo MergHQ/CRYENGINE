@@ -77,4 +77,3 @@ InplaceWidget* QUIFacade::createNumberWidget(PropertyRowNumberField* row) { retu
 InplaceWidget* QUIFacade::createStringWidget(PropertyRowString* row) { return new InplaceWidgetString(row, tree_); }
 
 }
-

@@ -527,4 +527,3 @@ void ClipVolumeObject::InvalidateTM(int nWhyFlags)
 }
 
 }
-

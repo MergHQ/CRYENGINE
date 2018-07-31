@@ -257,4 +257,3 @@ void CAssetFoldersView::OnSelectionChanged()
 
 	signalSelectionChanged(m_selectedFolders);
 }
-

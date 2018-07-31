@@ -39,4 +39,3 @@ BOOL COverwriteConfirmDialog::OnCommand(UINT uID)
 
 	return TRUE;
 }
-

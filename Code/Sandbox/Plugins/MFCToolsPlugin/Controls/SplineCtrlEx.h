@@ -355,4 +355,3 @@ protected:
 };
 
 #endif // __SplineCtrl_h__
-

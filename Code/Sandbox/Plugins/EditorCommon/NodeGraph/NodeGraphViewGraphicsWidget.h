@@ -104,4 +104,3 @@ inline T* CNodeGraphViewGraphicsWidget::Cast()
 }
 
 }
-

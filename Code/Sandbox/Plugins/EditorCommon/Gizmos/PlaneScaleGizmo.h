@@ -69,4 +69,3 @@ private:
 	float m_interactionScale;
 	float m_initLen;
 };
-

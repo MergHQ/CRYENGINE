@@ -142,4 +142,3 @@ bool CMainWindow::Open(CAsset* pAsset)
 	}
 	return true;
 }
-

@@ -59,4 +59,3 @@ protected:
 	std::shared_ptr<CVersionControlCache> GetCache();
 public:
 };
-

@@ -144,4 +144,3 @@ private:
 	EExistingFileOperation m_existingFileOperation = EExistingFileOperation::NotSet;
 	bool m_bImportAll;
 };
-

@@ -41,4 +41,3 @@ protected:
 
 	DragNDropCallback m_dropCb;
 };
-

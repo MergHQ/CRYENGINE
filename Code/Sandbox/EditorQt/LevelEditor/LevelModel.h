@@ -106,4 +106,3 @@ private:
 
 	bool m_ignoreLayerUpdates;
 };
-

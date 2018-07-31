@@ -46,4 +46,3 @@ QColor ColorMuliply(QColor a, QColor b)
 }
 
 }
-

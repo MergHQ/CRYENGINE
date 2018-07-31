@@ -34,4 +34,3 @@ private:
 	_smart_ptr<IAnimSequence> m_pSequence;
 	std::vector<string>       m_cameraNodes;
 };
-

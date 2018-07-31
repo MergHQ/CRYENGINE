@@ -124,4 +124,3 @@ private:
 	QVariantMap m_columnStateMap;
 	const int m_layoutVersion;
 };
-

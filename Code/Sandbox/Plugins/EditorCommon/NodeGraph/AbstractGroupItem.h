@@ -69,5 +69,3 @@ private:
 };
 
 } //namespace CryGraphEditor
-
-

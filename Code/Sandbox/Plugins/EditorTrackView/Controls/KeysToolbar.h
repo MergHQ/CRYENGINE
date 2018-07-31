@@ -32,4 +32,3 @@ private:
 	QActionGroup* m_pSnappingGroup;
 	QActionGroup* m_pMoveModeGroup;
 };
-

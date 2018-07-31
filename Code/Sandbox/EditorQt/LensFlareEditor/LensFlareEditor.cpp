@@ -1283,4 +1283,3 @@ void CLensFlareEditor::OnUpdateProperties(IVariable* var)
 {
 	GetIEditorImpl()->GetLensFlareManager()->Modified();
 }
-

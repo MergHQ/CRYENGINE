@@ -57,4 +57,3 @@ private:
 	CCreateObjectButtons* m_pTypeButtonPanel;
 	std::vector<string>   m_typeToStackIndex;
 };
-

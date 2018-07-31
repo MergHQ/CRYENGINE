@@ -52,4 +52,3 @@ bool YASLI_SERIALIZE_OVERRIDE(yasli::Archive& ar, ConstStringWrapper& value, con
 		return result;
 	}
 }
-

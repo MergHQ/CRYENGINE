@@ -284,5 +284,3 @@ const char* GetTextureSemanticFromChannelType(FbxTool::EMaterialChannelType chan
 		return nullptr;
 	}
 }
-
-

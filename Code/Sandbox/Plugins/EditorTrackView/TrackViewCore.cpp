@@ -413,4 +413,3 @@ void CTrackViewCore::OnSyncSelectedTracksFromBase()
 		pSequence->SyncSelectedTracksFromBase();
 	}
 }
-

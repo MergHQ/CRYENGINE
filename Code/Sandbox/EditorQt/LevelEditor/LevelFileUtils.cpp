@@ -226,4 +226,3 @@ bool IsAnySubFolderLevel(const AbsolutePath& path)
 }
 
 } // namespace LevelFileUtils
-

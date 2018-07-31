@@ -25,4 +25,3 @@ private:
 	int                           m_nUsagePage1Usage8Devices;
 	float                         m_fMultiplier;
 };
-

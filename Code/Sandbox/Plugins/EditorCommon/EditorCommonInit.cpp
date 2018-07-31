@@ -34,4 +34,3 @@ void EDITOR_COMMON_API EditorCommon::Deinitialize()
 	g_editor = nullptr;
 	gEnv = nullptr;
 }
-

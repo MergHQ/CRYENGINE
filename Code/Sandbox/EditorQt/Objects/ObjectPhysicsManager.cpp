@@ -868,4 +868,3 @@ void CObjectPhysicsManager::SerializeCollisionClasses(CXmlArchive& xmlAr)
 		}
 	}
 }
-

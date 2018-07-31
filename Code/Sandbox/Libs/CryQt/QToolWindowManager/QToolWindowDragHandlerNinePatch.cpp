@@ -88,4 +88,3 @@ QRect QToolWindowDragHandlerNinePatch::getRectFromCursorPos(QWidget* previewArea
 	}
 	return IToolWindowDragHandler::getRectFromCursorPos(previewArea, area);
 }
-

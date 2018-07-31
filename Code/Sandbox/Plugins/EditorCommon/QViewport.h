@@ -160,4 +160,3 @@ private:
 	std::unique_ptr<CDisplayViewportAdapter> m_pViewportAdapter;
 	CGizmoManager                            m_gizmoManager;
 };
-

@@ -76,4 +76,3 @@ protected:
 };
 
 #endif //__FACIALJOYSTICKDIALOG_H__
-

@@ -69,4 +69,3 @@ private:
 	std::vector<_smart_ptr<OffsetManipulator>> m_OffsetManipulators;
 };
 }
-

@@ -56,4 +56,3 @@ protected:
 	QGridLayout*                      m_layout;
 	QVector<QPair<QCheckBox*, bool*>> m_checkBoxes;
 };
-

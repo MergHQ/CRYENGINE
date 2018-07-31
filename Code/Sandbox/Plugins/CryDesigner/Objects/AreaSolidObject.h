@@ -92,4 +92,3 @@ public:
 	virtual const char*    GetToolClassName() override { return "EditTool.CreateAreaSolidTool"; }
 };
 } // namespace Designer
-

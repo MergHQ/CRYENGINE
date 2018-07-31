@@ -1319,4 +1319,3 @@ void CPreviewModelCtrl::DrawBackground()
 	aux->SetTexture(-1);
 	aux->SetRenderFlags(prevRenderFlags);
 }
-

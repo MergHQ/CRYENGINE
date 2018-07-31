@@ -322,4 +322,3 @@ void AIError(const char* format, ...)
 }
 
 #endif  // CRY_PLATFORM_WINDOWS
-

@@ -69,4 +69,3 @@ public:
 
 	virtual SVersionControlError GetError() const override;
 };
-

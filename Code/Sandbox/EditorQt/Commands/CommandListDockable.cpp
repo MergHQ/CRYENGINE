@@ -288,4 +288,3 @@ CCommandListDockable::CCommandListDockable(QWidget* const pParent)
 CCommandListDockable::~CCommandListDockable()
 {
 }
-

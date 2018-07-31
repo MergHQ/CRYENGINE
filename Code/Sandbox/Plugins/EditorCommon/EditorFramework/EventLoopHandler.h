@@ -35,4 +35,3 @@ private:
 	QWidget* m_pDefaultHandler;
 	std::vector <CallBack> m_nativeListeners;
 };
-

@@ -48,4 +48,3 @@ protected:
 private:
 	std::unique_ptr<MeshImporter::CBaseDialog> m_pDialog;
 };
-

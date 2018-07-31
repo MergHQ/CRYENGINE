@@ -186,4 +186,3 @@ bool CUniformScaleGizmo::HitTest(HitContext& hc)
 
 	return false;
 }
-

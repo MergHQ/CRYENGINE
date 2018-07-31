@@ -310,4 +310,3 @@ void CResourceSelectorDialog::DeleteModels()
 	m_libraryModels.clear();
 }
 } // namespace ACE
-

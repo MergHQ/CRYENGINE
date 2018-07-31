@@ -452,4 +452,3 @@ bool QMfcApp::winEventFilter(MSG* msg, long* result)
 	return false;
 #endif
 }
-

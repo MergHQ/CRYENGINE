@@ -126,4 +126,3 @@ bool CSkeletonPoseModifier::Execute(const SAnimationPoseModifierParams& params)
 }
 
 CRYREGISTER_CLASS(CSkeletonPoseModifier)
-

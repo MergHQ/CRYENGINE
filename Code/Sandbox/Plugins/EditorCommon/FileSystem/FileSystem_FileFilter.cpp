@@ -65,4 +65,3 @@ void SFileFilter::MakeInputValid()
 }
 
 } // namespace FileSystem
-

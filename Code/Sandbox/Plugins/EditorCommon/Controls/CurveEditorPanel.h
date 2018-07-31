@@ -55,4 +55,3 @@ private:
 	CCurveEditor*               m_pEditor;
 	QPointer<CBroadcastManager> m_broadcastManager;
 };
-

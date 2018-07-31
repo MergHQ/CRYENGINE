@@ -37,4 +37,3 @@ protected:
 private:
 	QWidget* m_pWidgetHost;
 };
-

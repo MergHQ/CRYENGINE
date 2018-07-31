@@ -37,4 +37,3 @@ protected:
 private:
 	virtual CryIcon GetIconInternal() const override;
 };
-

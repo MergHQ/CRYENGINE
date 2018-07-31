@@ -45,4 +45,3 @@ bool CEffectAsset::MakeNewComponent(const char* szTemplateName)
 }
 
 }
-

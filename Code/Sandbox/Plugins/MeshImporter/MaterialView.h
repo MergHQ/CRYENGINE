@@ -50,4 +50,3 @@ private:
 	CMaterialView* m_pView;
 	QSearchBox*    m_pSearchBox;
 };
-

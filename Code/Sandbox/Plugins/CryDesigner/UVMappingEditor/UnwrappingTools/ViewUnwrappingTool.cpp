@@ -45,4 +45,3 @@ void ViewUnwrappingTool::Enter()
 
 REGISTER_UVMAPPING_TOOL_AND_COMMAND(eUVMappingTool_View, eUVMappingToolGroup_Unwrapping, "View", ViewUnwrappingTool,
                                     view_unwrapping, "runs view unwrapping tool", "uvmapping.view_unwrapping")
-

@@ -57,4 +57,3 @@ private:
 	std::vector<ExportedBrushMaterial> m_materials;
 };
 }
-

@@ -500,4 +500,3 @@ void CAICoverSurface::DisplayBadCoverSurfaceObject(SDisplayContext& disp)
 
 	pRenderAux->SetRenderFlags(oldFlags);
 }
-

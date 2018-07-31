@@ -202,4 +202,3 @@ void CInspector::Unlock()
 	m_pLockButton->setToolTip("Lock Inspector");
 	m_pLockButton->setIcon(CryIcon("icons:General/Lock_False.ico"));
 }
-

@@ -98,4 +98,3 @@ bool PropertyRowResourceFilePath::onContextMenu(property_tree::IMenu& menu, Prop
 
 REGISTER_PROPERTY_ROW(ResourceFilePath, PropertyRowResourceFilePath);
 DECLARE_SEGMENT(PropertyRowResourceFilePath)
-

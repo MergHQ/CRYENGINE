@@ -250,4 +250,3 @@ void CTagSelectionControl::SetOnTagStateChangeCallback(OnTagStateChangeCallback 
 {
 	m_onTagStateChangeCallback = onTagStateChangeCallback;
 }
-

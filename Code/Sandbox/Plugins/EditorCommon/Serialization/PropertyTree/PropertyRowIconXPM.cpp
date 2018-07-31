@@ -108,4 +108,3 @@ public:
 REGISTER_PROPERTY_ROW(IconXPM, PropertyRowIconXPM); 
 REGISTER_PROPERTY_ROW(IconXPMToggle, PropertyRowIconToggle); 
 DECLARE_SEGMENT(PropertyRowIconXPM)
-

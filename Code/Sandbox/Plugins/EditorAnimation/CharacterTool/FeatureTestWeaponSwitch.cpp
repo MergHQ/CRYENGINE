@@ -96,4 +96,3 @@ struct FeatureTestWeaponSwitch : IFeatureTest
 SERIALIZATION_CLASS_NAME(IFeatureTest, FeatureTestWeaponSwitch, "WeaponSwitch", "Weapon Switch Example")
 
 }
-

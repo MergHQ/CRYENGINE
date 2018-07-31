@@ -205,4 +205,3 @@ XmlNodeRef CXmlTemplateRegistry::FindTemplate(const string& name)
 
 	return XmlNodeRef();
 }
-

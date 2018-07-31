@@ -173,4 +173,3 @@ void QTerrainLayerPanel::UndoPush()
 	CUndo layerModified("Texture Layer Change");
 	CTerrainTextureDialog::StoreLayersUndo();
 }
-

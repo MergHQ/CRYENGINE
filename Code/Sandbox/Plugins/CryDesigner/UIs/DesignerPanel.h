@@ -113,4 +113,3 @@ private:
 	static const int s_stride = 3;
 };
 }
-

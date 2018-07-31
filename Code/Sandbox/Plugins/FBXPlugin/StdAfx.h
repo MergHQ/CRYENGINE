@@ -26,4 +26,3 @@
 #include <CrySystem/ISystem.h>
 #include "Util/EditorUtils.h"
 #include "IEditor.h"
-

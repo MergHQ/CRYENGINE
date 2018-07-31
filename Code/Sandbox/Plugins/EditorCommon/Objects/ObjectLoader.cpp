@@ -408,4 +408,3 @@ bool CObjectArchive::IsAmongPendingIds(uint32 id) const
 {
 	return stl::find(m_pendingIds, id);
 }
-

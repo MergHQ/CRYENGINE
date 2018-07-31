@@ -323,4 +323,3 @@ void CNodeGraphViewModel::Refresh()
 }
 
 }
-

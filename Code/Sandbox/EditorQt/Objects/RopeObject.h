@@ -91,4 +91,3 @@ public:
 	virtual const char* GetTextureIcon()  { return "%EDITOR%/ObjectIcons/rope.bmp"; }
 	CRuntimeClass*      GetRuntimeClass() { return RUNTIME_CLASS(CRopeObject); }
 };
-

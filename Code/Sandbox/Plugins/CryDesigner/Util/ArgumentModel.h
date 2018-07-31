@@ -73,4 +73,3 @@ protected:
 
 typedef _smart_ptr<ArgumentModel> ArgumentModelPtr;
 }
-

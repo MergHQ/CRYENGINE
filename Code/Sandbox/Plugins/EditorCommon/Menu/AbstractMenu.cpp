@@ -343,4 +343,3 @@ void CAbstractMenu::InsertNamedSection(std::unique_ptr<SNamedSection>&& pNamedSe
 		return lhp->m_section < rhp->m_section;
 	}), std::move(pNamedSection));
 }
-

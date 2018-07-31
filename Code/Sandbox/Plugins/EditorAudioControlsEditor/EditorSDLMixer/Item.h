@@ -78,4 +78,3 @@ private:
 } // namespace SDLMixer
 } // namespace Impl
 } // namespace ACE
-

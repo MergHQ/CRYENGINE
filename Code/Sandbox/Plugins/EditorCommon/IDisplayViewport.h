@@ -42,4 +42,3 @@ struct IDisplayViewport
 	virtual Vec3                                    SnapToGrid(Vec3 vec) = 0;
 	virtual void                                    SetCursor(QCursor* hCursor) = 0;
 };
-

@@ -17,5 +17,3 @@ public:
 	QRect getRectFromCursorPos(QWidget* previewArea, IToolWindowArea* area) const Q_DECL_OVERRIDE;
 
 };
-
-

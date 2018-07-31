@@ -20,4 +20,3 @@ public:
 	static QString GetObjectListMimeFormat();
 	static QString GetGroupListMimeFormat();
 };
-

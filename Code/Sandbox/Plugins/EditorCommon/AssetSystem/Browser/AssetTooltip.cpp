@@ -237,4 +237,3 @@ void CAssetTooltip::hideEvent(QHideEvent* event)
 {
 	SetBigMode(false);
 }
-

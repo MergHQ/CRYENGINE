@@ -159,4 +159,3 @@ bool BaseTool::IsModelEmpty() const
 }
 
 }
-

@@ -27,4 +27,3 @@ private:
 	const FbxTool::SNode* m_pNode;
 	FbxTool::CScene* m_pFbxScene;
 };
-

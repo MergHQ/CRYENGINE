@@ -236,4 +236,3 @@ void CTrackGizmo::DrawKeys(SDisplayContext& dc, CTrackViewTrack* pTrack, CTrackV
 		}
 	}
 }
-

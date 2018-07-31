@@ -241,4 +241,3 @@ void CEditorAdapter::OnCloseAsset()
 {
 	m_pDialog->OnCloseAsset();
 }
-

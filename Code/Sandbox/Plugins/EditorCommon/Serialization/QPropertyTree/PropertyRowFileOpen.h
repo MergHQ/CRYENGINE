@@ -23,4 +23,3 @@ struct FileOpenMenuHandler : PropertyRowMenuHandler
 };
 
 yasli::string extractExtensionFromFilter(const char* fileSelectorFilter);
-

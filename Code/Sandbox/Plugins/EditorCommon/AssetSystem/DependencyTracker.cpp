@@ -155,4 +155,3 @@ std::pair<CDependencyTracker::IndexIterator, CDependencyTracker::IndexIterator> 
 	const auto upperBound = std::upper_bound(lowerBound, m_index.cend(), key, SLessKey());
 	return { lowerBound, upperBound };
 }
-

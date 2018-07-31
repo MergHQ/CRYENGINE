@@ -96,4 +96,3 @@ private:
 	bool			  m_restoreSelection;
 	std::vector<CAdvancedPersistentModelIndex> m_selectedBackup;
 };
-

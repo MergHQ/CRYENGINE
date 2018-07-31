@@ -17,4 +17,3 @@ public:
 protected:
 	void OnTriggered();
 };
-

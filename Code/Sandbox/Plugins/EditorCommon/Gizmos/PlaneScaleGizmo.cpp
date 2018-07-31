@@ -227,4 +227,3 @@ bool CPlaneScaleGizmo::HitTest(HitContext& hc)
 
 	return false;
 }
-

@@ -42,4 +42,3 @@ protected:
 	QLabel*                          m_iconLabel;
 	QDialogButtonBox::StandardButton m_buttonPressed;
 };
-

@@ -51,4 +51,3 @@ void SeparateFolders(const std::vector<string>& paths, std::vector<string>& outp
 }
 
 }
-

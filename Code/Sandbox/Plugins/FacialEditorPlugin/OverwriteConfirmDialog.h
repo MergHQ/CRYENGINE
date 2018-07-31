@@ -23,4 +23,3 @@ private:
 };
 
 #endif //__OVERWRITECONFIRMDIALOG_H__
-

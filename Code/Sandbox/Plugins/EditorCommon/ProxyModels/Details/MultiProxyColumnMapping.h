@@ -89,4 +89,3 @@ private:
 	ValueColumn  m_valueColumn;  // [value] = proxy column
 	ProxyColumns m_proxyColumns; // [proxy column] = ColumnIt
 };
-

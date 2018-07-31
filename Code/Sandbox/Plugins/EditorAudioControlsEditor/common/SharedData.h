@@ -77,4 +77,3 @@ static constexpr Scope GlobalScopeId = CryAudio::StringToId(s_szGlobalScopeName)
 
 using PlatformIndexType = uint16;
 } // namespace ACE
-

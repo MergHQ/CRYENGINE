@@ -128,4 +128,3 @@ int CNotificationCenter::AddNotification(Internal::CNotification::Type type, con
 {
 	return AddNotification(new Internal::CNotification(type, title, message));
 }
-

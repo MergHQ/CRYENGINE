@@ -1658,4 +1658,3 @@ FORCE_SEGMENT(PropertyRowIconXPM)
 FORCE_SEGMENT(PropertyRowFileSave)
 
 // vim:ts=4 sw=4:
-

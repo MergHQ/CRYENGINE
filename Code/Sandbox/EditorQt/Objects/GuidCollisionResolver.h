@@ -35,4 +35,3 @@ private:
 	CObjectArchive& m_archive;
 	std::vector<std::pair<CPrefabObject*, std::vector<CBaseObject*>>> m_hierarchy;
 };
-

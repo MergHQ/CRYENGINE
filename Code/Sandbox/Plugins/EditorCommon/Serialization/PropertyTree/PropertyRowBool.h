@@ -41,5 +41,3 @@ public:
 protected:
 	bool value_;
 };
-
-

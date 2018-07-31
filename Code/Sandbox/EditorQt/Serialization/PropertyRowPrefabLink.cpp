@@ -217,5 +217,3 @@ bool PropertyRowPrefabLink::onContextMenu(IMenu& menu, PropertyTree* tree)
 
 REGISTER_PROPERTY_ROW(PrefabLink, PropertyRowPrefabLink);
 DECLARE_SEGMENT(PropertyRowPrefabLink)
-
-

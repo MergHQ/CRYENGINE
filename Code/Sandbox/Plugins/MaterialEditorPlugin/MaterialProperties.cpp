@@ -1108,4 +1108,3 @@ void CMaterialSerializer::PopulateStringLists()
 	m_textureTypeStringList.push_back(GetIEditor()->Get3DEngine()->GetMaterialHelpers().GetNameFromTextureType(eTT_Dyn2D));
 	m_textureTypeStringList.push_back(GetIEditor()->Get3DEngine()->GetMaterialHelpers().GetNameFromTextureType(eTT_User));
 }
-

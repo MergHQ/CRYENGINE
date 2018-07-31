@@ -285,4 +285,3 @@ void UVCluster::InvalidateSmoothingGroups()
 
 }
 }
-

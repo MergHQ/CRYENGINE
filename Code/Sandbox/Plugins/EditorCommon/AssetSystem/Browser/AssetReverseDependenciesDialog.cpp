@@ -237,4 +237,3 @@ CAssetReverseDependenciesDialog::CAssetReverseDependenciesDialog(
 
 	setLayout(pMainLayout);
 }
-

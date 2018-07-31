@@ -102,4 +102,3 @@ bool CMaterialType::OnCreate(INewAsset& asset, const void* pTypeSpecificParamete
 
 	return true;
 }
-

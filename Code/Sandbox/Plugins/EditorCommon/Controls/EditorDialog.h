@@ -82,4 +82,3 @@ protected:
 	bool			 m_canClose;
 	QString			 m_dialogNameId;
 };
-

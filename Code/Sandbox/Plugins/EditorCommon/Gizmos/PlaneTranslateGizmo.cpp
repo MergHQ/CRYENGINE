@@ -228,4 +228,3 @@ bool CPlaneTranslateGizmo::HitTest(HitContext& hc)
 
 	return false;
 }
-

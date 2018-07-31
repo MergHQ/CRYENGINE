@@ -150,4 +150,3 @@ private:
 	std::vector<SQueuedWidgetInfo> m_queuedWidgets;
 	QVariantMap     m_personalizationState;
 };
-

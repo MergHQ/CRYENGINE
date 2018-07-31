@@ -4,4 +4,3 @@
 #include "EdGeometry.h"
 
 IMPLEMENT_DYNAMIC(CEdGeometry, CObject)
-

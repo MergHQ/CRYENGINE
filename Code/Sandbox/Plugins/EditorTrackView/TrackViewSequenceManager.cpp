@@ -462,4 +462,3 @@ void CTrackViewSequenceManager::HandleObjectDelete(const CBaseObject* pObject)
 		}
 	}
 }
-

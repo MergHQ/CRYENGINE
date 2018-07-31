@@ -125,4 +125,3 @@ void QCommandAction::operator=(const UiInfo& info)
 	if (!info.icon || *info.icon)
 		setIcon(CryIcon(QtUtil::ToQString(info.icon)));
 }
-

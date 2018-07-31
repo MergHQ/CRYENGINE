@@ -92,4 +92,3 @@ bool CSharpSourcefileAssetType::OnCreate(INewAsset& editAsset, const void* pCrea
 
 	return true;
 }
-

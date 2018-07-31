@@ -38,4 +38,3 @@ void WriteSessionData()
 		fclose(pFile);
 	}
 }
-

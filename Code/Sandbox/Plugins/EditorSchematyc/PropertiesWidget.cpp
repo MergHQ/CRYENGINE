@@ -206,4 +206,3 @@ void CPropertiesWidget::showEvent(QShowEvent* pEvent)
 }
 
 }
-

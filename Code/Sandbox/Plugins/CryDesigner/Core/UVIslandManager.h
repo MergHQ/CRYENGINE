@@ -36,4 +36,3 @@ private:
 	std::vector<UVIslandPtr> m_UVIslands;
 };
 }
-

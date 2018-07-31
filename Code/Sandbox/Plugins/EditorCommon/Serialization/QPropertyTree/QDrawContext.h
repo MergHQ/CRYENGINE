@@ -56,4 +56,3 @@ QPoint toQPoint(const Point& p);
 Point fromQPoint(const QPoint& p);
 
 }
-

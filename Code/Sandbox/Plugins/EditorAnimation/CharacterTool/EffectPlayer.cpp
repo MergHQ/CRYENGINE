@@ -153,4 +153,3 @@ void EffectPlayer::Render(SRendParams& params, const SRenderingPassInfo& passInf
 }
 
 }
-

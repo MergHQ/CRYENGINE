@@ -37,4 +37,3 @@ private:
 	CylinderParameter m_CylinderParameter;
 };
 }
-

@@ -248,4 +248,3 @@ bool CVariableIArchive::SerializeRangeUInt(const Serialization::SStruct& ser, co
 	const Serialization::RangeDecorator<unsigned int>* const pRange = reinterpret_cast<Serialization::RangeDecorator<unsigned int>*>(ser.pointer());
 	return VarUtil::ReadChildVariableAs<int>(m_pVariable, m_childIndexOverride, name, *pRange->value);
 }
-

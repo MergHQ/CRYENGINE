@@ -279,4 +279,3 @@ public:
 protected:
 	virtual void childEvent(QChildEvent *c) Q_DECL_OVERRIDE;
 };
-

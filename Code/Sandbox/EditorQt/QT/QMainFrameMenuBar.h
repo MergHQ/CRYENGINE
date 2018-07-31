@@ -26,4 +26,3 @@ protected:
 protected:
 	QMenuBar* m_pMenuBar;
 };
-

@@ -462,5 +462,3 @@ void CSubMaterialView::customEvent(QEvent* event)
 		}
 	}
 }
-
-

@@ -1074,4 +1074,3 @@ bool CViewport::MoreMouseEventProcessNeeded(EMouseEvent event)
 {
 	return event != eMouseWheel;
 }
-

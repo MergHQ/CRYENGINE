@@ -803,4 +803,3 @@ void CEntityEventsPanel::OnEventSend()
 			script->SendEvent(m_entity->GetIEntity(), m_currentSourceEvent);
 	}
 }
-

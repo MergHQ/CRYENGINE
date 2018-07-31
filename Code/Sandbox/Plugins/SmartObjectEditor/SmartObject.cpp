@@ -292,4 +292,3 @@ void CSmartObject::OnEvent(ObjectEvent eventID)
 		break;
 	}
 }
-

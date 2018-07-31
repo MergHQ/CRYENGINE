@@ -84,4 +84,3 @@ void CSafeObjectsArray::OnTargetEvent(const CBaseObject* pObject, const CObjectE
 		}
 	}
 }
-

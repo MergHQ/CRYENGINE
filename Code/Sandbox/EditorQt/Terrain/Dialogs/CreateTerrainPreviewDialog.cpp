@@ -36,4 +36,3 @@ CCreateTerrainPreviewDialog::Result CCreateTerrainPreviewDialog::GetResult() con
 {
 	return m_pDimensions->GetResult();
 }
-

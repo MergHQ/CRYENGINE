@@ -183,4 +183,3 @@ void CDrsVariableInfos::SetAutoUpdateActive(bool bValue)
 	m_pVariableChangesSerializerDockWidget->widget()->SetAutoUpdateActive(bValue);
 	m_pVariablesSerializerDockWidget->widget()->SetAutoUpdateActive(bValue);
 }
-

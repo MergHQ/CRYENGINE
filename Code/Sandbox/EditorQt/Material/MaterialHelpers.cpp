@@ -291,4 +291,3 @@ uint64 SetShaderGenParamsVars(IShader* pShader, CVarBlock* pBlock)
 	return nGenMask;
 }
 }
-

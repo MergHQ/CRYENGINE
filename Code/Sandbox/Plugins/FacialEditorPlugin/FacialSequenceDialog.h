@@ -218,4 +218,3 @@ private:
 };
 
 #endif // __FacialSequenceDialog_h__
-

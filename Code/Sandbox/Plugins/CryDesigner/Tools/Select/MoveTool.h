@@ -52,4 +52,3 @@ GENERATE_MOVETOOL_CLASS(VertexPolygon, EDesignerTool)
 GENERATE_MOVETOOL_CLASS(EdgePolygon, EDesignerTool)
 GENERATE_MOVETOOL_CLASS(VertexEdgePolygon, EDesignerTool)
 }
-

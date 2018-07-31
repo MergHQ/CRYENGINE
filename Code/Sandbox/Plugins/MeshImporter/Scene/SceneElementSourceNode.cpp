@@ -124,4 +124,3 @@ void CSceneElementSourceNode::Serialize(Serialization::IArchive& ar)
 		}
 	}
 }
-

@@ -41,4 +41,3 @@ void EDITOR_COMMON_API SerializeFromMemory(const SStruct& outObj, const std::vec
 void EDITOR_COMMON_API SerializeFromMemory(const SStruct& outObj, const DynArray<char>& buffer);
 
 }
-

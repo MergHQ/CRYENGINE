@@ -31,4 +31,3 @@ private:
 	std::vector<IClassDesc*> m_classes;
 	static CClassFactory*    s_pInstance;
 };
-

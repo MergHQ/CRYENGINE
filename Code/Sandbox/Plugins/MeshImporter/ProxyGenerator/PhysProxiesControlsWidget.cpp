@@ -182,4 +182,3 @@ void CPhysProxiesControlsWidget::SetupUI()
 
 	setLayout(pMainLayout);
 }
-

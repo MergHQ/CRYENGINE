@@ -142,4 +142,3 @@ protected:
 
 	std::unique_ptr<CMaterialImageListCtrl> m_pMaterialImageListCtrl;
 };
-

@@ -87,4 +87,3 @@ private:
 	QHBoxLayout*          m_pMainLayout;
 	QVector<CTrayObject*> m_trayObjects;
 };
-

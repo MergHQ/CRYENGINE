@@ -38,4 +38,3 @@ private:
 	float m_fThresholdAngle;
 };
 }
-

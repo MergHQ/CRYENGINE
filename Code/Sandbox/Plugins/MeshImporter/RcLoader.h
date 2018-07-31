@@ -46,4 +46,3 @@ void DeletePayload(CRcInOrderCaller* caller, const QString& filePath, void* pUse
 	TYPE* pPayload = (TYPE*)pUserData;
 	delete pPayload;
 }
-

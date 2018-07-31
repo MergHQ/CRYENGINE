@@ -88,4 +88,3 @@ void OffsetManipulator::Display(SDisplayContext& dc, bool bDisplayDistanceLine)
 	dc.SetLineWidth(oldThickness);
 }
 }
-

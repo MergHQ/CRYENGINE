@@ -217,4 +217,3 @@ bool CGizmoManager::HandleMouseInput(IDisplayViewport* view, EMouseEvent event, 
 
 	return false;
 }
-

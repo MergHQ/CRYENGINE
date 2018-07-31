@@ -108,4 +108,3 @@ void CSurfaceTypeValidator::GetUsedSubMaterials(pe_params_part* pPart, char used
 		}
 	}
 }
-

@@ -800,4 +800,3 @@ CreateDesignerObjectTool::CreateDesignerObjectTool()
 }
 
 }
-

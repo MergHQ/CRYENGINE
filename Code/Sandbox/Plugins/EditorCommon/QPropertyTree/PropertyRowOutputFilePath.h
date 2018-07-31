@@ -48,4 +48,3 @@ struct OutputFilePathMenuHandler : PropertyRowMenuHandler
 
 	void onMenuClear();
 };
-

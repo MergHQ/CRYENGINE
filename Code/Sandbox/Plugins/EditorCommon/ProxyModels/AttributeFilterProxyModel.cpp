@@ -135,4 +135,3 @@ void QAttributeFilterProxyModel::OnColumnsMoved(const QModelIndex& parent, int s
 {
 	ResetAttributes();
 }
-

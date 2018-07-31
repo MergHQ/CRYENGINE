@@ -83,4 +83,3 @@ protected:
 	bool        m_bNoDrag;
 	UINT        m_nDropHitTestFlags;
 };
-

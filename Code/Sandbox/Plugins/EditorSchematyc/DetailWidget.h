@@ -65,4 +65,3 @@ private:
 DECLARE_SHARED_POINTERS(CScriptElementDetailItem)
 
 }
-

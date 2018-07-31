@@ -352,4 +352,3 @@ void CConnectionsWidget::OnReloaded()
 	m_pTreeView->RestoreSelection();
 }
 } // namespace ACE
-

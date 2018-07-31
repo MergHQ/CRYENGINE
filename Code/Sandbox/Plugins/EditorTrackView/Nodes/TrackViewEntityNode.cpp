@@ -547,4 +547,3 @@ bool CTrackViewEntityNode::SyncFromBase()
 
 	return false;
 }
-

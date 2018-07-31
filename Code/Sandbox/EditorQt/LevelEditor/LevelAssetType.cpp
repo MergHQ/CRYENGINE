@@ -287,5 +287,3 @@ bool CLevelType::OnCreate(INewAsset& editAsset, const void* pTypeSpecificParamet
 	UpdateFilesAndDependencies(editAsset);
 	return true;
 }
-
-

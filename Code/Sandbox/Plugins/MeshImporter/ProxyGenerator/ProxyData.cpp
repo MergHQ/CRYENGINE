@@ -107,4 +107,3 @@ uint64 CProxyData::HasPhysProxies(const FbxTool::SNode* pFbxNode) const
 	int n = pProx ? pProx->pSrc->isleTriCount.size() : 1;
 	return isles | -(int64)((1ull << n) - 1 == isles);
 }
-

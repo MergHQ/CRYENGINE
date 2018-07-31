@@ -402,4 +402,3 @@ void CFragmentSequencePlayback::UpdateDebugParams()
 {
 	m_actionController.SetParam("CameraLocation", QuatT(Quat(ZERO), Vec3(0.f, 0.f, 1.5f)));
 }
-

@@ -37,4 +37,3 @@ protected:
 };
 
 #endif // __SELECTMISSIONOBJECTIVEDIALOG_H__
-

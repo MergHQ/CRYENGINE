@@ -1071,4 +1071,3 @@ void QToolBarCreator::OnContextMenu(const QPoint& position) const
 
 	menu->popup(m_pTreeView->mapToGlobal(position));
 }
-

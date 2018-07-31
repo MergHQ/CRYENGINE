@@ -451,4 +451,3 @@ void CCreateObjectButtons::AddButton(const char* szType, const std::function<voi
 	int row = index / 2;
 	m_layout->addWidget(pButton, row, column);
 }
-

@@ -624,4 +624,3 @@ void CTriMesh::GetFacesByVertex(MeshElementsArray& inVertices, MeshElementsArray
 			outFaces.push_back(i);
 	}
 }
-

@@ -174,4 +174,3 @@ template<class T> void CTrackViewCameraNode::GetParameter(SAnimTime time, EAnimP
 {
 	param = stl::get<T>(m_pAnimCameraNode->GetParameter(time, paramType));
 }
-

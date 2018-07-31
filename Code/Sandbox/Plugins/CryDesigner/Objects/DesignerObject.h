@@ -184,4 +184,3 @@ public:
 	const char*    GetFileSpec()     { return ""; }
 };
 }
-

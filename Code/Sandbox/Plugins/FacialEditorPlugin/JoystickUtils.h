@@ -18,4 +18,3 @@ void  PlaceKey(IJoystickChannel* pChannel, float time);
 }
 
 #endif //__JOYSTICKUTILS_H__
-

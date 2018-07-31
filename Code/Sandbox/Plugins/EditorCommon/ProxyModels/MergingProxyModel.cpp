@@ -1216,4 +1216,3 @@ QHash<int, QByteArray> CMergingProxyModel::roleNames() const
 }
 
 #undef reverse_foreach
-

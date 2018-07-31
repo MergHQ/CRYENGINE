@@ -188,4 +188,3 @@ void CPickMaterialTool::OnPicked(IMaterial* pEditorMaterial)
 		}
 	}
 }
-

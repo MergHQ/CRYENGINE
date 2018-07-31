@@ -36,4 +36,3 @@ private:
 	CVegetationObject*   m_pSelectedObject;
 	CVegetationInstance* m_pCreatedInstance;
 };
-

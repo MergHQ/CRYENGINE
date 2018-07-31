@@ -433,4 +433,3 @@ dll_string ShowDialog(const SResourceSelectorContext& context, const char* szPre
 
 REGISTER_RESOURCE_SELECTOR("SmartObjectClasses", ShowDialog, "")
 }
-

@@ -195,4 +195,3 @@ void TransformPanel::SetSpace(Manip::ETransformationSpace space)
 }
 
 }
-

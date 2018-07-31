@@ -26,4 +26,3 @@ void CAIWaveObject::SetName(const string& newName)
 
 	GetObjectManager()->FindAndRenameProperty2("aiwave_Wave", oldName, newName);
 }
-

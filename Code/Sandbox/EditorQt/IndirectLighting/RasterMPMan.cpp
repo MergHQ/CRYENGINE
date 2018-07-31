@@ -69,4 +69,3 @@ void CRasterMPMan::ThreadEntry()
 	}
 }
 #endif
-

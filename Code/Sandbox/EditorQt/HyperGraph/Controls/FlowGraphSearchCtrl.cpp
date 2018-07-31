@@ -998,4 +998,3 @@ void CFlowGraphSearchResultsCtrl::ShowSelectedResult()
 		}
 	}
 }
-

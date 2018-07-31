@@ -86,4 +86,3 @@ public:
 	afx_msg LRESULT OnCheckStateChange(WPARAM wparam, LPARAM lparam);
 	afx_msg void    OnBnClickedOk();
 };
-

@@ -164,4 +164,3 @@ void CCommentWidget::OnItemTextChanged()
 }
 
 }
-

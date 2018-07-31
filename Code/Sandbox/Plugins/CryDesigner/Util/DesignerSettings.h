@@ -91,4 +91,3 @@ struct DesignerSettings
 extern DesignerExclusiveMode gExclusiveModeSettings;
 extern DesignerSettings gDesignerSettings;
 }
-

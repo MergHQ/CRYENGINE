@@ -110,4 +110,3 @@ private:
 
 	bool                         m_bLockProperties;
 };
-

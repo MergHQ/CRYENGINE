@@ -88,4 +88,3 @@ bool SEditorFilePreferences::Serialize(yasli::Archive& ar)
 
 	return true;
 }
-

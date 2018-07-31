@@ -105,7 +105,3 @@ const T& CDragDropData::GetCustomData(const char* type) const
 	QByteArray data = GetCustomData(type);
 	return *reinterpret_cast<const T*>(data.data());
 }
-
-
-
-

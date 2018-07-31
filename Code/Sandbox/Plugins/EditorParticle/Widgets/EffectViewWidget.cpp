@@ -169,4 +169,3 @@ void CEffectAssetWidget::OnEndEffectAssetChange()
 }
 
 }
-

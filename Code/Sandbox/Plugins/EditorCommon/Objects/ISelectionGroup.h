@@ -64,5 +64,3 @@ public:
 	//! Saves original positions of filtered objects
 	virtual void         SaveFilteredTransform() const = 0;
 };
-
-

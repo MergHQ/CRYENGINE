@@ -44,4 +44,3 @@ template<typename F> inline void IterateGrid(F& f, const float minPixelsPerTick,
 }
 
 #endif //__GRIDUTILS_H__
-

@@ -44,4 +44,3 @@ private:
 	QViewport*       m_viewport;
 	bool             m_bXYViewport;
 };
-

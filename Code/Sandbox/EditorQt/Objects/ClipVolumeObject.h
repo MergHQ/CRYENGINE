@@ -76,4 +76,3 @@ public:
 };
 
 #endif //__INCLUDE_SANDBOX_CLIPVOLUMEOBJECT_H
-

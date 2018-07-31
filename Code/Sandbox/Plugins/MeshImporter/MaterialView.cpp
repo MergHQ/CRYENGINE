@@ -121,4 +121,3 @@ CMaterialView* CMaterialViewContainer::GetView()
 {
 	return m_pView;
 }
-

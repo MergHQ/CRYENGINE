@@ -36,4 +36,3 @@ private:
 	_Tool* m_pTool;
 };
 }
-

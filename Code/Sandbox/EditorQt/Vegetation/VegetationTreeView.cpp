@@ -37,4 +37,3 @@ void CVegetationTreeView::startDrag(Qt::DropActions supportedActions)
 	pDrag->setMimeData(pMimeData);
 	pDrag->exec(supportedActions);
 }
-

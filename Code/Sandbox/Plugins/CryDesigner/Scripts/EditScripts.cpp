@@ -154,4 +154,3 @@ void PyDesignerWeld()
                        "Puts the first selected vertex together into the second selected vertex.",
                        "designer.weld()" );
  */
-

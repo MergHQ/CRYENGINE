@@ -164,4 +164,3 @@ private:
 	QIcon m_expandedIcon;
 	QIcon m_dragHandleIcon;
 };
-

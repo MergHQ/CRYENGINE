@@ -71,4 +71,3 @@ protected:
 private:
 	CryGraphEditor::CNodeEditorData* m_pData;
 };
-

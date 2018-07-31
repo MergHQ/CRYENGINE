@@ -634,4 +634,3 @@ QString ReplaceExtension(const QString& str, const char* ext)
 }
 
 } // namespace MeshImporter
-

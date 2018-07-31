@@ -640,4 +640,3 @@ void MovePipeline::InitPolygonsInUVIslands()
 	}
 }
 }
-

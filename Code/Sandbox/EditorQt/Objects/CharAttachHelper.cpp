@@ -64,4 +64,3 @@ void CCharacterAttachHelperObject::SetHelperScale(float scale)
 {
 	m_charAttachHelperScale = scale;
 }
-

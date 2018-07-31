@@ -100,4 +100,3 @@ void PropertyRowTagList::setValueAndContext(const Serialization::IContainer& val
 
 REGISTER_PROPERTY_ROW(TagList, PropertyRowTagList)
 DECLARE_SEGMENT(PropertyRowTagList)
-

@@ -81,4 +81,3 @@ private:
 	bool        m_bAlignedToAnotherEdge;
 };
 }
-

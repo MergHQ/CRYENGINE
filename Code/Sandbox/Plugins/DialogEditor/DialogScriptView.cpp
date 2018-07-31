@@ -1050,4 +1050,3 @@ void CDialogScriptView::OnAudioTriggerFinished(CryAudio::SRequestInfo const* con
 		ms_currentPlayLine = CryAudio::InvalidControlId;
 	}
 }
-

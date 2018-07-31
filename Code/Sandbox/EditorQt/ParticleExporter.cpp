@@ -107,4 +107,3 @@ void CParticlesExporter::ExportParticles(const string& path, const string& level
 	   pISystem->GetIPak()->OpenPack( pakFilename );
 	 */
 }
-

@@ -208,4 +208,3 @@ std::vector<CAsset*> CAssetFactory::LoadAssetsFromPakFile(const char* szArchiveP
 }
 
 } // namespace AssetLoader
-

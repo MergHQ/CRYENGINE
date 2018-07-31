@@ -22,4 +22,3 @@ public:
 private:
 	std::vector<std::unique_ptr<QAbstractItemModel>> m_models;
 };
-

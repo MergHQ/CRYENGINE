@@ -43,4 +43,3 @@ ESceneElementType CSceneElementPhysProxies::GetType() const
 {
 	return ESceneElementType::PhysProxy;
 }
-

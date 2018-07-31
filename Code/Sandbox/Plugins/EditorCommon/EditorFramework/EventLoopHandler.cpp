@@ -95,4 +95,3 @@ bool CEventLoopHandler::nativeEventFilter(const QByteArray &eventType, void *mes
 
 	return false;
 }
-

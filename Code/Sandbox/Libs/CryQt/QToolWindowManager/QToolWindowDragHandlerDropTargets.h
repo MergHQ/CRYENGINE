@@ -39,5 +39,3 @@ private:
 	void hideTargets();
 	void showTargets(IToolWindowArea* area);
 };
-
-

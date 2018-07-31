@@ -83,4 +83,3 @@ void CTagComment::Serialize(CObjectArchive& ar)
 		// Old "Comment" attribute will be gone once it's saved, and no special treatment is needed.
 	}
 }
-

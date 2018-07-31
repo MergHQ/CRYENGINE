@@ -25,4 +25,3 @@ private:
 	typedef std::pair<CPolledKeyCommand*, QKeySequence> CmdAndKey;
 	std::vector<CmdAndKey> m_polledKeyState;
 };
-

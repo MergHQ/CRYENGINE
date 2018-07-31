@@ -301,4 +301,3 @@ CHistoryPanel::CHistoryPanel()
 CHistoryPanel::~CHistoryPanel()
 {
 }
-

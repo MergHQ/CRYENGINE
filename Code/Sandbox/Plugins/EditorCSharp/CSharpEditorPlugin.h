@@ -112,4 +112,3 @@ private:
 private:
 	static CCSharpEditorPlugin* s_pInstance;
 };
-

@@ -327,4 +327,3 @@ void CLevelSettingsEditor::ReloadFromTemplate()
 	structs.push_back(Serialization::SStruct(*m_varBlock));
 	m_pPropertyTree->attach(structs);
 }
-

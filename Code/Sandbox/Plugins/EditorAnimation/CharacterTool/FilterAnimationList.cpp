@@ -126,4 +126,3 @@ void FilterAnimationList::OnFileChange(const char* filename, EChangeType eType)
 }
 
 }
-

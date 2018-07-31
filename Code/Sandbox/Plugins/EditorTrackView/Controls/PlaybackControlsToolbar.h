@@ -67,4 +67,3 @@ private:
 	SAnimTime               m_lastTime;
 	SAnimTime::EDisplayMode m_displayMode;
 };
-

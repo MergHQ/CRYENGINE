@@ -33,4 +33,3 @@ public:
 	void onMenuCopy();
 	void onMenuPaste();
 };
-

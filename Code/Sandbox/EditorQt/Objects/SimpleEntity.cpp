@@ -119,4 +119,3 @@ bool CSimpleEntity::IsSimilarObject(CBaseObject* pObject)
 	}
 	return false;
 }
-

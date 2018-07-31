@@ -40,4 +40,3 @@ protected:
 	SRayHitInfo           m_HitInfo;
 	CMaterialEditor*      m_pMaterialEditor;
 };
-

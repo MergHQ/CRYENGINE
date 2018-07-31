@@ -61,4 +61,3 @@ private:
 	std::vector<ConnectionPtr> m_connectionsCache;
 };
 } // namespace ACE
-

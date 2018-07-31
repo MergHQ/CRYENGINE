@@ -44,4 +44,3 @@ public:
 private:
 	static std::vector<CAsset*> ImportExt(const string& ext, const std::vector<string>& filePaths, const SImportParamsEx& importParams);
 };
-

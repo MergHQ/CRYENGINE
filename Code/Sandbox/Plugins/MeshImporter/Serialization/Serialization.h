@@ -22,4 +22,3 @@ struct SMeshInfo
 
 	void Serialize(Serialization::IArchive& ar);
 };
-

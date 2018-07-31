@@ -137,4 +137,3 @@ void CTrackViewPlugin::OnMove(const Vec3 targetPos, Vec3 sourcePos, bool bIsCopy
 		}
 	}
 }
-

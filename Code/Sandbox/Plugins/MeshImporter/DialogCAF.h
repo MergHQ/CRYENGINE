@@ -164,4 +164,3 @@ private:
 };
 
 } // namespace MeshImporter
-

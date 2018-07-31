@@ -312,4 +312,3 @@ void CVehicleModificationDialog::OnSize(UINT nType, int cx, int cy)
 		}
 	}
 }
-

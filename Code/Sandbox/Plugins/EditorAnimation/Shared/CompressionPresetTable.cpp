@@ -60,4 +60,3 @@ const SCompressionPresetEntry* SCompressionPresetTable::FindPresetForAnimation(c
 
 	return 0;
 }
-

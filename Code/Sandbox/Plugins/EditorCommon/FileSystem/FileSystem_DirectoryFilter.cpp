@@ -39,4 +39,3 @@ void SDirectoryFilter::MakeInputValid()
 }
 
 } // namespace FileSystem
-

@@ -195,4 +195,3 @@ void MessageBox(const QString& title, const QString& msg)
 }
 
 }
-

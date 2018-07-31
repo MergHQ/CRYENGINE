@@ -50,4 +50,3 @@ const QVariant& CDependencyGraph::GetPersonalizationProperty(const QString& prop
 {
 	return GetIEditor()->GetPersonalizationManager()->GetProperty(GetPluginName(), propName);
 }
-

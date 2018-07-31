@@ -80,4 +80,3 @@ struct IPerforceExecutor
 
 	virtual void   UpdateSettings(const string& port, const string& workspace, const string& user = "", const string& password = "") = 0;
 };
-

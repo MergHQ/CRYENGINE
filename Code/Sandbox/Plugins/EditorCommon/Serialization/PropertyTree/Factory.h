@@ -158,5 +158,3 @@ protected:
 #define FORCE_SEGMENT(fileName) \
 	extern int dataSegment##fileName; \
 	int* dataSegmentPtr##fileName = &dataSegment##fileName;
-
-

@@ -247,4 +247,3 @@ string EdgeSharpnessManager::GenerateValidName(const char* baseName) const
 	return validName;
 }
 }
-

@@ -73,4 +73,3 @@ int CSaveChangesDialog::Execute()
 	FillText();
 	return exec();
 }
-

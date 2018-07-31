@@ -186,4 +186,3 @@ void CCommentNodeAnimator::DrawText(const char* szFontName, float fSize, const V
 		pFont->DrawString(pos.x, pos.y, szText, true, ctx);
 	}
 }
-

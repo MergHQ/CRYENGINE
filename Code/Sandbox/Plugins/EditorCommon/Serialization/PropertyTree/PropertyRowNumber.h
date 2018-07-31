@@ -266,4 +266,3 @@ protected:
 	SLimits softLimit_;
 	double singleStep_;
 };
-

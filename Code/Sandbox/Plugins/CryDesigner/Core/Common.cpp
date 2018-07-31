@@ -864,4 +864,3 @@ bool SaveSettings(const Serialization::SStruct& outObj, const char* name)
 	return GetIEditor()->GetSystem()->GetArchiveHost()->SaveJsonFile(GetSaveStateFilePath(name).c_str(), outObj);
 }
 }
-

@@ -56,4 +56,3 @@ protected:
 }
 
 #include "DesignerBaseObject_Impl.h"
-

@@ -487,4 +487,3 @@ void CMannFragmentEditor::OnAccept()
 		}
 	}
 }
-

@@ -3323,4 +3323,3 @@ void CMainDialog::UpdateSkin()
 	m_pSkinRcObject->SetMetaData(metaData);
 	m_pSkinRcObject->CreateAsync();
 }
-

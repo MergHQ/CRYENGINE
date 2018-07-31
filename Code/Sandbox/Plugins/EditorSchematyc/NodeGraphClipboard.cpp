@@ -47,4 +47,3 @@ CryGraphEditor::CAbstractNodeItem* CNodeGraphClipboard::RestoreNodeFromXml(Seria
 }
 
 }
-

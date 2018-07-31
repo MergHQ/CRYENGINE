@@ -105,4 +105,3 @@ void CSceneContextMenuCommon::AddGeneralSectionInternal()
 	using namespace Private_SceneContextMenu;
 	AddExpandCollapseAllContextMenu(m_pSceneView, m_pMenu);
 }
-

@@ -2319,4 +2319,3 @@ GetQuadrantIndex(const SVec2<TCenterCompType>& crCenterPos, const SVec2<TCompTyp
 };//NQT
 
 #pragma warning(default:4127)
-

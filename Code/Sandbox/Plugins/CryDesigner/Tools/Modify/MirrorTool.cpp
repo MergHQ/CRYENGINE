@@ -211,4 +211,3 @@ void MirrorTool::Serialize(Serialization::IArchive& ar)
 #define MirrorPanel PropertyTreePanel < Designer::MirrorTool >
 REGISTER_DESIGNER_TOOL_WITH_PANEL_AND_COMMAND(eDesigner_Mirror, eToolGroup_Modify, "Mirror", MirrorTool, MirrorPanel,
                                               mirror, "runs mirror tool", "designer.mirror")
-

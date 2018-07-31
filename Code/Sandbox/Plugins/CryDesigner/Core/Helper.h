@@ -64,4 +64,3 @@ void                         ConvertMeshFacesToFaces(const std::vector<Vertex>& 
 void                         MergeTwoObjects(const MainContext& mc0, const MainContext& mc1);
 int                          AddVertex(std::vector<Vertex>& vertices, const Vertex& newVertex);
 };
-

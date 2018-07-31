@@ -81,4 +81,3 @@ private:
 };
 
 #endif // __FacialPreviewDialog_h__
-

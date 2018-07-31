@@ -16,4 +16,3 @@ enum EItemDataRole
 };
 
 QModelIndex GetSourceModelIndex(const QModelIndex& index);
-

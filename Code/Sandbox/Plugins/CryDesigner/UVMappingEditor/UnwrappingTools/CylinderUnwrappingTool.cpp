@@ -60,4 +60,3 @@ void CylinderUnwrappingTool::Enter()
 
 REGISTER_UVMAPPING_TOOL_AND_COMMAND(eUVMappingTool_Cylinder, eUVMappingToolGroup_Unwrapping, "Cylinder", CylinderUnwrappingTool,
                                     cylinder_unwrapping, "runs cylinder unwrapping tool", "uvmapping.cylinder_unwrapping")
-

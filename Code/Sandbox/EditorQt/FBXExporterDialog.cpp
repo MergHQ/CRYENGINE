@@ -117,4 +117,3 @@ BOOL CFBXExporterDialog::OnInitDialog()
 
 	return TRUE;
 }
-

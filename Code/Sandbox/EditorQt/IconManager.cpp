@@ -201,4 +201,3 @@ IStatObj* CIconManager::GetObject(EStatObject object)
 		m_objects[object]->SetMaterial(GetHelperMaterial());
 	return m_objects[object];
 }
-

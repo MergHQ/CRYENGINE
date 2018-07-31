@@ -466,4 +466,3 @@ const QString& CAsset::GetFilterString(bool forceCompute /*=false*/) const
 
 	return m_filterString;
 }
-

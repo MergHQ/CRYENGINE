@@ -126,4 +126,3 @@ CFlowFilterNode::Apply(IFlowGraph* pGraph, const SFlowAddress from, const SFlowA
 	}
 	return eFR_Pass;
 }
-

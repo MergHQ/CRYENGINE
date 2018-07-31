@@ -82,4 +82,3 @@ struct ResourceSelectorMenuHandler : PropertyRowMenuHandler
 	void onMenuClear();
 	void onMenuPickResource();
 };
-

@@ -15,5 +15,3 @@ public:
 
 	virtual ~QPropertySplitter() override {}
 };
-
-

@@ -13,4 +13,3 @@ bool CompressAnimation(const string& animationPath, string& outErrorMessage, boo
 
 bool CheckIfNeedUpdate(const char* animationPath);
 }
-

@@ -263,4 +263,3 @@ void CEquipPackLib::ExportToGame()
 		}
 	}
 }
-

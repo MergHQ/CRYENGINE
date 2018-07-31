@@ -511,4 +511,3 @@ CString CClipVolumeObject::GenerateGameFilename()
 #endif
 	return sRealGeomFileName + ".cgf";
 }
-

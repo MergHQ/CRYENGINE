@@ -348,5 +348,3 @@ bool CNamedData::Load(const string& levelPath)
 
 	return true;
 }
-
-

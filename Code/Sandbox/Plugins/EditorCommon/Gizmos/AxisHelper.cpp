@@ -688,4 +688,3 @@ float CAxisHelper::GetDistance2D(IDisplayViewport* view, CPoint p, Vec3& wp)
 	CPoint vp = view->WorldToView(wp);
 	return sqrtf(float((p.x - vp.x) * (p.x - vp.x) + (p.y - vp.y) * (p.y - vp.y)));
 }
-

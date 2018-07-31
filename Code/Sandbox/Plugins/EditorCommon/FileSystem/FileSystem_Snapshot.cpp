@@ -369,4 +369,3 @@ SSubTree CSnapshot::FindSubTree(const SFileFilter& filter) const
 }
 
 } // namespace FileSystem
-

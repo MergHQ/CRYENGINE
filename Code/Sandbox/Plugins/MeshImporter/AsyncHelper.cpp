@@ -394,4 +394,3 @@ void CSyncTaskHost::ShowError(const CAsyncTaskBase* pTask, const QString& what) 
 {
 	GetIEditor()->GetNotificationCenter()->ShowCritical(m_title, what);
 }
-

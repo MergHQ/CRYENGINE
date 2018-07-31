@@ -51,4 +51,3 @@ private:
 
 	std::vector<SLocation> m_locations;
 };
-

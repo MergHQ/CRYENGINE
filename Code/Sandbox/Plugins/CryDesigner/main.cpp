@@ -75,4 +75,3 @@ public:
 
 
 REGISTER_PLUGIN(EditorDesigner);
-

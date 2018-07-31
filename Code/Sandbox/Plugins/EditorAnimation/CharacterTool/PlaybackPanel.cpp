@@ -765,4 +765,3 @@ float PlaybackPanel::TimelineTimeToAnimEventTime(const SAnimTime timelineTime) c
 }
 
 }
-

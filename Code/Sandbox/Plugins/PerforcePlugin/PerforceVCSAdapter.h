@@ -76,4 +76,3 @@ private:
 
 	bool  m_isOnline{ false };
 };
-

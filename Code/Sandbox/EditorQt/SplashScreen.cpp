@@ -59,4 +59,3 @@ void SplashScreen::init()
 	s_pLogoWindow = this;
 	setWindowTitle("Starting Crytek Sandbox Editor");
 }
-

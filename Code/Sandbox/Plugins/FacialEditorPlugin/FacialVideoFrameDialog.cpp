@@ -163,4 +163,3 @@ int CFacialVideoFrameDialog::GetPitch()
 {
 	return m_image->GetPitch();
 }
-

@@ -73,4 +73,3 @@ private:
 };
 
 #endif // __image_dxtc_h__
-

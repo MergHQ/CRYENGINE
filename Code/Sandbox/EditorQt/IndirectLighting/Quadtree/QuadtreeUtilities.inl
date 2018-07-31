@@ -612,4 +612,3 @@ inline void SChildIndices<TUseRadius, TMaxCellElems, TIndexType >::CompleteReset
 	reinserted = false;
 }
 };//NQT
-

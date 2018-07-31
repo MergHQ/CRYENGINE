@@ -270,4 +270,3 @@ void CCreateMaterialTask::FinishTask(bool bTaskSucceeded)
 
 	delete this;
 }
-

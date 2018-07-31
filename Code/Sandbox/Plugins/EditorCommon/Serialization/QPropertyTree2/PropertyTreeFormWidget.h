@@ -168,7 +168,3 @@ namespace PropertyTree2
 		void ReleaseWidgets(QPropertyTree2* pTree);
 	};
 }
-
-
-
-

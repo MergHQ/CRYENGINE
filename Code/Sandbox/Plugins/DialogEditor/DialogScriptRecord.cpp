@@ -730,4 +730,3 @@ void CDialogScriptRecord::Swap(CDialogScriptRecord* pOther)
 	pOther->m_pScript = pTmpScript;
 	pOther->FillItems();
 }
-

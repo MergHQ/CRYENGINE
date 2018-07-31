@@ -234,4 +234,3 @@ struct CTrackViewIcons
 		}
 	}
 };
-

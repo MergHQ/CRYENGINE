@@ -576,4 +576,3 @@ void QDrawContext::drawValidatorWarningIcon(const Rect& rect)
 
 
 }
-

@@ -49,4 +49,3 @@ private:
 
 	TSerializationFunc m_serializationFunc;
 };
-

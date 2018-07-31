@@ -68,4 +68,3 @@ private:
 
 	std::unique_ptr<CInteractionMode> m_interaction;
 };
-

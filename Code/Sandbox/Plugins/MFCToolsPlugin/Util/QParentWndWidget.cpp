@@ -248,4 +248,3 @@ bool QParentWndWidget::focusNextPrevChild(bool next)
 	::SetFocus(m_parent);
 	return true;
 }
-

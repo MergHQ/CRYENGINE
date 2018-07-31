@@ -3327,4 +3327,3 @@ void CPropertyItem::EnableNotifyWithoutValueChange(bool bFlag)
 	if (m_cEdit)
 		m_cEdit->EnableUpdateOnKillFocus(!m_bForceModified);
 }
-

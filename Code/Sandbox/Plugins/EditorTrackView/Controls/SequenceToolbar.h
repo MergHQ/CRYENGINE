@@ -21,4 +21,3 @@ private slots:
 	void OnAddSelectedEntities();
 	void OnShowProperties();
 };
-

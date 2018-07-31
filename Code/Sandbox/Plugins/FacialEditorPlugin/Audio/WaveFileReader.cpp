@@ -222,4 +222,3 @@ void CWaveFileReader::DestroyData()
 	m_nVolume = 0;
 	m_bLoaded = 0;
 }
-

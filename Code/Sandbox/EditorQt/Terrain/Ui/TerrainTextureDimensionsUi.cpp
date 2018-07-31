@@ -69,4 +69,3 @@ void CTerrainTextureDimensionsUi::SetupResolutions(int initialResolution)
 		}
 	}
 }
-

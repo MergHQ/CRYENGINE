@@ -41,4 +41,3 @@ QString SEnginePath::ConvertToNormalPath(const QString& enginePath)
 }
 
 } // namespace FileSystem
-

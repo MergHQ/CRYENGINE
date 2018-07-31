@@ -151,4 +151,3 @@ private:
 
 	SMinimapInfo    m_minimap;
 };
-

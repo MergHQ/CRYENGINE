@@ -98,4 +98,3 @@ void CMaterialSettings::Serialize(yasli::Archive& ar)
 		}
 	}
 }
-

@@ -278,4 +278,3 @@ bool RectangleTool::EnabledSeamlessSelection() const
 //! Registers the rectangle tool to CryDesigner
 REGISTER_DESIGNER_TOOL_WITH_PROPERTYTREE_PANEL_AND_COMMAND(eDesigner_Rectangle, eToolGroup_Shape, "Rectangle", RectangleTool,
                                                            rectangle, "runs rectangle tool", "designer.rectangle")
-

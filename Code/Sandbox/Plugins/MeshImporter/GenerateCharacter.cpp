@@ -399,4 +399,3 @@ std::vector<string> GenerateAllAnimations(const string& inputFilePath)
 
 	return charGen.GetOutputFiles();
 }
-

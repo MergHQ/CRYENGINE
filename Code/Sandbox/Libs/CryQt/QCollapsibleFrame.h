@@ -110,4 +110,3 @@ protected:
 protected Q_SLOTS:
 	void OnCollapseButtonClick();
 };
-

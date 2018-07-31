@@ -70,4 +70,3 @@ private:
 
 	bool m_bIsBeingChanged;
 };
-

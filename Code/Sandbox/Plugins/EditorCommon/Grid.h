@@ -74,4 +74,3 @@ struct EDITOR_COMMON_API SSnappingPreferences : public SPreferencePage
 };
 
 EDITOR_COMMON_API extern SSnappingPreferences gSnappingPreferences;
-

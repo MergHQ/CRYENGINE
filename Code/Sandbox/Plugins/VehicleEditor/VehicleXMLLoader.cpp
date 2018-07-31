@@ -309,4 +309,3 @@ IVehicleData* VehicleDataLoad(const XmlNodeRef& definition, const XmlNodeRef& da
 
 //
 // end of CVehicleDataLoader implementation
-

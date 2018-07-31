@@ -14,4 +14,3 @@
 // TODO: replace this with #include <assert.h> later
 #include <intrin.h>
 #include <CryCore/Assert/CryAssert.h>
-

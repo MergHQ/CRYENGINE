@@ -572,4 +572,3 @@ QString CAssetFoldersModel::GetPrettyPath(const QString& path) const
 		return GetProjectAssetsFolderName() + "/" + path;
 	}
 }
-

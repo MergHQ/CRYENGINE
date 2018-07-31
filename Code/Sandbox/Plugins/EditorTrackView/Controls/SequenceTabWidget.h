@@ -266,4 +266,3 @@ private:
 	QTimer*         m_refreshTimer;
 	SAnimTime       m_time;
 };
-

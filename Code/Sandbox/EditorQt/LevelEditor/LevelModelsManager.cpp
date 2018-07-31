@@ -403,4 +403,3 @@ void CLevelModelsManager::DisconnectChildrenModels(CObjectLayer* pLayer)
 		DisconnectChildrenModels(pChildLayer);
 	}
 }
-

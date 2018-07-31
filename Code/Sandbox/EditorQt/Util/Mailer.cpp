@@ -112,4 +112,3 @@ bool CMailer::SendMail(const char* subject,
 }
 
 #endif // CRY_PLATFORM_WINDOWS
-

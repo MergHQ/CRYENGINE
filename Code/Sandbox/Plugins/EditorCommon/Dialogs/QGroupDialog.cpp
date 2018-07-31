@@ -27,5 +27,3 @@ const string QGroupDialog::GetGroup()
 {
 	return m_pGroup->text().toUtf8().constData();
 }
-
-

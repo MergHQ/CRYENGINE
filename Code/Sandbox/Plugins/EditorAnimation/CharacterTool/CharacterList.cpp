@@ -196,4 +196,3 @@ dll_string AttachmentNameSelector(const SResourceSelectorContext& x, const char*
 REGISTER_RESOURCE_SELECTOR("Attachment", AttachmentNameSelector, "icons:common/animation_attachement.ico")
 
 }
-

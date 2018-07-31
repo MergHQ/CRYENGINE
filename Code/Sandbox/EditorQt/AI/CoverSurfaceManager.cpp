@@ -112,4 +112,3 @@ const CCoverSurfaceManager::SurfaceObjects& CCoverSurfaceManager::GetSurfaceObje
 {
 	return m_surfaceObjects;
 }
-

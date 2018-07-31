@@ -562,4 +562,3 @@ void CParticleEditor::OnEffectOptionsChanged()
 }
 
 }
-

@@ -57,4 +57,3 @@ protected:
 
 Q_DECLARE_METATYPE(FileSystem::SFileMonitorUpdate)
 Q_DECLARE_METATYPE(FileSystem::FileMonitorPtr)
-

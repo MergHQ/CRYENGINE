@@ -48,4 +48,3 @@ protected:
 };
 
 #endif // __inplaceedit_h__
-

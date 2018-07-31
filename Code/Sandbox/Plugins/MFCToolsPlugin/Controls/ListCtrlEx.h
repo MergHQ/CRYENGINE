@@ -70,4 +70,3 @@ protected:
 };
 
 #endif // __ListCtrlEx_h__
-

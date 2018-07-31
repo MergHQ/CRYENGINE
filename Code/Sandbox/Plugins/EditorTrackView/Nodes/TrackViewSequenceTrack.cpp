@@ -164,4 +164,3 @@ SAnimTime CTrackViewSequenceTrack::GetKeyAnimStart(const uint index) const
 	GetKey(index, &key);
 	return key.m_startTime;
 }
-

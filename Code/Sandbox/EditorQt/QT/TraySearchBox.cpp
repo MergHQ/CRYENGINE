@@ -235,4 +235,3 @@ static void PyFocus()
 REGISTER_EDITOR_AND_SCRIPT_COMMAND(Private_SearchCommands::PyFocus, search, focus,
                                    CCommandDescription("Focus Editor global search"));
 REGISTER_EDITOR_COMMAND_SHORTCUT(search, focus, "Ctrl+Alt+F");
-

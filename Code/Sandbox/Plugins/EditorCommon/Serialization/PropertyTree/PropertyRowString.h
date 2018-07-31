@@ -33,5 +33,3 @@ public:
 private:
 	yasli::wstring value_;
 };
-
-

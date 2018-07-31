@@ -86,4 +86,3 @@ protected:
 };
 
 #endif // !defined(AFX_TOOLBARDIALOG_H__31620F0B_DB2D_45BA_A86B_E71BD4F79414__INCLUDED_)
-

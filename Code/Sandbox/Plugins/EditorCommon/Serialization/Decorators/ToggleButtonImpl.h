@@ -22,4 +22,3 @@ inline bool Serialize(Serialization::IArchive& ar, Serialization::RadioButton& b
 }
 
 }
-

@@ -81,4 +81,3 @@ private:
 	FileSystem::CEnumerator&               m_enumerator;
 	QVector<Entry> m_entries;
 };
-

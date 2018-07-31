@@ -49,4 +49,3 @@ namespace Commands
 REGISTER_PYTHON_COMMAND_WITH_EXAMPLE(&Commands::ViconConnect, vicon, connect, "Connects Vicon", "");
 REGISTER_PYTHON_COMMAND_WITH_EXAMPLE(&Commands::ViconDisconnect, vicon, disconnect,"Connects Vicon", "");
 #endif
-

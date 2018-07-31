@@ -47,4 +47,3 @@ void CTrayArea::ReorderTrayObjects()
 		m_pMainLayout->addWidget(m_trayObjects[i]->GetWidget(), Qt::AlignRight);
 	}
 }
-

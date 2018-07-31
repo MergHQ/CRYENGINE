@@ -134,4 +134,3 @@ void CBaseObjectCreateTool::FinishCreation(bool restart, CViewport* pView, const
 		Abort();
 	}
 }
-

@@ -58,4 +58,3 @@ private:
 	int const                         m_nameColumn;
 };
 } // namespace ACE
-

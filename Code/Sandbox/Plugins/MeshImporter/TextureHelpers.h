@@ -14,4 +14,3 @@ string CreateCryTif(const string& filePath, const string& settings = "");
 string TranslateFilePath(const string& originalFilePath, const string& importedFilePath, const string& sourceTexturePath);
 
 } // namespace TextureHelpers
-

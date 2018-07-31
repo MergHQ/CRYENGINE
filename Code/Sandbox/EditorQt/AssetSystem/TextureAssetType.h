@@ -31,4 +31,3 @@ public:
 	static CItemModelAttribute s_heightAttribute;
 	static CItemModelAttribute s_mipCountAttribute;
 };
-

@@ -799,4 +799,3 @@ bool CCSharpEditorPlugin::OpenCSharpFileSafe(const string& filePath) const
 	return false;
 }
 REGISTER_PLUGIN(CCSharpEditorPlugin)
-

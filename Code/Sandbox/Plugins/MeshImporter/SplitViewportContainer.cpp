@@ -103,4 +103,3 @@ QSize CSplitViewportContainer::minimumSizeHint() const
 {
 	return QSize(0, 0);
 }
-

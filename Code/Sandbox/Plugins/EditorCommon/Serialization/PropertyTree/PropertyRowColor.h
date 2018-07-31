@@ -25,5 +25,3 @@ public:
 private:
 	Color value_;
 };
-
-

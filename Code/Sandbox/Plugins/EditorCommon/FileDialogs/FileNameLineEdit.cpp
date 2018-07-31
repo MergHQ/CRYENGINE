@@ -130,4 +130,3 @@ void CFileNameLineEdit::Clear()
 {
 	setText("");
 }
-

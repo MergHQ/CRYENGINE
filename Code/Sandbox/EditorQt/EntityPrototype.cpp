@@ -338,4 +338,3 @@ void CEntityPrototype::Update()
 		}
 	}
 }
-

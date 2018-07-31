@@ -140,4 +140,3 @@ void WeldTool::Enter()
 
 REGISTER_DESIGNER_TOOL_AND_COMMAND(eDesigner_Weld, eToolGroup_Edit, "Weld", WeldTool,
                                    weld, "runs weld tool", "designer.weld")
-

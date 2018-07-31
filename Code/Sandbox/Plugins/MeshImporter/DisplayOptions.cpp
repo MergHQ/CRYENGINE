@@ -113,4 +113,3 @@ void CDisplayOptionsWidget::OnPropertyTreeChanged()
 
 	SigChanged();
 }
-

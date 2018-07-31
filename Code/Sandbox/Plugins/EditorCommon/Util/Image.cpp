@@ -105,4 +105,3 @@ QImage CImageEx::ToQImage() const
 {
 	return QImage((const uchar*)GetData(), GetWidth(), GetHeight(), QImage::Format_ARGB32);
 }
-

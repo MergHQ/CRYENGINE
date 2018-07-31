@@ -23,4 +23,3 @@ CHyperNode* CQuickSearchNode::Clone()
 	pNode->CopyFrom(*this);
 	return pNode;
 }
-

@@ -15,4 +15,3 @@ protected:
 private:
 	HTREEITEM m_hHoverItem;
 };
-

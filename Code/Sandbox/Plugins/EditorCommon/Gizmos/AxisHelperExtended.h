@@ -37,4 +37,3 @@ private:
 
 	static const float            ms_maxDist;
 };
-

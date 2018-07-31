@@ -98,4 +98,3 @@ void QMainFrameMenuBar::AddActionsToModel(QMenu* pParentMenu, QStandardItemModel
 		pModel->setItem(pModel->rowCount() - 1, 1, pPathItem);
 	}
 }
-

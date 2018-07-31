@@ -62,4 +62,3 @@ private:
 private:
 	CAsset& m_asset;
 };
-

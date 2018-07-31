@@ -165,4 +165,3 @@ void DesignerBaseObject<T >::UpdateVisibility(bool visible)
 }
 
 }
-

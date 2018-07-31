@@ -367,4 +367,3 @@ void ExplorerModel::OnEndRemoveEntry()
 }
 
 }
-

@@ -216,4 +216,3 @@ bool CGuidCollisionResolver::RegenerateGuidsForConflictingObject(CPrefabObject* 
 	// otherwise it's guid is not conflicting anymore since the object it was conflicting with has a new guid
 	return true;
 }
-

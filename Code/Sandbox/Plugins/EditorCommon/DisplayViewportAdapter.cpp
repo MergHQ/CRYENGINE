@@ -154,4 +154,3 @@ void CDisplayViewportAdapter::GetDimensions(int* width, int* height) const
 	if (height)
 		*height = m_viewport->Height();
 }
-

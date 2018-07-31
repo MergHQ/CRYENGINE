@@ -49,4 +49,3 @@ void QPythonAction::OnTriggered()
 
 	PyScript::Execute("%s", py_command.c_str());
 }
-

@@ -250,4 +250,3 @@ void CSaveLevelDialog::paintEvent(QPaintEvent* event)
 		AfterFirstPaint();
 	}
 }
-

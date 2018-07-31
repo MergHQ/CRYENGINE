@@ -43,5 +43,3 @@ void CCharacterDefinitionType::GenerateThumbnail(const CAsset* pAsset) const
 		pPreviewWidget->SavePreview(thumbnailFileName.c_str());
 	}).get();
 }
-
-

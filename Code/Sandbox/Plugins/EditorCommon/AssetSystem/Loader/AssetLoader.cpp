@@ -330,5 +330,3 @@ namespace AssetLoader
 		}
 	}
 }
-
-

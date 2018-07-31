@@ -706,4 +706,3 @@ BOOST_PYTHON_FUNCTION_OVERLOADS(pyGetVegetationOverload, PyGetVegetation, 0, 2);
 REGISTER_PYTHON_OVERLOAD_COMMAND(PyGetVegetation, vegetation, get_vegetation, pyGetVegetationOverload,
                                  "Get all, selected, specific name, loaded vegetation objects in the current level.",
                                  "general.get_vegetation(str vegetationName=\'\', bool loadedOnly=False)");
-

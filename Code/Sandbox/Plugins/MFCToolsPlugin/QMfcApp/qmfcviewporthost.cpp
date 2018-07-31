@@ -48,4 +48,3 @@ void QMfcContainer::SetWidgetHost(QWidget* pHost)
 	if (m_pWidgetHost)
 		m_pWidgetHost->setGeometry(rect.left, rect.top, rect.Width(), rect.Height());
 }
-

@@ -23,4 +23,3 @@ public:
 	virtual const char* GetInfoAsString() const override     { return "Class: Comment"; }
 	// ~CHyperNode
 };
-

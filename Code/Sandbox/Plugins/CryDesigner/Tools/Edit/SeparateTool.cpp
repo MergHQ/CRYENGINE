@@ -86,4 +86,3 @@ DesignerObject* SeparateTool::Separate(MainContext& mc)
 
 REGISTER_DESIGNER_TOOL_AND_COMMAND(eDesigner_Separate, eToolGroup_Edit, "Separate", SeparateTool,
                                    separate, "runs separate tool", "designer.separate")
-

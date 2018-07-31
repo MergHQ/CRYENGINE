@@ -272,4 +272,3 @@ void CVehicleSeat::AttachChild(CBaseObject* child, bool bKeepPos, bool bInvalida
 
 	CBaseObject::AttachChild(child, bKeepPos, bInvalidateTM);
 }
-

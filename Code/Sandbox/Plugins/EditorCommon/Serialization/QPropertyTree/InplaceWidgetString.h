@@ -70,4 +70,3 @@ protected:
 	PropertyRowString* row_;
     QString initialValue_;
 };
-

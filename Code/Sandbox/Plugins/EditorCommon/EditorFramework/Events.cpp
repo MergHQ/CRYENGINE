@@ -144,4 +144,3 @@ MissedShortcutEvent::MissedShortcutEvent(QKeySequence sequence)
 	, m_sequence(sequence)
 {
 }
-

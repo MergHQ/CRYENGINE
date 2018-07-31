@@ -163,4 +163,3 @@ bool CEquipPack::Save(XmlNodeRef node)
 	}
 	return true;
 }
-

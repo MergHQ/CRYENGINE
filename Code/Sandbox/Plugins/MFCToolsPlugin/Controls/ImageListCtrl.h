@@ -121,4 +121,3 @@ protected:
 };
 
 #endif //__CImageListCtrl_h__
-

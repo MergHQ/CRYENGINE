@@ -114,4 +114,3 @@ private:
 	typedef std::map<BroadcastEvent::EventType, CCrySignal<void(BroadcastEvent&)>> ListenerMap;
 	ListenerMap m_listeners;
 };
-

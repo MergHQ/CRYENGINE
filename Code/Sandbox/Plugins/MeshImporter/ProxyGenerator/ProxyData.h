@@ -51,4 +51,3 @@ private:
 	std::vector<std::unique_ptr<SPhysProxies>> m_physProxies;
 	std::vector<std::vector<SPhysProxies*>> m_physProxiesNodeMap;  // Maps physics proxies to nodes. Indexed by node id.
 };
-

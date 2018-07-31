@@ -166,4 +166,3 @@ void UVIslandManager::ConvertIsolatedAreasToIslands()
 }
 
 }
-

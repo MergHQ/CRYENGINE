@@ -38,5 +38,3 @@ namespace EditorSubstance
 
 	}
 }
-
-

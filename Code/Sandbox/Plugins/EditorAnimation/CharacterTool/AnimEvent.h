@@ -201,4 +201,3 @@ private:
 	string                           m_defaultGamePlayerName;
 };
 }
-

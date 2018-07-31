@@ -71,4 +71,3 @@ REGISTER_NUMBER_ROW(u64, U64)
 DECLARE_SEGMENT(PropertyRowNumber)
 
 // ---------------------------------------------------------------------------
-

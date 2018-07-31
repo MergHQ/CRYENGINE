@@ -76,4 +76,3 @@ void CTrackViewFBXImportPreviewDialog::AddTreeItem(const CString& objectName)
 {
 	m_fBXItemNames[objectName] = true;
 }
-

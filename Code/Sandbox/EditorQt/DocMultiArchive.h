@@ -50,5 +50,3 @@ inline bool IsLoadingXmlArArray(TDocMultiArchive& arrXmlAr)
 	}
 	return bLoading;
 }
-
-

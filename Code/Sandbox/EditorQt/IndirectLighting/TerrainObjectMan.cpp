@@ -658,4 +658,3 @@ const uint8 CTerrainObjectMan::IsObstructed
 	rObstructionAmount = 0.f;
 	return scNotObstructed;
 }
-

@@ -35,4 +35,3 @@ CProgressNotification::~CProgressNotification()
 	Internal::CProgressNotification* pProgress = static_cast<Internal::CProgressNotification*>(pNotificationCenter->GetNotification(m_id));
 	pProgress->TaskComplete();
 }
-

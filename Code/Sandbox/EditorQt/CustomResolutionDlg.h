@@ -46,4 +46,3 @@ private:
 	int               m_aspectNumerator;
 	int               m_aspectDenominator;
 };
-

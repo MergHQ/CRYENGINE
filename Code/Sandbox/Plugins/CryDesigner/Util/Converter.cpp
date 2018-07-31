@@ -478,4 +478,3 @@ void Converter::GenerateUVIslands(Model* pModel)
 	}
 }
 };
-

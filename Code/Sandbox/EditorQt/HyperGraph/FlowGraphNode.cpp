@@ -725,4 +725,3 @@ TFlowNodeId CFlowNode::GetTypeId() const
 
 	return InvalidFlowNodeTypeId;
 }
-

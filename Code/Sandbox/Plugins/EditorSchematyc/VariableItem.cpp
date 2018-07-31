@@ -69,4 +69,3 @@ CryGUID CVariableItem::GetGUID() const
 }
 
 }
-

@@ -239,4 +239,3 @@ const bool RayLeafIntersection
   const float cRayLength                //ray length
 );
 }//NQT
-

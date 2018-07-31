@@ -68,5 +68,3 @@ private:
 	PropertyRow* lastNode_;
 	PropertyRow* root_;
 };
-
-

@@ -23,4 +23,3 @@ CPlaygroundDockable::~CPlaygroundDockable()
 {
 
 }
-

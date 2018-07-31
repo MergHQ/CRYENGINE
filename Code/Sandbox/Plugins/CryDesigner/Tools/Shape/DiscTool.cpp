@@ -248,4 +248,3 @@ void DiscTool::OnChangeParameter(bool continuous)
 
 REGISTER_DESIGNER_TOOL_WITH_PROPERTYTREE_PANEL_AND_COMMAND(eDesigner_Disc, eToolGroup_Shape, "Disc", DiscTool,
                                                            disc, "runs disc tool", "designer.disc")
-

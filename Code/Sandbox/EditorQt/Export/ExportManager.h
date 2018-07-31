@@ -78,4 +78,3 @@ private:
 
 	CBaseObject* m_pBaseObj;
 };
-

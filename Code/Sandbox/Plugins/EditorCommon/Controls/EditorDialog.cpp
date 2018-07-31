@@ -428,4 +428,3 @@ void CEditorDialog::SetTitle(const QString& title)
 {
 	setWindowTitle(title);
 }
-

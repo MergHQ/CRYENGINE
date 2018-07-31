@@ -27,4 +27,3 @@ private:
 	virtual bool                IsKeyAnimLoopable(const uint index) const override;
 };
 #endif
-

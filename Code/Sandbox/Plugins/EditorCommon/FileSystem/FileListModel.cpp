@@ -359,4 +359,3 @@ Qt::ItemFlags CFileListModel::flags(const QModelIndex &index) const
 {
 	return QAbstractListModel::flags(index) | Qt::ItemIsDragEnabled | Qt::ItemIsDropEnabled;
 }
-

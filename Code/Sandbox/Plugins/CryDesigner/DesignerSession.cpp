@@ -393,4 +393,3 @@ bool DesignerSession::GetIsActive()
 }
 
 }
-

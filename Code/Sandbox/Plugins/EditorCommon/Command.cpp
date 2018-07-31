@@ -31,4 +31,3 @@ const string& CCommandArgument::GetName() const
 {
 	return m_name;
 }
-

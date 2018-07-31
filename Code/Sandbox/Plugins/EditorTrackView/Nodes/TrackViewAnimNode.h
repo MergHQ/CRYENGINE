@@ -214,4 +214,3 @@ private:
 	_smart_ptr<IAnimNode>              m_pAnimNode;
 	std::unique_ptr<IAnimNodeAnimator> m_pNodeAnimator;
 };
-

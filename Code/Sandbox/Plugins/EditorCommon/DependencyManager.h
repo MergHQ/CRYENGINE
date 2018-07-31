@@ -23,4 +23,3 @@ private:
 	typedef std::map<string, Strings, stl::less_stricmp<string>> AssetUsers;
 	AssetUsers m_assetUsers;
 };
-

@@ -243,4 +243,3 @@ struct SViewportSettings
 		ar(background, "background", "Background");
 	}
 };
-

@@ -87,4 +87,3 @@ void CEnumerator::RegisterFileTypes(const QVector<const SFileType*>& fileTypes)
 }
 
 } // namespace FileSystem
-

@@ -177,4 +177,3 @@ void FlexibleMesh::Invert()
 		std::swap((*iFace).v[0], (*iFace).v[2]);
 }
 }
-

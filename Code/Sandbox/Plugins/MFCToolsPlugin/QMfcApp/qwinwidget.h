@@ -87,4 +87,3 @@ private:
 };
 
 #endif // QWINWIDGET_H
-

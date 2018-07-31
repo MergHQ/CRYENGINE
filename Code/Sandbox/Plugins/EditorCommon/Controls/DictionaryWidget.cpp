@@ -746,4 +746,3 @@ void QDictionaryTreeView::mouseReleaseEvent(QMouseEvent* pEvent)
 		signalMouseRightButton(indexAt(pEvent->localPos().toPoint()), pEvent->screenPos().toPoint());
 	}
 }
-
