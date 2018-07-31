@@ -59,7 +59,6 @@ CObjectPropertyWidget::~CObjectPropertyWidget()
 
 	if (m_propertyTree)
 	{
-		m_propertyTree->setParent(nullptr);
 		m_propertyTree->deleteLater();
 	}
 }
