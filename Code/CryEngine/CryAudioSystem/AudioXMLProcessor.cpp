@@ -84,6 +84,51 @@ void CAudioXMLProcessor::ParseControlsData(char const* const szFolderPath, EData
 	}
 
 #if defined(INCLUDE_AUDIO_PRODUCTION_CODE)
+	// This is a safety precaution in case no default_controls file exists.
+	ParameterConnections const parameterConnections;
+
+	if (g_pAbsoluteVelocityParameter == nullptr)
+	{
+		g_pAbsoluteVelocityParameter = new CAbsoluteVelocityParameter(parameterConnections);
+	}
+
+	if (g_pRelativeVelocityParameter == nullptr)
+	{
+		g_pRelativeVelocityParameter = new CRelativeVelocityParameter(parameterConnections);
+	}
+
+	TriggerConnections const triggerConnections;
+
+	if (g_pLoseFocusTrigger == nullptr)
+	{
+		g_pLoseFocusTrigger = new CLoseFocusTrigger(triggerConnections);
+	}
+
+	if (g_pGetFocusTrigger == nullptr)
+	{
+		g_pGetFocusTrigger = new CGetFocusTrigger(triggerConnections);
+	}
+
+	if (g_pMuteAllTrigger == nullptr)
+	{
+		g_pMuteAllTrigger = new CMuteAllTrigger(triggerConnections);
+	}
+
+	if (g_pUnmuteAllTrigger == nullptr)
+	{
+		g_pUnmuteAllTrigger = new CUnmuteAllTrigger(triggerConnections);
+	}
+
+	if (g_pPauseAllTrigger == nullptr)
+	{
+		g_pPauseAllTrigger = new CPauseAllTrigger(triggerConnections);
+	}
+
+	if (g_pResumeAllTrigger == nullptr)
+	{
+		g_pResumeAllTrigger = new CResumeAllTrigger(triggerConnections);
+	}
+
 	char const* szDataScope = "unknown";
 
 	switch (dataScope)
