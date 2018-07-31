@@ -36,10 +36,12 @@ namespace Cry
 
 			void CAccount::SetStatus(const char* status)
 			{
+				m_status = status;
+				
 				DiscordRichPresence discordPresence;
 				memset(&discordPresence, 0, sizeof(discordPresence));
 				discordPresence.state = "Playing";
-				discordPresence.details = status;
+				discordPresence.details = m_status.c_str();
 				discordPresence.endTimestamp = time(0) + 5 * 60;
 				discordPresence.largeImageKey = "canary-large";
 				discordPresence.smallImageKey = "ptb-small";
@@ -47,8 +49,6 @@ namespace Cry
 				CryComment("[Discord] Setting rich presence '%s'", status);
 
 				Discord_UpdatePresence(&discordPresence);
-
-				m_status = status;
 			}
 
 			const char* CAccount::GetStatus() const

@@ -15,6 +15,7 @@ namespace Cry
 				: public IAccount
 			{
 			public:
+				CAccount() = default;
 				explicit CAccount(const DiscordUser& user);
 				virtual ~CAccount();
 
