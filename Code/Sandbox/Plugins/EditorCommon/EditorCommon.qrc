@@ -593,7 +593,7 @@
         <file alias="TerrainEditor/Terrain_Flatten.ico">icons/terrain_editor_flatten.ico</file>
         <file alias="TerrainEditor/Terrain_Make_Holes.ico">icons/terrain_editor_make_holes.ico</file>
         <file alias="TerrainEditor/Terrain_Mini_Map.ico">icons/terrain_editor_mini_map.ico</file>
-        <file alias="TerrainEditor/Terrain_Clone.ico">icons/terrain_editor_clone.ico</file>
+        <file alias="TerrainEditor/Terrain_Duplicate.ico">icons/terrain_editor_duplicate.ico</file>
         <file alias="TerrainEditor/Terrain_Normal.ico">icons/terrain_editor_normal.ico</file>
         <file alias="TerrainEditor/Terrain_Paint.ico">icons/terrain_editor_paint.ico</file>
         <file alias="TerrainEditor/Terrain_Pick_Height.ico">icons/terrain_editor_pick_height.ico</file>
