@@ -153,11 +153,15 @@ IParticleFeature* CParticleComponent::GetFeature(uint featureIdx) const
 IParticleFeature* CParticleComponent::AddFeature(uint placeIdx, const SParticleFeatureParams& featureParams)
 {
 	IParticleFeature* pNewFeature = (featureParams.m_pFactory)();
-	m_features.insert(
-	  m_features.begin() + placeIdx,
-	  static_cast<CParticleFeature*>(pNewFeature));
+	m_features.insert(placeIdx, static_cast<CParticleFeature*>(pNewFeature));
 	SetChanged();
 	return pNewFeature;
+}
+
+void CParticleComponent::AddFeature(uint placeIdx, CParticleFeature* pFeature)
+{
+	m_features.insert(placeIdx, pFeature);
+	SetChanged();
 }
 
 void CParticleComponent::AddFeature(CParticleFeature* pFeature)
@@ -219,6 +223,7 @@ void CParticleComponent::SetParent(IParticleComponent* pParentComponent)
 	m_parent = static_cast<CParticleComponent*>(pParentComponent);
 	if (m_parent)
 		stl::push_back_unique(m_parent->m_children, this);
+	SetChanged();
 }
 
 void CParticleComponent::GetMaxParticleCounts(int& total, int& perFrame, float minFPS, float maxFPS) const
@@ -325,7 +330,7 @@ void CParticleComponent::Compile()
 		{
 			// Validate feature requirements and exclusivity.
 			EFeatureType type = it->GetFeatureType();
-			if (type & (EFT_Life | EFT_Motion | EFT_Render))
+			if (type & (EFT_Life | EFT_Motion | EFT_Render | EFT_Child))
 				if (featureMask & type)
 				{
 					it->SetEnabled(false);

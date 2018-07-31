@@ -414,7 +414,7 @@ bool CParticle::CheckCollision(ray_hit& hit, float fStepTime, SParticleUpdateCon
 {
 	hit.dist = 1.f;
 	uint32 nCollideFlags = context.nEnvFlags & ENV_COLLIDE_ANY;
-	if (nCollideFlags & ENV_COLLIDE_CACHE && GetCVars()->e_ParticlesObjectCollisions < 3)
+	if (nCollideFlags & ENV_COLLIDE_CACHE && !(GetCVars()->e_ParticlesCollisions & AlphaBit('p')))
 	{
 		// Cache collisions ahead in extended path.
 		if (collNew.Hit.TestHit(hit, m_Loc.t, stateNew.m_Loc.t, m_Vel.vLin, stateNew.m_Vel.vLin, fMAX_COLLIDE_DEVIATION, fCOLLIDE_BUFFER_DIST))

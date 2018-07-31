@@ -180,6 +180,7 @@ public:
 	// ~IParticleComponent
 
 	void                                  ClearFeatures()                       { m_features.clear(); }
+	void                                  AddFeature(uint placeIdx, CParticleFeature* pFeature);
 	void                                  AddFeature(CParticleFeature* pFeature);
 	void                                  PreCompile();
 	void                                  ResolveDependencies();
@@ -197,7 +198,7 @@ public:
 	bool                                  UsesGPU() const                       { return m_Params.m_usesGPU; }
 	gpu_pfx2::SComponentParams&           GPUComponentParams()                  { return m_GPUParams; };
 	void                                  AddGPUFeature(gpu_pfx2::IParticleFeature* gpuInterface) { if (gpuInterface) m_gpuFeatures.push_back(gpuInterface); }
-	TConstArray<gpu_pfx2::IParticleFeature*> GetGpuFeatures() const             { return { &*m_gpuFeatures.begin(), &*m_gpuFeatures.end() }; }
+	TConstArray<gpu_pfx2::IParticleFeature*> GetGpuFeatures() const             { return TConstArray<gpu_pfx2::IParticleFeature*>(m_gpuFeatures.data(), m_gpuFeatures.size()); }
 
 	const SComponentParams& GetComponentParams() const                          { return m_Params; }
 	SComponentParams&       ComponentParams()                                   { return m_Params; }

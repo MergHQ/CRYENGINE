@@ -443,6 +443,7 @@ struct CVars : public Cry3DEngineBase
 	int   e_Lods;
 	DeclareConstIntCVar(e_LodFaceArea, 1);
 	float e_ShadowsConstBias;
+	int   e_ParticlesCollisions;
 	int   e_ParticlesObjectCollisions;
 	int   e_ParticlesMinPhysicsDynamicBounds;
 	int   e_ParticlesSortQuality;
