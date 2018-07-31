@@ -1115,7 +1115,14 @@ void CEditorImpl::OpenAndFocusDataBase(EDataBaseItemType type, IDataBaseItem* pI
 	OpenDataBaseLibrary(type, pItem);
 }
 
-void CEditorImpl::SetConsoleVar(const char* var, float value)
+void CEditorImpl::SetConsoleVar(const char* var, const int value)
+{
+	ICVar* ivar = GetSystem()->GetIConsole()->GetCVar(var);
+	if (ivar)
+		ivar->Set(value);
+}
+
+void CEditorImpl::SetConsoleVar(const char* var, const float value)
 {
 	ICVar* ivar = GetSystem()->GetIConsole()->GetCVar(var);
 	if (ivar)

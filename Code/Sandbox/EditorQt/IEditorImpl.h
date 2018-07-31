@@ -145,7 +145,8 @@ public:
 	IRenderer*                   GetRenderer() override;
 	void                         WriteToConsole(const char* pszString);
 
-	void                         SetConsoleVar(const char* var, float value);
+	void                         SetConsoleVar(const char* var, const int value);
+	void                         SetConsoleVar(const char* var, const float value);
 	void                         SetConsoleStringVar(const char* var, const char* value);
 
 	float                        GetConsoleVar(const char* var);

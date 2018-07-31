@@ -398,7 +398,8 @@ struct IEditor
 
 	virtual ESystemConfigSpec GetEditorConfigSpec() const = 0;
 
-	virtual void              SetConsoleVar(const char* var, float value) = 0;
+	virtual void              SetConsoleVar(const char* var, const int value) = 0;
+	virtual void              SetConsoleVar(const char* var, const float value) = 0;
 	virtual float             GetConsoleVar(const char* var) = 0;
 
 	//! Adds a handler for native OS specific events. Useful for plugins that need access to specific OS messages.
