@@ -207,7 +207,6 @@ CScriptBind_System::CScriptBind_System(IScriptSystem* pScriptSystem, ISystem* pS
 
 	// CW: added for script based system analysis
 	SCRIPT_REG_FUNC(GetSystemMem);
-	SCRIPT_REG_FUNC(IsPS20Supported);
 	SCRIPT_REG_FUNC(IsHDRSupported);
 
 	SCRIPT_REG_FUNC(SetBudget);
@@ -2066,14 +2065,6 @@ int CScriptBind_System::RayTraceCheck(IFunctionHandler* pH)
 	int nHits = m_pSystem->GetIPhysicalWorld()->RayWorldIntersection(src, dst - src, ent_static | ent_terrain, rwi_ignore_noncolliding | rwi_stop_at_pierceable, &RayHit, 1, skipPhys, 2);
 
 	return pH->EndFunction((bool)(nHits == 0));
-}
-
-/////////////////////////////////////////////////////////////////////////////////
-int CScriptBind_System::IsPS20Supported(IFunctionHandler* pH)
-{
-	SCRIPT_CHECK_PARAMETERS(0);
-	bool bPS20(0 != (gEnv->pRenderer->GetFeatures() & RFT_HW_SM20));
-	return pH->EndFunction(false != bPS20 ? 1 : 0);
 }
 
 /////////////////////////////////////////////////////////////////////////////////

@@ -1122,12 +1122,14 @@ string CShaderMan::mfGetShaderCompileFlags(EHWShaderClass eClass, UPipelineState
 {
 	string result;
 
-#define STRICT_MODE		" /Ges"
-#define COMPATIBLE_MODE	" /Gec"
+#define W_STRICT_MODE		" /Ges"
+#define W_COMPATIBLE_MODE	" /Gec"
+#define L_STRICT_MODE		" -Ges"
 	// NOTE: when updating remote compiler folders, please ensure folders path is matching
 	const char* pCompilerOrbis   = "ORBIS/V033/DXOrbisShaderCompiler.exe %s %s %s %s";
-	const char* pCompilerDurango = "Durango/March2017/fxc.exe /nologo /E %s /T %s /Zpr" COMPATIBLE_MODE "" STRICT_MODE " /Fo %s %s";
-	const char* pCompilerD3D11   = "PCD3D11/v007/fxc.exe /nologo /E %s /T %s /Zpr" COMPATIBLE_MODE "" STRICT_MODE " /Fo %s %s";
+	const char* pCompilerDurango = "Durango/March2017/fxc.exe /nologo /E %s /T %s /Zpr" W_COMPATIBLE_MODE "" W_STRICT_MODE " /Fo %s %s";
+	const char* pCompilerD3D11   = "PCD3D11/v007/fxc.exe /nologo /E %s /T %s /Zpr" W_COMPATIBLE_MODE "" W_STRICT_MODE " /Fo %s %s";
+	const char* pCompilerD3D12   = "SPIRV/V003/dxc/dxc.exe -nologo -E %s -T %s -Zpr" L_STRICT_MODE " -Fo %s %s";
 	
 	string compilerSPIRV = "";
 	if (CRendererCVars::CV_r_VkShaderCompiler && strcmp(CRendererCVars::CV_r_VkShaderCompiler->GetString(), STR_VK_SHADER_COMPILER_HLSLCC) == 0)
@@ -1160,20 +1162,22 @@ string CShaderMan::mfGetShaderCompileFlags(EHWShaderClass eClass, UPipelineState
 	#error "Shading language revision not defined for this GL version"
 #endif
 
-	const char* pCompilerGL4 = "PCGL/V012/HLSLcc.exe -lang=" GLSL_VERSION " -flags=36609 -fxc=\"..\\..\\PCD3D11\\v007\\fxc.exe /nologo /E %s /T %s /Zpr" COMPATIBLE_MODE "" STRICT_MODE " /Fo\" -out=%s -in=%s";
-	const char* pCompilerGLES3 = "PCGL/V012/HLSLcc.exe -lang=" ESSL_VERSION " -flags=36609 -fxc=\"..\\..\\PCD3D11\\v007\\fxc.exe /nologo /E %s /T %s /Zpr" COMPATIBLE_MODE "" STRICT_MODE " /Fo\" -out=%s -in=%s";
+	const char* pCompilerGL4 = "PCGL/V012/HLSLcc.exe -lang=" GLSL_VERSION " -flags=36609 -fxc=\"..\\..\\PCD3D11\\v007\\fxc.exe /nologo /E %s /T %s /Zpr" W_COMPATIBLE_MODE "" W_STRICT_MODE " /Fo\" -out=%s -in=%s";
+	const char* pCompilerGLES3 = "PCGL/V012/HLSLcc.exe -lang=" ESSL_VERSION " -flags=36609 -fxc=\"..\\..\\PCD3D11\\v007\\fxc.exe /nologo /E %s /T %s /Zpr" W_COMPATIBLE_MODE "" W_STRICT_MODE " /Fo\" -out=%s -in=%s";
 
 	if (CRenderer::CV_r_shadersdebug == 3)
 	{
 		// Set debug information
-		pCompilerD3D11   = "PCD3D11/v007/fxc.exe /nologo /E %s /T %s /Zpr" COMPATIBLE_MODE "" STRICT_MODE " /Zi /Od /Fo %s %s";
-		pCompilerDurango = "Durango/March2017/fxc.exe /nologo /E %s /T %s /Zpr" COMPATIBLE_MODE "" STRICT_MODE " /Zi /Od /Fo %s %s";
+		pCompilerDurango = "Durango/March2017/fxc.exe /nologo /E %s /T %s /Zpr" W_COMPATIBLE_MODE "" W_STRICT_MODE " /Zi /Od /Fo %s %s";
+		pCompilerD3D11 = "PCD3D11/v007/fxc.exe /nologo /E %s /T %s /Zpr" W_COMPATIBLE_MODE "" W_STRICT_MODE " /Zi /Od /Fo %s %s";
+		pCompilerD3D12 = "SPIRV/V003/dxc/dxc.exe -nologo -E %s -T %s -Zpr" L_STRICT_MODE " -Fo %s %s";
 	}
 	else if (CRenderer::CV_r_shadersdebug == 4)
 	{
 		// Set debug information, optimized shaders
-		pCompilerD3D11   = "PCD3D11/v007/fxc.exe /nologo /E %s /T %s /Zpr" COMPATIBLE_MODE "" STRICT_MODE " /Zi /O3 /Fo %s %s";
-		pCompilerDurango = "Durango/March2017/fxc.exe /nologo /E %s /T %s /Zpr" COMPATIBLE_MODE "" STRICT_MODE " /Zi /O3 /Fo %s %s";
+		pCompilerDurango = "Durango/March2017/fxc.exe /nologo /E %s /T %s /Zpr" W_COMPATIBLE_MODE "" W_STRICT_MODE " /Zi /O3 /Fo %s %s";
+		pCompilerD3D11 = "PCD3D11/v007/fxc.exe /nologo /E %s /T %s /Zpr" W_COMPATIBLE_MODE "" W_STRICT_MODE " /Zi /O3 /Fo %s %s";
+		pCompilerD3D12 = "SPIRV/V003/dxc/dxc.exe -nologo -E %s -T %s -Zpr" L_STRICT_MODE " -O3 -Fo %s %s";
 	}
 
 	if (pipelineState.opaque != 0)
@@ -1248,6 +1252,8 @@ string CShaderMan::mfGetShaderCompileFlags(EHWShaderClass eClass, UPipelineState
 #else
 	if (CParserBin::m_nPlatform == SF_D3D11)
 		result = pCompilerD3D11;
+	else if (CParserBin::m_nPlatform == SF_D3D12)
+		result = pCompilerD3D12;
 	else if (CParserBin::m_nPlatform == SF_ORBIS)
 		result = pCompilerOrbis;
 	else if (CParserBin::m_nPlatform == SF_DURANGO)
@@ -1267,12 +1273,13 @@ string CShaderMan::mfGetShaderCompileFlags(EHWShaderClass eClass, UPipelineState
 
 	if (!CRenderer::CV_r_shadersCompileStrict)
 	{
-		result = result.replace("" STRICT_MODE "", "");
+		result = result.replace("" W_STRICT_MODE "", "");
+		result = result.replace("" L_STRICT_MODE "", "");
 	}
 
 	if (!CRenderer::CV_r_shadersCompileCompatible)
 	{
-		result = result.replace("" COMPATIBLE_MODE "", "");
+		result = result.replace("" W_COMPATIBLE_MODE "", "");
 	}
 
 	return result;
@@ -1483,6 +1490,8 @@ void CShaderMan::AddRTCombinations(FXShaderCacheCombinations& CmbsMap, CHWShader
 		nBitsPlatform |= SHGD_HW_DURANGO;
 	else if (CParserBin::m_nPlatform == SF_D3D11)
 		nBitsPlatform |= SHGD_HW_DX11;
+	else if (CParserBin::m_nPlatform == SF_D3D12)
+		nBitsPlatform |= SHGD_HW_DX12;
 	else if (CParserBin::m_nPlatform == SF_GL4)
 		nBitsPlatform |= SHGD_HW_GL4;
 	else if (CParserBin::m_nPlatform == SF_GLES3)
@@ -1594,7 +1603,7 @@ void CShaderMan::_PrecacheShaderList(bool bStatsOnly)
 		CRenderer::CV_r_shadersasynccompiling = 0;
 
 	// Command line shaders precaching
-	gRenDev->m_Features |= RFT_HW_SM20 | RFT_HW_SM2X | RFT_HW_SM30;
+	gRenDev->m_Features |= RFT_HW_SM50 | RFT_HW_SM51 | RFT_HW_SM60 | RFT_HW_SM62;
 	FXShaderCacheCombinations* Combinations = &m_ShaderCacheCombinations[0];
 
 	std::vector<SCacheCombination> Cmbs;
@@ -1735,7 +1744,7 @@ void CShaderMan::_PrecacheShaderList(bool bStatsOnly)
 			CmbsMapRTDst.clear();
 			CmbsMapRTSrc.clear();
 			uint32 nFlags = HWSF_PRECACHE;
-			if (CParserBin::m_nPlatform & (SF_D3D11 | SF_DURANGO | SF_ORBIS | SF_GL4 | SF_GLES3 | SF_VULKAN))
+			if (CParserBin::m_nPlatform & (SF_D3D11 | SF_D3D12 | SF_DURANGO | SF_ORBIS | SF_GL4 | SF_GLES3 | SF_VULKAN))
 				nFlags |= HWSF_STOREDATA;
 			if (bStatsOnly)
 				nFlags |= HWSF_FAKE;
@@ -1940,11 +1949,22 @@ void CShaderMan::mfPrecacheShaders(bool bStatsOnly)
 	#endif
 	}
 
-	gRenDev->m_bDeviceSupportsTessellation = CRenderer::ShaderTargetFlag & (SF_D3D11 | SF_GL4 | SF_VULKAN);
-	gRenDev->m_bDeviceSupportsGeometryShaders =	CRenderer::ShaderTargetFlag & (SF_D3D11 | SF_GL4 | SF_VULKAN | SF_DURANGO | SF_ORBIS);
+	gRenDev->m_bDeviceSupportsTessellation    = CRenderer::ShaderTargetFlag & (SF_D3D11 | SF_D3D12 | SF_GL4 | SF_VULKAN);
+	gRenDev->m_bDeviceSupportsGeometryShaders =	CRenderer::ShaderTargetFlag & (SF_D3D11 | SF_D3D12 | SF_GL4 | SF_VULKAN | SF_DURANGO | SF_ORBIS);
 
 	CParserBin::m_bShaderCacheGen = true;
-	gRenDev->m_Features |= RFT_HW_SM50;
+
+	switch (CRenderer::ShaderTargetFlag)
+	{
+	case SF_GLES3  : gRenDev->m_Features |= RFT_HW_SM50; break;
+	case SF_GL4    : gRenDev->m_Features |= RFT_HW_SM50; break;
+	case SF_ORBIS  : gRenDev->m_Features |= RFT_HW_SM50; break;
+	case SF_D3D11  : gRenDev->m_Features |= RFT_HW_SM50 | RFT_HW_SM51; break;
+	case SF_D3D12  : gRenDev->m_Features |= RFT_HW_SM50 | RFT_HW_SM51 | RFT_HW_SM60 | RFT_HW_SM62; break;
+	case SF_DURANGO: gRenDev->m_Features |= RFT_HW_SM50 | RFT_HW_SM51 | RFT_HW_SM60 | RFT_HW_SM62; break;
+	case SF_VULKAN : gRenDev->m_Features |= RFT_HW_SM50 | RFT_HW_SM51 | RFT_HW_SM60 | RFT_HW_SM62; break;
+	}
+
 	CParserBin::SetupForPlatform(CRenderer::ShaderTargetFlag);
 	CryLogAlways("\nStarting shader compilation for %s...", CRenderer::CV_r_ShaderTarget->GetString());
 	mfInitShadersList(NULL);
@@ -1954,7 +1974,7 @@ void CShaderMan::mfPrecacheShaders(bool bStatsOnly)
 	if (CRenderer::ShaderTargetFlag & SF_ORBIS)
 		CRenderer::ShaderTargetFlag &= ~SF_ORBIS;
 
-	CParserBin::SetupForPlatform(SF_D3D11);
+	CParserBin::SetupForPlatform(CRenderer::ShaderTargetFlag);
 
 	gRenDev->m_cEF.m_Bin.InvalidateCache();
 }

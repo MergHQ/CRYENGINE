@@ -1365,7 +1365,6 @@ void CShaderMan::RT_SetShaderQuality(EShaderType eST, EShaderQuality eSQ)
 	}
 	if (eST == eST_All || eST == eST_General)
 	{
-		bool bPS20 = ((gRenDev->m_Features & (RFT_HW_SM2X | RFT_HW_SM30)) == 0) || (eSQ == eSQ_Low);
 		m_Bin.InvalidateCache();
 		mfReloadAllShaders(FRO_FORCERELOAD, 0);
 	}
@@ -2545,44 +2544,30 @@ void CHWShader::mfCleanupCache()
 
 EHWShaderClass CHWShader::mfStringProfile(const char* profile)
 {
-	EHWShaderClass Profile = eHWSC_Num;
-	if (!strncmp(profile, "vs_5_0", 6) || !strncmp(profile, "vs_4_0", 6) || !strncmp(profile, "vs_3_0", 6))
-		Profile = eHWSC_Vertex;
-	else if (!strncmp(profile, "ps_5_0", 6) || !strncmp(profile, "ps_4_0", 6) || !strncmp(profile, "ps_3_0", 6))
-		Profile = eHWSC_Pixel;
-	else if (!strncmp(profile, "gs_5_0", 6) || !strncmp(profile, "gs_4_0", 6))
-		Profile = eHWSC_Geometry;
-	else if (!strncmp(profile, "hs_5_0", 6))
-		Profile = eHWSC_Hull;
-	else if (!strncmp(profile, "ds_5_0", 6))
-		Profile = eHWSC_Domain;
-	else if (!strncmp(profile, "cs_5_0", 6))
-		Profile = eHWSC_Compute;
-	else
-		assert(0);
-
-	return Profile;
+	if (!strncmp(profile, "vs_6_1", 6) || !strncmp(profile, "vs_6_0", 6) || !strncmp(profile, "vs_5_1", 6) || !strncmp(profile, "vs_5_0", 6) || !strncmp(profile, "vs_4_0", 6) || !strncmp(profile, "vs_3_0", 6)) return eHWSC_Vertex;
+	if (!strncmp(profile, "ps_6_1", 6) || !strncmp(profile, "ps_6_0", 6) || !strncmp(profile, "ps_5_1", 6) || !strncmp(profile, "ps_5_0", 6) || !strncmp(profile, "ps_4_0", 6) || !strncmp(profile, "ps_3_0", 6)) return eHWSC_Pixel;
+	if (!strncmp(profile, "gs_6_1", 6) || !strncmp(profile, "gs_6_0", 6) || !strncmp(profile, "gs_5_1", 6) || !strncmp(profile, "gs_5_0", 6) || !strncmp(profile, "gs_4_0", 6)) return eHWSC_Geometry;
+	if (!strncmp(profile, "hs_6_1", 6) || !strncmp(profile, "hs_6_0", 6) || !strncmp(profile, "hs_5_1", 6) || !strncmp(profile, "hs_5_0", 6)) return eHWSC_Hull;
+	if (!strncmp(profile, "ds_6_1", 6) || !strncmp(profile, "ds_6_0", 6) || !strncmp(profile, "ds_5_1", 6) || !strncmp(profile, "ds_5_0", 6)) return eHWSC_Domain;
+	if (!strncmp(profile, "cs_6_1", 6) || !strncmp(profile, "cs_6_0", 6) || !strncmp(profile, "cs_5_1", 6) || !strncmp(profile, "cs_5_0", 6)) return eHWSC_Compute;
+	
+	assert(0);
+	return eHWSC_Num;
 }
+
 EHWShaderClass CHWShader::mfStringClass(const char* szClass)
 {
-	EHWShaderClass Profile = eHWSC_Num;
-	if (!strnicmp(szClass, "VS", 2))
-		Profile = eHWSC_Vertex;
-	else if (!strnicmp(szClass, "PS", 2))
-		Profile = eHWSC_Pixel;
-	else if (!strnicmp(szClass, "GS", 2))
-		Profile = eHWSC_Geometry;
-	else if (!strnicmp(szClass, "HS", 2))
-		Profile = eHWSC_Hull;
-	else if (!strnicmp(szClass, "DS", 2))
-		Profile = eHWSC_Domain;
-	else if (!strnicmp(szClass, "CS", 2))
-		Profile = eHWSC_Compute;
-	else
-		assert(0);
-
-	return Profile;
+	if (!strnicmp(szClass, "VS", 2)) return eHWSC_Vertex;
+	if (!strnicmp(szClass, "PS", 2)) return eHWSC_Pixel;
+	if (!strnicmp(szClass, "GS", 2)) return eHWSC_Geometry;
+	if (!strnicmp(szClass, "HS", 2)) return eHWSC_Hull;
+	if (!strnicmp(szClass, "DS", 2)) return eHWSC_Domain;
+	if (!strnicmp(szClass, "CS", 2)) return eHWSC_Compute;
+	
+	assert(0);
+	return eHWSC_Num;
 }
+
 const char* CHWShader::mfProfileString(EHWShaderClass eClass)
 {
 	const char* szProfile = "Unknown";
@@ -2591,36 +2576,60 @@ const char* CHWShader::mfProfileString(EHWShaderClass eClass)
 	case eHWSC_Vertex:
 		if (CParserBin::m_nPlatform & (SF_D3D11 | SF_ORBIS | SF_DURANGO | SF_VULKAN | SF_GL4 | SF_GLES3))
 			szProfile = "vs_5_0";
+		else if (CParserBin::m_nPlatform & (SF_D3D12))
+			szProfile = "vs_6_0";
 		else
 			assert(0);
 		break;
 	case eHWSC_Pixel:
 		if (CParserBin::m_nPlatform & (SF_D3D11 | SF_ORBIS | SF_DURANGO | SF_VULKAN | SF_GL4 | SF_GLES3))
 			szProfile = "ps_5_0";
+		else if (CParserBin::m_nPlatform & (SF_D3D12))
+			szProfile = "ps_6_0";
 		else
 			assert(0);
 		break;
 	case eHWSC_Geometry:
 		if (CParserBin::PlatformSupportsGeometryShaders())
-			szProfile = "gs_5_0";
+		{
+			if (CParserBin::m_nPlatform & (SF_D3D11 | SF_ORBIS | SF_DURANGO | SF_VULKAN | SF_GL4 | SF_GLES3))
+				szProfile = "gs_5_0";
+			else if (CParserBin::m_nPlatform & (SF_D3D12))
+				szProfile = "gs_6_0";
+		}
 		else
 			assert(0);
 		break;
 	case eHWSC_Domain:
-		if (CParserBin::PlatformSupportsDomainShaders())
-			szProfile = "ds_5_0";
+		if (CParserBin::PlatformSupportsGeometryShaders())
+		{
+			if (CParserBin::m_nPlatform & (SF_D3D11 | SF_ORBIS | SF_DURANGO | SF_VULKAN | SF_GL4 | SF_GLES3))
+				szProfile = "ds_5_0";
+			else if (CParserBin::m_nPlatform & (SF_D3D12))
+				szProfile = "ds_6_0";
+		}
 		else
 			assert(0);
 		break;
 	case eHWSC_Hull:
-		if (CParserBin::PlatformSupportsHullShaders())
-			szProfile = "hs_5_0";
+		if (CParserBin::PlatformSupportsGeometryShaders())
+		{
+			if (CParserBin::m_nPlatform & (SF_D3D11 | SF_ORBIS | SF_DURANGO | SF_VULKAN | SF_GL4 | SF_GLES3))
+				szProfile = "hs_5_0";
+			else if (CParserBin::m_nPlatform & (SF_D3D12))
+				szProfile = "hs_6_0";
+		}
 		else
 			assert(0);
 		break;
 	case eHWSC_Compute:
-		if (CParserBin::PlatformSupportsComputeShaders())
-			szProfile = "cs_5_0";
+		if (CParserBin::PlatformSupportsGeometryShaders())
+		{
+			if (CParserBin::m_nPlatform & (SF_D3D11 | SF_ORBIS | SF_DURANGO | SF_VULKAN | SF_GL4 | SF_GLES3))
+				szProfile = "cs_5_0";
+			else if (CParserBin::m_nPlatform & (SF_D3D12))
+				szProfile = "cs_6_0";
+		}
 		else
 			assert(0);
 		break;
@@ -2629,6 +2638,7 @@ const char* CHWShader::mfProfileString(EHWShaderClass eClass)
 	}
 	return szProfile;
 }
+
 const char* CHWShader::mfClassString(EHWShaderClass eClass)
 {
 	const char* szClass = "Unknown";

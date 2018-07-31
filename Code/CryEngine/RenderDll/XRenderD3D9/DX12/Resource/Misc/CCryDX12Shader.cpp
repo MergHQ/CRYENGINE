@@ -14,7 +14,7 @@
 CCryDX12Shader* CCryDX12Shader::Create(CCryDX12Device* pDevice, const void* pShaderBytecode, SIZE_T BytecodeLength, ID3D11ClassLinkage* pClassLinkage)
 {
 	CCryDX12Shader* pResult = DX12_NEW_RAW(CCryDX12Shader(pShaderBytecode, BytecodeLength));
-	pResult->m_pShader = NCryDX12::CShader::CreateFromD3D11(pDevice->GetDX12Device(), pResult->GetD3D12ShaderBytecode());
+	pResult->m_pShader = NCryDX12::CShader::Create(pDevice->GetDX12Device(), pResult->GetD3D12ShaderBytecode());
 
 	return pResult;
 }

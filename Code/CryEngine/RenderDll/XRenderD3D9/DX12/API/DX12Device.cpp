@@ -28,6 +28,22 @@ CDevice* CDevice::Create(CCryDX12GIAdapter* pAdapter, D3D_FEATURE_LEVEL* pFeatur
 {
 	ID3D12Device* pDevice12 = NULL;
 
+#if USE_DXC
+	// Enable shader model 6.x
+	if (CRenderer::ShaderTargetFlag & SF_D3D12)
+	{
+		HRESULT res = D3D12EnableExperimentalFeatures(1, &D3D12ExperimentalShaderModels, nullptr, nullptr);
+		DX12_ASSERT(res == S_OK, "Enabling experimental features for D3D12 Device didn't work!");
+
+		// Disable shader model 6.x if it can't be enabled
+		if (res != S_OK)
+			CRenderer::ShaderTargetFlag = (CRenderer::ShaderTargetFlag & ~SF_D3D12) | SF_D3D11;
+	}
+#else
+	// Disable shader model 6.x if it isn't possible
+	CRenderer::ShaderTargetFlag = (CRenderer::ShaderTargetFlag & ~SF_D3D12) | SF_D3D11;
+#endif
+
 	if (CRenderer::CV_r_EnableDebugLayer)
 	{
 		ID3D12Debug* debugInterface = nullptr;

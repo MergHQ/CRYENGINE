@@ -413,6 +413,34 @@ typedef void (*RenderFunc)(void);
 //#define Direct3D IDXGIAdapter
 
 #if (CRY_RENDERER_DIRECT3D >= 120)
+#define	D3DReflection                     D3DReflectDXILorDXBC
+#define	IID_D3DShaderReflection           IID_ID3D12ShaderReflection
+#define	D3DShaderReflection               ID3D12ShaderReflection
+#define	D3DShaderReflectionConstantBuffer ID3D12ShaderReflectionConstantBuffer
+#define	D3DShaderReflectionVariable		  ID3D12ShaderReflectionVariable
+#define	D3DShaderReflectionType			  ID3D12ShaderReflectionType
+#define	D3D_SHADER_DESC					  D3D12_SHADER_DESC
+#define	D3D_SHADER_TYPE_DESC			  D3D12_SHADER_TYPE_DESC
+#define	D3D_SHADER_BUFFER_DESC			  D3D12_SHADER_BUFFER_DESC
+#define	D3D_SHADER_VARIABLE_DESC		  D3D12_SHADER_VARIABLE_DESC
+#define	D3D_SHADER_INPUT_BIND_DESC		  D3D12_SHADER_INPUT_BIND_DESC
+#define	D3D_SIGNATURE_PARAMETER_DESC	  D3D12_SIGNATURE_PARAMETER_DESC
+#else
+#define	D3DReflection                     D3DReflect
+#define	IID_D3DShaderReflection           IID_ID3D11ShaderReflection
+#define	D3DShaderReflection               ID3D11ShaderReflection
+#define	D3DShaderReflectionConstantBuffer ID3D11ShaderReflectionConstantBuffer
+#define	D3DShaderReflectionVariable		  ID3D11ShaderReflectionVariable
+#define	D3DShaderReflectionType			  ID3D11ShaderReflectionType
+#define	D3D_SHADER_DESC					  D3D11_SHADER_DESC
+#define	D3D_SHADER_TYPE_DESC			  D3D11_SHADER_TYPE_DESC
+#define	D3D_SHADER_BUFFER_DESC			  D3D11_SHADER_BUFFER_DESC
+#define	D3D_SHADER_VARIABLE_DESC		  D3D11_SHADER_VARIABLE_DESC
+#define	D3D_SHADER_INPUT_BIND_DESC		  D3D11_SHADER_INPUT_BIND_DESC
+#define	D3D_SIGNATURE_PARAMETER_DESC	  D3D11_SIGNATURE_PARAMETER_DESC
+#endif
+
+#if (CRY_RENDERER_DIRECT3D >= 120)
     #if CRY_PLATFORM_DURANGO
         #define DXGIFactory               IDXGIFactory1
         #define DXGIDevice                IDXGIDevice2

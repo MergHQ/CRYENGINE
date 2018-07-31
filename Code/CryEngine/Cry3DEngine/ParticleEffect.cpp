@@ -710,7 +710,7 @@ bool ResourceParticleParams::IsActive() const
 	if (config_spec <= CONFIG_VERYHIGH_SPEC)
 	{
 		// PC platform. Match DX settings.
-		if (!Platforms.PCDX11)
+		if (!Platforms.PCDX)
 			return false;
 	}
 
@@ -879,7 +879,7 @@ struct CompatibilityParticleParams
 	EMoveRelative eMoveRelEmitter;        // Particle motion is in emitter space
 
 	// Version 25
-	ETrinary tDX11;
+	ETrinary tDX;
 	bool     bGeometryInPieces;
 
 	// Version 24
@@ -1136,8 +1136,8 @@ void CompatibilityParticleParams::Correct(CParticleEffect* pEffect)
 
 	case 25:
 		// DX11 spec
-		if (tDX11 == ETrinary(false))
-			Platforms.PCDX11 = false;
+		if (tDX == ETrinary(false))
+			Platforms.PCDX = false;
 
 		// Fix reversed PivotY.
 		fPivotY.Set(-fPivotY.GetMaxValue());

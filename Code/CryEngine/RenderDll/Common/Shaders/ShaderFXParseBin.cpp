@@ -2050,7 +2050,7 @@ void CShaderManBin::AddAffectedParameter(CParserBin& Parser, std::vector<SFXPara
 		AffectedParams.push_back(*pParam);
 	else
 	{
-		if (CParserBin::m_nPlatform & (SF_D3D11 | SF_DURANGO | SF_ORBIS | SF_GL4 | SF_GLES3 | SF_VULKAN))
+		if (CParserBin::m_nPlatform & (SF_D3D11 | SF_D3D12 | SF_DURANGO | SF_ORBIS | SF_GL4 | SF_GLES3 | SF_VULKAN))
 		{
 			assert(eSHClass < eHWSC_Num);
 			if (((nFlags & PF_TWEAKABLE_MASK) || pParam->m_Values.c_str()[0] == '(') && pParam->m_nRegister[eSHClass] >= 0 && pParam->m_nRegister[eSHClass] < 1000)
@@ -2966,7 +2966,7 @@ bool CShaderManBin::ParseBinFX_Technique_Pass_GenerateShaderData(CParserBin& Par
 			Parser.CopyTokens(cf, SHData, Replaces, NewTokens, h);
 			if (cf->m_eType == eFT_Sampler)
 			{
-				if (CParserBin::m_nPlatform & (SF_D3D11 | SF_DURANGO | SF_GL4 | SF_GLES3 | SF_VULKAN))
+				if (CParserBin::m_nPlatform & (SF_D3D11 | SF_D3D12 | SF_DURANGO | SF_GL4 | SF_GLES3 | SF_VULKAN))
 				{
 					int nT = Parser.m_Tokens[cf->m_nLastToken - 1];
 					//assert(nT >= eT_s0 && nT <= eT_s15);
@@ -4022,7 +4022,7 @@ bool CShaderManBin::ParseBinFX(SShaderBin* pBin, CShader* ef, uint64 nMaskGen)
 						else
 							Pr.m_nCB = CB_PER_DRAW;
 					}
-					else if (CParserBin::m_nPlatform & (SF_D3D11 | SF_ORBIS | SF_DURANGO | SF_GL4 | SF_GLES3 | SF_VULKAN))
+					else if (CParserBin::m_nPlatform & (SF_D3D11 | SF_D3D12 | SF_ORBIS | SF_DURANGO | SF_GL4 | SF_GLES3 | SF_VULKAN))
 					{
 						uint32 nTokName = Parser.GetToken(Parser.m_Name);
 						const char* name = Parser.GetString(nTokName);

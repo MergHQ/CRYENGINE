@@ -1498,7 +1498,7 @@ typedef _smart_ptr<SInputShaderResources> SInputShaderResourcesPtr;
 #define SHGD_USER_ENABLED         0x40000
 // 0x80000
 #define SHGD_HW_VULKAN             0x100000
-#define SHGD_HW_DX10               0x200000
+#define SHGD_HW_DX12               0x200000
 #define SHGD_HW_DX11               0x400000
 #define SHGD_HW_GL4                0x800000
 #define SHGD_HW_WATER_TESSELLATION 0x1000000

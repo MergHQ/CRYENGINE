@@ -493,7 +493,6 @@ CShadowUtils::SShadowsSetupInfo CD3D9Renderer::ConfigShadowTexgen(CRenderView* p
 	if (bScreenToLocalBasis && CRenderer::CV_r_FogShadowsMode == 1)
 	{
 		Vec4r vWBasisX, vWBasisY, vWBasisZ, vCamPos;
-		bool bVPosSM30 = (GetFeatures() & (RFT_HW_SM30 | RFT_HW_SM40)) != 0;
 		const SRenderViewport& viewport = gcpRendD3D.GetGraphicsPipeline().GetCurrentRenderView()->GetViewport();
 
 		CCamera Cam = pRenderView->GetCamera(CCamera::eEye_Left);
@@ -501,7 +500,7 @@ CShadowUtils::SShadowsSetupInfo CD3D9Renderer::ConfigShadowTexgen(CRenderView* p
 			Cam.SetFrustum(Cam.GetViewSurfaceX(), Cam.GetViewSurfaceZ(), DEG2RAD(m_drawNearFov), Cam.GetNearPlane(), Cam.GetFarPlane(), Cam.GetPixelAspectRatio());
 
 		CShadowUtils::ProjectScreenToWorldExpansionBasis(Data.ShadowMat, Cam, pRenderView->m_vProjMatrixSubPixoffset,
-		                                                 static_cast<float>(viewport.width), static_cast<float>(viewport.height), vWBasisX, vWBasisY, vWBasisZ, vCamPos, bVPosSM30);
+		                                                 static_cast<float>(viewport.width), static_cast<float>(viewport.height), vWBasisX, vWBasisY, vWBasisZ, vCamPos, true);
 
 	#pragma warning(push)
 	#pragma warning(disable: 4244)

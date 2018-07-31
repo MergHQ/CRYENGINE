@@ -8,11 +8,11 @@
 #include "../GraphicsPipeline/Common/GraphicsPipelineStateSet.h"
 
 
-uint8_t SInputLayoutCompositionDescriptor::GenerateShaderMask(const InputLayoutHandle VertexFormat, ID3D11ShaderReflection* pShaderReflection)
+uint8_t SInputLayoutCompositionDescriptor::GenerateShaderMask(const InputLayoutHandle VertexFormat, D3DShaderReflection* pShaderReflection)
 {
 	uint8_t shaderMask = 0;
 
-	D3D11_SHADER_DESC Desc;
+	D3D_SHADER_DESC Desc;
 	pShaderReflection->GetDesc(&Desc);
 
 	// layoutDescriptor's names will be ordered in lexicographical ascending order
@@ -25,7 +25,7 @@ uint8_t SInputLayoutCompositionDescriptor::GenerateShaderMask(const InputLayoutH
 	reflectedNames.reserve(Desc.InputParameters);
 	for (uint32 i=0; i<Desc.InputParameters; i++)
 	{
-		D3D11_SIGNATURE_PARAMETER_DESC Sig;
+		D3D_SIGNATURE_PARAMETER_DESC Sig;
 		pShaderReflection->GetInputParameterDesc(i, &Sig);
 		if (!Sig.SemanticName)
 			continue;
@@ -358,11 +358,11 @@ const CDeviceObjectFactory::SInputLayoutPair* CDeviceObjectFactory::GetOrCreateI
 
 	{
 		CRY_PROFILE_SECTION(PROFILE_RENDERER, "D3DReflect");
-		HRESULT hr = D3DReflect(pVertexShader->m_pShaderData, pVertexShader->m_nDataSize, IID_ID3D11ShaderReflection, &pShaderReflBuf);
+		HRESULT hr = D3DReflection(pVertexShader->m_pShaderData, pVertexShader->m_nDataSize, IID_D3DShaderReflection, &pShaderReflBuf);
 		CRY_ASSERT(SUCCEEDED(hr) && pShaderReflBuf);
 	}
 
-	ID3D11ShaderReflection* pShaderReflection = (ID3D11ShaderReflection*)pShaderReflBuf;
+	D3DShaderReflection* pShaderReflection = (D3DShaderReflection*)pShaderReflBuf;
 
 	// Create the composition descriptor
 	SInputLayoutCompositionDescriptor compositionDescriptor(VertexFormat, StreamMask, pShaderReflection);
