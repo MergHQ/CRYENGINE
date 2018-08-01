@@ -324,6 +324,9 @@ HRESULT STDMETHODCALLTYPE CDevice::CreateOrReuseCommittedResource(
 				// Guaranteed O(1) lookup
 				*ppvResource = result->second.front().pObject;
 
+#if !defined(RELEASE) && CRY_PLATFORM_WINDOWS
+				result->second.front().pObject->SetPrivateData(WKPDID_D3DDebugObjectName, 0, nullptr);
+#endif
 				result->second.pop_front();
 				if (!result->second.size())
 					m_RecycleHeap.erase(result);
