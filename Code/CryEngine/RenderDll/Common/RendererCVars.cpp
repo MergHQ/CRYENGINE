@@ -269,11 +269,8 @@ AllocateConstIntCVar(CRendererCVars, CV_r_shaderslazyunload);
 AllocateConstIntCVar(CRendererCVars, CV_r_shadersdebug);
 AllocateConstIntCVar(CRendererCVars, CV_r_shadersCompileStrict);
 AllocateConstIntCVar(CRendererCVars, CV_r_shadersCompileCompatible);
-#if CRY_PLATFORM_DESKTOP || CRY_PLATFORM_DURANGO
 ICVar*      CRendererCVars::CV_r_ShaderTarget;
 uint        CRendererCVars::ShaderTargetFlag;
-#endif
-
 ICVar*      CRendererCVars::CV_r_VkShaderCompiler = nullptr;
 
 AllocateConstIntCVar(CRendererCVars, CV_r_shadersignoreincludeschanging);
@@ -679,7 +676,6 @@ static void OnChange_CV_d3d11_debugMuteMsgID(ICVar* /*pCVar*/)
 }
 #endif
 
-#if CRY_PLATFORM_DESKTOP
 static void OnChange_CV_r_ShaderTarget(ICVar* pCVar)
 {
 	if (!pCVar)
@@ -795,7 +791,6 @@ static void OnChange_CV_r_ShaderTarget(ICVar* pCVar)
 			STR_VULKAN_SHADER_TARGET);
 	}
 }
-#endif
 
 static void OnChange_CV_r_PostProcess(ICVar* pCVar)
 {
@@ -995,13 +990,12 @@ void CRendererCVars::InitCVars()
 	REGISTER_CVAR3("r_GraphicsPipelinePassScheduler", CV_r_GraphicsPipelinePassScheduler, 0, VF_NULL,
 	               "Toggles render pass scheduler that submits passes in a deferred way, allowing improved multithreading and barrier scheduling.");
 	
-#if CRY_PLATFORM_DESKTOP
 	CV_r_ShaderTarget = REGISTER_STRING_CB("r_ShaderTarget", "", VF_DUMPTODISK,
 			"Shader cache generation only CVar."
 			"Sets the shader generation target ( Orbis/Durango/D3D11/D3D12/GL4/GLES3/Vulkan ).\n"
 			"Specify in system.cfg like this: r_ShaderTarget = \"D3D11\"", OnChange_CV_r_ShaderTarget);
 		OnChange_CV_r_ShaderTarget(CV_r_ShaderTarget);
-#endif
+
 #if CRY_RENDERER_VULKAN
 		CV_r_VkShaderCompiler = REGISTER_STRING("r_VkShaderCompiler", "DXC", VF_DUMPTODISK,
 			"Vulkan renderer only CVar."
