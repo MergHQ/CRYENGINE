@@ -148,7 +148,7 @@ void NCryVulkan::CHeap::Init(VkPhysicalDevice physicalDevice, VkDevice device)
 		}
 	}
 
-	const uint32_t deviceStagingTypes = (hostLocalTypes ? deviceLocalTypes & hostVisibleTypes : 0);
+	const uint32_t deviceStagingTypes = (hostVisibleTypes ? deviceLocalTypes & hostVisibleTypes : 0);
 
 	// Always take away the "upload" heap from all the heap-preferences (never fall back to "upload" heap)
 	if (deviceLocalTypes  != deviceStagingTypes) deviceLocalTypes  &= ~deviceStagingTypes;
