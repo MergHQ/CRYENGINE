@@ -46,7 +46,7 @@ void CEntityContainerObject::ProcessEvent(const SEntityEvent& entityEvent)
 {
 	switch (entityEvent.event)
 	{
-	case ENTITY_EVENT_LEVEL_LOADED:
+	case ENTITY_EVENT_START_GAME:
 		{
 			// Process links
 			const EntityId id = GetEntityId();
@@ -84,7 +84,7 @@ void CEntityContainerObject::ProcessEvent(const SEntityEvent& entityEvent)
 
 Cry::Entity::EventFlags CEntityContainerObject::GetEventMask() const
 {
-	return ENTITY_EVENT_LEVEL_LOADED | ENTITY_EVENT_RESET | ENTITY_EVENT_EDITOR_PROPERTY_CHANGED | ENTITY_EVENT_DONE;
+	return ENTITY_EVENT_START_GAME | ENTITY_EVENT_RESET | ENTITY_EVENT_EDITOR_PROPERTY_CHANGED | ENTITY_EVENT_DONE;
 }
 
 bool CEntityContainerObject::ReadEditorProperties()
