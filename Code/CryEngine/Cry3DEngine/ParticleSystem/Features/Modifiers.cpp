@@ -166,11 +166,6 @@ public:
 		return EDD_PerParticle;
 	}
 
-	virtual void AddToParam(CParticleComponent* pComponent, IParamMod* pParam)
-	{
-		pParam->AddToInitParticles(this);
-	}
-
 	virtual void Serialize(Serialization::IArchive& ar)
 	{
 		IModifier::Serialize(ar);
@@ -604,17 +599,9 @@ public:
 			m_specMultipliers[i] = 1.0f;
 	}
 
-	virtual void AddToParam(CParticleComponent* pComponent, IParamMod* pParam) override
-	{
-		if (m_spawnOnly)
-			pParam->AddToInitParticles(this);
-		else
-			pParam->AddToUpdate(this);
-	}
-
 	virtual EDataDomain GetDomain() const override
 	{
-		return EDD_PerParticle;
+		return m_spawnOnly ? EDD_PerParticle : EDD_ParticleUpdate;
 	}
 
 	virtual Range GetMinMax() const override
@@ -679,17 +666,9 @@ SERIALIZATION_CLASS_NAME(IModifier, CModConfigSpec, "ConfigSpec", "Config Spec")
 class CModAttribute : public IModifier
 {
 public:
-	virtual void AddToParam(CParticleComponent* pComponent, IParamMod* pParam) override
-	{
-		if (m_spawnOnly)
-			pParam->AddToInitParticles(this);
-		else
-			pParam->AddToUpdate(this);
-	}
-
 	virtual EDataDomain GetDomain() const override
 	{
-		return EDD_PerParticle;
+		return m_spawnOnly ? EDD_PerParticle : EDD_ParticleUpdate;
 	}
 
 	virtual void Serialize(Serialization::IArchive& ar) override
@@ -765,15 +744,7 @@ public:
 
 	virtual EDataDomain GetDomain() const
 	{
-		return EDD_PerParticle;
-	}
-
-	virtual void AddToParam(CParticleComponent* pComponent, IParamMod* pParam)
-	{
-		if (m_spawnOnly)
-			pParam->AddToInitParticles(this);
-		else
-			pParam->AddToUpdate(this);
+		return m_spawnOnly ? EDD_PerParticle : EDD_ParticleUpdate;
 	}
 
 	virtual void Serialize(Serialization::IArchive& ar)

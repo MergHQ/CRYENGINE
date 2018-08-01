@@ -221,7 +221,7 @@ private:
 
 }
 
-ILINE CDomain::CDomain()
+inline CDomain::CDomain()
 	: m_domain(EDomain::Age)
 	, m_fieldSource(EDomainField(EPDT_LifeTime))
 	, m_sourceOwner(EDomainOwner::Self)
@@ -233,13 +233,8 @@ ILINE CDomain::CDomain()
 }
 
 template<typename TParam, typename TMod>
-ILINE void CDomain::AddToParam(CParticleComponent* pComponent, TParam* pParam, TMod* pModifier)
+inline void CDomain::AddToParam(CParticleComponent* pComponent, TParam* pParam, TMod* pModifier)
 {
-	if (m_spawnOnly)
-		pParam->AddToInitParticles(pModifier);
-	else
-		pParam->AddToUpdate(pModifier);
-
 	CParticleComponent* pSourceComponent = m_sourceOwner == EDomainOwner::Parent ? pComponent->GetParentComponent() : pComponent;
 	if (pSourceComponent)
 	{
@@ -254,26 +249,29 @@ ILINE void CDomain::AddToParam(CParticleComponent* pComponent, TParam* pParam, T
 	}
 }
 
-ILINE EDataDomain CDomain::GetDomain() const
+inline EDataDomain CDomain::GetDomain() const
 {
+	EDataDomain update = m_spawnOnly ? EDD_None : EDD_HasUpdate;
+
 	switch (m_domain)
 	{
 	case EDomain::Global:
 	case EDomain::Attribute:
-		return EDD_None;
+		return update;
 	}
 
 	switch (m_sourceOwner)
 	{
 	case EDomainOwner::Self:
-		return EDD_PerParticle;
+		return EDataDomain(EDD_PerParticle | update);
 	case EDomainOwner::Parent:
-		return EDD_PerInstance;
+		return EDataDomain(EDD_PerInstance | update);
 	default:
-		return EDD_None;
+		return update;
 	}
 }
-ILINE TDataType<float> CDomain::GetDataType() const
+
+inline TDataType<float> CDomain::GetDataType() const
 {
 	switch (m_domain)
 	{
@@ -289,7 +287,7 @@ ILINE TDataType<float> CDomain::GetDataType() const
 }
 
 template<typename TBase, typename TStream>
-ILINE void CDomain::Dispatch(CParticleComponentRuntime& runtime, const SUpdateRange& range, TStream stream, EDataDomain domain) const
+void CDomain::Dispatch(CParticleComponentRuntime& runtime, const SUpdateRange& range, TStream stream, EDataDomain domain) const
 {
 	switch (m_domain)
 	{

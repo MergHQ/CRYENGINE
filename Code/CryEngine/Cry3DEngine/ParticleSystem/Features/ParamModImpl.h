@@ -20,10 +20,6 @@ CParamMod<Domain, T>::CParamMod(TType defaultValue)
 template<EDataDomain Domain, typename T>
 void CParamMod<Domain, T >::AddToComponent(CParticleComponent* pComponent, CParticleFeature* pFeature)
 {
-	m_modInit.clear();
-	m_modUpdate.clear();
-	stl::find_and_erase_all(m_modifiers, nullptr);
-
 	if (Domain & EDD_PerParticle)
 		pComponent->InitParticles.add(pFeature);
 
@@ -58,14 +54,19 @@ void CParamMod<Domain, T >::Serialize(Serialization::IArchive& ar)
 
 	if (ar.isInput())
 	{
+		m_modInit.clear();
+		m_modUpdate.clear();
+		stl::find_and_erase_all(m_modifiers, nullptr);
 		for (auto& pMod : m_modifiers)
 		{
-			if (!pMod)
-				continue;
 			if (TModifier* pNewMod = pMod->VersionFixReplace())
 			{
 				pMod.reset(pNewMod);
 			}
+			if (pMod->GetDomain() & EDD_HasUpdate)
+				m_modUpdate.push_back(pMod);
+			else
+				m_modInit.push_back(pMod);
 		}
 	}
 }
@@ -159,9 +160,7 @@ template<EDataDomain Domain, typename T>
 TRange<typename T::TType> CParamMod<Domain, T >::GetValueRange() const
 {
 	TRange<TType> minmax(m_baseValue);
-	for (auto& pMod : m_modInit)
-		minmax = minmax * pMod->GetMinMax();
-	for (auto& pMod : m_modUpdate)
+	for (auto& pMod : m_modifiers)
 		minmax = minmax * pMod->GetMinMax();
 	return minmax;
 }
