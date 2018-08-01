@@ -12,7 +12,6 @@ class QViewportHeader;
 //! By progressively moving all level editor specific code here. See RenderViewport.h for other refactoring notes.
 class CLevelEditorViewport : public CRenderViewport
 {
-	typedef CRenderViewport Super;
 public:
 	CLevelEditorViewport();
 	~CLevelEditorViewport();
