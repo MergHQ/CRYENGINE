@@ -202,3 +202,4 @@ struct CFrameProfilerSection : CFrameProfilerSectionBase {
 	static CFrameProfiler staticFrameProfiler( szName ); \
 	CFrameProfilerSection frameProfilerSection( &staticFrameProfiler,get_iCaller() );
 
+#define RESTRICT_REFERENCE __restrict
