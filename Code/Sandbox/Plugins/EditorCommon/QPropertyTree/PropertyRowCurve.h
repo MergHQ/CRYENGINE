@@ -16,6 +16,10 @@ public:
 		: multiCurve_(multiCurve)
 		, editorContent_(nullptr)
 	{}
+	~PropertyRowCurve()
+	{
+		delete editorContent_;
+	}
 
 	// PropertyRow
 	bool            isLeaf() const override                                { return true; }
