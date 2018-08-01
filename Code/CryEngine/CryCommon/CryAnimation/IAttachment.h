@@ -67,16 +67,17 @@ struct SVClothParams
 	bool  forceSkinning;                   //!< If enabled, simulation is skipped and skinning is enforced.
 	float forceSkinningFpsThreshold;       //!< If the framerate drops under the provided FPS, simulation is skipped and skinning is enforced.
 	float forceSkinningTranslateThreshold; //!< If the translation is larger than this value, simulation is skipped and skinning is enforced.
-	bool  checkAnimationRewind;            //!< Check for Rewind in animation, if enabled, the cloth is re-initialized to collision-proxies in that case
-	float disableSimulationAtDistance;     //! Disable simulation / enable skinning in dependance of camera distance.
+	bool  checkAnimationRewind;            //!< Check for rewind in animation, if enabled, the cloth is re-initialized to collision-proxies in that case.
+	float disableSimulationAtDistance;     //!< Disable simulation / enable skinning in dependence of camera distance.
 	float disableSimulationTimeRange;      //!< Within this time range, the fading process (skinning vs. simulation) is done.
+	float enableSimulationSSaxisSizePerc;  //!< If size of characters bounding box exceeds provided percentage of viewport size, simulation is enabled.
 
 	// Simulation and Collision
 	float timeStep;                     //!< The (pseudo)fixed time step for the simulator.
-	int   timeStepsMax;                 //!< Number of maximum iterations for the time discretization in a single step
+	int   timeStepsMax;                 //!< Number of maximum iterations for the time discretization in a single step.
 	int   numIterations;                //!< Number of iterations for the positional stiffness & collision solver (contacts & edges).
-	int   collideEveryNthStep;          //!< for stiffness & collision solver: collide only every Nth step
-	float collisionMultipleShiftFactor; //!< for collision solver: if a particle collides with more than one collider at the same time, the particle is shifted by this factor in the average direction
+	int   collideEveryNthStep;          //!< For stiffness & collision solver: collide only every Nth step.
+	float collisionMultipleShiftFactor; //!< For collision solver: if a particle collides with more than one collider at the same time, the particle is shifted by this factor in the average direction.
 	float gravityFactor;
 
 	// Stiffness and Elasticity
@@ -91,13 +92,13 @@ struct SVClothParams
 	float rigidDamping;                 //!< Damping stiffness into rigid-body. 0.0 represents no damping, 1.0 represents rigid cloth.
 	float springDamping;                //!< Damping of springs.
 	bool  springDampingPerSubstep;      //!< Also damp springs in substeps.
-	float collisionDampingTangential;   //!< Tangential damping factor in case of collisions
+	float collisionDampingTangential;   //!< Tangential damping factor in case of collisions.
 
 	// Long Range Attachments
-	bool  longRangeAttachments;                     // Enables LRA.
-	float longRangeAttachmentsAllowedExtension;     // Allowed extension, e.g. 0.1 = 10%.
-	float longRangeAttachmentsMaximumShiftFactor;   // Scales maximum shift per iteration to closest neighbor, e.g. 0.5 -> half way to closest neighbor.
-	float longRangeAttachmentsShiftCollisionFactor; // Scales in case of shift the velocity.
+	bool  longRangeAttachments;                     //!< Enables LRA.
+	float longRangeAttachmentsAllowedExtension;     //!< Allowed extension, e.g. 0.1 = 10%.
+	float longRangeAttachmentsMaximumShiftFactor;   //!< Scales maximum shift per iteration to closest neighbor, e.g. 0.5 -> half way to closest neighbor.
+	float longRangeAttachmentsShiftCollisionFactor; //!< Scales in case of shift the velocity.
 
 	// Test Reset Damping
 	int   resetDampingRange;            //!< No of frames, within resetDampingFactor is used within simulation for dampening the system.
@@ -139,6 +140,7 @@ public:
 		, checkAnimationRewind(true)
 		, disableSimulationAtDistance(10.0)
 		, disableSimulationTimeRange(0.5f)
+		, enableSimulationSSaxisSizePerc(0.25f)
 
 		// Simulation and Collision
 		, timeStep(0.007f)

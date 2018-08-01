@@ -284,6 +284,7 @@ uint32 CAttachmentManager::ParseXMLAttachmentList(CharacterAttachment* parrAttac
 			nodeAttach->getAttr("checkAnimationRewind", attach.clothParams.checkAnimationRewind);
 			nodeAttach->getAttr("disableSimulationAtDistance", attach.clothParams.disableSimulationAtDistance);
 			nodeAttach->getAttr("disableSimulationTimeRange", attach.clothParams.disableSimulationTimeRange);
+			nodeAttach->getAttr("enableSimulationSSaxisSizePerc", attach.clothParams.enableSimulationSSaxisSizePerc);
 
 			// Simulation and Collision
 			nodeAttach->getAttr("timeStep", attach.clothParams.timeStep);

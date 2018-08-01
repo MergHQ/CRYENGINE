@@ -289,6 +289,7 @@ public:
 		, m_normalizedTimePrev(0)
 		, m_doSkinningForNSteps(0)
 		, m_forceSkinningAfterNFramesCounter(0)
+		, m_isFramerateBelowFpsThresh(false)
 		, m_fadeInOutPhysicsDirection(0)
 		, m_fadeTimeActual(0) // physical fade time
 		, m_bUseDijkstraForLRA(true)
@@ -393,6 +394,12 @@ private:
 	bool CheckCameraDistanceLessThan(float dist) const;
 
 	/**
+	 * Check screen space size of characters bounding box in x- or y-direction against viewport-size [using provided percentage-threshold]. 
+	 * @return True, if x- or y-dimension of bounding box in screen space is larger than provided threshold.
+	 */
+	bool CheckSSRatioLargerThan(float ssAxisSizePercThresh) const;
+
+	/**
 	 * Check framerate.
 	 * @return True, if framerate is less than m_config.forceSkinningFpsThreshold; false otherwise.
 	 */
@@ -447,6 +454,7 @@ private:
 	int                       m_fadeInOutPhysicsDirection;        //!< -1 fade out, 1 fade in
 	int                       m_doSkinningForNSteps;              //!< use skinning if any position change has occured, to keep simulation stable
 	int                       m_forceSkinningAfterNFramesCounter; //!< safety mechanism, i.e. local counter: if framerate falls below threshold for n-frames, skinning is forced to avoid performance issues
+	bool                      m_isFramerateBelowFpsThresh;        //!< true, if framerate is below user provided framerate-threshold, false otherwise
 
 	Vec3                      m_externalDeltaTranslation;  //!< delta translation of locator per timestep; is used to determine external influence according to velocity
 	Vec3                      m_permCollidables0Old;       //!< to determine above m_externalDeltaTranslation per step

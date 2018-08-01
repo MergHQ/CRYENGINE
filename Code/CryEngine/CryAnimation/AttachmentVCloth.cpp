@@ -1711,12 +1711,17 @@ void CClothSimulator::PositionsProjectToProxySurface(f32 t01)
 void CClothSimulator::HandleCameraDistance()
 {
 	const f32 disableSimAtDist = m_config.disableSimulationAtDistance;
+	const f32 ssAxisSizePercThresh = m_config.enableSimulationSSaxisSizePerc;
 
-	if (CheckCameraDistanceLessThan(disableSimAtDist))
+	if (!m_isFramerateBelowFpsThresh && (CheckSSRatioLargerThan(ssAxisSizePercThresh) || CheckCameraDistanceLessThan(disableSimAtDist)))
 	{
 		if (!IsSimulationEnabled() || IsFadingOut())
 		{
-			if (!IsFadingOut()) { PositionsSetToSkinned(); /* m_doSkinningForNSteps = 3; */ } // only translate to constraints, if actually is not fading out, otherwise a position jump in cloth would occur in these cases
+			if (!IsFadingOut())
+			{
+				// only translate to constraints, if simulation is not fading out atm, otherwise a position jump in cloth would occur in these cases
+				PositionsSetToSkinned();
+			} 
 			EnableSimulation();
 			EnableFadeInPhysics();
 			SetGpuSkinning(false);
@@ -1724,7 +1729,6 @@ void CClothSimulator::HandleCameraDistance()
 	}
 	else
 	{
-		//m_clothPiece.GetSimulator().EnableSimulation(false); // is done in step now, while handling fading
 		if (IsSimulationEnabled() && !IsFadingOut())
 		{
 			EnableFadeOutPhysics();
@@ -1780,11 +1784,36 @@ bool CClothSimulator::CheckCameraDistanceLessThan(float dist) const
 	return distSqr < dist * dist;
 }
 
+bool CClothSimulator::CheckSSRatioLargerThan(float ssAxisSizePercThresh) const
+{
+	// abort, if SS-ratio-test is disabled.
+	if (ssAxisSizePercThresh == 0)
+	{
+		return false;
+	}
+
+	// determine screen ratio of characters bounding box in actual camera view
+	int screenBounds[4];
+	const auto aabb_MS = m_pAttachmentManager->m_pSkelInstance->GetAABB();
+	const auto& translation = m_pAttachmentManager->m_pSkelInstance->m_location.t;
+	const AABB aabb_WS(translation + aabb_MS.min, translation + aabb_MS.max);
+
+	const auto& camera = gEnv->p3DEngine->GetRenderingCamera();
+	const int w = camera.GetViewSurfaceX();
+	const int h = camera.GetViewSurfaceZ();
+	camera.CalcScreenBounds(screenBounds, &aabb_WS, w, h);
+
+	const float screenSizeRatioX = (float)(screenBounds[2] - screenBounds[0]) / (float)w;
+	const float screenSizeRatioY = (float)(screenBounds[3] - screenBounds[1]) / (float)h;
+
+	return screenSizeRatioX > ssAxisSizePercThresh || screenSizeRatioY > ssAxisSizePercThresh;
+}
+
 bool CClothSimulator::CheckForceSkinningByFpsThreshold()
 {
-	bool forceSkinning = false;
-	float fps = gEnv->pTimer->GetFrameRate();
-	forceSkinning = fps < m_config.forceSkinningFpsThreshold;
+	const float fps = gEnv->pTimer->GetFrameRate();
+	m_isFramerateBelowFpsThresh = fps < m_config.forceSkinningFpsThreshold;
+	bool forceSkinning = m_isFramerateBelowFpsThresh;
 
 	// force skinning only after n-th frame with framerate below threshold
 	if (forceSkinning && (m_forceSkinningAfterNFramesCounter < Console::GetInst().ca_ClothForceSkinningAfterNFrames))
