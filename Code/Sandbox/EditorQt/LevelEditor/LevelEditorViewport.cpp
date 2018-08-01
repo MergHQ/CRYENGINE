@@ -22,19 +22,20 @@
 #include "EditorFramework/Events.h"
 #include "ViewportInteraction.h"
 #include <Preferences/ViewportPreferences.h>
-#include "Objects\BaseObject.h"
+#include "Objects/BaseObject.h"
 #include "IUndoManager.h"
 #include "IViewportManager.h"
 #include "IObjectManager.h"
 #include "ILevelEditor.h"
 #include "EditTool.h"
+#include "CryEditDoc.h"
 
 #include <QResizeEvent>
 #include "QtUtil.h"
 #include "Grid.h"
 #include "RenderLock.h"
 
-#include "Objects\CameraObject.h"
+#include "Objects/CameraObject.h"
 #include "Terrain/Heightmap.h"
 #include "Util/Ruler.h"
 #include "DragDrop.h"
@@ -169,7 +170,7 @@ bool CLevelEditorViewport::CreateRenderContext(HWND hWnd, IRenderer::EViewportTy
 
 bool CLevelEditorViewport::DragEvent(EDragEvent eventId, QEvent* event, int flags)
 {
-	bool result = Super::DragEvent(eventId, event, flags);
+	bool result = CRenderViewport::DragEvent(eventId, event, flags);
 	if (!result)
 	{
 		return AssetDragCreate(eventId, event, flags);
@@ -255,7 +256,7 @@ void CLevelEditorViewport::PopulateMenu(CPopupMenuItem& menu)
 
 void CLevelEditorViewport::OnEditorNotifyEvent(EEditorNotifyEvent event)
 {
-	Super::OnEditorNotifyEvent(event);
+	CRenderViewport::OnEditorNotifyEvent(event);
 
 	if(event == eNotify_OnEndNewScene)
 	{
@@ -1127,7 +1128,13 @@ Vec3 CLevelEditorViewport::ViewToWorldNormal(POINT vp, bool onlyTerrain, bool bT
 
 bool CLevelEditorViewport::MouseCallback(EMouseEvent event, CPoint& point, int flags)
 {
-	if (!Super::MouseCallback(event, point, flags))
+	// If there's no level loaded then don't handle any mouse events on the level editor viewport
+	if (!GetIEditorImpl()->GetDocument()->IsDocumentReady())
+	{
+		return true;
+	}
+
+	if (!CRenderViewport::MouseCallback(event, point, flags))
 	{
 		if (event == eMouseMDown)
 		{
