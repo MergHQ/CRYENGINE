@@ -3005,13 +3005,17 @@ void C3DEngine::TickDelayedRenderNodeDeletion()
 {
 	m_renderNodesToDeleteID = (m_renderNodesToDeleteID + 1) % CRY_ARRAY_COUNT(m_renderNodesToDelete);
 
-	for (auto pRenderNode : m_renderNodesToDelete[m_renderNodesToDeleteID])
+	while (m_renderNodesToDelete[m_renderNodesToDeleteID].size())
 	{
-		pRenderNode->SetRndFlags(ERF_PENDING_DELETE, false);
-		pRenderNode->ReleaseNode(true);
-	}
+		auto snapshot = std::move(m_renderNodesToDelete[m_renderNodesToDeleteID]);
+		m_renderNodesToDelete[m_renderNodesToDeleteID] = std::vector<IRenderNode*>{};
 
-	m_renderNodesToDelete[m_renderNodesToDeleteID].clear();
+		for (auto pRenderNode : snapshot)
+		{
+			pRenderNode->SetRndFlags(ERF_PENDING_DELETE, false);
+			pRenderNode->ReleaseNode(true);
+		}
+	}
 }
 
 void C3DEngine::SetWind(const Vec3& vWind)
