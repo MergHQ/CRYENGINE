@@ -11,9 +11,8 @@
 namespace CryAudio
 {
 //////////////////////////////////////////////////////////////////////////
-COcclusionObstructionState::COcclusionObstructionState(SwitchStateId const stateId, CAudioListenerManager const& audioListenerManager)
+COcclusionObstructionState::COcclusionObstructionState(SwitchStateId const stateId)
 	: m_stateId(stateId)
-	, m_audioListenerManager(audioListenerManager)
 {
 }
 
@@ -22,32 +21,30 @@ void COcclusionObstructionState::Set(CATLAudioObject& audioObject) const
 {
 	if (&audioObject != g_pObject)
 	{
-		Vec3 const& audioListenerPosition = m_audioListenerManager.GetActiveListenerTransformation().GetPosition();
-
 		if (m_stateId == IgnoreStateId)
 		{
-			audioObject.HandleSetOcclusionType(EOcclusionType::Ignore, audioListenerPosition);
+			audioObject.HandleSetOcclusionType(EOcclusionType::Ignore);
 			audioObject.SetObstructionOcclusion(0.0f, 0.0f);
 		}
 		else if (m_stateId == AdaptiveStateId)
 		{
-			audioObject.HandleSetOcclusionType(EOcclusionType::Adaptive, audioListenerPosition);
+			audioObject.HandleSetOcclusionType(EOcclusionType::Adaptive);
 		}
 		else if (m_stateId == LowStateId)
 		{
-			audioObject.HandleSetOcclusionType(EOcclusionType::Low, audioListenerPosition);
+			audioObject.HandleSetOcclusionType(EOcclusionType::Low);
 		}
 		else if (m_stateId == MediumStateId)
 		{
-			audioObject.HandleSetOcclusionType(EOcclusionType::Medium, audioListenerPosition);
+			audioObject.HandleSetOcclusionType(EOcclusionType::Medium);
 		}
 		else if (m_stateId == HighStateId)
 		{
-			audioObject.HandleSetOcclusionType(EOcclusionType::High, audioListenerPosition);
+			audioObject.HandleSetOcclusionType(EOcclusionType::High);
 		}
 		else
 		{
-			audioObject.HandleSetOcclusionType(EOcclusionType::Ignore, audioListenerPosition);
+			audioObject.HandleSetOcclusionType(EOcclusionType::Ignore);
 			audioObject.SetObstructionOcclusion(0.0f, 0.0f);
 		}
 	}

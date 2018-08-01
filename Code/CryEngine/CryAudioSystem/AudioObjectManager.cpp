@@ -2,6 +2,7 @@
 
 #include "stdafx.h"
 #include "AudioObjectManager.h"
+#include "AudioListenerManager.h"
 #include "ATLAudioObject.h"
 #include "AudioCVars.h"
 #include "IAudioImpl.h"
@@ -18,6 +19,18 @@ namespace CryAudio
 //////////////////////////////////////////////////////////////////////////
 CObjectManager::~CObjectManager()
 {
+	CRY_ASSERT_MESSAGE(m_constructedObjects.empty(), "There are still objects during CObjectManager destruction!");
+}
+
+//////////////////////////////////////////////////////////////////////////
+void CObjectManager::Initialize(uint32 const poolSize)
+{
+	m_constructedObjects.reserve(static_cast<std::size_t>(poolSize));
+}
+
+//////////////////////////////////////////////////////////////////////////
+void CObjectManager::Terminate()
+{
 	for (auto const pObject : m_constructedObjects)
 	{
 		CRY_ASSERT_MESSAGE(pObject->GetImplDataPtr() == nullptr, "An object cannot have valid impl data during CObjectManager destruction!");
@@ -25,12 +38,6 @@ CObjectManager::~CObjectManager()
 	}
 
 	m_constructedObjects.clear();
-}
-
-//////////////////////////////////////////////////////////////////////////
-void CObjectManager::Init(uint32 const poolSize)
-{
-	m_constructedObjects.reserve(static_cast<std::size_t>(poolSize));
 }
 
 //////////////////////////////////////////////////////////////////////////
@@ -59,7 +66,7 @@ void CObjectManager::ReleaseImplData()
 }
 
 //////////////////////////////////////////////////////////////////////////
-void CObjectManager::Update(float const deltaTime, CObjectTransformation const& listenerTransformation, Vec3 const& listenerVelocity)
+void CObjectManager::Update(float const deltaTime)
 {
 #if defined(INCLUDE_AUDIO_PRODUCTION_CODE)
 	CPropagationProcessor::s_totalAsyncPhysRays = 0;
@@ -68,6 +75,7 @@ void CObjectManager::Update(float const deltaTime, CObjectTransformation const& 
 
 	if (deltaTime > 0.0f)
 	{
+		Vec3 const& listenerVelocity = g_listenerManager.GetActiveListenerVelocity();
 		bool const listenerMoved = listenerVelocity.GetLengthSquared() > FloatEpsilon;
 		auto iter = m_constructedObjects.begin();
 		auto iterEnd = m_constructedObjects.end();
@@ -78,7 +86,7 @@ void CObjectManager::Update(float const deltaTime, CObjectTransformation const& 
 
 			CObjectTransformation const& transformation = pObject->GetTransformation();
 
-			float const distance = transformation.GetPosition().GetDistance(listenerTransformation.GetPosition());
+			float const distance = transformation.GetPosition().GetDistance(g_listenerManager.GetActiveListenerTransformation().GetPosition());
 			float const radius = pObject->GetMaxRadius();
 
 			if (radius <= 0.0f || distance < radius)
@@ -101,7 +109,7 @@ void CObjectManager::Update(float const deltaTime, CObjectTransformation const& 
 
 			if (IsActive(pObject))
 			{
-				pObject->Update(deltaTime, distance, listenerTransformation.GetPosition(), listenerVelocity, listenerMoved);
+				pObject->Update(deltaTime, distance, listenerVelocity, listenerMoved);
 			}
 			else if (pObject->CanBeReleased())
 			{
@@ -267,33 +275,19 @@ size_t CObjectManager::GetNumActiveAudioObjects() const
 }
 
 //////////////////////////////////////////////////////////////////////////
-void CObjectManager::DrawPerObjectDebugInfo(
-	IRenderAuxGeom& auxGeom,
-	Vec3 const& listenerPos,
-	AudioTriggerLookup const& triggers,
-	AudioParameterLookup const& parameters,
-	AudioSwitchLookup const& switches,
-	AudioPreloadRequestLookup const& preloadRequests,
-	AudioEnvironmentLookup const& environments) const
+void CObjectManager::DrawPerObjectDebugInfo(IRenderAuxGeom& auxGeom) const
 {
 	for (auto const pObject : m_constructedObjects)
 	{
 		if (IsActive(pObject))
 		{
-			pObject->DrawDebugInfo(
-				auxGeom,
-				listenerPos,
-				triggers,
-				parameters,
-				switches,
-				preloadRequests,
-				environments);
+			pObject->DrawDebugInfo(auxGeom);
 		}
 	}
 }
 
 //////////////////////////////////////////////////////////////////////////
-void CObjectManager::DrawDebugInfo(IRenderAuxGeom& auxGeom, Vec3 const& listenerPosition, float const posX, float posY) const
+void CObjectManager::DrawDebugInfo(IRenderAuxGeom& auxGeom, float const posX, float posY) const
 {
 	size_t numAudioObjects = 0;
 	float const headerPosY = posY;
@@ -305,7 +299,7 @@ void CObjectManager::DrawDebugInfo(IRenderAuxGeom& auxGeom, Vec3 const& listener
 	for (auto const pObject : m_constructedObjects)
 	{
 		Vec3 const& position = pObject->GetTransformation().GetPosition();
-		float const distance = position.GetDistance(listenerPosition);
+		float const distance = position.GetDistance(g_listenerManager.GetActiveListenerTransformation().GetPosition());
 
 		if (g_cvars.m_debugDistance <= 0.0f || (g_cvars.m_debugDistance > 0.0f && distance < g_cvars.m_debugDistance))
 		{

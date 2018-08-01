@@ -2,7 +2,6 @@
 
 #pragma once
 
-#include "GlobalTypedefs.h"
 #include "PropagationProcessor.h"
 #include <PoolObject.h>
 #include <CryAudio/IObject.h>
@@ -93,10 +92,10 @@ public:
 	void             HandleSetTransformation(CObjectTransformation const& transformation, float const distanceToListener);
 	void             HandleSetSwitchState(CATLSwitch const* const pSwitch, CATLSwitchState const* const pState);
 	void             HandleSetEnvironment(CATLAudioEnvironment const* const pEnvironment, float const value);
-	void             HandleSetOcclusionType(EOcclusionType const calcType, Vec3 const& listenerPosition);
+	void             HandleSetOcclusionType(EOcclusionType const calcType);
 	void             HandleStopFile(char const* const szFile);
 
-	void             Init(char const* const szName, Impl::IObject* const pImplData, Vec3 const& listenerPosition, EntityId entityId);
+	void             Init(char const* const szName, Impl::IObject* const pImplData, EntityId const entityId);
 	void             Release();
 
 	// Callbacks
@@ -129,7 +128,6 @@ public:
 	void         Update(
 		float const deltaTime,
 		float const distanceToListener,
-		Vec3 const& listenerPosition,
 		Vec3 const& listenerVelocity,
 		bool const listenerMoved);
 	bool CanBeReleased() const;
@@ -165,7 +163,6 @@ private:
 	void UpdateControls(
 		float const deltaTime,
 		float const distanceToListener,
-		Vec3 const& listenerPosition,
 		Vec3 const& listenerVelocity,
 		bool const listenerMoved);
 	void TryToSetRelativeVelocity(float const relativeVelocity);
@@ -192,22 +189,10 @@ private:
 #if defined(INCLUDE_AUDIO_PRODUCTION_CODE)
 public:
 
-	void DrawDebugInfo(
-		IRenderAuxGeom& auxGeom,
-		Vec3 const& listenerPosition,
-		AudioTriggerLookup const& triggers,
-		AudioParameterLookup const& parameters,
-		AudioSwitchLookup const& switches,
-		AudioPreloadRequestLookup const& preloadRequests,
-		AudioEnvironmentLookup const& environments) const;
-	void ResetObstructionRays() { m_propagationProcessor.ResetRayData(); }
+	void           DrawDebugInfo(IRenderAuxGeom& auxGeom) const;
+	void           ResetObstructionRays() { m_propagationProcessor.ResetRayData(); }
 
-	void ForceImplementationRefresh(
-		AudioTriggerLookup const& triggers,
-		AudioParameterLookup const& parameters,
-		AudioSwitchLookup const& switches,
-		AudioEnvironmentLookup const& environments,
-		bool const bSet3DAttributes);
+	void           ForceImplementationRefresh(bool const setTransformation);
 
 	ERequestStatus HandleSetName(char const* const szName);
 	void           StoreParameterValue(ControlId const id, float const value);

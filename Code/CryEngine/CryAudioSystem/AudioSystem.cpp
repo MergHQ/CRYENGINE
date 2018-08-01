@@ -6,6 +6,7 @@
 #include "ATLAudioObject.h"
 #include "PropagationProcessor.h"
 #include "Common.h"
+#include "ATL.h"
 #include <CrySystem/ITimer.h>
 #include <CryString/CryPath.h>
 #include <CryEntitySystem/IEntitySystem.h>
@@ -25,25 +26,19 @@ enum class ELoggingOptions : EnumFlagsType
 };
 CRY_CREATE_ENUM_FLAG_OPERATORS(ELoggingOptions);
 
-///////////////////////////////////////////////////////////////////////////
-void CMainThread::Init(CSystem* const pSystem)
-{
-	m_pSystem = pSystem;
-}
-
 //////////////////////////////////////////////////////////////////////////
 void CMainThread::ThreadEntry()
 {
-	while (!m_bQuit)
+	while (m_doWork)
 	{
-		m_pSystem->InternalUpdate();
+		g_system.InternalUpdate();
 	}
 }
 
 //////////////////////////////////////////////////////////////////////////
 void CMainThread::SignalStopWork()
 {
-	m_bQuit = true;
+	m_doWork = false;
 }
 
 ///////////////////////////////////////////////////////////////////////////
@@ -68,37 +63,6 @@ bool CMainThread::IsActive()
 	// JoinThread returns true if thread is not running.
 	// JoinThread returns false if thread is still running
 	return !gEnv->pThreadManager->JoinThread(this, eJM_TryJoin);
-}
-
-//////////////////////////////////////////////////////////////////////////
-CSystem::CSystem()
-	: m_isInitialized(false)
-	, m_didThreadWait(false)
-	, m_accumulatedFrameTime(0.0f)
-	, m_externalThreadFrameId(0)
-	, m_lastExternalThreadFrameId(0)
-	, m_atl()
-{
-	// For occasions such as unit tests pSystem isn't available, we need to skip the step
-	if (gEnv->pSystem != nullptr)
-	{
-		gEnv->pSystem->GetISystemEventDispatcher()->RegisterListener(g_pSystem, "CryAudio::CSystem");
-	}
-
-#if defined(INCLUDE_AUDIO_PRODUCTION_CODE)
-	m_currentRenderAuxGeom.exchange(nullptr);
-	m_lastRenderAuxGeom.exchange(nullptr);
-#endif // INCLUDE_AUDIO_PRODUCTION_CODE
-
-}
-
-//////////////////////////////////////////////////////////////////////////
-CSystem::~CSystem()
-{
-	if (gEnv->pSystem != nullptr)
-	{
-		gEnv->pSystem->GetISystemEventDispatcher()->RemoveListener(g_pSystem);
-	}
 }
 
 //////////////////////////////////////////////////////////////////////////
@@ -131,7 +95,7 @@ void CSystem::ExternalUpdate()
 
 	while (m_syncCallbacks.dequeue(request))
 	{
-		m_atl.NotifyListener(request);
+		g_atl.NotifyListener(request);
 
 		if (request.pObject == nullptr)
 		{
@@ -159,7 +123,7 @@ void CSystem::PushRequest(CAudioRequest const& request)
 {
 	CRY_PROFILE_FUNCTION(PROFILE_AUDIO);
 
-	if (m_atl.CanProcessRequests())
+	if (g_atl.CanProcessRequests())
 	{
 		m_requestQueue.enqueue(request);
 
@@ -173,7 +137,7 @@ void CSystem::PushRequest(CAudioRequest const& request)
 
 			if ((request.flags & ERequestFlags::CallbackOnExternalOrCallingThread) != 0)
 			{
-				m_atl.NotifyListener(m_syncRequest);
+				g_atl.NotifyListener(m_syncRequest);
 			}
 		}
 	}
@@ -222,7 +186,7 @@ void CSystem::OnSystemEvent(ESystemEvent event, UINT_PTR wparam, UINT_PTR lparam
 		{
 			if (gEnv->pInput != nullptr)
 			{
-				gEnv->pInput->AddConsoleEventListener(&m_atl);
+				gEnv->pInput->AddConsoleEventListener(&g_atl);
 			}
 
 			break;
@@ -232,7 +196,7 @@ void CSystem::OnSystemEvent(ESystemEvent event, UINT_PTR wparam, UINT_PTR lparam
 		{
 			if (gEnv->pInput != nullptr)
 			{
-				gEnv->pInput->RemoveConsoleEventListener(&m_atl);
+				gEnv->pInput->RemoveConsoleEventListener(&g_atl);
 			}
 
 			break;
@@ -300,7 +264,7 @@ void CSystem::InternalUpdate()
 
 	if (m_lastExternalThreadFrameId != m_externalThreadFrameId)
 	{
-		m_atl.Update(m_accumulatedFrameTime);
+		g_atl.Update(m_accumulatedFrameTime);
 		ProcessRequests(m_requestQueue);
 		m_lastExternalThreadFrameId = m_externalThreadFrameId;
 		m_accumulatedFrameTime = 0.0f;
@@ -310,7 +274,7 @@ void CSystem::InternalUpdate()
 	{
 		// Effectively no time has passed for the external thread as it didn't progress.
 		// Consequently 0.0f is passed for deltaTime.
-		m_atl.Update(0.0f);
+		g_atl.Update(0.0f);
 		ProcessRequests(m_requestQueue);
 		m_didThreadWait = false;
 	}
@@ -348,9 +312,8 @@ bool CSystem::Initialize()
 #endif // ENABLE_AUDIO_LOGGING
 
 		g_cvars.RegisterVariables();
-		m_atl.Initialize();
+		g_atl.Initialize();
 		CRY_ASSERT_MESSAGE(!m_mainThread.IsActive(), "AudioSystem thread active before initialization!");
-		m_mainThread.Init(this);
 		m_mainThread.Activate();
 		AddRequestListener(&CSystem::OnCallback, nullptr, ESystemEvents::TriggerExecuted | ESystemEvents::TriggerFinished);
 		m_isInitialized = true;
@@ -376,7 +339,7 @@ void CSystem::Release()
 		PushRequest(releaseImplRequest);
 
 		m_mainThread.Deactivate();
-		bool const bSuccess = m_atl.ShutDown();
+		g_atl.Terminate();
 		g_cvars.UnregisterVariables();
 
 #if defined(ENABLE_AUDIO_LOGGING)
@@ -389,8 +352,6 @@ void CSystem::Release()
 #endif // ENABLE_AUDIO_LOGGING
 
 		m_isInitialized = false;
-		delete g_pSystem;
-		g_pSystem = nullptr;
 	}
 	else
 	{
@@ -513,7 +474,7 @@ void CSystem::PlayFile(SPlayFileInfo const& playFileInfo, SRequestUserData const
 	SAudioObjectRequestData<EAudioObjectRequestType::PlayFile> requestData(playFileInfo.szFile, playFileInfo.usedTriggerForPlayback, playFileInfo.bLocalized);
 	CAudioRequest request(&requestData);
 	request.flags = userData.flags;
-	request.pOwner = (userData.pOwner != nullptr) ? userData.pOwner : g_pSystem;
+	request.pOwner = (userData.pOwner != nullptr) ? userData.pOwner : &g_system;
 	request.pUserData = userData.pUserData;
 	request.pUserDataOwner = userData.pUserDataOwner;
 	PushRequest(request);
@@ -681,7 +642,7 @@ void CSystem::ReloadControlsData(
 ///////////////////////////////////////////////////////////////////////////
 char const* CSystem::GetConfigPath() const
 {
-	return m_atl.GetConfigPath();
+	return g_atl.GetConfigPath();
 }
 
 ///////////////////////////////////////////////////////////////////////////
@@ -743,7 +704,7 @@ void CSystem::GetFileData(char const* const szName, SFileData& fileData)
 void CSystem::GetTriggerData(ControlId const triggerId, STriggerData& triggerData)
 {
 #if defined(INCLUDE_AUDIO_PRODUCTION_CODE)
-	m_atl.GetAudioTriggerData(triggerId, triggerData);
+	g_atl.GetAudioTriggerData(triggerId, triggerData);
 #endif // INCLUDE_AUDIO_PRODUCTION_CODE
 }
 
@@ -751,7 +712,7 @@ void CSystem::GetTriggerData(ControlId const triggerId, STriggerData& triggerDat
 void CSystem::OnLoadLevel(char const* const szLevelName)
 {
 	// Requests need to be blocking so data is available for next preloading request!
-	CryFixedStringT<MaxFilePathLength> audioLevelPath(m_atl.GetConfigPath());
+	CryFixedStringT<MaxFilePathLength> audioLevelPath(g_atl.GetConfigPath());
 	audioLevelPath += s_szLevelsFolderName;
 	audioLevelPath += "/";
 	audioLevelPath += szLevelName;
@@ -870,7 +831,7 @@ void CSystem::ProcessRequests(AudioRequests& requestQueue)
 		if (m_request.status == ERequestStatus::None)
 		{
 			m_request.status = ERequestStatus::Pending;
-			m_atl.ProcessRequest(m_request);
+			g_atl.ProcessRequest(m_request);
 		}
 		else
 		{
@@ -881,7 +842,7 @@ void CSystem::ProcessRequests(AudioRequests& requestQueue)
 		{
 			if ((m_request.flags & ERequestFlags::CallbackOnAudioThread) != 0)
 			{
-				m_atl.NotifyListener(m_request);
+				g_atl.NotifyListener(m_request);
 
 				if ((m_request.flags & ERequestFlags::ExecuteBlocking) != 0)
 				{

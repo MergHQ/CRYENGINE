@@ -4,6 +4,7 @@
 #include "AudioCVars.h"
 #include "AudioSystem.h"
 #include "Common.h"
+#include <CrySystem/ISystem.h>
 #include <CryCore/Platform/platform_impl.inl>
 #include <CrySystem/IEngineModule.h>
 #include <CryExtension/ICryFactory.h>
@@ -27,22 +28,16 @@ CCVars g_cvars;
 ///////////////////////////////////////////////////////////////////////////
 bool CreateAudioSystem(SSystemGlobalEnvironment& env)
 {
-	CRY_ASSERT_MESSAGE(g_pSystem == nullptr, "g_pSystem must be nullptr when calling CreateAudioSystem");
-
 	bool bSuccess = false;
-	g_pSystem = new CSystem;
 
-	if (g_pSystem != nullptr)
+	if (env.pAudioSystem != nullptr)
 	{
-		if (env.pAudioSystem != nullptr)
-		{
-			env.pAudioSystem->Release();
-			env.pAudioSystem = nullptr;
-		}
-
-		env.pAudioSystem = static_cast<IAudioSystem*>(g_pSystem);
-		bSuccess = g_pSystem->Initialize();
+		env.pAudioSystem->Release();
+		env.pAudioSystem = nullptr;
 	}
+
+	env.pAudioSystem = static_cast<IAudioSystem*>(&g_system);
+	bSuccess = g_system.Initialize();
 
 	return bSuccess;
 }
@@ -213,7 +208,11 @@ CRYREGISTER_SINGLETON_CLASS(CEngineModule_CryAudioSystem)
 //////////////////////////////////////////////////////////////////////////
 CEngineModule_CryAudioSystem::CEngineModule_CryAudioSystem()
 {
-	// Register audio cvars
+	if (gEnv->pSystem != nullptr)
+	{
+		gEnv->pSystem->GetISystemEventDispatcher()->RegisterListener(&g_system, "CryAudio::CSystem");
+	}
+
 	m_pAudioImplNameCVar = REGISTER_STRING_CB("s_AudioImplName", "CryAudioImplSDLMixer", 0,
 	                                          "Holds the name of the audio implementation library to be used.\n"
 	                                          "Usage: s_AudioImplName <name of the library without extension>\n"
@@ -224,11 +223,10 @@ CEngineModule_CryAudioSystem::CEngineModule_CryAudioSystem()
 //////////////////////////////////////////////////////////////////////////
 CEngineModule_CryAudioSystem::~CEngineModule_CryAudioSystem()
 {
-	SAFE_RELEASE(gEnv->pAudioSystem);
-
 	if (gEnv->pSystem != nullptr)
 	{
 		gEnv->pSystem->UnloadEngineModule(s_currentModuleName.c_str());
+		gEnv->pSystem->GetISystemEventDispatcher()->RemoveListener(&g_system);
 	}
 }
 } // namespace CryAudio

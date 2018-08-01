@@ -20,6 +20,7 @@ public:
 	CAudioListenerManager&       operator=(CAudioListenerManager const&) = delete;
 	CAudioListenerManager&       operator=(CAudioListenerManager&&) = delete;
 
+	void                         Terminate();
 	void                         OnAfterImplChanged();
 	void                         ReleaseImplData();
 	void                         Update(float const deltaTime);
@@ -35,6 +36,6 @@ public:
 
 private:
 
-	std::vector<CATLListener*> m_activeListeners;
+	std::vector<CATLListener*> m_constructedListeners;
 };
 } // namespace CryAudio

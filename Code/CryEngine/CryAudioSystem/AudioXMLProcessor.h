@@ -6,20 +6,16 @@
 
 namespace CryAudio
 {
+class CATLSwitch;
+class CATLPreloadRequest;
+class CATLAudioEnvironment;
 struct SInternalControls;
 
 class CAudioXMLProcessor final
 {
 public:
 
-	explicit CAudioXMLProcessor(
-		AudioTriggerLookup& triggers,
-		AudioParameterLookup& parameters,
-		AudioSwitchLookup& switches,
-		AudioEnvironmentLookup& environments,
-		AudioPreloadRequestLookup& preloadRequests,
-		CFileCacheManager& fileCacheMgr,
-		SInternalControls const& internalControls);
+	CAudioXMLProcessor();
 
 	CAudioXMLProcessor(CAudioXMLProcessor const&) = delete;
 	CAudioXMLProcessor(CAudioXMLProcessor&&) = delete;
@@ -47,13 +43,6 @@ private:
 	void DeletePreloadRequest(CATLPreloadRequest const* const pPreloadRequest);
 	void DeleteEnvironment(CATLAudioEnvironment const* const pEnvironment);
 
-	AudioTriggerLookup&        m_triggers;
-	AudioParameterLookup&      m_parameters;
-	AudioSwitchLookup&         m_switches;
-	AudioEnvironmentLookup&    m_environments;
-	AudioPreloadRequestLookup& m_preloadRequests;
-	TriggerImplId              m_triggerImplIdCounter;
-	CFileCacheManager&         m_fileCacheMgr;
-	SInternalControls const&   m_internalControls;
+	TriggerImplId m_triggerImplIdCounter;
 };
 } // namespace CryAudio

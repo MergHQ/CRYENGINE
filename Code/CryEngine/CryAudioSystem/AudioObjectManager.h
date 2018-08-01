@@ -2,8 +2,6 @@
 
 #pragma once
 
-#include "GlobalTypedefs.h"
-
 #if defined(INCLUDE_AUDIO_PRODUCTION_CODE)
 struct IRenderAuxGeom;
 #endif // INCLUDE_AUDIO_PRODUCTION_CODE
@@ -29,10 +27,11 @@ public:
 	CObjectManager& operator=(CObjectManager const&) = delete;
 	CObjectManager& operator=(CObjectManager&&) = delete;
 
-	void            Init(uint32 const poolSize);
+	void            Initialize(uint32 const poolSize);
+	void            Terminate();
 	void            OnAfterImplChanged();
 	void            ReleaseImplData();
-	void            Update(float const deltaTime, CObjectTransformation const& listenerTransformation, Vec3 const& listenerVelocity);
+	void            Update(float const deltaTime);
 	void            RegisterObject(CATLAudioObject* const pObject);
 
 	void            ReportStartedEvent(CATLEvent* const pEvent);
@@ -45,16 +44,9 @@ public:
 #if defined(INCLUDE_AUDIO_PRODUCTION_CODE)
 	size_t                    GetNumAudioObjects() const;
 	size_t                    GetNumActiveAudioObjects() const;
-	ConstructedObjects const& GetAudioObjects() const { return m_constructedObjects; }
-	void                      DrawPerObjectDebugInfo(
-		IRenderAuxGeom& auxGeom,
-		Vec3 const& listenerPos,
-		AudioTriggerLookup const& triggers,
-		AudioParameterLookup const& parameters,
-		AudioSwitchLookup const& switches,
-		AudioPreloadRequestLookup const& preloadRequests,
-		AudioEnvironmentLookup const& environments) const;
-	void DrawDebugInfo(IRenderAuxGeom& auxGeom, Vec3 const& listenerPosition, float const posX, float posY) const;
+	ConstructedObjects const& GetObjects() const { return m_constructedObjects; }
+	void                      DrawPerObjectDebugInfo(IRenderAuxGeom& auxGeom) const;
+	void                      DrawDebugInfo(IRenderAuxGeom& auxGeom, float const posX, float posY) const;
 
 #endif // INCLUDE_AUDIO_PRODUCTION_CODE
 

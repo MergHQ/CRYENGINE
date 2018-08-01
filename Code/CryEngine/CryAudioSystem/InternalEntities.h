@@ -6,7 +6,6 @@
 
 namespace CryAudio
 {
-class CAudioListenerManager;
 class CATLAudioObject;
 
 struct SInternalControls
@@ -21,7 +20,7 @@ class COcclusionObstructionState final : public IAudioSwitchStateImpl
 public:
 
 	COcclusionObstructionState() = delete;
-	explicit COcclusionObstructionState(SwitchStateId const stateId, CAudioListenerManager const& audioListenerManager);
+	explicit COcclusionObstructionState(SwitchStateId const stateId);
 
 	COcclusionObstructionState(COcclusionObstructionState const&) = delete;
 	COcclusionObstructionState(COcclusionObstructionState&&) = delete;
@@ -34,8 +33,7 @@ public:
 
 private:
 
-	SwitchStateId const          m_stateId;
-	CAudioListenerManager const& m_audioListenerManager;
+	SwitchStateId const m_stateId;
 };
 
 class CRelativeVelocityTrackingState final : public IAudioSwitchStateImpl

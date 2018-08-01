@@ -6,6 +6,7 @@
 #include "AudioEventManager.h"
 #include "AudioSystem.h"
 #include "AudioStandaloneFileManager.h"
+#include "AudioListenerManager.h"
 #include "Common/Logger.h"
 #include "Common.h"
 #include <IAudioImpl.h>
@@ -92,7 +93,7 @@ void CATLAudioObject::SendFinishedTriggerInstanceRequest(SAudioTriggerInstanceSt
 		request.flags = ERequestFlags::CallbackOnAudioThread;
 	}
 
-	g_pSystem->PushRequest(request);
+	g_system.PushRequest(request);
 }
 
 ///////////////////////////////////////////////////////////////////////////
@@ -328,7 +329,7 @@ void CATLAudioObject::ReportFinishedTriggerInstance(ObjectTriggerStates::iterato
 void CATLAudioObject::PushRequest(SAudioRequestData const& requestData, SRequestUserData const& userData)
 {
 	CAudioRequest const request(userData.flags, this, userData.pOwner, userData.pUserData, userData.pUserDataOwner, &requestData);
-	g_pSystem->PushRequest(request);
+	g_system.PushRequest(request);
 }
 
 //////////////////////////////////////////////////////////////////////////
@@ -359,11 +360,10 @@ bool CATLAudioObject::HasActiveData(CATLAudioObject const* const pAudioObject) c
 void CATLAudioObject::Update(
 	float const deltaTime,
 	float const distanceToListener,
-	Vec3 const& listenerPosition,
 	Vec3 const& listenerVelocity,
 	bool const listenerMoved)
 {
-	m_propagationProcessor.Update(distanceToListener, listenerPosition, m_flags);
+	m_propagationProcessor.Update(distanceToListener, m_flags);
 
 	if (m_propagationProcessor.HasNewOcclusionValues())
 	{
@@ -372,7 +372,7 @@ void CATLAudioObject::Update(
 		m_pImplData->SetObstructionOcclusion(propagationData.obstruction, propagationData.occlusion);
 	}
 
-	UpdateControls(deltaTime, distanceToListener, listenerPosition, listenerVelocity, listenerMoved);
+	UpdateControls(deltaTime, distanceToListener, listenerVelocity, listenerMoved);
 	m_pImplData->Update();
 }
 
@@ -404,10 +404,10 @@ void CATLAudioObject::HandleSetTransformation(CObjectTransformation const& trans
 }
 
 ///////////////////////////////////////////////////////////////////////////
-void CATLAudioObject::HandleSetOcclusionType(EOcclusionType const calcType, Vec3 const& listenerPosition)
+void CATLAudioObject::HandleSetOcclusionType(EOcclusionType const calcType)
 {
 	CRY_ASSERT(calcType != EOcclusionType::None);
-	m_propagationProcessor.SetOcclusionType(calcType, listenerPosition);
+	m_propagationProcessor.SetOcclusionType(calcType);
 }
 
 //////////////////////////////////////////////////////////////////////////
@@ -459,7 +459,7 @@ void CATLAudioObject::HandleStopFile(char const* const szFile)
 			if (status != ERequestStatus::Pending)
 			{
 				ReportFinishedStandaloneFile(pFile);
-				g_pFileManager->ReleaseStandaloneFile(pFile);
+				g_fileManager.ReleaseStandaloneFile(pFile);
 
 				iter = m_activeStandaloneFiles.begin();
 				iterEnd = m_activeStandaloneFiles.end();
@@ -476,7 +476,7 @@ void CATLAudioObject::HandleStopFile(char const* const szFile)
 }
 
 //////////////////////////////////////////////////////////////////////////
-void CATLAudioObject::Init(char const* const szName, Impl::IObject* const pImplData, Vec3 const& listenerPosition, EntityId entityId)
+void CATLAudioObject::Init(char const* const szName, Impl::IObject* const pImplData, EntityId const entityId)
 {
 #if defined(INCLUDE_AUDIO_PRODUCTION_CODE)
 	m_name = szName;
@@ -484,17 +484,18 @@ void CATLAudioObject::Init(char const* const szName, Impl::IObject* const pImplD
 
 	m_entityId = entityId;
 	m_pImplData = pImplData;
-	m_propagationProcessor.Init(this, listenerPosition);
+	m_propagationProcessor.Init(this);
 }
 
 ///////////////////////////////////////////////////////////////////////////
 void CATLAudioObject::UpdateControls(
 	float const deltaTime,
 	float const distanceToListener,
-	Vec3 const& listenerPosition,
 	Vec3 const& listenerVelocity,
 	bool const listenerMoved)
 {
+	Vec3 const& listenerPosition = g_listenerManager.GetActiveListenerTransformation().GetPosition();
+
 	if ((m_flags& EObjectFlags::MovingOrDecaying) != 0)
 	{
 		Vec3 const deltaPos(m_positionForVelocityCalculation - m_previousPositionForVelocityCalculation);
@@ -677,14 +678,7 @@ char const* CATLAudioObject::GetDefaultTriggerName(ControlId const id) const
 using TriggerCountMap = std::map<ControlId const, size_t>;
 
 ///////////////////////////////////////////////////////////////////////////
-void CATLAudioObject::DrawDebugInfo(
-	IRenderAuxGeom& auxGeom,
-	Vec3 const& listenerPosition,
-	AudioTriggerLookup const& triggers,
-	AudioParameterLookup const& parameters,
-	AudioSwitchLookup const& switches,
-	AudioPreloadRequestLookup const& preloadRequests,
-	AudioEnvironmentLookup const& environments) const
+void CATLAudioObject::DrawDebugInfo(IRenderAuxGeom& auxGeom) const
 {
 	Vec3 const& position = m_transformation.GetPosition();
 	Vec3 screenPos(ZERO);
@@ -704,7 +698,7 @@ void CATLAudioObject::DrawDebugInfo(
 
 	if ((screenPos.z >= 0.0f) && (screenPos.z <= 1.0f))
 	{
-		float const distance = position.GetDistance(listenerPosition);
+		float const distance = position.GetDistance(g_listenerManager.GetActiveListenerTransformation().GetPosition());
 
 		if ((g_cvars.m_debugDistance <= 0.0f) || ((g_cvars.m_debugDistance > 0.0f) && (distance <= g_cvars.m_debugDistance)))
 		{
@@ -741,7 +735,7 @@ void CATLAudioObject::DrawDebugInfo(
 				for (auto const& triggerCountsPair : triggerCounts)
 				{
 					char const* szTriggerName = nullptr;
-					auto const* const pTrigger = stl::find_in_map(triggers, triggerCountsPair.first, nullptr);
+					auto const* const pTrigger = stl::find_in_map(g_triggers, triggerCountsPair.first, nullptr);
 
 					if (pTrigger != nullptr)
 					{
@@ -833,7 +827,7 @@ void CATLAudioObject::DrawDebugInfo(
 			{
 				for (auto const& switchStatePair : m_switchStates)
 				{
-					CATLSwitch const* const pSwitch = stl::find_in_map(switches, switchStatePair.first, nullptr);
+					CATLSwitch const* const pSwitch = stl::find_in_map(g_switches, switchStatePair.first, nullptr);
 
 					if (pSwitch != nullptr)
 					{
@@ -872,7 +866,7 @@ void CATLAudioObject::DrawDebugInfo(
 				for (auto const& parameterPair : m_parameters)
 				{
 					char const* szParameterName = nullptr;
-					auto const* const pParameter = stl::find_in_map(parameters, parameterPair.first, nullptr);
+					auto const* const pParameter = stl::find_in_map(g_parameters, parameterPair.first, nullptr);
 
 					if (pParameter != nullptr)
 					{
@@ -908,7 +902,7 @@ void CATLAudioObject::DrawDebugInfo(
 			{
 				for (auto const& environmentPair : m_environments)
 				{
-					CATLAudioEnvironment const* const pEnvironment = stl::find_in_map(environments, environmentPair.first, nullptr);
+					CATLAudioEnvironment const* const pEnvironment = stl::find_in_map(g_environments, environmentPair.first, nullptr);
 
 					if (pEnvironment != nullptr)
 					{
@@ -1146,21 +1140,16 @@ void CATLAudioObject::DrawDebugInfo(
 					}
 				}
 
-				m_propagationProcessor.DrawDebugInfo(auxGeom, m_flags, listenerPosition);
+				m_propagationProcessor.DrawDebugInfo(auxGeom, m_flags);
 			}
 		}
 	}
 }
 
 ///////////////////////////////////////////////////////////////////////////
-void CATLAudioObject::ForceImplementationRefresh(
-	AudioTriggerLookup const& triggers,
-	AudioParameterLookup const& parameters,
-	AudioSwitchLookup const& switches,
-	AudioEnvironmentLookup const& environments,
-	bool const bSet3DAttributes)
+void CATLAudioObject::ForceImplementationRefresh(bool const setTransformation)
 {
-	if (bSet3DAttributes)
+	if (setTransformation)
 	{
 		m_pImplData->SetTransformation(m_transformation);
 	}
@@ -1168,7 +1157,7 @@ void CATLAudioObject::ForceImplementationRefresh(
 	// Parameters
 	for (auto const& parameterPair : m_parameters)
 	{
-		auto const* const pParameter = stl::find_in_map(parameters, parameterPair.first, nullptr);
+		auto const* const pParameter = stl::find_in_map(g_parameters, parameterPair.first, nullptr);
 
 		if (pParameter != nullptr)
 		{
@@ -1183,7 +1172,7 @@ void CATLAudioObject::ForceImplementationRefresh(
 	// Switches
 	for (auto const& switchPair : m_switchStates)
 	{
-		CATLSwitch const* const pSwitch = stl::find_in_map(switches, switchPair.first, nullptr);
+		CATLSwitch const* const pSwitch = stl::find_in_map(g_switches, switchPair.first, nullptr);
 
 		if (pSwitch != nullptr)
 		{
@@ -1199,7 +1188,7 @@ void CATLAudioObject::ForceImplementationRefresh(
 	// Environments
 	for (auto const& environmentPair : m_environments)
 	{
-		CATLAudioEnvironment const* const pEnvironment = stl::find_in_map(environments, environmentPair.first, nullptr);
+		CATLAudioEnvironment const* const pEnvironment = stl::find_in_map(g_environments, environmentPair.first, nullptr);
 
 		if (pEnvironment != nullptr)
 		{
@@ -1210,7 +1199,7 @@ void CATLAudioObject::ForceImplementationRefresh(
 	// Last re-execute its active triggers and standalone files.
 	for (auto& triggerStatePair : m_triggerStates)
 	{
-		auto const* const pTrigger = stl::find_in_map(triggers, triggerStatePair.second.triggerId, nullptr);
+		auto const* const pTrigger = stl::find_in_map(g_triggers, triggerStatePair.second.triggerId, nullptr);
 
 		if (pTrigger != nullptr)
 		{
@@ -1234,7 +1223,7 @@ void CATLAudioObject::ForceImplementationRefresh(
 			CRY_ASSERT_MESSAGE(pFile->m_state == EAudioStandaloneFileState::Playing, "Standalone file must be in playing state during CATLAudioObject::ForceImplementationRefresh!");
 			CRY_ASSERT_MESSAGE(pFile->m_pAudioObject == this, "Standalone file played on wrong object during CATLAudioObject::ForceImplementationRefresh!");
 
-			auto const* const pTrigger = stl::find_in_map(triggers, pFile->m_triggerId, nullptr);
+			auto const* const pTrigger = stl::find_in_map(g_triggers, pFile->m_triggerId, nullptr);
 
 			if (pTrigger != nullptr)
 			{
@@ -1361,8 +1350,6 @@ void CATLAudioObject::SetName(char const* const szName, SRequestUserData const& 
 //////////////////////////////////////////////////////////////////////////
 bool CATLAudioObject::SetDefaultParameterValue(ControlId const id, float const value) const
 {
-	CRY_ASSERT_MESSAGE(this != g_pObject, "CATLAudioObject::SetDefaultParameterValue mustn't happen on the global object!");
-
 	bool wasSuccess = true;
 
 	switch (id)
@@ -1384,8 +1371,6 @@ bool CATLAudioObject::SetDefaultParameterValue(ControlId const id, float const v
 //////////////////////////////////////////////////////////////////////////
 bool CATLAudioObject::ExecuteDefaultTrigger(ControlId const id)
 {
-	CRY_ASSERT_MESSAGE(this == g_pObject, "CATLAudioObject::ExecuteDefaultTrigger must happen only on the global object!");
-
 	bool wasSuccess = true;
 
 	switch (id)

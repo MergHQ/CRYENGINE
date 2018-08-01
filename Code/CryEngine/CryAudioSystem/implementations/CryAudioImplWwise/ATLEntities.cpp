@@ -16,11 +16,11 @@ void EndEventCallback(AkCallbackType callbackType, AkCallbackInfo* pCallbackInfo
 {
 	if (callbackType == AK_EndOfEvent)
 	{
-		CEvent* const pAudioEvent = static_cast<CEvent* const>(pCallbackInfo->pCookie);
+		CATLEvent* const pEvent = static_cast<CATLEvent* const>(pCallbackInfo->pCookie);
 
-		if (pAudioEvent != nullptr)
+		if (pEvent != nullptr)
 		{
-			gEnv->pAudioSystem->ReportFinishedEvent(pAudioEvent->m_atlEvent, true);
+			gEnv->pAudioSystem->ReportFinishedEvent(*pEvent, true);
 		}
 	}
 }
@@ -295,7 +295,7 @@ ERequestStatus CObject::ExecuteTrigger(ITrigger const* const pITrigger, IEvent* 
 			PostEnvironmentAmounts();
 		}
 
-		AkPlayingID const id = AK::SoundEngine::PostEvent(pTrigger->m_id, objectId, AK_EndOfEvent, &EndEventCallback, pEvent);
+		AkPlayingID const id = AK::SoundEngine::PostEvent(pTrigger->m_id, objectId, AK_EndOfEvent, &EndEventCallback, &pEvent->m_atlEvent);
 
 		if (id != AK_INVALID_PLAYING_ID)
 		{

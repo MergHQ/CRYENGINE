@@ -5,6 +5,7 @@
 #include "AudioCVars.h"
 #include "ATLAudioObject.h"
 #include "Common.h"
+#include "AudioListenerManager.h"
 #include <IAudioImpl.h>
 
 #if defined(INCLUDE_AUDIO_PRODUCTION_CODE)
@@ -20,7 +21,7 @@ CEventManager::~CEventManager()
 }
 
 //////////////////////////////////////////////////////////////////////////
-void CEventManager::Init(uint32 const poolSize)
+void CEventManager::Initialize(uint32 const poolSize)
 {
 	m_constructedEvents.reserve(static_cast<std::size_t>(poolSize));
 }
@@ -102,7 +103,7 @@ size_t CEventManager::GetNumConstructed() const
 
 #if defined(INCLUDE_AUDIO_PRODUCTION_CODE)
 //////////////////////////////////////////////////////////////////////////
-void CEventManager::DrawDebugInfo(IRenderAuxGeom& auxGeom, Vec3 const& listenerPosition, float const posX, float posY) const
+void CEventManager::DrawDebugInfo(IRenderAuxGeom& auxGeom, float const posX, float posY) const
 {
 	CryFixedStringT<MaxControlNameLength> lowerCaseSearchString(g_cvars.m_pDebugFilter->GetString());
 	lowerCaseSearchString.MakeLower();
@@ -113,7 +114,7 @@ void CEventManager::DrawDebugInfo(IRenderAuxGeom& auxGeom, Vec3 const& listenerP
 	for (auto const pEvent : m_constructedEvents)
 	{
 		Vec3 const& position = pEvent->m_pAudioObject->GetTransformation().GetPosition();
-		float const distance = position.GetDistance(listenerPosition);
+		float const distance = position.GetDistance(g_listenerManager.GetActiveListenerTransformation().GetPosition());
 
 		if (g_cvars.m_debugDistance <= 0.0f || (g_cvars.m_debugDistance > 0.0f && distance < g_cvars.m_debugDistance))
 		{

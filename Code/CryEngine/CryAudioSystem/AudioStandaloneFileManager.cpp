@@ -2,6 +2,7 @@
 
 #include "stdafx.h"
 #include "AudioStandaloneFileManager.h"
+#include "AudioListenerManager.h"
 #include "ATLAudioObject.h"
 #include "AudioCVars.h"
 #include "Common.h"
@@ -70,7 +71,7 @@ void CFileManager::ReleaseStandaloneFile(CATLStandaloneFile* const pStandaloneFi
 
 #if defined(INCLUDE_AUDIO_PRODUCTION_CODE)
 //////////////////////////////////////////////////////////////////////////
-void CFileManager::DrawDebugInfo(IRenderAuxGeom& auxGeom, Vec3 const& listenerPosition, float posX, float posY) const
+void CFileManager::DrawDebugInfo(IRenderAuxGeom& auxGeom, float posX, float posY) const
 {
 	auxGeom.Draw2dLabel(posX, posY, Debug::g_managerHeaderFontSize, Debug::g_managerColorHeader.data(), false, "Standalone Files [%" PRISIZE_T "]", m_constructedStandaloneFiles.size());
 	posY += Debug::g_managerHeaderLineHeight;
@@ -83,7 +84,7 @@ void CFileManager::DrawDebugInfo(IRenderAuxGeom& auxGeom, Vec3 const& listenerPo
 	for (auto const pStandaloneFile : m_constructedStandaloneFiles)
 	{
 		Vec3 const& position = pStandaloneFile->m_pAudioObject->GetTransformation().GetPosition();
-		float const distance = position.GetDistance(listenerPosition);
+		float const distance = position.GetDistance(g_listenerManager.GetActiveListenerTransformation().GetPosition());
 
 		if (g_cvars.m_debugDistance <= 0.0f || (g_cvars.m_debugDistance > 0.0f && distance < g_cvars.m_debugDistance))
 		{

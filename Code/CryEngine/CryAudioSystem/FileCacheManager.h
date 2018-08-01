@@ -2,7 +2,6 @@
 
 #pragma once
 
-#include "GlobalTypedefs.h"
 #include <CryAudio/IAudioSystem.h>
 #include <CrySystem/IStreamEngine.h>
 
@@ -34,17 +33,16 @@ class CFileCacheManager final : public IStreamCallback
 {
 public:
 
-	explicit CFileCacheManager(AudioPreloadRequestLookup& preloadRequests);
+	CFileCacheManager();
 	~CFileCacheManager();
 
-	CFileCacheManager() = delete;
 	CFileCacheManager(CFileCacheManager const&) = delete;
 	CFileCacheManager(CFileCacheManager&&) = delete;
 	CFileCacheManager& operator=(CFileCacheManager const&) = delete;
 	CFileCacheManager& operator=(CFileCacheManager&&) = delete;
 
 	// Public methods
-	void           Init();
+	void           Initialize();
 	FileEntryId    TryAddFileCacheEntry(XmlNodeRef const pFileNode, EDataScope const dataScope, bool const bAutoLoad);
 	bool           TryRemoveFileCacheEntry(FileEntryId const audioFileEntryId, EDataScope const dataScope);
 	void           UpdateLocalizedFileCacheEntries();
@@ -78,7 +76,6 @@ private:
 	bool TryCacheFileCacheEntryInternal(CATLAudioFileEntry* const pAudioFileEntry, FileEntryId const audioFileEntryId, bool const bLoadSynchronously, bool const bOverrideUseCount = false, size_t const useCount = 0);
 
 	// Internal members
-	AudioPreloadRequestLookup&      m_preloadRequests;
 	AudioFileEntries                m_audioFileEntries;
 	_smart_ptr<::ICustomMemoryHeap> m_pMemoryHeap;
 	size_t                          m_currentByteTotal;

@@ -7,6 +7,8 @@
 #include "Common/IAudioImpl.h"
 #include "Common/Logger.h"
 #include "Common.h"
+#include "AudioEventManager.h"
+#include "AudioStandaloneFileManager.h"
 
 namespace CryAudio
 {
@@ -38,7 +40,7 @@ void ExecuteDefaultTriggerConnections(Control const* const pControl, TriggerConn
 
 	for (auto const pConnection : connections)
 	{
-		CATLEvent* const pEvent = g_pEventManager->ConstructEvent();
+		CATLEvent* const pEvent = g_eventManager.ConstructEvent();
 		ERequestStatus const activateResult = pConnection->Execute(g_pObject->GetImplDataPtr(), pEvent->m_pImplData);
 
 		if (activateResult == ERequestStatus::Success || activateResult == ERequestStatus::Pending)
@@ -70,7 +72,7 @@ void ExecuteDefaultTriggerConnections(Control const* const pControl, TriggerConn
 		}
 		else
 		{
-			g_pEventManager->DestructEvent(pEvent);
+			g_eventManager.DestructEvent(pEvent);
 
 #if defined(INCLUDE_AUDIO_PRODUCTION_CODE)
 			if (activateResult != ERequestStatus::SuccessDoNotTrack)
@@ -103,7 +105,7 @@ void CATLListener::SetTransformation(CObjectTransformation const& transformation
 	request.pOwner = userData.pOwner;
 	request.pUserData = userData.pUserData;
 	request.pUserDataOwner = userData.pUserDataOwner;
-	g_pSystem->PushRequest(request);
+	g_system.PushRequest(request);
 }
 
 //////////////////////////////////////////////////////////////////////////
@@ -154,7 +156,7 @@ void CATLListener::SetName(char const* const szName, SRequestUserData const& use
 	request.pOwner = userData.pOwner;
 	request.pUserData = userData.pUserData;
 	request.pUserDataOwner = userData.pUserDataOwner;
-	g_pSystem->PushRequest(request);
+	g_system.PushRequest(request);
 }
 
 #if defined(INCLUDE_AUDIO_PRODUCTION_CODE)
@@ -328,7 +330,7 @@ void CTrigger::Execute(
 
 	for (auto const pConnection : m_connections)
 	{
-		CATLEvent* const pEvent = g_pEventManager->ConstructEvent();
+		CATLEvent* const pEvent = g_eventManager.ConstructEvent();
 		ERequestStatus const activateResult = pConnection->Execute(object.GetImplDataPtr(), pEvent->m_pImplData);
 
 		if (activateResult == ERequestStatus::Success || activateResult == ERequestStatus::Pending)
@@ -359,7 +361,7 @@ void CTrigger::Execute(
 		}
 		else
 		{
-			g_pEventManager->DestructEvent(pEvent);
+			g_eventManager.DestructEvent(pEvent);
 
 #if defined(INCLUDE_AUDIO_PRODUCTION_CODE)
 			if (activateResult != ERequestStatus::SuccessDoNotTrack)
@@ -398,7 +400,7 @@ void CTrigger::Execute(
 {
 	for (auto const pConnection : m_connections)
 	{
-		CATLEvent* const pEvent = g_pEventManager->ConstructEvent();
+		CATLEvent* const pEvent = g_eventManager.ConstructEvent();
 		ERequestStatus const activateResult = pConnection->Execute(object.GetImplDataPtr(), pEvent->m_pImplData);
 
 		if (activateResult == ERequestStatus::Success || activateResult == ERequestStatus::Pending)
@@ -429,7 +431,7 @@ void CTrigger::Execute(
 		}
 		else
 		{
-			g_pEventManager->DestructEvent(pEvent);
+			g_eventManager.DestructEvent(pEvent);
 
 #if defined(INCLUDE_AUDIO_PRODUCTION_CODE)
 			if (activateResult != ERequestStatus::SuccessDoNotTrack)
@@ -458,7 +460,7 @@ void CTrigger::LoadAsync(CATLAudioObject& object, bool const doLoad) const
 
 	for (auto const pConnection : m_connections)
 	{
-		CATLEvent* const pEvent = g_pEventManager->ConstructEvent();
+		CATLEvent* const pEvent = g_eventManager.ConstructEvent();
 		ERequestStatus prepUnprepResult = ERequestStatus::Failure;
 
 		if (doLoad)
@@ -490,7 +492,7 @@ void CTrigger::LoadAsync(CATLAudioObject& object, bool const doLoad) const
 		}
 		else
 		{
-			g_pEventManager->DestructEvent(pEvent);
+			g_eventManager.DestructEvent(pEvent);
 
 #if defined(INCLUDE_AUDIO_PRODUCTION_CODE)
 			Cry::Audio::Log(ELogType::Warning, R"(LoadAsync failed on trigger "%s" for object "%s")", GetName(), object.m_name.c_str());
@@ -513,7 +515,7 @@ void CTrigger::PlayFile(
 	if (!m_connections.empty())
 	{
 		Impl::ITrigger const* const pITrigger = m_connections[0]->m_pImplData;
-		CATLStandaloneFile* const pFile = g_pFileManager->ConstructStandaloneFile(szName, isLocalized, pITrigger);
+		CATLStandaloneFile* const pFile = g_fileManager.ConstructStandaloneFile(szName, isLocalized, pITrigger);
 		ERequestStatus const status = object.GetImplDataPtr()->PlayFile(pFile->m_pImplData);
 
 		if (status == ERequestStatus::Success || status == ERequestStatus::Pending)
@@ -541,7 +543,7 @@ void CTrigger::PlayFile(
 			Cry::Audio::Log(ELogType::Warning, R"(PlayFile failed with "%s" on object "%s")", pFile->m_hashedFilename.GetText().c_str(), object.m_name.c_str());
 #endif  // INCLUDE_AUDIO_PRODUCTION_CODE
 
-			g_pFileManager->ReleaseStandaloneFile(pFile);
+			g_fileManager.ReleaseStandaloneFile(pFile);
 		}
 	}
 }
