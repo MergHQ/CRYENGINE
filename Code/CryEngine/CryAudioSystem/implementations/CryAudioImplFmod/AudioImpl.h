@@ -89,12 +89,14 @@ private:
 	CryFixedStringT<MaxFilePathLength>    m_localizedSoundBankFolder;
 
 	CryFixedStringT<MaxFileNameLength>    m_masterBankPath;
-	CryFixedStringT<MaxFileNameLength>    m_masterBankStringsPath;
+	CryFixedStringT<MaxFileNameLength>    m_masterAssetsBankPath;
+	CryFixedStringT<MaxFileNameLength>    m_masterStringsBankPath;
 
 	FMOD::Studio::System*                 m_pSystem;
 	FMOD::System*                         m_pLowLevelSystem;
 	FMOD::Studio::Bank*                   m_pMasterBank;
-	FMOD::Studio::Bank*                   m_pStringsBank;
+	FMOD::Studio::Bank*                   m_pMasterAssetsBank;
+	FMOD::Studio::Bank*                   m_pMasterStringsBank;
 	CryFixedStringT<MaxControlNameLength> m_language;
 
 #if defined(INCLUDE_FMOD_IMPL_PRODUCTION_CODE)

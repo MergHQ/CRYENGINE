@@ -32,7 +32,8 @@ CImpl::CImpl()
 	: m_pSystem(nullptr)
 	, m_pLowLevelSystem(nullptr)
 	, m_pMasterBank(nullptr)
-	, m_pStringsBank(nullptr)
+	, m_pMasterAssetsBank(nullptr)
+	, m_pMasterStringsBank(nullptr)
 	, m_isMuted(false)
 {
 	m_constructedObjects.reserve(256);
@@ -933,7 +934,8 @@ bool CImpl::LoadMasterBanks()
 {
 	FMOD_RESULT fmodResult = FMOD_ERR_UNINITIALIZED;
 	m_masterBankPath.clear();
-	m_masterBankStringsPath.clear();
+	m_masterAssetsBankPath.clear();
+	m_masterStringsBankPath.clear();
 	CryFixedStringT<MaxFilePathLength + MaxFileNameLength> search(m_regularSoundBankFolder + "/*.bank");
 	_finddata_t fd;
 	intptr_t const handle = gEnv->pCryPak->FindFirst(search.c_str(), &fd);
@@ -942,17 +944,19 @@ bool CImpl::LoadMasterBanks()
 	{
 		do
 		{
-			m_masterBankStringsPath = fd.name;
-			size_t const substrPos = m_masterBankStringsPath.find(".strings.bank");
+			m_masterStringsBankPath = fd.name;
+			size_t const substrPos = m_masterStringsBankPath.find(".strings.bank");
 
-			if (substrPos != m_masterBankStringsPath.npos)
+			if (substrPos != m_masterStringsBankPath.npos)
 			{
 				m_masterBankPath = m_regularSoundBankFolder.c_str();
 				m_masterBankPath += "/";
-				m_masterBankPath += m_masterBankStringsPath.substr(0, substrPos);
+				m_masterBankPath += m_masterStringsBankPath.substr(0, substrPos);
+				m_masterAssetsBankPath = m_masterBankPath;
 				m_masterBankPath += ".bank";
-				m_masterBankStringsPath.insert(0, "/");
-				m_masterBankStringsPath.insert(0, m_regularSoundBankFolder.c_str());
+				m_masterAssetsBankPath += ".assets.bank";
+				m_masterStringsBankPath.insert(0, "/");
+				m_masterStringsBankPath.insert(0, m_regularSoundBankFolder.c_str());
 				break;
 			}
 
@@ -962,11 +966,11 @@ bool CImpl::LoadMasterBanks()
 		gEnv->pCryPak->FindClose(handle);
 	}
 
-	if (!m_masterBankPath.empty() && !m_masterBankStringsPath.empty())
+	if (!m_masterBankPath.empty() && !m_masterStringsBankPath.empty())
 	{
 		size_t const masterBankFileSize = gEnv->pCryPak->FGetSize(m_masterBankPath.c_str());
 		CRY_ASSERT(masterBankFileSize > 0);
-		size_t const masterBankStringsFileSize = gEnv->pCryPak->FGetSize(m_masterBankStringsPath.c_str());
+		size_t const masterBankStringsFileSize = gEnv->pCryPak->FGetSize(m_masterStringsBankPath.c_str());
 		CRY_ASSERT(masterBankStringsFileSize > 0);
 
 		if (masterBankFileSize > 0 && masterBankStringsFileSize > 0)
@@ -974,8 +978,9 @@ bool CImpl::LoadMasterBanks()
 			fmodResult = LoadBankCustom(m_masterBankPath.c_str(), &m_pMasterBank);
 			ASSERT_FMOD_OK;
 
-			fmodResult = LoadBankCustom(m_masterBankStringsPath.c_str(), &m_pStringsBank);
+			fmodResult = LoadBankCustom(m_masterStringsBankPath.c_str(), &m_pMasterStringsBank);
 			ASSERT_FMOD_OK;
+
 			if (m_pMasterBank != nullptr)
 			{
 				int numBuses = 0;
@@ -999,6 +1004,14 @@ bool CImpl::LoadMasterBanks()
 					delete[] pBuses;
 				}
 			}
+
+			size_t const masterBankAssetsFileSize = gEnv->pCryPak->FGetSize(m_masterAssetsBankPath.c_str());
+
+			if (masterBankAssetsFileSize > 0)
+			{
+				fmodResult = LoadBankCustom(m_masterAssetsBankPath.c_str(), &m_pMasterAssetsBank);
+				ASSERT_FMOD_OK;
+			}
 		}
 	}
 	else
@@ -1017,11 +1030,18 @@ void CImpl::UnloadMasterBanks()
 {
 	FMOD_RESULT fmodResult = FMOD_ERR_UNINITIALIZED;
 
-	if (m_pStringsBank != nullptr)
+	if (m_pMasterStringsBank != nullptr)
 	{
-		fmodResult = m_pStringsBank->unload();
+		fmodResult = m_pMasterStringsBank->unload();
 		ASSERT_FMOD_OK;
-		m_pStringsBank = nullptr;
+		m_pMasterStringsBank = nullptr;
+	}
+
+	if (m_pMasterAssetsBank != nullptr)
+	{
+		fmodResult = m_pMasterAssetsBank->unload();
+		ASSERT_FMOD_OK;
+		m_pMasterAssetsBank = nullptr;
 	}
 
 	if (m_pMasterBank != nullptr)
