@@ -618,7 +618,7 @@ def process_android_java_files(self):
 	
 	# Create text file containing all dlls to load on startup
 	template = compile_template(JAVA_LOAD_SHARED_LIB_LIST_TEMPLATE)
-	shared_libs = {'shared_libs' : [self.env['ANDROID_SDL_LIB_NAME'], 'SDL2', 'SDL2Ext', self.output_file_name] }
+	shared_libs = {'shared_libs' : [self.env['ANDROID_SDL_LIB_NAME'], 'SDL2', self.output_file_name] }
 	shared_lib_startup_dir = apk_folder.make_node('assets')
 	shared_lib_startup_node = shared_lib_startup_dir.make_node('startup_native_shared_lib.txt')
 	shared_lib_startup_task = self.create_task('generate_file', None, shared_lib_startup_node)
@@ -866,7 +866,6 @@ def add_android_lib_copy(self):
 		android_shared_libs = { 'armeabi-v7a': [
 			bld.env['ANDROID_SDL_LIB_PATH'],
 			bld.env['ANDROID_NDK_HOME'] + '/prebuilt/android-arm/gdbserver/gdbserver',
-			bld.CreateRootRelativePath('Code/Tools/SDLExtension/lib/android-armeabi-v7a/libSDL2Ext.so'),
 			bld.CreateRootRelativePath('Code/SDKs/SDL2/lib/android-armeabi-v7a/libSDL2.so')
 		]}
 	else:
