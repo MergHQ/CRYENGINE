@@ -41,26 +41,9 @@ struct CObjManager_Cmp_Streamable_Priority
 		IStreamable* arrObj[2] = { v1.GetStreamAbleObject(), v2.GetStreamAbleObject() };
 
 		// compare priorities
-		if (v1.fCurImportance > v2.fCurImportance)
-			return true;
-		if (v1.fCurImportance < v2.fCurImportance)
-			return false;
-
-		// give low lod's and small meshes higher priority
-		int MemUsage0 = v1.GetStreamableContentMemoryUsage();
-		int MemUsage1 = v2.GetStreamableContentMemoryUsage();
-		if (MemUsage0 < MemUsage1)
-			return true;
-		if (MemUsage0 > MemUsage1)
-			return false;
-
-		// fix sorting consistency
-		if (arrObj[0] > arrObj[1])
-			return true;
-		if (arrObj[0] < arrObj[1])
-			return false;
-
-		return false;
+		if (v1.fCurImportance == v2.fCurImportance)
+			return arrObj[0] > arrObj[1];
+		return v1.fCurImportance > v2.fCurImportance;
 	}
 };
 
@@ -582,6 +565,8 @@ void CObjManager::ProcessObjectsStreaming_Impl(bool bSyncLoad, const SRenderingP
 
 void CObjManager::ProcessObjectsStreaming_Sort(bool bSyncLoad, const SRenderingPassInfo& passInfo)
 {
+	static constexpr float fMeshStreamingMaxIImportance = 10.f;
+
 	int nNumStreamableObjects = m_arrStreamableObjects.Count();
 
 	static float fLastTime = 0;
@@ -594,8 +579,6 @@ void CObjManager::ProcessObjectsStreaming_Sort(bool bSyncLoad, const SRenderingP
 
 		SStreamAbleObject* arrStreamableObjects = &m_arrStreamableObjects[0];
 		assert(arrStreamableObjects);
-
-		const float fMeshStreamingMaxIImportance = 10.f;
 
 		if (bSyncLoad)
 		{
@@ -621,6 +604,13 @@ void CObjManager::ProcessObjectsStreaming_Sort(bool bSyncLoad, const SRenderingP
 			// use data of previous prediction round since current round is not finished yet
 			int nRoundId = CObjManager::m_nUpdateStreamingPrioriryRoundId - 1;
 
+			int maxSize = 0;
+			for (int i = 0; i < nNumStreamableObjects; i++)
+			{
+				SStreamAbleObject& rObj = arrStreamableObjects[i];
+				maxSize = std::max(maxSize, rObj.GetStreamableContentMemoryUsage());
+			}
+
 			for (int i = 0; i < nNumStreamableObjects; i++)
 			{
 				SStreamAbleObject& rObj = arrStreamableObjects[i];
@@ -631,6 +621,9 @@ void CObjManager::ProcessObjectsStreaming_Sort(bool bSyncLoad, const SRenderingP
 					continue;
 				}
 
+				const int size = rObj.GetStreamableContentMemoryUsage();
+				const float normalized_size = static_cast<float>(size) / static_cast<float>(maxSize);
+
 				// compute importance of objects for selected nRoundId
 				rObj.fCurImportance = -1000.f;
 
@@ -640,7 +633,7 @@ void CObjManager::ProcessObjectsStreaming_Sort(bool bSyncLoad, const SRenderingP
 				{
 					if (pInfo[nRoundIdx].nRoundId == nRoundId)
 					{
-						rObj.fCurImportance = pInfo[nRoundIdx].fMaxImportance;
+						rObj.fCurImportance = pInfo[nRoundIdx].fMaxImportance - normalized_size;
 						if (rObj.GetLastDrawMainFrameId() > (passInfo.GetMainFrameID() - GetCVars()->e_RNTmpDataPoolMaxFrames))
 							rObj.fCurImportance += GetFloatCVar(e_StreamCgfVisObjPriority);
 						break;
@@ -667,7 +660,8 @@ void CObjManager::ProcessObjectsStreaming_Release()
 	{
 		const SStreamAbleObject& rObj = arrStreamableObjects[nObjId];
 
-		nMemoryUsage += rObj.GetStreamableContentMemoryUsage();
+		if (rObj.GetStreamAbleObject()->m_eStreamingStatus != ecss_NotLoaded)
+			nMemoryUsage += rObj.GetStreamableContentMemoryUsage();
 
 		bool bUnload = nMemoryUsage >= GetCVars()->e_StreamCgfPoolSize * 1024 * 1024;
 
@@ -718,19 +712,23 @@ void CObjManager::ProcessObjectsStreaming_InitLoad(bool bSyncLoad)
 	for (int nObjId = 0; nObjId < nNumStreamableObjects; nObjId++)
 	{
 		const SStreamAbleObject& rObj = m_arrStreamableObjects[nObjId];
+		const int size = rObj.GetStreamableContentMemoryUsage();
+
 		if (rObj.GetStreamAbleObject()->m_eStreamingStatus == ecss_InProgress)
 		{
 			nInProgress++;
-			nInProgressMem += rObj.GetStreamableContentMemoryUsage();
+			nInProgressMem += size;
 		}
+		if (rObj.GetStreamAbleObject()->m_eStreamingStatus != ecss_NotLoaded)
+			nMemoryUsage += size;
 	}
 
 	for (int nObjId = 0; (nObjId < nNumStreamableObjects) && ((nInProgress < nMaxInProgress && (nInProgressMem < static_cast<int>(poolLimit) || !poolLimit) && nStarted < nMaxToStart) || bSyncLoad); nObjId++)
 	{
 		const SStreamAbleObject& rObj = arrStreamableObjects[nObjId];
 		IStreamable* pStatObj = rObj.GetStreamAbleObject();
+		const int size = rObj.GetStreamableContentMemoryUsage();
 
-		int size = rObj.GetStreamableContentMemoryUsage();
 		if (poolLimit && poolLimit <= (size_t)(nInProgressMem + size))
 		{
 			// Actually the above check is an implicit size limit on CGFs - which is awful because it can lead to meshes never
@@ -748,13 +746,10 @@ void CObjManager::ProcessObjectsStreaming_InitLoad(bool bSyncLoad)
 				continue;
 		}
 
-		nMemoryUsage += size;
-		if (nMemoryUsage >= nMaxMemUsage)
-			break;
-
-		if (rObj.GetStreamAbleObject()->m_eStreamingStatus == ecss_NotLoaded)
+		if (rObj.GetStreamAbleObject()->m_eStreamingStatus == ecss_NotLoaded && nMemoryUsage + size < nMaxMemUsage)
 		{
 			m_arrStreamableToLoad.push_back(rObj.GetStreamAbleObject());
+			nMemoryUsage += size;
 			nInProgressMem += size;
 			++nInProgress;
 			++nStarted;
