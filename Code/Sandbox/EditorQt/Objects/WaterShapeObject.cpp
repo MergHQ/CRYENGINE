@@ -335,7 +335,7 @@ void CWaterShapeObject::UpdateGameArea()
 			else
 				m_pWVRN->SetMaterial(0);
 
-			unsigned int renderFlags = m_pWVRN->GetRndFlags();
+			uint64 renderFlags = m_pWVRN->GetRndFlags();
 			if (CheckFlags(OBJFLAG_INVISIBLE) || IsHiddenBySpec())
 				renderFlags |= ERF_HIDDEN;
 			else

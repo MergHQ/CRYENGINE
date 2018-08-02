@@ -134,7 +134,7 @@ bool GenerateGameFilename(CBaseObject* pObj, string& outFileName)
 	return false;
 }
 
-bool GetRenderFlag(CBaseObject* pObj, int& outRenderFlag)
+bool GetRenderFlag(CBaseObject* pObj, uint64& outRenderFlag)
 {
 	if (pObj == NULL)
 		return false;

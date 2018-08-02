@@ -77,6 +77,7 @@ CVegetationObject::CVegetationObject(int id)
 	mv_minSpec = 0;
 	mv_allowIndoor = false;
 	mv_autoMerged = false;
+	mv_ignoreTerrainLayerBlend = true;
 
 	mv_hideable.AddEnumItem("None", 0);
 	mv_hideable.AddEnumItem("Hideable", 1);
@@ -146,6 +147,7 @@ CVegetationObject::CVegetationObject(int id)
 	m_pVarObject->AddVariable(mv_material, "Material", functor(*this, &CVegetationObject::OnMaterialChange), IVariable::DT_MATERIAL);
 	m_pVarObject->AddVariable(mv_UseSprites, "UseSprites", functor(*this, &CVegetationObject::OnVarChange));
 	m_pVarObject->AddVariable(mv_minSpec, "MinSpec", functor(*this, &CVegetationObject::OnVarChange));
+	m_pVarObject->AddVariable(mv_ignoreTerrainLayerBlend, "IgnoreTerrainLayerBlend", functor(*this, &CVegetationObject::OnVarChange));
 
 	m_pVarObject->AddVariable(mv_layerFrozen, "Frozen", "Layer_Frozen", functor(*this, &CVegetationObject::OnVarChange));
 	m_pVarObject->AddVariable(mv_layerWet, "Layer_Wet", "Layer_Wet", functor(*this, &CVegetationObject::OnVarChange));
@@ -382,6 +384,7 @@ void CVegetationObject::SetEngineParams()
 	grp.bDynamicDistanceShadows = mv_DynamicDistanceShadows;
 	grp.fSpriteDistRatio = mv_SpriteDistRatio;
 	grp.fLodDistRatio = mv_LodDistRatio;
+	grp.bIgnoreTerrainLayerBlend = mv_ignoreTerrainLayerBlend;
 	grp.fShadowDistRatio = mv_ShadowDistRatio;
 	grp.fMaxViewDistRatio = mv_MaxViewDistRatio;
 	grp.fBrightness = 1.f; // not used

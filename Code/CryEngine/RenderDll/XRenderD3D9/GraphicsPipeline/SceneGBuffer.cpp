@@ -110,9 +110,17 @@ bool CSceneGBufferStage::CreatePipelineState(const SGraphicsPipelineStateDescrip
 
 		if ((objectFlags & FOB_DECAL) || (objectFlags & FOB_TERRAIN_LAYER) || (((CShader*)desc.shaderItem.m_pShader)->GetFlags() & EF_DECAL))
 		{
-			psoDesc.m_RenderState = (psoDesc.m_RenderState & ~(GS_BLEND_MASK | GS_DEPTHWRITE | GS_DEPTHFUNC_MASK | GS_STENCIL));
+			psoDesc.m_RenderState = (psoDesc.m_RenderState & ~(GS_BLEND_MASK | GS_DEPTHWRITE | GS_DEPTHFUNC_MASK));
 			psoDesc.m_RenderState |= GS_DEPTHFUNC_LEQUAL | GS_BLSRC_SRCALPHA | GS_BLDST_ONEMINUSSRCALPHA | GS_NOCOLMASK_GBUFFER_OVERLAY;
 
+			psoDesc.m_StencilReadMask = BIT_STENCIL_ALLOW_TERRAINLAYERBLEND;
+			psoDesc.m_StencilWriteMask = 0;
+			psoDesc.m_StencilState =
+				STENC_FUNC(FSS_STENCFUNC_EQUAL)
+				| STENCOP_FAIL(FSS_STENCOP_KEEP)
+				| STENCOP_ZFAIL(FSS_STENCOP_KEEP)
+				| STENCOP_PASS(FSS_STENCOP_KEEP);		
+				
 			psoDesc.m_ShaderFlags_RT |= g_HWSR_MaskBit[HWSR_ALPHABLEND];
 
 			if (objectFlags & FOB_DECAL_TEXGEN_2D)

@@ -54,7 +54,7 @@ public:
 
 	//////////////////////////////////////////////////////////////////////////
 	virtual IStatObj* GetIStatObj();
-	int               GetRenderFlags() const   { return m_renderFlags; }
+	uint64            GetRenderFlags() const   { return m_renderFlags; }
 	IRenderNode*      GetEngineNode() const    { return m_pRenderNode; }
 	float             GetRatioLod() const      { return mv_ratioLOD; }
 	float             GetRatioViewDist() const { return mv_ratioViewDist; }
@@ -147,10 +147,11 @@ protected:
 	CVariable<bool>               mv_Occluder;
 	CVariable<bool>               mv_drawLast;
 	CVariable<int>                mv_shadowLodBias;
+	CVariable<bool>               mv_ignoreTerrainLayerBlend;
 
 	//////////////////////////////////////////////////////////////////////////
 	// Rendering flags.
-	int  m_renderFlags;
+	uint64  m_renderFlags;
 
 	bool m_bIgnoreNodeUpdate;
 	bool m_RePhysicalizeOnVisible;

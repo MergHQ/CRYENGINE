@@ -140,7 +140,7 @@ void DesignerBaseObject<T >::UpdateVisibility(bool visible)
 
 	if (pCompiler->GetRenderNode())
 	{
-		int renderFlag = pCompiler->GetRenderFlags();
+		uint64 renderFlag = pCompiler->GetRenderFlags();
 		if (!visible || IsHiddenBySpec() || IsHiddenByOption() || IsHidden())
 			renderFlag |= ERF_HIDDEN;
 		else
@@ -151,7 +151,7 @@ void DesignerBaseObject<T >::UpdateVisibility(bool visible)
 		_smart_ptr<IStatObj> pStatObj;
 		if (pCompiler->GetIStatObj(&pStatObj))
 		{
-			int flag = pStatObj->GetFlags();
+			uint64 flag = pStatObj->GetFlags();
 			if (visible)
 				flag &= (~STATIC_OBJECT_HIDDEN);
 			else

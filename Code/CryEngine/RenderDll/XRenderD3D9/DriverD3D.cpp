@@ -787,6 +787,14 @@ void CD3D9Renderer::BeginFrame(const SDisplayContextKey& displayContextKey)
 		m_cEF.mfReloadAllShaders(1, SHGD_HW_SILHOUETTE_POM);
 	}
 
+	PREFAST_SUPPRESS_WARNING(6326)
+	if ((CV_e_TerrainBlendingDebug != 0) != m_bAllowTerrainLayerBlending)
+	{
+		PREFAST_SUPPRESS_WARNING(6326)
+		m_bAllowTerrainLayerBlending = CV_e_TerrainBlendingDebug != 0;
+		m_cEF.mfReloadAllShaders(CV_r_reloadshaders, 0);
+	}
+
 	if (CV_r_reloadshaders)
 	{
 		//exit(0);
@@ -1011,8 +1019,10 @@ void CD3D9Renderer::RT_BeginFrame(const SDisplayContextKey& displayContextKey)
 #ifndef CONSOLE_CONST_CVAR_MODE
 	ICVar* pCVDebugTexelDensity = gEnv->pConsole->GetCVar("e_texeldensity");
 	ICVar* pCVDebugDraw = gEnv->pConsole->GetCVar("e_debugdraw");
+	ICVar* pCVTerrainBlendingDebug = gEnv->pConsole->GetCVar("e_TerrainBlendingDebug");
 	CRendererCVars::CV_e_DebugTexelDensity = pCVDebugTexelDensity ? pCVDebugTexelDensity->GetIVal() : 0;
 	CRendererCVars::CV_e_DebugDraw = pCVDebugDraw ? pCVDebugDraw->GetIVal() : 0;
+	CRendererCVars::CV_e_TerrainBlendingDebug = pCVTerrainBlendingDebug ? pCVTerrainBlendingDebug->GetIVal() : 0;
 #endif
 
 	CheckDeviceLost();

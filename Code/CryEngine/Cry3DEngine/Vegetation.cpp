@@ -275,6 +275,7 @@ void CVegetation::Render(const SRenderingPassInfo& passInfo, const CLodValue& lo
 	pRenderObject->m_pRenderNode = const_cast<IRenderNode*>(static_cast<const IRenderNode*>(this));
 	pRenderObject->m_fAlpha = 1.f;
 	pRenderObject->m_ObjFlags |= FOB_INSHADOW | FOB_TRANS_MASK | FOB_DYNAMIC_OBJECT;
+	pRenderObject->m_ObjFlags |= (m_dwRndFlags & ERF_FOB_ALLOW_TERRAIN_LAYER_BLEND) ? FOB_ALLOW_TERRAIN_LAYER_BLEND : 0;
 	pRenderObject->m_editorSelectionID = m_nEditorSelectionID;
 
 	if (!userData.objMat.m01 && !userData.objMat.m02 && !userData.objMat.m10 && !userData.objMat.m12 && !userData.objMat.m20 && !userData.objMat.m21)
@@ -971,6 +972,7 @@ void CVegetation::UpdateRndFlags()
 
 	m_dwRndFlags &= ~dwFlagsToUpdate;
 	m_dwRndFlags |= vegetGroup.m_dwRndFlags & (dwFlagsToUpdate | ERF_HAS_CASTSHADOWMAPS);
+	m_dwRndFlags |= !vegetGroup.bIgnoreTerrainLayerBlend ? ERF_FOB_ALLOW_TERRAIN_LAYER_BLEND : 0;
 
 	IRenderNode::SetLodRatio((int)(vegetGroup.fLodDistRatio * 100.f));
 	IRenderNode::SetViewDistRatio((int)(vegetGroup.fMaxViewDistRatio * 100.f));

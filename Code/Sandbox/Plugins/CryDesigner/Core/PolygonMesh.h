@@ -13,8 +13,8 @@ public:
 	PolygonMesh();
 	~PolygonMesh();
 
-	void         SetPolygon(PolygonPtr pPolygon, bool bForce, const Matrix34& worldTM = Matrix34::CreateIdentity(), int dwRndFlags = 0, int nViewDistRatio = 100, int nMinSpec = 0, uint8 materialLayerMask = 0);
-	void         SetPolygons(const std::vector<PolygonPtr>& polygonList, bool bForce, const Matrix34& worldTM = Matrix34::CreateIdentity(), int dwRndFlags = 0, int nViewDistRatio = 100, int nMinSpec = 0, uint8 materialLayerMask = 0);
+	void         SetPolygon(PolygonPtr pPolygon, bool bForce, const Matrix34& worldTM = Matrix34::CreateIdentity(), uint64 dwRndFlags = 0, int nViewDistRatio = 100, int nMinSpec = 0, uint8 materialLayerMask = 0);
+	void         SetPolygons(const std::vector<PolygonPtr>& polygonList, bool bForce, const Matrix34& worldTM = Matrix34::CreateIdentity(), uint64 dwRndFlags = 0, int nViewDistRatio = 100, int nMinSpec = 0, uint8 materialLayerMask = 0);
 	void         SetWorldTM(const Matrix34& worldTM);
 	void         SetMaterial(IMaterial* pMaterial);
 	void         ReleaseResources();
@@ -23,7 +23,7 @@ public:
 private:
 
 	void ApplyMaterial();
-	void UpdateStatObjAndRenderNode(const FlexibleMesh& mesh, const Matrix34& worldTM, int dwRndFlags, int nViewDistRatio, int nMinSpec, uint8 materialLayerMask);
+	void UpdateStatObjAndRenderNode(const FlexibleMesh& mesh, const Matrix34& worldTM, uint64 dwRndFlags, int nViewDistRatio, int nMinSpec, uint8 materialLayerMask);
 	void ReleaseRenderNode();
 	void CreateRenderNode();
 

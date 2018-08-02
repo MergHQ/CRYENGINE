@@ -95,7 +95,7 @@ void Exporter::ExportBrushes(const string& path, CPakFile& pakFile)
 			string gameFileName;
 			if (GenerateGameFilename(pObject, gameFileName) == false)
 				continue;
-			int nRenderFlag(0);
+			uint64 nRenderFlag(0);
 			if (GetRenderFlag(pObject, nRenderFlag) == false)
 				continue;
 			ExportStatObj(path, pStatObj, pObject, nRenderFlag, gameFileName, pakFile);

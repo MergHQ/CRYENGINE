@@ -161,6 +161,7 @@ void CRenderer::InitRenderer()
 	m_bDeferredRainOcclusionEnabled = false;
 	m_bDeferredSnowEnabled = false;
 
+	m_bAllowTerrainLayerBlending = 0;
 	m_nDisableTemporalEffects = 0;
 
 	m_ReqViewportScale = m_CurViewportScale = m_PrevViewportScale = Vec2(1, 1);

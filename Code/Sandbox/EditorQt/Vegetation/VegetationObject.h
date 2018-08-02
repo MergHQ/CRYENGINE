@@ -152,6 +152,7 @@ public:
 	bool  IsUseSprites() const                    { return mv_UseSprites; }
 	bool  IsAlignToTerrain() const                { return mv_alignToTerrainCoefficient != 0.f; }
 	bool  IsUseTerrainColor() const               { return mv_useTerrainColor; }
+	bool  IgnoresTerrainBlending() const          { return mv_ignoreTerrainLayerBlend; }
 	bool  IsAffectedByBrushes() const             { return mv_growOn == eGrowOn_Brushes || mv_growOn == eGrowOn_Both; }
 	bool  IsAffectedByTerrain() const             { return mv_growOn == eGrowOn_Terrain || mv_growOn == eGrowOn_Both; }
 
@@ -276,6 +277,7 @@ protected:
 	CSmartVariable<float>   mv_variance;
 	CSmartVariable<float>   mv_airResistance;
 	CSmartVariableEnum<int> mv_growOn;
+	CSmartVariable<bool>    mv_ignoreTerrainLayerBlend;
 
 	CSmartVariable<bool>    mv_layerFrozen;
 	CSmartVariable<bool>    mv_layerWet;

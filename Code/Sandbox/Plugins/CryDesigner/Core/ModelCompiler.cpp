@@ -312,7 +312,7 @@ void ModelCompiler::UpdateRenderNode(CBaseObject* pBaseObject, ShelfID nShelf)
 		}
 	}
 
-	int renderFlags = m_RenderFlags;
+	uint64 renderFlags = m_RenderFlags;
 
 	m_pRenderNode[nShelf]->SetRndFlags(renderFlags);
 	m_pRenderNode[nShelf]->SetViewDistRatio(m_viewDistRatio);

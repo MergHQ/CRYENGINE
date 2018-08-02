@@ -151,9 +151,10 @@ enum EStencilStateOp
 #define STENCOP_CCW_PASS(op)  (op << (FSS_STENCPASS_SHIFT + FSS_CCW_SHIFT))
 
 //Stencil masks
-#define BIT_STENCIL_RESERVED          0x80
-#define BIT_STENCIL_INSIDE_CLIPVOLUME 0x40
-#define STENCIL_VALUE_OUTDOORS        0x0
+#define BIT_STENCIL_RESERVED                 0x80
+#define BIT_STENCIL_INSIDE_CLIPVOLUME        0x40
+#define BIT_STENCIL_ALLOW_TERRAINLAYERBLEND  0x20
+#define STENCIL_VALUE_OUTDOORS               0x0
 
 #define STENC_VALID_BITS_NUM          7
 #define STENC_MAX_REF                 ((1 << STENC_VALID_BITS_NUM) - 1)

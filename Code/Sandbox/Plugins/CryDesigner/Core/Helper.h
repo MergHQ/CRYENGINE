@@ -16,7 +16,7 @@ bool UpdateStatObj(CBaseObject* pObj);
 bool UpdateGameResource(CBaseObject* pObj);
 bool GetIStatObj(CBaseObject* pObj, _smart_ptr<IStatObj>* pOutStatObj);
 bool GenerateGameFilename(CBaseObject* pObj, string& outFileName);
-bool GetRenderFlag(CBaseObject* pObj, int& outRenderFlag);
+bool GetRenderFlag(CBaseObject* pObj, uint64& outRenderFlag);
 bool GetCompiler(CBaseObject* pObj, ModelCompiler*& pCompiler);
 bool GetModel(CBaseObject* pObj, Model*& pModel);
 bool HitTest(const BrushRay& ray, MainContext& mc, HitContext& hc);

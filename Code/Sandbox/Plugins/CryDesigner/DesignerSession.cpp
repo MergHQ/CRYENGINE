@@ -248,7 +248,7 @@ void DesignerSession::UpdateSelectionMeshFromSelectedElements(MainContext& mc)
 	if (m_pSelectionMesh == NULL)
 		m_pSelectionMesh = new PolygonMesh;
 
-	int renderFlag = mc.pCompiler->GetRenderFlags();
+	uint64 renderFlag = mc.pCompiler->GetRenderFlags();
 	int viewDist = mc.pCompiler->GetViewDistRatio();
 	uint32 minSpec = mc.pObject->GetMinSpec();
 	uint32 materialLayerMask = mc.pObject->GetMaterialLayersMask();
@@ -278,7 +278,7 @@ void DesignerSession::UpdateSelectionMesh(
 	if (m_pSelectionMesh == NULL)
 		m_pSelectionMesh = new PolygonMesh;
 
-	int renderFlag = pCompiler->GetRenderFlags();
+	uint64 renderFlag = pCompiler->GetRenderFlags();
 	int viewDist = pCompiler->GetViewDistRatio();
 	uint32 minSpec = pObj->GetMinSpec();
 	uint32 materialLayerMask = pObj->GetMaterialLayersMask();

@@ -194,6 +194,12 @@ void CVars::Init()
 	DefineConstFloatCVar(e_SunAngleSnapDot, VF_NULL,
 	                     "Sun dir snap control");
 
+	REGISTER_CVAR(e_TerrainBlendingDebug, 0, VF_CHEAT, 
+                  "Options:\n"
+                  "0 = Only blend objects that have FOB_ALLOW_TERRAIN_LAYER_BLEND set (default)\n"
+                  "1 = Disable blending on all objects\n"
+                  "2 = Enable blending on all objects");
+
 	REGISTER_CVAR(e_Particles, 1, VF_CHEAT | VF_CHEAT_ALWAYS_CHECK,
 	              "Activates drawing of particles");
 	DefineConstIntCVar(e_ParticlesDebug, 0, VF_CHEAT | VF_BITFIELD,

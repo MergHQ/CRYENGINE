@@ -622,8 +622,12 @@ bool CCompiledRenderObject::Compile(const EObjectCompilationOptions& compilation
 	// Stencil ref value
 	uint8 stencilRef = 0; // @TODO: get from CRNTmpData::SRNUserData::m_pClipVolume::GetStencilRef
 	m_StencilRef = CRenderer::CV_r_VisAreaClipLightsPerPixel ? 0 : (stencilRef | BIT_STENCIL_INSIDE_CLIPVOLUME);
-	m_StencilRef |= (!(pRenderObject->m_ObjFlags & FOB_DYNAMIC_OBJECT) ? BIT_STENCIL_RESERVED : 0);
-
+	m_StencilRef |= (pRenderObject->m_ObjFlags & FOB_DYNAMIC_OBJECT) ? BIT_STENCIL_RESERVED : 0;
+	const bool bAllowTerrainLayerBlending = CRendererCVars::CV_e_TerrainBlendingDebug == 2 || 
+		                                   (CRendererCVars::CV_e_TerrainBlendingDebug == 0 && (pRenderObject->m_ObjFlags & FOB_ALLOW_TERRAIN_LAYER_BLEND));
+	const bool bTerrain = pRenderObject->m_data.m_pTerrainSectorTextureInfo != nullptr;
+	m_StencilRef |= (bAllowTerrainLayerBlending || bTerrain) ? BIT_STENCIL_ALLOW_TERRAINLAYERBLEND : 0;
+	
 	m_bRenderNearest = (pRenderObject->m_ObjFlags & FOB_NEAREST) != 0;
 
 	if (m_shaderItem.m_pShader)

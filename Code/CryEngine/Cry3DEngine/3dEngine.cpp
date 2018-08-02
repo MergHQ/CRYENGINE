@@ -774,7 +774,8 @@ void C3DEngine::ProcessCVarsChange()
 	  GetCVars()->e_Portals +
 	  GetCVars()->e_DebugDraw +
 	  GetFloatCVar(e_ViewDistCompMaxSize) +
-	  GetCVars()->e_DecalsDeferredStatic;
+	  GetCVars()->e_DecalsDeferredStatic +
+	  GetCVars()->e_TerrainBlendingDebug;
 
 	if (m_fRefreshSceneDataCVarsSumm != -1 && m_fRefreshSceneDataCVarsSumm != fNewCVarsSumm)
 	{
@@ -2115,6 +2116,7 @@ bool C3DEngine::SetStatInstGroup(int nGroupId, const IStatInstGroup& siGroup)
 	rGroup.fSlopeMin = siGroup.fSlopeMin;
 	rGroup.fStiffness = siGroup.fStiffness;
 	rGroup.fDamping = siGroup.fDamping;
+	rGroup.bIgnoreTerrainLayerBlend = siGroup.bIgnoreTerrainLayerBlend;
 	rGroup.fVariance = siGroup.fVariance;
 	rGroup.fAirResistance = siGroup.fAirResistance;
 
@@ -2185,6 +2187,7 @@ bool C3DEngine::GetStatInstGroup(int nGroupId, IStatInstGroup& siGroup)
 
 	siGroup.fStiffness = rGroup.fStiffness;
 	siGroup.fDamping = rGroup.fDamping;
+	siGroup.bIgnoreTerrainLayerBlend = rGroup.bIgnoreTerrainLayerBlend;
 	siGroup.fVariance = rGroup.fVariance;
 	siGroup.fAirResistance = rGroup.fAirResistance;
 
