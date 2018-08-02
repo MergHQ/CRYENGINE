@@ -393,6 +393,7 @@ Texture2D<float4> shadowMapTex3 : register(t36) = TS_Shadow6;
 SamplerState aniso16xWrapSState              : register(s0) = SS_MaterialAnisoHighWrap;
 SamplerState aniso16xClampSState             : register(s1) = SS_MaterialAnisoLowWrap;
 SamplerComparisonState linearClampCompSState : register(s10) = SS_Shadow2;
+SamplerState ssLinearMirrorX                 : register(s11);
 
 //////////////////////////////////////////////////////////////////////////
 // per pass textures for water volume reflection gen pass

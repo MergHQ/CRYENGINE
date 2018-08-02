@@ -393,7 +393,7 @@ pixout SSRRaytracePS(vtxOutWPOS IN)
 		GetTexture2D( SSRRay_Norms, SSRRay_Norms_Sampler, ScreenTC + halfTexel ), 0,
 		GetTexture2D( SSRRay_Spec, SSRRay_Norms_Sampler, ScreenTC + halfTexel ) );
 	
-	ReflParams params;
+	ReflParams params = (ReflParams)0;
 	
 	params.ScreenTC = ScreenTC;
 	params.ProjRatio = g_PS_ProjRatio.xy;
@@ -410,7 +410,8 @@ pixout SSRRaytracePS(vtxOutWPOS IN)
 	params.Smoothness = attribs.Smoothness;
 	params.Reproject = true;
 	params.ViewProjPrev = g_mViewProjPrev;
-	params.borderSize = 0.07;
+	params.limitMask = 0;
+	params.borderSize = float3(0.07, 0.07, 1.0);
 	
 	OUT.Color = SSRRaytrace
 	(
@@ -425,6 +426,9 @@ pixout SSRRaytracePS(vtxOutWPOS IN)
 
 		params
 	);
+
+	// Premultiply colored result
+	OUT.Color.a *= params.blendWeight;
 
 	return OUT;
 }
