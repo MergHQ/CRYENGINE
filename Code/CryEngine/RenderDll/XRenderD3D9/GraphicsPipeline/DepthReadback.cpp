@@ -334,12 +334,10 @@ void CDepthReadbackStage::ExecutePasses(float sourceWidth, float sourceHeight, f
 		pass.SetConstant(psParam0Name, psParams0, eHWSC_Pixel);
 		pass.SetConstant(psParam1Name, psParams1, eHWSC_Pixel);
 
-		if (pass.IsDirty())
-			return false;
-
 		pass.Execute();
 
-		return true;
+		// In case execution fails (missing pso, etc.)
+		return !pass.IsDirty(); 
 	};
 
 	// Issue downsample
@@ -365,7 +363,8 @@ void CDepthReadbackStage::ExecutePasses(float sourceWidth, float sourceHeight, f
 	CTexture* const pTarget = CRendererResources::s_ptexLinearDepthReadBack[readbackIndex];
 	SReadback& readback = m_readback[readbackIndex];
 	CFullscreenPass& pass = readback.pass;
-	executePass(pass, bInitial, sourceWidth, sourceHeight);
+	if (!executePass(pass, bInitial, sourceWidth, sourceHeight))
+		return;
 
 	readback.bIssued = true; pTarget->GetDevTexture()->DownloadToStagingResource(0);
 	readback.bCompleted =    pTarget->GetDevTexture()->AccessCurrStagingResource(0, false);
