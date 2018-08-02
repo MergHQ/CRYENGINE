@@ -517,15 +517,16 @@ bool CCompiledRenderObject::Compile(const EObjectCompilationOptions& compilation
 		return true;
 	}
 
-	if (compilationOptions & eObjCompilationOption_PerInstanceConstantBuffer)
+	const EDataType reType = m_pRenderElement->mfGetType();
+
+	if (compilationOptions & eObjCompilationOption_PerInstanceConstantBuffer && reType != eDATA_Particle)
 	{
 		// Update AABB by tranforming from local space
 		const auto& camera = pRenderView->GetCamera(pRenderView->GetCurrentEye());
 		m_aabb = pRenderObject->TransformAABB(localAABB, camera.GetPosition(), gcpRendD3D->GetObjectAccessorThreadConfig());
 	}
 
-	EDataType reType = m_pRenderElement->mfGetType();
-	bool bMeshCompatibleRenderElement = reType == eDATA_Mesh || reType == eDATA_Terrain || reType == eDATA_GeomCache || reType == eDATA_ClientPoly;
+	const bool bMeshCompatibleRenderElement = reType == eDATA_Mesh || reType == eDATA_Terrain || reType == eDATA_GeomCache || reType == eDATA_ClientPoly;
 	if (!bMeshCompatibleRenderElement)
 	{
 		// Custom render elements cannot be dynamically instanced.

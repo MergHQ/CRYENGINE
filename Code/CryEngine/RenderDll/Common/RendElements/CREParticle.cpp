@@ -364,7 +364,7 @@ void CRenderer::PrepareParticleRenderObjects(Array<const SAddParticlesToSceneJob
 		CREParticle* pRE = static_cast<CREParticle*>(pRenderObject->m_pRE);
 
 		if (pRenderObject->m_pCompiledObject)
-			pRenderObject->m_pCompiledObject->m_aabb = AABB{ job.aabb.min, job.aabb.max };
+			pRenderObject->m_pCompiledObject->m_aabb = job.aabb;
 
 		// generate the RenderItem entries for this Particle Element
 		assert(pRenderObject->m_bPermanent);

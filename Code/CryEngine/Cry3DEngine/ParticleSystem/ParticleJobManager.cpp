@@ -42,7 +42,7 @@ void CParticleJobManager::ScheduleComputeVertices(CParticleComponentRuntime& run
 	job.pRenderObject = pRenderObject;
 	job.pShaderItem = &pRenderObject->m_pCurrMaterial->GetShaderItem();
 	job.nCustomTexId = renderContext.m_renderParams.nTextureID;
-	job.aabb = {};
+	job.aabb = runtime.GetBounds();
 }
 
 void CParticleJobManager::AddUpdateEmitter(CParticleEmitter* pEmitter)
