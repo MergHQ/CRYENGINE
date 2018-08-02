@@ -81,6 +81,7 @@ public:
 		ePerPassSampler_PointClamp      = 9,
 
 		ePerPassSampler_LinearClampComp = 10,
+		ePerPassSampler_LinearMirror    = 11,
 
 		ePerPassSampler_Count,
 	};
@@ -184,6 +185,7 @@ private:
 	int32 m_aniso16xClampSampler;
 	int32 m_aniso16xWrapSampler;
 	int32 m_linearCompareClampSampler;
+	int32 m_linearMirrorSampler;
 
 	bool              m_bWaterNormalGen;
 	bool              m_bOceanMaskGen;

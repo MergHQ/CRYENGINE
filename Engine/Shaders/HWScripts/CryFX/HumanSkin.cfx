@@ -29,6 +29,9 @@ struct CustomForwardShadingAttribs
 };
 
 #include "ShadeLib.cfi"
+
+//////////////////////////////// Common vertex shader ////////////////
+
 #include "VertexLib.cfi"
 
 //////////////////////////////// Samplers ////////////////
@@ -39,8 +42,8 @@ OPACITYMAP
 ENVIRONMENTCUBEMAP
 DISSOLVE_NOISE_MAP
 
-Texture2D customTex          : register(t9)  = TM_Custom;
-Texture2D customSecondaryTex : register(t10) = TM_CustomSecondary; 
+CUSTOMMAP;
+CUSTOMSECONDARYMAP; 
 
 /// Tweakables //////////////////////
 

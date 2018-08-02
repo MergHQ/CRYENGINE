@@ -210,6 +210,7 @@ void CWaterStage::Init()
 	m_aniso16xClampSampler      = CDeviceObjectFactory::GetOrCreateSamplerStateHandle(SSamplerState(FILTER_ANISO16X, eSamplerAddressMode_Clamp, eSamplerAddressMode_Clamp, eSamplerAddressMode_Clamp, 0x0));
 	m_aniso16xWrapSampler       = CDeviceObjectFactory::GetOrCreateSamplerStateHandle(SSamplerState(FILTER_ANISO16X, eSamplerAddressMode_Wrap, eSamplerAddressMode_Wrap, eSamplerAddressMode_Wrap, 0x0));
 	m_linearCompareClampSampler = CDeviceObjectFactory::GetOrCreateSamplerStateHandle(SSamplerState(FILTER_LINEAR, eSamplerAddressMode_Clamp, eSamplerAddressMode_Clamp, eSamplerAddressMode_Clamp, 0x0, true));
+	m_linearMirrorSampler       = CDeviceObjectFactory::GetOrCreateSamplerStateHandle(SSamplerState(FILTER_LINEAR, eSamplerAddressMode_Mirror, eSamplerAddressMode_Clamp, eSamplerAddressMode_Clamp, 0x0));
 
 	PrepareDefaultPerInstanceResources();
 	for (uint32 i = 0; i < ePass_Count; ++i)
@@ -975,6 +976,7 @@ bool CWaterStage::SetAndBuildPerPassResources(bool bOnInit, EPass passId)
 		resources.SetSampler(ePerPassSampler_PointClamp, EDefaultSamplerStates::PointClamp, EShaderStage_AllWithoutCompute);
 
 		resources.SetSampler(ePerPassSampler_LinearClampComp, m_linearCompareClampSampler, EShaderStage_AllWithoutCompute);
+		resources.SetSampler(ePerPassSampler_LinearMirror, m_linearMirrorSampler, EShaderStage_AllWithoutCompute);
 	}
 
 	CTexture* pVolFogShadowTex = CRendererResources::s_ptexBlack;

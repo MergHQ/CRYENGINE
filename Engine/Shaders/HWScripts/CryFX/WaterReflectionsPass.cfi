@@ -7,6 +7,7 @@ half4 ReflectionPassPS( v2f_hs IN, half4 vNormal )
 {
 	// Do the specular reflection with ray marching.
 	half4 specularRefl = half4(0,0,0,0);
+	half  specularPrec = 0;
 
 	{
 		const float3 vPositionWS = IN.vPosWS.xyz;
@@ -14,11 +15,11 @@ half4 ReflectionPassPS( v2f_hs IN, half4 vNormal )
 		const float2 halfTexel = 0;
 
 		SPerPassWaterParams perPassParams = GetPerPassWaterParams();
-		ReflParams params;
+		ReflParams params = (ReflParams)0;
 	
 		params.ScreenTC = ScreenTC;
 		params.ProjRatio = g_PS_ProjRatio.xy;
-		params.JitterUV = IN.baseTC.zw;
+		params.JitterUV = IN.Position.xy;
 		params.NearFarClipDist = CV_NearFarClipDist.xy;
 		params.UnscaledMultiplier = float2(2.0f, 2.0f);
 		params.ViewVec = normalize(vPositionWS - g_VS_WorldViewPos);
@@ -29,12 +30,16 @@ half4 ReflectionPassPS( v2f_hs IN, half4 vNormal )
 		params.Smoothness = vNormal.w;
 		params.Reproject = false;
 		params.ViewProjPrev = 0;
+		params.limitMask =
+			// Don't clip left and right because we use X-mirroring to hide the end-of-data seam
+			FRUSTUM_NOCLIP_LEFT | FRUSTUM_NOCLIP_RIGHT;
 	
 		// local reflections setup
 		{
-			params.MaxDistance = perPassParams.ssrParams.z;
-			params.MaxSamples = perPassParams.ssrParams.w;
-			params.borderSize = float2(0.07, 0.05);
+			params.bgMultiplier = 0;
+			params.MaxDistance = perPassParams.ssrParams.z * ssrDistanceAtt;
+			params.MaxSamples = perPassParams.ssrParams.w * ssrSamplingAtt;
+			params.borderSize = float3(0.0f, 1.0f - (1.0f - ssrBorderSizeY) * 1.0f, ssrBorderSizeZ);
 
 			half4 color = SSRRaytrace
 			(
@@ -42,23 +47,25 @@ half4 ReflectionPassPS( v2f_hs IN, half4 vNormal )
 
 				refractionHalfResTex,
 				refractionHalfResTex,
-				ssMaterialBilinearClamp,
+				ssLinearMirrorX,
 
 				refractionHalfResTex,
-				ssMaterialTrilinearClamp,
+				ssLinearMirrorX,
 
 				params
 			);
 		
 			specularRefl = color;
+			specularPrec = params.blendWeight;
 		}
-	
+
 		// far reflection setup (if no or partially hit only)
 		[branch] if (specularRefl.a < 1.0f)
 		{
-			params.MaxDistance = perPassParams.ssrParams.z;
+			params.bgMultiplier = ssrBGMultiplier;
+			params.MaxDistance = perPassParams.ssrParams.z * ssrDistanceAtt;
 			params.MaxSamples = 1;
-			params.borderSize = float2(0.15, 0.07);
+			params.borderSize = float3(0.0f, 1.0f - (1.0f - ssrBorderSizeY) * 1.0f, ssrBorderSizeZ);
 
 			half4 color = SSRaycast
 			(
@@ -66,25 +73,26 @@ half4 ReflectionPassPS( v2f_hs IN, half4 vNormal )
 
 				refractionHalfResTex,
 				refractionHalfResTex,
-				ssMaterialBilinearClamp,
+				ssLinearMirrorX,
 
 				refractionHalfResTex,
-				ssMaterialTrilinearClamp,
+				ssLinearMirrorX,
 
 				params
 			);
 
-			if (color.a >= specularRefl.a)
+			// Merge local and far reflections
+			float l = specularRefl.a + color.a;
+			if (l > 0)
 			{
-				specularRefl.rgb = (specularRefl.rgb * specularRefl.a) + (color.rgb * (1.0f - specularRefl.a));
-				specularRefl.a = color.a;
-			}
-			else
-			{
-				specularRefl.rgb = (color.rgb * color.a) + (specularRefl.rgb * (1.0f - color.a));
-				specularRefl.a = specularRefl.a;
+				l = color.a / l;
+
+				specularRefl = lerp(specularRefl, color, l);
+				specularPrec = lerp(specularPrec, params.blendWeight, l);
 			}
 		}
+
+		specularRefl.a = pow(specularPrec * specularRefl.a, ssrBorderFadeExponent);
 	}
 
 	return specularRefl;
@@ -112,14 +120,14 @@ pixout WaterReflPS(v2f_hs IN)
 #else
 	half  cSmoothness = 1;
 	half4 cDiffuseMap = (half4) 1;
-	half3 vNormal = half3(0, 0, 1);
+	half3 vNormal = half3(0, 0, 1); // TODO: flip normal when under water (see BOT/TOP clipping above)
 #endif
 
 	half fNdotE =  (dot( vView.xyz, vNormal ) ) * IN.vView.w;
 
 	//////////////////////////////////////////////////////////////////////////////////////////////////    
 	// Get reflection color
-	const half ReflectionBumpScale = 1.0;
+	const half ReflectionBumpScale = NormalsFlatten;
 	
 	half3 vDir = g_VS_WorldViewPos - IN.vPosWS.xyz;
 	half3 vReflN = lerp(half3(0,0,1), vNormal, ReflectionBumpScale);
@@ -155,7 +163,7 @@ pixout WaterReflPS(v2f_hs IN)
 	half3 cReflPrev = reflectionPrevTex.Sample(ssMaterialTrilinearClamp, prevTC.xy).rgb / PS_HDR_RANGE_ADAPT_MAX;
 	cReflPrev = isfinite( cReflPrev ) ? cReflPrev : 0;  // Filter out NANs that we still have sometimes, otherwise they get propagated and remain in the view
 
-	OUT.Color.rgb = (cReflCurr * 0.75 + cReflPrev * 0.25) * PS_HDR_RANGE_ADAPT_MAX;
+	OUT.Color.rgb = cReflCurr;//(cReflCurr * 0.75 + cReflPrev * 0.25) * PS_HDR_RANGE_ADAPT_MAX;
 
 	return OUT;
 }
