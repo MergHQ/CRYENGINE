@@ -2,7 +2,6 @@
 
 #pragma once
 
-#include "ATLUtils.h"
 #include "AudioInternalInterfaces.h"
 #include "Common/SharedAudioData.h"
 #include "Common.h"

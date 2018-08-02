@@ -169,9 +169,9 @@ void CATLAudioObject::ReportFinishedEvent(CATLEvent* const pEvent, bool const bS
 		m_maxRadius = std::max(pActiveEvent->GetTriggerRadius(), m_maxRadius);
 	}
 
-	ObjectTriggerStates::iterator iter(m_triggerStates.begin());
+	ObjectTriggerStates::iterator const iter(m_triggerStates.find(pEvent->m_audioTriggerInstanceId));
 
-	if (FindPlace(m_triggerStates, pEvent->m_audioTriggerInstanceId, iter))
+	if (iter != m_triggerStates.end())
 	{
 		switch (pEvent->m_state)
 		{
