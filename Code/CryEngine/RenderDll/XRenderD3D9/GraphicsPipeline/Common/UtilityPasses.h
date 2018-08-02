@@ -225,7 +225,7 @@ public:
 	static EPassId GetPassId() { return EPassId::ClearRegionPass; }
 
 protected:
-	bool PreparePrimitive(CRenderPrimitive& prim, int renderState, int stencilState, const ColorF& cClear, float cDepth, int stencilRef, const RECT& rect, const D3DViewPort& targetViewport);
+	bool PreparePrimitive(CRenderPrimitive& prim, int renderState, int stencilState, const ColorF& cClear, float cDepth, int stencilRef, const RECT& rect, const D3DViewPort& targetViewport, int numRTVs);
 
 	CPrimitiveRenderPass          m_clearPass;
 	std::vector<CRenderPrimitive> m_clearPrimitives;

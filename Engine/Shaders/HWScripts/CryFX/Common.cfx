@@ -18,39 +18,55 @@ float4 vClearDepth;
 
 struct pixout_clear
 {
-  float4 Color0  : SV_Target0;
-  float4 Color1  : SV_Target1;
-  float4 Color2  : SV_Target2;
-  float4 Color3  : SV_Target3;
+#if %_RT_SAMPLE0
+	float4 Color0  : SV_Target0;
+#if %_RT_SAMPLE1
+	float4 Color1  : SV_Target1;
+#if %_RT_SAMPLE2
+	float4 Color2  : SV_Target2;
+#if %_RT_SAMPLE3
+	float4 Color3  : SV_Target3;
+#endif
+#endif
+#endif
+#endif
 };
 
 float4 ClearVS(float3 inPosition  : POSITION) : SV_Position
 {
-  float2 clipPos = inPosition.xy * vClearRect.xy + vClearRect.zw;
-  return float4(clipPos, vClearDepth.x, 1.0);
+	float2 clipPos = inPosition.xy * vClearRect.xy + vClearRect.zw;
+	return float4(clipPos, vClearDepth.x, 1.0);
 }
 
 pixout_clear ClearPS()
 {
-  pixout_clear OUT;
-  
-  OUT.Color0 = vClearColor;
-  OUT.Color1 = vClearColor;
-  OUT.Color2 = vClearColor;
-  OUT.Color3 = vClearColor;
-  
-  return OUT;
+	pixout_clear OUT;
+
+#if %_RT_SAMPLE0
+	OUT.Color0 = vClearColor;
+#if %_RT_SAMPLE1
+	OUT.Color1 = vClearColor;
+#if %_RT_SAMPLE2
+	OUT.Color2 = vClearColor;
+#if %_RT_SAMPLE3
+	OUT.Color3 = vClearColor;
+#endif
+#endif
+#endif
+#endif
+
+	return OUT;
 }
 
 //========================================================================
 
 technique Clear
 {
-  pass p0
-  {
-    VertexShader = ClearVS();
-    PixelShader  = ClearPS();
-  }
+	pass p0
+	{
+		VertexShader = ClearVS();
+		PixelShader  = ClearPS();
+	}
 }
 
 /////////////////////// eof ///
