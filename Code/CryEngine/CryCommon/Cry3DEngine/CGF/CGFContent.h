@@ -378,10 +378,10 @@ struct CSkinningInfo : public _reference_target_t
 // Fixed-size data stored for each vertex in a VCloth mesh.
 struct SVClothVertexAttributes
 {
-	// Improved long range attachments.
-	uint32 lraIdx;
-	uint32 lraNextParent;
-	f32    lraDist;
+	// Nearest Neighbor Distance Constraints
+	uint32 nndcIdx;
+	uint32 nndcNextParent;
+	f32    nndcDist;
 
 	AUTO_STRUCT_INFO;
 };
@@ -418,10 +418,10 @@ struct SVClothVertex
 	AUTO_STRUCT_INFO;
 };
 
-struct SVClothLraNotAttachedOrderedIdx
+struct SVClothNndcNotAttachedOrderedIdx
 {
-	int lraNotAttachedOrderedIdx;
-	SVClothLraNotAttachedOrderedIdx() : lraNotAttachedOrderedIdx(-1) {}
+	int nndcNotAttachedOrderedIdx;
+	SVClothNndcNotAttachedOrderedIdx() : nndcNotAttachedOrderedIdx(-1) {}
 
 	AUTO_STRUCT_INFO;
 };
@@ -450,11 +450,11 @@ struct SVClothBendTriangle
 
 struct SVClothInfoCGF
 {
-	DynArray<SVClothVertex>                   m_vertices;
-	DynArray<SVClothBendTrianglePair>         m_trianglePairs;
-	DynArray<SVClothBendTriangle>             m_triangles;
-	DynArray<SVClothLraNotAttachedOrderedIdx> m_lraNotAttachedOrderedIdx;
-	DynArray<SVClothLink>                     m_links[eVClothLink_COUNT];
+	DynArray<SVClothVertex>                    m_vertices;
+	DynArray<SVClothBendTrianglePair>          m_trianglePairs;
+	DynArray<SVClothBendTriangle>              m_triangles;
+	DynArray<SVClothNndcNotAttachedOrderedIdx> m_nndcNotAttachedOrderedIdx;
+	DynArray<SVClothLink>                      m_links[eVClothLink_COUNT];
 };
 
 //! This structure represents Material inside CGF.
