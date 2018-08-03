@@ -882,10 +882,10 @@ void CD3D9Renderer::ShutDown(bool bReInit)
 #ifdef USE_PIX_DURANGO
 	SAFE_RELEASE(m_pPixPerf);
 #endif
+
 	//////////////////////////////////////////////////////////////////////////
 	// Clear globals.
 	//////////////////////////////////////////////////////////////////////////
-
 
 	// Release Display Contexts, freeing Swap Channels.
 	m_pBaseDisplayContext = nullptr;
@@ -898,12 +898,15 @@ void CD3D9Renderer::ShutDown(bool bReInit)
 
 	SAFE_DELETE(m_pRT);
 
-#if CRY_RENDERER_OPENGL
-	#if !DXGL_FULL_EMULATION && !OGL_SINGLE_CONTEXT
+#if CRY_RENDERER_OPENGL && !DXGL_FULL_EMULATION && !OGL_SINGLE_CONTEXT
 	if (CV_r_multithreaded)
 		DXGLReleaseContext(GetDevice().GetRealDevice());
-	#endif
+#endif
+
+#if CRY_PLATFORM_IOS || CRY_PLATFORM_ANDROID || CRY_PLATFORM_WINDOWS || CRY_PLATFORM_APPLE || CRY_PLATFORM_LINUX
+#if defined(SUPPORT_DEVICE_INFO)
 	m_devInfo.Release();
+#endif
 #endif
 
 	if (!bReInit)
