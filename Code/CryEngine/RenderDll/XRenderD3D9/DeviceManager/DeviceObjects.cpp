@@ -588,10 +588,13 @@ void CDeviceObjectFactory::ReleaseResources()
 
 void CDeviceObjectFactory::ReloadPipelineStates()
 {
+	// Throw out expired PSOs before trying to recompile them (safes some time)
+	TrimPipelineStates();
+
 	for (auto it = m_GraphicsPsoCache.begin(), itEnd = m_GraphicsPsoCache.end(); it != itEnd; )
 	{
 		auto itCurrentPSO = it++;
-		const CDeviceGraphicsPSO::EInitResult result = itCurrentPSO->second->Init(itCurrentPSO->first);
+		const CDeviceGraphicsPSO::EInitResult result = itCurrentPSO->second.lock()->Init(itCurrentPSO->first);
 
 		if (result != CDeviceGraphicsPSO::EInitResult::Success)
 		{
@@ -609,10 +612,13 @@ void CDeviceObjectFactory::ReloadPipelineStates()
 		}
 	}
 
-	for (auto& it : m_ComputePsoCache)
+	for (auto it = m_ComputePsoCache.begin(), itEnd = m_ComputePsoCache.end(); it != itEnd; )
 	{
-		if (!it.second->Init(it.first))
-			m_InvalidComputePsos.emplace(it.first, it.second);
+		auto itCurrentPSO = it++;
+		const bool success = itCurrentPSO->second.lock()->Init(itCurrentPSO->first);
+
+		if (!success)
+			m_InvalidComputePsos.emplace(itCurrentPSO->first, itCurrentPSO->second);
 	}
 }
 
@@ -658,8 +664,8 @@ void CDeviceObjectFactory::UpdatePipelineStates()
 
 void CDeviceObjectFactory::TrimPipelineStates()
 {
-	EraseUnusedEntriesFromCache(m_GraphicsPsoCache);
-	EraseUnusedEntriesFromCache(m_ComputePsoCache);
+	EraseExpiredEntriesFromCache(m_GraphicsPsoCache);
+	EraseExpiredEntriesFromCache(m_ComputePsoCache);
 
 	EraseExpiredEntriesFromCache(m_InvalidGraphicsPsos);
 	EraseExpiredEntriesFromCache(m_InvalidComputePsos);
