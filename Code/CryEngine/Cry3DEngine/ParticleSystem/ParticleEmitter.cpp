@@ -146,7 +146,9 @@ void CParticleEmitter::CheckUpdated()
 		m_attributeInstance.Reset(m_pEffectOriginal->GetAttributeTable());
 		UpdateRuntimes();
 	}
-	m_alive = m_componentRuntimes.size() && m_time <= m_timeDeath;
+	if (m_time > m_timeDeath)
+		if (m_timeUpdated < m_time)
+			m_alive = false;
 }
 
 void CParticleEmitter::Update()
@@ -478,6 +480,8 @@ bool CParticleEmitter::IsActive() const
 
 void CParticleEmitter::SetLocation(const QuatTS& loc)
 {
+	CRY_PFX2_PROFILE_DETAIL;
+
 	QuatTS prevLoc = m_location;
 	m_location = loc;
 	if (m_spawnParams.bPlaced && m_pEffect->IsSubstitutedPfx1())
