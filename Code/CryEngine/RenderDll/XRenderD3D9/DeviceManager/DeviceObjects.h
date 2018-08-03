@@ -113,23 +113,8 @@ public:
 		memset(&m_singleton, 0xdf, sizeof(m_singleton));
 	}
 
-	void OnEndFrame()
-	{
-#if (CRY_RENDERER_DIRECT3D >= 110) && (CRY_RENDERER_DIRECT3D < 120)
-		m_pDX11Scheduler->EndOfFrame(false);
-
-	#if CRY_PLATFORM_DURANGO
-		m_texturePool.RT_Tick();
-	#endif
-#endif
-	}
-
-	void OnBeginFrame()
-	{
-#if CRY_RENDERER_VULKAN
-		UpdateDeferredUploads();
-#endif
-	}
+	void OnEndFrame();
+	void OnBeginFrame();
 
 	UINT64 QueryFormatSupport(D3DFormat Format);
 
@@ -421,10 +406,10 @@ private:
 
 	CDeviceCommandListUPtr m_pCoreCommandList;
 
-	std::unordered_map<CDeviceGraphicsPSODesc, CDeviceGraphicsPSOPtr>  m_GraphicsPsoCache;
+	std::unordered_map<CDeviceGraphicsPSODesc, CDeviceGraphicsPSOWPtr> m_GraphicsPsoCache;
 	std::unordered_map<CDeviceGraphicsPSODesc, CDeviceGraphicsPSOWPtr> m_InvalidGraphicsPsos;
 
-	std::unordered_map<CDeviceComputePSODesc, CDeviceComputePSOPtr>    m_ComputePsoCache;
+	std::unordered_map<CDeviceComputePSODesc, CDeviceComputePSOWPtr>   m_ComputePsoCache;
 	std::unordered_map<CDeviceComputePSODesc, CDeviceComputePSOWPtr>   m_InvalidComputePsos;
 
 	////////////////////////////////////////////////////////////////////////////

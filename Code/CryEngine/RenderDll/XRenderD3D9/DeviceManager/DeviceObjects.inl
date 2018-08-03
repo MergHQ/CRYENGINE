@@ -211,3 +211,25 @@ inline void EraseExpiredEntriesFromCache(TCache& cache)
 			std::next(it);
 	}
 }
+
+inline void CDeviceObjectFactory::OnEndFrame()
+{
+	// Garbage collect native API resources and objects
+#if (CRY_RENDERER_DIRECT3D >= 110) && (CRY_RENDERER_DIRECT3D < 120)
+	m_pDX11Scheduler->EndOfFrame(false);
+
+#if CRY_PLATFORM_DURANGO
+	m_texturePool.RT_Tick();
+#endif
+#endif
+
+	// Garbage collect device layer resources and objects
+	TrimPipelineStates();
+}
+
+inline void CDeviceObjectFactory::OnBeginFrame()
+{
+#if CRY_RENDERER_VULKAN
+	UpdateDeferredUploads();
+#endif
+}
