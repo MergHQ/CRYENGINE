@@ -1390,11 +1390,7 @@ WNDPROC g_prevWndProc;
 LRESULT CALLBACK BreakWndProc(HWND hWnd, UINT msg, WPARAM wParam, LPARAM lParam)
 {
 	if (msg == WM_HOTKEY)
-	#if CRY_PLATFORM_WINDOWS && CRY_PLATFORM_64BIT
-		CryDebugBreak();
-	#else
-		__asm int 3;
-	#endif
+		__debugbreak();
 	return CallWindowProc(g_prevWndProc, hWnd, msg, wParam, lParam);
 }
 
@@ -1438,7 +1434,7 @@ class BreakListener : public IInputEventListener
 	bool OnInputEvent(const SInputEvent& ie)
 	{
 		if (ie.deviceType == eIDT_Keyboard && ie.keyId == eKI_Pause && ie.state & (eIS_Pressed | eIS_Down))
-			CryDebugBreak();
+			__debugbreak();
 		return true;
 	}
 } g_BreakListener;
