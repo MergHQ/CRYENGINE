@@ -184,7 +184,8 @@ void SRenderThread::Init()
 	gRenDev->m_nProcessThreadID = threadID(m_nCurThreadProcess);
 	gRenDev->m_nFillThreadID = threadID(m_nCurThreadFill);
 
-	for (uint32 i = 0; i < RT_COMMAND_BUF_COUNT; ++i)
+	AUTO_LOCK_T(CryCriticalSectionNonRecursive, m_CommandsLock);
+    for (uint32 i = 0; i < RT_COMMAND_BUF_COUNT; ++i)
 	{
 		m_Commands[i].Free();
 		m_Commands[i].Create(300 * 1024); // 300 to stop growing in MP levels
@@ -525,6 +526,8 @@ void SRenderThread::ProcessCommands()
 	m_bSuccessful = true;
 	m_hResult = S_OK;
 	byte* pP;
+
+	AUTO_LOCK_T(CryCriticalSectionNonRecursive, m_CommandsLock);
 	while (n < (int)m_Commands[threadId].Num())
 	{
 		pP = &m_Commands[threadId][n];
@@ -914,7 +917,11 @@ void SRenderThread::SyncMainWithRender(bool bFrameToFrame)
 	m_nCurThreadFill    = (m_nCurThreadProcess + 1) & 1;
 	gRenDev->m_nProcessThreadID = threadID(m_nCurThreadProcess);
 	gRenDev->m_nFillThreadID    = threadID(m_nCurThreadFill);
-	m_Commands[m_nCurThreadFill].SetUse(0);
+
+	{
+		AUTO_LOCK_T(CryCriticalSectionNonRecursive, m_CommandsLock);
+		m_Commands[m_nCurThreadFill].SetUse(0);
+	}
 
 	// Open a new timing-scope after all times have been registered (see RT_EndMeasurement)
 	if (bFrameToFrame)
