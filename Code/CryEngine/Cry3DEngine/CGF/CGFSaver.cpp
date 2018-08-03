@@ -1632,7 +1632,7 @@ int CSaverCGF::SaveVCloth(bool bSwapEndian)
 	saver.WriteChunkHeader();
 	saver.WriteChunkVertices();
 	saver.WriteTriangleData();
-	saver.WriteLraNotAttachedOrdered();
+	saver.WriteNndcNotAttachedOrdered();
 	saver.WriteLinks();
 
 	return m_pChunkFile->AddChunk(

@@ -1273,7 +1273,7 @@ struct VCLOTH_CHUNK
 	uint32 vertexCount;
 	uint32 bendTrianglePairCount;
 	uint32 bendTriangleCount;
-	uint32 lraNotAttachedOrderedIdxCount;
+	uint32 nndcNotAttachedOrderedIdxCount;
 	uint32 linkCount[3];
 
 	AUTO_STRUCT_INFO;
@@ -1283,7 +1283,7 @@ struct VCLOTH_CHUNK
 	// SVClothChunkVertex      vertices[vertexCount];
 	// SVClothBendTriangle     triangles[bendTriangleCount];
 	// SVClothBendTrianglePair trianglePairs[bendTrianglePairCount];
-	// SVClothLraNotAttachedOrderedIdx m_lraNotAttachedOrderedIdx[lraNotAttachedOrderedIdxCount];
+	// SVClothNndcNotAttachedOrderedIdx m_nndcNotAttachedOrderedIdx[nndcNotAttachedOrderedIdxCount];
 	// SVClothLink             m_links [linkCount];
 
 };

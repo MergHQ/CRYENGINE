@@ -238,12 +238,12 @@ struct SParticleHot
 	bool    collisionExist;  //!< set to true, if a collision occurs
 	Vector4 collisionNormal; //!< stores collision normal for damping in tangential direction
 
-	// long range attachments
-	int   lraIdx;        //!< index of closest constraint / attached vtx
-	float lraDist;       //!< distance to closest constraint
-	int   lraNextParent; //!< index of next parent on path to closest constraint
+	// Nearest Neighbor Distance Constraints
+	int   nndcIdx;        //!< index of closest constraint / attached vtx
+	float nndcDist;       //!< distance to closest constraint
+	int   nndcNextParent; //!< index of next parent on path to closest constraint
 
-	SParticleHot() : pos(ZERO), alpha(0), factorAttached(0), timer(0), collisionExist(false), collisionNormal(ZERO), lraIdx(-1), lraDist(0), lraNextParent(-1)
+	SParticleHot() : pos(ZERO), alpha(0), factorAttached(0), timer(0), collisionExist(false), collisionNormal(ZERO), nndcIdx(-1), nndcDist(0), nndcNextParent(-1)
 	{
 	}
 };
@@ -293,7 +293,6 @@ public:
 		, m_isFramerateBelowFpsThresh(false)
 		, m_fadeInOutPhysicsDirection(0)
 		, m_fadeTimeActual(0) // physical fade time
-		, m_bUseDijkstraForLRA(true)
 		, m_bIsInitialized(false)
 		, m_bIsGpuSkinning(false)
 		, m_debugCollidableSubsteppingId(0)
@@ -388,7 +387,7 @@ private:
 	 * Determine actual, lerped quaternions for colliders
 	 */
 	void UpdateCollidablesLerp(f32 t01 = 1.0f);
-	void LongRangeAttachmentsSolve();
+	void NearestNeighborDistanceConstraintsSolve();
 
 	/**
 	 * Check distance to camera.
@@ -428,7 +427,6 @@ private:
 private:
 
 	bool                      m_bIsInitialized;
-	bool                      m_bUseDijkstraForLRA; //!< defaults to true; if set to false euklidean distances are used, which does not work very well, since in strange poses particles are pulled through the body (e.g. in case of bending down)
 	ColorB                    m_color;
 
 	SVClothParams             m_config;
@@ -465,8 +463,8 @@ private:
 
 	bool					  m_bIsGpuSkinning;            //!< true, if simulation is not needed (e.g., due to distance threshold), thus, the cloth can be skinned in total
 
-	// Long Range Attachments
-	std::vector<int> m_lraNotAttachedOrderedIdx; //!< not attached particles: ordered by distance to constraints
+	// Nearest Neighbor Distance Constraints
+	std::vector<int> m_nndcNotAttachedOrderedIdx; //!< not attached particles: ordered by distance to constraints
 
 	// Bending by triangle angles, not springs
 	std::vector<SBendTrianglePair> m_listBendTrianglePairs; //!< triangle pairs sharing an edge

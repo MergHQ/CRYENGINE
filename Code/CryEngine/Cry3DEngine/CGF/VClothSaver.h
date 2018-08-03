@@ -18,7 +18,7 @@ public:
 	void WriteChunkHeader();
 	void WriteChunkVertices();
 	void WriteTriangleData();
-	void WriteLraNotAttachedOrdered();
+	void WriteNndcNotAttachedOrdered();
 	void WriteLinks();
 
 private:

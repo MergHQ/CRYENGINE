@@ -315,11 +315,11 @@ uint32 CAttachmentManager::ParseXMLAttachmentList(CharacterAttachment* parrAttac
 			nodeAttach->getAttr("springDampingPerSubstep", attach.clothParams.springDampingPerSubstep);
 			nodeAttach->getAttr("collisionDampingTangential", attach.clothParams.collisionDampingTangential);
 
-			// Long Range Attachments
-			nodeAttach->getAttr("longRangeAttachments", attach.clothParams.longRangeAttachments);
-			nodeAttach->getAttr("longRangeAttachmentsAllowedExtension", attach.clothParams.longRangeAttachmentsAllowedExtension);
-			nodeAttach->getAttr("longRangeAttachmentsMaximumShiftFactor", attach.clothParams.longRangeAttachmentsMaximumShiftFactor);
-			nodeAttach->getAttr("longRangeAttachmentsShiftCollisionFactor", attach.clothParams.longRangeAttachmentsShiftCollisionFactor);
+			// Nearest Neighbor Distance Constraints
+			nodeAttach->getAttr("nearestNeighborDistanceConstraints", attach.clothParams.useNearestNeighborDistanceConstraints);
+			nodeAttach->getAttr("nndcAllowedExtension", attach.clothParams.nndcAllowedExtension);
+			nodeAttach->getAttr("nndcMaximumShiftFactor", attach.clothParams.nndcMaximumShiftFactor);
+			nodeAttach->getAttr("nndcShiftCollisionFactor", attach.clothParams.nndcShiftCollisionFactor);
 
 			// Test Reset Damping
 			nodeAttach->getAttr("resetDampingFactor", attach.clothParams.resetDampingFactor);
@@ -343,7 +343,7 @@ uint32 CAttachmentManager::ParseXMLAttachmentList(CharacterAttachment* parrAttac
 			attach.clothParams.material = nodeAttach->getAttr("Material");
 			nodeAttach->getAttr("debugDrawVerticesRadius", attach.clothParams.debugDrawVerticesRadius);
 			nodeAttach->getAttr("debugDrawCloth", attach.clothParams.debugDrawCloth);
-			nodeAttach->getAttr("debugDrawLRA", attach.clothParams.debugDrawLRA);
+			nodeAttach->getAttr("debugDrawNNDC", attach.clothParams.debugDrawNndc);
 			nodeAttach->getAttr("debugPrint", attach.clothParams.debugPrint);
 			// overwrite debug settings
 			attach.clothParams.debugPrint = 0;
