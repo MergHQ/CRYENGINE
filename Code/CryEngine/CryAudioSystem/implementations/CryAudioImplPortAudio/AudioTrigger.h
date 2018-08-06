@@ -23,18 +23,24 @@ class CTrigger final : public ITrigger
 public:
 
 	explicit CTrigger(
-	  uint32 const pathId_,
-	  int const numLoops_,
-	  double const sampleRate_,
-	  EEventType const eventType_,
-	  CryFixedStringT<MaxFilePathLength> const& filePath_,
-	  PaStreamParameters const& streamParameters_)
+		uint32 const pathId_,
+		int const numLoops_,
+		double const sampleRate_,
+		EEventType const eventType_,
+		CryFixedStringT<MaxFilePathLength> const& filePath_,
+		PaStreamParameters const& streamParameters_,
+		CryFixedStringT<MaxFilePathLength> const& folder,
+		CryFixedStringT<MaxFilePathLength> const& name,
+		bool const isLocalized)
 		: pathId(pathId_)
 		, numLoops(numLoops_)
 		, sampleRate(sampleRate_)
 		, eventType(eventType_)
 		, filePath(filePath_)
 		, streamParameters(streamParameters_)
+		, m_folder(folder)
+		, m_name(name)
+		, m_isLocalized(isLocalized)
 	{}
 
 	virtual ~CTrigger() override = default;
@@ -49,12 +55,15 @@ public:
 	virtual ERequestStatus UnloadAsync(IEvent* const pIEvent) const override { return ERequestStatus::Success; }
 	// ~CryAudio::Impl::ITrigger
 
-	uint32 const                             pathId;
-	int const                                numLoops;
-	double const                             sampleRate;
-	EEventType const                         eventType;
-	CryFixedStringT<MaxFilePathLength> const filePath;
-	PaStreamParameters const                 streamParameters;
+	uint32 const                                pathId;
+	int const                                   numLoops;
+	double                                      sampleRate;
+	EEventType const                            eventType;
+	CryFixedStringT<MaxFilePathLength>          filePath;
+	PaStreamParameters                          streamParameters;
+	CryFixedStringT<MaxFilePathLength> const    m_folder;
+	CryFixedStringT<MaxControlNameLength> const m_name;
+	bool const                                  m_isLocalized;
 };
 } // namespace PortAudio
 } // namespace Impl

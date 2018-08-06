@@ -14,9 +14,9 @@ class CFilterProxyModel final : public QAttributeFilterProxyModel
 {
 public:
 
-	explicit CFilterProxyModel(QObject* const pParent);
-
 	CFilterProxyModel() = delete;
+
+	explicit CFilterProxyModel(QObject* const pParent);
 
 private:
 

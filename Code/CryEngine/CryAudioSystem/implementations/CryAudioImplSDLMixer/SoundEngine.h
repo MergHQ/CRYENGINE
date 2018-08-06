@@ -10,6 +10,8 @@ namespace Impl
 {
 namespace SDL_mixer
 {
+static string s_localizedAssetsPath = "";
+
 namespace SoundEngine
 {
 using FnEventCallback = void (*)(CATLEvent&);
@@ -29,7 +31,7 @@ void UnMute();
 void Stop();
 
 // Load / Unload samples
-const SampleId LoadSample(const string& sampleFilePath, bool bOnlyMetadata);
+const SampleId LoadSample(string const& sampleFilePath, bool const onlyMetadata, bool const isLoacalized);
 const SampleId LoadSampleFromMemory(void* pMemory, const size_t size, const string& samplePath, const SampleId id = 0);
 void           UnloadSample(const SampleId id);
 

@@ -254,6 +254,15 @@ void CSystem::OnSystemEvent(ESystemEvent event, UINT_PTR wparam, UINT_PTR lparam
 
 			break;
 		}
+	case ESYSTEM_EVENT_AUDIO_LANGUAGE_CHANGED:
+		{
+			OnLanguageChanged();
+			break;
+		}
+	default:
+		{
+			break;
+		}
 	}
 }
 

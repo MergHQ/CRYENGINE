@@ -18,7 +18,7 @@ namespace Impl
 {
 namespace SDL_mixer
 {
-static string const s_projectPath = string(AUDIO_SYSTEM_DATA_ROOT) + "/" + s_szImplFolderName + "/" + s_szAssetsFolderName + "/";
+static string const s_regularAssetsPath = string(AUDIO_SYSTEM_DATA_ROOT) + "/" + s_szImplFolderName + "/" + s_szAssetsFolderName + "/";
 static constexpr int s_supportedFormats = MIX_INIT_OGG | MIX_INIT_MP3;
 static constexpr int s_numMixChannels = 512;
 static constexpr SampleId s_invalidSampleId = 0;
@@ -26,7 +26,6 @@ static constexpr int s_sampleRate = 48000;
 static constexpr int s_bufferSize = 4096;
 
 // Samples
-string g_sampleDataRootDir;
 using SampleDataMap = std::unordered_map<SampleId, Mix_Chunk*>;
 SampleDataMap g_sampleData;
 
@@ -202,42 +201,54 @@ void ChannelFinishedPlaying(int nChannel)
 }
 
 //////////////////////////////////////////////////////////////////////////
-void LoadMetadata(const string& path)
+void LoadMetadata(string const& path, bool const isLocalized)
 {
+	string const rootDir = isLocalized ? s_localizedAssetsPath : s_regularAssetsPath;
+
 	_finddata_t fd;
 	ICryPak* pCryPak = gEnv->pCryPak;
-	intptr_t handle = pCryPak->FindFirst(g_sampleDataRootDir + path + "*.*", &fd);
+	intptr_t handle = pCryPak->FindFirst(rootDir + path + "*.*", &fd);
+
 	if (handle != -1)
 	{
 		do
 		{
-			const string name = fd.name;
+			string const name = fd.name;
+
 			if (name != "." && name != ".." && !name.empty())
 			{
 				if (fd.attrib & _A_SUBDIR)
 				{
-					LoadMetadata(path + name + "/");
+					LoadMetadata(path + name + "/", isLocalized);
 				}
 				else
 				{
-					if (name.find(".wav") != string::npos ||
-					    name.find(".ogg") != string::npos ||
-					    name.find(".mp3") != string::npos)
+					string::size_type const posExtension = name.rfind('.');
+
+					if (posExtension != string::npos)
 					{
-						if (path.empty())
+						string const fileExtension = name.data() + posExtension;
+
+						if ((_stricmp(fileExtension, ".mp3") == 0) ||
+						    (_stricmp(fileExtension, ".ogg") == 0) ||
+						    (_stricmp(fileExtension, ".wav") == 0))
 						{
-							g_samplePaths[GetIDFromString(name)] = g_sampleDataRootDir + name;
-						}
-						else
-						{
-							string pathName = path + name;
-							g_samplePaths[GetIDFromString(pathName)] = g_sampleDataRootDir + pathName;
+							if (path.empty())
+							{
+								g_samplePaths[GetIDFromString(name)] = rootDir + name;
+							}
+							else
+							{
+								string const pathName = path + name;
+								g_samplePaths[GetIDFromString(pathName)] = rootDir + pathName;
+							}
 						}
 					}
 				}
 			}
 		}
 		while (pCryPak->FindNext(handle, &fd) >= 0);
+
 		pCryPak->FindClose(handle);
 	}
 }
@@ -275,8 +286,8 @@ bool SoundEngine::Init()
 
 	Mix_ChannelFinished(ChannelFinishedPlaying);
 
-	g_sampleDataRootDir = PathUtil::GetPathWithoutFilename(s_projectPath);
-	LoadMetadata("");
+	LoadMetadata("", false);
+	LoadMetadata("", true);
 	g_bListenerPosChanged = false;
 
 	// need to reinit as the global variable might have been initialized with wrong values
@@ -293,11 +304,14 @@ void FreeAllSampleData()
 	Mix_HaltChannel(-1);
 	SampleDataMap::const_iterator it = g_sampleData.begin();
 	SampleDataMap::const_iterator end = g_sampleData.end();
+
 	for (; it != end; ++it)
 	{
 		Mix_FreeChunk(it->second);
 	}
+
 	g_sampleData.clear();
+	g_samplePaths.clear();
 }
 
 //////////////////////////////////////////////////////////////////////////
@@ -315,7 +329,8 @@ void SoundEngine::Release()
 void SoundEngine::Refresh()
 {
 	FreeAllSampleData();
-	LoadMetadata(s_projectPath);
+	LoadMetadata("", false);
+	LoadMetadata("", true);
 }
 
 //////////////////////////////////////////////////////////////////////////
@@ -393,14 +408,15 @@ bool LoadSampleImpl(const SampleId id, const string& samplePath)
 }
 
 //////////////////////////////////////////////////////////////////////////
-const SampleId SoundEngine::LoadSample(const string& sampleFilePath, bool bOnlyMetadata)
+const SampleId SoundEngine::LoadSample(string const& sampleFilePath, bool const onlyMetadata, bool const isLoacalized)
 {
 	const SampleId id = GetIDFromString(sampleFilePath);
 	if (stl::find_in_map(g_sampleData, id, nullptr) == nullptr)
 	{
-		if (bOnlyMetadata)
+		if (onlyMetadata)
 		{
-			g_samplePaths[id] = g_sampleDataRootDir + sampleFilePath;
+			string const assetPath = isLoacalized ? s_localizedAssetsPath : s_regularAssetsPath;
+			g_samplePaths[id] = assetPath + sampleFilePath;
 		}
 		else if (!LoadSampleImpl(id, sampleFilePath))
 		{

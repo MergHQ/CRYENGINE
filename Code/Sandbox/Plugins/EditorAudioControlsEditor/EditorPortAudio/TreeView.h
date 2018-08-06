@@ -15,9 +15,9 @@ class CTreeView final : public QAdvancedTreeView
 {
 public:
 
-	explicit CTreeView(QWidget* const pParent, QAdvancedTreeView::BehaviorFlags const flags = QAdvancedTreeView::BehaviorFlags(UseItemModelAttribute));
-
 	CTreeView() = delete;
+
+	explicit CTreeView(QWidget* const pParent, QAdvancedTreeView::BehaviorFlags const flags = QAdvancedTreeView::BehaviorFlags(UseItemModelAttribute));
 
 	void ExpandSelection();
 	void CollapseSelection();

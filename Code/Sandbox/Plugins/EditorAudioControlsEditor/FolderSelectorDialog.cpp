@@ -29,6 +29,7 @@ CFolderSelectorDialog::CFolderSelectorDialog(QString const& assetFolderPath, QSt
 	, m_pSearchBox(new QSearchBox(this))
 	, m_assetFolderPath(assetFolderPath)
 	, m_targetPath(QDir::cleanPath(targetPath))
+	, m_targetFolder("")
 {
 	setAttribute(Qt::WA_DeleteOnClose);
 	setWindowTitle("Select Target Folder");
@@ -91,7 +92,7 @@ CFolderSelectorDialog::CFolderSelectorDialog(QString const& assetFolderPath, QSt
 	m_pSearchBox->signalOnFiltered.Connect([&]()
 		{
 			m_pTreeView->scrollTo(m_pTreeView->currentIndex());
-	  }, reinterpret_cast<uintptr_t>(this));
+		}, reinterpret_cast<uintptr_t>(this));
 }
 
 //////////////////////////////////////////////////////////////////////////
@@ -119,8 +120,6 @@ void CFolderSelectorDialog::OpenFolderDialog()
 //////////////////////////////////////////////////////////////////////////
 void CFolderSelectorDialog::OnCreateFolder(QString const& folderName)
 {
-	// TODO: Add dialog to set folder name. Only allow valid characters.
-
 	QString const targetFolderPath = m_targetPath + "/" + folderName;
 	QDir targetFolder(targetFolderPath);
 
@@ -140,6 +139,16 @@ void CFolderSelectorDialog::OnSelectionChanged(QModelIndex const& index)
 {
 	QModelIndex const currentIndex = m_pFilterProxyModel->mapToSource(index);
 	m_targetPath = m_pFileSystemModel->filePath(currentIndex);
+
+	if (m_targetPath.compare(m_assetFolderPath, Qt::CaseInsensitive) != 0)
+	{
+		int const length = m_targetPath.length() - m_assetFolderPath.length() - 1;
+		m_targetFolder = m_targetPath.right(length);
+	}
+	else
+	{
+		m_targetFolder = "";
+	}
 }
 
 //////////////////////////////////////////////////////////////////////////
@@ -152,7 +161,7 @@ void CFolderSelectorDialog::OnItemDoubleClicked(QModelIndex const& index)
 //////////////////////////////////////////////////////////////////////////
 void CFolderSelectorDialog::OnAccept()
 {
-	SignalSetTargetPath(m_targetPath + "/");
+	SignalSetTargetPath(m_targetFolder);
 	accept();
 }
 } // namespace ACE

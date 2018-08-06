@@ -12,6 +12,7 @@ namespace Impl
 namespace PortAudio
 {
 class CObject;
+class CTrigger;
 
 class CImpl final : public IImpl
 {
@@ -70,8 +71,12 @@ public:
 
 private:
 
-	std::vector<CObject*>              m_constructedObjects;
+	void UpdateLocalizedTriggers();
 
+	std::vector<CObject*>              m_constructedObjects;
+	std::vector<CTrigger*>             m_triggers;
+
+	string                             m_language;
 	CryFixedStringT<MaxFilePathLength> m_regularSoundBankFolder;
 	CryFixedStringT<MaxFilePathLength> m_localizedSoundBankFolder;
 

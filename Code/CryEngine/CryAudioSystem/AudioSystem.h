@@ -84,7 +84,6 @@ public:
 	virtual void        GetTriggerData(ControlId const triggerId, STriggerData& triggerData) override;
 	virtual void        OnLoadLevel(char const* const szLevelName) override;
 	virtual void        OnUnloadLevel() override;
-	virtual void        OnLanguageChanged() override;
 	virtual void        GetImplInfo(SImplInfo& implInfo) override;
 	virtual void        Log(ELogType const type, char const* const szFormat, ...) override;
 	// ~CryAudio::IAudioSystem
@@ -98,7 +97,6 @@ public:
 	void ParseControlsData(char const* const szFolderPath, EDataScope const dataScope, SRequestUserData const& userData = SRequestUserData::GetEmptyObject());
 	void ParsePreloadsData(char const* const szFolderPath, EDataScope const dataScope, SRequestUserData const& userData = SRequestUserData::GetEmptyObject());
 	void RetriggerAudioControls(SRequestUserData const& userData = SRequestUserData::GetEmptyObject());
-
 	void InternalUpdate();
 
 private:
@@ -106,6 +104,7 @@ private:
 	using AudioRequests = ConcQueue<UnboundMPSC, CAudioRequest>;
 	using AudioRequestsSyncCallbacks = ConcQueue<UnboundSPSC, CAudioRequest>;
 
+	void        OnLanguageChanged();
 	void        ProcessRequests(AudioRequests& requestQueue);
 	static void OnCallback(SRequestInfo const* const pRequestInfo);
 

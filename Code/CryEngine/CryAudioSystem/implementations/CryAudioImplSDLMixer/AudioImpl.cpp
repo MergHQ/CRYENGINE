@@ -91,6 +91,11 @@ ERequestStatus CImpl::Init(uint32 const objectPoolSize, uint32 const eventPoolSi
 
 	m_pCVarFileExtension = REGISTER_STRING("s_SDLMixerStandaloneFileExtension", ".mp3", 0, "the expected file extension for standalone files, played via the sdl_mixer");
 
+	if (ICVar* const pCVar = gEnv->pConsole->GetCVar("g_languageAudio"))
+	{
+		SetLanguage(pCVar->GetString());
+	}
+
 	if (SoundEngine::Init())
 	{
 		SoundEngine::RegisterEventFinishedCallback(OnEventFinished);
@@ -317,7 +322,10 @@ ITrigger const* CImpl::ConstructTrigger(XmlNodeRef const pRootNode)
 		char const* const szPath = pRootNode->getAttr(s_szPathAttribute);
 		string const fullFilePath = GetFullFilePath(szFileName, szPath);
 
-		SampleId const sampleId = SoundEngine::LoadSample(fullFilePath, true);
+		char const* const szLocalized = pRootNode->getAttr(s_szLocalizedAttribute);
+		bool const isLocalized = (szLocalized != nullptr) && (_stricmp(szLocalized, s_szTrueValue) == 0);
+
+		SampleId const sampleId = SoundEngine::LoadSample(fullFilePath, true, isLocalized);
 		EEventType type = EEventType::Start;
 
 		if (_stricmp(pRootNode->getAttr(s_szTypeAttribute), s_szStopValue) == 0)
@@ -413,7 +421,11 @@ IParameter const* CImpl::ConstructParameter(XmlNodeRef const pRootNode)
 		char const* const szFileName = pRootNode->getAttr(s_szNameAttribute);
 		char const* const szPath = pRootNode->getAttr(s_szPathAttribute);
 		string const fullFilePath = GetFullFilePath(szFileName, szPath);
-		SampleId const sampleId = SoundEngine::LoadSample(fullFilePath, true);
+
+		char const* const szLocalized = pRootNode->getAttr(s_szLocalizedAttribute);
+		bool const isLocalized = (szLocalized != nullptr) && (_stricmp(szLocalized, s_szTrueValue) == 0);
+
+		SampleId const sampleId = SoundEngine::LoadSample(fullFilePath, true, isLocalized);
 
 		float multiplier = s_defaultParamMultiplier;
 		float shift = s_defaultParamShift;
@@ -443,7 +455,11 @@ ISwitchState const* CImpl::ConstructSwitchState(XmlNodeRef const pRootNode)
 		char const* const szFileName = pRootNode->getAttr(s_szNameAttribute);
 		char const* const szPath = pRootNode->getAttr(s_szPathAttribute);
 		string const fullFilePath = GetFullFilePath(szFileName, szPath);
-		SampleId const sampleId = SoundEngine::LoadSample(fullFilePath, true);
+
+		char const* const szLocalized = pRootNode->getAttr(s_szLocalizedAttribute);
+		bool const isLocalized = (szLocalized != nullptr) && (_stricmp(szLocalized, s_szTrueValue) == 0);
+
+		SampleId const sampleId = SoundEngine::LoadSample(fullFilePath, true, isLocalized);
 
 		float value = s_defaultStateValue;
 		pRootNode->getAttr(s_szValueAttribute, value);
@@ -569,7 +585,27 @@ void CImpl::GamepadDisconnected(DeviceId const deviceUniqueID)
 ///////////////////////////////////////////////////////////////////////////
 void CImpl::SetLanguage(char const* const szLanguage)
 {
-	m_language = szLanguage;
+	if (szLanguage != nullptr)
+	{
+		bool const shouldReload = !m_language.IsEmpty() && (m_language.compareNoCase(szLanguage) != 0);
+
+		m_language = szLanguage;
+		s_localizedAssetsPath = PathUtil::GetLocalizationFolder().c_str();
+		s_localizedAssetsPath += "/";
+		s_localizedAssetsPath += m_language.c_str();
+		s_localizedAssetsPath += "/";
+		s_localizedAssetsPath += AUDIO_SYSTEM_DATA_ROOT;
+		s_localizedAssetsPath += "/";
+		s_localizedAssetsPath += s_szImplFolderName;
+		s_localizedAssetsPath += "/";
+		s_localizedAssetsPath += s_szAssetsFolderName;
+		s_localizedAssetsPath += "/";
+
+		if (shouldReload)
+		{
+			SoundEngine::Refresh();
+		}
+	}
 }
 
 ///////////////////////////////////////////////////////////////////////////

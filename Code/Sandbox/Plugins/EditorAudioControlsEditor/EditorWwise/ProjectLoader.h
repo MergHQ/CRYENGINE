@@ -16,7 +16,7 @@ class CProjectLoader final
 {
 public:
 
-	explicit CProjectLoader(string const& projectPath, string const& soundbanksPath, CItem& rootItem, ItemCache& itemCache);
+	explicit CProjectLoader(string const& projectPath, string const& soundbanksPath, string const& localizedBanksPath, CItem& rootItem, ItemCache& itemCache);
 
 	CProjectLoader() = delete;
 

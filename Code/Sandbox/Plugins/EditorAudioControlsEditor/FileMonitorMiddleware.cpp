@@ -27,7 +27,7 @@ void CFileMonitorMiddleware::Enable()
 		GetIEditor()->GetFileMonitor()->UnregisterListener(this);
 
 		m_monitorFolders.push_back(g_pIImpl->GetAssetsPath());
-		m_monitorFolders.push_back(PathUtil::GetLocalizationFolder().c_str());
+		m_monitorFolders.push_back(g_pIImpl->GetLocalizedAssetsPath());
 
 		if (g_pIImpl->SupportsProjects())
 		{

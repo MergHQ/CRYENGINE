@@ -16,12 +16,14 @@ class CStateConnection final : public CBaseConnection
 {
 public:
 
-	explicit CStateConnection(ControlId const id, float const value = CryAudio::Impl::SDL_mixer::s_defaultStateValue)
+	CStateConnection() = delete;
+
+	explicit CStateConnection(
+		ControlId const id,
+		float const value = CryAudio::Impl::SDL_mixer::s_defaultStateValue)
 		: CBaseConnection(id)
 		, m_value(value)
 	{}
-
-	CStateConnection() = delete;
 
 	// CBaseConnection
 	virtual void Serialize(Serialization::IArchive& ar) override;

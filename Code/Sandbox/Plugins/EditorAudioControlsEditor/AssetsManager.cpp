@@ -335,32 +335,21 @@ void CAssetsManager::OnAssetRenamed(CAsset* const pAsset)
 }
 
 //////////////////////////////////////////////////////////////////////////
-void CAssetsManager::UpdateFolderPaths()
+void CAssetsManager::UpdateConfigFolderPath()
 {
-	string const rootPath = AUDIO_SYSTEM_DATA_ROOT "/";
-
 	if (g_pIImpl != nullptr)
 	{
-		string const& implFolderPath = rootPath + g_pIImpl->GetFolderName() + "/";
-		m_configFolderPath = implFolderPath + CryAudio::s_szConfigFolderName + "/";
-		m_assetFolderPath = implFolderPath + CryAudio::s_szAssetsFolderName + "/";
+		m_configFolderPath = AUDIO_SYSTEM_DATA_ROOT "/" + g_pIImpl->GetFolderName() + "/" + CryAudio::s_szConfigFolderName + "/";
 	}
 	else
 	{
-		m_configFolderPath = rootPath;
-		m_assetFolderPath = rootPath;
+		m_configFolderPath = AUDIO_SYSTEM_DATA_ROOT "/";
 	}
 }
 //////////////////////////////////////////////////////////////////////////
 string const& CAssetsManager::GetConfigFolderPath() const
 {
 	return m_configFolderPath;
-}
-
-//////////////////////////////////////////////////////////////////////////
-string const& CAssetsManager::GetAssetFolderPath() const
-{
-	return m_assetFolderPath;
 }
 
 //////////////////////////////////////////////////////////////////////////

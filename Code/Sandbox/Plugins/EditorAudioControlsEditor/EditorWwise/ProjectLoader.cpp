@@ -8,7 +8,6 @@
 #include <CryAudioImplWwise/GlobalData.h>
 #include <CrySystem/File/CryFile.h>
 #include <CrySystem/ISystem.h>
-#include <CrySystem/ILocalizationManager.h>
 
 namespace ACE
 {
@@ -97,7 +96,7 @@ string BuildPath(IItem const* const pIItem)
 }
 
 //////////////////////////////////////////////////////////////////////////
-CProjectLoader::CProjectLoader(string const& projectPath, string const& soundbanksPath, CItem& rootItem, ItemCache& itemCache)
+CProjectLoader::CProjectLoader(string const& projectPath, string const& soundbanksPath, string const& localizedBanksPath, CItem& rootItem, ItemCache& itemCache)
 	: m_rootItem(rootItem)
 	, m_itemCache(itemCache)
 	, m_projectPath(projectPath)
@@ -122,17 +121,7 @@ CProjectLoader::CProjectLoader(string const& projectPath, string const& soundban
 	CItem* const pSoundBanks = CreateItem(g_soundBanksFolderName, EItemType::PhysicalFolder, m_rootItem, EPakStatus::None);
 	g_soundBanksFolderId = pSoundBanks->GetId();
 	LoadSoundBanks(soundbanksPath, false, *pSoundBanks);
-
-	char const* const szLanguage = gEnv->pSystem->GetLocalizationManager()->GetLanguage();
-	string const locaFolder =
-		PathUtil::GetLocalizationFolder() +
-		"/" +
-		szLanguage +
-		"/" AUDIO_SYSTEM_DATA_ROOT "/" +
-		CryAudio::Impl::Wwise::s_szImplFolderName +
-		"/" +
-		CryAudio::s_szAssetsFolderName;
-	LoadSoundBanks(locaFolder, true, *pSoundBanks);
+	LoadSoundBanks(localizedBanksPath, true, *pSoundBanks);
 
 	if (pSoundBanks->GetNumChildren() == 0)
 	{

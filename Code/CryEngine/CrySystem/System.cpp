@@ -39,7 +39,7 @@
 #include <CrySystem/ICodeCheckpointMgr.h>
 #include <CrySystem/Profilers/IStatoscope.h>
 #ifdef CRY_TESTING
-#include "TestSystem.h"
+	#include "TestSystem.h"
 #endif // CRY_TESTING
 #include "VisRegTest.h"
 #include <CryDynamicResponseSystem/IDynamicResponseSystem.h>
@@ -117,8 +117,8 @@ WATERMARKDATA(_m);
 #include "Interprocess/StatsAgent.h"
 
 #if CRY_PLATFORM_WINDOWS
-#include <timeapi.h>
-#include <algorithm>
+	#include <timeapi.h>
+	#include <algorithm>
 #endif
 
 // Define global cvars.
@@ -431,7 +431,7 @@ CSystem::CSystem(const SSystemInitParams& startupParams)
 	m_PlatformOSCreateFlags = 0;
 
 	m_bHasRenderedErrorMessage = false;
-	
+
 	m_pImeManager = nullptr;
 	RegisterWindowMessageHandler(this);
 
@@ -660,7 +660,7 @@ void CSystem::ShutDown()
 		m_env.pGameFramework->ShutDown();
 #if !defined(CRY_IS_MONOLITHIC_BUILD)
 		// This handle keeps gamedll loaded, it must be emptied on shutdown in order to properly clean up
-		m_gameLibrary.Set(nullptr); 
+		m_gameLibrary.Set(nullptr);
 #endif
 	}
 
@@ -898,7 +898,7 @@ void CSystem::Quit()
 	if (m_pTextModeConsole)
 		m_pTextModeConsole->OnShutdown();
 
-	if (m_env.pRenderer) 
+	if (m_env.pRenderer)
 	{
 		ICVar* pCVarGamma = m_env.pConsole->GetCVar("r_Gamma");
 		if (pCVarGamma)
@@ -1365,7 +1365,7 @@ void CSystem::SleepIfNeeded()
 		ITimer* pTimer = gEnv->pTimer;
 		static int64 sTimeLast = pTimer->GetAsyncTime().GetMicroSecondsAsInt64();
 		int64 currentTime = pTimer->GetAsyncTime().GetMicroSecondsAsInt64();
-		for (;; )
+		for (;;)
 		{
 			const int64 frameTime = currentTime - sTimeLast;
 			if (frameTime >= thresholdMs)
@@ -1576,7 +1576,7 @@ bool CSystem::DoFrame(const SDisplayContextKey& displayContextKey, CEnumFlags<ES
 	{
 		m_env.pGameFramework->PreSystemUpdate();
 	}
-	
+
 	if (!(updateFlags & ESYSUPDATE_EDITOR))
 	{
 		m_pPluginManager->UpdateBeforeSystem();
@@ -1592,7 +1592,7 @@ bool CSystem::DoFrame(const SDisplayContextKey& displayContextKey, CEnumFlags<ES
 	{
 		m_env.pNetwork->SyncWithGame(eNGS_SleepNetwork);
 	}
-	
+
 	RenderBegin(displayContextKey);
 
 	bool continueRunning = true;
@@ -1607,7 +1607,7 @@ bool CSystem::DoFrame(const SDisplayContextKey& displayContextKey, CEnumFlags<ES
 			pauseMode = 0;
 			updateFlags |= ESYSUPDATE_IGNORE_AI;
 		}
-		else if(m_env.pGameFramework != nullptr)
+		else if (m_env.pGameFramework != nullptr)
 		{
 			pauseMode = (m_env.pGameFramework->IsGamePaused() || !m_env.pGameFramework->IsGameStarted()) ? 1 : 0;
 		}
@@ -1844,12 +1844,12 @@ bool CSystem::Update(CEnumFlags<ESystemUpdateFlags> updateFlags, int nPauseMode)
 
 		// if aspect ratio changes or is different from default we need to update camera
 		const float fNewAspectRatio = gEnv->pRenderer->GetPixelAspectRatio();
-		const int   nNewWidth       = gEnv->pRenderer->GetOverlayWidth();
-		const int   nNewHeight      = gEnv->pRenderer->GetOverlayHeight();
+		const int nNewWidth = gEnv->pRenderer->GetOverlayWidth();
+		const int nNewHeight = gEnv->pRenderer->GetOverlayHeight();
 
 		if ((fNewAspectRatio != rCamera.GetPixelAspectRatio()) ||
-		    (nNewWidth       != rCamera.GetViewSurfaceX()) ||
-		    (nNewHeight      != rCamera.GetViewSurfaceZ()))
+		    (nNewWidth != rCamera.GetViewSurfaceX()) ||
+		    (nNewHeight != rCamera.GetViewSurfaceZ()))
 		{
 			rCamera.SetFrustum(
 				nNewWidth,
@@ -1985,8 +1985,8 @@ bool CSystem::Update(CEnumFlags<ESystemUpdateFlags> updateFlags, int nPauseMode)
 	if (m_env.pInput)
 	{
 		bool updateInput =
-		  !(updateFlags & ESYSUPDATE_EDITOR) ||
-		  (updateFlags & ESYSUPDATE_EDITOR_AI_PHYSICS);
+			!(updateFlags & ESYSUPDATE_EDITOR) ||
+			(updateFlags & ESYSUPDATE_EDITOR_AI_PHYSICS);
 		if (updateInput)
 		{
 			//////////////////////////////////////////////////////////////////////
@@ -2417,16 +2417,16 @@ bool CSystem::UpdateLoadtime()
 	   {
 	    //////////////////////////////////////////////////////////////////////
 	    //update input system
-	   #if !CRY_PLATFORM_WINDOWS
+	 #if !CRY_PLATFORM_WINDOWS
 	    m_env.pInput->Update(true);
-	   #else
+	 #else
 	    bool bFocus = (GetFocus()==m_hWnd) || m_bEditor;
 	    {
 	      WriteLock lock(g_lockInput);
 	      m_env.pInput->Update(bFocus);
 	      g_BreakListenerTask.m_nBreakIdle = 0;
 	    }
-	   #endif
+	 #endif
 	   }
 	 */
 
@@ -3247,10 +3247,7 @@ void CSystem::OnLanguageAudioCVarChanged(ICVar* const pLanguageAudio)
 			pSystem->OpenLanguageAudioPak(szNewLanguage);
 			pSystem->m_currentLanguageAudio = szNewLanguage;
 
-			if (gEnv->pAudioSystem != nullptr)
-			{
-				gEnv->pAudioSystem->OnLanguageChanged();
-			}
+			pSystem->GetISystemEventDispatcher()->OnSystemEvent(ESYSTEM_EVENT_AUDIO_LANGUAGE_CHANGED, 0, 0);
 		}
 	}
 }
@@ -3491,12 +3488,12 @@ enum class EMouseWheelOrigin
 	WindowSpaceClamped
 };
 
-#ifndef GET_X_LPARAM
-#define GET_X_LPARAM(lp) ((int)(short)LOWORD(lp))
-#endif
-#ifndef GET_Y_LPARAM
-#define GET_Y_LPARAM(lp) ((int)(short)HIWORD(lp))
-#endif
+	#ifndef GET_X_LPARAM
+		#define GET_X_LPARAM(lp) ((int)(short)LOWORD(lp))
+	#endif
+	#ifndef GET_Y_LPARAM
+		#define GET_Y_LPARAM(lp) ((int)(short)HIWORD(lp))
+	#endif
 
 bool CSystem::HandleMessage(HWND hWnd, UINT uMsg, WPARAM wParam, LPARAM lParam, LRESULT* pResult)
 {
@@ -3743,6 +3740,5 @@ void* CSystem::GetRootWindowMessageHandler()
 	return NULL;
 #endif
 }
-
 
 #undef EXCLUDE_UPDATE_ON_CONSOLE

@@ -490,13 +490,6 @@ struct IAudioSystem
 	virtual void OnUnloadLevel() = 0;
 
 	/**
-	 * This method is called whenever the language is changed.
-	 * It allows the AudioSystem to reload language specific data.
-	 * @return void
-	 */
-	virtual void OnLanguageChanged() = 0;
-
-	/**
 	 * Retrieve information about the current middleware implementation.
 	 * @param[out] implInfo - a reference to an instance of SImplInfo
 	 * @return void

@@ -484,6 +484,9 @@ enum ESystemEvent
 	//! Sent to inform the audio system to unmute.
 	ESYSTEM_EVENT_AUDIO_UNMUTE,
 
+	//! Sent when the audio language has changed.
+	ESYSTEM_EVENT_AUDIO_LANGUAGE_CHANGED,
+
 	//! Purpose of this event is to enable different modules to communicate with each other without knowing about each other.
 	ESYSTEM_EVENT_URI,
 

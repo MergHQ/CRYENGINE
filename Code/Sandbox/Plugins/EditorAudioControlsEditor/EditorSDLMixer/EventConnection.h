@@ -24,6 +24,8 @@ public:
 		Resume,
 	};
 
+	CEventConnection() = delete;
+
 	explicit CEventConnection(ControlId const id)
 		: CBaseConnection(id)
 		, m_actionType(EActionType::Start)
@@ -37,8 +39,6 @@ public:
 		, m_isInfiniteLoop(false)
 		, m_loopCount(1)
 	{}
-
-	CEventConnection() = delete;
 
 	// CBaseConnection
 	virtual void Serialize(Serialization::IArchive& ar) override;
