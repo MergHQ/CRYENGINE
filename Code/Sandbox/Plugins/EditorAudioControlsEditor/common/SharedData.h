@@ -42,9 +42,8 @@ CRY_CREATE_ENUM_FLAG_OPERATORS(EItemFlags);
 
 enum class EErrorCode
 {
-	None                     = 0,
-	UnkownPlatform           = BIT(0),
-	NonMatchedActivityRadius = BIT(1),
+	None           = 0,
+	UnkownPlatform = BIT(0),
 };
 CRY_CREATE_ENUM_FLAG_OPERATORS(EErrorCode);
 

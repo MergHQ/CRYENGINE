@@ -23,7 +23,6 @@ namespace CryAudio
 //////////////////////////////////////////////////////////////////////////
 CATLAudioObject::CATLAudioObject()
 	: m_pImplData(nullptr)
-	, m_maxRadius(0.0f)
 	, m_flags(EObjectFlags::InUse)
 	, m_previousRelativeVelocity(0.0f)
 	, m_previousAbsoluteVelocity(0.0f)
@@ -33,6 +32,9 @@ CATLAudioObject::CATLAudioObject()
 	, m_propagationProcessor(m_transformation)
 	, m_entityId(INVALID_ENTITYID)
 	, m_numPendingSyncCallbacks(0)
+#if defined(INCLUDE_AUDIO_PRODUCTION_CODE)
+	, m_maxRadius(0.0f)
+#endif // INCLUDE_AUDIO_PRODUCTION_CODE
 {}
 
 //////////////////////////////////////////////////////////////////////////
@@ -58,8 +60,10 @@ void CATLAudioObject::AddEvent(CATLEvent* const pEvent)
 	m_activeEvents.insert(pEvent);
 	m_triggerImplStates.emplace(pEvent->m_audioTriggerImplId, SAudioTriggerImplState());
 
+#if defined(INCLUDE_AUDIO_PRODUCTION_CODE)
 	// Set the max activity radius of all active events on this object.
 	m_maxRadius = std::max(pEvent->GetTriggerRadius(), m_maxRadius);
+#endif // INCLUDE_AUDIO_PRODUCTION_CODE
 }
 
 //////////////////////////////////////////////////////////////////////////
@@ -161,14 +165,6 @@ void CATLAudioObject::ReportFinishedEvent(CATLEvent* const pEvent, bool const bS
 	m_activeEvents.erase(pEvent);
 	m_triggerImplStates.erase(pEvent->m_audioTriggerImplId);
 
-	// Recalculate the max activity radius.
-	m_maxRadius = 0.0f;
-
-	for (auto const pActiveEvent : m_activeEvents)
-	{
-		m_maxRadius = std::max(pActiveEvent->GetTriggerRadius(), m_maxRadius);
-	}
-
 	ObjectTriggerStates::iterator const iter(m_triggerStates.find(pEvent->m_audioTriggerInstanceId));
 
 	if (iter != m_triggerStates.end())
@@ -176,6 +172,7 @@ void CATLAudioObject::ReportFinishedEvent(CATLEvent* const pEvent, bool const bS
 		switch (pEvent->m_state)
 		{
 		case EEventState::Playing:
+		case EEventState::Virtual:
 			{
 				SAudioTriggerInstanceState& audioTriggerInstanceState = iter->second;
 				CRY_ASSERT_MESSAGE(audioTriggerInstanceState.numPlayingEvents > 0, "Number of playing events must be at least 1 during CATLAudioObject::ReportFinishedEvent!");
@@ -219,6 +216,14 @@ void CATLAudioObject::ReportFinishedEvent(CATLEvent* const pEvent, bool const bS
 	{
 		Cry::Audio::Log(ELogType::Warning, "Reported finished event on an inactive trigger %s", pEvent->GetTriggerName());
 	}
+
+	// Recalculate the max activity radius.
+	m_maxRadius = 0.0f;
+
+	for (auto const pActiveEvent : m_activeEvents)
+	{
+		m_maxRadius = std::max(pActiveEvent->GetTriggerRadius(), m_maxRadius);
+	}
 #endif  // INCLUDE_AUDIO_PRODUCTION_CODE
 }
 
@@ -260,7 +265,7 @@ ERequestStatus CATLAudioObject::HandleStopTrigger(CTrigger const* const pTrigger
 {
 	for (auto const pEvent : m_activeEvents)
 	{
-		if ((pEvent != nullptr) && pEvent->IsPlaying() && (pEvent->GetTriggerId() == pTrigger->GetId()))
+		if ((pEvent != nullptr) && (pEvent->IsPlaying() || pEvent->IsVirtual()) && (pEvent->GetTriggerId() == pTrigger->GetId()))
 		{
 			pEvent->Stop();
 		}
@@ -925,8 +930,8 @@ void CATLAudioObject::DrawDebugInfo(IRenderAuxGeom& auxGeom) const
 			}
 
 			// Check if object name matches text filter.
-			auto const pAudioObject = const_cast<CATLAudioObject*>(this);
-			char const* const szObjectName = pAudioObject->m_name.c_str();
+			auto const pObject = const_cast<CATLAudioObject*>(this);
+			char const* const szObjectName = pObject->m_name.c_str();
 			bool doesObjectNameMatchFilter = false;
 
 			if (!isTextFilterDisabled && (drawLabel || filterAllObjectInfo))
@@ -948,25 +953,27 @@ void CATLAudioObject::DrawDebugInfo(IRenderAuxGeom& auxGeom) const
 
 			if (drawObjectDebugInfo)
 			{
-				if (drawSphere)
-				{
-					SAuxGeomRenderFlags const previousRenderFlags = auxGeom.GetRenderFlags();
-					SAuxGeomRenderFlags newRenderFlags(e_Def3DPublicRenderflags | e_AlphaBlended);
-					newRenderFlags.SetCullMode(e_CullModeNone);
-					auxGeom.SetRenderFlags(newRenderFlags);
-					auxGeom.DrawSphere(position, Debug::g_objectRadiusPositionSphere, ColorB(255, 1, 1, 255));
-					auxGeom.SetRenderFlags(previousRenderFlags);
-				}
+				bool const hasActiveData = HasActiveData(pObject);
+				bool const canDraw = (g_cvars.m_hideInactiveAudioObjects == 0) || ((g_cvars.m_hideInactiveAudioObjects != 0) && hasActiveData);
 
-				if (drawLabel)
+				if (canDraw)
 				{
-					bool const hasActiveData = HasActiveData(pAudioObject);
-					bool const draw = (g_cvars.m_hideInactiveAudioObjects == 0) || ((g_cvars.m_hideInactiveAudioObjects > 0) && hasActiveData);
+					bool const isVirtual = (pObject->GetFlags() & EObjectFlags::Virtual) != 0;
 
-					if (draw)
+					if (drawSphere)
 					{
-						bool const isVirtual = (pAudioObject->GetFlags() & EObjectFlags::Virtual) != 0;
+						SAuxGeomRenderFlags const previousRenderFlags = auxGeom.GetRenderFlags();
+						SAuxGeomRenderFlags newRenderFlags(e_Def3DPublicRenderflags);
+						auxGeom.SetRenderFlags(newRenderFlags);
+						auxGeom.DrawSphere(
+							position,
+							Debug::g_objectRadiusPositionSphere,
+							isVirtual ? ColorB(25, 200, 200, 255) : ColorB(255, 1, 1, 255));
+						auxGeom.SetRenderFlags(previousRenderFlags);
+					}
 
+					if (drawLabel)
+					{
 						auxGeom.Draw2dLabel(
 							screenPos.x,
 							screenPos.y + offsetOnY,
@@ -978,130 +985,123 @@ void CATLAudioObject::DrawDebugInfo(IRenderAuxGeom& auxGeom) const
 
 						offsetOnY += Debug::g_objectLineHeight;
 					}
-				}
 
-				if (drawTriggers && !triggerInfo.empty())
-				{
-					for (auto const& debugText : triggerInfo)
+					if (drawTriggers && !triggerInfo.empty())
+					{
+						for (auto const& debugText : triggerInfo)
+						{
+							auxGeom.Draw2dLabel(
+								screenPos.x,
+								screenPos.y + offsetOnY,
+								Debug::g_objectFontSize,
+								isVirtual ? Debug::g_objectColorVirtual.data() : Debug::g_objectColorTrigger.data(),
+								false,
+								"%s",
+								debugText.c_str());
+
+							offsetOnY += Debug::g_objectLineHeight;
+						}
+					}
+
+					if (drawStandaloneFiles && !standaloneFileInfo.empty())
+					{
+						for (auto const& debugText : standaloneFileInfo)
+						{
+							auxGeom.Draw2dLabel(
+								screenPos.x,
+								screenPos.y + offsetOnY,
+								Debug::g_objectFontSize,
+								isVirtual ? Debug::g_objectColorVirtual.data() : Debug::g_objectColorStandaloneFile.data(),
+								false,
+								"%s",
+								debugText.c_str());
+
+							offsetOnY += Debug::g_objectLineHeight;
+						}
+					}
+
+					if (drawStates && !switchStateInfo.empty())
+					{
+						for (auto const& switchStatePair : switchStateInfo)
+						{
+							auto const pSwitch = switchStatePair.first;
+							auto const pSwitchState = switchStatePair.second;
+
+							CStateDebugDrawData& drawData = m_stateDrawInfoMap.emplace(std::piecewise_construct, std::forward_as_tuple(pSwitch->GetId()), std::forward_as_tuple(pSwitchState->GetId())).first->second;
+							drawData.Update(pSwitchState->GetId());
+							float const switchTextColor[4] = { 0.8f, 0.3f, 0.6f, drawData.m_currentAlpha };
+
+							auxGeom.Draw2dLabel(
+								screenPos.x,
+								screenPos.y + offsetOnY,
+								Debug::g_objectFontSize,
+								isVirtual ? Debug::g_objectColorVirtual.data() : switchTextColor,
+								false,
+								"%s: %s\n",
+								pSwitch->GetName(),
+								pSwitchState->GetName());
+
+							offsetOnY += Debug::g_objectLineHeight;
+						}
+					}
+
+					if (drawParameters && !parameterInfo.empty())
+					{
+						for (auto const& parameterPair : parameterInfo)
+						{
+							auxGeom.Draw2dLabel(
+								screenPos.x,
+								screenPos.y + offsetOnY,
+								Debug::g_objectFontSize,
+								isVirtual ? Debug::g_objectColorVirtual.data() : Debug::g_objectColorParameter.data(),
+								false,
+								"%s: %2.2f\n",
+								parameterPair.first,
+								parameterPair.second);
+
+							offsetOnY += Debug::g_objectLineHeight;
+						}
+					}
+
+					if (drawEnvironments && !environmentInfo.empty())
+					{
+						for (auto const& environmentPair : environmentInfo)
+						{
+							auxGeom.Draw2dLabel(
+								screenPos.x,
+								screenPos.y + offsetOnY,
+								Debug::g_objectFontSize,
+								isVirtual ? Debug::g_objectColorVirtual.data() : Debug::g_objectColorEnvironment.data(),
+								false,
+								"%s: %.2f\n",
+								environmentPair.first,
+								environmentPair.second);
+
+							offsetOnY += Debug::g_objectLineHeight;
+						}
+					}
+
+					if (drawDistance)
 					{
 						auxGeom.Draw2dLabel(
 							screenPos.x,
 							screenPos.y + offsetOnY,
 							Debug::g_objectFontSize,
-							Debug::g_objectColorTrigger.data(),
+							isVirtual ? Debug::g_objectColorVirtual.data() : Debug::g_objectColorActive.data(),
 							false,
-							"%s",
-							debugText.c_str());
+							"Dist: %4.1fm / Max: %.1fm",
+							distance,
+							pObject->GetMaxRadius());
 
 						offsetOnY += Debug::g_objectLineHeight;
 					}
-				}
 
-				if (drawStandaloneFiles && !standaloneFileInfo.empty())
-				{
-					for (auto const& debugText : standaloneFileInfo)
+					if (drawOcclusionRayLabel)
 					{
-						auxGeom.Draw2dLabel(
-							screenPos.x,
-							screenPos.y + offsetOnY,
-							Debug::g_objectFontSize,
-							Debug::g_objectColorStandaloneFile.data(),
-							false,
-							"%s",
-							debugText.c_str());
+						EOcclusionType const occlusionType = m_propagationProcessor.GetOcclusionType();
+						SATLSoundPropagationData propagationData;
+						m_propagationProcessor.GetPropagationData(propagationData);
 
-						offsetOnY += Debug::g_objectLineHeight;
-					}
-				}
-
-				if (drawStates && !switchStateInfo.empty())
-				{
-					for (auto const& switchStatePair : switchStateInfo)
-					{
-						auto const pSwitch = switchStatePair.first;
-						auto const pSwitchState = switchStatePair.second;
-
-						CStateDebugDrawData& drawData = m_stateDrawInfoMap.emplace(std::piecewise_construct, std::forward_as_tuple(pSwitch->GetId()), std::forward_as_tuple(pSwitchState->GetId())).first->second;
-						drawData.Update(pSwitchState->GetId());
-						float const switchTextColor[4] = { 0.8f, 0.3f, 0.6f, drawData.m_currentAlpha };
-
-						auxGeom.Draw2dLabel(
-							screenPos.x,
-							screenPos.y + offsetOnY,
-							Debug::g_objectFontSize,
-							switchTextColor,
-							false,
-							"%s: %s\n",
-							pSwitch->GetName(),
-							pSwitchState->GetName());
-
-						offsetOnY += Debug::g_objectLineHeight;
-					}
-				}
-
-				if (drawParameters && !parameterInfo.empty())
-				{
-					for (auto const& parameterPair : parameterInfo)
-					{
-						auxGeom.Draw2dLabel(
-							screenPos.x,
-							screenPos.y + offsetOnY,
-							Debug::g_objectFontSize,
-							Debug::g_objectColorParameter.data(),
-							false,
-							"%s: %2.2f\n",
-							parameterPair.first,
-							parameterPair.second);
-
-						offsetOnY += Debug::g_objectLineHeight;
-					}
-				}
-
-				if (drawEnvironments && !environmentInfo.empty())
-				{
-					for (auto const& environmentPair : environmentInfo)
-					{
-						auxGeom.Draw2dLabel(
-							screenPos.x,
-							screenPos.y + offsetOnY,
-							Debug::g_objectFontSize,
-							Debug::g_objectColorEnvironment.data(),
-							false,
-							"%s: %.2f\n",
-							environmentPair.first,
-							environmentPair.second);
-
-						offsetOnY += Debug::g_objectLineHeight;
-					}
-				}
-
-				if (drawDistance)
-				{
-					bool const isVirtual = (pAudioObject->GetFlags() & EObjectFlags::Virtual) != 0;
-
-					auxGeom.Draw2dLabel(
-						screenPos.x,
-						screenPos.y + offsetOnY,
-						Debug::g_objectFontSize,
-						isVirtual ? Debug::g_objectColorVirtual.data() : Debug::g_objectColorActive.data(),
-						false,
-						"Dist: %4.1fm",
-						distance);
-
-					offsetOnY += Debug::g_objectLineHeight;
-				}
-
-				if (drawOcclusionRayLabel)
-				{
-					EOcclusionType const occlusionType = m_propagationProcessor.GetOcclusionType();
-					SATLSoundPropagationData propagationData;
-					m_propagationProcessor.GetPropagationData(propagationData);
-
-					bool const hasActiveData = HasActiveData(pAudioObject);
-					bool const draw = (g_cvars.m_hideInactiveAudioObjects == 0) || ((g_cvars.m_hideInactiveAudioObjects > 0) && hasActiveData);
-
-					if (draw)
-					{
 						CryFixedStringT<MaxMiscStringLength> debugText;
 
 						if (distance < g_cvars.m_occlusionMaxDistance)
@@ -1123,7 +1123,6 @@ void CATLAudioObject::DrawDebugInfo(IRenderAuxGeom& auxGeom) const
 							debugText.Format("Ignore (exceeded activity range)");
 						}
 
-						bool const isVirtual = (pAudioObject->GetFlags() & EObjectFlags::Virtual) != 0;
 						float const activeRayLabelColor[4] = { propagationData.occlusion, 1.0f - propagationData.occlusion, 0.0f, 0.9f };
 
 						auxGeom.Draw2dLabel(
@@ -1132,15 +1131,15 @@ void CATLAudioObject::DrawDebugInfo(IRenderAuxGeom& auxGeom) const
 							Debug::g_objectFontSize,
 							((occlusionType != EOcclusionType::None) && (occlusionType != EOcclusionType::Ignore)) ? (isVirtual ? Debug::g_objectColorVirtual.data() : activeRayLabelColor) : Debug::g_objectColorInactive.data(),
 							false,
-							"Occl: %3.2f | Type: %s", // Add obstruction again once the engine supports it.
+							"Occl: %3.2f | Type: %s", // Add obstruction once the engine supports it.
 							propagationData.occlusion,
 							debugText.c_str());
 
 						offsetOnY += Debug::g_objectLineHeight;
 					}
-				}
 
-				m_propagationProcessor.DrawDebugInfo(auxGeom, m_flags);
+					m_propagationProcessor.DrawDebugInfo(auxGeom, m_flags);
+				}
 			}
 		}
 	}

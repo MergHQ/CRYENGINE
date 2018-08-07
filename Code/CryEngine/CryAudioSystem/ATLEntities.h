@@ -216,11 +216,9 @@ public:
 	explicit CTrigger(
 		ControlId const id,
 		EDataScope const dataScope,
-		TriggerConnections const& connections,
-		float const radius)
+		TriggerConnections const& connections)
 		: Control(id, dataScope)
 		, m_connections(connections)
-		, m_radius(radius)
 	{}
 #endif // INCLUDE_AUDIO_PRODUCTION_CODE
 
@@ -244,16 +242,19 @@ public:
 		void* const pOwner = nullptr,
 		void* const pUserData = nullptr,
 		void* const pUserDataOwner = nullptr) const;
-	float GetRadius() const { return m_radius; }
 
 #if defined(INCLUDE_AUDIO_PRODUCTION_CODE)
-	void PlayFile(CATLAudioObject& object, CATLStandaloneFile* const pFile) const;
+	float GetRadius() const { return m_radius; }
+	void  PlayFile(CATLAudioObject& object, CATLStandaloneFile* const pFile) const;
 #endif // INCLUDE_AUDIO_PRODUCTION_CODE
 
 private:
 
 	TriggerConnections const m_connections;
-	float const              m_radius;
+
+#if defined(INCLUDE_AUDIO_PRODUCTION_CODE)
+	float const m_radius;
+#endif // INCLUDE_AUDIO_PRODUCTION_CODE
 };
 
 class CLoseFocusTrigger final : public Control
@@ -731,14 +732,15 @@ public:
 	void      Stop();
 	void      SetDataScope(EDataScope const dataScope) { m_dataScope = dataScope; }
 	bool      IsPlaying() const                        { return m_state == EEventState::Playing || m_state == EEventState::PlayingDelayed; }
+	bool      IsVirtual() const                        { return m_state == EEventState::Virtual; }
 	void      SetTriggerId(ControlId const id)         { m_triggerId = id; }
 	ControlId GetTriggerId() const                     { return m_triggerId; }
-	void      SetTriggerRadius(float const radius)     { m_triggerRadius = radius; }
-	float     GetTriggerRadius() const                 { return m_triggerRadius; }
 
 #if defined(INCLUDE_AUDIO_PRODUCTION_CODE)
 	void              SetTriggerName(char const* const szTriggerName) { m_szTriggerName = szTriggerName; }
 	char const* const GetTriggerName() const                          { return m_szTriggerName; }
+	void              SetTriggerRadius(float const radius)            { m_triggerRadius = radius; }
+	float             GetTriggerRadius() const                        { return m_triggerRadius; }
 #endif // INCLUDE_AUDIO_PRODUCTION_CODE
 
 	EDataScope        m_dataScope = EDataScope::None;
@@ -751,10 +753,10 @@ public:
 private:
 
 	ControlId m_triggerId = InvalidControlId;
-	float     m_triggerRadius = 0.0f;
 
 #if defined(INCLUDE_AUDIO_PRODUCTION_CODE)
 	char const* m_szTriggerName = nullptr;
+	float       m_triggerRadius = 0.0f;
 #endif // INCLUDE_AUDIO_PRODUCTION_CODE
 };
 

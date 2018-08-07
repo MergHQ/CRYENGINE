@@ -123,7 +123,6 @@ public:
 	EObjectFlags GetFlags() const { return m_flags; }
 	void         SetFlag(EObjectFlags const flag);
 	void         RemoveFlag(EObjectFlags const flag);
-	float        GetMaxRadius() const { return m_maxRadius; }
 
 	void         Update(
 		float const deltaTime,
@@ -174,7 +173,6 @@ private:
 	ObjectTriggerStates     m_triggerStates;
 	ObjectTriggerImplStates m_triggerImplStates;
 	Impl::IObject*          m_pImplData;
-	float                   m_maxRadius;
 	EObjectFlags            m_flags;
 	float                   m_previousRelativeVelocity;
 	float                   m_previousAbsoluteVelocity;
@@ -191,6 +189,7 @@ public:
 
 	void           DrawDebugInfo(IRenderAuxGeom& auxGeom) const;
 	void           ResetObstructionRays() { m_propagationProcessor.ResetRayData(); }
+	float          GetMaxRadius() const   { return m_maxRadius; }
 
 	void           ForceImplementationRefresh(bool const setTransformation);
 
@@ -240,6 +239,7 @@ private:
 	Parameters   m_parameters;
 	SwitchStates m_switchStates;
 	Environments m_environments;
+	float        m_maxRadius;
 #endif // INCLUDE_AUDIO_PRODUCTION_CODE
 };
 } // namespace CryAudio

@@ -118,36 +118,40 @@ void CFileLoader::LoadAllLibrariesInFolder(string const& folderPath, string cons
 	string const searchPath = path + "*.xml";
 	ICryPak* const pCryPak = gEnv->pCryPak;
 	_finddata_t fd;
-	intptr_t const handle = pCryPak->FindFirst(searchPath, &fd);
+	intptr_t const handle = pCryPak->FindFirst(searchPath.c_str(), &fd);
 
 	if (handle != -1)
 	{
 		do
 		{
-			string filename = path + fd.name;
-			XmlNodeRef const root = GetISystem()->LoadXmlFromFile(filename);
+			string fileName = path + fd.name;
 
-			if (root != nullptr)
+			if (_stricmp(PathUtil::GetExt(fileName), "xml") == 0)
 			{
-				if (_stricmp(root->getTag(), CryAudio::s_szRootNodeTag) == 0)
+				XmlNodeRef const root = GetISystem()->LoadXmlFromFile(fileName);
+
+				if (root != nullptr)
 				{
-					m_loadedFilenames.insert(filename.MakeLower());
-					string file = fd.name;
-
-					if (root->haveAttr(CryAudio::s_szNameAttribute))
+					if (_stricmp(root->getTag(), CryAudio::s_szRootNodeTag) == 0)
 					{
-						file = root->getAttr(CryAudio::s_szNameAttribute);
-					}
+						m_loadedFilenames.insert(fileName.MakeLower());
+						string file = fd.name;
 
-					int version = 1;
-					root->getAttr(CryAudio::s_szVersionAttribute, version);
-					PathUtil::RemoveExtension(file);
-					LoadControlsLibrary(root, filename, level, file, version);
+						if (root->haveAttr(CryAudio::s_szNameAttribute))
+						{
+							file = root->getAttr(CryAudio::s_szNameAttribute);
+						}
+
+						int version = 1;
+						root->getAttr(CryAudio::s_szVersionAttribute, version);
+						PathUtil::RemoveExtension(file);
+						LoadControlsLibrary(root, fileName, level, file, version);
+					}
 				}
-			}
-			else
-			{
-				CryWarning(VALIDATOR_MODULE_EDITOR, VALIDATOR_ERROR, "[Audio Controls Editor] Failed parsing audio system data file %s", filename);
+				else
+				{
+					CryWarning(VALIDATOR_MODULE_EDITOR, VALIDATOR_ERROR, "[Audio Controls Editor] Failed parsing audio system data file %s", fileName);
+				}
 			}
 		}
 		while (pCryPak->FindNext(handle, &fd) >= 0);
@@ -237,14 +241,6 @@ CControl* CFileLoader::LoadControl(XmlNodeRef const pNode, Scope const scope, ui
 			{
 				switch (controlType)
 				{
-				case EAssetType::Trigger:
-					{
-						float radius = 0.0f;
-						pNode->getAttr(CryAudio::s_szRadiusAttribute, radius);
-						pControl->SetRadius(radius);
-						LoadConnections(pNode, pControl);
-					}
-					break;
 				case EAssetType::Switch:
 					{
 						int const stateCount = pNode->getChildCount();
@@ -311,13 +307,11 @@ void CFileLoader::CreateInternalControls()
 		g_assetsManager.CreateDefaultControl(CryAudio::s_szDoNothingTriggerName, EAssetType::Trigger, pLibrary, true, "Used to bypass the default stop behavior of the audio system.");
 
 		SwitchStates const occlStates {
-			CryAudio::s_szIgnoreStateName, CryAudio::s_szAdaptiveStateName, CryAudio::s_szLowStateName, CryAudio::s_szMediumStateName, CryAudio::s_szHighStateName
-		};
+			CryAudio::s_szIgnoreStateName, CryAudio::s_szAdaptiveStateName, CryAudio::s_szLowStateName, CryAudio::s_szMediumStateName, CryAudio::s_szHighStateName };
 		CreateInternalSwitch(pLibrary, CryAudio::s_szOcclCalcSwitchName, occlStates, "Set the occlusion type of the object.");
 
 		SwitchStates const onOffStates {
-			CryAudio::s_szOnStateName, CryAudio::s_szOffStateName
-		};
+			CryAudio::s_szOnStateName, CryAudio::s_szOffStateName };
 
 		string description;
 		description.Format(R"(If enabled on an object, its "%s" parameter gets updated.)", CryAudio::s_szAbsoluteVelocityParameterName);
@@ -369,21 +363,13 @@ void CFileLoader::CreateDefaultControls()
 //////////////////////////////////////////////////////////////////////////
 void CFileLoader::LoadConnections(XmlNodeRef const pRoot, CControl* const pControl)
 {
-	// The radius might change because of the attenuation matching option
-	// so we check here to inform the user if their data is outdated.
-	float const radius = pControl->GetRadius();
+
 	int const numChildren = pRoot->getChildCount();
 
 	for (int i = 0; i < numChildren; ++i)
 	{
 		XmlNodeRef const pNode = pRoot->getChild(i);
 		pControl->LoadConnectionFromXML(pNode);
-	}
-
-	if (radius != pControl->GetRadius())
-	{
-		m_errorCodeMask |= EErrorCode::NonMatchedActivityRadius;
-		pControl->SetModified(true, true);
 	}
 }
 

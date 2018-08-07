@@ -101,8 +101,6 @@ CProjectLoader::CProjectLoader(string const& projectPath, string const& soundban
 	, m_itemCache(itemCache)
 	, m_projectPath(projectPath)
 {
-	LoadEventsMetadata(soundbanksPath);
-
 	// Wwise places all the Work Units in the same root physical folder but some of those WU can be nested
 	// inside each other so to be able to reference them in the right order we build a cache with the path and UIDs
 	// so that we can load them in the right order (i.e. the top most parent first)
@@ -155,17 +153,17 @@ void CProjectLoader::LoadSoundBanks(string const& folderPath, bool const isLocal
 			{
 				if ((fd.attrib & _A_SUBDIR) == 0)
 				{
-					if ((name.find(".bnk") != string::npos) && (name.compareNoCase("Init.bnk") != 0))
+					if ((_stricmp(PathUtil::GetExt(name), "bnk") == 0) && (name.compareNoCase("Init.bnk") != 0))
 					{
-						string const fullname = folderPath + "/" + name;
-						ControlId const id = CryAudio::StringToId(fullname);
+						string const fullName = folderPath + "/" + name;
+						ControlId const id = CryAudio::StringToId(fullName);
 						CItem* const pItem = stl::find_in_map(m_itemCache, id, nullptr);
 
 						if (pItem == nullptr)
 						{
 
-							EPakStatus const pakStatus = gEnv->pCryPak->IsFileExist(fullname.c_str(), ICryPak::eFileLocation_OnDisk) ? EPakStatus::OnDisk : EPakStatus::None;
-							auto const pSoundBank = new CItem(name, id, EItemType::SoundBank, flags, pakStatus, fullname);
+							EPakStatus const pakStatus = gEnv->pCryPak->IsFileExist(fullName.c_str(), ICryPak::eFileLocation_OnDisk) ? EPakStatus::OnDisk : EPakStatus::None;
+							auto const pSoundBank = new CItem(name, id, EItemType::SoundBank, flags, pakStatus, fullName);
 
 							parent.AddChild(pSoundBank);
 							m_itemCache[id] = pSoundBank;
@@ -346,11 +344,6 @@ CItem* CProjectLoader::CreateItem(const string& name, EItemType const type, CIte
 		default:
 			{
 				pItem = new CItem(name, id, type, EItemFlags::None, pakStatus);
-
-				if (type == EItemType::Event)
-				{
-					pItem->SetRadius(m_eventsInfoMap[CryAudio::StringToId(name.c_str())].maxRadius);
-				}
 			}
 			break;
 		}
@@ -360,57 +353,6 @@ CItem* CProjectLoader::CreateItem(const string& name, EItemType const type, CIte
 	}
 
 	return pItem;
-}
-
-//////////////////////////////////////////////////////////////////////////
-void CProjectLoader::LoadEventsMetadata(const string& soundbanksPath)
-{
-	m_eventsInfoMap.clear();
-	string path = soundbanksPath;
-	path += "/" + g_soundBanksInfoFileName;
-	XmlNodeRef const pRootNode = GetISystem()->LoadXmlFromFile(path.c_str());
-
-	if (pRootNode != nullptr)
-	{
-		XmlNodeRef const pSoundBanksNode = pRootNode->findChild("SoundBanks");
-
-		if (pSoundBanksNode != nullptr)
-		{
-			int const numSoundBankNodes = pSoundBanksNode->getChildCount();
-
-			for (int i = 0; i < numSoundBankNodes; ++i)
-			{
-				XmlNodeRef const pSoundBankNode = pSoundBanksNode->getChild(i);
-
-				if (pSoundBankNode != nullptr)
-				{
-					XmlNodeRef const pIncludedEventsNode = pSoundBankNode->findChild("IncludedEvents");
-
-					if (pIncludedEventsNode != nullptr)
-					{
-						int const numEventNodes = pIncludedEventsNode->getChildCount();
-
-						for (int j = 0; j < numEventNodes; ++j)
-						{
-							XmlNodeRef const pEventNode = pIncludedEventsNode->getChild(j);
-
-							if (pEventNode != nullptr)
-							{
-								SEventInfo info;
-
-								if (!pEventNode->getAttr("MaxAttenuation", info.maxRadius))
-								{
-									info.maxRadius = 0.0f;
-								}
-
-								m_eventsInfoMap[CryAudio::StringToId(pEventNode->getAttr("Name"))] = info;
-							}
-						}
-					}
-				}
-			}
-		}
-	}
 }
 
 //////////////////////////////////////////////////////////////////////////

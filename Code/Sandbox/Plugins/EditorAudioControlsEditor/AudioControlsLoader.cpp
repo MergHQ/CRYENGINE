@@ -121,36 +121,40 @@ void CAudioControlsLoader::LoadAllLibrariesInFolder(string const& folderPath, st
 	string const searchPath = path + "*.xml";
 	ICryPak* const pCryPak = gEnv->pCryPak;
 	_finddata_t fd;
-	intptr_t const handle = pCryPak->FindFirst(searchPath, &fd);
+	intptr_t const handle = pCryPak->FindFirst(searchPath.c_str(), &fd);
 
 	if (handle != -1)
 	{
 		do
 		{
-			string filename = path + fd.name;
-			XmlNodeRef const root = GetISystem()->LoadXmlFromFile(filename);
+			string fileName = path + fd.name;
 
-			if (root != nullptr)
+			if (_stricmp(PathUtil::GetExt(fileName), "xml") == 0)
 			{
-				if (_stricmp(root->getTag(), "ATLConfig") == 0)
+				XmlNodeRef const root = GetISystem()->LoadXmlFromFile(fileName);
+
+				if (root != nullptr)
 				{
-					m_loadedFilenames.insert(filename.MakeLower());
-					string file = fd.name;
-
-					if (root->haveAttr("atl_name"))
+					if (_stricmp(root->getTag(), "ATLConfig") == 0)
 					{
-						file = root->getAttr("atl_name");
-					}
+						m_loadedFilenames.insert(fileName.MakeLower());
+						string file = fd.name;
 
-					int atlVersion = 1;
-					root->getAttr("atl_version", atlVersion);
-					PathUtil::RemoveExtension(file);
-					LoadControlsLibrary(root, folderPath, level, file, atlVersion);
+						if (root->haveAttr("atl_name"))
+						{
+							file = root->getAttr("atl_name");
+						}
+
+						int atlVersion = 1;
+						root->getAttr("atl_version", atlVersion);
+						PathUtil::RemoveExtension(file);
+						LoadControlsLibrary(root, folderPath, level, file, atlVersion);
+					}
 				}
-			}
-			else
-			{
-				CryWarning(VALIDATOR_MODULE_EDITOR, VALIDATOR_ERROR, "[Audio Controls Editor] Failed parsing game sound file %s", filename);
+				else
+				{
+					CryWarning(VALIDATOR_MODULE_EDITOR, VALIDATOR_ERROR, "[Audio Controls Editor] Failed parsing game sound file %s", fileName);
+				}
 			}
 		}
 		while (pCryPak->FindNext(handle, &fd) >= 0);
@@ -265,14 +269,6 @@ CControl* CAudioControlsLoader::LoadControl(XmlNodeRef const pNode, Scope const 
 					{
 						switch (controlType)
 						{
-						case EAssetType::Trigger:
-							{
-								float radius = 0.0f;
-								pNode->getAttr("atl_radius", radius);
-								pControl->SetRadius(radius);
-								LoadConnections(pNode, pControl);
-							}
-							break;
 						case EAssetType::Switch:
 							{
 								int const stateCount = pNode->getChildCount();
@@ -333,9 +329,6 @@ CControl* CAudioControlsLoader::LoadDefaultControl(XmlNodeRef const pNode, Scope
 
 				if (pControl != nullptr)
 				{
-					float radius = 0.0f;
-					pNode->getAttr("atl_radius", radius);
-					pControl->SetRadius(radius);
 					LoadConnections(pNode, pControl);
 					pControl->SetModified(true, true);
 				}
@@ -423,22 +416,12 @@ FileNames CAudioControlsLoader::GetLoadedFilenamesList()
 //////////////////////////////////////////////////////////////////////////
 void CAudioControlsLoader::LoadConnections(XmlNodeRef const pRoot, CControl* const pControl)
 {
-	// The radius might change because of the attenuation matching option
-	// so we check here to inform the user if their data is outdated.
-	float const radius = pControl->GetRadius();
-
 	int const numChildren = pRoot->getChildCount();
 
 	for (int i = 0; i < numChildren; ++i)
 	{
 		XmlNodeRef const pNode = pRoot->getChild(i);
 		pControl->LoadConnectionFromXML(pNode);
-	}
-
-	if (radius != pControl->GetRadius())
-	{
-		m_errorCodeMask |= EErrorCode::NonMatchedActivityRadius;
-		pControl->SetModified(true, true);
 	}
 }
 

@@ -337,11 +337,11 @@ void CTrigger::Execute(
 		{
 #if defined(INCLUDE_AUDIO_PRODUCTION_CODE)
 			pEvent->SetTriggerName(GetName());
+			pEvent->SetTriggerRadius(m_radius);
 #endif  // INCLUDE_AUDIO_PRODUCTION_CODE
 
 			pEvent->m_pAudioObject = &object;
 			pEvent->SetTriggerId(GetId());
-			pEvent->SetTriggerRadius(m_radius);
 			pEvent->m_audioTriggerImplId = pConnection->m_audioTriggerImplId;
 			pEvent->m_audioTriggerInstanceId = s_triggerInstanceIdCounter;
 			pEvent->SetDataScope(GetDataScope());
@@ -407,11 +407,11 @@ void CTrigger::Execute(
 		{
 #if defined(INCLUDE_AUDIO_PRODUCTION_CODE)
 			pEvent->SetTriggerName(GetName());
+			pEvent->SetTriggerRadius(m_radius);
 #endif  // INCLUDE_AUDIO_PRODUCTION_CODE
 
 			pEvent->m_pAudioObject = &object;
 			pEvent->SetTriggerId(GetId());
-			pEvent->SetTriggerRadius(m_radius);
 			pEvent->m_audioTriggerImplId = pConnection->m_audioTriggerImplId;
 			pEvent->m_audioTriggerInstanceId = triggerInstanceId;
 			pEvent->SetDataScope(GetDataScope());
@@ -480,9 +480,12 @@ void CTrigger::LoadAsync(CATLAudioObject& object, bool const doLoad) const
 
 		if (prepUnprepResult == ERequestStatus::Success)
 		{
+#if defined(INCLUDE_AUDIO_PRODUCTION_CODE)
+			pEvent->SetTriggerRadius(m_radius);
+#endif  // INCLUDE_AUDIO_PRODUCTION_CODE
+
 			pEvent->m_pAudioObject = &object;
 			pEvent->SetTriggerId(GetId());
-			pEvent->SetTriggerRadius(m_radius);
 			pEvent->m_audioTriggerImplId = pConnection->m_audioTriggerImplId;
 			pEvent->m_audioTriggerInstanceId = s_triggerInstanceIdCounter;
 			pEvent->SetDataScope(GetDataScope());

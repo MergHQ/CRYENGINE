@@ -39,7 +39,7 @@ public:
 	virtual void                DestructFile(IFile* const pIFile) override;
 	virtual char const* const   GetFileLocation(SFileInfo* const pFileInfo) override;
 	virtual void                GetInfo(SImplInfo& implInfo) const override;
-	virtual ITrigger const*     ConstructTrigger(XmlNodeRef const pRootNode) override;
+	virtual ITrigger const*     ConstructTrigger(XmlNodeRef const pRootNode, float& radius) override;
 	virtual void                DestructTrigger(ITrigger const* const pITrigger) override;
 	virtual IParameter const*   ConstructParameter(XmlNodeRef const pRootNode) override;
 	virtual void                DestructParameter(IParameter const* const pIParameter) override;

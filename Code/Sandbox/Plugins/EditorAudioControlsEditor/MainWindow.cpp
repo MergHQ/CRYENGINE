@@ -411,11 +411,6 @@ void CMainWindow::CheckErrorMask()
 	{
 		CQuestionDialog::SWarning(tr(GetEditorName()), tr("Audio Preloads reference an unknown platform.\nSaving will permanently erase this data."));
 	}
-	else if ((errorCodeMask& EErrorCode::NonMatchedActivityRadius) != 0)
-	{
-		QString const middlewareName = QString(g_pIImpl->GetName());
-		CQuestionDialog::SWarning(tr(GetEditorName()), tr("The attenuation of some controls has changed in your ") + middlewareName + tr(" project.\n\nActivity radius of triggers will be updated next time you save."));
-	}
 }
 
 //////////////////////////////////////////////////////////////////////////

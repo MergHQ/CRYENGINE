@@ -348,6 +348,22 @@ struct IAudioSystem
 	virtual void ReportFinishedEvent(CATLEvent& event, bool const bSuccess, SRequestUserData const& userData = SRequestUserData::GetEmptyObject()) = 0;
 
 	/**
+	 * Used by audio middleware implementations to inform the AudioSystem that an event was virtualized.
+	 * @param event - reference to the instance of the event that was virtualized.
+	 * @param userData - optional struct used to pass additional data to the internal request.
+	 * @return void
+	 */
+	virtual void ReportVirtualizedEvent(CATLEvent& event, SRequestUserData const& userData = SRequestUserData::GetEmptyObject()) = 0;
+
+	/**
+	 * Used by audio middleware implementations to inform the AudioSystem that an event was physicalized.
+	 * @param event - reference to the instance of the event that was physicalized.
+	 * @param userData - optional struct used to pass additional data to the internal request.
+	 * @return void
+	 */
+
+	virtual void ReportPhysicalizedEvent(CATLEvent& event, SRequestUserData const& userData = SRequestUserData::GetEmptyObject()) = 0;
+	/**
 	 * Used to instruct the AudioSystem that it should stop all playing sounds.
 	 * @param userData - optional struct used to pass additional data to the internal request.
 	 * @return void

@@ -41,10 +41,14 @@ void PrepareEventCallback(
 	}
 }
 
+static Vec3 g_listenerPosition{ 0.0f, 0.0f, 0.0f };
+
 //////////////////////////////////////////////////////////////////////////
 CObject::CObject(AkGameObjectID const id)
 	: m_id(id)
-	, m_bNeedsToUpdateEnvironments(false)
+	, m_needsToUpdateEnvironments(false)
+	, m_needsToUpdateVirtualStates(false)
+	, m_position(0.0f, 0.0f, 0.0f)
 {
 	m_auxSendValues.reserve(4);
 }
@@ -52,9 +56,19 @@ CObject::CObject(AkGameObjectID const id)
 //////////////////////////////////////////////////////////////////////////
 void CObject::Update()
 {
-	if (m_bNeedsToUpdateEnvironments)
+	if (m_needsToUpdateEnvironments)
 	{
 		PostEnvironmentAmounts();
+	}
+
+	if (m_needsToUpdateVirtualStates)
+	{
+		float const distance = m_position.GetDistance(g_listenerPosition);
+
+		for (auto const pEvent : m_events)
+		{
+			pEvent->UpdateVirtualState(distance);
+		}
 	}
 }
 
@@ -63,6 +77,7 @@ void CObject::SetTransformation(CObjectTransformation const& transformation)
 {
 	AkSoundPosition soundPos;
 	FillAKObjectPosition(transformation, soundPos);
+	m_position = transformation.GetPosition();
 
 	AKRESULT const wwiseResult = AK::SoundEngine::SetPosition(m_id, soundPos);
 
@@ -95,7 +110,7 @@ void CObject::SetEnvironment(IEnvironment const* const pIEnvironment, float cons
 						if (fabs(auxSendValue.fControlValue - amount) > envEpsilon)
 						{
 							auxSendValue.fControlValue = amount;
-							m_bNeedsToUpdateEnvironments = true;
+							m_needsToUpdateEnvironments = true;
 						}
 
 						break;
@@ -106,7 +121,7 @@ void CObject::SetEnvironment(IEnvironment const* const pIEnvironment, float cons
 				{
 					// This temporary copy is needed until AK equips AkAuxSendValue with a ctor.
 					m_auxSendValues.emplace_back(AkAuxSendValue { g_listenerId, pEnvironment->busId, amount });
-					m_bNeedsToUpdateEnvironments = true;
+					m_needsToUpdateEnvironments = true;
 				}
 
 				break;
@@ -301,6 +316,11 @@ ERequestStatus CObject::ExecuteTrigger(ITrigger const* const pITrigger, IEvent* 
 		{
 			pEvent->m_state = EEventState::Playing;
 			pEvent->m_id = id;
+			pEvent->m_pObject = this;
+			pEvent->m_maxAttenuation = pTrigger->m_maxAttenuation;
+			m_events.push_back(pEvent);
+			m_needsToUpdateVirtualStates = true;
+
 			result = ERequestStatus::Success;
 		}
 		else
@@ -315,6 +335,17 @@ ERequestStatus CObject::ExecuteTrigger(ITrigger const* const pITrigger, IEvent* 
 	}
 
 	return result;
+}
+
+//////////////////////////////////////////////////////////////////////////
+void CObject::RemoveEvent(CEvent* const pEvent)
+{
+	if (!stl::find_and_erase(m_events, pEvent))
+	{
+		Cry::Audio::Log(ELogType::Error, "Tried to remove an event from an audio object that does not own that event");
+	}
+
+	m_needsToUpdateVirtualStates = ((m_id != g_globalObjectId) && !m_events.empty());
 }
 
 //////////////////////////////////////////////////////////////////////////
@@ -379,7 +410,7 @@ void CObject::PostEnvironmentAmounts()
 			);
 	}
 
-	m_bNeedsToUpdateEnvironments = false;
+	m_needsToUpdateEnvironments = false;
 }
 
 //////////////////////////////////////////////////////////////////////////
@@ -388,6 +419,7 @@ ERequestStatus CEvent::Stop()
 	switch (m_state)
 	{
 	case EEventState::Playing:
+	case EEventState::Virtual:
 		{
 			AK::SoundEngine::StopPlayingID(m_id, 10);
 			break;
@@ -404,10 +436,40 @@ ERequestStatus CEvent::Stop()
 }
 
 //////////////////////////////////////////////////////////////////////////
+CEvent::~CEvent()
+{
+	if (m_pObject != nullptr)
+	{
+		m_pObject->RemoveEvent(this);
+	}
+}
+
+//////////////////////////////////////////////////////////////////////////
+void CEvent::UpdateVirtualState(float const distance)
+{
+	EEventState const state = ((m_maxAttenuation > 0.0f) && (m_maxAttenuation < distance)) ? EEventState::Virtual : EEventState::Playing;
+
+	if (m_state != state)
+	{
+		m_state = state;
+
+		if (m_state == EEventState::Virtual)
+		{
+			gEnv->pAudioSystem->ReportVirtualizedEvent(m_atlEvent);
+		}
+		else
+		{
+			gEnv->pAudioSystem->ReportPhysicalizedEvent(m_atlEvent);
+		}
+	}
+}
+
+//////////////////////////////////////////////////////////////////////////
 void CListener::SetTransformation(CObjectTransformation const& transformation)
 {
 	AkListenerPosition listenerPos;
 	FillAKListenerPosition(transformation, listenerPos);
+	g_listenerPosition = transformation.GetPosition();
 
 	AKRESULT const wwiseResult = AK::SoundEngine::SetPosition(m_id, listenerPos);
 

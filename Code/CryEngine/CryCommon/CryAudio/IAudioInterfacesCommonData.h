@@ -86,7 +86,6 @@ static constexpr char const* s_szEventTag = "Event";
 static constexpr char const* s_szNameAttribute = "name";
 static constexpr char const* s_szVersionAttribute = "version";
 static constexpr char const* s_szTypeAttribute = "type";
-static constexpr char const* s_szRadiusAttribute = "radius";
 
 static constexpr char const* s_szDataLoadType = "autoload";
 

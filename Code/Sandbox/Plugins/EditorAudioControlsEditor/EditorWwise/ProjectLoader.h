@@ -27,25 +27,17 @@ private:
 	void   LoadWorkUnitFile(string const& filePath, CItem& parent, EPakStatus const pakStatus);
 	void   LoadXml(XmlNodeRef const root, CItem& parent, EPakStatus const pakStatus);
 	CItem* CreateItem(string const& name, EItemType const type, CItem& pParent, EPakStatus const pakStatus);
-	void   LoadEventsMetadata(string const& soundbanksPath);
 
 	void   BuildFileCache(string const& folderPath);
 
 private:
 
-	struct SEventInfo
-	{
-		float maxRadius;
-	};
-
-	using EventsInfoMap = std::map<uint32, SEventInfo>;
 	using FilesCache = std::map<uint32, string>;
 	using Items = std::map<uint32, CItem*>;
 
-	EventsInfoMap m_eventsInfoMap;
-	CItem&        m_rootItem;
-	ItemCache&    m_itemCache;
-	string const  m_projectPath;
+	CItem&       m_rootItem;
+	ItemCache&   m_itemCache;
+	string const m_projectPath;
 
 	// This maps holds the items with the internal IDs given in the Wwise files.
 	Items m_items;

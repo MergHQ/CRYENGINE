@@ -556,6 +556,30 @@ ERequestStatus CAudioTranslationLayer::ProcessAudioCallbackManagerRequest(CAudio
 				static_cast<SAudioCallbackManagerRequestData<EAudioCallbackManagerRequestType::ReportVirtualizedEvent> const* const>(request.GetData());
 
 			pRequestData->audioEvent.m_state = EEventState::Virtual;
+			CATLAudioObject* const pObject = pRequestData->audioEvent.m_pAudioObject;
+
+			if ((pObject->GetFlags() & EObjectFlags::Virtual) == 0)
+			{
+				bool isVirtual = true;
+
+				for (auto const pEvent : pObject->GetActiveEvents())
+				{
+					if (pEvent->m_state != EEventState::Virtual)
+					{
+						isVirtual = false;
+						break;
+					}
+				}
+
+				if (isVirtual)
+				{
+					pObject->SetFlag(EObjectFlags::Virtual);
+
+#if defined(INCLUDE_AUDIO_PRODUCTION_CODE)
+					pObject->ResetObstructionRays();
+#endif      // INCLUDE_AUDIO_PRODUCTION_CODE
+				}
+			}
 
 			result = ERequestStatus::Success;
 
@@ -567,6 +591,7 @@ ERequestStatus CAudioTranslationLayer::ProcessAudioCallbackManagerRequest(CAudio
 				static_cast<SAudioCallbackManagerRequestData<EAudioCallbackManagerRequestType::ReportPhysicalizedEvent> const* const>(request.GetData());
 
 			pRequestData->audioEvent.m_state = EEventState::Playing;
+			pRequestData->audioEvent.m_pAudioObject->RemoveFlag(EObjectFlags::Virtual);
 
 			result = ERequestStatus::Success;
 
@@ -1304,7 +1329,7 @@ void CAudioTranslationLayer::CreateInternalTrigger(char const* const szTriggerNa
 #if defined(INCLUDE_AUDIO_PRODUCTION_CODE)
 	g_triggers[triggerId] = new CTrigger(triggerId, EDataScope::Global, connections, 0.0f, szTriggerName);
 #else
-	g_triggers[triggerId] = new CTrigger(triggerId, EDataScope::Global, connections, 0.0f);
+	g_triggers[triggerId] = new CTrigger(triggerId, EDataScope::Global, connections);
 #endif // INCLUDE_AUDIO_PRODUCTION_CODE
 }
 

@@ -303,16 +303,6 @@ void CFileWriter::WriteControlToXML(XmlNodeRef const pNode, CControl* const pCon
 		pChildNode->setAttr(s_szPathAttribute, path);
 	}
 
-	if (type == EAssetType::Trigger)
-	{
-		float const radius = pControl->GetRadius();
-
-		if (radius > 0.0f)
-		{
-			pChildNode->setAttr(CryAudio::s_szRadiusAttribute, radius);
-		}
-	}
-
 	if (type == EAssetType::Switch)
 	{
 		size_t const numChildren = pControl->ChildCount();

@@ -85,27 +85,7 @@ void CObjectManager::Update(float const deltaTime)
 			CATLAudioObject* const pObject = *iter;
 
 			CObjectTransformation const& transformation = pObject->GetTransformation();
-
 			float const distance = transformation.GetPosition().GetDistance(g_listenerManager.GetActiveListenerTransformation().GetPosition());
-			float const radius = pObject->GetMaxRadius();
-
-			if (radius <= 0.0f || distance < radius)
-			{
-				if ((pObject->GetFlags() & EObjectFlags::Virtual) != 0)
-				{
-					pObject->RemoveFlag(EObjectFlags::Virtual);
-				}
-			}
-			else
-			{
-				if ((pObject->GetFlags() & EObjectFlags::Virtual) == 0)
-				{
-					pObject->SetFlag(EObjectFlags::Virtual);
-#if defined(INCLUDE_AUDIO_PRODUCTION_CODE)
-					pObject->ResetObstructionRays();
-#endif      // INCLUDE_AUDIO_PRODUCTION_CODE
-				}
-			}
 
 			if (IsActive(pObject))
 			{
@@ -232,7 +212,7 @@ bool CObjectManager::HasActiveData(CATLAudioObject const* const pAudioObject) co
 {
 	for (auto const pEvent : pAudioObject->GetActiveEvents())
 	{
-		if (pEvent->IsPlaying())
+		if (pEvent->IsPlaying() || pEvent->IsVirtual())
 		{
 			return true;
 		}
@@ -308,7 +288,7 @@ void CObjectManager::DrawDebugInfo(IRenderAuxGeom& auxGeom, float const posX, fl
 			lowerCaseObjectName.MakeLower();
 			bool const hasActiveData = HasActiveData(pObject);
 			bool const stringFound = (lowerCaseSearchString.empty() || (lowerCaseSearchString.compareNoCase("0") == 0)) || (lowerCaseObjectName.find(lowerCaseSearchString) != CryFixedStringT<MaxControlNameLength>::npos);
-			bool const draw = stringFound && ((g_cvars.m_hideInactiveAudioObjects == 0) || ((g_cvars.m_hideInactiveAudioObjects > 0) && hasActiveData));
+			bool const draw = stringFound && ((g_cvars.m_hideInactiveAudioObjects == 0) || ((g_cvars.m_hideInactiveAudioObjects != 0) && hasActiveData));
 
 			if (draw)
 			{

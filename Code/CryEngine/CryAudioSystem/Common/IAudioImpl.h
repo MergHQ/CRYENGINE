@@ -168,11 +168,12 @@ struct IImpl
 	 * Parse the implementation-specific XML node that represents an ATLTriggerImpl, return a pointer to the data needed for identifying
 	 * and using this ATLTriggerImpl instance inside the AudioImplementation
 	 * @param pRootNode - an XML node corresponding to the new ATLTriggerImpl to be created
+	 * @param radius - the max attenuation radius of the trigger. Set to 0.0f for 2D sounds. Used for debug draw.
 	 * @return ITrigger pointer to the audio implementation-specific data needed by the audio middleware and the
 	 * @return AudioImplementation code to use the corresponding ATLTriggerImpl; nullptr if the new AudioTriggerImplData instance was not created
 	 * @see DestructTrigger
 	 */
-	virtual ITrigger const* ConstructTrigger(XmlNodeRef const pRootNode) = 0;
+	virtual ITrigger const* ConstructTrigger(XmlNodeRef const pRootNode, float& radius) = 0;
 
 	/**
 	 * Free the memory and potentially other resources used by the supplied ITrigger instance

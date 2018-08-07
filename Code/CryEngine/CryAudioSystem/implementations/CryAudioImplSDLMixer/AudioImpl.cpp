@@ -312,7 +312,7 @@ void CImpl::GetInfo(SImplInfo& implInfo) const
 }
 
 ///////////////////////////////////////////////////////////////////////////
-ITrigger const* CImpl::ConstructTrigger(XmlNodeRef const pRootNode)
+ITrigger const* CImpl::ConstructTrigger(XmlNodeRef const pRootNode, float& radius)
 {
 	CTrigger* pTrigger = nullptr;
 
@@ -362,6 +362,10 @@ ITrigger const* CImpl::ConstructTrigger(XmlNodeRef const pRootNode)
 					Cry::Audio::Log(ELogType::Warning, "Min distance (%f) was greater than max distance (%f) of %s", minDistance, maxDistance, szFileName);
 					std::swap(minDistance, maxDistance);
 				}
+
+#if defined(INCLUDE_SDLMIXER_IMPL_PRODUCTION_CODE)
+				radius = maxDistance;
+#endif        // INCLUDE_SDLMIXER_IMPL_PRODUCTION_CODE
 			}
 
 			// Translate decibel to normalized value.

@@ -135,7 +135,7 @@ void CEventManager::DrawDebugInfo(IRenderAuxGeom& auxGeom, float const posX, flo
 				{
 					pColor = Debug::g_managerColorItemLoading.data();
 				}
-				else if (pEvent->m_state == EEventState::Virtual)
+				else if (pEvent->IsVirtual())
 				{
 					pColor = Debug::g_managerColorItemVirtual.data();
 				}

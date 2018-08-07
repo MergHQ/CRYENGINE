@@ -544,6 +544,30 @@ void CSystem::ReportFinishedEvent(
 }
 
 //////////////////////////////////////////////////////////////////////////
+void CSystem::ReportVirtualizedEvent(CATLEvent& event, SRequestUserData const& userData /*= SRequestUserData::GetEmptyObject()*/)
+{
+	SAudioCallbackManagerRequestData<EAudioCallbackManagerRequestType::ReportVirtualizedEvent> requestData(event);
+	CAudioRequest request(&requestData);
+	request.flags = userData.flags;
+	request.pOwner = userData.pOwner;
+	request.pUserData = userData.pUserData;
+	request.pUserDataOwner = userData.pUserDataOwner;
+	PushRequest(request);
+}
+
+//////////////////////////////////////////////////////////////////////////
+void CSystem::ReportPhysicalizedEvent(CATLEvent& event, SRequestUserData const& userData /*= SRequestUserData::GetEmptyObject()*/)
+{
+	SAudioCallbackManagerRequestData<EAudioCallbackManagerRequestType::ReportPhysicalizedEvent> requestData(event);
+	CAudioRequest request(&requestData);
+	request.flags = userData.flags;
+	request.pOwner = userData.pOwner;
+	request.pUserData = userData.pUserData;
+	request.pUserDataOwner = userData.pUserDataOwner;
+	PushRequest(request);
+}
+
+//////////////////////////////////////////////////////////////////////////
 void CSystem::StopAllSounds(SRequestUserData const& userData /* = SAudioRequestUserData::GetEmptyObject() */)
 {
 	SAudioManagerRequestData<EAudioManagerRequestType::StopAllSounds> requestData;

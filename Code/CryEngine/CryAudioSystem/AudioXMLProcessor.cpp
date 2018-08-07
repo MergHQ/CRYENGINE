@@ -637,8 +637,9 @@ void CAudioXMLProcessor::ParseTriggers(XmlNodeRef const pXMLTriggerRoot, EDataSc
 				TriggerConnections connections;
 				connections.reserve(numConnections);
 
+#if defined(INCLUDE_AUDIO_PRODUCTION_CODE)
 				float maxRadius = 0.0f;
-				pTriggerNode->getAttr(s_szRadiusAttribute, maxRadius);
+#endif        // INCLUDE_AUDIO_PRODUCTION_CODE
 
 				for (int m = 0; m < numConnections; ++m)
 				{
@@ -646,12 +647,17 @@ void CAudioXMLProcessor::ParseTriggers(XmlNodeRef const pXMLTriggerRoot, EDataSc
 
 					if (pTriggerImplNode)
 					{
-						Impl::ITrigger const* const pITrigger = g_pIImpl->ConstructTrigger(pTriggerImplNode);
+						float radius = 0.0f;
+						Impl::ITrigger const* const pITrigger = g_pIImpl->ConstructTrigger(pTriggerImplNode, radius);
 
 						if (pITrigger != nullptr)
 						{
 							CATLTriggerImpl const* const pTriggerImpl = new CATLTriggerImpl(++m_triggerImplIdCounter, pITrigger);
 							connections.push_back(pTriggerImpl);
+
+#if defined(INCLUDE_AUDIO_PRODUCTION_CODE)
+							maxRadius = std::max(radius, maxRadius);
+#endif          // INCLUDE_AUDIO_PRODUCTION_CODE
 						}
 					}
 				}
@@ -661,7 +667,7 @@ void CAudioXMLProcessor::ParseTriggers(XmlNodeRef const pXMLTriggerRoot, EDataSc
 #if defined(INCLUDE_AUDIO_PRODUCTION_CODE)
 				CTrigger* const pNewTrigger = new CTrigger(triggerId, dataScope, connections, maxRadius, szTriggerName);
 #else
-				CTrigger* const pNewTrigger = new CTrigger(triggerId, dataScope, connections, maxRadius);
+				CTrigger* const pNewTrigger = new CTrigger(triggerId, dataScope, connections);
 #endif        // INCLUDE_AUDIO_PRODUCTION_CODE
 
 				if (pNewTrigger != nullptr)
@@ -700,7 +706,8 @@ void CAudioXMLProcessor::ParseDefaultTriggers(XmlNodeRef const pXMLTriggerRoot)
 
 				if (pConnectionNode != nullptr)
 				{
-					Impl::ITrigger const* const pITrigger = g_pIImpl->ConstructTrigger(pConnectionNode);
+					float radius = 0.0f;
+					Impl::ITrigger const* const pITrigger = g_pIImpl->ConstructTrigger(pConnectionNode, radius);
 
 					if (pITrigger != nullptr)
 					{
