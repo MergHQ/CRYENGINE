@@ -789,6 +789,11 @@ public:
 	{
 	}
 
+	~ShapeTargetTool()
+	{
+		m_picker.OnCancelPick();
+	}
+
 	virtual void SetUserData(const char* key, void* userData) override
 	{
 		m_picker.m_owner = static_cast<CShapeObject*>(userData);

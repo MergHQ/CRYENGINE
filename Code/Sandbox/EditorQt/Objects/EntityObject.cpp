@@ -139,6 +139,11 @@ namespace Private_EntityObject
 			: CPickObjectTool(&m_picker)
 		{
 		}
+		
+		~EntityLinkTool()
+		{
+			m_picker.OnCancelPick();
+		}
 
 		virtual void SetUserData(const char* key, void* userData) override
 		{

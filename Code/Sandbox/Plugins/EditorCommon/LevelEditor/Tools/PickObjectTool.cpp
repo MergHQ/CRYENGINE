@@ -17,8 +17,6 @@ CPickObjectTool::CPickObjectTool(IPickObjectCallback* callback, CRuntimeClass* t
 
 CPickObjectTool::~CPickObjectTool()
 {
-	if (m_callback)
-		m_callback->OnCancelPick();
 }
 
 bool CPickObjectTool::MouseCallback(CViewport* view, EMouseEvent event, CPoint& point, int flags)

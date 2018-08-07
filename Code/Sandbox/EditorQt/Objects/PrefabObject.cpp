@@ -210,6 +210,11 @@ public:
 	{
 	}
 
+	~PrefabLinkTool()
+	{
+		m_picker.OnCancelPick();
+	}
+
 	virtual void SetUserData(const char* key, void* userData) override
 	{
 		m_picker.m_prefab = static_cast<CPrefabObject*>(userData);
