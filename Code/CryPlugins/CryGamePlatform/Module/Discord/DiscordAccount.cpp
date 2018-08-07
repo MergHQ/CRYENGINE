@@ -34,26 +34,44 @@ namespace Cry
 				return DiscordServiceID;
 			}
 
-			void CAccount::SetStatus(const char* status)
+			void CAccount::SetStatus(const char* szStatus)
 			{
-				m_status = status;
-				
-				DiscordRichPresence discordPresence;
-				memset(&discordPresence, 0, sizeof(discordPresence));
-				discordPresence.state = "Playing";
-				discordPresence.details = m_status.c_str();
-				discordPresence.endTimestamp = time(0) + 5 * 60;
-				discordPresence.largeImageKey = "canary-large";
-				discordPresence.smallImageKey = "ptb-small";
+				SRichPresence presence;
+				presence.status = szStatus;
 
-				CryComment("[Discord] Setting rich presence '%s'", status);
+				SetPresence(presence);
+			}
+
+			void CAccount::SetPresence(const SRichPresence& presence)
+			{
+				m_presence = presence;
+
+				// Note: Should be zero-initialized. Keep that in mind in case 
+				// this struct somehow changes in future versions of the SDK
+				DiscordRichPresence discordPresence = {};
+				
+				discordPresence.state = m_presence.status.c_str();
+				discordPresence.details = m_presence.details.c_str();
+				discordPresence.partySize = m_presence.partySize;
+				discordPresence.partyMax = m_presence.partyMax;
+
+				if(m_presence.countdownTimer == SRichPresence::ETimer::Remaining)
+				{
+					discordPresence.endTimestamp = time(0) + m_presence.seconds;
+				}
+				else if(m_presence.countdownTimer == SRichPresence::ETimer::Elapsed)
+				{
+					discordPresence.startTimestamp = time(0) + m_presence.seconds;
+				}
+
+				CryComment("[Discord] Setting rich presence:\n%s\n%s", m_presence.status.c_str(), m_presence.details.c_str());
 
 				Discord_UpdatePresence(&discordPresence);
 			}
 
-			const char* CAccount::GetStatus() const
+			void CAccount::GetPresence(SRichPresence& presence) const
 			{
-				return m_status.c_str();
+				presence = m_presence;
 			}
 
 			const DynArray<Cry::GamePlatform::AccountIdentifier>& CAccount::GetConnectedAccounts() const

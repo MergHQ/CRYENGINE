@@ -18,10 +18,10 @@ namespace Cry
 			virtual const char* GetNickname() const = 0;
 			//! Gets unique identifier of user
 			virtual UserIdentifier GetIdentifier() const = 0;
-			//! Sets the user's rich status
+			//! Sets a simple string as the user's presence
 			virtual void SetStatus(const char* szStatus) = 0;
-			//! Gets the user's rich status
-			virtual const char* GetStatus() const = 0;
+			//! Sets the user's rich status
+			virtual void SetPresence(const SRichPresence& presence) = 0;
 			//! Gets the user's avatar of the requested size as a texture
 			virtual ITexture* GetAvatar(EAvatarSize size) const = 0;
 			//! Gets the account associated with a specific service, if any

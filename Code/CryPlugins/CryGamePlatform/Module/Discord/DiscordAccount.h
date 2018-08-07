@@ -23,8 +23,9 @@ namespace Cry
 				virtual const char* GetNickname() const override;
 				virtual AccountIdentifier GetIdentifier() const override;
 				virtual ServiceIdentifier GetServiceIdentifier() const override;
-				virtual void SetStatus(const char* status) override;
-				virtual const char* GetStatus() const override;
+				virtual void SetStatus(const char* szStatus) override;
+				virtual void SetPresence(const SRichPresence& presence) override;
+				virtual void GetPresence(SRichPresence& presence) const override;
 				virtual ITexture* GetAvatar(EAvatarSize size) const override;
 				virtual const DynArray<AccountIdentifier>& GetConnectedAccounts() const override;
 				virtual bool IsLocal() const override;
@@ -37,7 +38,8 @@ namespace Cry
 				AccountIdentifierValue m_id;
 				string m_nickname;
 				string m_avatarHash;
-				string m_status;
+
+				SRichPresence m_presence;
 
 				DynArray<AccountIdentifier> m_connectedAccounts;
 			};

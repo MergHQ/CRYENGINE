@@ -27,7 +27,7 @@ namespace Cry
 			struct SWithAccount
 			{
 				explicit SWithAccount(const IAccount& acc) : m_acc(acc) {}
-				bool operator()(const std::unique_ptr<CUser>& pUser) const { return pUser->HasAccount(m_acc); }
+				bool operator()(const std::unique_ptr<CUser>& pUser) const { return pUser && pUser->HasAccount(m_acc); }
 
 			private:
 				const IAccount& m_acc;
@@ -280,7 +280,9 @@ namespace Cry
 				DynArray<IAccount*>::iterator mainAccPos = FindMainAccount(userAccounts);
 				if (mainAccPos != userAccounts.end() && mainAccPos != userAccounts.begin())
 				{
-					std::swap(userAccounts[0], *mainAccPos);
+					// Sebastien recommended me to add the using to support user-customized swap()
+					using std::swap;
+					swap(userAccounts[0], *mainAccPos);
 				}
 			}
 		}
