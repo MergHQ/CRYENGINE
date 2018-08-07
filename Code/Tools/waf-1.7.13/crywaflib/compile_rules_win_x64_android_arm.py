@@ -5,7 +5,7 @@ from waflib.TaskGen import after_method, before_method, feature, extension
 from waflib import Utils
 import os.path
 
-android_target_version = 23
+android_target_version = 24
 android_gcc_version = 4.9
 android_app_name = "CRYENGINE SDK"
 android_launcher_name = "AndroidLauncher"
@@ -13,7 +13,7 @@ android_package_name = "com.crytek.cryengine"
 android_version_code = "1"
 android_version_name = "1.0"
 android_debuggable = "true"
-android_min_sdk_version = "23"
+android_min_sdk_version = "24"
 android_permissions_required = ["WRITE_EXTERNAL_STORAGE", "READ_EXTERNAL_STORAGE", "INTERNET"]
 
 ANT_BUILD_TEMPLATE = r'''<?xml version="1.0" encoding="UTF-8"?>
