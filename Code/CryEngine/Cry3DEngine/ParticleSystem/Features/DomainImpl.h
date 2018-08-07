@@ -232,8 +232,7 @@ inline CDomain::CDomain()
 {
 }
 
-template<typename TParam, typename TMod>
-inline void CDomain::AddToParam(CParticleComponent* pComponent, TParam* pParam, TMod* pModifier)
+inline void CDomain::AddToParam(CParticleComponent* pComponent)
 {
 	CParticleComponent* pSourceComponent = m_sourceOwner == EDomainOwner::Parent ? pComponent->GetParentComponent() : pComponent;
 	if (pSourceComponent)

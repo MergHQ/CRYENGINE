@@ -21,16 +21,13 @@ CFeatureFieldColor::CFeatureFieldColor() : m_color(255, 255, 255) {}
 
 void CFeatureFieldColor::AddToComponent(CParticleComponent* pComponent, SComponentParams* pParams)
 {
-	m_modInit.clear();
-	m_modUpdate.clear();
-
 	pComponent->InitParticles.add(this);
 	pComponent->AddParticleData(EPDT_Color);
 
 	for (auto& pModifier : m_modifiers)
 	{
 		if (pModifier && pModifier->IsEnabled())
-			pModifier->AddToParam(pComponent, this);
+			pModifier->AddToParam(pComponent);
 	}
 	if (!m_modUpdate.empty())
 	{
@@ -68,6 +65,22 @@ void CFeatureFieldColor::Serialize(Serialization::IArchive& ar)
 		ColorB&                      m_color;
 	} serStruct(m_modifiers, m_color);
 	ar(serStruct, "Color", "Color");
+	if (ar.isInput())
+	{
+		m_modInit.clear();
+		m_modUpdate.clear();
+		stl::find_and_erase_all(m_modifiers, nullptr);
+		for (auto& pMod : m_modifiers)
+		{
+			if (pMod->IsEnabled())
+			{
+				if (pMod->GetDomain() & EDD_HasUpdate)
+					m_modUpdate.push_back(pMod);
+				else
+					m_modInit.push_back(pMod);
+			}
+		}
+	}
 }
 
 void CFeatureFieldColor::InitParticles(CParticleComponentRuntime& runtime)
@@ -134,9 +147,9 @@ class CColorRandom : public IColorModifier
 {
 public:
 
-	virtual void AddToParam(CParticleComponent* pComponent, CFeatureFieldColor* pParam)
+	virtual EDataDomain GetDomain() const
 	{
-		pParam->AddToInitParticles(this);
+		return EDD_PerParticle;
 	}
 
 	virtual void Serialize(Serialization::IArchive& ar)
@@ -199,11 +212,7 @@ SERIALIZATION_CLASS_NAME(IColorModifier, CColorRandom, "ColorRandom", "Color Ran
 class CColorCurve : public CDomain, public IColorModifier
 {
 public:
-	virtual void AddToParam(CParticleComponent* pComponent, CFeatureFieldColor* pParam)
-	{
-		if (m_spline.HasKeys())
-			CDomain::AddToParam(pComponent, pParam, this);
-	}
+	virtual EDataDomain GetDomain() const { return CDomain::GetDomain(); }
 
 	virtual void Serialize(Serialization::IArchive& ar)
 	{
@@ -217,7 +226,8 @@ public:
 	virtual void Modify(CParticleComponentRuntime& runtime, const SUpdateRange& range, IOColorStream stream) const
 	{
 		CRY_PFX2_PROFILE_DETAIL;
-		CDomain::Dispatch<CColorCurve>(runtime, range, stream, EDD_PerParticle);
+		if (m_spline.HasKeys())
+			CDomain::Dispatch<CColorCurve>(runtime, range, stream, EDD_PerParticle);
 	}
 
 	template<typename TTimeKernel>
@@ -236,9 +246,9 @@ public:
 		}
 	}
 
-	virtual void Sample(Vec3* samples, int samplePoints) const
+	virtual void Sample(Vec3* samples, uint samplePoints) const
 	{
-		for (int i = 0; i < samplePoints; ++i)
+		for (uint i = 0; i < samplePoints; ++i)
 		{
 			const float point = (float) i / samplePoints;
 			Vec3 color0 = samples[i];
@@ -259,12 +269,9 @@ SERIALIZATION_CLASS_NAME(IColorModifier, CColorCurve, "ColorCurve", "Color Curve
 class CColorAttribute : public IColorModifier
 {
 public:
-	virtual void AddToParam(CParticleComponent* pComponent, CFeatureFieldColor* pParam)
+	virtual EDataDomain GetDomain() const
 	{
-		if (m_spawnOnly)
-			pParam->AddToInitParticles(this);
-		else
-			pParam->AddToUpdate(this);
+		return m_spawnOnly ? EDD_PerParticle : EDD_ParticleUpdate;
 	}
 
 	virtual void Serialize(Serialization::IArchive& ar)
@@ -313,15 +320,9 @@ SERIALIZATION_CLASS_NAME(IColorModifier, CColorAttribute, "Attribute", "Attribut
 class CColorInherit : public IColorModifier
 {
 public:
-	CColorInherit()
-		: m_spawnOnly(true) {}
-
-	virtual void AddToParam(CParticleComponent* pComponent, CFeatureFieldColor* pParam)
+	virtual EDataDomain GetDomain() const
 	{
-		if (m_spawnOnly)
-			pParam->AddToInitParticles(this);
-		else
-			pParam->AddToUpdate(this);
+		return m_spawnOnly ? EDD_PerParticle : EDD_ParticleUpdate;
 	}
 
 	virtual void Serialize(Serialization::IArchive& ar)
@@ -352,7 +353,7 @@ public:
 	}
 
 private:
-	bool m_spawnOnly;
+	bool m_spawnOnly = true;
 };
 
 SERIALIZATION_CLASS_NAME(IColorModifier, CColorInherit, "Inherit", "Inherit");
