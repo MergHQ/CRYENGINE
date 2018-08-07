@@ -148,6 +148,7 @@ protected:
 	CVariable<bool>               mv_drawLast;
 	CVariable<int>                mv_shadowLodBias;
 	CVariable<bool>               mv_ignoreTerrainLayerBlend;
+	CVariable<bool>               mv_ignoreDecalBlend;
 
 	//////////////////////////////////////////////////////////////////////////
 	// Rendering flags.

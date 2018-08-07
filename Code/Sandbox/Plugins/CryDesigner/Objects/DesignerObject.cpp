@@ -646,6 +646,7 @@ DesignerObjectFlags::DesignerObjectFlags() : m_pObj(NULL)
 	excludeCollision = false;
 	occluder = false;
 	ignoreTerrainLayerBlend = true;
+	ignoreDecalBlend = true;
 }
 
 void DesignerObjectFlags::Set()
@@ -665,6 +666,7 @@ void DesignerObjectFlags::Set()
 	excludeFromTriangulation = (flags & ERF_EXCLUDE_FROM_TRIANGULATION) != 0;
 	excludeCollision = (statobjFlags & STATIC_OBJECT_NO_PLAYER_COLLIDE) != 0;
 	ignoreTerrainLayerBlend = (flags & ERF_FOB_ALLOW_TERRAIN_LAYER_BLEND) == 0;
+	ignoreDecalBlend = (flags & ERF_FOB_ALLOW_DECAL_BLEND) == 0;
 }
 
 void DesignerObjectFlags::Serialize(Serialization::IArchive& ar)
@@ -682,6 +684,7 @@ void DesignerObjectFlags::Serialize(Serialization::IArchive& ar)
 	ar(excludeCollision, "excludeCollision", "Exclude Collision");
 	ar(occluder, "occluder", "Occluder");
 	ar(ignoreTerrainLayerBlend, "ignoreTerrainLayerBlend", "Ignore Terrain Layer Blending");
+	ar(ignoreDecalBlend, "ignoreDecalBlend", "Ignore Decal Blending");
 	if (ar.isInput())
 		Update();
 }
@@ -722,6 +725,7 @@ void DesignerObjectFlags::Update()
 	ModifyFlag(nFlags, ERF_NO_DECALNODE_DECALS, noStaticDecals);
 	ModifyFlag(nFlags, ERF_GOOD_OCCLUDER, occluder);
 	ModifyFlag(nFlags, ERF_FOB_ALLOW_TERRAIN_LAYER_BLEND, !ignoreTerrainLayerBlend);
+	ModifyFlag(nFlags, ERF_FOB_ALLOW_DECAL_BLEND, !ignoreDecalBlend);
 	ModifyFlag(statobjFlags, STATIC_OBJECT_NO_PLAYER_COLLIDE, excludeCollision);
 
 	m_pObj->GetCompiler()->SetViewDistRatio(ratioViewDist);

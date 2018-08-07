@@ -628,6 +628,7 @@ bool CCompiledRenderObject::Compile(const EObjectCompilationOptions& compilation
 		                                   (CRendererCVars::CV_e_TerrainBlendingDebug == 0 && (pRenderObject->m_ObjFlags & FOB_ALLOW_TERRAIN_LAYER_BLEND));
 	const bool bTerrain = pRenderObject->m_data.m_pTerrainSectorTextureInfo != nullptr;
 	m_StencilRef |= (bAllowTerrainLayerBlending || bTerrain) ? BIT_STENCIL_ALLOW_TERRAINLAYERBLEND : 0;
+	m_StencilRef |= (pRenderObject->m_ObjFlags & FOB_ALLOW_DECAL_BLEND) ? BIT_STENCIL_ALLOW_DECALBLEND : 0;
 	
 	m_bRenderNearest = (pRenderObject->m_ObjFlags & FOB_NEAREST) != 0;
 

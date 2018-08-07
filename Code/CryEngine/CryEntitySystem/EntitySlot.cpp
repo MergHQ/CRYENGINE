@@ -177,6 +177,7 @@ void CEntitySlot::UpdateRenderNode(bool bForceRecreateNode)
 			SetRenderNodeFlags(renderNodeFlags, ERF_CUSTOM_VIEW_DIST_RATIO, 0 != (entityFlags & ENTITY_FLAG_CUSTOM_VIEWDIST_RATIO));
 
 			SetRenderNodeFlags(renderNodeFlags, ERF_FOB_ALLOW_TERRAIN_LAYER_BLEND, 0 != (GetFlags() & ENTITY_SLOT_ALLOW_TERRAIN_LAYER_BLEND));
+			SetRenderNodeFlags(renderNodeFlags, ERF_FOB_ALLOW_DECAL_BLEND, 0 != (GetFlags() & ENTITY_SLOT_ALLOW_DECAL_BLEND));
 			SetRenderNodeFlags(renderNodeFlags, ERF_FOB_RENDER_AFTER_POSTPROCESSING, 0 != (GetFlags() & ENTITY_SLOT_RENDER_AFTER_POSTPROCESSING));
 			SetRenderNodeFlags(renderNodeFlags, ERF_FOB_NEAREST, 0 != (GetFlags() & ENTITY_SLOT_RENDER_NEAREST));
 

@@ -527,7 +527,8 @@ enum EEntitySlotFlags : uint16
 	ENTITY_SLOT_GI_MODE_BIT0                = BIT16(9),
 	ENTITY_SLOT_GI_MODE_BIT1                = BIT16(10),
 	ENTITY_SLOT_GI_MODE_BIT2                = BIT16(11),
-	ENTITY_SLOT_ALLOW_TERRAIN_LAYER_BLEND   = BIT16(12)
+	ENTITY_SLOT_ALLOW_TERRAIN_LAYER_BLEND   = BIT16(12),
+	ENTITY_SLOT_ALLOW_DECAL_BLEND           = BIT16(13),
 };
 
 struct ISimpleEntityEventListener

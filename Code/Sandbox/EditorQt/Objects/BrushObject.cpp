@@ -128,6 +128,7 @@ CBrushObject::CBrushObject()
 	mv_Occluder = false;
 	mv_drawLast = false;
 	mv_ignoreTerrainLayerBlend = true;
+	mv_ignoreDecalBlend = true;
 	mv_shadowLodBias = 0;
 
 	static string sVarName_OutdoorOnly = "IgnoreVisareas";
@@ -157,6 +158,7 @@ CBrushObject::CBrushObject()
 	static string sVarName_DrawLast = "DrawLast";
 	static string sVarName_ShadowLodBias = "ShadowLodBias";
 	static string sVarName_IgnoreTerrainLayerBlend = "IgnoreTerrainLayerBlend";
+	static string sVarName_IgnoreDecalBlend = "IgnoreDecalBlend";
 
 	CVarEnumList<int>* pHideModeList = new CVarEnumList<int>;
 	pHideModeList->AddItem("None", 0);
@@ -187,6 +189,7 @@ CBrushObject::CBrushObject()
 	m_pVarObject->AddVariable(mv_drawLast, sVarName_DrawLast, functor(*this, &CBrushObject::OnRenderVarChange));
 	m_pVarObject->AddVariable(mv_shadowLodBias, sVarName_ShadowLodBias, functor(*this, &CBrushObject::OnRenderVarChange));
 	m_pVarObject->AddVariable(mv_ignoreTerrainLayerBlend, sVarName_IgnoreTerrainLayerBlend, functor(*this, &CBrushObject::OnRenderVarChange));
+	m_pVarObject->AddVariable(mv_ignoreDecalBlend, sVarName_IgnoreDecalBlend, functor(*this, &CBrushObject::OnRenderVarChange));
 
 	mv_ratioLOD.SetLimits(0, 255);
 	mv_ratioViewDist.SetLimits(0, 255);
@@ -786,6 +789,7 @@ void CBrushObject::CreateInspectorWidgets(CInspectorWidgetCreator& creator)
 		  pObject->m_pVarObject->SerializeVariable(&pObject->mv_drawLast, ar);
 		  pObject->m_pVarObject->SerializeVariable(&pObject->mv_shadowLodBias, ar);
 		  pObject->m_pVarObject->SerializeVariable(&pObject->mv_ignoreTerrainLayerBlend, ar);
+		  pObject->m_pVarObject->SerializeVariable(&pObject->mv_ignoreDecalBlend, ar);
 		}
 
 		if (ar.openBlock("cgf", "<CGF"))
@@ -908,6 +912,8 @@ void CBrushObject::UpdateEngineNode(bool bOnlyTransform)
 		m_renderFlags |= ERF_GI_MODE_BIT0;
 	if (!mv_ignoreTerrainLayerBlend)
 		m_renderFlags |= ERF_FOB_ALLOW_TERRAIN_LAYER_BLEND;
+	if (!mv_ignoreDecalBlend)
+		m_renderFlags |= ERF_FOB_ALLOW_DECAL_BLEND;
 
 	int flags = GetRenderFlags();
 

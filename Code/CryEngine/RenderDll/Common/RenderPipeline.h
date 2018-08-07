@@ -154,6 +154,7 @@ enum EStencilStateOp
 #define BIT_STENCIL_RESERVED                 0x80
 #define BIT_STENCIL_INSIDE_CLIPVOLUME        0x40
 #define BIT_STENCIL_ALLOW_TERRAINLAYERBLEND  0x20
+#define BIT_STENCIL_ALLOW_DECALBLEND         0x10
 #define STENCIL_VALUE_OUTDOORS               0x0
 
 #define STENC_VALID_BITS_NUM          7

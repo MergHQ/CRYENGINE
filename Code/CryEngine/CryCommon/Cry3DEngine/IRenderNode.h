@@ -202,6 +202,7 @@ enum ERenderNodeFlags : uint64
 	ERF_FOB_NEAREST                     = BIT64(40), //!< Set FOB_NEAREST on the CRenderObject flags
 	ERF_PENDING_DELETE                  = BIT64(41),
 	ERF_FOB_ALLOW_TERRAIN_LAYER_BLEND   = BIT64(42), //!< Set FOB_ALLOW_TERRAIN_LAYER_BLEND on the the CRenderObject flags
+	ERF_FOB_ALLOW_DECAL_BLEND           = BIT64(43), //!< Set FOB_ALLOW_DECAL_BLEND on the the CRenderObject flags
 };
 
 #define ERF_SPEC_BITS_MASK    (ERF_SPEC_BIT0 | ERF_SPEC_BIT1 | ERF_SPEC_BIT2)

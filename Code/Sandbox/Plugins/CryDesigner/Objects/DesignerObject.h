@@ -27,6 +27,7 @@ struct DesignerObjectFlags
 	bool            excludeCollision;
 	bool            occluder;
 	bool            ignoreTerrainLayerBlend;
+	bool            ignoreDecalBlend;
 
 	DesignerObject* m_pObj;
 

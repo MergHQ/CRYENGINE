@@ -809,6 +809,7 @@ void CParticleEmitter::Register()
 	SetRndFlags(ERF_RENDER_ALWAYS, m_spawnParams.bIgnoreVisAreas);
 	SetRndFlags(ERF_CASTSHADOWMAPS, false);
 	SetRndFlags(ERF_FOB_ALLOW_TERRAIN_LAYER_BLEND, !m_spawnParams.bIgnoreTerrainLayerBlend);
+	SetRndFlags(ERF_FOB_ALLOW_DECAL_BLEND, !m_spawnParams.bIgnoreDecalBlend);
 	gEnv->p3DEngine->RegisterEntity(this);
 	m_registered = true;
 

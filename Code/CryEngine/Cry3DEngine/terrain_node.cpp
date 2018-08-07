@@ -429,7 +429,7 @@ void CTerrainNode::Init(int x1, int y1, int nNodeSize, CTerrainNode* pParent, bo
 	assert(x1 >= 0 && y1 >= 0 && x1 < CTerrain::GetTerrainSize() && y1 < CTerrain::GetTerrainSize());
 	GetTerrain()->m_arrSecInfoPyramid[m_nTreeLevel][x1 / nSectorSize][y1 / nSectorSize] = this;
 
-	m_dwRndFlags |= (ERF_CASTSHADOWMAPS | ERF_HAS_CASTSHADOWMAPS | ERF_FOB_ALLOW_TERRAIN_LAYER_BLEND);
+	m_dwRndFlags |= (ERF_CASTSHADOWMAPS | ERF_HAS_CASTSHADOWMAPS | ERF_FOB_ALLOW_TERRAIN_LAYER_BLEND | ERF_FOB_ALLOW_DECAL_BLEND);
 	m_fWSMaxViewDist = 1000000.f;
 }
 

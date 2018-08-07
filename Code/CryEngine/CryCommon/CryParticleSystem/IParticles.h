@@ -50,6 +50,7 @@ struct SpawnParams
 	bool                     bNowhere                 = false;                            //!< Exists outside of level.
 	bool                     bPlaced                  = false;                            //!< Loaded from placed entity.
 	bool                     bIgnoreTerrainLayerBlend = true;                             //!< Controls blending with terrain layers
+	bool                     bIgnoreDecalBlend        = true;                             //!< Controls blending with decals
 
 	float                    fCountScale              = 1;                                //!< Multiple for particle count (on top of bCountPerUnit if set).
 	float                    fSizeScale               = 1;                                //!< Multiple for all effect sizes.
@@ -78,6 +79,7 @@ struct SpawnParams
 		ar(eSpec, "spec", "Particle Spec");                                                  ar.doc("Overrides System Spec for this emitter");
 		ar(bIgnoreVisAreas, "ignoreVvisAreas", "Ignore Vis Areas");                          ar.doc("Renders in all VisAreas");
 		ar(bIgnoreTerrainLayerBlend, "ignoreTerrainBlend", "Ignore Terrain Layer Blend");    ar.doc("Controls blending with terrain layers");
+		ar(bIgnoreDecalBlend, "ignoreDecalBlend", "Ignore Decal Blend");    ar.doc("Controls blending with decals");
 
 		bool bOverrideSeed = true;
 		if (ar.isEdit())

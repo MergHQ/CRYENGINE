@@ -357,6 +357,7 @@ void CParticleEmitter::Register(bool b, bool bImmediate)
 				SetRndFlags(ERF_REGISTER_BY_BBOX, m_SpawnParams.bRegisterByBBox);
 				SetRndFlags(ERF_RENDER_ALWAYS, m_SpawnParams.bIgnoreVisAreas);
 				SetRndFlags(ERF_FOB_ALLOW_TERRAIN_LAYER_BLEND, !m_SpawnParams.bIgnoreTerrainLayerBlend);
+				SetRndFlags(ERF_FOB_ALLOW_DECAL_BLEND, !m_SpawnParams.bIgnoreDecalBlend);
 				m_p3DEngine->RegisterEntity(this);
 				m_nEmitterFlags |= ePEF_Registered;
 			}
