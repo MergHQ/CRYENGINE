@@ -1,33 +1,36 @@
 // Copyright 2001-2018 Crytek GmbH / Crytek Group. All rights reserved.
 
 #pragma once
-#include <QWidget>
+
+#include "Gizmos/GizmoManager.h"
+#include "DisplayViewportAdapter.h"
+#include "QViewportEvents.h"
 
 #include <CryMath/Cry_Math.h>
 #include <CryMath/Cry_Matrix34.h>
 #include <CryRenderer/IRenderer.h>
-#include "QViewportEvents.h"
 #include <CrySerialization/Forward.h>
-#include "Gizmos/GizmoManager.h"
-#include "DisplayViewportAdapter.h"
 
-struct SDisplayContext;
-class CCamera;
-struct SRenderingPassInfo;
-struct SRendParams;
-struct Ray;
-struct IRenderer;
+#include <QWidget>
+
 struct I3DEngine;
-struct SSystemGlobalEnvironment;
-
-using Serialization::IArchive;
-
+struct IRenderer;
+struct Ray;
+struct SDisplayContext;
 struct SKeyEvent;
 struct SMouseEvent;
+struct SRenderingPassInfo;
+struct SRendParams;
+struct SSystemGlobalEnvironment;
 struct SViewportSettings;
 struct SViewportState;
 
+class CCamera;
 class QViewport;
+class QViewportConsumer;
+
+using Serialization::IArchive;
+
 struct SRenderContext
 {
 	CCamera*            camera;
@@ -37,7 +40,6 @@ struct SRenderContext
 	IRenderAuxGeom*     pAuxGeom;
 };
 
-class QViewportConsumer;
 class EDITOR_COMMON_API QViewport : public QWidget
 {
 	Q_OBJECT

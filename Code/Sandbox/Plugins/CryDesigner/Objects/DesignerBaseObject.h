@@ -15,8 +15,8 @@ class DesignerBaseObject : public T
 public:
 
 	DesignerBaseObject()
-	{
-		m_pModel = new Model;
+		: m_pModel(new Model)
+	{		
 	}
 
 	void                               Done() override;
@@ -51,7 +51,6 @@ protected:
 
 	_smart_ptr<Model>                 m_pModel;
 	mutable _smart_ptr<ModelCompiler> m_pCompiler;
-
 };
 }
 

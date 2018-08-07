@@ -111,7 +111,7 @@ class EDITOR_COMMON_API CDockableWidget : public CDockableWidgetT<QWidget>
 	Q_OBJECT;
 	Q_INTERFACES(IPane);
 public:
-	CDockableWidget(QWidget* pParent = nullptr) : CDockableWidgetT<QWidget>(pParent) {};
+	CDockableWidget(QWidget* pParent = nullptr) : CDockableWidgetT<QWidget>(pParent) {}
 	virtual ~CDockableWidget() {}
 };
 
@@ -121,7 +121,7 @@ class EDITOR_COMMON_API CDockableWindow : public CDockableWidgetT<QMainWindow>
 	Q_OBJECT;
 	Q_INTERFACES(IPane);
 public:
-	CDockableWindow(QWidget* pParent = nullptr) : CDockableWidgetT<QMainWindow>(pParent) {};
+	CDockableWindow(QWidget* pParent = nullptr) : CDockableWidgetT<QMainWindow>(pParent) {}
 	virtual ~CDockableWindow() {}
 };
 

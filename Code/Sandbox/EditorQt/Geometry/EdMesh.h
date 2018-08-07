@@ -1,17 +1,11 @@
 // Copyright 2001-2018 Crytek GmbH / Crytek Group. All rights reserved.
 #pragma once
 
-#include "EdGeometry.h"
-#include "Objects\SubObjSelection.h"
-#include "TriMesh.h"
+#include "Geometry/EdGeometry.h"
+#include "Geometry/TriMesh.h"
+#include "Objects/SubObjSelection.h"
 
 #include <Util/PakFile.h>
-
-// Flags that can be set on CEdMesh.
-enum CEdMeshFlags
-{
-
-};
 
 //////////////////////////////////////////////////////////////////////////
 // Description:

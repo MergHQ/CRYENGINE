@@ -110,7 +110,7 @@ public:
 
 	//! Returns asset dependencies as a collection of SAssetDependencyInfo
 	// \sa SAssetDependencyInfo
-	const std::vector<SAssetDependencyInfo>& GetDependencies() const { return m_dependencies; };
+	const std::vector<SAssetDependencyInfo>& GetDependencies() const { return m_dependencies; }
 
 	//! Tests if the specified asset is used by another asset.
 	//! \param szAnotherAssetPath paths to the main data file of another asset. The path must be relative to the assets root directory, as it returns by CAsset::GetFile.

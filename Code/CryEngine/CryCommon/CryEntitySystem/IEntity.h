@@ -8,40 +8,36 @@
 
 #include <type_traits>
 
-// Forward declarations.
-struct IPhysicalEntity;
-struct IEntityClass;
-struct IEntityArchetype;
-class CStream;
-class CCamera;
-struct EntityCloneState;
-struct IEntity;
-struct SEntityUpdateContext;
-struct IEntitySerializationContext;
-struct IScriptTable;
 struct AABB;
-class XmlNodeRef;
 struct AIObjectParams;
-struct IParticleEffect;
-struct SpawnParams;
-struct IGeomCacheRenderNode;
+struct EntityCloneState;
+struct IAIObject;
 struct ICharacterInstance;
-struct IParticleEmitter;
-struct IStatObj;
+struct IEntity;
+struct IEntityArchetype;
+struct IEntityClass;
+struct IEntitySerializationContext;
+struct IGameObject;
+struct IGeomCacheRenderNode;
+struct IMaterial;
 struct INetEntity;
-struct SGeometryDebugDrawInfo;
+struct IParticleEffect;
+struct IParticleEmitter;
+struct IPhysicalEntity;
+struct IScriptTable;
+struct IStatObj;
+struct SEntityUpdateContext;
 struct SFogVolumeProperties;
+struct SGeometryDebugDrawInfo;
+struct SpawnParams;
 struct SRenderLight;
 
-//////////////////////////////////////////////////////////////////////////
-struct IGameObject;
-struct IAIObject;
-struct IMaterial;
-//////////////////////////////////////////////////////////////////////////
+class CCamera;
+class CStream;
+class XmlNodeRef;
 
 namespace Schematyc
 {
-// Forward declarations.
 struct IObject;
 struct IEnvRegistrar;
 }
@@ -388,7 +384,6 @@ struct SEntityPreviewContext
 	bool                             bSelected = false;
 	//! Defines if the render slots should get previewed too
 	bool                             bRenderSlots = true;
-
 	//! \see I3DEngine::SGeometryDebugDrawInfo
 	SGeometryDebugDrawInfo&          debugDrawInfo;
 	//! \see IRenderer::SRendParams

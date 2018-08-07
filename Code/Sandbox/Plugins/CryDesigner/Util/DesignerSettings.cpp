@@ -1,38 +1,25 @@
 // Copyright 2001-2018 Crytek GmbH / Crytek Group. All rights reserved.
 
 #include "StdAfx.h"
-#include "Settings.h"
-#include "RenderViewport.h"
-#include <Cry3DEngine/ITimeOfDay.h>
-#include "DesignerEditor.h"
-#include <Preferences/ViewportPreferences.h>
-#include "Objects/DesignerObject.h"
+#include "DesignerSettings.h"
+
 #include "Objects/AreaSolidObject.h"
-#include "Mission.h"
-#include "CryEditDoc.h"
+#include "Objects/DesignerObject.h"
+#include "DesignerEditor.h"
+
 #include "Objects/EnvironmentProbeObject.h"
 #include "Objects/ObjectLoader.h"
+#include "CryEditDoc.h"
+#include "Mission.h"
+
+#include <Preferences/ViewportPreferences.h>
+#include <RenderViewport.h>
+
+#include <Cry3DEngine/ITimeOfDay.h>
 #include <CrySerialization/Decorators/Range.h>
 
 namespace Designer
 {
-class UndoExclusiveMode : public IUndoObject
-{
-public:
-	UndoExclusiveMode(const char* undoDescription = NULL)
-	{
-	}
-
-	const char* GetDescription() { return "Undo for Designer Exclusive Mode"; }
-
-	void        Undo(bool bUndo = true) override
-	{
-	}
-
-	void Redo() override
-	{
-	}
-};
 
 DesignerExclusiveMode gExclusiveModeSettings;
 DesignerSettings gDesignerSettings;

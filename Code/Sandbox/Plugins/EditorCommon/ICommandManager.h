@@ -1,10 +1,10 @@
 // Copyright 2001-2018 Crytek GmbH / Crytek Group. All rights reserved.
 
 #pragma once
+#include "AutoRegister.h"
 #include "Command.h"
 #include "CommandModuleDescription.h"
 #include <CryCore/functor.h>
-#include "AutoRegister.h"
 
 typedef void (* TPfnDeleter)(void*);
 
@@ -64,7 +64,7 @@ inline void DefaultDelete(void* p)
 	delete p;
 }
 }
-};
+}
 
 template<typename FunctorType, typename CommandType>
 bool CommandManagerHelper::Private::RegisterCommand(ICommandManager* pCmdMgr, const char* szModule, const char* szName, const CCommandDescription& description, const FunctorType& functor)
@@ -215,7 +215,7 @@ typedef CAutoRegister<CUiCommand::UiInfo> CAutoRegisterUiCommandHelper;
     cmdMgr->SetUiDescription( # moduleName, # functionName, s_uiInfo);                                                            \
   }                                                                                                                               \
   CAutoRegisterUiCommandHelper g_AutoRegUIDescHelper ## moduleName ## functionName(RegisterUiDesc ## moduleName ## functionName); \
-  };
+  }
 
 #define REGISTER_EDITOR_COMMAND_SHORTCUT(moduleName, functionName, shortcut) REGISTER_EDITOR_UI_COMMAND_DESC(moduleName, functionName, "", shortcut, "", false)
 #define REGISTER_EDITOR_COMMAND_ICON(moduleName, functionName, icon)         REGISTER_EDITOR_UI_COMMAND_DESC(moduleName, functionName, "", CKeyboardShortcut(), icon, false)

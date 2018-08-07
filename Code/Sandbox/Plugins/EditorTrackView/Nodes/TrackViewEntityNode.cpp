@@ -286,18 +286,18 @@ void CTrackViewEntityNode::SetNodeEntity(CEntityObject* pEntity)
 
 	if (pEntity)
 	{
-		const EntityGUID guid = ToEntityGuid(pEntity->GetId());
+		const EntityGUID guid = pEntity->GetId();
 		SetEntityGuid(guid);
 
 		if (pEntity->GetLookAt() && pEntity->GetLookAt()->IsKindOf(RUNTIME_CLASS(CEntityObject)))
 		{
 			CEntityObject* target = static_cast<CEntityObject*>(pEntity->GetLookAt());
-			SetEntityGuidTarget(ToEntityGuid(target->GetId()));
+			SetEntityGuidTarget(target->GetId());
 		}
 		if (pEntity->GetLookAtSource() && pEntity->GetLookAtSource()->IsKindOf(RUNTIME_CLASS(CEntityObject)))
 		{
 			CEntityObject* source = static_cast<CEntityObject*>(pEntity->GetLookAtSource());
-			SetEntityGuidSource(ToEntityGuid(source->GetId()));
+			SetEntityGuidSource(source->GetId());
 		}
 
 		SetPosRotScaleTracksDefaultValues();

@@ -60,7 +60,7 @@ namespace Loader_Private
 		}
 
 	private:
-		bool IsCompleted() const { return m_bCompleted && m_container.empty(); };
+		bool IsCompleted() const { return m_bCompleted && m_container.empty(); }
 
 	private:
 		std::mutex              m_mutex;

@@ -2,9 +2,9 @@
 
 #include "stdafx.h"
 #include "DisplayViewportAdapter.h"
+#include "Util/Math.h"
 #include "QViewport.h"
 #include <CryMath/Cry_Camera.h>
-#include "Util/Math.h"
 
 CDisplayViewportAdapter::CDisplayViewportAdapter(QViewport* viewport) : m_viewport(viewport), m_bXYViewport(false)
 {

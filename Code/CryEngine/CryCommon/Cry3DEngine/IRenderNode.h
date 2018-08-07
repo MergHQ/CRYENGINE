@@ -128,7 +128,7 @@ public:
 
 public:
 	SRenderNodeTempData()  { ZeroStruct(userData); hasValidRenderObjects = invalidRenderObjects = false; }
-	~SRenderNodeTempData() { Free(); };
+	~SRenderNodeTempData() { Free(); }
 
 	CRenderObject* GetRenderObject(int nLod); /* thread-safe */
 	void           Free();
@@ -348,7 +348,7 @@ public:
 #endif
 
 	//! \return IRenderMesh of the object.
-	virtual struct IRenderMesh* GetRenderMesh(int nLod) { return 0; };
+	virtual struct IRenderMesh* GetRenderMesh(int nLod) { return 0; }
 
 	//! Allows to adjust default lod distance settings.
 	//! If fLodRatio is 100 - default lod distance is used.
@@ -362,7 +362,7 @@ public:
 	virtual void                    SetPhysics(IPhysicalEntity* pPhys) = 0;
 
 	//! Physicalizes if it isn't already.
-	virtual void CheckPhysicalized() {};
+	virtual void CheckPhysicalized() {}
 
 	//! Physicalize the node.
 	virtual void Physicalize(bool bInstant = false) {}
@@ -377,7 +377,7 @@ public:
 	virtual struct IFoliage* GetFoliage(int nSlot = 0) { return 0; }
 
 	//! Make sure I3DEngine::FreeRenderNodeState(this) is called in destructor of derived class.
-	virtual ~IRenderNode() { CRY_ASSERT(!m_pTempData.load()); };
+	virtual ~IRenderNode() { CRY_ASSERT(!m_pTempData.load()); }
 
 	//! Set override material for this instance.
 	virtual void SetMaterial(IMaterial* pMat) = 0;
@@ -401,9 +401,9 @@ public:
 	virtual void       Dematerialize()                               {}
 	virtual void       GetMemoryUsage(ICrySizer* pSizer) const = 0;
 
-	virtual void       Precache()                                                                       {};
+	virtual void       Precache()                                                                       {}
 
-	virtual void       UpdateStreamingPriority(const SUpdateStreamingPriorityContext& streamingContext) {};
+	virtual void       UpdateStreamingPriority(const SUpdateStreamingPriorityContext& streamingContext) {}
 
 	virtual const AABB GetBBoxVirtual()                                                                 { return GetBBox(); }
 
@@ -437,7 +437,7 @@ public:
 		return (EGIMode)(((m_dwRndFlags & ERF_GI_MODE_BIT0) ? 1 : 0) | ((m_dwRndFlags & ERF_GI_MODE_BIT1) ? 2 : 0) | ((m_dwRndFlags & ERF_GI_MODE_BIT2) ? 4 : 0));
 	}
 
-	virtual void SetMinSpec(RenderFlagsType nMinSpec) { m_dwRndFlags &= ~ERF_SPEC_BITS_MASK; m_dwRndFlags |= (nMinSpec << ERF_SPEC_BITS_SHIFT) & ERF_SPEC_BITS_MASK; };
+	virtual void SetMinSpec(RenderFlagsType nMinSpec) { m_dwRndFlags &= ~ERF_SPEC_BITS_MASK; m_dwRndFlags |= (nMinSpec << ERF_SPEC_BITS_SHIFT) & ERF_SPEC_BITS_MASK; }
 
 	//! Allows to adjust default max view distance settings.
 	//! If fMaxViewDistRatio is 100 - default max view distance is used.
@@ -527,12 +527,12 @@ public:
 
 	//! Sets camera space position of the render node.
 	//! Only implemented by few nodes.
-	virtual void SetCameraSpacePos(Vec3* pCameraSpacePos) {};
+	virtual void SetCameraSpacePos(Vec3* pCameraSpacePos) {}
 
 	//! Set material layers mask.
 	ILINE void               SetMaterialLayers(uint8 nMtlLayers) { m_nMaterialLayers = nMtlLayers; }
 
-	ILINE int                GetMinSpec() const                  { return (m_dwRndFlags & ERF_SPEC_BITS_MASK) >> ERF_SPEC_BITS_SHIFT; };
+	ILINE int                GetMinSpec() const                  { return (m_dwRndFlags & ERF_SPEC_BITS_MASK) >> ERF_SPEC_BITS_SHIFT; }
 
 	static const ERNListType GetRenderNodeListId(const EERType eRType)
 	{
@@ -551,7 +551,7 @@ public:
 	}
 
 	//! Inform 3d engine that permanent render object that captures drawing state of this node is not valid and must be recreated.
-	ILINE void   InvalidatePermanentRenderObject() { if (auto pTempData = m_pTempData.load()) pTempData->invalidRenderObjects = pTempData->hasValidRenderObjects.load(); };
+	ILINE void   InvalidatePermanentRenderObject() { if (auto pTempData = m_pTempData.load()) pTempData->invalidRenderObjects = pTempData->hasValidRenderObjects.load(); }
 
 	virtual void SetEditorObjectId(uint32 nEditorObjectId)
 	{
@@ -663,7 +663,7 @@ struct IBrush : public IRenderNode
 
 	// Hide mask disable individual sub-objects rendering in the compound static objects
 	// Only implemented by few nodes.
-	virtual void SetSubObjectHideMask(hidemask subObjHideMask) {};
+	virtual void SetSubObjectHideMask(hidemask subObjHideMask) {}
 };
 
 //! \cond INTERNAL

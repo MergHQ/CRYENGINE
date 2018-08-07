@@ -1,18 +1,19 @@
 // Copyright 2001-2018 Crytek GmbH / Crytek Group. All rights reserved.
 
-#ifndef _ICONSOLE_H_
-#define _ICONSOLE_H_
+#pragma once
 
-#include <CryString/CryString.h>
 #include <CryCore/SmallFunction.h>
+#include <CryString/CryString.h>
+
 #include <initializer_list>
 #include <type_traits>
 
 struct ConsoleBind;
-
 struct ICVar;
-class ITexture;
+
 class ICrySizer;
+class ITexture;
+
 enum ELoadConfigurationType;
 
 enum class ECVarType
@@ -204,7 +205,7 @@ typedef void (* ConsoleVarFunc)(ICVar*);
 
 struct IManagedConsoleCommandListener
 {
-	virtual ~IManagedConsoleCommandListener() {};
+	virtual ~IManagedConsoleCommandListener() {}
 	virtual void OnManagedConsoleCommandEvent(const char* commandName, IConsoleCmdArgs* consoleCommandArguments) = 0;
 };
 
@@ -235,11 +236,11 @@ struct IConsole
 	//! \param value Y in screen coordinates.
 	virtual void SetScrollMax(int value) = 0;
 
-	//! Add output sink (clases which are interested in the output) - order is not guaranteed.
+	//! Add output sink (classes which are interested in the output) - order is not guaranteed.
 	//! \param inpSink Must not be 0 and is not allowed to be added twice.
 	virtual void AddOutputPrintSink(IOutputPrintSink* inpSink) = 0;
 
-	//! Remove output sink (clases which are interested in the output) - order is not guaranteed.
+	//! Remove output sink (classes which are interested in the output) - order is not guaranteed.
 	//! \param inpSink Must not be 0 and has to be added before.
 	virtual void RemoveOutputPrintSink(IOutputPrintSink* inpSink) = 0;
 
@@ -552,13 +553,13 @@ struct IRemoteConsoleListener
 {
 	virtual ~IRemoteConsoleListener() {}
 
-	virtual void OnConsoleCommand(const char* cmd)  {};
-	virtual void OnGameplayCommand(const char* cmd) {};
+	virtual void OnConsoleCommand(const char* cmd)  {}
+	virtual void OnGameplayCommand(const char* cmd) {}
 };
 
 struct IRemoteConsole
 {
-	virtual ~IRemoteConsole() {};
+	virtual ~IRemoteConsole() {}
 
 	virtual void RegisterConsoleVariables() = 0;
 	virtual void UnregisterConsoleVariables() = 0;
@@ -714,7 +715,7 @@ struct ICVar
 	virtual void SetAllowedValues(std::initializer_list<float> values) = 0;
 	virtual void SetAllowedValues(std::initializer_list<string> values) = 0;
 
-	//! Indicates whether the console ownes the CVar and should delete it
+	//! Indicates whether the console owns the CVar and should delete it
 	virtual bool IsOwnedByConsole() const = 0;
 };
 
@@ -724,14 +725,14 @@ struct ScopedConsoleLoadConfigType
 		: m_pConsole(pConsole)
 	{
 		m_prevType = pConsole->SetCurrentConfigType(configType);
-	};
+	}
 	~ScopedConsoleLoadConfigType() { m_pConsole->SetCurrentConfigType(m_prevType); }
 private:
 	IConsole*              m_pConsole;
 	ELoadConfigurationType m_prevType;
 };
 
-//#ifndef SWIG // SWIG does not like template specialisation
+//#ifndef SWIG // SWIG does not like template specialization
 
 class CTCVarBase : public ICVar
 {
@@ -1906,5 +1907,3 @@ void CXStringConsoleVariable<T>::GetMemoryUsage(class ICrySizer* pSizer) const
 {
 	pSizer->AddObject(this, sizeof(*this));
 }
-
-#endif //_ICONSOLE_H_

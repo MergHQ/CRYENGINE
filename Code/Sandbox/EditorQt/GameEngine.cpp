@@ -2,74 +2,77 @@
 
 #include "StdAfx.h"
 #include "GameEngine.h"
-#include "IEditorImpl.h"
-#include "CryEditDoc.h"
-#include "Objects/EntityScript.h"
-#include "Objects/AIWave.h"
-#include "Geometry/EdMesh.h"
-#include "Mission.h"
-#include "Terrain/SurfaceType.h"
-#include "Terrain/Heightmap.h"
-#include "Terrain/TerrainGrid.h"
-#include "TerrainLighting.h"
-#include "ViewManager.h"
-#include "SplashScreen.h"
+
 #include "AI/AIManager.h"
 #include "AI/CoverSurfaceManager.h"
-#include "Objects/ObjectLayerManager.h"
-#include "Objects/AICoverSurface.h"
 #include "AI/NavDataGeneration/Navigation.h"
-#include "Material/MaterialManager.h"
-#include "Particles/ParticleManager.h"
+#include "CustomActions/CustomActionsEditorManager.h"
+#include "Geometry/EdMesh.h"
+#include "HyperGraph/Controls/FlowGraphDebuggerEditor.h"
 #include "HyperGraph/FlowGraphManager.h"
 #include "HyperGraph/FlowGraphModuleManager.h"
-#include "HyperGraph/Controls/FlowGraphDebuggerEditor.h"
-#include "UIEnumsDatabase.h"
-#include "Util/Ruler.h"
-#include "CustomActions/CustomActionsEditorManager.h"
 #include "Material/MaterialFXGraphMan.h"
-#include <CryAISystem/IAgent.h>
+#include "Material/MaterialManager.h"
+#include "Objects/AICoverSurface.h"
+#include "Objects/AIWave.h"
+#include "Objects/EntityScript.h"
+#include "Objects/ObjectLayerManager.h"
+#include "Particles/ParticleManager.h"
+#include "Prefabs/PrefabEvents.h"
+#include "Prefabs/PrefabManager.h"
+#include "Terrain/Heightmap.h"
+#include "Terrain/SurfaceType.h"
+#include "Terrain/TerrainGrid.h"
+#include "TerrainLighting.h"
+#include "UI/UIManager.h"
+#include "Util/Ruler.h"
+#include "CryEditDoc.h"
+#include "GameExporter.h"
+#include "IEditorImpl.h"
+#include "Mission.h"
+#include "SplashScreen.h"
+#include "ViewManager.h"
+
+// EditorCommon
+#include <Controls/QuestionDialog.h>
+#include <Notifications/NotificationCenter.h>
+#include <Preferences/ViewportPreferences.h>
+#include <QT/Widgets/QWaitProgress.h>
+#include <ICommandManager.h>
+#include <RenderViewport.h>
+#include <UIEnumsDatabase.h>
+
 #include <Cry3DEngine/I3DEngine.h>
+#include <Cry3DEngine/ITimeOfDay.h>
+#include <CryAISystem/IAgent.h>
 #include <CryAISystem/IAISystem.h>
-#include <CryEntitySystem/IEntitySystem.h>
-#include <CryMovie/IMovieSystem.h>
-#include <CryInput/IInput.h>
-#include <CryScriptSystem/IScriptSystem.h>
-#include <CrySystem/File/ICryPak.h>
-#include <CryPhysics/IPhysics.h>
-#include <CrySandbox/IEditorGame.h>
-#include <CrySystem/ITimer.h>
-#include <CryFlowGraph/IFlowSystem.h>
 #include <CryAnimation/ICryAnimation.h>
+#include <CryAudio/Dialog/IDialogSystem.h>
+#include <CryCore/Platform/platform_impl.inl>
+#include <CryDynamicResponseSystem/IDynamicResponseSystem.h>
+#include <CryEntitySystem/IEntitySystem.h>
+#include <CryFlowGraph/IFlowSystem.h>
 #include <CryGame/IGameFramework.h>
 #include <CryInput/IHardwareMouse.h>
-#include <CryAudio/Dialog/IDialogSystem.h>
-#include <CryDynamicResponseSystem/IDynamicResponseSystem.h>
+#include <CryInput/IInput.h>
+#include <CryMovie/IMovieSystem.h>
 #include <CryPhysics/IDeferredCollisionEvent.h>
-#include <CryCore/Platform/platform_impl.inl>
-#include "Prefabs/PrefabManager.h"
-#include "Prefabs/PrefabEvents.h"
-#include "UI\UIManager.h"
-#include <Cry3DEngine/ITimeOfDay.h>
-#include "QT/Widgets/QWaitProgress.h"
-#include "Controls/QuestionDialog.h"
-#include "Notifications/NotificationCenter.h"
-#include "ICommandManager.h"
-#include "Preferences/ViewportPreferences.h"
-#include "GameExporter.h"
-#include <RenderViewport.h>
+#include <CryPhysics/IPhysics.h>
+#include <CrySandbox/IEditorGame.h>
+#include <CryScriptSystem/IScriptSystem.h>
+#include <CrySystem/File/ICryPak.h>
 #include <CrySystem/ICryPluginManager.h>
+#include <CrySystem/ITimer.h>
+#include <IGameRulesSystem.h>
+#include <ILevelSystem.h>
 
 // added just because of the suspending/resuming of engine update, should be removed once we have msgboxes in a separate process
 #include "CryEdit.h"
 
-#include <../CryAction/IGameRulesSystem.h>
-#include <../CryAction/ILevelSystem.h>
-
 // Implementation of System Callback structure.
 struct SSystemUserCallback : public ISystemUserCallback
 {
-	SSystemUserCallback(IInitializeUIInfo* logo) { m_pLogo = logo; };
+	SSystemUserCallback(IInitializeUIInfo* logo) { m_pLogo = logo; }
 	virtual void OnSystemConnect(ISystem* pSystem)
 	{
 		ModuleInitISystem(pSystem, "Editor");
@@ -159,7 +162,7 @@ static void GameSystemAuthCheckFunction(void* data)
 }
 
 	// src and trg can be the same pointer (in place decryption)
-	// len must be in bytes and must be multiple of 8 byts (64bits).
+	// len must be in bytes and must be multiple of 8 bytes (64bits).
 	// key is 128bit: int key[4] = {n1,n2,n3,n4};
 	// void decipher(unsigned int *const v,unsigned int *const w,const unsigned int *const k)
 #define TEA_DECODE(src, trg, len, key) {                                                                                      \
@@ -1610,12 +1613,6 @@ void CGameEngine::OnEditorNotifyEvent(EEditorNotifyEvent event)
 			if (m_pEditorGame)
 				m_pEditorGame->OnCloseLevel();
 		}
-		break;
-	case eNotify_OnDisplayRenderUpdate:
-		//Note: this seems to be only useful for helpers and only for GameSDK specific helpers,
-		//probably not necessary as each game DLL could simply listen to editor events in its editor plyugin
-		if (GetIEditorGame())
-			GetIEditorGame()->OnDisplayRenderUpdated(GetIEditor()->IsHelpersDisplayed());
 		break;
 	}
 }

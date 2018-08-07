@@ -47,7 +47,6 @@ protected:
 private:
 	CDecalObject();
 	bool       RayToLineDistance(const Vec3& rayLineP1, const Vec3& rayLineP2, const Vec3& pi, const Vec3& pj, float& distance, Vec3& intPnt);
-	void       OnFileChange(string filename);
 	void       OnParamChanged(IVariable* pVar);
 	void       OnViewDistRatioChanged(IVariable* pVar);
 	CMaterial* GetDefaultMaterial() const;

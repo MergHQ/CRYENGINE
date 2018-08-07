@@ -10,14 +10,14 @@ public:
 	DECLARE_DYNCREATE(CSimpleEntity)
 
 	//////////////////////////////////////////////////////////////////////////
-	bool    Init(CBaseObject* prev, const string& file);
-	bool    ConvertFromObject(CBaseObject* object);
+	bool   Init(CBaseObject* prev, const string& file);
+	bool   ConvertFromObject(CBaseObject* object);
 
-	void    Validate();
-	bool    IsSimilarObject(CBaseObject* pObject);
+	void   Validate();
+	bool   IsSimilarObject(CBaseObject* pObject);
 
 	string GetGeometryFile() const;
-	void    SetGeometryFile(const string& filename);
+	void   SetGeometryFile(const string& filename);
 
 private:
 	void OnFileChange(string filename);

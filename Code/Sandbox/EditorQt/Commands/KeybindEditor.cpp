@@ -3,23 +3,6 @@
 #include <StdAfx.h>
 
 #include "KeybindEditor.h"
-#include <QTreeWidget>
-#include <QVBoxLayout>
-#include <QHBoxLayout>
-#include <QAbstractItemModel>
-#include <QPushButton>
-#include <QHeaderView>
-#include <QAction>
-#include <QKeySequence>
-#include <QStyledItemDelegate>
-#include <QLineEdit>
-#include <QKeyEvent>
-#include <QSortFilterProxyModel>
-#include <QJsonDocument>
-#include <QKeySequenceEdit>
-#include <QMenu>
-#include <QToolButton>
-#include <QDir>
 
 #include "Command.h"
 #include "Commands/CommandModel.h"
@@ -38,6 +21,21 @@
 #include <CryIcon.h>
 #include <EditorStyleHelper.h>
 #include <CrySystem/IProjectManager.h>
+
+#include <QAbstractItemModel>
+#include <QAction>
+#include <QDir>
+#include <QHBoxLayout>
+#include <QHeaderView>
+#include <QJsonDocument>
+#include <QKeyEvent>
+#include <QKeySequence>
+#include <QLineEdit>
+#include <QMenu>
+#include <QPushButton>
+#include <QStyledItemDelegate>
+#include <QToolButton>
+#include <QVBoxLayout>
 
 REGISTER_HIDDEN_VIEWPANE_FACTORY(CKeybindEditor, "Keyboard Shortcuts", "Settings", true)
 

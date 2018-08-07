@@ -5,10 +5,10 @@
 class CBaseObject;
 class CObjectArchive;
 class CObjectClassDesc;
-struct SDisplayContext;
 class CObjectLayer;
 class CObjectLayerManager;
 class CObjectPhysicsManager;
+class CObjectRenderHelper;
 class CRect;
 class CSelectionGroup;
 class CTrackViewAnimNode;
@@ -19,7 +19,7 @@ struct CObjectEvent;
 struct HitContext;
 struct IGizmoManager;
 struct IObjectLayerManager;
-class CObjectRenderHelper;
+struct SDisplayContext;
 
 enum EObjectListenerEvent;
 
@@ -34,8 +34,8 @@ enum SerializeFlags
 };
 
 //////////////////////////////////////////////////////////////////////////
-typedef std::vector<CBaseObject*>                                    CBaseObjectsArray;
-typedef std::pair<bool(CALLBACK*)(CBaseObject const&, void*), void*> BaseObjectFilterFunctor;
+typedef std::vector<CBaseObject*>                                     CBaseObjectsArray;
+typedef std::pair<bool (CALLBACK*)(CBaseObject const&, void*), void*> BaseObjectFilterFunctor;
 
 class CBatchProcessDispatcher
 {
@@ -69,7 +69,6 @@ public:
 //////////////////////////////////////////////////////////////////////////
 struct IObjectManager
 {
-public:
 	enum class ESelectOp
 	{
 		eSelect,

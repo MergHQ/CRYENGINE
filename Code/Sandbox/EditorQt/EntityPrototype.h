@@ -18,7 +18,6 @@ public:
 	typedef Functor0 UpdateCallback;
 
 	CEntityPrototype();
-	~CEntityPrototype();
 
 	virtual EDataBaseItemType GetType() const { return EDB_TYPE_ENTITY_ARCHETYPE; }
 

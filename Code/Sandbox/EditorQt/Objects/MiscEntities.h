@@ -12,11 +12,7 @@ class CWindAreaEntity : public CEntityObject
 public:
 	DECLARE_DYNCREATE(CWindAreaEntity)
 
-	//////////////////////////////////////////////////////////////////////////
-	CWindAreaEntity(){}
 	virtual void Display(CObjectRenderHelper& objRenderHelper);
-
-private:
 };
 
 /*!

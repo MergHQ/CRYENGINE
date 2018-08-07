@@ -2,14 +2,11 @@
 
 #pragma once
 
-#include "Objects/BaseObject.h"
-#include "CollisionFilteringProperties.h"
 #include "Geometry/EdMesh.h"
+#include "CollisionFilteringProperties.h"
 
-/*!
- *	CTagPoint is an object that represent named 3d position in world.
- *
- */
+#include <Objects/BaseObject.h>
+
 class SANDBOX_API CBrushObject : public CBaseObject
 {
 public:
