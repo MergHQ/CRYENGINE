@@ -2,10 +2,10 @@
 
 def build(bld):	
 
-	bld.CryPlugin(
+	bld.CryEditorPlugin(
 		target          = 'EditorCryAudioImplSDLMixer',
 		vs_filter       = 'Sandbox/Plugins/EditorAudioControlsEditor/Impl',
 		file_list       = 'editorsdlmixer.waf_files',
-		includes        = ['../common/', 'GeneratedFiles'],
+		includes        = ['../common/', Path('Code/CryEngine/CryAudioSystem/implementations')],
 		output_sub_folder = "Audio"
 	)

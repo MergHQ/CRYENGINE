@@ -7,7 +7,6 @@
 #include <QWidget>
 #include "QtViewPane.h"
 #include "QScrollableBox.h"
-#include "QtViewPane.h"
 #include "Viewport.h"
 
 struct ICVar;
@@ -15,14 +14,15 @@ class CViewport;
 
 class CPanelDisplayRender : public CDockableWidgetT<QScrollableBox>, public IAutoEditorNotifyListener
 {
-	Q_OBJECT;
-	Q_INTERFACES(IPane);
-public:
+	Q_OBJECT
+	Q_INTERFACES(IPane)
+
+	public:
 	CPanelDisplayRender(QWidget* parent = nullptr, CViewport* viewport = nullptr);
 	~CPanelDisplayRender();
 
-	void        Serialize(Serialization::IArchive& ar);
-	QSize       sizeHint() const override;
+	void Serialize(Serialization::IArchive& ar);
+	QSize sizeHint() const override;
 
 	const char* GetPaneTitle() const
 	{
@@ -31,7 +31,7 @@ public:
 
 	void OnCVarChangedCallback();
 
-protected:
+	protected:
 	void SetupCallbacks();
 	void RemoveCallbacks();
 
@@ -59,8 +59,8 @@ protected:
 
 	void showEvent(QShowEvent* e) override;
 
-protected:
-	class QPropertyTree*               m_propertyTree;
+	protected:
+	class QPropertyTree* m_propertyTree;
 	std::unordered_map<ICVar*, uint64> m_varCallbackMap;
-	CViewport*                         m_pViewport;
+	CViewport* m_pViewport;
 };

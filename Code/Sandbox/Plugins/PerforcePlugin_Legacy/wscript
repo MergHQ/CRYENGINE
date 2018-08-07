@@ -18,8 +18,8 @@ def build(bld):
 	lib_path_base = 'Code/SDKs/p4api/' + p4api_subfolder + '_x64_%s/lib'
 
 
-	bld.CryPlugin(
-		target      = 'PerforcePlugin',
+	bld.CryEditorPlugin(
+		target      = 'PerforcePlugin_Legacy',
 		vs_filter   = 'Sandbox/Plugins',
 		file_list   = 'perforceplugin.waf_files',
 		defines		= ['BOOST_ALL_NO_LIB'], #this is necessary because we have force_static_crt = True which will trigger linking statically against boost

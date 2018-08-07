@@ -16,7 +16,7 @@ def build(bld) :
 	  
 	  includes  = Path('Code/SDKs/OSVR/include'),
 	  libpath  = Path('Code/SDKs/OSVR/lib/'),
-	  module_extension = ['sdl2'],
+	  module_extensions = ['sdl2'],
 	  
 	  lib = [ 'osvrClientKit', 'osvrRenderManager' ],
 	  features = [ 'feature_copy_osvr_binaries' ]

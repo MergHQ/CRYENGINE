@@ -14,14 +14,13 @@ def build(bld):
 	except:
 		pass
 
-	bld.CryPlugin(
+	bld.CryEditorPlugin(
 		target = 'FBXPlugin',
 		vs_filter = 'Sandbox/Plugins',
 		file_list = 'fbxplugin.waf_files',
 
 		pch = 'StdAfx.cpp',
-		includes = [ bld.CreateRootRelativePath('Code/SDKs/FbxSdk/include'), bld.CreateRootRelativePath('Code/Sandbox/EditorQt'), bld.CreateRootRelativePath('Code/Sandbox/EditorQt/Include') ],
-		use = [ 'Sandbox' ],
+		includes = [ bld.CreateRootRelativePath('Code/SDKs/FbxSdk/include') ],
 		lib = [ 'libfbxsdk-md', 'Wininet' ],
 		defines = ['FBXSDK_NEW_API', 'PLUGIN_EXPORTS' ,'NOT_USE_CRY_MEMORY_MANAGER'],
 

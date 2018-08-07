@@ -1337,7 +1337,7 @@ def CryGenericExecutable(ctx, *k, **kw):
 	
 ###############################################################################
 @conf
-def CryPlugin(ctx, *k, **kw):
+def CryEditorPlugin(ctx, *k, **kw):
 	"""
 	Wrapper for CryEngine Editor Plugins
 	"""
@@ -1351,7 +1351,7 @@ def CryPlugin(ctx, *k, **kw):
 	kw['cxxflags'] += ['/EHsc', '/GR', '/wd4251', '/wd4275']
 	kw['defines']   += [ 'PLUGIN_EXPORTS', 'EDITOR_COMMON_IMPORTS', 'NOT_USE_CRY_MEMORY_MANAGER' ]
 	kw['output_sub_folder']  = 'EditorPlugins'
-	kw['use']  += ['EditorCommon']
+	kw['use']  += ['EditorCommon', 'Sandbox']
 	kw['includes'] +=  [ctx.CreateRootRelativePath('Code/Sandbox/EditorQt/Include'), ctx.CreateRootRelativePath('Code/Sandbox/EditorQt')]
 		
 	ConfigureTaskGenerator(ctx, kw)

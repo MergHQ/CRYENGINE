@@ -10,7 +10,7 @@
 #include "Objects/SelectionGroup.h"
 #include "Core/Helper.h"
 #include "Tools/ToolCommon.h"
-#include "EditorCommon/QtUtil.h"
+#include <EditorCommon/QtUtil.h>
 
 namespace Designer
 {
