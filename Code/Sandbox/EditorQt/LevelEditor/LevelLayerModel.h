@@ -153,6 +153,7 @@ private:
 	std::map<string, int>            m_geometryCountMap;
 
 	bool m_isRuningBatchProcess{ false };
+	bool m_isDisconnected{ false };
 
 	friend class CLevelModelsManager;
 };

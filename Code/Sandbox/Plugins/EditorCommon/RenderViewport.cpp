@@ -496,12 +496,6 @@ void CRenderViewport::Update()
 		// Configures Aux to draw to the current display-context
 		SDisplayContext displayContext = InitDisplayContext(m_displayContextKey);
 
-		if (m_bForceUpdateVisibleObjectCache)
-		{
-			GetIEditor()->GetObjectManager()->ForceUpdateVisibleObjectCache(displayContext);
-			m_bForceUpdateVisibleObjectCache = false;
-		}
-
 		// 3D engine stats
 		GetIEditor()->GetSystem()->RenderBegin(m_displayContextKey);
 
@@ -1850,17 +1844,7 @@ void CRenderViewport::OnPaint()
 //////////////////////////////////////////////////////////////////////////
 bool CRenderViewport::MouseCallback(EMouseEvent event, CPoint& point, int flags)
 {
-	if (event == eMouseLDown && m_renderer)
-	{
-		// Force the visible object cache to be updated - this is to ensure that
-		// selection will work properly even if helpers are not being displayed,
-		// in which case the cache is not updated every frame.
-		if (!GetIEditor()->IsHelpersDisplayed())
-		{
-			m_bForceUpdateVisibleObjectCache = true;
-		}
-	}
-	else if (event == eMouseLUp)
+	if (event == eMouseLUp)
 	{
 		// Update viewports after done with actions.
 		GetIEditor()->UpdateViews(eUpdateObjects);

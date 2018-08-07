@@ -284,7 +284,6 @@ protected:
 
 	//TODO: We would like all viewports to render whether or not a level is loaded but this has to be further tested.
 	bool m_bCanDrawWithoutLevelLoaded;
-	bool m_bForceUpdateVisibleObjectCache;
 protected:
 
 	virtual void OnResizeInternal(int width, int height);

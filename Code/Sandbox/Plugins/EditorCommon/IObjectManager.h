@@ -131,10 +131,6 @@ public:
 	//! Display objects on specified display context.
 	virtual void Display(CObjectRenderHelper& objRenderHelper) = 0;
 
-	//! Called when selecting without selection helpers - this is needed since
-	//! the visible object cache is normally not updated when not displaying helpers.
-	virtual void ForceUpdateVisibleObjectCache(SDisplayContext& dc) = 0;
-
 	//! Check intersection with objects.
 	//! Find intersection with nearest to ray origin object hit by ray.
 	//! If distance tolerance is specified certain relaxation applied on collision test.

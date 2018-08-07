@@ -179,6 +179,7 @@ CLevelLayerModel::~CLevelLayerModel()
 
 void CLevelLayerModel::Connect()
 {
+	m_isDisconnected = false;
 	CObjectManager* pObjManager = static_cast<CObjectManager*>(GetIEditorImpl()->GetObjectManager());
 
 	pObjManager->signalObjectsChanged.Connect(this, &CLevelLayerModel::OnObjectEvent);
@@ -187,6 +188,7 @@ void CLevelLayerModel::Connect()
 
 void CLevelLayerModel::Disconnect()
 {
+	m_isDisconnected = true;
 	CObjectManager* pObjManager = static_cast<CObjectManager*>(GetIEditorImpl()->GetObjectManager());
 
 	pObjManager->signalObjectsChanged.DisconnectObject(this);
@@ -1771,6 +1773,10 @@ bool CLevelLayerModel::IsRelatedToTopLevelObject(CBaseObject* pObject) const
 
 void CLevelLayerModel::StartBatchProcess()
 {
+	// If we're not handling any object events, then don't handle batch changes either
+	if (m_isDisconnected)
+		return;
+
 	assert(!m_isRuningBatchProcess);
 	m_isRuningBatchProcess = true;
 	beginResetModel();
@@ -1778,6 +1784,10 @@ void CLevelLayerModel::StartBatchProcess()
 
 void CLevelLayerModel::FinishBatchProcess()
 {
+	// If we're not handling any object events, then don't handle batch changes either
+	if (m_isDisconnected)
+		return;
+
 	endResetModel();
 	assert(m_isRuningBatchProcess);
 	m_isRuningBatchProcess = false;

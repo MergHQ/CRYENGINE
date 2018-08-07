@@ -2316,16 +2316,7 @@ void CObjectManager::Display(CObjectRenderHelper& objRenderHelper)
 		UpdateVisibilityList();
 	}
 
-	if (GetIEditor()->IsHelpersDisplayed() || dc.view->GetVisibleObjectsCache()->GetObjectCount() == 0 ||
-	    dc.flags & DISPLAY_SELECTION_HELPERS) // is display helpers or list is not populated (needed to select objects)
-	{
-		FindDisplayableObjects(dc, &passInfo, true);
-	}
-}
-
-void CObjectManager::ForceUpdateVisibleObjectCache(SDisplayContext& dc)
-{
-	FindDisplayableObjects(dc, nullptr, false);
+	FindDisplayableObjects(dc, &passInfo, true);
 }
 
 void CObjectManager::FindDisplayableObjects(SDisplayContext& dc, const SRenderingPassInfo* passInfo, bool bDisplay)
