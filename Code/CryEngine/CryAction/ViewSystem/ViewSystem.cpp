@@ -70,6 +70,7 @@ CViewSystem::~CViewSystem()
 	pConsole->UnregisterVariable("cl_camera_noise_freq", true);
 	pConsole->UnregisterVariable("cl_ViewSystemDebug", true);
 	pConsole->UnregisterVariable("cl_DefaultNearPlane", true);
+	pConsole->UnregisterVariable("cl_ViewApplyHmdOffset", true);
 
 	//Remove as level system listener
 	if (CCryAction::GetCryAction()->GetILevelSystem())

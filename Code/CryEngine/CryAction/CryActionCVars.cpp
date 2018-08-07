@@ -117,6 +117,32 @@ CCryActionCVars::~CCryActionCVars()
 	pConsole->UnregisterVariable("g_enableMergedMeshRuntimeAreas", true);
 	pConsole->UnregisterVariable("g_useProfileManager", true);
 	pConsole->UnregisterVariable("g_legacyItemSystem", true);
+
+	pConsole->UnregisterVariable("cl_useCurrentUserNameAsDefault", true);
+#if !defined(_RELEASE)
+	pConsole->UnregisterVariable("g_userNeverAutoSignsIn", true);
+#endif
+	pConsole->UnregisterVariable("g_gameplayAnalyst", true);
+	pConsole->UnregisterVariable("g_multiplayerEnableVehicles", true);
+	pConsole->UnregisterVariable("co_coopAnimDebug", true);
+	pConsole->UnregisterVariable("co_slideWhileStreaming", true);
+	pConsole->UnregisterVariable("ag_defaultAIStance", true);
+	pConsole->UnregisterVariable("g_syncClassRegistry", true);
+	pConsole->UnregisterVariable("g_allowSaveLoadInEditor", true);
+	pConsole->UnregisterVariable("g_saveLoadBasicEntityOptimization", true);
+	pConsole->UnregisterVariable("g_debugSaveLoadMemory", true);
+	pConsole->UnregisterVariable("g_saveLoadUseExportedEntityList", true);
+	pConsole->UnregisterVariable("g_saveLoadExtendedLog", true);
+	pConsole->UnregisterVariable("g_useXMLCPBinForSaveLoad", true);
+	pConsole->UnregisterVariable("g_XMLCPBGenerateXmlDebugFiles", true);
+	pConsole->UnregisterVariable("g_XMLCPBAddExtraDebugInfoToXmlDebugFiles", true);
+	pConsole->UnregisterVariable("g_XMLCPBSizeReportThreshold", true);
+	pConsole->UnregisterVariable("g_XMLCPBUseExtraZLibCompression", true);
+	pConsole->UnregisterVariable("g_XMLCPBBlockQueueLimit", true);
+	pConsole->UnregisterVariable("g_debugDialogBuffers", true);
+	pConsole->UnregisterVariable("g_saveLoadDumpEntity", true);
+	pConsole->UnregisterVariable("g_dumpClassRegistry", true);
+	pConsole->UnregisterVariable("g_enableActionGame", true);
 }
 
 void CCryActionCVars::DumpEntitySerializationData(IConsoleCmdArgs* pArgs)
