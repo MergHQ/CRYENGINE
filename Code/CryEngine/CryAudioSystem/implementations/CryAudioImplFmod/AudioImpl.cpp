@@ -25,18 +25,15 @@ char const* const CImpl::s_szSnapshotPrefix = "snapshot:/";
 char const* const CImpl::s_szBusPrefix = "bus:/";
 char const* const CImpl::s_szVcaPrefix = "vca:/";
 
-struct SFmodFileData
-{
-	void*        pData;
-	int unsigned fileSize;
-};
+static constexpr size_t s_maxFileSize = size_t(1) << size_t(31);
 
 ///////////////////////////////////////////////////////////////////////////
 CImpl::CImpl()
 	: m_pSystem(nullptr)
 	, m_pLowLevelSystem(nullptr)
 	, m_pMasterBank(nullptr)
-	, m_pStringsBank(nullptr)
+	, m_pMasterAssetsBank(nullptr)
+	, m_pMasterStringsBank(nullptr)
 	, m_isMuted(false)
 {
 	m_constructedObjects.reserve(256);
@@ -840,11 +837,31 @@ void CImpl::CreateVersionString(CryFixedStringT<MaxInfoStringLength>& stringOut)
 //////////////////////////////////////////////////////////////////////////
 FMOD_RESULT F_CALLBACK FmodFileOpenCallback(const char* szName, unsigned int* pFileSize, void** pHandle, void* pUserData)
 {
-	SFmodFileData* const pFileData = static_cast<SFmodFileData*>(pUserData);
-	*pHandle = pFileData->pData;
-	*pFileSize = pFileData->fileSize;
+	FMOD_RESULT fmodResult = FMOD_ERR_FILE_NOTFOUND;
 
-	return FMOD_OK;
+	char const* szFileName = (char const*)pUserData;
+	FILE* const pFile = gEnv->pCryPak->FOpen(szFileName, "rbx", ICryPak::FOPEN_HINT_DIRECT_OPERATION);
+
+	if (pFile != nullptr)
+	{
+		gEnv->pCryPak->FSeek(pFile, 0, SEEK_END);
+		auto const fileSize = static_cast<size_t>(gEnv->pCryPak->FTell(pFile));
+		gEnv->pCryPak->FSeek(pFile, 0, SEEK_SET);
+
+		if (fileSize >= s_maxFileSize)
+		{
+			gEnv->pCryPak->FClose(pFile);
+			fmodResult = FMOD_ERR_FILE_BAD;
+		}
+		else
+		{
+			*pFileSize = static_cast<unsigned int>(fileSize);
+			*pHandle = pFile;
+			fmodResult = FMOD_OK;
+		}
+	}
+
+	return fmodResult;
 }
 
 //////////////////////////////////////////////////////////////////////////
@@ -896,11 +913,27 @@ FMOD_RESULT F_CALLBACK FmodFileSeekCallback(void* pHandle, unsigned int pos, voi
 }
 
 //////////////////////////////////////////////////////////////////////////
+FMOD_RESULT CImpl::LoadBankCustom(char const* const szFileName, FMOD::Studio::Bank** ppBank)
+{
+	FMOD_STUDIO_BANK_INFO bankInfo;
+	ZeroStruct(bankInfo);
+	bankInfo.opencallback = &FmodFileOpenCallback;
+	bankInfo.closecallback = &FmodFileCloseCallback;
+	bankInfo.readcallback = &FmodFileReadCallback;
+	bankInfo.seekcallback = &FmodFileSeekCallback;
+	bankInfo.size = sizeof(bankInfo);
+	bankInfo.userdata = reinterpret_cast<void*>(const_cast<char*>(szFileName));
+
+	return m_pSystem->loadBankCustom(&bankInfo, FMOD_STUDIO_LOAD_BANK_NORMAL, ppBank);
+}
+
+//////////////////////////////////////////////////////////////////////////
 bool CImpl::LoadMasterBanks()
 {
 	FMOD_RESULT fmodResult = FMOD_ERR_UNINITIALIZED;
-	CryFixedStringT<MaxFileNameLength> masterBankPath;
-	CryFixedStringT<MaxFileNameLength> masterBankStringsPath;
+	m_masterBankPath.clear();
+	m_masterAssetsBankPath.clear();
+	m_masterStringsBankPath.clear();
 	CryFixedStringT<MaxFilePathLength + MaxFileNameLength> search(m_regularSoundBankFolder + "/*.bank");
 	_finddata_t fd;
 	intptr_t const handle = gEnv->pCryPak->FindFirst(search.c_str(), &fd);
@@ -909,17 +942,19 @@ bool CImpl::LoadMasterBanks()
 	{
 		do
 		{
-			masterBankStringsPath = fd.name;
-			size_t const substrPos = masterBankStringsPath.find(".strings.bank");
+			m_masterStringsBankPath = fd.name;
+			size_t const substrPos = m_masterStringsBankPath.find(".strings.bank");
 
-			if (substrPos != masterBankStringsPath.npos)
+			if (substrPos != m_masterStringsBankPath.npos)
 			{
-				masterBankPath = m_regularSoundBankFolder.c_str();
-				masterBankPath += "/";
-				masterBankPath += masterBankStringsPath.substr(0, substrPos);
-				masterBankPath += ".bank";
-				masterBankStringsPath.insert(0, "/");
-				masterBankStringsPath.insert(0, m_regularSoundBankFolder.c_str());
+				m_masterBankPath = m_regularSoundBankFolder.c_str();
+				m_masterBankPath += "/";
+				m_masterBankPath += m_masterStringsBankPath.substr(0, substrPos);
+				m_masterAssetsBankPath = m_masterBankPath;
+				m_masterBankPath += ".bank";
+				m_masterAssetsBankPath += ".assets.bank";
+				m_masterStringsBankPath.insert(0, "/");
+				m_masterStringsBankPath.insert(0, m_regularSoundBankFolder.c_str());
 				break;
 			}
 
@@ -929,38 +964,21 @@ bool CImpl::LoadMasterBanks()
 		gEnv->pCryPak->FindClose(handle);
 	}
 
-	if (!masterBankPath.empty() && !masterBankStringsPath.empty())
+	if (!m_masterBankPath.empty() && !m_masterStringsBankPath.empty())
 	{
-		size_t const masterBankFileSize = gEnv->pCryPak->FGetSize(masterBankPath.c_str());
+		size_t const masterBankFileSize = gEnv->pCryPak->FGetSize(m_masterBankPath.c_str());
 		CRY_ASSERT(masterBankFileSize > 0);
-		size_t const masterBankStringsFileSize = gEnv->pCryPak->FGetSize(masterBankStringsPath.c_str());
+		size_t const masterBankStringsFileSize = gEnv->pCryPak->FGetSize(m_masterStringsBankPath.c_str());
 		CRY_ASSERT(masterBankStringsFileSize > 0);
 
 		if (masterBankFileSize > 0 && masterBankStringsFileSize > 0)
 		{
-			FILE* const pMasterBank = gEnv->pCryPak->FOpen(masterBankPath.c_str(), "rbx", ICryPak::FOPEN_HINT_DIRECT_OPERATION);
-			FILE* const pStringsBank = gEnv->pCryPak->FOpen(masterBankStringsPath.c_str(), "rbx", ICryPak::FOPEN_HINT_DIRECT_OPERATION);
-
-			SFmodFileData fileData;
-			fileData.pData = static_cast<void*>(pMasterBank);
-			fileData.fileSize = static_cast<int>(masterBankFileSize);
-
-			FMOD_STUDIO_BANK_INFO bankInfo;
-			ZeroStruct(bankInfo);
-			bankInfo.closecallback = &FmodFileCloseCallback;
-			bankInfo.opencallback = &FmodFileOpenCallback;
-			bankInfo.readcallback = &FmodFileReadCallback;
-			bankInfo.seekcallback = &FmodFileSeekCallback;
-			bankInfo.size = sizeof(bankInfo);
-			bankInfo.userdata = static_cast<void*>(&fileData);
-			bankInfo.userdatalength = sizeof(SFmodFileData);
-
-			fmodResult = m_pSystem->loadBankCustom(&bankInfo, FMOD_STUDIO_LOAD_BANK_NORMAL, &m_pMasterBank);
+			fmodResult = LoadBankCustom(m_masterBankPath.c_str(), &m_pMasterBank);
 			ASSERT_FMOD_OK;
-			fileData.pData = static_cast<void*>(pStringsBank);
-			fileData.fileSize = static_cast<int>(masterBankStringsFileSize);
-			fmodResult = m_pSystem->loadBankCustom(&bankInfo, FMOD_STUDIO_LOAD_BANK_NORMAL, &m_pStringsBank);
+
+			fmodResult = LoadBankCustom(m_masterStringsBankPath.c_str(), &m_pMasterStringsBank);
 			ASSERT_FMOD_OK;
+
 			if (m_pMasterBank != nullptr)
 			{
 				int numBuses = 0;
@@ -984,6 +1002,14 @@ bool CImpl::LoadMasterBanks()
 					delete[] pBuses;
 				}
 			}
+
+			size_t const masterBankAssetsFileSize = gEnv->pCryPak->FGetSize(m_masterAssetsBankPath.c_str());
+
+			if (masterBankAssetsFileSize > 0)
+			{
+				fmodResult = LoadBankCustom(m_masterAssetsBankPath.c_str(), &m_pMasterAssetsBank);
+				ASSERT_FMOD_OK;
+			}
 		}
 	}
 	else
@@ -1002,11 +1028,18 @@ void CImpl::UnloadMasterBanks()
 {
 	FMOD_RESULT fmodResult = FMOD_ERR_UNINITIALIZED;
 
-	if (m_pStringsBank != nullptr)
+	if (m_pMasterStringsBank != nullptr)
 	{
-		fmodResult = m_pStringsBank->unload();
+		fmodResult = m_pMasterStringsBank->unload();
 		ASSERT_FMOD_OK;
-		m_pStringsBank = nullptr;
+		m_pMasterStringsBank = nullptr;
+	}
+
+	if (m_pMasterAssetsBank != nullptr)
+	{
+		fmodResult = m_pMasterAssetsBank->unload();
+		ASSERT_FMOD_OK;
+		m_pMasterAssetsBank = nullptr;
 	}
 
 	if (m_pMasterBank != nullptr)

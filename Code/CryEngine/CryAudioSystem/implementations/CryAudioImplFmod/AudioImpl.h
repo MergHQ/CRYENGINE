@@ -74,11 +74,13 @@ private:
 	static char const* const s_szBusPrefix;
 	static char const* const s_szVcaPrefix;
 
-	void CreateVersionString(CryFixedStringT<MaxInfoStringLength>& stringOut) const;
-	bool LoadMasterBanks();
-	void UnloadMasterBanks();
-	void MuteMasterBus(bool const shouldMute);
-	void PauseMasterBus(bool const shouldPause);
+	void        CreateVersionString(CryFixedStringT<MaxInfoStringLength>& stringOut) const;
+	bool        LoadMasterBanks();
+	void        UnloadMasterBanks();
+	void        MuteMasterBus(bool const shouldMute);
+	void        PauseMasterBus(bool const shouldPause);
+
+	FMOD_RESULT LoadBankCustom(char const* const szFileName, FMOD::Studio::Bank** ppBank);
 
 	bool                                  m_isMuted;
 
@@ -87,10 +89,15 @@ private:
 	CryFixedStringT<MaxFilePathLength>    m_regularSoundBankFolder;
 	CryFixedStringT<MaxFilePathLength>    m_localizedSoundBankFolder;
 
+	CryFixedStringT<MaxFilePathLength>    m_masterBankPath;
+	CryFixedStringT<MaxFilePathLength>    m_masterAssetsBankPath;
+	CryFixedStringT<MaxFilePathLength>    m_masterStringsBankPath;
+
 	FMOD::Studio::System*                 m_pSystem;
 	FMOD::System*                         m_pLowLevelSystem;
 	FMOD::Studio::Bank*                   m_pMasterBank;
-	FMOD::Studio::Bank*                   m_pStringsBank;
+	FMOD::Studio::Bank*                   m_pMasterAssetsBank;
+	FMOD::Studio::Bank*                   m_pMasterStringsBank;
 	CryFixedStringT<MaxControlNameLength> m_language;
 
 #if defined(INCLUDE_FMOD_IMPL_PRODUCTION_CODE)
