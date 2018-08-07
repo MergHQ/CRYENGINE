@@ -335,6 +335,10 @@ void CRenderer::PrepareParticleRenderObjects(Array<const SAddParticlesToSceneJob
 
 	// == now create the render elements and start processing those == //
 	const bool useComputeVerticesJob = passInfo.IsGeneralPass();
+	if (useComputeVerticesJob)
+	{
+		m_ComputeVerticesJobState.SetRunning();
+	}
 
 	SCameraInfo camInfo(passInfo);
 	const bool bParticleTessellation = m_bDeviceSupportsTessellation && CV_r_ParticlesTessellation != 0;
@@ -420,6 +424,11 @@ void CRenderer::PrepareParticleRenderObjects(Array<const SAddParticlesToSceneJob
 		}
 
 		passInfo.GetRendItemSorter().IncreaseParticleCounter();
+	}
+
+	if (useComputeVerticesJob)
+	{
+		m_ComputeVerticesJobState.SetStopped();
 	}
 }
 
