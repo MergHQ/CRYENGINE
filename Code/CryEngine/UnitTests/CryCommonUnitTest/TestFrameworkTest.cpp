@@ -32,7 +32,12 @@ enum EBitFlagEnum
 };
 
 void PlaceholderFunction() {};
-template<typename T> void TemplatePlaceholderFunction() {};
+template<typename T> void TemplatePlaceholderFunction() 
+{
+	// Add side effect to function so it does not get optimized out and give the wrong equals comparison when comparing it with other optimized out functions.
+	volatile static int i = 0;
+	i++;
+};
 
 //Ensure these basic evaluations compile and work as intended
 //This is important when we touch the test framework itself
