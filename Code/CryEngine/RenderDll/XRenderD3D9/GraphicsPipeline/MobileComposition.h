@@ -9,7 +9,8 @@ class CMobileCompositionStage : public CGraphicsPipelineStage
 {
 public:
 	void Init() final;
-	void Execute();
+	void ExecuteDeferredLighting();
+	void ExecutePostProcessing();
 
 private:
 	CDepthDownsamplePass m_passDepthDownsample2;

@@ -53,7 +53,7 @@ CDeviceObjectFactory::CDeviceObjectFactory()
 	m_pVKDevice    = nullptr;
 	m_pVKScheduler = nullptr;
 
-#if defined(CRY_PLATFORM_MOBILE)
+#if !RENDERER_ENABLE_FULL_PIPELINE
 	m_objectValidator = CDeviceObjectValidator::CreateForMobile();
 #else
 	m_objectValidator = CDeviceObjectValidator::Create();

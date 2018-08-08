@@ -488,6 +488,9 @@ void CSceneGBufferStage::ExecuteMicroGBuffer()
 	m_microGBufferPass.EndExecution();
 
 	rendItemDrawer.JobifyDrawSubmission();
+
+	// linearize depth here so that it can be used in overlay passes for e.g for soft depth test
+	ExecuteLinearizeDepth();
 }
 
 void CSceneGBufferStage::Execute()

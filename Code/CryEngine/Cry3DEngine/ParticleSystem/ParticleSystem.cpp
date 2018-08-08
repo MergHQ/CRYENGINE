@@ -113,8 +113,8 @@ void CParticleSystem::Update()
 		m_cameraMotion.q = currentCameraPose.q * m_lastCameraPose.q.GetInverted();
 	}
 
-	auto gpuMan = gEnv->pRenderer->GetGpuParticleManager();
-	gpuMan->BeginFrame();
+	if (auto gpuMan = gEnv->pRenderer->GetGpuParticleManager())
+		gpuMan->BeginFrame();
 
 	// Accumulate thread stats from last frame
 	auto& sumData = GetSumData();

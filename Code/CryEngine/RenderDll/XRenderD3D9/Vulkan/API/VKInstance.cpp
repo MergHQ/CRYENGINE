@@ -587,7 +587,7 @@ VkResult CInstance::InitializeDebugLayerCallback()
 
 bool CInstance::ValidateDeviceFeatures(const SPhysicalDeviceInfo& deviceInfo) const
 {
-#if !CRY_PLATFORM_MOBILE
+#if !RENDERER_ENABLE_FULL_PIPELINE
 
 #define VALIDATE_LIMIT(requiredValue, supportedValue)                                                                          \
 	if (deviceInfo.deviceProperties.limits.supportedValue < requiredValue)                                                       \

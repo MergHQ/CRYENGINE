@@ -122,14 +122,14 @@ CTexture* LookupTexNeutral(EEfResTextures texSlot)
 
 bool IsSlotAvailable(EEfResTextures texSlot)
 {
-#if defined(CRY_PLATFORM_MOBILE)
+#if !RENDERER_ENABLE_FULL_PIPELINE
 	return
-		texSlot == EFTT_DIFFUSE ||
-		texSlot == EFTT_DIFFUSE ||
-		texSlot == EFTT_NORMALS ||
-		texSlot == EFTT_SPECULAR ||
-		texSlot == EFTT_SMOOTHNESS ||
-		texSlot == EFTT_EMITTANCE ||
+		texSlot == EFTT_DIFFUSE        ||
+		texSlot == EFTT_NORMALS        ||
+		texSlot == EFTT_SPECULAR       ||
+		texSlot == EFTT_SMOOTHNESS     ||
+		texSlot == EFTT_HEIGHT         ||
+		texSlot == EFTT_EMITTANCE      ||
 		texSlot == EFTT_DETAIL_OVERLAY ||
 		texSlot == EFTT_DECAL_OVERLAY;
 #else

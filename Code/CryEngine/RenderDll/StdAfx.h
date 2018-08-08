@@ -27,6 +27,22 @@
 	//#define RENDERER_ENABLE_LEGACY_PIPELINE
 #endif
 
+/* Choice of rendering pipeline: 
+ * RENDERER_ENABLE_FULL_PIPELINE   - full rendering pipeline with all bells and whistles
+ * RENDERER_ENABLE_MOBILE_PIPELINE - reduced rendering pipeline with limited features for mobile
+ * Note that both pipelines can be enabled simultaneously and runtime-switched via r_GraphicsPipelineMobile cvar
+*/
+
+#if !CRY_PLATFORM_MOBILE
+	#define RENDERER_ENABLE_FULL_PIPELINE 1
+#else
+	#define RENDERER_ENABLE_MOBILE_PIPELINE 1
+#endif
+
+#if !RENDERER_ENABLE_FULL_PIPELINE && !RENDERER_ENABLE_MOBILE_PIPELINE
+	#error "Enable either full rendering pipeline or mobile rendering pipeline (or both)"
+#endif
+
 #if (defined(CRY_USE_GNM) || defined(CRY_USE_GNM_RENDERER) || defined(CRY_USE_DX12) || defined(OPENGL) || defined(VULKAN)) || \
    !(defined(CRY_RENDERER_DIRECT3D) || defined(CRY_RENDERER_OPENGL) || defined(CRY_RENDERER_OPENGLES) || defined(CRY_RENDERER_GNM) || defined(CRY_RENDERER_VULKAN))
      #error "Renderer-Type configuration has not been changed to the unified naming scheme!"

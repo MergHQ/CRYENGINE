@@ -58,5 +58,8 @@ void CComputeParticlesStage::PostDraw()
 
 gpu_pfx2::IManager* CD3D9Renderer::GetGpuParticleManager()
 {
-	return GetGraphicsPipeline().GetComputeParticlesStage()->GetGpuParticleManager();
+	if (auto pComputeParticlesStage = GetGraphicsPipeline().GetComputeParticlesStage())
+		return pComputeParticlesStage->GetGpuParticleManager();
+
+	return nullptr;
 }

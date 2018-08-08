@@ -21,7 +21,6 @@
 
 //////////////////////////////////////////////////////////////////////////
 int CRendererCVars::CV_r_GraphicsPipeline;
-int CRendererCVars::CV_r_GraphicsPipelineMobile;
 int CRendererCVars::CV_r_GraphicsPipelinePassScheduler;
 int CRendererCVars::CV_r_PostProcess_CB;
 int CRendererCVars::CV_r_PostProcess;
@@ -46,6 +45,7 @@ int CRendererCVars::CV_r_overrideScanlineOrder = 0;
 int CRendererCVars::CV_r_FullscreenPreemption = 1;
 #endif
 AllocateConstIntCVar(CRendererCVars, CV_r_SyncToFrameFence);
+AllocateConstIntCVar(CRendererCVars, CV_r_GraphicsPipelineMobile);
 AllocateConstIntCVar(CRendererCVars, CV_e_DebugTexelDensity);
 AllocateConstIntCVar(CRendererCVars, CV_e_DebugDraw);
 AllocateConstIntCVar(CRendererCVars, CV_e_TerrainBlendingDebug);
@@ -983,10 +983,12 @@ void CRendererCVars::InitCVars()
 	               "  1: Use new graphics pipeline with objects compiled on the fly\n"
 	               "  2: Use new graphics pipeline with permanent render objects");
 
-	REGISTER_CVAR3("r_GraphicsPipelineMobile", CV_r_GraphicsPipelineMobile, 0, VF_NULL,
+#if RENDERER_ENABLE_FULL_PIPELINE && RENDERER_ENABLE_MOBILE_PIPELINE
+	DefineConstIntCVar3("r_GraphicsPipelineMobile", CV_r_GraphicsPipelineMobile, GRAPHICS_PIPELINE_MOBILE_DEFAULT_VAL, VF_NULL,
 	               "Run limited pipeline specifically optimized for mobile devices.\n"
 								 "  1: Using compressed micro GBuffer\n"
 								 "  2: Using standard GBuffer");
+#endif
 
 	REGISTER_CVAR3("r_GraphicsPipelinePassScheduler", CV_r_GraphicsPipelinePassScheduler, 0, VF_NULL,
 	               "Toggles render pass scheduler that submits passes in a deferred way, allowing improved multithreading and barrier scheduling.");

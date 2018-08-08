@@ -53,10 +53,17 @@ public:
 #if CRY_PLATFORM_WINDOWS
 	static int CV_r_FullscreenPreemption;
 #endif
+
+#if CRY_PLATFORM_ANDROID
+	#define GRAPHICS_PIPELINE_MOBILE_DEFAULT_VAL 1
+#else
+	#define GRAPHICS_PIPELINE_MOBILE_DEFAULT_VAL 0
+#endif
+
 	DeclareStaticConstIntCVar(CV_r_SyncToFrameFence, 1);
+	DeclareStaticConstIntCVar(CV_r_GraphicsPipelineMobile, GRAPHICS_PIPELINE_MOBILE_DEFAULT_VAL);
 
 	static int   CV_r_GraphicsPipeline;
-	static int   CV_r_GraphicsPipelineMobile;
 	static int   CV_r_GraphicsPipelinePassScheduler;
 
 	static int   CV_r_DeferredShadingTiled;

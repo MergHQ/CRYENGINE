@@ -97,12 +97,12 @@ void CStandardGraphicsPipeline::Init()
 	RegisterSceneStage<CShadowMapStage   , eStage_ShadowMap   >(m_pShadowMapStage);
 	RegisterSceneStage<CSceneGBufferStage, eStage_SceneGBuffer>(m_pSceneGBufferStage);
 	RegisterSceneStage<CSceneForwardStage, eStage_SceneForward>(m_pSceneForwardStage);
-#if !defined(CRY_PLATFORM_MOBILE)
+#if RENDERER_ENABLE_FULL_PIPELINE
 	RegisterSceneStage<CSceneCustomStage , eStage_SceneCustom >(m_pSceneCustomStage);
 #endif
 
 	// Register all other stages that don't need the global PSO cache
-#if !defined(CRY_PLATFORM_MOBILE)
+#if RENDERER_ENABLE_FULL_PIPELINE
 	RegisterStage<CTiledLightVolumesStage     >(m_pTiledLightVolumesStage     , eStage_TiledLightVolumes);
 	RegisterStage<CHeightMapAOStage           >(m_pHeightMapAOStage           , eStage_HeightMapAO);
 	RegisterStage<CScreenSpaceObscuranceStage >(m_pScreenSpaceObscuranceStage , eStage_ScreenSpaceObscurance);
@@ -136,8 +136,13 @@ void CStandardGraphicsPipeline::Init()
 	RegisterStage<COmniCameraStage            >(m_pOmniCameraStage            , eStage_OmniCamera);
 	RegisterStage<CDebugRenderTargetsStage    >(m_pDebugRenderTargetsStage    , eStage_DebugRenderTargets);
 #else
-	RegisterStage<CTiledShadingStage>(m_pTiledShadingStage, eStage_TiledShading);
-	RegisterStage<CMobileCompositionStage>(m_pMobileCompositionStage, eStage_MobileComposition);
+	RegisterStage<CTiledLightVolumesStage     >(m_pTiledLightVolumesStage     , eStage_TiledLightVolumes);
+	RegisterStage<CFogStage                   >(m_pFogStage                   , eStage_Fog);
+	RegisterStage<CClipVolumesStage           >(m_pClipVolumesStage           , eStage_ClipVolumes);
+	RegisterStage<CTiledShadingStage          >(m_pTiledShadingStage          , eStage_TiledShading);
+	RegisterStage<CMobileCompositionStage     >(m_pMobileCompositionStage     , eStage_MobileComposition);
+	RegisterStage<COmniCameraStage            >(m_pOmniCameraStage            , eStage_OmniCamera);
+	RegisterStage<CDebugRenderTargetsStage    >(m_pDebugRenderTargetsStage    , eStage_DebugRenderTargets);
 #endif
 
 	// Now init stages
@@ -227,7 +232,7 @@ bool CStandardGraphicsPipeline::CreatePipelineStates(DevicePipelineStatesArray* 
 		bFullyCompiled &= m_pSceneForwardStage->CreatePipelineStates(pStateArray, stateDesc, pStateCache);
 	}
 
-#if !defined(CRY_PLATFORM_MOBILE)
+#if RENDERER_ENABLE_FULL_PIPELINE
 	// Custom
 	{
 		stateDesc.technique = TTYPE_DEBUG;
@@ -748,13 +753,18 @@ void CStandardGraphicsPipeline::ExecuteMobilePipeline()
 			m_pClipVolumesStage->GenerateClipVolumeInfo();
 			m_pTiledLightVolumesStage->Execute();
 			m_pTiledShadingStage->Execute();
+			m_pMobileCompositionStage->ExecuteDeferredLighting();
 		}
 	}
 
-	// Opaque forward passes
+	// Opaque and transparent forward passes
 	m_pSceneForwardStage->ExecuteMobile();
 
-	m_pMobileCompositionStage->Execute();
+	// Insert fence which is used on consoles to prevent overwriting video memory
+	pRenderer->InsertParticleVideoDataFence(pRenderer->GetRenderFrameID());
+
+	m_pMobileCompositionStage->ExecutePostProcessing();
+
 
 	pRenderer->m_pPostProcessMgr->End(pRenderView);
 }

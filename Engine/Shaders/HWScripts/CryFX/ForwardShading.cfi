@@ -322,7 +322,7 @@ void Fwd_StandardOpaqueShading(in MaterialAttribsCommon commonAttribs, inout For
 		diffuseAcc += Fwd_GlobalProbe.SampleLevel(ssMaterialTrilinear, fwdAttribs.normal, 8);
 		float3 viewVec = normalize(-fwdAttribs.worldPos);
 		float NdotV = saturate(dot(viewVec, fwdAttribs.normal));
-		specularAcc += GetEnvironmentCMap(Fwd_GlobalProbe, reflect(-viewVec, fwdAttribs.normal), fwdAttribs.smoothness) * GetEnvmapFresnel(fwdAttribs.reflectance, fwdAttribs.smoothness, NdotV);
+		specularAcc += GetEnvironmentCMap(Fwd_GlobalProbe, ssMaterialTrilinearClamp, reflect(-viewVec, fwdAttribs.normal), fwdAttribs.smoothness) * GetEnvmapFresnel(fwdAttribs.reflectance, fwdAttribs.smoothness, NdotV);
 	}
 #endif
 	

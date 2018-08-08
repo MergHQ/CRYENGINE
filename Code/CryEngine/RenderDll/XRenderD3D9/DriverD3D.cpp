@@ -5494,7 +5494,10 @@ void CD3D9Renderer::EndRenderDocCapture()
 
 compute_skinning::IComputeSkinningStorage* CD3D9Renderer::GetComputeSkinningStorage()
 {
-	return &GetGraphicsPipeline().GetComputeSkinningStage()->GetStorage();
+	if (auto pComputeSkinningStage = GetGraphicsPipeline().GetComputeSkinningStage())
+		return &pComputeSkinningStage->GetStorage();
+
+	return nullptr;
 }
 
 #pragma warning(pop)

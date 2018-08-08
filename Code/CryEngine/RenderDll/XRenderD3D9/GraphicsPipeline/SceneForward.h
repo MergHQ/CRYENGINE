@@ -84,6 +84,7 @@ private:
 	CDeviceResourceLayoutPtr m_pOpaqueResourceLayout;
 	CDeviceResourceLayoutPtr m_pOpaqueResourceLayoutMobile;
 	CDeviceResourceLayoutPtr m_pTransparentResourceLayout;
+	CDeviceResourceLayoutPtr m_pTransparentResourceLayoutMobile;
 	CDeviceResourceLayoutPtr m_pEyeOverlayResourceLayout;
 
 	CDeviceResourceSetDesc   m_opaquePassResources;
@@ -92,6 +93,8 @@ private:
 	CDeviceResourceSetPtr    m_pOpaquePassResourceSetMobile;
 	CDeviceResourceSetDesc   m_transparentPassResources;
 	CDeviceResourceSetPtr    m_pTransparentPassResourceSet;
+	CDeviceResourceSetDesc   m_transparentPassResourcesMobile;
+	CDeviceResourceSetPtr    m_pTransparentPassResourceSetMobile;
 	CDeviceResourceSetDesc   m_eyeOverlayPassResources;
 	CDeviceResourceSetPtr    m_pEyeOverlayPassResourceSet;
 	CConstantBufferPtr       m_pPerPassCB;
@@ -102,6 +105,7 @@ private:
 	CSceneRenderPass         m_forwardTransparentBWPass;
 	CSceneRenderPass         m_forwardTransparentAWPass;
 	CSceneRenderPass         m_forwardTransparentLoResPass;
+	CSceneRenderPass         m_forwardTransparentPassMobile;
 	CSceneRenderPass         m_forwardHDRPass;
 	CSceneRenderPass         m_forwardLDRPass;
 	CSceneRenderPass         m_forwardEyeOverlayPass;
