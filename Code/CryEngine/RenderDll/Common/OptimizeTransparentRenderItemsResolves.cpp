@@ -118,7 +118,7 @@ inline void topological(nodes_t &nodes, roots_t &roots, std::size_t min_resolve_
 		{
 			const auto area = static_cast<std::size_t>(rt->bounds.GetWidth()) * rt->bounds.GetHeight();
 
-			if (rt->requiresResolve && area >= min_resolve_area)
+			if (rt->requiresResolve && area > min_resolve_area)
 			{
 				roots_pending_resolve.push_back(rt);
 				resolve_rects.push_back(rt->bounds);
@@ -155,7 +155,7 @@ std::size_t CRenderView::OptimizeTransparentRenderItemsResolves(STransparentSegm
 			STransparentSegment segment;
 			segment.rendItems.start = i;
 			while (++i < renderItems.size() && !(renderItems[i].nBatchFlags & refractionMask)) {}
-			segment.rendItems.end = i;
+			segment.rendItems.end = i; 
 
 			if (needsResolve)
 			{
