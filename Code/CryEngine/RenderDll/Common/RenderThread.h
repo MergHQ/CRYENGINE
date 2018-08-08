@@ -141,7 +141,6 @@ struct CRY_ALIGN(128) SRenderThread
 	// Will be blit into the first render frame's command queue after loading and subsequently resized to 0.
 	TArray<byte> m_CommandsLoading;
 	CryCriticalSectionNonRecursive m_CommandsLoadingLock;
-	CryCriticalSectionNonRecursive m_CommandsLock;
 
 	enum EVideoThreadMode
 	{
@@ -506,7 +505,7 @@ inline void SRenderThread::ExecuteRenderThreadCommand(RenderThreadCallback&& cal
 	else
 	{
 		CRY_ASSERT(!IsLevelLoadingThread());
-		AUTO_LOCK_T(CryCriticalSectionNonRecursive, m_CommandsLock);
+//		AUTO_LOCK_T(CryCriticalSectionNonRecursive, m_CommandsLock);
 		byte* p = AddCommandTo(eRC_LambdaCall, sizeof(void*), m_Commands[m_nCurThreadFill]);
 		void* pCallbackPtr = ::new(m_lambdaCallbacksPool.Allocate())SRenderThreadLambdaCallback{callback,flags};
 		AddPointer(p, pCallbackPtr);

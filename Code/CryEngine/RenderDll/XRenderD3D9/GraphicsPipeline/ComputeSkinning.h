@@ -78,7 +78,7 @@ struct SPerCharacterResources : public compute_skinning::IPerCharacterDataSupply
 	CTypedReadResource<compute_skinning::SSkinning>     skinningVector;
 	CTypedReadResource<compute_skinning::SSkinningMap>  skinningVectorMap;
 
-	void RT_PushWeights(const int numWeights, const int numWeightsMap, const compute_skinning::SSkinning* weights, const compute_skinning::SSkinningMap* weightsMap) override;
+	void PushWeights(const int numWeights, const int numWeightsMap, const compute_skinning::SSkinning* weights, const compute_skinning::SSkinningMap* weightsMap) override;
 	bool HasWeights() { return m_hasWeights; }
 
 	size_t GetSizeBytesGpuBuffers();
@@ -113,8 +113,8 @@ struct SPerMeshResources : public compute_skinning::IPerMeshDataSupply
 	bool IsInitialized(uint32 wantedState) const { return (uploadState & wantedState) == wantedState; }
 
 	// per mesh data supply implementation
-	virtual void RT_PushMorphs(const int numMorps, const int numMorphsBitField, const Vec4* morphsDeltas, const uint64* morphsBitField) override;
-	virtual void RT_PushBindPoseBuffers(const int numVertices, const int numIndices, const int numAdjTriangles, const compute_skinning::SSkinVertexIn* vertices, const vtx_idx* indices, const uint32* adjTriangles) override;
+	virtual void PushMorphs(const int numMorps, const int numMorphsBitField, const Vec4* morphsDeltas, const uint64* morphsBitField) override;
+	virtual void PushBindPoseBuffers(const int numVertices, const int numIndices, const int numAdjTriangles, const compute_skinning::SSkinVertexIn* vertices, const vtx_idx* indices, const uint32* adjTriangles) override;
 
 	std::shared_ptr<IPerCharacterDataSupply> GetOrCreatePerCharacterResources(const uint32 guid) override;
 	std::shared_ptr<SPerCharacterResources> GetPerCharacterResources(const uint32 guid);
