@@ -312,13 +312,22 @@ bool CFeatureCollision::RayWorldIntersection(SContactPoint& contact, const Vec3&
 	if (m_objectFilter & ~ent_terrain_raytrace)
 	{
 		ray_hit rayHit;
-		if (gEnv->pPhysicalWorld->RayWorldIntersection(start, ray, m_objectFilter & ~ent_terrain_raytrace, kCollisionsFlags, &rayHit, 1))
+		while (gEnv->pPhysicalWorld->RayWorldIntersection(start, ray, m_objectFilter & ~ent_terrain_raytrace, kCollisionsFlags, &rayHit, 1))
 		{
-			contact.m_point = rayHit.pt;
-			contact.m_normal = rayHit.n;
-			contact.m_pSurfaceType = gEnv->p3DEngine->GetMaterialManager()->GetSurfaceTypeManager()->GetSurfaceType(rayHit.surface_idx);
-			contact.m_time = rayHit.dist * rayIn.GetInvLength();
-			contact.m_collided = 1;
+			if ((rayHit.n | ray) >= 0.0f)
+			{
+				ray += start - rayHit.pt;
+				start = rayHit.pt;
+			}
+			else
+			{
+				contact.m_point = rayHit.pt;
+				contact.m_normal = rayHit.n;
+				contact.m_pSurfaceType = gEnv->p3DEngine->GetMaterialManager()->GetSurfaceTypeManager()->GetSurfaceType(rayHit.surface_idx);
+				contact.m_time = rayHit.dist * rayIn.GetInvLength();
+				contact.m_collided = 1;
+				break;
+			}
 		}
 	}
 
