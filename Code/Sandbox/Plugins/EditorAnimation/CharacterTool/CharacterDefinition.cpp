@@ -1798,7 +1798,7 @@ bool CharacterDefinition::LoadFromXml(const XmlNodeRef& root)
 					nodeAttach->getAttr("collisionDampingTangential", attach.m_vclothParams.collisionDampingTangential);
 
 					// Nearest Neighbor Distance Constraints
-					nodeAttach->getAttr("Nearest Neighbor Distance Constraints", attach.m_vclothParams.useNearestNeighborDistanceConstraints);
+					nodeAttach->getAttr("nearestNeighborDistanceConstraints", attach.m_vclothParams.useNearestNeighborDistanceConstraints);
 					nodeAttach->getAttr("nndcAllowedExtension", attach.m_vclothParams.nndcAllowedExtension);
 					nodeAttach->getAttr("nndcMaximumShiftFactor", attach.m_vclothParams.nndcMaximumShiftFactor);
 					nodeAttach->getAttr("nndcShiftCollisionFactor", attach.m_vclothParams.nndcShiftCollisionFactor);
