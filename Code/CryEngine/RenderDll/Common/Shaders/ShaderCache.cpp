@@ -1118,6 +1118,33 @@ void CShaderMan::mfInsertNewCombination(SShaderCombIdent& Ident, EHWShaderClass 
 		*Str = str;
 }
 
+static const char* GetGLSLANGTargetName(EHWShaderClass eClass)
+{
+	switch (eClass)
+	{
+	case EHWShaderClass::eHWSC_Vertex:
+		return "vert";
+
+	case EHWShaderClass::eHWSC_Pixel:
+		return "frag";
+
+	case EHWShaderClass::eHWSC_Geometry:
+		return "geom";
+
+	case EHWShaderClass::eHWSC_Domain:
+		return "tesc";
+
+	case EHWShaderClass::eHWSC_Hull:
+		return "tese";
+
+	case EHWShaderClass::eHWSC_Compute:
+		return "comp";
+	};
+
+	return "invalid";
+}
+
+
 string CShaderMan::mfGetShaderCompileFlags(EHWShaderClass eClass, UPipelineState pipelineState) const
 {
 	string result;
@@ -1139,8 +1166,16 @@ string CShaderMan::mfGetShaderCompileFlags(EHWShaderClass eClass, UPipelineState
 	else if (CRendererCVars::CV_r_VkShaderCompiler && strcmp(CRendererCVars::CV_r_VkShaderCompiler->GetString(), STR_VK_SHADER_COMPILER_DXC) == 0)
 	{
 		// " -spirv -Od -Zpr \"%s.%s\" -Fo \"%s.%s\" -Fc \"%s.%s\" -T %s -E \"%s\" %s %s"
-		compilerSPIRV.Format("SPIRV/V003/dxc/dxc.exe %s %s ", eClass == eHWSC_Vertex ? "-fvk-invert-y" : "", CRenderer::CV_r_shadersdebug == 3 ? "-Od" : "-O3");
-		compilerSPIRV += "-spirv -no-warnings -E %s -T %s -Zpr -Fo %s %s";
+		compilerSPIRV.Format("SPIRV/V003/dxc/dxc.exe %s %s ", eClass == eHWSC_Vertex ? " -fvk-invert-y " : "", CRenderer::CV_r_shadersdebug == 3 ? " -Od " : " -O3 ");
+		compilerSPIRV += " -Zpr -spirv -no-warnings -E %s -T %s -Fo %s %s";
+	}
+	else if (CRendererCVars::CV_r_VkShaderCompiler && strcmp(CRendererCVars::CV_r_VkShaderCompiler->GetString(), STR_VK_SHADER_COMPILER_GLSLANG) == 0)
+	{
+		//-D - fhlsl_functionality1 - V100 --target-env vulkan1.0 -S frag -e AuxGeomTexturePS -o vs_5_0_shader.out .\shader.in
+
+		compilerSPIRV.Format("SPIRV/V003/glslang/glslangValidator.exe -D -fhlsl_functionality1 -V100 --target-env vulkan1.0 %s -S %s", 
+			eClass == eHWSC_Vertex ? "--invert-y" : "", GetGLSLANGTargetName(eClass));
+		compilerSPIRV += " -e %s -I%s -o %s %s";
 	}
 
 #define ESSL_VERSION   "es310"

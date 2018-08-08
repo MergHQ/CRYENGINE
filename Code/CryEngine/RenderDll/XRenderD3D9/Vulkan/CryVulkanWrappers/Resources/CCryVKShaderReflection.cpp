@@ -301,7 +301,7 @@ CCryVKShaderReflection::CCryVKShaderReflection(const void* pShaderBytecode, size
 
 			if (vkShaderCompiler == STR_VK_SHADER_COMPILER_HLSLCC)
 			{
-				if (sscanf_s(input.name.c_str(), "dcl_Input%d_%[a-zA-Z]%d", &inputParam.attributeLocation, inputParam.semanticName, sizeof(inputParam.semanticName), &inputParam.semanticIndex) == 3)
+				if (sscanf(input.name.c_str(), "dcl_Input%d_%[a-zA-Z]%d", &inputParam.attributeLocation, inputParam.semanticName, &inputParam.semanticIndex) == 3)
 				{
 					UnformatVariableName(inputParam.semanticName);
 					m_shaderInputs.push_back(inputParam);
@@ -309,7 +309,7 @@ CCryVKShaderReflection::CCryVKShaderReflection(const void* pShaderBytecode, size
 			}
 			else if (vkShaderCompiler == STR_VK_SHADER_COMPILER_DXC)
 			{
-				if(sscanf_s(input.name.c_str(), "in_var_%[a-zA-Z]%d", inputParam.semanticName, sizeof(inputParam.semanticName), &inputParam.semanticIndex) >= 1)
+				if(sscanf(input.name.c_str(), "in_var_%[a-zA-Z]%d", inputParam.semanticName, &inputParam.semanticIndex) >= 1)
 				{
 					inputParam.attributeLocation = location;
 					m_shaderInputs.push_back(inputParam);
@@ -318,7 +318,7 @@ CCryVKShaderReflection::CCryVKShaderReflection(const void* pShaderBytecode, size
 			else if (vkShaderCompiler == STR_VK_SHADER_COMPILER_GLSLANG)
 			{
 				std::string semanticsName = m_pCompiler->get_decoration_string(input.id, spv::DecorationHlslSemanticGOOGLE);
-				if (sscanf_s(semanticsName.c_str(), "%[a-zA-Z]%d", inputParam.semanticName, sizeof(inputParam.semanticName), &inputParam.semanticIndex) >= 1)
+				if (sscanf(semanticsName.c_str(), "%[a-zA-Z]%d", inputParam.semanticName, &inputParam.semanticIndex) >= 1)
 				{
 					inputParam.attributeLocation = location;
 					m_shaderInputs.push_back(inputParam);
