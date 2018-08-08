@@ -1,0 +1,21 @@
+<RCC>
+    <qresource prefix="/icons">
+        <file alias="audio/impl/adx2/aisaccontrol.ico">Icons/aisaccontrol.ico</file>
+        <file alias="audio/impl/adx2/binary.ico">Icons/binary.ico</file>
+        <file alias="audio/impl/adx2/bus.ico">Icons/bus.ico</file>
+        <file alias="audio/impl/adx2/category.ico">Icons/category.ico</file>
+        <file alias="audio/impl/adx2/categorygroup.ico">Icons/categorygroup.ico</file>
+        <file alias="audio/impl/adx2/cue.ico">Icons/cue.ico</file>
+        <file alias="audio/impl/adx2/cuesheet.ico">Icons/cuesheet.ico</file>
+        <file alias="audio/impl/adx2/dspbussetting.ico">Icons/dspbussetting.ico</file>
+        <file alias="audio/impl/adx2/folder_grey.ico">Icons/folder_grey.ico</file>
+        <file alias="audio/impl/adx2/folder_red.ico">Icons/folder_red.ico</file>
+        <file alias="audio/impl/adx2/folder_yellow.ico">Icons/folder_yellow.ico</file>
+        <file alias="audio/impl/adx2/gamevariable.ico">Icons/gamevariable.ico</file>
+        <file alias="audio/impl/adx2/selector.ico">Icons/selector.ico</file>
+        <file alias="audio/impl/adx2/selectorlabel.ico">Icons/selectorlabel.ico</file>
+        <file alias="audio/impl/adx2/snapshot.ico">Icons/snapshot.ico</file>
+        <file alias="audio/impl/adx2/workunit.ico">Icons/workunit.ico</file>
+    </qresource>
+</RCC>
+

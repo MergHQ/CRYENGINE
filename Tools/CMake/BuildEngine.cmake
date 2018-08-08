@@ -272,6 +272,50 @@ else()
 endif()
 endfunction(try_to_enable_wwise)
 
+function(try_to_enable_adx2)
+if (WIN32 OR WIN64)
+	if (DEFINED AUDIO_ADX2)
+		if (AUDIO_ADX2)
+			if (EXISTS "${SDK_DIR}/Audio/adx2")
+				message(STATUS "ADX2 SDK found in ${SDK_DIR}/Audio/adx2 - enabling ADX2 support.")
+				
+				# This is to update only the message in the cache that is then used in the GUI as a tooltip.
+				option(AUDIO_ADX2 "ADX2 SDK found in ${SDK_DIR}/Audio/adx2." ON)
+			else()
+				message(STATUS "ADX2 SDK not found in ${SDK_DIR}/Audio/adx2 - disabling ADX2 support.")
+				
+				# Disables the AUDIO_ADX2 option but also updates the message in the cache that is then used in the GUI as a tooltip.
+				option(AUDIO_ADX2 "ADX2 SDK not found in ${SDK_DIR}/Audio/adx2." OFF)
+			endif()
+		else()
+			if (EXISTS "${SDK_DIR}/Audio/adx2")
+				message(STATUS "ADX2 SDK found in ${SDK_DIR}/Audio/adx2 but AUDIO_ADX2 option turned OFF")
+				
+				# This is to update only the message in the cache that is then used in the GUI as a tooltip.
+				option(AUDIO_ADX2 "ADX2 SDK found in ${SDK_DIR}/Audio/adx2 but AUDIO_ADX2 option turned OFF." OFF)
+			else()
+				message(STATUS "ADX2 SDK not found in ${SDK_DIR}/Audio/adx2 and AUDIO_ADX2 option turned OFF")
+				
+				# This is to update only the message in the cache that is then used in the GUI as a tooltip.
+				option(AUDIO_ADX2 "ADX2 SDK not found in ${SDK_DIR}/Audio/adx2 and AUDIO_ADX2 option turned OFF." OFF)
+			endif()
+		endif()
+	else()
+		# If this option is not in the cache yet, set it depending on whether the SDK is present or not.
+		if (EXISTS "${SDK_DIR}/Audio/adx2")
+			message(STATUS "ADX2 SDK found in ${SDK_DIR}/Audio/adx2 - enabling ADX2 support.")
+			set(AUDIO_ADX2 ON CACHE BOOL "ADX2 SDK found in ${SDK_DIR}/Audio/adx2." FORCE)
+		else()
+			message(STATUS "ADX2 SDK not found in ${SDK_DIR}/Audio/adx2 - disabling ADX2 support.")
+			set(AUDIO_ADX2 OFF CACHE BOOL "ADX2 SDK not found in ${SDK_DIR}/Audio/adx2." FORCE)
+		endif()
+	endif()
+else()
+	message(STATUS "Disabling ADX2 support due to unsupported platform.")
+	set(AUDIO_ADX2 OFF CACHE BOOL "ADX2 disabled due to unsupported platform." FORCE)
+endif()
+endfunction(try_to_enable_adx2)
+
 function(try_to_enable_oculus_hrtf)
 if(WIN32 OR WIN64)
 	if (DEFINED AUDIO_OCULUS_HRTF)
@@ -320,6 +364,7 @@ try_to_enable_fmod()
 try_to_enable_portaudio()
 try_to_enable_sdl_mixer()
 try_to_enable_wwise()
+try_to_enable_adx2()
 try_to_enable_oculus_hrtf()
 # ~Audio
 
@@ -425,6 +470,9 @@ if (OPTION_ENGINE)
 	if (AUDIO_WWISE)
 		add_subdirectory ("Code/CryEngine/CryAudioSystem/implementations/CryAudioImplWwise")
 	endif (AUDIO_WWISE)
+	if (AUDIO_ADX2)
+		add_subdirectory ("Code/CryEngine/CryAudioSystem/implementations/CryAudioImplAdx2")
+	endif (AUDIO_ADX2)
 
 	#libs
 	add_subdirectory ("Code/Libs/bigdigits")

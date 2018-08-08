@@ -1,0 +1,10 @@
+# Copyright 2001-2018 Crytek GmbH / Crytek Group. All rights reserved.
+
+def build(bld):	
+
+	bld.CryPlugin(
+		target          = 'EditorCryAudioImplAdx2',
+		vs_filter       = 'Sandbox/Plugins/EditorAudioControlsEditor/Impl',
+		file_list       = 'editoradx2.waf_files',
+		includes        = '../common/'
+	)
