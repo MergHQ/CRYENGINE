@@ -135,6 +135,15 @@ struct IRemoteCommandManager;
 struct IWindowMessageHandler;
 struct IScaleformHelper;
 struct IProjectManager;
+
+namespace Cry
+{
+namespace UDR
+{
+struct IUDR;
+}
+}
+
 class IImeManager;
 struct SDisplayContextKey;
 
@@ -893,6 +902,7 @@ struct SSystemGlobalEnvironment
 	Cry::Reflection::IModule*      pReflection;
 	Cry::Script::ICoreEnvironment* pScriptCoreEnv;
 	Cry::Script::ICoreRegistry*    pScriptCoreRegistry;
+	Cry::UDR::IUDR*                pUDR;
 
 #if CRY_PLATFORM_DURANGO
 	void*      pWindow;

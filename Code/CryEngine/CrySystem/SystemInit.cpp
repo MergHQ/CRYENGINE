@@ -49,6 +49,7 @@
 #include <CrySystem/ICmdLine.h>
 #include <CrySystem/IProcess.h>
 #include <CryReflection/Framework.h>
+#include <CryUDR/InterfaceIncludes.h>
 
 #include "CryPak.h"
 #include "XConsole.h"
@@ -175,6 +176,7 @@ extern AAssetManager* androidGetAssetManager();
 #define DLL_RENDERER_GNM  "CryRenderGNM"
 #define DLL_LIVECREATE    "CryLiveCreate"
 #define DLL_MONO_BRIDGE   "CryMonoBridge"
+#define DLL_UDR           "CryUDR"
 #define DLL_SCALEFORM     "CryScaleformHelper"
 
 //////////////////////////////////////////////////////////////////////////
@@ -1232,6 +1234,20 @@ bool CSystem::InitMonoBridge(const SSystemInitParams& startupParams)
 
 	return true;
 }
+
+//////////////////////////////////////////////////////////////////////////
+bool CSystem::InitUDR(const SSystemInitParams& startupParams)
+{
+	LOADING_TIME_PROFILE_SECTION(GetISystem());
+
+	if (!InitializeEngineModule(startupParams, DLL_UDR, cryiidof<Cry::UDR::IUDR>(), false))
+	{
+		gEnv->pLog->LogWarning("UDR not created.");
+		return false;
+	}
+
+	return true;
+}																		  
 
 //////////////////////////////////////////////////////////////////////////
 void CSystem::InitGameFramework(SSystemInitParams& startupParams)
@@ -2990,7 +3006,16 @@ bool CSystem::Initialize(SSystemInitParams& startupParams)
 		}
 
 		Cry::Reflection::CTypeRegistrationChain::Execute(g_cvars.sys_reflection_natvis != 0);
+		// Init UDR
 
+		if (!startupParams.bPreview && !startupParams.bShaderCacheGen)
+		{
+			CryLogAlways("UDR initialization");
+			if (!InitUDR(startupParams))
+			{
+				return false;
+			}
+		}
 		m_pResourceManager->Init();
 
 		m_env.pProfileLogSystem = new CProfileLogSystem();

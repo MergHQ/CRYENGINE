@@ -391,6 +391,7 @@ if (OPTION_ENGINE)
 	endif()
 	add_subdirectory ("Code/CryEngine/CryScriptSystem")
 	add_subdirectory ("Code/CryEngine/CryFlowGraph")
+	add_subdirectory ("Code/CryEngine/CryUDR")
 
 	if (WIN32)
 		add_subdirectory ("Code/CryEngine/CryLiveCreate")

@@ -79,6 +79,7 @@
 #include "OverloadSceneManager/OverloadSceneManager.h"
 #include <CryThreading/IThreadManager.h>
 #include <CryReflection/IModule.h>
+#include <CryUDR/InterfaceIncludes.h>
 
 #include <CrySystem/ZLib/IZLibCompressor.h>
 #include <CrySystem/ZLib/IZlibDecompressor.h>
@@ -849,6 +850,7 @@ void CSystem::ShutDown()
 	delete gEnv->pSystemScheduler;
 #endif // defined(MAP_LOADING_SLICING)
 
+	UnloadEngineModule("CryUDR");					 				  
 	UnloadEngineModule("CryReflection");
 
 #if CAPTURE_REPLAY_LOG

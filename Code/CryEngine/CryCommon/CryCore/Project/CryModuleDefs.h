@@ -34,8 +34,11 @@
 #define eCryM_EnginePlugin 27
 #define eCryM_EditorPlugin 28
 #define eCryM_Schematyc2 29
+#define eCryM_UniversalDebugRecordings 30
 
-#define eCryM_Num 30
+#define eCryM_Num 31
+
+
 
 static const wchar_t* g_moduleNames[] =
 {
@@ -68,5 +71,6 @@ static const wchar_t* g_moduleNames[] =
 	L"Legacy Module",
 	L"Engine Plug-ins",
 	L"Editor Plug-ins",
-	L"Schematyc2"
+	L"Schematyc2",
+	L"UniversalDebugRecordings"
 };
