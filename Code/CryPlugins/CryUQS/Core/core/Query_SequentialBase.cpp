@@ -127,14 +127,11 @@ namespace UQS
 			const size_t indexOfChildToInstantiate = m_indexOfNextChildToInstantiate++;
 			std::shared_ptr<const CQueryBlueprint> pChildQueryBlueprintToInstantiate = m_pQueryBlueprint->GetChild(indexOfChildToInstantiate);
 
-			stack_string querierName;
-			querierName.Format("%s::[childQuery_#%i]", m_querierName.c_str(), (int)indexOfChildToInstantiate);
-
 			m_queryIDOfCurrentlyRunningChild = g_pHub->GetQueryManager().StartQueryInternal(
 				m_queryID,
 				pChildQueryBlueprintToInstantiate,
 				m_runtimeParams,
-				querierName.c_str(),
+				m_querierName.c_str(),
 				functor(*this, &CQuery_SequentialBase::OnChildQueryFinished),
 				pResultingItemsOfPotentialPreviousChildQuery,
 				m_exceptionMessageFromChild);

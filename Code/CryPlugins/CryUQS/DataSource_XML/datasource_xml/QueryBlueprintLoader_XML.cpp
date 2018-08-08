@@ -119,6 +119,7 @@ namespace UQS
 
 					Core::ITextualQueryBlueprint* pParentQuery = m_pQuery;
 					m_pQuery = &m_pQuery->AddChild();
+					m_pQuery->SetName(m_queryName.c_str());
 					const bool bSucceeded = ParseQueryElement(child, error);
 					m_pQuery = pParentQuery;
 

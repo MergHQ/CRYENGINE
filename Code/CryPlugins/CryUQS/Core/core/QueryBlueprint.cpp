@@ -439,6 +439,15 @@ namespace UQS
 				}
 			}
 
+			// patch the name such that it also contains an extra suffix indicating its location in the hierarchical query (e. g. "spider_hide_spot::[childQuery_#0]::[childQuery_#2]")
+			// (this is done *before* sorting instant-evaluators, so that when the query blueprint's GetName() is used for debug logging, it will reflect its *original* location in the hierarchy as authored in the query editor)
+			stack_string nameSuffix;
+			for (const CQueryBlueprint* pParent = m_pParent, *pChild = this; pParent; pChild = pParent, pParent = pParent->m_pParent)
+			{
+				nameSuffix = stack_string().Format("::[childQuery_#%i]", pParent->GetChildIndex(pChild)) + nameSuffix;
+			}
+			m_name += nameSuffix.c_str();
+
 			// sort the instant-evaluator blueprints by cost and evaluation modality such that their order at execution time won't change
 			// (this also helps the user to read the query history as it will show all evaluators in order of how they were executed)
 			SortInstantEvaluatorBlueprintsByCostAndEvaluationModality();

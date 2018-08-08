@@ -289,7 +289,7 @@ namespace UQS
 
 			const CGeneratorBlueprint* pGenBP = m_pQueryBlueprint->GetGeneratorBlueprint();
 			CRY_ASSERT(pGenBP);   // should have been detected by OnInstantiateFromQueryBlueprint() already
-			m_pGenerator = pGenBP->InstantiateGenerator(m_blackboard, phaseUpdateContext.error);
+			m_pGenerator = pGenBP->InstantiateGenerator(m_queryContext, phaseUpdateContext.error);
 			if (!m_pGenerator)
 			{
 				return EPhaseStatus::ExceptionOccurred;
@@ -311,7 +311,7 @@ namespace UQS
 		{
 			CRY_PROFILE_FUNCTION_ARG(UQS_PROFILED_SUBSYSTEM_TO_USE, m_pQueryBlueprint->GetName());
 
-			const Client::IGenerator::SUpdateContext updateContext(m_queryID, m_blackboard, phaseUpdateContext.error);
+			const Client::IGenerator::SUpdateContext updateContext(m_queryContext, phaseUpdateContext.error);
 			const Client::IGenerator::EUpdateStatus generatorStatus = m_pGenerator->Update(updateContext, m_generatedItems);
 
 			switch (generatorStatus)
@@ -372,7 +372,7 @@ namespace UQS
 			//
 
 			m_pItemIterationContext.reset(new SItemIterationContext(m_generatedItems));
-			m_blackboard.pItemIterationContext = m_pItemIterationContext.get();
+			m_queryContext.pItemIterationContext = m_pItemIterationContext.get();
 
 			//
 			// - instantiate the function-call-hierarchies of instant-evaluators and deferred-evaluators
@@ -389,7 +389,7 @@ namespace UQS
 				for (size_t i = 0; i < numInstantEvaluators; ++i)
 				{
 					std::unique_ptr<CFunctionCallHierarchy> pFunctionCallHierarchy(new CFunctionCallHierarchy);
-					if (!instantEvaluatorBlueprints[i]->InstantiateFunctionCallHierarchy(*pFunctionCallHierarchy, m_blackboard, phaseUpdateContext.error))
+					if (!instantEvaluatorBlueprints[i]->InstantiateFunctionCallHierarchy(*pFunctionCallHierarchy, m_queryContext, phaseUpdateContext.error))
 					{
 						return EPhaseStatus::ExceptionOccurred;
 					}
@@ -406,7 +406,7 @@ namespace UQS
 				for (size_t i = 0; i < numDeferredEvaluators; ++i)
 				{
 					std::unique_ptr<CFunctionCallHierarchy> pFunctionCallHierarchy(new CFunctionCallHierarchy);
-					if (!deferredEvaluatorBlueprints[i]->InstantiateFunctionCallHierarchy(*pFunctionCallHierarchy, m_blackboard, phaseUpdateContext.error))
+					if (!deferredEvaluatorBlueprints[i]->InstantiateFunctionCallHierarchy(*pFunctionCallHierarchy, m_queryContext, phaseUpdateContext.error))
 					{
 						return EPhaseStatus::ExceptionOccurred;
 					}
@@ -509,7 +509,7 @@ namespace UQS
 			{
 				Shared::CUqsString exceptionMessageFromFunctionCalls;
 				bool bExceptionOccurredInFunctionCalls = false;
-				const Client::IFunction::SExecuteContext executeContext(workingDataToWriteResultTo.indexInGeneratedItems, m_blackboard, exceptionMessageFromFunctionCalls, bExceptionOccurredInFunctionCalls);
+				const Client::IFunction::SExecuteContext executeContext(workingDataToWriteResultTo.indexInGeneratedItems, m_queryContext, exceptionMessageFromFunctionCalls, bExceptionOccurredInFunctionCalls);
 				const CFunctionCallHierarchy* pFunctionCalls = m_functionCallHierarchyPerInstantEvalBP[instantEvaluatorIndex].get();
 				pFunctionCalls->ExecuteAll(executeContext, pParams, *instantEvaluatorToRun.pInputParameterRegistry);
 
@@ -529,7 +529,7 @@ namespace UQS
 			SItemEvaluationResult evaluationResult;
 			Shared::CUqsString exceptionMessageFromInstantEvaluatorHimself;
 			const Client::IInstantEvaluator* pInstantEvaluator = instantEvaluatorToRun.pInstantEvaluator.get();
-			const Client::IInstantEvaluator::SRunContext runContext(evaluationResult, m_blackboard, exceptionMessageFromInstantEvaluatorHimself);
+			const Client::IInstantEvaluator::SRunContext runContext(evaluationResult, m_queryContext, exceptionMessageFromInstantEvaluatorHimself);
 			const Client::IInstantEvaluator::ERunStatus status = pInstantEvaluator->Run(runContext, pParams);
 
 			switch(status)
@@ -726,7 +726,7 @@ namespace UQS
 
 				SItemEvaluationResult evaluationResult;
 				Shared::CUqsString exceptionMessageFromDeferredEvaluatorHimself;
-				const Client::IDeferredEvaluator::SUpdateContext evaluatorUpdateContext(evaluationResult, m_blackboard, exceptionMessageFromDeferredEvaluatorHimself);
+				const Client::IDeferredEvaluator::SUpdateContext evaluatorUpdateContext(evaluationResult, m_queryContext, exceptionMessageFromDeferredEvaluatorHimself);
 				const Client::IDeferredEvaluator::EUpdateStatus evaluatorStatus = de.pDeferredEvaluator->Update(evaluatorUpdateContext);
 
 				switch (evaluatorStatus)
@@ -1164,7 +1164,7 @@ namespace UQS
 			// function execution context (used for all function calls)
 			Shared::CUqsString exceptionMessageFromFunctionCalls;
 			bool bExceptionOccurredInFunctionCalls = false;
-			const Client::IFunction::SExecuteContext executeContext(pWorkingDataToInspectNext->indexInGeneratedItems, m_blackboard, exceptionMessageFromFunctionCalls, bExceptionOccurredInFunctionCalls);
+			const Client::IFunction::SExecuteContext executeContext(pWorkingDataToInspectNext->indexInGeneratedItems, m_queryContext, exceptionMessageFromFunctionCalls, bExceptionOccurredInFunctionCalls);
 
 			// fill the new task with all deferred-evaluators
 			for (size_t deferredEvaluatorBlueprintIndex = 0; deferredEvaluatorBlueprintIndex < numDeferredEvaluatorBlueprints; ++deferredEvaluatorBlueprintIndex)

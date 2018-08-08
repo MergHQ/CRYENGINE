@@ -35,9 +35,9 @@ namespace UQS
 		{
 			struct SCtorContext
 			{
-				explicit                              SCtorContext(const Core::ILeafFunctionReturnValue* _pOptionalReturnValueInCaseOfLeafFunction, const Core::SQueryBlackboard& _blackboard, const IInputParameterRegistry& _inputParameterRegistry, bool _bAddReturnValueToDebugRenderWorldUponExecution);
+				explicit                              SCtorContext(const Core::ILeafFunctionReturnValue* _pOptionalReturnValueInCaseOfLeafFunction, const Core::SQueryContext& _queryContext, const IInputParameterRegistry& _inputParameterRegistry, bool _bAddReturnValueToDebugRenderWorldUponExecution);
 				const Core::ILeafFunctionReturnValue* pOptionalReturnValueInCaseOfLeafFunction;    // is a nullptr if this function it not a leaf-function
-				const Core::SQueryBlackboard&         blackboard;
+				const Core::SQueryContext&            queryContext;
 				const IInputParameterRegistry&        inputParameterRegistry;
 				bool                                  bAddReturnValueToDebugRenderWorldUponExecution;
 			};
@@ -51,9 +51,9 @@ namespace UQS
 
 			struct SExecuteContext
 			{
-				explicit                              SExecuteContext(size_t _currentItemIndex, const Core::SQueryBlackboard& _blackboard, Shared::IUqsString& _error, bool& _bExceptionOccurred);
-				size_t                                currentItemIndex;     // this shall only to be used when we're currently in the evaluation phase (i. e. blackboard.pItemIterationContext will be set)
-				const Core::SQueryBlackboard&         blackboard;           // stuff that is shared by other sub systems in a query that doesn't change anymore (query initially writes to it, functions can read from it)
+				explicit                              SExecuteContext(size_t _currentItemIndex, const Core::SQueryContext& _queryContext, Shared::IUqsString& _error, bool& _bExceptionOccurred);
+				size_t                                currentItemIndex;     // this shall only to be used when we're currently in the evaluation phase (i. e. queryContext.pItemIterationContext will be set)
+				const Core::SQueryContext&            queryContext;         // stuff that is shared by other sub systems in a query that doesn't change anymore (query initially writes to it, functions can read from it)
 				Shared::IUqsString&                   error;                // if an exception occurs in a function, this is the place to write the message to (see .bExceptionOccurred)
 				bool&                                 bExceptionOccurred;   // can be set to true from inside a function call to notify of an unrecoverable error (see .error)
 			};
@@ -72,9 +72,9 @@ namespace UQS
 			virtual void                              Execute(const SExecuteContext& executeContext, void* pReturnValue) const = 0;   // called recursively on child functions to use their return value as one of our input parameters
 		};
 
-		inline IFunction::SCtorContext::SCtorContext(const Core::ILeafFunctionReturnValue* _pOptionalReturnValueInCaseOfLeafFunction, const Core::SQueryBlackboard& _blackboard, const IInputParameterRegistry& _inputParameterRegistry, bool _bAddReturnValueToDebugRenderWorldUponExecution)
+		inline IFunction::SCtorContext::SCtorContext(const Core::ILeafFunctionReturnValue* _pOptionalReturnValueInCaseOfLeafFunction, const Core::SQueryContext& _queryContext, const IInputParameterRegistry& _inputParameterRegistry, bool _bAddReturnValueToDebugRenderWorldUponExecution)
 			: pOptionalReturnValueInCaseOfLeafFunction(_pOptionalReturnValueInCaseOfLeafFunction)
-			, blackboard(_blackboard)
+			, queryContext(_queryContext)
 			, inputParameterRegistry(_inputParameterRegistry)
 			, bAddReturnValueToDebugRenderWorldUponExecution(_bAddReturnValueToDebugRenderWorldUponExecution)
 		{}
@@ -84,9 +84,9 @@ namespace UQS
 			, error(_error)
 		{}
 
-		inline IFunction::SExecuteContext::SExecuteContext(size_t _currentItemIndex, const Core::SQueryBlackboard& _blackboard, Shared::IUqsString& _error, bool& _bExceptionOccurred)
+		inline IFunction::SExecuteContext::SExecuteContext(size_t _currentItemIndex, const Core::SQueryContext& _queryContext, Shared::IUqsString& _error, bool& _bExceptionOccurred)
 			: currentItemIndex(_currentItemIndex)
-			, blackboard(_blackboard)
+			, queryContext(_queryContext)
 			, error(_error)
 			, bExceptionOccurred(_bExceptionOccurred)
 		{

@@ -18,8 +18,9 @@ namespace UQS
 		//
 		//===================================================================================
 
-		CQueryBase::SCtorContext::SCtorContext(const CQueryID& _queryID, const char* _szQuerierName, const HistoricQuerySharedPtr& _pOptionalHistoryToWriteTo, const std::shared_ptr<CItemList>& _pOptionalResultingItemsFromPreviousQuery)
+		CQueryBase::SCtorContext::SCtorContext(const CQueryID& _queryID, const std::shared_ptr<const CQueryBlueprint>& _pQueryBlueprint, const char* _szQuerierName, const HistoricQuerySharedPtr& _pOptionalHistoryToWriteTo, const std::shared_ptr<CItemList>& _pOptionalResultingItemsFromPreviousQuery)
 			: queryID(_queryID)
+			, pQueryBlueprint(_pQueryBlueprint)
 			, szQuerierName(_szQuerierName)
 			, pOptionalHistoryToWriteTo(_pOptionalHistoryToWriteTo)
 			, pOptionalResultingItemsFromPreviousQuery(_pOptionalResultingItemsFromPreviousQuery)
@@ -111,13 +112,15 @@ namespace UQS
 		CQueryBase::CQueryBase(const SCtorContext& ctorContext, bool bRequiresSomeTimeBudgetForExecution)
 			: m_querierName(ctorContext.szQuerierName)
 			, m_pHistory(ctorContext.pOptionalHistoryToWriteTo)
+			, m_bAlreadyInstantiated(false)
 			, m_queryID(ctorContext.queryID)
+			, m_pQueryBlueprint(ctorContext.pQueryBlueprint)
 			, m_pOptionalShuttledItems(ctorContext.pOptionalResultingItemsFromPreviousQuery)
 			, m_queryCreatedFrame(gEnv->nMainFrameID)
 			, m_queryCreatedTimestamp(gEnv->pTimer->GetAsyncTime())
 			, m_totalConsumedFrames(0)
 			, m_bRequiresSomeTimeBudgetForExecution(bRequiresSomeTimeBudgetForExecution)
-			, m_blackboard(m_globalParams, m_pOptionalShuttledItems.get(), m_timeBudgetForCurrentUpdate, ctorContext.pOptionalHistoryToWriteTo ? &ctorContext.pOptionalHistoryToWriteTo->GetDebugRenderWorldPersistent() : nullptr, ctorContext.pOptionalHistoryToWriteTo ? &ctorContext.pOptionalHistoryToWriteTo->GetDebugMessageCollection() : nullptr)
+			, m_queryContext(*m_pQueryBlueprint.get(), m_querierName.c_str(), m_queryID, m_globalParams, m_pOptionalShuttledItems.get(), m_timeBudgetForCurrentUpdate, ctorContext.pOptionalHistoryToWriteTo ? &ctorContext.pOptionalHistoryToWriteTo->GetDebugRenderWorldPersistent() : nullptr, ctorContext.pOptionalHistoryToWriteTo ? &ctorContext.pOptionalHistoryToWriteTo->GetDebugMessageCollection() : nullptr)
 		{
 			if (m_pHistory)
 			{
@@ -138,15 +141,15 @@ namespace UQS
 			return m_bRequiresSomeTimeBudgetForExecution;
 		}
 
-		bool CQueryBase::InstantiateFromQueryBlueprint(const std::shared_ptr<const CQueryBlueprint>& pQueryBlueprint, const Shared::IVariantDict& runtimeParams, Shared::CUqsString& error)
+		bool CQueryBase::InstantiateFromQueryBlueprint(const Shared::IVariantDict& runtimeParams, Shared::CUqsString& error)
 		{
-			CRY_ASSERT(!m_pQueryBlueprint);	// we don't support recycling the query
+			CRY_ASSERT(!m_bAlreadyInstantiated);	// we don't support recycling the query
 
-			m_pQueryBlueprint = pQueryBlueprint;
+			m_bAlreadyInstantiated = true;
 
 			if (m_pHistory)
 			{
-				m_pHistory->OnQueryBlueprintInstantiationStarted(pQueryBlueprint->GetName());
+				m_pHistory->OnQueryBlueprintInstantiationStarted(m_pQueryBlueprint->GetName());
 			}
 
 			//
@@ -264,11 +267,11 @@ namespace UQS
 			// immediate debug-rendering ON/OFF
 			if (SCvars::debugDraw)
 			{
-				m_blackboard.pDebugRenderWorldImmediate = &s_debugRenderWorldImmediate;
+				m_queryContext.pDebugRenderWorldImmediate = &s_debugRenderWorldImmediate;
 			}
 			else
 			{
-				m_blackboard.pDebugRenderWorldImmediate = nullptr;
+				m_queryContext.pDebugRenderWorldImmediate = nullptr;
 			}
 
 			bool bCorruptionOccurred = false;

@@ -50,7 +50,7 @@ namespace UQS
 			{
 				CRY_ASSERT(ctorContext.pOptionalReturnValueInCaseOfLeafFunction);
 
-				const Core::ILeafFunctionReturnValue::SGlobalParamInfo globalParamInfo = ctorContext.pOptionalReturnValueInCaseOfLeafFunction->GetGlobalParam(ctorContext.blackboard);
+				const Core::ILeafFunctionReturnValue::SGlobalParamInfo globalParamInfo = ctorContext.pOptionalReturnValueInCaseOfLeafFunction->GetGlobalParam(ctorContext.queryContext);
 
 				m_nameOfGlobalParam = globalParamInfo.szNameOfGlobalParam;
 

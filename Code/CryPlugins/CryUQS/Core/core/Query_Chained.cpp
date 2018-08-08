@@ -29,7 +29,7 @@ namespace UQS
 
 			// * if there are more queries in chain, then do the following:
 			//    - convert the result set to a list of "pre-generated" items
-			//    - instantiate the next query and pass that list to it (so that it resides on its private blackboard)
+			//    - instantiate the next query and pass that list to it (so that it resides in its private query context)
 			//      -> that way, the next query can use that list as some kind of input without having to generate items on its own
 			//
 			// * but if this was the last query in the chain, then copy the result set away to have it picked up by the CQueryManager (or the parent query, of course)
