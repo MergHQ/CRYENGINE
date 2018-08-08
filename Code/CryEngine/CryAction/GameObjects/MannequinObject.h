@@ -40,7 +40,6 @@ private:
 
 	// IEntityComponent
 	virtual void                  Initialize() override;
-	virtual void                  OnShutDown() override;
 	virtual void                  ProcessEvent(const SEntityEvent& event) override;
 	virtual Cry::Entity::EventFlags                GetEventMask() const override;
 	virtual IEntityPropertyGroup* GetPropertyGroup() override;
