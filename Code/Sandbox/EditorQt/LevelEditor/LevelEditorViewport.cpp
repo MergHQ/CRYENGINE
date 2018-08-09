@@ -2,49 +2,50 @@
 #include <StdAfx.h>
 #include "LevelEditorViewport.h"
 
-#include <Cry3DEngine/I3DEngine.h>
-#include <CryPhysics/IPhysics.h>
-#include <CryAISystem/IAISystem.h>
-#include <CrySystem/IConsole.h>
-#include <CrySystem/ITimer.h>
-#include <CryInput/IInput.h>
-#include <CryRenderer/IRenderAuxGeom.h>
-#include "CryMath/Cry_GeoIntersect.h"
-#include <CryInput/IHardwareMouse.h>
-#include <CryGame/IGameFramework.h>
-#include <CryAnimation/ICryAnimation.h>
-#include <CryPhysics/IPhysicsDebugRenderer.h>
-#include <DefaultComponents/Cameras/CameraComponent.h>
-#include "Gizmos/IGizmoManager.h"
-
-#include "Controls/DynamicPopupMenu.h"
-#include "EditorFramework/Events.h"
-#include "ViewportInteraction.h"
-#include <Preferences/ViewportPreferences.h>
-#include "Objects/BaseObject.h"
-#include "IUndoManager.h"
-#include "IViewportManager.h"
-#include "IObjectManager.h"
-#include "ILevelEditor.h"
-#include "LevelEditor/Tools/EditTool.h"
-#include "CryEditDoc.h"
-
-#include <QResizeEvent>
-#include "QtUtil.h"
-#include "Grid.h"
-#include "RenderLock.h"
-
+#include "AI/AIManager.h"
 #include "Objects/CameraObject.h"
+#include "QT/Widgets/QViewportHeader.h"
 #include "Terrain/Heightmap.h"
 #include "Util/Ruler.h"
-#include "DragDrop.h"
-#include "AssetSystem/AssetManager.h"
-#include "QT/Widgets/QViewportHeader.h"
-#include "ViewManager.h"
+#include "CryEditDoc.h"
 #include "GameEngine.h"
-#include "ProcessInfo.h"
 #include "ObjectCreateTool.h"
-#include "AI/AIManager.h"
+#include "ProcessInfo.h"
+#include "ViewManager.h"
+
+#include <AssetSystem/AssetManager.h>
+#include <Controls/DynamicPopupMenu.h>
+#include <EditorFramework/Events.h>
+#include <Gizmos/IGizmoManager.h>
+#include <Gizmos/Gizmo.h>
+#include <LevelEditor/Tools/EditTool.h>
+#include <Objects/BaseObject.h>
+#include <Preferences/ViewportPreferences.h>
+#include <DragDrop.h>
+#include <Grid.h>
+#include <ILevelEditor.h>
+#include <IObjectManager.h>
+#include <IUndoManager.h>
+#include <IViewportManager.h>
+#include <QtUtil.h>
+#include <RenderLock.h>
+#include <ViewportInteraction.h>
+
+#include <Cry3DEngine/I3DEngine.h>
+#include <CryAISystem/IAISystem.h>
+#include <CryAnimation/ICryAnimation.h>
+#include <CryGame/IGameFramework.h>
+#include <CryInput/IHardwareMouse.h>
+#include <CryInput/IInput.h>
+#include <CryMath/Cry_GeoIntersect.h>
+#include <CryPhysics/IPhysics.h>
+#include <CryPhysics/IPhysicsDebugRenderer.h>
+#include <CryRenderer/IRenderAuxGeom.h>
+#include <CrySystem/IConsole.h>
+#include <CrySystem/ITimer.h>
+#include <DefaultComponents/Cameras/CameraComponent.h>
+
+#include <QResizeEvent>
 
 inline bool SortCameraObjectsByName(CEntityObject* pObject1, CEntityObject* pObject2)
 {
@@ -178,7 +179,7 @@ bool CLevelEditorViewport::AssetDragEvent(EDragEvent eventId, QEvent* event, int
 	{
 		QDropEvent* drop = static_cast<QDropEvent*>(event);
 		CPoint point(drop->pos().x(), drop->pos().y());
-		HitContext hitContext;
+		HitContext hitContext(this);
 		string dragText;
 		if (HitTest(point, hitContext) && hitContext.object != nullptr && hitContext.object->CanApplyAsset(*pAsset, &dragText))
 		{
@@ -602,46 +603,43 @@ void CLevelEditorViewport::RenderAll(CObjectRenderHelper& displayInfo)
 {
 	// Draw physics helper/proxies, if requested
 #if !defined(_RELEASE) && !CRY_PLATFORM_DURANGO
-	if (m_bRenderStats) GetIEditor()->GetSystem()->RenderPhysicsHelpers();
+	if (m_bRenderStats)
+	{
+		GetIEditor()->GetSystem()->RenderPhysicsHelpers();
+	}
 #endif
-	SDisplayContext& context = displayInfo.GetDisplayContextRef();
+	SDisplayContext& dc = displayInfo.GetDisplayContextRef();
 
-	context.SetState(e_Mode3D | e_AlphaBlended | e_FillModeSolid | e_CullModeBack | e_DepthWriteOn | e_DepthTestOn);
+	dc.SetState(e_Mode3D | e_AlphaBlended | e_FillModeSolid | e_CullModeBack | e_DepthWriteOn | e_DepthTestOn);
 	GetIEditor()->GetObjectManager()->Display(displayInfo);
 
-	RenderSelectedRegion(context);
-	RenderSnapMarker(context);
-
-	if (gViewportPreferences.showGridGuide
-	    && GetIEditor()->IsHelpersDisplayed())
-		RenderSnappingGrid(context);
+	RenderSelectedRegion(dc);
+	RenderSnapMarker(dc);
+	RenderSnappingGrid(dc);
 
 	IAISystem* aiSystem = GetIEditor()->GetSystem()->GetAISystem();
 	if (aiSystem)
-		aiSystem->DebugDraw();
-
-	if (gViewportDebugPreferences.GetDebugFlags() & DBG_MEMINFO)
 	{
-		ProcessMemInfo mi;
-		CProcessInfo::QueryMemInfo(mi);
-		int MB = 1024 * 1024;
-		string str;
-		str.Format("WorkingSet=%dMb, PageFile=%dMb, PageFaults=%d", mi.WorkingSet / MB, mi.PagefileUsage / MB, mi.PageFaultCount);
-		IRenderAuxText::TextToScreenColor(1, 1, 1, 0, 0, 1, str);
+		aiSystem->DebugDraw();
 	}
 
-	// Display editing tool.
+	// Display editing tool
 	if (GetEditTool() && m_bMouseInside)
 	{
-		GetEditTool()->Display(context);
+		GetEditTool()->Display(dc);
 	}
 }
 
 void CLevelEditorViewport::RenderSnappingGrid(SDisplayContext& context)
 {
+	if (!context.showSnappingGridGuide)
+	{
+		return;
+	}
+
 	// First, Check whether we should draw the grid or not.
 	const CSelectionGroup* pSelGroup = GetIEditorImpl()->GetSelection();
-	if (pSelGroup == NULL || pSelGroup->GetCount() != 1)
+	if (pSelGroup == nullptr || pSelGroup->GetCount() != 1)
 		return;
 	if (GetIEditor()->GetLevelEditorSharedState()->GetEditMode() != CLevelEditorSharedState::EditMode::Move
 	    && GetIEditor()->GetLevelEditorSharedState()->GetEditMode() != CLevelEditorSharedState::EditMode::Rotate)
@@ -856,7 +854,7 @@ bool CLevelEditorViewport::IsSelectedCamera() const
 
 void CLevelEditorViewport::CycleCamera()
 {
-	if (GetCameraObject() == NULL)    // The default camera is active ATM.
+	if (GetCameraObject() == nullptr)    // The default camera is active ATM.
 	{
 		std::vector<CEntityObject*> objects;
 		((CObjectManager*)GetIEditor()->GetObjectManager())->GetCameras(objects);
@@ -1264,31 +1262,6 @@ void ToggleWireFrameMode()
 		r_wireframe->Set(nWireframe);
 	}
 }
-
-void TogglePointMode()
-{
-	int nWireframe(R_SOLID_MODE);
-	ICVar* r_wireframe(gEnv->pConsole->GetCVar("r_wireframe"));
-
-	if (r_wireframe)
-	{
-		nWireframe = r_wireframe->GetIVal();
-	}
-
-	if (nWireframe != R_POINT_MODE)
-	{
-		nWireframe = R_POINT_MODE;
-	}
-	else
-	{
-		nWireframe = R_SOLID_MODE;
-	}
-
-	if (r_wireframe)
-	{
-		r_wireframe->Set(nWireframe);
-	}
-}
 }
 
 REGISTER_EDITOR_AND_SCRIPT_COMMAND(Private_LevelEditorCommands::SetDefaultCamera, viewport, make_default_camera_current,
@@ -1310,7 +1283,3 @@ REGISTER_EDITOR_AND_SCRIPT_COMMAND(Private_LevelEditorCommands::ToggleWireFrameM
                                    CCommandDescription("Toggles between solid and wireframe mode in the viewport"))
 REGISTER_EDITOR_UI_COMMAND_DESC(viewport, toggle_wireframe_mode, "Wireframe/Solid Mode", "Alt+W", "icons:Viewport/Modes/display_wireframe.ico", false)
 REGISTER_COMMAND_REMAPPING(ui_action, actionWireframe, viewport, toggle_wireframe_mode)
-
-REGISTER_EDITOR_AND_SCRIPT_COMMAND(Private_LevelEditorCommands::TogglePointMode, viewport, toggle_point_mode,
-                                   CCommandDescription("Toggles between solid and point mode in the viewport"))
-REGISTER_EDITOR_UI_COMMAND_DESC(viewport, toggle_point_mode, "Wireframe/Point Mode", "", "", false)

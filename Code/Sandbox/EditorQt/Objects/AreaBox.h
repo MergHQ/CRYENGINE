@@ -64,7 +64,7 @@ public:
 	void         Done();
 	bool         CreateGameObject();
 	virtual void InitVariables();
-	void         Display(SDisplayContext& dc);
+	virtual void Display(CObjectRenderHelper& objRenderHelper) override;
 	void         InvalidateTM(int nWhyFlags);
 	void         GetLocalBounds(AABB& box);
 	bool         HitTest(HitContext& hc);

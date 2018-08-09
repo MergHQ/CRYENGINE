@@ -16,9 +16,7 @@ struct IMaterial;
 class CIconManager : public IIconManager, public IAutoEditorNotifyListener
 {
 public:
-	// Construction
 	CIconManager();
-	~CIconManager();
 
 	void Init();
 	void Done();
@@ -26,10 +24,9 @@ public:
 	// Unload all loaded resources.
 	void Reset();
 
-	// Operations
 	virtual int        GetIconTexture(EIcon icon);
 
-	virtual IStatObj*  GetObject(EStatObject object);
+	virtual IStatObj*  GetStatObject(EStatObject object);
 	virtual int        GetIconTexture(const char* szIconName);
 	virtual int        GetIconTexture(const char* szIconName, CryIcon& icon);
 

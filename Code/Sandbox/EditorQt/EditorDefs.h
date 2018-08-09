@@ -153,9 +153,6 @@
 // Log file access
 #include "LogFile.h"
 
-//Editor Settings.
-#include "Settings.h"
-
 // View panes.
 #include "QtViewPane.h"
 

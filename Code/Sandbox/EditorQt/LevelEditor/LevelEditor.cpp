@@ -3,48 +3,49 @@
 #include "LevelEditor.h"
 
 // LevelEditor
+#include "LevelAssetType.h"
 #include "LevelFileUtils.h"
 #include "NewLevelDialog.h"
 #include "OpenLevelDialog.h"
 #include "SaveLevelDialog.h"
-#include "LevelAssetType.h"
 
 // EditorQt
-#include "GameEngine.h"
-#include "GameExporter.h"
-#include "LevelIndependentFileMan.h"
-#include "AlignTool.h"
-#include "IEditorImpl.h"
-#include "CryEdit.h"
-#include "CryEditDoc.h"
-#include "ViewManager.h"
-#include "QT/QtMainFrame.h"
-#include "QT/QToolTabManager.h"
 #include "Commands/QCommandAction.h"
 #include "EditMode/VertexSnappingModeTool.h"
-#include "LevelExplorer.h"
+#include "QT/QtMainFrame.h"
+#include "QT/QToolTabManager.h"
 #include "Util/Clipboard.h"
+#include "AlignTool.h"
+#include "CryEdit.h"
+#include "CryEditDoc.h"
+#include "GameEngine.h"
+#include "GameExporter.h"
 #include "Grid.h"
+#include "IEditorImpl.h"
+#include "LevelExplorer.h"
+#include "LevelIndependentFileMan.h"
 #include "QtViewPane.h"
 #include "TagLocations.h"
+#include "ViewManager.h"
 
 // EditorCommon
-#include <AssetSystem/EditableAsset.h>
-#include <QtUtil.h>
-#include <EditorFramework/Inspector.h>
-#include <Notifications/NotificationCenterTrayWidget.h>
-#include <EditorFramework/PreferencesDialog.h>
-#include <Preferences/GeneralPreferences.h>
-#include <Objects/ObjectLoader.h>
 #include <AssetSystem/AssetManager.h>
-#include <AssetSystem/Browser/AssetBrowserDialog.h>
 #include <AssetSystem/Browser/AssetBrowser.h>
+#include <AssetSystem/Browser/AssetBrowserDialog.h>
+#include <AssetSystem/EditableAsset.h>
 #include <Controls/DockableDialog.h>
-#include <FilePathUtil.h>
-#include <ThreadingUtils.h>
-#include <EditorStyleHelper.h>
-#include <Util/FileUtil.h>
+#include <Controls/QuestionDialog.h>
+#include <EditorFramework/Inspector.h>
+#include <EditorFramework/PreferencesDialog.h>
 #include <LevelEditor/Tools/PickObjectTool.h>
+#include <Notifications/NotificationCenterTrayWidget.h>
+#include <Objects/ObjectLoader.h>
+#include <Preferences/GeneralPreferences.h>
+#include <Util/FileUtil.h>
+#include <EditorStyleHelper.h>
+#include <FilePathUtil.h>
+#include <QtUtil.h>
+#include <ThreadingUtils.h>
 
 // CryCommon
 #include <CrySandbox/ScopedVariableSetter.h>
@@ -52,15 +53,12 @@
 #include <CrySystem/ICmdLine.h>
 
 // Qt
-#include <QMenu>
-#include <QtGlobal>
-#include <QMenuBar>
 #include <QDir>
-#include <QFileInfo>
 #include <QDirIterator>
-#include <QTimer>
-
-#include "Controls/QuestionDialog.h"
+#include <QFileInfo>
+#include <QMenu>
+#include <QMenuBar>
+#include <QtGlobal>
 
 // Register viewpanes defined in EditorCommon
 REGISTER_VIEWPANE_FACTORY_AND_MENU(CNotificationCenterDockable, "Notification Center", "Advanced", true, "Advanced")
@@ -331,11 +329,6 @@ void CLevelEditor::customEvent(QEvent* pEvent)
 				EnableSurfaceNormalSnapping(!IsSurfaceNormalSnappingEnabled());
 				pEvent->setAccepted(true);
 			}
-			else if (command == "toggle_display_helpers")
-			{
-				EnableHelpersDisplay(!IsHelpersDisplayed());
-				pEvent->setAccepted(true);
-			}
 			else if (command == "tag_location")
 			{
 				bool result;
@@ -537,13 +530,6 @@ void CLevelEditor::EnableSurfaceNormalSnapping(bool bEnable)
 	SurfaceNormalSnappingEnabled(bEnable);
 }
 
-void CLevelEditor::EnableHelpersDisplay(bool bEnable)
-{
-	GetIEditorImpl()->EnableHelpersDisplay(bEnable);
-	HelpersDisplayEnabled(bEnable);
-	GetIEditorImpl()->GetObjectManager()->SendEvent(GetIEditor()->IsHelpersDisplayed() ? EVENT_SHOW_HELPER : EVENT_HIDE_HELPER);
-}
-
 bool CLevelEditor::IsVertexSnappingEnabled() const
 {
 	CEditTool* pTool = GetIEditorImpl()->GetLevelEditorSharedState()->GetEditTool();
@@ -583,11 +569,6 @@ bool CLevelEditor::IsGeometrySnappingEnabled() const
 bool CLevelEditor::IsSurfaceNormalSnappingEnabled() const
 {
 	return gSnappingPreferences.IsSnapToNormalEnabled();
-}
-
-bool CLevelEditor::IsHelpersDisplayed() const
-{
-	return GetIEditorImpl()->IsHelpersDisplayed();
 }
 
 bool CLevelEditor::IsLevelLoaded()

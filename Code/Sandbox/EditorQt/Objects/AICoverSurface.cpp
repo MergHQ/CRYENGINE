@@ -461,10 +461,8 @@ void CAICoverSurface::DisplayBadCoverSurfaceObject(SDisplayContext& disp)
 	GetLocalBounds(objectLocalBBox);
 	objectLocalBBox.Expand(Vec3(0.15f, 0.15f, 0.15f));
 
-	bool bDisplay2D = ((disp.flags & DISPLAY_2D) != 0);
 	float alpha;
-
-	if (bDisplay2D)
+	if (disp.display2D)
 	{
 		// 2D viewport is not animated, therefore always show fully opaque
 		alpha = 1.0f;

@@ -2,6 +2,7 @@
 
 #pragma once
 
+#include "Objects/ObjectPropertyWidget.h"
 #include <QCollapsibleFrame.h>
 
 class CInspectorWidgetCreator

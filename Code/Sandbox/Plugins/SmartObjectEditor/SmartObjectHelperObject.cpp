@@ -116,7 +116,7 @@ void CSmartObjectHelperObject::Display(CObjectRenderHelper& objRenderHelper)
 	}
 	if (!IsHighlighted())
 	{
-		//if (dc.flags & DISPLAY_2D)
+		//if (dc.display2D)
 		{
 			AABB box;
 			GetLocalBounds(box);

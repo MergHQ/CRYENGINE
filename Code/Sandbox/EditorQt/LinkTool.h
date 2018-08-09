@@ -1,17 +1,14 @@
 // Copyright 2001-2018 Crytek GmbH / Crytek Group. All rights reserved.
 #pragma once
 
-#include "LevelEditor/Tools/EditTool.h"
+#include <LevelEditor/Tools/EditTool.h>
 
-class CGeomCacheEntity;
-
-//////////////////////////////////////////////////////////////////////////
 class CLinkTool : public CEditTool
 {
 public:
 	DECLARE_DYNAMIC(CLinkTool)
 
-	CLinkTool(); // IPickObjectCallback *callback,CRuntimeClass *targetClass=NULL );
+	CLinkTool();
 
 	// Overrides from CEditTool
 	virtual string GetDisplayName() const override { return "Link Objects"; }
@@ -27,8 +24,6 @@ public:
 	static void    PickObject();
 
 protected:
-	virtual ~CLinkTool();
-	// Delete itself.
 	void DeleteThis() { delete this; }
 
 private:

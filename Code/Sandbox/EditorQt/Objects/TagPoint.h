@@ -37,10 +37,10 @@ public:
 	//////////////////////////////////////////////////////////////////////////
 	// Overrides from CBaseObject.
 	//////////////////////////////////////////////////////////////////////////
-	bool Init(CBaseObject* prev, const string& file);
-	void InitVariables();
-	void Display(SDisplayContext& disp);
-	bool IsScalable() const override { return false; }
+	bool         Init(CBaseObject* prev, const string& file);
+	void         InitVariables();
+	virtual void Display(CObjectRenderHelper& objRenderHelper) override;
+	bool         IsScalable() const override { return false; }
 
 	//! Called when object is being created.
 	int  MouseCreateCallback(IDisplayViewport* view, EMouseEvent event, CPoint& point, int flags);
@@ -66,15 +66,11 @@ class CNavigationSeedPoint : public CTagPoint
 {
 public:
 	DECLARE_DYNCREATE(CNavigationSeedPoint)
-	//////////////////////////////////////////////////////////////////////////
-	// Overrides from CBaseObject.
-	//////////////////////////////////////////////////////////////////////////
-	virtual void Display(SDisplayContext& dc)
+	virtual void Display(CObjectRenderHelper& objRenderHelper) override
 	{
-		DrawDefault(dc);
+		DrawDefault(objRenderHelper.GetDisplayContextRef());
 	}
 
-	//////////////////////////////////////////////////////////////////////////
 protected:
 	CNavigationSeedPoint()
 	{

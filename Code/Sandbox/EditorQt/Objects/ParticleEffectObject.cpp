@@ -124,8 +124,10 @@ void CParticleEffectObject::AssignEffect(const string& effectName)
 	}
 }
 
-void CParticleEffectObject::Display(SDisplayContext& dc)
+void CParticleEffectObject::Display(CObjectRenderHelper& objRenderHelper)
 {
+	SDisplayContext& dc = objRenderHelper.GetDisplayContextRef();
+
 	const Matrix34& wtm = GetWorldTM();
 
 	float fHelperScale = 1 * m_helperScale * gGizmoPreferences.helperScale;

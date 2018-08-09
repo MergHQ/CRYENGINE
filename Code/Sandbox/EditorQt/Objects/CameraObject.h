@@ -36,7 +36,7 @@ public:
 	void         InitVariables();
 	void         Done();
 	string       GetTypeDescription() const { return GetTypeName(); }
-	void         Display(SDisplayContext& disp);
+	virtual void Display(CObjectRenderHelper& objRenderHelper) override;
 
 	virtual void CreateInspectorWidgets(CInspectorWidgetCreator& creator) override;
 
@@ -180,15 +180,15 @@ public:
 	//////////////////////////////////////////////////////////////////////////
 	// Overrides from CBaseObject.
 	//////////////////////////////////////////////////////////////////////////
-	bool   Init(CBaseObject* prev, const string& file);
-	void   InitVariables();
-	string GetTypeDescription() const { return GetTypeName(); }
-	void   Display(SDisplayContext& disp);
-	bool   HitTest(HitContext& hc);
-	void   GetBoundBox(AABB& box);
-	bool   IsScalable() const override  { return false; }
-	bool   IsRotatable() const override { return false; }
-	void   Serialize(CObjectArchive& ar);
+	bool         Init(CBaseObject* prev, const string& file);
+	void         InitVariables();
+	string       GetTypeDescription() const { return GetTypeName(); }
+	virtual void Display(CObjectRenderHelper& objRenderHelper) override;
+	bool         HitTest(HitContext& hc);
+	void         GetBoundBox(AABB& box);
+	bool         IsScalable() const override  { return false; }
+	bool         IsRotatable() const override { return false; }
+	void         Serialize(CObjectArchive& ar);
 	//////////////////////////////////////////////////////////////////////////
 
 protected:

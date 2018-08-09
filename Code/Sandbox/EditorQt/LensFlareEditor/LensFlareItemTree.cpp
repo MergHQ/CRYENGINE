@@ -125,7 +125,7 @@ void CLensFlareItemTree::AssignLensFlareToLightEntity(XmlNodeRef xmlNode, const 
 
 	CPoint viewportPos(screenPos);
 	pViewport->ScreenToClient(&viewportPos);
-	HitContext hit;
+	HitContext hit(pViewport);
 	if (!pViewport->HitTest(viewportPos, hit))
 		return;
 

@@ -979,6 +979,7 @@ void CStandardGraphicsPipeline::Execute()
 
 		if (gEnv->IsEditor() && !gEnv->IsEditorGameMode())
 		{
+			m_pSceneCustomStage->ExecuteHelpers();
 			m_pSceneCustomStage->ExecuteSelectionHighlight();
 		}
 

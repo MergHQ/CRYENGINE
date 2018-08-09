@@ -1,13 +1,13 @@
 // Copyright 2001-2018 Crytek GmbH / Crytek Group. All rights reserved.
 
 #include "StdAfx.h"
-#include "TrackGizmo.h"
-#include "Objects/DisplayContext.h"
 #include "Nodes/TrackViewAnimNode.h"
+#include "Objects/TrackGizmo.h"
 #include "AnimationContext.h"
 #include "TrackViewPlugin.h"
 
-#include "Viewport.h"
+#include <Objects/DisplayContext.h>
+#include <Viewport.h>
 
 #include <CryMovie/IMovieSystem.h>
 
@@ -40,7 +40,7 @@ void CTrackGizmo::SetMatrix(const Matrix34& tm)
 
 void CTrackGizmo::Display(SDisplayContext& dc)
 {
-	if (!(dc.flags & DISPLAY_TRACKS))
+	if (!dc.showAnimationTracks)
 	{
 		return;
 	}
@@ -79,8 +79,6 @@ void CTrackGizmo::Display(SDisplayContext& dc)
 	TRange<SAnimTime> range = ac->GetTimeRange();
 	SAnimTime step(0.1f);
 
-	bool bTicks = (dc.flags & DISPLAY_TRACKTICKS) == DISPLAY_TRACKTICKS;
-
 	// Get Spline color.
 	ColorF splineCol(0.5f, 0.3f, 1, 1);
 	ColorF timeCol(0, 1, 0, 1);
@@ -106,10 +104,7 @@ void CTrackGizmo::Display(SDisplayContext& dc)
 		// Update bounding box.
 		m_worldBbox.Add(p1);
 
-		if (bTicks)
-		{
-			dc.DrawLine(p0 - tick, p0 + tick, timeCol, timeCol);
-		}
+		dc.DrawLine(p0 - tick, p0 + tick, timeCol, timeCol);
 
 		dc.DrawLine(p0, p1, splineCol, splineCol);
 		p0 = p1;

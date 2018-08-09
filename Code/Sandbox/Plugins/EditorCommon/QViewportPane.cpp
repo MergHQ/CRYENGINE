@@ -3,16 +3,16 @@
 #include "StdAfx.h"
 #include "QViewportPane.h"
 
+#include "EditorFramework/Events.h"
+#include "Objects/BaseObject.h"
+#include "GameEngine.h"
+#include "IViewportManager.h"
+#include "QFullScreenWidget.h"
 #include "QtUtil.h"
+#include "RenderViewport.h"
+#include "Viewport.h"
 
 #include <CryInput/IHardwareMouse.h>
-
-#include "EditorFramework/Events.h"
-#include "IViewportManager.h"
-#include "Viewport.h"
-#include "GameEngine.h"
-#include "QFullScreenWidget.h"
-#include "RenderViewport.h"
 
 #include <QApplication>
 #include <QGuiApplication>
@@ -407,18 +407,33 @@ void QViewportWidget::dropEvent(QDropEvent* event)
 	}
 }
 
-void QViewportWidget::customEvent(QEvent* evt)
+void QViewportWidget::customEvent(QEvent* pEvent)
 {
-	if (evt->type() == SandboxEvent::CameraMovement)
+	if (pEvent->type() == SandboxEvent::CameraMovement)
 	{
-		CameraTransformEvent* mouse3devt = static_cast<CameraTransformEvent*>(evt);
+		CameraTransformEvent* mouse3devt = static_cast<CameraTransformEvent*>(pEvent);
 		m_viewport->OnCameraTransformEvent(mouse3devt);
-		evt->setAccepted(true);
+		pEvent->setAccepted(true);
 	}
-	if (evt->type() == SandboxEvent::CryInput)
+
+	if (pEvent->type() == SandboxEvent::CryInput)
 	{
-		CryInputEvent* e = static_cast<CryInputEvent*>(evt);
+		CryInputEvent* e = static_cast<CryInputEvent*>(pEvent);
 		m_viewport->OnFilterCryInputEvent(e);
+	}
+
+	if (pEvent->type() == SandboxEvent::Command)
+	{
+		CommandEvent* pCommandEvent = static_cast<CommandEvent*>(pEvent);
+		const string& command = pCommandEvent->GetCommand();
+		if (command == "viewport.toggle_helpers")
+		{
+			auto& settings = m_viewport->GetHelperSettings();
+			settings.enabled = !settings.enabled;
+			settings.signalStateChanged();
+
+			pEvent->setAccepted(true);
+		}
 	}
 }
 
@@ -664,3 +679,17 @@ QViewportPane::QViewportPane(CViewport* viewport, QWidget* headerWidget)
 
 	viewport->SetViewWidget(m_viewWidget);
 }
+
+namespace Private_QViewportPane
+{
+
+void ToggleHelpers()
+{
+	CommandEvent("viewport.toggle_helpers").SendToKeyboardFocus();
+}
+
+}
+
+REGISTER_EDITOR_AND_SCRIPT_COMMAND(Private_QViewportPane::ToggleHelpers, viewport, toggle_helpers, CCommandDescription("Toggle display of helpers in the viewport"))
+REGISTER_EDITOR_UI_COMMAND_DESC(viewport, toggle_helpers, "", "Ctrl+H", "icons:Viewport/viewport-helpers.ico", true)
+REGISTER_COMMAND_REMAPPING(ui_action, actionShow_Hide_Helpers, viewport, toggle_helpers)

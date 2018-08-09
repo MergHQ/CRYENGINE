@@ -2,24 +2,25 @@
 
 #include "StdAfx.h"
 #include "RoadObject.h"
-#include "Viewport.h"
-#include "Terrain/Heightmap.h"
+
 #include "Material/Material.h"
-#include "../Vegetation/VegetationMap.h"
-#include "../Vegetation/VegetationObject.h"
-#include "Objects/ObjectLoader.h"
-#include "Objects/InspectorWidgetCreator.h"
+#include "Terrain/Heightmap.h"
+#include "Vegetation/VegetationMap.h"
+#include "Vegetation/VegetationObject.h"
+#include "CryEditDoc.h"
+
+#include <Objects/ObjectLoader.h>
+#include <Objects/InspectorWidgetCreator.h>
+#include <Preferences/ViewportPreferences.h>
+#include <Serialization/Decorators/EditorActionButton.h>
+#include <Util/MFCUtil.h>
+#include <Viewport.h>
+
 #include <Cry3DEngine/I3DEngine.h>
 #include <CryCore/Containers/CryArray.h>
-#include "Util/MFCUtil.h"
-#include "Serialization/Decorators/EditorActionButton.h"
-#include <Preferences/ViewportPreferences.h>
-
-#include "CryEditDoc.h"
 
 //////////////////////////////////////////////////////////////////////////
 // class CRoadSector
-
 void CRoadSector::Release()
 {
 	if (m_pRoadSector)
@@ -54,14 +55,12 @@ CRoadObject::CRoadObject()
 	mv_ratioViewDist = 100;
 }
 
-//////////////////////////////////////////////////////////////////////////
 void CRoadObject::Done()
 {
 	m_sectors.clear();
 	__super::Done();
 }
 
-//////////////////////////////////////////////////////////////////////////
 void CRoadObject::InitBaseVariables()
 {
 	if (m_pVarObject == nullptr)
@@ -93,14 +92,12 @@ void CRoadObject::InitVariables()
 	m_pVarObject->AddVariable(m_physicalize, "Physicalize", functor(*this, &CRoadObject::OnParamChange));
 }
 
-//////////////////////////////////////////////////////////////////////////
 void CRoadObject::InvalidateTM(int nWhyFlags)
 {
 	__super::InvalidateTM(nWhyFlags);
 	SetRoadSectors();
 }
 
-//////////////////////////////////////////////////////////////////////////
 void CRoadObject::CreateInspectorWidgets(CInspectorWidgetCreator& creator)
 {
 	CSplineObject::CreateInspectorWidgets(creator);
@@ -124,7 +121,6 @@ void CRoadObject::CreateInspectorWidgets(CInspectorWidgetCreator& creator)
 	});
 }
 
-//////////////////////////////////////////////////////////////////////////
 float CRoadObject::GetLocalWidth(int index, float t)
 {
 	float kof = t;
@@ -155,13 +151,11 @@ float CRoadObject::GetLocalWidth(int index, float t)
 	return ((1.0f - af) * an1 + af * an2);
 }
 
-//////////////////////////////////////////////////////////////////////////
 void CRoadObject::OnUpdate()
 {
 	SetRoadSectors();
 }
 
-//////////////////////////////////////////////////////////////////////////
 void CRoadObject::SetRoadSectors()
 {
 	const Matrix34& wtm = GetWorldTM();
@@ -237,7 +231,6 @@ void CRoadObject::SetRoadSectors()
 	UpdateSectors();
 }
 
-//////////////////////////////////////////////////////////////////////////
 int CRoadObject::GetRoadSectorCount(int index)
 {
 	int kn = int((GetBezierSegmentLength(index) + 0.5f) / GetStepSize());
@@ -246,7 +239,6 @@ int CRoadObject::GetRoadSectorCount(int index)
 	return kn;
 }
 
-//////////////////////////////////////////////////////////////////////////
 void CRoadObject::UpdateSectors()
 {
 	if (!m_bNeedUpdateSectors)
@@ -345,14 +337,12 @@ void CRoadObject::OnEvent(ObjectEvent event)
 	__super::OnEvent(event);
 }
 
-//////////////////////////////////////////////////////////////////////////
 void CRoadObject::SetHidden(bool bHidden)
 {
 	__super::SetHidden(bHidden);
 	UpdateSectors();
 }
 
-//////////////////////////////////////////////////////////////////////////
 void CRoadObject::UpdateVisibility(bool visible)
 {
 	if (visible == CheckFlags(OBJFLAG_INVISIBLE))
@@ -361,8 +351,6 @@ void CRoadObject::UpdateVisibility(bool visible)
 		UpdateSectors();
 	}
 }
-
-//////////////////////////////////////////////////////////////////////////
 
 void CRoadObject::RegisterOnEngine()
 {
@@ -375,8 +363,6 @@ void CRoadObject::RegisterOnEngine()
 	}
 }
 
-//////////////////////////////////////////////////////////////////////////
-
 void CRoadObject::UnRegisterFromEngine()
 {
 	for (CRoadSectorVector::size_type i = 0; i < m_sectors.size(); ++i)
@@ -388,7 +374,6 @@ void CRoadObject::UnRegisterFromEngine()
 	}
 }
 
-//////////////////////////////////////////////////////////////////////////
 void CRoadObject::SetMaterial(IEditorMaterial* pMaterial)
 {
 	CMaterial* pPrevMaterial = (CMaterial*)GetMaterial();
@@ -398,7 +383,6 @@ void CRoadObject::SetMaterial(IEditorMaterial* pMaterial)
 		UpdateSectors();
 }
 
-//////////////////////////////////////////////////////////////////////////
 void CRoadObject::DrawSectorLines(SDisplayContext& dc)
 {
 	const Matrix34& wtm = GetWorldTM();
@@ -420,7 +404,6 @@ void CRoadObject::DrawSectorLines(SDisplayContext& dc)
 	}
 }
 
-//////////////////////////////////////////////////////////////////////////
 void CRoadObject::DrawRoadObject(SDisplayContext& dc, COLORREF col)
 {
 	if (IsSelected())
@@ -429,18 +412,18 @@ void CRoadObject::DrawRoadObject(SDisplayContext& dc, COLORREF col)
 	}
 }
 
-//////////////////////////////////////////////////////////////////////////
 void CRoadObject::Display(CObjectRenderHelper& objRenderHelper)
 {
 	SDisplayContext& dc = objRenderHelper.GetDisplayContextRef();
-
-	if (!gViewportDebugPreferences.showRoadObjectHelper)
+	if (!dc.showRoadHelper)
+	{
 		return;
-
-	COLORREF col = 0;
+	}
 
 	if (m_points.size() > 1)
 	{
+		COLORREF col = 0;
+
 		if ((IsSelected() || IsHighlighted()))
 		{
 			col = dc.GetSelectedColor();
@@ -460,7 +443,6 @@ void CRoadObject::Display(CObjectRenderHelper& objRenderHelper)
 	__super::Display(objRenderHelper);
 }
 
-//////////////////////////////////////////////////////////////////////////
 void CRoadObject::Serialize(CObjectArchive& ar)
 {
 	m_bIgnoreParamUpdate = true;
@@ -472,7 +454,6 @@ void CRoadObject::Serialize(CObjectArchive& ar)
 		UpdateSectors();
 }
 
-//////////////////////////////////////////////////////////////////////////
 XmlNodeRef CRoadObject::Export(const string& levelPath, XmlNodeRef& xmlNode)
 {
 	//XmlNodeRef objNode = __super::Export( levelPath,xmlNode );
@@ -480,21 +461,18 @@ XmlNodeRef CRoadObject::Export(const string& levelPath, XmlNodeRef& xmlNode)
 	return 0;
 }
 
-//////////////////////////////////////////////////////////////////////////
 void CRoadObject::OnParamChange(IVariable* var)
 {
 	if (!m_bIgnoreParamUpdate)
 		SetRoadSectors();
 }
 
-//////////////////////////////////////////////////////////////////////////
 void CRoadObject::SetSelected(bool bSelect)
 {
 	__super::SetSelected(bSelect);
 	SetRoadSectors();
 }
 
-//////////////////////////////////////////////////////////////////////////
 void CRoadObject::AlignHeightMap()
 {
 	if (!GetIEditorImpl()->GetIUndoManager()->IsUndoRecording())
@@ -600,7 +578,6 @@ void CRoadObject::AlignHeightMap()
 					for (int tt = 0; tt < 24; ++tt)
 					{
 						Vec3 p0 = wtm.TransformPoint(GetBezierPos(i, t));
-						;
 						p0.z = 0.0f;
 
 						Vec3 ploc = GetBezierPos(i, t);
@@ -698,7 +675,6 @@ void CRoadObject::AlignHeightMap()
 	SetRoadSectors();
 }
 
-//////////////////////////////////////////////////////////////////////////
 void CRoadObject::EraseVegetation()
 {
 	if (CVegetationMap* vegetationMap = GetIEditorImpl()->GetVegetationMap())
@@ -803,21 +779,18 @@ void CRoadObject::EraseVegetation()
 	}
 }
 
-//////////////////////////////////////////////////////////////////////////
 void CRoadObject::SetMinSpec(uint32 nSpec, bool bSetChildren)
 {
 	__super::SetMinSpec(nSpec, bSetChildren);
 	UpdateSectors();
 }
 
-//////////////////////////////////////////////////////////////////////////
 void CRoadObject::SetMaterialLayersMask(uint32 nLayersMask)
 {
 	__super::SetMaterialLayersMask(nLayersMask);
 	UpdateSectors();
 }
 
-//////////////////////////////////////////////////////////////////////////
 void CRoadObject::SetLayerId(uint16 nLayerId)
 {
 	for (size_t i = 0; i < m_sectors.size(); ++i)
@@ -836,7 +809,6 @@ void CRoadObject::UpdateHighlightPassState(bool bSelected, bool bHighlighted)
 	}
 }
 
-//////////////////////////////////////////////////////////////////////////
 void CRoadObject::SetPhysics(bool isPhysics)
 {
 	for (size_t i = 0; i < m_sectors.size(); ++i)
@@ -851,9 +823,6 @@ void CRoadObject::SetPhysics(bool isPhysics)
 		}
 	}
 }
-
-//////////////////////////////////////////////////////////////////////////
-// Class Description of RoadObject.
 
 //////////////////////////////////////////////////////////////////////////
 class CRoadObjectClassDesc : public CObjectClassDesc

@@ -1006,10 +1006,9 @@ void CScene::OnMouseMove(const SMouseEvent& ev)
 
 		if (gizmoEnabled)
 		{
-			HitContext hc;
+			HitContext hc(&displayView);
 			hc.point2d.x = ev.x;
 			hc.point2d.y = ev.y;
-			hc.view = &displayView;
 			m_axisHelper->HitTest(Matrix34(axesTransform), hc);
 			m_axisHelper->SetHighlightAxis(hc.axis);
 		}
@@ -1051,7 +1050,7 @@ void CScene::OnViewportMouse(const SMouseEvent& ev)
 				Vec3 hitPoint = selectionTransform.t;
 				if (m_showGizmo)
 				{
-					HitContext hc;
+					HitContext hc(&displayView);
 					hc.point2d.x = ev.x;
 					hc.point2d.y = ev.y;
 					hc.view = &displayView;

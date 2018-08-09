@@ -756,8 +756,10 @@
         <file alias="Viewport/Modes/toggle_profiling.ico">icons/viewmode_toggle_profiling.ico</file>
 
         <!--Viewport-->
+        <file alias="Viewport/viewport-display.ico">icons/viewport_display.ico</file>
         <file alias="Viewport/viewport-displayinfo.ico">icons/viewport_displayinfo.ico</file>
         <file alias="Viewport/viewport-enable-snapping.ico">icons/viewport_enable-snapping.ico</file>
+        <file alias="Viewport/viewport-helpers-options.ico">icons/viewport_helpers_options.ico</file>
         <file alias="Viewport/viewport-helpers.ico">icons/viewport_helpers.ico</file>
         <file alias="Viewport/viewport-snap-angle.ico">icons/viewport_snap-angle.ico</file>
         <file alias="Viewport/viewport-snap-scale.ico">icons/viewport_snap-scale.ico</file>

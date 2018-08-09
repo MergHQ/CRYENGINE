@@ -173,7 +173,6 @@ void QViewport::DrawOrigin(const int left, const int top, const float scale, con
 struct QViewport::SPrivate
 {
 	SRenderLight m_VPLight0;
-
 };
 
 QViewport::QViewport(SSystemGlobalEnvironment* env, QWidget* parent, int supersamplingFactor)
@@ -380,7 +379,6 @@ SDisplayContext QViewport::InitDisplayContext(const SDisplayContextKey& displayC
 	dctx.engine = m_env->p3DEngine;
 	dctx.box.min = Vec3(-100000, -100000, -100000);
 	dctx.box.max = Vec3(100000, 100000, 100000);
-	dctx.flags = 0;
 
 	return dctx;
 }

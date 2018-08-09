@@ -2,13 +2,16 @@
 
 #pragma once
 
+#include "Viewport/ViewportSettings.h"
 #include "EditorCommonAPI.h"
 #include "IDisplayViewport.h"
 #include "IPostRenderer.h"
+
 #include <CryMath/Cry_Color.h>
 #include <CrySerialization/IArchive.h>
 
 #include <QPoint>
+
 class CameraTransformEvent;
 class CBaseObject;
 class CBaseObjectsCache;
@@ -18,6 +21,7 @@ class CImageEx;
 class CryInputEvent;
 class CViewManager;
 class QWidget;
+
 struct DisplayContext;
 struct HitContext;
 struct IRenderListener;
@@ -180,8 +184,8 @@ public:
 	//TODO : decorrelate terrain logic from these methods, implementing like this for now to support backwards compatibility
 	//hint: offset should be applied to the result of this method, which takes into account all snapping parameters, not before. right now it is applied
 	//after constraint and terrain snapping but before grid snapping
-	Vec3         MapViewToCP(CPoint point)                                            { return MapViewToCP(point, GetIEditor()->GetLevelEditorSharedState()->GetAxisConstraint(), false, 0.f); };
-	Vec3         MapViewToCP(CPoint point, bool aSnapToTerrain, float aTerrainOffset) { return MapViewToCP(point, GetIEditor()->GetLevelEditorSharedState()->GetAxisConstraint(), aSnapToTerrain, aTerrainOffset); };
+	Vec3         MapViewToCP(CPoint point)                                            { return MapViewToCP(point, GetIEditor()->GetLevelEditorSharedState()->GetAxisConstraint(), false, 0.f); }
+	Vec3         MapViewToCP(CPoint point, bool aSnapToTerrain, float aTerrainOffset) { return MapViewToCP(point, GetIEditor()->GetLevelEditorSharedState()->GetAxisConstraint(), aSnapToTerrain, aTerrainOffset); }
 	virtual Vec3 MapViewToCP(CPoint point, CLevelEditorSharedState::Axis axis, bool aSnapToTerrain = false, float aTerrainOffset = 0.f);
 
 	//! This method return a vector (p2-p1) in world space aligned to construction plane and restriction axises.
@@ -199,8 +203,6 @@ public:
 
 	virtual void  SetViewMode(ViewMode eViewMode)                    { m_eViewMode = eViewMode; }
 	ViewMode      GetViewMode()                                      { return m_eViewMode; }
-
-	void          SetAxisConstrain(int axis);
 
 	//////////////////////////////////////////////////////////////////////////
 	// Selection.
@@ -229,7 +231,7 @@ public:
 	virtual bool HitTestLine(const Vec3& lineP1, const Vec3& lineP2, const CPoint& hitpoint, int pixelRadius, float* pToCameraDistance = 0) const;
 
 	// Access to the member m_bAdvancedSelectMode so interested modules can know its value.
-	bool                                            GetAdvancedSelectModeFlag() const;
+	bool                                  GetAdvancedSelectModeFlag() const;
 
 	virtual CLevelEditorSharedState::Axis GetPerpendicularAxis(bool* pIs2D) const;
 
@@ -251,8 +253,6 @@ public:
 	virtual void SetConstructionMatrix(const Matrix34& xform) override;
 	//////////////////////////////////////////////////////////////////////////
 
-	void DegradateQuality(bool bEnable);
-
 	//////////////////////////////////////////////////////////////////////////
 	// Undo for viewport operations.
 	void BeginUndo();
@@ -271,7 +271,6 @@ public:
 
 	//////////////////////////////////////////////////////////////////////////
 
-	virtual void ToggleCameraObject()     {}
 	virtual bool IsSequenceCamera() const { return false; }
 
 	// Set`s current cursor string.
@@ -342,16 +341,14 @@ public:
 	virtual void OnPaint()  {}
 
 	// Get camera menu name for header
-	virtual const char* GetCameraMenuName() const
-	{
-		return m_name.c_str();
-	}
+	virtual const char* GetCameraMenuName() const { return m_name.c_str(); }
 
 	// Support for 3dconnexion mouse
 	virtual void OnCameraTransformEvent(CameraTransformEvent* msg) {}
 
 	// Allows for input devices to be modified prior to input event
-	virtual void OnFilterCryInputEvent(CryInputEvent* evt) {}
+	virtual void                     OnFilterCryInputEvent(CryInputEvent* evt) {}
+	virtual SViewportHelperSettings& GetHelperSettings() override              { return m_helperSettings; }
 
 protected:
 	friend class CViewManager;
@@ -401,8 +398,6 @@ protected:
 	CBaseObject* m_pMouseOverObject;
 	string       m_cursorStr;
 
-	static bool  m_bDegradateQuality;
-
 	// Grid size modifier due to zoom.
 	float              m_fGridZoom;
 
@@ -422,7 +417,8 @@ protected:
 	PostRenderers m_postRenderers;
 
 	// stores if mouse is inside the viewport
-	bool     m_bMouseInside;
+	bool                    m_bMouseInside;
 
-	QWidget* m_viewWidget;
+	QWidget*                m_viewWidget;
+	SViewportHelperSettings m_helperSettings;
 };

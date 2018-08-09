@@ -1,50 +1,22 @@
 // Copyright 2001-2018 Crytek GmbH / Crytek Group. All rights reserved.
 
 #include "StdAfx.h"
-#include "Objects\EntityObject.h"
+#include "AIMoveSimulation.h"
+
+#include "Objects/EntityObject.h"
 #include "GameEngine.h"
+
+#include <Viewport.h>
+
 #include <CryAISystem/IAIObject.h>
-#include "Viewport.h"
 #include <CryAISystem/IAIActorProxy.h>
 #include <CryAISystem/IMovementSystem.h>
 #include <CryAISystem/MovementRequest.h>
-
-#include <LevelEditor/Tools/ObjectMode.h>
-
-class CAIMoveSimulation : public CObjectMode::ISubTool
-{
-public:
-	CAIMoveSimulation();
-	virtual ~CAIMoveSimulation();
-
-	bool UpdateAIMoveSimulation(CViewport* pView, const CPoint& point);
-	bool HandleMouseEvent(CViewport* view, EMouseEvent event, CPoint& point, int flags) override;
-private:
-	void OnEditorNotifyEvent(EEditorNotifyEvent eventId);
-	void CancelMove();
-
-	void OnPreEditToolChanged();
-	void OnEditToolChanged();
-
-	bool GetAIMoveSimulationDestination(CViewport* pView, const CPoint& point, Vec3& outGotoPoint) const;
-	MovementRequestID SendAIMoveSimulation(IEntity* pEntity, const Vec3& vGotoPoint);
-
-	struct SMovingAI
-	{
-		CryGUID           m_id;
-		MovementRequestID m_movementRequestID;
-	};
-	std::vector<SMovingAI>   m_movingAIs;
-};
 
 namespace
 {
 	CAIMoveSimulation gAIMoveSimulation;
 	REGISTER_OBJECT_MODE_SUB_TOOL_PTR(CAIMoveSimulation, &gAIMoveSimulation);
-}
-
-CAIMoveSimulation::CAIMoveSimulation()
-{
 }
 
 CAIMoveSimulation::~CAIMoveSimulation()
@@ -128,7 +100,7 @@ bool CAIMoveSimulation::UpdateAIMoveSimulation(CViewport* pView, const CPoint& p
 
 bool CAIMoveSimulation::GetAIMoveSimulationDestination(CViewport* pView, const CPoint& point, Vec3& outGotoPoint) const
 {
-	HitContext hitInfo;
+	HitContext hitInfo(pView);
 	pView->HitTest(point, hitInfo);
 
 	// TODO Get point or projected point on hit object's bounds

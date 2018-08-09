@@ -45,9 +45,9 @@ void CLevelEditorSharedState::OnEditorNotifyEvent(EEditorNotifyEvent eventId)
 
 void CLevelEditorSharedState::InitActions()
 {
-	// Display Info
-	showDisplayInfoChanged.Connect([this]()  { GetIEditor()->GetICommandManager()->SetChecked("level.toggle_display_info", IsDisplayInfoEnabled()); });
-	displayInfoLevelChanged.Connect(this, &CLevelEditorSharedState::UpdateDisplayInfoActions);
+	signalShowDisplayInfoChanged.Connect([this]()  { GetIEditor()->GetICommandManager()->SetChecked("level.toggle_display_info", IsDisplayInfoEnabled()); });
+	signalDisplayInfoLevelChanged.Connect(this, &CLevelEditorSharedState::UpdateDisplayInfoActions);
+
 	signalCoordSystemChanged.Connect(this, &CLevelEditorSharedState::UpdateCoordSystemActions);
 	signalAxisConstraintChanged.Connect(this, &CLevelEditorSharedState::UpdateAxisConstraintActions);
 	signalEditModeChanged.Connect(this, &CLevelEditorSharedState::UpdateEditModeActions);
@@ -169,8 +169,8 @@ void CLevelEditorSharedState::ResetState()
 	UpdateCoordSystemActions();
 	UpdateAxisConstraintActions();
 
-	showDisplayInfoChanged();
-	displayInfoLevelChanged();
+	signalShowDisplayInfoChanged();
+	signalDisplayInfoLevelChanged();
 }
 
 bool CLevelEditorSharedState::IsDisplayInfoEnabled() const
@@ -187,7 +187,7 @@ void CLevelEditorSharedState::ToggleDisplayInfo()
 {
 	m_showDisplayInfo = !m_showDisplayInfo;
 	SetDisplayInfoCVar();
-	showDisplayInfoChanged();
+	signalShowDisplayInfoChanged();
 	SaveState();
 }
 
@@ -195,7 +195,7 @@ void CLevelEditorSharedState::SetDisplayInfoLevel(eDisplayInfoLevel level)
 {
 	m_displayInfoLevel = level;
 	SetDisplayInfoCVar();
-	displayInfoLevelChanged();
+	signalDisplayInfoLevelChanged();
 	SaveState();
 }
 

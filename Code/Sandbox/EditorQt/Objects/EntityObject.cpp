@@ -1,100 +1,62 @@
 // Copyright 2001-2018 Crytek GmbH / Crytek Group. All rights reserved.
 
 #include "StdAfx.h"
-#include "EntityObject.h"
+#include "Objects/EntityObject.h"
 
-#include "EntityObjectUndo.h"
-#include "Viewport.h"
-#include <Preferences/ViewportPreferences.h>
-#include "Group.h"
-
-#include <Cry3DEngine/I3DEngine.h>
-#include <CryAISystem/IAgent.h>
-#include <CryMovie/IMovieSystem.h>
-#include <CryEntitySystem/IEntitySystem.h>
-#include <CryAnimation/ICryAnimation.h>
-#include <CryAnimation/IVertexAnimation.h>
-
-#include <Cry3DEngine/IIndexedMesh.h>
-#include <CryEntitySystem/IBreakableManager.h>
-
-#include "EntityPrototype.h"
-#include "Material/MaterialManager.h"
-#include "Gizmos/AxisHelper.h"
-#include "Dialogs/QStringDialog.h"
-#include "Dialogs/GenericSelectItemDialog.h"
-
-#include "HyperGraph/FlowGraphManager.h"
+#include "AI/AIManager.h"
 #include "HyperGraph/FlowGraph.h"
 #include "HyperGraph/FlowGraphHelpers.h"
-
-#include "BrushObject.h"
-#include "GameEngine.h"
-
-#include <CryAISystem/IAIObject.h>
-#include <CryAISystem/IAIActor.h>
-
-#include "Viewport.h"
-#include "ViewManager.h"
-#include "IIconManager.h"
-#include "Dialogs/CustomColorDialog.h"
-#include "Util/MFCUtil.h"
-
-#include <CrySerialization/Serializer.h>
-#include <CrySerialization/IArchive.h>
-#include <CrySerialization/STL.h>
-#include <CrySerialization/DynArray.h>
-#include <CrySerialization/IArchiveHost.h>
-#include <CrySerialization/yasli/decorators/HorizontalLine.h>
-#include "Serialization/Decorators/EditorActionButton.h"
-#include <Serialization/Decorators/EntityLink.h>
-#include <Serialization/Decorators/EditToolButton.h>
-
-#include "Controls/PropertyItem.h"
-#include "Controls/DynamicPopupMenu.h"
-#include "Util/BoostPythonHelpers.h"
-#include "Objects/ObjectLayer.h"
-#include "Objects/DisplayContext.h"
-#include "Objects/ObjectLoader.h"
-#include "Objects/ObjectPropertyWidget.h"
-#include "Objects/InspectorWidgetCreator.h"
-
-#include <Objects/EntityComponentCollapsibleFrame.h>
-
-#include <CryRenderer/IFlares.h>
+#include "HyperGraph/FlowGraphManager.h"
+#include "LensFlareEditor/LensFlareLibrary.h"
 #include "LensFlareEditor/LensFlareManager.h"
 #include "LensFlareEditor/LensFlareUtil.h"
-#include "LensFlareEditor/LensFlareItem.h"
-#include "LensFlareEditor/LensFlareLibrary.h"
-#include "AI/AIManager.h"
-
-#include "Prefabs\PrefabManager.h"
-#include "Prefabs\PrefabLibrary.h"
-#include "Prefabs\PrefabItem.h"
-
-#include "UndoEntityProperty.h"
-#include "UndoEntityParam.h"
-
-#include <LevelEditor/Tools/PickObjectTool.h>
-
-#include <Cry3DEngine/IGeomCache.h>
-
-#include <CrySandbox/IEditorGame.h>
-#include <CrySystem/ICryLink.h>
+#include "Material/MaterialManager.h"
+#include "Objects/EntityObjectUndo.h"
+#include "Objects/Group.h"
+#include "Objects/UndoEntityParam.h"
+#include "Objects/UndoEntityProperty.h"
+#include "Prefabs/PrefabItem.h"
+#include "Prefabs/PrefabLibrary.h"
+#include "Prefabs/PrefabManager.h"
+#include "Serialization/Decorators/EntityLink.h"
+#include "Util/BoostPythonHelpers.h"
 #include "CryEditDoc.h"
-#include "Util/MFCUtil.h"
+#include "GameEngine.h"
+#include "ViewManager.h"
 
-#include <CryExtension/ICryFactoryRegistry.h>
+// MFC plugin
+#include <Dialogs/GenericSelectItemDialog.h>
+#include <Util/MFCUtil.h>
 
-#include <CrySchematyc/CoreAPI.h>
-#include <CrySchematyc/IObjectProperties.h>
-#include <CrySchematyc/Utils/ClassProperties.h>
-
-#include <IGameObjectSystem.h>
-
-#include <QToolButton.h>
-#include <QCollapsibleFrame.h>
+// EditorCommon
 #include <Controls/DictionaryWidget.h>
+#include <Controls/DynamicPopupMenu.h>
+#include <Dialogs/QStringDialog.h>
+#include <Gizmos/GizmoManager.h>
+#include <LevelEditor/Tools/PickObjectTool.h>
+#include <Objects/DisplayContext.h>
+#include <Objects/EntityComponentCollapsibleFrame.h>
+#include <Objects/InspectorWidgetCreator.h>
+#include <Objects/IObjectLayer.h>
+#include <Objects/ObjectLoader.h>
+#include <Preferences/GlobalHelperPreferences.h>
+#include <Preferences/ViewportPreferences.h>
+#include <Serialization/Decorators/EditToolButton.h>
+#include <IIconManager.h>
+#include <Viewport.h>
+
+// CryEngine
+#include <Cry3DEngine/I3DEngine.h>
+#include <Cry3DEngine/IGeomCache.h>
+#include <CryAISystem/IAIActor.h>
+#include <CryAISystem/IAIObject.h>
+#include <CryAnimation/IVertexAnimation.h>
+#include <CryExtension/ICryFactoryRegistry.h>
+#include <CryMovie/IMovieSystem.h>
+#include <CryRenderer/IFlares.h>
+#include <CrySandbox/IEditorGame.h>
+#include <CrySchematyc/CoreAPI.h>
+#include <IGameObjectSystem.h>
 
 REGISTER_CLASS_DESC(CEntityClassDesc);
 
@@ -103,61 +65,61 @@ const char* CEntityObject::s_LensFlareMaterialName("%ENGINE%/EngineAssets/Materi
 
 namespace Private_EntityObject
 {
-	class EntityLinkTool : public CPickObjectTool
+class EntityLinkTool : public CPickObjectTool
+{
+	DECLARE_DYNCREATE(EntityLinkTool)
+
+	struct SEntityLinkPicker : IPickObjectCallback
 	{
-		DECLARE_DYNCREATE(EntityLinkTool)
-
-		struct SEntityLinkPicker : IPickObjectCallback
+		SEntityLinkPicker()
 		{
-			SEntityLinkPicker()
-			{
-			}
+		}
 
-			void OnPick(CBaseObject* pObj) override
-			{
-				if (m_owner)
-				{
-					CUndo undo("Add entity link");
-					m_owner->AddEntityLink(pObj->GetName(), pObj->GetId());
-				}
-			}
-
-			bool OnPickFilter(CBaseObject* filterObject) override
-			{
-				return filterObject->IsKindOf(RUNTIME_CLASS(CEntityObject));
-			}
-
-			void OnCancelPick() override
-			{
-			}
-
-			CEntityObject* m_owner;
-		};
-
-	public:
-		EntityLinkTool()
-			: CPickObjectTool(&m_picker)
+		void OnPick(CBaseObject* pObj) override
 		{
+			if (m_owner)
+			{
+				CUndo undo("Add entity link");
+				m_owner->AddEntityLink(pObj->GetName(), pObj->GetId());
+			}
+		}
+
+		bool OnPickFilter(CBaseObject* filterObject) override
+		{
+			return filterObject->IsKindOf(RUNTIME_CLASS(CEntityObject));
 		}
 		
-		~EntityLinkTool()
+		void OnCancelPick() override
 		{
-			m_picker.OnCancelPick();
 		}
 
-		virtual void SetUserData(const char* key, void* userData) override
-		{
-			m_picker.m_owner = static_cast<CEntityObject*>(userData);
-		}
-
-	private:
-		SEntityLinkPicker m_picker;
+		CEntityObject* m_owner;
 	};
 
-	IMPLEMENT_DYNCREATE(EntityLinkTool, CPickObjectTool)
+public:
+	EntityLinkTool()
+		: CPickObjectTool(&m_picker)
+	{
+	}
 
-	std::map<EntityId, CEntityObject*> s_entityIdMap;
+	~EntityLinkTool()
+	{
+		m_picker.OnCancelPick();
+	}
+
+	virtual void SetUserData(const char* key, void* userData) override
+	{
+		m_picker.m_owner = static_cast<CEntityObject*>(userData);
+	}
+
+private:
+	SEntityLinkPicker m_picker;
 };
+
+IMPLEMENT_DYNCREATE(EntityLinkTool, CPickObjectTool)
+
+std::map<EntityId, CEntityObject*> s_entityIdMap;
+}
 
 IMPLEMENT_DYNCREATE(CEntityObject, CBaseObject)
 
@@ -192,13 +154,15 @@ CEntityObject* CEntityLink::GetTarget() const
 	return static_cast<CEntityObject*>(GetIEditorImpl()->GetObjectManager()->FindObject(targetId));
 }
 
-CEntityObject::CEntityObject() : m_listeners(1)
+CEntityObject::CEntityObject()
+	: m_listeners(1)
 {
-	m_pEntity = 0;
+	m_pEntity = nullptr;
 	m_bLoadFailed = false;
 
 	m_pEntityScript = nullptr;
 	m_pEntityClass = nullptr;
+	m_pHelperMesh = nullptr;
 
 	m_proximityRadius = 0;
 	m_innerRadius = 0;
@@ -209,7 +173,6 @@ CEntityObject::CEntityObject() : m_listeners(1)
 	m_bProjectInAllDirs = false;
 	m_bProjectorHasTexture = false;
 	m_bInitVariablesCalled = false;
-	m_auxEditorMeshSlot = -1;
 
 	m_bDisplayBBox = true;
 	m_bBBoxSelection = false;
@@ -220,6 +183,7 @@ CEntityObject::CEntityObject() : m_listeners(1)
 	m_bVisible = true;
 	m_bCalcPhysics = true;
 	m_pFlowGraph = nullptr;
+	m_bCloned = false;
 	m_bLight = false;
 	m_bAreaLight = false;
 	m_fAreaWidth = 1;
@@ -298,7 +262,7 @@ void CEntityObject::InitVariables()
 
 	if (m_pVarObject == nullptr)
 	{
-		m_pVarObject = stl::make_unique<CVarObject>();
+		m_pVarObject = std::make_unique<CVarObject>();
 	}
 
 	m_pVarObject->AddVariable(mv_outdoor, "OutdoorOnly", _T("Ignore Visareas"), functor(*this, &CEntityObject::OnEntityFlagsChange));
@@ -461,34 +425,10 @@ CEntityObject* CEntityObject::FindFromEntityId(EntityId id)
 
 bool CEntityObject::IsLegacyObject() const
 {
-	return (m_pEntityClass != nullptr && 
-					(gEnv->pGameFramework->GetIGameObjectSystem() && gEnv->pGameFramework->GetIGameObjectSystem()->GetID(m_pEntityClass->GetName()) != IGameObjectSystem::InvalidExtensionID))
+	return (m_pEntityClass != nullptr &&
+	        (gEnv->pGameFramework->GetIGameObjectSystem() && gEnv->pGameFramework->GetIGameObjectSystem()->GetID(m_pEntityClass->GetName()) != IGameObjectSystem::InvalidExtensionID))
 	       || (m_pEntityScript != nullptr && strlen(m_pEntityScript->GetClass()->GetScriptFile()) > 0)
 	       || m_prototype != nullptr;
-}
-
-bool CEntityObject::AuxEditorMeshPresent() const
-{
-	return m_auxEditorMeshSlot != -1;
-}
-
-void CEntityObject::EnableAuxMeshRender(bool enable) const
-{
-	if (!AuxEditorMeshPresent())
-	{
-		return;
-	}
-
-	if (enable)
-	{
-		auto flags = m_pEntity->GetSlotFlags(m_auxEditorMeshSlot) | ENTITY_SLOT_RENDER;
-		m_pEntity->SetSlotFlags(m_auxEditorMeshSlot, flags);
-	}
-	else
-	{
-		auto flags = m_pEntity->GetSlotFlags(m_auxEditorMeshSlot) & ~ENTITY_SLOT_RENDER;
-		m_pEntity->SetSlotFlags(m_auxEditorMeshSlot, flags);
-	}
 }
 
 void CEntityObject::CreateInspectorWidgets(CInspectorWidgetCreator& creator)
@@ -592,10 +532,10 @@ static void OnBnClickedAddComponent()
 			return QVariant();
 		}
 
-		virtual QString      GetToolTip(int32 columnIndex) const override { return m_tooltip; }
-		virtual const QIcon* GetColumnIcon(int32 columnIndex) const override { return &m_icon; }
+		virtual QString                         GetToolTip(int32 columnIndex) const override    { return m_tooltip; }
+		virtual const QIcon*                    GetColumnIcon(int32 columnIndex) const override { return &m_icon; }
 		virtual const CAbstractDictionaryEntry* GetParentEntry() const override                 { return m_pParentEntry; }
-		virtual bool         IsEnabled() const override                      { return m_bEnabled; }
+		virtual bool                            IsEnabled() const override                      { return m_bEnabled; }
 		// ~CAbstractDictionaryEntry
 
 		const Schematyc::IEnvComponent& GetComponent() const { return m_component; }
@@ -639,12 +579,12 @@ static void OnBnClickedAddComponent()
 
 		void AddEntry(CComponentDictionaryEntry& entry)
 		{
-			m_entries.emplace_back(stl::make_unique<CComponentDictionaryEntry>(entry));
+			m_entries.emplace_back(std::make_unique<CComponentDictionaryEntry>(entry));
 		}
 
 		CComponentDictionaryCategoryEntry& AddCategoryEntry(const char* szName)
 		{
-			m_entries.emplace_back(stl::make_unique<CComponentDictionaryCategoryEntry>(szName, this));
+			m_entries.emplace_back(std::make_unique<CComponentDictionaryCategoryEntry>(szName, this));
 			return static_cast<CComponentDictionaryCategoryEntry&>(*m_entries.back().get());
 		}
 
@@ -663,7 +603,7 @@ static void OnBnClickedAddComponent()
 		virtual int32                           GetNumEntries() const override       { return m_entries.size(); }
 		virtual const CAbstractDictionaryEntry* GetEntry(int32 index) const override { return (m_entries.size() > index) ? m_entries[index].get() : nullptr; }
 
-		virtual int32                           GetNumColumns() const override       { return (uint32)EComponentDictionaryColumn::Count; };
+		virtual int32                           GetNumColumns() const override       { return (uint32)EComponentDictionaryColumn::Count; }
 		virtual QString                         GetColumnName(int32 index) const override
 		{
 			if (index == (uint32)EComponentDictionaryColumn::Name)
@@ -676,12 +616,12 @@ static void OnBnClickedAddComponent()
 
 		void AddEntry(CComponentDictionaryEntry& entry)
 		{
-			m_entries.emplace_back(stl::make_unique<CComponentDictionaryEntry>(entry));
+			m_entries.emplace_back(std::make_unique<CComponentDictionaryEntry>(entry));
 		}
 
 		CComponentDictionaryCategoryEntry& AddCategoryEntry(const char* szName)
 		{
-			m_entries.emplace_back(stl::make_unique<CComponentDictionaryCategoryEntry>(szName));
+			m_entries.emplace_back(std::make_unique<CComponentDictionaryCategoryEntry>(szName));
 			return static_cast<CComponentDictionaryCategoryEntry&>(*m_entries.back().get());
 		}
 
@@ -724,24 +664,25 @@ static void OnBnClickedAddComponent()
 	std::map<string, std::vector<const Schematyc::IEnvComponent*>> componentsMap;
 
 	// Populate all available entity components into the map, sorted by category
-	auto visitComponentsLambda = [&existingComponentClassDescs, &componentsMap](const Schematyc::IEnvComponent& component)
-	{
-		if (strlen(component.GetDesc().GetLabel()) == 0)
+	auto visitComponentsLambda =
+		[&existingComponentClassDescs, &componentsMap](const Schematyc::IEnvComponent& component)
 		{
+			if (strlen(component.GetDesc().GetLabel()) == 0)
+			{
+				return Schematyc::EVisitStatus::Continue;
+			}
+
+			if (component.GetDesc().GetComponentFlags().Check(EEntityComponentFlags::HideFromInspector))
+			{
+				return Schematyc::EVisitStatus::Continue;
+			}
+
+			string editorCategory = component.GetDesc().GetEditorCategory();
+
+			componentsMap[editorCategory].push_back(&component);
+
 			return Schematyc::EVisitStatus::Continue;
-		}
-
-		if (component.GetDesc().GetComponentFlags().Check(EEntityComponentFlags::HideFromInspector))
-		{
-			return Schematyc::EVisitStatus::Continue;
-		}
-
-		string editorCategory = component.GetDesc().GetEditorCategory();
-
-		componentsMap[editorCategory].push_back(&component);
-
-		return Schematyc::EVisitStatus::Continue;
-	};
+		};
 
 	gEnv->pSchematyc->GetEnvRegistry().VisitComponents(visitComponentsLambda);
 
@@ -806,14 +747,14 @@ static void OnBnClickedAddComponent()
 		}
 	}
 
-	std::unique_ptr<CModalPopupDictionary> pDictionary = stl::make_unique<CModalPopupDictionary>("Entity::AddComponent", dictionary);
+	std::unique_ptr<CModalPopupDictionary> pDictionary = std::make_unique<CModalPopupDictionary>("Entity::AddComponent", dictionary);
 	pDictionary->ExecAt(QCursor::pos());
 
 	if (CComponentDictionaryEntry* pSelectedComponentEntry = static_cast<CComponentDictionaryEntry*>(pDictionary->GetResult()))
 	{
 		using namespace Private_EntityObject;
 		const CSelectionGroup* pSelectionGroup = GetIEditor()->GetObjectManager()->GetSelection();
-		std::unique_ptr<CUndoAddComponent> pUndoAddComponent = stl::make_unique<CUndoAddComponent>(&pSelectedComponentEntry->GetComponent().GetDesc(), pSelectionGroup->GetCount());
+		std::unique_ptr<CUndoAddComponent> pUndoAddComponent = std::make_unique<CUndoAddComponent>(&pSelectedComponentEntry->GetComponent().GetDesc(), pSelectionGroup->GetCount());
 
 		for (int i = 0, n = pSelectionGroup->GetCount(); i < n; ++i)
 		{
@@ -1064,8 +1005,8 @@ void CEntityObject::CreateComponentWidgets(CInspectorWidgetCreator& creator)
 
 		CryGUID componentInstanceGUID = pComponent->GetGUID();
 
-		std::unique_ptr<CEntityComponentCollapsibleFrame> pWidget = stl::make_unique<CEntityComponentCollapsibleFrame>(szComponentLabel,
-			pComponent->GetClassDesc(), componentTypeIndex, pComponent->GetComponentFlags().Check(EEntityComponentFlags::UserAdded));
+		std::unique_ptr<CEntityComponentCollapsibleFrame> pWidget =
+			std::make_unique<CEntityComponentCollapsibleFrame>(szComponentLabel, pComponent->GetClassDesc(), componentTypeIndex, pComponent->GetComponentFlags().Check(EEntityComponentFlags::UserAdded));
 
 		creator.AddPropertyTree(pComponent->GetClassDesc().GetGUID().hipart + componentTypeIndex, szComponentLabel, std::move(pWidget), [componentClassGUID, componentTypeIndex](CBaseObject* pObject, Serialization::IArchive& ar, bool bMultiEdit)
 		{
@@ -1143,7 +1084,8 @@ void CEntityObject::SerializeLinks(Serialization::IArchive& ar, bool bMultiEdit)
 			pickToolButton.SetToolClass(RUNTIME_CLASS(EntityLinkTool), nullptr, this);
 
 			ar(pickToolButton, "picker", "^Pick");
-			ar(Serialization::ActionButton([ = ] {
+			ar(Serialization::ActionButton([=]
+			{
 				CUndo undo("Clear entity links");
 				RemoveAllEntityLinks();
 			}), "picker", "^Clear");
@@ -1244,7 +1186,7 @@ IPhysicalEntity* CEntityObject::GetCollisionEntity() const
 	{
 		return m_pEntity->GetPhysics();
 	}
-	return 0;
+	return nullptr;
 }
 
 void CEntityObject::GetLocalBounds(AABB& box)
@@ -1287,6 +1229,11 @@ void CEntityObject::GetLocalBounds(AABB& box)
 			localSlotBounds.SetTransformedAABB(m_pEntity->GetSlotLocalTM(i, false), localSlotBounds);
 			box.Add(localSlotBounds);
 		}
+	}
+
+	if (m_pHelperMesh)
+	{
+		box.Add(m_pHelperMesh->GetAABB());
 	}
 }
 
@@ -1385,13 +1332,18 @@ bool CEntityObject::HitTestCharacter(ICharacterInstance* pCharacter, HitContext&
 
 bool CEntityObject::HitTestEntity(HitContext& hc, bool& bHavePhysics)
 {
-	AABB bbox;
-	m_pEntity->GetLocalBounds(bbox);
-
 	Matrix34 invertedWorldTransform = m_pEntity->GetWorldTM().GetInverted();
 
 	Vec3 raySrc = invertedWorldTransform.TransformPoint(hc.raySrc);
 	Vec3 rayDir = invertedWorldTransform.TransformVector(hc.rayDir).GetNormalized();
+
+	AABB bbox;
+	m_pEntity->GetLocalBounds(bbox);
+
+	if (m_pHelperMesh && hc.helperMeshShown)
+	{
+		bbox.Add(m_pHelperMesh->GetAABB());
+	}
 
 	// Early exit, check bounding box
 	Vec3 point;
@@ -1400,17 +1352,24 @@ bool CEntityObject::HitTestEntity(HitContext& hc, bool& bHavePhysics)
 		return false;
 	}
 
+	SRayHitInfo hitInfo;
+	hitInfo.inReferencePoint = raySrc;
+	hitInfo.inRay = Ray(raySrc, rayDir);
+
+	if (m_pHelperMesh && hc.helperMeshShown)
+	{
+		if (m_pHelperMesh->RayIntersection(hitInfo))
+		{
+			// World space distance.
+			Vec3 worldHitPos = GetWorldTM().TransformPoint(hitInfo.vHitPos);
+			hc.dist = hc.raySrc.GetDistance(worldHitPos);
+			hc.object = this;
+			return true;
+		}
+	}
+
 	for (int i = 0, n = m_pEntity->GetSlotCount(); i < n; ++i)
 	{
-		invertedWorldTransform = m_pEntity->GetSlotWorldTM(i).GetInverted();
-
-		raySrc = invertedWorldTransform.TransformPoint(hc.raySrc);
-		rayDir = invertedWorldTransform.TransformVector(hc.rayDir).GetNormalized();
-
-		SRayHitInfo hitInfo;
-		hitInfo.inReferencePoint = raySrc;
-		hitInfo.inRay = Ray(raySrc, rayDir);
-
 		if (IStatObj* pStatObj = m_pEntity->GetStatObj(i))
 		{
 			if (pStatObj->RayIntersection(hitInfo))
@@ -1491,17 +1450,48 @@ bool CEntityObject::HitTest(HitContext& hc)
 				return false;
 			}
 		}
+		if (m_pHelperMesh && !hc.iconShown)
+		{
+			Matrix34 tm = GetWorldTM();
+			float sz = m_helperScale * gGizmoPreferences.helperScale;
+			tm.ScaleColumn(Vec3(sz, sz, sz));
+			primitives::ray aray;
+			aray.origin = hc.raySrc;
+			aray.dir = hc.rayDir * 10000.0f;
+
+			IGeomManager* pGeomMgr = GetIEditorImpl()->GetSystem()->GetIPhysicalWorld()->GetGeomManager();
+			IGeometry* pRay = pGeomMgr->CreatePrimitive(primitives::ray::type, &aray);
+			geom_world_data gwd;
+			gwd.offset = tm.GetTranslation();
+			gwd.scale = tm.GetColumn0().GetLength();
+			gwd.R = Matrix33(tm);
+			geom_contact* pcontacts = 0;
+			WriteLockCond lock;
+
+			int col = (m_pHelperMesh->GetPhysGeom() && m_pHelperMesh->GetPhysGeom()->pGeom)
+			          ? m_pHelperMesh->GetPhysGeom()->pGeom->IntersectLocked(pRay, &gwd, 0, 0, pcontacts, lock)
+			          : 0;
+
+			pGeomMgr->DestroyGeometry(pRay);
+			if (col > 0)
+			{
+				if (pcontacts)
+				{
+					hc.dist = pcontacts[col - 1].t;
+				}
+				hc.object = this;
+				return true;
+			}
+		}
 	}
 
 	//////////////////////////////////////////////////////////////////////////
-	if ((m_bDisplayBBox && gViewportPreferences.showTriggerBounds) || hc.b2DViewport || (m_bDisplayBBox && m_bBBoxSelection))
+	if ((m_bDisplayBBox && hc.triggerBoundsShown) || hc.b2DViewport || (m_bDisplayBBox && m_bBBoxSelection))
 	{
-		float hitEpsilon = hc.view->GetScreenScaleFactor(GetWorldPos()) * 0.01f;
-		float hitDist;
-
-		float fScale = GetScale().x;
 		AABB boxScaled;
 		GetLocalBounds(boxScaled);
+
+		float fScale = GetScale().x;
 		boxScaled.min *= fScale;
 		boxScaled.max *= fScale;
 
@@ -1527,6 +1517,8 @@ bool CEntityObject::HitTest(HitContext& hc)
 			else
 			{
 				// Check intersection with bbox edges.
+				float hitEpsilon = hc.view->GetScreenScaleFactor(GetWorldPos()) * 0.01f;
+				float hitDist;
 				if (Intersect::Ray_AABBEdge(xformedRaySrc, xformedRayDir, boxScaled, hitEpsilon, hitDist, intPnt))
 				{
 					hc.dist = xformedRaySrc.GetDistance(intPnt);
@@ -1557,21 +1549,32 @@ bool CEntityObject::HitHelperTest(HitContext& hc)
 
 bool CEntityObject::HitTestRect(HitContext& hc)
 {
-	bool bResult = CBaseObject::HitTestRect(hc);
-	if (!bResult && m_pEntity && GetIEditorImpl()->GetGameEngine()->GetSimulationMode())
+	bool bResult = false;
+
+	if (m_pHelperMesh && !hc.iconShown)
 	{
 		AABB box;
-		if (hc.bUseSelectionHelpers)
-		{
-			box.max = box.min = m_pEntity->GetWorldPos();
-		}
-		else
-		{
-			// Retrieve world space bound box.
-			m_pEntity->GetWorldBounds(box);
-		}
-
+		box.SetTransformedAABB(GetWorldTM(), m_pHelperMesh->GetAABB());
 		bResult = HitTestRectBounds(hc, box);
+	}
+	else
+	{
+		bResult = CBaseObject::HitTestRect(hc);
+		if (!bResult && m_pEntity && GetIEditorImpl()->GetGameEngine()->GetSimulationMode())
+		{
+			AABB box;
+			if (hc.bUseSelectionHelpers)
+			{
+				box.max = box.min = m_pEntity->GetWorldPos();
+			}
+			else
+			{
+				// Retrieve world space bound box.
+				m_pEntity->GetWorldBounds(box);
+			}
+
+			bResult = HitTestRectBounds(hc, box);
+		}
 	}
 
 	if (bResult)
@@ -1693,6 +1696,15 @@ void CEntityObject::ResetEditorClassInfo()
 {
 	const SEditorClassInfo& editorClassInfo = m_pEntityClass->GetEditorClassInfo();
 
+	if (!editorClassInfo.sHelper.empty())
+	{
+		m_pHelperMesh = gEnv->p3DEngine->LoadStatObj(editorClassInfo.sHelper.c_str(), nullptr, nullptr, false);
+		if (m_pHelperMesh)
+		{
+			m_pHelperMesh->AddRef();
+		}
+	}
+
 	if (m_pEntity && m_pEntityScript != nullptr)
 	{
 		m_pEntityScript->UpdateTextureIcon(m_pEntity);
@@ -1717,7 +1729,7 @@ void CEntityObject::ResetEditorClassInfo()
 		{
 			iconId = GetClassDesc()->GetTextureIconId();
 			// Make sure there's always an icon
-			if (iconId == 0 && !AuxEditorMeshPresent())
+			if (iconId == 0 && !m_pHelperMesh)
 			{
 				iconId = GetIEditor()->GetIconManager()->GetIconTexture("%EDITOR%/ObjectIcons/Schematyc.bmp");
 			}
@@ -1911,7 +1923,7 @@ void CEntityObject::SpawnEntity()
 	params.vPosition = GetPos();
 	params.qRotation = GetRotation();
 	params.id = m_entityId;
-	// Give loaded xml data to the entity spawn function for loading schematyc components, and other component members
+	// Give loaded xml data to the entity spawn function for loading Schematyc components, and other component members
 	params.entityNode = m_loadedXmlNodeData;
 
 	m_bLight = strstr(params.pClass->GetScriptFile(), "/Lights/") ? true : false;
@@ -1944,7 +1956,7 @@ void CEntityObject::SpawnEntity()
 		params.nFlagsExtended = (params.nFlagsExtended & ~ENTITY_FLAG_EXTENDED_GI_MODE_BIT_MASK) | ((((int)mv_giMode) << ENTITY_FLAG_EXTENDED_GI_MODE_BIT_OFFSET) & ENTITY_FLAG_EXTENDED_GI_MODE_BIT_MASK);
 	}
 
-	params.guid = ToEntityGuid(GetId());
+	params.guid = GetId();
 
 	// Spawn Entity but not initialize it.
 	m_pEntity = pEntitySystem->SpawnEntity(params, false);
@@ -2018,17 +2030,6 @@ void CEntityObject::SpawnEntity()
 			           CryLinkService::CCryLinkUriFactory::GetUriV("Editor", "selection.select_and_go_to %s", GetName()));
 
 			return;
-		}
-
-		// Implicitly load geometry into free slot if "Editor->Model" is specified
-		if (m_pEntityScript)
-		{
-			const auto& classInfo = m_pEntityScript->GetClass()->GetEditorClassInfo();
-			if (!classInfo.sHelper.empty())
-			{
-				m_auxEditorMeshSlot = m_pEntity->LoadGeometry(-1, classInfo.sHelper);
-				EnableAuxMeshRender(GetIEditor()->IsHelpersDisplayed());
-			}
 		}
 
 		BindIEntityChilds();
@@ -2123,7 +2124,7 @@ void CEntityObject::DeleteEntity()
 		pEntitySystem->RemoveEntity(m_pEntity->GetId(), true);
 		s_entityIdMap.erase(m_entityId);
 	}
-	m_pEntity = 0;
+	m_pEntity = nullptr;
 }
 
 void CEntityObject::UnloadScript()
@@ -2134,9 +2135,12 @@ void CEntityObject::UnloadScript()
 	{
 		DeleteEntity();
 	}
-	m_auxEditorMeshSlot = -1;
-
-	m_pEntityScript = 0;
+	if (m_pHelperMesh)
+	{
+		m_pHelperMesh->Release();
+	}
+	m_pHelperMesh = nullptr;
+	m_pEntityScript = nullptr;
 }
 
 void CEntityObject::XFormGameEntity()
@@ -2178,10 +2182,19 @@ void CEntityObject::CalcBBox()
 
 		if (bbox.min.x >= bbox.max.x || bbox.min.y >= bbox.max.y || bbox.min.z >= bbox.max.z)
 		{
-			bbox = AABB(ZERO);
+			if (m_pHelperMesh)
+			{
+				Vec3 minp = m_pHelperMesh->GetBoxMin() * m_helperScale * gGizmoPreferences.helperScale;
+				Vec3 maxp = m_pHelperMesh->GetBoxMax() * m_helperScale * gGizmoPreferences.helperScale;
+				bbox.Add(minp);
+				bbox.Add(maxp);
+			}
+			else
+			{
+				bbox = AABB(ZERO);
+			}
 		}
-
-		const float minSize = 0.0001f;
+		float minSize = 0.0001f;
 		if (fabs(bbox.max.x - bbox.min.x) + fabs(bbox.max.y - bbox.min.y) + fabs(bbox.max.z - bbox.min.z) < minSize)
 		{
 			bbox.min = -Vec3(minSize, minSize, minSize);
@@ -2224,22 +2237,19 @@ void CEntityObject::SetSelected(bool bSelect)
 
 	if (m_pEntity)
 	{
-		//m_pEntity->SetFlags()
+		IRenderNode* pRenderNode = m_pEntity->GetRenderNode();
+		if (pRenderNode)
 		{
-			IRenderNode* pRenderNode = m_pEntity->GetRenderNode();
-			if (pRenderNode)
+			uint64 flags = pRenderNode->GetRndFlags();
+			if (bSelect)
 			{
-				uint64 flags = pRenderNode->GetRndFlags();
-				if (bSelect)
-				{
-					flags |= ERF_SELECTED;
-				}
-				else
-				{
-					flags &= ~ERF_SELECTED;
-				}
-				pRenderNode->SetRndFlags(flags);
+				flags |= ERF_SELECTED;
 			}
+			else
+			{
+				flags &= ~ERF_SELECTED;
+			}
+			pRenderNode->SetRndFlags(flags);
 		}
 	}
 
@@ -2409,8 +2419,7 @@ void CEntityObject::DrawProjectorFrustum(SDisplayContext& dc, Vec2 size, float d
 		Vec3(dist, -size.x, -size.y),
 		Vec3(dist, size.x,  -size.y),
 		Vec3(dist, -size.x, size.y),
-		Vec3(dist, size.x,  size.y)
-	};
+		Vec3(dist, size.x,  size.y) };
 
 	dc.DrawLine(org, corners[0]);
 	dc.DrawLine(org, corners[1]);
@@ -2422,29 +2431,30 @@ void CEntityObject::DrawProjectorFrustum(SDisplayContext& dc, Vec2 size, float d
 
 void CEntityObject::DrawEntityLinks(SDisplayContext& dc)
 {
-	if (dc.flags & DISPLAY_LINKS)
+	if (!dc.showLinks)
 	{
-		for (const auto& link : m_links)
+		return;
+	}
+
+	for (const auto& link : m_links)
+	{
+		if (CEntityObject* pTarget = link.GetTarget())
 		{
-			if (CEntityObject* pTarget = link.GetTarget())
+			dc.DrawLine(this->GetWorldPos(), pTarget->GetWorldPos(), ColorF(0.0f, 1.0f, 0.0f), ColorF(0.0f, 1.0f, 0.0f));
+
+			Vec3 pos = 0.5f * (this->GetWorldPos() + pTarget->GetWorldPos());
+			float camDist = dc.camera->GetPosition().GetDistance(pos);
+			if (camDist < gGlobalHelperPreferences.textLabelDistance)
 			{
-				dc.DrawLine(this->GetWorldPos(), pTarget->GetWorldPos(), ColorF(0.0f, 1.0f, 0.0f), ColorF(0.0f, 1.0f, 0.0f));
-
-				Vec3 pos = 0.5f * (this->GetWorldPos() + pTarget->GetWorldPos());
-
-				float camDist = dc.camera->GetPosition().GetDistance(pos);
-				float maxDist = gViewportPreferences.labelsDistance;
-				if (camDist < gViewportPreferences.labelsDistance)
+				float maxDist = gGlobalHelperPreferences.textLabelDistance;
+				float rangeRatio = 1.0f;
+				float range = maxDist / 2.0f;
+				if (camDist > range)
 				{
-					float rangeRatio = 1.0f;
-					float range = maxDist / 2.0f;
-					if (camDist > range)
-					{
-						rangeRatio = 1.0f * (1.0f - (camDist - range) / range);
-					}
-					dc.SetColor(0.4f, 1.0f, 0.0f, rangeRatio);
-					dc.DrawTextLabel(pos + Vec3(0, 0, 0.2f), 1.2f, link.name);
+					rangeRatio = 1.0f * (1.0f - (camDist - range) / range);
 				}
+				dc.SetColor(0.4f, 1.0f, 0.0f, rangeRatio);
+				dc.DrawTextLabel(pos + Vec3(0, 0, 0.2f), 1.2f, link.name);
 			}
 		}
 	}
@@ -2452,8 +2462,11 @@ void CEntityObject::DrawEntityLinks(SDisplayContext& dc)
 
 void CEntityObject::Display(CObjectRenderHelper& objRenderHelper)
 {
-	if (!gViewportDebugPreferences.showEntityObjectHelper)
+	SDisplayContext& dc = objRenderHelper.GetDisplayContextRef();
+	if (!dc.showEntityObjectHelper)
+	{
 		return;
+	}
 
 	if (!m_pEntity)
 	{
@@ -2464,8 +2477,6 @@ void CEntityObject::Display(CObjectRenderHelper& objRenderHelper)
 	float fHeight = m_fAreaHeight * 0.5f;
 
 	Matrix34 wtm = GetWorldTM();
-
-	SDisplayContext & dc = objRenderHelper.GetDisplayContextRef();
 
 	COLORREF col = CMFCUtils::ColorBToColorRef(GetColor());
 	if (IsFrozen())
@@ -2490,11 +2501,11 @@ void CEntityObject::Display(CObjectRenderHelper& objRenderHelper)
 		dc.DrawArrow(Vec3(0, 0, 0), FORWARD_DIRECTION * m_helperScale, m_helperScale);
 	}
 
-	bool bDisplaySolidBox = (m_bDisplaySolidBBox && gViewportPreferences.showTriggerBounds);
+	bool bDisplaySolidBox = (m_bDisplaySolidBBox && dc.showTriggerBounds);
 	if (IsSelected())
 	{
 		dc.SetSelectedColor(0.5f);
-		if (m_bDisplayBBox || (dc.flags & DISPLAY_2D))
+		if (m_bDisplayBBox || (dc.display2D))
 		{
 			bDisplaySolidBox = m_bDisplaySolidBBox;
 			AABB box;
@@ -2504,7 +2515,7 @@ void CEntityObject::Display(CObjectRenderHelper& objRenderHelper)
 	}
 	else
 	{
-		if ((m_bDisplayBBox && gViewportPreferences.showTriggerBounds) || (dc.flags & DISPLAY_2D))
+		if ((m_bDisplayBBox && dc.showTriggerBounds) || (dc.display2D))
 		{
 			dc.SetColor(col, 0.3f);
 			AABB box;
@@ -2590,8 +2601,8 @@ void CEntityObject::Display(CObjectRenderHelper& objRenderHelper)
 		}
 	}
 
-	// Draw radii if present and object selected.
-	if (gViewportPreferences.alwaysShowRadiuses || IsSelected())
+	// Draw radii if present or object is selected.
+	if (dc.showRadii || IsSelected())
 	{
 		const Vec3& scale = GetScale();
 		float fScale = scale.x; // Ignore matrix scale.
@@ -2645,7 +2656,35 @@ void CEntityObject::Display(CObjectRenderHelper& objRenderHelper)
 
 	dc.PopMatrix();
 
-	// Entities themselves are rendered by 3DEngine.
+	if (m_pHelperMesh && dc.showMesh)
+	{
+		Matrix34 tm(wtm);
+		float sz = m_helperScale * gGizmoPreferences.helperScale;
+		tm.ScaleColumn(Vec3(sz, sz, sz));
+
+		SRendParams rp;
+
+		// Helper mesh is rendered explicitly here, while Entity mesh is rendered by the Engine implicitly
+		// As a workaround of rendering silhouette on selected object, we are changing color manually and use different material
+		Vec3 color;
+		if (IsSelected())
+		{
+			color = CMFCUtils::Rgb2Vec(CMFCUtils::ColorBToColorRef(gViewportSelectionPreferences.geometrySelectionColor));
+			rp.pMaterial = GetIEditorImpl()->GetIconManager()->GetHelperMaterial();
+		}
+		else
+		{
+			color = CMFCUtils::Rgb2Vec(col);
+			rp.pMaterial = m_pHelperMesh->GetMaterial();
+		}
+
+		rp.AmbientColor = ColorF(color[0], color[1], color[2], 1);
+		rp.dwFObjFlags |= FOB_TRANS_MASK;
+		rp.fAlpha = 1;
+		rp.pMatrix = &tm;
+
+		m_pHelperMesh->Render(rp, objRenderHelper.GetPassInfo());
+	}
 
 	if (IsSelected())
 	{
@@ -2659,7 +2698,7 @@ void CEntityObject::Display(CObjectRenderHelper& objRenderHelper)
 		}
 	}
 
-	if ((dc.flags & DISPLAY_HIDENAMES) && gViewportPreferences.drawEntityLabels)
+	if (dc.showEntityObjectsTextLabels)
 	{
 		// If labels hidden but we draw entity labels enabled, always draw them.
 		CGroup* pGroup = (CGroup*)GetGroup();
@@ -2669,7 +2708,7 @@ void CEntityObject::Display(CObjectRenderHelper& objRenderHelper)
 		}
 	}
 
-	if (m_pEntity)
+	if (m_pEntity && dc.showComponentHelpers)
 	{
 		SGeometryDebugDrawInfo dd;
 		dd.tm = wtm;
@@ -2686,6 +2725,7 @@ void CEntityObject::Display(CObjectRenderHelper& objRenderHelper)
 
 	DrawDefault(dc, col);
 }
+
 const ColorB& CEntityObject::GetSelectionPreviewHighlightColor()
 {
 	return gViewportSelectionPreferences.colorEntityBBox;
@@ -2711,7 +2751,6 @@ void CEntityObject::DrawSelectionPreviewHighlight(SDisplayContext& dc)
 void CEntityObject::GetDisplayBoundBox(AABB& box)
 {
 	AABB bbox;
-
 	GetBoundBox(bbox);
 
 	for (const auto& link : m_links)
@@ -3122,7 +3161,7 @@ XmlNodeRef CEntityObject::Export(const string& levelPath, XmlNodeRef& xmlExportN
 		objNode->setAttr("ClassGUID", m_entityClassGUID);
 	}
 	objNode->setAttr("EntityId", m_entityId);
-	objNode->setAttr("EntityGuid", ToEntityGuid(GetId()));
+	objNode->setAttr("EntityGuid", GetId());
 
 	if (IsLegacyObject())
 	{
@@ -3197,7 +3236,7 @@ XmlNodeRef CEntityObject::Export(const string& levelPath, XmlNodeRef& xmlExportN
 				if (et.target->IsKindOf(RUNTIME_CLASS(CEntityObject)))
 				{
 					entityId = ((CEntityObject*)et.target)->GetEntityId();
-					entityGuid = ToEntityGuid(et.target->GetId());
+					entityGuid = et.target->GetId();
 				}
 			}
 
@@ -3288,13 +3327,11 @@ void CEntityObject::OnEvent(ObjectEvent event)
 				{
 					m_pEntity->ClearFlags(ENTITY_FLAG_IGNORE_PHYSICS_UPDATE);
 				}
-				EnableAuxMeshRender(false);
 			}
 			else if (event == EVENT_OUTOFGAME)
 			{
 				// Entity must be returned to editor visibility state.
 				m_pEntity->Hide(!m_bVisible);
-				EnableAuxMeshRender(GetIEditor()->IsHelpersDisplayed());
 			}
 			XFormGameEntity();
 			OnRenderFlagsChange(0);
@@ -3308,16 +3345,6 @@ void CEntityObject::OnEvent(ObjectEvent event)
 			}
 		}
 		break;
-
-	// Hide mesh while: cubemap generation + disabling helpers btn
-	case EVENT_HIDE_HELPER:
-		EnableAuxMeshRender(false);
-		break;
-
-	case EVENT_SHOW_HELPER:
-		EnableAuxMeshRender(GetIEditor()->IsHelpersDisplayed());
-		break;
-
 	case EVENT_REFRESH:
 		if (m_pEntity)
 		{
@@ -3435,7 +3462,12 @@ void CEntityObject::UpdateVisibility(bool bVisible)
 	{
 		m_pEntity->Hide(!m_bVisible);
 	}
-};
+}
+
+bool CEntityObject::IsLabelVisible(const SDisplayContext& dc) const
+{
+	return dc.showEntityObjectsTextLabels;
+}
 
 void CEntityObject::DrawDefault(SDisplayContext& dc, COLORREF labelColor)
 {
@@ -3466,13 +3498,12 @@ void CEntityObject::DrawDefault(SDisplayContext& dc, COLORREF labelColor)
 			{
 				DrawSelectionHelper(dc, wp, labelColor, 0.5f);
 			}
-			else if (!(dc.flags & DISPLAY_HIDENAMES))
+			else if (dc.showEntityObjectsTextLabels)
 			{
 				DrawLabel(dc, wp, labelColor, 0.5f);
 			}
 
-			if (GetIEditor()->IsHelpersDisplayed())
-				DrawTextureIcon(dc, wp, 0.5f, bDisplaySelectionHelper);
+			DrawTextureIcon(dc, wp, 0.5f, bDisplaySelectionHelper);
 		}
 	}
 
@@ -3481,7 +3512,7 @@ void CEntityObject::DrawDefault(SDisplayContext& dc, COLORREF labelColor)
 
 void CEntityObject::DrawTextureIcon(SDisplayContext& dc, const Vec3& pos, float alpha, bool bDisplaySelectionHelper, float distanceSquared)
 {
-	if (!gViewportPreferences.showSizeBasedIcons && !gViewportPreferences.showIcons)
+	if (!dc.showIcons)
 		return;
 
 	Vec3 iconPosition = pos;
@@ -3502,8 +3533,6 @@ void CEntityObject::DrawTextureIcon(SDisplayContext& dc, const Vec3& pos, float 
 	constexpr int iconDistX = 2;
 	constexpr int iconDistY = 5;
 
-	bool bDrewComponentIcon = false;
-
 	// Draw component icons first
 	if (m_pEntity != nullptr)
 	{
@@ -3520,8 +3549,6 @@ void CEntityObject::DrawTextureIcon(SDisplayContext& dc, const Vec3& pos, float 
 		constexpr int maxColumnCount = 5;
 
 		Vec3 iconPos = GetTextureIconDrawPos();
-
-		bDrewComponentIcon = m_componentIconTextureIds.size() > 0;
 
 		for (int i = 0, n = m_componentIconTextureIds.size(); i < n; ++i)
 		{
@@ -4577,14 +4604,14 @@ public:
 	}
 
 private:
-	virtual int         GetSize() { return sizeof(CUndoComponentSlotMaterialChange); }
+	virtual int         GetSize()        { return sizeof(CUndoComponentSlotMaterialChange); }
 	virtual const char* GetDescription() { return "Entity Component Material Change"; }
 
 	const CryGUID& m_owningEntityGUID;
-	CryGUID m_componentInstanceGUID;
-	int m_slotId;
-	string m_materialBeforeChange;
-	string m_materialAfterChange;
+	CryGUID        m_componentInstanceGUID;
+	int            m_slotId;
+	string         m_materialBeforeChange;
+	string         m_materialAfterChange;
 };
 
 bool CEntityObject::ApplyAsset(const CAsset& asset, HitContext* pHitContext)
@@ -4795,11 +4822,9 @@ void CEntityObject::Validate()
 		return;
 	}
 
-	int slot;
-
 	// Check Entity.
 	int numObj = m_pEntity->GetSlotCount();
-	for (slot = 0; slot < numObj; slot++)
+	for (int slot = 0; slot < numObj; slot++)
 	{
 		IStatObj* pObj = m_pEntity->GetStatObj(slot);
 		if (!pObj)
@@ -5647,20 +5672,21 @@ void CEntityObject::StoreUndoEntityLink(const std::vector<CBaseObject*>& objects
 
 IStatObj* CEntityObject::GetIStatObj()
 {
-	if (m_pEntity == NULL)
-		return NULL;
-
-	for (int i = 0, iSlotCount(m_pEntity->GetSlotCount()); i < iSlotCount; ++i)
+	if (m_pEntity != nullptr)
 	{
-		if (!m_pEntity->IsSlotValid(i))
-			continue;
-		IStatObj* pStatObj = m_pEntity->GetStatObj(i);
-		if (pStatObj == NULL)
-			continue;
-		return pStatObj;
+		for (int i = 0, iSlotCount(m_pEntity->GetSlotCount()); i < iSlotCount; ++i)
+		{
+			if (!m_pEntity->IsSlotValid(i))
+				continue;
+			IStatObj* pStatObj = m_pEntity->GetStatObj(i);
+			if (pStatObj != nullptr)
+			{
+				return pStatObj;
+			}
+		}
 	}
 
-	return NULL;
+	return m_pHelperMesh;
 }
 
 void CEntityObject::UpdateHighlightPassState(bool bSelected, bool bHighlighted)
@@ -5991,10 +6017,7 @@ SPyWrappedProperty CEntityObject::PyGetEntityProperty(const char* pName) const
 		if (pVariable->GetDataType() == IVariable::DT_COLOR)
 		{
 			value.type = SPyWrappedProperty::eType_Color;
-			COLORREF col = CMFCUtils::ColorLinearToGamma(ColorF(
-			                                               tempVec3[0],
-			                                               tempVec3[1],
-			                                               tempVec3[2]));
+			COLORREF col = CMFCUtils::ColorLinearToGamma(ColorF(tempVec3[0], tempVec3[1], tempVec3[2]));
 			value.property.colorValue.r = (int)GetRValue(col);
 			value.property.colorValue.g = (int)GetGValue(col);
 			value.property.colorValue.b = (int)GetBValue(col);

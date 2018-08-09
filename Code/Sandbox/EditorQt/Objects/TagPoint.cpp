@@ -2,33 +2,27 @@
 
 #include "StdAfx.h"
 #include "TagPoint.h"
+
+#include <Gizmos/AxisHelper.h>
+#include <Viewport.h>
+
 #include <CryAISystem/IAgent.h>
-
-#include "Viewport.h"
-
 #include <CryAISystem/IAISystem.h>
-#include "AI\AIManager.h"
-#include "Gizmos/AxisHelper.h"
 
 REGISTER_CLASS_DESC(CTagPointClassDesc);
 REGISTER_CLASS_DESC(CNavigationSeedPointClassDesc);
 
-//////////////////////////////////////////////////////////////////////////
-// CBase implementation.
-//////////////////////////////////////////////////////////////////////////
 IMPLEMENT_DYNCREATE(CTagPoint, CEntityObject)
 IMPLEMENT_DYNCREATE(CNavigationSeedPoint, CTagPoint)
 
 STagPointPreferences tagPointPreferences;
 REGISTER_PREFERENCES_PAGE_PTR(STagPointPreferences, &tagPointPreferences)
 
-//////////////////////////////////////////////////////////////////////////
 CTagPoint::CTagPoint()
 {
 	m_entityClass = "TagPoint";
 }
 
-//////////////////////////////////////////////////////////////////////////
 bool CTagPoint::Init(CBaseObject* prev, const string& file)
 {
 	SetColor(ColorB(0, 0, 255));
@@ -41,18 +35,15 @@ bool CTagPoint::Init(CBaseObject* prev, const string& file)
 	return res;
 }
 
-//////////////////////////////////////////////////////////////////////////
 void CTagPoint::InitVariables()
 {
 }
 
-//////////////////////////////////////////////////////////////////////////
 float CTagPoint::GetRadius()
 {
 	return GetHelperScale() * gGizmoPreferences.helperScale * tagPointPreferences.tagpointScaleMulti;
 }
 
-//////////////////////////////////////////////////////////////////////////
 int CTagPoint::MouseCreateCallback(IDisplayViewport* view, EMouseEvent event, CPoint& point, int flags)
 {
 	if (event == eMouseMove || event == eMouseLDown)
@@ -69,9 +60,10 @@ int CTagPoint::MouseCreateCallback(IDisplayViewport* view, EMouseEvent event, CP
 	return CBaseObject::MouseCreateCallback(view, event, point, flags);
 }
 
-//////////////////////////////////////////////////////////////////////////
-void CTagPoint::Display(SDisplayContext& dc)
+void CTagPoint::Display(CObjectRenderHelper& objRenderHelper)
 {
+	SDisplayContext& dc = objRenderHelper.GetDisplayContextRef();
+
 	const Matrix34& wtm = GetWorldTM();
 
 	float fHelperScale = 1 * m_helperScale * gGizmoPreferences.helperScale;
@@ -105,7 +97,6 @@ void CTagPoint::Display(SDisplayContext& dc)
 	DrawDefault(dc);
 }
 
-//////////////////////////////////////////////////////////////////////////
 bool CTagPoint::HitTest(HitContext& hc)
 {
 	// Must use icon..
@@ -134,7 +125,6 @@ bool CTagPoint::HitTest(HitContext& hc)
 	return false;
 }
 
-//////////////////////////////////////////////////////////////////////////
 void CTagPoint::GetBoundBox(AABB& box)
 {
 	Vec3 pos = GetWorldPos();
@@ -143,12 +133,9 @@ void CTagPoint::GetBoundBox(AABB& box)
 	box.max = pos + Vec3(r, r, r);
 }
 
-//////////////////////////////////////////////////////////////////////////
 void CTagPoint::GetLocalBounds(AABB& box)
 {
 	float r = GetRadius();
 	box.min = -Vec3(r, r, r);
 	box.max = Vec3(r, r, r);
 }
-
-//////////////////////////////////////////////////////////////////////////}

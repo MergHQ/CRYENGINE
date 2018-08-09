@@ -2,27 +2,31 @@
 
 #include "StdAfx.h"
 #include "DesignerObject.h"
-#include "Core/ModelCompiler.h"
-#include "Material/Material.h"
-#include "Material/MaterialManager.h"
-#include "DesignerEditor.h"
-#include "Util/Converter.h"
-#include "Objects/ObjectLoader.h"
-#include "Objects/InspectorWidgetCreator.h"
-#include "ObjectCreateTool.h"
-#include <CryCore/Base64.h>
-#include "GameEngine.h"
-#include "ToolFactory.h"
-#include "Core/Helper.h"
-#include "Util/Display.h"
-#include "Controls/DynamicPopupMenu.h"
-#include <Serialization/Decorators/EditorActionButton.h>
-#include "Tools/ToolCommon.h"
-#include "Util/PrimitiveShape.h"
+
 #include "Core/Common.h"
-#include "DesignerSession.h"
+#include "Core/Helper.h"
+#include "Core/ModelCompiler.h"
+#include "Tools/ToolCommon.h"
+#include "Util/Converter.h"
+#include "Util/Display.h"
+#include "Util/PrimitiveShape.h"
 #include "Util/Undo.h"
+#include "DesignerEditor.h"
+#include "DesignerSession.h"
+#include "ToolFactory.h"
+
+#include <Material/Material.h>
+#include <Material/MaterialManager.h>
+#include <GameEngine.h>
+#include <ObjectCreateTool.h>
+
+#include <Controls/DynamicPopupMenu.h>
+#include <Objects/ObjectLoader.h>
+#include <Objects/InspectorWidgetCreator.h>
 #include <Preferences/ViewportPreferences.h>
+#include <Serialization/Decorators/EditorActionButton.h>
+
+#include <CryCore/Base64.h>
 
 namespace Designer
 {
@@ -146,8 +150,7 @@ void DesignerObject::Display(CObjectRenderHelper& objRenderHelper)
 	const CSelectionGroup* pSelection = GetIEditor()->GetObjectManager()->GetSelection();
 	SDisplayContext& dc = objRenderHelper.GetDisplayContextRef();
 
-	bool bDisplay2D = dc.flags & DISPLAY_2D;
-	if (bDisplay2D)
+	if (dc.display2D)
 	{
 		dc.PushMatrix(GetWorldTM());
 		Display::DisplayModel(dc, GetModel(), NULL, eShelf_Any, 2, IsSelected() ? kSelectedColor : ColorB(0, 0, 0));
@@ -156,10 +159,8 @@ void DesignerObject::Display(CObjectRenderHelper& objRenderHelper)
 	else
 	{
 		DrawDefault(dc);
-	}
-
-	if (!bDisplay2D)
 		DrawOpenPolygons(dc);
+	}
 }
 
 const ColorB& DesignerObject::GetSelectionPreviewHighlightColor()
@@ -171,7 +172,7 @@ void DesignerObject::DrawSelectionPreviewHighlight(SDisplayContext& dc)
 {
 	CBaseObject::DrawSelectionPreviewHighlight(dc);
 
-	if (dc.flags & DISPLAY_2D)
+	if (dc.display2D)
 		return;
 
 	ColorB color = GetSelectionPreviewHighlightColor();
@@ -579,18 +580,6 @@ void DesignerObject::OnEvent(ObjectEvent event)
 			DesignerEditor* pDesignerTool = GetDesigner();
 			if (pDesignerTool)
 				pDesignerTool->EnterCurrentTool();
-		}
-		break;
-	case EVENT_HIDE_HELPER:
-		if (IsSelected() && GetCompiler() && IsVisible())
-		{
-			_smart_ptr<IStatObj> obj = NULL;
-			if (GetCompiler()->GetIStatObj(&obj))
-			{
-				int flag = obj->GetFlags();
-				flag &= ~STATIC_OBJECT_HIDDEN;
-				obj->SetFlags(flag);
-			}
 		}
 		break;
 	}

@@ -409,14 +409,14 @@ void MagnetTool::Display(SDisplayContext& dc)
 			if (m_nSelectedSourceVertex == i || m_nSelectedUpVertex == i)
 				continue;
 			BrushVec3 vWorldVertexPos = GetWorldTM().TransformPoint(v);
-			BrushVec3 vVertexBoxSize = GetElementBoxSize(dc.view, dc.flags & DISPLAY_2D, vWorldVertexPos);
+			BrushVec3 vVertexBoxSize = GetElementBoxSize(dc.view, dc.display2D, vWorldVertexPos);
 			dc.DrawSolidBox(ToVec3(vWorldVertexPos - vVertexBoxSize), ToVec3(vWorldVertexPos + vVertexBoxSize));
 		}
 
 		if (m_nSelectedSourceVertex != -1)
 		{
 			BrushVec3 vWorldVertexPos = GetWorldTM().TransformPoint(m_SourceVertices[m_nSelectedSourceVertex].position);
-			BrushVec3 vBoxSize = GetElementBoxSize(dc.view, dc.flags & DISPLAY_2D, vWorldVertexPos);
+			BrushVec3 vBoxSize = GetElementBoxSize(dc.view, dc.display2D, vWorldVertexPos);
 			dc.SetColor(kSelectedColor);
 			dc.DrawSolidBox(ToVec3(vWorldVertexPos - vBoxSize), ToVec3(vWorldVertexPos + vBoxSize));
 
@@ -430,7 +430,7 @@ void MagnetTool::Display(SDisplayContext& dc)
 		if (m_nSelectedUpVertex != -1)
 		{
 			BrushVec3 vWorldVertexPos = GetWorldTM().TransformPoint(m_SourceVertices[m_nSelectedUpVertex].position);
-			BrushVec3 vBoxSize = GetElementBoxSize(dc.view, dc.flags & DISPLAY_2D, vWorldVertexPos);
+			BrushVec3 vBoxSize = GetElementBoxSize(dc.view, dc.display2D, vWorldVertexPos);
 			dc.SetColor(ColorB(0, 150, 214, 255));
 			dc.DrawSolidBox(ToVec3(vWorldVertexPos - vBoxSize), ToVec3(vWorldVertexPos + vBoxSize));
 		}
@@ -443,7 +443,7 @@ void MagnetTool::Display(SDisplayContext& dc)
 			excludedVertices.push_back(m_TargetPos);
 			dc.SetColor(kSelectedColor);
 			BrushVec3 vWorldPos = GetWorldTM().TransformPoint(m_TargetPos);
-			BrushVec3 vBoxSize = GetElementBoxSize(dc.view, dc.flags & DISPLAY_2D, vWorldPos);
+			BrushVec3 vBoxSize = GetElementBoxSize(dc.view, dc.display2D, vWorldPos);
 			dc.DrawSolidBox(ToVec3(vWorldPos - vBoxSize), ToVec3(vWorldPos + vBoxSize));
 		}
 

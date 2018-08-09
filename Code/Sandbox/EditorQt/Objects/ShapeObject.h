@@ -2,14 +2,15 @@
 
 #pragma once
 
-#include <CryAISystem/INavigationSystem.h>
-#include <CrySystem/XML/IXml.h>
 #include "EntityObject.h"
 #include "SafeObjectsArray.h"
-#include "Gizmos/AxisHelper.h"
 
+#include <Gizmos/AxisHelper.h>
+
+#include <CryAISystem/INavigationSystem.h>
 #include <CryGame/IGameFramework.h>
 #include <CryGame/IGameVolumes.h>
+#include <CrySystem/XML/IXml.h>
 
 class CAIWaveObject;
 class CSelectionGroup;
@@ -28,7 +29,7 @@ public:
 	bool Init(CBaseObject* prev, const string& file);
 	void InitVariables();
 	void Done();
-	bool HasMeasurementAxis() const { return true;  }
+	bool HasMeasurementAxis() const { return true; }
 	void Display(CObjectRenderHelper& objRenderHelper);
 
 	//////////////////////////////////////////////////////////////////////////
@@ -144,7 +145,7 @@ protected:
 	virtual void ReadEntityProperties() {}
 
 	// Get obstruction colors to be used based on settings
-	void GetSoundObstructionColors(ColorB& obstruction, ColorB& noObstruction);
+	void GetSoundObstructionColors(ColorB& obstruction, ColorB& noObstruction, bool fillSelectedShapes);
 	// Helper function to draw sound roof and floor
 	void DisplaySoundRoofAndFloor(SDisplayContext& dc);
 	////! Calculate distance between

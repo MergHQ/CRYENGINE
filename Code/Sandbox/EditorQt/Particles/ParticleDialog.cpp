@@ -200,7 +200,7 @@ public:
 		 */
 		return false;
 	}
-	static bool IsActive() { return m_bActive; };
+	static bool IsActive() { return m_bActive; }
 private:
 	static bool m_bActive;
 };
@@ -232,7 +232,7 @@ CParticleDialog::CParticleDialog(CWnd* pParent)
 
 	pParticleUI = new CParticleUIDefinition;
 
-	// Immidiatly create dialog.
+	// Immediately create dialog.
 	Create(IDD_DATABASE, pParent);
 }
 
@@ -870,7 +870,7 @@ void CParticleDialog::OnMouseMove(UINT nFlags, CPoint point)
 			{
 				CPoint vp = p;
 				viewport->ScreenToClient(&vp);
-				HitContext hit;
+				HitContext hit(viewport);
 				if (viewport->HitTest(vp, hit))
 				{
 					if (hit.object && DYNAMIC_DOWNCAST(CEntityObject, hit.object))
@@ -885,7 +885,6 @@ void CParticleDialog::OnMouseMove(UINT nFlags, CPoint point)
 	CBaseLibraryDialog::OnMouseMove(nFlags, point);
 }
 
-//////////////////////////////////////////////////////////////////////////
 void CParticleDialog::OnLButtonUp(UINT nFlags, CPoint point)
 {
 	//CXTResizeDialog::OnLButtonUp(nFlags, point);
@@ -947,7 +946,7 @@ void CParticleDialog::OnLButtonUp(UINT nFlags, CPoint point)
 				CParticleItem* pParticles = m_pDraggedParticleItem;
 
 				// Drag and drop into one of views.
-				HitContext hit;
+				HitContext hit(viewport);
 				if (viewport->HitTest(vp, hit))
 				{
 					Vec3 hitpos = hit.raySrc + hit.rayDir * hit.dist;

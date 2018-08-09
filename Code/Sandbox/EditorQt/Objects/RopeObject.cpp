@@ -1,25 +1,22 @@
 // Copyright 2001-2018 Crytek GmbH / Crytek Group. All rights reserved.
 
 #include "StdAfx.h"
-
 #include "RopeObject.h"
-#include <Cry3DEngine/I3DEngine.h>
+
 #include "Material/Material.h"
-#include "Controls/PropertiesPanel.h"
-#include "Controls/PropertyCtrl.h"
-#include <Preferences/ViewportPreferences.h>
-#include "Objects/DisplayContext.h"
-#include "Objects/ObjectLoader.h"
-#include "Objects/InspectorWidgetCreator.h"
 #include "Material/MaterialManager.h"
+
+#include <Objects/DisplayContext.h>
+#include <Objects/InspectorWidgetCreator.h>
+#include <Objects/ObjectLoader.h>
+
+#include <Cry3DEngine/I3DEngine.h>
 #include <CrySerialization/Decorators/Resources.h>
 #include <CrySerialization/Decorators/ResourcesAudio.h>
 
 REGISTER_CLASS_DESC(CRopeObjectClassDesc);
 
 IMPLEMENT_DYNCREATE(CRopeObject, CShapeObject)
-
-//////////////////////////////////////////////////////////////////////////
 
 const ColorB g_lineConnectedColor(0, 255, 0);
 const ColorB g_lineDisconnectedColor(255, 255, 0);
@@ -117,7 +114,6 @@ inline void RopeParamsToXml(IRopeRenderNode::SRopeParams& rp, XmlNodeRef& node, 
 	}
 }
 
-//////////////////////////////////////////////////////////////////////////
 CRopeObject::CRopeObject()
 {
 	mv_closed = false;
@@ -139,34 +135,26 @@ CRopeObject::CRopeObject()
 	m_bskipInversionTools = true;
 }
 
-//////////////////////////////////////////////////////////////////////////
 void CRopeObject::InitVariables()
 {
 	//CEntity::InitVariables();
 }
 
-///////////////////////////////////////////////////////	///////////////////
 bool CRopeObject::Init(CBaseObject* prev, const string& file)
 {
-	bool bResult =
-	  __super::Init(prev, file);
+	bool bResult = __super::Init(prev, file);
 	if (bResult && prev)
 	{
 		m_ropeParams = ((CRopeObject*)prev)->m_ropeParams;
 	}
-	else
-	{
-	}
 	return bResult;
 }
 
-//////////////////////////////////////////////////////////////////////////
 void CRopeObject::Done()
 {
 	__super::Done();
 }
 
-//////////////////////////////////////////////////////////////////////////
 bool CRopeObject::CreateGameObject()
 {
 	__super::CreateGameObject();
@@ -179,7 +167,6 @@ bool CRopeObject::CreateGameObject()
 	return true;
 }
 
-//////////////////////////////////////////////////////////////////////////
 void CRopeObject::InvalidateTM(int nWhyFlags)
 {
 	__super::InvalidateTM(nWhyFlags);
@@ -193,7 +180,6 @@ void CRopeObject::InvalidateTM(int nWhyFlags)
 	}
 }
 
-//////////////////////////////////////////////////////////////////////////
 void CRopeObject::SetMaterial(IEditorMaterial* mtl)
 {
 	__super::SetMaterial(mtl);
@@ -209,11 +195,10 @@ void CRopeObject::SetMaterial(IEditorMaterial* mtl)
 	}
 }
 
-//////////////////////////////////////////////////////////////////////////
 void CRopeObject::Display(CObjectRenderHelper& objRenderHelper)
 {
 	SDisplayContext& dc = objRenderHelper.GetDisplayContextRef();
-	bool bPrevShowIcons = gViewportPreferences.showIcons;
+	bool bPrevShowIcons = dc.showIcons;
 	const Matrix34& wtm = GetWorldTM();
 
 	bool bLineWidth = 0;
@@ -278,7 +263,7 @@ void CRopeObject::Display(CObjectRenderHelper& objRenderHelper)
 
 		if (IsSelected())
 		{
-			gViewportPreferences.showIcons = false; // Selected Ropes hide icons.
+			dc.showIcons = false; // Selected Ropes hide icons.
 
 			Vec3 p0 = wtm.TransformPoint(m_points[0]);
 			Vec3 p1 = wtm.TransformPoint(m_points[m_points.size() - 1]);
@@ -305,10 +290,9 @@ void CRopeObject::Display(CObjectRenderHelper& objRenderHelper)
 	}
 
 	__super::Display(objRenderHelper);
-	gViewportPreferences.showIcons = bPrevShowIcons;
+	dc.showIcons = bPrevShowIcons;
 }
 
-//////////////////////////////////////////////////////////////////////////
 void CRopeObject::UpdateGameArea()
 {
 	if (!m_bAreaModified)
@@ -361,7 +345,6 @@ void CRopeObject::UpdateGameArea()
 	}
 }
 
-//////////////////////////////////////////////////////////////////////////
 void CRopeObject::UpdateRopeLinks()
 {
 	IRopeRenderNode::SEndPointLink links[2];
@@ -380,7 +363,6 @@ void CRopeObject::UpdateRopeLinks()
 	}
 }
 
-//////////////////////////////////////////////////////////////////////////
 void CRopeObject::OnParamChange(IVariable* var)
 {
 	if (!m_bIgnoreGameUpdate)
@@ -414,7 +396,6 @@ static void SerializeBitflag(Serialization::IArchive& ar, int& flag, int field, 
 
 }
 
-//////////////////////////////////////////////////////////////////////////
 void CRopeObject::CreateInspectorWidgets(CInspectorWidgetCreator& creator)
 {
 	CShapeObject::CreateInspectorWidgets(creator);
@@ -528,7 +509,6 @@ void CRopeObject::SerializeProperties(Serialization::IArchive& ar, bool bMultiEd
 	}
 }
 
-//////////////////////////////////////////////////////////////////////////
 void CRopeObject::OnEvent(ObjectEvent event)
 {
 	__super::OnEvent(event);
@@ -564,7 +544,6 @@ void CRopeObject::Reload(bool bReloadScript)
 	UpdateGameArea();
 }
 
-//////////////////////////////////////////////////////////////////////////
 void CRopeObject::Serialize(CObjectArchive& ar)
 {
 	if (ar.bLoading)
@@ -612,13 +591,11 @@ void CRopeObject::Serialize(CObjectArchive& ar)
 	__super::Serialize(ar);
 }
 
-//////////////////////////////////////////////////////////////////////////
 void CRopeObject::PostLoad(CObjectArchive& ar)
 {
 	__super::PostLoad(ar);
 }
 
-//////////////////////////////////////////////////////////////////////////
 XmlNodeRef CRopeObject::Export(const string& levelPath, XmlNodeRef& xmlNode)
 {
 	XmlNodeRef objNode = __super::Export(levelPath, xmlNode);
@@ -657,7 +634,6 @@ XmlNodeRef CRopeObject::Export(const string& levelPath, XmlNodeRef& xmlNode)
 	return objNode;
 }
 
-//////////////////////////////////////////////////////////////////////////
 IRopeRenderNode* CRopeObject::GetRenderNode() const
 {
 	if (m_pEntity != nullptr)
@@ -673,7 +649,6 @@ IRopeRenderNode* CRopeObject::GetRenderNode() const
 	return nullptr;
 }
 
-//////////////////////////////////////////////////////////////////////////
 void CRopeObject::CalcBBox()
 {
 	if (m_points.size() < 2)
@@ -722,7 +697,6 @@ void CRopeObject::CalcBBox()
 	m_lowestHeight = box.min.z;
 }
 
-//////////////////////////////////////////////////////////////////////////
 void CRopeObject::SetSelected(bool bSelect)
 {
 	if (IsSelected() && !bSelect && GetPointCount() > 1)
@@ -732,7 +706,6 @@ void CRopeObject::SetSelected(bool bSelect)
 	__super::SetSelected(bSelect);
 }
 
-//////////////////////////////////////////////////////////////////////////
 void CRopeObject::UpdateAudioData()
 {
 	IRopeRenderNode* const pIRopeRenderNode = GetRenderNode();

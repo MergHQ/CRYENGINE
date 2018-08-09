@@ -65,7 +65,7 @@ void CVehicleSeat::Display(CObjectRenderHelper& objRenderHelper)
 		dc.SetSelectedColor(0.6f);
 	}
 
-	//if (dc.flags & DISPLAY_2D)
+	//if (dc.display2D)
 	{
 		AABB box;
 		GetLocalBounds(box);

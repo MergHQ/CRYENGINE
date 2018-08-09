@@ -2,20 +2,20 @@
 
 #pragma once
 
+#include <LevelEditor/Tools/ObjectMode.h>
 #include <CryAISystem/MovementRequestID.h>
 
-class CAIMoveSimulation
+class CAIMoveSimulation : public CObjectMode::ISubTool
 {
 public:
-	CAIMoveSimulation();
 	virtual ~CAIMoveSimulation();
 
 	bool UpdateAIMoveSimulation(CViewport* pView, const CPoint& point);
-
+	bool HandleMouseEvent(CViewport* view, EMouseEvent event, CPoint& point, int flags) override;
 private:
-	void              CancelMove();
+	void CancelMove();
 
-	bool              GetAIMoveSimulationDestination(CViewport* pView, const CPoint& point, Vec3& outGotoPoint) const;
+	bool GetAIMoveSimulationDestination(CViewport* pView, const CPoint& point, Vec3& outGotoPoint) const;
 	MovementRequestID SendAIMoveSimulation(IEntity* pEntity, const Vec3& vGotoPoint);
 
 	struct SMovingAI

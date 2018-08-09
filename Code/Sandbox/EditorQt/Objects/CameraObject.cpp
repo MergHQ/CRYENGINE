@@ -262,7 +262,7 @@ Vec3 CCameraObject::GetLookAtEntityPos() const
 }
 
 //////////////////////////////////////////////////////////////////////////
-void CCameraObject::Display(SDisplayContext& dc)
+void CCameraObject::Display(CObjectRenderHelper& objRenderHelper)
 {
 	Matrix34 wtm = GetWorldTM();
 
@@ -276,6 +276,8 @@ void CCameraObject::Display(SDisplayContext& dc)
 
 	//float fScale = dc.view->GetScreenScaleFactor(wp) * 0.03f;
 	float fScale = GetHelperScale();
+
+	SDisplayContext& dc = objRenderHelper.GetDisplayContextRef();
 
 	if (IsHighlighted() && !IsFrozen())
 		dc.SetLineWidth(3);
@@ -658,15 +660,13 @@ bool CCameraObjectTarget::Init(CBaseObject* prev, const string& file)
 	return res;
 }
 
-//////////////////////////////////////////////////////////////////////////
 void CCameraObjectTarget::InitVariables()
 {
-
 }
 
-//////////////////////////////////////////////////////////////////////////
-void CCameraObjectTarget::Display(SDisplayContext& dc)
+void CCameraObjectTarget::Display(CObjectRenderHelper& objRenderHelper)
 {
+	SDisplayContext& dc = objRenderHelper.GetDisplayContextRef();
 	Vec3 wp = GetWorldPos();
 
 	//float fScale = dc.view->GetScreenScaleFactor(wp) * 0.03f;
@@ -685,7 +685,6 @@ void CCameraObjectTarget::Display(SDisplayContext& dc)
 	DrawDefault(dc);
 }
 
-//////////////////////////////////////////////////////////////////////////
 bool CCameraObjectTarget::HitTest(HitContext& hc)
 {
 	Vec3 origin = GetWorldPos();

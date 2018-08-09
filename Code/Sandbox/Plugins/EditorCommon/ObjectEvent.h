@@ -56,8 +56,6 @@ enum ObjectEvent
 
 	EVENT_FREE_GAME_DATA,//!< Object should free game data that its holding.
 	EVENT_CONFIG_SPEC_CHANGE, //!< Called when config spec changed.
-	EVENT_HIDE_HELPER,        //!< Signals that happens when Helper mode switches to be hidden.
-	EVENT_SHOW_HELPER,        //!< Signals that happens when Helper mode switches to be shown.
 	EVENT_TRANSFORM_FINISHED  //!< Signal when the object was transformed
 };
 
@@ -98,7 +96,7 @@ struct CObjectEvent
 	CObjectEvent(EObjectListenerEvent type)
 		: m_type(type)
 	{
-	};
+	}
 
 	EObjectListenerEvent m_type;
 };
@@ -109,7 +107,7 @@ struct CObjectPreDeleteEvent : public CObjectEvent
 		: CObjectEvent(OBJECT_ON_PREDELETE)
 		, m_pLayer(pLayer)
 	{
-	};
+	}
 
 	const IObjectLayer* m_pLayer;
 };
@@ -120,7 +118,7 @@ struct CObjectDeleteEvent : public CObjectEvent
 		: CObjectEvent(OBJECT_ON_DELETE)
 		, m_pLayer(pLayer)
 	{
-	};
+	}
 
 	const IObjectLayer* m_pLayer;
 };
@@ -132,7 +130,7 @@ struct CObjectPreAttachedEvent : public CObjectEvent
 		, m_pParent(pParent)
 		, m_shouldKeepPos(shouldKeepPos) // TODO: This information should not be necessary, only track view seems to make use of it
 	{
-	};
+	}
 
 	const CBaseObject* m_pParent;
 	bool               m_shouldKeepPos;
@@ -144,7 +142,7 @@ struct CObjectAttachedEvent : public CObjectEvent
 		: CObjectEvent(OBJECT_ON_ATTACHED)
 		, m_pParent(pParent)
 	{
-	};
+	}
 
 	const CBaseObject* m_pParent;
 };
@@ -156,7 +154,7 @@ struct CObjectPreDetachedEvent : public CObjectEvent
 		, m_pParent(pParent)
 		, m_shouldKeepPos(shouldKeepPos) // TODO: This information should not be necessary, only track view seems to make use of it
 	{
-	};
+	}
 
 	const CBaseObject* m_pParent;
 	bool               m_shouldKeepPos;
@@ -168,7 +166,7 @@ struct CObjectDetachedEvent : public CObjectEvent
 		: CObjectEvent(OBJECT_ON_DETACHED)
 		, m_pParent(pParent)
 	{
-	};
+	}
 
 	const CBaseObject* m_pParent;
 };
@@ -213,7 +211,7 @@ struct CObjectRenameEvent : public CObjectEvent
 		: CObjectEvent(OBJECT_ON_RENAME)
 		, m_name(prevName)
 	{
-	};
+	}
 
 	string m_name;
 };

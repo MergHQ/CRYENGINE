@@ -23,7 +23,7 @@ bool CPickObjectTool::MouseCallback(CViewport* view, EMouseEvent event, CPoint& 
 {
 	if (event == eMouseLDown)
 	{
-		HitContext hitInfo;
+		HitContext hitInfo(view);
 		view->HitTest(point, hitInfo);
 		CBaseObject* obj = hitInfo.object;
 		if (obj)
@@ -45,7 +45,7 @@ bool CPickObjectTool::MouseCallback(CViewport* view, EMouseEvent event, CPoint& 
 	}
 	else if (event == eMouseMove)
 	{
-		HitContext hitInfo;
+		HitContext hitInfo(view);
 		view->HitTest(point, hitInfo);
 		CBaseObject* obj = hitInfo.object;
 		if (obj)

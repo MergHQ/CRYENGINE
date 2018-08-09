@@ -2,12 +2,8 @@
 
 #pragma once
 
-#pragma once
-
-#include <QWidget>
-#include "QtViewPane.h"
-#include "QScrollableBox.h"
-#include "Viewport.h"
+#include <QScrollableBox.h>
+#include <QtViewPane.h>
 
 struct ICVar;
 class CViewport;
@@ -17,31 +13,25 @@ class CPanelDisplayRender : public CDockableWidgetT<QScrollableBox>, public IAut
 	Q_OBJECT
 	Q_INTERFACES(IPane)
 
-	public:
+public:
 	CPanelDisplayRender(QWidget* parent = nullptr, CViewport* viewport = nullptr);
 	~CPanelDisplayRender();
 
-	void Serialize(Serialization::IArchive& ar);
-	QSize sizeHint() const override;
+	void        Serialize(Serialization::IArchive& ar);
+	QSize       sizeHint() const override;
+	const char* GetPaneTitle() const { return "Display Settings"; }
 
-	const char* GetPaneTitle() const
-	{
-		return "Display Settings";
-	}
+	void        OnCVarChangedCallback();
 
-	void OnCVarChangedCallback();
-
-	protected:
+protected:
 	void SetupCallbacks();
 	void RemoveCallbacks();
 
 	//////////////////////////////////////////////////////////////////////////
-	// CEditorNotifyListener
+	// IAutoEditorNotifyListener
 	virtual void OnEditorNotifyEvent(EEditorNotifyEvent event);
 	//////////////////////////////////////////////////////////////////////////
 
-	void OnChangeRenderFlag();
-	void OnChangeDebugFlag();
 	void OnDisplayAll();
 	void OnDisplayNone();
 	void OnDisplayInvert();
@@ -59,8 +49,8 @@ class CPanelDisplayRender : public CDockableWidgetT<QScrollableBox>, public IAut
 
 	void showEvent(QShowEvent* e) override;
 
-	protected:
-	class QPropertyTree* m_propertyTree;
+protected:
+	class QPropertyTree*               m_propertyTree;
 	std::unordered_map<ICVar*, uint64> m_varCallbackMap;
-	CViewport* m_pViewport;
+	CViewport*                         m_pViewport;
 };

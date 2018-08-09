@@ -1,15 +1,5 @@
 // Copyright 2001-2018 Crytek GmbH / Crytek Group. All rights reserved.
 
-/*************************************************************************
-   -------------------------------------------------------------------------
-   $Id$
-   $DateTime$
-
-   -------------------------------------------------------------------------
-   History:
-   - 30:8:2004   11:19 : Created by Márcio Martins
-
-*************************************************************************/
 #include "StdAfx.h"
 #include "EditorGame.h"
 #include "Game.h"
@@ -178,18 +168,6 @@ IGamePhysicsSettings* CEditorGame::GetIGamePhysicsSettings()
 	return g_pGame->GetGamePhysicsSettings();
 }
 
-void CEditorGame::OnDisplayRenderUpdated(bool displayHelpers)
-{
-	CLedgeManagerEdit* pLedgeManagerEdit = g_pGame->GetLedgeManager()->GetEditorManager();
-	if (pLedgeManagerEdit != NULL)
-	{
-		pLedgeManagerEdit->OnDisplayHelpersChanged(displayHelpers);
-	}
-
-	g_pGame->OnEditorDisplayRenderUpdated(displayHelpers);
-}
-
-//------------------------------------------------------------------------
 void CEditorGame::InitUIEnums(IGameToEditorInterface* pGTE)
 {
 	m_pGTE = pGTE;

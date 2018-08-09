@@ -3,18 +3,17 @@
 #include "StdAfx.h"
 #include "SmartObject.h"
 
-#include <CryRenderer/IRenderAuxGeom.h>
+#include "Util/Math.h"
 #include "IDisplayViewport.h"
 #include "IIconManager.h"
 #include "SmartObjectsEditorDialog.h"
+
+#include <Cry3DEngine/I3DEngine.h>
 #include <CryAISystem/IAgent.h>
-#include "Util/Math.h"
+#include <CryRenderer/IRenderAuxGeom.h>
 
 REGISTER_CLASS_DESC(CSmartObjectClassDesc);
 
-//////////////////////////////////////////////////////////////////////////
-// CBase implementation.
-//////////////////////////////////////////////////////////////////////////
 IMPLEMENT_DYNCREATE(CSmartObject, CEntityObject)
 
 CSmartObject::CSmartObject()
@@ -33,7 +32,6 @@ CSmartObject::~CSmartObject()
 		m_pStatObj->Release();
 }
 
-//////////////////////////////////////////////////////////////////////////
 void CSmartObject::Done()
 {
 	__super::Done();
@@ -67,7 +65,7 @@ void CSmartObject::Display(CObjectRenderHelper& objRenderHelper)
 	{
 		objRenderHelper.Render(wtm);
 	}
-	else if (!(dc.flags & DISPLAY_2D))
+	else if (!dc.display2D)
 	{
 		if (m_pStatObj)
 		{
@@ -168,14 +166,13 @@ void CSmartObject::GetLocalBounds(AABB& box)
 	}
 }
 
-//////////////////////////////////////////////////////////////////////////
 IStatObj* CSmartObject::GetIStatObj()
 {
 	if (m_pStatObj)
 		return m_pStatObj;
 
-	ISmartObjectManager::IStatObjPtr* ppStatObjects = NULL;
-	IEntity* pEntity(GetIEntity());
+	ISmartObjectManager::IStatObjPtr* ppStatObjects = nullptr;
+	IEntity* pEntity = GetIEntity();
 
 	assert(pEntity);
 	if (gEnv->pAISystem && pEntity)
@@ -204,12 +201,14 @@ IStatObj* CSmartObject::GetIStatObj()
 		return m_pStatObj;
 	}
 
-	return NULL;
+	return nullptr;
+
+	//#DMITRYL: delete further code?
 
 	// Try to load the object specified in the SO class template
-	m_pClassTemplate = NULL;
+	m_pClassTemplate = nullptr;
 	string classes;
-	IVariable* pVar = GetProperties() ? GetProperties()->FindVariable("soclasses_SmartObjectClass") : NULL;
+	IVariable* pVar = GetProperties() ? GetProperties()->FindVariable("soclasses_SmartObjectClass") : nullptr;
 	if (pVar)
 	{
 		pVar->Get(classes);
@@ -233,11 +232,11 @@ IStatObj* CSmartObject::GetIStatObj()
 
 	if (m_pClassTemplate && !m_pClassTemplate->model.empty())
 	{
-		m_pStatObj = GetIEditor()->Get3DEngine()->LoadStatObj("%EDITOR%/Objects/" + m_pClassTemplate->model, NULL, NULL, false);
+		m_pStatObj = GetIEditor()->Get3DEngine()->LoadStatObj("%EDITOR%/Objects/" + m_pClassTemplate->model, nullptr, nullptr, false);
 		if (!m_pStatObj)
 		{
 			CryLog("Error: Load Failed: %s", (const char*) m_pClassTemplate->model);
-			return NULL;
+			return nullptr;
 		}
 		m_pStatObj->AddRef();
 		if (GetHelperMaterial())
@@ -249,15 +248,13 @@ IStatObj* CSmartObject::GetIStatObj()
 
 #define HELPER_MATERIAL "%EDITOR%/Objects/Helper"
 
-//////////////////////////////////////////////////////////////////////////
 IMaterial* CSmartObject::GetHelperMaterial()
 {
 	if (!m_pHelperMtl)
 		m_pHelperMtl = GetIEditor()->Get3DEngine()->GetMaterialManager()->LoadMaterial(HELPER_MATERIAL);
 	return m_pHelperMtl;
-};
+}
 
-//////////////////////////////////////////////////////////////////////////
 void CSmartObject::OnPropertyChange(IVariable* var)
 {
 	if (m_pStatObj)

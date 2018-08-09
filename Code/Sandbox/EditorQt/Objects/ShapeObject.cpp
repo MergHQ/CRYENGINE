@@ -2,38 +2,35 @@
 
 #include "StdAfx.h"
 #include "ShapeObject.h"
-#include "Viewport.h"
-#include <Preferences/ViewportPreferences.h>
+
+#include "AI/NavDataGeneration/Navigation.h"
+#include "AI/AIManager.h"
+#include "Controls/PropertiesPanel.h"
 #include "Objects/AIWave.h"
-#include "Objects/ObjectLoader.h"
-#include "Objects/InspectorWidgetCreator.h"
-#include "Util\Triangulate.h"
-#include "AI\AIManager.h"
+#include "Util/BoostPythonHelpers.h"
+#include "Util/Triangulate.h"
+#include "GameEngine.h"
+
+#include <Util/MFCUtil.h>
+
+#include <Controls/DynamicPopupMenu.h>
+#include <Gizmos/IGizmoManager.h>
+#include <LevelEditor/Tools/PickObjectTool.h>
+#include <Objects/ObjectLoader.h>
+#include <Objects/InspectorWidgetCreator.h>
+#include <Preferences/ViewportPreferences.h>
+#include <Serialization/Decorators/EditorActionButton.h>
+#include <Serialization/Decorators/EditToolButton.h>
+#include <Serialization/Decorators/EntityLink.h>
+#include <Grid.h>
+#include <Viewport.h>
 
 #include <Cry3DEngine/I3DEngine.h>
 #include <CryAISystem/IAISystem.h>
+#include <CryEntitySystem/IEntitySystem.h>
 #include <CryInput/IHardwareMouse.h>
 
 #include <vector>
-#include <CryEntitySystem/IEntitySystem.h>
-
-#include "GameEngine.h"
-#include "AI\NavDataGeneration\Navigation.h"
-#include "Controls/PropertiesPanel.h"
-
-#include "Util/BoostPythonHelpers.h"
-
-#include <Serialization/Decorators/EditToolButton.h>
-#include <Serialization/Decorators/EditorActionButton.h>
-#include <Serialization/Decorators/EntityLink.h>
-
-#include "Controls/DynamicPopupMenu.h"
-
-#include <LevelEditor/Tools/PickObjectTool.h>
-#include "Util/MFCUtil.h"
-#include "Gizmos/IGizmoManager.h"
-
-#include <Grid.h>
 
 //#pragma optimize("", off)
 //#pragma inline_depth(0)
@@ -52,15 +49,12 @@ REGISTER_CLASS_DESC(CAITerritoryObjectClassDesc);
 #define SHAPE_CLOSE_DISTANCE     0.8f
 #define SHAPE_POINT_MIN_DISTANCE 0.1f // Set to 10 cm (this number has been found in cooperation with C2 level designers)
 
-//////////////////////////////////////////////////////////////////////////
-
 CNavigation* GetNavigation()
 {
 	return GetIEditorImpl()->GetGameEngine()->GetNavigation();
 }
 
-//  CEditShapeObjectTool implementation ///////////////////////////////
-
+//////////////////////////////////////////////////////////////////////////
 class CEditShapeTool : public CEditTool, public ITransformManipulatorOwner
 {
 public:
@@ -104,10 +98,8 @@ private:
 	ITransformManipulator* m_pManipulator;
 };
 
-//////////////////////////////////////////////////////////////////////////
 IMPLEMENT_DYNCREATE(CEditShapeTool, CEditTool)
 
-//////////////////////////////////////////////////////////////////////////
 CEditShapeTool::CEditShapeTool()
 {
 	m_shape = nullptr;
@@ -120,7 +112,6 @@ CEditShapeTool::CEditShapeTool()
 	m_pManipulator->signalEndDrag.Connect(this, &CEditShapeTool::OnManipulatorEndDrag);
 }
 
-//////////////////////////////////////////////////////////////////////////
 void CEditShapeTool::SetUserData(const char* key, void* userData)
 {
 	m_shape = (CShapeObject*)userData;
@@ -139,7 +130,6 @@ void CEditShapeTool::SetUserData(const char* key, void* userData)
 	m_shape->SetInEditMode(true);
 }
 
-//////////////////////////////////////////////////////////////////////////
 CEditShapeTool::~CEditShapeTool()
 {
 	if (m_shape)
@@ -259,7 +249,6 @@ void CEditShapeTool::OnShapePropertyChange(const CBaseObject* pObject, const COb
 	}
 }
 
-//////////////////////////////////////////////////////////////////////////
 bool CEditShapeTool::MouseCallback(CViewport* view, EMouseEvent event, CPoint& point, int flags)
 {
 	if (!m_shape)
@@ -457,6 +446,7 @@ bool CEditShapeTool::MouseCallback(CViewport* view, EMouseEvent event, CPoint& p
 	return false;
 }
 
+//////////////////////////////////////////////////////////////////////////
 class CMergeShapesTool : public CEditTool
 {
 public:
@@ -477,20 +467,16 @@ protected:
 
 	int           m_curPoint;
 	CShapeObject* m_shape;
-
-private:
 };
 
 IMPLEMENT_DYNCREATE(CMergeShapesTool, CEditTool)
 
-//////////////////////////////////////////////////////////////////////////
 CMergeShapesTool::CMergeShapesTool()
 {
 	m_curPoint = -1;
 	m_shape = 0;
 }
 
-//////////////////////////////////////////////////////////////////////////
 void CMergeShapesTool::SetUserData(const char* key, void* userData)
 {
 	/*
@@ -503,7 +489,6 @@ void CMergeShapesTool::SetUserData(const char* key, void* userData)
 	 */
 }
 
-//////////////////////////////////////////////////////////////////////////
 CMergeShapesTool::~CMergeShapesTool()
 {
 	if (m_shape)
@@ -513,7 +498,6 @@ CMergeShapesTool::~CMergeShapesTool()
 		GetIEditorImpl()->GetIUndoManager()->Cancel();
 }
 
-//////////////////////////////////////////////////////////////////////////
 bool CMergeShapesTool::OnKeyDown(CViewport* view, uint32 nChar, uint32 nRepCnt, uint32 nFlags)
 {
 	if (nChar == Qt::Key_Escape)
@@ -521,7 +505,6 @@ bool CMergeShapesTool::OnKeyDown(CViewport* view, uint32 nChar, uint32 nRepCnt, 
 	return true;
 }
 
-//////////////////////////////////////////////////////////////////////////
 bool CMergeShapesTool::MouseCallback(CViewport* view, EMouseEvent event, CPoint& point, int flags)
 {
 	//return true;
@@ -595,6 +578,7 @@ bool CMergeShapesTool::MouseCallback(CViewport* view, EMouseEvent event, CPoint&
 	return false;
 }
 
+//////////////////////////////////////////////////////////////////////////
 class CSplitShapeTool : public CEditTool
 {
 public:
@@ -626,14 +610,12 @@ private:
 
 IMPLEMENT_DYNCREATE(CSplitShapeTool, CEditTool)
 
-//////////////////////////////////////////////////////////////////////////
 CSplitShapeTool::CSplitShapeTool()
 {
 	m_shape = 0;
 	m_curIndex = -1;
 }
 
-//////////////////////////////////////////////////////////////////////////
 void CSplitShapeTool::SetUserData(const char* key, void* userData)
 {
 	m_curIndex = -1;
@@ -648,14 +630,12 @@ void CSplitShapeTool::SetUserData(const char* key, void* userData)
 	}
 }
 
-//////////////////////////////////////////////////////////////////////////
 CSplitShapeTool::~CSplitShapeTool()
 {
 	if (GetIEditorImpl()->GetIUndoManager()->IsUndoRecording())
 		GetIEditorImpl()->GetIUndoManager()->Cancel();
 }
 
-//////////////////////////////////////////////////////////////////////////
 bool CSplitShapeTool::OnKeyDown(CViewport* view, uint32 nChar, uint32 nRepCnt, uint32 nFlags)
 {
 	if (nChar == Qt::Key_Escape)
@@ -686,9 +666,8 @@ void CSplitShapeTool::Display(SDisplayContext& dc)
 		}
 		dc.SetColor(m_shape->GetColor());
 	}
-};
+}
 
-//////////////////////////////////////////////////////////////////////////
 bool CSplitShapeTool::MouseCallback(CViewport* view, EMouseEvent event, CPoint& point, int flags)
 {
 	if (!m_shape)
@@ -929,7 +908,6 @@ CShapeObject::CShapeObject()
 	m_entities.RegisterEventCallback(functor(*this, &CShapeObject::OnObjectEvent));
 }
 
-//////////////////////////////////////////////////////////////////////////
 CShapeObject::~CShapeObject()
 {
 	m_entities.UnregisterEventCallback(functor(*this, &CShapeObject::OnObjectEvent));
@@ -984,7 +962,6 @@ void CShapeObject::LoadShapeTargets(XmlNodeRef xmlNode)
 
 }
 
-//////////////////////////////////////////////////////////////////////////
 void CShapeObject::Done()
 {
 	m_entities.Clear();
@@ -995,7 +972,6 @@ void CShapeObject::Done()
 	__super::Done();
 }
 
-//////////////////////////////////////////////////////////////////////////
 bool CShapeObject::Init(CBaseObject* prev, const string& file)
 {
 	m_bIgnoreGameUpdate = 1;
@@ -1019,7 +995,6 @@ bool CShapeObject::Init(CBaseObject* prev, const string& file)
 	return bResult;
 }
 
-//////////////////////////////////////////////////////////////////////////
 void CShapeObject::InitVariables()
 {
 	if (m_pVarObject == nullptr)
@@ -1042,13 +1017,11 @@ void CShapeObject::InitVariables()
 	m_pVarObject->AddVariable(mv_VoxelOffsetX, "voxel_offset_x");
 	m_pVarObject->AddVariable(mv_VoxelOffsetY, "voxel_offset_y");
 }
-//////////////////////////////////////////////////////////////////////////
 void CShapeObject::SetName(const string& name)
 {
 	__super::SetName(name);
 }
 
-//////////////////////////////////////////////////////////////////////////
 void CShapeObject::InvalidateTM(int nWhyFlags)
 {
 	__super::InvalidateTM(nWhyFlags);
@@ -1060,7 +1033,6 @@ void CShapeObject::InvalidateTM(int nWhyFlags)
 	UpdateGameArea();
 }
 
-//////////////////////////////////////////////////////////////////////////
 bool CShapeObject::ConvertFromObject(CBaseObject* pObject)
 {
 	__super::ConvertFromObject(pObject);
@@ -1079,7 +1051,6 @@ bool CShapeObject::ConvertFromObject(CBaseObject* pObject)
 	return false;
 }
 
-//////////////////////////////////////////////////////////////////////////
 void CShapeObject::GetBoundBox(AABB& box)
 {
 	box.SetTransformedAABB(GetWorldTM(), m_bbox);
@@ -1088,13 +1059,11 @@ void CShapeObject::GetBoundBox(AABB& box)
 	box.max += Vec3(s, s, s);
 }
 
-//////////////////////////////////////////////////////////////////////////
 void CShapeObject::GetLocalBounds(AABB& box)
 {
 	box = m_bbox;
 }
 
-//////////////////////////////////////////////////////////////////////////
 bool CShapeObject::HitTest(HitContext& hc)
 {
 	// First check if ray intersect our bounding box.
@@ -1167,7 +1136,6 @@ bool CShapeObject::HitTest(HitContext& hc)
 	return false;
 }
 
-//////////////////////////////////////////////////////////////////////////
 int CShapeObject::MouseCreateCallback(IDisplayViewport* view, EMouseEvent event, CPoint& point, int flags)
 {
 	// Retransform the last point if we're rotating
@@ -1246,7 +1214,6 @@ int CShapeObject::MouseCreateCallback(IDisplayViewport* view, EMouseEvent event,
 	return __super::MouseCreateCallback(view, event, point, flags);
 }
 
-//////////////////////////////////////////////////////////////////////////
 void CShapeObject::EndCreation()
 {
 	m_bBeingManuallyCreated = false;
@@ -1256,6 +1223,11 @@ void CShapeObject::EndCreation()
 void CShapeObject::Display(CObjectRenderHelper& objRenderHelper)
 {
 	SDisplayContext& dc = objRenderHelper.GetDisplayContextRef();
+
+	if (!dc.showShapeHelper)
+	{
+		return;
+	}
 
 	if (mv_displaySoundInfo)
 	{
@@ -1267,12 +1239,8 @@ void CShapeObject::Display(CObjectRenderHelper& objRenderHelper)
 	}
 }
 
-//////////////////////////////////////////////////////////////////////////
 void CShapeObject::DisplayNormal(SDisplayContext& dc)
 {
-	if (!gViewportDebugPreferences.showShapeObjectHelper)
-		return;
-
 	//dc.renderer->EnableDepthTest(false);
 
 	const Matrix34& wtm = GetWorldTM();
@@ -1374,7 +1342,7 @@ void CShapeObject::DisplayNormal(SDisplayContext& dc)
 				dc.DrawLine(p0, Vec3(p0.x, p0.y, z0));
 				dc.DrawLine(Vec3(p0.x, p0.y, z0), Vec3(p1.x, p1.y, z1));
 
-				if (mv_displayFilled || (gViewportPreferences.fillSelectedShapes && IsSelected()))
+				if (mv_displayFilled || (dc.fillSelectedShapes && IsSelected()))
 				{
 					dc.CullOff();
 					ColorB c = dc.GetColor();
@@ -1434,7 +1402,7 @@ void CShapeObject::DisplayNormal(SDisplayContext& dc)
 
 	if (mv_closed && !IsFrozen())
 	{
-		if (mv_displayFilled || (gViewportPreferences.fillSelectedShapes && IsSelected()))
+		if (mv_displayFilled || (dc.fillSelectedShapes && IsSelected()))
 		{
 			ColorB color = GetColor();
 			if (IsHighlighted())
@@ -1512,9 +1480,9 @@ const ColorB kObstructionNotFilled(255, 0, 0, 20);
 const ColorB kNoObstructionNotFilled(0, 255, 0, 20);
 }
 
-void CShapeObject::GetSoundObstructionColors(ColorB& obstructionColor, ColorB& noObstructionColor)
+void CShapeObject::GetSoundObstructionColors(ColorB& obstructionColor, ColorB& noObstructionColor, bool fillSelectedShapes)
 {
-	if (mv_displayFilled || (gViewportPreferences.fillSelectedShapes && IsSelected()))
+	if (mv_displayFilled || (fillSelectedShapes && IsSelected()))
 	{
 		obstructionColor = Private_SoundDisplayColors::kObstructionFilled;
 		noObstructionColor = Private_SoundDisplayColors::kNoObstructionFilled;
@@ -1581,7 +1549,7 @@ void CShapeObject::DisplaySoundInfo(SDisplayContext& dc)
 
 		ColorB obstructionColor;
 		ColorB noObstructionColor;
-		GetSoundObstructionColors(obstructionColor, noObstructionColor);
+		GetSoundObstructionColors(obstructionColor, noObstructionColor, dc.fillSelectedShapes);
 
 		int num = m_points.size();
 		if (num < GetMinPoints())
@@ -1712,7 +1680,7 @@ void CShapeObject::DisplaySoundRoofAndFloor(SDisplayContext& dc)
 
 	ColorB obstructionColor;
 	ColorB noObstructionColor;
-	GetSoundObstructionColors(obstructionColor, noObstructionColor);
+	GetSoundObstructionColors(obstructionColor, noObstructionColor, dc.fillSelectedShapes);
 
 	static AreaPoints tris;
 	tris.resize(0);
@@ -1763,7 +1731,6 @@ void CShapeObject::DisplaySoundRoofAndFloor(SDisplayContext& dc)
 	}
 }
 
-//////////////////////////////////////////////////////////////////////////
 void CShapeObject::DrawTerrainLine(SDisplayContext& dc, const Vec3& p1, const Vec3& p2)
 {
 	float len = (p2 - p1).GetLength();
@@ -1786,7 +1753,6 @@ void CShapeObject::DrawTerrainLine(SDisplayContext& dc, const Vec3& p1, const Ve
 	//dc.DrawLine( pos2,p2 );
 }
 
-//////////////////////////////////////////////////////////////////////////
 void CShapeObject::Serialize(CObjectArchive& ar)
 {
 	m_bIgnoreGameUpdate = true;
@@ -1999,14 +1965,12 @@ void CShapeObject::Serialize(CObjectArchive& ar)
 	m_bIgnoreGameUpdate = false;
 }
 
-//////////////////////////////////////////////////////////////////////////
 XmlNodeRef CShapeObject::Export(const string& levelPath, XmlNodeRef& xmlNode)
 {
 	XmlNodeRef objNode = __super::Export(levelPath, xmlNode);
 	return objNode;
 }
 
-//////////////////////////////////////////////////////////////////////////
 void CShapeObject::CalcBBox()
 {
 	if (m_points.empty())
@@ -2065,14 +2029,12 @@ void CShapeObject::CalcBBox()
 	}
 }
 
-//////////////////////////////////////////////////////////////////////////
 void CShapeObject::SetSelected(bool bSelect)
 {
 	__super::SetSelected(bSelect);
 	m_mergeIndex = -1;
 }
 
-//////////////////////////////////////////////////////////////////////////
 int CShapeObject::InsertPoint(int index, const Vec3& point, bool const bModifying)
 {
 	if (GetPointCount() >= GetMaxPoints())
@@ -2173,13 +2135,11 @@ void CShapeObject::SplitAtPoint(int index, bool bSnap, Vec3 point)
 	UpdateGameArea();
 }
 
-//////////////////////////////////////////////////////////////////////////
 void CShapeObject::SetMergeIndex(int index)
 {
 	m_mergeIndex = index;
 }
 
-//////////////////////////////////////////////////////////////////////////
 void CShapeObject::Merge(CShapeObject* shape)
 {
 	if (!shape || m_mergeIndex < 0 || shape->m_mergeIndex < 0)
@@ -2226,7 +2186,6 @@ void CShapeObject::Merge(CShapeObject* shape)
 	UpdateGameArea();
 }
 
-//////////////////////////////////////////////////////////////////////////
 void CShapeObject::RemovePoint(int index)
 {
 	if ((index >= 0 || index < m_points.size()) && m_points.size() > GetMinPoints())
@@ -2243,7 +2202,6 @@ void CShapeObject::RemovePoint(int index)
 	}
 }
 
-//////////////////////////////////////////////////////////////////////////
 void CShapeObject::ClearPoints()
 {
 	m_bAreaModified = true;
@@ -2256,7 +2214,6 @@ void CShapeObject::ClearPoints()
 	UpdatePrefab();
 }
 
-//////////////////////////////////////////////////////////////////////////
 void CShapeObject::PostClone(CBaseObject* pFromObject, CObjectCloneContext& ctx)
 {
 	__super::PostClone(pFromObject, ctx);
@@ -2280,7 +2237,6 @@ void CShapeObject::PostClone(CBaseObject* pFromObject, CObjectCloneContext& ctx)
 	}
 }
 
-//////////////////////////////////////////////////////////////////////////
 void CShapeObject::AddEntity(CBaseObject* const pBaseObject)
 {
 	CRY_ASSERT(pBaseObject != nullptr);
@@ -2297,7 +2253,6 @@ void CShapeObject::AddEntity(CBaseObject* const pBaseObject)
 	UpdateUIVars();
 }
 
-//////////////////////////////////////////////////////////////////////////
 void CShapeObject::RemoveEntity(size_t const index)
 {
 	CRY_ASSERT(index >= 0 && index < m_entities.GetCount());
@@ -2328,7 +2283,6 @@ void CShapeObject::RemoveEntity(size_t const index)
 	UpdatePrefab();
 }
 
-//////////////////////////////////////////////////////////////////////////
 void CShapeObject::OnObjectEvent(CBaseObject* const pBaseObject, int const event)
 {
 	if (event == OBJECT_ON_PREDELETE)
@@ -2345,14 +2299,12 @@ void CShapeObject::OnObjectEvent(CBaseObject* const pBaseObject, int const event
 	}
 }
 
-//////////////////////////////////////////////////////////////////////////
 CBaseObject* CShapeObject::GetEntity(size_t const index)
 {
 	CRY_ASSERT(index >= 0 && index < m_entities.GetCount());
 	return m_entities.Get(index);
 }
 
-//////////////////////////////////////////////////////////////////////////
 void CShapeObject::OnEntityAdded(IEntity const* const pIEntity)
 {
 	if (m_bIgnoreGameUpdate == 0)
@@ -2366,7 +2318,6 @@ void CShapeObject::OnEntityAdded(IEntity const* const pIEntity)
 	}
 }
 
-//////////////////////////////////////////////////////////////////////////
 void CShapeObject::OnEntityRemoved(IEntity const* const pIEntity)
 {
 	if (m_bIgnoreGameUpdate == 0)
@@ -2386,7 +2337,6 @@ void CShapeObject::OnContextMenu(CPopupMenuItem* menu)
 	CEntityObject::OnContextMenu(menu);
 }
 
-//////////////////////////////////////////////////////////////////////////
 void CShapeObject::SetClosed(bool bClosed)
 {
 	StoreUndo("Set Closed");
@@ -2402,19 +2352,16 @@ void CShapeObject::SetClosed(bool bClosed)
 	UpdatePrefab();
 }
 
-//////////////////////////////////////////////////////////////////////////
 int CShapeObject::GetAreaId()
 {
 	return mv_areaId;
 }
 
-//////////////////////////////////////////////////////////////////////////
 void CShapeObject::SelectPoint(int index)
 {
 	m_selectedPoint = index;
 }
 
-//////////////////////////////////////////////////////////////////////////
 void CShapeObject::SetPoint(int index, const Vec3& pos)
 {
 	Vec3 p = pos;
@@ -2452,7 +2399,6 @@ void CShapeObject::SetPoint(int index, const Vec3& pos)
 	}
 }
 
-//////////////////////////////////////////////////////////////////////////
 void CShapeObject::ReverseShape()
 {
 	StoreUndo("Reverse Shape");
@@ -2470,7 +2416,6 @@ void CShapeObject::ReverseShape()
 	UpdatePrefab();
 }
 
-//////////////////////////////////////////////////////////////////////////
 void CShapeObject::ResetShape()
 {
 	StoreUndo("Reset Height Shape");
@@ -2483,7 +2428,6 @@ void CShapeObject::ResetShape()
 	UpdatePrefab();
 }
 
-//////////////////////////////////////////////////////////////////////////
 int CShapeObject::GetNearestPoint(const Vec3& raySrc, const Vec3& rayDir, float& distance)
 {
 	int index = -1;
@@ -2505,7 +2449,6 @@ int CShapeObject::GetNearestPoint(const Vec3& raySrc, const Vec3& rayDir, float&
 	return index;
 }
 
-//////////////////////////////////////////////////////////////////////////
 void CShapeObject::GetNearestEdge(const Vec3& pos, int& p1, int& p2, float& distance, Vec3& intersectPoint)
 {
 	p1 = -1;
@@ -2534,7 +2477,6 @@ void CShapeObject::GetNearestEdge(const Vec3& pos, int& p1, int& p2, float& dist
 	distance = minDist;
 }
 
-//////////////////////////////////////////////////////////////////////////
 bool CShapeObject::RayToLineDistance(const Vec3& rayLineP1, const Vec3& rayLineP2, const Vec3& pi, const Vec3& pj, float& distance, Vec3& intPnt)
 {
 	Vec3 pa, pb;
@@ -2561,7 +2503,6 @@ bool CShapeObject::RayToLineDistance(const Vec3& rayLineP1, const Vec3& rayLineP
 	return true;
 }
 
-//////////////////////////////////////////////////////////////////////////
 void CShapeObject::GetNearestEdge(const Vec3& raySrc, const Vec3& rayDir, int& p1, int& p2, float& distance, Vec3& intersectPoint)
 {
 	p1 = -1;
@@ -2600,7 +2541,6 @@ void CShapeObject::GetNearestEdge(const Vec3& raySrc, const Vec3& rayDir, int& p
 	distance = minDist;
 }
 
-//////////////////////////////////////////////////////////////////////////
 void CShapeObject::UpdateGameArea()
 {
 	if (m_bIgnoreGameUpdate == 0)
@@ -2630,7 +2570,6 @@ void CShapeObject::EditShape()
 	}
 }
 
-//////////////////////////////////////////////////////////////////////////
 void CShapeObject::UpdateAttachedEntities()
 {
 	if (m_bIgnoreGameUpdate == 0)
@@ -2655,7 +2594,6 @@ void CShapeObject::UpdateAttachedEntities()
 	}
 }
 
-//////////////////////////////////////////////////////////////////////////
 void CShapeObject::SetAreaProxy()
 {
 	IEntityAreaComponent* const pAreaProxy = GetAreaProxy();
@@ -2684,7 +2622,6 @@ void CShapeObject::SetAreaProxy()
 	}
 }
 
-//////////////////////////////////////////////////////////////////////////
 IEntityAreaComponent* CShapeObject::GetAreaProxy() const
 {
 	if (m_pEntity != nullptr && m_points.size() > 1)
@@ -2695,7 +2632,6 @@ IEntityAreaComponent* CShapeObject::GetAreaProxy() const
 	return nullptr;
 }
 
-//////////////////////////////////////////////////////////////////////////
 void CShapeObject::OnShapeChange(IVariable* pVariable)
 {
 	if (m_bIgnoreGameUpdate == 0)
@@ -2712,7 +2648,6 @@ void CShapeObject::OnShapeChange(IVariable* pVariable)
 	}
 }
 
-//////////////////////////////////////////////////////////////////////////
 void CShapeObject::OnSizeChange(IVariable* pVariable)
 {
 	if (m_bIgnoreGameUpdate == 0)
@@ -2729,13 +2664,11 @@ void CShapeObject::OnSizeChange(IVariable* pVariable)
 	CalcBBox();
 }
 
-//////////////////////////////////////////////////////////////////////////
 void CShapeObject::OnFormChange(IVariable* pVariable)
 {
 	SetAreaProxy();
 }
 
-//////////////////////////////////////////////////////////////////////////
 void CShapeObject::OnSoundParamsChange(IVariable* var)
 {
 	if (!m_bIgnoreGameUpdate)
@@ -2745,7 +2678,6 @@ void CShapeObject::OnSoundParamsChange(IVariable* var)
 	}
 }
 
-//////////////////////////////////////////////////////////////////////////
 void CShapeObject::OnPointChange(IVariable* var)
 {
 	if (m_pOwnSoundVarBlock)
@@ -2798,7 +2730,6 @@ void CShapeObject::OnPointChange(IVariable* var)
 	}
 }
 
-//////////////////////////////////////////////////////////////////////////
 void CShapeObject::UpdateSoundPanelParams()
 {
 	if (!m_bIgnoreGameUpdate && mv_displaySoundInfo)
@@ -2807,7 +2738,6 @@ void CShapeObject::UpdateSoundPanelParams()
 	}
 }
 
-//////////////////////////////////////////////////////////////////////////
 void CShapeObject::SpawnEntity()
 {
 	if (!m_entityClass.IsEmpty())
@@ -2818,7 +2748,6 @@ void CShapeObject::SpawnEntity()
 	}
 }
 
-//////////////////////////////////////////////////////////////////////////
 void CShapeObject::OnEvent(ObjectEvent event)
 {
 	switch (event)
@@ -2831,7 +2760,6 @@ void CShapeObject::OnEvent(ObjectEvent event)
 	}
 }
 
-//////////////////////////////////////////////////////////////////////////
 void CShapeObject::PostLoad(CObjectArchive& ar)
 {
 	__super::PostLoad(ar);
@@ -2839,7 +2767,6 @@ void CShapeObject::PostLoad(CObjectArchive& ar)
 	UpdateAttachedEntities();
 }
 
-//////////////////////////////////////////////////////////////////////////
 void CShapeObject::AlignToGrid()
 {
 	CViewport* view = GetIEditorImpl()->GetActiveView();
@@ -2860,7 +2787,6 @@ void CShapeObject::AlignToGrid()
 	UpdatePrefab();
 }
 
-//////////////////////////////////////////////////////////////////////////
 void CShapeObject::SerializeShapeTargets(Serialization::IArchive& ar)
 {
 	if (ar.isEdit())
@@ -2872,7 +2798,8 @@ void CShapeObject::SerializeShapeTargets(Serialization::IArchive& ar)
 			pickToolButton.SetToolClass(RUNTIME_CLASS(ShapeTargetTool), nullptr, this);
 
 			ar(pickToolButton, "picker", "^Pick");
-			ar(Serialization::ActionButton([ = ] {
+			ar(Serialization::ActionButton([ = ]
+			{
 				CUndo undo("Clear targets");
 				while (!m_entities.IsEmpty())
 				{
@@ -2933,7 +2860,6 @@ void CShapeObject::SerializeShapeTargets(Serialization::IArchive& ar)
 	}
 }
 
-//////////////////////////////////////////////////////////////////////////
 void CShapeObject::CreateInspectorWidgets(CInspectorWidgetCreator& creator)
 {
 	CEntityObject::CreateInspectorWidgets(creator);
@@ -3137,7 +3063,7 @@ void CAIPathObject::DrawSphere(SDisplayContext& dc, const Vec3& p0, float r, int
 	// Note: The Aux Render already supports drawing spheres, but they appear
 	// shaded when rendered and there is no cylinder rendering available.
 	// This function is here just for the purpose to make the rendering of
-	// the validatedsegments more consistent.
+	// the validated segments more consistent.
 	Vec3 a0, a1, b0, b1;
 	for (int j = 0; j < n / 2; j++)
 	{
@@ -4206,7 +4132,6 @@ void CGameShapeObject::SetCustomMinAndMaxPoints()
 //////////////////////////////////////////////////////////////////////////
 /// GameShape Ledge Object
 //////////////////////////////////////////////////////////////////////////
-
 CGameShapeLedgeObject::CGameShapeLedgeObject()
 {
 	m_entityClass = "LedgeObject";
@@ -4258,13 +4183,11 @@ CNavigationAreaObject::CNavigationAreaObject()
 	m_bEditingPoints = false;
 }
 
-//////////////////////////////////////////////////////////////////////////
 CNavigationAreaObject::~CNavigationAreaObject()
 {
 	mv_agentTypes.DeleteAllVariables();
 }
 
-//////////////////////////////////////////////////////////////////////////
 void CNavigationAreaObject::Serialize(CObjectArchive& ar)
 {
 	XmlNodeRef xmlNode = ar.node;
@@ -4277,7 +4200,6 @@ void CNavigationAreaObject::Serialize(CObjectArchive& ar)
 	__super::Serialize(ar);
 }
 
-//////////////////////////////////////////////////////////////////////////
 void CNavigationAreaObject::CreateInspectorWidgets(CInspectorWidgetCreator& creator)
 {
 	CAIShapeObjectBase::CreateInspectorWidgets(creator);
@@ -4318,7 +4240,6 @@ void CNavigationAreaObject::CreateInspectorWidgets(CInspectorWidgetCreator& crea
 	});
 }
 
-//////////////////////////////////////////////////////////////////////////
 void CNavigationAreaObject::Display(CObjectRenderHelper& objRenderHelper)
 {
 	SDisplayContext& dc = objRenderHelper.GetDisplayContextRef();
@@ -4334,7 +4255,6 @@ void CNavigationAreaObject::Display(CObjectRenderHelper& objRenderHelper)
 	}
 }
 
-//////////////////////////////////////////////////////////////////////////
 void CNavigationAreaObject::PostLoad(CObjectArchive& ar)
 {
 	if (IAISystem* aiSystem = GetIEditorImpl()->GetSystem()->GetAISystem())
@@ -4357,7 +4277,6 @@ void CNavigationAreaObject::PostLoad(CObjectArchive& ar)
 	__super::PostLoad(ar);
 }
 
-//////////////////////////////////////////////////////////////////////////
 void CNavigationAreaObject::Done()
 {
 	__super::Done();
@@ -4383,7 +4302,6 @@ void CNavigationAreaObject::Done()
 	}
 }
 
-//////////////////////////////////////////////////////////////////////////
 void CNavigationAreaObject::InitVariables()
 {
 	mv_height = 16;
@@ -4417,7 +4335,6 @@ void CNavigationAreaObject::InitVariables()
 	}
 }
 
-//////////////////////////////////////////////////////////////////////////
 void CNavigationAreaObject::OnShapeTypeChange(IVariable* var)
 {
 	if (m_bIgnoreGameUpdate)
@@ -4427,7 +4344,6 @@ void CNavigationAreaObject::OnShapeTypeChange(IVariable* var)
 	ApplyExclusion(mv_exclusion);
 }
 
-//////////////////////////////////////////////////////////////////////////
 void CNavigationAreaObject::OnShapeAgentTypeChange(IVariable* var)
 {
 	if (m_bIgnoreGameUpdate)
@@ -4448,7 +4364,6 @@ void CNavigationAreaObject::SetInEditMode(bool editing)
 	}
 }
 
-//////////////////////////////////////////////////////////////////////////
 void CNavigationAreaObject::OnNavigationEvent(const INavigationSystem::ENavigationEvent event)
 {
 	switch (event)
@@ -4471,7 +4386,6 @@ void CNavigationAreaObject::OnNavigationEvent(const INavigationSystem::ENavigati
 	}
 }
 
-//////////////////////////////////////////////////////////////////////////
 void CNavigationAreaObject::OnContextMenu(CPopupMenuItem* menu)
 {
 	if (!mv_exclusion)
@@ -4481,7 +4395,6 @@ void CNavigationAreaObject::OnContextMenu(CPopupMenuItem* menu)
 	CAIShapeObjectBase::OnContextMenu(menu);
 }
 
-//////////////////////////////////////////////////////////////////////////
 void CNavigationAreaObject::UpdateMeshes()
 {
 	CRY_ASSERT(m_bRegistered);
@@ -4528,7 +4441,6 @@ void CNavigationAreaObject::UpdateMeshes()
 	}
 }
 
-//////////////////////////////////////////////////////////////////////////
 void CNavigationAreaObject::ApplyExclusion(bool apply)
 {
 	CRY_ASSERT(m_bRegistered);
@@ -4562,7 +4474,6 @@ void CNavigationAreaObject::ApplyExclusion(bool apply)
 		aiSystem->GetNavigationSystem()->SetExclusionVolume(&affectedAgentTypes[0], affectedAgentTypes.size(), m_volume);
 }
 
-//////////////////////////////////////////////////////////////////////////
 void CNavigationAreaObject::RelinkWithMesh(const ERelinkWithMeshesMode relinkMode)
 {
 	if (!m_bRegistered)
@@ -4613,14 +4524,13 @@ void CNavigationAreaObject::RelinkWithMesh(const ERelinkWithMeshesMode relinkMod
 
 	/*
 	   FR: We need to update the game area even in the case that after having read
-	   the data from the binary file the volumewas not recreated.
+	   the data from the binary file the volume was not recreated.
 	   This happens when there was no mesh associated to the actual volume.
 	 */
 	if ((relinkMode & eUpdateGameArea) || (!pAINavigation->ValidateVolume(m_volume) && !(relinkMode & ePostLoad)))
 		UpdateGameArea();
 }
 
-//////////////////////////////////////////////////////////////////////////
 void CNavigationAreaObject::CreateVolume(Vec3* points, size_t pointsSize, NavigationVolumeID requestedID /* = NavigationVolumeID */)
 {
 	CRY_ASSERT(m_bRegistered);
@@ -4640,7 +4550,6 @@ void CNavigationAreaObject::CreateVolume(Vec3* points, size_t pointsSize, Naviga
 	}
 }
 
-//////////////////////////////////////////////////////////////////////////
 void CNavigationAreaObject::RegisterNavigationArea(INavigationSystem& navigationSystem, const char* szAreaName)
 {
 	CRY_ASSERT(m_bRegistered == false);
@@ -4648,7 +4557,6 @@ void CNavigationAreaObject::RegisterNavigationArea(INavigationSystem& navigation
 	m_bRegistered = navigationSystem.RegisterArea(szAreaName, m_volume);
 }
 
-//////////////////////////////////////////////////////////////////////////
 void CNavigationAreaObject::ReregisterNavigationAreaAfterReload()
 {
 	if (m_bRegistered)
@@ -4680,7 +4588,6 @@ void CNavigationAreaObject::ReregisterNavigationAreaAfterReload()
 	}
 }
 
-//////////////////////////////////////////////////////////////////////////
 void CNavigationAreaObject::RegisterNavigationListener(INavigationSystem& navigationSystem, const char* szAreaName)
 {
 	if (!m_bListenerRegistered)
@@ -4690,7 +4597,6 @@ void CNavigationAreaObject::RegisterNavigationListener(INavigationSystem& naviga
 	}
 }
 
-//////////////////////////////////////////////////////////////////////////
 void CNavigationAreaObject::UnregisterNavigationListener(INavigationSystem& navigationSystem)
 {
 	if (m_bListenerRegistered)
@@ -4700,7 +4606,6 @@ void CNavigationAreaObject::UnregisterNavigationListener(INavigationSystem& navi
 	}
 }
 
-//////////////////////////////////////////////////////////////////////////
 void CNavigationAreaObject::DestroyVolume()
 {
 	if (!m_volume)
@@ -4716,7 +4621,6 @@ void CNavigationAreaObject::DestroyVolume()
 	}
 }
 
-//////////////////////////////////////////////////////////////////////////
 void CNavigationAreaObject::UpdateGameArea()
 {
 	if (m_bIgnoreGameUpdate)
@@ -4778,7 +4682,6 @@ void CNavigationAreaObject::UpdateGameArea()
 	m_bAreaModified = false;
 }
 
-//////////////////////////////////////////////////////////////////////////
 void CNavigationAreaObject::SetName(const string& name)
 {
 	__super::SetName(name);
@@ -4808,7 +4711,6 @@ void CNavigationAreaObject::SetName(const string& name)
 	}
 }
 
-//////////////////////////////////////////////////////////////////////////
 void CNavigationAreaObject::RemovePoint(int index)
 {
 	__super::RemovePoint(index);
@@ -4816,7 +4718,6 @@ void CNavigationAreaObject::RemovePoint(int index)
 	UpdateGameArea();
 }
 
-//////////////////////////////////////////////////////////////////////////
 int CNavigationAreaObject::InsertPoint(int index, const Vec3& point, bool const bModifying)
 {
 	int result = __super::InsertPoint(index, point, bModifying);
@@ -4826,7 +4727,6 @@ int CNavigationAreaObject::InsertPoint(int index, const Vec3& point, bool const 
 	return result;
 }
 
-//////////////////////////////////////////////////////////////////////////
 void CNavigationAreaObject::SetPoint(int index, const Vec3& pos)
 {
 	__super::SetPoint(index, pos);
@@ -4858,13 +4758,11 @@ void CNavigationAreaObject::EndCreation()
 	__super::EndCreation();
 }
 
-//////////////////////////////////////////////////////////////////////////
 void CNavigationAreaObject::ChangeColor(COLORREF color)
 {
 	SetModified(false, false);
 }
 
-//////////////////////////////////////////////////////////////////////////
 namespace
 {
 static void PyInsertPoint(const char* objName, int idx, float xPos, float yPos, float zPos)

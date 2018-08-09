@@ -7,37 +7,33 @@
 #include "HyperGraph/FlowGraphManager.h"
 #include "HyperGraph/Controls/HyperGraphEditorWnd.h"
 #include "HyperGraph/Controls/FlowGraphSearchCtrl.h"
-
-#include "Prefabs/PrefabManager.h"
-#include "Prefabs/PrefabEvents.h"
-#include "Prefabs/PrefabLibrary.h"
-#include "Prefabs/PrefabItem.h"
-#include "BaseLibraryManager.h"
-
-#include "Controls/DynamicPopupMenu.h"
-
-#include <Grid.h>
-#include <Viewport.h>
-#include <Preferences/ViewportPreferences.h>
-#include <LevelEditor/Tools/PickObjectTool.h>
-
-#include "Util/MFCUtil.h"
-#include <CryCore/ToolsHelpers/GuidUtil.h>
-#include "Util/BoostPythonHelpers.h"
 #include "Objects/EntityObject.h"
-#include "Objects/ObjectLoader.h"
-#include "Objects/InspectorWidgetCreator.h"
-#include "IUndoManager.h"
-
+#include "Prefabs/PrefabEvents.h"
+#include "Prefabs/PrefabItem.h"
+#include "Prefabs/PrefabLibrary.h"
+#include "Prefabs/PrefabManager.h"
 #include "Serialization/Decorators/EntityLink.h"
-#include "Serialization/Decorators/EditorActionButton.h"
-#include "Serialization/Decorators/EditToolButton.h"
-
-#include "IDataBaseManager.h"
+#include "Util/BoostPythonHelpers.h"
+#include "BaseLibraryManager.h"
 #include "CryEditDoc.h"
 
-#include <CrySystem/ICryLink.h>
+#include <Controls/DynamicPopupMenu.h>
+#include <LevelEditor/Tools/PickObjectTool.h>
+#include <Objects/ObjectLoader.h>
+#include <Objects/InspectorWidgetCreator.h>
+#include <Preferences/ViewportPreferences.h>
+#include <Serialization/Decorators/EditorActionButton.h>
+#include <Serialization/Decorators/EditToolButton.h>
+#include <Grid.h>
+#include <IDataBaseManager.h>
+#include <IUndoManager.h>
+#include <Viewport.h>
+
+#include <Util/MFCUtil.h>
+
+#include <CryCore/ToolsHelpers/GuidUtil.h>
 #include <CryGame/IGameFramework.h>
+#include <CrySystem/ICryLink.h>
 
 REGISTER_CLASS_DESC(CPrefabObjectClassDesc);
 
@@ -49,6 +45,7 @@ class CScopedPrefabEventsDelay
 {
 public:
 	CScopedPrefabEventsDelay()
+		: m_resumed{false}
 	{
 		CPrefabEvents* pPrefabEvents = GetIEditor()->GetPrefabManager()->GetPrefabEvents();
 		CRY_ASSERT(pPrefabEvents != nullptr);
@@ -72,7 +69,7 @@ public:
 	}
 
 private:
-	bool m_resumed { false };
+	bool m_resumed;
 };
 
 class CUndoChangeGuid : public IUndoObject
@@ -366,7 +363,6 @@ void CPrefabObject::OnContextMenu(CPopupMenuItem* menu)
 
 	menu->Add("Find in FlowGraph", [=](void) { OnShowInFG(); });
 	menu->Add("Convert to Procedural Object", [=](void) { ConvertToProceduralObject(); });
-
 	menu->Add("Swap Prefab...", [this](void)
 	{
 		CPrefabPicker picker;
@@ -419,9 +415,10 @@ int CPrefabObject::MouseCreateCallback(IDisplayViewport* view, EMouseEvent event
 void CPrefabObject::Display(CObjectRenderHelper& objRenderHelper)
 {
 	SDisplayContext& dc = objRenderHelper.GetDisplayContextRef();
-
-	if (!gViewportDebugPreferences.showPrefabObjectHelper)
+	if (!dc.showPrefabHelper)
+	{
 		return;
+	}
 
 	DrawDefault(dc, CMFCUtils::ColorBToColorRef(GetColor()));
 
@@ -440,7 +437,7 @@ void CPrefabObject::Display(CObjectRenderHelper& objRenderHelper)
 	}
 	else
 	{
-		if (gViewportPreferences.alwaysShowPrefabBox)
+		if (dc.showPrefabBounds)
 		{
 			if (IsFrozen())
 			{
@@ -454,7 +451,6 @@ void CPrefabObject::Display(CObjectRenderHelper& objRenderHelper)
 			}
 
 			dc.DepthWriteOff();
-			;
 			dc.DrawSolidBox(m_bbox.min, m_bbox.max);
 			dc.DepthWriteOn();
 
@@ -467,7 +463,7 @@ void CPrefabObject::Display(CObjectRenderHelper& objRenderHelper)
 	}
 	dc.PopMatrix();
 
-	if (gViewportDebugPreferences.showPrefabSubObjectHelper)
+	if (dc.showPrefabChildrenHelpers)
 	{
 		if (HaveChilds())
 		{
@@ -489,7 +485,7 @@ void CPrefabObject::RecursivelyDisplayObject(CBaseObject* obj, CObjectRenderHelp
 
 	AABB bbox;
 	obj->GetBoundBox(bbox);
-	if (dc.flags & DISPLAY_2D)
+	if (dc.display2D)
 	{
 		if (dc.box.IsIntersectBox(bbox))
 		{
@@ -605,7 +601,6 @@ void CPrefabObject::OnEvent(ObjectEvent event)
 			break;
 		}
 	}
-	;
 	// Send event to all prefab childs.
 	if (event != EVENT_ALIGN_TOGRID)
 	{

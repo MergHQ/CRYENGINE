@@ -30,7 +30,6 @@
 
 #include "IEditor.h"
 
-#include "Settings.h"
 #include "LogFile.h"
 
 #include "EditorCommon.h"

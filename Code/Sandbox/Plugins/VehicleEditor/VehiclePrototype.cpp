@@ -214,7 +214,7 @@ void CVehiclePrototype::Display(CObjectRenderHelper& objRenderHelper)
 	if (hasEntity())
 	{
 		// check if dc is 2d view, then render
-		if (dc.flags & DISPLAY_2D)
+		if (dc.display2D)
 		{
 			IRenderNode* pRenderNode = GetCEntity()->GetIEntity()->GetRenderNode();
 			if (!pRenderNode)

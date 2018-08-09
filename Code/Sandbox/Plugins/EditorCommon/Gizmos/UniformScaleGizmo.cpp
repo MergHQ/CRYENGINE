@@ -61,7 +61,7 @@ void CUniformScaleGizmo::Display(SDisplayContext& dc)
 		string msg;
 		msg.Format("Scale %.1f", m_interactionScale);
 		dc.SetColor(1.0f, 1.0f, 1.0f, 1.0f);
-		dc.DrawTextLabel(ConvertToTextPos(m_position, Matrix34::CreateIdentity(), dc.view, dc.flags & DISPLAY_2D), textSize, (LPCSTR)msg, true);
+		dc.DrawTextLabel(ConvertToTextPos(m_position, Matrix34::CreateIdentity(), dc.view, dc.display2D), textSize, (LPCSTR)msg, true);
 	}
 
 	if (GetFlag(EGIZMO_HIGHLIGHTED))

@@ -780,7 +780,7 @@ void CHolesTool::Serialize(Serialization::IArchive& ar)
 
 void CHolesTool::Display(SDisplayContext& dc)
 {
-	if (dc.flags & DISPLAY_2D)
+	if (dc.display2D)
 		return;
 
 	CHeightmap* pHeightmap = GetIEditorImpl()->GetHeightmap();

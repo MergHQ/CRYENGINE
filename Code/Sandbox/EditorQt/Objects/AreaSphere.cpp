@@ -2,22 +2,18 @@
 
 #include "StdAfx.h"
 #include "AreaSphere.h"
-#include "Viewport.h"
-#include <Preferences/ViewportPreferences.h>
-#include <CryEntitySystem/IEntitySystem.h>
-#include "Objects/ObjectLoader.h"
 
-#include "Util/MFCUtil.h"
-#include "Objects/InspectorWidgetCreator.h"
+#include <Util/MFCUtil.h>
+
+#include <Objects/InspectorWidgetCreator.h>
+#include <Objects/ObjectLoader.h>
+#include <Preferences/ViewportPreferences.h>
+#include <Viewport.h>
 
 REGISTER_CLASS_DESC(CAreaSphereClassDesc);
 
-//////////////////////////////////////////////////////////////////////////
-// CBase implementation.
-//////////////////////////////////////////////////////////////////////////
 IMPLEMENT_DYNCREATE(CAreaSphere, CEntityObject)
 
-//////////////////////////////////////////////////////////////////////////
 CAreaSphere::CAreaSphere()
 	: m_innerFadeDistance(0.0f)
 {
@@ -31,7 +27,6 @@ CAreaSphere::CAreaSphere()
 	SetColor(ColorB(0, 0, 255));
 }
 
-//////////////////////////////////////////////////////////////////////////
 void CAreaSphere::InitVariables()
 {
 	if (m_pVarObject == nullptr)
@@ -48,7 +43,6 @@ void CAreaSphere::InitVariables()
 	m_pVarObject->AddVariable(mv_filled, "Filled", functor(*this, &CAreaSphere::OnAreaChange));
 }
 
-//////////////////////////////////////////////////////////////////////////
 void CAreaSphere::CreateInspectorWidgets(CInspectorWidgetCreator& creator)
 {
 	CAreaObjectBase::CreateInspectorWidgets(creator);
@@ -65,7 +59,6 @@ void CAreaSphere::CreateInspectorWidgets(CInspectorWidgetCreator& creator)
 	});
 }
 
-//////////////////////////////////////////////////////////////////////////
 bool CAreaSphere::CreateGameObject()
 {
 	bool const bSuccess = __super::CreateGameObject();
@@ -86,14 +79,12 @@ bool CAreaSphere::CreateGameObject()
 	return bSuccess;
 }
 
-//////////////////////////////////////////////////////////////////////////
 void CAreaSphere::GetLocalBounds(AABB& box)
 {
 	box.min = Vec3(-m_radius, -m_radius, -m_radius);
 	box.max = Vec3(m_radius, m_radius, m_radius);
 }
 
-//////////////////////////////////////////////////////////////////////////
 bool CAreaSphere::HitTest(HitContext& hc)
 {
 	Vec3 origin = GetWorldPos();
@@ -113,7 +104,6 @@ bool CAreaSphere::HitTest(HitContext& hc)
 	return false;
 }
 
-//////////////////////////////////////////////////////////////////////////
 void CAreaSphere::Reload(bool bReloadScript /* = false */)
 {
 	__super::Reload(bReloadScript);
@@ -123,7 +113,6 @@ void CAreaSphere::Reload(bool bReloadScript /* = false */)
 	UpdateGameArea();
 }
 
-//////////////////////////////////////////////////////////////////////////
 void CAreaSphere::OnAreaChange(IVariable* pVar)
 {
 	if (m_pEntity != nullptr)
@@ -140,7 +129,6 @@ void CAreaSphere::OnAreaChange(IVariable* pVar)
 	}
 }
 
-//////////////////////////////////////////////////////////////////////////
 void CAreaSphere::OnSizeChange(IVariable* pVar)
 {
 	if (m_pEntity != nullptr)
@@ -155,11 +143,14 @@ void CAreaSphere::OnSizeChange(IVariable* pVar)
 	}
 }
 
-//////////////////////////////////////////////////////////////////////////
-void CAreaSphere::Display(SDisplayContext& dc)
+void CAreaSphere::Display(CObjectRenderHelper& objRenderHelper)
 {
-	if (!gViewportDebugPreferences.showAreaObjectHelper)
+	SDisplayContext& dc = objRenderHelper.GetDisplayContextRef();
+
+	if (!dc.showAreaHelper)
+	{
 		return;
+	}
 
 	COLORREF wireColor, solidColor;
 	float wireOffset = 0;
@@ -220,7 +211,6 @@ void CAreaSphere::Display(SDisplayContext& dc)
 	DrawDefault(dc);
 }
 
-//////////////////////////////////////////////////////////////////////////
 void CAreaSphere::Serialize(CObjectArchive& ar)
 {
 	__super::Serialize(ar);
@@ -229,19 +219,14 @@ void CAreaSphere::Serialize(CObjectArchive& ar)
 	{
 		SetAreaId(m_areaId);
 	}
-	else
-	{
-	}
 }
 
-//////////////////////////////////////////////////////////////////////////
 XmlNodeRef CAreaSphere::Export(const string& levelPath, XmlNodeRef& xmlNode)
 {
 	XmlNodeRef objNode = __super::Export(levelPath, xmlNode);
 	return objNode;
 }
 
-//////////////////////////////////////////////////////////////////////////
 void CAreaSphere::SetAreaId(int nAreaId)
 {
 	m_areaId = nAreaId;
@@ -257,13 +242,11 @@ void CAreaSphere::SetAreaId(int nAreaId)
 	}
 }
 
-//////////////////////////////////////////////////////////////////////////
 int CAreaSphere::GetAreaId()
 {
 	return m_areaId;
 }
 
-//////////////////////////////////////////////////////////////////////////
 void CAreaSphere::SetRadius(float fRadius)
 {
 	m_radius = fRadius;
@@ -279,13 +262,11 @@ void CAreaSphere::SetRadius(float fRadius)
 	}
 }
 
-//////////////////////////////////////////////////////////////////////////
 float CAreaSphere::GetRadius()
 {
 	return m_radius;
 }
 
-//////////////////////////////////////////////////////////////////////////
 void CAreaSphere::OnEntityAdded(IEntity const* const pIEntity)
 {
 	if (m_pEntity != nullptr)
@@ -299,7 +280,6 @@ void CAreaSphere::OnEntityAdded(IEntity const* const pIEntity)
 	}
 }
 
-//////////////////////////////////////////////////////////////////////////
 void CAreaSphere::OnEntityRemoved(IEntity const* const pIEntity)
 {
 	if (m_pEntity != nullptr)
@@ -313,7 +293,6 @@ void CAreaSphere::OnEntityRemoved(IEntity const* const pIEntity)
 	}
 }
 
-//////////////////////////////////////////////////////////////////////////
 void CAreaSphere::PostLoad(CObjectArchive& ar)
 {
 	// After loading Update game structure.
@@ -322,7 +301,6 @@ void CAreaSphere::PostLoad(CObjectArchive& ar)
 	UpdateAttachedEntities();
 }
 
-//////////////////////////////////////////////////////////////////////////
 void CAreaSphere::UpdateGameArea()
 {
 	if (m_pEntity != nullptr)
@@ -341,7 +319,6 @@ void CAreaSphere::UpdateGameArea()
 	}
 }
 
-//////////////////////////////////////////////////////////////////////////
 void CAreaSphere::UpdateAttachedEntities()
 {
 	if (m_pEntity != nullptr)

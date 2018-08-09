@@ -177,7 +177,6 @@ SDisplayContext CPreviewModelCtrl::InitDisplayContext(const SDisplayContextKey& 
 	dctx.engine = nullptr;
 	dctx.box.min = Vec3(-100000, -100000, -100000);
 	dctx.box.max = Vec3(100000, 100000, 100000);
-	dctx.flags = 0;
 
 	return dctx;
 }

@@ -905,7 +905,7 @@ void CEntityProtLibDialog::OnMouseMove(UINT nFlags, CPoint point)
 				SetCursor(m_hCursorCreate);
 				CPoint vp = p;
 				viewport->ScreenToClient(&vp);
-				HitContext hit;
+				HitContext hit(viewport);
 				if (viewport->HitTest(vp, hit))
 				{
 					if (hit.object && hit.object->IsKindOf(RUNTIME_CLASS(CProtEntityObject)))
@@ -944,7 +944,7 @@ void CEntityProtLibDialog::OnLButtonUp(UINT nFlags, CPoint point)
 			viewport->ScreenToClient(&vp);
 			// Drag and drop into one of views.
 			// Start object creation.
-			HitContext hit;
+			HitContext hit(viewport);
 			if (viewport->HitTest(vp, hit))
 			{
 				if (hit.object)

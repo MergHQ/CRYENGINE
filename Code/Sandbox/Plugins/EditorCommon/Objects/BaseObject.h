@@ -2,15 +2,17 @@
 
 #pragma once
 
-#include <CryMath/Cry_Geo.h>
-#include <CryMath/Cry_Color.h>
-#include "HitContext.h"
-#include "ClassDesc.h"
-#include "Util/Variable.h"
-#include "CryExtension/CryGUID.h"
 #include "Objects/DisplayContext.h"
+#include "Util/Variable.h"
+#include "ClassDesc.h"
+#include "HitContext.h"
 #include "IIconManager.h"
+
 #include <IUndoObject.h>
+
+#include <CryExtension/CryGUID.h>
+#include <CryMath/Cry_Color.h>
+#include <CryMath/Cry_Geo.h>
 
 class CAsset;
 class CEdGeometry;
@@ -158,9 +160,10 @@ enum ERotationWarningLevel
 };
 
 // Used for external control of object position without changing the object's real position (e.g. TrackView)
-class ITransformDelegate
+struct ITransformDelegate
 {
-public:
+	virtual ~ITransformDelegate() {}
+
 	// Called when matrix got invalidated
 	virtual void MatrixInvalidated() = 0;
 
@@ -228,12 +231,10 @@ public:
 	//! Retrieve class description of this object.
 	CObjectClassDesc* GetClassDesc() const { return m_classDesc; }
 
-	/** Check if both object are of same class.
-	 */
+	//! Check if both object are of same class.
 	virtual bool       IsSameClass(CBaseObject* obj);
 
 	virtual ObjectType GetType() const { return m_classDesc->GetObjectType(); }
-	//	const char* GetTypeName() const { return m_classDesc->ClassName(); }
 	string             GetTypeName() const;
 	virtual string     GetTypeDescription() const { return m_classDesc->ClassName(); }
 
@@ -282,8 +283,6 @@ public:
 	//! Set the name of the entity script. (This is temporary workaround allowing to mark CEntityObject as light source before CEntityObject::InitVariables() call. TODO: Remove it when light object is converted into separate class.)
 	virtual void SetScriptName(const string& file, CBaseObject* pPrev) {}
 
-	//! Set shared between missions flag.
-	virtual void SetShared(bool bShared);
 	//! Set object hidden status.
 	virtual void SetHidden(bool bHidden, bool bAnimated = false);
 	//! Set object visible status.
@@ -739,6 +738,8 @@ protected:
 
 	//! Draw default object items.
 	virtual void DrawDefault(SDisplayContext& dc, COLORREF labelColor = RGB(255, 255, 255));
+	//! Dependent on current settings and object type decide to show or not to show label
+	virtual bool IsLabelVisible(const SDisplayContext& dc) const;
 	//! Draw object label.
 	void         DrawLabel(SDisplayContext& dc, const Vec3& pos, COLORREF labelColor = RGB(255, 255, 255), float alpha = 1.0f, float size = 1.2f);
 	//! Draw selection helper.
@@ -981,7 +982,7 @@ public:
 
 protected:
 	virtual int         GetSize() { return sizeof(*this); }
-	virtual const char* GetDescription() override { return m_undoDescription; };
+	virtual const char* GetDescription() override { return m_undoDescription; }
 	virtual const char* GetObjectName() override;
 
 	virtual void        Undo(bool bUndo) override;

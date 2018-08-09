@@ -4,10 +4,8 @@
 
 #include "Objects/BaseObject.h"
 #include "EntityScript.h"
-
-#include <CryMovie/IMovieSystem.h>
 #include "EntityPrototype.h"
-#include "Gizmos/Gizmo.h"
+
 #include <CryCore/Containers/CryListenerSet.h>
 
 class CHyperFlowGraph;
@@ -15,9 +13,6 @@ class CEntityObject;
 class CPopupMenuItem;
 class IOpticsElementBase;
 struct SPyWrappedProperty;
-
-#include <CrySerialization/Serializer.h>
-#include <CrySerialization/STL.h>
 
 /*!
  *	CEntityEventTarget is an Entity event target and type.
@@ -40,11 +35,6 @@ struct CEntityLink
 	void           Serialize(Serialization::IArchive& ar);
 	CEntityObject* GetTarget() const;
 };
-
-inline const EntityGUID& ToEntityGuid(CryGUID guid)
-{
-	return guid;
-}
 
 struct IEntityObjectListener
 {
@@ -73,13 +63,9 @@ public:
 	DECLARE_DYNCREATE(CEntityObject)
 
 	//////////////////////////////////////////////////////////////////////////
-	// Overrides from CBaseObject.
-	//////////////////////////////////////////////////////////////////////////
-	//! Return type name of Entity.
-	string GetTypeDescription() const { return GetEntityClass(); }
-
-	//////////////////////////////////////////////////////////////////////////
-	bool              IsSameClass(CBaseObject* obj);
+	// CBaseObject.
+	virtual string    GetTypeDescription() const { return GetEntityClass(); }
+	virtual bool      IsSameClass(CBaseObject* obj);
 
 	virtual bool      Init(CBaseObject* prev, const string& file);
 	virtual void      InitVariables();
@@ -185,7 +171,7 @@ public:
 	virtual IRenderNode* GetEngineNode() const;
 	virtual bool         HasMeasurementAxis() const { return false; }
 
-	virtual void StoreUndo(const char* undoDescription, bool minimal = false, int flags = 0) override;
+	virtual void         StoreUndo(const char* undoDescription, bool minimal = false, int flags = 0) override;
 
 	//////////////////////////////////////////////////////////////////////////
 	// END CBaseObject
@@ -295,6 +281,8 @@ public:
 	void                  UpdateLightProperty();
 	void                  OnMenuReloadScripts();
 
+	IStatObj*             GetVisualObject() { return m_pHelperMesh; }
+
 	static void           StoreUndoEntityLink(const std::vector<CBaseObject*>& objects);
 
 	static const char* s_LensFlarePropertyName;
@@ -329,6 +317,7 @@ protected:
 	virtual void PostClone(CBaseObject* pFromObject, CObjectCloneContext& ctx);
 
 	//! Draw default object items.
+	virtual bool IsLabelVisible(const SDisplayContext& dc) const override;
 	virtual void DrawDefault(SDisplayContext& dc, COLORREF labelColor = RGB(255, 255, 255)) override;
 	virtual void DrawTextureIcon(SDisplayContext& dc, const Vec3& pos, float alpha, bool bDisplaySelectionHelper, float distanceSquared = 0) override;
 	void         DrawProjectorPyramid(SDisplayContext& dc, float dist);
@@ -373,7 +362,6 @@ protected:
 	// Called when link info changes.
 	virtual void UpdateIEntityLinks(bool bCallOnPropertyChange = true);
 
-	//! Dtor must be protected.
 	CEntityObject();
 	void DeleteThis() { delete this; }
 
@@ -414,7 +402,6 @@ protected:
 	void OnAreaLightChange(IVariable* var);
 	void OnAreaWidthChange(IVariable* var);
 	void OnAreaHeightChange(IVariable* var);
-	void OnAreaFOVChange(IVariable* var);
 	void OnAreaLightSizeChange(IVariable* var);
 	void OnColorChange(IVariable* var);
 	//////////////////////////////////////////////////////////////////////////
@@ -438,10 +425,7 @@ protected:
 
 	virtual string GetMouseOverStatisticsText() const override;
 
-	void           SetFlareName(const string& name)
-	{
-		SetEntityPropertyString(s_LensFlarePropertyName, name);
-	}
+	void           SetFlareName(const string& name) { SetEntityPropertyString(s_LensFlarePropertyName, name); }
 
 	//////////////////////////////////////////////////////////////////////////
 	// UI Part
@@ -456,7 +440,6 @@ protected:
 	void SerializeArchetype(Serialization::IArchive& ar, bool bMultiEdit);
 
 	void OnEditScript();
-	void OnReloadScript();
 	void OnOpenArchetype();
 	void OnBnClickedOpenFlowGraph();
 	void OnBnClickedRemoveFlowGraph();
@@ -465,11 +448,7 @@ protected:
 
 	// Reset information obtained from editor class info
 	void ResetEditorClassInfo();
-
 	bool IsLegacyObject() const;
-
-	bool AuxEditorMeshPresent() const;
-	void EnableAuxMeshRender(bool enable) const;
 
 protected:
 
@@ -489,8 +468,6 @@ protected:
 	unsigned int m_bBBoxSelection         : 1;
 	unsigned int m_bInitVariablesCalled   : 1;
 
-	int          m_auxEditorMeshSlot; // Slot number if "Editor"->"Model" mesh is present
-
 	Vec3         m_lightColor;
 
 	//! Entity class.
@@ -501,6 +478,7 @@ protected:
 	EntityId      m_entityId;
 	IEntity*      m_pEntity;
 	IEntityClass* m_pEntityClass;
+	IStatObj*     m_pHelperMesh;
 
 	// Entity class description.
 	std::shared_ptr<CEntityScript> m_pEntityScript;
@@ -572,7 +550,7 @@ protected:
 	// Loaded data for the entity;
 	// This xml data is passed to the entity for loading data from it.
 	XmlNodeRef m_loadedXmlNodeData;
-	bool       m_bCloned = false;
+	bool       m_bCloned;
 
 	//////////////////////////////////////////////////////////////////////////
 	// Associated FlowGraph.

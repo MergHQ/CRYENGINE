@@ -1,5 +1,5 @@
 // Copyright 2001-2018 Crytek GmbH / Crytek Group. All rights reserved.
-#include <StdAfx.h>
+#include "StdAfx.h"
 #include "ViewportPreferences.h"
 
 #include <CrySerialization/Color.h>
@@ -26,37 +26,12 @@ SViewportGeneralPreferences::SViewportGeneralPreferences()
 	, defaultFOV(DEG2RAD(60))
 	, defaultAspectRatio(800.0f / 600.0f)
 	, dragSquareSize(GetSystemMetrics(SM_CXDRAG) * 2)
-	, objectIconsScaleThreshold(50)
-	, objectIconsScaleThresholdSquared(objectIconsScaleThreshold * objectIconsScaleThreshold)
-	, objectHelperMaxDistDisplay(70)
-	, objectHelperMaxDistSquaredDisplay(objectHelperMaxDistDisplay * objectHelperMaxDistDisplay)
-	, selectionHelperDisplayThreshold(30)
-	, selectionHelperDisplayThresholdSquared(selectionHelperDisplayThreshold * selectionHelperDisplayThreshold)
-	, labelsDistance(100)
 	, mapViewportResolution(512)
 	, applyConfigSpec(true)
 	, sync2DViews(true)
 	, showSafeFrame(false)
 	, hideMouseCursorWhenCaptured(true)
 	, enableContextMenu(true)
-	, displayLabels(false)
-	, displayTracks(true)
-	, displayLinks(true)
-	, alwaysShowRadiuses(false)
-	, alwaysShowPrefabBox(false)
-	, showBBoxes(false)
-	, drawEntityLabels(false)
-	, showTriggerBounds(false)
-	, showIcons(true)
-	, distanceScaleIcons(true)
-	, bHideDistancedHelpers(true)
-	, objectIconsOnTop(true)
-	, showSizeBasedIcons(false)
-	, showFrozenHelpers(true)
-	, fillSelectedShapes(false)
-	, showGridGuide(true)
-	, displayDimension(false)
-	, displaySelectedObjectOrientation(false)
 	, toolsRenderUpdateMutualExclusive(false)
 	, mapViewportSwapXY(false)
 {
@@ -89,35 +64,6 @@ bool SViewportGeneralPreferences::Serialize(yasli::Archive& ar)
 	ar(showSafeFrame, "showSafeFrame", "Show 4:3 Aspect Ratio Frame");
 	ar(hideMouseCursorWhenCaptured, "hideMouseCursorWhenCaptured", "Hide Mouse Cursor When Captured");
 	ar(dragSquareSize, "dragSquareSize", "Drag Square Size");
-
-	ar(displayLinks, "displayLinks", "Display Object Links");
-	ar(displayTracks, "displayTracks", "Display Animation Tracks");
-	ar(alwaysShowRadiuses, "alwaysShowRadiuses", "Always Show Radiuses");
-	ar(alwaysShowPrefabBox, "alwaysShowPrefabBox", "Always Show Prefab Bounds");
-	ar(showBBoxes, "showBBoxes", "Show Bounding Boxes");
-	ar(drawEntityLabels, "drawEntityLabels", "Always Draw Entity Labels");
-	ar(showTriggerBounds, "showTriggerBounds", "Always Show Trigger Bounds");
-	ar(showIcons, "showIcons", "Show Object Icons");
-
-	ar(bHideDistancedHelpers, "hideDistancedHelpers", "Hide distanced helpers");
-	if (bHideDistancedHelpers)
-	{
-		ar(yasli::Range(objectHelperMaxDistDisplay, 0.0f, 500.0f), "objectHelperMaxDistDisplay", "Display helpers up to given distance");
-	}
-
-	ar(distanceScaleIcons, "distanceScaleIcons", "Scale object icons with distance");
-	if (distanceScaleIcons)
-	{
-		ar(yasli::Range(objectIconsScaleThreshold, 0.0f, 500.0f), "objectIconsScaleThreshold", "Threshold for distance scaling");
-	}
-
-	ar(objectIconsOnTop, "distanceScaleIconsThreshold", "Show object icons on top of objects");
-	ar(yasli::Range(selectionHelperDisplayThreshold, 0.0f, 500.0f), "selectionHelperDisplayThreshold", "Threshold for showing selection helpers");
-	ar(showFrozenHelpers, "showFrozenHelpers", "Show Helpers of Frozen Objects");
-	ar(fillSelectedShapes, "fillSelectedShapes", "Fill Selected Shapes");
-	ar(showGridGuide, "showGridGuide", "Show Snapping Grid Guide");
-	ar(displayDimension, "displayDimension", "Display dimension figures");
-	ar(displaySelectedObjectOrientation, "displaySelectedObjectOrientation", "Display Selected Object Orientation");
 	ar(toolsRenderUpdateMutualExclusive, "toolsRenderUpdateMutualExclusive", "Tools Render Update Mutual Exclusive");
 	ar.closeBlock();
 
@@ -126,18 +72,10 @@ bool SViewportGeneralPreferences::Serialize(yasli::Archive& ar)
 	ar(resolutionValue, "mapViewportResolution", "Map Texture Resolution");
 	ar.closeBlock();
 
-	ar.openBlock("textLabels", "Text Labels");
-	ar(displayLabels, "displayLabels", "Enabled");
-	ar(yasli::Range(labelsDistance, 0.0f, 1000.0f), "labelsDistance", "Distance");
-	ar.closeBlock();
-
 	if (ar.isInput())
 	{
 		mapViewportResolution = atoi(resolutionValue.c_str());
 		defaultFOV = DEG2RAD(defaultFOVDeg);
-		objectIconsScaleThresholdSquared = pow(objectIconsScaleThreshold, 2);
-		selectionHelperDisplayThresholdSquared = pow(selectionHelperDisplayThreshold, 2);
-		objectHelperMaxDistSquaredDisplay = objectHelperMaxDistDisplay * objectHelperMaxDistDisplay;
 	}
 
 	return true;
@@ -149,97 +87,21 @@ bool SViewportGeneralPreferences::Serialize(yasli::Archive& ar)
 SViewportDebugPreferences::SViewportDebugPreferences()
 	: SPreferencePage("Debug", "Viewport/Debug")
 	, objectHideMask(0)
-	, debugFlags(0)
 	, warningIconsDrawDistance(50.0f)
-	, showMeshStatsOnMouseOver(false)
 	, showScaleWarnings(false)
 	, showRotationWarnings(false)
-	, showEntityObjectHelper(true)
-	, showAreaObjectHelper(true)
-	, showShapeObjectHelper(true)
-	, showBrushObjectHelper(true)
-	, showDecalObjectHelper(true)
-	, showPrefabObjectHelper(true)
-	, showPrefabSubObjectHelper(true)
-	, showRoadObjectHelper(true)
-	, showGroupObjectHelper(true)
-	, showEnviromentProbeObjectHelper(true)
 {
 }
 
 bool SViewportDebugPreferences::Serialize(yasli::Archive& ar)
 {
-	ar.openBlock("debugHighlight", "Debug Highlight");
-	bool dbgHighlightBreakable = debugFlags & DBG_HIGHLIGHT_BREAKABLE;
-	bool dbgHighlightMissingSurfaceType = debugFlags & DBG_HIGHLIGHT_MISSING_SURFACE_TYPE;
-	ar(dbgHighlightBreakable, "highlightBreakable", "Breakable Materials");
-	ar(dbgHighlightMissingSurfaceType, "highlightMissingSurfaceType", "Missing Surface Types");
-	ar.closeBlock();
-
-	ar.openBlock("profiling", "Profiling");
-	ar(showMeshStatsOnMouseOver, "showMeshStatsOnMouseOver", "Show Mesh Statistics on Mouse Over");
-	ar.closeBlock();
-
 	ar.openBlock("warnings", "Warnings");
 	ar(yasli::Range(warningIconsDrawDistance, 0.1f, 10000.f), "warningIconsDrawDistance", "Warning Icons Draw Distance");
 	ar(showScaleWarnings, "showScaleWarnings", "Show Scale Warnings");
 	ar(showRotationWarnings, "showRotationWarnings", "Show Rotation Warnings");
 	ar.closeBlock();
 
-	ar.openBlock("helper", "Debug Helper");
-	ar(showEntityObjectHelper, "showEntityObjectHelper", "Show Entity Object Helper");
-	ar(showAreaObjectHelper, "showAreaObjectHelper", "Show Area Helper");
-	ar(showShapeObjectHelper, "showShapeObjectHelper", "Show Shape Helper");
-	ar(showBrushObjectHelper, "showBrushObjectHelper", "Show Brush Helper");
-	ar(showDecalObjectHelper, "showDecalObjectHelper", "Show Decal Helper");
-	ar(showPrefabObjectHelper, "showPrefabObjectHelper", "Show Prefab Helper");
-	ar(showPrefabSubObjectHelper, "showPrefabChildrenObjectHelper", "Show Prefab Children Helper");
-	ar(showRoadObjectHelper, "showRoadObjectHelper", "Show Road Helper");
-	ar(showGroupObjectHelper, "showRoadObjectHelper", "Show Group Helper");
-	ar(showEnviromentProbeObjectHelper, "showEnviromentProbeObjectHelper", "Show Environment Probe Helper");
-	ar.closeBlock();
-
-	if (ar.isInput())
-	{
-		int flags = debugFlags;
-		flags &= ~(DBG_HIGHLIGHT_BREAKABLE | DBG_HIGHLIGHT_MISSING_SURFACE_TYPE);
-		flags |= (dbgHighlightBreakable) ? DBG_HIGHLIGHT_BREAKABLE : 0;
-		flags |= (dbgHighlightMissingSurfaceType) ? DBG_HIGHLIGHT_MISSING_SURFACE_TYPE : 0;
-		SetDebugFlags(flags);
-	}
-
 	return true;
-}
-
-void SViewportDebugPreferences::SetDebugFlags(int flags)
-{
-	debugFlags = flags;
-	bool profilerEnabled = false;
-
-	if (gEnv->pConsole)
-	{
-		const ICVar* const pProfileCVar = gEnv->pConsole->GetCVar("Profile");
-		if (pProfileCVar)
-		{
-			profilerEnabled = (pProfileCVar->GetIVal() == 1);
-			if (profilerEnabled)
-			{
-				debugFlags |= DBG_FRAMEPROFILE;
-			}
-			else
-			{
-				debugFlags &= ~DBG_FRAMEPROFILE;
-			}
-		}
-	}
-
-	ISystem* pSystem = GetIEditor()->GetSystem();
-	if (pSystem)
-	{
-		pSystem->GetIProfileSystem()->Enable(profilerEnabled, profilerEnabled);
-	}
-
-	debugFlagsChanged();
 }
 
 void SViewportDebugPreferences::SetObjectHideMask(int hideMask)

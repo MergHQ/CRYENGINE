@@ -29,32 +29,23 @@ const char* g_IconNames[eIcon_COUNT] =
 	"%EDITOR%/Icons/ScaleWarning.png",
 	"%EDITOR%/Icons/RotationWarning.png",
 };
-};
+}
 
-//////////////////////////////////////////////////////////////////////////
 CIconManager::CIconManager()
 {
 	ZeroStruct(m_icons);
 	ZeroStruct(m_objects);
 }
 
-//////////////////////////////////////////////////////////////////////////
-CIconManager::~CIconManager()
-{
-}
-
-//////////////////////////////////////////////////////////////////////////
 void CIconManager::Init()
 {
 }
 
-//////////////////////////////////////////////////////////////////////////
 void CIconManager::Done()
 {
 	Reset();
 }
 
-//////////////////////////////////////////////////////////////////////////
 void CIconManager::Reset()
 {
 	I3DEngine* pEngine = GetIEditorImpl()->Get3DEngine();
@@ -79,7 +70,6 @@ void CIconManager::Reset()
 	m_iconBitmapsMap.clear();
 }
 
-//////////////////////////////////////////////////////////////////////////
 int CIconManager::GetIconTexture(const char* iconName)
 {
 	auto textureIt = m_textures.find(iconName);
@@ -117,7 +107,6 @@ int CIconManager::GetIconTexture(const char* iconName)
 	return id;
 }
 
-//////////////////////////////////////////////////////////////////////////
 int CIconManager::GetIconTexture(EIcon icon)
 {
 	assert(icon >= 0 && icon < eIcon_COUNT);
@@ -128,7 +117,6 @@ int CIconManager::GetIconTexture(EIcon icon)
 	return m_icons[icon];
 }
 
-//////////////////////////////////////////////////////////////////////////
 int CIconManager::GetIconTexture(const char* szIconName, CryIcon& icon)
 {
 	auto textureIt = m_textures.find(szIconName);
@@ -159,13 +147,12 @@ int CIconManager::GetIconTexture(const char* szIconName, CryIcon& icon)
 	return 0;
 }
 
-//////////////////////////////////////////////////////////////////////////
 IMaterial* CIconManager::GetHelperMaterial()
 {
 	if (!m_pHelperMtl)
 		m_pHelperMtl = GetIEditorImpl()->Get3DEngine()->GetMaterialManager()->LoadMaterial(HELPER_MATERIAL);
 	return m_pHelperMtl;
-};
+}
 
 void CIconManager::OnEditorNotifyEvent(EEditorNotifyEvent event)
 {
@@ -182,8 +169,7 @@ void CIconManager::OnEditorNotifyEvent(EEditorNotifyEvent event)
 	}
 }
 
-//////////////////////////////////////////////////////////////////////////
-IStatObj* CIconManager::GetObject(EStatObject object)
+IStatObj* CIconManager::GetStatObject(EStatObject object)
 {
 	assert(object >= 0 && object < eStatObject_COUNT);
 
