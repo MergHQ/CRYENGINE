@@ -40,7 +40,7 @@ CDefaultSkeleton::~CDefaultSkeleton()
 		{
 			int i = j >> 1, nLod = j & 1;
 			phys_geometry* pPhysGeom = m_arrModelJoints[i].m_PhysInfoRef[nLod].pPhysGeom;
-			if (pPhysGeom == 0)
+			if (pPhysGeom == 0 || nLod > 0 && &m_arrModelJoints[i].m_PhysInfoRef[nLod - 1] == &m_arrModelJoints[i].m_PhysInfoRef[nLod])
 				continue; //joint is not physical geometry
 			if ((INT_PTR)pPhysGeom == -1)
 				CryFatalError("Joint '%s' (model '%s') was physicalized but failed to load geometry for some reason. Please check the setup", m_arrModelJoints[i].m_strJointName.c_str(), GetModelFilePath());
