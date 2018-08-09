@@ -584,7 +584,7 @@ ITrigger const* CImpl::ConstructTrigger(XmlNodeRef const pRootNode, float& radiu
 #if defined(INCLUDE_ADX2_IMPL_PRODUCTION_CODE)
 		pITrigger = static_cast<ITrigger const*>(new CTrigger(StringToId(szName), szName, 0, ETriggerType::Snapshot, EEventType::Start, "", static_cast<CriSint32>(changeoverTime)));
 #else
-		pITrigger = static_cast<ITrigger const*>(new CTrigger(StringToId(szName), szName, StringToId(szCueSheetName), ETriggerType::Trigger, eventType, static_cast<CriSint32>(changeoverTime)));
+		pITrigger = static_cast<ITrigger const*>(new CTrigger(StringToId(szName), szName, 0, ETriggerType::Snapshot, EEventType::Start, static_cast<CriSint32>(changeoverTime)));
 #endif    // INCLUDE_ADX2_IMPL_PRODUCTION_CODE
 	}
 	else

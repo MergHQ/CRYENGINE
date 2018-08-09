@@ -212,10 +212,12 @@ bool CBaseObject::StartEvent(CTrigger const* const pTrigger, CEvent* const pEven
 			}
 		}
 	}
+#if defined(INCLUDE_ADX2_IMPL_PRODUCTION_CODE)
 	else
 	{
 		Cry::Audio::Log(ELogType::Warning, R"(Cue "%s" failed to play because ACB file "%s" was not loaded)", static_cast<char const*>(pTrigger->GetCueName()), pTrigger->GetCueSheetName());
 	}
+#endif  // INCLUDE_ADX2_IMPL_PRODUCTION_CODE
 
 	return eventStarted;
 }
