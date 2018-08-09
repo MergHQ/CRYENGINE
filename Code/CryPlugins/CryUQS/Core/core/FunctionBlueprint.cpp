@@ -17,10 +17,10 @@ namespace UQS
 		{
 		}
 
-		Client::FunctionUniquePtr CFunctionBlueprint::InstantiateCallHierarchy(const SQueryBlackboard& blackboard, Shared::CUqsString& error) const
+		Client::FunctionUniquePtr CFunctionBlueprint::InstantiateCallHierarchy(const SQueryContext& queryContext, Shared::CUqsString& error) const
 		{
 			const CLeafFunctionReturnValue* pLeafFunctionReturnValue = m_returnValueInCaseOfLeafFunction.IsActuallyALeafFunction() ? &m_returnValueInCaseOfLeafFunction : nullptr;
-			const Client::IFunction::SCtorContext ctorContext(pLeafFunctionReturnValue, blackboard, m_functionFactory.GetInputParameterRegistry(), m_bAddReturnValueToDebugRenderWorldUponExecution);
+			const Client::IFunction::SCtorContext ctorContext(pLeafFunctionReturnValue, queryContext, m_functionFactory.GetInputParameterRegistry(), m_bAddReturnValueToDebugRenderWorldUponExecution);
 			Client::FunctionUniquePtr pFunc = m_functionFactory.CreateFunction(ctorContext);
 			CRY_ASSERT(pFunc);       // function factories are never supposed to return nullptr
 
@@ -30,7 +30,7 @@ namespace UQS
 
 			for (const CFunctionBlueprint* pFuncBP : m_resolvedInputs)
 			{
-				Client::FunctionUniquePtr pChildFunc = pFuncBP->InstantiateCallHierarchy(blackboard, error);
+				Client::FunctionUniquePtr pChildFunc = pFuncBP->InstantiateCallHierarchy(queryContext, error);
 				if (pChildFunc == nullptr)
 				{
 					// an error occurred and already got written to given output error string

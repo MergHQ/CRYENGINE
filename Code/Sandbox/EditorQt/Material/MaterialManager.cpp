@@ -1,33 +1,30 @@
 // Copyright 2001-2018 Crytek GmbH / Crytek Group. All rights reserved.
 
 #include "StdAfx.h"
-#include "MaterialManager.h"
+#include "Material/MaterialManager.h"
 
-#include "Material.h"
-#include "MaterialLibrary.h"
-
-#include "Viewport.h"
-#include "ModelViewport.h"
+#include "Material/Material.h"
+#include "Material/MaterialLibrary.h"
+#include "QT/QToolTabManager.h"
+#include "QT/QtMainFrame.h"
+#include "Terrain/Layer.h"
+#include "Terrain/SurfaceType.h"
+#include "Terrain/TerrainManager.h"
+#include "Util/BoostPythonHelpers.h"
 #include "MaterialSender.h"
 
-#include <CryAnimation/ICryAnimation.h>
-#include "ISourceControl.h"
-
-#include "Util/BoostPythonHelpers.h"
-
-#include "Terrain/Layer.h"
-#include "Terrain/TerrainManager.h"
-#include "Terrain/SurfaceType.h"
-
-#include "QT/QtMainFrame.h"
-
-#include <CryString/CryPath.h>
+#include <AssetSystem/Browser/AssetBrowserDialog.h>
+#include <Preferences/GlobalHelperPreferences.h>
 #include <FilePathUtil.h>
-#include <Preferences/ViewportPreferences.h>
+#include <ISourceControl.h>
+#include <ModelViewport.h>
+#include <Viewport.h>
+
+#include <CryAnimation/ICryAnimation.h>
+#include <CryString/CryPath.h>
+
 #include <QAbstractNativeEventFilter>
 #include <QApplication>
-#include "QT/QToolTabManager.h"
-#include "AssetSystem/Browser/AssetBrowserDialog.h"
 
 namespace Private_MaterialManager 
 { 
@@ -225,12 +222,13 @@ CMaterialManager::CMaterialManager()
 
 	if (gEnv->p3DEngine)
 		gEnv->p3DEngine->GetMaterialManager()->SetListener(this);
-	gViewportDebugPreferences.debugFlagsChanged.Connect(this, &CMaterialManager::OnDebugFlagsChanged);
+
+	gGlobalHelperPreferences.materialSettingsChanged.Connect(this, &CMaterialManager::OnDebugFlagsChanged);
 }
 
 CMaterialManager::~CMaterialManager()
 {
-	gViewportDebugPreferences.debugFlagsChanged.DisconnectObject(this);
+	gGlobalHelperPreferences.materialSettingsChanged.DisconnectObject(this);
 
 	delete m_pHighlighter;
 	m_pHighlighter = 0;
@@ -1579,15 +1577,13 @@ void CMaterialManager::InitMatSender()
 
 void CMaterialManager::OnDebugFlagsChanged()
 {
-	int debugFlags = gViewportDebugPreferences.GetDebugFlags();
-
 	int mask = GetHighlightMask();
-	if (debugFlags & DBG_HIGHLIGHT_BREAKABLE)
+	if (gGlobalHelperPreferences.highlightBreakableMaterial)
 		mask |= eHighlight_Breakable;
 	else
 		mask &= ~eHighlight_Breakable;
 
-	if (debugFlags & DBG_HIGHLIGHT_MISSING_SURFACE_TYPE)
+	if (gGlobalHelperPreferences.highlightMissingSurfaceTypes)
 		mask |= eHighlight_NoSurfaceType;
 	else
 		mask &= ~eHighlight_NoSurfaceType;

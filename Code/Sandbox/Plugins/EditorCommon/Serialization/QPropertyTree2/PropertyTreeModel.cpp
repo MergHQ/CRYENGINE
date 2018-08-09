@@ -347,5 +347,3 @@ namespace PropertyTree2
 		}
 	}
 }
-
-

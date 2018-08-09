@@ -220,4 +220,3 @@ HWND FindTopLevelFrame(HWND child)
 
 	return current;
 }
-

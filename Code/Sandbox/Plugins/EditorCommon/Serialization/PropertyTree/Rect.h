@@ -87,4 +87,3 @@ struct Rect
 
 using property_tree::Rect; // temporary
 using property_tree::Point; // temporary
-

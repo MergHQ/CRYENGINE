@@ -31,4 +31,3 @@ private:
 	static int        CountAllEdges(MainContext& mc);
 };
 }
-

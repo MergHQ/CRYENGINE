@@ -5,6 +5,8 @@
 
 #include <ProxyModels/ItemModelAttribute.h>
 #include <EditorStyleHelper.h>
+#include <FilePathUtil.h>
+#include <QtUtil.h>
 
 namespace ACE
 {
@@ -42,11 +44,10 @@ CItemModelAttribute* GetAttributeForColumn(CFileImporterModel::EColumns const co
 }
 
 //////////////////////////////////////////////////////////////////////////
-CFileImporterModel::CFileImporterModel(FileImportInfos& fileInfos, QString const& assetFolderPath, QString const& targetPath, QObject* const pParent)
+CFileImporterModel::CFileImporterModel(FileImportInfos& fileInfos, QObject* const pParent)
 	: QAbstractItemModel(pParent)
 	, m_fileImportInfos(fileInfos)
-	, m_targetPath(targetPath)
-	, m_assetFolder(assetFolderPath)
+	, m_gameFolder(QtUtil::ToQString(PathUtil::GetGameFolder()))
 {
 }
 
@@ -106,7 +107,7 @@ QVariant CFileImporterModel::data(QModelIndex const& index, int role) const
 
 							if (fileInfo.isTypeSupported)
 							{
-								variant = m_assetFolder.relativeFilePath(m_fileImportInfos[index.row()].targetInfo.filePath());
+								variant = m_gameFolder.relativeFilePath(m_fileImportInfos[index.row()].targetInfo.filePath());
 							}
 							else
 							{

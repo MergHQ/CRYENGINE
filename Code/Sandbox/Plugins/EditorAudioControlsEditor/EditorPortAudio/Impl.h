@@ -34,6 +34,7 @@ public:
 	virtual string const&  GetName() const override                          { return m_implName; }
 	virtual string const&  GetFolderName() const override                    { return m_implFolderName; }
 	virtual char const*    GetAssetsPath() const override                    { return m_assetAndProjectPath.c_str(); }
+	virtual char const*    GetLocalizedAssetsPath() const override           { return m_localizedAssetsPath.c_str(); }
 	virtual char const*    GetProjectPath() const override                   { return m_assetAndProjectPath.c_str(); }
 	virtual void           SetProjectPath(char const* const szPath) override {}
 	virtual bool           SupportsProjects() const override                 { return false; }
@@ -56,20 +57,19 @@ public:
 
 private:
 
-	void      Clear();
-	void      CreateItemCache(CItem const* const pParent);
-	ControlId GetId(string const& name) const;
+	void Clear();
+	void SetLocalizedAssetsPath();
 
-	using ItemCache = std::map<ControlId, CItem*>;
 	using ConnectionIds = std::map<ControlId, int>;
 
-	CItem               m_rootItem { "", s_aceInvalidId, EItemType::None };
+	CItem               m_rootItem { "", s_aceInvalidId, EItemType::None, "" };
 	ItemCache           m_itemCache; // cache of the items stored by id for faster access
 	ConnectionIds       m_connectionsByID;
 	CryAudio::SImplInfo m_implInfo;
 	string              m_implName;
 	string              m_implFolderName;
 	string const        m_assetAndProjectPath;
+	string              m_localizedAssetsPath;
 	CDataPanel*         m_pDataPanel;
 };
 } // namespace PortAudio

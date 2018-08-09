@@ -194,6 +194,12 @@ void CVars::Init()
 	DefineConstFloatCVar(e_SunAngleSnapDot, VF_NULL,
 	                     "Sun dir snap control");
 
+	REGISTER_CVAR(e_TerrainBlendingDebug, 0, VF_CHEAT, 
+                  "Options:\n"
+                  "0 = Only blend objects that have FOB_ALLOW_TERRAIN_LAYER_BLEND set (default)\n"
+                  "1 = Disable blending on all objects\n"
+                  "2 = Enable blending on all objects");
+
 	REGISTER_CVAR(e_Particles, 1, VF_CHEAT | VF_CHEAT_ALWAYS_CHECK,
 	              "Activates drawing of particles");
 	DefineConstIntCVar(e_ParticlesDebug, 0, VF_CHEAT | VF_BITFIELD,
@@ -207,9 +213,12 @@ void CVars::Init()
 	                   " c = disable clipping against water and vis area bounds"
 	                   " z = freeze particle system"
 	                   " t = used by developers to debug test algorithms");
-	REGISTER_CVAR(e_ParticlesThread, 4, VF_BITFIELD,
+	REGISTER_CVAR(e_ParticlesThread, 4, VF_NULL,
 	              "Enable particle threading: 1 = basic, 4 = optimal");
-	REGISTER_CVAR(e_ParticlesObjectCollisions, 2, VF_NULL,
+	REGISTER_CVAR(e_ParticlesCollisions, 3,  VF_BITFIELD,
+	              "Enable collisions for non-physical particles:\n"
+	              "  1 = terrain only, 2 = static objects also, 3 = dynamic objects also");
+	REGISTER_CVAR(e_ParticlesObjectCollisions, -1, VF_CHEAT,
 	              "Enable particle/object collisions for SimpleCollision:\n"
 	              "  1 = against static objects only, 2 = dynamic also");
 	REGISTER_CVAR(e_ParticlesMinPhysicsDynamicBounds, 2, VF_NULL,

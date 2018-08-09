@@ -50,4 +50,3 @@ void DependencyManager::FindDepending(Strings* outAssets, const char* user) cons
 			FindUsers(&*outAssets, assets[i]);
 	}
 }
-

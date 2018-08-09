@@ -2695,4 +2695,3 @@ void CTrackViewSequenceTabWidget::OnDopesheetPaste(SAnimTime time, STimelineTrac
 		}
 	}
 }
-

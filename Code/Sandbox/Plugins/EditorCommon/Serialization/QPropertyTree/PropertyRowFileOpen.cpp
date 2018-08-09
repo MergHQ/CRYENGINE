@@ -153,5 +153,3 @@ void FileOpenMenuHandler::onMenuClear()
 {
 	self->clear(tree);
 }
-
-

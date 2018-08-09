@@ -338,5 +338,3 @@ int PropertyRowContainer::widgetSizeMin(const PropertyTree* tree) const
 {
 	return inlined_ ? 0 : (userWidgetSize() >=0 ? userWidgetSize() : int(tree->_defaultRowHeight() * 1.7f));
 }
-
-

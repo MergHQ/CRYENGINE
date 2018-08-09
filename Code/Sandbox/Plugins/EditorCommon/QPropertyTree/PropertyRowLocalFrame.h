@@ -46,4 +46,3 @@ struct LocalFrameMenuHandler : PropertyRowMenuHandler
 
 	void onMenuReset();
 };
-

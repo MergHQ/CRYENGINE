@@ -32,4 +32,3 @@ public:
 	//! Returns false when the AI system isn't ready for exporting game data and the user has canceled the export request
 	virtual bool IsReadyToGameExport(unsigned int& adjustedExportFlags) const = 0;
 };
-

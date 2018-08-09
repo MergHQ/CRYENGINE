@@ -265,4 +265,3 @@ void UVProjectionUndo::UndoPolygons(const std::vector<PolygonPtr>& polygons)
 
 }
 }
-

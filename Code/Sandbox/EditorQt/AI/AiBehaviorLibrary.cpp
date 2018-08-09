@@ -374,4 +374,3 @@ void CAIBehaviorLibrary::RemoveCharacter(CAICharacter* chr)
 {
 	m_characters.erase(chr->GetName());
 }
-

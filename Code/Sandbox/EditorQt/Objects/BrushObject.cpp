@@ -3,34 +3,29 @@
 #include "StdAfx.h"
 #include "BrushObject.h"
 
-#include <Preferences/ViewportPreferences.h>
-#include "Viewport.h"
-
-#include "EntityObject.h"
 #include "Geometry/EdMesh.h"
 #include "Material/Material.h"
 #include "Material/MaterialManager.h"
-#include "Objects/ObjectLoader.h"
-#include "Objects/InspectorWidgetCreator.h"
+#include "Objects/EntityObject.h"
 
-#include <Serialization/Decorators/EditToolButton.h>
-#include <Serialization/Decorators/EditorActionButton.h>
 #include <LevelEditor/Tools/SubObjectSelectionReferenceFrameCalculator.h>
+#include <Objects/ObjectLoader.h>
+#include <Objects/InspectorWidgetCreator.h>
+#include <Preferences/ViewportPreferences.h>
+#include <Serialization/Decorators/EditorActionButton.h>
+#include <FilePathUtil.h>
+#include <Viewport.h>
 
 #include <Cry3DEngine/I3DEngine.h>
+#include <CryEntitySystem/IBreakableManager.h>
 #include <CryEntitySystem/IEntitySystem.h>
 #include <CryPhysics/IPhysics.h>
-#include <CryEntitySystem/IBreakableManager.h>
 #include <CrySystem/ICryLink.h>
-#include "FilePathUtil.h"
 
 #include <cctype> // std::isdigit
 
 #define MIN_BOUNDS_SIZE 0.01f
 
-//////////////////////////////////////////////////////////////////////////
-// CBase implementation.
-//////////////////////////////////////////////////////////////////////////
 REGISTER_CLASS_DESC(CBrushObjectClassDesc);
 
 IMPLEMENT_DYNCREATE(CBrushObject, CBaseObject)
@@ -90,7 +85,6 @@ void CUndoSetGeometryFile::Redo()
 	}
 }
 
-//////////////////////////////////////////////////////////////////////////
 CBrushObject::CBrushObject()
 {
 	m_pGeometry = 0;
@@ -127,6 +121,8 @@ CBrushObject::CBrushObject()
 	mv_recvWind = false;
 	mv_Occluder = false;
 	mv_drawLast = false;
+	mv_ignoreTerrainLayerBlend = true;
+	mv_ignoreDecalBlend = true;
 	mv_shadowLodBias = 0;
 
 	static string sVarName_OutdoorOnly = "IgnoreVisareas";
@@ -155,6 +151,8 @@ CBrushObject::CBrushObject()
 	static string sVarName_Occluder = "Occluder";
 	static string sVarName_DrawLast = "DrawLast";
 	static string sVarName_ShadowLodBias = "ShadowLodBias";
+	static string sVarName_IgnoreTerrainLayerBlend = "IgnoreTerrainLayerBlend";
+	static string sVarName_IgnoreDecalBlend = "IgnoreDecalBlend";
 
 	CVarEnumList<int>* pHideModeList = new CVarEnumList<int>;
 	pHideModeList->AddItem("None", 0);
@@ -184,6 +182,8 @@ CBrushObject::CBrushObject()
 	m_pVarObject->AddVariable(mv_Occluder, sVarName_Occluder, functor(*this, &CBrushObject::OnRenderVarChange));
 	m_pVarObject->AddVariable(mv_drawLast, sVarName_DrawLast, functor(*this, &CBrushObject::OnRenderVarChange));
 	m_pVarObject->AddVariable(mv_shadowLodBias, sVarName_ShadowLodBias, functor(*this, &CBrushObject::OnRenderVarChange));
+	m_pVarObject->AddVariable(mv_ignoreTerrainLayerBlend, sVarName_IgnoreTerrainLayerBlend, functor(*this, &CBrushObject::OnRenderVarChange));
+	m_pVarObject->AddVariable(mv_ignoreDecalBlend, sVarName_IgnoreDecalBlend, functor(*this, &CBrushObject::OnRenderVarChange));
 
 	mv_ratioLOD.SetLimits(0, 255);
 	mv_ratioViewDist.SetLimits(0, 255);
@@ -194,7 +194,6 @@ CBrushObject::CBrushObject()
 	SetFlags(OBJFLAG_SHOW_ICONONTOP);
 }
 
-//////////////////////////////////////////////////////////////////////////
 void CBrushObject::Done()
 {
 	LOADING_TIME_PROFILE_SECTION_ARGS(GetName().c_str());
@@ -208,7 +207,6 @@ bool CBrushObject::IncludeForGI()
 	return true;
 }
 
-//////////////////////////////////////////////////////////////////////////
 void CBrushObject::FreeGameData()
 {
 	LOADING_TIME_PROFILE_SECTION;
@@ -223,7 +221,6 @@ void CBrushObject::FreeGameData()
 	m_pGeometry = 0;
 }
 
-//////////////////////////////////////////////////////////////////////////
 bool CBrushObject::Init(CBaseObject* prev, const string& file)
 {
 	SetColor(ColorB(255, 255, 255));
@@ -257,7 +254,6 @@ bool CBrushObject::Init(CBaseObject* prev, const string& file)
 	return res;
 }
 
-//////////////////////////////////////////////////////////////////////////
 bool CBrushObject::CreateGameObject()
 {
 	if (!m_pRenderNode)
@@ -286,7 +282,7 @@ void CBrushObject::UpdateHighlightPassState(bool bSelected, bool bHighlighted)
 		m_pRenderNode->SetEditorObjectInfo(bSelected, bHighlighted);
 	}
 }
-//////////////////////////////////////////////////////////////////////////
+
 void CBrushObject::ApplyStatObjProperties()
 {
 	if (m_pGeometry)
@@ -315,7 +311,6 @@ void CBrushObject::ApplyStatObjProperties()
 	}
 }
 
-//////////////////////////////////////////////////////////////////////////
 void CBrushObject::OnFileChange(string filename)
 {
 	CUndo undo("Brush Prefab Modify");
@@ -326,7 +321,6 @@ void CBrushObject::OnFileChange(string filename)
 	UpdateUIVars();
 }
 
-//////////////////////////////////////////////////////////////////////////
 void CBrushObject::SetSelected(bool bSelect)
 {
 	CBaseObject::SetSelected(bSelect);
@@ -342,19 +336,18 @@ void CBrushObject::SetSelected(bool bSelect)
 	}
 }
 
-//////////////////////////////////////////////////////////////////////////
 void CBrushObject::GetLocalBounds(AABB& box)
 {
 	box = m_bbox;
 }
 
-//////////////////////////////////////////////////////////////////////////
 void CBrushObject::Display(CObjectRenderHelper& objRenderHelper)
 {
-	if (!gViewportDebugPreferences.showBrushObjectHelper)
-		return;
-
 	SDisplayContext& dc = objRenderHelper.GetDisplayContextRef();
+	if (!dc.showBrushHelper)
+	{
+		return;
+	}
 
 	if (!m_pGeometry)
 	{
@@ -367,7 +360,7 @@ void CBrushObject::Display(CObjectRenderHelper& objRenderHelper)
 		}
 	}
 
-	if (dc.flags & DISPLAY_2D)
+	if (dc.display2D)
 	{
 		int flags = 0;
 
@@ -430,7 +423,7 @@ void CBrushObject::DrawSelectionPreviewHighlight(SDisplayContext& dc)
 {
 	CBaseObject::DrawSelectionPreviewHighlight(dc);
 
-	if (dc.flags & DISPLAY_2D)
+	if (dc.display2D)
 		return;
 
 	ColorB color = GetSelectionPreviewHighlightColor();
@@ -449,13 +442,11 @@ void CBrushObject::DrawSelectionPreviewHighlight(SDisplayContext& dc)
 		pStatObj->DebugDraw(dd);
 }
 
-//////////////////////////////////////////////////////////////////////////
 XmlNodeRef CBrushObject::Export(const string& levelPath, XmlNodeRef& xmlNode)
 {
 	return 0;
 }
 
-//////////////////////////////////////////////////////////////////////////
 void CBrushObject::Serialize(CObjectArchive& ar)
 {
 	XmlNodeRef xmlNode = ar.node;
@@ -482,7 +473,6 @@ void CBrushObject::Serialize(CObjectArchive& ar)
 	}
 }
 
-//////////////////////////////////////////////////////////////////////////
 bool CBrushObject::HitTest(HitContext& hc)
 {
 	if (CheckFlags(OBJFLAG_SUBOBJ_EDITING))
@@ -565,14 +555,12 @@ bool CBrushObject::HitTest(HitContext& hc)
 	return false;
 }
 
-//////////////////////////////////////////////////////////////////////////
 int CBrushObject::HitTestAxis(HitContext& hc)
 {
 	//@HACK Temporary hack.
 	return 0;
 }
 
-//////////////////////////////////////////////////////////////////////////
 //! Invalidates cached transformation matrix.
 void CBrushObject::InvalidateTM(int nWhyFlags)
 {
@@ -595,7 +583,6 @@ void CBrushObject::InvalidateTM(int nWhyFlags)
 	}
 }
 
-//////////////////////////////////////////////////////////////////////////
 void CBrushObject::OnEvent(ObjectEvent event)
 {
 	switch (event)
@@ -613,14 +600,12 @@ void CBrushObject::OnEvent(ObjectEvent event)
 	__super::OnEvent(event);
 }
 
-//////////////////////////////////////////////////////////////////////////
 void CBrushObject::WorldToLocalRay(Vec3& raySrc, Vec3& rayDir)
 {
 	raySrc = m_invertTM.TransformPoint(raySrc);
 	rayDir = m_invertTM.TransformVector(rayDir).GetNormalized();
 }
 
-//////////////////////////////////////////////////////////////////////////
 void CBrushObject::OnGeometryChange(IVariable* var)
 {
 	// Load new prefab model.
@@ -632,7 +617,6 @@ void CBrushObject::OnGeometryChange(IVariable* var)
 	SetModified(false, true);
 }
 
-//////////////////////////////////////////////////////////////////////////
 static bool IsBrushFilename(const char* filename)
 {
 	if ((filename == 0) || (filename[0] == 0))
@@ -651,7 +635,6 @@ static bool IsBrushFilename(const char* filename)
 	return false;
 }
 
-//////////////////////////////////////////////////////////////////////////
 void CBrushObject::CreateBrushFromMesh(const char* meshFilename)
 {
 	if (m_pGeometry)
@@ -691,7 +674,6 @@ void CBrushObject::CreateBrushFromMesh(const char* meshFilename)
 	}
 }
 
-//////////////////////////////////////////////////////////////////////////
 void CBrushObject::ReloadGeometry()
 {
 	if (m_pGeometry)
@@ -700,7 +682,6 @@ void CBrushObject::ReloadGeometry()
 	}
 }
 
-//////////////////////////////////////////////////////////////////////////
 void CBrushObject::OnAIRadiusVarChange(IVariable* var)
 {
 	if (m_bIgnoreNodeUpdate)
@@ -732,7 +713,6 @@ void CBrushObject::OnAIRadiusVarChange(IVariable* var)
 	UpdatePrefab();
 }
 
-//////////////////////////////////////////////////////////////////////////
 void CBrushObject::OnRenderVarChange(IVariable* var)
 {
 	UpdateEngineNode();
@@ -743,7 +723,6 @@ void CBrushObject::OnRenderVarChange(IVariable* var)
 		gEnv->p3DEngine->SetRecomputeCachedShadows();
 }
 
-//////////////////////////////////////////////////////////////////////////
 IPhysicalEntity* CBrushObject::GetCollisionEntity() const
 {
 	// Returns physical object of entity.
@@ -782,6 +761,8 @@ void CBrushObject::CreateInspectorWidgets(CInspectorWidgetCreator& creator)
 		  pObject->m_pVarObject->SerializeVariable(&pObject->mv_Occluder, ar);
 		  pObject->m_pVarObject->SerializeVariable(&pObject->mv_drawLast, ar);
 		  pObject->m_pVarObject->SerializeVariable(&pObject->mv_shadowLodBias, ar);
+		  pObject->m_pVarObject->SerializeVariable(&pObject->mv_ignoreTerrainLayerBlend, ar);
+		  pObject->m_pVarObject->SerializeVariable(&pObject->mv_ignoreDecalBlend, ar);
 		}
 
 		if (ar.openBlock("cgf", "<CGF"))
@@ -793,7 +774,6 @@ void CBrushObject::CreateInspectorWidgets(CInspectorWidgetCreator& creator)
 	});
 }
 
-//////////////////////////////////////////////////////////////////////////
 bool CBrushObject::ConvertFromObject(CBaseObject* object)
 {
 	__super::ConvertFromObject(object);
@@ -846,7 +826,6 @@ bool CBrushObject::ConvertFromObject(CBaseObject* object)
 	return false;
 }
 
-//////////////////////////////////////////////////////////////////////////
 void CBrushObject::UpdateEngineNode(bool bOnlyTransform)
 {
 	if (m_bIgnoreNodeUpdate)
@@ -902,6 +881,10 @@ void CBrushObject::UpdateEngineNode(bool bOnlyTransform)
 		m_renderFlags |= ERF_SELECTED;
 	if (mv_giMode)
 		m_renderFlags |= ERF_GI_MODE_BIT0;
+	if (!mv_ignoreTerrainLayerBlend)
+		m_renderFlags |= ERF_FOB_ALLOW_TERRAIN_LAYER_BLEND;
+	if (!mv_ignoreDecalBlend)
+		m_renderFlags |= ERF_FOB_ALLOW_DECAL_BLEND;
 
 	int flags = GetRenderFlags();
 
@@ -958,8 +941,6 @@ void CBrushObject::UpdateEngineNode(bool bOnlyTransform)
 	return;
 }
 
-//////////////////////////////////////////////////////////////////////////
-//////////////////////////////////////////////////////////////////////////
 IStatObj* CBrushObject::GetIStatObj()
 {
 	if (m_pRenderNode)
@@ -976,7 +957,6 @@ IStatObj* CBrushObject::GetIStatObj()
 	return m_pGeometry->GetIStatObj();
 }
 
-//////////////////////////////////////////////////////////////////////////
 void CBrushObject::SetMinSpec(uint32 nSpec, bool bSetChildren)
 {
 	__super::SetMinSpec(nSpec, bSetChildren);
@@ -987,7 +967,6 @@ void CBrushObject::SetMinSpec(uint32 nSpec, bool bSetChildren)
 	}
 }
 
-//////////////////////////////////////////////////////////////////////////
 void CBrushObject::UpdateVisibility(bool visible)
 {
 	if (visible == CheckFlags(OBJFLAG_INVISIBLE) ||
@@ -1017,7 +996,6 @@ void CBrushObject::UpdateVisibility(bool visible)
 	}
 }
 
-//////////////////////////////////////////////////////////////////////////
 void CBrushObject::SetMaterial(IEditorMaterial* mtl)
 {
 	CBaseObject::SetMaterial(mtl);
@@ -1025,7 +1003,6 @@ void CBrushObject::SetMaterial(IEditorMaterial* mtl)
 		UpdateEngineNode();
 }
 
-//////////////////////////////////////////////////////////////////////////
 IEditorMaterial* CBrushObject::GetRenderMaterial() const
 {
 	if (GetMaterial())
@@ -1035,14 +1012,12 @@ IEditorMaterial* CBrushObject::GetRenderMaterial() const
 	return NULL;
 }
 
-//////////////////////////////////////////////////////////////////////////
 void CBrushObject::SetMaterialLayersMask(uint32 nLayersMask)
 {
 	CBaseObject::SetMaterialLayersMask(nLayersMask);
 	UpdateEngineNode(false);
 }
 
-//////////////////////////////////////////////////////////////////////////
 void CBrushObject::Validate()
 {
 	CBaseObject::Validate();
@@ -1066,7 +1041,6 @@ string CBrushObject::GetAssetPath() const
 	return mv_geometryFile;
 }
 
-//////////////////////////////////////////////////////////////////////////
 void CBrushObject::GatherUsedResources(CUsedResources& resources)
 {
 	string geomFile = mv_geometryFile;
@@ -1080,7 +1054,6 @@ void CBrushObject::GatherUsedResources(CUsedResources& resources)
 	}
 }
 
-//////////////////////////////////////////////////////////////////////////
 bool CBrushObject::IsSimilarObject(CBaseObject* pObject)
 {
 	if (pObject->GetClassDesc() == GetClassDesc() && GetRuntimeClass() == pObject->GetRuntimeClass())
@@ -1092,7 +1065,6 @@ bool CBrushObject::IsSimilarObject(CBaseObject* pObject)
 	return false;
 }
 
-//////////////////////////////////////////////////////////////////////////
 bool CBrushObject::StartSubObjSelection(int elemType)
 {
 	bool bStarted = false;
@@ -1127,7 +1099,6 @@ bool CBrushObject::StartSubObjSelection(int elemType)
 	return bStarted;
 }
 
-//////////////////////////////////////////////////////////////////////////
 void CBrushObject::EndSubObjectSelection()
 {
 	ClearFlags(OBJFLAG_SUBOBJ_EDITING);
@@ -1141,7 +1112,6 @@ void CBrushObject::EndSubObjectSelection()
 	}
 }
 
-//////////////////////////////////////////////////////////////////////////
 void CBrushObject::CalculateSubObjectSelectionReferenceFrame(SubObjectSelectionReferenceFrameCalculator* pCalculator)
 {
 	if (m_pGeometry)
@@ -1153,7 +1123,6 @@ void CBrushObject::CalculateSubObjectSelectionReferenceFrame(SubObjectSelectionR
 	}
 }
 
-//////////////////////////////////////////////////////////////////////////
 CEdGeometry* CBrushObject::GetGeometry()
 {
 	// Return our geometry.
@@ -1167,7 +1136,6 @@ void CBrushObject::SetGeometryFile(const string& geometryFile)
 	mv_geometryFile = geometryFile;
 }
 
-//////////////////////////////////////////////////////////////////////////
 void CBrushObject::SaveToCGF()
 {
 	string filename;
@@ -1188,7 +1156,6 @@ void CBrushObject::SaveToCGF()
 	}
 }
 
-//////////////////////////////////////////////////////////////////////////
 void CBrushObject::GetVerticesInWorld(std::vector<Vec3>& vertices) const
 {
 	vertices.clear();
@@ -1221,7 +1188,6 @@ void CBrushObject::GetVerticesInWorld(std::vector<Vec3>& vertices) const
 	}
 }
 
-//////////////////////////////////////////////////////////////////////////
 void CBrushObject::InvalidateGeometryFile(const string& gamePath)
 {
 	if ((const string&)mv_geometryFile == gamePath)
@@ -1244,7 +1210,6 @@ void CBrushObject::InvalidateGeometryFile(const string& gamePath)
 	}
 }
 
-//////////////////////////////////////////////////////////////////////////
 string CBrushObject::GetMouseOverStatisticsText() const
 {
 	string triangleCountText;

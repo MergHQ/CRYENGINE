@@ -920,4 +920,3 @@ REGISTER_PYTHON_COMMAND_WITH_EXAMPLE(DesignerUVMappingCommand::PyScaleMode, uvma
 REGISTER_PYTHON_COMMAND_WITH_EXAMPLE(DesignerUVMappingCommand::PySelectAll, uvmapping, select_all, "Select all", "uvmapping.select_all")
 REGISTER_PYTHON_COMMAND_WITH_EXAMPLE(DesignerUVMappingCommand::PyRefresh, uvmapping, refresh, "Refresh islands to remove unused and sync", "uvmapping.refresh")
 REGISTER_PYTHON_COMMAND_WITH_EXAMPLE(DesignerUVMappingCommand::PyGoto, uvmapping, goto, "Moves the camera to the selected island", "uvmapping.goto")
-

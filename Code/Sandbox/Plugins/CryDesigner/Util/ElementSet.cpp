@@ -245,7 +245,7 @@ void ElementSet::Display(CBaseObject* pObject, SDisplayContext& dc) const
 		if (m_Elements[i].IsVertex())
 		{
 			BrushVec3 worldVertexPos = pObject->GetWorldTM().TransformPoint(m_Elements[i].m_Vertices[0]);
-			BrushVec3 vBoxSize = GetElementBoxSize(dc.view, dc.flags & DISPLAY_2D, worldVertexPos);
+			BrushVec3 vBoxSize = GetElementBoxSize(dc.view, dc.display2D, worldVertexPos);
 			dc.DrawSolidBox(ToVec3(worldVertexPos - vBoxSize), ToVec3(worldVertexPos + vBoxSize));
 		}
 	}
@@ -777,4 +777,3 @@ _smart_ptr<Model> ElementSet::CreateModel()
 	return pModel;
 }
 }
-

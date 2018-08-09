@@ -2888,4 +2888,3 @@ EDITOR_COMMON_API QGraphicsProxyWidget* AddWidget(QGraphicsScene* pScene, QWidge
 }
 
 }
-

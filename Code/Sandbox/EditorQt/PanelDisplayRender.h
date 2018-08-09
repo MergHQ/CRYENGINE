@@ -2,46 +2,36 @@
 
 #pragma once
 
-#pragma once
-
-#include <QWidget>
-#include "QtViewPane.h"
-#include "QScrollableBox.h"
-#include "QtViewPane.h"
-#include "Viewport.h"
+#include <QScrollableBox.h>
+#include <QtViewPane.h>
 
 struct ICVar;
 class CViewport;
 
 class CPanelDisplayRender : public CDockableWidgetT<QScrollableBox>, public IAutoEditorNotifyListener
 {
-	Q_OBJECT;
-	Q_INTERFACES(IPane);
+	Q_OBJECT
+	Q_INTERFACES(IPane)
+
 public:
 	CPanelDisplayRender(QWidget* parent = nullptr, CViewport* viewport = nullptr);
 	~CPanelDisplayRender();
 
 	void        Serialize(Serialization::IArchive& ar);
 	QSize       sizeHint() const override;
+	const char* GetPaneTitle() const { return "Display Settings"; }
 
-	const char* GetPaneTitle() const
-	{
-		return "Display Settings";
-	}
-
-	void OnCVarChangedCallback();
+	void        OnCVarChangedCallback();
 
 protected:
 	void SetupCallbacks();
 	void RemoveCallbacks();
 
 	//////////////////////////////////////////////////////////////////////////
-	// CEditorNotifyListener
+	// IAutoEditorNotifyListener
 	virtual void OnEditorNotifyEvent(EEditorNotifyEvent event);
 	//////////////////////////////////////////////////////////////////////////
 
-	void OnChangeRenderFlag();
-	void OnChangeDebugFlag();
 	void OnDisplayAll();
 	void OnDisplayNone();
 	void OnDisplayInvert();

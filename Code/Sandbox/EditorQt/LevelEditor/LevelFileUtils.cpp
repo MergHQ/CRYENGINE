@@ -16,20 +16,6 @@ namespace LevelFileUtils
 {
 namespace
 {
-const QString kLevelFolders[] =
-{
-	"Layers",
-	"Minimap",
-	"LevelData"
-};
-
-const QString kLevelFiles[] =
-{
-	"level.pak",
-	"terraintexture.pak",
-	"filelist.xml",
-	"levelshadercache.pak"
-};
 
 const QString kLevelExtension(CLevelType::GetFileExtensionStatic());
 const QString kLevelExtensions[] =
@@ -240,4 +226,3 @@ bool IsAnySubFolderLevel(const AbsolutePath& path)
 }
 
 } // namespace LevelFileUtils
-

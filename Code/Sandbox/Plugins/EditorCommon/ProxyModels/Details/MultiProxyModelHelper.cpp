@@ -158,4 +158,3 @@ void CAbstractMultiProxyModelHelper::Disconnect(const CAbstractMultiProxyModelHe
 		QObject::disconnect(connection);
 	}
 }
-

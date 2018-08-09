@@ -365,4 +365,3 @@ void PrimitiveShape::CreateCircle(const BrushVec3& mins, const BrushVec3& maxs, 
 	}
 }
 }
-

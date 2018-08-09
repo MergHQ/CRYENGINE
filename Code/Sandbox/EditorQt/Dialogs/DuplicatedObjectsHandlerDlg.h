@@ -38,4 +38,3 @@ protected:
 	afx_msg void OnBnClickedOverrideBtn();
 	afx_msg void OnBnClickedCreateCopiesBtn();
 };
-

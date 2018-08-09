@@ -18,13 +18,13 @@ namespace UQS
 			}
 		}
 
-		bool CBlueprintWithInputs::InstantiateFunctionCallHierarchy(CFunctionCallHierarchy& out, const SQueryBlackboard& blackboard, Shared::CUqsString& error) const
+		bool CBlueprintWithInputs::InstantiateFunctionCallHierarchy(CFunctionCallHierarchy& out, const SQueryContext& queryContext, Shared::CUqsString& error) const
 		{
 			for (size_t i = 0; i < m_resolvedInputs.size(); ++i)
 			{
 				const CFunctionBlueprint* pFuncBP = m_resolvedInputs[i];
 				CRY_ASSERT(pFuncBP);
-				if (!out.AddAndInstantiateFunctionBlueprint(*pFuncBP, blackboard, error))
+				if (!out.AddAndInstantiateFunctionBlueprint(*pFuncBP, queryContext, error))
 				{
 					return false;
 				}

@@ -55,4 +55,3 @@ void CGraphicsSceneIcon::mouseReleaseEvent(QGraphicsSceneMouseEvent* pEvent)
 }
 
 }
-

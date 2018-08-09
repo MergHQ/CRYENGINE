@@ -79,5 +79,3 @@ void QStringDialog::accept()
 
 	CEditorDialog::accept();
 }
-
-

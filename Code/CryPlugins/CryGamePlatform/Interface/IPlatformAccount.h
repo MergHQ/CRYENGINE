@@ -21,10 +21,12 @@ namespace Cry
 			virtual AccountIdentifier GetIdentifier() const = 0;
 			//! Gets the unique identifier of the service (shorthand for GetIdentifier().Service())
 			virtual ServiceIdentifier GetServiceIdentifier() const = 0;
-			//! Sets the user's rich status
+			//! Sets a simple string as the user's presence
 			virtual void SetStatus(const char* szStatus) = 0;
-			//! Gets the user's rich status
-			virtual const char* GetStatus() const = 0;
+			//! Sets the user's rich presence
+			virtual void SetPresence(const SRichPresence& presence) = 0;
+			//! Gets the user's rich presence
+			virtual void GetPresence(SRichPresence& presence) const = 0;
 			//! Gets the user's avatar of the requested size as a texture
 			virtual ITexture* GetAvatar(EAvatarSize size) const = 0;
 			//! Gets other services' accounts that were linked to this account

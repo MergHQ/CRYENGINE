@@ -44,5 +44,3 @@ inline int clamp(int value, int min, int max)
 {
 	return ::min(::max(min, value), max);
 }
-
-

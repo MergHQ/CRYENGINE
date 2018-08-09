@@ -373,4 +373,3 @@ void OffsetTool::RegisterScaledPolygons()
 
 REGISTER_DESIGNER_TOOL_WITH_PROPERTYTREE_PANEL_AND_COMMAND(eDesigner_Offset, eToolGroup_Edit, "Offset", OffsetTool,
                                                            offset, "runs offset tool", "designer.offset")
-

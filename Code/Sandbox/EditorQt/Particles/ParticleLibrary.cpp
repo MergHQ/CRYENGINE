@@ -81,4 +81,3 @@ void CParticleLibrary::Serialize(XmlNodeRef& root, bool bLoading)
 		}
 	}
 }
-

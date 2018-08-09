@@ -681,4 +681,3 @@ void QMenuComboBox::RecalculateSizeHint()
 	m_sizeHint.setHeight(m_lineEdit->sizeHint().height());
 	updateGeometry();
 }
-

@@ -159,4 +159,3 @@ void WriteAutoGenProxies(const string& fname, const SProxyTree* pProxyTree)
 		pStatObj->SaveToCGF(fname.c_str());
 	}
 }
-

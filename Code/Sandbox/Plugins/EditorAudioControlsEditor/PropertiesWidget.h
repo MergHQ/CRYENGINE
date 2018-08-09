@@ -48,4 +48,3 @@ private:
 	bool                      m_suppressUpdates;
 };
 } // namespace ACE
-

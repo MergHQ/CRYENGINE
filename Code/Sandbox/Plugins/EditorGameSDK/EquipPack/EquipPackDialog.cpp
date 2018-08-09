@@ -929,4 +929,3 @@ void CEquipPackDialog::OnBnClickedOk()
 	m_pEquipPacks->SaveLibs(true);
 	OnOK();
 }
-

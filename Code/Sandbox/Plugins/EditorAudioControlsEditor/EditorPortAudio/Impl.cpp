@@ -7,6 +7,7 @@
 #include "EventConnection.h"
 #include "ProjectLoader.h"
 #include "DataPanel.h"
+#include "Utils.h"
 
 #include <CryAudioImplPortAudio/GlobalData.h>
 #include <CrySystem/ISystem.h>
@@ -19,40 +20,13 @@ namespace Impl
 namespace PortAudio
 {
 //////////////////////////////////////////////////////////////////////////
-string GetPath(CItem const* const pItem)
-{
-	string path;
-	IItem const* pParent = pItem->GetParent();
-
-	while (pParent != nullptr)
-	{
-		string const parentName = pParent->GetName();
-
-		if (!parentName.empty())
-		{
-			if (path.empty())
-			{
-				path = parentName;
-			}
-			else
-			{
-				path = parentName + "/" + path;
-			}
-		}
-
-		pParent = pParent->GetParent();
-	}
-
-	return path;
-}
-
-//////////////////////////////////////////////////////////////////////////
 CImpl::CImpl()
 	: m_pDataPanel(nullptr)
 	, m_assetAndProjectPath(AUDIO_SYSTEM_DATA_ROOT "/" +
 	                        string(CryAudio::Impl::PortAudio::s_szImplFolderName) +
 	                        "/" +
 	                        string(CryAudio::s_szAssetsFolderName))
+	, m_localizedAssetsPath(m_assetAndProjectPath)
 {
 	gEnv->pAudioSystem->GetImplInfo(m_implInfo);
 	m_implName = m_implInfo.name.c_str();
@@ -84,13 +58,12 @@ void CImpl::DestroyDataPanel()
 }
 
 //////////////////////////////////////////////////////////////////////////
-void CImpl::Reload(bool const preserveConnectionStatus)
+void CImpl::Reload(bool const preserveConnectionStatus /*= true*/)
 {
 	Clear();
+	SetLocalizedAssetsPath();
 
-	CProjectLoader(m_assetAndProjectPath, m_rootItem);
-
-	CreateItemCache(&m_rootItem);
+	CProjectLoader(m_assetAndProjectPath, m_localizedAssetsPath, m_rootItem, m_itemCache, *this);
 
 	if (preserveConnectionStatus)
 	{
@@ -110,6 +83,11 @@ void CImpl::Reload(bool const preserveConnectionStatus)
 	else
 	{
 		m_connectionsByID.clear();
+	}
+
+	if (m_pDataPanel != nullptr)
+	{
+		m_pDataPanel->Reset();
 	}
 }
 
@@ -244,22 +222,16 @@ ConnectionPtr CImpl::CreateConnectionFromXMLNode(XmlNodeRef pNode, EAssetType co
 				path = pNode->getAttr("portaudio_path");
 			}
 #endif      // USE_BACKWARDS_COMPATIBILITY
-			ControlId id;
-
-			if (path.empty())
-			{
-				id = GetId(name);
-			}
-			else
-			{
-				id = GetId(path + "/" + name);
-			}
+			string const localizedAttribute = pNode->getAttr(CryAudio::Impl::PortAudio::s_szLocalizedAttribute);
+			bool const isLocalized = (localizedAttribute.compareNoCase(CryAudio::Impl::PortAudio::s_szTrueValue) == 0);
+			ControlId const id = Utils::GetId(EItemType::Event, name, path, isLocalized);
 
 			auto pItem = static_cast<CItem*>(GetItem(id));
 
 			if (pItem == nullptr)
 			{
-				pItem = new CItem(name, id, EItemType::Event, EItemFlags::IsPlaceHolder);
+				EItemFlags const flags = (isLocalized ? (EItemFlags::IsPlaceHolder | EItemFlags::IsLocalized) : EItemFlags::IsPlaceHolder);
+				pItem = new CItem(name, id, EItemType::Event, path, flags);
 				m_itemCache[id] = pItem;
 			}
 
@@ -273,16 +245,16 @@ ConnectionPtr CImpl::CreateConnectionFromXMLNode(XmlNodeRef pNode, EAssetType co
 					actionType = pNode->getAttr("event_type");
 				}
 #endif        // USE_BACKWARDS_COMPATIBILITY
-				pConnection->m_actionType = actionType.compareNoCase(CryAudio::Impl::PortAudio::s_szStopValue) == 0 ? CEventConnection::EActionType::Stop : CEventConnection::EActionType::Start;
+				pConnection->SetActionType(actionType.compareNoCase(CryAudio::Impl::PortAudio::s_szStopValue) == 0 ? CEventConnection::EActionType::Stop : CEventConnection::EActionType::Start);
 
 				int loopCount = 0;
 				pNode->getAttr(CryAudio::Impl::PortAudio::s_szLoopCountAttribute, loopCount);
 				loopCount = std::max(0, loopCount);
-				pConnection->m_loopCount = static_cast<uint32>(loopCount);
+				pConnection->SetLoopCount(static_cast<uint32>(loopCount));
 
-				if (pConnection->m_loopCount == 0)
+				if (pConnection->GetLoopCount() == 0)
 				{
-					pConnection->m_isInfiniteLoop = true;
+					pConnection->SetInfiniteLoop(true);
 				}
 
 				pConnectionPtr = pConnection;
@@ -298,33 +270,36 @@ XmlNodeRef CImpl::CreateXMLNodeFromConnection(ConnectionPtr const pConnection, E
 {
 	XmlNodeRef pNode = nullptr;
 
-	std::shared_ptr<CEventConnection const> const pImplConnection = std::static_pointer_cast<CEventConnection const>(pConnection);
+	std::shared_ptr<CEventConnection const> const pEventConnection = std::static_pointer_cast<CEventConnection const>(pConnection);
 	auto const pItem = static_cast<CItem const* const>(GetItem(pConnection->GetID()));
 
-	if ((pItem != nullptr) && (pImplConnection != nullptr) && (assetType == EAssetType::Trigger))
+	if ((pItem != nullptr) && (pEventConnection != nullptr) && (assetType == EAssetType::Trigger))
 	{
 		pNode = GetISystem()->CreateXmlNode(CryAudio::s_szEventTag);
 		pNode->setAttr(CryAudio::s_szNameAttribute, pItem->GetName());
+		pNode->setAttr(CryAudio::Impl::PortAudio::s_szPathAttribute, pItem->GetPath());
 
-		string const path = GetPath(pItem);
-		pNode->setAttr(CryAudio::Impl::PortAudio::s_szPathAttribute, path);
-
-		if (pImplConnection->m_actionType == CEventConnection::EActionType::Start)
+		if (pEventConnection->GetActionType() == CEventConnection::EActionType::Start)
 		{
 			pNode->setAttr(CryAudio::s_szTypeAttribute, CryAudio::Impl::PortAudio::s_szStartValue);
 
-			if (pImplConnection->m_isInfiniteLoop)
+			if (pEventConnection->IsInfiniteLoop())
 			{
 				pNode->setAttr(CryAudio::Impl::PortAudio::s_szLoopCountAttribute, 0);
 			}
 			else
 			{
-				pNode->setAttr(CryAudio::Impl::PortAudio::s_szLoopCountAttribute, pImplConnection->m_loopCount);
+				pNode->setAttr(CryAudio::Impl::PortAudio::s_szLoopCountAttribute, pEventConnection->GetLoopCount());
 			}
 		}
 		else
 		{
 			pNode->setAttr(CryAudio::s_szTypeAttribute, CryAudio::Impl::PortAudio::s_szStopValue);
+		}
+
+		if ((pItem->GetFlags() & EItemFlags::IsLocalized) != 0)
+		{
+			pNode->setAttr(CryAudio::Impl::PortAudio::s_szLocalizedAttribute, CryAudio::Impl::PortAudio::s_szTrueValue);
 		}
 	}
 
@@ -431,29 +406,25 @@ void CImpl::Clear()
 }
 
 //////////////////////////////////////////////////////////////////////////
-void CImpl::CreateItemCache(CItem const* const pParent)
+void CImpl::SetLocalizedAssetsPath()
 {
-	if (pParent != nullptr)
+	if (ICVar const* const pCVar = gEnv->pConsole->GetCVar("g_languageAudio"))
 	{
-		size_t const numChildren = pParent->GetNumChildren();
+		char const* const szLanguage = pCVar->GetString();
 
-		for (size_t i = 0; i < numChildren; ++i)
+		if (szLanguage != nullptr)
 		{
-			auto const pChild = static_cast<CItem* const>(pParent->GetChildAt(i));
-
-			if (pChild != nullptr)
-			{
-				m_itemCache[pChild->GetId()] = pChild;
-				CreateItemCache(pChild);
-			}
+			m_localizedAssetsPath = PathUtil::GetLocalizationFolder().c_str();
+			m_localizedAssetsPath += "/";
+			m_localizedAssetsPath += szLanguage;
+			m_localizedAssetsPath += "/";
+			m_localizedAssetsPath += AUDIO_SYSTEM_DATA_ROOT;
+			m_localizedAssetsPath += "/";
+			m_localizedAssetsPath += CryAudio::Impl::PortAudio::s_szImplFolderName;
+			m_localizedAssetsPath += "/";
+			m_localizedAssetsPath += CryAudio::s_szAssetsFolderName;
 		}
 	}
-}
-
-//////////////////////////////////////////////////////////////////////////
-ControlId CImpl::GetId(string const& name) const
-{
-	return CryAudio::StringToId(name);
 }
 } // namespace PortAudio
 } // namespace Impl

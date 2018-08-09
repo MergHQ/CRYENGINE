@@ -110,5 +110,4 @@ inline void UnregisterPlugin()
   {                                                                        \
     UnregisterPlugin();                                                    \
     delete pPlugin;                                                        \
-  }                                                                        \
-
+  }

@@ -24,5 +24,3 @@ void PropertyRowHorizontalLine::redraw(IDrawContext& context)
 
 DECLARE_SEGMENT(PropertyRowHorizontalLine)
 REGISTER_PROPERTY_ROW(HorizontalLine, PropertyRowHorizontalLine);
-
-

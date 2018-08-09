@@ -294,7 +294,7 @@ bool CMainWindow::OnAboutToCloseAsset(string& reason) const
 	if (m_pScriptBrowser && m_pScript && m_pScriptBrowser->HasScriptUnsavedChanges())
 	{
 		CRY_ASSERT(GetAssetBeingEdited());
-		reason = QtUtil::ToString(tr("Asset '%1' has unsaved modifications.").arg(GetAssetBeingEdited()->GetName()));
+		reason = QtUtil::ToString(tr("Asset '%1' has unsaved modifications.").arg(GetAssetBeingEdited()->GetName().c_str()));
 		return false;
 	}
 	return true;
@@ -797,4 +797,3 @@ Schematyc::CScriptBrowserWidget* CMainWindow::CreateScriptBrowserWidget()
 }
 
 } // Schematyc
-

@@ -545,6 +545,7 @@ void CTexture::Create2DTexture(int nWidth, int nHeight, int nMips, int nFlags, c
 	STexDataPtr td = new STexData;
 
 	td->m_eFormat = eSrcFormat;
+	td->m_eTileMode = m_eSrcTileMode;
 	td->m_nWidth = nWidth;
 	td->m_nHeight = nHeight;
 	td->m_nDepth = 1;
@@ -566,6 +567,7 @@ void CTexture::Create3DTexture(int nWidth, int nHeight, int nDepth, int nMips, i
 	STexDataPtr td = new STexData;
 
 	td->m_eFormat = eSrcFormat;
+	td->m_eTileMode = m_eSrcTileMode;
 	td->m_nWidth = nWidth;
 	td->m_nHeight = nHeight;
 	td->m_nDepth = nDepth;
@@ -1144,6 +1146,7 @@ void CTexture::Load(CImageFilePtr&& pImage)
 	td->m_nHeight = pImage->mfGet_height();
 	td->m_nDepth = pImage->mfGet_depth();
 	td->m_eFormat = pImage->mfGetFormat();
+	td->m_eTileMode = pImage->mfGetTileMode();
 	td->m_nMips = pImage->mfGet_numMips();
 	td->m_fAvgBrightness = pImage->mfGet_avgBrightness();
 	td->m_cMinColor = pImage->mfGet_minColor();

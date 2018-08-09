@@ -527,4 +527,3 @@ bool YASLI_SERIALIZE_OVERRIDE(yasli::Archive& ar, TreeSelection& value, const ch
 {
 	return ar(static_cast<std::vector<TreePath>&>(value), name, label);
 }
-

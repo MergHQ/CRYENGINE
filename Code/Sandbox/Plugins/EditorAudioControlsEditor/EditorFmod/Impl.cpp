@@ -201,6 +201,7 @@ CImpl::CImpl()
 	: m_pDataPanel(nullptr)
 	, m_projectPath(AUDIO_SYSTEM_DATA_ROOT "/fmod_project")
 	, m_assetsPath(AUDIO_SYSTEM_DATA_ROOT "/" + string(CryAudio::Impl::Fmod::s_szImplFolderName) + "/" + string(CryAudio::s_szAssetsFolderName))
+	, m_localizedAssetsPath(m_assetsPath)
 	, m_szUserSettingsFile("%USER%/audiocontrolseditor_fmod.user")
 {
 	gEnv->pAudioSystem->GetImplInfo(m_implInfo);
@@ -238,8 +239,9 @@ void CImpl::DestroyDataPanel()
 void CImpl::Reload(bool const preserveConnectionStatus)
 {
 	Clear();
+	SetLocalizedAssetsPath();
 
-	CProjectLoader(m_projectPath, m_assetsPath, m_rootItem, m_itemCache, *this);
+	CProjectLoader(m_projectPath, m_assetsPath, m_localizedAssetsPath, m_rootItem, m_itemCache, *this);
 
 	if (preserveConnectionStatus)
 	{
@@ -802,6 +804,28 @@ void CImpl::Clear()
 	s_programmerSoundEvents.clear();
 	m_itemCache.clear();
 	m_rootItem.Clear();
+}
+
+//////////////////////////////////////////////////////////////////////////
+void CImpl::SetLocalizedAssetsPath()
+{
+	if (ICVar const* const pCVar = gEnv->pConsole->GetCVar("g_languageAudio"))
+	{
+		char const* const szLanguage = pCVar->GetString();
+
+		if (szLanguage != nullptr)
+		{
+			m_localizedAssetsPath = PathUtil::GetLocalizationFolder().c_str();
+			m_localizedAssetsPath += "/";
+			m_localizedAssetsPath += szLanguage;
+			m_localizedAssetsPath += "/";
+			m_localizedAssetsPath += AUDIO_SYSTEM_DATA_ROOT;
+			m_localizedAssetsPath += "/";
+			m_localizedAssetsPath += CryAudio::Impl::Fmod::s_szImplFolderName;
+			m_localizedAssetsPath += "/";
+			m_localizedAssetsPath += CryAudio::s_szAssetsFolderName;
+		}
+	}
 }
 
 //////////////////////////////////////////////////////////////////////////

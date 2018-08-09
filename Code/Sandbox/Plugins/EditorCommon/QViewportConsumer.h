@@ -13,4 +13,3 @@ public:
 	virtual void OnViewportKey(const SKeyEvent& ev)         {}
 	virtual void OnViewportMouse(const SMouseEvent& ev)     {}
 };
-

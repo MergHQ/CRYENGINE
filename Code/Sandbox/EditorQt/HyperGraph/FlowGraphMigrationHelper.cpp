@@ -504,4 +504,3 @@ const std::vector<CFlowGraphMigrationHelper::ReportEntry>& CFlowGraphMigrationHe
 {
 	return m_report;
 }
-

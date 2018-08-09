@@ -2,6 +2,7 @@
 
 #include "stdafx.h"
 #include "AudioObjectManager.h"
+#include "AudioListenerManager.h"
 #include "ATLAudioObject.h"
 #include "AudioCVars.h"
 #include "IAudioImpl.h"
@@ -18,23 +19,25 @@ namespace CryAudio
 //////////////////////////////////////////////////////////////////////////
 CObjectManager::~CObjectManager()
 {
-	if (g_pIImpl != nullptr)
-	{
-		Release();
-	}
+	CRY_ASSERT_MESSAGE(m_constructedObjects.empty(), "There are still objects during CObjectManager destruction!");
+}
 
+//////////////////////////////////////////////////////////////////////////
+void CObjectManager::Initialize(uint32 const poolSize)
+{
+	m_constructedObjects.reserve(static_cast<std::size_t>(poolSize));
+}
+
+//////////////////////////////////////////////////////////////////////////
+void CObjectManager::Terminate()
+{
 	for (auto const pObject : m_constructedObjects)
 	{
+		CRY_ASSERT_MESSAGE(pObject->GetImplDataPtr() == nullptr, "An object cannot have valid impl data during CObjectManager destruction!");
 		delete pObject;
 	}
 
 	m_constructedObjects.clear();
-}
-
-//////////////////////////////////////////////////////////////////////////
-void CObjectManager::Init(uint32 const poolSize)
-{
-	m_constructedObjects.reserve(static_cast<std::size_t>(poolSize));
 }
 
 //////////////////////////////////////////////////////////////////////////
@@ -52,9 +55,9 @@ void CObjectManager::OnAfterImplChanged()
 }
 
 //////////////////////////////////////////////////////////////////////////
-void CObjectManager::Release()
+void CObjectManager::ReleaseImplData()
 {
-	// Don't clear m_constructedObjects here as we need the objects to survive a middleware switch!
+	// Don't delete objects here as we need them to survive a middleware switch!
 	for (auto const pObject : m_constructedObjects)
 	{
 		g_pIImpl->DestructObject(pObject->GetImplDataPtr());
@@ -63,7 +66,7 @@ void CObjectManager::Release()
 }
 
 //////////////////////////////////////////////////////////////////////////
-void CObjectManager::Update(float const deltaTime, CObjectTransformation const& listenerTransformation, Vec3 const& listenerVelocity)
+void CObjectManager::Update(float const deltaTime)
 {
 #if defined(INCLUDE_AUDIO_PRODUCTION_CODE)
 	CPropagationProcessor::s_totalAsyncPhysRays = 0;
@@ -72,6 +75,7 @@ void CObjectManager::Update(float const deltaTime, CObjectTransformation const& 
 
 	if (deltaTime > 0.0f)
 	{
+		Vec3 const& listenerVelocity = g_listenerManager.GetActiveListenerVelocity();
 		bool const listenerMoved = listenerVelocity.GetLengthSquared() > FloatEpsilon;
 		auto iter = m_constructedObjects.begin();
 		auto iterEnd = m_constructedObjects.end();
@@ -81,31 +85,11 @@ void CObjectManager::Update(float const deltaTime, CObjectTransformation const& 
 			CATLAudioObject* const pObject = *iter;
 
 			CObjectTransformation const& transformation = pObject->GetTransformation();
-
-			float const distance = transformation.GetPosition().GetDistance(listenerTransformation.GetPosition());
-			float const radius = pObject->GetMaxRadius();
-
-			if (radius <= 0.0f || distance < radius)
-			{
-				if ((pObject->GetFlags() & EObjectFlags::Virtual) != 0)
-				{
-					pObject->RemoveFlag(EObjectFlags::Virtual);
-				}
-			}
-			else
-			{
-				if ((pObject->GetFlags() & EObjectFlags::Virtual) == 0)
-				{
-					pObject->SetFlag(EObjectFlags::Virtual);
-#if defined(INCLUDE_AUDIO_PRODUCTION_CODE)
-					pObject->ResetObstructionRays();
-#endif      // INCLUDE_AUDIO_PRODUCTION_CODE
-				}
-			}
+			float const distance = transformation.GetPosition().GetDistance(g_listenerManager.GetActiveListenerTransformation().GetPosition());
 
 			if (IsActive(pObject))
 			{
-				pObject->Update(deltaTime, distance, listenerTransformation.GetPosition(), listenerVelocity, listenerMoved);
+				pObject->Update(deltaTime, distance, listenerVelocity, listenerMoved);
 			}
 			else if (pObject->CanBeReleased())
 			{
@@ -228,7 +212,7 @@ bool CObjectManager::HasActiveData(CATLAudioObject const* const pAudioObject) co
 {
 	for (auto const pEvent : pAudioObject->GetActiveEvents())
 	{
-		if (pEvent->IsPlaying())
+		if (pEvent->IsPlaying() || pEvent->IsVirtual())
 		{
 			return true;
 		}
@@ -271,33 +255,19 @@ size_t CObjectManager::GetNumActiveAudioObjects() const
 }
 
 //////////////////////////////////////////////////////////////////////////
-void CObjectManager::DrawPerObjectDebugInfo(
-	IRenderAuxGeom& auxGeom,
-	Vec3 const& listenerPos,
-	AudioTriggerLookup const& triggers,
-	AudioParameterLookup const& parameters,
-	AudioSwitchLookup const& switches,
-	AudioPreloadRequestLookup const& preloadRequests,
-	AudioEnvironmentLookup const& environments) const
+void CObjectManager::DrawPerObjectDebugInfo(IRenderAuxGeom& auxGeom) const
 {
 	for (auto const pObject : m_constructedObjects)
 	{
 		if (IsActive(pObject))
 		{
-			pObject->DrawDebugInfo(
-				auxGeom,
-				listenerPos,
-				triggers,
-				parameters,
-				switches,
-				preloadRequests,
-				environments);
+			pObject->DrawDebugInfo(auxGeom);
 		}
 	}
 }
 
 //////////////////////////////////////////////////////////////////////////
-void CObjectManager::DrawDebugInfo(IRenderAuxGeom& auxGeom, Vec3 const& listenerPosition, float const posX, float posY) const
+void CObjectManager::DrawDebugInfo(IRenderAuxGeom& auxGeom, float const posX, float posY) const
 {
 	size_t numAudioObjects = 0;
 	float const headerPosY = posY;
@@ -309,7 +279,7 @@ void CObjectManager::DrawDebugInfo(IRenderAuxGeom& auxGeom, Vec3 const& listener
 	for (auto const pObject : m_constructedObjects)
 	{
 		Vec3 const& position = pObject->GetTransformation().GetPosition();
-		float const distance = position.GetDistance(listenerPosition);
+		float const distance = position.GetDistance(g_listenerManager.GetActiveListenerTransformation().GetPosition());
 
 		if (g_cvars.m_debugDistance <= 0.0f || (g_cvars.m_debugDistance > 0.0f && distance < g_cvars.m_debugDistance))
 		{
@@ -318,7 +288,7 @@ void CObjectManager::DrawDebugInfo(IRenderAuxGeom& auxGeom, Vec3 const& listener
 			lowerCaseObjectName.MakeLower();
 			bool const hasActiveData = HasActiveData(pObject);
 			bool const stringFound = (lowerCaseSearchString.empty() || (lowerCaseSearchString.compareNoCase("0") == 0)) || (lowerCaseObjectName.find(lowerCaseSearchString) != CryFixedStringT<MaxControlNameLength>::npos);
-			bool const draw = stringFound && ((g_cvars.m_hideInactiveAudioObjects == 0) || ((g_cvars.m_hideInactiveAudioObjects > 0) && hasActiveData));
+			bool const draw = stringFound && ((g_cvars.m_hideInactiveAudioObjects == 0) || ((g_cvars.m_hideInactiveAudioObjects != 0) && hasActiveData));
 
 			if (draw)
 			{

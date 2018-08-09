@@ -145,9 +145,7 @@ void CAudioAreaAmbienceEntity::OnResetState()
 	m_globalRtpcId = CryAudio::StringToId(m_globalRtpcName.c_str());
 	m_environmentId = CryAudio::StringToId(m_environmentName.c_str());
 
-	const auto& stateIds = AudioEntitiesUtils::GetObstructionOcclusionStateIds();
-	audioProxy.SetSwitchState(AudioEntitiesUtils::GetObstructionOcclusionSwitch(), stateIds[IntegralValue(m_occlusionType)]);
-
+	audioProxy.SetObstructionCalcType(m_occlusionType);
 	audioProxy.SetFadeDistance(m_rtpcDistance);
 	audioProxy.SetEnvironmentFadeDistance(m_environmentDistance);
 	audioProxy.SetEnvironmentId(m_environmentId);

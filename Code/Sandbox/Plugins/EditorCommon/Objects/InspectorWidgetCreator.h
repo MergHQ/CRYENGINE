@@ -2,6 +2,7 @@
 
 #pragma once
 
+#include "Objects/ObjectPropertyWidget.h"
 #include <QCollapsibleFrame.h>
 
 class CInspectorWidgetCreator
@@ -150,4 +151,3 @@ private:
 	std::vector<SQueuedWidgetInfo> m_queuedWidgets;
 	QVariantMap     m_personalizationState;
 };
-

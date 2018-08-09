@@ -29,4 +29,3 @@ public:
 private:
 	_smart_ptr<IAnimSequence> m_pSequence;
 };
-

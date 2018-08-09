@@ -357,4 +357,3 @@ void LoopCutTool::FreezeLoops()
 
 REGISTER_DESIGNER_TOOL_WITH_PROPERTYTREE_PANEL_AND_COMMAND(eDesigner_LoopCut, eToolGroup_Modify, "LoopCut", LoopCutTool,
                                                            loopcut, "runs loopcut tool", "designer.loopcut");
-

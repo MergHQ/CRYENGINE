@@ -27,4 +27,3 @@ void SCharacterPhysicsContent::ApplyToCharacter(ICharacterInstance* instance)
 }
 
 }
-

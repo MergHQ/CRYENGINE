@@ -149,4 +149,3 @@ private:
 	std::vector<bool> used_;
 	bool enabled_;
 };
-

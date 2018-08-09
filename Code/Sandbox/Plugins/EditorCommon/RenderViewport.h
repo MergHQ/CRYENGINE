@@ -3,14 +3,13 @@
 #pragma once
 
 #include "EditorCommonAPI.h"
-#include <CryMath/Cry_Camera.h>
-#include "Viewport.h"
-#include "Objects\DisplayContext.h"
+#include "Objects/DisplayContext.h"
 #include "IUndoManager.h"
+#include "Viewport.h"
 #include <EditorFramework/Preferences.h>
 #include <CryExtension/CryGUID.h>
+#include <CryMath/Cry_Camera.h>
 
-// forward declarations.
 class CBaseObject;
 class CPopupMenuItem;
 
@@ -92,9 +91,8 @@ public:
 	virtual void   UpdateContent(int flags);
 
 	void           SetCamera(const CCamera& camera);
-	const CCamera& GetCamera() const { return m_Camera; }
-	virtual void   SetViewTM(const Matrix34& tm)
-	{ SetViewTM(tm, false); }
+	const CCamera& GetCamera() const             { return m_Camera; }
+	virtual void   SetViewTM(const Matrix34& tm) { SetViewTM(tm, false); }
 
 	//! Map world space position to viewport position.
 	virtual POINT WorldToView(const Vec3& wp) const;
@@ -119,22 +117,22 @@ public:
 
 	CCrySignal<void()> signalResolutionChanged;
 
-	virtual bool          IsSequenceCamera() const { return m_pCameraDelegate != nullptr; }
+	virtual bool        IsSequenceCamera() const { return m_pCameraDelegate != nullptr; }
 
-	void                  SetDefaultCamera();
-	bool                  IsDefaultCamera() const;
+	void                SetDefaultCamera();
+	bool                IsDefaultCamera() const;
 
-	void                  SetCameraObject(CBaseObject* cameraObject);
-	void                  SetCameraDelegate(const ICameraDelegate* pDelegate);
+	void                SetCameraObject(CBaseObject* cameraObject);
+	void                SetCameraDelegate(const ICameraDelegate* pDelegate);
 
-	virtual float         GetCameraMoveSpeed() const           { return m_moveSpeed; }
-	virtual float         GetCameraMoveSpeedIncrements() const { return m_moveSpeedIncrements; }
-	virtual void          SetCameraMoveSpeedIncrements(int sp, bool bnotify = false);
-	virtual void          OnCameraSpeedChanged()               {}
+	virtual float       GetCameraMoveSpeed() const           { return m_moveSpeed; }
+	virtual float       GetCameraMoveSpeedIncrements() const { return m_moveSpeedIncrements; }
+	virtual void        SetCameraMoveSpeedIncrements(int sp, bool bnotify = false);
+	virtual void        OnCameraSpeedChanged()               {}
 
-	virtual const char*   GetCameraMenuName() const override;
+	virtual const char* GetCameraMenuName() const override;
 
-	void                LockCameraMovement(bool bLock) { m_bLockCameraMovement = bLock;  }
+	void                LockCameraMovement(bool bLock) { m_bLockCameraMovement = bLock; }
 	bool                IsCameraMovementLocked() const { return m_bLockCameraMovement; }
 
 	SDisplayContextKey  GetDisplayContextKey() const   { return m_displayContextKey; }
@@ -152,7 +150,6 @@ protected:
 	struct SScopedCurrentContext;
 	struct SPreviousContext
 	{
-
 	};
 	// From CViewport
 	virtual bool  MouseCallback(EMouseEvent event, CPoint& point, int flags);
@@ -167,9 +164,6 @@ protected:
 	virtual void OnRender(SDisplayContext& context) = 0;
 
 	virtual void OnEditorNotifyEvent(EEditorNotifyEvent event) override;
-
-	//! Get currently active camera object.
-	void             ToggleCameraObject();
 
 	void             RenderSnapMarker(SDisplayContext& context);
 	void             RenderCursorString();
@@ -284,9 +278,8 @@ protected:
 
 	//TODO: We would like all viewports to render whether or not a level is loaded but this has to be further tested.
 	bool m_bCanDrawWithoutLevelLoaded;
-	bool m_bForceUpdateVisibleObjectCache;
-protected:
 
+protected:
 	virtual void OnResizeInternal(int width, int height);
 	virtual void BeginUndoTransaction() override;
 	virtual void EndUndoTransaction() override;

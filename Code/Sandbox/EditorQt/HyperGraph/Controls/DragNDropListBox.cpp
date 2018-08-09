@@ -291,6 +291,3 @@ void CDragNDropListBox::OnMouseMove(UINT nFlags, CPoint point)
 		}
 	}
 }
-
-
-

@@ -149,4 +149,3 @@ void CClampedSplitterWnd::ResizePanels(const int resizeAmount, CRowColInfo& make
 	makeBigger.nCurSize += resizeAmount;
 	makeBigger.nIdealSize = makeBigger.nCurSize;
 }
-

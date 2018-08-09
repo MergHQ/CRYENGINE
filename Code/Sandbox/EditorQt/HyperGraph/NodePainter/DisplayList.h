@@ -577,4 +577,3 @@ private:
 	mutable bool                  m_bBoundsOk;
 	mutable Gdiplus::RectF        m_bounds;
 };
-

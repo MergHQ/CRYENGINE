@@ -89,4 +89,3 @@ bool CTrackViewGeomCacheAnimationTrack::IsKeyAnimLoopable(const uint index) cons
 }
 
 #endif
-

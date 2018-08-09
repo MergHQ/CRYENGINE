@@ -326,11 +326,11 @@ public:
 
 	int                                FadeGlobalDensity(int nSlot, float fadeTime, float newGlobalDensity);
 
-	virtual void                       SetSubObjHideMask(int nSlot, hidemask nSubObjHideMask) final        { GetEntityRender()->SetSubObjHideMask(nSlot, nSubObjHideMask); };
-	virtual hidemask                   GetSubObjHideMask(int nSlot) const final                            { return GetEntityRender()->GetSubObjHideMask(nSlot); };
+	virtual void                       SetSubObjHideMask(int nSlot, hidemask nSubObjHideMask) final        { GetEntityRender()->SetSubObjHideMask(nSlot, nSubObjHideMask); }
+	virtual hidemask                   GetSubObjHideMask(int nSlot) const final                            { return GetEntityRender()->GetSubObjHideMask(nSlot); }
 
-	virtual void                       SetRenderNodeParams(const IEntity::SRenderNodeParams& params) final { GetEntityRender()->SetRenderNodeParams(params); };
-	virtual IEntity::SRenderNodeParams GetRenderNodeParams() const final                                   { return GetEntityRender()->GetRenderNodeParams(); };
+	virtual void                       SetRenderNodeParams(const IEntity::SRenderNodeParams& params) final { GetEntityRender()->SetRenderNodeParams(params); }
+	virtual IEntity::SRenderNodeParams GetRenderNodeParams() const final                                   { return GetEntityRender()->GetRenderNodeParams(); }
 
 	virtual void                       InvalidateTM(EntityTransformationFlagsMask transformReasons = EntityTransformationFlagsMask(), bool bRecalcPhyBounds = false) final;
 
@@ -396,10 +396,10 @@ public:
 	virtual void                  GetEditorObjectInfo(bool& bSelected, bool& bHighlighted) const final override;
 	virtual void                  SetEditorObjectInfo(bool bSelected, bool bHighlighted) final override;
 
-	virtual Schematyc::IObject*   GetSchematycObject() const final   { return m_pLegacySchematycData != nullptr ? m_pLegacySchematycData->pSchematycObject : nullptr; };
+	virtual Schematyc::IObject*   GetSchematycObject() const final   { return m_pLegacySchematycData != nullptr ? m_pLegacySchematycData->pSchematycObject : nullptr; }
 	virtual void                  OnSchematycObjectDestroyed() final { m_pLegacySchematycData != nullptr ? m_pLegacySchematycData->pSchematycObject = nullptr : nullptr; }
 
-	virtual EEntitySimulationMode GetSimulationMode() const final    { return m_simulationMode; };
+	virtual EEntitySimulationMode GetSimulationMode() const final    { return m_simulationMode; }
 
 	virtual bool IsInitialized() const final { return HasInternalFlag(EInternalFlag::Initialized); }
 	//~IEntity
@@ -409,7 +409,7 @@ public:
 
 	void                     ShutDownComponent(SEntityComponentRecord& componentRecord);
 
-	CEntityComponentsVector<SEntityComponentRecord>& GetComponentsVector() { return m_components; };
+	CEntityComponentsVector<SEntityComponentRecord>& GetComponentsVector() { return m_components; }
 
 	void                     AddSimpleEventListeners(Cry::Entity::EventFlags events, ISimpleEntityEventListener* pListener, IEntityComponent::ComponentEventPriority priority);
 	void                     AddSimpleEventListener(EEntityEvent event, ISimpleEntityEventListener* pListener, IEntityComponent::ComponentEventPriority priority);

@@ -146,35 +146,38 @@ bool CDevMode::OnInputEvent(const SInputEvent& evt)
 	{
 		if ((evt.state == eIS_Pressed) && canCheat)
 		{
-			if ((evt.modifiers & eMM_Shift) != 0 && (evt.modifiers & eMM_Alt) == 0) // Shift ONLY
+			if (evt.modifiers & eMM_Ctrl)
 			{
-				if (handled = (evt.keyId == eKI_F1)) GotoTagPoint(0);
-				if (handled = (evt.keyId == eKI_F2)) GotoTagPoint(1);
-				if (handled = (evt.keyId == eKI_F3)) GotoTagPoint(2);
-				if (handled = (evt.keyId == eKI_F4)) GotoTagPoint(3);
-				if (handled = (evt.keyId == eKI_F5)) GotoTagPoint(4);
-				if (handled = (evt.keyId == eKI_F6)) GotoTagPoint(5);
-				if (handled = (evt.keyId == eKI_F7)) GotoTagPoint(6);
-				if (handled = (evt.keyId == eKI_F8)) GotoTagPoint(7);
-				if (handled = (evt.keyId == eKI_F9)) GotoTagPoint(8);
-				if (handled = (evt.keyId == eKI_F10)) GotoTagPoint(9);
-				if (handled = (evt.keyId == eKI_F11)) GotoTagPoint(10);
-				if (handled = (evt.keyId == eKI_F12)) GotoTagPoint(11);
-			}
-			else if ((evt.modifiers & eMM_Shift) == 0 && ((evt.modifiers & eMM_Alt) != 0 || (evt.modifiers & eMM_Ctrl) != 0)) // Alt or Ctrl and NO Shift
-			{
-				if (handled = (evt.keyId == eKI_F1)) SaveTagPoint(0);
-				if (handled = (evt.keyId == eKI_F2)) SaveTagPoint(1);
-				if (handled = (evt.keyId == eKI_F3)) SaveTagPoint(2);
-				if (handled = (evt.keyId == eKI_F4)) SaveTagPoint(3);
-				if (handled = (evt.keyId == eKI_F5)) SaveTagPoint(4);
-				if (handled = (evt.keyId == eKI_F6)) SaveTagPoint(5);
-				if (handled = (evt.keyId == eKI_F7)) SaveTagPoint(6);
-				if (handled = (evt.keyId == eKI_F8)) SaveTagPoint(7);
-				if (handled = (evt.keyId == eKI_F9)) SaveTagPoint(8);
-				if (handled = (evt.keyId == eKI_F10)) SaveTagPoint(9);
-				if (handled = (evt.keyId == eKI_F11)) SaveTagPoint(10);
-				if (handled = (evt.keyId == eKI_F12)) SaveTagPoint(11);
+				if (evt.modifiers & eMM_Alt)
+				{
+					if (handled = (evt.keyId == eKI_F1)) SaveTagPoint(0);
+					if (handled = (evt.keyId == eKI_F2)) SaveTagPoint(1);
+					if (handled = (evt.keyId == eKI_F3)) SaveTagPoint(2);
+					if (handled = (evt.keyId == eKI_F4)) SaveTagPoint(3);
+					if (handled = (evt.keyId == eKI_F5)) SaveTagPoint(4);
+					if (handled = (evt.keyId == eKI_F6)) SaveTagPoint(5);
+					if (handled = (evt.keyId == eKI_F7)) SaveTagPoint(6);
+					if (handled = (evt.keyId == eKI_F8)) SaveTagPoint(7);
+					if (handled = (evt.keyId == eKI_F9)) SaveTagPoint(8);
+					if (handled = (evt.keyId == eKI_F10)) SaveTagPoint(9);
+					if (handled = (evt.keyId == eKI_F11)) SaveTagPoint(10);
+					if (handled = (evt.keyId == eKI_F12)) SaveTagPoint(11);
+				}
+				else
+				{
+					if (handled = (evt.keyId == eKI_F1)) GotoTagPoint(0);
+					if (handled = (evt.keyId == eKI_F2)) GotoTagPoint(1);
+					if (handled = (evt.keyId == eKI_F3)) GotoTagPoint(2);
+					if (handled = (evt.keyId == eKI_F4)) GotoTagPoint(3);
+					if (handled = (evt.keyId == eKI_F5)) GotoTagPoint(4);
+					if (handled = (evt.keyId == eKI_F6)) GotoTagPoint(5);
+					if (handled = (evt.keyId == eKI_F7)) GotoTagPoint(6);
+					if (handled = (evt.keyId == eKI_F8)) GotoTagPoint(7);
+					if (handled = (evt.keyId == eKI_F9)) GotoTagPoint(8);
+					if (handled = (evt.keyId == eKI_F10)) GotoTagPoint(9);
+					if (handled = (evt.keyId == eKI_F11)) GotoTagPoint(10);
+					if (handled = (evt.keyId == eKI_F12)) GotoTagPoint(11);
+				}
 			}
 		}
 	}

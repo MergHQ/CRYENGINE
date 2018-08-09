@@ -30,4 +30,3 @@ void CCustomCommand::SetCommandString(const char* commandStr)
 {
 	m_command = commandStr;
 }
-

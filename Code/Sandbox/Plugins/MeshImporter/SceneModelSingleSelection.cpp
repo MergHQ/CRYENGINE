@@ -75,4 +75,3 @@ bool CSceneModelSingleSelection::setData(const QModelIndex& modelIndex, const QV
 
 	return false;
 }
-

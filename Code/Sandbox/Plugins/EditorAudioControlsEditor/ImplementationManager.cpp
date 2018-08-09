@@ -108,4 +108,3 @@ void CImplementationManager::Release()
 	}
 }
 } // namespace ACE
-

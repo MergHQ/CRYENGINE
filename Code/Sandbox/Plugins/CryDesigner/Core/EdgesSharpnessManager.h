@@ -56,4 +56,3 @@ private:
 	std::vector<EdgeSharpness> m_EdgeSharpnessList;
 };
 }
-

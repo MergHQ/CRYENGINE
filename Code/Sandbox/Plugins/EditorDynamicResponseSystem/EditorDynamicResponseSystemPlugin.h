@@ -16,4 +16,3 @@ public:
 	virtual const char* GetPluginName() override                             { return "Dynamic Response System Editor"; }
 	virtual const char* GetPluginDescription() override						 { return ""; }
 };
-

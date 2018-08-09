@@ -31,4 +31,3 @@ private:
 	QSearchBox*		   m_pSearchBox;
 	QAdvancedTreeView* m_pTreeView;
 };
-

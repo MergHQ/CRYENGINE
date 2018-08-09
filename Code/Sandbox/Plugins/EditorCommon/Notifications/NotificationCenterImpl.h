@@ -80,4 +80,3 @@ protected:
 	QMutex notificationsLock;
 	std::vector<Internal::CNotification*> m_notifications;
 };
-

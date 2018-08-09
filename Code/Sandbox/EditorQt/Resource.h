@@ -56,7 +56,6 @@
 #define IDD_PANEL_VOLUME                                                                     55
 #define IDD_PANEL_DISPLAY_HIDE                                                               56
 #define IDR_GAMEACCELERATOR                                                                  57
-#define IDD_PANEL_DISPLAY_RENDER                                                             58
 #define IDD_CONSOLE                                                                          59
 #define IDD_SHADERS                                                                          60
 #define IDD_PANEL_BUILDING                                                                   61
@@ -1047,7 +1046,6 @@
 #define IDC_DISPLAY_PROFILE2                                                                 1492
 #define IDC_ANIMATION                                                                        1493
 #define IDC_DISPLAY_BEAMS                                                                    1494
-#define IDC_HIGHLIGHT_BREAKABLE                                                              1495
 #define IDC_EVENT_REMOVE                                                                     1496
 #define IDC_DISPLAY_AIDEBUGDRAWCOVER                                                         1497
 #define IDC_EVENT_SEND                                                                       1498
@@ -3097,4 +3095,3 @@
 		#define _APS_NEXT_SYMED_VALUE    2616
 	#endif
 #endif
-

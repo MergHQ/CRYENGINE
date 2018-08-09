@@ -28,15 +28,16 @@ public:
 		PakStatus,
 		InPak,
 		OnDisk,
+		Localized,
 		Name,
 		Count,
 	};
 
-	explicit CItemModel(CImpl const& impl, CItem const& rootItem, QObject* const pParent);
-
 	CItemModel() = delete;
 
-	QString GetTargetFolderName(QModelIndex const& index) const;
+	explicit CItemModel(CImpl const& impl, CItem const& rootItem, QObject* const pParent);
+
+	QString GetTargetFolderName(QModelIndex const& index, bool& isLocalized) const;
 	void    Reset();
 
 protected:
@@ -67,4 +68,3 @@ private:
 } // namespace PortAudio
 } // namespace Impl
 } // namespace ACE
-

@@ -171,9 +171,7 @@ void CAudioAreaEntity::OnResetState()
 	// Get properties
 	CryAudio::EnvironmentId const environmentId = CryAudio::StringToId(m_environmentName.c_str());
 
-	const auto& stateIds = AudioEntitiesUtils::GetObstructionOcclusionStateIds();
-	m_pProxy->SetSwitchState(AudioEntitiesUtils::GetObstructionOcclusionSwitch(), stateIds[IntegralValue(m_occlusionType)]);
-
+	m_pProxy->SetObstructionCalcType(m_occlusionType);
 	m_pProxy->SetFadeDistance(m_fadeDistance);
 	m_pProxy->SetEnvironmentFadeDistance(m_environmentFadeDistance);
 

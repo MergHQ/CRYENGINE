@@ -220,6 +220,8 @@ public:
 
 	void RegisterInstance(CVegetationInstance* pInst);
 
+	const char* GetDataFilename() const;
+	
 	CCrySignal<void(CVegetationObject*)> signalVegetationObjectChanged;
 	CCrySignal<void(bool)>               signalAllVegetationObjectsChanged; //bool - Reload vegetation objects in VegetationModel
 	CCrySignal<void()>                   signalVegetationObjectsMerged;

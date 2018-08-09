@@ -34,5 +34,3 @@ protected:
 
 	mutable RowWidthCache widthCache_;
 };
-
-

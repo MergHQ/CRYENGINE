@@ -211,4 +211,3 @@ const char* ListSelectionDialog::ChooseItem(const char* currentItem)
 
 	return currentItem;
 }
-

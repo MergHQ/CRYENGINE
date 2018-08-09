@@ -42,4 +42,3 @@ struct IViewportMode : public QViewportConsumer
 };
 
 }
-

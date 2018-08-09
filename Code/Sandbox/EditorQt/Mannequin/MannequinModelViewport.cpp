@@ -47,28 +47,28 @@ CString GetUserOptionsRegKeyName(EMannequinEditorMode editorMode)
 
 //////////////////////////////////////////////////////////////////////////
 CMannequinModelViewport::CMannequinModelViewport(EMannequinEditorMode editorMode)
-	:
-	CModelViewport(GetUserOptionsRegKeyName(editorMode)),
-	m_locMode(LM_Translate),
-	m_selectedLocator(0xffffffff),
-	m_viewmode(eVM_Unknown),
-	m_draggingLocator(false),
-	m_dragStartPoint(0, 0),
-	m_LeftButtonDown(false),
-	m_lookAtCamera(false),
-	m_showSceneRoots(false),
-	m_cameraKeyDown(false),
-	m_playbackMultiplier(1.0f),
-	m_tweenToFocusStart(ZERO),
-	m_tweenToFocusDelta(ZERO),
-	m_tweenToFocusTime(0.0f),
-	m_editorMode(editorMode),
-	m_pActionController(NULL),
-	m_piGroundPlanePhysicalEntity(NULL),
-	m_TickerMode(SEQTICK_INFRAMES),
-	m_attachCameraToEntity(NULL),
-	m_lastEntityPos(ZERO),
-	m_pHoverBaseObject(NULL)
+	: CModelViewport(GetUserOptionsRegKeyName(editorMode))
+	, m_locMode(LM_Translate)
+	, m_selectedLocator(0xffffffff)
+	, m_viewmode(eVM_Unknown)
+	, m_draggingLocator(false)
+	, m_dragStartPoint(0, 0)
+	, m_LeftButtonDown(false)
+	, m_lookAtCamera(false)
+	, m_showSceneRoots(false)
+	, m_cameraKeyDown(false)
+	, m_playbackMultiplier(1.0f)
+	, m_tweenToFocusStart(ZERO)
+	, m_tweenToFocusDelta(ZERO)
+	, m_tweenToFocusTime(0.0f)
+	, m_editorMode(editorMode)
+	, m_pActionController(nullptr)
+	, m_piGroundPlanePhysicalEntity(nullptr)
+	, m_TickerMode(SEQTICK_INFRAMES)
+	, m_attachCameraToEntity(nullptr)
+	, m_lastEntityPos(ZERO)
+	, m_pHoverBaseObject(nullptr)
+	, m_HitContext(this)
 {
 	m_camFOV = gViewportPreferences.defaultFOV;
 	m_PhysicalLocation.SetIdentity();
@@ -107,7 +107,6 @@ CMannequinModelViewport::CMannequinModelViewport(EMannequinEditorMode editorMode
 	m_bCanDrawWithoutLevelLoaded = true;
 }
 
-//////////////////////////////////////////////////////////////////////////
 CMannequinModelViewport::~CMannequinModelViewport()
 {
 	gEnv->pParticleManager->RemoveEventListener(this);
@@ -116,7 +115,6 @@ CMannequinModelViewport::~CMannequinModelViewport()
 	gEnv->pGameFramework->GetMannequinInterface().RemoveMannequinGameListener(this);
 }
 
-//////////////////////////////////////////////////////////////////////////
 int CMannequinModelViewport::OnPostStepLogged(const EventPhys* pEvent)
 {
 	const EventPhysPostStep* pPostStep = static_cast<const EventPhysPostStep*>(pEvent);
@@ -125,7 +123,6 @@ int CMannequinModelViewport::OnPostStepLogged(const EventPhys* pEvent)
 	return 1;
 }
 
-//////////////////////////////////////////////////////////////////////////
 bool CMannequinModelViewport::UseAnimationDrivenMotionForEntity(const IEntity* piEntity)
 {
 	static bool addedClientEvent = false;
@@ -148,7 +145,6 @@ bool CMannequinModelViewport::UseAnimationDrivenMotionForEntity(const IEntity* p
 	return true;
 }
 
-//////////////////////////////////////////////////////////////////////////
 void CMannequinModelViewport::Update()
 {
 	if (IsLevelLoading()) return; // avoid update during level loading time, since QT-MFC-coupling might crash in rare cases
@@ -223,8 +219,7 @@ void CMannequinModelViewport::OnLButtonUp(UINT nFlags, CPoint point)
 		CPoint mousePoint;
 		GetCursorPos(&mousePoint);
 		ScreenToClient(&mousePoint);
-		HitContext hc;
-		hc.view = this;
+		HitContext hc(this);
 		hc.point2d = mousePoint;
 		hc.camera = &m_Camera;
 		Vec3 raySrc(0, 0, 0), rayDir(1, 0, 0);
@@ -309,8 +304,7 @@ void CMannequinModelViewport::OnMouseMove(UINT nFlags, CPoint point)
 			CPoint mousePoint;
 			GetCursorPos(&mousePoint);
 			ScreenToClient(&mousePoint);
-			HitContext hc;
-			hc.view = this;
+			HitContext hc(this);
 			hc.point2d = mousePoint;
 			hc.camera = &m_Camera;
 			Vec3 raySrc(0, 0, 0), rayDir(1, 0, 0);
@@ -517,11 +511,11 @@ void CMannequinModelViewport::OnRender(SDisplayContext& context)
 			float adjustedWidth = crossHairLen / (float)screenWidth;
 
 			pAuxGeom->DrawLine(
-			  Vec3(0.5f - adjustedWidth, 0.5f, 0.0f), crosshairColour,
-			  Vec3(0.5f + adjustedWidth, 0.5f, 0.0f), crosshairColour);
+				Vec3(0.5f - adjustedWidth, 0.5f, 0.0f), crosshairColour,
+				Vec3(0.5f + adjustedWidth, 0.5f, 0.0f), crosshairColour);
 			pAuxGeom->DrawLine(
-			  Vec3(0.5f, 0.5f - adjustedHeight, 0.0f), crosshairColour,
-			  Vec3(0.5f, 0.5f + adjustedHeight, 0.0f), crosshairColour);
+				Vec3(0.5f, 0.5f - adjustedHeight, 0.0f), crosshairColour,
+				Vec3(0.5f, 0.5f + adjustedHeight, 0.0f), crosshairColour);
 		}
 
 		if (showSafeZone)
@@ -535,11 +529,11 @@ void CMannequinModelViewport::OnRender(SDisplayContext& context)
 				float innerX = edgePercent;
 				float upperX = 1.0f - edgePercent;
 				pAuxGeom->DrawLine(
-				  Vec3(innerX, 0.0f, 0.0f), crosshairColour,
-				  Vec3(innerX, 1.0f, 0.0f), crosshairColour);
+					Vec3(innerX, 0.0f, 0.0f), crosshairColour,
+					Vec3(innerX, 1.0f, 0.0f), crosshairColour);
 				pAuxGeom->DrawLine(
-				  Vec3(upperX, 0.0f, 0.0f), crosshairColour,
-				  Vec3(upperX, 1.0f, 0.0f), crosshairColour);
+					Vec3(upperX, 0.0f, 0.0f), crosshairColour,
+					Vec3(upperX, 1.0f, 0.0f), crosshairColour);
 
 				renderFlags.SetAlphaBlendMode(e_AlphaBlended);
 				pAuxGeom->SetRenderFlags(renderFlags);
@@ -822,7 +816,6 @@ Matrix34 CMannequinModelViewport::GetLocatorReferenceMatrix(const SLocator& loca
 				IStatObj* pStatObj = pEntity->GetStatObj(0);
 
 				return pEntity->GetWorldTM() * pStatObj->GetHelperTM(locator.m_helperName);
-				;
 			}
 		}
 
@@ -1020,7 +1013,6 @@ void CMannequinModelViewport::SetFirstperson(IAttachmentManager* pAttachmentMana
 	}
 }
 
-//////////////////////////////////////////////////////////////////////////
 void CMannequinModelViewport::DrawEntityAndChildren(CEntityObject* pEntityObject, const SRendParams& rp, const SRenderingPassInfo& passInfo)
 {
 	IEntity* pEntity = pEntityObject->GetIEntity();
@@ -1116,7 +1108,7 @@ void CMannequinModelViewport::DrawCharacter(ICharacterInstance* pInstance, const
 
 	if (m_particleEmitters.empty() == false)
 	{
-		for (std::vector<IParticleEmitter*>::iterator itEmitters = m_particleEmitters.begin(); itEmitters != m_particleEmitters.end(); )
+		for (std::vector<IParticleEmitter*>::iterator itEmitters = m_particleEmitters.begin(); itEmitters != m_particleEmitters.end();)
 		{
 			IParticleEmitter* pEmitter = *itEmitters;
 			if (pEmitter->IsAlive())
@@ -1131,7 +1123,6 @@ void CMannequinModelViewport::DrawCharacter(ICharacterInstance* pInstance, const
 			}
 		}
 	}
-
 }
 
 uint32 g_ypos;
@@ -1375,7 +1366,6 @@ void CMannequinModelViewport::UpdateDebugParams()
 	}
 }
 
-//////////////////////////////////////////////////////////////////////////
 BOOL CMannequinModelViewport::PreTranslateMessage(MSG* pMsg)
 {
 	if (pMsg->message == WM_KEYDOWN)
@@ -1398,4 +1388,3 @@ BOOL CMannequinModelViewport::PreTranslateMessage(MSG* pMsg)
 
 	return TRUE;
 }
-

@@ -270,4 +270,3 @@ void CStateItem::LoadFromScriptElement()
 }
 
 }
-

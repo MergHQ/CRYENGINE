@@ -512,4 +512,3 @@ afx_msg void CMannContextEditorDialog::OnImportBackground()
 		}
 	}
 }
-

@@ -17,4 +17,3 @@ QString GetLinkTargetPath(const QString& linkPath);
 } // namespace Win32
 } // namespace Internal
 } // namespace FileSystem
-

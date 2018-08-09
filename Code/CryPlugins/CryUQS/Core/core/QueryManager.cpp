@@ -190,12 +190,12 @@ namespace UQS
 			}
 
 			// create a new query instance through the query-blueprint
-			const CQueryBase::SCtorContext queryCtorContext(id, szQuerierName, pOptionalHistoryEntry, pPotentialResultingItemsFromPreviousQuery);
+			const CQueryBase::SCtorContext queryCtorContext(id, pQueryBlueprint, szQuerierName, pOptionalHistoryEntry, pPotentialResultingItemsFromPreviousQuery);
 			std::unique_ptr<CQueryBase> q = pQueryBlueprint->CreateQuery(queryCtorContext);
 
 			// instantiate that query (cannot be done in the query's ctor as it needs to return success/failure)
 			Shared::CUqsString error;
-			if (!q->InstantiateFromQueryBlueprint(pQueryBlueprint, runtimeParams, error))
+			if (!q->InstantiateFromQueryBlueprint(runtimeParams, error))
 			{
 				SFinishedQueryInfo finishedQueryInfo(
 					std::move(q),		// unique_ptr -> shared_ptr conversion

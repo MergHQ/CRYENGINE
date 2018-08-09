@@ -131,4 +131,3 @@ protected:
 protected:
 	CCVarBrowser* m_pCVarBrowser;
 };
-

@@ -1146,4 +1146,3 @@ void CPropertyCtrlEx::OnEditorNotifyEvent(EEditorNotifyEvent event)
 		break;
 	}
 }
-

@@ -110,4 +110,3 @@ CLevelType::SCreateParams CNewLevelDialog::GetResult() const
 
 	return params;
 }
-

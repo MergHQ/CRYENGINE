@@ -14,7 +14,7 @@
 
 #define GAMETOCKENS_LIBS_PATH "Libs/GameTokens/"
 
-namespace
+namespace Private_GameTokenManager
 {
 const char* kGameTokensFile = "GameTokens.xml";
 const char* kGameTokensRoot = "GameTokens";
@@ -118,9 +118,15 @@ void CGameTokenManager::OnEditorNotifyEvent(EEditorNotifyEvent event)
 	}
 }
 
+const char* CGameTokenManager::GetDataFilename() const
+{
+	return Private_GameTokenManager::kGameTokensFile;
+}
+
 //////////////////////////////////////////////////////////////////////////
 void CGameTokenManager::Save(bool bBackup)
 {
+	using namespace Private_GameTokenManager;
 	LOADING_TIME_PROFILE_SECTION;
 	CTempFileHelper helper(GetIEditorImpl()->GetLevelDataFolder() + kGameTokensFile);
 
@@ -134,6 +140,7 @@ void CGameTokenManager::Save(bool bBackup)
 //////////////////////////////////////////////////////////////////////////
 bool CGameTokenManager::Load()
 {
+	using namespace Private_GameTokenManager;
 	string filename = GetIEditorImpl()->GetLevelDataFolder() + kGameTokensFile;
 	XmlNodeRef root = XmlHelpers::LoadXmlFromFile(filename);
 	if (root && !stricmp(root->getTag(), kGameTokensRoot))
@@ -143,4 +150,3 @@ bool CGameTokenManager::Load()
 	}
 	return false;
 }
-

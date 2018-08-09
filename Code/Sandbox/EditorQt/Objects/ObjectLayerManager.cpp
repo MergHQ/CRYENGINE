@@ -982,7 +982,7 @@ void CObjectLayerManager::ResolveLayerParents(bool bNotifyAtomic /*= false*/, bo
 			// Deatch from old parent layer.
 			pLayer->GetParent()->RemoveChild(pLayer, bNotifyAtomic);
 		}
-		if (pNewParent)
+		if (pNewParent && pNewParent != pLayer)
 		{
 			// Attach to new parent layer.
 			pNewParent->AddChild(pLayer, bNotifyAtomic);

@@ -41,4 +41,3 @@ void CItemCollection::AddCustomItem(CAbstractNodeGraphViewModelItem& customItem)
 }
 
 }
-

@@ -793,4 +793,3 @@ void CFileChangeMonitor::NotifyListeners()
 		}
 	}
 }
-

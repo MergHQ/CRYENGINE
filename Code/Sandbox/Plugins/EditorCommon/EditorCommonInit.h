@@ -19,4 +19,3 @@ void EDITOR_COMMON_API                        SetIEditor(IEditor* editor);
 void EDITOR_COMMON_API                        Initialize();
 void EDITOR_COMMON_API                        Deinitialize();
 }
-

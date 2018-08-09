@@ -129,4 +129,3 @@ bool CXmlArchive::LoadFromFile(const string& filepath)
 
 	return pNamedData->Load(PathUtil::GetPathWithoutFilename(filepath));
 }
-

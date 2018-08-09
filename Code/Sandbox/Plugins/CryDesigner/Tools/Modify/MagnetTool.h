@@ -63,4 +63,3 @@ protected:
 	bool                      m_bApplyUndoForMagnet;
 };
 }
-

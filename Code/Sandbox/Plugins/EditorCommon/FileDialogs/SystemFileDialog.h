@@ -68,4 +68,3 @@ public:
 protected:
 	QFileDialog m_dialog;
 };
-

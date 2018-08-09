@@ -46,8 +46,8 @@ public:
 	CGroupEditorData&          GetEditorData()        { return m_data; }
 	const CGroupEditorData&    GetEditorData() const  { return m_data; }
 
-	CGroupItems&               GetItems()       { return GetEditorData().GetItems(); };
-	const CGroupItems&         GetItems() const { return GetEditorData().GetItems(); };
+	CGroupItems&               GetItems()       { return GetEditorData().GetItems(); }
+	const CGroupItems&         GetItems() const { return GetEditorData().GetItems(); }
 
 	void                       LinkItem(CAbstractNodeGraphViewModelItem& item);
 	void                       UnlinkItem(CAbstractNodeGraphViewModelItem& item);
@@ -69,5 +69,3 @@ private:
 };
 
 } //namespace CryGraphEditor
-
-

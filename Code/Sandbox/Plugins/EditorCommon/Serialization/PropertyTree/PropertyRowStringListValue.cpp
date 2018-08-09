@@ -72,4 +72,3 @@ int PropertyRowStringListStaticValue::widgetSizeMin(const PropertyTree* tree) co
 DECLARE_SEGMENT(PropertyRowStringList)
 
 // vim:ts=4 sw=4:
-

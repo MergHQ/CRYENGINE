@@ -313,4 +313,3 @@ void CFillSliderCtrl::SetFilledLook(bool bFilled)
 {
 	m_bFilled = bFilled;
 }
-

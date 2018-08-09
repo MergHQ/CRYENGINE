@@ -46,7 +46,7 @@ public:
 			return;
 
 		TFloatArray sizes(runtime.MemHeap(), runtime.GetParentContainer().GetMaxParticles());
-		auto modRange = m_scale.GetValues(runtime, sizes, EDD_PerInstance, true);
+		auto modRange = m_scale.GetValues(runtime, sizes, EDD_InstanceUpdate);
 
 		const uint numInstances = runtime.GetNumInstances();
 		for (uint i = 0; i < numInstances; ++i)
@@ -63,7 +63,7 @@ public:
 		TFloatArray scales(runtime.MemHeap(), parentId + 1);
 		const SUpdateRange range(parentId, parentId + 1);
 
-		auto modRange = m_scale.GetValues(runtime, scales.data(), range, EDD_PerInstance, true);
+		auto modRange = m_scale.GetValues(runtime, scales.data(), range, EDD_InstanceUpdate);
 		const float scale = scales[parentId] * (modRange.start + modRange.end) * 0.5f;
 		offset += m_offset * scale;
 	}
@@ -134,7 +134,7 @@ public:
 	{
 		uint numInstances = runtime.GetNumInstances();
 		TFloatArray sizes(runtime.MemHeap(), runtime.GetParentContainer().GetMaxParticles());
-		auto modRange = m_scale.GetValues(runtime, sizes, EDD_PerInstance, true);
+		auto modRange = m_scale.GetValues(runtime, sizes, EDD_InstanceUpdate);
 		float avg = (modRange.start + modRange.end) * 0.5f;
 
 		for (uint i = 0; i < numInstances; ++i)
@@ -247,7 +247,7 @@ public:
 	{
 		uint numInstances = runtime.GetNumInstances();
 		TFloatArray sizes(runtime.MemHeap(), runtime.GetParentContainer().GetMaxParticles());
-		auto modRange = m_radius.GetValues(runtime, sizes, EDD_PerInstance, true);
+		auto modRange = m_radius.GetValues(runtime, sizes, EDD_InstanceUpdate);
 
 		for (uint i = 0; i < numInstances; ++i)
 		{
@@ -366,7 +366,7 @@ public:
 	{
 		const uint numInstances = runtime.GetNumInstances();
 		TFloatArray sizes(runtime.MemHeap(), runtime.GetParentContainer().GetMaxParticles()); 
-		auto modRange = m_radius.GetValues(runtime, sizes, EDD_PerInstance, true);
+		auto modRange = m_radius.GetValues(runtime, sizes, EDD_InstanceUpdate);
 
 		for (uint i = 0; i < numInstances; ++i)
 		{

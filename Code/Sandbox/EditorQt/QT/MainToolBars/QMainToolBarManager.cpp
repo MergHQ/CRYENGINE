@@ -676,8 +676,14 @@ void QMainToolBarManager::OnCVarChanged(ICVar* pCVar)
 	case ECVarType::String:
 		for (QAction* pAction : actions)
 			pAction->setChecked(pAction->property(Private_ToolbarManager::s_actionPropertyName) == QString(pCVar->GetString()));
+		break;
 	case ECVarType::Int64:
-		CRY_ASSERT_MESSAGE(false, "QMainToolBarManager::OnCVarChanged int64 cvar not implemented");
+		for (QAction* pAction : actions)
+		{
+			bool isBitFlag = pAction->property(Private_ToolbarManager::s_actionCVarBitFlagName).toBool();
+			int64 value = pAction->property(Private_ToolbarManager::s_actionPropertyName).toLongLong();
+			pAction->setChecked(isBitFlag ? value & pCVar->GetI64Val() : value == pCVar->GetI64Val());
+		}
 		break;
 	default:
 		break;

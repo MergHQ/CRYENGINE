@@ -2205,5 +2205,3 @@ namespace ww{
 };
 
 #endif // SIGSLOT_H__
-
-

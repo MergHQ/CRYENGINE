@@ -12,7 +12,6 @@ class CSmartObject : public CEntityObject
 {
 protected:
 	IStatObj*                             m_pStatObj;
-	AABB                                  m_bbox;
 	IMaterial*                            m_pHelperMtl;
 
 	CSOLibrary::CClassTemplateData const* m_pClassTemplate;
@@ -63,4 +62,3 @@ public:
 	CRuntimeClass* GetRuntimeClass()            { return RUNTIME_CLASS(CSmartObject); }
 	virtual bool   IsCreatable() const override { return gEnv->pEntitySystem->GetClassRegistry()->FindClass("SmartObject") != nullptr; }
 };
-

@@ -131,4 +131,3 @@ void CSelectEntityClsDialog::OnTvnDoubleClick(NMHDR* pNMHDR, LRESULT* pResult)
 		EndDialog(IDOK);
 	}
 }
-

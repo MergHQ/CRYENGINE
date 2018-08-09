@@ -382,4 +382,3 @@ CImageList* CHyperGraphComponentsReportCtrl::CreateDragImage(CXTPReportRow* pRow
 	bitmap.DeleteObject();
 	return pImageList;
 }
-

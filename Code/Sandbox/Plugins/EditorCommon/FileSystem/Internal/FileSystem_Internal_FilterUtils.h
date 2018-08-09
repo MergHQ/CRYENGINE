@@ -179,4 +179,3 @@ inline SCheckDirectoryResult CheckDirectory(
 } // namespace FilterUtils
 } // namespace Internal
 } // namespace FileSystem
-

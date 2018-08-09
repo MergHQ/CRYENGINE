@@ -565,4 +565,3 @@ void SCompressionSettings::Serialize(Serialization::IArchive& ar)
 		ar(m_controllerCompressionSettings, "perJointSettings");
 	}
 }
-

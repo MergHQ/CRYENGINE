@@ -189,4 +189,3 @@ bool Serialize(yasli::Archive& ar, SAssetDependencyInfo& info, const char* name,
 	SDependencyInfoSerializer serializer(info);
 	return ar(serializer, name, label);
 }
-

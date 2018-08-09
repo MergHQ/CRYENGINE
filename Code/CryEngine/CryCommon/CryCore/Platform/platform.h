@@ -72,6 +72,8 @@ enum class EPlatform
 #endif
 
 #define RESTRICT_POINTER __restrict
+//! Restricted reference (similar to restricted pointer), use like: SFoo& RESTRICT_REFERENCE myFoo = ...;
+#define RESTRICT_REFERENCE __restrict
 
 // Safe memory helpers
 #define SAFE_ACQUIRE(p)       { if (p) (p)->AddRef(); }

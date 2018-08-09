@@ -75,4 +75,3 @@ protected:
 	bool fixedSize_;
 	bool inlined_;
 };
-

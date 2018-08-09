@@ -30,4 +30,3 @@ private:
 
 	std::vector<bool> m_assetTypeSelection;
 };
-

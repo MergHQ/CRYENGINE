@@ -40,4 +40,3 @@ private:
 	QPropertyTree* m_pSettingProperties;
 };
 }
-

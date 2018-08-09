@@ -120,7 +120,7 @@ Model* BaseTool::GetModel() const
 
 void BaseTool::Display(SDisplayContext& dc)
 {
-	if (dc.flags & DISPLAY_2D)
+	if (dc.display2D)
 		return;
 	DisplayDimensionHelper(dc);
 }
@@ -159,4 +159,3 @@ bool BaseTool::IsModelEmpty() const
 }
 
 }
-

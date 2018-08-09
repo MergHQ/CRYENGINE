@@ -155,14 +155,14 @@ namespace UQS
 						pItemMonitorNavMeshChanges->AddPointToMonitoredArea(triangleCenters[i]);
 					}
 
-					Core::IHubPlugin::GetHub().GetQueryManager().AddItemMonitorToQuery(updateContext.queryID, std::move(pItemMonitorNavMeshChanges));
+					Core::IHubPlugin::GetHub().GetQueryManager().AddItemMonitorToQuery(updateContext.queryContext.queryID, std::move(pItemMonitorNavMeshChanges));
 				}
 			}
 
 			// debug-persist the AABB
-			IF_UNLIKELY(updateContext.blackboard.pDebugRenderWorldPersistent)
+			IF_UNLIKELY(updateContext.queryContext.pDebugRenderWorldPersistent)
 			{
-				updateContext.blackboard.pDebugRenderWorldPersistent->AddAABB(AABB(m_params.pivot.value + m_params.localAABBMins.value, m_params.pivot.value + m_params.localAABBMaxs.value), Col_White);
+				updateContext.queryContext.pDebugRenderWorldPersistent->AddAABB(AABB(m_params.pivot.value + m_params.localAABBMins.value, m_params.pivot.value + m_params.localAABBMaxs.value), Col_White);
 			}
 
 			return EUpdateStatus::FinishedGeneratingItems;
@@ -231,7 +231,7 @@ namespace UQS
 			{
 				PerformOneFloodStep(updateContext);
 
-				if (updateContext.blackboard.timeBudget.IsExhausted())
+				if (updateContext.queryContext.timeBudget.IsExhausted())
 					break;
 			}
 
@@ -281,10 +281,10 @@ namespace UQS
 			}
 
 			// DEBUG
-			if (updateContext.blackboard.pDebugRenderWorldPersistent)
+			if (updateContext.queryContext.pDebugRenderWorldPersistent)
 			{
 				// draw debug counter as text (to visualize the order of visiting all cells)
-				updateContext.blackboard.pDebugRenderWorldPersistent->AddText(cellPos.value + Vec3(0.0f, 0.0f, 0.5f), 1.5f, Col_Cyan, "%i", m_debugRunawayCounter++);
+				updateContext.queryContext.pDebugRenderWorldPersistent->AddText(cellPos.value + Vec3(0.0f, 0.0f, 0.5f), 1.5f, Col_Cyan, "%i", m_debugRunawayCounter++);
 
 				// draw arrow from child cell to parent cell
 				if (compressedParentIndex != -1)
@@ -293,7 +293,7 @@ namespace UQS
 					float len = dir.NormalizeSafe(Vec3(0, 0, 0));
 					Vec3 start = cellPos.value;
 					Vec3 end = m_grid[compressedParentIndex].value;
-					updateContext.blackboard.pDebugRenderWorldPersistent->AddDirection(start, end, 0.2f, len * 0.5f, Col_Cyan);
+					updateContext.queryContext.pDebugRenderWorldPersistent->AddDirection(start, end, 0.2f, len * 0.5f, Col_Cyan);
 				}
 			}
 

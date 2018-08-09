@@ -326,4 +326,3 @@ std::vector<CAsset*> CAssetDropHandler::ImportExt(const string& ext, const std::
 
 	return assets;
 }
-

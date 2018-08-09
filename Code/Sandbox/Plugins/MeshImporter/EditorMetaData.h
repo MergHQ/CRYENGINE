@@ -65,5 +65,3 @@ struct SEditorMetaData : FbxMetaData::IEditorMetaData
 	virtual void Serialize(yasli::Archive& ar) override;
 	virtual std::unique_ptr<FbxMetaData::IEditorMetaData> Clone() const override;
 };
-
-

@@ -150,4 +150,3 @@ private:
 	friend class PropertyRowWidgetStringListValue;
 };
 	
-

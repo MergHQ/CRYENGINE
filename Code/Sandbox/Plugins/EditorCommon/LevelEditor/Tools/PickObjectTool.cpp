@@ -17,15 +17,13 @@ CPickObjectTool::CPickObjectTool(IPickObjectCallback* callback, CRuntimeClass* t
 
 CPickObjectTool::~CPickObjectTool()
 {
-	if (m_callback)
-		m_callback->OnCancelPick();
 }
 
 bool CPickObjectTool::MouseCallback(CViewport* view, EMouseEvent event, CPoint& point, int flags)
 {
 	if (event == eMouseLDown)
 	{
-		HitContext hitInfo;
+		HitContext hitInfo(view);
 		view->HitTest(point, hitInfo);
 		CBaseObject* obj = hitInfo.object;
 		if (obj)
@@ -47,7 +45,7 @@ bool CPickObjectTool::MouseCallback(CViewport* view, EMouseEvent event, CPoint& 
 	}
 	else if (event == eMouseMove)
 	{
-		HitContext hitInfo;
+		HitContext hitInfo(view);
 		view->HitTest(point, hitInfo);
 		CBaseObject* obj = hitInfo.object;
 		if (obj)

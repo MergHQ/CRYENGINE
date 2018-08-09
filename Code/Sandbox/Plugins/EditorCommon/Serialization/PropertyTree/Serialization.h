@@ -19,4 +19,3 @@ using yasli::Serializer;
 using yasli::Serializers;
 using yasli::TypeID;
 using yasli::SharedPtr;
-

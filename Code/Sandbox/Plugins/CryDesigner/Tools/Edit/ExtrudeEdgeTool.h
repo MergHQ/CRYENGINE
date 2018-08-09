@@ -56,4 +56,3 @@ private:
 	bool m_bHitGizmo;
 };
 }
-

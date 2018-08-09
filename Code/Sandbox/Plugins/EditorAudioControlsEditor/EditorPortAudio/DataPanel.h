@@ -23,9 +23,9 @@ class CDataPanel final : public QWidget
 {
 public:
 
-	explicit CDataPanel(CImpl const& impl);
-
 	CDataPanel() = delete;
+
+	explicit CDataPanel(CImpl const& impl);
 
 	void Reset();
 	void OnAboutToReload();

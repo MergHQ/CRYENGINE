@@ -70,4 +70,3 @@ protected:
 	bool          m_bIsAccepted; // User has seen and accepted this notification
 	bool          m_bDisableTimerHide;
 };
-

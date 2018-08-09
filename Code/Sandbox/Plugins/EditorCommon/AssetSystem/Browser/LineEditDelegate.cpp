@@ -117,4 +117,3 @@ QWidget* CLineEditDelegate::createEditor(QWidget* pParent, const QStyleOptionVie
 
 	return pEditor;
 }
-

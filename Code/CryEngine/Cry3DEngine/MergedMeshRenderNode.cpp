@@ -2978,6 +2978,8 @@ void CMergedMeshRenderNode::RenderRenderMesh(
 	ro->SetAmbientColor(ambientColor, passInfo);
 	ro->m_fAlpha = m_rendParams.fAlpha;
 	ro->m_ObjFlags = FOB_TRANS_MASK | FOB_INSHADOW | FOB_DYNAMIC_OBJECT;
+	ro->m_ObjFlags |= (m_dwRndFlags & ERF_FOB_ALLOW_TERRAIN_LAYER_BLEND) ? FOB_ALLOW_TERRAIN_LAYER_BLEND : 0;
+
 	if (pTerrainTexInfo)
 	{
 		pTempData->userData.bTerrainColorWasUsed = true;

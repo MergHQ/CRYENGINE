@@ -500,4 +500,3 @@ XmlNodeRef VehicleDataMergeAndSave(const char* originalXml, XmlNodeRef definitio
 
 	return root;
 }
-

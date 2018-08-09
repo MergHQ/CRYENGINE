@@ -251,4 +251,3 @@ REGISTER_DESIGNER_TOOL_WITH_PROPERTYTREE_PANEL_AND_COMMAND(eDesigner_EdgePolygon
                                                            edgepolygon, "runs edge and polygon tool", "designer.edgepolygon")
 REGISTER_DESIGNER_TOOL_WITH_PROPERTYTREE_PANEL_AND_COMMAND(eDesigner_VertexEdgePolygon, eToolGroup_BasicSelectionCombination, "Vertex Edge Polygon", MoveVertexEdgePolygonTool,
                                                            vertexedgepolygon, "runs vertex, edge and polygon tool", "designer.vertexedgepolygon")
-

@@ -58,4 +58,3 @@ void CComponentItem::Serialize(Serialization::IArchive& archive)
 }
 
 }
-

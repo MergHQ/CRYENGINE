@@ -29,12 +29,12 @@ CMiddlewareDataWidget::CMiddlewareDataWidget(QWidget* const pParent)
 	g_implementationManager.SignalImplementationAboutToChange.Connect([this]()
 		{
 			ClearImplDataWidget();
-	  }, reinterpret_cast<uintptr_t>(this));
+		}, reinterpret_cast<uintptr_t>(this));
 
 	g_implementationManager.SignalImplementationChanged.Connect([this]()
 		{
 			InitImplDataWidget();
-	  }, reinterpret_cast<uintptr_t>(this));
+		}, reinterpret_cast<uintptr_t>(this));
 }
 
 //////////////////////////////////////////////////////////////////////////
@@ -57,22 +57,22 @@ void CMiddlewareDataWidget::InitImplDataWidget()
 		g_pIImpl->SignalGetConnectedSystemControls.Connect([&](ControlId const id, SControlInfos& controlInfos)
 			{
 				GetConnectedControls(id, controlInfos);
-		  }, reinterpret_cast<uintptr_t>(this));
+			}, reinterpret_cast<uintptr_t>(this));
 
 		g_pIImpl->SignalSelectConnectedSystemControl.Connect([&](ControlId const systemControlId, ControlId const implItemId)
 			{
 				SignalSelectConnectedSystemControl(systemControlId, implItemId);
-		  }, reinterpret_cast<uintptr_t>(this));
+			}, reinterpret_cast<uintptr_t>(this));
 
-		g_pIImpl->SignalImportFiles.Connect([&](ExtensionFilterVector const& extensionFilters, QStringList const& supportedType, QString const& targetFolderName)
+		g_pIImpl->SignalImportFiles.Connect([&](ExtensionFilterVector const& extensionFilters, QStringList const& supportedType, QString const& targetFolderName, bool const isLocalized)
 			{
-				OnImportFiles(extensionFilters, supportedType, targetFolderName);
-		  }, reinterpret_cast<uintptr_t>(this));
+				OnImportFiles(extensionFilters, supportedType, targetFolderName, isLocalized);
+			}, reinterpret_cast<uintptr_t>(this));
 
-		g_pIImpl->SignalFilesDropped.Connect([&](FileImportInfos const& fileImportInfos, QString const& targetFolderName)
+		g_pIImpl->SignalFilesDropped.Connect([&](FileImportInfos const& fileImportInfos, QString const& targetFolderName, bool const isLocalized)
 			{
-				OpenFileImporter(fileImportInfos, targetFolderName);
-		  }, reinterpret_cast<uintptr_t>(this));
+				OpenFileImporter(fileImportInfos, targetFolderName, isLocalized);
+			}, reinterpret_cast<uintptr_t>(this));
 	}
 }
 
@@ -107,7 +107,11 @@ void CMiddlewareDataWidget::GetConnectedControls(ControlId const implItemId, SCo
 }
 
 //////////////////////////////////////////////////////////////////////////
-void CMiddlewareDataWidget::OnImportFiles(ExtensionFilterVector const& extensionFilters, QStringList const& supportedTypes, QString const& targetFolderName)
+void CMiddlewareDataWidget::OnImportFiles(
+	ExtensionFilterVector const& extensionFilters,
+	QStringList const& supportedTypes,
+	QString const& targetFolderName,
+	bool const isLocalized)
 {
 	g_pIImpl->OnFileImporterOpened();
 	CSystemFileDialog::RunParams runParams;
@@ -131,17 +135,18 @@ void CMiddlewareDataWidget::OnImportFiles(ExtensionFilterVector const& extension
 			}
 		}
 
-		OpenFileImporter(fileInfos, targetFolderName);
+		OpenFileImporter(fileInfos, targetFolderName, isLocalized);
 	}
 }
 
 //////////////////////////////////////////////////////////////////////////
-void CMiddlewareDataWidget::OpenFileImporter(FileImportInfos const& fileImportInfos, QString const& targetFolderName)
+void CMiddlewareDataWidget::OpenFileImporter(FileImportInfos const& fileImportInfos, QString const& targetFolderName, bool const isLocalized)
 {
 	FileImportInfos fileInfos = fileImportInfos;
 
-	QString const assetFolderPath = QtUtil::ToQString(PathUtil::GetGameFolder() + "/" + g_assetsManager.GetAssetFolderPath());
-	QString const targetFolderPath = assetFolderPath + targetFolderName;
+	QString assetsPath = QtUtil::ToQString(PathUtil::GetGameFolder() + "/" + g_pIImpl->GetAssetsPath());
+	QString localizedAssetsPath = QtUtil::ToQString(PathUtil::GetGameFolder() + "/" + g_pIImpl->GetLocalizedAssetsPath());
+	QString const targetFolderPath = (isLocalized ? localizedAssetsPath : assetsPath) + "/" + targetFolderName;
 
 	QDir const targetFolder(targetFolderPath);
 	QString const fullTargetPath = targetFolder.absolutePath() + "/";
@@ -166,13 +171,16 @@ void CMiddlewareDataWidget::OpenFileImporter(FileImportInfos const& fileImportIn
 		}
 	}
 
-	auto const pFileImporterDialog = new CFileImporterDialog(fileInfos, QDir(assetFolderPath).absolutePath(), fullTargetPath, this);
+	assetsPath = QDir(assetsPath).absolutePath();
+	localizedAssetsPath = QDir(localizedAssetsPath).absolutePath();
+
+	auto const pFileImporterDialog = new CFileImporterDialog(fileInfos, assetsPath, localizedAssetsPath, fullTargetPath, targetFolderName, isLocalized, this);
 	g_pIImpl->OnFileImporterOpened();
 
 	QObject::connect(pFileImporterDialog, &CFileImporterDialog::destroyed, [&]()
 		{
 			g_pIImpl->OnFileImporterClosed();
-	  });
+		});
 
 	pFileImporterDialog->exec();
 }

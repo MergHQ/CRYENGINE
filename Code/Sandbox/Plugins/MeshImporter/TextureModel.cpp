@@ -192,4 +192,3 @@ void CTextureModel::Reset()
 	beginResetModel();
 	endResetModel();
 }
-

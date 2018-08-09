@@ -64,4 +64,3 @@ private:
 } // namespace FileSystem
 
 Q_DECLARE_METATYPE(FileSystem::SnapshotPtr)
-

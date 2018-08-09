@@ -246,4 +246,3 @@ REGISTER_RESOURCE_SELECTOR("CharacterRig", AnimationResourceSelector, "icons:com
 REGISTER_RESOURCE_SELECTOR("CharacterPhysics", AnimationResourceSelector, "icons:common/animation_physics.ico")
 
 }
-

@@ -28,4 +28,3 @@ private:
 		return CryIcon("icons:common/assets_sound.ico");
 	}
 };
-

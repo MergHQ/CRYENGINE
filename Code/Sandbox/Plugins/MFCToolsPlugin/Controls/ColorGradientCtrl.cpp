@@ -957,4 +957,3 @@ void CColorGradientCtrl::ColorToValue(COLORREF col, ISplineInterpolator::ValueTy
 	val[2] = colLin.b;
 	val[3] = 0;
 }
-

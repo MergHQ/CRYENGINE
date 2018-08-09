@@ -38,15 +38,15 @@ public:
 	//////////////////////////////////////////////////////////////////////////
 	// Overrides from CBaseObject.
 	//////////////////////////////////////////////////////////////////////////
-	bool Init(CBaseObject* prev, const string& file);
-	void InitVariables();
-	void Done();
-	bool HasMeasurementAxis() const { return true;  }
+	bool         Init(CBaseObject* prev, const string& file);
+	void         InitVariables();
+	void         Done();
+	bool         HasMeasurementAxis() const { return true; }
 
-	void Display(SDisplayContext& dc);
-	void DrawBezierSpline(SDisplayContext& dc, CGravityVolumePointVector& points, COLORREF col, bool isDrawJoints, bool isDrawGravityVolume);
+	virtual void Display(CObjectRenderHelper& objRenderHelper) override;
+	void         DrawBezierSpline(SDisplayContext& dc, CGravityVolumePointVector& points, COLORREF col, bool isDrawJoints, bool isDrawGravityVolume);
 
-	bool CreateGameObject();
+	bool         CreateGameObject();
 
 	//////////////////////////////////////////////////////////////////////////
 	string GetUniqueName() const;

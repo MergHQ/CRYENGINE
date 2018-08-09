@@ -263,4 +263,3 @@ private:
 
 	static std::vector<CTrackViewMainWindow*> ms_trackViewWindows;
 };
-

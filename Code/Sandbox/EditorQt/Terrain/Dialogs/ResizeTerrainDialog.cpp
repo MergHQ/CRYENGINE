@@ -42,4 +42,3 @@ CResizeTerrainDialog::Result CResizeTerrainDialog::GetResult() const
 	result.texture = m_pTexture->GetResult();
 	return result;
 }
-

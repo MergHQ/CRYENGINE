@@ -1502,4 +1502,3 @@ void CTagControl::SetCallback(IVariable::OnSetCallback func)
 		var.AddOnSetCallback(func);
 	}
 }
-

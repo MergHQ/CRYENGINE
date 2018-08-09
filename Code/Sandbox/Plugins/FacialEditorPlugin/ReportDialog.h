@@ -45,4 +45,3 @@ protected:
 };
 
 #endif //__REPORTDIALOG_H__
-

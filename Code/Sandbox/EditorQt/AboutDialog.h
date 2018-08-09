@@ -20,4 +20,3 @@ protected:
 private:
 	Version m_version;
 };
-

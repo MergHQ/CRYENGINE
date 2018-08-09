@@ -1,15 +1,16 @@
 // Copyright 2001-2018 Crytek GmbH / Crytek Group. All rights reserved.
 
 #include "StdAfx.h"
-
 #include "LinkTool.h"
-#include "Viewport.h"
+
 #include "Objects/EntityObject.h"
 #include "Objects/MiscEntities.h"
-#include <Objects/IObjectLayer.h>
-#include "Controls/QuestionDialog.h"
 
-#include "QtUtil.h"
+#include <Controls/QuestionDialog.h>
+#include <Objects/IObjectLayer.h>
+#include <QtUtil.h>
+#include <Viewport.h>
+
 #include <QMenu>
 
 class CLinkToPicker : public IPickObjectCallback
@@ -57,7 +58,6 @@ namespace
 const float kGeomCacheNodePivotSizeScale = 0.0025f;
 }
 
-//////////////////////////////////////////////////////////////////////////
 CLinkTool::CLinkTool()
 	: m_pChild(nullptr)
 	, m_nodeName(nullptr)
@@ -68,12 +68,6 @@ CLinkTool::CLinkTool()
 {
 }
 
-//////////////////////////////////////////////////////////////////////////
-CLinkTool::~CLinkTool()
-{
-}
-
-//////////////////////////////////////////////////////////////////////////
 bool CLinkTool::MouseCallback(CViewport* view, EMouseEvent event, CPoint& point, int flags)
 {
 	view->SetCursorString("");
@@ -81,7 +75,7 @@ bool CLinkTool::MouseCallback(CViewport* view, EMouseEvent event, CPoint& point,
 	m_hCurrCursor = m_hLinkCursor;
 	if (event == eMouseLDown)
 	{
-		HitContext hitInfo;
+		HitContext hitInfo(view);
 		view->HitTest(point, hitInfo);
 		m_pChild = hitInfo.object;
 
@@ -90,7 +84,7 @@ bool CLinkTool::MouseCallback(CViewport* view, EMouseEvent event, CPoint& point,
 	}
 	else if (event == eMouseLUp)
 	{
-		HitContext hitInfo;
+		HitContext hitInfo(view);
 		view->HitTest(point, hitInfo);
 		CBaseObject* pLinkTo = hitInfo.object;
 		GetIEditorImpl()->GetObjectManager()->Link(m_pChild, pLinkTo, hitInfo.name);
@@ -107,7 +101,7 @@ bool CLinkTool::MouseCallback(CViewport* view, EMouseEvent event, CPoint& point,
 		m_nodeName = nullptr;
 		m_pGeomCacheRenderNode = nullptr;
 
-		HitContext hitInfo;
+		HitContext hitInfo(view);
 		if (view->HitTest(point, hitInfo))
 			m_EndDrag = hitInfo.raySrc + hitInfo.rayDir * hitInfo.dist;
 
@@ -129,7 +123,6 @@ bool CLinkTool::MouseCallback(CViewport* view, EMouseEvent event, CPoint& point,
 	return true;
 }
 
-//////////////////////////////////////////////////////////////////////////
 bool CLinkTool::OnKeyDown(CViewport* view, uint32 nChar, uint32 nRepCnt, uint32 nFlags)
 {
 	if (nChar == Qt::Key_Escape)
@@ -140,7 +133,6 @@ bool CLinkTool::OnKeyDown(CViewport* view, uint32 nChar, uint32 nRepCnt, uint32 
 	return false;
 }
 
-//////////////////////////////////////////////////////////////////////////
 void CLinkTool::Display(SDisplayContext& dc)
 {
 	if (m_pChild && m_EndDrag != Vec3(ZERO))
@@ -150,7 +142,6 @@ void CLinkTool::Display(SDisplayContext& dc)
 	}
 }
 
-//////////////////////////////////////////////////////////////////////////
 void CLinkTool::DrawObjectHelpers(CBaseObject* pObject, SDisplayContext& dc)
 {
 	if (!m_pChild)
@@ -223,7 +214,6 @@ void CLinkTool::PickObject()
 	GetIEditorImpl()->GetLevelEditorSharedState()->PickObject(pCallback);
 }
 
-//////////////////////////////////////////////////////////////////////////
 bool CLinkTool::HitTest(CBaseObject* pObject, HitContext& hc)
 {
 	if (!m_pChild)

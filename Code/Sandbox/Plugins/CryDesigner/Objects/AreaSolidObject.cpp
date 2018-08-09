@@ -2,22 +2,25 @@
 
 #include "StdAfx.h"
 #include "AreaSolidObject.h"
-#include "Viewport.h"
-#include <CryEntitySystem/IEntitySystem.h>
-#include "SurfaceInfoPicker.h"
+
+#include "Core/Helper.h"
+#include "Core/LoopPolygons.h"
 #include "Core/Model.h"
 #include "Core/PolygonDecomposer.h"
-#include "Core/Helper.h"
 #include "Tools/AreaSolidTool.h"
 #include "ToolFactory.h"
-#include "Core/LoopPolygons.h"
-#include "Util/ExcludedEdgeManager.h"
 #include "Util/Display.h"
-#include "Serialization/Decorators/EditorActionButton.h"
-#include "Objects/DisplayContext.h"
-#include "Objects/ObjectLoader.h"
-#include "Objects/InspectorWidgetCreator.h"
-#include "Preferences/ViewportPreferences.h"
+#include "Util/ExcludedEdgeManager.h"
+#include "SurfaceInfoPicker.h"
+
+#include <Objects/DisplayContext.h>
+#include <Objects/ObjectLoader.h>
+#include <Objects/InspectorWidgetCreator.h>
+#include <Preferences/GlobalHelperPreferences.h>
+#include <Serialization/Decorators/EditorActionButton.h>
+#include <Viewport.h>
+
+#include <CryEntitySystem/IEntitySystem.h>
 
 namespace Designer
 {
@@ -46,11 +49,15 @@ AreaSolidObject::AreaSolidObject()
 	SetColor(ColorB(0, 0, 255));
 
 	m_bIgnoreGameUpdate = true;
+
+	gGlobalHelperPreferences.designerVolumesChanged.Connect(this, &AreaSolidObject::UpdateHiddenIStatObjState);
 }
 
 AreaSolidObject::~AreaSolidObject()
 {
 	m_pSizer->Release();
+
+	gGlobalHelperPreferences.designerVolumesChanged.DisconnectObject(this);
 }
 
 bool AreaSolidObject::Init(CBaseObject* prev, const string& file)
@@ -173,11 +180,11 @@ void AreaSolidObject::CreateInspectorWidgets(CInspectorWidgetCreator& creator)
 				{
 					GetIEditor()->ExecuteCommand("general.open_pane 'Modeling'");
 
-				GetIEditor()->GetLevelEditorSharedState()->SetEditTool("EditTool.AreaSolidTool", false);
-			}), "edit", "^Edit");
-			ar.closeBlock();
-		}
-	});
+					GetIEditor()->GetLevelEditorSharedState()->SetEditTool("EditTool.AreaSolidTool", false);
+			  }), "edit", "^Edit");
+			  ar.closeBlock();
+			}
+	  });
 }
 
 void AreaSolidObject::Serialize(CObjectArchive& ar)
@@ -247,7 +254,6 @@ void AreaSolidObject::SetAreaId(int nAreaId)
 class CAreaSolidBeginEnd
 {
 public:
-
 	CAreaSolidBeginEnd(IEntityAreaComponent* const pArea, Matrix34 const& tm)
 		: m_pArea(pArea)
 	{
@@ -266,7 +272,6 @@ public:
 	}
 
 private:
-
 	IEntityAreaComponent* const m_pArea;
 };
 
@@ -372,6 +377,11 @@ void AreaSolidObject::InvalidateTM(int nWhyFlags)
 void AreaSolidObject::Display(CObjectRenderHelper& objRenderHelper)
 {
 	SDisplayContext& dc = objRenderHelper.GetDisplayContextRef();
+	if (!dc.showAreaHelper)
+	{
+		return;
+	}
+
 	DrawDefault(dc);
 
 	if (GetCompiler())
@@ -464,9 +474,7 @@ void AreaSolidObject::OnEvent(ObjectEvent event)
 	case EVENT_INGAME:
 		if (GetDesigner())
 			GetDesigner()->LeaveCurrentTool();
-	case EVENT_HIDE_HELPER:
 	case EVENT_OUTOFGAME:
-	case EVENT_SHOW_HELPER:
 		{
 			UpdateHiddenIStatObjState();
 			break;
@@ -478,7 +486,7 @@ bool AreaSolidObject::IsHiddenByOption()
 {
 	bool visible = false;
 	mv_filled.Get(visible);
-	return !(visible && GetIEditor()->IsHelpersDisplayed());
+	return !(visible && gGlobalHelperPreferences.showDesignerVolumes);
 }
 
 void AreaSolidObject::SetHidden(bool bHidden, bool bAnimated)
@@ -494,7 +502,6 @@ ModelCompiler* AreaSolidObject::GetCompiler() const
 	return m_pCompiler;
 }
 
-//////////////////////////////////////////////////////////////////////////
 void AreaSolidObject::Reload(bool bReloadScript /* = false */)
 {
 	LOADING_TIME_PROFILE_SECTION
@@ -505,7 +512,6 @@ void AreaSolidObject::Reload(bool bReloadScript /* = false */)
 	UpdateGameArea();
 }
 
-//////////////////////////////////////////////////////////////////////////
 void AreaSolidObject::OnAreaChange(IVariable* pVar)
 {
 	if (pVar == &mv_filled)
@@ -518,7 +524,6 @@ void AreaSolidObject::OnAreaChange(IVariable* pVar)
 	}
 }
 
-//////////////////////////////////////////////////////////////////////////
 void AreaSolidObject::OnEntityAdded(IEntity const* const pIEntity)
 {
 	if (!m_bIgnoreGameUpdate && m_pEntity != nullptr)
@@ -532,7 +537,6 @@ void AreaSolidObject::OnEntityAdded(IEntity const* const pIEntity)
 	}
 }
 
-//////////////////////////////////////////////////////////////////////////
 void AreaSolidObject::OnEntityRemoved(IEntity const* const pIEntity)
 {
 	if (!m_bIgnoreGameUpdate && m_pEntity != nullptr)
@@ -566,4 +570,3 @@ std::vector<EDesignerTool> AreaSolidObject::GetIncompatibleSubtools()
 	return toolList;
 }
 } // namespace Designer
-

@@ -1,16 +1,5 @@
 // Copyright 2001-2018 Crytek GmbH / Crytek Group. All rights reserved.
 
-/*************************************************************************
-   -------------------------------------------------------------------------
-   $Id$
-   $DateTime$
-
-   -------------------------------------------------------------------------
-   History:
-   - 3:8:2004   11:26 : Created by Márcio Martins
-   - 17:8:2005        : Modified - NickH: Factory registration moved to GameFactory.cpp
-
-*************************************************************************/
 #include "StdAfx.h"
 #include "Game.h"
 #include "GameCVars.h"
@@ -534,7 +523,6 @@ CGame::CGame()
 	m_inDevMode = false;
 	m_userProfileChanged = true;
 	m_bLastSaveDirty = true;
-	m_editorDisplayHelpers = true;
 	m_RenderingToHMD = false;
 
 	ICVar* pStereoOutput(gEnv->pConsole->GetCVar("r_StereoOutput"));

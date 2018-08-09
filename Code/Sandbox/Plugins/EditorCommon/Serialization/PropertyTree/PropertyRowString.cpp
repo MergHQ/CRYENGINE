@@ -81,4 +81,3 @@ void PropertyRowString::serializeValue(yasli::Archive& ar)
 }
 
 // vim:ts=4 sw=4:
-

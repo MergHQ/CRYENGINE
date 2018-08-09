@@ -559,4 +559,3 @@ void CFeatureGridNodeContentWidget::OnFeatureMoved(CFeatureItem& feature)
 }
 
 }
-

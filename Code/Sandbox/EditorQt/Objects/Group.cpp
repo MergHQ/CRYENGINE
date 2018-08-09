@@ -2,26 +2,26 @@
 
 #include "StdAfx.h"
 #include "Group.h"
-#include "PrefabObject.h"
-#include "CryEdit.h"
-#include "Viewport.h"
-#include <Preferences/ViewportPreferences.h>
-#include "Objects/DisplayContext.h"
-#include "Objects/ObjectLoader.h"
-#include "Objects/InspectorWidgetCreator.h"
-#include "EntityObject.h"
+
+#include "Objects/EntityObject.h"
 #include "Objects/ObjectLayerManager.h"
-#include <algorithm>
-#include "Util/MFCUtil.h"
-#include <Grid.h>
-#include <Serialization/Decorators/EditToolButton.h>
+#include "Objects/PrefabObject.h"
+#include "CryEdit.h"
+
+#include <Util/MFCUtil.h>
+
+#include <Objects/DisplayContext.h>
+#include <Objects/InspectorWidgetCreator.h>
+#include <Objects/ObjectLoader.h>
+#include <Preferences/ViewportPreferences.h>
 #include <Serialization/Decorators/EditorActionButton.h>
+#include <Serialization/Decorators/EditToolButton.h>
+#include <Grid.h>
+#include <Viewport.h>
+
+#include <algorithm>
 
 REGISTER_CLASS_DESC(CGroupClassDesc);
-
-//////////////////////////////////////////////////////////////////////////
-// CBase implementation.
-//////////////////////////////////////////////////////////////////////////
 IMPLEMENT_DYNCREATE(CGroup, CBaseObject)
 
 namespace Private_Group
@@ -31,7 +31,7 @@ void RemoveIfAlreadyChildrenOf(CBaseObject* pParent, std::vector<CBaseObject*>& 
 	objects.erase(std::remove_if(objects.begin(), objects.end(), [pParent](CBaseObject* pObj)
 		{
 			return pObj->GetParent() == pParent;
-	  }), objects.end());
+		}), objects.end());
 }
 
 void RemoveIfAlreadyMember(const TBaseObjects& members, std::vector<CBaseObject*>& objects)
@@ -39,7 +39,7 @@ void RemoveIfAlreadyMember(const TBaseObjects& members, std::vector<CBaseObject*
 	objects.erase(std::remove_if(objects.begin(), objects.end(), [&members](const CBaseObject* pObj)
 		{
 			return std::find(members.cbegin(), members.cend(), pObj) != members.cend();
-	  }), objects.end());
+		}), objects.end());
 }
 
 void ResetTransforms(CGroup* pParent, const std::vector<CBaseObject*>& children, bool shouldKeepPos, std::vector<Matrix34>& worldTMs,
@@ -162,10 +162,10 @@ private:
 		}
 	}
 
-	CGroup*                          m_pParent { nullptr };
+	CGroup*                          m_pParent;
 	const std::vector<CBaseObject*>& m_children;
-	bool                             m_shouldKeepPos { false };
-	bool                             m_shouldInvalidateTM { false };
+	bool                             m_shouldKeepPos;
+	bool                             m_shouldInvalidateTM;
 	std::vector<ITransformDelegate*> m_transformDelegates;
 };
 
@@ -306,7 +306,6 @@ CGroup::CGroup()
 	SetColor(ColorB(0, 255, 0)); // Green
 }
 
-//////////////////////////////////////////////////////////////////////////
 void CGroup::Done()
 {
 	LOADING_TIME_PROFILE_SECTION_ARGS(GetName().c_str());
@@ -314,7 +313,6 @@ void CGroup::Done()
 	CBaseObject::Done();
 }
 
-//////////////////////////////////////////////////////////////////////////
 void CGroup::DeleteAllMembers()
 {
 	LOADING_TIME_PROFILE_SECTION
@@ -330,7 +328,6 @@ void CGroup::DeleteAllMembers()
 	GetObjectManager()->DeleteObjects(members);
 }
 
-//////////////////////////////////////////////////////////////////////////
 void CGroup::GetAllLinkedObjects(std::vector<CBaseObject*>& objects, CBaseObject* pObject)
 {
 	for (auto i = 0; i < pObject->GetLinkedObjectCount(); ++i)
@@ -458,7 +455,6 @@ void CGroup::CreateFrom(std::vector<CBaseObject*>& objects, Vec3 center)
 	}
 }
 
-//////////////////////////////////////////////////////////////////////////
 bool CGroup::Init(CBaseObject* prev, const string& file)
 {
 	bool res = CBaseObject::Init(prev, file);
@@ -479,7 +475,6 @@ bool CGroup::Init(CBaseObject* prev, const string& file)
 	return res;
 }
 
-//////////////////////////////////////////////////////////////////////////
 void CGroup::AddMember(CBaseObject* pMember, bool keepPos)
 {
 	std::vector<CBaseObject*> members = { pMember };
@@ -523,7 +518,6 @@ void CGroup::AddMembers(std::vector<CBaseObject*>& objects, bool keepPos /*= tru
 	InvalidateBBox();
 }
 
-//////////////////////////////////////////////////////////////////////////
 void CGroup::RemoveMember(CBaseObject* pMember, bool keepPos, bool placeOnRoot)
 {
 	std::vector<CBaseObject*> members = { pMember };
@@ -557,7 +551,6 @@ void CGroup::FilterOutNonMembers(std::vector<CBaseObject*>& objects)
 	}), objects.end());
 }
 
-//////////////////////////////////////////////////////////////////////////
 void CGroup::RemoveChild(CBaseObject* child)
 {
 	bool bMemberChild = stl::find_and_erase(m_members, child);
@@ -566,7 +559,6 @@ void CGroup::RemoveChild(CBaseObject* child)
 		InvalidateBBox();
 }
 
-//////////////////////////////////////////////////////////////////////////
 void CGroup::GetBoundBox(AABB& box)
 {
 	if (!m_bBBoxValid)
@@ -575,7 +567,6 @@ void CGroup::GetBoundBox(AABB& box)
 	box.SetTransformedAABB(GetWorldTM(), m_bbox);
 }
 
-//////////////////////////////////////////////////////////////////////////
 void CGroup::GetLocalBounds(AABB& box)
 {
 	if (!m_bBBoxValid)
@@ -583,7 +574,6 @@ void CGroup::GetLocalBounds(AABB& box)
 	box = m_bbox;
 }
 
-//////////////////////////////////////////////////////////////////////////
 bool CGroup::HitTest(HitContext& hc)
 {
 	bool selected = false;
@@ -638,7 +628,6 @@ bool CGroup::HitTest(HitContext& hc)
 	return selected;
 }
 
-//////////////////////////////////////////////////////////////////////////
 bool CGroup::HitHelperTestForChildObjects(HitContext& hc)
 {
 	bool result = false;
@@ -655,7 +644,6 @@ bool CGroup::HitHelperTestForChildObjects(HitContext& hc)
 	return result;
 }
 
-//////////////////////////////////////////////////////////////////////////
 bool CGroup::HitTestMembers(HitContext& hcOrg)
 {
 	float mindist = FLT_MAX;
@@ -691,21 +679,18 @@ bool CGroup::HitTestMembers(HitContext& hcOrg)
 	return false;
 }
 
-//////////////////////////////////////////////////////////////////////////
 void CGroup::OnContextMenu(CPopupMenuItem* menu)
 {
 	CBaseObject::OnContextMenu(menu);
 }
 
-//////////////////////////////////////////////////////////////////////////
 void CGroup::Display(CObjectRenderHelper& objRenderHelper)
 {
 	SDisplayContext& dc = objRenderHelper.GetDisplayContextRef();
-
-	if (!gViewportDebugPreferences.showGroupObjectHelper)
+	if (!dc.showGroupHelper)
+	{
 		return;
-
-	bool hideNames = dc.flags & DISPLAY_HIDENAMES;
+	}
 
 	DrawDefault(dc, CMFCUtils::ColorBToColorRef(GetColor()));
 
@@ -740,6 +725,7 @@ void CGroup::Display(CObjectRenderHelper& objRenderHelper)
 	}
 	dc.PopMatrix();
 }
+
 const ColorB& CGroup::GetSelectionPreviewHighlightColor()
 {
 	return gViewportSelectionPreferences.colorGroupBBox;
@@ -783,28 +769,27 @@ void CGroup::CreateInspectorWidgets(CInspectorWidgetCreator& creator)
 			  ar(Serialization::ActionButton([]()
 				{
 					GetIEditor()->GetICommandManager()->Execute("group.ungroup");
-			  }), "ungroup", "^Ungroup");
+				}), "ungroup", "^Ungroup");
 			  if (pObject->IsOpen())
 			  {
 			    ar(Serialization::ActionButton([]()
 					{
 						GetIEditor()->GetICommandManager()->Execute("group.close");
-			    }), "close", "^Close");
-			  }
+					}), "close", "^Close");
+				}
 			  else
 			  {
 			    ar(Serialization::ActionButton([]()
 					{
 						GetIEditor()->GetICommandManager()->Execute("group.open");
-			    }), "open", "^Open");
-			  }
+					}), "open", "^Open");
+				}
 			  ar.closeBlock();
 			}
 		});
 	}
 }
 
-//////////////////////////////////////////////////////////////////////////
 void CGroup::Serialize(CObjectArchive& ar)
 {
 	CBaseObject::Serialize(ar);
@@ -827,7 +812,6 @@ void CGroup::Serialize(CObjectArchive& ar)
 	}
 }
 
-//////////////////////////////////////////////////////////////////////////
 void CGroup::SerializeMembers(CObjectArchive& ar)
 {
 	XmlNodeRef xmlNode = ar.node;
@@ -878,7 +862,6 @@ void CGroup::SerializeMembers(CObjectArchive& ar)
 	ar.node = xmlNode;
 }
 
-//////////////////////////////////////////////////////////////////////////
 void CGroup::Ungroup()
 {
 	StoreUndo("Ungroup");
@@ -907,7 +890,6 @@ void CGroup::Ungroup()
 	GetObjectManager()->SelectObjects(newSelection);
 }
 
-//////////////////////////////////////////////////////////////////////////
 void CGroup::Open()
 {
 	if (!m_opened)
@@ -919,7 +901,6 @@ void CGroup::Open()
 
 }
 
-//////////////////////////////////////////////////////////////////////////
 void CGroup::Close()
 {
 	if (m_opened)
@@ -940,7 +921,6 @@ void CGroup::PostClone(CBaseObject* pFromObject, CObjectCloneContext& ctx)
 	CBaseObject::PostClone(pFromObject, ctx);
 }
 
-//////////////////////////////////////////////////////////////////////////
 void CGroup::RecursivelyGetBoundBox(CBaseObject* object, AABB& box, const Matrix34& parentTM)
 {
 	Matrix34 worldTM = parentTM * object->GetLocalTM();
@@ -993,7 +973,6 @@ void CGroup::RemoveChildren(const std::vector<CBaseObject*>& objects)
 	InvalidateBBox();
 }
 
-//////////////////////////////////////////////////////////////////////////
 void CGroup::CalcBoundBox()
 {
 	Matrix34 identityTM;
@@ -1019,7 +998,6 @@ void CGroup::CalcBoundBox()
 	m_bBBoxValid = true;
 }
 
-//////////////////////////////////////////////////////////////////////////
 void CGroup::OnChildModified()
 {
 	if (m_ignoreChildModify)
@@ -1085,7 +1063,6 @@ int CGroup::SelectObjects(const AABB& box, bool bUnselect)
 	return numSel;
 }
 
-//////////////////////////////////////////////////////////////////////////
 void CGroup::OnEvent(ObjectEvent event)
 {
 	CBaseObject::OnEvent(event);
@@ -1113,9 +1090,8 @@ void CGroup::OnEvent(ObjectEvent event)
 		}
 		break;
 	}
-};
+}
 
-//////////////////////////////////////////////////////////////////////////
 void CGroup::BindToParent()
 {
 	CBaseObject* parent = GetParent();
@@ -1140,7 +1116,6 @@ void CGroup::BindToParent()
 	}
 }
 
-//////////////////////////////////////////////////////////////////////////
 void CGroup::DetachThis(bool bKeepPos, bool bPlaceOnRoot)
 {
 	CBaseObject* parent = GetParent();
@@ -1266,7 +1241,7 @@ void CGroup::AttachChildren(std::vector<CBaseObject*>& objects, bool shouldKeepP
 			  for (auto pChild : children)
 			  {
 			    pChild->UnLink(true);
-			  }
+				}
 			}
 		});
 
@@ -1362,4 +1337,3 @@ void CGroup::UpdatePivot(const Vec3& newWorldPivotPos)
 	CBaseObject::SetWorldPos(newWorldPivotPos);
 	m_bUpdatingPivot = false;
 }
-

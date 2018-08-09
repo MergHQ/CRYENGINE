@@ -21,7 +21,7 @@ class CControl;
 class CFileMonitorSystem;
 class CFileMonitorMiddleware;
 
-class CMainWindow final : public CDockableEditor, public IEditorNotifyListener
+class CMainWindow final : public CDockableEditor, public IEditorNotifyListener, public ISystemEventListener
 {
 	Q_OBJECT
 
@@ -71,6 +71,10 @@ private slots:
 	void OnPreferencesDialog();
 
 private:
+
+	// ISystemEventListener
+	virtual void OnSystemEvent(ESystemEvent event, UINT_PTR wparam, UINT_PTR lparam) override;
+	// ~ISystemEventListener
 
 	void                   InitMenuBar();
 	void                   InitToolbar(QVBoxLayout* const pWindowLayout);

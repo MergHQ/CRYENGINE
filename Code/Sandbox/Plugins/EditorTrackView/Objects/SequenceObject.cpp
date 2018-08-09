@@ -177,4 +177,3 @@ void CSequenceObject::PostLoad(CObjectArchive& ar)
 		}
 	}
 }
-

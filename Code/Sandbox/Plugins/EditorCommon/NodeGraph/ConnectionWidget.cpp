@@ -393,4 +393,3 @@ void CConnectionWidget::UpdatePath()
 }
 
 }
-

@@ -2,6 +2,10 @@
 
 #pragma once
 
+#include <Util/Variable.h>
+
+#include <CryPhysics/physinterface.h>
+
 class CCollisionFilteringProperties
 {
 public:

@@ -116,7 +116,7 @@ public:
 	uint                      GetParticleSpec() const;
 
 	void                      SetChanged();
-	bool                      IsStable() const             { return m_time > m_timeStable; }
+	bool                      IsStable() const             { return m_time > m_timeStable && !m_realBounds.IsReset(); }
 	bool                      IsIndependent() const        { return Unique(); }
 	bool                      HasParticles() const;
 	bool                      HasBounds() const            { return m_bounds.GetVolume() > 0.0f; }
@@ -149,7 +149,7 @@ private:
 	CAttributeInstance                     m_attributeInstance;
 	TParticleFeatures                      m_emitterFeatures;
 	AABB                                   m_realBounds;
-	AABB                                   m_maxBounds;
+	AABB                                   m_nextBounds;
 	AABB                                   m_bounds;
 	CParticleContainer                     m_parentContainer;
 	TRuntimes                              m_componentRuntimesFor;

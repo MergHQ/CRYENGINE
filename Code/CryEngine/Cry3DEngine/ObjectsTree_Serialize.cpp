@@ -26,7 +26,7 @@ struct SRenderNodeChunk
 	uint16 m_nLayerId;
 	int8   m_cShadowLodBias;
 	uint8  m_ucDummy;
-	uint32 m_dwRndFlags;
+	uint64 m_dwRndFlags;
 	uint16 m_nObjectTypeIndex;
 	uint8  m_ucViewDistRatio;
 	uint8  m_ucLodRatio;
@@ -251,10 +251,10 @@ int32 COctreeNode::SaveObjects_CompareRenderNodes(const void* v1, const void* v2
 	IRenderNode* p[2] = { *(IRenderNode**)v1, *(IRenderNode**)v2 };
 
 	EERType t0 = p[0]->GetRenderNodeType();
-	int f0 = p[0]->m_dwRndFlags;
+	uint64 f0 = p[0]->m_dwRndFlags;
 
 	EERType t1 = p[1]->GetRenderNodeType();
-	int f1 = p[1]->m_dwRndFlags;
+	uint64 f1 = p[1]->m_dwRndFlags;
 
 	if (IsObjectStreamable(t0, f0) > IsObjectStreamable(t1, f1))
 		return 1;

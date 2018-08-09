@@ -94,4 +94,3 @@ int PropertyRowBool::widgetSizeMin(const PropertyTree* tree) const
 {
 	return tree->_defaultRowHeight();
 }
-

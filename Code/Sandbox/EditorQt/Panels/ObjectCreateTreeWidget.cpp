@@ -98,4 +98,3 @@ void CObjectCreateTreeWidget::UpdatePreviewWidget()
 		}
 	}
 }
-

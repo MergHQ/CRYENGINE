@@ -35,4 +35,3 @@ struct SProxyTree
 };
 
 void WriteAutoGenProxies(const string& fname, const SProxyTree* pProxyTree);
-

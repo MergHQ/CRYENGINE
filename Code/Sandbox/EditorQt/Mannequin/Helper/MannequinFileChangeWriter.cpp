@@ -317,4 +317,3 @@ void CMannequinFileChangeWriter::SetControllerDef(const SControllerDef* pControl
 {
 	m_pControllerDef = pControllerDef;
 }
-

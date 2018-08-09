@@ -313,6 +313,7 @@ struct CVars : public Cry3DEngineBase
 	DeclareConstIntCVar(e_ObjStats, 0);
 	DeclareConstIntCVar(e_TerrainDeformations, 0);
 	int e_TerrainDetailMaterials;
+	int e_TerrainBlendingDebug;
 	DeclareConstIntCVar(e_ShadowsFrustums, 0);
 	DeclareConstIntCVar(e_OcclusionVolumes, e_OcclusionVolumesDefault);
 	int   e_TerrainEditPostponeTexturesUpdate;
@@ -443,6 +444,7 @@ struct CVars : public Cry3DEngineBase
 	int   e_Lods;
 	DeclareConstIntCVar(e_LodFaceArea, 1);
 	float e_ShadowsConstBias;
+	int   e_ParticlesCollisions;
 	int   e_ParticlesObjectCollisions;
 	int   e_ParticlesMinPhysicsDynamicBounds;
 	int   e_ParticlesSortQuality;

@@ -316,4 +316,3 @@ private:
 	// the same camera.
 	bool m_bNoNotificationsPreviously;
 };
-

@@ -47,12 +47,24 @@ DeviceInfo::DeviceInfo()
 
 void DeviceInfo::Release()
 {
-	memset(&m_adapterDesc, 0, sizeof(m_adapterDesc));
+#if defined(DX11_ALLOW_D3D_DEBUG_RUNTIME)
+	if (m_pDevice)
+	{
+		// TODO: Make it work, it's re right approach, maybe the flag is reset again?
+		HRESULT hr = S_FALSE;
+		ID3D11Debug* pDebugDevice = nullptr;
+		if (SUCCEEDED(m_pDevice->QueryInterface(__uuidof(ID3D11Debug), (void**)&pDebugDevice)))
+			hr = pDebugDevice->ReportLiveDeviceObjects(D3D11_RLDO_DETAIL);
+		SAFE_RELEASE(pDebugDevice);
+	}
+#endif
 
 	SAFE_RELEASE(m_pContext);
 	SAFE_RELEASE(m_pDevice);
 	SAFE_RELEASE(m_pAdapter);
 	SAFE_RELEASE(m_pFactory);
+
+	memset(&m_adapterDesc, 0, sizeof(m_adapterDesc));
 }
 
 static int GetDXGIAdapterOverride()

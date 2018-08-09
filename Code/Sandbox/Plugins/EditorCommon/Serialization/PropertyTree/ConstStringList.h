@@ -36,5 +36,3 @@ protected:
 };
 
 extern ConstStringList globalConstStringList;
-
-

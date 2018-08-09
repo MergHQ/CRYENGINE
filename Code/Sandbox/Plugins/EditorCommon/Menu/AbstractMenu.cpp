@@ -281,6 +281,17 @@ int CAbstractMenu::FindSectionByName(const char* szName) const
 	return eSections_Default;
 }
 
+int CAbstractMenu::FindOrCreateSectionByName(const char* szName) 
+{
+	int section = FindSectionByName(szName);
+	if (section == eSections_Default)
+	{
+		section = GetNextEmptySection();
+		SetSectionName(section, szName);
+	}
+	return section;
+}
+
 bool CAbstractMenu::ContainsAction(const QAction* pAction) const
 {
 	return m_actionItems.end() != std::find_if(m_actionItems.begin(), m_actionItems.end(), [pAction](const auto& other)
@@ -332,4 +343,3 @@ void CAbstractMenu::InsertNamedSection(std::unique_ptr<SNamedSection>&& pNamedSe
 		return lhp->m_section < rhp->m_section;
 	}), std::move(pNamedSection));
 }
-

@@ -1624,4 +1624,3 @@ void PropertyTree::setPropertySplitterPos(int pos)
 }
 
 // vim:ts=4 sw=4:
-

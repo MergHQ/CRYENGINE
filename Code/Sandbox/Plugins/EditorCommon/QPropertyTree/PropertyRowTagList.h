@@ -29,4 +29,3 @@ struct TagListMenuHandler : public PropertyRowMenuHandler
 
 	void onMenuAddTag();
 };
-

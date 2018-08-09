@@ -68,4 +68,3 @@ private:
 	static bool CreateBitmapFromImage(const CImageEx& image, CBitmap& bitmapObj);
 	static bool Save(const string& strFileName, CImageEx& inImage);
 };
-

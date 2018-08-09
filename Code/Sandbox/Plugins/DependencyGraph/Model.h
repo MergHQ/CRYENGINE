@@ -57,4 +57,3 @@ public:
 protected:
 	CAsset* m_pAsset;
 };
-

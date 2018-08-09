@@ -36,6 +36,7 @@ public:
 	virtual string const&  GetName() const override                                         { return m_implName; }
 	virtual string const&  GetFolderName() const override                                   { return m_implFolderName; }
 	virtual char const*    GetAssetsPath() const override                                   { return m_assetsPath.c_str(); }
+	virtual char const*    GetLocalizedAssetsPath() const override                          { return m_localizedAssetsPath.c_str(); }
 	virtual char const*    GetProjectPath() const override                                  { return m_projectPath.c_str(); }
 	virtual void           SetProjectPath(char const* const szPath) override;
 	virtual bool           SupportsProjects() const override                                { return true; }
@@ -61,6 +62,7 @@ public:
 private:
 
 	void Clear();
+	void SetLocalizedAssetsPath();
 
 	// Generates the ID of the item given its full path name.
 	ControlId GenerateID(string const& name, bool isLocalized, CItem* pParent) const;
@@ -79,6 +81,7 @@ private:
 	string              m_implFolderName;
 	string              m_projectPath;
 	string const        m_assetsPath;
+	string              m_localizedAssetsPath;
 	char const* const   m_szUserSettingsFile;
 	CDataPanel*         m_pDataPanel;
 };

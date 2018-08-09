@@ -37,16 +37,9 @@
 	#undef TOOLS_SUPPORT_ORBIS
 #endif
 
-// Type used for vertex indices
-#if defined(RESOURCE_COMPILER)
-typedef uint32 vtx_idx;
-#elif CRY_PLATFORM_MOBILE
-typedef uint16 vtx_idx;
-#else
 // Uncomment one of the two following typedefs:
 typedef uint32 vtx_idx;
 //typedef uint16 vtx_idx;
-#endif
 
 //! 0=off, 1=on
 //! \see http://wiki/bin/view/CryEngine/TerrainTexCompression

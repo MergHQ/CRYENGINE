@@ -180,4 +180,3 @@ bool CurveTool::OnKeyDown(CViewport* view, uint32 nChar, uint32 nRepCnt, uint32 
 
 REGISTER_DESIGNER_TOOL_WITH_PROPERTYTREE_PANEL_AND_COMMAND(eDesigner_Curve, eToolGroup_Shape, "Curve", CurveTool,
                                                            curve, "runs curve tool", "designer.curve")
-

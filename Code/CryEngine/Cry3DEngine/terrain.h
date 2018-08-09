@@ -134,7 +134,7 @@ struct StatInstGroupChunk
 	int    nMaterialId;
 
 	//! flags similar to entity render flags
-	int   m_dwRndFlags;
+	uint64   m_dwRndFlags;
 
 	float fStiffness;
 	float fDamping;

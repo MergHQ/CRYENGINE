@@ -179,6 +179,8 @@ SShaderGenBit* CShaderMan::mfCompileShaderGenProperty(char* scr)
 					shgm->m_nDependencySet |= SHGD_HW_ORBIS;
 				else if (!stricmp(data, "$HW_DX11"))
 					shgm->m_nDependencySet |= SHGD_HW_DX11;
+				else if (!stricmp(data, "$HW_DX12"))
+					shgm->m_nDependencySet |= SHGD_HW_DX12;
 				else if (!stricmp(data, "$HW_GL4"))
 					shgm->m_nDependencySet |= SHGD_HW_GL4;
 				else if (!stricmp(data, "$HW_GLES3"))
@@ -259,6 +261,8 @@ SShaderGenBit* CShaderMan::mfCompileShaderGenProperty(char* scr)
 					shgm->m_nDependencyReset |= SHGD_USER_ENABLED;
 				else if (!stricmp(data, "$HW_DX11"))
 					shgm->m_nDependencyReset |= SHGD_HW_DX11;
+				else if (!stricmp(data, "$HW_DX12"))
+					shgm->m_nDependencyReset |= SHGD_HW_DX12;
 				else if (!stricmp(data, "$HW_GL4"))
 					shgm->m_nDependencyReset |= SHGD_HW_GL4;
 				else if (!stricmp(data, "$HW_GLES3"))

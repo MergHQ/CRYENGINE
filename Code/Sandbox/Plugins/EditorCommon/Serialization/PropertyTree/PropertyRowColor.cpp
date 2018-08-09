@@ -35,4 +35,3 @@ void PropertyRowColor::closeNonLeaf(const yasli::Serializer& ser, yasli::Archive
 
 REGISTER_PROPERTY_ROW(Color, PropertyRowColor)
 DECLARE_SEGMENT(PropertyRowColor)
-

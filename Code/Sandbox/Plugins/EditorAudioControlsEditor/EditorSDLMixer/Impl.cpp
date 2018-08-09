@@ -10,6 +10,7 @@
 #include "StateConnection.h"
 #include "ProjectLoader.h"
 #include "DataPanel.h"
+#include "Utils.h"
 
 #include <CrySystem/ISystem.h>
 #include <CryCore/StlUtils.h>
@@ -21,40 +22,13 @@ namespace Impl
 namespace SDLMixer
 {
 //////////////////////////////////////////////////////////////////////////
-string GetPath(CItem const* const pItem)
-{
-	string path;
-	IItem const* pParent = pItem->GetParent();
-
-	while (pParent != nullptr)
-	{
-		string const parentName = pParent->GetName();
-
-		if (!parentName.empty())
-		{
-			if (path.empty())
-			{
-				path = parentName;
-			}
-			else
-			{
-				path = parentName + "/" + path;
-			}
-		}
-
-		pParent = pParent->GetParent();
-	}
-
-	return path;
-}
-
-//////////////////////////////////////////////////////////////////////////
 CImpl::CImpl()
 	: m_pDataPanel(nullptr)
 	, m_assetAndProjectPath(AUDIO_SYSTEM_DATA_ROOT "/" +
 	                        string(CryAudio::Impl::SDL_mixer::s_szImplFolderName) +
 	                        "/"
 	                        + string(CryAudio::s_szAssetsFolderName))
+	, m_localizedAssetsPath(m_assetAndProjectPath)
 {
 	gEnv->pAudioSystem->GetImplInfo(m_implInfo);
 	m_implName = m_implInfo.name.c_str();
@@ -86,13 +60,12 @@ void CImpl::DestroyDataPanel()
 }
 
 //////////////////////////////////////////////////////////////////////////
-void CImpl::Reload(bool const preserveConnectionStatus)
+void CImpl::Reload(bool const preserveConnectionStatus /*= true*/)
 {
 	Clear();
+	SetLocalizedAssetsPath();
 
-	CProjectLoader(m_assetAndProjectPath, m_rootItem);
-
-	CreateItemCache(&m_rootItem);
+	CProjectLoader(m_assetAndProjectPath, m_localizedAssetsPath, m_rootItem, m_itemCache, *this);
 
 	if (preserveConnectionStatus)
 	{
@@ -112,6 +85,11 @@ void CImpl::Reload(bool const preserveConnectionStatus)
 	else
 	{
 		m_connectionsByID.clear();
+	}
+
+	if (m_pDataPanel != nullptr)
+	{
+		m_pDataPanel->Reset();
 	}
 }
 
@@ -267,22 +245,16 @@ ConnectionPtr CImpl::CreateConnectionFromXMLNode(XmlNodeRef pNode, EAssetType co
 				path = pNode->getAttr("sdl_path");
 			}
 #endif      // USE_BACKWARDS_COMPATIBILITY
-			ControlId id;
-
-			if (path.empty())
-			{
-				id = GetId(name);
-			}
-			else
-			{
-				id = GetId(path + "/" + name);
-			}
+			string const localizedAttribute = pNode->getAttr(CryAudio::Impl::SDL_mixer::s_szLocalizedAttribute);
+			bool const isLocalized = (localizedAttribute.compareNoCase(CryAudio::Impl::SDL_mixer::s_szTrueValue) == 0);
+			ControlId const id = Utils::GetId(EItemType::Event, name, path, isLocalized);
 
 			auto pItem = static_cast<CItem*>(GetItem(id));
 
 			if (pItem == nullptr)
 			{
-				pItem = new CItem(name, id, EItemType::Event, EItemFlags::IsPlaceHolder);
+				EItemFlags const flags = (isLocalized ? (EItemFlags::IsPlaceHolder | EItemFlags::IsLocalized) : EItemFlags::IsPlaceHolder);
+				pItem = new CItem(name, id, EItemType::Event, path, flags);
 				m_itemCache[id] = pItem;
 			}
 
@@ -410,9 +382,7 @@ XmlNodeRef CImpl::CreateXMLNodeFromConnection(ConnectionPtr const pConnection, E
 				{
 					pNode = GetISystem()->CreateXmlNode(CryAudio::s_szEventTag);
 					pNode->setAttr(CryAudio::s_szNameAttribute, pItem->GetName());
-
-					string const path = GetPath(pItem);
-					pNode->setAttr(CryAudio::Impl::SDL_mixer::s_szPathAttribute, path);
+					pNode->setAttr(CryAudio::Impl::SDL_mixer::s_szPathAttribute, pItem->GetPath());
 
 					CEventConnection::EActionType const actionType = pEventConnection->GetActionType();
 
@@ -465,6 +435,11 @@ XmlNodeRef CImpl::CreateXMLNodeFromConnection(ConnectionPtr const pConnection, E
 						pNode->setAttr(CryAudio::s_szTypeAttribute, CryAudio::Impl::SDL_mixer::s_szResumeValue);
 						break;
 					}
+
+					if ((pItem->GetFlags() & EItemFlags::IsLocalized) != 0)
+					{
+						pNode->setAttr(CryAudio::Impl::SDL_mixer::s_szLocalizedAttribute, CryAudio::Impl::SDL_mixer::s_szTrueValue);
+					}
 				}
 			}
 			break;
@@ -476,9 +451,7 @@ XmlNodeRef CImpl::CreateXMLNodeFromConnection(ConnectionPtr const pConnection, E
 				{
 					pNode = GetISystem()->CreateXmlNode(CryAudio::s_szEventTag);
 					pNode->setAttr(CryAudio::s_szNameAttribute, pItem->GetName());
-
-					string const path = GetPath(pItem);
-					pNode->setAttr(CryAudio::Impl::SDL_mixer::s_szPathAttribute, path);
+					pNode->setAttr(CryAudio::Impl::SDL_mixer::s_szPathAttribute, pItem->GetPath());
 
 					if (pParameterConnection->GetMultiplier() != CryAudio::Impl::SDL_mixer::s_defaultParamMultiplier)
 					{
@@ -488,6 +461,11 @@ XmlNodeRef CImpl::CreateXMLNodeFromConnection(ConnectionPtr const pConnection, E
 					if (pParameterConnection->GetShift() != CryAudio::Impl::SDL_mixer::s_defaultParamShift)
 					{
 						pNode->setAttr(CryAudio::Impl::SDL_mixer::s_szShiftAttribute, pParameterConnection->GetShift());
+					}
+
+					if ((pItem->GetFlags() & EItemFlags::IsLocalized) != 0)
+					{
+						pNode->setAttr(CryAudio::Impl::SDL_mixer::s_szLocalizedAttribute, CryAudio::Impl::SDL_mixer::s_szTrueValue);
 					}
 				}
 			}
@@ -500,11 +478,13 @@ XmlNodeRef CImpl::CreateXMLNodeFromConnection(ConnectionPtr const pConnection, E
 				{
 					pNode = GetISystem()->CreateXmlNode(CryAudio::s_szEventTag);
 					pNode->setAttr(CryAudio::s_szNameAttribute, pItem->GetName());
-
-					string const path = GetPath(pItem);
-					pNode->setAttr(CryAudio::Impl::SDL_mixer::s_szPathAttribute, path);
-
+					pNode->setAttr(CryAudio::Impl::SDL_mixer::s_szPathAttribute, pItem->GetPath());
 					pNode->setAttr(CryAudio::Impl::SDL_mixer::s_szValueAttribute, pStateConnection->GetValue());
+
+					if ((pItem->GetFlags() & EItemFlags::IsLocalized) != 0)
+					{
+						pNode->setAttr(CryAudio::Impl::SDL_mixer::s_szLocalizedAttribute, CryAudio::Impl::SDL_mixer::s_szTrueValue);
+					}
 				}
 			}
 			break;
@@ -614,29 +594,25 @@ void CImpl::Clear()
 }
 
 //////////////////////////////////////////////////////////////////////////
-void CImpl::CreateItemCache(CItem const* const pParent)
+void CImpl::SetLocalizedAssetsPath()
 {
-	if (pParent != nullptr)
+	if (ICVar const* const pCVar = gEnv->pConsole->GetCVar("g_languageAudio"))
 	{
-		size_t const numChildren = pParent->GetNumChildren();
+		char const* const szLanguage = pCVar->GetString();
 
-		for (size_t i = 0; i < numChildren; ++i)
+		if (szLanguage != nullptr)
 		{
-			auto const pChild = static_cast<CItem* const>(pParent->GetChildAt(i));
-
-			if (pChild != nullptr)
-			{
-				m_itemCache[pChild->GetId()] = pChild;
-				CreateItemCache(pChild);
-			}
+			m_localizedAssetsPath = PathUtil::GetLocalizationFolder().c_str();
+			m_localizedAssetsPath += "/";
+			m_localizedAssetsPath += szLanguage;
+			m_localizedAssetsPath += "/";
+			m_localizedAssetsPath += AUDIO_SYSTEM_DATA_ROOT;
+			m_localizedAssetsPath += "/";
+			m_localizedAssetsPath += CryAudio::Impl::SDL_mixer::s_szImplFolderName;
+			m_localizedAssetsPath += "/";
+			m_localizedAssetsPath += CryAudio::s_szAssetsFolderName;
 		}
 	}
-}
-
-//////////////////////////////////////////////////////////////////////////
-ControlId CImpl::GetId(string const& name) const
-{
-	return CryAudio::StringToId(name);
 }
 } // namespace SDLMixer
 } // namespace Impl

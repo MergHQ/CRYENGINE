@@ -216,4 +216,3 @@ const IImportFile* CSceneManager::GetImportFile() const
 }
 
 } // namespace MeshImporter
-

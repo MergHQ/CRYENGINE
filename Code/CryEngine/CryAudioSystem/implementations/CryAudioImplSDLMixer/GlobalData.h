@@ -26,6 +26,7 @@ static constexpr char const* s_szFadeOutTimeAttribute = "fade_out_time";
 static constexpr char const* s_szValueAttribute = "value";
 static constexpr char const* s_szMutiplierAttribute = "value_multiplier";
 static constexpr char const* s_szShiftAttribute = "value_shift";
+static constexpr char const* s_szLocalizedAttribute = "localized";
 
 // XML values
 static constexpr char const* s_szTrueValue = "true";

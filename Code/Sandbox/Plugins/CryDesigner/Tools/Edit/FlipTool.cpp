@@ -81,4 +81,3 @@ void FlipTool::FlipPolygons()
 //! Registers this tool to CryDesigner
 REGISTER_DESIGNER_TOOL_AND_COMMAND(eDesigner_Flip, eToolGroup_Edit, "Flip", FlipTool,
                                    flip, "runs flip tool", "designer.flip")
-

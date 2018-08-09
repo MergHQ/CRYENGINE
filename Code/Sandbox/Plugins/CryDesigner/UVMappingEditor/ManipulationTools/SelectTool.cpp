@@ -236,4 +236,3 @@ void RectangleSelectionContext::Select(ESelectionFlag flag, const SMouseEvent& m
 }
 }
 }
-

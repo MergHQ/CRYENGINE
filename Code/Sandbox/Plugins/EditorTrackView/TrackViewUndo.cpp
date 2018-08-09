@@ -538,4 +538,3 @@ void CUndoTrackNodeDisable::Redo()
 {
 	m_pNode->SetDisabled(m_newState);
 }
-

@@ -59,4 +59,3 @@ private:
 	CPoint m_initPoint;
 	float  m_interactionScale;
 };
-

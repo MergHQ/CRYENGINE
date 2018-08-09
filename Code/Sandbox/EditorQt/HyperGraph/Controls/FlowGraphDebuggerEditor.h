@@ -53,5 +53,3 @@ private:
 	bool                  m_CursorVisible;
 	IFlowGraphDebuggerPtr m_pFlowGraphDebugger;
 };
-
-

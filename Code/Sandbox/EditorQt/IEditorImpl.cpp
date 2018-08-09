@@ -2,115 +2,112 @@
 
 #include "StdAfx.h"
 #include "IEditorImpl.h"
-#include "CryEdit.h"
-#include "CryEditDoc.h"
-#include "Dialogs/CustomColorDialog.h"
-#include "ClassFactory.h"
-#include <CryCore/ToolsHelpers/ResourceCompilerHelper.h>
 
-#include "PluginManager.h"
-#include "IconManager.h"
-#include "ViewManager.h"
-#include "Gizmos/GizmoManager.h"
-#include "Gizmos/TransformManipulator.h"
+#include "AI/AIManager.h"
+#include "Commands/PolledKeyManager.h"
+#include "Commands/PythonManager.h"
+#include "CustomActions/CustomActionsEditorManager.h"
+#include "Export/ExportManager.h"
+#include "FileSystem/FileSystem_Enumerator.h"
+#include "GameTokens/GameTokenManager.h"
+#include "HyperGraph/Controls/FlowGraphDebuggerEditor.h"
 #include "HyperGraph/FlowGraphManager.h"
 #include "HyperGraph/FlowGraphModuleManager.h"
-#include "HyperGraph/Controls/FlowGraphDebuggerEditor.h"
-#include "Export/ExportManager.h"
+#include "LensFlareEditor/LensFlareManager.h"
+#include "Material/Material.h"
+#include "Material/MaterialBrowser.h"
 #include "Material/MaterialFXGraphMan.h"
-#include "CustomActions/CustomActionsEditorManager.h"
-#include "AI/AIManager.h"
-#include "UI/UIManager.h"
-#include "Undo/Undo.h"
 #include "Material/MaterialManager.h"
 #include "Material/MaterialPickTool.h"
-#include "EntityPrototypeManager.h"
-#include "GameEngine.h"
-#include "BaseLibraryDialog.h"
-#include "Material/Material.h"
-#include "EntityPrototype.h"
+#include "Objects/ObjectLayerManager.h"
+#include "Objects/PrefabObject.h"
 #include "Particles/ParticleManager.h"
 #include "Prefabs/PrefabManager.h"
-#include "GameTokens/GameTokenManager.h"
-#include "LensFlareEditor/LensFlareManager.h"
-#include "DataBaseDialog.h"
-#include "UIEnumsDatabase.h"
-#include "Util/Ruler.h"
-#include "Script/ScriptEnvironment.h"
-#include "Gizmos/AxisHelper.h"
-#include "ObjectCreateTool.h"
-#include "Vegetation/VegetationMap.h"
-#include "Terrain/TerrainManager.h"
-#include "Terrain/SurfaceType.h"
-#include <Cry3DEngine/I3DEngine.h>
-#include <CrySystem/IConsole.h>
-#include <CryEntitySystem/IEntitySystem.h>
-#include <CryMovie/IMovieSystem.h>
-#include <ISourceControl.h>
-#include <IDevManager.h>
-#include "Objects/ObjectLayerManager.h"
-#include "BackgroundTaskManager.h"
-#include "BackgroundScheduleManager.h"
-#include "EditorFileMonitor.h"
-#include <CrySandbox/IEditorGame.h>
-#include <LevelEditor/LevelEditorSharedState.h>
-#include "Mission.h"
-#include "Commands/PythonManager.h"
-#include "Commands/PolledKeyManager.h"
-#include "EditorFramework/PersonalizationManager.h"
-#include "EditorFramework/BroadcastManager.h"
-#include "EditorCommonInit.h"
-#include "AssetSystem/AssetManager.h"
-#include "AssetSystem/Browser/AssetModel.h"
-#include <Preferences/ViewportPreferences.h>
-#include "MainThreadWorker.h"
-
-#include <CrySerialization/Serializer.h>
-#include <CrySandbox/CryInterop.h>
-#include "ResourceSelectorHost.h"
-#include "Util/BoostPythonHelpers.h"
-
-#include "FileSystem/FileSystem_Enumerator.h"
-
 #include "QT/QtMainFrame.h"
 #include "QT/QToolTabManager.h"
 #include "QT/Widgets/QPreviewWidget.h"
-#include "Material/MaterialBrowser.h"
+#include "Script/ScriptEnvironment.h"
+#include "Terrain/SurfaceType.h"
+#include "Terrain/TerrainManager.h"
+#include "UI/UIManager.h"
+#include "Undo/Undo.h"
+#include "Util/BoostPythonHelpers.h"
+#include "Util/Ruler.h"
+#include "Vegetation/VegetationMap.h"
 
-#include "Controls/QuestionDialog.h"
-#include "FilePathUtil.h"
-#include <Notifications/NotificationCenterImpl.h>
-#include <EditorFramework/TrayArea.h>
+#include "BackgroundScheduleManager.h"
+#include "BackgroundTaskManager.h"
+#include "BaseLibraryDialog.h"
+#include "ClassFactory.h"
+#include "CryEdit.h"
+#include "CryEditDoc.h"
+#include "DataBaseDialog.h"
+#include "EditorFileMonitor.h"
+#include "EntityPrototype.h"
+#include "EntityPrototypeManager.h"
+#include "GameEngine.h"
+#include "IconManager.h"
+#include "IDevManager.h"
+#include "LinkTool.h"
+#include "MainThreadWorker.h"
+#include "Mission.h"
+#include "ObjectCreateTool.h"
+#include "PhysTool.h"
+#include "PluginManager.h"
+#include "ResourceSelectorHost.h"
+#include "SurfaceInfoPicker.h"
+#include "ViewManager.h"
+
+// MFC
+#include <Dialogs/CustomColorDialog.h>
+#include <MFCToolsPlugin.h>
+
+// EditorCommon
+#include <AssetSystem/AssetManager.h>
+#include <AssetSystem/Browser/AssetModel.h>
+#include <Controls/QuestionDialog.h>
+#include <EditorFramework/BroadcastManager.h>
+#include <EditorFramework/PersonalizationManager.h>
 #include <EditorFramework/Preferences.h>
-#include <Preferences/GeneralPreferences.h>
-#include <CrySystem/IProjectManager.h>
+#include <EditorFramework/TrayArea.h>
+#include <Gizmos/AxisHelper.h>
+#include <Gizmos/GizmoManager.h>
+#include <Gizmos/TransformManipulator.h>
 #include <LevelEditor/LevelEditorSharedState.h>
+#include <LevelEditor/Tools/ObjectMode.h>
+#include <Notifications/NotificationCenterImpl.h>
+#include <Preferences/GeneralPreferences.h>
+#include <Preferences/ViewportPreferences.h>
+#include <ConfigurationManager.h>
+#include <EditorCommonInit.h>
+#include <FilePathUtil.h>
+#include <ISourceControl.h>
+#include <UIEnumsDatabase.h>
+
+#include <Cry3DEngine/I3DEngine.h>
+#include <CryCore/ToolsHelpers/ResourceCompilerHelper.h>
+#include <CryEntitySystem/IEntitySystem.h>
+#include <CryGame/IGameFramework.h>
+#include <CryMovie/IMovieSystem.h>
+#include <CrySandbox/CryInterop.h>
+#include <CrySandbox/IEditorGame.h>
+#include <CrySerialization/Serializer.h>
+#include <CrySystem/IConsole.h>
+#include <CrySystem/IProjectManager.h>
 
 #include <QFileInfo>
-#include "ConfigurationManager.h"
-#include <CryGame/IGameFramework.h>
-#include <LevelEditor/Tools/ObjectMode.h>
 
 LINK_SYSTEM_LIBRARY("version.lib")
-// Shell utility library
 LINK_SYSTEM_LIBRARY("Shlwapi.lib")
-
-// CBaseObject hacks
-#include "SurfaceInfoPicker.h"
-#include "Objects/PrefabObject.h"
-#include "PhysTool.h"
-
-#include "MFCToolsPlugin.h"
 
 // even in Release mode, the editor will return its heap, because there's no Profile build configuration for the editor
 #ifdef _RELEASE
 	#undef _RELEASE
 #endif
 #include <CryCore/CrtDebugStats.h>
-#include "LinkTool.h"
 
 static CCryEditDoc * theDocument;
-static CEditorImpl* s_pEditor = NULL;
+static CEditorImpl* s_pEditor = nullptr;
 
 IEditor*     GetIEditor() { return s_pEditor; }
 
@@ -123,7 +120,6 @@ CEditorImpl::CEditorImpl(CGameEngine* ge)
 	: m_bInitialized(false)
 	, m_objectHideMask(0)
 	, editorConfigSpec(CONFIG_MEDIUM_SPEC)
-	, m_areHelpersEnabled(true)
 {
 	LOADING_TIME_PROFILE_SECTION;
 
@@ -383,17 +379,12 @@ void CEditorImpl::Update()
 		SetModifiedFlag(FALSE);
 	}
 
-	if (m_pGameEngine != NULL)
+	if (m_pGameEngine != nullptr)
 	{
 		IEditorGame* pEditorGame = m_pGameEngine->GetIEditorGame();
-		if (pEditorGame != NULL)
+		if (pEditorGame != nullptr)
 		{
-			IEditorGame::HelpersDrawMode::EType helpersDrawMode = IEditorGame::HelpersDrawMode::Hide;
-			if (GetIEditor()->IsHelpersDisplayed())
-			{
-				helpersDrawMode = IEditorGame::HelpersDrawMode::Show;
-			}
-			pEditorGame->UpdateHelpers(helpersDrawMode);
+			pEditorGame->UpdateHelpers();
 		}
 	}
 
@@ -642,16 +633,6 @@ void CEditorImpl::SetDataModified()
 	GetDocument()->SetModifiedFlag(TRUE);
 }
 
-void CEditorImpl::EnableHelpersDisplay(bool bEnable)
-{
-	m_areHelpersEnabled = bEnable;
-}
-
-bool CEditorImpl::IsHelpersDisplayed() const
-{
-	return m_areHelpersEnabled;
-}
-
 CBaseObject* CEditorImpl::NewObject(const char* type, const char* file /*=nullptr*/, bool bInteractive /*= false*/)
 {
 	CUndo undo("Create new object");
@@ -734,7 +715,7 @@ void CEditorImpl::SelectObjects(std::vector<CBaseObject*> objects)
 IObjectManager* CEditorImpl::GetObjectManager()
 {
 	return m_pObjectManager;
-};
+}
 
 IGizmoManager* CEditorImpl::GetGizmoManager()
 {
@@ -1115,7 +1096,14 @@ void CEditorImpl::OpenAndFocusDataBase(EDataBaseItemType type, IDataBaseItem* pI
 	OpenDataBaseLibrary(type, pItem);
 }
 
-void CEditorImpl::SetConsoleVar(const char* var, float value)
+void CEditorImpl::SetConsoleVar(const char* var, const int value)
+{
+	ICVar* ivar = GetSystem()->GetIConsole()->GetCVar(var);
+	if (ivar)
+		ivar->Set(value);
+}
+
+void CEditorImpl::SetConsoleVar(const char* var, const float value)
 {
 	ICVar* ivar = GetSystem()->GetIConsole()->GetCVar(var);
 	if (ivar)
@@ -1157,7 +1145,7 @@ void CEditorImpl::OnObjectHideMaskChanged()
 	if (maskChanges & (OBJTYPE_ENTITY | OBJTYPE_PREFAB | OBJTYPE_GROUP | OBJTYPE_BRUSH | OBJTYPE_GEOMCACHE))
 		gEnv->p3DEngine->OnObjectModified(NULL, ERF_CASTSHADOWMAPS);
 
-	GetIEditorImpl()->Notify(eNotify_OnDisplayRenderUpdate);
+	GetIEditorImpl()->Notify(eNotify_OnObjectHideMaskChange);
 
 	m_objectHideMask = hideMask;
 }
@@ -1225,7 +1213,7 @@ IProjectManager* CEditorImpl::GetProjectManager()
 	return m_pSystem->GetIProjectManager();
 }
 
-bool CEditorImpl::IsSourceControlAvailable()
+bool CEditorImpl::IsSourceControlAvailable() 
 {
 	if (gEditorGeneralPreferences.enableSourceControl() && GetSourceControl())
 		return true;
@@ -1359,7 +1347,6 @@ void CEditorImpl::InitFinished()
 
 		m_pNotificationCenter->Init();
 		m_pPreferences->Init();
-		SEditorSettings::Load();
 		gViewportDebugPreferences.objectHideMaskChanged.Connect(this, &CEditorImpl::OnObjectHideMaskChanged);
 		m_pObjectManager->LoadClassTemplates("%EDITOR%");
 	}
@@ -1617,4 +1604,3 @@ void CEditorImpl::SetPlayerViewMatrix(const Matrix34& tm, bool bEyePos /*= true*
 	if (GetGameEngine())
 		GetGameEngine()->SetPlayerViewMatrix(tm, bEyePos);
 }
-

@@ -304,4 +304,3 @@ void CNotificationWidget::leaveEvent(QEvent* pEvent)
 	if (m_pHideTimer && !m_pHideTimer->isActive())
 		signalNotificationHide();
 }
-

@@ -35,9 +35,12 @@ namespace Cry
 			}
 		}
 
-		const char* CUser::GetStatus() const
+		void CUser::SetPresence(const SRichPresence& presence)
 		{
-			return m_accounts.empty() ? "?Account?" : m_accounts[0]->GetStatus();
+			for (IAccount* pAccount : m_accounts)
+			{
+				pAccount->SetPresence(presence);
+			}
 		}
 
 		ITexture* CUser::GetAvatar(EAvatarSize size) const

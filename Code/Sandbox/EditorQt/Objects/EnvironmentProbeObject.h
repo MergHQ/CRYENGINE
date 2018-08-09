@@ -9,9 +9,8 @@
  *	also it encapsulates a light
  */
 
-class QWidget;
-struct IMaterial;
 struct IBackgroundScheduleItemWork;
+struct IMaterial;
 
 class SANDBOX_API CEnvironementProbeObject : public CEntityObject
 {
@@ -27,7 +26,7 @@ public:
 
 	void                         CreateInspectorWidgets(CInspectorWidgetCreator& creator) override;
 
-	void                         Display(SDisplayContext& dc);
+	virtual void                 Display(CObjectRenderHelper& objRenderHelper) override;
 	void                         GetDisplayBoundBox(AABB& box) override;
 	void                         GetBoundBox(AABB& box);
 	void                         GetLocalBounds(AABB& aabb);
@@ -35,9 +34,7 @@ public:
 	IBackgroundScheduleItemWork* GenerateCubemapTask();
 	void                         GenerateCubemap();
 	void                         OnPreviewCubemap(IVariable* piVariable);
-	void                         OnCubemapResolutionChange(IVariable* piVariable);
 	IMaterial*                   CreateMaterial();
-	void                         UpdateMaterial();
 	virtual void                 UpdateLinks();
 
 	virtual int                  AddEntityLink(const string& name, CryGUID targetEntityId) override;
@@ -56,25 +53,6 @@ protected:
 	CSmartVariableEnum<int> m_cubemap_resolution;
 };
 
-class CEnvironementProbeTODObject : public CEnvironementProbeObject
-{
-public:
-	DECLARE_DYNCREATE(CEnvironementProbeTODObject)
-
-	//////////////////////////////////////////////////////////////////////////
-	// Overrides from CBaseObject.
-	//////////////////////////////////////////////////////////////////////////
-	void GenerateCubemap();
-	void UpdateLinks();
-
-protected:
-	//! Dtor must be protected.
-	CEnvironementProbeTODObject();
-
-private:
-	int m_timeSlots;
-};
-
 /*!
  * Class Description of EnvironmentProbeObject.
  */
@@ -88,4 +66,3 @@ public:
 	const char*    GetTextureIcon()             { return "%EDITOR%/ObjectIcons/environmentProbe.bmp"; }
 	virtual bool   IsCreatable() const override { return gEnv->pEntitySystem->GetClassRegistry()->FindClass("EnvironmentLight"); }
 };
-

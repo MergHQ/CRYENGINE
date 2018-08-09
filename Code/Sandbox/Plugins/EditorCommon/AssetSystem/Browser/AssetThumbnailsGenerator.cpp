@@ -13,7 +13,10 @@ namespace AsseThumbnailsGenerator
 
 void GenerateThumbnailsAsync(const string& folder, const std::function<void()>& finalize)
 {
-	std::vector<CAssetPtr> assetsCopy = GetIEditor()->GetAssetManager()->GetAssetsFromDirectory(folder);
+	std::vector<CAssetPtr> assetsCopy = GetIEditor()->GetAssetManager()->GetAssetsFromDirectory(folder, [](CAsset* pAsset)
+	{
+		return pAsset->GetType()->HasThumbnail();
+	});
 	if (assetsCopy.empty())
 	{
 		return;
@@ -36,7 +39,7 @@ void GenerateThumbnailsAsync(const string& folder, const std::function<void()>& 
 				return; // Preempt thumbnail generation when user closed the editor.
 			}
 
-			pNotification->SetMessage(QObject::tr("for asset '%1'").arg(pAsset->GetMetadataFile()));
+			pNotification->SetMessage(QObject::tr("for asset '%1'").arg(pAsset->GetMetadataFile().c_str()));
 
 			pAsset->GenerateThumbnail();
 

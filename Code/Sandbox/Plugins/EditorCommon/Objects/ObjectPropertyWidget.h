@@ -2,25 +2,26 @@
 
 #pragma once
 
-#include "QScrollableBox.h"
+#include "EditorFramework/Inspector.h"
+
+#include <QScrollableBox.h>
+
 #include <memory>
 #include <vector>
 
-#include "EditorFramework/Inspector.h"
-
-class QScrollArea;
-class QVBoxLayout;
 class CBaseObject;
-struct CObjectEvent;
+class QScrollArea;
 class QShowEvent;
 class QPropertyTree;
+class QVBoxLayout;
+struct CObjectEvent;
 
 class EDITOR_COMMON_API CObjectPropertyWidget : public QWidget, public IAutoEditorNotifyListener
 {
 	Q_OBJECT
 
 public:
-	typedef std::function<void(CBaseObject* pObject, Serialization::IArchive& ar, bool bMultiEdit)> TSerializationFunc;
+	typedef std::function<void (CBaseObject* pObject, Serialization::IArchive& ar, bool bMultiEdit)> TSerializationFunc;
 
 	CObjectPropertyWidget(TSerializationFunc serializationFunc);
 	virtual ~CObjectPropertyWidget();
@@ -42,11 +43,10 @@ private:
 	void ReloadPropertyTrees();
 	void CleanupDeletedObjects();
 
-	PropertyTreePtr m_propertyTree;
-	SerializerList  m_objectSerializers;
-	bool            m_bReloadProperties;
-	bool            m_bCleanupDeletedObjects;
+	PropertyTreePtr    m_propertyTree;
+	SerializerList     m_objectSerializers;
+	bool               m_bReloadProperties;
+	bool               m_bCleanupDeletedObjects;
 
 	TSerializationFunc m_serializationFunc;
 };
-

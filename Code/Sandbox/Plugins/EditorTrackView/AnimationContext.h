@@ -214,4 +214,3 @@ private:
 	//TODO : Improve observer system, right now every function has to loop and every event is a new virtual function...
 	std::vector<IAnimationContextListener*> m_contextListeners;
 };
-

@@ -27,4 +27,3 @@ typedef _smart_ptr<UVCursor> UVCursorPtr;
 
 }
 }
-

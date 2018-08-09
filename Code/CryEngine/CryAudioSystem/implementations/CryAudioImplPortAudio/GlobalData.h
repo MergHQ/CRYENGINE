@@ -16,8 +16,10 @@ static constexpr char const* s_szFileTag = "Sample";
 // XML attributes
 static constexpr char const* s_szPathAttribute = "path";
 static constexpr char const* s_szLoopCountAttribute = "loop_count";
+static constexpr char const* s_szLocalizedAttribute = "localized";
 
 // XML values
+static constexpr char const* s_szTrueValue = "true";
 static constexpr char const* s_szStartValue = "start";
 static constexpr char const* s_szStopValue = "stop";
 } // namespace PortAudio

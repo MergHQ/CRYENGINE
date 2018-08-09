@@ -140,4 +140,3 @@ private:
 };
 
 #endif // __SplineCtrl_h__
-

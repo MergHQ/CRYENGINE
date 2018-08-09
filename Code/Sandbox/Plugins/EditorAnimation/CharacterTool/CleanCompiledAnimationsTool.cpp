@@ -50,4 +50,3 @@ void ShowCleanCompiledAnimationsTool(QWidget* parent)
 }
 
 }
-

@@ -146,4 +146,3 @@ inline _smart_ptr<T> MakeSmartFromUnique(std::unique_ptr<T, Detail::DeleteUsingR
 	pUnique.reset();                     // Calls Release()
 	return pSmart;
 }
-

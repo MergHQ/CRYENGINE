@@ -210,4 +210,3 @@ void CDirectorNodeAnimator::UnBind(CTrackViewAnimNode* pNode)
 		}
 	}
 }
-

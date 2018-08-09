@@ -172,4 +172,3 @@ QVariant CTextureType::GetDetailValue(const CAsset * pAsset, const CItemModelAtt
 	}
 	return QVariant();
 }
-

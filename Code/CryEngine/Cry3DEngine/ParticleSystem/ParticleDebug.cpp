@@ -180,13 +180,13 @@ void DebugDrawComponentCollisions(CParticleComponentRuntime& runtime)
 	{
 		SContactPoint contact = contactPoints.Load(particleId);
 
-		if (contact.m_totalCollisions == 0)
+		if (!contact.m_collided)
 			continue;
 
 		ColorB color = ColorB(0, 0, 0);
-		if (contact.m_state.ignore)
+		if (contact.m_ignore)
 			color = ColorB(128, 128, 128);
-		else if (contact.m_state.sliding)
+		else if (contact.m_sliding)
 			color = ColorB(255, 128, 64);
 		else
 			color = ColorB(64, 128, 255);

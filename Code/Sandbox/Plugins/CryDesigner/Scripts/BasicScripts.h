@@ -80,4 +80,3 @@ void OutputPolygonPythonCreationCode(Polygon* pPolygon);
 
 }
 }
-

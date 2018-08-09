@@ -377,10 +377,6 @@ public:
 	//! <description>Gets the amount of the memory for the system.</description>
 	int GetSystemMem(IFunctionHandler* pH);
 
-	//! <code>System.IsPS20Supported()</code>
-	//! <description>Checks if the PS20 is supported.</description>
-	int IsPS20Supported(IFunctionHandler* pH);
-
 	//! <code>System.IsHDRSupported()</code>
 	//! <description>Checks if the HDR is supported.</description>
 	int IsHDRSupported(IFunctionHandler* pH);

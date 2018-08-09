@@ -287,4 +287,3 @@ CDockableContainer::FactoryInfo::FactoryInfo(std::function<QWidget*()> factory, 
 CDockableContainer::WidgetInstance::WidgetInstance(QWidget* widget, QString spawnName) : m_widget(widget), m_spawnName(spawnName)
 {
 }
-

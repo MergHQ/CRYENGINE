@@ -94,11 +94,11 @@ struct SVClothParams
 	bool  springDampingPerSubstep;      //!< Also damp springs in substeps.
 	float collisionDampingTangential;   //!< Tangential damping factor in case of collisions.
 
-	// Long Range Attachments
-	bool  longRangeAttachments;                     //!< Enables LRA.
-	float longRangeAttachmentsAllowedExtension;     //!< Allowed extension, e.g. 0.1 = 10%.
-	float longRangeAttachmentsMaximumShiftFactor;   //!< Scales maximum shift per iteration to closest neighbor, e.g. 0.5 -> half way to closest neighbor.
-	float longRangeAttachmentsShiftCollisionFactor; //!< Scales in case of shift the velocity.
+	// Nearest Neighbor Distance Constraints
+	bool  useNearestNeighborDistanceConstraints; //!< Enables nndc
+	float nndcAllowedExtension;			//!< Allowed extension, e.g. 0.1 = 10%.
+	float nndcMaximumShiftFactor;		//!< Scales maximum shift per iteration to closest neighbor, e.g. 0.5 -> half way to closest neighbor.
+	float nndcShiftCollisionFactor;		//!< Scales in case of shift the velocity.
 
 	// Test Reset Damping
 	int   resetDampingRange;            //!< No of frames, within resetDampingFactor is used within simulation for dampening the system.
@@ -121,7 +121,7 @@ struct SVClothParams
 	string materialLods[g_nMaxGeomLodLevels];
 	float  debugDrawVerticesRadius;
 	int    debugDrawCloth;
-	int    debugDrawLRA;       //!< Debug long range attachments (LRA).
+	int    debugDrawNndc;      //!< Debug Nearest Neighbor Distance Constraints (nndc).
 	int    debugPrint;
 
 	float* weights;            //!< Per vertex weights used for blending with animation.
@@ -163,11 +163,11 @@ public:
 		, springDampingPerSubstep(true)
 		, collisionDampingTangential(0)
 
-		// Long Range Attachments
-		, longRangeAttachments(false)
-		, longRangeAttachmentsAllowedExtension(0.0)     // allowed extension, e.g. 0.1 = 10%
-		, longRangeAttachmentsMaximumShiftFactor(0.25)  // scales maximum shift per iteration to closest neighbor, e.g. 0.5 -> half way to closest neighbor
-		, longRangeAttachmentsShiftCollisionFactor(1.0) // scales in case of shift the velocity, 0.0=no shift, 1.0=no velocity change, -1=increase velocity by change
+		// Nearest Neighbor Distance Constraints
+		, useNearestNeighborDistanceConstraints(false)
+		, nndcAllowedExtension(0.0)     // allowed extension, e.g. 0.1 = 10%
+		, nndcMaximumShiftFactor(0.25)  // scales maximum shift per iteration to closest neighbor, e.g. 0.5 -> half way to closest neighbor
+		, nndcShiftCollisionFactor(1.0) // scales in case of shift the velocity, 0.0=no shift, 1.0=no velocity change, -1=increase velocity by change
 
 		// Test Reset Damping
 		, resetDampingRange(3)
@@ -189,7 +189,7 @@ public:
 		, material("")
 		, debugDrawVerticesRadius(0.01f)
 		, debugDrawCloth(1)
-		, debugDrawLRA(0) // long range attachments
+		, debugDrawNndc(0) // Nearest Neighbor Distance Constraints
 		, debugPrint(0)
 
 		, weights(nullptr)

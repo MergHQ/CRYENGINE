@@ -41,4 +41,3 @@ BOOL __stdcall DllMain(HINSTANCE hinstDLL, ULONG fdwReason, LPVOID lpvReserved)
 	}
 	return TRUE;
 }
-

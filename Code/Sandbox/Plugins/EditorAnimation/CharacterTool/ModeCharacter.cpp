@@ -781,4 +781,3 @@ void ModeCharacter::UpdateToolbar()
 }
 
 }
-

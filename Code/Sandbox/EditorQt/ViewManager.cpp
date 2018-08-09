@@ -2,25 +2,26 @@
 
 #include "StdAfx.h"
 #include "ViewManager.h"
-#include "Viewport.h"
 
+#include "LevelEditor/LevelEditorViewport.h"
+#include "Qt/Widgets/QViewportHeader.h"
+#include "Qt/QtMainFrame.h"
 #include "2DViewport.h"
-#include "TopRendererWnd.h"
-#include "RenderViewport.h"
-#include "ModelViewport.h"
 #include "CryEditDoc.h"
+#include "TopRendererWnd.h"
 
-#include <IViewSystem.h>
-#include <CryGame/IGameFramework.h>
 #include <Preferences/ViewportPreferences.h>
-#include "QtViewPane.h"
+#include <ModelViewport.h>
+#include <QtViewPane.h>
+#include <QViewportPane.h>
+#include <RenderViewport.h>
+#include <Viewport.h>
+
+#include <CryGame/IGameFramework.h>
+#include <IViewSystem.h>
 
 #include <QApplication>
 #include <QVBoxLayout>
-#include "Qt/QtMainFrame.h"
-#include "QViewportPane.h"
-#include "Qt/Widgets/QViewportHeader.h"
-#include "LevelEditor/LevelEditorViewport.h"
 
 class QViewportPaneContainer : public CDockableWidget
 {
@@ -41,43 +42,56 @@ public:
 		return m_pViewport->GetName().c_str();
 	}
 
+	virtual QMenu* GetPaneMenu() const override
+	{
+		QMenu* pMenu = CDockableWidget::GetPaneMenu();
+		QMenu* pDisplayMenu = pMenu->addMenu("Display");
+		pDisplayMenu->addAction(GetIEditorImpl()->GetICommandManager()->GetAction("general.fullscreen"));
+
+		return pMenu;
+	}
+
 	virtual QVariantMap GetState() const
 	{
+		QVariantMap state;
+		state.insert("Helpers", m_pViewport->GetHelperSettings().GetState());
+
 		if (m_pViewport->IsRenderViewport())
 		{
 			CRenderViewport* viewport = static_cast<CRenderViewport*>(m_pViewport);
-
-			QVariantMap state;
 			state.insert("resolutionMode", static_cast<int>(viewport->GetResolutionMode()));
 			int width, height;
 			viewport->GetResolution(width, height);
 			state.insert("xViewportRes", width);
 			state.insert("yViewportRes", height);
 			state.insert("cameraSpeed", viewport->GetCameraMoveSpeed());
-			return state;
 		}
 		else if (m_pViewport->GetType() == ET_ViewportXY ||
 		         m_pViewport->GetType() == ET_ViewportYZ ||
 		         m_pViewport->GetType() == ET_ViewportXZ)
 		{
 			C2DViewport* viewport = static_cast<C2DViewport*>(m_pViewport);
-			QVariantMap state;
 			state.insert("showGrid", viewport->GetShowGrid());
-			return state;
 		}
 
-		return QVariantMap();
+		return state;
 	}
 
 	// Restore transient state
 	virtual void SetState(const QVariantMap& state)
 	{
+		QVariant helpers = state.value("Helpers");
+		if (helpers.isValid() && helpers.type() == QVariant::Map)
+		{
+			m_pViewport->GetHelperSettings().SetState(helpers.value<QVariantMap>());
+		}
+
 		if (m_pViewport->IsRenderViewport())
 		{
 			CRenderViewport* viewport = static_cast<CRenderViewport*>(m_pViewport);
 			CViewport::EResolutionMode fitTowindow = CViewport::EResolutionMode::Window;
-			QVariant fitVar = state.value("resolutionMode");
 
+			QVariant fitVar = state.value("resolutionMode");
 			if (fitVar.isValid())
 			{
 				fitTowindow = static_cast<CViewport::EResolutionMode>(fitVar.toInt());
@@ -129,7 +143,6 @@ private:
 	CViewport* m_pViewport;
 };
 
-//////////////////////////////////////////////////////////////////////////
 IPane* CViewportClassDesc::CreatePane() const
 {
 	CViewport* pViewport = CreateViewport();
@@ -182,8 +195,6 @@ struct CViewportClassDesc_Map : public CViewportClassDesc
 };
 
 //////////////////////////////////////////////////////////////////////
-// Construction/Destruction
-//////////////////////////////////////////////////////////////////////
 CViewManager::CViewManager()
 {
 	m_origin2D(0, 0, 0);
@@ -209,7 +220,6 @@ CViewManager::CViewManager()
 	GetIEditorImpl()->RegisterNotifyListener(this);
 }
 
-//////////////////////////////////////////////////////////////////////////
 CViewManager::~CViewManager()
 {
 	GetIEditorImpl()->UnregisterNotifyListener(this);
@@ -218,7 +228,6 @@ CViewManager::~CViewManager()
 	m_viewportDesc.clear();
 }
 
-//////////////////////////////////////////////////////////////////////////
 void CViewManager::RegisterViewportDesc(CViewportClassDesc* desc)
 {
 	m_viewportDesc.push_back(desc);
@@ -227,7 +236,6 @@ void CViewManager::RegisterViewportDesc(CViewportClassDesc* desc)
 	GetIEditorImpl()->GetClassFactory()->RegisterClass(desc);
 }
 
-//////////////////////////////////////////////////////////////////////////
 void CViewManager::RegisterViewport(CViewport* pViewport)
 {
 	m_viewports.push_back(pViewport);
@@ -236,7 +244,6 @@ void CViewManager::RegisterViewport(CViewport* pViewport)
 	m_bGameViewportsUpdated = false;
 }
 
-//////////////////////////////////////////////////////////////////////////
 void CViewManager::UnregisterViewport(CViewport* pViewport)
 {
 	if (m_pSelectedView == pViewport)
@@ -247,7 +254,6 @@ void CViewManager::UnregisterViewport(CViewport* pViewport)
 	m_bGameViewportsUpdated = false;
 }
 
-//////////////////////////////////////////////////////////////////////////
 CViewport* CViewManager::GetViewport(EViewportType type) const
 {
 	////////////////////////////////////////////////////////////////////////
@@ -262,7 +268,6 @@ CViewport* CViewManager::GetViewport(EViewportType type) const
 	return 0;
 }
 
-//////////////////////////////////////////////////////////////////////////
 CViewport* CViewManager::GetViewport(const string& name) const
 {
 	for (int i = 0; i < m_viewports.size(); i++)
@@ -273,7 +278,6 @@ CViewport* CViewManager::GetViewport(const string& name) const
 	return 0;
 }
 
-//////////////////////////////////////////////////////////////////////////
 void CViewManager::UpdateViews(int flags)
 {
 	// Update each attached view,
@@ -283,7 +287,6 @@ void CViewManager::UpdateViews(int flags)
 	}
 }
 
-//////////////////////////////////////////////////////////////////////////
 void CViewManager::ResetViews()
 {
 	LOADING_TIME_PROFILE_SECTION;
@@ -294,7 +297,6 @@ void CViewManager::ResetViews()
 	}
 }
 
-//////////////////////////////////////////////////////////////////////////
 void CViewManager::IdleUpdate()
 {
 	LOADING_TIME_PROFILE_SECTION;
@@ -314,7 +316,6 @@ void CViewManager::IdleUpdate()
 	}
 }
 
-//////////////////////////////////////////////////////////////////////////
 void CViewManager::GetViewportDescriptions(std::vector<CViewportClassDesc*>& descriptions)
 {
 	descriptions.clear();
@@ -331,13 +332,11 @@ void CViewManager::SetZoom2D(float zoom)
 		m_zoom2D = 460.0f;
 };
 
-//////////////////////////////////////////////////////////////////////////
 void CViewManager::Cycle2DViewport()
 {
 	//GetLayout()->Cycle2DViewport();
 }
 
-//////////////////////////////////////////////////////////////////////////
 CViewport* CViewManager::GetViewportAtPoint(CPoint point) const
 {
 	QWidget* wnd = qApp->widgetAt(point.x, point.y);
@@ -374,7 +373,6 @@ bool CViewManager::IsViewport(QWidget* w)
 	return false;
 }
 
-//////////////////////////////////////////////////////////////////////////
 void CViewManager::SelectViewport(CViewport* pViewport)
 {
 	//TODO : this could be a property of CViewport, does not need to be here
@@ -415,19 +413,16 @@ void CViewManager::SelectViewport(CViewport* pViewport)
 	}
 }
 
-//////////////////////////////////////////////////////////////////////////
 CViewport* CViewManager::GetActiveViewport() const
 {
 	return m_pSelectedView;
 }
 
-//////////////////////////////////////////////////////////////////////////
 CViewport* CViewManager::GetGameViewport() const
 {
 	return GetViewport(ET_ViewportCamera);
 }
 
-//////////////////////////////////////////////////////////////////////////
 int CViewManager::GetNumberOfGameViewports()
 {
 	if (m_bGameViewportsUpdated)
@@ -444,7 +439,6 @@ int CViewManager::GetNumberOfGameViewports()
 	return m_nGameViewports;
 }
 
-//////////////////////////////////////////////////////////////////////////
 void CViewManager::OnEditorNotifyEvent(EEditorNotifyEvent event)
 {
 	switch (event)
@@ -459,7 +453,6 @@ void CViewManager::OnEditorNotifyEvent(EEditorNotifyEvent event)
 	}
 }
 
-//////////////////////////////////////////////////////////////////////////
 string CViewManager::ViewportTypeToClassName(EViewportType viewType)
 {
 	string viewClassName;
@@ -471,19 +464,16 @@ string CViewManager::ViewportTypeToClassName(EViewportType viewType)
 	return viewClassName;
 }
 
-//////////////////////////////////////////////////////////////////////////
 bool CViewManager::TryResize(CViewport* viewport, int width, int height, bool bMaximize)
 {
 	return false;
 }
 
-//////////////////////////////////////////////////////////////////////////
 void CViewManager::RegisterCameraDelegate(ICameraDelegate* pCameraDelegate)
 {
 	stl::push_back_unique(m_cameraDelegates, pCameraDelegate);
 }
 
-//////////////////////////////////////////////////////////////////////////
 void CViewManager::UnregisterCameraDelegate(ICameraDelegate* pCameraDelegate)
 {
 	stl::find_and_erase(m_cameraDelegates, pCameraDelegate);

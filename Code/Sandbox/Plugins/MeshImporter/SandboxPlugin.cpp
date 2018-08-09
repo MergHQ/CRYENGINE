@@ -109,5 +109,3 @@ const QVariant& CFbxToolPlugin::GetPersonalizationProperty(const QString& propNa
 {
 	return GetIEditor()->GetPersonalizationManager()->GetProperty(MESH_IMPORTER_NAME, propName);
 }
-
-

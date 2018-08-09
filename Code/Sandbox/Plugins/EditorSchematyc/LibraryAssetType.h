@@ -27,7 +27,7 @@ public:
 
 	virtual CAssetEditor* Edit(CAsset* pAsset) const override;
 	virtual bool          RenameAsset(CAsset* pAsset, const char* szNewName) const override;
-	virtual bool          DeleteAssetFiles(const CAsset& asset, bool bDeleteSourceFile, size_t& numberOfFilesDeleted) const override;
+	virtual void          PreDeleteAssetFiles(const CAsset& asset) const override;
 
 protected:
 	virtual bool OnCreate(INewAsset& asset, const void* pTypeSpecificParameter) const override;
@@ -41,4 +41,3 @@ private:
 // ~TODO
 
 }
-

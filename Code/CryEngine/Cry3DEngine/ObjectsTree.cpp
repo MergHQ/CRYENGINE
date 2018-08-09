@@ -3000,7 +3000,7 @@ void COctreeNode::InsertObject(IRenderNode* pObj, const AABB& objBox, const floa
 	COctreeNode* pCurrentNode = this;
 
 	EERType eType = pObj->GetRenderNodeType();
-	const uint32 renderFlags = (pObj->GetRndFlags() & (ERF_GOOD_OCCLUDER | ERF_CASTSHADOWMAPS | ERF_HAS_CASTSHADOWMAPS));
+	const uint64 renderFlags = (pObj->GetRndFlags() & (ERF_GOOD_OCCLUDER | ERF_CASTSHADOWMAPS | ERF_HAS_CASTSHADOWMAPS));
 
 	const bool bTypeLight = (eType == eERType_Light);
 	const float fViewDistRatioVegetation = GetCVars()->e_ViewDistRatioVegetation;

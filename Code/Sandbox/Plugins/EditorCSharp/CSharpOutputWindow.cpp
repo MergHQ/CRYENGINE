@@ -195,4 +195,3 @@ void CCSharpOutputWindow::OnMessagesUpdated(const string messages)
 	m_pCompileTextWidget->unsetCursor();
 	m_pCompileTextWidget->setPlainText(messages.c_str());
 }
-

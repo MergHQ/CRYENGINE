@@ -257,8 +257,8 @@ bool CEntityComponentAudio::PlayFile(CryAudio::SPlayFileInfo const& playbackInfo
 
 //////////////////////////////////////////////////////////////////////////
 void CEntityComponentAudio::StopFile(
-  char const* const szFile,
-  CryAudio::AuxObjectId const audioAuxObjectId /*= DefaultAuxObjectId*/)
+	char const* const szFile,
+	CryAudio::AuxObjectId const audioAuxObjectId /*= DefaultAuxObjectId*/)
 {
 	if (m_pEntity != nullptr)
 	{
@@ -284,9 +284,9 @@ void CEntityComponentAudio::StopFile(
 
 //////////////////////////////////////////////////////////////////////////
 bool CEntityComponentAudio::ExecuteTrigger(
-  CryAudio::ControlId const audioTriggerId,
-  CryAudio::AuxObjectId const audioAuxObjectId /* = DefaultAuxObjectId */,
-  CryAudio::SRequestUserData const& userData /* = SAudioRequestUserData::GetEmptyObject() */)
+	CryAudio::ControlId const audioTriggerId,
+	CryAudio::AuxObjectId const audioAuxObjectId /* = DefaultAuxObjectId */,
+	CryAudio::SRequestUserData const& userData /* = SAudioRequestUserData::GetEmptyObject() */)
 {
 	if (m_pEntity != nullptr)
 	{
@@ -327,9 +327,9 @@ bool CEntityComponentAudio::ExecuteTrigger(
 
 //////////////////////////////////////////////////////////////////////////
 void CEntityComponentAudio::StopTrigger(
-  CryAudio::ControlId const audioTriggerId,
-  CryAudio::AuxObjectId const audioAuxObjectId /* = DefaultAuxObjectId */,
-  CryAudio::SRequestUserData const& userData /* = SAudioRequestUserData::GetEmptyObject() */)
+	CryAudio::ControlId const audioTriggerId,
+	CryAudio::AuxObjectId const audioAuxObjectId /* = DefaultAuxObjectId */,
+	CryAudio::SRequestUserData const& userData /* = SAudioRequestUserData::GetEmptyObject() */)
 {
 	if (audioAuxObjectId != CryAudio::InvalidAuxObjectId)
 	{
@@ -450,7 +450,7 @@ void CEntityComponentAudio::AudioAuxObjectsMoveWithEntity(bool const bCanMoveWit
 }
 
 //////////////////////////////////////////////////////////////////////////
-void CEntityComponentAudio::AddAsListenerToAudioAuxObject(CryAudio::AuxObjectId const audioAuxObjectId, void (* func)(CryAudio::SRequestInfo const* const), CryAudio::ESystemEvents const eventMask)
+void CEntityComponentAudio::AddAsListenerToAudioAuxObject(CryAudio::AuxObjectId const audioAuxObjectId, void (*func)(CryAudio::SRequestInfo const* const), CryAudio::ESystemEvents const eventMask)
 {
 	AuxObjects::const_iterator const iter(m_mapAuxObjects.find(audioAuxObjectId));
 
@@ -461,7 +461,7 @@ void CEntityComponentAudio::AddAsListenerToAudioAuxObject(CryAudio::AuxObjectId 
 }
 
 //////////////////////////////////////////////////////////////////////////
-void CEntityComponentAudio::RemoveAsListenerFromAudioAuxObject(CryAudio::AuxObjectId const audioAuxObjectId, void (* func)(CryAudio::SRequestInfo const* const))
+void CEntityComponentAudio::RemoveAsListenerFromAudioAuxObject(CryAudio::AuxObjectId const audioAuxObjectId, void (*func)(CryAudio::SRequestInfo const* const))
 {
 	AuxObjects::const_iterator const iter(m_mapAuxObjects.find(audioAuxObjectId));
 
@@ -616,4 +616,40 @@ CryAudio::AuxObjectId CEntityComponentAudio::GetAuxObjectIdFromAudioObject(CryAu
 		}
 	}
 	return CryAudio::InvalidAuxObjectId;
+}
+
+//////////////////////////////////////////////////////////////////////////
+void CEntityComponentAudio::ToggleAbsoluteVelocityTracking(bool const enable, CryAudio::AuxObjectId const audioAuxObjectId /* = CryAudio::DefaultAuxObjectId */, CryAudio::SRequestUserData const& userData /* = CryAudio::SRequestUserData::GetEmptyObject() */)
+{
+	if (audioAuxObjectId != CryAudio::InvalidAuxObjectId)
+	{
+		AuxObjectPair const& audioObjectPair = GetAudioAuxObjectPair(audioAuxObjectId);
+
+		if (audioObjectPair.first != CryAudio::InvalidAuxObjectId)
+		{
+			(SToggleAbsoluteVelocityTracking(enable))(audioObjectPair);
+		}
+	}
+	else
+	{
+		std::for_each(m_mapAuxObjects.begin(), m_mapAuxObjects.end(), SToggleAbsoluteVelocityTracking(enable));
+	}
+}
+
+//////////////////////////////////////////////////////////////////////////
+void CEntityComponentAudio::ToggleRelativeVelocityTracking(bool const enable, CryAudio::AuxObjectId const audioAuxObjectId /* = CryAudio::DefaultAuxObjectId */, CryAudio::SRequestUserData const& userData /* = CryAudio::SRequestUserData::GetEmptyObject() */)
+{
+	if (audioAuxObjectId != CryAudio::InvalidAuxObjectId)
+	{
+		AuxObjectPair const& audioObjectPair = GetAudioAuxObjectPair(audioAuxObjectId);
+
+		if (audioObjectPair.first != CryAudio::InvalidAuxObjectId)
+		{
+			(SToggleRelativeVelocityTracking(enable))(audioObjectPair);
+		}
+	}
+	else
+	{
+		std::for_each(m_mapAuxObjects.begin(), m_mapAuxObjects.end(), SToggleRelativeVelocityTracking(enable));
+	}
 }

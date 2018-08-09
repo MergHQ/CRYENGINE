@@ -206,4 +206,3 @@ int LoopSelectionTool::FindBestLoopUVEdge(const Vec2& uv0, const Vec2& uv1, UVIs
 
 REGISTER_UVMAPPING_TOOL_AND_COMMAND(eUVMappingTool_LoopSelect, eUVMappingToolGroup_Manipulation, "Loop Selection", LoopSelectionTool,
                                     loopselection, "runs loop selection tool", "uvmapping.loopselection")
-

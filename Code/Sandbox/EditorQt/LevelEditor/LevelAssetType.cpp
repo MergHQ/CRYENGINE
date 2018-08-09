@@ -1,26 +1,27 @@
 // Copyright 2001-2018 Crytek GmbH / Crytek Group. All rights reserved.
 
 #include <StdAfx.h>
-#include "LevelAssetType.h"
-#include "IEditorImpl.h"
-#include "LevelEditor.h" // CLevelEditor::tr
-#include "LevelIndependentFileMan.h"
-#include "LevelEditor/NewLevelDialog.h"
-#include "LevelFileUtils.h"
 #include "CryEdit.h"
 #include "CryEditDoc.h"
+#include "IEditorImpl.h"
+#include "FilePathUtil.h"
 #include "GameExporter.h"
+#include "LevelAssetType.h"
+#include "LevelEditor.h" // CLevelEditor::tr
+#include "LevelIndependentFileMan.h"
+#include "LevelFileUtils.h"
+#include "QtUtil.h"
+#include "ThreadingUtils.h"
+#include "LevelEditor/NewLevelDialog.h"
 #include "AssetSystem/Asset.h"
 #include "AssetSystem/AssetManager.h"
 #include "AssetSystem/DependencyTracker.h"
+#include "Preferences/GeneralPreferences.h"
+#include "CrySandbox/ScopedVariableSetter.h"
+#include "CryString/CryPath.h"
 #include "Prefabs/PrefabManager.h"
-#include "ThreadingUtils.h"
-#include <Preferences/GeneralPreferences.h>
-#include <CrySandbox/ScopedVariableSetter.h>
-#include <CryString/CryPath.h>
-#include "QtUtil.h"
+#include "Objects/ObjectLayerManager.h"
 #include <QDirIterator> 
-#include <FilePathUtil.h>
 
 REGISTER_ASSET_TYPE(CLevelType)
 
@@ -153,41 +154,30 @@ CAssetEditor* CLevelType::Edit(CAsset* pAsset) const
 	return nullptr;
 }
 
-bool CLevelType::DeleteAssetFiles(const CAsset& asset, bool bDeleteSourceFile, size_t& numberOfFilesDeleted) const
+std::vector<string> CLevelType::GetAssetFiles(const CAsset& asset, bool includeSourceFile, bool makeAbsolute) const
 {
-	numberOfFilesDeleted = 0;
+	std::vector<string> files = CAssetType::GetAssetFiles(asset, includeSourceFile, makeAbsolute);
+
+	if (makeAbsolute)
+	{
+		files.push_back(PathUtil::Make(PathUtil::GetGameProjectAssetsPath(), PathUtil::GetDirectory(asset.GetFile(0))));
+	}
+	else
+	{
+		files.push_back(PathUtil::GetDirectory(asset.GetFile(0)));
+	}
+
+	return files;
+}
+
+void CLevelType::PreDeleteAssetFiles(const CAsset& asset) const
+{
 	const string activeLevelPath = PathUtil::GetDirectory(GetIEditorImpl()->GetDocument()->GetPathName());
 	const string levelPath = PathUtil::Make(PathUtil::GetGameFolder(), Private_LevelAssetType::GetLevelFolder(asset));
 	if (activeLevelPath.CompareNoCase(levelPath) == 0)
 	{
 		GetIEditorImpl()->GetSystem()->GetIPak()->ClosePacks(PathUtil::Make(activeLevelPath, "*.*"));
 	}
-
-	if (!CAssetType::DeleteAssetFiles(asset, bDeleteSourceFile, numberOfFilesDeleted))
-	{
-		return false;
-	}
-
-	// Make sure none of the level files are read only.
-	QDirIterator iterator(QtUtil::ToQString(levelPath), QDirIterator::Subdirectories);
-	while (iterator.hasNext())
-	{
-		QFileInfo fileInfo(iterator.next());
-		if (!fileInfo.isWritable())
-		{
-			CryWarning(EValidatorModule::VALIDATOR_MODULE_EDITOR, EValidatorSeverity::VALIDATOR_WARNING, "File is read-only: %s", QtUtil::ToString(fileInfo.absoluteFilePath()));
-			return false;
-		}
-	}
-
-	// Asynchronously delete the level directory. 
-	// A new level can not be created while the old one is still being deleted. We keep the most recent future result to be able to wait for deletion requests to complete.
-	// see CLevelType::OnCreate 
-	m_asyncAction = ThreadingUtils::AsyncQueue([levelPath]()
-	{
-		return QDir(QtUtil::ToQString(levelPath)).removeRecursively();
-	});
-	return true;
 }
 
 CryIcon CLevelType::GetIconInternal() const
@@ -195,16 +185,29 @@ CryIcon CLevelType::GetIconInternal() const
 	return CryIcon("icons:FileType/Level.ico");
 }
 
+void CLevelType::UpdateFilesAndDependencies(IEditableAsset& editAsset)
+{
+	UpdateFiles(editAsset);
+	UpdateDependencies(editAsset);
+}
+
 void CLevelType::UpdateDependencies(IEditableAsset& editAsset)
 {
 	std::vector<SAssetDependencyInfo> dependencies = Private_LevelAssetType::GetDependencies(editAsset);
 	if (dependencies.size())
 	{
-		editAsset.SetDependencies(dependencies);
+		editAsset.SetDependencies(std::move(dependencies));
 	}
 }
 
-bool CLevelType::OnCreate(INewAsset& asset, const void* pTypeSpecificParameter) const
+void CLevelType::UpdateFiles(IEditableAsset& editAsset)
+{
+	const string levelFolder = PathUtil::RemoveExtension(PathUtil::RemoveExtension(editAsset.GetMetadataFile()));
+	const string filename = string().Format("%s/%s.%s", levelFolder.c_str(), PathUtil::GetFile(levelFolder).c_str(), GetFileExtensionStatic());
+	editAsset.SetFiles({ filename });
+}
+
+bool CLevelType::OnCreate(INewAsset& editAsset, const void* pTypeSpecificParameter) const
 {
 	SCreateParams params;
 
@@ -234,13 +237,9 @@ bool CLevelType::OnCreate(INewAsset& asset, const void* pTypeSpecificParameter) 
 	}
 
 	// Waiting for levels removal to complete.
-	// see CLevelType::DeleteAssetFiles
-	if (m_asyncAction.valid())
-	{
-		m_asyncAction.get();
-	}
+	CAssetManager::GetInstance()->WaitAsyncProcess();
 
-	string levelFolder = PathUtil::RemoveExtension(PathUtil::RemoveExtension(asset.GetMetadataFile()));
+	string levelFolder = PathUtil::RemoveExtension(PathUtil::RemoveExtension(editAsset.GetMetadataFile()));
 	
 	auto createResult = CCryEditApp::GetInstance()->CreateLevel(levelFolder.c_str(), params.resolution, params.unitSize, params.bUseTerrain);
 
@@ -285,10 +284,6 @@ bool CLevelType::OnCreate(INewAsset& asset, const void* pTypeSpecificParameter) 
 		gameExporter.Export(exportFlags, ".");
 	}
 
-	const string filename = string().Format("%s/%s.%s", levelFolder.c_str(), PathUtil::GetFile(levelFolder).c_str(), GetFileExtension());
-	asset.SetFiles({ filename });
-	UpdateDependencies(asset);
+	UpdateFilesAndDependencies(editAsset);
 	return true;
 }
-
-

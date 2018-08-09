@@ -1,0 +1,18 @@
+{
+    "CryAudioImpl_uber_0.cpp": {
+        "Header Files": [
+            "AudioImpl.h",
+            "resource.h",
+            "stdafx.h"
+        ],
+        "Source Files": [
+            "AudioImpl.cpp",
+            "CryAudioImpl.cpp"
+        ]
+    },
+    "NoUberFile": {
+        "Root": [
+            "stdafx.cpp"
+        ]
+    }
+}

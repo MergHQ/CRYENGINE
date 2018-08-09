@@ -26,6 +26,8 @@ struct DesignerObjectFlags
 	bool            noStaticDecals;
 	bool            excludeCollision;
 	bool            occluder;
+	bool            ignoreTerrainLayerBlend;
+	bool            ignoreDecalBlend;
 
 	DesignerObject* m_pObj;
 
@@ -184,4 +186,3 @@ public:
 	const char*    GetFileSpec()     { return ""; }
 };
 }
-

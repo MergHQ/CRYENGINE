@@ -50,18 +50,6 @@ void CMannequinObject::Initialize()
 	pGameObject->EnablePhysicsEvent(true, eEPE_OnPostStepImmediate);
 }
 
-void CMannequinObject::OnShutDown()
-{
-	if (m_pAnimatedCharacter)
-	{
-		IGameObject* pGameObject = GetEntity()->GetComponent<CGameObject>();
-		assert(pGameObject);
-		assert(pGameObject == gEnv->pGameFramework->GetGameObject(GetEntity()->GetId()));
-
-		pGameObject->ReleaseExtension("AnimatedCharacter");
-	}
-}
-
 void CMannequinObject::ProcessEvent(const SEntityEvent& event)
 {
 	switch (event.event)

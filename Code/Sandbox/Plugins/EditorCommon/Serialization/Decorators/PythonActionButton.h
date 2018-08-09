@@ -39,4 +39,3 @@ inline bool Serialize(Serialization::IArchive& ar, Serialization::PythonActionBu
 		return false;
 }
 }
-

@@ -211,6 +211,9 @@ CItemModelAttribute* GetAttributeForColumn(CItemModel::EColumns const column)
 	case CItemModel::EColumns::OnDisk:
 		pAttribute = &ModelUtils::s_onDiskAttribute;
 		break;
+	case CItemModel::EColumns::Localized:
+		pAttribute = &ModelUtils::s_localizedAttribute;
+		break;
 	case CItemModel::EColumns::Name:
 		pAttribute = &Attributes::s_nameAttribute;
 		break;
@@ -292,11 +295,19 @@ QVariant CItemModel::data(QModelIndex const& index, int role) const
 							{
 								variant = ModelUtils::GetItemNotificationIcon(ModelUtils::EItemStatus::NoConnection);
 							}
+							else if ((flags& EItemFlags::IsLocalized) != 0)
+							{
+								variant = ModelUtils::GetItemNotificationIcon(ModelUtils::EItemStatus::Localized);
+							}
 							break;
 						case Qt::ToolTipRole:
 							if ((flags & (EItemFlags::IsConnected | EItemFlags::IsContainer)) == 0)
 							{
 								variant = TypeToString(pItem->GetType()) + tr(" is not connected to any audio system control");
+							}
+							else if ((flags& EItemFlags::IsLocalized) != 0)
+							{
+								variant = TypeToString(pItem->GetType()) + tr(" is localized");
 							}
 							break;
 						case static_cast<int>(ModelUtils::ERoles::Id):
@@ -362,6 +373,12 @@ QVariant CItemModel::data(QModelIndex const& index, int role) const
 						{
 							variant = ((pItem->GetPakStatus() & EPakStatus::OnDisk) != 0) ? Qt::Checked : Qt::Unchecked;
 						}
+					}
+					break;
+				case static_cast<int>(EColumns::Localized):
+					if (role == Qt::CheckStateRole)
+					{
+						variant = ((flags& EItemFlags::IsLocalized) != 0) ? Qt::Checked : Qt::Unchecked;
 					}
 					break;
 				case static_cast<int>(EColumns::Name):
@@ -518,6 +535,7 @@ bool CItemModel::dropMimeData(QMimeData const* pData, Qt::DropAction action, int
 	if (wasDropped)
 	{
 		QString targetFolderName;
+		bool isLocalized = false;
 
 		if (parent.isValid())
 		{
@@ -526,10 +544,11 @@ bool CItemModel::dropMimeData(QMimeData const* pData, Qt::DropAction action, int
 			if (pItem != nullptr)
 			{
 				targetFolderName = GetTargetFolderPath(pItem);
+				isLocalized = ((pItem->GetFlags() & EItemFlags::IsLocalized) != 0);
 			}
 		}
 
-		m_impl.SignalFilesDropped(fileImportInfos, targetFolderName);
+		m_impl.SignalFilesDropped(fileImportInfos, targetFolderName, isLocalized);
 	}
 
 	return wasDropped;
@@ -625,7 +644,7 @@ QModelIndex CItemModel::IndexFromItem(CItem const* const pItem) const
 }
 
 //////////////////////////////////////////////////////////////////////////
-QString CItemModel::GetTargetFolderName(QModelIndex const& index) const
+QString CItemModel::GetTargetFolderName(QModelIndex const& index, bool& isLocalized) const
 {
 	QString targetFolderName;
 
@@ -636,6 +655,7 @@ QString CItemModel::GetTargetFolderName(QModelIndex const& index) const
 		if (pItem != nullptr)
 		{
 			targetFolderName = GetTargetFolderPath(pItem);
+			isLocalized = ((pItem->GetFlags() & EItemFlags::IsLocalized) != 0);
 		}
 	}
 

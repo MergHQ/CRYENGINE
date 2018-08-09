@@ -4,30 +4,30 @@
 
 #include "Item.h"
 
-#include <CrySystem/XML/IXml.h>
-
 namespace ACE
 {
 namespace Impl
 {
 namespace PortAudio
 {
+class CImpl;
+
 class CProjectLoader final
 {
 public:
 
-	explicit CProjectLoader(string const& sAssetsPath, CItem& rootItem);
-
 	CProjectLoader() = delete;
+
+	explicit CProjectLoader(string const& assetsPath, string const& localizedAssetsPath, CItem& rootItem, ItemCache& itemCache, CImpl const& impl);
 
 private:
 
-	CItem* CreateItem(string const& name, string const& path, EItemType const type, CItem& rootItem);
-	void   LoadFolder(string const& folderPath, CItem& parent);
+	CItem* CreateItem(string const& assetsPath, string const& name, string const& path, EItemType const type, CItem& rootItem, EItemFlags flags);
+	void   LoadFolder(string const& assetsPath, string const& folderPath, bool const isLocalized, CItem& parent);
 
-	string const m_assetsPath;
+	CImpl const& m_impl;
+	ItemCache&   m_itemCache;
 };
 } // namespace PortAudio
 } // namespace Impl
 } // namespace ACE
-

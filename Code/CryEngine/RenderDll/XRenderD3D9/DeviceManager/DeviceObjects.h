@@ -53,9 +53,9 @@ struct SInputLayoutCompositionDescriptor
 	const bool bInstanced;
 	const uint8_t ShaderMask;
 
-	static uint8_t GenerateShaderMask(const InputLayoutHandle VertexFormat, ID3D11ShaderReflection* pShaderReflection);
+	static uint8_t GenerateShaderMask(const InputLayoutHandle VertexFormat, D3DShaderReflection* pShaderReflection);
 
-	SInputLayoutCompositionDescriptor(InputLayoutHandle VertexFormat, int Stream, ID3D11ShaderReflection* pShaderReflection) noexcept
+	SInputLayoutCompositionDescriptor(InputLayoutHandle VertexFormat, int Stream, D3DShaderReflection* pShaderReflection) noexcept
 		: VertexFormat(VertexFormat), StreamMask(static_cast<uint8_t>(Stream % MASK(VSF_NUM))), bInstanced((StreamMask & VSM_INSTANCED) != 0), ShaderMask(GenerateShaderMask(VertexFormat, pShaderReflection))
 	{}
 
@@ -112,23 +112,8 @@ public:
 		memset(&m_singleton, 0xdf, sizeof(m_singleton));
 	}
 
-	void OnEndFrame()
-	{
-#if (CRY_RENDERER_DIRECT3D >= 110) && (CRY_RENDERER_DIRECT3D < 120)
-		m_pDX11Scheduler->EndOfFrame(false);
-
-	#if CRY_PLATFORM_DURANGO
-		m_texturePool.RT_Tick();
-	#endif
-#endif
-	}
-
-	void OnBeginFrame()
-	{
-#if CRY_RENDERER_VULKAN
-		UpdateDeferredUploads();
-#endif
-	}
+	void OnEndFrame();
+	void OnBeginFrame();
 
 	UINT64 QueryFormatSupport(D3DFormat Format);
 
@@ -426,10 +411,10 @@ private:
 
 	CDeviceCommandListUPtr m_pCoreCommandList;
 
-	std::unordered_map<CDeviceGraphicsPSODesc, CDeviceGraphicsPSOPtr>  m_GraphicsPsoCache;
+	std::unordered_map<CDeviceGraphicsPSODesc, CDeviceGraphicsPSOWPtr> m_GraphicsPsoCache;
 	std::unordered_map<CDeviceGraphicsPSODesc, CDeviceGraphicsPSOWPtr> m_InvalidGraphicsPsos;
 
-	std::unordered_map<CDeviceComputePSODesc, CDeviceComputePSOPtr>    m_ComputePsoCache;
+	std::unordered_map<CDeviceComputePSODesc, CDeviceComputePSOWPtr>   m_ComputePsoCache;
 	std::unordered_map<CDeviceComputePSODesc, CDeviceComputePSOWPtr>   m_InvalidComputePsos;
 
 	////////////////////////////////////////////////////////////////////////////

@@ -103,6 +103,12 @@ EDITOR_COMMON_API QString ToUnixPath(const QString& path);
 //! Returns true if the file exists on disk (does not use CryPak)
 EDITOR_COMMON_API bool FileExists(const string& path);
 
+//! Returns true if the gives is folder that exists on disk 
+EDITOR_COMMON_API bool FolderExists(const string& path);
+
+//! Returns true if the file exists only in paks
+EDITOR_COMMON_API bool IsFileInPakOnly(const string& path);
+
 //! Returns true if the name is not empty and only contains letters, numbers or '-' '_' ' ', and starts with a significant character
 //! This restrictive naming policy ensures filenames will work on any system
 EDITOR_COMMON_API bool IsValidFileName(const QString& name);

@@ -200,4 +200,3 @@ QImage* IconXPMCache::getImageForIcon(const Icon& icon)
 
 
 }
-

@@ -225,5 +225,3 @@ SubstanceAir::PackageDesc* CSubstanceManager::LoadPackage(const string& archiveN
 	m_loadedPackages.emplace(CCrc32::ComputeLowercase(archiveName), package);
 	return package;
 }
-
-

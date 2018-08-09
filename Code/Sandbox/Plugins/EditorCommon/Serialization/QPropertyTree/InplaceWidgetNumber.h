@@ -86,4 +86,3 @@ inline void InplaceWidgetNumber::onShown()
 	entry_->setEditMode(true);
 	connect(entry_, &QNumericBox::valueSubmitted, this, &InplaceWidgetNumber::commit);
 }
-

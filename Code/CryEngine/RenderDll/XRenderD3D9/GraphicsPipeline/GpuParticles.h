@@ -12,7 +12,7 @@ public:
 
 	void Init() final;
 
-	void Execute();
+	void Update() override;
 	void PreDraw();
 	void PostDraw();
 

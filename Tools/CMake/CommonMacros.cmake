@@ -797,6 +797,8 @@ function(CryUnitTestSuite target)
 			set(temp_old_output_directory ${CMAKE_RUNTIME_OUTPUT_DIRECTORY})
 			set(CMAKE_RUNTIME_OUTPUT_DIRECTORY "${CMAKE_SOURCE_DIR}/bin/durango_test/${target}")
 			set(LAYOUT_DIRECTORY "${CMAKE_SOURCE_DIR}/bin/durango_test/${target}_layout/")
+			file(GLOB RESOURCE_COPY_WILDCARD "${CRYENGINE_DIR}/Code/CryEngine/UnitTests/Resources/*.*")
+			file(COPY ${RESOURCE_COPY_WILDCARD} DESTINATION "${CMAKE_CURRENT_BINARY_DIR}")
 
 			configure_durango_game(
 				"GENERATE_DIRECTORY" "${CMAKE_CURRENT_BINARY_DIR}"
@@ -809,11 +811,11 @@ function(CryUnitTestSuite target)
 				"foreground_text" "light"
 				"background_color" "#6495ED"
 				"version" "1.0.0.0"
-				"logo" "placeholder.png"
-				"small_logo" "placeholder.png"
-				"wide_logo" "placeholder.png"
-				"splash_screen" "placeholder.png"
-				"store_logo" "placeholder.png"
+				"logo" "DurangoLogo.png"
+				"small_logo" "DurangoSmallLogo.png"
+				"wide_logo" "DurangoWideLogo.png"
+				"splash_screen" "DurangoSplashScreen.png"
+				"store_logo" "DurangoStoreLogo.png"
 			)
 			add_sources("NoUberFile" SOURCE_GROUP "Generated" "${CMAKE_CURRENT_BINARY_DIR}/Package.appxmanifest")
 		endif()

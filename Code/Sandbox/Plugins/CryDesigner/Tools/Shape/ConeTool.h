@@ -20,4 +20,3 @@ private:
 	void UpdateShape(float fHeight) override;
 };
 }
-

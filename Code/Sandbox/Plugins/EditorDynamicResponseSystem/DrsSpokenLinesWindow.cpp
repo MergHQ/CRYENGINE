@@ -68,4 +68,3 @@ void CSpokenLinesWidget::Serialize(Serialization::IArchive& ar)
 	ar.setFilter(m_SerializationFilter);
 	gEnv->pDynamicResponseSystem->GetDialogLineDatabase()->SerializeLinesHistory(ar);
 }
-

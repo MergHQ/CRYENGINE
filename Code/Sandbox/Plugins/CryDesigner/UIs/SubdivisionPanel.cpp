@@ -189,4 +189,3 @@ void SubdivisionPanel::OnDeleteUnused()
 	RefreshEdgeGroupList();
 }
 }
-

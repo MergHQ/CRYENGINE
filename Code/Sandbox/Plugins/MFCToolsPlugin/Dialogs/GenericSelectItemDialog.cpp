@@ -321,4 +321,3 @@ void CGenericSelectItemDialog::ItemSelected()
 			m_desc.SetWindowText(m_selectedDesc);
 	}
 }
-

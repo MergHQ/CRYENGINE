@@ -21,4 +21,3 @@ public:
 protected:
 	virtual bool CanEditTool(CEditTool* pTool);
 };
-

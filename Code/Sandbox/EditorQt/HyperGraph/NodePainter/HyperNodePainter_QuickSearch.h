@@ -9,5 +9,3 @@ class CHyperNodePainter_QuickSearch : public IHyperNodePainter
 public:
 	virtual void Paint(CHyperNode* pNode, CDisplayList* pList);
 };
-
-

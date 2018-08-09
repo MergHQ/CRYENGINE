@@ -56,4 +56,3 @@ void CInstanceRenderer::RemoveItemFromQueue(SubstanceAir::OutputInstanceBase* ou
 
 	} // END namespace Renderers
 } // END namespace EditorSubstance
-

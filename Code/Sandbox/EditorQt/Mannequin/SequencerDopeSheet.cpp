@@ -721,4 +721,3 @@ void CSequencerDopeSheet::DrawNodeItem(const CSequencerNode* pAnimNode, CDC* dc,
 
 	dc->SelectObject(prevFont);
 }
-

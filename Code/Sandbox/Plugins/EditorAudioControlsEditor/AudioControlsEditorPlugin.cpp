@@ -62,6 +62,8 @@ CAudioControlsEditorPlugin::~CAudioControlsEditorPlugin()
 		StopTriggerExecution();
 		gEnv->pAudioSystem->ReleaseObject(s_pIAudioObject);
 	}
+
+	GetISystem()->GetISystemEventDispatcher()->RemoveListener(this);
 }
 
 //////////////////////////////////////////////////////////////////////////
@@ -91,7 +93,7 @@ void CAudioControlsEditorPlugin::ReloadData(EReloadFlags const flags)
 	{
 		GetIEditor()->GetIUndoManager()->Suspend();
 
-		g_assetsManager.UpdateFolderPaths();
+		g_assetsManager.UpdateConfigFolderPath();
 		g_assetsManager.Clear();
 
 		if (g_pIImpl != nullptr)
@@ -222,4 +224,3 @@ void CAudioControlsEditorPlugin::InitPlatforms()
 	}
 }
 } // namespace ACE
-

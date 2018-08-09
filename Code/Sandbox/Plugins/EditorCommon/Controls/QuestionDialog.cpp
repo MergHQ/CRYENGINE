@@ -178,4 +178,3 @@ QDialogButtonBox::StandardButton CQuestionDialog::SSave(const QString& title, co
 	dialog.SetupUI(EInfoMessageType::QuestionType, title, text, buttons, defaultButton);
 	return dialog.Execute();
 }
-

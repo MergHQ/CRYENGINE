@@ -87,4 +87,3 @@ private:
 	CryIcon* const                  m_pExportIcon;
 	int                             m_iconDimension;
 };
-

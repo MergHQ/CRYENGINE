@@ -14,7 +14,7 @@ namespace UQS
 		// ILeafFunctionReturnValue
 		//
 		// - allows leaf-functions to get access to the data for returning it when being called
-		// - it's a more convenient and unified way than accessing the SQueryBlackboard directly
+		// - it's a more convenient and unified way than accessing the SQueryContext directly
 		// - also, it bears the option to carry "pre-computed" data ready to be used (e. g. literal values will already be de-serialized)
 		//
 		//===================================================================================
@@ -50,14 +50,14 @@ namespace UQS
 			{
 				explicit                       SShuttledItemsInfo(const IItemList* _pShuttledItems);
 
-				const IItemList*               pShuttledItems;        // is a nullptr if there is no previous query in the chain that could have put its result-set on the blackboard
+				const IItemList*               pShuttledItems;        // is a nullptr if there is no previous query in the chain that could have put its result-set in the query context
 			};
 
 			virtual                            ~ILeafFunctionReturnValue() {}
-			virtual SLiteralInfo               GetLiteral(const SQueryBlackboard& blackboard) const = 0;
-			virtual SGlobalParamInfo           GetGlobalParam(const SQueryBlackboard& blackboard) const = 0;
-			virtual SItemIterationInfo         GetItemIteration(const SQueryBlackboard& blackboard) const = 0;
-			virtual SShuttledItemsInfo         GetShuttledItems(const SQueryBlackboard& blackboard) const = 0;
+			virtual SLiteralInfo               GetLiteral(const SQueryContext& queryContext) const = 0;
+			virtual SGlobalParamInfo           GetGlobalParam(const SQueryContext& queryContext) const = 0;
+			virtual SItemIterationInfo         GetItemIteration(const SQueryContext& queryContext) const = 0;
+			virtual SShuttledItemsInfo         GetShuttledItems(const SQueryContext& queryContext) const = 0;
 		};
 
 		inline ILeafFunctionReturnValue::SLiteralInfo::SLiteralInfo(const Shared::CTypeInfo& _type, const void* _pValue)

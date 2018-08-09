@@ -756,4 +756,3 @@ typedef SBrushLine3D<BrushFloat>       BrushLine3D;
 typedef SBrushRay<BrushFloat>          BrushRay;
 
 }
-

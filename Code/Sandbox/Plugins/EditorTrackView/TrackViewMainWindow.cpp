@@ -2111,4 +2111,3 @@ _smart_ptr<IAnimKeyWrapper> CTrackViewMainWindow::GetWrappedKeyFromElement(const
 
 	return nullptr;
 }
-

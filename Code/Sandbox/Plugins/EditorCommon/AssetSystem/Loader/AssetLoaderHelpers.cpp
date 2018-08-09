@@ -39,6 +39,12 @@ string GetAssetName(const char* szPath)
 	return szExt ? string(szFile, szExt - szFile) : string(szFile);
 }
 
+bool IsMetadataFile(const char* szPath)
+{
+	const char* const szExt = PathUtil::GetExt(szPath);
+	return stricmp(szExt, "cryasset") == 0;
+}
+
 CAsset* CAssetFactory::CreateFromMetadata(const char* szAssetPath, const SAssetMetadata& metadata)
 {
 	const string path = PathUtil::GetPathWithoutFilename(szAssetPath);
@@ -96,6 +102,22 @@ CAsset* CAssetFactory::CreateFromMetadata(const char* szAssetPath, const SAssetM
 	}
 
 	return pAsset;
+}
+
+std::vector<CAsset*> CAssetFactory::LoadAssetsFromMetadataFiles(const std::vector<string>& metadataFiles)
+{
+	std::vector<CAsset*> newAssets;
+	newAssets.reserve(metadataFiles.size());
+	for (const string& metadataFile : metadataFiles)
+	{
+		auto pNewAsset = LoadAssetFromXmlFile(metadataFile);
+		CRY_ASSERT_MESSAGE(pNewAsset, "The asset %s doesn't exist on file system. Figure out why it was passed here in the first place", metadataFile);
+		if (pNewAsset)
+		{
+			newAssets.push_back(pNewAsset);
+		}
+	}
+	return newAssets;
 }
 
 CAsset* CAssetFactory::LoadAssetFromXmlFile(const char* szAssetPath)
@@ -186,4 +208,3 @@ std::vector<CAsset*> CAssetFactory::LoadAssetsFromPakFile(const char* szArchiveP
 }
 
 } // namespace AssetLoader
-

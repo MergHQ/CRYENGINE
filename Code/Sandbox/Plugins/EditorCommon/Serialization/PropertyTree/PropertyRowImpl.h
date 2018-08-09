@@ -40,5 +40,3 @@ public:
 protected:
 	Type value_; 
 };
-
-

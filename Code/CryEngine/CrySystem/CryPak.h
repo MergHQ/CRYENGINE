@@ -322,7 +322,12 @@ private:
 
 	// this is the list of MOD subdirectories that will be prepended to the actual relative file path
 	// they all have trailing forward slash. "" means the root dir
-	std::vector<string> m_arrMods;
+	struct SModFolder
+	{
+		EModAccessPriority priority = EModAccessPriority::BeforeSource;
+		string             path;
+	};
+	std::vector<SModFolder> m_arrMods;
 
 	// this is the list of aliases, used to replace certain folder(s) or file name(s).
 	typedef std::vector<tNameAlias*> TAliasList;
@@ -428,7 +433,7 @@ public: // ---------------------------------------------------------------------
 	void SetLog(IMiniLog* pLog);
 
 	//! adds a mod to the list of mods
-	virtual void        AddMod(const char* szMod) override;
+	virtual void        AddMod(const char* szMod, EModAccessPriority modAccessPriority=EModAccessPriority::BeforeSource) override;
 	//! removes a mod from the list of mods
 	virtual void        RemoveMod(const char* szMod) override;
 	//! returns indexed mod path, or NULL if out of range
@@ -673,6 +678,9 @@ public: // ---------------------------------------------------------------------
 	EStreamSourceMediaType         GetMediaType(ZipDir::Cache* pCache, unsigned int nArchiveFlags);
 
 	virtual void                   CreatePerfHUDWidget() override;
+
+	//! Return true if szPath is one of the Mod paths (Paths added with iCryPak::AddMod)
+	bool                           IsModPath(const char* szPath);
 
 #if CRY_PLATFORM_LINUX || CRY_PLATFORM_ANDROID || CRY_PLATFORM_APPLE
 private:

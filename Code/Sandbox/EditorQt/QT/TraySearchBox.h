@@ -1,11 +1,13 @@
 // Copyright 2001-2018 Crytek GmbH / Crytek Group. All rights reserved.
 
-#include <QSearchBox.h>
-#include "QAdvancedTreeView.h"
+#pragma once
 
-class QPopupWidget;
-class QMenuTreeView;
+#include <QAdvancedTreeView.h>
+#include <QSearchBox.h>
+
 class QDeepFilterProxyModel;
+class QMenuTreeView;
+class QPopupWidget;
 class QStandardItemModel;
 
 class CTraySearchBox : public QSearchBox
@@ -32,13 +34,10 @@ public:
 protected:
 	virtual void keyPressEvent(QKeyEvent* pKeyEvent) override;
 
-	void UpdatePlaceHolderText();
+	void         UpdatePlaceHolderText();
 
 private:
-	QPopupWidget*        m_pPopupWidget;
+	QPopupWidget*          m_pPopupWidget;
 	QMenuTreeView*         m_pTreeView;
 	QDeepFilterProxyModel* m_pFilterProxy;
 };
-
-#pragma once
-

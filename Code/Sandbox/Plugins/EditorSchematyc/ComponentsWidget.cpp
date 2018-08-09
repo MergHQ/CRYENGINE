@@ -596,4 +596,3 @@ void CComponentsWidget::customEvent(QEvent* pEvent)
 }
 
 }
-

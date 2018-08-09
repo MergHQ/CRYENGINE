@@ -9,6 +9,8 @@ if (NOT PLUGIN_GAMEPLATFORM_DISCORD)
 endif()
 
 start_sources()
+
+# -- discord.waf_files --
 sources_platform(WIN32)
 add_sources("CryGamePlatform_Discord_uber_0.cpp"
 	SOURCE_GROUP "Root"

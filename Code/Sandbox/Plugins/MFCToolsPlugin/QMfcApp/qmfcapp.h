@@ -91,4 +91,3 @@ public:
 };
 
 #endif // QMFCAPP_H
-

@@ -232,4 +232,3 @@ void CCustomActionsEditorManager::GetCustomActions(std::vector<CString>& values)
 		}
 	}
 }
-

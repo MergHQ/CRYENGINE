@@ -54,14 +54,21 @@ namespace Cry
 				pSteamFriends->SetRichPresence("status", status);
 			}
 
-			const char* CAccount::GetStatus() const
+			void CAccount::SetPresence(const SRichPresence& presence)
 			{
+				CryWarning(VALIDATOR_MODULE_SYSTEM, VALIDATOR_WARNING, "[Steam] No rich presence support. Setting only status!");
+
+				SetStatus(presence.status);
+			}
+
+			void CAccount::GetPresence(SRichPresence& presence) const
+			{
+				presence = SRichPresence();
+
 				if (ISteamFriends* pSteamFriends = SteamFriends())
 				{
-					return pSteamFriends->GetFriendRichPresence(m_id, "status");
+					presence.status = pSteamFriends->GetFriendRichPresence(m_id, "status");
 				}
-
-				return nullptr;
 			}
 
 			const DynArray<Cry::GamePlatform::AccountIdentifier>& CAccount::GetConnectedAccounts() const

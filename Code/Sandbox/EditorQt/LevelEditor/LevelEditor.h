@@ -15,8 +15,6 @@ class CLevelEditor : public CEditor, public ILevelEditor, public IAutoEditorNoti
 {
 	Q_OBJECT
 
-	friend bool CreateNewLevelFile(const string& levelFolder, const char* const szName);
-
 public:
 	CLevelEditor();
 	~CLevelEditor();
@@ -27,7 +25,7 @@ public:
 	void                CreateRecentFilesMenu(QMenu* pRecentFilesMenu);
 	virtual const char* GetEditorName() const override { return "Level Editor"; }
 
-	// snapping
+	// Snapping
 	void EnableVertexSnapping(bool bEnable);
 	void EnablePivotSnapping(bool bEnable);
 	void EnableGridSnapping(bool bEnable);
@@ -37,7 +35,6 @@ public:
 	void EnableTerrainSnapping(bool bEnable);
 	void EnableGeometrySnapping(bool bEnable);
 	void EnableSurfaceNormalSnapping(bool bEnable);
-	void EnableHelpersDisplay(bool bEnable);
 
 	bool IsVertexSnappingEnabled() const;
 	bool IsPivotSnappingEnabled() const;
@@ -48,7 +45,6 @@ public:
 	bool IsTerrainSnappingEnabled() const;
 	bool IsGeometrySnappingEnabled() const;
 	bool IsSurfaceNormalSnappingEnabled() const;
-	bool IsHelpersDisplayed() const;
 
 	bool ConvertEditorXmlToLevelAssetType(const string& levelFolder, const char* const szName) const;
 
@@ -94,4 +90,3 @@ private:
 	CDockableDialog* m_assetBrowser;
 	CTagLocations*   m_pTagLocations;
 };
-

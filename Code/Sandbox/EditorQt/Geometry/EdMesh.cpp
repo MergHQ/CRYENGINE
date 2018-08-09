@@ -2,18 +2,19 @@
 
 #include "StdAfx.h"
 #include "EdMesh.h"
-#include "Objects\DisplayContext.h"
-#include "Objects\ObjectLoader.h"
-#include "Gizmos/ITransformManipulator.h"
-#include "Viewport.h"
-#include "Util\PakFile.h"
-#include "Grid.h"
 
-#include <Cry3DEngine/I3DEngine.h>
+#include <Gizmos/ITransformManipulator.h>
+#include <Objects/DisplayContext.h>
+#include <Objects/ObjectLoader.h>
+#include <Util/PakFile.h>
+#include <Grid.h>
+#include <Viewport.h>
+
+#include <Cry3DEngine/CGF/CGFContent.h>
 #include <Cry3DEngine/CGF/IChunkFile.h>
+#include <Cry3DEngine/I3DEngine.h>
 #include <Cry3DEngine/IIndexedMesh.h>
 #include <CryRenderer/IRenderAuxGeom.h>
-#include <Cry3DEngine/CGF/CGFContent.h>
 
 IMPLEMENT_DYNAMIC(CEdMesh, CEdGeometry)
 

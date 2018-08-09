@@ -33,4 +33,3 @@ private:
 	ElementSet m_FlipedSelectedElements;
 };
 }
-

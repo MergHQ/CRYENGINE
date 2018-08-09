@@ -57,4 +57,3 @@ bool QMinimapPanel::CanEditTool(CEditTool* pTool)
 
 	return pTool->IsKindOf(RUNTIME_CLASS(CTerrainMiniMapTool));
 }
-

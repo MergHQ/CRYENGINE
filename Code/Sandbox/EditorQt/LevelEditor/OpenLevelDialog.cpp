@@ -229,4 +229,3 @@ void COpenLevelDialog::paintEvent(QPaintEvent* event)
 		AfterFirstPaint();
 	}
 }
-

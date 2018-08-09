@@ -270,4 +270,3 @@ void QTrackingTooltip::resizeEvent(QResizeEvent* resizeEvent)
 		SetPosCursorOffset(m_cursorOffset);
 	}
 }
-

@@ -137,4 +137,3 @@ bool SelectGrowTool::SelectAdjacentElements(MainContext& mc)
 }
 REGISTER_DESIGNER_TOOL_AND_COMMAND(eDesigner_Grow, eToolGroup_Selection, "Grow", SelectGrowTool,
                                    growselection, "runs grow selection tool", "designer.growselection");
-

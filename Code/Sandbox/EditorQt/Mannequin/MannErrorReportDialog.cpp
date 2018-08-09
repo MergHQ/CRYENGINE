@@ -1033,4 +1033,3 @@ void CMannErrorReportDialog::OnReportHyperlink(NMHDR* pNotifyStruct, LRESULT* re
    }
    }
  */
-

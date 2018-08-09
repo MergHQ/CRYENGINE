@@ -25,4 +25,3 @@ struct TreeConfig
 	// Whether we'll allow actions / buttons in the tree to be used
 	bool enableActions;
 };
-

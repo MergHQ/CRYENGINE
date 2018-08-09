@@ -99,4 +99,3 @@ unsigned int AnimationTagList::GroupCount() const
 }
 
 }
-

@@ -147,6 +147,3 @@ void Log(const char* szFormat, ...)
 
 } // namespace Detail
 } // namespace EditorSubstance
-
-
-

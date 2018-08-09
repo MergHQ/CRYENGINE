@@ -285,7 +285,7 @@ STRUCT_INFO_BEGIN(ParticleParams::SMoveRelativeEmitter)
 STRUCT_INFO_END(ParticleParams::SMoveRelativeEmitter)
 
 STRUCT_INFO_BEGIN(ParticleParams::SPlatforms)
-	VAR_INFO(PCDX11)
+	VAR_INFO(PCDX)
 	VAR_INFO(PS4)
 	VAR_INFO(XBoxOne)
 STRUCT_INFO_END(ParticleParams::SPlatforms)

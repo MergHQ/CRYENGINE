@@ -323,4 +323,3 @@ typedef DesignerFactory<EDesignerTool, BaseTool, int>                     ToolFa
   public:                                                  \
     Move ## type ## Tool(ToolEnum tool) : MoveTool(tool){} \
   };
-

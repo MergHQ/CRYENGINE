@@ -41,4 +41,3 @@ void ConeTool::UpdateShape(float fHeight)
 
 REGISTER_DESIGNER_TOOL_WITH_PROPERTYTREE_PANEL_AND_COMMAND(eDesigner_Cone, eToolGroup_Shape, "Cone", ConeTool,
                                                            cone, "runs cone tool", "designer.cone")
-

@@ -58,4 +58,3 @@ private:
 
 	volatile bool m_bGenerateThumbnais;
 };
-

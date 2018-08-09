@@ -81,6 +81,7 @@
         <file alias="Audio/component_audio_listener.ico">icons/audio_component_audio_listener.ico</file>
         <file alias="Audio/component_preload.ico">icons/audio_component_preload.ico</file>
         <file alias="Audio/component_occlusion.ico">icons/audio_component_occlusion.ico</file>
+        <file alias="Audio/component_velocity_tracking.ico">icons/audio_component_velocity_tracking.ico</file>
 
         <!--sdl_mixer-->
         <file alias="Audio/sdl_mixer/Audio_Event.ico">icons/audio_sdlmixer_event.ico</file>
@@ -367,7 +368,6 @@
         <file alias="General/Show_In_Explorer.ico">icons/general_Show_In_Explorer.ico</file>
         <file alias="General/Show_Statistics_rDisplayinfo.ico">icons/general_Show_Statistics_rDisplayinfo.ico</file>
         <file alias="General/Simulate_Physics.ico">icons/general_Simulate_Physics.ico</file>
-        <file alias="General/Source_Control.ico">icons/general_Source_Control.ico</file>
         <file alias="General/Start_Physics.ico">icons/general_Start_Physics.ico</file>
         <file alias="General/Sun.ico">icons/general_Sun.ico</file>
         <file alias="General/SymLink.ico">icons/general_SymLink.ico</file>
@@ -594,7 +594,7 @@
         <file alias="TerrainEditor/Terrain_Flatten.ico">icons/terrain_editor_flatten.ico</file>
         <file alias="TerrainEditor/Terrain_Make_Holes.ico">icons/terrain_editor_make_holes.ico</file>
         <file alias="TerrainEditor/Terrain_Mini_Map.ico">icons/terrain_editor_mini_map.ico</file>
-        <file alias="TerrainEditor/Terrain_Clone.ico">icons/terrain_editor_clone.ico</file>
+        <file alias="TerrainEditor/Terrain_Duplicate.ico">icons/terrain_editor_duplicate.ico</file>
         <file alias="TerrainEditor/Terrain_Normal.ico">icons/terrain_editor_normal.ico</file>
         <file alias="TerrainEditor/Terrain_Paint.ico">icons/terrain_editor_paint.ico</file>
         <file alias="TerrainEditor/Terrain_Pick_Height.ico">icons/terrain_editor_pick_height.ico</file>
@@ -756,8 +756,10 @@
         <file alias="Viewport/Modes/toggle_profiling.ico">icons/viewmode_toggle_profiling.ico</file>
 
         <!--Viewport-->
+        <file alias="Viewport/viewport-display.ico">icons/viewport_display.ico</file>
         <file alias="Viewport/viewport-displayinfo.ico">icons/viewport_displayinfo.ico</file>
         <file alias="Viewport/viewport-enable-snapping.ico">icons/viewport_enable-snapping.ico</file>
+        <file alias="Viewport/viewport-helpers-options.ico">icons/viewport_helpers_options.ico</file>
         <file alias="Viewport/viewport-helpers.ico">icons/viewport_helpers.ico</file>
         <file alias="Viewport/viewport-snap-angle.ico">icons/viewport_snap-angle.ico</file>
         <file alias="Viewport/viewport-snap-scale.ico">icons/viewport_snap-scale.ico</file>
@@ -815,6 +817,15 @@
         <file alias="Window/Window_Minimize.ico">icons/window_minimize.ico</file>
         <file alias="Window/Window_Restore.ico">icons/window_restore.ico</file>
         <file alias="Window/Window_Split.ico">icons/window_split.ico</file>
+
+        <!--Version Contro-->
+        <file alias="VersionControl/icon.ico">icons/versioncontrol_icon.ico</file>
+        <file alias="VersionControl/checked_out.ico">icons/versioncontrol_checked_out.ico</file>
+        <file alias="VersionControl/checked_out_modified.ico">icons/versioncontrol_checked_out_modified.ico</file>
+        <file alias="VersionControl/locked.ico">icons/versioncontrol_locked.ico</file>
+        <file alias="VersionControl/new.ico">icons/versioncontrol_new.ico</file>
+        <file alias="VersionControl/not_latest.ico">icons/versioncontrol_not_latest.ico</file>
+        <file alias="VersionControl/latest.ico">icons/versioncontrol_latest.ico</file>
+        <file alias="VersionControl/error.ico">icons/versioncontrol_error.ico</file>
     </qresource>
 </RCC>
-

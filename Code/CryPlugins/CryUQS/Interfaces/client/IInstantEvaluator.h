@@ -25,9 +25,9 @@ namespace UQS
 
 			struct SRunContext
 			{
-				explicit                        SRunContext(Core::SItemEvaluationResult& _evaluationResult, const Core::SQueryBlackboard& _blackboard, Shared::IUqsString& _error);
+				explicit                        SRunContext(Core::SItemEvaluationResult& _evaluationResult, const Core::SQueryContext& _queryContext, Shared::IUqsString& _error);
 				Core::SItemEvaluationResult&    evaluationResult;
-				const Core::SQueryBlackboard&   blackboard;
+				const Core::SQueryContext&      queryContext;
 				Shared::IUqsString&             error;
 			};
 
@@ -35,9 +35,9 @@ namespace UQS
 			virtual ERunStatus                  Run(const SRunContext& runContext, const void* pParams) const = 0;
 		};
 
-		inline IInstantEvaluator::SRunContext::SRunContext(Core::SItemEvaluationResult& _evaluationResult, const Core::SQueryBlackboard& _blackboard, Shared::IUqsString& _error)
+		inline IInstantEvaluator::SRunContext::SRunContext(Core::SItemEvaluationResult& _evaluationResult, const Core::SQueryContext& _queryContext, Shared::IUqsString& _error)
 			: evaluationResult(_evaluationResult)
-			, blackboard(_blackboard)
+			, queryContext(_queryContext)
 			, error(_error)
 		{}
 

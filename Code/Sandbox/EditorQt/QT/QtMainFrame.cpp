@@ -152,7 +152,6 @@ class Ui_MainWindow
 		CMenu(QWidget* pParent = nullptr)
 			: QMenu(pParent)
 		{
-
 		}
 
 		QCommandAction* AddCommand(const char* szCommand)
@@ -514,7 +513,6 @@ public:
 		menuDisplay->AddCommand("viewport.toggle_wireframe_mode");
 		menuDisplay->addAction(menuGraphics->menuAction());
 		menuDisplay->addSeparator();
-		menuDisplay->AddCommand("level.toggle_display_helpers");
 		menuDisplay->addAction(menuDisplayInfo->menuAction());
 		menuDisplayInfo->AddCommand("level.toggle_display_info");
 		menuDisplayInfo->addSeparator();
@@ -526,7 +524,6 @@ public:
 		menuDisplay->AddCommand("camera.toggle_speed_height_relative");
 		menuDisplay->AddCommand("camera.toggle_terrain_collisions");
 		menuDisplay->AddCommand("camera.toggle_object_collisions");
-		menuDisplay->AddCommand("general.fullscreen");
 		menuLocation->addAction(menuRemember_Location->menuAction());
 		menuLocation->addAction(menuGoto_Location->menuAction());
 		for (auto i = 1; i <= 12; ++i)
@@ -784,7 +781,6 @@ void CEditorMainFrame::UpdateWindowTitle(const QString& levelPath /*= "" */)
 	setWindowTitle(title);
 }
 
-//////////////////////////////////////////////////////////////////////////
 CEditorMainFrame::~CEditorMainFrame()
 {
 	GetIEditorImpl()->GetLevelEditorSharedState()->signalEditToolChanged.DisconnectObject(this);
@@ -797,8 +793,6 @@ CEditorMainFrame::~CEditorMainFrame()
 		m_pInstance = 0;
 	}
 }
-
-//////////////////////////////////////////////////////////////////////////
 
 void CEditorMainFrame::SetDefaultLayout()
 {
@@ -819,7 +813,6 @@ void CEditorMainFrame::SetDefaultLayout()
 	w->showMaximized();
 }
 
-//////////////////////////////////////////////////////////////////////////
 void CEditorMainFrame::PostLoad()
 {
 	LOADING_TIME_PROFILE_SECTION;
@@ -838,14 +831,11 @@ void CEditorMainFrame::PostLoad()
 	GetIEditorImpl()->Notify(eNotify_OnMainFrameInitialized);
 }
 
-//////////////////////////////////////////////////////////////////////////
-
 CEditorMainFrame* CEditorMainFrame::GetInstance()
 {
 	return m_pInstance;
 }
 
-//////////////////////////////////////////////////////////////////////////
 void CEditorMainFrame::CreateToolsMenu()
 {
 	std::vector<IViewPaneClass*> viewPaneClasses;
@@ -872,17 +862,15 @@ void CEditorMainFrame::CreateToolsMenu()
 		temp = "";
 	}
 
-	int i;
-
 	std::map<string, int> numClassesInCategory;
 
 	std::vector<IClassDesc*> classes;
 	GetIEditorImpl()->GetClassFactory()->GetClassesBySystemID(ESYSTEM_CLASS_VIEWPANE, classes);
-	for (i = 0; i < classes.size(); i++)
+	for (int i = 0; i < classes.size(); i++)
 	{
 		numClassesInCategory[classes[i]->Category()]++;
 	}
-	for (i = 0; i < classes.size(); i++)
+	for (int i = 0; i < classes.size(); i++)
 	{
 		IClassDesc* pClass = classes[i];
 		IViewPaneClass* pViewClass = (IViewPaneClass*)pClass;
@@ -892,7 +880,9 @@ void CEditorMainFrame::CreateToolsMenu()
 			continue;
 		}
 		if (stl::find(viewPaneClasses, pViewClass))
+		{
 			continue;
+		}
 
 		int numClasses = numClassesInCategory[pViewClass->Category()];
 		string name = pViewClass->ClassName();
@@ -1303,7 +1293,6 @@ void CEditorMainFrame::InitMenus()
 		});
 
 		pHelpMenu->addAction(pAction);
-
 	}
 }
 

@@ -27,4 +27,3 @@ public:
 	static void DeselectAllFaces();
 };
 }
-

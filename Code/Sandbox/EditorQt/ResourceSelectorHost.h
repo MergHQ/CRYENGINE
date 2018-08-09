@@ -4,4 +4,3 @@
 #include "IResourceSelectorHost.h"
 
 IResourceSelectorHost* CreateResourceSelectorHost();
-

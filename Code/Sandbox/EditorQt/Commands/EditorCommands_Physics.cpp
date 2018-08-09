@@ -48,4 +48,3 @@ REGISTER_PYTHON_COMMAND_WITH_EXAMPLE(Private_EditorCommands::PySetPhysicsTool, p
                                      "Turns on physics tool mode (Ctrl/Shift modify)",
                                      "physics.set_physics_tool()");
 REGISTER_EDITOR_COMMAND_ICON(physics, set_physics_tool, "icons:General/Physics_Tool.ico");
-

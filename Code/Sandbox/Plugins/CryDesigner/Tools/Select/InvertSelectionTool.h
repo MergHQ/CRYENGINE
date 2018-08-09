@@ -19,4 +19,3 @@ public:
 	static void InvertSelection(MainContext& mc);
 };
 }
-

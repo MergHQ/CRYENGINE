@@ -96,4 +96,3 @@ private:
 };
 
 #endif // __EffectorInfoWnd_h__
-

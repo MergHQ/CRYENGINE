@@ -357,4 +357,3 @@ void CAssetFolderFilterModel::SetShowFolders(bool showFolders)
 		m_assetsModel->invalidate();
 	}
 }
-

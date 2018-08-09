@@ -45,7 +45,7 @@ namespace UQS
 			{
 				CRY_ASSERT(ctorContext.pOptionalReturnValueInCaseOfLeafFunction);
 
-				const Core::ILeafFunctionReturnValue::SItemIterationInfo itemIterationInfo = ctorContext.pOptionalReturnValueInCaseOfLeafFunction->GetItemIteration(ctorContext.blackboard);
+				const Core::ILeafFunctionReturnValue::SItemIterationInfo itemIterationInfo = ctorContext.pOptionalReturnValueInCaseOfLeafFunction->GetItemIteration(ctorContext.queryContext);
 
 				m_pGeneratedItems = itemIterationInfo.pGeneratedItems;
 			}

@@ -153,4 +153,3 @@ private:
 	//  will be called on next draw to update the manipulator
 	ITransformManipulatorOwner* m_owner;
 };
-

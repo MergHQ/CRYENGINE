@@ -428,4 +428,3 @@ void CSequencerTrackPropsDlg::SetCurrKey(int nkey)
 	}
 	GetIEditorImpl()->Notify(eNotify_OnUpdateSequencerKeySelection);
 }
-

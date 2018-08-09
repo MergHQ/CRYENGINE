@@ -12,6 +12,7 @@ namespace Impl
 namespace PortAudio
 {
 class CObject;
+class CTrigger;
 
 class CImpl final : public IImpl
 {
@@ -26,9 +27,8 @@ public:
 	// CryAudio::Impl::IImpl
 	virtual void                Update() override {}
 	virtual ERequestStatus      Init(uint32 const objectPoolSize, uint32 const eventPoolSize) override;
-	virtual ERequestStatus      OnBeforeShutDown() override;
-	virtual ERequestStatus      ShutDown() override;
-	virtual ERequestStatus      Release() override;
+	virtual void                ShutDown() override;
+	virtual void                Release() override;
 	virtual ERequestStatus      OnLoseFocus() override;
 	virtual ERequestStatus      OnGetFocus() override;
 	virtual ERequestStatus      MuteAll() override;
@@ -42,7 +42,7 @@ public:
 	virtual void                DestructFile(IFile* const pIFile) override;
 	virtual char const* const   GetFileLocation(SFileInfo* const pFileInfo) override;
 	virtual void                GetInfo(SImplInfo& implInfo) const override;
-	virtual ITrigger const*     ConstructTrigger(XmlNodeRef const pRootNode) override;
+	virtual ITrigger const*     ConstructTrigger(XmlNodeRef const pRootNode, float& radius) override;
 	virtual void                DestructTrigger(ITrigger const* const pITrigger) override;
 	virtual IParameter const*   ConstructParameter(XmlNodeRef const pRootNode) override;
 	virtual void                DestructParameter(IParameter const* const pIParameter) override;
@@ -71,8 +71,12 @@ public:
 
 private:
 
-	std::vector<CObject*>              m_constructedObjects;
+	void UpdateLocalizedTriggers();
 
+	std::vector<CObject*>              m_constructedObjects;
+	std::vector<CTrigger*>             m_triggers;
+
+	string                             m_language;
 	CryFixedStringT<MaxFilePathLength> m_regularSoundBankFolder;
 	CryFixedStringT<MaxFilePathLength> m_localizedSoundBankFolder;
 

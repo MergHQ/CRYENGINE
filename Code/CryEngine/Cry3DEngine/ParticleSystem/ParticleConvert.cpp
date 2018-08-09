@@ -991,7 +991,7 @@ void ConvertConfigSpec(IParticleComponent& component, ParticleParams& params)
 	XmlNodeRef spec = MakeFeature("ComponentEnableByConfig");
 	ConvertValueString(spec, "Minimum", params.eConfigMin, ParticleParams::EConfigSpecBrief::Low);
 	ConvertValueString(spec, "Maximum", params.eConfigMax, ParticleParams::EConfigSpecBrief::VeryHigh);
-	ConvertValue(spec, "PC", params.Platforms.PCDX11);
+	ConvertValue(spec, "PC", params.Platforms.PCDX);
 	ConvertValue(spec, "XBoxOne", params.Platforms.XBoxOne);
 	ConvertValue(spec, "PS4", params.Platforms.PS4);
 	AddFeature(component, spec);

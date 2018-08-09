@@ -35,4 +35,3 @@ protected:
 
 	CString m_title;
 };
-

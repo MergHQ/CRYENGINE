@@ -59,4 +59,3 @@ void SFileType::CheckValid() const
 		CRY_ASSERT(extension == extension.toLower());
 	}
 }
-

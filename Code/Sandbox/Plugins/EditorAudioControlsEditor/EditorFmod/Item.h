@@ -52,7 +52,6 @@ public:
 	// IItem
 	virtual ControlId     GetId() const override                        { return m_id; }
 	virtual string const& GetName() const override                      { return m_name; }
-	virtual float         GetRadius() const override                    { return 0.0f; }
 	virtual size_t        GetNumChildren() const override               { return m_children.size(); }
 	virtual IItem*        GetChildAt(size_t const index) const override { return m_children[index]; }
 	virtual IItem*        GetParent() const override                    { return m_pParent; }

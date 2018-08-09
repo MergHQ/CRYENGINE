@@ -2,16 +2,15 @@
 
 #include "StdAfx.h"
 #include "Ruler.h"
-#include "Viewport.h"
+
+#include <QtUtil.h>
+#include <Viewport.h>
 
 #include <CryRenderer/IRenderAuxGeom.h>
-
-#include "QtUtil.h"
 
 static SRulerPreferences rulerPreferences;
 REGISTER_PREFERENCES_PAGE_PTR(SRulerPreferences, &rulerPreferences);
 
-//////////////////////////////////////////////////////////////////////////
 CRuler::CRuler()
 	: m_bActive(false)
 	, m_MouseOverObject(CryGUID::Null())
@@ -21,13 +20,11 @@ CRuler::CRuler()
 	// can't create path agents here, AI manager doesn't know how many there are yet
 }
 
-//////////////////////////////////////////////////////////////////////////
 CRuler::~CRuler()
 {
 	SetActive(false);
 }
 
-//////////////////////////////////////////////////////////////////////////
 void CRuler::SetActive(bool bActive)
 {
 	if (m_bActive != bActive)
@@ -53,7 +50,6 @@ void CRuler::SetActive(bool bActive)
 	}
 }
 
-//////////////////////////////////////////////////////////////////////////
 void CRuler::Update()
 {
 	if (!IsActive())
@@ -116,13 +112,11 @@ void CRuler::Update()
 	}
 }
 
-//////////////////////////////////////////////////////////////////////////
 bool CRuler::IsObjectSelectMode() const
 {
 	return QtUtil::IsModifierKeyDown(Qt::ShiftModifier);
 }
 
-//////////////////////////////////////////////////////////////////////////
 void CRuler::UpdateRulerPoint(CViewport* pView, const CPoint& point, CRulerPoint& rulerPoint, bool bRequestPath)
 {
 	CRY_ASSERT(pView);
@@ -134,7 +128,7 @@ void CRuler::UpdateRulerPoint(CViewport* pView, const CPoint& point, CRulerPoint
 	// Do entity hit check
 	if (bObjectSelect)
 	{
-		HitContext hitInfo;
+		HitContext hitInfo(pView);
 		pView->HitTest(point, hitInfo);
 
 		CBaseObject* pHitObj = hitInfo.object;
@@ -147,7 +141,6 @@ void CRuler::UpdateRulerPoint(CViewport* pView, const CPoint& point, CRulerPoint
 	}
 }
 
-//////////////////////////////////////////////////////////////////////////
 bool CRuler::MouseCallback(CViewport* pView, EMouseEvent event, CPoint& point, int flags)
 {
 	bool bResult = IsActive();
@@ -174,7 +167,6 @@ bool CRuler::MouseCallback(CViewport* pView, EMouseEvent event, CPoint& point, i
 	return bResult;
 }
 
-//////////////////////////////////////////////////////////////////////////
 void CRuler::OnMouseMove(CViewport* pView, CPoint& point, int flags)
 {
 	CryGUID hitGUID = CryGUID::Null();
@@ -182,7 +174,7 @@ void CRuler::OnMouseMove(CViewport* pView, CPoint& point, int flags)
 	if (IsObjectSelectMode())
 	{
 		// Check for hit entity
-		HitContext hitInfo;
+		HitContext hitInfo(pView);
 		pView->HitTest(point, hitInfo);
 		CBaseObject* pHitObj = hitInfo.object;
 		if (pHitObj)
@@ -206,7 +198,6 @@ void CRuler::OnMouseMove(CViewport* pView, CPoint& point, int flags)
 	}
 }
 
-//////////////////////////////////////////////////////////////////////////
 void CRuler::OnLButtonUp(CViewport* pView, CPoint& point, int flags)
 {
 	if (m_startPoint.IsEmpty())
@@ -224,7 +215,6 @@ void CRuler::OnLButtonUp(CViewport* pView, CPoint& point, int flags)
 	}
 }
 
-//////////////////////////////////////////////////////////////////////////
 void CRuler::OnMButtonUp(CViewport* pView, CPoint& point, int flags)
 {
 	if (m_startPoint.IsEmpty())
@@ -240,10 +230,8 @@ void CRuler::OnMButtonUp(CViewport* pView, CPoint& point, int flags)
 	}
 }
 
-//////////////////////////////////////////////////////////////////////////
 void CRuler::OnRButtonUp(CViewport* pView, CPoint& point, int flags)
 {
 	/*m_startPoint.Reset();
 	   m_endPoint.Reset();*/
 }
-

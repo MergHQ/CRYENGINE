@@ -1044,4 +1044,3 @@ void CLevelModel::OnLayerUpdate(const CLayerChangeEvent& event)
 		break;
 	}
 }
-

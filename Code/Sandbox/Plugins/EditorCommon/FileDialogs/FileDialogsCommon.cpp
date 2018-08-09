@@ -68,4 +68,3 @@ void FilesTreeView::OnContextMenu(const QPoint& point)
 }
 
 }
-

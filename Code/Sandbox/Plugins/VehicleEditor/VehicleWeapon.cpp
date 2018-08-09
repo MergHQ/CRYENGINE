@@ -63,4 +63,3 @@ void CVehicleWeapon::GetLocalBounds(AABB& box)
 	// todo
 	// return local bounds
 }
-

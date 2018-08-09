@@ -70,4 +70,3 @@ int EditorScriptEnvironment::Command(IFunctionHandler* pH, const char* commandNa
 
 	return pH->EndFunction();
 }
-

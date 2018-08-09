@@ -95,4 +95,3 @@ private:
 	CEntityObject*     m_pNodeEntity;
 	_smart_ptr<CTrackGizmo> m_trackGizmo;
 };
-

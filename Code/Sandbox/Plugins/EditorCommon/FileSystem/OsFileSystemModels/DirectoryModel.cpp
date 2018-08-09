@@ -19,4 +19,3 @@ void CDirectoriesOnlyProxyModel::setSourceModel(CAdvancedFileSystemModel* source
 {
 	QSortFilterProxyModel::setSourceModel(sourceFileSystem);
 }
-

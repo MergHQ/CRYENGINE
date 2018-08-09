@@ -496,7 +496,7 @@ bool CBaseDialog::Open(const string& filePath)
 		{
 			if (pAsset->IsBeingEdited())
 			{
-				GetIEditor()->GetNotificationCenter()->ShowInfo(tr("Asset already open"), tr("'%1' already open").arg(pAsset->GetName()));
+				GetIEditor()->GetNotificationCenter()->ShowInfo(tr("Asset already open"), tr("'%1' already open").arg(pAsset->GetName().c_str()));
 				return false;  // A particular asset can only edited by a single editor at a time.
 			}
 
@@ -634,4 +634,3 @@ QString ReplaceExtension(const QString& str, const char* ext)
 }
 
 } // namespace MeshImporter
-

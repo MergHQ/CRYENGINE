@@ -74,4 +74,3 @@ CCryLinkCommands& CCryLinkCommands::GetInstance()
 
 CCryLinkCommands CCryLinkCommands::ms_instance;
 } // Schematyc
-

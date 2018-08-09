@@ -105,4 +105,3 @@ private:
 	SOutputSettings m_outputSettings;
 	bool m_bStaticMeshSettingsEnabled;
 };
-

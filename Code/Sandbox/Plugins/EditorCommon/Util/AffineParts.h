@@ -21,5 +21,3 @@ struct EDITOR_COMMON_API AffineParts
 	 */
 	void SpectralDecompose(const Matrix34& mat);
 };
-
-

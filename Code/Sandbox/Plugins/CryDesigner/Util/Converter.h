@@ -57,4 +57,3 @@ private:
 	static void     GenerateUVIslands(Model* pModel);
 };
 }
-

@@ -1,51 +1,39 @@
 // Copyright 2001-2018 Crytek GmbH / Crytek Group. All rights reserved.
 
 #include "StdAfx.h"
+#include "2DViewport.h"
 
-#ifndef EDITOR_2D_VIEWPORT_NOT_IMPLEMENTED
+#include "Objects/BrushObject.h"
+#include "Util/MFCUtil.h"
+#include "CryEditDoc.h"
+#include "ViewManager.h"
 
-	#include "2DViewport.h"
-	#include "CryEditDoc.h"
-	#include "Util/MFCUtil.h"
+#include <Controls/DynamicPopupMenu.h>
+#include <Gizmos/IGizmoManager.h>
+#include <Preferences/ViewportPreferences.h>
+#include <Grid.h>
+#include <RenderLock.h>
 
-	#include <Preferences/ViewportPreferences.h>
-	#include "Grid.h"
-	#include "ViewManager.h"
-	#include "Gizmos/IGizmoManager.h"
+#include <CryRenderer/IRenderAuxGeom.h>
 
-	#include "Objects/BrushObject.h"
-	#include "Controls/DynamicPopupMenu.h"
+#define MARKER_SIZE          6.0f
+#define MARKER_DIR_SIZE      10.0f
+#define SELECTION_RADIUS     30.0f
 
-	#include "RenderLock.h"
+#define GL_RGBA              0x1908
+#define GL_BGRA              0x80E1
 
-	#include <CryRenderer/IRenderAuxGeom.h>
+#define BACKGROUND_COLOR     Vec3(1.0f, 1.0f, 1.0f)
+#define SELECTION_RECT_COLOR Vec3(0.8f, 0.8f, 0.8f)
+#define MINOR_GRID_COLOR     Vec3(0.55f, 0.55f, 0.55f)
+#define MAJOR_GRID_COLOR     Vec3(0.6f, 0.6f, 0.6f)
+#define AXIS_GRID_COLOR      Vec3(0, 0, 0)
+#define GRID_TEXT_COLOR      Vec3(0, 0, 1.0f)
 
-	#define MARKER_SIZE          6.0f
-	#define MARKER_DIR_SIZE      10.0f
-	#define SELECTION_RADIUS     30.0f
-
-	#define GL_RGBA              0x1908
-	#define GL_BGRA              0x80E1
-
-	#define BACKGROUND_COLOR     Vec3(1.0f, 1.0f, 1.0f)
-	#define SELECTION_RECT_COLOR Vec3(0.8f, 0.8f, 0.8f)
-	#define MINOR_GRID_COLOR     Vec3(0.55f, 0.55f, 0.55f)
-	#define MAJOR_GRID_COLOR     Vec3(0.6f, 0.6f, 0.6f)
-	#define AXIS_GRID_COLOR      Vec3(0, 0, 0)
-	#define GRID_TEXT_COLOR      Vec3(0, 0, 1.0f)
-
-	#define MAX_WORLD_SIZE       10000
-
-enum Viewport2dTitleMenuCommands
-{
-	ID_SHOW_LABELS,
-	ID_SHOW_GRID
-};
+#define MAX_WORLD_SIZE       10000
 
 IMPLEMENT_DYNCREATE(C2DViewport, CViewport)
-//////////////////////////////////////////////////////////////////////
-// Construction/Destruction
-//////////////////////////////////////////////////////////////////////
+
 C2DViewport::C2DViewport()
 {
 	// Scroll offset equals origin
@@ -83,7 +71,6 @@ C2DViewport::C2DViewport()
 	CalculateViewTM();
 }
 
-//////////////////////////////////////////////////////////////////////////
 C2DViewport::~C2DViewport()
 {
 	if (m_bRenderContextCreated)
@@ -95,7 +82,6 @@ C2DViewport::~C2DViewport()
 	}
 }
 
-//////////////////////////////////////////////////////////////////////////
 void C2DViewport::SetType(EViewportType type)
 {
 	m_viewType = type;
@@ -112,12 +98,10 @@ void C2DViewport::SetType(EViewportType type)
 		m_axis = VPA_YZ;
 		break;
 	}
-	;
 
 	SetAxis(m_axis);
 }
 
-//////////////////////////////////////////////////////////////////////////
 void C2DViewport::SetAxis(EViewportAxis axis)
 {
 	m_axis = axis;
@@ -138,7 +122,6 @@ void C2DViewport::SetAxis(EViewportAxis axis)
 	}
 }
 
-//////////////////////////////////////////////////////////////////////////
 void C2DViewport::CalculateViewTM()
 {
 	Matrix34 viewTM;
@@ -180,13 +163,11 @@ void C2DViewport::CalculateViewTM()
 	SetConstructionMatrix(GetViewTM());
 }
 
-//////////////////////////////////////////////////////////////////////////
 void C2DViewport::ResetContent()
 {
 	CViewport::ResetContent();
 }
 
-//////////////////////////////////////////////////////////////////////////
 void C2DViewport::UpdateContent(int flags)
 {
 	CViewport::UpdateContent(flags);
@@ -196,7 +177,6 @@ void C2DViewport::UpdateContent(int flags)
 	}
 }
 
-//////////////////////////////////////////////////////////////////////////
 void C2DViewport::SetScrollOffset(float x, float y, bool bLimits)
 {
 	Vec3 org = GetOrigin2D();
@@ -224,7 +204,6 @@ void C2DViewport::SetScrollOffset(float x, float y, bool bLimits)
 	m_bContentValid = false;
 }
 
-//////////////////////////////////////////////////////////////////////////
 void C2DViewport::GetScrollOffset(float& x, float& y)
 {
 	Vec3 origin = GetOrigin2D();
@@ -246,7 +225,6 @@ void C2DViewport::GetScrollOffset(float& x, float& y)
 	}
 }
 
-//////////////////////////////////////////////////////////////////////////
 void C2DViewport::SetZoom(float fZoomFactor, CPoint center)
 {
 	if (fZoomFactor < 0.01f)
@@ -275,13 +253,11 @@ void C2DViewport::SetZoom(float fZoomFactor, CPoint center)
 	m_bContentValid = false;
 }
 
-//////////////////////////////////////////////////////////////////////////
 void C2DViewport::OnPaint()
 {
 	m_bContentValid = false;
 }
 
-//////////////////////////////////////////////////////////////////////////
 bool C2DViewport::CreateRenderContext(HWND hWnd)
 {
 	Vec3 clCol = CMFCUtils::Rgb2Vec(m_colorBackground);
@@ -305,7 +281,6 @@ bool C2DViewport::CreateRenderContext(HWND hWnd)
 	return true;
 }
 
-//////////////////////////////////////////////////////////////////////////
 void C2DViewport::Update()
 {
 	if (!m_bContentValid)
@@ -316,7 +291,6 @@ void C2DViewport::Update()
 	CViewport::Update();
 }
 
-//////////////////////////////////////////////////////////////////////////
 POINT C2DViewport::WorldToView(const Vec3& wp) const
 {
 	Vec3 sp = m_screenTM.TransformPoint(wp);
@@ -324,7 +298,6 @@ POINT C2DViewport::WorldToView(const Vec3& wp) const
 	return p;
 }
 
-//////////////////////////////////////////////////////////////////////////
 Vec3 C2DViewport::ViewToWorld(POINT vp, bool* collideWithTerrain, bool onlyTerrain, bool bSkipVegetation, bool bTestRenderMesh) const
 {
 	Vec3 wp = m_screenTM_Inverted.TransformPoint(Vec3(vp.x, vp.y, 0));
@@ -402,7 +375,6 @@ Vec3 C2DViewport::CameraToWorld(Vec3 worldPoint) const
 	return ViewDirection();
 }
 
-//////////////////////////////////////////////////////////////////////////
 void C2DViewport::ViewToWorldRay(POINT vp, Vec3& raySrc, Vec3& rayDir) const
 {
 	raySrc = ViewToWorld(vp);
@@ -424,14 +396,12 @@ void C2DViewport::ViewToWorldRay(POINT vp, Vec3& raySrc, Vec3& rayDir) const
 	}
 }
 
-//////////////////////////////////////////////////////////////////////////
 float C2DViewport::GetScreenScaleFactor(const Vec3& worldPoint) const
 {
 	return 400.0f / GetZoomFactor();
 	//return 100.0f / ;
 }
 
-//////////////////////////////////////////////////////////////////////////
 void C2DViewport::Render()
 {
 	// lock while we are rendering to prevent any re-rendering across the application
@@ -471,7 +441,7 @@ void C2DViewport::Render()
 			dc.view = this;
 			dc.renderer = gEnv->pRenderer;
 			dc.engine = GetIEditorImpl()->Get3DEngine();
-			dc.flags = DISPLAY_2D;
+			dc.display2D = true;
 			dc.box = m_displayBounds;
 			m_camera = GetIEditorImpl()->GetSystem()->GetViewCamera();
 			// Should be setting orthogonal camera
@@ -480,23 +450,17 @@ void C2DViewport::Render()
 			dc.pIconManager = GetIEditorImpl()->GetIconManager();
 			dc.SetDisplayContext(m_displayContextKey);
 
-			if (!gViewportPreferences.displayLabels || !(GetIEditor()->IsHelpersDisplayed()))
+			if (m_helperSettings.enabled)
 			{
-				dc.flags |= DISPLAY_HIDENAMES;
-			}
-			if (gViewportPreferences.displayLinks && GetIEditor()->IsHelpersDisplayed())
-			{
-				dc.flags |= DISPLAY_LINKS;
-			}
-			if (m_bDegradateQuality)
-			{
-				dc.flags |= DISPLAY_DEGRADATED;
+				dc.enabled = m_helperSettings.enabled;
+				//This is the only helper is used inside viewport in 2D mode
+				dc.showLinks = m_helperSettings.showLinks;
 			}
 
 			// Render
 			gEnv->pRenderer->BeginFrame(m_displayContextKey);
 
-			// TODO: BeginFrame/EndFrame calls can be droped and replaced by RT_AuxRender
+			// TODO: BeginFrame/EndFrame calls can be dropped and replaced by RT_AuxRender
 			auto oldCamera = gEnv->pRenderer->GetIRenderAuxGeom()->GetCamera();
 			gEnv->pRenderer->UpdateAuxDefaultCamera(m_camera);
 
@@ -519,7 +483,6 @@ void C2DViewport::Render()
 	}
 }
 
-//////////////////////////////////////////////////////////////////////////
 void C2DViewport::Draw(CObjectRenderHelper& objRenderHelper)
 {
 	SDisplayContext& dc = objRenderHelper.GetDisplayContextRef();
@@ -535,7 +498,6 @@ void C2DViewport::Draw(CObjectRenderHelper& objRenderHelper)
 	DrawAxis(dc);
 }
 
-//////////////////////////////////////////////////////////////////////////
 inline Vec3 SnapToSize(Vec3 v, double size)
 {
 	Vec3 snapped;
@@ -545,7 +507,6 @@ inline Vec3 SnapToSize(Vec3 v, double size)
 	return snapped;
 }
 
-//////////////////////////////////////////////////////////////////////////
 void C2DViewport::DrawGrid(SDisplayContext& dc, bool bNoXNumbers)
 {
 	float gridSize = gSnappingPreferences.gridSize();
@@ -700,10 +661,8 @@ void C2DViewport::DrawGrid(SDisplayContext& dc, bool bNoXNumbers)
 		dc.DrawLine(Vec3(org.x, 0, fZ), Vec3(org.x, height, fZ));
 		dc.DrawLine(Vec3(0, org.y, fZ), Vec3(width, org.y, fZ));
 	}
-	//////////////////////////////////////////////////////////////////////////
 }
 
-//////////////////////////////////////////////////////////////////////////
 void C2DViewport::DrawAxis(SDisplayContext& dc)
 {
 	int ix = 0;
@@ -771,7 +730,6 @@ void C2DViewport::DrawAxis(SDisplayContext& dc)
 	dc.Draw2dTextLabel(pos.x - 5, pos.y + 5, 1, zstr);
 }
 
-//////////////////////////////////////////////////////////////////////////
 void C2DViewport::DrawSelection(SDisplayContext& dc)
 {
 	AABB box = GetIEditorImpl()->GetLevelEditorSharedState()->GetSelectedRegion();
@@ -810,7 +768,6 @@ void C2DViewport::DrawSelection(SDisplayContext& dc)
 	}
 }
 
-//////////////////////////////////////////////////////////////////////////
 void C2DViewport::DrawViewerMarker(SDisplayContext& dc)
 {
 	float noScale = 1.0f / GetZoomFactor();
@@ -868,7 +825,6 @@ void C2DViewport::DrawViewerMarker(SDisplayContext& dc)
 	dc.PopMatrix();
 }
 
-//////////////////////////////////////////////////////////////////////////
 void C2DViewport::DrawObjects(CObjectRenderHelper& objRenderHelper)
 {
 	SDisplayContext& dc = objRenderHelper.GetDisplayContextRef();
@@ -887,7 +843,6 @@ void C2DViewport::DrawObjects(CObjectRenderHelper& objRenderHelper)
 	dc.PopMatrix();
 }
 
-//////////////////////////////////////////////////////////////////////////
 void C2DViewport::MakeSnappingGridPlane(CLevelEditorSharedState::Axis axis)
 {
 	switch (m_axis)
@@ -907,7 +862,6 @@ void C2DViewport::MakeSnappingGridPlane(CLevelEditorSharedState::Axis axis)
 	}
 }
 
-//////////////////////////////////////////////////////////////////////////
 AABB C2DViewport::GetWorldBounds(CPoint pnt1, CPoint pnt2)
 {
 	Vec3 org;
@@ -936,7 +890,6 @@ AABB C2DViewport::GetWorldBounds(CPoint pnt1, CPoint pnt2)
 	return box;
 }
 
-//////////////////////////////////////////////////////////////////////////
 void C2DViewport::OnDragSelectRectangle(CPoint pnt1, CPoint pnt2, bool bNormilizeRect)
 {
 	Vec3 org;
@@ -991,15 +944,12 @@ void C2DViewport::OnDragSelectRectangle(CPoint pnt1, CPoint pnt2, bool bNormiliz
 	GetIEditorImpl()->GetLevelEditorSharedState()->SetSelectedRegion(box);
 }
 
-//////////////////////////////////////////////////////////////////////////
 bool C2DViewport::HitTest(CPoint point, HitContext& hitInfo)
 {
 	hitInfo.bounds = &m_displayBounds;
 	return CViewport::HitTest(point, hitInfo);
 }
 
-//////////////////////////////////////////////////////////////////////////
-//////////////////////////////////////////////////////////////////////////
 bool C2DViewport::IsBoundsVisible(const AABB& box) const
 {
 	// If at least part of bbox is visible then its visible.
@@ -1008,7 +958,6 @@ bool C2DViewport::IsBoundsVisible(const AABB& box) const
 	return false;
 }
 
-//////////////////////////////////////////////////////////////////////////
 void C2DViewport::CenterOnSelection()
 {
 	const CSelectionGroup* sel = GetIEditorImpl()->GetSelection();
@@ -1029,7 +978,6 @@ void C2DViewport::CenterOnSelection()
 	m_bContentValid = false;
 }
 
-//////////////////////////////////////////////////////////////////////////
 Vec3 C2DViewport::GetOrigin2D() const
 {
 	if (gViewportPreferences.sync2DViews)
@@ -1038,7 +986,6 @@ Vec3 C2DViewport::GetOrigin2D() const
 		return m_origin2D;
 }
 
-//////////////////////////////////////////////////////////////////////////
 void C2DViewport::SetOrigin2D(const Vec3& org)
 {
 	m_origin2D = org;
@@ -1046,7 +993,6 @@ void C2DViewport::SetOrigin2D(const Vec3& org)
 		GetViewManager()->SetOrigin2D(m_origin2D);
 }
 
-//////////////////////////////////////////////////////////////////////////
 void C2DViewport::OnResize()
 {
 	int width = 0;
@@ -1060,7 +1006,6 @@ void C2DViewport::OnResize()
 	OnPaint();
 }
 
-//////////////////////////////////////////////////////////////////////////
 bool C2DViewport::MouseCallback(EMouseEvent event, CPoint& point, int flags)
 {
 	if (GetIEditorImpl()->IsInGameMode())
@@ -1228,6 +1173,3 @@ void C2DViewport::SerializeDisplayOptions(Serialization::IArchive& ar)
 
 	ar(ser, "viewport2D", "2D Viewport");
 }
-
-#endif //EDITOR_2D_VIEWPORT_NOT_IMPLEMENTED
-

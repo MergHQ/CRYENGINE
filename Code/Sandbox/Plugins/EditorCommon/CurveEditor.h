@@ -174,4 +174,3 @@ private:
 	int                            m_rulerTicksYOffset;
 	float                          m_fitMargin;
 };
-

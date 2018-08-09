@@ -6,10 +6,15 @@
 #include <CrySystem/File/IFileChangeMonitor.h>
 #include <CryCore/ToolsHelpers/ResourceCompilerHelper.h>
 
+class CAsset;
+
 namespace AssetManagerHelpers
 {
 
 bool IsFileOpened(const string& path);
+
+//! Returns list of metadata files for given assets
+std::vector<string> GetListOfMetadataFiles(const std::vector<CAsset*>& assets);
 
 struct EDITOR_COMMON_API RCLogger : IResourceCompilerListener
 {

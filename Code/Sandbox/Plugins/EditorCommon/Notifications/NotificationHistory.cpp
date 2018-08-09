@@ -192,4 +192,3 @@ void CNotificationHistory::SaveState()
 	SET_PERSONALIZATION_PROPERTY(CNotificationHistory, "ShowErrors", m_pShowErrors->isChecked());
 	SET_PERSONALIZATION_PROPERTY(CNotificationHistory, "TreeView", m_pTreeView->GetState());
 }
-

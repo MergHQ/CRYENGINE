@@ -533,4 +533,3 @@ REGISTER_PYTHON_COMMAND_WITH_EXAMPLE(PyTrackViewGetInterpolatedValue, trackview,
                                      "trackview.get_num_track_keys(str paramName, int trackIndex, float time, str nodeName, str parentDirectorName)");
 
 #pragma warning(pop)
-

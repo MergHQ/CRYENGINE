@@ -287,4 +287,3 @@ bool GenerateFootsteps(AnimationContent* content, string* errorMessage, ICharact
 }
 
 }
-

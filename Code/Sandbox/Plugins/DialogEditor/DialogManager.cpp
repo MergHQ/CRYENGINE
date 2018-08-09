@@ -536,4 +536,3 @@ bool CEditorDialogScriptSerializer::WriteLine(XmlNodeRef lineNode, const CEditor
 	lineNode->setAttr("desc", line.m_desc);
 	return true;
 }
-

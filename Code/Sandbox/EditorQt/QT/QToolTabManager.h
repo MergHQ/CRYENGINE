@@ -95,8 +95,6 @@ private:
 
 	class QToolWindowManager* GetToolManager() const;
 
-	void                      SetDefaultLayout();
-
 	QTabPane*                 FindTabPane(IPane* pane);
 
 	bool                      CloseTabPane(QTabPane* pane);

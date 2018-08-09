@@ -3541,9 +3541,8 @@ void CDeviceBufferManager::ReleaseEmptyBanks(uint32 frameId)
 		s_PoolManager.m_constant_allocator[i].ReleaseEmptyBanks();
 #endif
 
-	// Note: Issue the current fence for retiring allocations. This is the same fence shelled out
-	// to the pools during the update stage for COW, now we are reusing it to ensure the gpu caught
-	// up to this point and therefore give out reclaimed memory again.
+	// Note: Issue the fence now for COPY_ON_WRITE. If the GPU has caught up to this point, no previous drawcall
+	// will be pending and therefore it is safe to just reuse the previous allocation.
 	GetDeviceObjectFactory().IssueFence(s_PoolManager.m_fences[frameId & SPoolConfig::POOL_FRAME_QUERY_MASK]);
 }
 
@@ -3592,10 +3591,6 @@ void CDeviceBufferManager::Update(uint32 frameId, bool called_during_loading)
 	s_PoolManager.m_ResourceDescriptorPool.Update(frameId,
 	                                              s_PoolManager.m_fences[frameId & SPoolConfig::POOL_FRAME_QUERY_MASK]);
 #endif
-
-	// Note: Issue the fence now for COPY_ON_WRITE. If the GPU has caught up to this point, no previous drawcall
-	// will be pending and therefore it is safe to just reuse the previous allocation.
-	GetDeviceObjectFactory().IssueFence(s_PoolManager.m_fences[frameId & SPoolConfig::POOL_FRAME_QUERY_MASK]);
 }
 
 //////////////////////////////////////////////////////////////////////////////////////

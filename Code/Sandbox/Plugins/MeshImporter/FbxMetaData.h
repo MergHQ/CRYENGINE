@@ -224,4 +224,3 @@ struct SMetaData
 	bool    FromJson(const TString& json);
 };
 }
-

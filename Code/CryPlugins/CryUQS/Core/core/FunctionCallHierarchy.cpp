@@ -10,9 +10,9 @@ namespace UQS
 	namespace Core
 	{
 
-		bool CFunctionCallHierarchy::AddAndInstantiateFunctionBlueprint(const CFunctionBlueprint& functionBlueprintToInstantiate, const SQueryBlackboard& blackboard, Shared::CUqsString& error)
+		bool CFunctionCallHierarchy::AddAndInstantiateFunctionBlueprint(const CFunctionBlueprint& functionBlueprintToInstantiate, const SQueryContext& queryContext, Shared::CUqsString& error)
 		{
-			Client::FunctionUniquePtr pFunction = functionBlueprintToInstantiate.InstantiateCallHierarchy(blackboard, error);
+			Client::FunctionUniquePtr pFunction = functionBlueprintToInstantiate.InstantiateCallHierarchy(queryContext, error);
 
 			if (pFunction)
 			{

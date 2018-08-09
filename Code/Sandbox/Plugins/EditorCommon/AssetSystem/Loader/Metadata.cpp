@@ -6,6 +6,7 @@
 #include <Cry3DEngine/CGF/IChunkFile.h>
 #include <CrySerialization/yasli/JSONIArchive.h>
 #include <CrySerialization/yasli/JSONOArchive.h>
+#include <chrono>
 
 namespace AssetLoader
 {
@@ -78,6 +79,14 @@ bool ReadMetadata(const XmlNodeRef& container, SAssetMetadata& metadata)
 	return true;
 }
 
+long GetTimeStamp()
+{
+	using namespace std::chrono;
+	auto nowTimePoint = system_clock::now();
+	auto nowTimePointSeconds = time_point_cast<seconds>(nowTimePoint);
+	return nowTimePointSeconds.time_since_epoch().count();
+}
+
 // See also RC's version of WriteMetaData.
 void WriteMetaData(const XmlNodeRef& asset, const SAssetMetadata& metadata)
 {	
@@ -93,6 +102,7 @@ void WriteMetaData(const XmlNodeRef& asset, const SAssetMetadata& metadata)
 	pMetadataNode->setAttr("type", metadata.type);
 	pMetadataNode->setAttr("guid", metadata.guid.ToString().c_str());
 	pMetadataNode->setAttr("source", metadata.sourceFile);
+	pMetadataNode->setAttr("timestamp", GetTimeStamp());
 
 	XmlNodeRef pFiles = pMetadataNode->findChild("Files");
 	if (!pFiles)
@@ -143,4 +153,3 @@ void WriteMetaData(const XmlNodeRef& asset, const SAssetMetadata& metadata)
 }
 
 }
-

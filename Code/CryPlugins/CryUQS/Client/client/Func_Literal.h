@@ -44,7 +44,7 @@ namespace UQS
 			{
 				CRY_ASSERT(ctorContext.pOptionalReturnValueInCaseOfLeafFunction);
 
-				const Core::ILeafFunctionReturnValue::SLiteralInfo literalInfo = ctorContext.pOptionalReturnValueInCaseOfLeafFunction->GetLiteral(ctorContext.blackboard);
+				const Core::ILeafFunctionReturnValue::SLiteralInfo literalInfo = ctorContext.pOptionalReturnValueInCaseOfLeafFunction->GetLiteral(ctorContext.queryContext);
 
 				// if this fails then something might have gone wrong in CInputBlueprint::Resolve()
 				CRY_ASSERT(literalInfo.type == Shared::SDataTypeHelper<TLiteral>::GetTypeInfo());

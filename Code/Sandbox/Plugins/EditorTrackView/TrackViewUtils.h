@@ -46,4 +46,3 @@ struct SSequenceData
 	SCurveEditorContent                m_curveEditorContent;
 	std::map<CryGUID, STimelineTrack*> m_uIdToTimelineTrackMap;
 };
-

@@ -128,4 +128,3 @@ QAbstractButton* CFilePreviewContainer::CreateToggleButton(QWidget* parent)
 
 	return button;
 }
-

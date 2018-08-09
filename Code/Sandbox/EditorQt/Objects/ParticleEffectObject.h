@@ -11,22 +11,22 @@ class SANDBOX_API CParticleEffectObject : public CEntityObject
 public:
 	DECLARE_DYNCREATE(CParticleEffectObject)
 
-	void        Serialize(CObjectArchive& ar) override;
+	void         Serialize(CObjectArchive& ar) override;
 
-	void        CreateInspectorWidgets(CInspectorWidgetCreator& creator) override;
+	void         CreateInspectorWidgets(CInspectorWidgetCreator& creator) override;
 
-	bool        Init(CBaseObject* prev, const string& file);
-	void        PostInit(const string& file);
-	void        AssignEffect(const string& effectName);
+	bool         Init(CBaseObject* prev, const string& file);
+	void         PostInit(const string& file);
+	void         AssignEffect(const string& effectName);
 
-	void        Display(SDisplayContext& disp);
+	virtual void Display(CObjectRenderHelper& objRenderHelper) override;
 
-	static bool IsGroup(const string& effectName);
-	string      GetParticleName() const;
-	string      GetComment() const;
+	static bool  IsGroup(const string& effectName);
+	string       GetParticleName() const;
+	string       GetComment() const;
 
-	string      GetAssetPath() const override { return m_ParticleEntityName; }
-	void        OnMenuGoToDatabase() const;
+	string       GetAssetPath() const override { return m_ParticleEntityName; }
+	void         OnMenuGoToDatabase() const;
 
 	class CFastParticleParser
 	{

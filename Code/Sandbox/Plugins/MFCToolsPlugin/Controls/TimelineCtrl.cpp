@@ -746,4 +746,3 @@ void CTimelineCtrl::SetPlayCallback(const std::function<void()>& callback)
 {
 	m_playCallback = callback;
 }
-

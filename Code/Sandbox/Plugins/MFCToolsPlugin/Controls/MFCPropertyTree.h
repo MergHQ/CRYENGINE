@@ -68,4 +68,3 @@ private:
 	Functor0                       m_sizeChangeCallback;
 	Functor0                       m_propertyChangeCallback;
 };
-

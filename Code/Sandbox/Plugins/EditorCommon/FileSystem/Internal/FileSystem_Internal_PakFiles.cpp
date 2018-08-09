@@ -99,4 +99,3 @@ void CPakFiles::GetContentsInternal(const std::string& archiveEnginePathStr, con
 
 } // namespace Internal
 } // namespace FileSystem
-

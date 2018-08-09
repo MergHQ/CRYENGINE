@@ -1014,4 +1014,3 @@ string CBaseLibraryDialog::MakeValidName(const string& candidateName) const
 	assert(0 && "CBaseLibraryDialog::MakeValidName()");
 	return candidateName;
 }
-

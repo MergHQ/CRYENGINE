@@ -756,4 +756,3 @@ bool CFBXExporter::ImportFromFile(const char* filename, SExportData* pData)
 
 	return true;
 }
-

@@ -328,6 +328,7 @@ struct IStatInstGroup
 		bUseTerrainColor = false;
 		fAlignToTerrainCoefficient = 0.f;
 		bAutoMerged = false;
+		bIgnoreTerrainLayerBlend = true;
 		minConfigSpec = (ESystemConfigSpec)0;
 		nTexturesAreStreamedIn = 0;
 		nPlayerHideable = ePlayerHideable_None;
@@ -356,6 +357,7 @@ struct IStatInstGroup
 	bool                 bUseTerrainColor;
 	bool                 bAllowIndoor;
 	bool                 bAutoMerged;
+	bool                 bIgnoreTerrainLayerBlend;
 	float                fDensity;
 	float                fElevationMax;
 	float                fElevationMin;
@@ -386,7 +388,7 @@ struct IStatInstGroup
 	uint8 nTexturesAreStreamedIn;
 
 	//! Flags similar to entity render flags.
-	int m_dwRndFlags;
+	uint64 m_dwRndFlags;
 };
 //! \endcond
 

@@ -48,4 +48,3 @@ private:
 	QAdvancedTreeView*                           m_pView;
 	QFilteringPanel* m_pFilteringPanel;
 };
-

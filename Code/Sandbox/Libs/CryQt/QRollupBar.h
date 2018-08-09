@@ -59,4 +59,3 @@ private:
 	bool m_canReorder;
 	bool m_rollupsClosable;
 };
-

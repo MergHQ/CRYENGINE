@@ -90,4 +90,3 @@ public:
 private:
 	std::unique_ptr<CTargetMeshModel> m_pModel;
 };
-

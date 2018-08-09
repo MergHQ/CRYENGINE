@@ -14,10 +14,10 @@ bool AttachmentVClothPreProcess::PreProcess(std::vector<Vec3> const& vtx, std::v
 	bool valid = true;
 
 	// init data structures
-	m_lra.resize(vtx.size());
+	m_nndc.resize(vtx.size());
 
 	// preprocess
-	LraDijkstra(vtx, idx, attached);
+	NndcDijkstra(vtx, idx, attached);
 	BendByTriangleAngle(vtx, idx, attached);
 	CreateLinks(vtx, idx);
 
@@ -43,7 +43,7 @@ namespace {
 	}
 }
 
-bool AttachmentVClothPreProcess::LraDijkstra(std::vector<Vec3> const& vtx, std::vector<int> const& idx, std::vector<bool> const& attached)
+bool AttachmentVClothPreProcess::NndcDijkstra(std::vector<Vec3> const& vtx, std::vector<int> const& idx, std::vector<bool> const& attached)
 {
 	int nVtx = (int)vtx.size();
 	int nTriangles = (int)idx.size() / 3;
@@ -78,24 +78,24 @@ bool AttachmentVClothPreProcess::LraDijkstra(std::vector<Vec3> const& vtx, std::
 	// init per-vertex-data with results from dijkstra or (in case of islands) with default values
 	for (int idx = 0; idx < nVtx; ++idx)
 	{
-		assert(idx < results.size() && idx < m_lra.size());
+		assert(idx < results.size() && idx < m_nndc.size());
 
 		const int& nextParent = results[idx].nextNodeIdOnShortestPath;
 		const float& distanceToAttachedVtx = results[idx].weightTotal;
 
-		m_lra[idx].lraNextParent = -1;
+		m_nndc[idx].nndcNextParent = -1;
 		if (idx == source) continue;     // this is the source node, not existing in m_particlesHot, since added for graph traversing reasons, thus, do nothing
 		if (idx == nextParent) continue; // this is the source node or something went wrong, do nothing
-		m_lra[idx].lraDist = 0;          // default: no lra, i.e. no path existing / disconnected parts
-		m_lra[idx].lraIdx = -1;          // default: no lra, i.e. no path existing / disconnected parts
-		m_lra[idx].lraNextParent = nextParent;
-		if (distanceToAttachedVtx < 0.001f) continue;         // this is an attached vtx, thus, no lra
-		if (distanceToAttachedVtx > std::numeric_limits<float>::max() * 0.5f) continue; // no path existing, disconnected mesh, thus, no lra
+		m_nndc[idx].nndcDist = 0;          // default: no nndc, i.e. no path existing / disconnected parts
+		m_nndc[idx].nndcIdx = -1;          // default: no nndc, i.e. no path existing / disconnected parts
+		m_nndc[idx].nndcNextParent = nextParent;
+		if (distanceToAttachedVtx < 0.001f) continue;         // this is an attached vtx, thus, no nndc
+		if (distanceToAttachedVtx > std::numeric_limits<float>::max() * 0.5f) continue; // no path existing, disconnected mesh, thus, no nndc
 
 		// if we are here a path has been found
-		m_lra[idx].lraDist = distanceToAttachedVtx;
-		m_lra[idx].lraNextParent = nextParent;
-		m_lra[idx].lraIdx = 0; // this enables later the search for the closest attached constraint
+		m_nndc[idx].nndcDist = distanceToAttachedVtx;
+		m_nndc[idx].nndcNextParent = nextParent;
+		m_nndc[idx].nndcIdx = 0; // this enables later the search for the closest attached constraint
 	}
 
 	// all paths are set, thus, search for each particle the closest attached vtx by walking the whole path until next parent equals 'source'
@@ -103,16 +103,16 @@ bool AttachmentVClothPreProcess::LraDijkstra(std::vector<Vec3> const& vtx, std::
 	for (int idx = 0; idx < nVtx; idx++)
 	{
 		if (attached[idx]) continue;
-		if (m_lra[idx].lraIdx == -1) continue; // no path available, (-1 is default value, see above)
+		if (m_nndc[idx].nndcIdx == -1) continue; // no path available, (-1 is default value, see above)
 		int actualNode = idx;
-		while (m_lra[actualNode].lraNextParent != source)
+		while (m_nndc[actualNode].nndcNextParent != source)
 		{
-			int nextParentNode = m_lra[actualNode].lraNextParent;
+			int nextParentNode = m_nndc[actualNode].nndcNextParent;
 			assert(nextParentNode >= 0);
 			assert(nextParentNode < nVtx); // +1 // +1 due to source
 			actualNode = nextParentNode;
 		}
-		m_lra[idx].lraIdx = actualNode;
+		m_nndc[idx].nndcIdx = actualNode;
 	}
 
 	// sort by distance
@@ -130,15 +130,15 @@ bool AttachmentVClothPreProcess::LraDijkstra(std::vector<Vec3> const& vtx, std::
 		for (int i = 0; i < nVtx; i++)
 		{
 			if (attached[i]) continue;
-			myClassSortList.push_back(MyClassSort(i, m_lra[i].lraDist));
+			myClassSortList.push_back(MyClassSort(i, m_nndc[i].nndcDist));
 		}
 		std::sort(myClassSortList.begin(), myClassSortList.end(), [](const MyClassSort& a, const MyClassSort& b) { return a.dist < b.dist; });
-		// copy list of indices to m_lraNotAttachedOrderedIdx
-		m_lraNotAttachedOrderedIdx.clear();
-		m_lraNotAttachedOrderedIdx.reserve(myClassSortList.size());
+		// copy list of indices to m_nndcNotAttachedOrderedIdx
+		m_nndcNotAttachedOrderedIdx.clear();
+		m_nndcNotAttachedOrderedIdx.reserve(myClassSortList.size());
 		for (const auto& it : myClassSortList)
 		{
-			m_lraNotAttachedOrderedIdx.push_back(it.idx);
+			m_nndcNotAttachedOrderedIdx.push_back(it.idx);
 		}
 
 	}

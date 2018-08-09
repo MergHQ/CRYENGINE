@@ -127,4 +127,3 @@ bool CPakFile::RemoveDir(const char* directory)
 	}
 	return false;
 }
-

@@ -97,4 +97,3 @@ public:
 };
 
 #endif // __inplacebutton_h__
-

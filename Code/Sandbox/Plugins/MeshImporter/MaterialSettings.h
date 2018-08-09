@@ -27,4 +27,3 @@ private:
 	MaterialCallback     m_materialChangedCallback;
 	TSmartPtr<CMaterial> m_pMaterial;
 };
-

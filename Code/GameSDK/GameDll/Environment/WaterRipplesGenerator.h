@@ -1,30 +1,17 @@
 // Copyright 2001-2018 Crytek GmbH / Crytek Group. All rights reserved.
 
-/*************************************************************************
--------------------------------------------------------------------------
-
-Description: Generates water ripplets when moving across a water surface
-
--------------------------------------------------------------------------
-History:
-- 17:05:2012: Created by Benito Gangoso Rodriguez
-
-*************************************************************************/
-
-#ifndef __WATER_RIPPLES_GENERATOR_H__
-#define __WATER_RIPPLES_GENERATOR_H__
-
 #pragma once
 
 #include <IGameObject.h>
 
-
 #define WATER_RIPPLES_EDITING_ENABLED 1
 
+// Description: Generates water ripples when moving across a water surface
 
-class CWaterRipplesGenerator : public CGameObjectExtensionHelper<CWaterRipplesGenerator, IGameObjectExtension>
+class CWaterRipplesGenerator
+	: public CGameObjectExtensionHelper<CWaterRipplesGenerator, IGameObjectExtension>
+	  , public IEntityComponentPreviewer
 {
-
 	struct SProperties
 	{
 		SProperties()
@@ -37,12 +24,11 @@ class CWaterRipplesGenerator : public CGameObjectExtensionHelper<CWaterRipplesGe
 			, m_enabled(true)
 			, m_autoSpawn(false)
 			, m_spawnOnMovement(true)
-			, m_randomOffset(0,0)
+			, m_randomOffset(0, 0)
 		{
-
 		}
 
-		void InitFromScript( const IEntity& entity );
+		void InitFromScript(const IEntity& entity);
 
 		float m_scale;
 		float m_strength;
@@ -52,8 +38,8 @@ class CWaterRipplesGenerator : public CGameObjectExtensionHelper<CWaterRipplesGe
 		float m_randStrength;
 		bool  m_enabled;
 		bool  m_autoSpawn;
-		bool m_spawnOnMovement;
-		Vec2 m_randomOffset;
+		bool  m_spawnOnMovement;
+		Vec2  m_randomOffset;
 	};
 
 public:
@@ -61,43 +47,46 @@ public:
 	virtual ~CWaterRipplesGenerator();
 
 	// IGameObjectExtension
-	virtual bool Init(IGameObject *pGameObject);
-	virtual void InitClient(int channelId) {};
-	virtual void PostInit(IGameObject *pGameObject);
-	virtual void PostInitClient(int channelId) {};
-	virtual bool ReloadExtension( IGameObject * pGameObject, const SEntitySpawnParams &params );
-	virtual void PostReloadExtension( IGameObject * pGameObject, const SEntitySpawnParams &params ) {}
-	virtual bool GetEntityPoolSignature( TSerialize signature );
-	virtual void Release();
-	virtual bool NetSerialize(TSerialize ser, EEntityAspects aspect, uint8 profile, int pflags) { return true; }
-	virtual void FullSerialize(TSerialize ser);
-	virtual void PostSerialize() {}
-	virtual void SerializeSpawnInfo( TSerialize ser ) {}
-	virtual ISerializableInfoPtr GetSpawnInfo() {return 0;}
-	virtual void Update( SEntityUpdateContext &ctx, int updateSlot);
-	virtual void PostUpdate(float frameTime ) {};
-	virtual void PostRemoteSpawn() {};
-	virtual void HandleEvent( const SGameObjectEvent &gameObjectEvent );
-	virtual void ProcessEvent(const SEntityEvent& );
-	virtual Cry::Entity::EventFlags GetEventMask() const;
-	virtual void ProcessHit(bool isMoving);
-	virtual void SetChannelId(uint16 id) {}
-	virtual void GetMemoryUsage(ICrySizer *pSizer) const { pSizer->Add(*this); }
+	virtual bool                       Init(IGameObject* pGameObject) override;
+	virtual void                       InitClient(int channelId) override                                                       {}
+	virtual void                       PostInit(IGameObject* pGameObject) override;
+	virtual void                       PostInitClient(int channelId) override                                                   {}
+	virtual bool                       ReloadExtension(IGameObject* pGameObject, const SEntitySpawnParams& params) override;
+	virtual void                       PostReloadExtension(IGameObject* pGameObject, const SEntitySpawnParams& params) override {}
+	virtual bool                       NetSerialize(TSerialize ser, EEntityAspects aspect, uint8 profile, int pflags) override  { return true; }
+	virtual void                       FullSerialize(TSerialize ser) override;
+	virtual void                       PostSerialize() override                                                                 {}
+	virtual void                       SerializeSpawnInfo(TSerialize ser) override                                              {}
+	virtual ISerializableInfoPtr       GetSpawnInfo() override                                                                  { return 0; }
+	virtual void                       Update(SEntityUpdateContext& ctx, int updateSlot) override;
+	virtual void                       PostUpdate(float frameTime) override                                                     {}
+	virtual void                       PostRemoteSpawn() override                                                               {}
+	virtual void                       HandleEvent(const SGameObjectEvent& gameObjectEvent) override;
+	virtual void                       ProcessEvent(const SEntityEvent&) override;
+	virtual Cry::Entity::EventFlags    GetEventMask() const override;
+	virtual void                       SetChannelId(uint16 id) override                 {}
+	virtual void                       GetMemoryUsage(ICrySizer* pSizer) const override { pSizer->Add(*this); }
+	virtual IEntityComponentPreviewer* GetPreviewer() override                          { return this; }
+	// ~IGameObjectExtension
 
-	//~IGameObjectExtension
+	// IEntityComponentPreviewer
+	virtual void SerializeProperties(Serialization::IArchive& archive) override {}
+	virtual void Render(const IEntity& entity, const IEntityComponent& component, SEntityPreviewContext& context) const override;
+	// ~IEntityComponentPreviewer
+
+	virtual bool GetEntityPoolSignature(TSerialize signature);
+	virtual void Release();
+	virtual void ProcessHit(bool isMoving);
 
 private:
 
 	void Reset();
-	void ActivateGeneration( const bool activate );
+	void ActivateGeneration(const bool activate);
 
 	SProperties m_properties;
-	float				m_lastSpawnTime;
+	float       m_lastSpawnTime;
 
 #if WATER_RIPPLES_EDITING_ENABLED
 	bool m_currentLocationOk;
 #endif
-
 };
-
-#endif //__WATER_RIPPLES_GENERATOR_H__

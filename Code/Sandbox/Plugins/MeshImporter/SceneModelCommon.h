@@ -94,4 +94,3 @@ private:
 
 	std::unique_ptr<CItemModelAttributeEnum> m_pSourceNodeAttributeAttribute;
 };
-

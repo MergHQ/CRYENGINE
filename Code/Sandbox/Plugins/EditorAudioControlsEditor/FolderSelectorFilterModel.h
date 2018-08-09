@@ -10,9 +10,9 @@ class CFolderSelectorFilterModel final : public QDeepFilterProxyModel
 {
 public:
 
-	explicit CFolderSelectorFilterModel(QString const& assetpath, QObject* const pParent);
-
 	CFolderSelectorFilterModel() = delete;
+
+	explicit CFolderSelectorFilterModel(QString const& assetpath, QObject* const pParent);
 
 protected:
 

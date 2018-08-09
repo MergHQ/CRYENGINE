@@ -194,4 +194,3 @@ CBaseObject* CRulerPoint::GetObject() const
 
 	return pResult;
 }
-

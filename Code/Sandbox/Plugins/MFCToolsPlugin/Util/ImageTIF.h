@@ -16,4 +16,3 @@ public:
 };
 
 #endif // __imagetif_h__
-

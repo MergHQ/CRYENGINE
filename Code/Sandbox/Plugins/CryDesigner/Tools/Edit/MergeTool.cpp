@@ -137,4 +137,3 @@ void MergeTool::MergePolygons()
 
 REGISTER_DESIGNER_TOOL_AND_COMMAND(eDesigner_Merge, eToolGroup_Edit, "Merge", MergeTool,
                                    merge, "runs merge tool", "designer.merge")
-

@@ -45,4 +45,3 @@ struct CAbstractMultiProxyModelHelper
 private:
 	int m_storedMovedSituation;
 };
-

@@ -303,4 +303,3 @@ bool StairProfileTool::IsPhaseFirstStepOnPrimitiveCreation() const
 
 REGISTER_DESIGNER_TOOL_WITH_PROPERTYTREE_PANEL_AND_COMMAND(eDesigner_StairProfile, eToolGroup_Shape, "Stair Profile", StairProfileTool,
                                                            stairprofile, "runs stair profile tool", "designer.stairprofile")
-

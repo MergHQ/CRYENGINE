@@ -215,4 +215,3 @@ void DesignerSubPanel::UpdateBackFaceCheckBox(Model* pModel)
 }
 
 REGISTER_GENERALPANEL(SettingPanel, DesignerSubPanel, DesignerSubPanelConstructor);
-

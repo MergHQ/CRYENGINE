@@ -8,4 +8,3 @@ namespace QtUtil
 {
 void                AssignMenuRole(QAction* action, const QString& roleString);
 }
-

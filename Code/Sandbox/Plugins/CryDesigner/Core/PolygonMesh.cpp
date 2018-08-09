@@ -51,7 +51,7 @@ void PolygonMesh::CreateRenderNode()
 	m_pRenderNode = GetIEditor()->Get3DEngine()->CreateRenderNode(eERType_Brush);
 }
 
-void PolygonMesh::SetPolygon(PolygonPtr pPolygon, bool bForce, const Matrix34& worldTM, int dwRndFlags, int nViewDistRatio, int nMinSpec, uint8 materialLayerMask)
+void PolygonMesh::SetPolygon(PolygonPtr pPolygon, bool bForce, const Matrix34& worldTM, uint64 dwRndFlags, int nViewDistRatio, int nMinSpec, uint8 materialLayerMask)
 {
 	if (m_pPolygons.size() == 1 && m_pPolygons[0] == pPolygon && !bForce)
 		return;
@@ -62,7 +62,7 @@ void PolygonMesh::SetPolygon(PolygonPtr pPolygon, bool bForce, const Matrix34& w
 	SetPolygons(polygons, bForce, worldTM, dwRndFlags, nViewDistRatio, nMinSpec, materialLayerMask);
 }
 
-void PolygonMesh::SetPolygons(const std::vector<PolygonPtr>& polygonList, bool bForce, const Matrix34& worldTM, int dwRndFlags, int nViewDistRatio, int nMinSpec, uint8 materialLayerMask)
+void PolygonMesh::SetPolygons(const std::vector<PolygonPtr>& polygonList, bool bForce, const Matrix34& worldTM, uint64 dwRndFlags, int nViewDistRatio, int nMinSpec, uint8 materialLayerMask)
 {
 	m_pPolygons = polygonList;
 	ReleaseResources();
@@ -87,7 +87,7 @@ void PolygonMesh::SetPolygons(const std::vector<PolygonPtr>& polygonList, bool b
 		UpdateStatObjAndRenderNode(mesh, worldTM, dwRndFlags, nViewDistRatio, nMinSpec, materialLayerMask);
 }
 
-void PolygonMesh::UpdateStatObjAndRenderNode(const FlexibleMesh& mesh, const Matrix34& worldTM, int dwRndFlags, int nViewDistRatio, int nMinSpec, uint8 materialLayerMask)
+void PolygonMesh::UpdateStatObjAndRenderNode(const FlexibleMesh& mesh, const Matrix34& worldTM, uint64 dwRndFlags, int nViewDistRatio, int nMinSpec, uint8 materialLayerMask)
 {
 	CreateRenderNode();
 
@@ -144,4 +144,3 @@ void PolygonMesh::ApplyMaterial()
 }
 
 };
-

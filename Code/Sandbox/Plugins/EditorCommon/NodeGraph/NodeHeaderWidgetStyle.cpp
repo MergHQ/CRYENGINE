@@ -124,4 +124,3 @@ void CNodeHeaderWidgetStyle::GeneratePixmap(EStyleState state)
 }
 
 }
-

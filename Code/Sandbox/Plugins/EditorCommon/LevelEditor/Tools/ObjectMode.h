@@ -64,17 +64,16 @@ private:
 };
 
 /*!
- *	CObjectMode is an abstract base class for All Editing	Tools supported by Editor.
+ *	CObjectMode is an abstract base class for All Editing Tools supported by Editor.
  *	Edit tools handle specific editing modes in viewports.
  */
 class EDITOR_COMMON_API CObjectMode : public CEditTool
 {
 public:
 
-	class EDITOR_COMMON_API ISubTool
+	struct EDITOR_COMMON_API ISubTool
 	{
-	public:
-		virtual ~ISubTool() = 0 {};
+		virtual ~ISubTool() {}
 		virtual bool HandleMouseEvent(CViewport* view, EMouseEvent event, CPoint& point, int flags) = 0;
 	};
 

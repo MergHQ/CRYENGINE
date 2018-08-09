@@ -223,4 +223,3 @@ void CHyperNodePainter_CommentBox::Paint(CHyperNode* pNode, CDisplayList* pList)
 	rectTemp.Y = rectFillArea.GetBottom() - borderThickness * 2;
 	pBorderDownRight->SetRect(rectTemp);
 }
-

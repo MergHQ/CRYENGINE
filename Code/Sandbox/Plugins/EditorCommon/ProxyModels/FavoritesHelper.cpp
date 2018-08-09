@@ -130,4 +130,3 @@ void FavoritesHelper::Save()
 		pm->SetProjectProperty("FavoritesHelper", m_key, m_favorites);
 	}
 }
-

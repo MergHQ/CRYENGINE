@@ -6,31 +6,16 @@
 namespace pfx2
 {
 
-ILINE void IModifier::Serialize(Serialization::IArchive& ar)
-{
-	ar(m_enabled);
-}
-
-template<EDataDomain Domain, typename T>
-CParamMod<Domain, T>::CParamMod(TType defaultValue)
-	: m_baseValue(defaultValue)
-{
-}
-
 template<EDataDomain Domain, typename T>
 void CParamMod<Domain, T >::AddToComponent(CParticleComponent* pComponent, CParticleFeature* pFeature)
 {
-	m_modInit.clear();
-	m_modUpdate.clear();
-	stl::find_and_erase_all(m_modifiers, nullptr);
-
 	if (Domain & EDD_PerParticle)
 		pComponent->InitParticles.add(pFeature);
 
 	for (auto& pModifier : m_modifiers)
 	{
 		if (pModifier && pModifier->IsEnabled())
-			pModifier->AddToParam(pComponent, this);
+			pModifier->AddToParam(pComponent);
 	}
 }
 
@@ -58,13 +43,21 @@ void CParamMod<Domain, T >::Serialize(Serialization::IArchive& ar)
 
 	if (ar.isInput())
 	{
+		m_modInit.clear();
+		m_modUpdate.clear();
+		stl::find_and_erase_all(m_modifiers, nullptr);
 		for (auto& pMod : m_modifiers)
 		{
-			if (!pMod)
-				continue;
 			if (TModifier* pNewMod = pMod->VersionFixReplace())
 			{
 				pMod.reset(pNewMod);
+			}
+			if (pMod->IsEnabled())
+			{
+				if (pMod->GetDomain() & EDD_HasUpdate)
+					m_modUpdate.push_back(pMod);
+				else
+					m_modInit.push_back(pMod);
 			}
 		}
 	}
@@ -117,23 +110,17 @@ void CParamMod<Domain, T >::ModifyUpdate(CParticleComponentRuntime& runtime, TIO
 }
 
 template<EDataDomain Domain, typename T>
-TRange<typename T::TType> CParamMod<Domain, T >::GetValues(const CParticleComponentRuntime& runtime, TType* data, SUpdateRange range, EDataDomain domain, bool updating) const
+TRange<typename T::TType> CParamMod<Domain, T >::GetValues(const CParticleComponentRuntime& runtime, TType* data, SUpdateRange range, EDataDomain domain) const
 {
 	TRange<TType> minmax(1);
 	TIOStream<TType> stream(data);
 
 	stream.Fill(range, m_baseValue);
 
-	for (auto & pMod : m_modInit)
+	for (auto& pMod : m_modifiers)
 	{
-		if (pMod->GetDomain() & domain)
-			pMod->Modify(non_const(runtime), range, stream, TDataType<TType>(), domain);
-		else
-			minmax = minmax * pMod->GetMinMax();
-	}
-	for (auto& pMod : m_modUpdate)
-	{
-		if (updating && pMod->GetDomain() & domain)
+		EDataDomain modDomain = pMod->GetDomain();
+		if ((modDomain & domain & ~EDD_HasUpdate) && (!(modDomain & EDD_HasUpdate) || domain & EDD_HasUpdate))
 			pMod->Modify(non_const(runtime), range, stream, TDataType<TType>(), domain);
 		else
 			minmax = minmax * pMod->GetMinMax();
@@ -142,16 +129,16 @@ TRange<typename T::TType> CParamMod<Domain, T >::GetValues(const CParticleCompon
 }
 
 template<EDataDomain Domain, typename T>
-TRange<typename T::TType> CParamMod<Domain, T >::GetValues(const CParticleComponentRuntime& runtime, TVarArray<TType> data, EDataDomain domain, bool updating) const
+TRange<typename T::TType> CParamMod<Domain, T >::GetValues(const CParticleComponentRuntime& runtime, TVarArray<TType> data, EDataDomain domain) const
 {
-	return GetValues(runtime, data.data(), SUpdateRange(0, data.size()), domain, updating);
+	return GetValues(runtime, data.data(), SUpdateRange(0, data.size()), domain);
 }
 
 template<EDataDomain Domain, typename T>
 TRange<typename T::TType> CParamMod<Domain, T >::GetValueRange(const CParticleComponentRuntime& runtime) const
 {
 	floatv curValue;
-	auto minmax = GetValues(runtime, (float*)&curValue, SUpdateRange(0, 1), EDD_None, true);
+	auto minmax = GetValues(runtime, (float*)&curValue, SUpdateRange(0, 1), EDD_None);
 	return minmax * (*(float*)&curValue);
 }
 
@@ -159,15 +146,13 @@ template<EDataDomain Domain, typename T>
 TRange<typename T::TType> CParamMod<Domain, T >::GetValueRange() const
 {
 	TRange<TType> minmax(m_baseValue);
-	for (auto& pMod : m_modInit)
-		minmax = minmax * pMod->GetMinMax();
-	for (auto& pMod : m_modUpdate)
+	for (auto& pMod : m_modifiers)
 		minmax = minmax * pMod->GetMinMax();
 	return minmax;
 }
 
 template<EDataDomain Domain, typename T>
-void pfx2::CParamMod<Domain, T >::Sample(TType* samples, int numSamples) const
+void pfx2::CParamMod<Domain, T >::Sample(TType* samples, uint numSamples) const
 {
 	TIOStream<TType> stream(samples);
 	stream.Fill(SUpdateRange(0, numSamples), m_baseValue);

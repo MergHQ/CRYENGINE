@@ -74,6 +74,8 @@ namespace Cry
 
 				EnableUpdate(Cry::IEnginePlugin::EUpdateStep::MainUpdate, true);
 
+				m_localAccount = stl::make_unique<CAccount>();
+
 				CryLogAlways("[Discord] Successfully initialized Discord Rich Presence API");
 
 				if (pGamePlatform)
@@ -188,24 +190,18 @@ namespace Cry
 
 			void CService::SetLocalUser(const DiscordUser* pUser)
 			{
-				if (pUser)
+				if (m_localAccount)
 				{
-					if (m_localAccount)
+					if (pUser)
 					{
 						m_localAccount->SetDiscordUser(*pUser);
+						std::for_each(m_listeners.begin(), m_listeners.end(), [this](IListener* pListener) { pListener->OnAccountAdded(*m_localAccount); });
 					}
 					else
 					{
-						m_localAccount = stl::make_unique<CAccount>(*pUser);
+						std::for_each(m_listeners.begin(), m_listeners.end(), [this](IListener* pListener) { pListener->OnAccountRemoved(*m_localAccount); });
+						m_localAccount.reset();
 					}
-
-					std::for_each(m_listeners.begin(), m_listeners.end(), [this](IListener* pListener) { pListener->OnAccountAdded(*m_localAccount); });
-				}
-				else if(m_localAccount)
-				{
-					std::for_each(m_listeners.begin(), m_listeners.end(), [this](IListener* pListener) { pListener->OnAccountRemoved(*m_localAccount); });
-
-					m_localAccount.reset();
 				}
 			}
 

@@ -154,4 +154,3 @@ bool FacialExpressionUtils::IsExpressionInGarbage(IFacialEffectorsLibrary* pLibr
 	}
 	return inGarbage;
 }
-

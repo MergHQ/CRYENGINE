@@ -95,6 +95,7 @@ CMainWindow::CMainWindow()
 		}, reinterpret_cast<uintptr_t>(this));
 
 	GetIEditor()->RegisterNotifyListener(this);
+	GetISystem()->GetISystemEventDispatcher()->RegisterListener(this, "CAudioControlsEditorMainWindow");
 }
 
 //////////////////////////////////////////////////////////////////////////
@@ -104,6 +105,7 @@ CMainWindow::~CMainWindow()
 	g_implementationManager.SignalImplementationChanged.DisconnectById(reinterpret_cast<uintptr_t>(this));
 	g_assetsManager.SignalIsDirty.DisconnectById(reinterpret_cast<uintptr_t>(this));
 	GetIEditor()->UnregisterNotifyListener(this);
+	GetISystem()->GetISystemEventDispatcher()->RemoveListener(this);
 }
 
 //////////////////////////////////////////////////////////////////////////
@@ -409,11 +411,6 @@ void CMainWindow::CheckErrorMask()
 	{
 		CQuestionDialog::SWarning(tr(GetEditorName()), tr("Audio Preloads reference an unknown platform.\nSaving will permanently erase this data."));
 	}
-	else if ((errorCodeMask& EErrorCode::NonMatchedActivityRadius) != 0)
-	{
-		QString const middlewareName = QString(g_pIImpl->GetName());
-		CQuestionDialog::SWarning(tr(GetEditorName()), tr("The attenuation of some controls has changed in your ") + middlewareName + tr(" project.\n\nActivity radius of triggers will be updated next time you save."));
-	}
 }
 
 //////////////////////////////////////////////////////////////////////////
@@ -482,6 +479,17 @@ void CMainWindow::OnEditorNotifyEvent(EEditorNotifyEvent event)
 }
 
 //////////////////////////////////////////////////////////////////////////
+void CMainWindow::OnSystemEvent(ESystemEvent event, UINT_PTR wparam, UINT_PTR lparam)
+{
+	switch (event)
+	{
+	case ESYSTEM_EVENT_AUDIO_LANGUAGE_CHANGED:
+		ReloadMiddlewareData();
+		break;
+	}
+}
+
+//////////////////////////////////////////////////////////////////////////
 void CMainWindow::ReloadSystemData()
 {
 	m_pMonitorSystem->Disable();
@@ -516,6 +524,7 @@ void CMainWindow::ReloadSystemData()
 //////////////////////////////////////////////////////////////////////////
 void CMainWindow::ReloadMiddlewareData()
 {
+	m_pMonitorSystem->Disable();
 	QGuiApplication::setOverrideCursor(Qt::WaitCursor);
 	OnAboutToReload();
 
@@ -528,6 +537,7 @@ void CMainWindow::ReloadMiddlewareData()
 
 	OnReloaded();
 	QGuiApplication::restoreOverrideCursor();
+	m_pMonitorMiddleware->Enable();
 }
 
 //////////////////////////////////////////////////////////////////////////

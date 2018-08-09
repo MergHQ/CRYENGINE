@@ -22,6 +22,3 @@ namespace EditorSubstance
 		};
 	}
 }
-
-
-

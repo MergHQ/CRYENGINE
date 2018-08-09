@@ -207,4 +207,3 @@ BOOL CFacialSlidersDialog::OnMouseWheel(UINT nFlags, short zDelta, CPoint pt)
 		m_pContext->MoveToFrame(direction);
 	return TRUE;
 }
-

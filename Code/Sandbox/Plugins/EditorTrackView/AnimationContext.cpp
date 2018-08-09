@@ -713,4 +713,3 @@ void CAnimationContext::OnMovieEvent(EMovieEvent movieEvent, IAnimSequence* pAni
 		break;
 	}
 }
-

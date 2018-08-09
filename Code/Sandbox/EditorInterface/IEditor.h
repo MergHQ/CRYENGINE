@@ -32,6 +32,7 @@ class CWaitProgress;
 class CWnd;
 class QString;
 class QWidget;
+class CVersionControl;
 
 struct AABB;
 struct I3DEngine;
@@ -150,7 +151,7 @@ enum EEditorNotifyEvent
 	eNotify_OnVegetationObjectSelection, // When vegetation objects selection change.
 	eNotify_OnVegetationPanelUpdate,     // When vegetation objects selection change.
 
-	eNotify_OnDisplayRenderUpdate,     // Sent when editor finish terrain texture generation.
+	eNotify_OnObjectHideMaskChange,     // Sent when editor changes types of objects to display
 
 	eNotify_OnTimeOfDayChange,         // Time of day parameters where modified.
 
@@ -389,15 +390,14 @@ struct IEditor
 	virtual CPrefabManager*        GetPrefabManager() = 0;
 	virtual const char*            GetLevelName() = 0;
 	virtual const char*            GetLevelPath() = 0;
-	virtual bool                   IsHelpersDisplayed() const = 0;
-	virtual void                   EnableHelpersDisplay(bool bEnable) = 0;
 	virtual void                   StartObjectCreation(const char* type, const char* file = nullptr) = 0;
 	virtual CHeightmap*            GetHeightmap() = 0;
 	// end level editor methods
 
 	virtual ESystemConfigSpec GetEditorConfigSpec() const = 0;
 
-	virtual void              SetConsoleVar(const char* var, float value) = 0;
+	virtual void              SetConsoleVar(const char* var, const int value) = 0;
+	virtual void              SetConsoleVar(const char* var, const float value) = 0;
 	virtual float             GetConsoleVar(const char* var) = 0;
 
 	//! Adds a handler for native OS specific events. Useful for plugins that need access to specific OS messages.

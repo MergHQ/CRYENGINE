@@ -1,17 +1,5 @@
 // Copyright 2001-2018 Crytek GmbH / Crytek Group. All rights reserved.
 
-/*************************************************************************
-   -------------------------------------------------------------------------
-   $Id$
-   $DateTime$
-   Description:
-
-   -------------------------------------------------------------------------
-   History:
-   - 3:8:2004   11:23 : Created by Márcio Martins
-
-*************************************************************************/
-
 #pragma once
 
 #include <CryGame/IGame.h>
@@ -620,9 +608,6 @@ public:
 
 	void         QueueDeferredKill(const EntityId entityId);
 
-	void         OnEditorDisplayRenderUpdated(bool displayHelpers) { m_editorDisplayHelpers = displayHelpers; }
-	bool         DisplayEditorHelpersEnabled() const               { return m_editorDisplayHelpers; }
-
 	void         SetRenderingToHMD(bool bRenderingToHMD)           { m_RenderingToHMD = bRenderingToHMD; }
 	bool         IsRenderingToHMD() const                          { return m_RenderingToHMD; }
 
@@ -808,7 +793,6 @@ protected:
 	bool                  m_userProfileChanged;
 	bool                  m_bLastSaveDirty;
 	bool                  m_needsInitPatchables;
-	bool                  m_editorDisplayHelpers;
 	bool                  m_RenderingToHMD;
 
 	// script binds

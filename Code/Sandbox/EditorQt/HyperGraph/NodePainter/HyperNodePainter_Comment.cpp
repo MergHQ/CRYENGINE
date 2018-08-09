@@ -79,4 +79,3 @@ void CHyperNodePainter_Comment::Paint(CHyperNode* pNode, CDisplayList* pList)
 
 	pBackground->SetHitEvent(eSOID_Title);
 }
-

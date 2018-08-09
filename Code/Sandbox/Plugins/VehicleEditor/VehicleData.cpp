@@ -223,4 +223,3 @@ void DumpVariable(IVariable* pVar, int level /*=0*/)
 	for (int i = 0; i < pVar->GetNumVariables(); ++i)
 		DumpVariable(pVar->GetVariable(0), level++);
 }
-

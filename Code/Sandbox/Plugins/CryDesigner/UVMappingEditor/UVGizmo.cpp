@@ -109,7 +109,7 @@ bool UVGizmo::HitTest(QViewport* viewport, int x, int y, CLevelEditorSharedState
 	if (!m_bVisible)
 		return false;
 
-	HitContext hc;
+	HitContext hc(nullptr); //viewport does not contain helper settings
 	CDisplayViewportAdapter viewAdapter(viewport);
 	hc.view = &viewAdapter;
 	hc.camera = viewport->Camera();
@@ -328,4 +328,3 @@ void UVGizmo::RemoveCallback(IGizmoTransform* pGizmoTransform)
 
 }
 }
-

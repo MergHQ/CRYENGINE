@@ -170,4 +170,3 @@ void QSearchBox::OnClear()
 {
 	clear();
 }
-

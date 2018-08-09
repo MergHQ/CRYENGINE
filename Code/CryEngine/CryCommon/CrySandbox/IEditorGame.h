@@ -79,15 +79,6 @@ struct IEditorGame
 {
 	typedef IEditorGame*(* TEntryFunction)();
 
-	struct HelpersDrawMode
-	{
-		enum EType
-		{
-			Hide = 0,
-			Show
-		};
-	};
-
 	// <interfuscator:shuffle>
 	CRY_DEPRECATED_GAME_DLL IEditorGame() = default;
 	virtual ~IEditorGame(){}
@@ -110,11 +101,10 @@ struct IEditorGame
 	// telemetry functions: possibly should find a better place for these
 	virtual void RegisterTelemetryTimelineRenderers(Telemetry::ITelemetryRepository* pRepository) = 0;
 
-	//! Update (and render) all sorts of generic editor 'helpers'.
-	//! This could be used, for example, to render certain metrics, boundaries, invalid links, etc.
-	virtual void UpdateHelpers(const HelpersDrawMode::EType drawMode) {}
+	//! Update all sorts of generic editor 'helpers'.
+	//! This could be used, for example, to update certain metrics, boundaries, invalid links, etc.
+	virtual void UpdateHelpers() {}
 
-	virtual void OnDisplayRenderUpdated(bool displayHelpers) = 0;
 	virtual void OnEntitySelectionChanged(EntityId entityId, bool isSelected) = 0;
 
 	virtual IGamePhysicsSettings* GetIGamePhysicsSettings() = 0;

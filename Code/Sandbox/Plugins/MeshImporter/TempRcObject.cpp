@@ -114,4 +114,3 @@ void CTempRcObject::SetFinalize(const Finalize& finalize)
 {
 	m_finalize = finalize;
 }
-

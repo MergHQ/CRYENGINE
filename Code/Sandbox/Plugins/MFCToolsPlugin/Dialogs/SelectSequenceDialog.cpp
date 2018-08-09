@@ -37,4 +37,3 @@ CSelectSequenceDialog::GetItems(std::vector<SItem>& outItems)
 		outItems.push_back(item);
 	}
 }
-

@@ -23,7 +23,7 @@ void CComputeParticlesStage::Init()
 		m_pGpuParticleManager = std::unique_ptr<gpu_pfx2::CManager>(new gpu_pfx2::CManager());
 }
 
-void CComputeParticlesStage::Execute()
+void CComputeParticlesStage::Update()
 {
 	CRenderView* pRenderView = RenderView();
 	int CurrentFrameID = pRenderView->GetFrameId();
@@ -58,5 +58,8 @@ void CComputeParticlesStage::PostDraw()
 
 gpu_pfx2::IManager* CD3D9Renderer::GetGpuParticleManager()
 {
-	return GetGraphicsPipeline().GetComputeParticlesStage()->GetGpuParticleManager();
+	if (auto pComputeParticlesStage = GetGraphicsPipeline().GetComputeParticlesStage())
+		return pComputeParticlesStage->GetGpuParticleManager();
+
+	return nullptr;
 }

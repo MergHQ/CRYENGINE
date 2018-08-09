@@ -281,5 +281,3 @@ void CPluginManager::CleanUp()
 
 	m_plugins.clear();
 }
-
-

@@ -82,6 +82,11 @@ public:
 	static int                        GetColumnCount();
 	bool                              AddColumn(const CItemModelAttribute* pAttribute, std::function<QVariant(const CAsset* pAsset, const CItemModelAttribute* pAttribute)> getValueFn);
 
+	//! Adds icons providers to the list.
+	//! This icon providers are called in order to get additional icons that need to be displayed in thumbnail view
+	void AddThumbnailIconProvider(const string& name, std::function<QIcon(const CAsset*)> iconProviderFunc);
+	void RemoveThumbnailIconProvider(const string& name);
+
 	//////////////////////////////////////////////////////////
 	// QAbstractItemModel implementation
 	virtual bool			hasChildren(const QModelIndex& parent = QModelIndex()) const override;
@@ -132,4 +137,5 @@ private:
 	FavoritesHelper m_favHelper;
 
 	std::vector<SDetailAttribute> m_detailAttributes;
+	std::vector<std::pair<string, std::function<QIcon(const CAsset*)>>> m_tumbnailIconProviders;
 };

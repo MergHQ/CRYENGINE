@@ -111,7 +111,7 @@ public:
 				maxRadiusSqr = MeshRadiusSqr(m_pStaticObject);
 			}
 			if (m_sizeMode == ESizeMode::Scale)
-				SetMax(pParams->m_physicalSizeSlope.scale, sqrt(maxRadiusSqr));
+				pParams->m_physicalSizeSlope.scale *= sqrt(maxRadiusSqr);
 		}
 	}
 

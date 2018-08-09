@@ -106,6 +106,8 @@ if (AUDIO_WWISE)
 		AkHarmonizerFX
 		AkMatrixReverbFX
 		AkMeterFX
+		AkMotionSourceSource
+		AkOpusDecoder
 		AkParametricEQFX
 		AkPeakLimiterFX
 		AkPitchShifterFX
@@ -138,7 +140,6 @@ if (AUDIO_WWISE)
 		iZTrashFiltersFX
 		iZTrashMultibandDistortionFX
 		AuroHeadphoneFX
-		AuroPannerMixer
 	)
 
 	set( COMMON_WWISE_LIBS ${WWISE_CORE_LIBS} ${WWISE_PLUGIN_LIBS} )

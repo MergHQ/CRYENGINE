@@ -1,22 +1,10 @@
 // Copyright 2001-2018 Crytek GmbH / Crytek Group. All rights reserved.
 
-/*************************************************************************
-   -------------------------------------------------------------------------
-   $Id$
-   $DateTime$
-   Description: Climb-able Ledge system
-
-   -------------------------------------------------------------------------
-   History:
-   - 20:04:2009: Created by Michelle Martin
-
-*************************************************************************/
-
 #include "StdAfx.h"
 #include "LedgeManager.h"
-#include <CryRenderer/IRenderAuxGeom.h>
 
 #include <CryCore/TypeInfo_impl.h>
+#include <CryRenderer/IRenderAuxGeom.h>
 
 #define LEDGE_DATA_FILE_VERSION 3
 
@@ -464,19 +452,6 @@ void CLedgeManagerEdit::DebugDraw() const
 	}
 }
 
-void CLedgeManagerEdit::OnDisplayHelpersChanged(bool displayHelpers)
-{
-	if (displayHelpers)
-	{
-		g_LedgeGrabManager_DebugDrawInEditor = m_lastDebugDrawValue;
-	}
-	else
-	{
-		m_lastDebugDrawValue = g_LedgeGrabManager_DebugDrawInEditor;
-		g_LedgeGrabManager_DebugDrawInEditor = 0;
-	}
-}
-
 void CLedgeManagerEdit::RegisterCVars()
 {
 	REGISTER_CVAR(g_LedgeGrabManager_DebugDrawInEditor, 1, VF_DUMPTODISK, "Toggles debug rendering on ledges in editor: 0 - Disabled / 1 - Enabled in editing mode / 2 - Enabled in game mode / 3 - Visualize only deprecated ledge entities");
@@ -773,13 +748,13 @@ void CLedgeManager::Serialize(TSerialize ser)
 						}
 						else
 						{
-							//Save game not in synch with level data
+							//Save game not in sync with level data
 							GameWarning("LedgeManager - Trying to update markers for ledge %d, but there is a mismatch in the markers count. %d-%d", objectIdx, markerCount, ledgeObject.m_markersCount);
 						}
 					}
 					else
 					{
-						//Save game not in synch with level data
+						//Save game not in sync with level data
 						GameWarning("LedgeManager - Trying to load saved data for ledge %d, when there is only %d registered", objectIdx, m_levelLedges.m_ledgeCount);
 					}
 				}
@@ -831,7 +806,6 @@ void CLedgeManager::Serialize(TSerialize ser)
 		}
 		ser.EndGroup(); // "LevelLedges"
 	}
-
 }
 
 void CLedgeManager::DebugDraw() const

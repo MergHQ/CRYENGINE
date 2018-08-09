@@ -42,4 +42,3 @@ void CTrackViewComponentsManager::BroadcastTrackViewEditorEvent(ETrackViewEditor
 		(*it)->OnTrackViewEditorEvent(event);
 	}
 }
-

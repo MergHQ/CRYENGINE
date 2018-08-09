@@ -341,4 +341,3 @@ void CHyperNodePainter_BlackBox::Paint(CHyperNode* pNode, CDisplayList* pList)
 		pBackgroundCollapsed->SetRect(rect);
 	}
 }
-

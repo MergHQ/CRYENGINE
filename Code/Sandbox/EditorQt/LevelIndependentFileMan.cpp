@@ -31,4 +31,3 @@ void CLevelIndependentFileMan::UnregisterModule(ILevelIndependentFileModule* pMo
 {
 	stl::find_and_erase(m_Modules, pModule);
 }
-

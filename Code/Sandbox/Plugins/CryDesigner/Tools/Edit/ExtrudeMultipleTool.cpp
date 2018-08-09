@@ -357,4 +357,3 @@ void ExtrudeMultipleTool::UpdateModel(ExtrudeMultipleContext& emc)
 
 REGISTER_DESIGNER_TOOL_WITH_PROPERTYTREE_PANEL_AND_COMMAND(eDesigner_ExtrudeMultiple, eToolGroup_Edit, "Extrude Multiple", ExtrudeMultipleTool,
                                                            extrudemultiple, "runs extrude multiple tool", "designer.extrudemultiple")
-

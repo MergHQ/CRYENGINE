@@ -79,4 +79,3 @@ private:
 	StandardKey m_key;
 	string      m_string;
 };
-

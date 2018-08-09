@@ -23,4 +23,3 @@ private:
 private:
 	QHash<QString, QVector<const SFileType*>> m_extensionTypes;
 };
-

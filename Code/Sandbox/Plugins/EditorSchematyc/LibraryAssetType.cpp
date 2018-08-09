@@ -65,19 +65,13 @@ bool CLibraryAssetType::RenameAsset(CAsset* pAsset, const char* szNewName) const
 	return false;
 }
 
-bool CLibraryAssetType::DeleteAssetFiles(const CAsset& asset, bool bDeleteSourceFile, size_t& numberOfFilesDeleted) const
+void CLibraryAssetType::PreDeleteAssetFiles(const CAsset& asset) const
 {
-	if (CAssetType::DeleteAssetFiles(asset, bDeleteSourceFile, numberOfFilesDeleted))
+	Schematyc::IScript* pScript = GetScript(asset);
+	if (pScript)
 	{
-		Schematyc::IScript* pScript = GetScript(asset);
-		if (pScript)
-		{
-			gEnv->pSchematyc->GetScriptRegistry().RemoveElement(pScript->GetRoot()->GetGUID());
-		}
-
-		return true;
+		gEnv->pSchematyc->GetScriptRegistry().RemoveElement(pScript->GetRoot()->GetGUID());
 	}
-	return false;
 }
 
 CryIcon CLibraryAssetType::GetIconInternal() const
@@ -102,4 +96,3 @@ Schematyc::IScript* CLibraryAssetType::GetScript(const CAsset& asset) const
 	return nullptr;
 }
 }
-

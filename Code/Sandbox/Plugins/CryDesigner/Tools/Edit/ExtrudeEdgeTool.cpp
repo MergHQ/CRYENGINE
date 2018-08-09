@@ -227,4 +227,3 @@ void ExtrudeEdgeTool::FlipPolygons()
 
 REGISTER_DESIGNER_TOOL_WITH_PROPERTYTREE_PANEL_AND_COMMAND(eDesigner_ExtrudeEdge, eToolGroup_Edit, "Extrude Edge", ExtrudeEdgeTool,
                                                            extrudeedge, "runs extrude edge tool", "designer.extrudeedge")
-

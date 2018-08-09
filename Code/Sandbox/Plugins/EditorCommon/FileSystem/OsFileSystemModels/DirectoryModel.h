@@ -23,4 +23,3 @@ protected:
 public:
 	virtual void setSourceModel(CAdvancedFileSystemModel* sourceFileSystem);
 };
-

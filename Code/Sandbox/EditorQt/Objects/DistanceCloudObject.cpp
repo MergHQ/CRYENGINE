@@ -262,4 +262,3 @@ int CDistanceCloudObject::MouseCreateCallback(IDisplayViewport* view, EMouseEven
 	}
 	return CBaseObject::MouseCreateCallback(view, event, point, flags);
 }
-

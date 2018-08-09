@@ -336,7 +336,7 @@ class CMockCryPak : public ICryPak
 	virtual void LoadPaksToMemory(int nMaxPakSize, bool bLoadToMemory) override
 	{
 	}
-	virtual void AddMod(const char * szMod) override
+	virtual void AddMod(const char * szMod, EModAccessPriority modAccessPriority = EModAccessPriority::BeforeSource) override
 	{
 	}
 	virtual void RemoveMod(const char * szMod) override

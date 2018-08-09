@@ -51,4 +51,3 @@ bool CMainThreadWorker::TryExecuteNextTask()
 }
 
 CMainThreadWorker* CMainThreadWorker::s_pTheInstance = nullptr;
-

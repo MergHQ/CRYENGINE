@@ -3,4 +3,3 @@
 #include "StdAfx.h"
 #include "BaseTool.h"
 #include "UVMappingEditor.h"
-

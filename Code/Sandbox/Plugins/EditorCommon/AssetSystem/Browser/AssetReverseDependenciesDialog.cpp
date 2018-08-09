@@ -22,8 +22,8 @@ namespace Private_AssetReverseDependenciesDialog
 class CFilteredAssetsModel : public QSortFilterProxyModel
 {
 public:
-	CFilteredAssetsModel(std::vector<CAsset*>&& assets)
-		: m_assets(std::move(assets))
+	CFilteredAssetsModel(const std::vector<CAsset*>& assets)
+		: m_assets(assets)
 	{
 		std::sort(m_assets.begin(), m_assets.end());
 		setSourceModel(CAssetModel::GetInstance());
@@ -167,7 +167,7 @@ static QWidget* CreateInfoBox(const QString& infoText)
 }
 
 CAssetReverseDependenciesDialog::CAssetReverseDependenciesDialog(
-	const QVector<CAsset*>& assets,
+	const std::vector<CAsset*>& assets,
 	const QString& assetsGroupTitle,
 	const QString& dependentAssetsGroupTitle,
 	const QString& dependentAssetsInfoText,
@@ -177,7 +177,7 @@ CAssetReverseDependenciesDialog::CAssetReverseDependenciesDialog(
 {
 	using namespace Private_AssetReverseDependenciesDialog;
 
-	auto pAssetModel = new CFilteredAssetsModel(std::move(assets.toStdVector()));
+	auto pAssetModel = new CFilteredAssetsModel(assets);
 	auto pDependentAssetModel = new CFilteredAssetsModel(std::move(pAssetModel->GetDependentAssets()));
 	m_models.emplace_back(pAssetModel);
 	m_models.emplace_back(pDependentAssetModel);
@@ -237,4 +237,3 @@ CAssetReverseDependenciesDialog::CAssetReverseDependenciesDialog(
 
 	setLayout(pMainLayout);
 }
-

@@ -106,4 +106,3 @@ void CDockableDialog::hideEvent(QHideEvent* e)
 {
 	SaveState();
 }
-

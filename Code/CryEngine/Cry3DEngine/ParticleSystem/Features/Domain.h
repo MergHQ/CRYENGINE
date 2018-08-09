@@ -55,12 +55,11 @@ class CDomain
 public:
 	CDomain();
 
-	template<typename TParam, typename TMod>
-	void              AddToParam(CParticleComponent* pComponent, TParam* pParam, TMod* pModifier);
+	void              AddToParam(CParticleComponent* pComponent);
 	template<typename TBase, typename TStream>
 	void              Dispatch(CParticleComponentRuntime& runtime, const SUpdateRange& range, TStream stream, EDataDomain domain) const;
 
-	EDataDomain        GetDomain() const;
+	EDataDomain       GetDomain() const;
 	TDataType<float>  GetDataType() const;
 	string            GetSourceDescription() const;
 	float             Adjust(float sample) const { return sample * m_domainScale + m_domainBias; }

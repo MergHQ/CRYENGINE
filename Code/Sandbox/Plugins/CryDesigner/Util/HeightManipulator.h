@@ -52,4 +52,3 @@ private:
 
 extern HeightManipulator s_HeightManipulator;
 }
-

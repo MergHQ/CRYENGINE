@@ -69,4 +69,3 @@ const char* CPhonemesAnalyzer::GetLastError()
 {
 	return m_LastError;
 }
-

@@ -206,5 +206,3 @@ Qt::ItemFlags CNewAssetModel::flags(const QModelIndex& index) const
 {
 	return Qt::ItemIsEditable | QAbstractItemModel::flags(index);
 }
-
-

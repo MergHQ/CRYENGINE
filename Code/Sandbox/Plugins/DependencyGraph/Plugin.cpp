@@ -3,8 +3,8 @@
 #include "StdAfx.h"
 #include "Plugin.h"
 #include "Menu/AbstractMenu.h"
-#include <AssetSystem/AssetManager.h>
 #include <CryCore/Platform/platform_impl.inl>
+#include <AssetSystem/Browser/AssetBrowser.h>
 
 // Plugin instance
 static CDependencyGraph* g_pInstance = nullptr;
@@ -16,7 +16,7 @@ CDependencyGraph::CDependencyGraph()
 	CRY_ASSERT(g_pInstance == nullptr);
 	g_pInstance = this;
 
-	GetIEditor()->GetAssetManager()->signalContextMenuRequested.Connect([](CAbstractMenu& menu, const std::vector<CAsset*>& assets, std::shared_ptr<IUIContext> context)
+	CAssetBrowser::s_signalContextMenuRequested.Connect([](CAbstractMenu& menu, const std::vector<CAsset*>& assets, const std::vector<string>& folders, std::shared_ptr<IUIContext> context)
 	{
 		if (assets.size() == 1)
 		{
@@ -31,7 +31,7 @@ CDependencyGraph::CDependencyGraph()
 
 CDependencyGraph::~CDependencyGraph()
 {
-	GetIEditor()->GetAssetManager()->signalContextMenuRequested.DisconnectById((uintptr_t)this);
+	CAssetBrowser::s_signalContextMenuRequested.DisconnectById((uintptr_t)this);
 	CRY_ASSERT(g_pInstance == this);
 	g_pInstance = nullptr;
 }
@@ -50,4 +50,3 @@ const QVariant& CDependencyGraph::GetPersonalizationProperty(const QString& prop
 {
 	return GetIEditor()->GetPersonalizationManager()->GetProperty(GetPluginName(), propName);
 }
-

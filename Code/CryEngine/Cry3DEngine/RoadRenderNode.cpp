@@ -499,6 +499,8 @@ void CRoadRenderNode::Render(const SRendParams& RendParams, const SRenderingPass
 
 	//	if (RendParams.pShadowMapCasters)
 	pObj->m_ObjFlags |= (FOB_DECAL | FOB_INSHADOW | FOB_NO_FOG | FOB_TRANS_TRANSLATE);
+	pObj->m_ObjFlags |= (m_dwRndFlags & ERF_FOB_ALLOW_TERRAIN_LAYER_BLEND) ? FOB_ALLOW_TERRAIN_LAYER_BLEND : 0;
+	pObj->m_ObjFlags |= (m_dwRndFlags & ERF_FOB_ALLOW_DECAL_BLEND) ? FOB_ALLOW_DECAL_BLEND : 0;
 
 	if (RendParams.pTerrainTexInfo && (RendParams.dwFObjFlags & (FOB_BLEND_WITH_TERRAIN_COLOR /* | FOB_AMBIENT_OCCLUSION*/)))
 	{

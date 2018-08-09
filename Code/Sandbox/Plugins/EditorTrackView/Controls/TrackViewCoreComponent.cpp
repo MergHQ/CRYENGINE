@@ -100,4 +100,3 @@ void CTrackViewCoreComponent::SetUseEngineListeners(bool bEnable)
 	}
 	m_bIsListening = bEnable;
 }
-

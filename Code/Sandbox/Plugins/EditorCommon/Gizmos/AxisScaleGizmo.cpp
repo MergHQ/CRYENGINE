@@ -115,7 +115,7 @@ void CAxisScaleGizmo::Display(SDisplayContext& dc)
 		string msg;
 		msg.Format("Scale %.1f", m_scaleInteraction);
 
-		dc.DrawTextLabel(ConvertToTextPos(m_position, Matrix34::CreateIdentity(), dc.view, dc.flags & DISPLAY_2D), textSize, (LPCSTR)msg, true);
+		dc.DrawTextLabel(ConvertToTextPos(m_position, Matrix34::CreateIdentity(), dc.view, dc.display2D), textSize, (LPCSTR)msg, true);
 	}
 
 	// draw a shadow arrow at the initial position
@@ -239,4 +239,3 @@ bool CAxisScaleGizmo::HitTest(HitContext& hc)
 
 	return false;
 }
-

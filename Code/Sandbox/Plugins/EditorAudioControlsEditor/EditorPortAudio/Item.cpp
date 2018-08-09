@@ -24,4 +24,3 @@ void CItem::Clear()
 } // namespace PortAudio
 } // namespace Impl
 } // namespace ACE
-

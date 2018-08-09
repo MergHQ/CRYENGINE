@@ -46,4 +46,3 @@
 
 
 #endif // GLOBAL_H
-

@@ -71,4 +71,3 @@ protected:
 };
 
 #endif //__CFillSliderCtrl_h__
-

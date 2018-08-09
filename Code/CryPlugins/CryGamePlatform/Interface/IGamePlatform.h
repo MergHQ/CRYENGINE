@@ -21,13 +21,14 @@ namespace Cry
 			virtual IUser* GetLocalClient() const = 0;
 			
 			//! Gets a list of all users that are friends with the local user
+			//! \note Can be expensive. Don't call too often.
 			virtual const DynArray<IUser*>& GetFriends() const = 0;
 
 			//! Gets an IUser representation of another user by platform user id
-			//! Note that this function cannot fail, and will always return a valid pointer even if the id is invalid - no server checks are made.
+			//! \note This function can rarely fail, as UserIdentifier is expected to be created by IUser objects only
 			virtual IUser* GetUserById(const UserIdentifier& id) const = 0;
 
-			//! Gets an IUser representation of another user by account id
+			//! Gets an IUser representation of another user by account id, if available
 			virtual IUser* GetUserById(const AccountIdentifier& accountId) const = 0;
 
 			//! Gets the main platform service.

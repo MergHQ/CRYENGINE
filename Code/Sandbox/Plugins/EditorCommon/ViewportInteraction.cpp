@@ -26,4 +26,3 @@ bool ViewportInteraction::CheckPolledKey(Key key)
 		return false;
 	}
 }
-

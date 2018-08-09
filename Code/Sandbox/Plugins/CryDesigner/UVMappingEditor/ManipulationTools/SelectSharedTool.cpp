@@ -32,4 +32,3 @@ void SelectSharedTool::SelectShared()
 
 REGISTER_UVMAPPING_TOOL_AND_COMMAND(eUVMappingTool_SharedSelect, eUVMappingToolGroup_Manipulation, "Select Shared", SelectSharedTool,
                                     shared_select, "runs shared select tool", "uvmapping.shared_select");
-

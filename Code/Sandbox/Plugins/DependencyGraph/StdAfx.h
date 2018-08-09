@@ -10,4 +10,3 @@
 #include "EditorCommon.h"
 #include "Controls\DictionaryWidget.h"
 #include <QtUtil.h>
-

@@ -2,12 +2,12 @@
 
 #pragma once
 
-#include "Objects/EntityObject.h"
 #include "Objects/AreaBox.h"
+#include "Objects/EntityObject.h"
 #include "DesignerBaseObject.h"
 
-class IDesignerEventHandler;
 class CPickEntitiesPanel;
+class IDesignerEventHandler;
 class ICrySizer;
 
 namespace Designer
@@ -92,4 +92,3 @@ public:
 	virtual const char*    GetToolClassName() override { return "EditTool.CreateAreaSolidTool"; }
 };
 } // namespace Designer
-

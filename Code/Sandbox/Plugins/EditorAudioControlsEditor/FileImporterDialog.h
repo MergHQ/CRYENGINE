@@ -5,6 +5,7 @@
 #include <Controls/EditorDialog.h>
 
 #include <FileImportInfo.h>
+#include <QDir>
 
 class QAttributeFilterProxyModel;
 class QLineEdit;
@@ -20,9 +21,16 @@ class CFileImporterDialog final : public CEditorDialog
 
 public:
 
-	explicit CFileImporterDialog(FileImportInfos const& fileInfos, QString const& assetFolderPath, QString const& targetPath, QWidget* const pParent);
-
 	CFileImporterDialog() = delete;
+
+	explicit CFileImporterDialog(
+		FileImportInfos const& fileInfos,
+		QString const& assetsPath,
+		QString const& localizedAssetsPath,
+		QString const& targetPath,
+		QString const& targetFolderName,
+		bool const isLocalized,
+		QWidget* const pParent);
 
 	// QDialog
 	virtual QSize sizeHint() const override;
@@ -30,8 +38,8 @@ public:
 
 private:
 
+	void UpdateTargetPath(QString const& targetFolderName);
 	void OnCreateFolderSelector();
-	void OnTargetPathChanged(QString const& targetPath);
 	void OnActionChanged(Qt::CheckState const isChecked);
 	void OnSetImportAll();
 	void OnSetIgnoreAll();
@@ -42,7 +50,11 @@ private:
 	QAttributeFilterProxyModel* const m_pAttributeFilterProxyModel;
 	QLineEdit* const                  m_pTargetDirLineEdit;
 	FileImportInfos                   m_fileImportInfos;
-	QString const                     m_assetFolderPath;
+	QString const                     m_assetsPath;
+	QString const                     m_localizedAssetsPath;
 	QString                           m_targetPath;
+	QString                           m_targetFolderName;
+	QDir const                        m_gameFolder;
+	bool                              m_isLocalized;
 };
 } // namespace ACE

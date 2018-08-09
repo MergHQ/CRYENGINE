@@ -795,16 +795,18 @@ protected:
 	//! <returns>nil</returns>
 	int SetAudioSwitchState(IFunctionHandler* pH, ScriptHandle const hSwitchID, ScriptHandle const hSwitchStateID, ScriptHandle const hAudioProxyLocalID);
 
-	//! <code>Entity.SetAudioObstructionCalcType( nObstructionCalcType, hAudioProxyLocalID )</code>
-	//! <description>Set the Audio Obstruction/Occlusion calculation type on the underlying GameAudioObject.</description>
-	//!		<param name="nObstructionCalcType">Obstruction/Occlusion calculation type;
+	//! <code>Entity.SetAudioOcclusionType( occlusionType, hAudioProxyLocalID )</code>
+	//! <description>Set the audio occlusion type on the audio object.</description>
+	//!		<param name="occlusionType">occlusion type;
 	//!				Possible values:
-	//!				0 - ignore Obstruction/Occlusion
-	//!				1 - use single physics ray
-	//!				2 - use multiple physics rays (currently 5 per object)</param>
+	//!				1 - ignore
+	//!				2 - adaptive
+	//!				3 - low
+	//!				4 - medium
+	//!				5 - high</param>
 	//!		<param name="hAudioProxyLocalID">ID of the AuxAudioProxy local to the EntityAudioProxy (to address the default AuxAudioProxy pass 1 to address all AuxAudioProxies pass 0)</param>
 	//! <returns>nil</returns>
-	int SetAudioObstructionCalcType(IFunctionHandler* pH, int const nObstructionCalcType, ScriptHandle const hAudioProxyLocalID);
+	int SetAudioOcclusionType(IFunctionHandler* pH, int const occlusionType, ScriptHandle const hAudioProxyLocalID);
 
 	//! <code>Entity.SetFadeDistance( fFadeDistance )</code>
 	//! <description>Sets the distance in which this entity will execute fade calculations.</description>

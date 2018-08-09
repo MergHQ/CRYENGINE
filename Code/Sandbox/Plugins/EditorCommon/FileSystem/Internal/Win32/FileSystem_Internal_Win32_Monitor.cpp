@@ -83,4 +83,3 @@ bool CMonitor::RemovePath(const QString& absoluteKeyPath)
 } // namespace Win32
 } // namespace Internal
 } // namespace FileSystem
-

@@ -4,7 +4,6 @@
 
 #include "SplineObject.h"
 
-// Road Sector
 struct CRoadSector
 {
 	std::vector<Vec3> points;
@@ -103,7 +102,7 @@ protected:
 
 	float GetLocalWidth(int index, float t);
 
-	//overrided from CBaseObject.
+	// Overrides from CBaseObject.
 	void InvalidateTM(int nWhyFlags);
 
 	//! Called when Road variable changes.
@@ -131,4 +130,3 @@ protected:
 	bool m_bIgnoreParamUpdate;
 	bool m_bNeedUpdateSectors;
 };
-

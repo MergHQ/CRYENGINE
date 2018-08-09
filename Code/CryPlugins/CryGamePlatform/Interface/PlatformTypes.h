@@ -25,6 +25,39 @@ namespace Cry
 		struct IUserGeneratedContent;
 		class  UserIdentifier;
 		
+		struct SRichPresence
+		{
+			enum class ETimer
+			{
+				None = -1,
+				Elapsed,
+				Remaining
+			};
+
+			CryFixedStringT<128> status;
+			CryFixedStringT<128> details;
+			ETimer countdownTimer = ETimer::None;
+			int64 seconds = 0;
+			uint32 partySize = 0;
+			uint32 partyMax = 0;
+
+			bool operator==(const SRichPresence& other) const
+			{
+				return countdownTimer == other.countdownTimer
+					&& partySize == other.partySize
+					&& partyMax == other.partyMax
+					&& seconds == other.seconds
+					&& details == other.status
+					&& status == other.status;
+			}
+
+			bool operator!=(const SRichPresence& other) const
+			{
+				const bool areEqual = this->operator==(other);
+				return !areEqual;
+			}
+		};
+
 		//! Type of in-game overlay dialog, used together with IPlugin::OpenDialog
 		enum class EDialog
 		{

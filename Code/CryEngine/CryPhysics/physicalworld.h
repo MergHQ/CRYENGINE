@@ -1131,9 +1131,10 @@ template<class T> struct ChangeRequest {
 		if (bInactive<=0) {
 			int isPODthread;
 			int isProcessed = 0;
+			m_iCaller = get_iCaller();
 			while (!isProcessed) {
 				if (m_pWorld->m_lockStep || m_pWorld->m_lockTPR || pent->m_bProcessed>=PENT_QUEUED || bInactive<0 ||
-						!(isPODthread=IsPODThread(m_pWorld)) && m_pWorld->m_lockCaller[MAX_PHYS_THREADS])
+						!(isPODthread=IsPODThread(m_pWorld)) && m_pWorld->m_lockCaller[m_iCaller])
 				{
 					subref *psubref;
 					int szSubref,szTot;
@@ -1164,7 +1165,6 @@ template<class T> struct ChangeRequest {
 					m_bQueued = 1;
 					isProcessed = 1;
 				}	else {
-					m_iCaller = get_iCaller(1);
 					if (!isPODthread && m_iCaller>=MAX_PHYS_THREADS) {
 						if (AtomicCAS(&m_pWorld->m_lockCaller[m_iCaller], WRITE_LOCK_VAL, 0)) {
 							continue;

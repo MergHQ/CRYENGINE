@@ -7,12 +7,22 @@
 #include <cstring>
 
 #if !CRY_PLATFORM_ORBIS && !CRY_RENDERER_OPENGL && !CRY_RENDERER_OPENGLES && !CRY_RENDERER_VULKAN
-	#if CRY_PLATFORM_DURANGO
-		#include <D3D11Shader_x.h>
-		#include <D3DCompiler_x.h>
+	#if CRY_RENDERER_DIRECT3D >= 120
+		#if CRY_PLATFORM_DURANGO
+			#include <D3D12Shader_x.h>
+			#include <D3DCompiler_x.h>
+		#else
+			#include <D3D12Shader.h>
+			#include <D3DCompiler.h>
+		#endif
 	#else
-		#include <D3D11Shader.h>
-		#include <D3DCompiler.h>
+		#if CRY_PLATFORM_DURANGO
+			#include <D3D11Shader_x.h>
+			#include <D3DCompiler_x.h>
+		#else
+			#include <D3D11Shader.h>
+			#include <D3DCompiler.h>
+		#endif
 	#endif
 #endif
 
@@ -266,14 +276,14 @@ const char* szNamesCB[CB_NUM] = { "PER_BATCH", "PER_MATERIAL" };
 void CHWShader_D3D::mfCreateBinds(std::vector<SCGBind> &binds, const void* pConstantTable, std::size_t nSize)
 {
 	uint32 i;
-	ID3D11ShaderReflection* pShaderReflection = (ID3D11ShaderReflection*)pConstantTable;
-	D3D11_SHADER_DESC Desc;
+	D3DShaderReflection* pShaderReflection = (D3DShaderReflection*)pConstantTable;
+	D3D_SHADER_DESC Desc;
 	pShaderReflection->GetDesc(&Desc);
-	ID3D11ShaderReflectionConstantBuffer* pCB = NULL;
+	D3DShaderReflectionConstantBuffer* pCB = NULL;
 	for (uint32 n = 0; n < Desc.ConstantBuffers; n++)
 	{
 		pCB = pShaderReflection->GetConstantBufferByIndex(n);
-		D3D11_SHADER_BUFFER_DESC SBDesc;
+		D3D_SHADER_BUFFER_DESC SBDesc;
 		pCB->GetDesc(&SBDesc);
 		if (SBDesc.Type == D3D11_CT_RESOURCE_BIND_INFO)
 			continue;
@@ -292,10 +302,10 @@ void CHWShader_D3D::mfCreateBinds(std::vector<SCGBind> &binds, const void* pCons
 		for (i = 0; i < SBDesc.Variables; i++)
 		{
 			uint32 nCount = 1;
-			ID3D11ShaderReflectionVariable* pCV = pCB->GetVariableByIndex(i);
-			ID3D11ShaderReflectionType* pVT = pCV->GetType();
-			D3D11_SHADER_VARIABLE_DESC CDesc;
-			D3D11_SHADER_TYPE_DESC CTDesc;
+			D3DShaderReflectionVariable* pCV = pCB->GetVariableByIndex(i);
+			D3DShaderReflectionType* pVT = pCV->GetType();
+			D3D_SHADER_VARIABLE_DESC CDesc;
+			D3D_SHADER_TYPE_DESC CTDesc;
 			pVT->GetDesc(&CTDesc);
 			pCV->GetDesc(&CDesc);
 			if (!(CDesc.uFlags & D3D10_SVF_USED))
@@ -320,7 +330,7 @@ void CHWShader_D3D::mfCreateBinds(std::vector<SCGBind> &binds, const void* pCons
 		}
 	}
 
-	D3D11_SHADER_INPUT_BIND_DESC IBDesc;
+	D3D_SHADER_INPUT_BIND_DESC IBDesc;
 	for (i = 0; i < Desc.BoundResources; i++)
 	{
 		ZeroStruct(IBDesc);
@@ -580,16 +590,16 @@ InputLayoutHandle CHWShader_D3D::mfVertexFormat(SHWSInstance* pInst, CHWShader_D
 	size_t nSize = pShader->GetBufferSize();
 	void* pData = pShader->GetBufferPointer();
 	void* pShaderReflBuf = pConstantTable;
-	HRESULT hr = pConstantTable ? S_OK : D3DReflect(pData, nSize, IID_ID3D11ShaderReflection, &pShaderReflBuf);
+	HRESULT hr = pConstantTable ? S_OK : D3DReflection(pData, nSize, IID_D3DShaderReflection, &pShaderReflBuf);
 	assert(SUCCEEDED(hr));
-	ID3D11ShaderReflection* pShaderReflection = (ID3D11ShaderReflection*)pShaderReflBuf;
+	D3DShaderReflection* pShaderReflection = (D3DShaderReflection*)pShaderReflBuf;
 	if (!SUCCEEDED(hr))
 		return InputLayoutHandle::Unspecified;
-	D3D11_SHADER_DESC Desc;
+	D3D_SHADER_DESC Desc;
 	pShaderReflection->GetDesc(&Desc);
 	if (!Desc.InputParameters)
 		return InputLayoutHandle::Unspecified;
-	D3D11_SIGNATURE_PARAMETER_DESC IDesc;
+	D3D_SIGNATURE_PARAMETER_DESC IDesc;
 	for (uint32 i = 0; i < Desc.InputParameters; i++)
 	{
 		pShaderReflection->GetInputParameterDesc(i, &IDesc);
@@ -720,6 +730,8 @@ void CHWShader_D3D::mfSetDefaultRT(uint64& nAndMask, uint64& nOrMask)
 		nBitsPlatform |= SHGD_HW_DURANGO;
 	else if (CParserBin::m_nPlatform == SF_D3D11)
 		nBitsPlatform |= SHGD_HW_DX11;
+	else if (CParserBin::m_nPlatform == SF_D3D12)
+		nBitsPlatform |= SHGD_HW_DX12;
 	else if (CParserBin::m_nPlatform == SF_GL4)
 		nBitsPlatform |= SHGD_HW_GL4;
 	else if (CParserBin::m_nPlatform == SF_GLES3)
@@ -1158,7 +1170,7 @@ bool CHWShader_D3D::mfGenerateScript(CShader* pSH, SHWSInstance* pInst, std::vec
 			if (nStreams & VSM_HWSKIN)
 				CParserBin::AddDefineToken(eT__FT_SKIN_STREAM, NewTokens);
 #if ENABLE_NORMALSTREAM_SUPPORT
-			if (CParserBin::m_nPlatform & (SF_D3D11 | SF_DURANGO | SF_ORBIS | SF_GL4 | SF_GLES3))
+			if (CParserBin::m_nPlatform & (SF_D3D11 | SF_D3D12 | SF_DURANGO | SF_ORBIS | SF_GL4 | SF_GLES3))
 			{
 				if (nStreams & VSM_NORMALS)
 					CParserBin::AddDefineToken(eT__FT_NORMAL, NewTokens);
@@ -2957,7 +2969,7 @@ SShaderAsyncInfo::~SShaderAsyncInfo()
 	SAFE_RELEASE(m_pShader);
 	SAFE_RELEASE(m_pErrors);
 
-	if (ID3D11ShaderReflection* pShaderReflection = static_cast<ID3D11ShaderReflection*>(m_pConstants))
+	if (D3DShaderReflection* pShaderReflection = static_cast<D3DShaderReflection*>(m_pConstants))
 	{
 		pShaderReflection->Release();
 		m_pConstants = nullptr;
@@ -3366,10 +3378,10 @@ bool CHWShader_D3D::mfCompileHLSL_Int(CShader* pSH, char* prog_text, D3DBlob** p
 		if (bReflect)
 		{
 			void* pShaderReflBuf;
-			hr = D3DReflect(pBuf, nSize, IID_ID3D11ShaderReflection, &pShaderReflBuf);
+			hr = D3DReflection(pBuf, nSize, IID_D3DShaderReflection, &pShaderReflBuf);
 			if (SUCCEEDED(hr))
 			{
-				ID3D11ShaderReflection* pShaderReflection = (ID3D11ShaderReflection*)pShaderReflBuf;
+				D3DShaderReflection* pShaderReflection = (D3DShaderReflection*)pShaderReflBuf;
 				*ppConstantTable = (void*)pShaderReflection;
 			}
 			else
@@ -3386,7 +3398,7 @@ bool CHWShader_D3D::mfCompileHLSL_Int(CShader* pSH, char* prog_text, D3DBlob** p
 		static bool s_logOnce_WrongPlatform = false;
 	#if !CRY_RENDERER_OPENGL
 		#if !defined(_RELEASE)
-		if (!s_logOnce_WrongPlatform && (CParserBin::m_nPlatform & (SF_D3D11 | SF_DURANGO | SF_VULKAN)) == 0)
+		if (!s_logOnce_WrongPlatform && (CParserBin::m_nPlatform & (SF_D3D11 | SF_D3D12 | SF_DURANGO | SF_VULKAN)) == 0)
 		{
 			s_logOnce_WrongPlatform = true;
 			iLog->LogError("Trying to build non DX11 shader via internal compiler which is not supported. Please use remote compiler instead!");
@@ -3415,10 +3427,10 @@ bool CHWShader_D3D::mfCompileHLSL_Int(CShader* pSH, char* prog_text, D3DBlob** p
 			void* pShaderReflBuf;
 			UINT* pData = (UINT*)ppShader[0]->GetBufferPointer();
 			UINT nSize = (uint32)ppShader[0]->GetBufferSize();
-			hr = D3DReflect(pData, nSize, IID_ID3D11ShaderReflection, &pShaderReflBuf);
+			hr = D3DReflection(pData, nSize, IID_D3DShaderReflection, &pShaderReflBuf);
 			if (SUCCEEDED(hr))
 			{
-				ID3D11ShaderReflection* pShaderReflection = (ID3D11ShaderReflection*)pShaderReflBuf;
+				D3DShaderReflection* pShaderReflection = (D3DShaderReflection*)pShaderReflBuf;
 				*ppConstantTable = (void*)pShaderReflection;
 			}
 			else
@@ -3479,13 +3491,13 @@ void CHWShader_D3D::mfPrepareShaderDebugInfo(SHWSInstance* pInst, const char* sz
 			pInst->m_nInstructions = atoi(&szInst[13]);
 	}
 
-	if (CParserBin::m_nPlatform & (SF_D3D11 | SF_DURANGO | SF_GL4 | SF_GLES3))
+	if (CParserBin::m_nPlatform & (SF_D3D11 | SF_D3D12 | SF_DURANGO | SF_GL4 | SF_GLES3))
 	{
-		ID3D11ShaderReflection* pShaderReflection = (ID3D11ShaderReflection*)pConstantTable;
+		D3DShaderReflection* pShaderReflection = (D3DShaderReflection*)pConstantTable;
 
 		if (pShaderReflection)
 		{
-			D3D11_SHADER_DESC Desc;
+			D3D_SHADER_DESC Desc;
 			pShaderReflection->GetDesc(&Desc);
 
 			pInst->m_nInstructions = Desc.InstructionCount;
@@ -3644,7 +3656,7 @@ bool CHWShader_D3D::mfCreateShaderEnv(int nThread, SHWSInstance* pInst, D3DBlob*
 		pSH->mfCreateCacheItem(pInst, pFXShader, InstBindVars, NULL, 0, bShaderThread);
 
 	SAFE_RELEASE(pErrorMsgs);
-	if (ID3D11ShaderReflection* pShaderReflection = (ID3D11ShaderReflection*)pConstantTable)
+	if (D3DShaderReflection* pShaderReflection = (D3DShaderReflection*)pConstantTable)
 	{
 		pShaderReflection->Release();
 		pConstantTable = nullptr;
@@ -3787,7 +3799,7 @@ bool CHWShader_D3D::mfActivate(CShader* pSH, uint32 nFlags)
 		bResult &= mfUploadHW(pShader, pInst, pSH, nFlags);
 		SAFE_RELEASE(pShader);
 		SAFE_RELEASE(pErrorMsgs);
-		if (ID3D11ShaderReflection* pShaderReflection = static_cast<ID3D11ShaderReflection*>(pConstantTable))
+		if (D3DShaderReflection* pShaderReflection = static_cast<D3DShaderReflection*>(pConstantTable))
 		{
 			pShaderReflection->Release();
 			pConstantTable = nullptr;
@@ -4006,8 +4018,8 @@ bool CAsyncShaderTask::CompileAsyncShader(SShaderAsyncInfo* pAsync)
 
 		if (bReflect)
 		{
-			ID3D11ShaderReflection* pShaderReflection;
-			hr = D3DReflect(pBuf, nSize, IID_ID3D11ShaderReflection, (void**)&pShaderReflection);
+			D3DShaderReflection* pShaderReflection;
+			hr = D3DReflection(pBuf, nSize, IID_D3DShaderReflection, (void**)&pShaderReflection);
 			if (SUCCEEDED(hr))
 			{
 				pAsync->m_pConstants = (void*)pShaderReflection;
@@ -4029,7 +4041,7 @@ bool CAsyncShaderTask::CompileAsyncShader(SShaderAsyncInfo* pAsync)
 	{
 		static bool s_logOnce_WrongPlatform = false;
 		#if !defined(_RELEASE)
-		if (!s_logOnce_WrongPlatform && (CParserBin::m_nPlatform & (SF_D3D11 | SF_DURANGO | SF_VULKAN)) == 0)
+		if (!s_logOnce_WrongPlatform && (CParserBin::m_nPlatform & (SF_D3D11 | SF_D3D12 | SF_DURANGO | SF_VULKAN)) == 0)
 		{
 			s_logOnce_WrongPlatform = true;
 			iLog->LogError("Trying to build non DX11 shader via internal compiler which is not supported. Please use remote compiler instead!");
@@ -4057,10 +4069,10 @@ bool CAsyncShaderTask::CompileAsyncShader(SShaderAsyncInfo* pAsync)
 		}
 		else
 		{
-			ID3D11ShaderReflection* pShaderReflection;
+			D3DShaderReflection* pShaderReflection;
 			UINT* pData = (UINT*)pAsync->m_pDevShader->GetBufferPointer();
 			size_t nSize = pAsync->m_pDevShader->GetBufferSize();
-			hr = D3DReflect(pData, nSize, IID_ID3D11ShaderReflection, (void**)&pShaderReflection);
+			hr = D3DReflection(pData, nSize, IID_D3DShaderReflection, (void**)&pShaderReflection);
 			if (SUCCEEDED(hr))
 			{
 				pAsync->m_pConstants = (void*)pShaderReflection;

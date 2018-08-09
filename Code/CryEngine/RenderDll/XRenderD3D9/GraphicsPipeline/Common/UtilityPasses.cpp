@@ -790,7 +790,7 @@ void CClearRegionPass::Execute(CTexture* pDepthTex, const int nFlags, const floa
 	for (int i = 0; i < numRects; ++i)
 	{
 		auto& prim = m_clearPrimitives[i];
-		PreparePrimitive(prim, renderState, stencilState, Col_Black, cDepth, cStencil, pRects[i], viewport);
+		PreparePrimitive(prim, renderState, stencilState, Col_Black, cDepth, cStencil, pRects[i], viewport, 0);
 
 		m_clearPass.AddPrimitive(&prim);
 	}
@@ -832,7 +832,7 @@ void CClearRegionPass::Execute(CTexture* pTex, const ColorF& cClear, const uint 
 	for (int i = 0; i < numRects; ++i)
 	{
 		auto& prim = m_clearPrimitives[i];
-		if (PreparePrimitive(prim, renderState, stencilState, cClear, 0, 0, pRects[i], viewport))
+		if (PreparePrimitive(prim, renderState, stencilState, cClear, 0, 0, pRects[i], viewport, 1))
 		{
 			m_clearPass.AddPrimitive(&prim);
 		}
@@ -876,12 +876,19 @@ void CClearRegionPass::Execute(CGpuBuffer* pBuf, const ColorI& cClear, const uin
 #endif
 }
 
-bool CClearRegionPass::PreparePrimitive(CRenderPrimitive& prim, int renderState, int stencilState, const ColorF& cClear, float cDepth, int stencilRef, const RECT& rect, const D3DViewPort& targetViewport)
+bool CClearRegionPass::PreparePrimitive(CRenderPrimitive& prim, int renderState, int stencilState, const ColorF& cClear, float cDepth, int stencilRef, const RECT& rect, const D3DViewPort& targetViewport, int numRTVs)
 {
 	static CCryNameTSCRC techClear("Clear");
 
-	prim.SetFlags(CRenderPrimitive::eFlags_ReflectShaderConstants);
-	prim.SetTechnique(CShaderMan::s_ShaderCommon, techClear, 0);
+	uint64 rtFlags = 0;
+
+	if (numRTVs > 0) rtFlags |= g_HWSR_MaskBit[HWSR_SAMPLE0];
+	if (numRTVs > 1) rtFlags |= g_HWSR_MaskBit[HWSR_SAMPLE1];
+	if (numRTVs > 2) rtFlags |= g_HWSR_MaskBit[HWSR_SAMPLE2];
+	if (numRTVs > 3) rtFlags |= g_HWSR_MaskBit[HWSR_SAMPLE3];
+
+	prim.SetFlags(numRTVs > 0 ? CRenderPrimitive::eFlags_ReflectShaderConstants : CRenderPrimitive::eFlags_ReflectShaderConstants_VS);
+	prim.SetTechnique(CShaderMan::s_ShaderCommon, techClear, rtFlags);
 	prim.SetRenderState(renderState);
 	prim.SetStencilState(stencilState, stencilRef);
 	prim.SetCustomVertexStream(m_quadVertices, EDefaultInputLayouts::P3F, sizeof(SVF_P3F));
@@ -909,7 +916,8 @@ bool CClearRegionPass::PreparePrimitive(CRenderPrimitive& prim, int renderState,
 
 		constantManager.SetNamedConstant(paramClearRect, vClearRect, eHWSC_Vertex);
 		constantManager.SetNamedConstant(paramClearDepth, Vec4(cDepth, 0, 0, 0), eHWSC_Vertex);
-		constantManager.SetNamedConstant(paramClearColor, cClear.toVec4(), eHWSC_Pixel);
+		if (numRTVs > 0)
+			constantManager.SetNamedConstant(paramClearColor, cClear.toVec4(), eHWSC_Pixel);
 
 		constantManager.EndNamedConstantUpdate(&m_clearPass.GetViewport());
 

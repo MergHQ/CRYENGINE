@@ -123,4 +123,3 @@ void CDeepSelection::SetMode(EDeepSelectionMode mode)
 	m_previousMode = m_Mode;
 	m_Mode = mode;
 }
-

@@ -218,4 +218,3 @@ void QCheckboxHandler::onCheckChange(int state)
 
 REGISTER_PROPERTY_ROW(yasli::BitVectorWrapper, PropertyRowFlags)
 }
-

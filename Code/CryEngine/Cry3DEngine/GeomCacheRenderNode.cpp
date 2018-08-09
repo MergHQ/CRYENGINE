@@ -880,6 +880,7 @@ void CGeomCacheRenderNode::FillRenderObject(const SRendParams& rendParams, const
 	pRenderObject->m_fDistance = rendParams.fDistance;
 
 	pRenderObject->m_ObjFlags |= FOB_TRANS_MASK | FOB_DYNAMIC_OBJECT;
+	pRenderObject->m_ObjFlags |= (rendParams.dwFObjFlags & ERF_FOB_ALLOW_TERRAIN_LAYER_BLEND) ? FOB_ALLOW_TERRAIN_LAYER_BLEND : 0;
 	pRenderObject->m_ObjFlags |= rendParams.dwFObjFlags;
 
 	pRenderObject->SetAmbientColor(rendParams.AmbientColor, passInfo);

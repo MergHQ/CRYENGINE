@@ -412,4 +412,3 @@ protected:
 
 	bool                           m_bSendCallbackOnNonModified;
 };
-

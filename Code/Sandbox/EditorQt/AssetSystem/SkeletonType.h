@@ -31,4 +31,3 @@ public:
 	//! May be referenced by other asset types, too.
 	static CItemModelAttribute s_bonesCountAttribute;
 };
-

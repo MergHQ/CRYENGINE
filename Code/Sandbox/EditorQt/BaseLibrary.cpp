@@ -239,4 +239,3 @@ bool CBaseLibrary::SaveLibrary(const char* name)
 	}
 	return bRes;
 }
-

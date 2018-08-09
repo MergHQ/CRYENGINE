@@ -46,4 +46,3 @@ void CUsedResources::Validate()
 			CryWarning(VALIDATOR_MODULE_EDITOR, VALIDATOR_ERROR, "Resource File %s not found,", (const char*)filename);
 	}
 }
-

@@ -3,59 +3,38 @@
 #include "stdafx.h"
 #include "QViewportHeader.h"
 
-#include "Viewport.h"
-#include "RenderViewport.h"
-
-#include "ViewManager.h"
-#include <LevelEditor/LevelEditorSharedState.h>
-#include <Preferences/ViewportPreferences.h>
-
-#include "Dialogs/ToolbarDialog.h"
-#include "CustomResolutionDlg.h"
-#include "Controls/DynamicPopupMenu.h"
-#include "Controls/QuestionDialog.h"
-#include "Objects/ObjectLayerManager.h"
-#include "Commands/QPythonAction.h"
-#include "QT/QToolTabManager.h"
-#include "QControls.h"
-#include <QToolButton>
-#include <QPushButton>
-#include <QWidget>
-#include <QBoxLayout>
-#include <QGridLayout>
-#include <QLabel>
-#include <QPainter>
-#include <QAction>
-#include <QDoubleSpinBox>
-#include <QSlider>
-#include <QWidgetAction>
-#include <QDialog>
-#include <QTimer>
-#include <QGraphicsDropShadowEffect>
-
-#include "QT/QtMainFrame.h"
-#include "Qt/QtMainFrameWidgets.h"
-#include "AlignTool.h"
 #include "EditMode/VertexSnappingModeTool.h"
+#include "LevelEditor/LevelEditorViewport.h"
+#include "Objects/ObjectLayerManager.h"
+#include "QT/QtMainFrame.h"
+#include "QT/QtMainFrameWidgets.h"
+#include "QT/QToolTabManager.h"
+#include "CustomResolutionDlg.h"
 #include "PanelDisplayRender.h"
-#include "CryEdit.h"
-#include "Dialogs/QNumericBoxDialog.h"
+#include "ViewManager.h"
 
-#include <CryIcon.h>
-#include <EditorStyleHelper.h>
-#include <LevelEditor/LevelEditorSharedState.h>
+#include <Controls/DynamicPopupMenu.h>
+#include <Controls/QuestionDialog.h>
+#include <Dialogs/QNumericBoxDialog.h>
 #include <LevelEditor/Tools/PickObjectTool.h>
 #include <LevelEditor/Tools/ObjectMode.h>
-#include "LevelEditor/LevelEditorViewport.h"
+#include <LevelEditor/LevelEditorSharedState.h>
+#include <Preferences/ViewportPreferences.h>
+#include <Viewport/ViewportHelperWnd.h>
+#include <EditorStyleHelper.h>
 
-static QColor Interpolate(const QColor& a, const QColor& b, float k)
-{
-	float mk = 1.0f - k;
-	return QColor(a.red() * mk + b.red() * k,
-	              a.green() * mk + b.green() * k,
-	              a.blue() * mk + b.blue() * k,
-	              a.alpha() * mk + b.alpha() * k);
-}
+#include <CryIcon.h>
+
+#include <QAction>
+#include <QBoxLayout>
+#include <QGraphicsDropShadowEffect>
+#include <QLabel>
+#include <QPainter>
+#include <QSlider>
+#include <QTimer>
+#include <QToolButton>
+#include <QWidget>
+#include <QWidgetAction>
 
 class QViewportHeaderText : public QLabel
 {
@@ -308,8 +287,7 @@ private:
 	protected:
 		QWidget* createWidget(QWidget* parent)
 		{
-			CPanelDisplayRender* displayPanel = new CPanelDisplayRender(parent, m_pViewport);
-			m_widget = displayPanel;
+			m_widget = new CPanelDisplayRender(parent, m_pViewport);
 			return m_widget;
 		}
 
@@ -321,12 +299,50 @@ public:
 	QViewportDisplayMenu(CLevelEditorViewport* viewport, QWidget* parent = nullptr)
 		: QDynamicPopupMenu(parent)
 		, m_pViewport(viewport)
-	{
-	}
+	{}
 
 	void OnPopulateMenu() override
 	{
 		this->addAction(new DisplayOptionsItem(m_pViewport));
+	}
+
+private:
+	CLevelEditorViewport* m_pViewport;
+};
+
+class QViewportHelperMenu : public QDynamicPopupMenu
+{
+private:
+	class DisplayOptionsItem : public QWidgetAction
+	{
+	public:
+		DisplayOptionsItem(CLevelEditorViewport* viewport)
+			: QWidgetAction(nullptr)
+			, m_widget(nullptr)
+			, m_pViewport(viewport)
+		{
+		}
+
+	protected:
+		QWidget* createWidget(QWidget* parent)
+		{
+			m_widget = new CViewportHelperWnd(parent, m_pViewport);
+			return m_widget;
+		}
+
+		QWidget*              m_widget;
+		CLevelEditorViewport* m_pViewport;
+	};
+
+public:
+	QViewportHelperMenu(CLevelEditorViewport* viewport, QWidget* parent)
+		: QDynamicPopupMenu(parent)
+		, m_pViewport(viewport)
+	{}
+
+	void OnPopulateMenu() override
+	{
+		addAction(new DisplayOptionsItem(m_pViewport));
 	}
 
 private:
@@ -420,14 +436,10 @@ void QTerrainSnappingMenu::mouseReleaseEvent(QMouseEvent* pEvent)
 }
 
 QViewportHeader::QViewportHeader(CLevelEditorViewport* pViewport)
-	: m_searchMode(ESM_BY_NAME)
-	, m_searchResultHandling(ESRH_HIDE_OTHERS)
-	, m_bOR(false)
-	, m_viewport(NULL)
+	: m_viewport(pViewport)
 	, m_moduleName("QViewportHeader")
 {
 	LoadPersonalization();
-	m_viewport = pViewport;
 
 	GetIEditorImpl()->RegisterNotifyListener(this);
 	GetIEditorImpl()->GetLevelEditorSharedState()->signalEditToolChanged.Connect(this, &QViewportHeader::OnEditToolChanged);
@@ -446,12 +458,6 @@ QViewportHeader::QViewportHeader(CLevelEditorViewport* pViewport)
 	m_titleBtn->setToolButtonStyle(Qt::ToolButtonTextOnly);
 	m_titleBtn->setMenu(new QViewportTitleMenu(this, m_viewport));
 	m_titleBtn->setPopupMode(QToolButton::InstantPopup);
-
-	QToolButton* m_displayOptions = new QToolButton;
-	m_displayOptions->setAutoRaise(true);
-	m_displayOptions->setMenu(new QViewportDisplayMenu(m_viewport, this));
-	m_displayOptions->setPopupMode(QToolButton::InstantPopup);
-	m_displayOptions->setText("Display");
 
 	m_pivotSnapping = new QToolButton();
 	QAction* pivotSnappingAction = GetIEditorImpl()->GetICommandManager()->GetAction("level.toggle_snap_to_pivot");
@@ -519,7 +525,6 @@ QViewportHeader::QViewportHeader(CLevelEditorViewport* pViewport)
 	boxlayout->addWidget(m_currentToolText);
 	boxlayout->addWidget(m_currentToolExit);
 	boxlayout->addStretch(1);
-	boxlayout->addWidget(m_displayOptions);
 	QToolButton* pSnapToGrid = AddToolButtonForCommand("level.toggle_snap_to_grid", boxlayout);
 	pSnapToGrid->setMenu(new QSnapToGridMenu(this));
 	pSnapToGrid->setContextMenuPolicy(Qt::CustomContextMenu);
@@ -536,6 +541,16 @@ QViewportHeader::QViewportHeader(CLevelEditorViewport* pViewport)
 	m_vertexSnapping = AddToolButtonForCommand("level.toggle_snap_to_vertex", boxlayout);
 	boxlayout->addWidget(pTerrainSnapping);
 
+	boxlayout->addSpacing(25);
+	m_displayOptions = new QToolButton;
+	m_displayOptions->setAutoRaise(true);
+	m_displayOptions->setMenu(new QViewportDisplayMenu(m_viewport, this));
+	m_displayOptions->setPopupMode(QToolButton::InstantPopup);
+	m_displayOptions->setIcon(CryIcon("icons:Viewport/viewport-display.ico"));
+	m_displayOptions->setToolTip("Display Options");
+	boxlayout->addWidget(m_displayOptions);
+	boxlayout->addSpacing(25);
+
 	QToolButton* pDisplayInfo = AddToolButtonForCommand("level.toggle_display_info", boxlayout);
 	QMenu* pDisplayInfoPopupMenu = new QMenu(this);
 	pDisplayInfoPopupMenu->addAction(pCommandManager->GetCommandAction("level.display_info_low"));
@@ -545,11 +560,36 @@ QViewportHeader::QViewportHeader(CLevelEditorViewport* pViewport)
 	pDisplayInfo->setContextMenuPolicy(Qt::CustomContextMenu);
 	connect(pDisplayInfo, &QToolButton::customContextMenuRequested, pDisplayInfo, &QToolButton::showMenu);
 	boxlayout->addWidget(pDisplayInfo);
+	boxlayout->addSpacing(25);
 
-	m_toggleHelpersBtn = AddToolButtonForCommand("level.toggle_display_helpers", boxlayout);
-	m_toggleHelpersBtn->setAutoRaise(true);
-	m_toggleHelpersBtn->defaultAction()->setChecked(GetIEditorImpl()->IsHelpersDisplayed());
-	boxlayout->addWidget(m_toggleHelpersBtn);
+	// Helpers options button
+	m_pHelpersOptionsBtn = new QToolButton;
+	m_pHelpersOptionsBtn->setAutoRaise(true);
+	m_pHelpersOptionsBtn->setMenu(new QViewportHelperMenu(m_viewport, this));
+	m_pHelpersOptionsBtn->setPopupMode(QToolButton::InstantPopup);
+	m_pHelpersOptionsBtn->setIcon(CryIcon("icons:Viewport/viewport-helpers-options.ico"));
+	m_pHelpersOptionsBtn->setToolTip("Helper Options");
+	boxlayout->addWidget(m_pHelpersOptionsBtn);
+
+	// Helpers enable/disable button
+	m_pDisplayHelpersBtn = new QToolButton(this);
+	boxlayout->addWidget(m_pDisplayHelpersBtn);
+	QAction* pAction = new QAction(CryIcon("icons:Viewport/viewport-helpers.ico"), tr("Toggle helpers on/off"), this);
+	connect(pAction, &QAction::triggered, [&]()
+	{
+		m_viewport->GetHelperSettings().enabled = !m_viewport->GetHelperSettings().enabled;
+		m_viewport->GetHelperSettings().signalStateChanged();
+		SavePersonalization();
+		m_pDisplayHelpersBtn->setChecked(m_viewport->GetHelperSettings().enabled);
+	});
+	m_pDisplayHelpersBtn->setDefaultAction(pAction);
+	m_pDisplayHelpersBtn->setCheckable(true);
+	m_pDisplayHelpersBtn->setChecked(m_viewport->GetHelperSettings().enabled);
+
+	m_viewport->GetHelperSettings().signalStateChanged.Connect([this]()
+	{
+		m_pDisplayHelpersBtn->setChecked(m_viewport->GetHelperSettings().enabled);
+	});
 
 	if (pViewport->IsRenderViewport())
 	{
@@ -568,6 +608,7 @@ QViewportHeader::~QViewportHeader()
 	GetIEditorImpl()->GetLevelEditorSharedState()->signalEditToolChanged.DisconnectObject(this);
 	GetIEditorImpl()->UnregisterNotifyListener(this);
 	gViewportPreferences.signalSettingsChanged.DisconnectById((uintptr_t)this);
+	m_viewport->GetHelperSettings().signalStateChanged.DisconnectById((uintptr_t)this);
 }
 
 void QViewportHeader::SetViewportFOV(float fov)
@@ -598,7 +639,6 @@ float QViewportHeader::GetViewportFOV()
 	return RAD2DEG(gViewportPreferences.defaultFOV);
 }
 
-/////////////////////////////////////////////////////////////////////////
 void QViewportHeader::AddFOVMenus(CPopupMenuItem& menu, Functor1<float> setFOVFunc, const std::vector<string>& customPresets)
 {
 	float currentfov = GetViewportFOV();
@@ -608,8 +648,7 @@ void QViewportHeader::AddFOVMenus(CPopupMenuItem& menu, Functor1<float> setFOVFu
 		60.0f,
 		70.0f,
 		80.0f,
-		90.0f
-	};
+		90.0f };
 
 	static const size_t fovCount = sizeof(fovs) / sizeof(fovs[0]);
 
@@ -650,7 +689,6 @@ void QViewportHeader::AddFOVMenus(CPopupMenuItem& menu, Functor1<float> setFOVFu
 	}
 }
 
-//////////////////////////////////////////////////////////////////////////
 void QViewportHeader::OnMenuFOVCustom()
 {
 	QNumericBoxDialog dlg(QObject::tr("Custom FOV"), GetViewportFOV());
@@ -671,7 +709,6 @@ void QViewportHeader::OnMenuFOVCustom()
 	}
 }
 
-//////////////////////////////////////////////////////////////////////////
 void QViewportHeader::AddAspectRatioMenus(CPopupMenuItem& menu, Functor2<unsigned int, unsigned int> setAspectRatioFunc,
                                           const std::vector<string>& customPresets)
 {
@@ -679,8 +716,7 @@ void QViewportHeader::AddAspectRatioMenus(CPopupMenuItem& menu, Functor2<unsigne
 		std::pair<unsigned int, unsigned int>(16, 9),
 		std::pair<unsigned int, unsigned int>(16, 10),
 		std::pair<unsigned int, unsigned int>(4,  3),
-		std::pair<unsigned int, unsigned int>(5,  4)
-	};
+		std::pair<unsigned int, unsigned int>(5,  4) };
 
 	static const size_t ratioCount = sizeof(ratios) / sizeof(ratios[0]);
 
@@ -717,8 +753,7 @@ const CRenderViewport::SResolution resolutions[] = {
 	CRenderViewport::SResolution(2560, 1440),
 	CRenderViewport::SResolution(2048, 858),
 	CRenderViewport::SResolution(1998, 1080),
-	CRenderViewport::SResolution(3840, 2160)
-};
+	CRenderViewport::SResolution(3840, 2160) };
 
 const size_t resolutionCount = sizeof(resolutions) / sizeof(resolutions[0]);
 }
@@ -801,7 +836,6 @@ void QViewportHeader::AddResolutionMenus(CPopupMenuItem& menu, Functor2<int, int
 	itemBottomLeft.Check(mode == CViewport::EResolutionMode::BottomLeft);
 }
 
-//////////////////////////////////////////////////////////////////////////
 void QViewportHeader::OnMenuResolutionCustom()
 {
 	int currentWidth, currentHeight;
@@ -876,32 +910,13 @@ void QViewportHeader::OnEditToolChanged()
 	}
 }
 
-//////////////////////////////////////////////////////////////////////////
 void QViewportHeader::OnEditorNotifyEvent(EEditorNotifyEvent event)
 {
 	switch (event)
 	{
-	case eNotify_OnDisplayRenderUpdate:
-		m_toggleHelpersBtn->setChecked(GetIEditor()->IsHelpersDisplayed());
-		break;
-
 	case eNotify_CameraChanged:
 		UpdateCameraName();
 	}
-}
-
-//////////////////////////////////////////////////////////////////////////
-void QViewportHeader::InputNamesToSearchFromSelection()
-{
-	IObjectManager* pObjMgr = GetIEditorImpl()->GetObjectManager();
-	const CSelectionGroup* pSelected = pObjMgr->GetSelection();
-	string names;
-	for (int i = 0; i < pSelected->GetCount(); ++i)
-	{
-		names += pSelected->GetObject(i)->GetName();
-		names += " ";
-	}
-	//m_viewportSearch.SetWindowText(names.c_str());
 }
 
 void QViewportHeader::SavePersonalization()
@@ -916,7 +931,6 @@ void QViewportHeader::SavePersonalization()
 		pPersonalizationManager->SetProperty(m_moduleName, "Terrain Snapping", pMainFrame->m_levelEditor->IsTerrainSnappingEnabled());
 		pPersonalizationManager->SetProperty(m_moduleName, "Geometry Snapping", pMainFrame->m_levelEditor->IsGeometrySnappingEnabled());
 		pPersonalizationManager->SetProperty(m_moduleName, "Normal Snapping", pMainFrame->m_levelEditor->IsSurfaceNormalSnappingEnabled());
-		pPersonalizationManager->SetProperty(m_moduleName, "Helpers Display", pMainFrame->m_levelEditor->IsHelpersDisplayed());
 		SaveCustomPresets("FOVPreset", m_customFOVPresets);
 		SaveCustomPresets("AspectRatioPreset", m_customAspectRatioPresets);
 		SaveCustomPresets("CustomResPreset", m_customResPresets);
@@ -960,18 +974,12 @@ void QViewportHeader::LoadPersonalization()
 		{
 			pLevelEditor->EnableSurfaceNormalSnapping(propertyValue.toBool());
 		}
-		propertyValue = pPersonalizationManager->GetProperty(m_moduleName, "Helpers Display");
-		if (propertyValue.isValid())
-		{
-			pLevelEditor->EnableHelpersDisplay(propertyValue.toBool());
-		}
 		LoadCustomPresets("FOVPreset", m_customFOVPresets);
 		LoadCustomPresets("AspectRatioPreset", m_customAspectRatioPresets);
 		LoadCustomPresets("CustomResPreset", m_customResPresets);
 	}
 }
 
-//////////////////////////////////////////////////////////////////////////
 QToolButton* QViewportHeader::AddToolButtonForCommand(const char* szCommand, QLayout* pLayout)
 {
 	QAction* pAction = GetIEditorImpl()->GetICommandManager()->GetAction(szCommand);
@@ -988,166 +996,6 @@ QToolButton* QViewportHeader::AddToolButtonForCommand(const char* szCommand, QLa
 	pLayout->addWidget(pToolButton);
 
 	return pToolButton;
-}
-
-//////////////////////////////////////////////////////////////////////////
-static bool DoesTextSatisfyTerms(const string& text, const std::vector<string>& terms, bool bOR)
-{
-	if (bOR) // OR
-	{
-		for (size_t i = 0; i < terms.size(); ++i)
-		{
-			if (text.find(terms[i]) != -1)
-				return true;
-		}
-		return false;
-	}
-	else // AND
-	{
-		for (size_t i = 0; i < terms.size(); ++i)
-		{
-			if (text.find(terms[i]) == -1)
-				return false;
-		}
-		return true;
-	}
-}
-
-//////////////////////////////////////////////////////////////////////////
-static void HandleMatched(CBaseObject* pObject)
-{
-	IObjectManager* pObjMgr = GetIEditorImpl()->GetObjectManager();
-
-	if (pObject->GetLayer()->IsFrozen() == false)
-		pObjMgr->FreezeObject(pObject, false);
-
-	if (pObject->GetLayer()->IsVisible() == true)
-		pObjMgr->HideObject(pObject, false);
-
-	if (pObject->GetLayer()->IsFrozen() == false
-	    && pObject->GetLayer()->IsVisible() == true)
-		pObjMgr->SelectObject(pObject);
-}
-
-//////////////////////////////////////////////////////////////////////////
-static void HandleFiltered(CBaseObject* pObject, QViewportHeader::ESearchResultHandling searchResultHandling)
-{
-	IObjectManager* pObjMgr = GetIEditorImpl()->GetObjectManager();
-	pObjMgr->UnselectObject(pObject);
-	if (searchResultHandling == QViewportHeader::ESRH_HIDE_OTHERS)
-	{
-		if (pObject->GetLayer()->IsFrozen() == false)
-			pObjMgr->FreezeObject(pObject, false);
-		pObjMgr->HideObject(pObject, true);
-	}
-	else if (searchResultHandling == QViewportHeader::ESRH_FREEZE_OTHERS)
-	{
-		if (pObject->GetLayer()->IsVisible() == true)
-			pObjMgr->HideObject(pObject, false);
-		pObjMgr->FreezeObject(pObject, true);
-	}
-}
-
-//////////////////////////////////////////////////////////////////////////
-void QViewportHeader::SearchByType(const std::vector<string>& terms)
-{
-	IObjectManager* pObjMgr = GetIEditorImpl()->GetObjectManager();
-	int objCount = pObjMgr->GetObjectCount();
-	CBaseObjectsArray objects;
-	pObjMgr->GetObjects(objects);
-	for (int i = 0; i < objCount; ++i)
-	{
-		CBaseObject* pObject = objects[i];
-		string type = pObject->GetTypeDescription();
-		type.MakeLower();
-		if (DoesTextSatisfyTerms(type, terms, m_bOR))
-			HandleMatched(pObject);
-		else
-			HandleFiltered(pObject, m_searchResultHandling);
-	}
-}
-
-//////////////////////////////////////////////////////////////////////////
-void QViewportHeader::SearchByName(const std::vector<string>& terms)
-{
-	IObjectManager* pObjMgr = GetIEditorImpl()->GetObjectManager();
-	int objCount = pObjMgr->GetObjectCount();
-	CBaseObjectsArray objects;
-	pObjMgr->GetObjects(objects);
-	for (int i = 0; i < objCount; ++i)
-	{
-		CBaseObject* pObject = objects[i];
-		string name = pObject->GetName();
-		name.MakeLower();
-		if (DoesTextSatisfyTerms(name, terms, m_bOR))
-			HandleMatched(pObject);
-		else
-			HandleFiltered(pObject, m_searchResultHandling);
-	}
-}
-
-//////////////////////////////////////////////////////////////////////////
-void QViewportHeader::SearchByAsset(const std::vector<string>& terms)
-{
-	IObjectManager* pObjMgr = GetIEditorImpl()->GetObjectManager();
-	int objCount = pObjMgr->GetObjectCount();
-	CBaseObjectsArray objects;
-	pObjMgr->GetObjects(objects);
-	for (int i = 0; i < objCount; ++i)
-	{
-		CBaseObject* pObject = objects[i];
-		CUsedResources usedAssets;
-		pObject->GatherUsedResources(usedAssets);
-		CUsedResources::TResourceFiles::const_iterator itr = usedAssets.files.begin(),
-		                                               end = usedAssets.files.end();
-		bool bMatch = false;
-		for (; itr != end; ++itr)
-		{
-			string filename = *itr;
-			filename.MakeLower();
-			if (DoesTextSatisfyTerms(filename, terms, m_bOR))
-			{
-				bMatch = true;
-				break;
-			}
-		}
-		if (bMatch)
-			HandleMatched(pObject);
-		else
-			HandleFiltered(pObject, m_searchResultHandling);
-	}
-}
-
-//////////////////////////////////////////////////////////////////////////
-void QViewportHeader::UpdateSearchOptionsText()
-{
-	/*
-	   if(m_searchOptionsText.m_hWnd)
-	   {
-	   string str = "";
-
-	   if(m_searchMode == ESM_BY_NAME)
-	    str += "By Name";
-	   else if(m_searchMode == ESM_BY_TYPE)
-	    str += "By Type";
-	   else //if(m_searchMode == ESM_BY_ASSET)
-	    str += "By Asset";
-
-	   if(m_searchResultHandling == ESRH_HIDE_OTHERS)
-	    str += ", Hide filtered";
-	   else if(m_searchResultHandling == ESRH_FREEZE_OTHERS)
-	    str += ", Freeze filtered";
-	   else if(m_searchResultHandling == ESRH_JUST_SELECT)
-	    str += ", Just Select";
-
-	   if(m_bOR)
-	    str += ", OR";
-	   else
-	    str += ", AND";
-
-	   m_searchOptionsText.SetWindowText(str);
-	   }
-	 */
 }
 
 void QViewportHeader::LoadCustomPresets(const char* keyName, std::vector<string>& outCustompresets)
@@ -1196,7 +1044,6 @@ QSize QViewportHeader::sizeHint() const
 	return QSize(14, 14);
 }
 
-//////////////////////////////////////////////////////////////////////////
 void QViewportHeader::OnMenuViewSelected(IViewPaneClass* viewClass)
 {
 	string cmd;
@@ -1204,7 +1051,6 @@ void QViewportHeader::OnMenuViewSelected(IViewPaneClass* viewClass)
 	GetIEditorImpl()->ExecuteCommand(cmd.c_str());
 }
 
-//////////////////////////////////////////////////////////////////////////
 void QViewportHeader::UpdateCameraName()
 {
 	m_titleBtn->setText(m_viewport->GetCameraMenuName());

@@ -100,9 +100,9 @@ void CAssetTooltip::UpdateInfos()
 {
 	QString str;
 
-	str += QString(tr("<b>Name:</b> %1")).arg(m_asset->GetName());
+	str += QString(tr("<b>Name:</b> %1")).arg(m_asset->GetName().c_str());
 	str += QString(tr("<br/><b>Type:</b> %1")).arg(m_asset->GetType()->GetUiTypeName());
-	str += QString(tr("<br/><b>Asset File:</b> %1")).arg(m_asset->GetMetadataFile());
+	str += QString(tr("<br/><b>Asset File:</b> %1")).arg(m_asset->GetMetadataFile().c_str());
 
 	const int dataFilesCount = m_asset->GetFilesCount();
 
@@ -116,7 +116,7 @@ void CAssetTooltip::UpdateInfos()
 	}
 
 	if (m_asset->HasSourceFile())
-		str += QString(tr("<br/><b>Source File:</b> %1")).arg(m_asset->GetSourceFile());
+		str += QString(tr("<br/><b>Source File:</b> %1")).arg(m_asset->GetSourceFile().c_str());
 
 	const std::vector<CItemModelAttribute*>& details = m_asset->GetType()->GetDetails();
 	QString detailsText;
@@ -237,4 +237,3 @@ void CAssetTooltip::hideEvent(QHideEvent* event)
 {
 	SetBigMode(false);
 }
-

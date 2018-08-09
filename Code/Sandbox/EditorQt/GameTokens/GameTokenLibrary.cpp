@@ -64,4 +64,3 @@ void CGameTokenLibrary::Serialize(XmlNodeRef& root, bool bLoading)
 		}
 	}
 }
-

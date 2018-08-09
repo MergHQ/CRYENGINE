@@ -702,4 +702,3 @@ IDataBaseItem* CBaseLibraryManager::GetSelectedParentItem() const
 {
 	return m_pSelectedParent;
 }
-

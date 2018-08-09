@@ -145,7 +145,8 @@ public:
 	IRenderer*                   GetRenderer() override;
 	void                         WriteToConsole(const char* pszString);
 
-	void                         SetConsoleVar(const char* var, float value);
+	void                         SetConsoleVar(const char* var, const int value);
+	void                         SetConsoleVar(const char* var, const float value);
 	void                         SetConsoleStringVar(const char* var, const char* value);
 
 	float                        GetConsoleVar(const char* var);
@@ -158,7 +159,7 @@ public:
 		}
 
 		return 0;
-	};
+	}
 
 	string              GetMasterCDFolder();
 	virtual const char* GetLevelName() override;
@@ -239,7 +240,7 @@ public:
 		if (m_pSystem)
 			return m_pSystem->GetIMovieSystem();
 		return NULL;
-	};
+	}
 
 	CPluginManager*           GetPluginManager()  { return m_pPluginManager; }
 	CTerrainManager*          GetTerrainManager() { return m_pTerrainManager; }
@@ -257,8 +258,6 @@ public:
 	void                      UpdateSequencer(bool bOnlyKeys = false);
 	CRuler*                   GetRuler() override { return m_pRuler; }
 	void                      SetDataModified();
-	virtual bool              IsHelpersDisplayed() const;
-	virtual void              EnableHelpersDisplay(bool bEnable);
 	XmlNodeRef                FindTemplate(const string& templateName);
 	void                      AddTemplate(const string& templateName, XmlNodeRef& tmpl);
 	virtual void              OpenAndFocusDataBase(EDataBaseItemType type, IDataBaseItem* pItem) override;
@@ -394,7 +393,6 @@ protected:
 	CPluginManager*                   m_pPluginManager;
 	CViewManager*                     m_pViewManager;
 	IUndoManager*                     m_pUndoManager;
-	bool                              m_areHelpersEnabled;
 	bool                              m_bUpdates;
 	Version                           m_fileVersion;
 	Version                           m_productVersion;
@@ -417,10 +415,8 @@ protected:
 	CBroadcastManager*                m_pGlobalBroadcastManager;
 	CGameTokenManager*                m_pGameTokenManager;
 	CLensFlareManager*                m_pLensFlareManager;
-	//! Global instance of error report class.
-	//! Source control interface.
-	ISourceControl*                          m_pSourceControl;
-	CFlowGraphManager*                       m_pFlowGraphManager;
+	ISourceControl*                   m_pSourceControl;
+	CFlowGraphManager*                m_pFlowGraphManager;
 
 	CUIEnumsDatabase*                        m_pUIEnumsDatabase;
 	//! Currently used ruler

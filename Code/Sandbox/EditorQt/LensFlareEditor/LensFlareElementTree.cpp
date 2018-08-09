@@ -1200,4 +1200,3 @@ void CLensFlareElementTree::UpdateDraggingFromOtherWindow()
 	if (bChanged)
 		RedrawWindow();
 }
-

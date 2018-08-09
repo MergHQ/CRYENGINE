@@ -21,4 +21,3 @@ CSceneElementSourceNode* CreateSceneFromSourceScene(CScene& scene, FbxTool::CSce
 CSceneElementSourceNode* FindSceneElementOfNode(CScene& scene, const FbxTool::SNode* pFbxNode);
 
 void SelectSceneElementWithNode(CSceneModelCommon* pSceneModel, CSceneViewCommon* pSceneView, const FbxTool::SNode* pNode);
-

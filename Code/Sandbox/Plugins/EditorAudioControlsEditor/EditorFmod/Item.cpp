@@ -31,4 +31,3 @@ void CItem::Clear()
 } // namespace Fmod
 } // namespace Impl
 } // namespace ACE
-

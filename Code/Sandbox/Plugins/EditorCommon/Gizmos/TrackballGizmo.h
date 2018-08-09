@@ -53,4 +53,3 @@ private:
 	Vec2  m_initOffset;
 	Vec3  m_initPosition;
 };
-

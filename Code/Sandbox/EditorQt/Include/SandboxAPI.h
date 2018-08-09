@@ -19,7 +19,3 @@
 // Standalone plugins that use Editor plugins.
 	#define SANDBOX_API
 #endif
-
-// Surround text that needs localiation in this macro
-#define LOCALIZE(x) x
-

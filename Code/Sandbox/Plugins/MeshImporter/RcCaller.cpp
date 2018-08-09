@@ -192,4 +192,3 @@ string CRcCaller::OptionVertexPositionFormat(bool b32bit)
 {
 	return string().Format("/vertexpositionformat=%s", b32bit ? "f32" : "f16");
 }
-

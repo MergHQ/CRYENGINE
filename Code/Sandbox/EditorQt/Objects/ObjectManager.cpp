@@ -3,82 +3,66 @@
 #include "StdAfx.h"
 #include "ObjectManager.h"
 
-#include <Preferences/ViewportPreferences.h>
-
-#include "EntityObject.h"
-#include "EntityObjectWithComponent.h"
-#include "AIWave.h"
-#include "Group.h"
-#include "ShapeObject.h"
-#include "BrushObject.h"
-#include "GeomEntity.h"
-#include "SimpleEntity.h"
-#include "MiscEntities.h"
-#include "CameraObject.h"
-#include "IAIManager.h"
-#include "PrefabObject.h"
-#include "Prefabs/PrefabManager.h"
-#include "AICoverSurface.h"
-#include "RefPicture.h"
-#include "Viewport.h"
-#include "Gizmos/GizmoManager.h"
-#include "Gizmos/TransformManipulator.h"
-#include "ObjectLayerManager.h"
-#include "ObjectPhysicsManager.h"
-#include "CryEdit.h"
-#include "QtUtil.h"
-
-#include <LevelEditor/Tools/ObjectMode.h>
-
-#include <CryAISystem/IAgent.h>
-#include <CryEntitySystem/IEntitySystem.h>
-#include <io.h>
-
-#include "Geometry\EdMesh.h"
-
-#include "Material\MaterialManager.h"
-
-#include <CryAISystem/IAIObject.h>
-#include <LevelEditor/Tools/DeepSelection.h>
-#include "Objects\EnvironmentProbeObject.h"
-#include "Util/CubemapUtils.h"
-
-#include "HyperGraph\FlowGraphManager.h"
-
-#include "Util/BoostPythonHelpers.h"
+#include "Geometry/EdMesh.h"
 #include "HyperGraph/FlowGraphHelpers.h"
+#include "HyperGraph/FlowGraphManager.h"
+#include "Material/MaterialManager.h"
+#include "Objects/AICoverSurface.h"
+#include "Objects/AIWave.h"
+#include "Objects/BrushObject.h"
+#include "Objects/CameraObject.h"
+#include "Objects/EntityObject.h"
+#include "Objects/EntityObjectWithComponent.h"
+#include "Objects/EnvironmentProbeObject.h"
+#include "Objects/GeomEntity.h"
+#include "Objects/Group.h"
+#include "Objects/GuidCollisionResolver.h"
+#include "Objects/MiscEntities.h"
+#include "Objects/ObjectLayerManager.h"
+#include "Objects/ObjectPhysicsManager.h"
+#include "Objects/PrefabObject.h"
+#include "Objects/RefPicture.h"
+#include "Objects/ShapeObject.h"
+#include "Objects/SimpleEntity.h"
+#include "Prefabs/PrefabManager.h"
+#include "QT/QtMainFrame.h"
+#include "Util/BoostPythonHelpers.h"
+#include "Util/CubemapUtils.h"
+#include "CryEdit.h"
 #include "GameEngine.h"
 
-#include <CryNetwork/IRemoteCommand.h>
-
-#include <CryCore/ToolsHelpers/GuidUtil.h>
-#include <regex>
-#include <QApplication>
-#include <QMenu>
+// EditorCommon
+#include <Controls/QuestionDialog.h>
+#include <EditorFramework/BroadcastManager.h>
+#include <EditorFramework/Events.h>
+#include <Gizmos/GizmoManager.h>
+#include <Gizmos/TransformManipulator.h>
+#include <IObjectEnumerator.h>
+#include <LevelEditor/Tools/DeepSelection.h>
+#include <LevelEditor/Tools/ObjectMode.h>
+#include <Objects/InspectorWidgetCreator.h>
+#include <Objects/ObjectPropertyWidget.h>
+#include <Preferences/GlobalHelperPreferences.h>
+#include <Preferences/ViewportPreferences.h>
+#include <QT/Widgets/QWaitProgress.h>
 #include <Serialization/QPropertyTree/QPropertyTree.h>
-
-#include "EditorFramework/BroadcastManager.h"
-#include "EditorFramework/Events.h"
-#include "Objects/ObjectPropertyWidget.h"
-#include "QT/QtMainFrame.h"
-#include <CrySandbox/ScopedVariableSetter.h>
-
-#include "IObjectEnumerator.h"
-#include "QT/Widgets/QWaitProgress.h"
-#include "Controls/QuestionDialog.h"
-
 #include <FilePathUtil.h>
-#include <CrySystem/ICryLink.h>
-
-#include "Gizmos/ITransformManipulator.h"
-
-#include "Objects/InspectorWidgetCreator.h"
-#include "Objects/GuidCollisionResolver.h"
-
+#include <IAIManager.h>
 #include <QAdvancedPropertyTree.h>
-#include <CrySchematyc/Env/IEnvRegistry.h>
+#include <QtUtil.h>
+#include <Viewport.h>
+
+// CryEngine
+#include <CryCore/ToolsHelpers/GuidUtil.h>
+#include <CryEntitySystem/IEntitySystem.h>
+#include <CryNetwork/IRemoteCommand.h>
 #include <CrySchematyc/env/Elements/EnvComponent.h>
+#include <CrySchematyc/Env/IEnvRegistry.h>
 #include <DefaultComponents/Cameras/CameraComponent.h>
+
+#include <QMenu>
+
+#include <regex>
 
 namespace Private_ObjectManager
 {
@@ -301,7 +285,7 @@ public:
 			return fileSpec;
 		else
 			return superType->GetFileSpec();
-	};
+	}
 	static bool GetScriptData(CEntityScript* pScript, string& file, string& name)
 	{
 		name = pScript->GetName();
@@ -697,9 +681,6 @@ CryGUID IGuidProvider::GetFor(CBaseObject* pObject) const
 
 //////////////////////////////////////////////////////////////////////////
 // CObjectManager implementation.
-//////////////////////////////////////////////////////////////////////////
-
-//////////////////////////////////////////////////////////////////////////
 CObjectManager::CObjectManager()
 	: m_bLayerChanging(false)
 {
@@ -756,7 +737,6 @@ CObjectManager::CObjectManager()
 	});
 }
 
-//////////////////////////////////////////////////////////////////////////
 CObjectManager::~CObjectManager()
 {
 	ClearSelection();
@@ -768,19 +748,16 @@ CObjectManager::~CObjectManager()
 	delete m_pPhysicsManager;
 }
 
-//////////////////////////////////////////////////////////////////////////
 IObjectLayerManager* CObjectManager::GetIObjectLayerManager() const
 {
 	return m_pLayerManager;
 }
 
-//////////////////////////////////////////////////////////////////////////
 bool CObjectManager::CanCreateObject() const
 {
 	return (m_pLayerManager->GetCurrentLayer() != nullptr);
 }
 
-//////////////////////////////////////////////////////////////////////////
 CBaseObject* CObjectManager::NewObject(CObjectClassDesc* cls, CBaseObject* prev, const string& file)
 {
 	CRY_ASSERT(cls != 0);
@@ -842,7 +819,6 @@ CBaseObject* CObjectManager::NewObject(CObjectClassDesc* cls, CBaseObject* prev,
 	return obj;
 }
 
-//////////////////////////////////////////////////////////////////////////
 CBaseObject* CObjectManager::NewObject(CObjectArchive& ar, CBaseObject* pUndoObject, bool bLoadInCurrentLayer)
 {
 	using namespace Private_ObjectManager;
@@ -1018,7 +994,6 @@ CBaseObject* CObjectManager::NewObject(CObjectArchive& ar, CBaseObject* pUndoObj
 	return pObject;
 }
 
-//////////////////////////////////////////////////////////////////////////
 CBaseObject* CObjectManager::NewObject(const string& typeName, CBaseObject* prev, const string& file)
 {
 	// [9/22/2009 evgeny] If it is "Entity", figure out if a CEntity subclass is actually needed
@@ -1038,7 +1013,6 @@ CBaseObject* CObjectManager::NewObject(const string& typeName, CBaseObject* prev
 	return pObject;
 }
 
-//////////////////////////////////////////////////////////////////////////
 void CObjectManager::DeleteObject(CBaseObject* obj)
 {
 	std::vector<CBaseObject*> objects = { obj };
@@ -1141,7 +1115,6 @@ void CObjectManager::FilterOutDeletedObjects(std::vector<CBaseObject*>& objects)
 	}), objects.end());
 }
 
-//////////////////////////////////////////////////////////////////////////
 void CObjectManager::DeleteAllObjects()
 {
 	LOADING_TIME_PROFILE_SECTION
@@ -1212,14 +1185,12 @@ CBaseObject* CObjectManager::CloneObject(CBaseObject* obj)
 	return clone;
 }
 
-//////////////////////////////////////////////////////////////////////////
 CBaseObject* CObjectManager::FindObject(const CryGUID& guid) const
 {
 	CBaseObject* result = stl::find_in_map(m_objects, guid, (CBaseObject*)0);
 	return result;
 }
 
-//////////////////////////////////////////////////////////////////////////
 CBaseObject* CObjectManager::FindObject(const char* objectName, CRuntimeClass* pRuntimeClass) const
 {
 	for (Objects::const_iterator it = m_objects.begin(); it != m_objects.end(); ++it)
@@ -1240,7 +1211,6 @@ CBaseObject* CObjectManager::FindObject(const char* objectName, CRuntimeClass* p
 	return NULL;
 }
 
-//////////////////////////////////////////////////////////////////////////
 void CObjectManager::FindObjectsOfType(const CRuntimeClass* pClass, std::vector<CBaseObject*>& result)
 {
 	result.clear();
@@ -1272,7 +1242,6 @@ void CObjectManager::FindObjectsOfType(ObjectType type, std::vector<CBaseObject*
 	}
 }
 
-//////////////////////////////////////////////////////////////////////////
 void CObjectManager::FindObjectsInAABB(const AABB& aabb, std::vector<CBaseObject*>& result) const
 {
 	result.clear();
@@ -1292,7 +1261,6 @@ void CObjectManager::FindObjectsInAABB(const AABB& aabb, std::vector<CBaseObject
 	}
 }
 
-//////////////////////////////////////////////////////////////////////////
 bool CObjectManager::AddObject(CBaseObject* obj)
 {
 	CBaseObjectPtr p = stl::find_in_map(m_objects, obj->GetId(), 0);
@@ -1311,7 +1279,6 @@ bool CObjectManager::AddObject(CBaseObject* obj)
 	return true;
 }
 
-//////////////////////////////////////////////////////////////////////////
 void CObjectManager::RemoveObject(CBaseObject* pObject)
 {
 	CRY_ASSERT(pObject != 0);
@@ -1329,7 +1296,6 @@ void CObjectManager::RemoveObjects(const std::vector<CBaseObject*>& objects)
 	}
 }
 
-//////////////////////////////////////////////////////////////////////////
 void CObjectManager::GetAllObjects(TBaseObjects& objects) const
 {
 	objects.clear();
@@ -1340,7 +1306,6 @@ void CObjectManager::GetAllObjects(TBaseObjects& objects) const
 	}
 }
 
-//////////////////////////////////////////////////////////////////////////
 void CObjectManager::ChangeObjectId(const CryGUID& oldGuid, const CryGUID& newGuid)
 {
 	Objects::iterator it = m_objects.find(oldGuid);
@@ -1353,7 +1318,6 @@ void CObjectManager::ChangeObjectId(const CryGUID& oldGuid, const CryGUID& newGu
 	}
 }
 
-//////////////////////////////////////////////////////////////////////////
 void CObjectManager::NotifyPrefabObjectChanged(CBaseObject* pObject)
 {
 	NotifyObjectListeners(pObject, CObjectEvent(OBJECT_ON_PREFAB_CHANGED));
@@ -1361,7 +1325,6 @@ void CObjectManager::NotifyPrefabObjectChanged(CBaseObject* pObject)
 	InvalidateVisibleList();
 }
 
-//////////////////////////////////////////////////////////////////////////
 bool CObjectManager::IsInvalidObjectName(const string& newName) const
 {
 	// Object names are not allowed to contain '%'
@@ -1369,7 +1332,6 @@ bool CObjectManager::IsInvalidObjectName(const string& newName) const
 	return std::regex_match(newName.GetString(), invalidObjectName);
 }
 
-//////////////////////////////////////////////////////////////////////////
 void CObjectManager::ShowDuplicationMsgWarning(CBaseObject* obj, const string& newName, bool bShowMsgBox) const
 {
 	CBaseObject* pExisting = FindObject(newName);
@@ -1396,7 +1358,6 @@ void CObjectManager::ShowDuplicationMsgWarning(CBaseObject* obj, const string& n
 	}
 }
 
-//////////////////////////////////////////////////////////////////////////
 void CObjectManager::ShowInvalidNameMsgWarning(CBaseObject* obj, const string& newName, bool bShowMsgBox) const
 {
 	string sRenameWarning("");
@@ -1418,7 +1379,6 @@ void CObjectManager::ShowInvalidNameMsgWarning(CBaseObject* obj, const string& n
 	CryWarning(VALIDATOR_MODULE_EDITOR, VALIDATOR_WARNING, sRenameWarning);
 }
 
-//////////////////////////////////////////////////////////////////////////
 bool CObjectManager::ChangeObjectName(CBaseObject* pObject, const string& newName, bool bGenerateUnique /* = false*/)
 {
 	CRY_ASSERT(pObject);
@@ -1451,7 +1411,6 @@ bool CObjectManager::ChangeObjectName(CBaseObject* pObject, const string& newNam
 	return false;
 }
 
-//////////////////////////////////////////////////////////////////////////
 int CObjectManager::GetObjectCount() const
 {
 	return m_objects.size();
@@ -1827,7 +1786,6 @@ void CObjectManager::LinkToGeomCacheNode(const std::vector<CBaseObject*>& object
 }
 #endif
 
-//////////////////////////////////////////////////////////////////////////
 void CObjectManager::GetObjects(CBaseObjectsArray& objects, const CObjectLayer* layer) const
 {
 	CRY_PROFILE_FUNCTION(PROFILE_EDITOR);
@@ -1866,7 +1824,6 @@ void CObjectManager::GetObjects(CBaseObjectsArray& objects, BaseObjectFilterFunc
 	}
 }
 
-//////////////////////////////////////////////////////////////////////////
 void CObjectManager::GetCameras(std::vector<CEntityObject*>& objects)
 {
 	objects.clear();
@@ -1896,7 +1853,6 @@ void CObjectManager::GetCameras(std::vector<CEntityObject*>& objects)
 	}
 }
 
-//////////////////////////////////////////////////////////////////////////
 void CObjectManager::SendEvent(ObjectEvent event)
 {
 	if (event == EVENT_RELOAD_ENTITY)
@@ -1924,7 +1880,6 @@ void CObjectManager::SendEvent(ObjectEvent event)
 	}
 }
 
-//////////////////////////////////////////////////////////////////////////
 void CObjectManager::SendEvent(ObjectEvent event, const AABB& bounds)
 {
 	AABB box;
@@ -1939,7 +1894,6 @@ void CObjectManager::SendEvent(ObjectEvent event, const AABB& bounds)
 	}
 }
 
-//////////////////////////////////////////////////////////////////////////
 void CObjectManager::Update()
 {
 	CRY_PROFILE_FUNCTION(PROFILE_EDITOR);
@@ -1949,7 +1903,6 @@ void CObjectManager::Update()
 	UpdateAttachedEntities();
 }
 
-//////////////////////////////////////////////////////////////////////////
 void CObjectManager::HideObject(CBaseObject* obj, bool hide)
 {
 	CRY_ASSERT(obj != 0);
@@ -1958,7 +1911,6 @@ void CObjectManager::HideObject(CBaseObject* obj, bool hide)
 	InvalidateVisibleList();
 }
 
-//////////////////////////////////////////////////////////////////////////
 void CObjectManager::ToggleHideAllBut(CBaseObject* pObject)
 {
 	CBaseObjectsArray objects;
@@ -1989,7 +1941,6 @@ void CObjectManager::ToggleHideAllBut(CBaseObject* pObject)
 	}
 }
 
-//////////////////////////////////////////////////////////////////////////
 void CObjectManager::UnhideAll()
 {
 	for (Objects::iterator it = m_objects.begin(); it != m_objects.end(); ++it)
@@ -2015,7 +1966,6 @@ void CObjectManager::UnhideAll()
 	InvalidateVisibleList();
 }
 
-//////////////////////////////////////////////////////////////////////////
 void CObjectManager::FreezeObject(CBaseObject* obj, bool freeze)
 {
 	CRY_ASSERT(obj != 0);
@@ -2054,7 +2004,6 @@ void CObjectManager::ToggleFreezeAllBut(CBaseObject* pObject)
 	}
 }
 
-//////////////////////////////////////////////////////////////////////////
 void CObjectManager::UnfreezeAll()
 {
 	for (Objects::iterator it = m_objects.begin(); it != m_objects.end(); ++it)
@@ -2065,7 +2014,6 @@ void CObjectManager::UnfreezeAll()
 	InvalidateVisibleList();
 }
 
-//////////////////////////////////////////////////////////////////////////
 void CObjectManager::SelectObject(CBaseObject* pObj)
 {
 	SelectObjects({ pObj });
@@ -2264,7 +2212,6 @@ void CObjectManager::SelectAll()
 	SelectObjects(objects);
 }
 
-//////////////////////////////////////////////////////////////////////////
 void CObjectManager::ClearSelection()
 {
 	// Make sure to unlock selection.
@@ -2280,7 +2227,6 @@ void CObjectManager::ClearSelection()
 	UnselectObjects(objects);
 }
 
-//////////////////////////////////////////////////////////////////////////
 void CObjectManager::InvertSelection()
 {
 	if (m_objects.empty())
@@ -2301,10 +2247,8 @@ void CObjectManager::InvertSelection()
 	NotifySelectionChanges(selected, deselected);
 }
 
-//////////////////////////////////////////////////////////////////////////
 void CObjectManager::Display(CObjectRenderHelper& objRenderHelper)
 {
-	Vec3 org;
 	SDisplayContext& dc = objRenderHelper.GetDisplayContextRef();
 	const SRenderingPassInfo& passInfo = objRenderHelper.GetPassInfo();
 
@@ -2316,16 +2260,7 @@ void CObjectManager::Display(CObjectRenderHelper& objRenderHelper)
 		UpdateVisibilityList();
 	}
 
-	if (GetIEditor()->IsHelpersDisplayed() || dc.view->GetVisibleObjectsCache()->GetObjectCount() == 0 ||
-	    dc.flags & DISPLAY_SELECTION_HELPERS) // is display helpers or list is not populated (needed to select objects)
-	{
-		FindDisplayableObjects(dc, &passInfo, true);
-	}
-}
-
-void CObjectManager::ForceUpdateVisibleObjectCache(SDisplayContext& dc)
-{
-	FindDisplayableObjects(dc, nullptr, false);
+	FindDisplayableObjects(dc, &passInfo, true);
 }
 
 void CObjectManager::FindDisplayableObjects(SDisplayContext& dc, const SRenderingPassInfo* passInfo, bool bDisplay)
@@ -2344,7 +2279,7 @@ void CObjectManager::FindDisplayableObjects(SDisplayContext& dc, const SRenderin
 
 	CEditTool* pEditTool = GetIEditorImpl()->GetLevelEditorSharedState()->GetEditTool();
 
-	if (dc.flags & DISPLAY_2D)
+	if (dc.display2D)
 	{
 		int numVis = m_visibleObjects.size();
 		for (int i = 0; i < numVis; i++)
@@ -2356,7 +2291,7 @@ void CObjectManager::FindDisplayableObjects(SDisplayContext& dc, const SRenderin
 			{
 				pDispayedViewObjects->AddObject(obj);
 
-				if (bDisplay && GetIEditor()->IsHelpersDisplayed() && (gViewportPreferences.showFrozenHelpers || !obj->IsFrozen()))
+				if (bDisplay && dc.enabled && (dc.showFrozenObjectsHelpers || !obj->IsFrozen()))
 				{
 					obj->Display(CObjectRenderHelper { dc, *passInfo });
 					if (pEditTool)
@@ -2402,7 +2337,7 @@ void CObjectManager::FindDisplayableObjects(SDisplayContext& dc, const SRenderin
 			{
 				// Check if object is too far.
 				float visRatio = obj->GetCameraVisRatio(camera);
-				if (visRatio > m_maxObjectViewDistRatio || (dc.flags & DISPLAY_SELECTION_HELPERS) || obj->IsSelected())
+				if (visRatio > m_maxObjectViewDistRatio || dc.displaySelectionHelpers || obj->IsSelected())
 				{
 					pDispayedViewObjects->AddObject(obj);
 
@@ -2411,11 +2346,12 @@ void CObjectManager::FindDisplayableObjects(SDisplayContext& dc, const SRenderin
 
 					float distanceSquared = objAABB.GetDistanceSqr(camera.GetPosition());
 
-					if (distanceSquared > gViewportPreferences.objectHelperMaxDistSquaredDisplay)
+					if (distanceSquared > gGlobalHelperPreferences.objectHelperMaxDistSquaredDisplay)
 					{
 						continue;
 					}
-					if (bDisplay && (GetIEditor()->IsHelpersDisplayed() || dc.flags & DISPLAY_SELECTION_HELPERS) && (gViewportPreferences.showFrozenHelpers || !obj->IsFrozen()) && !obj->CheckFlags(OBJFLAG_HIDE_HELPERS))
+
+					if (bDisplay && (dc.enabled || dc.displaySelectionHelpers) && (dc.showFrozenObjectsHelpers || !obj->IsFrozen()) && !obj->CheckFlags(OBJFLAG_HIDE_HELPERS))
 					{
 						obj->Display(CObjectRenderHelper { dc, *passInfo });
 						if (pEditTool)
@@ -2429,7 +2365,6 @@ void CObjectManager::FindDisplayableObjects(SDisplayContext& dc, const SRenderin
 	}
 }
 
-//////////////////////////////////////////////////////////////////////////
 int CObjectManager::MoveObjects(const AABB& box, const Vec3& offset, int nRot, bool bIsCopy)
 {
 	AABB objBounds;
@@ -2504,7 +2439,6 @@ bool CObjectManager::IsObjectDeletionAllowed(CBaseObject* pObject)
 	return true;
 };
 
-//////////////////////////////////////////////////////////////////////////
 void CObjectManager::DeleteSelection()
 {
 	std::vector<CBaseObject*> selectedObjects;
@@ -2527,7 +2461,6 @@ void CObjectManager::DeleteSelection()
 	GetIEditorImpl()->GetFlowGraphManager()->SendNotifyEvent(EHG_GRAPH_INVALIDATE);
 }
 
-//////////////////////////////////////////////////////////////////////////
 bool CObjectManager::HitTestObject(CBaseObject* obj, HitContext& hc)
 {
 	if (obj->IsFrozen())
@@ -2587,7 +2520,6 @@ bool CObjectManager::HitTestObject(CBaseObject* obj, HitContext& hc)
 	return (bSelectionHelperHit || obj->HitTest(hc));
 }
 
-//////////////////////////////////////////////////////////////////////////
 bool CObjectManager::HitTest(HitContext& hitInfo)
 {
 	CRY_PROFILE_FUNCTION(PROFILE_EDITOR);
@@ -2666,8 +2598,7 @@ void CObjectManager::FindObjectsInRect(CViewport* view, const CRect& rect, std::
 	if (rect.Width() < 1 || rect.Height() < 1)
 		return;
 
-	HitContext hc;
-	hc.view = view;
+	HitContext hc(view);
 	hc.b2DViewport = view->GetType() != ET_ViewportCamera;
 	hc.rect = rect;
 	hc.bUseSelectionHelpers = view->GetAdvancedSelectModeFlag();
@@ -2684,7 +2615,7 @@ void CObjectManager::FindObjectsInRect(CViewport* view, const CRect& rect, std::
 		HitTestObjectAgainstRect(pObj, view, hc, guids);
 	}
 }
-//////////////////////////////////////////////////////////////////////////
+
 void CObjectManager::SelectObjectsInRect(CViewport* view, const CRect& rect, ESelectOp eSelect)
 {
 	CRY_PROFILE_FUNCTION(PROFILE_EDITOR);
@@ -2721,8 +2652,7 @@ void CObjectManager::FindSelectableObjectsInRect(CViewport* view, const CRect& r
 {
 	CRY_PROFILE_FUNCTION(PROFILE_EDITOR);
 
-	HitContext hc;
-	hc.view = view;
+	HitContext hc(view);
 	hc.b2DViewport = view->GetType() != ET_ViewportCamera;
 	hc.rect = rect;
 	hc.bUseSelectionHelpers = view->GetAdvancedSelectModeFlag();
@@ -2756,7 +2686,6 @@ bool CObjectManager::IsObjectSelectableInHitContext(CViewport* view, HitContext&
 	return false;
 }
 
-//////////////////////////////////////////////////////////////////////////
 uint16 FindPossibleObjectNameNumber(std::set<uint16>& numberSet)
 {
 	const int LIMIT = 65535;
@@ -2809,7 +2738,6 @@ void CObjectManager::RegisterObjectName(const string& name)
 	}
 }
 
-//////////////////////////////////////////////////////////////////////////
 void CObjectManager::UpdateRegisterObjectName(const string& name)
 {
 	// Remove all numbers from the end of typename.
@@ -2847,7 +2775,6 @@ void CObjectManager::UpdateRegisterObjectName(const string& name)
 	}
 }
 
-//////////////////////////////////////////////////////////////////////////
 string CObjectManager::GenUniqObjectName(const string& theTypeName)
 {
 	string typeName = theTypeName;
@@ -2893,7 +2820,6 @@ string CObjectManager::GenUniqObjectName(const string& theTypeName)
 	return str;
 }
 
-//////////////////////////////////////////////////////////////////////////
 CObjectClassDesc* CObjectManager::FindClass(const string& className)
 {
 	IClassDesc* cls = GetIEditorImpl()->GetClassFactory()->FindClass(className);
@@ -2904,7 +2830,6 @@ CObjectClassDesc* CObjectManager::FindClass(const string& className)
 	return 0;
 }
 
-//////////////////////////////////////////////////////////////////////////
 void CObjectManager::GetClassCategories(std::vector<string>& categories)
 {
 	std::vector<IClassDesc*> classes;
@@ -2982,7 +2907,6 @@ std::vector<string> CObjectManager::GetAllClasses() const
 	return classes;
 }
 
-//////////////////////////////////////////////////////////////////////////
 void CObjectManager::RegisterClassTemplate(XmlNodeRef& templ)
 {
 	string typeName = templ->getTag();
@@ -3005,7 +2929,6 @@ void CObjectManager::RegisterClassTemplate(XmlNodeRef& templ)
 	GetIEditorImpl()->GetClassFactory()->RegisterClass(classDesc);
 }
 
-//////////////////////////////////////////////////////////////////////////
 void CObjectManager::LoadClassTemplates(const string& path)
 {
 	string dir = PathUtil::AddBackslash(path.GetString());
@@ -3028,7 +2951,6 @@ void CObjectManager::LoadClassTemplates(const string& path)
 	}
 }
 
-//////////////////////////////////////////////////////////////////////////
 void CObjectManager::Serialize(XmlNodeRef& xmlNode, bool bLoading, int flags)
 {
 	if (!xmlNode)
@@ -3080,7 +3002,6 @@ void CObjectManager::Serialize(XmlNodeRef& xmlNode, bool bLoading, int flags)
 	}
 }
 
-//////////////////////////////////////////////////////////////////////////
 void CObjectManager::LoadObjects(CObjectArchive& objectArchive, bool bSelect)
 {
 	LOADING_TIME_PROFILE_SECTION;
@@ -3112,7 +3033,6 @@ void CObjectManager::LoadObjects(CObjectArchive& objectArchive, bool bSelect)
 	m_bLoadingObjects = false;
 }
 
-//////////////////////////////////////////////////////////////////////////
 void CObjectManager::Export(const string& levelPath, XmlNodeRef& rootNode, bool onlyShared)
 {
 	// Clear export files.
@@ -3176,7 +3096,6 @@ void CObjectManager::Export(const string& levelPath, XmlNodeRef& rootNode, bool 
 	}
 }
 
-//////////////////////////////////////////////////////////////////////////
 void CObjectManager::DeleteNotSharedObjects()
 {
 	TBaseObjects objects;
@@ -3205,7 +3124,6 @@ void CObjectManager::DeleteSharedObjects()
 	}
 }
 
-//////////////////////////////////////////////////////////////////////////
 void CObjectManager::InvalidateVisibleList()
 {
 	m_cachedAreaBox = AABB::RESET;
@@ -3217,7 +3135,6 @@ void CObjectManager::InvalidateVisibleList()
 	m_visibleObjects.clear();
 }
 
-//////////////////////////////////////////////////////////////////////////
 void CObjectManager::UpdateVisibilityList()
 {
 	CRY_PROFILE_FUNCTION(PROFILE_EDITOR);
@@ -3240,13 +3157,11 @@ void CObjectManager::UpdateVisibilityList()
 	m_isUpdateVisibilityList = false;
 }
 
-//////////////////////////////////////////////////////////////////////////
 void CObjectManager::RegisterTypeConverter(CRuntimeClass* pSource, const char* szTargetName, std::function<void(CBaseObject* pObject)> conversionFunc)
 {
 	m_typeConverters.emplace_back(SConverter { pSource, szTargetName, conversionFunc });
 }
 
-//////////////////////////////////////////////////////////////////////////
 void CObjectManager::IterateTypeConverters(CRuntimeClass* pSource, std::function<void(const char* szTargetName, std::function<void(CBaseObject* pObject)> conversionFunc)> callback)
 {
 	for (const SConverter& converter : m_typeConverters)
@@ -3258,7 +3173,6 @@ void CObjectManager::IterateTypeConverters(CRuntimeClass* pSource, std::function
 	}
 }
 
-//////////////////////////////////////////////////////////////////////////
 bool CObjectManager::SetObjectSelected(CBaseObject* pObject, bool bSelect, bool shouldNotify /* = true */)
 {
 	CRY_PROFILE_FUNCTION(PROFILE_EDITOR);
@@ -3301,7 +3215,6 @@ void CObjectManager::NotifyObjectListeners(const std::vector<CBaseObject*>& obje
 	signalObjectsChanged(objects, event);
 }
 
-//////////////////////////////////////////////////////////////////////////
 void CObjectManager::StartObjectsLoading(int numObjects)
 {
 	if (m_pLoadProgress)
@@ -3311,7 +3224,6 @@ void CObjectManager::StartObjectsLoading(int numObjects)
 	m_loadedObjects = 0;
 }
 
-//////////////////////////////////////////////////////////////////////////
 void CObjectManager::EndObjectsLoading()
 {
 	if (m_pLoadProgress)
@@ -3319,7 +3231,6 @@ void CObjectManager::EndObjectsLoading()
 	m_pLoadProgress = 0;
 }
 
-//////////////////////////////////////////////////////////////////////////
 void CObjectManager::GatherUsedResources(CUsedResources& resources, CObjectLayer* pLayer)
 {
 	CBaseObjectsArray objects;
@@ -3332,7 +3243,6 @@ void CObjectManager::GatherUsedResources(CUsedResources& resources, CObjectLayer
 	}
 }
 
-//////////////////////////////////////////////////////////////////////////
 IStatObj* CObjectManager::GetGeometryFromObject(CBaseObject* pObject)
 {
 	CRY_ASSERT(pObject);
@@ -3358,7 +3268,6 @@ IStatObj* CObjectManager::GetGeometryFromObject(CBaseObject* pObject)
 	return 0;
 }
 
-//////////////////////////////////////////////////////////////////////////
 ICharacterInstance* CObjectManager::GetCharacterFromObject(CBaseObject* pObject)
 {
 	CRY_ASSERT(pObject);
@@ -3378,7 +3287,6 @@ ICharacterInstance* CObjectManager::GetCharacterFromObject(CBaseObject* pObject)
 	return 0;
 }
 
-//////////////////////////////////////////////////////////////////////////
 CBaseObject* CObjectManager::FindPhysicalObjectOwner(IPhysicalEntity* pPhysicalEntity)
 {
 	if (!pPhysicalEntity)
@@ -3420,14 +3328,12 @@ CBaseObject* CObjectManager::FindPhysicalObjectOwner(IPhysicalEntity* pPhysicalE
 	return 0;
 }
 
-//////////////////////////////////////////////////////////////////////////
 void CObjectManager::OnObjectModified(CBaseObject* pObject, bool bDelete, bool boModifiedTransformOnly)
 {
 	if (IRenderNode* pRenderNode = pObject->GetEngineNode())
 		GetIEditorImpl()->Get3DEngine()->OnObjectModified(pRenderNode, pRenderNode->GetRndFlags());
 }
 
-//////////////////////////////////////////////////////////////////////////
 void CObjectManager::UnregisterNoExported()
 {
 	for (Objects::const_iterator it = m_objects.begin(); it != m_objects.end(); ++it)
@@ -3441,7 +3347,6 @@ void CObjectManager::UnregisterNoExported()
 	}
 }
 
-//////////////////////////////////////////////////////////////////////////
 void CObjectManager::RegisterNoExported()
 {
 	for (Objects::const_iterator it = m_objects.begin(); it != m_objects.end(); ++it)
@@ -3833,7 +3738,6 @@ void CObjectManager::SetSelectionMask(int mask) const
 	signalSelectionMaskChanged(mask);
 }
 
-//////////////////////////////////////////////////////////////////////////
 void CObjectManager::UpdateAttachedEntities()
 {
 	CRY_PROFILE_FUNCTION(PROFILE_EDITOR);
@@ -3852,13 +3756,11 @@ void CObjectManager::UpdateAttachedEntities()
 	}
 }
 
-//////////////////////////////////////////////////////////////////////////
 void CObjectManager::AssignLayerIDsToRenderNodes()
 {
 	m_pLayerManager->AssignLayerIDsToRenderNodes();
 }
 
-//////////////////////////////////////////////////////////////////////////
 void CObjectManager::SaveEntitiesInternalState(IDataWriteStream& writer) const
 {
 	// save layer state
@@ -3940,7 +3842,6 @@ void CObjectManager::SaveEntitiesInternalState(IDataWriteStream& writer) const
 	}
 }
 
-//////////////////////////////////////////////////////////////////////////
 void CObjectManager::HitTestObjectAgainstRect(CBaseObject* pObj, CViewport* view, HitContext hc, std::vector<CryGUID>& guids)
 {
 	if (!pObj->IsSelectable())
@@ -3972,7 +3873,6 @@ void CObjectManager::HitTestObjectAgainstRect(CBaseObject* pObj, CViewport* view
 		stl::push_back_unique(guids, pObj->GetId());
 }
 
-//////////////////////////////////////////////////////////////////////////
 void CObjectManager::SelectObjectInRect(CBaseObject* pObj, CViewport* view, HitContext hc, ESelectOp eSelect)
 {
 	if (!pObj->IsSelectable())

@@ -113,4 +113,3 @@ private:
 	};
 	std::array<STreeFolder, 8> m_topLevelFolders;
 };
-

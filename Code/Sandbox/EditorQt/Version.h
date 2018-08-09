@@ -91,5 +91,3 @@ struct Version
 		return s;
 	}
 };
-
-

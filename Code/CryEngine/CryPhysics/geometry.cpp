@@ -921,7 +921,7 @@ int SanityCheckTree(CBVTree* pBVtree, int maxDepth)
 {
 	BV* pBV;
 	bool okay = true;
-	int iCaller = get_iCaller(1), locked=0;
+	int iCaller = get_iCaller(), locked=0;
 	if (iCaller>=MAX_PHYS_THREADS && (!IsPODThread(g_pPhysWorlds[0]) || !g_pLockIntersect[iCaller-MAX_PHYS_THREADS]))
 		SpinLock(g_pLockIntersect+(iCaller-MAX_PHYS_THREADS), 0,locked=WRITE_LOCK_VAL);
 	ResetGlobalPrimsBuffers(iCaller);

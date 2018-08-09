@@ -53,22 +53,14 @@ ERequestStatus CImpl::Init(uint32 const objectPoolSize, uint32 const eventPoolSi
 	return ERequestStatus::Success;
 }
 
-//////////////////////////////////////////////////////////////////////////
-ERequestStatus CImpl::OnBeforeShutDown()
+///////////////////////////////////////////////////////////////////////////
+void CImpl::ShutDown()
 {
-	return ERequestStatus::Success;
 }
 
 ///////////////////////////////////////////////////////////////////////////
-ERequestStatus CImpl::ShutDown()
+void CImpl::Release()
 {
-	return ERequestStatus::Success;
-}
-
-///////////////////////////////////////////////////////////////////////////
-ERequestStatus CImpl::Release()
-{
-	return ERequestStatus::Success;
 }
 
 ///////////////////////////////////////////////////////////////////////////
@@ -219,7 +211,7 @@ void CImpl::GamepadDisconnected(DeviceId const deviceUniqueID)
 }
 
 ///////////////////////////////////////////////////////////////////////////
-ITrigger const* CImpl::ConstructTrigger(XmlNodeRef const pRootNode)
+ITrigger const* CImpl::ConstructTrigger(XmlNodeRef const pRootNode, float& radius)
 {
 	return nullptr;
 }

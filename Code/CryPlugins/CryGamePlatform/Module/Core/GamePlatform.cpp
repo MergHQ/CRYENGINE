@@ -27,7 +27,7 @@ namespace Cry
 			struct SWithAccount
 			{
 				explicit SWithAccount(const IAccount& acc) : m_acc(acc) {}
-				bool operator()(const std::unique_ptr<CUser>& pUser) const { return pUser->HasAccount(m_acc); }
+				bool operator()(const std::unique_ptr<CUser>& pUser) const { return pUser && pUser->HasAccount(m_acc); }
 
 			private:
 				const IAccount& m_acc;
@@ -38,10 +38,8 @@ namespace Cry
 		{
 			// First element is reserved for main service
 			m_services.emplace_back(nullptr);
-		}
-
-		CPlugin::~CPlugin()
-		{
+			// First element is reserved for local user
+			m_users.emplace_back(nullptr);
 		}
 
 		bool CPlugin::Initialize(SSystemGlobalEnvironment& env, const SSystemInitParams& initParams)
@@ -56,12 +54,25 @@ namespace Cry
 
 		IUser* CPlugin::GetLocalClient() const
 		{
-			if (IAccount* pMainAccount = GetMainLocalAccount())
+			if (m_users[0] == nullptr)
 			{
-				return TryGetUser(*pMainAccount);
+				DynArray<IAccount*> userAccounts;
+				for (IService* pSvc : m_services)
+				{
+					IAccount* pSvcLocalAccount = pSvc ? pSvc->GetLocalAccount() : nullptr;
+
+					if (pSvcLocalAccount)
+					{
+						userAccounts.push_back(pSvcLocalAccount);
+					}
+				}
+
+				CollectConnectedAccounts(userAccounts);
+
+				m_users[0] = stl::make_unique<CUser>(userAccounts);
 			}
 
-			return nullptr;
+			return m_users[0].get();
 		}
 
 		IUser* CPlugin::GetUserById(const UserIdentifier& id) const
@@ -83,7 +94,7 @@ namespace Cry
 				const DynArray<IAccount*>& accounts = pMainService->GetFriendAccounts();
 				for (IAccount* pAccount : accounts)
 				{
-					m_friends.push_back(TryGetUser(*pAccount));
+					stl::push_back_unique(m_friends, TryGetUser(*pAccount));
 				}
 			}
 
@@ -162,6 +173,11 @@ namespace Cry
 
 		IUser* CPlugin::TryGetUser(const UserIdentifier& id) const
 		{
+			if (m_users[0] == nullptr)
+			{
+				return GetLocalClient();
+			}
+
 			for (const std::unique_ptr<CUser>& pUser : m_users)
 			{
 				if (pUser->GetIdentifier() == id)
@@ -169,7 +185,7 @@ namespace Cry
 					return pUser.get();
 				}
 			}
-			
+
 			CryWarning(VALIDATOR_MODULE_SYSTEM, VALIDATOR_WARNING, "[GamePlatform::TryGetUser] no user '%s' was found", id.ToDebugString());
 
 			return nullptr;
@@ -201,18 +217,13 @@ namespace Cry
 		IUser* CPlugin::TryGetUser(IAccount& account) const
 		{
 			const ServiceIdentifier& svcId = account.GetServiceIdentifier();
-			if (GetMainServiceIdentifier() == svcId)
+			for (const std::unique_ptr<CUser>& pUser : m_users)
 			{
-				for (const std::unique_ptr<CUser>& pUser : m_users)
+				if (pUser->GetAccount(svcId) == &account)
 				{
-					if (pUser->GetAccount(svcId) == &account)
-					{
-						return pUser.get();
-					}
+					return pUser.get();
 				}
 			}
-
-			CryWarning(VALIDATOR_MODULE_SYSTEM, VALIDATOR_WARNING, "[GamePlatform] Attempt to use account for service '%s' that is not the main one!", svcId.ToDebugString());
 
 			return AddUser(account);
 		}
@@ -220,40 +231,18 @@ namespace Cry
 		IUser* CPlugin::AddUser(IAccount& account) const
 		{
 			DynArray<IAccount*> userAccounts;
-			CollectConnectedAccounts(account, userAccounts);
+			userAccounts.push_back(&account);
 
-			if (EnsureMainAccountFirst(userAccounts))
-			{
-				m_users.emplace_back(stl::make_unique<CUser>(userAccounts));
-			}
-			else
-			{
-				CryWarning(VALIDATOR_MODULE_SYSTEM, VALIDATOR_WARNING, "[GamePlatform::AddUser] main account not found for '%s'", account.GetIdentifier().ToDebugString());
-				return nullptr;
-			}
+			CollectConnectedAccounts(userAccounts);
+			EnsureMainAccountFirst(userAccounts);
+			
+			m_users.emplace_back(stl::make_unique<CUser>(userAccounts));
 
 			return m_users.back().get();
 		}
 
-		void CPlugin::CollectConnectedAccounts(IAccount& account, DynArray<IAccount*>& userAccounts) const
+		void CPlugin::CollectConnectedAccounts(DynArray<IAccount*>& userAccounts) const
 		{
-			userAccounts.clear();
-			userAccounts.push_back(&account); // Beware: we rely on userAccounts never being empty
-
-			// Assume all local accounts are connected, even if no connection info is available
-			if (account.IsLocal())
-			{
-				for (IService* pSvc : m_services)
-				{
-					IAccount* pSvcLocalAccount = pSvc ? pSvc->GetLocalAccount() : nullptr;
-
-					if (pSvcLocalAccount && pSvcLocalAccount != &account)
-					{
-						userAccounts.push_back(pSvcLocalAccount);
-					}
-				}
-			}
-
 			for (size_t idx = 0; idx < userAccounts.size(); ++idx)
 			{
 				// This call can increase the size of userAccounts, thus it is very important to use
@@ -279,35 +268,33 @@ namespace Cry
 			return std::find_if(userAccounts.begin(), userAccounts.end(), Predicate::SWithServiceId(GetMainServiceIdentifier()));
 		}
 
-		bool CPlugin::EnsureMainAccountFirst(DynArray<IAccount*>& userAccounts) const
+		void CPlugin::EnsureMainAccountFirst(DynArray<IAccount*>& userAccounts) const
 		{
 			if (userAccounts.empty())
 			{
-				return false;
+				return;
 			}
 
-			if (userAccounts[0]->GetServiceIdentifier() == GetMainServiceIdentifier())
+			if (userAccounts[0]->GetServiceIdentifier() != GetMainServiceIdentifier())
 			{
-				return true;
+				DynArray<IAccount*>::iterator mainAccPos = FindMainAccount(userAccounts);
+				if (mainAccPos != userAccounts.end() && mainAccPos != userAccounts.begin())
+				{
+					// Sebastien recommended me to add the using to support user-customized swap()
+					using std::swap;
+					swap(userAccounts[0], *mainAccPos);
+				}
 			}
-
-			DynArray<IAccount*>::iterator mainAccPos = FindMainAccount(userAccounts);
-			if (mainAccPos == userAccounts.end())
-			{
-				return false;
-			}
-
-			std::swap(userAccounts[0], *mainAccPos);
-
-			return true;
 		}
 
 		void CPlugin::AddOrUpdateUser(DynArray<IAccount*> userAccounts)
 		{
-			if (EnsureMainAccountFirst(userAccounts))
+			EnsureMainAccountFirst(userAccounts);
+			
+			IAccount* pMainAcc = userAccounts.empty() ? nullptr : userAccounts[0];
+			
+			if(pMainAcc)
 			{
-				IAccount* pMainAcc = userAccounts[0];
-				
 				auto userPos = std::find_if(m_users.begin(), m_users.end(), Predicate::SWithAccount(*pMainAcc));
 				if (userPos != m_users.end())
 				{
@@ -320,7 +307,7 @@ namespace Cry
 			}
 			else
 			{
-				CryWarning(VALIDATOR_MODULE_SYSTEM, VALIDATOR_WARNING, "[GamePlatform::AddOrUpdateUser] main account not found for '%s'", userAccounts[0]->GetIdentifier().ToDebugString());
+				CryWarning(VALIDATOR_MODULE_SYSTEM, VALIDATOR_ERROR, "[GamePlatform::AddOrUpdateUser] no suitable account found.");
 			}
 		}
 
@@ -372,7 +359,8 @@ namespace Cry
 		void CPlugin::OnAccountAdded(IAccount& account)
 		{
 			DynArray<IAccount*> userAccounts;
-			CollectConnectedAccounts(account, userAccounts);
+			userAccounts.push_back(&account);
+			CollectConnectedAccounts(userAccounts);
 
 			AddOrUpdateUser(std::move(userAccounts));
 		}

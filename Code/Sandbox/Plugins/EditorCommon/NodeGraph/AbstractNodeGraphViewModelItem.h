@@ -128,4 +128,3 @@ inline T* CAbstractNodeGraphViewModelItem::Cast()
 }
 
 }
-

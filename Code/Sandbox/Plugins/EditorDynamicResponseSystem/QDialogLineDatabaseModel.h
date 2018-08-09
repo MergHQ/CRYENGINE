@@ -70,4 +70,3 @@ public:
 private:
 	QWidget* m_pParent;
 };
-

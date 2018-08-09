@@ -48,4 +48,3 @@ QString CVegetationDragDropData::GetGroupListMimeFormat()
 {
 	return GetMimeFormatForType(Private_VegetationDragDropData::kGroupListIdentifier);
 }
-

@@ -2,27 +2,31 @@
 
 #include "StdAfx.h"
 #include "DesignerObject.h"
-#include "Core/ModelCompiler.h"
-#include "Material/Material.h"
-#include "Material/MaterialManager.h"
-#include "DesignerEditor.h"
-#include "Util/Converter.h"
-#include "Objects/ObjectLoader.h"
-#include "Objects/InspectorWidgetCreator.h"
-#include "ObjectCreateTool.h"
-#include <CryCore/Base64.h>
-#include "GameEngine.h"
-#include "ToolFactory.h"
-#include "Core/Helper.h"
-#include "Util/Display.h"
-#include "Controls/DynamicPopupMenu.h"
-#include <Serialization/Decorators/EditorActionButton.h>
-#include "Tools/ToolCommon.h"
-#include "Util/PrimitiveShape.h"
+
 #include "Core/Common.h"
-#include "DesignerSession.h"
+#include "Core/Helper.h"
+#include "Core/ModelCompiler.h"
+#include "Tools/ToolCommon.h"
+#include "Util/Converter.h"
+#include "Util/Display.h"
+#include "Util/PrimitiveShape.h"
 #include "Util/Undo.h"
+#include "DesignerEditor.h"
+#include "DesignerSession.h"
+#include "ToolFactory.h"
+
+#include <Material/Material.h>
+#include <Material/MaterialManager.h>
+#include <GameEngine.h>
+#include <ObjectCreateTool.h>
+
+#include <Controls/DynamicPopupMenu.h>
+#include <Objects/ObjectLoader.h>
+#include <Objects/InspectorWidgetCreator.h>
 #include <Preferences/ViewportPreferences.h>
+#include <Serialization/Decorators/EditorActionButton.h>
+
+#include <CryCore/Base64.h>
 
 namespace Designer
 {
@@ -146,8 +150,7 @@ void DesignerObject::Display(CObjectRenderHelper& objRenderHelper)
 	const CSelectionGroup* pSelection = GetIEditor()->GetObjectManager()->GetSelection();
 	SDisplayContext& dc = objRenderHelper.GetDisplayContextRef();
 
-	bool bDisplay2D = dc.flags & DISPLAY_2D;
-	if (bDisplay2D)
+	if (dc.display2D)
 	{
 		dc.PushMatrix(GetWorldTM());
 		Display::DisplayModel(dc, GetModel(), NULL, eShelf_Any, 2, IsSelected() ? kSelectedColor : ColorB(0, 0, 0));
@@ -156,10 +159,8 @@ void DesignerObject::Display(CObjectRenderHelper& objRenderHelper)
 	else
 	{
 		DrawDefault(dc);
-	}
-
-	if (!bDisplay2D)
 		DrawOpenPolygons(dc);
+	}
 }
 
 const ColorB& DesignerObject::GetSelectionPreviewHighlightColor()
@@ -171,7 +172,7 @@ void DesignerObject::DrawSelectionPreviewHighlight(SDisplayContext& dc)
 {
 	CBaseObject::DrawSelectionPreviewHighlight(dc);
 
-	if (dc.flags & DISPLAY_2D)
+	if (dc.display2D)
 		return;
 
 	ColorB color = GetSelectionPreviewHighlightColor();
@@ -343,7 +344,7 @@ void DesignerObject::Serialize(CObjectArchive& ar)
 
 		if (GetCompiler())
 		{
-			int nRenderFlag = ERF_HAS_CASTSHADOWMAPS | ERF_CASTSHADOWMAPS;
+			uint64 nRenderFlag = ERF_HAS_CASTSHADOWMAPS | ERF_CASTSHADOWMAPS;
 			ar.node->getAttr("RndFlags", nRenderFlag);
 			if (nRenderFlag & ERF_CASTSHADOWMAPS)
 				nRenderFlag |= ERF_HAS_CASTSHADOWMAPS;
@@ -581,18 +582,6 @@ void DesignerObject::OnEvent(ObjectEvent event)
 				pDesignerTool->EnterCurrentTool();
 		}
 		break;
-	case EVENT_HIDE_HELPER:
-		if (IsSelected() && GetCompiler() && IsVisible())
-		{
-			_smart_ptr<IStatObj> obj = NULL;
-			if (GetCompiler()->GetIStatObj(&obj))
-			{
-				int flag = obj->GetFlags();
-				flag &= ~STATIC_OBJECT_HIDDEN;
-				obj->SetFlags(flag);
-			}
-		}
-		break;
 	}
 }
 
@@ -645,12 +634,14 @@ DesignerObjectFlags::DesignerObjectFlags() : m_pObj(NULL)
 	noStaticDecals = false;
 	excludeCollision = false;
 	occluder = false;
+	ignoreTerrainLayerBlend = true;
+	ignoreDecalBlend = true;
 }
 
 void DesignerObjectFlags::Set()
 {
 	ratioViewDist = m_pObj->GetCompiler()->GetViewDistRatio();
-	int flags = m_pObj->GetCompiler()->GetRenderFlags();
+	uint64 flags = m_pObj->GetCompiler()->GetRenderFlags();
 	int statobjFlags = m_pObj->GetCompiler()->GetStaticObjFlags();
 	outdoor = (flags & ERF_OUTDOORONLY) != 0;
 	rainOccluder = (flags & ERF_RAIN_OCCLUDER) != 0;
@@ -663,6 +654,8 @@ void DesignerObjectFlags::Set()
 	noStaticDecals = (flags & ERF_NO_DECALNODE_DECALS) != 0;
 	excludeFromTriangulation = (flags & ERF_EXCLUDE_FROM_TRIANGULATION) != 0;
 	excludeCollision = (statobjFlags & STATIC_OBJECT_NO_PLAYER_COLLIDE) != 0;
+	ignoreTerrainLayerBlend = (flags & ERF_FOB_ALLOW_TERRAIN_LAYER_BLEND) == 0;
+	ignoreDecalBlend = (flags & ERF_FOB_ALLOW_DECAL_BLEND) == 0;
 }
 
 void DesignerObjectFlags::Serialize(Serialization::IArchive& ar)
@@ -679,12 +672,22 @@ void DesignerObjectFlags::Serialize(Serialization::IArchive& ar)
 	ar(noStaticDecals, "noStaticDecals", "No Static Decal");
 	ar(excludeCollision, "excludeCollision", "Exclude Collision");
 	ar(occluder, "occluder", "Occluder");
+	ar(ignoreTerrainLayerBlend, "ignoreTerrainLayerBlend", "Ignore Terrain Layer Blending");
+	ar(ignoreDecalBlend, "ignoreDecalBlend", "Ignore Decal Blending");
 	if (ar.isInput())
 		Update();
 }
 
 namespace
 {
+void ModifyFlag(uint64& nFlags, uint64 flag, uint64 clearFlag, bool var)
+{
+	nFlags = (var) ? (nFlags | flag) : (nFlags & (~clearFlag));
+}
+void ModifyFlag(uint64& nFlags, uint64 flag, bool var)
+{
+	ModifyFlag(nFlags, flag, flag, var);
+}
 void ModifyFlag(int& nFlags, int flag, int clearFlag, bool var)
 {
 	nFlags = (var) ? (nFlags | flag) : (nFlags & (~clearFlag));
@@ -697,7 +700,7 @@ void ModifyFlag(int& nFlags, int flag, bool var)
 
 void DesignerObjectFlags::Update()
 {
-	int nFlags = m_pObj->GetCompiler()->GetRenderFlags();
+	uint64 nFlags = m_pObj->GetCompiler()->GetRenderFlags();
 	int statobjFlags = m_pObj->GetCompiler()->GetStaticObjFlags();
 
 	ModifyFlag(nFlags, ERF_OUTDOORONLY, outdoor);
@@ -710,6 +713,8 @@ void DesignerObjectFlags::Update()
 	ModifyFlag(nFlags, ERF_NODYNWATER, noDynWater);
 	ModifyFlag(nFlags, ERF_NO_DECALNODE_DECALS, noStaticDecals);
 	ModifyFlag(nFlags, ERF_GOOD_OCCLUDER, occluder);
+	ModifyFlag(nFlags, ERF_FOB_ALLOW_TERRAIN_LAYER_BLEND, !ignoreTerrainLayerBlend);
+	ModifyFlag(nFlags, ERF_FOB_ALLOW_DECAL_BLEND, !ignoreDecalBlend);
 	ModifyFlag(statobjFlags, STATIC_OBJECT_NO_PLAYER_COLLIDE, excludeCollision);
 
 	m_pObj->GetCompiler()->SetViewDistRatio(ratioViewDist);
@@ -720,4 +725,3 @@ void DesignerObjectFlags::Update()
 }
 
 }
-

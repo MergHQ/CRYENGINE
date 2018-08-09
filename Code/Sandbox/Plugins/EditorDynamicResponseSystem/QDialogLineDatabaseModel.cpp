@@ -745,4 +745,3 @@ void QDialogLineDelegate::paint(QPainter* painter, const QStyleOptionViewItem& o
 
 	QStyledItemDelegate::paint(painter, opt, index);
 }
-

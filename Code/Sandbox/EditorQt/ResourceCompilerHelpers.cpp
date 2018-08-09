@@ -108,4 +108,3 @@ bool CResourceCompilerVersion::CheckIfValid(bool bSilent)
 	}
 	return true;
 }
-

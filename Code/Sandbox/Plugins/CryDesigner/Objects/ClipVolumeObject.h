@@ -77,4 +77,3 @@ public:
 	virtual const char* GetToolClassName()         { return "EditTool.CreateClipVolumeTool"; }
 };
 }
-

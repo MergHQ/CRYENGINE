@@ -73,7 +73,7 @@ void CTiledLightVolumesStage::Init()
 	// Cubemap Array(s) ==================================================================
 
 #if CRY_RENDERER_OPENGLES || CRY_PLATFORM_ANDROID
-	ETEX_Format textureAtlasFormatSpecDiff = eTF_R16G16B16A16F;
+	ETEX_Format textureAtlasFormatSpecDiff = eTF_R9G9B9E5;
 	ETEX_Format textureAtlasFormatSpot = eTF_EAC_R11;
 #else
 	ETEX_Format textureAtlasFormatSpecDiff = eTF_BC6UH;
@@ -255,6 +255,12 @@ void CTiledLightVolumesStage::Destroy(bool destroyResolutionIndependentResources
 		m_specularProbeAtlas.items.clear();
 		m_diffuseProbeAtlas.items.clear();
 		m_spotTexAtlas.items.clear();
+
+#if DEVRES_USE_PINNING
+		m_specularProbeAtlas.texArray->GetDevTexture()->Unpin();
+		m_diffuseProbeAtlas.texArray->GetDevTexture()->Unpin();
+		m_spotTexAtlas.texArray->GetDevTexture()->Unpin();
+#endif
 
 		SAFE_RELEASE_FORCE(m_specularProbeAtlas.texArray);
 		SAFE_RELEASE_FORCE(m_diffuseProbeAtlas.texArray);

@@ -169,7 +169,6 @@ public class SDLActivity extends Activity {
             // "SDL2_mixer",
             // "SDL2_net",
             // "SDL2_ttf",
-            "SDL2Ext",
             "AndroidLauncher"
         };
     }
@@ -588,7 +587,6 @@ public class SDLActivity extends Activity {
     // C functions we call
     public static native int nativeSetupJNI();
     public static native int nativeRunMain(String library, String function, Object arguments);
-	public static native void nativeInitExt(AssetManager mgr);
     public static native void nativeLowMemory();
     public static native void nativeQuit();
     public static native void nativePause();
@@ -1151,8 +1149,7 @@ class SDLMain implements Runnable {
 		// Get permissions
 		((SDLActivity)SDLActivity.getContext()).verifyStoragePermissions();
 
-		// Runs SDL_main()
-		SDLActivity.nativeInitExt(SDLActivity.getAssetManager());
+		// Run SDL_main()
 
         // Runs SDL_main()
         String library = SDLActivity.mSingleton.getMainSharedObject();

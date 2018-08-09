@@ -329,4 +329,3 @@ void SAnimationFilter::FindTags(std::vector<string>* tags) const
 		condition->FindTags(tags);
 	tags->erase(std::unique(tags->begin(), tags->end()), tags->end());
 }
-

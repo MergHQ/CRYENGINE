@@ -46,4 +46,3 @@ private:
 	typedef std::vector<CHyperFlowGraph*> TFlowGraphs;
 	TFlowGraphs m_FlowGraphs;
 };
-

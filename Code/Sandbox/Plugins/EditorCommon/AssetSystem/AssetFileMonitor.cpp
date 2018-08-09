@@ -93,7 +93,7 @@ void CAssetFileMonitor::RemoveAsset(const string& assetPath)
 		return;
 	}
 
-	CAssetManager::GetInstance()->DeleteAssets({ pAsset }, false);
+	CAssetManager::GetInstance()->DeleteAssetsOnlyFromData({ pAsset });
 }
 
 void CAssetFileMonitor::LoadAsset(const string& assetPath)

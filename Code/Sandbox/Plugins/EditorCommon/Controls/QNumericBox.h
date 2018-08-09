@@ -107,4 +107,3 @@ private:
 	int   m_acceleration;
 	bool  m_accelerated;
 };
-

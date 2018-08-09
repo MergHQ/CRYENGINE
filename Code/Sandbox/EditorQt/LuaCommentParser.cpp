@@ -436,4 +436,3 @@ bool LuaCommentParser::IsAlphaNumericalChar(char c)
 
 	return isNumber || isLowerCase || isUpperCase || (int)c == 95;
 }
-

@@ -2,22 +2,17 @@
 
 #pragma once
 
-#include <QDialog>
 #include <QFrame>
 #include <QMenu>
 
-class CameraSpeedPopup;
 class CLevelEditorViewport;
 class CPopupMenuItem;
 class QLabel;
 class QLineEdit;
-class QPushButton;
-class QSpinBox;
 class QToolButton;
 class QViewportHeader;
 
 //////////////////////////////////////////////////////////////////////////
-
 class QTerrainSnappingMenu : public QMenu
 {
 	Q_OBJECT
@@ -46,20 +41,6 @@ public:
 
 	void UpdateCameraName();
 
-	enum ESearchResultHandling
-	{
-		ESRH_HIDE_OTHERS = 0,
-		ESRH_FREEZE_OTHERS,
-		ESRH_JUST_SELECT,
-	};
-
-	enum ESearchMode
-	{
-		ESM_BY_NAME = 0,
-		ESM_BY_TYPE,
-		ESM_BY_ASSET,
-	};
-
 	void                       AddFOVMenus(CPopupMenuItem& menu, Functor1<float> setFOVFunc, const std::vector<string>& customPresets);
 	void                       AddAspectRatioMenus(CPopupMenuItem& menu, Functor2<unsigned int, unsigned int> setAspectRatioFunc, const std::vector<string>& customPresets);
 	void                       AddResolutionMenus(CPopupMenuItem& menu, Functor2<int, int> resizeFunc, const std::vector<string>& customPresets);
@@ -85,16 +66,10 @@ protected:
 	void OnEditToolChanged();
 	virtual void  OnEditorNotifyEvent(EEditorNotifyEvent event);
 	virtual QSize sizeHint() const;
-	//virtual QSize minimumSizeHint() const { return sizeHint(); }
 
 private:
 	void         LoadPersonalization();
 	QToolButton* AddToolButtonForCommand(const char* szCommand, QLayout* pLayout);
-	void         SearchByType(const std::vector<string>& terms);
-	void         SearchByName(const std::vector<string>& terms);
-	void         SearchByAsset(const std::vector<string>& terms);
-	void         UpdateSearchOptionsText();
-	void         InputNamesToSearchFromSelection();
 
 	void         SetViewportFOV(float fov);
 	float        GetViewportFOV();
@@ -104,19 +79,14 @@ private:
 	friend class QViewportTitleMenu;
 private:
 	QToolButton* m_titleBtn;
-	QToolButton* m_toggleHelpersBtn;
 	QToolButton* m_displayOptions;
+	QToolButton* m_pHelpersOptionsBtn;
+	QToolButton* m_pDisplayHelpersBtn;
 
 	// Snapping
 	QToolButton*          m_pivotSnapping;
 	QToolButton*          m_vertexSnapping;
 	QString               m_moduleName;
-
-	QLabel*               m_searchOptionsText;
-	QLineEdit*            m_viewportSearch;
-	ESearchMode           m_searchMode;
-	ESearchResultHandling m_searchResultHandling;
-	bool                  m_bOR;
 
 	CLevelEditorViewport* m_viewport;
 
@@ -128,6 +98,4 @@ private:
 	// current tool info and exit button
 	QLabel*      m_currentToolText;
 	QToolButton* m_currentToolExit;
-
-	string       m_viewPaneClass;
 };

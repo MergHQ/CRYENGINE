@@ -312,6 +312,8 @@ void CVisibleRenderNodesManager::OnRenderNodeDeleted(IRenderNode* pRenderNode)
 	{
 		LOADING_TIME_PROFILE_SECTION;
 
+		CryAutoCriticalSectionNoRecursive lock(m_accessLock);
+
 		auto iter = std::partition(m_visibleNodes.begin(), m_visibleNodes.end(),
 			[pNodeTempData](SRenderNodeTempData* pTempData) { return pTempData != pNodeTempData; });
 

@@ -70,4 +70,3 @@ private:
 	Vec3 m_initOffset;
 	Vec3 m_interactionOffset;
 };
-

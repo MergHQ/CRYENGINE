@@ -55,4 +55,3 @@ protected:
 	bool       m_bEnableMagnet;
 };
 }
-

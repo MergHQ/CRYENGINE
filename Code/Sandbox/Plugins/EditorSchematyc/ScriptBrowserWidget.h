@@ -311,4 +311,3 @@ private:
 	CAsset*                          m_pAsset;
 };
 } // Schematyc
-

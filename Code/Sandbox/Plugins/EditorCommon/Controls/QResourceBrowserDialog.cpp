@@ -84,5 +84,3 @@ void QResourceBrowserDialog::ResourceSelected(const char* szIconPath)
 	m_SelectedResource = szIconPath;
 	accept();
 }
-
-

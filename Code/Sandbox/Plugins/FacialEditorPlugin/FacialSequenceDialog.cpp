@@ -3140,4 +3140,3 @@ void CFacialSequenceDialog::UpdateRemoveNoiseSigma()
 	if (m_pRemoveNoiseValueEdit)
 		m_pRemoveNoiseValueEdit->SetEditText(text.c_str());
 }
-

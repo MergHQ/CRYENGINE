@@ -39,4 +39,3 @@ bool Serialize(Serialization::IArchive& ar, Serialization::RadioButton& button, 
 }
 
 #include "ToggleButtonImpl.h"
-

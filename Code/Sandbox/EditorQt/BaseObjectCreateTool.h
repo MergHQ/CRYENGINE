@@ -32,4 +32,3 @@ private:
 
 	virtual void FinishCreation(bool restart, CViewport* pView = nullptr, const CPoint& point = CPoint());
 };
-

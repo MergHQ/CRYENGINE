@@ -36,4 +36,3 @@ public:
 };
 typedef _smart_ptr<FlexibleMesh> FlexibleMeshPtr;
 }
-

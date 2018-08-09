@@ -69,4 +69,3 @@ QVariant CAdvancedFileSystemModel::data(const QModelIndex& index, int role) cons
 	}
 	return QFileSystemModel::data(index, role);
 }
-

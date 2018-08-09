@@ -218,4 +218,3 @@ void CHGSelNodeInfoPanel::SetNodeInfo(std::vector<CHyperNode*>& nodes)
 		}
 	}
 }
-

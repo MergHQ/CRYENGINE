@@ -10,17 +10,17 @@
 #if WATER_RIPPLES_EDITING_ENABLED
 namespace
 {
-	bool TestLocation( const Vec3& testPosition )
-	{
-		const float threshold = 0.4f;
-		const float waterLevel = gEnv->p3DEngine->GetWaterLevel( &testPosition );
+bool TestLocation(const Vec3& testPosition)
+{
+	const float threshold = 0.4f;
+	const float waterLevel = gEnv->p3DEngine->GetWaterLevel(&testPosition);
 
-		return (fabs_tpl(waterLevel - testPosition.z) < threshold);
-	}
+	return (fabs_tpl(waterLevel - testPosition.z) < threshold);
+}
 }
 #endif
 
-void CWaterRipplesGenerator::SProperties::InitFromScript( const IEntity& entity )
+void CWaterRipplesGenerator::SProperties::InitFromScript(const IEntity& entity)
 {
 	IScriptTable* pScriptTable = entity.GetScriptTable();
 	if (pScriptTable != NULL)
@@ -31,10 +31,10 @@ void CWaterRipplesGenerator::SProperties::InitFromScript( const IEntity& entity 
 			propertiesTable->GetValue("fScale", m_scale);
 			propertiesTable->GetValue("fStrength", m_strength);
 			propertiesTable->GetValue("bEnabled", m_enabled);
-			
+
 			// Get the spawning parameters.
 			SmartScriptTable spawnTable;
-			if(propertiesTable->GetValue("Spawning", spawnTable))
+			if (propertiesTable->GetValue("Spawning", spawnTable))
 			{
 				spawnTable->GetValue("bAutoSpawn", m_autoSpawn);
 				spawnTable->GetValue("bSpawnOnMovement", m_spawnOnMovement);
@@ -43,7 +43,7 @@ void CWaterRipplesGenerator::SProperties::InitFromScript( const IEntity& entity 
 
 			// Get the randomizaiton parameters.
 			SmartScriptTable randomTable;
-			if(propertiesTable->GetValue("Randomization", randomTable))
+			if (propertiesTable->GetValue("Randomization", randomTable))
 			{
 				randomTable->GetValue("fRandomFreq", m_randFrequency);
 				randomTable->GetValue("fRandomScale", m_randScale);
@@ -55,15 +55,14 @@ void CWaterRipplesGenerator::SProperties::InitFromScript( const IEntity& entity 
 	}
 }
 
-
 namespace WRG
 {
-	void RegisterEvents( IGameObjectExtension& goExt, IGameObject& gameObject )
-	{
-		const int eventID = eGFE_ScriptEvent;
-		gameObject.UnRegisterExtForEvents( &goExt, NULL, 0 );
-		gameObject.RegisterExtForEvents( &goExt, &eventID, 1 );
-	}
+void RegisterEvents(IGameObjectExtension& goExt, IGameObject& gameObject)
+{
+	const int eventID = eGFE_ScriptEvent;
+	gameObject.UnRegisterExtForEvents(&goExt, NULL, 0);
+	gameObject.RegisterExtForEvents(&goExt, &eventID, 1);
+}
 }
 
 //////////////////////////////////////////////////////////////////////////
@@ -80,32 +79,32 @@ CWaterRipplesGenerator::~CWaterRipplesGenerator()
 
 }
 
-bool CWaterRipplesGenerator::Init(IGameObject *pGameObject)
+bool CWaterRipplesGenerator::Init(IGameObject* pGameObject)
 {
 	SetGameObject(pGameObject);
 
 	return true;
 }
 
-void CWaterRipplesGenerator::PostInit(IGameObject *pGameObject)
+void CWaterRipplesGenerator::PostInit(IGameObject* pGameObject)
 {
 	Reset();
 
-	WRG::RegisterEvents( *this, *pGameObject );
+	WRG::RegisterEvents(*this, *pGameObject);
 }
 
-bool CWaterRipplesGenerator::ReloadExtension( IGameObject * pGameObject, const SEntitySpawnParams &params )
+bool CWaterRipplesGenerator::ReloadExtension(IGameObject* pGameObject, const SEntitySpawnParams& params)
 {
 	ResetGameObject();
 
-	WRG::RegisterEvents( *this, *pGameObject );
+	WRG::RegisterEvents(*this, *pGameObject);
 
 	CRY_ASSERT_MESSAGE(false, "CWaterRipplesGenerator::ReloadExtension not implemented");
 
 	return false;
 }
 
-bool CWaterRipplesGenerator::GetEntityPoolSignature( TSerialize signature )
+bool CWaterRipplesGenerator::GetEntityPoolSignature(TSerialize signature)
 {
 	CRY_ASSERT_MESSAGE(false, "CWaterRipplesGenerator::GetEntityPoolSignature not implemented");
 
@@ -122,17 +121,20 @@ void CWaterRipplesGenerator::FullSerialize(TSerialize ser)
 
 }
 
-void CWaterRipplesGenerator::Update(SEntityUpdateContext &ctx, int updateSlot)
+void CWaterRipplesGenerator::Update(SEntityUpdateContext& ctx, int updateSlot)
 {
-	CRY_ASSERT( updateSlot == WATER_RIPPLES_GENERATOR_UPDATE_SLOT );
+	CRY_ASSERT(updateSlot == WATER_RIPPLES_GENERATOR_UPDATE_SLOT);
 
-	float fFrequency = m_properties.m_frequency + cry_random(-1.0f, 1.0f)*m_properties.m_randFrequency;
+	float fFrequency = m_properties.m_frequency + cry_random(-1.0f, 1.0f) * m_properties.m_randFrequency;
 	bool allowHit = (gEnv->pTimer->GetCurrTime() - m_lastSpawnTime) > fFrequency;
-	if(m_properties.m_autoSpawn && allowHit)
+	if (m_properties.m_autoSpawn && allowHit)
 		ProcessHit(false);
+}
 
+void CWaterRipplesGenerator::Render(const IEntity& entity, const IEntityComponent& component, SEntityPreviewContext& context) const
+{
 #if WATER_RIPPLES_EDITING_ENABLED
-	const bool debugDraw = m_properties.m_enabled && gEnv->IsEditing() && g_pGame->DisplayEditorHelpersEnabled();
+	const bool debugDraw = m_properties.m_enabled && gEnv->IsEditing();
 	if (debugDraw)
 	{
 		IRenderAuxGeom* pRenderAux = gEnv->pRenderer->GetIRenderAuxGeom();
@@ -161,14 +163,14 @@ void CWaterRipplesGenerator::Update(SEntityUpdateContext &ctx, int updateSlot)
 			const Vec3 offset0(radius0 * cosine, radius0 * sinus, 0);
 			const Vec3 offset1(radius1 * cosine, radius1 * sinus, 0);
 			const Vec3 offset2(radius2 * cosine, radius2 * sinus, 0);
-			pRenderAux->DrawLine(surfacePosition+offset0, surfaceColor0, surfacePosition+offset1, surfaceColor1, 2.0f);
-			pRenderAux->DrawLine(surfacePosition+offset1, surfaceColor1, surfacePosition+offset2, surfaceColor0, 2.0f);
+			pRenderAux->DrawLine(surfacePosition + offset0, surfaceColor0, surfacePosition + offset1, surfaceColor1, 2.0f);
+			pRenderAux->DrawLine(surfacePosition + offset1, surfaceColor1, surfacePosition + offset2, surfaceColor0, 2.0f);
 		}
 	}
 #endif
 }
 
-void CWaterRipplesGenerator::HandleEvent( const SGameObjectEvent &gameObjectEvent )
+void CWaterRipplesGenerator::HandleEvent(const SGameObjectEvent& gameObjectEvent)
 {
 	if ((gameObjectEvent.event == eGFE_ScriptEvent) && (gameObjectEvent.param != NULL))
 	{
@@ -176,12 +178,12 @@ void CWaterRipplesGenerator::HandleEvent( const SGameObjectEvent &gameObjectEven
 		if (strcmp(eventName, "enable") == 0)
 		{
 			m_properties.m_enabled = true;
-			ActivateGeneration( true );
+			ActivateGeneration(true);
 		}
 		else if (strcmp(eventName, "disable") == 0)
 		{
 			m_properties.m_enabled = false;
-			ActivateGeneration( false );
+			ActivateGeneration(false);
 		}
 		else if (gEnv->IsEditor() && (strcmp(eventName, "propertyChanged") == 0))
 		{
@@ -194,13 +196,13 @@ void CWaterRipplesGenerator::ProcessEvent(const SEntityEvent& event)
 {
 	if (event.event == ENTITY_EVENT_XFORM)
 	{
-		if(m_properties.m_spawnOnMovement)
+		if (m_properties.m_spawnOnMovement)
 			ProcessHit(true);
 
 #if WATER_RIPPLES_EDITING_ENABLED
 		if (gEnv->IsEditor())
 		{
-			m_currentLocationOk = TestLocation( GetEntity()->GetWorldPos() );
+			m_currentLocationOk = TestLocation(GetEntity()->GetWorldPos());
 		}
 #endif
 	}
@@ -224,7 +226,7 @@ void CWaterRipplesGenerator::ProcessHit(bool isMoving)
 	if ((m_properties.m_enabled))
 	{
 		Vec3 vWorldPos = GetEntity()->GetWorldPos();
-		if(!isMoving) // No random offsets during movement spawning.
+		if (!isMoving) // No random offsets during movement spawning.
 		{
 			vWorldPos += Vec3(m_properties.m_randomOffset).CompMul(cry_random_componentwise(Vec3(-1, -1, 0), Vec3(1, 1, 0)));
 		}
@@ -244,27 +246,27 @@ void CWaterRipplesGenerator::ProcessHit(bool isMoving)
 
 void CWaterRipplesGenerator::Reset()
 {
-	m_properties.InitFromScript( *GetEntity() );
-	
-	ActivateGeneration( m_properties.m_enabled );
+	m_properties.InitFromScript(*GetEntity());
+
+	ActivateGeneration(m_properties.m_enabled);
 
 #if WATER_RIPPLES_EDITING_ENABLED
-	m_currentLocationOk = TestLocation( GetEntity()->GetWorldPos() );
+	m_currentLocationOk = TestLocation(GetEntity()->GetWorldPos());
 #endif
 
 }
 
-void CWaterRipplesGenerator::ActivateGeneration( const bool activate )
+void CWaterRipplesGenerator::ActivateGeneration(const bool activate)
 {
 	if (activate && (gEnv->IsEditor() || m_properties.m_autoSpawn))
 	{
-		if (GetGameObject()->GetUpdateSlotEnables( this, WATER_RIPPLES_GENERATOR_UPDATE_SLOT) == 0)
+		if (GetGameObject()->GetUpdateSlotEnables(this, WATER_RIPPLES_GENERATOR_UPDATE_SLOT) == 0)
 		{
-			GetGameObject()->EnableUpdateSlot( this, WATER_RIPPLES_GENERATOR_UPDATE_SLOT ) ;
+			GetGameObject()->EnableUpdateSlot(this, WATER_RIPPLES_GENERATOR_UPDATE_SLOT);
 		}
 	}
 	else
 	{
-		GetGameObject()->DisableUpdateSlot( this, WATER_RIPPLES_GENERATOR_UPDATE_SLOT );
+		GetGameObject()->DisableUpdateSlot(this, WATER_RIPPLES_GENERATOR_UPDATE_SLOT);
 	}
 }

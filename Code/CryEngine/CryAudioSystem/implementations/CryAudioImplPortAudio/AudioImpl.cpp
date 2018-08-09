@@ -21,6 +21,52 @@ namespace Impl
 {
 namespace PortAudio
 {
+//////////////////////////////////////////////////////////////////////////
+bool GetSoundInfo(char const* const szPath, SF_INFO& sfInfo, PaStreamParameters& streamParameters)
+{
+	bool success = false;
+
+	ZeroStruct(sfInfo);
+	SNDFILE* const pSndFile = sf_open(szPath, SFM_READ, &sfInfo);
+
+	if (pSndFile != nullptr)
+	{
+		streamParameters.device = Pa_GetDefaultOutputDevice();
+		streamParameters.channelCount = sfInfo.channels;
+		streamParameters.suggestedLatency = Pa_GetDeviceInfo(streamParameters.device)->defaultLowOutputLatency;
+		streamParameters.hostApiSpecificStreamInfo = nullptr;
+		int const subFormat = sfInfo.format & SF_FORMAT_SUBMASK;
+
+		switch (subFormat)
+		{
+		case SF_FORMAT_PCM_16:
+		case SF_FORMAT_PCM_24:
+			streamParameters.sampleFormat = paInt16;
+			break;
+		case SF_FORMAT_PCM_32:
+			streamParameters.sampleFormat = paInt32;
+			break;
+		case SF_FORMAT_FLOAT:
+		case SF_FORMAT_VORBIS:
+			streamParameters.sampleFormat = paFloat32;
+			break;
+		}
+
+		if (sf_close(pSndFile) != 0)
+		{
+			Cry::Audio::Log(ELogType::Error, "Failed to close sound file %s", szPath);
+		}
+
+		success = true;
+	}
+	else
+	{
+		Cry::Audio::Log(ELogType::Error, "Failed to open sound file %s", szPath);
+	}
+
+	return success;
+}
+
 ///////////////////////////////////////////////////////////////////////////
 ERequestStatus CImpl::Init(uint32 const objectPoolSize, uint32 const eventPoolSize)
 {
@@ -51,6 +97,11 @@ ERequestStatus CImpl::Init(uint32 const objectPoolSize, uint32 const eventPoolSi
 	m_regularSoundBankFolder += s_szAssetsFolderName;
 	m_localizedSoundBankFolder = m_regularSoundBankFolder;
 
+	if (ICVar* const pCVar = gEnv->pConsole->GetCVar("g_languageAudio"))
+	{
+		SetLanguage(pCVar->GetString());
+	}
+
 	PaError const err = Pa_Initialize();
 
 	if (err != paNoError)
@@ -62,13 +113,7 @@ ERequestStatus CImpl::Init(uint32 const objectPoolSize, uint32 const eventPoolSi
 }
 
 ///////////////////////////////////////////////////////////////////////////
-ERequestStatus CImpl::OnBeforeShutDown()
-{
-	return ERequestStatus::Success;
-}
-
-///////////////////////////////////////////////////////////////////////////
-ERequestStatus CImpl::ShutDown()
+void CImpl::ShutDown()
 {
 	PaError const err = Pa_Terminate();
 
@@ -77,19 +122,16 @@ ERequestStatus CImpl::ShutDown()
 		Cry::Audio::Log(ELogType::Error, "Failed to shut down PortAudio: %s", Pa_GetErrorText(err));
 	}
 
-	return (err == paNoError) ? ERequestStatus::Success : ERequestStatus::Failure;
 }
 
 ///////////////////////////////////////////////////////////////////////////
-ERequestStatus CImpl::Release()
+void CImpl::Release()
 {
 	delete this;
 	g_cvars.UnregisterVariables();
 
 	CObject::FreeMemoryPool();
 	CEvent::FreeMemoryPool();
-
-	return ERequestStatus::Success;
 }
 
 ///////////////////////////////////////////////////////////////////////////
@@ -284,73 +326,56 @@ void CImpl::GamepadDisconnected(DeviceId const deviceUniqueID)
 }
 
 ///////////////////////////////////////////////////////////////////////////
-ITrigger const* CImpl::ConstructTrigger(XmlNodeRef const pRootNode)
+ITrigger const* CImpl::ConstructTrigger(XmlNodeRef const pRootNode, float& radius)
 {
 	CTrigger* pTrigger = nullptr;
 	char const* const szTag = pRootNode->getTag();
 
 	if (_stricmp(szTag, s_szEventTag) == 0)
 	{
-		stack_string path = m_regularSoundBankFolder.c_str();
+		char const* const szLocalized = pRootNode->getAttr(s_szLocalizedAttribute);
+		bool const isLocalized = (szLocalized != nullptr) && (_stricmp(szLocalized, s_szTrueValue) == 0);
+
+		stack_string path = (isLocalized ? m_localizedSoundBankFolder.c_str() : m_regularSoundBankFolder.c_str());
 		path += "/";
-		path += pRootNode->getAttr(s_szNameAttribute);
+		stack_string const folderName = pRootNode->getAttr(s_szPathAttribute);
 
-		if (!path.empty())
+		if (!folderName.empty())
 		{
-			SF_INFO sfInfo;
-			ZeroStruct(sfInfo);
+			path += folderName.c_str();
+			path += "/";
+		}
 
-			SNDFILE* const pSndFile = sf_open(path.c_str(), SFM_READ, &sfInfo);
+		stack_string const name = pRootNode->getAttr(s_szNameAttribute);
+		path += name.c_str();
 
-			if (pSndFile != nullptr)
-			{
-				CryFixedStringT<16> const eventTypeString(pRootNode->getAttr(s_szTypeAttribute));
-				EEventType const eventType = eventTypeString.compareNoCase(s_szStartValue) == 0 ? EEventType::Start : EEventType::Stop;
+		SF_INFO sfInfo;
+		PaStreamParameters streamParameters;
 
-				int numLoops = 0;
-				pRootNode->getAttr(s_szLoopCountAttribute, numLoops);
-				// --numLoops because -1: play infinite, 0: play once, 1: play twice, etc...
-				--numLoops;
-				// Max to -1 to stay backwards compatible.
-				numLoops = std::max(-1, numLoops);
+		if (GetSoundInfo(path.c_str(), sfInfo, streamParameters))
+		{
+			CryFixedStringT<16> const eventTypeString(pRootNode->getAttr(s_szTypeAttribute));
+			EEventType const eventType = eventTypeString.compareNoCase(s_szStartValue) == 0 ? EEventType::Start : EEventType::Stop;
 
-				PaStreamParameters streamParameters;
-				streamParameters.device = Pa_GetDefaultOutputDevice();
-				streamParameters.channelCount = sfInfo.channels;
-				streamParameters.suggestedLatency = Pa_GetDeviceInfo(streamParameters.device)->defaultLowOutputLatency;
-				streamParameters.hostApiSpecificStreamInfo = nullptr;
-				int const subFormat = sfInfo.format & SF_FORMAT_SUBMASK;
+			int numLoops = 0;
+			pRootNode->getAttr(s_szLoopCountAttribute, numLoops);
+			// --numLoops because -1: play infinite, 0: play once, 1: play twice, etc...
+			--numLoops;
+			// Max to -1 to stay backwards compatible.
+			numLoops = std::max(-1, numLoops);
 
-				switch (subFormat)
-				{
-				case SF_FORMAT_PCM_16:
-				case SF_FORMAT_PCM_24:
-					streamParameters.sampleFormat = paInt16;
-					break;
-				case SF_FORMAT_PCM_32:
-					streamParameters.sampleFormat = paInt32;
-					break;
-				case SF_FORMAT_FLOAT:
-				case SF_FORMAT_VORBIS:
-					streamParameters.sampleFormat = paFloat32;
-					break;
-				}
+			pTrigger = new CTrigger(
+				StringToId(path.c_str()),
+				numLoops,
+				static_cast<double>(sfInfo.samplerate),
+				eventType,
+				path.c_str(),
+				streamParameters,
+				folderName.c_str(),
+				name.c_str(),
+				isLocalized);
 
-				pTrigger = new CTrigger(
-				  StringToId(path.c_str()),
-				  numLoops,
-				  static_cast<double>(sfInfo.samplerate),
-				  eventType,
-				  path.c_str(),
-				  streamParameters);
-
-				int const failure = sf_close(pSndFile);
-
-				if (failure)
-				{
-					Cry::Audio::Log(ELogType::Error, "Failed to close SNDFILE during CImpl::NewAudioTrigger");
-				}
-			}
+			m_triggers.push_back(pTrigger);
 		}
 	}
 	else
@@ -440,6 +465,7 @@ void CImpl::GetMemoryInfo(SMemoryInfo& memoryInfo) const
 //////////////////////////////////////////////////////////////////////////
 void CImpl::OnRefresh()
 {
+	m_triggers.clear();
 }
 
 //////////////////////////////////////////////////////////////////////////
@@ -447,7 +473,13 @@ void CImpl::SetLanguage(char const* const szLanguage)
 {
 	if (szLanguage != nullptr)
 	{
-		m_localizedSoundBankFolder = PathUtil::GetLocalizationFolder().c_str();
+		bool const shouldReload = !m_language.IsEmpty() && (m_language.compareNoCase(szLanguage) != 0);
+
+		m_language = szLanguage;
+		char const* szAssetDirectory = gEnv->pSystem->GetIProjectManager()->GetCurrentAssetDirectoryRelative();
+		m_localizedSoundBankFolder = szAssetDirectory;
+		m_localizedSoundBankFolder += "/";
+		m_localizedSoundBankFolder += PathUtil::GetLocalizationFolder().c_str();
 		m_localizedSoundBankFolder += "/";
 		m_localizedSoundBankFolder += szLanguage;
 		m_localizedSoundBankFolder += "/";
@@ -456,6 +488,40 @@ void CImpl::SetLanguage(char const* const szLanguage)
 		m_localizedSoundBankFolder += s_szImplFolderName;
 		m_localizedSoundBankFolder += "/";
 		m_localizedSoundBankFolder += s_szAssetsFolderName;
+
+		if (shouldReload)
+		{
+			UpdateLocalizedTriggers();
+		}
+	}
+}
+
+//////////////////////////////////////////////////////////////////////////
+void CImpl::UpdateLocalizedTriggers()
+{
+	for (auto const pTrigger : m_triggers)
+	{
+		if (pTrigger->m_isLocalized)
+		{
+			stack_string path = m_localizedSoundBankFolder.c_str();
+			path += "/";
+
+			if (!pTrigger->m_folder.empty())
+			{
+				path += pTrigger->m_folder.c_str();
+				path += "/";
+			}
+
+			path += pTrigger->m_name.c_str();
+
+			SF_INFO sfInfo;
+			PaStreamParameters streamParameters;
+
+			GetSoundInfo(path.c_str(), sfInfo, streamParameters);
+			pTrigger->sampleRate = static_cast<double>(sfInfo.samplerate);
+			pTrigger->streamParameters = streamParameters;
+			pTrigger->filePath = path.c_str();
+		}
 	}
 }
 

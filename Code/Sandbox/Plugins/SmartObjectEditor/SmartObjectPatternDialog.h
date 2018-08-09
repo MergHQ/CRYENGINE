@@ -36,4 +36,3 @@ protected:
 public:
 	virtual BOOL OnInitDialog();
 };
-

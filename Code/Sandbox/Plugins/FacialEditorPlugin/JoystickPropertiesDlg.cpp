@@ -121,4 +121,3 @@ void CJoystickPropertiesDlg::SetChannelEnabled(int axis, bool enabled)
 {
 	m_enableds[axis] = enabled;
 }
-

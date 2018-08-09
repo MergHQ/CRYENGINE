@@ -37,4 +37,3 @@ protected:
 private:
 	QList<QKeySequence> m_defaults;
 };
-

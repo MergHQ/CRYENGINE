@@ -39,4 +39,3 @@ public:
 	virtual CVariableItem* CreateVariable()                     { return nullptr; }
 	virtual bool           RemoveVariable()                     { return false; }
 };
-

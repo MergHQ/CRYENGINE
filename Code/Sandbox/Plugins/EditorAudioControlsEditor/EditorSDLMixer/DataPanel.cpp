@@ -97,7 +97,7 @@ void CDataPanel::OnContextMenu(QPoint const& pos)
 						pConnectionsMenu->addAction(info.icon, QtUtil::ToQString(info.name), [=]()
 									{
 										m_impl.SignalSelectConnectedSystemControl(info.id, pItem->GetId());
-						      });
+									});
 					}
 
 					pConnectionsMenu->setTitle(tr("Connections (" + ToString(controlInfos.size()) + ")"));
@@ -111,7 +111,7 @@ void CDataPanel::OnContextMenu(QPoint const& pos)
 				pContextMenu->addAction(tr("Show in File Explorer"), [=]()
 							{
 								QtUtil::OpenInExplorer((PathUtil::GetGameFolder() + "/" + pItem->GetFilePath()).c_str());
-				      });
+							});
 
 				pContextMenu->addSeparator();
 			}
@@ -135,13 +135,14 @@ void CDataPanel::OnContextMenu(QPoint const& pos)
 void CDataPanel::OnImportFiles()
 {
 	QString targetFolderName = "";
+	bool isLocalized = false;
 
 	if (!m_pTreeView->selectionModel()->selectedRows(m_nameColumn).isEmpty())
 	{
-		targetFolderName = m_pModel->GetTargetFolderName(m_pFilterProxyModel->mapToSource(m_pTreeView->currentIndex()));
+		targetFolderName = m_pModel->GetTargetFolderName(m_pFilterProxyModel->mapToSource(m_pTreeView->currentIndex()), isLocalized);
 	}
 
-	m_impl.SignalImportFiles(s_extensionFilters, s_supportedFileTypes, targetFolderName);
+	m_impl.SignalImportFiles(s_extensionFilters, s_supportedFileTypes, targetFolderName, isLocalized);
 }
 
 //////////////////////////////////////////////////////////////////////////

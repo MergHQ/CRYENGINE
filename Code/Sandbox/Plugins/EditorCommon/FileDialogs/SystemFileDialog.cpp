@@ -172,4 +172,3 @@ QString CSystemFileDialog::RunSelectDirectory(const RunParams& runParams, QWidge
 	}
 	return selectedFiles.front();
 }
-

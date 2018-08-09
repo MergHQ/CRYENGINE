@@ -81,13 +81,6 @@ struct IObject
 	virtual void SetCurrentEnvironments(EntityId const entityToIgnore = INVALID_ENTITYID, SRequestUserData const& userData = SRequestUserData::GetEmptyObject()) = 0;
 
 	/**
-	 * Removes all of the environments currently set to this audio object from this audio object.
-	 * @param userData - optional struct used to pass additional data to the internal request.
-	 * @return void
-	 */
-	virtual void ResetEnvironments(SRequestUserData const& userData = SRequestUserData::GetEmptyObject()) = 0;
-
-	/**
 	 * Sets the occlusion type to be used by this audio object.
 	 * @param occlusionType - occlusion type to apply.
 	 * @param userData - optional struct used to pass additional data to the internal request.
@@ -123,10 +116,24 @@ struct IObject
 	virtual void SetName(char const* const szName, SRequestUserData const& userData = SRequestUserData::GetEmptyObject()) = 0;
 
 	/**
-	* Gets the entityId linked with this object (or INVALID_ENTITYID if not linked to an entity)
-	* @return EntityId
-	*/
+	 * Gets the entityId linked with this object (or INVALID_ENTITYID if not linked to an entity)
+	 * @return EntityId
+	 */
 	virtual EntityId GetEntityId() const = 0;
+
+	/**
+	 * Toggles whether this audio object should track and update its absolute velocity.
+	 * @param enable - if true enables absolute velocity tracking otherwise disables it.
+	 * @return void
+	 */
+	virtual void ToggleAbsoluteVelocityTracking(bool const enable, SRequestUserData const& userData = SRequestUserData::GetEmptyObject()) = 0;
+
+	/**
+	 * Toggles whether this audio object should track and update its relative velocity (against the listener).
+	 * @param enable - if true enables relative velocity tracking otherwise disables it.
+	 * @return void
+	 */
+	virtual void ToggleRelativeVelocityTracking(bool const enable, SRequestUserData const& userData = SRequestUserData::GetEmptyObject()) = 0;
 	// </interfuscator:shuffle>
 };
 } // namespace CryAudio

@@ -74,13 +74,14 @@ public:
 
 	enum EPerPassSampler
 	{
-		ePerPassSampler_Aniso16xWrap = 1,
+		ePerPassSampler_Aniso16xWrap    = 0,
+		ePerPassSampler_Aniso16xClamp   = 1,
 
-		ePerPassSampler_PointWrap    = EFSS_MAX,
-		ePerPassSampler_PointClamp,
+		ePerPassSampler_PointWrap       = 8,
+		ePerPassSampler_PointClamp      = 9,
 
-		ePerPassSampler_Aniso16xClamp,
-		ePerPassSampler_LinearClampComp,
+		ePerPassSampler_LinearClampComp = 10,
+		ePerPassSampler_LinearMirror    = 11,
 
 		ePerPassSampler_Count,
 	};
@@ -180,6 +181,11 @@ private:
 
 	uint64 m_frameIdWaterSim;
 	Vec4   m_oceanAnimationParams[2];
+
+	int32 m_aniso16xClampSampler;
+	int32 m_aniso16xWrapSampler;
+	int32 m_linearCompareClampSampler;
+	int32 m_linearMirrorSampler;
 
 	bool              m_bWaterNormalGen;
 	bool              m_bOceanMaskGen;

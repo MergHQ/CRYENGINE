@@ -75,4 +75,3 @@ void CNodeInfoWidget::paint(QPainter* pPainter, const QStyleOptionGraphicsItem* 
 }
 
 }
-

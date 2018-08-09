@@ -171,4 +171,3 @@ struct SHeaderElement
 	string        pixmap;
 	bool          visible;
 };
-

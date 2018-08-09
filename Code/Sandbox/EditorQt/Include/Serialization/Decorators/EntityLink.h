@@ -76,4 +76,3 @@ inline bool Serialize(Serialization::IArchive& ar, PrefabLink& link, const char*
 }
 
 }
-

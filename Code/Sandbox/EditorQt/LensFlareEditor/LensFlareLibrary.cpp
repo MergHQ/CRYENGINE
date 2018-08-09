@@ -71,4 +71,3 @@ IOpticsElementBasePtr CLensFlareLibrary::GetOpticsOfItem(const char* szflareName
 
 	return pOptics;
 }
-

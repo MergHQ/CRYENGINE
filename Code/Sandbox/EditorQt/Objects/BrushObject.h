@@ -2,14 +2,11 @@
 
 #pragma once
 
-#include "Objects/BaseObject.h"
-#include "CollisionFilteringProperties.h"
 #include "Geometry/EdMesh.h"
+#include "CollisionFilteringProperties.h"
 
-/*!
- *	CTagPoint is an object that represent named 3d position in world.
- *
- */
+#include <Objects/BaseObject.h>
+
 class SANDBOX_API CBrushObject : public CBaseObject
 {
 public:
@@ -54,7 +51,7 @@ public:
 
 	//////////////////////////////////////////////////////////////////////////
 	virtual IStatObj* GetIStatObj();
-	int               GetRenderFlags() const   { return m_renderFlags; }
+	uint64            GetRenderFlags() const   { return m_renderFlags; }
 	IRenderNode*      GetEngineNode() const    { return m_pRenderNode; }
 	float             GetRatioLod() const      { return mv_ratioLOD; }
 	float             GetRatioViewDist() const { return mv_ratioViewDist; }
@@ -147,10 +144,12 @@ protected:
 	CVariable<bool>               mv_Occluder;
 	CVariable<bool>               mv_drawLast;
 	CVariable<int>                mv_shadowLodBias;
+	CVariable<bool>               mv_ignoreTerrainLayerBlend;
+	CVariable<bool>               mv_ignoreDecalBlend;
 
 	//////////////////////////////////////////////////////////////////////////
 	// Rendering flags.
-	int  m_renderFlags;
+	uint64  m_renderFlags;
 
 	bool m_bIgnoreNodeUpdate;
 	bool m_RePhysicalizeOnVisible;

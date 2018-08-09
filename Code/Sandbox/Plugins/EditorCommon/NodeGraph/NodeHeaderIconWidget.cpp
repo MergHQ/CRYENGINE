@@ -61,4 +61,3 @@ QSizeF CNodeHeaderIcon::sizeHint(Qt::SizeHint which, const QSizeF& constraint) c
 }
 
 }
-

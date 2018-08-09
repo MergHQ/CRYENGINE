@@ -63,7 +63,7 @@ void DisplayHighlightedVertices(SDisplayContext& dc, MainContext& mc, bool bExcl
 				}
 
 				BrushVec3 vWorldVertexPos = mc.pObject->GetWorldTM().TransformPoint(v);
-				BrushVec3 vBoxSize = GetElementBoxSize(dc.view, dc.flags & DISPLAY_2D, vWorldVertexPos);
+				BrushVec3 vBoxSize = GetElementBoxSize(dc.view, dc.display2D, vWorldVertexPos);
 				dc.SetColor(kElementBoxColor);
 				dc.DrawSolidBox(ToVec3(vWorldVertexPos - vBoxSize), ToVec3(vWorldVertexPos + vBoxSize));
 			}
@@ -101,7 +101,7 @@ void DisplayHighlightedPolygons(SDisplayContext& dc, MainContext& mc)
 			else
 				dc.SetColor(kElementBoxColor);
 			BrushVec3 pos = mc.pObject->GetWorldTM().TransformPoint(pPolygon->GetRepresentativePosition());
-			BrushVec3 vBoxSize = GetElementBoxSize(dc.view, dc.flags & DISPLAY_2D, pos);
+			BrushVec3 vBoxSize = GetElementBoxSize(dc.view, dc.display2D, pos);
 			dc.DrawSolidBox(ToVec3(pos - vBoxSize), ToVec3(pos + vBoxSize));
 		}
 	}
@@ -277,4 +277,3 @@ void DisplayTriangulation(SDisplayContext& dc, MainContext& mc)
 }
 }
 }
-

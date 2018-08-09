@@ -101,8 +101,8 @@ public:
 	const AABB&        GetSelectedRegion();
 
 public:
-	CCrySignal<void()>            showDisplayInfoChanged;
-	CCrySignal<void()>            displayInfoLevelChanged;
+	CCrySignal<void()>            signalShowDisplayInfoChanged;
+	CCrySignal<void()>            signalDisplayInfoLevelChanged;
 
 	CCrySignal<void(Axis)>        signalAxisConstraintChanged;
 	CCrySignal<void(CoordSystem)> signalCoordSystemChanged;

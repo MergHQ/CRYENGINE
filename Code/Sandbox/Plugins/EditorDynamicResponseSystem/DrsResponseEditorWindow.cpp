@@ -1025,4 +1025,3 @@ FileExplorerWithButtons::FileExplorerWithButtons(QWidget* pParent, Explorer::Exp
 		}
 	});
 }
-

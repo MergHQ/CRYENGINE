@@ -1392,4 +1392,3 @@ void QPreviewWidget::DrawBackground()
 	//m_pRenderer->DrawImageWithUV(0, 0, 0.5f, clientWidth, clientHeight, m_backgroundTextureId, uvs, uvt, color[0], color[1], color[2], color[3]);
 	IRenderAuxGeom::GetAux()->SetOrthographicProjection(false);
 }
-

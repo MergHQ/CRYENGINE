@@ -7,6 +7,33 @@
 
 class QAdvancedTreeView;
 class CCustomCommand;
+class QLineEdit;
+
+class CKeybindLineEdit : public QWidget
+{
+	Q_OBJECT
+public:
+	CKeybindLineEdit(QWidget* pParent);
+
+	void    SetText(const QString& text);
+	QString GetText() const;
+
+signals:
+	void editingFinished();
+
+private:
+	bool event(QEvent* pEvent) override;
+	bool eventFilter(QObject* object, QEvent* event) override;
+	void keyPressEvent(QKeyEvent* event) override;
+
+private:
+	void OnPlus();
+	void OnMinus();
+	void OnClear();
+
+private:
+	QLineEdit* m_pLineEdit;
+};
 
 class CKeybindEditor : public CDockableWidget, public CUserData
 {

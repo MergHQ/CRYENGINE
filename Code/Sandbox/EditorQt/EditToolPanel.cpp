@@ -71,4 +71,3 @@ void QEditToolPanel::SetTool(CEditTool* pTool)
 		m_pPropertyTree->attach(structs);
 	}
 }
-

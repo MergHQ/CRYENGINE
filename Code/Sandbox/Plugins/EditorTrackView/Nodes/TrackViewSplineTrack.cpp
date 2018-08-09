@@ -123,4 +123,3 @@ string CTrackViewSplineTrack::GetKeyDescription(const uint index) const
 	description.Format("%.3f", key.m_controlPoint.m_value);
 	return description;
 }
-

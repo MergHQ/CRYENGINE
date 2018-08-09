@@ -84,4 +84,3 @@ CreateAreaSolidTool::CreateAreaSolidTool()
 }
 
 } // namespace Designer
-

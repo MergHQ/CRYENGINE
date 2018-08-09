@@ -21,8 +21,9 @@ public:
 	CEventManager(CEventManager const&) = delete;
 	CEventManager& operator=(CEventManager const&) = delete;
 
-	void           Init(uint32 const poolSize);
+	void           Initialize(uint32 const poolSize);
 	void           OnAfterImplChanged();
+	void           ReleaseImplData();
 	void           Release();
 
 	CATLEvent*     ConstructEvent();
@@ -37,7 +38,7 @@ private:
 #if defined(INCLUDE_AUDIO_PRODUCTION_CODE)
 public:
 
-	void DrawDebugInfo(IRenderAuxGeom& auxGeom, Vec3 const& listenerPosition, float const posX, float posY) const;
+	void DrawDebugInfo(IRenderAuxGeom& auxGeom, float const posX, float posY) const;
 
 #endif // INCLUDE_AUDIO_PRODUCTION_CODE
 };

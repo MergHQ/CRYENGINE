@@ -316,4 +316,3 @@ private:
 	CString m_fileName;
 	CString m_tempFileName;
 };
-

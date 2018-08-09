@@ -75,6 +75,9 @@ struct IImpl
 	//! Returns path to the folder that contains soundbanks and/or audio files.
 	virtual char const* GetAssetsPath() const = 0;
 
+	//! Returns path to the folder that contains localized soundbanks and/or audio files.
+	virtual char const* GetLocalizedAssetsPath() const = 0;
+
 	//! Returns path to the folder that contains the middleware project.
 	//! If the selected middleware doesn't support projects, the asset path is returned.
 	virtual char const* GetProjectPath() const = 0;
@@ -166,12 +169,12 @@ struct IImpl
 	//! \param ExtensionFilterVector - List of supported file extensions and their descriptions.
 	//! \param QStringList - List of supported file types.
 	//! \param QString - Name of the target folder.
-	CCrySignal<void(ExtensionFilterVector const&, QStringList const&, QString const&)> SignalImportFiles;
+	CCrySignal<void(ExtensionFilterVector const&, QStringList const&, QString const&, bool const)> SignalImportFiles;
 
 	//! Signal when files got dropped into the middleware data panel. Will open the file importer.
 	//! \param FileImportInfos - Info struct of the files to import.
 	//! \param QString - Name of the target folder.
-	CCrySignal<void(FileImportInfos const&, QString const&)> SignalFilesDropped;
+	CCrySignal<void(FileImportInfos const&, QString const&, bool const)> SignalFilesDropped;
 };
 } // namespace Impl
 } // namespace ACE

@@ -163,4 +163,3 @@ PolygonPtr ExtrusionSnappingHelper::FindAlignedPolygon(PolygonPtr pCapPolygon, c
 	return NULL;
 }
 }
-

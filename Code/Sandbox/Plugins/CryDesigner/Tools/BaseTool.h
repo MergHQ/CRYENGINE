@@ -85,4 +85,3 @@ private:
 	EDesignerTool m_Tool;
 };
 }
-

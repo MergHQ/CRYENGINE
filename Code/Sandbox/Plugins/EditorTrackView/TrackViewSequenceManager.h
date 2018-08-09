@@ -78,4 +78,3 @@ private:
 	// Used to handle object attach/detach
 	std::unordered_map<CTrackViewNode*, Matrix34> m_prevTransforms;
 };
-

@@ -121,4 +121,3 @@ inline void StoreTransform(T* pResult, const FbxAMatrix& transform)
 	pResult->scale[3] = 0.0;
 }
 }
-

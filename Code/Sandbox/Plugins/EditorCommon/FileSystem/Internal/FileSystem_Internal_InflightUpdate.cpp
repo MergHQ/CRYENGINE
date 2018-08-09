@@ -2867,4 +2867,3 @@ void CInflightUpdate::AddFileToDirectoryMut(const FilePtr& file, const Directory
 
 } // namespace Internal
 } // namespace FileSystem
-

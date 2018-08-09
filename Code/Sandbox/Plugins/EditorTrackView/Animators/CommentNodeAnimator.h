@@ -47,4 +47,3 @@ private:
 	CTrackViewAnimNode* m_pCommentNode;
 	CCommentContext     m_commentContext;
 };
-

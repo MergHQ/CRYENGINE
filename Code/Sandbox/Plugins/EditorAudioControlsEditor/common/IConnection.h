@@ -37,4 +37,3 @@ struct IConnection
 	CCrySignal<void()> SignalConnectionChanged;
 };
 } // namespace ACE
-

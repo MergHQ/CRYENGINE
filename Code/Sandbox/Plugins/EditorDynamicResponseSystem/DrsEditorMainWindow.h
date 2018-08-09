@@ -80,4 +80,3 @@ private:
 	DockedWidget<CDrsResponseEditorWindow>* m_pResponseEditorDockWidget;
 	DockedWidget<CDialogLinesEditorWidget>* m_pDialogLinesDockWidget;
 };
-

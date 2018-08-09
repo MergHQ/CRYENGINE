@@ -44,9 +44,6 @@
 //! Example: struct CRY_ALIGN(16) { ... }; CRY_ALIGN(16) char myAlignedChar;
 #define CRY_ALIGN(bytes) __attribute__((aligned(bytes)))
 
-//! Restricted reference (similar to restricted pointer), use like: SFoo& RESTRICT_REFERENCE myFoo = ...;
-#define RESTRICT_REFERENCE __restrict__
-
 //! Compiler-supported type-checking helper
 #define PRINTF_PARAMS(...) __attribute__((format(printf, __VA_ARGS__)))
 #define SCANF_PARAMS(...)  __attribute__((format(scanf, __VA_ARGS__)))

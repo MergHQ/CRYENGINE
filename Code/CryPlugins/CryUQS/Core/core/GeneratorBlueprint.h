@@ -56,7 +56,7 @@ namespace UQS
 
 			bool                              Resolve(const ITextualGeneratorBlueprint& source, const CQueryBlueprint& queryBlueprintForGlobalParamChecking);
 			const Shared::CTypeInfo&          GetTypeOfItemsToGenerate() const;
-			Client::GeneratorUniquePtr        InstantiateGenerator(const SQueryBlackboard& blackboard, Shared::CUqsString& error) const;
+			Client::GeneratorUniquePtr        InstantiateGenerator(const SQueryContext& queryContext, Shared::CUqsString& error) const;
 			void                              PrintToConsole(CLogger& logger) const;
 
 		private:

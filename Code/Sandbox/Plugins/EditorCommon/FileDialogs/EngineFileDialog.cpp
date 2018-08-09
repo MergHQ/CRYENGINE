@@ -1450,4 +1450,3 @@ QString CEngineFileDialog::RunGameSelectDirectory(const RunParams& runParams, QW
 	}
 	return selectedFiles.front();
 }
-

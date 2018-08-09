@@ -304,6 +304,3 @@ bool QRollupBar::eventFilter(QObject * o, QEvent * e)
 	}
 	return QWidget::eventFilter(o, e);
 }
-
-
-

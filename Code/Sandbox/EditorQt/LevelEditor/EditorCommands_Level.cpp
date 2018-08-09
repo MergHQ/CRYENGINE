@@ -9,6 +9,7 @@
 #include <Qt/Widgets/QWaitProgress.h>
 
 // Sandbox
+#include "CryEditDoc.h"
 #include "IEditorImpl.h"
 #include "Objects/ObjectManager.h"
 #include "Objects/ObjectLayerManager.h"
@@ -137,11 +138,6 @@ void PyDisplayInfoHigh()
 	GetIEditorImpl()->GetLevelEditorSharedState()->SetDisplayInfoLevel(CLevelEditorSharedState::eDisplayInfoLevel_High);
 }
 
-void PyToggleDisplayHelpers()
-{
-	CommandEvent("level.toggle_display_helpers").SendToKeyboardFocus();
-}
-
 void IsolateEditability()
 {
 	CommandEvent("level.isolate_editability").SendToKeyboardFocus();
@@ -170,6 +166,12 @@ void ReloadTexturesAndShaders()
 
 void ReloadGeometry()
 {
+	if (!GetIEditor()->GetDocument()->IsDocumentReady())
+	{
+		CryWarning(VALIDATOR_MODULE_GAME, VALIDATOR_WARNING, "Please load a level before reloading all geometry");
+		return;
+	}
+
 	CWaitProgress wait("Reloading static geometry");
 
 	CVegetationMap* pVegetationMap = GetIEditorImpl()->GetVegetationMap();
@@ -424,33 +426,23 @@ REGISTER_EDITOR_UI_COMMAND_DESC(level, display_info_medium, "Verbosity Level Med
 REGISTER_EDITOR_AND_SCRIPT_COMMAND(Private_LevelCommands::PyDisplayInfoHigh, level, display_info_high, CCommandDescription("Verbosity level high"));
 REGISTER_EDITOR_UI_COMMAND_DESC(level, display_info_high, "Verbosity Level High", "", "", true)
 
-REGISTER_EDITOR_AND_SCRIPT_COMMAND(Private_LevelCommands::PyToggleDisplayHelpers, level, toggle_display_helpers,
-                                   CCommandDescription("Toggle display of helpers in the level editor viewport"));
-REGISTER_EDITOR_UI_COMMAND_DESC(level, toggle_display_helpers, "", "Ctrl+H", "icons:Viewport/viewport-helpers.ico", true)
-REGISTER_COMMAND_REMAPPING(ui_action, actionShow_Hide_Helpers, level, toggle_display_helpers)
-
-REGISTER_EDITOR_AND_SCRIPT_COMMAND(Private_LevelCommands::IsolateEditability, level, isolate_editability,
-                                   CCommandDescription("Isolate editability of objects or layers"))
+REGISTER_EDITOR_AND_SCRIPT_COMMAND(Private_LevelCommands::IsolateEditability, level, isolate_editability, CCommandDescription("Isolate editability of objects or layers"))
 REGISTER_EDITOR_UI_COMMAND_DESC(level, isolate_editability, "Isolate Editability", "Ctrl+Shift+F", "", false)
 REGISTER_COMMAND_REMAPPING(level, toggle_freeze_all_other_layers, level, isolate_editability)
 
-REGISTER_EDITOR_AND_SCRIPT_COMMAND(Private_LevelCommands::IsolateVisibility, level, isolate_visibility,
-                                   CCommandDescription("Isolate visibility of objects or layers"))
+REGISTER_EDITOR_AND_SCRIPT_COMMAND(Private_LevelCommands::IsolateVisibility, level, isolate_visibility, CCommandDescription("Isolate visibility of objects or layers"))
 REGISTER_EDITOR_UI_COMMAND_DESC(level, isolate_visibility, "Isolate Visibility", "Ctrl+Shift+H", "", false)
 REGISTER_COMMAND_REMAPPING(level, toggle_hide_all_other_layers, level, isolate_visibility)
 
-REGISTER_EDITOR_AND_SCRIPT_COMMAND(Private_LevelCommands::ReloadAllScripts, level, reload_all_scripts,
-                                   CCommandDescription("Reloads all scripts"))
+REGISTER_EDITOR_AND_SCRIPT_COMMAND(Private_LevelCommands::ReloadAllScripts, level, reload_all_scripts, CCommandDescription("Reloads all scripts"))
 REGISTER_EDITOR_UI_COMMAND_DESC(level, reload_all_scripts, "Reload All Scripts", "", "", false)
 REGISTER_COMMAND_REMAPPING(ui_action, actionReload_All_Scripts, level, reload_all_scripts)
 
-REGISTER_EDITOR_AND_SCRIPT_COMMAND(Private_LevelCommands::ReloadTexturesAndShaders, level, reload_textures_shaders,
-                                   CCommandDescription("Reloads all textures and shaders"))
+REGISTER_EDITOR_AND_SCRIPT_COMMAND(Private_LevelCommands::ReloadTexturesAndShaders, level, reload_textures_shaders, CCommandDescription("Reloads all textures and shaders"))
 REGISTER_EDITOR_UI_COMMAND_DESC(level, reload_textures_shaders, "Reload Texture/Shaders", "", "", false)
 REGISTER_COMMAND_REMAPPING(ui_action, actionReload_Texture_Shaders, level, reload_textures_shaders)
 
-REGISTER_EDITOR_AND_SCRIPT_COMMAND(Private_LevelCommands::ReloadGeometry, level, reload_geometry,
-                                   CCommandDescription("Reloads all geometry"))
+REGISTER_EDITOR_AND_SCRIPT_COMMAND(Private_LevelCommands::ReloadGeometry, level, reload_geometry, CCommandDescription("Reloads all geometry"))
 REGISTER_EDITOR_UI_COMMAND_DESC(level, reload_geometry, "Reload Geometry", "", "", false)
 REGISTER_COMMAND_REMAPPING(ui_action, actionReload_Geometry, level, reload_geometry)
 
@@ -459,8 +451,7 @@ REGISTER_EDITOR_AND_SCRIPT_COMMAND(Private_LevelCommands::ValidateLevel, level, 
 REGISTER_EDITOR_UI_COMMAND_DESC(level, validate, "Check Level for Errors", "", "", false)
 REGISTER_COMMAND_REMAPPING(ui_action, actionCheck_Level_for_Errors, level, validate)
 
-REGISTER_EDITOR_AND_SCRIPT_COMMAND(Private_LevelCommands::SaveLevelStats, level, save_stats,
-                                   CCommandDescription("Saves level statistics"))
+REGISTER_EDITOR_AND_SCRIPT_COMMAND(Private_LevelCommands::SaveLevelStats, level, save_stats, CCommandDescription("Saves level statistics"))
 REGISTER_EDITOR_UI_COMMAND_DESC(level, save_stats, "Save Level Statistics", "", "", false)
 REGISTER_COMMAND_REMAPPING(ui_action, actionSave_Level_Statistics, level, save_stats)
 

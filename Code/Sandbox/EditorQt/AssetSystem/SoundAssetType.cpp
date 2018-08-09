@@ -38,4 +38,3 @@ dll_string SoundSelector(const SResourceSelectorContext& x, const char* previous
 	}
 }
 REGISTER_RESOURCE_SELECTOR("Sound", SoundSelector, "")
-

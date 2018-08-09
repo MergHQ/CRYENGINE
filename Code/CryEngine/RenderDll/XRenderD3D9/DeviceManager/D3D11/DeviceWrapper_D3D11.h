@@ -3953,8 +3953,8 @@ inline void CCryDeviceContextWrapper::CopySubresourcesRegion1(ID3D11Resource* pD
 		// NOTE: too complex case which is not supported as it leads to fe. [slice,mip] sequences like [0,4],[0,5],[0,6],[1,0],[1,1],...
 		// which we don't support because the offsets and dimensions are relative to a intermediate mip-level, while crossing the
 		// slice-boundary forces us to extrapolate dimensions to larger mips, which is probably not what is wanted in the first place.
-		CRY_ASSERT(!srcMipLevels || !((SrcSubresource) % (srcMipLevels)) || (SrcSubresource + NumSubresources <= srcMipLevels));
-		CRY_ASSERT(!dstMipLevels || !((DstSubresource) % (dstMipLevels)) || (DstSubresource + NumSubresources <= dstMipLevels));
+		CRY_ASSERT(!srcMipLevels || (SrcSubresource / srcMipLevels == (SrcSubresource + NumSubresources - 1) / srcMipLevels));
+		CRY_ASSERT(!dstMipLevels || (DstSubresource / dstMipLevels == (DstSubresource + NumSubresources - 1) / dstMipLevels));
 
 		for (UINT n = 0; n < NumSubresources; ++n)
 		{

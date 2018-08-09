@@ -39,4 +39,3 @@ void CTrackViewSequenceToolbar::OnShowProperties()
 		}
 	}
 }
-

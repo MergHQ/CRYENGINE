@@ -202,4 +202,3 @@ int QFlowLayout::smartSpacing(QStyle::PixelMetric pm) const
 		return static_cast<QLayout*>(parent)->spacing();
 	}
 }
-

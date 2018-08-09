@@ -43,4 +43,3 @@ private:
 	};
 	Ui m_ui;
 };
-

@@ -147,7 +147,11 @@ _smart_ptr<CSwapChain> CSwapChain::Create(CCommandListPool& commandQueue, VkSwap
 	Info.imageUsage = imageUsage;
 	Info.imageSharingMode = VK_SHARING_MODE_EXCLUSIVE;
 	Info.preTransform = transform;
+#if CRY_PLATFORM_WINDOWS
 	Info.compositeAlpha = VK_COMPOSITE_ALPHA_OPAQUE_BIT_KHR;
+# elif CRY_PLATFORM_ANDROID
+	Info.compositeAlpha = VK_COMPOSITE_ALPHA_INHERIT_BIT_KHR;
+#endif
 	Info.presentMode = presentMode;
 	Info.oldSwapchain = KHRSwapChain;
 	Info.clipped = true;

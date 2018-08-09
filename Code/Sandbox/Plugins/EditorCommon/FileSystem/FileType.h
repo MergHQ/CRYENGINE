@@ -30,4 +30,3 @@ struct SFileType
 };
 
 Q_DECLARE_METATYPE(const SFileType*)
-

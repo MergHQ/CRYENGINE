@@ -66,4 +66,3 @@ private:
 	QVariant                 m_checkValue;
 	QSet<QModelIndex>        m_checkedIndices;
 };
-

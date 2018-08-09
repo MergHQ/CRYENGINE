@@ -32,5 +32,3 @@ private:
 	static XmlNodeRef m_node;
 	static string    m_title;
 };
-
-

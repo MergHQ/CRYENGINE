@@ -5,10 +5,10 @@
 class CBaseObject;
 class CObjectArchive;
 class CObjectClassDesc;
-struct SDisplayContext;
 class CObjectLayer;
 class CObjectLayerManager;
 class CObjectPhysicsManager;
+class CObjectRenderHelper;
 class CRect;
 class CSelectionGroup;
 class CTrackViewAnimNode;
@@ -19,7 +19,7 @@ struct CObjectEvent;
 struct HitContext;
 struct IGizmoManager;
 struct IObjectLayerManager;
-class CObjectRenderHelper;
+struct SDisplayContext;
 
 enum EObjectListenerEvent;
 
@@ -34,8 +34,8 @@ enum SerializeFlags
 };
 
 //////////////////////////////////////////////////////////////////////////
-typedef std::vector<CBaseObject*>                                    CBaseObjectsArray;
-typedef std::pair<bool(CALLBACK*)(CBaseObject const&, void*), void*> BaseObjectFilterFunctor;
+typedef std::vector<CBaseObject*>                                     CBaseObjectsArray;
+typedef std::pair<bool (CALLBACK*)(CBaseObject const&, void*), void*> BaseObjectFilterFunctor;
 
 class CBatchProcessDispatcher
 {
@@ -69,7 +69,6 @@ public:
 //////////////////////////////////////////////////////////////////////////
 struct IObjectManager
 {
-public:
 	enum class ESelectOp
 	{
 		eSelect,
@@ -130,10 +129,6 @@ public:
 
 	//! Display objects on specified display context.
 	virtual void Display(CObjectRenderHelper& objRenderHelper) = 0;
-
-	//! Called when selecting without selection helpers - this is needed since
-	//! the visible object cache is normally not updated when not displaying helpers.
-	virtual void ForceUpdateVisibleObjectCache(SDisplayContext& dc) = 0;
 
 	//! Check intersection with objects.
 	//! Find intersection with nearest to ray origin object hit by ray.

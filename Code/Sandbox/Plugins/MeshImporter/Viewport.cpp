@@ -89,4 +89,3 @@ void CSplitViewport::OnCameraMoved(const QuatT& qt)
 		m_pSecondaryViewport->SetState(state);
 	}
 }
-

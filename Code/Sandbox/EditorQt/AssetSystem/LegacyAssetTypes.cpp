@@ -145,4 +145,3 @@ CAssetEditor* CXmlType::Edit(CAsset* pAsset) const
 
 	return nullptr;
 }
-

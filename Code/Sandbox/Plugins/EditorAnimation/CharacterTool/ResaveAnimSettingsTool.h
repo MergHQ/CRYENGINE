@@ -12,4 +12,3 @@ class AnimationList;
 void ShowResaveAnimSettingsTool(AnimationList* animationList, QWidget* parent);
 
 }
-

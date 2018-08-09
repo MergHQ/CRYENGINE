@@ -28,4 +28,3 @@ public:
 	CEntityComponentCollapsibleFrame(const QString& title, const CEntityComponentClassDesc& typeDesc, const size_t typeInstanceIndex, const bool isComponentUserAdded);
 	virtual ~CEntityComponentCollapsibleFrame() {}
 };
-

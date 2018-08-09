@@ -93,4 +93,3 @@ protected:
 	IFlowGraphModule::SModulePortConfig* m_pPort;
 	TPorts* m_pOtherPorts;
 };
-

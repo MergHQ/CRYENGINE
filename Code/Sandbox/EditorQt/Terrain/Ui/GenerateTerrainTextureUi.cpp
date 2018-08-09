@@ -74,4 +74,3 @@ bool CGenerateTerrainTextureUi::IsHighQualityCompression() const
 	auto checkbox = m_ui.m_pHighQualityCompressionCheckBox;
 	return checkbox->isChecked();
 }
-

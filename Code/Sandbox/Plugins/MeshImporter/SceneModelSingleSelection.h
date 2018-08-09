@@ -31,4 +31,3 @@ private:
 	SetNode m_setNode;
 	GetNode m_getNode;
 };
-

@@ -28,9 +28,9 @@ namespace UQS
 
 			struct SUpdateContext
 			{
-				explicit                        SUpdateContext(Core::SItemEvaluationResult& _evaluationResult, const Core::SQueryBlackboard& _blackboard, Shared::IUqsString& _error);
+				explicit                        SUpdateContext(Core::SItemEvaluationResult& _evaluationResult, const Core::SQueryContext& _queryContext, Shared::IUqsString& _error);
 				Core::SItemEvaluationResult&    evaluationResult;
-				const Core::SQueryBlackboard&   blackboard;
+				const Core::SQueryContext&      queryContext;
 				Shared::IUqsString&             error;
 			};
 
@@ -38,9 +38,9 @@ namespace UQS
 			virtual EUpdateStatus               Update(const SUpdateContext& updateContext) = 0;
 		};
 
-		inline IDeferredEvaluator::SUpdateContext::SUpdateContext(Core::SItemEvaluationResult& _evaluationResult, const Core::SQueryBlackboard& _blackboard, Shared::IUqsString& _error)
+		inline IDeferredEvaluator::SUpdateContext::SUpdateContext(Core::SItemEvaluationResult& _evaluationResult, const Core::SQueryContext& _queryContext, Shared::IUqsString& _error)
 			: evaluationResult(_evaluationResult)
-			, blackboard(_blackboard)
+			, queryContext(_queryContext)
 			, error(_error)
 		{}
 

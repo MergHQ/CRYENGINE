@@ -295,4 +295,3 @@ void CEmitterVisibleIcon::UpdateIcon(bool isSelected, bool isVisible, bool isDea
 }
 
 }
-

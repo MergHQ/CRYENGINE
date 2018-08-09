@@ -126,4 +126,3 @@ bool CParticlesType::OnCreate(INewAsset& asset, const void* pTypeSpecificParamet
 
 	return true;
 }
-

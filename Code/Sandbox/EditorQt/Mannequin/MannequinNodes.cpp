@@ -1440,4 +1440,3 @@ bool CMannNodesCtrl::CreatePointForAnimationInContextDrop(SItemInfo* pItemInfo, 
 	pTrack->SelectKey(keyID, true);
 	return true;
 }
-

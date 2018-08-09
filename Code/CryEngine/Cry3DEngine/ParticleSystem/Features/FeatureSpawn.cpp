@@ -110,9 +110,11 @@ protected:
 			};
 			param = disabledValue;
 			ar(SEnabledValue(param), name, name);
+			return;
 		}
-		else
-			ar(param, name, name);
+		if (ar.isInput() && GetVersion(ar) < 12)
+			param = TParam::TValue::Default();
+		ar(param, name, name);
 	}
 
 	// Convert amounts to spawn counts for frame

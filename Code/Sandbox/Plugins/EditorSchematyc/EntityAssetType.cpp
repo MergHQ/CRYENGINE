@@ -138,19 +138,13 @@ bool CEntityAssetType::RenameAsset(CAsset* pAsset, const char* szNewName) const
 	return false;
 }
 
-bool CEntityAssetType::DeleteAssetFiles(const CAsset& asset, bool bDeleteSourceFile, size_t& numberOfFilesDeleted) const
+void CEntityAssetType::PreDeleteAssetFiles(const CAsset& asset) const
 {
-	if (CAssetType::DeleteAssetFiles(asset, bDeleteSourceFile, numberOfFilesDeleted))
+	Schematyc::IScript* pScript = GetScript(asset);
+	if (pScript)
 	{
-		Schematyc::IScript* pScript = GetScript(asset);
-		if (pScript)
-		{
-			gEnv->pSchematyc->GetScriptRegistry().RemoveElement(pScript->GetRoot()->GetGUID());
-		}
-
-		return true;
+		gEnv->pSchematyc->GetScriptRegistry().RemoveElement(pScript->GetRoot()->GetGUID());
 	}
-	return false;
 }
 
 string CEntityAssetType::GetObjectFilePath(const CAsset* pAsset) const
@@ -193,4 +187,3 @@ Schematyc::IScript* CEntityAssetType::GetScript(const CAsset& asset) const
 }
 
 }
-

@@ -2,7 +2,7 @@
 import os, re
 from waflib.Configure import conf
 from waflib.TaskGen import after_method, before_method, feature, extension
-from waflib import Utils
+from waflib import Utils, Context, Logs
 import os.path
 
 android_target_version = 24
@@ -13,7 +13,7 @@ android_package_name = "com.crytek.cryengine"
 android_version_code = "1"
 android_version_name = "1.0"
 android_debuggable = "true"
-android_min_sdk_version = "23"
+android_min_sdk_version = "24"
 android_permissions_required = ["WRITE_EXTERNAL_STORAGE", "READ_EXTERNAL_STORAGE", "INTERNET"]
 
 ANT_BUILD_TEMPLATE = r'''<?xml version="1.0" encoding="UTF-8"?>
@@ -192,7 +192,7 @@ def check_win_x64_android_arm64_installed(conf):
 	else:
 		android_sdk_home 		= os.getenv('ANDROID_HOME', "")
 		android_ndk_home 		= os.getenv('NDK_ROOT', "")
-		android_java_home 	= os.getenv('JAVA_HOME', "")
+		android_java_home 		= os.getenv('JAVA_HOME', "")
 		android_ant_home 		= os.getenv('ANT_HOME', "")
 
 	# Validate paths
@@ -297,6 +297,7 @@ def load_win_x64_android_arm64_common_settings(conf):
 	v['ANDROID_TARGET_VERSION'] = android_target_version
 
 	v['ANT'] = android_ant_home + '/bin/ant.bat'
+	v['ADB'] = android_sdk_home + '/platform-tools/adb.exe'
 
 	v['ANDROID_NDK_HOME'] = android_ndk_home 
 	v['ANDROID_SDL_HOME'] = android_stl_home 
@@ -675,7 +676,7 @@ def process_android_java_files(self):
 	
 	# Create text file containing all dlls to load on startup
 	template = compile_template(JAVA_LOAD_SHARED_LIB_LIST_TEMPLATE)
-	shared_libs = {'shared_libs' : [self.env['ANDROID_SDL_LIB_NAME'], 'SDL2', 'SDL2Ext', self.output_file_name] }
+	shared_libs = {'shared_libs' : [self.env['ANDROID_SDL_LIB_NAME'], 'SDL2', self.output_file_name] }
 	shared_lib_startup_dir = apk_folder.make_node('assets')
 	shared_lib_startup_node = shared_lib_startup_dir.make_node('startup_native_shared_lib.txt')
 	shared_lib_startup_task = self.create_task('generate_file', None, shared_lib_startup_node)
@@ -927,7 +928,6 @@ def add_android_lib_copy(self):
 		android_shared_libs = { 'arm64-v8a': [
 			bld.env['ANDROID_SDL_LIB_PATH'],
 			bld.env['ANDROID_NDK_HOME'] + '/prebuilt/android-arm/gdbserver/gdbserver',
-			bld.CreateRootRelativePath('Code/Tools/SDLExtension/lib/android-arm64-v8a/libSDL2Ext.so'),
 			bld.CreateRootRelativePath('Code/SDKs/SDL2/android/arm64-v8a/libSDL2.so')
 		]}
 	else:
@@ -1089,7 +1089,48 @@ class install_apk(Task.Task):
 		""" Run Ant """
 		env = self.env
 		gen = self.generator
+		
+		#Check if a device is connected
+		cmd_check_connection = [env['ADB'], 'get-state']
+		
+		ret = 0
+		try:
+			(out,err) = self.generator.bld.cmd_and_log(cmd_check_connection, output=Context.BOTH, quiet=Context.BOTH)
+		except Exception as e:
+			out = e.stdout
+			err = e.stderr
+			ret = e.returncode		
 
-		cmd = ['adb', 'install', '-r', self.inputs[0].abspath()]
-		ret = self.exec_command(cmd, env=env.env or None)		
+		if ret != 0:
+			if 'no devices' in err:
+				Logs.warn('warning: No device connected. Did not deploy application to device.')
+				return 0
+			else:
+				Logs.error('Command: "adb get-state" failed to run. Did not deploy application to device.')
+				return ret
+		
+		# Try install
+		ret = 0
+		Logs.info('[INFO] Installing package: "%s"' % android_package_name)
+		cmd_install = [env['ADB'], 'install', '-r', self.inputs[0].abspath()] # -r: reinstall
+		try:
+			(out,err) = self.generator.bld.cmd_and_log(cmd_install, output=Context.BOTH, quiet=Context.BOTH)
+		except Exception as e:
+			out = e.stdout
+			err = e.stderr
+			ret = e.returncode	
+					
+		
+		if ret != 0:
+			# Uninstalled if the signiture does not match (deployed by a different pc)			
+			if 'INSTALL_FAILED_UPDATE_INCOMPATIBLE' in err:
+				Logs.info('[INFO] Application with same name but other signiture already exists.')
+				Logs.info('[INFO] Uninstall package "%s".' % android_package_name)
+				cmd_uninstall = [env['ADB'], 'uninstall', android_package_name]
+				ret = self.exec_command(cmd_uninstall, env=env.env or None)	
+				
+				# Install again
+				Logs.info('[INFO] Installing package: "%s"' % android_package_name)
+				ret = self.exec_command(cmd_install, env=env.env or None)	
+				
 		return ret

@@ -78,15 +78,17 @@ SAudioRequestData* AllocateRequestData(SAudioRequestData const* const pRequestDa
 				AO_REQUEST_BLOCK(EAudioObjectRequestType::StopTrigger)
 				AO_REQUEST_BLOCK(EAudioObjectRequestType::StopAllTriggers)
 				AO_REQUEST_BLOCK(EAudioObjectRequestType::SetTransformation)
+				AO_REQUEST_BLOCK(EAudioObjectRequestType::SetOcclusionType)
 				AO_REQUEST_BLOCK(EAudioObjectRequestType::SetParameter)
 				AO_REQUEST_BLOCK(EAudioObjectRequestType::SetSwitchState)
 				AO_REQUEST_BLOCK(EAudioObjectRequestType::SetCurrentEnvironments)
 				AO_REQUEST_BLOCK(EAudioObjectRequestType::SetEnvironment)
-				AO_REQUEST_BLOCK(EAudioObjectRequestType::ResetEnvironments)
 				AO_REQUEST_BLOCK(EAudioObjectRequestType::RegisterObject)
 				AO_REQUEST_BLOCK(EAudioObjectRequestType::ReleaseObject)
 				AO_REQUEST_BLOCK(EAudioObjectRequestType::ProcessPhysicsRay)
 				AO_REQUEST_BLOCK(EAudioObjectRequestType::SetName)
+				AO_REQUEST_BLOCK(EAudioObjectRequestType::ToggleAbsoluteVelocityTracking)
+				AO_REQUEST_BLOCK(EAudioObjectRequestType::ToggleRelativeVelocityTracking)
 			default:
 				{
 					CRY_ASSERT_MESSAGE(false, "Unknown audio object request type (%u)", pBase->type);

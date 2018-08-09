@@ -34,7 +34,7 @@ private:
 	class CBrowser;
 
 signals:
-	void SelectionChanged(const QVector<CAsset*>& assets);
+	void SelectionChanged(const std::vector<CAsset*>& assets);
 
 public:
 	CAssetBrowserDialog(const std::vector<string>& assetTypeNames, Mode mode, QWidget* pParent = nullptr);

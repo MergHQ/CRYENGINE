@@ -63,4 +63,3 @@ void CAssetImporter::ReimportAsset(CAsset* pAsset)
 	// If we cannot assume this anymore, CAssetManager::MergeAssets() should be called at the end
 	// of this method.
 }
-

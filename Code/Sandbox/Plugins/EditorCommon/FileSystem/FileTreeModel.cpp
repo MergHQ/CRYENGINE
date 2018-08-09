@@ -1139,4 +1139,3 @@ QMimeData* CFileTreeModel::mimeData(const QModelIndexList& indexes) const
 	pDragDropData->SetCustomData("EngineFilePaths", byteArray);
 	return pDragDropData;
 }
-

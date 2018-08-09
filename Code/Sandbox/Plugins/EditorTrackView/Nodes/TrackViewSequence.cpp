@@ -1017,4 +1017,3 @@ void CTrackViewSequence::Serialize(Serialization::IArchive& ar)
 		ar(m_pAnimSequence->GetAudioTrigger(), "audioTrigger", "+Audio Trigger");
 	}
 }
-

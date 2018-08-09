@@ -741,5 +741,3 @@ void QNumericBox::focusInEvent(QFocusEvent* e)
 {
 	m_pEdit->setFocus(e->reason());
 }
-
-

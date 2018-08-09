@@ -238,4 +238,3 @@ Q_SIGNALS:
 public:
 	TCurveEditorCurves m_curves;
 };
-

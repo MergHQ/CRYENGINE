@@ -34,4 +34,3 @@ private:
 
 	QWidget*                        m_maximizable;
 };
-

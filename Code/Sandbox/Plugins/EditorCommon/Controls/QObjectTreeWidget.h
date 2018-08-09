@@ -87,4 +87,3 @@ protected:
 };
 
 Q_DECLARE_METATYPE(QObjectTreeWidget::NodeType)
-

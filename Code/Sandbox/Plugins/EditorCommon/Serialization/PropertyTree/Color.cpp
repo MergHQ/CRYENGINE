@@ -123,4 +123,3 @@ void Color::YASLI_SERIALIZE_METHOD(yasli::Archive& ar)
 }
 
 }
-

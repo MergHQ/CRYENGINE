@@ -241,4 +241,3 @@ typedef Designer::DesignerFactory<Designer::UVMapping::EUVMappingTool, Designer:
 	REGISTER_UVMAPPING_TOOL(_key, _group, _name, _class)                                                                      \
 	PYTHON_DESIGNER_UVMAPPING_COMMAND(_key, _class)                                                                           \
 	REGISTER_PYTHON_COMMAND_WITH_EXAMPLE(DesignerUVMappingCommand::Py ## _class, uvmapping, _cmd_functionName, _cmd_description, _cmd_example)
-

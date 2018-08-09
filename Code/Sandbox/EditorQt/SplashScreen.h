@@ -26,4 +26,3 @@ private:
 
 	static SplashScreen* s_pLogoWindow;
 };
-

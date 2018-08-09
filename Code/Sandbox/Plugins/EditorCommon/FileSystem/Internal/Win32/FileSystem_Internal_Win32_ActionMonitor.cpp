@@ -476,4 +476,3 @@ void CActionMonitor::Remove(unsigned long key)
 } // namespace Win32
 } // namespace Internal
 } // namespace FileSystem
-

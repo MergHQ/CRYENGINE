@@ -103,32 +103,14 @@ Vec3 SSnappingPreferences::Snap(const Vec3& vec, double fZoom) const
 	if (!gridSnappingEnabled() || m_gridSize < 0.001f)
 		return vec;
 
-	Matrix34 tm = GetMatrix();
-
 	double zoomscale = m_gridScale * fZoom;
+
 	Vec3 snapped;
-
-	Matrix34 invtm = tm.GetInverted();
-
-	snapped = invtm * vec;
-
-	snapped.x = floor((snapped.x / m_gridSize) / zoomscale + 0.5) * m_gridSize * zoomscale;
-	snapped.y = floor((snapped.y / m_gridSize) / zoomscale + 0.5) * m_gridSize * zoomscale;
-	snapped.z = floor((snapped.z / m_gridSize) / zoomscale + 0.5) * m_gridSize * zoomscale;
-
-	snapped = tm * snapped;
+	snapped.x = floor((vec.x / m_gridSize) / zoomscale + 0.5) * m_gridSize * zoomscale;
+	snapped.y = floor((vec.y / m_gridSize) / zoomscale + 0.5) * m_gridSize * zoomscale;
+	snapped.z = floor((vec.z / m_gridSize) / zoomscale + 0.5) * m_gridSize * zoomscale;
 
 	return snapped;
-}
-
-Matrix34 SSnappingPreferences::GetMatrix() const
-{
-	Matrix34 tm = Matrix34::CreateIdentity();
-	const ISelectionGroup* sel = GetIEditor()->GetISelectionGroup();
-	sel->GetManipulatorMatrix(tm);
-	tm.SetTranslation(Vec3(0, 0, 0));
-
-	return tm;
 }
 
 uint16 SSnappingPreferences::GetSnapMode() const

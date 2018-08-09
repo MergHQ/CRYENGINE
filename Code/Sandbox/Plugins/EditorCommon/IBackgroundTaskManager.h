@@ -208,4 +208,3 @@ struct IBackgroundTaskManager
 
 	virtual void RemoveListener(IBackgroundTaskManagerListener* pListener) = 0;
 };
-

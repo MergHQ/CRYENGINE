@@ -3,13 +3,13 @@
 #include "StdAfx.h"
 #include "AxisHelper.h"
 
+#include "LevelEditor/LevelEditorSharedState.h"
 #include "Objects/DisplayContext.h"
+#include "Util/Math.h"
 #include "IDisplayViewport.h"
 #include "HitContext.h"
-#include "Util/Math.h"
-#include <CryMath/Cry_Geo.h>
 
-#include "LevelEditor/LevelEditorSharedState.h"
+#include <CryMath/Cry_Geo.h>
 
 #define PLANE_SCALE  (0.3f)
 #define HIT_RADIUS   (8)
@@ -19,7 +19,6 @@
 const float kSelectionBallScale = 0.05f;
 const float kRotateCircleRadiusScale = 0.75f;
 
-//////////////////////////////////////////////////////////////////////////
 CAxisHelper::CAxisHelper()
 	: m_matrix(IDENTITY)
 {
@@ -32,13 +31,11 @@ CAxisHelper::CAxisHelper()
 	m_bNeedZ = true;
 }
 
-//////////////////////////////////////////////////////////////////////////
 void CAxisHelper::SetMode(int nModeFlags)
 {
 	m_nModeFlags = nModeFlags;
 }
 
-//////////////////////////////////////////////////////////////////////////
 void CAxisHelper::Prepare(const Matrix34& worldTM, IDisplayViewport* view, float fScaleRatio)
 {
 	CLevelEditorSharedState::CoordSystem coordSystem = GetIEditor()->GetLevelEditorSharedState()->GetCoordSystem();
@@ -88,7 +85,6 @@ void CAxisHelper::Prepare(const Matrix34& worldTM, IDisplayViewport* view, float
 	m_matrix.OrthonormalizeFast();
 }
 
-//////////////////////////////////////////////////////////////////////////
 void CAxisHelper::DrawAxis(const Matrix34& worldTM, SDisplayContext& dc, float fScaleRatio)
 {
 	Prepare(worldTM, dc.view, fScaleRatio);
@@ -99,7 +95,7 @@ void CAxisHelper::DrawAxis(const Matrix34& worldTM, SDisplayContext& dc, float f
 
 	int prevRState = dc.GetState();
 
-	if (!(dc.flags & DISPLAY_2D))
+	if (!dc.display2D)
 		dc.DepthTestOff();
 
 	dc.PushMatrix(m_matrix);
@@ -115,18 +111,18 @@ void CAxisHelper::DrawAxis(const Matrix34& worldTM, SDisplayContext& dc, float f
 
 	dc.SetColor(gGizmoPreferences.enabled ? axisColor : disabledColor);
 	if (m_bNeedX && gGizmoPreferences.axisGizmoText)
-		dc.DrawTextLabel(ConvertToTextPos(x, worldTMWithoutScale, dc.view, dc.flags & DISPLAY_2D), textSize, "x");
+		dc.DrawTextLabel(ConvertToTextPos(x, worldTMWithoutScale, dc.view, dc.display2D), textSize, "x");
 	if (m_bNeedY && gGizmoPreferences.axisGizmoText)
-		dc.DrawTextLabel(ConvertToTextPos(y, worldTMWithoutScale, dc.view, dc.flags & DISPLAY_2D), textSize, "y");
+		dc.DrawTextLabel(ConvertToTextPos(y, worldTMWithoutScale, dc.view, dc.display2D), textSize, "y");
 	if (m_bNeedZ && gGizmoPreferences.axisGizmoText)
-		dc.DrawTextLabel(ConvertToTextPos(z, worldTMWithoutScale, dc.view, dc.flags & DISPLAY_2D), textSize, "z");
+		dc.DrawTextLabel(ConvertToTextPos(z, worldTMWithoutScale, dc.view, dc.display2D), textSize, "z");
 
 	CLevelEditorSharedState::Axis axisConstraint = GetIEditor()->GetLevelEditorSharedState()->GetAxisConstraint();
 	if (m_highlightAxis != CLevelEditorSharedState::Axis::None)
 		axisConstraint = m_highlightAxis;
 
 	int nBoldWidth = BOLD_LINE_3D;
-	if (dc.flags & DISPLAY_2D)
+	if (dc.display2D)
 	{
 		nBoldWidth = BOLD_LINE_2D;
 	}
@@ -154,7 +150,7 @@ void CAxisHelper::DrawAxis(const Matrix34& worldTM, SDisplayContext& dc, float f
 			colX = colSelected;
 			dc.SetColor(colSelected);
 			if (m_bNeedX && gGizmoPreferences.axisGizmoText)
-				dc.DrawTextLabel(ConvertToTextPos(x, worldTMWithoutScale, dc.view, dc.flags & DISPLAY_2D), textSize, "x");
+				dc.DrawTextLabel(ConvertToTextPos(x, worldTMWithoutScale, dc.view, dc.display2D), textSize, "x");
 			linew[0] = float(nBoldWidth);
 		}
 		if (axisConstraint == CLevelEditorSharedState::Axis::Y || axisConstraint == CLevelEditorSharedState::Axis::XY ||
@@ -163,7 +159,7 @@ void CAxisHelper::DrawAxis(const Matrix34& worldTM, SDisplayContext& dc, float f
 			colY = colSelected;
 			dc.SetColor(colSelected);
 			if (m_bNeedY && gGizmoPreferences.axisGizmoText)
-				dc.DrawTextLabel(ConvertToTextPos(y, worldTMWithoutScale, dc.view, dc.flags & DISPLAY_2D), textSize, "y");
+				dc.DrawTextLabel(ConvertToTextPos(y, worldTMWithoutScale, dc.view, dc.display2D), textSize, "y");
 			linew[1] = float(nBoldWidth);
 		}
 		if (axisConstraint == CLevelEditorSharedState::Axis::Z || axisConstraint == CLevelEditorSharedState::Axis::XZ ||
@@ -172,7 +168,7 @@ void CAxisHelper::DrawAxis(const Matrix34& worldTM, SDisplayContext& dc, float f
 			colZ = colSelected;
 			dc.SetColor(colSelected);
 			if (m_bNeedZ && gGizmoPreferences.axisGizmoText)
-				dc.DrawTextLabel(ConvertToTextPos(z, worldTMWithoutScale, dc.view, dc.flags & DISPLAY_2D), textSize, "z");
+				dc.DrawTextLabel(ConvertToTextPos(z, worldTMWithoutScale, dc.view, dc.display2D), textSize, "z");
 			linew[2] = float(nBoldWidth);
 		}
 	}
@@ -236,11 +232,8 @@ void CAxisHelper::DrawAxis(const Matrix34& worldTM, SDisplayContext& dc, float f
 			dc.DrawArrow(z, 1.1f * z, headScl[MOVE_MODE] * 0.75f);
 		}
 	}
-	//////////////////////////////////////////////////////////////////////////
 
-	//////////////////////////////////////////////////////////////////////////
 	// Draw Rotate Spheres.
-	//////////////////////////////////////////////////////////////////////////
 	if (m_nModeFlags & ROTATE_FLAG)
 	{
 		dc.SetLineWidth(4.0f);
@@ -261,11 +254,8 @@ void CAxisHelper::DrawAxis(const Matrix34& worldTM, SDisplayContext& dc, float f
 			dc.DrawBall(z + Vec3(0, 0, ball_radius), ball_radius);
 		}
 	}
-	//////////////////////////////////////////////////////////////////////////
 
-	//////////////////////////////////////////////////////////////////////////
 	// Draw Scale Boxes.
-	//////////////////////////////////////////////////////////////////////////
 	if (m_nModeFlags & SCALE_FLAG)
 	{
 		if (axisConstraint == CLevelEditorSharedState::Axis::XYZ) dc.SetColor(colSelected); else dc.SetColor(RGB(128, 128, 0));
@@ -288,16 +278,13 @@ void CAxisHelper::DrawAxis(const Matrix34& worldTM, SDisplayContext& dc, float f
 			dc.DrawSolidBox(z - boxsz + Vec3(0, 0, size_scale), z + boxsz + Vec3(0, 0, size_scale));
 		}
 	}
-	//////////////////////////////////////////////////////////////////////////
 
 	dc.SetLineWidth(0);
 
 	// If only in move mode.
 	if (m_nModeFlags == MOVE_FLAG)
 	{
-		//////////////////////////////////////////////////////////////////////////
 		// Draw axis planes.
-		//////////////////////////////////////////////////////////////////////////
 		Vec3 colXY[2];
 		Vec3 colXZ[2];
 		Vec3 colYZ[2];
@@ -341,7 +328,7 @@ void CAxisHelper::DrawAxis(const Matrix34& worldTM, SDisplayContext& dc, float f
 			linew[2] = float(nBoldWidth);
 		}
 
-		if (!(dc.flags & DISPLAY_2D))
+		if (!dc.display2D)
 		{
 			dc.SetColor(RGB(128, 32, 32), 0.4f);
 			Vec3 org = worldTM.GetTranslation();
@@ -418,13 +405,12 @@ void CAxisHelper::DrawAxis(const Matrix34& worldTM, SDisplayContext& dc, float f
 	}
 
 	dc.PopMatrix();
-	if (!(dc.flags & DISPLAY_2D))
+	if (!dc.display2D)
 		dc.DepthTestOn();
 
 	dc.SetState(prevRState);
 }
 
-//////////////////////////////////////////////////////////////////////////
 bool CAxisHelper::HitTest(const Matrix34& worldTM, HitContext& hc, EHelperMode* pManipulatorMode, float fScaleRatio)
 {
 	EHelperMode manipulatorMode = HELPER_MODE_NONE;
@@ -682,10 +668,8 @@ bool CAxisHelper::HitTest(const Matrix34& worldTM, HitContext& hc, EHelperMode* 
 	return axis != CLevelEditorSharedState::Axis::None;
 }
 
-//////////////////////////////////////////////////////////////////////////
 float CAxisHelper::GetDistance2D(IDisplayViewport* view, CPoint p, Vec3& wp)
 {
 	CPoint vp = view->WorldToView(wp);
 	return sqrtf(float((p.x - vp.x) * (p.x - vp.x) + (p.y - vp.y) * (p.y - vp.y)));
 }
-

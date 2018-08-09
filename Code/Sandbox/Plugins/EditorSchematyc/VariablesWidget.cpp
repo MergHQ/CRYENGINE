@@ -560,4 +560,3 @@ void CVariablesWidget::customEvent(QEvent* pEvent)
 }
 
 }
-

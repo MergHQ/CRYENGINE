@@ -83,4 +83,3 @@ public:
 	explicit CryIcon(const QPixmap& pixmap, CryIconColorMap colorMap = CryIconColorMap());
 	static void SetDefaultTint(QIcon::Mode mode, QBrush brush);
 };
-

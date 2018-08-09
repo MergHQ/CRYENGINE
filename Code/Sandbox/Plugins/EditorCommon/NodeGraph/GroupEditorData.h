@@ -60,5 +60,3 @@ EDITOR_COMMON_API inline bool Serialize(Serialization::IArchive& archive, CGroup
 }
 
 } // namespace CryGraphEditor
-
-

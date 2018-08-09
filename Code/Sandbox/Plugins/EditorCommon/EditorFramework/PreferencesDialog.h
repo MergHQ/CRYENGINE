@@ -60,4 +60,3 @@ private:
 	QObjectTreeWidget* m_pTreeView;
 	string             m_currPath;
 };
-

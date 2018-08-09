@@ -11,4 +11,3 @@ uint32 CAbstractVariablesModelItem::GetIndex() const
 }
 
 }
-

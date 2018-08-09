@@ -101,4 +101,3 @@ QString CInterfacesDictionary::GetColumnName(int32 index) const
 }
 
 }
-

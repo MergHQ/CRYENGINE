@@ -31,4 +31,3 @@ struct SSnapshotUpdate
 
 } // namespace Internal
 } // namespace FileSystem
-

@@ -1278,4 +1278,3 @@ void ExplorerPanel::OnExplorerEntryModified(ExplorerEntryModifyEvent& ev)
 }
 
 }
-

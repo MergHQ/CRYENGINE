@@ -313,4 +313,3 @@ CAlembicCompileDialog::SConfig CAlembicCompileDialog::LoadConfig(const CString& 
 
 	return config;
 }
-

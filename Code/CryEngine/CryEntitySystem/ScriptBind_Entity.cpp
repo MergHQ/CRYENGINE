@@ -299,7 +299,7 @@ CScriptBind_Entity::CScriptBind_Entity(IScriptSystem* pSS, ISystem* pSystem)
 	SCRIPT_REG_TEMPLFUNC(ExecuteAudioTrigger, "hTriggerID, hAudioProxyLocalID");
 	SCRIPT_REG_TEMPLFUNC(StopAudioTrigger, "hTriggerID, hAudioProxyLocalID");
 	SCRIPT_REG_TEMPLFUNC(SetAudioSwitchState, "hSwitchID, hSwitchStateID, hAudioProxyLocalID");
-	SCRIPT_REG_TEMPLFUNC(SetAudioObstructionCalcType, "nObstructionCalcType, hAudioProxyLocalID");
+	SCRIPT_REG_TEMPLFUNC(SetAudioOcclusionType, "occlusionType, hAudioProxyLocalID");
 	SCRIPT_REG_TEMPLFUNC(SetFadeDistance, "fFadeDistance");
 	SCRIPT_REG_TEMPLFUNC(SetAudioProxyOffset, "vOffset, hAudioProxyLocalID");
 	SCRIPT_REG_TEMPLFUNC(SetEnvironmentFadeDistance, "fEnvironmentFadeDistance");
@@ -4206,7 +4206,7 @@ int CScriptBind_Entity::GetAllAuxAudioProxiesID(IFunctionHandler* pH)
 	// Get or create an AudioProxy on the entity if necessary.
 	IEntityAudioComponent* const pIEntityAudioComponent = pEntity->GetOrCreateComponent<IEntityAudioComponent>();
 
-	if (pIEntityAudioComponent)
+	if (pIEntityAudioComponent != nullptr)
 	{
 		return pH->EndFunction(IntToHandle(CryAudio::InvalidAuxObjectId));
 	}
@@ -4222,7 +4222,7 @@ int CScriptBind_Entity::GetDefaultAuxAudioProxyID(IFunctionHandler* pH)
 	// Get or create an AudioProxy on the entity if necessary.
 	IEntityAudioComponent* const pIEntityAudioComponent = pEntity->GetOrCreateComponent<IEntityAudioComponent>();
 
-	if (pIEntityAudioComponent)
+	if (pIEntityAudioComponent != nullptr)
 	{
 		return pH->EndFunction(IntToHandle(CryAudio::DefaultAuxObjectId));
 	}
@@ -4238,7 +4238,7 @@ int CScriptBind_Entity::CreateAuxAudioProxy(IFunctionHandler* pH)
 	// Get or create an AudioProxy on the entity if necessary.
 	IEntityAudioComponent* const pIEntityAudioComponent = pEntity->GetOrCreateComponent<IEntityAudioComponent>();
 
-	if (pIEntityAudioComponent)
+	if (pIEntityAudioComponent != nullptr)
 	{
 		return pH->EndFunction(IntToHandle(pIEntityAudioComponent->CreateAudioAuxObject()));
 	}
@@ -4254,7 +4254,7 @@ int CScriptBind_Entity::RemoveAuxAudioProxy(IFunctionHandler* pH, ScriptHandle c
 	// Get or create an AudioProxy on the entity if necessary.
 	IEntityAudioComponent* const pIEntityAudioComponent = pEntity->GetOrCreateComponent<IEntityAudioComponent>();
 
-	if (pIEntityAudioComponent)
+	if (pIEntityAudioComponent != nullptr)
 	{
 		pIEntityAudioComponent->RemoveAudioAuxObject(HandleToInt<CryAudio::AuxObjectId>(hAudioProxyLocalID));
 	}
@@ -4287,7 +4287,7 @@ int CScriptBind_Entity::StopAudioTrigger(IFunctionHandler* pH, ScriptHandle cons
 	// Get or create an AudioProxy on the entity if necessary.
 	IEntityAudioComponent* const pIEntityAudioComponent = pEntity->GetOrCreateComponent<IEntityAudioComponent>();
 
-	if (pIEntityAudioComponent)
+	if (pIEntityAudioComponent != nullptr)
 	{
 		CryAudio::SRequestUserData const userData(CryAudio::ERequestFlags::DoneCallbackOnExternalThread, this, reinterpret_cast<void*>((UINT_PTR)pEntity->GetId()), this);
 		pIEntityAudioComponent->StopTrigger(HandleToInt<CryAudio::ControlId>(hTriggerID), HandleToInt<CryAudio::AuxObjectId>(hAudioProxyLocalID), userData);
@@ -4304,48 +4304,27 @@ int CScriptBind_Entity::SetAudioSwitchState(IFunctionHandler* pH, ScriptHandle c
 	// Get or create an AudioProxy on the entity if necessary.
 	IEntityAudioComponent* const pIEntityAudioComponent = pEntity->GetOrCreateComponent<IEntityAudioComponent>();
 
-	if (pIEntityAudioComponent)
+	if (pIEntityAudioComponent != nullptr)
 	{
 		pIEntityAudioComponent->SetSwitchState(
-		  HandleToInt<CryAudio::ControlId>(hSwitchID),
-		  HandleToInt<CryAudio::SwitchStateId>(hSwitchStateID), HandleToInt<CryAudio::AuxObjectId>(hAudioProxyLocalID));
+			HandleToInt<CryAudio::ControlId>(hSwitchID),
+			HandleToInt<CryAudio::SwitchStateId>(hSwitchStateID), HandleToInt<CryAudio::AuxObjectId>(hAudioProxyLocalID));
 	}
 
 	return pH->EndFunction();
 }
 
 //////////////////////////////////////////////////////////////////////////
-int CScriptBind_Entity::SetAudioObstructionCalcType(IFunctionHandler* pH, int const nObstructionCalcType, ScriptHandle const hAudioProxyLocalID)
+int CScriptBind_Entity::SetAudioOcclusionType(IFunctionHandler* pH, int const occlusionType, ScriptHandle const hAudioProxyLocalID)
 {
 	GET_ENTITY;
 
 	// Get or create an AudioProxy on the entity if necessary.
 	IEntityAudioComponent* const pIEntityAudioComponent = pEntity->GetOrCreateComponent<IEntityAudioComponent>();
 
-	if (pIEntityAudioComponent)
+	if (pIEntityAudioComponent != nullptr)
 	{
-		CryAudio::EOcclusionType occlusionType = CryAudio::EOcclusionType::None;
-
-		switch (nObstructionCalcType)
-		{
-		case 1:
-			occlusionType = CryAudio::EOcclusionType::Ignore;
-			break;
-		case 2:
-			occlusionType = CryAudio::EOcclusionType::Adaptive;
-			break;
-		case 3:
-			occlusionType = CryAudio::EOcclusionType::Low;
-			break;
-		case 4:
-			occlusionType = CryAudio::EOcclusionType::Medium;
-			break;
-		case 5:
-			occlusionType = CryAudio::EOcclusionType::High;
-			break;
-		}
-
-		pIEntityAudioComponent->SetObstructionCalcType(occlusionType, HandleToInt<CryAudio::AuxObjectId>(hAudioProxyLocalID));
+		pIEntityAudioComponent->SetObstructionCalcType(static_cast<CryAudio::EOcclusionType>(occlusionType), HandleToInt<CryAudio::AuxObjectId>(hAudioProxyLocalID));
 	}
 
 	return pH->EndFunction();
@@ -4359,7 +4338,7 @@ int CScriptBind_Entity::SetFadeDistance(IFunctionHandler* pH, float const fFadeD
 	// Get or create an AudioProxy on the entity if necessary.
 	IEntityAudioComponent* const pIEntityAudioComponent = pEntity->GetOrCreateComponent<IEntityAudioComponent>();
 
-	if (pIEntityAudioComponent)
+	if (pIEntityAudioComponent != nullptr)
 	{
 		pIEntityAudioComponent->SetFadeDistance(fFadeDistance);
 		g_pIEntitySystem->GetAreaManager()->SetAreasDirty();
@@ -4376,7 +4355,7 @@ int CScriptBind_Entity::SetAudioProxyOffset(IFunctionHandler* pH, Vec3 const vOf
 	// Get or create an AudioProxy on the entity if necessary.
 	IEntityAudioComponent* const pIEntityAudioComponent = pEntity->GetOrCreateComponent<IEntityAudioComponent>();
 
-	if (pIEntityAudioComponent)
+	if (pIEntityAudioComponent != nullptr)
 	{
 		pIEntityAudioComponent->SetAudioAuxObjectOffset(Matrix34(IDENTITY, vOffset), HandleToInt<CryAudio::AuxObjectId>(hAudioProxyLocalID));
 	}
@@ -4392,7 +4371,7 @@ int CScriptBind_Entity::SetEnvironmentFadeDistance(IFunctionHandler* pH, float c
 	// Get or create an AudioProxy on the entity if necessary.
 	IEntityAudioComponent* const pIEntityAudioComponent = pEntity->GetOrCreateComponent<IEntityAudioComponent>();
 
-	if (pIEntityAudioComponent)
+	if (pIEntityAudioComponent != nullptr)
 	{
 		pIEntityAudioComponent->SetEnvironmentFadeDistance(fEnvironmentFadeDistance);
 	}
@@ -4408,7 +4387,7 @@ int CScriptBind_Entity::SetAudioEnvironmentID(IFunctionHandler* pH, ScriptHandle
 	// Get or create an AudioProxy on the entity if necessary.
 	IEntityAudioComponent* const pIEntityAudioComponent = pEntity->GetOrCreateComponent<IEntityAudioComponent>();
 
-	if (pIEntityAudioComponent)
+	if (pIEntityAudioComponent != nullptr)
 	{
 		CryAudio::EnvironmentId const audioEnvironmentIdToSet = HandleToInt<CryAudio::EnvironmentId>(hAudioEnvironmentID);
 		CryAudio::EnvironmentId const audioEnvironmentIdToUnset = pIEntityAudioComponent->GetEnvironmentId();
@@ -4481,7 +4460,7 @@ int CScriptBind_Entity::SetCurrentAudioEnvironments(IFunctionHandler* pH)
 	// Get or create an AudioProxy on the entity if necessary.
 	IEntityAudioComponent* const pIEntityAudioComponent = pEntity->GetOrCreateComponent<IEntityAudioComponent>();
 
-	if (pIEntityAudioComponent)
+	if (pIEntityAudioComponent != nullptr)
 	{
 		// Passing INVALID_AUDIO_PROXY_ID to address all auxiliary AudioProxies on pIEntityAudioComponent.
 		pIEntityAudioComponent->SetCurrentEnvironments(CryAudio::InvalidAuxObjectId);
@@ -4498,7 +4477,7 @@ int CScriptBind_Entity::SetAudioRtpcValue(IFunctionHandler* pH, ScriptHandle con
 	// Get or create an AudioProxy on the entity if necessary.
 	IEntityAudioComponent* const pIEntityAudioComponent = pEntity->GetOrCreateComponent<IEntityAudioComponent>();
 
-	if (pIEntityAudioComponent)
+	if (pIEntityAudioComponent != nullptr)
 	{
 		pIEntityAudioComponent->SetParameter(HandleToInt<CryAudio::ControlId>(hRtpcID), fValue, HandleToInt<CryAudio::AuxObjectId>(hAudioProxyLocalID));
 	}
@@ -4514,7 +4493,7 @@ int CScriptBind_Entity::AuxAudioProxiesMoveWithEntity(IFunctionHandler* pH, bool
 	// Get or create an AudioProxy on the entity if necessary.
 	IEntityAudioComponent* const pIEntityAudioComponent = pEntity->GetOrCreateComponent<IEntityAudioComponent>();
 
-	if (pIEntityAudioComponent)
+	if (pIEntityAudioComponent != nullptr)
 	{
 		pIEntityAudioComponent->AudioAuxObjectsMoveWithEntity(bCanMoveWithEntity);
 	}

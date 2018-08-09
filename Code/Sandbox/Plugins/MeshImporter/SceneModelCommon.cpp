@@ -345,4 +345,3 @@ void CSceneModelCommon::ClearSceneWithoutReset()
 	m_pRoot = nullptr;
 	m_pFbxScene = nullptr;
 }
-

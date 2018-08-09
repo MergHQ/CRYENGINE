@@ -32,4 +32,3 @@ void CLayerNodeAnimator::Animate(CTrackViewAnimNode* pNode, const SAnimContext& 
 		}
 	}
 }
-

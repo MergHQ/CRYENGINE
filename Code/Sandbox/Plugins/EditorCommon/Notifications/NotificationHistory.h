@@ -31,4 +31,3 @@ protected:
 	QToolButton*              m_pShowWarnings;
 	QToolButton*              m_pShowErrors;
 };
-

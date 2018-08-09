@@ -1098,5 +1098,3 @@ void CVehicleEditorDialog::OnPaintsEdit()
 
 	GetDockingPaneManager()->ShowPane(IDW_VEED_PAINTS_PANE);
 }
-
-

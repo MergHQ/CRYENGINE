@@ -16,16 +16,16 @@ class CParameterConnection final : public CBaseConnection
 {
 public:
 
+	CParameterConnection() = delete;
+
 	explicit CParameterConnection(
-	  ControlId const id,
-	  float const mult = CryAudio::Impl::SDL_mixer::s_defaultParamMultiplier,
-	  float const shift = CryAudio::Impl::SDL_mixer::s_defaultParamShift)
+		ControlId const id,
+		float const mult = CryAudio::Impl::SDL_mixer::s_defaultParamMultiplier,
+		float const shift = CryAudio::Impl::SDL_mixer::s_defaultParamShift)
 		: CBaseConnection(id)
 		, m_mult(mult)
 		, m_shift(shift)
 	{}
-
-	CParameterConnection() = delete;
 
 	// CBaseConnection
 	virtual void Serialize(Serialization::IArchive& ar) override;

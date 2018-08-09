@@ -112,4 +112,3 @@ void BooleanTool::Serialize(Serialization::IArchive& ar)
 
 REGISTER_DESIGNER_TOOL_WITH_PROPERTYTREE_PANEL_AND_COMMAND(eDesigner_Boolean, eToolGroup_Modify, "Boolean", BooleanTool,
                                                            boolean, "runs boolean tool", "designer.boolean")
-

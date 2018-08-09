@@ -34,5 +34,3 @@ void PropertyRowObject::YASLI_SERIALIZE_METHOD(Archive& ar)
 {
     PropertyRow::YASLI_SERIALIZE_METHOD(ar);
 }
-
-

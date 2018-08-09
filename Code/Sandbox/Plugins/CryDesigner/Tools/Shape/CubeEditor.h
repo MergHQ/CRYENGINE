@@ -88,4 +88,3 @@ private:
 	DrawStraight m_DS;
 };
 }
-

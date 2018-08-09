@@ -21,15 +21,12 @@ static QString const s_emptyTypeName("");
 static QString const s_eventTypeName("Audio File");
 static QString const s_folderTypeName("Folder");
 
-static QStringList const s_supportedFileTypes {
-	"ogg", "wav"
-};
+static QStringList const s_supportedFileTypes { "wav" };
 
 static ExtensionFilterVector const s_extensionFilters(
 			{
-				CExtensionFilter("Ogg Vorbis", "ogg"),
 				CExtensionFilter("Wave (Microsoft)", "wav")
-      });
+			});
 
 //////////////////////////////////////////////////////////////////////////
 inline void InitIcons()

@@ -353,4 +353,3 @@ void CTrackViewPlaybackControlsToolbar::OnTimeChanged(SAnimTime newTime)
 {
 	UpdateTime(newTime);
 }
-

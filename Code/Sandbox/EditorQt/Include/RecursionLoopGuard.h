@@ -26,4 +26,3 @@ private:
     STATIC_RECURSION_GUARD(__VA_ARGS__);
 
 #define RECURSION_GUARD_SCOPE_END() }
-

@@ -882,10 +882,10 @@ void CD3D9Renderer::ShutDown(bool bReInit)
 #ifdef USE_PIX_DURANGO
 	SAFE_RELEASE(m_pPixPerf);
 #endif
+
 	//////////////////////////////////////////////////////////////////////////
 	// Clear globals.
 	//////////////////////////////////////////////////////////////////////////
-
 
 	// Release Display Contexts, freeing Swap Channels.
 	m_pBaseDisplayContext = nullptr;
@@ -898,12 +898,15 @@ void CD3D9Renderer::ShutDown(bool bReInit)
 
 	SAFE_DELETE(m_pRT);
 
-#if CRY_RENDERER_OPENGL
-	#if !DXGL_FULL_EMULATION && !OGL_SINGLE_CONTEXT
+#if CRY_RENDERER_OPENGL && !DXGL_FULL_EMULATION && !OGL_SINGLE_CONTEXT
 	if (CV_r_multithreaded)
 		DXGLReleaseContext(GetDevice().GetRealDevice());
-	#endif
+#endif
+
+#if CRY_PLATFORM_IOS || CRY_PLATFORM_ANDROID || CRY_PLATFORM_WINDOWS || CRY_PLATFORM_APPLE || CRY_PLATFORM_LINUX
+#if defined(SUPPORT_DEVICE_INFO)
 	m_devInfo.Release();
+#endif
 #endif
 
 	if (!bReInit)
@@ -1185,7 +1188,7 @@ bool CD3D9Renderer::SetWindowIcon(const char* path)
   static void OnQShaderChange_Shader ## name(ICVar * pVar)                \
   {                                                                       \
     int iQuality = eSQ_Low;                                               \
-    if (gRenDev->GetFeatures() & (RFT_HW_SM2X | RFT_HW_SM30))             \
+    if (gRenDev->GetFeatures() & (RFT_HW_SM40))                           \
       iQuality = CLAMP(pVar->GetIVal(), 0, eSQ_Max);                      \
     gRenDev->EF_SetShaderQuality(eST_ ## name, (EShaderQuality)iQuality); \
   }
@@ -1209,7 +1212,7 @@ static void OnQShaderChange_Renderer(ICVar* pVar)
 {
 	int iQuality = eRQ_Low;
 
-	if (gRenDev->GetFeatures() & (RFT_HW_SM2X | RFT_HW_SM30))
+	if (gRenDev->GetFeatures() & (RFT_HW_SM40))
 		iQuality = CLAMP(pVar->GetIVal(), 0, eSQ_Max);
 	else
 		pVar->ForceSet("0");
@@ -1466,18 +1469,18 @@ WIN_HWND CD3D9Renderer::Init(int x, int y, int width, int height, unsigned int c
 			break;
 		case D3D_FEATURE_LEVEL_11_1:
 			iLog->Log(" Feature level: D3D 11_1");
-			iLog->Log(" Vertex Shaders version %d.%d", 5, 0);
-			iLog->Log(" Pixel Shaders version %d.%d", 5, 0);
+			iLog->Log(" Vertex Shaders version %d.%d", 5, 1);
+			iLog->Log(" Pixel Shaders version %d.%d", 5, 1);
 			break;
 		case D3D_FEATURE_LEVEL_12_0:
 			iLog->Log(" Feature level: D3D 12_0");
-			iLog->Log(" Vertex Shaders version %d.%d", 5, 1);
-			iLog->Log(" Pixel Shaders version %d.%d", 5, 1);
+			iLog->Log(" Vertex Shaders version %d.%d", 6, 0);
+			iLog->Log(" Pixel Shaders version %d.%d", 6, 0);
 			break;
 		case D3D_FEATURE_LEVEL_12_1:
 			iLog->Log(" Feature level: D3D 12_1");
-			iLog->Log(" Vertex Shaders version %d.%d", 5, 1);
-			iLog->Log(" Pixel Shaders version %d.%d", 5, 1);
+			iLog->Log(" Vertex Shaders version %d.%d", 6, 2);
+			iLog->Log(" Pixel Shaders version %d.%d", 6, 2);
 			break;
 		default:
 			iLog->Log(" Feature level: Unknown");
@@ -1506,13 +1509,19 @@ WIN_HWND CD3D9Renderer::Init(int x, int y, int width, int height, unsigned int c
 
 		CRenderer::OnChange_GeomInstancingThreshold(0);   // to get log printout and to set the internal value (vendor dependent)
 
-		m_Features |= RFT_HW_SM20 | RFT_HW_SM2X | RFT_HW_SM30;
+		m_Features |= RFT_HW_SM40;
 
 		if (!m_bDeviceSupportsInstancing)
 			_SetVar("r_GeomInstancing", 0);
 
 		const char* str = NULL;
-		if (m_Features & RFT_HW_SM50)
+		if (m_Features & RFT_HW_SM62)
+			str = "SM.6.2";
+		else if (m_Features & RFT_HW_SM60)
+			str = "SM.6.0";
+		else if (m_Features & RFT_HW_SM51)
+			str = "SM.5.1";
+		else if (m_Features & RFT_HW_SM50)
 			str = "SM.5.0";
 		else if (m_Features & RFT_HW_SM40)
 			str = "SM.4.0";
@@ -1531,7 +1540,7 @@ WIN_HWND CD3D9Renderer::Init(int x, int y, int width, int height, unsigned int c
 	{
 
 		// force certain features during shader cache gen mode
-		m_Features |= RFT_HW_SM20 | RFT_HW_SM2X | RFT_HW_SM30;
+		m_Features |= RFT_HW_SM40;
 
 #if defined(ENABLE_NULL_D3D11DEVICE)
 		m_DeviceWrapper.AssignDevice(new NullD3D11Device);
@@ -2107,7 +2116,7 @@ HRESULT CALLBACK CD3D9Renderer::OnD3D11CreateDevice(D3DDevice* pd3dDevice)
 #if defined(SUPPORT_DEVICE_INFO)
 	rd->m_DeviceContextWrapper.AssignDeviceContext(rd->m_devInfo.Context());
 #endif
-	rd->m_Features |= RFT_OCCLUSIONQUERY | RFT_ALLOWANISOTROPIC | RFT_HW_SM20 | RFT_HW_SM2X | RFT_HW_SM30 | RFT_HW_SM40 | RFT_HW_SM50;
+	rd->m_Features |= RFT_OCCLUSIONQUERY | RFT_ALLOWANISOTROPIC | RFT_HW_SM40 | RFT_HW_SM50;
 
 #if defined(DX11_ALLOW_D3D_DEBUG_RUNTIME)
 	rd->m_d3dDebug.Init(pd3dDevice);

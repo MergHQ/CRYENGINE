@@ -74,4 +74,3 @@ private:
 	float m_origLenInteraction;
 	float m_origScale;
 };
-

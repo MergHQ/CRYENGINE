@@ -2,17 +2,16 @@
 
 #pragma once
 
-#include <QMainWindow>
-
-#include <QMenu>
-
 #include "EditorFramework/EventLoopHandler.h"
 #include "LevelEditor/LevelEditor.h"
 
-class QToolWindowManager;
-class QMainToolBarManager;
-class QLoading;
+#include <QMainWindow>
+#include <QMenu>
+
 class CWaitProgress;
+class QLoading;
+class QMainToolBarManager;
+class QToolWindowManager;
 
 class CEditorMainFrame : public QMainWindow, public IAutoEditorNotifyListener //TODO : class name doesn't match filename
 {
@@ -20,14 +19,14 @@ class CEditorMainFrame : public QMainWindow, public IAutoEditorNotifyListener //
 public:
 	CEditorMainFrame(QWidget* parent = 0);
 	virtual ~CEditorMainFrame();
-	void PostLoad();
+	void                     PostLoad();
 
-	void ResetAutoSaveTimers();
+	void                     ResetAutoSaveTimers();
 
 	static CEditorMainFrame* GetInstance();
 
-	QToolWindowManager*  GetToolManager();
-	QMainToolBarManager* GetToolBarManager();
+	QToolWindowManager*      GetToolManager();
+	QMainToolBarManager*     GetToolBarManager();
 
 	//Temporary functions to handle CWaitProgress more elegantly
 	void          AddWaitProgress(CWaitProgress* task);

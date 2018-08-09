@@ -111,4 +111,3 @@ public:
 	CRuntimeClass* GetRuntimeClass()   { return RUNTIME_CLASS(CAreaSolid); };
 	int            GameCreationOrder() { return 51; };
 };
-

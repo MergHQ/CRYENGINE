@@ -104,7 +104,7 @@ void CAxisTranslateGizmo::Display(SDisplayContext& dc)
 		string msg;
 		msg.Format("%.2f units", translationLen);
 
-		dc.DrawTextLabel(ConvertToTextPos(m_position, Matrix34::CreateIdentity(), view, dc.flags & DISPLAY_2D), textSize, (LPCSTR)msg, true);
+		dc.DrawTextLabel(ConvertToTextPos(m_position, Matrix34::CreateIdentity(), view, dc.display2D), textSize, (LPCSTR)msg, true);
 	}
 
 	// draw a shadow arrow at the initial position
@@ -221,4 +221,3 @@ bool CAxisTranslateGizmo::HitTest(HitContext& hc)
 
 	return false;
 }
-

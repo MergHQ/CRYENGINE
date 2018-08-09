@@ -45,4 +45,3 @@ private:
 	bool               m_bHasGeometryFileFilter;
 	bool               m_bHasParticleFileFilter;
 };
-

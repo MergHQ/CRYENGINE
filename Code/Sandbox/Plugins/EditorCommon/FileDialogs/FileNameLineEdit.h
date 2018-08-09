@@ -15,4 +15,3 @@ public:
 	void		SetExtensionForFiles(const QString& extension);
 	void		Clear();
 };
-

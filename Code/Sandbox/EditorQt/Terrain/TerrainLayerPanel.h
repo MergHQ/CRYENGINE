@@ -49,4 +49,3 @@ protected:
 
 	STexturePainterSerializer m_layerSerializer;
 };
-

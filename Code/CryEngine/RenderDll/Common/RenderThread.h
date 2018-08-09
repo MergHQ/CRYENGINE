@@ -504,7 +504,7 @@ inline void SRenderThread::ExecuteRenderThreadCommand(RenderThreadCallback&& cal
 	}
 	else
 	{
-		CRY_ASSERT(!IsLevelLoadingThread());
+		CRY_ASSERT(IsMainThread());
 //		AUTO_LOCK_T(CryCriticalSectionNonRecursive, m_CommandsLock);
 		byte* p = AddCommandTo(eRC_LambdaCall, sizeof(void*), m_Commands[m_nCurThreadFill]);
 		void* pCallbackPtr = ::new(m_lambdaCallbacksPool.Allocate())SRenderThreadLambdaCallback{callback,flags};

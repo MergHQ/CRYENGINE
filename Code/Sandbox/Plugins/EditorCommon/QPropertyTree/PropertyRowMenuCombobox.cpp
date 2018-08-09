@@ -289,4 +289,3 @@ void QComboBoxHandler::actionTriggered(QAction* pAction)
 REGISTER_PROPERTY_ROW(StringListStaticValue, PropertyRowStaticMenuCombobox)
 REGISTER_PROPERTY_ROW(StringListValue, PropertyRowMenuCombobox)
 }
-

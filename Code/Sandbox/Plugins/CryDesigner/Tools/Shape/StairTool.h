@@ -74,4 +74,3 @@ private:
 	bool                    m_bWidthIsLonger;
 };
 }
-

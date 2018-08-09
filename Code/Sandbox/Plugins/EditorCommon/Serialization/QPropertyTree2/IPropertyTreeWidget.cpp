@@ -7,4 +7,3 @@ PROPERTY_TREE_API CPropertyTreeWidgetFactory& GetPropertyTreeWidgetFactory()
 	static CPropertyTreeWidgetFactory sFactory;
 	return sFactory;
 }
-

@@ -2,28 +2,18 @@
 
 #include "StdAfx.h"
 #include "EntityPrototype.h"
-#include "Objects\EntityScript.h"
-#include "Objects\EntityObject.h"
+
+#include "Objects/EntityObject.h"
+#include "Objects/EntityScript.h"
 
 #include <CryEntitySystem/IEntitySystem.h>
 #include <CrySerialization/IArchiveHost.h>
 
-//////////////////////////////////////////////////////////////////////////
-// CEntityPrototype implementation.
-//////////////////////////////////////////////////////////////////////////
-
-//////////////////////////////////////////////////////////////////////////
 CEntityPrototype::CEntityPrototype()
 {
-	m_pArchetype = 0;
+	m_pArchetype = nullptr;
 }
 
-//////////////////////////////////////////////////////////////////////////
-CEntityPrototype::~CEntityPrototype()
-{
-}
-
-//////////////////////////////////////////////////////////////////////////
 void CEntityPrototype::SetEntityClassName(const string& className)
 {
 	if (className != m_className)
@@ -100,7 +90,6 @@ void CEntityPrototype::SetEntityClassName(const string& className)
 	}
 };
 
-//////////////////////////////////////////////////////////////////////////
 void CEntityPrototype::Reload()
 {
 	if (m_script)
@@ -118,19 +107,16 @@ void CEntityPrototype::Reload()
 	Update();
 }
 
-//////////////////////////////////////////////////////////////////////////
 CVarBlock* CEntityPrototype::GetProperties()
 {
 	return m_properties;
 }
 
-//////////////////////////////////////////////////////////////////////////
 CEntityScript* CEntityPrototype::GetScript()
 {
 	return m_script.get();
 }
 
-//////////////////////////////////////////////////////////////////////////
 QString CEntityPrototype::GetMaterial() const
 {
 	if (!m_properties)
@@ -148,7 +134,6 @@ QString CEntityPrototype::GetMaterial() const
 	return QString();
 }
 
-//////////////////////////////////////////////////////////////////////////
 QString CEntityPrototype::GetVisualObject() const
 {
 	static auto getString = [](IVariable* pVariable)
@@ -196,7 +181,6 @@ QString CEntityPrototype::GetVisualObject() const
 	return result;
 }
 
-//////////////////////////////////////////////////////////////////////////
 void CEntityPrototype::Serialize(SerializeContext& ctx)
 {
 	CBaseLibraryItem::Serialize(ctx);
@@ -285,13 +269,11 @@ void CEntityPrototype::SerializePrototype(SerializeContext& ctx, bool bRecreateA
 	}
 }
 
-//////////////////////////////////////////////////////////////////////////
 void CEntityPrototype::AddUpdateListener(UpdateCallback cb)
 {
 	m_updateListeners.push_back(cb);
 }
 
-//////////////////////////////////////////////////////////////////////////
 void CEntityPrototype::RemoveUpdateListener(UpdateCallback cb)
 {
 	std::list<UpdateCallback>::iterator it = std::find(m_updateListeners.begin(), m_updateListeners.end(), cb);
@@ -299,7 +281,6 @@ void CEntityPrototype::RemoveUpdateListener(UpdateCallback cb)
 		m_updateListeners.erase(it);
 }
 
-//////////////////////////////////////////////////////////////////////////
 void CEntityPrototype::Update()
 {
 	if (m_pArchetype)
@@ -338,4 +319,3 @@ void CEntityPrototype::Update()
 		}
 	}
 }
-

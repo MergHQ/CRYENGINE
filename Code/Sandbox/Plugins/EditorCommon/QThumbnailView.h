@@ -59,6 +59,8 @@ public:
 	static constexpr int s_ThumbnailColorRole = s_ThumbnailRole + 1;
 	//! Return true to view the thumbnail on top of the background slightly tinted with color from s_ThumbnailColorRole.
 	static constexpr int s_ThumbnailTintedBackgroundRole = s_ThumbnailColorRole + 1;
+	//! Return a list of icons that need to be drawn on top of the thumbnail.
+	static constexpr int s_ThumbnailIconsRole = s_ThumbnailTintedBackgroundRole + 1;
 
 	virtual QVariantMap GetState() const override;
 	virtual void        SetState(const QVariantMap& state) override;
@@ -94,4 +96,3 @@ private:
 	bool			  m_restoreSelection;
 	std::vector<CAdvancedPersistentModelIndex> m_selectedBackup;
 };
-

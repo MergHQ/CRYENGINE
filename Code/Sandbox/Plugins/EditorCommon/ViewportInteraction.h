@@ -13,4 +13,3 @@ struct EDITOR_COMMON_API ViewportInteraction
 
 	static bool CheckPolledKey(Key key);
 };
-

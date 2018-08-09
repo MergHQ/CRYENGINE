@@ -23,10 +23,6 @@ struct IItem
 	//! Returns name of the item.
 	virtual string const& GetName() const = 0;
 
-	//! Returns radius of the item.
-	//! The radius is used to calculate the activity radius of the connected audio system trigger.
-	virtual float GetRadius() const = 0;
-
 	//! Returns the number of children.
 	virtual size_t GetNumChildren() const = 0;
 

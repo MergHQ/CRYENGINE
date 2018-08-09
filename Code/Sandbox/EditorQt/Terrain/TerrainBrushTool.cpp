@@ -263,7 +263,7 @@ bool CBrushTool::MouseCallback(CViewport* view, EMouseEvent event, CPoint& point
 		else if (event == eMouseMove && bCollideWithTerrain && (flags & MK_LBUTTON))
 		{
 			const CPoint delta = s_lastMousePoint - point;
-			const CPoint magnitudeFromStart = abs(m_LMButtonDownPoint.x - point.x), abs(m_LMButtonDownPoint.y - point.y);
+			const CPoint magnitudeFromStart(abs(m_LMButtonDownPoint.x - point.x), abs(m_LMButtonDownPoint.y - point.y));
 
 			if (magnitudeFromStart.x > magnitudeFromStart.y)
 			{
@@ -780,7 +780,7 @@ void CHolesTool::Serialize(Serialization::IArchive& ar)
 
 void CHolesTool::Display(SDisplayContext& dc)
 {
-	if (dc.flags & DISPLAY_2D)
+	if (dc.display2D)
 		return;
 
 	CHeightmap* pHeightmap = GetIEditorImpl()->GetHeightmap();

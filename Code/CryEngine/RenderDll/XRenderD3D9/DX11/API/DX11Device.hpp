@@ -23,7 +23,7 @@ private:
 	D3D_FEATURE_LEVEL      m_featureLevel;
 
 public:
-	HRESULT                     CheckFeatureSupport(D3D11_FEATURE Feature, void *pFeatureSupportData, UINT FeatureSupportDataSize) { m_pDevice->CheckFeatureSupport(Feature, pFeatureSupportData, FeatureSupportDataSize); }
+	HRESULT                     CheckFeatureSupport(D3D11_FEATURE Feature, void *pFeatureSupportData, UINT FeatureSupportDataSize) { return m_pDevice->CheckFeatureSupport(Feature, pFeatureSupportData, FeatureSupportDataSize); }
 	D3D_FEATURE_LEVEL           GetFeatureLevel() const { return m_featureLevel; }
 
 	CCommandScheduler&          GetScheduler() { return m_Scheduler; }

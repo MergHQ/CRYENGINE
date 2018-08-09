@@ -83,7 +83,7 @@ void CRefPicture::CreateInspectorWidgets(CInspectorWidgetCreator& creator)
 void CRefPicture::Display(CObjectRenderHelper& objRenderHelper)
 {
 	SDisplayContext& dc = objRenderHelper.GetDisplayContextRef();
-	if (dc.flags & DISPLAY_2D)
+	if (dc.display2D)
 	{
 		if (IsSelected())
 		{
@@ -333,4 +333,3 @@ void CRefPicture::ApplyScale(bool bHeight)
 
 	CBaseObject::SetScale(Vec3(1.0f, scaleWidth, scaleHeight));
 }
-

@@ -46,4 +46,3 @@ private:
 
 extern OffsetManipulator s_OffsetManipulator;
 }
-

@@ -4,6 +4,7 @@
 #include "ProjectLoader.h"
 
 #include "Impl.h"
+#include "Utils.h"
 
 #include <CrySystem/File/CryFile.h>
 #include <CrySystem/ISystem.h>
@@ -25,21 +26,25 @@ void SetParentPakStatus(CItem* pParent, EPakStatus const pakStatus)
 }
 
 //////////////////////////////////////////////////////////////////////////
-CProjectLoader::CProjectLoader(string const& assetsPath, CItem& rootItem)
-	: m_assetsPath(assetsPath)
+CProjectLoader::CProjectLoader(string const& assetsPath, string const& localizedAssetsPath, CItem& rootItem, ItemCache& itemCache, CImpl const& impl)
+	: m_itemCache(itemCache)
+	, m_impl(impl)
 {
-	LoadFolder("", rootItem);
+	LoadFolder(assetsPath, "", false, rootItem);
+	LoadFolder(localizedAssetsPath, "", true, rootItem);
 }
 
 //////////////////////////////////////////////////////////////////////////
-void CProjectLoader::LoadFolder(string const& folderPath, CItem& parent)
+void CProjectLoader::LoadFolder(string const& assetsPath, string const& folderPath, bool const isLocalized, CItem& parent)
 {
 	_finddata_t fd;
 	ICryPak* const pCryPak = gEnv->pCryPak;
-	intptr_t const handle = pCryPak->FindFirst(m_assetsPath + "/" + folderPath + "/*.*", &fd);
+	intptr_t const handle = pCryPak->FindFirst(assetsPath + "/" + folderPath + "/*.*", &fd);
 
 	if (handle != -1)
 	{
+		EItemFlags const flags = isLocalized ? EItemFlags::IsLocalized : EItemFlags::None;
+
 		do
 		{
 			string const name = fd.name;
@@ -50,11 +55,11 @@ void CProjectLoader::LoadFolder(string const& folderPath, CItem& parent)
 				{
 					if (folderPath.empty())
 					{
-						LoadFolder(name, *CreateItem(name, folderPath, EItemType::Folder, parent));
+						LoadFolder(assetsPath, name, isLocalized, *CreateItem(assetsPath, name, folderPath, EItemType::Folder, parent, flags));
 					}
 					else
 					{
-						LoadFolder(folderPath + "/" + name, *CreateItem(name, folderPath, EItemType::Folder, parent));
+						LoadFolder(assetsPath, folderPath + "/" + name, isLocalized, *CreateItem(assetsPath, name, folderPath, EItemType::Folder, parent, flags));
 					}
 				}
 				else
@@ -63,10 +68,12 @@ void CProjectLoader::LoadFolder(string const& folderPath, CItem& parent)
 
 					if (posExtension != string::npos)
 					{
-						if ((_stricmp(name.data() + posExtension, ".ogg") == 0) || (_stricmp(name.data() + posExtension, ".wav") == 0))
+						string const fileExtension = name.data() + posExtension;
+
+						if (_stricmp(fileExtension, ".wav") == 0)
 						{
 							// Create the event with the same name as the file
-							CreateItem(name, folderPath, EItemType::Event, parent);
+							CreateItem(assetsPath, name, folderPath, EItemType::Event, parent, flags);
 						}
 					}
 				}
@@ -79,43 +86,52 @@ void CProjectLoader::LoadFolder(string const& folderPath, CItem& parent)
 }
 
 //////////////////////////////////////////////////////////////////////////
-CItem* CProjectLoader::CreateItem(string const& name, string const& path, EItemType const type, CItem& parent)
+CItem* CProjectLoader::CreateItem(string const& assetsPath, string const& name, string const& path, EItemType const type, CItem& parent, EItemFlags flags)
 {
-	ControlId id;
-	string filePath = m_assetsPath + "/";
+	bool const isLocalized = (flags& EItemFlags::IsLocalized) != 0;
+	ControlId const id = Utils::GetId(type, name, path, isLocalized);
+	auto pItem = static_cast<CItem*>(m_impl.GetItem(id));
 
-	if (path.empty())
+	if (pItem == nullptr)
 	{
-		id = CryAudio::StringToId(name);
-		filePath += name;
+		string filePath = assetsPath + "/";
+
+		if (path.empty())
+		{
+			filePath += name;
+		}
+		else
+		{
+			filePath += (path + "/" + name);
+		}
+
+		EPakStatus pakStatus = EPakStatus::None;
+
+		if (gEnv->pCryPak->IsFileExist(filePath.c_str(), ICryPak::eFileLocation_InPak))
+		{
+			pakStatus |= EPakStatus::InPak;
+		}
+
+		if (gEnv->pCryPak->IsFileExist(filePath.c_str(), ICryPak::eFileLocation_OnDisk))
+		{
+			pakStatus |= EPakStatus::OnDisk;
+		}
+
+		if (type == EItemType::Event)
+		{
+			SetParentPakStatus(&parent, pakStatus);
+		}
+		else if (type == EItemType::Folder)
+		{
+			flags |= EItemFlags::IsContainer;
+		}
+
+		pItem = new CItem(name, id, type, path, flags, pakStatus, filePath);
+
+		parent.AddChild(pItem);
+		m_itemCache[id] = pItem;
 	}
-	else
-	{
-		id = CryAudio::StringToId(path + "/" + name);
-		filePath += (path + "/" + name);
-	}
 
-	EItemFlags const flags = type == EItemType::Folder ? EItemFlags::IsContainer : EItemFlags::None;
-	EPakStatus pakStatus = EPakStatus::None;
-
-	if (gEnv->pCryPak->IsFileExist(filePath.c_str(), ICryPak::eFileLocation_InPak))
-	{
-		pakStatus |= EPakStatus::InPak;
-	}
-
-	if (gEnv->pCryPak->IsFileExist(filePath.c_str(), ICryPak::eFileLocation_OnDisk))
-	{
-		pakStatus |= EPakStatus::OnDisk;
-	}
-
-	if (type == EItemType::Event)
-	{
-		SetParentPakStatus(&parent, pakStatus);
-	}
-
-	auto const pItem = new CItem(name, id, type, flags, pakStatus, filePath);
-
-	parent.AddChild(pItem);
 	return pItem;
 }
 } // namespace PortAudio

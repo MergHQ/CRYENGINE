@@ -27,4 +27,3 @@ private:
 	void CreateCircle(const BrushVec3& mins, const BrushVec3& maxs, int numSides, std::vector<BrushVec3>& outVertexList) const;
 };
 }
-

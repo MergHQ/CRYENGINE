@@ -54,4 +54,3 @@ private:
 	string m_sourceDirectory; // Directory of source FBX file.
 	std::vector<std::unique_ptr<STexture>> m_textures;
 };
-

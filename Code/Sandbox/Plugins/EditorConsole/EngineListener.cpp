@@ -268,4 +268,3 @@ void CEngineListener::Execute(const t_string& command) const
 		pConsole->ExecuteString(command.c_str());
 	}
 }
-

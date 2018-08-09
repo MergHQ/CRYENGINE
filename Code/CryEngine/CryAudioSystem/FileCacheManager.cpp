@@ -18,23 +18,22 @@
 namespace CryAudio
 {
 //////////////////////////////////////////////////////////////////////////
-CFileCacheManager::CFileCacheManager(AudioPreloadRequestLookup& preloadRequests)
-	: m_preloadRequests(preloadRequests)
-	, m_currentByteTotal(0)
+CFileCacheManager::CFileCacheManager()
+	: m_currentByteTotal(0)
 	, m_maxByteTotal(0)
 {
 }
 
 //////////////////////////////////////////////////////////////////////////
-void CFileCacheManager::Init()
+CFileCacheManager::~CFileCacheManager()
 {
-	AllocateHeap(static_cast<size_t>(g_cvars.m_fileCacheManagerSize), "AudioFileCacheManager");
+	CRY_ASSERT_MESSAGE(m_audioFileEntries.empty(), "There are still file entries during CFileCacheManager destruction!");
 }
 
 //////////////////////////////////////////////////////////////////////////
-void CFileCacheManager::Release()
+void CFileCacheManager::Initialize()
 {
-	CRY_ASSERT(m_audioFileEntries.empty());
+	AllocateHeap(static_cast<size_t>(g_cvars.m_fileCacheManagerSize), "AudioFileCacheManager");
 }
 
 //////////////////////////////////////////////////////////////////////////
@@ -182,7 +181,7 @@ ERequestStatus CFileCacheManager::TryLoadRequest(PreloadRequestId const audioPre
 {
 	bool bFullSuccess = false;
 	bool bFullFailure = true;
-	CATLPreloadRequest* const pPreloadRequest = stl::find_in_map(m_preloadRequests, audioPreloadRequestId, nullptr);
+	CATLPreloadRequest* const pPreloadRequest = stl::find_in_map(g_preloadRequests, audioPreloadRequestId, nullptr);
 
 	if (pPreloadRequest != nullptr && (!bAutoLoadOnly || (bAutoLoadOnly && pPreloadRequest->m_bAutoLoad)))
 	{
@@ -209,7 +208,7 @@ ERequestStatus CFileCacheManager::TryUnloadRequest(PreloadRequestId const audioP
 {
 	bool bFullSuccess = false;
 	bool bFullFailure = true;
-	CATLPreloadRequest* const pPreloadRequest = stl::find_in_map(m_preloadRequests, audioPreloadRequestId, nullptr);
+	CATLPreloadRequest* const pPreloadRequest = stl::find_in_map(g_preloadRequests, audioPreloadRequestId, nullptr);
 
 	if (pPreloadRequest != nullptr)
 	{

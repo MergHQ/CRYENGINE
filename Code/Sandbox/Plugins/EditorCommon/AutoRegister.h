@@ -140,4 +140,3 @@ private:
 
 template<typename T> CAutoRegister<T>* CAutoRegister<T>::s_pLast = nullptr;
 template<typename T> CAutoRegister<T>* CAutoRegister<T>::s_pFirst = nullptr;
-

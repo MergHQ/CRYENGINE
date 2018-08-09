@@ -1567,4 +1567,3 @@ dll_string AnimationAliasSelector(const SResourceSelectorContext& x, const char*
 REGISTER_RESOURCE_SELECTOR("AnimationAlias", AnimationAliasSelector, "icons:common/assets_animation.ico")
 
 }
-

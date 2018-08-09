@@ -19,4 +19,3 @@ yasli::wstring fromANSIToWide(const char* ansiString);
 yasli::string toANSIFromWide(const wchar_t* wstr);
 
 }
-

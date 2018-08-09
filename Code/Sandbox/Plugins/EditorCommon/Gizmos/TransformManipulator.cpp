@@ -1,23 +1,17 @@
 // Copyright 2001-2018 Crytek GmbH / Crytek Group. All rights reserved.
 
 #include "StdAfx.h"
-#include "IEditor.h"
 #include "TransformManipulator.h"
-#include "IUndoManager.h"
-#include "Grid.h"
-
-#include "IDisplayViewport.h"
 
 #include "Gizmos/AxisHelper.h"
 #include "Gizmos/AxisHelperExtended.h"
-
+#include "Grid.h"
+#include "IDisplayViewport.h"
 #include "QtUtil.h"
 
-//////////////////////////////////////////////////////////////////////////
-// CAxisGizmo implementation.
-//////////////////////////////////////////////////////////////////////////
+#include <IEditor.h>
+#include <IUndoManager.h>
 
-//////////////////////////////////////////////////////////////////////////
 CTransformManipulator::CTransformManipulator(ITransformManipulatorOwner* owner)
 	: m_bDragging(false)
 	, m_bUseCustomTransform(false)
@@ -36,7 +30,6 @@ CTransformManipulator::CTransformManipulator(ITransformManipulatorOwner* owner)
 	GetIEditor()->GetLevelEditorSharedState()->signalEditModeChanged.Connect(this, &CTransformManipulator::OnUpdateState);
 }
 
-//////////////////////////////////////////////////////////////////////////
 CTransformManipulator::~CTransformManipulator()
 {
 	GetIEditor()->GetLevelEditorSharedState()->signalAxisConstraintChanged.DisconnectObject(this);
@@ -382,7 +375,6 @@ void CTransformManipulator::UpdateTransform()
 	}
 }
 
-//////////////////////////////////////////////////////////////////////////
 void CTransformManipulator::Display(SDisplayContext& dc)
 {
 	if (!m_owner->IsManipulatorVisible())
@@ -454,7 +446,7 @@ void CTransformManipulator::Display(SDisplayContext& dc)
 			m_zRotateAxis.Display(dc);
 		}
 
-		if (editMode == CLevelEditorSharedState::EditMode::Move && !(dc.flags & DISPLAY_2D))
+		if (editMode == CLevelEditorSharedState::EditMode::Move && !dc.display2D)
 		{
 			// TODO: Use SHIFT+G key for this, make it a polled key
 			bool bClickedShift = QtUtil::IsModifierKeyDown(Qt::ShiftModifier);
@@ -479,7 +471,7 @@ void CTransformManipulator::Display(SDisplayContext& dc)
 		m_yzMovePlane.Display(dc);
 		m_zxMovePlane.Display(dc);
 
-		if (!(dc.flags & DISPLAY_2D))
+		if (!dc.display2D)
 		{
 			//TODO: Use SHIFT+G key for this, make it a polled key
 			bool bClickedShift = QtUtil::IsModifierKeyDown(Qt::ShiftModifier);
@@ -544,13 +536,11 @@ void CTransformManipulator::DisplayPivotPoint(SDisplayContext& dc)
 	dc.SetStateFlag(curflags);
 }
 
-//////////////////////////////////////////////////////////////////////////
 void CTransformManipulator::SetWorldBounds(const AABB& bbox)
 {
 	m_bbox = bbox;
 }
 
-//////////////////////////////////////////////////////////////////////////
 void CTransformManipulator::GetWorldBounds(AABB& bbox)
 {
 	// TODO: substitute with scaled bounding box (will need very careful evaluation order)
@@ -560,13 +550,11 @@ void CTransformManipulator::GetWorldBounds(AABB& bbox)
 	}
 }
 
-//////////////////////////////////////////////////////////////////////////
 void CTransformManipulator::SetMatrix(const Matrix34& m)
 {
 	m_matrix = m;
 }
 
-//////////////////////////////////////////////////////////////////////////
 bool CTransformManipulator::HitTest(HitContext& hc, EManipulatorMode& manipulatorMode)
 {
 	CLevelEditorSharedState::EditMode editMode = GetIEditor()->GetLevelEditorSharedState()->GetEditMode();
@@ -740,7 +728,6 @@ bool CTransformManipulator::HitTest(HitContext& hc)
 	return false;
 }
 
-//////////////////////////////////////////////////////////////////////////
 Matrix34 CTransformManipulator::GetTransform() const
 {
 	return m_matrix;
@@ -759,7 +746,6 @@ bool CTransformManipulator::NeedsSnappingGrid() const
 	return m_bDragging && GetIEditor()->GetLevelEditorSharedState()->GetEditMode() == CLevelEditorSharedState::EditMode::Move;
 }
 
-//////////////////////////////////////////////////////////////////////////
 bool CTransformManipulator::MouseCallback(IDisplayViewport* view, EMouseEvent event, CPoint& point, int nFlags)
 {
 	if (m_highlightedGizmo)
@@ -769,8 +755,7 @@ bool CTransformManipulator::MouseCallback(IDisplayViewport* view, EMouseEvent ev
 	else if (event == eMouseMove)
 	{
 		// Hit test current transform manipulator, to highlight when mouse over.
-		HitContext hc;
-		hc.view = view;
+		HitContext hc(view);
 		hc.point2d = point;
 		view->ViewToWorldRay(point, hc.raySrc, hc.rayDir);
 		bool bHit = false;

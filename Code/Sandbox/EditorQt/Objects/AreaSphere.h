@@ -19,7 +19,7 @@ public:
 	//////////////////////////////////////////////////////////////////////////
 	bool         CreateGameObject();
 	virtual void InitVariables();
-	void         Display(SDisplayContext& dc);
+	virtual void Display(CObjectRenderHelper& objRenderHelper) override;
 	bool         IsScalable() const override  { return false; }
 	bool         IsRotatable() const override { return false; }
 	void         GetLocalBounds(AABB& box);
@@ -76,4 +76,3 @@ public:
 	const char*    Category()        { return "Area"; }
 	CRuntimeClass* GetRuntimeClass() { return RUNTIME_CLASS(CAreaSphere); }
 };
-

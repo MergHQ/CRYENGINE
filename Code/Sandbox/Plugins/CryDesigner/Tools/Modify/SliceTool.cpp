@@ -320,4 +320,3 @@ void SliceTool::Serialize(Serialization::IArchive& ar)
 
 REGISTER_DESIGNER_TOOL_WITH_PROPERTYTREE_PANEL_AND_COMMAND(eDesigner_Slice, eToolGroup_Modify, "Slice", SliceTool,
                                                            slice, "runs slice tool", "designer.slice");
-

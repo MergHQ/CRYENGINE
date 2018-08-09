@@ -87,4 +87,3 @@ private:
 typedef _smart_ptr<UVElementSet> UVElementSetPtr;
 }
 }
-

@@ -851,4 +851,3 @@ bool RemoveScriptElement(const IScriptElement& element)
 }
 } // ScriptBrowserUtils
 } // Schematyc
-

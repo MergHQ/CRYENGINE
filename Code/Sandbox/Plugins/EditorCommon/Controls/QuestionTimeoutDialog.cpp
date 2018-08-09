@@ -61,4 +61,3 @@ void CQuestionTimeoutDialog::UpdateText()
 	const QString infoLabelText = m_infoLabelText.isEmpty() ? countdownText : tr("%1\n%2").arg(m_infoLabelText, countdownText);
 	m_infoLabel->setText(infoLabelText);
 }
-

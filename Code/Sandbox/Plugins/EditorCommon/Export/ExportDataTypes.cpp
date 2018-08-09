@@ -128,4 +128,3 @@ void SExportData::Clear()
 {
 	m_objects.clear();
 }
-

@@ -42,4 +42,3 @@ IEditor* GetIEditor();
 #if defined(GetObject)
 	#undef GetObject
 #endif
-

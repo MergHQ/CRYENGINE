@@ -2,7 +2,9 @@
 
 #pragma once
 
-#include "ATL.h"
+#include "AudioInternalInterfaces.h"
+#include <CryAudio/IAudioSystem.h>
+#include <CrySystem/ISystem.h>
 #include <CrySystem/TimeValue.h>
 #include <CryThreading/IThreadManager.h>
 #include <concqueue/concqueue.hpp>
@@ -22,8 +24,6 @@ public:
 	CMainThread& operator=(CMainThread const&) = delete;
 	CMainThread& operator=(CMainThread&&) = delete;
 
-	void         Init(CSystem* const pSystem);
-
 	// IThread
 	virtual void ThreadEntry() override;
 	// ~IThread
@@ -37,16 +37,15 @@ public:
 
 private:
 
-	CSystem*      m_pSystem = nullptr;
-	volatile bool m_bQuit = false;
+	volatile bool m_doWork = true;
 };
 
-class CSystem final : public IAudioSystem, ::ISystemEventListener
+class CSystem final : public IAudioSystem, public ::ISystemEventListener
 {
 public:
 
-	CSystem();
-	virtual ~CSystem() override;
+	CSystem() = default;
+	virtual ~CSystem() override = default;
 
 	CSystem(CSystem const&) = delete;
 	CSystem(CSystem&&) = delete;
@@ -68,13 +67,15 @@ public:
 	virtual void        ReportStartedFile(CATLStandaloneFile& standaloneFile, bool const bSuccessfullyStarted, SRequestUserData const& userData = SRequestUserData::GetEmptyObject()) override;
 	virtual void        ReportStoppedFile(CATLStandaloneFile& standaloneFile, SRequestUserData const& userData = SRequestUserData::GetEmptyObject()) override;
 	virtual void        ReportFinishedEvent(CATLEvent& event, bool const bSuccess, SRequestUserData const& userData = SRequestUserData::GetEmptyObject()) override;
+	virtual void        ReportVirtualizedEvent(CATLEvent& event, SRequestUserData const& userData = SRequestUserData::GetEmptyObject()) override;
+	virtual void        ReportPhysicalizedEvent(CATLEvent& event, SRequestUserData const& userData = SRequestUserData::GetEmptyObject()) override;
 	virtual void        StopAllSounds(SRequestUserData const& userData = SRequestUserData::GetEmptyObject()) override;
 	virtual void        Refresh(char const* const szLevelName, SRequestUserData const& userData = SRequestUserData::GetEmptyObject()) override;
 	virtual void        PreloadSingleRequest(PreloadRequestId const id, bool const bAutoLoadOnly, SRequestUserData const& userData = SRequestUserData::GetEmptyObject()) override;
 	virtual void        UnloadSingleRequest(PreloadRequestId const id, SRequestUserData const& userData = SRequestUserData::GetEmptyObject()) override;
 	virtual void        ReloadControlsData(char const* const szFolderPath, char const* const szLevelName, SRequestUserData const& userData = SRequestUserData::GetEmptyObject()) override;
-	virtual void        AddRequestListener(void (* func)(SRequestInfo const* const), void* const pObjectToListenTo, ESystemEvents const eventMask) override;
-	virtual void        RemoveRequestListener(void (* func)(SRequestInfo const* const), void* const pObjectToListenTo) override;
+	virtual void        AddRequestListener(void (*func)(SRequestInfo const* const), void* const pObjectToListenTo, ESystemEvents const eventMask) override;
+	virtual void        RemoveRequestListener(void (*func)(SRequestInfo const* const), void* const pObjectToListenTo) override;
 	virtual void        ExternalUpdate() override;
 	virtual char const* GetConfigPath() const override;
 	virtual IListener*  CreateListener(char const* const szname = nullptr) override;
@@ -85,7 +86,6 @@ public:
 	virtual void        GetTriggerData(ControlId const triggerId, STriggerData& triggerData) override;
 	virtual void        OnLoadLevel(char const* const szLevelName) override;
 	virtual void        OnUnloadLevel() override;
-	virtual void        OnLanguageChanged() override;
 	virtual void        GetImplInfo(SImplInfo& implInfo) override;
 	virtual void        Log(ELogType const type, char const* const szFormat, ...) override;
 	// ~CryAudio::IAudioSystem
@@ -99,7 +99,6 @@ public:
 	void ParseControlsData(char const* const szFolderPath, EDataScope const dataScope, SRequestUserData const& userData = SRequestUserData::GetEmptyObject());
 	void ParsePreloadsData(char const* const szFolderPath, EDataScope const dataScope, SRequestUserData const& userData = SRequestUserData::GetEmptyObject());
 	void RetriggerAudioControls(SRequestUserData const& userData = SRequestUserData::GetEmptyObject());
-
 	void InternalUpdate();
 
 private:
@@ -107,17 +106,17 @@ private:
 	using AudioRequests = ConcQueue<UnboundMPSC, CAudioRequest>;
 	using AudioRequestsSyncCallbacks = ConcQueue<UnboundSPSC, CAudioRequest>;
 
+	void        OnLanguageChanged();
 	void        ProcessRequests(AudioRequests& requestQueue);
 	static void OnCallback(SRequestInfo const* const pRequestInfo);
 
-	bool                       m_isInitialized;
-	bool                       m_didThreadWait;
-	volatile float             m_accumulatedFrameTime;
-	std::atomic<uint32>        m_externalThreadFrameId;
-	uint32                     m_lastExternalThreadFrameId;
+	bool                       m_isInitialized = false;
+	bool                       m_didThreadWait = false;
+	volatile float             m_accumulatedFrameTime = 0.0f;
+	std::atomic<uint32>        m_externalThreadFrameId{ 0 };
+	uint32                     m_lastExternalThreadFrameId = 0;
 	CMainThread                m_mainThread;
 
-	CAudioTranslationLayer     m_atl;
 	AudioRequests              m_requestQueue;
 	AudioRequestsSyncCallbacks m_syncCallbacks;
 	CAudioRequest              m_syncRequest;
@@ -137,8 +136,8 @@ private:
 	void SubmitLastIRenderAuxGeomForRendering();
 	void DrawAudioDebugData();
 
-	std::atomic<IRenderAuxGeom*> m_currentRenderAuxGeom;
-	std::atomic<IRenderAuxGeom*> m_lastRenderAuxGeom;
+	std::atomic<IRenderAuxGeom*> m_currentRenderAuxGeom{ nullptr };
+	std::atomic<IRenderAuxGeom*> m_lastRenderAuxGeom{ nullptr };
 #endif // INCLUDE_AUDIO_PRODUCTION_CODE
 };
 } // namespace CryAudio

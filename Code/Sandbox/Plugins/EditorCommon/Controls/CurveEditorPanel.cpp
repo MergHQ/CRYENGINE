@@ -133,4 +133,3 @@ void CCurveEditorPanel::OnContentDestroyed(QObject* pObject)
 {
 	SetEditorContent(nullptr);
 }
-

@@ -53,4 +53,3 @@ void QAdvancedPropertyTree::SavePersonalization()
 		}
 	}
 }
-

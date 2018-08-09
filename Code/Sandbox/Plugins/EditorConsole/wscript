@@ -8,7 +8,7 @@
 #############################################################################
 
 def build(bld): 
-	bld.CryPlugin(
+	bld.CryEditorPlugin(
 		target                      = 'EditorConsole',
 		vs_filter                   = 'Sandbox/Plugins',
 		file_list                   = 'editorconsole.waf_files',

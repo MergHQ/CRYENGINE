@@ -30,4 +30,3 @@ void CUndoEntityProperty::Redo()
 {
 	PySetEntityProperty(m_entityName, m_propertyName, m_redo);
 }
-

@@ -26,9 +26,8 @@ namespace UQS
 
 			struct SUpdateContext
 			{
-				explicit                       SUpdateContext(const Core::CQueryID& _queryID, const Core::SQueryBlackboard& _blackboard, Shared::IUqsString& _error);
-				Core::CQueryID                 queryID;
-				const Core::SQueryBlackboard&  blackboard;
+				explicit                       SUpdateContext(const Core::SQueryContext& _queryContext, Shared::IUqsString& _error);
+				const Core::SQueryContext&     queryContext;
 				Shared::IUqsString&            error;
 			};
 
@@ -37,9 +36,8 @@ namespace UQS
 			virtual EUpdateStatus              Update(const SUpdateContext& updateContext, Core::IItemList& itemListToPopulate) = 0;
 		};
 
-		inline IGenerator::SUpdateContext::SUpdateContext(const Core::CQueryID& _queryID, const Core::SQueryBlackboard& _blackboard, Shared::IUqsString& _error)
-			: queryID(_queryID)
-			, blackboard(_blackboard)
+		inline IGenerator::SUpdateContext::SUpdateContext(const Core::SQueryContext& _queryContext, Shared::IUqsString& _error)
+			: queryContext(_queryContext)
 			, error(_error)
 		{}
 

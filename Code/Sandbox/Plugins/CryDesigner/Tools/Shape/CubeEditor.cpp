@@ -780,4 +780,3 @@ void CubeEditor::AddBrush(const AABB& aabb)
 #include "UIs/CubeEditorPanel.h"
 REGISTER_DESIGNER_TOOL_WITH_PANEL_AND_COMMAND(eDesigner_CubeEditor, eToolGroup_Shape, "Cube Editor", CubeEditor, CubeEditorPanel,
                                               cube_editor, "runs cube editor", "designer.cube_editor")
-

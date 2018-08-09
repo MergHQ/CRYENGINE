@@ -595,4 +595,3 @@ void GetAllUVsFromUVIsland(UVIslandPtr pUVIsland, std::set<UVVertex>& outUVs)
 }
 }
 }
-

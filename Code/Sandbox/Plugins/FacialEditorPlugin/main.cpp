@@ -34,5 +34,3 @@ PLUGIN_API void DeletePluginInstance(IPlugin* pPlugin)
 	delete pPlugin;
 }
 */
-
-

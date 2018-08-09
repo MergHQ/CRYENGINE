@@ -127,4 +127,3 @@ bool CCloudObject::HitTest(HitContext& hc)
 	}
 	return false;
 }
-

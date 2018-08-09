@@ -90,7 +90,7 @@ void CVegetationSelectTool::Display(SDisplayContext& dc)
 		}
 	}
 
-	if (dc.flags & DISPLAY_2D)
+	if (dc.display2D)
 	{
 		return;
 	}

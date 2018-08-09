@@ -36,7 +36,3 @@ private:
 	std::vector<std::pair<string, SAssetDependencyInfo>> m_index;
 	std::future<void> m_future;
 };
-
-
-
-

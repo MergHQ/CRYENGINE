@@ -76,4 +76,3 @@ uint64 CRcInOrderCaller::GetTimpestamp() const
 {
 	return m_timestamp;
 }
-

@@ -30,4 +30,3 @@ struct SPhysProxies
 
 	void                          Serialize(Serialization::IArchive& ar);
 };
-

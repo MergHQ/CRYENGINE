@@ -693,7 +693,8 @@ int CSaverCGF::SaveNodeMesh(
 		chunk.bboxMax = pNode->meshInfo.bboxMax;
 	}
 
-	const bool bEmptyMesh = m_bDoNotSaveMeshData || pNode->bPhysicsProxy || !pNode->pMesh;
+	const bool bHaveMesh = pNode->pMesh && !pNode->bPhysicsProxy;
+	const bool bEmptyMesh = m_bDoNotSaveMeshData || !bHaveMesh;
 
 	if (bEmptyMesh)
 	{
@@ -712,13 +713,24 @@ int CSaverCGF::SaveNodeMesh(
 		}
 	}
 
-	if (!bEmptyMesh)
+	if (bHaveMesh)
 	{
 		CMesh& mesh = *pNode->pMesh;
 
 		mesh.RecomputeTexMappingDensity();
 		chunk.texMappingDensity = mesh.m_texMappingDensity;
 		chunk.nFlags |= MESH_CHUNK_DESC_0801::HAS_TEX_MAPPING_DENSITY;
+
+		if (mesh.RecomputeGeometricMeanFaceArea())
+		{
+			chunk.geometricMeanFaceArea = mesh.m_geometricMeanFaceArea;
+			chunk.nFlags |= MESH_CHUNK_DESC_0801::HAS_FACE_AREA;
+		}
+	}
+
+	if (!bEmptyMesh)
+	{
+		CMesh& mesh = *pNode->pMesh;
 
 		chunk.nSubsetsChunkId = SaveMeshSubsetsChunk(mesh, bSwapEndian);
 
@@ -1620,7 +1632,7 @@ int CSaverCGF::SaveVCloth(bool bSwapEndian)
 	saver.WriteChunkHeader();
 	saver.WriteChunkVertices();
 	saver.WriteTriangleData();
-	saver.WriteLraNotAttachedOrdered();
+	saver.WriteNndcNotAttachedOrdered();
 	saver.WriteLinks();
 
 	return m_pChunkFile->AddChunk(

@@ -55,4 +55,3 @@ void CAbstractConnectionItem::SetDeactivated(bool isDeactivated)
 }
 
 }
-

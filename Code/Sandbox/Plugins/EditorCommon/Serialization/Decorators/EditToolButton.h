@@ -189,4 +189,3 @@ inline SEditToolButton EditToolButton(const char* icon = "")
 }
 
 }
-

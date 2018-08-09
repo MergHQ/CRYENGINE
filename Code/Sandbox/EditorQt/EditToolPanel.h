@@ -38,4 +38,3 @@ protected:
 	QPropertyTree*      m_pPropertyTree;
 	SEditToolSerializer m_toolSerializer;
 };
-

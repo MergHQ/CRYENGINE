@@ -76,4 +76,3 @@ void SaveRcObjectAsync(const SRcObjectSaveState& saveState, const string& target
 		}
 	});
 }
-

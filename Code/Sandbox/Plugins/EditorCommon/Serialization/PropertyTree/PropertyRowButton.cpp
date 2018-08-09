@@ -103,4 +103,3 @@ bool PropertyRowButton::onActivate(const PropertyActivationEvent& ev)
 
 DECLARE_SEGMENT(PropertyRowButton)
 REGISTER_PROPERTY_ROW(Button, PropertyRowButton);
-

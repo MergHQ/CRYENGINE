@@ -119,4 +119,3 @@ protected:
 	static class CSplinePanel* m_pSplinePanel;
 	static int                 m_splineRollupID;
 };
-

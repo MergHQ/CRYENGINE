@@ -24,7 +24,7 @@ namespace UQS
 		class CBlueprintWithInputs
 		{
 		public:
-			bool                               InstantiateFunctionCallHierarchy(CFunctionCallHierarchy& out, const SQueryBlackboard& blackboard, Shared::CUqsString& error) const;
+			bool                               InstantiateFunctionCallHierarchy(CFunctionCallHierarchy& out, const SQueryContext& queryContext, Shared::CUqsString& error) const;
 
 		protected:
 			explicit                           CBlueprintWithInputs() {}

@@ -37,8 +37,8 @@
 #include "core/IInputBlueprint.h"
 #include "core/ItemIterationContext.h"
 #include "core/ITimeBudget.h"
-#include "core/QueryBlackboard.h"
 #include "core/QueryID.h"
+#include "core/QueryContext.h"
 #include "core/ILeafFunctionReturnValue.h"
 
 #include "client/IFunction.h"

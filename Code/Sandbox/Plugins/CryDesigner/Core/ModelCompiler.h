@@ -37,8 +37,8 @@ public:
 	void         SetViewDistRatio(int nViewDistRatio) { m_viewDistRatio = nViewDistRatio; }
 	int          GetViewDistRatio() const             { return m_viewDistRatio; }
 
-	void         SetRenderFlags(int nRenderFlag)      { m_RenderFlags = nRenderFlag; }
-	int          GetRenderFlags() const               { return m_RenderFlags; }
+	void         SetRenderFlags(uint64 nRenderFlag)   { m_RenderFlags = nRenderFlag; }
+	uint64       GetRenderFlags() const               { return m_RenderFlags; }
 
 	void         SetStaticObjFlags(int nStaticObjFlag);
 	int          GetStaticObjFlags();
@@ -67,9 +67,8 @@ private:
 	mutable IStatObj*    m_pStatObj[cShelfMax];
 	mutable IRenderNode* m_pRenderNode[cShelfMax];
 
-	int                  m_RenderFlags;
+	uint64               m_RenderFlags;
 	int                  m_viewDistRatio;
 	int                  m_nCompilerFlag;
 };
 }
-

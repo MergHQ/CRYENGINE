@@ -520,4 +520,3 @@ CBaseBrush* CAreaSolid::GetBrush() const
 		m_pBrush = new CBaseBrush(0);
 	return m_pBrush;
 }
-

@@ -29,4 +29,3 @@ private:
 	static CCryLinkCommands ms_instance;
 };
 } // Schematyc
-

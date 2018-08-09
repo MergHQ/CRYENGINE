@@ -332,6 +332,7 @@ public:
 		return *this;
 	};
 	bool                   IsNetSynced() const { return m_doNetSync && GetTypeDesc().GetOperators().netSerialize != nullptr; };
+	bool                   IsNetSyncAllowed() const { return m_doNetSync; }
 	bool                   IsNetSpawnSynced() const { return m_doNetSpawnSync && GetTypeDesc().GetOperators().netSerialize != nullptr; };
 	int32                  GetNetPolicy() const { return m_netPolicy; };
 

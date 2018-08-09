@@ -2,21 +2,23 @@
 
 #include "StdAfx.h"
 #include "CubemapUtils.h"
-#include "Objects\EntityObject.h"
-#include "Objects\EnvironmentProbeObject.h"
-#include "Util\ImageTIF.h"
-#include "Controls/QuestionDialog.h"
-#include "IEditorImpl.h"
+
+#include "Objects/EntityObject.h"
+#include "Objects/EnvironmentProbeObject.h"
 #include "IBackgroundScheduleManager.h"
-#include "FilePathUtil.h"
-///////////////////////////////////////////////////////////////////////////////////
+#include "IEditorImpl.h"
+
+#include <Controls/QuestionDialog.h>
+#include <Preferences/GlobalHelperPreferences.h>
+#include <Util/ImageTIF.h>
+#include <FilePathUtil.h>
+
 bool CubemapUtils::GenCubemapWithPathAndSize(string& filename, const int size, const bool dds)
 {
 	CBaseObject* pObject = GetIEditorImpl()->GetSelectedObject();
 	return GenCubemapWithObjectPathAndSize(filename, pObject, size, dds);
 }
 
-///////////////////////////////////////////////////////////////////////////////////
 bool CubemapUtils::GenCubemapWithObjectPathAndSize(string& filename, CBaseObject* pObject, const int size, const bool dds)
 {
 	if (!pObject)
@@ -65,16 +67,17 @@ bool CubemapUtils::GenCubemapWithObjectPathAndSize(string& filename, CBaseObject
 		}
 	}
 
-	// Items like helpers (CE-15190) and aux. geo. like gizmos (CE-15280) should not be rendered into cubemaps
-	bool helpersOn = GetIEditorImpl()->IsHelpersDisplayed();
-	if (helpersOn) 
+	//Turn off all GLOBAL helpers
+	// 1. Area and Clip Volumes (the volume meshes themselves are controlled via Global setting)
+	bool designerVolumesOn = gGlobalHelperPreferences.showDesignerVolumes;
+	if (designerVolumesOn)
 	{
-		GetIEditorImpl()->EnableHelpersDisplay(false);
-		GetIEditorImpl()->GetObjectManager()->SendEvent(EVENT_HIDE_HELPER);
-	} 
+		gGlobalHelperPreferences.SetShowDesignerVolumes(false);
+	}
 
+	//2. r_auxGeom
 	int auxOn = gEnv->pConsole->GetCVar("r_auxGeom")->GetIVal();
-	if(auxOn)
+	if (auxOn)
 		gEnv->pConsole->GetCVar("r_auxGeom")->Set(0);
 
 	string texname = PathUtil::GetFileName(filename);
@@ -104,21 +107,25 @@ bool CubemapUtils::GenCubemapWithObjectPathAndSize(string& filename, CBaseObject
 	{
 		pIEnt->Hide(bIsHidden);
 	}
-	// restore rendering of helpers and Aux. Geo.
-	if (helpersOn) 
+
+	// Restore rendering of GLOBAL helpers:
+	// 1. Area and Clip Volumes
+	if (designerVolumesOn)
 	{
-		GetIEditorImpl()->EnableHelpersDisplay(true);
-		GetIEditorImpl()->GetObjectManager()->SendEvent(EVENT_SHOW_HELPER);
-	} 
+		gGlobalHelperPreferences.SetShowDesignerVolumes(true);
+	}
+
+	// 2. r_auxGeom
 	if (auxOn)
+	{
 		gEnv->pConsole->GetCVar("r_auxGeom")->Set(auxOn);
+	}
 
 	filename = PathUtil::ToUnixPath(texname.GetString()).c_str();
 	return true;
 }
 
-//////////////////////////////////////////////////////////////////////////
-void CubemapUtils::GenHDRCubemapTiff(const string& fileName, std::size_t nDstSize, Vec3& pos)
+void CubemapUtils::GenHDRCubemapTiff(const string& fileName, size_t nDstSize, Vec3& pos)
 {
 	const auto nSrcSize = nDstSize * 4; // Render 16x bigger cubemap (4x4) - 16x SSAA
 	const auto srcPitch = nSrcSize * 4;
@@ -209,4 +216,3 @@ void CubemapUtils::GenerateCubemaps()
 	envmapTexSchedule->AddItem(scheduleItem);
 	GetIEditorImpl()->GetBackgroundScheduleManager()->SubmitSchedule(envmapTexSchedule);
 }
-

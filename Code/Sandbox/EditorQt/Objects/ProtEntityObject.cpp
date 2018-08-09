@@ -291,4 +291,3 @@ SPreviewDesc CProtEntityObjectClassDesc::GetPreviewDesc(const char* id) const
 	}
 	return previewDesc;
 }
-

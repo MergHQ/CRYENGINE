@@ -627,7 +627,7 @@ bool CEntitySystem::InitEntity(IEntity* pEntity, SEntitySpawnParams& params)
 	}
 
 #ifndef RELEASE
-	if (gEnv->IsEditor() && !gEnv->IsEditing() && !(pCEntity->GetFlags() & ENTITY_FLAG_UNREMOVABLE))
+	if (gEnv->IsEditor() && gEnv->IsGameOrSimulation()  &&!(pCEntity->GetFlags() & ENTITY_FLAG_UNREMOVABLE))
 	{
 		m_entityComponentsCache->OnEntitySpawnedDuringGameMode(pEntity->GetId());
 	}
@@ -773,7 +773,7 @@ void CEntitySystem::RemoveEntity(CEntity* pEntity, bool forceRemoveImmediately, 
 			}
 
 #ifndef RELEASE
-			if (gEnv->IsEditor() && !gEnv->IsEditing() && !(pEntity->GetFlags() & ENTITY_FLAG_UNREMOVABLE))
+			if (gEnv->IsEditor() && gEnv->IsGameOrSimulation() && !(pEntity->GetFlags() & ENTITY_FLAG_UNREMOVABLE))
 			{
 				m_entityComponentsCache->OnEntityRemovedDuringGameMode(pEntity->GetId());
 			}

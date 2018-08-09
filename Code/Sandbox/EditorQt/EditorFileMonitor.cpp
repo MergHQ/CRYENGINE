@@ -342,4 +342,3 @@ void CEditorFileMonitor::OnFileMonitorChange(const SFileChangeInfo& rChange)
 		CCryEditApp::GetInstance()->ForceNextIdleProcessing();
 	}
 }
-

@@ -21,7 +21,6 @@ MakeDataType(EPDT_Gravity,       float, EDD_ParticleUpdate);
 MakeDataType(EPDT_Drag,          float, EDD_ParticleUpdate);
 MakeDataType(EPVF_Acceleration,  Vec3);
 MakeDataType(EPVF_VelocityField, Vec3);
-MakeDataType(EPVF_PositionPrev,  Vec3);
 
 extern TDataType<IMeshObj*> EPDT_MeshGeometry;
 
@@ -112,8 +111,6 @@ void CFeatureMotionPhysics::UpdateParticles(CParticleComponentRuntime& runtime)
 	CParticleContainer& container = runtime.GetContainer();
 	m_gravity.Update(runtime, EPDT_Gravity);
 	m_drag.Update(runtime, EPDT_Drag);
-
-	container.CopyData(EPVF_PositionPrev, EPVF_Position, runtime.FullRange());
 
 	if (!m_moveList.empty())
 	{

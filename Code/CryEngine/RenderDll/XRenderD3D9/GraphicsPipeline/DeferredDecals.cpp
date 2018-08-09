@@ -287,7 +287,8 @@ void CDeferredDecalsStage::SetupDecalPrimitive(const SDeferredDecal& decal, CRen
 		STENCOP_FAIL(FSS_STENCOP_KEEP)  |
 		STENCOP_ZFAIL(FSS_STENCOP_KEEP) |
 		STENCOP_PASS(FSS_STENCOP_KEEP),
-		BIT_STENCIL_RESERVED, BIT_STENCIL_RESERVED, 0xFF);
+		BIT_STENCIL_RESERVED | BIT_STENCIL_ALLOW_DECALBLEND, 
+		BIT_STENCIL_RESERVED | BIT_STENCIL_ALLOW_DECALBLEND, 0xFF);
 
 	primitive.Compile(m_decalPass);
 	m_decalPass.AddPrimitive(&primitive);

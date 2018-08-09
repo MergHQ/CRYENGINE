@@ -7,4 +7,3 @@ class CAlembicCompiler
 public:
 	bool CompileAlembic(string& fileName, const string& fullPath, bool showDialog);
 };
-

@@ -1122,4 +1122,3 @@ void CTrackViewAnimNode::Serialize(Serialization::IArchive& ar)
 {
 	CTrackViewNode::Serialize(ar);
 }
-

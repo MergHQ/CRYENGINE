@@ -895,4 +895,3 @@ void CMannFileManager::OnDisplayOnlyCurrentPreviewClicked()
 
 	UpdateFileRecords();
 }
-

@@ -47,4 +47,3 @@ protected:
 } // namespace FileSystem
 
 Q_DECLARE_METATYPE(FileSystem::SDirectoryFilter)
-

@@ -64,4 +64,3 @@ private:
   REGISTER_EDITOR_COMMAND_SHORTCUT(moduleName, keyName, shortcut);
 
 #define GET_POLLED_KEY(moduleName, keyName) Private_CryCommand::g_bPolledKey ## moduleName ## keyName
-

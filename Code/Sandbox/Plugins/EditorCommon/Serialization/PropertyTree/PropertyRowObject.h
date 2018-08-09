@@ -39,5 +39,3 @@ protected:
 	Object object_;
 	PropertyTreeModel* model_;
 };
-
-

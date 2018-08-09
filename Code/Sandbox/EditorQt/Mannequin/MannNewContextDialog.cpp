@@ -469,4 +469,3 @@ void CMannNewContextDialog::OnNewAdbButton()
 	// ...and select it in the list
 	m_databaseCombo.SelectString(0, pADB->GetFilename());
 }
-

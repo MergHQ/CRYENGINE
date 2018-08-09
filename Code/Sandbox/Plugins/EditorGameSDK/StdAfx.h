@@ -32,5 +32,3 @@
 #include "LogFile.h"
 
 #include "EditorCommon.h"
-
-

@@ -178,6 +178,3 @@ class PropertyRowEntityTargetImpl final : public PropertyRowEntityLink
 
 REGISTER_PROPERTY_ROW(Serialization::EntityTarget, PropertyRowEntityTargetImpl);
 DECLARE_SEGMENT(PropertyRowEntityLink)
-
-
-

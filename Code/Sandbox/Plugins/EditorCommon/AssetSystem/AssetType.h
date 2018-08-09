@@ -74,7 +74,7 @@ public:
 	//! Default-initializes an asset. Creates all the necessary asset files.
 	//! This will be used for creating new assets, e.g., in the asset browser or an asset editor.
 	//! \param szFilepath Path to the cryasset file that has to be created.
-	//! \param pTypeSpecificParameter Pointer to an extra parameter. The default value is nullprt. The actual type of the parameter is specific to the asset type.
+	//! \param pTypeSpecificParameter Pointer to an extra parameter. The default value is nullptr. The actual type of the parameter is specific to the asset type. 
 	//! All the asset types should be able to create a default asset instance if the value of pTypeSpecificParameter is nullptr.
 	//! \sa CAssetType::OnCreate()
 	bool Create(const char* szFilepath, const void* pTypeSpecificParameter = nullptr) const;
@@ -101,12 +101,10 @@ public:
 	//! \param szNewName The new path and name for the asset. Asset with such name must not already exist in the destination folder.
 	virtual bool CopyAsset(CAsset* pAsset, const char* szNewPath) const;
 
-	//! Removes all the asset files including the .cryasset file.
-	//! You must remove the read-only file attributes to delete read-only files.
-	//! \param bDeleteSourceFile a boolean value, if true the asset source file will be deleted.
-	//! \param numberOfFilesDeleted The number of files that were deleted. The asset is invalid if at least one file was deleted.
-	//! \return True true if the asset files were deleted. False on errors.
-	virtual bool                              DeleteAssetFiles(const CAsset& asset, bool bDeleteSourceFile, size_t& numberOfFilesDeleted) const;
+	//! This method is called just before asset's files get removed.
+	virtual void PreDeleteAssetFiles(const CAsset& asset) const {}
+
+	bool IsInPakOnly(const CAsset& asset) const;
 
 	virtual CryIcon                           GetIcon() const;
 	virtual QWidget*                          CreatePreviewWidget(CAsset* pAsset, QWidget* pParent = nullptr) const;

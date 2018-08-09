@@ -67,14 +67,22 @@ public:
 	//! MergeAssets updates an asset if it already exists, and inserts a new one, otherwise.
 	void MergeAssets(std::vector<CAsset*> assets);
 
-	//! Removes specified assets from the asset browser. Deletes asset files if requested.
+	//! Removes specified assets from the asset browser along with files from file system. 
+	//! \param assets A collection of assets to be deleted. The assets pointers are invalid after this operation.
+	//! \sa CAsset::IsReadOnly 
+	//! \sa CAssetType::DeleteAssetFiles
+	//! \sa CAssetManager::signalBeforeAssetsRemoved
+	//! \sa CAssetManager::signalAfterAssetsRemoved
+	bool DeleteAssetsWithFiles(std::vector<CAsset*> assets);
+	
+	//! Removes specified assets from the asset browser. 
 	//! \param assets A collection of assets to be deleted. The assets pointers are invalid after this operation.
 	//! \param bDeleteAssetsFiles a boolean value.
 	//! \sa CAsset::IsReadOnly
 	//! \sa CAssetType::DeleteAssetFiles
 	//! \sa CAssetManager::signalBeforeAssetsRemoved
 	//! \sa CAssetManager::signalAfterAssetsRemoved
-	void DeleteAssets(const std::vector<CAsset*>& assets, bool bDeleteAssetsFiles);
+	void DeleteAssetsOnlyFromData(const std::vector<CAsset*>& assets);
 
 	//! Moves existing assets to the specified folder, including all assets files.
 	//! \param assets A collection of assets to be moved.
@@ -159,9 +167,9 @@ public:
 	void SaveBackup(const string& backupFolder);
 
 	//! Returns a collection of assets that belong to the directory (including child directories).
-	std::vector<CAssetPtr> GetAssetsFromDirectory(const string& directory) const;
+	std::vector<CAssetPtr> GetAssetsFromDirectory(const string& directory, std::function<bool(CAsset*)> predicate = {}) const;
 
-	void                   AppendContextMenuActions(CAbstractMenu& menu, const std::vector<CAsset*>& assets, const std::shared_ptr<IUIContext>& context) const;
+	void WaitAsyncProcess() const;
 
 	//! Braces the invalidation of all assets.
 	CCrySignal<void()> signalBeforeAssetsUpdated;
@@ -181,8 +189,6 @@ public:
 
 	CCrySignal<void()>                             signalScanningCompleted;
 
-	CCrySignal<void(CAbstractMenu&, const std::vector<CAsset*>&, const std::shared_ptr<IUIContext>&)> signalContextMenuRequested;
-
 private:
 	void UpdateAssetTypes();
 	void UpdateAssetImporters();
@@ -190,7 +196,6 @@ private:
 	void RegisterAssetResourceSelectors();
 	//Init and update asset registry
 	void AsyncScanForAssets();
-	void RemoveAssets(const std::vector<CAsset*>& assets, bool bDeleteAssetsFiles);
 
 	// Returns true if the specified asset shares the source file with any other assets.
 	// \sa CAsset::GetSourceFile

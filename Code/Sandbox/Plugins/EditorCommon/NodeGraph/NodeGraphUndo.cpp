@@ -379,4 +379,3 @@ void CUndoNodeRemove::Redo()
 }
 
 }
-

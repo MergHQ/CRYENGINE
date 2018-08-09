@@ -163,4 +163,3 @@ void CTrackViewSequenceDialog::keyPressEvent(QKeyEvent* pEvent)
 		QDialog::keyPressEvent(pEvent);
 	}
 }
-

@@ -137,4 +137,3 @@ std::vector<CAsset*> CAssetImporterImage::ImportAssets(const std::vector<string>
 		return {};
 	}
 }
-

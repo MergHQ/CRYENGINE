@@ -59,4 +59,3 @@
 
 IEditor*               GetIEditor();
 pfx2::IParticleSystem* GetParticleSystem();
-

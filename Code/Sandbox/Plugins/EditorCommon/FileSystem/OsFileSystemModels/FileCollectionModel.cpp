@@ -301,4 +301,3 @@ QModelIndex CFileCollectionModel::GetSourceIndex(const QString &path, int column
 	CRY_ASSERT(sourceModel);
 	return sourceModel->index(path, column);
 }
-

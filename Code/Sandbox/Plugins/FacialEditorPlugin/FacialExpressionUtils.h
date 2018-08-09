@@ -77,4 +77,3 @@ bool                                               IsExpressionInGarbage(IFacial
 }
 
 #endif //__FACIALEXPRESSIONUTILS_H__
-

@@ -41,4 +41,3 @@ void CEnvironmentTool::EndEditParams()
 		m_panel = 0;
 	}
 }
-

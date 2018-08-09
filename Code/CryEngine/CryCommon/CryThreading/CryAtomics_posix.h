@@ -230,7 +230,6 @@ ILINE void* CryInterlockedFlushSList(SLockFreeSingleLinkedListHeader& list)
 {
 	uint64 curSetting[2];
 	uint64 newSetting[2];
-	uint64 newSalt;
 	uint64 newPointer;
 	do
 	{
@@ -321,7 +320,6 @@ ILINE void* CryInterlockedFlushSList(SLockFreeSingleLinkedListHeader& list)
 {
 	uint32 curSetting[2];
 	uint32 newSetting[2];
-	uint32 newSalt;
 	uint32 newPointer;
 	do
 	{

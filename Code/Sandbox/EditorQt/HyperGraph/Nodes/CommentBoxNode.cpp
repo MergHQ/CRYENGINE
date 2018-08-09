@@ -197,4 +197,3 @@ void CCommentBoxNode::SetPos(Gdiplus::PointF pos)
 	m_rect = Gdiplus::RectF(pos.X, pos.Y, m_rect.Width, m_rect.Height);
 	Invalidate(false, true);
 }
-

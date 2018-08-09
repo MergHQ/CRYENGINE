@@ -70,74 +70,120 @@ public:
 	void paint(QPainter *painter, const QStyleOptionViewItem &option, const QModelIndex &index) const override
 	{
 		QVariant v = index.data(QThumbnailsView::s_ThumbnailRole);
+
 		if (v.isValid())
 		{
 			if(v.type() == QVariant::Bool && !v.toBool())
 			{
-				const QWidget* widget = option.widget;
-				QStyle* style = widget ? widget->style() : QApplication::style();
-
-				QStyleOptionViewItem viewOpt(option);
-				initStyleOption(&viewOpt, index);
-
-				viewOpt.icon = m_rotatedLoading;
-				style->drawControl(QStyle::CE_ItemViewItem, &viewOpt, painter, widget);
-
-				m_view->StartUpdateTimer();
+				DrawLoadingIcon(option, index, painter);
 				return;
 			}
 			else if (v.type() == QVariant::Icon)
 			{
-				const QWidget* widget = option.widget;
-				QStyle* style = widget ? widget->style() : QApplication::style();
-
-				QStyleOptionViewItem viewOpt(option);
-				initStyleOption(&viewOpt, index);
-
-				// Check if the model provides color categorization
-				QVariant vc = index.data(QThumbnailsView::s_ThumbnailColorRole);
-				if (vc.isValid() && vc.type() == QVariant::Color)
-				{
-					const QColor color = vc.value<QColor>();
-					QRect iconRect = style->subElementRect(QStyle::SE_ItemViewItemDecoration, &viewOpt, widget);
-
-					// Draw a tinted background for the thumbnail by the model request.
-					const QVariant vb = index.data(QThumbnailsView::s_ThumbnailTintedBackgroundRole);
-					if (vb.isValid() && vb.type() == QVariant::Bool && vb.toBool())
-					{
-						const float lightnessFactor = 0.75f;
-						const float saturationFactor = 0.125f;
-
-						const QColor hslColor = color.toHsl();
-						const QColor backgroundColor = QColor::fromHslF(
-							hslColor.hslHueF(),
-							hslColor.hslSaturationF() * saturationFactor,
-							hslColor.lightnessF() * lightnessFactor,
-							hslColor.alphaF());
-
-						painter->fillRect(iconRect, backgroundColor);
-					}
-
-					viewOpt.icon = qvariant_cast<QIcon>(v);
-					style->drawControl(QStyle::CE_ItemViewItem, &viewOpt, painter, widget);
-
-					// Draw vertical box left to the item icon.
-					{
-						const int markerWidth = 4;
-						iconRect.setWidth(markerWidth);
-						painter->fillRect(iconRect, color);
-					}
-				}
-				else
-				{
-					viewOpt.icon = qvariant_cast<QIcon>(v);
-					style->drawControl(QStyle::CE_ItemViewItem, &viewOpt, painter, widget);
-				}
+				DrawThumbnail(option, index, painter, v);
 				return;
 			}
 		}
 
 		QStyledItemDelegate::paint(painter, option, index);
+	}
+
+	void DrawThumbnail(const QStyleOptionViewItem& option, const QModelIndex& index, QPainter* painter, const QVariant& v) const
+	{
+		const QWidget* widget = option.widget;
+		QStyle* style = widget ? widget->style() : QApplication::style();
+
+		QStyleOptionViewItem viewOpt(option);
+		initStyleOption(&viewOpt, index);
+
+		// Check if the model provides color categorization
+		QVariant vc = index.data(QThumbnailsView::s_ThumbnailColorRole);
+		const QRect& iconRect = style->subElementRect(QStyle::SE_ItemViewItemDecoration, &viewOpt, widget);
+		if (vc.isValid() && vc.type() == QVariant::Color)
+		{
+			const QColor color = vc.value<QColor>();
+
+			DrawThumbnailBackground(index, color, painter, iconRect);
+
+			viewOpt.icon = qvariant_cast<QIcon>(v);
+			style->drawControl(QStyle::CE_ItemViewItem, &viewOpt, painter, widget);
+
+			// Draw vertical box left to the item icon.
+			{
+				painter->fillRect(iconRect.x(), iconRect.y(), 4, iconRect.height(), color);
+			}
+		}
+		else
+		{
+			viewOpt.icon = qvariant_cast<QIcon>(v);
+			style->drawControl(QStyle::CE_ItemViewItem, &viewOpt, painter, widget);
+		}
+
+		DrawThumbmailAdditionalIcons(index, iconRect, painter);
+	}
+
+	void DrawThumbmailAdditionalIcons(const QModelIndex& index, const QRect& iconRect, QPainter* painter) const
+	{
+		QVariant vi = index.data(QThumbnailsView::s_ThumbnailIconsRole);
+		if (vi.isValid() && vi.type() == QVariant::List)
+		{
+			const int iconSize = iconRect.width() >= 64 ? 16 : 8;
+			QVariantList varIcons = vi.value<QVariantList>();
+			int iconX = iconRect.right() - iconSize + 1;
+			int iconY = iconRect.y();
+			for (QVariant& vIcon : varIcons)
+			{
+				if (vIcon.isValid() && vIcon.type() == QVariant::Icon)
+				{
+					QIcon icon = qvariant_cast<QIcon>(vIcon);
+					painter->drawPixmap(iconX, iconY, icon.pixmap(iconSize, iconSize));
+				}
+				iconX -= iconSize;
+				if (iconX + 1 < iconRect.x())
+				{
+					iconX = iconRect.right() - iconSize + 1;
+					iconY += iconSize;
+					if (iconY + iconSize > iconRect.bottom() + 1)
+					{
+						return;
+					}
+				}
+			}
+		}
+	}
+
+	void DrawThumbnailBackground(const QModelIndex &index, const QColor &color, QPainter* painter, const QRect& iconRect) const
+	{
+		// Draw a tinted background for the thumbnail by the model request.
+		const QVariant vb = index.data(QThumbnailsView::s_ThumbnailTintedBackgroundRole);
+		if (vb.isValid() && vb.type() == QVariant::Bool && vb.toBool())
+		{
+			const float lightnessFactor = 0.75f;
+			const float saturationFactor = 0.125f;
+
+			const QColor hslColor = color.toHsl();
+			const QColor backgroundColor = QColor::fromHslF(
+				hslColor.hslHueF(),
+				hslColor.hslSaturationF() * saturationFactor,
+				hslColor.lightnessF() * lightnessFactor,
+				hslColor.alphaF());
+
+			painter->fillRect(iconRect, backgroundColor);
+		}
+	}
+
+	void DrawLoadingIcon(const QStyleOptionViewItem& option, const QModelIndex & index, QPainter* painter) const
+	{
+		const QWidget* widget = option.widget;
+		QStyle* style = widget ? widget->style() : QApplication::style();
+
+		QStyleOptionViewItem viewOpt(option);
+		initStyleOption(&viewOpt, index);
+
+		viewOpt.icon = m_rotatedLoading;
+		style->drawControl(QStyle::CE_ItemViewItem, &viewOpt, painter, widget);
+
+		m_view->StartUpdateTimer();
 	}
 
 	virtual void initStyleOption(QStyleOptionViewItem *option, const QModelIndex &index) const override
@@ -500,5 +546,3 @@ void QThumbnailsView::AddSizingButton(int size, int iconNumber)
 	m_button->setAutoRaise(true);
 	m_previewSizeButtons->addButton(m_button, size);
 }
-
-

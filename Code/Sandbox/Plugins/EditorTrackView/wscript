@@ -5,17 +5,13 @@
 
 def build(bld):	
 	
-	bld.CryPlugin(
+	bld.CryEditorPlugin(
 		target 		= 'EditorTrackView',
 		vs_filter 	= 'Sandbox/Plugins',
 		file_list   = 'editortrackview.waf_files',
 		pch			= 'StdAfx.cpp',
-		use			= [ 'Sandbox','MFCToolsPlugin' ],
+		use			= [ 'MFCToolsPlugin' ],
 		module_extensions = ['python27'],
-		includes 	= [
-			Path('Code/Sandbox/EditorQt'),
-			Path('Code/Sandbox/EditorQt/Include'),
-			Path('Code/Sandbox/Plugins/MFCToolsPlugin')
-			]
+		includes 	= [Path('Code/Sandbox/Plugins/MFCToolsPlugin')]
 	)
 

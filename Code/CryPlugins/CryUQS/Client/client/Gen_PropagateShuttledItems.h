@@ -43,9 +43,9 @@ namespace UQS
 				{
 					CRY_PROFILE_FUNCTION(UQS_PROFILED_SUBSYSTEM_TO_USE);	// mainly for keeping an eye on the copy operation of the passed-in items below
 
-					if (!updateContext.blackboard.pShuttledItems)
+					if (!updateContext.queryContext.pShuttledItems)
 					{
-						updateContext.error.Format("CGen_PropagateShuttledItems<>::DoUpdate: updateContext.blackboard.pShuttledItems == NULL (this can happen if there was no previous query that forwarded its resulting items)");
+						updateContext.error.Format("CGen_PropagateShuttledItems<>::DoUpdate: updateContext.queryContext.pShuttledItems == NULL (this can happen if there was no previous query that forwarded its resulting items)");
 						return BaseClass::EUpdateStatus::ExceptionOccurred;
 					}
 
@@ -53,15 +53,15 @@ namespace UQS
 
 					// ensure both item lists have the same ItemFactory
 					const IItemFactory& expectedItemFactory = underlyingItemList.GetItemFactory();
-					const IItemFactory& receivedItemFactory = updateContext.blackboard.pShuttledItems->GetItemFactory();
+					const IItemFactory& receivedItemFactory = updateContext.queryContext.pShuttledItems->GetItemFactory();
 					if (&expectedItemFactory != &receivedItemFactory)
 					{
-						updateContext.error.Format("CGen_PropagateShuttledItems<>::DoUpdate: incompatible item-factories (generator wants to propagate items of type '%s', but the blackboard contains items of type '%s')", expectedItemFactory.GetItemType().name(), receivedItemFactory.GetItemType().name());
+						updateContext.error.Format("CGen_PropagateShuttledItems<>::DoUpdate: incompatible item-factories (generator wants to propagate items of type '%s', but the queryContext contains items of type '%s')", expectedItemFactory.GetItemType().name(), receivedItemFactory.GetItemType().name());
 						return BaseClass::EUpdateStatus::ExceptionOccurred;
 					}
 
 					// copy the items from the previous query to given output list
-					underlyingItemList.CopyOtherToSelf(*updateContext.blackboard.pShuttledItems);
+					underlyingItemList.CopyOtherToSelf(*updateContext.queryContext.pShuttledItems);
 
 					return BaseClass::EUpdateStatus::FinishedGeneratingItems;
 				}

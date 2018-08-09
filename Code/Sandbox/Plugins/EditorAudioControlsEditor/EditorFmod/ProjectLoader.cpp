@@ -9,7 +9,6 @@
 #include <CryAudioImplFmod/GlobalData.h>
 #include <CrySystem/File/CryFile.h>
 #include <CrySystem/ISystem.h>
-#include <CrySystem/ILocalizationManager.h>
 
 namespace ACE
 {
@@ -30,26 +29,15 @@ string const g_vcasPath = "/metadata/vca/";
 string const g_bankPath = "/metadata/bank/";
 
 //////////////////////////////////////////////////////////////////////////
-CProjectLoader::CProjectLoader(string const& projectPath, string const& soundbanksPath, CItem& rootItem, ItemCache& itemCache, CImpl const& impl)
+CProjectLoader::CProjectLoader(string const& projectPath, string const& banksPath, string const& localizedBanksPath, CItem& rootItem, ItemCache& itemCache, CImpl const& impl)
 	: m_rootItem(rootItem)
 	, m_itemCache(itemCache)
 	, m_projectPath(projectPath)
 	, m_impl(impl)
 {
 	CItem* const pSoundBanksFolder = CreateItem(s_soundBanksFolderName, EItemType::EditorFolder, &m_rootItem, EItemFlags::IsContainer);
-	LoadBanks(soundbanksPath, false, *pSoundBanksFolder);
-
-	char const* const szLanguage = gEnv->pSystem->GetLocalizationManager()->GetLanguage();
-	string const locaFolder =
-		PathUtil::GetLocalizationFolder() +
-		"/" +
-		szLanguage +
-		"/" AUDIO_SYSTEM_DATA_ROOT "/" +
-		CryAudio::Impl::Fmod::s_szImplFolderName +
-		"/" +
-		CryAudio::s_szAssetsFolderName;
-
-	LoadBanks(locaFolder, true, *pSoundBanksFolder);
+	LoadBanks(banksPath, false, *pSoundBanksFolder);
+	LoadBanks(localizedBanksPath, true, *pSoundBanksFolder);
 
 	CItem* const pEventsFolder = CreateItem(s_eventsFolderName, EItemType::EditorFolder, &m_rootItem, EItemFlags::IsContainer);
 	CItem* const pParametersFolder = CreateItem(s_parametersFolderName, EItemType::EditorFolder, &m_rootItem, EItemFlags::IsContainer);

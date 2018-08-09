@@ -10,9 +10,6 @@
 
 #include "Common.cfi"
 #include "ModificatorVT.cfi"
-#include "ShadeLib.cfi"
-#include "PostEffectsLib.cfi"
-#include "WaterCommon.cfi"
 
 float Script : STANDARDSGLOBAL
 <
@@ -27,10 +24,28 @@ float Script : STANDARDSGLOBAL
 #endif
 >;
 
+////////////////////////////////////////////////////////////////////////////////////////////////////
+//////////////////////////////// Custom shading pass structure /////////////////////////////////////
+
+struct CustomForwardShadingAttribs
+{
+};
+
+
+#include "ShadeLib.cfi"
+#include "PostEffectsLib.cfi"
+#include "WaterCommon.cfi"
+
+//////////////////////////////// Samplers ////////////////
+
+DECALMAP
+OPACITYMAP
+ENVIRONMENTCUBEMAP
+
 //////////////////////////////////////////////////////////////////////////
 
 // Tweakables /////////////////
-
+  
 float SoftIntersectionFactor
 <
   register = REG_PM_PARAM_0.x;
@@ -96,6 +111,39 @@ half NormalsScale
   float UIMax = 4.0;
   float UIStep = 0.001;
 > = 0.25;
+
+half EnvCubeScale
+<
+  register = REG_PM_PARAM_3.y;
+  string UIHelp = "Env projection scale";
+  string UIName = "Env projection scale";
+  string UIWidget = "slider";
+  float UIMin = 0.1;
+  float UIMax = 200.0;
+  float UIStep = 0.1;
+> = 20.0;
+
+half NormalsFlatten
+<
+  register = REG_PM_PARAM_3.w;
+  string UIHelp = "Normals flattening when reflecting";
+  string UIName = "Normals flattening when reflecting";
+  string UIWidget = "slider";
+  float UIMin = 0.0;
+  float UIMax = 1.0;
+  float UIStep = 0.001;
+> = 0.33333333333;
+
+half VertexWaveScale
+<
+  register = REG_PM_PARAM_5.z;
+  string UIHelp = "Strength of vertex displaced wave animation";
+  string UIName = "Vertex wave scale";
+  string UIWidget = "slider";
+  float UIMin = 0.0;
+  float UIMax = 1.0;
+  float UIStep = 0.1;
+> = 0.125;
 
 //////////////////////////////////////////////////////////////////////////
 // This is an ugly hack around a problem with the shader system that's too
@@ -169,6 +217,34 @@ half WaterFlowMapScale
 
 #endif
 
+#if %FLOW_MAP && %FLOW_MAP_STRENGTH
+
+half FlowOffsetTiling
+<
+  register = REG_PM_PARAM_5.w;
+  string UIHelp = "Tiling scale for flow animation offset map";
+  string UIName = "Flow offset tiling";
+  string UIWidget = "slider";
+  float UIMin = 0.0;
+  float UIMax = 4.0;
+  float UIStep = 0.01;
+> = 0.15;
+
+half FlowOffsetStrength
+<
+  register = REG_PM_PARAM_6.x;
+  string UIHelp = "Strength of flow animation offset map";
+  string UIName = "Flow offset strength";
+  string UIWidget = "slider";
+  float UIMin = 0.0;
+  float UIMax = 1.0;
+  float UIStep = 0.01;
+> = 0.15;
+
+#endif
+
+//////////////////////////////////////////////////////////////////////////
+
 #if %SPECULAR_MAP
 // TODO: remove smoothness from water and substitute it by a seconday material layer
 // which floats on top of the water surface (albedo+normal+smoothness and water-specular override)
@@ -219,16 +295,79 @@ half GlossMapExponent
 
 #endif
 
-half EnvCubeScale
+//////////////////////////////////////////////////////////////////////////
+
+#if %SSREFL
+
+half ssrBorderSizeY
 <
-  register = REG_PM_PARAM_3.y;
-  string UIHelp = "Env projection scale";
-  string UIName = "Env projection scale";
+  register = REG_PM_PARAM_6.y;
+  string UIHelp = "Size of SSR border transition region in Y";
+  string UIName = "SSR border Y";
   string UIWidget = "slider";
-  float UIMin = 0.1;
-  float UIMax = 200.0;
-  float UIStep = 0.1;
-> = 20.0;
+  float UIMin = 0.0;
+  float UIMax = 0.5;
+  float UIStep = 0.01;
+> = 0.05;
+
+half ssrBorderSizeZ
+<
+  register = REG_PM_PARAM_6.z;
+  string UIHelp = "Size of SSR distance transition region in Z";
+  string UIName = "SSR distance Z";
+  string UIWidget = "slider";
+  float UIMin = 0.0;
+  float UIMax = 1.0;
+  float UIStep = 0.01;
+> = 1.0;
+
+half ssrBorderFadeExponent
+<
+  register = REG_PM_PARAM_6.w;
+  string UIHelp = "Exponent of SSR transition region shape";
+  string UIName = "SSR transition exp.";
+  string UIWidget = "slider";
+  float UIMin = 0.0;
+  float UIMax = 8.0;
+  float UIStep = 0.01;
+> = 1.0;
+
+half ssrDistanceAtt
+<
+  register = REG_PM_PARAM_7.x;
+  string UIHelp = "SSR max. tracing distance multiplier";
+  string UIName = "SSR distance vs. default";
+  string UIWidget = "slider";
+  float UIMin = 0.0;
+  float UIMax = 1.0;
+  float UIStep = 0.01;
+> = 1.0;
+
+half ssrSamplingAtt
+<
+  register = REG_PM_PARAM_7.y;
+  string UIHelp = "SSR max. tracing samples multiplier";
+  string UIName = "SSR samples vs. default";
+  string UIWidget = "slider";
+  float UIMin = 0.0;
+  float UIMax = 1.0;
+  float UIStep = 0.01;
+> = 1.0;
+
+half ssrBGMultiplier
+<
+  register = REG_PM_PARAM_7.z;
+  string UIHelp = "SSR max. utilization of the sky background";
+  string UIName = "SSR sky reflection";
+  string UIWidget = "slider";
+  float UIMin = 0.0;
+  float UIMax = 1.0;
+  float UIStep = 0.01;
+> = 1.0;
+
+#endif
+
+//////////////////////////////////////////////////////////////////////////
 
 #if %FOAM
 
@@ -267,6 +406,8 @@ half FoamTilling
 
 #endif
 
+//////////////////////////////////////////////////////////////////////////
+
 #if %DECAL_MAP
 
 float DecalTilling
@@ -304,41 +445,6 @@ float DecalFalloff
 
 #endif
 
-half VertexWaveScale
-<
-  register = REG_PM_PARAM_5.z;
-  string UIHelp = "Strength of vertex displaced wave animation";
-  string UIName = "Vertex wave scale";
-  string UIWidget = "slider";
-  float UIMin = 0.0;
-  float UIMax = 1.0;
-  float UIStep = 0.1;
-> = 0.125;
-
-#if %FLOW_MAP && %FLOW_MAP_STRENGTH
-half FlowOffsetTiling
-<
-  register = REG_PM_PARAM_5.w;
-  string UIHelp = "Tiling scale for flow animation offset map";
-  string UIName = "Flow offset tiling";
-  string UIWidget = "slider";
-  float UIMin = 0.0;
-  float UIMax = 4.0;
-  float UIStep = 0.01;
-> = 0.15;
-
-half FlowOffsetStrength
-<
-  register = REG_PM_PARAM_6.x;
-  string UIHelp = "Strength of flow animation offset map";
-  string UIName = "Flow offset strength";
-  string UIWidget = "slider";
-  float UIMin = 0.0;
-  float UIMax = 1.0;
-  float UIStep = 0.01;
-> = 0.15;
-#endif
-
 ////////////////////////////////////////////////////////////////
 
 Texture2D WaterSmoothnessTex : register(t2)
@@ -348,13 +454,6 @@ Texture2D WaterSmoothnessTex : register(t2)
 > = TM_Specular;
 
 TextureCube envCubeTex : register(t3) = TM_Env;
-
-Texture2D decalTex : register(t7)
-< 
-  UIName = "Decal";
-  UIDescription = "Decal texture";
-  sRGBLookup = true;
-> = TM_DecalOverlay;
 
 Texture2D decalNormalTex : register(t1)
 < 
@@ -762,21 +861,21 @@ half3 BumpGen( in v2f_hs IN, float2 vParalaxOffset, inout half cSmoothness, inou
 
 #if %DECAL_MAP
 	float4 tcDiff = tcBase0.zwzw * DecalTilling * half4(1,1,2,2); 
-	half3 vBumpNormal = GetNormalMap(decalNormalTex, tcDiff + bumpNormal.xy * 0.04h);
-	vBumpNormal.xy *= NormalsScale;
+	half3 vDecalNormal = GetNormalMap(decalNormalTex, tcDiff + bumpNormal.xy * 0.04h);
+	vDecalNormal.xy *= NormalsScale;
 
-	tcDiff.xyzw += (bumpNormal.xyxy + vBumpNormal.xyxy) * 0.1h;
+	tcDiff.xyzw += (bumpNormal.xyxy + vDecalNormal.xyxy) * 0.1h;
 	cAlbedo  = GetDecalTex(decalTex, tcDiff.xy);  
 	cAlbedo += GetDecalTex(decalTex, tcDiff.zw);
 	
 	#if %FLOW_MAP
 		tcDiff = tcBase1.zwzw * DecalTilling * half4(1,1,2,2); 
-		tcDiff.xyzw += (bumpNormal.xyxy + vBumpNormal.xyxy) * 0.1h;
+		tcDiff.xyzw += (bumpNormal.xyxy + vDecalNormal.xyxy) * 0.1h;
 	
-		half4 cDiffuseMap2;
-		cDiffuseMap2  = GetDecalTex(decalTex, tcDiff.xy);
-		cDiffuseMap2 += GetDecalTex(decalTex, tcDiff.zw);
-		cAlbedo = lerp(cAlbedo, cDiffuseMap2, fLerpFlow);
+		half4 cAlbedo2;
+		cAlbedo2  = GetDecalTex(decalTex, tcDiff.xy);
+		cAlbedo2 += GetDecalTex(decalTex, tcDiff.zw);
+		cAlbedo = lerp(cAlbedo, cAlbedo2, fLerpFlow);
 	#endif
 	
 	cAlbedo *= 0.5h;
@@ -787,7 +886,7 @@ half3 BumpGen( in v2f_hs IN, float2 vParalaxOffset, inout half cSmoothness, inou
 	fBlendFactor *= fGlossVariation;
 	cAlbedo.w = saturate(fBlendFactor);
 
-	bumpNormal = lerp(bumpNormal, vBumpNormal, cAlbedo.w);
+	bumpNormal = lerp(bumpNormal, vDecalNormal, cAlbedo.w);
 #endif
 
 #if %_RT_SAMPLE4
@@ -1006,7 +1105,7 @@ pixout WaterPS(v2f_hs IN)
 
 	//////////////////////////////////////////////////////////////////////////////////////////////////
 	// Get refraction and apply refraction masking
-	const half RefractionBumpScale = 1.0;
+	const half RefractionBumpScale = NormalsFlatten;
 
 	float fFogDepth = sceneDepth;
 	float2 refrNewst = screenTC.xy;
@@ -1061,7 +1160,7 @@ pixout WaterPS(v2f_hs IN)
 
 	//////////////////////////////////////////////////////////////////////////////////////////////////    
 	// Get reflection color
-	const half ReflectionBumpScale = 1.0;
+	const half ReflectionBumpScale = NormalsFlatten;
 	
 	half3 vDir = g_VS_WorldViewPos - IN.vPosWS.xyz;
 	half3 vReflN = lerp(half3(0,0,1), vNormal, ReflectionBumpScale);

@@ -90,4 +90,3 @@ void CClassFactory::GetClassesByCategory(const char* pCategory, std::vector<ICla
 
 	std::sort(rOutClasses.begin(), rOutClasses.end(), ClassDescNameCompare);
 }
-

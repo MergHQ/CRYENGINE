@@ -24,4 +24,3 @@ protected:
 	static bool  SelectAdjacentEdgesToPolygonVertex(CBaseObject* pObject, ElementSet* pSelected, PolygonPtr pPolygon, int index);
 };
 }
-

@@ -175,4 +175,3 @@ void CMaterialFXGraphMan::ClearEditorGraphs()
 
 	m_matFxGraphs.clear();
 }
-

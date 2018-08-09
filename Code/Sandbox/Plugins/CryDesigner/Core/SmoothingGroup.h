@@ -47,4 +47,3 @@ private:
 
 typedef _smart_ptr<SmoothingGroup> SmoothingGroupPtr;
 }
-

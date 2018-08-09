@@ -114,4 +114,3 @@ void CMultiProxyColumnMapping::RemoveColumns(int firstProxyColumn, int count)
 	auto newProxyColumnCount = oldProxyColumnCount - count;
 	m_proxyColumns.resize(newProxyColumnCount);
 }
-

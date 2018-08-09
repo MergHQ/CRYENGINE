@@ -102,4 +102,3 @@ int CCollisionFilteringProperties::GetCollisionClassExportId()
 	// This should only be called during the export phase
 	return GetIEditorImpl()->GetObjectManager()->GetPhysicsManager()->RegisterCollisionClass(m_collisionClass);
 }
-

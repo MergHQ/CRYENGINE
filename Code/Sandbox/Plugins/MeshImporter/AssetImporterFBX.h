@@ -64,4 +64,3 @@ private:
 	std::unique_ptr<QTemporaryDir> m_pTempDir;
 	bool m_bCreateMaterial;
 };
-

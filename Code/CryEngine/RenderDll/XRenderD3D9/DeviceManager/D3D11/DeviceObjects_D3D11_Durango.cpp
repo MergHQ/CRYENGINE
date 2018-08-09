@@ -219,7 +219,7 @@ IDefragAllocatorStats CDurangoGPUMemoryManager::GetStats()
 	return m_pAllocator->GetStats();
 }
 
-bool CDurangoGPUMemoryManager::Init(size_t size, size_t bankSize, size_t reserveSize, uint32 xgMemType, bool allowAdditionalBanks)
+bool CDurangoGPUMemoryManager::Init(size_t maximumSize, size_t bankSize, size_t reserveSize, uint32 xgMemType, bool allowAdditionalBanks)
 {
 	CryAutoLock<CryCriticalSectionNonRecursive> lock(m_lock);
 
@@ -230,10 +230,18 @@ bool CDurangoGPUMemoryManager::Init(size_t size, size_t bankSize, size_t reserve
 	}
 #endif
 
-	m_banks.reserve(size / bankSize);
-	m_bankShift = IntegerLog2(bankSize);
+	maximumSize = std::max(maximumSize, reserveSize);
 	m_memType = xgMemType;
-	m_allowAdditionalBanks = allowAdditionalBanks;
+
+	m_bankShift = IntegerLog2_RoundUp(bankSize);
+	bankSize = 1ull << m_bankShift;
+
+	const size_t maxBackingBanks = (maximumSize + bankSize - 1) / bankSize;
+	const size_t numReserveBanks = (reserveSize + bankSize - 1) / bankSize;
+	m_allowAdditionalBanks = allowAdditionalBanks && (maxBackingBanks != numReserveBanks);
+
+	m_banks.resize(numReserveBanks);
+	m_banks.reserve(maxBackingBanks);
 
 	m_pAllocator = CryGetIMemoryManager()->CreateDefragAllocator();
 
@@ -242,11 +250,6 @@ bool CDurangoGPUMemoryManager::Init(size_t size, size_t bankSize, size_t reserve
 	pol.pDefragPolicy = this;
 	pol.maxAllocs = 65535;
 	m_pAllocator->Init(bankSize, AllocAlign, pol);
-
-	reserveSize = max(reserveSize, bankSize);
-
-	size_t numReserveBanks = reserveSize / bankSize;
-	m_banks.resize(numReserveBanks);
 
 	for (size_t i = 0; i < numReserveBanks; ++i)
 	{
