@@ -85,7 +85,7 @@ uint32 CDeviceTimestampGroup::IssueTimestamp(CDeviceCommandList* pCommandList)
 	CDeviceCommandListRef deviceCommandList = pCommandList ? *pCommandList : GetDeviceObjectFactory().GetCoreCommandList();
 	vkCmdWriteTimestamp(deviceCommandList.GetVKCommandList()->GetVkCommandList(), VK_PIPELINE_STAGE_ALL_COMMANDS_BIT, m_queryPool, m_numTimestamps);
 
-	return m_numTimestamps++;
+	return (m_numTimestamps + 1) < kMaxTimestamps ? m_numTimestamps++ : m_numTimestamps;
 }
 
 bool CDeviceTimestampGroup::ResolveTimestamps()

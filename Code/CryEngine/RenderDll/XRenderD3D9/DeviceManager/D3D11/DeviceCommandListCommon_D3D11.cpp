@@ -67,7 +67,8 @@ uint32 CDeviceTimestampGroup::IssueTimestamp(CDeviceCommandList* pCommandList)
 	assert(m_numTimestamps < m_timestampQueries.size());
 	gcpRendD3D->GetDeviceContext().End(m_timestampQueries[m_numTimestamps]);
 	m_timeValues[m_numTimestamps] = 0;
-	return m_numTimestamps++;
+
+	return (m_numTimestamps + 1) < m_timestampQueries.size() ? m_numTimestamps++ : m_numTimestamps;
 }
 
 bool CDeviceTimestampGroup::ResolveTimestamps()

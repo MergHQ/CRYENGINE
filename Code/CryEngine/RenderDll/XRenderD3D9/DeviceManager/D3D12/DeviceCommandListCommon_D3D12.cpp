@@ -73,7 +73,11 @@ uint32 CDeviceTimestampGroup::IssueTimestamp(CDeviceCommandList* pCommandList)
 	const uint32 timestampIndex = m_groupIndex * kMaxTimestamps + m_numTimestamps;
 	pDX12Device->InsertTimestamp(pDX12CmdList, timestampIndex);
 
-	++m_numTimestamps;
+	if((m_numTimestamps + 1) < kMaxTimestamps)
+	{
+		++m_numTimestamps;
+	}
+
 	return timestampIndex;
 }
 
