@@ -999,7 +999,7 @@ template<EUIObjectType T> bool IsTemplate()                     { return false; 
 template<> bool                IsTemplate<eUOT_MovieClipTmpl>() { return true; }
 
 template<EUIObjectType Type, class Item>
-static void CreateMCFunctionNodes(std::vector<CFlashUiFlowNodeFactory*>& nodelist, IUIElement* pElement, Item* pItem, const string& path, bool fill = false)
+static void CreateMCFunctionNodes(CFlashUiFlowNodeFactory_AutoArray& nodelist, IUIElement* pElement, Item* pItem, const string& path, bool fill = false)
 {
 	// prevent to fill "first row"
 	if (fill)
