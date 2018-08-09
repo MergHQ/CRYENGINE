@@ -662,6 +662,8 @@ void CLensFlareEditor::OnAssignFlareToLightEntities()
 	for (int i = 0, iEntityCount(entityList.size()); i < iEntityCount; ++i)
 		entityList[i]->ApplyOptics(pLensFlareItem->GetFullName(), pLensFlareItem->GetOptics());
 
+	LensFlareUtil::ApplyOpticsToSelectedEntityWithComponent(pLensFlareItem->GetFullName(), pLensFlareItem->GetOptics());
+
 	m_pLensFlareLightEntityTree->OnLensFlareChangeItem(pLensFlareItem);
 }
 
