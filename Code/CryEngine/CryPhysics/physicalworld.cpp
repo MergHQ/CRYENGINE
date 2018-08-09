@@ -2460,6 +2460,8 @@ void CPhysicalWorld::TimeStep(float time_interval, int flags)
 
 	{
     WriteLock lock1(m_lockCaller[MAX_PHYS_THREADS]),lock2(m_lockStep);
+		int iCaller = get_iCaller();
+		WriteLockCond lock3(m_lockCaller[iCaller], iCaller>MAX_PHYS_THREADS);
 		char **pQueueSlots;
 		int nQueueSlots;
 		volatile int64 timer = CryGetTicks();
