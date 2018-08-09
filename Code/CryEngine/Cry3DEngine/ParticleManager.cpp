@@ -68,6 +68,8 @@ void CParticleBatchDataManager::FinishParticleRenderTasks(const SRenderingPassIn
 	{
 		GetRenderer()->EF_AddMultipleParticlesToScene(&m_ParticlesToScene[passInfo.ThreadID()][nJobStart], m_ParticlesToScene[passInfo.ThreadID()].size() - nJobStart, passInfo);
 	}
+
+	pfx2::GetIParticleSystem()->FinishRenderTasks(passInfo);
 }
 
 void CParticleBatchDataManager::GetMemoryUsage(ICrySizer* pSizer) const
@@ -195,6 +197,11 @@ void CParticleManager::GetCounts(SParticleCounts& counts)
 	counts = m_GlobalCounts;
 }
 
+void CParticleManager::DisplayStats(Vec2& location, float lineHeight)
+{
+	pfx2::GetIParticleSystem()->DisplayStats(location, lineHeight);
+}
+
 void CParticleManager::GetMemoryUsage(ICrySizer* pSizer) const
 {
 	{
@@ -241,6 +248,8 @@ void CParticleManager::PrintParticleMemory()
 
 void CParticleManager::Reset()
 {
+	pfx2::GetIParticleSystem()->Reset();
+	
 	m_bRegisteredListener = false;
 
 	for (auto& e : m_Emitters)
@@ -265,6 +274,8 @@ void CParticleManager::Reset()
 //////////////////////////////////////////////////////////////////////////
 void CParticleManager::ClearRenderResources(bool bForceClear)
 {
+	pfx2::GetIParticleSystem()->ClearRenderResources();
+	
 	const bool bClearEmitters = !GetCVars()->e_ParticlesPreload || bForceClear;
 
 #if !defined(_RELEASE)
@@ -415,7 +426,7 @@ IParticleEffect* CParticleManager::FindEffect(cstr sEffectName, cstr sSource, bo
 
 	LOADING_TIME_PROFILE_SECTION(gEnv->pSystem);
 
-	pfx2::PParticleEffect pPfx2 = Cry3DEngineBase::m_pParticleSystem->FindEffect(sEffectName);
+	pfx2::PParticleEffect pPfx2 = pfx2::GetIParticleSystem()->FindEffect(sEffectName);
 	if (pPfx2)
 		return pPfx2.get();
 
@@ -460,7 +471,7 @@ IParticleEffect* CParticleManager::FindEffect(cstr sEffectName, cstr sSource, bo
 		{
 			bool bForce = !!(GetCVars()->e_ParticlesConvertPfx1 & 2);
 			bool bSubstitute = !!(GetCVars()->e_ParticlesConvertPfx1 & 4);
-			auto pEffectPfx2 = m_pParticleSystem->ConvertEffect(pEffect, bForce);
+			auto pEffectPfx2 = pfx2::GetIParticleSystem()->ConvertEffect(pEffect, bForce);
 			if (bSubstitute)
 			{
 				pEffectPfx2->SetSubstitutedPfx1(true);
@@ -619,6 +630,8 @@ void CParticleManager::LogEvents()
 
 void CParticleManager::OnFrameStart()
 {
+	pfx2::GetIParticleSystem()->OnFrameStart();
+	
 #ifdef bEVENT_TIMINGS
 	LogEvents();
 #endif
@@ -638,6 +651,8 @@ void CParticleManager::OnFrameStart()
 
 void CParticleManager::Update()
 {
+	pfx2::GetIParticleSystem()->Update();
+
 	CRY_PROFILE_REGION(PROFILE_3DENGINE, "ParticleManager Update");
 	CRYPROFILE_SCOPE_PROFILE_MARKER("ParticleManager Update");
 
@@ -1235,11 +1250,6 @@ void CParticleManager::ClearCachedLibraries()
 
 	if ((GetCVars()->e_ParticlesDebug & AlphaBit('m')) || GetCVars()->e_ParticlesDumpMemoryAfterMapLoad)
 		PrintParticleMemory();
-}
-
-IParticleEffectIteratorPtr CParticleManager::GetEffectIterator()
-{
-	return new CParticleEffectIterator(this);
 }
 
 void CParticleManager::RenderDebugInfo()

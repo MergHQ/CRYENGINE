@@ -253,9 +253,14 @@ IParticleComponent* CParticleEffect::AddComponent()
 	return pNewComponent;
 }
 
-void CParticleEffect::RemoveComponent(uint componentIdx)
+void CParticleEffect::RemoveComponent(uint componentIdx, bool all)
 {
-	m_components.erase(m_components.begin() + componentIdx);
+	auto pComp = m_components[componentIdx];
+	pComp->SetParent(nullptr);
+	while (all && pComp->m_children.size())
+		pComp = pComp->m_children.back();
+	size_t endIdx = pComp->GetComponentId() + 1;
+	m_components.erase(m_components.begin() + componentIdx, m_components.begin() + endIdx);
 	SetChanged();
 }
 

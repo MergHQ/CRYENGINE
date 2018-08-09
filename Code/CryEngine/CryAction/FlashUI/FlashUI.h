@@ -19,6 +19,7 @@
 #include <CryGame/IGameFramework.h>
 #include <ILevelSystem.h>
 #include "FlashUIEventSystem.h"
+#include "FlashUIFlowNodeFactory.h"
 
 #if !defined (_RELEASE) || defined(RELEASE_LOGGING)
 	#define UIACTION_LOGGING
@@ -54,7 +55,7 @@ class CFlashUI
 	CRYGENERATE_SINGLETONCLASS_GUID(CFlashUI, "FlashUI", "35ae7f0f-bb13-437b-9c5f-fcd2568616a5"_cry_guid)
 
 	CFlashUI();
-	virtual ~CFlashUI() {}
+	virtual ~CFlashUI() = default;
 
 public:
 	// IFlashUI
@@ -254,7 +255,7 @@ private:
 	typedef std::vector<std::shared_ptr<IFlashPlayer>> TPlayerList;
 	TPlayerList           m_loadtimePlayerList;
 
-	std::vector<CFlashUiFlowNodeFactory*> m_UINodes;
+	CFlashUiFlowNodeFactory_AutoArray m_UINodes;
 
 	typedef std::map<ITexture*, string> TTextureMap;
 	TTextureMap       m_preloadedTextures;

@@ -149,8 +149,6 @@ public:
 	bool                       LoadLibrary(cstr sParticlesLibrary, cstr sParticlesLibraryFile = NULL, bool bLoadResources = false);
 	void                       ClearCachedLibraries();
 
-	IParticleEffectIteratorPtr GetEffectIterator();
-
 	IParticleEmitter*          CreateEmitter(const ParticleLoc& loc, const ParticleParams& Params, const SpawnParams* pSpawnParams = NULL);
 	void                       DeleteEmitter(IParticleEmitter* pEmitter);
 	void                       DeleteEmitters(FEmitterFilter filter);
@@ -172,6 +170,8 @@ public:
 	// Stats
 	void GetMemoryUsage(ICrySizer* pSizer) const;
 	void GetCounts(SParticleCounts& counts);
+	void DisplayStats(Vec2& location, float lineHeight);
+
 	void ListEmitters(cstr sDesc = "", bool bForce = false);
 	void ListEffects();
 	void PrintParticleMemory();
@@ -424,36 +424,6 @@ private:
 	CThreadSafeRendererContainer<SPhysAreaNodeProxy> m_physAreaChangedProxies;
 	CryCriticalSection                               m_PhysAreaChangeLock;
 	PodArray<SAreaChangeRecord>                      m_listPhysAreasChanged;
-};
-
-struct CParticleEffectIterator : public IParticleEffectIterator
-{
-	CParticleEffectIterator(CParticleManager* pManager)
-		: m_refs(0)
-	{
-		if (pManager)
-		{
-			for (CParticleManager::TEffectsList::iterator it = pManager->m_Effects.begin(); it != pManager->m_Effects.end(); ++it)
-			{
-				CParticleEffect* pEffect = it->second.get();
-				if (!pEffect->IsNull())
-					m_effects.push_back(pEffect);
-			}
-		}
-		m_iter = m_effects.begin();
-	}
-
-	virtual void             AddRef()         { m_refs++; }
-	virtual void             Release()        { if (--m_refs == 0) delete this; }
-
-	virtual IParticleEffect* Next()           { return m_iter != m_effects.end() ? *m_iter++ : NULL; }
-	virtual int              GetCount() const { return m_effects.size(); }
-
-private:
-	int                m_refs;
-	typedef std::vector<IParticleEffect*> TEffects;
-	TEffects           m_effects;
-	TEffects::iterator m_iter;
 };
 
 #ifdef bEVENT_TIMINGS

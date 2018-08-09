@@ -80,7 +80,6 @@ C3DEngine* Cry3DEngineBase::m_p3DEngine = 0;
 CVars* Cry3DEngineBase::m_pCVars = 0;
 ICryPak* Cry3DEngineBase::m_pCryPak = 0;
 IParticleManager* Cry3DEngineBase::m_pPartManager = 0;
-std::shared_ptr<pfx2::IParticleSystem> Cry3DEngineBase::m_pParticleSystem;
 IOpticsManager* Cry3DEngineBase::m_pOpticsManager = 0;
 CDecalManager* Cry3DEngineBase::m_pDecalManager = 0;
 CSkyLightManager* Cry3DEngineBase::m_pSkyLightManager = 0;
@@ -501,7 +500,6 @@ void C3DEngine::RemoveEntInFoliage(int i, IPhysicalEntity* pent)
 bool C3DEngine::Init()
 {
 	m_pPartManager = CreateParticleManager(!gEnv->IsDedicated());
-	m_pParticleSystem = pfx2::GetIParticleSystem();
 	m_pSystem->SetIParticleManager(m_pPartManager);
 
 	m_pOpticsManager = new COpticsManager;
@@ -584,8 +582,6 @@ void C3DEngine::OnFrameStart()
 
 	if (m_pPartManager)
 		m_pPartManager->OnFrameStart();
-	if (m_pParticleSystem)
-		m_pParticleSystem->OnFrameStart();
 
 	m_nRenderWorldUSecs = 0;
 	m_pDeferredPhysicsEventManager->Update();
@@ -878,7 +874,6 @@ void C3DEngine::ShutDown()
 
 	DestroyParticleManager(m_pPartManager);
 	m_pPartManager = nullptr;
-	m_pParticleSystem.reset();
 	m_pSystem->SetIParticleManager(0);
 
 	if (m_pOpticsManager)
@@ -2263,7 +2258,7 @@ void C3DEngine::GetMemoryUsage(class ICrySizer* pSizer) const
 
 	{
 		SIZER_COMPONENT_NAME(pSizer, "ParticleSystem");
-		pSizer->AddObject(m_pParticleSystem);
+		pSizer->AddObject(pfx2::GetIParticleSystem());
 	}
 
 	{
@@ -2879,8 +2874,6 @@ void C3DEngine::ResetParticlesAndDecals()
 {
 	if (m_pPartManager)
 		m_pPartManager->Reset();
-	if (m_pParticleSystem)
-		m_pParticleSystem->Reset();
 
 	if (m_pDecalManager)
 		m_pDecalManager->Reset();
@@ -4058,8 +4051,6 @@ void C3DEngine::SerializeState(TSerialize ser)
 		m_pDecalManager->Serialize(ser);
 
 	m_pPartManager->Serialize(ser);
-	if (m_pParticleSystem)
-		m_pParticleSystem->Serialize(ser);
 	m_pTimeOfDay->Serialize(ser);
 }
 

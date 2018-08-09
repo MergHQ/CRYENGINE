@@ -184,7 +184,7 @@ void CParticleSystem::SyncMainWithRender()
 	m_lastCameraPose = QuatT(camera.GetMatrix());
 }
 
-void CParticleSystem::DeferredRender(const SRenderingPassInfo& passInfo)
+void CParticleSystem::FinishRenderTasks(const SRenderingPassInfo& passInfo)
 {
 	m_jobManager.DeferredRender();
 	DebugParticleSystem(m_emitters);
@@ -240,7 +240,7 @@ void DisplayParticleStats(Vec2& displayLocation, float lineHeight, cstr name, TS
 	}
 }
 
-float CParticleSystem::DisplayDebugStats(Vec2 displayLocation, float lineHeight)
+void CParticleSystem::DisplayStats(Vec2& location, float lineHeight)
 {
 	float blendTime = GetTimer()->GetCurrTime();
 	int blendMode = 0;
@@ -254,16 +254,16 @@ float CParticleSystem::DisplayDebugStats(Vec2 displayLocation, float lineHeight)
 	statsGPUAvg = Lerp(statsGPUAvg, statsGPUCur, blendCur);
 
 	if (!statsCPUAvg.emitters.IsZero())
-		DisplayParticleStats(displayLocation, lineHeight, "Wavicle CPU", statsCPUAvg);
+		DisplayParticleStats(location, lineHeight, "Wavicle CPU", statsCPUAvg);
 
 	static TElementCounts<float> statsSyncAvg;
 	TElementCounts<float> statsSyncCur;
 	statsSyncCur.Set(GetSumData().statsSync);
 	statsSyncAvg = Lerp(statsSyncAvg, statsSyncCur, blendCur);
-	DisplayElementStats(displayLocation, lineHeight, "Comp Sync", statsSyncAvg);
+	DisplayElementStats(location, lineHeight, "Comp Sync", statsSyncAvg);
 
 	if (!statsGPUAvg.components.IsZero())
-		DisplayParticleStats(displayLocation, lineHeight, "Wavicle GPU", statsGPUAvg);
+		DisplayParticleStats(location, lineHeight, "Wavicle GPU", statsGPUAvg);
 
 	if (m_pPartManager)
 	{
@@ -273,10 +273,26 @@ float CParticleSystem::DisplayDebugStats(Vec2 displayLocation, float lineHeight)
 		countsAvg = Lerp(countsAvg, counts, blendCur);
 
 		if (!countsAvg.emitters.IsZero())
-			DisplayParticleStats(displayLocation, lineHeight, "Particles V1", countsAvg);
+			DisplayParticleStats(location, lineHeight, "Particles V1", countsAvg);
+			
+		if (GetCVars()->e_ParticlesDebug & AlphaBit('r'))
+		{
+			gEnv->p3DEngine->DrawTextRightAligned(location.x, location.y += lineHeight,
+			                     "Reiter %4.0f, Reject %4.0f, Clip %4.1f, Coll %4.1f / %4.1f",
+			                     countsAvg.particles.reiterate, countsAvg.particles.reject, countsAvg.particles.clip,
+			                     countsAvg.particles.collideHit, countsAvg.particles.collideTest);
+		}
+		if (GetCVars()->e_ParticlesDebug & AlphaBits('bx'))
+		{
+			if (countsAvg.volume.stat + countsAvg.volume.dyn > 0.0f)
+			{
+				float fDiv = 1.f / (countsAvg.volume.dyn + FLT_MIN);
+				gEnv->p3DEngine->DrawTextRightAligned(location.x, location.y += lineHeight,
+					"Particle BB vol: Stat %.3g, Stat/Dyn %.2f, Err/Dyn %.3g",
+					countsAvg.volume.stat, countsAvg.volume.stat * fDiv, countsAvg.volume.error * fDiv);
+			}
+		}
 	}
-
-	return displayLocation.y;
 }
 
 void CParticleSystem::ClearRenderResources()

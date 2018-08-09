@@ -37,11 +37,14 @@ public:
 	void                    OnFrameStart() override;
 	void                    Update() override;
 	void                    Reset() override;
+	void                    ClearRenderResources() override;
+	void                    FinishRenderTasks(const SRenderingPassInfo& passInfo) override;
 
 	void                    Serialize(TSerialize ser) override;
 	bool                    SerializeFeatures(IArchive& ar, TParticleFeatures& features, cstr name, cstr label) const override;
 
 	void                    GetStats(SParticleStats& stats) override;
+	void                    DisplayStats(Vec2& location, float lineHeight) override;
 	void                    GetMemoryUsage(ICrySizer* pSizer) const override;
 	void                    SyncMainWithRender() override;
 	// ~IParticleSystem
@@ -62,13 +65,8 @@ public:
 	CParticleJobManager&     GetJobManager() { return m_jobManager; }
 	CParticleProfiler&       GetProfiler()   { return m_profiler; }
 
-	void                     FinishUpdate() {}
-	void                     DeferredRender(const SRenderingPassInfo& passInfo);
-	float                    DisplayDebugStats(Vec2 displayLocation, float lineHeight);
-
 	bool                     IsRuntime() const                { return m_numClears > 0 && m_numFrames > 1; }
 	void                     CheckFileAccess(cstr filename = 0) const;
-	void                     ClearRenderResources();
 
 	static float             GetMaxAngularDensity(const CCamera& camera);
 	QuatT                    GetLastCameraPose() const        { return m_lastCameraPose; }

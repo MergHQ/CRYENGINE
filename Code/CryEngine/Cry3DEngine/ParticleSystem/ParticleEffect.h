@@ -30,8 +30,9 @@ public:
 	virtual uint                   GetNumComponents() const override              { return m_components.size(); }
 	virtual IParticleComponent*    GetComponent(uint componentIdx) const override { return m_components[componentIdx]; }
 	virtual IParticleComponent*    AddComponent() override;
-	virtual void                   RemoveComponent(uint componentIdx) override;
+	virtual void                   RemoveComponent(uint componentIdx, bool all) override;
 	virtual void                   SetChanged() override;
+	virtual void                   Update() override                              { Compile(); }
 	virtual Serialization::SStruct GetEffectOptionsSerializer() const override;
 	virtual TParticleAttributesPtr CreateAttributesInstance() const override;
 	// ~pfx2 IParticleEffect
