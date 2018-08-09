@@ -363,6 +363,10 @@ void CSwapChainBackedRenderDisplayContext::ChangeOutputIfNecessary(bool isFullsc
 		isWindowOnExistingOutputMonitor = outputDesc.Monitor == hMonitor;
 #endif
 
+#if CRY_PLATFORM_ANDROID
+	isWindowOnExistingOutputMonitor = true;
+#endif
+
 	// Recreate output only if the window has been moved to another monitor
 	if (!isWindowOnExistingOutputMonitor)
 		CreateOutput();

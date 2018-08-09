@@ -1430,6 +1430,7 @@ public:
 	uint32    m_bInLevel                       : 1;
 	uint32    m_bUseWaterTessHW                : 1;
 	uint32    m_bUseSilhouettePOM              : 1;
+	uint32    m_bAllowTerrainLayerBlending     : 1;
 	uint32    m_bWaterCaustics                 : 1;
 	uint32    m_bIsWindowActive                : 1;
 	uint32    m_bInShutdown                    : 1;

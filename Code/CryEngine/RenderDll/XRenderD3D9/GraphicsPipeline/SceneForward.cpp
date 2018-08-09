@@ -32,19 +32,23 @@ CSceneForwardStage::CSceneForwardStage()
 void CSceneForwardStage::Init()
 {
 	// Create per-pass resources
-#if !defined(CRY_PLATFORM_MOBILE)
+#if RENDERER_ENABLE_FULL_PIPELINE
 	m_pOpaquePassResourceSet      = GetDeviceObjectFactory().CreateResourceSet(CDeviceResourceSet::EFlags_ForceSetAllState);
 	m_pTransparentPassResourceSet = GetDeviceObjectFactory().CreateResourceSet(CDeviceResourceSet::EFlags_ForceSetAllState);
 	m_pEyeOverlayPassResourceSet  = GetDeviceObjectFactory().CreateResourceSet(CDeviceResourceSet::EFlags_ForceSetAllState);
-#else
-	m_pOpaquePassResourceSetMobile = GetDeviceObjectFactory().CreateResourceSet(CDeviceResourceSet::EFlags_ForceSetAllState);
 #endif
+
+#if RENDERER_ENABLE_MOBILE_PIPELINE
+	m_pOpaquePassResourceSetMobile      = GetDeviceObjectFactory().CreateResourceSet(CDeviceResourceSet::EFlags_ForceSetAllState);
+	m_pTransparentPassResourceSetMobile = GetDeviceObjectFactory().CreateResourceSet(CDeviceResourceSet::EFlags_ForceSetAllState);
+#endif
+
 	m_pPerPassCB = gcpRendD3D->m_DevBufMan.CreateConstantBuffer(sizeof(SPerPassConstantBuffer));
 	
 	bool bSuccess = PreparePerPassResources(true);
 	assert(bSuccess);
 
-#if !defined(CRY_PLATFORM_MOBILE)
+#if RENDERER_ENABLE_FULL_PIPELINE
 	// Create resource layout
 	m_pOpaqueResourceLayout      = gcpRendD3D->GetGraphicsPipeline().CreateScenePassLayout(m_opaquePassResources);
 	m_pTransparentResourceLayout = gcpRendD3D->GetGraphicsPipeline().CreateScenePassLayout(m_transparentPassResources);
@@ -54,13 +58,18 @@ void CSceneForwardStage::Init()
 	m_opaquePassResources     .AcceptChangedBindPoints();
 	m_transparentPassResources.AcceptChangedBindPoints();
 	m_eyeOverlayPassResources .AcceptChangedBindPoints();
-#else
+#endif
+
+#if RENDERER_ENABLE_MOBILE_PIPELINE
 	// Opaque mobile forward scene pass
-	m_pOpaqueResourceLayoutMobile = gcpRendD3D->GetGraphicsPipeline().CreateScenePassLayout(m_opaquePassResourcesMobile);
+	m_pOpaqueResourceLayoutMobile      = gcpRendD3D->GetGraphicsPipeline().CreateScenePassLayout(m_opaquePassResourcesMobile);
+	m_pTransparentResourceLayoutMobile = gcpRendD3D->GetGraphicsPipeline().CreateScenePassLayout(m_transparentPassResourcesMobile);
 
 	// Freeze resource-set layout (assert  will fire when violating the constraint)
-	m_opaquePassResourcesMobile.AcceptChangedBindPoints();
+	m_opaquePassResourcesMobile.     AcceptChangedBindPoints();
+	m_transparentPassResourcesMobile.AcceptChangedBindPoints();
 #endif
+
 }
 
 void CSceneForwardStage::Update()
@@ -73,7 +82,7 @@ void CSceneForwardStage::Update()
 
 	if (!isForwardMinimal)
 	{
-#if !defined(CRY_PLATFORM_MOBILE)
+#if RENDERER_ENABLE_FULL_PIPELINE
 		CTexture* pDepthTexture = pRenderView->GetDepthTarget();
 
 		// Opaque forward scene pass
@@ -95,7 +104,7 @@ void CSceneForwardStage::Update()
 			// Depth
 			pDepthTexture,
 			// Color 0
-			CRendererResources::s_ptexHDRTarget
+			CRendererResources::s_ptexSceneDiffuse 
 		);
 
 		m_forwardOverlayPass.SetLabel("FORWARD_OVERLAY");
@@ -158,7 +167,9 @@ void CSceneForwardStage::Update()
 			// Color 0
 			CRendererResources::s_ptexSceneDiffuse
 		);
-#else
+#endif
+
+#if RENDERER_ENABLE_MOBILE_PIPELINE
 		m_forwardOpaquePassMobile.SetLabel("FORWARD_OPAQUE");
 		m_forwardOpaquePassMobile.SetupPassContext(m_stageID, ePass_ForwardMobile, TTYPE_GENERAL, FB_TILED_FORWARD | FB_GENERAL);
 		m_forwardOpaquePassMobile.SetPassResources(m_pOpaqueResourceLayoutMobile, m_pOpaquePassResourceSetMobile);
@@ -168,9 +179,20 @@ void CSceneForwardStage::Update()
 			// Color 0
 			CRendererResources::s_ptexHDRTarget
 		);
+
+		m_forwardTransparentPassMobile.SetLabel("FORWARD_TRANSPARENT");
+		m_forwardTransparentPassMobile.SetupPassContext(m_stageID, ePass_ForwardMobile, TTYPE_GENERAL, FB_GENERAL, EFSLIST_TRANSP_AW);
+		m_forwardTransparentPassMobile.SetPassResources(m_pTransparentResourceLayoutMobile, m_pTransparentPassResourceSetMobile);
+		m_forwardTransparentPassMobile.SetRenderTargets(
+			// Depth
+			pRenderView->GetDepthTarget(),
+			// Color 0
+			CRendererResources::s_ptexHDRTarget
+		);
 #endif
 	}
 
+#if RENDERER_ENABLE_FULL_PIPELINE
 	// Recursive passes need to be updated in the non-recursive update as well because of PSO creation
 	{
 		CTexture* pDepthTexture = pRenderView->GetDepthTarget();
@@ -208,6 +230,7 @@ void CSceneForwardStage::Update()
 			pColorTexture
 		);
 	}
+#endif
 }
 
 bool CSceneForwardStage::CreatePipelineState(const SGraphicsPipelineStateDescription& desc,
@@ -220,7 +243,12 @@ bool CSceneForwardStage::CreatePipelineState(const SGraphicsPipelineStateDescrip
 	outPSO = nullptr;
 
 	const bool bRecursive = (passId == ePass_ForwardRecursive);	
-	CSceneRenderPass* pSceneRenderPass = bRecursive ? &m_forwardTransparentRecursivePass : &m_forwardTransparentBWPass;
+	const bool bMobile    = (passId == ePass_ForwardMobile);
+
+	CSceneRenderPass* pSceneRenderPass = 
+		 bRecursive ? &m_forwardTransparentRecursivePass : 
+		(bMobile    ? &m_forwardTransparentPassMobile    : 
+			          &m_forwardTransparentBWPass);
 
 	CDeviceGraphicsPSODesc psoDesc(nullptr, desc);
 	
@@ -253,7 +281,8 @@ bool CSceneForwardStage::CreatePipelineState(const SGraphicsPipelineStateDescrip
 		const bool bAfterLDRPostProcess = (shaderFlags2 & EF2_AFTERPOSTPROCESS) != 0;
 		const bool bEmissive = (desc.shaderItem.m_pShaderResources && desc.shaderItem.m_pShaderResources->IsEmissive());
 
-#if defined(CRY_PLATFORM_MOBILE)
+#if !RENDERER_ENABLE_FULL_PIPELINE
+
 		// HACK: only opaque forward is supported on mobile currently
 		if (!(bOpaquePass && passId == ePass_ForwardMobile))
 			return true;
@@ -406,12 +435,14 @@ bool CSceneForwardStage::CreatePipelineStates(DevicePipelineStatesArray* pStateA
 	SGraphicsPipelineStateDescription _stateDesc = stateDesc;
 
 	_stateDesc.technique = TTYPE_GENERAL;
-#if !defined(CRY_PLATFORM_MOBILE)
+#if RENDERER_ENABLE_FULL_PIPELINE
 	bFullyCompiled &= CreatePipelineState(_stateDesc, stageStates[ePass_Forward], ePass_Forward);
 
 	_stateDesc.technique = TTYPE_GENERAL;
 	bFullyCompiled &= CreatePipelineState(_stateDesc, stageStates[ePass_ForwardRecursive], ePass_ForwardRecursive);
-#else
+#endif
+
+#if RENDERER_ENABLE_MOBILE_PIPELINE
 	bFullyCompiled &= CreatePipelineState(_stateDesc, stageStates[ePass_ForwardMobile], ePass_ForwardMobile);
 #endif
 
@@ -432,9 +463,11 @@ bool CSceneForwardStage::PreparePerPassResources(bool bOnInit, bool bShadowMask,
 	auto* pTiledLights = GetStdGraphicsPipeline().GetTiledLightVolumesStage();
 	auto* pFogStage    = GetStdGraphicsPipeline().GetFogStage();
 	auto* pVolFogStage = GetStdGraphicsPipeline().GetVolumetricFogStage();
+
 #if defined(FEATURE_SVO_GI)
 	auto* pSVOGIStage  = CSvoRenderer::GetInstance();
 #endif
+
 	CTexture* pShadowMask = bShadowMask ? CRendererResources::s_ptexShadowMask : CRendererResources::s_ptexBlack;
 
 	enum EResourcesSubset
@@ -449,27 +482,20 @@ bool CSceneForwardStage::PreparePerPassResources(bool bOnInit, bool bShadowMask,
 		eResSubset_None                    = ~eResSubset_All
 	};
 	
-#if !defined(CRY_PLATFORM_MOBILE)
-	CDeviceResourceSetDesc* pResourceDescs[]      = { &m_opaquePassResources, &m_transparentPassResources, &m_eyeOverlayPassResources };
-	uint32_t        resourceSubsetDescs[] = { 
-		eResSubset_General | eResSubset_TiledShadingOpaque      | eResSubset_Particles,
-		eResSubset_General | eResSubset_TiledShadingTransparent | eResSubset_Particles,
-		eResSubset_General | eResSubset_EyeOverlay              | eResSubset_Particles
-	};
-	CDeviceResourceSet*     pResourceSets[]       = { m_pOpaquePassResourceSet.get(), m_pTransparentPassResourceSet.get(), m_pEyeOverlayPassResourceSet.get() };
 
-	const bool bFogStage   = true;
-	const bool bCloudStage = true;
-	const bool bSVOGIStage = true;
-#else
-	CDeviceResourceSetDesc* pResourceDescs[]      = { &m_opaquePassResourcesMobile };
-	EResourcesSubset        resourceSubsetDescs[] = { eResSubset_General };
-	CDeviceResourceSet*     pResourceSets[]       = { m_pOpaquePassResourceSetMobile.get() };
-
-	const bool bFogStage   = false;
-	const bool bCloudStage = false;
-	const bool bSVOGIStage = false;
+	struct { CDeviceResourceSetDesc& resourceDesc; CDeviceResourceSet*  pResourceSet; uint32_t flags; } resourceSetsToBuild[] =
+	{
+#if RENDERER_ENABLE_FULL_PIPELINE
+		{ m_opaquePassResources,            m_pOpaquePassResourceSet.get(),            eResSubset_General | eResSubset_TiledShadingOpaque      | eResSubset_Particles },
+		{ m_transparentPassResources,       m_pTransparentPassResourceSet.get(),       eResSubset_General | eResSubset_TiledShadingTransparent | eResSubset_Particles },
+		{ m_eyeOverlayPassResources,	    m_pEyeOverlayPassResourceSet.get(),        eResSubset_General | eResSubset_EyeOverlay              | eResSubset_Particles },
 #endif
+
+#if RENDERER_ENABLE_MOBILE_PIPELINE
+		{ m_opaquePassResourcesMobile,      m_pOpaquePassResourceSetMobile.get(),      eResSubset_General | eResSubset_Particles},
+		{ m_transparentPassResourcesMobile, m_pTransparentPassResourceSetMobile.get(), eResSubset_General | eResSubset_Particles},
+#endif
+	};
 
 	if (!bOnInit)
 	{
@@ -479,47 +505,47 @@ bool CSceneForwardStage::PreparePerPassResources(bool bOnInit, bool bShadowMask,
 		if (pRenderView)
 			CShadowUtils::GetShadowCascadesSamplingInfo(cb->cbShadowSampling, pRenderView);
 
-		if (bFogStage)
-		{
-			pFogStage->FillForwardParams(cb->cbFog, bFog);
-			pVolFogStage->FillForwardParams(cb->cbVoxelFog, bFog);
-		}
+		FillCloudShadingParams(cb->cbClouds, true);
 
-		if(bCloudStage)
-			this->FillCloudShadingParams(cb->cbClouds, true);
+		if (pFogStage)    pFogStage   ->FillForwardParams(cb->cbFog, bFog);
+		if (pVolFogStage) pVolFogStage->FillForwardParams(cb->cbVoxelFog, bFog);
+
 #if defined(FEATURE_SVO_GI)
-		if(bSVOGIStage)
+		if (auto pSVOGIStage = CSvoRenderer::GetInstance())
+		{
 			pSVOGIStage->FillForwardParams(cb->cbSVOGI, pSVOGIStage->IsActive());
+		}
 #endif
 
 		m_pPerPassCB->UpdateBuffer(cb, cbSize);
 	}
 
-	for (uint32 i = 0; i < CRY_ARRAY_COUNT(pResourceDescs); i++)
+	for (uint32 i = 0; i < CRY_ARRAY_COUNT(resourceSetsToBuild); i++)
 	{
 
-		CDeviceResourceSetDesc* pResources   = pResourceDescs[i];
-		CDeviceResourceSet*     pResourceSet = pResourceSets[i];
-		const uint32_t& resourceSubset       = resourceSubsetDescs[i];
+		CDeviceResourceSetDesc& resources      = resourceSetsToBuild[i].resourceDesc;
+		CDeviceResourceSet*     pResourceSet   = resourceSetsToBuild[i].pResourceSet;
+		const uint32_t&         resourceSubset = resourceSetsToBuild[i].flags;
 
-		const bool bOpaquePass      = !!(resourceSubset & eResSubset_TiledShadingOpaque);
-		const bool bTransparentPass = !!(resourceSubset & eResSubset_TiledShadingTransparent);
-		const bool bEyeOverlayPass  = !!(resourceSubset & eResSubset_EyeOverlay);		
+		const bool includeOpaquePassResources      = !!(resourceSubset & eResSubset_TiledShadingOpaque);
+		const bool includeTransparentPassResources = !!(resourceSubset & eResSubset_TiledShadingTransparent);
+		const bool includeEyeOverlayPassResources  = !!(resourceSubset & eResSubset_EyeOverlay);		
+		const bool includeForwardShadowResources   = !!(resourceSubset & (eResSubset_TiledShadingTransparent | eResSubset_Particles));
 
 		// Samplers
 		{
 			auto materialSamplers = gcpRendD3D->GetGraphicsPipeline().GetDefaultMaterialSamplers();
 			for (int i = 0; i < materialSamplers.size(); ++i)
 			{
-				pResources->SetSampler(EEfResSamplers(i), materialSamplers[i], EShaderStage_AllWithoutCompute);
+				resources.SetSampler(EEfResSamplers(i), materialSamplers[i], EShaderStage_AllWithoutCompute);
 			}
 			
-			pResources->SetSampler(8, EDefaultSamplerStates::PointWrap, EShaderStage_AllWithoutCompute);
-			pResources->SetSampler(9, EDefaultSamplerStates::PointClamp, EShaderStage_AllWithoutCompute);
+			resources.SetSampler(8, EDefaultSamplerStates::PointWrap, EShaderStage_AllWithoutCompute);
+			resources.SetSampler(9, EDefaultSamplerStates::PointClamp, EShaderStage_AllWithoutCompute);
 			
 			// Custom for pass
-			pResources->SetSampler(10, EDefaultSamplerStates::BilinearWrap, EShaderStage_AllWithoutCompute);
-			pResources->SetSampler(11, EDefaultSamplerStates::LinearCompare, EShaderStage_AllWithoutCompute);
+			resources.SetSampler(10, EDefaultSamplerStates::BilinearWrap, EShaderStage_AllWithoutCompute);
+			resources.SetSampler(11, EDefaultSamplerStates::LinearCompare, EShaderStage_AllWithoutCompute);
 		}
 
 		// Textures
@@ -528,48 +554,48 @@ bool CSceneForwardStage::PreparePerPassResources(bool bOnInit, bool bShadowMask,
 			if (gEnv->p3DEngine && gEnv->p3DEngine->GetITerrain())
 				gEnv->p3DEngine->GetITerrain()->GetAtlasTexId(nTerrainTex0, nTerrainTex1, nTerrainTex2);
 
-			pResources->SetTexture(ePerPassTexture_PerlinNoiseMap, CRendererResources::s_ptexPerlinNoiseMap, EDefaultResourceViews::Default, EShaderStage_AllWithoutCompute);
-			pResources->SetTexture(ePerPassTexture_WindGrid, CRendererResources::s_ptexWindGrid, EDefaultResourceViews::Default, EShaderStage_AllWithoutCompute);
-			pResources->SetTexture(ePerPassTexture_TerrainElevMap, CTexture::GetByID(nTerrainTex2), EDefaultResourceViews::Default, EShaderStage_AllWithoutCompute);
-			pResources->SetTexture(ePerPassTexture_TerrainNormMap, CTexture::GetByID(nTerrainTex1), EDefaultResourceViews::Default, EShaderStage_AllWithoutCompute);
-			pResources->SetTexture(ePerPassTexture_TerrainBaseMap, CTexture::GetByID(nTerrainTex0), EDefaultResourceViews::sRGB, EShaderStage_AllWithoutCompute);
-			pResources->SetTexture(ePerPassTexture_NormalsFitting, CRendererResources::s_ptexNormalsFitting, EDefaultResourceViews::Default, EShaderStage_AllWithoutCompute);
-			pResources->SetTexture(ePerPassTexture_SceneLinearDepth, CRendererResources::s_ptexLinearDepth, EDefaultResourceViews::Default, EShaderStage_AllWithoutCompute);
+			resources.SetTexture(ePerPassTexture_PerlinNoiseMap, CRendererResources::s_ptexPerlinNoiseMap, EDefaultResourceViews::Default, EShaderStage_AllWithoutCompute);
+			resources.SetTexture(ePerPassTexture_WindGrid, CRendererResources::s_ptexWindGrid, EDefaultResourceViews::Default, EShaderStage_AllWithoutCompute);
+			resources.SetTexture(ePerPassTexture_TerrainElevMap, CTexture::GetByID(nTerrainTex2), EDefaultResourceViews::Default, EShaderStage_AllWithoutCompute);
+			resources.SetTexture(ePerPassTexture_TerrainNormMap, CTexture::GetByID(nTerrainTex1), EDefaultResourceViews::Default, EShaderStage_AllWithoutCompute);
+			resources.SetTexture(ePerPassTexture_TerrainBaseMap, CTexture::GetByID(nTerrainTex0), EDefaultResourceViews::sRGB, EShaderStage_AllWithoutCompute);
+			resources.SetTexture(ePerPassTexture_NormalsFitting, CRendererResources::s_ptexNormalsFitting, EDefaultResourceViews::Default, EShaderStage_AllWithoutCompute);
+			resources.SetTexture(ePerPassTexture_SceneLinearDepth, CRendererResources::s_ptexLinearDepth, EDefaultResourceViews::Default, EShaderStage_AllWithoutCompute);
 
-			pResources->SetTexture(38, pShadowMask, EDefaultResourceViews::Default, EShaderStage_AllWithoutCompute);
-			pResources->SetTexture(39, CRendererResources::s_ptexNoise3D, EDefaultResourceViews::Default, EShaderStage_AllWithoutCompute);
-			pResources->SetTexture(40, CRendererResources::s_ptexEnvironmentBRDF, EDefaultResourceViews::Default, EShaderStage_AllWithoutCompute);
-			pResources->SetTexture(45, (pRenderView && pRenderView->IsRecursive()) ? CRendererResources::s_ptexBlackCM : CRendererResources::s_ptexDefaultProbeCM, EDefaultResourceViews::Default, EShaderStage_AllWithoutCompute);
+			resources.SetTexture(38, pShadowMask, EDefaultResourceViews::Default, EShaderStage_AllWithoutCompute);
+			resources.SetTexture(39, CRendererResources::s_ptexNoise3D, EDefaultResourceViews::Default, EShaderStage_AllWithoutCompute);
+			resources.SetTexture(40, CRendererResources::s_ptexEnvironmentBRDF, EDefaultResourceViews::Default, EShaderStage_AllWithoutCompute);
+			resources.SetTexture(45, (pRenderView && pRenderView->IsRecursive()) ? CRendererResources::s_ptexBlackCM : CRendererResources::s_ptexDefaultProbeCM, EDefaultResourceViews::Default, EShaderStage_AllWithoutCompute);
 
-			if (bTransparentPass) // Transparent pass only: allow writing motion vectors
+			if (includeTransparentPassResources) // Transparent pass only: allow writing motion vectors
 			{
-				pResources->SetTexture(2, CRendererResources::s_ptexVelocityObjects[0], EDefaultResourceViews::UnorderedAccess, EShaderStage_Pixel);
+				resources.SetTexture(2, CRendererResources::s_ptexVelocityObjects[0], EDefaultResourceViews::UnorderedAccess, EShaderStage_Pixel);
 			}			
 		}
 
 		// Particle resources
-		if(resourceSubset & EResourcesSubset::eResSubset_Particles)
+		if (resourceSubset & EResourcesSubset::eResSubset_Particles)
 		{
 			if (bOnInit)
 			{
-				pResources->SetBuffer(
+				resources.SetBuffer(
 					EReservedTextureSlot_LightvolumeInfos,
 					CDeviceBufferManager::GetNullBufferStructured(),
 					EDefaultResourceViews::Default, EShaderStage_AllWithoutCompute);
-				pResources->SetBuffer(
+				resources.SetBuffer(
 					EReservedTextureSlot_LightVolumeRanges,
 					CDeviceBufferManager::GetNullBufferStructured(),
 					EDefaultResourceViews::Default, EShaderStage_AllWithoutCompute);
 
-				pResources->SetBuffer(
+				resources.SetBuffer(
 					EReservedTextureSlot_ParticlePositionStream,
 					CDeviceBufferManager::GetNullBufferStructured(),
 					EDefaultResourceViews::Default, EShaderStage_AllWithoutCompute);
-				pResources->SetBuffer(
+				resources.SetBuffer(
 					EReservedTextureSlot_ParticleAxesStream,
 					CDeviceBufferManager::GetNullBufferStructured(),
 					EDefaultResourceViews::Default, EShaderStage_AllWithoutCompute);
-				pResources->SetBuffer(
+				resources.SetBuffer(
 					EReservedTextureSlot_ParticleColorSTStream,
 					CDeviceBufferManager::GetNullBufferStructured(),
 					EDefaultResourceViews::Default, EShaderStage_AllWithoutCompute);
@@ -579,11 +605,11 @@ bool CSceneForwardStage::PreparePerPassResources(bool bOnInit, bool bShadowMask,
 				const CLightVolumeBuffer& lightVolumes = GetStdGraphicsPipeline().GetLightVolumeBuffer();
 				const CParticleBufferSet& particleBuffer = GetStdGraphicsPipeline().GetParticleBufferSet();
 
-				pResources->SetBuffer(
+				resources.SetBuffer(
 					EReservedTextureSlot_LightvolumeInfos,
 					const_cast<CGpuBuffer*>(&lightVolumes.GetLightInfosBuffer()),
 					EDefaultResourceViews::Default, EShaderStage_AllWithoutCompute);
-				pResources->SetBuffer(
+				resources.SetBuffer(
 					EReservedTextureSlot_LightVolumeRanges,
 					const_cast<CGpuBuffer*>(&lightVolumes.GetLightRangesBuffer()),
 					EDefaultResourceViews::Default, EShaderStage_AllWithoutCompute);
@@ -593,15 +619,15 @@ bool CSceneForwardStage::PreparePerPassResources(bool bOnInit, bool bShadowMask,
 				const auto colorStream    = particleBuffer.GetColorSTsStream(RenderView()->GetFrameId());
 				if (positionStream && axesStream && colorStream)
 				{
-					pResources->SetBuffer(
+					resources.SetBuffer(
 						EReservedTextureSlot_ParticlePositionStream,
 						const_cast<CGpuBuffer*>(positionStream),
 						EDefaultResourceViews::Default, EShaderStage_AllWithoutCompute);
-					pResources->SetBuffer(
+					resources.SetBuffer(
 						EReservedTextureSlot_ParticleAxesStream,
 						const_cast<CGpuBuffer*>(axesStream),
 						EDefaultResourceViews::Default, EShaderStage_AllWithoutCompute);
-					pResources->SetBuffer(
+					resources.SetBuffer(
 						EReservedTextureSlot_ParticleColorSTStream,
 						const_cast<CGpuBuffer*>(colorStream),
 						EDefaultResourceViews::Default, EShaderStage_AllWithoutCompute);
@@ -613,54 +639,54 @@ bool CSceneForwardStage::PreparePerPassResources(bool bOnInit, bool bShadowMask,
 		{
 			if (bOnInit)
 			{
-				pResources->SetBuffer(17, CDeviceBufferManager::GetNullBufferTyped(), EDefaultResourceViews::Default, EShaderStage_AllWithoutCompute);
-				pResources->SetBuffer(18, CDeviceBufferManager::GetNullBufferStructured(), EDefaultResourceViews::Default, EShaderStage_AllWithoutCompute);
-				pResources->SetBuffer(19, CDeviceBufferManager::GetNullBufferStructured(), EDefaultResourceViews::Default, EShaderStage_AllWithoutCompute);
-				pResources->SetTexture(20, CRendererResources::s_ptexBlackCM, EDefaultResourceViews::Default, EShaderStage_AllWithoutCompute);
-				pResources->SetTexture(21, CRendererResources::s_ptexBlackCM, EDefaultResourceViews::Default, EShaderStage_AllWithoutCompute);
-				pResources->SetTexture(22, CRendererResources::s_ptexBlack, EDefaultResourceViews::Default, EShaderStage_AllWithoutCompute);
+				resources.SetBuffer(17, CDeviceBufferManager::GetNullBufferTyped(), EDefaultResourceViews::Default, EShaderStage_AllWithoutCompute);
+				resources.SetBuffer(18, CDeviceBufferManager::GetNullBufferStructured(), EDefaultResourceViews::Default, EShaderStage_AllWithoutCompute);
+				resources.SetBuffer(19, CDeviceBufferManager::GetNullBufferStructured(), EDefaultResourceViews::Default, EShaderStage_AllWithoutCompute);
+				resources.SetTexture(20, CRendererResources::s_ptexBlackCM, EDefaultResourceViews::Default, EShaderStage_AllWithoutCompute);
+				resources.SetTexture(21, CRendererResources::s_ptexBlackCM, EDefaultResourceViews::Default, EShaderStage_AllWithoutCompute);
+				resources.SetTexture(22, CRendererResources::s_ptexBlack, EDefaultResourceViews::Default, EShaderStage_AllWithoutCompute);
 
-				if (bTransparentPass || (CRenderer::CV_r_DeferredShadingTiled < 3))
+				if (includeTransparentPassResources || (CRenderer::CV_r_DeferredShadingTiled < 3))
 				{
-					pResources->SetBuffer(17, CDeviceBufferManager::GetNullBufferTyped(), EDefaultResourceViews::Default, EShaderStage_AllWithoutCompute);
+					resources.SetBuffer(17, CDeviceBufferManager::GetNullBufferTyped(), EDefaultResourceViews::Default, EShaderStage_AllWithoutCompute);
 				}
 			}
 			else
 			{
-				pResources->SetBuffer(17, pTiledLights->GetTiledOpaqueLightMaskBuffer(), EDefaultResourceViews::Default, EShaderStage_AllWithoutCompute);
-				pResources->SetBuffer(18, pTiledLights->GetLightShadeInfoBuffer(), EDefaultResourceViews::Default, EShaderStage_AllWithoutCompute);
-				pResources->SetBuffer(19, pClipVolumes->GetClipVolumeInfoBuffer(), EDefaultResourceViews::Default, EShaderStage_AllWithoutCompute);
-				pResources->SetTexture(20, pTiledLights->GetSpecularProbeAtlas(), EDefaultResourceViews::Default, EShaderStage_AllWithoutCompute);
-				pResources->SetTexture(21, pTiledLights->GetDiffuseProbeAtlas(), EDefaultResourceViews::Default, EShaderStage_AllWithoutCompute);
-				pResources->SetTexture(22, pTiledLights->GetProjectedLightAtlas(), EDefaultResourceViews::Default, EShaderStage_AllWithoutCompute);
+				resources.SetBuffer(17, pTiledLights->GetTiledOpaqueLightMaskBuffer(), EDefaultResourceViews::Default, EShaderStage_AllWithoutCompute);
+				resources.SetBuffer(18, pTiledLights->GetLightShadeInfoBuffer(), EDefaultResourceViews::Default, EShaderStage_AllWithoutCompute);
+				resources.SetBuffer(19, pClipVolumes->GetClipVolumeInfoBuffer(), EDefaultResourceViews::Default, EShaderStage_AllWithoutCompute);
+				resources.SetTexture(20, pTiledLights->GetSpecularProbeAtlas(), EDefaultResourceViews::Default, EShaderStage_AllWithoutCompute);
+				resources.SetTexture(21, pTiledLights->GetDiffuseProbeAtlas(), EDefaultResourceViews::Default, EShaderStage_AllWithoutCompute);
+				resources.SetTexture(22, pTiledLights->GetProjectedLightAtlas(), EDefaultResourceViews::Default, EShaderStage_AllWithoutCompute);
 
-				if (bTransparentPass || (CRenderer::CV_r_DeferredShadingTiled < 3))
+				if (includeTransparentPassResources || (CRenderer::CV_r_DeferredShadingTiled < 3))
 				{
-					pResources->SetBuffer(17, pTiledLights->GetTiledTranspLightMaskBuffer(), EDefaultResourceViews::Default, EShaderStage_AllWithoutCompute);
+					resources.SetBuffer(17, pTiledLights->GetTiledTranspLightMaskBuffer(), EDefaultResourceViews::Default, EShaderStage_AllWithoutCompute);
 				}
 			}
 
 #if defined(FEATURE_SVO_GI)
 			if (bOnInit || !CSvoRenderer::GetInstance()->IsActive() || !CSvoRenderer::GetInstance()->GetSpecularFinRT())
 			{
-				pResources->SetTexture(46, CRendererResources::s_ptexBlack, EDefaultResourceViews::Default, EShaderStage_AllWithoutCompute);
-				pResources->SetTexture(47, CRendererResources::s_ptexBlack, EDefaultResourceViews::Default, EShaderStage_AllWithoutCompute);
+				resources.SetTexture(46, CRendererResources::s_ptexBlack, EDefaultResourceViews::Default, EShaderStage_AllWithoutCompute);
+				resources.SetTexture(47, CRendererResources::s_ptexBlack, EDefaultResourceViews::Default, EShaderStage_AllWithoutCompute);
 			}
 			else
 			{
-				pResources->SetTexture(46, CSvoRenderer::GetInstance()->GetDiffuseFinRT(), EDefaultResourceViews::Default, EShaderStage_AllWithoutCompute);
-				pResources->SetTexture(47, CSvoRenderer::GetInstance()->GetSpecularFinRT(), EDefaultResourceViews::Default, EShaderStage_AllWithoutCompute);
+				resources.SetTexture(46, CSvoRenderer::GetInstance()->GetDiffuseFinRT(), EDefaultResourceViews::Default, EShaderStage_AllWithoutCompute);
+				resources.SetTexture(47, CSvoRenderer::GetInstance()->GetSpecularFinRT(), EDefaultResourceViews::Default, EShaderStage_AllWithoutCompute);
 			}
 #endif
 
-			pResources->SetTexture(23, CRendererResources::s_ptexRT_ShadowPool, EDefaultResourceViews::Default, EShaderStage_AllWithoutCompute);
-			pResources->SetTexture(24, CRendererResources::s_ptexSceneNormalsBent, EDefaultResourceViews::Default, EShaderStage_AllWithoutCompute);
-			pResources->SetTexture(41, CRendererResources::s_ptexSceneDiffuse, EDefaultResourceViews::Default, EShaderStage_AllWithoutCompute);  //  Eye AO overlay
+			resources.SetTexture(23, CRendererResources::s_ptexRT_ShadowPool, EDefaultResourceViews::Default, EShaderStage_AllWithoutCompute);
+			resources.SetTexture(24, CRendererResources::s_ptexSceneNormalsBent, EDefaultResourceViews::Default, EShaderStage_AllWithoutCompute);
+			resources.SetTexture(41, CRendererResources::s_ptexSceneDiffuse, EDefaultResourceViews::Default, EShaderStage_AllWithoutCompute);  //  Eye AO overlay
 
 			// Overwrite resources for transparent pass (need to be careful that the layout is still the same)
-			if (bTransparentPass)
+			if (includeForwardShadowResources)
 			{
-				pResources->SetTexture(24, CRendererResources::s_ptexShadowJitterMap, EDefaultResourceViews::Default, EShaderStage_AllWithoutCompute);
+				resources.SetTexture(24, CRendererResources::s_ptexShadowJitterMap, EDefaultResourceViews::Default, EShaderStage_AllWithoutCompute);
 
 				CShadowUtils::SShadowCascades cascades;
 				if (bOnInit)
@@ -672,32 +698,35 @@ bool CSceneForwardStage::PreparePerPassResources(bool bOnInit, bool bShadowMask,
 					CShadowUtils::GetShadowCascades(cascades, RenderView());
 				}
 
-				pResources->SetTexture(25, CRendererResources::s_ptexSceneTarget, EDefaultResourceViews::Default, EShaderStage_AllWithoutCompute);
-				pResources->SetTexture(26, cascades.pShadowMap[0], EDefaultResourceViews::Default, EShaderStage_AllWithoutCompute);
-				pResources->SetTexture(27, cascades.pShadowMap[1], EDefaultResourceViews::Default, EShaderStage_AllWithoutCompute);
-				pResources->SetTexture(28, cascades.pShadowMap[2], EDefaultResourceViews::Default, EShaderStage_AllWithoutCompute);
-				pResources->SetTexture(29, cascades.pShadowMap[3], EDefaultResourceViews::Default, EShaderStage_AllWithoutCompute);
-				pResources->SetTexture(30, CRendererResources::s_ptexWhite, EDefaultResourceViews::Default, EShaderStage_AllWithoutCompute);
-				pResources->SetTexture(31, CRendererResources::s_ptexShadowJitterMap, EDefaultResourceViews::Default, EShaderStage_AllWithoutCompute);
+				resources.SetTexture(25, CRendererResources::s_ptexSceneTarget, EDefaultResourceViews::Default, EShaderStage_AllWithoutCompute);
+				resources.SetTexture(26, cascades.pShadowMap[0], EDefaultResourceViews::Default, EShaderStage_AllWithoutCompute);
+				resources.SetTexture(27, cascades.pShadowMap[1], EDefaultResourceViews::Default, EShaderStage_AllWithoutCompute);
+				resources.SetTexture(28, cascades.pShadowMap[2], EDefaultResourceViews::Default, EShaderStage_AllWithoutCompute);
+				resources.SetTexture(29, cascades.pShadowMap[3], EDefaultResourceViews::Default, EShaderStage_AllWithoutCompute);
+				resources.SetTexture(30, CRendererResources::s_ptexWhite, EDefaultResourceViews::Default, EShaderStage_AllWithoutCompute);
+				resources.SetTexture(31, CRendererResources::s_ptexShadowJitterMap, EDefaultResourceViews::Default, EShaderStage_AllWithoutCompute);
+			}
 
+			if (includeTransparentPassResources)
+			{
 				// volumetric fog supports only general pass currently so only transparent pass needs those textures.
 				if (bOnInit || !pVolFogStage || !bFog)
 				{
-					pResources->SetTexture(42, CRendererResources::s_ptexBlack, EDefaultResourceViews::Default, EShaderStage_AllWithoutCompute);
-					pResources->SetTexture(43, CRendererResources::s_ptexBlackCM, EDefaultResourceViews::Default, EShaderStage_AllWithoutCompute);
-					pResources->SetTexture(44, CRendererResources::s_ptexBlackCM, EDefaultResourceViews::Default, EShaderStage_AllWithoutCompute);
+					resources.SetTexture(42, CRendererResources::s_ptexBlack, EDefaultResourceViews::Default, EShaderStage_AllWithoutCompute);
+					resources.SetTexture(43, CRendererResources::s_ptexBlackCM, EDefaultResourceViews::Default, EShaderStage_AllWithoutCompute);
+					resources.SetTexture(44, CRendererResources::s_ptexBlackCM, EDefaultResourceViews::Default, EShaderStage_AllWithoutCompute);
 				}
 				else
 				{
-					pResources->SetTexture(42, pVolFogStage->GetVolumetricFogTex(), EDefaultResourceViews::Default, EShaderStage_AllWithoutCompute);
-					pResources->SetTexture(43, pVolFogStage->GetGlobalEnvProbeTex0(), EDefaultResourceViews::Default, EShaderStage_AllWithoutCompute);
-					pResources->SetTexture(44, pVolFogStage->GetGlobalEnvProbeTex1(), EDefaultResourceViews::Default, EShaderStage_AllWithoutCompute);
+					resources.SetTexture(42, pVolFogStage->GetVolumetricFogTex(), EDefaultResourceViews::Default, EShaderStage_AllWithoutCompute);
+					resources.SetTexture(43, pVolFogStage->GetGlobalEnvProbeTex0(), EDefaultResourceViews::Default, EShaderStage_AllWithoutCompute);
+					resources.SetTexture(44, pVolFogStage->GetGlobalEnvProbeTex1(), EDefaultResourceViews::Default, EShaderStage_AllWithoutCompute);
 				}
 			}
-			else if (bEyeOverlayPass)
+			else if (includeEyeOverlayPassResources)
 			{
 				// Eye AO overlay pass resource must not contain eye AO overlay texture.
-				pResources->SetTexture(41, CRendererResources::s_ptexBlack, EDefaultResourceViews::Default, EShaderStage_AllWithoutCompute);
+				resources.SetTexture(41, CRendererResources::s_ptexBlack, EDefaultResourceViews::Default, EShaderStage_AllWithoutCompute);
 			}
 		}
 
@@ -718,18 +747,22 @@ bool CSceneForwardStage::PreparePerPassResources(bool bOnInit, bool bShadowMask,
 				pPerViewCB = GetStdGraphicsPipeline().GetMainViewConstantBuffer();
 			}
 
-			pResources->SetConstantBuffer(eConstantBufferShaderSlot_PerPass, pPerPassCB, EShaderStage_AllWithoutCompute);
-			pResources->SetConstantBuffer(eConstantBufferShaderSlot_PerView, pPerViewCB, EShaderStage_AllWithoutCompute);
+			resources.SetConstantBuffer(eConstantBufferShaderSlot_PerPass, pPerPassCB, EShaderStage_AllWithoutCompute);
+			resources.SetConstantBuffer(eConstantBufferShaderSlot_PerView, pPerViewCB, EShaderStage_AllWithoutCompute);
 		}
 
 		if (bOnInit)
 			continue;
 
-		CRY_ASSERT(!pResources->HasChangedBindPoints()); // Cannot change resource layout after init. It is baked into the shaders
-		pResourceSet->Update(*pResources);
+		CRY_ASSERT(!resources.HasChangedBindPoints()); // Cannot change resource layout after init. It is baked into the shaders
+		pResourceSet->Update(resources);
 	}
 
-	return bOnInit || (m_pOpaquePassResourceSet->IsValid() && m_pTransparentPassResourceSet->IsValid());
+	bool allResourceSetsValid = true;
+	for (int i = 0; i < CRY_ARRAY_COUNT(resourceSetsToBuild); ++i)
+		allResourceSetsValid &= resourceSetsToBuild[i].pResourceSet->IsValid();
+
+	return bOnInit || allResourceSetsValid;
 }
 
 void CSceneForwardStage::ExecuteOpaque()
@@ -803,7 +836,7 @@ void CSceneForwardStage::ExecuteTransparent(bool bBelowWater)
 	auto& RESTRICT_REFERENCE commandList = GetDeviceObjectFactory().GetCoreCommandList();
 
 	scenePass.PrepareRenderPassForUse(commandList);
-	scenePass.SetFlags(passFlags | CSceneRenderPass::ePassFlags_RenderNearest);
+	scenePass.SetFlags(passFlags | (!bBelowWater ? CSceneRenderPass::ePassFlags_RenderNearest : CSceneRenderPass::ePassFlags_None));
 	scenePass.SetViewport(RenderView()->GetViewport());
 
 	auto& renderItemDrawer = pRenderView->GetDrawer();
@@ -811,7 +844,10 @@ void CSceneForwardStage::ExecuteTransparent(bool bBelowWater)
 
 	scenePass.BeginExecution();
 	scenePass.DrawTransparentRenderItems(pRenderView, bBelowWater ? EFSLIST_TRANSP_BW : EFSLIST_TRANSP_AW);
-	scenePass.DrawTransparentRenderItems(pRenderView, EFSLIST_TRANSP_NEAREST);
+	if (!bBelowWater)
+	{
+		scenePass.DrawTransparentRenderItems(pRenderView, EFSLIST_TRANSP_NEAREST);
+	}
 	scenePass.EndExecution();
 
 	renderItemDrawer.JobifyDrawSubmission();
@@ -1003,6 +1039,11 @@ void CSceneForwardStage::ExecuteMobile()
 	m_forwardOpaquePassMobile.SetFlags(passFlags | CSceneRenderPass::ePassFlags_VrProjectionPass | CSceneRenderPass::ePassFlags_RenderNearest);
 	m_forwardOpaquePassMobile.SetViewport(viewport);
 
+	m_forwardTransparentPassMobile.PrepareRenderPassForUse(commandList);
+	m_forwardTransparentPassMobile.SetFlags(passFlags | CSceneRenderPass::ePassFlags_RenderNearest);
+	m_forwardTransparentPassMobile.SetViewport(viewport);
+
+	// forward opaque
 	{
 		renderItemDrawer.InitDrawSubmission();
 
@@ -1019,6 +1060,19 @@ void CSceneForwardStage::ExecuteMobile()
 	}
 
 	ExecuteSky(CRendererResources::s_ptexHDRTarget, RenderView()->GetDepthTarget());
+
+	// forward transparent AW
+	{
+		renderItemDrawer.InitDrawSubmission();
+
+		m_forwardTransparentPassMobile.BeginExecution();
+		m_forwardTransparentPassMobile.DrawTransparentRenderItems(pRenderView, EFSLIST_TRANSP_AW);
+		m_forwardTransparentPassMobile.DrawTransparentRenderItems(pRenderView, EFSLIST_TRANSP_NEAREST);
+		m_forwardTransparentPassMobile.EndExecution();
+
+		renderItemDrawer.JobifyDrawSubmission();
+		renderItemDrawer.WaitForDrawSubmission();
+	}
 }
 
 void CSceneForwardStage::ExecuteMinimum(CTexture* pColorTex, CTexture* pDepthTex)

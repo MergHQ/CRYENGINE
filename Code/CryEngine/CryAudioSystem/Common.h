@@ -20,8 +20,15 @@ namespace Impl
 struct IImpl;
 } // namespace Impl
 
+class CSystem;
+class CAudioTranslationLayer;
 class CEventManager;
-class CAudioStandaloneFileManager;
+class CFileManager;
+class CObjectManager;
+class CAudioListenerManager;
+class CFileCacheManager;
+class CAudioEventListenerManager;
+class CAudioXMLProcessor;
 class CATLAudioObject;
 class CAbsoluteVelocityParameter;
 class CRelativeVelocityParameter;
@@ -31,10 +38,33 @@ class CMuteAllTrigger;
 class CUnmuteAllTrigger;
 class CPauseAllTrigger;
 class CResumeAllTrigger;
+class CTrigger;
+class CParameter;
+class CATLSwitch;
+class CATLPreloadRequest;
+class CATLAudioEnvironment;
+
+using AudioTriggerLookup = std::map<ControlId, CTrigger const*>;
+using AudioParameterLookup = std::map<ControlId, CParameter const*>;
+using AudioSwitchLookup = std::map<ControlId, CATLSwitch const*>;
+using AudioPreloadRequestLookup = std::map<PreloadRequestId, CATLPreloadRequest*>;
+using AudioEnvironmentLookup = std::map<EnvironmentId, CATLAudioEnvironment const*>;
 
 extern Impl::IImpl* g_pIImpl;
-extern CEventManager* g_pEventManager;
-extern CAudioStandaloneFileManager* g_pFileManager;
+extern CSystem g_system;
+extern CAudioTranslationLayer g_atl;
+extern CEventManager g_eventManager;
+extern CFileManager g_fileManager;
+extern CObjectManager g_objectManager;
+extern CAudioListenerManager g_listenerManager;
+extern CFileCacheManager g_fileCacheManager;
+extern CAudioEventListenerManager g_eventListenerManager;
+extern CAudioXMLProcessor g_xmlProcessor;
+extern AudioTriggerLookup g_triggers;
+extern AudioParameterLookup g_parameters;
+extern AudioSwitchLookup g_switches;
+extern AudioPreloadRequestLookup g_preloadRequests;
+extern AudioEnvironmentLookup g_environments;
 extern CATLAudioObject* g_pObject;
 extern CAbsoluteVelocityParameter* g_pAbsoluteVelocityParameter;
 extern CRelativeVelocityParameter* g_pRelativeVelocityParameter;

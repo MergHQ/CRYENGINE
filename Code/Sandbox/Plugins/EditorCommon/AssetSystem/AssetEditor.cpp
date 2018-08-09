@@ -3,6 +3,7 @@
 #include "AssetEditor.h"
 
 #include "AssetManager.h"
+#include "FileOperationsExecutor.h"
 #include "AssetType.h"
 #include "EditableAsset.h"
 #include "Loader/AssetLoaderHelpers.h"
@@ -13,6 +14,8 @@
 #include "FilePathUtil.h"
 #include "CryExtension/CryGUID.h"
 #include "DragDrop.h"
+#include "AssetFilesGroupProvider.h"
+#include "ThreadingUtils.h"
 
 #include <QCloseEvent>
 
@@ -232,7 +235,7 @@ void CAssetEditor::UpdateWindowTitle()
 		if (m_assetBeingEdited->IsModified())
 			setWindowTitle(QString(m_assetBeingEdited->GetName()) + " *");
 		else
-			setWindowTitle(m_assetBeingEdited->GetName());
+			setWindowTitle(m_assetBeingEdited->GetName().c_str());
 
 		setWindowIcon(m_assetBeingEdited->GetType()->GetIcon());
 	}
@@ -304,7 +307,7 @@ bool CAssetEditor::OnAboutToCloseAssetInternal(string& reason) const
 
 	if (m_assetBeingEdited->IsModified())
 	{
-		reason = QtUtil::ToString(tr("Asset '%1' has unsaved modifications.").arg(m_assetBeingEdited->GetName()));
+		reason = QtUtil::ToString(tr("Asset '%1' has unsaved modifications.").arg(m_assetBeingEdited->GetName().c_str()));
 		return false;
 	}
 
@@ -325,7 +328,7 @@ bool CAssetEditor::TryCloseAsset()
 		if (reason.empty())
 		{
 			// Show generic modification message.
-			reason = QtUtil::ToString(tr("Asset '%1' has unsaved modifications.").arg(m_assetBeingEdited->GetName()));
+			reason = QtUtil::ToString(tr("Asset '%1' has unsaved modifications.").arg(m_assetBeingEdited->GetName().c_str()));
 		}
 
 		const QString title = tr("Closing %1").arg(GetEditorName());
@@ -761,7 +764,7 @@ bool CAssetEditor::OnSaveAs()
 	if (pAsset)
 	{
 		// Cancel if unable to delete.
-		pAssetManager->DeleteAssets({ pAsset }, true);
+		pAssetManager->DeleteAssetsWithFiles({ pAsset });
 		pAsset = pAssetManager->FindAssetForMetadata(newAssetPath);
 		if (pAsset)
 		{
@@ -812,9 +815,14 @@ bool CAssetEditor::InternalSaveAs(const string& newAssetPath)
 	}
 
 	const bool result = m_assetBeingEdited->GetType()->CopyAsset(m_assetBeingEdited, newAssetPath);
-	size_t numberOfFilesDeleted(0);
-	m_assetBeingEdited->GetType()->DeleteAssetFiles(*m_assetBeingEdited, false, numberOfFilesDeleted);
-	// tempCopy restores asset files.
+
+	ThreadingUtils::AsyncQueue([this]()
+	{
+		std::vector<std::unique_ptr<IFilesGroupProvider>> fileGroups;
+		fileGroups.emplace_back(new CAssetFilesGroupProvider(m_assetBeingEdited, false));
+		CFileOperationExecutor::GetDefaultExecutor()->Delete(std::move(fileGroups));
+	}).wait(); // we need to wait here it needs to be finished before tempCopy gets destroyed. Hopefully this method will die soon.
+	
 	return result;
 }
 
@@ -891,4 +899,3 @@ void CAssetEditor::SetInstantEditingMode(bool isActive)
 		m_pLockButton->setChecked(isActive);
 	}
 }
-

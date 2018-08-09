@@ -2460,6 +2460,8 @@ void CPhysicalWorld::TimeStep(float time_interval, int flags)
 
 	{
     WriteLock lock1(m_lockCaller[MAX_PHYS_THREADS]),lock2(m_lockStep);
+		int iCaller = get_iCaller();
+		WriteLockCond lock3(m_lockCaller[iCaller], iCaller>MAX_PHYS_THREADS);
 		char **pQueueSlots;
 		int nQueueSlots;
 		volatile int64 timer = CryGetTicks();
@@ -2530,7 +2532,8 @@ void CPhysicalWorld::TimeStep(float time_interval, int flags)
 	}
 
 	{ 
-	WriteLockCond lock1(m_lockCaller[MAX_PHYS_THREADS], flags & ent_flagged_only && get_iCaller() == MAX_PHYS_THREADS);
+	int iCaller = get_iCaller();
+	WriteLockCond lock1(m_lockCaller[iCaller], flags & ent_flagged_only && iCaller >= MAX_PHYS_THREADS);
 	WriteLock lock(m_lockStep);
 	if (time_interval>0 && !(flags & ent_flagged_only))
 		MarkAsPhysThread();

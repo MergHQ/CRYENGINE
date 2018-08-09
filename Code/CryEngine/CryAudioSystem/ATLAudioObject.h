@@ -2,7 +2,6 @@
 
 #pragma once
 
-#include "GlobalTypedefs.h"
 #include "PropagationProcessor.h"
 #include <PoolObject.h>
 #include <CryAudio/IObject.h>
@@ -14,18 +13,9 @@ struct IRenderAuxGeom;
 
 namespace CryAudio
 {
-static constexpr ControlId OcclusionTypeSwitchId = CCrc32::ComputeLowercase_CompileTime(s_szOcclCalcSwitchName);
-static constexpr SwitchStateId OcclusionTypeStateIds[IntegralValue(EOcclusionType::Count)] = {
-	InvalidSwitchStateId,
-	IgnoreStateId,
-	AdaptiveStateId,
-	LowStateId,
-	MediumStateId,
-	HighStateId };
-
 class CSystem;
 class CEventManager;
-class CAudioStandaloneFileManager;
+class CFileManager;
 
 enum class ETriggerStatus : EnumFlagsType
 {
@@ -77,9 +67,6 @@ using ObjectStandaloneFileMap = std::map<CATLStandaloneFile*, SUserDataBase>;
 using ObjectEventSet = std::set<CATLEvent*>;
 using ObjectTriggerImplStates = std::map<TriggerImplId, SAudioTriggerImplState>;
 using ObjectTriggerStates = std::map<TriggerInstanceId, SAudioTriggerInstanceState>;
-using ObjectStateMap = std::map<ControlId, SwitchStateId>;
-using ObjectParameterMap = std::map<ControlId, float>;
-using ObjectEnvironmentMap = std::map<EnvironmentId, float>;
 
 class CATLAudioObject final : public IObject, public CPoolObject<CATLAudioObject, stl::PSyncMultiThread>
 {
@@ -94,13 +81,11 @@ public:
 
 	ERequestStatus   HandleStopTrigger(CTrigger const* const pTrigger);
 	void             HandleSetTransformation(CObjectTransformation const& transformation, float const distanceToListener);
-	void             HandleSetSwitchState(CATLSwitch const* const pSwitch, CATLSwitchState const* const pState);
-	void             HandleSetEnvironment(CATLAudioEnvironment const* const pEnvironment, float const amount);
-	void             HandleResetEnvironments(AudioEnvironmentLookup const& environmentsLookup);
-	void             HandleSetOcclusionType(EOcclusionType const calcType, Vec3 const& listenerPosition);
+	void             HandleSetEnvironment(CATLAudioEnvironment const* const pEnvironment, float const value);
+	void             HandleSetOcclusionType(EOcclusionType const calcType);
 	void             HandleStopFile(char const* const szFile);
 
-	void             Init(char const* const szName, Impl::IObject* const pImplData, Vec3 const& listenerPosition, EntityId entityId);
+	void             Init(char const* const szName, Impl::IObject* const pImplData, EntityId const entityId);
 	void             Release();
 
 	// Callbacks
@@ -128,12 +113,10 @@ public:
 	EObjectFlags GetFlags() const { return m_flags; }
 	void         SetFlag(EObjectFlags const flag);
 	void         RemoveFlag(EObjectFlags const flag);
-	float        GetMaxRadius() const { return m_maxRadius; }
 
 	void         Update(
 		float const deltaTime,
 		float const distanceToListener,
-		Vec3 const& listenerPosition,
 		Vec3 const& listenerVelocity,
 		bool const listenerMoved);
 	bool CanBeReleased() const;
@@ -146,8 +129,6 @@ public:
 	void AddStandaloneFile(CATLStandaloneFile* const pStandaloneFile, SUserDataBase const& userDataBase);
 	void SendFinishedTriggerInstanceRequest(SAudioTriggerInstanceState const& audioTriggerInstanceState);
 
-	static CSystem* s_pAudioSystem;
-
 private:
 
 	// CryAudio::IObject
@@ -158,12 +139,13 @@ private:
 	virtual void     SetSwitchState(ControlId const audioSwitchId, SwitchStateId const audioSwitchStateId, SRequestUserData const& userData = SRequestUserData::GetEmptyObject()) override;
 	virtual void     SetEnvironment(EnvironmentId const audioEnvironmentId, float const amount, SRequestUserData const& userData = SRequestUserData::GetEmptyObject()) override;
 	virtual void     SetCurrentEnvironments(EntityId const entityToIgnore = 0, SRequestUserData const& userData = SRequestUserData::GetEmptyObject()) override;
-	virtual void     ResetEnvironments(SRequestUserData const& userData = SRequestUserData::GetEmptyObject()) override;
 	virtual void     SetOcclusionType(EOcclusionType const occlusionType, SRequestUserData const& userData = SRequestUserData::GetEmptyObject()) override;
 	virtual void     PlayFile(SPlayFileInfo const& playFileInfo, SRequestUserData const& userData = SRequestUserData::GetEmptyObject()) override;
 	virtual void     StopFile(char const* const szFile, SRequestUserData const& userData = SRequestUserData::GetEmptyObject()) override;
 	virtual void     SetName(char const* const szName, SRequestUserData const& userData = SRequestUserData::GetEmptyObject()) override;
 	virtual EntityId GetEntityId() const override { return m_entityId; }
+	void             ToggleAbsoluteVelocityTracking(bool const enable, SRequestUserData const& userData = SRequestUserData::GetEmptyObject()) override;
+	void             ToggleRelativeVelocityTracking(bool const enable, SRequestUserData const& userData = SRequestUserData::GetEmptyObject()) override;
 	// ~CryAudio::IObject
 
 	void ReportFinishedTriggerInstance(ObjectTriggerStates::iterator const& iter);
@@ -172,21 +154,17 @@ private:
 	void UpdateControls(
 		float const deltaTime,
 		float const distanceToListener,
-		Vec3 const& listenerPosition,
 		Vec3 const& listenerVelocity,
 		bool const listenerMoved);
 	void TryToSetRelativeVelocity(float const relativeVelocity);
-	void SetDefaultParameterValue(ControlId const id, float const value) const;
-	void ExecuteDefaultTrigger(ControlId const id);
+	bool SetDefaultParameterValue(ControlId const id, float const value) const;
+	bool ExecuteDefaultTrigger(ControlId const id);
 
 	ObjectStandaloneFileMap m_activeStandaloneFiles;
 	ObjectEventSet          m_activeEvents;
 	ObjectTriggerStates     m_triggerStates;
 	ObjectTriggerImplStates m_triggerImplStates;
-	ObjectEnvironmentMap    m_environments;
-	ObjectStateMap          m_switchStates;
 	Impl::IObject*          m_pImplData;
-	float                   m_maxRadius;
 	EObjectFlags            m_flags;
 	float                   m_previousRelativeVelocity;
 	float                   m_previousAbsoluteVelocity;
@@ -201,25 +179,16 @@ private:
 #if defined(INCLUDE_AUDIO_PRODUCTION_CODE)
 public:
 
-	void DrawDebugInfo(
-		IRenderAuxGeom& auxGeom,
-		Vec3 const& listenerPosition,
-		AudioTriggerLookup const& triggers,
-		AudioParameterLookup const& parameters,
-		AudioSwitchLookup const& switches,
-		AudioPreloadRequestLookup const& preloadRequests,
-		AudioEnvironmentLookup const& environments) const;
-	void ResetObstructionRays() { m_propagationProcessor.ResetRayData(); }
+	void           DrawDebugInfo(IRenderAuxGeom& auxGeom) const;
+	void           ResetObstructionRays() { m_propagationProcessor.ResetRayData(); }
+	float          GetMaxRadius() const   { return m_maxRadius; }
 
-	void ForceImplementationRefresh(
-		AudioTriggerLookup const& triggers,
-		AudioParameterLookup const& parameters,
-		AudioSwitchLookup const& switches,
-		AudioEnvironmentLookup const& environments,
-		bool const bSet3DAttributes);
+	void           ForceImplementationRefresh(bool const setTransformation);
 
 	ERequestStatus HandleSetName(char const* const szName);
 	void           StoreParameterValue(ControlId const id, float const value);
+	void           StoreSwitchValue(ControlId const switchId, SwitchStateId const switchStateId);
+	void           StoreEnvironmentValue(ControlId const id, float const value);
 
 	CryFixedStringT<MaxObjectNameLength> m_name;
 
@@ -254,7 +223,15 @@ private:
 	typedef std::map<ControlId, CStateDebugDrawData> StateDrawInfoMap;
 
 	mutable StateDrawInfoMap m_stateDrawInfoMap;
-	ObjectParameterMap       m_parameters;
+
+	using SwitchStates = std::map<ControlId, SwitchStateId>;
+	using Parameters = std::map<ControlId, float>;
+	using Environments = std::map<EnvironmentId, float>;
+
+	Parameters   m_parameters;
+	SwitchStates m_switchStates;
+	Environments m_environments;
+	float        m_maxRadius;
 #endif // INCLUDE_AUDIO_PRODUCTION_CODE
 };
 } // namespace CryAudio

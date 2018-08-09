@@ -10,6 +10,7 @@ add_sources("Editor_Uber_AI.cpp"
 		"AI/AiBehaviorLibrary.cpp"
 		"AI/AIManager.cpp"
 		"AI/AIMoveSimulation.cpp"
+		"AI/AIMoveSimulation.h"
 		"AI/CoverSurfaceManager.cpp"
 		"AI/EditorCommands_AI.cpp"
 		"AI/AiBehavior.h"
@@ -1031,12 +1032,6 @@ add_sources("Editor_Uber_Serialization.cpp"
 		"Include/Serialization/GUID.h"
 	SOURCE_GROUP "Util\\\\Serialization\\\\Decorators"
 		"Include/Serialization/Decorators/EntityLink.h"
-)
-
-add_sources("Editor_Uber_Settings.cpp"
-	SOURCE_GROUP "Core\\\\Settings"
-		"Settings.cpp"
-		"Settings.h"
 )
 
 add_sources("Editor_Uber_Terrain.cpp"

@@ -202,6 +202,56 @@ public:
 };
 
 CAuxWwiseAudioThread g_auxAudioThread;
+std::map<AkUniqueID, float> g_maxAttenuations;
+
+//////////////////////////////////////////////////////////////////////////
+void LoadEventsMaxAttenuations(const string& soundbanksPath)
+{
+	g_maxAttenuations.clear();
+	string const bankInfoPath = soundbanksPath + "/SoundbanksInfo.xml";
+	XmlNodeRef const pRootNode = GetISystem()->LoadXmlFromFile(bankInfoPath.c_str());
+
+	if (pRootNode != nullptr)
+	{
+		XmlNodeRef const pSoundBanksNode = pRootNode->findChild("SoundBanks");
+
+		if (pSoundBanksNode != nullptr)
+		{
+			int const numSoundBankNodes = pSoundBanksNode->getChildCount();
+
+			for (int i = 0; i < numSoundBankNodes; ++i)
+			{
+				XmlNodeRef const pSoundBankNode = pSoundBanksNode->getChild(i);
+
+				if (pSoundBankNode != nullptr)
+				{
+					XmlNodeRef const pIncludedEventsNode = pSoundBankNode->findChild("IncludedEvents");
+
+					if (pIncludedEventsNode != nullptr)
+					{
+						int const numEventNodes = pIncludedEventsNode->getChildCount();
+
+						for (int j = 0; j < numEventNodes; ++j)
+						{
+							XmlNodeRef const pEventNode = pIncludedEventsNode->getChild(j);
+
+							if ((pEventNode != nullptr) && pEventNode->haveAttr("MaxAttenuation"))
+							{
+								float maxAttenuation = 0.0f;
+								pEventNode->getAttr("MaxAttenuation", maxAttenuation);
+
+								uint32 id = 0;
+								pEventNode->getAttr("Id", id);
+
+								g_maxAttenuations[static_cast<AkUniqueID>(id)] = maxAttenuation;
+							}
+						}
+					}
+				}
+			}
+		}
+	}
+}
 
 ///////////////////////////////////////////////////////////////////////////
 CImpl::CImpl()
@@ -559,29 +609,13 @@ ERequestStatus CImpl::Init(uint32 const objectPoolSize, uint32 const eventPoolSi
 		m_initBankId = AK_INVALID_BANK_ID;
 	}
 
-	return ERequestStatus::Success;
-}
-
-///////////////////////////////////////////////////////////////////////////
-ERequestStatus CImpl::OnBeforeShutDown()
-{
-	AK::SoundEngine::Query::AkGameObjectsList objectList;
-	AK::SoundEngine::Query::GetActiveGameObjects(objectList);
-	AkUInt32 const length = objectList.Length();
-
-	for (AkUInt32 i = 0; i < length; ++i)
-	{
-		// This call requires at least Wwise v2017.1.0.
-		AK::SoundEngine::CancelEventCallbackGameObject(objectList[i]);
-	}
-
-	objectList.Term();
+	LoadEventsMaxAttenuations(m_regularSoundBankFolder);
 
 	return ERequestStatus::Success;
 }
 
 ///////////////////////////////////////////////////////////////////////////
-ERequestStatus CImpl::ShutDown()
+void CImpl::ShutDown()
 {
 	AKRESULT wwiseResult = AK_Fail;
 
@@ -630,6 +664,17 @@ ERequestStatus CImpl::ShutDown()
 		//	Cry::Audio::Log(eALT_WARNING, "AK::SoundEngine::UnregisterGlobalCallback() returned AKRESULT %d", wwiseResult);
 		//}
 
+		AK::SoundEngine::Query::AkGameObjectsList objectList;
+		AK::SoundEngine::Query::GetActiveGameObjects(objectList);
+		AkUInt32 const length = objectList.Length();
+
+		for (AkUInt32 i = 0; i < length; ++i)
+		{
+			// This call requires at least Wwise v2017.1.0.
+			AK::SoundEngine::CancelEventCallbackGameObject(objectList[i]);
+		}
+
+		objectList.Term();
 		AK::SoundEngine::Term();
 	}
 
@@ -656,12 +701,10 @@ ERequestStatus CImpl::ShutDown()
 		m_pOculusSpatializerLibrary = nullptr;
 	}
 #endif  // WWISE_USE_OCULUS
-
-	return ERequestStatus::Success;
 }
 
 ///////////////////////////////////////////////////////////////////////////
-ERequestStatus CImpl::Release()
+void CImpl::Release()
 {
 	delete this;
 	g_pImpl = nullptr;
@@ -669,8 +712,6 @@ ERequestStatus CImpl::Release()
 
 	CObject::FreeMemoryPool();
 	CEvent::FreeMemoryPool();
-
-	return ERequestStatus::Success;
 }
 
 ///////////////////////////////////////////////////////////////////////////
@@ -1030,7 +1071,7 @@ void CImpl::GamepadDisconnected(DeviceId const deviceUniqueID)
 }
 
 ///////////////////////////////////////////////////////////////////////////
-ITrigger const* CImpl::ConstructTrigger(XmlNodeRef const pRootNode)
+ITrigger const* CImpl::ConstructTrigger(XmlNodeRef const pRootNode, float& radius)
 {
 	CTrigger* pTrigger = nullptr;
 
@@ -1041,7 +1082,19 @@ ITrigger const* CImpl::ConstructTrigger(XmlNodeRef const pRootNode)
 
 		if (uniqueId != AK_INVALID_UNIQUE_ID)
 		{
-			pTrigger = new CTrigger(uniqueId);
+			float maxAttenuation = 0.0f;
+			auto const attenuationPair = g_maxAttenuations.find(uniqueId);
+
+			if (attenuationPair != g_maxAttenuations.end())
+			{
+				maxAttenuation = attenuationPair->second;
+			}
+
+			pTrigger = new CTrigger(uniqueId, maxAttenuation);
+
+#if defined(INCLUDE_WWISE_IMPL_PRODUCTION_CODE)
+			radius = maxAttenuation;
+#endif      // INCLUDE_WWISE_IMPL_PRODUCTION_CODE
 		}
 		else
 		{
@@ -1374,6 +1427,8 @@ void CImpl::OnRefresh()
 		m_initBankId = AK_INVALID_BANK_ID;
 		CRY_ASSERT(false);
 	}
+
+	LoadEventsMaxAttenuations(m_regularSoundBankFolder);
 }
 
 //////////////////////////////////////////////////////////////////////////

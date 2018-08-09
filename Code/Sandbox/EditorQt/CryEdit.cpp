@@ -1289,7 +1289,7 @@ void CCryEditApp::OnResourcesReduceworkingset()
 
 void CCryEditApp::CreateSampleMissionObjectives()
 {
-	CTempFileHelper helper(GetIEditorImpl()->GetLevelDataFolder() + "Objectives.xml");
+	CTempFileHelper helper(GetIEditorImpl()->GetLevelDataFolder() + CMission::GetObjectivesFileName());
 
 	XmlNodeRef root = XmlHelpers::CreateXmlNode("Root");
 

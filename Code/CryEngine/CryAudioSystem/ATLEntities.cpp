@@ -7,6 +7,8 @@
 #include "Common/IAudioImpl.h"
 #include "Common/Logger.h"
 #include "Common.h"
+#include "AudioEventManager.h"
+#include "AudioStandaloneFileManager.h"
 
 namespace CryAudio
 {
@@ -38,7 +40,7 @@ void ExecuteDefaultTriggerConnections(Control const* const pControl, TriggerConn
 
 	for (auto const pConnection : connections)
 	{
-		CATLEvent* const pEvent = g_pEventManager->ConstructEvent();
+		CATLEvent* const pEvent = g_eventManager.ConstructEvent();
 		ERequestStatus const activateResult = pConnection->Execute(g_pObject->GetImplDataPtr(), pEvent->m_pImplData);
 
 		if (activateResult == ERequestStatus::Success || activateResult == ERequestStatus::Pending)
@@ -70,7 +72,7 @@ void ExecuteDefaultTriggerConnections(Control const* const pControl, TriggerConn
 		}
 		else
 		{
-			g_pEventManager->DestructEvent(pEvent);
+			g_eventManager.DestructEvent(pEvent);
 
 #if defined(INCLUDE_AUDIO_PRODUCTION_CODE)
 			if (activateResult != ERequestStatus::SuccessDoNotTrack)
@@ -103,7 +105,7 @@ void CATLListener::SetTransformation(CObjectTransformation const& transformation
 	request.pOwner = userData.pOwner;
 	request.pUserData = userData.pUserData;
 	request.pUserDataOwner = userData.pUserDataOwner;
-	CATLAudioObject::s_pAudioSystem->PushRequest(request);
+	g_system.PushRequest(request);
 }
 
 //////////////////////////////////////////////////////////////////////////
@@ -154,7 +156,7 @@ void CATLListener::SetName(char const* const szName, SRequestUserData const& use
 	request.pOwner = userData.pOwner;
 	request.pUserData = userData.pUserData;
 	request.pUserDataOwner = userData.pUserDataOwner;
-	CATLAudioObject::s_pAudioSystem->PushRequest(request);
+	g_system.PushRequest(request);
 }
 
 #if defined(INCLUDE_AUDIO_PRODUCTION_CODE)
@@ -190,7 +192,7 @@ void CParameterImpl::Set(CATLAudioObject const& object, float const value) const
 //////////////////////////////////////////////////////////////////////////
 CParameterImpl::~CParameterImpl()
 {
-	CRY_ASSERT_MESSAGE(g_pIImpl != nullptr, "g_pIImpl mustn't be nullptr during destruction");
+	CRY_ASSERT_MESSAGE(g_pIImpl != nullptr, "g_pIImpl mustn't be nullptr during destruction of CParameterImpl");
 	g_pIImpl->DestructParameter(m_pImplData);
 }
 
@@ -269,22 +271,53 @@ void CRelativeVelocityParameter::Set(CATLAudioObject const& object, float const 
 }
 
 //////////////////////////////////////////////////////////////////////////
-void CExternalAudioSwitchStateImpl::Set(CATLAudioObject& audioObject) const
+CSwitchStateImpl::~CSwitchStateImpl()
+{
+	CRY_ASSERT_MESSAGE(g_pIImpl != nullptr, "g_pIImpl mustn't be nullptr during destruction of CSwitchStateImpl");
+	g_pIImpl->DestructSwitchState(m_pImplData);
+}
+
+//////////////////////////////////////////////////////////////////////////
+void CSwitchStateImpl::Set(CATLAudioObject const& audioObject) const
 {
 	audioObject.GetImplDataPtr()->SetSwitchState(m_pImplData);
 }
 
 //////////////////////////////////////////////////////////////////////////
-CExternalAudioSwitchStateImpl::~CExternalAudioSwitchStateImpl()
+CATLSwitchState::~CATLSwitchState()
 {
-	CRY_ASSERT_MESSAGE(g_pIImpl != nullptr, "g_pIImpl mustn't be nullptr during destruction");
-	g_pIImpl->DestructSwitchState(m_pImplData);
+	for (auto const pStateImpl : m_connections)
+	{
+		delete pStateImpl;
+	}
+}
+
+//////////////////////////////////////////////////////////////////////////
+void CATLSwitchState::Set(CATLAudioObject const& object) const
+{
+	for (auto const pSwitchStateImpl : m_connections)
+	{
+		pSwitchStateImpl->Set(object);
+	}
+
+#if defined(INCLUDE_AUDIO_PRODUCTION_CODE)
+	const_cast<CATLAudioObject&>(object).StoreSwitchValue(m_switchId, m_switchStateId);
+#endif   // INCLUDE_AUDIO_PRODUCTION_CODE
+}
+
+//////////////////////////////////////////////////////////////////////////
+CATLSwitch::~CATLSwitch()
+{
+	for (auto const& statePair : m_states)
+	{
+		delete statePair.second;
+	}
 }
 
 //////////////////////////////////////////////////////////////////////////
 CATLTriggerImpl::~CATLTriggerImpl()
 {
-	CRY_ASSERT_MESSAGE(g_pIImpl != nullptr, "g_pIImpl mustn't be nullptr during destruction");
+	CRY_ASSERT_MESSAGE(g_pIImpl != nullptr, "g_pIImpl mustn't be nullptr during destruction of CATLTriggerImpl");
 	g_pIImpl->DestructTrigger(m_pImplData);
 }
 
@@ -328,18 +361,18 @@ void CTrigger::Execute(
 
 	for (auto const pConnection : m_connections)
 	{
-		CATLEvent* const pEvent = g_pEventManager->ConstructEvent();
+		CATLEvent* const pEvent = g_eventManager.ConstructEvent();
 		ERequestStatus const activateResult = pConnection->Execute(object.GetImplDataPtr(), pEvent->m_pImplData);
 
 		if (activateResult == ERequestStatus::Success || activateResult == ERequestStatus::Pending)
 		{
 #if defined(INCLUDE_AUDIO_PRODUCTION_CODE)
 			pEvent->SetTriggerName(GetName());
+			pEvent->SetTriggerRadius(m_radius);
 #endif  // INCLUDE_AUDIO_PRODUCTION_CODE
 
 			pEvent->m_pAudioObject = &object;
 			pEvent->SetTriggerId(GetId());
-			pEvent->SetTriggerRadius(m_radius);
 			pEvent->m_audioTriggerImplId = pConnection->m_audioTriggerImplId;
 			pEvent->m_audioTriggerInstanceId = s_triggerInstanceIdCounter;
 			pEvent->SetDataScope(GetDataScope());
@@ -359,7 +392,7 @@ void CTrigger::Execute(
 		}
 		else
 		{
-			g_pEventManager->DestructEvent(pEvent);
+			g_eventManager.DestructEvent(pEvent);
 
 #if defined(INCLUDE_AUDIO_PRODUCTION_CODE)
 			if (activateResult != ERequestStatus::SuccessDoNotTrack)
@@ -398,18 +431,18 @@ void CTrigger::Execute(
 {
 	for (auto const pConnection : m_connections)
 	{
-		CATLEvent* const pEvent = g_pEventManager->ConstructEvent();
+		CATLEvent* const pEvent = g_eventManager.ConstructEvent();
 		ERequestStatus const activateResult = pConnection->Execute(object.GetImplDataPtr(), pEvent->m_pImplData);
 
 		if (activateResult == ERequestStatus::Success || activateResult == ERequestStatus::Pending)
 		{
 #if defined(INCLUDE_AUDIO_PRODUCTION_CODE)
 			pEvent->SetTriggerName(GetName());
+			pEvent->SetTriggerRadius(m_radius);
 #endif  // INCLUDE_AUDIO_PRODUCTION_CODE
 
 			pEvent->m_pAudioObject = &object;
 			pEvent->SetTriggerId(GetId());
-			pEvent->SetTriggerRadius(m_radius);
 			pEvent->m_audioTriggerImplId = pConnection->m_audioTriggerImplId;
 			pEvent->m_audioTriggerInstanceId = triggerInstanceId;
 			pEvent->SetDataScope(GetDataScope());
@@ -429,7 +462,7 @@ void CTrigger::Execute(
 		}
 		else
 		{
-			g_pEventManager->DestructEvent(pEvent);
+			g_eventManager.DestructEvent(pEvent);
 
 #if defined(INCLUDE_AUDIO_PRODUCTION_CODE)
 			if (activateResult != ERequestStatus::SuccessDoNotTrack)
@@ -458,7 +491,7 @@ void CTrigger::LoadAsync(CATLAudioObject& object, bool const doLoad) const
 
 	for (auto const pConnection : m_connections)
 	{
-		CATLEvent* const pEvent = g_pEventManager->ConstructEvent();
+		CATLEvent* const pEvent = g_eventManager.ConstructEvent();
 		ERequestStatus prepUnprepResult = ERequestStatus::Failure;
 
 		if (doLoad)
@@ -478,9 +511,12 @@ void CTrigger::LoadAsync(CATLAudioObject& object, bool const doLoad) const
 
 		if (prepUnprepResult == ERequestStatus::Success)
 		{
+#if defined(INCLUDE_AUDIO_PRODUCTION_CODE)
+			pEvent->SetTriggerRadius(m_radius);
+#endif  // INCLUDE_AUDIO_PRODUCTION_CODE
+
 			pEvent->m_pAudioObject = &object;
 			pEvent->SetTriggerId(GetId());
-			pEvent->SetTriggerRadius(m_radius);
 			pEvent->m_audioTriggerImplId = pConnection->m_audioTriggerImplId;
 			pEvent->m_audioTriggerInstanceId = s_triggerInstanceIdCounter;
 			pEvent->SetDataScope(GetDataScope());
@@ -490,7 +526,7 @@ void CTrigger::LoadAsync(CATLAudioObject& object, bool const doLoad) const
 		}
 		else
 		{
-			g_pEventManager->DestructEvent(pEvent);
+			g_eventManager.DestructEvent(pEvent);
 
 #if defined(INCLUDE_AUDIO_PRODUCTION_CODE)
 			Cry::Audio::Log(ELogType::Warning, R"(LoadAsync failed on trigger "%s" for object "%s")", GetName(), object.m_name.c_str());
@@ -513,7 +549,7 @@ void CTrigger::PlayFile(
 	if (!m_connections.empty())
 	{
 		Impl::ITrigger const* const pITrigger = m_connections[0]->m_pImplData;
-		CATLStandaloneFile* const pFile = g_pFileManager->ConstructStandaloneFile(szName, isLocalized, pITrigger);
+		CATLStandaloneFile* const pFile = g_fileManager.ConstructStandaloneFile(szName, isLocalized, pITrigger);
 		ERequestStatus const status = object.GetImplDataPtr()->PlayFile(pFile->m_pImplData);
 
 		if (status == ERequestStatus::Success || status == ERequestStatus::Pending)
@@ -541,7 +577,7 @@ void CTrigger::PlayFile(
 			Cry::Audio::Log(ELogType::Warning, R"(PlayFile failed with "%s" on object "%s")", pFile->m_hashedFilename.GetText().c_str(), object.m_name.c_str());
 #endif  // INCLUDE_AUDIO_PRODUCTION_CODE
 
-			g_pFileManager->ReleaseStandaloneFile(pFile);
+			g_fileManager.ReleaseStandaloneFile(pFile);
 		}
 	}
 }
@@ -715,7 +751,7 @@ void CResumeAllTrigger::Execute() const
 //////////////////////////////////////////////////////////////////////////
 CATLEnvironmentImpl::~CATLEnvironmentImpl()
 {
-	CRY_ASSERT_MESSAGE(g_pIImpl != nullptr, "g_pIImpl mustn't be nullptr during destruction");
+	CRY_ASSERT_MESSAGE(g_pIImpl != nullptr, "g_pIImpl mustn't be nullptr during destruction of CATLEnvironmentImpl");
 	g_pIImpl->DestructEnvironment(m_pImplData);
 }
 } // namespace CryAudio

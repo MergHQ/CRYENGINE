@@ -2,6 +2,7 @@
 
 #include "stdafx.h"
 #include "AudioStandaloneFileManager.h"
+#include "AudioListenerManager.h"
 #include "ATLAudioObject.h"
 #include "AudioCVars.h"
 #include "Common.h"
@@ -15,24 +16,35 @@
 namespace CryAudio
 {
 //////////////////////////////////////////////////////////////////////////
-CAudioStandaloneFileManager::~CAudioStandaloneFileManager()
+CFileManager::~CFileManager()
 {
-	Release();
+	CRY_ASSERT_MESSAGE(m_constructedStandaloneFiles.empty(), "There are still files during CFileManager destruction!");
 }
 
 //////////////////////////////////////////////////////////////////////////
-void CAudioStandaloneFileManager::Release()
+void CFileManager::ReleaseImplData()
 {
 	// Don't clear m_constructedStandaloneFiles here as we need the files to survive a middleware switch!
-	for (auto const pStandaloneFile : m_constructedStandaloneFiles)
+	for (auto const pFile : m_constructedStandaloneFiles)
 	{
-		g_pIImpl->DestructStandaloneFile(pStandaloneFile->m_pImplData);
-		pStandaloneFile->m_pImplData = nullptr;
+		g_pIImpl->DestructStandaloneFile(pFile->m_pImplData);
+		pFile->m_pImplData = nullptr;
 	}
 }
 
 //////////////////////////////////////////////////////////////////////////
-CATLStandaloneFile* CAudioStandaloneFileManager::ConstructStandaloneFile(char const* const szFile, bool const isLocalized, Impl::ITrigger const* const pITrigger)
+void CFileManager::Release()
+{
+	for (auto const pFile : m_constructedStandaloneFiles)
+	{
+		delete pFile;
+	}
+
+	m_constructedStandaloneFiles.clear();
+}
+
+//////////////////////////////////////////////////////////////////////////
+CATLStandaloneFile* CFileManager::ConstructStandaloneFile(char const* const szFile, bool const isLocalized, Impl::ITrigger const* const pITrigger)
 {
 	auto const pStandaloneFile = new CATLStandaloneFile();
 	pStandaloneFile->m_pImplData = g_pIImpl->ConstructStandaloneFile(*pStandaloneFile, szFile, isLocalized, pITrigger);
@@ -47,7 +59,7 @@ CATLStandaloneFile* CAudioStandaloneFileManager::ConstructStandaloneFile(char co
 }
 
 //////////////////////////////////////////////////////////////////////////
-void CAudioStandaloneFileManager::ReleaseStandaloneFile(CATLStandaloneFile* const pStandaloneFile)
+void CFileManager::ReleaseStandaloneFile(CATLStandaloneFile* const pStandaloneFile)
 {
 	if (pStandaloneFile != nullptr)
 	{
@@ -59,7 +71,7 @@ void CAudioStandaloneFileManager::ReleaseStandaloneFile(CATLStandaloneFile* cons
 
 #if defined(INCLUDE_AUDIO_PRODUCTION_CODE)
 //////////////////////////////////////////////////////////////////////////
-void CAudioStandaloneFileManager::DrawDebugInfo(IRenderAuxGeom& auxGeom, Vec3 const& listenerPosition, float posX, float posY) const
+void CFileManager::DrawDebugInfo(IRenderAuxGeom& auxGeom, float posX, float posY) const
 {
 	auxGeom.Draw2dLabel(posX, posY, Debug::g_managerHeaderFontSize, Debug::g_managerColorHeader.data(), false, "Standalone Files [%" PRISIZE_T "]", m_constructedStandaloneFiles.size());
 	posY += Debug::g_managerHeaderLineHeight;
@@ -72,7 +84,7 @@ void CAudioStandaloneFileManager::DrawDebugInfo(IRenderAuxGeom& auxGeom, Vec3 co
 	for (auto const pStandaloneFile : m_constructedStandaloneFiles)
 	{
 		Vec3 const& position = pStandaloneFile->m_pAudioObject->GetTransformation().GetPosition();
-		float const distance = position.GetDistance(listenerPosition);
+		float const distance = position.GetDistance(g_listenerManager.GetActiveListenerTransformation().GetPosition());
 
 		if (g_cvars.m_debugDistance <= 0.0f || (g_cvars.m_debugDistance > 0.0f && distance < g_cvars.m_debugDistance))
 		{
@@ -119,6 +131,5 @@ void CAudioStandaloneFileManager::DrawDebugInfo(IRenderAuxGeom& auxGeom, Vec3 co
 		}
 	}
 }
-
 #endif // INCLUDE_AUDIO_PRODUCTION_CODE
 }      // namespace CryAudio

@@ -171,4 +171,3 @@ std::unique_ptr<IAssetEditingSession> CEffectAssetModel::CreateEditingSession()
 }
 
 }
-

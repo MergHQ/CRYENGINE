@@ -1527,15 +1527,8 @@ void CRenderMesh::ComputeSkinningCreateBindPoseAndMorphBuffers(CMesh& mesh)
 	for (uint32 i=1; i<m_nVerts; ++i)
 		bucketsCounter[i] = bucketsCounter[i-1] + buckets[i-1];
 
-	uint32*                          adjTriangles         = static_cast<uint32*>(AllocateMeshDataUnpooled(sizeof(uint32) * m_nInds));
-	compute_skinning::SSkinVertexIn* vertices             = static_cast<compute_skinning::SSkinVertexIn*>(AllocateMeshDataUnpooled(sizeof(compute_skinning::SSkinVertexIn) * m_nVerts));
-	vtx_idx*                         indices              = static_cast<vtx_idx*>(AllocateMeshDataUnpooled(sizeof(vtx_idx) * m_nInds));
-	Vec4*                            vertexDeltas         = static_cast<Vec4*>(AllocateMeshDataUnpooled(sizeof(Vec4) * mesh.m_vertexDeltas.size()));
-	uint64*                          vertexMorphsBitfield = static_cast<uint64*>(AllocateMeshDataUnpooled(sizeof(uint64) * mesh.m_verticesDeltaOffsets.size()));
-	
-	memcpy(indices, mesh.m_pIndices, sizeof(vtx_idx) * m_nInds);
-	memcpy(vertexDeltas, mesh.m_vertexDeltas.data(), sizeof(Vec4) * mesh.m_vertexDeltas.size());
-	memcpy(vertexMorphsBitfield, mesh.m_vertexMorphsBitfield.data(), sizeof(uint64) * mesh.m_vertexMorphsBitfield.size());
+	std::vector<uint32> adjTriangles;
+	adjTriangles.resize(m_nInds);
 
 	int32 k=0;
 	for (uint32 i=0; i<m_nInds; i+=3)
@@ -1553,6 +1546,8 @@ void CRenderMesh::ComputeSkinningCreateBindPoseAndMorphBuffers(CMesh& mesh)
 	bool haveDeltaMorphs = mesh.m_verticesDeltaOffsets.size() > 0;
 
 	// filling up arrays of CSSkinVertexIn
+	std::vector<compute_skinning::SSkinVertexIn> vertices;
+	vertices.resize(m_nVerts);
 	uint32 count = 0;
 	for (int32 i=0; i<m_nVerts; ++i)
 	{
@@ -1571,29 +1566,15 @@ void CRenderMesh::ComputeSkinningCreateBindPoseAndMorphBuffers(CMesh& mesh)
 	}
 	m_nMorphs = mesh.m_numMorphs;
 
-	m_computeSkinningDataSupply = gcpRendD3D->GetComputeSkinningStorage()->GetOrCreatePerMeshResources(this);
-
-	uint32	nVerts = m_nVerts,
-			nIndices = m_nInds,
-			nVertexDeltas = mesh.m_vertexDeltas.size(),
-			nVertexMorphsBitfield = mesh.m_vertexMorphsBitfield.size();
-
-	gcpRendD3D->ExecuteRenderThreadCommand(
-		[=]
+	if (auto pComputeSkinningStorage = gcpRendD3D->GetComputeSkinningStorage())
+	{
+		m_computeSkinningDataSupply = pComputeSkinningStorage->GetOrCreatePerMeshResources(this);
+		m_computeSkinningDataSupply->PushBindPoseBuffers(m_nVerts, m_nInds, adjTriangles.size(), &vertices[0], mesh.m_pIndices, &adjTriangles[0]);
+		if (mesh.m_vertexDeltas.size())
 		{
-				m_computeSkinningDataSupply->RT_PushBindPoseBuffers(nVerts, nIndices, nIndices, vertices, indices, adjTriangles);
-				if (nVertexDeltas > 0)
-				{
-					m_computeSkinningDataSupply->RT_PushMorphs(nVertexDeltas, nVertexMorphsBitfield, vertexDeltas, vertexMorphsBitfield);
-				}
-
-				FreeMeshDataUnpooled(adjTriangles);
-				FreeMeshDataUnpooled(indices);
-				FreeMeshDataUnpooled(vertices);
-				FreeMeshDataUnpooled(vertexDeltas);
-				FreeMeshDataUnpooled(vertexMorphsBitfield);
-		}, ERenderCommandFlags::None
-	);
+			m_computeSkinningDataSupply->PushMorphs(mesh.m_vertexDeltas.size(), mesh.m_vertexMorphsBitfield.size(), &mesh.m_vertexDeltas[0], &mesh.m_vertexMorphsBitfield[0]);
+		}
+	}
 }
 
 void CRenderMesh::ComputeSkinningCreateSkinningBuffers(uint32 guid, const SVF_W4B_I4S* pBoneMapping, const SMeshBoneMapping_uint16* pExtraBoneMapping)
@@ -1601,11 +1582,11 @@ void CRenderMesh::ComputeSkinningCreateSkinningBuffers(uint32 guid, const SVF_W4
 	MEMORY_SCOPE_CHECK_HEAP();
 
 	// read remapped stream
-	auto skinningVector    = static_cast<compute_skinning::SSkinning*>(AllocateMeshDataUnpooled(m_nVerts * 8 * sizeof(compute_skinning::SSkinning)));
-	auto skinningVectorMap = static_cast<compute_skinning::SSkinningMap*>(AllocateMeshDataUnpooled(m_nVerts * sizeof(compute_skinning::SSkinningMap)));
-	uint32 nSkinningVectorElements = 0u, nSkinningVectorMapElements = m_nVerts;
+	std::vector<compute_skinning::SSkinning> skinningVector;
+	std::vector<compute_skinning::SSkinningMap> skinningVectorMap;
 
 	uint offset = 0;
+	skinningVector.reserve(m_nVerts*8);
 	for (uint32 i=0; i<m_nVerts; ++i)
 	{
 		uint count = 0;
@@ -1615,8 +1596,8 @@ void CRenderMesh::ComputeSkinningCreateSkinningBuffers(uint32 guid, const SVF_W4
 			const uint8  weight = pBoneMapping[i].weights.bcolor[j];
 			if (weight > 0)
 			{
-				skinningVector[nSkinningVectorElements++]             = compute_skinning::SSkinning();
-				skinningVector[nSkinningVectorElements-1].weightIndex = (weight << 24 | index);
+				skinningVector.push_back(compute_skinning::SSkinning());
+				skinningVector.back().weightIndex = (weight << 24 | index);
 
 				++count;
 			}
@@ -1631,30 +1612,23 @@ void CRenderMesh::ComputeSkinningCreateSkinningBuffers(uint32 guid, const SVF_W4
 				const uint8  weight = pExtraBoneMapping[i].weights[j];
 				if (weight > 0)
 				{
-					skinningVector[nSkinningVectorElements++]             = compute_skinning::SSkinning();
-					skinningVector[nSkinningVectorElements-1].weightIndex = (weight << 24 | index);
+					skinningVector.push_back(compute_skinning::SSkinning());
+					skinningVector.back().weightIndex = (weight << 24 | index);
 					++count;
 				}
 			}
 		}
 
-		skinningVectorMap[i].offset = offset;
-		skinningVectorMap[i].count = count;
+		skinningVectorMap.push_back(compute_skinning::SSkinningMap());
+		skinningVectorMap.back().offset = offset;
+		skinningVectorMap.back().count = count;
 
 		offset += count;
 	}
 
 	// this can occur before or after the other call to GetOrCreateComputeSkinningPerMeshData
 	m_computeSkinningDataSupply = gcpRendD3D->GetComputeSkinningStorage()->GetOrCreatePerMeshResources(this);
-
-	gcpRendD3D->ExecuteRenderThreadCommand(
-		[=]
-		{
-			m_computeSkinningDataSupply->GetOrCreatePerCharacterResources(guid)->RT_PushWeights(nSkinningVectorElements, nSkinningVectorMapElements, skinningVector, skinningVectorMap);
-			FreeMeshDataUnpooled(skinningVector);
-			FreeMeshDataUnpooled(skinningVectorMap);
-		}, ERenderCommandFlags::None
-	);
+	m_computeSkinningDataSupply->GetOrCreatePerCharacterResources(guid)->PushWeights(skinningVector.size(), skinningVectorMap.size(), &skinningVector[0], &skinningVectorMap[0]);
 }
 
 uint CRenderMesh::GetSkinningWeightCount() const

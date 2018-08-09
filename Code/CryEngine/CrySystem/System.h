@@ -552,6 +552,7 @@ private:
 	void InitLog(const SSystemInitParams& startupParams);
 	void LoadPatchPaks();
 	bool InitFileSystem_LoadEngineFolders();
+	void InitResourceCacheFolder();
 	bool InitStreamEngine();
 	bool Init3DEngine(const SSystemInitParams& startupParams);
 	bool InitAnimationSystem(const SSystemInitParams& startupParams);
@@ -562,6 +563,7 @@ private:
 	bool InitDynamicResponseSystem(const SSystemInitParams& startupParams);
 	bool InitLiveCreate(const SSystemInitParams& startupParams);
 	bool InitMonoBridge(const SSystemInitParams& startupParams);
+	bool InitUDR(const SSystemInitParams& startupParams);										  
 	void InitGameFramework(SSystemInitParams& startupParams);
 	bool OpenRenderLibrary(const SSystemInitParams& startupParams, int type);
 	bool OpenRenderLibrary(const SSystemInitParams& startupParams, const char* t_rend);

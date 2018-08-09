@@ -104,21 +104,23 @@ int32 CDeviceResource::Cleanup()
 
 	// Gracefully deal with NULL-resources which are nullptr
 	int32 nRef = m_resourceElements ? -1 : 0; // -!!bool
+
 	if (m_pNativeResource)
 	{
+		// Figure out current ref-count
 		nRef = m_pNativeResource->AddRef();
 		nRef = m_pNativeResource->Release();
+
+		// NOTE: Heap are ref-counting (first register, then release yourself)
+		if (m_eFlags & CDeviceObjectFactory::USAGE_HIFREQ_HEAP)
+			GetDeviceObjectFactory().RecycleResource(m_pNativeResource);
+		else
+			GetDeviceObjectFactory().ReleaseResource(m_pNativeResource);
 
 		// NOTE: CDeviceResource might be shared, take care the texture-pointer stays valid for the other aliases
 		if (nRef == 1)
 		{
 			nRef = 0;
-
-			// NOTE: Heap are ref-counting (first register, then release yourself)
-			if (m_eFlags & CDeviceObjectFactory::USAGE_HIFREQ_HEAP)
-				GetDeviceObjectFactory().RecycleResource(m_pNativeResource);
-			else
-				GetDeviceObjectFactory().ReleaseResource(m_pNativeResource);
 
 			m_pNativeResource = nullptr;
 		}
@@ -633,6 +635,11 @@ int CDeviceTexture::Cleanup()
 #if (CRY_RENDERER_DIRECT3D >= 110) && (CRY_RENDERER_DIRECT3D < 120) && DEVRES_USE_PINNING
 		if (nRef <= 0 && m_gpuHdl.IsValid())
 		{
+			if (m_Pinned)
+			{
+				CryWarning(VALIDATOR_MODULE_RENDERER, EValidatorSeverity::VALIDATOR_WARNING, "Freeing a texture from the texture pool while it is still pinned!");
+				__debugbreak();
+			}
 			GetDeviceObjectFactory().m_texturePool.Free(m_gpuHdl);
 			m_gpuHdl = SGPUMemHdl();
 		}

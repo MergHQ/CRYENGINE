@@ -725,22 +725,25 @@ bool CNavMesh::SnapPosition(
 	const MNM::real_t verticalDefaultRange = MNMUtils::CalculateMinVerticalRange(m_agentSettings.height, m_params.voxelSize.z);
 	const MNM::real_t verticalDownRange = snappingRules.verticalDownRange == FLT_MAX ? verticalDefaultRange : MNM::real_t(snappingRules.verticalDownRange);
 	const MNM::real_t horizontalRange = snappingRules.horizontalRange == -FLT_MAX ? MNMUtils::CalculateMinHorizontalRange(m_agentSettings.radius, m_params.voxelSize.x) : MNM::real_t(snappingRules.horizontalRange);
-	
+
 	if (snappingRules.bVerticalSearch)
 	{
 		const MNM::real_t verticalUpRange = snappingRules.verticalUpRange == -FLT_MAX
 			? MNM::real_t(min(2u, m_agentSettings.height) * m_params.voxelSize.z) // This value computation was used for a long time when snapping points in Pathfinder
 			: MNM::real_t(snappingRules.verticalUpRange);
 
-		if (TriangleID triangleId = GetTriangleAt(localPosition, verticalDownRange, verticalUpRange, pFilter, 0.0f))
+		if (const TriangleID triangleId = GetTriangleAt(localPosition, verticalDownRange, verticalUpRange, pFilter, 0.0f))
 		{
-			// TODO: get the position projected down on the triangle
-			// Using input position for now
-			snappedLocalPosition = localPosition;
+			MNM::vector3_t vertices[3];
+			GetVertices(triangleId, vertices);
+			if (ProjectPointOnTriangleVertical(localPosition, vertices[0], vertices[1], vertices[2], snappedLocalPosition))
+			{
+				if (pTriangleId)
+					*pTriangleId = triangleId;
 
-			if (pTriangleId)
-				*pTriangleId = triangleId;
-			return true;
+				return true;
+			}
+			return false;
 		}
 	}
 	if (snappingRules.bBoxSearch)
@@ -748,7 +751,7 @@ bool CNavMesh::SnapPosition(
 		// In bBoxSearch, default verticalUpRange is using the same value as verticalDownRange
 		const MNM::real_t verticalUpRange = snappingRules.verticalUpRange == -FLT_MAX ? verticalDefaultRange : MNM::real_t(snappingRules.verticalUpRange);
 		const MNM::aabb_t aroundPositionAABB(MNM::vector3_t(-horizontalRange, -horizontalRange, -verticalDownRange), MNM::vector3_t(horizontalRange, horizontalRange, verticalUpRange));
-		if (TriangleID triangleId = GetClosestTriangle(localPosition, aroundPositionAABB, pFilter, nullptr, &snappedLocalPosition))
+		if (const TriangleID triangleId = GetClosestTriangle(localPosition, aroundPositionAABB, pFilter, nullptr, &snappedLocalPosition))
 		{
 			if (pTriangleId)
 				*pTriangleId = triangleId;

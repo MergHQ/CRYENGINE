@@ -53,10 +53,17 @@ public:
 #if CRY_PLATFORM_WINDOWS
 	static int CV_r_FullscreenPreemption;
 #endif
+
+#if CRY_PLATFORM_ANDROID
+	#define GRAPHICS_PIPELINE_MOBILE_DEFAULT_VAL 1
+#else
+	#define GRAPHICS_PIPELINE_MOBILE_DEFAULT_VAL 0
+#endif
+
 	DeclareStaticConstIntCVar(CV_r_SyncToFrameFence, 1);
+	DeclareStaticConstIntCVar(CV_r_GraphicsPipelineMobile, GRAPHICS_PIPELINE_MOBILE_DEFAULT_VAL);
 
 	static int   CV_r_GraphicsPipeline;
-	static int   CV_r_GraphicsPipelineMobile;
 	static int   CV_r_GraphicsPipelinePassScheduler;
 
 	static int   CV_r_DeferredShadingTiled;
@@ -117,11 +124,8 @@ public:
 	static int   CV_r_watervolumecaustics;
 	static int   CV_r_watervolumecausticsdensity;
 	static int   CV_r_watervolumecausticsresolution;
-#if CRY_PLATFORM_DESKTOP
 	static ICVar*       CV_r_ShaderTarget;
-	static int          ShaderTargetFlag;
-#endif
-
+	static uint         ShaderTargetFlag;
 	static ICVar*       CV_r_VkShaderCompiler;
 
 	//  static int CV_r_envcmwrite;
@@ -391,6 +395,7 @@ public:
 	DeclareStaticConstIntCVar(CV_r_TexturesStreamingDebugDumpIntoLog, 0);
 	DeclareStaticConstIntCVar(CV_e_DebugTexelDensity, 0);
 	DeclareStaticConstIntCVar(CV_e_DebugDraw, 0);
+	DeclareStaticConstIntCVar(CV_e_TerrainBlendingDebug, 0);
 	static int CV_r_RainDropsEffect;
 	DeclareStaticConstIntCVar(CV_r_RefractionPartialResolveMode, 2);
 	DeclareStaticConstIntCVar(CV_r_RefractionPartialResolveMinimalResolveArea, 0);

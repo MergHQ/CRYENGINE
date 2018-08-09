@@ -21,7 +21,6 @@
 
 //////////////////////////////////////////////////////////////////////////
 int CRendererCVars::CV_r_GraphicsPipeline;
-int CRendererCVars::CV_r_GraphicsPipelineMobile;
 int CRendererCVars::CV_r_GraphicsPipelinePassScheduler;
 int CRendererCVars::CV_r_PostProcess_CB;
 int CRendererCVars::CV_r_PostProcess;
@@ -46,8 +45,10 @@ int CRendererCVars::CV_r_overrideScanlineOrder = 0;
 int CRendererCVars::CV_r_FullscreenPreemption = 1;
 #endif
 AllocateConstIntCVar(CRendererCVars, CV_r_SyncToFrameFence);
+AllocateConstIntCVar(CRendererCVars, CV_r_GraphicsPipelineMobile);
 AllocateConstIntCVar(CRendererCVars, CV_e_DebugTexelDensity);
 AllocateConstIntCVar(CRendererCVars, CV_e_DebugDraw);
+AllocateConstIntCVar(CRendererCVars, CV_e_TerrainBlendingDebug);
 AllocateConstIntCVar(CRendererCVars, CV_r_statsMinDrawcalls);
 AllocateConstIntCVar(CRendererCVars, CV_r_stats);
 AllocateConstIntCVar(CRendererCVars, CV_r_profiler);
@@ -269,11 +270,8 @@ AllocateConstIntCVar(CRendererCVars, CV_r_shaderslazyunload);
 AllocateConstIntCVar(CRendererCVars, CV_r_shadersdebug);
 AllocateConstIntCVar(CRendererCVars, CV_r_shadersCompileStrict);
 AllocateConstIntCVar(CRendererCVars, CV_r_shadersCompileCompatible);
-#if CRY_PLATFORM_DESKTOP
 ICVar*      CRendererCVars::CV_r_ShaderTarget;
-int         CRendererCVars::ShaderTargetFlag;
-#endif
-
+uint        CRendererCVars::ShaderTargetFlag;
 ICVar*      CRendererCVars::CV_r_VkShaderCompiler = nullptr;
 
 AllocateConstIntCVar(CRendererCVars, CV_r_shadersignoreincludeschanging);
@@ -679,7 +677,6 @@ static void OnChange_CV_d3d11_debugMuteMsgID(ICVar* /*pCVar*/)
 }
 #endif
 
-#if CRY_PLATFORM_DESKTOP
 static void OnChange_CV_r_ShaderTarget(ICVar* pCVar)
 {
 	if (!pCVar)
@@ -721,57 +718,80 @@ static void OnChange_CV_r_ShaderTarget(ICVar* pCVar)
 
 	if (shaderTargetStr == "")
 	{
-		CRenderer::ShaderTargetFlag = -1;
+		// These are the shader-target defaults. DX12 (either or not Durango) can choose more
+		if (r_driverStr == STR_GNM_RENDERER)
+			CRenderer::ShaderTargetFlag = SF_ORBIS;
+#if CRY_PLATFORM_DURANGO
+		else if (r_driverStr == STR_DX11_RENDERER)
+			CRenderer::ShaderTargetFlag = SF_DURANGO;
+		else if (r_driverStr == STR_DX12_RENDERER)
+			CRenderer::ShaderTargetFlag = SF_DURANGO;
+#else
+		else if (r_driverStr == STR_DX11_RENDERER)
+			CRenderer::ShaderTargetFlag = SF_D3D11;
+		else if (r_driverStr == STR_DX12_RENDERER)
+			CRenderer::ShaderTargetFlag = SF_D3D11;
+#endif
+		else if (r_driverStr == STR_GL_RENDERER)
+			CRenderer::ShaderTargetFlag = SF_GL4;
+		else if (r_driverStr == STR_VK_RENDERER)
+			CRenderer::ShaderTargetFlag = SF_VULKAN;
 	}
 	else if (shaderTargetStr == STR_ORBIS_SHADER_TARGET)
 	{
 		CRenderer::ShaderTargetFlag = SF_ORBIS;
 		if(r_driverStr != STR_GNM_RENDERER && r_driverStr != STR_DX11_RENDERER)
-			CryFatalError("r_driver MUST match shader target flag.");
+			CryFatalError("r_driver MUST support shader target flag.");
 	}
 	else if (shaderTargetStr == STR_DURANGO_SHADER_TARGET)
 	{
 		CRenderer::ShaderTargetFlag = SF_DURANGO;
 		if (r_driverStr != STR_DX11_RENDERER && r_driverStr != STR_DX12_RENDERER)
-			CryFatalError("r_driver MUST match shader target flag.");
+			CryFatalError("r_driver MUST support shader target flag.");
 	}
 	else if (shaderTargetStr == STR_D3D11_SHADER_TARGET)
 	{
 		CRenderer::ShaderTargetFlag = SF_D3D11;
 		if (r_driverStr != STR_DX11_RENDERER && r_driverStr != STR_DX12_RENDERER)
-			CryFatalError("r_driver MUST match shader target flag.");
+			CryFatalError("r_driver MUST support shader target flag.");
+	}
+	else if (shaderTargetStr == STR_D3D12_SHADER_TARGET)
+	{
+		CRenderer::ShaderTargetFlag = SF_D3D12;
+		if (r_driverStr != STR_DX12_RENDERER)
+			CryFatalError("r_driver MUST support shader target flag.");
 	}
 	else if (shaderTargetStr == STR_GL4_SHADER_TARGET)
 	{
 		CRenderer::ShaderTargetFlag = SF_GL4;
 		if (r_driverStr != STR_GL_RENDERER)
-			CryFatalError("r_driver MUST match shader target flag.");
+			CryFatalError("r_driver MUST support shader target flag.");
 	}
 	else if (shaderTargetStr == STR_GLES3_SHADER_TARGET)
 	{
 		CRenderer::ShaderTargetFlag = SF_GLES3;
 		if (r_driverStr != STR_GL_RENDERER)
-			CryFatalError("r_driver MUST match shader target flag.");
+			CryFatalError("r_driver MUST support shader target flag.");
 	}
 	else if (shaderTargetStr == STR_VULKAN_SHADER_TARGET)
 	{
 		CRenderer::ShaderTargetFlag = SF_VULKAN;
 		if (r_driverStr != STR_VK_RENDERER)
-			CryFatalError("r_driver MUST match shader target flag.");
+			CryFatalError("r_driver MUST support shader target flag.");
 	}
 	else
 	{
-		CryFatalError("Using %s as a shader target string is not allowed. Available valid options are %s/%s/%s/%s/%s/%s", 
+		CryFatalError("Using %s as a shader target string is not allowed. Available valid options are %s/%s/%s/%s/%s/%s/%s", 
 			shaderTargetStr.c_str(),
 			STR_ORBIS_SHADER_TARGET, 
 			STR_DURANGO_SHADER_TARGET,
 			STR_D3D11_SHADER_TARGET,
+			STR_D3D12_SHADER_TARGET,
 			STR_GL4_SHADER_TARGET,
 			STR_GLES3_SHADER_TARGET,
 			STR_VULKAN_SHADER_TARGET);
 	}
 }
-#endif
 
 static void OnChange_CV_r_PostProcess(ICVar* pCVar)
 {
@@ -963,21 +983,22 @@ void CRendererCVars::InitCVars()
 	               "  1: Use new graphics pipeline with objects compiled on the fly\n"
 	               "  2: Use new graphics pipeline with permanent render objects");
 
-	REGISTER_CVAR3("r_GraphicsPipelineMobile", CV_r_GraphicsPipelineMobile, 0, VF_NULL,
+#if RENDERER_ENABLE_FULL_PIPELINE && RENDERER_ENABLE_MOBILE_PIPELINE
+	DefineConstIntCVar3("r_GraphicsPipelineMobile", CV_r_GraphicsPipelineMobile, GRAPHICS_PIPELINE_MOBILE_DEFAULT_VAL, VF_NULL,
 	               "Run limited pipeline specifically optimized for mobile devices.\n"
 								 "  1: Using compressed micro GBuffer\n"
 								 "  2: Using standard GBuffer");
+#endif
 
 	REGISTER_CVAR3("r_GraphicsPipelinePassScheduler", CV_r_GraphicsPipelinePassScheduler, 0, VF_NULL,
 	               "Toggles render pass scheduler that submits passes in a deferred way, allowing improved multithreading and barrier scheduling.");
 	
-#if CRY_PLATFORM_DESKTOP
 	CV_r_ShaderTarget = REGISTER_STRING_CB("r_ShaderTarget", "", VF_DUMPTODISK,
 			"Shader cache generation only CVar."
-			"Sets the shader generation target ( Orbis/Durango/D3D11/GL4/GLES3/Vulkan ).\n"
+			"Sets the shader generation target ( Orbis/Durango/D3D11/D3D12/GL4/GLES3/Vulkan ).\n"
 			"Specify in system.cfg like this: r_ShaderTarget = \"D3D11\"", OnChange_CV_r_ShaderTarget);
 		OnChange_CV_r_ShaderTarget(CV_r_ShaderTarget);
-#endif
+
 #if CRY_RENDERER_VULKAN
 		CV_r_VkShaderCompiler = REGISTER_STRING("r_VkShaderCompiler", "DXC", VF_DUMPTODISK,
 			"Vulkan renderer only CVar."

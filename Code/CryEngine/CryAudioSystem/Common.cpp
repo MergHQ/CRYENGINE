@@ -2,8 +2,14 @@
 
 #include "stdafx.h"
 #include "Common.h"
-
-#include <IAudioImpl.h>
+#include "AudioSystem.h"
+#include "ATL.h"
+#include "AudioStandaloneFileManager.h"
+#include "AudioEventManager.h"
+#include "AudioListenerManager.h"
+#include "AudioEventListenerManager.h"
+#include "AudioObjectManager.h"
+#include "AudioXMLProcessor.h"
 
 #if defined(INCLUDE_AUDIO_PRODUCTION_CODE)
 	#include <array>
@@ -12,8 +18,20 @@
 namespace CryAudio
 {
 Impl::IImpl* g_pIImpl = nullptr;
-CEventManager* g_pEventManager = nullptr;
-CAudioStandaloneFileManager* g_pFileManager = nullptr;
+CSystem g_system;
+CAudioTranslationLayer g_atl;
+CEventManager g_eventManager;
+CFileManager g_fileManager;
+CObjectManager g_objectManager;
+CAudioListenerManager g_listenerManager;
+CFileCacheManager g_fileCacheManager;
+CAudioEventListenerManager g_eventListenerManager;
+CAudioXMLProcessor g_xmlProcessor;
+AudioTriggerLookup g_triggers;
+AudioParameterLookup g_parameters;
+AudioSwitchLookup g_switches;
+AudioPreloadRequestLookup g_preloadRequests;
+AudioEnvironmentLookup g_environments;
 CATLAudioObject* g_pObject = nullptr;
 CAbsoluteVelocityParameter* g_pAbsoluteVelocityParameter = nullptr;
 CRelativeVelocityParameter* g_pRelativeVelocityParameter = nullptr;

@@ -67,10 +67,22 @@ namespace Cry
 
 		void CAlembicComponent::Initialize()
 		{
+#if defined(USE_GEOM_CACHES)
 			if (m_filePath.value.size() > 0)
 			{
 				m_pEntity->LoadGeomCache(GetOrMakeEntitySlotId(), m_filePath.value);
+
+				if (!m_materialPath.value.empty())
+				{
+					if (IMaterial* pMaterial = gEnv->p3DEngine->GetMaterialManager()->LoadMaterial(m_materialPath.value, false))
+					{
+						m_pEntity->SetSlotMaterial(GetEntitySlotId(), pMaterial);
+					}
+				}
 			}
+#else
+			CryWarning(VALIDATOR_MODULE_GAME, VALIDATOR_WARNING, "Unable to load alembic component as GeomCaches are not supported by this CE build. (%s)", m_filePath.value.c_str());
+#endif
 		}
 
 		void CAlembicComponent::ProcessEvent(const SEntityEvent& event)
@@ -78,6 +90,19 @@ namespace Cry
 			if (event.event == ENTITY_EVENT_COMPONENT_PROPERTY_CHANGED)
 			{
 				Initialize();
+#ifdef USE_GEOM_CACHES
+				// Update Editor UI to show the default object material
+				if (m_materialPath.value.empty())
+				{
+					if (IGeomCacheRenderNode* pRenderNode = m_pEntity->GetGeomCacheRenderNode(GetEntitySlotId()))
+					{
+						if (IMaterial* pMaterial = pRenderNode->GetMaterial())
+						{
+							m_materialPath = pMaterial->GetName();
+						}
+					}
+				}
+#endif
 			}
 			else if (event.event == ENTITY_EVENT_UPDATE)
 			{
@@ -85,55 +110,64 @@ namespace Cry
 			}
 		}
 
-		uint64 CAlembicComponent::GetEventMask() const
+		Cry::Entity::EventFlags CAlembicComponent::GetEventMask() const
 		{
-			uint64 bitFlags = m_isPlayEnabled ? BIT64(ENTITY_EVENT_UPDATE) : 0;
-			bitFlags |= BIT64(ENTITY_EVENT_COMPONENT_PROPERTY_CHANGED);
+			Cry::Entity::EventFlags bitFlags = m_isPlayEnabled ? ENTITY_EVENT_UPDATE : Cry::Entity::EventFlags();
+			bitFlags |= ENTITY_EVENT_COMPONENT_PROPERTY_CHANGED;
 
 			return bitFlags;
 		}
 
 		void CAlembicComponent::Enable(bool bEnable)
 		{
+#if defined(USE_GEOM_CACHES)
 			if (IGeomCacheRenderNode* pRenderNode = m_pEntity->GetGeomCacheRenderNode(GetEntitySlotId()))
 			{
 				pRenderNode->SetDrawing(bEnable);
 			}
+#endif
 		}
 
 		void CAlembicComponent::SetLooping(bool bLooping)
 		{
+#if defined(USE_GEOM_CACHES)
 			if (IGeomCacheRenderNode* pRenderNode = m_pEntity->GetGeomCacheRenderNode(GetEntitySlotId()))
 			{
 				pRenderNode->SetLooping(bLooping);
 			}
+#endif
 		}
 
 		bool CAlembicComponent::IsLooping() const
 		{
+#if defined(USE_GEOM_CACHES)
 			if (IGeomCacheRenderNode* pRenderNode = m_pEntity->GetGeomCacheRenderNode(GetEntitySlotId()))
 			{
 				return pRenderNode->IsLooping();
 			}
+#endif
 
 			return false;
 		}
 
 		void CAlembicComponent::SetPlaybackTime(float time)
 		{
+#if defined(USE_GEOM_CACHES)
 			if (IGeomCacheRenderNode* pRenderNode = m_pEntity->GetGeomCacheRenderNode(GetEntitySlotId()))
 			{
 				pRenderNode->SetPlaybackTime(time);
 			}
+#endif
 		}
 
 		float CAlembicComponent::GetPlaybackTime() const
 		{
+#if defined(USE_GEOM_CACHES)
 			if (IGeomCacheRenderNode* pRenderNode = m_pEntity->GetGeomCacheRenderNode(GetEntitySlotId()))
 			{
 				return pRenderNode->GetPlaybackTime();
 			}
-
+#endif
 			return 0.f;
 		}
 
@@ -160,6 +194,27 @@ namespace Cry
 			m_currentTime = 0.01f;
 			SetPlaybackTime(0.f);
 			m_pEntity->UpdateComponentEventMask(this);
+		}
+
+		bool CAlembicComponent::SetMaterial(int slotId, const char* szMaterial)
+		{
+			if (slotId == GetEntitySlotId())
+			{
+				if (IMaterial* pMaterial = gEnv->p3DEngine->GetMaterialManager()->LoadMaterial(szMaterial, false))
+				{
+					m_materialPath = szMaterial;
+					m_pEntity->SetSlotMaterial(GetEntitySlotId(), pMaterial);
+				}
+				else if (szMaterial[0] == '\0')
+				{
+					m_materialPath.value.clear();
+					m_pEntity->SetSlotMaterial(GetEntitySlotId(), nullptr);
+				}
+
+				return true;
+			}
+
+			return false;
 		}
 	}
 }

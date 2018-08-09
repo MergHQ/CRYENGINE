@@ -17,12 +17,32 @@
 
 namespace NCryDX12 {
 
+#if !defined(RELEASE) && CRY_PLATFORM_WINDOWS
 auto GetDebugName = [](ID3D12Resource* pO) -> const char* { UINT len = 511; static char name[512] = "unknown"; pO->GetPrivateData(WKPDID_D3DDebugObjectName, &len, name); name[len] = '\0'; return name; };
+#else
+auto GetDebugName = [](ID3D12Resource* pO) -> const char* { return "unknown"; };
+#endif
 
 //---------------------------------------------------------------------------------------------------------------------
 CDevice* CDevice::Create(CCryDX12GIAdapter* pAdapter, D3D_FEATURE_LEVEL* pFeatureLevel)
 {
 	ID3D12Device* pDevice12 = NULL;
+
+#if USE_DXC
+	// Enable shader model 6.x
+	if (CRenderer::ShaderTargetFlag & SF_D3D12)
+	{
+		HRESULT res = D3D12EnableExperimentalFeatures(1, &D3D12ExperimentalShaderModels, nullptr, nullptr);
+		DX12_ASSERT(res == S_OK, "Enabling experimental features for D3D12 Device didn't work!");
+
+		// Disable shader model 6.x if it can't be enabled
+		if (res != S_OK)
+			CRenderer::ShaderTargetFlag = (CRenderer::ShaderTargetFlag & ~SF_D3D12) | SF_D3D11;
+	}
+#else
+	// Disable shader model 6.x if it isn't possible
+	CRenderer::ShaderTargetFlag = (CRenderer::ShaderTargetFlag & ~SF_D3D12) | SF_D3D11;
+#endif
 
 	if (CRenderer::CV_r_EnableDebugLayer)
 	{
@@ -960,6 +980,9 @@ HRESULT STDMETHODCALLTYPE CDevice::CreateOrReuseCommittedResource(
 				// Guaranteed O(1) lookup
 				*ppvResource = result->second.front().pObject;
 
+#if !defined(RELEASE) && CRY_PLATFORM_WINDOWS
+				result->second.front().pObject->SetPrivateData(WKPDID_D3DDebugObjectName, 0, nullptr);
+#endif
 				result->second.pop_front();
 				if (!result->second.size())
 					m_RecycleHeap.erase(result);

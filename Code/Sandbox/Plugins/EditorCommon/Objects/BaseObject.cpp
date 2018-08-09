@@ -1,52 +1,49 @@
 // Copyright 2001-2018 Crytek GmbH / Crytek Group. All rights reserved.
 
 #include "StdAfx.h"
-#include <Preferences/ViewportPreferences.h>
 #include "Objects/BaseObject.h"
-#include "Objects/ObjectLoader.h"
+
+#include "AssetSystem/AssetManager.h"
+#include "Controls/DynamicPopupMenu.h"
+#include "EditorFramework/Editor.h"
+#include "EditorFramework/Preferences.h"
+#include "Gizmos/GizmoManager.h"
+#include "LevelEditor/Tools/EditTool.h"
+#include "Objects/DisplayContext.h"
+#include "Objects/InspectorWidgetCreator.h"
 #include "Objects/IObjectLayer.h"
 #include "Objects/IObjectLayerManager.h"
-#include "IDisplayViewport.h"
-#include "Objects/DisplayContext.h"
 #include "Objects/ISelectionGroup.h"
-#include "Objects/ObjectPropertyWidget.h"
+#include "Objects/ObjectLoader.h"
 #include "Objects/ObjectManager.h"
-#include "Objects/InspectorWidgetCreator.h"
+#include "Objects/ObjectPropertyWidget.h"
+#include "Preferences/GeneralPreferences.h"
+#include "Preferences/GlobalHelperPreferences.h"
+#include "Preferences/ViewportPreferences.h"
+#include "Serialization/Decorators/EditorActionButton.h"
+#include "Util/AffineParts.h"
+#include "Util/Math.h"
+#include "Util/GeometryUtil.h" // To use the Andrew's algorithm in order to make convex hull from the points, this header is needed.
+#include "IAIManager.h"
+#include "IDisplayViewport.h"
+#include "IEditorMaterial.h"
 #include "IIconManager.h"
 #include "IObjectManager.h"
-#include "Util/Math.h"
-#include "Util/AffineParts.h"
-#include "Controls/DynamicPopupMenu.h"
-#include "LevelEditor/Tools/EditTool.h"
-#include "UsedResources.h"
-#include "IEditorMaterial.h"
+#include "IUndoObject.h"
 #include "Grid.h"
 #include "QtUtil.h"
-
-#include "IAIManager.h"
-#include "IUndoObject.h"
+#include "UsedResources.h"
 
 #include <CryMovie/IMovieSystem.h>
+#include <CrySystem/ICryLink.h>
 #include <CrySystem/ITimer.h>
 
-// To use the Andrew's algorithm in order to make convex hull from the points, this header is needed.
-#include "Util/GeometryUtil.h"
-
-#include <CrySerialization/Serializer.h>
-#include <CrySerialization/IArchive.h>
-#include <CrySerialization/STL.h>
 #include <CrySerialization/Color.h>
-#include <CrySerialization/Math.h>
 #include <CrySerialization/Enum.h>
-#include <Serialization/Decorators/EditorActionButton.h>
-
-#include <CrySystem/ICryLink.h>
-
-#include <EditorFramework/Editor.h>
-#include <EditorFramework/Preferences.h>
-#include <Preferences/GeneralPreferences.h>
-#include <Gizmos/GizmoManager.h>
-#include <AssetSystem/AssetManager.h>
+#include <CrySerialization/IArchive.h>
+#include <CrySerialization/Math.h>
+#include <CrySerialization/Serializer.h>
+#include <CrySerialization/STL.h>
 
 SERIALIZATION_ENUM_BEGIN(ESystemConfigSpec, "SystemConfigSpec")
 SERIALIZATION_ENUM(CONFIG_CUSTOM, "notset", "Any");
@@ -194,7 +191,6 @@ bool CalculateConvexEdgesForOBB(const CPoint* obb_p, const int maxSizeOfEdgeList
 #define INVALID_POSITION_EPSILON 100000
 
 //////////////////////////////////////////////////////////////////////////
-//////////////////////////////////////////////////////////////////////////
 //! Undo object for CBaseObject that only stores its transform, color, area and minSpec
 class CUndoBaseObjectMinimal : public IUndoObject
 {
@@ -331,7 +327,6 @@ private:
 	ActionType m_actionType;
 };
 
-//////////////////////////////////////////////////////////////////////////
 CUndoBaseObject::CUndoBaseObject(CBaseObject* obj, const char* undoDescription)
 {
 	// Stores the current state of this object.
@@ -348,7 +343,6 @@ CUndoBaseObject::CUndoBaseObject(CBaseObject* obj, const char* undoDescription)
 	obj->SetLayerModified();
 }
 
-//////////////////////////////////////////////////////////////////////////
 const char* CUndoBaseObject::GetObjectName()
 {
 	if (CBaseObject* obj = GetIEditor()->GetObjectManager()->FindObject(m_guid))
@@ -358,7 +352,6 @@ const char* CUndoBaseObject::GetObjectName()
 	return "";
 }
 
-//////////////////////////////////////////////////////////////////////////
 void CUndoBaseObject::Undo(bool bUndo)
 {
 	CBaseObject* pObject = GetIEditor()->GetObjectManager()->FindObject(m_guid);
@@ -397,7 +390,6 @@ void CUndoBaseObject::Undo(bool bUndo)
 	GetIEditor()->GetIUndoManager()->Resume();
 }
 
-//////////////////////////////////////////////////////////////////////////
 void CUndoBaseObject::Redo()
 {
 	CBaseObject* pObject = GetIEditor()->GetObjectManager()->FindObject(m_guid);
@@ -423,7 +415,6 @@ void CUndoBaseObject::Redo()
 	GetIEditor()->GetIUndoManager()->Resume();
 }
 
-//////////////////////////////////////////////////////////////////////////
 CUndoBaseObjectMinimal::CUndoBaseObjectMinimal(CBaseObject* pObj, const char* undoDescription, int flags)
 {
 	// Stores the current state of this object.
@@ -443,7 +434,6 @@ CUndoBaseObjectMinimal::CUndoBaseObjectMinimal(CBaseObject* pObj, const char* un
 	pObj->SetLayerModified();
 }
 
-//////////////////////////////////////////////////////////////////////////
 const char* CUndoBaseObjectMinimal::GetObjectName()
 {
 	CBaseObject* pObject = GetIEditor()->GetObjectManager()->FindObject(m_guid);
@@ -453,7 +443,6 @@ const char* CUndoBaseObjectMinimal::GetObjectName()
 	return pObject->GetName();
 }
 
-//////////////////////////////////////////////////////////////////////////
 void CUndoBaseObjectMinimal::Undo(bool bUndo)
 {
 	CBaseObject* pObject = GetIEditor()->GetObjectManager()->FindObject(m_guid);
@@ -481,7 +470,6 @@ void CUndoBaseObjectMinimal::Undo(bool bUndo)
 		pObject->UpdateGroup();
 }
 
-//////////////////////////////////////////////////////////////////////////
 void CUndoBaseObjectMinimal::Redo()
 {
 	CBaseObject* pObject = GetIEditor()->GetObjectManager()->FindObject(m_guid);
@@ -497,7 +485,6 @@ void CUndoBaseObjectMinimal::Redo()
 	pObject->UpdateGroup();
 }
 
-//////////////////////////////////////////////////////////////////////////
 void CUndoBaseObjectMinimal::SetTransformsFromState(CBaseObject* pObject, const StateStruct& state, bool bUndo)
 {
 	uint32 flags = eObjectUpdateFlags_Undo;
@@ -516,13 +503,11 @@ void CUndoBaseObjectMinimal::SetTransformsFromState(CBaseObject* pObject, const 
 //////////////////////////////////////////////////////////////////////////
 IMPLEMENT_DYNAMIC(CBaseObject, CObject);
 
-//////////////////////////////////////////////////////////////////////////
 void CObjectCloneContext::AddClone(CBaseObject* pFromObject, CBaseObject* pToObject)
 {
 	m_objectsMap[pFromObject] = pToObject;
 }
 
-//////////////////////////////////////////////////////////////////////////
 CBaseObject* CObjectCloneContext::FindClone(CBaseObject* pFromObject) const
 {
 	CBaseObject* pTarget = stl::find_in_map(m_objectsMap, pFromObject, (CBaseObject*) NULL);
@@ -578,19 +563,16 @@ CBaseObject::CBaseObject()
 	m_bSupportsBoxHighlight = true;
 }
 
-//////////////////////////////////////////////////////////////////////////
 IObjectManager* CBaseObject::GetObjectManager() const
 {
 	return GetIEditor()->GetObjectManager();
-};
+}
 
-//////////////////////////////////////////////////////////////////////////
 void CBaseObject::SetClassDesc(CObjectClassDesc* classDesc)
 {
 	m_classDesc = classDesc;
 }
 
-//////////////////////////////////////////////////////////////////////////
 bool CBaseObject::Init(CBaseObject* prev, const string& file)
 {
 	ClearFlags(OBJFLAG_DELETED);
@@ -629,7 +611,6 @@ bool CBaseObject::Init(CBaseObject* prev, const string& file)
 	return true;
 }
 
-//////////////////////////////////////////////////////////////////////////
 CBaseObject::~CBaseObject()
 {
 	for (BaseObjectArray::iterator c = m_children.begin(); c != m_children.end(); c++)
@@ -643,7 +624,6 @@ CBaseObject::~CBaseObject()
 		pLinkedObject->m_parent = nullptr;
 }
 
-//////////////////////////////////////////////////////////////////////////
 void CBaseObject::Done()
 {
 	LOADING_TIME_PROFILE_SECTION_ARGS(m_name.c_str());
@@ -686,7 +666,6 @@ void CBaseObject::Done()
 	}
 }
 
-//////////////////////////////////////////////////////////////////////////
 void CBaseObject::SetName(const string& name)
 {
 	if (name == m_name)
@@ -703,7 +682,6 @@ void CBaseObject::SetName(const string& name)
 	GetIEditor()->GetObjectManager()->NotifyObjectListeners(this, renameEvent);
 }
 
-//////////////////////////////////////////////////////////////////////////
 void CBaseObject::SetUniqName(const string& name)
 {
 	if (name == m_name)
@@ -711,13 +689,11 @@ void CBaseObject::SetUniqName(const string& name)
 	SetName(GetObjectManager()->GenUniqObjectName(name));
 }
 
-//////////////////////////////////////////////////////////////////////////
 const string& CBaseObject::GetName() const
 {
 	return m_name;
 }
 
-//////////////////////////////////////////////////////////////////////////
 string CBaseObject::GetWarningsText() const
 {
 	string warnings;
@@ -752,13 +728,11 @@ string CBaseObject::GetWarningsText() const
 	return warnings;
 }
 
-//////////////////////////////////////////////////////////////////////////
 bool CBaseObject::IsSameClass(CBaseObject* obj)
 {
 	return GetClassDesc() == obj->GetClassDesc();
 }
 
-//////////////////////////////////////////////////////////////////////////
 bool CBaseObject::SetPos(const Vec3& pos, int flags)
 {
 	auto currentPos = GetPos();
@@ -826,7 +800,6 @@ bool CBaseObject::SetPos(const Vec3& pos, int flags)
 	return true;
 }
 
-//////////////////////////////////////////////////////////////////////////
 bool CBaseObject::SetRotation(const Quat& rotate, int flags)
 {
 	if (!IsRotatable())
@@ -879,7 +852,6 @@ bool CBaseObject::SetRotation(const Quat& rotate, int flags)
 	return true;
 }
 
-//////////////////////////////////////////////////////////////////////////
 bool CBaseObject::SetScale(const Vec3& scale, int flags)
 {
 	if (!IsScalable())
@@ -935,7 +907,6 @@ bool CBaseObject::SetScale(const Vec3& scale, int flags)
 	return true;
 }
 
-//////////////////////////////////////////////////////////////////////////
 const Vec3 CBaseObject::GetPos() const
 {
 	if (!m_pTransformDelegate)
@@ -946,7 +917,6 @@ const Vec3 CBaseObject::GetPos() const
 	return m_pTransformDelegate->GetTransformDelegatePos(m_pos);
 }
 
-//////////////////////////////////////////////////////////////////////////
 const Quat CBaseObject::GetRotation() const
 {
 	if (!m_pTransformDelegate)
@@ -957,7 +927,6 @@ const Quat CBaseObject::GetRotation() const
 	return m_pTransformDelegate->GetTransformDelegateRotation(m_rotate);
 }
 
-//////////////////////////////////////////////////////////////////////////
 const Vec3 CBaseObject::GetScale() const
 {
 	if (!m_pTransformDelegate)
@@ -968,7 +937,6 @@ const Vec3 CBaseObject::GetScale() const
 	return m_pTransformDelegate->GetTransformDelegateScale(m_scale);
 }
 
-//////////////////////////////////////////////////////////////////////////
 void CBaseObject::ChangeColor(ColorB color)
 {
 	if (color == m_color && m_useColorOverride)
@@ -981,7 +949,6 @@ void CBaseObject::ChangeColor(ColorB color)
 	UseColorOverride(true);
 }
 
-//////////////////////////////////////////////////////////////////////////
 void CBaseObject::SetColor(ColorB color)
 {
 	m_color = color;
@@ -1046,20 +1013,17 @@ void CBaseObject::GetBoundBox(AABB& box)
 	box = m_worldBounds;
 }
 
-//////////////////////////////////////////////////////////////////////////
 void CBaseObject::GetLocalBounds(AABB& box)
 {
 	box.min.Set(0, 0, 0);
 	box.max.Set(0, 0, 0);
 }
 
-//////////////////////////////////////////////////////////////////////////
 void CBaseObject::UpdateUIVars()
 {
 	// Just notify inspector, he'll take care of the rest
 	GetIEditor()->GetObjectManager()->NotifyObjectListeners(this, OBJECT_ON_UI_PROPERTY_CHANGED);
 }
-//////////////////////////////////////////////////////////////////////////
 
 void CBaseObject::SetModified(bool boModifiedTransformOnly, bool bNotifyObjectManager)
 {
@@ -1083,7 +1047,7 @@ void CBaseObject::DrawDefault(SDisplayContext& dc, COLORREF labelColor)
 		return;
 
 	// Draw link between parent and child.
-	if (dc.flags & DISPLAY_LINKS)
+	if (dc.showLinks)
 	{
 		bool prefabOpenedCheck = true;
 		// If we are part of a prefab draw links only if the prefab is in opened state
@@ -1100,7 +1064,7 @@ void CBaseObject::DrawDefault(SDisplayContext& dc, COLORREF labelColor)
 	}
 
 	// Draw Bounding box
-	if (dc.flags & DISPLAY_BBOX)
+	if (dc.showBoundingBoxes)
 	{
 		AABB box;
 		GetBoundBox(box);
@@ -1108,7 +1072,7 @@ void CBaseObject::DrawDefault(SDisplayContext& dc, COLORREF labelColor)
 		dc.DrawWireBox(box.min, box.max);
 	}
 
-	if (gViewportPreferences.displaySelectedObjectOrientation && IsSelected())
+	if (dc.showSelectedObjectOrientation && IsSelected())
 	{
 		float textSize = 1.4;
 		const Matrix34& m = GetWorldTM();
@@ -1133,9 +1097,9 @@ void CBaseObject::DrawDefault(SDisplayContext& dc, COLORREF labelColor)
 		if (gGizmoPreferences.axisGizmoText)
 		{
 			dc.SetColor(Vec3(1, 1, 1));
-			dc.DrawTextLabel(ConvertToTextPos(xVec, Matrix34::CreateIdentity(), dc.view, dc.flags & DISPLAY_2D), textSize, "x");
-			dc.DrawTextLabel(ConvertToTextPos(yVec, Matrix34::CreateIdentity(), dc.view, dc.flags & DISPLAY_2D), textSize, "y");
-			dc.DrawTextLabel(ConvertToTextPos(zVec, Matrix34::CreateIdentity(), dc.view, dc.flags & DISPLAY_2D), textSize, "z");
+			dc.DrawTextLabel(ConvertToTextPos(xVec, Matrix34::CreateIdentity(), dc.view, dc.display2D), textSize, "x");
+			dc.DrawTextLabel(ConvertToTextPos(yVec, Matrix34::CreateIdentity(), dc.view, dc.display2D), textSize, "y");
+			dc.DrawTextLabel(ConvertToTextPos(zVec, Matrix34::CreateIdentity(), dc.view, dc.display2D), textSize, "z");
 		}
 
 		dc.SetState(oldFlags);
@@ -1150,7 +1114,7 @@ void CBaseObject::DrawDefault(SDisplayContext& dc, COLORREF labelColor)
 	{
 		const ISelectionGroup* pSelection = GetIEditor()->GetISelectionGroup();
 
-		// If the number of selected object is over 2, the merged boundbox should be used to render the measurement axis.
+		// If the number of selected object is over 2, the merged bounding box should be used to render the measurement axis.
 		if (!pSelection || (pSelection && pSelection->GetCount() == 1))
 		{
 			DrawDimensions(dc);
@@ -1158,11 +1122,12 @@ void CBaseObject::DrawDefault(SDisplayContext& dc, COLORREF labelColor)
 	}
 
 	float objectToCameraDistanceSquared = GetIEditor()->GetSystem()->GetViewCamera().GetPosition().GetSquaredDistance(wp);
-	if (bDisplaySelectionHelper && objectToCameraDistanceSquared < gViewportPreferences.selectionHelperDisplayThresholdSquared)
+
+	if (bDisplaySelectionHelper && objectToCameraDistanceSquared < gGlobalHelperPreferences.selectionHelperDisplayThresholdSquared)
 	{
 		DrawSelectionHelper(dc, wp, labelColor, 1.0f);
 	}
-	else if (!(dc.flags & DISPLAY_HIDENAMES))
+	else if (IsLabelVisible(dc))
 	{
 		DrawLabel(dc, wp, labelColor);
 	}
@@ -1175,10 +1140,9 @@ void CBaseObject::DrawDefault(SDisplayContext& dc, COLORREF labelColor)
 	}
 }
 
-//////////////////////////////////////////////////////////////////////////
 void CBaseObject::DrawDimensions(SDisplayContext& dc, AABB* pMergedBoundBox)
 {
-	if (HasMeasurementAxis() && gViewportPreferences.displayDimension)
+	if (HasMeasurementAxis() && dc.showDimensions)
 	{
 		AABB localBoundBox;
 		GetLocalBounds(localBoundBox);
@@ -1186,7 +1150,6 @@ void CBaseObject::DrawDimensions(SDisplayContext& dc, AABB* pMergedBoundBox)
 	}
 }
 
-//////////////////////////////////////////////////////////////////////////
 void CBaseObject::DrawDimensionsImpl(SDisplayContext& dc, const AABB& localBoundBox, AABB* pMergedBoundBox)
 {
 	AABB boundBox;
@@ -1438,7 +1401,6 @@ void CBaseObject::DrawDimensionsImpl(SDisplayContext& dc, const AABB& localBound
 	dc.SetLineWidth(backupThickness);
 }
 
-//////////////////////////////////////////////////////////////////////////
 void CBaseObject::DrawTextOn2DBox(SDisplayContext& dc, const Vec3& pos, const char* text, float textScale, const ColorF& TextColor, const ColorF& TextBackColor)
 {
 	Vec3 worldPos = dc.ToWorldPos(pos);
@@ -1518,11 +1480,10 @@ void CBaseObject::DrawSelectionPreviewHighlight(SDisplayContext& dc)
 	else
 	{
 		dc.SetColor(Vec3(1, 1, 1));
-		dc.DrawTextLabel(ConvertToTextPos(bbox.GetCenter(), Matrix34::CreateIdentity(), dc.view, dc.flags & DISPLAY_2D), 1, GetName());
+		dc.DrawTextLabel(ConvertToTextPos(bbox.GetCenter(), Matrix34::CreateIdentity(), dc.view, dc.display2D), 1, GetName());
 	}
 }
 
-//////////////////////////////////////////////////////////////////////////
 void CBaseObject::DrawSelectionHelper(SDisplayContext& dc, const Vec3& pos, COLORREF labelColor, float alpha)
 {
 	// Magic Number to offset the text from the selection box
@@ -1543,87 +1504,96 @@ void CBaseObject::DrawSelectionHelper(SDisplayContext& dc, const Vec3& pos, COLO
 	dc.SetState(nPrevState);
 }
 
-//////////////////////////////////////////////////////////////////////////
 void CBaseObject::SetDrawTextureIconProperties(SDisplayContext& dc, const Vec3& pos, float alpha)
 {
-	if (gViewportPreferences.showIcons || gViewportPreferences.showSizeBasedIcons)
+	if (!dc.showIcons)
 	{
-		if (IsHighlighted())
-			dc.SetColor(RGB(255, 120, 0), 0.8f * alpha);
-		else if (IsSelected())
-			dc.SetSelectedColor(alpha);
-		else if (IsFrozen())
-			dc.SetFreezeColor();
-		else
-			dc.SetColor(RGB(255, 255, 255), alpha);
-
-		m_vDrawIconPos = pos;
-
-		int nIconFlags = 0;
-		if (CheckFlags(OBJFLAG_SHOW_ICONONTOP))
-		{
-			Vec3 objectPos = GetWorldPos();
-
-			AABB box;
-			GetBoundBox(box);
-			m_vDrawIconPos.z = (m_vDrawIconPos.z - objectPos.z) + box.max.z;
-			nIconFlags = SDisplayContext::TEXICON_ALIGN_BOTTOM;
-		}
-
-		m_nIconFlags = nIconFlags;
+		return;
 	}
+
+	if (IsHighlighted())
+		dc.SetColor(RGB(255, 120, 0), 0.8f * alpha);
+	else if (IsSelected())
+		dc.SetSelectedColor(alpha);
+	else if (IsFrozen())
+		dc.SetFreezeColor();
+	else
+		dc.SetColor(RGB(255, 255, 255), alpha);
+
+	m_vDrawIconPos = pos;
+
+	int nIconFlags = 0;
+	if (CheckFlags(OBJFLAG_SHOW_ICONONTOP))
+	{
+		Vec3 objectPos = GetWorldPos();
+
+		AABB box;
+		GetBoundBox(box);
+		m_vDrawIconPos.z = (m_vDrawIconPos.z - objectPos.z) + box.max.z;
+		nIconFlags = SDisplayContext::TEXICON_ALIGN_BOTTOM;
+	}
+
+	m_nIconFlags = nIconFlags;
 }
 
-//////////////////////////////////////////////////////////////////////////
 void CBaseObject::DrawTextureIcon(SDisplayContext& dc, const Vec3& pos, float alpha, bool bDisplaySelectionHelper, float distanceSquared)
 {
-	if (m_nTextureIcon && (gViewportPreferences.showIcons || gViewportPreferences.showSizeBasedIcons))
+	if (!m_nTextureIcon || !dc.showIcons)
 	{
-		dc.DrawTextureLabel(GetTextureIconDrawPos(), OBJECT_TEXTURE_ICON_SIZE, OBJECT_TEXTURE_ICON_SIZE,
-		                    GetTextureIcon(), GetTextureIconFlags(), 0, 0, OBJECT_TEXTURE_ICON_SCALE, distanceSquared);
+		return;
 	}
+
+	dc.DrawTextureLabel(GetTextureIconDrawPos(), OBJECT_TEXTURE_ICON_SIZE, OBJECT_TEXTURE_ICON_SIZE,
+		                    GetTextureIcon(), GetTextureIconFlags(), 0, 0, OBJECT_TEXTURE_ICON_SCALE, distanceSquared);
 }
 
-//////////////////////////////////////////////////////////////////////////
 void CBaseObject::DrawWarningIcons(SDisplayContext& dc, const Vec3& pos)
 {
+	if (!dc.showIcons)
+	{
+		return;
+	}
+
 	// Don't draw warning icons if they are beyond draw distance
 	if ((dc.camera->GetPosition() - pos).GetLength() > gViewportDebugPreferences.warningIconsDrawDistance)
-		return;
-
-	if (gViewportPreferences.showIcons || gViewportPreferences.showSizeBasedIcons)
 	{
-		const int warningIconSize = OBJECT_TEXTURE_ICON_SIZE / 2;
-		const int iconOffset = m_nTextureIcon ? (-OBJECT_TEXTURE_ICON_SIZE / 2) : 0;
+		return;
+	}
 
-		if (gViewportDebugPreferences.showScaleWarnings)
+	const int warningIconSize = OBJECT_TEXTURE_ICON_SIZE / 2;
+	const int iconOffset = m_nTextureIcon ? (-OBJECT_TEXTURE_ICON_SIZE / 2) : 0;
+
+	if (gViewportDebugPreferences.showScaleWarnings)
+	{
+		const EScaleWarningLevel scaleWarningLevel = GetScaleWarningLevel();
+
+		if (scaleWarningLevel != eScaleWarningLevel_None)
 		{
-			const EScaleWarningLevel scaleWarningLevel = GetScaleWarningLevel();
-
-			if (scaleWarningLevel != eScaleWarningLevel_None)
-			{
-				dc.SetColor(RGB(255, scaleWarningLevel == eScaleWarningLevel_RescaledNonUniform ? 50 : 255, 50), 1.0f);
-				dc.DrawTextureLabel(GetTextureIconDrawPos(), warningIconSize, warningIconSize,
-				                    GetIEditor()->GetIconManager()->GetIconTexture(eIcon_ScaleWarning), GetTextureIconFlags(),
-				                    -warningIconSize / 2, iconOffset - (warningIconSize / 2));
-			}
+			dc.SetColor(RGB(255, scaleWarningLevel == eScaleWarningLevel_RescaledNonUniform ? 50 : 255, 50), 1.0f);
+			dc.DrawTextureLabel(GetTextureIconDrawPos(), warningIconSize, warningIconSize,
+				                GetIEditor()->GetIconManager()->GetIconTexture(eIcon_ScaleWarning), GetTextureIconFlags(),
+				                -warningIconSize / 2, iconOffset - (warningIconSize / 2));
 		}
+	}
 
-		if (gViewportDebugPreferences.showRotationWarnings)
+	if (gViewportDebugPreferences.showRotationWarnings)
+	{
+		const ERotationWarningLevel rotationWarningLevel = GetRotationWarningLevel();
+		if (rotationWarningLevel != eRotationWarningLevel_None)
 		{
-			const ERotationWarningLevel rotationWarningLevel = GetRotationWarningLevel();
-			if (rotationWarningLevel != eRotationWarningLevel_None)
-			{
-				dc.SetColor(RGB(255, rotationWarningLevel == eRotationWarningLevel_RotatedNonRectangular ? 50 : 255, 50), 1.0f);
-				dc.DrawTextureLabel(GetTextureIconDrawPos(), warningIconSize, warningIconSize,
-				                    GetIEditor()->GetIconManager()->GetIconTexture(eIcon_RotationWarning), GetTextureIconFlags(),
-				                    warningIconSize / 2, iconOffset - (warningIconSize / 2));
-			}
+			dc.SetColor(RGB(255, rotationWarningLevel == eRotationWarningLevel_RotatedNonRectangular ? 50 : 255, 50), 1.0f);
+			dc.DrawTextureLabel(GetTextureIconDrawPos(), warningIconSize, warningIconSize,
+				                GetIEditor()->GetIconManager()->GetIconTexture(eIcon_RotationWarning), GetTextureIconFlags(),
+				                warningIconSize / 2, iconOffset - (warningIconSize / 2));
 		}
 	}
 }
 
-//////////////////////////////////////////////////////////////////////////
+bool CBaseObject::IsLabelVisible(const SDisplayContext& dc) const
+{
+	return dc.showTextLabels;
+}
+
 void CBaseObject::DrawLabel(SDisplayContext& dc, const Vec3& pos, COLORREF labelColor, float alpha, float size)
 {
 	// Check if our group is not closed.
@@ -1633,23 +1603,23 @@ void CBaseObject::DrawLabel(SDisplayContext& dc, const Vec3& pos, COLORREF label
 		GetBoundBox(box);
 
 		//p.z = box.max.z + 0.2f;
-		if ((dc.flags & DISPLAY_2D) && labelColor == RGB(255, 255, 255))
+		if ((dc.display2D) && labelColor == RGB(255, 255, 255))
 		{
 			labelColor = RGB(0, 0, 0);
 		}
 	}
 
 	float camDist = dc.camera->GetPosition().GetDistance(pos);
-	float maxDist = gViewportPreferences.labelsDistance;
-	if (camDist < gViewportPreferences.labelsDistance || (dc.flags & DISPLAY_SELECTION_HELPERS))
+	if (camDist < gGlobalHelperPreferences.textLabelDistance || (dc.displaySelectionHelpers))
 	{
+		float maxDist = gGlobalHelperPreferences.textLabelDistance;
 		float range = maxDist / 2.0f;
 		Vec3 c = BO_Private::Rgb2Vec(labelColor);
 		if (IsSelected())
 			c = BO_Private::Rgb2Vec(dc.GetSelectedColor());
 
 		float col[4] = { c.x, c.y, c.z, 1 };
-		if (dc.flags & DISPLAY_SELECTION_HELPERS)
+		if (dc.displaySelectionHelpers)
 		{
 			if (IsHighlighted())
 				c = BO_Private::Rgb2Vec(dc.GetSelectedColor());
@@ -1667,7 +1637,6 @@ void CBaseObject::DrawLabel(SDisplayContext& dc, const Vec3& pos, COLORREF label
 	}
 }
 
-//////////////////////////////////////////////////////////////////////////
 void CBaseObject::DrawHighlight(SDisplayContext& dc)
 {
 	if (!m_nTextureIcon && m_bSupportsBoxHighlight)
@@ -1682,13 +1651,12 @@ void CBaseObject::DrawHighlight(SDisplayContext& dc)
 	}
 }
 
-//////////////////////////////////////////////////////////////////////////
 bool CBaseObject::CanBeDrawn(const SDisplayContext& dc, bool& outDisplaySelectionHelper) const
 {
 	bool bResult = true;
 	outDisplaySelectionHelper = false;
 
-	if (dc.flags & DISPLAY_SELECTION_HELPERS)
+	if (dc.displaySelectionHelpers)
 	{
 		// Check if this object type is masked for selection.
 		if ((GetType() & gViewportSelectionPreferences.objectSelectMask) && !IsFrozen())
@@ -1708,7 +1676,6 @@ bool CBaseObject::CanBeDrawn(const SDisplayContext& dc, bool& outDisplaySelectio
 	return bResult;
 }
 
-//////////////////////////////////////////////////////////////////////////
 bool CBaseObject::IsInCameraView(const CCamera& camera)
 {
 	AABB bbox;
@@ -1716,7 +1683,6 @@ bool CBaseObject::IsInCameraView(const CCamera& camera)
 	return (camera.IsAABBVisible_F(AABB(bbox.min, bbox.max)));
 }
 
-//////////////////////////////////////////////////////////////////////////
 float CBaseObject::GetCameraVisRatio(const CCamera& camera)
 {
 	AABB bbox;
@@ -1733,7 +1699,6 @@ float CBaseObject::GetCameraVisRatio(const CCamera& camera)
 	return visRatio;
 }
 
-//////////////////////////////////////////////////////////////////////////
 int CBaseObject::MouseCreateCallback(IDisplayViewport* view, EMouseEvent event, CPoint& point, int flags)
 {
 	if (event == eMouseMove || event == eMouseLDown)
@@ -1760,7 +1725,6 @@ int CBaseObject::MouseCreateCallback(IDisplayViewport* view, EMouseEvent event, 
 	return MOUSECREATE_CONTINUE;
 }
 
-//////////////////////////////////////////////////////////////////////////
 void CBaseObject::OnEvent(ObjectEvent event)
 {
 	switch (event)
@@ -1774,13 +1738,6 @@ void CBaseObject::OnEvent(ObjectEvent event)
 	}
 }
 
-//////////////////////////////////////////////////////////////////////////
-void CBaseObject::SetShared(bool bShared)
-{
-
-}
-
-//////////////////////////////////////////////////////////////////////////
 void CBaseObject::SetHidden(bool bHidden, bool bAnimated)
 {
 	// test first if the current layer is hidden beforehand AND we're not currently loading a level
@@ -1825,7 +1782,6 @@ void CBaseObject::SetHidden(bool bHidden, bool bAnimated)
 	}
 }
 
-//////////////////////////////////////////////////////////////////////////
 bool CBaseObject::FilterByLayer(CBaseObject const& obj, void* pLayer)
 {
 	if (obj.CheckFlags(OBJFLAG_DELETED))
@@ -1837,7 +1793,6 @@ bool CBaseObject::FilterByLayer(CBaseObject const& obj, void* pLayer)
 	return false;
 }
 
-//////////////////////////////////////////////////////////////////////////
 void CBaseObject::SetFrozen(bool bFrozen)
 {
 	IObjectManager* pObjectManager = GetIEditor()->GetObjectManager();
@@ -1884,7 +1839,6 @@ void CBaseObject::SetFrozen(bool bFrozen)
 	GetIEditor()->GetObjectManager()->NotifyObjectListeners(this, OBJECT_ON_FREEZE);
 }
 
-//////////////////////////////////////////////////////////////////////////
 void CBaseObject::SetHighlight(bool bHighlight)
 {
 	if (bHighlight)
@@ -1895,14 +1849,12 @@ void CBaseObject::SetHighlight(bool bHighlight)
 	UpdateHighlightPassState(IsSelected(), bHighlight);
 }
 
-//////////////////////////////////////////////////////////////////////////
 void CBaseObject::SetSelected(bool bSelect)
 {
 	bSelect ? SetFlags(OBJFLAG_SELECTED) : ClearFlags(OBJFLAG_SELECTED);
 	UpdateHighlightPassState(bSelect, IsHighlighted());
 }
 
-//////////////////////////////////////////////////////////////////////////
 bool CBaseObject::IsHiddenBySpec() const
 {
 	if (!gViewportPreferences.applyConfigSpec)
@@ -1916,8 +1868,6 @@ bool CBaseObject::IsHiddenBySpec() const
 	return (m_nMinSpec != 0 && configSpec != 0 && m_nMinSpec > configSpec);
 }
 
-//////////////////////////////////////////////////////////////////////////
-//! Returns true if object hidden.
 bool CBaseObject::IsHidden() const
 {
 	if (!m_layer)
@@ -1927,8 +1877,6 @@ bool CBaseObject::IsHidden() const
 	       (gViewportDebugPreferences.GetObjectHideMask() & GetType());
 }
 
-//////////////////////////////////////////////////////////////////////////
-//! Returns true if object frozen.
 bool CBaseObject::IsFrozen() const
 {
 	if (!m_layer)
@@ -1937,7 +1885,6 @@ bool CBaseObject::IsFrozen() const
 	return CheckFlags(OBJFLAG_FROZEN) || m_layer->IsFrozen(false);
 }
 
-//////////////////////////////////////////////////////////////////////////
 bool CBaseObject::IsSelectable() const
 {
 	// Not selectable if hidden.
@@ -1959,7 +1906,6 @@ bool CBaseObject::IsSelectable() const
 	return true;
 }
 
-//////////////////////////////////////////////////////////////////////////
 void CBaseObject::Serialize(CObjectArchive& ar)
 {
 	XmlNodeRef xmlNode = ar.node;
@@ -2196,7 +2142,6 @@ void CBaseObject::Serialize(CObjectArchive& ar)
 	m_pTransformDelegate = pTransformDelegate;
 }
 
-//////////////////////////////////////////////////////////////////////////
 XmlNodeRef CBaseObject::Export(const string& levelPath, XmlNodeRef& xmlNode)
 {
 	// This function exports object to the Engine
@@ -2252,13 +2197,11 @@ XmlNodeRef CBaseObject::Export(const string& levelPath, XmlNodeRef& xmlNode)
 	return objNode;
 }
 
-//////////////////////////////////////////////////////////////////////////
 CBaseObject* CBaseObject::FindObject(CryGUID id) const
 {
 	return GetObjectManager()->FindObject(id);
 }
 
-//////////////////////////////////////////////////////////////////////////
 void CBaseObject::StoreUndo(const char* UndoDescription, bool minimal, int flags)
 {
 	if (CUndo::IsRecording())
@@ -2270,13 +2213,11 @@ void CBaseObject::StoreUndo(const char* UndoDescription, bool minimal, int flags
 	}
 }
 
-//////////////////////////////////////////////////////////////////////////
 bool CBaseObject::IsCreateGameObjects() const
 {
 	return GetObjectManager()->IsCreateGameObjects();
 }
 
-//////////////////////////////////////////////////////////////////////////
 string CBaseObject::GetTypeName() const
 {
 	const char* className = m_classDesc->ClassName();
@@ -2289,7 +2230,6 @@ string CBaseObject::GetTypeName() const
 	return name;
 }
 
-//////////////////////////////////////////////////////////////////////////
 void CBaseObject::SetLayer(string layerFullName)
 {
 	auto pLayer = GetIEditor()->GetObjectManager()->GetIObjectLayerManager()->FindLayerByFullName(layerFullName);
@@ -2332,7 +2272,7 @@ void CBaseObject::SetLayer(IObjectLayer* pLayer)
 			UpdateVisibility(pLayer->IsVisible());
 	}
 
-	// Set layer for all childs.
+	// Set layer for all children
 	for (int i = 0; i < m_children.size(); i++)
 	{
 		m_children[i]->SetLayer(pLayer);
@@ -2348,7 +2288,6 @@ void CBaseObject::SetLayer(IObjectLayer* pLayer)
 		pObjectManager->SetLayerChanging(false);
 }
 
-//////////////////////////////////////////////////////////////////////////
 void CBaseObject::SetDescendantsLayer(IObjectLayer* pLayer)
 {
 	SetLayer(pLayer);
@@ -2363,7 +2302,6 @@ void CBaseObject::SetDescendantsLayer(IObjectLayer* pLayer)
 	}
 }
 
-//////////////////////////////////////////////////////////////////////////
 bool CBaseObject::IntersectRectBounds(const AABB& bbox)
 {
 	AABB aabb;
@@ -2372,7 +2310,6 @@ bool CBaseObject::IntersectRectBounds(const AABB& bbox)
 	return aabb.IsIntersectBox(bbox);
 }
 
-//////////////////////////////////////////////////////////////////////////
 bool CBaseObject::IntersectRayBounds(const Ray& ray)
 {
 	Vec3 tmpPnt;
@@ -2382,7 +2319,6 @@ bool CBaseObject::IntersectRayBounds(const Ray& ray)
 	return Intersect::Ray_AABB(ray, aabb, tmpPnt);
 }
 
-//////////////////////////////////////////////////////////////////////////
 bool CBaseObject::HitTestRectBounds(HitContext& hc, const AABB& box)
 {
 	using namespace BO_Private;
@@ -2497,7 +2433,6 @@ bool CBaseObject::HitTestRectBounds(HitContext& hc, const AABB& box)
 	return false;
 }
 
-//////////////////////////////////////////////////////////////////////////
 bool CBaseObject::HitTestRect(HitContext& hc)
 {
 	AABB box;
@@ -2522,22 +2457,20 @@ bool CBaseObject::HitTestRect(HitContext& hc)
 	return bHit;
 }
 
-//////////////////////////////////////////////////////////////////////////
 bool CBaseObject::HitHelperTest(HitContext& hc)
 {
 	return HitHelperAtTest(hc, GetWorldPos());
 }
 
-//////////////////////////////////////////////////////////////////////////
 bool CBaseObject::HitHelperAtTest(HitContext& hc, const Vec3& pos)
 {
 	bool bResult = false;
 
-	if (m_nTextureIcon && (gViewportPreferences.showIcons || gViewportPreferences.showSizeBasedIcons) && !hc.bUseSelectionHelpers)
+	if (m_nTextureIcon && hc.iconShown && !hc.bUseSelectionHelpers)
 	{
 		int iconSize = OBJECT_TEXTURE_ICON_SIZE;
 
-		if (gViewportPreferences.distanceScaleIcons)
+		if (gGlobalHelperPreferences.distanceScaleIcons)
 		{
 			iconSize *= OBJECT_TEXTURE_ICON_SCALE / hc.view->GetScreenScaleFactor(pos);
 		}
@@ -2599,14 +2532,12 @@ CBaseObject* CBaseObject::GetLinkedObject(size_t i) const
 	return m_linkedObjects[i];
 }
 
-//////////////////////////////////////////////////////////////////////////
 CBaseObject* CBaseObject::GetChild(size_t const i) const
 {
 	assert(i >= 0 && i < m_children.size());
 	return m_children[i];
 }
 
-//////////////////////////////////////////////////////////////////////////
 bool CBaseObject::IsDescendantOf(const CBaseObject* pObject) const
 {
 	CBaseObject* pParentObject = m_parent;
@@ -2637,7 +2568,6 @@ CBaseObject* CBaseObject::FindOwner(bool onSameLayer) const
 	return owner;
 }
 
-//////////////////////////////////////////////////////////////////////////
 bool CBaseObject::IsChildOf(const CBaseObject* node) const
 {
 	CBaseObject* p = m_parent;
@@ -2650,7 +2580,6 @@ bool CBaseObject::IsChildOf(const CBaseObject* node) const
 	return false;
 }
 
-//////////////////////////////////////////////////////////////////////////
 bool CBaseObject::IsLinkedDescendantOf(const CBaseObject* pObject) const
 {
 	CBaseObject* pLinkedTo = pObject->GetLinkedTo();
@@ -2665,7 +2594,6 @@ bool CBaseObject::IsLinkedDescendantOf(const CBaseObject* pObject) const
 	return false;
 }
 
-//////////////////////////////////////////////////////////////////////////
 void CBaseObject::GetAllChildren(TBaseObjects& outAllChildren, CBaseObject* pObj) const
 {
 	const CBaseObject* pBaseObj = pObj ? pObj : this;
@@ -2770,14 +2698,12 @@ void CBaseObject::GetAllPrefabFlagedChildren(ISelectionGroup& outAllChildren, CB
 	}
 }
 
-//////////////////////////////////////////////////////////////////////////
 void CBaseObject::AttachChild(CBaseObject* pChild, bool shouldKeepPos, bool bInvalidateTM)
 {
 	std::vector<CBaseObject*> children = { pChild };
 	AttachChildren(children, shouldKeepPos, bInvalidateTM);
 }
 
-//////////////////////////////////////////////////////////////////////////
 void CBaseObject::DetachThis(bool bKeepPos, bool bPlaceOnRoot)
 {
 	if (m_parent)
@@ -2787,14 +2713,12 @@ void CBaseObject::DetachThis(bool bKeepPos, bool bPlaceOnRoot)
 	}
 }
 
-//////////////////////////////////////////////////////////////////////////
 void CBaseObject::RemoveChild(CBaseObject* pChild)
 {
 	std::vector<CBaseObject*> children = { pChild };
 	RemoveChildren(children);
 }
 
-//////////////////////////////////////////////////////////////////////////
 void CBaseObject::ResolveParent(CBaseObject* parent)
 {
 	// even though parent is same as m_parent, adding the member to the parent must be done.
@@ -2838,7 +2762,6 @@ void CBaseObject::ResolveLinkedTo(CBaseObject* object)
 	}
 }
 
-//////////////////////////////////////////////////////////////////////////
 void CBaseObject::CalcLocalTM(Matrix34& tm) const
 {
 	tm.SetIdentity();
@@ -2880,7 +2803,6 @@ void CBaseObject::CalcLocalTM(Matrix34& tm) const
 	}
 }
 
-//////////////////////////////////////////////////////////////////////////
 void CBaseObject::OnChildModified()
 {
 	if (m_parent)
@@ -2888,9 +2810,8 @@ void CBaseObject::OnChildModified()
 
 	if (m_pLinkedTo)
 		m_pLinkedTo->OnChildModified();
-};
+}
 
-//////////////////////////////////////////////////////////////////////////
 Matrix34 CBaseObject::GetParentWorldTM() const
 {
 	if (m_parent)
@@ -2902,7 +2823,6 @@ Matrix34 CBaseObject::GetParentWorldTM() const
 	return GetLinkAttachPointWorldTM();
 }
 
-//////////////////////////////////////////////////////////////////////////
 const Matrix34& CBaseObject::GetWorldTM() const
 {
 	if (!m_bMatrixValid)
@@ -2960,7 +2880,6 @@ bool CBaseObject::GetManipulatorMatrix(Matrix34& tm) const
 	return false;
 }
 
-//////////////////////////////////////////////////////////////////////////
 Matrix34 CBaseObject::GetLinkAttachPointWorldTM() const
 {
 	CBaseObject* pLinkedTo = GetLinkedTo();
@@ -2972,13 +2891,11 @@ Matrix34 CBaseObject::GetLinkAttachPointWorldTM() const
 	return Matrix34(IDENTITY);
 }
 
-//////////////////////////////////////////////////////////////////////////
 bool CBaseObject::IsParentAttachmentValid() const
 {
 	return true;
 }
 
-//////////////////////////////////////////////////////////////////////////
 void CBaseObject::InvalidateTM(int flags)
 {
 	LOADING_TIME_PROFILE_SECTION
@@ -3030,7 +2947,6 @@ void CBaseObject::InvalidateTM(int flags)
 	}
 }
 
-//////////////////////////////////////////////////////////////////////////
 void CBaseObject::SetLocalTM(const Vec3& pos, const Quat& rotate, const Vec3& scale, int flags)
 {
 	const bool b1 = SetPos(pos, flags | eObjectUpdateFlags_DoNotInvalidate);
@@ -3046,7 +2962,6 @@ void CBaseObject::SetLocalTM(const Vec3& pos, const Quat& rotate, const Vec3& sc
 	}
 }
 
-//////////////////////////////////////////////////////////////////////////
 void CBaseObject::SetLocalTM(const Matrix34& tm, int flags)
 {
 	if (m_lookat)
@@ -3063,7 +2978,6 @@ void CBaseObject::SetLocalTM(const Matrix34& tm, int flags)
 	}
 }
 
-//////////////////////////////////////////////////////////////////////////
 void CBaseObject::SetWorldPos(const Vec3& pos, int flags)
 {
 	if (m_parent || m_pLinkedTo)
@@ -3079,7 +2993,6 @@ void CBaseObject::SetWorldPos(const Vec3& pos, int flags)
 	}
 }
 
-//////////////////////////////////////////////////////////////////////////
 void CBaseObject::SetWorldTM(const Matrix34& tm, int flags)
 {
 	if (m_parent || m_pLinkedTo)
@@ -3095,7 +3008,6 @@ void CBaseObject::SetWorldTM(const Matrix34& tm, int flags)
 	}
 }
 
-//////////////////////////////////////////////////////////////////////////
 void CBaseObject::UpdateVisibility(bool bVisible)
 {
 	bool bVisibleWithSpec = bVisible && !IsHiddenBySpec();
@@ -3115,7 +3027,6 @@ void CBaseObject::UpdateVisibility(bool bVisible)
 	}
 }
 
-//////////////////////////////////////////////////////////////////////////
 void CBaseObject::SetLookAt(CBaseObject* target)
 {
 	if (m_lookat == target)
@@ -3137,19 +3048,16 @@ void CBaseObject::SetLookAt(CBaseObject* target)
 	InvalidateTM(0);
 }
 
-//////////////////////////////////////////////////////////////////////////
 bool CBaseObject::IsLookAtTarget() const
 {
 	return m_lookatSource != 0;
 }
 
-//////////////////////////////////////////////////////////////////////////
 bool IsBaseObjectEventCallbackNULL(const CBaseObject::EventCallback& cb)
 {
 	return cb.getFunc() == NULL;
 }
 
-//////////////////////////////////////////////////////////////////////////
 bool CBaseObject::ConvertFromObject(CBaseObject* object)
 {
 	SetLocalTM(object->GetLocalTM());
@@ -3165,7 +3073,6 @@ bool CBaseObject::ConvertFromObject(CBaseObject* object)
 	return true;
 }
 
-//////////////////////////////////////////////////////////////////////////
 bool CBaseObject::IsPotentiallyVisible() const
 {
 	if (!m_layer->IsVisible())
@@ -3224,10 +3131,8 @@ void CBaseObject::Validate()
 		CryWarning(VALIDATOR_MODULE_EDITOR, VALIDATOR_WARNING, "Material: %s for object: %s not found %s", GetMaterial()->GetName(), (const char*)GetName(),
 		           CryLinkService::CCryLinkUriFactory::GetUriV("Editor", "general.select_and_go_to_object %s", GetName()));
 	}
+}
 
-};
-
-//////////////////////////////////////////////////////////////////////////
 Ang3 CBaseObject::GetWorldAngles() const
 {
 	// Not using acccessors(GetScale()...) here as we want to validate the object scale and ignore delegates
@@ -3246,9 +3151,8 @@ Ang3 CBaseObject::GetWorldAngles() const
 		Ang3 angles = RAD2DEG(Ang3::GetAnglesXYZ(Matrix33(q)));
 		return angles;
 	}
-};
+}
 
-//////////////////////////////////////////////////////////////////////////
 void CBaseObject::PostClone(CBaseObject* pFromObject, CObjectCloneContext& ctx)
 {
 	CBaseObject* pFromParent = pFromObject->GetParent();
@@ -3303,7 +3207,6 @@ void CBaseObject::PostClone(CBaseObject* pFromObject, CObjectCloneContext& ctx)
 	}
 }
 
-//////////////////////////////////////////////////////////////////////////
 void CBaseObject::GatherUsedResources(CUsedResources& resources)
 {
 	if (m_pVarObject != nullptr)
@@ -3317,7 +3220,6 @@ void CBaseObject::GatherUsedResources(CUsedResources& resources)
 	}
 }
 
-//////////////////////////////////////////////////////////////////////////
 bool CBaseObject::IsSimilarObject(CBaseObject* pObject)
 {
 	if (pObject->GetClassDesc() == GetClassDesc() && pObject->GetRuntimeClass() == GetRuntimeClass())
@@ -3327,7 +3229,6 @@ bool CBaseObject::IsSimilarObject(CBaseObject* pObject)
 	return false;
 }
 
-//////////////////////////////////////////////////////////////////////////
 void CBaseObject::SetMaterial(IEditorMaterial* mtl)
 {
 	if (m_pMaterial == mtl)
@@ -3348,7 +3249,6 @@ void CBaseObject::SetMaterial(IEditorMaterial* mtl)
 	UpdateUIVars();
 }
 
-//////////////////////////////////////////////////////////////////////////
 string CBaseObject::GetMaterialName() const
 {
 	if (m_pMaterial)
@@ -3356,7 +3256,6 @@ string CBaseObject::GetMaterialName() const
 	return "";
 }
 
-//////////////////////////////////////////////////////////////////////////
 void CBaseObject::SetMaterial(const string& materialName)
 {
 	IEditorMaterial* pMaterial = NULL;
@@ -3377,7 +3276,6 @@ void CBaseObject::OnMtlResolved(uint32 id, bool success, const char* orgName, co
 	}
 }
 
-//////////////////////////////////////////////////////////////////////////
 bool CBaseObject::ApplyAsset(const CAsset& asset, HitContext* pHitContext)
 {
 	if (!strcmp(asset.GetType()->GetTypeName(), "Material"))
@@ -3395,7 +3293,6 @@ bool CBaseObject::ApplyAsset(const CAsset& asset, HitContext* pHitContext)
 	return false;
 }
 
-//////////////////////////////////////////////////////////////////////////
 bool CBaseObject::CanApplyAsset(const CAsset& asset, string* pApplyTextOut) const
 {
 	if (!strcmp(asset.GetType()->GetTypeName(), "Material"))
@@ -3411,20 +3308,18 @@ bool CBaseObject::CanApplyAsset(const CAsset& asset, string* pApplyTextOut) cons
 	return false;
 }
 
-//////////////////////////////////////////////////////////////////////////
 void CBaseObject::SetLayerModified()
 {
 	if (m_layer)
 		m_layer->SetModified();
 }
 
-//////////////////////////////////////////////////////////////////////////
 void CBaseObject::SetMinSpec(uint32 nSpec, bool bSetChildren)
 {
 	m_nMinSpec = nSpec;
 	UpdateVisibility(!IsHidden());
 
-	// Set min spec for all childs.
+	// Set min spec for all children
 	if (bSetChildren)
 	{
 		for (int i = m_children.size() - 1; i >= 0; --i)
@@ -3437,7 +3332,6 @@ void CBaseObject::SetMinSpec(uint32 nSpec, bool bSetChildren)
 	}
 }
 
-//////////////////////////////////////////////////////////////////////////
 void CBaseObject::OnPropertyChanged(IVariable*)
 {
 	SetLayerModified();
@@ -3445,18 +3339,15 @@ void CBaseObject::OnPropertyChanged(IVariable*)
 	UpdatePrefab();
 }
 
-//////////////////////////////////////////////////////////////////////////
 void CBaseObject::OnMultiSelPropertyChanged(IVariable*)
 {
 	const ISelectionGroup* grp = GetIEditor()->GetISelectionGroup();
 	for (int i = 0; i < grp->GetCount(); i++)
 	{
 		grp->GetObject(i)->SetLayerModified();
-		;
 	}
 }
 
-//////////////////////////////////////////////////////////////////////////
 void CBaseObject::OnMenuProperties()
 {
 	if (!IsSelected())
@@ -3467,7 +3358,6 @@ void CBaseObject::OnMenuProperties()
 	}
 }
 
-//////////////////////////////////////////////////////////////////////////
 void CBaseObject::OnContextMenu(CPopupMenuItem* menu)
 {
 	if (!menu->Empty())
@@ -3578,7 +3468,6 @@ void CBaseObject::OnContextMenu(CPopupMenuItem* menu)
 		showInAssetBrowser.Enable(false);
 }
 
-//////////////////////////////////////////////////////////////////////////
 bool CBaseObject::IntersectRayMesh(const Vec3& raySrc, const Vec3& rayDir, SRayHitInfo& outHitInfo) const
 {
 	const float fRenderMeshTestDistance = 0.2f;
@@ -3611,7 +3500,6 @@ bool CBaseObject::IntersectRayMesh(const Vec3& raySrc, const Vec3& rayDir, SRayH
 	return pStatObj->RayIntersection(outHitInfo, 0);
 }
 
-//////////////////////////////////////////////////////////////////////////
 EScaleWarningLevel CBaseObject::GetScaleWarningLevel() const
 {
 	EScaleWarningLevel scaleWarningLevel = eScaleWarningLevel_None;
@@ -3637,7 +3525,6 @@ EScaleWarningLevel CBaseObject::GetScaleWarningLevel() const
 	return scaleWarningLevel;
 }
 
-//////////////////////////////////////////////////////////////////////////
 ERotationWarningLevel CBaseObject::GetRotationWarningLevel() const
 {
 	ERotationWarningLevel rotationWarningLevel = eRotationWarningLevel_None;
@@ -3969,7 +3856,6 @@ void CBaseObject::UnLink(bool placeOnRoot /*= false*/)
 	}
 }
 
-//////////////////////////////////////////////////////////////////////////
 void CBaseObject::UnLinkAll()
 {
 	while (!m_linkedObjects.empty())
@@ -4033,13 +3919,11 @@ void CBaseObject::OnBeforeAreaChange()
 	GetBoundBox(aabb);
 	GetIEditor()->GetAIManager()->OnAreaModified(aabb, this);
 }
-//////////////////////////////////////////////////////////////////////////
+
 void CBaseObject::SetMaterialByName(const char* mtlName)
 {
-
 }
 
-//////////////////////////////////////////////////////////////////////////
 void CBaseObject::CreateInspectorWidgets(CInspectorWidgetCreator& creator)
 {
 	creator.AddPropertyTree<CBaseObject>("General", [](CBaseObject* pObject, Serialization::IArchive& ar, bool bMultiEdit)
@@ -4052,7 +3936,6 @@ void CBaseObject::CreateInspectorWidgets(CInspectorWidgetCreator& creator)
 	});
 }
 
-//////////////////////////////////////////////////////////////////////////
 void CBaseObject::SerializeGeneralProperties(Serialization::IArchive& ar, bool bMultiEdit)
 {
 	string typeDescr = GetTypeDescription();
@@ -4147,7 +4030,6 @@ void CBaseObject::SerializeGeneralProperties(Serialization::IArchive& ar, bool b
 	}
 }
 
-//////////////////////////////////////////////////////////////////////////
 void CBaseObject::SerializeTransformProperties(Serialization::IArchive& ar)
 {
 	using namespace BO_Private;

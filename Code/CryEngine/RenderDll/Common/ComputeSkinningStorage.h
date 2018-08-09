@@ -28,13 +28,13 @@ struct IPerCharacterDataSupply
 {
 	//! Store weights and mapping
 	//! At this point, weights are only added from render-thread - thus, resources are not locked atm
-	virtual void RT_PushWeights(const int numWeights, const int numWeightsMap, const compute_skinning::SSkinning* weights, const compute_skinning::SSkinningMap* weightsMap) = 0;
+	virtual void PushWeights(const int numWeights, const int numWeightsMap, const compute_skinning::SSkinning* weights, const compute_skinning::SSkinningMap* weightsMap) = 0;
 };
 
 struct IPerMeshDataSupply
 {
-	virtual void RT_PushMorphs(const int numMorphs, const int numMorphsBitField, const Vec4* morphsDeltas, const uint64* morphsBitField) = 0;
-	virtual void RT_PushBindPoseBuffers(const int numVertices, const int numIndices, const int numAdjTriangles, const compute_skinning::SSkinVertexIn* vertices, const vtx_idx* indices, const uint32* adjTriangles) = 0;
+	virtual void PushMorphs(const int numMorphs, const int numMorphsBitField, const Vec4* morphsDeltas, const uint64* morphsBitField) = 0;
+	virtual void PushBindPoseBuffers(const int numVertices, const int numIndices, const int numAdjTriangles, const compute_skinning::SSkinVertexIn* vertices, const vtx_idx* indices, const uint32* adjTriangles) = 0;
 
 	virtual std::shared_ptr<compute_skinning::IPerCharacterDataSupply> GetOrCreatePerCharacterResources(const uint32 guid) = 0;
 };

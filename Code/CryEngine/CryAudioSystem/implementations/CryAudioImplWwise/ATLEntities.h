@@ -16,6 +16,8 @@ namespace Impl
 {
 namespace Wwise
 {
+class CEvent;
+
 class CObject final : public IObject, public CPoolObject<CObject, stl::PSyncNone>
 {
 public:
@@ -44,13 +46,19 @@ public:
 	virtual ERequestStatus SetName(char const* const szName) override;
 	// ~CryAudio::Impl::IObject
 
+	void RemoveEvent(CEvent* const pEvent);
+
 	AkGameObjectID const m_id;
-	bool                 m_bNeedsToUpdateEnvironments;
-	AuxSendValues        m_auxSendValues;
 
 private:
 
 	void PostEnvironmentAmounts();
+
+	Vec3                 m_position;
+	std::vector<CEvent*> m_events;
+	bool                 m_needsToUpdateEnvironments;
+	bool                 m_needsToUpdateVirtualStates;
+	AuxSendValues        m_auxSendValues;
 };
 
 class CListener final : public IListener
@@ -77,8 +85,9 @@ class CTrigger final : public ITrigger
 {
 public:
 
-	explicit CTrigger(AkUniqueID const id)
+	explicit CTrigger(AkUniqueID const id, float const maxAttenuation)
 		: m_id(id)
+		, m_maxAttenuation(maxAttenuation)
 	{}
 
 	CTrigger(CTrigger const&) = delete;
@@ -94,6 +103,7 @@ public:
 	// ~CryAudio::Impl::ITrigger
 
 	AkUniqueID const m_id;
+	float const      m_maxAttenuation;
 
 private:
 
@@ -213,7 +223,11 @@ public:
 		: m_state(EEventState::None)
 		, m_id(AK_INVALID_UNIQUE_ID)
 		, m_atlEvent(atlEvent_)
+		, m_pObject(nullptr)
+		, m_maxAttenuation(0.0f)
 	{}
+
+	virtual ~CEvent() override;
 
 	CEvent() = delete;
 	CEvent(CEvent const&) = delete;
@@ -225,9 +239,13 @@ public:
 	virtual ERequestStatus Stop() override;
 	// ~CryAudio::Impl::IEvent
 
+	void UpdateVirtualState(float const distance);
+
 	EEventState m_state;
 	AkUniqueID  m_id;
 	CATLEvent&  m_atlEvent;
+	CObject*    m_pObject;
+	float       m_maxAttenuation;
 };
 
 struct SFile final : public IFile

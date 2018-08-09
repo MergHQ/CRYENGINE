@@ -4,6 +4,7 @@
 #include "AudioCVars.h"
 #include "AudioSystem.h"
 #include "Common.h"
+#include <CrySystem/ISystem.h>
 #include <CryCore/Platform/platform_impl.inl>
 #include <CrySystem/IEngineModule.h>
 #include <CryExtension/ICryFactory.h>
@@ -24,89 +25,19 @@ namespace CryAudio
 // Define global objects.
 CCVars g_cvars;
 
-//////////////////////////////////////////////////////////////////////////
-class CSystemEventListener_Sound : public ISystemEventListener
-{
-public:
-
-	CSystemEventListener_Sound() = default;
-
-	virtual void OnSystemEvent(ESystemEvent event, UINT_PTR wparam, UINT_PTR lparam) override
-	{
-		if (gEnv->pAudioSystem != nullptr)
-		{
-			switch (event)
-			{
-			case ESYSTEM_EVENT_ACTIVATE:
-				{
-					// When Alt+Tabbing out of the application while it's in full-screen mode
-					// ESYSTEM_EVENT_ACTIVATE is sent instead of ESYSTEM_EVENT_CHANGE_FOCUS.
-
-					if (g_cvars.m_ignoreWindowFocus == 0)
-					{
-						// wparam != 0 is active, wparam == 0 is inactive
-						// lparam != 0 is minimized, lparam == 0 is not minimized
-						if (wparam == 0 || lparam != 0)
-						{
-							// lost focus
-							g_pLoseFocusTrigger->Execute();
-						}
-						else
-						{
-							// got focus
-							g_pGetFocusTrigger->Execute();
-						}
-					}
-					break;
-				}
-			case ESYSTEM_EVENT_CHANGE_FOCUS:
-				{
-					if (g_cvars.m_ignoreWindowFocus == 0)
-					{
-						// wparam != 0 is focused, wparam == 0 is not focused
-						if (wparam == 0)
-						{
-							// lost focus
-							g_pLoseFocusTrigger->Execute();
-						}
-						else
-						{
-							// got focus
-							g_pGetFocusTrigger->Execute();
-						}
-					}
-					break;
-				}
-			case ESYSTEM_EVENT_AUDIO_MUTE:
-				g_pMuteAllTrigger->Execute();
-				break;
-			case ESYSTEM_EVENT_AUDIO_UNMUTE:
-				g_pUnmuteAllTrigger->Execute();
-				break;
-			}
-		}
-	}
-};
-
-static CSystemEventListener_Sound g_system_event_listener_sound;
-
 ///////////////////////////////////////////////////////////////////////////
 bool CreateAudioSystem(SSystemGlobalEnvironment& env)
 {
 	bool bSuccess = false;
-	CSystem* const pSystem = new CSystem;
 
-	if (pSystem != nullptr)
+	if (env.pAudioSystem != nullptr)
 	{
-		if (env.pAudioSystem != nullptr)
-		{
-			env.pAudioSystem->Release();
-			env.pAudioSystem = nullptr;
-		}
-
-		env.pAudioSystem = static_cast<IAudioSystem*>(pSystem);
-		bSuccess = pSystem->Initialize();
+		env.pAudioSystem->Release();
+		env.pAudioSystem = nullptr;
 	}
+
+	env.pAudioSystem = static_cast<IAudioSystem*>(&g_system);
+	bSuccess = g_system.Initialize();
 
 	return bSuccess;
 }
@@ -115,12 +46,9 @@ bool CreateAudioSystem(SSystemGlobalEnvironment& env)
 void PrepareAudioSystem(CSystem* const pAudioSystem)
 {
 	CryFixedStringT<MaxFilePathLength> const temp(pAudioSystem->GetConfigPath());
-
-	// Must be blocking requests.
-	SRequestUserData const data(ERequestFlags::ExecuteBlocking);
-	pAudioSystem->ParseControlsData(temp.c_str(), EDataScope::Global, data);
-	pAudioSystem->ParsePreloadsData(temp.c_str(), EDataScope::Global, data);
-	pAudioSystem->PreloadSingleRequest(GlobalPreloadRequestId, false, data);
+	pAudioSystem->ParseControlsData(temp.c_str(), EDataScope::Global);
+	pAudioSystem->ParsePreloadsData(temp.c_str(), EDataScope::Global);
+	pAudioSystem->PreloadSingleRequest(GlobalPreloadRequestId, false);
 }
 
 //////////////////////////////////////////////////////////////////////////////////////////////
@@ -187,8 +115,6 @@ class CEngineModule_CryAudioSystem : public ISystemModule
 				SRequestUserData const data(ERequestFlags::ExecuteBlocking);
 				static_cast<CSystem*>(env.pAudioSystem)->SetImpl(nullptr, data);
 			}
-
-			env.pSystem->GetISystemEventDispatcher()->RegisterListener(&g_system_event_listener_sound, "CSystemEventListener_Sound");
 
 			// As soon as the audio system was created we consider this a success (even if the NULL implementation was used)
 			bSuccess = true;
@@ -282,7 +208,11 @@ CRYREGISTER_SINGLETON_CLASS(CEngineModule_CryAudioSystem)
 //////////////////////////////////////////////////////////////////////////
 CEngineModule_CryAudioSystem::CEngineModule_CryAudioSystem()
 {
-	// Register audio cvars
+	if (gEnv->pSystem != nullptr)
+	{
+		gEnv->pSystem->GetISystemEventDispatcher()->RegisterListener(&g_system, "CryAudio::CSystem");
+	}
+
 	m_pAudioImplNameCVar = REGISTER_STRING_CB("s_AudioImplName", "CryAudioImplSDLMixer", 0,
 	                                          "Holds the name of the audio implementation library to be used.\n"
 	                                          "Usage: s_AudioImplName <name of the library without extension>\n"
@@ -293,11 +223,10 @@ CEngineModule_CryAudioSystem::CEngineModule_CryAudioSystem()
 //////////////////////////////////////////////////////////////////////////
 CEngineModule_CryAudioSystem::~CEngineModule_CryAudioSystem()
 {
-	SAFE_RELEASE(gEnv->pAudioSystem);
-
 	if (gEnv->pSystem != nullptr)
 	{
 		gEnv->pSystem->UnloadEngineModule(s_currentModuleName.c_str());
+		gEnv->pSystem->GetISystemEventDispatcher()->RemoveListener(&g_system);
 	}
 }
 } // namespace CryAudio

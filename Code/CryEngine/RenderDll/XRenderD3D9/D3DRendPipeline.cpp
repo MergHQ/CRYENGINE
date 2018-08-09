@@ -421,12 +421,20 @@ void CD3D9Renderer::EF_EndEf2D(const bool bSort)
 //==============================================================================================
 float* CD3D9Renderer::PinOcclusionBuffer(Matrix44A &camera)
 {
-	return m_pGraphicsPipeline->GetDepthReadbackStage()->PinOcclusionBuffer(camera);
+	if (auto pDepthReadbackStage = m_pGraphicsPipeline->GetDepthReadbackStage())
+	{
+		return pDepthReadbackStage->PinOcclusionBuffer(camera);
+	}
+
+	return nullptr;
 }
 
 void CD3D9Renderer::UnpinOcclusionBuffer()
 {
-	m_pGraphicsPipeline->GetDepthReadbackStage()->UnpinOcclusionBuffer();
+	if (auto pDepthReadbackStage = m_pGraphicsPipeline->GetDepthReadbackStage())
+	{
+		pDepthReadbackStage->UnpinOcclusionBuffer();
+	}
 }
 
 void CD3D9Renderer::RT_UpdateSkinningConstantBuffers(CRenderView* pRenderView)

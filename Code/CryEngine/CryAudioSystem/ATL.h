@@ -2,17 +2,20 @@
 
 #pragma once
 
-#include "InternalEntities.h"
-#include "AudioListenerManager.h"
-#include "AudioEventListenerManager.h"
-#include "AudioStandaloneFileManager.h"
-#include "AudioEventManager.h"
-#include "AudioObjectManager.h"
-#include "AudioXMLProcessor.h"
+#include "ATLEntities.h"
 #include <CryInput/IInput.h>
 
 namespace CryAudio
 {
+namespace Impl
+{
+struct IImpl;
+}   // namespace Impl
+
+class CAudioRequest;
+class CATLAudioObject;
+struct SAudioRequestData;
+
 enum class EInternalStates : EnumFlagsType
 {
 	None                        = 0,
@@ -20,14 +23,12 @@ enum class EInternalStates : EnumFlagsType
 };
 CRY_CREATE_ENUM_FLAG_OPERATORS(EInternalStates);
 
-class CSystem;
-
 class CAudioTranslationLayer final : public IInputEventListener
 {
 public:
 
-	CAudioTranslationLayer();
-	virtual ~CAudioTranslationLayer() override;
+	CAudioTranslationLayer() = default;
+	~CAudioTranslationLayer();
 
 	CAudioTranslationLayer(CAudioTranslationLayer const&) = delete;
 	CAudioTranslationLayer(CAudioTranslationLayer&&) = delete;
@@ -38,8 +39,8 @@ public:
 	virtual bool OnInputEvent(SInputEvent const& event) override;
 	// ~IInputEventListener
 
-	void        Initialize(CSystem* const pSystem);
-	bool        ShutDown();
+	void        Initialize();
+	void        Terminate();
 	void        ProcessRequest(CAudioRequest& request);
 	void        Update(float const deltaTime);
 	bool        CanProcessRequests() const { return (m_flags& EInternalStates::AudioMiddlewareShuttingDown) == 0; }
@@ -57,33 +58,11 @@ private:
 
 	ERequestStatus RefreshAudioSystem(char const* const szLevelName);
 	void           SetImplLanguage();
-	void           CreateInternalControls();
-	void           ClearInternalControls();
 	void           SetCurrentEnvironmentsOnObject(CATLAudioObject* const pObject, EntityId const entityToIgnore);
+	void           SetOcclusionType(CATLAudioObject& object, EOcclusionType const occlusionType) const;
 
-	void           CreateInternalTrigger(char const* const szTriggerName, ControlId const triggerId, CATLTriggerImpl const* const pTriggerConnection);
-	void           CreateInternalSwitch(char const* const szSwitchName, ControlId const switchId, std::vector<char const*> const& stateNames);
-
-	// ATLObject containers
-	AudioTriggerLookup        m_triggers;
-	AudioParameterLookup      m_parameters;
-	AudioSwitchLookup         m_switches;
-	AudioPreloadRequestLookup m_preloadRequests;
-	AudioEnvironmentLookup    m_environments;
-
-	// Components
-	CAudioStandaloneFileManager m_audioStandaloneFileMgr;
-	CEventManager               m_eventMgr;
-	CObjectManager              m_objectMgr;
-	CAudioListenerManager       m_audioListenerMgr;
-	CFileCacheManager           m_fileCacheMgr;
-	CAudioEventListenerManager  m_audioEventListenerMgr;
-	CAudioXMLProcessor          m_xmlProcessor;
-
-	SInternalControls           m_internalControls;
-
-	uint32                      m_objectPoolSize = 0;
-	uint32                      m_eventPoolSize = 0;
+	uint32 m_objectPoolSize = 0;
+	uint32 m_eventPoolSize = 0;
 
 	// Utility members
 	EInternalStates                    m_flags = EInternalStates::None;

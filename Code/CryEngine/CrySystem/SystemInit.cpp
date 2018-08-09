@@ -49,6 +49,7 @@
 #include <CrySystem/ICmdLine.h>
 #include <CrySystem/IProcess.h>
 #include <CryReflection/Framework.h>
+#include <CryUDR/InterfaceIncludes.h>
 
 #include "CryPak.h"
 #include "XConsole.h"
@@ -175,6 +176,7 @@ extern AAssetManager* androidGetAssetManager();
 #define DLL_RENDERER_GNM  "CryRenderGNM"
 #define DLL_LIVECREATE    "CryLiveCreate"
 #define DLL_MONO_BRIDGE   "CryMonoBridge"
+#define DLL_UDR           "CryUDR"
 #define DLL_SCALEFORM     "CryScaleformHelper"
 
 //////////////////////////////////////////////////////////////////////////
@@ -1234,6 +1236,20 @@ bool CSystem::InitMonoBridge(const SSystemInitParams& startupParams)
 }
 
 //////////////////////////////////////////////////////////////////////////
+bool CSystem::InitUDR(const SSystemInitParams& startupParams)
+{
+	LOADING_TIME_PROFILE_SECTION(GetISystem());
+
+	if (!InitializeEngineModule(startupParams, DLL_UDR, cryiidof<Cry::UDR::IUDR>(), false))
+	{
+		gEnv->pLog->LogWarning("UDR not created.");
+		return false;
+	}
+
+	return true;
+}																		  
+
+//////////////////////////////////////////////////////////////////////////
 void CSystem::InitGameFramework(SSystemInitParams& startupParams)
 {
 	LOADING_TIME_PROFILE_SECTION(GetISystem());
@@ -2199,12 +2215,9 @@ bool CSystem::InitFileSystem_LoadEngineFolders()
 			m_env.pCryPak->AddMod(modPath.c_str());
 		}
 	}
-
-	// Resource cache folder is used to store locally compiled resources.
-	// Its content is managed by Sandbox. For consistent testing we need it in game.
-	m_env.pCryPak->AddMod(m_sys_resource_cache_folder->GetString());
-
 #endif // !defined(_RELEASE)
+
+	InitResourceCacheFolder();
 
 	// simply open all paks if fast load pak can't be found
 	if (!g_cvars.sys_intromoviesduringinit || !m_pResourceManager->LoadFastLoadPaks(true))
@@ -2224,6 +2237,44 @@ bool CSystem::InitFileSystem_LoadEngineFolders()
 #endif
 	return (true);
 }
+
+/////////////////////////////////////////////////////////////////////////////////
+void CSystem::InitResourceCacheFolder()
+{
+	// Resource Cache folder is not enabled in the release configuration
+#if !defined(_RELEASE)
+	const char* szResourceCacheFolder = m_sys_resource_cache_folder->GetString();
+
+	if (0 == strlen(szResourceCacheFolder))
+		return;
+
+	CryPathString cacheFolder(szResourceCacheFolder);
+	//////////////////////////////////////////////////////////////////////////
+	// Open Paks from Engine folder
+	//////////////////////////////////////////////////////////////////////////
+	// After game paks to have same search order as with files on disk
+	{
+		CryPathString cacheFolderParentFolder;
+		auto slashPos = cacheFolder.rfind('/');
+		if (slashPos != string::npos)
+		{
+			cacheFolderParentFolder = cacheFolder.substr(0,slashPos);
+		}
+		if (!cacheFolderParentFolder.empty())
+		{
+			const char* szBindRoot = m_env.pCryPak->GetAlias("%ENGINE%", false);
+			CryPathString paksFolder = cacheFolderParentFolder + "/Engine/*.pak";
+			// Will open engine specific paks in the parent of the resource ccache folder /engine folder.
+			m_env.pCryPak->OpenPacks(szBindRoot, paksFolder.c_str());
+		}
+	}
+
+	// Resource cache folder is used to store locally compiled resources (or precompiled asset cache folder).
+	m_env.pCryPak->AddMod(szResourceCacheFolder, ICryPak::EModAccessPriority::AfterSource);
+
+#endif // !defined(_RELEASE)
+}
+
 
 //////////////////////////////////////////////////////////////////////////
 bool CSystem::InitStreamEngine()
@@ -2955,7 +3006,16 @@ bool CSystem::Initialize(SSystemInitParams& startupParams)
 		}
 
 		Cry::Reflection::CTypeRegistrationChain::Execute(g_cvars.sys_reflection_natvis != 0);
+		// Init UDR
 
+		if (!startupParams.bPreview && !startupParams.bShaderCacheGen)
+		{
+			CryLogAlways("UDR initialization");
+			if (!InitUDR(startupParams))
+			{
+				return false;
+			}
+		}
 		m_pResourceManager->Init();
 
 		m_env.pProfileLogSystem = new CProfileLogSystem();

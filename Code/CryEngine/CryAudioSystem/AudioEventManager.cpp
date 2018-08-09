@@ -5,6 +5,7 @@
 #include "AudioCVars.h"
 #include "ATLAudioObject.h"
 #include "Common.h"
+#include "AudioListenerManager.h"
 #include <IAudioImpl.h>
 
 #if defined(INCLUDE_AUDIO_PRODUCTION_CODE)
@@ -16,14 +17,11 @@ namespace CryAudio
 //////////////////////////////////////////////////////////////////////////
 CEventManager::~CEventManager()
 {
-	if (g_pIImpl != nullptr)
-	{
-		Release();
-	}
+	CRY_ASSERT_MESSAGE(m_constructedEvents.empty(), "There are still events during CEventManager destruction!");
 }
 
 //////////////////////////////////////////////////////////////////////////
-void CEventManager::Init(uint32 const poolSize)
+void CEventManager::Initialize(uint32 const poolSize)
 {
 	m_constructedEvents.reserve(static_cast<std::size_t>(poolSize));
 }
@@ -35,23 +33,29 @@ void CEventManager::OnAfterImplChanged()
 }
 
 //////////////////////////////////////////////////////////////////////////
+void CEventManager::ReleaseImplData()
+{
+	for (auto const pEvent : m_constructedEvents)
+	{
+		g_pIImpl->DestructEvent(pEvent->m_pImplData);
+		pEvent->Release();
+	}
+}
+
+//////////////////////////////////////////////////////////////////////////
 void CEventManager::Release()
 {
 	// Events cannot survive a middleware switch because we cannot
 	// know which event types the new middleware backend will support so
 	// the existing ones have to be destroyed now and new ones created
 	// after the switch.
-	if (!m_constructedEvents.empty())
+	for (auto const pEvent : m_constructedEvents)
 	{
-		for (auto const pEvent : m_constructedEvents)
-		{
-			g_pIImpl->DestructEvent(pEvent->m_pImplData);
-			pEvent->Release();
-			delete pEvent;
-		}
-
-		m_constructedEvents.clear();
+		CRY_ASSERT_MESSAGE(pEvent->m_pImplData == nullptr, "An event cannot have valid impl data during CEventManager::Release!");
+		delete pEvent;
 	}
+
+	m_constructedEvents.clear();
 }
 
 //////////////////////////////////////////////////////////////////////////
@@ -99,7 +103,7 @@ size_t CEventManager::GetNumConstructed() const
 
 #if defined(INCLUDE_AUDIO_PRODUCTION_CODE)
 //////////////////////////////////////////////////////////////////////////
-void CEventManager::DrawDebugInfo(IRenderAuxGeom& auxGeom, Vec3 const& listenerPosition, float const posX, float posY) const
+void CEventManager::DrawDebugInfo(IRenderAuxGeom& auxGeom, float const posX, float posY) const
 {
 	CryFixedStringT<MaxControlNameLength> lowerCaseSearchString(g_cvars.m_pDebugFilter->GetString());
 	lowerCaseSearchString.MakeLower();
@@ -110,7 +114,7 @@ void CEventManager::DrawDebugInfo(IRenderAuxGeom& auxGeom, Vec3 const& listenerP
 	for (auto const pEvent : m_constructedEvents)
 	{
 		Vec3 const& position = pEvent->m_pAudioObject->GetTransformation().GetPosition();
-		float const distance = position.GetDistance(listenerPosition);
+		float const distance = position.GetDistance(g_listenerManager.GetActiveListenerTransformation().GetPosition());
 
 		if (g_cvars.m_debugDistance <= 0.0f || (g_cvars.m_debugDistance > 0.0f && distance < g_cvars.m_debugDistance))
 		{
@@ -131,7 +135,7 @@ void CEventManager::DrawDebugInfo(IRenderAuxGeom& auxGeom, Vec3 const& listenerP
 				{
 					pColor = Debug::g_managerColorItemLoading.data();
 				}
-				else if (pEvent->m_state == EEventState::Virtual)
+				else if (pEvent->IsVirtual())
 				{
 					pColor = Debug::g_managerColorItemVirtual.data();
 				}

@@ -47,6 +47,9 @@
 
 REGISTER_VIEWPANE_FACTORY(CAssetBrowser, "Asset Browser", "Tools", false);
 
+CCrySignal<void(CAbstractMenu&, const std::shared_ptr<IUIContext>&)> CAssetBrowser::s_signalMenuCreated;
+CCrySignal<void(CAbstractMenu&, const std::vector<CAsset*>&, const std::vector<string>& folders, const std::shared_ptr<IUIContext>&)> CAssetBrowser::s_signalContextMenuRequested;
+
 namespace Private_AssetBrowser
 {
 
@@ -557,14 +560,14 @@ void GetExtensionFilter(ExtensionFilterVector& extFilter)
 	extFilter[0] = CExtensionFilter(QObject::tr("All importable files (%1)").arg(allExtsShort), allExts);
 }
 
-QVector<CAsset*> GetAssets(const CDragDropData& data)
+std::vector<CAsset*> GetAssets(const CDragDropData& data)
 {
 	QVector<quintptr> tmp;
 	QByteArray byteArray = data.GetCustomData("Assets");
 	QDataStream stream(byteArray);
 	stream >> tmp;
 
-	QVector<CAsset*> assets;
+	std::vector<CAsset*> assets;
 	std::transform(tmp.begin(), tmp.end(), std::back_inserter(assets), [](quintptr p)
 		{
 			return reinterpret_cast<CAsset*>(p);
@@ -572,7 +575,7 @@ QVector<CAsset*> GetAssets(const CDragDropData& data)
 	return assets;
 }
 
-bool IsMovePossible(QVector<CAsset*>& assets, const string& destinationFolder)
+bool IsMovePossible(const std::vector<CAsset*>& assets, const string& destinationFolder)
 {
 	// Do not allow moving to aliases, like %engine%
 	if (destinationFolder.empty() || destinationFolder.front() == '%')
@@ -727,10 +730,10 @@ void CAssetBrowser::dragMoveEvent(QDragMoveEvent* pEvent)
 		string folderPath;
 		if (GetImportFolder(folderPath))
 		{
-			QVector<CAsset*> assets = Private_AssetBrowser::GetAssets(*pDragDropData);
+			std::vector<CAsset*> assets = Private_AssetBrowser::GetAssets(*pDragDropData);
 			if (Private_AssetBrowser::IsMovePossible(assets, folderPath))
 			{
-				CDragDropData::ShowDragText(qApp->widgetAt(QCursor::pos()), tr("Move %n asset(s) to \"%1\"", "", assets.count()).arg(QtUtil::ToQString(folderPath)));
+				CDragDropData::ShowDragText(qApp->widgetAt(QCursor::pos()), tr("Move %n asset(s) to \"%1\"", "", assets.size()).arg(QtUtil::ToQString(folderPath)));
 				pEvent->acceptProposedAction();
 			}
 			else
@@ -801,7 +804,7 @@ void CAssetBrowser::dropEvent(QDropEvent* pEvent)
 	}
 	else if (bHasFolderPath && pDragDropData->HasCustomData("Assets")) // Move asset(s)
 	{
-		QVector<CAsset*> assets = Private_AssetBrowser::GetAssets(*pDragDropData);
+		std::vector<CAsset*> assets = Private_AssetBrowser::GetAssets(*pDragDropData);
 		if (Private_AssetBrowser::IsMovePossible(assets, folderPath))
 		{
 			OnMove(assets, QtUtil::ToQString(folderPath));
@@ -950,6 +953,7 @@ void CAssetBrowser::InitViews(bool bHideEngineFolder)
 	//folders view
 	m_foldersView = new CAssetFoldersView(bHideEngineFolder);
 	m_foldersView->signalSelectionChanged.Connect(this, &CAssetBrowser::OnFolderSelectionChanged);
+	connect(m_foldersView->m_treeView, &QTreeView::customContextMenuRequested, this, &CAssetBrowser::OnFolderViewContextMenu);
 
 	m_foldersSplitter = new QSplitter();
 	m_foldersSplitter->setOrientation(Qt::Horizontal);
@@ -1065,7 +1069,7 @@ void CAssetBrowser::InitMenus()
 		auto action = menuEdit->CreateAction(tr("Generate All Thumbnails"));
 		connect(action, &QAction::triggered, [this]()
 		{
-			GenerateThumbnailsAsync(QString());
+				GenerateThumbnailsAsync("");
 		});
 
 		action = menuEdit->CreateAction(tr("Generate/Repair All Metadata"));
@@ -1149,6 +1153,8 @@ void CAssetBrowser::InitMenus()
 		  m_filterPanel->FillMenu(menuView, tr("Apply Filter"));
 		}
 	});
+	
+	s_signalMenuCreated(*GetMenu(MenuItems::ViewMenu), std::make_shared<Private_AssetBrowser::CContextMenuContext>(this));
 }
 
 void CAssetBrowser::InitAssetsView()
@@ -1167,8 +1173,8 @@ void CAssetBrowser::InitAssetsView()
 	// Set up double-clicking.
 	{
 		typedef void (CAssetBrowser::* ResolveOverload)(const QModelIndex&);
-		connect(m_detailsView, &QAdvancedTreeView::doubleClicked, this, (ResolveOverload) & CAssetBrowser::OnDoubleClick);
-		connect(m_thumbnailView->GetInternalView(), &QAdvancedTreeView::doubleClicked, this, (ResolveOverload) & CAssetBrowser::OnDoubleClick);
+		connect(m_detailsView, &QAdvancedTreeView::activated, this, (ResolveOverload) & CAssetBrowser::OnActivated);
+		connect(m_thumbnailView->GetInternalView(), &QAbstractItemView::activated, this, (ResolveOverload) & CAssetBrowser::OnActivated);
 	}
 
 	InitNewNameDelegates();
@@ -1305,7 +1311,7 @@ void CAssetBrowser::SelectAsset(const char* szPath) const
 
 void CAssetBrowser::SelectAsset(const CAsset& asset) const
 {
-	m_foldersView->SelectFolder(asset.GetFolder());
+	m_foldersView->SelectFolder(asset.GetFolder().c_str());
 	QModelIndex idx = CAssetModel::GetInstance()->ToIndex(asset);
 	QModelIndex result;
 	QAbstractItemView* const pActiveView = m_viewMode == Thumbnails ? m_thumbnailView->GetInternalView() : m_detailsView;
@@ -1505,10 +1511,10 @@ QFilteringPanel* CAssetBrowser::GetFilterPanel()
 	return m_filterPanel;
 }
 
-QVector<CAsset*> CAssetBrowser::GetSelectedAssets() const
+std::vector<CAsset*> CAssetBrowser::GetSelectedAssets() const
 {
-	QVector<CAsset*> assets;
-	QStringList folders;
+	std::vector<CAsset*> assets;
+	std::vector<string> folders;
 	ProcessSelection(assets, folders);
 	return assets;
 }
@@ -1657,7 +1663,7 @@ bool CAssetBrowser::eventFilter(QObject* object, QEvent* event)
 	return false;
 }
 
-void CAssetBrowser::ProcessSelection(QVector<CAsset*>& assets, QStringList& folders) const
+void CAssetBrowser::ProcessSelection(std::vector<CAsset*>& assets, std::vector<string>& folders) const
 {
 	using namespace Private_AssetBrowser;
 
@@ -1675,12 +1681,12 @@ void CAssetBrowser::ProcessSelection(QVector<CAsset*>& assets, QStringList& fold
 				CAsset* const pAsset = ToAsset(index);
 				if (pAsset)
 				{
-					assets.append(pAsset);
+					assets.push_back(pAsset);
 				}
 			}
 			break;
 		case eAssetModelRow_Folder:
-			folders.append(ToFolderPath(index));
+			folders.push_back(QtUtil::ToString(ToFolderPath(index)));
 			break;
 		default:
 			CRY_ASSERT(0);
@@ -1689,98 +1695,223 @@ void CAssetBrowser::ProcessSelection(QVector<CAsset*>& assets, QStringList& fold
 	}
 }
 
+void CAssetBrowser::OnFolderViewContextMenu()
+{
+	CreateContextMenu(true);
+}
+
 void CAssetBrowser::OnContextMenu()
+{
+	CreateContextMenu(false);
+}
+
+void CAssetBrowser::CreateContextMenu(bool isFolderView /*= false*/)
 {
 	//TODO : This could be unified more with the folders view's context menu
 
 	CAbstractMenu abstractMenu;
 
-	QVector<CAsset*> assets;
-	QStringList folders;
+	std::vector<CAsset*> assets;
+	std::vector<string> folders;
 	ProcessSelection(assets, folders);
 
-	if (assets.length() != 0)
+	if (!assets.empty())
 	{
-		bool canReimport = false;
-		bool isReadOnly = false;
-		bool isModified = false;
-		QMap<const CAssetType*, std::vector<CAsset*>> assetsByType;
-
-		for (CAsset* asset : assets)
+		BuildContextMenuForAssets(assets, folders, abstractMenu);
+	}
+	else if (!folders.empty() || isFolderView)
+	{
+		if (isFolderView)
 		{
-			if (asset->GetType()->IsImported() && !asset->IsReadOnly() && asset->HasSourceFile())
+			folders = GetSelectedFoldersInFolderView();
+		}
+		BuildContextMenuForFolders(folders, abstractMenu);
+	}
+	else if (assets.empty() && folders.empty() && !m_recursiveView)//nothing selected in recursive view
+	{
+		BuildContextMenuForEmptiness(abstractMenu);
+	}
+
+	QMenu menu;
+	abstractMenu.Build(MenuWidgetBuilders::CMenuBuilder(&menu));
+
+	if (menu.actions().count() > 0)
+	{
+		menu.exec(QCursor::pos());
+	}
+}
+
+void CAssetBrowser::BuildContextMenuForEmptiness(CAbstractMenu &abstractMenu)
+{
+	std::vector<string> selectedFolders = GetSelectedFoldersInFolderView();
+	CAssetFoldersModel* pModel = CAssetFoldersModel::GetInstance();
+
+	int foldersSection = abstractMenu.GetNextEmptySection();
+	abstractMenu.SetSectionName(foldersSection, "Folders");
+
+	auto folder = QtUtil::ToQString(selectedFolders[0]);
+	if (selectedFolders.size() == 1 && !pModel->IsReadOnlyFolder(folder))
+	{
+		auto action = abstractMenu.CreateAction(CryIcon("icons:General/Element_Add.ico"), tr("Create folder"));
+		connect(action, &QAction::triggered, [this, folder]() { OnCreateFolder(folder); });
+
+		CAbstractMenu* const pCreateAssetMenu = abstractMenu.CreateMenu(tr("New..."));
+		FillCreateAssetMenu(pCreateAssetMenu, folder);
+
+		action = abstractMenu.CreateAction(tr("Import"), foldersSection);
+		connect(action, &QAction::triggered, [this]() { OnImport(); });
+
+		action = abstractMenu.CreateAction(tr("Show in File Explorer"), foldersSection);
+		connect(action, &QAction::triggered, [this, folder]() { OnOpenInExplorer(folder); });
+
+		action = abstractMenu.CreateAction(tr("Generate Thumbnails"), foldersSection);
+		connect(action, &QAction::triggered, [this, folder]()
+		{
+			GenerateThumbnailsAsync(QtUtil::ToString(folder));
+		});
+	}
+
+	NotifyContextMenuCreation(abstractMenu, {}, selectedFolders);
+}
+
+std::vector<string> CAssetBrowser::GetSelectedFoldersInFolderView()
+{
+	auto& selectedFolders = m_foldersView->GetSelectedFolders();
+
+	std::vector<string> folders;
+	folders.reserve(selectedFolders.size());
+	std::transform(selectedFolders.cbegin(), selectedFolders.cend(), std::back_inserter(folders), [](const QString& str)
+	{	
+		return QtUtil::ToString(str);
+	});
+	return folders;
+}
+void CAssetBrowser::BuildContextMenuForFolders(const std::vector<string>& folders, CAbstractMenu &abstractMenu)
+{
+	if (folders.size() > 1)
+	{
+		return;
+	}
+
+	//Do not show folder actions if we are not showing folder
+	auto folder = QtUtil::ToQString(folders[0]);
+	if (CAssetFoldersModel::GetInstance()->IsReadOnlyFolder(folder))
+		return;
+
+	//TODO : move this, just only add the separator if we add more things later
+	int foldersSection = abstractMenu.GetNextEmptySection();
+	abstractMenu.SetSectionName(foldersSection, "Folders");
+
+	auto action = abstractMenu.CreateAction(CryIcon("icons:General/Element_Add.ico"), tr("Create folder"));
+	connect(action, &QAction::triggered, [this, folder]() { OnCreateFolder(folder); });
+
+	if (CAssetFoldersModel::GetInstance()->IsEmptyFolder(folder))
+	{
+		action = abstractMenu.CreateAction(CryIcon("icons:General/Element_Remove.ico"), tr("Delete"));
+		connect(action, &QAction::triggered, [this, folder]()
+		{
+			CAssetFoldersModel::GetInstance()->DeleteFolder(folder);
+		});
+
+		action = abstractMenu.CreateAction(tr("Rename"), foldersSection);
+		connect(action, &QAction::triggered, [this, folder]() { OnRenameFolder(folder); });
+	}
+
+	action = abstractMenu.CreateAction(tr("Show in File Explorer"), foldersSection);
+	connect(action, &QAction::triggered, [this, folder]()
+	{
+		CAssetFoldersModel::GetInstance()->OpenFolderWithShell(folder);
+	});
+
+	action = abstractMenu.CreateAction(tr("Generate Thumbnails"), foldersSection);
+	connect(action, &QAction::triggered, [this, folder = folders[0]]()
+	{
+		GenerateThumbnailsAsync(folder);
+	});
+
+	NotifyContextMenuCreation(abstractMenu, {}, folders);
+}
+
+void CAssetBrowser::BuildContextMenuForAssets(const std::vector<CAsset*>& assets, const std::vector<string>& folders, CAbstractMenu &abstractMenu)
+{
+	bool canReimport = false;
+	bool isReadOnly = false;
+	bool isModified = false;
+	QMap<const CAssetType*, std::vector<CAsset*>> assetsByType;
+
+	for (CAsset* asset : assets)
+	{
+	if (asset->GetType()->IsImported() && !asset->IsReadOnly() && asset->HasSourceFile())
+		{
+			canReimport = true;
+		}
+
+		if (asset->IsReadOnly() || !GetISystem()->GetIPak()->IsFileExist(assets.front()->GetFile(0), ICryPak::eFileLocation_OnDisk))
+		{
+			isReadOnly = true;
+		}
+
+		isModified = isModified || asset->IsModified();
+
+		assetsByType[asset->GetType()].push_back(asset);
+	}
+
+	int section = abstractMenu.FindSectionByName("Assets");
+
+	if (canReimport)
+	{
+		auto action = abstractMenu.CreateAction(tr("Reimport"), section);
+		connect(action, &QAction::triggered, [this, assets]() { OnReimport(assets); });
+	}
+
+	if (!isReadOnly)
+	{
+		auto action = abstractMenu.CreateAction(tr("Delete"));
+		connect(action, &QAction::triggered, [this, assets]() { OnDelete(assets); });
+	}
+
+	if (isModified)
+	{
+		auto action = abstractMenu.CreateAction(tr("Save"));
+		connect(action, &QAction::triggered, [this, assets]() 
+		{  
+			for (CAsset* pAsset : assets)
 			{
-				canReimport = true;
+				pAsset->Save();
 			}
+		});
 
-			if (asset->IsReadOnly() || !GetISystem()->GetIPak()->IsFileExist(assets.front()->GetFile(0), ICryPak::eFileLocation_OnDisk))
+		action = abstractMenu.CreateAction(tr("Discard Changes"));
+		connect(action, &QAction::triggered, [this, assets]()
+		{
+			const QString title(tr("Discard Changes"));
+			const QString text(tr("Are you sure you want to discard the changes in the selected assets?"));
+
+			const auto button = CQuestionDialog::SQuestion(title, text, QDialogButtonBox::Discard | QDialogButtonBox::Cancel, QDialogButtonBox::Cancel);
+			if (QDialogButtonBox::Discard == button)
 			{
-				isReadOnly = true;
-			}
-
-			isModified = isModified || asset->IsModified();
-
-			assetsByType[asset->GetType()].push_back(asset);
-		}
-
-		int section = abstractMenu.FindSectionByName("Assets");
-
-		if (canReimport)
-		{
-			auto action = abstractMenu.CreateAction(tr("Reimport"), section);
-			connect(action, &QAction::triggered, [this, assets]() { OnReimport(assets); });
-		}
-
-		if (!isReadOnly)
-		{
-			auto action = abstractMenu.CreateAction(tr("Delete"));
-			connect(action, &QAction::triggered, [this, assets]() { OnDelete(assets); });
-		}
-
-		if (isModified)
-		{
-			auto action = abstractMenu.CreateAction(tr("Save"));
-			connect(action, &QAction::triggered, [this, assets]() 
-			{  
 				for (CAsset* pAsset : assets)
 				{
-					pAsset->Save();
+					pAsset->Reload();
 				}
-			});
-
-			action = abstractMenu.CreateAction(tr("Discard Changes"));
-			connect(action, &QAction::triggered, [this, assets]()
-			{
-				const QString title(tr("Discard Changes"));
-				const QString text(tr("Are you sure you want to discard the changes in the selected assets?"));
-
-				const auto button = CQuestionDialog::SQuestion(title, text, QDialogButtonBox::Discard | QDialogButtonBox::Cancel, QDialogButtonBox::Cancel);
-				if (QDialogButtonBox::Discard == button)
-				{
-					for (CAsset* pAsset : assets)
-					{
-						pAsset->Reload();
-					}
-				}
-			});
-		}
-
-		//TODO : source control
-
-		auto it = assetsByType.begin();
-		for (; it != assetsByType.end(); ++it)
-		{
-			if (it->size() != 0)
-			{
-				const CAssetType* t = it.key();
-				string s = t->GetTypeName();
-				std::vector<CAsset*> assets = it.value();
-				t->AppendContextMenuActions(assets, &abstractMenu);
 			}
+		});
+	}
+
+	//TODO : source control
+	auto it = assetsByType.begin();
+	for (; it != assetsByType.end(); ++it)
+	{
+		if (it->size() != 0)
+		{
+			const CAssetType* pType = it.key();
+			string s = pType->GetTypeName();
+			std::vector<CAsset*> assets = it.value();
+			pType->AppendContextMenuActions(assets, &abstractMenu);
 		}
 	}
 
-	if (assets.length() == 1)
+	if (assets.size() == 1)
 	{
 		const bool isAssetOnDisk = GetISystem()->GetIPak()->IsFileExist(assets.front()->GetFile(0), ICryPak::eFileLocation_OnDisk);
 
@@ -1799,85 +1930,18 @@ void CAssetBrowser::OnContextMenu()
 		AppendFilterDependenciesActions(&abstractMenu, assets.front());
 	}
 
-	if (folders.length() == 1)//only one folder selected
+	NotifyContextMenuCreation(abstractMenu, assets, folders);
+}
+
+void CAssetBrowser::NotifyContextMenuCreation(CAbstractMenu& menu, const std::vector<CAsset*>& assets, const std::vector<string>& folders) 
+{
+	if (menu.FindSectionByName("Assets") == CAbstractMenu::eSections_Default)
 	{
-		//Do not show folder actions if we are not showing folder
-		auto folder = folders[0];
-		if (CAssetFoldersModel::GetInstance()->IsReadOnlyFolder(folder))
-			return;
-
-		//TODO : move this, just only add the separator if we add more things later
-		int section = abstractMenu.GetNextEmptySection();
-		abstractMenu.SetSectionName(section, "Folders");
-
-		if (CAssetFoldersModel::GetInstance()->IsEmptyFolder(folder))
-		{
-			auto action = abstractMenu.CreateAction(CryIcon("icons:General/Element_Remove.ico"), tr("Delete"));
-			connect(action, &QAction::triggered, [this, folder]()
-			{
-				CAssetFoldersModel::GetInstance()->DeleteFolder(folder);
-			});
-
-			action = abstractMenu.CreateAction(tr("Rename"));
-			connect(action, &QAction::triggered, [this, folder]() { OnRenameFolder(folder); });
-		}
-
-		auto action = abstractMenu.CreateAction(tr("Show in File Explorer"));
-		connect(action, &QAction::triggered, [this, folder]()
-		{
-			CAssetFoldersModel::GetInstance()->OpenFolderWithShell(folder);
-		});
-
-		action = abstractMenu.CreateAction(tr("Generate Thumbnails"));
-		connect(action, &QAction::triggered, [this, folder]()
-		{
-			GenerateThumbnailsAsync(folder);
-		});
+		int section = menu.GetNextEmptySection();
+		menu.SetSectionName(section, "Assets");
 	}
 
-	if (assets.length() == 0 && folders.length() == 0 && !m_recursiveView)//nothing selected in recursive view
-	{
-		CAssetFoldersModel* pModel = CAssetFoldersModel::GetInstance();
-		auto& selectedFolders = m_foldersView->GetSelectedFolders();
-
-		if (selectedFolders.count() == 1 && !pModel->IsReadOnlyFolder(selectedFolders.first()))
-		{
-			int section = abstractMenu.GetNextEmptySection();
-			abstractMenu.SetSectionName(section, "Create");
-
-			auto folder = selectedFolders[0];
-			auto action = abstractMenu.CreateAction(CryIcon("icons:General/Element_Add.ico"), tr("Create folder"));
-			connect(action, &QAction::triggered, [this, folder]() { OnCreateFolder(folder); });
-
-			CAbstractMenu* const pCreateAssetMenu = abstractMenu.CreateMenu(tr("New..."));
-			FillCreateAssetMenu(pCreateAssetMenu, folder);
-
-			action = abstractMenu.CreateAction(tr("Import"));
-			connect(action, &QAction::triggered, [this]() { OnImport(); });
-
-			action = abstractMenu.CreateAction(tr("Show in File Explorer"));
-			connect(action, &QAction::triggered, [this, folder]() { OnOpenInExplorer(folder); });
-
-			action = abstractMenu.CreateAction(tr("Generate Thumbnails"));
-			connect(action, &QAction::triggered, [this, folder]()
-			{
-				GenerateThumbnailsAsync(folder);
-			});
-		}
-	}
-
-	CAssetManager::GetInstance()->AppendContextMenuActions(
-		abstractMenu,
-		assets.toStdVector(),
-		std::make_shared<Private_AssetBrowser::CContextMenuContext>(this));
-
-	QMenu menu;
-	abstractMenu.Build(MenuWidgetBuilders::CMenuBuilder(&menu));
-
-	if (menu.actions().count() > 0)
-	{
-		menu.exec(QCursor::pos());
-	}
+	s_signalContextMenuRequested(menu, assets, folders, std::make_shared<Private_AssetBrowser::CContextMenuContext>(this));
 }
 
 void CAssetBrowser::AppendFilterDependenciesActions(CAbstractMenu* pAbstractMenu, const CAsset* pAsset)
@@ -1887,7 +1951,7 @@ void CAssetBrowser::AppendFilterDependenciesActions(CAbstractMenu* pAbstractMenu
 	const auto dependencyOperators = s_dependenciesAttribute.GetType()->GetOperators();
 	for (Attributes::IAttributeFilterOperator* pOperator : dependencyOperators)
 	{
-		QAction* pAction = pAbstractMenu->CreateAction(QString("%1 %2 '%3'").arg(tr("Show Assets"), pOperator->GetName(), pAsset->GetName()));
+		QAction* pAction = pAbstractMenu->CreateAction(QString("%1 %2 '%3'").arg(tr("Show Assets"), pOperator->GetName(), QtUtil::ToQString(pAsset->GetName())));
 		connect(pAction, &QAction::triggered, [pOperator, pAsset]()
 		{
 			CAssetBrowser* const pAssetBrowser = static_cast<CAssetBrowser*>(GetIEditor()->CreateDockable("Asset Browser"));
@@ -1901,7 +1965,7 @@ void CAssetBrowser::AppendFilterDependenciesActions(CAbstractMenu* pAbstractMenu
 	}
 }
 
-void CAssetBrowser::OnDoubleClick(const QModelIndex& index)
+void CAssetBrowser::OnActivated(const QModelIndex& index)
 {
 	using namespace Private_AssetBrowser;
 
@@ -1913,13 +1977,13 @@ void CAssetBrowser::OnDoubleClick(const QModelIndex& index)
 			CAsset* pAsset = ToAsset(index);
 			if (pAsset)
 			{
-				OnDoubleClick(pAsset);
+				OnActivated(pAsset);
 			}
 			break;
 		}
 	case eAssetModelRow_Folder:
 		{
-			OnDoubleClick(ToFolderPath(index));
+		OnActivated(ToFolderPath(index));
 			break;
 		}
 	default:
@@ -1928,7 +1992,7 @@ void CAssetBrowser::OnDoubleClick(const QModelIndex& index)
 	}
 }
 
-void CAssetBrowser::OnDoubleClick(CAsset* pAsset)
+void CAssetBrowser::OnActivated(CAsset* pAsset)
 {
 	if (m_pQuickEditTimer)
 	{
@@ -1937,7 +2001,7 @@ void CAssetBrowser::OnDoubleClick(CAsset* pAsset)
 	pAsset->Edit();
 }
 
-void CAssetBrowser::OnDoubleClick(const QString& folder)
+void CAssetBrowser::OnActivated(const QString& folder)
 {
 	m_foldersView->SelectFolder(folder);
 }
@@ -1955,7 +2019,6 @@ void CAssetBrowser::OnCurrentChanged(const QModelIndex& current, const QModelInd
 
 void CAssetBrowser::UpdatePreview(const QModelIndex& currentIndex)
 {
-
 	using namespace Private_AssetBrowser;
 
 	if (IsAsset(currentIndex))
@@ -2074,7 +2137,7 @@ void CAssetBrowser::OnImport()
 	}
 }
 
-void CAssetBrowser::OnReimport(const QVector<CAsset*>& assets)
+void CAssetBrowser::OnReimport(const std::vector<CAsset*>& assets)
 {
 	for (CAsset* pAsset : assets)
 	{
@@ -2085,16 +2148,16 @@ void CAssetBrowser::OnReimport(const QVector<CAsset*>& assets)
 	}
 }
 
-void CAssetBrowser::OnDelete(const QVector<CAsset*>& assets)
+void CAssetBrowser::OnDelete(const std::vector<CAsset*>& assets)
 {
 	CRY_ASSERT(std::none_of(assets.begin(), assets.end(), [](CAsset* pAsset) { return !pAsset; }));
 
-	std::vector<CAsset*> assetsToDelete(assets.toStdVector());
+	std::vector<CAsset*> assetsToDelete(assets);
 	CAssetManager* const pAssetManager = CAssetManager::GetInstance();
 
 	const QString question = tr("There is a possibility of undetected dependencies which can be violated after performing the operation.\n"
 	                            "\n"
-	                            "Do you really want to delete %n asset(s)?", "", assets.count());
+	                            "Do you really want to delete %n asset(s)?", "", assets.size());
 
 	if (pAssetManager->HasAnyReverseDependencies(assetsToDelete))
 	{
@@ -2117,14 +2180,12 @@ void CAssetBrowser::OnDelete(const QVector<CAsset*>& assets)
 		return;
 	}
 
-	// Physically delete asset files.
-	const bool bDeleteAssetFiles(true);
-	pAssetManager->DeleteAssets(assetsToDelete, bDeleteAssetFiles);
+	pAssetManager->DeleteAssetsWithFiles(assetsToDelete);
 }
 
 bool CAssetBrowser::OnOpen()
 {
-	const QVector<CAsset*> assets = GetSelectedAssets();
+	const std::vector<CAsset*> assets = GetSelectedAssets();
 	if (assets.empty())
 	{
 		return false;
@@ -2132,21 +2193,20 @@ bool CAssetBrowser::OnOpen()
 
 	for (CAsset* pAsset : assets)
 	{
-		OnDoubleClick(pAsset);
+		OnActivated(pAsset);
 	}
 	return true;
 }
 
-void CAssetBrowser::OnMove(const QVector<CAsset*>& assets, const QString& destinationFolder)
+void CAssetBrowser::OnMove(const std::vector<CAsset*>& assets, const QString& destinationFolder)
 {
-	std::vector<CAsset*> assetsToMove(assets.toStdVector());
 	const CAssetManager* const pAssetManager = CAssetManager::GetInstance();
 
 	const QString question = tr("There is a possibility of undetected dependencies which can be violated after performing the operation.\n"
 	                            "\n"
-	                            "Do you really want to move %n asset(s) to \"%1\"?", "", assets.count()).arg(destinationFolder);
+	                            "Do you really want to move %n asset(s) to \"%1\"?", "", assets.size()).arg(destinationFolder);
 
-	if (pAssetManager->HasAnyReverseDependencies(assetsToMove))
+	if (pAssetManager->HasAnyReverseDependencies(assets))
 	{
 		CAssetReverseDependenciesDialog dialog(
 			assets,
@@ -2167,7 +2227,7 @@ void CAssetBrowser::OnMove(const QVector<CAsset*>& assets, const QString& destin
 		return;
 	}
 
-	pAssetManager->MoveAssets(assetsToMove, QtUtil::ToString(destinationFolder));
+	pAssetManager->MoveAssets(assets, QtUtil::ToString(destinationFolder));
 }
 
 void CAssetBrowser::OnRenameFolder(const QString& folder)
@@ -2219,9 +2279,9 @@ void CAssetBrowser::OnRenameAsset(CAsset& asset)
 	}
 }
 
-void CAssetBrowser::GenerateThumbnailsAsync(const QString& folder, const std::function<void()>& finalize)
+void CAssetBrowser::GenerateThumbnailsAsync(const string& folder, const std::function<void()>& finalize /*= std::function<void()>()*/)
 {
-	AsseThumbnailsGenerator::GenerateThumbnailsAsync(QtUtil::ToString(folder), finalize);
+	AsseThumbnailsGenerator::GenerateThumbnailsAsync(folder, finalize);
 }
 
 void CAssetBrowser::OnNavBack()
@@ -2380,7 +2440,7 @@ bool CAssetBrowser::ValidatePath(const QString path)
 
 bool CAssetBrowser::OnDelete()
 {
-	const QVector<CAsset*> assets = GetSelectedAssets();
+	const std::vector<CAsset*> assets = GetSelectedAssets();
 	if (!assets.empty())
 	{
 		OnDelete(assets);

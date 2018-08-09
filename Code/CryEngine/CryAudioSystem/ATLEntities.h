@@ -2,7 +2,6 @@
 
 #pragma once
 
-#include "ATLUtils.h"
 #include "AudioInternalInterfaces.h"
 #include "Common/SharedAudioData.h"
 #include "Common.h"
@@ -217,11 +216,9 @@ public:
 	explicit CTrigger(
 		ControlId const id,
 		EDataScope const dataScope,
-		TriggerConnections const& connections,
-		float const radius)
+		TriggerConnections const& connections)
 		: Control(id, dataScope)
 		, m_connections(connections)
-		, m_radius(radius)
 	{}
 #endif // INCLUDE_AUDIO_PRODUCTION_CODE
 
@@ -245,16 +242,19 @@ public:
 		void* const pOwner = nullptr,
 		void* const pUserData = nullptr,
 		void* const pUserDataOwner = nullptr) const;
-	float GetRadius() const { return m_radius; }
 
 #if defined(INCLUDE_AUDIO_PRODUCTION_CODE)
-	void PlayFile(CATLAudioObject& object, CATLStandaloneFile* const pFile) const;
+	float GetRadius() const { return m_radius; }
+	void  PlayFile(CATLAudioObject& object, CATLStandaloneFile* const pFile) const;
 #endif // INCLUDE_AUDIO_PRODUCTION_CODE
 
 private:
 
 	TriggerConnections const m_connections;
-	float const              m_radius;
+
+#if defined(INCLUDE_AUDIO_PRODUCTION_CODE)
+	float const m_radius;
+#endif // INCLUDE_AUDIO_PRODUCTION_CODE
 };
 
 class CLoseFocusTrigger final : public Control
@@ -448,7 +448,7 @@ class CParameterImpl final : public CATLControlImpl
 {
 public:
 
-	CParameterImpl() = default;
+	CParameterImpl() = delete;
 	CParameterImpl(CParameterImpl const&) = delete;
 	CParameterImpl(CParameterImpl&&) = delete;
 	CParameterImpl& operator=(CParameterImpl const&) = delete;
@@ -460,7 +460,7 @@ public:
 
 	virtual ~CParameterImpl();
 
-	virtual void Set(CATLAudioObject const& audioObject, float const value) const;
+	void Set(CATLAudioObject const& audioObject, float const value) const;
 
 private:
 
@@ -569,39 +569,34 @@ private:
 	ParameterConnections const m_connections;
 };
 
-class IAudioSwitchStateImpl : public CATLControlImpl
+class CSwitchStateImpl final : public CATLControlImpl
 {
 public:
 
-	virtual ~IAudioSwitchStateImpl() = default;
+	CSwitchStateImpl() = delete;
+	CSwitchStateImpl(CSwitchStateImpl const&) = delete;
+	CSwitchStateImpl(CSwitchStateImpl&&) = delete;
+	CSwitchStateImpl& operator=(CSwitchStateImpl const&) = delete;
+	CSwitchStateImpl& operator=(CSwitchStateImpl&&) = delete;
 
-	virtual void Set(CATLAudioObject& audioObject) const = 0;
-};
-
-class CExternalAudioSwitchStateImpl final : public IAudioSwitchStateImpl
-{
-public:
-
-	explicit CExternalAudioSwitchStateImpl(Impl::ISwitchState const* const pImplData)
+	explicit CSwitchStateImpl(Impl::ISwitchState const* const pImplData)
 		: m_pImplData(pImplData)
 	{}
 
-	virtual ~CExternalAudioSwitchStateImpl() override;
+	virtual ~CSwitchStateImpl();
 
-	// IAudioSwitchStateImpl
-	virtual void Set(CATLAudioObject& audioObject) const override;
-	// ~IAudioSwitchStateImpl
+	void Set(CATLAudioObject const& audioObject) const;
 
 private:
 
-	Impl::ISwitchState const* const m_pImplData;
+	Impl::ISwitchState const* const m_pImplData = nullptr;
 };
+
+using SwitchStateConnections = std::vector<CSwitchStateImpl const*>;
 
 class CATLSwitchState final
 {
 public:
-
-	using ImplPtrVec = std::vector<IAudioSwitchStateImpl const*>;
 
 	CATLSwitchState() = delete;
 	CATLSwitchState(CATLSwitchState const&) = delete;
@@ -613,37 +608,39 @@ public:
 	explicit CATLSwitchState(
 		ControlId const audioSwitchId,
 		SwitchStateId const audioSwitchStateId,
-		ImplPtrVec const& implPtrs,
+		SwitchStateConnections const& connections,
 		char const* const szName)
-		: m_audioSwitchStateId(audioSwitchStateId)
-		, m_audioSwitchId(audioSwitchId)
-		, m_implPtrs(implPtrs)
+		: m_switchStateId(audioSwitchStateId)
+		, m_switchId(audioSwitchId)
+		, m_connections(connections)
 		, m_name(szName)
 	{}
 #else
 	explicit CATLSwitchState(
 		ControlId const audioSwitchId,
 		SwitchStateId const audioSwitchStateId,
-		ImplPtrVec const& implPtrs)
-		: m_audioSwitchStateId(audioSwitchStateId)
-		, m_audioSwitchId(audioSwitchId)
-		, m_implPtrs(implPtrs)
+		SwitchStateConnections const& connections)
+		: m_switchStateId(audioSwitchStateId)
+		, m_switchId(audioSwitchId)
+		, m_connections(connections)
 	{}
 #endif // INCLUDE_AUDIO_PRODUCTION_CODE
 
-	SwitchStateId GetId() const       { return m_audioSwitchStateId; }
-	SwitchStateId GetParentId() const { return m_audioSwitchId; }
+	~CATLSwitchState();
+
+	void          Set(CATLAudioObject const& object) const;
+	SwitchStateId GetId() const { return m_switchStateId; }
+	//ControlId GetParentId() const { return m_switchId; }
 
 #if defined(INCLUDE_AUDIO_PRODUCTION_CODE)
 	char const* GetName() const { return m_name.c_str(); }
 #endif // INCLUDE_AUDIO_PRODUCTION_CODE
 
-	ImplPtrVec const m_implPtrs;
-
 private:
 
-	SwitchStateId const m_audioSwitchStateId;
-	ControlId const     m_audioSwitchId;
+	ControlId const              m_switchId;
+	SwitchStateId const          m_switchStateId;
+	SwitchStateConnections const m_connections;
 
 #if defined(INCLUDE_AUDIO_PRODUCTION_CODE)
 	CryFixedStringT<MaxControlNameLength> const m_name;
@@ -653,6 +650,12 @@ private:
 class CATLSwitch final : public Control
 {
 public:
+
+	CATLSwitch() = delete;
+	CATLSwitch(CATLSwitch const&) = delete;
+	CATLSwitch(CATLSwitch&&) = delete;
+	CATLSwitch& operator=(CATLSwitch const&) = delete;
+	CATLSwitch& operator=(CATLSwitch&&) = delete;
 
 #if defined(INCLUDE_AUDIO_PRODUCTION_CODE)
 	explicit CATLSwitch(ControlId const audioSwitchId, EDataScope const dataScope, char const* const szName)
@@ -664,8 +667,16 @@ public:
 	{}
 #endif // INCLUDE_AUDIO_PRODUCTION_CODE
 
-	using AudioStates = std::map<SwitchStateId, CATLSwitchState const*>;
-	AudioStates audioSwitchStates;
+	~CATLSwitch();
+
+	using SwitchStates = std::map<SwitchStateId, CATLSwitchState const*>;
+
+	void                AddState(SwitchStateId const id, CATLSwitchState const* pState) { m_states[id] = pState; }
+	SwitchStates const& GetStates() const                                               { return m_states; }
+
+private:
+
+	SwitchStates m_states;
 };
 
 class CATLEnvironmentImpl final : public CATLControlImpl
@@ -732,14 +743,15 @@ public:
 	void      Stop();
 	void      SetDataScope(EDataScope const dataScope) { m_dataScope = dataScope; }
 	bool      IsPlaying() const                        { return m_state == EEventState::Playing || m_state == EEventState::PlayingDelayed; }
+	bool      IsVirtual() const                        { return m_state == EEventState::Virtual; }
 	void      SetTriggerId(ControlId const id)         { m_triggerId = id; }
 	ControlId GetTriggerId() const                     { return m_triggerId; }
-	void      SetTriggerRadius(float const radius)     { m_triggerRadius = radius; }
-	float     GetTriggerRadius() const                 { return m_triggerRadius; }
 
 #if defined(INCLUDE_AUDIO_PRODUCTION_CODE)
 	void              SetTriggerName(char const* const szTriggerName) { m_szTriggerName = szTriggerName; }
 	char const* const GetTriggerName() const                          { return m_szTriggerName; }
+	void              SetTriggerRadius(float const radius)            { m_triggerRadius = radius; }
+	float             GetTriggerRadius() const                        { return m_triggerRadius; }
 #endif // INCLUDE_AUDIO_PRODUCTION_CODE
 
 	EDataScope        m_dataScope = EDataScope::None;
@@ -752,10 +764,10 @@ public:
 private:
 
 	ControlId m_triggerId = InvalidControlId;
-	float     m_triggerRadius = 0.0f;
 
 #if defined(INCLUDE_AUDIO_PRODUCTION_CODE)
 	char const* m_szTriggerName = nullptr;
+	float       m_triggerRadius = 0.0f;
 #endif // INCLUDE_AUDIO_PRODUCTION_CODE
 };
 

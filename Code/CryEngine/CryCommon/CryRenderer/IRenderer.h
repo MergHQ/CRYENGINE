@@ -308,6 +308,7 @@ class IManager;
 #define STR_ORBIS_SHADER_TARGET   "ORBIS"
 #define STR_DURANGO_SHADER_TARGET "DURANGO"
 #define STR_D3D11_SHADER_TARGET   "D3D11"
+#define STR_D3D12_SHADER_TARGET   "D3D12"
 #define STR_GL4_SHADER_TARGET     "GL4"
 #define STR_GLES3_SHADER_TARGET   "GLES3"
 #define STR_VULKAN_SHADER_TARGET  "VULKAN"
@@ -344,11 +345,11 @@ class IManager;
 
 #define RFT_HW_HDR           0x80000     // Hardware supports high dynamic range rendering.
 
-#define RFT_HW_SM20          0x100000    // Shader model 2.0
-#define RFT_HW_SM2X          0x200000    // Shader model 2.X
-#define RFT_HW_SM30          0x400000    // Shader model 3.0
-#define RFT_HW_SM40          0x800000    // Shader model 4.0
-#define RFT_HW_SM50          0x1000000   // Shader model 5.0
+#define RFT_HW_SM40          0x0100000   // Shader model 4.0
+#define RFT_HW_SM50          0x0200000   // Shader model 5.0
+#define RFT_HW_SM51          0x0400000   // Shader model 5.1
+#define RFT_HW_SM60          0x0800000   // Shader model 6.0, 6.1
+#define RFT_HW_SM62          0x1000000   // Shader model 6.2
 
 #define RFT_FREE_0x2000000   0x2000000
 #define RFT_FREE_0x4000000   0x4000000
