@@ -28,8 +28,8 @@ public:
 	virtual void     StopFile(char const* const szFile, SRequestUserData const& userData = SRequestUserData::GetEmptyObject()) override                                                    {}
 	virtual void     SetName(char const* const szName, SRequestUserData const& userData = SRequestUserData::GetEmptyObject()) override                                                     {}
 	virtual EntityId GetEntityId() const override                                                                                                                                          { return INVALID_ENTITYID; }
-	void             ToggleAbsoluteVelocityTracking(bool const enable, SRequestUserData const& userData = SRequestUserData::GetEmptyObject()) override                                     {}
-	void             ToggleRelativeVelocityTracking(bool const enable, SRequestUserData const& userData = SRequestUserData::GetEmptyObject()) override                                     {}
+	virtual void     ToggleAbsoluteVelocityTracking(bool const enable, SRequestUserData const& userData = SRequestUserData::GetEmptyObject()) override                                     {}
+	virtual void     ToggleRelativeVelocityTracking(bool const enable, SRequestUserData const& userData = SRequestUserData::GetEmptyObject()) override                                     {}
 };
 
 class CSystem final : public IAudioSystem
