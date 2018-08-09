@@ -8,6 +8,7 @@
 #include <CryCore/StlUtils.h>
 #include <CryCore/Project/ProjectDefines.h>
 #include <CrySystem/ISystem.h>
+#include <CrySystem/File/ICryPak.h>
 
 #if !defined(_RELEASE)
 	#define INCLUDE_ADX2_IMPL_PRODUCTION_CODE

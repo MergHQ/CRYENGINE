@@ -812,6 +812,7 @@ inline /*void*/ UnifyFilePath(TString& path)
 #ifndef CRY_COMMON_HELPERS_ONLY
 #include <CrySystem/File/ICryPak.h>
 #include <CrySystem/ICmdLine.h>
+#include <CrySystem/IConsole.h>
 
 namespace PathUtil
 {

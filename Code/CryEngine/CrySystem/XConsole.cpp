@@ -28,6 +28,47 @@
 
 //#define DEFENCE_CVAR_HASH_LOGGING
 
+namespace ECVarTypeHelper
+{
+	template<typename T>
+	constexpr ECVarType GetTypeForT();
+	template<>
+	constexpr ECVarType GetTypeForT<int>() { return ECVarType::Int; }
+	template<>
+	constexpr ECVarType GetTypeForT<float>() { return ECVarType::Float; }
+	template<>
+	constexpr ECVarType GetTypeForT<const char*>() { return ECVarType::String; }
+	template<>
+	constexpr ECVarType GetTypeForT<int64>() { return ECVarType::Int64; }
+
+	template<typename T>
+	constexpr const char* GetNameForT();
+	template<>
+	constexpr const char* GetNameForT<int>() { return "int"; }
+	template<>
+	constexpr const char* GetNameForT<float>() { return "float"; }
+	template<>
+	constexpr const char* GetNameForT<const char*>() { return "string"; }
+
+	inline const char*    GetNameForECVar(ECVarType type)
+	{
+		switch (type)
+		{
+		case ECVarType::Invalid:
+			return "?";
+		case ECVarType::Int:
+			return "int";
+		case ECVarType::Float:
+			return "float";
+		case ECVarType::String:
+			return "string";
+		default:
+			CRY_ASSERT(false);
+			return "?";
+		}
+	}
+}
+
 static inline void AssertName(const char* szName)
 {
 #ifdef _DEBUG
