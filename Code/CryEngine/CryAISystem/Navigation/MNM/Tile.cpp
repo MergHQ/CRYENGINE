@@ -469,17 +469,6 @@ void STile::Draw(size_t drawFlags, vector3_t origin, TileID tileID, const std::v
 			for (size_t l = 0; l < triangle.linkCount; ++l)
 			{
 				const Tile::SLink& link = links[triangle.firstLink + l];
-				const size_t edge = link.edge;
-				linkedEdges |= static_cast<size_t>((size_t)1 << edge);
-
-				const uint16 vi0 = link.edge;
-				const uint16 vi1 = (link.edge + 1) % 3;
-
-				assert(vi0 < 3);
-				assert(vi1 < 3);
-
-				const Vec3 v0 = triVertices[vi0] + loffset;
-				const Vec3 v1 = triVertices[vi1] + loffset;
 
 				if (link.side == Tile::SLink::OffMesh)
 				{
@@ -497,23 +486,38 @@ void STile::Draw(size_t drawFlags, vector3_t origin, TileID tileID, const std::v
 						offmeshLinkLines.push_back(a);
 					}
 				}
-				else if (link.side != Tile::SLink::Internal)
-				{
-					if (drawFlags & DrawExternalLinks)
-					{
-						// TODO: compute clipped edge
-						externalLinkLines.push_back(v0);
-						externalLinkLines.push_back(v1);
-					}
-				}
 				else
 				{
-					if (drawFlags & DrawInternalLinks)
+					const size_t edge = link.edge;
+					linkedEdges |= static_cast<size_t>((size_t)1 << edge);
+					
+					const uint16 vi0 = link.edge;
+					const uint16 vi1 = (link.edge + 1) % 3;
+
+					assert(vi0 < 3);
+					assert(vi1 < 3);
+
+					const Vec3 v0 = triVertices[vi0] + loffset;
+					const Vec3 v1 = triVertices[vi1] + loffset;
+
+					if (link.side != Tile::SLink::Internal)
 					{
-						internalLinkLines.push_back(v0);
-						internalLinkLines.push_back(v1);
+						if (drawFlags & DrawExternalLinks)
+						{
+							// TODO: compute clipped edge
+							externalLinkLines.push_back(v0);
+							externalLinkLines.push_back(v1);
+						}
 					}
-				}
+					else
+					{
+						if (drawFlags & DrawInternalLinks)
+						{
+							internalLinkLines.push_back(v0);
+							internalLinkLines.push_back(v1);
+						}
+					}
+				}				
 			}
 
 			if (drawFlags & DrawMeshBoundaries)

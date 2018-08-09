@@ -246,6 +246,45 @@ inline VecType ClosestPtPointTriangle(const VecType& p, const VecType& a, const 
 	return a + ab * v + ac * w;
 }
 
+//! Projects point p on triangle abc in vertical direction. 
+//! Returns true when the position is successfully projected to triangle or false in case of degenerate triangle or when the point is outside of the triangle.
+inline bool ProjectPointOnTriangleVertical(const vector3_t& p, const vector3_t& a, const vector3_t& b, const vector3_t& c, vector3_t& projected)
+{
+	const vector3_t v0 = c - a;
+	const vector3_t v1 = b - a;
+	const vector3_t v2 = p - a;
+
+	// Barycentric coordinates of the point p are computed in 2D space first
+	const vector2_t v0_2d(v0);
+	const vector2_t v1_2d(v1);
+	const vector2_t v2_2d(v2);
+
+	const real_t dot00 = v0_2d.dot(v0_2d);
+	const real_t dot01 = v0_2d.dot(v1_2d);
+	const real_t dot02 = v0_2d.dot(v2_2d);
+	const real_t dot11 = v1_2d.dot(v1_2d);
+	const real_t dot12 = v1_2d.dot(v2_2d);
+
+	const real_t denom = dot00 * dot11 - dot01 * dot01;
+	if (denom == 0)
+	{
+		// Degenerate triangle
+		return false;
+	}
+
+	const real_t u = (dot11 * dot02 - dot01 * dot12) / denom;
+	const real_t v = (dot00 * dot12 - dot01 * dot02) / denom;
+
+	const real_t tolerance = real_t::epsilon();
+	if (u >= -tolerance && v >= -tolerance && (u + v) <= real_t(1) + tolerance)
+	{
+		// Compute back 3D position of the projected point
+		projected = a + v0 * u + v1 * v;
+		return true;
+	}
+	return false;
+}
+
 inline bool PointInTriangle(const vector2_t& p, const vector2_t& a, const vector2_t& b, const vector2_t& c)
 {
 	const bool e0 = (p - a).cross(a - b) >= 0;
