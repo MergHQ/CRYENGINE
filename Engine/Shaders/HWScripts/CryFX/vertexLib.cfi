@@ -17,9 +17,9 @@
 
 struct v2f_sh
 {
-	#if %_DS || %_PS || !ENABLE_TESSELLATION || %_RT_NO_TESSELLATION
-		float4 HPosition  : SV_POSITION;
-	#endif
+#if %_DS || %_PS || %_GS || !ENABLE_TESSELLATION || %_RT_NO_TESSELLATION
+	OUT_HPOS_IN_WPOS_SG
+#endif
 
 	#if ENABLE_TESSELLATION && !%_RT_NO_TESSELLATION
 		float4 vView     : TEXCOORDN;	// For shadow gen this is world position
