@@ -174,6 +174,13 @@ _smart_ptr<CSwapChain> CSwapChain::Create(CCommandListPool& commandQueue, VkSwap
 		CSwapChain* pRaw = new CSwapChain(commandQueue, pInfo->surface, KHRSwapChain, pInfo); // Has ref-count 1
 		_smart_ptr<CSwapChain> smart;
 		smart.Assign_NoAddRef(pRaw);
+
+		if (CRendererCVars::CV_r_MaxFrameLatency > pRaw->GetBackBufferCount())
+		{
+			CRY_ASSERT_MESSAGE(false, "r_MaxFrameLatency is reduced because swap chain can have %i back buffers at maximum.", pRaw->GetBackBufferCount());
+			CRendererCVars::CV_r_MaxFrameLatency = pRaw->GetBackBufferCount() - 1;
+		}
+
 		return smart;
 	}
 

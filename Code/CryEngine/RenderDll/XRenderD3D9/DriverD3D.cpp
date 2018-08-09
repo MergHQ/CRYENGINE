@@ -660,7 +660,7 @@ void CD3D9Renderer::HandleDisplayPropertyChanges()
 		if (m_cbpp != colorBits ||
 			m_VSync != vSync ||
 			wasFullscreen != IsFullscreen() ||
-			bufferCountBefore != (CRendererCVars::CV_r_MaxFrameLatency + 1))
+			bufferCountBefore < (CRendererCVars::CV_r_MaxFrameLatency + 1))
 		{
 			bRecreateSwapchain = true;
 		}
