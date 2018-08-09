@@ -12,6 +12,7 @@
 #include "DefaultComponents/Audio/PreloadComponent.h"
 #include "DefaultComponents/Audio/SwitchComponent.h"
 #include "DefaultComponents/Audio/TriggerComponent.h"
+#include "DefaultComponents/Audio/VelocityComponent.h"
 #include "DefaultComponents/Cameras/CameraComponent.h"
 #include "DefaultComponents/Cameras/VirtualReality/RoomscaleCamera.h"
 #include "DefaultComponents/Constraints/LineConstraint.h"
@@ -59,8 +60,6 @@
 IEntityRegistrator* IEntityRegistrator::g_pFirst = nullptr;
 IEntityRegistrator* IEntityRegistrator::g_pLast = nullptr;
 
-
-
 CPlugin_CryDefaultEntities::~CPlugin_CryDefaultEntities()
 {
 	if (gEnv->pSchematyc != nullptr)
@@ -89,8 +88,7 @@ void CPlugin_CryDefaultEntities::RegisterComponents(Schematyc::IEnvRegistrar& re
 	{
 		{
 			Schematyc::CEnvRegistrationScope componentScope = scope.Register(SCHEMATYC_MAKE_ENV_COMPONENT(Cry::DefaultComponents::CPathfindingComponent));
-			Cry::DefaultComponents::CPathfindingComponent::Register(componentScope);
-		}
+			Cry::DefaultComponents::CPathfindingComponent::Register(componentScope); }
 		{
 			Schematyc::CEnvRegistrationScope componentScope = scope.Register(SCHEMATYC_MAKE_ENV_COMPONENT(Cry::Audio::DefaultComponents::CAreaComponent));
 			Cry::Audio::DefaultComponents::CAreaComponent::Register(componentScope);
@@ -122,6 +120,10 @@ void CPlugin_CryDefaultEntities::RegisterComponents(Schematyc::IEnvRegistrar& re
 		{
 			Schematyc::CEnvRegistrationScope componentScope = scope.Register(SCHEMATYC_MAKE_ENV_COMPONENT(Cry::Audio::DefaultComponents::CTriggerComponent));
 			Cry::Audio::DefaultComponents::CTriggerComponent::Register(componentScope);
+		}
+		{
+			Schematyc::CEnvRegistrationScope componentScope = scope.Register(SCHEMATYC_MAKE_ENV_COMPONENT(Cry::Audio::DefaultComponents::CVelocityComponent));
+			Cry::Audio::DefaultComponents::CVelocityComponent::Register(componentScope);
 		}
 		{
 			Schematyc::CEnvRegistrationScope componentScope = scope.Register(SCHEMATYC_MAKE_ENV_COMPONENT(Cry::DefaultComponents::CCameraComponent));
@@ -309,7 +311,7 @@ void CPlugin_CryDefaultEntities::OnSystemEvent(ESystemEvent event, UINT_PTR wpar
 						"CRYENGINE Default Entity Components",
 						[this](Schematyc::IEnvRegistrar& registrar) { RegisterComponents(registrar); }
 						)
-				);
+					);
 			}
 		}
 		break;

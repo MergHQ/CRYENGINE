@@ -120,6 +120,20 @@ struct IObject
 	 * @return EntityId
 	 */
 	virtual EntityId GetEntityId() const = 0;
+
+	/**
+	 * Toggles whether this audio object should track and update its absolute velocity.
+	 * @param enable - if true enables absolute velocity tracking otherwise disables it.
+	 * @return void
+	 */
+	virtual void ToggleAbsoluteVelocityTracking(bool const enable, SRequestUserData const& userData = SRequestUserData::GetEmptyObject()) = 0;
+
+	/**
+	 * Toggles whether this audio object should track and update its relative velocity (against the listener).
+	 * @param enable - if true enables relative velocity tracking otherwise disables it.
+	 * @return void
+	 */
+	virtual void ToggleRelativeVelocityTracking(bool const enable, SRequestUserData const& userData = SRequestUserData::GetEmptyObject()) = 0;
 	// </interfuscator:shuffle>
 };
 } // namespace CryAudio

@@ -108,6 +108,7 @@ void CAudioTriggerSpotEntity::OnResetState()
 	// Reset values to their default
 	audioProxy.SetAudioAuxObjectOffset(Matrix34(IDENTITY));
 	audioProxy.SetCurrentEnvironments(CryAudio::InvalidAuxObjectId);
+	audioProxy.SetObstructionCalcType(m_occlusionType);
 	entity.SetFlags(entity.GetFlags() | ENTITY_FLAG_CLIENT_ONLY);
 
 	if (m_bTriggerAreasOnMove)
@@ -120,9 +121,6 @@ void CAudioTriggerSpotEntity::OnResetState()
 		entity.SetFlags(entity.GetFlags() & (~ENTITY_FLAG_TRIGGER_AREAS));
 		entity.SetFlagsExtended(entity.GetFlagsExtended() & (~ENTITY_FLAG_EXTENDED_NEEDS_MOVEINSIDE));
 	}
-
-	const auto& stateIds = AudioEntitiesUtils::GetObstructionOcclusionStateIds();
-	audioProxy.SetSwitchState(AudioEntitiesUtils::GetObstructionOcclusionSwitch(), stateIds[IntegralValue(m_occlusionType)]);
 
 	if (m_bEnabled)
 	{

@@ -77,6 +77,7 @@ enum class EAudioObjectRequestType : EnumFlagsType
 	StopTrigger,
 	StopAllTriggers,
 	SetTransformation,
+	SetOcclusionType,
 	SetParameter,
 	SetSwitchState,
 	SetCurrentEnvironments,
@@ -85,6 +86,8 @@ enum class EAudioObjectRequestType : EnumFlagsType
 	ReleaseObject,
 	ProcessPhysicsRay,
 	SetName,
+	ToggleAbsoluteVelocityTracking,
+	ToggleRelativeVelocityTracking,
 };
 
 enum class EAudioListenerRequestType : EnumFlagsType
@@ -831,6 +834,25 @@ struct SAudioObjectRequestData<EAudioObjectRequestType::SetTransformation> final
 
 //////////////////////////////////////////////////////////////////////////
 template<>
+struct SAudioObjectRequestData<EAudioObjectRequestType::SetOcclusionType> final : public SAudioObjectRequestDataBase
+{
+	explicit SAudioObjectRequestData(EOcclusionType const occlusionType_)
+		: SAudioObjectRequestDataBase(EAudioObjectRequestType::SetOcclusionType)
+		, occlusionType(occlusionType_)
+	{}
+
+	explicit SAudioObjectRequestData(SAudioObjectRequestData<EAudioObjectRequestType::SetOcclusionType> const* const pAORData)
+		: SAudioObjectRequestDataBase(EAudioObjectRequestType::SetOcclusionType)
+		, occlusionType(pAORData->occlusionType)
+	{}
+
+	virtual ~SAudioObjectRequestData() override = default;
+
+	EOcclusionType const occlusionType;
+};
+
+//////////////////////////////////////////////////////////////////////////
+template<>
 struct SAudioObjectRequestData<EAudioObjectRequestType::SetParameter> final : public SAudioObjectRequestDataBase
 {
 	explicit SAudioObjectRequestData(ControlId const parameterId_, float const value_)
@@ -981,6 +1003,44 @@ struct SAudioObjectRequestData<EAudioObjectRequestType::SetName> final : public 
 	virtual ~SAudioObjectRequestData() override = default;
 
 	CryFixedStringT<MaxObjectNameLength> const name;
+};
+
+//////////////////////////////////////////////////////////////////////////
+template<>
+struct SAudioObjectRequestData<EAudioObjectRequestType::ToggleAbsoluteVelocityTracking> final : public SAudioObjectRequestDataBase
+{
+	explicit SAudioObjectRequestData(bool const isEnabled_)
+		: SAudioObjectRequestDataBase(EAudioObjectRequestType::ToggleAbsoluteVelocityTracking)
+		, isEnabled(isEnabled_)
+	{}
+
+	explicit SAudioObjectRequestData(SAudioObjectRequestData<EAudioObjectRequestType::ToggleAbsoluteVelocityTracking> const* const pAORData)
+		: SAudioObjectRequestDataBase(EAudioObjectRequestType::ToggleAbsoluteVelocityTracking)
+		, isEnabled(pAORData->isEnabled)
+	{}
+
+	virtual ~SAudioObjectRequestData() override = default;
+
+	bool const isEnabled;
+};
+
+//////////////////////////////////////////////////////////////////////////
+template<>
+struct SAudioObjectRequestData<EAudioObjectRequestType::ToggleRelativeVelocityTracking> final : public SAudioObjectRequestDataBase
+{
+	explicit SAudioObjectRequestData(bool const isEnabled_)
+		: SAudioObjectRequestDataBase(EAudioObjectRequestType::ToggleRelativeVelocityTracking)
+		, isEnabled(isEnabled_)
+	{}
+
+	explicit SAudioObjectRequestData(SAudioObjectRequestData<EAudioObjectRequestType::ToggleRelativeVelocityTracking> const* const pAORData)
+		: SAudioObjectRequestDataBase(EAudioObjectRequestType::ToggleRelativeVelocityTracking)
+		, isEnabled(pAORData->isEnabled)
+	{}
+
+	virtual ~SAudioObjectRequestData() override = default;
+
+	bool const isEnabled;
 };
 
 //////////////////////////////////////////////////////////////////////////

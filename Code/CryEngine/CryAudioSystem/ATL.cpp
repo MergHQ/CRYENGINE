@@ -95,8 +95,8 @@ void CAudioTranslationLayer::Initialize()
 		&CPropagationProcessor::OnObstructionTest,
 		1);
 
-	m_objectPoolSize = std::max<uint32>(g_cvars.m_audioObjectPoolSize, 1);
-	m_eventPoolSize = std::max<uint32>(g_cvars.m_audioEventPoolSize, 1);
+	m_objectPoolSize = static_cast<uint32>(g_cvars.m_audioObjectPoolSize);
+	m_eventPoolSize = static_cast<uint32>(g_cvars.m_audioEventPoolSize);
 
 	g_objectManager.Initialize(m_objectPoolSize);
 	g_eventManager.Initialize(m_eventPoolSize);
@@ -354,11 +354,6 @@ ERequestStatus CAudioTranslationLayer::ProcessAudioManagerRequest(CAudioRequest 
 			SAudioManagerRequestData<EAudioManagerRequestType::ClearControlsData> const* const pRequestData = static_cast<SAudioManagerRequestData<EAudioManagerRequestType::ClearControlsData> const*>(request.GetData());
 			g_xmlProcessor.ClearControlsData(pRequestData->dataScope);
 
-			if (pRequestData->dataScope == EDataScope::All || pRequestData->dataScope == EDataScope::Global)
-			{
-				ClearInternalControls();
-			}
-
 			result = ERequestStatus::Success;
 
 			break;
@@ -442,9 +437,6 @@ ERequestStatus CAudioTranslationLayer::ProcessAudioManagerRequest(CAudioRequest 
 			}
 
 			g_xmlProcessor.ClearControlsData(EDataScope::All);
-			ClearInternalControls();
-			CreateInternalControls();
-
 			g_xmlProcessor.ParseControlsData(pRequestData->folderPath, EDataScope::Global);
 
 			if (strcmp(pRequestData->levelName, "") != 0)
@@ -788,22 +780,7 @@ ERequestStatus CAudioTranslationLayer::ProcessAudioObjectRequest(CAudioRequest c
 					SetCurrentEnvironmentsOnObject(pNewObject, INVALID_ENTITYID);
 				}
 
-				if (pRequestData->occlusionType < EOcclusionType::Count)
-				{
-					// TODO: Can we prevent these lookups and access the switch and state directly?
-					CATLSwitch const* const pSwitch = stl::find_in_map(g_switches, OcclusionTypeSwitchId, nullptr);
-
-					if (pSwitch != nullptr)
-					{
-						CATLSwitchState const* const pState = stl::find_in_map(pSwitch->audioSwitchStates, OcclusionTypeStateIds[IntegralValue(pRequestData->occlusionType)], nullptr);
-
-						if (pState != nullptr)
-						{
-							pNewObject->HandleSetSwitchState(pSwitch, pState);
-						}
-					}
-				}
-
+				SetOcclusionType(*pNewObject, pRequestData->occlusionType);
 				pTrigger->Execute(*pNewObject, request.pOwner, request.pUserData, request.pUserDataOwner, request.flags);
 				pNewObject->RemoveFlag(EObjectFlags::InUse);
 				result = ERequestStatus::Success;
@@ -882,14 +859,26 @@ ERequestStatus CAudioTranslationLayer::ProcessAudioObjectRequest(CAudioRequest c
 
 			if (pSwitch != nullptr)
 			{
-				CATLSwitchState const* const pState = stl::find_in_map(pSwitch->audioSwitchStates, pRequestData->audioSwitchStateId, nullptr);
+				CATLSwitchState const* const pState = stl::find_in_map(pSwitch->GetStates(), pRequestData->audioSwitchStateId, nullptr);
 
 				if (pState != nullptr)
 				{
-					pObject->HandleSetSwitchState(pSwitch, pState);
+					pState->Set(*pObject);
 					result = ERequestStatus::Success;
 				}
 			}
+
+			break;
+		}
+	case EAudioObjectRequestType::SetOcclusionType:
+		{
+			CRY_ASSERT_MESSAGE(pObject != g_pObject, "Received a request to set the occlusion type on the global object.");
+
+			SAudioObjectRequestData<EAudioObjectRequestType::SetOcclusionType> const* const pRequestData =
+				static_cast<SAudioObjectRequestData<EAudioObjectRequestType::SetOcclusionType> const* const>(request.GetData());
+
+			SetOcclusionType(*pObject, pRequestData->occlusionType);
+			result = ERequestStatus::Success;
 
 			break;
 		}
@@ -946,22 +935,7 @@ ERequestStatus CAudioTranslationLayer::ProcessAudioObjectRequest(CAudioRequest c
 				SetCurrentEnvironmentsOnObject(pObject, INVALID_ENTITYID);
 			}
 
-			if (pRequestData->occlusionType < EOcclusionType::Count)
-			{
-				// TODO: Can we prevent these lookups and access the switch and state directly?
-				CATLSwitch const* const pSwitch = stl::find_in_map(g_switches, OcclusionTypeSwitchId, nullptr);
-
-				if (pSwitch != nullptr)
-				{
-					CATLSwitchState const* const pState = stl::find_in_map(pSwitch->audioSwitchStates, OcclusionTypeStateIds[IntegralValue(pRequestData->occlusionType)], nullptr);
-
-					if (pState != nullptr)
-					{
-						pObject->HandleSetSwitchState(pSwitch, pState);
-					}
-				}
-			}
-
+			SetOcclusionType(*pObject, pRequestData->occlusionType);
 			g_objectManager.RegisterObject(pObject);
 			result = ERequestStatus::Success;
 
@@ -1007,6 +981,40 @@ ERequestStatus CAudioTranslationLayer::ProcessAudioObjectRequest(CAudioRequest c
 			break;
 		}
 #endif // INCLUDE_AUDIO_PRODUCTION_CODE
+	case EAudioObjectRequestType::ToggleAbsoluteVelocityTracking:
+		{
+			SAudioObjectRequestData<EAudioObjectRequestType::ToggleAbsoluteVelocityTracking> const* const pRequestData =
+				static_cast<SAudioObjectRequestData<EAudioObjectRequestType::ToggleAbsoluteVelocityTracking> const* const>(request.GetData());
+
+			if (pRequestData->isEnabled)
+			{
+				pObject->SetFlag(EObjectFlags::TrackAbsoluteVelocity);
+			}
+			else
+			{
+				pObject->RemoveFlag(EObjectFlags::TrackAbsoluteVelocity);
+			}
+
+			result = ERequestStatus::Success;
+			break;
+		}
+	case EAudioObjectRequestType::ToggleRelativeVelocityTracking:
+		{
+			SAudioObjectRequestData<EAudioObjectRequestType::ToggleRelativeVelocityTracking> const* const pRequestData =
+				static_cast<SAudioObjectRequestData<EAudioObjectRequestType::ToggleRelativeVelocityTracking> const* const>(request.GetData());
+
+			if (pRequestData->isEnabled)
+			{
+				pObject->SetFlag(EObjectFlags::TrackRelativeVelocity);
+			}
+			else
+			{
+				pObject->RemoveFlag(EObjectFlags::TrackRelativeVelocity);
+			}
+
+			result = ERequestStatus::Success;
+			break;
+		}
 	case EAudioObjectRequestType::None:
 		{
 			result = ERequestStatus::Success;
@@ -1149,7 +1157,6 @@ ERequestStatus CAudioTranslationLayer::SetImpl(Impl::IImpl* const pIImpl)
 	g_listenerManager.OnAfterImplChanged();
 
 	SetImplLanguage();
-	CreateInternalControls();
 
 	return result;
 }
@@ -1174,7 +1181,6 @@ void CAudioTranslationLayer::ReleaseImpl()
 
 	g_xmlProcessor.ClearPreloadsData(EDataScope::All);
 	g_xmlProcessor.ClearControlsData(EDataScope::All);
-	ClearInternalControls();
 
 	g_pIImpl->ShutDown();
 	g_pIImpl->Release();
@@ -1204,11 +1210,9 @@ ERequestStatus CAudioTranslationLayer::RefreshAudioSystem(char const* const szLe
 
 	g_xmlProcessor.ClearPreloadsData(EDataScope::All);
 	g_xmlProcessor.ClearControlsData(EDataScope::All);
-	ClearInternalControls();
 
 	g_pIImpl->OnRefresh();
 
-	CreateInternalControls();
 	g_xmlProcessor.ParseControlsData(m_configPath.c_str(), EDataScope::Global);
 	g_xmlProcessor.ParsePreloadsData(m_configPath.c_str(), EDataScope::Global);
 
@@ -1267,114 +1271,6 @@ bool CAudioTranslationLayer::OnInputEvent(SInputEvent const& event)
 }
 
 //////////////////////////////////////////////////////////////////////////
-void CAudioTranslationLayer::CreateInternalControls()
-{
-	// Occlusion switch
-	COcclusionObstructionState const* const pOcclusionIgnore = new COcclusionObstructionState(IgnoreStateId);
-	m_internalControls.m_switchStates[std::make_pair(OcclusionCalcSwitchId, IgnoreStateId)] = pOcclusionIgnore;
-
-	COcclusionObstructionState const* const pOcclusionAdaptive = new COcclusionObstructionState(AdaptiveStateId);
-	m_internalControls.m_switchStates[std::make_pair(OcclusionCalcSwitchId, AdaptiveStateId)] = pOcclusionAdaptive;
-
-	COcclusionObstructionState const* const pOcclusionLow = new COcclusionObstructionState(LowStateId);
-	m_internalControls.m_switchStates[std::make_pair(OcclusionCalcSwitchId, LowStateId)] = pOcclusionLow;
-
-	COcclusionObstructionState const* const pOcclusionMedium = new COcclusionObstructionState(MediumStateId);
-	m_internalControls.m_switchStates[std::make_pair(OcclusionCalcSwitchId, MediumStateId)] = pOcclusionMedium;
-
-	COcclusionObstructionState const* const pOcclusionHigh = new COcclusionObstructionState(HighStateId);
-	m_internalControls.m_switchStates[std::make_pair(OcclusionCalcSwitchId, HighStateId)] = pOcclusionHigh;
-
-	// Relative Velocity Tracking switch
-	CRelativeVelocityTrackingState const* const pRelativeVelocityTrackingOn = new CRelativeVelocityTrackingState(OnStateId);
-	m_internalControls.m_switchStates[std::make_pair(RelativeVelocityTrackingSwitchId, OnStateId)] = pRelativeVelocityTrackingOn;
-
-	CRelativeVelocityTrackingState const* const pRelativeVelocityTrackingOff = new CRelativeVelocityTrackingState(OffStateId);
-	m_internalControls.m_switchStates[std::make_pair(RelativeVelocityTrackingSwitchId, OffStateId)] = pRelativeVelocityTrackingOff;
-
-	// Absolute Velocity Tracking switch
-	CAbsoluteVelocityTrackingState const* const pAbsoluteVelocityTrackingOn = new CAbsoluteVelocityTrackingState(OnStateId);
-	m_internalControls.m_switchStates[std::make_pair(AbsoluteVelocityTrackingSwitchId, OnStateId)] = pAbsoluteVelocityTrackingOn;
-
-	CAbsoluteVelocityTrackingState const* const pAbsoluteVelocityTrackingOff = new CAbsoluteVelocityTrackingState(OffStateId);
-	m_internalControls.m_switchStates[std::make_pair(AbsoluteVelocityTrackingSwitchId, OffStateId)] = pAbsoluteVelocityTrackingOff;
-
-	// Create internal controls.
-	std::vector<char const*> const occlStates {
-		s_szIgnoreStateName, s_szAdaptiveStateName, s_szLowStateName, s_szMediumStateName, s_szHighStateName };
-	CreateInternalSwitch(s_szOcclCalcSwitchName, OcclusionCalcSwitchId, occlStates);
-
-	std::vector<char const*> const onOffStates {
-		s_szOnStateName, s_szOffStateName };
-	CreateInternalSwitch(s_szRelativeVelocityTrackingSwitchName, RelativeVelocityTrackingSwitchId, onOffStates);
-	CreateInternalSwitch(s_szAbsoluteVelocityTrackingSwitchName, AbsoluteVelocityTrackingSwitchId, onOffStates);
-
-	// Do Nothing trigger
-	CDoNothingTrigger const* const pDoNothingTrigger = new CDoNothingTrigger(DoNothingTriggerId);
-	CreateInternalTrigger(s_szDoNothingTriggerName, DoNothingTriggerId, pDoNothingTrigger);
-}
-
-//////////////////////////////////////////////////////////////////////////
-void CAudioTranslationLayer::ClearInternalControls()
-{
-	m_internalControls.m_switchStates.clear();
-}
-
-//////////////////////////////////////////////////////////////////////////
-void CAudioTranslationLayer::CreateInternalTrigger(char const* const szTriggerName, ControlId const triggerId, CATLTriggerImpl const* const pTriggerConnection)
-{
-	TriggerConnections connections;
-	connections.push_back(pTriggerConnection);
-
-#if defined(INCLUDE_AUDIO_PRODUCTION_CODE)
-	g_triggers[triggerId] = new CTrigger(triggerId, EDataScope::Global, connections, 0.0f, szTriggerName);
-#else
-	g_triggers[triggerId] = new CTrigger(triggerId, EDataScope::Global, connections);
-#endif // INCLUDE_AUDIO_PRODUCTION_CODE
-}
-
-//////////////////////////////////////////////////////////////////////////
-void CAudioTranslationLayer::CreateInternalSwitch(char const* const szSwitchName, ControlId const switchId, std::vector<char const*> const& stateNames)
-{
-	if ((switchId != InvalidControlId) && (stl::find_in_map(g_switches, switchId, nullptr) == nullptr))
-	{
-#if defined(INCLUDE_AUDIO_PRODUCTION_CODE)
-		CATLSwitch* const pNewSwitch = new CATLSwitch(switchId, EDataScope::Global, szSwitchName);
-#else
-		CATLSwitch* const pNewSwitch = new CATLSwitch(switchId, EDataScope::Global);
-#endif  // INCLUDE_AUDIO_PRODUCTION_CODE
-
-		for (auto const szStateName : stateNames)
-		{
-			SwitchStateId const stateId = static_cast<SwitchStateId const>(StringToId(szStateName));
-
-			if (stateId != InvalidSwitchStateId)
-			{
-				CATLSwitchState::ImplPtrVec switchStateImplVec;
-				switchStateImplVec.reserve(1);
-
-				IAudioSwitchStateImpl const* const pSwitchStateImpl = stl::find_in_map(m_internalControls.m_switchStates, std::make_pair(switchId, stateId), nullptr);
-
-				if (pSwitchStateImpl != nullptr)
-				{
-					switchStateImplVec.push_back(pSwitchStateImpl);
-				}
-
-#if defined(INCLUDE_AUDIO_PRODUCTION_CODE)
-				CATLSwitchState const* const pNewState = new CATLSwitchState(switchId, stateId, switchStateImplVec, szStateName);
-#else
-				CATLSwitchState const* const pNewState = new CATLSwitchState(switchId, stateId, switchStateImplVec);
-#endif    // INCLUDE_AUDIO_PRODUCTION_CODE
-
-				pNewSwitch->audioSwitchStates[stateId] = pNewState;
-			}
-		}
-
-		g_switches[switchId] = pNewSwitch;
-	}
-}
-
-//////////////////////////////////////////////////////////////////////////
 void CAudioTranslationLayer::SetCurrentEnvironmentsOnObject(CATLAudioObject* const pObject, EntityId const entityToIgnore)
 {
 	IAreaManager* const pIAreaManager = gEnv->pEntitySystem->GetAreaManager();
@@ -1397,6 +1293,51 @@ void CAudioTranslationLayer::SetCurrentEnvironmentsOnObject(CATLAudioObject* con
 					pObject->HandleSetEnvironment(pEnvironment, areaInfo.amount);
 				}
 			}
+		}
+	}
+}
+
+//////////////////////////////////////////////////////////////////////////
+void CAudioTranslationLayer::SetOcclusionType(CATLAudioObject& object, EOcclusionType const occlusionType) const
+{
+	switch (occlusionType)
+	{
+	case EOcclusionType::Ignore:
+		{
+			object.HandleSetOcclusionType(EOcclusionType::Ignore);
+			object.SetObstructionOcclusion(0.0f, 0.0f);
+
+			break;
+		}
+	case EOcclusionType::Adaptive:
+		{
+			object.HandleSetOcclusionType(EOcclusionType::Adaptive);
+
+			break;
+		}
+	case EOcclusionType::Low:
+		{
+			object.HandleSetOcclusionType(EOcclusionType::Low);
+
+			break;
+		}
+	case EOcclusionType::Medium:
+		{
+			object.HandleSetOcclusionType(EOcclusionType::Medium);
+
+			break;
+		}
+	case EOcclusionType::High:
+		{
+			object.HandleSetOcclusionType(EOcclusionType::High);
+
+			break;
+		}
+	default:
+		{
+			Cry::Audio::Log(ELogType::Warning, "Unknown occlusion type during SetOcclusionType: %u", occlusionType);
+
+			break;
 		}
 	}
 }

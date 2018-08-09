@@ -253,9 +253,9 @@ CControl* CAudioControlsLoader::LoadControl(XmlNodeRef const pNode, Scope const 
 			if (!((controlType == EAssetType::Switch) && ((name.compareNoCase("ObstrOcclCalcType") == 0) ||
 			                                              (name.compareNoCase("object_velocity_tracking") == 0) ||
 			                                              (name.compareNoCase("object_doppler_tracking") == 0) ||
-			                                              (name.compareNoCase(CryAudio::s_szAbsoluteVelocityTrackingSwitchName) == 0) ||
-			                                              (name.compareNoCase(CryAudio::s_szRelativeVelocityTrackingSwitchName) == 0))) &&
-			    !((controlType == EAssetType::Trigger) && ((name.compareNoCase(CryAudio::s_szDoNothingTriggerName) == 0) ||
+			                                              (name.compareNoCase("absolute_velocity_tracking") == 0) ||
+			                                              (name.compareNoCase("relative_velocity_tracking") == 0))) &&
+			    !((controlType == EAssetType::Trigger) && ((name.compareNoCase("do_nothing") == 0) ||
 			                                               (m_defaultTriggerNames.find(name) != m_defaultTriggerNames.end()))) &&
 			    !((controlType == EAssetType::Parameter) && (m_defaultParameterNames.find(name) != m_defaultParameterNames.end())))
 			{

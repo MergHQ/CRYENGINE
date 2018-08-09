@@ -304,35 +304,7 @@ void CFileLoader::CreateInternalControls()
 		pLibrary->SetDescription("Contains all engine default controls.");
 		pLibrary->SetFlags(pLibrary->GetFlags() | EAssetFlags::IsDefaultControl);
 
-		g_assetsManager.CreateDefaultControl(CryAudio::s_szDoNothingTriggerName, EAssetType::Trigger, pLibrary, true, "Used to bypass the default stop behavior of the audio system.");
-
-		SwitchStates const occlStates {
-			CryAudio::s_szIgnoreStateName, CryAudio::s_szAdaptiveStateName, CryAudio::s_szLowStateName, CryAudio::s_szMediumStateName, CryAudio::s_szHighStateName };
-		CreateInternalSwitch(pLibrary, CryAudio::s_szOcclCalcSwitchName, occlStates, "Set the occlusion type of the object.");
-
-		SwitchStates const onOffStates {
-			CryAudio::s_szOnStateName, CryAudio::s_szOffStateName };
-
-		string description;
-		description.Format(R"(If enabled on an object, its "%s" parameter gets updated.)", CryAudio::s_szAbsoluteVelocityParameterName);
-		CreateInternalSwitch(pLibrary, CryAudio::s_szAbsoluteVelocityTrackingSwitchName, onOffStates, description.c_str());
-
-		description.Format(R"(If enabled on an object, its "%s" parameter gets updated.)", CryAudio::s_szRelativeVelocityParameterName);
-		CreateInternalSwitch(pLibrary, CryAudio::s_szRelativeVelocityTrackingSwitchName, onOffStates, description.c_str());
-	}
-}
-
-//////////////////////////////////////////////////////////////////////////
-void CFileLoader::CreateInternalSwitch(CAsset* const pLibrary, char const* const szSwitchName, SwitchStates const& stateNames, char const* const szDescription)
-{
-	CControl* const pSwitch = g_assetsManager.CreateDefaultControl(szSwitchName, EAssetType::Switch, pLibrary, true, szDescription);
-
-	if (pSwitch != nullptr)
-	{
-		for (auto const& szStateName : stateNames)
-		{
-			g_assetsManager.CreateDefaultControl(szStateName, EAssetType::State, pSwitch, true, szDescription);
-		}
+		g_assetsManager.CreateDefaultControl("do_nothing", EAssetType::Trigger, pLibrary, true, "Used to bypass the default stop behavior of the audio system.");
 	}
 }
 
@@ -353,9 +325,9 @@ void CFileLoader::CreateDefaultControls()
 		g_assetsManager.CreateDefaultControl(CryAudio::s_szResumeAllTriggerName, EAssetType::Trigger, pLibrary, false, "Resumes playback of all audio.");
 
 		string description;
-		description.Format(R"(Updates the absolute velocity of an object, if its "%s" switch is enabled.)", CryAudio::s_szAbsoluteVelocityTrackingSwitchName);
+		description.Format(R"(Updates the absolute velocity of an object, if its "%s" switch is enabled.)", "absolute_velocity_tracking");
 		g_assetsManager.CreateDefaultControl(CryAudio::s_szAbsoluteVelocityParameterName, EAssetType::Parameter, pLibrary, false, description.c_str());
-		description.Format(R"(Updates the absolute velocity of an object, if its "%s" switch is enabled.)", CryAudio::s_szRelativeVelocityTrackingSwitchName);
+		description.Format(R"(Updates the absolute velocity of an object, if its "%s" switch is enabled.)", "relative_velocity_tracking");
 		g_assetsManager.CreateDefaultControl(CryAudio::s_szRelativeVelocityParameterName, EAssetType::Parameter, pLibrary, false, description.c_str());
 	}
 }

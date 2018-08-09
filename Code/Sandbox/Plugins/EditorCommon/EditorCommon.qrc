@@ -81,6 +81,7 @@
         <file alias="Audio/component_audio_listener.ico">icons/audio_component_audio_listener.ico</file>
         <file alias="Audio/component_preload.ico">icons/audio_component_preload.ico</file>
         <file alias="Audio/component_occlusion.ico">icons/audio_component_occlusion.ico</file>
+        <file alias="Audio/component_velocity_tracking.ico">icons/audio_component_velocity_tracking.ico</file>
 
         <!--sdl_mixer-->
         <file alias="Audio/sdl_mixer/Audio_Event.ico">icons/audio_sdlmixer_event.ico</file>
@@ -826,4 +827,3 @@
         <file alias="VersionControl/error.ico">icons/versioncontrol_error.ico</file>
     </qresource>
 </RCC>
-

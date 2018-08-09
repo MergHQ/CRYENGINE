@@ -13,15 +13,6 @@ struct IRenderAuxGeom;
 
 namespace CryAudio
 {
-static constexpr ControlId OcclusionTypeSwitchId = CCrc32::ComputeLowercase_CompileTime(s_szOcclCalcSwitchName);
-static constexpr SwitchStateId OcclusionTypeStateIds[IntegralValue(EOcclusionType::Count)] = {
-	InvalidSwitchStateId,
-	IgnoreStateId,
-	AdaptiveStateId,
-	LowStateId,
-	MediumStateId,
-	HighStateId };
-
 class CSystem;
 class CEventManager;
 class CFileManager;
@@ -90,7 +81,6 @@ public:
 
 	ERequestStatus   HandleStopTrigger(CTrigger const* const pTrigger);
 	void             HandleSetTransformation(CObjectTransformation const& transformation, float const distanceToListener);
-	void             HandleSetSwitchState(CATLSwitch const* const pSwitch, CATLSwitchState const* const pState);
 	void             HandleSetEnvironment(CATLAudioEnvironment const* const pEnvironment, float const value);
 	void             HandleSetOcclusionType(EOcclusionType const calcType);
 	void             HandleStopFile(char const* const szFile);
@@ -154,6 +144,8 @@ private:
 	virtual void     StopFile(char const* const szFile, SRequestUserData const& userData = SRequestUserData::GetEmptyObject()) override;
 	virtual void     SetName(char const* const szName, SRequestUserData const& userData = SRequestUserData::GetEmptyObject()) override;
 	virtual EntityId GetEntityId() const override { return m_entityId; }
+	void             ToggleAbsoluteVelocityTracking(bool const enable, SRequestUserData const& userData = SRequestUserData::GetEmptyObject()) override;
+	void             ToggleRelativeVelocityTracking(bool const enable, SRequestUserData const& userData = SRequestUserData::GetEmptyObject()) override;
 	// ~CryAudio::IObject
 
 	void ReportFinishedTriggerInstance(ObjectTriggerStates::iterator const& iter);

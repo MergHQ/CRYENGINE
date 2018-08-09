@@ -908,14 +908,14 @@ void CRopeRenderNode::Render(const SRendParams& rParams, const SRenderingPassInf
 	SRenderObjData* pOD = m_bones.empty() ? nullptr : pObj->GetObjData();
 	if (pOD)
 	{
-		uint idFrame = passInfo.GetIRenderView()->GetSkinningPoolIndex(), iList = idFrame%3, iListPrev = (idFrame-1u)%3;
+		uint idFrame = passInfo.GetIRenderView()->GetSkinningPoolIndex(), iList = idFrame % 3, iListPrev = (idFrame - 1u) % 3;
 		SSkinningData* pSD = m_skinDataHist[iList];
 		if (!pSD || idFrame != m_idSkinFrame)
 		{
 			m_idSkinFrame = idFrame;
 			pSD = gEnv->pRenderer->EF_CreateSkinningData(passInfo.GetIRenderView(), m_bones.size(), false);
 			memcpy(pSD->pBoneQuatsS, m_bones.data(), m_bones.size() * sizeof(DualQuat));
-			if (m_skinDataHist[iListPrev] && m_skinDataHist[iListPrev]->pCustomData == (void*)(INT_PTR)(idFrame-1))
+			if (m_skinDataHist[iListPrev] && m_skinDataHist[iListPrev]->pCustomData == (void*)(INT_PTR)(idFrame - 1))
 			{
 				pSD->pPreviousSkinningRenderData = m_skinDataHist[iListPrev];
 				pSD->nHWSkinningFlags |= eHWS_MotionBlured;
@@ -1137,7 +1137,7 @@ void CRopeRenderNode::Physicalize(bool bInstant)
 		do
 		{
 			pr.pPoints[0] = pSrcPoints[0];
-			for (i = ivtx = 0; i < nTargetSegments && ivtx < nSrcSegments; )
+			for (i = ivtx = 0; i < nTargetSegments && ivtx < nSrcSegments;)
 			{
 				dir = pSrcPoints[ivtx + 1] - pSrcPoints[ivtx];
 				v0 = pSrcPoints[ivtx] - pr.pPoints[i];
@@ -1599,10 +1599,10 @@ void CRopeRenderNode::CreateRenderMesh()
 	// make new RenderMesh
 	//////////////////////////////////////////////////////////////////////////
 	m_pRenderMesh = GetRenderer()->CreateRenderMeshInitialized(
-	  NULL, 3, EDefaultInputLayouts::P3F_C4B_T2F,
-	  NULL, 3, prtTriangleList,
-	  "Rope", GetName(),
-	  eRMT_Dynamic, 1, 0, NULL, NULL, false, false);
+		NULL, 3, EDefaultInputLayouts::P3F_C4B_T2F,
+		NULL, 3, prtTriangleList,
+		"Rope", GetName(),
+		eRMT_Dynamic, 1, 0, NULL, NULL, false, false);
 
 	CRenderChunk chunk;
 	memset(&chunk, 0, sizeof(chunk));
@@ -1640,13 +1640,13 @@ void CRopeRenderNode::UpdateRenderMesh()
 	tubeSurf.m_worldTM = m_worldTM;
 
 	int nLengthSamples = m_params.nFlags & IRopeRenderNode::eRope_Smooth ? m_params.nNumSegments + 1 : m_physicsPoints.size();
-	bool useBones = m_params.nFlags & eRope_UseBones && !((m_params.nFlags & (eRope_Subdivide | eRope_Smooth))==eRope_Subdivide && m_physicsPoints.size() > m_params.nPhysSegments+1u);
-	int nNewVertexCount = m_params.nNumSides*(nLengthSamples-1)*3-1;
+	bool useBones = m_params.nFlags & eRope_UseBones && !((m_params.nFlags & (eRope_Subdivide | eRope_Smooth)) == eRope_Subdivide && m_physicsPoints.size() > m_params.nPhysSegments + 1u);
+	int nNewVertexCount = m_params.nNumSides * (nLengthSamples - 1) * 3 - 1;
 
 	if (!m_params.segmentObj.empty())
 	{
 		if (!m_segObj || m_params.segmentObj.compare(m_segObj->GetFilePath()))
-			m_segObj = Get3DEngine()->LoadStatObj(m_params.segmentObj, nullptr,nullptr, false);
+			m_segObj = Get3DEngine()->LoadStatObj(m_params.segmentObj, nullptr, nullptr, false);
 		if (!m_segObj->GetRenderMesh())
 			return;
 		useBones = true;
@@ -1670,7 +1670,7 @@ void CRopeRenderNode::UpdateRenderMesh()
 		m_spline.SetModified(true);
 
 		tubeSurf.GenerateSurface(&m_spline, m_params.fThickness, false, (m_physicsPoints[numSplinePoints - 1] - m_physicsPoints[0]).GetOrthogonal().GetNormalized(),
-														nLengthSamples, m_params.nNumSides, true, false, false, false, &vTexMin, &vTexMax);
+		                         nLengthSamples, m_params.nNumSides, true, false, false, false, &vTexMin, &vTexMax);
 		nNewVertexCount = tubeSurf.iVQuantity;
 	}
 
@@ -1682,129 +1682,139 @@ void CRopeRenderNode::UpdateRenderMesh()
 		m_pRenderMesh->LockForThreadAccess();
 		m_pRenderMesh->UpdateVertices(NULL, nNewVertexCount, 0, VSF_GENERAL, 0u);
 
-		strided_pointer<Vec3> vtx; vtx.data = (Vec3*)m_pRenderMesh->GetPosPtr(vtx.iStride, FSL_VIDEO_CREATE);
-		strided_pointer<Vec2> tex; tex.data = (Vec2*)m_pRenderMesh->GetUVPtr(tex.iStride, FSL_VIDEO_CREATE);
-		SMeshBoneMapping_uint16 *skin = nullptr;
+		strided_pointer<Vec3> vtx;
+		vtx.data = (Vec3*)m_pRenderMesh->GetPosPtr(vtx.iStride, FSL_VIDEO_CREATE);
+		strided_pointer<Vec2> tex;
+		tex.data = (Vec2*)m_pRenderMesh->GetUVPtr(tex.iStride, FSL_VIDEO_CREATE);
+		SMeshBoneMapping_uint16* skin = nullptr;
 
 		if (useBones)
 		{
-			strided_pointer<SMeshQTangents> qtng; qtng.data = (SMeshQTangents*)m_pRenderMesh->GetQTangentPtr(qtng.iStride, FSL_VIDEO_CREATE);
+			strided_pointer<SMeshQTangents> qtng;
+			qtng.data = (SMeshQTangents*)m_pRenderMesh->GetQTangentPtr(qtng.iStride, FSL_VIDEO_CREATE);
 			m_tmpSkin.resize(nNewVertexCount);
 			skin = m_tmpSkin.data();
-			memset(skin, 0, nNewVertexCount*sizeof(skin[0]));
+			memset(skin, 0, nNewVertexCount * sizeof(skin[0]));
 			float seglen = 0;
-			for(int i=0; i<(int)m_physicsPoints.size()-1; i++)
-				seglen += (m_physicsPoints[i+1]-m_physicsPoints[i]).len();
-			m_lenSkin = seglen; seglen /= max(1, nLengthSamples-1);
+			for (int i = 0; i < (int)m_physicsPoints.size() - 1; i++)
+				seglen += (m_physicsPoints[i + 1] - m_physicsPoints[i]).len();
+			m_lenSkin = seglen;
+			seglen /= max(1, nLengthSamples - 1);
 
 			if (!m_params.segmentObj.empty())
 			{
-				m_bones.resize(((m_params.nFlags & (eRope_Subdivide | eRope_SegObjBends)) == eRope_SegObjBends ? max(m_params.nPhysSegments,m_params.nNumSegments) : m_params.nNumSegments) + 2);
-				m_filteredPoints.resize((int)m_bones.size()-2 > m_params.nNumSegments ? 0 : m_params.nNumSegments+1);
-				const float kt = (float)(m_bones.size()-2) / m_params.nNumSegments;
+				m_bones.resize(((m_params.nFlags & (eRope_Subdivide | eRope_SegObjBends)) == eRope_SegObjBends ? max(m_params.nPhysSegments, m_params.nNumSegments) : m_params.nNumSegments) + 2);
+				m_filteredPoints.resize((int)m_bones.size() - 2 > m_params.nNumSegments ? 0 : m_params.nNumSegments + 1);
+				const float kt = (float)(m_bones.size() - 2) / m_params.nNumSegments;
 
-				IRenderMesh *pSegMesh = m_segObj->GetRenderMesh();
+				IRenderMesh* pSegMesh = m_segObj->GetRenderMesh();
 				AABB bbox = m_segObj->GetAABB();
-				int iax = m_params.segObjAxis==eRopeSeg_Auto ? idxmax3(bbox.GetSize()) : (int)m_params.segObjAxis;
+				int iax = m_params.segObjAxis == eRopeSeg_Auto ? idxmax3(bbox.GetSize()) : (int)m_params.segObjAxis;
 				QuatTS trans(IDENTITY);
 				trans.s = m_lenSkin / (bbox.GetSize()[iax] * m_params.segObjLen * m_params.nNumSegments);
-				const float ds = trans.s*m_params.sizeChange / m_params.nNumSegments;
-				const float dx = bbox.GetSize()[iax]*trans.s*m_params.segObjLen, dxInv = 1/dx;
+				const float ds = trans.s * m_params.sizeChange / m_params.nNumSegments;
+				const float dx = bbox.GetSize()[iax] * trans.s * m_params.segObjLen, dxInv = 1 / dx;
 				if (iax)
-					trans.q = Quat::CreateRotationV0V1(Vec3(0,iax&1,iax>>1&1), Vec3(1,0,0));
-				Quat dq = Quat::CreateRotationAA(m_params.segObjRot, Vec3(1,0,0)*trans.q);
-				trans.t = Vec3(-bbox.min[iax]*trans.s, 0, 0);
+					trans.q = Quat::CreateRotationV0V1(Vec3(0, iax & 1, iax >> 1 & 1), Vec3(1, 0, 0));
+				Quat dq = Quat::CreateRotationAA(m_params.segObjRot, Vec3(1, 0, 0) * trans.q);
+				trans.t = Vec3(-bbox.min[iax] * trans.s, 0, 0);
 				uint8 nosmooth = m_params.nFlags & eRope_SegObjBends ? 0 : 255;
 
 				pSegMesh->LockForThreadAccess();
-				strided_pointer<Vec3> vtxSeg; vtxSeg.data = (Vec3*)pSegMesh->GetPosPtr(vtxSeg.iStride, FSL_READ);
-				strided_pointer<Vec2> texSeg; texSeg.data = (Vec2*)pSegMesh->GetUVPtr(texSeg.iStride, FSL_READ);
-				strided_pointer<SPipTangents> tngSeg; tngSeg.data = (SPipTangents*)pSegMesh->GetTangentPtr(tngSeg.iStride, FSL_READ);
-				Vec3_tpl<vtx_idx> *idxSeg = (Vec3_tpl<vtx_idx>*)pSegMesh->GetIndexPtr(FSL_READ);
-				int nvtx = pSegMesh->GetVerticesCount(), ntris = pSegMesh->GetIndicesCount()/3;
-				m_tmpIdx.resize(m_params.nNumSegments*ntris);
-				for(int i=0,iseg=0; iseg<m_params.nNumSegments; iseg++)
+				strided_pointer<Vec3> vtxSeg;
+				vtxSeg.data = (Vec3*)pSegMesh->GetPosPtr(vtxSeg.iStride, FSL_READ);
+				strided_pointer<Vec2> texSeg;
+				texSeg.data = (Vec2*)pSegMesh->GetUVPtr(texSeg.iStride, FSL_READ);
+				strided_pointer<SPipTangents> tngSeg;
+				tngSeg.data = (SPipTangents*)pSegMesh->GetTangentPtr(tngSeg.iStride, FSL_READ);
+				Vec3_tpl<vtx_idx>* idxSeg = (Vec3_tpl<vtx_idx>*)pSegMesh->GetIndexPtr(FSL_READ);
+				int nvtx = pSegMesh->GetVerticesCount(), ntris = pSegMesh->GetIndicesCount() / 3;
+				m_tmpIdx.resize(m_params.nNumSegments * ntris);
+				for (int i = 0, iseg = 0; iseg < m_params.nNumSegments; iseg++)
 				{
-					for(int j=0; j<nvtx; j++,i++)
+					for (int j = 0; j < nvtx; j++, i++)
 					{
 						vtx[i] = trans * vtxSeg[j];
-						Vec4 t4,b4; tngSeg[j].GetTB(t4,b4);
-						Vec3 t3(t4), b3(b4), n=(t3^b3).GetNormalizedFast();
-						Quat qtang = trans.q * Quat(Matrix33(t3, n^t3, n));
+						Vec4 t4, b4;
+						tngSeg[j].GetTB(t4, b4);
+						Vec3 t3(t4), b3(b4), n = (t3 ^ b3).GetNormalizedFast();
+						Quat qtang = trans.q * Quat(Matrix33(t3, n ^ t3, n));
 						qtang *= sgnnz(qtang.w);
-						qtang.w = max(qtang.w, 1.0f/32767);
+						qtang.w = max(qtang.w, 1.0f / 32767);
 						qtng[i] = SMeshQTangents(qtang * t4.w);
 						tex[i] = texSeg[j];
-						float t = ((vtx[i].x-iseg*dx)*dxInv + iseg)*kt;
-						int ibone = (int)t;	t -= ibone;
-						skin[i].boneIds[0] = ibone+1;
-						skin[i].boneIds[1] = max(0,ibone-1)+1;
-						skin[i].boneIds[2] = ibone+2;
-						const int half = isneg(0.5f-t);
-						skin[i].weights[half+1] = 255 - (skin[i].weights[0] = 1+(int8)(254*(1-fabs(t-0.5f))) | nosmooth);
+						float t = ((vtx[i].x - iseg * dx) * dxInv + iseg) * kt;
+						int ibone = (int)t;
+						t -= ibone;
+						skin[i].boneIds[0] = ibone + 1;
+						skin[i].boneIds[1] = max(0, ibone - 1) + 1;
+						skin[i].boneIds[2] = ibone + 2;
+						const int half = isneg(0.5f - t);
+						skin[i].weights[half + 1] = 255 - (skin[i].weights[0] = 1 + (int8)(254 * (1 - fabs(t - 0.5f))) | nosmooth);
 					}
-					for(int j=0; j<ntris; j++)
-						m_tmpIdx[iseg*ntris + j] = idxSeg[j] + Vec3_tpl<vtx_idx>(nvtx*iseg);
+					for (int j = 0; j < ntris; j++)
+						m_tmpIdx[iseg * ntris + j] = idxSeg[j] + Vec3_tpl<vtx_idx>(nvtx * iseg);
 					trans.t.x += dx;
 					trans.q = trans.q * dq;
 					trans.s += ds;
 				}
 				pSegMesh->UnLockForThreadAccess();
-				m_pRenderMesh->UpdateIndices(&m_tmpIdx[0].x, ntris*3*m_params.nNumSegments, 0,0u);
+				m_pRenderMesh->UpdateIndices(&m_tmpIdx[0].x, ntris * 3 * m_params.nNumSegments, 0, 0u);
 			}
 			else
 			{
 				const int s = m_params.nNumSides;
-				const float ang = 2*gf_PI/s, sina = sin(ang), cosa = cos(ang), sinha = sin(ang*0.5f), cosha = cos(ang*0.5f);
-				const float kU = m_params.fTextureTileU/s, kV = m_params.fTextureTileV/m_lenSkin, kr = m_params.sizeChange/m_lenSkin;
-				Vec3 pt(0,1,0);
+				const float ang = 2 * gf_PI / s, sina = sin(ang), cosa = cos(ang), sinha = sin(ang * 0.5f), cosha = cos(ang * 0.5f);
+				const float kU = m_params.fTextureTileU / s, kV = m_params.fTextureTileV / m_lenSkin, kr = m_params.sizeChange / m_lenSkin;
+				Vec3 pt(0, 1, 0);
 
-				m_bones.resize(nLengthSamples+1);
+				m_bones.resize(nLengthSamples + 1);
 				m_filteredPoints.resize(nLengthSamples);
 				uint8 w[3] = { 0, (uint8)(m_params.nFlags & eRope_Smooth ? 127 : 0), 127 };
-				for(int iz=0,i=0; iz<(nLengthSamples-1)*3-1; pt.x += !(iz++ % 3)*seglen, w[0]=w[1])
+				for (int iz = 0, i = 0; iz < (nLengthSamples - 1) * 3 - 1; pt.x += !(iz++ % 3) * seglen, w[0] = w[1])
 				{
-					Quat qtang(sqrt2*0.5f,-sqrt2*0.5f,0,0);	// start with rotation by -90 around x, then rotate by +angle around x each step
-					for(int j=0; j<s; j++,i++)
+					Quat qtang(sqrt2 * 0.5f, -sqrt2 * 0.5f, 0, 0); // start with rotation by -90 around x, then rotate by +angle around x each step
+					for (int j = 0; j < s; j++, i++)
 					{
-						const float r = m_params.fThickness*(1+pt.x*kr);
-						vtx[i] = Vec3(pt.x, pt.y*r, pt.z*r);
-						qtng[i] = SMeshQTangents(qtang*sgnnz(qtang.w));
-						tex[i].set(j*kU, pt.x*kV);
+						const float r = m_params.fThickness * (1 + pt.x * kr);
+						vtx[i] = Vec3(pt.x, pt.y * r, pt.z * r);
+						qtng[i] = SMeshQTangents(qtang * sgnnz(qtang.w));
+						tex[i].set(j * kU, pt.x * kV);
 						int iseg = iz % 3;
-						skin[i].boneIds[1] = (skin[i].boneIds[0] = 1+(iz/3)) + 1 + ((iseg-(w[0]&1))>>31)*2;
-						skin[i].weights[0] = 255 - (skin[i].weights[1] = w[iseg] | ((nLengthSamples-2)*3 - iz) >> 31 & 255);
-						pt = Vec3(pt.x, pt.y*cosa-pt.z*sina, pt.y*sina+pt.z*cosa);
-						qtang = Quat(qtang.w*cosha-qtang.v.x*sinha, qtang.v.x*cosha+qtang.w*sinha, 0, 0);
+						skin[i].boneIds[1] = (skin[i].boneIds[0] = 1 + (iz / 3)) + 1 + ((iseg - (w[0] & 1)) >> 31) * 2;
+						skin[i].weights[0] = 255 - (skin[i].weights[1] = w[iseg] | ((nLengthSamples - 2) * 3 - iz) >> 31 & 255);
+						pt = Vec3(pt.x, pt.y * cosa - pt.z * sina, pt.y * sina + pt.z * cosa);
+						qtang = Quat(qtang.w * cosha - qtang.v.x * sinha, qtang.v.x * cosha + qtang.w * sinha, 0, 0);
 					}
 				}
 
-				m_tmpIdx.resize(((nLengthSamples-1)*2-1)*s*4 + max(0,s-2)*2);
+				m_tmpIdx.resize(((nLengthSamples - 1) * 2 - 1) * s * 4 + max(0, s - 2) * 2);
 				Vec3_tpl<vtx_idx>* idx = m_tmpIdx.data();
 				int ivtx = 0;
-				for(int i=1; i<s-1; i++)
-					idx[ivtx++].Set(0, i+1, i);
-				for(int i=0; i<(nLengthSamples-1)*3-2; i++)
-					for(int j=0; j<s; j++)
+				for (int i = 1; i < s - 1; i++)
+					idx[ivtx++].Set(0, i + 1, i);
+				for (int i = 0; i < (nLengthSamples - 1) * 3 - 2; i++)
+					for (int j = 0; j < s; j++)
 					{
-						int i0 = s*i + j, i1 = s*i + j+1 - (s & (s-2-j)>>31);
-						idx[ivtx++].Set(i0, i1, i1+s);
-						idx[ivtx++].Set(i1+s, i0+s, i0);
+						int i0 = s * i + j, i1 = s * i + j + 1 - (s & (s - 2 - j) >> 31);
+						idx[ivtx++].Set(i0, i1, i1 + s);
+						idx[ivtx++].Set(i1 + s, i0 + s, i0);
 					}
-				for(int i=1,j=((nLengthSamples-1)*3-2)*s; i<s-1; i++)
-					idx[ivtx++].Set(j, j+i, j+i+1);
-				m_pRenderMesh->UpdateIndices(&idx[0].x, ivtx*3, 0, 0u);
+				for (int i = 1, j = ((nLengthSamples - 1) * 3 - 2) * s; i < s - 1; i++)
+					idx[ivtx++].Set(j, j + i, j + i + 1);
+				m_pRenderMesh->UpdateIndices(&idx[0].x, ivtx * 3, 0, 0u);
 			}
 			m_pRenderMesh->UnlockStream(VSF_QTANGENTS);
 		}
 		else
 		{
-			strided_pointer<SPipTangents> tng; tng.data = (SPipTangents*)m_pRenderMesh->GetTangentPtr(tng.iStride, FSL_VIDEO_CREATE);
+			strided_pointer<SPipTangents> tng;
+			tng.data = (SPipTangents*)m_pRenderMesh->GetTangentPtr(tng.iStride, FSL_VIDEO_CREATE);
 			for (int i = 0; i < nNewVertexCount; i++)
 			{
 				vtx[i] = tubeSurf.m_akVertex[i];
 				tex[i] = tubeSurf.m_akTexture[i];
-				tng[i] = SPipTangents(tubeSurf.m_akTangents[i],	tubeSurf.m_akBitangents[i], 1);
+				tng[i] = SPipTangents(tubeSurf.m_akTangents[i], tubeSurf.m_akBitangents[i], 1);
 			}
 			m_pRenderMesh->UpdateIndices(tubeSurf.m_pIndices, tubeSurf.iNumIndices, 0, 0u);
 			m_bones.resize(0);
@@ -1829,7 +1839,7 @@ void CRopeRenderNode::UpdateRenderMesh()
 			pChunk->m_bUsesBones = true;
 			pChunk->pRE->mfUpdateFlags(FCEF_SKINNED);
 			static CMesh mesh;
-			m_pRenderMesh->SetSkinningDataCharacter(mesh,0,skin,nullptr);
+			m_pRenderMesh->SetSkinningDataCharacter(mesh, 0, skin, nullptr);
 			m_pRenderMesh->SetSkinned(true);
 		}
 		m_pRenderMesh->UnLockForThreadAccess();
@@ -1837,37 +1847,38 @@ void CRopeRenderNode::UpdateRenderMesh()
 
 	if (m_bones.size() > 2)
 	{
-		float seglen = m_lenSkin / max((int)m_bones.size()-2, 1);
+		float seglen = m_lenSkin / max((int)m_bones.size() - 2, 1);
 		float curlen = 0, curseg, cursegInv, ki;
-		Vec3 *srcPoints = &m_physicsPoints[0];
+		Vec3* srcPoints = &m_physicsPoints[0];
 		if (!m_filteredPoints.empty() && (m_filteredPoints.size() != m_physicsPoints.size() || m_params.nFlags & IRopeRenderNode::eRope_Smooth))
 		{
-			cursegInv = 1 / max(1e-6f, curseg = (m_physicsPoints[1]-m_physicsPoints[0]).len());
-			ki = m_lenSkin / (m_bones.size()-2);
+			cursegInv = 1 / max(1e-6f, curseg = (m_physicsPoints[1] - m_physicsPoints[0]).len());
+			ki = m_lenSkin / (m_bones.size() - 2);
 			m_filteredPoints[0] = m_physicsPoints[0];
-			for(int i=1,iphys=0; i<(int)m_bones.size()-1; i++)
+			for (int i = 1, iphys = 0; i < (int)m_bones.size() - 1; i++)
 			{
-				for(; i*ki > curlen+curseg && iphys < (int)m_physicsPoints.size()-2; iphys++)
-					curlen += curseg, cursegInv = 1/max(1e-6f, curseg = (m_physicsPoints[iphys+2]-m_physicsPoints[iphys+1]).len()); 
-				const float t = (i*ki-curlen)*cursegInv;
-				m_filteredPoints[i] = m_physicsPoints[iphys] + (m_physicsPoints[iphys+1] - m_physicsPoints[iphys])*t;
+				for (; i * ki > curlen + curseg && iphys < (int)m_physicsPoints.size() - 2; iphys++)
+					curlen += curseg, cursegInv = 1 / max(1e-6f, curseg = (m_physicsPoints[iphys + 2] - m_physicsPoints[iphys + 1]).len());
+				const float t = (i * ki - curlen) * cursegInv;
+				m_filteredPoints[i] = m_physicsPoints[iphys] + (m_physicsPoints[iphys + 1] - m_physicsPoints[iphys]) * t;
 			}
 			if (m_params.nFlags & IRopeRenderNode::eRope_Smooth)
-				for(int iter=0; iter<m_params.boneSmoothIters; iter++) for(int i=1; i<(int)m_filteredPoints.size()-1; i++)
-					m_filteredPoints[i] = (m_filteredPoints[i-1] + m_filteredPoints[i] + m_filteredPoints[i+1])*(1.0f/3);
+				for (int iter = 0; iter < m_params.boneSmoothIters; iter++)
+					for (int i = 1; i < (int)m_filteredPoints.size() - 1; i++)
+						m_filteredPoints[i] = (m_filteredPoints[i - 1] + m_filteredPoints[i] + m_filteredPoints[i + 1]) * (1.0f / 3);
 			srcPoints = &m_filteredPoints[0];
 		}
-		Vec3 dirPrev(1,0,0), dirCur, pt0=srcPoints[0], pt1;
+		Vec3 dirPrev(1, 0, 0), dirCur, pt0 = srcPoints[0], pt1;
 		Quat q(IDENTITY);
-		for(int i=0; i<(int)m_bones.size()-2; i++,dirPrev=dirCur,pt0=pt1)
+		for (int i = 0; i < (int)m_bones.size() - 2; i++, dirPrev = dirCur, pt0 = pt1)
 		{
-			pt1 = srcPoints[i+1];
-			dirCur = (pt1-pt0).normalized();
+			pt1 = srcPoints[i + 1];
+			dirCur = (pt1 - pt0).normalized();
 			q = Quat::CreateRotationV0V1(dirPrev, dirCur) * q;
-			m_bones[i+1] = DualQuat(q, pt0 - q*Vec3(i*seglen,0,0));
+			m_bones[i + 1] = DualQuat(q, pt0 - q * Vec3(i * seglen, 0, 0));
 		}
 		m_bones.front() = DualQuat(IDENTITY);
-		m_bones.back() = DualQuat(q, m_physicsPoints.back() - q*Vec3(m_lenSkin,0,0));
+		m_bones.back() = DualQuat(q, m_physicsPoints.back() - q * Vec3(m_lenSkin, 0, 0));
 	}
 }
 
@@ -1945,7 +1956,7 @@ void CRopeRenderNode::OnPhysicsPostStep()
 		pe_status_pos sp;
 		sp.pGridRefEnt = WORLD_ENTITY;
 		m_pPhysicalEntity->GetStatus(&sp);
-		m_WSBBox = AABB(sp.pos+sp.BBox[0], sp.pos+sp.BBox[1]);
+		m_WSBBox = AABB(sp.pos + sp.BBox[0], sp.pos + sp.BBox[1]);
 		Get3DEngine()->RegisterEntity(this);
 	}
 	m_bNeedToReRegister = false;
@@ -1963,7 +1974,7 @@ void CRopeRenderNode::OnPhysicsPostStep()
 		{
 			CryAudio::SCreateObjectData const objectData("RopeyMcRopeFace", m_audioParams.occlusionType);
 			m_pIAudioObject = gEnv->pAudioSystem->CreateObject(objectData);
-			m_pIAudioObject->SetSwitchState(CryAudio::AbsoluteVelocityTrackingSwitchId, CryAudio::OnStateId);
+			m_pIAudioObject->ToggleAbsoluteVelocityTracking(true);
 			UpdateAudio();
 			m_pIAudioObject->ExecuteTrigger(m_audioParams.startTrigger);
 		}

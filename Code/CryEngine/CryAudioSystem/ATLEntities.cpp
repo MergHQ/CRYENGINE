@@ -192,7 +192,7 @@ void CParameterImpl::Set(CATLAudioObject const& object, float const value) const
 //////////////////////////////////////////////////////////////////////////
 CParameterImpl::~CParameterImpl()
 {
-	CRY_ASSERT_MESSAGE(g_pIImpl != nullptr, "g_pIImpl mustn't be nullptr during destruction");
+	CRY_ASSERT_MESSAGE(g_pIImpl != nullptr, "g_pIImpl mustn't be nullptr during destruction of CParameterImpl");
 	g_pIImpl->DestructParameter(m_pImplData);
 }
 
@@ -271,22 +271,53 @@ void CRelativeVelocityParameter::Set(CATLAudioObject const& object, float const 
 }
 
 //////////////////////////////////////////////////////////////////////////
-void CExternalAudioSwitchStateImpl::Set(CATLAudioObject& audioObject) const
+CSwitchStateImpl::~CSwitchStateImpl()
+{
+	CRY_ASSERT_MESSAGE(g_pIImpl != nullptr, "g_pIImpl mustn't be nullptr during destruction of CSwitchStateImpl");
+	g_pIImpl->DestructSwitchState(m_pImplData);
+}
+
+//////////////////////////////////////////////////////////////////////////
+void CSwitchStateImpl::Set(CATLAudioObject const& audioObject) const
 {
 	audioObject.GetImplDataPtr()->SetSwitchState(m_pImplData);
 }
 
 //////////////////////////////////////////////////////////////////////////
-CExternalAudioSwitchStateImpl::~CExternalAudioSwitchStateImpl()
+CATLSwitchState::~CATLSwitchState()
 {
-	CRY_ASSERT_MESSAGE(g_pIImpl != nullptr, "g_pIImpl mustn't be nullptr during destruction");
-	g_pIImpl->DestructSwitchState(m_pImplData);
+	for (auto const pStateImpl : m_connections)
+	{
+		delete pStateImpl;
+	}
+}
+
+//////////////////////////////////////////////////////////////////////////
+void CATLSwitchState::Set(CATLAudioObject const& object) const
+{
+	for (auto const pSwitchStateImpl : m_connections)
+	{
+		pSwitchStateImpl->Set(object);
+	}
+
+#if defined(INCLUDE_AUDIO_PRODUCTION_CODE)
+	const_cast<CATLAudioObject&>(object).StoreSwitchValue(m_switchId, m_switchStateId);
+#endif   // INCLUDE_AUDIO_PRODUCTION_CODE
+}
+
+//////////////////////////////////////////////////////////////////////////
+CATLSwitch::~CATLSwitch()
+{
+	for (auto const& statePair : m_states)
+	{
+		delete statePair.second;
+	}
 }
 
 //////////////////////////////////////////////////////////////////////////
 CATLTriggerImpl::~CATLTriggerImpl()
 {
-	CRY_ASSERT_MESSAGE(g_pIImpl != nullptr, "g_pIImpl mustn't be nullptr during destruction");
+	CRY_ASSERT_MESSAGE(g_pIImpl != nullptr, "g_pIImpl mustn't be nullptr during destruction of CATLTriggerImpl");
 	g_pIImpl->DestructTrigger(m_pImplData);
 }
 
@@ -720,7 +751,7 @@ void CResumeAllTrigger::Execute() const
 //////////////////////////////////////////////////////////////////////////
 CATLEnvironmentImpl::~CATLEnvironmentImpl()
 {
-	CRY_ASSERT_MESSAGE(g_pIImpl != nullptr, "g_pIImpl mustn't be nullptr during destruction");
+	CRY_ASSERT_MESSAGE(g_pIImpl != nullptr, "g_pIImpl mustn't be nullptr during destruction of CATLEnvironmentImpl");
 	g_pIImpl->DestructEnvironment(m_pImplData);
 }
 } // namespace CryAudio

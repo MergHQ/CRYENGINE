@@ -44,9 +44,7 @@ static constexpr uint16 MaxMiscStringLength = 512;
 static constexpr uint32 InvalidCRC32 = 0xFFFFffff;
 static constexpr float FloatEpsilon = 1.0e-3f;
 
-static constexpr char const* s_szRelativeVelocityTrackingSwitchName = "relative_velocity_tracking";
 static constexpr char const* s_szRelativeVelocityParameterName = "relative_velocity";
-static constexpr char const* s_szAbsoluteVelocityTrackingSwitchName = "absolute_velocity_tracking";
 static constexpr char const* s_szAbsoluteVelocityParameterName = "absolute_velocity";
 static constexpr char const* s_szLoseFocusTriggerName = "lose_focus";
 static constexpr char const* s_szGetFocusTriggerName = "get_focus";
@@ -54,15 +52,6 @@ static constexpr char const* s_szMuteAllTriggerName = "mute_all";
 static constexpr char const* s_szUnmuteAllTriggerName = "unmute_all";
 static constexpr char const* s_szPauseAllTriggerName = "pause_all";
 static constexpr char const* s_szResumeAllTriggerName = "resume_all";
-static constexpr char const* s_szDoNothingTriggerName = "do_nothing";
-static constexpr char const* s_szOcclCalcSwitchName = "occlusion_calculation_type";
-static constexpr char const* s_szIgnoreStateName = "ignore";
-static constexpr char const* s_szAdaptiveStateName = "adaptive";
-static constexpr char const* s_szLowStateName = "low";
-static constexpr char const* s_szMediumStateName = "medium";
-static constexpr char const* s_szHighStateName = "high";
-static constexpr char const* s_szOnStateName = "on";
-static constexpr char const* s_szOffStateName = "off";
 static constexpr char const* s_szGlobalPreloadRequestName = "global_audio_system_preload";
 
 static constexpr char const* s_szDefaultLibraryName = "default_controls";
@@ -103,17 +92,6 @@ static constexpr IdType StringToId(char const* const szSource)
 	return static_cast<IdType>(CCrc32::ComputeLowercase_CompileTime(szSource));
 }
 
-static constexpr ControlId RelativeVelocityTrackingSwitchId = StringToId(s_szRelativeVelocityTrackingSwitchName);
-static constexpr ControlId AbsoluteVelocityTrackingSwitchId = StringToId(s_szAbsoluteVelocityTrackingSwitchName);
-static constexpr ControlId DoNothingTriggerId = StringToId(s_szDoNothingTriggerName);
-static constexpr ControlId OcclusionCalcSwitchId = StringToId(s_szOcclCalcSwitchName);
-static constexpr SwitchStateId IgnoreStateId = StringToId(s_szIgnoreStateName);
-static constexpr SwitchStateId AdaptiveStateId = StringToId(s_szAdaptiveStateName);
-static constexpr SwitchStateId LowStateId = StringToId(s_szLowStateName);
-static constexpr SwitchStateId MediumStateId = StringToId(s_szMediumStateName);
-static constexpr SwitchStateId HighStateId = StringToId(s_szHighStateName);
-static constexpr SwitchStateId OnStateId = StringToId(s_szOnStateName);
-static constexpr SwitchStateId OffStateId = StringToId(s_szOffStateName);
 static constexpr PreloadRequestId GlobalPreloadRequestId = StringToId(s_szGlobalPreloadRequestName);
 static constexpr LibraryId DefaultLibraryId = StringToId(s_szDefaultLibraryName);
 

@@ -9,7 +9,6 @@ namespace CryAudio
 class CATLSwitch;
 class CATLPreloadRequest;
 class CATLAudioEnvironment;
-struct SInternalControls;
 
 class CAudioXMLProcessor final
 {
@@ -39,7 +38,6 @@ private:
 	void ParsePreloads(XmlNodeRef const pPreloadDataRoot, EDataScope const dataScope, char const* const szFolderName, uint const version);
 	void ParseEnvironments(XmlNodeRef const pAudioEnvironmentRoot, EDataScope const dataScope);
 
-	void DeleteSwitch(CATLSwitch const* const pSwitch);
 	void DeletePreloadRequest(CATLPreloadRequest const* const pPreloadRequest);
 	void DeleteEnvironment(CATLAudioEnvironment const* const pEnvironment);
 

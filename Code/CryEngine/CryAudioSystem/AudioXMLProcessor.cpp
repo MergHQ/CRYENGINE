@@ -2,7 +2,7 @@
 
 #include "stdafx.h"
 #include "AudioXMLProcessor.h"
-#include "InternalEntities.h"
+#include "ATLEntities.h"
 #include "Common/Logger.h"
 #include "Common.h"
 #include <IAudioImpl.h>
@@ -401,7 +401,7 @@ void CAudioXMLProcessor::ClearControlsData(EDataScope const dataScope)
 
 			if ((pSwitch->GetDataScope() == dataScope) || dataScope == EDataScope::All)
 			{
-				DeleteSwitch(pSwitch);
+				delete pSwitch;
 				iterSwitches = g_switches.erase(iterSwitches);
 				iterSwitchesEnd = g_switches.end();
 				continue;
@@ -807,7 +807,7 @@ void CAudioXMLProcessor::ParseSwitches(XmlNodeRef const pXMLSwitchRoot, EDataSco
 						if (switchStateId != InvalidSwitchStateId)
 						{
 							int const numConnections = pSwitchStateNode->getChildCount();
-							CATLSwitchState::ImplPtrVec connections;
+							SwitchStateConnections connections;
 							connections.reserve(numConnections);
 
 							for (int k = 0; k < numConnections; ++k)
@@ -821,8 +821,8 @@ void CAudioXMLProcessor::ParseSwitches(XmlNodeRef const pXMLSwitchRoot, EDataSco
 									if (pISwitchState != nullptr)
 									{
 										// Only add the connection if the middleware recognizes the control
-										CExternalAudioSwitchStateImpl const* const pExternalSwitchStateImpl = new CExternalAudioSwitchStateImpl(pISwitchState);
-										connections.push_back(pExternalSwitchStateImpl);
+										CSwitchStateImpl const* const pSwitchStateImpl = new CSwitchStateImpl(pISwitchState);
+										connections.push_back(pSwitchStateImpl);
 									}
 								}
 							}
@@ -833,7 +833,7 @@ void CAudioXMLProcessor::ParseSwitches(XmlNodeRef const pXMLSwitchRoot, EDataSco
 							auto const pNewState = new CATLSwitchState(switchId, switchStateId, connections);
 #endif          // INCLUDE_AUDIO_PRODUCTION_CODE
 
-							pNewSwitch->audioSwitchStates[switchStateId] = pNewState;
+							pNewSwitch->AddState(switchStateId, pNewState);
 						}
 					}
 				}
@@ -964,30 +964,6 @@ void CAudioXMLProcessor::ParseDefaultParameters(XmlNodeRef const pXMLParameterRo
 				}
 			}
 		}
-	}
-}
-
-//////////////////////////////////////////////////////////////////////////
-void CAudioXMLProcessor::DeleteSwitch(CATLSwitch const* const pSwitch)
-{
-	if (pSwitch != nullptr)
-	{
-		for (auto const& statePair : pSwitch->audioSwitchStates)
-		{
-			CATLSwitchState const* const pSwitchState = statePair.second;
-
-			if (pSwitchState != nullptr)
-			{
-				for (auto const pStateImpl : pSwitchState->m_implPtrs)
-				{
-					delete pStateImpl;
-				}
-
-				delete pSwitchState;
-			}
-		}
-
-		delete pSwitch;
 	}
 }
 

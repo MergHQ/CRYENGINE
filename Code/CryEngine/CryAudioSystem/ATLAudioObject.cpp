@@ -275,19 +275,6 @@ ERequestStatus CATLAudioObject::HandleStopTrigger(CTrigger const* const pTrigger
 }
 
 ///////////////////////////////////////////////////////////////////////////
-void CATLAudioObject::HandleSetSwitchState(CATLSwitch const* const pSwitch, CATLSwitchState const* const pState)
-{
-	for (auto const pSwitchStateImpl : pState->m_implPtrs)
-	{
-		pSwitchStateImpl->Set(*this);
-	}
-
-#if defined(INCLUDE_AUDIO_PRODUCTION_CODE)
-	StoreSwitchValue(pSwitch->GetId(), pState->GetId());
-#endif   // INCLUDE_AUDIO_PRODUCTION_CODE
-}
-
-///////////////////////////////////////////////////////////////////////////
 void CATLAudioObject::HandleSetEnvironment(CATLAudioEnvironment const* const pEnvironment, float const value)
 {
 	for (auto const pEnvImpl : pEnvironment->m_implPtrs)
@@ -836,7 +823,7 @@ void CATLAudioObject::DrawDebugInfo(IRenderAuxGeom& auxGeom) const
 
 					if (pSwitch != nullptr)
 					{
-						CATLSwitchState const* const pSwitchState = stl::find_in_map(pSwitch->audioSwitchStates, switchStatePair.second, nullptr);
+						CATLSwitchState const* const pSwitchState = stl::find_in_map(pSwitch->GetStates(), switchStatePair.second, nullptr);
 
 						if (pSwitchState != nullptr)
 						{
@@ -866,7 +853,7 @@ void CATLAudioObject::DrawDebugInfo(IRenderAuxGeom& auxGeom) const
 			bool doesParameterMatchFilter = false;
 			std::map<char const* const, float const> parameterInfo;
 
-			if ((drawParameters && !m_parameters.empty()) || filterAllObjectInfo)
+			if (drawParameters || filterAllObjectInfo)
 			{
 				for (auto const& parameterPair : m_parameters)
 				{
@@ -1175,11 +1162,11 @@ void CATLAudioObject::ForceImplementationRefresh(bool const setTransformation)
 
 		if (pSwitch != nullptr)
 		{
-			CATLSwitchState const* const pState = stl::find_in_map(pSwitch->audioSwitchStates, switchPair.second, nullptr);
+			CATLSwitchState const* const pState = stl::find_in_map(pSwitch->GetStates(), switchPair.second, nullptr);
 
 			if (pState != nullptr)
 			{
-				HandleSetSwitchState(pSwitch, pState);
+				pState->Set(*this);
 			}
 		}
 	}
@@ -1320,7 +1307,7 @@ void CATLAudioObject::SetOcclusionType(EOcclusionType const occlusionType, SRequ
 {
 	if (occlusionType < EOcclusionType::Count)
 	{
-		SAudioObjectRequestData<EAudioObjectRequestType::SetSwitchState> requestData(OcclusionTypeSwitchId, OcclusionTypeStateIds[IntegralValue(occlusionType)]);
+		SAudioObjectRequestData<EAudioObjectRequestType::SetOcclusionType> requestData(occlusionType);
 		PushRequest(requestData, userData);
 	}
 }
@@ -1343,6 +1330,20 @@ void CATLAudioObject::StopFile(char const* const szFile, SRequestUserData const&
 void CATLAudioObject::SetName(char const* const szName, SRequestUserData const& userData /* = SAudioRequestUserData::GetEmptyObject() */)
 {
 	SAudioObjectRequestData<EAudioObjectRequestType::SetName> requestData(szName);
+	PushRequest(requestData, userData);
+}
+
+//////////////////////////////////////////////////////////////////////////
+void CATLAudioObject::ToggleAbsoluteVelocityTracking(bool const enable, SRequestUserData const& userData /* = SAudioRequestUserData::GetEmptyObject() */)
+{
+	SAudioObjectRequestData<EAudioObjectRequestType::ToggleAbsoluteVelocityTracking> requestData(enable);
+	PushRequest(requestData, userData);
+}
+
+//////////////////////////////////////////////////////////////////////////
+void CATLAudioObject::ToggleRelativeVelocityTracking(bool const enable, SRequestUserData const& userData /* = SAudioRequestUserData::GetEmptyObject() */)
+{
+	SAudioObjectRequestData<EAudioObjectRequestType::ToggleRelativeVelocityTracking> requestData(enable);
 	PushRequest(requestData, userData);
 }
 

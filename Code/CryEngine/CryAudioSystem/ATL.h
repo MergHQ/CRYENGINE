@@ -2,7 +2,7 @@
 
 #pragma once
 
-#include "InternalEntities.h"
+#include "ATLEntities.h"
 #include <CryInput/IInput.h>
 
 namespace CryAudio
@@ -14,7 +14,6 @@ struct IImpl;
 
 class CAudioRequest;
 class CATLAudioObject;
-class CATLTriggerImpl;
 struct SAudioRequestData;
 
 enum class EInternalStates : EnumFlagsType
@@ -59,17 +58,11 @@ private:
 
 	ERequestStatus RefreshAudioSystem(char const* const szLevelName);
 	void           SetImplLanguage();
-	void           CreateInternalControls();
-	void           ClearInternalControls();
 	void           SetCurrentEnvironmentsOnObject(CATLAudioObject* const pObject, EntityId const entityToIgnore);
+	void           SetOcclusionType(CATLAudioObject& object, EOcclusionType const occlusionType) const;
 
-	void           CreateInternalTrigger(char const* const szTriggerName, ControlId const triggerId, CATLTriggerImpl const* const pTriggerConnection);
-	void           CreateInternalSwitch(char const* const szSwitchName, ControlId const switchId, std::vector<char const*> const& stateNames);
-
-	SInternalControls m_internalControls;
-
-	uint32            m_objectPoolSize = 0;
-	uint32            m_eventPoolSize = 0;
+	uint32 m_objectPoolSize = 0;
+	uint32 m_eventPoolSize = 0;
 
 	// Utility members
 	EInternalStates                    m_flags = EInternalStates::None;

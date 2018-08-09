@@ -70,17 +70,17 @@ struct IEntityPropertyGroup
 #define CRY_ENTITY_COMPONENT_CLASS(implclassname, interfaceName, cname, iidHigh, iidLow) CRY_PP_ERROR("Deprecated macro: Use CRY_ENTITY_COMPONENT_CLASS_GUID instead. Please refer to the Migrating Guide from CRYENGINE 5.3 to CRYENGINE 5.4 for more details.")
 
 #define CRY_ENTITY_COMPONENT_CLASS_GUID(implclassname, interfaceName, cname, cguid) \
-  CRYINTERFACE_BEGIN()                                                              \
-  CRYINTERFACE_ADD(IEntityComponent)                                                \
-  CRYINTERFACE_ADD(interfaceName)                                                   \
-  CRYINTERFACE_END()                                                                \
-  CRYGENERATE_CLASS_GUID(implclassname, cname, cguid)
+	CRYINTERFACE_BEGIN()                                                              \
+	CRYINTERFACE_ADD(IEntityComponent)                                                \
+	CRYINTERFACE_ADD(interfaceName)                                                   \
+	CRYINTERFACE_END()                                                                \
+	CRYGENERATE_CLASS_GUID(implclassname, cname, cguid)
 
 #define CRY_ENTITY_COMPONENT_INTERFACE_AND_CLASS(implclassname, cname, cguid) CRY_PP_ERROR("Deprecated macro: Use CRY_ENTITY_COMPONENT_INTERFACE_AND_CLASS_GUID instead. Please refer to the Migrating Guide from CRYENGINE 5.3 to CRYENGINE 5.4 for more details.")
 
 #define CRY_ENTITY_COMPONENT_INTERFACE_AND_CLASS_GUID(implclassname, cname, cguid) \
-  CRY_ENTITY_COMPONENT_INTERFACE_GUID(implclassname, cguid)                        \
-  CRY_ENTITY_COMPONENT_CLASS_GUID(implclassname, implclassname, cname, cguid)
+	CRY_ENTITY_COMPONENT_INTERFACE_GUID(implclassname, cguid)                        \
+	CRY_ENTITY_COMPONENT_CLASS_GUID(implclassname, implclassname, cname, cguid)
 
 #include <CrySchematyc/Component.h>
 
@@ -280,14 +280,14 @@ struct IEntityComponent : public ICryUnknown, ISimpleEntityEventListener
 	struct SInitParams
 	{
 		inline SInitParams(
-		  IEntity* pEntity_,
-		  const CryGUID& guid_,
-		  const string& name_,
-		  const CEntityComponentClassDesc* classDesc_,
-		  EntityComponentFlags flags_,
-		  IEntityComponent* pParent_,
-		  const CryTransform::CTransformPtr& transform_
-		  )
+			IEntity* pEntity_,
+			const CryGUID& guid_,
+			const string& name_,
+			const CEntityComponentClassDesc* classDesc_,
+			EntityComponentFlags flags_,
+			IEntityComponent* pParent_,
+			const CryTransform::CTransformPtr& transform_
+			)
 			: pEntity(pEntity_)
 			, guid(guid_)
 			, name(name_)
@@ -297,14 +297,14 @@ struct IEntityComponent : public ICryUnknown, ISimpleEntityEventListener
 			, flags(flags_)
 		{}
 
-		IEntity*                           pEntity;
-		const CryGUID                      guid;
-		const string                       name;
-		const CEntityComponentClassDesc*   classDesc;
-		const CryTransform::CTransformPtr  transform;
-		IEntityComponent*                  pParent = nullptr;
-		INetworkSpawnParams*               pNetworkSpawnParams = nullptr;
-		EntityComponentFlags               flags;
+		IEntity*                          pEntity;
+		const CryGUID                     guid;
+		const string                      name;
+		const CEntityComponentClassDesc*  classDesc;
+		const CryTransform::CTransformPtr transform;
+		IEntityComponent*                 pParent = nullptr;
+		INetworkSpawnParams*              pNetworkSpawnParams = nullptr;
+		EntityComponentFlags              flags;
 	};
 
 public:
@@ -578,7 +578,7 @@ protected:
 	// Needs access to OnShutDown to maintain legacy game object extension shutdown behavior
 	friend class CGameObject;
 	// Needs access to Initialize
-	friend Schematyc::CObject;
+	friend Schematyc ::CObject;
 
 	// Host Entity pointer
 	IEntity*       m_pEntity = nullptr;
@@ -702,39 +702,41 @@ struct IEntityAudioComponent : public IEntityComponent
 	virtual CryAudio::EnvironmentId GetEnvironmentId() const = 0;
 	//! Creates an additional audio object managed by this component, allowing individual handling of effects
 	//! IEntityAudioComponent will always create an audio object by default where audio will be played unless otherwise specified.
-	virtual CryAudio::AuxObjectId   CreateAudioAuxObject() = 0;
-	virtual bool                    RemoveAudioAuxObject(CryAudio::AuxObjectId const audioAuxObjectId) = 0;
-	virtual void                    SetAudioAuxObjectOffset(Matrix34 const& offset, CryAudio::AuxObjectId const audioAuxObjectId = CryAudio::DefaultAuxObjectId) = 0;
-	virtual Matrix34 const&         GetAudioAuxObjectOffset(CryAudio::AuxObjectId const audioAuxObjectId = CryAudio::DefaultAuxObjectId) = 0;
-	virtual bool                    PlayFile(CryAudio::SPlayFileInfo const& playbackInfo, CryAudio::AuxObjectId const audioAuxObjectId = CryAudio::DefaultAuxObjectId, CryAudio::SRequestUserData const& userData = CryAudio::SRequestUserData::GetEmptyObject()) = 0;
-	virtual void                    StopFile(char const* const szFile, CryAudio::AuxObjectId const audioAuxObjectId = CryAudio::DefaultAuxObjectId) = 0;
+	virtual CryAudio::AuxObjectId CreateAudioAuxObject() = 0;
+	virtual bool                  RemoveAudioAuxObject(CryAudio::AuxObjectId const audioAuxObjectId) = 0;
+	virtual void                  SetAudioAuxObjectOffset(Matrix34 const& offset, CryAudio::AuxObjectId const audioAuxObjectId = CryAudio::DefaultAuxObjectId) = 0;
+	virtual Matrix34 const&       GetAudioAuxObjectOffset(CryAudio::AuxObjectId const audioAuxObjectId = CryAudio::DefaultAuxObjectId) = 0;
+	virtual bool                  PlayFile(CryAudio::SPlayFileInfo const& playbackInfo, CryAudio::AuxObjectId const audioAuxObjectId = CryAudio::DefaultAuxObjectId, CryAudio::SRequestUserData const& userData = CryAudio::SRequestUserData::GetEmptyObject()) = 0;
+	virtual void                  StopFile(char const* const szFile, CryAudio::AuxObjectId const audioAuxObjectId = CryAudio::DefaultAuxObjectId) = 0;
 	//! Executes the specified trigger on the entity
 	//! \param audioTriggerId The trigger we want to execute
 	//! \param audioAuxObjectId Audio object within the component that we want to set, see IEntityAudioComponent::CreateAudioAuxObject. If not provided it is played on the default object.
 	//! \par Example
 	//! \include CryEntitySystem/Examples/Audio/ExecuteTrigger.cpp
-	virtual bool                    ExecuteTrigger(CryAudio::ControlId const audioTriggerId, CryAudio::AuxObjectId const audioAuxObjectId = CryAudio::DefaultAuxObjectId, CryAudio::SRequestUserData const& userData = CryAudio::SRequestUserData::GetEmptyObject()) = 0;
-	virtual void                    StopTrigger(CryAudio::ControlId const audioTriggerId, CryAudio::AuxObjectId const audioAuxObjectId = CryAudio::DefaultAuxObjectId, CryAudio::SRequestUserData const& userData = CryAudio::SRequestUserData::GetEmptyObject()) = 0;
+	virtual bool ExecuteTrigger(CryAudio::ControlId const audioTriggerId, CryAudio::AuxObjectId const audioAuxObjectId = CryAudio::DefaultAuxObjectId, CryAudio::SRequestUserData const& userData = CryAudio::SRequestUserData::GetEmptyObject()) = 0;
+	virtual void StopTrigger(CryAudio::ControlId const audioTriggerId, CryAudio::AuxObjectId const audioAuxObjectId = CryAudio::DefaultAuxObjectId, CryAudio::SRequestUserData const& userData = CryAudio::SRequestUserData::GetEmptyObject()) = 0;
 	//! Sets the current state of a switch in the entity
 	//! \param audioSwitchId Identifier of the switch whose state we want to change
 	//! \param audioStateId Identifier of the switch state we want to set to
 	//! \param audioAuxObjectId Audio object within the component that we want to set, see IEntityAudioComponent::CreateAudioAuxObject. If not provided it is played on the default object.
 	//! \par Example
 	//! \include CryEntitySystem/Examples/Audio/SetSwitchState.cpp
-	virtual void                    SetSwitchState(CryAudio::ControlId const audioSwitchId, CryAudio::SwitchStateId const audioStateId, CryAudio::AuxObjectId const audioAuxObjectId = CryAudio::DefaultAuxObjectId) = 0;
+	virtual void SetSwitchState(CryAudio::ControlId const audioSwitchId, CryAudio::SwitchStateId const audioStateId, CryAudio::AuxObjectId const audioAuxObjectId = CryAudio::DefaultAuxObjectId) = 0;
 	//! Sets the value of the specified parameter on the entity
 	//! \param parameterId Identifier of the parameter we want to modify the value of
 	//! \param audioAuxObjectId Audio object within the component that we want to set, see IEntityAudioComponent::CreateAudioAuxObject. If not provided it is played on the default object.
 	//! \par Example
 	//! \include CryEntitySystem/Examples/Audio/SetParameterValue.cpp
-	virtual void                    SetParameter(CryAudio::ControlId const parameterId, float const value, CryAudio::AuxObjectId const audioAuxObjectId = CryAudio::DefaultAuxObjectId) = 0;
-	virtual void                    SetObstructionCalcType(CryAudio::EOcclusionType const occlusionType, CryAudio::AuxObjectId const audioAuxObjectId = CryAudio::DefaultAuxObjectId) = 0;
-	virtual void                    SetEnvironmentAmount(CryAudio::EnvironmentId const audioEnvironmentId, float const amount, CryAudio::AuxObjectId const audioAuxObjectId = CryAudio::DefaultAuxObjectId) = 0;
-	virtual void                    SetCurrentEnvironments(CryAudio::AuxObjectId const audioAuxObjectId = CryAudio::DefaultAuxObjectId) = 0;
-	virtual void                    AudioAuxObjectsMoveWithEntity(bool const bCanMoveWithEntity) = 0;
-	virtual void                    AddAsListenerToAudioAuxObject(CryAudio::AuxObjectId const audioAuxObjectId, void (* func)(CryAudio::SRequestInfo const* const), CryAudio::ESystemEvents const eventMask) = 0;
-	virtual void                    RemoveAsListenerFromAudioAuxObject(CryAudio::AuxObjectId const audioAuxObjectId, void (* func)(CryAudio::SRequestInfo const* const)) = 0;
-	virtual CryAudio::AuxObjectId   GetAuxObjectIdFromAudioObject(CryAudio::IObject* pObject) = 0;
+	virtual void                  SetParameter(CryAudio::ControlId const parameterId, float const value, CryAudio::AuxObjectId const audioAuxObjectId = CryAudio::DefaultAuxObjectId) = 0;
+	virtual void                  SetObstructionCalcType(CryAudio::EOcclusionType const occlusionType, CryAudio::AuxObjectId const audioAuxObjectId = CryAudio::DefaultAuxObjectId) = 0;
+	virtual void                  SetEnvironmentAmount(CryAudio::EnvironmentId const audioEnvironmentId, float const amount, CryAudio::AuxObjectId const audioAuxObjectId = CryAudio::DefaultAuxObjectId) = 0;
+	virtual void                  SetCurrentEnvironments(CryAudio::AuxObjectId const audioAuxObjectId = CryAudio::DefaultAuxObjectId) = 0;
+	virtual void                  AudioAuxObjectsMoveWithEntity(bool const bCanMoveWithEntity) = 0;
+	virtual void                  AddAsListenerToAudioAuxObject(CryAudio::AuxObjectId const audioAuxObjectId, void (*func)(CryAudio::SRequestInfo const* const), CryAudio::ESystemEvents const eventMask) = 0;
+	virtual void                  RemoveAsListenerFromAudioAuxObject(CryAudio::AuxObjectId const audioAuxObjectId, void (*func)(CryAudio::SRequestInfo const* const)) = 0;
+	virtual CryAudio::AuxObjectId GetAuxObjectIdFromAudioObject(CryAudio::IObject* pObject) = 0;
+	virtual void                  ToggleAbsoluteVelocityTracking(bool const enable, CryAudio::AuxObjectId const audioAuxObjectId = CryAudio::DefaultAuxObjectId, CryAudio::SRequestUserData const& userData = CryAudio::SRequestUserData::GetEmptyObject()) = 0;
+	virtual void                  ToggleRelativeVelocityTracking(bool const enable, CryAudio::AuxObjectId const audioAuxObjectId = CryAudio::DefaultAuxObjectId, CryAudio::SRequestUserData const& userData = CryAudio::SRequestUserData::GetEmptyObject()) = 0;
 };
 
 //! Type of an area managed by IEntityAreaComponent.
