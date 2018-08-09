@@ -646,7 +646,7 @@ bool CSceneForwardStage::PreparePerPassResources(bool bOnInit, bool bShadowMask,
 				resources.SetTexture(21, CRendererResources::s_ptexBlackCM, EDefaultResourceViews::Default, EShaderStage_AllWithoutCompute);
 				resources.SetTexture(22, CRendererResources::s_ptexBlack, EDefaultResourceViews::Default, EShaderStage_AllWithoutCompute);
 
-				if (includeTransparentPassResources || (CRenderer::CV_r_DeferredShadingTiled < 3))
+				if (includeTransparentPassResources || (CRenderer::CV_r_DeferredShadingTiled < 3) || (CRendererCVars::CV_r_GraphicsPipelineMobile > 0))
 				{
 					resources.SetBuffer(17, CDeviceBufferManager::GetNullBufferTyped(), EDefaultResourceViews::Default, EShaderStage_AllWithoutCompute);
 				}
@@ -660,7 +660,7 @@ bool CSceneForwardStage::PreparePerPassResources(bool bOnInit, bool bShadowMask,
 				resources.SetTexture(21, pTiledLights->GetDiffuseProbeAtlas(), EDefaultResourceViews::Default, EShaderStage_AllWithoutCompute);
 				resources.SetTexture(22, pTiledLights->GetProjectedLightAtlas(), EDefaultResourceViews::Default, EShaderStage_AllWithoutCompute);
 
-				if (includeTransparentPassResources || (CRenderer::CV_r_DeferredShadingTiled < 3))
+				if (includeTransparentPassResources || (CRenderer::CV_r_DeferredShadingTiled < 3) || (CRendererCVars::CV_r_GraphicsPipelineMobile > 0))
 				{
 					resources.SetBuffer(17, pTiledLights->GetTiledTranspLightMaskBuffer(), EDefaultResourceViews::Default, EShaderStage_AllWithoutCompute);
 				}
