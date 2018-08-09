@@ -43,36 +43,35 @@ class CClipVolumeManager;
 //  are derived from this base class to access other interfaces
 struct Cry3DEngineBase
 {
-	static ISystem*                               m_pSystem;
+	static ISystem*                 m_pSystem;
 #if !defined(DEDICATED_SERVER)
-	static IRenderer*                             m_pRenderer;
+	static IRenderer*               m_pRenderer;
 #else
-	static IRenderer* const                       m_pRenderer;
+	static IRenderer* const         m_pRenderer;
 #endif
-	static ITimer*                                m_pTimer;
-	static ILog*                                  m_pLog;
-	static IPhysicalWorld*                        m_pPhysicalWorld;
-	static IConsole*                              m_pConsole;
-	static C3DEngine*                             m_p3DEngine;
-	static CVars*                                 m_pCVars;
-	static ICryPak*                               m_pCryPak;
-	static CObjManager*                           m_pObjManager;
-	static CTerrain*                              m_pTerrain;
-	static IParticleManager*                      m_pPartManager;
-	static std::shared_ptr<pfx2::IParticleSystem> m_pParticleSystem;
-	static IOpticsManager*                        m_pOpticsManager;
-	static CDecalManager*                         m_pDecalManager;
-	static CVisAreaManager*                       m_pVisAreaManager;
-	static CClipVolumeManager*                    m_pClipVolumeManager;
-	static CMatMan*                               m_pMatMan;
-	static CSkyLightManager*                      m_pSkyLightManager;
-	static CWaterWaveManager*                     m_pWaterWaveManager;
-	static CRenderMeshMerger*                     m_pRenderMeshMerger;
-	static CMergedMeshesManager*                  m_pMergedMeshesManager;
-	static CBreezeGenerator*                      m_pBreezeGenerator;
-	static IStreamedObjectListener*               m_pStreamListener;
+	static ITimer*                  m_pTimer;
+	static ILog*                    m_pLog;
+	static IPhysicalWorld*          m_pPhysicalWorld;
+	static IConsole*                m_pConsole;
+	static C3DEngine*               m_p3DEngine;
+	static CVars*                   m_pCVars;
+	static ICryPak*                 m_pCryPak;
+	static CObjManager*             m_pObjManager;
+	static CTerrain*                m_pTerrain;
+	static IParticleManager*        m_pPartManager;
+	static IOpticsManager*          m_pOpticsManager;
+	static CDecalManager*           m_pDecalManager;
+	static CVisAreaManager*         m_pVisAreaManager;
+	static CClipVolumeManager*      m_pClipVolumeManager;
+	static CMatMan*                 m_pMatMan;
+	static CSkyLightManager*        m_pSkyLightManager;
+	static CWaterWaveManager*       m_pWaterWaveManager;
+	static CRenderMeshMerger*       m_pRenderMeshMerger;
+	static CMergedMeshesManager*    m_pMergedMeshesManager;
+	static CBreezeGenerator*        m_pBreezeGenerator;
+	static IStreamedObjectListener* m_pStreamListener;
 #if defined(USE_GEOM_CACHES)
-	static CGeomCacheManager*                     m_pGeomCacheManager;
+	static CGeomCacheManager*       m_pGeomCacheManager;
 #endif
 
 	static bool              m_bProfilerEnabled;

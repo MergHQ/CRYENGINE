@@ -182,8 +182,6 @@ bool C3DEngine::InitLevelForEditor(const char* szFolderName, const char* szMissi
 	// recreate particles and decals
 	if (m_pPartManager)
 		m_pPartManager->Reset();
-	if (m_pParticleSystem)
-		static_cast<pfx2::CParticleSystem*>(m_pParticleSystem.get())->Reset();
 
 	// recreate decals
 	SAFE_DELETE(m_pDecalManager);
@@ -511,14 +509,11 @@ void C3DEngine::UnloadLevel()
 	}
 
 	//////////////////////////////////////////////////////////////////////////
-	if (m_pPartManager || m_pParticleSystem)
+	if (m_pPartManager)
 	{
 		CryComment("Purge particles");
 		// Force to clean all particles that are left, even if still referenced.
-		if (m_pPartManager)
-			m_pPartManager->ClearRenderResources(true);
-		if (m_pParticleSystem)
-			static_cast<pfx2::CParticleSystem*>(m_pParticleSystem.get())->ClearRenderResources();
+		m_pPartManager->ClearRenderResources(true);
 		CryComment("done");
 	}
 

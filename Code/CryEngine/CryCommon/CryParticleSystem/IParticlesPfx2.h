@@ -107,10 +107,11 @@ struct SParentData
 struct IParticleEffectPfx2 : public IParticleEffect
 {
 	virtual void                   SetChanged() = 0;
+	virtual void                   Update() = 0;
 	virtual uint                   GetNumComponents() const = 0;
 	virtual IParticleComponent*    GetComponent(uint componentIdx) const = 0;
 	virtual IParticleComponent*    AddComponent() = 0;
-	virtual void                   RemoveComponent(uint componentIdx) = 0;
+	virtual void                   RemoveComponent(uint componentIdx, bool all = false) = 0;
 	virtual Serialization::SStruct GetEffectOptionsSerializer() const = 0;
 	virtual TParticleAttributesPtr CreateAttributesInstance() const = 0;
 	virtual bool                   IsSubstitutedPfx1() const = 0;
@@ -135,19 +136,22 @@ struct IParticleSystem : public ICryUnknown
 
 	virtual void                    OnFrameStart() = 0;
 	virtual void                    Update() = 0;
+	virtual void                    FinishRenderTasks(const SRenderingPassInfo& passInfo) = 0;
 	virtual void                    Reset() = 0;
+	virtual void                    ClearRenderResources() = 0;
 
 	virtual void                    Serialize(TSerialize ser) = 0;
 	virtual bool                    SerializeFeatures(IArchive& ar, TParticleFeatures& features, cstr name, cstr label) const = 0;
 
 	virtual void                    GetStats(SParticleStats& stats) = 0;
+	virtual void                    DisplayStats(Vec2& location, float lineHeight) = 0;
 	virtual void                    GetMemoryUsage(ICrySizer* pSizer) const = 0;
 };
 
 static std::shared_ptr<IParticleSystem> GetIParticleSystem()
 {
-	std::shared_ptr<IParticleSystem> pParticleSystem;
-	CryCreateClassInstanceForInterface(cryiidof<IParticleSystem>(), pParticleSystem);
+	static std::shared_ptr<IParticleSystem> pParticleSystem;
+	static bool created = CryCreateClassInstanceForInterface(cryiidof<IParticleSystem>(), pParticleSystem);
 	return pParticleSystem;
 }
 

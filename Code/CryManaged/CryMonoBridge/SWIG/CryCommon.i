@@ -191,7 +191,6 @@ SMART_PTR_TEMPLATE(IWriteXMLSource)
 SMART_PTR_TEMPLATE(SCrySessionID)
 SMART_PTR_TEMPLATE(SCryUserID)
 SMART_PTR_TEMPLATE(SMFXResourceList)
-SMART_PTR_TEMPLATE(IParticleEffectIterator)
 
 //%include <std_vector.i>
 //%template(ProfilerList) std::vector<CFrameProfiler*>;

@@ -639,20 +639,6 @@ typedef TContainerCounts<float> SContainerCounts;
 typedef TParticleCounts<float> SParticleCounts;
 
 //////////////////////////////////////////////////////////////////////////
-struct IParticleEffectIterator
-{
-	virtual ~IParticleEffectIterator() {}
-
-	virtual void             AddRef() = 0;
-	virtual void             Release() = 0;
-
-	virtual IParticleEffect* Next() = 0;
-	virtual int              GetCount() const = 0;
-};
-
-TYPEDEF_AUTOPTR(IParticleEffectIterator);
-typedef IParticleEffectIterator_AutoPtr IParticleEffectIteratorPtr;
-
 //////////////////////////////////////////////////////////////////////////
 struct IParticleManager
 {
@@ -700,9 +686,6 @@ struct IParticleManager
 	virtual bool LoadLibrary(cstr sParticlesLibrary, XmlNodeRef& libNode, bool bLoadResources) = 0;
 	virtual bool LoadLibrary(cstr sParticlesLibrary, cstr sParticlesLibraryFile = NULL, bool bLoadResources = false) = 0;
 
-	//! Returns particle iterator.
-	virtual IParticleEffectIteratorPtr GetEffectIterator() = 0;
-
 	//////////////////////////////////////////////////////////////////////////
 	// ParticleEmitters
 	//////////////////////////////////////////////////////////////////////////
@@ -746,6 +729,7 @@ struct IParticleManager
 	//! Stats.
 	virtual void GetMemoryUsage(ICrySizer* pSizer) const = 0;
 	virtual void GetCounts(SParticleCounts& counts) = 0;
+	virtual void DisplayStats(Vec2& location, float lineHeight) = 0;
 
 	//! PerfHUD.
 	virtual void CreatePerfHUDWidget() = 0;

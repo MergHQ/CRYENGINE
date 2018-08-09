@@ -1426,8 +1426,6 @@ void C3DEngine::RenderInternal(const int nRenderFlags, const SRenderingPassInfo&
 	m_pPartManager->GetLightProfileCounts().ResetFrameTicks();
 	if (passInfo.IsGeneralPass() && m_pPartManager)
 		m_pPartManager->Update();
-	if (passInfo.IsGeneralPass() && m_pParticleSystem)
-		m_pParticleSystem->Update();
 
 	if (passInfo.IsGeneralPass() && passInfo.RenderClouds())
 	{
@@ -1836,13 +1834,8 @@ void C3DEngine::RenderScene(const int nRenderFlags, const SRenderingPassInfo& pa
 	if (passInfo.RenderFarSprites())
 		m_pObjManager->RenderFarObjects(passInfo);
 
-	pfx2::CParticleSystem* pParticleSystem = static_cast<pfx2::CParticleSystem*>(m_pParticleSystem.get());
-	if (pParticleSystem)
-		pParticleSystem->FinishUpdate();
 	if (m_pPartManager)
 		m_pPartManager->FinishParticleRenderTasks(passInfo);
-	if (pParticleSystem)
-		pParticleSystem->DeferredRender(passInfo);
 
 	if (passInfo.IsGeneralPass())
 		m_LightVolumesMgr.Update(passInfo);
@@ -3214,50 +3207,9 @@ void C3DEngine::DisplayInfo(float& fTextPosX, float& fTextPosY, float& fTextStep
 
 	if (GetCVars()->e_ParticlesDebug & 1)
 	{
-		// Show particle stats.
-		static SParticleCounts Counts;
-		SParticleCounts CurCounts;
-		if (m_pPartManager)
-			m_pPartManager->GetCounts(CurCounts);
-
-		// Blend stats.
-		Counts = Lerp(Counts, CurCounts, fBlendCur);
-
-		if (m_pParticleSystem)
-		{
-			const Vec2 location = Vec2(fTextPosX, fTextPosY += fTextStepY);
-			pfx2::CParticleSystem* pPSystem = static_cast<pfx2::CParticleSystem*>(m_pParticleSystem.get());
-			fTextPosY = pPSystem->DisplayDebugStats(location, fTextStepY);
-		}
-		else
-		{
-			float fScreenPix = (float)(GetRenderer()->GetOverlayWidth() * GetRenderer()->GetOverlayHeight());
-
-			DrawTextRightAligned(fTextPosX, fTextPosY += fTextStepY,
-			                     "(Rendered/Active/Alloc): Particles %5.0f/%5.0f/%5.0f, Emitters %3.0f/%3.0f/%3.0f, SubEmitter: %3.0f, Fill %5.2f/%5.2f",
-			                     Counts.particles.rendered, Counts.particles.updated, Counts.particles.alive,
-			                     Counts.components.rendered, Counts.components.updated, Counts.components.alive, Counts.subemitters.updated,
-			                     Counts.pixels.rendered / fScreenPix, Counts.pixels.updated / fScreenPix);
-			fTextPosY += fTextStepY;
-		}
-
-		if (GetCVars()->e_ParticlesDebug & AlphaBit('r'))
-		{
-			DrawTextRightAligned(fTextPosX, fTextPosY += fTextStepY,
-			                     "Reiter %4.0f, Reject %4.0f, Clip %4.1f, Coll %4.1f / %4.1f",
-			                     Counts.particles.reiterate, Counts.particles.reject, Counts.particles.clip,
-			                     Counts.particles.collideHit, Counts.particles.collideTest);
-		}
-		if (GetCVars()->e_ParticlesDebug & AlphaBits('bx'))
-		{
-			if (Counts.volume.stat + Counts.volume.dyn > 0.0f)
-			{
-				float fDiv = 1.f / (Counts.volume.dyn + FLT_MIN);
-				DrawTextRightAligned(fTextPosX, fTextPosY += fTextStepY,
-					"Particle BB vol: Stat %.3g, Stat/Dyn %.2f, Err/Dyn %.3g",
-					Counts.volume.stat, Counts.volume.stat * fDiv, Counts.volume.error * fDiv);
-			}
-		}
+		Vec2 location = Vec2(fTextPosX, fTextPosY += fTextStepY);
+		m_pPartManager->DisplayStats(location, fTextStepY);
+		fTextPosY = location.y;
 	}
 
 	if (GetCVars()->e_ParticlesDebug & AlphaBit('m'))
