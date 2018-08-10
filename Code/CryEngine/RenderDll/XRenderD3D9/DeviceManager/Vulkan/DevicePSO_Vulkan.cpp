@@ -20,10 +20,7 @@ using namespace NCryVulkan;
 
 CDeviceGraphicsPSO_Vulkan::~CDeviceGraphicsPSO_Vulkan()
 {
-	if (m_pipeline != VK_NULL_HANDLE)
-	{
-		vkDestroyPipeline(m_pDevice->GetVkDevice(), m_pipeline, nullptr);
-	}
+	GetDevice()->ReleaseLater(m_pipeline, gcpRendD3D->GetRenderFrameID());
 }
 
 static struct
@@ -507,10 +504,7 @@ CDeviceGraphicsPSO::EInitResult CDeviceGraphicsPSO_Vulkan::Init(const CDeviceGra
 
 CDeviceComputePSO_Vulkan::~CDeviceComputePSO_Vulkan()
 {
-	if (m_pipeline != VK_NULL_HANDLE)
-	{
-		vkDestroyPipeline(m_pDevice->GetVkDevice(), m_pipeline, nullptr);
-	}
+	GetDevice()->ReleaseLater(m_pipeline, gcpRendD3D->GetRenderFrameID());
 }
 
 bool CDeviceComputePSO_Vulkan::Init(const CDeviceComputePSODesc& psoDesc)
