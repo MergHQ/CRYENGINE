@@ -2,8 +2,6 @@
 
 #pragma once
 
-#include <CryAudio/IAudioSystem.h>
-
 struct ICVar;
 struct IConsoleCmdArgs;
 
@@ -20,13 +18,13 @@ public:
 	void    RegisterVariables();
 	void    UnregisterVariables();
 
-	int m_fileCacheManagerSize = 0;
-	int m_audioObjectPoolSize = 0;
-	int m_audioEventPoolSize = 0;
-	int m_audioStandaloneFilePoolSize = 0;
-	int m_accumulateOcclusion = 1;
-	int m_ignoreWindowFocus = 0;
-	int m_occlusionCollisionTypes = 0;
+	int   m_fileCacheManagerSize = 0;
+	int   m_audioObjectPoolSize = 0;
+	int   m_audioEventPoolSize = 0;
+	int   m_audioStandaloneFilePoolSize = 0;
+	int   m_accumulateOcclusion = 1;
+	int   m_ignoreWindowFocus = 0;
+	int   m_occlusionCollisionTypes = 0;
 
 	float m_occlusionMaxDistance = 500.0f;
 	float m_occlusionMinDistance = 0.1f;
@@ -40,11 +38,11 @@ public:
 	float m_listenerOcclusionPlaneSize = 0.0f;
 
 #if defined(INCLUDE_AUDIO_PRODUCTION_CODE)
-	float m_debugDistance = 0.0f;
-	int m_drawAudioDebug = 0;
-	int m_fileCacheManagerDebugFilter = 0;
-	int m_hideInactiveAudioObjects = 0;
-	int m_audioObjectsRayType = 0;
+	float  m_debugDistance = 0.0f;
+	int    m_drawAudioDebug = 0;
+	int    m_fileCacheManagerDebugFilter = 0;
+	int    m_hideInactiveAudioObjects = 0;
+	int    m_audioObjectsRayType = 0;
 	ICVar* m_pDebugFilter = nullptr;
 #endif // INCLUDE_AUDIO_PRODUCTION_CODE
 

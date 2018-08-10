@@ -2,9 +2,8 @@
 
 #pragma once
 
-#include <CryPhysics/IPhysics.h>
-#include <CryAudio/IAudioSystem.h>
 #include "ATLEntities.h"
+#include <CryPhysics/IPhysics.h>
 
 namespace CryAudio
 {

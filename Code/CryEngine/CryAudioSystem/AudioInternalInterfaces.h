@@ -3,7 +3,6 @@
 #pragma once
 
 #include <CryAudio/IAudioSystem.h>
-#include <CryString/CryName.h>
 
 namespace CryAudio
 {

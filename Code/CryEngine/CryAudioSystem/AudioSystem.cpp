@@ -5,7 +5,6 @@
 #include "AudioCVars.h"
 #include "ATLAudioObject.h"
 #include "PropagationProcessor.h"
-#include "Common.h"
 #include "ATL.h"
 #include <CrySystem/ITimer.h>
 #include <CryString/CryPath.h>

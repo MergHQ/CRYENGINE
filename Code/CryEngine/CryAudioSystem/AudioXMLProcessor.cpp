@@ -2,9 +2,10 @@
 
 #include "stdafx.h"
 #include "AudioXMLProcessor.h"
+#include "Managers.h"
+#include "FileCacheManager.h"
 #include "ATLEntities.h"
 #include "Common/Logger.h"
-#include "Common.h"
 #include <IAudioImpl.h>
 #include <CryString/CryPath.h>
 

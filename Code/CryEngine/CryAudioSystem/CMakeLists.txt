@@ -23,6 +23,8 @@ add_sources("CryAudioSystem_uber_0.cpp"
 		"AudioEventListenerManager.h"
 		"AudioXMLProcessor.h"
 		"Common.h"
+		"DebugColor.h"
+		"Managers.h"
 	SOURCE_GROUP "Source Files"
 		"ATL.cpp"
 		"ATLAudioObject.cpp"
@@ -41,6 +43,8 @@ add_sources("CryAudioSystem_uber_0.cpp"
 		"AudioEventListenerManager.cpp"
 		"AudioXMLProcessor.cpp"
 		"Common.cpp"
+		"DebugColor.cpp"
+		"Managers.cpp"
 )
 
 add_sources("NoUberFile"
@@ -99,6 +103,8 @@ MACRO(setup_cryaudio)
 			-Wno-switch
 		)
     endif()
+
+		target_compile_definitions(${THIS_PROJECT} PRIVATE $<$<NOT:$<CONFIG:Release>>:INCLUDE_AUDIO_PRODUCTION_CODE> $<$<NOT:$<CONFIG:Release>>:ENABLE_AUDIO_LOGGING>)
 ENDMACRO()
 
 CryEngineModule(CryAudioSystem PCH "stdafx.cpp" SOLUTION_FOLDER "CryEngine/Audio")

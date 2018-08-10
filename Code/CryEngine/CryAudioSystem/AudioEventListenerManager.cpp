@@ -3,6 +3,7 @@
 #include "stdafx.h"
 #include "AudioEventListenerManager.h"
 #include "Common/Logger.h"
+#include <CrySystem/Profilers/FrameProfiler/FrameProfiler.h>
 
 namespace CryAudio
 {
@@ -41,7 +42,7 @@ ERequestStatus CAudioEventListenerManager::AddRequestListener(SAudioManagerReque
 }
 
 //////////////////////////////////////////////////////////////////////////
-ERequestStatus CAudioEventListenerManager::RemoveRequestListener(void (* func)(SRequestInfo const* const), void const* const pObjectToListenTo)
+ERequestStatus CAudioEventListenerManager::RemoveRequestListener(void (*func)(SRequestInfo const* const), void const* const pObjectToListenTo)
 {
 	ERequestStatus result = ERequestStatus::Failure;
 	ListenerArray::iterator Iter(m_listeners.begin());

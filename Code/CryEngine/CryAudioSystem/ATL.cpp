@@ -7,7 +7,7 @@
 #include "ATLAudioObject.h"
 #include "PoolObject_impl.h"
 #include "Common/Logger.h"
-#include "Common.h"
+#include "Managers.h"
 #include "AudioObjectManager.h"
 #include "AudioEventManager.h"
 #include "FileCacheManager.h"
@@ -21,6 +21,7 @@
 
 #if defined(INCLUDE_AUDIO_PRODUCTION_CODE)
 	#include "AudioSystem.h"
+	#include "DebugColor.h"
 	#include <CryRenderer/IRenderAuxGeom.h>
 #endif // INCLUDE_AUDIO_PRODUCTION_CODE
 

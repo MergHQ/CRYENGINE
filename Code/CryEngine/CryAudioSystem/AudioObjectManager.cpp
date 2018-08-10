@@ -2,15 +2,16 @@
 
 #include "stdafx.h"
 #include "AudioObjectManager.h"
+#include "Managers.h"
 #include "AudioListenerManager.h"
 #include "ATLAudioObject.h"
 #include "AudioCVars.h"
 #include "IAudioImpl.h"
 #include "SharedAudioData.h"
 #include "Common/Logger.h"
-#include "Common.h"
 
 #if defined(INCLUDE_AUDIO_PRODUCTION_CODE)
+	#include "DebugColor.h"
 	#include <CryRenderer/IRenderAuxGeom.h>
 #endif // INCLUDE_AUDIO_PRODUCTION_CODE
 

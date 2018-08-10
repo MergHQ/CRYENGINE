@@ -47,7 +47,6 @@ public:
 	ConstructedObjects const& GetObjects() const { return m_constructedObjects; }
 	void                      DrawPerObjectDebugInfo(IRenderAuxGeom& auxGeom) const;
 	void                      DrawDebugInfo(IRenderAuxGeom& auxGeom, float const posX, float posY) const;
-
 #endif // INCLUDE_AUDIO_PRODUCTION_CODE
 
 private:
