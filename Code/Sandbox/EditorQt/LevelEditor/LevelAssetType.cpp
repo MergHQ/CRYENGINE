@@ -148,8 +148,8 @@ CAssetEditor* CLevelType::Edit(CAsset* pAsset) const
 {
 	// Editing the level type presents a special case, as it does not return an asset editor.
 	// Instead we load the level.
-
-	CCryEditApp::GetInstance()->LoadLevel(pAsset->GetFile(0));
+	auto levelFullPath = PathUtil::Make(PathUtil::GetGameProjectAssetsPath(), pAsset->GetFile(0));
+	CCryEditApp::GetInstance()->LoadLevel(PathUtil::AbsolutePathToCryPakPath(levelFullPath));
 
 	return nullptr;
 }
