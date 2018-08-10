@@ -220,7 +220,7 @@ private:
 	char const* GetDefaultParameterName(ControlId const id) const;
 	char const* GetDefaultTriggerName(ControlId const id) const;
 
-	typedef std::map<ControlId, CStateDebugDrawData> StateDrawInfoMap;
+	using StateDrawInfoMap = std::map<ControlId, CStateDebugDrawData>;
 
 	mutable StateDrawInfoMap m_stateDrawInfoMap;
 

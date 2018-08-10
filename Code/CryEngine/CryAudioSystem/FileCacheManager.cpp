@@ -5,13 +5,13 @@
 #include "ATLEntities.h"
 #include "AudioCVars.h"
 #include "Common/Logger.h"
-#include "Common.h"
 #include <IAudioImpl.h>
 #include <CryRenderer/IRenderer.h>
 #include <CryMemory/IMemory.h>
 #include <CryString/CryPath.h>
 
 #if defined(INCLUDE_AUDIO_PRODUCTION_CODE)
+	#include "DebugColor.h"
 	#include <CryRenderer/IRenderAuxGeom.h>
 #endif // INCLUDE_AUDIO_PRODUCTION_CODE
 

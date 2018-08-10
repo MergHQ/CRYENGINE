@@ -2,11 +2,12 @@
 
 #pragma once
 
-#include <CryAudio/IAudioInterfacesCommonData.h>
+#include <CryMath/Cry_Math.h>
 
 namespace CryAudio
 {
 class CATLListener;
+class CObjectTransformation;
 
 class CAudioListenerManager final
 {

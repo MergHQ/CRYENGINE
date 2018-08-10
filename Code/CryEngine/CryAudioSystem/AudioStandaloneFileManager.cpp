@@ -2,14 +2,15 @@
 
 #include "stdafx.h"
 #include "AudioStandaloneFileManager.h"
-#include "AudioListenerManager.h"
 #include "ATLAudioObject.h"
 #include "AudioCVars.h"
-#include "Common.h"
 #include <IAudioImpl.h>
 #include <CryString/HashedString.h>
 
 #if defined(INCLUDE_AUDIO_PRODUCTION_CODE)
+	#include "Managers.h"
+	#include "AudioListenerManager.h"
+	#include "DebugColor.h"
 	#include <CryRenderer/IRenderAuxGeom.h>
 #endif // INCLUDE_AUDIO_PRODUCTION_CODE
 
@@ -63,7 +64,7 @@ void CFileManager::ReleaseStandaloneFile(CATLStandaloneFile* const pStandaloneFi
 {
 	if (pStandaloneFile != nullptr)
 	{
-		m_constructedStandaloneFiles.remove(pStandaloneFile);
+		m_constructedStandaloneFiles.erase(std::remove(m_constructedStandaloneFiles.begin(), m_constructedStandaloneFiles.end(), pStandaloneFile), m_constructedStandaloneFiles.end());
 		g_pIImpl->DestructStandaloneFile(pStandaloneFile->m_pImplData);
 		delete pStandaloneFile;
 	}

@@ -2,8 +2,6 @@
 
 #pragma once
 
-#include <CryAudio/IAudioInterfacesCommonData.h>
-
 #if defined(INCLUDE_AUDIO_PRODUCTION_CODE)
 struct IRenderAuxGeom;
 #endif //INCLUDE_AUDIO_PRODUCTION_CODE
@@ -36,7 +34,7 @@ public:
 
 private:
 
-	std::list<CATLStandaloneFile*> m_constructedStandaloneFiles;
+	std::vector<CATLStandaloneFile*> m_constructedStandaloneFiles;
 
 #if defined(INCLUDE_AUDIO_PRODUCTION_CODE)
 public:

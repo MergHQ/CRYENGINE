@@ -3,10 +3,7 @@
 #include "stdafx.h"
 #include "AudioListenerManager.h"
 #include "ATLEntities.h"
-#include "Common.h"
-#include <ATLEntityData.h>
 #include <IAudioImpl.h>
-#include <algorithm>
 
 namespace CryAudio
 {

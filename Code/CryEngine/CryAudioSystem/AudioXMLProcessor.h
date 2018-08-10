@@ -2,7 +2,9 @@
 
 #pragma once
 
-#include "FileCacheManager.h"
+#include <CryAudio/IAudioSystem.h>
+
+class XmlNodeRef;
 
 namespace CryAudio
 {

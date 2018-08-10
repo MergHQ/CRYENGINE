@@ -4,11 +4,12 @@
 #include "AudioEventManager.h"
 #include "AudioCVars.h"
 #include "ATLAudioObject.h"
-#include "Common.h"
-#include "AudioListenerManager.h"
 #include <IAudioImpl.h>
 
 #if defined(INCLUDE_AUDIO_PRODUCTION_CODE)
+	#include "Managers.h"
+	#include "AudioListenerManager.h"
+	#include "DebugColor.h"
 	#include <CryRenderer/IRenderAuxGeom.h>
 #endif // INCLUDE_AUDIO_PRODUCTION_CODE
 

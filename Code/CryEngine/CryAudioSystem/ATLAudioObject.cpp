@@ -3,18 +3,19 @@
 #include "stdafx.h"
 #include "ATLAudioObject.h"
 #include "AudioCVars.h"
+#include "Managers.h"
 #include "AudioEventManager.h"
 #include "AudioSystem.h"
 #include "AudioStandaloneFileManager.h"
 #include "AudioListenerManager.h"
 #include "Common/Logger.h"
-#include "Common.h"
 #include <IAudioImpl.h>
 #include <CryString/HashedString.h>
 #include <CryEntitySystem/IEntitySystem.h>
 #include <CryMath/Cry_Camera.h>
 
 #if defined(INCLUDE_AUDIO_PRODUCTION_CODE)
+	#include "DebugColor.h"
 	#include <CryRenderer/IRenderAuxGeom.h>
 #endif // INCLUDE_AUDIO_PRODUCTION_CODE
 

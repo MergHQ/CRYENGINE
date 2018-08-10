@@ -3,7 +3,6 @@
 #pragma once
 
 #if defined(INCLUDE_AUDIO_PRODUCTION_CODE)
-	#include <CryMath/Cry_Math.h>
 struct IRenderAuxGeom;
 #endif // INCLUDE_AUDIO_PRODUCTION_CODE
 

@@ -2,15 +2,16 @@
 
 #include "stdafx.h"
 #include "PropagationProcessor.h"
+#include "Managers.h"
+#include "AudioListenerManager.h"
 #include "AudioCVars.h"
 #include "ATLAudioObject.h"
 #include "AudioSystem.h"
-#include "Common.h"
-#include "AudioListenerManager.h"
 #include <Cry3DEngine/I3DEngine.h>
 #include <Cry3DEngine/ISurfaceType.h>
 
 #if defined(INCLUDE_AUDIO_PRODUCTION_CODE)
+	#include "DebugColor.h"
 	#include <CryRenderer/IRenderAuxGeom.h>
 	#include <CryMath/Random.h>
 #endif // INCLUDE_AUDIO_PRODUCTION_CODE
