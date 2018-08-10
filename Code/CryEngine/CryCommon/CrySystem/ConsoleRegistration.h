@@ -203,8 +203,8 @@ struct SDummyCVar : ICVar
 	const char*                  GetDataProbeString() const override                             { return ""; }
 	void                         Set(const char* s) override                                     { if (SQueryTypeEnum<T>::ParseString(s) != value) InvalidAccess(); }
 	void                         ForceSet(const char* s) override                                { Set(s); }
-	void                         Set(const float f) override                                     { if (static_cast<T>(f) != value) InvalidAccess(); }
-	void                         Set(const int i) override                                       { if (static_cast<T>(i) != value) InvalidAccess(); }
+	void                         Set(float f) override                                           { if (static_cast<T>(f) != value) InvalidAccess(); }
+	void                         Set(int i) override                                             { if (static_cast<T>(i) != value) InvalidAccess(); }
 	void                         Set(int64 i) override                                           { if (static_cast<T>(i) != value) InvalidAccess(); }
 	void                         SetFromString(const char* szValue) override                     { Set(szValue); }
 	void                         ClearFlags(int flags) override                                  {}
