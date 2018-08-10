@@ -177,7 +177,7 @@ if (AUDIO_WWISE)
 	set( DARWIN_RELEASE_LIBS ${COMMON_WWISE_LIBS} ${DARWIN_WWISE_LIBS} )
 	set( DARWIN_NONRELEASE_LIBS ${COMM_CENTRAL_LIBS} ${DARWIN_RELEASE_LIBS} )
 
-	set( ANDROID_WWISE_LIBS	CrankcaseAudioREVModelPlayerFX AuroHeadphoneFX AuroPannerMixer AkMotionGeneratorSource AkMotionSink)
+	set( ANDROID_WWISE_LIBS	CrankcaseAudioREVModelPlayerFX AuroHeadphoneFX AkMotionGeneratorSource AkMotionSink)
 	make_library(ANDROID_WWISE_LIBS "${WWISE_LIB_PATH}")
 
 	set( ANDROID_RELEASE_LIBS ${COMMON_WWISE_LIBS} ${ANDROID_WWISE_LIBS} )

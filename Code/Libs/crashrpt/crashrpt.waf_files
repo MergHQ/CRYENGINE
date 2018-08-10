@@ -1,0 +1,19 @@
+{
+    "NoUberFile": {
+        "Root": [
+            "../../SDKs/CrashRpt/1403/reporting/crashrpt/CrashHandler.cpp", 
+            "../../SDKs/CrashRpt/1403/reporting/crashrpt/CrashHandler.h", 
+            "../../SDKs/CrashRpt/1403/reporting/crashrpt/CrashRpt.cpp", 
+            "../../SDKs/CrashRpt/1403/reporting/crashrpt/CritSec.h", 
+            "../../SDKs/CrashRpt/1403/reporting/crashrpt/Prefastdef.h", 
+            "../../SDKs/CrashRpt/1403/reporting/crashrpt/resource.h", 
+            "../../SDKs/CrashRpt/1403/reporting/crashrpt/SharedMem.cpp", 
+            "../../SDKs/CrashRpt/1403/reporting/crashrpt/SharedMem.h", 
+            "../../SDKs/CrashRpt/1403/reporting/crashrpt/StdAfx.cpp", 
+            "../../SDKs/CrashRpt/1403/reporting/crashrpt/StdAfx.h", 
+            "../../SDKs/CrashRpt/1403/reporting/crashrpt/strconv.h", 
+            "../../SDKs/CrashRpt/1403/reporting/crashrpt/Utility.cpp", 
+            "../../SDKs/CrashRpt/1403/reporting/crashrpt/Utility.h"
+        ]
+    }
+}

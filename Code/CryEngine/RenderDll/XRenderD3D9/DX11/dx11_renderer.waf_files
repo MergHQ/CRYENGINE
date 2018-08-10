@@ -1,0 +1,43 @@
+{
+    "CryRenderer_uber_5_dx11_dx11.cpp": {
+        "DeviceManager/D3D11": [
+            "DeviceManager/D3D11/DeviceSubmissionQueue_D3D11.h", 
+            "DeviceManager/D3D11/DeviceSubmissionQueue_D3D11.inl", 
+            "DeviceManager/D3D11/DeviceSubmissionQueue_D3D11.cpp", 
+            "DeviceManager/D3D11/DeviceObjects_D3D11.h", 
+            "DeviceManager/D3D11/DeviceObjects_D3D11.inl", 
+            "DeviceManager/D3D11/DeviceObjects_D3D11.cpp", 
+            "DeviceManager/D3D11/DeviceResources_D3D11.inl", 
+            "DeviceManager/D3D11/DeviceResources_D3D11_NVAPI.h", 
+            "DeviceManager/D3D11/DeviceResources_D3D11_NVAPI.inl", 
+            "DeviceManager/D3D11/DeviceCommandList_D3D11.h", 
+            "DeviceManager/D3D11/DeviceWrapper_D3D11_Logging.cpp", 
+            "DeviceManager/D3D11/DeviceWrapper_D3D11_MemReplay.h", 
+            "DeviceManager/D3D11/DeviceWrapper_D3D11_MemReplay.cpp", 
+            "DeviceManager/D3D11/DeviceResourceSet_D3D11.h", 
+            "DeviceManager/D3D11/DeviceResourceSet_D3D11.cpp", 
+            "DeviceManager/D3D11/DeviceCommandListCommon_D3D11.h", 
+            "DeviceManager/D3D11/DeviceCommandListCommon_D3D11.cpp", 
+            "DeviceManager/D3D11/DevicePSO_D3D11.h", 
+            "DeviceManager/D3D11/DevicePSO_D3D11.cpp", 
+            "DeviceManager/D3D11/DeviceRenderPass_D3D11.h", 
+            "DeviceManager/D3D11/DeviceRenderPass_D3D11.cpp"
+        ]
+    }, 
+    "NoUberFile": {
+        "DX11": [
+            "DX11/CryDX11.cpp", 
+            "DX11/CryDX11.hpp"
+        ], 
+        "DX11/API": [
+            "DX11/API/DX11Base.cpp", 
+            "DX11/API/DX11CommandScheduler.cpp", 
+            "DX11/API/DX11CommandListFence.cpp", 
+            "DX11/API/DX11Device.cpp", 
+            "DX11/API/DX11Base.hpp", 
+            "DX11/API/DX11CommandScheduler.hpp", 
+            "DX11/API/DX11CommandListFence.hpp", 
+            "DX11/API/DX11Device.hpp"
+        ]
+    }
+}

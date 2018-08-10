@@ -1,0 +1,11 @@
+# Copyright 2001-2018 Crytek GmbH / Crytek Group. All rights reserved.
+
+def build(bld):	
+
+	bld.CryEngineModule(
+		target    = 'CryUDR',
+		vs_filter = 'CryEngine',		
+		file_list = 'cry_udr_core.waf_files',
+
+		pch       = 'StdAfx.cpp',	
+	)	

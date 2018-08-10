@@ -5,7 +5,7 @@ def build(bld):
 	bld.CryEngineModule(
 		target = 'CrySchematyc2',
 		vs_filter = 'CryEngine',
-		file_list = 'cryschematyc.waf_files',
+		file_list = ['cryschematyc.waf_files', 'baseenv.waf_files'],
 
 		pch = 'StdAfx.cpp',
 		defines = 'SCHEMATYC_EXPORTS',

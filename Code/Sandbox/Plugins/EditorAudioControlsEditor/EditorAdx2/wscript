@@ -2,7 +2,7 @@
 
 def build(bld):	
 
-	bld.CryPlugin(
+	bld.CryEditorPlugin(
 		target          = 'EditorCryAudioImplAdx2',
 		vs_filter       = 'Sandbox/Plugins/EditorAudioControlsEditor/Impl',
 		file_list       = 'editoradx2.waf_files',

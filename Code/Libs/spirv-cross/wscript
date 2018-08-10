@@ -6,12 +6,19 @@ def build(bld):
 		target       = 'spirv-cross', 
 		vs_filter    = 'Libs',
 		file_list    = 'spirv-cross.waf_files',
-		win_defines  = [ '_CRT_SECURE_NO_WARNINGS' ], # cpp locale used
-		win_cxxflags = [ '/W0' ],               # conversion warnings, sprintf warnings
-		
 		exclude_from_static_code_analyzer = True,
+
+		win_defines  = [ '_CRT_SECURE_NO_WARNINGS' ], # cpp locale used		
+		win_cxxflags = 
+		[ 
+		'/wd4530', # C++ exception handler used, but unwind semantics are not enabled. Specify /EHsc
+		'/wd4267', # 'initializing': conversion from 'size_t' to 'uint32_t', possible loss of data
+		'/wd4244', # '=': conversion from '__int64' to 'uint32_t', possible loss of data
+		'/WX-'  # disabling warnings treated as errors
+		],   
 		
-		android_cxxflags = ['-fcxx-exceptions'],
+		linux_cxxflags = ['-Wno-return-type', '-Werror'],
+		android_cxxflags = ['-Wno-return-type', '-Werror', '-fexceptions'],
 
 		module_provides = dict(
 			includes = [ Path('Code/SDKs/spirv-cross'), ],

@@ -1,0 +1,27 @@
+# Copyright 2001-2018 Crytek GmbH / Crytek Group. All rights reserved.
+
+def build(bld):	
+
+	bld.CryEngineStaticModule( 
+		target    = 'crashrpt', 
+		vs_filter = 'Libs',
+		file_list = 'crashrpt.waf_files',
+		exclude_from_static_code_analyzer = True,
+		
+		defines = ['_UNICODE', '_CRT_SECURE_NO_DEPRECATE','CRASHRPT_LIB'],
+		
+		win_cxxflags = [
+		'/wd4530', #Disable C4530 (warning C4530: C++ exception handler used, but unwind semantics are not enabled. Specify /EHsc)
+		'/wd4996'  #Disable C4996 (warning C4996: 'GetVersionExA': was declared deprecated)
+		],
+		
+		win_linkerflags = [
+		'/ignore:4221' #Disable link warning LNK4221 (StdAfx.obj : warning LNK4221: This object file does not define any previously undefined public symbols, so it will not be used by any link operation that consumes this library)
+		],
+		
+		win_lib = ['rpcrt4.dll', 'version.lib'],
+
+		module_provides = dict(
+			includes = [ Path('Code/SDKs/CrashRpt/1403/include')],
+		)
+	)

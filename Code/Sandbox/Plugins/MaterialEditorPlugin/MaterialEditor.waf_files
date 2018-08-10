@@ -1,0 +1,25 @@
+{
+    "Editor_Uber_MaterialEditorPlugin.cpp": {
+        "Root": [
+            "MaterialEditor.cpp",
+            "MaterialEditor.h",
+            "MaterialEditorPlugin.cpp",
+            "MaterialEditorPlugin.h",
+            "SubMaterialView.h",
+            "SubMaterialView.cpp",
+            "MaterialPreview.h",
+            "MaterialPreview.cpp",
+            "MaterialProperties.h",
+            "MaterialProperties.cpp",
+            "PickMaterialTool.h",
+            "PickMaterialTool.cpp"
+        ]
+    },
+    "NoUberFile": {
+        "Root": [
+            "StdAfx.h",
+            "StdAfx.cpp",
+            "MaterialEditorPlugin.qrc"
+        ]
+    }
+}
