@@ -1,14 +1,15 @@
 {
 	"description"                           : "Configuration to build the Engine and the GameSDK Project",
-	"valid_platforms"                       : [ "win", "durango", "orbis" ],
+	"valid_platforms"                       : [ "win", "durango", "orbis", "android" ],
 	"valid_configuration"                   : [ "debug", "profile", "performance", "release" ],
 	"visual_studio_name"                    : "GameSDK",
 
   "game_projects": "GameSDK",
 
-	"win_module_extensions"                 : ["audio_fmod", "brofiler", "eyex", "mono"],
+	"win_module_extensions"                 : ["audio_fmod", "brofiler", "eyex"],
+	"android_module_extensions"             : ["sdl2"],
 
-  "defines"                               : [ "UQS_SCHEMATYC_SUPPORT=1", "SUPPORT_UNSIGNED_PAKS" ],
+  "defines"                               : [ "UQS_SCHEMATYC_SUPPORT=1", "SUPPORT_UNSIGNED_PAKS", "USE_SCHEMATYC", "USE_SCHEMATYC_EXPERIMENTAL" ],
 
 	"modules" :
 	[
@@ -33,8 +34,21 @@
 		"CryScaleformHelper",
 		"CryAction",
 		"CrySchematyc",
+		"CryGamePlatform",
+		"CryPerceptionSystem",
+		"CrySensorSystem",
+		"CryUDR",
+		
 		"CryFlowGraph",
+		"CryReflection",
 		"HWScripts",
+		
+		"CryUQS_Core",
+		"CryUQS_Client",
+		"CryUQS_DataSource_XML",
+		"CryUQS_Shared",
+		"CryUQS_StdLib",
+		"CryUQS_Interfaces",
 		
 		"CryDefaultEntities",
 
@@ -54,6 +68,7 @@
 		"tiff",
 		"curl",
 		"spirv-cross",
+		"mikkelsen",
 
 		"CryGameSDK"
 	],
@@ -65,13 +80,12 @@
 		"CryAudioImplFmod",
 		"CryAudioImplPortAudio",
 		
+		
 		"CryRenderD3D11",
 		"CryRenderD3D12",
 		"CryRenderVulkan",
 
-		"CryScaleformHelper",
-
-		"CryMonoBridge"
+		"CryScaleformHelper"
 	],
 	
 	"durango_force_shared_monolithic_build_modules" : 
@@ -82,12 +96,15 @@
 	"win_modules": [
 		"WindowsLauncher",
 		"CryRenderD3D11",
-		"CryRenderD3D12",
-		"CryRenderVulkan",
 		"CryAudioImplSDLMixer",
 		"CryAudioImplFmod",
 		"CryAudioImplPortAudio",
 		"CryLobby",
+		"CrySchematyc2",
+		
+		"CryRenderD3D11",
+		"CryRenderD3D12",
+		"CryRenderVulkan",
 
 		"oculus",
 		"flac",
@@ -102,7 +119,6 @@
 
 		"CryOculusVR",
 		"CryOpenVR",
-		"CryMonoBridge",
 		"CryUserAnalytics"
 	],
 		
@@ -153,20 +169,7 @@
 	"android_modules":
 	[
 		"AndroidLauncher",
-		"CryRenderOpenGL",
-		"CryRenderVulkan",
-		"CryAudioImplSDLMixer",
-		"CryLobby",
-
-		"libmodplug",
-		"flac",
-		"libmikmod",
-		"libogg",
-		"libvorbis",
-		"libvorbisfile",
-		"native_midi",
-		"sdl_mixer",
-		"smpeg",
-		"timidity"
-	]
+		"CryRenderVulkan"
+	],
+	"android_monolithic_build" : "True"
 }

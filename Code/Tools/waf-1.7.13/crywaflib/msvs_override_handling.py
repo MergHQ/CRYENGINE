@@ -173,6 +173,9 @@ def _get_project_overrides(ctx, target):
 	# Open file
 	try:
 		file = open(vcxproj_file)
+	except IOError as e:
+		# skip files that do not exist. 
+		return ({}, {})
 	except Exception as e:	
 		Logs.warn('warning: Unable to parse .vcxproj file to extract configuration overrides. [File:%s] [Exception:%s, %s]' % (vcxproj_file, sys.exc_info()[0], e) )
 		return ({}, {})

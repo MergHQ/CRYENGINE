@@ -1,0 +1,18 @@
+from waflib.TaskGen import feature
+from waflib.Utils import run_once
+
+def build(bld): 
+	bld.CryEditorPlugin(
+		target     = 'EditorSubstance',
+		vs_filter  = 'Sandbox/Plugins',
+		file_list  = 'editorsubstance.waf_files',
+		pch        = 'StdAfx.cpp',
+		
+		module_extensions = ['substance'],
+		
+		includes 	= [ Path('Code/Sandbox/Plugins/MFCToolsPlugin'),
+						Path('Code/Sandbox/Libs/CrySubstance')],
+						
+		use			= [ 'MFCToolsPlugin', 'CrySubstance' ]
+	)
+	

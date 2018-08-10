@@ -1,7 +1,7 @@
 {
     "NoUberFile": {
         "DXGL/Specification": [
-            "DXGL/Specification/glad_wgl.c",
+            "DXGL/Specification/glad_wgl.c", 
             "DXGL/Specification/glad_wgl.h"
         ]
     }
