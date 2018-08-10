@@ -549,11 +549,23 @@ void CDevice::FlushReleaseHeap(const UINT64 (&completedFenceValues)[CMDQUEUE_NUM
 	}
 }
 
+void CDevice::FlushReleasePSOHeap() threadsafe
+{
+	while (!m_PSOReleasePair.empty() && m_PSOReleasePair.front().second >= (gcpRendD3D->GetRenderFrameID() + MAX_FRAME_LATENCY))
+	{
+		VkPipeline pipeline = m_PSOReleasePair.front().first;
+		if (pipeline != VK_NULL_HANDLE)
+			vkDestroyPipeline(GetVkDevice(), pipeline, nullptr);
+		m_PSOReleasePair.pop( );
+	}
+}
+
 void CDevice::FlushReleaseHeaps(const UINT64 (&completedFenceValues)[CMDQUEUE_NUM], const UINT64 (&pruneFenceValues)[CMDQUEUE_NUM]) threadsafe
 {
 	FlushReleaseHeap<CBufferResource             >(completedFenceValues, pruneFenceValues);
 	FlushReleaseHeap<CDynamicOffsetBufferResource>(completedFenceValues, pruneFenceValues);
 	FlushReleaseHeap<CImageResource              >(completedFenceValues, pruneFenceValues);
+	FlushReleasePSOHeap                           ();
 }
 
 //---------------------------------------------------------------------------------------------------------------------
@@ -609,6 +621,12 @@ void CDevice::ReleaseLater(const FVAL64 (&fenceValues)[CMDQUEUE_NUM], CResource*
 
 		std::pair<typename TReleaseHeap<CResource>::iterator, bool> result = ReleaseHeap.emplace(pObject, std::move(releaseInfo));
 	}
+}
+
+//---------------------------------------------------------------------------------------------------------------------
+void CDevice::ReleaseLater(VkPipeline pipeline, int frameID) threadsafe
+{
+	m_PSOReleasePair.push(std::make_pair(pipeline, frameID));
 }
 
 //---------------------------------------------------------------------------------------------------------------------

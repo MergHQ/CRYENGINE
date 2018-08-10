@@ -3,6 +3,7 @@
 #pragma once
 
 #include <vector>
+#include <queue>
 
 #include "VKBase.hpp"
 #include "VKHeap.hpp"
@@ -87,7 +88,9 @@ public:
 	template<class CResource> VkResult CreateOrReuseStagingResource(CResource* pInputResource, VkDeviceSize minSize, CBufferResource** ppStagingResource, bool bUpload) threadsafe;
 	template<class CResource, class VkCreateInfo> VkResult CreateOrReuseCommittedResource(EHeapType HeapHint, const VkCreateInfo& createInfo, CResource** ppOutputResource) threadsafe;
 	template<class CResource> void ReleaseLater(const FVAL64 (&fenceValues)[CMDQUEUE_NUM], CResource* pObject, bool bReusable = true) threadsafe;
+	void                           ReleaseLater(VkPipeline pipeline, int frameID) threadsafe;
 	template<class CResource> void FlushReleaseHeap(const UINT64 (&completedFenceValues)[CMDQUEUE_NUM], const UINT64 (&pruneFenceValues)[CMDQUEUE_NUM]) threadsafe;
+	void                           FlushReleasePSOHeap() threadsafe;
 
 	void FlushReleaseHeaps(const UINT64 (&completedFenceValues)[CMDQUEUE_NUM], const UINT64 (&pruneFenceValues)[CMDQUEUE_NUM]) threadsafe;
 	void FlushAndWaitForGPU();
@@ -148,6 +151,8 @@ private:
 
 	TReleaseHeap<CImageResource> m_ImageReleaseHeap;
 	TRecycleHeap<CImageResource> m_ImageRecycleHeap;
+
+	std::queue<std::pair<VkPipeline, int>>     m_PSOReleasePair;
 
 	template<class CResource> TReleaseHeap<CResource>& GetReleaseHeap();
 	template<class CResource> TRecycleHeap<CResource>& GetRecycleHeap();
