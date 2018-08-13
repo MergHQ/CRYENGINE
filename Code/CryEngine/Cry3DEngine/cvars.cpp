@@ -830,10 +830,8 @@ void CVars::Init()
 	              "Number of heightmap quad-tree levels used for vegetation spawning");
 	REGISTER_CVAR(e_ProcVegetationMaxSectorsInCache, 16, VF_REQUIRE_APP_RESTART,
 	              "Maximum number of 64x64 meter sectors cached in memory");
-	REGISTER_CVAR(e_ProcVegetationMaxChunksInCache, 128, VF_REQUIRE_APP_RESTART,
-	              "Maximum number of object chunks cached in memory");
-	REGISTER_CVAR(e_ProcVegetationMaxObjectsInChunk, 1024, VF_REQUIRE_APP_RESTART,
-	              "Maximum number of instances per chunk");
+	REGISTER_CVAR(e_ProcVegetationMaxObjectsPerSector, 2048, VF_REQUIRE_APP_RESTART,
+	              "Maximum number of procedural instances in level");
 
 	REGISTER_CVAR(e_Recursion, 1, VF_NULL,
 	              "If 0 - will skip recursive render calls like render into texture");

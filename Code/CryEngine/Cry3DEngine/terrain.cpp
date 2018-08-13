@@ -262,79 +262,92 @@ void CTerrain::UpdateNodesIncrementaly(const SRenderingPassInfo& passInfo)
 	// process procedural objects
 	if (m_lstActiveProcObjNodes.Count())
 	{
-		static int paramsCheckSumm = 0;
-		if (!CTerrainNode::GetProcObjChunkPool() || paramsCheckSumm != (MAX_PROC_OBJ_CHUNKS_NUM + MAX_PROC_SECTORS_NUM + GetCVars()->e_ProcVegetationMaxObjectsInChunk))
-		{
-			while (m_lstActiveProcObjNodes.Count() > 0)
-			{
-				m_lstActiveProcObjNodes.Last()->RemoveProcObjects(false);
-				m_lstActiveProcObjNodes.DeleteLast();
-			}
-
-			delete CTerrainNode::GetProcObjChunkPool();
-			CTerrainNode::SetProcObjChunkPool(new SProcObjChunkPool(MAX_PROC_OBJ_CHUNKS_NUM));
-
-			delete CTerrainNode::GetProcObjPoolMan();
-			CTerrainNode::SetProcObjPoolMan(new CProcVegetPoolMan(MAX_PROC_SECTORS_NUM));
-
-			paramsCheckSumm = (MAX_PROC_OBJ_CHUNKS_NUM + MAX_PROC_SECTORS_NUM + GetCVars()->e_ProcVegetationMaxObjectsInChunk);
-		}
-
 		// make sure distances are correct
 		for (int i = 0; i < m_lstActiveProcObjNodes.Count(); i++)
 			m_lstActiveProcObjNodes[i]->UpdateDistance(passInfo);
 
-		// sort by distance
-		qsort(m_lstActiveProcObjNodes.GetElements(), m_lstActiveProcObjNodes.Count(),
-		      sizeof(m_lstActiveProcObjNodes[0]), CmpTerrainNodesDistance);
-
-		// release unimportant sectors
-		static int nMaxSectors = MAX_PROC_SECTORS_NUM;
-		while (m_lstActiveProcObjNodes.Count() > (GetCVars()->e_ProcVegetation ? nMaxSectors : 0))
-		{
-			m_lstActiveProcObjNodes.Last()->RemoveProcObjects(false);
-			m_lstActiveProcObjNodes.DeleteLast();
-		}
-
-		while (1)
-		{
-			// release even more if we are running out of memory
-			while (m_lstActiveProcObjNodes.Count())
-			{
-				int nAll = 0;
-				int nUsed = CTerrainNode::GetProcObjChunkPool()->GetUsedInstancesCount(nAll);
-				if (nAll - nUsed > (MAX_PROC_OBJ_CHUNKS_NUM / MAX_PROC_SECTORS_NUM)) // make sure at least X chunks are free and ready to be used in this frame
-					break;
-
-				m_lstActiveProcObjNodes.Last()->RemoveProcObjects(false);
-				m_lstActiveProcObjNodes.DeleteLast();
-
-				nMaxSectors = min(nMaxSectors, m_lstActiveProcObjNodes.Count());
-			}
-
-			// build most important not ready sector
-			bool bAllDone = true;
-			for (int i = 0; i < m_lstActiveProcObjNodes.Count(); i++)
-			{
-				if (m_lstActiveProcObjNodes[i]->CheckUpdateProcObjects(passInfo))
-				{
-					bAllDone = false;
-					break;
-				}
-			}
-
-			if (!Get3DEngine()->IsTerrainSyncLoad() || bAllDone)
-				break;
-		}
-
-		//    if(m_lstActiveProcObjNodes.Count())
-		//    m_lstActiveProcObjNodes[0]->RemoveProcObjects(false);
+		ProcessActiveProcObjNodes();
 
 		IF (GetCVars()->e_ProcVegetation == 2, 0)
+		{
 			for (int i = 0; i < m_lstActiveProcObjNodes.Count(); i++)
-				DrawBBox(m_lstActiveProcObjNodes[i]->GetBBoxVirtual(),
-				         m_lstActiveProcObjNodes[i]->IsProcObjectsReady() ? Col_Green : Col_Red);
+				DrawBBox(m_lstActiveProcObjNodes[i]->GetBBoxVirtual(), m_lstActiveProcObjNodes[i]->IsProcObjectsReady() ? Col_Green : Col_Red);
+		}
 	}
+}
+
+bool CTerrain::CheckUpdateProcObjectsInArea(const AABB& areaBox, bool bForceSyncUpdate)
+{
+	if (GetTerrain()->m_bProcVegetationInUse && GetCVars()->e_ProcVegetation)
+	{
+		if (bForceSyncUpdate)
+		{
+			// release all procedural nodes
+			while (m_lstActiveProcObjNodes.Count())
+			{
+				m_lstActiveProcObjNodes.Last()->RemoveProcObjects(false);
+				m_lstActiveProcObjNodes.DeleteLast();
+			}
+		}
+
+		PodArray<CTerrainNode*> arrNodes;
+		m_pParentNode->IntersectWithBox(areaBox, &arrNodes);
+
+		// visit leaf nodes
+		for (int i = 0; i < arrNodes.Count(); i++)
+		{
+			if (!arrNodes[i]->m_nTreeLevel && !arrNodes[i]->IsProcObjectsReady())
+			{
+				ActivateNodeProcObj(arrNodes[i]);
+
+				if (!bForceSyncUpdate)
+					return false;
+			}
+		}
+
+		if (bForceSyncUpdate) // distribute objects
+			ProcessActiveProcObjNodes(true);
+	}
+
+	return true;
+}
+
+void CTerrain::ProcessActiveProcObjNodes(bool bSyncUpdate)
+{
+	// sort by distance
+	qsort(m_lstActiveProcObjNodes.GetElements(), m_lstActiveProcObjNodes.Count(), sizeof(m_lstActiveProcObjNodes[0]), CmpTerrainNodesDistance);
+
+	// release unimportant sectors
+	while (m_lstActiveProcObjNodes.Count() > (GetCVars()->e_ProcVegetation ? GetCVars()->e_ProcVegetationMaxSectorsInCache : 0))
+	{
+		m_lstActiveProcObjNodes.Last()->RemoveProcObjects(false);
+		m_lstActiveProcObjNodes.DeleteLast();
+	}
+
+	while (1)
+	{
+		// build most important not ready sector
+		bool bAllDone = true;
+		for (int i = 0; i < m_lstActiveProcObjNodes.Count(); i++)
+		{
+			if (m_lstActiveProcObjNodes[i]->CheckUpdateProcObjects())
+			{
+				bAllDone = false;
+				break;
+			}
+		}
+
+		if (!(Get3DEngine()->IsTerrainSyncLoad() || bSyncUpdate) || bAllDone)
+			break;
+	}
+}
+
+int CTerrain::GetActiveProcObjNodesCount(int& objectsNum)
+{
+	objectsNum = 0;
+	for (int i = 0; i < m_lstActiveProcObjNodes.Count(); i++)
+		objectsNum += m_lstActiveProcObjNodes[i]->m_arrProcObjects.Count();
+	return m_lstActiveProcObjNodes.Count();
 }
 
 int CTerrain::UpdateOcean(const SRenderingPassInfo& passInfo)
@@ -435,11 +448,6 @@ void CTerrain::GetMemoryUsage(class ICrySizer* pSizer) const
 	{
 		SIZER_COMPONENT_NAME(pSizer, "SecInfoTable");
 		pSizer->AddObject(m_arrSecInfoPyramid);
-	}
-
-	{
-		SIZER_COMPONENT_NAME(pSizer, "ProcVeget");
-		pSizer->AddObject(CTerrainNode::GetProcObjPoolMan());
 	}
 
 	pSizer->AddObject(m_lstVisSectors);

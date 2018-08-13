@@ -41,13 +41,14 @@ char* CSvoManager::GetStatusString(int lineId)
 	if (lineId == (slotId++) && (CVoxelSegment::m_addPolygonToSceneCounter || GetCVars()->e_svoEnabled))
 	{
 		int allSlotsNum = SVO_ATLAS_DIM_BRICKS_XY * SVO_ATLAS_DIM_BRICKS_XY * SVO_ATLAS_DIM_BRICKS_Z;
-		cry_sprintf(szText, "SVO pool: %2d of %dMB x %d, %3d/%3d of %4d = %.1f Async: %2d, Post: %2d, Loaded: %4d",
+		cry_sprintf(szText, "SVO pool: %2d of %dMB x %d, %3d/%3d of %4d = %.1f Async: %2d, Post: %2d, Loaded: %4d, %s",
 		            CVoxelSegment::m_poolUsageBytes / 1024 / 1024,
 		            int(CVoxelSegment::m_voxTexPoolDimXY * CVoxelSegment::m_voxTexPoolDimXY * CVoxelSegment::m_voxTexPoolDimZ / 1024 / 1024) * (gSvoEnv->m_voxTexFormat == eTF_BC3 ? 1 : 4),
 		            CVoxelSegment::m_svoDataPoolsCounter,
 		            CVoxelSegment::m_addPolygonToSceneCounter, CVoxelSegment::m_poolUsageItems, allSlotsNum,
 		            (float)CVoxelSegment::m_poolUsageItems / allSlotsNum,
-		            CVoxelSegment::m_streamingTasksInProgress, CVoxelSegment::m_postponedCounter, CVoxelSegment::m_arrLoadedSegments.Count());
+		            CVoxelSegment::m_streamingTasksInProgress, CVoxelSegment::m_postponedCounter, CVoxelSegment::m_arrLoadedSegments.Count(),
+		            CSvoNode::IsStreamingActive() ? "OFV" : "RTV");
 		return szText;
 	}
 

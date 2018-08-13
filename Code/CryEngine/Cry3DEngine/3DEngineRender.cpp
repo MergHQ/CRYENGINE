@@ -3346,37 +3346,11 @@ void C3DEngine::DisplayInfo(float& fTextPosX, float& fTextPosY, float& fTextStep
 
 	if (GetCVars()->e_ProcVegetation == 2)
 	{
-		CProcVegetPoolMan& pool = *CTerrainNode::GetProcObjPoolMan();
-		int nAll;
-		int nUsed = pool.GetUsedInstancesCount(nAll);
-
-		DrawTextRightAligned(fTextPosX, fTextPosY += fTextStepY, "---------------------------------------");
-		DrawTextRightAligned(fTextPosX, fTextPosY += fTextStepY, "Procedural sectors pool status: used=%d, all=%d, active=%d",
-		                     nUsed, nAll, GetTerrain()->GetActiveProcObjNodesCount());
-		DrawTextRightAligned(fTextPosX, fTextPosY += fTextStepY, "---------------------------------------");
-		for (int i = 0; i < min(16, pool.m_lstUsed.Count()); i++)
-		{
-			CProcObjSector* pSubPool = pool.m_lstUsed[i];
-			nUsed = pSubPool->GetUsedInstancesCount(nAll);
-			DrawTextRightAligned(fTextPosX, fTextPosY += fTextStepY,
-			                     "Used sector: used=%d, all=%dx%d", nUsed, nAll, (int)GetCVars()->e_ProcVegetationMaxObjectsInChunk);
-		}
-		for (int i = 0; i < min(16, pool.m_lstFree.Count()); i++)
-		{
-			CProcObjSector* pSubPool = pool.m_lstFree[i];
-			nUsed = pSubPool->GetUsedInstancesCount(nAll);
-			DrawTextRightAligned(fTextPosX, fTextPosY += fTextStepY,
-			                     "Free sector: used=%d, all=%dx%d", nUsed, nAll, (int)GetCVars()->e_ProcVegetationMaxObjectsInChunk);
-		}
-		DrawTextRightAligned(fTextPosX, fTextPosY += fTextStepY, "---------------------------------------");
-		{
-			SProcObjChunkPool& chunks = *CTerrainNode::GetProcObjChunkPool();
-			nUsed = chunks.GetUsedInstancesCount(nAll);
-			DrawTextRightAligned(fTextPosX, fTextPosY += fTextStepY,
-			                     "chunks pool status: used=%d, all=%d, %d MB", nUsed, nAll,
-			                     nAll * int(GetCVars()->e_ProcVegetationMaxObjectsInChunk) * (int)sizeof(CVegetation) / 1024 / 1024);
-		}
+		int objectsNum = 0;
+		int nodesNum = GetTerrain()->GetActiveProcObjNodesCount(objectsNum);
+		DrawTextRightAligned(fTextPosX, fTextPosY += fTextStepY, "ProcVeg: sectors num: %d, objects num: %d", nodesNum, objectsNum);
 	}
+
 	if (GetCVars()->e_MergedMeshesDebug)
 	{
 		if (m_pMergedMeshesManager->PoolOverFlow())
