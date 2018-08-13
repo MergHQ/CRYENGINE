@@ -276,6 +276,10 @@ bool CryInitializeEngine(SSystemInitParams& startupParams, bool bManualEngineLoo
 		}
 #endif
 	}
+	else
+	{
+		return false;
+	}
 
 	return true;
 }

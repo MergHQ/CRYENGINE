@@ -496,7 +496,10 @@ CGameLobby::~CGameLobby()
 	// Unregister as System Event Listener.
 	GetISystem()->GetISystemEventDispatcher()->RemoveListener(this);
 
-	gEnv->pCodeCheckpointMgr->UnRegisterCheckpoint("GameLobby_JoinServer");
+	if (gEnv->pCodeCheckpointMgr != nullptr)
+	{
+		gEnv->pCodeCheckpointMgr->UnRegisterCheckpoint("GameLobby_JoinServer");
+	}
 
 	m_gameLobbyMgr = NULL;
 }

@@ -878,8 +878,14 @@ CCryPak::~CCryPak()
 		}
 	}
 
-	ICryPerfHUD* pPerfHUD = gEnv->pSystem->GetPerfHUD();
-	pPerfHUD->RemoveWidget(m_pWidget);
+#ifdef USE_PERFHUD
+	ICryPerfHUD* const pPerfHUD = gEnv->pSystem->GetPerfHUD();
+
+	if (pPerfHUD != nullptr)
+	{
+		pPerfHUD->RemoveWidget(m_pWidget);
+	}
+#endif // USE_PERFHUD
 }
 
 // makes the path lower-case and removes the duplicate and non native slashes
