@@ -41,11 +41,14 @@ class Local_CommandCoordinator(object):
 		
 	def execute_command(self, cmd, **kw):
 
+		# Replace all "\\" with "/" in command line	
 		if use_incredibuild_workaround:
-			# Replace all "\\" with "/" in command line
-			cmd[:] = [w.replace('\\', '/') for w in cmd]
+			if isinstance(cmd,list):				
+				cmd[:] = [w.replace('\\\\', '/').replace('\\', '/') for w in cmd] #inplace so on error we get the same string
+			else:
+				cmd = cmd.replace('\\\\', '/').replace('\\', '/') # strings are imutable so we need to create a temp string
 
-		try:
+ 		try:
 			if kw['stdout'] or kw['stderr']:
 				p = subprocess.Popen(cmd, **kw)
 				(out, err) = p.communicate() # [blocking]
@@ -154,7 +157,7 @@ def execute_waf_via_ib(bld):
 			raise BuildError()
 	else:	
 		try:
-			p = subprocess.Popen ([ str(ib_folder) + '/BuildConsole.exe', "/command=" + command, "/useidemonitor", "/nologo", allow_local])
+			p = subprocess.Popen ([ str(ib_folder) + '/BuildConsole.exe', "/command=" + command, "/useidemonitor", "/nologo", "/MaxCPUS=250", allow_local])
 		except:
 			raise BuildError()
 			
@@ -265,7 +268,7 @@ def set_cmd_coordinator(conf, coordinator_name):
 	elif coordinator_name == 'IB':		
 		jobs_backup = conf.jobs
 		conf.options.jobs =  int(conf.options.incredibuild_max_cores) + conf.options.jobs 
-		conf.jobs = conf.options.jobs	
+		conf.jobs = conf.options.jobs
 		
 		# If a multi core licence is available, run IB as build master		
 		run_ib_as_service = conf.is_option_true('run_ib_as_service')

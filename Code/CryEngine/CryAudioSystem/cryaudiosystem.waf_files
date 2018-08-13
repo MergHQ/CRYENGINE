@@ -17,7 +17,9 @@
             "AudioListenerManager.h", 
             "AudioEventListenerManager.h", 
             "AudioXMLProcessor.h", 
-            "Common.h"
+            "Common.h", 
+            "DebugColor.h", 
+            "Managers.h"
         ], 
         "Source Files": [
             "ATL.cpp", 
@@ -36,7 +38,9 @@
             "AudioListenerManager.cpp", 
             "AudioEventListenerManager.cpp", 
             "AudioXMLProcessor.cpp", 
-            "Common.cpp"
+            "Common.cpp", 
+            "DebugColor.cpp", 
+            "Managers.cpp"
         ]
     }, 
     "NoUberFile": {

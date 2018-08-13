@@ -937,7 +937,7 @@ class vsnode(object):
 		"""
 		Override in subclasses...
 		"""
-		return 'cd /d "%s" & %s' % (self.ctx.srcnode.abspath(), getattr(self.ctx, 'waf_command', 'cry_waf.exe'))
+		return 'cd /d "%s" & %s' % (self.ctx.srcnode.abspath(), getattr(self.ctx, 'waf_command', self.ctx.srcnode.abspath() + '/Code/Tools/waf-1.7.13/bin/cry_waf.exe'))
 
 	def ptype(self):
 		"""
