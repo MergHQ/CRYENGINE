@@ -49,10 +49,10 @@ static const char g_strTabs[17] = "\t\t\t\t\t\t\t\t\t\t\t\t\t\t\t\t";
 
 struct parse_item;
 struct parse_context;
-struct Serializer;
+struct CPhysSerializer;
 typedef std::map<string,parse_item*> parse_map;
 typedef std::vector<parse_item*> parse_list;
-typedef int (Serializer::*ParseProc)(parse_context&, char*);
+typedef int (CPhysSerializer::*ParseProc)(parse_context&, char*);
 
 unsigned short *g_hfData;
 unsigned char *g_hfFlags;
@@ -76,7 +76,7 @@ struct parse_item {
 struct parse_context {
 	FILE *f;
 	CPhysicalWorld *pWorld;
-	Serializer *pSerializer,*pSerializerStack[16];
+	CPhysSerializer *pSerializer,*pSerializerStack[16];
 	void *pobj,*pObjStack[16];
 	int iStackPos;
 	int bSaving;
@@ -156,11 +156,11 @@ int proc(parse_context &ctx,char *str) { \
 	} return 0;	\
 }
 
-struct Serializer {
+struct CPhysSerializer {
 	parse_map map;
 	parse_list list;
 
-	~Serializer() {
+	~CPhysSerializer() {
 		for(unsigned int i=0; i<list.size(); i++)
 			delete list[i];
 	}
@@ -246,7 +246,7 @@ struct Serializer {
 };
 
 
-struct CMeshSerializer : Serializer {
+struct CMeshSerializer : CPhysSerializer {
 	CMeshSerializer() {
 		CTriMesh trg;
 		DECLARE_MEMBER("numVertices", ft_int, m_nVertices)
@@ -335,7 +335,7 @@ struct CMeshSerializer : Serializer {
 };
 
 
-struct CBoxSerializer : Serializer {
+struct CBoxSerializer : CPhysSerializer {
 	CBoxSerializer() {
 		CBoxGeom trg;
 		DECLARE_MEMBER("Oriented", ft_int, GetBox().bOriented)
@@ -358,7 +358,7 @@ struct CBoxSerializer : Serializer {
 };
 
 
-struct CCylinderSerializer : Serializer {
+struct CCylinderSerializer : CPhysSerializer {
 	CCylinderSerializer() {
 		CCylinderGeom trg;
 		DECLARE_MEMBER("Center", ft_vector, m_cyl.center)
@@ -384,7 +384,7 @@ struct CCylinderSerializer : Serializer {
 };
 
 
-struct CSphereSerializer : Serializer {
+struct CSphereSerializer : CPhysSerializer {
 	CSphereSerializer() {
 		CSphereGeom trg;
 		DECLARE_MEMBER("Center", ft_vector, m_sphere.center)
@@ -401,7 +401,7 @@ struct CSphereSerializer : Serializer {
 };
 
 
-struct CPlaneSerializer : Serializer {
+struct CPlaneSerializer : CPhysSerializer {
 	CPlaneSerializer() {
 		plane trg;
 		DECLARE_MEMBER("Normal", ft_vector, n)
@@ -413,7 +413,7 @@ struct CPlaneSerializer : Serializer {
 inline char hex2chr(int h) { return h+'0'+(9-h>>31 & 'A'-'0'-10); }
 inline int chr2hex(char c) { return c-'0'-(9+'0'-c>>31 & 'A'-'0'-10); }
 
-struct CHeightfieldSerializer : Serializer {
+struct CHeightfieldSerializer : CPhysSerializer {
 	CHeightfieldSerializer() {
 		CHeightfield trg;
 		DECLARE_MEMBER("BasisX", ft_vector, m_hf.Basis.m00)
@@ -498,7 +498,7 @@ struct CHeightfieldSerializer : Serializer {
 };
 
 
-struct CTetrahedronSerializer : Serializer {
+struct CTetrahedronSerializer : CPhysSerializer {
 	CTetrahedronSerializer() {
 		STetrahedron trg;
 		DECLARE_MEMBER("flags", ft_uint, flags)
@@ -549,7 +549,7 @@ struct CTetrahedronSerializer : Serializer {
 };
 
 
-struct CTetrLatticeSerializer : Serializer {
+struct CTetrLatticeSerializer : CPhysSerializer {
 	CTetrahedronSerializer *pTetrSerializer;
 
 	CTetrLatticeSerializer(CTetrahedronSerializer *trs) : pTetrSerializer(trs) {
@@ -609,7 +609,7 @@ struct CTetrLatticeSerializer : Serializer {
 };
 
 
-struct CPhysGeometrySerializer : Serializer {
+struct CPhysGeometrySerializer : CPhysSerializer {
 	CMeshSerializer *pMeshSerializer;
 	CHeightfieldSerializer *pHeightfieldSerializer;
 	CBoxSerializer *pBoxSerializer;
@@ -629,7 +629,7 @@ struct CPhysGeometrySerializer : Serializer {
 	}
 
 	int SerializeGeometryPtr(parse_context &ctx, char* str, IGeometry *&pGeom) {
-		Serializer *pSerializer;
+		CPhysSerializer *pSerializer;
 		if (ctx.bSaving) {
 			const char *name;
 			if (!pGeom)
@@ -671,7 +671,7 @@ struct CPhysGeometrySerializer : Serializer {
 };
 
 
-struct CExplosionShapeSerializer : Serializer {
+struct CExplosionShapeSerializer : CPhysSerializer {
 	CMeshSerializer *pMeshSerializer;
 
 	CExplosionShapeSerializer(CMeshSerializer *ms) : pMeshSerializer(ms) {
@@ -719,7 +719,7 @@ struct CExplosionShapeSerializer : Serializer {
 };
 
 
-struct CCrackSerializer : Serializer {
+struct CCrackSerializer : CPhysSerializer {
 	CMeshSerializer *pMeshSerializer;
 
 	CCrackSerializer(CMeshSerializer *ms) : pMeshSerializer(ms) {
@@ -781,7 +781,7 @@ struct CCrackSerializer : Serializer {
 };
 
 
-struct CGeomanSerializer : Serializer {
+struct CGeomanSerializer : CPhysSerializer {
 	CPhysGeometrySerializer *pPhysGeometrySerializer;
 	CExplosionShapeSerializer *pExplSerializer;
 	CCrackSerializer *pCrackSerializer;
@@ -903,7 +903,7 @@ struct CGeomanSerializer : Serializer {
 };
 
 
-struct CPhysicalPlaceholderSerializer : Serializer {
+struct CPhysicalPlaceholderSerializer : CPhysSerializer {
 	CPhysicalPlaceholderSerializer() {
 		CPhysicalPlaceholder trg;
 		DECLARE_MEMBER("BBoxMin", ft_vector, m_BBox[0])
@@ -935,7 +935,7 @@ struct CPhysicalPlaceholderSerializer : Serializer {
 };
 
 
-struct CPhysicalEntityPartSerializer : Serializer {
+struct CPhysicalEntityPartSerializer : CPhysSerializer {
 	CTetrLatticeSerializer *pLatticeSerializer;
 
 	CPhysicalEntityPartSerializer(CTetrLatticeSerializer *tls) : pLatticeSerializer(tls) {
@@ -1055,7 +1055,7 @@ struct CPhysicalEntityPartSerializer : Serializer {
 };
 
 
-struct CPhysicalJointSerializerWrite : Serializer	{
+struct CPhysicalJointSerializerWrite : CPhysSerializer {
 	CPhysicalJointSerializerWrite() {
 		SStructuralJoint trg;
 		DECLARE_MEMBER("ipart0", ft_int, ipart[0])
@@ -1075,7 +1075,7 @@ struct CPhysicalJointSerializerWrite : Serializer	{
 	}
 };
 
-struct CPhysicalJointSerializerRead : Serializer	{
+struct CPhysicalJointSerializerRead : CPhysSerializer {
 	CPhysicalJointSerializerRead() {
 		pe_params_structural_joint trg;
 		DECLARE_MEMBER("ipart0", ft_int, partid[0])
@@ -1203,7 +1203,7 @@ struct CPhysicalEntitySerializer : CPhysicalPlaceholderSerializer {
 };
 
 
-struct CRigidBodySerializer : Serializer {
+struct CRigidBodySerializer : CPhysSerializer {
 	CRigidBodySerializer() {
 		RigidBody trg;
 		DECLARE_MEMBER("pos", ft_vector, pos)
@@ -1233,7 +1233,7 @@ struct CRigidBodySerializer : Serializer {
 	}
 };
 
-struct CConstraintSerializer : Serializer {
+struct CConstraintSerializer : CPhysSerializer {
 	CConstraintSerializer() {
 		pe_action_add_constraint trg;
 		DECLARE_MEMBER("pBuddy", ft_entityptr, pBuddy)
@@ -1348,7 +1348,7 @@ struct CRigidEntitySerializer : CPhysicalEntitySerializer {
 };
 
 
-struct CSuspSerializer : Serializer {
+struct CSuspSerializer : CPhysSerializer {
 	CSuspSerializer() {
 		suspension_point trg;
 		DECLARE_PROC("Driving", &CSuspSerializer::SerializeDriving)
@@ -1475,7 +1475,7 @@ struct CWheeledVehicleEntitySerializer : CRigidEntitySerializer {
 };
 
 
-struct CJointSerializer : Serializer {
+struct CJointSerializer : CPhysSerializer {
 	CRigidBodySerializer *pRigidBodySerializer;
 
 	CJointSerializer(CRigidBodySerializer *rbs) : pRigidBodySerializer(rbs) { 
@@ -1524,7 +1524,7 @@ struct CJointSerializer : Serializer {
 };
 
 
-struct CAEPartInfoSerializer : Serializer {
+struct CAEPartInfoSerializer : CPhysSerializer {
 	CAEPartInfoSerializer() {
 		ae_part_info trg;
 		DECLARE_MEMBER("Quat0", ft_quaternion, q0)
@@ -1723,7 +1723,7 @@ struct CWalkingRigidEntitySerializer : CRigidEntitySerializer {
 };
 
 
-struct CRopeVtxSerializer : Serializer {
+struct CRopeVtxSerializer : CPhysSerializer {
 	CRopeVtxSerializer() {
 		rope_vtx trg;
 		DECLARE_MEMBER("pt", ft_vector, pt)
@@ -1737,7 +1737,7 @@ struct CRopeVtxSerializer : Serializer {
 	DEFINE_MEMBER_PROC(rope_vtx, SerializeContactPart, iContactPart)
 };
 
-struct CRopeSegSerializer : Serializer {
+struct CRopeSegSerializer : CPhysSerializer {
 	CRopeSegSerializer() {
 		rope_segment trg;
 		DECLARE_MEMBER("pt", ft_vector, pt)
@@ -1872,7 +1872,7 @@ struct CRopeEntitySerializer : CPhysicalEntitySerializer {
 };
 
 
-struct CSoftVtxSerializer : Serializer {
+struct CSoftVtxSerializer : CPhysSerializer {
 	CSoftVtxSerializer() {
 		se_vertex trg; trg.pContactEnt=0;
 		DECLARE_MEMBER("pos", ft_vector, pos)
@@ -1893,7 +1893,7 @@ struct CSoftVtxSerializer : Serializer {
 	DEFINE_MEMBER_PROC(se_vertex,SerializeContactPart,iContactPart)
 };
 
-struct CSoftEdgeSerializer : Serializer {
+struct CSoftEdgeSerializer : CPhysSerializer {
 	CSoftEdgeSerializer() {
 		se_edge trg;
 		DECLARE_MEMBER("len0", ft_float, len0)
@@ -2113,7 +2113,7 @@ struct CAreaSerializer : CPhysicalPlaceholderSerializer {
 };
 
 
-struct CEntityGridSerializer : Serializer {
+struct CEntityGridSerializer : CPhysSerializer {
 	CEntityGridSerializer() {
 		CPhysicalWorld trg(0);
 		DECLARE_MEMBER("iAxisZ", ft_int, m_entgrid.iup)
@@ -2140,7 +2140,7 @@ struct CEntityGridSerializer : Serializer {
 };
 
 
-struct CPhysVarsSerializer : Serializer {
+struct CPhysVarsSerializer : CPhysSerializer {
 	CPhysVarsSerializer() {
 		PhysicsVars trg;
 		DECLARE_MEMBER("nMaxStackSizeMC", ft_int, nMaxStackSizeMC)
@@ -2199,7 +2199,7 @@ struct CPhysVarsSerializer : Serializer {
 	}
 };
 
-struct CPhysicalWorldSerializer : Serializer {
+struct CPhysicalWorldSerializer : CPhysSerializer {
 	CPhysVarsSerializer *pPhysVarsSerializer;
 	CEntityGridSerializer *pEntityGridSerializer;
 	CPhysicalEntitySerializer *pStaticEntitySerializer;
@@ -2290,7 +2290,7 @@ struct CPhysicalWorldSerializer : Serializer {
 					if ((pent->m_flags & flaggedOnly)!=flaggedOnly)
 						continue;
 					const char *name = "Static";
-					Serializer *pSerializer = pStaticEntitySerializer;
+					CPhysSerializer *pSerializer = pStaticEntitySerializer;
 					switch (pent->GetType()) {
 						case PE_RIGID: pSerializer = pRigidEntitySerializer; name = "Rigid Body"; break;
 						case PE_WHEELEDVEHICLE: pSerializer = pWheeledVehicleEntitySerializer; name = "Wheeled Vehicle"; break;
