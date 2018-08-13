@@ -77,15 +77,17 @@ public:
 
 	void                 CheckAllocateChilds();
 	void                 DeleteChilds();
-	void                 Render(PodArray<struct SPvsItem>* pSortedPVS, uint64 nodeKey, int treeLevel, PodArray<SVF_P3F_C4B_T2F>& arrVertsOut, PodArray<class CVoxelSegment*> arrForStreaming[SVO_STREAM_QUEUE_MAX_SIZE][SVO_STREAM_QUEUE_MAX_SIZE]);
+	void                 Render(PodArray<struct SPvsItem>* pSortedPVS, uint64 nodeKey, int treeLevel, PodArray<SVF_P3F_C4B_T2F>& arrVertsOut,
+	                            PodArray<class CVoxelSegment*> arrForStreaming[SVO_STREAM_QUEUE_MAX_SIZE][SVO_STREAM_QUEUE_MAX_SIZE], const AABB& playableArea);
 	bool                 IsStreamingInProgress();
 	void                 GetTrisInAreaStats(int& trisCount, int& vertCount, int& trisBytes, int& vertBytes, int& maxVertPerArea, int& matsCount);
 	void                 GetVoxSegMemUsage(int& allocated);
 	AABB                 GetChildBBox(int childId);
+	static AABB          GetMagnifiedNodeBox(const AABB& nodeBox);
 	void                 CheckAllocateSegment(int lod);
 	void                 OnStatLightsChanged(const AABB& objBox);
 	class CVoxelSegment* AllocateSegment(int cloudId, int stationId, int lod, EFileStreamingStatus eStreamingStatus, bool bDroppedOnDisk);
-	uint32               SaveNode(PodArray<byte>& arrData, uint32& nNodesCounter, ICryArchive* pArchive, uint32& totalSizeCounter);
+	uint32               SaveNode(PodArray<byte>& arrData, uint32& nNodesCounter, ICryArchive* pArchive, uint32& totalSizeCounter, const AABB& playableArea);
 	void                 MakeNodeFilePath(char* szFileName);
 	bool                 CheckReadyForRendering(int treeLevel, PodArray<CVoxelSegment*> arrForStreaming[SVO_STREAM_QUEUE_MAX_SIZE][SVO_STREAM_QUEUE_MAX_SIZE]);
 	CSvoNode*            FindNodeByPosition(const Vec3& vPosWS, int treeLevelToFind, int treeLevelCur);
@@ -144,6 +146,7 @@ public:
 	void ReconstructTree(bool bMultiPoint);
 	void AllocateRootNode();
 	int  ExportSvo(ICryArchive* pArchive);
+	AABB GetPlayableArea();
 	void DetectMovement_StaticGeom();
 	void DetectMovement_StatLights();
 	void CollectLights();

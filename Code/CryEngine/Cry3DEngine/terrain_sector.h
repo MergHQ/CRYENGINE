@@ -329,37 +329,6 @@ public:
 	int          m_nPoolSize;
 };
 
-#define MAX_PROC_OBJ_CHUNKS_NUM (GetCVars()->e_ProcVegetationMaxChunksInCache * GetCVars()->e_ProcVegetationMaxCacheLevels)
-#define MAX_PROC_SECTORS_NUM    (GetCVars()->e_ProcVegetationMaxSectorsInCache * GetCVars()->e_ProcVegetationMaxCacheLevels)
-
-struct SProcObjChunk : public Cry3DEngineBase
-{
-	CVegetation* m_pInstances;
-	int          nAllocatedItems;
-	SProcObjChunk();
-	~SProcObjChunk();
-	void GetMemoryUsage(class ICrySizer* pSizer) const;
-};
-
-typedef TPool<SProcObjChunk> SProcObjChunkPool;
-
-class CProcObjSector : public Cry3DEngineBase
-{
-public:
-	CProcObjSector() { m_nProcVegetNum = 0; m_ProcVegetChunks.PreAllocate(32); }
-	~CProcObjSector();
-	CVegetation* AllocateProcObject();
-	void         ReleaseAllObjects();
-	int          GetUsedInstancesCount(int& nAll) { nAll = m_ProcVegetChunks.Count(); return m_nProcVegetNum; }
-	void         GetMemoryUsage(ICrySizer* pSizer) const;
-
-protected:
-	PodArray<SProcObjChunk*> m_ProcVegetChunks;
-	int                      m_nProcVegetNum;
-};
-
-typedef TPool<CProcObjSector> CProcVegetPoolMan;
-
 struct STerrainNodeLeafData
 {
 	STerrainNodeLeafData() { memset(this, 0, sizeof(*this)); }
@@ -425,7 +394,6 @@ public:
 		m_pChilds(0),
 		m_nLastTimeUsed(0),
 		m_nSetLodFrameId(0),
-		m_pProcObjPoolPtr(0),
 		m_bHMDataIsModified(0)
 	{
 		memset(&m_arrfDistance, 0, sizeof(m_arrfDistance));
@@ -443,10 +411,10 @@ public:
 	static void   SaveCompressedMipmapLevel(const void* data, size_t size, void* userData);
 	void          CheckNodeGeomUnload(const SRenderingPassInfo& passInfo);
 	void          RenderNodeHeightmap(const SRenderingPassInfo& passInfo, uint32 passCullMask);
-	bool          CheckUpdateProcObjects(const SRenderingPassInfo& passInfo);
+	bool          CheckUpdateProcObjects();
 	void          IntersectTerrainAABB(const AABB& aabbBox, PodArray<CTerrainNode*>& lstResult);
 	void          UpdateDetailLayersInfo(bool bRecursive);
-	void          RemoveProcObjects(bool bRecursive = false, bool bReleaseAllObjects = true);
+	void          RemoveProcObjects(bool bRecursive = false);
 	void          IntersectWithShadowFrustum(bool bAllIn, PodArray<IShadowCaster*>* plstResult, ShadowMapFrustum* pFrustum, const float fHalfGSMBoxSize, const SRenderingPassInfo& passInfo);
 	void          IntersectWithBox(const AABB& aabbBox, PodArray<CTerrainNode*>* plstResult);
 	CTerrainNode* FindMinNodeContainingBox(const AABB& aabbBox);
@@ -502,10 +470,6 @@ public:
 
 	bool                         CheckUpdateDiffuseMap();
 	bool                         AssignTextureFileOffset(int16*& pIndices, int16& nElementsNum);
-	static CProcVegetPoolMan*    GetProcObjPoolMan()                                       { return m_pProcObjPoolMan; }
-	static SProcObjChunkPool*    GetProcObjChunkPool()                                     { return m_pProcObjChunkPool; }
-	static void                  SetProcObjPoolMan(CProcVegetPoolMan* pProcObjPoolMan)     { m_pProcObjPoolMan = pProcObjPoolMan; }
-	static void                  SetProcObjChunkPool(SProcObjChunkPool* pProcObjChunkPool) { m_pProcObjChunkPool = pProcObjChunkPool; }
 	void                         UpdateDistance(const SRenderingPassInfo& passInfo);
 	const float                  GetDistance(const SRenderingPassInfo& passInfo);
 	bool                         IsProcObjectsReady() { return m_bProcObjectsReady != 0; }
@@ -555,33 +519,22 @@ protected:
 public:
 
 	PodArray<SSurfaceTypeInfo> m_lstSurfaceTypeInfo;
-
 	SRangeInfo                 m_rangeInfo;
-
 	STerrainNodeLeafData*      m_pLeafData;
-
-	CProcObjSector*            m_pProcObjPoolPtr;
-
+	PodArray<CVegetation*>     m_arrProcObjects;
 	SSectorTextureSet          m_nNodeTexSet, m_nTexSet; // texture id's
-
 	uint16                     m_nNodeTextureLastUsedSec4;
-
 	AABB                       m_boxHeigtmapLocal;
 	float                      m_fBBoxExtentionByObjectsIntegration;
 	struct CTerrainNode*       m_pParent;
-
 	float                      m_arrfDistance[MAX_RECURSION_LEVELS];
 	int                        m_nNodeTextureOffset;
 	int                        m_nNodeHMDataOffset;
 	int FTell(uint8*& f);
 	int FTell(FILE*& f);
-
 	static PodArray<vtx_idx>       m_arrIndices[SRangeInfo::e_max_surface_types][4];
 	static PodArray<SSurfaceType*> m_lstReadyTypes;
-	static CProcVegetPoolMan*      m_pProcObjPoolMan;
-	static SProcObjChunkPool*      m_pProcObjChunkPool;
 	static int                     m_nNodesCounter;
-
 	OcclusionTestClient            m_occlusionTestClient;
 	bool                           m_bHMDataIsModified;
 };

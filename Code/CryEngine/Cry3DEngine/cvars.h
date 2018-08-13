@@ -508,10 +508,9 @@ struct CVars : public Cry3DEngineBase
 	// ProcVegetation cvars
 	int    e_ProcVegetation;
 	int    e_ProcVegetationMaxSectorsInCache;
-	int    e_ProcVegetationMaxChunksInCache;
 	int    e_ProcVegetationMaxCacheLevels;
 	int    e_ProcVegetationMaxViewDistance;
-	int    e_ProcVegetationMaxObjectsInChunk;
+	int    e_ProcVegetationMaxObjectsPerSector;
 	int    e_AutoPrecacheTerrainAndProcVeget;
 
 	int    e_DebugGeomPrep;

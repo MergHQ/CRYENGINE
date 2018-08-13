@@ -372,7 +372,6 @@ void CTerrain::SetTerrainElevation(int X1, int Y1, int nSizeX, int nSizeY, float
 					pNode->m_geomError = kGeomErrorNotSet;
 
 					pNode->ReleaseHeightMapGeometry();
-					pNode->RemoveProcObjects(false, false);
 					pNode->UpdateDetailLayersInfo(false);
 
 					// propagate bounding boxes and error metrics to parents

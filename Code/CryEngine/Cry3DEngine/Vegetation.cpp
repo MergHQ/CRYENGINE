@@ -25,6 +25,31 @@
 #define BYTE2RAD(x) ((x) * float(g_PI2) / 255.0f)
 
 float CRY_ALIGN(128) CVegetation::g_scBoxDecomprTable[256];
+TVegetationAllocator CVegetation::s_poolAllocator[CVegetation::eAllocator_Count];
+
+void* CVegetation::operator new(size_t size, EAllocatorId allocatorId)
+{
+	// allocate procedural vegetation separately from normal vegetation
+	return s_poolAllocator[allocatorId].New();
+}
+
+void CVegetation::operator delete(void* pToFree)
+{
+	CVegetation* pVeg = (CVegetation*)pToFree;
+	if (pVeg->m_dwRndFlags & ERF_PROCEDURAL)
+		s_poolAllocator[eAllocator_Procedural].Delete((CVegetation*)pToFree);
+	else
+		s_poolAllocator[eAllocator_Default].Delete((CVegetation*)pToFree);
+}
+
+void CVegetation::StaticReset()
+{
+	for (int i = 0; i < eAllocator_Count; i++)
+	{
+		assert(s_poolAllocator[i].GetCounts().nUsed == 0);
+		s_poolAllocator[i].FreeMemory();
+	}
+}
 
 // g_scBoxDecomprTable heps on consoles (no difference on PC)
 void CVegetation::InitVegDecomprTable()

@@ -7,6 +7,8 @@ class CDeformableNode;
 
 #define VEGETATION_CONV_FACTOR 64.f
 
+typedef stl::TPoolAllocator<CVegetation, stl::PSyncNone> TVegetationAllocator;
+
 template<class T>
 class PodArrayAABB : public PodArray<T>
 {
@@ -20,6 +22,14 @@ class CVegetation
 	  , public Cry3DEngineBase
 {
 public:
+
+	enum EAllocatorId
+	{
+		eAllocator_Default    = 0,
+		eAllocator_Procedural = 1,
+		eAllocator_Count      = 2,
+	};
+
 	Vec3                                        m_vPos;
 	IPhysicalEntity*                            m_pPhysEnt;
 	SVegetationSpriteInfo*                      m_pSpriteInfo;
@@ -36,6 +46,7 @@ public:
 	byte m_bApplyPhys;
 
 	static CRY_ALIGN(128) float g_scBoxDecomprTable[256];
+	static TVegetationAllocator s_poolAllocator[eAllocator_Count];
 
 	CVegetation();
 	virtual ~CVegetation();
@@ -78,6 +89,7 @@ public:
 	virtual void         SetBBox(const AABB& WSBBox) final;
 	virtual void         OffsetPosition(const Vec3& delta) final;
 	const float          GetRadius() const;
+	static void          StaticReset();
 	void                 UpdateRndFlags();
 	ILINE int            GetStatObjGroupSize() const
 	{
@@ -151,6 +163,10 @@ public:
 
 	// Apply bending parameters to the CRenderObject
 	void FillBendingData(CRenderObject* pObj, const SRenderingPassInfo& passInfo) const;
+
+	// Custom pool allocator for vegetation
+	static void* operator new(size_t size, EAllocatorId allocatorId = eAllocator_Default);
+	static void  operator delete(void* pToFree);
 };
 
 #endif // _CVegetation_H_

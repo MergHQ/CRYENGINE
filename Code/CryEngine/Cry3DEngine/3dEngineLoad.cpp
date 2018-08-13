@@ -620,6 +620,7 @@ void C3DEngine::UnloadLevel()
 	CRoadRenderNode::FreeStaticMemoryUsage();
 	CFogVolumeRenderNode::StaticReset();
 	CRopeRenderNode::StaticReset();
+	CVegetation::StaticReset();
 
 	if (GetRenderer())
 	{

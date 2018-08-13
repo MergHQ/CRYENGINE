@@ -133,7 +133,7 @@ public:
 		MEMSTAT_USAGE(begin(), (sizeof(T) * size()) + overAllocBytes);
 	}
 
-	ILINE void Add(const T& p)
+	ILINE T& Add(const T& p)
 	{
 		if (m_nCount >= m_nAllocatedCount)
 		{
@@ -151,6 +151,7 @@ public:
 		memcpy(&m_pElements[m_nCount], &p, sizeof(m_pElements[m_nCount]));
 		m_nCount++;
 		MEMSTAT_USAGE(begin(), (sizeof(T) * size()) + overAllocBytes);
+		return Last();
 	}
 
 	ILINE T& AddNew()

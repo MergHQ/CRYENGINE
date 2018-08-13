@@ -34,7 +34,7 @@
 	#define SVO_NODES_POOL_DIM_XY  (SVO_NODE_BRICK_SIZE * SVO_ATLAS_DIM_MAX_XY)
 	#define SVO_NODES_POOL_DIM_Z   (SVO_NODE_BRICK_SIZE * SVO_ATLAS_DIM_MAX_Z)
 	#define SVO_MAX_TRIS_PER_VOXEL 512
-	#define SVO_PACK_TO_16_BIT     false // disabled because causes not enough occlusion
+	#define SVO_PACK_TO_16_BIT     true
 
 CBlockPacker3D* CVoxelSegment::m_pBlockPacker = 0;
 CCamera CVoxelSegment::m_voxCam;
@@ -1898,6 +1898,13 @@ bool CVoxelSegment::CheckCollectObjectsForVoxelization(const AABB& cloudBoxWS, P
 
 	if (bThisIsAreaParent || bThisIsLowLodNode)
 	{
+		if (bAllowStartStreaming && bThisIsAreaParent)
+		{
+			// check or activate or build procedural vegetation in the area
+			if (!GetTerrain()->CheckUpdateProcObjectsInArea(AABB(cloudBoxWS.min - Vec3(2.f, 2.f, 32.f), cloudBoxWS.max + Vec3(2.f)), m_bExportMode))
+				bSuccess = false;
+		}
+
 		for (int objType = 0; objType < eERType_TypesNum; objType++)
 		{
 			if ((bThisIsAreaParent && (objType == eERType_Brush || objType == eERType_MovableBrush)) || (objType == eERType_Vegetation))

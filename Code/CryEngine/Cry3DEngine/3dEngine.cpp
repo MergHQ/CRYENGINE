@@ -433,12 +433,6 @@ C3DEngine::~C3DEngine()
 	m_bInUnload = true;
 	m_bInLoad = false;
 
-	delete CTerrainNode::GetProcObjPoolMan();
-	CTerrainNode::SetProcObjChunkPool(NULL);
-
-	delete CTerrainNode::GetProcObjChunkPool();
-	CTerrainNode::SetProcObjPoolMan(NULL);
-
 	assert(IsHeapValid());
 
 	ShutDown();
@@ -2302,9 +2296,13 @@ void C3DEngine::GetMemoryUsage(class ICrySizer* pSizer) const
 	}
 
 	{
+		SIZER_COMPONENT_NAME(pSizer, "DefaultVegetPool");
+		pSizer->AddObject(CVegetation::s_poolAllocator[CVegetation::eAllocator_Default]);
+	}
+
+	{
 		SIZER_COMPONENT_NAME(pSizer, "ProcVegetPool");
-		pSizer->AddObject(CTerrainNode::GetProcObjPoolMan());
-		pSizer->AddObject(CTerrainNode::GetProcObjChunkPool());
+		pSizer->AddObject(CVegetation::s_poolAllocator[CVegetation::eAllocator_Procedural]);
 	}
 
 	{
