@@ -435,8 +435,6 @@ C3DEngine::~C3DEngine()
 
 	assert(IsHeapValid());
 
-	ShutDown();
-
 	delete m_pTimeOfDay;
 	delete m_pDecalManager;
 	delete m_pVisAreaManager;

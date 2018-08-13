@@ -707,7 +707,7 @@ void CSystem::ShutDown()
 	//////////////////////////////////////////////////////////////////////////
 	// Clear 3D Engine resources.
 	if (m_env.p3DEngine)
-		m_env.p3DEngine->UnloadLevel();
+		m_env.p3DEngine->ShutDown();
 	//////////////////////////////////////////////////////////////////////////
 
 	// Shutdown resource manager.
@@ -836,6 +836,10 @@ void CSystem::ShutDown()
 
 	// Shut down the streaming system and console as late as possible and after audio!
 	SAFE_DELETE(m_pStreamEngine);
+
+	// Shut down UDR before the console gets released as it accesses it during destruction!
+	UnloadEngineModule("CryUDR");
+
 	SAFE_RELEASE(m_env.pConsole);
 
 	// Log must be last thing released.
@@ -850,7 +854,6 @@ void CSystem::ShutDown()
 	delete gEnv->pSystemScheduler;
 #endif // defined(MAP_LOADING_SLICING)
 
-	UnloadEngineModule("CryUDR");					 				  
 	UnloadEngineModule("CryReflection");
 
 #if CAPTURE_REPLAY_LOG

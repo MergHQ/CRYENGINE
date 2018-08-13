@@ -2972,8 +2972,11 @@ void SCVars::ReleaseCVars()
 	pConsole->UnregisterVariable("g_kickCarDetachStartTime", true);
 	pConsole->UnregisterVariable("g_kickCarDetachEndTime", true);
 
-#if !defined(_RELEASE)
+#if (USE_DEDICATED_INPUT)
 	pConsole->UnregisterVariable("g_playerUsesDedicatedInput", true);
+#endif
+
+#if !defined(_RELEASE)
 	pConsole->UnregisterVariable("g_DisableScoring", true);
 	pConsole->UnregisterVariable("g_DisableCollisionDamage", true);
 	pConsole->UnregisterVariable("g_MaxSimpleCollisions", true);

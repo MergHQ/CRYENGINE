@@ -32,7 +32,7 @@ extern bool g_bCrashRptInstalled;
 // For lua debugger
 //#include <malloc.h>
 
-HMODULE gDLLHandle = NULL;
+HMODULE gDLLHandle = nullptr;
 
 struct DummyInitializer
 {
@@ -106,7 +106,7 @@ extern void EnableDynamicBucketCleanups(bool enable);
 struct CSystemEventListener_System : public ISystemEventListener
 {
 public:
-	virtual void OnSystemEvent(ESystemEvent event, UINT_PTR wparam, UINT_PTR lparam)
+	virtual void OnSystemEvent(ESystemEvent event, UINT_PTR wparam, UINT_PTR lparam) override
 	{
 #if defined(USE_GLOBAL_BUCKET_ALLOCATOR)
 		switch (event)
@@ -158,7 +158,7 @@ public:
 					{
 						pSystemEventDispatcher->RemoveListener(this);
 					}
-				} 
+				}
 			}
 			break;
 		}
@@ -185,9 +185,9 @@ extern "C"
 		LOADING_TIME_PROFILE_SECTION_NAMED("CreateSystemInterface");
 		ModuleInitISystem(pSystem.get(), "CrySystem");
 #if CRY_PLATFORM_DURANGO
-#if !defined(_LIB)
+	#if !defined(_LIB)
 		gEnv = pSystem->GetGlobalEnvironment();
-#endif
+	#endif
 		gEnv->pWindow = startupParams.hWnd;
 #endif
 
@@ -206,12 +206,15 @@ extern "C"
 		if (!pSystem->Initialize(startupParams))
 		{
 			CryMessageBox("CrySystem initialization failed!", "Engine initialization failed!");
+			pSystem.release();
+			startupParams.pSystem = nullptr;
+			gEnv->pSystem = nullptr;
 
 			return nullptr;
 		}
 
 		pSystem->GetISystemEventDispatcher()->OnSystemEvent(ESYSTEM_EVENT_CRYSYSTEM_INIT_DONE, 0, 0);
-		pSystem->GetISystemEventDispatcher()->RegisterListener(&g_system_event_listener_system,"CSystemEventListener_System");
+		pSystem->GetISystemEventDispatcher()->RegisterListener(&g_system_event_listener_system, "CSystemEventListener_System");
 
 		// run main loop
 		if (!bManualEngineLoop)
