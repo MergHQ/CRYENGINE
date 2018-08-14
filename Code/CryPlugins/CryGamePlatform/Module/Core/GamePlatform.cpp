@@ -42,8 +42,15 @@ namespace Cry
 			m_users.emplace_back(nullptr);
 		}
 
+		CPlugin::~CPlugin()
+		{
+			gEnv->pSystem->GetISystemEventDispatcher()->RemoveListener(this);
+		}
+
 		bool CPlugin::Initialize(SSystemGlobalEnvironment& env, const SSystemInitParams& initParams)
 		{
+			gEnv->pSystem->GetISystemEventDispatcher()->RegisterListener(this, "GamePlatform");
+
 			return true;
 		}
 
@@ -372,15 +379,44 @@ namespace Cry
 			{
 				CUser* const pUser = usrPos->get();
 
-				if (account.GetServiceIdentifier() == GetMainServiceIdentifier())
+				pUser->RemoveAccount(account);
+				if (pUser->GetAccounts().empty())
 				{
 					stl::find_and_erase(m_friends, pUser);
-					m_users.erase(usrPos);
+
+					// First place is reserved for local user
+					if (usrPos == m_users.begin())
+					{
+						m_users[0].reset();
+					}
+					else
+					{
+						m_users.erase(usrPos);
+					}
 				}
-				else
+			}
+		}
+
+		void CPlugin::OnSystemEvent(ESystemEvent event, UINT_PTR wparam, UINT_PTR lparam)
+		{
+			if (event == ESYSTEM_EVENT_FAST_SHUTDOWN || event == ESYSTEM_EVENT_FULL_SHUTDOWN)
+			{
+				for (IService* pSvc : m_services)
 				{
-					pUser->RemoveAccount(account);
+					if (pSvc)
+					{
+						pSvc->RemoveListener(*this);
+						pSvc->Shutdown();
+					}
 				}
+
+				m_friends.clear();
+
+				m_users.erase(m_users.begin() + 1, m_users.end());
+				m_users[0] = nullptr;
+
+				m_services.erase(m_services.begin() + 1, m_services.end());
+				m_services[0] = nullptr;
 			}
 		}
 

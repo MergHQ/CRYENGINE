@@ -29,7 +29,7 @@ namespace Cry
 				CRYGENERATE_SINGLETONCLASS_GUID(CService, "Plugin_SteamService", SteamServiceID)
 
 				CService();
-				~CService();
+				~CService() = default;
 
 				// Cry::IEnginePlugin
 				virtual bool Initialize(SSystemGlobalEnvironment& env, const SSystemInitParams& initParams) override;
@@ -41,6 +41,8 @@ namespace Cry
 				// IService
 				virtual void AddListener(IListener& listener) override { m_listeners.push_back(&listener); }
 				virtual void RemoveListener(IListener& listener) override { stl::find_and_erase(m_listeners, &listener); }
+
+				virtual void Shutdown() override;
 
 				virtual ServiceIdentifier GetServiceIdentifier() const override;
 				virtual int GetBuildIdentifier() const override;
@@ -92,6 +94,9 @@ namespace Cry
 				CAccount* TryGetAccount(CSteamID id) const;
 				CAccount* TryGetAccount(const AccountIdentifier& accountId) const;
 				std::unique_ptr<CAccount> RemoveAccount(CSteamID id);
+
+				void NotifyAccountAdded(CAccount* pAccount) const;
+				void NotifyAccountRemoved(CAccount* pAccount) const;
 
 			private:
 				std::unique_ptr<CStatistics> m_pStatistics;
