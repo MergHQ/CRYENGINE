@@ -2030,7 +2030,6 @@ void CSOLibrary::String2Classes(const string& sClass, SetStrings& classes)
 
 		start = end + 1;
 	}
-	;
 }
 
 void CSmartObjectsEditorDialog::ParseClassesFromProperties(CBaseObject* pObject, SetStrings& classes)

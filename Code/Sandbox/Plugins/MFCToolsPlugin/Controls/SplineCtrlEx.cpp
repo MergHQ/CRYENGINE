@@ -566,7 +566,6 @@ BOOL CSplineCtrlEx::OnEraseBkgnd(CDC* pDC)
 void CSplineCtrlEx::OnSize(UINT nType, int cx, int cy)
 {
 	CRect oldRect = m_rcSpline;
-	;
 
 	__super::OnSize(nType, cx, cy);
 
@@ -635,7 +634,6 @@ CPoint CSplineCtrlEx::TimeToPoint(float time, ISplineInterpolator* pSpline)
 		pSpline->InterpolateFloat(time, val);
 
 	return WorldToClient(Vec2(time, val));
-	;
 }
 
 //////////////////////////////////////////////////////////////////////////
@@ -1050,7 +1048,6 @@ void CSplineCtrlEx::DrawKeys(CDC* pDC, int splineIndex, float startTime, float e
 				value[nCurrentDimension] = value[nCurrentDimension] + value2[nCurrentDimension];
 			}
 			CPoint pt = WorldToClient(Vec2(time, value[nCurrentDimension]));
-			;
 
 			if (pt.x < m_rcSpline.left)
 			{
@@ -2030,7 +2027,6 @@ CSplineCtrlEx::EHitCode CSplineCtrlEx::HitTest(CPoint point)
 			}
 
 			CPoint splinePt = WorldToClient(Vec2(time, stSplineValue[nCurrentDimension]));
-			;
 			bool bSplineHit = abs(splinePt.x - point.x) < 4 && abs(splinePt.y - point.y) < 4;
 
 			if (bSplineHit)

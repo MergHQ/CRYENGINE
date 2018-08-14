@@ -31,7 +31,7 @@ public:
 				*p &= ~mask;
 			return *this;
 		}
-		BitReference& operator=(const BitReference& __x)        { return *this = bool(__x);  }
+		BitReference& operator=(const BitReference& __x)        { return *this = bool(__x); }
 		bool          operator==(const BitReference& __x) const { return bool(*this) == bool(__x); }
 		bool          operator<(const BitReference& __x) const  { return !bool(*this) && bool(__x); }
 		BitReference& operator|=(bool __x)
@@ -209,7 +209,11 @@ public:
 				in++;
 				c = *in++;
 				decompressed += c;
-				while (c) { *out++ = 0; c--; };
+				while (c) 
+				{ 
+					*out++ = 0; 
+					c--; 
+				}
 			}
 		}
 		m_numBits = decompressed;

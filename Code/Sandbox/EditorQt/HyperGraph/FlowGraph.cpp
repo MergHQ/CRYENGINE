@@ -159,7 +159,6 @@ protected:
 #endif
 				GetIEditorImpl()->GetPrefabManager()->SetSkipPrefabUpdate(true);
 				CObjectArchive remappingInfo(GetIEditorImpl()->GetObjectManager(), m_redo, true);
-				;
 				pGraph->ExtractObjectsPrefabIdToGlobalIdMappingFromPrefab(remappingInfo);
 
 				pGraph->Serialize(m_redo, true, &remappingInfo);

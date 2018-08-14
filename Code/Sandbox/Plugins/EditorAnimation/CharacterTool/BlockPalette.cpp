@@ -427,7 +427,6 @@ void BlockPalette::paintEvent(QPaintEvent* ev)
 	for (size_t i = 0; i < m_layout->items.size(); ++i)
 	{
 		bool dragged = std::find(m_draggedItems.begin(), m_draggedItems.end(), int(i)) != m_draggedItems.end();
-		;
 		if (dragged)
 			continue;
 		bool selected = std::find(m_selectedItems.begin(), m_selectedItems.end(), int(i)) != m_selectedItems.end();

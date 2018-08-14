@@ -46,7 +46,7 @@ public:
 	XmlNodeRef     GetEnvironemnt()                   { return m_environment; }
 
 	//! Return weapons ammo definitions for this mission.
-	XmlNodeRef GetWeaponsAmmo() { return m_weaponsAmmo; };
+	XmlNodeRef GetWeaponsAmmo() { return m_weaponsAmmo; }
 
 	//! Return lighting used for this mission.
 	LightingSettings* GetLighting() const { return m_lighting; }

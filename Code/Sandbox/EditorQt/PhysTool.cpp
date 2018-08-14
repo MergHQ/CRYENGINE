@@ -205,7 +205,6 @@ bool CPhysPullTool::MouseCallback(CViewport* view, EMouseEvent event, CPoint& po
 				expl.epicenter = expl.epicenterImp = hit.pt;
 				expl.rmin = (expl.r = expl.rmax = cv_HitExplR) * 0.2f;
 				expl.impulsivePressureAtR = cv_HitExplPress0 + min(2.0f, t - m_timeHit) * (cv_HitExplPress1 - cv_HitExplPress0) * 0.5f;
-				;
 				expl.rminOcc = 0.05f;
 				expl.nOccRes = 16;
 				gEnv->pPhysicalWorld->SimulateExplosion(&expl, 0, 0, ent_static | ent_sleeping_rigid | ent_rigid | ent_living | ent_independent);

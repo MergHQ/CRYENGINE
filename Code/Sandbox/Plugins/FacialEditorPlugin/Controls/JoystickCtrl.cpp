@@ -625,7 +625,6 @@ public:
 
 			return;
 		}
-		;
 
 		if (pJoystick)
 		{

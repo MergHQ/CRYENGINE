@@ -45,6 +45,5 @@ private:
 	QString const                     m_assetFolderPath;
 	QString                           m_targetPath;
 	QString                           m_targetFolder;
-	;
 };
 } // namespace ACE

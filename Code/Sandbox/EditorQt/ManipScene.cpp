@@ -1414,7 +1414,6 @@ int CScene::GetSelectionCaps() const
 
 		caps |= selectedElements[i].caps;
 	}
-	;
 
 	return caps;
 }

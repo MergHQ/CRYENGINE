@@ -281,7 +281,6 @@ void ExplorerData::OnProviderEntryAdded(int subtreeIndex, uint id)
 		if (strnicmp(entry->path.c_str(), subtree.commonPrefix.c_str(), subtree.commonPrefix.size()) == 0)
 		{
 			ExplorerEntry* parent = CreateGroupsForPath(&subtree, entry->path.c_str(), subtree.commonPrefix.c_str());
-			;
 			if (parent)
 			{
 				LinkEntryToParent(parent, entry);

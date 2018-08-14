@@ -185,7 +185,6 @@ QImage* IconXPMCache::getImageForIcon(const Icon& icon)
 		FilenameToBitmap::iterator it = filenameToImageMap_.find(icon.filename);
 		if (it != filenameToImageMap_.end())
 			return it->second.bitmap;
-		;
 
 		BitmapCache& cache = filenameToImageMap_[icon.filename];
 		cache.bitmap = new QImage(property_tree::PropertyIcon(QString::fromUtf8(icon.filename.c_str())).pixmap(16, 16).toImage());

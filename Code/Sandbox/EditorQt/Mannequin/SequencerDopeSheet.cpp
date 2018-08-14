@@ -308,7 +308,6 @@ void CSequencerDopeSheet::DrawKeys(const CSequencerTrack* track, CDC* dc, const 
 						imgType = SEQBMP_PARAMS;
 						break;
 					}
-					;
 				}
 
 				// images are ordered (sel,unsel),(sel,unsel),(sel,unsel),(sel,unsel)

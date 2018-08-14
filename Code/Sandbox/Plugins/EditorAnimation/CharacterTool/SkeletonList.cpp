@@ -58,7 +58,6 @@ bool SkeletonList::Load()
 		XmlNodeRef xmlEntry = xmlRoot->getChild(i);
 
 		const char* name = xmlEntry->getAttr("name");
-		;
 		const char* file = xmlEntry->getAttr("file");
 		if (file[0] != '\0' && name[0] != '\0')
 		{

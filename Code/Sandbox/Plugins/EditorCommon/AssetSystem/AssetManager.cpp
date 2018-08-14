@@ -547,7 +547,6 @@ std::vector<CAssetPtr> CAssetManager::GetAssetsFromDirectory(const string& direc
 			assets.emplace_back(pAsset);
 		}
 	}
-	;
 	return assets;
 }
 

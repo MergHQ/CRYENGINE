@@ -105,7 +105,7 @@ struct CSequencerKey
 	virtual void UpdateFlags()
 	{
 		m_fileState = eNone;
-	};
+	}
 
 	float m_time;
 	int   flags;
@@ -126,7 +126,7 @@ protected:
 	{
 		extensions.clear();
 		editableExtension.Empty();
-	};
+	}
 
 	enum ESequencerKeyFileState
 	{

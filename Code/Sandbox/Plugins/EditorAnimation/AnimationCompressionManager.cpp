@@ -142,7 +142,6 @@ private:
 	CAnimationCompressionManager* m_pManager;
 	std::vector<string>           m_fileList;
 	int                           m_totalFileCount;
-	;
 };
 
 // ---------------------------------------------------------------------------

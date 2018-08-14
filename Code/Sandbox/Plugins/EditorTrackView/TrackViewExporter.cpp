@@ -307,7 +307,6 @@ bool CTrackViewExporter::ExportToFile(bool bCompleteSequence)
 	runParams.extensionFilters = extensionFilters;
 
 	string fileName = CSystemFileDialog::RunExportFile(runParams, nullptr).toLocal8Bit().data();
-	;
 	if (fileName.GetLength() > 0)
 	{
 		EFormat selFormat = eFormat_Unknown;

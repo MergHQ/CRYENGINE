@@ -2231,7 +2231,6 @@ void CTimeline::paintEvent(QPaintEvent* ev)
 		options.visibleRange = TRange<SAnimTime>(visibleRange.start, visibleRange.end);
 		options.rulerRange = options.visibleRange;
 		options.innerRange = TRange<SAnimTime>(innerRange.start, innerRange.end);
-		;
 		options.ticksPerFrame = SAnimTime::numTicksPerSecond / SAnimTime::GetFrameRateValue(m_frameRate);
 		options.timeUnit = m_timeUnit;
 

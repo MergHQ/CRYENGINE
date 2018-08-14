@@ -176,7 +176,6 @@ bool QParentWndWidget::eventFilter(QObject* obj, QEvent* ev)
 	default:
 		break;
 	}
-	;
 
 	return QWidget::eventFilter(obj, ev);
 }

@@ -103,7 +103,6 @@ bool FlexibleMesh::IsOverlappedUV(const AABB& aabb) const
 			if (Intersect::Lineseg_AABB(ls, aabb, out) != 0)
 				return true;
 		}
-		;
 	}
 	return false;
 }

@@ -285,7 +285,6 @@ void ModeCharacter::OnSceneElementsChanged(unsigned int layerBits)
 void ModeCharacter::OnSceneElementContinuousChange(unsigned int layerBits)
 {
 	HandleSceneChange(layerBits, true);
-	;
 }
 
 void ModeCharacter::OnSceneUndo()
