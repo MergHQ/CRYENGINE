@@ -27,12 +27,7 @@ namespace Cry
 
 			CService::~CService()
 			{
-				for (IListener* pListener : m_listeners)
-				{
-					pListener->OnShutdown(DiscordServiceID);
-				}
-
-				Discord_Shutdown();
+				s_pInstance = nullptr;
 			}
 
 			bool CService::Initialize(SSystemGlobalEnvironment& env, const SSystemInitParams& initParams)
@@ -91,6 +86,18 @@ namespace Cry
 				CRY_PROFILE_FUNCTION(PROFILE_SYSTEM);
 
 				Discord_RunCallbacks();
+			}
+
+			void CService::Shutdown()
+			{
+				SetLocalUser(nullptr);
+
+				for (IListener* pListener : m_listeners)
+				{
+					pListener->OnShutdown(DiscordServiceID);
+				}
+
+				Discord_Shutdown();
 			}
 
 			ServiceIdentifier CService::GetServiceIdentifier() const
@@ -195,12 +202,34 @@ namespace Cry
 					if (pUser)
 					{
 						m_localAccount->SetDiscordUser(*pUser);
-						std::for_each(m_listeners.begin(), m_listeners.end(), [this](IListener* pListener) { pListener->OnAccountAdded(*m_localAccount); });
+						NotifyAccountAdded(m_localAccount.get());
 					}
 					else
 					{
-						std::for_each(m_listeners.begin(), m_listeners.end(), [this](IListener* pListener) { pListener->OnAccountRemoved(*m_localAccount); });
+						NotifyAccountRemoved(m_localAccount.get());
 						m_localAccount.reset();
+					}
+				}
+			}
+
+			void CService::NotifyAccountAdded(CAccount* pAccount) const
+			{
+				if (pAccount)
+				{
+					for (IListener* pListener : m_listeners)
+					{
+						pListener->OnAccountAdded(*pAccount);
+					}
+				}
+			}
+
+			void CService::NotifyAccountRemoved(CAccount* pAccount) const
+			{
+				if (pAccount)
+				{
+					for (IListener* pListener : m_listeners)
+					{
+						pListener->OnAccountRemoved(*pAccount);
 					}
 				}
 			}

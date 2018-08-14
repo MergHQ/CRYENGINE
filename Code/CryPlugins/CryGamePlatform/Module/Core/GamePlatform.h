@@ -11,7 +11,7 @@ namespace Cry
 	namespace GamePlatform
 	{
 		//! Game platform core plugin. Keeps track and coordinates all available services.
-		class CPlugin final : public IPlugin, public IService::IListener
+		class CPlugin final : public IPlugin, public IService::IListener, public ISystemEventListener
 		{
 			CRYINTERFACE_BEGIN()
 				CRYINTERFACE_ADD(Cry::GamePlatform::IPlugin)
@@ -22,7 +22,7 @@ namespace Cry
 
 		public:
 			CPlugin();
-			virtual ~CPlugin() = default;
+			virtual ~CPlugin();
 
 			// Cry::IEnginePlugin
 			virtual bool Initialize(SSystemGlobalEnvironment& env, const SSystemInitParams& initParams) override;
@@ -70,6 +70,10 @@ namespace Cry
 			virtual void OnAccountRemoved(IAccount& account) override;
 			// ~IService::IListener
 
+			// ISystemEventListener
+			virtual void OnSystemEvent(ESystemEvent event, UINT_PTR wparam, UINT_PTR lparam) override;
+			// ~ISystemEventListener
+
 			virtual void RegisterMainService(IService& service) override;
 			virtual void RegisterService(IService& service) override;
 
@@ -97,7 +101,7 @@ namespace Cry
 		private:
 			// Index '0' is reserved for main service
 			DynArray<IService*> m_services;
-
+			// Index '0' is reserved for local user
 			mutable std::vector<std::unique_ptr<CUser>> m_users;
 			mutable DynArray<IUser*> m_friends;
 		};

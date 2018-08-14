@@ -35,6 +35,8 @@ namespace Cry
 				virtual void AddListener(IListener& listener) override { m_listeners.push_back(&listener); }
 				virtual void RemoveListener(IListener& listener) override { stl::find_and_erase(m_listeners, &listener); }
 
+				virtual void Shutdown() override;
+
 				virtual ServiceIdentifier GetServiceIdentifier() const override;
 				virtual int GetBuildIdentifier() const override;
 
@@ -77,6 +79,8 @@ namespace Cry
 
 			private:
 				void SetLocalUser(const DiscordUser* pUser);
+				void NotifyAccountRemoved(CAccount* pAccount) const;
+				void NotifyAccountAdded(CAccount* pAccount) const;
 
 			private:
 				static void OnDiscordReady(const DiscordUser* pUser);

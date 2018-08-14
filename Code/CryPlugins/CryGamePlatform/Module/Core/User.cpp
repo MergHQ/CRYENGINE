@@ -69,6 +69,11 @@ namespace Cry
 			m_accounts.swap(accounts);
 		}
 
+		const DynArray<IAccount*>& CUser::GetAccounts() const
+		{
+			return m_accounts;
+		}
+
 		void CUser::RemoveAccount(const IAccount& account)
 		{
 			stl::find_and_erase_all(m_accounts, &account);

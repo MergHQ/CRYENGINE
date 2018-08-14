@@ -72,14 +72,6 @@ namespace Cry
 				m_translationMappings["turkish"] = ILocalizationManager::ePILID_Turkish;
 			}
 
-			CService::~CService()
-			{
-				for (IListener* pListener : m_listeners)
-				{
-					pListener->OnShutdown(SteamServiceID);
-				}
-			}
-
 			bool CService::Initialize(SSystemGlobalEnvironment& env, const SSystemInitParams& initParams)
 			{
 				if (env.IsEditor())
@@ -228,6 +220,32 @@ namespace Cry
 				}
 			}
 
+			void CService::Shutdown()
+			{
+				m_pServer.reset();
+				m_pRemoteStorage.reset();
+				m_pNetworking.reset();
+				m_pMatchmaking.reset();
+				m_pSteamLeaderboards.reset();
+				m_pStatistics.reset();
+
+				m_friends.clear();
+
+				for (const std::unique_ptr<CAccount>& pRemovedAccount : m_accounts)
+				{
+					NotifyAccountRemoved(pRemovedAccount.get());
+				}
+
+				m_accounts.clear();
+
+				for (IListener* pListener : m_listeners)
+				{
+					pListener->OnShutdown(SteamServiceID);
+				}
+
+				SteamAPI_Shutdown();
+			}
+
 			ServiceIdentifier CService::GetServiceIdentifier() const
 			{
 				return SteamServiceID;
@@ -278,20 +296,13 @@ namespace Cry
 			{
 				if (pCallback->m_nChangeFlags & k_EPersonaChangeComeOnline)
 				{
-					IAccount* pFriendAccount = TryGetAccount(pCallback->m_ulSteamID);
-					for (IListener* pListener : m_listeners)
-					{
-						pListener->OnAccountAdded(*pFriendAccount);
-					}
+					TryGetAccount(pCallback->m_ulSteamID);
 				}
 				else if (pCallback->m_nChangeFlags & k_EPersonaChangeGoneOffline)
 				{
 					if (auto pRemovedAccount = RemoveAccount(pCallback->m_ulSteamID))
 					{
-						for (IListener* pListener : m_listeners)
-						{
-							pListener->OnAccountRemoved(*pRemovedAccount);
-						}
+						NotifyAccountRemoved(pRemovedAccount.get());
 					}
 				}
 			}
@@ -495,6 +506,8 @@ namespace Cry
 				}
 
 				m_accounts.emplace_back(stl::make_unique<CAccount>(id));
+				NotifyAccountAdded(m_accounts.back().get());
+
 				return m_accounts.back().get();
 			}
 
@@ -513,6 +526,8 @@ namespace Cry
 				{
 					removedAccount.swap(*accPos);
 					m_accounts.erase(accPos);
+
+					stl::find_and_erase(m_friends, removedAccount.get());
 				}
 
 				return removedAccount;
@@ -552,6 +567,28 @@ namespace Cry
 				}
 
 				return false;
+			}
+
+			void CService::NotifyAccountAdded(CAccount* pAccount) const
+			{
+				if (pAccount)
+				{
+					for (IListener* pListener : m_listeners)
+					{
+						pListener->OnAccountAdded(*pAccount);
+					}
+				}
+			}
+
+			void CService::NotifyAccountRemoved(CAccount* pAccount) const
+			{
+				if (pAccount)
+				{
+					for (IListener* pListener : m_listeners)
+					{
+						pListener->OnAccountRemoved(*pAccount);
+					}
+				}
 			}
 
 			CRYREGISTER_SINGLETON_CLASS(CService)

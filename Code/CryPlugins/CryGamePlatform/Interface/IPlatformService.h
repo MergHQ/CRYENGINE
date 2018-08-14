@@ -35,6 +35,9 @@ namespace Cry
 			//! Removes a service event listener
 			virtual void RemoveListener(IListener& listener) = 0;
 
+			//! Called by core platform plugin before it's going to be unloaded
+			virtual void Shutdown() = 0;
+
 			//! Gets the unique identifier of this service
 			virtual ServiceIdentifier GetServiceIdentifier() const = 0;
 

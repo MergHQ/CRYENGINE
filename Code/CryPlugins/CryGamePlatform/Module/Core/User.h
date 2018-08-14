@@ -29,6 +29,7 @@ namespace Cry
 			// ~IUser
 
 			void SetAccounts(DynArray<IAccount*> accounts);
+			const DynArray<IAccount*>& GetAccounts() const;
 			void RemoveAccount(const IAccount& account);
 			const char* ToDebugString() const;
 
