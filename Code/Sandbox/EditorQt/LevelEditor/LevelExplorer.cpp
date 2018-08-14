@@ -4,48 +4,47 @@
 
 #include "LevelExplorer.h"
 
-#include "LevelModel.h"
-#include "LevelLayerModel.h"
-#include "LevelModelsManager.h"
-#include "Objects/ObjectLayerManager.h"
-#include "Objects/ObjectLayer.h"
+#include "LevelEditor/LevelEditorViewport.h"
+#include "LevelEditor/LevelLayerModel.h"
+#include "LevelEditor/LevelModel.h"
+#include "LevelEditor/LevelModelsManager.h"
 #include "Objects/Group.h"
+#include "Objects/ObjectLayer.h"
+#include "Objects/ObjectLayerManager.h"
+#include "QT/QtMainFrame.h"
 #include "CryEdit.h"
 
-#include "QControls.h"
-#include "QAdvancedTreeView.h"
-#include "QAdvancedItemDelegate.h"
-#include "QSearchBox.h"
-#include "QFilteringPanel.h"
-#include "Controls/DynamicPopupMenu.h"
-#include "QtUtil.h"
-#include "ProxyModels/AttributeFilterProxyModel.h"
-#include "ProxyModels/MergingProxyModel.h"
-#include "Controls/QMenuComboBox.h"
-#include "CryIcon.h"
-#include "QtUtil.h"
-#include "MenuHelpers.h"
-#include "FileDialogs/SystemFileDialog.h"
-#include "QT/QtMainFrame.h"
-#include "FilePathUtil.h"
+#include <Controls/DynamicPopupMenu.h>
+#include <Controls/QMenuComboBox.h>
+#include <Controls/QuestionDialog.h>
+#include <FileDialogs/SystemFileDialog.h>
+#include <Menu/MenuWidgetBuilders.h>
+#include <ProxyModels/AttributeFilterProxyModel.h>
+#include <ProxyModels/MergingProxyModel.h>
+#include <FilePathUtil.h>
+#include <MenuHelpers.h>
+#include <QAdvancedItemDelegate.h>
+#include <QAdvancedTreeView.h>
+#include <QControls.h>
+#include <QFilteringPanel.h>
+#include <QSearchBox.h>
+
+#include <CryIcon.h>
 
 #include <QAbstractItemModel>
-#include <QVBoxLayout>
+#include <QApplication>
+#include <QClipboard>
+#include <QColorDialog>
+#include <QDir>
 #include <QHBoxLayout>
+#include <QHeaderView>
+#include <QLabel>
+#include <QLayout>
+#include <QProcess>
 #include <QSplitter>
 #include <QStyledItemDelegate>
-#include <QClipboard>
-#include <QApplication>
-#include <QDir>
-#include <QProcess>
-#include <QColorDialog>
 #include <QToolButton>
-#include <QLabel>
-#include <QHeaderView>
-#include <QLayout>
-#include "Controls/QuestionDialog.h"
-#include "LevelEditorViewport.h"
-#include "Menu/MenuWidgetBuilders.h"
+#include <QVBoxLayout>
 
 REGISTER_VIEWPANE_FACTORY_AND_MENU(CLevelExplorer, "Level Explorer", "Tools", false, "Level Editor")
 
@@ -617,19 +616,19 @@ void CLevelExplorer::CreateContextMenuForLayers(CAbstractMenu &abstractMenu, con
 		int miscLayerSection = abstractMenu.GetNextEmptySection();
 
 		action = abstractMenu.CreateAction(tr("Open Containing Folder"), miscLayerSection);
-		connect(action, &QAction::triggered, [&]()
+		connect(action, &QAction::triggered, [layer]()
 		{
 			QtUtil::OpenInExplorer((const char*)layer->GetLayerFilepath());
 		});
 
 		action = abstractMenu.CreateAction(tr("Copy Filename"), miscLayerSection);
-		connect(action, &QAction::triggered, [&]()
+		connect(action, &QAction::triggered, [layer]()
 		{
 			QApplication::clipboard()->setText(PathUtil::GetFile(layer->GetLayerFilepath()).GetString());
 		});
 
 		action = abstractMenu.CreateAction(tr("Copy Full Path"), miscLayerSection);
-		connect(action, &QAction::triggered, [&]()
+		connect(action, &QAction::triggered, [layer]()
 		{
 			QApplication::clipboard()->setText(layer->GetLayerFilepath().GetString());
 		});
@@ -1633,5 +1632,4 @@ void CLevelExplorer::FocusActiveLayer()
 			m_treeView->selectionModel()->setCurrentIndex(index, QItemSelectionModel::ClearAndSelect | QItemSelectionModel::Rows);
 		}
 	}
-
 }

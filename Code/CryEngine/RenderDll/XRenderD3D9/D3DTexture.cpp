@@ -355,24 +355,27 @@ void CTexture::ReleaseDeviceTexture(bool bKeepLastMips, bool bFromUnload) thread
 		// The responsible code-path for deconstruction is the m_pFileTexMips->m_pPoolItem's dtor, if either of these is set
 		if (!m_pFileTexMips || !m_pFileTexMips->m_pPoolItem)
 		{
-			CDeviceTexture* pDevTex = m_pDevTexture;
-			if (pDevTex)
-				pDevTex->SetOwner(NULL);
-
-			if (IsStreamed())
+			if (CDeviceTexture* const pDevTex = m_pDevTexture)
 			{
-				SAFE_DELETE(pDevTex);      // for manually created textures
-			}
-			else
-			{
-				SAFE_RELEASE(pDevTex);
+				pDevTex->SetOwner(nullptr);
 
-				volatile size_t* pTexMem = &CTexture::s_nStatsCurManagedNonStreamedTexMem;
-				if (IsDynamic())
-					pTexMem = &CTexture::s_nStatsCurDynamicTexMem;
+				// Ref-Counting only works when there is a backing native objects, otherwise it's -1
+				if (IsStreamed() || !pDevTex->GetNativeResource())
+				{
+					// for manually created textures
+					delete pDevTex;
+				}
+				else
+				{
+					pDevTex->Release();
 
-				assert(*pTexMem >= m_nDevTextureSize);
-				CryInterlockedAdd(pTexMem, -m_nDevTextureSize);
+					volatile size_t* pTexMem = &CTexture::s_nStatsCurManagedNonStreamedTexMem;
+					if (IsDynamic())
+						pTexMem = &CTexture::s_nStatsCurDynamicTexMem;
+
+					assert(*pTexMem >= m_nDevTextureSize);
+					CryInterlockedAdd(pTexMem, -m_nDevTextureSize);
+				}
 			}
 		}
 
