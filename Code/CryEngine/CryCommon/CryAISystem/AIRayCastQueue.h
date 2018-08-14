@@ -20,9 +20,10 @@ struct SRequesterDebugInfo
 		, szCustomString(szCustomString)
 		, entityId(entityId)
 	{}
-	const char*    szRequesterString;
-	const char*    szCustomString;
-	const EntityId entityId;
+
+	const char* szRequesterString;
+	const char* szCustomString;
+	EntityId    entityId;
 };
 
 struct SRequestDebugInfo
@@ -34,20 +35,25 @@ struct SRequestDebugInfo
 		Completed,
 	};
 
-	SRequestDebugInfo(const SRequesterDebugInfo& requesterInfo)
+	SRequestDebugInfo(const SRequesterDebugInfo& requesterInfo, const RayCastRequest::Priority priorityClass)
 		: requesterString(requesterInfo.szRequesterString)
 		, customString(requesterInfo.szCustomString)
 		, entityId(requesterInfo.entityId)
+		, priorityClass(priorityClass)
 		, state(EState::Queued)
 		, queuedTime(gEnv->pTimer->GetAsyncTime())
+		, queuedFrame(gEnv->nMainFrameID)
 	{}
 
-	string     requesterString;
-	string     customString;
-	EntityId   entityId;
-	EState     state;
-	CTimeValue queuedTime;
-	CTimeValue completedTime;
+	string                   requesterString;
+	string                   customString;
+	EntityId                 entityId;
+	RayCastRequest::Priority priorityClass;
+	EState                   state;
+	CTimeValue               queuedTime;
+	CTimeValue               completedTime;
+	uint32                   queuedFrame;
+	uint32                   completedFrame;
 };
 
 struct SContentionStats
@@ -88,7 +94,7 @@ struct SContentionExtended : public DefaultContention
 		stats.peakQueueSize = baseStats.peakQueueSize;
 
 		stats.pendingRequests.reserve(m_pendingRequestsMap.size());
-		for (const auto& keyValue : m_pendingRequestsMap)
+		for (auto& keyValue : m_pendingRequestsMap)
 		{
 			stats.pendingRequests.push_back(keyValue.second);
 		}
@@ -114,11 +120,11 @@ protected:
 	{
 	}
 
-	void Queued(const SRequesterDebugInfo& requesterInfo, const uint32 queuedId)
+	void Queued(const SRequesterDebugInfo& requesterInfo, const uint32 queuedId, const RayCastRequest::Priority priorityClass)
 	{
 		if (m_isEnabled)
 		{
-			m_pendingRequestsMap.emplace(queuedId, SRequestDebugInfo(requesterInfo));
+			m_pendingRequestsMap.emplace(queuedId, SRequestDebugInfo(requesterInfo, priorityClass));
 		}
 	}
 
@@ -144,6 +150,7 @@ protected:
 			{
 				SRequestDebugInfo& completedRequest = it->second;
 				completedRequest.completedTime = gEnv->pTimer->GetAsyncTime();
+				completedRequest.completedFrame = gEnv->nMainFrameID;
 				completedRequest.state = SRequestDebugInfo::EState::Completed;
 				m_completedRequests.push_back(completedRequest);
 
@@ -200,7 +207,7 @@ public:
 	             const typename BaseType::SubmitCallback& submitCallback, const SRequesterDebugInfo& requester = SRequesterDebugInfo())
 	{
 		const uint32 queuedId = BaseType::Queue(priority, resultCallback, submitCallback);
-		BaseType::ContentionPolicy::Queued(requester, queuedId);
+		BaseType::ContentionPolicy::Queued(requester, queuedId, priority);
 		return queuedId;
 	}
 
@@ -208,7 +215,7 @@ public:
 	             const typename BaseType::ResultCallback& resultCallback, const typename BaseType::SubmitCallback& submitCallback = 0, const SRequesterDebugInfo& requester = SRequesterDebugInfo())
 	{
 		const uint32 queuedId = BaseType::Queue(priority, request, resultCallback, submitCallback);
-		BaseType::ContentionPolicy::Queued(requester, queuedId);
+		BaseType::ContentionPolicy::Queued(requester, queuedId, priority);
 		return queuedId;
 	}
 };
