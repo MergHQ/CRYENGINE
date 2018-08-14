@@ -201,7 +201,6 @@ public:
 	virtual QVariant GetId() const override
 	{
 		return QVariant::fromValue(QString("In"));
-		;
 	}
 	virtual bool HasId(QVariant id) const override
 	{
@@ -240,7 +239,6 @@ public:
 	virtual QVariant GetId() const override
 	{
 		return QVariant::fromValue(QString("Out"));
-		;
 	}
 	virtual bool HasId(QVariant id) const override
 	{

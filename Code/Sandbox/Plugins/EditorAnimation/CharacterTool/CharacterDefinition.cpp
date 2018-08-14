@@ -1516,7 +1516,6 @@ bool CharacterDefinition::LoadFromXml(const XmlNodeRef& root)
 		tagname(uint32 crc32, AttachmentTypes type, bool dsetup, bool dtext, bool active)
 		{
 			m_crc32 = crc32;
-			;
 			m_type = type;
 			m_dsetup = dsetup;
 			m_dtext = dtext;

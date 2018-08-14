@@ -43,7 +43,7 @@ public:
 		pLayer->Serialize(m_undo, false);
 	}
 protected:
-	virtual const char* GetDescription() { return m_bCreate ? "Create Layer" : "Delete Layer"; };
+	virtual const char* GetDescription() { return m_bCreate ? "Create Layer" : "Delete Layer"; }
 
 	virtual void        Undo(bool bUndo) override
 	{
@@ -96,7 +96,7 @@ public:
 		m_undoName = pLayer->GetName();
 	}
 protected:
-	virtual const char* GetDescription() { return "Select Layer"; };
+	virtual const char* GetDescription() { return "Select Layer"; }
 
 	virtual void        Undo(bool bUndo)
 	{

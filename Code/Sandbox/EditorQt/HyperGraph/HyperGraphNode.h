@@ -187,8 +187,8 @@ public:
 	virtual void        PostClone(CBaseObject* pFromObject, CObjectCloneContext& ctx) {}
 
 	//////////////////////////////////////////////////////////////////////////
-	Ports* GetInputs()  { return &m_inputs; };
-	Ports* GetOutputs() { return &m_outputs; };
+	Ports* GetInputs()  { return &m_inputs; }
+	Ports* GetOutputs() { return &m_outputs; }
 	//////////////////////////////////////////////////////////////////////////
 
 	// Finds a port by name.

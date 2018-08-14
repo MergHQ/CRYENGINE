@@ -465,7 +465,6 @@ UIEnumType ParseUIConfig(const char* sUIConfig, std::map<string, string>& outEnu
 			outEnumPairs[str] = value;
 			resToken = TokenizeString(values, " ,", pos);
 		}
-		;
 	}
 
 	return enumType;

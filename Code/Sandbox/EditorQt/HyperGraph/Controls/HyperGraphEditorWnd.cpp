@@ -3020,7 +3020,6 @@ void CHyperGraphDialog::ProcessBreakpointMenu(int nMenuOption, HTREEITEM hItem)
 		}
 		break;
 	}
-	;
 }
 
 void CHyperGraphDialog::OnBreakpointsClick(NMHDR* pNMHDR, LRESULT* pResult)

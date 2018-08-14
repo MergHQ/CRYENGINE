@@ -1831,7 +1831,6 @@ void CFacialEditorDialog::OnFacialEdEvent(EFacialEdEvent event, IFacialEffector*
 		}
 		break;
 	}
-	;
 }
 
 //////////////////////////////////////////////////////////////////////////

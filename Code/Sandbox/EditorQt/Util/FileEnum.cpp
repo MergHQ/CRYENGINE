@@ -74,7 +74,6 @@ bool CFileEnum::GetNextFile(__finddata64_t* pFile)
 
 		return false;
 	}
-	;
 
 	// At least one file left
 	return true;

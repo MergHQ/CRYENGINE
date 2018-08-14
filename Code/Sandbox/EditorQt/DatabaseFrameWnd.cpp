@@ -433,7 +433,6 @@ void CDatabaseFrameWnd::GetAllItems(std::vector<HTREEITEM>& outItemList) const
 		GetItemsUnderSpecificItem(hItem, outItemList);
 		hItem = GetTreeCtrl().GetNextItem(hItem, TVGN_NEXT);
 	}
-	;
 }
 
 void CDatabaseFrameWnd::GetItemsUnderSpecificItem(HTREEITEM hItem, std::vector<HTREEITEM>& outItemList) const

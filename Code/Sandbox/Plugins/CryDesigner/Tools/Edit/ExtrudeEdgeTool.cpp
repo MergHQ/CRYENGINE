@@ -16,7 +16,6 @@ void ExtrudeEdgeTool::Enter()
 {
 	__super::Enter();
 	m_bManipulatingGizmo = false;
-	;
 	m_bHitGizmo = false;
 	m_CreatedPolygons.clear();
 

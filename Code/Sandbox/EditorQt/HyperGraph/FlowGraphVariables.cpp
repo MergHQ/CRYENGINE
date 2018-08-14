@@ -121,7 +121,6 @@ bool GetParamMap(CFlowNodeGetCustomItemsBase* pGetCustomItems, TParamMap& outMap
 		outMap[str] = value;
 		resToken = TokenizeString(values, " ,", pos);
 	}
-	;
 	return outMap.empty() == false;
 }
 

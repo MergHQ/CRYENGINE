@@ -183,7 +183,6 @@ inline string TokenizeString(const string& str, const char* pszTokens, int& iSta
 	if (pszPlace < pszEnd)
 	{
 		int nIncluding = (int)strspn(pszPlace, pszTokens);
-		;
 
 		if ((pszPlace + nIncluding) < pszEnd)
 		{

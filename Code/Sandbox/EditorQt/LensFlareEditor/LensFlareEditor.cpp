@@ -1037,7 +1037,6 @@ void CLensFlareEditor::GetAllLensFlareItems(std::vector<HTREEITEM>& outItemList)
 		GetLensFlareItemsUnderSpecificItem(hItem, outItemList);
 		hItem = GetTreeCtrl().GetNextItem(hItem, TVGN_NEXT);
 	}
-	;
 }
 
 void CLensFlareEditor::GetLensFlareItemsUnderSpecificItem(HTREEITEM hItem, std::vector<HTREEITEM>& outItemList) const

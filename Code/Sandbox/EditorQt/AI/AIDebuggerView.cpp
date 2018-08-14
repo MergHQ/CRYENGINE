@@ -2259,7 +2259,6 @@ void CAIDebuggerView::OnVScroll(UINT nSBCode, UINT nPos, CScrollBar* pScrollBar)
 	default:
 		;  // Ignore
 	}
-	;
 
 	if (iPosition < 0)
 		iPosition = 0;

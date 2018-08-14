@@ -520,21 +520,23 @@ IVec CModelViewportCE::CheckFootIntersection(const Vec3& Final_Heel, const Vec3&
 
 		ival = Intersect::Ray_OBB(RayHeel, pos, obb, out);
 		if (ival == 0x01)
+		{
 			if (HeightHeel < out.z)
 			{
 				HeightHeel = out.z;
 				normalHeel = obb.m33.GetColumn2(); // * m_PhysicalLocation.q;
 			}
-		;
+		}
 
 		ival = Intersect::Ray_OBB(RayToe0, pos, obb, out);
 		if (ival == 0x01)
+		{
 			if (HeightToe0 < out.z)
 			{
 				HeightToe0 = out.z;
 				normalToe0 = obb.m33.GetColumn2(); // * m_PhysicalLocation.q;
 			}
-		;
+		}
 	}
 
 	IVec retval;

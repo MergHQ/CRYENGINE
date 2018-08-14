@@ -148,7 +148,6 @@ PropertiesPanel::PropertiesPanel(QWidget* parent, System* system)
 		if (m_system->sourceAssetList)
 		{
 			m_followActions[FOLLOW_SOURCE_ASSET] = m_followMenu->addAction(CryIcon("icons:common/animation_source_asset.ico"), "Import Assets", this, SLOT(OnFollowMenu()));
-			;
 			m_followActions[FOLLOW_SOURCE_ASSET]->setData(int(FOLLOW_SOURCE_ASSET));
 		}
 		m_followMenu->addSeparator();

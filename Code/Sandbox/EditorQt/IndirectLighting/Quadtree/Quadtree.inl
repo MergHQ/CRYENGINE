@@ -610,7 +610,6 @@ RemoveLeafFromNode(SQuadNode& rParentNode, const TLeafContent& crCont, const TVe
 		for (int i = 0; i < TMaxCellElems - 1; ++i)
 		{
 			TIndexType tempNextCellLeaf = 0;
-			;
 			if (nextCellLeafIndex != TLeaf::INVALID_LEAF_INDEX)
 			{
 				tempNextCellLeaf = GetLeaf(nextCellLeafIndex).GetNextCellLeaf();
