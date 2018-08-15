@@ -1022,18 +1022,13 @@ bool CCryEditDoc::SaveLevel(const string& filename)
 
 	CryLog("Saving level file %s", filename.c_str());
 	{
-		// Make a backup of file.
-		if (gEditorFilePreferences.filesBackup)
-		{
-			CFileUtil::BackupFile(filename.c_str());
-		}
+		CTempFileHelper helper(filename);
 
 		CXmlArchive xmlAr;
 		Save(xmlAr);
-		if (!xmlAr.SaveToFile(filename))
-		{
-			return false;
-		}
+
+		xmlAr.SaveToFile(string(helper.GetTempFilePath()));
+		helper.UpdateFile(gEditorFilePreferences.filesBackup);
 	}
 
 	// Save Heightmap and terrain data
