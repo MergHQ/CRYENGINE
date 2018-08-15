@@ -73,7 +73,6 @@ public:
 	virtual void             SetPhysics(IPhysicalEntity*)      {}
 
 	virtual void             Render(SRendParams const& rParam, const SRenderingPassInfo& passInfo);
-	virtual void             OnPhysAreaChange() { m_PhysEnviron.m_nNonUniformFlags &= ~EFF_LOADED; }
 
 	virtual void             Hide(bool bHide);
 
@@ -277,8 +276,6 @@ public:
 		m_pUpdateParticlesJobState = pJobState;
 	}
 
-public:
-	int m_nPhysAreaChangedProxyId;
 private:
 
 	// Internal emitter flags, extend EParticleEmitterFlags

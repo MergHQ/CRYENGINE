@@ -1,20 +1,10 @@
 // Copyright 2001-2018 Crytek GmbH / Crytek Group. All rights reserved.
 
-// -------------------------------------------------------------------------
-//  File name:   ParticleEnviron.cpp
-//  Created:     28/08/2007 by Scott Peter
-//  Description: World environment interface
-// -------------------------------------------------------------------------
-//  History:		 Refactored from ParticleEmitter.cpp
-//
-////////////////////////////////////////////////////////////////////////////
-
 #include "StdAfx.h"
 #include "ParticleEnviron.h"
 #include "VisAreas.h"
 
-//////////////////////////////////////////////////////////////////////////
-// SPhysEnviron implementation.
+
 //////////////////////////////////////////////////////////////////////////
 
 void SPhysForces::Add(SPhysForces const& other, uint32 nEnvFlags)
@@ -28,6 +18,35 @@ void SPhysForces::Add(SPhysForces const& other, uint32 nEnvFlags)
 			plWater = other.plWater;
 }
 
+//////////////////////////////////////////////////////////////////////////
+static uint32 GetAreaFlags(IPhysicalEntity* pEntity, pe_params_area& parea, pe_params_buoyancy& pbuoy, Plane* pWaterPlane = 0)
+{
+	uint32 flags = 0;
+
+	if (pEntity->GetParams(&parea))
+	{
+		if (!is_unused(parea.gravity))
+			flags |= ENV_GRAVITY;
+	}
+
+	if (pEntity->GetParams(&pbuoy))
+	{
+		if (pbuoy.iMedium == 1)
+			flags |= ENV_WIND;
+		else if (pbuoy.iMedium == 0)
+		{
+			flags |= ENV_WATER;
+			if (pWaterPlane && !is_unused(pbuoy.waterPlane.n))
+				pWaterPlane->SetPlane(pbuoy.waterPlane.n, pbuoy.waterPlane.origin);
+		}
+	}
+
+	return flags;
+}
+
+//////////////////////////////////////////////////////////////////////////
+// SPhysEnviron implementation
+
 void SPhysEnviron::Clear()
 {
 	m_UniformForces = SPhysForces(ZERO);
@@ -37,18 +56,85 @@ void SPhysEnviron::Clear()
 	m_NonUniformAreas.resize(0);
 }
 
-void SPhysEnviron::FreeMemory()
+static SWorldPhysEnviron* s_pWorldPhysEnviron;
+
+static int StaticOnAreaChange(const EventPhys* pEvent)
 {
-	Clear();
-	stl::free_container(m_NonUniformAreas);
+	if (s_pWorldPhysEnviron)
+	{
+		if (s_pWorldPhysEnviron->OnAreaChange(static_cast<const EventPhysAreaChange&>(*pEvent)))
+		{
+			s_pWorldPhysEnviron->OnPhysAreaChange();
+			
+		}
+	}
+	return 0;
 }
 
-void SPhysEnviron::GetWorldPhysAreas(uint32 nFlags, bool bNonUniformAreas)
+SWorldPhysEnviron::SWorldPhysEnviron()
+{
+	s_pWorldPhysEnviron = this;
+	if (gEnv->pPhysicalWorld)
+		gEnv->pPhysicalWorld->AddEventClient(EventPhysAreaChange::id, &StaticOnAreaChange, 0);
+}
+SWorldPhysEnviron::~SWorldPhysEnviron()
+{
+	if (gEnv->pPhysicalWorld)
+		gEnv->pPhysicalWorld->RemoveEventClient(EventPhysAreaChange::id, &StaticOnAreaChange, 0);
+	s_pWorldPhysEnviron = 0;
+}
+
+bool SWorldPhysEnviron::OnAreaChange(const EventPhysAreaChange& event)
 {
 	CRY_PROFILE_FUNCTION(PROFILE_PARTICLE);
 
+	// Require re-querying of world physics areas
+	if (!event.pEntity || event.pEntity->GetType() != PE_AREA)
+		return false;
+
+	SAreaSpec acNew;
+	pe_params_area parea;
+	pe_params_buoyancy pbuoy;
+	acNew.m_nFlags = GetAreaFlags(event.pEntity, parea, pbuoy);
+	if (!acNew.m_nFlags)
+		return false;
+
+	acNew.m_bounds = AABB(event.boxAffected[0], event.boxAffected[1]);
+
+	AUTO_LOCK(m_Lock);
+	m_SumAreaChanged |= acNew;
+
+	// Merge with existing bb if close enough and same medium
+	static const float fMERGE_THRESHOLD = 2.f;
+
+	float fNewVolume = acNew.m_bounds.GetVolume();
+	for (auto& ac : m_AreasChanged)
+	{
+		if (ac.m_nFlags == acNew.m_nFlags)
+		{
+			AABB bbUnion = acNew.m_bounds;
+			bbUnion.Add(ac.m_bounds);
+			if (bbUnion.GetVolume() <= (fNewVolume + ac.m_bounds.GetVolume()) * fMERGE_THRESHOLD)
+			{
+				ac.m_bounds = bbUnion;
+				return true;
+			}
+		}
+	}
+	m_AreasChanged.push_back(acNew);
+	return true;
+}
+
+void SWorldPhysEnviron::Update()
+{
+	if (IsCurrent() && !IsChanged())
+		return;
+
+	CRY_PROFILE_FUNCTION(PROFILE_PARTICLE);
+
 	// Recycle shared SArea objects
-	SmartPtrArray<SArea> aPrevAreas = m_NonUniformAreas;
+	SmartPtrArray<SArea> aPrevAreas;
+	std::swap(aPrevAreas, m_NonUniformAreas);
 
 	Clear();
 
@@ -58,36 +144,17 @@ void SPhysEnviron::GetWorldPhysAreas(uint32 nFlags, bool bNonUniformAreas)
 	Vec3 vWorldSize(GetTerrain() ? float(GetTerrain()->GetTerrainSize()) : 0.f);
 
 	// Atomic iteration.
-	for (IPhysicalEntity* pArea = 0; pArea = GetPhysicalWorld()->GetNextArea(pArea); )
+	for (IPhysicalEntity* pArea = 0; pArea = gEnv->pPhysicalWorld->GetNextArea(pArea); )
 	{
 		// Initial check for areas of interest.
-		int nAreaFlags = 0;
-		Plane plWater = m_UniformForces.plWater;
-
 		pe_params_area parea;
-		if (!pArea->GetParams(&parea))
-			continue;
-
-		// Determine which forces are in area.
-		if (!is_unused(parea.gravity))
-			nAreaFlags |= ENV_GRAVITY;
-
 		pe_params_buoyancy pbuoy;
-		if (pArea->GetParams(&pbuoy))
-		{
-			if (pbuoy.iMedium == 1)
-				nAreaFlags |= ENV_WIND;
-			else if (pbuoy.iMedium == 0 && !is_unused(pbuoy.waterPlane.n))
-			{
-				plWater.SetPlane(pbuoy.waterPlane.n, pbuoy.waterPlane.origin);
-				nAreaFlags |= ENV_WATER;
-			}
-		}
+		Plane plWater = m_UniformForces.plWater;
+		uint32 nAreaFlags = GetAreaFlags(pArea, parea, pbuoy, &plWater);
 
 		// Skip if unneeded gravity or wind.
 		// All emitters require m_tUnderwater intersection test.
-		nAreaFlags &= nFlags;
-		if (nAreaFlags == 0)
+		if (!nAreaFlags)
 			continue;
 
 		// Query area for intersection and forces, uniform only.
@@ -126,71 +193,67 @@ void SPhysEnviron::GetWorldPhysAreas(uint32 nFlags, bool bNonUniformAreas)
 
 		if (nStatus < 0)
 		{
-			if (bNonUniformAreas)
+			// Add to NonUniformAreas list, re-using previous SAreas
+			_smart_ptr<SArea> pAreaRec;
+			int i = 0;
+			for (auto& area : aPrevAreas)
 			{
-				// Add to NonUniformAreas list, re-using previous SAreas
-				_smart_ptr<SArea> pAreaRec;
-				int i = 0;
-				for (auto& area : aPrevAreas)
+				if (area.m_pArea == pArea)
 				{
-					if (area.m_pArea == pArea)
-					{
-						pAreaRec = &area;
-						aPrevAreas.erase(i);
-						break;
-					}
-					i++;
+					pAreaRec = &area;
+					aPrevAreas.erase(i);
+					break;
 				}
+				i++;
+			}
 
-				if (!pAreaRec)
+			if (!pAreaRec)
+			{
+				pAreaRec = new SArea;
+				pAreaRec->m_pArea = pArea;
+			}
+
+			SArea& area = *pAreaRec;
+			m_NonUniformAreas.push_back(pAreaRec);
+
+			area.m_nFlags = nAreaFlags;
+			area.m_pLock = sarea.pLockUpdate;
+			area.m_bounds.min = spos.BBox[0] + spos.pos;
+			area.m_bounds.max = spos.BBox[1] + spos.pos;
+			area.m_Forces = area_forces;
+
+			if (nAreaFlags & ENV_WATER)
+			{
+				// Expand water test area
+				area.m_bounds.min.z = -fHUGE;
+			}
+
+			pe_params_foreign_data pfd;
+			if (pArea->GetParams(&pfd))
+			{
+				if (pfd.iForeignFlags & PFF_OUTDOOR_AREA)
+					area.m_bOutdoorOnly = true;
+			}
+
+			area.m_bCacheForce = false;
+
+			if (nAreaFlags & ENV_FORCES)
+			{
+				// Test whether we can cache force information for quick evaluation.
+				int geom_type;
+				if (parea.pGeom && ((geom_type = parea.pGeom->GetType()) == GEOM_BOX || geom_type == GEOM_SPHERE))
 				{
-					pAreaRec = new SArea;
-					pAreaRec->m_pArea = pArea;
+					area.m_bRadial = !parea.bUniform;
+					area.m_nGeomShape = geom_type;
+					area.m_fFalloffScale = div_min(1.f, 1.f - parea.falloff0, fHUGE);
+
+					// Construct world-to-unit-sphere transform.
+					area.m_vCenter = spos.pos;
+					area.m_matToLocal = (matArea * Matrix33::CreateScale(area.m_bounds.GetSize() * 0.5f)).GetInverted();
+					area.m_bCacheForce = true;
 				}
-
-				SArea& area = *pAreaRec;
-				m_NonUniformAreas.push_back(pAreaRec);
-
-				area.m_pEnviron = this;
-				area.m_nFlags = nAreaFlags;
-				area.m_pLock = sarea.pLockUpdate;
-				area.m_bbArea.min = spos.BBox[0] + spos.pos;
-				area.m_bbArea.max = spos.BBox[1] + spos.pos;
-				area.m_Forces = area_forces;
-
-				if (nAreaFlags & ENV_WATER)
-				{
-					// Expand water test area
-					area.m_bbArea.min.z = -fHUGE;
-				}
-
-				pe_params_foreign_data pfd;
-				if (pArea->GetParams(&pfd))
-				{
-					if (pfd.iForeignFlags & PFF_OUTDOOR_AREA)
-						area.m_bOutdoorOnly = true;
-				}
-
-				area.m_bCacheForce = false;
-
-				if (nAreaFlags & (ENV_GRAVITY | ENV_WIND))
-				{
-					// Test whether we can cache force information for quick evaluation.
-					int geom_type;
-					if (parea.pGeom && ((geom_type = parea.pGeom->GetType()) == GEOM_BOX || geom_type == GEOM_SPHERE))
-					{
-						area.m_bRadial = !parea.bUniform;
-						area.m_nGeomShape = geom_type;
-						area.m_fFalloffScale = div_min(1.f, 1.f - parea.falloff0, fHUGE);
-
-						// Construct world-to-unit-sphere transform.
-						area.m_vCenter = spos.pos;
-						area.m_matToLocal = (matArea * Matrix33::CreateScale(area.m_bbArea.GetSize() * 0.5f)).GetInverted();
-						area.m_bCacheForce = true;
-					}
-					if (!area.m_bCacheForce)
-						m_nNonCachedFlags |= nAreaFlags & (ENV_GRAVITY | ENV_WIND);
-				}
+				if (!area.m_bCacheForce)
+					m_nNonCachedFlags |= nAreaFlags & ENV_FORCES;
 			}
 			m_nNonUniformFlags |= nAreaFlags;
 		}
@@ -202,8 +265,15 @@ void SPhysEnviron::GetWorldPhysAreas(uint32 nFlags, bool bNonUniformAreas)
 	}
 }
 
-void SPhysEnviron::GetPhysAreas(SPhysEnviron const& envSource, AABB const& box, bool bIndoors, uint32 nFlags, bool bNonUniformAreas, const CParticleEmitter* pEmitterSkip)
+void SWorldPhysEnviron::FinishUpdate()
 {
+	ClearAreasChanged();
+}
+
+void SPhysEnviron::Update(SPhysEnviron const& envSource, AABB const& box, bool bIndoors, uint32 nFlags, bool bNonUniformAreas, const void* pObjectSkip)
+{
+	assert(envSource.IsCurrent());
+
 	CRY_PROFILE_FUNCTION(PROFILE_PARTICLE);
 
 	Clear();
@@ -241,14 +311,14 @@ void SPhysEnviron::GetPhysAreas(SPhysEnviron const& envSource, AABB const& box, 
 				if (!bIndoors || !area.m_bOutdoorOnly)
 				{
 					// Test bb intersection.
-					if (area.m_bbArea.IsIntersectBox(box))
+					if (area.m_bounds.IsIntersectBox(box))
 					{
-						if (pEmitterSkip)
+						if (pObjectSkip)
 						{
 							pe_params_foreign_data fd;
 							if (area.m_pArea->GetParams(&fd))
 							{
-								if (fd.pForeignData == pEmitterSkip)
+								if (fd.pForeignData == pObjectSkip)
 									continue;
 							}
 						}
@@ -283,7 +353,7 @@ void SPhysEnviron::GetPhysAreas(SPhysEnviron const& envSource, AABB const& box, 
 									m_NonUniformAreas.push_back(&area);
 									m_nNonUniformFlags |= area.m_nFlags;
 									if (!area.m_bCacheForce)
-										m_nNonCachedFlags |= area.m_nFlags & (ENV_GRAVITY | ENV_WIND);
+										m_nNonCachedFlags |= area.m_nFlags & ENV_FORCES;
 								}
 								else
 								{
@@ -297,6 +367,14 @@ void SPhysEnviron::GetPhysAreas(SPhysEnviron const& envSource, AABB const& box, 
 			}
 		}
 	}
+}
+
+void SPhysEnviron::GetForces(SPhysForces& forces, AABB const& bb, uint32 nFlags, bool bAverage) const
+{
+	CRY_PROFILE_FUNCTION(PROFILE_PARTICLE);
+
+	forces = m_UniformForces;
+	ForNonumiformAreas(bb, nFlags, [&](const SArea& area) { area.GetForces(forces, bb, nFlags, bAverage); });
 }
 
 bool SPhysEnviron::PhysicsCollision(ray_hit& hit, Vec3 const& vStart, Vec3 const& vEnd, float fRadius, uint32 nEnvFlags, IPhysicalEntity* pTestEntity)
@@ -343,7 +421,7 @@ bool SPhysEnviron::PhysicsCollision(ray_hit& hit, Vec3 const& vStart, Vec3 const
 	if (pTestEntity)
 	{
 		// Test specified entity only.
-		bHit = GetPhysicalWorld()->RayTraceEntity(pTestEntity, vStart, vMove, &hit)
+		bHit = gEnv->pPhysicalWorld->RayTraceEntity(pTestEntity, vStart, vMove, &hit)
 		       && hit.n * vMove < 0.f;
 	}
 	else if (hit.dist > 0.f)
@@ -360,7 +438,7 @@ bool SPhysEnviron::PhysicsCollision(ray_hit& hit, Vec3 const& vStart, Vec3 const
 		{
 			// rwi_ flags copied from similar code in CParticleEntity.
 			ray_hit hit_loc;
-			if (GetPhysicalWorld()->RayWorldIntersection(
+			if (gEnv->pPhysicalWorld->RayWorldIntersection(
 			      vStart, vMove * hit.dist,
 			      ent_collide | ent_no_ondemand_activation,
 			      sf_max_pierceable | (geom_colltype_ray | geom_colltype13) << rwi_colltype_bit | rwi_colltype_any | rwi_ignore_noncolliding,
@@ -402,12 +480,12 @@ void SPhysEnviron::SArea::GetForcesPhys(SPhysForces& forces, AABB const& bb) con
 	}
 }
 
-void SPhysEnviron::SArea::GetForces(SPhysForces& forces, AABB const& bb, uint32 nFlags) const
+void SPhysEnviron::SArea::GetForces(SPhysForces& forces, AABB const& bb, uint32 nFlags, bool bAverage) const
 {
 	nFlags &= m_nFlags;
 
 	Vec3 vPos = bb.GetCenter();
-	if (nFlags & (ENV_GRAVITY | ENV_WIND))
+	if (nFlags & ENV_FORCES)
 	{
 		if (!m_bCacheForce)
 		{
@@ -424,53 +502,20 @@ void SPhysEnviron::SArea::GetForces(SPhysForces& forces, AABB const& bb, uint32 
 			GetForcesPhys(forcesPhys, bb);
 #endif
 
-			Vec3 vPosRel;
-			float fStrength;
-
+			float fStrength = 1.0f;
 			float fVolume = bb.GetVolume();
+
 			if (fVolume)
 			{
-				// Get approx average force over box
-				Vec3 vCenter;
-				AABB bbClip;
-				if (m_pEnviron->IsCurrent())
-				{
-					vCenter = m_vCenter;
-					bbClip = m_bbArea;
-				}
-				else
-				{
-					pe_status_pos spos;
-					if (m_pArea->GetStatus(&spos))
-					{
-						vCenter = spos.pos;
-						bbClip.min = spos.BBox[0] + spos.pos;
-						bbClip.max = spos.BBox[1] + spos.pos;
-					}
-				}
-
+				AABB bbClip = m_bounds;
 				bbClip.ClipToBox(bb);
-
-				vPosRel = bbClip.GetCenter() - vCenter;
-				fStrength = bbClip.GetVolume() / fVolume;
-			}
-			else
-			{
-				// Get force at point
-				Vec3 vCenter;
-				if (m_pEnviron->IsCurrent())
-					vCenter = m_vCenter;
-				else
-				{
-					pe_status_pos spos;
-					if (m_pArea->GetStatus(&spos))
-						vCenter = spos.pos;
-				}
-
-				vPosRel = vPos - vCenter;
-				fStrength = 1.0f;
+				vPos = bbClip.GetCenter();
+				if (bAverage)
+					// Scale force by bounds overlap ratio
+					fStrength = bbClip.GetVolume() / fVolume;
 			}
 
+			Vec3 vPosRel = vPos - m_vCenter;
 			Vec3 vDist = m_matToLocal * vPosRel;
 			float fDist = m_nGeomShape == GEOM_BOX ? max(max(abs(vDist.x), abs(vDist.y)), abs(vDist.z))
 			              : vDist.GetLengthFast();
@@ -514,12 +559,16 @@ float SPhysEnviron::SArea::GetWaterPlane(Plane& plane, Vec3 const& vPos, float f
 	float fDist = m_Forces.plWater.DistFromPlane(vPos);
 	if (fDist < fMaxDist)
 	{
-		pe_status_contains_point st;
-		st.pt = vPos - m_Forces.plWater.n * fDist;
-		if (m_pArea->GetStatus(&st))
+		if (m_bounds.IsContainPoint(vPos))
 		{
-			plane = m_Forces.plWater;
-			return fDist;
+			CRY_PROFILE_FUNCTION(PROFILE_PARTICLE);
+			pe_status_contains_point st;
+			st.pt = vPos - m_Forces.plWater.n * fDist;
+			if (m_pArea->GetStatus(&st))
+			{
+				plane = m_Forces.plWater;
+				return fDist;
+			}
 		}
 	}
 	return fMaxDist;

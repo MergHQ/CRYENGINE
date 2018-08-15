@@ -9,6 +9,7 @@
 #include <CrySerialization/STL.h>
 #include <CrySerialization/IArchive.h>
 #include <CrySerialization/SmartPtr.h>
+#include <CrySerialization/DynArray.h>
 #include <CrySerialization/Math.h>
 
 namespace pfx2
