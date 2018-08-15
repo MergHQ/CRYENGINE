@@ -41,7 +41,7 @@ else()
 endif()
 
 if (SUPPORTED_PLATFORM)
-	set(P4API_DIR "${SDK_DIR}/p4api")
+	set(P4API_DIR "${SDK_DIR}/p4api/2016.2.1612602")
 	
 	if (NOT EXISTS ${P4API_DIR})
 			message(WARNING "Perforce api library could not be found at ${P4API_DIR}")
