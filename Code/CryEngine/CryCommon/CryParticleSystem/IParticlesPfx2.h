@@ -150,8 +150,8 @@ struct IParticleSystem : public ICryUnknown
 
 static std::shared_ptr<IParticleSystem> GetIParticleSystem()
 {
-	static std::shared_ptr<IParticleSystem> pParticleSystem;
-	static bool created = CryCreateClassInstanceForInterface(cryiidof<IParticleSystem>(), pParticleSystem);
+	std::shared_ptr<IParticleSystem> pParticleSystem;
+	CryCreateClassInstanceForInterface(cryiidof<IParticleSystem>(), pParticleSystem);
 	return pParticleSystem;
 }
 

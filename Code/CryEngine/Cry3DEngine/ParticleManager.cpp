@@ -1,21 +1,9 @@
 // Copyright 2001-2018 Crytek GmbH / Crytek Group. All rights reserved.
 
-// -------------------------------------------------------------------------
-//  File name:   ParticleManager.cpp
-//  Version:     v1.00
-//  Created:     28/5/2001 by Vladimir Kajalin
-//  Compilers:   Visual Studio.NET
-//  Description: Manage particle effects and emitters
-// -------------------------------------------------------------------------
-//  History:
-//	- 03:2006				 : Modified by Jan Müller (Serialization)
-//
-////////////////////////////////////////////////////////////////////////////
-
 #include "StdAfx.h"
+#include "ParticleManager.h"
 #include <ParticleSystem/ParticleEffect.h>
 #include <ParticleSystem/ParticleEmitter.h>
-#include "ParticleManager.h"
 #include "ParticleEmitter.h"
 #include "ParticleContainer.h"
 #include "ParticleMemory.h"
@@ -68,8 +56,6 @@ void CParticleBatchDataManager::FinishParticleRenderTasks(const SRenderingPassIn
 	{
 		GetRenderer()->EF_AddMultipleParticlesToScene(&m_ParticlesToScene[passInfo.ThreadID()][nJobStart], m_ParticlesToScene[passInfo.ThreadID()].size() - nJobStart, passInfo);
 	}
-
-	pfx2::GetIParticleSystem()->FinishRenderTasks(passInfo);
 }
 
 void CParticleBatchDataManager::GetMemoryUsage(ICrySizer* pSizer) const
@@ -105,6 +91,8 @@ ITimer* g_pParticleTimer = NULL;
 //////////////////////////////////////////////////////////////////////////
 CParticleManager::CParticleManager(bool bEnable)
 {
+	m_pParticleSystem = pfx2::GetIParticleSystem();
+
 	m_bEnabled = bEnable;
 	m_bRegisteredListener = false;
 #ifdef bEVENT_TIMINGS
@@ -115,14 +103,9 @@ CParticleManager::CParticleManager(bool bEnable)
 	g_pParticleTimer = gEnv->pTimer;
 	m_pLastDefaultParams = &GetDefaultParams();
 
-	if (GetPhysicalWorld())
-	{
-		GetPhysicalWorld()->AddEventClient(EventPhysAreaChange::id, &StaticOnPhysAreaChange, 0);
-
-		REGISTER_COMMAND("e_ParticleListEmitters", &CmdParticleListEmitters, 0, "Writes all emitters to log");
-		REGISTER_COMMAND("e_ParticleListEffects", &CmdParticleListEffects, 0, "Writes all effects used and counts to log");
-		REGISTER_COMMAND("e_ParticleMemory", &CmdParticleMemory, 0, "Displays current particle memory usage");
-	}
+	REGISTER_COMMAND("e_ParticleListEmitters", &CmdParticleListEmitters, 0, "Writes all emitters to log");
+	REGISTER_COMMAND("e_ParticleListEffects", &CmdParticleListEffects, 0, "Writes all effects used and counts to log");
+	REGISTER_COMMAND("e_ParticleMemory", &CmdParticleMemory, 0, "Displays current particle memory usage");
 
 	// Convert deprecated cvar
 	int& cvarCollisions = GetCVars()->e_ParticlesCollisions;
@@ -151,7 +134,6 @@ CParticleManager::~CParticleManager()
 	{
 		Get3DEngine()->GetIVisAreaManager()->RemoveListener(this);
 	}
-	GetPhysicalWorld()->RemoveEventClient(EventPhysAreaChange::id, &StaticOnPhysAreaChange, 0);
 	Reset();
 
 	// Destroy references to shaders.
@@ -199,7 +181,7 @@ void CParticleManager::GetCounts(SParticleCounts& counts)
 
 void CParticleManager::DisplayStats(Vec2& location, float lineHeight)
 {
-	pfx2::GetIParticleSystem()->DisplayStats(location, lineHeight);
+	m_pParticleSystem->DisplayStats(location, lineHeight);
 }
 
 void CParticleManager::GetMemoryUsage(ICrySizer* pSizer) const
@@ -248,7 +230,7 @@ void CParticleManager::PrintParticleMemory()
 
 void CParticleManager::Reset()
 {
-	pfx2::GetIParticleSystem()->Reset();
+	m_pParticleSystem->Reset();
 	
 	m_bRegisteredListener = false;
 
@@ -271,10 +253,16 @@ void CParticleManager::Reset()
 #endif
 }
 
+void CParticleManager::FinishParticleRenderTasks(const SRenderingPassInfo& passInfo)
+{
+	CParticleBatchDataManager::FinishParticleRenderTasks(passInfo);
+	m_pParticleSystem->FinishRenderTasks(passInfo);
+}
+
 //////////////////////////////////////////////////////////////////////////
 void CParticleManager::ClearRenderResources(bool bForceClear)
 {
-	pfx2::GetIParticleSystem()->ClearRenderResources();
+	m_pParticleSystem->ClearRenderResources();
 	
 	const bool bClearEmitters = !GetCVars()->e_ParticlesPreload || bForceClear;
 
@@ -314,7 +302,6 @@ void CParticleManager::ClearRenderResources(bool bForceClear)
 	ParticleObjectAllocator().ResetUsage();
 
 	m_pPartLightShader = 0;
-	m_PhysEnv.FreeMemory();
 }
 
 //////////////////////////////////////////////////////////////////////////
@@ -426,7 +413,7 @@ IParticleEffect* CParticleManager::FindEffect(cstr sEffectName, cstr sSource, bo
 
 	LOADING_TIME_PROFILE_SECTION(gEnv->pSystem);
 
-	pfx2::PParticleEffect pPfx2 = pfx2::GetIParticleSystem()->FindEffect(sEffectName);
+	pfx2::PParticleEffect pPfx2 = m_pParticleSystem->FindEffect(sEffectName);
 	if (pPfx2)
 		return pPfx2.get();
 
@@ -471,7 +458,7 @@ IParticleEffect* CParticleManager::FindEffect(cstr sEffectName, cstr sSource, bo
 		{
 			bool bForce = !!(GetCVars()->e_ParticlesConvertPfx1 & 2);
 			bool bSubstitute = !!(GetCVars()->e_ParticlesConvertPfx1 & 4);
-			auto pEffectPfx2 = pfx2::GetIParticleSystem()->ConvertEffect(pEffect, bForce);
+			auto pEffectPfx2 = m_pParticleSystem->ConvertEffect(pEffect, bForce);
 			if (bSubstitute)
 			{
 				pEffectPfx2->SetSubstitutedPfx1(true);
@@ -630,7 +617,7 @@ void CParticleManager::LogEvents()
 
 void CParticleManager::OnFrameStart()
 {
-	pfx2::GetIParticleSystem()->OnFrameStart();
+	m_pParticleSystem->OnFrameStart();
 	
 #ifdef bEVENT_TIMINGS
 	LogEvents();
@@ -651,8 +638,6 @@ void CParticleManager::OnFrameStart()
 
 void CParticleManager::Update()
 {
-	pfx2::GetIParticleSystem()->Update();
-
 	CRY_PROFILE_REGION(PROFILE_3DENGINE, "ParticleManager Update");
 	CRYPROFILE_SCOPE_PROFILE_MARKER("ParticleManager Update");
 
@@ -667,8 +652,8 @@ void CParticleManager::Update()
 			GetRenderer()->SyncComputeVerticesJobs();
 		}
 
-		CleanOldPhysAreaChangedProxies();
-		UpdatePhysAreasChanged();
+		m_PhysEnv.Update();
+		m_pParticleSystem->Update();
 
 		DumpAndResetVertexIndexPoolUsage();
 
@@ -719,6 +704,8 @@ void CParticleManager::Update()
 				EraseEmitter(&e);
 			}
 		}
+
+		m_PhysEnv.FinishUpdate();
 	}
 }
 
@@ -1659,154 +1646,4 @@ CParticleManager::SEffectsKey::SEffectsKey(const cstr& sName)
 	pZLib->MD5Init(&context);
 	pZLib->MD5Update(&context, (const char*)lowerName.c_str(), lowerName.size());
 	pZLib->MD5Final(&context, c16);
-}
-
-//////////////////////////////////////////////////////////////////////////
-void CParticleManager::OnPhysAreaChange(const EventPhys* pEvent)
-{
-	m_PhysEnv.OnPhysAreaChange();
-
-	auto const& event = static_cast<const EventPhysAreaChange&>(*pEvent);
-	EventPhysAreaChange* pepac = (EventPhysAreaChange*)&event;
-
-	SAreaChangeRecord rec;
-	rec.boxAffected = AABB(pepac->boxAffected[0], pepac->boxAffected[1]);
-	rec.uPhysicsMask = Area_Other;
-
-	// Determine area medium types
-	if (pepac->pEntity)
-	{
-		pe_simulation_params psim;
-		if (pepac->pEntity->GetParams(&psim) && !is_unused(psim.gravity))
-			rec.uPhysicsMask |= Area_Gravity;
-
-		pe_params_buoyancy pbuoy;
-		if (pepac->pEntity->GetParams(&pbuoy) && pbuoy.iMedium >= 0 && pbuoy.iMedium < 14)
-			rec.uPhysicsMask |= 1 << pbuoy.iMedium;
-	}
-	AddUpdatedPhysArea(rec);
-}
-
-//////////////////////////////////////////////////////////////////////////
-uint32 CParticleManager::GetPhysAreaChangedProxy(CParticleEmitter* pEmitter, uint16 uPhysicsMask)
-{
-	size_t nIndex = ~0;
-	SPhysAreaNodeProxy* proxy = ::new(m_physAreaChangedProxies.push_back_new(nIndex))SPhysAreaNodeProxy();
-
-	proxy->pEmitter = pEmitter;
-	proxy->uPhysicsMask = uPhysicsMask;
-	proxy->bIsValid = true;
-	proxy->bbox = pEmitter->GetBBox();
-	return nIndex;
-}
-
-//////////////////////////////////////////////////////////////////////////
-void CParticleManager::UpdatePhysAreaChangedProxy(CParticleEmitter* pEmitter, uint32 nProxyId, bool bValid)
-{
-	m_physAreaChangedProxies[nProxyId].bbox = pEmitter->GetBBox();
-	m_physAreaChangedProxies[nProxyId].bIsValid = bValid;
-}
-
-//////////////////////////////////////////////////////////////////////////
-void CParticleManager::CleanOldPhysAreaChangedProxies()
-{
-	// Ensure list is continues in memory
-	m_physAreaChangedProxies.CoalesceMemory();
-
-	const uint32 nSize = m_physAreaChangedProxies.size();
-	if (nSize == 0)
-		return;
-
-	SPhysAreaNodeProxy* pFrontIter = &m_physAreaChangedProxies[0];
-	SPhysAreaNodeProxy* pBackIter = &m_physAreaChangedProxies[nSize - 1];
-	const SPhysAreaNodeProxy* pHead = pFrontIter;
-	uint32 nNumItemsToDelete = 0;
-
-	// Move invalid nodes to the back of the array
-	do
-	{
-		while (pFrontIter->bIsValid && pFrontIter < pBackIter)
-		{
-			++pFrontIter;
-		}
-		while (!pBackIter->bIsValid && pFrontIter < pBackIter)
-		{
-			--pBackIter;
-			++nNumItemsToDelete;
-		}
-
-		if (pFrontIter < pBackIter)
-		{
-			// Replace invalid front element with back element
-			// Note: No need to swap because we cut the data from the array at the end anyway
-			memcpy(pFrontIter, pBackIter, sizeof(SPhysAreaNodeProxy));
-			pFrontIter->pEmitter->m_nPhysAreaChangedProxyId = (uint32)(pFrontIter - pHead);
-			pBackIter->bIsValid = false;
-
-			--pBackIter;
-			++pFrontIter;
-			++nNumItemsToDelete;
-		}
-	}
-	while (pFrontIter < pBackIter);
-
-	// Cut off invalid elements
-	m_physAreaChangedProxies.resize(nSize - nNumItemsToDelete);
-}
-
-void CParticleManager::AddUpdatedPhysArea(const SAreaChangeRecord& rec)
-{
-	// Merge with existing bb if close enough and same medium
-	AUTO_LOCK(m_PhysAreaChangeLock);
-	static const float fMERGE_THRESHOLD = 2.f;
-	float fNewVolume = rec.boxAffected.GetVolume();
-	for (uint i = 0; i < m_listPhysAreasChanged.size(); i++)
-	{
-		if (m_listPhysAreasChanged[i].uPhysicsMask == rec.uPhysicsMask)
-		{
-			AABB bbUnion = rec.boxAffected;
-			bbUnion.Add(m_listPhysAreasChanged[i].boxAffected);
-			if (bbUnion.GetVolume() <= (fNewVolume + m_listPhysAreasChanged[i].boxAffected.GetVolume()) * fMERGE_THRESHOLD)
-			{
-				m_listPhysAreasChanged[i].boxAffected = bbUnion;
-				return;
-			}
-		}
-	}
-	m_listPhysAreasChanged.push_back(rec);
-}
-
-void CParticleManager::UpdatePhysAreasChanged()
-{
-	FUNCTION_PROFILER_3DENGINE;
-	AUTO_LOCK(m_PhysAreaChangeLock);
-	if (m_listPhysAreasChanged.empty())
-		return;
-
-	// Check area against registered proxies
-	int nSizeAreasChanged = (int)m_listPhysAreasChanged.size();
-	int nSizeProxies = m_physAreaChangedProxies.size();
-
-	// Access elements via [i] as the thread safe list does not always safe its element in a continues array
-	for (int i = 0; i < nSizeProxies; ++i)
-	{
-		const SPhysAreaNodeProxy& proxy = m_physAreaChangedProxies[i];
-
-		IF (!proxy.bIsValid, 0)
-		{
-			continue;
-		}
-
-		for (int j = 0; j < nSizeAreasChanged; ++j)
-		{
-			const SAreaChangeRecord& rec = m_listPhysAreasChanged[j];
-			if ((proxy.uPhysicsMask & rec.uPhysicsMask) && Overlap::AABB_AABB(proxy.bbox, rec.boxAffected))
-			{
-				proxy.pEmitter->OnPhysAreaChange();
-				break;
-			}
-		}
-	}
-
-	m_listPhysAreasChanged.resize(0);
 }

@@ -52,7 +52,7 @@ enum
 int CFeatureCollision::GetRayTraceFilter() const
 {
 	const int allowedCollisions = C3DEngine::GetCVars()->e_ParticlesCollisions & 3;
-	int filter = ent_no_ondemand_activation;
+	int filter = 0;
 	if (m_terrain && allowedCollisions >= 1)
 	{
 		if (C3DEngine::GetCVars()->e_ParticlesCollisions & AlphaBit('t'))
@@ -312,7 +312,7 @@ bool CFeatureCollision::RayWorldIntersection(SContactPoint& contact, const Vec3&
 	if (m_objectFilter & ~ent_terrain_raytrace)
 	{
 		ray_hit rayHit;
-		while (gEnv->pPhysicalWorld->RayWorldIntersection(start, ray, m_objectFilter & ~ent_terrain_raytrace, kCollisionsFlags, &rayHit, 1))
+		while (gEnv->pPhysicalWorld->RayWorldIntersection(start, ray, (m_objectFilter & ~ent_terrain_raytrace | ent_no_ondemand_activation), kCollisionsFlags, &rayHit, 1))
 		{
 			if ((rayHit.n | ray) >= 0.0f)
 			{

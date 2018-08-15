@@ -93,7 +93,7 @@ void CParticleSystem::TrimEmitters(bool finished_only)
 
 void CParticleSystem::Update()
 {
-	CRY_PFX2_PROFILE_DETAIL;
+	CRY_PROFILE_FUNCTION(PROFILE_PARTICLE);
 	PARTICLE_LIGHT_PROFILER();
 
 	if (!GetCVars()->e_Particles)
