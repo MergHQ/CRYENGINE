@@ -243,7 +243,7 @@ void CPanelDisplayRender::Serialize(Serialization::IArchive& ar)
 
 	if (ar.openBlock("categories", "Render Types"))
 	{
-		if (ar.openBlock("buttons", "<Enable"))
+		if (ar.openBlock("buttons", "<"))
 		{
 			using Serialization::ActionButton;
 			ar(ActionButton(std::bind(&CPanelDisplayRender::OnDisplayAll, this)), "all", "^All");
