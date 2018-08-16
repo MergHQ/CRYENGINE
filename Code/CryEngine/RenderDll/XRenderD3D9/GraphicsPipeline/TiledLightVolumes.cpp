@@ -500,6 +500,9 @@ int CTiledLightVolumesStage::InsertTexture(CTexture* pTexInput, float mipFactor,
 			}
 		}
 
+		if (minValue == frameID)
+			return -1;
+
 		arrayIndex = minIndex;
 	}
 
@@ -830,9 +833,11 @@ void CTiledLightVolumesStage::GenerateLightList()
 			lightInfo.depthBoundsVS = Vec2(posVS.z - volumeSize, posVS.z + volumeSize) * invCameraFar;
 			lightShadeInfo.posRad = Vec4(pos.x, pos.y, pos.z, volumeSize);
 			lightShadeInfo.attenuationParams = Vec2(areaLightRect ? (renderLight.m_fAreaWidth + renderLight.m_fAreaHeight) * 0.25f : renderLight.m_fAttenuationBulbSize, renderLight.m_fAreaHeight * 0.5f);
-			float itensityScale = rd->m_fAdaptedSceneScaleLBuffer;
-			lightShadeInfo.color = Vec4(renderLight.m_Color.r * itensityScale, renderLight.m_Color.g * itensityScale,
-				renderLight.m_Color.b * itensityScale, renderLight.m_SpecMult);
+			float intensityScale = rd->m_fAdaptedSceneScaleLBuffer;
+			lightShadeInfo.color = Vec4(renderLight.m_Color.r * intensityScale, 
+			                            renderLight.m_Color.g * intensityScale,
+			                            renderLight.m_Color.b * intensityScale, 
+			                            renderLight.m_SpecMult);
 			lightShadeInfo.resIndex = 0;
 			lightShadeInfo.resMipClamp0 = 0;
 			lightShadeInfo.resMipClamp1 = 0;
