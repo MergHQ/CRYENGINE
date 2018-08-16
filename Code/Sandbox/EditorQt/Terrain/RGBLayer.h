@@ -100,15 +100,8 @@ public:
 
 	void GetMemoryUsage(ICrySizer* pSizer);
 
-	// useful to detect problems before saving (e.g. file is read-only)
-	bool WouldSaveSucceed();
-
 	// offsets texture by (x,y) tiles
 	void Offset(int iTilesX, int iTilesY);
-
-	// forces all tiles to be loaded into memory, violating max mem limit if necessary
-	// used when converting normal level into segmented format
-	void LoadAll();
 
 	// similar to AllocTiles() but preserves the image
 	// if dwTileCountX and dwTileCountY already match, will do nothing
@@ -152,6 +145,8 @@ public:
 
 	CImageEx* GetTileImage(int tileX, int tileY, bool setDirtyFlag = true);
 	void      UnloadTile(int tileX, int tileY);
+
+	string GetFullFileName() const;
 
 private:
 	struct CTerrainTextureTile
@@ -201,8 +196,6 @@ private:
 	// Return:
 	//   true = save needed
 	bool   IsDirty() const;
-
-	string GetFullFileName();
 
 private:
 	std::vector<CTerrainTextureTile> m_terrainTextureTiles;             // [x+y*m_dwTileCountX]

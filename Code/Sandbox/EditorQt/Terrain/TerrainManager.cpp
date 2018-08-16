@@ -594,11 +594,6 @@ void CTerrainManager::ResetHeightMap()
 	m_heightmap.SetMaxHeight(1024);
 }
 
-bool CTerrainManager::WouldHeightmapSaveSucceed()
-{
-	return GetRGBLayer()->WouldSaveSucceed();
-}
-
 CRGBLayer* CTerrainManager::GetRGBLayer()
 {
 	return m_heightmap.GetRGBLayer();
@@ -661,8 +656,6 @@ void CTerrainManager::SetModified(int x1, int y1, int x2, int y2)
 	if (!gEnv->p3DEngine->GetITerrain())
 		return;
 
-	GetIEditorImpl()->SetModifiedFlag();
-
 	AABB bounds;
 	bounds.Reset();
 	if (!(x1 == 0 && y1 == 0 && x2 == 0 && y2 == 0))
@@ -686,6 +679,8 @@ void CTerrainManager::SetModified(int x1, int y1, int x2, int y2)
 		bounds.Add(Vec3((y1 - 1) * nTerrainSectorSize, (x1 - 1) * nTerrainSectorSize, -32000.0f));
 		bounds.Add(Vec3((y2 + 1) * nTerrainSectorSize, (x2 + 1) * nTerrainSectorSize, +32000.0f));
 	}
+
+	signalTerrainChanged();
 }
 
 void CTerrainManager::SelectLayer(int layerIndex)

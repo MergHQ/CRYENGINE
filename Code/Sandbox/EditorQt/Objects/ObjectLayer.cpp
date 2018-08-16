@@ -6,7 +6,9 @@
 #include "ObjectLayerManager.h"
 #include "ObjectLayer.h"
 #include "Terrain/TerrainManager.h"
+#include "Terrain/RGBLayer.h"
 #include "CryString/CryPath.h"
+#include "Preferences/GeneralPreferences.h"
 
 //////////////////////////////////////////////////////////////////////////
 // class CUndoLayerStates
@@ -167,20 +169,31 @@ private:
 namespace Private_ObjectLayer
 {
 
-class CTerrain : public CObjectLayer
+class CTerrainLayer : public CObjectLayer
 {
 public:
-	CTerrain::CTerrain(const char* szName)
+	CTerrainLayer::CTerrainLayer(const char* szName)
 		: CObjectLayer(szName, eObjectLayerType_Terrain)
 	{
-		const CTerrainManager* const pTerrainManager = GetIEditorImpl()->GetTerrainManager();
-		const string dataFolder = GetIEditorImpl()->GetLevelDataFolder();
+		CTerrainManager* pTerrainManager = GetIEditorImpl()->GetTerrainManager();
 		const size_t n = pTerrainManager->GetDataFilesCount();
 		m_files.reserve(n);
+		string dataFolder = GetIEditorImpl()->GetLevelDataFolder();
 		for (size_t i = 0; i < n; ++i)
 		{
-			m_files.push_back(PathUtil::Make(dataFolder, pTerrainManager->GetDataFilename(i)));
+			m_files.push_back(PathUtil::MakeGamePath(PathUtil::Make(dataFolder, pTerrainManager->GetDataFilename(i))));
 		}
+		m_files.push_back(PathUtil::MakeGamePath(pTerrainManager->GetRGBLayer()->GetFullFileName()));
+
+		pTerrainManager->signalTerrainChanged.Connect(this, &CTerrainLayer::OnTerrainChange);
+		pTerrainManager->signalLayersChanged.Connect(this, &CTerrainLayer::OnTerrainChange);
+	}
+
+	~CTerrainLayer()
+	{
+		CTerrainManager* pTerrainManager = GetIEditorImpl()->GetTerrainManager();
+		pTerrainManager->signalTerrainChanged.DisconnectObject(this);
+		pTerrainManager->signalLayersChanged.DisconnectObject(this);
 	}
 
 	virtual void SetVisible(bool isVisible, bool isRecursive) override
@@ -220,6 +233,24 @@ public:
 		// - the terrain has no child objects.
 
 		// TODO:  Consider introducing the frozen state.
+	}
+
+	virtual void Serialize(XmlNodeRef& node, bool isLoading) override
+	{
+		CObjectLayer::Serialize(node, isLoading);
+
+		if (!isLoading)
+		{
+			// Save Heightmap and terrain data
+			GetIEditorImpl()->GetTerrainManager()->Save(gEditorFilePreferences.filesBackup);
+			// Save TerrainTexture
+			GetIEditorImpl()->GetTerrainManager()->SaveTexture(gEditorFilePreferences.filesBackup);
+		}
+	}
+
+	void OnTerrainChange()
+	{
+		SetModified(true);
 	}
 };
 
@@ -359,7 +390,7 @@ CObjectLayer* CObjectLayer::Create(const char* szName, EObjectLayerType type)
 {
 	if (eObjectLayerType_Terrain == type)
 	{
-		return new Private_ObjectLayer::CTerrain(szName);
+		return new Private_ObjectLayer::CTerrainLayer(szName);
 	}
 
 	return new CObjectLayer(szName, type);

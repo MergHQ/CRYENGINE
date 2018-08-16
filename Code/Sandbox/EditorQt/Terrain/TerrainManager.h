@@ -55,12 +55,12 @@ public:
 
 	//////////////////////////////////////////////////////////////////////////
 	// Heightmap
-	CHeightmap* GetHeightmap() { return &m_heightmap; }
-	CRGBLayer*  GetRGBLayer();
+	CHeightmap*       GetHeightmap() { return &m_heightmap; }
+	CRGBLayer*        GetRGBLayer();
+	const CRGBLayer*  GetRGBLayer() const { return const_cast<CTerrainManager*>(this)->GetRGBLayer(); }
 
 	void        SetTerrainSize(int resolution, float unitSize);
 	void        ResetHeightMap();
-	bool        WouldHeightmapSaveSucceed();
 
 	void        Save(bool bBackup = false);
 	bool        Load();
@@ -83,6 +83,7 @@ public:
 	const char* GetDataFilename(int i) const;
 
 	CCrySignal<void(void)>    signalLayersChanged;
+	CCrySignal<void(void)>    signalTerrainChanged;
 	CCrySignal<void(CLayer*)> signalSelectedLayerChanged;
 
 private:
