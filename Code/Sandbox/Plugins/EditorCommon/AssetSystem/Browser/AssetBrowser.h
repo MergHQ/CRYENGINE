@@ -79,19 +79,7 @@ signals:
 	void SelectionChanged();
 
 protected:
-	// Drag and drop.
-	virtual void dragEnterEvent(QDragEnterEvent* pEvent) override;
-	virtual void dropEvent(QDropEvent* pEvent) override;
-	virtual void dragMoveEvent(QDragMoveEvent* pEvent) override;
-	virtual void dragLeaveEvent(QDragLeaveEvent* pEvent) override;
-
-	virtual void mouseReleaseEvent(QMouseEvent* pEvent) override;
-
-	//! Returns whether there is a folder under the mouse cursor. If there is, \p folder is assigned its path.
-	bool GetDropFolder(string& folder) const;
-
-	//! Sets \p folder to where assets should be imported. Returns whether the import location is unambiguous.
-	bool                        GetImportFolder(string& folder) const;
+	virtual void                mouseReleaseEvent(QMouseEvent* pEvent) override;
 
 	QAttributeFilterProxyModel* GetAttributeFilterProxyModel();
 	QItemSelectionModel*        GetItemSelectionModel();
@@ -149,7 +137,7 @@ private:
 	void OnImport();
 	void OnReimport(const std::vector<CAsset*>& assets);
 	void OnDelete(const std::vector<CAsset*>& assets);
-	void OnMove(const std::vector<CAsset*>& assets, const QString& destinationFolder);
+
 	void OnRenameAsset(CAsset& asset);
 	void OnRenameFolder(const QString& folder);
 	void OnCreateFolder(const QString& parentFolder);

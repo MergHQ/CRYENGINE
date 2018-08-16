@@ -7,6 +7,7 @@
 #include <memory>
 #include <unordered_map>
 #include <vector>
+#include <future>
 
 class CAsset;
 struct IAssetDropImporter;
@@ -29,17 +30,18 @@ public:
 	struct SImportParams
 	{
 		string outputDirectory;
-		bool bHideDialog = false;
+		bool   bHideDialog = false;
 	};
 
 public:
 	CAssetDropHandler();
 
-	static bool CanImportAny(const std::vector<string>& filePaths);
-	static bool CanImportAny(const QStringList& filePaths);
+	static bool                              CanImportAny(const std::vector<string>& filePaths);
+	static bool                              CanImportAny(const QStringList& filePaths);
 
-	static std::vector<CAsset*> Import(const std::vector<string>& filePaths, const SImportParams& importParams);
-	static std::vector<CAsset*> Import(const QStringList& filePaths, const SImportParams& importParams);
+	static std::vector<CAsset*>              Import(const std::vector<string>& filePaths, const SImportParams& importParams);
+	static std::vector<CAsset*>              Import(const QStringList& filePaths, const SImportParams& importParams);
+	static std::future<std::vector<CAsset*>> ImportAsync(const QStringList& filePaths, const SImportParams& importParams);
 
 private:
 	static std::vector<CAsset*> ImportExt(const string& ext, const std::vector<string>& filePaths, const SImportParamsEx& importParams);
