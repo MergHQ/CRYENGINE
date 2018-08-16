@@ -202,7 +202,7 @@ protected:
 
 					if (std::isfinite(spawnData.m_duration))
 					{
-						entry.m_fractionIncrement = rcp((float)entry.m_count);
+						entry.m_fractionIncrement = rcp((float)entry.m_count - 1);
 						if (spawnData.m_duration > 0.0f)
 						{
 							const float invDuration = rcp(spawnData.m_duration);

@@ -267,8 +267,6 @@ private:
 		CParticleContainer& container = runtime.GetContainer();
 		IOVec3Stream positions = container.GetIOVec3Stream(EPVF_Position);
 		IOVec3Stream velocities = container.GetIOVec3Stream(EPVF_Velocity);
-		const float baseRadius = m_radius.GetBaseValue();
-		const float invBaseRadius = __fres(baseRadius);
 
 		STempInitBuffer<float> radii(runtime, m_radius);
 		STempInitBuffer<float> velocityMults(runtime, m_velocity);
@@ -277,12 +275,10 @@ private:
 		{
 			const Vec3 sphere = runtime.Chaos().RandSphere();
 			const Vec3 sphereDist = sphere.CompMul(m_axisScale);
-			const float radiusMult = abs(radii.SafeLoad(particleId));
-			const float velocityMult = velocityMults.SafeLoad(particleId);
 
 			if (UseRadius)
 			{
-				const float radius = sqrt(radiusMult * invBaseRadius) * baseRadius;
+				const float radius = radii.SafeLoad(particleId);
 				const Vec3 wPosition0 = positions.Load(particleId);
 				const Vec3 wPosition1 = wPosition0 + sphereDist * radius;
 				positions.Store(particleId, wPosition1);
@@ -290,6 +286,7 @@ private:
 
 			if (UseVelocity)
 			{
+				const float velocityMult = velocityMults.SafeLoad(particleId);
 				const Vec3 wVelocity0 = velocities.Load(particleId);
 				const Vec3 wVelocity1 = wVelocity0 + sphereDist * velocityMult;
 				velocities.Store(particleId, wVelocity1);
@@ -388,8 +385,6 @@ private:
 		const IPidStream parentIds = container.GetIPidStream(EPDT_ParentId);
 		const IQuatStream parentQuats = parentContainer.GetIQuatStream(EPQF_Orientation, defaultQuat);
 		const Quat axisQuat = Quat::CreateRotationV0V1(Vec3(0.0f, 0.0f, 1.0f), m_axis.GetNormalizedSafe());
-		const float baseRadius = m_radius.GetBaseValue();
-		const float invBaseRadius = __fres(baseRadius);
 		IOVec3Stream positions = container.GetIOVec3Stream(EPVF_Position);
 		IOVec3Stream velocities = container.GetIOVec3Stream(EPVF_Velocity);
 
@@ -399,8 +394,6 @@ private:
 		for (auto particleId : runtime.SpawnedRange())
 		{
 			TParticleId parentId = parentIds.Load(particleId);
-			const float radiusMult = abs(radii.SafeLoad(particleId));
-			const float velocityMult = velocityMults.SafeLoad(particleId);
 			const Quat wQuat = parentQuats.SafeLoad(parentId);
 
 			const Vec2 disc2 = runtime.Chaos().RandCircle();
@@ -408,7 +401,7 @@ private:
 
 			if (UseRadius)
 			{
-				const float radius = sqrt(radiusMult * invBaseRadius) * baseRadius;
+				const float radius = radii.SafeLoad(particleId);
 				const Vec3 oPosition = disc3 * radius;
 				const Vec3 wPosition0 = positions.Load(particleId);
 				const Vec3 wPosition1 = wPosition0 + wQuat * oPosition;
@@ -417,6 +410,7 @@ private:
 
 			if (UseVelocity)
 			{
+				const float velocityMult = velocityMults.SafeLoad(particleId);
 				const Vec3 wVelocity0 = velocities.Load(particleId);
 				const Vec3 wVelocity1 = wVelocity0 + wQuat * disc3 * velocityMult;
 				velocities.Store(particleId, wVelocity1);
@@ -800,7 +794,7 @@ private:
 			totalMult += mult;
 			mult *= 0.5f;
 		}
-		mult = __fres(totalMult);
+		mult = rcp_fast(totalMult);
 		float size = 1.0f;
 		for (uint i = 0; i < octaves; ++i)
 		{

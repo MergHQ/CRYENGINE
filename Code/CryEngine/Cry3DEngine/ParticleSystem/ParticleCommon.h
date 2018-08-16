@@ -11,7 +11,7 @@
 #endif
 // #define CRY_PFX1_BAIL_UNSUPPORTED	// disable pfx1 features that not yet supported by pfx2 for precision profiling
 // #define CRY_PFX2_LOAD_PRIORITY		// when trying to load a pfx1 effect, try to load pfx2 effect with the same name first
-// #define CRY_PFX2_PROFILE_DETAILS        // more in detail profile of pfx2. Individual features and sub update parts will appear here.
+// #define CRY_PFX2_PROFILE_DETAILS     // more in detail profile of pfx2. Individual features and sub update parts will appear here.
 // ~compile options
 
 #if defined(CRY_PFX2_DEBUG) && CRY_PLATFORM_WINDOWS
@@ -23,7 +23,7 @@
 #define CRY_PFX2_DBG	// obsolete
 
 #ifndef _RELEASE
-	#define CRY_PFX2_ASSERT(cond) { CRY_ASSERT(cond); }
+	#define CRY_PFX2_ASSERT(cond) CRY_ASSERT(cond)
 #else
 	#define CRY_PFX2_ASSERT(cond)
 #endif
@@ -79,7 +79,7 @@ template<typename T> using TSmartArray = TDynArray<_smart_ptr<T>>;
 struct TParticleGroupId
 {
 	TParticleGroupId() {}
-	explicit TParticleGroupId(uint32 i) { id = i; CRY_PFX2_ASSERT(IsAligned(i, CRY_PFX2_PARTICLESGROUP_STRIDE)); }
+	explicit TParticleGroupId(uint32 i) { id = i; CRY_PFX2_DEBUG_ASSERT(IsAligned(i, CRY_PFX2_PARTICLESGROUP_STRIDE)); }
 	friend bool                       operator<(const TParticleGroupId a, const TParticleGroupId b)  { return a.id < b.id; }
 	friend bool                       operator>(const TParticleGroupId a, const TParticleGroupId b)  { return a.id > b.id; }
 	friend bool                       operator<=(const TParticleGroupId a, const TParticleGroupId b) { return a.id <= b.id; }
