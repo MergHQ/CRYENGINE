@@ -113,7 +113,7 @@ void CSurfaceType::SaveVegetationIds(XmlNodeRef& node)
 					CVegetationObject* pObject = pVegMap->GetObject(j);
 					if (pObject->GetId() == p->nID)
 					{
-						if (pObject->IsUsedOnTerrainLayer(m_name))
+						if (pObject->IsUsedOnTerrainLayer(m_name) && !pObject->IsOfflineProcedural())
 						{
 							XmlNodeRef nodeVeg = node->newChild("VegetationGroup");
 							nodeVeg->setAttr("GUID", pObject->GetGUID());

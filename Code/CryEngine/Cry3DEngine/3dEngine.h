@@ -822,6 +822,7 @@ public:
 	float                 m_dayNightIndicator;
 	bool                  m_bHeightMapAoEnabled;
 	bool                  m_bIntegrateObjectsIntoTerrain;
+	bool                  m_supportOfflineProceduralVegetation = false;
 
 	Vec3                  m_fogColor2;
 	Vec3                  m_fogColorRadial;

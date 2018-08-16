@@ -7,8 +7,6 @@ class CDeformableNode;
 
 #define VEGETATION_CONV_FACTOR 64.f
 
-typedef stl::TPoolAllocator<CVegetation, stl::PSyncNone> TVegetationAllocator;
-
 template<class T>
 class PodArrayAABB : public PodArray<T>
 {
@@ -46,7 +44,6 @@ public:
 	byte m_bApplyPhys;
 
 	static CRY_ALIGN(128) float g_scBoxDecomprTable[256];
-	static TVegetationAllocator s_poolAllocator[eAllocator_Count];
 
 	CVegetation();
 	virtual ~CVegetation();
@@ -167,6 +164,7 @@ public:
 	// Custom pool allocator for vegetation
 	static void* operator new(size_t size, EAllocatorId allocatorId = eAllocator_Default);
 	static void  operator delete(void* pToFree);
+	static void  GetStaticMemoryUsage(ICrySizer* pSizer);
 };
 
 #endif // _CVegetation_H_

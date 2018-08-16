@@ -133,6 +133,11 @@ public:
 	//! Check if object can be voxelized.
 	bool GetGIMode() const  { return mv_giMode; }
 
+	//! Set if procedural object has to be exported as normal non-procedural object
+	void SetOfflineProcedural(bool enabled) { mv_offlineProcedural = enabled; }
+	//! Check if procedural object has to be exported as normal non-procedural object
+	bool IsOfflineProcedural() const { return mv_offlineProcedural; }
+
 	//////////////////////////////////////////////////////////////////////////
 	void SetDynamicDistanceShadows(bool on) { mv_DynamicDistanceShadows = on; }
 	bool HasDynamicDistanceShadows() const  { return mv_DynamicDistanceShadows; }
@@ -251,6 +256,7 @@ protected:
 	CSmartVariable<bool>    mv_castShadows; // Legacy, remains for backward compatibility
 	CSmartVariableEnum<int> mv_castShadowMinSpec;
 	CSmartVariable<bool>    mv_giMode;
+	CSmartVariable<bool>    mv_offlineProcedural;
 	CSmartVariable<bool>    mv_instancing;
 	CSmartVariable<bool>    mv_DynamicDistanceShadows;
 	CSmartVariable<float>   mv_bending;

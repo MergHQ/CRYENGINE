@@ -302,6 +302,7 @@ struct IStatInstGroup
 		nCastShadowMinSpec = 0;
 		bDynamicDistanceShadows = false;
 		bGIMode = true;
+		offlineProcedural = false;
 		bInstancing = true;
 		fSpriteDistRatio = 1.f;
 		fShadowDistRatio = 1.f;
@@ -344,6 +345,7 @@ struct IStatInstGroup
 	uint8                nCastShadowMinSpec;
 	bool                 bDynamicDistanceShadows;
 	bool                 bGIMode;
+	bool                 offlineProcedural;
 	bool                 bInstancing;
 	float                fSpriteDistRatio;
 	float                fLodDistRatio;

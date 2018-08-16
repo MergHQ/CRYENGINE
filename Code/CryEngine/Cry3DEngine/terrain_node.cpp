@@ -779,6 +779,8 @@ bool CTerrainNode::CheckUpdateProcObjects()
 				if (!CheckMinSpec(pGroup->minConfigSpec)) // Check min spec of this group.
 					continue;
 
+				assert(gEnv->IsEditor() || !pGroup->offlineProcedural);
+
 				// distribute objects into different tree levels based on object size
 
 				float fSectorViewDistMax = GetCVars()->e_ProcVegetationMaxViewDistance * (GetBBox().GetSize().x / 64.f);
