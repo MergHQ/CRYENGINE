@@ -5,6 +5,8 @@
 #include "SteamNetworking.h"
 #include "SteamUserIdentifier.h"
 
+#include <steam/steam_gameserver.h>
+
 namespace Cry
 {
 	namespace GamePlatform
