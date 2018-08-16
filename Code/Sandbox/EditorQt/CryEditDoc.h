@@ -61,6 +61,9 @@ public:
 	QString            GetLastLoadedLevelName();
 	//! Set the relative path of the last level that was loaded last (relative to project root)
 	void               SetLastLoadedLevelName(const char* lastLoadedFileName);
+	
+	//! Copies all files necessary for the level if the level is being saved to a new location.
+	void               CopyFilesIfSavedToNewLocation(const string& levelFolder);
 
 	void               SaveAutoBackup(bool bForce = false);
 	void               SerializeFogSettings(CXmlArchive& xmlAr);

@@ -612,6 +612,20 @@ CObjectLayer* CObjectLayerManager::CreateLayersFromPath(const string& fullPathNa
 	return pFolder;
 }
 
+std::vector<string> CObjectLayerManager::GetFiles() const
+{
+	std::vector<string> result;
+	for (const auto& it : m_layersMap)
+	{
+		std::vector<string> layerFiles = it.second->GetFiles();
+		if (!layerFiles.empty())
+		{
+			std::move(layerFiles.begin(), layerFiles.end(), std::back_inserter(result));
+		}
+	}
+	return result;
+}
+
 void CObjectLayerManager::Serialize(CObjectArchive& ar)
 {
 	XmlNodeRef xmlNode = ar.node;

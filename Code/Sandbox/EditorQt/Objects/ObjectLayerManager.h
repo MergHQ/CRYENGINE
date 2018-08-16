@@ -162,6 +162,9 @@ public:
 	// iterate over all layers and make sure all render nodes have valid IDs
 	void AssignLayerIDsToRenderNodes();
 
+	//! Returns the list of file that belong to layers.
+	std::vector<string> GetFiles() const;
+
 private:
 	// friend undo because we don't want anyone adding layers to the layer manager. If a layer needs to be added, then call Create
 	friend class Private_ObjectLayerManager::CUndoLayerCreateDelete;
@@ -201,4 +204,4 @@ private:
 
 	// visible set for restoring states in Isolate()
 	CryGUID           m_visibleSetLayer;
-}; 
+};

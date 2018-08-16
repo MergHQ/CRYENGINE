@@ -66,9 +66,7 @@ static const char* kLastLoadPathFilename = "lastLoadPath.preset";
 static const char* kLevelSaveAsCopyList[] =
 {
 	"level.pak",
-	"terraintexture.pak",
 	"filelist.xml",
-	"levelshadercache.pak"
 	"tags.txt"
 };
 
@@ -926,8 +924,6 @@ BOOL CCryEditDoc::DoSaveDocument(LPCTSTR filename, TSaveDocContext& context)
 
 	bool& bSaved = context.bSaved;
 
-	bSaved = GetIEditorImpl()->GetTerrainManager()->WouldHeightmapSaveSucceed();
-
 	if (bSaved)
 	{
 		bSaved = SaveLevel(PathUtil::AbsolutePathToCryPakPath(filename).c_str());
@@ -979,8 +975,6 @@ bool CCryEditDoc::SaveLevel(const string& filename)
 	LOADING_TIME_PROFILE_SECTION;
 	CWaitCursor wait;
 
-	CollectAllLevelFiles();
-
 	CAutoCheckOutDialogEnableForAll enableForAll;
 
 	if (!CFileUtil::OverwriteFile(filename))
@@ -990,35 +984,7 @@ bool CCryEditDoc::SaveLevel(const string& filename)
 	CFileUtil::CreateDirectory(levelFolder);
 	GetIEditorImpl()->GetGameEngine()->SetLevelPath(levelFolder);
 
-	// need to copy other level data before saving to different folder
-	const string oldLevelPath = PathUtil::AbsolutePathToCryPakPath(GetPathName().GetString()).c_str();
-	const string oldLevelFolder = PathUtil::GetPathWithoutFilename(oldLevelPath);
-
-	if (oldLevelFolder != levelFolder)
-	{
-		LOADING_TIME_PROFILE_SECTION_NAMED("CCryEditDoc::SaveLevel() level folder changed");
-
-		// make sure we stop streaming from level.pak
-		gEnv->p3DEngine->CloseTerrainTextureFile();
-
-		ICryPak* pIPak = GetIEditorImpl()->GetSystem()->GetIPak();
-		pIPak->Lock();
-
-		for (unsigned int i = 0; i < sizeof(kLevelSaveAsCopyList) / sizeof(char*); ++i)
-		{
-			// if we're saving a pak file, ensure we do not have an existing version of that pak file open in memory
-			// causes nasty problems when we reload the pak with different file contents and have old header info in mem
-			if (strstr(kLevelSaveAsCopyList[i], ".pak"))
-			{
-				string pakPath = levelFolder + "/" + kLevelSaveAsCopyList[i];
-				pIPak->ClosePack(pakPath);
-			}
-
-			CFileUtil::CopyFile(oldLevelFolder + "/" + kLevelSaveAsCopyList[i], levelFolder + "/" + kLevelSaveAsCopyList[i]);
-		}
-
-		pIPak->Unlock();
-	}
+	CopyFilesIfSavedToNewLocation(levelFolder);
 
 	CryLog("Saving level file %s", filename.c_str());
 	{
@@ -1031,11 +997,6 @@ bool CCryEditDoc::SaveLevel(const string& filename)
 		helper.UpdateFile(gEditorFilePreferences.filesBackup);
 	}
 
-	// Save Heightmap and terrain data
-	GetIEditorImpl()->GetTerrainManager()->Save(gEditorFilePreferences.filesBackup);
-	// Save TerrainTexture
-	GetIEditorImpl()->GetTerrainManager()->SaveTexture(gEditorFilePreferences.filesBackup);
-
 	// Save vegetation
 	if (GetIEditorImpl()->GetVegetationMap())
 		GetIEditorImpl()->GetVegetationMap()->Save(gEditorFilePreferences.filesBackup);
@@ -1046,6 +1007,54 @@ bool CCryEditDoc::SaveLevel(const string& filename)
 	// Commit changes to the disk.
 	_flushall();
 	return true;
+}
+
+void CCryEditDoc::CopyFilesIfSavedToNewLocation(const string& levelFolder)
+{
+	// need to copy other level data before saving to different folder
+	const string oldLevelPath = PathUtil::AbsolutePathToCryPakPath(GetPathName().GetString()).c_str();
+	const string oldLevelFolder = PathUtil::GetPathWithoutFilename(oldLevelPath);
+
+	if (oldLevelFolder != levelFolder)
+	{
+		LOADING_TIME_PROFILE_SECTION_NAMED("CCryEditDoc::SaveLevel() level folder changed");
+
+		// make sure we stop streaming from level.pak
+		gEnv->p3DEngine->CloseTerrainTextureFile();
+
+		auto levelPath = PathUtil::MakeGamePath(GetPathName());
+		levelPath = levelPath.substr(0, levelPath.rfind('/'));
+		auto levelPathLength = levelPath.size() + 1;
+
+		std::vector<string> filesToCopy = GetIEditorImpl()->GetObjectManager()->GetLayersManager()->GetFiles();
+		for (string& fileName : filesToCopy)
+		{
+			fileName = fileName.substr(levelPathLength, fileName.size() - levelPathLength);
+		}
+		for (unsigned int i = 0; i < sizeof(kLevelSaveAsCopyList) / sizeof(char*); ++i)
+		{
+			filesToCopy.push_back(kLevelSaveAsCopyList[i]);
+		}
+
+		ICryPak* pIPak = GetIEditorImpl()->GetSystem()->GetIPak();
+		pIPak->MakeDir(PathUtil::Make(levelFolder, "LevelData"));
+		pIPak->Lock();
+
+		for (const string& fileName : filesToCopy)
+		{
+			// if we're saving a pak file, ensure we do not have an existing version of that pak file open in memory
+			// causes nasty problems when we reload the pak with different file contents and have old header info in mem
+			if (strstr(fileName, ".pak"))
+			{
+				string pakPath = levelFolder + "/" + fileName;
+				pIPak->ClosePack(pakPath);
+			}
+
+			CFileUtil::CopyFile(oldLevelFolder + "/" + fileName, levelFolder + "/" + fileName);
+		}
+
+		pIPak->Unlock();
+	}
 }
 
 bool CCryEditDoc::LoadLevel(TDocMultiArchive& arrXmlAr, const string& filename)

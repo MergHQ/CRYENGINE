@@ -574,8 +574,8 @@ CRGBLayer::CTerrainTextureTile* CRGBLayer::LoadTileIfNeeded(const uint32 dwTileX
 				if (file.Open(PathUtil::AddBackslash(pathRel.GetString()) + szTileName, "rb"))
 				{
 					if (file.ReadType(&dwWidth)
-					    && file.ReadType(&dwHeight)
-					    && dwWidth > 0 && dwHeight > 0)
+						&& file.ReadType(&dwHeight)
+						&& dwWidth > 0 && dwHeight > 0)
 					{
 						assert(dwWidth == dwHeight);
 
@@ -695,43 +695,12 @@ bool CRGBLayer::IsDirty() const
 	return false;
 }
 
-string CRGBLayer::GetFullFileName()
+string CRGBLayer::GetFullFileName() const
 {
 	string pathRel = GetIEditorImpl()->GetGameEngine()->GetLevelPath();
 	string pathPak = PathUtil::Make(pathRel, m_TerrainRGBFileName);
 
 	return pathPak;
-}
-
-bool CRGBLayer::WouldSaveSucceed()
-{
-	if (!IsDirty())
-	{
-		return true;    // no need to save
-	}
-
-	if (!ClosePakForLoading())
-	{
-		return false;
-	}
-
-	const string pakFilename = GetFullFileName();
-	if (!CFileUtil::OverwriteFile(pakFilename.c_str()))
-	{
-		return false;
-	}
-
-	// Create pak file
-	{
-		CPakFile pakFile;
-		if (!pakFile.Open(pakFilename.c_str()))
-		{
-			CryWarning(VALIDATOR_MODULE_EDITOR, VALIDATOR_ERROR, "Unable to create pak file %s.", pakFilename.c_str());
-			return false;   // save would fail
-		}
-		pakFile.Close();
-	}
-	return true;      // save would work
 }
 
 void CRGBLayer::Offset(int iTilesX, int iTilesY)
@@ -779,19 +748,6 @@ void CRGBLayer::Offset(int iTilesX, int iTilesY)
 				pSrc->m_bDirty = false;
 				pSrc->m_timeLastUsed = CTimeValue();
 			}
-		}
-	}
-}
-
-void CRGBLayer::LoadAll()
-{
-	if (!OpenPakForLoading())
-		return;
-	for (uint32 y = 0; y < m_dwTileCountY; ++y)
-	{
-		for (uint32 x = 0; x < m_dwTileCountX; ++x)
-		{
-			LoadTileIfNeeded(x, y, true);
 		}
 	}
 }
@@ -1016,6 +972,8 @@ void CRGBLayer::PaintBrushWithPatternTiled(const float fpx, const float fpy, SEd
 		}
 
 	brush.fRadius = fOldRadius;
+
+	GetIEditorImpl()->GetTerrainManager()->signalTerrainChanged();
 }
 
 uint32 CRGBLayer::GetTileResolution(const uint32 dwTileX, const uint32 dwTileY)

@@ -68,7 +68,7 @@ public:
 	//////////////////////////////////////////////////////////////////////////
 	//! Save/Load layer to/from xml node.
 	void SerializeBase(XmlNodeRef& node, bool isLoading);
-	void Serialize(XmlNodeRef& node, bool isLoading);
+	virtual void Serialize(XmlNodeRef& node, bool isLoading);
 
 	//! Get number of objects.
 	uint GetObjectCount() const;
