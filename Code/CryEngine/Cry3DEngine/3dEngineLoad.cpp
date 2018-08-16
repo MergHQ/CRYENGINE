@@ -1471,6 +1471,9 @@ void C3DEngine::LoadEnvironmentSettingsFromXML(XmlNodeRef pInputNode)
 	// TODO: support on-the-fly in-engine base texture generation (including roughness and normals) without exporting it from the editor.
 	GetCVars()->e_TerrainAutoGenerateBaseTexture = GetXMLAttribBool(pInputNode, "Terrain", "AutoGenerateBaseTexture", false);
 
+	// Enable support for offline-procedural vegetation. Allows export of automatically distributed objects as normal permanent objects
+	m_supportOfflineProceduralVegetation = GetXMLAttribBool(pInputNode, "Terrain", "SupportOfflineProceduralVegetation", false);
+
 	{
 		int nMinSpec = 3;//atoi(pText);
 		m_fSunClipPlaneRange = 256.0;

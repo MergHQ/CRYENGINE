@@ -375,10 +375,15 @@ int COctreeNode::GetSingleObjectFileDataSize(IRenderNode* pObj, const SHotUpdate
 
 	int nBlockSize = 0;
 
-	if (eType == eERType_Vegetation && !(pRenderNode->GetRndFlags() & ERF_PROCEDURAL))
+	if (eType == eERType_Vegetation)
 	{
-		nBlockSize += sizeof(eType);
-		nBlockSize += sizeof(SVegetationChunk);
+		CVegetation* pVeg = (CVegetation*)pObj;
+
+		if (!(pVeg->GetRndFlags() & ERF_PROCEDURAL) || (pVeg->GetStatObjGroup().offlineProcedural && Get3DEngine()->m_supportOfflineProceduralVegetation))
+		{
+			nBlockSize += sizeof(eType);
+			nBlockSize += sizeof(SVegetationChunk);
+		}
 	}
 	else if (eType == eERType_MergedMesh)
 	{
@@ -489,34 +494,40 @@ void COctreeNode::SaveSingleObject(byte*& pPtr, int& nDatanSize, IRenderNode* pE
 
 		AddToPtr(pPtr, nDatanSize, chunk, eEndian);
 	}
-	else if (eType == eERType_Vegetation && !(pEnt->GetRndFlags() & ERF_PROCEDURAL))
+	else if (eType == eERType_Vegetation)
 	{
-		AddToPtr(pPtr, nDatanSize, eType, eEndian);
+		CVegetation* pVeg = (CVegetation*)pEnt;
 
-		CVegetation* pObj = (CVegetation*)pEnt;
-
-		SVegetationChunk chunk;
-
-		CopyCommonData(&chunk, pObj);
-
-		// vegetation data
-		COPY_MEMBER_SAVE(&chunk, pObj, m_vPos);
-		chunk.m_fScale = pObj->GetScale();
-		COPY_MEMBER_SAVE(&chunk, pObj, m_nObjectTypeIndex);
-		COPY_MEMBER_SAVE(&chunk, pObj, m_ucAngle);
-		COPY_MEMBER_SAVE(&chunk, pObj, m_ucAngleX);
-		COPY_MEMBER_SAVE(&chunk, pObj, m_ucAngleY);
-
+		if (!(pVeg->GetRndFlags() & ERF_PROCEDURAL) || (pVeg->GetStatObjGroup().offlineProcedural && Get3DEngine()->m_supportOfflineProceduralVegetation))
 		{
-			// find StatInstGroup Id
-			StatInstGroup& group = pObj->GetStatObjGroup();
-			int nItemId = CObjManager::GetItemId<IStatInstGroup>(pStatInstGroupTable, &group);
-			if (nItemId < 0)
-				assert(!"StatObj not found in StatInstGroupTable on exporting");
-			chunk.m_nObjectTypeIndex = nItemId;
-		}
+			AddToPtr(pPtr, nDatanSize, eType, eEndian);
 
-		AddToPtr(pPtr, nDatanSize, chunk, eEndian);
+			CVegetation* pObj = (CVegetation*)pEnt;
+
+			SVegetationChunk chunk;
+
+			CopyCommonData(&chunk, pObj);
+			chunk.m_dwRndFlags &= ~ERF_PROCEDURAL;
+
+			// vegetation data
+			COPY_MEMBER_SAVE(&chunk, pObj, m_vPos);
+			chunk.m_fScale = pObj->GetScale();
+			COPY_MEMBER_SAVE(&chunk, pObj, m_nObjectTypeIndex);
+			COPY_MEMBER_SAVE(&chunk, pObj, m_ucAngle);
+			COPY_MEMBER_SAVE(&chunk, pObj, m_ucAngleX);
+			COPY_MEMBER_SAVE(&chunk, pObj, m_ucAngleY);
+
+			{
+				// find StatInstGroup Id
+				StatInstGroup& group = pObj->GetStatObjGroup();
+				int nItemId = CObjManager::GetItemId<IStatInstGroup>(pStatInstGroupTable, &group);
+				if (nItemId < 0)
+					assert(!"StatObj not found in StatInstGroupTable on exporting");
+				chunk.m_nObjectTypeIndex = nItemId;
+			}
+
+			AddToPtr(pPtr, nDatanSize, chunk, eEndian);
+		}
 	}
 	else if (eType == eERType_MergedMesh)
 	{
@@ -1092,7 +1103,7 @@ void COctreeNode::LoadSingleObject(byte*& pPtr, std::vector<IStatObj*>* pStatObj
 		if (CheckSkipLoadObject(eType, pChunk->m_dwRndFlags, eLoadMode) || !CheckRenderFlagsMinSpec(pChunk->m_dwRndFlags) || Get3DEngine()->IsLayerSkipped(pChunk->m_nLayerId))
 		{
 			int auxCntSrc = pChunk->m_volumeTypeAndMiscBits >> volumeTypeAndMiscBitShift;
-			const float *pAuxDataSrc = StepData<float>(pPtr, auxCntSrc, eEndian);
+			const float* pAuxDataSrc = StepData<float>(pPtr, auxCntSrc, eEndian);
 
 			for (uint32 j(0); j < pChunk->m_numVertices; ++j)
 			{

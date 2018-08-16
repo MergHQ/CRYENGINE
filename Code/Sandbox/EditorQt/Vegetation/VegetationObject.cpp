@@ -61,6 +61,7 @@ CVegetationObject::CVegetationObject(int id)
 	mv_castShadows = false;
 	mv_castShadowMinSpec = CONFIG_LOW_SPEC;
 	mv_giMode = true;
+	mv_offlineProcedural = false;
 	mv_instancing = false;
 	mv_DynamicDistanceShadows = false;
 	mv_hideable = 0;
@@ -140,6 +141,7 @@ CVegetationObject::CVegetationObject(int id)
 	m_pVarObject->AddVariable(mv_castShadowMinSpec, "CastShadowMinSpec", functor(*this, &CVegetationObject::OnVarChange));
 	m_pVarObject->AddVariable(mv_DynamicDistanceShadows, "DynamicDistanceShadows", functor(*this, &CVegetationObject::OnVarChange));
 	m_pVarObject->AddVariable(mv_giMode, "GlobalIllumination", "Global Illumination", functor(*this, &CVegetationObject::OnVarChange));
+	m_pVarObject->AddVariable(mv_offlineProcedural, "OfflineProcedural", "Offline Procedural", functor(*this, &CVegetationObject::OnVarChange));
 	m_pVarObject->AddVariable(mv_instancing, "Instancing", "UseInstancing", functor(*this, &CVegetationObject::OnVarChange));
 	m_pVarObject->AddVariable(mv_SpriteDistRatio, "SpriteDistRatio", functor(*this, &CVegetationObject::OnVarChange));
 	m_pVarObject->AddVariable(mv_LodDistRatio, "LodDistRatio", functor(*this, &CVegetationObject::OnVarChange));
@@ -380,6 +382,7 @@ void CVegetationObject::SetEngineParams()
 	grp.fBending = mv_bending;
 	grp.nCastShadowMinSpec = mv_castShadowMinSpec;
 	grp.bGIMode = mv_giMode;
+	grp.offlineProcedural = mv_offlineProcedural;
 	grp.bInstancing = mv_instancing;
 	grp.bDynamicDistanceShadows = mv_DynamicDistanceShadows;
 	grp.fSpriteDistRatio = mv_SpriteDistRatio;

@@ -12,6 +12,7 @@
 			<HeightMapAO type="BOOL" value="0"/>
 			<IntegrateObjects type="BOOL" value="0"/>
 			<AutoGenerateBaseTexture type="BOOL" value="0"/>
+      <SupportOfflineProceduralVegetation type="BOOL" value="0"/>
 		</Terrain>
 
 		<EnvState>

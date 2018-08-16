@@ -455,10 +455,21 @@ void CHeightmap::Resize(int iWidth, int iHeight, float unitSize, bool bCleanOld,
 				IRenderNode** pFirst = &lstInstances[0];
 				gEnv->p3DEngine->GetObjectsInBox(aabbAll, pFirst);
 
+				for (int i = 0; i < lstInstances.size(); i++)
+				{
+					if (lstInstances[i]->GetRndFlags() & ERF_PROCEDURAL)
+					{
+						lstInstances[i] = nullptr;
+					}
+				}
+
 				// unregister all objects from scene graph
 				for (int i = 0; i < lstInstances.size(); i++)
 				{
-					gEnv->p3DEngine->UnRegisterEntityDirect(lstInstances[i]);
+					if (lstInstances[i])
+					{
+					  gEnv->p3DEngine->UnRegisterEntityDirect(lstInstances[i]);
+				  }
 				}
 
 				// recreate terrain in the engine
@@ -471,7 +482,10 @@ void CHeightmap::Resize(int iWidth, int iHeight, float unitSize, bool bCleanOld,
 				// register all objects back into scene graph
 				for (int i = 0; i < lstInstances.size(); i++)
 				{
-					gEnv->p3DEngine->RegisterEntity(lstInstances[i]);
+					if (lstInstances[i])
+					{
+					  gEnv->p3DEngine->RegisterEntity(lstInstances[i]);
+				  }
 				}
 
 				// restore level rendering

@@ -2081,6 +2081,7 @@ bool C3DEngine::SetStatInstGroup(int nGroupId, const IStatInstGroup& siGroup)
 	rGroup.nCastShadowMinSpec = siGroup.nCastShadowMinSpec;
 	rGroup.bDynamicDistanceShadows = siGroup.bDynamicDistanceShadows;
 	rGroup.bGIMode = siGroup.bGIMode;
+	rGroup.offlineProcedural = siGroup.offlineProcedural;
 	rGroup.bInstancing = siGroup.bInstancing;
 	rGroup.fSpriteDistRatio = siGroup.fSpriteDistRatio;
 	rGroup.fLodDistRatio = siGroup.fLodDistRatio;
@@ -2153,6 +2154,7 @@ bool C3DEngine::GetStatInstGroup(int nGroupId, IStatInstGroup& siGroup)
 	siGroup.nCastShadowMinSpec = rGroup.nCastShadowMinSpec;
 	siGroup.bDynamicDistanceShadows = rGroup.bDynamicDistanceShadows;
 	siGroup.bGIMode = rGroup.bGIMode;
+	siGroup.offlineProcedural = rGroup.offlineProcedural;
 	siGroup.bInstancing = rGroup.bInstancing;
 	siGroup.fSpriteDistRatio = rGroup.fSpriteDistRatio;
 	siGroup.fLodDistRatio = rGroup.fLodDistRatio;
@@ -2293,15 +2295,7 @@ void C3DEngine::GetMemoryUsage(class ICrySizer* pSizer) const
 		pSizer->AddObject(m_pClipVolumeManager);
 	}
 
-	{
-		SIZER_COMPONENT_NAME(pSizer, "DefaultVegetPool");
-		pSizer->AddObject(CVegetation::s_poolAllocator[CVegetation::eAllocator_Default]);
-	}
-
-	{
-		SIZER_COMPONENT_NAME(pSizer, "ProcVegetPool");
-		pSizer->AddObject(CVegetation::s_poolAllocator[CVegetation::eAllocator_Procedural]);
-	}
+	CVegetation::GetStaticMemoryUsage(pSizer);
 
 	{
 		SIZER_COMPONENT_NAME(pSizer, "LayersBaseTextureData");

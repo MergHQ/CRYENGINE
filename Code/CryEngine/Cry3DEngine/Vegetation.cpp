@@ -25,29 +25,45 @@
 #define BYTE2RAD(x) ((x) * float(g_PI2) / 255.0f)
 
 float CRY_ALIGN(128) CVegetation::g_scBoxDecomprTable[256];
-TVegetationAllocator CVegetation::s_poolAllocator[CVegetation::eAllocator_Count];
+
+namespace VegetationPoolAllocator
+{
+stl::PoolAllocator<sizeof(CVegetation), stl::PSyncNone> m_vegetationAllocator[CVegetation::eAllocator_Count];
+}
 
 void* CVegetation::operator new(size_t size, EAllocatorId allocatorId)
 {
 	// allocate procedural vegetation separately from normal vegetation
-	return s_poolAllocator[allocatorId].New();
+	return VegetationPoolAllocator::m_vegetationAllocator[allocatorId].Allocate();
 }
 
 void CVegetation::operator delete(void* pToFree)
 {
-	CVegetation* pVeg = (CVegetation*)pToFree;
-	if (pVeg->m_dwRndFlags & ERF_PROCEDURAL)
-		s_poolAllocator[eAllocator_Procedural].Delete((CVegetation*)pToFree);
+	if (((CVegetation*)pToFree)->m_dwRndFlags & ERF_PROCEDURAL)
+		VegetationPoolAllocator::m_vegetationAllocator[eAllocator_Procedural].Deallocate(pToFree);
 	else
-		s_poolAllocator[eAllocator_Default].Delete((CVegetation*)pToFree);
+		VegetationPoolAllocator::m_vegetationAllocator[eAllocator_Default].Deallocate(pToFree);
 }
 
 void CVegetation::StaticReset()
 {
 	for (int i = 0; i < eAllocator_Count; i++)
 	{
-		assert(s_poolAllocator[i].GetCounts().nUsed == 0);
-		s_poolAllocator[i].FreeMemory();
+		assert(VegetationPoolAllocator::m_vegetationAllocator[i].GetCounts().nUsed == 0);
+		VegetationPoolAllocator::m_vegetationAllocator[i].FreeMemory();
+	}
+}
+
+void CVegetation::GetStaticMemoryUsage(ICrySizer* pSizer)
+{
+	{
+		SIZER_COMPONENT_NAME(pSizer, "DefaultVegetPool");
+		pSizer->AddObject(VegetationPoolAllocator::m_vegetationAllocator[CVegetation::eAllocator_Default]);
+	}
+
+	{
+		SIZER_COMPONENT_NAME(pSizer, "ProcVegetPool");
+		pSizer->AddObject(VegetationPoolAllocator::m_vegetationAllocator[CVegetation::eAllocator_Procedural]);
 	}
 }
 
@@ -224,7 +240,7 @@ CLodValue CVegetation::ComputeLod(int wantedLod, const SRenderingPassInfo& passI
 
 	return CLodValue(nLodA, nDissolveRefA, nLodB);
 }
-	
+
 //////////////////////////////////////////////////////////////////////////
 void CVegetation::FillBendingData(CRenderObject* pObj, const SRenderingPassInfo& passInfo) const
 {

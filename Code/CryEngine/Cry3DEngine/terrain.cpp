@@ -259,6 +259,24 @@ void CTerrain::UpdateNodesIncrementaly(const SRenderingPassInfo& passInfo)
 		}
 	}
 
+	// in the editor build all procedural vegetation on level load and make sure it is always up to date
+	if (gEnv->IsEditor())
+	{
+		static bool oldVal = false;
+		const bool newVal = Get3DEngine()->m_supportOfflineProceduralVegetation && (GetCVars()->e_ProcVegetation != 0);
+
+		if (newVal != oldVal)
+		{
+			if (newVal)
+			{
+				// update of all procedural vegetation when feature is triggered from OFF to ON
+				CheckUpdateProcObjectsInArea(GetParentNode()->GetBBox(), true);
+			}
+
+			oldVal = newVal;
+		}
+	}
+
 	// process procedural objects
 	if (m_lstActiveProcObjNodes.Count())
 	{
@@ -280,7 +298,7 @@ bool CTerrain::CheckUpdateProcObjectsInArea(const AABB& areaBox, bool bForceSync
 {
 	if (GetTerrain()->m_bProcVegetationInUse && GetCVars()->e_ProcVegetation)
 	{
-		if (bForceSyncUpdate)
+		if (bForceSyncUpdate && !gEnv->IsEditor())
 		{
 			// release all procedural nodes
 			while (m_lstActiveProcObjNodes.Count())
@@ -317,11 +335,14 @@ void CTerrain::ProcessActiveProcObjNodes(bool bSyncUpdate)
 	// sort by distance
 	qsort(m_lstActiveProcObjNodes.GetElements(), m_lstActiveProcObjNodes.Count(), sizeof(m_lstActiveProcObjNodes[0]), CmpTerrainNodesDistance);
 
-	// release unimportant sectors
-	while (m_lstActiveProcObjNodes.Count() > (GetCVars()->e_ProcVegetation ? GetCVars()->e_ProcVegetationMaxSectorsInCache : 0))
+	if (!gEnv->IsEditor() || !GetCVars()->e_ProcVegetation)
 	{
-		m_lstActiveProcObjNodes.Last()->RemoveProcObjects(false);
-		m_lstActiveProcObjNodes.DeleteLast();
+		// release unimportant sectors
+		while (m_lstActiveProcObjNodes.Count() > (GetCVars()->e_ProcVegetation ? GetCVars()->e_ProcVegetationMaxSectorsInCache : 0))
+		{
+			m_lstActiveProcObjNodes.Last()->RemoveProcObjects(false);
+			m_lstActiveProcObjNodes.DeleteLast();
+		}
 	}
 
 	while (1)
