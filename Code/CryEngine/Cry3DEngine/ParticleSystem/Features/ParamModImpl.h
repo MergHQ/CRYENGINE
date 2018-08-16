@@ -25,7 +25,7 @@ void CParamMod<Domain, T >::AddToComponent(CParticleComponent* pComponent, CPart
 	AddToComponent(pComponent, pFeature);
 	pComponent->AddParticleData(dataType);
 
-	if (dataType.info().domain & EDD_HasUpdate && !m_modUpdate.empty())
+	if (Domain & EDD_HasUpdate && !m_modUpdate.empty())
 	{
 		pComponent->AddParticleData(dataType.InitType());
 		if (Domain & EDD_PerParticle)
@@ -54,7 +54,7 @@ void CParamMod<Domain, T >::Serialize(Serialization::IArchive& ar)
 			}
 			if (pMod->IsEnabled())
 			{
-				if (pMod->GetDomain() & EDD_HasUpdate)
+				if (pMod->GetDomain() & Domain & EDD_HasUpdate)
 					m_modUpdate.push_back(pMod);
 				else
 					m_modInit.push_back(pMod);
@@ -75,7 +75,7 @@ void CParamMod<Domain, T >::InitParticles(CParticleComponentRuntime& runtime, TD
 	TIOStream<TType> stream = container.IOStream(dataType);
 	ModifyInit(runtime, stream, runtime.SpawnedRange(), dataType);
 
-	if (dataType.info().domain & EDD_HasUpdate)
+	if (Domain & EDD_HasUpdate)
 		container.CopyData(dataType.InitType(), dataType, runtime.SpawnedRange());
 }
 

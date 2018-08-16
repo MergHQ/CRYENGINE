@@ -316,13 +316,13 @@ void CDomain::Dispatch(CParticleComponentRuntime& runtime, const SUpdateRange& r
 			detail::CViewAngleSampler(runtime, domain));
 		break;
 	case EDomain::CameraDistance:
-		if (!(C3DEngine::GetCVars()->e_ParticlesDebug & AlphaBit('u')) || domain == EDD_PerParticle)
+		if (!(C3DEngine::GetCVars()->e_ParticlesDebug & AlphaBit('u')) || domain & EDD_PerParticle)
 			((TBase*)this)->DoModify(
 				runtime, range, stream,
 				detail::CCameraDistanceSampler(runtime, domain));
 		break;
 	case EDomain::Speed:
-		if (m_sourceOwner == EDomainOwner::Self || domain == EDD_PerInstance)
+		if (m_sourceOwner == EDomainOwner::Self || domain & EDD_PerInstance)
 			((TBase*)this)->DoModify(
 			  runtime, range, stream,
 			  detail::CSelfSpeedSampler(runtime, domain));
@@ -332,7 +332,7 @@ void CDomain::Dispatch(CParticleComponentRuntime& runtime, const SUpdateRange& r
 			  detail::CParentSpeedSampler(runtime));
 		break;
 	default:
-		if (m_sourceOwner == EDomainOwner::Self || domain == EDD_PerInstance)
+		if (m_sourceOwner == EDomainOwner::Self || domain & EDD_PerInstance)
 			((TBase*)this)->DoModify(
 				runtime, range, stream,
 				detail::CSelfStreamSampler(runtime, GetDataType(), domain));
