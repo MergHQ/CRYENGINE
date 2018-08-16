@@ -2,15 +2,64 @@
 #include "StdAfx.h"
 #include "AssetFoldersModel.h"
 
+#include "AssetBrowser.h"
+#include "AssetDropHandler.h"
+#include "AssetReverseDependenciesDialog.h"
 #include "AssetSystem/Asset.h"
 #include "AssetSystem/AssetManager.h"
 
-#include "QtUtil.h"
 #include "FilePathUtil.h"
+#include "QtUtil.h"
 #include "CryString/CryPath.h"
 
 #include <QDesktopServices>
 #include <QUrl>
+
+namespace Private_AssetFoldersModel
+{
+
+// Make sure none of assets belong to the destination folder.
+bool CanMove(const std::vector<CAsset*>& assets, const string& folder)
+{
+	const string path(PathUtil::AddSlash(folder));
+	return std::none_of(assets.begin(), assets.end(), [&path](CAsset* pAsset)
+	{
+		return strcmp(path.c_str(), pAsset->GetFolder()) == 0;
+	});
+}
+
+void OnMove(const std::vector<CAsset*>& assets, const QString& destinationFolder)
+{
+	const CAssetManager* const pAssetManager = CAssetManager::GetInstance();
+
+	const QString question = QObject::tr("There is a possibility of undetected dependencies which can be violated after performing the operation.\n"
+		"\n"
+		"Do you really want to move %n asset(s) to \"%1\"?", "", assets.size()).arg(destinationFolder);
+
+	if (pAssetManager->HasAnyReverseDependencies(assets))
+	{
+		CAssetReverseDependenciesDialog dialog(
+			assets,
+			QObject::tr("Assets to be moved"),
+			QObject::tr("Dependent Assets"),
+			QObject::tr("The following assets depend on the asset(s) to be moved. Therefore they probably will not behave correctly after performing the move operation."),
+			question);
+		dialog.setWindowTitle(QObject::tr("Move Assets"));
+
+		if (!dialog.Execute())
+		{
+			return;
+		}
+	}
+	else if (CQuestionDialog::SQuestion(QObject::tr("Move Assets"), question) != QDialogButtonBox::Yes)
+	{
+		return;
+	}
+
+	pAssetManager->MoveAssets(assets, QtUtil::ToString(destinationFolder));
+}
+
+}
 
 CAssetFoldersModel::CAssetFoldersModel(QObject* parent /*= nullptr*/)
 	: QAbstractItemModel(parent)
@@ -163,13 +212,140 @@ QVariant CAssetFoldersModel::headerData(int section, Qt::Orientation orientation
 
 Qt::ItemFlags CAssetFoldersModel::flags(const QModelIndex& index) const
 {
+	Qt::ItemFlags flags = QAbstractItemModel::flags(index) | Qt::ItemIsDropEnabled;
+
 	const Folder* folder = ToFolder(index);
 	if (folder->m_empty)
 	{
-		return QAbstractItemModel::flags(index) | Qt::ItemIsEditable;
+		return flags | Qt::ItemIsEditable;
 	}
 
-	return QAbstractItemModel::flags(index);
+	return flags;
+}
+
+QStringList CAssetFoldersModel::mimeTypes() const
+{
+	auto typeList = QAbstractItemModel::mimeTypes();
+	typeList << CDragDropData::GetMimeFormatForType("EngineFilePaths");
+	typeList << CDragDropData::GetMimeFormatForType("Assets");
+	typeList << CDragDropData::GetMimeFormatForType("LayersAndObjects");
+	return typeList;
+}
+
+Qt::DropActions CAssetFoldersModel::supportedDropActions() const
+{
+	return Qt::MoveAction | Qt::CopyAction;
+}
+
+bool CAssetFoldersModel::canDropMimeData(const QMimeData* pMimeData, Qt::DropAction action, int row, int column, const QModelIndex& parent) const
+{
+	using namespace Private_AssetFoldersModel;
+
+	const QModelIndex destination = row != -1 ? index(row, 0, parent) : (parent.isValid() ? parent.sibling(parent.row(), 0) : GetProjectAssetsFolderIndex());
+	if (!destination.isValid())
+	{
+		return false;
+	}
+
+	const QVariant variant(destination.data(static_cast<int>(Roles::FolderPathRole)));
+	if (!variant.isValid())
+	{
+		return false;
+	}
+
+	const QString folder(variant.toString());
+	if (IsReadOnlyFolder(folder))
+	{
+		return false;
+	}
+
+	const CDragDropData* const pDragDropData = CDragDropData::FromMimeData(pMimeData);
+	const QStringList filePaths = pDragDropData->GetFilePaths();
+	if (!filePaths.empty())
+	{
+		return true;
+	}
+
+	if (pDragDropData->HasCustomData("Assets"))
+	{
+		std::vector<CAsset*> assets = CAssetModel::GetAssets(*pDragDropData);
+		if (CanMove(assets, QtUtil::ToString(folder)))
+		{
+			CDragDropData::ShowDragText(qApp->widgetAt(QCursor::pos()), QObject::tr("Move %n asset(s) to \"%1\"", "", assets.size()).arg(GetPrettyPath(folder)));
+			return true;
+		}
+	}
+	else
+	{
+		CAssetConverter* pConverter = CAssetManager::GetInstance()->GetAssetConverter(*pMimeData);
+		if (pConverter)
+		{
+			CDragDropData::ShowDragText(qApp->widgetAt(QCursor::pos()), QObject::tr("%1 in \"%2\"").arg(QtUtil::ToQString(pConverter->ConversionInfo(*pMimeData)), GetPrettyPath(folder)));
+			return true;
+		}
+	}
+
+	return false;
+}
+
+bool CAssetFoldersModel::dropMimeData(const QMimeData* pMimeData, Qt::DropAction action, int row, int column, const QModelIndex& parent)
+{
+	using namespace Private_AssetFoldersModel;
+
+	const QModelIndex destination = row != -1 ? index(row, 0, parent) : (parent.isValid() ? parent.sibling(parent.row(), 0) : GetProjectAssetsFolderIndex());
+	if (!destination.isValid())
+	{
+		return false;
+	}
+
+	const QVariant variant(destination.data(static_cast<int>(Roles::FolderPathRole)));
+	if (!variant.isValid())
+	{
+		return false;
+	}
+
+	const QString folder(variant.toString());
+	CRY_ASSERT(!IsReadOnlyFolder(folder));
+
+	const CDragDropData* const pDragDropData = CDragDropData::FromMimeData(pMimeData);
+	const QStringList filePaths = pDragDropData->GetFilePaths();
+	if (!filePaths.empty())
+	{
+		CAssetDropHandler::SImportParams importParams;
+		importParams.outputDirectory = QtUtil::ToString(folder);
+		importParams.bHideDialog = !QApplication::keyboardModifiers().testFlag(Qt::ControlModifier);
+		CAssetDropHandler::ImportAsync(filePaths, importParams);
+		return true;
+	}
+
+	if (pDragDropData->HasCustomData("Assets"))
+	{
+		std::vector<CAsset*> assets = CAssetModel::GetAssets(*pDragDropData);
+		OnMove(assets, folder);
+		return true;
+	}
+
+	CAssetConverter* pConverter = CAssetManager::GetInstance()->GetAssetConverter(*pMimeData);
+	if (pConverter)
+	{
+		const string folderPath(QtUtil::ToString(folder));
+
+		QWidget* pWidget = qApp->widgetAt(QCursor::pos());
+		while (pWidget && pWidget->objectName().compare("Asset Browser") != 0)
+		{
+			pWidget = pWidget->parentWidget();
+		}
+
+		CAssetBrowser* pAssetBrowser = pWidget ? static_cast<CAssetBrowser*>(pWidget) : nullptr;
+		if (pAssetBrowser)
+		{
+			SAssetConverterConversionInfo info{ folderPath, pAssetBrowser };
+			pConverter->Convert(*pMimeData, info);
+			return true;
+		}
+	}
+
+	return false;
 }
 
 QModelIndex CAssetFoldersModel::index(int row, int column, const QModelIndex& parent /*= QModelIndex()*/) const

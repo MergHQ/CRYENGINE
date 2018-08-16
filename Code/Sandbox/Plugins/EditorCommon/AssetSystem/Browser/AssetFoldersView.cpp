@@ -43,6 +43,18 @@ public:
 
 		return QDeepFilterProxyModel::rowMatchesFilter(sourceRow, sourceParent);
 	}
+
+	virtual bool canDropMimeData(const QMimeData* pMimeData, Qt::DropAction action, int row, int column, const QModelIndex& parent) const override
+	{
+		if (QDeepFilterProxyModel::canDropMimeData(pMimeData, action, row, column, parent))
+		{
+			return true;
+		}
+
+		CDragDropData::ClearDragTooltip(qApp->widgetAt(QCursor::pos()));
+		return false;
+	}
+
 private:
 	bool m_bHideEngineFolder;
 
@@ -70,6 +82,7 @@ CAssetFoldersView::CAssetFoldersView(bool bHideEngineFolder /*= false*/, QWidget
 	m_treeView->setContextMenuPolicy(Qt::CustomContextMenu);
 	m_treeView->setHeaderHidden(true);
 	m_treeView->sortByColumn(0, Qt::AscendingOrder);
+	m_treeView->setDragDropMode(QAbstractItemView::DragDrop);
 
 	connect(m_treeView->selectionModel(), &QItemSelectionModel::selectionChanged, [this]() { OnSelectionChanged(); });
 	connect(deepFilterProxy, &QAbstractItemModel::dataChanged, this, &CAssetFoldersView::OnDataChanged);

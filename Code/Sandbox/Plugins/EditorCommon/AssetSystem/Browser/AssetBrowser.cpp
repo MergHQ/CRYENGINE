@@ -111,11 +111,85 @@ static bool UserConfirmsRenaming(CAsset& asset, QWidget* pParent)
 	return true;
 }
 
-class QAssetDetailsView : public QAdvancedTreeView
+// A private helper class that allows to drop items into the root folder of details and thumbnails views.
+// This is a workaround for CAssetFolderFilterModel that does not support hierarchy so the views can not use QAbstractItemView::SetRootIndex()
+template <typename TView> 
+class CDraggingIntoRootOf : public TView
+{
+public:
+	template<typename... Arg> 
+	CDraggingIntoRootOf(Arg&&... arg) 
+		: TView(std::forward<Arg>(arg)...)
+	{
+	}
+
+	// The root folder is the parent folder to the view's top level items.
+	// folder.IsEmpty is a valid string and stands for the assets root folder, while folder.isNull means the root folder is not assigned.
+	void SetRootFolder(const QString& folder)
+	{
+		m_root = folder;
+	}
+
+	template<typename TEvent>
+	bool Processed(const TEvent* pEvent)
+	{
+		return pEvent->isAccepted() || m_root.isNull() || indexAt(pEvent->pos()).isValid();
+	}
+
+	template<typename TEvent>
+	void dragEnterMoveRoot(TEvent* pEvent) const
+	{
+		const CAssetFoldersModel* const pModel = CAssetFoldersModel::GetInstance();
+		const QModelIndex root = pModel->FindIndexForFolder(m_root);
+		if (pModel->canDropMimeData(pEvent->mimeData(), pEvent->dropAction(), root.row(), root.column(), root.parent()))
+		{
+			pEvent->accept();
+		}
+	}
+
+	virtual void dragEnterEvent(QDragEnterEvent* pEvent) override
+	{
+		TView::dragEnterEvent(pEvent);
+
+		if (!Processed(pEvent))
+		{
+			dragEnterMoveRoot(pEvent);
+		}
+	}
+
+	virtual void dragMoveEvent(QDragMoveEvent* pEvent) override
+	{
+		TView::dragMoveEvent(pEvent);
+
+		if (!Processed(pEvent))
+		{
+			dragEnterMoveRoot(pEvent);
+		}
+	}
+
+	virtual void dropEvent(QDropEvent* pEvent) override
+	{
+		TView::dropEvent(pEvent);
+
+		if (!Processed(pEvent))
+		{
+			CAssetFoldersModel* const pModel = CAssetFoldersModel::GetInstance();
+			const QModelIndex root = pModel->FindIndexForFolder(m_root);
+			if (pModel->dropMimeData(pEvent->mimeData(), pEvent->dropAction(), root.row(), root.column(), root.parent()))
+			{
+				pEvent->accept();
+			}
+		}
+	}
+private:
+	QString m_root;
+};
+
+class QAssetDetailsView : public CDraggingIntoRootOf<QAdvancedTreeView>
 {
 public:
 	QAssetDetailsView(QWidget* parent = nullptr)
-		: QAdvancedTreeView(QAdvancedTreeView::UseItemModelAttribute, parent)
+		: CDraggingIntoRootOf(QAdvancedTreeView::UseItemModelAttribute, parent)
 	{
 	}
 protected:
@@ -138,11 +212,11 @@ protected:
 	}
 };
 
-class CThumbnailsInternalView : public QListView
+class CThumbnailsInternalView : public CDraggingIntoRootOf<QListView>
 {
 public:
 	CThumbnailsInternalView(QWidget* pParent = nullptr)
-		: QListView(pParent)
+		: CDraggingIntoRootOf(pParent)
 	{
 	}
 
@@ -502,6 +576,17 @@ class SortFilterProxyModel : public QAttributeFilterProxyModel
 		}
 	}
 
+	virtual bool canDropMimeData(const QMimeData* pMimeData, Qt::DropAction action, int row, int column, const QModelIndex& parent) const override
+	{
+		if (QAttributeFilterProxyModel::canDropMimeData(pMimeData, action, row, column, parent))
+		{
+			return true;
+		}
+
+		CDragDropData::ClearDragTooltip(qApp->widgetAt(QCursor::pos()));
+		return false;
+	}
+
 	virtual QVariant data(const QModelIndex& index, int role) const override
 	{
 		UsageCountAttributeContext context(m_pDependencyFilter);
@@ -651,6 +736,8 @@ CAssetBrowser::CAssetBrowser(bool bHideEngineFolder /*= false*/, QWidget* pParen
 	, m_navigationIndex(-1)
 	, m_dontPushNavHistory(false)
 {
+	setObjectName("Asset Browser");
+
 	InitViews(bHideEngineFolder);
 	InitMenus();
 
@@ -695,138 +782,9 @@ CAssetBrowser::~CAssetBrowser()
 	CAssetManager::GetInstance()->signalScanningCompleted.DisconnectById((uintptr_t)this);
 }
 
-static bool bDropping = false;
-
-void CAssetBrowser::dragEnterEvent(QDragEnterEvent* pEvent)
-{
-	if (CAssetManager::GetInstance()->IsScanning())
-		return;
-
-	auto pDragDropData = CDragDropData::FromMimeData(pEvent->mimeData());
-	const QStringList filePaths = pDragDropData->GetFilePaths();
-	if (!filePaths.empty())
-	{
-		if (m_pAssetDropHandler->CanImportAny(filePaths))
-		{
-			pEvent->acceptProposedAction();
-		}
-	}
-	else if ((pEvent->possibleActions() & Qt::MoveAction) && pDragDropData->HasCustomData("Assets"))
-	{
-		pEvent->acceptProposedAction();
-	}
-	else if (CAssetManager::GetInstance()->HasAssetConverter(*pDragDropData))
-	{
-		pEvent->acceptProposedAction();
-	}
-
-}
-
-void CAssetBrowser::dragMoveEvent(QDragMoveEvent* pEvent)
-{
-	auto pDragDropData = CDragDropData::FromMimeData(pEvent->mimeData());
-	if (pDragDropData->HasCustomData("Assets"))
-	{
-		string folderPath;
-		if (GetImportFolder(folderPath))
-		{
-			std::vector<CAsset*> assets = Private_AssetBrowser::GetAssets(*pDragDropData);
-			if (Private_AssetBrowser::IsMovePossible(assets, folderPath))
-			{
-				CDragDropData::ShowDragText(qApp->widgetAt(QCursor::pos()), tr("Move %n asset(s) to \"%1\"", "", assets.size()).arg(QtUtil::ToQString(folderPath)));
-				pEvent->acceptProposedAction();
-			}
-			else
-			{
-				CDragDropData::ClearDragTooltip(qApp->widgetAt(QCursor::pos()));
-				pEvent->setAccepted(false);
-			}
-		}
-	}
-	else 
-	{
-		CAssetConverter * pConverter =  CAssetManager::GetInstance()->GetAssetConverter(*pEvent->mimeData());
-		if (pConverter)
-		{
-			CDragDropData::ShowDragText(qApp->widgetAt(QCursor::pos()), QString(pConverter->ConversionInfo(*pEvent->mimeData()).c_str()));
-			pEvent->acceptProposedAction();
-		}
-	}
-}
-
-void CAssetBrowser::dragLeaveEvent(QDragLeaveEvent* pEvent)
-{
-	CDragDropData::ClearDragTooltip(qApp->widgetAt(QCursor::pos()));
-}
-
 bool DiscardChanges(const QString& what)
 {
 	return CQuestionDialog::SQuestion("Discard changes?", what) == QDialogButtonBox::Yes;
-}
-
-void CAssetBrowser::dropEvent(QDropEvent* pEvent)
-{
-	if (CAssetManager::GetInstance()->IsScanning())
-		return;
-
-	string folderPath;
-	bool bHasFolderPath = GetImportFolder(folderPath);
-
-	auto pDragDropData = CDragDropData::FromMimeData(pEvent->mimeData());
-	const QStringList filePaths = pDragDropData->GetFilePaths();
-
-	// Is it an import request?
-	if (!filePaths.empty())
-	{
-		CAssetDropHandler::SImportParams importParams;
-		importParams.outputDirectory = folderPath;
-		importParams.bHideDialog = (pEvent->keyboardModifiers() & Qt::ControlModifier) == 0;
-
-		if (!bHasFolderPath && importParams.bHideDialog)
-		{
-			CryWarning(VALIDATOR_MODULE_ASSETS, VALIDATOR_WARNING, tr("Select a single target folder for import").toLocal8Bit().constData());
-
-			// Reject ambiguous drop.
-			// When we cannot tell what single folder is the target folder and the dialog is hidden, we do not import anything.
-			return;
-		}
-
-		CRY_ASSERT(!filePaths.empty());
-
-		ThreadingUtils::AsyncFinalize([this, filePaths, importParams]
-		{
-			return m_pAssetDropHandler->Import(filePaths, importParams);
-		},
-		                              [](std::vector<CAsset*>&& assets)
-		{
-			GetIEditor()->GetAssetManager()->MergeAssets(assets);
-		});
-	}
-	else if (bHasFolderPath && pDragDropData->HasCustomData("Assets")) // Move asset(s)
-	{
-		std::vector<CAsset*> assets = Private_AssetBrowser::GetAssets(*pDragDropData);
-		if (Private_AssetBrowser::IsMovePossible(assets, folderPath))
-		{
-			OnMove(assets, QtUtil::ToQString(folderPath));
-		}
-		pEvent->acceptProposedAction();
-	}
-	else if (bHasFolderPath)
-	{
-		CAssetConverter* pConverter = CAssetManager::GetInstance()->GetAssetConverter(*pEvent->mimeData());
-
-		if (pConverter)
-		{
-			SAssetConverterConversionInfo info{ folderPath, this };
-			//we need to select the actual folder where the conversion is going to take place
-			m_foldersView->SelectFolder(QString(folderPath));
-			pEvent->acceptProposedAction();
-			pConverter->Convert(*pEvent->mimeData(), info);
-		}
-	}
-
-	CDragDropData::ClearDragTooltip(qApp->widgetAt(QCursor::pos()));
-
 }
 
 void CAssetBrowser::mouseReleaseEvent(QMouseEvent* pEvent)
@@ -854,55 +812,6 @@ void CAssetBrowser::mouseReleaseEvent(QMouseEvent* pEvent)
 	default:
 		break;
 	}
-}
-
-bool CAssetBrowser::GetDropFolder(string& folder) const
-{
-	CRY_ASSERT(m_foldersView && m_foldersView->GetInternalView());
-	CRY_ASSERT(m_thumbnailView && m_thumbnailView->GetInternalView());
-	CRY_ASSERT(m_detailsView);
-
-	using namespace Private_AssetBrowser;
-
-	folder.clear();
-
-	const std::vector<const QAbstractItemView*> views {
-		m_foldersView->GetInternalView(), m_detailsView, m_thumbnailView->GetInternalView() };
-
-	for (const QAbstractItemView* pView : views)
-	{
-		if (!pView->isVisible())
-		{
-			continue;
-		}
-
-		const QPoint point = pView->mapFromGlobal(QCursor::pos());
-		if (!pView->contentsRect().contains(point))
-		{
-			continue;
-		}
-
-		const QModelIndex index = pView->indexAt(point);
-		if (index.isValid() && IsFolder(index))
-		{
-			folder = QtUtil::ToString(ToFolderPath(index));
-			return true;
-		}
-	}
-
-	return false;
-}
-
-bool CAssetBrowser::GetImportFolder(string& folderPath) const
-{
-	const auto getSelectedFolder = [this](string& folderPath)
-	{
-		 auto folderSelection = m_foldersView->GetSelectedFolders();
-		 folderPath = QtUtil::ToString(folderSelection.front());
-		 return folderSelection.size() == 1;
-	};
-
-	return GetDropFolder(folderPath) || getSelectedFolder(folderPath);
 }
 
 // Create and set item delegates for naming a new asset.
@@ -1191,7 +1100,7 @@ void CAssetBrowser::InitDetailsView()
 	m_detailsView->setSelectionModel(m_selection);
 	m_detailsView->setUniformRowHeights(true);
 	m_detailsView->setDragEnabled(true);
-	m_detailsView->setDragDropMode(QAbstractItemView::DragOnly);//Assets can be dragged outside of the asset browser
+	m_detailsView->setDragDropMode(QAbstractItemView::DragDrop);
 	m_detailsView->sortByColumn((int)eAssetColumns_Name, Qt::AscendingOrder);
 	m_detailsView->setContextMenuPolicy(Qt::CustomContextMenu);
 	m_detailsView->header()->setStretchLastSection(false);
@@ -1221,9 +1130,7 @@ void CAssetBrowser::InitThumbnailsView()
 	pView->setSelectionMode(QAbstractItemView::ExtendedSelection);
 	pView->setSelectionBehavior(QAbstractItemView::SelectRows);
 	pView->setSelectionModel(m_selection);
-	pView->setDragEnabled(true);
-	pView->setDragDropMode(QAbstractItemView::DragDrop);//Assets can be dragged outside of the asset browser
-	pView->setDropIndicatorShown(false);
+	pView->setDragDropMode(QAbstractItemView::DragDrop);
 	pView->setEditTriggers(pView->editTriggers() & ~QAbstractItemView::DoubleClicked);
 }
 
@@ -1299,7 +1206,7 @@ void CAssetBrowser::SelectAsset(const char* szPath) const
 	{
 		SelectAsset(*pAsset);
 	}
-	else if (PathUtil::GetExt(szPath)) // try to select folder by the file path
+	else if (strchr(szPath, '.')) // try to select folder by the file path
 	{
 		m_foldersView->SelectFolder(QtUtil::ToQString(PathUtil::GetDirectory(szPath)));
 	}
@@ -2198,38 +2105,6 @@ bool CAssetBrowser::OnOpen()
 	return true;
 }
 
-void CAssetBrowser::OnMove(const std::vector<CAsset*>& assets, const QString& destinationFolder)
-{
-	const CAssetManager* const pAssetManager = CAssetManager::GetInstance();
-
-	const QString question = tr("There is a possibility of undetected dependencies which can be violated after performing the operation.\n"
-	                            "\n"
-	                            "Do you really want to move %n asset(s) to \"%1\"?", "", assets.size()).arg(destinationFolder);
-
-	if (pAssetManager->HasAnyReverseDependencies(assets))
-	{
-		CAssetReverseDependenciesDialog dialog(
-			assets,
-			tr("Assets to be moved"),
-			tr("Dependent Assets"),
-			tr("The following assets depend on the asset(s) to be moved. Therefore they probably will not behave correctly after performing the move operation."),
-			question,
-			this);
-		dialog.setWindowTitle(tr("Move Assets"));
-
-		if (!dialog.Execute())
-		{
-			return;
-		}
-	}
-	else if (CQuestionDialog::SQuestion(tr("Move Assets"), question) != QDialogButtonBox::Yes)
-	{
-		return;
-	}
-
-	pAssetManager->MoveAssets(assets, QtUtil::ToString(destinationFolder));
-}
-
 void CAssetBrowser::OnRenameFolder(const QString& folder)
 {
 	auto view = GetFocusedView();
@@ -2313,11 +2188,19 @@ void CAssetBrowser::OnNavForward()
 
 void CAssetBrowser::OnFolderSelectionChanged(const QStringList& selectedFolders)
 {
+	using namespace Private_AssetBrowser;
+
+	CThumbnailsInternalView* pThumbnailsView = static_cast<CThumbnailsInternalView*>(m_thumbnailView->GetInternalView());
+	QAssetDetailsView* pDetailsView = static_cast<QAssetDetailsView*>(m_detailsView);
+
 	const int numFolders = selectedFolders.size();
 	if (numFolders > 1)
 	{
 		m_breadcrumbs->hide();
 		m_multipleFoldersLabel->show();
+
+		pThumbnailsView->SetRootFolder(QString());
+		pDetailsView->SetRootFolder(QString());
 	}
 	else
 	{
@@ -2325,6 +2208,9 @@ void CAssetBrowser::OnFolderSelectionChanged(const QStringList& selectedFolders)
 		m_multipleFoldersLabel->hide();
 
 		UpdateBreadcrumbsBar(CAssetFoldersModel::GetInstance()->GetPrettyPath(selectedFolders.first()));
+
+		pThumbnailsView->SetRootFolder(selectedFolders.first());
+		pDetailsView->SetRootFolder(selectedFolders.first());
 	}
 
 	m_pFolderFilterModel->SetAcceptedFolders(selectedFolders);

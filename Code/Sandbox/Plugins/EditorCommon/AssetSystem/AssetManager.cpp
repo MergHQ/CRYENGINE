@@ -281,11 +281,13 @@ CAsset* CAssetManager::FindAssetById(const CryGUID& guid)
 {
 	if (!m_orderedByGUID)
 	{
+		signalBeforeAssetsUpdated();
 		std::sort(m_assets.begin(), m_assets.end(), [](const CAsset* a, const CAsset* b)
 		{
 			return a->GetGUID() < b->GetGUID();
 		});
 		m_orderedByGUID = true;
+		signalAfterAssetsUpdated();
 	}
 
 	auto it = std::lower_bound(m_assets.cbegin(), m_assets.cend(), guid, [](const CAsset* pAsset, const CryGUID& guid)

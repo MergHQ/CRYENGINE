@@ -230,7 +230,7 @@ QThumbnailsView::QThumbnailsView(QListView* pListView, bool showSizeButtons /* =
 	m_listView->setWrapping(true);
 	m_listView->setResizeMode(QListView::Adjust);
 	m_listView->setSelectionRectVisible(true);
-	m_listView->setMovement(QListView::Static);
+	m_listView->setMovement(QListView::Snap);
 
 	//For some reason the cell is still grown by text. Ideally we would not allow growing past cell size, instead we would elide the text
 	m_listView->setWordWrap(true);

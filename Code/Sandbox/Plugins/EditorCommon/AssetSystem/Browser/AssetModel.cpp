@@ -675,6 +675,22 @@ QMimeData* CAssetModel::mimeData(const QModelIndexList& indexes) const
 	return pDragDropData;
 }
 
+std::vector<CAsset*> CAssetModel::GetAssets(const CDragDropData& data)
+{
+	QVector<quintptr> tmp;
+	QByteArray byteArray = data.GetCustomData("Assets");
+	QDataStream stream(byteArray);
+	stream >> tmp;
+
+	std::vector<CAsset*> assets;
+	assets.reserve(tmp.size());
+	std::transform(tmp.begin(), tmp.end(), std::back_inserter(assets), [](quintptr p)
+	{
+		return reinterpret_cast<CAsset*>(p);
+	});
+	return assets;
+}
+
 CAssetModel::CAutoRegisterColumn::CAutoRegisterColumn(const CItemModelAttribute* pAttribute, std::function<QVariant(const CAsset* pAsset, const CItemModelAttribute* pAttribute)> computeFn)
 	: CAutoRegister([pAttribute, computeFn = std::move(computeFn)]()
 {

@@ -172,6 +172,13 @@ std::vector<CAsset*> CAssetDropHandler::Import(const QStringList& filePaths, con
 	return Import(ToStringVector(filePaths), importParams);
 }
 
+std::future<std::vector<CAsset*>> CAssetDropHandler::ImportAsync(const QStringList& filePaths, const SImportParams& importParams)
+{
+	auto import = [filePaths, importParams] { return Import(filePaths, importParams); };
+	auto merge = [](std::vector<CAsset*>&& assets) { GetIEditor()->GetAssetManager()->MergeAssets(assets); };
+	return ThreadingUtils::AsyncFinalize(import, merge);
+}
+
 //! Precondition: pAssetImporter->GetAssetTypes() is a sub-set of assetTypes.
 static std::vector<CAssetType*> FilterAssetTypes(const std::vector<CAssetType*>& assetTypes, const CAssetImporter* pAssetImporter)
 {
