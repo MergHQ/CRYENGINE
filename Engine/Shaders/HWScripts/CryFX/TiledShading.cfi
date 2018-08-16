@@ -200,17 +200,19 @@ void TiledForwardShading(in ForwardShadingAttribs attribs, inout float3 diffuseA
 			if (lightIndex >= 0) break;
 			else curMask = Fwd_TileLightMask[++maskIndex + bufferIdx];
 		}
+
+		uint lightShadeInfoIdx = lightIndex + maskIndex * 32;
 		
 		[branch]
-		if (lightIndex < 0 || Fwd_TiledLightsShadeInfo[lightIndex].lightType > TILEDLIGHT_TYPE_AMBIENT_AREA)
+		if (lightIndex < 0 || Fwd_TiledLightsShadeInfo[lightShadeInfoIdx].lightType > TILEDLIGHT_TYPE_AMBIENT_AREA)
 			break;
 			
 		if (applyProbes)
 		{
 			const float clipVolumeWeight = 1;  // TODO
-			if (Fwd_TiledLightsShadeInfo[lightIndex].lightType == TILEDLIGHT_TYPE_PROBE && probeWeightSum < 1 && clipVolumeWeight > 0)
+			if (Fwd_TiledLightsShadeInfo[lightShadeInfoIdx].lightType == TILEDLIGHT_TYPE_PROBE && probeWeightSum < 1 && clipVolumeWeight > 0)
 			{
-				STiledLightShadeInfo light = Fwd_TiledLightsShadeInfo[lightIndex];
+				STiledLightShadeInfo light = Fwd_TiledLightsShadeInfo[lightShadeInfoIdx];
 				float3 position = attribs.worldPos;
 				float3 lightVec = (light.posRad.xyz - GetWorldViewPos()) - position;
 				
@@ -263,13 +265,15 @@ void TiledForwardShading(in ForwardShadingAttribs attribs, inout float3 diffuseA
 		if (lightIndex < 0)
 			break;
 
+		uint lightShadeInfoIdx = lightIndex + maskIndex * 32;
+
 		const float3 position = attribs.worldPos;
-		const float4 posRad = Fwd_TiledLightsShadeInfo[lightIndex].posRad;
+		const float4 posRad = Fwd_TiledLightsShadeInfo[lightShadeInfoIdx].posRad;
 		const float3 lightVec = (posRad.xyz - GetWorldViewPos()) - position;
 		
-		if (applyNonProbes && Fwd_TiledLightsShadeInfo[lightIndex].lightType > TILEDLIGHT_TYPE_AMBIENT_AREA && length( lightVec ) < posRad.w)
+		if (applyNonProbes && Fwd_TiledLightsShadeInfo[lightShadeInfoIdx].lightType > TILEDLIGHT_TYPE_AMBIENT_AREA && length( lightVec ) < posRad.w)
 		{
-			STiledLightShadeInfo light = Fwd_TiledLightsShadeInfo[lightIndex];
+			STiledLightShadeInfo light = Fwd_TiledLightsShadeInfo[lightShadeInfoIdx];
 			bool skipShading = false;
 			bool shadowMap = false;
 			

@@ -7308,10 +7308,12 @@ bool CScriptBind_Entity::ParseLightParams(IScriptTable* pLightTable, SRenderLigh
 	const char* specularCubemap = 0;
 	if (chain.GetValue("deferred_cubemap", specularCubemap) && gEnv->pRenderer)
 	{
+		light.m_Flags |= DLF_DEFERRED_CUBEMAPS;
 		light.ReleaseCubemaps();
 
 		if (specularCubemap && strlen(specularCubemap) > 0)
 		{
+			bool bFailed = false;
 			string sSpecularName(specularCubemap);
 			int strIndex = sSpecularName.find("_diff");
 			if (strIndex >= 0)
@@ -7336,21 +7338,18 @@ bool CScriptBind_Entity::ParseLightParams(IScriptTable* pLightTable, SRenderLigh
 				GetISystem()->Warning(VALIDATOR_MODULE_ENTITYSYSTEM, VALIDATOR_WARNING, 0, specularCubemap,
 				                      "Deferred cubemap texture not found: %s", specularCubemap);
 
-				light.ReleaseCubemaps();
+				bFailed = true;
 			}
 			if (!light.GetDiffuseCubemap() || !light.GetDiffuseCubemap()->IsTextureLoaded())
 			{
 				GetISystem()->Warning(VALIDATOR_MODULE_ENTITYSYSTEM, VALIDATOR_WARNING, 0, diffuseCubemap,
 				                      "Deferred diffuse cubemap texture not found: %s", diffuseCubemap);
 
-				light.ReleaseCubemaps();
+				bFailed = true;
 			}
 
-			if (light.GetDiffuseCubemap() && light.GetSpecularCubemap())
-				light.m_Flags |= DLF_DEFERRED_CUBEMAPS;
-			else
+			if (bFailed)
 			{
-				light.m_Flags &= ~DLF_DEFERRED_CUBEMAPS;
 				light.m_Flags |= DLF_DISABLED;
 				light.ReleaseCubemaps();
 			}
