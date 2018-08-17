@@ -126,8 +126,8 @@ float CParticleRenderBase::CullArea(float area, float areaLimit, TParticleIdArra
 		// Sort sprites by area, cull largest
 		stl::sort(ids, [&areas](uint id) { return areas[id]; });
 
-		static float Slope = 2.0f;
-		float factor = Slope / areaLimit;
+		static float Slope = 1.0f;
+		const float factor = Slope / areaLimit;
 		float areaDrawn = 0;
 		uint newSize = ids.size();
 		for (uint i = 0; i < ids.size(); ++i)

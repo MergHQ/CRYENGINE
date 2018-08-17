@@ -151,6 +151,7 @@ void CFeatureRenderSprites::Serialize(Serialization::IArchive& ar)
 	ar(m_offset, "Offset", "Offset");
 	ar(m_flipU, "FlipU", "Flip U");
 	ar(m_flipV, "FlipV", "Flip V");
+	ar(m_fillCost, "FillCost", "Fill Cost");
 }
 
 void CFeatureRenderSprites::ComputeVertices(const CParticleComponentRuntime& runtime, const SCameraInfo& camInfo, CREParticle* pRE, uint64 uRenderFlags, float fMaxPixels)
@@ -226,8 +227,9 @@ void CFeatureRenderSprites::CullParticles(SSpritesContext& spritesContext)
 	                     || GetCVars()->e_ParticlesMinDrawPixels > 0.0f;
 
 	// count and cull pixels drawn for near emitters
-	const float maxArea = runtime.GetContainer().GetNumParticles() *
-		div_min(sqr(runtime.ComponentParams().m_maxParticleSize * 2.0f) * m_aspectRatio, sqr(nearDist), screenArea);
+	const float maxArea = runtime.GetContainer().GetNumParticles()
+		* div_min(sqr(runtime.ComponentParams().m_maxParticleSize * 2.0f) * m_aspectRatio, sqr(nearDist), screenArea)
+		* m_fillCost;
 	const bool cullArea = maxArea > spritesContext.m_areaLimit;
 	const bool sumArea = cullArea || maxArea > 1.0f / 256.0f;
 
@@ -290,7 +292,7 @@ void CFeatureRenderSprites::CullParticles(SSpritesContext& spritesContext)
 				if (sumArea)
 				{
 					// Compute pixel area, and cull latest particles to enforce pixel limit
-					const float area = min(size * sizeX * 4.0f * sqr(invDist), screenArea) * (alpha > 0.0f);
+					const float area = min(size * sizeX * 4.0f * sqr(invDist), screenArea) * (alpha > 0.0f) * m_fillCost;
 					spritesContext.m_area += area;
 					if (cullArea)
 						areas[particleId] = area;
