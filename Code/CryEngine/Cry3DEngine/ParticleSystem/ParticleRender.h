@@ -129,6 +129,9 @@ protected:
 
 	static float CullArea(float area, float areaLimit, TParticleIdArray& ids, TVarArray<float> alphas, TConstArray<float> areas);
 
+protected:
+	UFloat m_fillCost = 1;
+
 private:
 	uint m_renderObjectBeforeWaterId = -1;
 	uint m_renderObjectAfterWaterId  = -1;

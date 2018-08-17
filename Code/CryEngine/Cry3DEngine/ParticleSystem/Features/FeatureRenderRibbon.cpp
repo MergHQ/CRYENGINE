@@ -123,6 +123,7 @@ void CFeatureRenderRibbon::Serialize(Serialization::IArchive& ar)
 	ar(m_connectToOrigin, "ConnectToOrigin", "Connect To Origin");
 	ar(m_frequency, "TextureFrequency", "Texture Frequency");
 	ar(m_offset, "Offset", "Offset");
+	ar(m_fillCost, "FillCost", "Fill Cost");
 }
 
 void CFeatureRenderRibbon::InitParticles(CParticleComponentRuntime& runtime)
@@ -465,7 +466,7 @@ void CFeatureRenderRibbon::CullRibbonAreas(const CParticleComponentRuntime& runt
 	static const float ribbonAreaMultiple = 2.0f; // Estimate ribbon area as 2x sprite area
 	const float maxSize = sqr(runtime.ComponentParams().m_maxParticleSize * 2.0f) * ribbonAreaMultiple;
 	const float nearDist = runtime.GetBounds().GetDistance(camPos);
-	const float maxArea = container.GetNumParticles() *	div_min(maxSize, sqr(nearDist), screenArea);
+	const float maxArea = container.GetNumParticles() *	div_min(maxSize, sqr(nearDist), screenArea) * m_fillCost;
 	const float areaLimit = fMaxPixels / areaToPixels;
 	const bool cullArea = maxArea > areaLimit;
 	const bool sumArea = cullArea || maxArea > 1.0f / 256.0f;
@@ -523,8 +524,9 @@ void CFeatureRenderRibbon::CullRibbonAreas(const CParticleComponentRuntime& runt
 
 		// Compute area for each segment
 		const float ribbonArea =
-			frustumTest.VisibleArea(rPositions[0], rSizes[0], rPositions[1], rSizes[1], screenArea) +
-			frustumTest.VisibleArea(rPositions[2], rSizes[2], rPositions[1], rSizes[1], screenArea);
+			(frustumTest.VisibleArea(rPositions[0], rSizes[0], rPositions[1], rSizes[1], screenArea)
+			+ frustumTest.VisibleArea(rPositions[2], rSizes[2], rPositions[1], rSizes[1], screenArea))
+			* m_fillCost;
 		area += ribbonArea;
 
 		if (cullArea)
