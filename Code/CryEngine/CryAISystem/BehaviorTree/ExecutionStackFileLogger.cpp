@@ -4,7 +4,7 @@
 #include "ExecutionStackFileLogger.h"
 #include <CryAISystem/BehaviorTree/Node.h>
 
-#ifdef USING_BEHAVIOR_TREE_EXECUTION_STACKS_FILE_LOG
+#ifdef DEBUG_MODULAR_BEHAVIOR_TREE
 namespace BehaviorTree
 {
 
@@ -153,4 +153,4 @@ void ExecutionStackFileLogger::LogNodeRecursively(const DebugNode& debugNode, co
 }
 
 }
-#endif  // USING_BEHAVIOR_TREE_EXECUTION_STACKS_FILE_LOG
+#endif  // DEBUG_MODULAR_BEHAVIOR_TREE

@@ -9,16 +9,14 @@
 
 namespace
 {
-void AISendSignal(IEntity* const pEntity, const char* const signalName)
+void AISendSignal(IEntity* const pEntity, const AISignals::ISignalDescription& signalDescription)
 {
 	CRY_ASSERT(pEntity);
-	CRY_ASSERT(signalName);
 
 	IAIObject* const pAiObject = pEntity->GetAI();
 	if (pAiObject)
 	{
-		const uint32 signalNameCrc = CCrc32::Compute(signalName);
-		gEnv->pAISystem->SendSignal(SIGNALFILTER_SENDER, 1, signalName, pAiObject, NULL, signalNameCrc);
+		gEnv->pAISystem->SendSignal(AISignals::ESignalFilter::SIGNALFILTER_SENDER, gEnv->pAISystem->GetSignalManager()->CreateSignal(AISIGNAL_DEFAULT, signalDescription, pAiObject->GetAIObjectID()));
 	}
 }
 }
@@ -81,11 +79,11 @@ public:
 		case eFE_Activate:
 			if (IsPortActive(pActInfo, eInputPort_Enable))
 			{
-				AISendSignal(pEntity, "CombatTargetEnabled");
+				AISendSignal(pEntity, gEnv->pAISystem->GetSignalManager()->GetBuiltInSignalDescriptions().GetOnCombatTargetEnabled_DEPRECATED());
 			}
 			else if (IsPortActive(pActInfo, eInputPort_Disable))
 			{
-				AISendSignal(pEntity, "CombatTargetDisabled");
+				AISendSignal(pEntity, gEnv->pAISystem->GetSignalManager()->GetBuiltInSignalDescriptions().GetOnCombatTargetDisabled_DEPRECATED());
 			}
 			break;
 		}
@@ -150,11 +148,11 @@ public:
 		case eFE_Activate:
 			if (IsPortActive(pActInfo, eInputPort_Enable))
 			{
-				AISendSignal(pEntity, "FiringAllowed");
+				AISendSignal(pEntity, gEnv->pAISystem->GetSignalManager()->GetBuiltInSignalDescriptions().GetOnFiringAllowed_DEPRECATED());
 			}
 			else if (IsPortActive(pActInfo, eInputPort_Disable))
 			{
-				AISendSignal(pEntity, "FiringNotAllowed");
+				AISendSignal(pEntity, gEnv->pAISystem->GetSignalManager()->GetBuiltInSignalDescriptions().GetOnFiringNotAllowed_DEPRECATED());
 			}
 			break;
 		}
@@ -255,7 +253,7 @@ public:
 			else if (IsPortActive(pActInfo, eInputPort_Stop))
 			{
 				ActivateOutput(pActInfo, eOutputPort_Stopped, true);
-				AISendSignal(pEntity, "StopFollowPath");
+				AISendSignal(pEntity, gEnv->pAISystem->GetSignalManager()->GetBuiltInSignalDescriptions().GetOnStopFollowPath_DEPRECATED());
 				Reset(pActInfo);
 			}
 			else if (IsPortActive(pActInfo, eInputPort_Speed))
@@ -515,7 +513,7 @@ private:
 
 		pActInfo->pGraph->SetRegularlyUpdated(pActInfo->myID, true);
 
-		AISendSignal(pEntity, "StartFollowPath");
+		AISendSignal(pEntity, gEnv->pAISystem->GetSignalManager()->GetBuiltInSignalDescriptions().GetOnStartFollowPath_DEPRECATED());
 
 		m_restartOnPostSerialize = true;
 	}
@@ -611,11 +609,11 @@ public:
 				RegisterScriptEventlistener(pEntity->GetId());
 				pActInfo->pGraph->SetRegularlyUpdated(pActInfo->myID, true);
 
-				AISendSignal(pEntity, "StartForceFire");
+				AISendSignal(pEntity, gEnv->pAISystem->GetSignalManager()->GetBuiltInSignalDescriptions().GetOnStartForceFire_DEPRECATED());
 			}
 			else if (IsPortActive(pActInfo, eInputPort_Disable))
 			{
-				AISendSignal(pEntity, "StopForceFire");
+				AISendSignal(pEntity, gEnv->pAISystem->GetSignalManager()->GetBuiltInSignalDescriptions().GetOnStopForceFire_DEPRECATED());
 			}
 			break;
 

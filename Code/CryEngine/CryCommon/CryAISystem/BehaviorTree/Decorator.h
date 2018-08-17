@@ -4,6 +4,7 @@
 
 #pragma once
 
+#include "BehaviorTreeDefines.h"
 #include "Node.h"
 
 namespace BehaviorTree
@@ -20,12 +21,12 @@ public:
 		m_child = child;
 	}
 
-	virtual LoadResult LoadFromXml(const XmlNodeRef& xml, const LoadContext& context) override
+	virtual LoadResult LoadFromXml(const XmlNodeRef& xml, const struct LoadContext& context, const bool strictMode) override
 	{
-		IF_UNLIKELY (BaseClass::LoadFromXml(xml, context) == LoadFailure)
+		IF_UNLIKELY (BaseClass::LoadFromXml(xml, context, strictMode) == LoadFailure)
 			return LoadFailure;
 
-		return LoadChildFromXml(xml, context);
+		return LoadChildFromXml(xml, context, strictMode);
 	}
 
 	virtual void HandleEvent(const EventContext& context, const Event& event) override
@@ -61,9 +62,9 @@ public:
 
 protected:
 
-	LoadResult LoadChildFromXml(const XmlNodeRef& xml, const LoadContext& context)
+	LoadResult LoadChildFromXml(const XmlNodeRef& xml, const LoadContext& context, const bool strictMode)
 	{
-		IF_UNLIKELY (BaseClass::LoadFromXml(xml, context) == LoadFailure)
+		IF_UNLIKELY (BaseClass::LoadFromXml(xml, context, strictMode) == LoadFailure)
 			return LoadFailure;
 
 		if (xml->getChildCount() != 1)
@@ -72,7 +73,7 @@ protected:
 			return LoadFailure;
 		}
 
-		INodePtr node = context.nodeFactory.CreateNodeFromXml(xml->getChild(0), context);
+		INodePtr node = context.nodeFactory.CreateNodeFromXml(xml->getChild(0), context, strictMode);
 		if (node)
 		{
 			SetChild(node);

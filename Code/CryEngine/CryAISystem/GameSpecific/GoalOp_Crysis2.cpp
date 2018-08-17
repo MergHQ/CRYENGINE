@@ -419,8 +419,7 @@ bool COPCrysis2AdjustAim::ProcessQueryResult(CPipeUser* pipeUser, AsyncState que
 	{
 		if ((now - m_lastGood).GetMilliSecondsAsInt64() > 500)
 		{
-			pipeUser->SetSignal(1, "OnNoAimPosture", 0, 0, gAIEnv.SignalCRCs.m_nOnNoAimPosture);
-
+			pipeUser->SetSignal(GetAISystem()->GetSignalManager()->CreateSignal(AISIGNAL_DEFAULT, GetAISystem()->GetSignalManager()->GetBuiltInSignalDescriptions().GetOnNoAimPosture_DEPRECATED()));
 			return false;
 		}
 
@@ -736,7 +735,7 @@ bool COPCrysis2Peek::ProcessQueryResult(CPipeUser* pipeUser, AsyncState querySta
 	{
 		if ((now - m_lastGood).GetMilliSecondsAsInt64() > 500)
 		{
-			pipeUser->SetSignal(1, "OnNoPeekPosture", 0, 0, gAIEnv.SignalCRCs.m_nOnNoPeekPosture);
+			pipeUser->SetSignal(GetAISystem()->GetSignalManager()->CreateSignal(AISIGNAL_DEFAULT, GetAISystem()->GetSignalManager()->GetBuiltInSignalDescriptions().GetOnNoPeekPosture_DEPRECATED()));
 
 			return false;
 		}
@@ -1066,7 +1065,7 @@ EGoalOpResult COPCrysis2Hide::Execute(CPipeUser* pPipeUser)
 				if (pPipeUser->GetCoverID())
 				{
 					pPipeUser->SetInCover(true);
-					pPipeUser->SetSignal(1, "OnCoverReached", 0, 0, gAIEnv.SignalCRCs.m_nOnCoverReached);
+					pPipeUser->SetSignal(GetAISystem()->GetSignalManager()->CreateSignal(AISIGNAL_DEFAULT, GetAISystem()->GetSignalManager()->GetBuiltInSignalDescriptions().GetOnCoverReached_DEPRECATED()));
 				}
 
 				return eGOR_SUCCEEDED;
@@ -1533,7 +1532,7 @@ bool COPCrysis2StickPath::ExecuteState_Prepare(CPuppet* pPuppet, bool bDryUpdate
 		const char* szPathName = pPuppet->GetPathToFollow();
 		if (!gAIEnv.pNavigation->GetDesignerPath(szPathName, m_Path))
 		{
-			pPuppet->SetSignal(0, "OnNoPathFound", 0, 0, gAIEnv.SignalCRCs.m_nOnNoPathFound);
+			pPuppet->SetSignal(GetAISystem()->GetSignalManager()->CreateSignal(AISIGNAL_INCLUDE_DISABLED, GetAISystem()->GetSignalManager()->GetBuiltInSignalDescriptions().GetOnNoPathFound_DEPRECATED()));
 			return false;
 		}
 

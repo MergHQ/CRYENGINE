@@ -26,6 +26,8 @@
 #include <CryAISystem/IBlackBoard.h>
 #include <CryAISystem/IAIObject.h>
 #include <CryAISystem/IAIActor.h>
+#include <CryAISystem/ISignal.h>
+
 //#include <ILipSync.h>
 #if defined(__GNUC__)
 	#include <float.h>
@@ -506,10 +508,11 @@ void CAIHandler::AIMind(SOBJECTSTATE& state)
 	m_lastTargetID = state.eTargetID;
 	m_lastTargetPos = state.vTargetPos;
 
-	const char* eventString = 0;
+	const AISignals::ISignalDescription* pSignalDescription = nullptr;
 	float* value = 0;
 
-	IAISignalExtraData* pExtraData = NULL;
+	AISignals::IAISignalExtraData* pExtraData = nullptr;
+	AISignals::SignalSharedPtr pSignal = nullptr;
 	IAIObject* pEntityAI = m_pEntity->GetAI();
 
 	switch (state.eTargetType)
@@ -521,12 +524,12 @@ void CAIHandler::AIMind(SOBJECTSTATE& state)
 			if (state.eTargetThreat == AITHREAT_THREATENING)
 			{
 				value = &state.fDistanceFromTarget;
-				eventString = "OnEnemyMemory";
+				pSignalDescription = &gEnv->pAISystem->GetSignalManager()->GetBuiltInSignalDescriptions().GetOnEnemyMemory();
 			}
 			else if (state.eTargetThreat == AITHREAT_AGGRESSIVE)
 			{
 				value = &state.fDistanceFromTarget;
-				eventString = "OnLostSightOfTarget";
+				pSignalDescription = &gEnv->pAISystem->GetSignalManager()->GetBuiltInSignalDescriptions().GetOnLostSightOfTarget();
 			}
 		}
 		else
@@ -534,7 +537,7 @@ void CAIHandler::AIMind(SOBJECTSTATE& state)
 			if (state.eTargetThreat == AITHREAT_AGGRESSIVE)
 			{
 				value = &state.fDistanceFromTarget;
-				eventString = "OnMemoryMoved";
+				pSignalDescription = &gEnv->pAISystem->GetSignalManager()->GetBuiltInSignalDescriptions().GetOnMemoryMoved();
 			}
 		}
 
@@ -543,22 +546,22 @@ void CAIHandler::AIMind(SOBJECTSTATE& state)
 		if (state.eTargetThreat >= AITHREAT_AGGRESSIVE)
 		{
 			value = &state.fDistanceFromTarget;
-			eventString = "OnEnemyHeard";
+			pSignalDescription = &gEnv->pAISystem->GetSignalManager()->GetBuiltInSignalDescriptions().GetOnEnemyHeard();
 		}
 		else if (state.eTargetThreat == AITHREAT_THREATENING)
 		{
 			value = &state.fDistanceFromTarget;
-			eventString = "OnThreateningSoundHeard";
+			pSignalDescription = &gEnv->pAISystem->GetSignalManager()->GetBuiltInSignalDescriptions().GetOnThreateningSoundHeard();
 		}
 		else if (state.eTargetThreat == AITHREAT_INTERESTING)
 		{
 			value = &state.fDistanceFromTarget;
-			eventString = "OnInterestingSoundHeard";
+			pSignalDescription = &gEnv->pAISystem->GetSignalManager()->GetBuiltInSignalDescriptions().GetOnInterestingSoundHeard();
 		}
 		else if (state.eTargetThreat == AITHREAT_SUSPECT)
 		{
 			value = &state.fDistanceFromTarget;
-			eventString = "OnSuspectedSoundHeard";
+			pSignalDescription = &gEnv->pAISystem->GetSignalManager()->GetBuiltInSignalDescriptions().GetOnSuspectedSoundHeard();
 		}
 		break;
 	case AITARGET_VISUAL:
@@ -594,7 +597,7 @@ void CAIHandler::AIMind(SOBJECTSTATE& state)
 					}
 				}
 			}
-			eventString = "OnObjectSeen";
+			pSignalDescription = &gEnv->pAISystem->GetSignalManager()->GetBuiltInSignalDescriptions().GetOnObjectSeen();
 		}
 		else if (state.eTargetThreat == AITHREAT_AGGRESSIVE)
 		{
@@ -616,7 +619,8 @@ void CAIHandler::AIMind(SOBJECTSTATE& state)
 				{
 					if (IAIObject::eFOV_Outside != pTarget->IsPointInFOV(pEntityAI->GetPos()))
 					{
-						gEnv->pAISystem->SendSignal(SIGNALFILTER_SENDER, 1, "OnSeenByEnemy", pTarget);
+						pSignal = gEnv->pAISystem->GetSignalManager()->CreateSignal(AISIGNAL_DEFAULT, gEnv->pAISystem->GetSignalManager()->GetBuiltInSignalDescriptions().GetOnSeenByEnemy(), pTarget->GetAIObjectID());
+						gEnv->pAISystem->SendSignal(AISignals::ESignalFilter::SIGNALFILTER_SENDER, pSignal);
 					}
 				}
 			}
@@ -629,68 +633,75 @@ void CAIHandler::AIMind(SOBJECTSTATE& state)
 
 			if (targetIsCloaked)
 			{
-				const char* cloakedTargetSeenSignal = "OnCloakedTargetSeen";
-				AISignal(AISIGNAL_DEFAULT, cloakedTargetSeenSignal, CCrc32::Compute(cloakedTargetSeenSignal), NULL, pExtraData);
+				pSignal = gEnv->pAISystem->GetSignalManager()->CreateSignal(AISIGNAL_DEFAULT, gEnv->pAISystem->GetSignalManager()->GetBuiltInSignalDescriptions().GetOnCloakedTargetSeen(), 0, pExtraData);
+				AISignal(pSignal);
 			}
-
-			eventString = "OnEnemySeen";
+			pSignalDescription = &gEnv->pAISystem->GetSignalManager()->GetBuiltInSignalDescriptions().GetOnEnemySeen();
 		}
 		else if (state.eTargetThreat == AITHREAT_THREATENING)
 		{
-			eventString = "OnThreateningSeen";
+			pSignalDescription = &gEnv->pAISystem->GetSignalManager()->GetBuiltInSignalDescriptions().GetOnThreateningSeen();
 		}
 		else if (state.eTargetThreat == AITHREAT_INTERESTING)
 		{
-			eventString = "OnSomethingSeen";
+			pSignalDescription = &gEnv->pAISystem->GetSignalManager()->GetBuiltInSignalDescriptions().GetOnSomethingSeen();
 		}
 		else if (state.eTargetThreat == AITHREAT_SUSPECT)
 		{
-			eventString = "OnSuspectedSeen";
+			pSignalDescription = &gEnv->pAISystem->GetSignalManager()->GetBuiltInSignalDescriptions().GetOnSuspectedSeen();
 		}
 		break;
 	case AITARGET_NONE:
-		eventString = "OnNoTarget";
+		pSignalDescription = &gEnv->pAISystem->GetSignalManager()->GetBuiltInSignalDescriptions().GetOnNoTarget();
 		break;
 	}
 
-	if (eventString)
+	if (pSignalDescription && !pSignalDescription->IsNone())
 	{
-		gEnv->pAISystem->Record(pEntityAI, IAIRecordable::E_HANDLERNEVENT, eventString);
+		pSignal = gEnv->pAISystem->GetSignalManager()->CreateSignal(AISIGNAL_DEFAULT, *pSignalDescription, 0, pExtraData);
 
-		IAIRecordable::RecorderEventData recorderEventData(eventString);
+		gEnv->pAISystem->Record(pEntityAI, IAIRecordable::E_HANDLERNEVENT, pSignal->GetSignalDescription().GetName());
+		IAIRecordable::RecorderEventData recorderEventData(pSignal->GetSignalDescription().GetName());
 		pEntityAI->RecordEvent(IAIRecordable::E_SIGNALRECIEVED, &recorderEventData);
 
-		AISignal(AISIGNAL_DEFAULT, eventString, CCrc32::Compute(eventString), NULL, pExtraData);
+		AISignal(pSignal);
 	}
 
 	if (pExtraData)
+	{
 		gEnv->pAISystem->FreeSignalExtraData(pExtraData);
+		if (pSignal)
+		{
+			pSignal->SetExtraData(nullptr);
+		}
+	}
 }
 
 //
 //------------------------------------------------------------------------------
-void CAIHandler::AISignal(int signalID, const char* signalText, uint32 crc, IEntity* pSender, const IAISignalExtraData* pData)
+void CAIHandler::AISignal(AISignals::SignalSharedPtr pSignal)
 {
+	
 	CRY_PROFILE_FUNCTION(PROFILE_AI);
 
-	assert(crc != 0);
-
-	if (!signalText)
+	if (pSignal->GetSignalDescription().IsNone())
 		return;
 
-	if (signalID != AISIGNAL_PROCESS_NEXT_UPDATE)
+	if (pSignal->GetNSignal() != AISIGNAL_PROCESS_NEXT_UPDATE)
 	{
-		IAIRecordable::RecorderEventData recorderEventData(signalText);
+		IAIRecordable::RecorderEventData recorderEventData(pSignal->GetSignalDescription().GetName());
 		m_pEntity->GetAI()->RecordEvent(IAIRecordable::E_SIGNALEXECUTING, &recorderEventData);
-		gEnv->pAISystem->Record(m_pEntity->GetAI(), IAIRecordable::E_SIGNALEXECUTING, signalText);
+		gEnv->pAISystem->Record(m_pEntity->GetAI(), IAIRecordable::E_SIGNALEXECUTING, pSignal->GetSignalDescription().GetName());
 	}
 
-	if (!CallScript(m_pBehavior, signalText, NULL, pSender, pData))
+	IEntity* pSender = gEnv->pEntitySystem->GetEntity(pSignal->GetSenderID());
+
+	if (!CallScript(m_pBehavior, pSignal->GetSignalDescription().GetName(), NULL, pSender, pSignal->GetExtraData()))
 	{
 #ifdef USE_DEPRECATED_AI_CHARACTER_SYSTEM
-		if (!CallScript(m_pDefaultBehavior, signalText, NULL, pSender, pData))
+		if (!CallScript(m_pDefaultBehavior, pSignal->GetSignalDescription().GetName(), NULL, pSender, pSignal->GetExtraData()))
 		{
-			if (CallScript(m_pDEFAULTDefaultBehavior, signalText, NULL, pSender, pData))
+			if (CallScript(m_pDEFAULTDefaultBehavior, pSignal->GetSignalDescription().GetName(), NULL, pSender, pSignal->GetExtraData()))
 			{
 				gEnv->pAISystem->Record(m_pEntity->GetAI(), IAIRecordable::E_SIGNALEXECUTING, "from defaultDefault behaviour");
 			}
@@ -700,7 +711,7 @@ void CAIHandler::AISignal(int signalID, const char* signalText, uint32 crc, IEnt
 			gEnv->pAISystem->Record(m_pEntity->GetAI(), IAIRecordable::E_SIGNALEXECUTING, "from default behaviour");
 		}
 #else
-		if (CallScript(m_pDEFAULTDefaultBehavior, signalText, NULL, pSender, pData))
+		if (CallScript(m_pDEFAULTDefaultBehavior, pSignal->GetSignalDescription().GetName(), NULL, pSender, pSignal->GetExtraData()))
 		{
 			gEnv->pAISystem->Record(m_pEntity->GetAI(), IAIRecordable::E_SIGNALEXECUTING, "from defaultDefault behaviour");
 		}
@@ -709,20 +720,20 @@ void CAIHandler::AISignal(int signalID, const char* signalText, uint32 crc, IEnt
 
 	if (m_pEntity)
 	{
-		CallScript(m_pEntity->GetScriptTable(), signalText, NULL, pSender, pData);
+		CallScript(m_pEntity->GetScriptTable(), pSignal->GetSignalDescription().GetName(), NULL, pSender, pSignal->GetExtraData());
 
 		assert(m_pEntity->GetAI() != NULL);
 		IAIActor* aiActor = m_pEntity->GetAI()->CastToIAIActor();
 		if (aiActor != NULL)
 		{
-			aiActor->OnAIHandlerSentSignal(signalText, crc);
+			aiActor->OnAIHandlerSentSignal(pSignal);
 		}
 	}
 
 #ifdef USE_DEPRECATED_AI_CHARACTER_SYSTEM
-	if (const char* szNextBehavior = CheckAndGetBehaviorTransition(signalText))
+	if (const char* szNextBehavior = CheckAndGetBehaviorTransition(pSignal->GetSignalDescription().GetName()))
 	{
-		SetBehavior(szNextBehavior, pData);
+		SetBehavior(szNextBehavior, pSignal->GetExtraData());
 	}
 #endif
 }
@@ -958,7 +969,7 @@ void CAIHandler::ResetBehavior()
 
 //
 //------------------------------------------------------------------------------
-void CAIHandler::SetBehavior(const char* szNextBehaviorName, const IAISignalExtraData* pData, ESetFlags setFlags)
+void CAIHandler::SetBehavior(const char* szNextBehaviorName, const AISignals::IAISignalExtraData* pData, ESetFlags setFlags)
 {
 	CRY_PROFILE_FUNCTION(PROFILE_AI);
 
@@ -1167,7 +1178,7 @@ void CAIHandler::CallCharacterConstructor()
 
 //
 //------------------------------------------------------------------------------
-void CAIHandler::CallBehaviorConstructor(const IAISignalExtraData* pData)
+void CAIHandler::CallBehaviorConstructor(const AISignals::IAISignalExtraData* pData)
 {
 	if (m_pBehavior.GetPtr())
 	{
@@ -1235,7 +1246,7 @@ IActor* CAIHandler::GetActor() const
 
 //
 //------------------------------------------------------------------------------
-bool CAIHandler::CallScript(IScriptTable* scriptTable, const char* funcName, float* pValue, IEntity* pSender, const IAISignalExtraData* pData)
+bool CAIHandler::CallScript(IScriptTable* scriptTable, const char* funcName, float* pValue, IEntity* pSender, const AISignals::IAISignalExtraData* pData)
 {
 	CRY_PROFILE_FUNCTION(PROFILE_AI);
 
@@ -2333,10 +2344,11 @@ void CAIHandler::DoReadibilityPackForAIObjectsOfType(unsigned short int nType, c
 	// Send response request.
 	if (nearestInGroup)
 	{
-		IAISignalExtraData* pData = pAISystem->CreateSignalExtraData();
+		AISignals::IAISignalExtraData* pData = pAISystem->CreateSignalExtraData();
 		pData->iValue = 0;                                                              // Default Priority.
 		pData->fValue = fResponseDelay > 0.0f ? fResponseDelay : cry_random(2.5f, 4.f); // Delay
-		pAISystem->SendSignal(SIGNALFILTER_READABILITYRESPONSE, 1, szText, nearestInGroup, pData);
+		const AISignals::SignalSharedPtr pSignal = gEnv->pAISystem->GetSignalManager()->CreateSignal_DEPRECATED(AISIGNAL_DEFAULT, szText, nearestInGroup->GetAIObjectID(), pData);
+		pAISystem->SendSignal(AISignals::ESignalFilter::SIGNALFILTER_READABILITYRESPONSE, pSignal);
 	}
 }
 

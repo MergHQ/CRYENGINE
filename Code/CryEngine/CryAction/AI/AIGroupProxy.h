@@ -7,6 +7,7 @@
 
 #include <CryAISystem/IAIObject.h>
 #include <CryAISystem/IAIGroupProxy.h>
+#include <CryAISystem/ISignal.h>
 
 class CAIGroupProxy :
 	public IAIGroupProxy
@@ -19,7 +20,7 @@ public:
 	virtual const char*   GetCurrentBehaviorName() const;
 	virtual const char*   GetPreviousBehaviorName() const;
 
-	virtual void          Notify(uint32 notificationID, tAIObjectID senderID, const char* notification);
+	virtual void          Notify(uint32 notificationID, const AISignals::SignalSharedPtr& pSignal);
 	virtual void          SetBehaviour(const char* behaviour, bool callCDtor = true);
 
 	virtual void          MemberAdded(tAIObjectID memberID);

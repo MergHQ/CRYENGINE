@@ -1435,10 +1435,10 @@ void CActor::OnFall(const HitInfo& hitInfo)
 			IAIActor* pAIActor = CastToIAIActorSafe(GetEntity()->GetAI());
 			if(pAIActor)
 			{
-				IAISignalExtraData *pEData = pAISystem->CreateSignalExtraData();	// no leak - this will be deleted inside SendAnonymousSignal
+				AISignals::IAISignalExtraData *pEData = pAISystem->CreateSignalExtraData();	// no leak - this will be deleted inside SendAnonymousSignal
 				pEData->point = Vec3(0,0,0);
 
-				pAIActor->SetSignal(1,"OnFallAndPlay",0,pEData);
+				pAIActor->SetSignal(gEnv->pAISystem->GetSignalManager()->CreateSignal(AISIGNAL_DEFAULT, gEnv->pAISystem->GetSignalManager()->GetBuiltInSignalDescriptions().GetOnFallAndPlay(), 0, pEData));
 			}
 		}
 	}
@@ -5583,9 +5583,9 @@ void CActor::SetGrabbedByPlayer( IEntity* pPlayerEntity, bool grabbed )
 				IAIActor* pAIActor = CastToIAIActorSafe(pAIObject);
 				if(pAIActor)
 				{
-					IAISignalExtraData *pSData = gEnv->pAISystem->CreateSignalExtraData();	
+					AISignals::IAISignalExtraData *pSData = gEnv->pAISystem->CreateSignalExtraData();	
 					pSData->point = Vec3(0,0,0);
-					pAIActor->SetSignal(1, "OnGrabbedByPlayer", pPlayerEntity, pSData);
+					pAIActor->SetSignal(gEnv->pAISystem->GetSignalManager()->CreateSignal(AISIGNAL_DEFAULT, gEnv->pAISystem->GetSignalManager()->GetBuiltInSignalDescriptions().GetOnGrabbedByPlayer(), pPlayerEntity ?  pPlayerEntity->GetAIObjectID() : 0, pSData));
 				}
 				pAIObject->Event(AIEVENT_DISABLE,0);
 			}

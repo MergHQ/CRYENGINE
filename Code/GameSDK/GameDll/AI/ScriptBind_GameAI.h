@@ -48,12 +48,12 @@ private:
 	int MarkAssignedSearchSpotAsUnreachable(IFunctionHandler* pH, ScriptHandle entityID);
 
 	int ResetRanges(IFunctionHandler* pH, ScriptHandle entityID);
-	int AddRange(IFunctionHandler* pH, ScriptHandle entityID, float range, const char* enterSignal, const char* leaveSignal);
+	int AddRange(IFunctionHandler* pH, ScriptHandle entityID, float range);
 	int GetRangeState(IFunctionHandler* pH, ScriptHandle entityID, int rangeID);
 	int ChangeRange(IFunctionHandler* pH, ScriptHandle entityID, int rangeID, float distance);
 
 	int ResetAloneDetector(IFunctionHandler* pH, ScriptHandle entityID);
-	int SetupAloneDetector(IFunctionHandler* pH, ScriptHandle entityID, float range, const char* aloneSignal, const char* notAloneSignal);
+	int SetupAloneDetector(IFunctionHandler* pH, ScriptHandle entityID, float range);
 	int AddActorClassToAloneDetector(IFunctionHandler* pH, ScriptHandle entityID, const char* entityClassName);
 	int RemoveActorClassFromAloneDetector(IFunctionHandler* pH, ScriptHandle entityID, const char* entityClassName);
 	int IsAloneForAloneDetector(IFunctionHandler* pH, ScriptHandle entityID);

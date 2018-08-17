@@ -60,9 +60,9 @@ namespace BehaviorTree
 
 	public:
 
-		virtual LoadResult LoadFromXml(const XmlNodeRef& xml, const LoadContext& context) override
+		virtual LoadResult LoadFromXml(const XmlNodeRef& xml, const struct LoadContext& context, const bool strictMode) override
 		{
-			if (BaseClass::LoadFromXml(xml, context) == LoadFailure)
+			if (BaseClass::LoadFromXml(xml, context, strictMode) == LoadFailure)
 			{
 				return LoadFailure;
 			}
@@ -182,9 +182,9 @@ namespace BehaviorTree
 		{
 		}
 
-		virtual LoadResult LoadFromXml(const XmlNodeRef& xml, const LoadContext& context) override
+		virtual LoadResult LoadFromXml(const XmlNodeRef& xml, const struct LoadContext& context, const bool strictMode) override
 		{
-			if(BaseClass::LoadFromXml(xml, context) == LoadFailure)
+			if(BaseClass::LoadFromXml(xml, context, strictMode) == LoadFailure)
 				return LoadFailure;
 
 			const char* szBBCoverId;

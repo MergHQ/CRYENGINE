@@ -121,7 +121,7 @@ public:
 	virtual void                BusyUnitNotify(CUnitImg&); // CLeaderAction will manage the inter-dependencies between
 	// the busy member's actions and other members ones
 	virtual void                ResumeUnit(CUnitImg&)                 {}; // CLeaderAction will re-create a planning for the resumed unit
-	virtual bool                ProcessSignal(const AISIGNAL& signal) { return false; }
+	virtual bool                ProcessSignal(const AISignals::SignalSharedPtr pSignal) { return false; }
 	inline void                 SetPriority(int priority)             { m_Priority = priority; };
 	inline int                  GetPriority() const                   { return m_Priority; };
 
@@ -162,7 +162,7 @@ public:
 	CLeaderAction_Attack();//used for derived classes' constructors
 	virtual ~CLeaderAction_Attack();
 
-	virtual bool ProcessSignal(const AISIGNAL& signal);
+	virtual bool ProcessSignal(const AISignals::SignalSharedPtr pSignal);
 	virtual void Serialize(TSerialize ser);
 protected:
 	bool         HasTarget(CAIObject* unit) const;
@@ -206,7 +206,7 @@ public:
 
 	virtual eActionUpdateResult Update();
 
-	virtual bool                ProcessSignal(const AISIGNAL& signal);
+	virtual bool                ProcessSignal(const AISignals::SignalSharedPtr pSignal);
 	virtual void                Serialize(TSerialize ser);
 private:
 	void                        PopulateSearchSpotList(Vec3& initPos);
@@ -237,7 +237,7 @@ public:
 	virtual ~CLeaderAction_Attack_SwitchPositions();
 	virtual eActionUpdateResult Update();
 	virtual void                Serialize(TSerialize ser);
-	bool                        ProcessSignal(const AISIGNAL& signal);
+	virtual bool                ProcessSignal(const AISignals::SignalSharedPtr pSignal);
 	virtual void                OnObjectRemoved(CAIObject* pObject);
 	virtual void                AddUnitNotify(CAIActor* pUnit);
 	void                        UpdateBeaconWithTarget(const CAIObject* pTarget = NULL) const;

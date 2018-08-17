@@ -23,7 +23,10 @@
 #include "IWeapon.h"
 #include "IGameObject.h"
 
-struct IAISignalExtraData;
+namespace AISignals
+{
+	struct IAISignalExtraData;
+}
 struct IEntity;
 class CAIHandler;
 class CommunicationHandler;
@@ -156,7 +159,7 @@ public:
 	void        RemoveListener(IAIProxyListener* pListener);
 	CTimeValue  GetEstimatedAGAnimationLength(EAIAGInput input, const char* value);
 
-	void        SetBehaviour(const char* szBehavior, const IAISignalExtraData* pData = 0);
+	void        SetBehaviour(const char* szBehavior, const AISignals::IAISignalExtraData* pData = 0);
 
 	void        GetMemoryUsage(ICrySizer* pSizer) const
 	{
@@ -188,7 +191,7 @@ protected:
 	IWeapon*         GetWeaponFromId(EntityId entityId);
 
 	IActor*          GetActor() const;
-	void             SendSignal(int signalID, const char* szText, IEntity* pSender, const IAISignalExtraData* pData, uint32 crc = 0u);
+	void             SendSignal(AISignals::SignalSharedPtr pSignal);
 	void             UpdateAuxSignal(SOBJECTSTATE& state);
 	IFireController* GetFireController(uint32 controllerNum = 0);
 	void             UpdateShooting(const SOBJECTSTATE& state, bool isAlive);

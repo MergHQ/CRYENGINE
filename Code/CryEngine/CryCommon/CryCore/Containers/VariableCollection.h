@@ -1,8 +1,5 @@
 // Copyright 2001-2018 Crytek GmbH / Crytek Group. All rights reserved.
 
-#ifndef VariableCollection_h
-#define VariableCollection_h
-
 #pragma once
 
 #ifndef _RELEASE
@@ -20,7 +17,10 @@
 #endif // DEBUG_VARIABLE_COLLECTION
 
 #include <CryNetwork/ISerialize.h>
+#include <CryAISystem/BehaviorTree/SerializationSupport.h>
 #include <CryString/StringUtils.h>
+#include <CryAISystem/ISignal.h>
+#include <CrySerialization/SerializationUtils.h>
 
 #if defined(USING_VARIABLE_COLLECTION_SERIALIZATION)
 	#include <CrySerialization/IArchive.h>
@@ -167,9 +167,14 @@ struct Description
 #if defined(USING_VARIABLE_COLLECTION_SERIALIZATION)
 	void Serialize(Serialization::IArchive& archive)
 	{
-		archive(name, "name", "^<");
+		archive(name, "name", "^<Name");
+		archive.doc("Variable name");
+
 		if (name.empty())
-			archive.error(name, "Name must be specified");
+		{
+			archive.error(name, SerializationUtils::Messages::ErrorEmptyValue("Name"));
+		}
+			
 	}
 
 	bool operator<(const Description& rhs) const
@@ -181,7 +186,9 @@ struct Description
 	string name;
 };
 
-typedef std::map<VariableID, Description> VariableDescriptions;
+typedef std::map<VariableID, Description>                        VariableDescriptions;
+typedef std::pair<Variables::VariableID, Variables::Description> VariableIdDescriptionPair;
+typedef std::vector<VariableIdDescriptionPair>                   DescriptorVector;
 
 static VariableID GetVariableID(const char* name)
 {
@@ -208,7 +215,7 @@ public:
 					childNode->getAttr("name", &variableName);
 				else
 				{
-					gEnv->pLog->LogWarning("Missing 'name' attribute for tag '%s' in file '%s' at line %d.", childNode->getTag(), fileName, childNode->getLine());
+					gEnv->pLog->LogWarning("(%d) [File='%s'] Missing 'name' attribute for tag '%s'", childNode->getLine(), fileName, childNode->getTag());
 					return false;
 				}
 
@@ -224,7 +231,7 @@ public:
 						defaultValue = false;
 					else
 					{
-						gEnv->pLog->LogWarning("Invalid variable value '%s' for variable '%s' in file '%s' at line %d.", value, variableName, fileName, childNode->getLine());
+						gEnv->pLog->LogWarning("(%d) [File='%s'] Invalid variable value '%s' for variable '%s'", childNode->getLine(), fileName, value, variableName);
 						return false;
 					}
 				}
@@ -237,11 +244,11 @@ public:
 				{
 					if (!stricmp(iresult.first->second.name, variableName))
 					{
-						gEnv->pLog->LogWarning("Duplicate variable declaration '%s' in file '%s' at line %d.", variableName, fileName, childNode->getLine());
+						gEnv->pLog->LogWarning("(%d) [File='%s'] Duplicate variable declaration '%s'", childNode->getLine(), fileName, variableName);
 					}
 					else
 					{
-						gEnv->pLog->LogWarning("Hash collision for variable declaration '%s' in file '%s' at line %d.", variableName, fileName, childNode->getLine());
+						gEnv->pLog->LogWarning("(%d) [File='%s'] Hash collision for variable declaration '%s'", childNode->getLine(), fileName, variableName);
 					}
 
 					return false;
@@ -252,10 +259,15 @@ public:
 			}
 			else
 			{
-				gEnv->pLog->LogWarning("Unexpected tag '%s' in file '%s' at line %d. 'Variable' expected.", childNode->getTag(), fileName, childNode->getLine());
+				gEnv->pLog->LogWarning("(%d) [File='%s'] Unexpected tag '%s'", childNode->getLine(), fileName, childNode->getTag());
 				return false;
 			}
 		}
+
+#if defined(USING_VARIABLE_COLLECTION_SERIALIZATION)
+		m_descriptionVector.assign(m_descriptions.begin(), m_descriptions.end());
+		SortDescriptorVector();
+#endif//USING_VARIABLE_COLLECTION_SERIALIZATION
 
 		return true;
 	}
@@ -303,6 +315,19 @@ public:
 		}
 	}
 
+#if defined(USING_VARIABLE_COLLECTION_SERIALIZATION)
+
+	void SortDescriptorVector()
+	{
+		std::sort(m_descriptionVector.begin(), m_descriptionVector.end(), [](const VariableIdDescriptionPair& a, const VariableIdDescriptionPair& b) { return a.second < b.second; });
+	}
+
+	const DescriptorVector& GetSortedDescriptorVector() const
+	{
+		return m_descriptionVector;
+	}
+
+#endif
 	const Collection& GetDefaults() const
 	{
 		return m_defaults;
@@ -332,12 +357,34 @@ public:
 #if defined(USING_VARIABLE_COLLECTION_SERIALIZATION)
 	void Serialize(Serialization::IArchive& archive)
 	{
-		archive(m_descriptions, "variableDescriptions", "^[<>]");
+		archive(m_descriptionVector, "variableDescriptions", "^[<>]");
+		SortDescriptorVector();
+
+		bool existDuplicatedVariable = false;
+		for (DescriptorVector::const_iterator it = m_descriptionVector.begin(), end = m_descriptionVector.end(); it != end; ++it)
+		{
+			const DescriptorVector::const_iterator itNext = std::next(it, 1);
+			if (itNext != m_descriptionVector.end() && it->first == itNext->first)
+			{
+				existDuplicatedVariable = true;
+				archive.error(itNext->second.name, SerializationUtils::Messages::ErrorDuplicatedValue("variable name", itNext->second.name));
+			}
+		}
+
+		if (!existDuplicatedVariable)
+		{
+			m_descriptions.clear();
+			m_descriptions.insert(m_descriptionVector.begin(), m_descriptionVector.end());
+		}
 	}
+
 #endif
 
 private:
 	VariableDescriptions m_descriptions;
+#if defined(USING_VARIABLE_COLLECTION_SERIALIZATION)
+	DescriptorVector     m_descriptionVector;
+#endif
 	Collection           m_defaults;
 };
 
@@ -477,6 +524,13 @@ public:
 		return m_rootID >= 0;
 	}
 
+#ifdef USING_VARIABLE_COLLECTION_SERIALIZATION
+	bool operator==(const Expression& rhs) const
+	{
+		return m_rootID == rhs.m_rootID && m_expressionOps == rhs.m_expressionOps;
+	}
+#endif
+
 private:
 	int AddOp(const ExpressionOperator& op)
 	{
@@ -571,11 +625,14 @@ private:
 			return AddOp(ExpressionOperator(ExpressionOperator::Constant, false));
 		else if (tok == 'var')
 		{
-			if (VariableID variableID = GetVariableID(lex.ident()))
+			const VariableID variableID = GetVariableID(lex.ident());
+			if (variableID && declarations.IsDeclared(variableID))
+			{
 				return AddOp(ExpressionOperator(ExpressionOperator::Variable, variableID));
+			}
 			else
 			{
-				gEnv->pLog->LogWarning("Unknown variable '%s' used in expression '%s'...", lex.ident(), lex.buf());
+				gEnv->pLog->LogError("Unknown variable '%s' used in expression '%s'...", lex.ident(), lex.buf());
 			}
 		}
 
@@ -658,6 +715,17 @@ private:
 		{
 		}
 
+#ifdef USING_VARIABLE_COLLECTION_SERIALIZATION
+		bool operator==(const ExpressionOperator& rhs) const
+		{
+			return variableID == rhs.variableID &&
+			       value == rhs.value &&
+			       opType == rhs.opType &&
+			       operandLeft == rhs.operandLeft &&
+			       operandRight == rhs.operandRight;
+		}
+#endif
+
 		uint32 variableID;
 		bool   value;
 
@@ -673,6 +741,382 @@ private:
 
 DECLARE_SHARED_POINTERS(Expression)
 
+struct Event;
+typedef std::vector<Event> Events;
+
+struct Event
+{
+	Event()
+	{
+	};
+
+	Event(const char* _name)
+		: name(_name)
+	{
+	}
+
+#if defined(USING_VARIABLE_COLLECTION_SERIALIZATION)
+	void Serialize(Serialization::IArchive& archive)
+	{
+		archive(name, "name", "^<Name");
+		archive.doc("Event name");
+
+		if (name.empty())
+		{
+			archive.error(name, SerializationUtils::Messages::ErrorEmptyValue("Name"));
+		}
+	}
+
+	const string& SerializeToString() const
+	{
+		return name;
+	}
+#endif
+
+	bool operator<(const Event& rhs) const
+	{
+		return (name < rhs.name);
+	}
+
+	bool operator==(const Event& rhs) const
+	{
+		return (name == rhs.name);
+	}
+
+	string name;
+};
+
+class EventsDeclaration
+{
+public:
+	EventsDeclaration()
+	{
+		LoadBuiltInEvents();
+	}
+
+	// Has to be virtual so that allocation and deallocation of memory happens in the same module
+	// Otherwise crashes since allocation happens in the IA module and deallocation in Sandbox
+	// Using a private implementation would also solve the issue but CryCore does not have any .cpp files
+	virtual bool DeclareGameEventIfNotAlreadyDeclared(const char* newEventName)
+	{
+		if (!IsDeclared(newEventName))
+		{
+			const Event tempEvent = Event(newEventName);
+			m_eventsGame.insert(
+				std::upper_bound(
+					m_eventsGame.begin(),
+					m_eventsGame.end(),
+					tempEvent),
+				tempEvent
+			);
+			return true;
+		}
+		return false;
+	}
+
+	bool LoadFromXML(const XmlNodeRef& rootNode, const char* fileName)
+	{
+		m_eventsGame.clear();
+
+		if (XmlNodeRef eventsTagNode = rootNode->findChild("GameEvents"))
+		{
+			const int count = eventsTagNode->getChildCount();
+
+			for (int i = 0; i < count; ++i)
+			{
+				XmlNodeRef childNode = eventsTagNode->getChild(i);
+				if (!stricmp(childNode->getTag(), "Event"))
+				{
+					const char* eventName = 0;
+					if (childNode->haveAttr("name"))
+					{
+						childNode->getAttr("name", &eventName);
+					}
+					else
+					{
+						gEnv->pLog->LogWarning("(%d) [File='%s'] Missing 'name' attribute for tag '%s'", childNode->getLine(), fileName, childNode->getTag());
+						return false;
+					}
+
+					m_eventsGame.emplace_back(eventName);
+				}
+				else
+				{
+					gEnv->pLog->LogWarning("(%d) [File='%s'] Unexpected tag '%s'. Tag 'Event' expected.", childNode->getLine(), fileName, childNode->getTag());
+					return false;
+				}
+			}
+		}
+
+		return true;
+	}
+
+#ifdef USING_BEHAVIOR_TREE_SERIALIZATION
+	const Events GetEvents() const
+	{
+		Events events;
+
+		if (m_eventsFlags.test(BehaviorTree::NodeSerializationHints::EEventsFlags_CryEngine))
+		{
+			events.reserve(m_eventsCryEngine.size());
+			events.insert(events.end(), m_eventsCryEngine.begin(), m_eventsCryEngine.end());
+		}
+
+		if (m_eventsFlags.test(BehaviorTree::NodeSerializationHints::EEventsFlags_GameSDK))
+		{
+			events.reserve(events.size() + m_eventsGameSDK.size());
+			events.insert(events.end(), m_eventsGameSDK.begin(), m_eventsGameSDK.end());
+		}
+
+		if (m_eventsFlags.test(BehaviorTree::NodeSerializationHints::EEventsFlags_Deprecated))
+		{
+			events.reserve(events.size() + m_eventsDeprecated.size());
+			events.insert(events.end(), m_eventsDeprecated.begin(), m_eventsDeprecated.end());
+		}
+
+		events.reserve(events.size() + m_eventsGame.size());
+		events.insert(events.end(), m_eventsGame.begin(), m_eventsGame.end());
+
+		return events;
+	}
+#else
+	const Events GetEvents() const
+	{
+		Events events;
+
+		events.reserve(m_eventsCryEngine.size());
+		events.insert(events.end(), m_eventsCryEngine.begin(), m_eventsCryEngine.end());
+
+		events.reserve(events.size() + m_eventsGameSDK.size());
+		events.insert(events.end(), m_eventsGameSDK.begin(), m_eventsGameSDK.end());
+
+		events.reserve(events.size() + m_eventsDeprecated.size());
+		events.insert(events.end(), m_eventsDeprecated.begin(), m_eventsDeprecated.end());
+
+		events.reserve(events.size() + m_eventsGame.size());
+		events.insert(events.end(), m_eventsGame.begin(), m_eventsGame.end());
+
+		return events;
+	}
+#endif
+
+#ifdef USING_BEHAVIOR_TREE_SERIALIZATION
+	bool IsDeclared(const char* eventName) const
+	{
+		const Event tempEvent = Event(eventName);
+
+		bool isDeclared = std::find(m_eventsGame.begin(), m_eventsGame.end(), tempEvent) != m_eventsGame.end();
+
+		if (!isDeclared && m_eventsFlags.test(BehaviorTree::NodeSerializationHints::EEventsFlags_CryEngine))
+		{
+			isDeclared = std::find(m_eventsCryEngine.begin(), m_eventsCryEngine.end(), tempEvent) != m_eventsCryEngine.end();
+		}
+
+		if (!isDeclared && m_eventsFlags.test(BehaviorTree::NodeSerializationHints::EEventsFlags_GameSDK))
+		{
+			isDeclared = std::find(m_eventsGameSDK.begin(), m_eventsGameSDK.end(), tempEvent) != m_eventsGameSDK.end();
+		}
+
+		if (!isDeclared && m_eventsFlags.test(BehaviorTree::NodeSerializationHints::EEventsFlags_Deprecated))
+		{
+			isDeclared = std::find(m_eventsDeprecated.begin(), m_eventsDeprecated.end(), tempEvent) != m_eventsDeprecated.end();
+		}
+
+		return isDeclared;
+	}
+#else
+	bool IsDeclared(const string& eventName) const
+	{
+		const Event tempEvent = Event(eventName);
+
+		bool isDeclared = std::find(m_eventsGame.begin(), m_eventsGame.end(), tempEvent) != m_eventsGame.end();
+
+		if (!isDeclared)
+		{
+			isDeclared = std::find(m_eventsCryEngine.begin(), m_eventsCryEngine.end(), tempEvent) != m_eventsCryEngine.end();
+		}
+
+		if (!isDeclared)
+		{
+			isDeclared = std::find(m_eventsGameSDK.begin(), m_eventsGameSDK.end(), tempEvent) != m_eventsGameSDK.end();
+		}
+
+		if (!isDeclared)
+		{
+			isDeclared = std::find(m_eventsDeprecated.begin(), m_eventsDeprecated.end(), tempEvent) != m_eventsDeprecated.end();
+		}
+
+		return isDeclared;
+	}
+#endif
+
+#ifdef USING_BEHAVIOR_TREE_SERIALIZATION
+	void Serialize(Serialization::IArchive& archive)
+	{
+		const BehaviorTree::NodeSerializationHints* pHintsContext = archive.context<BehaviorTree::NodeSerializationHints>();
+
+		IF_LIKELY(pHintsContext)
+		{
+			SetEventsFlags(pHintsContext->eventsFlags);
+		}
+
+		if (m_eventsFlags.test(BehaviorTree::NodeSerializationHints::EEventsFlags_CryEngine))
+		{
+			SerializeEventsList(archive, "eventsCryEngine", "!CryEngine Events", m_eventsCryEngine);
+		}
+
+		if (m_eventsFlags.test(BehaviorTree::NodeSerializationHints::EEventsFlags_GameSDK))
+		{
+			SerializeEventsList(archive, "eventsGameSDK", "!GameSDK Events", m_eventsGameSDK);
+		}
+
+		if (m_eventsFlags.test(BehaviorTree::NodeSerializationHints::EEventsFlags_Deprecated))
+		{
+			SerializeEventsList<Events>(archive, "eventsDeprecated", "!Deprecated Events", m_eventsDeprecated);
+		}
+
+		SerializeEventsList(archive, "gameEvents", "+Game Events", m_eventsGame);
+
+		LookForEventGamesDuplicates(archive, m_eventsCryEngine);
+		LookForEventGamesDuplicates(archive, m_eventsGameSDK);
+		LookForEventGamesDuplicates(archive, m_eventsDeprecated);
+
+	}
+
+	void LookForEventGamesDuplicates(Serialization::IArchive& archive, const Events& events)
+	{
+		Events::const_iterator itEvents = events.begin();
+		Events::const_iterator itEventsGame = m_eventsGame.begin();
+
+		bool eventsCryEngineDone = itEvents == events.end();
+		bool eventsGameDone = itEventsGame == m_eventsGame.end();
+
+		while (!eventsCryEngineDone && !eventsGameDone)
+		{
+			if (!eventsCryEngineDone && !eventsGameDone)
+			{
+				const Event& eventCryEngine = *itEvents;
+				const Event& eventGame = *itEventsGame;
+
+				if (eventCryEngine < eventGame)
+				{
+					++itEvents;
+					eventsCryEngineDone = itEvents == events.end();
+				}
+				else if (eventGame < eventCryEngine)
+				{
+					++itEventsGame;
+					eventsGameDone = itEventsGame == m_eventsGame.end();
+				}
+				else
+				{
+					archive.error(itEventsGame->name, SerializationUtils::Messages::ErrorInvalidValueWithReason("Name", itEventsGame->name, "Event with this name already exist as a built-in event. You can enable built-in events under the View menu"));
+
+					++itEvents;
+					++itEventsGame;
+					eventsCryEngineDone = itEvents == events.end();
+					eventsGameDone = itEventsGame == m_eventsGame.end();
+				}
+			}
+		}
+	}
+
+
+#endif
+
+#if defined(USING_VARIABLE_COLLECTION_XML_DESCRIPTION_CREATION)
+	XmlNodeRef CreateXmlDescription()
+	{
+		if (m_eventsGame.size() == 0)
+		{
+			return XmlNodeRef();
+		}
+
+		XmlNodeRef eventsXml = GetISystem()->CreateXmlNode("Events");
+		XmlNodeRef gameEventsXml = GetISystem()->CreateXmlNode("GameEvents");
+
+		// Only write game defined events. Built in events are stored in CE code
+		for (Events::const_iterator it = m_eventsGame.begin(), end = m_eventsGame.end(); it != end; ++it)
+		{
+			XmlNodeRef variableXml = GetISystem()->CreateXmlNode("Event");
+			variableXml->setAttr("name", it->name);
+
+			gameEventsXml->addChild(variableXml);
+		}
+		eventsXml->addChild(gameEventsXml);
+
+		return eventsXml;
+	}
+#endif
+
+#ifdef USING_BEHAVIOR_TREE_SERIALIZATION
+	const BehaviorTree::NodeSerializationHints::EventsFlags& GetEventsFlags() const
+	{
+		return m_eventsFlags;
+	}
+
+	void SetEventsFlags(const BehaviorTree::NodeSerializationHints::EventsFlags& eventsFlags)
+	{
+		m_eventsFlags = eventsFlags;
+	}
+#endif
+private:
+	void LoadBuiltInEvents()
+	{
+		const size_t signalDescriptionsCount = gEnv->pAISystem->GetSignalManager()->GetSignalDescriptionsCount();
+		for (size_t i = 0; i < signalDescriptionsCount; ++i)
+		{
+			const AISignals::ISignalDescription& signalDesc = gEnv->pAISystem->GetSignalManager()->GetSignalDescription(i);
+
+			switch (signalDesc.GetTag())
+			{
+			case AISignals::ESignalTag::CRY_ENGINE:
+				m_eventsCryEngine.emplace_back(signalDesc.GetName());
+				break;
+			case AISignals::ESignalTag::GAME_SDK:
+				m_eventsGameSDK.emplace_back(signalDesc.GetName());
+				break;
+			case AISignals::ESignalTag::DEPRECATED:
+				m_eventsDeprecated.emplace_back(signalDesc.GetName());
+				break;
+			case AISignals::ESignalTag::GAME:
+			case AISignals::ESignalTag::NONE:
+				// Nothing
+				break;
+			default:
+				CRY_ASSERT_MESSAGE(false, "Missing case label for Signal Tag");
+			}
+		}
+	}
+
+#if defined (USING_BEHAVIOR_TREE_SERIALIZATION) || defined(USING_VARIABLE_COLLECTION_SERIALIZATION)
+	template <class T>
+	void SerializeEventsList(Serialization::IArchive& archive, const char* szKey, const char* szLabel, T& events)
+	{
+		std::sort(events.begin(), events.end());
+		archive(events, szKey, szLabel);
+
+		for (T::const_iterator it = events.begin(), end = events.end(); it != end; ++it)
+		{
+			const T::const_iterator itNext = std::next(it, 1);
+			if (itNext != events.end() && it->name == itNext->name)
+			{
+				archive.error(itNext->name, SerializationUtils::Messages::ErrorDuplicatedValue("Event name", itNext->name));
+			}
+		}
+	}
+#endif
+private:
+	Events m_eventsCryEngine;
+	Events m_eventsGameSDK;
+	Events m_eventsDeprecated;
+	Events m_eventsGame;
+
+#ifdef USING_BEHAVIOR_TREE_SERIALIZATION
+	BehaviorTree::NodeSerializationHints::EventsFlags m_eventsFlags;
+#endif
+};
+
 /*
    A simple mechanism to flip variable values based on signal fire and conditions.
    A signal is mapped to an expression which will evaluate to the value of the variable,
@@ -686,41 +1130,59 @@ struct SignalHandle
 #ifdef USING_VARIABLE_COLLECTION_SERIALIZATION
 	void Serialize(Serialization::IArchive& archive)
 	{
-		Declarations* declarations = archive.context<Declarations>();
+		// Serialize Events
+
+		const EventsDeclaration* eventsDeclaration = archive.context<EventsDeclaration>();
+		IF_LIKELY (!eventsDeclaration)
+			return;
+
+		const Variables::Events events = eventsDeclaration->GetEvents();
+		BehaviorTree::SerializeContainerAsStringList(archive, "signalName", "^On event", events, "Event", signalName);
+		archive.doc("Event that triggers the change in the value of the Variable");
+
+		// Serialize Variables
+
+		const Declarations* declarations = archive.context<Declarations>();
 		if (!declarations)
 			return;
 
-		archive(signalName, "signalName", "^On event");
+		const DescriptorVector& descriptionsVector = declarations->GetSortedDescriptorVector();
 
-		Serialization::StringList variableNameList;
-		variableNameList.push_back("");
+		const auto toString = [](const VariableIdDescriptionPair& idDescriptionPair) -> string
+		{
+			return idDescriptionPair.second.name;
+		};
 
-		const VariableDescriptions& variableDescriptions = declarations->GetVariableDescriptions();
-		for (VariableDescriptions::const_iterator it = variableDescriptions.begin(), end = variableDescriptions.end(); it != end; ++it)
-			variableNameList.push_back(it->second.name);
+		BehaviorTree::SerializeContainerAsStringListWithGivenFunction(
+			archive, 
+			"variableName", 
+			"^Switch variable", 
+			descriptionsVector, 
+			toString, 
+			"Switch variable", 
+			variableName
+		);
+		archive.doc("Variable that gets changed to the specified value when the Event is triggered");
 
-		Serialization::StringListValue variableNameListValue(variableNameList, variableName);
-		archive(variableNameListValue, "variableName", "^Switch variable");
-		variableName = variableNameListValue.c_str();
-
-		archive(value, "valueString", "^(True/False)");
+		// Serialize bool switch
+		archive(value, "valueString", "^Value(True/False)");
+		archive.doc("Value of the variable after the Event has been triggered");
 
 		if (archive.isInput())
 		{
 			variableID = GetVariableID(variableName);
 			valueExpr = Expression(value ? "true" : "false", *declarations);
 		}
-
-		if (signalName.empty())
-			archive.error(signalName, "Signal must be specified");
-
-		if (variableName.empty())
-			archive.error(*this, "Variable must be selected");
 	}
 
 	bool operator<(const SignalHandle& rhs) const
 	{
 		return (signalName < rhs.signalName);
+	}
+
+	inline bool operator==(const SignalHandle& rhs) const
+	{
+		return signalName == rhs.signalName && variableID == rhs.variableID && valueExpr == rhs.valueExpr;
 	}
 #endif
 
@@ -731,12 +1193,14 @@ struct SignalHandle
 #endif
 };
 
-typedef std::multimap<uint32, SignalHandle> SignalHandles;
+typedef std::multimap<uint32, SignalHandle>        SignalHandles;
+typedef std::pair<uint32, Variables::SignalHandle> KeySignalHandlePair;
+typedef std::vector<KeySignalHandlePair>           SignalHandleVector;
 
 class SignalHandler
 {
 public:
-	bool LoadFromXML(const Declarations& declarations, const XmlNodeRef& rootNode, const char* fileName)
+	bool LoadFromXML(const Declarations& variableDeclaration, EventsDeclaration& eventsDeclaration, const XmlNodeRef& rootNode, const char* fileName)
 	{
 		const int childCount = rootNode->getChildCount();
 		for (int i = 0; i < childCount; ++i)
@@ -744,67 +1208,83 @@ public:
 			XmlNodeRef childNode = rootNode->getChild(i);
 			if (!stricmp(childNode->getTag(), "Signal"))
 			{
+				// Event
 				const char* signalName = 0;
 				if (childNode->haveAttr("name"))
+				{
 					childNode->getAttr("name", &signalName);
+				}
 				else
 				{
-					gEnv->pLog->LogWarning("Missing 'name' attribute for tag '%s' in file '%s' at line %d.", childNode->getTag(), fileName, childNode->getLine());
+					gEnv->pLog->LogWarning("(%d) [File='%s'] Missing 'name' attribute for tag '%s'", childNode->getLine(), fileName, childNode->getTag());
 					return false;
 				}
 
-				const char* variableName = 0;
-				if (childNode->haveAttr("variable"))
-					childNode->getAttr("variable", &variableName);
-				else
+				// Automatically declare game signals
+				if (eventsDeclaration.DeclareGameEventIfNotAlreadyDeclared(signalName))
 				{
-					gEnv->pLog->LogWarning("Missing 'variable' attribute for tag '%s' in file '%s' at line %d.", childNode->getTag(), fileName, childNode->getLine());
-					return false;
+					gEnv->pLog->LogWarning("(%d) [File='%s'] Unknown event '%s' used in Event Handle", childNode->getLine(), fileName, signalName);
 				}
 
+				// Bool value
 				const char* value = 0;
 				if (childNode->haveAttr("value"))
 					childNode->getAttr("value", &value);
 				else
 				{
-					gEnv->pLog->LogWarning("Missing 'value' attribute for tag '%s' in file '%s' at line %d.", childNode->getTag(), fileName, childNode->getLine());
+					gEnv->pLog->LogWarning("(%d) [File='%s'] Missing 'value' attribute for tag '%s'", childNode->getLine(), fileName, childNode->getTag());
+					return false;
+				}
+
+				// Variable
+				const char* variableName = 0;
+				if (childNode->haveAttr("variable"))
+				{
+					childNode->getAttr("variable", &variableName);
+				}
+				else
+				{
+					gEnv->pLog->LogWarning("(%d) [File='%s'] Missing 'variable' attribute for tag '%s'", childNode->getLine(), fileName, childNode->getTag());
 					return false;
 				}
 
 				VariableID variableID = GetVariableID(variableName);
-				if (declarations.IsDeclared(variableID))
+				SignalHandles::iterator it = m_signalHandles.insert(SignalHandles::value_type(CCrc32::Compute(signalName), SignalHandle()));
+
+				SignalHandle& signalHandle = it->second;
+
+				signalHandle.valueExpr = Expression(value, variableDeclaration);
+				signalHandle.variableID = variableID;
+
+				if (variableDeclaration.IsDeclared(variableID))
 				{
-					SignalHandles::iterator it = m_signalHandles.insert(SignalHandles::value_type(CCrc32::Compute(signalName), SignalHandle()));
-
-					SignalHandle& signalHandle = it->second;
-
-					signalHandle.valueExpr = Expression(value, declarations);
-					signalHandle.variableID = variableID;
-
 #if defined(USING_VARIABLE_COLLECTION_SERIALIZATION) || defined(USING_VARIABLE_COLLECTION_XML_DESCRIPTION_CREATION)
 					signalHandle.signalName = signalName;
 					signalHandle.variableName = variableName;
 					signalHandle.value = signalHandle.valueExpr.Evaluate(Variables::Collection());
 #endif
-
 					if (!signalHandle.valueExpr.Valid())
 					{
-						gEnv->pLog->LogWarning("Failed to compile expression '%s' in file '%s' at line %d.", value, fileName, childNode->getLine());
-						return false;
+						gEnv->pLog->LogWarning("(%d) [File='%s'] Failed to compile expression '%s'", childNode->getLine(), fileName, value);
 					}
 				}
 				else
 				{
-					gEnv->pLog->LogWarning("Unknown variable '%s' used for signal variable in file '%s' at line '%d'.", variableName, fileName, childNode->getLine());
-					return false;
+					gEnv->pLog->LogWarning("(%d) [File='%s'] Unknown variable '%s' used for Event Handle", childNode->getLine(), fileName, variableName);
 				}
+
 			}
 			else
 			{
-				gEnv->pLog->LogWarning("Unexpected tag '%s' in file '%s' at line %d. 'Signal' expected.", childNode->getTag(), fileName, childNode->getLine());
+				gEnv->pLog->LogWarning("(%d) [File='%s'] Unexpected tag '%s'. Tag 'Signal' expected.", childNode->getLine(), fileName, childNode->getTag());
 				return false;
 			}
 		}
+
+#if defined(USING_VARIABLE_COLLECTION_SERIALIZATION)
+		m_signalHandleVector.assign(m_signalHandles.begin(), m_signalHandles.end());
+		SortSingnalHandleVector();
+#endif//USING_VARIABLE_COLLECTION_SERIALIZATION
 
 		return true;
 	}
@@ -828,7 +1308,29 @@ public:
 #ifdef USING_VARIABLE_COLLECTION_SERIALIZATION
 	void Serialize(Serialization::IArchive& archive)
 	{
-		archive(m_signalHandles, "signalHandles", "^[<>]");
+		const Declarations* declarations = archive.context<Declarations>();
+		if (!declarations)
+			return;
+
+		archive(m_signalHandleVector, "signalHandles", "^[<>]");
+		SortSingnalHandleVector();
+
+		bool existDuplicate = false;
+		for (SignalHandleVector::const_iterator it = m_signalHandleVector.begin(), end = m_signalHandleVector.end(); it != end; ++it)
+		{
+			const SignalHandleVector::const_iterator itNext = std::next(it, 1);
+			if (itNext != m_signalHandleVector.end() && it->second == itNext->second)
+			{
+				existDuplicate = true;
+				archive.error(itNext->second, SerializationUtils::Messages::ErrorDuplicatedValue("Event handle", itNext->second.signalName));
+			}
+		}
+
+		if (!existDuplicate)
+		{
+			m_signalHandles.clear();
+			m_signalHandles.insert(m_signalHandleVector.begin(), m_signalHandleVector.end());
+		}
 	}
 #endif
 
@@ -855,8 +1357,27 @@ public:
 	}
 #endif
 
+#ifdef USING_VARIABLE_COLLECTION_SERIALIZATION
+	void SortSingnalHandleVector()
+	{
+		std::sort(m_signalHandleVector.begin(), m_signalHandleVector.end(), [](const KeySignalHandlePair& a, const KeySignalHandlePair& b) { return a.second < b.second; });
+	}
+
+	const SignalHandleVector& GetSortedSignalHandleVector() const
+	{
+		return m_signalHandleVector;
+	}
+#endif //USING_VARIABLE_COLLECTION_SERIALIZATION
+
+	const SignalHandles& GetSignalHandles() const
+	{
+		return m_signalHandles;
+	}
+
 private:
-	SignalHandles m_signalHandles;
+	SignalHandles      m_signalHandles;
+	SignalHandleVector m_signalHandleVector;
+
 };
 
 #ifdef DEBUG_VARIABLE_COLLECTION
@@ -1035,62 +1556,4 @@ inline bool Serialize(Serialization::IArchive& archive, std::pair<uint32, Variab
 }
 }
 
-namespace Variables
-{
-template<class T>
-bool less_than_second(const T& a, const T& b)
-{
-	return (a.second < b.second);
-};
-
-inline bool Serialize(Serialization::IArchive& archive, VariableDescriptions& variableDescriptions, const char* name, const char* label)
-{
-	typedef std::pair<Variables::VariableID, Variables::Description> VariableIdDescriptionPair;
-	typedef std::vector<VariableIdDescriptionPair>                   DescriptorVector;
-	DescriptorVector tempDescriptionsVector;
-
-	if (archive.isOutput())
-	{
-		tempDescriptionsVector.assign(variableDescriptions.begin(), variableDescriptions.end());
-		std::sort(tempDescriptionsVector.begin(), tempDescriptionsVector.end(), less_than_second<VariableIdDescriptionPair> );
-	}
-
-	if (!archive(tempDescriptionsVector, name, label))
-		return false;
-
-	if (archive.isInput())
-	{
-		variableDescriptions.clear();
-		variableDescriptions.insert(tempDescriptionsVector.begin(), tempDescriptionsVector.end());
-	}
-
-	return true;
-}
-
-inline bool Serialize(Serialization::IArchive& archive, SignalHandles& signalHandles, const char* name, const char* label)
-{
-	typedef std::pair<uint32, Variables::SignalHandle> KeySignalHandlePair;
-	typedef std::vector<KeySignalHandlePair>           SignalHandleVector;
-	SignalHandleVector tempSignalHandleVector;
-
-	if (archive.isOutput())
-	{
-		tempSignalHandleVector.assign(signalHandles.begin(), signalHandles.end());
-		std::sort(tempSignalHandleVector.begin(), tempSignalHandleVector.end(), less_than_second<KeySignalHandlePair> );
-	}
-
-	archive(tempSignalHandleVector, name, label);
-
-	if (archive.isInput())
-	{
-		signalHandles.clear();
-		signalHandles.insert(tempSignalHandleVector.begin(), tempSignalHandleVector.end());
-	}
-
-	return true;
-}
-}
-
 #endif
-
-#endif // VariableCollection_h

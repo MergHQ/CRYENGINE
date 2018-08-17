@@ -174,13 +174,13 @@ void CAIFlyingVehicle::Serialize(TSerialize ser)
 
 namespace
 {
-void AISendSignal(CAIFlyingVehicle* const pFlyingVehicle, const char* const signalName)
+void AISendSignal(CAIFlyingVehicle* const pFlyingVehicle, const AISignals::ISignalDescription& signalDescription)
 {
 	CRY_ASSERT(pFlyingVehicle);
-	CRY_ASSERT(signalName);
 
-	const uint32 signalNameCrc = CCrc32::Compute(signalName);
-	gEnv->pAISystem->SendSignal(SIGNALFILTER_SENDER, 1, signalName, pFlyingVehicle, NULL, signalNameCrc);
+	const AISignals::SignalSharedPtr pSignal = gEnv->pAISystem->GetSignalManager()->CreateSignal(AISIGNAL_DEFAULT, signalDescription, pFlyingVehicle->GetAIObjectID());
+
+	gEnv->pAISystem->SendSignal(AISignals::ESignalFilter::SIGNALFILTER_SENDER, pSignal);
 }
 }
 
@@ -190,46 +190,41 @@ void CAIFlyingVehicle::PostSerialize()
 
 	if (m_combatModeEnabled)
 	{
-		AISendSignal(this, "CombatTargetEnabled");
+		AISendSignal(this, gEnv->pAISystem->GetSignalManager()->GetBuiltInSignalDescriptions().GetOnCombatTargetEnabled_DEPRECATED());
 	}
 	else
 	{
-		AISendSignal(this, "CombatTargetDisabled");
+		AISendSignal(this, gEnv->pAISystem->GetSignalManager()->GetBuiltInSignalDescriptions().GetOnCombatTargetDisabled_DEPRECATED());
 	}
 
 	if (m_firingAllowed)
 	{
-		AISendSignal(this, "FiringAllowed");
+		AISendSignal(this, gEnv->pAISystem->GetSignalManager()->GetBuiltInSignalDescriptions().GetOnFiringAllowed_DEPRECATED());
 	}
 	else
 	{
-		AISendSignal(this, "FiringNotAllowed");
+		AISendSignal(this, gEnv->pAISystem->GetSignalManager()->GetBuiltInSignalDescriptions().GetOnFiringNotAllowed_DEPRECATED());
 	}
 }
 
-void CAIFlyingVehicle::SetSignal(int nSignalID, const char* szText, IEntity* pSender, IAISignalExtraData* pData, uint32 crcCode)
+void CAIFlyingVehicle::SetSignal(const AISignals::SignalSharedPtr& pSignal)
 {
-	static const uint32 s_combatTargetEnabledCrc = CCrc32::Compute("CombatTargetEnabled");
-	static const uint32 s_combatTargetDisabledCrc = CCrc32::Compute("CombatTargetDisabled");
-	static const uint32 s_firingAllowedCrc = CCrc32::Compute("FiringAllowed");
-	static const uint32 s_firingNotAllowedCrc = CCrc32::Compute("FiringNotAllowed");
-
-	if (crcCode == s_combatTargetEnabledCrc)
+	if (pSignal->GetSignalDescription() == gEnv->pAISystem->GetSignalManager()->GetBuiltInSignalDescriptions().GetOnCombatTargetEnabled_DEPRECATED())
 	{
 		m_combatModeEnabled = true;
 	}
-	else if (crcCode == s_combatTargetDisabledCrc)
+	else if (pSignal->GetSignalDescription() == gEnv->pAISystem->GetSignalManager()->GetBuiltInSignalDescriptions().GetOnCombatTargetDisabled_DEPRECATED())
 	{
 		m_combatModeEnabled = false;
 	}
-	else if (crcCode == s_firingAllowedCrc)
+	else if (pSignal->GetSignalDescription() == gEnv->pAISystem->GetSignalManager()->GetBuiltInSignalDescriptions().GetOnFiringAllowed_DEPRECATED())
 	{
 		m_firingAllowed = true;
 	}
-	else if (crcCode == s_firingNotAllowedCrc)
+	else if (pSignal->GetSignalDescription() == gEnv->pAISystem->GetSignalManager()->GetBuiltInSignalDescriptions().GetOnFiringNotAllowed_DEPRECATED())
 	{
 		m_firingAllowed = false;
 	}
 
-	Base::SetSignal(nSignalID, szText, pSender, pData, crcCode);
+	Base::SetSignal(pSignal);
 }

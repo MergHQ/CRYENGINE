@@ -6114,8 +6114,7 @@ void CPlayer::ExecuteFootStep(ICharacterInstance* pCharacter, const float frameT
 					stimulusEventInfo.eTargetThreat = AITHREAT_INTERESTING;
 					tAIObjectID targetAIObjectId = GetEntity()->GetAI() ? GetEntity()->GetAI()->GetAIObjectID() : 0;
 					gEnv->pAISystem->GetTargetTrackManager()->HandleStimulusEventInRange(targetAIObjectId, "SoundWaterRipple", stimulusEventInfo, radius);
-
-					g_pGame->GetGameAISystem()->GetEnvironmentDisturbanceManager().AddObservableEvent(GetEntity()->GetWorldPos(), 2.0f, "OnWaterRippleSeen", GetEntityId());
+					g_pGame->GetGameAISystem()->GetEnvironmentDisturbanceManager().AddObservableEvent(GetEntity()->GetWorldPos(), 2.0f, gEnv->pAISystem->GetSignalManager()->GetBuiltInSignalDescriptions().GetOnWaterRippleSeen(), GetEntityId() );
 				}
 
 				// trigger water splashes from here

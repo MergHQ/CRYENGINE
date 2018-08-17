@@ -84,7 +84,7 @@ public:
 
 	bool                      GetMissLocation(const Vec3& shootPos, const Vec3& shootDir, float maxAngle, Vec3& pos);
 	void                      NotifyMissLocationConsumed();
-	void                      NotifyPlayerActionToTheLookingAgents(const char* eventName);
+	void                      NotifyPlayerActionToTheLookingAgents(const AISignals::ISignalDescription& signalDescription);
 
 	void                      DebugDraw();
 

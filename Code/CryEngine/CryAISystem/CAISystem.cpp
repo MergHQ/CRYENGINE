@@ -215,7 +215,6 @@ CAISystem::CAISystem(ISystem* pSystem)
 
 	//TODO see if we can init the actual environment yet?
 	gAIEnv.CVars.Init(); // CVars need to be init before any logging takes place
-	gAIEnv.SignalCRCs.Init();
 
 	REGISTER_COMMAND("ai_reload", (ConsoleCommandFunc)ReloadConsoleCommand, VF_CHEAT, "Reload AI system scripts and data");
 	REGISTER_COMMAND("ai_CheckGoalpipes", (ConsoleCommandFunc)CheckGoalpipes, VF_CHEAT, "Checks goalpipes and dumps report to console.");
@@ -579,6 +578,11 @@ void CAISystem::SetupAIEnvironment()
 		gAIEnv.pBubblesSystem->Init();
 	}
 #endif // CRYAISYSTEM_DEBUG
+
+	if (!gAIEnv.pSignalManager)
+	{
+		gAIEnv.pSignalManager = new AISignals::CSignalManager();
+	}
 }
 
 //
@@ -825,27 +829,33 @@ CAIObject* CAISystem::GetPlayer() const
 // Sends a signal using the desired filter to the desired agents
 //
 //-----------------------------------------------------------------------------------------------------------
-void CAISystem::SendSignal(unsigned char cFilter, int nSignalId, const char* szText, IAIObject* pSenderObject, IAISignalExtraData* pData, uint32 crcCode /*= 0*/)
+void CAISystem::SendSignal(unsigned char cFilter, const AISignals::SignalSharedPtr& pSignal)
 {
-	// (MATT) This is quite a switch statement. Needs replacing. {2009/02/11}
 	CCCPOINT(CAISystem_SendSignal);
 	CRY_PROFILE_FUNCTION(PROFILE_AI);
 
-	// This deletes the passed pData parameter if it wasn't set to NULL
+	AISignals::IAISignalExtraData* pData = pSignal->GetExtraData();
+
+	// This deletes the passed pSignal extra data if it wasn't set to NULL
 	struct DeleteBeforeReturning
 	{
-		IAISignalExtraData** _p;
-		DeleteBeforeReturning(IAISignalExtraData** p) : _p(p) {}
+		const AISignals::SignalSharedPtr& _pSignal;
+		AISignals::IAISignalExtraData** _pData;
+		DeleteBeforeReturning(const AISignals::SignalSharedPtr& pSignal, AISignals::IAISignalExtraData** pData) : _pSignal(pSignal), _pData(pData) {}
 		~DeleteBeforeReturning()
 		{
-			if (*_p)
-				delete (AISignalExtraData*)*_p;
+			if (_pData)
+			{
+				GetAISystem()->FreeSignalExtraData(_pSignal->GetExtraData());
+				_pSignal->SetExtraData(nullptr);
+			}
 		}
-	} autoDelete(&pData);
+	} autoDelete(pSignal, &pData);
 
 	// Calling this with no senderObject is an error
-	assert(pSenderObject);
+	assert(pSignal->GetSenderID() != 0);
 
+	IAIObject* pSenderObject = gAIEnv.pAIObjectManager->GetAIObject(pSignal->GetSenderID());
 	CAIActor* pSender = CastToCAIActorSafe(pSenderObject);
 	//filippo: can be that sender is null, for example when you send this signal in multiplayer.
 	if (!pSender)
@@ -854,20 +864,18 @@ void CAISystem::SendSignal(unsigned char cFilter, int nSignalId, const char* szT
 	float fRange = pSender->GetParameters().m_fCommRange;
 	fRange *= pSender->GetParameters().m_fCommRange;
 	Vec3 pos = pSender->GetPos();
-	IEntity* pSenderEntity(pSender->GetEntity());
-
 	CWeakRef<CAIObject> refSender = GetWeakRefSafe(pSender);
 
 	switch (cFilter)
 	{
 
-	case SIGNALFILTER_SENDER:
+	case AISignals::ESignalFilter::SIGNALFILTER_SENDER:
 		{
-			pSender->SetSignal(nSignalId, szText, pSenderEntity, pData, crcCode);
-			pData = NULL;
+			pSender->SetSignal(pSignal);
+			pData = nullptr;
 			break;
 		}
-	case SIGNALFILTER_HALFOFGROUP:
+	case AISignals::ESignalFilter::SIGNALFILTER_HALFOFGROUP:
 		{
 			CCCPOINT(CAISystem_SendSignal_HALFOFGROUP);
 
@@ -888,7 +896,7 @@ void CAISystem::SendSignal(unsigned char cFilter, int nSignalId, const char* szT
 					CAIActor* pReciever = CastToCAIActorSafe(ai->second.GetAIObject());
 					if ((pReciever != NULL) && pReciever != pSenderObject)
 					{
-						pReciever->SetSignal(nSignalId, szText, pSenderEntity, pData ? new AISignalExtraData(*(AISignalExtraData*)pData) : NULL, crcCode);
+						pReciever->SetSignal(pSignal);
 					}
 					else
 						++groupmembers;   // dont take into account sender
@@ -898,7 +906,7 @@ void CAISystem::SendSignal(unsigned char cFilter, int nSignalId, const char* szT
 			}
 		}
 		break;
-	case SIGNALFILTER_NEARESTGROUP:
+	case AISignals::ESignalFilter::SIGNALFILTER_NEARESTGROUP:
 		{
 			int groupid = pSender->GetGroupId();
 			AIObjects::iterator ai;
@@ -927,14 +935,14 @@ void CAISystem::SendSignal(unsigned char cFilter, int nSignalId, const char* szT
 
 				if (pNearest)
 				{
-					pNearest->SetSignal(nSignalId, szText, pSenderEntity, pData, crcCode);
-					pData = NULL;
+					pNearest->SetSignal(pSignal);
+					pData = nullptr;
 				}
 			}
 		}
 		break;
 
-	case SIGNALFILTER_NEARESTINCOMM:
+	case AISignals::ESignalFilter::SIGNALFILTER_NEARESTINCOMM:
 		{
 			int groupid = pSender->GetGroupId();
 			AIObjects::iterator ai;
@@ -966,13 +974,13 @@ void CAISystem::SendSignal(unsigned char cFilter, int nSignalId, const char* szT
 
 				if (pNearest)
 				{
-					pNearest->SetSignal(nSignalId, szText, pSenderEntity, pData, crcCode);
-					pData = NULL;
+					pNearest->SetSignal(pSignal);
+					pData = nullptr;
 				}
 			}
 		}
 		break;
-	case SIGNALFILTER_NEARESTINCOMM_LOOKING:
+	case AISignals::ESignalFilter::SIGNALFILTER_NEARESTINCOMM_LOOKING:
 		{
 			int groupid = pSender->GetGroupId();
 			AIObjects::iterator ai;
@@ -1001,13 +1009,13 @@ void CAISystem::SendSignal(unsigned char cFilter, int nSignalId, const char* szT
 				}
 				if (pNearest)
 				{
-					pNearest->SetSignal(nSignalId, szText, pSenderEntity, pData, crcCode);
-					pData = NULL;
+					pNearest->SetSignal(pSignal);
+					pData = nullptr;
 				}
 			}
 		}
 		break;
-	case SIGNALFILTER_NEARESTINCOMM_FACTION:
+	case AISignals::ESignalFilter::SIGNALFILTER_NEARESTINCOMM_FACTION:
 		{
 			uint8 factionID = pSender->GetFactionID();
 			AIObjects::iterator ai;
@@ -1036,13 +1044,13 @@ void CAISystem::SendSignal(unsigned char cFilter, int nSignalId, const char* szT
 
 				if (pNearest)
 				{
-					pNearest->SetSignal(nSignalId, szText, pSenderEntity, pData, crcCode);
-					pData = NULL;
+					pNearest->SetSignal(pSignal);
+					pData = nullptr;
 				}
 			}
 		}
 		break;
-	case SIGNALFILTER_SUPERGROUP:
+	case AISignals::ESignalFilter::SIGNALFILTER_SUPERGROUP:
 		{
 			int groupid = pSender->GetGroupId();
 			AIObjects::iterator ai;
@@ -1054,7 +1062,7 @@ void CAISystem::SendSignal(unsigned char cFilter, int nSignalId, const char* szT
 					if (ai->first != groupid)
 						break;
 					if (pReciever)
-						pReciever->SetSignal(nSignalId, szText, pSenderEntity, pData ? new AISignalExtraData(*(AISignalExtraData*)pData) : NULL, crcCode);
+						pReciever->SetSignal(pSignal);
 				}
 				// don't delete pData!!! - it will be deleted at the end of this function
 			}
@@ -1065,12 +1073,12 @@ void CAISystem::SendSignal(unsigned char cFilter, int nSignalId, const char* szT
 #pragma warning(push)
 #pragma warning(disable:6011)
 				if (pSender->GetParameters().m_nGroup == pPlayer->GetParameters().m_nGroup)
-					pPlayer->SetSignal(nSignalId, szText, pSenderEntity, pData ? new AISignalExtraData(*(AISignalExtraData*)pData) : NULL, crcCode);
+					pPlayer->SetSignal(pSignal);
 #pragma warning(pop)
 			}
 		}
 		break;
-	case SIGNALFILTER_SUPERFACTION:
+	case AISignals::ESignalFilter::SIGNALFILTER_SUPERFACTION:
 		{
 			uint8 factionID = pSender->GetFactionID();
 			AIObjects::iterator ai;
@@ -1083,7 +1091,7 @@ void CAISystem::SendSignal(unsigned char cFilter, int nSignalId, const char* szT
 					if (ai->first != factionID)
 						break;
 					if (pReciever)
-						pReciever->SetSignal(nSignalId, szText, pSenderEntity, pData ? new AISignalExtraData(*(AISignalExtraData*)pData) : NULL, crcCode);
+						pReciever->SetSignal(pSignal);
 					++ai;
 				}
 				// don't delete pData!!! - it will be deleted at the end of this function
@@ -1092,13 +1100,13 @@ void CAISystem::SendSignal(unsigned char cFilter, int nSignalId, const char* szT
 			CAIPlayer* pPlayer = CastToCAIPlayerSafe(GetPlayer());
 			if (pPlayer)
 			{
-				pPlayer->SetSignal(nSignalId, szText, pSenderEntity, pData ? new AISignalExtraData(*(AISignalExtraData*)pData) : NULL, crcCode);
+				pPlayer->SetSignal(pSignal);
 			}
 		}
 		break;
 
-	case SIGNALFILTER_GROUPONLY:
-	case SIGNALFILTER_GROUPONLY_EXCEPT:
+	case AISignals::ESignalFilter::SIGNALFILTER_GROUPONLY:
+	case AISignals::ESignalFilter::SIGNALFILTER_GROUPONLY_EXCEPT:
 		{
 			int groupid = pSender->GetGroupId();
 
@@ -1114,9 +1122,9 @@ void CAISystem::SendSignal(unsigned char cFilter, int nSignalId, const char* szT
 						CAIActor* pReciever = CastToCAIActorSafe(ai->second.GetAIObject());
 						if (ai->first != groupid)
 							break;
-						if ((pReciever != NULL) && !(cFilter == SIGNALFILTER_GROUPONLY_EXCEPT && pReciever == pSender))
+						if ((pReciever != NULL) && !(cFilter == AISignals::ESignalFilter::SIGNALFILTER_GROUPONLY_EXCEPT && pReciever == pSender))
 						{
-							pReciever->SetSignal(nSignalId, szText, pSenderEntity, pData ? new AISignalExtraData(*(AISignalExtraData*)pData) : NULL, crcCode);
+							pReciever->SetSignal(pSignal);
 						}
 					}
 					// don't delete pData!!! - it will be deleted at the end of this function
@@ -1126,13 +1134,13 @@ void CAISystem::SendSignal(unsigned char cFilter, int nSignalId, const char* szT
 				CAIPlayer* pPlayer = CastToCAIPlayerSafe(GetPlayer());
 				if (pPlayer)
 				{
-					if (pSender->GetParameters().m_nGroup == pPlayer->GetParameters().m_nGroup && Distance::Point_PointSq(pPlayer->GetPos(), pos) < fRange && !(cFilter == SIGNALFILTER_GROUPONLY_EXCEPT && pPlayer == pSender))
-						pPlayer->SetSignal(nSignalId, szText, pSenderEntity, pData ? new AISignalExtraData(*(AISignalExtraData*)pData) : NULL, crcCode);
+					if (pSender->GetParameters().m_nGroup == pPlayer->GetParameters().m_nGroup && Distance::Point_PointSq(pPlayer->GetPos(), pos) < fRange && !(cFilter == AISignals::ESignalFilter::SIGNALFILTER_GROUPONLY_EXCEPT && pPlayer == pSender))
+						pPlayer->SetSignal(pSignal);
 				}
 			}
 		}
 		break;
-	case SIGNALFILTER_FACTIONONLY:
+	case AISignals::ESignalFilter::SIGNALFILTER_FACTIONONLY:
 		{
 			uint8 factionID = pSender->GetFactionID();
 			AIObjects::iterator ai;
@@ -1150,7 +1158,7 @@ void CAISystem::SendSignal(unsigned char cFilter, int nSignalId, const char* szT
 						mypos -= pos;
 
 						if (mypos.GetLengthSquared() < fRange)
-							pReciever->SetSignal(nSignalId, szText, pSenderEntity, pData ? new AISignalExtraData(*(AISignalExtraData*)pData) : NULL, crcCode);
+							pReciever->SetSignal(pSignal);
 					}
 				}
 				// don't delete pData!!! - it will be deleted at the end of this function
@@ -1160,12 +1168,12 @@ void CAISystem::SendSignal(unsigned char cFilter, int nSignalId, const char* szT
 			if (pPlayer)
 			{
 				if (pSender->GetFactionID() == pPlayer->GetFactionID() && Distance::Point_PointSq(pPlayer->GetPos(), pos) < fRange)
-					pPlayer->SetSignal(nSignalId, szText, pSenderEntity, pData ? new AISignalExtraData(*(AISignalExtraData*)pData) : NULL, crcCode);
+					pPlayer->SetSignal(pSignal);
 			}
 		}
 		break;
-	case SIGNALFILTER_ANYONEINCOMM:
-	case SIGNALFILTER_ANYONEINCOMM_EXCEPT:
+	case AISignals::ESignalFilter::SIGNALFILTER_ANYONEINCOMM:
+	case AISignals::ESignalFilter::SIGNALFILTER_ANYONEINCOMM_EXCEPT:
 		{
 			// send to puppets and aware objects in the communications range of the sender
 
@@ -1191,8 +1199,8 @@ void CAISystem::SendSignal(unsigned char cFilter, int nSignalId, const char* szT
 							if (ai->first == *ki)
 							{
 								CAIActor* pReciever = ai->second->CastToCAIActor();
-								if (pReciever && Distance::Point_PointSq(pReciever->GetPos(), pos) < fRange && !(cFilter == SIGNALFILTER_ANYONEINCOMM_EXCEPT && pReciever == pSender))
-									pReciever->SetSignal(nSignalId, szText, pSenderEntity, pData ? new AISignalExtraData(*(AISignalExtraData*)pData) : NULL, crcCode);
+								if (pReciever && Distance::Point_PointSq(pReciever->GetPos(), pos) < fRange && !(cFilter == AISignals::ESignalFilter::SIGNALFILTER_ANYONEINCOMM_EXCEPT && pReciever == pSender))
+									pReciever->SetSignal(pSignal);
 							}
 						++ai;
 					}
@@ -1213,7 +1221,7 @@ void CAISystem::SendSignal(unsigned char cFilter, int nSignalId, const char* szT
 						Vec3 mypos = pReciever->GetPos();
 						mypos -= pos;
 						if (mypos.GetLengthSquared() < fRange)
-							pReciever->SetSignal(nSignalId, szText, pSenderEntity, pData ? new AISignalExtraData(*(AISignalExtraData*)pData) : NULL, crcCode);
+							pReciever->SetSignal(pSignal);
 					}
 					++ai;
 				}
@@ -1223,17 +1231,17 @@ void CAISystem::SendSignal(unsigned char cFilter, int nSignalId, const char* szT
 			CAIPlayer* pPlayer = CastToCAIPlayerSafe(GetPlayer());
 			if (pPlayer)
 			{
-				if (Distance::Point_PointSq(pPlayer->GetPos(), pos) < fRange && !(cFilter == SIGNALFILTER_ANYONEINCOMM_EXCEPT && pPlayer == pSender))
+				if (Distance::Point_PointSq(pPlayer->GetPos(), pos) < fRange && !(cFilter == AISignals::ESignalFilter::SIGNALFILTER_ANYONEINCOMM_EXCEPT && pPlayer == pSender))
 				{
 					PREFAST_SUPPRESS_WARNING(6011)
-					pPlayer->SetSignal(nSignalId, szText, pSenderEntity, pData ? new AISignalExtraData(*(AISignalExtraData*)pData) : NULL, crcCode);
+					pPlayer->SetSignal(pSignal);
 				}
 			}
 			// don't delete pData!!! - it will be deleted at the end of this function
 		}
 		break;
-	case SIGNALFILTER_LEADER:
-	case SIGNALFILTER_LEADERENTITY:
+	case AISignals::ESignalFilter::SIGNALFILTER_LEADER:
+	case AISignals::ESignalFilter::SIGNALFILTER_LEADERENTITY:
 		{
 			int groupid = pSender->GetGroupId();
 			AIObjects::iterator ai;
@@ -1246,12 +1254,12 @@ void CAISystem::SendSignal(unsigned char cFilter, int nSignalId, const char* szT
 						break;
 					if (pLeader)
 					{
-						CAIObject* pRecipientObj = (cFilter == SIGNALFILTER_LEADER ? pLeader : pLeader->GetAssociation().GetAIObject());
+						CAIObject* pRecipientObj = (cFilter == AISignals::ESignalFilter::SIGNALFILTER_LEADER ? pLeader : pLeader->GetAssociation().GetAIObject());
 						if (pRecipientObj)
 						{
 							CAIActor* pRecipient = pRecipientObj->CastToCAIActor();
 							if (pRecipient)
-								pRecipient->SetSignal(nSignalId, szText, pSenderEntity, pData ? new AISignalExtraData(*(AISignalExtraData*)pData) : NULL, crcCode);
+								pRecipient->SetSignal(pSignal);
 						}
 						break;
 					}
@@ -1262,8 +1270,8 @@ void CAISystem::SendSignal(unsigned char cFilter, int nSignalId, const char* szT
 		}
 		break;
 
-	case SIGNALFILTER_FORMATION:
-	case SIGNALFILTER_FORMATION_EXCEPT:
+	case AISignals::ESignalFilter::SIGNALFILTER_FORMATION:
+	case AISignals::ESignalFilter::SIGNALFILTER_FORMATION_EXCEPT:
 		{
 			const CFormationManager::FormationMap& activeFormations = gAIEnv.pFormationManager->GetActiveFormations();
 		
@@ -1278,11 +1286,11 @@ void CAISystem::SendSignal(unsigned char cFilter, int nSignalId, const char* szT
 					for (int i = 0; i < s; i++)
 					{
 						CAIObject* pMember = pFormation->GetPointOwner(i);
-						if (pMember && (cFilter == SIGNALFILTER_FORMATION || pMember != pSender))
+						if (pMember && (cFilter == AISignals::ESignalFilter::SIGNALFILTER_FORMATION || pMember != pSender))
 						{
 							CAIActor* pRecipient = pMember->CastToCAIActor();
 							if (pRecipient)
-								pRecipient->SetSignal(nSignalId, szText, pSenderEntity, pData ? new AISignalExtraData(*(AISignalExtraData*)pData) : NULL, crcCode);
+								pRecipient->SetSignal(pSignal);
 						}
 					}
 					break;
@@ -1637,7 +1645,7 @@ void CAISystem::Reset(IAISystem::EResetReason reason)
 			ClearAIObjectIteratorPools();
 
 			CPathObstacles::ResetOfStaticData();
-			AISignalExtraData::CleanupPool();
+			AISignals::AISignalExtraData::CleanupPool();
 
 			stl::free_container(m_tmpFullUpdates);
 			stl::free_container(m_tmpDryUpdates);
@@ -2417,11 +2425,9 @@ int CAISystem::GetAITickCount(void)
 
 //
 //-----------------------------------------------------------------------------------------------------------
-void CAISystem::SendAnonymousSignal(int signalID, const char* text, const Vec3& pos, float radius, IAIObject* pSenderObject, IAISignalExtraData* pData)
+void CAISystem::SendAnonymousSignal(const AISignals::SignalSharedPtr& pSignal, const Vec3& pos, float radius)
 {
 	CCCPOINT(CAISystem_SendAnonymousSignal);
-
-	IEntity* const pSenderEntity = pSenderObject ? pSenderObject->GetEntity() : NULL;
 
 	// Go trough all the puppets and vehicles in the surrounding area.
 	// Still makes precise radius check inside because the grid might
@@ -2449,16 +2455,17 @@ void CAISystem::SendAnonymousSignal(int signalID, const char* text, const Vec3& 
 				    pReceiverPuppet->GetParameters().m_PerceptionParams.perceptionScale.audio > 0.01f &&
 				    Distance::Point_PointSq(pReceiverPuppet->GetPos(), pos) < radiusSq)
 				{
-					pReceiverPuppet->SetSignal(signalID, text, pSenderEntity, (pData ? new AISignalExtraData(*(AISignalExtraData*)pData) : NULL));
+					pReceiverPuppet->SetSignal(pSignal);
 				}
 			}
 		}
 	}
 
 	// Finally delete pData since all recipients have their own copies
-	if (pData)
+	if (pSignal->GetExtraData())
 	{
-		delete (AISignalExtraData*)pData;
+		GetAISystem()->FreeSignalExtraData(pSignal->GetExtraData());
+		pSignal->SetExtraData(nullptr);
 	}
 }
 
@@ -3751,10 +3758,10 @@ void CAISystem::EnableGenericShape(const char* shapeName, bool state)
 			// Shape enabled
 			if (shape.IsPointInsideShape(puppet->GetPos(), true))
 			{
-				IAISignalExtraData* pData = CreateSignalExtraData();
+				AISignals::IAISignalExtraData* pData = CreateSignalExtraData();
 				pData->SetObjectName(shapeName);
 				pData->iValue = shape.type;
-				puppet->SetSignal(1, "OnShapeEnabled", puppet->GetEntity(), pData, gAIEnv.SignalCRCs.m_nOnShapeEnabled);
+				puppet->SetSignal(GetAISystem()->GetSignalManager()->CreateSignal(AISIGNAL_DEFAULT, GetAISystem()->GetSignalManager()->GetBuiltInSignalDescriptions().GetOnShapeEnabled(), puppet->GetAIObjectID(), pData));
 			}
 		}
 		else
@@ -3767,9 +3774,9 @@ void CAISystem::EnableGenericShape(const char* shapeName, bool state)
 				val |= 2;
 			if (val)
 			{
-				IAISignalExtraData* pData = CreateSignalExtraData();
+				AISignals::IAISignalExtraData* pData = CreateSignalExtraData();
 				pData->iValue = val;
-				puppet->SetSignal(1, "OnShapeDisabled", puppet->GetEntity(), pData, gAIEnv.SignalCRCs.m_nOnShapeDisabled);
+				puppet->SetSignal(GetAISystem()->GetSignalManager()->CreateSignal(AISIGNAL_DEFAULT, GetAISystem()->GetSignalManager()->GetBuiltInSignalDescriptions().GetOnShapeDisabled(), puppet->GetAIObjectID(), pData));
 			}
 		}
 	}
@@ -3961,11 +3968,11 @@ void CAISystem::NotifyTargetDead(IAIObject* pDeadObject)
 
 		if (pAIActor->GetAttentionTarget() == pDeadObject)
 		{
-			IAISignalExtraData* pData = GetAISystem()->CreateSignalExtraData();
+			AISignals::IAISignalExtraData* pData = GetAISystem()->CreateSignalExtraData();
 			pData->SetObjectName(pDeadObject->GetName());
 			pData->nID = pDeadObject->GetEntityID();
 			pData->string1 = gAIEnv.pFactionMap->GetFactionName(pDeadObject->GetFactionID());
-			pAIActor->SetSignal(0, "OnTargetDead", pAIActor->GetEntity(), pData, gAIEnv.SignalCRCs.m_nOnTargetDead);
+			pAIActor->SetSignal(GetAISystem()->GetSignalManager()->CreateSignal(AISIGNAL_INCLUDE_DISABLED, GetAISystem()->GetSignalManager()->GetBuiltInSignalDescriptions().GetOnTargetDead(), pAIActor->GetAIObjectID(), pData));
 		}
 	}
 
@@ -3998,7 +4005,7 @@ void CAISystem::NotifyTargetDead(IAIObject* pDeadObject)
 				if (!CheckVisibilityToBody(pPuppet, pDeadActor, dist, pNearestThrownEntPhys))
 					continue;
 
-				pPuppet->SetSignal(1, "OnGroupMemberMutilated", pDeadObject->GetEntity(), 0);
+				pPuppet->SetSignal(GetAISystem()->GetSignalManager()->CreateSignal(AISIGNAL_DEFAULT, GetAISystem()->GetSignalManager()->GetBuiltInSignalDescriptions().GetOnGroupMemberMutilated(), pDeadObject->GetEntity()->GetAIObjectID()));
 			}
 		}
 	}
@@ -5488,20 +5495,18 @@ int CAISystem::AllocGoalPipeId() const
 }
 
 //====================================================================
-// CreateSignalExtraData
+// AISignals
 //====================================================================
-IAISignalExtraData* CAISystem::CreateSignalExtraData() const
+
+AISignals::IAISignalExtraData* CAISystem::CreateSignalExtraData() const
 {
-	return new AISignalExtraData;
+	return new AISignals::AISignalExtraData;
 }
 
-//====================================================================
-// FreeSignalExtraData
-//====================================================================
-void CAISystem::FreeSignalExtraData(IAISignalExtraData* pData) const
+void CAISystem::FreeSignalExtraData(AISignals::IAISignalExtraData* pData) const
 {
 	if (pData)
-		delete (AISignalExtraData*) pData;
+		delete (AISignals::AISignalExtraData*) pData;
 }
 
 //===================================================================
@@ -5560,6 +5565,11 @@ AIActionSequence::ISequenceManager* CAISystem::GetSequenceManager() const
 IClusterDetector* CAISystem::GetClusterDetector() const
 {
 	return gAIEnv.pClusterDetector;
+}
+
+AISignals::ISignalManager* CAISystem::GetSignalManager() const
+{
+	return gAIEnv.pSignalManager;
 }
 
 //===================================================================

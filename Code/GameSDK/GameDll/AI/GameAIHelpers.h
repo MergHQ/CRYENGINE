@@ -10,9 +10,11 @@
 
 // For an overview of the GameAISystem take a look in GameAISystem.cpp
 
-struct IAISignalExtraData;
-
-
+namespace AISignals
+{
+	struct IAISignalExtraData;
+	class ISignalDescription;
+}
 
 class CGameAIInstanceBase
 {
@@ -22,8 +24,8 @@ public:
 	void Init(EntityId entityID);
 	void Destroy() {}
 	void Update(float frameTime) {}
-	void SendSignal(const char* signal, IAISignalExtraData* data = NULL);
-	void SendSignal(const char* signal, IAISignalExtraData* data, int nSignalID);
+	void SendSignal(const AISignals::ISignalDescription& signalDescription, AISignals::IAISignalExtraData* data = NULL);
+	void SendSignal(const AISignals::ISignalDescription& signalDescription, AISignals::IAISignalExtraData* data, int nSignalID);
 	IEntity* GetEntity() const { return gEnv->pEntitySystem->GetEntity(m_entityID); }
 	EntityId GetEntityID() const { return m_entityID; }
 

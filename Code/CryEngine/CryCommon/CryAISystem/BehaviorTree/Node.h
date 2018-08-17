@@ -4,9 +4,9 @@
 
 #pragma once
 
-	#include "IBehaviorTree.h"
-
-	#include "SerializationSupport.h"
+#include "BehaviorTreeDefines.h"
+#include "IBehaviorTree.h"
+#include "SerializationSupport.h"
 
 namespace BehaviorTree
 {
@@ -40,17 +40,16 @@ public:
 
 		if (nodeNeedsToBeInitialized)
 		{
-	#ifdef USING_BEHAVIOR_TREE_LOG
+	#ifdef DEBUG_MODULAR_BEHAVIOR_TREE
 			if (!m_startLog.empty())
 				context.behaviorLog.AddMessage(m_startLog.c_str());
-	#endif // USING_BEHAVIOR_TREE_LOG
+	#endif // DEBUG_MODULAR_BEHAVIOR_TREE
 			OnInitialize(context);
 		}
 
 		const Status status = Update(context);
 
 	#ifdef DEBUG_MODULAR_BEHAVIOR_TREE
-	#ifdef USING_BEHAVIOR_TREE_NODE_CUSTOM_DEBUG_TEXT
 		if (debugTree)
 		{
 			DebugNodePtr topNode = debugTree->GetTopNode();
@@ -58,7 +57,6 @@ public:
 			assert(topNode->node == this);
 			GetCustomDebugText(context, topNode->customDebugText);	// FIXME: stack_string may suddenly switch to heap memory in a different DLL => bang! (GetCustomDebugText() would need refactoring to output to a string interface)
 		}
-	#endif // USING_BEHAVIOR_TREE_NODE_CUSTOM_DEBUG_TEXT
 	#endif // DEBUG_MODULAR_BEHAVIOR_TREE
 
 		if (status != Running)
@@ -67,12 +65,12 @@ public:
 			GetCreator()->FreeRuntimeData(runtimeDataID);
 			context.runtimeData = NULL;
 
-	#ifdef USING_BEHAVIOR_TREE_LOG
+	#ifdef DEBUG_MODULAR_BEHAVIOR_TREE
 			if (status == Success && !m_successLog.empty())
 				context.behaviorLog.AddMessage(m_successLog.c_str());
 			else if (status == Failure && !m_failureLog.empty())
 				context.behaviorLog.AddMessage(m_failureLog.c_str());
-	#endif // USING_BEHAVIOR_TREE_LOG
+	#endif // DEBUG_MODULAR_BEHAVIOR_TREE
 		}
 
 	#ifdef DEBUG_MODULAR_BEHAVIOR_TREE
@@ -114,23 +112,21 @@ public:
 	}
 
 	//! Load up a behavior tree node with information from an xml node.
-	virtual LoadResult LoadFromXml(const XmlNodeRef& xml, const struct LoadContext& context) override
+	virtual LoadResult LoadFromXml(const XmlNodeRef& xml, const struct LoadContext& context, const bool strictMode) override
 	{
-
-	#ifdef USING_BEHAVIOR_TREE_LOG
+		#ifdef DEBUG_MODULAR_BEHAVIOR_TREE
 		m_startLog = xml->getAttr("_startLog");
 		m_successLog = xml->getAttr("_successLog");
 		m_failureLog = xml->getAttr("_failureLog");
-	#endif // USING_BEHAVIOR_TREE_LOG
-
-	#ifdef USING_BEHAVIOR_TREE_COMMENTS
 		m_comment = xml->getAttr("_comment");
-	#endif // USING_BEHAVIOR_TREE_COMMENTS
+		#endif // DEBUG_MODULAR_BEHAVIOR_TREE
 
 		return LoadSuccess;
 	}
 
 	#ifdef USING_BEHAVIOR_TREE_XML_DESCRIPTION_CREATION
+	//! Save behavior tree node information in an xml node. Opposite of LoadFromXML.
+	//! Saved information that is saved here should be read back when calling LoadFromXML and viceversa
 	virtual XmlNodeRef CreateXmlDescription() override
 	{
 		XmlNodeRef node = GetISystem()->CreateXmlNode("Node");
@@ -142,29 +138,24 @@ public:
 				node->setAttr(szKey, value);
 			}
 		};
-		#ifdef USING_BEHAVIOR_TREE_LOG
+		#ifdef DEBUG_MODULAR_BEHAVIOR_TREE
 		setAttrOptional("_startLog", m_startLog);
 		setAttrOptional("_successLog", m_successLog);
 		setAttrOptional("_failureLog", m_failureLog);
-		#endif // USING_BEHAVIOR_TREE_LOG
-		#ifdef USING_BEHAVIOR_TREE_COMMENTS
 		setAttrOptional("_comment", m_comment);
-		#endif // USING_BEHAVIOR_TREE_COMMENTS
-
+		#endif // DEBUG_MODULAR_BEHAVIOR_TREE
 		return node;
 	}
 	#endif
 
 	#ifdef USING_BEHAVIOR_TREE_SERIALIZATION
+	//! Serialize node data to be shown in the Interim Editor
+	//! All properties that are saved/loaded in the xml should be accessible (somehow) from the Editor
 	virtual void Serialize(Serialization::IArchive& archive) override
 	{
-		#ifdef DEBUG_MODULAR_BEHAVIOR_TREE
 		HandleXmlLineNumberSerialization(archive, m_xmlLine);
-		#endif
 
-		#ifdef USING_BEHAVIOR_TREE_COMMENTS
 		HandleCommentSerialization(archive, m_comment);
-		#endif // USING_BEHAVIOR_TREE_COMMENTS
 	}
 	#endif
 
@@ -175,11 +166,8 @@ public:
 	#ifdef DEBUG_MODULAR_BEHAVIOR_TREE
 	void   SetXmlLine(const uint32 line) { m_xmlLine = line; }
 	uint32 GetXmlLine() const            { return m_xmlLine; }
-	#endif // DEBUG_MODULAR_BEHAVIOR_TREE
-
-	#ifdef USING_BEHAVIOR_TREE_NODE_CUSTOM_DEBUG_TEXT
 	virtual void GetCustomDebugText(const UpdateContext& updateContext, stack_string& debugText) const {}
-	#endif // USING_BEHAVIOR_TREE_NODE_CUSTOM_DEBUG_TEXT
+	#endif // DEBUG_MODULAR_BEHAVIOR_TREE
 
 	template<typename RuntimeDataType>
 	RuntimeDataType& GetRuntimeData(const EventContext& context)
@@ -221,9 +209,8 @@ protected:
 	//! Called before the first call to Update.
 	virtual void OnInitialize(const UpdateContext& context) {}
 
-	//! Called when a node is being terminated. Clean up after yourself here!
-	//! Not to be confused with Terminate which you call when you want to terminate a node. :) Confused? Read it again.
-	//! OnTerminate is called in one of the following cases:
+	//! Called when a node is being terminated (Terminate() was called)
+	//! It can happen when in the following cases:
 	//! a) The node itself returned Success/Failure in Update.
 	//! b) Another node told this node to Terminate while this node was running.
 	virtual void OnTerminate(const UpdateContext& context) {}
@@ -244,20 +231,14 @@ private:
 
 	INodeCreator* m_creator;
 
-	#ifdef USING_BEHAVIOR_TREE_LOG
+	#ifdef DEBUG_MODULAR_BEHAVIOR_TREE
 	string m_startLog;
 	string m_successLog;
 	string m_failureLog;
-	#endif // USING_BEHAVIOR_TREE_LOG
-
-	#ifdef DEBUG_MODULAR_BEHAVIOR_TREE
-	uint32 m_xmlLine;
 	#endif // DEBUG_MODULAR_BEHAVIOR_TREE
 
-	#ifdef USING_BEHAVIOR_TREE_COMMENTS
+	uint32 m_xmlLine;
 	string m_comment;
-	#endif // USING_BEHAVIOR_TREE_COMMENTS
-
 };
 
 DECLARE_SHARED_POINTERS(Node);
@@ -329,6 +310,29 @@ public:
 		finalMessage.Format("%s %s", m_prefixString.c_str(), formattedLog);
 		gEnv->pLog->LogError("%s", finalMessage.c_str());
 	}
+
+
+	static string ErrorMessageMissingOrEmptyAttribute(const string& tag, const string& fieldMissing)
+	{
+		string missingOrEmptyAttributeMessage;
+		missingOrEmptyAttributeMessage.Format("%s tag is missing '%s' attribute or empty.", tag.c_str(), fieldMissing.c_str());
+		return missingOrEmptyAttributeMessage;
+	}
+
+	static string ErrorMessageInvalidAttribute(const string& tag, const string& invalidField, const string& providedInvalidValue, const string& reason)
+	{
+		string invalidAttributeMessage;
+		invalidAttributeMessage.Format("%s tag has invalid attribute '%s' with value '%s'. Reason: %s.", tag.c_str(), invalidField.c_str(), providedInvalidValue.c_str(), reason.c_str());
+		return invalidAttributeMessage;
+	}
+
+	static string ErrorMessageTooManyChildren(const string& tag, const int currentChildCount, const int maxSupportedChildren)
+	{
+		string tooManyChildrenMessage;
+		tooManyChildrenMessage.Format("%s has %d children. Max %d children are supported.", tag.c_str(), currentChildCount, maxSupportedChildren);
+		return tooManyChildrenMessage;
+	}
+
 
 private:
 	CryFixedStringT<128> m_prefixString;

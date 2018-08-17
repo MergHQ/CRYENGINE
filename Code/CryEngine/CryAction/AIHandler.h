@@ -26,7 +26,12 @@
 struct IScriptSystem;
 struct IScriptTable;
 struct ISystem;
-struct IAISignalExtraData;
+
+namespace AISignals
+{
+	struct IAISignalExtraData;
+}
+
 class CAIProxy;
 class CMovementRequest;
 
@@ -122,7 +127,7 @@ public:
 
 	void Update();
 	void AIMind(SOBJECTSTATE& state);
-	void AISignal(int signalID, const char* signalText, uint32 crc, IEntity* pSender, const IAISignalExtraData* pData);
+	void AISignal(AISignals::SignalSharedPtr pSignal);
 	void Release();
 
 	/// Plays a readability set (Group + Response)
@@ -162,14 +167,14 @@ public:
 #ifdef USE_DEPRECATED_AI_CHARACTER_SYSTEM
 	bool SetCharacter(const char* character, ESetFlags setFlags = SET_IMMEDIATE);
 #endif
-	void SetBehavior(const char* szBehavior, const IAISignalExtraData* pData = 0, ESetFlags setFlags = SET_IMMEDIATE);
+	void SetBehavior(const char* szBehavior, const AISignals::IAISignalExtraData* pData = 0, ESetFlags setFlags = SET_IMMEDIATE);
 
 #ifdef USE_DEPRECATED_AI_CHARACTER_SYSTEM
 	const char* GetCharacter();
 
 	void        CallCharacterConstructor();
 #endif
-	void        CallBehaviorConstructor(const IAISignalExtraData* pData);
+	void        CallBehaviorConstructor(const AISignals::IAISignalExtraData* pData);
 
 	void        ResendTargetSignalsNextFrame();
 
@@ -201,7 +206,7 @@ protected:
 #ifdef USE_DEPRECATED_AI_CHARACTER_SYSTEM
 	const char*        CheckAndGetBehaviorTransition(const char* szSignalText) const;
 #endif
-	bool               CallScript(IScriptTable* scriptTable, const char* funcName, float* pValue = NULL, IEntity* pSender = NULL, const IAISignalExtraData* pData = NULL);
+	bool               CallScript(IScriptTable* scriptTable, const char* funcName, float* pValue = NULL, IEntity* pSender = NULL, const AISignals::IAISignalExtraData* pData = NULL);
 	bool               GetMostLikelyTable(IScriptTable* table, SmartScriptTable& dest);
 	bool               FindOrLoadTable(IScriptTable* pGlobalTable, const char* szTableName, SmartScriptTable& tableOut);
 	void               FindOrLoadBehavior(const char* szBehaviorName, SmartScriptTable& pBehaviorTable);

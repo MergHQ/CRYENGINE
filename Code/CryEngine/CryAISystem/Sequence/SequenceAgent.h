@@ -113,15 +113,15 @@ public:
 		return m_aiActor->GetEntityID();
 	}
 
-	void SendSignal(const char* signalName, IEntity* pSender)
+	void SendSignal(const AISignals::ISignalDescription& signalDescription, IEntity* pSender)
 	{
 		if (!ValidateAgent())
 			return;
 
-		IAISignalExtraData* pData = gEnv->pAISystem->CreateSignalExtraData();
+		AISignals::IAISignalExtraData* pData = gEnv->pAISystem->CreateSignalExtraData();
 		const int goalPipeId = gEnv->pAISystem->AllocGoalPipeId();
 		pData->iValue = goalPipeId;
-		m_aiActor->SetSignal(10, signalName, pSender, pData);
+		m_aiActor->SetSignal(GetAISystem()->GetSignalManager()->CreateSignal(AISIGNAL_ALLOW_DUPLICATES, signalDescription, pSender ? pSender->GetAIObjectID() : 0, pData));
 	}
 
 private:

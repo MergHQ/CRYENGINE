@@ -23,7 +23,7 @@ public:
 	// Base ----------------------------------------------------------
 	CAngleAlert(CPersonalRangeSignaling* pPersonal);
 	virtual ~CAngleAlert();
-	void Init(float fAngle, float fBoundary, const char* sSignal, IAISignalExtraData* pData = NULL);
+	void Init(float fAngle, float fBoundary, const char* sSignal, AISignals::IAISignalExtraData* pData = NULL);
 
 	// Utils ---------------------------------------------------------
 	bool  Check(const Vec3& vPos) const;
@@ -50,16 +50,16 @@ public:
 		return(m_sSignal);
 	}
 
-	IAISignalExtraData* GetSignalData() const
+	AISignals::IAISignalExtraData* GetSignalData() const
 	{
 		return(m_pSignalData);
 	}
 
 private:
-	CPersonalRangeSignaling* m_pPersonal;
-	IAISignalExtraData*      m_pSignalData;
-	float                    m_fAngle;
-	float                    m_fBoundary;
-	string                   m_sSignal;
+	CPersonalRangeSignaling*       m_pPersonal;
+	AISignals::IAISignalExtraData* m_pSignalData;
+	float                          m_fAngle;
+	float                          m_fBoundary;
+	string                         m_sSignal;
 };
 #endif // _ANGLE_ALERT_H_

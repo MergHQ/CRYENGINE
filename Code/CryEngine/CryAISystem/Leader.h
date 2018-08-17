@@ -224,8 +224,8 @@ public:
 
 protected:
 	void           UpdateEnemyStats();
-	void           ProcessSignal(AISIGNAL& signal);
-	CLeaderAction* CreateAction(const LeaderActionParams* params, const char* signalText = NULL);
+	void           ProcessSignal(const AISignals::SignalSharedPtr pSignal);
+	CLeaderAction* CreateAction(const LeaderActionParams* params, const bool sendActionCreatedSignal = false);
 
 private:
 	void ChangeStance(EStance stance);

@@ -43,7 +43,7 @@ void StalkerModule::UpdateInstance(StalkerInstance& instance, float frameTime)
 		if (instance.lastInTargetFov != inTargetFov)
 		{
 			instance.lastInTargetFov = inTargetFov;
-			instance.SendSignal(inTargetFov ? "OnInTargetFov" : "OnNotInTargetFov");
+			instance.SendSignal(inTargetFov ? gEnv->pAISystem->GetSignalManager()->GetBuiltInSignalDescriptions().GetOnInTargetFov() : gEnv->pAISystem->GetSignalManager()->GetBuiltInSignalDescriptions().GetOnNotInTargetFov());
 		}
 	}
 }
@@ -79,7 +79,7 @@ void StalkerModule::LineOfSightRayComplete(const QueuedRayID& rayID, const RayCa
 			if (visible != instance->lastVisibleFromTarget)
 			{
 				instance->lastVisibleFromTarget = visible;
-				instance->SendSignal(visible ? "OnVisibleFromTarget" : "OnNotVisibleFromTarget");
+				instance->SendSignal(visible ? gEnv->pAISystem->GetSignalManager()->GetBuiltInSignalDescriptions().GetOnNotVisibleFromTarget() : gEnv->pAISystem->GetSignalManager()->GetBuiltInSignalDescriptions().GetOnNotVisibleFromTarget());
 			}
 		}
 	}

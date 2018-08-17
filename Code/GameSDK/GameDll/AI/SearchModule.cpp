@@ -120,9 +120,8 @@ void SearchSpot::MarkAsSearchedBy(SearchActor& participant, float timeout)
 			if (agent)
 			{
 				if(m_isTargetSearchSpot)
-					agent.SetSignal(0, "OnTargetSearchSpotSeen");
-
-				agent.SetSignal(0, "OnAssignedSearchSpotSeen");
+					agent.SetSignal(gEnv->pAISystem->GetSignalManager()->CreateSignal(AISIGNAL_INCLUDE_DISABLED, gEnv->pAISystem->GetSignalManager()->GetBuiltInSignalDescriptions().GetOnTargetSearchSpotSeen()));
+				agent.SetSignal(gEnv->pAISystem->GetSignalManager()->CreateSignal(AISIGNAL_INCLUDE_DISABLED, gEnv->pAISystem->GetSignalManager()->GetBuiltInSignalDescriptions().GetOnAssignedSearchSpotSeen()));
 			}
 		}
 		else
@@ -130,7 +129,7 @@ void SearchSpot::MarkAsSearchedBy(SearchActor& participant, float timeout)
 			Agent agent(m_assigneeID);
 			if (agent)
 			{
-				agent.SetSignal(0, "OnAssignedSearchSpotSeenBySomeoneElse");
+				agent.SetSignal(gEnv->pAISystem->GetSignalManager()->CreateSignal(AISIGNAL_INCLUDE_DISABLED, gEnv->pAISystem->GetSignalManager()->GetBuiltInSignalDescriptions().GetOnAssignedSearchSpotSeenBySomeoneElse()));
 			}
 		}
 		m_assigneeID = 0;

@@ -4,7 +4,6 @@
 #include "Mannequin/AnimActionTriState.h"
 #include <CryAISystem/BehaviorTree/Action.h>
 
-
 namespace BehaviorTree
 {
 // Play an animation fragment directly through Mannequin (start a fragment for a specific FragmentID), and wait until it is done
@@ -32,11 +31,11 @@ public:
 
 	AnimateFragment();
 
-	virtual LoadResult LoadFromXml(const XmlNodeRef& xml, const LoadContext& context) override;
+	virtual LoadResult LoadFromXml(const XmlNodeRef& xml, const struct LoadContext& context, const bool strictMode) override;
 
-#ifdef USING_BEHAVIOR_TREE_NODE_CUSTOM_DEBUG_TEXT
+#ifdef DEBUG_MODULAR_BEHAVIOR_TREE
 	virtual void GetCustomDebugText(const UpdateContext& updateContext, stack_string& debugText) const override;
-#endif
+#endif // DEBUG_MODULAR_BEHAVIOR_TREE
 
 protected:
 	virtual void OnInitialize(const UpdateContext& context) override;
@@ -50,9 +49,9 @@ private:
 	// The CRC value for the fragment name.
 	uint32 m_fragNameCrc32;
 
-#ifdef USING_BEHAVIOR_TREE_NODE_CUSTOM_DEBUG_TEXT
+#ifdef DEBUG_MODULAR_BEHAVIOR_TREE
 	// The actual fragment name.
 	string m_fragName;
-#endif
+#endif // DEBUG_MODULAR_BEHAVIOR_TREE
 };
 }

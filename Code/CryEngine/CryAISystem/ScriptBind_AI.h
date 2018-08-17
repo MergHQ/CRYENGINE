@@ -1878,7 +1878,7 @@ protected:
 	void     SetPFProperties(AgentMovementAbility& moveAbility, EAIPathType nPathType) const;
 	void     SetPFProperties(AgentMovementAbility& moveAbility, const string& sPathType) const;
 
-	bool     GetSignalExtraData(IFunctionHandler* pH, int iParam, IAISignalExtraData*& pEData);
+	bool     GetSignalExtraData(IFunctionHandler* pH, int iParam, AISignals::IAISignalExtraData*& pEData);
 
 	int      RayWorldIntersectionWrapper(Vec3 org, Vec3 dir, int objtypes, unsigned int flags, ray_hit* hits, int nMaxHits,
 	                                     IPhysicalEntity** pSkipEnts = 0, int nSkipEnts = 0, void* pForeignData = 0, int iForeignData = 0);

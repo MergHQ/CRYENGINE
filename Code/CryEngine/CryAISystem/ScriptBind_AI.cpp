@@ -1046,28 +1046,28 @@ CScriptBind_AI::CScriptBind_AI() :
 	SCRIPT_REG_GLOBAL(AIREADIBILITY_INTERESTING);
 
 	//SCRIPT_REG_GLOBAL("SIGNALID_THROWGRENADE", -10);
-	gEnv->pScriptSystem->SetGlobalValue("SIGNALID_READIBILITY", SIGNALFILTER_READABILITY);
-	gEnv->pScriptSystem->SetGlobalValue("SIGNALID_READIBILITYAT", SIGNALFILTER_READABILITYAT);
-	SCRIPT_REG_GLOBAL(SIGNALFILTER_LASTOP);
-	SCRIPT_REG_GLOBAL(SIGNALFILTER_GROUPONLY);
-	SCRIPT_REG_GLOBAL(SIGNALFILTER_GROUPONLY_EXCEPT);
-	SCRIPT_REG_GLOBAL(SIGNALFILTER_FACTIONONLY);
-	SCRIPT_REG_GLOBAL(SIGNALFILTER_ANYONEINCOMM);
-	SCRIPT_REG_GLOBAL(SIGNALFILTER_ANYONEINCOMM_EXCEPT);
-	SCRIPT_REG_GLOBAL(SIGNALFILTER_TARGET);
-	SCRIPT_REG_GLOBAL(SIGNALFILTER_SUPERGROUP);
-	SCRIPT_REG_GLOBAL(SIGNALFILTER_SUPERFACTION);
-	SCRIPT_REG_GLOBAL(SIGNALFILTER_SUPERTARGET);
-	SCRIPT_REG_GLOBAL(SIGNALFILTER_NEARESTGROUP);
-	SCRIPT_REG_GLOBAL(SIGNALFILTER_NEARESTINCOMM);
-	SCRIPT_REG_GLOBAL(SIGNALFILTER_NEARESTINCOMM_FACTION);
-	SCRIPT_REG_GLOBAL(SIGNALFILTER_NEARESTINCOMM_LOOKING);
-	SCRIPT_REG_GLOBAL(SIGNALFILTER_HALFOFGROUP);
-	SCRIPT_REG_GLOBAL(SIGNALFILTER_SENDER);
-	SCRIPT_REG_GLOBAL(SIGNALFILTER_LEADER);
-	SCRIPT_REG_GLOBAL(SIGNALFILTER_LEADERENTITY);
-	SCRIPT_REG_GLOBAL(SIGNALFILTER_FORMATION);
-	SCRIPT_REG_GLOBAL(SIGNALFILTER_FORMATION_EXCEPT);
+	gEnv->pScriptSystem->SetGlobalValue("SIGNALID_READIBILITY", AISignals::SIGNALFILTER_READABILITY);
+	gEnv->pScriptSystem->SetGlobalValue("SIGNALID_READIBILITYAT", AISignals::SIGNALFILTER_READABILITYAT);
+	gEnv->pScriptSystem->SetGlobalValue("SIGNALFILTER_LASTOP", AISignals::SIGNALFILTER_LASTOP);
+	gEnv->pScriptSystem->SetGlobalValue("SIGNALFILTER_GROUPONLY", AISignals::SIGNALFILTER_GROUPONLY);
+	gEnv->pScriptSystem->SetGlobalValue("SIGNALFILTER_GROUPONLY_EXCEPT", AISignals::SIGNALFILTER_GROUPONLY_EXCEPT);
+	gEnv->pScriptSystem->SetGlobalValue("SIGNALFILTER_FACTIONONLY", AISignals::SIGNALFILTER_FACTIONONLY);
+	gEnv->pScriptSystem->SetGlobalValue("SIGNALFILTER_ANYONEINCOMM", AISignals::SIGNALFILTER_ANYONEINCOMM);
+	gEnv->pScriptSystem->SetGlobalValue("SIGNALFILTER_ANYONEINCOMM_EXCEPT", AISignals::SIGNALFILTER_ANYONEINCOMM_EXCEPT);
+	gEnv->pScriptSystem->SetGlobalValue("SIGNALFILTER_TARGET", AISignals::SIGNALFILTER_TARGET);
+	gEnv->pScriptSystem->SetGlobalValue("SIGNALFILTER_SUPERGROUP", AISignals::SIGNALFILTER_SUPERGROUP);
+	gEnv->pScriptSystem->SetGlobalValue("SIGNALFILTER_SUPERFACTION", AISignals::SIGNALFILTER_SUPERFACTION);
+	gEnv->pScriptSystem->SetGlobalValue("SIGNALFILTER_SUPERTARGET", AISignals::SIGNALFILTER_SUPERTARGET);
+	gEnv->pScriptSystem->SetGlobalValue("SIGNALFILTER_NEARESTGROUP", AISignals::SIGNALFILTER_NEARESTGROUP);
+	gEnv->pScriptSystem->SetGlobalValue("SIGNALFILTER_NEARESTINCOMM", AISignals::SIGNALFILTER_NEARESTINCOMM);
+	gEnv->pScriptSystem->SetGlobalValue("SIGNALFILTER_NEARESTINCOMM_FACTION", AISignals::SIGNALFILTER_NEARESTINCOMM_FACTION);
+	gEnv->pScriptSystem->SetGlobalValue("SIGNALFILTER_NEARESTINCOMM_LOOKING", AISignals::SIGNALFILTER_NEARESTINCOMM_LOOKING);
+	gEnv->pScriptSystem->SetGlobalValue("SIGNALFILTER_HALFOFGROUP", AISignals::SIGNALFILTER_HALFOFGROUP);
+	gEnv->pScriptSystem->SetGlobalValue("SIGNALFILTER_SENDER", AISignals::SIGNALFILTER_SENDER);
+	gEnv->pScriptSystem->SetGlobalValue("SIGNALFILTER_LEADER", AISignals::SIGNALFILTER_LEADER);
+	gEnv->pScriptSystem->SetGlobalValue("SIGNALFILTER_LEADERENTITY", AISignals::SIGNALFILTER_LEADERENTITY);
+	gEnv->pScriptSystem->SetGlobalValue("SIGNALFILTER_FORMATION", AISignals::SIGNALFILTER_FORMATION);
+	gEnv->pScriptSystem->SetGlobalValue("SIGNALFILTER_FORMATION_EXCEPT", AISignals::SIGNALFILTER_FORMATION_EXCEPT);
 
 	SCRIPT_REG_GLOBAL(AIOBJECTFILTER_SAMEFACTION);
 	SCRIPT_REG_GLOBAL(AIOBJECTFILTER_SAMEGROUP);
@@ -2895,7 +2895,7 @@ int CScriptBind_AI::IsGoalPipe(IFunctionHandler* pH)
 	return pH->EndFunction(false);
 }
 
-bool CScriptBind_AI::GetSignalExtraData(IFunctionHandler* pH, int iParam, IAISignalExtraData*& pEData)
+bool CScriptBind_AI::GetSignalExtraData(IFunctionHandler* pH, int iParam, AISignals::IAISignalExtraData*& pEData)
 {
 	bool bDataFound = false;
 	SmartScriptTable theObj;
@@ -3007,12 +3007,13 @@ int CScriptBind_AI::Signal(IFunctionHandler* pH)
 			return pH->EndFunction();
 		}
 
-		IAISignalExtraData* pEData = 0;
+		AISignals::IAISignalExtraData* pEData = 0;
 		GetSignalExtraData(pH, 5, pEData);
 
 		if (IAIObject* aiObject = pEntity->GetAI())
 		{
-			GetAISystem()->SendSignal(cFilter, nSignalID, szSignalText, aiObject, pEData);
+			const AISignals::SignalSharedPtr pSignal = GetAISystem()->GetSignalManager()->CreateSignal_DEPRECATED(nSignalID, szSignalText, aiObject->GetAIObjectID(), pEData);
+			GetAISystem()->SendSignal(cFilter, pSignal);
 
 			return pH->EndFunction();
 		}
@@ -3063,7 +3064,7 @@ int CScriptBind_AI::FreeSignal(IFunctionHandler* pH)
 	if (pH->GetParamCount() > 4)
 		pEntity = GetEntityFromParam(pH, 5);
 
-	IAISignalExtraData* pEData = 0;
+	AISignals::IAISignalExtraData* pEData = nullptr;
 	GetSignalExtraData(pH, 6, pEData);
 
 	if (pEntity)
@@ -3071,7 +3072,7 @@ int CScriptBind_AI::FreeSignal(IFunctionHandler* pH)
 		pObject = pEntity->GetAI();
 	}
 
-	GetAISystem()->SendAnonymousSignal(nSignalID, szSignalText, pos, fRadius, pObject, pEData);
+	GetAISystem()->SendAnonymousSignal(GetAISystem()->GetSignalManager()->CreateSignal_DEPRECATED(nSignalID, szSignalText, pObject->GetAIObjectID(), pEData), pos, fRadius);
 
 	return pH->EndFunction();
 }
@@ -5967,9 +5968,11 @@ int CScriptBind_AI::SetLeader(IFunctionHandler* pH)
 			if (pOldLeader != pAIObject)
 			{
 				if (pOldLeader)
-					GetAISystem()->SendSignal(0, 0, "OnLeaderDeassigned", pOldLeader);
+				{
+					GetAISystem()->SendSignal(AISignals::ESignalFilter::SIGNALFILTER_SENDER, GetAISystem()->GetSignalManager()->CreateSignal(AISIGNAL_INCLUDE_DISABLED, GetAISystem()->GetSignalManager()->GetBuiltInSignalDescriptions().GetOnLeaderDeassigned_DEPRECATED(), pOldLeader->GetAIObjectID()));
+				}
 				GetAISystem()->SetLeader(pAIObject);
-				GetAISystem()->SendSignal(0, 0, "OnLeaderAssigned", pAIObject);
+				GetAISystem()->SendSignal(AISignals::ESignalFilter::SIGNALFILTER_SENDER, GetAISystem()->GetSignalManager()->CreateSignal(AISIGNAL_INCLUDE_DISABLED, GetAISystem()->GetSignalManager()->GetBuiltInSignalDescriptions().GetOnLeaderAssigned_DEPRECATED(), pAIObject->GetAIObjectID()));
 			}
 		}
 	}
@@ -8574,9 +8577,9 @@ int CScriptBind_AI::NotifySurpriseEntityAction(IFunctionHandler* pH)
 			IAIObject* pAttTarget = pAIActor->GetAttentionTarget();
 			if (pAttTarget && (pAttTarget->GetEntityID() == miracleId))
 			{
-				IAISignalExtraData* pData = gEnv->pAISystem->CreateSignalExtraData();
+				AISignals::IAISignalExtraData* pData = GetAISystem()->CreateSignalExtraData();
 				pData->iValue = note;
-				pAIActor->SetSignal(1, "SURPRISE_ACTION", pEntity, pData);
+				pAIActor->SetSignal(GetAISystem()->GetSignalManager()->CreateSignal(AISIGNAL_DEFAULT, GetAISystem()->GetSignalManager()->GetBuiltInSignalDescriptions().GetOnSurpriseAction_DEPRECATED(), miracleId, pData));
 			}
 		}
 	}

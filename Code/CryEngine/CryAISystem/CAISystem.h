@@ -59,7 +59,11 @@ struct ITacticalPointSystem;
 struct AgentPathfindingProperties;
 struct IFireCommandDesc;
 struct IVisArea;
-struct IAISignalExtraData;
+
+namespace AISignals
+{
+	struct IAISignalExtraData;
+}
 
 class CAIActionManager;
 class ICentralInterestManager;
@@ -165,37 +169,37 @@ public:
 	virtual void                DummyFunctionNumberOne(void);
 
 	//If disabled most things early out
-	virtual void                                 Enable(bool enable = true);
-	virtual void                                 SetActorProxyFactory(IAIActorProxyFactory* pFactory);
-	virtual IAIActorProxyFactory*                GetActorProxyFactory() const;
-	virtual void                                 SetGroupProxyFactory(IAIGroupProxyFactory* pFactory);
-	virtual IAIGroupProxyFactory*                GetGroupProxyFactory() const;
-	virtual IAIGroupProxy*                       GetAIGroupProxy(int groupID);
+	virtual void                                  Enable(bool enable = true);
+	virtual void                                  SetActorProxyFactory(IAIActorProxyFactory* pFactory);
+	virtual IAIActorProxyFactory*                 GetActorProxyFactory() const;
+	virtual void                                  SetGroupProxyFactory(IAIGroupProxyFactory* pFactory);
+	virtual IAIGroupProxyFactory*                 GetGroupProxyFactory() const;
+	virtual IAIGroupProxy*                        GetAIGroupProxy(int groupID);
 
-	virtual IActorLookUp*                        GetActorLookup()              { return gAIEnv.pActorLookUp; }
+	virtual IActorLookUp*                         GetActorLookup() { return gAIEnv.pActorLookUp; }
 
-	virtual IAISystem::GlobalRayCaster*          GetGlobalRaycaster()          { return gAIEnv.pRayCaster; }
-	virtual IAISystem::GlobalIntersectionTester* GetGlobalIntersectionTester() { return gAIEnv.pIntersectionTester; }
+	virtual IAISystem::GlobalRayCaster*           GetGlobalRaycaster() { return gAIEnv.pRayCaster; }
+	virtual IAISystem::GlobalIntersectionTester*  GetGlobalIntersectionTester() { return gAIEnv.pIntersectionTester; }
 
 	//Every frame (multiple time steps per frame possible?)		//TODO find out
 	//	currentTime - AI time since game start in seconds (GetCurrentTime)
 	//	frameTime - since last update (GetFrameTime)
-	virtual void                Update(CTimeValue currentTime, float frameTime);
-
-	virtual bool                RegisterSystemComponent(IAISystemComponent* pComponent);
-	virtual bool                UnregisterSystemComponent(IAISystemComponent* pComponent);
-
-	void                        OnAgentDeath(EntityId deadEntityID, EntityId killerID);
-
-	void                        OnAIObjectCreated(CAIObject* pObject);
-	void                        OnAIObjectRemoved(CAIObject* pObject);
-
-	virtual void                Event(int eventT, const char*);
-	virtual IAISignalExtraData* CreateSignalExtraData() const;
-	virtual void                FreeSignalExtraData(IAISignalExtraData* pData) const;
-	virtual void                SendSignal(unsigned char cFilter, int nSignalId, const char* szText, IAIObject* pSenderObject, IAISignalExtraData* pData = NULL, uint32 crcCode = 0);
-	virtual void                SendAnonymousSignal(int nSignalId, const char* szText, const Vec3& pos, float fRadius, IAIObject* pSenderObject, IAISignalExtraData* pData = NULL);
-	virtual void                OnSystemEvent(ESystemEvent event, UINT_PTR wparam, UINT_PTR lparam);
+	virtual void                                  Update(CTimeValue currentTime, float frameTime);
+												  
+	virtual bool                                  RegisterSystemComponent(IAISystemComponent* pComponent);
+	virtual bool                                  UnregisterSystemComponent(IAISystemComponent* pComponent);
+												  
+	void                                          OnAgentDeath(EntityId deadEntityID, EntityId killerID);
+												  
+	void                                          OnAIObjectCreated(CAIObject* pObject);
+	void                                          OnAIObjectRemoved(CAIObject* pObject);
+												  
+	virtual void                                  Event(int eventT, const char*);
+	virtual void                                  SendSignal(unsigned char cFilter, const AISignals::SignalSharedPtr& pSignal);
+	virtual void                                  SendAnonymousSignal(const AISignals::SignalSharedPtr& pSignal, const Vec3& pos, float radius);
+	virtual AISignals::IAISignalExtraData*        CreateSignalExtraData() const;
+	virtual void                                  FreeSignalExtraData(AISignals::IAISignalExtraData* pData) const;
+	virtual void                                  OnSystemEvent(ESystemEvent event, UINT_PTR wparam, UINT_PTR lparam);
 
 	//Basic////////////////////////////////////////////////////////////////////////////////////////////////////////
 	///////////////////////////////////////////////////////////////////////////////////////////////////////////////
@@ -321,6 +325,7 @@ public:
 	virtual struct IMovementSystem*             GetMovementSystem() const;
 	virtual AIActionSequence::ISequenceManager* GetSequenceManager() const;
 	virtual IClusterDetector*                   GetClusterDetector() const;
+	virtual AISignals::ISignalManager*          GetSignalManager() const;
 
 	virtual ISmartObjectManager*                GetSmartObjectManager();
 	virtual IAIObjectManager*                   GetAIObjectManager();

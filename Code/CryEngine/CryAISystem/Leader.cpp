@@ -125,7 +125,7 @@ void CLeader::Update(EUpdateType type)
 
 	while (!m_State.vSignals.empty())
 	{
-		AISIGNAL sstruct = m_State.vSignals.back();
+		AISignals::SignalSharedPtr sstruct = m_State.vSignals.back();
 		m_State.vSignals.pop_back();
 		ProcessSignal(sstruct);
 	}
@@ -155,7 +155,7 @@ void CLeader::Update(EUpdateType type)
 		// inform the puppet that the order is done
 		CWeakRef<CAIObject> refTarget = m_pGroup->GetAttentionTarget(true);
 		CAIObject* pTarget = refTarget.GetAIObject();
-		AISignalExtraData* pData = new AISignalExtraData;
+		AISignals::AISignalExtraData* pData = new AISignals::AISignalExtraData;
 		pData->iValue = iActionType;
 		pData->iValue2 = iActionSubType;
 		if (pTarget)
@@ -181,10 +181,10 @@ void CLeader::Update(EUpdateType type)
 		int sigFilter;
 		CAIActor* pDestActor = CastToCAIActorSafe(GetAssociation().GetAIObject());
 		if (pDestActor && pDestActor->IsEnabled())
-			sigFilter = SIGNALFILTER_SENDER;
+			sigFilter = AISignals::SIGNALFILTER_SENDER;
 		else
 		{
-			sigFilter = SIGNALFILTER_SUPERGROUP;
+			sigFilter = AISignals::SIGNALFILTER_SUPERGROUP;
 			if (!m_pGroup->GetUnits().empty())
 			{
 				TUnitList::iterator itUnit = m_pGroup->GetUnits().begin();
@@ -195,9 +195,15 @@ void CLeader::Update(EUpdateType type)
 		if (pDestActor)
 		{
 			if (eUpdateResult == CLeaderAction::ACTION_DONE)
-				GetAISystem()->SendSignal(sigFilter, 10, "OnLeaderActionCompleted", pDestActor, pData);
+			{
+				const AISignals::SignalSharedPtr pSignal = GetAISystem()->GetSignalManager()->CreateSignal(AISIGNAL_ALLOW_DUPLICATES, gEnv->pAISystem->GetSignalManager()->GetBuiltInSignalDescriptions().GetOnLeaderActionCompleted_DEPRECATED(), pDestActor->GetAIObjectID(), pData);
+				GetAISystem()->SendSignal(sigFilter, pSignal);
+			}
 			else
-				GetAISystem()->SendSignal(sigFilter, 10, "OnLeaderActionFailed", pDestActor, pData);
+			{
+				const AISignals::SignalSharedPtr pSignal = GetAISystem()->GetSignalManager()->CreateSignal(AISIGNAL_ALLOW_DUPLICATES, gEnv->pAISystem->GetSignalManager()->GetBuiltInSignalDescriptions().GetOnLeaderActionFailed_DEPRECATED(), pDestActor->GetAIObjectID(), pData);
+				GetAISystem()->SendSignal(sigFilter, pSignal);
+			}
 		}
 
 	}
@@ -206,22 +212,23 @@ void CLeader::Update(EUpdateType type)
 
 //
 //----------------------------------------------------------------------------------------------------
-void CLeader::ProcessSignal(AISIGNAL& signal)
+void CLeader::ProcessSignal(const AISignals::SignalSharedPtr pSignal)
 {
-	if (m_pCurrentAction && m_pCurrentAction->ProcessSignal(signal))
+	
+	if (m_pCurrentAction && m_pCurrentAction->ProcessSignal(pSignal))
 		return;
 
 	CCCPOINT(CLeader_ProcessSignal);
 
-	AISignalExtraData data;
-	if (signal.pEData)
+	AISignals::AISignalExtraData data;
+	if (pSignal->GetExtraData())
 	{
-		data = *(AISignalExtraData*)signal.pEData;
-		delete (AISignalExtraData*)signal.pEData;
-		signal.pEData = NULL;
+		data = *(AISignals::AISignalExtraData*)pSignal->GetExtraData();
+		gEnv->pAISystem->FreeSignalExtraData(pSignal->GetExtraData());
+		pSignal->SetExtraData(nullptr);
 	}
 
-	if (signal.Compare(gAIEnv.SignalCRCs.m_nAIORD_ATTACK))
+	if (pSignal->GetSignalDescription() == gEnv->pAISystem->GetSignalManager()->GetBuiltInSignalDescriptions().GetOnOrderAttack_DEPRECATED())
 	{
 		ELeaderActionSubType attackType = static_cast<ELeaderActionSubType>(data.iValue);
 		LeaderActionParams params;
@@ -235,12 +242,12 @@ void CLeader::ProcessSignal(AISIGNAL& signal)
 		params.name = data.GetObjectName();
 		Attack(&params);
 	}
-	else if (signal.Compare(gAIEnv.SignalCRCs.m_nAIORD_SEARCH))
+	else if (pSignal->GetSignalDescription() == gEnv->pAISystem->GetSignalManager()->GetBuiltInSignalDescriptions().GetOnOrdSearch_DEPRECATED())
 	{
 		Vec3 startPoint = data.point;
 		Search((startPoint.IsZero() ? m_pGroup->GetEnemyPositionKnown() : startPoint), data.fValue, (data.iValue ? data.iValue : UPR_ALL), data.iValue2);
 	}
-	else if (signal.Compare(gAIEnv.SignalCRCs.m_nOnScaleFormation))
+	else if (pSignal->GetSignalDescription() == gEnv->pAISystem->GetSignalManager()->GetBuiltInSignalDescriptions().GetOnScaleFormation_DEPRECATED())
 	{
 		CCCPOINT(CLeader_ProcessSignal_ScaleFormation);
 
@@ -249,21 +256,22 @@ void CLeader::ProcessSignal(AISIGNAL& signal)
 		if (pFormationOwner)
 			pFormationOwner->m_pFormation->SetScale(fScale);
 	}
-	else if (signal.Compare(gAIEnv.SignalCRCs.m_nRPT_LeaderDead))
+	else if (pSignal->GetSignalDescription() == gEnv->pAISystem->GetSignalManager()->GetBuiltInSignalDescriptions().GetOnRPTLeaderDead_DEPRECATED())
 	{
 		if (!m_pCurrentAction) // if there is a current action, the OnLeaderDied signal will be sent after the action finishes
 		{
 			CAIObject* pAILeader = GetAssociation().GetAIObject();
 			if (pAILeader && m_bLeaderAlive)
 			{
-				GetAISystem()->SendSignal(SIGNALFILTER_SUPERGROUP, 0, "OnLeaderDied", pAILeader);
+				const AISignals::SignalSharedPtr pSignal = GetAISystem()->GetSignalManager()->CreateSignal(AISIGNAL_INCLUDE_DISABLED, gEnv->pAISystem->GetSignalManager()->GetBuiltInSignalDescriptions().GetOnLeaderDied_DEPRECATED(), pAILeader->GetAIObjectID());
+				GetAISystem()->SendSignal(AISignals::ESignalFilter::SIGNALFILTER_SUPERGROUP, pSignal);
 				m_bLeaderAlive = false;
 			}
 		}
 	}
-	else if (IEntity* pEntity = gEnv->pEntitySystem->GetEntity(signal.senderID))
+	else if (IEntity* pEntity = gEnv->pEntitySystem->GetEntity(pSignal->GetSenderID()))
 	{
-		if (signal.Compare(gAIEnv.SignalCRCs.m_nOnUnitDied))
+		if (pSignal->GetSignalDescription() == gEnv->pAISystem->GetSignalManager()->GetBuiltInSignalDescriptions().GetOnUnitDied_DEPRECATED())
 		{
 			CAIActor* pActor = CastToCAIActorSafe(pEntity->GetAI());
 			if (m_pCurrentAction)
@@ -274,7 +282,7 @@ void CLeader::ProcessSignal(AISIGNAL& signal)
 				m_pGroup->RemoveMember(pActor);
 			// TO DO: remove use action from list if it's owned by this unit
 		}
-		else if (signal.Compare(gAIEnv.SignalCRCs.m_nOnUnitBusy))
+		else if (pSignal->GetSignalDescription() == gEnv->pAISystem->GetSignalManager()->GetBuiltInSignalDescriptions().GetOnUnitBusy_DEPRECATED())
 		{
 			CAIActor* pActor = CastToCAIActorSafe(pEntity->GetAI());
 			TUnitList::iterator senderUnit = std::find(m_pGroup->GetUnits().begin(), m_pGroup->GetUnits().end(), pActor);
@@ -291,7 +299,7 @@ void CLeader::ProcessSignal(AISIGNAL& signal)
 				m_pGroup->RemoveMember(pActor);
 			}
 		}
-		else if (signal.Compare(gAIEnv.SignalCRCs.m_nOnUnitSuspended))
+		else if (pSignal->GetSignalDescription() == gEnv->pAISystem->GetSignalManager()->GetBuiltInSignalDescriptions().GetOnUnitSuspended_DEPRECATED())
 		{
 			CAIActor* pActor = CastToCAIActorSafe(pEntity->GetAI());
 			TUnitList::iterator senderUnit = std::find(m_pGroup->GetUnits().begin(), m_pGroup->GetUnits().end(), pActor);
@@ -302,7 +310,7 @@ void CLeader::ProcessSignal(AISIGNAL& signal)
 					m_pCurrentAction->BusyUnitNotify(*senderUnit);
 			}
 		}
-		else if (signal.Compare(gAIEnv.SignalCRCs.m_nOnUnitResumed))
+		else if (pSignal->GetSignalDescription() == gEnv->pAISystem->GetSignalManager()->GetBuiltInSignalDescriptions().GetOnUnitResumed_DEPRECATED())
 		{
 			CAIActor* pActor = CastToCAIActorSafe(pEntity->GetAI());
 			TUnitList::iterator senderUnit = std::find(m_pGroup->GetUnits().begin(), m_pGroup->GetUnits().end(), pActor);
@@ -313,7 +321,7 @@ void CLeader::ProcessSignal(AISIGNAL& signal)
 					m_pCurrentAction->ResumeUnit(*senderUnit);
 			}
 		}
-		else if (signal.Compare(gAIEnv.SignalCRCs.m_nOnSetUnitProperties))
+		else if (pSignal->GetSignalDescription() == gEnv->pAISystem->GetSignalManager()->GetBuiltInSignalDescriptions().GetOnSetUnitProperties_DEPRECATED())
 		{
 			CAIActor* pActor = CastToCAIActorSafe(pEntity->GetAI());
 			TUnitList::iterator senderUnit = std::find(m_pGroup->GetUnits().begin(), m_pGroup->GetUnits().end(), pActor);
@@ -325,9 +333,9 @@ void CLeader::ProcessSignal(AISIGNAL& signal)
 
 	if (m_pCurrentAction)
 	{
-		if (signal.Compare(gAIEnv.SignalCRCs.m_nAIORD_REPORTDONE))
+		if (pSignal->GetSignalDescription() == gEnv->pAISystem->GetSignalManager()->GetBuiltInSignalDescriptions().GetOnOrderDone_DEPRECATED())
 		{
-			if (IEntity* pEntity = gEnv->pEntitySystem->GetEntity(signal.senderID))
+			if (IEntity* pEntity = gEnv->pEntitySystem->GetEntity(pSignal->GetSenderID()))
 			{
 				CAIActor* pActor = CastToCAIActorSafe(pEntity->GetAI());
 				TUnitList::iterator senderUnit = std::find(m_pGroup->GetUnits().begin(), m_pGroup->GetUnits().end(), pActor);
@@ -338,26 +346,26 @@ void CLeader::ProcessSignal(AISIGNAL& signal)
 				}
 			}
 		}
-		else if (signal.Compare(gAIEnv.SignalCRCs.m_nOnAbortAction))
+		else if (pSignal->GetSignalDescription() == gEnv->pAISystem->GetSignalManager()->GetBuiltInSignalDescriptions().GetOnAbortAction_DEPRECATED())
 		{
 			AbortExecution();
 			CLeader* pAILeader = CastToCLeaderSafe(GetAssociation().GetAIObject());
 			if (pAILeader)
-				pAILeader->SetSignal(1, "OnAbortAction", 0, 0, gAIEnv.SignalCRCs.m_nOnAbortAction);
+				pAILeader->SetSignal(GetAISystem()->GetSignalManager()->CreateSignal(AISIGNAL_DEFAULT, gEnv->pAISystem->GetSignalManager()->GetBuiltInSignalDescriptions().GetOnAbortAction_DEPRECATED()));
 		}
-		else if (signal.Compare(gAIEnv.SignalCRCs.m_nOnFormationPointReached)) /*if(!strcmp(signal.strText, "OnFormationPointReached"))*/
+		else if (pSignal->GetSignalDescription() == gEnv->pAISystem->GetSignalManager()->GetBuiltInSignalDescriptions().GetOnFormationPointReached_DEPRECATED())
 		{
 			/*
 			   // TO DO: what to do with this?
-			   IEntity* pEntity = (IEntity*)signal.pSender;
+			   IEntity* pEntity = (IEntity*)pSignal->pSender;
 			   assert(pEntity);
 			   CAIObject* pAIObj = (CAIObject*)pEntity->GetAI();
 			   assert(pAIObj);
 			   TUnitList::iterator itEnd =  m_pGroup->GetUnits().end();
-			 */
+			*/
 		}
 	}
-	else if (signal.Compare(gAIEnv.SignalCRCs.m_nOnKeepEnabled))
+	else if (pSignal->GetSignalDescription() == gEnv->pAISystem->GetSignalManager()->GetBuiltInSignalDescriptions().GetOnKeepEnabled_DEPRECATED() )
 		m_bKeepEnabled = true;
 }
 
@@ -440,7 +448,7 @@ void CLeader::OnEnemyStatsUpdated(const Vec3& avgEnemyPos, const Vec3& oldAvgEne
 		{
 			CLeader* pAILeader = CastToCLeaderSafe(GetAssociation().GetAIObject());
 			if (pAILeader)
-				pAILeader->SetSignal(1, "OnNoGroupTarget", 0, 0, gAIEnv.SignalCRCs.m_nOnNoGroupTarget);
+				pAILeader->SetSignal(GetAISystem()->GetSignalManager()->CreateSignal(AISIGNAL_DEFAULT, gEnv->pAISystem->GetSignalManager()->GetBuiltInSignalDescriptions().GetOnNoGroupTarget_DEPRECATED()));
 		}
 		else if (!avgEnemyPos.IsZero() && oldAvgEnemyPos.IsZero())
 		{
@@ -453,9 +461,10 @@ void CLeader::OnEnemyStatsUpdated(const Vec3& avgEnemyPos, const Vec3& oldAvgEne
 				IEntity* pEntity = pTarget->GetEntity();
 				if (pEntity)
 				{
-					AISignalExtraData* pData = new AISignalExtraData;
+					AISignals::AISignalExtraData* pData = new AISignals::AISignalExtraData;
 					pData->nID = pEntity->GetId();
-					GetAISystem()->SendSignal(SIGNALFILTER_SENDER, 0, "OnGroupTarget", pAILeader, pData);
+					const AISignals::SignalSharedPtr pSignal = GetAISystem()->GetSignalManager()->CreateSignal(AISIGNAL_INCLUDE_DISABLED, gEnv->pAISystem->GetSignalManager()->GetBuiltInSignalDescriptions().GetOnGroupTarget(), pAILeader->GetAIObjectID(), pData);
+					GetAISystem()->SendSignal(AISignals::ESignalFilter::SIGNALFILTER_SENDER, pSignal);
 				}
 			}
 		}
@@ -862,7 +871,7 @@ void CLeader::AssignFormationPointIndex(CUnitImg& unit, int index)
 
 //
 //--------------------------------------------------------------------------------------------------------------
-CLeaderAction* CLeader::CreateAction(const LeaderActionParams* params, const char* signalText)
+CLeaderAction* CLeader::CreateAction(const LeaderActionParams* params, const bool sendActionCreatedSignal)
 {
 	CLeaderAction* pAction(NULL);
 
@@ -886,11 +895,14 @@ CLeaderAction* CLeader::CreateAction(const LeaderActionParams* params, const cha
 	default:
 		AIAssert(!"Action type not added");
 	}
-	if (signalText)
+	if (sendActionCreatedSignal)
 	{
 		CAIObject* pAILeader = GetAssociation().GetAIObject();
 		if (pAILeader)
-			GetAISystem()->SendSignal(SIGNALFILTER_SENDER, 1, signalText, pAILeader);
+		{
+			const AISignals::SignalSharedPtr pSignal = GetAISystem()->GetSignalManager()->CreateSignal(AISIGNAL_DEFAULT, gEnv->pAISystem->GetSignalManager()->GetBuiltInSignalDescriptions().GetOnActionCreated(), pAILeader->GetAIObjectID());
+			GetAISystem()->SendSignal(AISignals::ESignalFilter::SIGNALFILTER_SENDER, pSignal);
+		}
 	}
 
 	if (pAction)
@@ -982,7 +994,7 @@ void CLeader::AssignTargetToUnits(uint32 unitProp, int maxUnitsPerTarget)
 		CUnitImg& unit = *it;
 		if (unit.GetProperties() & unitProp)
 		{
-			AISignalExtraData data;
+			AISignals::AISignalExtraData data;
 			unit.ClearPlanning();
 			IEntity* pTargetEntity = NULL;
 
@@ -1051,7 +1063,8 @@ void CLeader::DeadUnitNotify(CAIActor* pAIObj)
 {
 	if (pAIObj && GetAssociation() == pAIObj)
 	{
-		GetAISystem()->SendSignal(SIGNALFILTER_SUPERGROUP, 0, "OnLeaderDied", pAIObj);
+		const AISignals::SignalSharedPtr pSignal = GetAISystem()->GetSignalManager()->CreateSignal(AISIGNAL_INCLUDE_DISABLED, gEnv->pAISystem->GetSignalManager()->GetBuiltInSignalDescriptions().GetOnLeaderDied_DEPRECATED(), pAIObj->GetAIObjectID());
+		GetAISystem()->SendSignal(AISignals::SIGNALFILTER_SUPERGROUP, pSignal);
 		m_bLeaderAlive = false;
 	}
 

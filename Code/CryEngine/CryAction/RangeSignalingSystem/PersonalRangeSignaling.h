@@ -38,9 +38,9 @@ public:
 	bool IsEnabled() const { return m_bEnabled; }
 
 	// Utils ---------------------------------------------------------
-	bool           AddRangeSignal(float fRadius, float fBoundary, const char* sSignal, IAISignalExtraData* pData = NULL);
-	bool           AddTargetRangeSignal(EntityId IdTarget, float fRadius, float fBoundary, const char* sSignal, IAISignalExtraData* pData = NULL);
-	bool           AddAngleSignal(float fAngle, float fBoundary, const char* sSignal, IAISignalExtraData* pData = NULL);
+	bool           AddRangeSignal(float fRadius, float fBoundary, const char* sSignal, AISignals::IAISignalExtraData* pData = NULL);
+	bool           AddTargetRangeSignal(EntityId IdTarget, float fRadius, float fBoundary, const char* sSignal, AISignals::IAISignalExtraData* pData = NULL);
+	bool           AddAngleSignal(float fAngle, float fBoundary, const char* sSignal, AISignals::IAISignalExtraData* pData = NULL);
 	EntityId       GetEntityId() const;
 	IEntity*       GetEntity();
 	IEntity const* GetEntity() const;
@@ -51,8 +51,8 @@ private:
 	CRange*             SearchRange(const char* sSignal, const VecRanges& vecRangeList) const;
 	CAngleAlert const*  GetAngleTo(const Vec3& vPos, bool bUseBoundary = false) const;
 	CAngleAlert*        SearchAngle(const char* sSignal) const;
-	void                SendSignal(IActor* pActor, const string& sSignal, IAISignalExtraData* pData = NULL) const;
-	IAISignalExtraData* PrepareSignalData(IAISignalExtraData* pRequestedData) const;
+	void                SendSignal(IActor* pActor, const string& sSignal, AISignals::IAISignalExtraData* pData = NULL) const;
+	AISignals::IAISignalExtraData* PrepareSignalData(AISignals::IAISignalExtraData* pRequestedData) const;
 	void                DebugDraw(uint32 uOrder) const;
 	void                CheckActorRanges(IActor* pActor);
 	void                CheckActorTargetRanges(IActor* pActor);

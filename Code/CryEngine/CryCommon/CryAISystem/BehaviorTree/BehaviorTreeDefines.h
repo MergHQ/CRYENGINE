@@ -1,0 +1,19 @@
+// Copyright 2001-2018 Crytek GmbH / Crytek Group. All rights reserved.
+
+//! \cond INTERNAL
+
+#pragma once
+
+#if !defined(_RELEASE) && CRY_PLATFORM_WINDOWS
+	#define DEBUG_MODULAR_BEHAVIOR_TREE
+	#define USING_BEHAVIOR_TREE_EDITOR
+#endif
+
+#ifdef USING_BEHAVIOR_TREE_EDITOR
+	#define USING_BEHAVIOR_TREE_SERIALIZATION
+	#define USING_BEHAVIOR_TREE_XML_DESCRIPTION_CREATION
+#endif
+
+#if defined(DEBUG_MODULAR_BEHAVIOR_TREE) || defined(USING_BEHAVIOR_TREE_EDITOR)
+	#define STORE_BLACKBOARD_VARIABLE_NAMES
+#endif

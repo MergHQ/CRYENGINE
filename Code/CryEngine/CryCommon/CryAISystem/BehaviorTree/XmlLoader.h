@@ -17,7 +17,9 @@ public:
 		return behaviorTreeNode;
 	}
 
-	INodePtr CreateBehaviorTreeRootNodeFromBehaviorTreeXml(const XmlNodeRef& behaviorTreeXmlNode, const LoadContext& context) const
+	// strictMode = true -> Tree will only be loaded if the result of the operation is LoadSucess. This is used when loading behavior trees in Runtime. It has to be strict to prevent running an invalid tree.
+	// strictMode = false -> Tree will be loaded even if the result of the operation is LoadFailure. This is used in the Interim Editor, since it's convinient to still load the tree with errors so we can fix them without having to manually edit the XML.
+	INodePtr CreateBehaviorTreeRootNodeFromBehaviorTreeXml(const XmlNodeRef& behaviorTreeXmlNode, const LoadContext& context, const bool strictMode = true) const
 	{
 		XmlNodeRef rootXmlNode = behaviorTreeXmlNode->findChild("Root");
 		IF_UNLIKELY (!rootXmlNode)
@@ -26,10 +28,10 @@ public:
 			return INodePtr();
 		}
 
-		return CreateBehaviorTreeNodeFromXml(rootXmlNode, context);
+		return CreateBehaviorTreeNodeFromXml(rootXmlNode, context, strictMode);
 	}
 
-	INodePtr CreateBehaviorTreeNodeFromXml(const XmlNodeRef& xmlNode, const LoadContext& context) const
+	INodePtr CreateBehaviorTreeNodeFromXml(const XmlNodeRef& xmlNode, const LoadContext& context, const bool strictMode) const
 	{
 		if (xmlNode->getChildCount() != 1)
 		{
@@ -37,7 +39,7 @@ public:
 			return INodePtr();
 		}
 
-		return context.nodeFactory.CreateNodeFromXml(xmlNode->getChild(0), context);
+		return context.nodeFactory.CreateNodeFromXml(xmlNode->getChild(0), context, strictMode);
 	}
 
 };

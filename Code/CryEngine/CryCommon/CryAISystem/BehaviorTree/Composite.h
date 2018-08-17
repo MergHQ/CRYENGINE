@@ -2,10 +2,8 @@
 
 #pragma once
 
-#ifndef Composite_h
-	#define Composite_h
-
-	#include "Node.h"
+#include "BehaviorTreeDefines.h"
+#include "Node.h"
 
 namespace BehaviorTree
 {
@@ -20,9 +18,9 @@ public:
 		m_children.push_back(child);
 	}
 
-	virtual LoadResult LoadFromXml(const XmlNodeRef& xml, const LoadContext& context) override
+	virtual LoadResult LoadFromXml(const XmlNodeRef& xml, const struct LoadContext& context, const bool strictMode) override
 	{
-		return BaseClass::LoadFromXml(xml, context);
+		return BaseClass::LoadFromXml(xml, context, strictMode);
 	}
 
 	#ifdef USING_BEHAVIOR_TREE_SERIALIZATION
@@ -70,20 +68,20 @@ class CompositeWithChildLoader : public Composite<INodePtr>
 	typedef Composite<INodePtr> BaseClass;
 
 public:
-	virtual LoadResult LoadFromXml(const XmlNodeRef& xml, const LoadContext& context) override
+	virtual LoadResult LoadFromXml(const XmlNodeRef& xml, const LoadContext& context, const bool strictMode) override
 	{
-		IF_UNLIKELY (BaseClass::LoadFromXml(xml, context) == LoadFailure)
+		IF_UNLIKELY (BaseClass::LoadFromXml(xml, context, strictMode) == LoadFailure)
 			return LoadFailure;
 
-		return ConstructChildNodesFromXml(xml, context);
+		return ConstructChildNodesFromXml(xml, context, strictMode);
 	}
 
 protected:
-	LoadResult ConstructChildNodesFromXml(const XmlNodeRef& xml, const LoadContext& context)
+	LoadResult ConstructChildNodesFromXml(const XmlNodeRef& xml, const LoadContext& context, const bool strictMode)
 	{
 		for (int i = 0; i < xml->getChildCount(); ++i)
 		{
-			INodePtr child = context.nodeFactory.CreateNodeFromXml(xml->getChild(i), context);
+			INodePtr child = context.nodeFactory.CreateNodeFromXml(xml->getChild(i), context, strictMode);
 
 			if (child)
 			{
@@ -99,5 +97,3 @@ protected:
 	}
 };
 }
-
-#endif // Composite_h

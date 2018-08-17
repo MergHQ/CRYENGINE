@@ -14,11 +14,13 @@
 #include <CrySystem/Timer.h>
 #include "Cover/CoverSystem.h"
 #include "GoalPipeXMLReader.h"
+#include "GoalOps/ShootOp.h"
 #include <CryAISystem/IAIActor.h>
 #include <CryAISystem/IAgent.h>
 #include <CryAISystem/IMovementSystem.h>
 #include <CryAISystem/MovementRequest.h>
 #include <CryAISystem/MovementStyle.h>
+#include <CrySerialization/SerializationUtils.h>
 #include "PipeUser.h"                                // Big one, but needed for GetProxy and SetBehavior
 #include "TacticalPointSystem/TacticalPointSystem.h" // Big one, but needed for InitQueryContextFromActor
 #include "TargetSelection/TargetTrackManager.h"
@@ -29,36 +31,13 @@
 
 #include <../CryAction/ICryMannequin.h>
 
+#ifdef USING_BEHAVIOR_TREE_SERIALIZATION
+	#include <CrySerialization/Enum.h>
+	#include <CrySerialization/ClassFactory.h>
+#endif
+
 namespace
 {
-struct FireModeDictionary
-{
-	FireModeDictionary();
-	CXMLAttrReader<EFireMode> fireMode;
-};
-
-FireModeDictionary::FireModeDictionary()
-{
-	fireMode.Add("Off", FIREMODE_OFF);
-	fireMode.Add("Burst", FIREMODE_BURST);
-	fireMode.Add("Continuous", FIREMODE_CONTINUOUS);
-	fireMode.Add("Forced", FIREMODE_FORCED);
-	fireMode.Add("Aim", FIREMODE_AIM);
-	fireMode.Add("Secondary", FIREMODE_SECONDARY);
-	fireMode.Add("SecondarySmoke", FIREMODE_SECONDARY_SMOKE);
-	fireMode.Add("Melee", FIREMODE_MELEE);
-	fireMode.Add("Kill", FIREMODE_KILL);
-	fireMode.Add("BurstWhileMoving", FIREMODE_BURST_WHILE_MOVING);
-	fireMode.Add("PanicSpread", FIREMODE_PANIC_SPREAD);
-	fireMode.Add("BurstDrawFire", FIREMODE_BURST_DRAWFIRE);
-	fireMode.Add("MeleeForced", FIREMODE_MELEE_FORCED);
-	fireMode.Add("BurstSnipe", FIREMODE_BURST_SNIPE);
-	fireMode.Add("AimSweep", FIREMODE_AIM_SWEEP);
-	fireMode.Add("BurstOnce", FIREMODE_BURST_ONCE);
-}
-
-FireModeDictionary g_fireModeDictionary;
-
 CPipeUser* GetPipeUser(const BehaviorTree::UpdateContext& context)
 {
 	assert(context.entity.GetAI());
@@ -139,22 +118,22 @@ public:
 		}
 	};
 
-	virtual LoadResult LoadFromXml(const XmlNodeRef& goalPipeXml, const LoadContext& context) override
+	virtual LoadResult LoadFromXml(const XmlNodeRef& xml, const struct LoadContext& context, const bool strictMode) override
 	{
-		LoadName(goalPipeXml, context);
+		LoadName(xml, context);
 
 		CGoalPipeXMLReader reader;
-		reader.ParseGoalPipe(m_goalPipeName, goalPipeXml, CPipeManager::SilentlyReplaceDuplicate);
+		reader.ParseGoalPipe(m_goalPipeName, xml, CPipeManager::SilentlyReplaceDuplicate);
 
 		return LoadSuccess;
 	}
 
-#ifdef USING_BEHAVIOR_TREE_NODE_CUSTOM_DEBUG_TEXT
+#ifdef DEBUG_MODULAR_BEHAVIOR_TREE
 	virtual void GetCustomDebugText(const UpdateContext& updateContext, stack_string& debugText) const
 	{
 		debugText = m_goalPipeName;
 	}
-#endif
+#endif // DEBUG_MODULAR_BEHAVIOR_TREE
 
 protected:
 	virtual void OnInitialize(const UpdateContext& context) override
@@ -265,21 +244,55 @@ public:
 		}
 	};
 
-	virtual LoadResult LoadFromXml(const XmlNodeRef& node, const LoadContext& context) override
+	virtual LoadResult LoadFromXml(const XmlNodeRef& xml, const struct LoadContext& context, const bool strictMode) override
 	{
-		IF_UNLIKELY (BaseClass::LoadFromXml(node, context) == LoadFailure)
+		IF_UNLIKELY (BaseClass::LoadFromXml(xml, context, strictMode) == LoadFailure)
 			return LoadFailure;
 
-		m_behaviorName = node->getAttr("name");
+		m_behaviorName = xml->getAttr("name");
+
+		if (m_behaviorName.empty())
+		{
+			ErrorReporter(*this, context).LogError("%s", ErrorReporter::ErrorMessageMissingOrEmptyAttribute("LuaBehavior", "name").c_str());
+			return LoadFailure;
+		}
+
 		return LoadSuccess;
 	}
 
-#ifdef USING_BEHAVIOR_TREE_NODE_CUSTOM_DEBUG_TEXT
+#ifdef USING_BEHAVIOR_TREE_XML_DESCRIPTION_CREATION
+	virtual XmlNodeRef CreateXmlDescription() override
+	{
+		XmlNodeRef xml = BaseClass::CreateXmlDescription();
+		xml->setTag("LuaBehavior");
+		xml->setAttr("name", m_behaviorName);
+
+		return xml;
+	}
+#endif
+
+#ifdef USING_BEHAVIOR_TREE_SERIALIZATION
+	virtual void Serialize(Serialization::IArchive& archive) override
+	{
+		archive(m_behaviorName, "name", "^Name");
+		archive.doc("Name of the Lua behavior");
+
+		if (m_behaviorName.empty())
+		{
+			archive.error(m_behaviorName, SerializationUtils::Messages::ErrorEmptyValue("Name"));
+		}
+
+		BaseClass::Serialize(archive);
+	}
+#endif
+
+
+#ifdef DEBUG_MODULAR_BEHAVIOR_TREE
 	virtual void GetCustomDebugText(const UpdateContext& updateContext, stack_string& debugText) const
 	{
 		debugText += m_behaviorName;
 	}
-#endif
+#endif // DEBUG_MODULAR_BEHAVIOR_TREE
 
 protected:
 	virtual void OnInitialize(const UpdateContext& context) override
@@ -330,6 +343,8 @@ private:
 
 class Bubble : public Action
 {
+	typedef Action BaseClass;
+
 public:
 	struct RuntimeData
 	{
@@ -338,6 +353,8 @@ public:
 	Bubble()
 		: m_duration(2.0)
 		, m_balloonFlags(0)
+		, m_baloonFlag(false)
+		, m_logFlag(false)
 	{
 	}
 
@@ -347,40 +364,94 @@ public:
 		return Success;
 	}
 
-	virtual LoadResult LoadFromXml(const XmlNodeRef& xml, const LoadContext& context)
+	virtual LoadResult LoadFromXml(const XmlNodeRef& xml, const struct LoadContext& context, const bool strictMode)
 	{
 		m_message = xml->getAttr("message");
-
 		m_duration = 2.0f;
 		xml->getAttr("duration", m_duration);
-
-		bool balloon = true;
-		bool log = true;
-
-		xml->getAttr("balloon", balloon);
-		xml->getAttr("log", log);
+		xml->getAttr("balloon", m_baloonFlag);
+		xml->getAttr("log", m_logFlag);
 
 		m_balloonFlags = eBNS_None;
 
-		if (balloon) m_balloonFlags |= eBNS_Balloon;
-		if (log) m_balloonFlags |= eBNS_Log;
+		if (m_baloonFlag) m_balloonFlags |= eBNS_Balloon;
+		if (m_logFlag) m_balloonFlags |= eBNS_Log;
+
+
+		if (m_message.empty())
+		{
+			ErrorReporter(*this, context).LogWarning("%s", ErrorReporter::ErrorMessageMissingOrEmptyAttribute("Bubble", "message").c_str());
+		}
+
+		if (m_duration < 0)
+		{
+			ErrorReporter(*this, context).LogWarning("%s", ErrorReporter::ErrorMessageInvalidAttribute("Bubble", "duration", ToString(m_duration), "Value must be greater or equal than 0").c_str());
+		}
 
 		return LoadSuccess;
 	}
+
+#ifdef USING_BEHAVIOR_TREE_XML_DESCRIPTION_CREATION
+	virtual XmlNodeRef CreateXmlDescription() override
+	{
+		XmlNodeRef xml = BaseClass::CreateXmlDescription();
+		xml->setTag("Bubble");
+		xml->setAttr("message", m_message);
+		xml->setAttr("duration", m_duration);
+		xml->setAttr("balloon", m_baloonFlag ? "true" : "false");
+		xml->setAttr("log", m_logFlag ? "true" : "false");
+
+		return xml;
+	}
+#endif
+
+#ifdef USING_BEHAVIOR_TREE_SERIALIZATION
+	virtual void Serialize(Serialization::IArchive& archive) override
+	{
+		archive(m_message, "message", "+Message");
+		archive.doc("Message to be shown in the bubble");
+
+		archive(m_duration, "duration", "+Duration");
+		archive.doc("Time in seconds that the bubble will last");
+
+		archive(m_baloonFlag, "ballonOn", "+Ballon flag");
+		archive.doc("When enabled, shows the message in a 'baloon' above the agent");
+
+		archive(m_logFlag, "logOn", "+Log flag");
+		archive.doc("When enabled, writes the message in the general purpose log");
+
+
+		if (m_message.empty())
+		{
+			archive.warning(m_message, SerializationUtils::Messages::ErrorEmptyValue("Name"));
+		}
+
+		if (m_duration < 0)
+		{
+			archive.warning(m_duration, SerializationUtils::Messages::ErrorInvalidValueWithReason("Duration", ToString(m_duration), "Value must be greater or equal than 0"));
+		}
+
+		BaseClass::Serialize(archive);
+	}
+#endif
 
 private:
 	string m_message;
 	float  m_duration;
 	uint32 m_balloonFlags;
+
+	bool m_baloonFlag;
+	bool m_logFlag;
 };
 
 //////////////////////////////////////////////////////////////////////////
+
 
 class Move : public Action
 {
 	typedef Action BaseClass;
 
-private:
+public:
 	enum DestinationType
 	{
 		Target,
@@ -390,24 +461,6 @@ private:
 		InitialPosition,
 	};
 
-	struct Dictionaries
-	{
-		CXMLAttrReader<DestinationType> to;
-
-		Dictionaries()
-		{
-			to.Reserve(4);
-			to.Add("Target", Target);
-			to.Add("Cover", Cover);
-			to.Add("RefPoint", ReferencePoint);
-			to.Add("LastOp", LastOp);
-			to.Add("InitialPosition", InitialPosition);
-		}
-	};
-
-	static Dictionaries s_dictionaries;
-
-public:
 	struct RuntimeData
 	{
 		Vec3              destinationAtTimeOfMovementRequest;
@@ -454,6 +507,32 @@ public:
 		}
 	};
 
+private:
+
+	struct Dictionaries
+	{
+		CXMLAttrReader<DestinationType> to;
+		Serialization::StringList       destinationsSerialization;
+
+		Dictionaries()
+		{
+			to.Reserve(5);
+			to.Add("Target", Target);
+			to.Add("Cover", Cover);
+			to.Add("RefPoint", ReferencePoint);
+			to.Add("LastOp", LastOp);
+			to.Add("InitialPosition", InitialPosition);
+
+			destinationsSerialization.reserve(5);
+			destinationsSerialization.push_back("Target");
+			destinationsSerialization.push_back("Cover");
+			destinationsSerialization.push_back("RefPoint");
+			destinationsSerialization.push_back("LastOp");
+			destinationsSerialization.push_back("InitialPosition");
+		}
+	};
+
+public:
 	Move()
 		: m_stopWithinDistance(0.0f)
 		, m_stopDistanceVariation(0.0f)
@@ -462,31 +541,37 @@ public:
 		, m_dangersFlags(eMNMDangers_None)
 		, m_considerActorsAsPathObstacles(false)
 		, m_lengthToTrimFromThePathEnd(0.0f)
+		, m_shouldTurnTowardsMovementDirectionBeforeMoving(false)
+		, m_shouldStrafe(false)
+		, m_shouldGlanceInMovementDirection(false)
+		, m_avoidDangers(true)
+		, m_avoidGroupMates(false)
 	{
 	}
 
-	virtual LoadResult LoadFromXml(const XmlNodeRef& xml, const LoadContext& context) override
+	virtual LoadResult LoadFromXml(const XmlNodeRef& xml, const struct LoadContext& context, const bool strictMode) override
 	{
-		IF_UNLIKELY (BaseClass::LoadFromXml(xml, context) == LoadFailure)
+		IF_UNLIKELY (BaseClass::LoadFromXml(xml, context, strictMode) == LoadFailure)
 			return LoadFailure;
-
-		// Speed? Stance?
-		m_movementStyle.ReadFromXml(xml);
-
-		// Destination? Target/Cover/ReferencePoint
-		s_dictionaries.to.Get(xml, "to", m_destination, true);
-		m_movementStyle.SetMovingToCover(m_destination == Cover);
 
 		xml->getAttr("stopWithinDistance", m_stopWithinDistance);
 		if (m_stopWithinDistance > 0.0f)
+		{
 			xml->getAttr("stopDistanceVariation", m_stopDistanceVariation);
+		}
 
-		g_fireModeDictionary.fireMode.Get(xml, "fireMode", m_fireMode);
+		m_movementStyle.ReadFromXml(xml);
 
-		bool avoidDangers = true;
-		xml->getAttr("avoidDangers", avoidDangers);
+		s_dictionaries.to.Get(xml, "to", m_destination, true);
+		m_movementStyle.SetMovingToCover(m_destination == Cover);
 
-		SetupDangersFlagsForDestination(avoidDangers);
+		const AgentDictionary agentDictionary;
+
+		agentDictionary.fireModeXml.Get(xml, "fireMode", m_fireMode);
+
+		xml->getAttr("avoidDangers", m_avoidDangers);
+
+		SetupDangersFlagsForDestination(m_avoidDangers);
 
 		bool avoidGroupMates = true;
 		xml->getAttr("avoidGroupMates", avoidGroupMates);
@@ -498,9 +583,128 @@ public:
 		xml->getAttr("considerActorsAsPathObstacles", m_considerActorsAsPathObstacles);
 		xml->getAttr("lengthToTrimFromThePathEnd", m_lengthToTrimFromThePathEnd);
 
+		if (m_stopWithinDistance < 0)
+		{
+			ErrorReporter(*this, context).LogWarning("%s", ErrorReporter::ErrorMessageInvalidAttribute("Move", "stopWithinDistance", ToString(m_stopWithinDistance), "Value must be greater or equal than 0").c_str());
+		}
+
+		if (m_stopDistanceVariation < 0)
+		{
+			ErrorReporter(*this, context).LogWarning("%s", ErrorReporter::ErrorMessageInvalidAttribute("Move", "stopDistanceVariation", ToString(m_stopDistanceVariation), "Value must be greater or equal than 0").c_str());
+		}
+
+		if (m_stopDistanceVariation > m_stopWithinDistance)
+		{
+			ErrorReporter(*this, context).LogWarning("%s", ErrorReporter::ErrorMessageInvalidAttribute("Move", "stopDistanceVariation", ToString(m_stopDistanceVariation), "Value must be greater or equal than stopWithinDistance value").c_str());
+		}
+
 		return LoadSuccess;
 	}
 
+#ifdef USING_BEHAVIOR_TREE_XML_DESCRIPTION_CREATION
+	virtual XmlNodeRef CreateXmlDescription() override
+	{
+		const MovementStyleDictionaryCollection movementStyleDictionaryCollection;
+
+		XmlNodeRef xml = BaseClass::CreateXmlDescription();
+		xml->setTag("Move");
+		xml->setAttr("stopWithinDistance", m_stopWithinDistance);
+		xml->setAttr("stopDistanceVariation", m_stopDistanceVariation);
+
+		m_movementStyle.WriteToXml(xml);
+
+		xml->setAttr("to", Serialization::getEnumLabel<DestinationType>(m_destination));
+		xml->setAttr("fireMode", Serialization::getEnumLabel<EFireMode>(m_fireMode));
+
+		xml->setAttr("avoidDangers", m_avoidDangers);
+		xml->setAttr("avoidGroupMates", m_avoidGroupMates);
+		xml->setAttr("considerActorsAsPathObstacles", m_considerActorsAsPathObstacles);
+
+		xml->getAttr("lengthToTrimFromThePathEnd", m_lengthToTrimFromThePathEnd);
+
+		return xml;
+	}
+#endif
+
+#ifdef USING_BEHAVIOR_TREE_SERIALIZATION
+	virtual void Serialize(Serialization::IArchive& archive) override
+	{
+		archive(m_stopWithinDistance, "stopWithinDistance", "+Stop within distance");
+		archive.doc("When real distance to target is smaller than Stop within distance, we stop moving");
+
+		archive(m_stopDistanceVariation, "stopDistanceVariation", "+Stop within distance variation");
+		archive.doc("Maximum variation applied to the 'Stop within distance' parameter. Effectively modifies the parameter value to be in the range [variation, Stop within distance + variation]");
+		
+		archive(m_lengthToTrimFromThePathEnd, "lengthToTrimFromThePathEnd", "+Length to trim from the path end");
+		archive.doc("Distance to cut from the path. Positive value means distance from path end. Negative value means distance from path start.");
+
+		const MovementStyleDictionaryCollection movementStyleDictionaryCollection;
+		const AgentDictionary agentDictionary;
+
+		MovementStyle::Speed newSpeed(m_movementStyle.GetSpeed());
+		SerializationUtils::SerializeEnumList<MovementStyle::Speed>(archive, "speed", "+Speed", movementStyleDictionaryCollection.speedsSerialization, movementStyleDictionaryCollection.speedsXml, newSpeed);
+		archive.doc("Speed mode while the node is active. Maximum speed may be limited by current stance");
+
+		m_movementStyle.SetSpeed(newSpeed);
+
+		MovementStyle::Stance newStance(m_movementStyle.GetStance());
+		SerializationUtils::SerializeEnumList<MovementStyle::Stance>(archive, "stance", "+Stance", movementStyleDictionaryCollection.stancesSerialization, movementStyleDictionaryCollection.stancesXml, newStance);
+		archive.doc("Body stance while the node is active");
+
+		m_movementStyle.SetStance(newStance);
+
+		EBodyOrientationMode newBodyOrientationMode(m_movementStyle.GetBodyOrientationMode());
+		SerializationUtils::SerializeEnumList<EBodyOrientationMode>(archive, "bodyOrientation", "+Body orientation", agentDictionary.bodyOrientationsSerialization, agentDictionary.bodyOrientationsXml, newBodyOrientationMode);
+		archive.doc("Specifies the body orientation while the moving action is being performed");
+		m_movementStyle.SetBodyOrientationMode(newBodyOrientationMode);
+
+		SerializationUtils::SerializeEnumList<DestinationType>(archive, "to", "+To", s_dictionaries.destinationsSerialization, s_dictionaries.to, m_destination);
+		archive.doc("Destination of the movement request");
+		
+		SerializationUtils::SerializeEnumList<EFireMode>(archive, "fireMode", "+Fire mode", agentDictionary.fireModesSerialization, agentDictionary.fireModeXml, m_fireMode);
+		archive.doc("Fire mode enabled while the node is active");
+
+		archive(m_avoidDangers, "avoidDangers", "+Avoid dangers");
+		archive.doc("When true, movement request avoids areas flagged as dangerous in pathfinding operation");
+		
+		archive(m_avoidGroupMates, "avoidGroupMates", "+Avoid group mates");
+		archive.doc("When true, movement request avoids group mates in pathfinding operation");
+		
+		archive(m_shouldTurnTowardsMovementDirectionBeforeMoving, "turnTowardsMovementDirectionBeforeMoving", "+Turn towards movement direction before moving");
+		archive.doc("When true, character fully turns towards movement direction before starting the move action");
+		
+		archive(m_shouldStrafe, "strafe", "+Strafe");
+		archive.doc("When true, character will apply a strafing behavior  while node is active");
+		
+		archive(m_shouldGlanceInMovementDirection, "glanceInMovementDirection", "+Glance in movement direction");
+		archive.doc("When true, character glances in movement direction");
+
+		m_movementStyle.SetMovingToCover(m_destination == DestinationType::Cover);
+		m_movementStyle.SetTurnTowardsMovementDirectionBeforeMoving(m_shouldTurnTowardsMovementDirectionBeforeMoving);
+		m_movementStyle.SetShouldStrafe(m_shouldStrafe);
+		m_movementStyle.SetShouldGlanceInMovementDirection(m_shouldGlanceInMovementDirection);
+
+		archive(m_considerActorsAsPathObstacles, "considerActorsAsPathObstacles", "+Consider actors as path obstacles");
+		archive.doc("When true, other actors as considered obstacles during the pathfinding operation, avoiding collisions.");
+
+		if (m_stopWithinDistance < 0)
+		{
+			archive.warning(m_stopWithinDistance, SerializationUtils::Messages::ErrorInvalidValueWithReason("Stop Within Distance", ToString(m_stopWithinDistance), "Value must be greater or equal than 0"));
+		}
+
+		if (m_stopDistanceVariation < 0)
+		{
+			archive.warning(m_stopDistanceVariation, SerializationUtils::Messages::ErrorInvalidValueWithReason("Stop Distance Variation", ToString(m_stopDistanceVariation), "Value must be greater or equal than 0"));
+		}
+
+		if (m_stopDistanceVariation > m_stopWithinDistance)
+		{
+			archive.warning(m_stopDistanceVariation, SerializationUtils::Messages::ErrorInvalidValueWithReason("Stop Distance Variation", ToString(m_stopDistanceVariation), "Value must be greater or equal than Stop Within Distance"));
+		}
+
+		BaseClass::Serialize(archive);
+	}
+#endif
 	virtual void OnInitialize(const UpdateContext& context) override
 	{
 		RuntimeData& runtimeData = GetRuntimeData<RuntimeData>(context);
@@ -542,7 +746,7 @@ public:
 		runtimeData.ReleaseCurrentMovementRequest();
 	}
 
-#if defined(USING_BEHAVIOR_TREE_NODE_CUSTOM_DEBUG_TEXT) && defined(COMPILE_WITH_MOVEMENT_SYSTEM_DEBUG)
+#if defined(DEBUG_MODULAR_BEHAVIOR_TREE) && defined(COMPILE_WITH_MOVEMENT_SYSTEM_DEBUG)
 	virtual void GetCustomDebugText(const UpdateContext& updateContext, stack_string& debugText) const override
 	{
 		const RuntimeData& runtimeData = GetRuntimeData<RuntimeData>(updateContext);
@@ -553,16 +757,6 @@ public:
 #endif
 
 private:
-
-	float           m_stopWithinDistance;
-	float           m_stopDistanceVariation;
-	MovementStyle   m_movementStyle;
-	DestinationType m_destination;
-	EFireMode       m_fireMode;
-	MNMDangersFlags m_dangersFlags;
-	bool            m_considerActorsAsPathObstacles;
-	float           m_lengthToTrimFromThePathEnd;
-
 	virtual Status Update(const UpdateContext& context) override
 	{
 		RuntimeData& runtimeData = GetRuntimeData<RuntimeData>(context);
@@ -758,7 +952,29 @@ private:
 			break;
 		}
 	}
+
+private:
+	static Dictionaries s_dictionaries;
+
+	float               m_stopWithinDistance;
+	float               m_stopDistanceVariation;
+	MovementStyle       m_movementStyle;
+	DestinationType     m_destination;
+	EFireMode           m_fireMode;
+	MNMDangersFlags     m_dangersFlags;
+	bool                m_considerActorsAsPathObstacles;
+	float               m_lengthToTrimFromThePathEnd;
+
+	// Movement style helpers
+	bool m_shouldTurnTowardsMovementDirectionBeforeMoving;
+	bool m_shouldStrafe;
+	bool m_shouldGlanceInMovementDirection;
+
+	// Dangers Flags helpers
+	bool m_avoidDangers;
+	bool m_avoidGroupMates;
 };
+
 
 Move::Dictionaries Move::s_dictionaries;
 
@@ -783,53 +999,98 @@ public:
 
 	struct Dictionaries
 	{
-		CXMLAttrReader<EAIRegister> reg;
+		CXMLAttrReader<EAIRegister> registerXml;
+		Serialization::StringList   registerSerialization;
 
 		Dictionaries()
 		{
-			reg.Reserve(2);
+			registerXml.Reserve(2);
 			//reg.Add("LastOp",     AI_REG_LASTOP);
-			reg.Add("RefPoint", AI_REG_REFPOINT);
+			registerXml.Add("RefPoint", AI_REG_REFPOINT);
 			//reg.Add("AttTarget",  AI_REG_ATTENTIONTARGET);
 			//reg.Add("Path",       AI_REG_PATH);
-			reg.Add("Cover", AI_REG_COVER);
+			registerXml.Add("Cover", AI_REG_COVER);
+
+			registerSerialization.reserve(2);
+			registerSerialization.push_back("RefPoint");
+			registerSerialization.push_back("Cover");
 		}
 	};
 
 	static Dictionaries s_dictionaries;
 
-	virtual LoadResult LoadFromXml(const XmlNodeRef& xml, const LoadContext& context) override
+	virtual LoadResult LoadFromXml(const XmlNodeRef& xml, const struct LoadContext& context, const bool strictMode) override
 	{
-		IF_UNLIKELY (BaseClass::LoadFromXml(xml, context) == LoadFailure)
+		IF_UNLIKELY (BaseClass::LoadFromXml(xml, context, strictMode) == LoadFailure)
 			return LoadFailure;
 
 		const char* queryName = xml->getAttr("name");
 		m_queryID = queryName ? gEnv->pAISystem->GetTacticalPointSystem()->GetQueryID(queryName) : TPSQueryID(0);
+
 		if (m_queryID == 0)
 		{
-			gEnv->pLog->LogError("QueryTPS behavior tree node: Query '%s' does not exist (yet). Line %d.", queryName, xml->getLine());
+			ErrorReporter(*this, context).LogError("%s", ErrorReporter::ErrorMessageInvalidAttribute("QueryTPS", "name", queryName, "Query does not exist").c_str());
 			return LoadFailure;
 		}
 
-#ifdef USING_BEHAVIOR_TREE_NODE_CUSTOM_DEBUG_TEXT
+#ifdef DEBUG_MODULAR_BEHAVIOR_TREE
 		m_tpsQueryName = queryName;
-#endif
+#endif // DEBUG_MODULAR_BEHAVIOR_TREE
 
-		if (!s_dictionaries.reg.Get(xml, "register", m_register))
+		if (!s_dictionaries.registerXml.Get(xml, "register", m_register))
 		{
-			gEnv->pLog->LogError("QueryTPS behavior tree node: Missing 'register' attribute, line %d.", xml->getLine());
+			ErrorReporter(*this, context).LogError("%s", ErrorReporter::ErrorMessageMissingOrEmptyAttribute("QueryTPS", "register").c_str());
 			return LoadFailure;
 		}
 
 		return LoadSuccess;
 	}
 
-#ifdef USING_BEHAVIOR_TREE_NODE_CUSTOM_DEBUG_TEXT
+#ifdef USING_BEHAVIOR_TREE_XML_DESCRIPTION_CREATION
+	virtual XmlNodeRef CreateXmlDescription() override
+	{
+		XmlNodeRef xml = BaseClass::CreateXmlDescription();
+		xml->setTag("QueryTPS");
+		xml->setAttr("name", m_tpsQueryName);
+		xml->setAttr("register", Serialization::getEnumLabel<EAIRegister>(m_register));
+
+		return xml;
+	}
+#endif
+
+#ifdef USING_BEHAVIOR_TREE_SERIALIZATION
+	virtual void Serialize(Serialization::IArchive& archive) override
+	{
+		archive(m_tpsQueryName, "name", "^Name");
+		archive.doc("Name of the TPS query. Query must already exist");
+
+		SerializationUtils::SerializeEnumList<EAIRegister>(archive, "register", "^Register", s_dictionaries.registerSerialization, s_dictionaries.registerXml, m_register);
+		archive.doc("AI Register used to store the result of the query");
+
+		if (m_tpsQueryName.empty())
+		{
+			archive.error(m_tpsQueryName, SerializationUtils::Messages::ErrorEmptyValue("Name"));
+		}
+		else 
+		{
+			m_queryID = m_tpsQueryName ? gEnv->pAISystem->GetTacticalPointSystem()->GetQueryID(m_tpsQueryName) : TPSQueryID(0);
+			if (m_queryID == 0)
+			{
+				archive.error(m_tpsQueryName, SerializationUtils::Messages::ErrorInvalidValueWithReason("Name", m_tpsQueryName, "Query does not exist"));
+			}
+		}
+
+		BaseClass::Serialize(archive);
+	}
+#endif
+
+
+#ifdef DEBUG_MODULAR_BEHAVIOR_TREE
 	virtual void GetCustomDebugText(const UpdateContext& updateContext, stack_string& debugText) const
 	{
 		debugText = m_tpsQueryName;
 	}
-#endif
+#endif // DEBUG_MODULAR_BEHAVIOR_TREE
 
 protected:
 	virtual void OnInitialize(const UpdateContext& context) override
@@ -948,9 +1209,9 @@ private:
 	EAIRegister m_register;
 	TPSQueryID  m_queryID;
 
-#ifdef USING_BEHAVIOR_TREE_NODE_CUSTOM_DEBUG_TEXT
+#ifdef DEBUG_MODULAR_BEHAVIOR_TREE
 	string m_tpsQueryName;
-#endif
+#endif // DEBUG_MODULAR_BEHAVIOR_TREE
 };
 
 QueryTPS::Dictionaries QueryTPS::s_dictionaries;
@@ -968,27 +1229,62 @@ public:
 	{
 		bool gateIsOpen;
 
-		RuntimeData() : gateIsOpen(false) {}
+		RuntimeData() : gateIsOpen(false)
+		{
+		}
 	};
 
-	virtual LoadResult LoadFromXml(const XmlNodeRef& xml, const LoadContext& context) override
+	virtual LoadResult LoadFromXml(const XmlNodeRef& xml, const struct LoadContext& context, const bool strictMode) override
 	{
-		const stack_string code = xml->getAttr("code");
-		if (code.empty())
+		m_code = xml->getAttr("code");
+
+		if (m_code.empty())
 		{
-			gEnv->pLog->LogError("LuaGate expected the 'code' attribute at line %d.", xml->getLine());
+			ErrorReporter(*this, context).LogError("%s", ErrorReporter::ErrorMessageMissingOrEmptyAttribute("LuaGate", "code").c_str());
 			return LoadFailure;
 		}
 
-		m_scriptFunction = SmartScriptFunction(gEnv->pScriptSystem, gEnv->pScriptSystem->CompileBuffer(code.c_str(), code.length(), "LuaGate"));
+		m_scriptFunction = SmartScriptFunction(gEnv->pScriptSystem, gEnv->pScriptSystem->CompileBuffer(m_code.c_str(), m_code.length(), "LuaGate"));
 		if (!m_scriptFunction)
 		{
-			ErrorReporter(*this, context).LogError("Failed to compile Lua code '%s'", code.c_str());
+			ErrorReporter(*this, context).LogError("%s", ErrorReporter::ErrorMessageInvalidAttribute("LuaGate", "code", m_code, "Could not compile code").c_str());
 			return LoadFailure;
 		}
 
-		return LoadChildFromXml(xml, context);
+		return LoadChildFromXml(xml, context, strictMode);
 	}
+
+#ifdef USING_BEHAVIOR_TREE_XML_DESCRIPTION_CREATION
+	virtual XmlNodeRef CreateXmlDescription() override
+	{
+		XmlNodeRef xml = BaseClass::CreateXmlDescription();
+		xml->setTag("LuaGate");
+		xml->setAttr("code", m_code);
+
+		return xml;
+	}
+#endif
+
+#ifdef USING_BEHAVIOR_TREE_SERIALIZATION
+	virtual void Serialize(Serialization::IArchive& archive) override
+	{
+		archive(m_code, "code", "^Code");
+		archive.doc("Lua code used as a condition for the gate. Code should return a boolean value");
+
+		if (m_code.empty())
+		{
+			archive.error(m_code, SerializationUtils::Messages::ErrorEmptyValue("Code"));
+		}
+
+		m_scriptFunction = SmartScriptFunction(gEnv->pScriptSystem, gEnv->pScriptSystem->CompileBuffer(m_code.c_str(), m_code.length(), "LuaGate"));
+		if (!m_scriptFunction)
+		{
+			archive.error(m_code, SerializationUtils::Messages::ErrorInvalidValueWithReason("Code", m_code, "Could not compile code"));
+		}
+
+		BaseClass::Serialize(archive);
+	}
+#endif
 
 protected:
 	virtual void OnInitialize(const UpdateContext& context) override
@@ -1027,12 +1323,15 @@ protected:
 
 private:
 	SmartScriptFunction m_scriptFunction;
+	stack_string m_code;
 };
 
 //////////////////////////////////////////////////////////////////////////
 
 class AdjustCoverStance : public Action
 {
+	typedef Action BaseClass;
+
 public:
 	struct RuntimeData
 	{
@@ -1040,12 +1339,12 @@ public:
 	};
 
 	AdjustCoverStance()
-		: m_duration(0.0f)
+		: m_duration(-1.0f)
 		, m_variation(0.0f)
 	{
 	}
 
-	virtual LoadResult LoadFromXml(const XmlNodeRef& xml, const LoadContext& context)
+	virtual LoadResult LoadFromXml(const XmlNodeRef& xml, const struct LoadContext& context, const bool strictMode)
 	{
 		const stack_string str = xml->getAttr("duration");
 
@@ -1055,10 +1354,56 @@ public:
 		{
 			xml->getAttr("duration", m_duration);
 			xml->getAttr("variation", m_variation);
+
+			if (m_duration < 0)
+			{
+				ErrorReporter(*this, context).LogWarning("%s", ErrorReporter::ErrorMessageInvalidAttribute("AdjustCoverStance", "duration", ToString(m_duration), "Value must be greater or equal than 0").c_str());
+			}
+
+			if (m_variation < 0)
+			{
+				ErrorReporter(*this, context).LogWarning("%s", ErrorReporter::ErrorMessageInvalidAttribute("AdjustCoverStance", "variation", ToString(m_variation), "Value must be greater or equal than 0").c_str());
+			}
+
 		}
 
 		return LoadSuccess;
 	}
+
+#ifdef USING_BEHAVIOR_TREE_XML_DESCRIPTION_CREATION
+	virtual XmlNodeRef CreateXmlDescription() override
+	{
+		XmlNodeRef xml = BaseClass::CreateXmlDescription();
+		xml->setTag("AdjustCoverStance");
+		xml->setAttr("duration", m_duration);
+		xml->setAttr("variation", m_variation);
+
+		return xml;
+	}
+#endif
+
+#ifdef USING_BEHAVIOR_TREE_SERIALIZATION
+	virtual void Serialize(Serialization::IArchive& archive) override
+	{
+		archive(m_duration, "duration", "+Duration");
+		archive.doc("Time in seconds before the node exits yielding Success. If value is -1 runs forever.");
+
+		archive(m_variation, "variation", "+Variation");
+		archive.doc("Maximum variation time in seconds applied to the duration parameter. Effectively modifies the duration to be in the range [duration, duration + variation]	");
+
+		if (m_duration < 0)
+		{
+			archive.warning(m_duration, SerializationUtils::Messages::ErrorInvalidValueWithReason("Duration", ToString(m_duration), "Value must be greater or equal than 0"));
+		}
+
+		if (m_variation < 0)
+		{
+			archive.warning(m_variation, SerializationUtils::Messages::ErrorInvalidValueWithReason("Variation", ToString(m_variation), "Value must be greater or equal than 0"));
+		}
+
+		BaseClass::Serialize(archive);
+	}
+#endif
 
 	virtual void OnInitialize(const UpdateContext& context)
 	{
@@ -1090,7 +1435,7 @@ public:
 		}
 	}
 
-#ifdef USING_BEHAVIOR_TREE_NODE_CUSTOM_DEBUG_TEXT
+#ifdef DEBUG_MODULAR_BEHAVIOR_TREE
 	virtual void GetCustomDebugText(const UpdateContext& updateContext, stack_string& debugText) const
 	{
 		if (m_duration == -1.0f)
@@ -1103,7 +1448,7 @@ public:
 			debugText.Format("%0.1f (%0.1f)", runtimeData.timer.GetSecondsLeft(), m_duration);
 		}
 	}
-#endif
+#endif // DEBUG_MODULAR_BEHAVIOR_TREE
 
 private:
 	void ClearCoverPosture(CPipeUser* pipeUser)
@@ -1136,23 +1481,46 @@ public:
 	{
 	}
 
-	virtual LoadResult LoadFromXml(const XmlNodeRef& xml, const LoadContext& context) override
+	virtual LoadResult LoadFromXml(const XmlNodeRef& xml, const struct LoadContext& context, const bool strictMode) override
 	{
-		if (BaseClass::LoadFromXml(xml, context) == LoadFailure)
+		if (BaseClass::LoadFromXml(xml, context, strictMode) == LoadFailure)
 			return LoadFailure;
 
 		xml->getAttr("value", m_alertness);
 
-		if (m_alertness >= 0 && m_alertness <= 2)
+		if (m_alertness < 0 || m_alertness > 2)
 		{
-			return LoadSuccess;
-		}
-		else
-		{
-			gEnv->pLog->LogError("Alertness '%d' on line %d is invalid. Can only be 0, 1 or 2.", m_alertness, xml->getLine());
+			ErrorReporter(*this, context).LogError("%s", ErrorReporter::ErrorMessageInvalidAttribute("SetAlertness", "value", "", "Valid range is between 0 and 2.").c_str());
 			return LoadFailure;
 		}
+		return LoadSuccess;
 	}
+
+#ifdef USING_BEHAVIOR_TREE_XML_DESCRIPTION_CREATION
+	virtual XmlNodeRef CreateXmlDescription() override
+	{
+		XmlNodeRef xml = BaseClass::CreateXmlDescription();
+		xml->setTag("SetAlertness");
+		xml->setAttr("value", m_alertness);
+
+		return xml;
+	}
+#endif
+
+#ifdef USING_BEHAVIOR_TREE_SERIALIZATION
+	virtual void Serialize(Serialization::IArchive& archive) override
+	{
+		archive(m_alertness, "value", "^Value");
+		archive.doc("Set alertness value between [0-2]. 0 represents minimum alertness; 2 maximum.");
+
+		if (m_alertness < 0 && m_alertness > 2)
+		{
+			archive.error(m_alertness, SerializationUtils::Messages::ErrorInvalidValueWithReason("Value", ToString(m_alertness), "Alertness valid range is [0-2]"));
+		}
+
+		BaseClass::Serialize(archive);
+	}
+#endif
 
 protected:
 	virtual Status Update(const UpdateContext& context) override
@@ -1241,43 +1609,43 @@ public:
 	{
 	}
 
-	virtual LoadResult LoadFromXml(const XmlNodeRef& xml, const LoadContext& context) override
+	virtual LoadResult LoadFromXml(const XmlNodeRef& xml, const struct LoadContext& context, const bool strictMode) override
 	{
-		IF_UNLIKELY (BaseClass::LoadFromXml(xml, context) == LoadFailure)
+		IF_UNLIKELY (BaseClass::LoadFromXml(xml, context, strictMode) == LoadFailure)
 			return LoadFailure;
 
 		ICommunicationManager* communicationManager = gEnv->pAISystem->GetCommunicationManager();
 
-		const char* commName;
-		if (xml->getAttr("name", &commName))
+		m_commName = xml->getAttr("name");
+		if (!m_commName.empty())
 		{
-			m_commID = communicationManager->GetCommunicationID(commName);
+			m_commID = communicationManager->GetCommunicationID(m_commName);
 			if (!communicationManager->GetCommunicationName(m_commID))
 			{
-				ErrorReporter(*this, context).LogError("Unknown communication name '%s'", commName);
+				ErrorReporter(*this, context).LogError("%s", ErrorReporter::ErrorMessageInvalidAttribute("Communicate", "name", m_commName, "Communication name does not exist").c_str());
 				m_commID = CommID(0);
 				return LoadFailure;
 			}
 		}
 		else
 		{
-			ErrorReporter(*this, context).LogError("Attribute 'name' is missing or empty.");
+			ErrorReporter(*this, context).LogError("%s", ErrorReporter::ErrorMessageMissingOrEmptyAttribute("Communicate", "name").c_str());
 			return LoadFailure;
 		}
 
-		const char* channelName;
-		if (xml->getAttr("channel", &channelName))
+		m_channelName = xml->getAttr("channel");
+		if (!m_channelName.empty())
 		{
-			m_channelID = communicationManager->GetChannelID(channelName);
+			m_channelID = communicationManager->GetChannelID(m_channelName);
 			if (!m_channelID)
 			{
-				ErrorReporter(*this, context).LogError("Unknown channel name '%s'", channelName);
+				ErrorReporter(*this, context).LogError("%s", ErrorReporter::ErrorMessageInvalidAttribute("Communicate", "channel", m_channelName, "Channel name does not exist").c_str());
 				return LoadFailure;
 			}
 		}
 		else
 		{
-			ErrorReporter(*this, context).LogError("Attribute 'name' is missing or empty.");
+			ErrorReporter(*this, context).LogError("%s", ErrorReporter::ErrorMessageMissingOrEmptyAttribute("Communicate", "channel").c_str());
 			return LoadFailure;
 		}
 
@@ -1299,8 +1667,91 @@ public:
 		if (xml->haveAttr("ignoreAnim"))
 			xml->getAttr("ignoreAnim", m_ignoreAnim);
 
+		if (m_timeout < 0)
+		{
+			ErrorReporter(*this, context).LogWarning("%s", ErrorReporter::ErrorMessageInvalidAttribute("Communicate", "timeout", ToString(m_timeout), "Value must be greater or equal than 0").c_str());
+		}
+
+		if (m_expiry < 0)
+		{
+			ErrorReporter(*this, context).LogWarning("%s", ErrorReporter::ErrorMessageInvalidAttribute("Communicate", "expiry", ToString(m_expiry), "Value must be greater or equal than 0").c_str());
+		}
+
 		return LoadSuccess;
 	}
+
+#ifdef USING_BEHAVIOR_TREE_XML_DESCRIPTION_CREATION
+	virtual XmlNodeRef CreateXmlDescription() override
+	{
+		XmlNodeRef xml = BaseClass::CreateXmlDescription();
+		xml->setTag("Communicate");
+		xml->setAttr("name", m_commName);
+		xml->setAttr("channel", m_channelName);
+		xml->setAttr("waitUntilFinished", m_waitUntilFinished);
+		xml->setAttr("timeout", m_timeout);
+		xml->setAttr("expiry", m_expiry);
+		xml->setAttr("minSilence", m_minSilence);
+		xml->setAttr("ignoreSound", m_ignoreSound);
+		xml->setAttr("ignoreAnim", m_ignoreAnim);
+
+		return xml;
+	}
+#endif
+
+#ifdef USING_BEHAVIOR_TREE_SERIALIZATION
+	virtual void Serialize(Serialization::IArchive& archive) override
+	{
+		ICommunicationManager* communicationManager = gEnv->pAISystem->GetCommunicationManager();
+
+		archive(m_commName, "commName", "+Communication name");
+		archive.doc("Name of the communication to be played.. Must already exists");
+
+		m_commID = communicationManager->GetCommunicationID(m_commName);
+		if (!communicationManager->GetCommunicationName(m_commID))
+		{
+			archive.error(m_commName, SerializationUtils::Messages::ErrorInvalidValueWithReason("Communication name", m_commName, "Communication name does not exist"));
+			m_commID = CommID(0);
+		}
+
+		archive(m_channelName, "channelName", "+Channel name");
+		archive.doc("Name of the channel on which the communication is to be set. Must exists already");
+		m_channelID = communicationManager->GetChannelID(m_channelName);
+		if (!m_channelID)
+		{
+			archive.error(m_channelName, SerializationUtils::Messages::ErrorInvalidValueWithReason("Channel name", m_channelName, "Channel name does not exist"));
+		}
+
+		archive(m_timeout, "timeout", "+Timeout");
+		archive.doc("Time in seconds before the node exists yielding Success");
+
+		archive(m_expiry, "expiry", "+Expiry");
+		archive.doc("The amount of seconds the communication can wait for the channel to be clear");
+
+		archive(m_minSilence, "minSilence", "+Minimum silence");
+		archive.doc("The amount of seconds the channel will be silenced after the communication is played");
+
+		archive(m_waitUntilFinished, "waitUntilFinished", "+Wait until finished");
+		archive.doc("When enabled, node waits communication to finish before succeeding");
+
+		archive(m_ignoreSound, "ignoreSound", "+Ignore sound");
+		archive.doc("When enabled, sets the sound component of the communication to be ignored");
+
+		archive(m_ignoreAnim, "ignoreAnim", "+Ignore animation");
+		archive.doc("When enabled, sets the animation component of the communication to be ignored");
+
+		if (m_timeout < 0)
+		{
+			archive.warning(m_timeout, SerializationUtils::Messages::ErrorInvalidValueWithReason("Timeout", ToString(m_timeout), "Value must be greater or equal than 0"));
+		}
+
+		if (m_expiry < 0)
+		{
+			archive.warning(m_expiry, SerializationUtils::Messages::ErrorInvalidValueWithReason("Expiry", ToString(m_expiry), "Value must be greater or equal than 0"));
+		}
+
+		BaseClass::Serialize(archive);
+	}
+#endif
 
 protected:
 	virtual void OnInitialize(const UpdateContext& context) override
@@ -1373,6 +1824,8 @@ protected:
 
 private:
 
+	string                           m_commName;
+	string                           m_channelName;
 	CommID                           m_commID;
 	CommChannelID                    m_channelID;
 	SCommunicationRequest::EOrdering m_ordering;
@@ -1389,7 +1842,6 @@ private:
 class Animate : public Action
 {
 	typedef Action BaseClass;
-
 public:
 	enum PlayMode
 	{
@@ -1397,11 +1849,35 @@ public:
 		InfiniteLoop
 	};
 
+private:
+	struct Dictionaries
+	{
+		CXMLAttrReader<PlayMode>    playModeXml;
+		Serialization::StringList   playModeSerialization;
+
+		Dictionaries()
+		{
+			playModeXml.Reserve(2);
+			playModeXml.Add("PlayOnce", PlayMode::PlayOnce);
+			playModeXml.Add("InfiniteLoop", PlayMode::InfiniteLoop);
+
+			playModeSerialization.reserve(2);
+			playModeSerialization.push_back("PlayOnce");
+			playModeSerialization.push_back("InfiniteLoop");
+		}
+	};
+
+	static Dictionaries s_dictionaries;
+
+public:
+
 	struct RuntimeData
 	{
 		bool signalWasSet;
 
-		RuntimeData() : signalWasSet(false) {}
+		RuntimeData() : signalWasSet(false)
+		{
+		}
 	};
 
 	struct ConfigurationData
@@ -1419,20 +1895,34 @@ public:
 		{
 		}
 
-		LoadResult LoadFromXml(const XmlNodeRef& xml, const LoadContext& context)
+		LoadResult LoadFromXml(const XmlNodeRef& xml, const LoadContext& context, const Animate& parent)
 		{
 			m_name = xml->getAttr("name");
 			IF_UNLIKELY (m_name.empty())
 			{
-				gEnv->pLog->LogError("Empty or missing 'name' attribute for Animate node at line %d.", xml->getLine());
+				ErrorReporter(parent, context).LogError("%s", ErrorReporter::ErrorMessageMissingOrEmptyAttribute("Animate", "name").c_str());
 				return LoadFailure;
 			}
 
 			xml->getAttr("urgent", m_urgent);
 
-			bool loop = false;
-			xml->getAttr("loop", loop);
-			m_playMode = loop ? InfiniteLoop : PlayOnce;
+			if (xml->haveAttr("playMode"))
+			{
+				if (!s_dictionaries.playModeXml.Get(xml, "playMode", m_playMode))
+				{
+					ErrorReporter(parent, context).LogError("%s", ErrorReporter::ErrorMessageMissingOrEmptyAttribute("Animate", "playMode").c_str());
+					return LoadFailure;
+				}
+			}
+			else
+			{
+				// Legacy compatibility
+				bool loop = false;
+				xml->getAttr("loop", loop);
+				m_playMode = loop ? InfiniteLoop : PlayOnce;
+
+				ErrorReporter(parent, context).LogWarning("Loop value is deprecated. Please use playMode=InfiniteLoop or playMode=PlayOnce instead");
+			}
 
 			xml->getAttr("setBodyDirectionTowardsAttentionTarget", m_setBodyDirectionTowardsAttentionTarget);
 
@@ -1440,20 +1930,58 @@ public:
 		}
 	};
 
-	virtual LoadResult LoadFromXml(const XmlNodeRef& xml, const LoadContext& context) override
+	virtual LoadResult LoadFromXml(const XmlNodeRef& xml, const struct LoadContext& context, const bool strictMode) override
 	{
-		IF_UNLIKELY (BaseClass::LoadFromXml(xml, context) == LoadFailure)
+		IF_UNLIKELY (BaseClass::LoadFromXml(xml, context, strictMode) == LoadFailure)
 			return LoadFailure;
 
-		return m_configurationData.LoadFromXml(xml, context);
+		return m_configurationData.LoadFromXml(xml, context, *this);
 	}
 
-#ifdef USING_BEHAVIOR_TREE_NODE_CUSTOM_DEBUG_TEXT
+#ifdef USING_BEHAVIOR_TREE_XML_DESCRIPTION_CREATION
+	virtual XmlNodeRef CreateXmlDescription() override
+	{
+		XmlNodeRef xml = BaseClass::CreateXmlDescription();
+		xml->setTag("Animate");
+		xml->setAttr("name", m_configurationData.m_name);
+		xml->setAttr("playMode", Serialization::getEnumLabel<PlayMode>(m_configurationData.m_playMode));
+		xml->setAttr("urgent", m_configurationData.m_urgent);
+		xml->setAttr("setBodyDirectionTowardsAttentionTarget", m_configurationData.m_setBodyDirectionTowardsAttentionTarget);
+
+		return xml;
+	}
+#endif
+
+#ifdef USING_BEHAVIOR_TREE_SERIALIZATION
+	virtual void Serialize(Serialization::IArchive& archive) override
+	{
+		archive(m_configurationData.m_name, "name", "+Name");
+		archive.doc("Name of the animation to be played");
+
+		if (m_configurationData.m_name.empty())
+		{
+			archive.error(m_configurationData.m_name, SerializationUtils::Messages::ErrorEmptyValue("Name"));
+		}
+
+		SerializationUtils::SerializeEnumList<PlayMode>(archive, "playMode", "+Play Mode", s_dictionaries.playModeSerialization, s_dictionaries.playModeXml, m_configurationData.m_playMode);
+		archive.doc("Animation play mode. Can be run once or in a loop");
+
+		archive(m_configurationData.m_urgent, "urgent", "+Urgent");
+		archive.doc("When enabled flags the animation as urgent (high priority)");
+
+		archive(m_configurationData.m_setBodyDirectionTowardsAttentionTarget, "setBodyDirectionTowardsAttentionTarget", "+Set body direction towards attention target");
+		archive.doc("Orient body to face the attention target");
+
+		BaseClass::Serialize(archive);
+	}
+#endif
+
+#ifdef DEBUG_MODULAR_BEHAVIOR_TREE
 	virtual void GetCustomDebugText(const UpdateContext& updateContext, stack_string& debugText) const override
 	{
 		debugText = m_configurationData.m_name;
 	}
-#endif
+#endif // DEBUG_MODULAR_BEHAVIOR_TREE
 
 protected:
 	virtual void OnInitialize(const UpdateContext& context) override
@@ -1541,54 +2069,99 @@ private:
 	ConfigurationData m_configurationData;
 };
 
+Animate::Dictionaries Animate::s_dictionaries;
 //////////////////////////////////////////////////////////////////////////
 
 class Signal : public Action
 {
 	typedef Action BaseClass;
 
-private:
-	struct Dictionaries
-	{
-		CXMLAttrReader<ESignalFilter> filters;
-
-		Dictionaries()
-		{
-			filters.Reserve(2);
-			filters.Add("Sender", SIGNALFILTER_SENDER);
-			filters.Add("Group", SIGNALFILTER_GROUPONLY);
-			filters.Add("GroupExcludingSender", SIGNALFILTER_GROUPONLY_EXCEPT);
-		}
-	};
-
-	static Dictionaries s_signalDictionaries;
-
 public:
 	struct RuntimeData
 	{
 	};
 
+private:
+	struct Dictionaries
+	{
+		CXMLAttrReader<AISignals::ESignalFilter> filtersXml;
+		Serialization::StringList     filtersSerialization;
+
+		Dictionaries()
+		{
+			filtersXml.Reserve(3);
+			filtersXml.Add("Sender", AISignals::SIGNALFILTER_SENDER);
+			filtersXml.Add("Group", AISignals::SIGNALFILTER_GROUPONLY);
+			filtersXml.Add("GroupExcludingSender", AISignals::SIGNALFILTER_GROUPONLY_EXCEPT);
+
+			filtersSerialization.reserve(3);
+			filtersSerialization.push_back("Sender");
+			filtersSerialization.push_back("Group");
+			filtersSerialization.push_back("GroupExcludingSender");
+		}
+	};
+
+public:
+
 	Signal()
-		: m_filter(SIGNALFILTER_SENDER)
+		: m_filter(AISignals::SIGNALFILTER_SENDER)
 	{
 	}
 
-	virtual LoadResult LoadFromXml(const XmlNodeRef& xml, const LoadContext& context) override
+	virtual LoadResult LoadFromXml(const XmlNodeRef& xml, const struct LoadContext& context, const bool strictMode) override
 	{
-		IF_UNLIKELY (BaseClass::LoadFromXml(xml, context) == LoadFailure)
+		IF_UNLIKELY (BaseClass::LoadFromXml(xml, context, strictMode) == LoadFailure)
 			return LoadFailure;
 
 		m_signalName = xml->getAttr("name");
-		s_signalDictionaries.filters.Get(xml, "filter", m_filter);
+
+		if (m_signalName.empty())
+		{
+			ErrorReporter(*this, context).LogError("%s", ErrorReporter::ErrorMessageMissingOrEmptyAttribute("Signal", "name").c_str());
+			return LoadFailure;
+		}
+
+		s_signalDictionaries.filtersXml.Get(xml, "filter", m_filter);
+
 		return LoadSuccess;
 	}
 
-#ifdef USING_BEHAVIOR_TREE_NODE_CUSTOM_DEBUG_TEXT
+#ifdef USING_BEHAVIOR_TREE_XML_DESCRIPTION_CREATION
+	virtual XmlNodeRef CreateXmlDescription() override
+	{
+		XmlNodeRef xml = BaseClass::CreateXmlDescription();
+		xml->setTag("Signal");
+		xml->setAttr("name", m_signalName);
+		xml->setAttr("filter", Serialization::getEnumLabel<AISignals::ESignalFilter>(m_filter));
+
+		return xml;
+	}
+#endif
+
+#ifdef USING_BEHAVIOR_TREE_SERIALIZATION
+	virtual void Serialize(Serialization::IArchive& archive) override
+	{
+		archive(m_signalName, "name", "^Name");
+		archive.doc("Name of the transition signal");
+
+		SerializationUtils::SerializeEnumList<AISignals::ESignalFilter>(archive, "filter", "^Filter", s_signalDictionaries.filtersSerialization, s_signalDictionaries.filtersXml, m_filter);
+		archive.doc("Filter used when sending the signal");
+
+		if (m_signalName.empty())
+		{
+			archive.error(m_signalName, SerializationUtils::Messages::ErrorEmptyValue("Name"));
+		}
+		
+		BaseClass::Serialize(archive);
+	}
+#endif
+
+#ifdef DEBUG_MODULAR_BEHAVIOR_TREE
 	virtual void GetCustomDebugText(const UpdateContext& updateContext, stack_string& debugText) const override
 	{
 		debugText = m_signalName;
 	}
-#endif
+#endif // DEBUG_MODULAR_BEHAVIOR_TREE
 
 protected:
 	virtual void OnInitialize(const UpdateContext& context) override
@@ -1605,8 +2178,9 @@ protected:
 	{
 		if (CPipeUser* pipeUser = GetPipeUser(context))
 		{
-			GetAISystem()->SendSignal(m_filter, 1, m_signalName.c_str(), pipeUser,
-			                          NULL, CCrc32::Compute(m_signalName.c_str()));
+			const AISignals::SignalSharedPtr pSignal = GetAISystem()->GetSignalManager()->CreateSignal_DEPRECATED(AISIGNAL_DEFAULT, m_signalName, pipeUser->GetAIObjectID());
+			
+			GetAISystem()->SendSignal(m_filter, pSignal);
 		}
 		else
 		{
@@ -1615,8 +2189,10 @@ protected:
 	}
 
 private:
-	string        m_signalName;
-	ESignalFilter m_filter;
+	static Dictionaries s_signalDictionaries;
+
+	string              m_signalName;
+	AISignals::ESignalFilter       m_filter;
 };
 
 Signal::Dictionaries Signal::s_signalDictionaries;
@@ -1636,15 +2212,23 @@ public:
 
 struct Dictionaries
 {
-	CXMLAttrReader<EStance> stances;
+	CXMLAttrReader<EStance>   stancesXml;
+	Serialization::StringList stancesSerialization;
 
 	Dictionaries()
 	{
-		stances.Reserve(4);
-		stances.Add("Stand", STANCE_STAND);
-		stances.Add("Crouch", STANCE_CROUCH);
-		stances.Add("Relaxed", STANCE_RELAXED);
-		stances.Add("Alerted", STANCE_ALERTED);
+		stancesXml.Reserve(4);
+		stancesXml.Add("Stand", STANCE_STAND);
+		stancesXml.Add("Crouch", STANCE_CROUCH);
+		stancesXml.Add("Relaxed", STANCE_RELAXED);
+		stancesXml.Add("Alerted", STANCE_ALERTED);
+
+		stancesSerialization.reserve(4);
+		stancesSerialization.push_back("Stand");
+		stancesSerialization.push_back("Crouch");
+		stancesSerialization.push_back("Relaxed");
+		stancesSerialization.push_back("Alerted");
+
 	}
 };
 
@@ -1652,6 +2236,7 @@ Dictionaries s_stanceDictionary;
 
 class Stance : public Action
 {
+	typedef Action BaseClass;
 public:
 	struct RuntimeData
 	{
@@ -1664,18 +2249,61 @@ public:
 	{
 	}
 
-	virtual LoadResult LoadFromXml(const XmlNodeRef& xml, const LoadContext& context) override
+	virtual LoadResult LoadFromXml(const XmlNodeRef& xml, const struct LoadContext& context, const bool strictMode) override
 	{
-		s_stanceDictionary.stances.Get(xml, "name", m_stance);
+		s_stanceDictionary.stancesXml.Get(xml, "name", m_stance);
 
 		float degrees = 90.0f;
 		xml->getAttr("allowedSlopeNormalDeviationFromUpInDegrees", degrees);
 		m_allowedSlopeNormalDeviationFromUpInRadians = DEG2RAD(degrees);
 
-		s_stanceDictionary.stances.Get(xml, "stanceToUseIfSlopeIsTooSteep", m_stanceToUseIfSlopeIsTooSteep);
+		s_stanceDictionary.stancesXml.Get(xml, "stanceToUseIfSlopeIsTooSteep", m_stanceToUseIfSlopeIsTooSteep);
+
+		if (m_allowedSlopeNormalDeviationFromUpInRadians < 0)
+		{
+			ErrorReporter(*this, context).LogWarning("%s", ErrorReporter::ErrorMessageInvalidAttribute("Stance", "allowedSlopeNormalDeviationFromUpInDegrees", ToString(degrees), "Value must be greater or equal than 0").c_str());
+		}
 
 		return LoadSuccess;
 	}
+
+#ifdef USING_BEHAVIOR_TREE_XML_DESCRIPTION_CREATION
+	virtual XmlNodeRef CreateXmlDescription() override
+	{
+		XmlNodeRef xml = BaseClass::CreateXmlDescription();
+		xml->setTag("Stance");
+
+		xml->setAttr("name", Serialization::getEnumLabel<EStance>(m_stance));
+		xml->setAttr("stanceToUseIfSlopeIsTooSteep", Serialization::getEnumLabel<EStance>(m_stanceToUseIfSlopeIsTooSteep));
+		xml->setAttr("allowedSlopeNormalDeviationFromUpInDegrees", RAD2DEG(m_allowedSlopeNormalDeviationFromUpInRadians));
+
+		return xml;
+	}
+#endif
+
+#ifdef USING_BEHAVIOR_TREE_SERIALIZATION
+	virtual void Serialize(Serialization::IArchive& archive) override
+	{
+		SerializationUtils::SerializeEnumList<EStance>(archive, "name", "+Stance", s_stanceDictionary.stancesSerialization, s_stanceDictionary.stancesXml, m_stance);
+		archive.doc("Stance to use by default");
+
+		SerializationUtils::SerializeEnumList<EStance>(archive, "stanceToUseIfSlopeIsTooSteep", "+Stance to use if slope is too steep", s_stanceDictionary.stancesSerialization, s_stanceDictionary.stancesXml, m_stanceToUseIfSlopeIsTooSteep);
+		archive.doc("Stance to use if terrain slope is too steep.");
+
+		float allowedSlopeNormalDeviationFromUpInDeg = RAD2DEG(m_allowedSlopeNormalDeviationFromUpInRadians);
+		archive(allowedSlopeNormalDeviationFromUpInDeg, "allowedSlopeNormalDeviationFromUpInDegrees", "+Allowed slope normal deviation from up in degrees");
+		archive.doc("If the real slope deviation is less than the allowed slope normal deviation, the character will use the default stance. Otherwise, it will use the stance set up for steep slopes");
+
+		m_allowedSlopeNormalDeviationFromUpInRadians = DEG2RAD(allowedSlopeNormalDeviationFromUpInDeg);
+
+		if (allowedSlopeNormalDeviationFromUpInDeg < 0)
+		{
+			archive.warning(allowedSlopeNormalDeviationFromUpInDeg, SerializationUtils::Messages::ErrorInvalidValueWithReason("Allowed slope normal deviation from up in degrees", ToString(allowedSlopeNormalDeviationFromUpInDeg), "Value must be greater or equal than 0"));
+		}
+
+		BaseClass::Serialize(archive);
+	}
+#endif
 
 protected:
 	virtual Status Update(const UpdateContext& context) override
@@ -1754,7 +2382,7 @@ public:
 		}
 	};
 
-	virtual LoadResult LoadFromXml(const XmlNodeRef& xml, const LoadContext& context) override
+	virtual LoadResult LoadFromXml(const XmlNodeRef& xml, const struct LoadContext& context, const bool strictMode) override
 	{
 		stack_string enterCode = xml->getAttr("onEnter");
 		stack_string exitCode = xml->getAttr("onExit");
@@ -1765,7 +2393,7 @@ public:
 		if (!exitCode.empty())
 			m_exitScriptFunction.reset(gEnv->pScriptSystem, gEnv->pScriptSystem->CompileBuffer(exitCode.c_str(), exitCode.length(), "LuaWrapper - exit"));
 
-		return LoadChildFromXml(xml, context);
+		return LoadChildFromXml(xml, context, strictMode);
 	}
 
 	void ExecuteEnterScript(RuntimeData& runtimeData)
@@ -1825,29 +2453,69 @@ private:
 };
 
 //////////////////////////////////////////////////////////////////////////
-
 class ExecuteLua : public Action
 {
+	typedef Action BaseClass;
 public:
 	struct RuntimeData
 	{
 	};
 
-	virtual LoadResult LoadFromXml(const XmlNodeRef& xml, const LoadContext& context) override
+	virtual LoadResult LoadFromXml(const XmlNodeRef& xml, const struct LoadContext& context, const bool strictMode) override
 	{
-		IF_UNLIKELY (Action::LoadFromXml(xml, context) == LoadFailure)
+		IF_UNLIKELY (Action::LoadFromXml(xml, context, strictMode) == LoadFailure)
 			return LoadFailure;
 
-		const stack_string code = xml->getAttr("code");
-		IF_UNLIKELY (code.empty())
+		m_code = xml->getAttr("code");
+		IF_UNLIKELY (m_code.empty())
 		{
-			gEnv->pLog->LogError("ExecuteLua node on line %d must have some Lua code in the 'code' attribute.", xml->getLine());
+			ErrorReporter(*this, context).LogError("%s", ErrorReporter::ErrorMessageMissingOrEmptyAttribute("ExecuteLua", "code").c_str());
 			return LoadFailure;
 		}
 
-		m_scriptFunction.reset(gEnv->pScriptSystem, gEnv->pScriptSystem->CompileBuffer(code.c_str(), code.length(), "ExecuteLua behavior tree node"));
-		return m_scriptFunction ? LoadSuccess : LoadFailure;
+		m_scriptFunction.reset(gEnv->pScriptSystem, gEnv->pScriptSystem->CompileBuffer(m_code.c_str(), m_code.length(), "ExecuteLua behavior tree node"));
+		IF_UNLIKELY(!m_scriptFunction)
+		{
+			ErrorReporter(*this, context).LogError("%s", ErrorReporter::ErrorMessageInvalidAttribute("ExecuteLua", "code", m_code, "Code could not be compiled").c_str());
+			return LoadFailure;
+		}
+
+		return LoadSuccess;
 	}
+
+#ifdef USING_BEHAVIOR_TREE_XML_DESCRIPTION_CREATION
+	virtual XmlNodeRef CreateXmlDescription() override
+	{
+		XmlNodeRef xml = BaseClass::CreateXmlDescription();
+		xml->setTag("ExecuteLua");
+		xml->setAttr("code", m_code);
+
+		return xml;
+	}
+#endif
+
+#ifdef USING_BEHAVIOR_TREE_SERIALIZATION
+	virtual void Serialize(Serialization::IArchive& archive) override
+	{
+		archive(m_code, "code", "+Code");
+		archive.doc("Lua code to be executed. Does not need to have boolean return type");
+
+		if (m_code.empty())
+		{
+			archive.error(m_code, SerializationUtils::Messages::ErrorEmptyValue("Code"));
+		}
+		else
+		{
+			m_scriptFunction.reset(gEnv->pScriptSystem, gEnv->pScriptSystem->CompileBuffer(m_code.c_str(), m_code.length(), "Execute Lua behavior tree node"));
+			if (!m_scriptFunction)
+			{
+				archive.error(m_code, SerializationUtils::Messages::ErrorInvalidValueWithReason("Code", m_code, "Failed to compile Lua code"));
+			}
+		}
+
+		BaseClass::Serialize(archive);
+	}
+#endif
 
 protected:
 	virtual Status Update(const UpdateContext& context) override
@@ -1871,6 +2539,7 @@ private:
 	}
 
 	SmartScriptFunction m_scriptFunction;
+	stack_string m_code;
 };
 
 //////////////////////////////////////////////////////////////////////////
@@ -1887,28 +2556,61 @@ public:
 	{
 	};
 
-	virtual LoadResult LoadFromXml(const XmlNodeRef& xml, const LoadContext& context) override
+	virtual LoadResult LoadFromXml(const XmlNodeRef& xml, const struct LoadContext& context, const bool strictMode) override
 	{
-		IF_UNLIKELY (BaseClass::LoadFromXml(xml, context) == LoadFailure)
+		IF_UNLIKELY (BaseClass::LoadFromXml(xml, context, strictMode) == LoadFailure)
 			return LoadFailure;
 
-		const stack_string code = xml->getAttr("code");
-		IF_UNLIKELY (code.empty())
+		m_code = xml->getAttr("code");
+		IF_UNLIKELY (m_code.empty())
 		{
-			ErrorReporter(*this, context).LogError("Missing or empty 'code' attribute.");
+			ErrorReporter(*this, context).LogError("%s", ErrorReporter::ErrorMessageMissingOrEmptyAttribute("AssertLua", "code").c_str());
 			return LoadFailure;
 		}
 
-		m_scriptFunction.reset(gEnv->pScriptSystem, gEnv->pScriptSystem->CompileBuffer(code.c_str(), code.length(), "AssertLua behavior tree node"));
+		m_scriptFunction.reset(gEnv->pScriptSystem, gEnv->pScriptSystem->CompileBuffer(m_code.c_str(), m_code.length(), "AssertLua behavior tree node"));
 		IF_UNLIKELY (!m_scriptFunction)
 		{
-			ErrorReporter(*this, context).LogError("Failed to compile Lua code '%s'.", code.c_str());
+			ErrorReporter(*this, context).LogError("%s", ErrorReporter::ErrorMessageInvalidAttribute("AssertLua", "code", m_code, "Code could not be compiled").c_str());
 			return LoadFailure;
 		}
 
 		return LoadSuccess;
 	}
 
+#ifdef USING_BEHAVIOR_TREE_XML_DESCRIPTION_CREATION
+	virtual XmlNodeRef CreateXmlDescription() override
+	{
+		XmlNodeRef xml = BaseClass::CreateXmlDescription();
+		xml->setTag("AssertLua");
+		xml->setAttr("code", m_code);
+
+		return xml;
+	}
+#endif
+
+#ifdef USING_BEHAVIOR_TREE_SERIALIZATION
+	virtual void Serialize(Serialization::IArchive& archive) override
+	{
+		archive(m_code, "code", "+Code");
+		archive.doc("Lua code used as a condition for the assert. If True, node Success. Otherwise, Fails.");
+
+		if (m_code.empty())
+		{
+			archive.error(m_code, SerializationUtils::Messages::ErrorEmptyValue("Code"));
+		}
+		else
+		{
+			m_scriptFunction.reset(gEnv->pScriptSystem, gEnv->pScriptSystem->CompileBuffer(m_code.c_str(), m_code.length(), "AssertLua behavior tree node"));
+			if(!m_scriptFunction)
+			{
+				archive.error(m_code, SerializationUtils::Messages::ErrorInvalidValueWithReason("Code", m_code, "Failed to compile Lua code"));
+			}
+		}
+
+		BaseClass::Serialize(archive);
+	}
+#endif
 protected:
 	virtual Status Update(const UpdateContext& context) override
 	{
@@ -1928,6 +2630,7 @@ protected:
 
 private:
 	SmartScriptFunction m_scriptFunction;
+	stack_string m_code;
 };
 
 //////////////////////////////////////////////////////////////////////////
@@ -1979,25 +2682,59 @@ public:
 	GroupScope()
 		: m_scopeID(0)
 		, m_allowedConcurrentUsers(1u)
-	{}
+	{
+	}
 
-	virtual LoadResult LoadFromXml(const XmlNodeRef& xml, const LoadContext& context) override
+	virtual LoadResult LoadFromXml(const XmlNodeRef& xml, const struct LoadContext& context, const bool strictMode) override
 	{
 		const stack_string scopeName = xml->getAttr("name");
 
 		if (scopeName.empty())
+		{
+			ErrorReporter(*this, context).LogError("%s", ErrorReporter::ErrorMessageMissingOrEmptyAttribute("GroupScope", "name").c_str());
 			return LoadFailure;
+		}
 
 		m_scopeID = CAIGroup::GetGroupScopeId(scopeName.c_str());
 
-#ifdef USING_BEHAVIOR_TREE_NODE_CUSTOM_DEBUG_TEXT
+#ifdef DEBUG_MODULAR_BEHAVIOR_TREE
 		m_scopeName = scopeName.c_str();
-#endif
+#endif // DEBUG_MODULAR_BEHAVIOR_TREE
 
 		xml->getAttr("allowedConcurrentUsers", m_allowedConcurrentUsers);
 
-		return LoadChildFromXml(xml, context);
+		return LoadChildFromXml(xml, context, strictMode);
 	}
+
+#ifdef USING_BEHAVIOR_TREE_XML_DESCRIPTION_CREATION
+	virtual XmlNodeRef CreateXmlDescription() override
+	{
+		XmlNodeRef xml = BaseClass::CreateXmlDescription();
+		xml->setTag("GroupScope");
+		xml->setAttr("name", m_scopeName);
+		xml->setAttr("allowedConcurrentUsers", m_allowedConcurrentUsers);
+
+		return xml;
+	}
+#endif
+
+#ifdef USING_BEHAVIOR_TREE_SERIALIZATION
+	virtual void Serialize(Serialization::IArchive& archive) override
+	{
+		archive(m_scopeName, "name", "^Name");
+		archive.doc("Name of the group ");
+
+		archive(m_allowedConcurrentUsers, "allowedConcurrentUsers", "^Allowed concurrent users");
+		archive.doc("Maximum number of concurrent members in the group");
+
+		if (m_scopeName.empty())
+		{
+			archive.error(m_scopeName, SerializationUtils::Messages::ErrorEmptyValue("Name"));
+		}
+
+		BaseClass::Serialize(archive);
+	}
+#endif
 
 protected:
 
@@ -2039,12 +2776,12 @@ protected:
 			return Failure;
 	}
 
-#ifdef USING_BEHAVIOR_TREE_NODE_CUSTOM_DEBUG_TEXT
+#ifdef DEBUG_MODULAR_BEHAVIOR_TREE
 	virtual void GetCustomDebugText(const UpdateContext& updateContext, stack_string& debugText) const
 	{
 		debugText.Format("%s", m_scopeName.c_str());
 	}
-#endif
+#endif // DEBUG_MODULAR_BEHAVIOR_TREE
 
 private:
 
@@ -2063,9 +2800,9 @@ private:
 	GroupScopeID m_scopeID;
 	uint32       m_allowedConcurrentUsers;
 
-#ifdef USING_BEHAVIOR_TREE_NODE_CUSTOM_DEBUG_TEXT
+#ifdef DEBUG_MODULAR_BEHAVIOR_TREE
 	string m_scopeName;
-#endif
+#endif // DEBUG_MODULAR_BEHAVIOR_TREE
 };
 
 //////////////////////////////////////////////////////////////////////////
@@ -2075,31 +2812,84 @@ class Look : public Action
 	typedef Action BaseClass;
 
 public:
+	enum At
+	{
+		AttentionTarget,
+		ClosestGroupMember,
+		ReferencePoint,
+	};
+
 	struct RuntimeData
 	{
 		std::shared_ptr<Vec3> lookTarget;
 	};
 
+private:
+	struct Dictionaries
+	{
+		CXMLAttrReader<At>        lookAtXml;
+		Serialization::StringList lookAtSerialization;
+
+		Dictionaries()
+		{
+			lookAtXml.Reserve(3);
+			lookAtXml.Add("AttentionTarget", At::AttentionTarget);
+			lookAtXml.Add("ClosestGroupMember", At::ClosestGroupMember);
+			lookAtXml.Add("ReferencePoint", At::ReferencePoint);
+
+			lookAtSerialization.reserve(3);
+			lookAtSerialization.push_back("AttentionTarget");
+			lookAtSerialization.push_back("ClosestGroupMember");
+			lookAtSerialization.push_back("ReferencePoint");
+		}
+	};
+
+public:
 	Look() : m_targetType(AttentionTarget)
 	{
 	}
 
-	virtual LoadResult LoadFromXml(const XmlNodeRef& xml, const LoadContext& context) override
+	virtual LoadResult LoadFromXml(const XmlNodeRef& xml, const struct LoadContext& context, const bool strictMode) override
 	{
-		IF_UNLIKELY (BaseClass::LoadFromXml(xml, context) == LoadFailure)
+		IF_UNLIKELY (BaseClass::LoadFromXml(xml, context, strictMode) == LoadFailure)
 			return LoadFailure;
 
-		const stack_string str = xml->getAttr("at");
-		if (str == "ClosestGroupMember")
-			m_targetType = ClosestGroupMember;
-		else if (str == "RefPoint")
-			m_targetType = ReferencePoint;
-		else
-			m_targetType = AttentionTarget;
+		IF_UNLIKELY (!s_lookDictionaries.lookAtXml.Get(xml, "at", m_targetType))
+		{
+			const string lookAtTarget = xml->getAttr("at");
+			if (lookAtTarget == "Target")
+			{
+				m_targetType = At::AttentionTarget;
+			}
+			else
+			{
+				ErrorReporter(*this, context).LogError("%s", ErrorReporter::ErrorMessageMissingOrEmptyAttribute("Look", "at").c_str());
+				return LoadFailure;
+			}
+		}
 
 		return LoadSuccess;
 	}
 
+#ifdef USING_BEHAVIOR_TREE_XML_DESCRIPTION_CREATION
+	virtual XmlNodeRef CreateXmlDescription() override
+	{
+		XmlNodeRef xml = BaseClass::CreateXmlDescription();
+		xml->setTag("Look");
+		xml->setAttr("at", Serialization::getEnumLabel<At>(m_targetType));
+
+		return xml;
+	}
+#endif
+
+#ifdef USING_BEHAVIOR_TREE_SERIALIZATION
+	virtual void Serialize(Serialization::IArchive& archive) override
+	{
+		SerializationUtils::SerializeEnumList<At>(archive, "at", "^At", s_lookDictionaries.lookAtSerialization, s_lookDictionaries.lookAtXml, m_targetType);
+		archive.doc("Where to look at");
+		BaseClass::Serialize(archive);
+	}
+#endif
 protected:
 	virtual void OnInitialize(const UpdateContext& context) override
 	{
@@ -2175,15 +2965,11 @@ protected:
 	}
 
 private:
-	enum At
-	{
-		AttentionTarget,
-		ClosestGroupMember,
-		ReferencePoint,
-	};
-
-	At m_targetType;
+	static Dictionaries s_lookDictionaries;
+	At                  m_targetType;
 };
+
+Look::Dictionaries Look::s_lookDictionaries;
 
 //////////////////////////////////////////////////////////////////////////
 
@@ -2218,9 +3004,9 @@ public:
 	{
 	}
 
-	virtual LoadResult LoadFromXml(const XmlNodeRef& xml, const LoadContext& context) override
+	virtual LoadResult LoadFromXml(const XmlNodeRef& xml, const struct LoadContext& context, const bool strictMode) override
 	{
-		IF_UNLIKELY (BaseClass::LoadFromXml(xml, context) == LoadFailure)
+		IF_UNLIKELY (BaseClass::LoadFromXml(xml, context, strictMode) == LoadFailure)
 			return LoadFailure;
 
 		float angleThresholdInDegrees = 30.0f;
@@ -2244,9 +3030,52 @@ public:
 			xml->getAttr("durationOnceWithinThreshold", m_durationOnceWithinThreshold);
 		}
 
+		if (m_durationOnceWithinThreshold != -1.0 && m_durationOnceWithinThreshold < 0)
+		{
+			ErrorReporter(*this, context).LogWarning("%s", ErrorReporter::ErrorMessageInvalidAttribute("Aim", "durationOnceWithinThreshold", ToString(m_durationOnceWithinThreshold), "Value must be greater or equal than 0").c_str());
+		}
+
 		return LoadSuccess;
 	}
 
+#ifdef USING_BEHAVIOR_TREE_XML_DESCRIPTION_CREATION
+	virtual XmlNodeRef CreateXmlDescription() override
+	{
+		XmlNodeRef xml = BaseClass::CreateXmlDescription();
+		xml->setTag("Aim");
+
+		xml->setAttr("angleThreshold", RAD2DEG(acosf(m_angleThresholdCosine)));
+		xml->setAttr("durationOnceWithinThreshold", m_durationOnceWithinThreshold);
+		xml->setAttr("aimAtReferencePoint", m_aimAtReferencePoint);
+
+		return xml;
+	}
+#endif
+
+#ifdef USING_BEHAVIOR_TREE_SERIALIZATION
+	virtual void Serialize(Serialization::IArchive& archive) override
+	{
+		float angleThresholdInDegrees = RAD2DEG(acosf(m_angleThresholdCosine));
+		archive(angleThresholdInDegrees, "angleThreshold", "+Angle threshold");
+		archive.doc("Allowed error between desired aim direction and real aim direction");
+
+		m_angleThresholdCosine = cosf(DEG2RAD(angleThresholdInDegrees));
+
+		archive(m_durationOnceWithinThreshold, "durationOnceWithinThreshold", "+Duration once within threshold");
+		archive.doc("Time in seconds before the node exists yielding Success once character orientation is already within threshold");
+
+		archive(m_aimAtReferencePoint, "aimAtReferencePoint", "+Aim at reference point");
+		archive.doc("When enable, aims at reference point. Otherwise, aims at Target.");
+
+
+		if (m_durationOnceWithinThreshold != -1.0f && m_durationOnceWithinThreshold < 0)
+		{
+			archive.warning(m_durationOnceWithinThreshold, SerializationUtils::Messages::ErrorInvalidValueWithReason("Duration once within threshold", ToString(m_durationOnceWithinThreshold), "Value must be greater or equal than 0 or -1 to run forever"));
+		}
+
+		BaseClass::Serialize(archive);
+	}
+#endif
 protected:
 	virtual void OnInitialize(const UpdateContext& context) override
 	{
@@ -2374,9 +3203,9 @@ public:
 	{
 	}
 
-	virtual LoadResult LoadFromXml(const XmlNodeRef& xml, const LoadContext& context) override
+	virtual LoadResult LoadFromXml(const XmlNodeRef& xml, const struct LoadContext& context, const bool strictMode) override
 	{
-		IF_UNLIKELY (BaseClass::LoadFromXml(xml, context) == LoadFailure)
+		IF_UNLIKELY (BaseClass::LoadFromXml(xml, context, strictMode) == LoadFailure)
 			return LoadFailure;
 
 		float maxAngleRange = 30.0f;
@@ -2393,8 +3222,9 @@ public:
 			// This is currently not used but it forces the readability of the behavior of the node.
 			// It forces to understand that the reference point is used to store the pivot position and the inizial direction
 			// of the machine gun
-			ErrorReporter(*this, context).LogError("Attribute 'useReferencePointForInitialDirectionAndPivotPosition' is missing or different"
-			                                       " than 1 (1 is currently the only accepted value)");
+			// Only accepted value is 1
+			ErrorReporter(*this, context).LogError("%s", ErrorReporter::ErrorMessageMissingOrEmptyAttribute("AimAroundWhileUsingAMachingGun", "useReferencePointForInitialDirectionAndPivotPosition").c_str());
+			return LoadFailure;
 		}
 
 		return LoadSuccess;
@@ -2518,9 +3348,9 @@ public:
 	{
 	}
 
-	virtual LoadResult LoadFromXml(const XmlNodeRef& xml, const LoadContext& context) override
+	virtual LoadResult LoadFromXml(const XmlNodeRef& xml, const struct LoadContext& context, const bool strictMode) override
 	{
-		IF_UNLIKELY (BaseClass::LoadFromXml(xml, context) == LoadFailure)
+		IF_UNLIKELY (BaseClass::LoadFromXml(xml, context, strictMode) == LoadFailure)
 			return LoadFailure;
 
 		m_alignWithTarget = false;
@@ -2542,7 +3372,7 @@ public:
 		{
 			if ((stopWithinAngleDegrees < 0.0f) || (stopWithinAngleDegrees > 180.0f))
 			{
-				ErrorReporter(*this, context).LogError("stopWithinAngle should be in the range of [0.0 .. 180.0].");
+				ErrorReporter(*this, context).LogError("%s", ErrorReporter::ErrorMessageInvalidAttribute("TurnBody", "stopWithinAngle", ToString(stopWithinAngleDegrees), "Valid range is between 0 and 180").c_str());
 				return LoadFailure;
 			}
 			m_stopWithinAngleCosined = cosf(DEG2RAD(stopWithinAngleDegrees));
@@ -2557,7 +3387,8 @@ public:
 		{
 			if ((angleDegrees < 0.0f) || (angleDegrees > 180.0f))
 			{
-				ErrorReporter(*this, context).LogError("Min. random angle should be in the range of [0.0 .. 180.0].");
+				
+				ErrorReporter(*this, context).LogError("%s", ErrorReporter::ErrorMessageInvalidAttribute("TurnBody", "randomMinAngle", ToString(angleDegrees), "Valid range is between 0 and 180").c_str());
 				return LoadFailure;
 			}
 			m_randomMinAngle = DEG2RAD(angleDegrees);
@@ -2567,7 +3398,7 @@ public:
 		{
 			if ((angleDegrees < 0.0f) || (angleDegrees > 180.0f))
 			{
-				ErrorReporter(*this, context).LogError("Max. random angle should be in the range of [0.0 .. 180.0].");
+				ErrorReporter(*this, context).LogError("%s", ErrorReporter::ErrorMessageInvalidAttribute("TurnBody", "randomMaxAngle", ToString(angleDegrees), "Valid range is between 0 and 180").c_str());
 				return LoadFailure;
 			}
 			m_randomMaxAngle = DEG2RAD(angleDegrees);
@@ -2584,7 +3415,7 @@ public:
 			}
 			if (m_randomMinAngle > m_randomMaxAngle)
 			{
-				ErrorReporter(*this, context).LogError("Min. and max. random angles are swapped.");
+				ErrorReporter(*this, context).LogError("Min. and max. random angles are swapped");
 				return LoadFailure;
 			}
 
@@ -2593,7 +3424,7 @@ public:
 			{
 				if ((m_randomTurnRightChance < 0.0f) || (m_randomTurnRightChance > 1.0f))
 				{
-					ErrorReporter(*this, context).LogError("randomTurnRightChance should be in the range of [0.0 .. 1.0].");
+					ErrorReporter(*this, context).LogError("%s", ErrorReporter::ErrorMessageInvalidAttribute("TurnBody", "randomTurnRightChance", ToString(m_randomTurnRightChance), "Valid range is between 0 and 1").c_str());
 					return LoadFailure;
 				}
 			}
@@ -2607,7 +3438,8 @@ public:
 
 		if (m_turnTarget == TurnTarget_Invalid)
 		{
-			ErrorReporter(*this, context).LogError("Target is missing");
+			ErrorReporter(*this, context).LogError("%s", ErrorReporter::ErrorMessageMissingOrEmptyAttribute("TurnBody", "target").c_str());
+			return LoadFailure;
 		}
 
 		return LoadSuccess;
@@ -2801,10 +3633,22 @@ BehaviorTree::TurnBody::TurnBodyDictionary BehaviorTree::TurnBody::s_turnBodyDic
 
 class ClearTargets : public Action
 {
+	typedef Action BaseClass;
 public:
 	struct RuntimeData
 	{
 	};
+#ifdef USING_BEHAVIOR_TREE_XML_DESCRIPTION_CREATION
+	virtual XmlNodeRef CreateXmlDescription() override
+	{
+		const MovementStyleDictionaryCollection movementStyleDictionaryCollection;
+
+		XmlNodeRef xml = BaseClass::CreateXmlDescription();
+		xml->setTag("ClearTargets");
+
+		return xml;
+	}
+#endif
 
 protected:
 	virtual Status Update(const UpdateContext& context) override
@@ -2866,9 +3710,9 @@ public:
 	{
 	}
 
-	virtual LoadResult LoadFromXml(const XmlNodeRef& xml, const LoadContext& context) override
+	virtual LoadResult LoadFromXml(const XmlNodeRef& xml, const struct LoadContext& context, const bool strictMode) override
 	{
-		IF_UNLIKELY (BaseClass::LoadFromXml(xml, context) == LoadFailure)
+		IF_UNLIKELY (BaseClass::LoadFromXml(xml, context, strictMode) == LoadFailure)
 			return LoadFailure;
 
 		m_waitUntilStopped = false;
@@ -2880,6 +3724,31 @@ public:
 		return LoadSuccess;
 	}
 
+#ifdef USING_BEHAVIOR_TREE_XML_DESCRIPTION_CREATION
+	virtual XmlNodeRef CreateXmlDescription() override
+	{
+		XmlNodeRef xml = BaseClass::CreateXmlDescription();
+		xml->setTag("StopMovement");
+
+		xml->setAttr("waitUntilStopped", m_waitUntilStopped);
+		xml->setAttr("waitUntilIdleAnimation", m_waitUntilIdleAnimation);
+
+		return xml;
+	}
+#endif
+
+#ifdef USING_BEHAVIOR_TREE_SERIALIZATION
+	virtual void Serialize(Serialization::IArchive& archive) override
+	{
+		archive(m_waitUntilStopped, "waitUntilStopped", "+Wait until stopped");
+		archive.doc("When enabled, waits until the Movement System has processed the request");
+
+		archive(m_waitUntilIdleAnimation, "waitUntilIdleAnimation", "+Wait until idle animation");
+		archive.doc("When enabled, waits until the Motion_Idle animation fragment started running in Mannquin");
+
+		BaseClass::Serialize(archive);
+	}
+#endif
 protected:
 	virtual void OnInitialize(const UpdateContext& context) override
 	{
@@ -3120,20 +3989,20 @@ public:
 		}
 	};
 
-	virtual LoadResult LoadFromXml(const XmlNodeRef& xml, const LoadContext& context) override
+	virtual LoadResult LoadFromXml(const XmlNodeRef& xml, const struct LoadContext& context, const bool strictMode) override
 	{
 		m_enterStates = xml->getAttr("onEnter");
 		m_exitStates = xml->getAttr("onExit");
 
-		return LoadChildFromXml(xml, context);
+		return LoadChildFromXml(xml, context, strictMode);
 	}
 
-#ifdef USING_BEHAVIOR_TREE_NODE_CUSTOM_DEBUG_TEXT
+#ifdef DEBUG_MODULAR_BEHAVIOR_TREE
 	virtual void GetCustomDebugText(const UpdateContext& updateContext, stack_string& debugText) const
 	{
 		debugText.Format("onEnter(%s) - onExit(%s)", m_enterStates.c_str(), m_exitStates.c_str());
 	}
-#endif
+#endif // DEBUG_MODULAR_BEHAVIOR_TREE
 
 protected:
 	virtual void OnInitialize(const UpdateContext& context) override
@@ -3232,9 +4101,9 @@ public:
 	{
 	}
 
-	virtual LoadResult LoadFromXml(const XmlNodeRef& xml, const LoadContext& context) override
+	virtual LoadResult LoadFromXml(const XmlNodeRef& xml, const struct LoadContext& context, const bool strictMode) override
 	{
-		IF_UNLIKELY (BaseClass::LoadFromXml(xml, context) == LoadFailure)
+		IF_UNLIKELY (BaseClass::LoadFromXml(xml, context, strictMode) == LoadFailure)
 			return LoadFailure;
 
 		const stack_string modeStr = xml->getAttr("mode");
@@ -3346,29 +4215,29 @@ public:
 	{
 	}
 
-	virtual LoadResult LoadFromXml(const XmlNodeRef& xml, const LoadContext& context) override
+	virtual LoadResult LoadFromXml(const XmlNodeRef& xml, const struct LoadContext& context, const bool strictMode) override
 	{
 		const char* tagName = xml->getAttr("name");
 		if (!tagName)
 		{
-			gEnv->pLog->LogError("AnimationTagWrapper behavior tree node: Missing 'name' attribute at line %d.", xml->getLine());
+			ErrorReporter(*this, context).LogError("%s", ErrorReporter::ErrorMessageMissingOrEmptyAttribute("AnimationTagWrapper", "name").c_str());
 			return LoadFailure;
 		}
 
-#ifdef USING_BEHAVIOR_TREE_NODE_CUSTOM_DEBUG_TEXT
+#ifdef DEBUG_MODULAR_BEHAVIOR_TREE
 		m_tagName = tagName;
-#endif
+#endif // DEBUG_MODULAR_BEHAVIOR_TREE
 
 		m_nameCRC = CCrc32::ComputeLowercase(tagName);
-		return LoadChildFromXml(xml, context);
+		return LoadChildFromXml(xml, context, strictMode);
 	}
 
-#ifdef USING_BEHAVIOR_TREE_NODE_CUSTOM_DEBUG_TEXT
+#ifdef DEBUG_MODULAR_BEHAVIOR_TREE
 	virtual void GetCustomDebugText(const UpdateContext& context, stack_string& debugText) const override
 	{
 		debugText = m_tagName;
 	}
-#endif
+#endif // DEBUG_MODULAR_BEHAVIOR_TREE
 
 protected:
 	virtual void OnInitialize(const UpdateContext& context) override
@@ -3386,9 +4255,9 @@ protected:
 	}
 
 private:
-#ifdef USING_BEHAVIOR_TREE_NODE_CUSTOM_DEBUG_TEXT
+#ifdef DEBUG_MODULAR_BEHAVIOR_TREE
 	string m_tagName;
-#endif
+#endif // DEBUG_MODULAR_BEHAVIOR_TREE
 	unsigned int m_nameCRC;
 };
 
@@ -3426,31 +4295,85 @@ public:
 	{
 	}
 
-	virtual LoadResult LoadFromXml(const XmlNodeRef& xml, const LoadContext& context) override
+	virtual LoadResult LoadFromXml(const XmlNodeRef& xml, const struct LoadContext& context, const bool strictMode) override
 	{
-		IF_UNLIKELY (BaseClass::LoadFromXml(xml, context) == LoadFailure)
+		IF_UNLIKELY (BaseClass::LoadFromXml(xml, context, strictMode) == LoadFailure)
 			return LoadFailure;
 
 		IF_UNLIKELY (!xml->getAttr("duration", m_duration))
 		{
-			ErrorReporter(*this, context).LogError("Missing 'duration' attribute.");
+			ErrorReporter(*this, context).LogError("%s", ErrorReporter::ErrorMessageMissingOrEmptyAttribute("ShootFromCover", "duration").c_str());
 			return LoadFailure;
 		}
 
 		if (xml->haveAttr("fireMode"))
 		{
-			IF_UNLIKELY (!g_fireModeDictionary.fireMode.Get(xml, "fireMode", m_fireMode))
+			const AgentDictionary agentDictionary;
+
+			IF_UNLIKELY (!agentDictionary.fireModeXml.Get(xml, "fireMode", m_fireMode))
 			{
-				ErrorReporter(*this, context).LogError("Invalid 'fireMode' attribute.");
+				ErrorReporter(*this, context).LogError("%s", ErrorReporter::ErrorMessageInvalidAttribute("ShootFromCover", "fireMode", "", "Unknown fire mode").c_str());
 				return LoadFailure;
 			}
 		}
 
 		xml->getAttr("aimObstructedTimeout", m_aimObstructedTimeout);
 
+		if (m_duration < 0)
+		{
+			ErrorReporter(*this, context).LogWarning("%s", ErrorReporter::ErrorMessageInvalidAttribute("ShootFromCover", "duration", ToString(m_duration), "Value must be greater or equal than 0").c_str());
+		}
+
+		if (m_aimObstructedTimeout < 0 && m_aimObstructedTimeout != -1)
+		{
+			ErrorReporter(*this, context).LogWarning("%s", ErrorReporter::ErrorMessageInvalidAttribute("ShootFromCover", "aimObstructedTimeout", ToString(m_aimObstructedTimeout), "Value must be greater or equal than 0").c_str());
+		}
+
 		return LoadSuccess;
 	}
 
+#ifdef USING_BEHAVIOR_TREE_XML_DESCRIPTION_CREATION
+	virtual XmlNodeRef CreateXmlDescription() override
+	{
+		XmlNodeRef xml = BaseClass::CreateXmlDescription();
+		xml->setTag("ShootFromCover");
+		xml->setAttr("duration", m_duration);
+		xml->setAttr("fireMode", Serialization::getEnumLabel<EFireMode>(m_fireMode));
+		xml->setAttr("aimObstructedTimeout", m_aimObstructedTimeout);
+
+		return xml;
+	}
+#endif
+
+#ifdef USING_BEHAVIOR_TREE_SERIALIZATION
+	virtual void Serialize(Serialization::IArchive& archive) override
+	{
+		const AgentDictionary agentDictionary;
+
+		
+		SerializationUtils::SerializeEnumList<EFireMode>(archive, "fireMode", "+Fire mode", agentDictionary.fireModesSerialization, agentDictionary.fireModeXml, m_fireMode);
+		archive.doc("Fire mode used to shoot");
+
+		archive(m_duration, "duration", "+Duration");
+		archive.doc("Time in seconds before the node exists");
+
+		archive(m_aimObstructedTimeout, "aimObstructedTimeout", "+Aim obstructed timeout");
+		archive.doc("Maximum time in seconds that the character will be allowed to have its aim obstructed before exiting yielding a Failure");
+
+
+		if (m_duration < 0)
+		{
+			archive.warning(m_duration, SerializationUtils::Messages::ErrorInvalidValueWithReason("Duration", ToString(m_duration), "Value must be greater or equal than 0"));
+		}
+
+		if (m_aimObstructedTimeout < 0 && m_aimObstructedTimeout != -1)
+		{
+			archive.warning(m_aimObstructedTimeout, SerializationUtils::Messages::ErrorInvalidValueWithReason("Aim Obstructed Timeout", ToString(m_aimObstructedTimeout), "Value must be greater or equal than 0"));
+		}
+
+		BaseClass::Serialize(archive);
+	}
+#endif
 protected:
 	virtual void OnInitialize(const UpdateContext& context) override
 	{
@@ -3617,25 +4540,28 @@ private:
 
 //////////////////////////////////////////////////////////////////////////
 
-enum ShootAt
-{
-	AttentionTarget,
-	ReferencePoint,
-	LocalSpacePosition,
-};
-
 struct ShootDictionary
 {
 	ShootDictionary();
-	CXMLAttrReader<ShootAt> shootAt;
+
+	CXMLAttrReader<EStance>   shootStanceXml;
+	Serialization::StringList shootStanceSerialization;
 };
 
 ShootDictionary::ShootDictionary()
 {
-	shootAt.Reserve(3);
-	shootAt.Add("Target", AttentionTarget);
-	shootAt.Add("RefPoint", ReferencePoint);
-	shootAt.Add("LocalSpacePosition", LocalSpacePosition);
+
+	shootStanceXml.Reserve(4);
+	shootStanceXml.Add("Stand", STANCE_STAND);
+	shootStanceXml.Add("Crouch", STANCE_CROUCH);
+	shootStanceXml.Add("Relaxed", STANCE_RELAXED);
+	shootStanceXml.Add("Alerted", STANCE_ALERTED);
+
+	shootStanceSerialization.reserve(3);
+	shootStanceSerialization.push_back("Stand");
+	shootStanceSerialization.push_back("Crouch");
+	shootStanceSerialization.push_back("Relaxed");
+	shootStanceSerialization.push_back("Alerted");
 }
 
 ShootDictionary g_shootDictionary;
@@ -3660,48 +4586,62 @@ public:
 
 	Shoot()
 		: m_duration(0.0f)
-		, m_shootAt(AttentionTarget)
+		, m_shootAt(ShootOp::ShootAt::AttentionTarget)
 		, m_stance(STANCE_STAND)
+		, m_fireMode(FIREMODE_OFF)
 		, m_stanceToUseIfSlopeIsTooSteep(STANCE_STAND)
 		, m_allowedSlopeNormalDeviationFromUpInRadians(0.0f)
 		, m_aimObstructedTimeout(-1.0f)
+		, m_position(ZERO)
 	{
 	}
 
-	virtual LoadResult LoadFromXml(const XmlNodeRef& xml, const LoadContext& context) override
+	virtual LoadResult LoadFromXml(const XmlNodeRef& xml, const struct LoadContext& context, const bool strictMode) override
 	{
-		IF_UNLIKELY (BaseClass::LoadFromXml(xml, context) == LoadFailure)
+		IF_UNLIKELY (BaseClass::LoadFromXml(xml, context, strictMode) == LoadFailure)
 			return LoadFailure;
 
 		IF_UNLIKELY (!xml->getAttr("duration", m_duration) || m_duration < 0.0f)
 		{
-			ErrorReporter(*this, context).LogError("Missing or invalid 'duration' attribute.");
+			ErrorReporter(*this, context).LogError("%s", ErrorReporter::ErrorMessageInvalidAttribute("Shoot", "duration", ToString(m_duration), "Missing or invalid value. Duration cannot be empty and should be greater or equal to 0").c_str());
 			return LoadFailure;
 		}
 
-		IF_UNLIKELY (!g_shootDictionary.shootAt.Get(xml, "at", m_shootAt))
+		const ShootOpDictionary shootOpDictionary;
+
+		IF_UNLIKELY (!shootOpDictionary.shootAtXml.Get(xml, "at", m_shootAt))
 		{
-			ErrorReporter(*this, context).LogError("Missing or invalid 'at' attribute.");
-			return LoadFailure;
+			const string shootAtTarget = xml->getAttr("at");
+			if (shootAtTarget == "Target")
+			{
+				m_shootAt = ShootOp::AttentionTarget;
+			}
+			else 
+			{
+				ErrorReporter(*this, context).LogError("%s", ErrorReporter::ErrorMessageInvalidAttribute("Shoot", "at", "", "Missing or invalid value").c_str());
+				return LoadFailure;
+			}
 		}
 
-		IF_UNLIKELY (!g_fireModeDictionary.fireMode.Get(xml, "fireMode", m_fireMode))
+		const AgentDictionary agentDictionary;
+
+		IF_UNLIKELY (!agentDictionary.fireModeXml.Get(xml, "fireMode", m_fireMode))
 		{
-			ErrorReporter(*this, context).LogError("Missing or invalid 'fireMode' attribute.");
+			ErrorReporter(*this, context).LogError("%s", ErrorReporter::ErrorMessageInvalidAttribute("Shoot", "fireMode", "", "Missing or invalid value").c_str());
 			return LoadFailure;
 		}
 
-		IF_UNLIKELY (!s_stanceDictionary.stances.Get(xml, "stance", m_stance))
+		IF_UNLIKELY (!s_stanceDictionary.stancesXml.Get(xml, "stance", m_stance))
 		{
-			ErrorReporter(*this, context).LogError("Missing or invalid 'stance' attribute.");
+			ErrorReporter(*this, context).LogError("%s", ErrorReporter::ErrorMessageInvalidAttribute("Shoot", "stance", "", "Missing or invalid value").c_str());
 			return LoadFailure;
 		}
 
-		if (m_shootAt == LocalSpacePosition)
+		if (m_shootAt == ShootOp::ShootAt::LocalSpacePosition)
 		{
 			IF_UNLIKELY (!xml->getAttr("position", m_position))
 			{
-				ErrorReporter(*this, context).LogError("Missing or invalid 'position' attribute.");
+				ErrorReporter(*this, context).LogError("%s", ErrorReporter::ErrorMessageInvalidAttribute("Shoot", "position", "", "Missing or invalid value").c_str());
 				return LoadFailure;
 			}
 		}
@@ -3710,12 +4650,79 @@ public:
 		xml->getAttr("allowedSlopeNormalDeviationFromUpInDegrees", degrees);
 		m_allowedSlopeNormalDeviationFromUpInRadians = DEG2RAD(degrees);
 
-		s_stanceDictionary.stances.Get(xml, "stanceToUseIfSlopeIsTooSteep", m_stanceToUseIfSlopeIsTooSteep);
+		s_stanceDictionary.stancesXml.Get(xml, "stanceToUseIfSlopeIsTooSteep", m_stanceToUseIfSlopeIsTooSteep);
 		xml->getAttr("aimObstructedTimeout", m_aimObstructedTimeout);
 
 		return LoadSuccess;
 	}
 
+#ifdef USING_BEHAVIOR_TREE_XML_DESCRIPTION_CREATION
+	virtual XmlNodeRef CreateXmlDescription() override
+	{
+		XmlNodeRef xml = BaseClass::CreateXmlDescription();
+		xml->setTag("Shoot");
+		xml->setAttr("duration", m_duration);
+		xml->setAttr("at", Serialization::getEnumLabel<ShootOp::ShootAt>(m_shootAt));
+		xml->setAttr("fireMode", Serialization::getEnumLabel<EFireMode>(m_fireMode));
+		xml->setAttr("stance", Serialization::getEnumLabel<EStance>(m_stance));
+		xml->setAttr("stanceToUseIfSlopeIsTooSteep", Serialization::getEnumLabel<EStance>(m_stanceToUseIfSlopeIsTooSteep));
+		xml->setAttr("allowedSlopeNormalDeviationFromUpInDegrees", RAD2DEG(m_allowedSlopeNormalDeviationFromUpInRadians));
+		xml->setAttr("aimObstructedTimeout", m_aimObstructedTimeout);
+
+		if (m_shootAt == ShootOp::ShootAt::LocalSpacePosition)
+		{
+			xml->setAttr("+position", m_position);
+		}
+
+		return xml;
+	}
+#endif
+
+#ifdef USING_BEHAVIOR_TREE_SERIALIZATION
+	virtual void Serialize(Serialization::IArchive& archive) override
+	{
+		const ShootOpDictionary shootOpDictionary;
+		const AgentDictionary agentDictionary;
+
+		SerializationUtils::SerializeEnumList<ShootOp::ShootAt>(archive, "at", "+At", shootOpDictionary.shootAtSerialization, shootOpDictionary.shootAtXml, m_shootAt);
+		archive.doc("Where to shoot at");
+		
+		SerializationUtils::SerializeEnumList<EFireMode>(archive, "fireMode", "+Fire mode", agentDictionary.fireModesSerialization, agentDictionary.fireModeXml, m_fireMode);
+		archive.doc("Fire mode use to shoot");
+
+		SerializationUtils::SerializeEnumList<EStance>(archive, "stance", "+Stance", g_shootDictionary.shootStanceSerialization, g_shootDictionary.shootStanceXml, m_stance);
+		archive.doc("Stance to use by default");
+
+		SerializationUtils::SerializeEnumList<EStance>(archive, "stanceToUseIfSlopeIsTooSteep", "+Stance to use if slope is too steep", g_shootDictionary.shootStanceSerialization, g_shootDictionary.shootStanceXml, m_stanceToUseIfSlopeIsTooSteep);
+		archive.doc("Stance to use if terrain slope is too steep");
+
+		float m_allowedSlopeNormalDeviationFromUpInDeg = RAD2DEG(m_allowedSlopeNormalDeviationFromUpInRadians);
+		
+		archive(m_allowedSlopeNormalDeviationFromUpInDeg, "allowedSlopeNormalDeviationFromUpInDegrees", "+Allowed slope normal deviation from up in degrees");
+		archive.doc("If the real slope deviation is less than the allowed slope normal deviation, the character will use the default stance. Otherwise, it will use the stance set up for steep slopes");
+
+		m_allowedSlopeNormalDeviationFromUpInRadians = DEG2RAD(m_allowedSlopeNormalDeviationFromUpInDeg);
+
+		archive(m_duration, "duration", "+Duration");
+		archive.doc("Time in seconds before the node exists yielding Success.");
+
+		if (m_duration == 0.0f)
+		{
+			archive.warning(m_duration, SerializationUtils::Messages::ErrorInvalidValueWithReason("Duration", ToString(m_duration), "Shooting duration is set to 0"));
+		}
+
+		archive(m_aimObstructedTimeout, "aimObstructedTimeout", "+Aim obstructed timeout");
+		archive.doc("Maximum time in seconds that the character will be allowed to have its aim obstructed before exiting yielding a Failure");
+
+		if (m_shootAt == ShootOp::ShootAt::LocalSpacePosition)
+		{
+			archive(m_position, "position", "+Position");
+			archive.doc("World position to shoot at");
+		}
+
+		BaseClass::Serialize(archive);
+	}
+#endif
 protected:
 	virtual void OnInitialize(const UpdateContext& context) override
 	{
@@ -3730,10 +4737,14 @@ protected:
 
 		RuntimeData& runtimeData = GetRuntimeData<RuntimeData>(context);
 
-		if (m_shootAt == LocalSpacePosition)
+		if (m_shootAt == ShootOp::ShootAt::LocalSpacePosition)
+		{
 			SetupFireTargetForLocalPosition(*pipeUser, runtimeData);
-		else if (m_shootAt == ReferencePoint)
+		}
+		else if (m_shootAt == ShootOp::ShootAt::ReferencePoint)
+		{
 			SetupFireTargetForReferencePoint(*pipeUser, runtimeData);
+		}
 
 		pipeUser->SetFireMode(m_fireMode);
 
@@ -3866,14 +4877,14 @@ private:
 		pipeUser.SetFireTarget(runtimeData.dummyTarget);
 	}
 
-	Vec3      m_position;
-	float     m_duration;
-	ShootAt   m_shootAt;
-	EFireMode m_fireMode;
-	EStance   m_stance;
-	EStance   m_stanceToUseIfSlopeIsTooSteep;
-	float     m_allowedSlopeNormalDeviationFromUpInRadians;
-	float     m_aimObstructedTimeout;
+	Vec3             m_position;
+	float            m_duration;
+	ShootOp::ShootAt m_shootAt;
+	EFireMode        m_fireMode;
+	EStance          m_stance;
+	EStance          m_stanceToUseIfSlopeIsTooSteep;
+	float            m_allowedSlopeNormalDeviationFromUpInRadians;
+	float            m_aimObstructedTimeout;
 };
 
 //////////////////////////////////////////////////////////////////////////
@@ -3905,14 +4916,14 @@ public:
 	{
 	}
 
-	virtual LoadResult LoadFromXml(const XmlNodeRef& xml, const LoadContext& context) override
+	virtual LoadResult LoadFromXml(const XmlNodeRef& xml, const struct LoadContext& context, const bool strictMode) override
 	{
-		IF_UNLIKELY (BaseClass::LoadFromXml(xml, context) == LoadFailure)
+		IF_UNLIKELY (BaseClass::LoadFromXml(xml, context, strictMode) == LoadFailure)
 			return LoadFailure;
 
 		IF_UNLIKELY (!xml->getAttr("timeout", m_timeout) || m_timeout < 0.0f)
 		{
-			ErrorReporter(*this, context).LogError("Missing or invalid 'timeout' attribute.");
+			ErrorReporter(*this, context).LogError("%s", ErrorReporter::ErrorMessageInvalidAttribute("ThrowGrenade", "timeout", ToString(m_timeout), "Missing or invalid value. Timeout cannot be empty and should be greater or equal to 0").c_str());
 			return LoadFailure;
 		}
 
@@ -3931,7 +4942,7 @@ public:
 		}
 		else
 		{
-			ErrorReporter(*this, context).LogError("Missing or invalid 'type' attribute.");
+			ErrorReporter(*this, context).LogError("%s", ErrorReporter::ErrorMessageInvalidAttribute("ThrowGrenade", "type", ToString(m_timeout), "Missing or invalid value").c_str());
 			return LoadFailure;
 		}
 
@@ -4008,6 +5019,16 @@ public:
 	{
 	};
 
+#ifdef USING_BEHAVIOR_TREE_XML_DESCRIPTION_CREATION
+	virtual XmlNodeRef CreateXmlDescription() override
+	{
+		XmlNodeRef xml = BaseClass::CreateXmlDescription();
+		xml->setTag("PullDownThreatLevel");
+
+		return xml;
+	}
+#endif
+
 protected:
 	virtual Status Update(const UpdateContext& context) override
 	{
@@ -4023,43 +5044,73 @@ protected:
 //////////////////////////////////////////////////////////////////////////
 //////////////////////////////////////////////////////////////////////////
 
+SERIALIZATION_ENUM_BEGIN_NESTED(Move, DestinationType, "Destination Type")
+SERIALIZATION_ENUM(Move::DestinationType::Target, "target", "Target")
+SERIALIZATION_ENUM(Move::DestinationType::Cover, "cover", "Cover")
+SERIALIZATION_ENUM(Move::DestinationType::ReferencePoint, "reference_point", "ReferencePoint")
+SERIALIZATION_ENUM(Move::DestinationType::LastOp, "last_op", "LastOp")
+SERIALIZATION_ENUM(Move::DestinationType::InitialPosition, "target", "InitialPosition")
+SERIALIZATION_ENUM_END()
+
+SERIALIZATION_ENUM_BEGIN(EAIRegister, "AI Register")
+SERIALIZATION_ENUM(EAIRegister::AI_REG_REFPOINT, "ref_point", "RefPoint")
+SERIALIZATION_ENUM(EAIRegister::AI_REG_COVER, "cover", "Cover")
+SERIALIZATION_ENUM_END()
+
+SERIALIZATION_ENUM_BEGIN_NESTED(Animate, PlayMode, "Play Mode")
+SERIALIZATION_ENUM(Animate::PlayMode::PlayOnce, "play_once", "PlayOnce")
+SERIALIZATION_ENUM(Animate::PlayMode::InfiniteLoop, "infinite_loop", "InfiniteLoop")
+SERIALIZATION_ENUM_END()
+
+SERIALIZATION_ENUM_BEGIN_NESTED(Look, At, "Look At")
+SERIALIZATION_ENUM(Look::At::AttentionTarget, "attention_target", "AttentionTarget")
+SERIALIZATION_ENUM(Look::At::ClosestGroupMember, "closest_group_member", "ClosestGroupMember")
+SERIALIZATION_ENUM(Look::At::ReferencePoint, "reference_point", "ReferencePoint")
+SERIALIZATION_ENUM_END()
+
+//////////////////////////////////////////////////////////////////////////
+//////////////////////////////////////////////////////////////////////////
+
 void RegisterBehaviorTreeNodes_AI()
 {
 	assert(gAIEnv.pBehaviorTreeManager);
 
 	IBehaviorTreeManager& manager = *gAIEnv.pBehaviorTreeManager;
 
-	REGISTER_BEHAVIOR_TREE_NODE(manager, GoalPipe);
-	REGISTER_BEHAVIOR_TREE_NODE(manager, LuaBehavior);
-	REGISTER_BEHAVIOR_TREE_NODE(manager, Bubble);
-	REGISTER_BEHAVIOR_TREE_NODE(manager, Move);
-	REGISTER_BEHAVIOR_TREE_NODE(manager, QueryTPS);
-	REGISTER_BEHAVIOR_TREE_NODE(manager, LuaGate);
-	REGISTER_BEHAVIOR_TREE_NODE(manager, AdjustCoverStance);
-	REGISTER_BEHAVIOR_TREE_NODE(manager, SetAlertness);
-	REGISTER_BEHAVIOR_TREE_NODE(manager, Communicate);
-	REGISTER_BEHAVIOR_TREE_NODE(manager, Animate);
-	REGISTER_BEHAVIOR_TREE_NODE(manager, Signal);
-	REGISTER_BEHAVIOR_TREE_NODE(manager, SendTransitionSignal);
-	REGISTER_BEHAVIOR_TREE_NODE(manager, Stance);
-	REGISTER_BEHAVIOR_TREE_NODE(manager, LuaWrapper);
-	REGISTER_BEHAVIOR_TREE_NODE(manager, ExecuteLua);
-	REGISTER_BEHAVIOR_TREE_NODE(manager, AssertLua);
-	REGISTER_BEHAVIOR_TREE_NODE(manager, GroupScope);
-	REGISTER_BEHAVIOR_TREE_NODE(manager, Look);
-	REGISTER_BEHAVIOR_TREE_NODE(manager, Aim);
-	REGISTER_BEHAVIOR_TREE_NODE(manager, AimAroundWhileUsingAMachingGun);
-	REGISTER_BEHAVIOR_TREE_NODE(manager, TurnBody);
-	REGISTER_BEHAVIOR_TREE_NODE(manager, ClearTargets);
-	REGISTER_BEHAVIOR_TREE_NODE(manager, StopMovement);
-	REGISTER_BEHAVIOR_TREE_NODE(manager, SmartObjectStatesWrapper);
-	REGISTER_BEHAVIOR_TREE_NODE(manager, CheckIfTargetCanBeReached);
-	REGISTER_BEHAVIOR_TREE_NODE(manager, AnimationTagWrapper);
-	REGISTER_BEHAVIOR_TREE_NODE(manager, ShootFromCover);
-	REGISTER_BEHAVIOR_TREE_NODE(manager, Shoot);
-	REGISTER_BEHAVIOR_TREE_NODE(manager, ThrowGrenade);
-	REGISTER_BEHAVIOR_TREE_NODE(manager, PullDownThreatLevel);
+	const char* COLOR_SDK = "ff00ff";
 
-	REGISTER_BEHAVIOR_TREE_NODE(manager, TeleportStalker_Deprecated);
+	// Keep alphabetically sorted for better readability
+	REGISTER_BEHAVIOR_TREE_NODE(manager, AimAroundWhileUsingAMachingGun);
+	REGISTER_BEHAVIOR_TREE_NODE(manager, AnimationTagWrapper);
+	REGISTER_BEHAVIOR_TREE_NODE(manager, CheckIfTargetCanBeReached);
+	REGISTER_BEHAVIOR_TREE_NODE(manager, GoalPipe);
+	REGISTER_BEHAVIOR_TREE_NODE(manager, LuaWrapper);
+	REGISTER_BEHAVIOR_TREE_NODE(manager, SmartObjectStatesWrapper);
+	REGISTER_BEHAVIOR_TREE_NODE(manager, ThrowGrenade);
+	REGISTER_BEHAVIOR_TREE_NODE(manager, TurnBody);
+
+	// Keep alphabetically sorted for better readability
+	REGISTER_BEHAVIOR_TREE_NODE_WITH_SERIALIZATION(manager, AdjustCoverStance, "GameSDK\\Adjust cover stance", COLOR_SDK);
+	REGISTER_BEHAVIOR_TREE_NODE_WITH_SERIALIZATION(manager, Aim, "GameSDK\\Aim", COLOR_SDK);
+	REGISTER_BEHAVIOR_TREE_NODE_WITH_SERIALIZATION(manager, Animate, "GameSDK\\Animate", COLOR_SDK);
+	REGISTER_BEHAVIOR_TREE_NODE_WITH_SERIALIZATION(manager, AssertLua, "GameSDK\\Assert Lua", COLOR_SDK);
+	REGISTER_BEHAVIOR_TREE_NODE_WITH_SERIALIZATION(manager, Bubble, "GameSDK\\Bubble", COLOR_SDK);
+	REGISTER_BEHAVIOR_TREE_NODE_WITH_SERIALIZATION(manager, ClearTargets, "GameSDK\\Clear targets", COLOR_SDK);
+	REGISTER_BEHAVIOR_TREE_NODE_WITH_SERIALIZATION(manager, Communicate, "GameSDK\\Communicate", COLOR_SDK);
+	REGISTER_BEHAVIOR_TREE_NODE_WITH_SERIALIZATION(manager, ExecuteLua, "GameSDK\\Execute Lua", COLOR_SDK);
+	REGISTER_BEHAVIOR_TREE_NODE_WITH_SERIALIZATION(manager, GroupScope, "GameSDK\\Group scope", COLOR_SDK);
+	REGISTER_BEHAVIOR_TREE_NODE_WITH_SERIALIZATION(manager, Look, "GameSDK\\Look", COLOR_SDK);
+	REGISTER_BEHAVIOR_TREE_NODE_WITH_SERIALIZATION(manager, LuaBehavior, "GameSDK\\Lua behavior (DEPRECATED)", COLOR_SDK);
+	REGISTER_BEHAVIOR_TREE_NODE_WITH_SERIALIZATION(manager, LuaGate, "GameSDK\\Lua gate", COLOR_SDK);
+	REGISTER_BEHAVIOR_TREE_NODE_WITH_SERIALIZATION(manager, Move, "GameSDK\\Move", COLOR_SDK);
+	REGISTER_BEHAVIOR_TREE_NODE_WITH_SERIALIZATION(manager, PullDownThreatLevel, "GameSDK\\Pull down threat level", COLOR_SDK);
+	REGISTER_BEHAVIOR_TREE_NODE_WITH_SERIALIZATION(manager, QueryTPS, "GameSDK\\Query TPS", COLOR_SDK);
+	REGISTER_BEHAVIOR_TREE_NODE_WITH_SERIALIZATION(manager, SendTransitionSignal, "GameSDK\\Send transition signal", COLOR_SDK);
+	REGISTER_BEHAVIOR_TREE_NODE_WITH_SERIALIZATION(manager, SetAlertness, "GameSDK\\Set alertness", COLOR_SDK);
+	REGISTER_BEHAVIOR_TREE_NODE_WITH_SERIALIZATION(manager, Shoot, "GameSDK\\Shoot", COLOR_SDK);
+	REGISTER_BEHAVIOR_TREE_NODE_WITH_SERIALIZATION(manager, ShootFromCover, "GameSDK\\Shoot from cover", COLOR_SDK);
+	REGISTER_BEHAVIOR_TREE_NODE_WITH_SERIALIZATION(manager, Signal, "GameSDK\\Send signal", COLOR_SDK);
+	REGISTER_BEHAVIOR_TREE_NODE_WITH_SERIALIZATION(manager, Stance, "GameSDK\\Stance", COLOR_SDK);
+	REGISTER_BEHAVIOR_TREE_NODE_WITH_SERIALIZATION(manager, StopMovement, "GameSDK\\Stop movement", COLOR_SDK);
 }
 }

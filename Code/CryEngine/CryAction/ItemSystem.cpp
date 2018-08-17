@@ -22,6 +22,8 @@
 
 #include <CryEntitySystem/IEntitySystem.h>
 #include <CryAnimation/ICryAnimation.h>
+#include <CryAISystem/ISignal.h>
+#include <CryAISystem/IAIObject.h>
 #include <IVehicleSystem.h>
 #include "ItemParams.h"
 #include "EquipmentManager.h"
@@ -689,7 +691,10 @@ EntityId CItemSystem::GiveItem(IActor* pActor, const char* item, bool sound, boo
 			if (gEnv->pAISystem)
 			{
 				if (IAIObject* pActorAI = pActor->GetEntity()->GetAI())
-					gEnv->pAISystem->SendSignal(SIGNALFILTER_SENDER, 0, "OnUpdateItems", pActorAI);
+				{
+					const AISignals::SignalSharedPtr pSignal = gEnv->pAISystem->GetSignalManager()->CreateSignal(AISIGNAL_INCLUDE_DISABLED, gEnv->pAISystem->GetSignalManager()->GetBuiltInSignalDescriptions().GetOnUpdateItems(), pActorAI->GetAIObjectID());
+					gEnv->pAISystem->SendSignal(AISignals::ESignalFilter::SIGNALFILTER_SENDER, pSignal);
+				}
 			}
 
 			if ((pItemEnt = gEnv->pEntitySystem->GetEntity(itemEntId)) && !pItemEnt->IsGarbage())

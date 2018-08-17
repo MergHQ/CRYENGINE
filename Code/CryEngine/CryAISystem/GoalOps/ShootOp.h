@@ -46,4 +46,32 @@ private:
 	EStance               m_stance;
 };
 
+struct ShootOpDictionary
+{
+	ShootOpDictionary();
+
+	CXMLAttrReader<ShootOp::ShootAt> shootAtXml;
+	Serialization::StringList        shootAtSerialization;
+
+};
+
+inline ShootOpDictionary::ShootOpDictionary()
+{
+	shootAtXml.Reserve(3);
+	shootAtXml.Add("AttentionTarget", ShootOp::AttentionTarget);
+	shootAtXml.Add("ReferencePoint", ShootOp::ReferencePoint);
+	shootAtXml.Add("LocalSpacePosition", ShootOp::LocalSpacePosition);
+
+	shootAtSerialization.reserve(3);
+	shootAtSerialization.push_back("AttentionTarget");
+	shootAtSerialization.push_back("ReferencePoint");
+	shootAtSerialization.push_back("LocalSpacePosition");
+}
+
+SERIALIZATION_ENUM_BEGIN_NESTED(ShootOp, ShootAt, "Shoot At")
+SERIALIZATION_ENUM(ShootOp::ShootAt::AttentionTarget, "attention_target", "AttentionTarget")
+SERIALIZATION_ENUM(ShootOp::ShootAt::ReferencePoint, "reference_point", "ReferencePoint")
+SERIALIZATION_ENUM(ShootOp::ShootAt::LocalSpacePosition, "local_space_position", "LocalSpacePosition")
+SERIALIZATION_ENUM_END()
+
 #endif // ShootOp_h

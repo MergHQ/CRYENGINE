@@ -73,7 +73,7 @@ void Group::Update(float updateTime)
 	{
 		QueuedNotification& notification = m_notifications.front();
 
-		m_proxy->Notify(notification.ID, notification.senderID, notification.notification);
+		m_proxy->Notify(notification.ID, notification.pSignal);
 
 		m_notifications.pop_front();
 	}
@@ -173,24 +173,32 @@ void Group::Update(float updateTime)
 		m_target->SetPos(m_targetLocation);
 	}
 
+
 	if (m_targetType != m_prevTargetType)
 	{
+		const AISignals::ISignalDescription* pSignalDescription = nullptr;
 		switch (m_targetType)
 		{
 		case AITARGET_NONE:
-			gAIEnv.pGroupManager->NotifyGroup(m_groupID, 0, "OnGroupTargetNone");
+			pSignalDescription = &GetAISystem()->GetSignalManager()->GetBuiltInSignalDescriptions().GetOnGroupTargetNone();
 			break;
 		case AITARGET_SOUND:
-			gAIEnv.pGroupManager->NotifyGroup(m_groupID, 0, "OnGroupTargetSound");
+			pSignalDescription = &GetAISystem()->GetSignalManager()->GetBuiltInSignalDescriptions().GetOnGroupTargetSound();
 			break;
 		case AITARGET_MEMORY:
-			gAIEnv.pGroupManager->NotifyGroup(m_groupID, 0, "OnGroupTargetMemory");
+			pSignalDescription = &GetAISystem()->GetSignalManager()->GetBuiltInSignalDescriptions().GetOnGroupTargetMemory();
 			break;
 		case AITARGET_VISUAL:
-			gAIEnv.pGroupManager->NotifyGroup(m_groupID, 0, "OnGroupTargetVisual");
+			pSignalDescription = &GetAISystem()->GetSignalManager()->GetBuiltInSignalDescriptions().GetOnGroupTargetVisual();
 			break;
 		default:
 			break;
+		}
+
+		if (pSignalDescription && !pSignalDescription->IsNone())
+		{
+			const AISignals::SignalSharedPtr pSignal = GetAISystem()->GetSignalManager()->CreateSignal(AISIGNAL_INCLUDE_DISABLED, *pSignalDescription);
+			gAIEnv.pGroupManager->NotifyGroup(m_groupID, pSignal);
 		}
 
 		m_prevTargetType = m_targetType;
@@ -236,9 +244,9 @@ const Vec3& Group::GetTargetLocation() const
 	return m_targetLocation;
 }
 
-void Group::Notify(const NotificationID& notificationID, tAIObjectID recipientID, const char* name)
+void Group::Notify(const NotificationID& notificationID, AISignals::SignalSharedPtr pSignal)
 {
-	m_notifications.push_back(QueuedNotification(notificationID, recipientID, name));
+	m_notifications.push_back(QueuedNotification(notificationID, pSignal));
 }
 
 void Group::Serialize(TSerialize ser)

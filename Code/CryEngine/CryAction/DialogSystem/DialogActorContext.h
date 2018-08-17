@@ -88,7 +88,7 @@ protected:
 
 	void                                              ResetState();
 	void                                              CancelCurrent(bool bResetStates = false);
-	bool                                              ExecuteAI(int& goalPipeID, const char* signalText, IAISignalExtraData* pExtraData = 0, bool bRegisterAsListener = true);
+	bool                                              ExecuteAI(int& goalPipeID, const AISignals::ISignalDescription& signalDescription, AISignals::IAISignalExtraData* pExtraData = 0, bool bRegisterAsListener = true);
 	void                                              AdvancePhase();
 	void                                              StopSound(bool bUnregisterOnly = false);
 	void                                              AbortContext(bool bCancel, CDialogSession::EAbortReason reason);

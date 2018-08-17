@@ -44,7 +44,7 @@ CAngleAlert::~CAngleAlert()
 //
 // Return:
 //
-void CAngleAlert::Init(float fAngle, float fBoundary, const char* sSignal, IAISignalExtraData* pData /*= NULL*/)
+void CAngleAlert::Init(float fAngle, float fBoundary, const char* sSignal, AISignals::IAISignalExtraData* pData /*= NULL*/)
 {
 	CRY_ASSERT(fAngle >= 1.0f);
 	CRY_ASSERT(fBoundary >= 0.0f);

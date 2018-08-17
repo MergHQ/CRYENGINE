@@ -29,8 +29,6 @@ public:
 			UseLiveTargetDistance
 		};
 
-		string enterSignal;
-		string leaveSignal;
 		float rangeSq;
 		State state;
 		TargetMode targetMode;

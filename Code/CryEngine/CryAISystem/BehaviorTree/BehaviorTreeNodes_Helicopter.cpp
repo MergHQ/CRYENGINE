@@ -145,7 +145,7 @@ public:
 	{
 	}
 
-	virtual LoadResult LoadFromXml(const XmlNodeRef& xml, const LoadContext& context) override
+	virtual LoadResult LoadFromXml(const XmlNodeRef& xml, const struct LoadContext& context, const bool strictMode) override
 	{
 		m_useSecondaryWeapon = false;
 		xml->getAttr("useSecondaryWeapon", m_useSecondaryWeapon);
@@ -249,7 +249,7 @@ public:
 	{
 	}
 
-	virtual LoadResult LoadFromXml(const XmlNodeRef& xml, const LoadContext& context) override
+	virtual LoadResult LoadFromXml(const XmlNodeRef& xml, const struct LoadContext& context, const bool strictMode) override
 	{
 		GetClampedXmlAttribute(xml, "toleranceDegrees", m_toleranceDegrees, 0.0f, 180.0f);
 		return LoadSuccess;
@@ -456,7 +456,7 @@ public:
 		}
 	}
 
-	virtual LoadResult LoadFromXml(const XmlNodeRef& xml, const LoadContext& context) override
+	virtual LoadResult LoadFromXml(const XmlNodeRef& xml, const struct LoadContext& context, const bool strictMode) override
 	{
 		GetClampedXmlAttribute(xml, "desiredSpeed", m_params.desiredSpeed, 0.0f, FLT_MAX);
 		GetClampedXmlAttribute(xml, "pathRadius", m_params.pathRadius, 0.0f, FLT_MAX);

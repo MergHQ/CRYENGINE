@@ -33,7 +33,7 @@ AnimateFragment::AnimateFragment() :
 {
 }
 
-LoadResult AnimateFragment::LoadFromXml(const XmlNodeRef& xml, const LoadContext& context)
+BehaviorTree::LoadResult AnimateFragment::LoadFromXml(const XmlNodeRef& xml, const struct LoadContext& context, const bool strictMode /*= true*/)
 {
 	const string fragName = xml->getAttr("name");
 	IF_UNLIKELY (fragName.empty())
@@ -41,20 +41,20 @@ LoadResult AnimateFragment::LoadFromXml(const XmlNodeRef& xml, const LoadContext
 		ErrorReporter(*this, context).LogError("Missing attribute 'name'.");
 		return LoadFailure;
 	}
-#ifdef USING_BEHAVIOR_TREE_NODE_CUSTOM_DEBUG_TEXT
+#ifdef DEBUG_MODULAR_BEHAVIOR_TREE
 	m_fragName = fragName;
-#endif
+#endif // DEBUG_MODULAR_BEHAVIOR_TREE
 	m_fragNameCrc32 = CCrc32::ComputeLowercase(fragName);
 
 	return LoadSuccess;
 }
 
-#ifdef USING_BEHAVIOR_TREE_NODE_CUSTOM_DEBUG_TEXT
+#ifdef DEBUG_MODULAR_BEHAVIOR_TREE
 void AnimateFragment::GetCustomDebugText(const UpdateContext& updateContext, stack_string& debugText) const
 {
 	debugText = m_fragName;
 }
-#endif
+#endif // DEBUG_MODULAR_BEHAVIOR_TREE
 
 void AnimateFragment::OnInitialize(const UpdateContext& context)
 {
@@ -111,11 +111,11 @@ void AnimateFragment::QueueAction(const UpdateContext& context)
 		const FragmentID fragID = pIActionController->GetFragID(m_fragNameCrc32);
 		IF_LIKELY (fragID == FRAGMENT_ID_INVALID)
 		{
-#ifdef USING_BEHAVIOR_TREE_NODE_CUSTOM_DEBUG_TEXT
+#ifdef DEBUG_MODULAR_BEHAVIOR_TREE
 			ErrorReporter(*this, context).LogError("Invalid fragment name '%s'", m_fragName.c_str());
 #else
 			ErrorReporter(*this, context).LogError("Invalid fragment name!");
-#endif
+#endif // DEBUG_MODULAR_BEHAVIOR_TREE
 			return;
 		}
 		runtimeData.action = new CAnimActionTriState(NORMAL_ACTION_PRIORITY, fragID, *animChar, true /*oneshot*/);

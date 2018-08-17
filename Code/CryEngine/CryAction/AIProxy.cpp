@@ -25,6 +25,7 @@
 #include "AI/AIProxyManager.h"
 #include <CryAISystem/IAIAction.h>
 #include <CryAISystem/IAISystem.h>
+#include <CryAISystem/IAgent.h>
 #include "AIHandler.h"
 #include "IItemSystem.h"
 #include "IVehicleSystem.h"
@@ -39,6 +40,8 @@
 
 #include <CryAISystem/IAIObject.h>
 #include <CryAISystem/IAIActor.h>
+#include <CryAISystem/ISignal.h>
+#include <CryAISystem/IAIObjectManager.h>
 #include "AnimationGraph/AnimatedCharacter.h"
 
 //
@@ -968,31 +971,32 @@ void CAIProxy::UpdateShooting(const SOBJECTSTATE& state, bool isAlive)
 			IEntity* pEnt = m_pGameObject->GetEntity();
 			if (pEnt)
 			{
+				const AgentDictionary agentDictionary;
 
 				switch (returnedGrenadeType)
 				{
 				case eRGT_SMOKE_GRENADE:
-					SendSignal(AISIGNAL_DEFAULT, "OnSmokeGrenadeThrown", pEnt, NULL);
+					SendSignal(gEnv->pAISystem->GetSignalManager()->CreateSignal(AISIGNAL_DEFAULT, gEnv->pAISystem->GetSignalManager()->GetBuiltInSignalDescriptions().GetOnSmokeGrenadeThrown(), pEnt->GetAIObjectID()));
 					break;
 				case eRGT_FLASHBANG_GRENADE:
-					SendSignal(AISIGNAL_DEFAULT, "OnFlashbangGrenadeThrown", pEnt, NULL);
+					SendSignal(gEnv->pAISystem->GetSignalManager()->CreateSignal(AISIGNAL_DEFAULT, gEnv->pAISystem->GetSignalManager()->GetBuiltInSignalDescriptions().GetOnFlashbangGrenadeThrown(), pEnt->GetAIObjectID()));
 					break;
 				case eRGT_FRAG_GRENADE:
-					SendSignal(AISIGNAL_DEFAULT, "OnFragGrenadeThrown", pEnt, NULL);
+					SendSignal(gEnv->pAISystem->GetSignalManager()->CreateSignal(AISIGNAL_DEFAULT, gEnv->pAISystem->GetSignalManager()->GetBuiltInSignalDescriptions().GetOnFragGrenadeThrown(), pEnt->GetAIObjectID()));
 					break;
 				case eRGT_EMP_GRENADE:
-					SendSignal(AISIGNAL_DEFAULT, "OnEMPGrenadeThrown", pEnt, NULL);
+					SendSignal(gEnv->pAISystem->GetSignalManager()->CreateSignal(AISIGNAL_DEFAULT, gEnv->pAISystem->GetSignalManager()->GetBuiltInSignalDescriptions().GetOnEMPGrenadeThrown(), pEnt->GetAIObjectID()));
 					break;
 				}
 
 				// If not specific grenade type was requested, just
 				// signal to self to inform grenade is now being thrown
-				IAISignalExtraData* pData = gEnv->pAISystem->CreateSignalExtraData();
+				AISignals::IAISignalExtraData* pData = gEnv->pAISystem->CreateSignalExtraData();
 				pData->iValue = state.requestedGrenadeType;
 				pData->fValue = state.projectileInfo.fSpeedScale;
 				pData->point = state.vShootTargetPos;
-				SendSignal(AISIGNAL_DEFAULT, "OnGrenadeThrown", pEnt, pData);
 
+				SendSignal(gEnv->pAISystem->GetSignalManager()->CreateSignal(AISIGNAL_DEFAULT, gEnv->pAISystem->GetSignalManager()->GetBuiltInSignalDescriptions().GetOnGrenadeThrown(), pEnt->GetAIObjectID(), pData));
 				gEnv->pAISystem->FreeSignalExtraData(pData);
 			}
 		}
@@ -1179,7 +1183,8 @@ void CAIProxy::OnShoot(IWeapon* pWeapon, EntityId shooterId, EntityId ammoId, IE
 
 	if (!m_NeedsShootSignal)
 		return;
-	SendSignal(0, "WPN_SHOOT", pEntity, NULL);
+
+	SendSignal(gEnv->pAISystem->GetSignalManager()->CreateSignal(AISIGNAL_INCLUDE_DISABLED, gEnv->pAISystem->GetSignalManager()->GetBuiltInSignalDescriptions().GetOnWeaponShoot(), pEntity->GetAIObjectID()));
 }
 
 //
@@ -1197,7 +1202,7 @@ void CAIProxy::OnMelee(IWeapon* pWeapon, EntityId shooterId)
 	IEntity* pEntity = m_pGameObject->GetEntity();
 	assert(pEntity);
 	if (pEntity)
-		SendSignal(0, "WPN_MELEE", pEntity, NULL);
+		SendSignal(gEnv->pAISystem->GetSignalManager()->CreateSignal(AISIGNAL_INCLUDE_DISABLED, gEnv->pAISystem->GetSignalManager()->GetBuiltInSignalDescriptions().GetOnWeaponMelee(), pEntity->GetAIObjectID()));
 }
 
 //
@@ -1220,7 +1225,7 @@ void CAIProxy::OnEndBurst(IWeapon* pWeapon, EntityId actorId)
 		AIWarningID(">> ", "CAIProxy::OnEndBurst null entity");
 		return;
 	}
-	SendSignal(0, "WPN_END_BURST", pEntity, NULL);
+	SendSignal(gEnv->pAISystem->GetSignalManager()->CreateSignal(AISIGNAL_INCLUDE_DISABLED, gEnv->pAISystem->GetSignalManager()->GetBuiltInSignalDescriptions().GetOnWeaponEndBurst(), pEntity->GetAIObjectID()));
 }
 
 //
@@ -1402,9 +1407,9 @@ void CAIProxy::SetForcedExecute(bool forced)
 		if (pAIActor)
 		{
 			if (forced)
-				pAIActor->SetSignal(10, "OnForcedExecute", pEntity);
+				pAIActor->SetSignal(gEnv->pAISystem->GetSignalManager()->CreateSignal(AISIGNAL_ALLOW_DUPLICATES, gEnv->pAISystem->GetSignalManager()->GetBuiltInSignalDescriptions().GetOnForcedExecute_DEPRECATED(), pEntity->GetAIObjectID()));
 			else if (m_forcedExecute <= 0)
-				pAIActor->SetSignal(10, "OnForcedExecuteComplete", pEntity);
+				pAIActor->SetSignal(gEnv->pAISystem->GetSignalManager()->CreateSignal(AISIGNAL_ALLOW_DUPLICATES, gEnv->pAISystem->GetSignalManager()->GetBuiltInSignalDescriptions().GetOnForcedExecuteComplete_DEPRECATED(), pEntity->GetAIObjectID()));
 		}
 	}
 }
@@ -1549,34 +1554,37 @@ void CAIProxy::UpdateMind(SOBJECTSTATE& state)
 		m_pAIHandler->Update();
 
 	// (MATT) For signals that should wait until next update, mainly used by Troopers {2008/09/05}
-	std::vector<AISIGNAL> nextUpdateSignals;
-
+	std::vector<AISignals::SignalSharedPtr> nextUpdateSignals;
+	
 	if (m_pGameObject->GetEntity()->GetAI()->IsUpdatedOnce())
 	{
 		while (!state.vSignals.empty())
 		{
-			AISIGNAL sstruct = state.vSignals.front();
+			AISignals::SignalSharedPtr pSignalFront = state.vSignals.front();
 			state.vSignals.erase(0);
 
-			int signal = sstruct.nSignal;
-			if (signal == AISIGNAL_PROCESS_NEXT_UPDATE)
+			int nSignal = pSignalFront->GetNSignal();
+			if (nSignal == AISIGNAL_PROCESS_NEXT_UPDATE)
 			{
-				sstruct.nSignal = AISIGNAL_RECEIVED_PREV_UPDATE;
-				nextUpdateSignals.push_back(sstruct);
+				const AISignals::SignalSharedPtr pSignal = gEnv->pAISystem->GetSignalManager()->CreateSignal(AISIGNAL_RECEIVED_PREV_UPDATE, pSignalFront->GetSignalDescription(), pSignalFront->GetSenderID(), pSignalFront->GetExtraData());
+				nextUpdateSignals.push_back(pSignal);
 			}
 			else
 			{
-				const char* szText = sstruct.strText;
-				const uint32 crc = sstruct.m_nCrcText;
-				IEntity* pSender = gEnv->pEntitySystem->GetEntity(sstruct.senderID);
-				SendSignal(signal, szText, pSender, sstruct.pEData, sstruct.m_nCrcText);
+				const IAIObject* pSender = gEnv->pAISystem->GetAIObjectManager()->GetAIObject(pSignalFront->GetSenderID());
+				const tAIObjectID senderId = pSender ? pSender->GetAIObjectID() : 0;
+				SendSignal(gEnv->pAISystem->GetSignalManager()->CreateSignal(nSignal, pSignalFront->GetSignalDescription(), senderId, pSignalFront->GetExtraData()));
 
-				if (sstruct.pEData)
-					gEnv->pAISystem->FreeSignalExtraData(sstruct.pEData);
+				if (pSignalFront->GetExtraData())
+				{
+					gEnv->pAISystem->FreeSignalExtraData(pSignalFront->GetExtraData());
+					pSignalFront->SetExtraData(nullptr);
+				}
+
 			}
 		}
 
-		std::vector<AISIGNAL>::iterator it = nextUpdateSignals.begin(), itEnd = nextUpdateSignals.end();
+		std::vector<AISignals::SignalSharedPtr>::iterator it = nextUpdateSignals.begin(), itEnd = nextUpdateSignals.end();
 		for (; it != itEnd; ++it)
 			state.vSignals.push_back(*it);
 	}
@@ -1587,18 +1595,18 @@ void CAIProxy::UpdateMind(SOBJECTSTATE& state)
 		int i = 0;
 		while (i < size)
 		{
-			AISIGNAL signal = state.vSignals[i];
+			const AISignals::SignalSharedPtr pSignal = state.vSignals[i];
 
-			if (signal.nSignal == AISIGNAL_INITIALIZATION)
+			if (pSignal->GetNSignal() == AISIGNAL_INITIALIZATION)
 			{
 				state.vSignals.erase(state.vSignals.begin() + i);
-				gEnv->pLog->LogError("Initialisation signal used \"%s\"", signal.strText);
+				gEnv->pLog->LogError("Initialisation signal used \"%s\"", pSignal->GetSignalDescription().GetName());
 
 				// process only init. signals!
-				IEntity* pSender = gEnv->pEntitySystem->GetEntity(signal.senderID);
-				SendSignal(signal.nSignal, signal.strText, pSender, signal.pEData);
-				if (signal.pEData)
-					gEnv->pAISystem->FreeSignalExtraData(signal.pEData);
+				IEntity* pSender = gEnv->pEntitySystem->GetEntity(pSignal->GetSenderID());
+				SendSignal(pSignal);
+				if (pSignal->GetExtraData())
+					gEnv->pAISystem->FreeSignalExtraData(pSignal->GetExtraData());
 
 				// TO DO: check if this is still necessary once the newly inserted signals will be processed on the next update
 				if (--size != state.vSignals.size())
@@ -1612,7 +1620,7 @@ void CAIProxy::UpdateMind(SOBJECTSTATE& state)
 				i++;
 		}
 	}
-
+	
 	if (!m_pAIHandler)
 		return;
 
@@ -1711,16 +1719,11 @@ void CAIProxy::OnActorRemoved()
 
 //
 //----------------------------------------------------------------------------------------------------------
-void CAIProxy::SendSignal(int signalID, const char* szText, IEntity* pSender, const IAISignalExtraData* pData, uint32 crc /* = 0u */)
+void CAIProxy::SendSignal(AISignals::SignalSharedPtr pSignal)
 {
-	IF_UNLIKELY (crc == 0u)
-	{
-		crc = CCrc32::Compute(szText);
-	}
-
 	if (m_pAIHandler)
 	{
-		m_pAIHandler->AISignal(signalID, szText, crc, pSender, pData);
+		m_pAIHandler->AISignal(pSignal);
 	}
 }
 
@@ -2022,7 +2025,7 @@ bool CAIProxy::IsDead() const
 
 //
 //----------------------------------------------------------------------------------------------------------
-void CAIProxy::SetBehaviour(const char* szBehavior, const IAISignalExtraData* pData)
+void CAIProxy::SetBehaviour(const char* szBehavior, const AISignals::IAISignalExtraData* pData)
 {
 	if (m_pAIHandler)
 	{

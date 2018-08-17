@@ -16,6 +16,7 @@
 
 #include "IRangeSignaling.h"
 
+
 class CPersonalRangeSignaling;
 
 class CRangeSignaling : public IRangeSignaling
@@ -38,9 +39,9 @@ public:
 	bool Update(float fElapsedTime);
 
 	/*$1- Utils --------------------------------------------------------------*/
-	bool AddRangeSignal(EntityId IdEntity, float fRadius, float fBoundary, const char* sSignal, IAISignalExtraData* pData = NULL);
-	bool AddTargetRangeSignal(EntityId IdEntity, EntityId IdTarget, float fRadius, float fBoundary, const char* sSignal, IAISignalExtraData* pData = NULL);
-	bool AddAngleSignal(EntityId IdEntity, float fAngle, float fBoundary, const char* sSignal, IAISignalExtraData* pData = NULL);
+	bool AddRangeSignal(EntityId IdEntity, float fRadius, float fBoundary, const char* sSignal, AISignals::IAISignalExtraData* pData = NULL);
+	bool AddTargetRangeSignal(EntityId IdEntity, EntityId IdTarget, float fRadius, float fBoundary, const char* sSignal, AISignals::IAISignalExtraData* pData = NULL);
+	bool AddAngleSignal(EntityId IdEntity, float fAngle, float fBoundary, const char* sSignal, AISignals::IAISignalExtraData* pData = NULL);
 	bool DestroyPersonalRangeSignaling(EntityId IdEntity);
 	void ResetPersonalRangeSignaling(EntityId IdEntity);
 	void EnablePersonalRangeSignaling(EntityId IdEntity, bool bEnable);

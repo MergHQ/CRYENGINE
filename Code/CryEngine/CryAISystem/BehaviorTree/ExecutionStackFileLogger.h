@@ -7,7 +7,7 @@
 
 #include <CryAISystem/BehaviorTree/IBehaviorTree.h>
 
-#ifdef USING_BEHAVIOR_TREE_EXECUTION_STACKS_FILE_LOG
+#ifdef DEBUG_MODULAR_BEHAVIOR_TREE
 namespace BehaviorTree
 {
 class ExecutionStackFileLogger
@@ -37,6 +37,6 @@ private:
 	CCryFile         m_logFile;
 };
 }
-#endif  // USING_BEHAVIOR_TREE_EXECUTION_STACKS_FILE_LOG
+#endif  // DEBUG_MODULAR_BEHAVIOR_TREE
 
 #endif  // ExecutionStackFileLogger_h

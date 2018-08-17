@@ -2,35 +2,46 @@
 
 #pragma once
 
-#ifndef BehaviorTreeSerializationSupport_h
-	#define BehaviorTreeSerializationSupport_h
+#include "BehaviorTreeDefines.h"
 
-	#include <CrySerialization/IArchive.h>
-	#include <CrySerialization/CryStrings.h>
+#include <CrySerialization/IArchive.h>
+#include <CrySerialization/CryStrings.h>
+
+#include <bitset>
 
 namespace BehaviorTree
 {
+#ifdef USING_BEHAVIOR_TREE_SERIALIZATION
 
-	#ifdef USING_BEHAVIOR_TREE_SERIALIZATION
-
-		#define NODE_COMBOBOX_FIXED_WIDTH          "300"
-		#define STATE_TRANSITION_EVENT_FIXED_WIDTH "150"
-		#define LINE_NUMBER_FIXED_WIDTH            "58"
+#define NODE_COMBOBOX_FIXED_WIDTH          "300"
+#define STATE_TRANSITION_EVENT_FIXED_WIDTH "300"
+#define LINE_NUMBER_FIXED_WIDTH            "58"
 
 //! A simple helper class in which we store hints to the serialization code.
 //! These hints can be used to control the layout/contents of the property tree in the editor.
 struct NodeSerializationHints
 {
+	enum EEventsFlags
+	{
+		EEventsFlags_CryEngine = 0,
+		EEventsFlags_GameSDK = 1,
+		EEventsFlags_Deprecated = 2,
+
+		EEventsFlags_Count = 3
+	};
+
+	typedef std::bitset<EEventsFlags_Count> EventsFlags;
+
 	NodeSerializationHints()
 		: showXmlLineNumbers(false)
 		, showComments(false)
-		, allowAutomaticMigration(false)
+		, eventsFlags()
 	{
 	}
 
 	bool showXmlLineNumbers;
 	bool showComments;
-	bool allowAutomaticMigration;
+	EventsFlags eventsFlags;
 };
 
 static void HandleXmlLineNumberSerialization(Serialization::IArchive& archive, const uint32 xmlLineNumber)
@@ -41,7 +52,7 @@ static void HandleXmlLineNumberSerialization(Serialization::IArchive& archive, c
 		if (hintsContext->showXmlLineNumbers)
 		{
 			stack_string xmlLineText;
-			const bool isXmlLineKnown = (xmlLineNumber != 0u);     // A bit 'hacky' but XML lines start at 1, so this works when the document has not been saved to XML yet.
+			const bool isXmlLineKnown = (xmlLineNumber != 0u);     // XML lines start at 1, so this works when the document has not been saved to XML yet.
 			if (isXmlLineKnown)
 			{
 				xmlLineText.Format("::: %u :::", xmlLineNumber);
@@ -68,8 +79,37 @@ static void HandleCommentSerialization(Serialization::IArchive& archive, string&
 	}
 }
 
-	#endif
+template<class T, typename F>
+static void SerializeContainerAsStringListWithGivenFunction(Serialization::IArchive& archive, const char* szKey, const char* szLabel, const T& container, F toString, const string& fieldName, /* OUT */ string& selectedElement, const bool showErrorEmptyMessage = true, const bool showErrorNonExistingValueMessage = true)
+{
+	bool elementAddedToStringList;
+	Serialization::StringListValue stringListValue = SerializationUtils::ContainerToStringListValuesForceAdd(container, toString, selectedElement, elementAddedToStringList);
 
+	archive(stringListValue, szKey, szLabel);
+	selectedElement = stringListValue.c_str();
+
+	if (showErrorNonExistingValueMessage && elementAddedToStringList)
+	{
+		archive.error(stringListValue.handle(), stringListValue.type(), SerializationUtils::Messages::ErrorNonExistingValue(fieldName, selectedElement));
+	}
+
+	if (showErrorEmptyMessage && selectedElement.empty())
+	{
+		archive.error(stringListValue.handle(), stringListValue.type(), SerializationUtils::Messages::ErrorEmptyValue(fieldName));
+	}
 }
 
-#endif                                                   // BehaviorTreeSerializationSupport_h
+// T::value_type should implement SerializeToString method
+template<class T>
+static void SerializeContainerAsStringList(Serialization::IArchive& archive, const char* szKey, const char* szLabel, const T& container, const string& fieldName, /* OUT */ string& selectedElement, const bool showErrorEmptyMessage = true, const bool showErrorNonExistingValueMessage = true)
+{
+	const auto toString = [](const T::value_type& t) -> string
+	{
+		return t.SerializeToString();
+	};
+
+	SerializeContainerAsStringListWithGivenFunction(archive, szKey, szLabel, container, toString, fieldName, selectedElement, showErrorEmptyMessage, showErrorNonExistingValueMessage);
+}
+
+#endif // USING_BEHAVIOR_TREE_SERIALIZATION
+}

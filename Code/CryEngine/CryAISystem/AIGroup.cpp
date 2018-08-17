@@ -1087,10 +1087,12 @@ void CAIGroup::UpdateReinforcementLogic()
 
 				// Tell the agent to call reinforcements.
 				CAIActor* const pUnit = CastToCAIActorSafe(pNearestCallerImg->m_refUnit.GetAIObject());
-				AISignalExtraData* pData = new AISignalExtraData;
+				AISignals::AISignalExtraData* pData = new AISignals::AISignalExtraData;
 				pData->nID = nearestSpot->pAI->GetEntityID();
 				pData->iValue = nearestSpot->type;
-				pUnit->SetSignal(1, "OnCallReinforcements", pUnit->GetEntity(), pData);
+
+				AISignals::SignalSharedPtr signal = gEnv->pAISystem->GetSignalManager()->CreateSignal(AISIGNAL_DEFAULT, gEnv->pAISystem->GetSignalManager()->GetBuiltInSignalDescriptions().GetOnCallReinforcements_DEPRECATED(), pUnit->GetAIObjectID(), pData);
+				pUnit->SetSignal(signal);
 				pNearestCallerImg->m_lastReinforcementTime = GetAISystem()->GetFrameStartTime();
 
 #ifdef CRYAISYSTEM_DEBUG
