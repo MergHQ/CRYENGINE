@@ -901,7 +901,7 @@ def main():
 
     parser_upgrade = subparsers.add_parser('upgrade')
     parser_upgrade.add_argument('project_file')
-    parser_upgrade.add_argument('--engine_version')
+    parser_upgrade.add_argument('--engine_id')
     parser_upgrade.set_defaults(func=cmd_upgrade)
 
     parser_require = subparsers.add_parser('require')
