@@ -126,13 +126,13 @@ def error_engine_json_decode(engine_file, silent):
     sys.exit(604)
 
 
-def error_engine_path_not_found(args, engine_version):
+def error_engine_path_not_found(args, engine_id):
     """
     Error to specify that the engine path could not be found,
     because the engine was not registered.
     """
     message = "CryEngine '{}' has not been registered locally.\n".format(
-        engine_version)
+        engine_id)
     if not args.silent and HAS_WIN_MODULES:
         MESSAGEBOX(None, message, command_title(args),
                    win32con.MB_OK | win32con.MB_ICONERROR)
@@ -501,13 +501,13 @@ def cmd_add(args):
     sys.exit(add_engines(*args.engine_files, silent=args.silent))
 
 
-def add_plugins(engine_version, plugin_files):
+def add_plugins(engine_id, plugin_files):
     """
     Adds the collection of plugins to the registered engine.
     """
     engine_registry = cryregistry.load_engines()
 
-    engine = engine_registry[engine_version]
+    engine = engine_registry[engine_id]
     plugins = engine.get('plugins', {})
 
     for plugin_file in plugin_files:
@@ -535,11 +535,7 @@ def cmd_add_plugins(args):
     """
     Adds the plugins to the registered engine.
     """
-    if args.engine_id is None:
-        app = crygui.CryWindowAddPlugin(args.plugin_files)
-        app.mainloop()
-    else:
-        sys.exit(add_plugins(args.engine_version, args.plugin_files))
+    sys.exit(add_plugins(args.engine_id, args.plugin_files))
 
 
 def cmd_add_plugin_gui(args):
@@ -571,7 +567,7 @@ def cmd_remove(args):
             engine_registry, register_action=False, silent=args.silent))
 
 
-def remove_plugins(engine_version, plugin_files):
+def remove_plugins(engine_id, plugin_files):
     """
     Removes the plugins from the registered engine.
     """
@@ -584,16 +580,16 @@ def remove_plugins(engine_version, plugin_files):
             sys.excepthook(*sys.exc_info())
             return
 
-        remove_plugin_by_guid(engine_version, plugin.guid())
+        remove_plugin_by_guid(engine_id, plugin.guid())
 
 
-def remove_plugin_by_guid(engine_version, guid):
+def remove_plugin_by_guid(engine_id, guid):
     """
     Removes the plugin from the registered engine.
     """
     engine_registry = cryregistry.load_engines()
 
-    engine = engine_registry[engine_version]
+    engine = engine_registry[engine_id]
     plugins = engine.get('plugins', {})
 
     del plugins[guid]
@@ -607,7 +603,7 @@ def cmd_remove_plugins(args):
     """
     Removes the plugins from the registered engine.
     """
-    sys.exit(remove_plugins(args.engine_version, args.plugin_files))
+    sys.exit(remove_plugins(args.engine_id, args.plugin_files))
 
 
 def cmd_remove_plugin_gui(args):
@@ -811,9 +807,8 @@ def cmd_switch(args):
         error_project_json_decode(args)
 
     # If the engine version is already specified than set it and return early.
-    if args.engine_version is not None:
-        sys.exit(switch_engine(args.project_file,
-                               args.engine_version, args.silent))
+    if args.engine_id is not None:
+        sys.exit(switch_engine(args.project_file, args.engine_id, args.silent))
 
     engine_list = []
     engine_version = []
@@ -938,9 +933,9 @@ def cmd_upgrade(args):
     Upgrades the project by calling it's engines cryrun.exe.
     """
     registry = cryregistry.load_engines()
-    engine_path = cryregistry.engine_path(registry, args.engine_version)
+    engine_path = cryregistry.engine_path(registry, args.engine_id)
     if engine_path is None:
-        error_engine_path_not_found(args, args.engine_version)
+        error_engine_path_not_found(args, args.engine_id)
 
     if getattr(sys, 'frozen', False):
         subcmd = [
@@ -1098,7 +1093,7 @@ def main():
     parser_add.set_defaults(func=cmd_add)
 
     parser_add_plugins = subparsers.add_parser('add_plugins')
-    parser_add_plugins.add_argument('engine_version')
+    parser_add_plugins.add_argument('engine_id')
     parser_add_plugins.add_argument('plugin_files', nargs='+')
     parser_add_plugins.set_defaults(func=cmd_add_plugins)
 
@@ -1111,7 +1106,7 @@ def main():
     parser_remove.set_defaults(func=cmd_remove)
 
     parser_remove_plugins = subparsers.add_parser('remove_plugins')
-    parser_remove_plugins.add_argument('engine_version')
+    parser_remove_plugins.add_argument('engine_id')
     parser_remove_plugins.add_argument('plugin_files', nargs='+')
     parser_remove_plugins.set_defaults(func=cmd_remove_plugins)
 
@@ -1124,7 +1119,7 @@ def main():
 
     parser_switch = subparsers.add_parser('switch')
     parser_switch.add_argument('project_file')
-    parser_switch.add_argument('engine_version', nargs='?')
+    parser_switch.add_argument('engine_id', nargs='?')
     parser_switch.set_defaults(func=cmd_switch)
 
     parser_backup = subparsers.add_parser('backup')
@@ -1135,7 +1130,7 @@ def main():
     # ---
 
     parser_upgrade = subparsers.add_parser('upgrade')
-    parser_upgrade.add_argument('--engine_version', default='')
+    parser_upgrade.add_argument('--engine_id', default='')
     parser_upgrade.add_argument('project_file')
     parser_upgrade.set_defaults(func=cmd_upgrade)
 

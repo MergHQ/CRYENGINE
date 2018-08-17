@@ -46,6 +46,17 @@ CONFIGURATION_PLATFORM_LOOKUP = {
     "linux_x64_gcc:Release": "Linux",
 }
 
+CONFIGURATION_BUILD_TARGET_LOOKUP = {
+    "win_x64:Profile": "win_x64",
+    "win_x64:Release": "win_x64",
+    "win_x86:Profile": "win_x86",
+    "win_x86:Release": "win_x86",
+    "linux_x64_clang:Profile": "win_x64",
+    "linux_x64_clang:Release": "win_x64",
+    "linux_x64_gcc:Profile": "win_x64",
+    "linux_x64_gcc:Release": "win_x64",
+}
+
 # "\\\\?\\" is added to make sure copying doesn't crash on Windows
 # because the path gets too long for some files.
 # This is a requirement to copy the Mono folder on Windows.
@@ -101,6 +112,7 @@ def run(project_file):
     config_type = configuration[1]
     bin_path = os.path.normpath(configuration[2])
     include_symbols = configuration[3]
+    bit_type = CONFIGURATION_BUILD_TARGET_LOOKUP[config_type]
 
     print("Packaging project {}".format(project.name()))
     print("Configuration: {}".format(config_type))
@@ -132,7 +144,7 @@ def run(project_file):
         project_path, export_path, bin_path, config_type, include_symbols))
     task_list.append((
         "Copying shared libraries...", copy_libs,
-        project, project_path, export_path, include_symbols))
+        project, project_path, export_path, bin_path, bit_type, include_symbols))
     task_list.append((
         "Copying existing game asset packages...",
         copy_assets, project, project_path_long, export_path_long))
@@ -768,7 +780,7 @@ def copy_project_plugins(
                         shutil.copyfile(src_file, dst_file)
             else:
                 print("Failed to copy plugin file '{}' from {}!".format(
-                      path, src_file))
+                    path, src_file))
 
     # Also copy the assembly generated from C# assets
     asset_assembly = os.path.join("bin", "CRYENGINE.CSharp.dll")
@@ -791,7 +803,7 @@ def copy_project_plugins(
                     shutil.copyfile(src_file, dst_file)
 
 
-def copy_libs(project, project_path, export_path, include_symbols):
+def copy_libs(project, project_path, export_path, bin_path, config, include_symbols):
     """
     Searches the bin folder for files that fit the name of the shared libs,
     and copies them to the export directory.
@@ -801,11 +813,11 @@ def copy_libs(project, project_path, export_path, include_symbols):
     if not libs:
         return
 
-    bin_dir = os.path.join(project_path, "bin")
-    if not os.path.isdir(bin_dir):
+    src_path = os.path.join(project_path, bin_path)
+    if not os.path.isdir(src_path):
         return
 
-    export_bin = os.path.join(export_path, "bin")
+    dst_path = os.path.join(export_path, bin_path)
 
     exclude = ["*.mdb", "*.xml", "*.ilk"]
     if not include_symbols:
@@ -820,21 +832,14 @@ def copy_libs(project, project_path, export_path, include_symbols):
             continue
 
         any_config = shared.get("any", None)
-        win86 = shared.get("win_x86", None)
-        win64 = shared.get("win_x64", None)
+        specific_config = shared.get(config, None)
+        if specific_config == any_config:
+            specific_config = None
 
         if any_config:
             include = ["{}*".format(any_config)]
-            copy_directory_contents(bin_dir, export_bin, include, exclude)
+            copy_directory_contents(src_path, dst_path, include, exclude)
 
-        if win86:
-            include = ["{}*".format(win86)]
-            copy_directory_contents(
-                os.path.join(bin_dir, "win_x86"),
-                os.path.join(export_bin, "win_x86"), include, exclude)
-
-        if win64:
-            include = ["{}*".format(win64)]
-            copy_directory_contents(
-                os.path.join(bin_dir, "win_x64"),
-                os.path.join(export_bin, "win_x64"), include, exclude)
+        if specific_config:
+            include = ["{}*".format(specific_config)]
+            copy_directory_contents(src_path, dst_path, include, exclude)

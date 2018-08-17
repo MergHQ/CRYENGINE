@@ -139,21 +139,21 @@ def save_engines(database, register_action=True, silent=False):
             return 630
 
 
-def engine_file(database, engine_version):
+def engine_file(database, engine_id):
     """
     Returns the path to the .cryengine file of the specified engine
     version, or None if the engine version is not in the database.
     """
-    path = database.get(engine_version, {'uri': None})['uri']
+    path = database.get(engine_id, {'uri': None})['uri']
     return path if path else None
 
 
-def engine_path(database, engine_version):
+def engine_path(database, engine_id):
     """
     Returns the path to the root-folder of the specified engine version,
     or None if the engine version is not in the database.
     """
-    path = engine_file(database, engine_version)
+    path = engine_file(database, engine_id)
 
     root = os.path.dirname(path)
     return root if root else None
