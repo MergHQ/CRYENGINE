@@ -197,7 +197,7 @@ bool CRangeSignaling::GetDebug() const
 //
 // Return:
 //
-bool CRangeSignaling::AddRangeSignal(EntityId IdEntity, float fRadius, float fBoundary, const char* sSignal, IAISignalExtraData* pData /*=NULL*/)
+bool CRangeSignaling::AddRangeSignal(EntityId IdEntity, float fRadius, float fBoundary, const char* sSignal, AISignals::IAISignalExtraData* pData /*=NULL*/)
 {
 	CRY_ASSERT(m_bInit == true);
 	CRY_ASSERT(IdEntity > 0);
@@ -227,7 +227,7 @@ bool CRangeSignaling::AddRangeSignal(EntityId IdEntity, float fRadius, float fBo
 //
 // Return:
 //
-bool CRangeSignaling::AddTargetRangeSignal(EntityId IdEntity, EntityId IdTarget, float fRadius, float fBoundary, const char* sSignal, IAISignalExtraData* pData /*= NULL*/)
+bool CRangeSignaling::AddTargetRangeSignal(EntityId IdEntity, EntityId IdTarget, float fRadius, float fBoundary, const char* sSignal, AISignals::IAISignalExtraData* pData /*= NULL*/)
 {
 	CRY_ASSERT(m_bInit == true);
 	CRY_ASSERT(IdEntity > 0);
@@ -258,7 +258,7 @@ bool CRangeSignaling::AddTargetRangeSignal(EntityId IdEntity, EntityId IdTarget,
 //
 // Return:
 //
-bool CRangeSignaling::AddAngleSignal(EntityId IdEntity, float fAngle, float fBoundary, const char* sSignal, IAISignalExtraData* pData /*=NULL*/)
+bool CRangeSignaling::AddAngleSignal(EntityId IdEntity, float fAngle, float fBoundary, const char* sSignal, AISignals::IAISignalExtraData* pData /*=NULL*/)
 {
 	CRY_ASSERT(m_bInit == true);
 	CRY_ASSERT(IdEntity > 0);

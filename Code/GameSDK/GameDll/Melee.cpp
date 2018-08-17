@@ -304,7 +304,7 @@ struct CMelee::StopAttackingAction
 			if (IEntity* owner = pItem->GetOwner())
 				if (IAIObject* aiObject = owner->GetAI())
 					if (IAIActor* aiActor = aiObject->CastToIAIActor())
-						aiActor->SetSignal(0, "OnMeleePerformed");
+						aiActor->SetSignal(gEnv->pAISystem->GetSignalManager()->CreateSignal(AISIGNAL_INCLUDE_DISABLED, gEnv->pAISystem->GetSignalManager()->GetBuiltInSignalDescriptions().GetOnMeleePerformed()));
 		}
 		else if( g_pGameCVars->pl_melee.mp_melee_system_camera_lock_and_turn && s_meleeSnapTargetId && (pActor = pItem->GetOwnerActor()) && pActor->IsClient() )
 		{

@@ -26,7 +26,6 @@ class ICrySizer;
 struct IEntity;
 struct IAIDebugRenderer;
 struct IAIObject;
-struct IAISignalExtraData;
 struct ICoordinationManager;
 struct ICommunicationManager;
 struct ICoverSystem;
@@ -64,6 +63,12 @@ struct IActorLookUp;
 namespace AIActionSequence {
 struct ISequenceManager;
 }
+namespace AISignals {
+	struct IAISignalExtraData;
+	class ISignalManager;
+	class ISignal;
+}
+
 
 //! Define the oldest AI Area file version that can still be read.
 #define BAI_AREA_FILE_VERSION_READ 19
@@ -580,16 +585,15 @@ struct IAISystem
 	//! Every frame (multiple time steps per frame possible?)
 	//! \param currentTime AI time since game start in seconds (GetCurrentTime).
 	//! \param frameTime AI time since last update (GetFrameTime).
-	virtual void                Update(CTimeValue currentTime, float frameTime) = 0;
+	virtual void                                  Update(CTimeValue currentTime, float frameTime) = 0;
 
-	virtual bool                RegisterSystemComponent(IAISystemComponent* pComponent) = 0;
-	virtual bool                UnregisterSystemComponent(IAISystemComponent* pComponent) = 0;
-
-	virtual void                SendAnonymousSignal(int nSignalId, const char* szText, const Vec3& pos, float fRadius, IAIObject* pSenderObject, IAISignalExtraData* pData = NULL) = 0;
-	virtual void                SendSignal(unsigned char cFilter, int nSignalId, const char* szText, IAIObject* pSenderObject, IAISignalExtraData* pData = NULL, uint32 crcCode = 0) = 0;
-	virtual void                FreeSignalExtraData(IAISignalExtraData* pData) const = 0;
-	virtual IAISignalExtraData* CreateSignalExtraData() const = 0;
-	virtual void                Event(int eventT, const char*) = 0;
+	virtual bool                                  RegisterSystemComponent(IAISystemComponent* pComponent) = 0;
+	virtual bool                                  UnregisterSystemComponent(IAISystemComponent* pComponent) = 0;
+	virtual void                                  SendAnonymousSignal(const std::shared_ptr<AISignals::ISignal>& pSignal, const Vec3& pos, float radius) = 0;
+	virtual void                                  SendSignal(unsigned char cFilter, const std::shared_ptr<AISignals::ISignal>& pSignal) = 0;
+	virtual AISignals::IAISignalExtraData*        CreateSignalExtraData() const = 0;
+	virtual void                                  FreeSignalExtraData(AISignals::IAISignalExtraData* pData) const = 0;
+	virtual void                                  Event(int eventT, const char*) = 0;
 	///////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
 	///////////////////////////////////////////////////////////////////////////////////////////////////////////////
@@ -692,6 +696,7 @@ struct IAISystem
 	virtual struct IMovementSystem*             GetMovementSystem() const = 0;
 	virtual AIActionSequence::ISequenceManager* GetSequenceManager() const = 0;
 	virtual IClusterDetector*                   GetClusterDetector() const = 0;
+	virtual AISignals::ISignalManager*          GetSignalManager() const = 0;
 	///////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
 	///////////////////////////////////////////////////////////////////////////////////////////////////////////////

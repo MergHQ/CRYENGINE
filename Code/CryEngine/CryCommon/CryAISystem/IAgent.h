@@ -9,11 +9,14 @@
 #include <CryMemory/CrySizer.h>
 #include <CryScriptSystem/IScriptSystem.h> // <> required for Interfuscator
 #include <CryAISystem/IAISystem.h>         // <> required for Interfuscator
+#include <CryAISystem/ISignal.h>
 #include <CryNetwork/SerializeFwd.h>
 #include <limits>
 #include <CryAISystem/ICommunicationManager.h> // <> required for Interfuscator
 #include "IAIMannequin.h"
 #include <CryEntitySystem/IEntitySystem.h>
+#include <CrySystem/XML/XMLAttrReader.h>
+#include <CrySerialization/Enum.h>
 
 #ifdef max
 	#undef max
@@ -67,16 +70,6 @@ struct GoalParams;
 #define AIOBJECT_RPG               151
 
 #define AI_USE_HIDESPOTS           (1 << 14)
-
-// Signal ids
-#define AISIGNAL_INCLUDE_DISABLED     0
-#define AISIGNAL_DEFAULT              1
-#define AISIGNAL_PROCESS_NEXT_UPDATE  3
-#define AISIGNAL_NOTIFY_ONLY          9
-#define AISIGNAL_ALLOW_DUPLICATES     10
-#define AISIGNAL_RECEIVED_PREV_UPDATE 30  //!< Internal AI system use only, like AISIGNAL_DEFAULT but used for logging/recording.
-//!< A signal sent in the previous update and processed in the current (AISIGNAL_PROCESS_NEXT_UPDATE).
-#define AISIGNAL_INITIALIZATION       -100
 
 // Anchors
 #define AIANCHOR_FIRST                     200
@@ -137,34 +130,6 @@ struct GoalParams;
 #define AIGOALPIPE_DONT_RESET_AG       16 // Don't reset the AG Input (by default AG Action input is reset to idle).
 #define AIGOALPIPE_KEEP_LAST_SUBPIPE   32 // Keeps the last inserted subpipe.
 #define AIGOALPIPE_KEEP_ON_TOP         64 // Keeps the inserted subpipe on the top for its duration, FIFO.
-
-enum ESignalFilter
-{
-	SIGNALFILTER_SENDER,
-	SIGNALFILTER_LASTOP,
-	SIGNALFILTER_GROUPONLY,
-	SIGNALFILTER_FACTIONONLY,
-	SIGNALFILTER_ANYONEINCOMM,
-	SIGNALFILTER_TARGET,
-	SIGNALFILTER_SUPERGROUP,
-	SIGNALFILTER_SUPERFACTION,
-	SIGNALFILTER_SUPERTARGET,
-	SIGNALFILTER_NEARESTGROUP,
-	SIGNALFILTER_NEARESTSPECIES,
-	SIGNALFILTER_NEARESTINCOMM,
-	SIGNALFILTER_HALFOFGROUP,
-	SIGNALFILTER_LEADER,
-	SIGNALFILTER_GROUPONLY_EXCEPT,
-	SIGNALFILTER_ANYONEINCOMM_EXCEPT,
-	SIGNALFILTER_LEADERENTITY,
-	SIGNALFILTER_NEARESTINCOMM_FACTION,
-	SIGNALFILTER_NEARESTINCOMM_LOOKING,
-	SIGNALFILTER_FORMATION,
-	SIGNALFILTER_FORMATION_EXCEPT,
-	SIGNALFILTER_READABILITY = 100,
-	SIGNALFILTER_READABILITYAT,         //!< Readability anticipation.
-	SIGNALFILTER_READABILITYRESPONSE,   //!< Readability response.
-};
 
 static const float AISPEED_ZERO   = 0.0f;
 static const float AISPEED_SLOW   = 0.21f;
@@ -1216,58 +1181,6 @@ struct IPuppet
 	// </interfuscator:shuffle>
 };
 
-struct IAISignalExtraData
-{
-	// <interfuscator:shuffle>
-	virtual ~IAISignalExtraData(){}
-	virtual void        Serialize(TSerialize ser) = 0;
-	virtual const char* GetObjectName() const = 0;
-	virtual void        SetObjectName(const char* objectName) = 0;
-
-	virtual void        ToScriptTable(SmartScriptTable& table) const = 0;
-	virtual void        FromScriptTable(const SmartScriptTable& table) = 0;
-	// </interfuscator:shuffle>
-
-	IAISignalExtraData() : string1(NULL), string2(NULL) {}
-
-	Vec3         point;
-	Vec3         point2;
-	ScriptHandle nID;
-	float        fValue;
-	int          iValue;
-	int          iValue2;
-	const char*  string1;
-	const char*  string2;
-};
-
-// Put new signal here!
-
-struct AISIGNAL
-{
-	int                 nSignal;
-	uint32              m_nCrcText;
-	EntityId            senderID;
-	IAISignalExtraData* pEData;
-	static const int    SIGNAL_NAME_LENGTH = 50;
-	char                strText[SIGNAL_NAME_LENGTH];
-
-	AISIGNAL()
-		: nSignal(0)
-		, m_nCrcText(0)
-		, senderID(0)
-		, pEData(NULL)
-	{
-		strText[0] = 0;
-	}
-
-	void        Serialize(TSerialize ser);
-
-	inline bool Compare(uint32 crc) const
-	{
-		return m_nCrcText == crc;
-	}
-};
-
 struct PATHPOINT
 {
 	Vec3 vPos;
@@ -1513,43 +1426,43 @@ struct SOBJECTSTATE
 
 	//! AISPEED_ZERO, AISPEED_SLOW, AISPEED_WALK, AISPEED_RUN, AISPEED_SPRINT. This affects animation and thus speed only indirectly,
 	//! due to it affecting the available max/min speeds.
-	float                       fMovementUrgency;
-	float                       fDesiredSpeed; //!< < in m/s.
-	float                       fTargetSpeed;  //!< < in m/s.
-	bool                        allowStrafing; //!< Whether strafing is allowed or not.
-	bool                        allowEntityClampingByAnimation;
+	float                           fMovementUrgency;
+	float                           fDesiredSpeed; //!< < in m/s.
+	float                           fTargetSpeed;  //!< < in m/s.
+	bool                            allowStrafing; //!< Whether strafing is allowed or not.
+	bool                            allowEntityClampingByAnimation;
 
-	float                       fDistanceToPathEnd;
-	Vec3                        vDirOffPath; //!< Displacement vector between the physical position and the current path.
+	float                           fDistanceToPathEnd;
+	Vec3                            vDirOffPath; //!< Displacement vector between the physical position and the current path.
 
-	EActorTargetPhase           curActorTargetPhase;
-	Vec3                        curActorTargetFinishPos;
-	SAIActorTargetRequest       actorTargetReq;
+	EActorTargetPhase               curActorTargetPhase;
+	Vec3                            curActorTargetFinishPos;
+	SAIActorTargetRequest           actorTargetReq;
 
-	bool                        bCloseContact;
-	bool                        bReevaluate;
-	bool                        bTargetEnabled;
-	bool                        bTargetIsGroupTarget;
-	bool                        continuousMotion;
-	EAITargetType               eTargetType;
-	EAITargetContextType        eTargetContextType;
-	EAITargetThreat             eTargetThreat;
-	tAIObjectID                 eTargetID;
-	EAITargetType               ePeakTargetType;
-	EAITargetThreat             ePeakTargetThreat;
-	tAIObjectID                 ePeakTargetID;
-	EAITargetType               ePreviousPeakTargetType;
-	EAITargetThreat             ePreviousPeakTargetThreat;
-	tAIObjectID                 ePreviousPeakTargetID;
-	Vec3                        vTargetPos;
-	float                       fDistanceFromTarget;
-	EAITargetStuntReaction      eTargetStuntReaction;
-	int                         nTargetType;
-	DynArray<AISIGNAL>          vSignals;
-	int                         secondaryIndex;
-	CAIMannequinCommandList<32> mannequinRequest;
-	SAICoverRequest             coverRequest;
-	EBodyOrientationMode        bodyOrientationMode;
+	bool                            bCloseContact;
+	bool                            bReevaluate;
+	bool                            bTargetEnabled;
+	bool                            bTargetIsGroupTarget;
+	bool                            continuousMotion;
+	EAITargetType                   eTargetType;
+	EAITargetContextType            eTargetContextType;
+	EAITargetThreat                 eTargetThreat;
+	tAIObjectID                     eTargetID;
+	EAITargetType                   ePeakTargetType;
+	EAITargetThreat                 ePeakTargetThreat;
+	tAIObjectID                     ePeakTargetID;
+	EAITargetType                   ePreviousPeakTargetType;
+	EAITargetThreat                 ePreviousPeakTargetThreat;
+	tAIObjectID                     ePreviousPeakTargetID;
+	Vec3                            vTargetPos;
+	float                           fDistanceFromTarget;
+	EAITargetStuntReaction          eTargetStuntReaction;
+	int                             nTargetType;
+	DynArray<AISignals::SignalSharedPtr> vSignals;
+	int                             secondaryIndex;
+	CAIMannequinCommandList<32>     mannequinRequest;
+	SAICoverRequest                 coverRequest;
+	EBodyOrientationMode            bodyOrientationMode;
 
 	SOBJECTSTATE()
 		: forceWeaponAlertness(false)
@@ -1658,8 +1571,12 @@ struct SOBJECTSTATE
 	{
 		for (size_t idx = 0, count = vSignals.size(); idx != count; ++idx)
 		{
-			if (vSignals[idx].pEData)
-				gEnv->pAISystem->FreeSignalExtraData(vSignals[idx].pEData);
+			const AISignals::SignalSharedPtr pSignal = vSignals[idx];
+			if (pSignal->GetExtraData())
+			{
+				gEnv->pAISystem->FreeSignalExtraData(pSignal->GetExtraData());
+				pSignal->SetExtraData(nullptr);
+			}
 		}
 
 		vSignals.clear();
@@ -1883,7 +1800,115 @@ struct IAICommunicationHandler
 	// </interfuscator:shuffle>
 };
 
+struct AgentDictionary
+{
+	AgentDictionary();
+
+	CXMLAttrReader<EStance>              stancesXml;
+	Serialization::StringList            stancesSerialization;
+
+	CXMLAttrReader<EFireMode>            fireModeXml;
+	Serialization::StringList            fireModesSerialization;
+
+	CXMLAttrReader<EBodyOrientationMode> bodyOrientationsXml;
+	Serialization::StringList            bodyOrientationsSerialization;
+};
+
+inline AgentDictionary::AgentDictionary()
+{
+	fireModeXml.Reserve(17);
+	fireModeXml.Add("Off", FIREMODE_OFF);
+	fireModeXml.Add("Burst", FIREMODE_BURST);
+	fireModeXml.Add("Continuous", FIREMODE_CONTINUOUS);
+	fireModeXml.Add("Forced", FIREMODE_FORCED);
+	fireModeXml.Add("Aim", FIREMODE_AIM);
+	fireModeXml.Add("Secondary", FIREMODE_SECONDARY);
+	fireModeXml.Add("SecondarySmoke", FIREMODE_SECONDARY_SMOKE);
+	fireModeXml.Add("Melee", FIREMODE_MELEE);
+	fireModeXml.Add("Kill", FIREMODE_KILL);
+	fireModeXml.Add("BurstWhileMoving", FIREMODE_BURST_WHILE_MOVING);
+	fireModeXml.Add("PanicSpread", FIREMODE_PANIC_SPREAD);
+	fireModeXml.Add("BurstDrawFire", FIREMODE_BURST_DRAWFIRE);
+	fireModeXml.Add("MeleeForced", FIREMODE_MELEE_FORCED);
+	fireModeXml.Add("BurstSnipe", FIREMODE_BURST_SNIPE);
+	fireModeXml.Add("AimSweep", FIREMODE_AIM_SWEEP);
+	fireModeXml.Add("BurstOnce", FIREMODE_BURST_ONCE);
+	fireModeXml.Add("Vehicle", FIREMODE_VEHICLE);
+
+	fireModesSerialization.reserve(17);
+	fireModesSerialization.push_back("Off");
+	fireModesSerialization.push_back("Burst");
+	fireModesSerialization.push_back("Continuous");
+	fireModesSerialization.push_back("Forced");
+	fireModesSerialization.push_back("Aim");
+	fireModesSerialization.push_back("Secondary");
+	fireModesSerialization.push_back("SecondarySmoke");
+	fireModesSerialization.push_back("Melee");
+	fireModesSerialization.push_back("Kill");
+	fireModesSerialization.push_back("BurstWhileMoving");
+	fireModesSerialization.push_back("PanicSpread");
+	fireModesSerialization.push_back("BurstDrawFire");
+	fireModesSerialization.push_back("MeleeForced");
+	fireModesSerialization.push_back("BurstSnipe");
+	fireModesSerialization.push_back("AimSweep");
+	fireModesSerialization.push_back("BurstOnce");
+	fireModesSerialization.push_back("Vehicle");
+
+	bodyOrientationsXml.Reserve(3);
+	bodyOrientationsXml.Add("FullyTowardsMovementDirection", FullyTowardsMovementDirection);
+	bodyOrientationsXml.Add("FullyTowardsAimOrLook", FullyTowardsAimOrLook);
+	bodyOrientationsXml.Add("HalfwayTowardsAimOrLook", HalfwayTowardsAimOrLook);
+
+	bodyOrientationsSerialization.reserve(3);
+	bodyOrientationsSerialization.push_back("FullyTowardsMovementDirection");
+	bodyOrientationsSerialization.push_back("FullyTowardsAimOrLook");
+	bodyOrientationsSerialization.push_back("HalfwayTowardsAimOrLook");
+
+}
+
 enum EWaypointNodeType {WNT_UNSET, WNT_WAYPOINT, WNT_HIDE, WNT_ENTRYEXIT, WNT_EXITONLY, WNT_HIDESECONDARY};
 enum EWaypointLinkType {WLT_AUTO_PASS = 320, WLT_AUTO_IMPASS = -320, WLT_EDITOR_PASS = 321, WLT_EDITOR_IMPASS = -321, WLT_UNKNOWN_TYPE = 0};
+
+
+#ifndef SWIG
+SERIALIZATION_ENUM_BEGIN(EStance, "Stance")
+SERIALIZATION_ENUM(EStance::STANCE_STAND, "stand", "Stand")
+SERIALIZATION_ENUM(EStance::STANCE_CROUCH, "crouch", "Crouch")
+SERIALIZATION_ENUM(EStance::STANCE_PRONE, "prone", "Prone")
+SERIALIZATION_ENUM(EStance::STANCE_RELAXED, "relaxed", "Relaxed")
+SERIALIZATION_ENUM(EStance::STANCE_STEALTH, "stealth", "Stealth")
+SERIALIZATION_ENUM(EStance::STANCE_LOW_COVER, "low_cover", "Lowcover")
+SERIALIZATION_ENUM(EStance::STANCE_ALERTED, "alerted", "Alerted")
+SERIALIZATION_ENUM(EStance::STANCE_HIGH_COVER, "high_cover", "HighCover")
+SERIALIZATION_ENUM(EStance::STANCE_SWIM, "swim", "Swim")
+SERIALIZATION_ENUM(EStance::STANCE_ZEROG, "zero_g", "ZeroG")
+SERIALIZATION_ENUM_END()
+
+SERIALIZATION_ENUM_BEGIN(EFireMode, "Fire Mode")
+SERIALIZATION_ENUM(EFireMode::FIREMODE_OFF, "off", "Off")
+SERIALIZATION_ENUM(EFireMode::FIREMODE_BURST, "burst", "Burst")
+SERIALIZATION_ENUM(EFireMode::FIREMODE_CONTINUOUS, "continuous", "Continuous")
+SERIALIZATION_ENUM(EFireMode::FIREMODE_FORCED, "forced", "Forced")
+SERIALIZATION_ENUM(EFireMode::FIREMODE_AIM, "aim", "Aim")
+SERIALIZATION_ENUM(EFireMode::FIREMODE_SECONDARY, "secondary", "Secondary")
+SERIALIZATION_ENUM(EFireMode::FIREMODE_SECONDARY_SMOKE, "secondary_smoke", "SecondarySmoke")
+SERIALIZATION_ENUM(EFireMode::FIREMODE_MELEE, "melee", "Melee")
+SERIALIZATION_ENUM(EFireMode::FIREMODE_KILL, "kill", "Kill")
+SERIALIZATION_ENUM(EFireMode::FIREMODE_BURST_WHILE_MOVING, "burst_while_moving", "BurstWhileMoving")
+SERIALIZATION_ENUM(EFireMode::FIREMODE_PANIC_SPREAD, "panic_spread", "PanicSpread")
+SERIALIZATION_ENUM(EFireMode::FIREMODE_BURST_DRAWFIRE, "burst_drawfire", "BurstDrawfire")
+SERIALIZATION_ENUM(EFireMode::FIREMODE_MELEE_FORCED, "melee_forced", "MeleeForced")
+SERIALIZATION_ENUM(EFireMode::FIREMODE_BURST_SNIPE, "burst_snipe", "BurstSnipe")
+SERIALIZATION_ENUM(EFireMode::FIREMODE_AIM_SWEEP, "aim_sweep", "AimSweep")
+SERIALIZATION_ENUM(EFireMode::FIREMODE_BURST_ONCE, "burst_once", "BurstOnce")
+SERIALIZATION_ENUM(EFireMode::FIREMODE_VEHICLE, "vehicle", "Vehicle")
+SERIALIZATION_ENUM_END()
+
+SERIALIZATION_ENUM_BEGIN(EBodyOrientationMode, "Body Orientation Mode")
+SERIALIZATION_ENUM(EBodyOrientationMode::FullyTowardsMovementDirection, "fully_towards_movement_direction", "Fully Towards Movement Direction")
+SERIALIZATION_ENUM(EBodyOrientationMode::FullyTowardsAimOrLook, "fully_towards_aim_or_look", "Fully Towards Aim Or Look")
+SERIALIZATION_ENUM(EBodyOrientationMode::HalfwayTowardsAimOrLook, "halfway_towards_aim_or_look", "Halfway Towards Aim Or Look")
+SERIALIZATION_ENUM_END()
+#endif // SWIG
 
 //! \endcond

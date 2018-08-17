@@ -3255,10 +3255,10 @@ void CAISystem::DebugDrawStatsTarget(const char* pName)
 		int i = 0;
 
 		dc->TextToScreen(0, 78, "Pending signals:");
-		DynArray<AISIGNAL>::iterator sig, iend = targetState.vSignals.end();
+		DynArray<AISignals::SignalSharedPtr>::iterator sig, iend = targetState.vSignals.end();
 		for (sig = targetState.vSignals.begin(); sig != iend; ++sig, i++)
 		{
-			dc->TextToScreen(0.f, 80.f + 2.f * i, "%s", (*sig).strText);
+			dc->TextToScreen(0.f, 80.f + 2.f * i, "%s", (*sig)->GetSignalDescription().GetName());
 		}
 	}
 

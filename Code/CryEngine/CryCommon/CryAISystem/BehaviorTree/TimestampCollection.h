@@ -4,13 +4,19 @@
 
 #pragma once
 
-#if defined(USING_BEHAVIOR_TREE_TIMESTAMP_DEBUGGING) || defined(USING_BEHAVIOR_TREE_EDITOR)
-	#define STORE_EXTRA_TIMESTAMP_DATA
-#endif
+#include "BehaviorTreeDefines.h"
 
 #if defined(USING_BEHAVIOR_TREE_SERIALIZATION)
 	#include <CrySerialization/StringList.h>
+	#include <CrySerialization/SerializationUtils.h>
+	#include <CryAISystem/BehaviorTree/IBehaviorTree.h>
 #endif
+
+#if defined(DEBUG_MODULAR_BEHAVIOR_TREE) || defined(USING_BEHAVIOR_TREE_EDITOR)
+	#define STORE_EXTRA_TIMESTAMP_DATA
+#endif
+
+#include <CryCore/Containers/VariableCollection.h>
 
 namespace BehaviorTree
 {
@@ -76,7 +82,6 @@ struct Timestamp
 #if defined(STORE_EXTRA_TIMESTAMP_DATA)
 	string setOnEventName;
 #endif
-
 	bool IsValid() const
 	{
 		return time.GetMilliSecondsAsInt64() >= 0;
@@ -90,39 +95,50 @@ struct Timestamp
 #if defined (USING_BEHAVIOR_TREE_SERIALIZATION)
 	void Serialize(Serialization::IArchive& archive)
 	{
+		// Serialize timestamp name
 		archive(id.timestampName, "name", "^<Name");
-		archive(setOnEventName, "setOnEventName", "^<Set on event");
+		archive.doc("Timestamp name");
 
 		if (id.timestampName.empty())
-			archive.error(id.timestampName, "Name must be specified");
-
-		if (setOnEventName.empty())
-			archive.error(setOnEventName, "Event must be specified");
-
-		bool refenreceFound = false;
-
-		Serialization::StringList exclusiveToTimestampList;
-		exclusiveToTimestampList.push_back("");
-
-		Timestamps* timestamps = archive.context<Timestamps>();
-		for (Timestamps::const_iterator it = timestamps->begin(), end = timestamps->end(); it != end; ++it)
 		{
-			const Timestamp& timestamp = *it;
-			if (timestamp.id.timestampName == id.timestampName)
-			{
-				if (refenreceFound)
-					archive.error(id.timestampName, "Duplicated timestamp name");
-
-				refenreceFound = true;
-				continue;
-			}
-
-			exclusiveToTimestampList.push_back(timestamp.id.timestampName);
+			archive.error(id.timestampName, SerializationUtils::Messages::ErrorEmptyValue("Name"));
 		}
 
-		Serialization::StringListValue exclusiveToStringListValue(exclusiveToTimestampList, exclusiveTo.timestampName);
-		archive(exclusiveToStringListValue, "exclusiveTo", "^<Exclusive To");
-		exclusiveTo.timestampName = exclusiveToStringListValue.c_str();
+		// Serialize events
+		const Variables::EventsDeclaration* eventsDeclaration = archive.context<Variables::EventsDeclaration>();
+		IF_LIKELY (!eventsDeclaration)
+			return;
+
+		const Variables::Events events = eventsDeclaration->GetEvents();
+		SerializeContainerAsStringList(archive, "setOnEventName", "^Set on event", events, "Event", setOnEventName);
+		archive.doc("Event that triggers the start of the Timestamp");
+
+		const Timestamps* timestamps = archive.context<Timestamps>();
+		if (!timestamps)
+		{
+			return;
+		}
+		
+		Timestamps timestampsWithoutThis;
+		if (!timestamps->empty())
+		{
+			timestampsWithoutThis.reserve(timestamps->size() - 1);
+
+			for (const Timestamp& timestamp : *timestamps)
+			{
+				if (timestamp.id != id)
+				{
+					timestampsWithoutThis.push_back(timestamp);
+				}
+			}
+		}
+
+		SerializeContainerAsStringList(archive,  "exclusiveTo", "^<Exclusive To", timestampsWithoutThis, "Exclusive To", exclusiveTo.timestampName, false, true);
+	}
+
+	const string& SerializeToString() const
+	{
+		return id.timestampName;
 	}
 
 	bool operator<(const Timestamp& rhs) const
@@ -221,21 +237,44 @@ public:
 		}
 	}
 
-	void LoadFromXml(const XmlNodeRef& xml)
+	bool LoadFromXml(Variables::EventsDeclaration& eventsDeclaration, const XmlNodeRef& xml, const char* fileName)
 	{
 		for (int i = 0; i < xml->getChildCount(); ++i)
 		{
 			XmlNodeRef child = xml->getChild(i);
 
-			const char* name = child->getAttr("name");
-			const char* setOnEvent = child->getAttr("setOnEvent");
-			const char* exclusiveTo = child->getAttr("exclusiveTo");
-
-			if (!name)
+			// name
+			const char* name;
+			if (child->haveAttr("name"))
 			{
-				gEnv->pLog->LogError("Missing 'name' attribute at line %d.", xml->getLine());
-				continue;
+				name = child->getAttr("name");
 			}
+			else
+			{
+				gEnv->pLog->LogWarning("(%d) [Tree='%s'] Missing 'name' attribute for tag '%s'", child->getLine(), fileName, child->getTag());
+				return false;
+			}
+
+			// Event
+			const char* setOnEvent;
+			if (child->haveAttr("setOnEvent"))
+			{
+				setOnEvent = child->getAttr("setOnEvent");
+			}
+			else
+			{
+				gEnv->pLog->LogWarning("(%d) [Tree='%s'] Missing 'setOnEvent' attribute for tag '%s'", child->getLine(), fileName, child->getTag());
+				return false;
+			}
+
+			// Exclusive
+			// Automatically declare user-defined signals
+			if (eventsDeclaration.DeclareGameEventIfNotAlreadyDeclared(setOnEvent))
+			{
+				gEnv->pLog->LogWarning("(%d) [Tree='%s'] Unknown event '%s' used for Timestamp", child->getLine(), fileName, setOnEvent);
+			}
+
+			const char* exclusiveTo = child->getAttr("exclusiveTo");
 
 			Timestamp timestamp;
 			timestamp.id = TimestampID(name);
@@ -245,7 +284,10 @@ public:
 			timestamp.setOnEventName = setOnEvent;
 #endif
 			m_timestamps.push_back(timestamp);
+
 		}
+
+		return true;
 	}
 
 	const Timestamps& GetTimestamps() const { return m_timestamps; }
@@ -255,7 +297,16 @@ public:
 	{
 		if (archive.isOutput())
 			std::sort(m_timestamps.begin(), m_timestamps.end());
-
+		
+		for (Timestamps::const_iterator it = m_timestamps.begin(), end = m_timestamps.end(); it != end; ++it)
+		{
+			const Timestamps::const_iterator itNext = std::next(it, 1);
+			if (itNext != m_timestamps.end() && it->id.timestampName == itNext->id.timestampName)
+			{
+				archive.error(itNext->id.timestampName, SerializationUtils::Messages::ErrorDuplicatedValue("Timestamp", itNext->id.timestampName));
+			}
+		}
+		
 		Serialization::SContext variableDeclarations(archive, &m_timestamps);
 		archive(m_timestamps, "timestamps", "^[<>]");
 	}

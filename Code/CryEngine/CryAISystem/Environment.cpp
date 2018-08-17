@@ -57,6 +57,7 @@ SAIEnvironment::SAIEnvironment()
 	, pClusterDetector(NULL)
 	, pFormationManager(NULL)
 	, pWorld(NULL)
+	, pSignalManager(NULL)
 {
 	SetDebugRenderer(0);
 	SetNetworkDebugRenderer(0);
@@ -82,6 +83,7 @@ void SAIEnvironment::ShutDown()
 	SAFE_DELETE(pTargetTrackManager);
 	SAFE_DELETE(pObjectContainer);
 	SAFE_DELETE(pFormationManager);
+	SAFE_DELETE(pSignalManager);
 }
 
 IAIDebugRenderer* SAIEnvironment::GetDebugRenderer()

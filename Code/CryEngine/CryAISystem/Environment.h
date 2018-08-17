@@ -20,7 +20,6 @@
 
 #include "Configuration.h"
 #include "AIConsoleVariables.h"
-#include "AISignalCRCs.h"
 
 //////////////////////////////////////////////////////////////////////////
 // AI system environment.
@@ -77,7 +76,6 @@ struct IAIBubblesSystem;
 struct SAIEnvironment
 {
 	AIConsoleVars            CVars;
-	AISIGNALS_CRC            SignalCRCs;
 
 	SConfiguration           configuration;
 
@@ -111,6 +109,7 @@ struct SAIEnvironment
 	AIActionSequence::SequenceManager*   pSequenceManager;
 	ClusterDetector*                     pClusterDetector;
 	CFormationManager*                   pFormationManager;
+	AISignals::CSignalManager*           pSignalManager;
 
 #ifdef CRYAISYSTEM_DEBUG
 	IAIBubblesSystem* pBubblesSystem;

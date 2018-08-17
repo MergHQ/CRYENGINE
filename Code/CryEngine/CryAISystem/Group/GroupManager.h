@@ -23,6 +23,7 @@ public:
 	uint32                GetGroupMemberCount(const GroupID& groupID) const;
 
 	Group::NotificationID NotifyGroup(const GroupID& groupID, tAIObjectID senderID, const char* name);
+	Group::NotificationID NotifyGroup(const GroupID& groupID, AISignals::SignalSharedPtr signal);
 
 	void                  Serialize(TSerialize ser);
 

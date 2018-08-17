@@ -230,7 +230,8 @@ private:
 	void										HandleAIStartReaction(const HitInfo& hitInfo, const SReactionParams& reactionParams);
 	void										HandleAIEndReaction();
 	void										HandleAIReactionInterrupted();
-	bool										SendAISignal(const char* szSignal, IAISignalExtraData *pData = NULL, bool bWaitOpOnly = false) const;
+	bool										SendAISignal_DEPRECATED(const char* szSignal, AISignals::IAISignalExtraData *pData = NULL, bool bWaitOpOnly = false) const;
+	bool										SendAISignal(const AISignals::ISignalDescription& signalDesc, AISignals::IAISignalExtraData *pData = NULL, bool bWaitOpOnly = false) const;
 
 #ifndef _RELEASE
 	void 										DrawDebugInfo();

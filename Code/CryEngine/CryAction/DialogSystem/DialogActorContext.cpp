@@ -12,6 +12,7 @@
 #include <CryAISystem/IAIObject.h>
 #include <CryAISystem/IAIActor.h>
 #include <CryAISystem/IAIActorProxy.h>
+#include <CryAISystem/ISignal.h>
 
 static const float LOOKAT_TIMEOUT = 1.0f;
 static const float ANIM_TIMEOUT = 1.0f;
@@ -163,10 +164,10 @@ void CDialogActorContext::BeginSession()
 	switch (GetAIBehaviourMode())
 	{
 	case CDialogSession::eDIB_InterruptAlways:
-		ExecuteAI(m_goalPipeID, "ACT_ANIM");
+		ExecuteAI(m_goalPipeID, gEnv->pAISystem->GetSignalManager()->GetBuiltInSignalDescriptions().GetOnActAnim_DEPRECATED());
 		break;
 	case CDialogSession::eDIB_InterruptMedium:
-		ExecuteAI(m_goalPipeID, "ACT_DIALOG");
+		ExecuteAI(m_goalPipeID, gEnv->pAISystem->GetSignalManager()->GetBuiltInSignalDescriptions().GetOnActDialog_DEPRECATED());
 		break;
 	case CDialogSession::eDIB_InterruptNever:
 		break;
@@ -723,14 +724,14 @@ bool CDialogActorContext::DoAnimActionEP(IEntity* pEntity, const char* sAction)
 	static const float dirTolerance = 5.f;
 	static const float targetRadius = 0.05f;
 
-	IAISignalExtraData* pData = gEnv->pAISystem->CreateSignalExtraData();
+	AISignals::IAISignalExtraData* pData = gEnv->pAISystem->CreateSignalExtraData();
 	pData->iValue2 = m_bAnimUseAGSignal ? 1 : 0;
 	pData->SetObjectName(sAction);
 	pData->point = startRadius;
 	pData->fValue = dirTolerance;
 	pData->point2.x = targetRadius;
 
-	const bool ok = ExecuteAI(m_exPosAnimPipeID, "ACT_ANIMEX", pData);
+	const bool ok = ExecuteAI(m_exPosAnimPipeID, gEnv->pAISystem->GetSignalManager()->GetBuiltInSignalDescriptions().GetOnActAnimex_DEPRECATED(), pData);
 	return ok;
 }
 
@@ -869,7 +870,7 @@ void CDialogActorContext::CancelCurrent(bool bResetStates)
 						if (GetAIBehaviourMode() == CDialogSession::eDIB_InterruptMedium)
 						{
 							int dummyPipe = 0;
-							ExecuteAI(dummyPipe, "ACT_DIALOG_OVER", 0, false);
+							ExecuteAI(dummyPipe, gEnv->pAISystem->GetSignalManager()->GetBuiltInSignalDescriptions().GetOnActDialogOver_DEPRECATED(), 0, false);
 						}
 						pPipeUser->UnRegisterGoalPipeListener(this, m_goalPipeID);
 						pPipeUser->RemoveSubPipe(m_goalPipeID, true);
@@ -1020,7 +1021,7 @@ void CDialogActorContext::DestroyedState(IAnimationGraphState*)
 // ~IAnimationGraphStateListener
 
 ////////////////////////////////////////////////////////////////////////////
-bool CDialogActorContext::ExecuteAI(int& goalPipeID, const char* signalText, IAISignalExtraData* pExtraData, bool bRegisterAsListener)
+bool CDialogActorContext::ExecuteAI(int& goalPipeID, const AISignals::ISignalDescription& signalDescription, AISignals::IAISignalExtraData* pExtraData, bool bRegisterAsListener)
 {
 	IEntitySystem* pSystem = gEnv->pEntitySystem;
 	IEntity* pEntity = pSystem->GetEntity(m_entityID);
@@ -1071,7 +1072,11 @@ bool CDialogActorContext::ExecuteAI(int& goalPipeID, const char* signalText, IAI
 
 	IAIActor* pAIActor = CastToIAIActorSafe(pAI);
 	if (pAIActor)
-		pAIActor->SetSignal(10, signalText, pEntity, pExtraData);   // 10 means this signal must be sent (but sent[!], not set)
+	{
+		// AISIGNAL_ALLOW_DUPLICATES means this signal must be sent (but sent[!], not set)
+		const AISignals::SignalSharedPtr pSignal = gEnv->pAISystem->GetSignalManager()->CreateSignal(AISIGNAL_ALLOW_DUPLICATES, signalDescription, m_entityID, pExtraData);
+		pAIActor->SetSignal(pSignal);   
+	}
 	// even if the same signal is already present in the queue
 	return true;
 }

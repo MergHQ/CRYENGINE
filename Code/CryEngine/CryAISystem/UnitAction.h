@@ -22,7 +22,7 @@
 
 #include <CryNetwork/ISerialize.h>
 #include <list>
-#include "AISignal.h"
+#include "CSignal.h"
 
 enum EPriority
 {
@@ -43,7 +43,6 @@ enum  EUnitAction
 	UA_LAST,  // make sure this one is always the last!
 };
 
-struct AISignalExtraData;
 class CUnitAction;
 
 typedef std::list<CUnitAction*> TActionList;
@@ -58,11 +57,11 @@ public:
 	CUnitAction(EUnitAction eAction, bool bBlocking, const Vec3& point, const Vec3& dir);
 	CUnitAction(EUnitAction eAction, bool bBlocking, float fDistance);
 	CUnitAction(EUnitAction eAction, bool bBlocking, const char* szText);
-	CUnitAction(EUnitAction eAction, bool bBlocking, const char* szText, const AISignalExtraData& data);
+	CUnitAction(EUnitAction eAction, bool bBlocking, const char* szText, const AISignals::AISignalExtraData& data);
 	CUnitAction(EUnitAction eAction, bool bBlocking, int priority);
 	CUnitAction(EUnitAction eAction, bool bBlocking, int priority, const Vec3& point);
 	CUnitAction(EUnitAction eAction, bool bBlocking, int priority, const char* szText);
-	CUnitAction(EUnitAction eAction, bool bBlocking, int priority, const char* szText, const AISignalExtraData& data);
+	CUnitAction(EUnitAction eAction, bool bBlocking, int priority, const char* szText, const AISignals::AISignalExtraData& data);
 
 	~CUnitAction();
 	void        Update();
@@ -83,7 +82,7 @@ public:
 	float             m_fDistance;
 	string            m_SignalText;
 	int               m_Tag;
-	AISignalExtraData m_SignalData;
+	AISignals::AISignalExtraData m_SignalData;
 };
 
 #endif // __UnitAction_H__

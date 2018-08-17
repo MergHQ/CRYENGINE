@@ -918,8 +918,13 @@ void CTurret::NotifyDestroyed( const bool hasBeenDestroyedByPlayer /* = false */
 	{
 		IEntity* const pTurretEntity = GetEntity();
 		const float notificationRadius = 50.0f;
-		const stack_string signalName = hasBeenDestroyedByPlayer ? "OnTurretHasBeenDestroyedByThePlayer" : "OnTurretHasBeenDestroyed";
-		pAISystem->SendAnonymousSignal( 1, signalName.c_str(), pTurretEntity->GetWorldPos(), notificationRadius, pTurretEntity->GetAI() );
+		const AISignals::ISignalDescription& signalDescription = hasBeenDestroyedByPlayer ?  gEnv->pAISystem->GetSignalManager()->GetBuiltInSignalDescriptions().GetOnTurretHasBeenDestroyedByThePlayer() : gEnv->pAISystem->GetSignalManager()->GetBuiltInSignalDescriptions().GetOnTurretHasBeenDestroyed();
+		
+		const tAIObjectID entityId = pTurretEntity->GetAI() ? pTurretEntity->GetAI()->GetAIObjectID() : 0;
+		pAISystem->SendAnonymousSignal(
+			pAISystem->GetSignalManager()->CreateSignal(AISIGNAL_DEFAULT, signalDescription, entityId), 
+			pTurretEntity->GetWorldPos(), notificationRadius
+		);
 	}
 }
 
@@ -1630,10 +1635,12 @@ void CTurret::NotifySelectedTarget( IEntity* pTargetEntity )
 	assert( pTargetEntity != NULL );
 	if ( IAIObject* const pTargetAiObject = pTargetEntity->GetAI() )
 	{
-		IAISignalExtraData* const pData = gEnv->pAISystem->CreateSignalExtraData();
+		AISignals::IAISignalExtraData* const pData = gEnv->pAISystem->CreateSignalExtraData();
 		pData->nID = GetEntityId();
 		pData->point = GetEntity()->GetWorldPos();
-		gEnv->pAISystem->SendSignal( SIGNALFILTER_SENDER, 1, "OnTargetedByTurret", pTargetAiObject, pData );
+
+		AISignals::SignalSharedPtr signal = gEnv->pAISystem->GetSignalManager()->CreateSignal(AISIGNAL_DEFAULT, gEnv->pAISystem->GetSignalManager()->GetBuiltInSignalDescriptions().GetOnTargetedByTurret(), pTargetAiObject->GetAIObjectID(), pData);
+		gEnv->pAISystem->SendSignal(AISignals::ESignalFilter::SIGNALFILTER_SENDER, signal);
 	}
 }
 
@@ -2749,9 +2756,8 @@ void CTurret::NotifyGroupTargetSpotted( const IEntity* pTargetEntity )
 	assert( pTargetTrackManager );
 	pTargetTrackManager->HandleStimulusEventInRange( groupMemberAiObjectId, "TurretSpottedTarget", stimulusEventInfo, radius );
 
-	const char* const signalName = "GroupMemberEnteredCombat";
-	const uint32 signalNameCrc32 = CCrc32::Compute( signalName );
-	gEnv->pAISystem->SendSignal( SIGNALFILTER_GROUPONLY, 1, signalName, pGroupMemeberAiObject, NULL, signalNameCrc32 );
+	AISignals::SignalSharedPtr signal = gEnv->pAISystem->GetSignalManager()->CreateSignal(AISIGNAL_DEFAULT, gEnv->pAISystem->GetSignalManager()->GetBuiltInSignalDescriptions().GetOnGroupMemberEnteredCombat(), pGroupMemeberAiObject->GetAIObjectID());
+	gEnv->pAISystem->SendSignal(AISignals::ESignalFilter::SIGNALFILTER_GROUPONLY, signal);
 }
 
 

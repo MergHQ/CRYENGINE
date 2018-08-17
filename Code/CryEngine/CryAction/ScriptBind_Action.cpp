@@ -659,7 +659,7 @@ int CScriptBind_Action::AddRangeSignal(IFunctionHandler* pH, ScriptHandle entity
 	if (gEnv->pAISystem)
 	{
 		// Get optional signal data
-		IAISignalExtraData* pData = NULL;
+		AISignals::IAISignalExtraData* pData = NULL;
 		if (pH->GetParamCount() > 4)
 		{
 			SmartScriptTable dataTable;
@@ -684,7 +684,7 @@ int CScriptBind_Action::AddTargetRangeSignal(IFunctionHandler* pH, ScriptHandle 
 	if (gEnv->pAISystem)
 	{
 		// Get optional signal data
-		IAISignalExtraData* pData = NULL;
+		AISignals::IAISignalExtraData* pData = NULL;
 		if (pH->GetParamCount() > 5)
 		{
 			SmartScriptTable dataTable;
@@ -709,7 +709,7 @@ int CScriptBind_Action::AddAngleSignal(IFunctionHandler* pH, ScriptHandle entity
 	if (gEnv->pAISystem)
 	{
 		// Get optional signal data
-		IAISignalExtraData* pData = NULL;
+		AISignals::IAISignalExtraData* pData = NULL;
 		if (pH->GetParamCount() > 4)
 		{
 			SmartScriptTable dataTable;

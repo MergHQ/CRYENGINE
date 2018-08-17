@@ -422,14 +422,13 @@ void CSmartObject::Use(CSmartObject* pObject, CCondition* pCondition, int eventI
 		IEntity* pObjectEntity = pObject->GetEntity();
 		if (sSignal)
 		{
-			AISignalExtraData* pExtraData = new AISignalExtraData;
+			AISignals::AISignalExtraData* pExtraData = new AISignals::AISignalExtraData;
 			if (eventId)
 				pExtraData->iValue = eventId;
 			pExtraData->nID = pObject->GetEntityId();
 
 			pExtraData->point = pCondition->pObjectHelper ? pObject->GetHelperPos(pCondition->pObjectHelper) : pObject->GetPos();
-
-			pAIObject->SetSignal(10, sSignal, pObjectEntity, pExtraData);
+			pAIObject->SetSignal(GetAISystem()->GetSignalManager()->CreateSignal_DEPRECATED(AISIGNAL_ALLOW_DUPLICATES, sSignal, pObjectEntity->GetAIObjectID(), pExtraData));
 
 			// update states
 			if (!pCondition->userPostActionStates.empty())   // check is next state non-empty
@@ -499,14 +498,14 @@ void CSmartObject::Use(CSmartObject* pObject, CCondition* pCondition, int eventI
 			}
 			else
 			{
-				AISignalExtraData* pExtraData = new AISignalExtraData;
+				AISignals::AISignalExtraData* pExtraData = new AISignals::AISignalExtraData;
 				pExtraData->SetObjectName(string(pAction->GetName()) +
 				                          ",\"" + pCondition->userPostActionStates.AsString() + '\"' +
 				                          ",\"" + pCondition->objectPostActionStates.AsString() + '\"' +
 				                          ",\"" + pCondition->userPreActionStates.AsUndoString() + '\"' +
 				                          ",\"" + pCondition->objectPreActionStates.AsUndoString() + '\"');
 				pExtraData->iValue = maxAlertness;
-				pAIObject->SetSignal(10, "OnUseSmartObject", pObjectEntity, pExtraData, gAIEnv.SignalCRCs.m_nOnUseSmartObject);
+				pAIObject->SetSignal(GetAISystem()->GetSignalManager()->CreateSignal(AISIGNAL_ALLOW_DUPLICATES, GetAISystem()->GetSignalManager()->GetBuiltInSignalDescriptions().GetOnUseSmartObject(), pObjectEntity ? pObjectEntity->GetAIObjectID() : 0, pExtraData));
 			}
 
 			return;

@@ -6,6 +6,7 @@
 #define EnvironmentDisturbanceManager_h
 
 #include <CryAISystem/IVisionMap.h>
+#include <CryAISystem/ISignal.h>
 
 namespace GameAI
 {
@@ -15,9 +16,10 @@ namespace GameAI
 		ObservableEvent()
 			: m_expirationTime(0.0f)
 			, m_position(ZERO)
+			, m_pSignalDescription(nullptr)
 		{};
 
-		void Initialize( const Vec3& position, float duration, uint8 faction, const char* signal );
+		void Initialize( const Vec3& position, float duration, uint8 faction, const AISignals::ISignalDescription& signalDescription);
 		void Release();
 
 		bool IsExpired( CTimeValue currentTime );
@@ -25,15 +27,22 @@ namespace GameAI
 		void SetObservedBy( EntityId entityId );
 		VisionID GetVisionId() { return m_visionId; }
 		const Vec3& GetPosition() { return m_position; }
-		const char* GetSignal() { return m_signal; }
+		const AISignals::ISignalDescription& GetSignalDescription() 
+		{ 
+			if (!m_pSignalDescription)
+			{
+				return gEnv->pAISystem->GetSignalManager()->GetBuiltInSignalDescriptions().GetNone();
+			}
+			return *m_pSignalDescription; 
+		}
 
 	private:
-		CTimeValue m_expirationTime;
-		VisionID   m_visionId;
-		Vec3       m_position;
-		string     m_signal;
+		CTimeValue                           m_expirationTime;
+		VisionID                             m_visionId;
+		Vec3                                 m_position;
+		const AISignals::ISignalDescription* m_pSignalDescription;
 
-		std::vector<EntityId> m_obeservedBy;
+		std::vector<EntityId>                m_obeservedBy;
 	};
 
 	class EnvironmentDisturbanceManager
@@ -48,7 +57,7 @@ namespace GameAI
 		void Reset();
 		void Update();
 
-		void AddObservableEvent( const Vec3& position, float duration, const char* signal, EntityId sourceEntityId = 0 );
+		void AddObservableEvent( const Vec3& position, float duration, const AISignals::ISignalDescription& signalDescription, EntityId sourceEntityId = 0 );
 
 	private:
 		void RemoveExpiredEvents();

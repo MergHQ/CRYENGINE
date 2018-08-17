@@ -340,7 +340,7 @@ void COPCharge::ExecuteDry(CPipeUser* pOperand)
 			SetChargeParams();
 			m_state = STATE_CHARGE; //STATE_ANTICIPATE;
 			m_anticipateTime = GetAISystem()->GetFrameStartTime();
-			m_pOperand->SetSignal(0, "OnChargeStart", pOperand->GetEntity(), 0, gAIEnv.SignalCRCs.m_nOnChargeStart);
+			m_pOperand->SetSignal(GetAISystem()->GetSignalManager()->CreateSignal(AISIGNAL_INCLUDE_DISABLED, gEnv->pAISystem->GetSignalManager()->GetBuiltInSignalDescriptions().GetOnChargeStart_DEPRECATED(), pOperand->GetAIObjectID()));
 
 			// Start jump approach animation.
 			if (m_pOperand->GetProxy())
@@ -352,7 +352,7 @@ void COPCharge::ExecuteDry(CPipeUser* pOperand)
 			SetChargeParams();
 			m_state = STATE_CHARGE; //STATE_ANTICIPATE;
 			m_anticipateTime = GetAISystem()->GetFrameStartTime();
-			m_pOperand->SetSignal(0, "OnChargeStart", pOperand->GetEntity(), 0, gAIEnv.SignalCRCs.m_nOnChargeStart);
+			m_pOperand->SetSignal(GetAISystem()->GetSignalManager()->CreateSignal(AISIGNAL_INCLUDE_DISABLED, gEnv->pAISystem->GetSignalManager()->GetBuiltInSignalDescriptions().GetOnChargeStart_DEPRECATED(), pOperand->GetAIObjectID()));
 
 			// Start jump approach animation.
 			if (m_pOperand->GetProxy())
@@ -382,9 +382,9 @@ void COPCharge::ExecuteDry(CPipeUser* pOperand)
 			if (Distance::Point_Point(opPos, m_moveTarget->GetPos()) < rad * 1.5f)
 			{
 				// Send the target that was hit along with the signal.
-				AISignalExtraData* pData = new AISignalExtraData;
+				AISignals::AISignalExtraData* pData = new AISignals::AISignalExtraData;
 				pData->nID = m_moveTarget->GetEntityID();
-				m_pOperand->SetSignal(0, "OnChargeHit", m_pOperand->GetEntity(), pData, gAIEnv.SignalCRCs.m_nOnChargeHit);
+				m_pOperand->SetSignal(GetAISystem()->GetSignalManager()->CreateSignal(AISIGNAL_INCLUDE_DISABLED, gEnv->pAISystem->GetSignalManager()->GetBuiltInSignalDescriptions().GetOnChargeHit_DEPRECATED(), pOperand->GetAIObjectID(), pData));
 
 				m_state = STATE_FOLLOW_TROUGH;
 			}
@@ -392,7 +392,7 @@ void COPCharge::ExecuteDry(CPipeUser* pOperand)
 			{
 				if (!m_bailOut)
 				{
-					m_pOperand->SetSignal(0, "OnChargeMiss", m_pOperand->GetEntity(), 0, gAIEnv.SignalCRCs.m_nOnChargeMiss);
+					m_pOperand->SetSignal(GetAISystem()->GetSignalManager()->CreateSignal(AISIGNAL_INCLUDE_DISABLED, gEnv->pAISystem->GetSignalManager()->GetBuiltInSignalDescriptions().GetOnChargeMiss_DEPRECATED(), pOperand->GetAIObjectID()));
 					m_state = STATE_FOLLOW_TROUGH;
 
 					if (m_pOperand->GetProxy())
@@ -415,7 +415,7 @@ void COPCharge::ExecuteDry(CPipeUser* pOperand)
 
 				if (!m_bailOut)
 				{
-					m_pOperand->SetSignal(0, "OnChargeBailOut", m_pOperand->GetEntity(), 0, gAIEnv.SignalCRCs.m_nOnChargeBailOut);
+					m_pOperand->SetSignal(GetAISystem()->GetSignalManager()->CreateSignal(AISIGNAL_INCLUDE_DISABLED, gEnv->pAISystem->GetSignalManager()->GetBuiltInSignalDescriptions().GetOnChargeBailOut_DEPRECATED(), pOperand->GetAIObjectID()));
 					m_bailOut = true;
 				}
 			}

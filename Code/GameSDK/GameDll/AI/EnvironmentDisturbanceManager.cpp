@@ -9,7 +9,7 @@
 
 namespace GameAI
 {
-	void ObservableEvent::Initialize( const Vec3& position, float duration, uint8 faction, const char* signal )
+	void ObservableEvent::Initialize( const Vec3& position, float duration, uint8 faction, const AISignals::ISignalDescription& signalDescription)
 	{
 		IVisionMap* visionMap = gEnv->pAISystem->GetVisionMap();
 		assert(visionMap);
@@ -30,7 +30,7 @@ namespace GameAI
 
 		m_expirationTime = gEnv->pTimer->GetFrameStartTime() + duration;
 		m_position = position;
-		m_signal = signal;
+		m_pSignalDescription = &signalDescription;
 	}
 
 	void ObservableEvent::Release()
@@ -94,9 +94,9 @@ namespace GameAI
 				{
 					observableEvent.SetObservedBy( agent.GetEntityID() );
 
-					IAISignalExtraData* data = gEnv->pAISystem->CreateSignalExtraData();
+					AISignals::IAISignalExtraData* data = gEnv->pAISystem->CreateSignalExtraData();
 					data->point = observableEvent.GetPosition();
-					agent.SetSignal( SIGNALFILTER_SENDER, observableEvent.GetSignal(), data );
+					agent.SetSignal(gEnv->pAISystem->GetSignalManager()->CreateSignal(AISIGNAL_INCLUDE_DISABLED, observableEvent.GetSignalDescription(), 0, data));
 				}
 
 				++observableEventIterator;
@@ -106,12 +106,12 @@ namespace GameAI
 		}
 	}
 
-	void EnvironmentDisturbanceManager::AddObservableEvent( const Vec3& position, float duration, const char* signal, EntityId sourceEntityId /*= 0*/ )
+	void EnvironmentDisturbanceManager::AddObservableEvent( const Vec3& position, float duration, const AISignals::ISignalDescription& signalDescription, EntityId sourceEntityId /*= 0*/ )
 	{
 		Agent sourceAgent( sourceEntityId );
 		uint8 faction = sourceAgent.IsValid() ? sourceAgent.GetFactionID() : 31;
 		ObservableEvent observableEvent;
-		observableEvent.Initialize( position, duration, faction, signal );
+		observableEvent.Initialize( position, duration, faction, signalDescription );
 		m_observableEvents.push_back( observableEvent );
 	}
 

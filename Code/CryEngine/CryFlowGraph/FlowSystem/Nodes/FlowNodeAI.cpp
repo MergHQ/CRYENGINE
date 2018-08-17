@@ -736,7 +736,7 @@ public:
 			{
 				IAIActor* pAIActor = members[i]->CastToIAIActor();
 				if (pAIActor)
-					pAIActor->SetSignal(10, "OnGroupChanged", members[i]->GetEntity(), 0);
+					pAIActor->SetSignal(gEnv->pAISystem->GetSignalManager()->CreateSignal(AISIGNAL_ALLOW_DUPLICATES, gEnv->pAISystem->GetSignalManager()->GetBuiltInSignalDescriptions().GetOnGroupChanged(), members[i]->GetAIObjectID()));
 			}
 		}
 	}
@@ -2444,13 +2444,12 @@ public:
 			break;
 		case eFE_Activate:
 			const int groupId = GetPortInt(pActInfo, eIN_GroupId);
-			const char* signalName = "OnRequestReinforcementTriggered";
 
 			// Select the first member of the group to use it as a sender
 			IAIObject* pFirstGroupMember = gEnv->pAISystem->GetGroupMember(groupId, 0);
 			if (pFirstGroupMember)
 			{
-				gEnv->pAISystem->SendSignal(SIGNALFILTER_GROUPONLY, 1, signalName, pFirstGroupMember);
+				gEnv->pAISystem->SendSignal(AISignals::ESignalFilter::SIGNALFILTER_GROUPONLY, gEnv->pAISystem->GetSignalManager()->CreateSignal(AISIGNAL_DEFAULT, gEnv->pAISystem->GetSignalManager()->GetBuiltInSignalDescriptions().GetOnRequestReinforcementTriggered_DEPRECATED(), pFirstGroupMember->GetAIObjectID()));
 
 				ActivateOutput(pActInfo, eOUT_Done, true);
 			}

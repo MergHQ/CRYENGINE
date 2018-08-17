@@ -23,7 +23,7 @@ public:
 	// Base ----------------------------------------------------------
 	CRange(CPersonalRangeSignaling* pPersonal);
 	virtual ~CRange();
-	void Init(float fRadius, float fBoundary, const char* sSignal, IAISignalExtraData* pData = NULL);
+	void Init(float fRadius, float fBoundary, const char* sSignal, AISignals::IAISignalExtraData* pData = NULL);
 
 	// Utils ---------------------------------------------------------
 	bool IsInRange(const Vec3& vPos) const;
@@ -49,7 +49,7 @@ public:
 		return(m_sSignal);
 	}
 
-	IAISignalExtraData* GetSignalData() const
+	AISignals::IAISignalExtraData* GetSignalData() const
 	{
 		return(m_pSignalData);
 	}
@@ -57,10 +57,10 @@ public:
 private:
 
 private:
-	CPersonalRangeSignaling* m_pPersonal;
-	IAISignalExtraData*      m_pSignalData;
-	float                    m_fRadius;
-	float                    m_fBoundary;
-	string                   m_sSignal;
+	CPersonalRangeSignaling*       m_pPersonal;
+	AISignals::IAISignalExtraData* m_pSignalData;
+	float                          m_fRadius;
+	float                          m_fBoundary;
+	string                         m_sSignal;
 };
 #endif // _RANGE_H_

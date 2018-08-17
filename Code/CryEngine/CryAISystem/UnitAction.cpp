@@ -14,7 +14,6 @@
 
 #include "StdAfx.h"
 #include "UnitAction.h"
-#include "AISignal.h"
 #include <CryNetwork/ISerialize.h>
 
 //
@@ -84,7 +83,7 @@ CUnitAction::CUnitAction(EUnitAction eAction, bool bBlocking, const char* szText
 
 //
 //----------------------------------------------------------------------------------------------------
-CUnitAction::CUnitAction(EUnitAction eAction, bool bBlocking, const char* szText, const AISignalExtraData& data) :
+CUnitAction::CUnitAction(EUnitAction eAction, bool bBlocking, const char* szText, const AISignals::AISignalExtraData& data) :
 	m_Action(eAction),
 	m_BlockingPlan(bBlocking),
 	m_SignalText(szText),
@@ -132,7 +131,7 @@ CUnitAction::CUnitAction(EUnitAction eAction, bool bBlocking, int priority, cons
 
 //
 //----------------------------------------------------------------------------------------------------
-CUnitAction::CUnitAction(EUnitAction eAction, bool bBlocking, int priority, const char* szText, const AISignalExtraData& data) :
+CUnitAction::CUnitAction(EUnitAction eAction, bool bBlocking, int priority, const char* szText, const AISignals::AISignalExtraData& data) :
 	m_Action(eAction),
 	m_BlockingPlan(bBlocking),
 	m_SignalText(szText),

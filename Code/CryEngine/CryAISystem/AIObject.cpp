@@ -977,12 +977,11 @@ void SOBJECTSTATE::Serialize(TSerialize ser)
 			{
 				vSignals.resize(signalsCount);
 			}
-			for (DynArray<AISIGNAL>::iterator ai(vSignals.begin()); ai != vSignals.end(); ++ai)
+			for (DynArray<AISignals::SignalSharedPtr>::iterator ai(vSignals.begin()); ai != vSignals.end(); ++ai)
 			{
 				ser.BeginGroup("Signal");
 				{
-					AISIGNAL& signal = *ai;
-					signal.Serialize(ser);
+					(*ai)->Serialize(ser);
 				}
 				ser.EndGroup();
 			}

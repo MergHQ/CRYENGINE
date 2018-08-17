@@ -44,7 +44,7 @@ CRange::~CRange()
 //
 // Return:
 //
-void CRange::Init(float fRadius, float fBoundary, const char* sSignal, IAISignalExtraData* pData /*= NULL*/)
+void CRange::Init(float fRadius, float fBoundary, const char* sSignal, AISignals::IAISignalExtraData* pData /*= NULL*/)
 {
 	CRY_ASSERT(fRadius >= 1.0f);
 	CRY_ASSERT(fBoundary >= 0.0f);

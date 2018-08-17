@@ -149,7 +149,7 @@ bool CompareAngle(CAngleAlert* pAngle1, CAngleAlert* pAngle2)
 //
 // Return:
 //
-bool CPersonalRangeSignaling::AddRangeSignal(float fRadius, float fBoundary, const char* sSignal, IAISignalExtraData* pData /*=NULL*/)
+bool CPersonalRangeSignaling::AddRangeSignal(float fRadius, float fBoundary, const char* sSignal, AISignals::IAISignalExtraData* pData /*=NULL*/)
 {
 	CRY_ASSERT(m_bInit == true);
 	CRY_ASSERT(sSignal != NULL);
@@ -177,7 +177,7 @@ bool CPersonalRangeSignaling::AddRangeSignal(float fRadius, float fBoundary, con
 //
 // Return:
 //
-bool CPersonalRangeSignaling::AddTargetRangeSignal(EntityId IdTarget, float fRadius, float fBoundary, const char* sSignal, IAISignalExtraData* pData /*= NULL*/)
+bool CPersonalRangeSignaling::AddTargetRangeSignal(EntityId IdTarget, float fRadius, float fBoundary, const char* sSignal, AISignals::IAISignalExtraData* pData /*= NULL*/)
 {
 	CRY_ASSERT(m_bInit == true);
 	CRY_ASSERT(GetActor());
@@ -207,7 +207,7 @@ bool CPersonalRangeSignaling::AddTargetRangeSignal(EntityId IdTarget, float fRad
 //
 // Return:
 //
-bool CPersonalRangeSignaling::AddAngleSignal(float fAngle, float fBoundary, const char* sSignal, IAISignalExtraData* pData /*=NULL*/)
+bool CPersonalRangeSignaling::AddAngleSignal(float fAngle, float fBoundary, const char* sSignal, AISignals::IAISignalExtraData* pData /*=NULL*/)
 {
 	CRY_ASSERT(m_bInit == true);
 	CRY_ASSERT(sSignal != NULL);
@@ -503,7 +503,7 @@ IActor* CPersonalRangeSignaling::GetActor()
 //
 // Return:
 //
-void CPersonalRangeSignaling::SendSignal(IActor* pActor, const string& sSignal, IAISignalExtraData* pData /*= NULL*/) const
+void CPersonalRangeSignaling::SendSignal(IActor* pActor, const string& sSignal, AISignals::IAISignalExtraData* pData /*= NULL*/) const
 {
 	CRY_ASSERT(m_bInit == true);
 	CRY_ASSERT(pActor != NULL);
@@ -513,7 +513,8 @@ void CPersonalRangeSignaling::SendSignal(IActor* pActor, const string& sSignal, 
 	//CRY_ASSERT(pAI);  Not every actor has an ai, and nor do they need it
 	if (pAI && gEnv->pAISystem)
 	{
-		gEnv->pAISystem->SendSignal(SIGNALFILTER_SENDER, 1, sSignal, pAI, PrepareSignalData(pData));
+		const AISignals::SignalSharedPtr pSignal = gEnv->pAISystem->GetSignalManager()->CreateSignal_DEPRECATED(AISIGNAL_DEFAULT,sSignal, pAI->GetAIObjectID(), PrepareSignalData(pData));
+		gEnv->pAISystem->SendSignal(AISignals::ESignalFilter::SIGNALFILTER_SENDER, pSignal);
 	}
 }
 
@@ -523,9 +524,9 @@ void CPersonalRangeSignaling::SendSignal(IActor* pActor, const string& sSignal, 
 //
 // Return:
 //
-IAISignalExtraData* CPersonalRangeSignaling::PrepareSignalData(IAISignalExtraData* pRequestedData) const
+AISignals::IAISignalExtraData* CPersonalRangeSignaling::PrepareSignalData(AISignals::IAISignalExtraData* pRequestedData) const
 {
-	IAISignalExtraData* pSendData = gEnv->pAISystem->CreateSignalExtraData();
+	AISignals::IAISignalExtraData* pSendData = gEnv->pAISystem->CreateSignalExtraData();
 	if (pRequestedData)
 	{
 		// Clone requested data and send it over

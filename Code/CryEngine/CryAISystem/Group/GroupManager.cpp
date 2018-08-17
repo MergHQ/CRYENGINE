@@ -109,13 +109,20 @@ uint32 CGroupManager::GetGroupMemberCount(const GroupID& groupID) const
 	return 0;
 }
 
+// Kept for backwards compatibility
 Group::NotificationID CGroupManager::NotifyGroup(const GroupID& groupID, tAIObjectID senderID, const char* name)
+{
+	const AISignals::SignalSharedPtr pSignal = GetAISystem()->GetSignalManager()->CreateSignal_DEPRECATED(AISIGNAL_INCLUDE_DISABLED, name, senderID);
+	return NotifyGroup(groupID, pSignal);
+}
+
+Group::NotificationID CGroupManager::NotifyGroup(const GroupID& groupID, AISignals::SignalSharedPtr pSignal)
 {
 	if (groupID > 0)
 	{
 		Group& group = GetGroup(groupID);
 
-		group.Notify(++m_notifications, senderID, name);
+		group.Notify(++m_notifications, pSignal);
 	}
 
 	return m_notifications;

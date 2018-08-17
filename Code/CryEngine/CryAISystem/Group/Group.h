@@ -43,7 +43,7 @@ public:
 	EAITargetType                 GetTargetType() const;
 	const Vec3& GetTargetLocation() const;
 
-	void        Notify(const NotificationID& notificationID, tAIObjectID recipientID, const char* name);
+	void        Notify(const NotificationID& notificationID, AISignals::SignalSharedPtr pSignal);
 
 	void        Serialize(TSerialize ser);
 
@@ -91,32 +91,29 @@ private:
 	{
 		QueuedNotification()
 			: ID(0)
-			, senderID(0)
+			, pSignal()
 		{
-			notification[0] = 0;
 		}
 
-		QueuedNotification(const NotificationID& _notificationID, tAIObjectID _senderID, const char* _notification)
+		QueuedNotification(const NotificationID& _notificationID, AISignals::SignalSharedPtr _pSignal)
 			: ID(_notificationID)
-			, senderID(_senderID)
+			, pSignal(_pSignal)
 		{
-			cry_strcpy(notification, _notification);
 		}
 
 		NotificationID ID;
-		tAIObjectID    senderID;
-		char           notification[MaxNotificationLength];
+		AISignals::SignalSharedPtr pSignal;
 
 		void           Serialize(TSerialize ser)
 		{
+			EntityId senderId = pSignal->GetSenderID();
+			string notificationName = pSignal->GetSignalDescription().GetName();
+
 			ser.Value("ID", ID);
-			ser.Value("senderID", senderID);
+			ser.Value("senderID", senderId);
+			ser.Value("notification", notificationName);
 
-			string textString(notification);
-			ser.Value("notification", textString);
-
-			if (ser.IsReading())
-				cry_strcpy(notification, textString.c_str());
+			pSignal = gEnv->pAISystem->GetSignalManager()->CreateSignal_DEPRECATED(pSignal->GetNSignal(), notificationName, senderId, pSignal->GetExtraData());
 		}
 	};
 

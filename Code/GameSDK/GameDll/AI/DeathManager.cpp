@@ -58,7 +58,8 @@ namespace GameAI
 			{
 				if (IAIActor* pAIActor = pAI->CastToIAIActor())
 				{
-					gEnv->pAISystem->SendSignal(SIGNALFILTER_GROUPONLY_EXCEPT, AISIGNAL_DEFAULT, "GroupMemberGrabbedByPlayer", pAI);
+					const AISignals::SignalSharedPtr pSignal = gEnv->pAISystem->GetSignalManager()->CreateSignal(AISIGNAL_DEFAULT, gEnv->pAISystem->GetSignalManager()->GetBuiltInSignalDescriptions().GetOnGroupMemberGrabbedByPlayer(), pAI->GetAIObjectID());
+					gEnv->pAISystem->SendSignal(AISignals::ESignalFilter::SIGNALFILTER_GROUPONLY_EXCEPT, pSignal);
 				}
 			}
 		}
@@ -180,7 +181,8 @@ namespace GameAI
 			if (IAIGroupProxy* group = aiSystem.GetAIGroupProxy(ddr.groupID))
 			{
 				InjectDeadGroupMemberDataIntoScriptTable(group->GetScriptTable(), ddr.victimID, ddr.killerID, ddr.deathPos);
-				aiSystem.SendSignal(SIGNALFILTER_GROUPONLY, AISIGNAL_DEFAULT, "GroupMemberDied", arbitraryMember.GetAIObject());
+				const AISignals::SignalSharedPtr pSignal = gEnv->pAISystem->GetSignalManager()->CreateSignal(AISIGNAL_DEFAULT, gEnv->pAISystem->GetSignalManager()->GetBuiltInSignalDescriptions().GetOnGroupMemberDied(), arbitraryMember.GetAIObject() ? arbitraryMember.GetAIObject()->GetAIObjectID() : 0);
+				aiSystem.SendSignal(AISignals::ESignalFilter::SIGNALFILTER_GROUPONLY_EXCEPT, pSignal);
 			}
 		}
 
@@ -192,7 +194,7 @@ namespace GameAI
 		if (witness)
 		{
 			InjectDeadGroupMemberDataIntoScriptTable(witness.GetScriptTable(), ddr.victimID, ddr.killerID, ddr.deathPos);
-			witness.SetSignal(AISIGNAL_DEFAULT, "WatchedMateDie");
+			witness.SetSignal(gEnv->pAISystem->GetSignalManager()->CreateSignal(AISIGNAL_DEFAULT, gEnv->pAISystem->GetSignalManager()->GetBuiltInSignalDescriptions().GetOnWatchMeDie()));
 
 			#ifdef BUILD_WITH_DEATH_MANAGER_DEBUG_INFORMATION
 			if (g_pGameCVars->ai_DebugDeferredDeath)
@@ -261,7 +263,7 @@ namespace GameAI
 				#endif
 
 				InjectDeadGroupMemberDataIntoScriptTable(agent.GetScriptTable(), deadBody.entityID, deadBody.killerID, deadBody.position);
-				agent.SetSignal(0, "SpottedDeadGroupMember");
+				agent.SetSignal(gEnv->pAISystem->GetSignalManager()->CreateSignal(AISIGNAL_INCLUDE_DISABLED, gEnv->pAISystem->GetSignalManager()->GetBuiltInSignalDescriptions().GetOnSpottedDeadGroupMember()));
 
 				// Stimulate finder so that he gets scared of the body (with killer's ID)
 				// This only happens if the agent doesn't have an attention target.

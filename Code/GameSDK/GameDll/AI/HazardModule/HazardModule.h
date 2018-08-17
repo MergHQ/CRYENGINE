@@ -97,10 +97,10 @@ private:
 	void                                ReportHazardCollisions();
 	inline void                         ReportHazardCollisionsHelper();
 	inline void                         ProcessCollisionsWithEntity(const EntityId entityID);
-	template<class CONTAINER> void      ProcessCollisionsWithEntityProcessContainer(CONTAINER& container, Agent& agent, const char *signalFunctionName, const EntityId entityID);
+	template<class CONTAINER> void      ProcessCollisionsWithEntityProcessContainer(CONTAINER& container, Agent& agent, const AISignals::ISignalDescription& signalDescription, const EntityId entityID);
 	void                                ProcessAgentAndProjectile(Agent& agent, const HazardSystem::HazardDataProjectile& HazardData);
 	void                                ProcessAgentAndSphere(Agent& agent, const HazardSystem::HazardDataSphere& HazardData);
-	void                                SendSignalToAgent(Agent& agent, const char *warningName, const Vec3& estimatedHazardPos, const Vec3& hazardNormal);
+	void                                SendSignalToAgent(Agent& agent, const AISignals::ISignalDescription& signalDescription, const Vec3& estimatedHazardPos, const Vec3& hazardNormal);
 
 	// Hazard instance management:
 	template<class CONTAINER> int       IndexOfInstanceID(const CONTAINER& container, const HazardSystem::HazardID instanceID) const;	

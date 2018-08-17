@@ -361,7 +361,7 @@ void HazardModule::ProcessCollisionsWithEntity(const EntityId entityID)
 	}
 
 	ProcessCollisionsWithEntityProcessContainer(
-		m_ProjectileHazards, agent, "OnIncomingProjectile", entityID);
+		m_ProjectileHazards, agent, gEnv->pAISystem->GetSignalManager()->GetBuiltInSignalDescriptions().GetOnIncomingProjectile(), entityID);
 	// TODO: implement hazard spheres!
 	//ProcessCollisionsWithEntityProcessContainer(
 	//   m_SphereHazards, agent, "OnHazard", entityID);
@@ -378,12 +378,8 @@ void HazardModule::ProcessCollisionsWithEntity(const EntityId entityID)
 //	In:		The entity ID.
 //
 template<class CONTAINER>
-void HazardModule::ProcessCollisionsWithEntityProcessContainer(
-	CONTAINER& container, Agent& agent,
-	const char *signalFunctionName, const EntityId entityID)
-{
-	assert(signalFunctionName != NULL);
-	
+void HazardModule::ProcessCollisionsWithEntityProcessContainer(CONTAINER& container, Agent& agent, const AISignals::ISignalDescription& signalDescription, const EntityId entityID)
+{	
 	HazardCollisionResult collisionResult;
 
 	// NOTE: for now this will be quick and dirty. If the amount of hazards
@@ -399,7 +395,7 @@ void HazardModule::ProcessCollisionsWithEntityProcessContainer(
 			{
 				if (hazardIter->IsAgentAwareOfDanger(agent, collisionResult.m_HazardOriginPos))
 				{
-					SendSignalToAgent(agent, signalFunctionName, 
+					SendSignalToAgent(agent, signalDescription, 
 						collisionResult.m_HazardOriginPos, hazardIter->GetNormal());
 				}
 			}
@@ -420,11 +416,11 @@ void HazardModule::ProcessCollisionsWithEntityProcessContainer(
 //
 void HazardModule::SendSignalToAgent(	
 	Agent& agent,
-	const char *warningName,	
+	const AISignals::ISignalDescription& signalDescription,
 	const Vec3& estimatedHazardPos,
 	const Vec3& hazardNormal)
 {
-	IAISignalExtraData* extraData = gEnv->pAISystem->CreateSignalExtraData();
+	AISignals::IAISignalExtraData* extraData = gEnv->pAISystem->CreateSignalExtraData();
 	extraData->point = estimatedHazardPos;
 	extraData->point2 = hazardNormal;
 	
@@ -432,7 +428,7 @@ void HazardModule::SendSignalToAgent(
 	//gEnv->pGameFramework->GetIPersistantDebug()->Begin("HazardDebugGraphics", false);
 	//gEnv->pGameFramework->GetIPersistantDebug()->AddSphere(estimatedHazardPos, 0.3f, Col_DarkGray, 10.0f);
 
-	agent.SetSignal(AISIGNAL_DEFAULT, warningName, extraData);
+	agent.SetSignal(gEnv->pAISystem->GetSignalManager()->CreateSignal(AISIGNAL_DEFAULT, signalDescription, 0, extraData));
 }
 
 

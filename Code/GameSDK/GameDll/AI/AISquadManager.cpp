@@ -27,7 +27,7 @@ namespace
 			RuntimeData() : isInScope(false) {}
 		};
 		
-		virtual LoadResult LoadFromXml(const XmlNodeRef& xml, const LoadContext& context) override
+		virtual LoadResult LoadFromXml(const XmlNodeRef& xml, const struct LoadContext& context, const bool strictMode) override
 		{
 			const stack_string name = xml->getAttr("name");
 			if (name.empty())
@@ -41,7 +41,7 @@ namespace
 			m_allowedConcurrentUsers = 1;
 			xml->getAttr("allowedConcurrentUsers", m_allowedConcurrentUsers);
 
-			return LoadChildFromXml(xml, context);
+			return LoadChildFromXml(xml, context, strictMode);
 		}
 
 	protected:
@@ -97,9 +97,9 @@ namespace
 		{
 		};
 		
-		virtual LoadResult LoadFromXml(const XmlNodeRef& node, const LoadContext& context) override
+		virtual LoadResult LoadFromXml(const XmlNodeRef& xml, const struct LoadContext& context, const bool strictMode) override
 		{
-			m_event = node->getAttr("name");
+			m_event = xml->getAttr("name");
 			return LoadSuccess;
 		}
 
@@ -126,7 +126,7 @@ namespace
 			RuntimeData() : gateIsOpen(false) {}
 		};
 		
-		virtual LoadResult LoadFromXml(const XmlNodeRef& xml, const LoadContext& context) override
+		virtual LoadResult LoadFromXml(const XmlNodeRef& xml, const struct LoadContext& context, const bool strictMode) override
 		{
 			IF_UNLIKELY(xml->getNumAttributes() != 1)
 			{
@@ -152,7 +152,7 @@ namespace
 				return LoadFailure;
 			}
 
-			return LoadChildFromXml(xml, context);
+			return LoadChildFromXml(xml, context, strictMode);
 		}
 
 	protected:
@@ -311,7 +311,7 @@ void AISquadManager::SendSquadEvent( const EntityId sourcEntityId, const char* e
 			{
 				Agent agent(squadAgent.entityId);
 				if(agent.IsValid())
-					agent.SetSignal(SIGNALFILTER_SENDER, eventName);
+					agent.SetSignal(gEnv->pAISystem->GetSignalManager()->CreateSignal_DEPRECATED(AISIGNAL_DEFAULT, eventName));
 			}
 		}
 	}

@@ -8,7 +8,7 @@
 #include "ICryMannequin.h"
 #include <CryAISystem/IAIObject.h>
 #include <CryAISystem/IAIActor.h>
-
+#include <CryAISystem/ISignal.h>
 #include <Mannequin/Serialization.h>
 
 struct SProceduralClipAISignalParams
@@ -57,11 +57,7 @@ public:
 
 		if (!onEnterSignalName.empty())
 		{
-			aiActor->SetSignal(
-			  AISIGNAL_DEFAULT,
-			  onEnterSignalName.c_str(),
-			  NULL,  // Sender.
-			  NULL); // No additional data.
+			aiActor->SetSignal(gEnv->pAISystem->GetSignalManager()->CreateSignal_DEPRECATED(AISIGNAL_DEFAULT, onEnterSignalName));
 		}
 	}
 
@@ -77,12 +73,7 @@ public:
 		{
 			return;
 		}
-
-		aiActor->SetSignal(
-		  AISIGNAL_DEFAULT,
-		  m_onExitSignalName.c_str(),
-		  NULL,  // Sender.
-		  NULL); // No additional data.
+		aiActor->SetSignal(gEnv->pAISystem->GetSignalManager()->CreateSignal_DEPRECATED(AISIGNAL_DEFAULT, m_onExitSignalName));
 	}
 
 	virtual void Update(float timePassed) {}

@@ -88,14 +88,14 @@ const char* CAIGroupProxy::GetPreviousBehaviorName() const
 	return 0;
 }
 
-void CAIGroupProxy::Notify(uint32 notificationID, tAIObjectID senderID, const char* notification)
+void CAIGroupProxy::Notify(uint32 notificationID, const AISignals::SignalSharedPtr& pSignal)
 {
 	IScriptTable* senderScript = 0;
-	if (IAIObject* sender = senderID ? gEnv->pAISystem->GetAIObjectManager()->GetAIObject(senderID) : 0)
+	if (IAIObject* sender = pSignal->GetSenderID() ? gEnv->pAISystem->GetAIObjectManager()->GetAIObject(pSignal->GetSenderID()) : 0)
 		if (IEntity* senderEntity = sender->GetEntity())
 			senderScript = senderEntity->GetScriptTable();
 
-	CallNotification(m_behavior, notification, notificationID, senderScript);
+	CallNotification(m_behavior, pSignal->GetSignalDescription().GetName(), notificationID, senderScript);
 
 	Members::iterator it = m_members.begin();
 	Members::iterator end = m_members.end();
@@ -103,7 +103,10 @@ void CAIGroupProxy::Notify(uint32 notificationID, tAIObjectID senderID, const ch
 	for (uint32 k = 1; it != end; ++it)
 	{
 		if (IAIObject* aiObject = gEnv->pAISystem->GetAIObjectManager()->GetAIObject(*it))
-			gEnv->pAISystem->SendSignal(SIGNALFILTER_SENDER, 0, notification, aiObject);
+		{
+			AISignals::SignalSharedPtr pNewSignal = gEnv->pAISystem->GetSignalManager()->CreateSignal(pSignal->GetNSignal(), pSignal->GetSignalDescription(), aiObject->GetAIObjectID(), pSignal->GetExtraData());
+			gEnv->pAISystem->SendSignal(AISignals::SIGNALFILTER_SENDER, pNewSignal);
+		}
 	}
 }
 

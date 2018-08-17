@@ -142,8 +142,8 @@ public:
 	virtual void                OnObjectRemoved(CAIObject* pObject) override;
 	virtual SOBJECTSTATE&       GetState(void) override       { return m_State; }
 	virtual const SOBJECTSTATE& GetState(void) const override { return m_State; }
-	virtual void                SetSignal(int nSignalID, const char* szText, IEntity* pSender = 0, IAISignalExtraData* pData = NULL, uint32 crcCode = 0) override;
-	virtual void                OnAIHandlerSentSignal(const char* szText, uint32 crcCode) override;
+	virtual void                SetSignal(const AISignals::SignalSharedPtr& pSignal) override;
+	virtual void                OnAIHandlerSentSignal(const AISignals::SignalSharedPtr& pSignal) override;
 	virtual void                Serialize(TSerialize ser) override;
 	virtual void                Update(EUpdateType type);
 	virtual void                UpdateProxy(EUpdateType type);

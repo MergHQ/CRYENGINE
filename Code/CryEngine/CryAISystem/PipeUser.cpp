@@ -943,7 +943,7 @@ void CPipeUser::Update(EUpdateType type)
 				// keep track of last used smart object
 				m_idLastUsedSmartObject = m_currentNavSOStates.objectEntId;
 
-				SetSignal(1, "OnEnterNavSO");
+				SetSignal(GetAISystem()->GetSignalManager()->CreateSignal(AISIGNAL_DEFAULT, GetAISystem()->GetSignalManager()->GetBuiltInSignalDescriptions().GetOnEnterNavSO()));
 			}
 		}
 
@@ -958,7 +958,7 @@ void CPipeUser::Update(EUpdateType type)
 			m_currentNavSOStates.Clear();
 			m_eNavSOMethod = nSOmNone;
 
-			SetSignal(1, "OnLeaveNavSO");
+			SetSignal(GetAISystem()->GetSignalManager()->CreateSignal(AISIGNAL_DEFAULT, GetAISystem()->GetSignalManager()->GetBuiltInSignalDescriptions().GetOnLeaveNavSO()));
 		}
 	}
 
@@ -1080,7 +1080,7 @@ void CPipeUser::SetCoverState(const ICoverUser::StateFlags& state)
 		CRY_ASSERT(currentState.Check(ICoverUser::EStateFlags::MovingToCover));
 		if (!currentState.Check(ICoverUser::EStateFlags::InCover))
 		{
-			SetSignal(1, "OnEnterCover", 0, 0, gAIEnv.SignalCRCs.m_nOnEnterCover);
+			SetSignal(GetAISystem()->GetSignalManager()->CreateSignal(AISIGNAL_DEFAULT, GetAISystem()->GetSignalManager()->GetBuiltInSignalDescriptions().GetOnEnterCover()));
 		}
 	}
 	else if (state.Check(ICoverUser::EStateFlags::MovingToCover))
@@ -1088,10 +1088,10 @@ void CPipeUser::SetCoverState(const ICoverUser::StateFlags& state)
 		CRY_ASSERT(!currentState.Check(ICoverUser::EStateFlags::InCover));
 		if (!currentState.Check(ICoverUser::EStateFlags::MovingToCover))
 		{
-			SetSignal(1, "OnMovingToCover", 0, 0, gAIEnv.SignalCRCs.m_nOnMovingToCover);
+			SetSignal(GetAISystem()->GetSignalManager()->CreateSignal(AISIGNAL_DEFAULT, GetAISystem()->GetSignalManager()->GetBuiltInSignalDescriptions().GetOnMovingToCover()));
 			if (state.Check(ICoverUser::EStateFlags::InCover))
 			{
-				SetSignal(1, "OnMovingInCover", 0, 0, gAIEnv.SignalCRCs.m_nOnMovingInCover);
+				SetSignal(GetAISystem()->GetSignalManager()->CreateSignal(AISIGNAL_DEFAULT, GetAISystem()->GetSignalManager()->GetBuiltInSignalDescriptions().GetOnMovingInCover()));
 			}
 		}
 	}
@@ -1101,7 +1101,7 @@ void CPipeUser::SetCoverState(const ICoverUser::StateFlags& state)
 		{
 			SetCoverID(CoverID());
 			ResetBodyTargetDir();
-			SetSignal(1, "OnLeaveCover", 0, 0, gAIEnv.SignalCRCs.m_nOnLeaveCover);
+			SetSignal(GetAISystem()->GetSignalManager()->CreateSignal(AISIGNAL_DEFAULT, GetAISystem()->GetSignalManager()->GetBuiltInSignalDescriptions().GetOnLeaveCover()));
 		}
 	}
 }
@@ -1156,7 +1156,7 @@ void CPipeUser::SetCoverCompromised()
 
 	if (!m_pCoverUser->GetState().IsEmpty())
 	{
-		SetSignal(1, "OnCoverCompromised", 0, 0, gAIEnv.SignalCRCs.m_nOnCoverCompromised);
+		SetSignal(GetAISystem()->GetSignalManager()->CreateSignal(AISIGNAL_DEFAULT, GetAISystem()->GetSignalManager()->GetBuiltInSignalDescriptions().GetOnCoverCompromised()));
 
 		if (CoverID coverID = m_pCoverUser->GetCoverID())
 			SetCoverBlacklisted(coverID, true, 10.0f);
@@ -1173,7 +1173,7 @@ void CPipeUser::SetCoverInvalidated(CoverID coverID, ICoverUser* pCoverUser)
 	if (!m_pCoverUser)
 		return;
 	
-	SetSignal(1, "OnCoverCompromised", 0, 0, gAIEnv.SignalCRCs.m_nOnCoverCompromised);
+	SetSignal(GetAISystem()->GetSignalManager()->CreateSignal(AISIGNAL_DEFAULT, GetAISystem()->GetSignalManager()->GetBuiltInSignalDescriptions().GetOnCoverCompromised()));
 
 	SetCoverState(ICoverUser::EStateFlags::None);
 
@@ -2615,9 +2615,9 @@ CAIObject* CPipeUser::GetSpecialAIObject(const char* objName, float range)
 				if (!pObject)
 				{
 					// lets send a NoFormationPoint event
-					SetSignal(1, "OnNoFormationPoint", 0, 0, gAIEnv.SignalCRCs.m_nOnNoFormationPoint);
+					SetSignal(GetAISystem()->GetSignalManager()->CreateSignal(AISIGNAL_DEFAULT, GetAISystem()->GetSignalManager()->GetBuiltInSignalDescriptions().GetOnNoFormationPoint_DEPRECATED()));
 					if (pLeader)
-						pLeader->SetSignal(1, "OnNoFormationPoint", GetEntity(), 0, gAIEnv.SignalCRCs.m_nOnNoFormationPoint);
+						pLeader->SetSignal(GetAISystem()->GetSignalManager()->CreateSignal(AISIGNAL_DEFAULT, GetAISystem()->GetSignalManager()->GetBuiltInSignalDescriptions().GetOnNoFormationPoint_DEPRECATED(), GetAIObjectID()));
 				}
 			}
 
@@ -2663,7 +2663,7 @@ CAIObject* CPipeUser::GetSpecialAIObject(const char* objName, float range)
 			if (!pObject)
 			{
 				// lets send a NoFormationPoint event
-				SetSignal(1, "OnNoFormationPoint", 0, 0, gAIEnv.SignalCRCs.m_nOnNoFormationPoint);
+				SetSignal(GetAISystem()->GetSignalManager()->CreateSignal(AISIGNAL_DEFAULT, GetAISystem()->GetSignalManager()->GetBuiltInSignalDescriptions().GetOnNoFormationPoint_DEPRECATED()));
 			}
 		}
 
@@ -2677,9 +2677,9 @@ CAIObject* CPipeUser::GetSpecialAIObject(const char* objName, float range)
 		if (!pObject)
 		{
 			// lets send a NoFormationPoint event
-			SetSignal(1, "OnNoFormationPoint", 0, 0, gAIEnv.SignalCRCs.m_nOnNoFormationPoint);
+			SetSignal(GetAISystem()->GetSignalManager()->CreateSignal(AISIGNAL_DEFAULT, GetAISystem()->GetSignalManager()->GetBuiltInSignalDescriptions().GetOnNoFormationPoint_DEPRECATED()));
 			if (pLeader)
-				pLeader->SetSignal(1, "OnNoFormationPoint", GetEntity(), 0, gAIEnv.SignalCRCs.m_nOnNoFormationPoint);
+				pLeader->SetSignal(GetAISystem()->GetSignalManager()->CreateSignal(AISIGNAL_DEFAULT, GetAISystem()->GetSignalManager()->GetBuiltInSignalDescriptions().GetOnNoFormationPoint_DEPRECATED(), GetAIObjectID()));
 		}
 	}
 	else if (strcmp(objName, "atttarget") == 0)
@@ -4736,21 +4736,21 @@ void CPipeUser::EnableUpdateLookTarget(bool bEnable /*= true*/)
 	m_bEnableUpdateLookTarget = bEnable;
 }
 
-void CPipeUser::OnAIHandlerSentSignal(const char* szText, uint32 crcCode)
+void CPipeUser::OnAIHandlerSentSignal(const AISignals::SignalSharedPtr& pSignal)
 {
-	assert(crcCode != 0);
+	CRY_ASSERT(!pSignal->GetSignalDescription().IsNone());
 
 	ListWaitGoalOps::iterator it = m_listWaitGoalOps.begin();
 	while (it != m_listWaitGoalOps.end())
 	{
 		COPWaitSignal* pGoalOp = *it;
-		if (pGoalOp->NotifySignalReceived(this, szText, NULL))
+		if (pGoalOp->NotifySignalReceived(this, pSignal->GetSignalDescription().GetName(), NULL))
 			it = m_listWaitGoalOps.erase(it);
 		else
 			++it;
 	}
 
-	CAIActor::OnAIHandlerSentSignal(szText, crcCode);
+	CAIActor::OnAIHandlerSentSignal(pSignal);
 }
 
 Movement::PathfinderState CPipeUser::GetPathfinderState()

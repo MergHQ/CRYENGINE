@@ -4,31 +4,7 @@
 
 #pragma once
 
-#if !defined(_RELEASE) && CRY_PLATFORM_WINDOWS
-	#define DEBUG_MODULAR_BEHAVIOR_TREE
-	#define USING_BEHAVIOR_TREE_EDITOR
-#endif
-
-#ifdef USING_BEHAVIOR_TREE_EDITOR
-	#define USING_BEHAVIOR_TREE_SERIALIZATION
-	#define USING_BEHAVIOR_TREE_XML_DESCRIPTION_CREATION
-	#define USING_BEHAVIOR_TREE_COMMENTS
-#endif
-
-#ifdef DEBUG_MODULAR_BEHAVIOR_TREE
-	#define USING_BEHAVIOR_TREE_EVENT_DEBUGGING
-	#define USING_BEHAVIOR_TREE_LOG
-	#define USING_BEHAVIOR_TREE_VISUALIZER
-	#define USING_BEHAVIOR_TREE_NODE_CUSTOM_DEBUG_TEXT
-	#define USING_BEHAVIOR_TREE_TIMESTAMP_DEBUGGING
-	#define USING_BEHAVIOR_TREE_EXECUTION_STACKS_FILE_LOG
-//#  define USING_BEHAVIOR_TREE_DEBUG_MEMORY_USAGE
-#endif
-
-#if defined(DEBUG_MODULAR_BEHAVIOR_TREE) || defined(USING_BEHAVIOR_TREE_EDITOR)
-	#define STORE_BLACKBOARD_VARIABLE_NAMES
-#endif
-
+#include "BehaviorTreeDefines.h"
 #include <CryCore/Containers/VectorMap.h>
 #include <CryCore/Containers/VariableCollection.h>
 #include <CryAISystem/BehaviorTree/TimestampCollection.h>
@@ -47,7 +23,10 @@ typedef Serialization::ClassFactory<INode> NodeSerializationClassFactory;
 
 #endif
 
-struct IAISignalExtraData;
+namespace AISignals
+{
+	struct IAISignalExtraData;
+}
 
 namespace BehaviorTree
 {
@@ -68,7 +47,7 @@ enum LoadResult
 	LoadSuccess,
 };
 
-#if defined(USING_BEHAVIOR_TREE_EVENT_DEBUGGING) || defined(USING_BEHAVIOR_TREE_SERIALIZATION)
+#if defined(DEBUG_MODULAR_BEHAVIOR_TREE) || defined(USING_BEHAVIOR_TREE_SERIALIZATION)
 	#define STORE_EVENT_NAME
 #endif
 
@@ -93,14 +72,14 @@ public:
 	{
 	}
 
-#ifdef STORE_EVENT_NAME
 	Event(uint32 nameCRC32, const char* name, const void* pData = 0)
 		: m_nameCRC32(nameCRC32)
-		, m_name(name)
 		, m_pData(pData)
+#ifdef STORE_EVENT_NAME
+		, m_name(name)
+#endif
 	{
 	}
-#endif
 
 	Event(const char* name, const void* pData = 0)
 		: m_pData(pData)
@@ -157,19 +136,23 @@ private:
 struct LoadContext
 {
 	LoadContext(
-	  INodeFactory& _nodeFactory,
-	  const char* _treeName,
-	  const Variables::Declarations& _variableDeclarations
-	  )
+		INodeFactory&                       _nodeFactory,
+		const char*                         _treeName,
+		const Variables::Declarations&      _variableDeclarations,
+		Variables::EventsDeclaration&        _eventsDeclaration
+	)
 		: nodeFactory(_nodeFactory)
 		, treeName(_treeName)
 		, variableDeclarations(_variableDeclarations)
+		, eventsDeclaration(_eventsDeclaration)
 	{
 	}
 
-	INodeFactory&                  nodeFactory;
-	const char*                    treeName;
-	const Variables::Declarations& variableDeclarations;
+	INodeFactory&                        nodeFactory;
+	const char*                          treeName;
+	const Variables::Declarations&       variableDeclarations;
+	// non-const in order to automatically declare events when loading the XML
+	Variables::EventsDeclaration&        eventsDeclaration;
 
 	// Warning! If you're thinking about adding the entity id to the
 	// LoadContext you need to keep one thing in mind:
@@ -188,9 +171,9 @@ struct DebugNode
 
 	const INode* node;
 	Status       nodeStatus = Invalid;
-#ifdef USING_BEHAVIOR_TREE_NODE_CUSTOM_DEBUG_TEXT
+#ifdef DEBUG_MODULAR_BEHAVIOR_TREE
 	stack_string customDebugText;
-#endif
+#endif // DEBUG_MODULAR_BEHAVIOR_TREE
 	Children     children;
 
 	DebugNode(const INode* _node) { node = _node; }
@@ -252,9 +235,10 @@ typedef uint32 NodeID;
 
 struct BehaviorVariablesContext
 {
-	BehaviorVariablesContext(Variables::Collection& _collection, const Variables::Declarations& _declarations, bool _variablesWereChangedBeforeCurrentTick)
+	BehaviorVariablesContext(Variables::Collection& _collection, const Variables::Declarations& _declarations, const Variables::EventsDeclaration& _eventsDeclaration, bool _variablesWereChangedBeforeCurrentTick)
 		: collection(_collection)
 		, declarations(_declarations)
+		, eventsDeclaration(_eventsDeclaration)
 		, variablesWereChangedBeforeCurrentTick(_variablesWereChangedBeforeCurrentTick)
 	{
 	}
@@ -264,12 +248,13 @@ struct BehaviorVariablesContext
 		return variablesWereChangedBeforeCurrentTick || collection.Changed();
 	}
 
-	Variables::Collection&         collection;
-	const Variables::Declarations& declarations;
-	const bool                     variablesWereChangedBeforeCurrentTick;
+	Variables::Collection&              collection;
+	const Variables::Declarations&      declarations;
+	const Variables::EventsDeclaration& eventsDeclaration;
+	const bool                          variablesWereChangedBeforeCurrentTick;
 };
 
-#ifdef USING_BEHAVIOR_TREE_LOG
+#ifdef DEBUG_MODULAR_BEHAVIOR_TREE
 class MessageQueue
 {
 public:
@@ -296,7 +281,7 @@ public:
 private:
 	Messages m_messages;
 };
-#endif // USING_BEHAVIOR_TREE_LOG
+#endif // DEBUG_MODULAR_BEHAVIOR_TREE
 
 //////////////////////////////////////////////////////////////////////////
 
@@ -573,29 +558,25 @@ private:
 struct UpdateContext
 {
 	UpdateContext(
-	  const EntityId _id
-	  , IEntity& _entity
-	  , BehaviorVariablesContext& _variables
-	  , TimestampCollection& _timestamps
-	  , Blackboard& _blackboard
-#ifdef USING_BEHAVIOR_TREE_LOG
-	  , MessageQueue& _behaviorLog
-#endif // USING_BEHAVIOR_TREE_LOG
+		const EntityId _id
+		, IEntity& _entity
+		, BehaviorVariablesContext& _variables
+		, TimestampCollection& _timestamps
+		, Blackboard& _blackboard
 #ifdef DEBUG_MODULAR_BEHAVIOR_TREE
-	  , DebugTree* _debugTree = NULL
+		, MessageQueue& _behaviorLog
+		, DebugTree* _debugTree = NULL
 #endif // DEBUG_MODULAR_BEHAVIOR_TREE
 
-	  )
+	)
 		: entityId(_id)
 		, entity(_entity)
 		, runtimeData(NULL)
 		, variables(_variables)
 		, timestamps(_timestamps)
 		, blackboard(_blackboard)
-#ifdef USING_BEHAVIOR_TREE_LOG
-		, behaviorLog(_behaviorLog)
-#endif // USING_BEHAVIOR_TREE_LOG
 #ifdef DEBUG_MODULAR_BEHAVIOR_TREE
+		, behaviorLog(_behaviorLog)
 		, debugTree(_debugTree)
 #endif // DEBUG_MODULAR_BEHAVIOR_TREE
 	{
@@ -608,11 +589,8 @@ struct UpdateContext
 	TimestampCollection&      timestamps;
 	Blackboard&               blackboard;
 
-#ifdef USING_BEHAVIOR_TREE_LOG
-	MessageQueue& behaviorLog;
-#endif // USING_BEHAVIOR_TREE_LOG
-
 #ifdef DEBUG_MODULAR_BEHAVIOR_TREE
+	MessageQueue& behaviorLog;
 	DebugTree* debugTree;
 #endif // DEBUG_MODULAR_BEHAVIOR_TREE
 
@@ -644,10 +622,11 @@ struct INode
 	//! Call this to explicitly terminate a node.
 	//! The node will itself take care of cleaning things up.
 	//! It's safe to call Terminate on an already terminated node, although it is of course redundant.
+	//! - If you return Running the node will keep running and it will be executed again the next frame
 	virtual void Terminate(const UpdateContext& context) = 0;
 
 	//! Load up a behavior tree node with information from an xml node.
-	virtual LoadResult LoadFromXml(const XmlNodeRef& xml, const struct LoadContext& context) = 0;
+	virtual LoadResult LoadFromXml(const XmlNodeRef& xml, const struct LoadContext& context, const bool strictMode = true) = 0;
 
 #ifdef USING_BEHAVIOR_TREE_XML_DESCRIPTION_CREATION
 	virtual XmlNodeRef CreateXmlDescription() = 0;
@@ -673,22 +652,25 @@ struct BehaviorTreeTemplate
 	BehaviorTreeTemplate() {}
 
 	BehaviorTreeTemplate(
-	  INodePtr& _rootNode,
-	  TimestampCollection& _timestampCollection,
-	  Variables::Declarations& _variableDeclarations,
-	  Variables::SignalHandler& _signals)
+		INodePtr& _rootNode,
+		TimestampCollection& _timestampCollection,
+		Variables::Declarations& _variableDeclarations,
+		Variables::SignalHandler& _signals,
+		Variables::EventsDeclaration _eventsDeclaration)
 		: rootNode(_rootNode)
 		, defaultTimestampCollection(_timestampCollection)
 		, variableDeclarations(_variableDeclarations)
 		, signalHandler(_signals)
+		, eventsDeclaration(_eventsDeclaration)
 	{
 	}
 
-	MetaExtensionTable       metaExtensionTable;
-	INodePtr                 rootNode;
-	TimestampCollection      defaultTimestampCollection;
-	Variables::Declarations  variableDeclarations;
-	Variables::SignalHandler signalHandler;
+	MetaExtensionTable           metaExtensionTable;
+	INodePtr                     rootNode;
+	TimestampCollection          defaultTimestampCollection;
+	Variables::Declarations      variableDeclarations;
+	Variables::SignalHandler     signalHandler;
+	Variables::EventsDeclaration eventsDeclaration;
 
 #if defined(DEBUG_MODULAR_BEHAVIOR_TREE)
 	CryFixedStringT<64> mbtFilename;
@@ -704,10 +686,10 @@ struct BehaviorTreeInstance
 	BehaviorTreeInstance() {}
 
 	BehaviorTreeInstance(
-	  const TimestampCollection& _timestampCollection,
-	  const Variables::Collection& _variables,
-	  BehaviorTreeTemplatePtr _behaviorTreeTemplate,
-	  INodeFactory& nodeFactory)
+		const TimestampCollection& _timestampCollection,
+		const Variables::Collection& _variables,
+		BehaviorTreeTemplatePtr _behaviorTreeTemplate,
+		INodeFactory& nodeFactory)
 		: timestampCollection(_timestampCollection)
 		, variables(_variables)
 		, behaviorTreeTemplate(_behaviorTreeTemplate)
@@ -719,13 +701,10 @@ struct BehaviorTreeInstance
 	const BehaviorTreeTemplatePtr behaviorTreeTemplate;
 	Blackboard                    blackboard;
 
-#ifdef USING_BEHAVIOR_TREE_LOG
-	MessageQueue behaviorLog;
-#endif // USING_BEHAVIOR_TREE_LOG
-
-#ifdef USING_BEHAVIOR_TREE_EVENT_DEBUGGING
-	MessageQueue eventsLog;
-#endif // USING_BEHAVIOR_TREE_EVENT_DEBUGGING
+#ifdef DEBUG_MODULAR_BEHAVIOR_TREE
+	MessageQueue                  behaviorLog;
+	MessageQueue                  eventsLog;
+#endif // DEBUG_MODULAR_BEHAVIOR_TREE
 };
 
 DECLARE_SHARED_POINTERS(BehaviorTreeInstance);
@@ -734,21 +713,22 @@ struct IBehaviorTreeManager
 {
 	virtual ~IBehaviorTreeManager() {}
 
-	virtual void Update() = 0;
+	virtual void                           Update() = 0;
 
 	virtual struct IMetaExtensionFactory&  GetMetaExtensionFactory() = 0;
 	virtual struct INodeFactory&           GetNodeFactory() = 0;
+
 #ifdef USING_BEHAVIOR_TREE_SERIALIZATION
 	virtual NodeSerializationClassFactory& GetNodeSerializationFactory() = 0;
 #endif
 	virtual void                           LoadFromDiskIntoCache(const char* behaviorTreeName) = 0;
-	virtual bool StartModularBehaviorTree(const EntityId entityId, const char* treeName) = 0;
-	virtual bool StartModularBehaviorTreeFromXml(const EntityId entityId, const char* treeName, XmlNodeRef treeXml) = 0;
-	virtual void StopModularBehaviorTree(const EntityId entityId) = 0;
+	virtual bool                           StartModularBehaviorTree(const EntityId entityId, const char* treeName) = 0;
+	virtual bool                           StartModularBehaviorTreeFromXml(const EntityId entityId, const char* treeName, XmlNodeRef treeXml) = 0;
+	virtual void                           StopModularBehaviorTree(const EntityId entityId) = 0;
 
-	virtual void HandleEvent(const EntityId entityId, Event& event) = 0;
+	virtual void                           HandleEvent(const EntityId entityId, Event& event) = 0;
 
-	virtual BehaviorTree::Blackboard* GetBehaviorTreeBlackboard(const EntityId entityId) = 0;
+	virtual BehaviorTree::Blackboard*      GetBehaviorTreeBlackboard(const EntityId entityId) = 0;
 
 	//! Todo: Remove these functions as the behavior variables are a internal concept of the behavior tree and should not be directly accessed from the outside.
 	//! Instead of changing directly the internal state of the variable, the external systems should inform the tree of a
@@ -802,7 +782,7 @@ struct INodeFactory
 {
 	virtual ~INodeFactory() {}
 	virtual INodePtr CreateNodeOfType(const char* typeName) = 0;
-	virtual INodePtr CreateNodeFromXml(const XmlNodeRef& xml, const LoadContext& context) = 0;
+	virtual INodePtr CreateNodeFromXml(const XmlNodeRef& xml, const LoadContext& context, const bool strictMode = true) = 0;
 	virtual void     RegisterNodeCreator(struct INodeCreator* nodeCreator) = 0;
 	virtual size_t   GetSizeOfImmutableDataForAllAllocatedNodes() const = 0;
 	virtual size_t   GetSizeOfRuntimeDataForAllAllocatedNodes() const = 0;

@@ -2778,9 +2778,10 @@ void CPickAndThrowWeapon::OnThrownObjectSeen(const Agent& agent, EntityId object
 		pManager->HandleStimulusEventForAgent(aiTargetId, aiPlayerId, "SeeThrownObject", eventInfo);
 
 		// Send signal to target AI
-		IAISignalExtraData *pData = pAISystem->CreateSignalExtraData();
+		AISignals::IAISignalExtraData *pData = pAISystem->CreateSignalExtraData();
 		pData->nID = objectId;
-		pAISystem->SendSignal(SIGNALFILTER_SENDER, AISIGNAL_DEFAULT, "OnThrownObjectSeen", agent.GetAIObject(), pData);
+		const AISignals::SignalSharedPtr pSignal = gEnv->pAISystem->GetSignalManager()->CreateSignal(AISIGNAL_DEFAULT, gEnv->pAISystem->GetSignalManager()->GetBuiltInSignalDescriptions().GetOnThrownObjectSeen(), agent.GetAIObject()->GetAIObjectID(), pData);
+		pAISystem->SendSignal(AISignals::ESignalFilter::SIGNALFILTER_SENDER, pSignal);
 	}
 }
 

@@ -1164,13 +1164,13 @@ EGoalOpResult COPStick::HandlePathDecision(CPipeUser* pPipeUser, int nPathDecisi
 				if ((lastPathNode.navType != IAISystem::NAV_SMARTOBJECT) &&
 				    (fDistance > m_fStickDistance + C_MaxDistanceForPathOffset))
 				{
-					AISignalExtraData* pData = new AISignalExtraData;
+					AISignals::AISignalExtraData* pData = new AISignals::AISignalExtraData;
 					pData->fValue = fDistance - m_fStickDistance;
-					pPipeUser->SetSignal(0, "OnEndPathOffset", pPipeUser->GetEntity(), pData, gAIEnv.SignalCRCs.m_nOnEndPathOffset);
+					pPipeUser->SetSignal(GetAISystem()->GetSignalManager()->CreateSignal(AISIGNAL_INCLUDE_DISABLED, GetAISystem()->GetSignalManager()->GetBuiltInSignalDescriptions().GetOnEndPathOffset_DEPRECATED(), pPipeUser->GetAIObjectID(), pData));
 				}
 				else
 				{
-					pPipeUser->SetSignal(0, "OnPathFound", NULL, 0, gAIEnv.SignalCRCs.m_nOnPathFound);
+					pPipeUser->SetSignal(GetAISystem()->GetSignalManager()->CreateSignal(AISIGNAL_INCLUDE_DISABLED, GetAISystem()->GetSignalManager()->GetBuiltInSignalDescriptions().GetOnPathFound_DEPRECATED()));
 				}
 
 				return Execute(pPipeUser);

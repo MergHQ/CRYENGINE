@@ -318,7 +318,7 @@ public:
 		return m_fTimePassed;
 	}
 
-	virtual void              OnAIHandlerSentSignal(const char* szText, uint32 crcCode) override;
+	virtual void              OnAIHandlerSentSignal(const AISignals::SignalSharedPtr& pSignal) override;
 
 	Movement::PathfinderState GetPathfinderState();
 	INavPath*                 GetINavPath() { return &m_Path; };

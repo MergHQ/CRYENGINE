@@ -1,0 +1,12 @@
+# Copyright 2001-2018 Crytek GmbH / Crytek Group. All rights reserved.
+
+def build(bld):	
+	bld.CryPlugin(
+		target = 'EditorInterimBehaviorTree',
+		vs_filter = 'Sandbox/Plugins',
+		file_list = 'editorinterimbehaviortree.waf_files',
+		pch = 'StdAfx.cpp',
+		features = 'qt',
+		includes = ['.', '..','GeneratedFiles'],
+		use=['Editor', 'EditorCommon' ]
+	)

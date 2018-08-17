@@ -221,7 +221,8 @@ void CWeapon::OnShoot(EntityId shooterId, EntityId ammoId, IEntityClass* pAmmoTy
 		{
 			if (IAIObject *pAIObject = pActor->GetEntity()->GetAI())
 			{
-				gEnv->pAISystem->SendSignal(SIGNALFILTER_LEADER, 1, "OnEnableFire",	pAIObject, 0);
+				const AISignals::SignalSharedPtr pSignal = gEnv->pAISystem->GetSignalManager()->CreateSignal(AISIGNAL_DEFAULT, gEnv->pAISystem->GetSignalManager()->GetBuiltInSignalDescriptions().GetOnEnableFire(), pAIObject->GetAIObjectID());
+				gEnv->pAISystem->SendSignal(AISignals::ESignalFilter::SIGNALFILTER_LEADER, pSignal);
 			}
 
 			gEnv->pAISystem->DisableGlobalPerceptionScaling();
@@ -293,9 +294,14 @@ void CWeapon::OnStartReload(EntityId shooterId, IEntityClass* pAmmoType)
 
 	if (CActor *pActor = GetOwnerActor())
 	{
-		if (IAIObject *pAIObject=pActor->GetEntity()->GetAI())
+		if (IAIObject *pAIObject = pActor->GetEntity()->GetAI())
+		{
 			if (gEnv->pAISystem)
-				gEnv->pAISystem->SendSignal( SIGNALFILTER_SENDER, 1, "OnReload", pAIObject);
+			{
+				const AISignals::SignalSharedPtr pSignal = gEnv->pAISystem->GetSignalManager()->CreateSignal(AISIGNAL_DEFAULT, gEnv->pAISystem->GetSignalManager()->GetBuiltInSignalDescriptions().GetOnReload(), pAIObject->GetAIObjectID());
+				gEnv->pAISystem->SendSignal(AISignals::ESignalFilter::SIGNALFILTER_SENDER, pSignal);
+			}
+		}
 
 		if(pActor->IsClient())
 		{
@@ -334,9 +340,14 @@ void CWeapon::OnEndReload(EntityId shooterId, IEntityClass* pAmmoType)
 
 	if (CActor *pActor = GetOwnerActor())
 	{
-		if (IAIObject *pAIObject=pActor->GetEntity()->GetAI())
+		if (IAIObject *pAIObject = pActor->GetEntity()->GetAI())
+		{
 			if (gEnv->pAISystem)
-				gEnv->pAISystem->SendSignal( SIGNALFILTER_SENDER, 1, "OnReloadDone", pAIObject);
+			{
+				const AISignals::SignalSharedPtr pSignal = gEnv->pAISystem->GetSignalManager()->CreateSignal(AISIGNAL_DEFAULT, gEnv->pAISystem->GetSignalManager()->GetBuiltInSignalDescriptions().GetOnReloadDone(), pAIObject->GetAIObjectID());
+				gEnv->pAISystem->SendSignal(AISignals::ESignalFilter::SIGNALFILTER_SENDER, pSignal);
+			}
+		}
 	}
 
 	if (m_doingMagazineSwap)

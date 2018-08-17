@@ -316,8 +316,16 @@ struct AIConsoleVars
 
 	int         LogSignals;
 
+	// Modular Behavior Tree
 	int         ModularBehaviorTree;
-	int         DebugTimestamps;
+	int         ModularBehaviorTreeDebug;
+	int         ModularBehaviorTreeDebugTree;
+	int         ModularBehaviorTreeDebugVariables;
+	int         ModularBehaviorTreeDebugTimestamps;
+	int         ModularBehaviorTreeDebugEvents;
+	int         ModularBehaviorTreeDebugLog;
+	int         ModularBehaviorTreeDebugBlackboard;
+
 
 	float       CommunicationManagerHeightThresholdForTargetPosition;
 

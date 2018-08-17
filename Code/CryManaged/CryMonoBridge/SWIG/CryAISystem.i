@@ -132,6 +132,7 @@ public:
 %ignore BehaviorTree::BehaviorVariablesContext;
 %ignore BehaviorTree::UpdateContext::variables;
 %feature("director") INode;
+%include "../../../../CryEngine/CryCommon/CryAISystem/BehaviorTree/BehaviorTreeDefines.h"
 %include "../../../../CryEngine/CryCommon/CryAISystem/BehaviorTree/IBehaviorTree.h"
 %include <typemaps.i>
 %apply stack_string *OUTPUT { stack_string& debugText };

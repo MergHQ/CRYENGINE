@@ -650,7 +650,7 @@ void CAIActionManager::ExecuteAIAction(const IAIAction* pAction, IEntity* pUser,
 	}
 
 	// Tell entity about action start
-	GetAISystem()->SendSignal(SIGNALFILTER_SENDER, 1, "OnActionStart", pAI);
+	GetAISystem()->SendSignal(AISignals::ESignalFilter::SIGNALFILTER_SENDER, GetAISystem()->GetSignalManager()->CreateSignal(AISIGNAL_DEFAULT, GetAISystem()->GetSignalManager()->GetBuiltInSignalDescriptions().GetOnActionStart(), pAI->GetAIObjectID()));
 
 	if (pFlowGraph)
 	{
@@ -842,11 +842,12 @@ void CAIActionManager::ActionDone(CActiveAction& action, bool bRemoveAction /*= 
 		CAIActor* pAIActor = pAI->CastToCAIActor();
 		if (pAIActor)
 		{
-			IAISignalExtraData* pData = GetAISystem()->CreateSignalExtraData();
+			AISignals::IAISignalExtraData* pData = GetAISystem()->CreateSignalExtraData();
 			pData->SetObjectName(copy.GetName());
 			pData->nID = copy.m_pObjectEntity->GetId();
 			pData->iValue = copy.m_bDeleted ? 1 : 0; // if m_bDeleted is true it means the action was succeeded
-			pAIActor->SetSignal(10, "OnActionDone", NULL, pData, gAIEnv.SignalCRCs.m_nOnActionDone);
+			
+			pAIActor->SetSignal(GetAISystem()->GetSignalManager()->CreateSignal(AISIGNAL_ALLOW_DUPLICATES, GetAISystem()->GetSignalManager()->GetBuiltInSignalDescriptions().GetOnActionDone(), 0, pData));
 			if (CPipeUser* pPipeUser = pAIActor->CastToCPipeUser())
 			{
 				pPipeUser->SetLastActionStatus(copy.m_bDeleted);   // if m_bDeleted is true it means the action was succeeded
@@ -874,7 +875,8 @@ void CAIActionManager::ActionDone(CActiveAction& action, bool bRemoveAction /*= 
 	//		ResumeActionsOnEntity( copy.m_pObjectEntity );
 
 	// Tell entity about action end
-	GetAISystem()->SendSignal(SIGNALFILTER_SENDER, 1, "OnActionEnd", pAI);
+	GetAISystem()->SendSignal(AISignals::ESignalFilter::SIGNALFILTER_SENDER, GetAISystem()->GetSignalManager()->CreateSignal(AISIGNAL_DEFAULT, GetAISystem()->GetSignalManager()->GetBuiltInSignalDescriptions().GetOnActionEnd(), pAI->GetAIObjectID()));
+
 }
 
 // loads the library of AI Action Flow Graphs

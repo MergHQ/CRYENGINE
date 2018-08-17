@@ -9,9 +9,9 @@
 namespace BehaviorTree
 {
 class MetaExtensionFactory;
-#ifdef USING_BEHAVIOR_TREE_EXECUTION_STACKS_FILE_LOG
+#ifdef DEBUG_MODULAR_BEHAVIOR_TREE
 class ExecutionStackFileLogger;
-#endif
+#endif // DEBUG_MODULAR_BEHAVIOR_TREE
 
 #if defined(DEBUG_MODULAR_BEHAVIOR_TREE)
 	#define DEBUG_MODULAR_BEHAVIOR_TREE_WEB
@@ -77,11 +77,8 @@ private:
 
 #if defined(DEBUG_MODULAR_BEHAVIOR_TREE)
 	void UpdateDebugVisualization(UpdateContext updateContext, const EntityId entityId, DebugTree debugTree, BehaviorTreeInstance& instance, IEntity* agentEntity);
-#endif // DEBUG_MODULAR_BEHAVIOR_TREE
-
-#ifdef USING_BEHAVIOR_TREE_EXECUTION_STACKS_FILE_LOG
 	void UpdateExecutionStackLogging(UpdateContext updateContext, const EntityId entityId, DebugTree debugTree, BehaviorTreeInstance& instance);
-#endif
+#endif // DEBUG_MODULAR_BEHAVIOR_TREE
 
 	std::unique_ptr<NodeFactory>          m_nodeFactory;
 	std::unique_ptr<MetaExtensionFactory> m_metaExtensionFactory;
@@ -109,10 +106,10 @@ private:
 	bool           m_bRegisteredAsDebugChannel;
 #endif
 
-#ifdef USING_BEHAVIOR_TREE_EXECUTION_STACKS_FILE_LOG
+#ifdef DEBUG_MODULAR_BEHAVIOR_TREE
 	typedef std::shared_ptr<ExecutionStackFileLogger>        ExecutionStackFileLoggerPtr;
 	typedef VectorMap<EntityId, ExecutionStackFileLoggerPtr> ExecutionStackFileLoggerInstances;
 	ExecutionStackFileLoggerInstances m_executionStackFileLoggerInstances;
-#endif
+#endif // DEBUG_MODULAR_BEHAVIOR_TREE
 };
 }

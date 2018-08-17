@@ -1126,7 +1126,7 @@ void CFlowNode_AISequenceJoinFormation::ProcessEvent(EFlowEvent event, SActivati
 				EntityId entityIdToFollow = GetPortEntityId(pActInfo, InputPort_LeaderId);
 				SequenceAgent agentToFollow(entityIdToFollow);
 
-				nodeAgent.SendSignal("ACT_JOIN_FORMATION", agentToFollow.GetEntity());
+				nodeAgent.SendSignal(gEnv->pAISystem->GetSignalManager()->GetBuiltInSignalDescriptions().GetOnActJoinFormation(), agentToFollow.GetEntity());
 				isSignalSent = true;
 			}
 			ActivateOutput(pActInfo, OutputPort_Done, isSignalSent);
@@ -1137,10 +1137,10 @@ void CFlowNode_AISequenceJoinFormation::ProcessEvent(EFlowEvent event, SActivati
 
 void CFlowNode_AISequenceJoinFormation::SendSignal(IAIActor* pIAIActor, const char* signalName, IEntity* pSender)
 {
-	IAISignalExtraData* pData = gEnv->pAISystem->CreateSignalExtraData();
+	AISignals::IAISignalExtraData* pData = gEnv->pAISystem->CreateSignalExtraData();
 	const int goalPipeId = gEnv->pAISystem->AllocGoalPipeId();
 	pData->iValue = goalPipeId;
-	pIAIActor->SetSignal(AISIGNAL_ALLOW_DUPLICATES, signalName, pSender, pData);
+	pIAIActor->SetSignal(GetAISystem()->GetSignalManager()->CreateSignal_DEPRECATED(AISIGNAL_DEFAULT, signalName, pSender ? pSender->GetAIObjectID() : 0, pData));
 }
 
 //////////////////////////////////////////////////////////////////////////
