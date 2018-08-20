@@ -16,8 +16,8 @@ IMPLEMENT_DYNCREATE(AreaSolidTool, DesignerEditor)
 class AreaSolidTool_ClassDesc : public IClassDesc
 {
 	virtual ESystemClassID SystemClassID() override   { return ESYSTEM_CLASS_EDITTOOL; }
-	virtual const char*    ClassName() override       { return "EditTool.AreaSolidTool"; };
-	virtual const char*    Category() override        { return "Brush"; };
+	virtual const char*    ClassName() override       { return "EditTool.AreaSolidTool"; }
+	virtual const char*    Category() override        { return "Brush"; }
 	virtual CRuntimeClass* GetRuntimeClass() override { return RUNTIME_CLASS(AreaSolidTool); }
 };
 
@@ -71,8 +71,8 @@ IMPLEMENT_DYNCREATE(CreateAreaSolidTool, AreaSolidTool)
 class CreateAreaSolidTool_ClassDesc : public IClassDesc
 {
 	virtual ESystemClassID SystemClassID() override { return ESYSTEM_CLASS_EDITTOOL; }
-	virtual const char*    ClassName() override { return "EditTool.CreateAreaSolidTool"; };
-	virtual const char*    Category() override { return "Object"; };
+	virtual const char*    ClassName() override { return "EditTool.CreateAreaSolidTool"; }
+	virtual const char*    Category() override { return "Object"; }
 	virtual CRuntimeClass* GetRuntimeClass() override { return RUNTIME_CLASS(CreateAreaSolidTool); }
 };
 

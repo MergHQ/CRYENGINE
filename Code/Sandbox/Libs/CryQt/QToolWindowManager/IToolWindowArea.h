@@ -9,7 +9,7 @@
 class QTOOLWINDOWMANAGER_EXPORT IToolWindowArea
 {
 public:
-	virtual ~IToolWindowArea() {};
+	virtual ~IToolWindowArea() {}
 	virtual void addToolWindow(QWidget* toolWindow, int index = -1 ) = 0;
 	virtual void addToolWindows(const QList<QWidget*>& toolWindows, int index = -1 ) = 0;
 

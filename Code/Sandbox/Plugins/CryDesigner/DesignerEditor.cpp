@@ -35,8 +35,8 @@ namespace Designer
 class DesignerEditor_ClassDesc : public IClassDesc
 {
 	virtual ESystemClassID SystemClassID()   { return ESYSTEM_CLASS_EDITTOOL; }
-	virtual const char*    ClassName()       { return "EditTool.DesignerEditor"; };
-	virtual const char*    Category()        { return "Brush"; };
+	virtual const char*    ClassName()       { return "EditTool.DesignerEditor"; }
+	virtual const char*    Category()        { return "Brush"; }
 	virtual CRuntimeClass* GetRuntimeClass() { return RUNTIME_CLASS(DesignerEditor); }
 };
 
@@ -787,8 +787,8 @@ IMPLEMENT_DYNCREATE(CreateDesignerObjectTool, DesignerEditor)
 class CreateDesignerObjectTool_ClassDesc : public IClassDesc
 {
 	ESystemClassID SystemClassID()   { return ESYSTEM_CLASS_EDITTOOL; }
-	const char*    ClassName()       { return "EditTool.CreateDesignerObjectTool"; };
-	const char*    Category()        { return "Object"; };
+	const char*    ClassName()       { return "EditTool.CreateDesignerObjectTool"; }
+	const char*    Category()        { return "Object"; }
 	CRuntimeClass* GetRuntimeClass() { return RUNTIME_CLASS(CreateDesignerObjectTool); }
 };
 

@@ -42,9 +42,7 @@ private:
 
 struct IGizmoTransformOp // #SchematycTODO : Use generalized transform system.
 {
-public:
-
-	virtual ~IGizmoTransformOp() {};
+	virtual ~IGizmoTransformOp() {}
 
 	virtual void OnInit() = 0;
 	virtual void OnMove(const Vec3& offset) = 0;

@@ -145,7 +145,7 @@ public:
 	~CNodeGraphRuntimeContext();
 
 	// CryGraphEditor::INodeGraphRuntimeContext
-	virtual const char*                                GetTypeName() const override { return "Schematyc_Graph"; };
+	virtual const char*                                GetTypeName() const override { return "Schematyc_Graph"; }
 	virtual CAbstractDictionary*                       GetAvailableNodesDictionary() override;
 
 	virtual const CryGraphEditor::CNodeGraphViewStyle* GetStyle() const override { return m_pStyle; }

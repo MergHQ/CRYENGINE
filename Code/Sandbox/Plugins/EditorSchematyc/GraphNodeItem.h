@@ -42,7 +42,7 @@ public:
 
 	virtual QVariant                            GetTypeId() const override;
 
-	virtual const CryGraphEditor::PinItemArray& GetPinItems() const override    { return m_pins; };
+	virtual const CryGraphEditor::PinItemArray& GetPinItems() const override    { return m_pins; }
 	virtual QString                             GetName() const override        { return m_shortName; }
 
 	virtual QString                             GetToolTipText() const override { return m_fullQualifiedName; }

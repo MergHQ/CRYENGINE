@@ -16,7 +16,7 @@ public:
 	CCSharpOutputWindow();
 	~CCSharpOutputWindow();
 
-	virtual const char* GetEditorName() const override { return "C# Output"; };
+	virtual const char* GetEditorName() const override { return "C# Output"; }
 
 	// ICSharpMessageListener
 	virtual void OnMessagesUpdated(string messages) override;

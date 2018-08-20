@@ -46,7 +46,7 @@ public:
 	CParticleEditor();
 
 	// CEditor
-	virtual const char* GetEditorName() const override { return "Particle Editor"; };
+	virtual const char* GetEditorName() const override { return "Particle Editor"; }
 	virtual void        SetLayout(const QVariantMap& state) override;
 	virtual QVariantMap GetLayout() const override;
 	// ~CEditor

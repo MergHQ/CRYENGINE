@@ -1,16 +1,14 @@
 // Copyright 2001-2018 Crytek GmbH / Crytek Group. All rights reserved.
 #pragma once
 
-// CryCommon
-#include "CryExtension/CryGUID.h"
-#include <CrySerialization/yasli/decorators/Range.h>
-
-// EditorInterface
-#include "IObjectManager.h"
-
-// EditorCommon
 #include "EditorFramework/Preferences.h"
 #include "Gizmos/ITransformManipulator.h"
+
+#include <IObjectManager.h>
+
+#include <CryExtension/CryGUID.h>
+#include <CrySerialization/yasli/decorators/Range.h>
+
 
 // {87109FED-BDB5-4874-936D-338400079F58}
 DEFINE_GUID(OBJECT_MODE_GUID, 0x87109fed, 0xbdb5, 0x4874, 0x93, 0x6d, 0x33, 0x84, 0x0, 0x7, 0x9f, 0x58);

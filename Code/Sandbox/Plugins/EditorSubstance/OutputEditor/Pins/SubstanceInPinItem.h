@@ -16,7 +16,7 @@ namespace EditorSubstance
 			CSubstanceInPinItem(CryGraphEditor::CAbstractNodeItem& nodeItem, EOutputPinType pinType)
 				: CSubstanceBasePinItem(nodeItem, pinType)
 			{}
-			virtual ~CSubstanceInPinItem() {};
+			virtual ~CSubstanceInPinItem() {}
 			virtual bool IsInputPin() const override { return true; }
 			virtual bool IsOutputPin() const override { return false; }
 		};

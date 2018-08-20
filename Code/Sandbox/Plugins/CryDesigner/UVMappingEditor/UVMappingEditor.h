@@ -94,7 +94,7 @@ public:
 
 	//////////////////////////////////////////////////////////
 	// CDockableWindow implementation
-	virtual const char*                       GetPaneTitle() const override        { return "UV Mapping"; };
+	virtual const char*                       GetPaneTitle() const override        { return "UV Mapping"; }
 	virtual IViewPaneClass::EDockingDirection GetDockingDirection() const override { return IViewPaneClass::DOCK_FLOAT; }
 	//////////////////////////////////////////////////////////
 

@@ -205,14 +205,12 @@ void CClipVolumeObject::Display(DisplayContext& dc)
 		{
 			dd.color.a = uint8(0.15f * 255);
 			dd.lineColor.a = uint8(0.15f * 255);
-			;
 
 			dc.DepthTestOff();
 			pStatObj->DebugDraw(dd);
 
 			dd.color.a = uint8(0.25f * 255);
 			dd.lineColor.a = uint8(1.0f * 255);
-			;
 
 			dc.DepthTestOn();
 			pStatObj->DebugDraw(dd);

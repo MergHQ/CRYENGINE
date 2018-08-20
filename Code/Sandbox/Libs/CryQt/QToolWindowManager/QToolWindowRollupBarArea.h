@@ -34,30 +34,30 @@ public:
 
 	virtual bool switchAutoHide(bool newValue);
 
-	const QPalette& palette() const Q_DECL_OVERRIDE { return QRollupBar::palette(); };
-	void clear() Q_DECL_OVERRIDE { QRollupBar::clear(); };
-	QRect rect() const Q_DECL_OVERRIDE { return QRollupBar::rect(); };
-	QSize size() const Q_DECL_OVERRIDE { return QRollupBar::size(); };
-	int count() const Q_DECL_OVERRIDE { return QRollupBar::count(); };
-	QWidget* widget(int index) const Q_DECL_OVERRIDE { return QRollupBar::widget(index); };
-	void deleteLater() Q_DECL_OVERRIDE { QRollupBar::deleteLater(); };
-	int width() const Q_DECL_OVERRIDE { return QRollupBar::width(); };
-	int height() const Q_DECL_OVERRIDE { return QRollupBar::height(); };
-	const QRect geometry() const Q_DECL_OVERRIDE { return QRollupBar::geometry(); };
-	void hide() Q_DECL_OVERRIDE { QRollupBar::hide(); };
-	QObject* parent() const Q_DECL_OVERRIDE { return QRollupBar::parent(); };
-	void setParent(QWidget* parent) Q_DECL_OVERRIDE { QRollupBar::setParent(parent); };
+	const QPalette& palette() const Q_DECL_OVERRIDE { return QRollupBar::palette(); }
+	void clear() Q_DECL_OVERRIDE { QRollupBar::clear(); }
+	QRect rect() const Q_DECL_OVERRIDE { return QRollupBar::rect(); }
+	QSize size() const Q_DECL_OVERRIDE { return QRollupBar::size(); }
+	int count() const Q_DECL_OVERRIDE { return QRollupBar::count(); }
+	QWidget* widget(int index) const Q_DECL_OVERRIDE { return QRollupBar::widget(index); }
+	void deleteLater() Q_DECL_OVERRIDE { QRollupBar::deleteLater(); }
+	int width() const Q_DECL_OVERRIDE { return QRollupBar::width(); }
+	int height() const Q_DECL_OVERRIDE { return QRollupBar::height(); }
+	const QRect geometry() const Q_DECL_OVERRIDE { return QRollupBar::geometry(); }
+	void hide() Q_DECL_OVERRIDE { QRollupBar::hide(); }
+	QObject* parent() const Q_DECL_OVERRIDE { return QRollupBar::parent(); }
+	void setParent(QWidget* parent) Q_DECL_OVERRIDE { QRollupBar::setParent(parent); }
 	int indexOf(QWidget* w) const Q_DECL_OVERRIDE;
-	QWidget* parentWidget() const Q_DECL_OVERRIDE { return QRollupBar::parentWidget(); };
-	QPoint mapFromGlobal(const QPoint & pos) const Q_DECL_OVERRIDE { return QRollupBar::mapFromGlobal(pos); };
-	QPoint mapToGlobal(const QPoint & pos) const Q_DECL_OVERRIDE { return QRollupBar::mapToGlobal(pos); };
+	QWidget* parentWidget() const Q_DECL_OVERRIDE { return QRollupBar::parentWidget(); }
+	QPoint mapFromGlobal(const QPoint & pos) const Q_DECL_OVERRIDE { return QRollupBar::mapFromGlobal(pos); }
+	QPoint mapToGlobal(const QPoint & pos) const Q_DECL_OVERRIDE { return QRollupBar::mapToGlobal(pos); }
 	void setCurrentWidget(QWidget* w) Q_DECL_OVERRIDE;
 
 	QPoint mapCombineDropAreaFromGlobal(const QPoint & pos) const Q_DECL_OVERRIDE;
 	QRect combineAreaRect() const Q_DECL_OVERRIDE;
 	QRect combineSubWidgetRect(int index) const Q_DECL_OVERRIDE;
 	int subWidgetAt(const QPoint& pos) const Q_DECL_OVERRIDE;
-	virtual QTWMWrapperAreaType areaType() const { return QTWMWrapperAreaType::watRollups; };
+	virtual QTWMWrapperAreaType areaType() const { return QTWMWrapperAreaType::watRollups; }
 protected:
 	virtual bool eventFilter(QObject *o, QEvent *ev) Q_DECL_OVERRIDE;
 protected Q_SLOTS:

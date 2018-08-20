@@ -8,7 +8,7 @@
 class QTOOLWINDOWMANAGER_EXPORT IToolWindowWrapper
 {
 public:
-	virtual ~IToolWindowWrapper() {};
+	virtual ~IToolWindowWrapper() {}
 	virtual QWidget* getWidget() = 0;
 	virtual QWidget* getContents() = 0;
 	virtual void setContents(QWidget* widget) = 0;

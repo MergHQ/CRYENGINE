@@ -25,7 +25,6 @@ class CPopupMenuItem;
 class CUndoBaseObject;
 class SubObjectSelectionReferenceFrameCalculator;
 
-struct DisplayContext;
 struct HitContext;
 struct IDisplayViewport;
 struct IEditorMaterial;

@@ -194,7 +194,7 @@ public:
 
 	// Called when node is added/removed from sequence
 	virtual void OnAdded()   {}
-	virtual void OnRemoved() {};
+	virtual void OnRemoved() {}
 
 	// Only for displaying sequence properties at the moment
 	virtual void Serialize(Serialization::IArchive& ar);

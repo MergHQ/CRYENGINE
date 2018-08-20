@@ -29,7 +29,7 @@ namespace EditorSubstance
 
 			CCompressedRenderer();
 			virtual void FillVirtualOutputRenderData(const ISubstancePreset* preset, const SSubstanceOutput& output, std::vector<SSubstanceRenderData>& renderData) override;
-			virtual void FillOriginalOutputRenderData(const ISubstancePreset* preset, SSubstanceOutput& output, std::vector<SSubstanceRenderData>& renderData) override {};
+			virtual void FillOriginalOutputRenderData(const ISubstancePreset* preset, SSubstanceOutput& output, std::vector<SSubstanceRenderData>& renderData) override {}
 			virtual void ProcessComputedOutputs() override;
 			virtual void RemovePresetRenderData(ISubstancePreset* preset) override;
 		protected:

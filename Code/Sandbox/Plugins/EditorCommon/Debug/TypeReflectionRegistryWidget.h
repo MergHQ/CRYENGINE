@@ -74,7 +74,7 @@ public:
 	virtual ~CTypeReflectionRegistryDockable() final;
 
 	// CEditor
-	virtual const char* GetEditorName() const override { return "Type Reflection Registry"; };
+	virtual const char* GetEditorName() const override { return "Type Reflection Registry"; }
 	virtual void        SetLayout(const QVariantMap& state) override;
 	virtual QVariantMap GetLayout() const override;
 	// ~CEditor

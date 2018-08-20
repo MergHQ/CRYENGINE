@@ -1,8 +1,5 @@
 // Copyright 2001-2018 Crytek GmbH / Crytek Group. All rights reserved.
 
-#ifndef __INCLUDE_SANDBOX_CLIPVOLUMEOBJECT_H
-#define __INCLUDE_SANDBOX_CLIPVOLUMEOBJECT_H
-
 #pragma once
 
 #include "EntityObject.h"
@@ -66,13 +63,11 @@ public:
 		static const GUID guid = { 0xc91100aa, 0x1dbf, 0x4410, { 0xb2, 0x5a, 0x3, 0x25, 0x85, 0x34, 0x80, 0xc4 } };
 		return guid;
 	}
-	ObjectType     GetObjectType()            { return OBJTYPE_SOLID; };
-	const char*    ClassName()                { return "ClipVolume"; };
-	const char*    Category()                 { return "Area"; };
-	CRuntimeClass* GetRuntimeClass()          { return RUNTIME_CLASS(CClipVolumeObject); };
-	int            GameCreationOrder()        { return 52; };
-	const char*    GetTextureIcon()           { return "Editor/ObjectIcons/bird.bmp"; };
+	ObjectType     GetObjectType()            { return OBJTYPE_SOLID; }
+	const char*    ClassName()                { return "ClipVolume"; }
+	const char*    Category()                 { return "Area"; }
+	CRuntimeClass* GetRuntimeClass()          { return RUNTIME_CLASS(CClipVolumeObject); }
+	int            GameCreationOrder()        { return 52; }
+	const char*    GetTextureIcon()           { return "Editor/ObjectIcons/bird.bmp"; }
 	virtual bool   RenderTextureOnTop() const { return true; }
 };
-
-#endif //__INCLUDE_SANDBOX_CLIPVOLUMEOBJECT_H

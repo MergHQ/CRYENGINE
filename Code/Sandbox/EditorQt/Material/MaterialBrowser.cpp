@@ -636,7 +636,6 @@ void CMaterialToolBar::OnFilter()
 		m_curFilter = eFilter_Materials;
 		break;
 	}
-	;
 }
 
 //////////////////////////////////////////////////////////////////////////

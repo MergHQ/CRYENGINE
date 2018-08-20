@@ -21,7 +21,7 @@ class QTOOLWINDOWMANAGER_EXPORT QToolWindowSingleTabAreaFrame : public QFrame
 	Q_OBJECT;
 public:
 	QToolWindowSingleTabAreaFrame(QToolWindowManager* manager, QWidget* parent);
-	virtual ~QToolWindowSingleTabAreaFrame() {};
+	virtual ~QToolWindowSingleTabAreaFrame() {}
 	QWidget*     contents() { return m_contents; }
 	virtual void setContents(QWidget* widget);
 
@@ -69,23 +69,23 @@ public:
 	QToolWindowTabBar* tabBar() const { return (QToolWindowTabBar*)QTabWidget::tabBar(); }
 
 	//QTabWidget members
-	const QPalette& palette() const Q_DECL_OVERRIDE                        { return QTabWidget::palette(); };
-	void            clear() Q_DECL_OVERRIDE                                { QTabWidget::clear(); };
-	QRect           rect() const Q_DECL_OVERRIDE                           { return QTabWidget::rect(); };
-	QSize           size() const Q_DECL_OVERRIDE                           { return QTabWidget::size(); };
-	int             count() const Q_DECL_OVERRIDE                          { return QTabWidget::count(); };
-	QWidget*        widget(int index) const Q_DECL_OVERRIDE                { return QTabWidget::widget(index); };
-	void            deleteLater() Q_DECL_OVERRIDE                          { QTabWidget::deleteLater(); };
-	int             width() const Q_DECL_OVERRIDE                          { return QTabWidget::width(); };
-	int             height() const Q_DECL_OVERRIDE                         { return QTabWidget::height(); };
-	const QRect     geometry() const Q_DECL_OVERRIDE                       { return QTabWidget::geometry(); };
-	void            hide() Q_DECL_OVERRIDE                                 { QTabWidget::hide(); };
-	QObject*        parent() const Q_DECL_OVERRIDE                         { return QTabWidget::parent(); };
-	void            setParent(QWidget* parent) Q_DECL_OVERRIDE             { QTabWidget::setParent(parent); };
+	const QPalette& palette() const Q_DECL_OVERRIDE                        { return QTabWidget::palette(); }
+	void            clear() Q_DECL_OVERRIDE                                { QTabWidget::clear(); }
+	QRect           rect() const Q_DECL_OVERRIDE                           { return QTabWidget::rect(); }
+	QSize           size() const Q_DECL_OVERRIDE                           { return QTabWidget::size(); }
+	int             count() const Q_DECL_OVERRIDE                          { return QTabWidget::count(); }
+	QWidget*        widget(int index) const Q_DECL_OVERRIDE                { return QTabWidget::widget(index); }
+	void            deleteLater() Q_DECL_OVERRIDE                          { QTabWidget::deleteLater(); }
+	int             width() const Q_DECL_OVERRIDE                          { return QTabWidget::width(); }
+	int             height() const Q_DECL_OVERRIDE                         { return QTabWidget::height(); }
+	const QRect     geometry() const Q_DECL_OVERRIDE                       { return QTabWidget::geometry(); }
+	void            hide() Q_DECL_OVERRIDE                                 { QTabWidget::hide(); }
+	QObject*        parent() const Q_DECL_OVERRIDE                         { return QTabWidget::parent(); }
+	void            setParent(QWidget* parent) Q_DECL_OVERRIDE             { QTabWidget::setParent(parent); }
 	int             indexOf(QWidget* w) const Q_DECL_OVERRIDE;
-	QWidget*        parentWidget() const Q_DECL_OVERRIDE                   { return QTabWidget::parentWidget(); };
-	QPoint          mapFromGlobal(const QPoint& pos) const Q_DECL_OVERRIDE { return QTabWidget::mapFromGlobal(pos); };
-	QPoint          mapToGlobal(const QPoint& pos) const Q_DECL_OVERRIDE   { return QTabWidget::mapToGlobal(pos); };
+	QWidget*        parentWidget() const Q_DECL_OVERRIDE                   { return QTabWidget::parentWidget(); }
+	QPoint          mapFromGlobal(const QPoint& pos) const Q_DECL_OVERRIDE { return QTabWidget::mapFromGlobal(pos); }
+	QPoint          mapToGlobal(const QPoint& pos) const Q_DECL_OVERRIDE   { return QTabWidget::mapToGlobal(pos); }
 	void            setCurrentWidget(QWidget* w) Q_DECL_OVERRIDE;
 
 	//QTabBar wrappers
@@ -93,7 +93,7 @@ public:
 	QRect                       combineAreaRect() const Q_DECL_OVERRIDE;
 	QRect                       combineSubWidgetRect(int index) const Q_DECL_OVERRIDE                 { return tabBar()->tabRect(index); }
 	int                         subWidgetAt(const QPoint& pos) const Q_DECL_OVERRIDE                  { return tabBar()->tabAt(pos); }
-	virtual QTWMWrapperAreaType areaType() const Q_DECL_OVERRIDE                                      { return QTWMWrapperAreaType::watTabs; };
+	virtual QTWMWrapperAreaType areaType() const Q_DECL_OVERRIDE                                      { return QTWMWrapperAreaType::watTabs; }
 protected:
 	virtual bool                eventFilter(QObject* o, QEvent* ev) Q_DECL_OVERRIDE;
 	virtual bool                shouldShowSingleTabFrame();

@@ -59,7 +59,7 @@ public:
 	virtual CComponentItem*            CreateComponent(CryGUID typeId, const char* szName) override;
 	virtual bool                       RemoveComponent(CComponentItem& component) override;
 
-	virtual CAbstractDictionary*       GetAvailableComponentsDictionary() { return static_cast<CAbstractDictionary*>(&m_componentsDictionary); };
+	virtual CAbstractDictionary*       GetAvailableComponentsDictionary() { return static_cast<CAbstractDictionary*>(&m_componentsDictionary); }
 
 	virtual Schematyc::IScriptElement* GetScriptElement() const override  { return &m_scriptElement; }
 	// ~CAbstractComponentsModel

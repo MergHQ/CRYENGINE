@@ -67,7 +67,7 @@ public:
 
 	//////////////////////////////////////////////////////////
 	// CDockableWindow implementation
-	virtual const char*                       GetPaneTitle() const override        { return "Dynamic Response System"; };
+	virtual const char*                       GetPaneTitle() const override        { return "Dynamic Response System"; }
 	virtual IViewPaneClass::EDockingDirection GetDockingDirection() const override { return IViewPaneClass::DOCK_FLOAT; }
 	//////////////////////////////////////////////////////////
 

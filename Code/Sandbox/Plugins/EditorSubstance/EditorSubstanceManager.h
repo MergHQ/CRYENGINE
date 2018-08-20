@@ -105,8 +105,8 @@ public:
 	std::set<string>                      GetTexturePresetsForFile(const string& mask);
 	STexturePreset                        GetConfigurationForPreset(const string& presetName);
 	const SubstanceAir::InputImage::SPtr& GetInputImage(const ISubstancePreset* preset, const string& path);
-	Renderers::CInstanceRenderer*         GetCompressedRenderer() { return m_pCompressedRenderer; };
-	Renderers::CInstanceRenderer*         GetPreviewRenderer()    { return m_pPreviewRenderer; };
+	Renderers::CInstanceRenderer*         GetCompressedRenderer() { return m_pCompressedRenderer; }
+	Renderers::CInstanceRenderer*         GetPreviewRenderer()    { return m_pPreviewRenderer; }
 
 	ISubstancePreset*                     GetSubstancePreset(CAsset* asset);
 	ISubstancePreset*                     GetPreviewPreset(const string& archiveName, const string& graphName);

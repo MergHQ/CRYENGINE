@@ -24,7 +24,7 @@ public:
 	virtual void startDrag() Q_DECL_OVERRIDE;
 	virtual void hide() Q_DECL_OVERRIDE { QWidget::hide(); }
 	virtual void deferDeletion() Q_DECL_OVERRIDE;
-	void setParent(QWidget* parent) Q_DECL_OVERRIDE { QWidget::setParent(parent); };
+	void setParent(QWidget* parent) Q_DECL_OVERRIDE { QWidget::setParent(parent); }
 
 protected:	
 	virtual void closeEvent(QCloseEvent *) Q_DECL_OVERRIDE;
