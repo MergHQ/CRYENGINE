@@ -1096,9 +1096,9 @@ private:
 		std::sort(events.begin(), events.end());
 		archive(events, szKey, szLabel);
 
-		for (T::const_iterator it = events.begin(), end = events.end(); it != end; ++it)
+		for (auto it = events.cbegin(); it != events.cend(); ++it)
 		{
-			const T::const_iterator itNext = std::next(it, 1);
+			auto itNext = std::next(it, 1);
 			if (itNext != events.end() && it->name == itNext->name)
 			{
 				archive.error(itNext->name, SerializationUtils::Messages::ErrorDuplicatedValue("Event name", itNext->name));
