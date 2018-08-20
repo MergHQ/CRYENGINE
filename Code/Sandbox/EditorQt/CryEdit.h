@@ -1,16 +1,11 @@
 // Copyright 2001-2018 Crytek GmbH / Crytek Group. All rights reserved.
 
 #pragma once
-#include "MaterialSender.h"
 
-class CMatEditMainDlg;
 class CCryEditDoc;
 class CEditCommandLineInfo;
-class SplashScreen;
-struct mg_connection;
-struct mg_request_info;
-struct mg_context;
-struct SGameExporterSettings;
+class CEditorImpl;
+class CMannequinChangeMonitor;
 
 class SANDBOX_API CCryEditApp
 {
@@ -63,8 +58,6 @@ public:
 	bool PostInit();
 	int  ExitInstance();
 
-	// Implementation
-	void OnScriptCompileScript();
 	void OnScriptEditScript();
 	void OnUndo();
 	void OnEditDuplicate();
@@ -75,7 +68,7 @@ public:
 private:
 	void CreateSampleMissionObjectives();
 
-	class CEditorImpl* m_pEditor { nullptr };
+	CEditorImpl* m_pEditor { nullptr };
 	//! True if editor is in test mode.
 	//! Test mode is a special mode enabled when Editor ran with /test command line.
 	//! In this mode editor starts up, but exit immediately after all initialization.
@@ -111,12 +104,12 @@ private:
 	bool m_bPrevActive { false };
 	// If this flag is set, the next OnIdle() will update, even if the app is in the background, and then
 	// this flag will be reset.
-	bool                           m_bForceProcessIdle { false };
+	bool                     m_bForceProcessIdle { false };
 	// Keep the editor alive, even if no focus is set
-	bool                           m_bKeepEditorActive { false };
-	bool                           m_suspendUpdate { false };
+	bool                     m_bKeepEditorActive { false };
+	bool                     m_suspendUpdate { false };
 
-	class CMannequinChangeMonitor* m_pChangeMonitor { nullptr };
+	CMannequinChangeMonitor* m_pChangeMonitor { nullptr };
 
 public:
 	void OnExportIndoors();

@@ -1,16 +1,7 @@
 // Copyright 2001-2018 Crytek GmbH / Crytek Group. All rights reserved.
 
 #pragma once
-////////////////////////////////////////////////////////////////////////////
-//
-//  Crytek Engine Source File.
-//  Copyright (C), Crytek Studios, 2011
-// -------------------------------------------------------------------------
-//  File name:   AreaSolid.h
-//  Created:     13/9/2011 by Jaesik
-//  Description: AreaSolid object definition
-//
-////////////////////////////////////////////////////////////////////////////
+
 #include "EntityObject.h"
 #include "AreaBox.h"
 #include "Brush/BrushUtil.h"
@@ -55,7 +46,7 @@ public:
 	int              GetAreaId() const { return m_areaId; }
 
 	void             UpdateGameArea() override;
-	void             UpdateGameResource() override { UpdateGameArea(); };
+	void             UpdateGameResource() override { UpdateGameArea(); }
 
 	CString          GenerateGameFilename() const;
 
@@ -71,7 +62,7 @@ protected:
 	CAreaSolid();
 
 	static void AddConvexhullToEngineArea(IEntityAreaProxy* pArea, const BUtil::VertexList& vertexList, const BUtil::FaceList& faceList, bool bObstructrion);
-	void        DeleteThis() { delete this; };
+	void        DeleteThis() { delete this; }
 
 	void        OnAreaChange(IVariable* pVar) override;
 	void        OnSizeChange(IVariable* pVar);
@@ -105,9 +96,9 @@ public:
 		static const GUID guid = { 0x672811ea, 0xda24, 0x4586, { 0xbe, 0xfb, 0x74, 0x2a, 0x4e, 0xd9, 0x6d, 0x0c } };
 		return guid;
 	}
-	ObjectType     GetObjectType()     { return OBJTYPE_SOLID; };
-	const char*    ClassName()         { return "AreaSolid"; };
-	const char*    Category()          { return "Area"; };
-	CRuntimeClass* GetRuntimeClass()   { return RUNTIME_CLASS(CAreaSolid); };
-	int            GameCreationOrder() { return 51; };
+	ObjectType     GetObjectType()     { return OBJTYPE_SOLID; }
+	const char*    ClassName()         { return "AreaSolid"; }
+	const char*    Category()          { return "Area"; }
+	CRuntimeClass* GetRuntimeClass()   { return RUNTIME_CLASS(CAreaSolid); }
+	int            GameCreationOrder() { return 51; }
 };

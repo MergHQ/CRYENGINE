@@ -207,7 +207,7 @@ private:
 
 	// IAnimNodeOwner
 	virtual void OnNodeVisibilityChanged(IAnimNode* pNode, const bool bHidden) override {}
-	virtual void OnNodeReset(IAnimNode* pNode) override                                 {};
+	virtual void OnNodeReset(IAnimNode* pNode) override                                 {}
 	// ~IAnimNodeOwner
 
 	IAnimSequence*                     m_pAnimSequence;

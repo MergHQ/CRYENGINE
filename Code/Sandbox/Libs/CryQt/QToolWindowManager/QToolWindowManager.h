@@ -73,9 +73,9 @@ struct QTOOLWINDOWMANAGER_EXPORT QToolWindowAreaTarget
 	int index;
 	QRect geometry;
 
-	QToolWindowAreaTarget() : area(nullptr), reference(QToolWindowAreaReference::Combine), index(-1), geometry() {};
-	QToolWindowAreaTarget(QToolWindowAreaReference::eType reference, int index = -1, QRect geometry = QRect()) : area(nullptr), reference(reference), index(index), geometry(geometry) {};
-	QToolWindowAreaTarget(IToolWindowArea* area, QToolWindowAreaReference::eType reference, int index = -1, QRect geometry = QRect()) : area(area), reference(reference), index(index), geometry(geometry) {};
+	QToolWindowAreaTarget() : area(nullptr), reference(QToolWindowAreaReference::Combine), index(-1), geometry() {}
+	QToolWindowAreaTarget(QToolWindowAreaReference::eType reference, int index = -1, QRect geometry = QRect()) : area(nullptr), reference(reference), index(index), geometry(geometry) {}
+	QToolWindowAreaTarget(IToolWindowArea* area, QToolWindowAreaReference::eType reference, int index = -1, QRect geometry = QRect()) : area(area), reference(reference), index(index), geometry(geometry) {}
 };
 
 class QTOOLWINDOWMANAGER_EXPORT QToolWindowManagerClassFactory : public QObject
@@ -95,7 +95,7 @@ public:
 	
 	QToolWindowManager(QWidget *parent = 0, QVariant config = QVariant(), QToolWindowManagerClassFactory* factory = nullptr);
 	virtual ~QToolWindowManager();
-	bool empty() { return m_areas.empty(); };
+	bool empty() { return m_areas.empty(); }
 
 	void removeArea(IToolWindowArea* area);
 	void removeWrapper(IToolWindowWrapper* wrapper);

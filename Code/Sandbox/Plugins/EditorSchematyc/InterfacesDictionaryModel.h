@@ -63,7 +63,7 @@ public:
 	virtual int32                           GetNumEntries() const override { return m_interfaces.size(); }
 	virtual const CAbstractDictionaryEntry* GetEntry(int32 index) const override;
 
-	virtual int32                           GetNumColumns() const override { return Column_COUNT; };
+	virtual int32                           GetNumColumns() const override { return Column_COUNT; }
 	virtual QString                         GetColumnName(int32 index) const override;
 
 	virtual int32                           GetDefaultFilterColumn() const override { return Column_Name; }

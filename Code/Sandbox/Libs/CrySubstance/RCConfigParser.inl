@@ -120,7 +120,7 @@ namespace RCConfigParser
 			}
 			return m_sections[sectionName];
 		}
-		const ConfigSections& GetSections() const { return m_sections; };
+		const ConfigSections& GetSections() const { return m_sections; }
 	private:
 		ConfigSections m_sections;
 	};

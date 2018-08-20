@@ -10,5 +10,5 @@ public:
 
 	int32       GetPluginVersion();
 	const char* GetPluginName();
-	const char* GetPluginDescription() { return "Perforce source control integration"; };
+	const char* GetPluginDescription() { return "Perforce source control integration"; }
 };

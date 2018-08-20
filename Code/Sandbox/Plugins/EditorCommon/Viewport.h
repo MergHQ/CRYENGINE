@@ -22,7 +22,6 @@ class CryInputEvent;
 class CViewManager;
 class QWidget;
 
-struct DisplayContext;
 struct HitContext;
 struct IRenderListener;
 struct SDisplayContext;

@@ -75,7 +75,7 @@ public:
 	virtual int32                           GetNumEntries() const override       { return m_names.size(); }
 	virtual const CAbstractDictionaryEntry* GetEntry(int32 index) const override { return (m_names.size() > index) ? &m_names[index] : nullptr; }
 
-	virtual int32                           GetNumColumns() const override       { return Column_COUNT; };
+	virtual int32                           GetNumColumns() const override       { return Column_COUNT; }
 	virtual QString                         GetColumnName(int32 index) const override
 	{
 		if (index == Column_Name)

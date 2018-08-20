@@ -42,7 +42,7 @@ public:
 	virtual string GetCompileMessage()                                          { return m_compileMessage; }
 
 	// Returns the path to the C# solution file.
-	const char* GetCSharpSolutionPath() const { return m_csharpSolutionPath; };
+	const char* GetCSharpSolutionPath() const { return m_csharpSolutionPath; }
 
 	// Opens the specified file in the editor that's set in the preferences.
 	bool OpenCSharpFile(const string& filePath);

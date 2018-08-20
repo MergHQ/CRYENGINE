@@ -47,7 +47,7 @@ public:
 	virtual bool                                HasId(QVariant id) const override;
 	virtual QVariant                            GetTypeId() const override;
 
-	virtual const CryGraphEditor::PinItemArray& GetPinItems() const override { return m_pins; };
+	virtual const CryGraphEditor::PinItemArray& GetPinItems() const override { return m_pins; }
 	virtual QString                             GetName() const;
 	virtual void                                SetName(const QString& name);
 
@@ -125,7 +125,7 @@ public:
 	virtual EPinType GetPinType() const { return EPinType::Unset; }
 
 	// CryGraphEditor::CAbstractPinItem
-	virtual CryGraphEditor::CAbstractNodeItem& GetNodeItem() const override { return static_cast<CryGraphEditor::CAbstractNodeItem&>(m_nodeItem); };
+	virtual CryGraphEditor::CAbstractNodeItem& GetNodeItem() const override { return static_cast<CryGraphEditor::CAbstractNodeItem&>(m_nodeItem); }
 	// ~CryGraphEditor::CAbstractPinItem
 
 protected:

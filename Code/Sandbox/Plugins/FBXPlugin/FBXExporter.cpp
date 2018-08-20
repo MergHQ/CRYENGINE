@@ -618,7 +618,7 @@ void CFBXExporter::Release()
 	delete this;
 }
 
-inline f32 Maya2SandboxFOVDeg(const f32 fov, const f32 ratio) { return RAD2DEG(2.0f * atanf(tan(DEG2RAD(fov) / 2.0f) / ratio)); };
+inline f32 Maya2SandboxFOVDeg(const f32 fov, const f32 ratio) { return RAD2DEG(2.0f * atanf(tan(DEG2RAD(fov) / 2.0f) / ratio)); }
 
 void       CFBXExporter::FillAnimationData(SExportObject* pObject, FbxAnimLayer* pAnimLayer, FbxAnimCurve* pCurve, EAnimParamType paramType)
 {

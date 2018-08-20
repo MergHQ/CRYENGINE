@@ -29,7 +29,7 @@ public:
 	virtual void           Convert(const QMimeData& data, const SAssetConverterConversionInfo& info) = 0;
 	//! Returns a readable string representing the result of the conversion operation
 	virtual string         ConversionInfo(const QMimeData& data) = 0;
-	virtual ~CAssetConverter() {};
+	virtual ~CAssetConverter() {}
 };
 
 #define DECLARE_ASSET_CONVERTER_DESC(type)                    \

@@ -90,7 +90,7 @@ protected:
 
 // Description:
 //		Implement the observable methods when the user class is inheriting from a virtual interface using the observable methods
-#define IMPLEMENT_OBSERVABLE_METHODS(observerClassName)                                                                                     \
-  virtual bool RegisterObserver(observerClassName * pObserver) { return CObservable<observerClassName>::RegisterObserver(pObserver); };     \
-  virtual bool UnregisterObserver(observerClassName * pObserver) { return CObservable<observerClassName>::UnregisterObserver(pObserver); }; \
-  virtual void UnregisterAllObservers() { CObservable<observerClassName>::UnregisterAllObservers(); };
+#define IMPLEMENT_OBSERVABLE_METHODS(observerClassName)                                                                                    \
+  virtual bool RegisterObserver(observerClassName * pObserver) { return CObservable<observerClassName>::RegisterObserver(pObserver); }     \
+  virtual bool UnregisterObserver(observerClassName * pObserver) { return CObservable<observerClassName>::UnregisterObserver(pObserver); } \
+  virtual void UnregisterAllObservers() { CObservable<observerClassName>::UnregisterAllObservers(); }

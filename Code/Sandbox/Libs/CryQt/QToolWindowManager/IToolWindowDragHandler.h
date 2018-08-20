@@ -15,7 +15,7 @@ class QTOOLWINDOWMANAGER_EXPORT IToolWindowDragHandler
 			int oldSize;
 			int newSize;
 		};
-		virtual ~IToolWindowDragHandler() {};
+		virtual ~IToolWindowDragHandler() {}
 		virtual void startDrag() = 0;
 		virtual QRect getRectFromCursorPos(QWidget* previewArea, IToolWindowArea* area) const
 		{
