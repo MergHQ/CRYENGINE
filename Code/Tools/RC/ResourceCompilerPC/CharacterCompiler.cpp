@@ -574,15 +574,15 @@ bool CharacterCompiler::ProcessInternal(CLoaderCGF* cgfLoader, CContentCGF* pCGF
 
 	if (pCContentCGF)
 	{
-		pCContentCGF->GetExportInfo()->rc_version[0] = fv.v[0];
-		pCContentCGF->GetExportInfo()->rc_version[1] = fv.v[1];
-		pCContentCGF->GetExportInfo()->rc_version[2] = fv.v[2];
-		pCContentCGF->GetExportInfo()->rc_version[3] = fv.v[3];
+		pCContentCGF->GetExportInfo()->rc_version[0] = fv[0];
+		pCContentCGF->GetExportInfo()->rc_version[1] = fv[1];
+		pCContentCGF->GetExportInfo()->rc_version[2] = fv[2];
+		pCContentCGF->GetExportInfo()->rc_version[3] = fv[3];
 
 		StringHelpers::SafeCopyPadZeros(
 			pCContentCGF->GetExportInfo()->rc_version_string,
 			sizeof(pCContentCGF->GetExportInfo()->rc_version_string),
-			StringHelpers::Format(" RCVer:%d.%d ", fv.v[2], fv.v[1]).c_str());
+			StringHelpers::Format(" RCVer:%d.%d ", fv[2], fv[1]).c_str());
 
 		cgfSaver.SetContent(pCContentCGF);
 	}

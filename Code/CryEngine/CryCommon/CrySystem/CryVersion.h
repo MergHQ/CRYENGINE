@@ -4,88 +4,97 @@
 
 #pragma once
 
+#include <array>
+#include <algorithm>
+
 #include <CryString/CryFixedString.h>
+#include <CrySystem/CryUtils.h>
 
 //////////////////////////////////////////////////////////////////////////
 /** This class keeps file version information.
  */
 struct SFileVersion
 {
-	int v[4];
-
-	SFileVersion()
+	constexpr SFileVersion()
+		: v({ { 0, 0, 0, 0 } })
 	{
-		v[0] = v[1] = v[2] = v[3] = 0;
-	}
-	SFileVersion(const int vers[])
-	{
-		v[0] = vers[0];
-		v[1] = vers[1];
-		v[2] = vers[2];
-		v[3] = 1;
 	}
 
-	void Set(const char* s)
+	constexpr SFileVersion(int a, int b, int c, int d)
+		: v({ { d, c, b, a } })
 	{
-		v[0] = v[1] = v[2] = v[3] = 0;
-
-		char t[50];
-		const size_t len = (std::min)(strlen(s), sizeof(t) - 1);
-		memcpy(t, s, len);
-		t[len] = 0;
-
-		char* p;
-		if (!(p = strtok(t, "."))) return;
-		v[3] = atoi(p);
-		if (!(p = strtok(NULL, "."))) return;
-		v[2] = atoi(p);
-		if (!(p = strtok(NULL, "."))) return;
-		v[1] = atoi(p);
-		if (!(p = strtok(NULL, "."))) return;
-		v[0] = atoi(p);
 	}
 
-	explicit SFileVersion(const char* s)
+	explicit SFileVersion(const char* szVersion)
 	{
-		Set(s);
+		Set(szVersion);
 	}
 
-	bool operator<(const SFileVersion& v2) const
+	void Set(const char* szVersion)
 	{
-		if (v[3] < v2.v[3]) return true;
-		if (v[3] > v2.v[3]) return false;
+		CRY_ASSERT_MESSAGE(szVersion != nullptr, "No version string passed");
+		if (szVersion != nullptr)
+		{
+			v.fill(0);
 
-		if (v[2] < v2.v[2]) return true;
-		if (v[2] > v2.v[2]) return false;
-
-		if (v[1] < v2.v[1]) return true;
-		if (v[1] > v2.v[1]) return false;
-
-		if (v[0] < v2.v[0]) return true;
-		if (v[0] > v2.v[0]) return false;
-		return false;
-	}
-	bool operator==(const SFileVersion& v1) const
-	{
-		if (v[0] == v1.v[0] && v[1] == v1.v[1] &&
-		    v[2] == v1.v[2] && v[3] == v1.v[3]) return true;
-		return false;
-	}
-	bool operator>(const SFileVersion& v1) const
-	{
-		return !(*this < v1);
-	}
-	bool operator>=(const SFileVersion& v1) const
-	{
-		return (*this == v1) || (*this > v1);
-	}
-	bool operator<=(const SFileVersion& v1) const
-	{
-		return (*this == v1) || (*this < v1);
+			const char* it = szVersion;
+			for (int i = v.size() - 1; i >= 0; --i)
+			{
+				v[i] = atoi(it);
+				it = strchr(it + 1, '.');
+				if (it == nullptr)
+					break;
+				++it; // Skip the '.'
+			}
+		}
 	}
 
-	int& operator[](int i)       { return v[i]; }
-	int  operator[](int i) const { return v[i]; }
+	constexpr bool operator<(const SFileVersion& rhs) const
+	{
+		return v[3] < rhs.v[3]
+			|| (v[3] == rhs.v[3] && v[2] < rhs.v[2])
+			|| (v[3] == rhs.v[3] && v[2] == rhs.v[2] && v[1] < rhs.v[1])
+			|| (v[3] == rhs.v[3] && v[2] == rhs.v[2] && v[1] == rhs.v[1] && v[0] < rhs.v[0]);
+	}
+
+	constexpr bool operator>(const SFileVersion& rhs) const
+	{
+		return rhs < *this;
+	}
+
+	constexpr bool operator<=(const SFileVersion& rhs) const
+	{
+		return !(rhs < *this);
+	}
+
+	constexpr bool operator>=(const SFileVersion& rhs) const
+	{
+		return !(*this < rhs);
+	}
+
+	constexpr bool operator==(const SFileVersion& rhs) const
+	{
+		return v[0] == rhs.v[0]
+			&& v[1] == rhs.v[1]
+			&& v[2] == rhs.v[2]
+			&& v[3] == rhs.v[3];
+	}
+
+	constexpr bool operator!=(const SFileVersion& rhs) const
+	{
+		return !(*this == rhs);
+	}
+
+	int& operator[](size_t i)
+	{
+		CRY_ASSERT_MESSAGE(i < v.size(), "Invalid index");
+		return v[i];
+	}
+
+	constexpr int operator[](size_t i) const
+	{
+		return v[i];
+	}
 
 	void ToShortString(char* s) const
 	{
@@ -101,9 +110,11 @@ struct SFileVersion
 	{
 		CryFixedStringT<32> str;
 		str.Format("%d.%d.%d.%d", v[3], v[2], v[1], v[0]);
-
 		return str;
 	}
+
+protected:
+	std::array<int, 4> v;
 };
 
 //! \endcond

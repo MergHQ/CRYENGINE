@@ -81,15 +81,15 @@ void ColladaCompiler::SetExportInfo(CContentCGF* const pCompiledCGF, ExportFile 
 	// Set export data.
 	{
 		const SFileVersion &version = m_CC.pRC->GetFileVersion();
-		info->rc_version[0] = version.v[0];
-		info->rc_version[1] = version.v[1];
-		info->rc_version[2] = version.v[2];
-		info->rc_version[3] = version.v[3];
+		info->rc_version[0] = version[0];
+		info->rc_version[1] = version[1];
+		info->rc_version[2] = version[2];
+		info->rc_version[3] = version[3];
 
 		StringHelpers::SafeCopyPadZeros(
 			info->rc_version_string,
 			sizeof(info->rc_version_string),
-			StringHelpers::Format(" RCVer:%d.%d ", version.v[2], version.v[1]).c_str());
+			StringHelpers::Format(" RCVer:%d.%d ", version[2], version[1]).c_str());
 	}
 
 	info->bFromColladaXSI = info->bFromColladaMAX = info->bFromColladaMAYA = false;

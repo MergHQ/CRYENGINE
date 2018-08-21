@@ -956,7 +956,7 @@ bool CGame::Init(/*IGameFramework* pFramework*/)
 			//Set the matchmaking version based on the build version if g_matchmakingversion is a default value
 			if (!gEnv->IsEditor() && g_pGameCVars->g_MatchmakingVersion <= 1)
 			{
-				const int internalBuildVersion = gEnv->pSystem->GetBuildVersion().v[0];
+				const int internalBuildVersion = gEnv->pSystem->GetBuildVersion()[0];
 				CryLog("BuildVersion %d", internalBuildVersion);
 				if (internalBuildVersion != 1)
 				{

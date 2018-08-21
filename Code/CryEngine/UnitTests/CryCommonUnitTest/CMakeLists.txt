@@ -19,6 +19,7 @@ add_sources("NoUberFile"
 		"PathTests.cpp"
 		"GUIDTests.cpp"
 		"CryTestTests.cpp"
+		"FileVersionTests.cpp"
 )
 end_sources()
 

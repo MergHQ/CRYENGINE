@@ -398,12 +398,10 @@ SFileVersion CCrashRpt::GetSystemVersionInfo()
 		UINT len(0);
 		VerQueryValue(ver, "\\", (void**)&vinfo, &len);
 
-		const uint32 verIndices[4] = { 0, 1, 2, 3 };
-
-		productVersion.v[verIndices[0]] = vinfo->dwFileVersionLS & 0xFFFF;
-		productVersion.v[verIndices[1]] = vinfo->dwFileVersionLS >> 16;
-		productVersion.v[verIndices[2]] = vinfo->dwFileVersionMS & 0xFFFF;
-		productVersion.v[verIndices[3]] = vinfo->dwFileVersionMS >> 16;
+		productVersion[0] = vinfo->dwFileVersionLS & 0xFFFF;
+		productVersion[1] = vinfo->dwFileVersionLS >> 16;
+		productVersion[2] = vinfo->dwFileVersionMS & 0xFFFF;
+		productVersion[3] = vinfo->dwFileVersionMS >> 16;
 	}
 #endif //CRY_PLATFORM_WINDOWS
 	return productVersion;

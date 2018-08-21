@@ -504,7 +504,7 @@ void CStatsRecordingMgr::StateEndOfSessionStats()
 		}
 
 		SFileVersion ver = gEnv->pSystem->GetFileVersion();
-		m_sessionTracker->StateValue(eGSS_BuildNumber,ver.v[0]);
+		m_sessionTracker->StateValue(eGSS_BuildNumber,ver[0]);
 
 		m_sessionTracker->StateValue(eGSS_StatsFileFormatVersion,1);
 
