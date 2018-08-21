@@ -153,6 +153,8 @@ void CCompiledRenderObject::CompilePerDrawCB(CRenderObject* pRenderObject)
 	const CCompiledRenderObject* pRootCompiled = pRenderObject->m_pCompiledObject;
 	if (pRootCompiled && pRootCompiled != this && pRootCompiled->m_perDrawCB)
 	{
+		CRY_ASSERT(pRenderObject->m_bPermanent);
+
 		// If root object have per instance constant buffer, share ours with root compiled object.
 		m_bOwnPerInstanceCB = false;
 		m_perDrawCB = pRootCompiled->m_perDrawCB;
