@@ -179,7 +179,7 @@ static std::unique_ptr<CSimpleOutputStream> CreateOutput(const char* filename)
 
 	char buf[128];
 	const SFileVersion& ver = gEnv->pSystem->GetFileVersion();
-	cry_sprintf(buf, "_Build%04d_", ver.v[0]);
+	cry_sprintf(buf, "_Build%04d_", ver[0]);
 	path += buf;
 
 	time_t ltime;

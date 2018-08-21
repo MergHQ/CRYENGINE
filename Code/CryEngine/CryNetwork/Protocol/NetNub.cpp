@@ -704,7 +704,7 @@ bool CNetNub::SendPendingConnect(SPendingConnection& pc)
 		SFileVersion ver = gEnv->pSystem->GetProductVersion();
 		uint32 v[VERSION_SIZE];
 		for (int i = 0; i < 4; i++)
-			v[i] = htonl(ver.v[i]);
+			v[i] = htonl(ver[i]);
 		v[4] = htonl(PROTOCOL_VERSION);
 		v[5] = htonl(CNetwork::Get()->GetExternalSocketIOManager().caps);
 
@@ -1629,7 +1629,7 @@ void CNetNub::ProcessSetup(const TNetAddress& from, const uint8* pData, uint32 n
 
 	for (int i = 0; i < 4; i++)
 	{
-		if (v[i] != ntohl(ver.v[i]))
+		if (v[i] != ntohl(ver[i]))
 		{
 			AddDisconnectEntry(from, session, eDC_VersionMismatch, "Build version mismatch");
 			m_connectingMap.erase(from);

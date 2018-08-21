@@ -1548,7 +1548,7 @@ static string GetResourceCompilerGenericInfo(const ResourceCompiler& rc, const s
 #endif
 	s += newline;
 
-	s += StringHelpers::Format("Version %d.%d.%d.%d  %s %s", v.v[3], v.v[2], v.v[1], v.v[0], __DATE__, __TIME__);
+	s += StringHelpers::Format("Version %d.%d.%d.%d  %s %s", v[3], v[2], v[1], v[0], __DATE__, __TIME__);
 	s += newline;
 
 	s += newline;
@@ -2372,10 +2372,10 @@ void ResourceCompiler::QueryVersionInfo()
 		UINT len;
 		VerQueryValue(ver, "\\", (void**)&vinfo, &len);
 
-		m_fileVersion.v[0] = vinfo->dwFileVersionLS & 0xFFFF;
-		m_fileVersion.v[1] = vinfo->dwFileVersionLS >> 16;
-		m_fileVersion.v[2] = vinfo->dwFileVersionMS & 0xFFFF;
-		m_fileVersion.v[3] = vinfo->dwFileVersionMS >> 16;
+		m_fileVersion[0] = vinfo->dwFileVersionLS & 0xFFFF;
+		m_fileVersion[1] = vinfo->dwFileVersionLS >> 16;
+		m_fileVersion[2] = vinfo->dwFileVersionMS & 0xFFFF;
+		m_fileVersion[3] = vinfo->dwFileVersionMS >> 16;
 	}
 }
 

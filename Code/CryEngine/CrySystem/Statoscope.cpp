@@ -2391,7 +2391,7 @@ void CStatoscope::SetLogFilename()
 
 		const SFileVersion& ver = gEnv->pSystem->GetFileVersion();
 		char versionString[64];
-		cry_sprintf(versionString, "_%d_%d_%d_%d", ver.v[3], ver.v[2], ver.v[1], ver.v[0]);
+		cry_sprintf(versionString, "_%d_%d_%d_%d", ver[3], ver[2], ver[1], ver[0]);
 
 		m_logFilename += versionString;
 	}

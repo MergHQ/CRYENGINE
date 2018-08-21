@@ -2423,7 +2423,7 @@ void C3DEngine::DisplayInfo(float& fTextPosX, float& fTextPosY, float& fTextStep
 	#endif
 
 	DrawTextRightAligned(fTextPosX, fTextPosY += fTextStepY, "%s %s %dbit %s %s [%d.%d]",
-	                     pRenderType, mode, (int)sizeof(char*) * 8, szFlags, szLevelName, ver.v[1], ver.v[0]);
+	                     pRenderType, mode, (int)sizeof(char*) * 8, szFlags, szLevelName, ver[1], ver[0]);
 
 	// Polys in scene
 	int nPolygons, nShadowPolygons;

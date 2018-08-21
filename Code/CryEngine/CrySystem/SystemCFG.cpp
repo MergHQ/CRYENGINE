@@ -80,9 +80,9 @@ void CSystem::SetVersionInfo(const char* const szVersion)
 	m_productVersion.Set(szVersion);
 	m_buildVersion.Set(szVersion);
 	CryLog("SetVersionInfo '%s'", szVersion);
-	CryLog("FileVersion: %d.%d.%d.%d", m_fileVersion.v[3], m_fileVersion.v[2], m_fileVersion.v[1], m_fileVersion.v[0]);
-	CryLog("ProductVersion: %d.%d.%d.%d", m_productVersion.v[3], m_productVersion.v[2], m_productVersion.v[1], m_productVersion.v[0]);
-	CryLog("BuildVersion: %d.%d.%d.%d", m_buildVersion.v[3], m_buildVersion.v[2], m_buildVersion.v[1], m_buildVersion.v[0]);
+	CryLog("FileVersion: %s", m_fileVersion.ToString().c_str());
+	CryLog("ProductVersion: %s", m_productVersion.ToString().c_str());
+	CryLog("BuildVersion: %s", m_buildVersion.ToString().c_str());
 #endif
 }
 
@@ -91,10 +91,10 @@ void CSystem::QueryVersionInfo()
 {
 #if !CRY_PLATFORM_WINDOWS
 	//do we need some other values here?
-	m_fileVersion.v[0] = m_productVersion.v[0] = EXE_VERSION_INFO_3;
-	m_fileVersion.v[1] = m_productVersion.v[1] = EXE_VERSION_INFO_2;
-	m_fileVersion.v[2] = m_productVersion.v[2] = EXE_VERSION_INFO_1;
-	m_fileVersion.v[3] = m_productVersion.v[3] = EXE_VERSION_INFO_0;
+	m_fileVersion[0] = m_productVersion[0] = EXE_VERSION_INFO_3;
+	m_fileVersion[1] = m_productVersion[1] = EXE_VERSION_INFO_2;
+	m_fileVersion[2] = m_productVersion[2] = EXE_VERSION_INFO_1;
+	m_fileVersion[3] = m_productVersion[3] = EXE_VERSION_INFO_0;
 	m_buildVersion = m_fileVersion;
 #else
 	char moduleName[_MAX_PATH];
@@ -107,9 +107,9 @@ void CSystem::QueryVersionInfo()
 
 	#ifdef _LIB
 	GetModuleFileName(NULL, moduleName, _MAX_PATH);  //retrieves the PATH for the current module
-	#else                                    //_LIB
+	#else //_LIB
 	cry_strcpy(moduleName, "CrySystem.dll"); // we want to version from the system dll
-	#endif                                   //_LIB
+	#endif //_LIB
 
 	int verSize = GetFileVersionInfoSize(moduleName, &dwHandle);
 	if (verSize > 0)
@@ -118,11 +118,10 @@ void CSystem::QueryVersionInfo()
 		VS_FIXEDFILEINFO* vinfo;
 		VerQueryValue(ver, "\\", (void**)&vinfo, &len);
 
-		const uint32 verIndices[4] = { 0, 1, 2, 3 };
-		m_fileVersion.v[verIndices[0]] = m_productVersion.v[verIndices[0]] = vinfo->dwFileVersionLS & 0xFFFF;
-		m_fileVersion.v[verIndices[1]] = m_productVersion.v[verIndices[1]] = vinfo->dwFileVersionLS >> 16;
-		m_fileVersion.v[verIndices[2]] = m_productVersion.v[verIndices[2]] = vinfo->dwFileVersionMS & 0xFFFF;
-		m_fileVersion.v[verIndices[3]] = m_productVersion.v[verIndices[3]] = vinfo->dwFileVersionMS >> 16;
+		m_fileVersion[0] = m_productVersion[0] = vinfo->dwFileVersionLS & 0xFFFF;
+		m_fileVersion[1] = m_productVersion[1] = vinfo->dwFileVersionLS >> 16;
+		m_fileVersion[2] = m_productVersion[2] = vinfo->dwFileVersionMS & 0xFFFF;
+		m_fileVersion[3] = m_productVersion[3] = vinfo->dwFileVersionMS >> 16;
 		m_buildVersion = m_fileVersion;
 
 		struct LANGANDCODEPAGE
@@ -163,7 +162,7 @@ void CSystem::LogVersion()
 
 	const SFileVersion& ver = GetFileVersion();
 
-	CryLogAlways("BackupNameAttachment=\" Build(%d) %s\"  -- used by backup system\n", ver.v[0], s);      // read by CreateBackupFile()
+	CryLogAlways("BackupNameAttachment=\" Build(%d) %s\"  -- used by backup system\n", ver[0], s);      // read by CreateBackupFile()
 
 	// Use strftime to build a customized time string.
 	strftime(s, 128, "Log Started at %c", today);
@@ -196,8 +195,8 @@ void CSystem::LogVersion()
 	CryLogAlways("Executable: %s", s);
 #endif
 
-	CryLogAlways("FileVersion: %d.%d.%d.%d", m_fileVersion.v[3], m_fileVersion.v[2], m_fileVersion.v[1], m_fileVersion.v[0]);
-	CryLogAlways("ProductVersion: %d.%d.%d.%d", m_productVersion.v[3], m_productVersion.v[2], m_productVersion.v[1], m_productVersion.v[0]);
+	CryLogAlways("FileVersion: %d.%d.%d.%d", m_fileVersion[3], m_fileVersion[2], m_fileVersion[1], m_fileVersion[0]);
+	CryLogAlways("ProductVersion: %d.%d.%d.%d", m_productVersion[3], m_productVersion[2], m_productVersion[1], m_productVersion[0]);
 }
 
 //////////////////////////////////////////////////////////////////////////

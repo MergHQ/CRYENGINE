@@ -1719,7 +1719,7 @@ void CRendererCVars::InitCVars()
 
 		char versionString[128];
 		memset(versionString, 0, sizeof(versionString));
-		sprintf(versionString, "Build Version: %d.%d.%d.%d", ver.v[3], ver.v[2], ver.v[1], ver.v[0]);
+		sprintf(versionString, "Build Version: %d.%d.%d.%d", ver[3], ver[2], ver[1], ver[0]);
 
 		CV_r_ShaderEmailTags = REGISTER_STRING("r_ShaderEmailTags", versionString, VF_NULL,
 		                                       "Adds optional tags to shader error emails e.g. own name or build run\n"
