@@ -103,12 +103,14 @@ public:
 	static CTexture* CreateDepthTarget(int nWidth, int nHeight, const ColorF& cClear, ETEX_Format eTF);
 	static CTexture* CreateRenderTarget(int nWidth, int nHeight, const ColorF& cClear, ETEX_Format eTF);
 
+	static ETEX_Format   GetHDRFormat(bool withAlpha, bool lowQuality);
+
 public:
 	static bool m_bLoadedSystem;
 
 	// Global renderer resources
 	static void CreateDepthMaps(int resourceWidth, int resourceHeight);
-	static void CreateSceneMaps(ETEX_Format eTF, int resourceWidth, int resourceHeight);
+	static void CreateSceneMaps(int resourceWidth, int resourceHeight);
 	static void CreateHDRMaps(int resourceWidth, int resourceHeight);
 	static bool CreatePostFXMaps(int resourceWidth, int resourceHeight);
 	static void CreateCachedShadowMaps();
@@ -247,7 +249,7 @@ public:
 	static CTexture* s_ptexLinearDepthReadBack[4];                               // CDepthReadbackStage
 
 	static CTexture* s_ptexSceneTarget;                                          // Shared rt for generic usage (refraction/srgb/diffuse accumulation/hdr motionblur/etc)
-	static CTexture* s_ptexSceneTargetR11G11B10F[2];
+	static CTexture* s_ptexSceneTargetR11G11B10F[2];                             // CMotionBlurStage
 	static CTexture* s_ptexSceneDiffuse;
 	static CTexture* s_ptexSceneDiffuseTmp;
 	static CTexture* s_ptexSceneSpecular;
@@ -263,13 +265,12 @@ public:
 	static CTexture* s_ptexVelocityObjects[CCamera::eEye_eCount];                // CSceneGBufferStage, Dynamic object velocity (for left and right eye)
 
 	static CTexture* s_ptexHDRTarget;
-	static CTexture* s_ptexHDRTargetPrev;
-	static CTexture* s_ptexHDRTargetScaled[4];
-	static CTexture* s_ptexHDRTargetScaledTmp[4];
-	static CTexture* s_ptexHDRTargetScaledTempRT[4];                             // CScreenSpaceReflectionsStage, CDepthOfFieldStage
+	static CTexture* s_ptexHDRTargetPrev;                                        // CScreenSpaceReflectionsStage, CWaterStage, CMotionBlurStage, CSvoRenderer
+	static CTexture* s_ptexHDRTargetScaled[4][4];                                // CAutoExposureStage, CBloomStage, CSunShaftsStage
 
-	static CTexture* s_ptexHDRDofLayers[2];                                      // CDepthOfFieldStage
-	static CTexture* s_ptexHDRTempBloom[2];                                      // CBloomStage
+	static CTexture* s_ptexHDRTargetMasked;                                      // CScreenSpaceReflectionsStage, CPostAAStage
+	static CTexture* s_ptexHDRTargetMaskedScaled[4][4];                          // CScreenSpaceReflectionsStage, CDepthOfFieldStage, CSnowStage
+
 	static CTexture* s_ptexHDRFinalBloom;                                        // CRainStage, CToneMappingStage, CBloomStage
 
 	static CTexture* s_ptexBackBuffer;                                           // back buffer copy

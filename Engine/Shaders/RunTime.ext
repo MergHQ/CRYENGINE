@@ -365,8 +365,14 @@ Property
   Precache = WaterFogVolume_PS
 	
 	Precache = TiledShadingCS
-	Precache = CloudShadowGenCS
+	Precache = VolumeLightInjectionCS
+	Precache = RaymarchVolumetricFogCS
+	Precache = ReprojectVolumetricFogCS
+	Precache = BlurHorizontalInscatteringVolumeCS
+	Precache = BlurVerticalInscatteringVolumeCS
 	Precache = VolumetricCloudsPS
+	Precache = ReprojectCloudsPS
+	Precache = CloudShadowGenCS
 
 	Precache = WaterSurfaceVS
 	Precache = WaterSurfacePS

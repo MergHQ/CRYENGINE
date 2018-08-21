@@ -988,6 +988,8 @@ pixout PostAAComposites_PS(vtxOut IN)
 	OUT.Color.xyz = (16.0/255.0) + OUT.Color.xyz * ((235.0 - 16.0) / 255.0);
 #endif
 
+	// No out-of-gammut pixels from here on
+	OUT.Color = saturate(OUT.Color);
 	return OUT;
 }
 

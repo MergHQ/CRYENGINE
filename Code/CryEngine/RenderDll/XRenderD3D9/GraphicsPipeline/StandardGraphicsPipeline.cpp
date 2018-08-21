@@ -601,35 +601,41 @@ void CStandardGraphicsPipeline::ExecuteHDRPostProcessing()
 		PROFILE_LABEL_SCOPE("HALFRES_DOWNSAMPLE_HDRTARGET");
 
 		if (CRenderer::CV_r_HDRBloomQuality > 1)
-			GetOrCreateUtilityPass<CStableDownsamplePass>()->Execute(CRendererResources::s_ptexHDRTarget, CRendererResources::s_ptexHDRTargetScaled[0], true);
+			GetOrCreateUtilityPass<CStableDownsamplePass>()->Execute(CRendererResources::s_ptexHDRTarget, CRendererResources::s_ptexHDRTargetScaled[0][0], true);
 		else
-			GetOrCreateUtilityPass<CStretchRectPass>()->Execute(CRendererResources::s_ptexHDRTarget, CRendererResources::s_ptexHDRTargetScaled[0]);
+			GetOrCreateUtilityPass<CStretchRectPass>()->Execute(CRendererResources::s_ptexHDRTarget, CRendererResources::s_ptexHDRTargetScaled[0][0]);
 	}
 
 	// Quarter resolution downsampling
+	if (CRenderer::CV_r_HDRBloom > 0 || true /* measure luminance */)
 	{
 		PROFILE_LABEL_SCOPE("QUARTER_RES_DOWNSAMPLE_HDRTARGET");
 
 		if (CRenderer::CV_r_HDRBloomQuality > 0)
-			GetOrCreateUtilityPass<CStableDownsamplePass>()->Execute(CRendererResources::s_ptexHDRTargetScaled[0], CRendererResources::s_ptexHDRTargetScaled[1], CRenderer::CV_r_HDRBloomQuality >= 1);
+			GetOrCreateUtilityPass<CStableDownsamplePass>()->Execute(CRendererResources::s_ptexHDRTargetScaled[0][0], CRendererResources::s_ptexHDRTargetScaled[1][0], CRenderer::CV_r_HDRBloomQuality >= 1);
 		else
-			GetOrCreateUtilityPass<CStretchRectPass>()->Execute(CRendererResources::s_ptexHDRTargetScaled[0], CRendererResources::s_ptexHDRTargetScaled[1]);
+			GetOrCreateUtilityPass<CStretchRectPass>()->Execute(CRendererResources::s_ptexHDRTargetScaled[0][0], CRendererResources::s_ptexHDRTargetScaled[1][0]);
 	}
 
 	if (GetCurrentRenderView()->GetCurrentEye() != CCamera::eEye_Right)
 	{
+		// reads CRendererResources::s_ptexHDRTargetScaled[1][0]
 		m_pAutoExposureStage->Execute();
 	}
 
+	// reads CRendererResources::s_ptexHDRTargetScaled[1][0] and then kills it
 	m_pBloomStage->Execute();
 
 	// Lens optics
 	if (CRenderer::CV_r_flares && !CRenderer::CV_r_durango_async_dips)
 	{
 		PROFILE_LABEL_SCOPE("LENS_OPTICS");
+
+		// writes CRendererResources::s_ptexSceneTargetR11G11B10F[0]
 		m_pLensOpticsStage->Execute();
 	}
 
+	// reads CRendererResources::s_ptexHDRTargetScaled[0][0]
 	m_pSunShaftsStage->Execute();
 	m_pColorGradingStage->Execute();
 	m_pToneMappingStage->Execute();

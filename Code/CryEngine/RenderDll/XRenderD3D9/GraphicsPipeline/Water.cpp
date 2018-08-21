@@ -1027,7 +1027,7 @@ bool CWaterStage::SetAndBuildPerPassResources(bool bOnInit, EPass passId)
 		if (passId == ePass_ReflectionGen)
 		{
 			resources.SetTexture(ePerPassTexture_Reflection, pPrevWaterVolRefl, EDefaultResourceViews::Default, EShaderStage_Pixel);
-			resources.SetTexture(ePerPassTexture_Refraction, CRendererResources::s_ptexHDRTargetScaled[0], EDefaultResourceViews::Default, EShaderStage_Pixel);
+			resources.SetTexture(ePerPassTexture_Refraction, CRendererResources::s_ptexHDRTargetScaled[0][0], EDefaultResourceViews::Default, EShaderStage_Pixel);
 			resources.SetTexture(ePerPassTexture_SceneDepth, CRendererResources::s_ptexLinearDepthScaled[0], EDefaultResourceViews::Default, EShaderStage_Pixel);
 		}
 		else
@@ -1535,7 +1535,7 @@ void CWaterStage::ExecuteReflection()
 		const RECT rect = { 0, pCurrWaterVolRefl->GetHeight() - nHeight, nWidth, nHeight };
 		D3DViewPort viewport = { 0.0f, float(pCurrWaterVolRefl->GetHeight() - nHeight), float(nWidth), float(nHeight), 0.0f, 1.0f };
 
-		m_passCopySceneTargetReflection.Execute(CRendererResources::s_ptexSceneTarget, CRendererResources::s_ptexHDRTargetScaled[0]);
+		m_passCopySceneTargetReflection.Execute(CRendererResources::s_ptexSceneTarget, CRendererResources::s_ptexHDRTargetScaled[0][0]);
 		m_passWaterReflectionClear.Execute(pCurrWaterVolRefl, Clr_Transparent, 1, &rect);
 
 		// draw render items to generate water reflection texture.

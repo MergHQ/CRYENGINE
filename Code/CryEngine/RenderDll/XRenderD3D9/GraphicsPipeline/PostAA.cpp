@@ -176,11 +176,9 @@ void CPostAAStage::ApplySMAA(CTexture*& pCurrRT)
 	CD3D9Renderer* pRenderer = gcpRendD3D;
 
 	CTexture* pEdgesRT = CRendererResources::s_ptexSceneNormalsMap;   // Reusing ESRAM resident target
-	CTexture* pBlendWeightsRT = CRendererResources::s_ptexHDRTarget;  // Reusing ESRAM resident target (FP16 RT accessed using point filtering which gives full rate on GCN)
+	CTexture* pBlendWeightsRT = CRendererResources::s_ptexHDRTargetMasked;  // Reusing ESRAM resident target (FP16 RT accessed using point filtering which gives full rate on GCN)
 	CTexture* pDestRT = CRendererResources::s_ptexSceneNormalsMap;
 	CTexture* pZTexture = RenderView()->GetDepthTarget();
-
-	assert(pBlendWeightsRT->GetDstFormat() != eTF_R11G11B10F);  // Alpha channel required
 
 	if (!pEdgesRT || !pBlendWeightsRT)
 		return;
