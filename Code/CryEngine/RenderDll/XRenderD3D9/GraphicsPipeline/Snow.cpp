@@ -711,7 +711,7 @@ void CSnowStage::RenderSnowClusters()
 	CTexture* pVelocitySrc = CRendererResources::s_ptexVelocity;
 	if (CRenderer::CV_r_snow_halfres)
 	{
-		pSceneSrc = CRendererResources::s_ptexHDRTargetScaledTmp[0];
+		pSceneSrc = CRendererResources::s_ptexHDRTargetMaskedScaled[0][0];
 		pVelocitySrc = CRendererResources::s_ptexBackBufferScaled[0];
 
 		// Clear the buffers
@@ -837,7 +837,7 @@ void CSnowStage::ExecuteHalfResComposite()
 		pass.SetRenderTarget(0, CRendererResources::s_ptexHDRTarget);
 		pass.SetRenderTarget(1, CRendererResources::s_ptexVelocity);
 
-		pass.SetTexture(0, CRendererResources::s_ptexHDRTargetScaledTmp[0]);
+		pass.SetTexture(0, CRendererResources::s_ptexHDRTargetMaskedScaled[0][0]);
 		pass.SetTexture(1, CRendererResources::s_ptexBackBufferScaled[0]);
 
 		pass.SetSampler(0, EDefaultSamplerStates::TrilinearClamp);

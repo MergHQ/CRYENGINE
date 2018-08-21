@@ -6,7 +6,7 @@
 #define ENABLE_5X5_NEIGHBOR_VOXEL_SEARCH
 //#define ENABLE_SPHERE_INTERSECTION
 #define ENABLE_MAX_DEPTH_AWARE_INJECTION_AND_FILTERING
-#define ENABLE_VOLFOG_TEX_FORMAT_RGBA16F
+//#define ENABLE_VOLFOG_TEX_FORMAT_RGBA16F
 
 #if ORBIS
 // if FEATURE_RENDER_CLIPVOLUME_GEOMETRY_SHADER isn't defined in ClipVolume.h, this macro must be used.
@@ -124,18 +124,17 @@ float3 vfDecodeInscattering(float3 rawVal)
 ////////////////////////////////////////////////////////////////////////////
 // 
 ////////////////////////////////////////////////////////////////////////////
-#if !ENABLE_VOLFOG_TEX_FORMAT_RGBA16F
-RWTexture3D<float3> BlurredInscatteringOutput : register(u0);
+RWTexture3D<float3> BlurredInscatteringOutput3 : register(u0);
+RWTexture3D<float4> BlurredInscatteringOutput4 : register(u0);
+RWTexture3D<float> BlurredDensityOutput : register(u1);
 
-Texture3D<float3> BlurredInscatteringInput : register(t0);
-#else
-RWTexture3D<float4> BlurredInscatteringOutput : register(u0);
+Texture3D<float3> BlurredInscatteringInput3 : register(t0);
+Texture3D<float4> BlurredInscatteringInput4 : register(t0);
+Texture3D<float> BlurredDensityInput : register(t1);
 
-Texture3D<float4> BlurredInscatteringInput : register(t0);
-#endif
-Texture2D<float> BlurredInscatteringDepthMaxInput : register(t1);
+Texture2D<float> BlurredDepthMaxInput : register(t2);
 
-SamplerState BlurredInscatteringInputSampler : register(s0);
+SamplerState BlurredInputSampler : register(s0);
 
 groupshared float SourceColorR[16 * 8];
 groupshared float SourceColorG[16 * 8];
@@ -164,34 +163,38 @@ void BlurHorizontalInscatteringVolumeCS(uint3 DispatchThreadID : SV_DispatchThre
 		p.x = clamp(p.x, 0, int(ScreenSize.x - 1));
 		p.y = clamp(p.y, 0, int(ScreenSize.y - 1));
 
-#if !ENABLE_VOLFOG_TEX_FORMAT_RGBA16F
-#if 1
+#if %_RT_SAMPLE3
+	#if 1
 		// use Load instruction because of no need to blend two slices.
-		float3 v = BlurredInscatteringInput.Load(p);
-#else
+		float4 v = float4(
+			BlurredInscatteringInput3.Load(p),
+			BlurredDensityInput.Load(p));
+	#else
 		float3 tc = float3((float2(loc.xy + offset.xy) + 0.5f) * ScreenSize.zw, curDepth);
-		float3 v = BlurredInscatteringInput.SampleLevel(BlurredInscatteringInputSampler, tc, 0);
-#endif
+		float4 v = float4(
+			BlurredInscatteringInput3.SampleLevel(BlurredInputSampler, tc, 0),
+			BlurredDensityInput.SampleLevel(BlurredInputSampler, tc, 0));
+	#endif
 #else
-#if 1
+	#if 1
 		// use Load instruction because of no need to blend two slices.
-		float4 v = BlurredInscatteringInput.Load(p);
-#else
+		float4 v =
+			BlurredInscatteringInput4.Load(p);
+	#else
 		float3 tc = float3((float2(loc.xy + offset.xy) + 0.5f) * ScreenSize.zw, curDepth);
-		float4 v = BlurredInscatteringInput.SampleLevel(BlurredInscatteringInputSampler, tc, 0);
-#endif
+		float4 v =
+			BlurredInscatteringInput4.SampleLevel(BlurredInputSampler, tc, 0);
+	#endif
 #endif
 
 		int index = offset.x + offset.y * 16;
 		SourceColorR[index] = v.r;
 		SourceColorG[index] = v.g;
 		SourceColorB[index] = v.b;
-#if ENABLE_VOLFOG_TEX_FORMAT_RGBA16F
 		SourceDensity[index] = v.a;
-#endif
 
 #if ENABLE_MAX_DEPTH_AWARE_INJECTION_AND_FILTERING
-		float depthMax = BlurredInscatteringDepthMaxInput.Load(int3(p.xy, 0));
+		float depthMax = BlurredDepthMaxInput.Load(int3(p.xy, 0));
 		SourceDepthMax[index] = depthMax * maxDistance;
 #endif
 	}
@@ -208,11 +211,8 @@ void BlurHorizontalInscatteringVolumeCS(uint3 DispatchThreadID : SV_DispatchThre
 		56.0f/256.0f, 70.0f/256.0f, 56.0f/256.0f,
 		28.0f/256.0f, 8.0f/256.0f, 1.0f/256.0f,
 	};
-#if !ENABLE_VOLFOG_TEX_FORMAT_RGBA16F
-	float3 value = float3(0.0f, 0.0f, 0.0f);
-#else
+
 	float4 value = float4(0.0f, 0.0f, 0.0f, 0.0f);
-#endif
 	float totalWeight = 0.0f;
 
 	for(int i = -4; i <= 4; ++i)
@@ -226,9 +226,7 @@ void BlurHorizontalInscatteringVolumeCS(uint3 DispatchThreadID : SV_DispatchThre
 		value.r += w * SourceColorR[index];
 		value.g += w * SourceColorG[index];
 		value.b += w * SourceColorB[index];
-#if ENABLE_VOLFOG_TEX_FORMAT_RGBA16F
 		value.a += w * SourceDensity[index];
-#endif
 #else
 		float depthMax = SourceDepthMax[index];
 		if(depthMax > depthFront)
@@ -236,9 +234,7 @@ void BlurHorizontalInscatteringVolumeCS(uint3 DispatchThreadID : SV_DispatchThre
 			value.r += w * SourceColorR[index];
 			value.g += w * SourceColorG[index];
 			value.b += w * SourceColorB[index];
-#if ENABLE_VOLFOG_TEX_FORMAT_RGBA16F
 			value.a += w * SourceDensity[index];
-#endif
 			totalWeight += w;
 		}
 #endif
@@ -248,7 +244,12 @@ void BlurHorizontalInscatteringVolumeCS(uint3 DispatchThreadID : SV_DispatchThre
 	value = (totalWeight > 0.0f) ? (value / totalWeight) : 0.0f;
 #endif
 
-	BlurredInscatteringOutput[DispatchThreadID.xyz] = value;
+#if %_RT_SAMPLE3
+	BlurredInscatteringOutput3[DispatchThreadID.xyz] = value.xyz;
+	BlurredDensityOutput      [DispatchThreadID.xyz] = value.w;
+#else
+	BlurredInscatteringOutput4[DispatchThreadID.xyz] = value.xyzw;
+#endif
 }
 
 [numthreads(8, 8, 1)]
@@ -272,34 +273,38 @@ void BlurVerticalInscatteringVolumeCS(uint3 DispatchThreadID : SV_DispatchThread
 		p.x = clamp(p.x, 0, int(ScreenSize.x - 1));
 		p.y = clamp(p.y, 0, int(ScreenSize.y - 1));
 
-#if !ENABLE_VOLFOG_TEX_FORMAT_RGBA16F
-#if 0
-		float3 v = BlurredInscatteringInput.Load(p);
-#else
+#if %_RT_SAMPLE3
+	#if 0
+		float4 v = float4(
+			BlurredInscatteringInput3.Load(p),
+			BlurredDensityInput.Load(p));
+	#else
 		// use SampleLevel because of blending two slices.
 		float3 tc = float3((float2(loc.xy + offset.xy) + 0.5f) * ScreenSize.zw, curDepth);
-		float3 v = BlurredInscatteringInput.SampleLevel(BlurredInscatteringInputSampler, tc, 0);
-#endif
+		float4 v = float4(
+			BlurredInscatteringInput3.SampleLevel(BlurredInputSampler, tc, 0),
+			BlurredDensityInput.SampleLevel(BlurredInputSampler, tc, 0));
+	#endif
 #else
-#if 0
-		float4 v = BlurredInscatteringInput.Load(p);
-#else
+	#if 0
+		float4 v =
+			BlurredInscatteringInput4.Load(p);
+	#else
 		// use SampleLevel because of blending two slices.
 		float3 tc = float3((float2(loc.xy + offset.xy) + 0.5f) * ScreenSize.zw, curDepth);
-		float4 v = BlurredInscatteringInput.SampleLevel(BlurredInscatteringInputSampler, tc, 0);
-#endif
+		float4 v =
+			BlurredInscatteringInput4.SampleLevel(BlurredInputSampler, tc, 0);
+	#endif
 #endif
 
 		int index = offset.x + offset.y * 8;
 		SourceColorR[index] = v.r;
 		SourceColorG[index] = v.g;
 		SourceColorB[index] = v.b;
-#if ENABLE_VOLFOG_TEX_FORMAT_RGBA16F
 		SourceDensity[index] = v.a;
-#endif
 
 #if ENABLE_MAX_DEPTH_AWARE_INJECTION_AND_FILTERING
-		float depthMax = BlurredInscatteringDepthMaxInput.Load(int3(p.xy, 0));
+		float depthMax = BlurredDepthMaxInput.Load(int3(p.xy, 0));
 		SourceDepthMax[index] = depthMax * maxDistance;
 #endif
 	}
@@ -316,11 +321,8 @@ void BlurVerticalInscatteringVolumeCS(uint3 DispatchThreadID : SV_DispatchThread
 		56.0f/256.0f, 70.0f/256.0f, 56.0f/256.0f,
 		28.0f/256.0f, 8.0f/256.0f, 1.0f/256.0f,
 	};
-#if !ENABLE_VOLFOG_TEX_FORMAT_RGBA16F
-	float3 value = float3(0.0f, 0.0f, 0.0f);
-#else
+
 	float4 value = float4(0.0f, 0.0f, 0.0f, 0.0f);
-#endif
 	float totalWeight = 0.0f;
 
 	for(int i = -4; i <= 4; ++i)
@@ -334,9 +336,7 @@ void BlurVerticalInscatteringVolumeCS(uint3 DispatchThreadID : SV_DispatchThread
 		value.r += w * SourceColorR[index];
 		value.g += w * SourceColorG[index];
 		value.b += w * SourceColorB[index];
-#if ENABLE_VOLFOG_TEX_FORMAT_RGBA16F
 		value.a += w * SourceDensity[index];
-#endif
 #else
 		float depthMax = SourceDepthMax[index];
 		if(depthMax > depthFront)
@@ -344,24 +344,23 @@ void BlurVerticalInscatteringVolumeCS(uint3 DispatchThreadID : SV_DispatchThread
 			value.r += w * SourceColorR[index];
 			value.g += w * SourceColorG[index];
 			value.b += w * SourceColorB[index];
-#if ENABLE_VOLFOG_TEX_FORMAT_RGBA16F
 			value.a += w * SourceDensity[index];
-#endif
 			totalWeight += w;
 		}
 #endif
 	}
 
 #if ENABLE_MAX_DEPTH_AWARE_INJECTION_AND_FILTERING
-#if !ENABLE_VOLFOG_TEX_FORMAT_RGBA16F
-	value = (totalWeight > 0.0f) ? (value / totalWeight) : 0.0f;
-#else
 	value.xyz = (totalWeight > 0.0f) ? (value.xyz / totalWeight) : 0.0f;
 	value.w = (totalWeight > 0.0f) ? (value.w / totalWeight) : (0.0f / 0.0f);// set NaN as the mark of empty voxel.
 #endif
-#endif
 
-	BlurredInscatteringOutput[DispatchThreadID.xyz] = value;
+#if %_RT_SAMPLE3
+	BlurredInscatteringOutput3[DispatchThreadID.xyz] = value.xyz;
+	BlurredDensityOutput      [DispatchThreadID.xyz] = value.w;
+#else
+	BlurredInscatteringOutput4[DispatchThreadID.xyz] = value.xyzw;
+#endif
 }
 
 technique BlurHorizontalInscatteringVolume
@@ -384,12 +383,6 @@ technique BlurVerticalInscatteringVolume
 ////////////////////////////////////////////////////////////////////////////
 // 
 ////////////////////////////////////////////////////////////////////////////
-RWTexture3D<float> BlurredDensityOutput : register(u0);
-
-Texture3D<float> BlurredDensityInput : register(t0);
-Texture2D<float> BlurredDensityDepthMaxInput : register(t1);
-
-SamplerState BlurredDensityInputSampler : register(s0);
 
 [numthreads(8, 8, 1)]
 void BlurHorizontalDensityVolumeCS(uint3 DispatchThreadID : SV_DispatchThreadID, uint3 gtid : SV_GroupThreadID, uint3 gid : SV_GroupID)
@@ -417,14 +410,14 @@ void BlurHorizontalDensityVolumeCS(uint3 DispatchThreadID : SV_DispatchThreadID,
 		float v = BlurredDensityInput.Load(p);
 #else
 		float3 tc = float3((float2(loc.xy + offset.xy) + 0.5f) * ScreenSize.zw, curDepth);
-		float v = BlurredDensityInput.SampleLevel(BlurredDensityInputSampler, tc, 0);
+		float v = BlurredDensityInput.SampleLevel(BlurredInputSampler, tc, 0);
 #endif
 
 		int index = offset.x + offset.y * 16;
 		SourceDensity[index] = v;
 
 #if ENABLE_MAX_DEPTH_AWARE_INJECTION_AND_FILTERING
-		float depthMax = BlurredInscatteringDepthMaxInput[p.xy];
+		float depthMax = BlurredDepthMaxInput[p.xy];
 		SourceDepthMax[index] = depthMax * maxDistance;
 #endif
 	}
@@ -496,14 +489,14 @@ void BlurVerticalDensityVolumeCS(uint3 DispatchThreadID : SV_DispatchThreadID, u
 #else
 		// use SampleLevel because of blending two slices.
 		float3 tc = float3((float2(loc.xy + offset.xy) + 0.5f) * ScreenSize.zw, curDepth);
-		float v = BlurredDensityInput.SampleLevel(BlurredDensityInputSampler, tc, 0);
+		float v = BlurredDensityInput.SampleLevel(BlurredInputSampler, tc, 0);
 #endif
 
 		int index = offset.x + offset.y * 8;
 		SourceDensity[index] = v;
 
 #if ENABLE_MAX_DEPTH_AWARE_INJECTION_AND_FILTERING
-		float depthMax = BlurredInscatteringDepthMaxInput[p.xy];
+		float depthMax = BlurredDepthMaxInput[p.xy];
 		SourceDepthMax[index] = depthMax * maxDistance;
 #endif
 	}
@@ -1429,9 +1422,8 @@ Texture2DArray<uint2> ClipVolumeStencil : register(t11);
 #endif
 StructuredBuffer<SVolumeLightShadeInfo> VolumeLightsShadeInfo : register(t12);
 Texture3D<float3> VolumetricFogDensityColorInput : register(t13);
-#if ENABLE_VOLFOG_TEX_FORMAT_RGBA16F
+
 Texture3D<float> VolumetricFogDensityInput : register(t14);
-#endif
 Texture3D<float3> VolumetricFogEmissiveInput : register(t15);
 
 TextureCubeArray<float4> VL_DiffuseCubeArray : register(t18);
@@ -1907,11 +1899,9 @@ float3 CombineInscatteringSunAndRegularLights(in float3 inscatterRegularLights, 
 ////////////////////////////////////////////////////////////////////////////
 // 
 ////////////////////////////////////////////////////////////////////////////
-#if !ENABLE_VOLFOG_TEX_FORMAT_RGBA16F
-RWTexture3D<float3> VolumetricFogInscatterOUT	: register(u0);
-#else
-RWTexture3D<float4> VolumetricFogInscatterOUT	: register(u0);
-#endif
+
+RWTexture3D<float3> VolumetricFogInscatterOUT3 : register(u0);
+RWTexture3D<float4> VolumetricFogInscatterOUT4 : register(u0);
 
 [numthreads(BLOCK_SIZE_X, BLOCK_SIZE_Y, BLOCK_SIZE_Z)]
 void InjectVolumetricInscatteringCS(uint3 DispatchThreadID : SV_DispatchThreadID
@@ -1939,7 +1929,7 @@ void InjectVolumetricInscatteringCS(uint3 DispatchThreadID : SV_DispatchThreadID
 
 	GroupMemoryBarrierWithGroupSync();
 
-#if ENABLE_VOLFOG_TEX_FORMAT_RGBA16F
+#if !%_RT_SAMPLE3
 	float globalAndLocalFogDensity = VolumetricFogDensityInput[DispatchThreadID.xyz].x;
 #endif
 
@@ -2045,10 +2035,10 @@ void InjectVolumetricInscatteringCS(uint3 DispatchThreadID : SV_DispatchThreadID
 
 	//if(all(pixelCoord.xyz < float3(ScreenSize.xy, ScreenInfo.w)))
 	{
-#if !ENABLE_VOLFOG_TEX_FORMAT_RGBA16F
-		VolumetricFogInscatterOUT[DispatchThreadID.xyz] = inscatter.xyz;
+#if %_RT_SAMPLE3
+		VolumetricFogInscatterOUT3[DispatchThreadID.xyz] = inscatter.xyz;
 #else
-		VolumetricFogInscatterOUT[DispatchThreadID.xyz] = float4(inscatter.xyz, globalAndLocalFogDensity.x);
+		VolumetricFogInscatterOUT4[DispatchThreadID.xyz] = float4(inscatter.xyz, globalAndLocalFogDensity.x);
 #endif
 	}
 }
@@ -2066,12 +2056,9 @@ technique InjectVolumetricInscattering
 ////////////////////////////////////////////////////////////////////////////
 RWTexture3D<float4> VolumetricFogOutput : register(u0);
 
-#if !ENABLE_VOLFOG_TEX_FORMAT_RGBA16F
-Texture3D<float3> InscatteringInput : register(t0);
+Texture3D<float3> InscatteringInput3 : register(t0);
+Texture3D<float4> InscatteringInput4 : register(t0);
 Texture3D<float> FogDensityInput : register(t1);
-#else
-Texture3D<float4> InscatteringInput : register(t0);
-#endif
 
 [numthreads(8, 8, 1)]
 void RaymarchVolumetricFogCS(uint3 DispatchThreadID : SV_DispatchThreadID)
@@ -2096,11 +2083,11 @@ void RaymarchVolumetricFogCS(uint3 DispatchThreadID : SV_DispatchThreadID)
 
 		[loop] for(uint step = 0; step < maxStepNum; ++step)
 		{
-#if !ENABLE_VOLFOG_TEX_FORMAT_RGBA16F
-			float3 v = InscatteringInput[uint3(pixelCoord.xy, step)].xyz;
+#if %_RT_SAMPLE3
+			float3 v = InscatteringInput3[uint3(pixelCoord.xy, step)].xyz;
 			float density = FogDensityInput[uint3(pixelCoord.xy, step)].x;
 #else
-			float4 v = InscatteringInput[uint3(pixelCoord.xy, step)].xyzw;
+			float4 v = InscatteringInput4[uint3(pixelCoord.xy, step)].xyzw;
 			float density = v.w;
 #endif
 
@@ -2142,22 +2129,20 @@ technique RaymarchVolumetricFog
 ////////////////////////////////////////////////////////////////////////////
 // 
 ////////////////////////////////////////////////////////////////////////////
-#if !ENABLE_VOLFOG_TEX_FORMAT_RGBA16F
-RWTexture3D<float3> ReprojectVolumetricFogInscatterOutput : register(u0);
+RWTexture3D<float3> ReprojectVolumetricFogInscatterOutput3 : register(u0);
 RWTexture3D<float> ReprojectVolumetricFogDensityOutput : register(u1);
+RWTexture3D<float4> ReprojectVolumetricFogInscatterOutput4 : register(u0);
 
-Texture3D<float3> CurFrameInscatteringInput : register(t0);
-Texture3D<float3> PrevFrameInscatteringInput : register(t1);
-Texture3D<float3> CurFrameFogDensityInput : register(t2);
-Texture3D<float3> PrevFrameFogDensityInput : register(t3);
+Texture3D<float3> CurFrameInscatteringInput3 : register(t0);
+Texture3D<float4> CurFrameInscatteringInput4 : register(t0);
+
+Texture3D<float3> PrevFrameInscatteringInput3 : register(t1);
+Texture3D<float4> PrevFrameInscatteringInput4 : register(t1);
+
+Texture3D<float> CurFrameFogDensityInput : register(t2);
+Texture3D<float> PrevFrameFogDensityInput : register(t3);
+
 Texture2D<float> ReprojectMaxDepthInput : register(t4);
-#else
-RWTexture3D<float4> ReprojectVolumetricFogInscatterOutput : register(u0);
-
-Texture3D<float4> CurFrameInscatteringInput : register(t0);
-Texture3D<float4> PrevFrameInscatteringInput : register(t1);
-Texture2D<float> ReprojectMaxDepthInput : register(t2);
-#endif
 
 SamplerState ReprojectInputSampler : register(s0);
 
@@ -2177,18 +2162,18 @@ void ReprojectVolumetricFogCS(uint3 DispatchThreadID : SV_DispatchThreadID, uint
 	float maxLinearDepth = maxDistance * ReprojectMaxDepthInput.Load(int3(DispatchThreadID.xy, 0));
 #endif
 
-#if !ENABLE_VOLFOG_TEX_FORMAT_RGBA16F
-	float3 current = CurFrameInscatteringInput[DispatchThreadID.xyz].xyz;
+#if %_RT_SAMPLE3
+	float3 current = CurFrameInscatteringInput3[DispatchThreadID.xyz].xyz;
 	float currDensity = CurFrameFogDensityInput[DispatchThreadID.xyz].x;
 #else
-	float4 current = CurFrameInscatteringInput[DispatchThreadID.xyz].xyzw;
+	float4 current = CurFrameInscatteringInput4[DispatchThreadID.xyz].xyzw;
 #endif
 
 	current.xyz = vfDecodeInscattering(current.xyz);
 
 #if %_RT_SAMPLE5
 	{
-#if ENABLE_5X5_NEIGHBOR_VOXEL_SEARCH
+	#if ENABLE_5X5_NEIGHBOR_VOXEL_SEARCH
 		int3 loc = int3(gid.xyz * 4);
 		loc.xy -= int2(2, 2);
 
@@ -2202,12 +2187,16 @@ void ReprojectVolumetricFogCS(uint3 DispatchThreadID : SV_DispatchThreadID, uint
 			int3 p = loc + offset;
 			p.x = clamp(p.x, 0, int(ScreenSize.x - 1));
 			p.y = clamp(p.y, 0, int(ScreenSize.y - 1));
-			float3 v = CurFrameInscatteringInput[p.xyz].xyz;
+		#if %_RT_SAMPLE3
+			float3 v = CurFrameInscatteringInput3[p.xyz].xyz;
+		#else
+			float3 v = CurFrameInscatteringInput4[p.xyz].xyz;
+		#endif
 
 			int index = (offset.x + (offset.y * 8)) + (offset.z * 64);
 			CurrentLuminance[index] = GetLuminance(v.xyz);
 		}
-#else
+	#else
 		int3 loc = int3(gid.xyz * 4);
 		loc.xyz -= int3(1, 1, 1);
 
@@ -2221,12 +2210,16 @@ void ReprojectVolumetricFogCS(uint3 DispatchThreadID : SV_DispatchThreadID, uint
 			int3 p = loc + offset;
 			p.x = clamp(p.x, 0, int(ScreenSize.x - 1));
 			p.y = clamp(p.y, 0, int(ScreenSize.y - 1));
-			float3 v = CurFrameInscatteringInput[p.xyz].xyz;
+		#if %_RT_SAMPLE3
+			float3 v = CurFrameInscatteringInput3[p.xyz].xyz;
+		#else
+			float3 v = CurFrameInscatteringInput4[p.xyz].xyz;
+		#endif
 
 			int index = (offset.x + (offset.y * 8)) + (offset.z * 64);
 			CurrentLuminance[index] = (offset.y < 6 && offset.x < 6) ? GetLuminance(v.xyz) : 0;
 		}
-#endif
+	#endif
 	}
 #endif
 
@@ -2273,11 +2266,11 @@ void ReprojectVolumetricFogCS(uint3 DispatchThreadID : SV_DispatchThreadID, uint
 
 	if(blendFactor > 0.0f)
 	{
-#if !ENABLE_VOLFOG_TEX_FORMAT_RGBA16F
-		float3 prev = PrevFrameInscatteringInput.SampleLevel(ReprojectInputSampler, tc, 0).xyz;
+#if %_RT_SAMPLE3
+		float3 prev = PrevFrameInscatteringInput3.SampleLevel(ReprojectInputSampler, tc, 0).xyz;
 		float prevDensity = PrevFrameFogDensityInput.SampleLevel(ReprojectInputSampler, tc, 0).x;
 #else
-		float4 prev = PrevFrameInscatteringInput.SampleLevel(ReprojectInputSampler, tc, 0).xyzw;
+		float4 prev = PrevFrameInscatteringInput4.SampleLevel(ReprojectInputSampler, tc, 0).xyzw;
 		float prevDensity = prev.w;
 #endif
 
@@ -2463,7 +2456,7 @@ void ReprojectVolumetricFogCS(uint3 DispatchThreadID : SV_DispatchThreadID, uint
 		blendFactor *= lerp(similarityFactor, 1.0f, ratio);
 #endif
 
-#if !ENABLE_VOLFOG_TEX_FORMAT_RGBA16F
+#if %_RT_SAMPLE3
 		current = lerp(current, prev, blendFactor);
 		currDensity = lerp(currDensity, prevDensity, blendFactor);
 #else
@@ -2478,11 +2471,11 @@ void ReprojectVolumetricFogCS(uint3 DispatchThreadID : SV_DispatchThreadID, uint
 
 	current.xyz = vfEncodeInscattering(current.xyz);
 
-#if !ENABLE_VOLFOG_TEX_FORMAT_RGBA16F
-	ReprojectVolumetricFogInscatterOutput[pixelCoord.xyz] = current;
+#if %_RT_SAMPLE3
+	ReprojectVolumetricFogInscatterOutput3[pixelCoord.xyz] = current;
 	ReprojectVolumetricFogDensityOutput[pixelCoord.xyz] = currDensity;
 #else
-	ReprojectVolumetricFogInscatterOutput[pixelCoord.xyz] = current;
+	ReprojectVolumetricFogInscatterOutput4[pixelCoord.xyz] = current;
 #endif
 }
 

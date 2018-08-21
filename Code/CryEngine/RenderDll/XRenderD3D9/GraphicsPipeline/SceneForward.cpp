@@ -145,7 +145,7 @@ void CSceneForwardStage::Update()
 			// Depth
 			CRendererResources::s_ptexSceneDepthScaled[0],//[1]//[2]
 			// Color 0
-			CRendererResources::s_ptexHDRTargetScaled[0]//[1]//[2]
+			CRendererResources::s_ptexHDRTargetScaled[0][0]//[1][0]//[2][0]
 		);
 
 		m_forwardHDRPass.SetLabel("FORWARD_AFTER_POSTFX_HDR");
@@ -907,7 +907,7 @@ void CSceneForwardStage::ExecuteTransparentLoRes(int subRes)
 
 	CTexture* pSourceDS = CRendererResources::s_ptexLinearDepthScaled[subRes];
 	CTexture* pTargetDS = CRendererResources::s_ptexSceneDepthScaled[subRes];
-	CTexture* pTargetRT = CRendererResources::s_ptexHDRTargetScaled[subRes];
+	CTexture* pTargetRT = CRendererResources::s_ptexHDRTargetScaled[subRes][0];
 
 	CClearSurfacePass::Execute(pTargetRT, Clr_Empty);
 

@@ -64,7 +64,7 @@ void CAutoExposureStage::MeasureLuminance()
 			m_passLuminanceInitial.SetState(GS_NODEPTHTEST);
 			m_passLuminanceInitial.SetFlags(CPrimitiveRenderPass::ePassFlags_RequireVrProjectionConstants);
 
-			m_passLuminanceInitial.SetTexture(0, CRendererResources::s_ptexHDRTargetScaled[1]);
+			m_passLuminanceInitial.SetTexture(0, CRendererResources::s_ptexHDRTargetScaled[1][0]);
 			m_passLuminanceInitial.SetTexture(1, CRendererResources::s_ptexSceneNormalsMap);
 			m_passLuminanceInitial.SetTexture(2, CRendererResources::s_ptexSceneDiffuse);
 			m_passLuminanceInitial.SetTexture(3, CRendererResources::s_ptexSceneSpecular);
@@ -76,8 +76,8 @@ void CAutoExposureStage::MeasureLuminance()
 
 		m_passLuminanceInitial.BeginConstantUpdate();
 
-		float s1 = 1.0f / (float) CRendererResources::s_ptexHDRTargetScaled[1]->GetWidth();
-		float t1 = 1.0f / (float) CRendererResources::s_ptexHDRTargetScaled[1]->GetHeight();
+		float s1 = 1.0f / (float) CRendererResources::s_ptexHDRTargetScaled[1][0]->GetWidth();
+		float t1 = 1.0f / (float) CRendererResources::s_ptexHDRTargetScaled[1][0]->GetHeight();
 
 		// Use rotated grid
 		Vec4 sampleLumOffsets0 = Vec4(s1 * 0.95f, t1 * 0.25f, -s1 * 0.25f, t1 * 0.96f);

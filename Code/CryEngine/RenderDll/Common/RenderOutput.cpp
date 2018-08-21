@@ -285,9 +285,7 @@ Vec2_tpl<uint32_t> CRenderOutput::GetDisplayResolution() const
 //////////////////////////////////////////////////////////////////////////
 void CRenderOutput::AllocateColorTarget()
 {
-	const ETEX_Format eHDRFormat =
-		CRenderer::CV_r_HDRTexFormat == 0 ? eTF_R11G11B10F : eTF_R16G16B16A16F;
-
+	const ETEX_Format eHDRFormat = CRendererResources::GetHDRFormat(false, false);
 	const ColorF clearValue = Clr_Empty;
 
 	// NOTE: Actual device texture allocation happens just before rendering.

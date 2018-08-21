@@ -329,12 +329,6 @@ CTexture* CShaderMan::mfCheckTemplateTexName(const char* mapname, ETEX_Type eTT)
 		TexPic = CRendererResources::s_ptexBackBufferScaled[2];
 	else if (!stricmp(mapname, "$HDR_BackBuffer"))
 		TexPic = CRendererResources::s_ptexSceneTarget;
-	else if (!stricmp(mapname, "$HDR_BackBufferScaled_d2"))
-		TexPic = CRendererResources::s_ptexHDRTargetScaled[0];
-	else if (!stricmp(mapname, "$HDR_BackBufferScaled_d4"))
-		TexPic = CRendererResources::s_ptexHDRTargetScaled[1];
-	else if (!stricmp(mapname, "$HDR_BackBufferScaled_d8"))
-		TexPic = CRendererResources::s_ptexHDRTargetScaled[2];
 	else if (!stricmp(mapname, "$HDR_FinalBloom"))
 		TexPic = CRendererResources::s_ptexHDRFinalBloom;
 	else if (!stricmp(mapname, "$HDR_TargetPrev"))

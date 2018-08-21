@@ -10,10 +10,6 @@
 
 //////////////////////////////////////////////////////////////////////////
 
-#define ENABLE_VOLFOG_TEX_FORMAT_RGBA16F
-
-//////////////////////////////////////////////////////////////////////////
-
 namespace
 {
 static const float ThresholdLengthGlobalProbe = 1.732f * (1000.0f * 0.5f);
@@ -285,7 +281,6 @@ void CVolumetricFogStage::Init()
 		}
 	}
 
-#ifndef ENABLE_VOLFOG_TEX_FORMAT_RGBA16F
 	{
 		const char* texName[2] =
 		{
@@ -297,7 +292,6 @@ void CVolumetricFogStage::Init()
 			m_pFogDensityVolume[i] = CTexture::GetOrCreateTextureObjectPtr(texName[i], 0, 0, 0, eTT_3D, uavFlags, eTF_Unknown);
 		}
 	}
-#endif
 
 	CRY_ASSERT(m_pMaxDepth == nullptr);
 	m_pMaxDepth = CTexture::GetOrCreateTextureObjectPtr("$VolFogMaxDepth", 0, 0, 0, eTT_2D, uavFlags, eTF_Unknown);
@@ -370,11 +364,7 @@ void CVolumetricFogStage::Update()
 	const int32 scaledWidth  = GetVolumeTextureSize(renderWidth , CRenderer::CV_r_VolumetricFogTexScale);
 	const int32 scaledHeight = GetVolumeTextureSize(renderHeight, CRenderer::CV_r_VolumetricFogTexScale);
 	const int32 depth = GetVolumeTextureDepthSize();
-#ifdef ENABLE_VOLFOG_TEX_FORMAT_RGBA16F
-	const ETEX_Format fmtInscattering = eTF_R16G16B16A16F;
-#else
-	const ETEX_Format fmtInscattering = eTF_R11G11B10F;
-#endif
+	const ETEX_Format fmtInscattering = CRendererResources::GetHDRFormat(false, false);
 	const ETEX_Format fmtDensityColor = eTF_R11G11B10F;
 	const ETEX_Format fmtDensity = eTF_R16F;
 	const ETEX_Format fmtEmissive = eTF_R11G11B10F;
@@ -508,17 +498,27 @@ void CVolumetricFogStage::Update()
 		}
 	}
 
-#ifndef ENABLE_VOLFOG_TEX_FORMAT_RGBA16F
-	for (auto pTex : m_pFogDensityVolume)
+	// If the inscattering format has no alpha-channel we need an extra resource for the density
+	if ((m_seperateDensity = !CImageExtensionHelper::HasAlphaForTextureFormat(fmtInscattering)))
 	{
-		CRY_ASSERT(pTex);
-		if (createTexture3D(pTex, uavFlags, fmtDensity))
+		for (auto pTex : m_pFogDensityVolume)
 		{
-			pTex->DisableMgpuSync();
-			bResetReprojection = true;
+			CRY_ASSERT(pTex);
+			if (createTexture3D(pTex, uavFlags, fmtDensity))
+			{
+				pTex->DisableMgpuSync();
+				bResetReprojection = true;
+			}
 		}
 	}
-#endif
+	else
+	{
+		for (auto pTex : m_pFogDensityVolume)
+		{
+			CRY_ASSERT(pTex);
+			releaseDevTexture(pTex);
+		}
+	}
 
 	CRY_ASSERT(m_pMaxDepth);
 	createTexture2D(m_pMaxDepth, scaledWidth, scaledHeight, uavFlags, fmtDepth);
@@ -801,12 +801,8 @@ void CVolumetricFogStage::ExecuteVolumetricFog(const SScopedComputeCommandList& 
 		maxBlurCount = maxBlurCount <= 4 ? maxBlurCount : 4;
 		for (int32 count = 0; count < maxBlurCount; ++count)
 		{
-#ifdef ENABLE_VOLFOG_TEX_FORMAT_RGBA16F
-			ExecuteBlurInscatterVolume(commandList);
-#else
-			ExecuteBlurDensityVolume(commandList);
-			ExecuteBlurInscatterVolume(commandList);
-#endif
+			ExecuteBlurInscatterVolume(commandList); // Supports interleaved and non-interleaved inscattering with density
+//			ExecuteBlurDensityVolume(commandList);
 		}
 	}
 
@@ -854,10 +850,6 @@ bool CVolumetricFogStage::IsTexturesValid() const
 	                            && CTexture::IsTextureExist(m_pInscatteringVolume)
 	                            && CTexture::IsTextureExist(m_pFogInscatteringVolume[0])
 	                            && CTexture::IsTextureExist(m_pFogInscatteringVolume[1])
-#ifndef ENABLE_VOLFOG_TEX_FORMAT_RGBA16F
-	                            && CTexture::IsTextureExist(m_pFogDensityVolume[0])
-	                            && CTexture::IsTextureExist(m_pFogDensityVolume[1])
-#endif
 	                            && CTexture::IsTextureExist(CRendererResources::s_ptexVolumetricFog);
 
 	const bool bDepth = CTexture::IsTextureExist(m_pMaxDepth)
@@ -1936,6 +1928,12 @@ void CVolumetricFogStage::ExecuteInjectInscatteringLight(const SScopedComputeCom
 		rtMask |= g_HWSR_MaskBit[HWSR_SAMPLE2];
 	}
 
+	// set texture format toggle
+	if (m_seperateDensity)
+	{
+		rtMask |= g_HWSR_MaskBit[HWSR_SAMPLE3];
+	}
+
 	// setup shadow maps.
 	CShadowUtils::SShadowCascades cascades;
 	const bool bSunShadow = CShadowUtils::SetupShadowsForFog(cascades, pRenderView);
@@ -1991,24 +1989,27 @@ void CVolumetricFogStage::ExecuteInjectInscatteringLight(const SScopedComputeCom
 		pass.SetInlineConstantBuffer(eConstantBufferShaderSlot_PerView, gcpRendD3D->GetGraphicsPipeline().GetMainViewConstantBuffer());
 		pass.SetSampler(3, EDefaultSamplerStates::TrilinearClamp);
 
-#ifdef ENABLE_VOLFOG_TEX_FORMAT_RGBA16F
-		pass.SetBuffer(8, &m_lightGridBuf);
-		pass.SetBuffer(9, &m_lightCountBuf);
-		pass.SetTexture(10, m_pMaxDepth);
-		pass.SetTexture(11, pClipVolumeStencilTex, EDefaultResourceViews::StencilOnly);
-		pass.SetBuffer(12, &m_LightShadeInfoBuf);
-		pass.SetTexture(13, m_pVolFogBufDensityColor);
-		pass.SetTexture(14, m_pVolFogBufDensity);
-		pass.SetTexture(15, m_pVolFogBufEmissive);
-#else
-		pass.SetBuffer(8, &m_lightGridBuf);
-		pass.SetBuffer(9, &m_lightCountBuf);
-		pass.SetTexture(10, m_pMaxDepth);
-		pass.SetTexture(11, pClipVolumeStencilTex, EDefaultResourceViews::StencilOnly);
-		pass.SetBuffer(12, &m_LightShadeInfoBuf);
-		pass.SetTexture(13, m_pVolFogBufDensityColor);
-		pass.SetTexture(15, m_pVolFogBufEmissive);
-#endif
+		if (!m_seperateDensity)
+		{
+			pass.SetBuffer(8, &m_lightGridBuf);
+			pass.SetBuffer(9, &m_lightCountBuf);
+			pass.SetTexture(10, m_pMaxDepth);
+			pass.SetTexture(11, pClipVolumeStencilTex, EDefaultResourceViews::StencilOnly);
+			pass.SetBuffer(12, &m_LightShadeInfoBuf);
+			pass.SetTexture(13, m_pVolFogBufDensityColor);
+			pass.SetTexture(14, m_pVolFogBufDensity);
+			pass.SetTexture(15, m_pVolFogBufEmissive);
+		}
+		else
+		{
+			pass.SetBuffer(8, &m_lightGridBuf);
+			pass.SetBuffer(9, &m_lightCountBuf);
+			pass.SetTexture(10, m_pMaxDepth);
+			pass.SetTexture(11, pClipVolumeStencilTex, EDefaultResourceViews::StencilOnly);
+			pass.SetBuffer(12, &m_LightShadeInfoBuf);
+			pass.SetTexture(13, m_pVolFogBufDensityColor);
+			pass.SetTexture(15, m_pVolFogBufEmissive);
+		}
 
 		pass.SetTexture(18, tiledLights->GetDiffuseProbeAtlas());
 		pass.SetTexture(19, tiledLights->GetProjectedLightAtlas());
@@ -2121,10 +2122,10 @@ void CVolumetricFogStage::ExecuteBlurDensityVolume(const SScopedComputeCommandLi
 			static CCryNameTSCRC techName("BlurHorizontalDensityVolume");
 			pass.SetTechnique(pShader, techName, 0);
 
-			pass.SetOutputUAV(0, GetDensityTex());
+			pass.SetOutputUAV(1, GetDensityTex());
 
-			pass.SetTexture(0, m_pVolFogBufDensity);
-			pass.SetTexture(1, m_pMaxDepth);
+			pass.SetTexture(1, m_pVolFogBufDensity);
+			pass.SetTexture(2, m_pMaxDepth);
 
 			pass.SetSampler(0, EDefaultSamplerStates::TrilinearClamp);
 		}
@@ -2160,10 +2161,10 @@ void CVolumetricFogStage::ExecuteBlurDensityVolume(const SScopedComputeCommandLi
 			static CCryNameTSCRC techName("BlurVerticalDensityVolume");
 			pass.SetTechnique(pShader, techName, 0);
 
-			pass.SetOutputUAV(0, m_pVolFogBufDensity);
+			pass.SetOutputUAV(1, m_pVolFogBufDensity);
 
-			pass.SetTexture(0, GetDensityTex());
-			pass.SetTexture(1, m_pMaxDepth);
+			pass.SetTexture(1, GetDensityTex());
+			pass.SetTexture(2, m_pMaxDepth);
 
 			pass.SetSampler(0, EDefaultSamplerStates::TrilinearClamp);
 		}
@@ -2207,18 +2208,28 @@ void CVolumetricFogStage::ExecuteBlurInscatterVolume(const SScopedComputeCommand
 
 	CShader* pShader = CShaderMan::s_shDeferredShading;
 
+	// set texture format toggle
+	uint64 rtMask = 0;
+	if (m_seperateDensity)
+		rtMask |= g_HWSR_MaskBit[HWSR_SAMPLE3];
+
 	{
 		auto& pass = m_passBlurInscatteringHorizontal[bufferId];
 
-		if (pass.IsDirty())
+		if (pass.IsDirty(rtMask))
 		{
 			static CCryNameTSCRC techName("BlurHorizontalInscatteringVolume");
-			pass.SetTechnique(pShader, techName, 0);
+			pass.SetTechnique(pShader, techName, rtMask);
 
 			pass.SetOutputUAV(0, GetInscatterTex());
+			if (m_seperateDensity)
+				pass.SetOutputUAV(1, GetDensityTex());
 
 			pass.SetTexture(0, m_pInscatteringVolume);
-			pass.SetTexture(1, m_pMaxDepth);
+			if (m_seperateDensity)
+				pass.SetTexture(1, m_pVolFogBufDensity);
+
+			pass.SetTexture(2, m_pMaxDepth);
 
 			pass.SetSampler(0, EDefaultSamplerStates::TrilinearClamp);
 		}
@@ -2249,15 +2260,20 @@ void CVolumetricFogStage::ExecuteBlurInscatterVolume(const SScopedComputeCommand
 	{
 		auto& pass = m_passBlurInscatteringVertical[bufferId];
 
-		if (pass.IsDirty())
+		if (pass.IsDirty(rtMask))
 		{
 			static CCryNameTSCRC techName("BlurVerticalInscatteringVolume");
-			pass.SetTechnique(pShader, techName, 0);
+			pass.SetTechnique(pShader, techName, rtMask);
 
 			pass.SetOutputUAV(0, m_pInscatteringVolume);
+			if (m_seperateDensity)
+				pass.SetOutputUAV(1, m_pVolFogBufDensity);
 
 			pass.SetTexture(0, GetInscatterTex());
-			pass.SetTexture(1, m_pMaxDepth);
+			if (m_seperateDensity)
+				pass.SetTexture(1, GetDensityTex());
+
+			pass.SetTexture(2, m_pMaxDepth);
 
 			pass.SetSampler(0, EDefaultSamplerStates::TrilinearClamp);
 		}
@@ -2300,12 +2316,9 @@ void CVolumetricFogStage::ExecuteTemporalReprojection(const SScopedComputeComman
 	{
 		m_cleared -= 1;
 
-#ifdef ENABLE_VOLFOG_TEX_FORMAT_RGBA16F
 		GetDeviceObjectFactory().GetCoreCommandList().GetCopyInterface()->Copy(m_pInscatteringVolume->GetDevTexture(), GetPrevInscatterTex()->GetDevTexture());
-#else
-		GetDeviceObjectFactory().GetCoreCommandList().GetCopyInterface()->Copy(m_pInscatteringVolume->GetDevTexture(), GetPrevInscatterTex()->GetDevTexture());
-		GetDeviceObjectFactory().GetCoreCommandList().GetCopyInterface()->Copy(m_pVolFogBufDensity  ->GetDevTexture(), GetPrevDensityTex()->GetDevTexture());
-#endif
+		if (m_seperateDensity)
+			GetDeviceObjectFactory().GetCoreCommandList().GetCopyInterface()->Copy(m_pVolFogBufDensity->GetDevTexture(), GetPrevDensityTex()->GetDevTexture());
 	}
 
 	// temporal reprojection
@@ -2322,24 +2335,29 @@ void CVolumetricFogStage::ExecuteTemporalReprojection(const SScopedComputeComman
 		{
 			uint64 rtMask = 0;
 			rtMask |= (CRenderer::CV_r_VolumetricFogReprojectionMode != 0) ? g_HWSR_MaskBit[HWSR_SAMPLE5] : 0;
+			// set texture format toggle
+			rtMask |= (m_seperateDensity != false) ? g_HWSR_MaskBit[HWSR_SAMPLE3] : 0;
 
 			static CCryNameTSCRC techName("ReprojectVolumetricFog");
 			pass.SetTechnique(pShader, techName, rtMask);
 
-#ifdef ENABLE_VOLFOG_TEX_FORMAT_RGBA16F
-			pass.SetOutputUAV(0, GetInscatterTex());
-			pass.SetTexture(0, m_pInscatteringVolume);
-			pass.SetTexture(1, GetPrevInscatterTex());
-			pass.SetTexture(2, m_pMaxDepth);
-#else
-			pass.SetOutputUAV(0, GetInscatterTex());
-			pass.SetOutputUAV(1, GetDensityTex());
-			pass.SetTexture(0, m_pInscatteringVolume);
-			pass.SetTexture(1, GetPrevInscatterTex());
-			pass.SetTexture(2, m_pVolFogBufDensity);
-			pass.SetTexture(3, GetPrevDensityTex());
-			pass.SetTexture(4, m_pMaxDepth);
-#endif
+			if (!m_seperateDensity)
+			{
+				pass.SetOutputUAV(0, GetInscatterTex());
+				pass.SetTexture(0, m_pInscatteringVolume);
+				pass.SetTexture(1, GetPrevInscatterTex());
+				pass.SetTexture(2, m_pMaxDepth);
+			}
+			else
+			{
+				pass.SetOutputUAV(0, GetInscatterTex());
+				pass.SetOutputUAV(1, GetDensityTex());
+				pass.SetTexture(0, m_pInscatteringVolume);
+				pass.SetTexture(1, GetPrevInscatterTex());
+				pass.SetTexture(2, m_pVolFogBufDensity);
+				pass.SetTexture(3, GetPrevDensityTex());
+				pass.SetTexture(4, m_pMaxDepth);
+			}
 
 			pass.SetSampler(0, EDefaultSamplerStates::TrilinearClamp);
 
@@ -2402,21 +2420,23 @@ void CVolumetricFogStage::ExecuteRaymarchVolumetricFog(const SScopedComputeComma
 	const uint32 bufferId = GetTemporalBufferId();
 	auto& pass = m_passRaymarch[bufferId];
 
-	if (pass.IsDirty())
+	// set texture format toggle
+	uint64 rtMask = 0;
+	if (m_seperateDensity)
+		rtMask |= g_HWSR_MaskBit[HWSR_SAMPLE3];
+
+	if (pass.IsDirty(rtMask))
 	{
 		static CCryNameTSCRC techName("RaymarchVolumetricFog");
-		pass.SetTechnique(pShader, techName, 0);
+		pass.SetTechnique(pShader, techName, rtMask);
 
 		pass.SetOutputUAV(0, CRendererResources::s_ptexVolumetricFog);
 
 		pass.SetInlineConstantBuffer(eConstantBufferShaderSlot_PerView, gcpRendD3D->GetGraphicsPipeline().GetMainViewConstantBuffer());
 		
-#ifdef ENABLE_VOLFOG_TEX_FORMAT_RGBA16F
 		pass.SetTexture(0, GetInscatterTex());
-#else
-		pass.SetTexture(0, GetInscatterTex());
-		pass.SetTexture(1, GetDensityTex());
-#endif
+		if (m_seperateDensity)
+			pass.SetTexture(1, GetDensityTex());
 	}
 
 	pass.BeginConstantUpdate();

@@ -141,4 +141,6 @@ private:
 	int64                    m_frameID = -1;
 	int32                    m_tick = 0;
 	int32                    m_resourceFrameID = -1;
+
+	bool                     m_seperateDensity = false;
 };
