@@ -63,7 +63,7 @@ void CLensOpticsStage::Execute()
 			SRenderLight* pLight = pOD ? &pRenderView->GetLight(eDLT_DeferredLight, pOD->m_nLightID) : nullptr;
 			RootOpticsElement* pRootElem = pLight ? (RootOpticsElement*)pLight->GetLensOpticsElement() : nullptr;
 
-			if (!pRootElem || pRootElem->GetType() != eFT_Root)
+			if (!pRootElem || !pRootElem->IsEnabled() || pRootElem->GetType() != eFT_Root)
 				continue;
 
 			CFlareSoftOcclusionQuery* pOcc = static_cast<CFlareSoftOcclusionQuery*>(pLight->m_pSoftOccQuery);

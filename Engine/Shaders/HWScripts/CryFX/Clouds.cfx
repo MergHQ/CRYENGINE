@@ -545,7 +545,7 @@ Texture3D VolCloudGlobalShadowTex : register(t5) = TS_VolCloudShadow;
 Texture3D VolCloudNoiseTex : register(t6);
 Texture3D VolCloudEdgeNoiseTex : register(t7);
 
-Texture2D VolFogShadowTex : register(t8) = TS_VolumetricFogShadow0;
+Texture2D<float2> VolFogShadowTex : register(t8) = TS_VolumetricFogShadow0;
 
 Texture3D VolFogSamplingTex : register(t9) = TS_VolumetricFog;
 TextureCube VolFogGlobalEnvProbeTex0 : register(t10) = TS_VolumetricFogGlobalEnvProbe0;
@@ -1668,7 +1668,7 @@ void RenderCloudMonolithicCS(uint3 GroupID : SV_GroupID,
 #else
 	#if %_RT_SAMPLE0
 		// Read volumetric shadows and apply to the global fog.
-		const float volFogShadowContrib = VolFogShadowTex.SampleLevel(VolCloudTrilinearClampSState, vPixelUV.xy, 0.0f).a;
+		const float volFogShadowContrib = VolFogShadowTex.SampleLevel(VolCloudTrilinearClampSState, vPixelUV.xy, 0.0f).g;
 		const float2 volFogShadowContribSunAmb = saturate(volFogShadowContrib * vVolFogShadowDarkeningSunAmb.xz + vVolFogShadowDarkeningSunAmb.yw);
 		half4 localFogColor = GetVolumetricFogColor(fogParams, worldPos, cameraToWorldPos, volFogShadowContribSunAmb.x, volFogShadowContribSunAmb.y);
 		localFogColor.rgb = lerp(localFogColor.rgb * vVolFogShadowDarkening.x, localFogColor.rgb, volFogShadowContrib);
@@ -2541,7 +2541,7 @@ void RenderCloudCS(uint3 GroupID : SV_GroupID,
 #else
 	#if %_RT_SAMPLE0
 		// Read volumetric shadows and apply to the global fog.
-		const float volFogShadowContrib = VolFogShadowTex.SampleLevel(VolCloudTrilinearClampSState, vPixelUV.xy, 0.0f).a;
+		const float volFogShadowContrib = VolFogShadowTex.SampleLevel(VolCloudTrilinearClampSState, vPixelUV.xy, 0.0f).g;
 		const float2 volFogShadowContribSunAmb = saturate(volFogShadowContrib * vVolFogShadowDarkeningSunAmb.xz + vVolFogShadowDarkeningSunAmb.yw);
 		half4 localFogColor = GetVolumetricFogColor(fogParams, worldPos, cameraToWorldPos, volFogShadowContribSunAmb.x, volFogShadowContribSunAmb.y);
 		localFogColor.rgb = lerp(localFogColor.rgb * vVolFogShadowDarkening.x, localFogColor.rgb, volFogShadowContrib);
@@ -3056,7 +3056,7 @@ pixout CloudsBlendPS( vtxOutWPOS IN )
 #else
 	#if %_RT_SAMPLE0
 		// Read volumetric shadows and apply to the global fog.
-		const float volFogShadowContrib = VolFogShadowTex.SampleLevel(VolCloudTrilinearClampSState, IN.baseTC.xy, 0.0f).a;
+		const float volFogShadowContrib = VolFogShadowTex.SampleLevel(VolCloudTrilinearClampSState, IN.baseTC.xy, 0.0f).g;
 		const float2 volFogShadowContribSunAmb = saturate(volFogShadowContrib * params.volFogShadowDarkeningSunAmb.xz + params.volFogShadowDarkeningSunAmb.yw);
 		half4 localFogColor = GetVolumetricFogColor(fogParams, worldPos, cameraToWorldPos, volFogShadowContribSunAmb.x, volFogShadowContribSunAmb.y);
 		localFogColor.rgb = lerp(localFogColor.rgb * params.volFogShadowDarkening.x, localFogColor.rgb, volFogShadowContrib);

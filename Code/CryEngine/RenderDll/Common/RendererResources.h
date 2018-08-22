@@ -279,6 +279,7 @@ public:
 
 	static CTexture* s_ptexAOColorBleed;                                         // CScreenSpaceObscuranceStage, CTiledShadingStage
 	static CTexture* s_ptexShadowMask;                                           // CShadowMapStage
+	static CTexture* s_ptexClipVolumes;                                          // CClipVolumeStage, CTiledShadingStage, CHeightMapAOStage
 	static CTexture* s_ptexModelHudBuffer;                                       // CV_r_UsePersistentRTForModelHUD, used by Menu3DModelRenderer to postprocess render models
 	static CTexture* s_ptexSceneCoC[MIN_DOF_COC_K];                              // CDepthOfFieldStage
 	static CTexture* s_ptexSceneCoCTemp;                                         // CDepthOfFieldStage
@@ -286,7 +287,7 @@ public:
 	static CTexture* s_ptexWaterVolumeRefl[2];                                   // CWaterStage, water volume reflections buffer
 	static CTexture* s_ptexRainSSOcclusion[2];                                   // CRainStage, screen-space rain occlusion accumulation
 #if defined(VOLUMETRIC_FOG_SHADOWS)
-	static CTexture* s_ptexVolFogShadowBuf[2];                                   // CVolumetricFogStage, CFogStage
+	static CTexture* s_ptexVolFogShadowBuf[2];                                   // CVolumetricCloudStage, CVolumetricFogStage, CFogStage, CWaterStage
 #endif
 
 	// Display resolution [dependent] targets ==================================================================

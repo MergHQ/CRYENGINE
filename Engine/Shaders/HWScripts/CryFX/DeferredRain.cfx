@@ -24,7 +24,7 @@ Texture2D drSurfaceFlowTex : register(t4) = "%ENGINE%/EngineAssets/Textures/Rain
 Texture2D drRainSpatterTex : register(t5) = "%ENGINE%/EngineAssets/Textures/Rain/rain_spatter.tif";
 Texture2D drPuddleMaskTex : register(t6) = "%ENGINE%/EngineAssets/Textures/Rain/puddle_mask.tif";
 Texture2D drRainRipplesTex : register(t7) = "%ENGINE%/EngineAssets/Textures/Rain/Ripple/ripple#01_24_ddn.tif";
-Texture2D drRainOcclusionTex : register(t8) = $RainOcclusion;
+Texture2D<float> drRainOcclusionTex : register(t8) = $RainOcclusion;
 Texture2D<uint2> drStencilTex : register(t9);
 
 SamplerState drPointWrapSampler : register(s0) = SS_PointWrap;
@@ -94,8 +94,8 @@ pixoutRainGBuffer DeferredRainGBufferPS( vtxOut IN )
 	vOccMapCoords.xy += spatterMask * (2.h/RAIN_OCC_MAP_SIZE) - (1.h/RAIN_OCC_MAP_SIZE);
 
 	half2 vOccDepth;
-	vOccDepth.x = drRainOcclusionTex.SampleLevel(drPointBorderWhiteSampler, vOccMapCoords.xy, 0.0f).x;
-	vOccDepth.y = drRainOcclusionTex.SampleLevel(drPointBorderWhiteSampler, vOccMapCoords.xy + g_RainOcc_WindOffs.xy, 0.0f).x;
+	vOccDepth.x = drRainOcclusionTex.SampleLevel(drPointBorderWhiteSampler, vOccMapCoords.xy, 0.0f);
+	vOccDepth.y = drRainOcclusionTex.SampleLevel(drPointBorderWhiteSampler, vOccMapCoords.xy + g_RainOcc_WindOffs.xy, 0.0f);
 
 	const half2 bOccCheck = (vOccDepth==1.0f) ? 1.h : (254.h/256.h - vOccDepth) < vOccMapCoords.z;
 	fAttenuation *= lerp(bOccCheck.x, bOccCheck.y, 0.5h);
@@ -204,17 +204,17 @@ struct vert2fragOcc
 vert2fragOcc DeferredRainOccVS( app2vertOcc IN )
 {
 	vert2fragOcc OUT = (vert2fragOcc)0;
+
 	OUT.HPosition = float4(mul((float3x4)matRainOccluder, IN.Position), 1);
 	OUT.HPosition.z = 1 - OUT.HPosition.z;
-	OUT.Z = OUT.HPosition.z;
+	OUT.Z = min(OUT.HPosition.z, 254.0f/255.0f);
+
 	return OUT;
 }
 
-pixout DeferredRainOccPS( vert2fragOcc IN )
+float DeferredRainOccPS( vert2fragOcc IN ) : SV_Target
 {
-	pixout OUT = (pixout)0;
-	OUT.Color = min(IN.Z, 254.0f/255.0f);
-	return OUT;
+	return IN.Z;
 }
 
 

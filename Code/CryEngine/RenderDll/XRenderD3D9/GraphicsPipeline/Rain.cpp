@@ -152,7 +152,7 @@ void CRainStage::Update()
 	if (!shouldApplyOcclusion && CTexture::IsTextureExist(CRendererResources::s_ptexRainOcclusion))
 		CRendererResources::s_ptexRainOcclusion->ReleaseDeviceTexture(false);
 	else if (shouldApplyOcclusion && !CTexture::IsTextureExist(CRendererResources::s_ptexRainOcclusion))
-		CRendererResources::s_ptexRainOcclusion->CreateRenderTarget(eTF_R8G8B8A8, Clr_Neutral);
+		CRendererResources::s_ptexRainOcclusion->CreateRenderTarget(eTF_R8, Clr_Neutral);
 
 	if (RenderView()->GetCurrentEye() != CCamera::eEye_Right)
 	{

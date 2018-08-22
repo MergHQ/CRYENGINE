@@ -7,7 +7,7 @@
 #include "../Textures/Texture.h"
 #include <Cry3DEngine/I3DEngine.h>
 
-unsigned char CFlareSoftOcclusionQuery::s_paletteRawCache[s_nIDMax * 4];
+unsigned char CFlareSoftOcclusionQuery::s_paletteRawCache[s_nIDMax * CHANNELS_PER_GATHER];
 char CFlareSoftOcclusionQuery::s_idHashTable[s_nIDMax];
 int CFlareSoftOcclusionQuery::s_idCount = 0;
 int CFlareSoftOcclusionQuery::s_ringReadIdx = 1;
@@ -158,7 +158,7 @@ void CFlareSoftOcclusionQuery::UpdateCachedResults()
 {
 	int cacheIdx = 4 * m_nID;
 	m_fOccResultCache = s_paletteRawCache[cacheIdx + 0] / 255.0f;
-	m_fDirResultCache = (s_paletteRawCache[cacheIdx + 3] / 255.0f) * 2.0f * PI;
+	m_fDirResultCache = (s_paletteRawCache[cacheIdx + 1] / 255.0f) * 2.0f * PI;
 	sincos_tpl(m_fDirResultCache, &m_DirVecResultCache.y, &m_DirVecResultCache.x);
 }
 
@@ -177,7 +177,7 @@ void CFlareSoftOcclusionQuery::BatchReadResults()
 	CRendererResources::s_ptexFlaresOcclusionRing[s_ringReadIdx]->GetDevTexture()->AccessCurrStagingResource(0, false, [=](void* pData, uint32 rowPitch, uint32 slicePitch)
 	{
 		unsigned char* pTexBuf = reinterpret_cast<unsigned char*>(pData);
-		int validLineStrideBytes = s_nIDColMax * 4;
+		int validLineStrideBytes = s_nIDColMax * CHANNELS_PER_GATHER;
 		for (int i = 0; i < s_nIDRowMax; i++)
 		{
 		  memcpy(s_paletteRawCache + i * validLineStrideBytes, pTexBuf + i * rowPitch, validLineStrideBytes);

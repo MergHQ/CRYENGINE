@@ -90,9 +90,9 @@ float3 ComputeWaterFogShadow(
 	half2 texelSize = CV_ScreenSize.zw * 40.0;
 
 	// Sample with chroma shift.
-	half3 fogSample = volFogShadowTex.Sample(ssMaterialTrilinear, screenTC + texelSize * 1.25).a;
-	fogSample.y = volFogShadowTex.Sample(ssMaterialTrilinear, screenTC + texelSize ).a;
-	fogSample.z = volFogShadowTex.Sample(ssMaterialTrilinear, screenTC + texelSize * 0.75).a;
+	half3 fogSample = volFogShadowTex.Sample(ssMaterialTrilinear, screenTC + texelSize * 1.25).g;
+	fogSample.y = volFogShadowTex.Sample(ssMaterialTrilinear, screenTC + texelSize ).g;
+	fogSample.z = volFogShadowTex.Sample(ssMaterialTrilinear, screenTC + texelSize * 0.75).g;
 	fogSample = min(fogSample, shadowSample);
 
 	// Loop through positions from fog buffer and compute proper attenuation and cutoff.
@@ -171,7 +171,7 @@ pixout WaterVolumeIntoPS( v2fIn IN )
 	SFogParams fogParams = GetFogParams();
 	#if %_RT_SAMPLE5
 		SVolumetricFogShadowParams volFogShadow = GetVolumetricFogShadowParams();
-		half fVolumetricFog = volFogShadowTex.Sample(ssMaterialTrilinear, screenTC).a;
+		half fVolumetricFog = volFogShadowTex.Sample(ssMaterialTrilinear, screenTC).g;
 		float2 fVolumetricFogSunAmb = saturate(fVolumetricFog * volFogShadow.volFogShadowDarkeningSunAmb.xz + volFogShadow.volFogShadowDarkeningSunAmb.yw);
 		half4 localFogColor = GetVolumetricFogColor(fogParams, worldPos, IN.viewDir.xyz, fVolumetricFogSunAmb.x, fVolumetricFogSunAmb.y);
 		localFogColor.rgb = lerp(localFogColor.rgb * volFogShadow.volFogShadowDarkening.x, localFogColor.rgb, fVolumetricFog);

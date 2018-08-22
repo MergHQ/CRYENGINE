@@ -271,7 +271,7 @@ void RootOpticsElement::RT_RenderPreview(const SLensFlareRenderParam* pParam, co
 
 bool RootOpticsElement::ProcessAll(CPrimitiveRenderPass& targetPass, std::vector<CPrimitiveRenderPass*>& prePasses, const SFlareLight& light, const SRenderViewInfo* pViewInfo, int viewInfoCount, bool bForceRender, bool bUpdateOcclusion)
 {
-	assert(viewInfoCount > 0 && viewInfoCount <= CCamera::eEye_eCount);
+	CRY_ASSERT(IsGroupEnabled() && (viewInfoCount > 0) && (viewInfoCount <= CCamera::eEye_eCount));
 
 	Vec3 vSrcWorldPos = light.m_vPos;
 	Vec3 vSrcProjPos;
@@ -291,9 +291,6 @@ bool RootOpticsElement::ProcessAll(CPrimitiveRenderPass& targetPass, std::vector
 
 	linearDepth = clamp_tpl(CFlareSoftOcclusionQuery::ComputeLinearDepth(vSrcWorldPos, viewInfo.viewMatrix, viewInfo.nearClipPlane, viewInfo.farClipPlane), -1.0f, 0.99f);
 	distance = viewInfo.cameraOrigin.GetDistance(vSrcWorldPos);
-
-	if (GetElementCount() <= 0 || !IsEnabled())
-		return false;
 
 	if (!bForceRender && (linearDepth <= 0 || !IsVisibleBasedOnLight(light, distance)))
 		return false;

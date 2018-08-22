@@ -96,7 +96,7 @@ void CTiledShadingStage::Execute()
 
 	rtFlags |= CVrProjectionManager::Instance()->GetRTFlags();
 
-	CTexture* texClipVolumeIndex = CRendererResources::s_ptexVelocity;
+	CTexture* texClipVolumeIndex = CRendererResources::s_ptexClipVolumes;
 	CTexture* pTexCaustics = tiledLights->IsCausticsVisible() ? CRendererResources::s_ptexSceneTargetR11G11B10F[1] : CRendererResources::s_ptexBlack;
 	CTexture* pTexAOColorBleed = CRenderer::CV_r_ssdoColorBleeding ? CRendererResources::s_ptexAOColorBleed : CRendererResources::s_ptexBlack;
 

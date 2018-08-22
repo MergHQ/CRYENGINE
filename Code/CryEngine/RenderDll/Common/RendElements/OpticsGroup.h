@@ -28,6 +28,8 @@ public:
 	void                SetElementAt(int i, IOpticsElementBase* elem);
 	void                Invalidate() override;
 
+	bool                IsGroupEnabled() const { return GetElementCount() > 0 && IsEnabled(); }
+
 	bool                IsGroup() const override { return true; }
 	void                validateChildrenGlobalVars(const SAuxParams& aux);
 

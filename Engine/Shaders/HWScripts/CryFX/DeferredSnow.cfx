@@ -76,7 +76,7 @@ Texture2D snowSpatterTex : register(t5) = "%ENGINE%/EngineAssets/Textures/Frozen
 Texture2D frostBubblesBumpTex : register(t6) = "%ENGINE%/EngineAssets/Textures/Frozen/frost_noise4.tif";
 Texture2D snowFrostBumpTex : register(t7) = "%ENGINE%/EngineAssets/Textures/Frozen/frost_noise3.dds";
 Texture3D volumeNoiseTex : register(t8) = "%ENGINE%/EngineAssets/Textures/noise3d.dds";
-Texture2D snowOcclusionTex : register(t9) = $RainOcclusion;
+Texture2D<float> snowOcclusionTex : register(t9) = $RainOcclusion;
 
 SamplerState pointClampSampler : register(s0) = SS_PointClamp;
 SamplerState trilinearWrapSampler : register(s1) = SS_TrilinearWrap;

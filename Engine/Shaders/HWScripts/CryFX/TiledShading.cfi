@@ -420,7 +420,7 @@ Texture2DArray<float4> ShadowMaskRT : register(t4);
 Texture2D<float4> DirectionalOccRT : register(t5);
 Texture2D<float4> SSReflectionRT : register(t6);
 Texture2D<float4> EnvBRDF : register(t7);
-Texture2D<float4> ClipVolumeIndexRT : register(t8);
+Texture2D<float2> ClipVolumeIndexRT : register(t8);
 Texture2D<float4> AOColorBleedRT : register(t9);
 Texture2D<float4> GiDiffuseRT : register(t10);
 Texture2D<float4> GiSpecularRT : register(t11);

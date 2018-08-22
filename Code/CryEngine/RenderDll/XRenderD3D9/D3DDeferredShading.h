@@ -149,7 +149,7 @@ private:
 		, m_pNormalsRT(CRendererResources::s_ptexSceneNormalsMap)
 		, m_pDepthRT(CRendererResources::s_ptexLinearDepth)
 		, m_pMSAAMaskRT(CRendererResources::s_ptexBackBuffer)
-		, m_pResolvedStencilRT(CRendererResources::s_ptexVelocity)
+		, m_pResolvedStencilRT(CRendererResources::s_ptexClipVolumes)
 		, m_nRenderState(GS_BLSRC_ONE | GS_BLDST_ONE)
 		, m_nThreadID(0)
 		, m_nRecurseLevel(0)

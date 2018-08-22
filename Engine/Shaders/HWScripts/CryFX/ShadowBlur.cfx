@@ -24,7 +24,7 @@ float4 PixelOffset < vsregister = VS_REG_PB_0; >
 // Textures and Sampler states
 Texture2D<float4> BlurSrcTex         : register(t0);
 Texture2D<float4> DepthTex           : register(t1);
-Texture2D<float4> ClipVolumeIdTex    : register(t2);
+Texture2D<float2> ClipVolumeIdTex    : register(t2);
 
 SamplerState BlurSrcSS         : register(s0);
 SamplerState DepthSS           : register(s1);
@@ -117,9 +117,9 @@ SamplerState SampStatePoint
 	AddressV = Clamp;
 };
 
-pixout HMAO_Blur_PS(vtxOut IN)
+float2 HMAO_Blur_PS(vtxOut IN) : SV_Target
 {
-	pixout OUT = (pixout)0;
+	float2 OUT = float2(0, 0);
 	
 	const int halfKernelWidth = 2;
 	
@@ -138,13 +138,13 @@ pixout HMAO_Blur_PS(vtxOut IN)
 			float2 depthSample = DepthTex.Load(int3(samplePos, 0)).rg;
 
 			float2 sampleWeight = exp2(abs(depthSample - centerDepth) * -similarity);
-			OUT.Color.rg += colorSample * sampleWeight;
+			OUT.rg += colorSample * sampleWeight;
 			
 			weightSum += sampleWeight;
 		}
 	}
 
-	OUT.Color.rg /= weightSum;
+	OUT.rg /= weightSum;
 	
 #if %_RT_SAMPLE0
 	float4 clipVolumeIDs = ClipVolumeIdTex.GatherRed(SampStatePoint, IN.baseTC.xy);
@@ -158,7 +158,7 @@ pixout HMAO_Blur_PS(vtxOut IN)
 	);
 	
 	float avgIgnoreOutdoor = dot((nClipVolumeData & CLIPVOLUME_IGNORE_OUTDOOR_AO) ? 1.0 : 0.0, 0.25);
-	OUT.Color.rg = 1-(1-OUT.Color.rg)*(1-avgIgnoreOutdoor);
+	OUT.rg = 1-(1-OUT.Color.rg)*(1-avgIgnoreOutdoor);
 #endif
 	
 	return OUT;
