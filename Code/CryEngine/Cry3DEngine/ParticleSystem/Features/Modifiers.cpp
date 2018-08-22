@@ -25,12 +25,9 @@ public:
 class CModCurve : public CFTimeSource
 {
 public:
-	CModCurve() {}
-
-	virtual void AddToParam(CParticleComponent* pComponent, IParamMod* pParam)
+	virtual void AddToParam(CParticleComponent* pComponent)
 	{
-		if (m_spline.HasKeys())
-			CDomain::AddToParam(pComponent, pParam, this);
+		CDomain::AddToParam(pComponent);
 	}
 
 	virtual void Serialize(Serialization::IArchive& ar)
@@ -42,9 +39,9 @@ public:
 		ar(m_spline, "Curve", "Curve");
 	}
 
-	virtual void Sample(float* samples, const int numSamples) const
+	virtual void Sample(float* samples, uint numSamples) const
 	{
-		for (int i = 0; i < numSamples; ++i)
+		for (uint i = 0; i < numSamples; ++i)
 		{
 			const float point = (float)i / numSamples;
 			float dataIn = samples[i];
@@ -57,7 +54,8 @@ public:
 	virtual void Modify(CParticleComponentRuntime& runtime, const SUpdateRange& range, IOFStream stream, TDataType<float> streamType, EDataDomain domain) const
 	{
 		CRY_PFX2_PROFILE_DETAIL;
-		CDomain::Dispatch<CModCurve>(runtime, range, stream, domain);
+		if (m_spline.HasKeys())
+			CDomain::Dispatch<CModCurve>(runtime, range, stream, domain);
 	}
 
 	template<typename TTimeKernel>
@@ -93,13 +91,11 @@ SERIALIZATION_CLASS_NAME(IModifier, CModCurve, "Curve", "Curve");
 class CModDoubleCurve : public CFTimeSource
 {
 public:
-	CModDoubleCurve() {}
-
-	virtual void AddToParam(CParticleComponent* pComponent, IParamMod* pParam)
+	virtual void AddToParam(CParticleComponent* pComponent)
 	{
 		if (m_spline.HasKeys())
 		{
-			CDomain::AddToParam(pComponent, pParam, this);
+			CDomain::AddToParam(pComponent);
 			pComponent->AddParticleData(EPDT_Random);
 		}
 	}
@@ -166,11 +162,6 @@ public:
 		return EDD_PerParticle;
 	}
 
-	virtual void AddToParam(CParticleComponent* pComponent, IParamMod* pParam)
-	{
-		pParam->AddToInitParticles(this);
-	}
-
 	virtual void Serialize(Serialization::IArchive& ar)
 	{
 		IModifier::Serialize(ar);
@@ -222,9 +213,9 @@ public:
 		, m_pulseWidth(0.5f)
 		, m_mode(EParamNoiseMode::Smooth) {}
 
-	virtual void AddToParam(CParticleComponent* pComponent, IParamMod* pParam)
+	virtual void AddToParam(CParticleComponent* pComponent)
 	{
-		CDomain::AddToParam(pComponent, pParam, this);
+		CDomain::AddToParam(pComponent);
 	}
 
 	virtual void Serialize(Serialization::IArchive& ar)
@@ -378,9 +369,9 @@ public:
 		, m_bias(0.5f)
 		, m_inverse(false) {}
 
-	virtual void AddToParam(CParticleComponent* pComponent, IParamMod* pParam)
+	virtual void AddToParam(CParticleComponent* pComponent)
 	{
-		CDomain::AddToParam(pComponent, pParam, this);
+		CDomain::AddToParam(pComponent);
 	}
 
 	virtual void Serialize(Serialization::IArchive& ar)
@@ -528,11 +519,9 @@ SERIALIZATION_CLASS_NAME(IModifier, CModWave, "Wave", "Wave");
 class CModLinear : public CFTimeSource
 {
 public:
-	CModLinear() {}
-
-	virtual void AddToParam(CParticleComponent* pComponent, IParamMod* pParam)
+	virtual void AddToParam(CParticleComponent* pComponent)
 	{
-		CDomain::AddToParam(pComponent, pParam, this);
+		CDomain::AddToParam(pComponent);
 	}
 
 	virtual void Serialize(Serialization::IArchive& ar)
@@ -604,17 +593,9 @@ public:
 			m_specMultipliers[i] = 1.0f;
 	}
 
-	virtual void AddToParam(CParticleComponent* pComponent, IParamMod* pParam) override
-	{
-		if (m_spawnOnly)
-			pParam->AddToInitParticles(this);
-		else
-			pParam->AddToUpdate(this);
-	}
-
 	virtual EDataDomain GetDomain() const override
 	{
-		return EDD_PerParticle;
+		return m_spawnOnly ? EDD_PerParticle : EDD_ParticleUpdate;
 	}
 
 	virtual Range GetMinMax() const override
@@ -680,17 +661,9 @@ SERIALIZATION_CLASS_NAME(IModifier, CModConfigSpec, "ConfigSpec", "Config Spec")
 class CModAttribute : public IModifier
 {
 public:
-	virtual void AddToParam(CParticleComponent* pComponent, IParamMod* pParam) override
-	{
-		if (m_spawnOnly)
-			pParam->AddToInitParticles(this);
-		else
-			pParam->AddToUpdate(this);
-	}
-
 	virtual EDataDomain GetDomain() const override
 	{
-		return EDD_PerParticle;
+		return m_spawnOnly ? EDD_PerParticle : EDD_ParticleUpdate;
 	}
 
 	virtual void Serialize(Serialization::IArchive& ar) override
@@ -766,15 +739,7 @@ public:
 
 	virtual EDataDomain GetDomain() const
 	{
-		return EDD_PerParticle;
-	}
-
-	virtual void AddToParam(CParticleComponent* pComponent, IParamMod* pParam)
-	{
-		if (m_spawnOnly)
-			pParam->AddToInitParticles(this);
-		else
-			pParam->AddToUpdate(this);
+		return m_spawnOnly ? EDD_PerParticle : EDD_ParticleUpdate;
 	}
 
 	virtual void Serialize(Serialization::IArchive& ar)

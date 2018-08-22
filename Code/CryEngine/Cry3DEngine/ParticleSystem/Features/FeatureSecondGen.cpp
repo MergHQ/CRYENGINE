@@ -40,8 +40,32 @@ public:
 		: m_probability(1.0f)
 		, m_mode(ESecondGenMode::All) {}
 
-	CParticleFeature* MakeChildFeatures(CParticleComponent* pComponent, cstr featureName)
+	void Serialize(Serialization::IArchive& ar) override
 	{
+		CParticleFeature::Serialize(ar);
+		ar(m_mode, "Mode", "Mode");
+		ar(m_probability, "Probability", "Probability");
+		ar(m_componentNames, "Components", "!Components");
+		if (ar.isInput())
+		{
+			VersionFix(ar);
+
+			// Add Child feature of corresponding name
+			if (auto pParam = GetPSystem()->FindFeatureParam("Child", GetChildFeatureName()))
+			{
+				m_pChildFeature = static_cast<CParticleFeature*>((pParam->m_pFactory)());
+				m_pChildFeature->Serialize(ar);
+			}
+		}
+	}
+
+	virtual cstr GetChildFeatureName() = 0;
+
+	CParticleFeature* ResolveDependency(CParticleComponent* pComponent) override
+	{
+		if (!m_pChildFeature)
+			return nullptr;
+
 		CParticleEffect* pEffect = pComponent->GetEffect();
 
 		// Count number of real children
@@ -75,31 +99,28 @@ public:
 				pChild->SetParent(pComponent);
 
 				// Add Child feature of corresponding name
-				if (auto pParam = CRY_PFX2_VERIFY(GetPSystem()->FindFeatureParam("Child", featureName)))
+				pChild->AddFeature(0, m_pChildFeature);
+
+				if (probability < 1.0f)
 				{
-					pChild->AddFeature(0, *pParam);
-
-					if (probability < 1.0f)
+					// Add Spawn Random feature	
+					if (auto pParam = CRY_PFX2_VERIFY(GetPSystem()->FindFeatureParam("Component", "ActivateRandom")))
 					{
-						// Add Spawn Random feature	
-						if (auto pParam = CRY_PFX2_VERIFY(GetPSystem()->FindFeatureParam("Component", "ActivateRandom")))
+						IParticleFeature* pFeature = pChild->AddFeature(1, *pParam);
+						XmlNodeRef attrs = gEnv->pSystem->CreateXmlNode("ActivateRandom");
+						AddValue(attrs, "Probability", probability);
+
+						if (numChildren > 1)
 						{
-							IParticleFeature* pFeature = pChild->AddFeature(1, *pParam);
-							XmlNodeRef attrs = gEnv->pSystem->CreateXmlNode("ActivateRandom");
-							AddValue(attrs, "Probability", probability);
-
-							if (numChildren > 1)
-							{
-								AddValue(attrs, "Group", s_childGroup);
-							}
-							if (componentFrac < 1.0f)
-							{
-								AddValue(attrs, "SelectionStart", selectionStart);
-								selectionStart += componentFrac;
-							}
-
-							CRY_PFX2_VERIFY(Serialization::LoadXmlNode(*pFeature, attrs));
+							AddValue(attrs, "Group", s_childGroup);
 						}
+						if (componentFrac < 1.0f)
+						{
+							AddValue(attrs, "SelectionStart", selectionStart);
+							selectionStart += componentFrac;
+						}
+
+						CRY_PFX2_VERIFY(Serialization::LoadXmlNode(*pFeature, attrs));
 					}
 				}
 			}
@@ -107,16 +128,6 @@ public:
 
 		// Delete this feature
 		return nullptr;
-	}
-
-	void Serialize(Serialization::IArchive& ar) override
-	{
-		CParticleFeature::Serialize(ar);
-		ar(m_mode, "Mode", "Mode");
-		ar(m_probability, "Probability", "Probability");
-		ar(m_componentNames, "Components", "!Components");
-		if (ar.isInput())
-			VersionFix(ar);
 	}
 
 	const SParticleFeatureParams& GetFeatureParams() const override
@@ -143,6 +154,8 @@ private:
 	std::vector<string> m_componentNames;
 	SUnitFloat          m_probability;
 	ESecondGenMode      m_mode;
+
+	CParticleFeature*   m_pChildFeature = 0;
 };
 
 //////////////////////////////////////////////////////////////////////////
@@ -150,10 +163,7 @@ private:
 class CFeatureSecondGenOnSpawn : public CFeatureSecondGenBase
 {
 public:
-	CParticleFeature* ResolveDependency(CParticleComponent* pComponent) override
-	{
-		return MakeChildFeatures(pComponent, "OnBirth");
-	}
+	cstr GetChildFeatureName() override { return "OnBirth"; }
 };
 
 CRY_PFX2_LEGACY_FEATURE(CFeatureSecondGenOnSpawn, "SecondGen", "OnSpawn");
@@ -161,10 +171,7 @@ CRY_PFX2_LEGACY_FEATURE(CFeatureSecondGenOnSpawn, "SecondGen", "OnSpawn");
 class CFeatureSecondGenOnDeath : public CFeatureSecondGenBase
 {
 public:
-	CParticleFeature* ResolveDependency(CParticleComponent* pComponent) override
-	{
-		return MakeChildFeatures(pComponent, "OnDeath");
-	}
+	cstr GetChildFeatureName() override { return "OnDeath"; }
 };
 
 CRY_PFX2_LEGACY_FEATURE(CFeatureSecondGenOnDeath, "SecondGen", "OnDeath");
@@ -172,10 +179,7 @@ CRY_PFX2_LEGACY_FEATURE(CFeatureSecondGenOnDeath, "SecondGen", "OnDeath");
 class CFeatureSecondGenOnCollide : public CFeatureSecondGenBase
 {
 public:
-	CParticleFeature* ResolveDependency(CParticleComponent* pComponent) override
-	{
-		return MakeChildFeatures(pComponent, "OnCollide");
-	}
+	cstr GetChildFeatureName() override { return "OnCollide"; }
 };
 
 CRY_PFX2_LEGACY_FEATURE(CFeatureSecondGenOnCollide, "SecondGen", "OnCollide");

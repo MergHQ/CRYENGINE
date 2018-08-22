@@ -3,6 +3,7 @@
 #include "StdAfx.h"
 #include "FeatureCommon.h"
 #include "FeatureCollision.h"
+#include "FeatureMotion.h"
 
 namespace pfx2
 {
@@ -93,10 +94,23 @@ CRY_PFX2_IMPLEMENT_COMPONENT_FEATURE(CParticleFeature, CFeatureChildOnDeath, "Ch
 
 //////////////////////////////////////////////////////////////////////////
 
+SERIALIZATION_DECLARE_ENUM(ESurfaceRequirement,
+	Any,
+	Only,
+	Not
+)
+
 class CFeatureChildOnCollide : public CFeatureChildBase
 {
 public:
 	CRY_PFX2_DECLARE_FEATURE
+
+	void Serialize(Serialization::IArchive& ar) override
+	{
+		SERIALIZE_VAR(ar, m_surfaceRequirement);
+		if (m_surfaceRequirement != ESurfaceRequirement::Any)
+			SERIALIZE_VAR(ar, m_surface);
+	}
 
 	bool IsDelayed() const override { return true; }
 
@@ -110,12 +124,28 @@ public:
 
 		for (auto particleId : parentContainer.GetFullRange())
 		{
-			const SContactPoint contact = contactPoints.Load(particleId);
-			if (contact.m_state.collided)
+			const SContactPoint& contact = contactPoints[particleId];
+			if (contact.m_collided)
+			{
+				if (m_surfaceRequirement == ESurfaceRequirement::Only)
+				{
+					if (contact.m_pSurfaceType->GetId() != m_surface)
+						continue;
+				}
+				else if (m_surfaceRequirement == ESurfaceRequirement::Not)
+				{
+					if (contact.m_pSurfaceType->GetId() == m_surface)
+						continue;
+				}
 				triggers.emplace_back(particleId, contact.m_time);
+			}
 		}
 		runtime.AddSubInstances(triggers);
 	}
+
+private:
+	ESurfaceRequirement m_surfaceRequirement;
+	ESurfaceType        m_surface;
 };
 
 CRY_PFX2_IMPLEMENT_COMPONENT_FEATURE(CParticleFeature, CFeatureChildOnCollide, "Child", "OnCollide", colorChild);

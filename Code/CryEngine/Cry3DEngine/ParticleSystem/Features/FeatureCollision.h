@@ -1,11 +1,4 @@
-// Copyright 2001-2018 Crytek GmbH / Crytek Group. All rights reserved.
-
-// -------------------------------------------------------------------------
-//  Created:     22/10/2015 by Benjamin Block
-//  Description:
-// -------------------------------------------------------------------------
-//
-////////////////////////////////////////////////////////////////////////////
+// Copyright 2015-2018 Crytek GmbH / Crytek Group. All rights reserved. 
 
 #pragma once
 
@@ -17,19 +10,21 @@ namespace pfx2
 
 struct SContactPoint
 {
+	bool  m_collided;
+	bool  m_sliding;
+	bool  m_stopped;
+	bool  m_ignore;
+
+	float m_time;
 	Vec3  m_point;
 	Vec3  m_normal;
-	float m_speedIn;          // incoming collision speed
-	float m_time;             // since start of frame
-	uint  m_totalCollisions;
-	struct  
-	{
-		uint collided: 1,
-		     sliding: 1,
-		     ignore: 1;
-	} m_state;
-
+	const ISurfaceType* m_pSurfaceType;
 	SContactPoint() { ZeroStruct(*this); }
+};
+
+struct SContactPredict: SContactPoint
+{
+	Vec3 m_testDir;
 };
 
 template<typename T, typename F = float> struct QuadPathT;
@@ -53,11 +48,9 @@ public:
 	CRY_PFX2_DECLARE_FEATURE
 
 public:
-	CFeatureCollision();
-
 	virtual void AddToComponent(CParticleComponent* pComponent, SComponentParams* pParams) override;
 	virtual void Serialize(Serialization::IArchive& ar) override;
-	virtual void InitParticles(CParticleComponentRuntime& runtime) override;
+	virtual void PostInitParticles(CParticleComponentRuntime& runtime) override;
 	virtual void PostUpdateParticles(CParticleComponentRuntime& runtime) override;
 
 	bool  IsActive() const           { return m_terrain || m_staticObjects || m_dynamicObjects; }
@@ -66,19 +59,27 @@ public:
 
 private:
 	void DoCollisions(CParticleComponentRuntime& runtime) const;
-	bool DoCollision(SContactPoint& contact, QuadPath& path, int objectFilter, bool doSliding = true) const;
+	bool DoCollision(SContactPredict& contactNext, SContactPoint& contact, float& collideSpeed, QuadPath& path) const;
+	bool PathWorldIntersection(SContactPoint& contact, const QuadPath& path, float t0, float t1, bool splitInflection) const;
+	bool RayWorldIntersection(SContactPoint& contact, const Vec3& startIn, const Vec3& rayIn) const;
+	bool TestSlide(SContactPoint& contact, Vec3& pos, Vec3& vel, const Vec3& acc) const;
+	void Collide(SContactPoint& contact, float& collideSpeed, QuadPath& path) const;
 
 	template<typename TCollisionLimit>
 	void UpdateCollisionLimit(CParticleComponentRuntime& runtime) const;
 
 	UUnitFloat          m_elasticity;
 	UUnitFloat          m_friction;
-	ECollisionLimitMode m_collisionsLimitMode;
-	UBytePos            m_maxCollisions;
-	bool                m_rotateToNormal;
-	bool                m_terrain;
-	bool                m_staticObjects;
-	bool                m_dynamicObjects;
+	ECollisionLimitMode m_collisionsLimitMode = ECollisionLimitMode::Unlimited;
+	UBytePos            m_maxCollisions       = 0;
+	bool                m_rotateToNormal      = false;
+	bool                m_terrain             = true;
+	bool                m_staticObjects       = true;
+	bool                m_dynamicObjects      = false;
+	bool                m_water               = false;
+
+	bool                m_doPrediction        = true;
+	int                 m_objectFilter        = 0;
 };
 
 //////////////////////////////////////////////////////////////////////////

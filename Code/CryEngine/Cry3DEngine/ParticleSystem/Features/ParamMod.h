@@ -10,36 +10,18 @@
 
 namespace pfx2
 {
-struct IModifier;
-struct IFieldModifier;
-
-struct IParamMod
-{
-	void AddToInitParticles(IModifier* pMod)
-	{
-		stl::push_back_unique(m_modInit, pMod);
-	}
-	void AddToUpdate(IModifier* pMod)
-	{
-		stl::push_back_unique(m_modUpdate, pMod);
-	}
-	
-protected:
-	std::vector<IModifier*> m_modInit;
-	std::vector<IModifier*> m_modUpdate;
-};
 
 struct IModifier : public _i_reference_target_t
 {
 public:
-	bool               IsEnabled() const { return m_enabled; }
+	bool                IsEnabled() const { return m_enabled; }
 	virtual EDataDomain GetDomain() const = 0;
-	virtual Range      GetMinMax() const = 0;
-	virtual void       AddToParam(CParticleComponent* pComponent, IParamMod* pParam)                                                                             {}
-	virtual void       Modify(CParticleComponentRuntime& runtime, const SUpdateRange& range, IOFStream stream, TDataType<float> streamType, EDataDomain domain) const {}
-	virtual void       Sample(float* samples, const int numSamples) const                                                                                        {}
-	virtual void       Serialize(Serialization::IArchive& ar);
-	virtual IModifier* VersionFixReplace() const                                                                                                                 { return nullptr; }
+	virtual Range       GetMinMax() const = 0;
+	virtual void        AddToParam(CParticleComponent* pComponent) {}
+	virtual void        Modify(CParticleComponentRuntime& runtime, const SUpdateRange& range, IOFStream stream, TDataType<float> streamType, EDataDomain domain) const {}
+	virtual void        Sample(float* samples, uint numSamples) const {}
+	virtual void        Serialize(Serialization::IArchive& ar) { ar(m_enabled); }
+	virtual IModifier*  VersionFixReplace() const { return nullptr; }
 private:
 	SEnable m_enabled;
 };
@@ -50,13 +32,14 @@ struct IFieldModifier: IModifier
 };
 
 template<EDataDomain Domain, typename T = SFloat>
-class CParamMod : public IParamMod
+class CParamMod
 {
 public:
 	typedef T TValue;
 	typedef typename T::TType TType;
 
-	CParamMod(TType defaultValue = TType(1));
+	CParamMod(TType defaultValue = TType(1))
+		: m_baseValue(defaultValue) {}
 
 	void                           AddToComponent(CParticleComponent* pComponent, CParticleFeature* pFeature);
 	void                           AddToComponent(CParticleComponent* pComponent, CParticleFeature* pFeature, TDataType<TType> dataType);
@@ -68,15 +51,15 @@ public:
 	void                           Update(CParticleComponentRuntime& runtime, TDataType<TType> dataType) const;
 	void                           ModifyUpdate(CParticleComponentRuntime& runtime, TIOStream<TType>& stream, SUpdateRange range, TDataType<TType> dataType = TDataType<TType>()) const;
 
-	TRange<TType>                  GetValues(const CParticleComponentRuntime& runtime, TType* data, SUpdateRange range, EDataDomain domain, bool updating) const;
-	TRange<TType>                  GetValues(const CParticleComponentRuntime& runtime, TVarArray<TType> data, EDataDomain domain, bool updating) const;
+	TRange<TType>                  GetValues(const CParticleComponentRuntime& runtime, TType* data, SUpdateRange range, EDataDomain domain) const;
+	TRange<TType>                  GetValues(const CParticleComponentRuntime& runtime, TVarArray<TType> data, EDataDomain domain) const;
 	TRange<TType>                  GetValueRange(const CParticleComponentRuntime& runtime) const;
 	TRange<TType>                  GetValueRange() const;
-	void                           Sample(TType* samples, int numSamples) const;
+	void                           Sample(TType* samples, uint numSamples) const;
 
 	bool                           HasInitModifiers() const   { return !m_modInit.empty(); }
 	bool                           HasUpdateModifiers() const { return !m_modUpdate.empty(); }
-	bool                           HasModifiers() const       { return !m_modInit.empty() || !m_modUpdate.empty(); }
+	bool                           HasModifiers() const       { return !m_modifiers.empty(); }
 	TType                          GetBaseValue() const       { return m_baseValue; }
 	bool                           IsEnabled() const          { return crymath::valueisfinite(m_baseValue); }
 
@@ -84,8 +67,10 @@ private:
 	using TModifier = typename std::conditional<!!(Domain & EDD_HasUpdate), IFieldModifier, IModifier>::type;
 	using PModifier = _smart_ptr<TModifier>;
 
-	T                       m_baseValue;
-	std::vector<PModifier>  m_modifiers;
+	T                      m_baseValue;
+	std::vector<PModifier> m_modifiers;
+	std::vector<PModifier> m_modInit;
+	std::vector<PModifier> m_modUpdate;
 };
 
 template<typename T>

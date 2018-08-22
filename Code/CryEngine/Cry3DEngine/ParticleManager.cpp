@@ -122,6 +122,15 @@ CParticleManager::CParticleManager(bool bEnable)
 		REGISTER_COMMAND("e_ParticleMemory", &CmdParticleMemory, 0, "Displays current particle memory usage");
 	}
 
+	// Convert deprecated cvar
+	int& cvarCollisions = GetCVars()->e_ParticlesCollisions;
+	if (GetCVars()->e_ParticlesObjectCollisions >= 0)
+	{
+		cvarCollisions = GetCVars()->e_ParticlesObjectCollisions + 1;
+		if (cvarCollisions >= 4)
+			cvarCollisions = 3 + AlphaBit('p');
+	}
+
 	// reset tracking data for dumping vertex/index pool usage
 #if defined(PARTICLE_COLLECT_VERT_IND_POOL_USAGE)
 	memset(m_arrVertexIndexPoolUsage, 0, sizeof(m_arrVertexIndexPoolUsage));
@@ -837,10 +846,10 @@ void CParticleManager::UpdateEngineData()
 	if (GetCVars())
 	{
 		// Update allowed particle features.
-		if (GetCVars()->e_ParticlesObjectCollisions < 2)
+		if (GetCVars()->e_ParticlesCollisions < 3)
 		{
 			m_nAllowedEnvironmentFlags &= ~ENV_DYNAMIC_ENT;
-			if (GetCVars()->e_ParticlesObjectCollisions < 1)
+			if (GetCVars()->e_ParticlesCollisions < 2)
 				m_nAllowedEnvironmentFlags &= ~ENV_STATIC_ENT;
 		}
 		if (!GetCVars()->e_ParticlesLights || !GetCVars()->e_DynamicLights)

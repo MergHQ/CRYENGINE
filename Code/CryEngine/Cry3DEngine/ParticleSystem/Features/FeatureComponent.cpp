@@ -61,7 +61,7 @@ public:
 public:
 	virtual void AddToComponent(CParticleComponent* pComponent, SComponentParams* pParams) override
 	{
-		pComponent->MainPreUpdate.add(this);
+		pComponent->CullSubInstances.add(this);
 	}
 
 	virtual void Serialize(Serialization::IArchive& ar) override
@@ -70,11 +70,10 @@ public:
 		ar(m_attribute, "Attribute", "Attribute");
 	}
 
-	virtual void MainPreUpdate(CParticleComponentRuntime& runtime) override
+	virtual void CullSubInstances(CParticleComponentRuntime& runtime, TVarArray<SInstance>& instances) override
 	{
-		CRY_PFX2_PROFILE_DETAIL;
 		if (!m_attribute.GetValueAs(runtime.GetEmitter()->GetAttributeInstance(), true))
-			runtime.RemoveAllSubInstances();
+			instances.resize(0);
 	}
 
 private:

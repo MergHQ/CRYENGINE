@@ -132,6 +132,7 @@ void CFeatureRenderSprites::AddToComponent(CParticleComponent* pComponent, SComp
 		pParams->m_shaderData.m_sphericalApproximation = m_sphericalProjection;
 	else
 		pParams->m_shaderData.m_sphericalApproximation = 0.0f;
+	pParams->m_physicalSizeSlope.scale *= max(+m_aspectRatio, 1.0f);
 	pParams->m_renderObjectSortBias = m_sortBias;
 }
 
@@ -225,12 +226,13 @@ void CFeatureRenderSprites::CullParticles(SSpritesContext& spritesContext)
 	                     || GetCVars()->e_ParticlesMinDrawPixels > 0.0f;
 
 	// count and cull pixels drawn for near emitters
-	const float maxArea = runtime.GetContainer().GetNumParticles() *
-		div_min(sqr(runtime.ComponentParams().m_maxParticleSize * 2.0f), sqr(nearDist), screenArea);
+	const float maxArea = runtime.GetContainer().GetNumParticles()
+		* div_min(sqr(runtime.ComponentParams().m_maxParticleSize * 2.0f) * m_aspectRatio, sqr(nearDist), screenArea);
 	const bool cullArea = maxArea > spritesContext.m_areaLimit;
 	const bool sumArea = cullArea || maxArea > 1.0f / 256.0f;
 
 	const bool culling = frustumTest.doTest || cullNear || cullFar || sumArea;
+	const bool stretching = m_facingMode == EFacingMode::Velocity && m_axisScale != 0.0f;
 
 	auto& memHeap = GetPSystem()->GetThreadData().memHeap;
 	THeapArray<float> areas(memHeap);
@@ -241,8 +243,10 @@ void CFeatureRenderSprites::CullParticles(SSpritesContext& spritesContext)
 	IFStream alphas = container.GetIFStream(EPDT_Alpha, 1.0f);
 	IFStream sizes = container.GetIFStream(EPDT_Size);
 	IVec3Stream positions = container.GetIVec3Stream(EPVF_Position);
+	IVec3Stream velocities = container.GetIVec3Stream(EPVF_Velocity);
 	auto& particleIds = spritesContext.m_particleIds;
 	auto& spriteAlphas = spritesContext.m_spriteAlphas;
+	TFloatArray fullSizes(runtime.MemHeap(), container.GetNumParticles());
 
 	uint numParticles = 0;
 
@@ -254,11 +258,20 @@ void CFeatureRenderSprites::CullParticles(SSpritesContext& spritesContext)
 		if (size * alpha <= 0.0f)
 			continue;
 
+		float sizeX = size;
+		if (stretching)
+		{
+			const Vec3 velocity = velocities.Load(particleId);
+			sizeX = max(size, velocity.GetLengthFast() * m_axisScale);
+		}
+		sizeX *= m_aspectRatio;
+		const float fullSize = max(size, sizeX);
+
 		if (culling)
 		{
 			const Vec3 position = positions.Load(particleId);
 
-			if (!frustumTest.IsVisible(position, size))
+			if (!frustumTest.IsVisible(position, fullSize))
 				continue;
 
 			if (cullNear + cullFar + sumArea)
@@ -266,24 +279,26 @@ void CFeatureRenderSprites::CullParticles(SSpritesContext& spritesContext)
 				const float invDist = rsqrt_fast((cameraPosition - position).GetLengthSquared());
 				if (cullNear)
 				{
-					const float ratio = max(size * invMaxAng, minCamDist) * invDist;
+					const float ratio = max(fullSize * invMaxAng, minCamDist) * invDist;
 					alpha *= crymath::saturate((1.0f - ratio) * 2.0f);
 				}
 				if (cullFar)
 				{
-					const float ratio = min(size * invMinAng, maxCamDist) * invDist;
+					const float ratio = min(fullSize * invMinAng, maxCamDist) * invDist;
 					alpha *= crymath::saturate((ratio - 1.0f) * 3.0f);
 				}
 				if (sumArea)
 				{
 					// Compute pixel area, and cull latest particles to enforce pixel limit
-					const float area = min(sqr((size + size) * invDist), screenArea) * (alpha > 0.0f);
+					const float area = min(size * sizeX * 4.0f * sqr(invDist), screenArea) * (alpha > 0.0f);
 					spritesContext.m_area += area;
 					if (cullArea)
 						areas[particleId] = area;
 				}
 			}
 		}
+
+		fullSizes[particleId] = fullSize;
 
 		if (alpha > 0.0f)
 		{
@@ -308,7 +323,7 @@ void CFeatureRenderSprites::CullParticles(SSpritesContext& spritesContext)
 			for (auto particleId : particleIds)
 			{
 				Sphere sphere;
-				const float radius = sizes.Load(particleId) * 0.5f;
+				const float radius = fullSizes[particleId];
 				sphere.center = positions.Load(particleId);
 				sphere.radius = radius;
 				if (spritesContext.m_visEnviron.ClipVisAreas(pVisArea, sphere, normal))
@@ -341,7 +356,7 @@ void CFeatureRenderSprites::CullParticles(SSpritesContext& spritesContext)
 		numParticles = 0;
 		for (auto particleId : particleIds)
 		{
-			const float radius = sizes.Load(particleId) * 0.5f;
+			const float radius = fullSizes[particleId];
 			const Vec3 position = positions.Load(particleId);
 			const float distToWaterPlane = spritesContext.m_physEnviron.GetWaterPlane(waterPlane, position, radius);
 			const float waterDist = MAdd(radius, offsetMult, distToWaterPlane) * clipWaterSign;
@@ -590,7 +605,7 @@ void CFeatureRenderSprites::WriteToGPUMem(const SSpritesContext& spritesContext,
 	const bool hasAbsFrameRate = params.m_textureAnimation.HasAbsoluteFrameRate();
 	const bool hasOffset = (m_offset != Vec2(ZERO)) || (m_cameraOffset != 0.0f);
 
-	const uint spritesPerChunk = 170;
+	const uint spritesPerChunk = vertexChunckSize / sizeof(SParticleAxes);
 	const uint numChunks = ((numSprites + spritesPerChunk - 1) / spritesPerChunk);
 	CWriteCombinedBuffer<Vec3, vertexBufferSize, spritesPerChunk * sizeof(Vec3)> wcPositions(pRenderVertices->aPositions);
 	CWriteCombinedBuffer<SParticleAxes, vertexBufferSize, spritesPerChunk * sizeof(SParticleAxes)> wcAxes(pRenderVertices->aAxes);
