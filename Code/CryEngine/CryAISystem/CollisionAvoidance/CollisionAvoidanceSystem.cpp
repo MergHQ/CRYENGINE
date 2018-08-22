@@ -836,15 +836,15 @@ Vec2 CCollisionAvoidanceSystem::ClampSpeedWithNavigationMesh(const SNavigationPr
 			if (triStart && triEnd)
 			{
 				MNM::CNavMesh::RayCastRequest<512> raycastRequest;
-				MNM::CNavMesh::ERayCastResult result = navMesh.RayCast(startMeshLoc, triStart, endMeshLoc, triEnd, raycastRequest, pFilter);
-				if (result == MNM::CNavMesh::eRayCastResult_Hit)
+				MNM::ERayCastResult result = navMesh.RayCast(startMeshLoc, triStart, endMeshLoc, triEnd, raycastRequest, pFilter);
+				if (result == MNM::ERayCastResult::Hit)
 				{
 					const float velocityMagnitude = min(TimeStep, raycastRequest.hit.distance.as_float());
 					const Vec3 newEndLoc = agentPosition + (navMesh.ToWorldSpace(endMeshLoc).GetVec3() - agentPosition) * velocityMagnitude;
 					const Vec3 newVelocity = newEndLoc - agentPosition;
 					outputVelocity = Vec2(newVelocity.x, newVelocity.y) * invTimeHorizon;
 				}
-				else if (result == MNM::CNavMesh::eRayCastResult_NoHit)
+				else if (result == MNM::ERayCastResult::NoHit)
 				{
 					const Vec3 newVelocity = navMesh.ToWorldSpace(endMeshLoc).GetVec3() - agentPosition;
 					outputVelocity = Vec2(newVelocity.x, newVelocity.y);

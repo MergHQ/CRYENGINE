@@ -10,7 +10,19 @@ struct INavMeshQueryProcessing;
 namespace MNM
 {
 
-//! Structure used as output in NavMesh raycast queries
+//! Enum for results of NavMesh ray-cast queries
+enum class ERayCastResult
+{
+	NoHit = 0,              //! Ray doesn't hit NavMesh boundary
+	Hit,                    //! Ray hit NavMesh boundary and SRayHitOutput is filled
+	RayTooLong,             //! Ray is too long and is going through too many triangles
+	DisconnectedLocations,  //! Starting and ending positions can't be connected directly by straight line on NavMesh
+	InvalidStart,           //! Starting position doesn't match with starting triangle
+	InvalidEnd,             //! Ending position doesn't match with ending triangle
+	Count
+};
+
+//! Structure used as output in NavMesh ray-cast queries
 struct SRayHitOutput
 {
 	Vec3 position;

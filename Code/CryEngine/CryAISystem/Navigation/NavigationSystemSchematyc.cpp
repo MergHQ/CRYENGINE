@@ -71,12 +71,12 @@ namespace NavigationSystemSchematyc
 	bool TestRaycastHitOnNavmeshSchematyc(NavigationAgentTypeID agentTypeID, const Vec3& startPos, const Vec3& endPos, const SNavMeshQueryFilterDefault& filter, Vec3& hitPos)
 	{
 		MNM::SRayHitOutput hit;
-		bool bResult = gAIEnv.pNavigationSystem->NavMeshTestRaycastHit(agentTypeID, startPos, endPos, &filter, &hit);
-		if (bResult)
+		const bool isHit = gAIEnv.pNavigationSystem->NavMeshTestRaycastHit(agentTypeID, startPos, endPos, &filter, &hit) == MNM::ERayCastResult::Hit;
+		if (isHit)
 		{
 			hitPos = hit.position;
 		}
-		return bResult;
+		return isHit;
 	}
 	
 	void Register(Schematyc::IEnvRegistrar& registrar, Schematyc::CEnvRegistrationScope& parentScope)

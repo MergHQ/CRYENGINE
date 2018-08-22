@@ -643,7 +643,7 @@ bool CSmartPathFollower::CanReachTarget(float testIndex) const
 
 			MNM::CNavMesh::RayCastRequest<512> wayRequest;
 
-			if (navMesh.RayCast(startLocationInMeshCoordinates, triangleStartID, endLocationInMeshCoordinates, triangleEndID, wayRequest, m_params.pQueryFilter))
+			if (navMesh.RayCast(startLocationInMeshCoordinates, triangleStartID, endLocationInMeshCoordinates, triangleEndID, wayRequest, m_params.pQueryFilter) != MNM::ERayCastResult::NoHit)
 				return false;
 
 			//Check against obstacles...
@@ -1505,8 +1505,7 @@ bool CSmartPathFollower::CheckWalkability(const Vec2* path, const size_t length)
 					return false;
 
 				MNM::CNavMesh::RayCastRequest<512> raycastRequest;
-
-				if (navMesh.RayCast(mnmStartLoc, triStart, mnmEndLoc, triEnd, raycastRequest, m_params.pQueryFilter) != MNM::CNavMesh::eRayCastResult_NoHit)
+				if (navMesh.RayCast(mnmStartLoc, triStart, mnmEndLoc, triEnd, raycastRequest, m_params.pQueryFilter) != MNM::ERayCastResult::NoHit)
 					return false;
 
 				if (m_pathObstacles.IsPathIntersectingObstacles(m_pNavPath->GetMeshID(), startLoc, endLoc, m_params.passRadius))
@@ -1610,9 +1609,9 @@ bool CSmartPathFollower::IsRemainingPathTraversableOnNavMesh() const
 			if (triStart)
 			{
 				MNM::CNavMesh::RayCastRequest<512> raycastRequest;
-				MNM::CNavMesh::ERayCastResult raycastResult = navMeshUsedByPath.RayCast(mnmStartLoc, triStart, mnmEndLoc, triEnd, raycastRequest, m_params.pQueryFilter);
+				MNM::ERayCastResult raycastResult = navMeshUsedByPath.RayCast(mnmStartLoc, triStart, mnmEndLoc, triEnd, raycastRequest, m_params.pQueryFilter);
 
-				if (raycastResult != MNM::CNavMesh::eRayCastResult_NoHit)
+				if (raycastResult != MNM::ERayCastResult::NoHit)
 				{
 					return false;
 				}

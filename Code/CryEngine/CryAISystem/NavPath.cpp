@@ -1233,7 +1233,7 @@ bool CNavPath::CheckPath(const TPathPoints& pathList, float radius, const INavMe
 					return false;
 
 				MNM::CNavMesh::RayCastRequest<512> raycastRequest;
-				if (mesh.navMesh.RayCast(startLocation, triangleStartID, endLocation, triangleEndID, raycastRequest, pFilter) != MNM::CNavMesh::eRayCastResult_NoHit)
+				if (mesh.navMesh.RayCast(startLocation, triangleStartID, endLocation, triangleEndID, raycastRequest, pFilter) != MNM::ERayCastResult::NoHit)
 					return false;
 			}
 		}
