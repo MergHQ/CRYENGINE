@@ -2341,22 +2341,16 @@ void CVolumetricFogStage::ExecuteTemporalReprojection(const SScopedComputeComman
 			static CCryNameTSCRC techName("ReprojectVolumetricFog");
 			pass.SetTechnique(pShader, techName, rtMask);
 
-			if (!m_seperateDensity)
+			pass.SetOutputUAV(0, GetInscatterTex());
+			pass.SetTexture(0, m_pInscatteringVolume);
+			pass.SetTexture(1, GetPrevInscatterTex());
+			pass.SetTexture(4, m_pMaxDepth);
+
+			if (m_seperateDensity)
 			{
-				pass.SetOutputUAV(0, GetInscatterTex());
-				pass.SetTexture(0, m_pInscatteringVolume);
-				pass.SetTexture(1, GetPrevInscatterTex());
-				pass.SetTexture(2, m_pMaxDepth);
-			}
-			else
-			{
-				pass.SetOutputUAV(0, GetInscatterTex());
 				pass.SetOutputUAV(1, GetDensityTex());
-				pass.SetTexture(0, m_pInscatteringVolume);
-				pass.SetTexture(1, GetPrevInscatterTex());
 				pass.SetTexture(2, m_pVolFogBufDensity);
 				pass.SetTexture(3, GetPrevDensityTex());
-				pass.SetTexture(4, m_pMaxDepth);
 			}
 
 			pass.SetSampler(0, EDefaultSamplerStates::TrilinearClamp);
