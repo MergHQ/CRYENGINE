@@ -28,9 +28,9 @@ public:
 	virtual void                   Serialize(Serialization::IArchive& ar) override;
 	virtual IParticleEmitter*      Spawn(const ParticleLoc& loc, const SpawnParams* pSpawnParams = NULL) override;
 	virtual uint                   GetNumComponents() const override              { return m_components.size(); }
-	virtual IParticleComponent*    GetComponent(uint componentIdx) const override { return componentIdx < m_components.size() ? m_components[componentIdx] : nullptr; }
+	virtual IParticleComponent*    GetComponent(uint componentIdx) const override { return m_components[componentIdx]; }
 	virtual IParticleComponent*    AddComponent() override;
-	virtual void                   RemoveComponent(uint componentIdx, bool bRecursive = false) override;
+	virtual void                   RemoveComponent(uint componentIdx, bool all) override;
 	virtual void                   SetChanged() override;
 	virtual void                   Update() override;
 	virtual Serialization::SStruct GetEffectOptionsSerializer() const override;
@@ -63,7 +63,6 @@ public:
 	virtual void                  SetSubstitutedPfx1(bool b) override                                { m_substitutedPfx1 = b; }
 	// pfx1 IParticleEffect
 
-	void                      Compile();
 	TComponents&              GetComponents()                                               { return m_components; }
 	const TComponents&        GetComponents() const                                         { return m_components; }
 	CParticleComponent*       FindComponentByName(const char* name) const;

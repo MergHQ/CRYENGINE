@@ -2,11 +2,8 @@
 
 #pragma once
 
-#include <CryParticleSystem/ParticleParams.h>
-#include <CryEntitySystem/IEntity.h>
+#include <CryParticleSystem/ParticleParams.h> // just for ETrinary
 #include <CryCore/Containers/CryPtrArray.h>
-
-class CParticleEmitter;
 
 //////////////////////////////////////////////////////////////////////////
 // Physical environment management.
@@ -21,6 +18,7 @@ enum EEnvironFlags
 	ENV_WIND      = BIT(2),
 	ENV_WATER     = BIT(3),
 
+	ENV_FORCES    = ENV_GRAVITY | ENV_WIND,
 	ENV_PHYS_AREA = ENV_GRAVITY | ENV_WIND | ENV_WATER,
 
 	// Collision targets.
@@ -50,11 +48,13 @@ struct SPhysForces
 	void Add(SPhysForces const& other, uint32 nEnvFlags);
 };
 
-inline bool HasWater(const Plane& pl)
+ILINE bool HasWater(const Plane& pl)
 {
 	return pl.d < -WATER_LEVEL_UNKNOWN;
 }
 
+//////////////////////////////////////////////////////////////////////////
+// Handles physical environment within a volume
 struct SPhysEnviron : Cry3DEngineBase
 {
 	// PhysArea caching.
@@ -63,18 +63,30 @@ struct SPhysEnviron : Cry3DEngineBase
 	uint32      m_nNonUniformFlags;         // EParticleEnviron flags of non-uniform areas found.
 	uint32      m_nNonCachedFlags;          // Env flags of areas requiring physics system access.
 
-	// Nonuniform area support.
-	struct SArea
+	struct SAreaSpec
 	{
-		const SPhysEnviron*
-		              m_pEnviron;               // Parent environment.
+		uint32 m_nFlags = 0;
+		AABB   m_bounds { AABB::RESET };
+
+		void operator |= (const SAreaSpec& ac)
+		{
+			m_bounds.Add(ac.m_bounds);
+			m_nFlags |= ac.m_nFlags;
+		}
+		bool operator & (const SAreaSpec& ac) const
+		{
+			return (m_nFlags & ac.m_nFlags) && m_bounds.IsIntersectBox(ac.m_bounds);
+		}
+	};
+
+	// Nonuniform area support.
+	struct SArea: SAreaSpec
+	{
 		_smart_ptr<IPhysicalEntity>
 		              m_pArea;
 		volatile int* m_pLock;                  // Copy of lock for area.
 
 		SPhysForces   m_Forces;
-		AABB          m_bbArea;                 // Bounds of area, for quick checks.
-		uint32        m_nFlags;
 		bool          m_bOutdoorOnly;           // Force only for outdoor areas.
 
 		// Area params, for simple evaluation.
@@ -86,24 +98,28 @@ struct SPhysEnviron : Cry3DEngineBase
 		float    m_fFalloffScale;               // For scaling to inner/outer force bounds.
 
 		SArea() { ZeroStruct(*this); }
-		void  GetForces(SPhysForces& forces, AABB const& bb, uint32 nFlags) const;
+		void  GetForces(SPhysForces& forces, AABB const& bb, uint32 nFlags, bool bAverage) const;
 		void  GetForcesPhys(SPhysForces& forces, AABB const& bb) const;
 		float GetWaterPlane(Plane& plane, Vec3 const& vPos, float fMaxDist = -WATER_LEVEL_UNKNOWN) const;
 		void  GetMemoryUsage(ICrySizer* pSizer) const {}
 
+		// Reference counting
 		void AddRef()
 		{
 			m_nRefCount++;
 		}
 		void Release()
 		{
-			assert(m_nRefCount >= 0);
 			if (--m_nRefCount == 0)
 				delete this;
 		}
+		~SArea()
+		{
+			assert(m_nRefCount == 0);
+		}
 
 	private:
-		int m_nRefCount;
+		int m_nRefCount = 0;
 	};
 
 	SPhysEnviron()
@@ -111,16 +127,10 @@ struct SPhysEnviron : Cry3DEngineBase
 		Clear();
 	}
 
-	// Phys areas
 	void Clear();
-	void FreeMemory();
-
-	// Query world phys areas.
-	void GetWorldPhysAreas(uint32 nFlags = ~0, bool bNonUniformAreas = true);
 
 	// Query subset of phys areas.
-	void GetPhysAreas(SPhysEnviron const& envSource, AABB const& box, bool bIndoors, uint32 nFlags = ~0, bool bNonUniformAreas = true, const CParticleEmitter* pEmitterSkip = 0);
-
+	void Update(SPhysEnviron const& envSource, AABB const& box, bool bIndoors, uint32 nFlags, bool bNonUniformAreas = true, const void* pObjectSkip = 0);
 	bool IsCurrent() const
 	{
 		return (m_nNonUniformFlags & EFF_LOADED) != 0;
@@ -152,21 +162,17 @@ struct SPhysEnviron : Cry3DEngineBase
 			for (const auto& area : m_NonUniformAreas)
 			{
 				if (area.m_nFlags & nFlags)
-					if (area.m_bbArea.IsIntersectBox(bb))
+					if (area.m_bounds.IsIntersectBox(bb))
 						func(area);
 			}
 		}
 	}
 
-	void GetForces(SPhysForces& forces, AABB const& bb, uint32 nFlags) const
-	{
-		forces = m_UniformForces;
-		ForNonumiformAreas(bb, nFlags, [&](const SArea& area) { area.GetForces(forces, bb, nFlags); });
-	}
+	void GetForces(SPhysForces& forces, AABB const& bb, uint32 nFlags, bool bAverage) const;
 
 	void GetForces(SPhysForces& forces, Vec3 const& vPos, uint32 nFlags) const
 	{
-		return GetForces(forces, AABB(vPos), nFlags);
+		return GetForces(forces, AABB(vPos), nFlags, false);
 	}
 
 	float GetWaterPlane(Plane& plWater, Vec3 const& vPos, float fMaxDist = -WATER_LEVEL_UNKNOWN) const
@@ -194,6 +200,59 @@ protected:
 	SmartPtrArray<SArea> m_NonUniformAreas;
 
 	float GetNonUniformWaterPlane(Plane& plWater, Vec3 const& vPos, float fMaxDist = -WATER_LEVEL_UNKNOWN) const;
+};
+
+//////////////////////////////////////////////////////////////////////////
+// Master environment for level
+//
+struct SWorldPhysEnviron: SPhysEnviron
+{
+	SWorldPhysEnviron();
+	~SWorldPhysEnviron();
+
+	// Get world phys areas
+	void Update();
+	void FinishUpdate();
+
+	bool Update(SPhysEnviron& env, AABB const& box, bool bIndoors, uint32 nFlags, bool bNonUniformAreas = true, const void* pObjectSkip = 0) const
+	{
+		SAreaSpec as;
+		as.m_nFlags = nFlags;
+		as.m_bounds = box;
+		if (env.IsCurrent() && !IsChanged(as))
+			return false;
+		env.Update(*this, box, bIndoors, nFlags, bNonUniformAreas, pObjectSkip);
+		return true;
+	}
+
+	uint32 IsChanged() const
+	{
+		return m_SumAreaChanged.m_nFlags;
+	}
+
+	bool IsChanged(const SAreaSpec& in) const
+	{
+		if (m_SumAreaChanged & in)
+		{
+			for (const auto& ac : m_AreasChanged)
+				if (ac & in)
+					return true;
+		}
+		return false;
+	}
+
+	void ClearAreasChanged()
+	{
+		m_SumAreaChanged = {};
+		m_AreasChanged.resize(0);
+	}
+
+	bool OnAreaChange(const EventPhysAreaChange& event);
+
+private:
+	SAreaSpec               m_SumAreaChanged;
+	FastDynArray<SAreaSpec> m_AreasChanged;
+	CryCriticalSection      m_Lock;
 };
 
 //////////////////////////////////////////////////////////////////////////

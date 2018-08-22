@@ -148,31 +148,11 @@ void CParticleEmitter::UpdateState()
 	  m_fAge <= m_fBoundsStableAge
 	  );
 
-	if (m_nEnvFlags & ENV_PHYS_AREA)
+	if (m_bbWorld.IsReset() && nEnvFlags & ENV_PHYS_AREA)
 	{
-		bool bCreateAreaChangeProxy = m_nPhysAreaChangedProxyId == ~0;
-
-		IF (bCreateAreaChangeProxy || !(m_PhysEnviron.m_nNonUniformFlags & EFF_LOADED), 0)
-		{
-			// For initial bounds computation, query the physical environment at the origin.
-			m_PhysEnviron.GetPhysAreas(CParticleManager::Instance()->GetPhysEnviron(), AABB(vPos),
-			                           Get3DEngine()->GetVisAreaFromPos(vPos) != NULL, m_nEnvFlags, true, this);
-
-			// Get phys area changed proxy if not set yet
-			if (bCreateAreaChangeProxy)
-			{
-				uint16 uPhysicsMask = 0;
-				if (m_nEnvFlags & ENV_WATER)
-					uPhysicsMask |= Area_Water;
-				if (m_nEnvFlags & ENV_WIND)
-					uPhysicsMask |= Area_Air;
-				if (m_nEnvFlags & ENV_GRAVITY)
-					uPhysicsMask |= Area_Gravity;
-				m_nPhysAreaChangedProxyId = CParticleManager::Instance()->GetPhysAreaChangedProxy(this, uPhysicsMask);
-			}
-
-			bUpdateBounds = true;
-		}
+		// For initial bounds computation, query the physical environment at the origin.
+		m_PhysEnviron.Update(CParticleManager::Instance()->GetPhysEnviron(), AABB(vPos),
+			Get3DEngine()->GetVisAreaFromPos(vPos) != NULL, nEnvFlags, true, this);
 	}
 
 	bool bUpdateState = (GetRndFlags()&ERF_HIDDEN)==0 && (bUpdateBounds || m_fAge >= m_fStateChangeAge);
@@ -189,15 +169,13 @@ void CParticleEmitter::UpdateState()
 		if (bUpdateBounds && !m_SpawnParams.bNowhere)
 		{
 			// Re-query environment to include full bounds, and water volumes for clipping.
-			m_VisEnviron.Update(GetLocation().t, m_bbWorld);
-			m_PhysEnviron.GetPhysAreas(CParticleManager::Instance()->GetPhysEnviron(), m_bbWorld,
-			                           m_VisEnviron.OriginIndoors(), m_nEnvFlags | ENV_WATER, true, this);
+			m_VisEnviron.Update(vPos, m_bbWorld);
+			m_PhysEnviron.OnPhysAreaChange();
 		}
-
-		// Update phys area changed proxy
-		if (m_nPhysAreaChangedProxyId != ~0)
-			CParticleManager::Instance()->UpdatePhysAreaChangedProxy(this, m_nPhysAreaChangedProxyId, true);
 	}
+
+	CParticleManager::Instance()->GetPhysEnviron().Update(m_PhysEnviron, m_bbWorld, 
+		m_VisEnviron.OriginIndoors(), nEnvFlags | ENV_WATER, true, this);
 }
 
 void CParticleEmitter::Activate(bool bActive)
@@ -290,7 +268,6 @@ CParticleEmitter::CParticleEmitter(const IParticleEffect* pEffect, const QuatTS&
 	, m_fBoundsStableAge(0.f)
 	, m_fResetAge(fUNSEEN_EMITTER_RESET_TIME)
 	, m_pUpdateParticlesJobState(NULL)
-	, m_nPhysAreaChangedProxyId(~0)
 {
 	m_nInternalFlags |= IRenderNode::REQUIRES_FORWARD_RENDERING | IRenderNode::REQUIRES_NEAREST_CUBEMAP;
 
@@ -319,10 +296,6 @@ CParticleEmitter::CParticleEmitter(const IParticleEffect* pEffect, const QuatTS&
 //////////////////////////////////////////////////////////////////////////
 CParticleEmitter::~CParticleEmitter()
 {
-	if (m_nPhysAreaChangedProxyId != ~0)
-	{
-		CParticleManager::Instance()->UpdatePhysAreaChangedProxy(this, m_nPhysAreaChangedProxyId, false);
-	}
 	m_p3DEngine->FreeRenderNodeState(this); // Also does unregister entity.
 	GetInstCount(GetRenderNodeType())--;
 }

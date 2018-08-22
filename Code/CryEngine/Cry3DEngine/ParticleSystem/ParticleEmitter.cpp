@@ -187,6 +187,9 @@ void CParticleEmitter::Update()
 			Register();
 	}
 
+	CParticleManager::Instance()->GetPhysEnviron().Update(m_physEnviron, 
+		m_bounds, m_visEnviron.OriginIndoors(), m_pEffect->GetEnvironFlags() | ENV_WATER, true, 0);
+
 	// Apply stats from last update
 	auto& stats = GetPSystem()->GetThreadData().statsCPU;
 	stats.components.alive += m_stats.components.alive;
@@ -617,7 +620,7 @@ void CParticleEmitter::UpdateRuntimes()
 	m_componentRuntimesFor.clear();
 	TRuntimes newRuntimes;
 
-	m_pEffectOriginal->Compile();
+	m_pEffectOriginal->Update();
 
 	if (!m_emitterFeatures.empty())
 	{
@@ -640,7 +643,7 @@ void CParticleEmitter::UpdateRuntimes()
 			}
 		}
 		m_pEffect->SetChanged();
-		m_pEffect->Compile();
+		m_pEffect->Update();
 	}
 	else
 	{
@@ -813,9 +816,7 @@ void CParticleEmitter::Register()
 
 	m_visEnviron.Invalidate();
 	m_visEnviron.Update(GetPos(), m_bounds);
-	m_physEnviron.GetPhysAreas(
-		CParticleManager::Instance()->GetPhysEnviron(), m_bounds,
-		m_visEnviron.OriginIndoors(), m_pEffect->GetEnvironFlags() | ENV_WATER, true, 0);
+	m_physEnviron.OnPhysAreaChange();
 }
 
 void CParticleEmitter::Unregister()

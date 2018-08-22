@@ -147,15 +147,6 @@ uint CFeatureMotionPhysics::ComputeEffectors(CParticleComponentRuntime& runtime,
 {
 	CRY_PFX2_PROFILE_DETAIL;
 
-	// Get area center
-	Vec3v center = area.m_vCenter;
-	if (!area.m_pEnviron->IsCurrent())
-	{
-		pe_status_pos spos;
-		if (area.m_pArea->GetStatus(&spos))
-			center = spos.pos;
-	}
-
 	auto hasGravity = area.m_nFlags & ENV_GRAVITY;
 	auto hasWind = area.m_nFlags & ENV_WIND;
 	assert(hasGravity || hasWind);
@@ -164,6 +155,8 @@ uint CFeatureMotionPhysics::ComputeEffectors(CParticleComponentRuntime& runtime,
 	CParticleContainer& container = runtime.GetContainer();
 	IVec3Stream positions = container.GetIVec3Stream(EPVF_Position);
 	IOVec3Stream fieldStream = container.GetIOVec3Stream(hasGravity ? EPVF_Acceleration : EPVF_VelocityField);
+
+	Vec3v center = area.m_vCenter;
 	Vec3v force = hasGravity ? area.m_Forces.vAccel : area.m_Forces.vWind;
 	Vec3v forceVec = force * ToFloatv(!area.m_bRadial);
 	floatv forceRad = force.z * ToFloatv(area.m_bRadial);
@@ -352,7 +345,7 @@ void CFeatureMotionPhysics::Integrate(CParticleComponentRuntime& runtime)
 	else
 	{
 		// Get average forces for each area
-		physEnv.GetForces(uniformForces, runtime.GetBounds(), m_environFlags);
+		physEnv.GetForces(uniformForces, runtime.GetBounds(), m_environFlags, true);
 	}
 
 	const Vec3v uniformAccel = ToVec3v(m_uniformAcceleration);

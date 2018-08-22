@@ -36,7 +36,7 @@ cstr CParticleEffect::GetName() const
 	return m_name.empty() ? nullptr : m_name.c_str();
 }
 
-void CParticleEffect::Compile()
+void CParticleEffect::Update()
 {
 	CRY_PFX2_PROFILE_DETAIL;
 
@@ -225,7 +225,7 @@ void CParticleEffect::Serialize(Serialization::IArchive& ar)
 		SetChanged();
 		for (auto& component : m_components)
 			component->SetChanged();
-		Compile();
+		Update();
 	}
 }
 
@@ -253,25 +253,14 @@ IParticleComponent* CParticleEffect::AddComponent()
 	return pNewComponent;
 }
 
-void CParticleEffect::RemoveComponent(uint componentIdx, bool bRecursive)
+void CParticleEffect::RemoveComponent(uint componentIdx, bool all)
 {
-	if (componentIdx >= m_components.size())
-		return;
-	CParticleComponent* pComponent = m_components[componentIdx];
-	CParticleComponent* pParent = pComponent->GetParentComponent();
-	uint last = componentIdx + 1;
-	if (bRecursive)
-	{
-		while (last < m_components.size() && m_components[last]->GetParent() != pParent)
-			last++;
-	}
-	else
-	{
-		for (auto child : pComponent->GetChildComponents())
-			child->SetParent(pParent);
-	}
-	pComponent->SetParent(nullptr);
-	m_components.erase(m_components.begin() + componentIdx, m_components.begin() + last);
+	auto pComp = m_components[componentIdx];
+	pComp->SetParent(nullptr);
+	while (all && pComp->m_children.size())
+		pComp = pComp->m_children.back();
+	size_t endIdx = pComp->GetComponentId() + 1;
+	m_components.erase(m_components.begin() + componentIdx, m_components.begin() + endIdx);
 	SetChanged();
 }
 
@@ -280,11 +269,6 @@ void CParticleEffect::SetChanged()
 	if (!m_dirty)
 		++m_editVersion;
 	m_dirty = true;
-}
-
-void CParticleEffect::Update()
-{
-	Compile();
 }
 
 Serialization::SStruct CParticleEffect::GetEffectOptionsSerializer() const
