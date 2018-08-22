@@ -10,6 +10,9 @@ def build(bld):
 		pch			= 'stdafx.cpp',
 
 		includes = ['Common'],
+		
+		debug_defines = ['INCLUDE_AUDIO_PRODUCTION_CODE', 'ENABLE_AUDIO_LOGGING'],
+		profile_defines = ['INCLUDE_AUDIO_PRODUCTION_CODE', 'ENABLE_AUDIO_LOGGING'],
 
 		durango_lib = [ 'acphal' ],
 	)

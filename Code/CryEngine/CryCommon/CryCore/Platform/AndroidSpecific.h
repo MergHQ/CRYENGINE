@@ -91,7 +91,7 @@ extern int wcsnicmp(const wchar_t* s1, const wchar_t* s2, size_t count);
 
 #define TARGET_DEFAULT_ALIGN (16U)
 
-#define __debugbreak() __builtin_trap()
+#define __debugbreak() raise(SIGTRAP)
 
 // There is no __finite in android, only isfinite.
 #undef __finite

@@ -1132,5 +1132,17 @@ class install_apk(Task.Task):
 				# Install again
 				Logs.info('[INFO] Installing package: "%s"' % android_package_name)
 				ret = self.exec_command(cmd_install, env=env.env or None)	
+		
+		#Try connect for debugging
+		if ret == 0:
+			forward_ports = {'4600' : '4600', '5002' : '5002'}
+			for host_port, device_port in forward_ports.iteritems():	
+				Logs.info('[INFO] ADB forward: Redirect host port: %s to device port: %s' % (host_port, device_port))
+				self.generator.bld.cmd_and_log([env['ADB'], 'forward', 'tcp:' + host_port, 'tcp:' + device_port] , output=Context.BOTH, quiet=Context.BOTH)
 				
+			reverse_ports = {'31455' : '31455', '61453' : '61453'}
+			for device_port, host_port in reverse_ports.iteritems():	
+				Logs.info('[INFO] ADB reverse: Redirect device port %s to host port %s' % (device_port,host_port))
+				self.generator.bld.cmd_and_log([env['ADB'], 'reverse', 'tcp:' + device_port, 'tcp:' + host_port] , output=Context.BOTH, quiet=Context.BOTH)
+		
 		return ret

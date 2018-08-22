@@ -158,7 +158,6 @@ def configure(conf):
 	
 	conf.load('compile_settings_windows', tooldir=CRY_WAF_TOOL_DIR)
 	conf.load('compile_settings_linux', tooldir=CRY_WAF_TOOL_DIR)
-	conf.load('compile_settings_linux_x86', tooldir=CRY_WAF_TOOL_DIR)
 	conf.load('compile_settings_linux_x64', tooldir=CRY_WAF_TOOL_DIR)
 	conf.load('compile_settings_darwin', tooldir=CRY_WAF_TOOL_DIR)
 	
