@@ -150,6 +150,15 @@ def execute_waf_via_ib(bld):
 		
 	# Get correct incredibuild installation folder to not depend on PATH
 	ib_folder = get_ib_folder()	
+		
+	# Cancel any other IB build		
+	try:
+		p = subprocess.check_output([ str(ib_folder) + '/BuildConsole.exe', "/stop", "/nologo"])
+	except subprocess.CalledProcessError as e:
+		# According to IB docs: BuildConsole returns the code 3 when a build has been stopped. If /stop was used and no build is currently running, 2 is returned.
+		# However in pratice the process ends with a 0 value as no exception is raised by subprocess check_output.
+		pass
+
 	if (has_dev_tools_acceleration_license and not has_make_and_build_license) or 'cppcheck' in bld.variant:
 		try:			
 			p = subprocess.Popen ([str(ib_folder) + '/xgconsole.exe', "/command=" + command, "/profile=Code\\Tools\\waf-1.7.13\\profile.xml", "/useidemonitor", "/nologo", allow_local])
