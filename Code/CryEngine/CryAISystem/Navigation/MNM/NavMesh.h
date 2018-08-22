@@ -194,16 +194,6 @@ public:
 		size_t     edge;
 	};
 
-	enum ERayCastResult
-	{
-		eRayCastResult_NoHit = 0,
-		eRayCastResult_Hit,
-		eRayCastResult_RayTooLong,
-		eRayCastResult_Unacceptable,
-		eRayCastResult_InvalidStart,
-		eRayCastResult_InvalidEnd,
-	};
-
 	/*
 	 ********************************************************************************************
 	   RayCastRequestBase holds the actual request information needed to perform a RayCast request.
@@ -220,7 +210,7 @@ public:
 			: maxWayTriCount(_maxWayTriCount)
 			, way(NULL)
 			, wayTriCount(0)
-			, result(ERayCastResult::eRayCastResult_NoHit)
+			, result(ERayCastResult::NoHit)
 		{}
 
 	public:
@@ -253,7 +243,7 @@ public:
 	ERayCastResult RayCast_v2(const vector3_t& fromLocalPosition, TriangleID fromTriangleID, const vector3_t& toLocalPosition, TriangleID toTriangleID, RaycastRequestBase& wayRequest) const;
 	
 	template<typename TFilter>
-	ERayCastResult RayCast_v3(const vector3_t& fromLocalPosition, TriangleID fromTriangleID, const vector3_t& toLocalPosition, const TFilter& filter, RaycastRequestBase& wayRequest) const;
+	ERayCastResult RayCast_v3(const vector3_t& fromLocalPosition, TriangleID fromTriangleID, const vector3_t& toLocalPosition, TriangleID toTriangleID, const TFilter& filter, RaycastRequestBase& wayRequest) const;
 
 	TileID         SetTile(size_t x, size_t y, size_t z, STile& tile);
 	void           ClearTile(TileID tileID, bool clearNetwork = true);

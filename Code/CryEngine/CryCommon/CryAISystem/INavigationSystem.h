@@ -252,13 +252,13 @@ struct INavigationSystem
 	virtual bool   IsLocationValidInNavigationMesh(const NavigationAgentTypeID agentID, const Vec3& location, const INavMeshQueryFilter* pFilter, float downRange = 1.0f, float upRange = 1.0f) const = 0;
 	virtual size_t GetTriangleCenterLocationsInMesh(const NavigationMeshID meshID, const Vec3& location, const AABB& searchAABB, Vec3* centerLocations, size_t maxCenterLocationCount, const INavMeshQueryFilter* pFilter, float minIslandArea = 0.f) const = 0;
 
-	//! Performs raycast on navmesh.
+	//! Performs ray-cast on NavMesh.
 	//! \param agentTypeID navigation agent type Id
 	//! \param startPos Starting position of the ray
 	//! \param endPos End position of the ray
 	//! \param pOutHit Optional pointer for a return value of additional information about the hit. This structure is valid only when the hit is reported.
-	//! \return Returns true if the ray is hits navmesh boundary before end position.
-	virtual bool NavMeshTestRaycastHit(NavigationAgentTypeID agentTypeID, const Vec3& startPos, const Vec3& endPos, const INavMeshQueryFilter* pFilter, MNM::SRayHitOutput* pOutHit) const = 0;
+	//! \return Returns MNM::ERayCastResult::Hit if the ray has hit a NavMesh boundary before end position or other value in case of no hit or an error.
+	virtual MNM::ERayCastResult NavMeshTestRaycastHit(NavigationAgentTypeID agentTypeID, const Vec3& startPos, const Vec3& endPos, const INavMeshQueryFilter* pFilter, MNM::SRayHitOutput* pOutHit) const = 0;
 
 	//! Returns all borders (unconnected edges) in the specified AABB.
 	//! There are 3 Vec3's per border edge, vert 0, vert 1, and a normal pointing out from the edge.

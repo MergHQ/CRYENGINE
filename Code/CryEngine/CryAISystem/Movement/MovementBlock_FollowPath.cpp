@@ -290,9 +290,9 @@ bool FollowPath::IsPathTraversableOnNavMesh(const INavMeshQueryFilter* pFilter) 
 				if (triStart)
 				{
 					MNM::CNavMesh::RayCastRequest<512> raycastRequest;
-					MNM::CNavMesh::ERayCastResult raycastResult = navMeshUsedByPath.RayCast(mnmStartLoc, triStart, mnmEndLoc, triEnd, raycastRequest, pFilter);
+					const MNM::ERayCastResult raycastResult = navMeshUsedByPath.RayCast(mnmStartLoc, triStart, mnmEndLoc, triEnd, raycastRequest, pFilter);
 
-					if (raycastResult != MNM::CNavMesh::eRayCastResult_NoHit)
+					if (raycastResult != MNM::ERayCastResult::NoHit)
 					{
 						return false;
 					}

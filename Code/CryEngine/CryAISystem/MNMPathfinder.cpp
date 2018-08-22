@@ -282,7 +282,7 @@ bool CMNMPathfinder::CheckIfPointsAreOnStraightWalkableLine(const NavigationMesh
 		return false;
 
 	MNM::CNavMesh::RayCastRequest<512> raycastRequest;
-	if (navMesh.RayCast(startMeshLoc, triStart, endMeshLoc, triEnd, raycastRequest, pFilter) != MNM::CNavMesh::eRayCastResult_NoHit)
+	if (navMesh.RayCast(startMeshLoc, triStart, endMeshLoc, triEnd, raycastRequest, pFilter) != MNM::ERayCastResult::NoHit)
 		return false;
 
 	return true;

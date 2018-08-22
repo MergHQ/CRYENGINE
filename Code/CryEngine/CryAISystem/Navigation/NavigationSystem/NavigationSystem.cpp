@@ -2775,11 +2775,11 @@ bool NavigationSystem::SnapToNavMesh(const NavigationAgentTypeID agentID, const 
 	return false;
 }
 
-bool NavigationSystem::NavMeshTestRaycastHit(NavigationAgentTypeID agentTypeID, const Vec3& startPos, const Vec3& toPos, const INavMeshQueryFilter* pFilter, MNM::SRayHitOutput* pOutHit) const
+MNM::ERayCastResult NavigationSystem::NavMeshTestRaycastHit(NavigationAgentTypeID agentTypeID, const Vec3& startPos, const Vec3& toPos, const INavMeshQueryFilter* pFilter, MNM::SRayHitOutput* pOutHit) const
 {
 	NavigationMeshID meshId = GetEnclosingMeshID(agentTypeID, startPos);
 	if (!meshId)
-		return false;
+		return MNM::ERayCastResult::InvalidStart;
 
 	const NavigationMesh& mesh = GetMesh(meshId);
 	const Vec3& voxelSize = mesh.navMesh.GetGridParams().voxelSize;
@@ -2802,10 +2802,9 @@ bool NavigationSystem::NavMeshTestRaycastHit(NavigationAgentTypeID agentTypeID, 
 	const MNM::TriangleID endTriangle = mesh.navMesh.GetTriangleAt(mnmToPos, verticalDownwardRange, verticalUpwardRange, pFilter);
 	
 	MNM::CNavMesh::RayCastRequest<512> request;
-	MNM::CNavMesh::ERayCastResult result = mesh.navMesh.RayCast(mnmStartPos, startTriangle, mnmToPos, endTriangle, request, pFilter);
-	
-	bool isHit = result == MNM::CNavMesh::eRayCastResult_Hit;
-	if (isHit && pOutHit)
+	const MNM::ERayCastResult result = mesh.navMesh.RayCast(mnmStartPos, startTriangle, mnmToPos, endTriangle, request, pFilter);\
+
+	if (pOutHit && result == MNM::ERayCastResult::Hit)
 	{
 		const float t = request.hit.distance.as_float();
 		
@@ -2826,7 +2825,7 @@ bool NavigationSystem::NavMeshTestRaycastHit(NavigationAgentTypeID agentTypeID, 
 			pOutHit->normal2D = (startPos - toPos).GetNormalized();
 		}
 	}
-	return isHit;
+	return result;
 }
 
 const MNM::INavMesh* NavigationSystem::GetMNMNavMesh(NavigationMeshID meshID) const
@@ -4456,7 +4455,7 @@ void NavigationSystemDebugDraw::DebugDrawRayCast(NavigationSystem& navigationSys
 		MNM::TriangleID triEnd = navMesh.GetTriangleAt(end, range, range, pDebugQueryFilter);
 
 		MNM::CNavMesh::RayCastRequest<512> raycastRequest;
-		MNM::CNavMesh::ERayCastResult result = navMesh.RayCast(start, triStart, end, triEnd, raycastRequest, pDebugQueryFilter);
+		MNM::ERayCastResult result = navMesh.RayCast(start, triStart, end, triEnd, raycastRequest, pDebugQueryFilter);
 
 		for (size_t i = 0; i < raycastRequest.wayTriCount; ++i)
 		{
@@ -4494,14 +4493,14 @@ void NavigationSystemDebugDraw::DebugDrawRayCast(NavigationSystem& navigationSys
 
 		const Vec3 offset(0.0f, 0.0f, 0.085f);
 
-		if (result == MNM::CNavMesh::eRayCastResult_NoHit)
+		if (result == MNM::ERayCastResult::NoHit)
 		{
 			renderAuxGeom->DrawLine(startLoc + offset, Col_YellowGreen, endLoc + offset, Col_YellowGreen, 8.0f);
 		}
 		else
 		{
 			const MNM::CNavMesh::RayHit& hit = raycastRequest.hit;
-			Vec3 hitLoc = (result == MNM::CNavMesh::eRayCastResult_Hit) ? startLoc + ((endLoc - startLoc) * hit.distance.as_float()) : startLoc;
+			Vec3 hitLoc = (result == MNM::ERayCastResult::Hit) ? startLoc + ((endLoc - startLoc) * hit.distance.as_float()) : startLoc;
 			renderAuxGeom->DrawLine(startLoc + offset, Col_YellowGreen, hitLoc + offset, Col_YellowGreen, 8.0f);
 			renderAuxGeom->DrawLine(hitLoc + offset, Col_Red, endLoc + offset, Col_Red, 8.0f);
 		}
