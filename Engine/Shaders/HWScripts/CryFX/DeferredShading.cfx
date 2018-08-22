@@ -1172,7 +1172,7 @@ struct vtxOutMSAA
 	MSAA_SAMPLE_INDEX_PS
 };
 
-float4 ResolveStencilPS(vtxOutMSAA IN) : SV_Target0 
+float2 ResolveStencilPS(vtxOutMSAA IN) : SV_Target
 {
 	const int BIT_STENCIL_STATIC            = 0x0000007F;
 	const int BIT_STENCIL_INSIDE_VOLUME     = 0x00000040;
@@ -1185,11 +1185,12 @@ float4 ResolveStencilPS(vtxOutMSAA IN) : SV_Target0
 	nStencilVal = StencilTex.Load(vPixCoord);
 	nStencilVal = nStencilVal & BIT_STENCIL_STATIC;
 	nStencilVal = max(nStencilVal - BIT_STENCIL_INSIDE_VOLUME, 0);
-
+	
+	// Stencil-id is written to red only (GS_NOCOLMASK_GBA)
 #if DURANGO || ORBIS
-	return nStencilVal.r * fMaxStencilRefRcp;
+	return float2(nStencilVal.r * fMaxStencilRefRcp, 0);
 #else
-	return nStencilVal.g * fMaxStencilRefRcp;
+	return float2(nStencilVal.g * fMaxStencilRefRcp, 0);
 #endif
 }
 
@@ -1236,9 +1237,9 @@ pixOutClipVolume ClipVolumePS(vtxOutClipVolume IN)
 	return OUT;
 }
 
-pixout ClipVolumeBlendValuePS(float4 WPos : SV_POSITION)
+float2 ClipVolumeBlendValuePS(float4 WPos : SV_POSITION) : SV_Target
 {
-	pixout OUT = (pixout) 1;
+	float OUT = 1.0f;
 
 	float fDepthPixel = DepthTex.Load(int3(WPos.xy, 0)).x;
 	float fDevDepth = cbClipVolume.projRatioScreenScale.y / fDepthPixel + cbClipVolume.projRatioScreenScale.x;
@@ -1249,9 +1250,8 @@ pixout ClipVolumeBlendValuePS(float4 WPos : SV_POSITION)
 	float planeDist0 = max(dot(cbClipVolume.blendPlane0, vClipPos), 0);
 	float planeDist1 = max(dot(cbClipVolume.blendPlane1, vClipPos), 0);
 	
-	OUT.Color = planeDist0 / max(planeDist0 + planeDist1, 1e-5);
-
-	return OUT;
+	// Blend-value is written to green only (GS_NOCOLMASK_RBA)
+	return float2(0, planeDist0 / max(planeDist0 + planeDist1, 1e-5));
 }
 
 technique ClipVolumeStencil
@@ -1336,7 +1336,7 @@ technique ClipVolumeStencilVolFog
 	}
 }
 
-float4 ResolveStencilVolFogPS(vtxOut IN) : SV_Target0 
+float ResolveStencilVolFogPS(vtxOut IN) : SV_Target
 {
 	const int BIT_STENCIL_STATIC            = 0x0000007F;
 	const int BIT_STENCIL_INSIDE_VOLUME     = 0x00000040;

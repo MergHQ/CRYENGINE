@@ -1356,10 +1356,8 @@ vtxOutRainOcc SceneRainOccAccumulateVS(vtxInWPOS IN)
 	return OUT;
 }
 
-pixout SceneRainOccAccumulatePS(vtxOutRainOcc IN)
+float SceneRainOccAccumulatePS(vtxOutRainOcc IN) : SV_Target
 {
-	pixout OUT = (pixout)0;
-
 	const float fDepth = CV_NearFarClipDist.y * roDepthTex.Load(int3(IN.HPosition.xy, 0)).y;
 	const half fNoise = roNoiseTex.SampleLevel(roTrilinearWrapSampler, IN.baseTC.zw, 0.0f).x;
 
@@ -1392,9 +1390,7 @@ pixout SceneRainOccAccumulatePS(vtxOutRainOcc IN)
 	}
 
 	// Output occlusion w/ compressed near depth
-	OUT.Color.r = saturate(fOcc * fOccStrength);
-
-	return OUT;
+	return fOcc * fOccStrength;
 }
 
 //////////////////////////////////////////////////////////////////////////////////////////////
@@ -1491,8 +1487,7 @@ pixout SceneRainPS(vtxOutRain IN)
 	// Rain occlusion
 	float2 tcProj = IN.tcProj.xy / IN.tcProj.w;
 #if %_RT_SAMPLE0
-	float2 rainDistOcc = rnRainDistOccTex.SampleLevel(rnTrilinearClampSampler, tcProj, 0.0f).xy;
-	OUT.Color.a *= rainDistOcc.x;
+	OUT.Color.a *= rnRainDistOccTex.SampleLevel(rnTrilinearClampSampler, tcProj, 0.0f).x;
 	OUT.Color.a *= saturate(IN.blendWeights.z + 1.h);
 #endif
 
@@ -1548,7 +1543,7 @@ cbuffer CBSnowCluster : register(b0)
 
 Texture2D snSceneTargetTex : register(t0) = $SceneTarget;
 Texture2D snDepthTex : register(t1) = $ZTarget;
-Texture2D snSnowOcclusionTex : register(t2) = $RainOcclusion;
+Texture2D<float> snSnowOcclusionTex : register(t2) = $RainOcclusion;
 Texture2D snSnowFlakesTex : register(t3) = "%ENGINE%/EngineAssets/Textures/snowflakes.tif";
 
 SamplerState snPointClampSampler : register(s0) = SS_PointClamp;

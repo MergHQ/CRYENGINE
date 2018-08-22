@@ -35,13 +35,11 @@ VS_OUT quadVS( VS_IN IN )
 Texture2D    depthTex : register(t0);
 SamplerState ssDepth  : register(s0);
 
-float4 renderOccPlanePS( VS_OUT IN ) : SV_Target
+float renderOccPlanePS( VS_OUT IN ) : SV_Target
 {
 	float depth = GetTexture2D(depthTex, ssDepth, IN.uvz.xy);
 
-	float4 ret;
-	ret.x = saturate(sign(depth-IN.uvz.z));
-	return ret.xxxx;
+	return sign(depth-IN.uvz.z);
 }
 
 float4 occlusionParams; // xy: normalized size, zw: screen UV clamp
@@ -49,11 +47,11 @@ float4 occlusionParams; // xy: normalized size, zw: screen UV clamp
 Texture2D    occTex   : register(t0);
 SamplerState ssGather : register(s0);
 
-float4 gatherResultPS( VS_OUT IN ) : SV_Target
+float2 gatherResultPS( VS_OUT IN ) : SV_Target
 {
-	half4 result = half4(0,0,0,0);
+	half2 result = half2(0,0);
 	#define occResult result.r
-	#define dirResult result.a
+	#define dirResult result.g
 
 	half2 dirResultVec = 0;
 	half3 delta = half3( -0.25*occlusionParams.x, 0.25*occlusionParams.y, 0 );
@@ -101,6 +99,7 @@ float4 gatherResultPS( VS_OUT IN ) : SV_Target
 	const half kPI = 3.1415927;
 	dirResult = (atan2( -dirResultVec.y, -dirResultVec.x )+kPI)/(kPI*2);
 
+	// TODO: Code as 0-9.xxxx fixed point number (more than 255 angles (of 360))
 	return result;
 }
 

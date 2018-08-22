@@ -365,7 +365,7 @@ Texture2D oceanReflectionTex : register(t16);
 // per pass textures
 
 // volumetric fog shadow
-Texture2D volFogShadowTex : register(t21) = TS_VolumetricFogShadow0;
+Texture2D<float2> volFogShadowTex : register(t21) = TS_VolumetricFogShadow0;
 Texture2D interleaveSampleTex : register(t26) = "%ENGINE%/EngineAssets/Textures/FogVolShadowJitter.tif";
 
 // voxel-based volumetric fog

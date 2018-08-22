@@ -156,6 +156,7 @@ CTexture* CRendererResources::s_ptexAOVOJitter;
 CTexture* CRendererResources::s_ptexFromRE[8];
 CTexture* CRendererResources::s_ptexShadowID[8];
 CTexture* CRendererResources::s_ptexShadowMask;
+CTexture* CRendererResources::s_ptexClipVolumes;
 CTexture* CRendererResources::s_ptexCachedShadowMap[MAX_GSM_LODS_NUM];
 CTexture* CRendererResources::s_ptexNearestShadowMap;
 CTexture* CRendererResources::s_ptexHeightMapAO[2];
@@ -508,12 +509,13 @@ void CRendererResources::LoadDefaultSystemTextures()
 			s_ptexSceneDiffuseTmp = CTexture::GetOrCreateTextureObject("$SceneDiffuseTmp", 0, 0, 1, eTT_2D, nRTFlags, eTF_R8G8B8A8, TO_SCENE_DIFFUSE_ACC);
 			s_ptexSceneSpecularTmp = CTexture::GetOrCreateTextureObject("$SceneSpecularTmp", 0, 0, 1, eTT_2D, nRTFlags, eTF_R8G8B8A8, TO_SCENE_SPECULAR_ACC);
 			s_ptexShadowMask = CTexture::GetOrCreateTextureObject("$ShadowMask", 0, 0, 1, eTT_2DArray, nRTFlags, eTF_R8, TO_SHADOWMASK);
+			s_ptexClipVolumes = CTexture::GetOrCreateTextureObject("$ClipVolumes", 0, 0, 1, eTT_2D, nRTFlags, eTF_R8G8);
 
-			s_ptexFlaresGather = CTexture::GetOrCreateTextureObject("$FlaresGather", 0, 0, 1, eTT_2D, nRTFlags, eTF_R8G8B8A8);
+			s_ptexFlaresGather = CTexture::GetOrCreateTextureObject("$FlaresGather", 0, 0, 1, eTT_2D, nRTFlags, eTF_R8 /* 1-bit used only */);
 			for (i = 0; i < MAX_OCCLUSION_READBACK_TEXTURES; i++)
 			{
 				cry_sprintf(str, "$FlaresOcclusion_%d", i);
-				s_ptexFlaresOcclusionRing[i] = CTexture::GetOrCreateTextureObject(str, 0, 0, 1, eTT_2D, nRTFlags, eTF_R8G8B8A8);
+				s_ptexFlaresOcclusionRing[i] = CTexture::GetOrCreateTextureObject(str, 0, 0, 1, eTT_2D, nRTFlags, eTF_R8G8);
 			}
 
 			// fixme: get texture resolution from CREWaterOcean
@@ -862,7 +864,8 @@ void CRendererResources::CreateDeferredMaps(int resourceWidth, int resourceHeigh
 		SD3DPostEffectsUtils::GetOrCreateRenderTarget("$SceneNormalsMap", s_ptexSceneNormalsMap, width, height, Clr_Unknown, true, false, eTF_R8G8B8A8, TO_SCENE_NORMALMAP, FT_USAGE_ALLOWREADSRGB);
 		SD3DPostEffectsUtils::GetOrCreateRenderTarget("$SceneNormalsBent", s_ptexSceneNormalsBent, width, height, Clr_Median, true, false, eTF_R8G8B8A8);
 		SD3DPostEffectsUtils::GetOrCreateRenderTarget("$AOColorBleed", s_ptexAOColorBleed, width_r8, height_r8, Clr_Unknown, true, false, eTF_R8G8B8A8);
-		
+		SD3DPostEffectsUtils::GetOrCreateRenderTarget("$ClipVolumes", s_ptexClipVolumes, width, height, Clr_Empty, false, false, eTF_R8G8);
+
 		ETEX_Format preferredDepthFormat =
 			gRenDev->GetDepthBpp() == 32 ? eTF_D32FS8 :
 			gRenDev->GetDepthBpp() == 24 ? eTF_D24S8 :
@@ -975,6 +978,7 @@ void CRendererResources::DestroyDeferredMaps()
 	// shadow mask
 	SAFE_RELEASE(s_ptexRT_ShadowPool);
 	SAFE_RELEASE(s_ptexShadowMask);
+	SAFE_RELEASE(s_ptexClipVolumes);
 
 	// height map AO mask
 	SAFE_RELEASE(s_ptexHeightMapAO[0]);
@@ -1163,8 +1167,8 @@ bool CRendererResources::CreatePostFXMaps(int resourceWidth, int resourceHeight)
 
 		SPostEffectsUtils::GetOrCreateRenderTarget("$BackBufferScaled_d8", s_ptexBackBufferScaled[2], width_r8, height_r8, Clr_Unknown, 1, 0, eTF_R8G8B8A8, TO_BACKBUFFERSCALED_D8, FT_DONT_RELEASE);
 
-		SPostEffectsUtils::GetOrCreateRenderTarget("$RainSSOcclusion0", s_ptexRainSSOcclusion[0], width_r8, height_r8, Clr_Unknown, 1, false, eTF_R8G8B8A8);
-		SPostEffectsUtils::GetOrCreateRenderTarget("$RainSSOcclusion1", s_ptexRainSSOcclusion[1], width_r8, height_r8, Clr_Unknown, 1, false, eTF_R8G8B8A8);
+		SPostEffectsUtils::GetOrCreateRenderTarget("$RainSSOcclusion0", s_ptexRainSSOcclusion[0], width_r8, height_r8, Clr_Unknown, 1, false, eTF_R8);
+		SPostEffectsUtils::GetOrCreateRenderTarget("$RainSSOcclusion1", s_ptexRainSSOcclusion[1], width_r8, height_r8, Clr_Unknown, 1, false, eTF_R8);
 
 		if (CRenderer::CV_r_watervolumecaustics && CRenderer::CV_r_watercaustics && CRenderer::CV_r_watercausticsdeferred)
 		{
@@ -1180,8 +1184,8 @@ bool CRendererResources::CreatePostFXMaps(int resourceWidth, int resourceHeight)
 
 #if defined(VOLUMETRIC_FOG_SHADOWS)
 		int fogShadowBufDiv = (CRenderer::CV_r_FogShadows == 2) ? 4 : 2;
-		SPostEffectsUtils::GetOrCreateRenderTarget("$VolFogShadowBuf0", s_ptexVolFogShadowBuf[0], width / fogShadowBufDiv, height / fogShadowBufDiv, Clr_Unknown, 1, 0, eTF_R8G8B8A8, TO_VOLFOGSHADOW_BUF);
-		SPostEffectsUtils::GetOrCreateRenderTarget("$VolFogShadowBuf1", s_ptexVolFogShadowBuf[1], width / fogShadowBufDiv, height / fogShadowBufDiv, Clr_Unknown, 1, 0, eTF_R8G8B8A8);
+		SPostEffectsUtils::GetOrCreateRenderTarget("$VolFogShadowBuf0", s_ptexVolFogShadowBuf[0], width / fogShadowBufDiv, height / fogShadowBufDiv, Clr_Unknown, 1, 0, eTF_R8G8, TO_VOLFOGSHADOW_BUF);
+		SPostEffectsUtils::GetOrCreateRenderTarget("$VolFogShadowBuf1", s_ptexVolFogShadowBuf[1], width / fogShadowBufDiv, height / fogShadowBufDiv, Clr_Unknown, 1, 0, eTF_R8G8);
 #endif
 
 		// TODO: Only create necessary RTs for minimal ring?
@@ -1189,10 +1193,10 @@ bool CRendererResources::CreatePostFXMaps(int resourceWidth, int resourceHeight)
 		for (int i = 0, end = gcpRendD3D->GetActiveGPUCount() * MAX_FRAMES_IN_FLIGHT; i < end; i++)
 		{
 			sprintf(str, "$FlaresOcclusion_%d", i);
-			SPostEffectsUtils::GetOrCreateRenderTarget(str, s_ptexFlaresOcclusionRing[i], CFlareSoftOcclusionQuery::s_nIDColMax, CFlareSoftOcclusionQuery::s_nIDRowMax, Clr_Unknown, 1, 0, eTF_R8G8B8A8, -1, FT_DONT_RELEASE | FT_STAGE_READBACK);
+			SPostEffectsUtils::GetOrCreateRenderTarget(str, s_ptexFlaresOcclusionRing[i], CFlareSoftOcclusionQuery::s_nIDColMax, CFlareSoftOcclusionQuery::s_nIDRowMax, Clr_Unknown, 1, 0, eTF_R8G8, -1, FT_DONT_RELEASE | FT_STAGE_READBACK);
 		}
 
-		SPostEffectsUtils::GetOrCreateRenderTarget("$FlaresGather", s_ptexFlaresGather, CFlareSoftOcclusionQuery::s_nGatherTextureWidth, CFlareSoftOcclusionQuery::s_nGatherTextureHeight, Clr_Unknown, 1, 0, eTF_R8G8B8A8, -1, FT_DONT_RELEASE);
+		SPostEffectsUtils::GetOrCreateRenderTarget("$FlaresGather", s_ptexFlaresGather, CFlareSoftOcclusionQuery::s_nGatherTextureWidth, CFlareSoftOcclusionQuery::s_nGatherTextureHeight, Clr_Unknown, 1, 0, eTF_R8, -1, FT_DONT_RELEASE);
 	}
 
 	/*
@@ -1200,7 +1204,7 @@ bool CRendererResources::CreatePostFXMaps(int resourceWidth, int resourceHeight)
 	 */
 
 	if (!CTexture::IsTextureExist(s_ptexRainOcclusion))
-		SPostEffectsUtils::GetOrCreateRenderTarget("$RainOcclusion", s_ptexRainOcclusion, RAIN_OCC_MAP_SIZE, RAIN_OCC_MAP_SIZE, Clr_Neutral, false, false, eTF_R8G8B8A8, -1, FT_DONT_RELEASE);
+		SPostEffectsUtils::GetOrCreateRenderTarget("$RainOcclusion", s_ptexRainOcclusion, RAIN_OCC_MAP_SIZE, RAIN_OCC_MAP_SIZE, Clr_Neutral, false, false, eTF_R8, -1, FT_DONT_RELEASE);
 
 	if (!CTexture::IsTextureExist(s_ptexWaterVolumeDDN))
 	{

@@ -1295,7 +1295,7 @@ pixout WaterPS(v2f_hs IN)
 	#if %_RT_SAMPLE5
 		// Read volumetric shadows and apply to the global fog.
 		SVolumetricFogShadowParams volFogShadow = GetVolumetricFogShadowParams();
-		const float volFogShadowContrib = volFogShadowTex.Sample(ssMaterialTrilinear, screenTC).a;
+		const float volFogShadowContrib = volFogShadowTex.Sample(ssMaterialTrilinear, screenTC).g;
 		const float2 volFogShadowContribSunAmb = saturate(volFogShadowContrib * volFogShadow.volFogShadowDarkeningSunAmb.xz + volFogShadow.volFogShadowDarkeningSunAmb.yw);
 		half4 localFogColor = GetVolumetricFogColor(fogParams, IN.vPosWS.xyz, -IN.vView, volFogShadowContribSunAmb.x, volFogShadowContribSunAmb.y);
 		localFogColor.rgb = lerp(localFogColor.rgb * volFogShadow.volFogShadowDarkening.x, localFogColor.rgb, volFogShadowContrib);

@@ -712,11 +712,8 @@ float SingleGSMShadowedFog(Texture2D depthMap, SamplerComparisonState comparison
 
 }
 
-pixout MultiGSMShadowedFogPS(fragInShadowFog IN)
+float2 MultiGSMShadowedFogPS(fragInShadowFog IN) : SV_Target
 {
-	pixout OUT;
-	OUT.Color = 0.0f;
-
     SShadowSamplingParams ss = GetShadowSamplingParams();
 
 	//jitter
@@ -776,8 +773,7 @@ pixout MultiGSMShadowedFogPS(fragInShadowFog IN)
 
 	fogOccl /= (numShadowSamples);
 
-	OUT.Color = float4(refDepth, 1, 1, fogOccl);
-	return OUT;
+	return float2(refDepth, fogOccl);
 	////////////////////////////////////////////////////////////////////////////////
 }
 
@@ -786,10 +782,8 @@ pixout MultiGSMShadowedFogPS(fragInShadowFog IN)
 /////////////////////////////////////////////////////////////////////////////////////////////////////////////
 //===================================================================================
 
-pixout FogPassVolShadowsInterleavePassPS(vert2fragFog IN)
+float2 FogPassVolShadowsInterleavePassPS(vert2fragFog IN) : SV_Target
 {
-	pixout OUT = (pixout) 0;
-
 	float2 sampleUV = MapViewportToRaster(IN.baseTC.xy);
 
 	const float sceneDepth = min(fogShadowDepthTex.SampleLevel(fogShadowPointWrapSS, sampleUV, 0.0f), volFogShadowRange.x);
@@ -840,15 +834,14 @@ pixout FogPassVolShadowsInterleavePassPS(vert2fragFog IN)
 	}
 
 	const float refDepth = sceneDepth * volFogShadowRange.y;
-	OUT.Color = float4(refDepth, 1, 1, shadowOccl / (float)numShadowSamples);
+	shadowOccl /= (float)numShadowSamples;
 
-
-	return OUT;
+	return float2(refDepth, shadowOccl);
 }
 
 float4 volFogShadowBufSampleOffsets[8];
 
-float VolFogShadowBilateralFilter(in Texture2D tex, in SamplerState pointClampSS, in const int numSamples, in const float2 baseTC, in const float refDepth, in const float similarity)
+float VolFogShadowBilateralFilter(in Texture2D<float2> tex, in SamplerState pointClampSS, in const int numSamples, in const float2 baseTC, in const float refDepth, in const float similarity)
 {
 	float accumVal = 0.0;
 	float accumWeight = 0.0;
@@ -856,9 +849,9 @@ float VolFogShadowBilateralFilter(in Texture2D tex, in SamplerState pointClampSS
 	for(int i=0; i<numSamples; i++)
 	{
 		const float2 coord = baseTC.xy + volFogShadowBufSampleOffsets[i].xy;
-		const float4 sampleXYZW = tex.Sample(pointClampSS, coord);
+		const float2 sampleXYZW = tex.Sample(pointClampSS, coord).xy;
 
-		const float sampleVal = sampleXYZW.w;
+		const float sampleVal = sampleXYZW.y;
 		const float sampleDepth = sampleXYZW.x;
 
 		const float s = exp2(abs(sampleDepth - refDepth) * -similarity);
@@ -869,24 +862,20 @@ float VolFogShadowBilateralFilter(in Texture2D tex, in SamplerState pointClampSS
 	return accumVal / accumWeight;
 }
 
-Texture2D volFogShadowGatherTex : register(t0);
+Texture2D<float2> volFogShadowGatherTex : register(t0);
 SamplerState volFogPointSamplerState : register(s0);
 
-pixout FogPassVolShadowsGatherPassPS(vert2fragFog IN)
+float2 FogPassVolShadowsGatherPassPS(vert2fragFog IN) : SV_Target
 {
-	pixout OUT = (pixout) 0;
-
 	float2 sampleUV = MapViewportToRaster(IN.baseTC.xy);
 
 	const float refDepth = volFogShadowGatherTex.Sample(volFogPointSamplerState, sampleUV + volFogShadowBufSampleOffsets[4].xy).x;
 	const float value = VolFogShadowBilateralFilter(volFogShadowGatherTex, volFogPointSamplerState, 8, sampleUV, refDepth, 50.0);
 
-	OUT.Color = float4(refDepth, 1, 1, value);
-
-	return OUT;
+	return float2(refDepth, value);
 }
 
-Texture2D volFogShadowTex : register(t1);
+Texture2D<float2> volFogShadowTex : register(t1);
 
 float4 volFogShadowDarkening;
 float4 volFogShadowDarkeningSunAmb;

@@ -6,6 +6,8 @@
 #include <CryMath/Cry_Vector2.h>
 #include "Timeline.h"
 
+#define CHANNELS_PER_GATHER	2
+
 class CTexture;
 class CShader;
 class RootOpticsElement;
@@ -45,7 +47,7 @@ public:
 private:
 	static int           s_idCount;
 	static char          s_idHashTable[s_nIDMax];
-	static unsigned char s_paletteRawCache[s_nIDMax * 4];
+	static unsigned char s_paletteRawCache[s_nIDMax * CHANNELS_PER_GATHER];
 
 	static int           s_ringReadIdx;
 	static int           s_ringWriteIdx;
