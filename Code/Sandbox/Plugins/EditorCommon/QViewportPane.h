@@ -99,8 +99,9 @@ class EDITOR_COMMON_API QViewportPane : public QWidget
 public:
 	QViewportPane(CViewport* viewport, QWidget* headerWidget);
 
+	QViewportWidget* GetViewWidget() const { return m_viewWidget; }
 private:
-	friend class QViewportWidget;
+	friend QViewportWidget;
 	QWidget*         m_headerWidget;
 	QViewportWidget* m_viewWidget;
 
