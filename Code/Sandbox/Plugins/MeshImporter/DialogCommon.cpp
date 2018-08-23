@@ -240,9 +240,22 @@ void CBaseDialog::dragEnterEvent(QDragEnterEvent* pEvent)
 {
 	auto pDragDropData = CDragDropData::FromMimeData(pEvent->mimeData());
 	const QStringList filePaths = pDragDropData->GetFilePaths();
-	if (!filePaths.empty())
+	if (filePaths.size() != 1)
 	{
-		pEvent->acceptProposedAction();
+		return;
+	}
+
+	const string fileExtension(PathUtil::GetExt(QtUtil::ToString(filePaths.first())));
+
+	FbxTool::TIndex numExtensions;
+	const char* const* const ppExtensions = FbxTool::GetSupportedFileExtensions(numExtensions);
+	for (FbxTool::TIndex i = 0; i < numExtensions; ++i)
+	{
+		if (fileExtension.CompareNoCase(ppExtensions[i]) == 0)
+		{
+			pEvent->acceptProposedAction();
+			break;
+		}
 	}
 }
 
