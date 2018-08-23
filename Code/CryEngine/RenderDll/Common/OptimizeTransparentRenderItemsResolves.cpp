@@ -160,9 +160,9 @@ std::size_t CRenderView::OptimizeTransparentRenderItemsResolves(STransparentSegm
 			if (needsResolve)
 			{
 				const bool forceFullResolve = !!(item.nBatchFlags & FB_RESOLVE_FULL);
-				const auto bounds = item.pCompiledObject->m_aabb.IsEmpty() ?
-					bounds_t{ 0,0,0,0 } :
-					ComputeResolveViewport(item.pCompiledObject->m_aabb, forceFullResolve);
+				const auto bounds = item.pCompiledObject && !item.pCompiledObject->m_aabb.IsEmpty() ?
+					ComputeResolveViewport(item.pCompiledObject->m_aabb, forceFullResolve) :
+					bounds_t{ 0,0,0,0 };
 				segment.resolveRects.push_back(bounds);
 			}
 
@@ -176,9 +176,9 @@ std::size_t CRenderView::OptimizeTransparentRenderItemsResolves(STransparentSegm
 		for (const auto &item : renderItems)
 		{
 			const bool forceFullResolve = !!(item.nBatchFlags & FB_RESOLVE_FULL);
-			const auto bounds = item.pCompiledObject->m_aabb.IsEmpty() ?
-				bounds_t{ 0,0,0,0 } :
-				ComputeResolveViewport(item.pCompiledObject->m_aabb, forceFullResolve);
+			const auto bounds = item.pCompiledObject && !item.pCompiledObject->m_aabb.IsEmpty() ?
+				ComputeResolveViewport(item.pCompiledObject->m_aabb, forceFullResolve) :
+				bounds_t{ 0,0,0,0 };
 			nodes.emplace_back(node{ item, bounds, !!(item.nBatchFlags & refractionMask) });
 		}
 
