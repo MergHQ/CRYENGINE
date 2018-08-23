@@ -1478,10 +1478,10 @@ size_t CRendererResources::m_DTallocs = 0;
 
 CTexture* CRendererResources::CreateDepthTarget(int nWidth, int nHeight, const ColorF& cClear, ETEX_Format eTF)
 {
-	const ETEX_Format preferredDepthFormat = eTF == eTF_Unknown ?
+	const ETEX_Format preferredDepthFormat = s_hwTexFormatSupport.GetClosestFormatSupported(eTF == eTF_Unknown ?
 		gRenDev->GetDepthBpp() == 32 ? eTF_D32FS8 :
 		gRenDev->GetDepthBpp() == 24 ? eTF_D24S8 :
-		gRenDev->GetDepthBpp() == 8  ? eTF_D16S8 : eTF_D16 : eTF;
+		gRenDev->GetDepthBpp() == 8  ? eTF_D16S8 : eTF_D16 : eTF);
 
 	char pName[128]; // Create unique names for every allocation, otherwise name-matches would occur in GetOrCreateDepthStencil()
 	cry_sprintf(pName, "$DepthStencil%8x", ++m_DTallocs);

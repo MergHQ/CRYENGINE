@@ -25,16 +25,18 @@ ETEX_Format CShadowMapStage::GetShadowTexFormat(EPass passID) const
 	{
 	case ePass_DirectionalLight:
 	case ePass_DirectionalLightRSM:
-		return  CRendererCVars::CV_r_shadowtexformat == 0 ? eTF_D32F  :
-		       (CRendererCVars::CV_r_shadowtexformat == 1 ? eTF_D16   :
-		                                                    eTF_D24S8);
+		return CRendererResources::s_hwTexFormatSupport.GetClosestFormatSupported(
+			CRendererCVars::CV_r_shadowtexformat == 0 ? eTF_D32F  :
+		    (CRendererCVars::CV_r_shadowtexformat == 1 ? eTF_D16  : eTF_D24S8));
 
 	case ePass_DirectionalLightCached:
-		return CRendererCVars::CV_r_ShadowsCacheFormat == 0 ? eTF_D32F : eTF_D16;
+		return CRendererResources::s_hwTexFormatSupport.GetClosestFormatSupported(
+			CRendererCVars::CV_r_ShadowsCacheFormat == 0 ? eTF_D32F : eTF_D16);
 
 	case ePass_LocalLightRSM:
 	case ePass_LocalLight:
-		return CRendererCVars::CV_r_shadowtexformat == 0 ? eTF_D32F : eTF_D16;
+		return CRendererResources::s_hwTexFormatSupport.GetClosestFormatSupported(
+			CRendererCVars::CV_r_shadowtexformat == 0 ? eTF_D32F : eTF_D16);
 	}
 
 	return eTF_Unknown;

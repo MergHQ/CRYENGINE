@@ -945,7 +945,9 @@ int32 CScaleformPlayback::PushTempRenderTarget(const RectF& frameRect, uint32 ta
 	}
 
 	CTexture* pNewTempRT = m_pRenderer->SF_GetResources().GetColorSurface(m_pRenderer, RTWidth, RTHeight, eTF_R8G8B8A8, RTWidth, RTHeight);// TODO: allow larger RTs upto ST (needs viewport adjustment), pNewTempST->pTexture->GetWidth(), pNewTempST->pTexture->GetHeight());
-	CTexture* pNewTempST = wantStencil ? m_pRenderer->SF_GetResources().GetStencilSurface(m_pRenderer, pNewTempRT->GetWidth(), pNewTempRT->GetHeight(), eTF_D24S8) : nullptr;
+	CTexture* pNewTempST = wantStencil ?
+		m_pRenderer->SF_GetResources().GetStencilSurface(m_pRenderer, pNewTempRT->GetWidth(), pNewTempRT->GetHeight(), CRendererResources::s_hwTexFormatSupport.GetClosestFormatSupported(eTF_D24S8)) :
+		nullptr;
 
 	m_renderTargetStack.emplace_back();
 	SSF_GlobalDrawParams::OutputParams& sNewOutput = m_renderTargetStack.back();
