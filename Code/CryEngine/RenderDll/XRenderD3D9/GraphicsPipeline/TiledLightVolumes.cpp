@@ -1217,7 +1217,7 @@ void CTiledLightVolumesStage::GenerateLightList()
 				isValid ? '!' : '?',
 				pName);
 
-			if (rowPos >= (rd->GetHeight() - rowHeightSmall))
+			if (rowPos >= (rd->GetOverlayHeight() - rowHeightSmall))
 			{
 				rowPos = rowReset;
 				colPos += 800;

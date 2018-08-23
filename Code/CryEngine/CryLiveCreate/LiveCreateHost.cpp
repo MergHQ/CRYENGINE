@@ -752,8 +752,8 @@ void CHost::FillHostInfo(CHostInfoPacket& outHostInfo) const
 	outHostInfo.rootFolder = gEnv->pSystem->GetRootFolder();
 	outHostInfo.bAllowsLiveCreate = true;
 	outHostInfo.bHasLiveCreateConnection = m_pCommandServer ? m_pCommandServer->HasConnectedClients() : false;
-	outHostInfo.screenWidth = gEnv->pRenderer ? gEnv->pRenderer->GetWidth() : 0;
-	outHostInfo.screenHeight = gEnv->pRenderer ? gEnv->pRenderer->GetHeight() : 0;
+	outHostInfo.screenWidth = gEnv->pRenderer ? gEnv->pRenderer->GetOverlayWidth() : 0;
+	outHostInfo.screenHeight = gEnv->pRenderer ? gEnv->pRenderer->GetOverlayHeight() : 0;
 
 	if (gEnv->pGameFramework)
 	{

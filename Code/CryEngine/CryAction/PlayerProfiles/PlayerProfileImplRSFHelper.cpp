@@ -601,7 +601,7 @@ public:
 #ifdef TEST_THUMBNAIL_AUTOCAPTURE
 		// the image file we write out is always in 16:9 format, e.g. 256x144
 		// or scaled depending on renderer height
-		const int h = gEnv->pRenderer->GetHeight();
+		const int h = gEnv->pRenderer->GetOverlayHeight();
 		const int imageDepth = RichSaveGames::THUMBNAIL_DEFAULT_DEPTH;
 		int imageHeight = std::min(RichSaveGames::THUMBNAIL_DEFAULT_HEIGHT, h);
 		int imageWidth = imageHeight * 16 / 9;
@@ -732,8 +732,8 @@ public:
 		// debug: get screen shot here
 		if (thumbnailSize > 0)
 		{
-			int w = gEnv->pRenderer->GetWidth();
-			int h = gEnv->pRenderer->GetHeight();
+			int w = gEnv->pRenderer->GetOverlayWidth();
+			int h = gEnv->pRenderer->GetOverlayHeight();
 
 			// initialize to stretch thumbnail
 			int captureDestWidth = m_thumbnailWidth;

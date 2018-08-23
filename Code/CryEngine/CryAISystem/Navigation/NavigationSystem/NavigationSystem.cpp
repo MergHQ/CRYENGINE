@@ -4995,15 +4995,15 @@ void NavigationSystemDebugDraw::DebugDrawTriangleOnCursor(NavigationSystem& navi
 	if (!gAIEnv.CVars.DebugTriangleOnCursor)
 		return;
 
+	const CCamera& viewCamera = gEnv->pSystem->GetViewCamera();
+
 	CDebugDrawContext dc;
-	float yPos = gEnv->pRenderer->GetHeight() - 100.0f;
+	float yPos = viewCamera.GetViewSurfaceZ() - 100.0f;
 	const float textSize = 1.2f;
 	const float xPos = 200.0f;
 
 	dc->Draw2dLabel(xPos - 2.0f, yPos, 1.6f, Col_White, false, "NavMesh Triangle Info");
 	yPos += 20.0f;
-	
-	const CCamera& viewCamera = gEnv->pSystem->GetViewCamera();
 	
 	Vec3 rayStartPos = viewCamera.GetPosition();
 	Vec3 rayDir = viewCamera.GetViewdir();
@@ -5014,7 +5014,7 @@ void NavigationSystemDebugDraw::DebugDrawTriangleOnCursor(NavigationSystem& navi
 		gEnv->pHardwareMouse->GetHardwareMouseClientPosition(&mouseX, &mouseY);
 
 		// Invert mouse Y
-		mouseY = gEnv->pRenderer->GetHeight() - mouseY;
+		mouseY = viewCamera.GetViewSurfaceZ() - mouseY;
 
 		Vec3 pos0(0.0f);
 		Vec3 pos1(0.0f);
@@ -5148,7 +5148,7 @@ void NavigationSystemDebugDraw::DebugDrawNavigationSystemState(NavigationSystem&
 
 	const size_t areaTypesCount = annotationsLib.GetAreaTypeCount();
 	const float lineHeight = 25.0f;
-	const float yPos = gEnv->pRenderer->GetHeight() - float(areaTypesCount + 1) * lineHeight - 20.0f;
+	const float yPos = gEnv->pRenderer->GetOverlayHeight() - float(areaTypesCount + 1) * lineHeight - 20.0f;
 
 	dc->Draw2dLabel(10.0f, yPos, 1.6f, Col_White, false, "Area Types");
 
