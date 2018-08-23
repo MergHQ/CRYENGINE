@@ -189,9 +189,9 @@ void CD3D9Renderer::RT_GraphicsPipelineShutdown()
 
 ////////////////////////////////////////////////////////////////////////////////////////////////////
 
-bool CD3D9Renderer::FX_HDRScene(CRenderView *pRenderView, bool bEnableHDR, bool bClear)
+bool CD3D9Renderer::FX_HDRScene(CRenderView *pRenderView, bool bClear)
 {
-	if (bEnableHDR)
+	if (pRenderView->AllowsHDRRendering())
 	{
 		if (m_LogFile)
 			Logv(" +++ Start HDR scene +++ \n");
@@ -200,7 +200,7 @@ bool CD3D9Renderer::FX_HDRScene(CRenderView *pRenderView, bool bEnableHDR, bool 
 		const bool bDeferredShading = (shaderRenderingFlags & SHDF_ZPASS) != 0;
 		if (!bDeferredShading || CV_r_measureoverdraw || (shaderRenderingFlags & SHDF_BILLBOARDS))
 		{
-			// HDR post process isn't used.
+			// HDR output isn't used.
 			return false;
 		}
 
@@ -210,7 +210,7 @@ bool CD3D9Renderer::FX_HDRScene(CRenderView *pRenderView, bool bEnableHDR, bool 
 			CClearSurfacePass::Execute(pRenderView->GetDepthTarget(), CLEAR_ZBUFFER | CLEAR_STENCIL, 0.0f, 0);
 		}
 	}
-	else if (!CV_r_HDRRendering && CRendererResources::s_ptexHDRTarget)
+	else
 	{
 		if (m_LogFile)
 			Logv(" +++ End HDR scene +++ \n");
@@ -651,20 +651,10 @@ void CD3D9Renderer::RT_RenderScene(CRenderView* pRenderView)
 
 	m_bDeferredDecals = false;
 
-	if (!IsHDRModeEnabled())
-	{
-		m_vSceneLuminanceInfo = Vec4(1.0f, 1.0f, 1.0f, 1.0f);
-		m_fAdaptedSceneScale  = m_fAdaptedSceneScaleLBuffer = m_fScotopicSceneScale = 1.0f;
-	}
+	m_vSceneLuminanceInfo = Vec4(1.0f, 1.0f, 1.0f, 1.0f);
+	m_fAdaptedSceneScale  = m_fAdaptedSceneScaleLBuffer = m_fScotopicSceneScale = 1.0f;
 
-	if (!bRecurse && pRenderView->IsHDRModeEnabled())
-	{
-		FX_HDRScene(pRenderView, true, false);
-	}
-	else
-	{
-		FX_HDRScene(pRenderView, false);
-	}
+	FX_HDRScene(pRenderView, false);
 
 	// This scope is the only one allowed to utilize the graphics pipeline
 	{

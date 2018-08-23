@@ -1143,8 +1143,6 @@ NO_INLINE Vec4 sGetVolumetricFogParams(const CCamera& camera)
 	pEng->GetGlobalParameter(E3DPARAM_VOLFOG_GLOBAL_DENSITY, globalDensityParams);
 
 	float globalDensity = globalDensityParams.x;
-	if (!gRenDev->IsHDRModeEnabled())
-		globalDensity *= globalDensityParams.y;
 
 	Vec3 volFogHeightDensity(0, 1, 0);
 	pEng->GetGlobalParameter(E3DPARAM_VOLFOG_HEIGHT_DENSITY, volFogHeightDensity);
