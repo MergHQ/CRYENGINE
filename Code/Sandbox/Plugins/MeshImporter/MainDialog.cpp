@@ -1736,7 +1736,7 @@ namespace Private_MainDialog
 std::unique_ptr<CModelProperties::SSerializer> CreateSerializer(QAbstractItemModel* pModel, const QModelIndex& modelIndex)
 {
 	QVariant data = modelIndex.data(eItemDataRole_YasliSStruct);
-	if (data.canConvert<void*>())
+	if (data.isValid() && data.canConvert<void*>())
 	{
 		std::unique_ptr<Serialization::SStruct> sstruct((Serialization::SStruct*)data.value<void*>());
 

@@ -38,7 +38,10 @@ void CModelProperties::AttachSelectionToPropertyTree(QAbstractItemModel* pModel,
 		if (pSerializer)
 		{
 			structs.emplace_back(pSerializer->m_sstruct);
-			m_serializedObjects.emplace_back(pSerializer->m_pObject);
+			if (pSerializer->m_pObject)
+			{
+				m_serializedObjects.emplace_back(pSerializer->m_pObject);
+			}
 		}
 	}
 	m_pPropertyTree->attach(structs);
@@ -51,7 +54,7 @@ std::unique_ptr<CModelProperties::SSerializer> CModelProperties::GetSerializer(Q
 	for (const auto& createSerializerFunc : m_createSerializerFuncs)
 	{
 		std::unique_ptr<SSerializer> pSerializer(createSerializerFunc(pModel, modelIndex));
-		if (pSerializer && pSerializer->m_pObject)
+		if (pSerializer && pSerializer->m_sstruct.pointer())
 		{
 			return pSerializer;
 		}
