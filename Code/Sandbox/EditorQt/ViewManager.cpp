@@ -5,6 +5,7 @@
 
 #include "LevelEditor/LevelEditorViewport.h"
 #include "Qt/Widgets/QViewportHeader.h"
+#include "Qt/QMainFrameMenuBar.h"
 #include "Qt/QtMainFrame.h"
 #include "2DViewport.h"
 #include "CryEditDoc.h"
@@ -21,12 +22,13 @@
 #include <IViewSystem.h>
 
 #include <QApplication>
+#include <QMenuBar>
 #include <QVBoxLayout>
 
 class QViewportPaneContainer : public CDockableWidget
 {
 public:
-	QViewportPaneContainer(QWidget* w, CViewport* pViewport)
+	QViewportPaneContainer(QViewportPane* pViewportPane, CViewport* pViewport)
 		: CDockableWidget(nullptr)
 		, m_pViewport(pViewport)
 	{
@@ -34,7 +36,12 @@ public:
 		layout->setContentsMargins(0, 0, 0, 0);
 		layout->setSpacing(0);
 		setLayout(layout);
-		layout->addWidget(w);
+		layout->addWidget(pViewportPane);
+
+		QWidget* pViewWidget = pViewportPane->GetViewWidget();
+		// In order for this widget to handle shortcuts for level editing when in full screen, we must add all relevant actions
+		// to the widget itself
+		pViewWidget->addAction(GetPaneMenu()->menuAction());
 	}
 
 	const char* GetPaneTitle() const
@@ -44,11 +51,30 @@ public:
 
 	virtual QMenu* GetPaneMenu() const override
 	{
-		QMenu* pMenu = CDockableWidget::GetPaneMenu();
-		QMenu* pDisplayMenu = pMenu->addMenu("Display");
-		pDisplayMenu->addAction(GetIEditorImpl()->GetICommandManager()->GetAction("general.fullscreen"));
+		QMenu* pPaneMenu = CDockableWidget::GetPaneMenu();
 
-		return pMenu;
+		if (CEditorMainFrame::GetInstance())
+		{
+			QMainFrameMenuBar* pMenuBar = qobject_cast<QMainFrameMenuBar*>(CEditorMainFrame::GetInstance()->menuWidget());
+			QList<QMenu*> menus = pMenuBar->GetMenuBar()->findChildren<QMenu*>(QString(), Qt::FindDirectChildrenOnly);
+
+			// Technically these menus should just live in the level editor but since these actions live in the mainframe
+			// due to the level editor being considered the main editor for now, then we need to also place them in the viewport widget
+			// which is the place where the actual editing is done. This should be consolidated once we've fully separated the level
+			// editor as a standalone editor
+			QStringList menuTitles({ "Edit", "Level", "Display", "Game", "Debug" });
+			QAction* pBeforeMenu = pPaneMenu->actions().first();
+
+			for (QMenu* pMenu : menus)
+			{
+				if (menuTitles.contains(pMenu->title()))
+				{
+					pPaneMenu->insertMenu(pBeforeMenu, pMenu);
+				}
+			}
+		}
+
+		return pPaneMenu;
 	}
 
 	virtual QVariantMap GetState() const

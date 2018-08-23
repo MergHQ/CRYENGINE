@@ -14,6 +14,8 @@ public:
 	QMainFrameMenuBar(QMenuBar* pMenuBar = 0, QWidget* pParent = 0);
 	void ShowSearchResults();
 
+	QMenuBar*           GetMenuBar() const { return m_pMenuBar; }
+
 protected:
 	void                OnItemSelected(const QModelIndex& index);
 

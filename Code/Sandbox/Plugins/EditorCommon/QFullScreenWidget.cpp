@@ -87,10 +87,6 @@ QFullScreenWidgetWindow::QFullScreenWidgetWindow(QFullScreenWidget* w)
 	setLayout(layout);
 	showFullScreen();
 	wmax->setFocus();
-
-	// Actions not assigned to this widget will not work when in full screen. We must assign this
-	// so the user is able to quit full screen mode
-	addAction(GetIEditor()->GetICommandManager()->GetAction("general.fullscreen"));
 }
 
 QFullScreenWidgetWindow::~QFullScreenWidgetWindow()
