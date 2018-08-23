@@ -2,6 +2,8 @@
 
 #pragma once
 
+class CImageEx;
+
 /** Use this class to put and get stuff from windows clipboard.
  */
 class PLUGIN_API CClipboard
@@ -30,5 +32,5 @@ public:
 	bool IsEmpty() const;
 private:
 	static XmlNodeRef m_node;
-	static string    m_title;
+	static string     m_title;
 };

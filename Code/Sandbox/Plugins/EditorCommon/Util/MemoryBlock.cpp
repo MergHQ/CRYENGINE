@@ -2,8 +2,9 @@
 
 #include "StdAfx.h"
 #include "MemoryBlock.h"
-#include <zlib.h>
 #include "Controls/QuestionDialog.h"
+
+#include <zlib.h>
 
 namespace Private_MemoryBlock
 {
@@ -15,7 +16,6 @@ namespace Private_MemoryBlock
 	}
 }
 
-//////////////////////////////////////////////////////////////////////////
 CMemoryBlock::CMemoryBlock()
 {
 	m_buffer = 0;
@@ -24,19 +24,16 @@ CMemoryBlock::CMemoryBlock()
 	m_owns = false;
 }
 
-//////////////////////////////////////////////////////////////////////////
 CMemoryBlock::CMemoryBlock(const CMemoryBlock& mem)
 {
 	*this = mem;
 }
 
-//////////////////////////////////////////////////////////////////////////
 CMemoryBlock::~CMemoryBlock()
 {
 	Free();
 }
 
-//////////////////////////////////////////////////////////////////////////
 CMemoryBlock& CMemoryBlock::operator=(const CMemoryBlock& mem)
 {
 	if (mem.GetSize() > 0)
@@ -59,7 +56,6 @@ CMemoryBlock& CMemoryBlock::operator=(const CMemoryBlock& mem)
 	return *this;
 }
 
-//////////////////////////////////////////////////////////////////////////
 bool CMemoryBlock::Allocate(int size, int uncompressedSize)
 {
 	using namespace Private_MemoryBlock;
@@ -107,7 +103,6 @@ bool CMemoryBlock::Allocate(int size, int uncompressedSize)
 	return true;
 }
 
-//////////////////////////////////////////////////////////////////////////
 void CMemoryBlock::Free()
 {
 	if (m_buffer && m_owns)
@@ -118,14 +113,12 @@ void CMemoryBlock::Free()
 	m_uncompressedSize = 0;
 }
 
-//////////////////////////////////////////////////////////////////////////
 void CMemoryBlock::Copy(void* src, int size)
 {
 	assert(size <= m_size);
 	memcpy(m_buffer, src, size);
 }
 
-//////////////////////////////////////////////////////////////////////////
 void CMemoryBlock::Attach(void* buffer, int size, int uncompressedSize)
 {
 	Free();
@@ -135,13 +128,11 @@ void CMemoryBlock::Attach(void* buffer, int size, int uncompressedSize)
 	m_uncompressedSize = uncompressedSize;
 }
 
-//////////////////////////////////////////////////////////////////////////
 void CMemoryBlock::Detach()
 {
 	Free();
 }
 
-//////////////////////////////////////////////////////////////////////////
 void CMemoryBlock::Compress(CMemoryBlock& toBlock) const
 {
 	// Cannot compress to itself.
@@ -157,7 +148,6 @@ void CMemoryBlock::Compress(CMemoryBlock& toBlock) const
 	toBlock.m_uncompressedSize = GetSize();
 }
 
-//////////////////////////////////////////////////////////////////////////
 void CMemoryBlock::Uncompress(CMemoryBlock& toBlock) const
 {
 	assert(this != &toBlock);
@@ -169,7 +159,6 @@ void CMemoryBlock::Uncompress(CMemoryBlock& toBlock) const
 	assert(destSize == m_uncompressedSize);
 }
 
-//////////////////////////////////////////////////////////////////////////
 void CMemoryBlock::Serialize(CArchive& ar)
 {
 	if (ar.IsLoading())

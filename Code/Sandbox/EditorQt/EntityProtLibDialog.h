@@ -2,18 +2,17 @@
 
 #pragma once
 
+#include "Controls/SplitterCtrl.h"
+#include "Controls/PropertyCtrl.h"
+#include "Controls/PreviewModelCtrl.h"
 #include "BaseLibraryDialog.h"
-#include "Controls\SplitterCtrl.h"
-#include "Controls\TreeCtrlEx.h"
-#include "Controls\PropertyCtrl.h"
-#include "Controls\PreviewModelCtrl.h"
-#include "Controls\PropertyItem.h"
 #include "EntityScriptDialog.h"
+
+struct IEntitySystem;
+struct IEntity;
 
 class CEntityPrototypeManager;
 class CEntityPrototype;
-struct IEntitySystem;
-struct IEntity;
 class CMFCPropertyTree;
 
 /** Dialog which hosts entity prototype library.

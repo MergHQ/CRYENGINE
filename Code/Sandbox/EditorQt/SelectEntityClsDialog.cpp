@@ -2,18 +2,14 @@
 
 #include "stdafx.h"
 #include "SelectEntityClsDialog.h"
-#include "Util/MFCUtil.h"
-#include "Objects\EntityScript.h"
 
-// CSelectEntityClsDialog dialog
+#include "Objects/EntityScript.h"
+
+#include <Util/MFCUtil.h>
 
 IMPLEMENT_DYNAMIC(CSelectEntityClsDialog, CXTResizeDialog)
 CSelectEntityClsDialog::CSelectEntityClsDialog(CWnd* pParent /*=NULL*/)
 	: CXTResizeDialog(CSelectEntityClsDialog::IDD, pParent)
-{
-}
-
-CSelectEntityClsDialog::~CSelectEntityClsDialog()
 {
 }
 
@@ -28,9 +24,6 @@ ON_NOTIFY(TVN_SELCHANGED, IDC_TREE, OnTvnSelchangedTree)
 ON_NOTIFY(NM_DBLCLK, IDC_TREE, OnTvnDoubleClick)
 END_MESSAGE_MAP()
 
-// CSelectEntityClsDialog message handlers
-
-//////////////////////////////////////////////////////////////////////////
 BOOL CSelectEntityClsDialog::OnInitDialog()
 {
 	CXTResizeDialog::OnInitDialog();
@@ -56,7 +49,6 @@ BOOL CSelectEntityClsDialog::OnInitDialog()
 	return TRUE;
 }
 
-//////////////////////////////////////////////////////////////////////////
 void CSelectEntityClsDialog::ReloadEntities()
 {
 	std::map<string, HTREEITEM> items;
@@ -110,20 +102,15 @@ void CSelectEntityClsDialog::ReloadEntities()
 	m_tree.SortChildren(TVI_ROOT);
 }
 
-//////////////////////////////////////////////////////////////////////////
 void CSelectEntityClsDialog::OnTvnSelchangedTree(NMHDR* pNMHDR, LRESULT* pResult)
 {
 	LPNMTREEVIEW pNMTreeView = reinterpret_cast<LPNMTREEVIEW>(pNMHDR);
 
-	//////////////////////////////////////////////////////////////////////////
-	// Return entity class.
-	//////////////////////////////////////////////////////////////////////////
 	m_entityClass = stl::find_in_map(m_itemsMap, pNMTreeView->itemNew.hItem, string(""));
 
 	*pResult = 0;
 }
 
-//////////////////////////////////////////////////////////////////////////
 void CSelectEntityClsDialog::OnTvnDoubleClick(NMHDR* pNMHDR, LRESULT* pResult)
 {
 	if (!m_entityClass.IsEmpty())

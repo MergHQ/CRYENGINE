@@ -3,7 +3,7 @@
 #pragma once
 
 #include "ISequencerSystem.h"
-#include "Controls\PropertyCtrl.h"
+#include "Controls/PropertyCtrl.h"
 #include "SequencerNode.h"
 
 class CSequencerTrackPropsDialog;

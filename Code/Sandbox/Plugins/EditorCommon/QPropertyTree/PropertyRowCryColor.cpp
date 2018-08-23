@@ -2,24 +2,21 @@
 
 #include "stdafx.h"
 #include "PropertyRowCryColor.h"
-#include <CrySerialization/ClassFactory.h>
-#include <Serialization/PropertyTree/PropertyRowNumber.h>
-#include <Serialization/PropertyTree/IMenu.h>
+
+#include "Serialization/PropertyTree/IMenu.h"
+#include "Serialization/PropertyTree/PropertyRowNumber.h"
+#include "Serialization/PropertyTree/PropertyTreeModel.h"
+#include "Serialization/QPropertyTree/QPropertyTree.h"
+
 #include <CryMath/Cry_Color.h>
-#include <QMenu>
-#include <QFileDialog>
-#include <QPainter>
-#include <QColorDialog>
+
 #include <QApplication>
+#include <QColorDialog>
 #include <QDesktopWidget>
-#include <QDialogButtonBox>
-#include <QPushButton>
 
 using Serialization::Vec3AsColor;
 typedef SerializableColor_tpl<unsigned char> SerializableColorB;
 typedef SerializableColor_tpl<float>         SerializableColorF;
-
-//////////////////////////////////////////////////////////////////////////
 
 QColor ToQColor(const ColorB& v)
 {
@@ -62,7 +59,6 @@ void FromQColor(SerializableColorF& vColor, QColor color)
 	vColor.a = color.alphaF();
 }
 
-//////////////////////////////////////////////////////////////////////////
 #if 0
 template<class ColorClass>
 class QPropertyColorDialog : public QColorDialog
@@ -150,7 +146,6 @@ public:
 };
 
 #endif
-//////////////////////////////////////////////////////////////////////////
 
 template<class ColorClass>
 void PropertyRowCryColor<ColorClass >::setValueAndContext(const Serialization::SStruct& ser, IArchive& ar)

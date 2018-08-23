@@ -2,7 +2,7 @@
 
 #include "stdafx.h"
 #include "SequencerDopeSheet.h"
-#include "Controls\MemDC.h"
+#include "Controls/MemDC.h"
 #include "MannPreferences.h"
 #include "SequencerUndo.h"
 

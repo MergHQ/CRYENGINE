@@ -5,26 +5,21 @@
 
 #include "EntityPrototype.h"
 #include "EntityPrototypeManager.h"
-#include "Material\MaterialManager.h"
+#include "Material/MaterialManager.h"
 #include "Objects/ObjectLoader.h"
 
-#include <CrySystem/ICryLink.h>
 #include <CryGame/IGameFramework.h>
+#include <CrySystem/ICryLink.h>
 
 REGISTER_CLASS_DESC(CProtEntityObjectClassDesc);
-//////////////////////////////////////////////////////////////////////////
 IMPLEMENT_DYNCREATE(CProtEntityObject, CEntityObject)
 
-//////////////////////////////////////////////////////////////////////////
-// CProtEntityObject implementation.
-//////////////////////////////////////////////////////////////////////////
 CProtEntityObject::CProtEntityObject()
 {
 	ZeroStruct(m_prototypeGUID);
 	m_prototypeName = "Unknown Archetype";
 }
 
-//////////////////////////////////////////////////////////////////////////
 bool CProtEntityObject::Init(CBaseObject* prev, const string& file)
 {
 	bool result = CEntityObject::Init(prev, "");
@@ -47,9 +42,7 @@ bool CProtEntityObject::Init(CBaseObject* prev, const string& file)
 		SetUniqName(m_prototypeName);
 	}
 
-	//////////////////////////////////////////////////////////////////////////
 	// Disable variables that are in archetype.
-	//////////////////////////////////////////////////////////////////////////
 	mv_castShadow.SetFlags(mv_castShadow.GetFlags() | IVariable::UI_DISABLED);
 	mv_castShadowMinSpec->SetFlags(mv_castShadowMinSpec->GetFlags() | IVariable::UI_DISABLED);
 
@@ -60,7 +53,6 @@ bool CProtEntityObject::Init(CBaseObject* prev, const string& file)
 	return result;
 }
 
-//////////////////////////////////////////////////////////////////////////
 void CProtEntityObject::Done()
 {
 	if (m_prototype)
@@ -70,7 +62,6 @@ void CProtEntityObject::Done()
 	CEntityObject::Done();
 }
 
-//////////////////////////////////////////////////////////////////////////
 bool CProtEntityObject::CreateGameObject()
 {
 	if (m_prototype)
@@ -80,7 +71,6 @@ bool CProtEntityObject::CreateGameObject()
 	return true;
 }
 
-//////////////////////////////////////////////////////////////////////////
 void CProtEntityObject::SpawnEntity()
 {
 	if (m_prototype)
@@ -90,7 +80,7 @@ void CProtEntityObject::SpawnEntity()
 		PostSpawnEntity();
 	}
 }
-//////////////////////////////////////////////////////////////////////////
+
 void CProtEntityObject::PostSpawnEntity()
 {
 	// Here we adjust any additional property.
@@ -127,7 +117,7 @@ void CProtEntityObject::PostSpawnEntity()
 		}
 	}
 }
-//////////////////////////////////////////////////////////////////////////
+
 void CProtEntityObject::SetPrototype(CryGUID guid, bool bForceReload)
 {
 	if (m_prototypeGUID == guid && bForceReload == false)
@@ -149,7 +139,6 @@ void CProtEntityObject::SetPrototype(CryGUID guid, bool bForceReload)
 	SetPrototype(prototype, bForceReload);
 }
 
-//////////////////////////////////////////////////////////////////////////
 void CProtEntityObject::Serialize(CObjectArchive& ar)
 {
 	if (ar.bLoading)
@@ -187,13 +176,11 @@ void CProtEntityObject::Serialize(CObjectArchive& ar)
 	}
 }
 
-//////////////////////////////////////////////////////////////////////////
 XmlNodeRef CProtEntityObject::Export(const string& levelPath, XmlNodeRef& xmlNode)
 {
 	return CEntityObject::Export(levelPath, xmlNode);
 }
 
-//////////////////////////////////////////////////////////////////////////
 void CProtEntityObject::OnPrototypeUpdate()
 {
 	// Callback from prototype.
@@ -206,7 +193,6 @@ void CProtEntityObject::OnPrototypeUpdate()
 	}
 }
 
-//////////////////////////////////////////////////////////////////////////
 void CProtEntityObject::SetPrototype(CEntityPrototype* prototype, bool bForceReload, bool bOnlyDisabled)
 {
 	assert(prototype);
@@ -239,7 +225,6 @@ void CProtEntityObject::SetPrototype(CEntityPrototype* prototype, bool bForceRel
 		SpawnEntity();
 }
 
-//////////////////////////////////////////////////////////////////////////
 void CProtEntityObject::SyncVariablesFromPrototype(bool bOnlyDisabled)
 {
 	if (m_prototype)

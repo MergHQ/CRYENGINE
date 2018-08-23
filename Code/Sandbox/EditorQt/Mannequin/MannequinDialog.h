@@ -2,32 +2,19 @@
 
 #pragma once
 
-#include "SequencerSplitter.h"
-#include "SequencerDopeSheet.h"
+#include "Mannequin/Controls/FragmentBrowser.h"
+#include "Mannequin/Controls/PreviewerPage.h"
+#include "Mannequin/Controls/FragmentEditorPage.h"
+#include "Mannequin/Controls/SequenceBrowser.h"
+#include "Mannequin/Controls/TransitionBrowser.h"
+#include "Mannequin/Controls/TransitionEditorPage.h"
+#include "Mannequin/MannErrorReportDialog.h"
+#include "Mannequin/FragmentSplitter.h"
 
-#include "Dialogs\BaseFrameWnd.h"
+#include <Controls/PropertiesPanel.h>
+#include <Controls/RollupCtrl.h>
+#include <Dialogs/BaseFrameWnd.h>
 
-#include "Controls/PropertiesPanel.h"
-
-#include "MannKeyPropertiesDlgFE.h"
-#include "MannequinNodes.h"
-#include "MannequinBase.h"
-#include "MannErrorReportDialog.h"
-
-#include "Controls/FragmentBrowser.h"
-#include "Controls/SequenceBrowser.h"
-#include "Controls/TransitionBrowser.h"
-#include "Controls/FragmentEditorPage.h"
-#include "Controls/TransitionEditorPage.h"
-#include "Controls/PreviewerPage.h"
-#include "FragmentSplitter.h"
-
-#include "Controls/RollupCtrl.h"
-#include "Controls/SequenceBrowser.h"
-
-class CTagSelectionControl;
-class CFragmentTagDefFileSelectionControl;
-class CSequencerSplitter;
 class CMannequinFileChangeWriter;
 
 class CMannequinDialog : public CBaseFrameWnd, public IEditorNotifyListener
@@ -112,8 +99,6 @@ protected:
 
 	void         GetTagStateFromCtrl(std::vector<SFragTagState>& outFragTagStates) const;
 	void         OnInternalVariableChange(IVariable* pVar);
-
-	void         SetCursorPosText(float fTime);
 
 public:
 	void Validate();

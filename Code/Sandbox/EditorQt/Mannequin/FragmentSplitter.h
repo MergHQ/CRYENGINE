@@ -2,7 +2,7 @@
 
 #pragma once
 
-#include "..\Controls\ClampedSplitterWnd.h"
+#include "Controls/ClampedSplitterWnd.h"
 
 class CFragmentSplitter : public CClampedSplitterWnd
 {

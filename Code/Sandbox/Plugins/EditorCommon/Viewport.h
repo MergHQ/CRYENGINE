@@ -15,9 +15,7 @@
 class CameraTransformEvent;
 class CBaseObject;
 class CBaseObjectsCache;
-class CCryEditDoc;
 class CEditTool;
-class CImageEx;
 class CryInputEvent;
 class CViewManager;
 class QWidget;

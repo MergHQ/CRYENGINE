@@ -122,7 +122,12 @@ void SPixFormatSupport::CheckFormatSupport()
 	// Depth/Stencil formats
 	m_FormatD32FS8.CheckSupport(DXGI_FORMAT_R32G8X24_TYPELESS, "D32FS8 (R32G8T)");
 	m_FormatD32F.CheckSupport(DXGI_FORMAT_R32_TYPELESS, "D32F (R32T)");
+#if CRY_PLATFORM_DURANGO
+	m_FormatD24S8.CheckSupport(DXGI_FORMAT_UNKNOWN, "D24S8 (R24G8T)");
+#else
 	m_FormatD24S8.CheckSupport(DXGI_FORMAT_R24G8_TYPELESS, "D24S8 (R24G8T)");
+#endif
+
 #if CRY_RENDERER_VULKAN
 	m_FormatD24.CheckSupport(DXGI_FORMAT_R24X8_TYPELESS, "D24 (R24T)");
 	m_FormatD16S8.CheckSupport(DXGI_FORMAT_R16G8X8_TYPELESS, "D16S8 (R16G8T)");

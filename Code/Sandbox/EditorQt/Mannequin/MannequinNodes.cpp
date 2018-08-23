@@ -16,7 +16,7 @@
 
 #include "ISequencerSystem.h"
 
-#include "Objects\EntityObject.h"
+#include "Objects/EntityObject.h"
 #include "ViewManager.h"
 #include "RenderViewport.h"
 #include "Util/MFCUtil.h"

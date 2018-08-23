@@ -4,8 +4,6 @@
 #include "XmlArchive.h"
 #include "Util/PakFile.h"
 
-//////////////////////////////////////////////////////////////////////////
-// CXmlArchive
 bool CXmlArchive::Load(const string& file)
 {
 	bLoading = true;
@@ -45,7 +43,6 @@ bool CXmlArchive::Load(const string& file)
 	return false;
 }
 
-//////////////////////////////////////////////////////////////////////////
 void CXmlArchive::Save(const string& file)
 {
 	string filename(file);
@@ -77,7 +74,6 @@ void CXmlArchive::Save(const string& file)
 	pNamedData->Serialize(ar);
 }
 
-//////////////////////////////////////////////////////////////////////////
 bool CXmlArchive::SaveToPak(const string& levelPath, CPakFile& pakFile)
 {
 	LOADING_TIME_PROFILE_SECTION;
@@ -93,7 +89,6 @@ bool CXmlArchive::SaveToPak(const string& levelPath, CPakFile& pakFile)
 	return true;
 }
 
-//////////////////////////////////////////////////////////////////////////
 bool CXmlArchive::LoadFromPak(const string& levelPath)
 {
 	string xmlFilename = levelPath + "Level.editor_xml";

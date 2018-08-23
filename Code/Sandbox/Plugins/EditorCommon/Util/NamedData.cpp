@@ -2,24 +2,22 @@
 
 #include "StdAfx.h"
 #include "NamedData.h"
-#include <zlib.h>
 #include "Util/PakFile.h"
 #include "Util/CryMemFile.h"
 
+#include <zlib.h>
+
 IMPLEMENT_SERIAL(CNamedData, CObject, 1)
 
-//////////////////////////////////////////////////////////////////////////
 CNamedData::CNamedData()
 {
 }
 
-//////////////////////////////////////////////////////////////////////////
 CNamedData::~CNamedData()
 {
 	Clear();
 }
 
-//////////////////////////////////////////////////////////////////////////
 void CNamedData::AddDataBlock(const string& blockName, void* pData, int nSize, bool bCompress)
 {
 	assert(pData);
@@ -78,7 +76,6 @@ void CNamedData::AddDataBlock(const string& blockName, CMemoryBlock& mem)
 	m_blocks[blockName] = pBlock;
 }
 
-//////////////////////////////////////////////////////////////////////////
 void CNamedData::Clear()
 {
 	for (TBlocks::iterator it = m_blocks.begin(); it != m_blocks.end(); ++it)
@@ -88,7 +85,6 @@ void CNamedData::Clear()
 	m_blocks.clear();
 }
 
-//////////////////////////////////////////////////////////////////////////
 bool CNamedData::GetDataBlock(const string& blockName, void*& pData, int& nSize)
 {
 	pData = 0;
@@ -105,7 +101,6 @@ bool CNamedData::GetDataBlock(const string& blockName, void*& pData, int& nSize)
 	return false;
 }
 
-//////////////////////////////////////////////////////////////////////////
 CMemoryBlock* CNamedData::GetDataBlock(const string& blockName, bool& bCompressed)
 {
 	DataBlock* pBlock = stl::find_in_map(m_blocks, blockName, (DataBlock*)0);
@@ -138,7 +133,6 @@ CMemoryBlock* CNamedData::GetDataBlock(const string& blockName, bool& bCompresse
 	return 0;
 }
 
-//////////////////////////////////////////////////////////////////////////
 void CNamedData::Serialize(CArchive& ar)
 {
 	CObject::Serialize(ar);
@@ -234,7 +228,6 @@ void CNamedData::Serialize(CArchive& ar)
 	}
 }
 
-//////////////////////////////////////////////////////////////////////////
 void CNamedData::Save(CPakFile& pakFile)
 {
 	for (TBlocks::iterator it = m_blocks.begin(); it != m_blocks.end(); it++)
@@ -294,7 +287,6 @@ void CNamedData::Save(const string& levelPath)
 	}
 }
 
-//////////////////////////////////////////////////////////////////////////
 bool CNamedData::Load(const string& levelPath)
 {
 	int i;

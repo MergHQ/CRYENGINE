@@ -7,8 +7,8 @@
 #include "IUndoManager.h"
 
 struct IUndoObject;
-class CUndoStep;
 class CSuperUndoStep;
+class CUndoStep;
 
 /*!
  *	CUndoManager is keeping and operating on CUndo class instances.
@@ -52,7 +52,6 @@ public:
 	//! Check if undo information is recording now.
 	bool IsUndoRecording() const { return (m_bRecording || m_bSuperRecording) && m_suspendCount == 0; }
 
-	//////////////////////////////////////////////////////////////////////////
 	bool IsUndoSuspended() const   { return m_suspendCount != 0; }
 	bool IsUndoTransaction() const { return m_bUndoing || m_bRedoing; }
 
@@ -96,7 +95,7 @@ public:
 	const std::list<CUndoStep*>& GetUndoStack() const { return m_undoStack; }
 	const std::list<CUndoStep*>& GetRedoStack() const { return m_redoStack; }
 
-private: // ---------------------------------------------------------------
+private:
 
 	void BeginUndoTransaction();
 	void EndUndoTransaction();

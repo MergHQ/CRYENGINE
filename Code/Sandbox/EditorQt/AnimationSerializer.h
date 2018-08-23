@@ -2,7 +2,6 @@
 
 #pragma once
 
-// forward declarations.
 struct IAnimSequence;
 class CPakFile;
 
@@ -11,9 +10,6 @@ class CPakFile;
 class CAnimationSerializer
 {
 public:
-	CAnimationSerializer();
-	~CAnimationSerializer();
-
 	/** Save all animation sequences to files in given directory.
 	 */
 	void SerializeSequences(XmlNodeRef& xmlNode, bool bLoading);

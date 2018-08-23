@@ -2,18 +2,18 @@
 
 #include "StdAfx.h"
 #include "Objects/ObjectLoader.h"
+
 #include "Objects/BaseObject.h"
-#include "IObjectManager.h"
 #include "QT/Widgets/QWaitProgress.h"
 #include "Util/PakFile.h"
-#include "IEditorMaterial.h"
-#include <CryPhysics/physinterface.h>
-#include <CryMovie/IMovieSystem.h>
-#include "IUndoManager.h"
+#include "IObjectManager.h"
 
-//////////////////////////////////////////////////////////////////////////
-// CObjectArchive Implementation.
-//////////////////////////////////////////////////////////////////////////
+#include <IEditorMaterial.h>
+#include <IUndoManager.h>
+
+#include <CryMovie/IMovieSystem.h>
+#include <CryPhysics/physinterface.h>
+
 CObjectArchive::CObjectArchive(IObjectManager* objMan, XmlNodeRef xmlRoot, bool loading)
 {
 	m_objectManager = objMan;
@@ -27,7 +27,6 @@ CObjectArchive::CObjectArchive(IObjectManager* objMan, XmlNodeRef xmlRoot, bool 
 	m_bProgressBarEnabled = true;
 }
 
-//////////////////////////////////////////////////////////////////////////
 CObjectArchive::~CObjectArchive()
 {
 	if (m_pGeometryPak)
@@ -39,7 +38,6 @@ CObjectArchive::~CObjectArchive()
 	}
 }
 
-//////////////////////////////////////////////////////////////////////////
 void CObjectArchive::SetResolveCallback(CBaseObject* fromObject, const CryGUID& objectId, ResolveObjRefFunctor1& func)
 {
 	if (objectId == CryGUID::Null())
@@ -79,7 +77,6 @@ void CObjectArchive::SetResolveCallback(CBaseObject* fromObject, const CryGUID& 
 	}
 }
 
-//////////////////////////////////////////////////////////////////////////
 void CObjectArchive::SetResolveCallback(CBaseObject* fromObject, const CryGUID& objectId, ResolveObjRefFunctor2& func, uint32 userData)
 {
 	if (objectId == CryGUID::Null())
@@ -104,13 +101,11 @@ void CObjectArchive::SetResolveCallback(CBaseObject* fromObject, const CryGUID& 
 	}
 }
 
-//////////////////////////////////////////////////////////////////////////
 CryGUID CObjectArchive::ResolveID(const CryGUID& id)
 {
 	return stl::find_in_map(m_IdRemap, id, id);
 }
 
-//////////////////////////////////////////////////////////////////////////
 void CObjectArchive::ResolveObjects(bool processEvents)
 {
 	if (!bLoading)
@@ -133,7 +128,6 @@ void CObjectArchive::ResolveObjects(bool processEvents)
 	m_pendingIds.clear();
 }
 
-//////////////////////////////////////////////////////////////////////////
 void CObjectArchive::SaveObject(CBaseObject* pObject, bool bSaveInGroupObjects, bool bSaveInPrefabObjects)
 {
 	// Not save objects in prefabs.
@@ -161,7 +155,6 @@ void CObjectArchive::SaveObject(CBaseObject* pObject, bool bSaveInGroupObjects, 
 	}
 }
 
-//////////////////////////////////////////////////////////////////////////
 CBaseObject* CObjectArchive::LoadObject(XmlNodeRef& objNode, CBaseObject* pPrevObject)
 {
 	XmlNodeRef prevNode = node;
@@ -185,7 +178,6 @@ CBaseObject* CObjectArchive::LoadObject(XmlNodeRef& objNode, CBaseObject* pPrevO
 	return pObject;
 }
 
-//////////////////////////////////////////////////////////////////////////
 void CObjectArchive::LoadObjects(XmlNodeRef& rootObjectsNode)
 {
 	int numObjects = rootObjectsNode->getChildCount();
@@ -208,7 +200,6 @@ void CObjectArchive::LoadInCurrentLayer(bool bEnable)
 	}
 }
 
-//////////////////////////////////////////////////////////////////////////
 void CObjectArchive::EnableReconstructPrefabObject(bool bEnable)
 {
 	if (bEnable)
@@ -221,7 +212,6 @@ void CObjectArchive::EnableReconstructPrefabObject(bool bEnable)
 	}
 }
 
-//////////////////////////////////////////////////////////////////////////
 void CObjectArchive::SetShouldResetInternalMembers(bool reset)
 {
 	if (reset)
@@ -243,9 +233,8 @@ void CObjectArchive::SerializeObjects(bool processEvents)
 	}
 
 	GetIEditor()->GetIUndoManager()->Suspend();
-	//////////////////////////////////////////////////////////////////////////
+
 	// Serialize All Objects from XML.
-	//////////////////////////////////////////////////////////////////////////
 	int numObj = m_loadedObjects.size();
 	for (int i = 0; i < numObj; i++)
 	{
@@ -262,7 +251,6 @@ void CObjectArchive::SerializeObjects(bool processEvents)
 		// Objects can be added to the list here (from Groups).
 		numObj = m_loadedObjects.size();
 	}
-	//////////////////////////////////////////////////////////////////////////
 	GetIEditor()->GetIUndoManager()->Resume();
 }
 
@@ -370,19 +358,16 @@ void CObjectArchive::CallPostLoadOnObjects()
 	}
 }
 
-//////////////////////////////////////////////////////////////////////////
 void CObjectArchive::RemapID(CryGUID oldId, CryGUID newId)
 {
 	m_IdRemap[oldId] = newId;
 }
 
-//////////////////////////////////////////////////////////////////////////
 CBaseObject* CObjectArchive::GetCurrentObject()
 {
 	return m_pCurrentObject;
 }
 
-//////////////////////////////////////////////////////////////////////////
 void CObjectArchive::AddSequenceIdMapping(uint32 oldId, uint32 newId)
 {
 	assert(oldId != newId);
@@ -393,7 +378,6 @@ void CObjectArchive::AddSequenceIdMapping(uint32 oldId, uint32 newId)
 	m_pendingIds.push_back(newId);
 }
 
-//////////////////////////////////////////////////////////////////////////
 uint32 CObjectArchive::RemapSequenceId(uint32 id) const
 {
 	std::map<uint32, uint32>::const_iterator itr = m_sequenceIdRemap.find(id);
@@ -403,7 +387,6 @@ uint32 CObjectArchive::RemapSequenceId(uint32 id) const
 		return itr->second;
 }
 
-//////////////////////////////////////////////////////////////////////////
 bool CObjectArchive::IsAmongPendingIds(uint32 id) const
 {
 	return stl::find(m_pendingIds, id);

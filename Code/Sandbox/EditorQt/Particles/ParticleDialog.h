@@ -3,10 +3,10 @@
 #pragma once
 
 #include "BaseLibraryDialog.h"
-#include "Controls\SplitterCtrl.h"
-#include "Controls\TreeCtrlEx.h"
-#include "Controls\PropertyCtrlEx.h"
-#include "Controls\PreviewModelCtrl.h"
+#include "Controls/PreviewModelCtrl.h"
+#include "Controls/PropertyCtrlEx.h"
+#include "Controls/SplitterCtrl.h"
+#include "Controls/TreeCtrlEx.h"
 
 class CParticleItem;
 class CParticleManager;

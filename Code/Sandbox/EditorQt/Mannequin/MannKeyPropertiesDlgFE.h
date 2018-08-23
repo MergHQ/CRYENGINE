@@ -4,7 +4,7 @@
 
 #include "Dialogs/ToolbarDialog.h"
 #include "SequencerKeyPropertiesDlg.h"
-#include "Dialogs\BaseFrameWnd.h"
+#include "Dialogs/BaseFrameWnd.h"
 
 class IAnimationDatabase;
 struct SMannequinContexts;

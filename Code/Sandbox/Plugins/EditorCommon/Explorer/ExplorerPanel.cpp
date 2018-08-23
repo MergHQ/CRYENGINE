@@ -3,34 +3,21 @@
 #include "stdafx.h"
 #include "ExplorerPanel.h"
 
+#include "Explorer/Explorer.h"
+#include "Explorer/ExplorerFileList.h"
+#include "Explorer/ExplorerModel.h"
+#include "QAdvancedItemDelegate.h"
+
 #include <QApplication>
-#include <QAdvancedTreeView.h>
 #include <QBoxLayout>
 #include <QClipboard>
-#include <QLineEdit>
-#include <QPushButton>
-#include <QToolButton>
-#include <QSortFilterProxyModel>
-#include <QMenu>
 #include <QDockWidget>
-#include <QHeaderView>
-#include <QEvent>
 #include <QFocusEvent>
-#include "QSearchBox.h"
-#include "Explorer.h"
-#include "ExplorerModel.h"
-#include "ExplorerFileList.h"
-
-#include <CryCore/Platform/CryWindows.h>
-#include <shellapi.h>
-
-#include "QAdvancedItemDelegate.h"
-#include "CryIcon.h"
-
-//////////////////////////////////////////////////////////////////////////
-// Serialization method for a tree view
-//////////////////////////////////////////////////////////////////////////
-
+#include <QHeaderView>
+#include <QMenu>
+#include <QPushButton>
+#include <QSortFilterProxyModel>
+#include <QToolButton>
 
 QString GetIndexPath(QAbstractItemModel* model, const QModelIndex& index)
 {

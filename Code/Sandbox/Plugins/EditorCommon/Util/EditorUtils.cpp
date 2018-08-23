@@ -2,17 +2,18 @@
 
 #include "StdAfx.h"
 #include "Util/EditorUtils.h"
-#include "IDisplayViewport.h"
-#include <malloc.h>
+
 #include "Controls/QuestionDialog.h"
 #include "FileDialogs/SystemFileDialog.h"
 #include "LevelEditor/LevelEditorSharedState.h"
+#include "IDisplayViewport.h"
 
 #include <QDesktopServices>
 #include <QJsonDocument>
 
-#include <cctype>  // std::isspace
-#include <cstring> // std::strspn
+#include <cctype>
+#include <cstring>
+#include <malloc.h>
 
 namespace EditorUtils
 {
@@ -68,7 +69,6 @@ CArchive& operator>>(CArchive& ar, string& str)
 	return ar;
 }
 
-//////////////////////////////////////////////////////////////////////////
 void HeapCheck::Check(const char* file, int line)
 {
 #ifdef _DEBUG
@@ -102,7 +102,7 @@ void HeapCheck::Check(const char* file, int line)
 #endif
 }
 
-//////////////////////////////////////////////////////////////////////////-
+
 static int TrimTrailingZeros(char* pBuf)
 {
 	for (int pos = strlen(pBuf) - 1; pos >= 0; --pos)
@@ -177,7 +177,6 @@ void FormatFloatForUI(string& str, int significantDigits, double value)
 	}
 }
 
-//////////////////////////////////////////////////////////////////////////-
 Vec3 ConvertToTextPos(const Vec3& pos, const Matrix34& tm, IDisplayViewport* view, bool bDisplay2D)
 {
 	if (bDisplay2D)
@@ -192,7 +191,6 @@ Vec3 ConvertToTextPos(const Vec3& pos, const Matrix34& tm, IDisplayViewport* vie
 	}
 }
 
-//////////////////////////////////////////////////////////////////////////
 void ParsePropertyString(const char* szProperties, const char* szDelim, const std::function<void(const char* pKey, size_t keyLength, const char* pValue, size_t valueLength)>& fn)
 {
 	auto trimLeft = [](const char* pBegin, const char* pEnd) -> const char*
@@ -246,4 +244,4 @@ void ParsePropertyString(const char* szProperties, const char* szDelim, const st
 		pEnd += std::strspn(pEnd, szDelim);
 		pBegin = pEnd;
 	}
-};
+}

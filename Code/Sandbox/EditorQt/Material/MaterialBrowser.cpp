@@ -2,51 +2,34 @@
 
 #include "StdAfx.h"
 #include "MaterialBrowser.h"
-#include "IDataBaseItem.h"
-#include "Material.h"
-#include "MaterialManager.h"
-#include "ViewManager.h"
-#include "Objects\BaseObject.h"
-#include "Util/Clipboard.h"
-#include "Dialogs/ToolbarDialog.h"
-#include "MaterialImageListCtrl.h"
-#include "Dialogs/SourceControlDescDlg.h"
-#include <CryCore/CryCrc32.h>
 
+#include "LevelEditor/LevelFileUtils.h"
+#include "Material/MaterialImageListCtrl.h"
+#include "Material/MaterialManager.h"
+#include "Material/MaterialPickTool.h"
+#include "QT/Widgets/QPreviewWidget.h"
+
+//MFC
+#include "Dialogs/SourceControlDescDlg.h"
+#include "Util/Clipboard.h"
+#include "Util/MFCUtil.h"
+
+//EditorCommon
+#include <Dialogs/QNumericBoxDialog.h>
+#include <Dialogs/QStringDialog.h>
+#include <FileDialogs/EngineFileDialog.h>
+#include <FilePathUtil.h>
 #include <ISourceControl.h>
-#include "Dialogs/QStringDialog.h"
-#include <CryString/StringUtils.h>
-#include "MaterialPickTool.h"
+
 #include <CryThreading/IThreadManager.h>
 
 #include <QHBoxLayout>
-#include <QPushButton>
-#include <QVBoxLayout>
-#include <QTimer>
-#include <QLabel>
-#include <QSplitter>
 #include <QPainter>
 #include <QStyleOption>
+#include <QTimer>
+#include <QVBoxLayout>
 
-#include "Controls/QObjectTreeWidget.h"
-#include "IResourceSelectorHost.h"
-#include <CrySandbox/CrySignal.h>
-#include "QtUtil.h"
-#include "QT/Widgets/QPreviewWidget.h"
-#include "QScrollableBox.h"
-#include "Controls/QuestionDialog.h"
-#include "Util/MFCUtil.h"
-
-#include "FileDialogs/EngineFileDialog.h"
-#include "FileSystem/FileSystem_Enumerator.h"
-#include "FileSystem/FileSystem_FileFilter.h"
-#include "FileSystem/FileSystem_File.h"
-#include "FilePathUtil.h"
-#include "LevelEditor/LevelFileUtils.h"
-
-#include "Dialogs/QNumericBoxDialog.h"
 #include <qevent.h>
-
 
 IMPLEMENT_DYNAMIC(CMaterialBrowserRecord, CTreeItemRecord)
 
@@ -106,7 +89,6 @@ enum
 	MENU_SCM_HISTORY,
 };
 
-///////////////////////////////////////////////////////
 
 //////////////////////////////////////////////////////////////////////////
 // Scan materials in a separate thread
@@ -518,8 +500,6 @@ void QMaterialPreview::validateSize()
 //////////////////////////////////////////////////////////////////////////
 // CMaterialToolBar
 //////////////////////////////////////////////////////////////////////////
-
-//////////////////////////////////////////////////////////////////////////
 CMaterialToolBar::CMaterialToolBar() :
 	m_pEdit(0),
 	m_fIdleFilterTextTime(0.0f),
@@ -527,7 +507,6 @@ CMaterialToolBar::CMaterialToolBar() :
 {
 }
 
-//////////////////////////////////////////////////////////////////////////
 void CMaterialToolBar::Create(CWnd* pParentWnd)
 {
 	VERIFY(CreateToolBar(WS_VISIBLE | WS_CHILD | CBRS_TOOLTIPS | CBRS_GRIPPER, pParentWnd, AFX_IDW_TOOLBAR));
@@ -548,7 +527,6 @@ void CMaterialToolBar::Create(CWnd* pParentWnd)
 	}
 }
 
-//////////////////////////////////////////////////////////////////////////
 BOOL CMaterialToolBar::OnCommand(WPARAM wParam, LPARAM lParam)
 {
 	if (HIWORD(wParam) == EN_CHANGE)
@@ -559,7 +537,6 @@ BOOL CMaterialToolBar::OnCommand(WPARAM wParam, LPARAM lParam)
 	return __super::OnCommand(wParam, lParam);
 }
 
-//////////////////////////////////////////////////////////////////////////
 const CString& CMaterialToolBar::GetFilterText(bool* pOutIsNew)
 {
 	if (pOutIsNew)
@@ -584,7 +561,6 @@ const CString& CMaterialToolBar::GetFilterText(bool* pOutIsNew)
 	return m_filterText;
 }
 
-//////////////////////////////////////////////////////////////////////////
 void CMaterialToolBar::Reset()
 {
 	if (m_pEdit)
@@ -593,7 +569,6 @@ void CMaterialToolBar::Reset()
 	m_fIdleFilterTextTime = 0.0f;
 }
 
-//////////////////////////////////////////////////////////////////////////
 void CMaterialToolBar::OnFilter()
 {
 	CMenu menu;
@@ -642,7 +617,6 @@ void CMaterialToolBar::OnFilter()
 // CMaterialBrowserCtrl
 //////////////////////////////////////////////////////////////////////////
 
-//////////////////////////////////////////////////////////////////////////
 BEGIN_MESSAGE_MAP(CMaterialBrowserCtrl, CWnd)
 ON_WM_SIZE()
 ON_WM_MOUSEMOVE()
@@ -653,7 +627,6 @@ ON_COMMAND(ID_MATERIAL_BROWSER_CHECKEDOUT, OnShowCheckedOut)
 ON_UPDATE_COMMAND_UI(ID_MATERIAL_BROWSER_CHECKEDOUT, OnUpdateShowCheckedOut)
 END_MESSAGE_MAP()
 
-//////////////////////////////////////////////////////////////////////////
 CMaterialBrowserCtrl::CMaterialBrowserCtrl()
 {
 	m_bIgnoreSelectionChange = false;
@@ -689,7 +662,6 @@ CMaterialBrowserCtrl::CMaterialBrowserCtrl()
 	pScanner->fileCacheClearedSignal.Connect(this, &CMaterialBrowserCtrl::ClearItems);
 }
 
-//////////////////////////////////////////////////////////////////////////
 CMaterialBrowserCtrl::~CMaterialBrowserCtrl()
 {
 	GetIEditorImpl()->UnregisterNotifyListener(this);
@@ -712,7 +684,6 @@ CMaterialBrowserCtrl::~CMaterialBrowserCtrl()
 	}
 }
 
-//////////////////////////////////////////////////////////////////////////
 void CMaterialBrowserCtrl::OnSize(UINT nType, int cx, int cy)
 {
 	__super::OnSize(nType, cx, cy);
@@ -735,7 +706,6 @@ void CMaterialBrowserCtrl::OnSize(UINT nType, int cx, int cy)
 	m_tree.MoveWindow(rctree, FALSE);
 }
 
-//////////////////////////////////////////////////////////////////////////
 BOOL CMaterialBrowserCtrl::Create(const RECT& rect, CWnd* pParentWnd, UINT nID)
 {
 	LPCSTR lpzClass = AfxRegisterWndClass(CS_VREDRAW | CS_HREDRAW, ::LoadCursor(NULL, IDC_ARROW), (HBRUSH)GetStockObject(NULL_BRUSH), NULL);
@@ -747,7 +717,6 @@ BOOL CMaterialBrowserCtrl::Create(const RECT& rect, CWnd* pParentWnd, UINT nID)
 	CRect rc;
 	GetClientRect(rc);
 
-	//////////////////////////////////////////////////////////////////////////
 	m_tree.SetMtlBrowser(this);
 	m_tree.Create(WS_CHILD | WS_VISIBLE, CRect(0, 0, 200, 300), this, IDC_MATERIAL_TREECTRL);
 	m_tree.EnableAutoNameGrouping(true, ITEM_IMAGE_FOLDER);
@@ -755,14 +724,12 @@ BOOL CMaterialBrowserCtrl::Create(const RECT& rect, CWnd* pParentWnd, UINT nID)
 	return res;
 }
 
-//////////////////////////////////////////////////////////////////////////
 void CMaterialBrowserCtrl::OnReloadItems()
 {
 	m_wndToolBar.Reset();
 	ReloadItems(m_viewType);
 }
 
-//////////////////////////////////////////////////////////////////////////
 bool CMaterialBrowserCtrl::ShowCheckedOutRecursive(CXTPReportRecords* pRecords)
 {
 	bool isSomeVisible = false;
@@ -818,7 +785,6 @@ bool CMaterialBrowserCtrl::ShowCheckedOutRecursive(CXTPReportRecords* pRecords)
 	return isSomeVisible;
 }
 
-//////////////////////////////////////////////////////////////////////////
 void CMaterialBrowserCtrl::OnShowCheckedOut()
 {
 	m_bShowOnlyCheckedOut = !m_bShowOnlyCheckedOut;
@@ -829,7 +795,6 @@ void CMaterialBrowserCtrl::OnShowCheckedOut()
 	m_tree.RedrawControl();
 }
 
-//////////////////////////////////////////////////////////////////////////
 void CMaterialBrowserCtrl::OnFilter()
 {
 	m_wndToolBar.OnFilter();
@@ -839,14 +804,12 @@ void CMaterialBrowserCtrl::OnFilter()
 		m_tree.SetFilterText(filterText);
 }
 
-//////////////////////////////////////////////////////////////////////////
 void CMaterialBrowserCtrl::OnUpdateShowCheckedOut(CCmdUI* pCmdUI)
 {
 	pCmdUI->SetCheck(m_bShowOnlyCheckedOut ? 1 : 0);
 	pCmdUI->Enable(GetIEditorImpl()->IsSourceControlAvailable() ? TRUE : FALSE);
 }
 
-//////////////////////////////////////////////////////////////////////////
 void CMaterialBrowserCtrl::ClearItems()
 {
 	m_bIgnoreSelectionChange = true;
@@ -864,7 +827,6 @@ void CMaterialBrowserCtrl::ClearItems()
 	m_bIgnoreSelectionChange = false;
 }
 
-//////////////////////////////////////////////////////////////////////////
 void CMaterialBrowserCtrl::ReloadItems(EViewType viewType)
 {
 	CWaitCursor wait;
@@ -905,7 +867,6 @@ void CMaterialBrowserCtrl::ReloadItems(EViewType viewType)
 	}
 }
 
-//////////////////////////////////////////////////////////////////////////
 void CMaterialBrowserCtrl::ReloadLevelItems()
 {
 	m_bIgnoreSelectionChange = true;
@@ -926,7 +887,6 @@ void CMaterialBrowserCtrl::ReloadLevelItems()
 	m_bIgnoreSelectionChange = false;
 }
 
-//////////////////////////////////////////////////////////////////////////
 void CMaterialBrowserCtrl::AddItemToTree(IDataBaseItem* pItem, bool bUpdate)
 {
 	if (!pItem)
@@ -941,7 +901,6 @@ void CMaterialBrowserCtrl::AddItemToTree(IDataBaseItem* pItem, bool bUpdate)
 	m_bIgnoreSelectionChange = false;
 }
 
-//////////////////////////////////////////////////////////////////////////
 CMaterialBrowserRecord* CMaterialBrowserCtrl::InsertItemToTree(IDataBaseItem* pItem, int nSubMtlSlot, CMaterialBrowserRecord* pParentRecord)
 {
 	CMaterial* pMtl = (CMaterial*)pItem;
@@ -981,7 +940,6 @@ CMaterialBrowserRecord* CMaterialBrowserCtrl::InsertItemToTree(IDataBaseItem* pI
 	return pRecord;
 }
 
-//////////////////////////////////////////////////////////////////////////
 void CMaterialBrowserCtrl::ReloadTreeSubMtls(CMaterialBrowserRecord* pRecord, bool bForceCtrlUpdate)
 {
 	if (pRecord && pRecord->HasChildren())
@@ -1015,7 +973,6 @@ void CMaterialBrowserCtrl::ReloadTreeSubMtls(CMaterialBrowserRecord* pRecord, bo
 	}
 }
 
-//////////////////////////////////////////////////////////////////////////
 void CMaterialBrowserCtrl::RemoveItemFromTree(CMaterialBrowserRecord* pRecord)
 {
 	// Remove itself from Records
@@ -1025,14 +982,12 @@ void CMaterialBrowserCtrl::RemoveItemFromTree(CMaterialBrowserRecord* pRecord)
 	m_items.erase(pRecord);
 }
 
-//////////////////////////////////////////////////////////////////////////
 void CMaterialBrowserCtrl::ReloadAllItems()
 {
 	// First add all items already loaded in the level.
 	CMaterialScanner::GetInstance()->StartScan();
 }
 
-//////////////////////////////////////////////////////////////////////////
 void CMaterialBrowserCtrl::TryLoadRecordMaterial(CMaterialBrowserRecord* pRecord)
 {
 	if (!pRecord)
@@ -1056,7 +1011,6 @@ void CMaterialBrowserCtrl::TryLoadRecordMaterial(CMaterialBrowserRecord* pRecord
 	m_bIgnoreSelectionChange = false;
 }
 
-//////////////////////////////////////////////////////////////////////////
 void CMaterialBrowserCtrl::TickRefreshMaterials()
 {
 	CFileUtil::FileArray files;
@@ -1070,9 +1024,7 @@ void CMaterialBrowserCtrl::TickRefreshMaterials()
 
 	bool bAnyUpdated = false;
 	int nNumLoaded = 0;
-	//////////////////////////////////////////////////////////////////////////
-	//
-	//////////////////////////////////////////////////////////////////////////
+
 	CXTPReportRows* pRows = m_tree.GetRows();
 	for (int i = 0, num = pRows->GetCount(); i < num; i++)
 	{
@@ -1110,7 +1062,6 @@ void CMaterialBrowserCtrl::TickRefreshMaterials()
 	}
 }
 
-//////////////////////////////////////////////////////////////////////////
 void CMaterialBrowserCtrl::LoadFromFiles(const CFileUtil::FileArray& files)
 {
 	m_bIgnoreSelectionChange = true;
@@ -1147,7 +1098,6 @@ void CMaterialBrowserCtrl::LoadFromFiles(const CFileUtil::FileArray& files)
 	m_bIgnoreSelectionChange = false;
 }
 
-//////////////////////////////////////////////////////////////////////////
 void CMaterialBrowserCtrl::OnEditorNotifyEvent(EEditorNotifyEvent event)
 {
 	switch (event)
@@ -1183,7 +1133,6 @@ void CMaterialBrowserCtrl::OnEditorNotifyEvent(EEditorNotifyEvent event)
 	}
 }
 
-//////////////////////////////////////////////////////////////////////////
 void CMaterialBrowserCtrl::IdleSaveMaterial()
 {
 	m_fIdleSaveMaterialTime = gEnv->pTimer->GetCurrTime();
@@ -1239,7 +1188,6 @@ void CMaterialBrowserCtrl::IdleSaveMaterial()
  */
 
 /*
-   //////////////////////////////////////////////////////////////////////////
    void CMaterialBrowserCtrl::OnMouseMove(UINT nFlags, CPoint point)
    {
    if (m_dragImage)
@@ -1317,7 +1265,6 @@ void CMaterialBrowserCtrl::IdleSaveMaterial()
  */
 
 /*
-   //////////////////////////////////////////////////////////////////////////
    void CMaterialBrowserCtrl::OnLButtonUp(UINT nFlags, CPoint point)
    {
    //CXTResizeDialog::OnLButtonUp(nFlags, point);
@@ -1399,7 +1346,6 @@ void CMaterialBrowserCtrl::IdleSaveMaterial()
    }
  */
 
-//////////////////////////////////////////////////////////////////////////
 void CMaterialBrowserCtrl::DropToItem(CMaterialBrowserRecord* pTrgItem, CMaterialBrowserRecord* pSrcItem)
 {
 	if (pTrgItem && pSrcItem)
@@ -1446,7 +1392,6 @@ void CMaterialBrowserCtrl::DropToItem(CMaterialBrowserRecord* pTrgItem, CMateria
 	}
 }
 
-//////////////////////////////////////////////////////////////////////////
 void CMaterialBrowserCtrl::SetSelectedItem(CMaterialBrowserRecord* pRecord, const TMaterialBrowserRecords* pMarkedRecords, bool bFromOnSelectOfCtrl)
 {
 	if (m_bIgnoreSelectionChange)
@@ -1511,7 +1456,6 @@ void CMaterialBrowserCtrl::SetSelectedItem(CMaterialBrowserRecord* pRecord, cons
 	m_bIgnoreSelectionChange = false;
 }
 
-//////////////////////////////////////////////////////////////////////////
 void CMaterialBrowserCtrl::SelectItem(IDataBaseItem* pItem, IDataBaseItem* pParentItem)
 {
 	if (m_bIgnoreSelectionChange)
@@ -1566,13 +1510,11 @@ void CMaterialBrowserCtrl::SelectItem(IDataBaseItem* pItem, IDataBaseItem* pPare
 	}
 }
 
-//////////////////////////////////////////////////////////////////////////
 void CMaterialBrowserCtrl::OnDuplicate()
 {
 	GetIEditorImpl()->ExecuteCommand("material.duplicate_current");
 }
 
-//////////////////////////////////////////////////////////////////////////
 void CMaterialBrowserCtrl::OnCut()
 {
 	CMaterialBrowserRecord* pRecord = GetSelectedRecord();
@@ -1583,7 +1525,6 @@ void CMaterialBrowserCtrl::OnCut()
 	}
 }
 
-//////////////////////////////////////////////////////////////////////////
 void CMaterialBrowserCtrl::OnCopyName()
 {
 	CMaterial* pMtl = GetCurrentMaterial();
@@ -1594,7 +1535,6 @@ void CMaterialBrowserCtrl::OnCopyName()
 	}
 }
 
-//////////////////////////////////////////////////////////////////////////
 void CMaterialBrowserCtrl::OnCopy()
 {
 	CMaterial* pMtl = GetCurrentMaterial();
@@ -1610,7 +1550,6 @@ void CMaterialBrowserCtrl::OnCopy()
 	}
 }
 
-//////////////////////////////////////////////////////////////////////////
 bool CMaterialBrowserCtrl::CanPaste()
 {
 	CClipboard clipboard;
@@ -1627,7 +1566,6 @@ bool CMaterialBrowserCtrl::CanPaste()
 	return false;
 }
 
-//////////////////////////////////////////////////////////////////////////
 void CMaterialBrowserCtrl::OnPaste()
 {
 	CClipboard clipboard;
@@ -1656,31 +1594,26 @@ void CMaterialBrowserCtrl::OnPaste()
 	}
 }
 
-//////////////////////////////////////////////////////////////////////////
 void CMaterialBrowserCtrl::OnAddNewMaterial()
 {
 	GetIEditorImpl()->ExecuteCommand("material.create");
 }
 
-//////////////////////////////////////////////////////////////////////////
 void CMaterialBrowserCtrl::OnAddNewMultiMaterial()
 {
 	GetIEditorImpl()->ExecuteCommand("material.create_multi");
 }
 
-//////////////////////////////////////////////////////////////////////////
 void CMaterialBrowserCtrl::OnMergeMaterials()
 {
 	GetIEditorImpl()->ExecuteCommand("material.merge_selection");
 }
 
-//////////////////////////////////////////////////////////////////////////
 void CMaterialBrowserCtrl::OnConvertToMulti()
 {
 	GetIEditorImpl()->ExecuteCommand("material.convert_to_multi");
 }
 
-//////////////////////////////////////////////////////////////////////////
 void CMaterialBrowserCtrl::DeleteItem()
 {
 	CMaterialBrowserRecord* pRecord = GetSelectedRecord();
@@ -1690,7 +1623,6 @@ void CMaterialBrowserCtrl::DeleteItem()
 	}
 }
 
-//////////////////////////////////////////////////////////////////////////
 void CMaterialBrowserCtrl::OnResetItem()
 {
 	if (QDialogButtonBox::StandardButton::Yes == CQuestionDialog::SQuestion(QObject::tr("Reset Material to defaults?"), QObject::tr("Reset Material")))
@@ -1711,7 +1643,6 @@ void CMaterialBrowserCtrl::OnResetItem()
 	}
 }
 
-//////////////////////////////////////////////////////////////////////////
 void CMaterialBrowserCtrl::DeleteItem(CMaterialBrowserRecord* pRecord)
 {
 	if (pRecord)
@@ -1738,7 +1669,6 @@ void CMaterialBrowserCtrl::DeleteItem(CMaterialBrowserRecord* pRecord)
 	}
 }
 
-//////////////////////////////////////////////////////////////////////////
 void CMaterialBrowserCtrl::OnRenameItem()
 {
 	CMaterial* pMtl = GetCurrentMaterial();
@@ -1829,7 +1759,6 @@ void CMaterialBrowserCtrl::OnRenameItem()
 	 */
 }
 
-//////////////////////////////////////////////////////////////////////////
 void CMaterialBrowserCtrl::OnSetSubMtlCount(CMaterialBrowserRecord* pRecord)
 {
 	CMaterial* pMtl = pRecord->pMaterial;
@@ -1866,7 +1795,6 @@ void CMaterialBrowserCtrl::OnSetSubMtlCount(CMaterialBrowserRecord* pRecord)
 	}
 }
 
-//////////////////////////////////////////////////////////////////////////
 void CMaterialBrowserCtrl::DoSourceControlOp(CMaterialBrowserRecord* pRecord, ESourceControlOp scmOp)
 {
 	if (!pRecord)
@@ -2001,7 +1929,6 @@ void CMaterialBrowserCtrl::DoSourceControlOp(CMaterialBrowserRecord* pRecord, ES
 		pRecord->UpdateChildItems();
 }
 
-//////////////////////////////////////////////////////////////////////////
 void CMaterialBrowserCtrl::OnMakeSubMtlSlot(CMaterialBrowserRecord* pRecord)
 {
 	if (pRecord && pRecord->nSubMtlSlot >= 0)
@@ -2024,7 +1951,6 @@ void CMaterialBrowserCtrl::OnMakeSubMtlSlot(CMaterialBrowserRecord* pRecord)
 	}
 }
 
-//////////////////////////////////////////////////////////////////////////
 void CMaterialBrowserCtrl::OnClearSubMtlSlot(CMaterialBrowserRecord* pRecord)
 {
 	if (pRecord && pRecord->nSubMtlSlot >= 0 && pRecord->pMaterial != NULL)
@@ -2044,7 +1970,6 @@ void CMaterialBrowserCtrl::OnClearSubMtlSlot(CMaterialBrowserRecord* pRecord)
 	}
 }
 
-//////////////////////////////////////////////////////////////////////////
 void CMaterialBrowserCtrl::SetSubMaterial(CMaterialBrowserRecord* pRecord, int nSlot, CMaterial* pSubMaterial, bool bSelectSubMtl)
 {
 	if (pRecord && pRecord->pMaterial != NULL && pRecord->pMaterial->IsMultiSubMaterial())
@@ -2054,7 +1979,6 @@ void CMaterialBrowserCtrl::SetSubMaterial(CMaterialBrowserRecord* pRecord, int n
 	}
 }
 
-//////////////////////////////////////////////////////////////////////////
 void CMaterialBrowserCtrl::OnDataBaseItemEvent(IDataBaseItem* pItem, EDataBaseItemEvent event)
 {
 	if (m_bIgnoreSelectionChange)
@@ -2149,7 +2073,6 @@ void CMaterialBrowserCtrl::OnDataBaseItemEvent(IDataBaseItem* pItem, EDataBaseIt
 	}
 }
 
-//////////////////////////////////////////////////////////////////////////
 void CMaterialBrowserCtrl::SetImageListCtrl(CMaterialImageListCtrl* pCtrl)
 {
 	m_pMaterialImageListCtrl = pCtrl;
@@ -2157,7 +2080,6 @@ void CMaterialBrowserCtrl::SetImageListCtrl(CMaterialImageListCtrl* pCtrl)
 		m_pMaterialImageListCtrl->SetSelectMaterialCallback(functor(*this, &CMaterialBrowserCtrl::OnImageListCtrlSelect));
 }
 
-//////////////////////////////////////////////////////////////////////////
 void CMaterialBrowserCtrl::OnImageListCtrlSelect(CImageListCtrlItem* pMtlItem)
 {
 	int nSlot = (INT_PTR)pMtlItem->pUserData;
@@ -2198,7 +2120,6 @@ void CMaterialBrowserCtrl::OnImageListCtrlSelect(CImageListCtrlItem* pMtlItem)
 	}
 }
 
-//////////////////////////////////////////////////////////////////////////
 void CMaterialBrowserCtrl::OnSaveToFile(bool bMulti)
 {
 	CMaterial* pCurrentMaterial = GetCurrentMaterial();
@@ -2235,7 +2156,6 @@ void CMaterialBrowserCtrl::OnSaveToFile(bool bMulti)
 	}
 }
 
-//////////////////////////////////////////////////////////////////////////
 void CMaterialBrowserCtrl::RefreshSelected()
 {
 	CMaterialBrowserRecord* pRecord = GetSelectedRecord();
@@ -2303,7 +2223,6 @@ void CMaterialBrowserCtrl::RefreshSelected()
 	}
 }
 
-//////////////////////////////////////////////////////////////////////////
 void CMaterialBrowserCtrl::ShowContextMenu(CMaterialBrowserRecord* pRecord, CPoint point)
 {
 	_smart_ptr<CMaterial> pMtl;
@@ -2588,7 +2507,6 @@ void CMaterialBrowserCtrl::ShowContextMenu(CMaterialBrowserRecord* pRecord, CPoi
 	}
 }
 
-//////////////////////////////////////////////////////////////////////////
 bool CMaterialBrowserCtrl::SelectItemByName(const CString materialName, const CString parentMaterialName)
 {
 	uint32 materialNameCrc32 = MaterialNameToCrc32(materialName);
@@ -2609,7 +2527,6 @@ bool CMaterialBrowserCtrl::SelectItemByName(const CString materialName, const CS
 	return false;
 }
 
-//////////////////////////////////////////////////////////////////////////
 void CMaterialBrowserCtrl::PopulateItems()
 {
 	if (m_bIgnoreSelectionChange)
@@ -2639,13 +2556,11 @@ void CMaterialBrowserCtrl::PopulateItems()
 	}
 }
 
-//////////////////////////////////////////////////////////////////////////
 uint32 CMaterialBrowserCtrl::MaterialNameToCrc32(const char* str)
 {
 	return CCrc32::ComputeLowercase(str);
 }
 
-//////////////////////////////////////////////////////////////////////////
 CMaterialBrowserRecord* CMaterialBrowserCtrl::GetSelectedRecord()
 {
 	CMaterialBrowserRecord* pFirstFoundRecord = 0;
@@ -2667,7 +2582,6 @@ CMaterialBrowserRecord* CMaterialBrowserCtrl::GetSelectedRecord()
 	return pFirstFoundRecord;
 }
 
-//////////////////////////////////////////////////////////////////////////
 CMaterial* CMaterialBrowserCtrl::GetCurrentMaterial()
 {
 	CMaterialBrowserRecord* pRecord = GetSelectedRecord();
@@ -2681,7 +2595,6 @@ CMaterial* CMaterialBrowserCtrl::GetCurrentMaterial()
 	}
 }
 
-//////////////////////////////////////////////////////////////////////////
 CString CMaterialBrowserCtrl::GetSelectedMaterialID()
 {
 	CMaterialBrowserRecord* pRecord = GetSelectedRecord();
@@ -2707,13 +2620,11 @@ BOOL CMaterialBrowserCtrl::PreTranslateMessage(MSG* pMsg)
 //////////////////////////////////////////////////////////////////////////
 // CMaterialBrowserTreeCtrl
 
-//////////////////////////////////////////////////////////////////////////
 BEGIN_MESSAGE_MAP(CMaterialBrowserTreeCtrl, CTreeCtrlReport)
 ON_NOTIFY_REFLECT(NM_RCLICK, OnNMRclick)
 ON_NOTIFY_REFLECT(NM_KEYDOWN, OnTreeKeyDown)
 END_MESSAGE_MAP()
 
-//////////////////////////////////////////////////////////////////////////
 CMaterialBrowserTreeCtrl::CMaterialBrowserTreeCtrl()
 {
 	CMFCUtils::LoadTrueColorImageList(m_imageList, IDB_MATERIAL_TREE, 20, RGB(255, 0, 255));
@@ -2739,12 +2650,10 @@ CMaterialBrowserTreeCtrl::CMaterialBrowserTreeCtrl()
 	m_pMtlBrowser = 0;
 }
 
-//////////////////////////////////////////////////////////////////////////
 void CMaterialBrowserTreeCtrl::OnFillItems()
 {
 }
 
-//////////////////////////////////////////////////////////////////////////
 void CMaterialBrowserTreeCtrl::OnSelectionChanged()
 {
 	CMaterialBrowserRecord* pRecord = 0;
@@ -2775,7 +2684,6 @@ void CMaterialBrowserTreeCtrl::DeleteAllItems()
 	__super::DeleteAllItems();
 }
 
-//////////////////////////////////////////////////////////////////////////
 void CMaterialBrowserTreeCtrl::OnNMRclick(NMHDR* pNMHDR, LRESULT* pResult)
 {
 	CPoint point;
@@ -2802,7 +2710,6 @@ void CMaterialBrowserTreeCtrl::OnNMRclick(NMHDR* pNMHDR, LRESULT* pResult)
 	m_pMtlBrowser->ShowContextMenu(pRecord, point);
 }
 
-//////////////////////////////////////////////////////////////////////////
 void CMaterialBrowserTreeCtrl::OnTreeKeyDown(NMHDR* pNMHDR, LRESULT* pResult)
 {
 	GetAsyncKeyState(VK_CONTROL);
@@ -2853,7 +2760,6 @@ void CMaterialBrowserTreeCtrl::OnTreeKeyDown(NMHDR* pNMHDR, LRESULT* pResult)
 	}
 }
 
-//////////////////////////////////////////////////////////////////////////
 CTreeItemRecord* CMaterialBrowserTreeCtrl::CreateGroupRecord(const char* name, int nGroupIcon)
 {
 	CMaterialBrowserRecord* pRec = new CMaterialBrowserRecord();
@@ -2864,7 +2770,6 @@ CTreeItemRecord* CMaterialBrowserTreeCtrl::CreateGroupRecord(const char* name, i
 	return pRec;
 }
 
-//////////////////////////////////////////////////////////////////////////
 void CMaterialBrowserTreeCtrl::SelectItem(CMaterialBrowserRecord* pRecord, const TMaterialBrowserRecords* pMarkedRecords)
 {
 	EnsureItemVisible(pRecord);
@@ -2891,7 +2796,6 @@ void CMaterialBrowserTreeCtrl::SelectItem(CMaterialBrowserRecord* pRecord, const
 	}
 }
 
-//////////////////////////////////////////////////////////////////////////
 void CMaterialBrowserTreeCtrl::UpdateItemState(CMaterialBrowserRecord* pRecord)
 {
 	if (!pRecord)
@@ -2945,7 +2849,6 @@ void CMaterialBrowserTreeCtrl::UpdateItemState(CMaterialBrowserRecord* pRecord)
 	pRecord->SetIcon2(nIcon);
 }
 
-//////////////////////////////////////////////////////////////////////////
 int _cdecl CMaterialBrowserTreeCtrl::RowCompareFunc(const CXTPReportRow** pRow1, const CXTPReportRow** pRow2)
 {
 	CMaterialBrowserRecord* pRec1 = RowToRecord(*pRow1);
@@ -2982,7 +2885,6 @@ int _cdecl CMaterialBrowserTreeCtrl::RowCompareFunc(const CXTPReportRow** pRow1,
 	return stricmp(name1, name2);
 }
 
-//////////////////////////////////////////////////////////////////////////
 void CMaterialBrowserTreeCtrl::OnItemExpanded(CXTPReportRow* pRow, bool bExpanded)
 {
 	CMaterialBrowserRecord* pRecord = RowToRecord(pRow);
@@ -2990,7 +2892,6 @@ void CMaterialBrowserTreeCtrl::OnItemExpanded(CXTPReportRow* pRow, bool bExpande
 		pRecord->UpdateChildItems();
 }
 
-//////////////////////////////////////////////////////////////////////////
 bool CMaterialBrowserTreeCtrl::OnFilterTestSubmaterials(CTreeItemRecord* pRecord, bool bAddOperation)
 {
 	CMaterialBrowserRecord* pMatRecord = static_cast<CMaterialBrowserRecord*>(pRecord);
@@ -3014,7 +2915,6 @@ bool CMaterialBrowserTreeCtrl::OnFilterTestSubmaterials(CTreeItemRecord* pRecord
 	return false;
 }
 
-//////////////////////////////////////////////////////////////////////////
 bool CMaterialBrowserTreeCtrl::OnFilterTestTextures(CTreeItemRecord* pRecord, bool bAddOperation)
 {
 	CMaterialBrowserRecord* pMatRecord = static_cast<CMaterialBrowserRecord*>(pRecord);
@@ -3038,7 +2938,6 @@ bool CMaterialBrowserTreeCtrl::OnFilterTestTextures(CTreeItemRecord* pRecord, bo
 	return false;
 }
 
-//////////////////////////////////////////////////////////////////////////
 bool CMaterialBrowserTreeCtrl::OnFilterTest(CTreeItemRecord* pRecord)
 {
 	if (!pRecord->IsKindOf(RUNTIME_CLASS(CMaterialBrowserRecord)))
@@ -3066,8 +2965,6 @@ bool CMaterialBrowserTreeCtrl::OnFilterTest(CTreeItemRecord* pRecord)
 
 //////////////////////////////////////////////////////////////////////////
 // CMaterialBrowserRecord
-
-//////////////////////////////////////////////////////////////////////////
 void CMaterialBrowserRecord::CreateItems()
 {
 	int nIcon = ITEM_IMAGE_MATERIAL;
@@ -3100,7 +2997,6 @@ void CMaterialBrowserRecord::CreateItems()
 	SetIcon(nIcon);
 }
 
-//////////////////////////////////////////////////////////////////////////
 void CMaterialBrowserRecord::UpdateChildItems()
 {
 	for (int i = GetChildCount() - 1; i >= 0; --i)
@@ -3113,7 +3009,6 @@ void CMaterialBrowserRecord::UpdateChildItems()
 	}
 }
 
-//////////////////////////////////////////////////////////////////////////
 CString CMaterialBrowserRecord::CollectChildItems()
 {
 	CString paths;

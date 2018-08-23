@@ -3,11 +3,12 @@
 #pragma once
 
 #include "BaseLibraryDialog.h"
-#include "Controls\SplitterCtrl.h"
-#include "Controls\TreeCtrlEx.h"
-#include "Controls\PropertyCtrl.h"
-#include "Controls\PreviewModelCtrl.h"
+
 #include "Controls/ListCtrlEx.h"
+#include "Controls/PreviewModelCtrl.h"
+#include "Controls/PropertyCtrl.h"
+#include "Controls/SplitterCtrl.h"
+#include "Controls/TreeCtrlEx.h"
 
 class CGameTokenItem;
 class CGameTokenManager;

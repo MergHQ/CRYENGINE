@@ -2,8 +2,6 @@
 
 #pragma once
 
-// CEntityScriptDialog dialog
-
 #include "Controls/ColorCheckBox.h"
 
 class CEntityScript;
@@ -14,8 +12,7 @@ class CEntityScriptDialog : public CXTResizeDialog
 public:
 	typedef Functor0 Callback;
 
-	CEntityScriptDialog(CWnd* pParent = NULL);   // standard constructor
-	virtual ~CEntityScriptDialog();
+	CEntityScriptDialog(CWnd* pParent = NULL);
 
 	// Dialog Data
 	enum { IDD = IDD_DB_ENTITY_METHODS };
@@ -32,7 +29,6 @@ protected:
 	virtual void   OnCancel() {}
 
 	void           ReloadMethods();
-	void           ReloadEvents();
 
 	void           GotoMethod(const string& method);
 

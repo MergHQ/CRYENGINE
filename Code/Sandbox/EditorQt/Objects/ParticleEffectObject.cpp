@@ -2,16 +2,16 @@
 
 #include "StdAfx.h"
 #include "ParticleEffectObject.h"
-#include "Particles\ParticleDialog.h"
-#include "DataBaseDialog.h"
-#include "Particles\ParticleManager.h"
-#include "Particles\ParticleItem.h"
-#include "Objects/ObjectLoader.h"
-#include "Objects/DisplayContext.h"
-#include "Objects/InspectorWidgetCreator.h"
-#include "GameEngine.h"
-#include "Gizmos/AxisHelper.h"
+
 #include "LevelEditor/LevelAssetType.h"
+#include "Particles/ParticleDialog.h"
+#include "Particles/ParticleItem.h"
+#include "Particles/ParticleManager.h"
+#include "GameEngine.h"
+
+#include <Gizmos/AxisHelper.h>
+#include <Objects/ObjectLoader.h>
+#include <Objects/InspectorWidgetCreator.h>
 
 #include <Serialization/Decorators/EditorActionButton.h>
 
