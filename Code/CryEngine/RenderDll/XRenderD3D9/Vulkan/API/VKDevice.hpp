@@ -3,7 +3,6 @@
 #pragma once
 
 #include <vector>
-#include <queue>
 
 #include "VKBase.hpp"
 #include "VKHeap.hpp"
@@ -76,6 +75,7 @@ public:
 	void DeferDestruction(CBufferView&& view);
 	void DeferDestruction(CImageView&& view);
 	void DeferDestruction(VkRenderPass renderPass, VkFramebuffer frameBuffer);
+	void DeferDestruction(VkPipeline pipeline);
 
 	// Ticks the deferred destruction for the above types.
 	// After kDeferTicks the deferred objects will be actually destroyed.
@@ -88,9 +88,7 @@ public:
 	template<class CResource> VkResult CreateOrReuseStagingResource(CResource* pInputResource, VkDeviceSize minSize, CBufferResource** ppStagingResource, bool bUpload) threadsafe;
 	template<class CResource, class VkCreateInfo> VkResult CreateOrReuseCommittedResource(EHeapType HeapHint, const VkCreateInfo& createInfo, CResource** ppOutputResource) threadsafe;
 	template<class CResource> void ReleaseLater(const FVAL64 (&fenceValues)[CMDQUEUE_NUM], CResource* pObject, bool bReusable = true) threadsafe;
-	void                           ReleaseLater(VkPipeline pipeline, int frameID) threadsafe;
 	template<class CResource> void FlushReleaseHeap(const UINT64 (&completedFenceValues)[CMDQUEUE_NUM], const UINT64 (&pruneFenceValues)[CMDQUEUE_NUM]) threadsafe;
-	void                           FlushReleasePSOHeap() threadsafe;
 
 	void FlushReleaseHeaps(const UINT64 (&completedFenceValues)[CMDQUEUE_NUM], const UINT64 (&pruneFenceValues)[CMDQUEUE_NUM]) threadsafe;
 	void FlushAndWaitForGPU();
@@ -112,12 +110,21 @@ private:
 		~SRenderPass();
 	};
 
+	struct SPipeline
+	{
+		VkDevice self;
+		CAutoHandle<VkPipeline> pipeline;
+		SPipeline(SPipeline&&) = default;
+		~SPipeline();
+	};
+
 	static const uint32_t        kDeferTicks = 2; // One for "currently recording", one for "currently executing on GPU", may need to be adjusted?
 	CryCriticalSection           m_deferredLock;
 	std::vector<CBufferView>     m_deferredBufferViews[kDeferTicks];
 	std::vector<CImageView>      m_deferredImageViews[kDeferTicks];
 	std::vector<CSampler>        m_deferredSamplers[kDeferTicks];
 	std::vector<SRenderPass>     m_deferredRenderPasses[kDeferTicks];
+	std::vector<SPipeline>       m_deferredPipelines[kDeferTicks];
 
 	// Objects that should be released when they are not in use anymore
 	static CryCriticalSectionNonRecursive m_ReleaseHeapTheadSafeScope[3];
@@ -151,8 +158,6 @@ private:
 
 	TReleaseHeap<CImageResource> m_ImageReleaseHeap;
 	TRecycleHeap<CImageResource> m_ImageRecycleHeap;
-
-	std::queue<std::pair<VkPipeline, int>>     m_PSOReleasePair;
 
 	template<class CResource> TReleaseHeap<CResource>& GetReleaseHeap();
 	template<class CResource> TRecycleHeap<CResource>& GetRecycleHeap();

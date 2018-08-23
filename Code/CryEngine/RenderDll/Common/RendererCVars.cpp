@@ -190,7 +190,7 @@ AllocateConstIntCVar(CRendererCVars, CV_r_CBufferUseNativeDepth);
 float CRendererCVars::CV_r_DeferredShadingLightLodRatio;
 float CRendererCVars::CV_r_DeferredShadingLightStencilRatio;
 
-int CRendererCVars::CV_r_HDRRendering;
+int CRendererCVars::CV_r_HDRSwapChain;
 AllocateConstIntCVar(CRendererCVars, CV_r_HDRDebug);
 int CRendererCVars::CV_r_HDRBloom;
 int CRendererCVars::CV_r_HDRBloomQuality;
@@ -821,17 +821,6 @@ static void OnChange_CV_r_AntialiasingMode(ICVar* pCVar)
 	gRenDev->CV_r_AntialiasingMode = nVal;
 }
 
-static void OnChange_CV_r_HDRRendering(ICVar* pCVar)
-{
-	ITimeOfDay* pTimeOfDay(gEnv->p3DEngine->GetTimeOfDay());
-	float time(pTimeOfDay->GetTime());
-	pTimeOfDay->SetTime(time, true);
-
-	// MSAA requires HDR mode on
-	// search for #LABEL_MSAA_HDR
-	// cvar r_MSAA is no longer available
-}
-
 static void OnChange_CV_r_ShadersAllowCompiliation(ICVar* pCVar)
 {
 	// disable async activation. Can be a problem though if some shader cache files were opened async/streamed
@@ -1125,12 +1114,36 @@ void CRendererCVars::InitCVars()
 	               "Usage: r_DeferredShadingSortLights [0/1]\n"
 	               "Default is 0 (off)");
 
-	REGISTER_CVAR3_CB("r_HDRRendering", CV_r_HDRRendering, 1, VF_DUMPTODISK,
-	                  "Toggles HDR rendering.\n"
-	                  "Usage: r_HDRRendering [0/1]\n"
-	                  "Default is 1 (on), film curve tone mapping. \n"
-	                  "Set to 0 to disable HDR rendering.",
-	                  OnChange_CV_r_HDRRendering);
+	//	TODO: Activate once sRGB encoding is gone from the shader
+#if 0
+#if !defined(__dxgi1_5_h__) || true /* TODO */
+#if !CRY_PLATFORM_DURANGO
+	REGISTER_CVAR3("r_HDRSwapChain", CV_r_HDRSwapChain, 0, VF_DUMPTODISK,
+	                  "Toggles HDR display.\n"
+	                  "Usage:r_HDRSwapChain [0/1/2]\n"
+	                  "  0 - RGBA8 BT.709 (sRGB)\n"
+	                  "  1 - RGBA16 (Linear)\n"
+	                  "  2 - RGBA16F (Linear)\n"
+	                  "Default is 0 (8-bit sRGB), film curve tone mapping.\n");
+#endif
+#else
+	REGISTER_CVAR3("r_HDRSwapChain", CV_r_HDRSwapChain, 0, VF_DUMPTODISK,
+	                  "Toggles HDR display.\n"
+	                  "Usage:r_HDRSwapChain [0/1/2/3/4/5/6/7/8/9]\n"
+	                  "  0 - RGBA8 BT.709 (sRGB)\n"
+	                  "  1 - RGBA16 (Linear)\n"
+	                  "  2 - RGBA16F (Linear)\n"
+	                  // Require meta-data and possible transcoding of input-data to the other color-space
+	                  "  3 - RGBA10 BT.709 (sRGB)\n"
+	                  "  4 - RGBA16 BT.709 (sRGB)\n"
+	                  "  5 - RGBA16F BT.709 (sRGB)\n"
+	                  "  6 - RGBA8 BT.2020\n"
+	                  "  7 - RGBA10 BT.2020\n"
+	                  "  8 - RGBA16 BT.2020\n"
+	                  "  9 - RGBA16F BT.2020\n"
+	                  "Default is 0 (8-bit sRGB), film curve tone mapping.\n");
+#endif
+#endif
 
 	DefineConstIntCVar3("r_HDRDebug", CV_r_HDRDebug, 0, VF_NULL,
 	                    "Toggles HDR debugging info (to debug HDR/eye adaptation)\n"

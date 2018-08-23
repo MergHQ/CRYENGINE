@@ -342,7 +342,6 @@ void CPerfHUD::InitUI(IMiniGUI* pGUI)
 	CreateCVarMenuItem(pDebugMenu, "Overdraw", "r_MeasureOverdrawScale", 0, 1);
 	CreateCVarMenuItem(pDebugMenu, "Freeze Camera", "e_CameraFreeze", 0, 1);
 	CreateCVarMenuItem(pDebugMenu, "Post Effects", "r_PostProcessEffects", 0, 1);
-	CreateCVarMenuItem(pDebugMenu, "HDR", "r_HDRRendering", 0, 2);
 	CreateCVarMenuItem(pDebugMenu, "Deferred decals debug", "r_deferredDecalsDebug", 0, 1);
 	CreateCVarMenuItem(pDebugMenu, "Shadows", "e_Shadows", 0, 1);
 	CreateCVarMenuItem(pDebugMenu, "Ocean", "e_WaterOcean", 0, 1);

@@ -100,6 +100,8 @@ void CVolumetricScattering::Render()
 ////////////////////////////////////////////////////////////////////////////////////////////////////
 void CPost3DRenderer::Render()
 {
+	ASSERT_LEGACY_PIPELINE
+/*
 	PROFILE_LABEL_SCOPE("POST_3D_RENDERER");
 
 	// Must update the RT pointers here, otherwise they can get out-of-date
@@ -133,15 +135,19 @@ void CPost3DRenderer::Render()
 		// Nothing to render, so clear Flash RT so that we don't render rubbish on the flash objects
 		ClearFlashRT();
 	}
+*/
 }
 
 void CPost3DRenderer::ClearFlashRT()
 {
+	ASSERT_LEGACY_PIPELINE
+/*
 	PROFILE_LABEL_SCOPE("CLEAR_RT");
 
 	const uint8 zbufferRenderTile = 2; // Use zbuffer render tile, because in stereo the 1st 2 are used for the eyes
 
 	CClearSurfacePass::Execute(m_pFlashRT, Clr_Transparent);
+*/
 }
 
 void CPost3DRenderer::RenderGroup(uint8 groupId)

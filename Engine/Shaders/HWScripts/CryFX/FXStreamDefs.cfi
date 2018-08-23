@@ -63,25 +63,14 @@
 
 #endif
 
-#if %_RT_SAMPLE0
-
 #define OUT_HPOS_IN_WPOS_SG												\
-	#if %_PS															\
+	#if %_PS && %_RT_SAMPLE0											\
 		sample float4 WPos : SV_POSITION;								\
-	#else																\
-		float4 HPosition : SV_POSITION;									\
-	#endif
-
-#else
-
-#define OUT_HPOS_IN_WPOS_SG												\
-	#if %_PS															\
+	#elif %_PS															\
 		float4 WPos : SV_POSITION;										\
 	#else																\
 		float4 HPosition : SV_POSITION;									\
 	#endif
-
-#endif
 
 // if %_PS could be used in global scope, could simplify this a bit
 

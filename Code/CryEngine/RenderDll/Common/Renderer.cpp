@@ -1943,7 +1943,7 @@ void CRenderer::EF_QueryImpl(ERenderQueryTypes eQuery, void* pInOut0, uint32 nIn
 
 	case EFQ_HDRModeEnabled:
 	{
-		WriteQueryResult(pInOut0, nInOutSize0, static_cast<bool>(IsHDRModeEnabled() ? 1 : 0));
+		WriteQueryResult(pInOut0, nInOutSize0, true);
 	}
 	break;
 
@@ -3844,7 +3844,7 @@ void CRenderer::UpdateRenderingModesInfo()
 		return;
 	}
 
-	m_nNightVisionMode = ((pNightVision->IsActive() && (CV_r_NightVision == 2)) || ((CV_r_NightVision == 3) && gRenDev->IsHDRModeEnabled()));             // check only for HDR version
+	m_nNightVisionMode = (pNightVision->IsActive() && (CV_r_NightVision == 2)) || ((CV_r_NightVision == 3));
 
 	if (!m_nNightVisionMode && pThermalVision->GetTransitionEffectState())
 		m_nThermalVisionMode = 0;

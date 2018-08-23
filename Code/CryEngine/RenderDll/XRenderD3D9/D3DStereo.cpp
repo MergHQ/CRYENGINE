@@ -319,9 +319,9 @@ void CD3DStereoRenderer::Shutdown()
 #endif
 
 	for (auto &e : m_pEyeDisplayContexts)
-		RecreateDisplayContext(e, Clr_Empty, {});
+		RecreateDisplayContext(e, "", Clr_Empty, {});
 	for (auto &e : m_pVrQuadLayerDisplayContexts)
-		RecreateDisplayContext(e, Clr_Transparent, {});
+		RecreateDisplayContext(e, "", Clr_Transparent, {});
 }
 
 bool CD3DStereoRenderer::EnableStereo()
@@ -447,14 +447,20 @@ void CD3DStereoRenderer::HandleNVControl()
 #endif
 }
 
-void CD3DStereoRenderer::RecreateDisplayContext(std::pair<std::shared_ptr<CCustomRenderDisplayContext>, SDisplayContextKey> &target, const ColorF &clearColor, std::vector<_smart_ptr<CTexture>> &&swapChain)
+void CD3DStereoRenderer::RecreateDisplayContext(std::pair<std::shared_ptr<CCustomRenderDisplayContext>, SDisplayContextKey> &target, std::string name, const ColorF &clearColor, std::vector<_smart_ptr<CTexture>> &&swapChain)
 {
 	IRenderer::SDisplayContextDescription displayContextDesc = {};
 	displayContextDesc.clearColor = clearColor;
 
 	if (target.first)
+	{
+		if (name.empty())
+			name = target.first->GetName();
+
 		gcpRendD3D->DeleteContext(target.second);
-	target.first = swapChain.size() ? std::make_shared<CCustomRenderDisplayContext>(displayContextDesc, gcpRendD3D->GenerateUniqueContextId(), std::move(swapChain)) : nullptr;
+	}
+
+	target.first = swapChain.size() ? std::make_shared<CCustomRenderDisplayContext>(displayContextDesc, name, gcpRendD3D->GenerateUniqueContextId(), std::move(swapChain)) : nullptr;
 	target.second = {};
 	if (target.first)
 		target.second = gcpRendD3D->AddCustomContext(target.first);
@@ -462,12 +468,19 @@ void CD3DStereoRenderer::RecreateDisplayContext(std::pair<std::shared_ptr<CCusto
 
 void CD3DStereoRenderer::CreateEyeDisplayContext(CCamera::EEye eEye, std::vector<_smart_ptr<CTexture>> &&swapChain)
 {
-	RecreateDisplayContext(m_pEyeDisplayContexts[eEye], Clr_Empty, std::move(swapChain));
+	static_assert(CCamera::eEye_eCount <= 2, "More eyes defined than covered in the following code, please adjust.");
+	const std::string name = (eEye == CCamera::EEye::eEye_Left ? "LeftEye-SwapChain" : "RightEye-SwapChain");
+
+	RecreateDisplayContext(m_pEyeDisplayContexts[eEye], name, Clr_Empty, std::move(swapChain));
 }
 
 void CD3DStereoRenderer::CreateVrQuadLayerDisplayContext(RenderLayer::EQuadLayers id, std::vector<_smart_ptr<CTexture>> &&swapChain)
 {
-	RecreateDisplayContext(m_pVrQuadLayerDisplayContexts[id], Clr_Transparent, std::move(swapChain));
+	static_assert(RenderLayer::eQuadLayers_Total <= 9, "More quadlayers defined than covered in the following code, please adjust.");
+	const char number = '0' + id;
+	const std::string name = std::string("Quad") + number + std::string("-SwapChain");
+
+	RecreateDisplayContext(m_pVrQuadLayerDisplayContexts[id], name, Clr_Transparent, std::move(swapChain));
 }
 
 void CD3DStereoRenderer::SetCurrentEyeSwapChainIndices(const std::array<uint32_t, eEyeType_NumEyes> &indices)

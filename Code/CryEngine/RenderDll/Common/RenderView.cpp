@@ -331,9 +331,9 @@ void CRenderView::CalculateViewInfo()
 }
 
 //////////////////////////////////////////////////////////////////////////
-bool CRenderView::IsHDRModeEnabled() const
+bool CRenderView::AllowsHDRRendering() const
 { 
-	return (m_shaderRenderingFlags & SHDF_ALLOWHDR) && gcpRendD3D->IsHDRModeEnabled();
+	return (m_shaderRenderingFlags & SHDF_ALLOWHDR);
 }
 
 bool CRenderView::IsPostProcessingEnabled() const
@@ -891,6 +891,10 @@ CCamera::EEye CRenderView::GetCurrentEye() const
 //////////////////////////////////////////////////////////////////////////
 CTexture* CRenderView::GetColorTarget() const
 {
+	// Toggle back-buffer on first use
+	if (m_bRenderToSwapChain)
+		m_pRenderOutput->GetDisplayContext()->PostPresent();
+
 	CRY_ASSERT(m_pColorTarget);
 	return m_pColorTarget.get();
 }
@@ -944,7 +948,8 @@ void CRenderView::ChangeRenderResolution(uint32_t renderWidth, uint32_t renderHe
 	CRY_ASSERT((renderHeight % GetOutputResolution()[1]) == 0);
 
 	// No changes do not need to resize
-	if (m_RenderWidth == renderWidth && m_RenderHeight == renderHeight && !bForce)
+	if (m_RenderWidth  == renderWidth &&
+	    m_RenderHeight == renderHeight && !bForce)
 	{ 
 		CRY_ASSERT(m_pDepthTarget->GetWidth() >= renderWidth && m_pDepthTarget->GetHeight() >= renderHeight);
 		CRY_ASSERT(m_pColorTarget->GetWidth() >= renderWidth && m_pColorTarget->GetHeight() >= renderHeight);
@@ -953,22 +958,22 @@ void CRenderView::ChangeRenderResolution(uint32_t renderWidth, uint32_t renderHe
 
 	m_RenderWidth  = renderWidth;
 	m_RenderHeight = renderHeight;
-	if (renderWidth == GetOutputResolution()[0] && renderHeight == GetOutputResolution()[1] && m_pRenderOutput) 
+	if (renderWidth  == GetOutputResolution()[0] &&
+	    renderHeight == GetOutputResolution()[1] && m_pRenderOutput) 
 	{
 		m_pColorTarget = m_pRenderOutput->GetColorTarget();
-		m_pDepthTarget = !m_pRenderOutput->RequiresTemporaryDepthBuffer() ?
-			m_pRenderOutput->GetDepthTarget() :
-			nullptr;
+		m_pDepthTarget = m_pRenderOutput->GetDepthTarget();
+
+		m_bRenderToSwapChain = m_pRenderOutput->m_bRenderToSwapChain;
 	}
 	else
 	{
 		m_pColorTarget = CRendererResources::s_ptexHDRTarget;
-		m_pDepthTarget = nullptr;
-	}
+		m_pDepthTarget = nullptr; // Allocate temporary depth target
+		m_pDepthTarget.Assign_NoAddRef(CRendererResources::CreateDepthTarget(renderWidth, renderHeight, Clr_Transparent, eTF_Unknown));
 
-	// Allocate temporary depth target
-	if (!m_pDepthTarget)
-		m_pDepthTarget.Assign_NoAddRef(CRendererResources::CreateDepthTarget(renderWidth, renderHeight, Clr_Empty, eTF_Unknown));
+		m_bRenderToSwapChain = false;
+	}
 
 	CRY_ASSERT(m_pColorTarget->GetWidth() >= renderWidth && m_pColorTarget->GetHeight() >= renderHeight);
 }

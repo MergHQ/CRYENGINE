@@ -624,6 +624,28 @@ ETEX_Format CRendererResources::GetHDRFormat(bool withAlpha, bool lowQuality)
 	return candidate;
 }
 
+ETEX_Format CRendererResources::GetLDRFormat()
+{
+	ETEX_Format candidate = eTF_R8G8B8A8;
+
+	return candidate;
+}
+
+ETEX_Format CRendererResources::GetDisplayFormat()
+{
+	ETEX_Format candidate = eTF_R8G8B8A8;
+
+	return candidate;
+}
+
+ETEX_Format CRendererResources::GetDepthFormat()
+{
+	return
+		gRenDev->GetDepthBpp() == 32 ? eTF_D32FS8 :
+		gRenDev->GetDepthBpp() == 24 ? eTF_D24S8 :
+		gRenDev->GetDepthBpp() ==  8 ? eTF_D16S8 : eTF_D16;
+}
+
 ////////////////////////////////////////////////////////////////////////////////////////////////////
 ////////////////////////////////////////////////////////////////////////////////////////////////////
 
@@ -794,13 +816,13 @@ void CRendererResources::CreateSceneMaps(int resourceWidth, int resourceHeight)
 
 	// This RT used for all post processes passes and shadow mask (group 0) as well
 	if (!CTexture::IsTextureExist(s_ptexBackBuffer))
-		s_ptexBackBuffer = CTexture::GetOrCreateRenderTarget("$BackBuffer", nWidth, nHeight, Clr_Empty, eTT_2D, nFlags | FT_USAGE_ALLOWREADSRGB, eTF_R8G8B8A8, TO_BACKBUFFERMAP);
+		s_ptexBackBuffer = CTexture::GetOrCreateRenderTarget("$BackBuffer", nWidth, nHeight, Clr_Empty, eTT_2D, nFlags, eTF_R8G8B8A8, TO_BACKBUFFERMAP);
 	else
 	{
-		s_ptexBackBuffer->SetFlags(nFlags | FT_USAGE_ALLOWREADSRGB);
+		s_ptexBackBuffer->SetFlags(nFlags);
 		s_ptexBackBuffer->SetWidth(nWidth);
 		s_ptexBackBuffer->SetHeight(nHeight);
-		s_ptexBackBuffer->CreateRenderTarget(eTF_R8G8B8A8, Clr_Empty);
+		s_ptexBackBuffer->CreateRenderTarget(eTF, Clr_Empty);
 	}
 
 	nFlags &= ~(FT_USAGE_MSAA | FT_USAGE_UNORDERED_ACCESS);
@@ -1493,14 +1515,9 @@ size_t CRendererResources::m_DTallocs = 0;
 
 CTexture* CRendererResources::CreateDepthTarget(int nWidth, int nHeight, const ColorF& cClear, ETEX_Format eTF)
 {
-	const ETEX_Format preferredDepthFormat = eTF == eTF_Unknown ?
-		gRenDev->GetDepthBpp() == 32 ? eTF_D32FS8 :
-		gRenDev->GetDepthBpp() == 24 ? eTF_D24S8 :
-		gRenDev->GetDepthBpp() == 8  ? eTF_D16S8 : eTF_D16 : eTF;
-
 	char pName[128]; // Create unique names for every allocation, otherwise name-matches would occur in GetOrCreateDepthStencil()
 	cry_sprintf(pName, "$DynDepthStencil_%8_x%d", m_DTallocs + 1, m_DTallocs + 2); ++m_DTallocs;
-	return CTexture::GetOrCreateDepthStencil(pName, nWidth, nHeight, cClear, eTT_2D, FT_USAGE_TEMPORARY | FT_NOMIPS, preferredDepthFormat);
+	return CTexture::GetOrCreateDepthStencil(pName, nWidth, nHeight, cClear, eTT_2D, FT_USAGE_TEMPORARY | FT_NOMIPS, eTF == eTF_Unknown ? GetDepthFormat() : eTF);
 }
 
 CTexture* CRendererResources::CreateRenderTarget(int nWidth, int nHeight, const ColorF& cClear, ETEX_Format eTF)
