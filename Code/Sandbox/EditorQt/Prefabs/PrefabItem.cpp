@@ -3,27 +3,23 @@
 #include "StdAfx.h"
 #include "PrefabItem.h"
 
-#include "PrefabLibrary.h"
-#include "PrefabManager.h"
-#include "Prefabs/PrefabEvents.h"
-#include "BaseLibraryManager.h"
-
-#include "Grid.h"
-#include <CryMath/Cry_Math.h>
-
 #include "HyperGraph/FlowGraph.h"
 #include "HyperGraph/FlowGraphManager.h"
-
+#include "Objects/EntityObject.h"
 #include "Objects/PrefabObject.h"
 #include "Objects/SelectionGroup.h"
-#include "Objects/EntityObject.h"
-#include "Objects/ObjectLoader.h"
+#include "Prefabs/PrefabEvents.h"
+#include "Prefabs/PrefabLibrary.h"
+#include "Prefabs/PrefabManager.h"
+#include "BaseLibraryManager.h"
 
 #include <Objects/IObjectLayer.h>
+#include <Objects/ObjectLoader.h>
+#include <Preferences/SnappingPreferences.h>
+#include <IUndoManager.h>
 
-#include "IUndoManager.h"
+#include <CryMath/Cry_Math.h>
 
-//////////////////////////////////////////////////////////////////////////
 CPrefabItem::CPrefabItem()
 {
 	m_PrefabClassName = PREFAB_OBJECT_CLASS_NAME;
@@ -35,13 +31,6 @@ void CPrefabItem::SetPrefabClassName(string prefabClassNameString)
 	m_PrefabClassName = prefabClassNameString;
 }
 
-//////////////////////////////////////////////////////////////////////////
-CPrefabItem::~CPrefabItem()
-{
-
-}
-
-//////////////////////////////////////////////////////////////////////////
 void CPrefabItem::Serialize(SerializeContext& ctx)
 {
 	CBaseLibraryItem::Serialize(ctx);
@@ -115,14 +104,12 @@ void CPrefabItem::Serialize(SerializeContext& ctx)
 	}
 }
 
-//////////////////////////////////////////////////////////////////////////
 void CPrefabItem::Update()
 {
 	// Mark library as modified.
 	SetModified();
 }
 
-//////////////////////////////////////////////////////////////////////////
 void CPrefabItem::MakeFromSelection(const CSelectionGroup& selection)
 {
 	selection.FilterParents();
@@ -166,7 +153,6 @@ void CPrefabItem::CollectLinkedObjects(CBaseObject* pObj, std::vector<CBaseObjec
 	}
 }
 
-//////////////////////////////////////////////////////////////////////////
 void CPrefabItem::UpdateFromPrefabObject(CPrefabObject* pPrefabObject, const SObjectChangedContext& context)
 {
 	CPrefabManager* const pPrefabManager = GetIEditorImpl()->GetPrefabManager();
@@ -266,7 +252,6 @@ void CPrefabItem::UpdateFromPrefabObject(CPrefabObject* pPrefabObject, const SOb
 	pPrefabObject->SetModifyInProgress(false);
 }
 
-//////////////////////////////////////////////////////////////////////////
 void CPrefabItem::UpdateObjects()
 {
 	std::vector<CBaseObject*> pPrefabObjects;
@@ -288,7 +273,6 @@ void CPrefabItem::UpdateObjects()
 	}
 }
 
-//////////////////////////////////////////////////////////////////////////
 void CPrefabItem::ModifyLibraryPrefab(CSelectionGroup& objectsInPrefabAsFlatSelection, CPrefabObject* pPrefabObject, const SObjectChangedContext& context, const TObjectIdMapping& guidMapping)
 {
 	IObjectManager* const pObjManager = GetIEditorImpl()->GetObjectManager();
@@ -374,7 +358,6 @@ void CPrefabItem::ModifyLibraryPrefab(CSelectionGroup& objectsInPrefabAsFlatSele
 	}   // ~if (CBaseObject* const pObj = objectsInPrefabAsFlatSelection.GetObjectByGuidInPrefab(context.m_modifiedObjectGuidInPrefab))
 }
 
-//////////////////////////////////////////////////////////////////////////
 void CPrefabItem::ModifyInstancedPrefab(CSelectionGroup& objectsInPrefabAsFlatSelection, CPrefabObject* pPrefabObject, const SObjectChangedContext& context, const TObjectIdMapping& guidMapping)
 {
 	IObjectManager* const pObjManager = GetIEditorImpl()->GetObjectManager();
@@ -493,7 +476,6 @@ void CPrefabItem::ModifyInstancedPrefab(CSelectionGroup& objectsInPrefabAsFlatSe
 	}
 }
 
-//////////////////////////////////////////////////////////////////////////
 XmlNodeRef CPrefabItem::FindObjectByGuid(const CryGUID& guid, bool forwardSearch)
 {
 	CryGUID objectId = CryGUID::Null();
@@ -585,7 +567,6 @@ std::set<CryGUID> CPrefabItem::FindAllPrefabsGUIDsInChildren(const std::set<CryG
 	return finalGuids;
 }
 
-//////////////////////////////////////////////////////////////////////////
 CBaseObjectPtr CPrefabItem::FindObjectByPrefabGuid(const std::vector<CBaseObject*>& objects, CryGUID guidInPrefab)
 {
 	for (auto it = objects.cbegin(), end = objects.cend(); it != end; ++it)
@@ -597,7 +578,6 @@ CBaseObjectPtr CPrefabItem::FindObjectByPrefabGuid(const std::vector<CBaseObject
 	return nullptr;
 }
 
-//////////////////////////////////////////////////////////////////////////
 void CPrefabItem::ExtractObjectsPrefabIDtoGuidMapping(CSelectionGroup& objects, TObjectIdMapping& mapping)
 {
 	mapping.reserve(objects.GetCount());
@@ -630,7 +610,6 @@ void CPrefabItem::ExtractObjectsPrefabIDtoGuidMapping(CSelectionGroup& objects, 
 	}
 }
 
-//////////////////////////////////////////////////////////////////////////
 CryGUID CPrefabItem::ResolveID(const TObjectIdMapping& prefabIdToGuidMapping, CryGUID id, bool prefabIdToGuidDirection)
 {
 	if (prefabIdToGuidDirection)
@@ -653,7 +632,6 @@ CryGUID CPrefabItem::ResolveID(const TObjectIdMapping& prefabIdToGuidMapping, Cr
 	return id;
 }
 
-//////////////////////////////////////////////////////////////////////////
 void CPrefabItem::RemapIDsInNodeAndChildren(XmlNodeRef objectNode, const TObjectIdMapping& mapping, bool prefabIdToGuidDirection)
 {
 	std::queue<XmlNodeRef> objects;
@@ -694,7 +672,6 @@ void CPrefabItem::RemapIDsInNodeAndChildren(XmlNodeRef objectNode, const TObject
 	}
 }
 
-//////////////////////////////////////////////////////////////////////////
 void CPrefabItem::RemapIDsInNode(XmlNodeRef objectNode, const TObjectIdMapping& mapping, bool prefabIdToGuidDirection)
 {
 	CryGUID patchedId;
@@ -710,7 +687,6 @@ void CPrefabItem::RemapIDsInNode(XmlNodeRef objectNode, const TObjectIdMapping& 
 		objectNode->setAttr("TargetId", ResolveID(mapping, patchedId, prefabIdToGuidDirection));
 }
 
-//////////////////////////////////////////////////////////////////////////
 void CPrefabItem::RemoveAllChildsOf(CryGUID guid)
 {
 	std::deque<XmlNodeRef> childrenToRemove;
@@ -746,7 +722,6 @@ void CPrefabItem::RemoveAllChildsOf(CryGUID guid)
 	}
 }
 
-//////////////////////////////////////////////////////////////////////////
 void CPrefabItem::RegisterPrefabEventFlowNodes(CBaseObject* const pEntityObj)
 {
 	if (pEntityObj->IsKindOf(RUNTIME_CLASS(CEntityObject)))

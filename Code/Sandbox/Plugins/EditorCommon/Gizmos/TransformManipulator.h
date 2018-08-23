@@ -2,22 +2,20 @@
 
 #pragma once
 
-#include "Gizmo.h"
-#include "ITransformManipulator.h"
-#include "AxisTranslateGizmo.h"
-#include "PlaneTranslateGizmo.h"
-#include "ViewTranslateGizmo.h"
+#include "AxisHelperExtended.h"
 #include "AxisRotateGizmo.h"
 #include "AxisScaleGizmo.h"
-#include "UniformScaleGizmo.h"
+#include "AxisTranslateGizmo.h"
+#include "Gizmo.h"
+#include "ITransformManipulator.h"
 #include "PlaneScaleGizmo.h"
+#include "PlaneTranslateGizmo.h"
 #include "TrackballGizmo.h"
-#include "IEditor.h" // for AxisConstrains and CLevelEditorSharedState::CoordSystem
+#include "UniformScaleGizmo.h"
+#include "ViewTranslateGizmo.h"
 
-#include "AxisHelperExtended.h"
+#include <IEditor.h>
 
-// forward declarations.
-struct SDisplayContext;
 
 /** Gizmo of Objects animation track.
  */
@@ -25,11 +23,10 @@ class EDITOR_COMMON_API CTransformManipulator : public CGizmo, public ITransform
 {
 public:
 	CTransformManipulator(ITransformManipulatorOwner* owner);
-	// Creates axis gizmo linked to an object.
 	~CTransformManipulator();
 
 	//////////////////////////////////////////////////////////////////////////
-	// Ovverides from CGizmo
+	// Overrides from CGizmo
 	//////////////////////////////////////////////////////////////////////////
 	virtual void GetWorldBounds(AABB& bbox);
 	virtual void Display(SDisplayContext& dc);

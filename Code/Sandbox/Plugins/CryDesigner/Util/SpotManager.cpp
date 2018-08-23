@@ -1,13 +1,16 @@
 // Copyright 2001-2018 Crytek GmbH / Crytek Group. All rights reserved.
 
 #include "StdAfx.h"
-#include "Viewport.h"
 #include "SpotManager.h"
-#include "Tools/BaseTool.h"
+
 #include "Core/Model.h"
+#include "Tools/BaseTool.h"
 #include "DesignerEditor.h"
-#include "Grid.h"
-#include "SurfaceInfoPicker.h"
+
+#include <SurfaceInfoPicker.h>
+
+#include <Preferences/SnappingPreferences.h>
+#include <Viewport.h>
 
 namespace Designer
 {
@@ -782,7 +785,7 @@ bool SpotManager::IsSnapEnabled() const
 BrushVec3 SpotManager::Snap(const BrushVec3& vPos) const
 {
 	if (!m_bBuiltInSnap)
-		return gSnappingPreferences.Snap(vPos);
+		return gSnappingPreferences.Snap3D(vPos);
 
 	BrushVec3 snapped;
 	snapped.x = std::floor((vPos.x / m_BuiltInSnapSize) + (BrushFloat)0.5) * m_BuiltInSnapSize;

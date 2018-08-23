@@ -4,10 +4,6 @@
 
 #include "Gizmo.h"
 
-struct SDisplayContext;
-struct HitContext;
-struct IDisplayViewport;
-
 //////////////////////////////////////////////////////////////////////////
 // CPlaneTranslateGizmo Gizmo.
 //
@@ -17,7 +13,6 @@ class EDITOR_COMMON_API CPlaneTranslateGizmo : public CGizmo
 {
 public:
 	CPlaneTranslateGizmo();
-	~CPlaneTranslateGizmo();
 
 	//! set position - should be world space
 	void         SetPosition(Vec3 pos);

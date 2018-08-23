@@ -2,10 +2,12 @@
 
 #include "StdAfx.h"
 #include "UVGizmo.h"
-#include "QViewport.h"
+
 #include "UVMappingEditorCommon.h"
-#include "DisplayViewportAdapter.h"
-#include "Grid.h"
+
+#include <Preferences/SnappingPreferences.h>
+#include <DisplayViewportAdapter.h>
+#include <QViewport.h>
 
 namespace Designer {
 namespace UVMapping

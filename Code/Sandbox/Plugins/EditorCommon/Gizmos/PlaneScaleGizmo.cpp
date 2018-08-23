@@ -4,17 +4,13 @@
 #include "PlaneScaleGizmo.h"
 #include "IDisplayViewport.h"
 #include "Gizmos/AxisHelper.h"
-#include "Grid.h"
+#include "Preferences/SnappingPreferences.h"
 
 CPlaneScaleGizmo::CPlaneScaleGizmo()
 	: m_color(1.0f, 1.0f, 0.0f)
 	, m_scale(1.0f)
 	, m_offsetInner(0.0f)
 	, m_offsetFromCenter(0.0f)
-{
-}
-
-CPlaneScaleGizmo::~CPlaneScaleGizmo()
 {
 }
 

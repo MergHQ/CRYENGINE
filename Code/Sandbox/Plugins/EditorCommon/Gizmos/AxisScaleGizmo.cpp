@@ -2,9 +2,10 @@
 
 #include "StdAfx.h"
 #include "AxisScaleGizmo.h"
+
 #include "IDisplayViewport.h"
 #include "Gizmos/AxisHelper.h"
-#include "Grid.h"
+#include "Preferences/SnappingPreferences.h"
 
 #define HIT_RADIUS (8)
 
@@ -13,20 +14,6 @@ CAxisScaleGizmo::CAxisScaleGizmo()
 	, m_scale(1.0f)
 	, m_offset(0.0f)
 {
-}
-
-CAxisScaleGizmo::~CAxisScaleGizmo()
-{
-}
-
-void CAxisScaleGizmo::SetName(const char* sName)
-{
-	m_name = sName;
-}
-
-const char* CAxisScaleGizmo::GetName()
-{
-	return m_name.c_str();
 }
 
 void CAxisScaleGizmo::SetPosition(Vec3 pos)

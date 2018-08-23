@@ -7,15 +7,14 @@
 #include <Objects/ObjectLoader.h>
 #include <Objects/InspectorWidgetCreator.h>
 #include <Gizmos/IGizmoManager.h>
+#include <Preferences/SnappingPreferences.h>
 #include <Serialization/Decorators/EditToolButton.h>
-#include <Grid.h>
 #include <Viewport.h>
 
 #include <Util/MFCUtil.h>
 
 //////////////////////////////////////////////////////////////////////////
 // CEditSplineObjectTool
-
 class CEditSplineObjectTool : public CEditTool, public ITransformManipulatorOwner
 {
 public:
@@ -66,10 +65,8 @@ private:
 	ITransformManipulator* m_pManipulator;
 };
 
-//////////////////////////////////////////////////////////////////////////
 IMPLEMENT_DYNCREATE(CEditSplineObjectTool, CEditTool)
 
-//////////////////////////////////////////////////////////////////////////
 void CEditSplineObjectTool::SetUserData(const char* key, void* userData)
 {
 	m_pSpline = (CSplineObject*)userData;
@@ -116,7 +113,6 @@ bool CEditSplineObjectTool::IsManipulatorVisible()
 	return false;
 }
 
-//////////////////////////////////////////////////////////////////////////
 CEditSplineObjectTool::~CEditSplineObjectTool()
 {
 	if (m_pSpline)
@@ -139,7 +135,6 @@ CEditSplineObjectTool::~CEditSplineObjectTool()
 	}
 }
 
-//////////////////////////////////////////////////////////////////////////
 bool CEditSplineObjectTool::OnKeyDown(CViewport* view, uint32 nChar, uint32 nRepCnt, uint32 nFlags)
 {
 	if (nChar == Qt::Key_Escape)
@@ -172,7 +167,6 @@ void CEditSplineObjectTool::OnSplineEvent(const CBaseObject* pObject, const CObj
 	}
 }
 
-//////////////////////////////////////////////////////////////////////////
 void CEditSplineObjectTool::SelectPoint(int index)
 {
 	if (index < 0)
@@ -189,7 +183,6 @@ void CEditSplineObjectTool::SelectPoint(int index)
 	m_pSpline->SelectPoint(index);
 }
 
-//////////////////////////////////////////////////////////////////////////
 void CEditSplineObjectTool::OnManipulatorDrag(IDisplayViewport* pView, ITransformManipulator* pManipulator, const Vec2i& point0, const Vec3& value, int flags)
 {
 	// get world/local coordinate system setting.
@@ -377,7 +370,6 @@ void CEditSplineObjectTool::SetCursor(EStdCursor cursor, bool bForce)
 
 //////////////////////////////////////////////////////////////////////////
 // CSplitSplineObjectTool
-
 class CSplitSplineObjectTool : public CEditTool
 {
 public:
@@ -403,7 +395,6 @@ private:
 
 IMPLEMENT_DYNCREATE(CSplitSplineObjectTool, CEditTool)
 
-//////////////////////////////////////////////////////////////////////////
 CSplitSplineObjectTool::CSplitSplineObjectTool()
 {
 	m_pSpline = 0;
@@ -489,7 +480,6 @@ bool CSplitSplineObjectTool::MouseCallback(CViewport* view, EMouseEvent event, C
 
 //////////////////////////////////////////////////////////////////////////
 // CMergeSplineObjectsTool
-
 class CMergeSplineObjectsTool : public CEditTool
 {
 public:

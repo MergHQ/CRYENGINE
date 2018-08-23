@@ -1,18 +1,17 @@
 // Copyright 2001-2018 Crytek GmbH / Crytek Group. All rights reserved.
 
-#include <StdAfx.h>
-#include "Grid.h"
+#include "StdAfx.h"
+#include "SnappingPreferences.h"
 
-#include "Objects/ISelectionGroup.h"
 #include "Objects/BaseObject.h"
+#include "Objects/ISelectionGroup.h"
 
-#include <QWidget>
-#include <QVBoxLayout>
+#include <IUndoObject.h>
 
 #include <CrySerialization/Math.h>
 #include <CrySerialization/yasli/decorators/Range.h>
 
-#include <IUndoObject.h>
+#include <QVBoxLayout>
 
 class CSnappingPreferencesDialog : public CDockableWidget
 {
@@ -87,29 +86,53 @@ float SSnappingPreferences::SnapScale(const float scale) const
 	return floor(scale / m_scaleSnap + 0.5) * m_scaleSnap;
 }
 
-Vec3 SSnappingPreferences::Snap(const Vec3& vec, bool bForceSnap /*= false*/) const
+namespace SnappingPreferences_Private
 {
-	if ((!bForceSnap && !m_gridSnappingEnabled) || m_gridSize < 0.001)
-		return vec;
-	Vec3 snapped;
-	snapped.x = floor((vec.x / m_gridSize) / m_gridScale + 0.5) * m_gridSize * m_gridScale;
-	snapped.y = floor((vec.y / m_gridSize) / m_gridScale + 0.5) * m_gridSize * m_gridScale;
-	snapped.z = floor((vec.z / m_gridSize) / m_gridScale + 0.5) * m_gridSize * m_gridScale;
-	return snapped;
+Vec3 Snap(const Vec3& vecWS, bool plane, float gridSize, float gridScale, const Vec3& axisX, const Vec3& axisY)
+{
+	Matrix33 transform(axisX, axisY, (axisX ^ axisY));
+	Vec3 vecLS = vecWS * transform;
+
+	const float factor = gridSize * gridScale;
+
+	// Snap in Local Space
+	vecLS.x = floor(vecLS.x / factor + 0.5) * factor;
+	vecLS.y = floor(vecLS.y / factor + 0.5) * factor;
+
+	// For 2D, there is no movement in Z direction
+	vecLS.z = plane ? 0 : floor(vecLS.z / factor + 0.5) * factor;
+
+	// Transform to WS (== transpose for rotation matrix)
+	transform.Transpose();
+	Vec3 vWS = vecLS * transform;
+	return vWS;
+}
 }
 
-Vec3 SSnappingPreferences::Snap(const Vec3& vec, double fZoom) const
+Vec3 SSnappingPreferences::SnapPlane(const Vec3& vecWS, const Vec3& axisX, const Vec3& axisY) const
 {
-	if (!gridSnappingEnabled() || m_gridSize < 0.001f)
-		return vec;
+	if (!m_gridSnappingEnabled || m_gridSize < 0.001)
+		return vecWS;
 
-	double zoomscale = m_gridScale * fZoom;
+	return SnappingPreferences_Private::Snap(vecWS, true, m_gridSize, m_gridScale, axisX, axisY);
+}
+
+Vec3 SSnappingPreferences::Snap3D(const Vec3& posWS, const Vec3& axisX, const Vec3& axisY, float gridZoom) const
+{
+	if (!m_gridSnappingEnabled || m_gridSize < 0.001f)
+		return posWS;
+
+	return SnappingPreferences_Private::Snap(posWS, false, m_gridSize, m_gridScale * gridZoom, axisX, axisY);
+}
+
+Vec3 SSnappingPreferences::Snap3DWorldSpace(const Vec3& posWS) const
+{
+	const float factor = m_gridSize * m_gridScale;
 
 	Vec3 snapped;
-	snapped.x = floor((vec.x / m_gridSize) / zoomscale + 0.5) * m_gridSize * zoomscale;
-	snapped.y = floor((vec.y / m_gridSize) / zoomscale + 0.5) * m_gridSize * zoomscale;
-	snapped.z = floor((vec.z / m_gridSize) / zoomscale + 0.5) * m_gridSize * zoomscale;
-
+	snapped.x = floor(posWS.x / factor + 0.5) * factor;
+	snapped.y = floor(posWS.y / factor + 0.5) * factor;
+	snapped.z = floor(posWS.z / factor + 0.5) * factor;
 	return snapped;
 }
 
@@ -175,8 +198,9 @@ void AlignToGrid()
 		{
 			CBaseObject* obj = sel->GetObject(i);
 			tm = obj->GetWorldTM();
-			// Force snapping on
-			Vec3 snappedPos = gSnappingPreferences.Snap(tm.GetTranslation(), true);
+
+			// Alignment for this command is only make sense in World Space coordinates
+			Vec3 snappedPos = gSnappingPreferences.Snap3DWorldSpace(tm.GetTranslation());
 			tm.SetTranslation(snappedPos);
 			obj->SetWorldTM(tm);
 			obj->OnEvent(EVENT_ALIGN_TOGRID);

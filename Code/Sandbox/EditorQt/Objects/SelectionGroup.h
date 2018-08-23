@@ -16,8 +16,6 @@ struct SDisplayContext;
 class SANDBOX_API CSelectionGroup : public ISelectionGroup
 {
 public:
-	CSelectionGroup();
-
 	//! Set name of selection.
 	void          SetName(const string& name) { m_name = name; }
 	//! Get name of selection.

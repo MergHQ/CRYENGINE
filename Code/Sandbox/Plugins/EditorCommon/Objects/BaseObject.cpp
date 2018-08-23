@@ -19,6 +19,7 @@
 #include "Objects/ObjectPropertyWidget.h"
 #include "Preferences/GeneralPreferences.h"
 #include "Preferences/GlobalHelperPreferences.h"
+#include "Preferences/SnappingPreferences.h"
 #include "Preferences/ViewportPreferences.h"
 #include "Serialization/Decorators/EditorActionButton.h"
 #include "Util/AffineParts.h"
@@ -30,7 +31,6 @@
 #include "IIconManager.h"
 #include "IObjectManager.h"
 #include "IUndoObject.h"
-#include "Grid.h"
 #include "QtUtil.h"
 #include "UsedResources.h"
 

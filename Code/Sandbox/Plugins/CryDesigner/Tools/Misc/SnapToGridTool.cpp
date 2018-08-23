@@ -2,11 +2,12 @@
 
 #include "StdAfx.h"
 #include "SnapToGridTool.h"
+
+#include "Core/PolygonDecomposer.h"
 #include "Tools/Select/SelectTool.h"
 #include "DesignerEditor.h"
-#include "Core/PolygonDecomposer.h"
-#include "Grid.h"
-#include "ViewManager.h"
+
+#include <Preferences/SnappingPreferences.h>
 
 namespace Designer
 {

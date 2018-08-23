@@ -2,30 +2,24 @@
 
 #include "StdAfx.h"
 #include "SelectionGroup.h"
-#include "Grid.h"
-#include "Viewport.h"
-#include "Objects/BaseObject.h"
-#include "Objects/DisplayContext.h"
-#include "GeomEntity.h"
-#include "PrefabObject.h"
-#include "BrushObject.h"
-#include "EntityObject.h"
-#include "SurfaceInfoPicker.h"
+
+#include "Objects/BrushObject.h"
+#include "Objects/EntityObject.h"
+#include "Objects/GeomEntity.h"
+#include "Objects/PrefabObject.h"
 #include "Prefabs/PrefabManager.h"
+#include "SurfaceInfoPicker.h"
 
-//////////////////////////////////////////////////////////////////////////
-CSelectionGroup::CSelectionGroup()
-{
+#include <Objects/BaseObject.h>
+#include <Objects/DisplayContext.h>
+#include <Preferences/SnappingPreferences.h>
+#include <Viewport.h>
 
-}
-
-//////////////////////////////////////////////////////////////////////////
 void CSelectionGroup::Reserve(size_t count)
 {
 	m_objects.reserve(count);
 }
 
-//////////////////////////////////////////////////////////////////////////
 void CSelectionGroup::AddObject(CBaseObject* obj)
 {
 	CRY_PROFILE_FUNCTION(PROFILE_EDITOR);
@@ -39,7 +33,6 @@ void CSelectionGroup::AddObject(CBaseObject* obj)
 	}
 }
 
-//////////////////////////////////////////////////////////////////////////
 void CSelectionGroup::RemoveObject(CBaseObject* obj)
 {
 	for (Objects::iterator it = m_objects.begin(); it != m_objects.end(); ++it)
@@ -55,7 +48,6 @@ void CSelectionGroup::RemoveObject(CBaseObject* obj)
 	}
 }
 
-//////////////////////////////////////////////////////////////////////////
 void CSelectionGroup::RemoveAll()
 {
 	m_objects.clear();
@@ -69,26 +61,22 @@ bool CSelectionGroup::IsContainObject(CBaseObject* obj) const
 	return (m_objectsSet.find(obj) != m_objectsSet.end());
 }
 
-//////////////////////////////////////////////////////////////////////////
 bool CSelectionGroup::IsEmpty() const
 {
 	return m_objects.empty();
 }
 
-//////////////////////////////////////////////////////////////////////////
 int CSelectionGroup::GetCount() const
 {
 	return m_objects.size();
 }
 
-//////////////////////////////////////////////////////////////////////////
 CBaseObject* CSelectionGroup::GetObject(int index) const
 {
 	ASSERT(index >= 0 && index < m_objects.size());
 	return m_objects[index];
 }
 
-//////////////////////////////////////////////////////////////////////////
 CBaseObject* CSelectionGroup::GetObjectByGuid(CryGUID guid) const
 {
 	for (size_t i = 0, count(m_objects.size()); i < count; ++i)
@@ -101,7 +89,6 @@ CBaseObject* CSelectionGroup::GetObjectByGuid(CryGUID guid) const
 	return nullptr;
 }
 
-//////////////////////////////////////////////////////////////////////////
 CBaseObject* CSelectionGroup::GetObjectByGuidInPrefab(CryGUID guid) const
 {
 	std::queue<CBaseObject*> groups;
@@ -138,7 +125,6 @@ CBaseObject* CSelectionGroup::GetObjectByGuidInPrefab(CryGUID guid) const
 	return nullptr;
 }
 
-//////////////////////////////////////////////////////////////////////////
 void CSelectionGroup::Copy(const CSelectionGroup& from)
 {
 	m_name = from.m_name;
@@ -147,7 +133,6 @@ void CSelectionGroup::Copy(const CSelectionGroup& from)
 	m_filtered = from.m_filtered;
 }
 
-//////////////////////////////////////////////////////////////////////////
 Vec3 CSelectionGroup::GetCenter() const
 {
 	Vec3 c(0, 0, 0);
@@ -190,7 +175,6 @@ bool CSelectionGroup::GetManipulatorMatrix(Matrix34& tm) const
 	return false;
 }
 
-//////////////////////////////////////////////////////////////////////////
 AABB CSelectionGroup::GetBounds() const
 {
 	AABB b;
@@ -205,7 +189,6 @@ AABB CSelectionGroup::GetBounds() const
 	return box;
 }
 
-//////////////////////////////////////////////////////////////////////////
 void CSelectionGroup::FilterParents() const
 {
 	if (!m_filtered.empty())
@@ -214,7 +197,6 @@ void CSelectionGroup::FilterParents() const
 	GetIEditorImpl()->GetObjectManager()->FilterParents(m_objects, m_filtered);
 }
 
-//////////////////////////////////////////////////////////////////////////
 void CSelectionGroup::FilterLinkedObjects() const
 {
 	if (!m_filtered.empty())
@@ -222,8 +204,7 @@ void CSelectionGroup::FilterLinkedObjects() const
 
 	GetIEditorImpl()->GetObjectManager()->FilterLinkedObjects(m_objects, m_filtered);
 }
-//////////////////////////////////////////////////////////////////////////
-//////////////////////////////////////////////////////////////////////////
+
 void CSelectionGroup::Move(const Vec3& offset, int moveFlags, const CPoint& point, bool bFromInitPos) const
 {
 	// [MichaelS - 17/3/2005] Removed this code from the three edit functions (move,
@@ -332,7 +313,6 @@ void CSelectionGroup::Move(const Vec3& offset, int moveFlags, const CPoint& poin
 	}
 }
 
-//////////////////////////////////////////////////////////////////////////
 void CSelectionGroup::Rotate(const Quat& qRot) const
 {
 	Matrix34 rotateTM = Matrix33(qRot);
@@ -340,7 +320,6 @@ void CSelectionGroup::Rotate(const Quat& qRot) const
 	Rotate(rotateTM);
 }
 
-//////////////////////////////////////////////////////////////////////////
 void CSelectionGroup::Rotate(const Ang3& angles) const
 {
 	//if (angles.x == 0 && angles.y == 0 && angles.z == 0)
@@ -351,7 +330,6 @@ void CSelectionGroup::Rotate(const Ang3& angles) const
 	Rotate(rotateTM);
 }
 
-//////////////////////////////////////////////////////////////////////////
 void CSelectionGroup::Rotate(const Matrix34& rotateTM) const
 {
 	// Rotate selection about selection center.
@@ -447,7 +425,6 @@ void CSelectionGroup::Rotate(const Matrix34& rotateTM) const
 	}
 }
 
-//////////////////////////////////////////////////////////////////////////
 void CSelectionGroup::Scale(const Vec3& scaleArg) const
 {
 	Vec3 scl = scaleArg;
@@ -520,7 +497,6 @@ void CSelectionGroup::SetScale(const Vec3& scale) const
 	Scale(relScale);
 }
 
-//////////////////////////////////////////////////////////////////////////
 void CSelectionGroup::Align() const
 {
 	for (int i = 0; i < GetFilteredCount(); ++i)
@@ -542,7 +518,6 @@ void CSelectionGroup::Align() const
 	}
 }
 
-//////////////////////////////////////////////////////////////////////////
 void CSelectionGroup::ResetTransformation() const
 {
 	FilterParents();
@@ -558,7 +533,6 @@ void CSelectionGroup::ResetTransformation() const
 	}
 }
 
-//////////////////////////////////////////////////////////////////////////
 static void RecursiveFlattenHierarchy(CBaseObject* pObj, CSelectionGroup& newGroup, bool flattenGroups)
 {
 	if (!pObj->IsKindOf(RUNTIME_CLASS(CGroup)))
@@ -585,7 +559,6 @@ static void RecursiveFlattenHierarchy(CBaseObject* pObj, CSelectionGroup& newGro
 	}
 }
 
-//////////////////////////////////////////////////////////////////////////
 void CSelectionGroup::FlattenHierarchy(CSelectionGroup& newGroup, bool flattenGroups)
 {
 	for (int i = 0; i < GetCount(); i++)
@@ -596,7 +569,6 @@ void CSelectionGroup::FlattenHierarchy(CSelectionGroup& newGroup, bool flattenGr
 	}
 }
 
-//////////////////////////////////////////////////////////////////////////
 void CSelectionGroup::SendEvent(ObjectEvent event) const
 {
 	for (int i = 0; i < m_objects.size(); i++)
@@ -629,7 +601,6 @@ void CSelectionGroup::SaveFilteredTransform() const
 	}
 }
 
-//////////////////////////////////////////////////////////////////////////
 void CSelectionGroup::ObjectModified() const
 {
 	//Object has been moved/scaled/rotated, call reset

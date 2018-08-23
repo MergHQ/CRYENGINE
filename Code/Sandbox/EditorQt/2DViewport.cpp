@@ -10,8 +10,8 @@
 
 #include <Controls/DynamicPopupMenu.h>
 #include <Gizmos/IGizmoManager.h>
+#include <Preferences/SnappingPreferences.h>
 #include <Preferences/ViewportPreferences.h>
-#include <Grid.h>
 #include <RenderLock.h>
 
 #include <CryRenderer/IRenderAuxGeom.h>

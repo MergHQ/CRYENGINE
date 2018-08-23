@@ -18,11 +18,11 @@
 #include <LevelEditor/Tools/PickObjectTool.h>
 #include <Objects/ObjectLoader.h>
 #include <Objects/InspectorWidgetCreator.h>
+#include <Preferences/SnappingPreferences.h>
 #include <Preferences/ViewportPreferences.h>
 #include <Serialization/Decorators/EditorActionButton.h>
 #include <Serialization/Decorators/EditToolButton.h>
 #include <Serialization/Decorators/EntityLink.h>
-#include <Grid.h>
 #include <Viewport.h>
 
 #include <Cry3DEngine/I3DEngine.h>

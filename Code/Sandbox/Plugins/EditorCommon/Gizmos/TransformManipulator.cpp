@@ -5,7 +5,7 @@
 
 #include "Gizmos/AxisHelper.h"
 #include "Gizmos/AxisHelperExtended.h"
-#include "Grid.h"
+#include "Preferences/SnappingPreferences.h"
 #include "IDisplayViewport.h"
 #include "QtUtil.h"
 
@@ -284,6 +284,7 @@ void CTransformManipulator::UpdateGizmos()
 		m_zxMovePlane.SetYVector(m_matrix.GetColumn0());
 
 		m_viewMoveGizmo.SetPosition(position);
+		m_viewMoveGizmo.SetRotationAxis(m_matrix.GetColumn0(), m_matrix.GetColumn1());
 	}
 	else if (editMode == CLevelEditorSharedState::EditMode::Rotate)
 	{
@@ -349,30 +350,32 @@ void CTransformManipulator::UpdateGizmos()
 
 void CTransformManipulator::UpdateTransform()
 {
+	// if we have a custom transform our matrix is already as it should be
+	if (m_bUseCustomTransform)
+	{
+		return;
+	}
+
 	CLevelEditorSharedState::CoordSystem coordSystem = GetIEditor()->GetLevelEditorSharedState()->GetCoordSystem();
 
-	// if we have a custom transform our matrix is already as it should be
-	if (!m_bUseCustomTransform)
+	Vec3 position;
+	// TODO: This should not be necessary, but many tools have a separate step for getting a transform and also getting
+	// the real position of the transform manipulator and then expecting the original matrix to be modified here.
+	// GetManipulatorMatrix() should already return a matrix with the correct position data.
+	m_owner->GetManipulatorPosition(position);
+	if (coordSystem == CLevelEditorSharedState::CoordSystem::Local || coordSystem == CLevelEditorSharedState::CoordSystem::Parent)
 	{
-		Vec3 position;
-		// TODO: This should not be necessary, but many tools have a separate step for getting a transform and also getting
-		// the real position of the transform manipulator and then expecting the original matrix to be modified here.
-		// GetManipulatorMatrix() should already return a matrix with the correct position data.
-		m_owner->GetManipulatorPosition(position);
-		if (coordSystem == CLevelEditorSharedState::CoordSystem::Local || coordSystem == CLevelEditorSharedState::CoordSystem::Parent)
-		{
-			// attempt to get local or parent matrix from gizmo owner. If none is provided, just use world matrix instead
-			if (!m_owner->GetManipulatorMatrix(m_matrix))
-			{
-				m_matrix.SetIdentity();
-			}
-		}
-		else if (coordSystem == CLevelEditorSharedState::CoordSystem::World)
+		// attempt to get local or parent matrix from gizmo owner. If none is provided, just use world matrix instead
+		if (!m_owner->GetManipulatorMatrix(m_matrix))
 		{
 			m_matrix.SetIdentity();
 		}
-		m_matrix.SetTranslation(position);
 	}
+	else if (coordSystem == CLevelEditorSharedState::CoordSystem::World)
+	{
+		m_matrix.SetIdentity();
+	}
+	m_matrix.SetTranslation(position);
 }
 
 void CTransformManipulator::Display(SDisplayContext& dc)
@@ -758,9 +761,8 @@ bool CTransformManipulator::MouseCallback(IDisplayViewport* view, EMouseEvent ev
 		HitContext hc(view);
 		hc.point2d = point;
 		view->ViewToWorldRay(point, hc.raySrc, hc.rayDir);
-		bool bHit = false;
-		EManipulatorMode manipulatorMode;
 
+		EManipulatorMode manipulatorMode;
 		HitTest(hc, manipulatorMode);
 	}
 

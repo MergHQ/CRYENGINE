@@ -8,8 +8,8 @@
 #include "LevelEditor/Tools/DeepSelection.h"
 #include "LevelEditor/Tools/SubObjectSelectionReferenceFrameCalculator.h"
 #include "Objects/ISelectionGroup.h"
+#include "Preferences/SnappingPreferences.h"
 #include "Preferences/ViewportPreferences.h"
-#include "Grid.h"
 #include "IUndoManager.h"
 #include "Viewport.h"
 
@@ -301,31 +301,31 @@ bool CObjectMode::MouseCallback(CViewport* view, EMouseEvent event, CPoint& poin
 	{
 	case eMouseLDown:
 		return OnLButtonDown(view, flags, point);
-		break;
+
 	case eMouseLUp:
 		return OnLButtonUp(view, flags, point);
-		break;
+
 	case eMouseLDblClick:
 		return OnLButtonDblClk(view, flags, point);
-		break;
+
 	case eMouseRDown:
 		return OnRButtonDown(view, flags, point);
-		break;
+
 	case eMouseRUp:
 		return OnRButtonUp(view, flags, point);
-		break;
+
 	case eMouseMove:
 	case eMouseEnter:
 		return OnMouseMove(view, flags, point);
-		break;
+
 	case eMouseMDown:
 		return OnMButtonDown(view, flags, point);
-		break;
+
 	case eMouseFocusLeave:
 	case eMouseLeave:
 		SetObjectCursor(view, 0, IObjectManager::ESelectOp::eNone);
 		return true;
-		break;
+
 	}
 	return false;
 }
@@ -354,10 +354,6 @@ bool CObjectMode::OnLButtonDown(CViewport* view, int nFlags, CPoint point)
 	{
 		HideMoveByFaceNormGizmo();
 	}
-
-	// CPointF ptMarker;
-	CPoint ptCoord;
-	int iCurSel = -1;
 
 	if (GetIEditor()->IsInGameMode())
 	{
@@ -408,10 +404,7 @@ bool CObjectMode::OnLButtonDown(CViewport* view, int nFlags, CPoint point)
 
 	bool bLockSelection = GetIEditor()->IsSelectionLocked();
 
-	int numUnselected = 0;
 	int numSelected = 0;
-
-	//	m_activeAxis = 0;
 
 	HitContext hitInfo(view);
 
@@ -438,7 +431,6 @@ bool CObjectMode::OnLButtonDown(CViewport* view, int nFlags, CPoint point)
 
 		m_pDeepSelection->SetMode(CDeepSelection::DSM_NONE);
 		hitInfo.pDeepSelection = 0;
-
 	}
 
 	if (view->HitTest(point, hitInfo))

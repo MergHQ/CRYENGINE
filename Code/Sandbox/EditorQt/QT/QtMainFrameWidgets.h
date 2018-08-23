@@ -1,33 +1,26 @@
 // Copyright 2001-2018 Crytek GmbH / Crytek Group. All rights reserved.
 #pragma once
 
-#include <QComboBox>
-#include <QMenu>
-#include <QVBoxLayout>
-#include <QPushButton>
-#include <QGroupBox>
-
-#include "QControls.h"
-#include "Commands/QCommandAction.h"
-
-#include "Grid.h"
-#include "IUndoManager.h"
-
 #include "AI/AIManager.h"
+#include "Commands/QCommandAction.h"
 #include "Objects/ObjectManager.h"
-
 #include "ViewManager.h"
-#include <Preferences/ViewportPreferences.h>
 
-//////////////////////////////////////////////////////////////////////////
+#include <Preferences/SnappingPreferences.h>
+#include <Preferences/ViewportPreferences.h>
+#include <QControls.h>
+
+#include <IUndoManager.h>
+
+#include <QComboBox>
+#include <QGroupBox>
+#include <QMenu>
+#include <QPushButton>
+#include <QVBoxLayout>
 
 class QSelectionMaskMenu : public QDynamicPopupMenu
 {
 	Q_OBJECT
-
-public:
-
-	QSelectionMaskMenu() {}
 
 protected:
 
@@ -267,7 +260,6 @@ protected:
 };
 
 //////////////////////////////////////////////////////////////////////////
-
 class QMNMRegenerationAgentTypeMenu : public QDynamicPopupMenu
 {
 	Q_OBJECT
@@ -329,5 +321,3 @@ protected:
 		}
 	}
 };
-
-//////////////////////////////////////////////////////////////////////////

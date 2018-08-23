@@ -2,19 +2,16 @@
 
 #include "StdAfx.h"
 #include "UniformScaleGizmo.h"
-#include "IDisplayViewport.h"
+
 #include "Gizmos/AxisHelper.h"
-#include "Grid.h"
+#include "Preferences/SnappingPreferences.h"
+#include "IDisplayViewport.h"
 
 #define HIT_RADIUS (8)
 
 CUniformScaleGizmo::CUniformScaleGizmo()
 	: m_color(1.0f, 1.0f, 0.0f)
 	, m_scale(1.0f)
-{
-}
-
-CUniformScaleGizmo::~CUniformScaleGizmo()
 {
 }
 

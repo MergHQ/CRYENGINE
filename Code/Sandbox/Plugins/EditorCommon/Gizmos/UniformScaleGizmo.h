@@ -4,10 +4,6 @@
 
 #include "Gizmo.h"
 
-struct SDisplayContext;
-struct HitContext;
-struct IDisplayViewport;
-
 //////////////////////////////////////////////////////////////////////////
 // CUniformScaleGizmo Gizmo.
 //
@@ -17,7 +13,6 @@ class EDITOR_COMMON_API CUniformScaleGizmo : public CGizmo
 {
 public:
 	CUniformScaleGizmo();
-	~CUniformScaleGizmo();
 
 	//! set position - should be world space
 	void         SetPosition(Vec3 pos);

@@ -2,10 +2,11 @@
 
 #include "StdAfx.h"
 #include "AxisTranslateGizmo.h"
-#include "IDisplayViewport.h"
-#include "Grid.h"
-#include "Objects/DisplayContext.h"
+
 #include "Gizmos/AxisHelper.h"
+#include "Objects/DisplayContext.h"
+#include "Preferences/SnappingPreferences.h"
+#include "IDisplayViewport.h"
 
 #define HIT_RADIUS (8)
 
@@ -15,20 +16,6 @@ CAxisTranslateGizmo::CAxisTranslateGizmo(bool bDrawArrowTip /* = true*/)
 	, m_offset(0.0f)
 	, m_bDrawArrowTip(bDrawArrowTip)
 {
-}
-
-CAxisTranslateGizmo::~CAxisTranslateGizmo()
-{
-}
-
-void CAxisTranslateGizmo::SetName(const char* sName)
-{
-	m_name = sName;
-}
-
-const char* CAxisTranslateGizmo::GetName()
-{
-	return m_name.c_str();
 }
 
 void CAxisTranslateGizmo::SetPosition(Vec3 pos)

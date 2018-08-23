@@ -26,7 +26,6 @@ class SANDBOX_API CPrefabItem : public CBaseLibraryItem
 	friend class CPrefabObject;
 public:
 	CPrefabItem();
-	~CPrefabItem();
 
 	virtual EDataBaseItemType GetType() const { return EDB_TYPE_PREFAB; }
 
