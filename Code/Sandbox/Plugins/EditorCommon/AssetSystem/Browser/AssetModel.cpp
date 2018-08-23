@@ -50,17 +50,17 @@ CItemModelAttribute s_FilterStringAttribute("_filter_string_", &Attributes::s_st
 void CAssetModel::AddPredefinedComputedColumns()
 {
 	static CItemModelAttribute fileExtensionAttribute("File extension", &Attributes::s_stringAttributeType, CItemModelAttribute::StartHidden);
-	AddColumn(&fileExtensionAttribute, [](const CAsset* pAsset, const CItemModelAttribute* pAttribute)
+	AddColumn(&fileExtensionAttribute, [](const CAsset* pAsset, const CItemModelAttribute* pAttribute, int role)
 	{
 		CRY_ASSERT(&fileExtensionAttribute == pAttribute);
-		return QVariant(QtUtil::ToQString(pAsset->GetType()->GetFileExtension()));
+		return role != Qt::DisplayRole ? QVariant() : QVariant(QtUtil::ToQString(pAsset->GetType()->GetFileExtension()));
 	});
 
 	static CItemModelAttribute filesCountAttribute("Files count", &Attributes::s_intAttributeType, CItemModelAttribute::StartHidden);
-	AddColumn(&filesCountAttribute, [](const CAsset* pAsset, const CItemModelAttribute* pAttribute)
+	AddColumn(&filesCountAttribute, [](const CAsset* pAsset, const CItemModelAttribute* pAttribute, int role)
 	{
 		CRY_ASSERT(&filesCountAttribute == pAttribute);
-		return QVariant(pAsset->GetFilesCount());
+		return role != Qt::DisplayRole ? QVariant() : QVariant(pAsset->GetFilesCount());
 	});
 }
 
@@ -71,8 +71,12 @@ void CAssetModel::BuildDetailAttributes()
 
 	for (CAssetType* pAssetType : CAssetManager::GetInstance()->GetAssetTypes())
 	{
-		static const auto getDetailValue = [](const CAsset* pAsset, const CItemModelAttribute* pAttribute)
+		static const auto getDetailValue = [](const CAsset* pAsset, const CItemModelAttribute* pAttribute, int role)
 		{
+			if (role != Qt::DisplayRole)
+			{
+				return QVariant();
+			}
 			const CAssetType* const pAssetType = pAsset->GetType();
 			return  pAssetType->GetDetailValue(pAsset, pAttribute);
 		};
@@ -203,7 +207,7 @@ int CAssetModel::GetColumnCount()
 	return eAssetColumns_Details + GetInstance()->m_detailAttributes.size();
 }
 
-bool CAssetModel::AddColumn(const CItemModelAttribute* pAttribute, std::function<QVariant(const CAsset* pAsset, const CItemModelAttribute* pAttribute)> getValueFn)
+bool CAssetModel::AddColumn(const CItemModelAttribute* pAttribute, std::function<QVariant(const CAsset* pAsset, const CItemModelAttribute* pAttribute, int role)> getValueFn)
 {
 	if (std::any_of(m_detailAttributes.begin(), m_detailAttributes.end(), [pAttribute](const SDetailAttribute& attrib)
 	{
@@ -402,19 +406,15 @@ QVariant CAssetModel::data(const QModelIndex& index, int role) const
 		break;
 	}
 
-	// Detail columns.
-	if (role == Qt::DisplayRole)
+	const int detailColumn = index.column() - (int)eAssetColumns_Details;
+	if (detailColumn >= 0 && detailColumn < m_detailAttributes.size())
 	{
-		const int detailColumn = index.column() - (int)eAssetColumns_Details;
-		if (detailColumn >= 0 && detailColumn < m_detailAttributes.size())
-		{
-			QVariant value = m_detailAttributes[detailColumn].getValueFn(pAsset, m_detailAttributes[detailColumn].pAttribute);
+		QVariant value = m_detailAttributes[detailColumn].getValueFn(pAsset, m_detailAttributes[detailColumn].pAttribute, role);
 
-			// By returning a string, we ensure proper sorting of assets where this detail does not apply.
-			// Note that invalid variants (QVariant()) have unnatural sorting characteristics.
-			// For example, an invalid variant is greater than any variant storing an int.
-			return value.isValid() ? value : QVariant(QString());  
-		}
+		// By returning a string, we ensure proper sorting of assets where this detail does not apply.
+		// Note that invalid variants (QVariant()) have unnatural sorting characteristics.
+		// For example, an invalid variant is greater than any variant storing an int.
+		return value.isValid() ? value : QVariant(QString());  
 	}
 
 	return m_favHelper.data(index, role);
@@ -691,7 +691,7 @@ std::vector<CAsset*> CAssetModel::GetAssets(const CDragDropData& data)
 	return assets;
 }
 
-CAssetModel::CAutoRegisterColumn::CAutoRegisterColumn(const CItemModelAttribute* pAttribute, std::function<QVariant(const CAsset* pAsset, const CItemModelAttribute* pAttribute)> computeFn)
+CAssetModel::CAutoRegisterColumn::CAutoRegisterColumn(const CItemModelAttribute* pAttribute, std::function<QVariant(const CAsset* pAsset, const CItemModelAttribute* pAttribute, int role)> computeFn)
 	: CAutoRegister([pAttribute, computeFn = std::move(computeFn)]()
 {
 	CAssetManager::GetInstance()->GetAssetModel()->AddColumn(pAttribute, computeFn);

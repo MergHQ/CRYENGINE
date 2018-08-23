@@ -11,7 +11,8 @@
 		"engine": ".",
 		"plugins": []
 	},
-	"console_variables": [
+	"console_variables":
+	[
 		{ "name": "ca_useIMG_CAF", "value": "0" },
 		{ "name": "sys_ime", "value": "1" },
 		{ "name": "sys_target_platforms", "value": "pc,ps4,xboxone,linux" },
@@ -40,6 +41,7 @@
 		{ "name": "sys_vr_support", "value": " 0" },
 		{ "name": "sys_asserts", "value": " 0" },
 		{ "name": "r_ShaderTarget", "value": "D3D11"},
-		{ "name": "r_driver", "value": "DX11" }
+		{ "name": "r_driver", "value": "DX11" },
+		{ "name": "r_ShadersOrbisFiltering", "value": "LC" }
 	]
 }

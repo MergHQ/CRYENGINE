@@ -439,24 +439,24 @@ QString AssetStatusToString(int status)
 
 void AddAssetsStatusColumn()
 {
-	CAssetModel::GetInstance()->AddColumn(&g_vcsStatusAttribute, [](const CAsset* pAsset, const CItemModelAttribute* pAttribute)
+	CAssetModel::GetInstance()->AddColumn(&g_vcsStatusAttribute, [](const CAsset* pAsset, const CItemModelAttribute* pAttribute, int role)
 	{
-		if (!CVersionControl::IsAvailable())
+		if (!CVersionControl::IsAvailable() || role != Qt::DisplayRole)
 		{
-			return QString();
+			return QVariant();
 		}
 
-		return AssetStatusToString(CAssetsVCSStatusProvider::GetStatus(*pAsset));
+		return QVariant(AssetStatusToString(CAssetsVCSStatusProvider::GetStatus(*pAsset)));
 	});
 
-	CAssetModel::GetInstance()->AddColumn(&g_vcsStatusMaskAttribute, [](const CAsset* pAsset, const CItemModelAttribute* pAttribute)
+	CAssetModel::GetInstance()->AddColumn(&g_vcsStatusMaskAttribute, [](const CAsset* pAsset, const CItemModelAttribute* pAttribute, int role)
 	{
-		if (!CVersionControl::IsAvailable())
+		if (!CVersionControl::IsAvailable() || role != Qt::DisplayRole)
 		{
-			return 0;
+			return QVariant();
 		}
 
-		return CAssetsVCSStatusProvider::GetStatus(*pAsset);
+		return QVariant(CAssetsVCSStatusProvider::GetStatus(*pAsset));
 	});
 }
 
