@@ -51,7 +51,7 @@ class EDITOR_COMMON_API CAssetModel : public QAbstractItemModel
 	{
 		const CItemModelAttribute* pAttribute;
 		std::vector<CAssetType*>   assetTypes; //!< All asset types sharing attribute \p pAttribute.
-		std::function<QVariant(const CAsset* pAsset, const CItemModelAttribute* pDetail)> getValueFn;
+		std::function<QVariant(const CAsset* pAsset, const CItemModelAttribute* pDetail, int role)> getValueFn;
 	};
 
 public:
@@ -69,7 +69,7 @@ public:
 	class CAutoRegisterColumn : public CAutoRegister<CAutoRegisterColumn>
 	{
 	public:
-		CAutoRegisterColumn(const CItemModelAttribute* pAttribute, std::function<QVariant(const CAsset* pAsset, const CItemModelAttribute* pAttribute)> getValueFn);
+		CAutoRegisterColumn(const CItemModelAttribute* pAttribute, std::function<QVariant(const CAsset* pAsset, const CItemModelAttribute* pAttribute, int role)> getValueFn);
 	};
 
 	CAsset*                           ToAsset(const QModelIndex& index);
@@ -81,7 +81,7 @@ public:
 	static const CItemModelAttribute* GetColumnAttribute(int column);
 	static QVariant                   GetHeaderData(int section, Qt::Orientation orientation, int role);
 	static int                        GetColumnCount();
-	bool                              AddColumn(const CItemModelAttribute* pAttribute, std::function<QVariant(const CAsset* pAsset, const CItemModelAttribute* pAttribute)> getValueFn);
+	bool                              AddColumn(const CItemModelAttribute* pAttribute, std::function<QVariant(const CAsset* pAsset, const CItemModelAttribute* pAttribute, int role)> getValueFn);
 
 	//! Adds icons providers to the list.
 	//! This icon providers are called in order to get additional icons that need to be displayed in thumbnail view
