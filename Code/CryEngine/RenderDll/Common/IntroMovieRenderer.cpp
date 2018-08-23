@@ -141,8 +141,8 @@ void CIntroMovieRenderer::UpdateViewport()
 	int videoWidth (pPlayer->GetWidth());
 	int videoHeight(pPlayer->GetHeight());
 
-	const int screenWidth (gEnv->pRenderer->GetWidth ());
-	const int screenHeight(gEnv->pRenderer->GetHeight());
+	const int screenWidth (gEnv->pRenderer->GetOverlayWidth ());
+	const int screenHeight(gEnv->pRenderer->GetOverlayHeight());
 
 	const float pixelAR = gEnv->pRenderer->GetPixelAspectRatio();
 

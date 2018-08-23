@@ -118,8 +118,8 @@ void CThreadProfiler::Render()
 	if (!m_pSampler)
 		return;
 
-	int width = gEnv->pRenderer->GetWidth();
-	int height = gEnv->pRenderer->GetHeight();
+	int width = gEnv->pRenderer->GetOverlayWidth();
+	int height = gEnv->pRenderer->GetOverlayHeight();
 	gEnv->pRenderer->GetIRenderAuxGeom()->SetOrthographicProjection(true, 0.0f, static_cast<float>(width), static_cast<float>(height), 0.0f);
 
 	width -= 20; // End of thread graph.

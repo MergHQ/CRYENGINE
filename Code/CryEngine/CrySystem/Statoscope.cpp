@@ -2123,15 +2123,12 @@ void CStatoscope::CloseTelemetryStream()
 
 void CStatoscope::PrepareScreenShot()
 {
-	const int widthDelta  = m_lastScreenWidth  - gEnv->pRenderer->GetWidth();
-	const int heightDelta = m_lastScreenHeight - gEnv->pRenderer->GetHeight();
+	const int widthDelta  = m_lastScreenWidth  - gEnv->pRenderer->GetOverlayWidth();
+	const int heightDelta = m_lastScreenHeight - gEnv->pRenderer->GetOverlayHeight();
 
-	m_lastScreenWidth  = gEnv->pRenderer->GetWidth();
-	m_lastScreenHeight = gEnv->pRenderer->GetHeight();
-
-	CRY_ASSERT(gEnv->pRenderer->GetWidth () == gEnv->pRenderer->GetOverlayWidth ());
-	CRY_ASSERT(gEnv->pRenderer->GetHeight() == gEnv->pRenderer->GetOverlayHeight());
-
+	m_lastScreenWidth  = gEnv->pRenderer->GetOverlayWidth();
+	m_lastScreenHeight = gEnv->pRenderer->GetOverlayHeight();
+	
 	const int shrunkenWidthNotAligned = OnGetFrameWidth();
 	const int shrunkenWidth = shrunkenWidthNotAligned - (shrunkenWidthNotAligned % 4);
 	const int shrunkenHeight = OnGetFrameHeight();

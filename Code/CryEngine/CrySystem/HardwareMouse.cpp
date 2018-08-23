@@ -126,7 +126,7 @@ CHardwareMouse::CHardwareMouse(bool bVisibleByDefault)
 
 #if !CRY_PLATFORM_WINDOWS
 	if (gEnv->pRenderer)
-		SetHardwareMousePosition(gEnv->pRenderer->GetWidth() * 0.5f, gEnv->pRenderer->GetHeight() * 0.5f);
+		SetHardwareMousePosition(gEnv->pRenderer->GetOverlayWidth() * 0.5f, gEnv->pRenderer->GetOverlayHeight() * 0.5f);
 	else
 		SetHardwareMousePosition(0.0f, 0.0f);
 #endif
