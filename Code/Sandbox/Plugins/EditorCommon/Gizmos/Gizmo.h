@@ -4,9 +4,9 @@
 
 #include "Objects/BaseObject.h"
 
-struct SDisplayContext;
 struct HitContext;
 struct IDisplayViewport;
+struct SDisplayContext;
 
 enum EGizmoFlags
 {
@@ -25,10 +25,6 @@ class EDITOR_COMMON_API CGizmo : public _i_reference_target_t
 {
 public:
 	CGizmo();
-	virtual ~CGizmo();
-
-	virtual void        SetName(const char* sName) {}
-	virtual const char* GetName()                  { return ""; }
 
 	//! Set gizmo object flags.
 	void SetFlag(EGizmoFlags flag)       { m_flags |= flag; }

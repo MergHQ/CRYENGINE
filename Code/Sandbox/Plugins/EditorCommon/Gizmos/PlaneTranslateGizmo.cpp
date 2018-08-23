@@ -2,19 +2,16 @@
 
 #include "StdAfx.h"
 #include "PlaneTranslateGizmo.h"
-#include "IDisplayViewport.h"
-#include "Grid.h"
+
+#include "Preferences/SnappingPreferences.h"
 #include "Gizmos/AxisHelper.h"
+#include "IDisplayViewport.h"
 
 CPlaneTranslateGizmo::CPlaneTranslateGizmo()
 	: m_color(1.0f, 1.0f, 0.0f)
 	, m_scale(1.0f)
 	, m_xOffset(0.0f)
 	, m_yOffset(0.0f)
-{
-}
-
-CPlaneTranslateGizmo::~CPlaneTranslateGizmo()
 {
 }
 
@@ -137,10 +134,7 @@ bool CPlaneTranslateGizmo::MouseCallback(IDisplayViewport* view, EMouseEvent eve
 
 				// find the world space vector on the plane
 				m_interactionOffset = raySrc + fac * rayDir - m_initOffset;
-				if (gSnappingPreferences.gridSnappingEnabled())
-				{
-					m_interactionOffset = gSnappingPreferences.Snap(m_interactionOffset);
-				}
+				m_interactionOffset = gSnappingPreferences.SnapPlane(m_interactionOffset, m_xVector, m_yVector);
 				signalDragging(view, this, m_interactionOffset, point, nFlags);
 				break;
 			}

@@ -4,10 +4,6 @@
 
 #include "Gizmo.h"
 
-struct HitContext;
-struct IDisplayViewport;
-struct SDisplayContext;
-
 //////////////////////////////////////////////////////////////////////////
 // Axis Gizmo.
 //
@@ -17,10 +13,6 @@ class EDITOR_COMMON_API CAxisTranslateGizmo : public CGizmo
 {
 public:
 	CAxisTranslateGizmo(bool bDrawArrowTip = true);
-	~CAxisTranslateGizmo();
-
-	virtual void        SetName(const char* sName) override;
-	virtual const char* GetName() override;
 
 	//! set position - should be world space
 	void         SetPosition(Vec3 pos);
@@ -57,8 +49,6 @@ private:
 	Vec3   m_position;
 	Vec3   m_direction;
 	Vec3   m_color;
-
-	string m_name;
 
 	//! custom scale of widget - final size is calculated from z-distance of widget to camera and global parameters
 	float m_scale;

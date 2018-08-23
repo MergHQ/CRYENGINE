@@ -27,10 +27,6 @@ CTrackGizmo::CTrackGizmo()
 	m_matrix.SetIdentity();
 }
 
-CTrackGizmo::~CTrackGizmo()
-{
-}
-
 void CTrackGizmo::SetMatrix(const Matrix34& tm)
 {
 	m_matrix = tm;

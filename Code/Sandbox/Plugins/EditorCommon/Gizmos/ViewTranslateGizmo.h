@@ -4,10 +4,6 @@
 
 #include "Gizmo.h"
 
-struct SDisplayContext;
-struct HitContext;
-struct IDisplayViewport;
-
 //////////////////////////////////////////////////////////////////////////
 // CViewTranslateGizmo Gizmo.
 //
@@ -17,10 +13,13 @@ class EDITOR_COMMON_API CViewTranslateGizmo : public CGizmo
 {
 public:
 	CViewTranslateGizmo();
-	~CViewTranslateGizmo();
 
 	//! set position - should be world space
 	void         SetPosition(Vec3 pos);
+
+	//! Set axis required for translation with snapping
+	void         SetRotationAxis(const Vec3& axisX, const Vec3& axisY);
+
 	//! set rgb color of the gizmo
 	void         SetColor(Vec3 color);
 	//! set unique scale of the gizmo
@@ -45,6 +44,8 @@ public:
 private:
 	// position and vectors defining the plane in world space
 	Vec3 m_position;
+	Vec3 m_rotAxisX;
+	Vec3 m_rotAxisY;
 	Vec3 m_color;
 
 	//! custom scale of widget - final size is calculated from z-distance of widget to camera and global parameters

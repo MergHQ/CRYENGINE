@@ -1,19 +1,16 @@
 // Copyright 2001-2018 Crytek GmbH / Crytek Group. All rights reserved.
-#include <StdAfx.h>
-
-// EditorCommon
-#include <ICommandManager.h>
-#include <IUndoObject.h>
-#include <Grid.h>
-
-// Sandbox
-#include "IEditorImpl.h"
-#include "Objects/ObjectManager.h"
-#include "Objects/ObjectLayerManager.h"
+#include "StdAfx.h"
 
 #include "Objects/Group.h"
+#include "Objects/ObjectManager.h"
+#include "Objects/ObjectLayerManager.h"
 #include "Objects/PrefabObject.h"
 #include "Prefabs/PrefabManager.h"
+#include "IEditorImpl.h"
+
+#include <Preferences/SnappingPreferences.h>
+#include <ICommandManager.h>
+#include <IUndoObject.h>
 
 namespace Private_EditorCommands
 {

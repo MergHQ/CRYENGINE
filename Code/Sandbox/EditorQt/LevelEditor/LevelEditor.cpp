@@ -4,29 +4,28 @@
 
 // LevelEditor
 #include "LevelAssetType.h"
+#include "LevelExplorer.h"
 #include "LevelFileUtils.h"
 #include "NewLevelDialog.h"
 #include "OpenLevelDialog.h"
 #include "SaveLevelDialog.h"
+#include "TagLocations.h"
 
 // EditorQt
 #include "Commands/QCommandAction.h"
 #include "EditMode/VertexSnappingModeTool.h"
 #include "QT/QtMainFrame.h"
 #include "QT/QToolTabManager.h"
-#include "Util/Clipboard.h"
 #include "AlignTool.h"
 #include "CryEdit.h"
 #include "CryEditDoc.h"
 #include "GameEngine.h"
 #include "GameExporter.h"
-#include "Grid.h"
 #include "IEditorImpl.h"
-#include "LevelExplorer.h"
 #include "LevelIndependentFileMan.h"
-#include "QtViewPane.h"
-#include "TagLocations.h"
 #include "ViewManager.h"
+
+#include <Util/Clipboard.h>
 
 // EditorCommon
 #include <AssetSystem/AssetManager.h>
@@ -41,10 +40,12 @@
 #include <Notifications/NotificationCenterTrayWidget.h>
 #include <Objects/ObjectLoader.h>
 #include <Preferences/GeneralPreferences.h>
+#include <Preferences/SnappingPreferences.h>
 #include <Util/FileUtil.h>
 #include <EditorStyleHelper.h>
 #include <FilePathUtil.h>
 #include <QtUtil.h>
+#include <QtViewPane.h>
 #include <ThreadingUtils.h>
 
 // CryCommon

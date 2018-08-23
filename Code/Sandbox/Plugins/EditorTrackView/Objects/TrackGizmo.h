@@ -4,7 +4,6 @@
 
 #include "Gizmos/Gizmo.h"
 
-struct SDisplayContext;
 class CTrackViewAnimNode;
 class CTrackViewTrack;
 
@@ -13,7 +12,6 @@ class CTrackGizmo : public CGizmo
 {
 public:
 	CTrackGizmo();
-	~CTrackGizmo();
 
 	// Overrides from CGizmo
 	virtual void GetWorldBounds(AABB& bbox);

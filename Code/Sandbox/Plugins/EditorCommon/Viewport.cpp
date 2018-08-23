@@ -12,11 +12,11 @@
 #include "Include/IRenderListener.h"
 #include "LevelEditor/Tools/EditTool.h"
 #include "Objects/BaseObject.h"
+#include "Preferences/SnappingPreferences.h"
 #include "Preferences/ViewportPreferences.h"
 #include "Util/Math.h"
 #include "IObjectManager.h"
 #include "DragDrop.h"
-#include "Grid.h"
 #include "QtUtil.h"
 
 #include <IViewportManager.h>
@@ -52,8 +52,8 @@ CViewport::CViewport()
 	, m_viewWidget{nullptr}
 {
 	m_constructionPlane.SetPlane(Vec3(0.0f, 0.0f, 1.0f), Vec3(0.0f, 0.0f, 0.0f));
-	m_constructionPlaneAxisX.Set(0, 0, 0);
-	m_constructionPlaneAxisY.Set(0, 0, 0);
+	m_constructionPlaneAxisX.Set(1, 0, 0);
+	m_constructionPlaneAxisY.Set(0, 1, 0);
 
 	// TODO: move to common cursor library instead of loading per viewport
 	m_hCursor[STD_CURSOR_DEFAULT] = QCursor(Qt::ArrowCursor);
@@ -617,7 +617,7 @@ float CViewport::GetZoomFactor() const
 
 Vec3 CViewport::SnapToGrid(Vec3 vec)
 {
-	return gSnappingPreferences.Snap(vec, m_fGridZoom);
+	return gSnappingPreferences.Snap3D(vec, m_constructionPlaneAxisX, m_constructionPlaneAxisY, m_fGridZoom);
 }
 
 float CViewport::GetGridStep() const

@@ -1,5 +1,5 @@
 // Copyright 2001-2018 Crytek GmbH / Crytek Group. All rights reserved.
-#include <StdAfx.h>
+#include "StdAfx.h"
 #include "LevelEditorViewport.h"
 
 #include "AI/AIManager.h"
@@ -20,9 +20,9 @@
 #include <Gizmos/Gizmo.h>
 #include <LevelEditor/Tools/EditTool.h>
 #include <Objects/BaseObject.h>
+#include <Preferences/SnappingPreferences.h>
 #include <Preferences/ViewportPreferences.h>
 #include <DragDrop.h>
-#include <Grid.h>
 #include <ILevelEditor.h>
 #include <IObjectManager.h>
 #include <IUndoManager.h>

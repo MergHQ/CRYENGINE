@@ -5,9 +5,6 @@
 #include "Gizmo.h"
 #include <memory>
 
-struct SDisplayContext;
-struct HitContext;
-struct IDisplayViewport;
 class CInteractionMode;
 
 //////////////////////////////////////////////////////////////////////////

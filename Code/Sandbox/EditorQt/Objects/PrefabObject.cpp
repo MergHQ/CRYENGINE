@@ -21,10 +21,10 @@
 #include <LevelEditor/Tools/PickObjectTool.h>
 #include <Objects/ObjectLoader.h>
 #include <Objects/InspectorWidgetCreator.h>
+#include <Preferences/SnappingPreferences.h>
 #include <Preferences/ViewportPreferences.h>
 #include <Serialization/Decorators/EditorActionButton.h>
 #include <Serialization/Decorators/EditToolButton.h>
-#include <Grid.h>
 #include <IDataBaseManager.h>
 #include <IUndoManager.h>
 #include <Viewport.h>
@@ -270,7 +270,7 @@ void CPrefabObject::CreateFrom(std::vector<CBaseObject*>& objects, Vec3 center, 
 	}
 
 	// Snap center to grid.
-	pPrefab->SetPos(gSnappingPreferences.Snap(center));
+	pPrefab->SetPos(gSnappingPreferences.Snap3D(center));
 	if (!pPrefab->CreateFrom(objects))
 	{
 		undo.Cancel();

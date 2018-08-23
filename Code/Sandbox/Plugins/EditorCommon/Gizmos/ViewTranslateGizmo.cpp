@@ -2,25 +2,30 @@
 
 #include "StdAfx.h"
 #include "ViewTranslateGizmo.h"
-#include "IDisplayViewport.h"
-#include "Grid.h"
+
 #include "Gizmos/AxisHelper.h"
+#include "Preferences/SnappingPreferences.h"
+#include "IDisplayViewport.h"
 
 #define HIT_RADIUS (8)
 
 CViewTranslateGizmo::CViewTranslateGizmo()
 	: m_color(1.0f, 1.0f, 1.0f)
 	, m_scale(1.0f)
-{
-}
-
-CViewTranslateGizmo::~CViewTranslateGizmo()
-{
+	, m_rotAxisX(1, 0, 0)
+	, m_rotAxisY(0, 1, 0)
+{ 
 }
 
 void CViewTranslateGizmo::SetPosition(Vec3 pos)
 {
 	m_position = pos;
+}
+
+void CViewTranslateGizmo::SetRotationAxis(const Vec3& axisX, const Vec3& axisY)
+{
+	m_rotAxisX = axisX;
+	m_rotAxisY = axisY;
 }
 
 void CViewTranslateGizmo::SetColor(Vec3 color)
@@ -59,7 +64,6 @@ void CViewTranslateGizmo::Display(SDisplayContext& dc)
 		dc.SetColor(m_color);
 	}
 
-	// construct a view aligned matrix
 	uint32 curstate = dc.GetState();
 	dc.DepthTestOff();
 	dc.DrawBall(position, scale);
@@ -80,10 +84,8 @@ bool CViewTranslateGizmo::MouseCallback(IDisplayViewport* view, EMouseEvent even
 				view->ViewToWorldRay(point, raySrc, rayDir);
 
 				m_interactionOffset = raySrc + ((m_initPosition - raySrc) * vDir) / (vDir * rayDir) * rayDir - m_initPosition - m_initOffset;
-				if (gSnappingPreferences.gridSnappingEnabled())
-				{
-					m_interactionOffset = gSnappingPreferences.Snap(m_interactionOffset);
-				}
+				m_interactionOffset = gSnappingPreferences.Snap3D(m_interactionOffset, m_rotAxisX, m_rotAxisY);
+
 				signalDragging(view, this, m_interactionOffset, point, nFlags);
 				break;
 			}

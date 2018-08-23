@@ -13,10 +13,10 @@
 #include <Objects/DisplayContext.h>
 #include <Objects/InspectorWidgetCreator.h>
 #include <Objects/ObjectLoader.h>
+#include <Preferences/SnappingPreferences.h>
 #include <Preferences/ViewportPreferences.h>
 #include <Serialization/Decorators/EditorActionButton.h>
 #include <Serialization/Decorators/EditToolButton.h>
-#include <Grid.h>
 #include <Viewport.h>
 
 #include <algorithm>
@@ -445,7 +445,7 @@ void CGroup::CreateFrom(std::vector<CBaseObject*>& objects, Vec3 center)
 	}
 
 	// Snap center to grid.
-	group->SetPos(gSnappingPreferences.Snap(center));
+	group->SetPos(gSnappingPreferences.Snap3D(center));
 
 	if (!group->CreateFrom(objects))
 	{

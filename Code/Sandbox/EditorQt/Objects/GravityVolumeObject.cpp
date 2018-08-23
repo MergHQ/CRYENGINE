@@ -2,20 +2,23 @@
 
 #include "StdAfx.h"
 #include "GravityVolumeObject.h"
-#include "Viewport.h"
-#include "Util\Triangulate.h"
-#include "Material\Material.h"
-#include "LevelEditor/Tools/EditTool.h"
-#include "Objects/DisplayContext.h"
-#include "Objects/ObjectLoader.h"
-#include "Objects/InspectorWidgetCreator.h"
-#include "Util/MFCUtil.h"
-#include <Cry3DEngine/I3DEngine.h>
-#include "Serialization/Decorators/EditToolButton.h"
-#include "Gizmos/ITransformManipulator.h"
-#include "Gizmos/IGizmoManager.h"
 
-#include <Grid.h>
+#include "Material/Material.h"
+#include "Util/Triangulate.h"
+
+#include <Util/MFCUtil.h>
+
+#include <Gizmos/IGizmoManager.h>
+#include <Gizmos/ITransformManipulator.h>
+#include <LevelEditor/Tools/EditTool.h>
+#include <Objects/DisplayContext.h>
+#include <Objects/InspectorWidgetCreator.h>
+#include <Objects/ObjectLoader.h>
+#include <Preferences/SnappingPreferences.h>
+#include <Serialization/Decorators/EditToolButton.h>
+#include <Viewport.h>
+
+#include <Cry3DEngine/I3DEngine.h>
 
 class CEditGravityVolumeTool : public CEditTool, public ITransformManipulatorOwner
 {

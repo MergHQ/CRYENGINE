@@ -2,12 +2,14 @@
 
 #include "StdAfx.h"
 #include "AxisRotateGizmo.h"
-#include "IDisplayViewport.h"
-#include "Grid.h"
-#include "CryMath/Cry_Math.h"
-#include "Objects/DisplayContext.h"
+
 #include "Gizmos/AxisHelper.h"
+#include "Objects/DisplayContext.h"
+#include "Preferences/SnappingPreferences.h"
+#include "IDisplayViewport.h"
 #include "QtUtil.h"
+
+#include <CryMath/Cry_Math.h>
 
 ////////////////////////////////////////////////////
 // interaction modes for rotation gizmo

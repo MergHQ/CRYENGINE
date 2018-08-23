@@ -1,140 +1,46 @@
 // Copyright 2001-2018 Crytek GmbH / Crytek Group. All rights reserved.
 
 #include "StdAfx.h"
-
-#include <gdiplus.h>
-#pragma comment (lib, "Gdiplus.lib")
-
-#include <CryCore/CryCustomTypes.h>
 #include "CryEdit.h"
 
-#include "GameExporter.h"
-#include "GameResourcesExporter.h"
-
-#include "CryEditDoc.h"
-#include "Dialogs/QStringDialog.h"
-#include "Dialogs/ToolbarDialog.h"
-#include "LinkTool.h"
-#include "AlignTool.h"
-#include "MissionScript.h"
 #include "LevelEditor/NewLevelDialog.h"
-#include "LevelEditor/LevelEditorViewport.h"
-#include "PhysTool.h"
-#include "Vegetation/VegetationMap.h"
-#include <Preferences/GeneralPreferences.h>
-#include "MainThreadWorker.h"
-#include "Terrain/TerrainManager.h"
-#include "Terrain/Heightmap.h"
-
-#include "ProcessInfo.h"
-
-#include "ViewManager.h"
-#include "ModelViewport.h"
-#include "RenderViewport.h"
-#include <Preferences/ViewportPreferences.h>
-
-#include "PluginManager.h"
-
+#include "Mannequin/MannequinChangeMonitor.h"
 #include "Objects/Group.h"
-#include "Objects/CameraObject.h"
-#include "Objects/EntityScript.h"
-#include "Objects/ObjectLoader.h"
-#include "Objects/PrefabObject.h"
-#include "Prefabs/PrefabManager.h"
-
-#include "IEditorImpl.h"
-#include "SplashScreen.h"
-#include "Grid.h"
-
-#include "ObjectCloneTool.h"
-
-#include "Mission.h"
-#include "MissionSelectDialog.h"
-#include "IUndoManager.h"
-#include "MissionProps.h"
-
-#include "GameEngine.h"
-
-#include "AI\AIManager.h"
-
-#include "Geometry\EdMesh.h"
-
-#include <io.h>
-#include <CryScriptSystem/IScriptSystem.h>
-#include <CryEntitySystem/IEntitySystem.h>
-#include <Cry3DEngine/I3DEngine.h>
-#include <CrySystem/ITimer.h>
-#include <CryGame/IGame.h>
-#include <CryGame/IGameFramework.h>
-#include <CryAnimation/ICryAnimation.h>
-#include <CryPhysics/IPhysics.h>
-#include <IGameRulesSystem.h>
-#include <IBackgroundScheduleManager.h>
-#include <CrySandbox/IEditorGame.h>
-#include "IDevManager.h"
-
-#include "CryEdit.h"
-#include "ShaderCache.h"
-#include "FilePathUtil.h"
-
-#include <CryString/StringUtils.h>
-
-#include <CrySandbox/ScopedVariableSetter.h>
-
+#include "QT/QtMainFrame.h"
+#include "Terrain/Heightmap.h"
+#include "Terrain/TerrainManager.h"
+#include "Util/BoostPythonHelpers.h"
 #include "Util/EditorAutoLevelLoadTest.h"
 #include "Util/Ruler.h"
-#include "Util/IndexedFiles.h"
 
-#include "ResourceCompilerHelpers.h"
-
-#include "Mannequin/MannequinChangeMonitor.h"
-
-#include "Util/BoostPythonHelpers.h"
-#include "Export/ExportManager.h"
-
+#include "CryEditDoc.h"
+#include "GameEngine.h"
+#include "GameExporter.h"
+#include "GameResourcesExporter.h"
+#include "IBackgroundScheduleManager.h"
+#include "IDevManager.h"
+#include "IEditorImpl.h"
 #include "LevelIndependentFileMan.h"
-#include "Objects/ObjectLayerManager.h"
-#include "Dialogs/DuplicatedObjectsHandlerDlg.h"
-#include "IconManager.h"
-#include "UI/UIManager.h"
-#include "EditMode/VertexSnappingModeTool.h"
+#include "MainThreadWorker.h"
+#include "Mission.h"
+#include "ObjectCloneTool.h"
+#include "ProcessInfo.h"
+#include "ResourceCompilerHelpers.h"
+#include "SplashScreen.h"
+#include "ViewManager.h"
 
-#include <CrySerialization/IArchive.h>
-#include <CrySerialization/Math.h>
-#include <CrySerialization/STL.h>
-#include <CrySerialization/IArchiveHost.h>
-#include <CryCore/Platform/WindowsUtils.h>
-
-#include <CryAISystem/IAIObjectManager.h>
-
-#include "QToolWindowManager/QToolWindowManager.h"
-#include "Controls/QuestionDialog.h"
-#include "QFullScreenWidget.h"
-
-#include "QT/Widgets/QWaitProgress.h"
-
-#include "FileDialogs/SystemFileDialog.h"
-#include "ConfigurationManager.h"
+#include <Util/IndexedFiles.h>
 
 #include <Notifications/NotificationCenter.h>
-#include <QtUtil.h>
+#include <FilePathUtil.h>
+#include <ModelViewport.h>
+#include <QFullScreenWidget.h>
 
-#include "QT/QtMainFrame.h"
-#include <QDesktopServices>
-#include <QFile>
-#include <QFileInfo>
-#include <QJsonDocument>
-#include <QUrl>
-
-#include <CrySystem/ICryLink.h>
-
-#include "Material/MaterialManager.h"
-#include "AssetSystem/AssetManager.h"
-
-#include <CrySystem/Testing/CryTestCommands.h>
+#include <CrySandbox/IEditorGame.h>
 #include <CrySystem/Testing/CryTest.h>
+#include <CrySystem/Testing/CryTestCommands.h>
+#include <IGameRulesSystem.h>
 
-//////////////////////////////////////////////////////////////////////////
 namespace
 {
 
@@ -265,7 +171,7 @@ REGISTER_PYTHON_COMMAND_WITH_EXAMPLE(PySetCurrentViewRotation, general, set_curr
                                      "Sets the rotation of the current view as given x, y, z Euler angles.",
                                      "general.set_current_view_rotation(float xValue, float yValue, float zValue)");
 
-/////////////////////////////////////////////////////////////////////////////
+//////////////////////////////////////////////////////////////////////////
 // The one and only CCryEditApp object
 //////////////////////////////////////////////////////////////////////////
 CCryEditApp theApp;
@@ -291,8 +197,6 @@ CCryEditApp* CCryEditApp::GetInstance()
 	return s_pCCryEditApp;
 }
 
-/////////////////////////////////////////////////////////////////////////////
-// CCryEditApp construction
 CCryEditApp::CCryEditApp()
 {
 	s_pCCryEditApp = this;
@@ -303,7 +207,7 @@ CCryEditApp::CCryEditApp()
 #ifdef _DEBUG
 	int tmpDbgFlag;
 	tmpDbgFlag = _CrtSetDbgFlag(_CRTDBG_REPORT_FLAG);
-	// Clear the upper 16 bits and OR in the desired freqency
+	// Clear the upper 16 bits and OR in the desired frequency
 	tmpDbgFlag = (tmpDbgFlag & 0x0000FFFF) | (32768 << 16);
 	//tmpDbgFlag |= _CRTDBG_LEAK_CHECK_DF;
 	_CrtSetDbgFlag(tmpDbgFlag);
@@ -313,7 +217,6 @@ CCryEditApp::CCryEditApp()
 #endif
 }
 
-//////////////////////////////////////////////////////////////////////////
 CCryEditApp::~CCryEditApp()
 {
 }
@@ -489,7 +392,7 @@ private:
 	}
 };
 
-/////////////////////////////////////////////////////////////////////////////
+//////////////////////////////////////////////////////////////////////////
 // CTheApp::FirstInstance
 //		FirstInstance checks for an existing instance of the application.
 //		If one is found, it is activated.
@@ -544,13 +447,11 @@ BOOL CCryEditApp::FirstInstance(bool bForceNewInstance)
 			TRACE("Class Registration Failed\n");
 			return FALSE;
 		}
-		//		bClassRegistered = TRUE;
 
 		return TRUE;
 	}
 }
 
-//////////////////////////////////////////////////////////////////////////
 void CCryEditApp::InitFromCommandLine(CEditCommandLineInfo& cmdInfo)
 {
 	//! Setup flags from command line
@@ -603,10 +504,8 @@ void CCryEditApp::InitFromCommandLine(CEditCommandLineInfo& cmdInfo)
 	{
 		CryGetIMemReplay()->Start();
 	}
-
 }
 
-/////////////////////////////////////////////////////////////////////////////
 namespace
 {
 
@@ -640,7 +539,6 @@ std::unique_ptr<CGameEngine> CCryEditApp::InitGameSystem()
 	return pGameEngine;
 }
 
-/////////////////////////////////////////////////////////////////////////////
 bool CCryEditApp::CheckIfAlreadyRunning()
 {
 	bool bForceNewInstance = false;
@@ -671,7 +569,6 @@ bool CCryEditApp::CheckIfAlreadyRunning()
 	return true;
 }
 
-/////////////////////////////////////////////////////////////////////////////
 void CCryEditApp::InitPlugins()
 {
 	LOADING_TIME_PROFILE_SECTION;
@@ -682,7 +579,6 @@ void CCryEditApp::InitPlugins()
 	}
 }
 
-////////////////////////////////////////////////////////////////////////////
 void CCryEditApp::InitLevel(CEditCommandLineInfo& cmdInfo)
 {
 	LOADING_TIME_PROFILE_SECTION;
@@ -724,7 +620,6 @@ void CCryEditApp::InitLevel(CEditCommandLineInfo& cmdInfo)
 	}
 }
 
-/////////////////////////////////////////////////////////////////////////////
 BOOL CCryEditApp::InitConsole()
 {
 	if (m_bPrecacheShaderList)
@@ -764,7 +659,6 @@ BOOL CCryEditApp::InitConsole()
 	return TRUE;
 }
 
-/////////////////////////////////////////////////////////////////////////////
 void CCryEditApp::RunInitPythonScript(CEditCommandLineInfo& cmdInfo)
 {
 	LOADING_TIME_PROFILE_SECTION;
@@ -774,8 +668,6 @@ void CCryEditApp::RunInitPythonScript(CEditCommandLineInfo& cmdInfo)
 	}
 }
 
-/////////////////////////////////////////////////////////////////////////////
-// CCryEditApp initialization
 bool CCryEditApp::InitInstance()
 {
 	////////////////////////////////////////////////////////////////////////
@@ -796,8 +688,7 @@ bool CCryEditApp::InitInstance()
 	// Initialize GDI+
 	Gdiplus::GdiplusStartupInput gdiplusstartupinput;
 	Gdiplus::GdiplusStartup(&m_gdiplusToken, &gdiplusstartupinput, NULL);
-	//////////////////////////////////////////////////////////////////////////
-
+	
 	// Check for 32bpp
 	if (::GetDeviceCaps(GetDC(NULL), BITSPIXEL) != 32)
 		CQuestionDialog::SWarning(QObject::tr("Warning"), QObject::tr("WARNING: Your desktop is not set to 32bpp, this might result in unexpected behavior" \
@@ -920,7 +811,6 @@ void CCryEditApp::DiscardLevelChanges()
 	GetIEditorImpl()->GetDocument()->SetModifiedFlag(FALSE);
 }
 
-//////////////////////////////////////////////////////////////////////////
 void CCryEditApp::LoadFile(const string& fileName)
 {
 	//CEditCommandLineInfo cmdLine;
@@ -939,7 +829,6 @@ void CCryEditApp::LoadFile(const string& fileName)
 	GetIEditorImpl()->SetModifiedFlag(FALSE);
 }
 
-//////////////////////////////////////////////////////////////////////////
 inline void ExtractMenuName(string& str)
 {
 	// eliminate &
@@ -1092,7 +981,6 @@ bool CCryEditApp::IdleProcessing(bool bBackgroundUpdate)
 	return res;
 }
 
-//////////////////////////////////////////////////////////////////////////
 void CCryEditApp::ExportLevel(bool bExportToGame, bool bExportTexture, bool bAutoExport)
 {
 	if (bExportTexture)
@@ -1127,7 +1015,6 @@ void CCryEditApp::OnEditDuplicate()
 	GetIEditorImpl()->SetModifiedFlag();
 }
 
-//////////////////////////////////////////////////////////////////////////
 void CCryEditApp::OnScriptEditScript()
 {
 	// Let the user choose a LUA script file to edit
@@ -1138,25 +1025,21 @@ void CCryEditApp::OnScriptEditScript()
 	}
 }
 
-//////////////////////////////////////////////////////////////////////////
 void CCryEditApp::OnFileEditLogFile()
 {
 	CFileUtil::EditTextFile(CLogFile::GetLogFileName(), 0, CFileUtil::FILE_TYPE_SCRIPT, false);
 }
 
-//////////////////////////////////////////////////////////////////////////
 void CCryEditApp::OnUndo()
 {
 	GetIEditorImpl()->GetIUndoManager()->Undo();
 }
 
-//////////////////////////////////////////////////////////////////////////
 void CCryEditApp::OnRedo()
 {
 	GetIEditorImpl()->GetIUndoManager()->Redo();
 }
 
-//////////////////////////////////////////////////////////////////////////
 CCryEditApp::ECreateLevelResult CCryEditApp::CreateLevel(const string& levelName, int resolution, float unitSize, bool bUseTerrain)
 {
 	ICryPak* const pCryPak = GetIEditorImpl()->GetSystem()->GetIPak();
@@ -1250,7 +1133,6 @@ CCryEditApp::ECreateLevelResult CCryEditApp::CreateLevel(const string& levelName
 	return ECLR_OK;
 }
 
-//////////////////////////////////////////////////////////////////////////
 CCryEditDoc* CCryEditApp::LoadLevel(const char* lpszFileName)//this path is a pak file path but make this more robust
 {
 	CCryEditDoc* doc = 0;
@@ -1281,7 +1163,6 @@ CCryEditDoc* CCryEditApp::LoadLevel(const char* lpszFileName)//this path is a pa
 	return doc;
 }
 
-//////////////////////////////////////////////////////////////////////////
 void CCryEditApp::OnResourcesReduceworkingset()
 {
 	SetProcessWorkingSetSize(GetCurrentProcess(), -1, -1);
@@ -1312,7 +1193,6 @@ void CCryEditApp::CreateSampleMissionObjectives()
 	helper.UpdateFile(false);
 }
 
-//////////////////////////////////////////////////////////////////////////
 void CCryEditApp::OnExportIndoors()
 {
 	//CBrushIndoor *indoor = GetIEditorImpl()->GetObjectManager()->GetCurrentIndoor();
@@ -1320,20 +1200,17 @@ void CCryEditApp::OnExportIndoors()
 	//exp.Export( indoor, "C:\\MasterCD\\Objects\\Indoor.bld" );
 }
 
-//////////////////////////////////////////////////////////////////////////
 void CCryEditApp::OnViewCycle2dviewport()
 {
 	GetIEditorImpl()->GetViewManager()->Cycle2DViewport();
 }
 
-//////////////////////////////////////////////////////////////////////////
 void CCryEditApp::OnRuler()
 {
 	CRuler* pRuler = GetIEditorImpl()->GetRuler();
 	pRuler->SetActive(!pRuler->IsActive());
 }
 
-//////////////////////////////////////////////////////////////////////////
 void CCryEditApp::OnFileSavelevelresources()
 {
 	CGameResourcesExporter saver;
@@ -1341,7 +1218,6 @@ void CCryEditApp::OnFileSavelevelresources()
 	saver.ChooseDirectoryAndSave();
 }
 
-//////////////////////////////////////////////////////////////////////////
 bool CCryEditApp::IsInRegularEditorMode()
 {
 	return !IsInTestMode() && !IsInPreviewMode()
@@ -1351,10 +1227,7 @@ bool CCryEditApp::IsInRegularEditorMode()
 namespace
 {
 bool g_runScriptResult = false;     // true -> success, false -> failure
-}
 
-namespace
-{
 void PySetResultToSuccess()
 {
 	g_runScriptResult = true;

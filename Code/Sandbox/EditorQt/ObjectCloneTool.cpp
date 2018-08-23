@@ -2,8 +2,9 @@
 
 #include "StdAfx.h"
 #include "ObjectCloneTool.h"
-#include "Viewport.h"
-#include "Grid.h"
+
+#include <Preferences/SnappingPreferences.h>
+#include <Viewport.h>
 
 IMPLEMENT_DYNCREATE(CObjectCloneTool, CEditTool)
 

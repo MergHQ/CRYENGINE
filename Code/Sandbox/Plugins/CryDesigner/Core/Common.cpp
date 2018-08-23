@@ -1,15 +1,21 @@
 // Copyright 2001-2018 Crytek GmbH / Crytek Group. All rights reserved.
 
 #include "StdAfx.h"
+#include "Common.h"
+
+#include "Core/Helper.h"
 #include "Objects/DesignerObject.h"
-#include "Objects/DisplayContext.h"
-#include "Helper.h"
-#include "Grid.h"
-#include "Viewport.h"
-#include "SurfaceInfoPicker.h"
-#include <QDir>
-#include <CrySerialization/Enum.h>
 #include "DesignerEditor.h"
+
+#include <SurfaceInfoPicker.h>
+
+#include <Objects/DisplayContext.h>
+#include <Preferences/SnappingPreferences.h>
+#include <Viewport.h>
+
+#include <CrySerialization/Enum.h>
+
+#include <QDir>
 
 namespace Designer
 {
@@ -787,7 +793,7 @@ bool PickPosFromWorld(IDisplayViewport* view, const CPoint& point, Vec3& outPick
 	IPhysicalWorld* const pPhysics = GetIEditor()->GetSystem()->GetIPhysicalWorld();
 	if (pPhysics->RayWorldIntersection(pos, dir, types, flags, &hit, 1) > 0)
 	{
-		outPickedPos = gSnappingPreferences.Snap(hit.pt);
+		outPickedPos = gSnappingPreferences.Snap3D(hit.pt);
 		return true;
 	}
 	return false;

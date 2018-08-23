@@ -2,19 +2,16 @@
 
 #include "StdAfx.h"
 #include "TrackballGizmo.h"
-#include "IDisplayViewport.h"
-#include "Grid.h"
+
 #include "Gizmos/AxisHelper.h"
+#include "Preferences/SnappingPreferences.h"
+#include "IDisplayViewport.h"
 
 #define HIT_RADIUS (8)
 
 CTrackballGizmo::CTrackballGizmo()
 	: m_color(1.0f, 1.0f, 0.0f)
 	, m_scale(1.0f)
-{
-}
-
-CTrackballGizmo::~CTrackballGizmo()
 {
 }
 

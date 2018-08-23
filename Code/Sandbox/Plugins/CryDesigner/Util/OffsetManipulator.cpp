@@ -2,13 +2,15 @@
 
 #include "StdAfx.h"
 #include "OffsetManipulator.h"
-#include "Core/Model.h"
-#include "Grid.h"
-#include "Viewport.h"
-#include "DesignerEditor.h"
-#include "Util/Display.h"
+
 #include "Core/LoopPolygons.h"
-#include "Objects/DisplayContext.h"
+#include "Core/Model.h"
+#include "Util/Display.h"
+#include "DesignerEditor.h"
+
+#include <Objects/DisplayContext.h>
+#include <Preferences/SnappingPreferences.h>
+#include <Viewport.h>
 
 namespace Designer
 {

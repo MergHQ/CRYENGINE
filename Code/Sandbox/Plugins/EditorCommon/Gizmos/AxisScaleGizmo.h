@@ -4,9 +4,6 @@
 
 #include "Gizmo.h"
 
-struct SDisplayContext;
-struct HitContext;
-struct IDisplayViewport;
 class CViewport;
 
 //////////////////////////////////////////////////////////////////////////
@@ -18,10 +15,6 @@ class EDITOR_COMMON_API CAxisScaleGizmo : public CGizmo
 {
 public:
 	CAxisScaleGizmo();
-	~CAxisScaleGizmo();
-
-	virtual void        SetName(const char* sName) override;
-	virtual const char* GetName() override;
 
 	//! set position - should be world space
 	void         SetPosition(Vec3 pos);
@@ -61,8 +54,6 @@ private:
 	Vec3   m_direction;
 	Vec3   m_upAxis;
 	Vec3   m_color;
-
-	string m_name;
 
 	//! custom scale of widget - final size is calculated from z-distance of widget to camera and global parameters
 	float m_scale;
