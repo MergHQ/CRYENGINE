@@ -2,14 +2,20 @@
 
 #include "StdAfx.h"
 #include "FileChangeMonitor.h"
-#include "Util\FileUtil.h"
-#include "FilePathUtil.h"
-#include <sys/stat.h>
-#include <CrySystem/ISystem.h>
-#include <CrySystem/IConsole.h>
-#include <CryThreading/IThreadManager.h>
+
 #include "CryEdit.h"
-#include "QtUtil.h"
+
+#include <Util/FileUtil.h>
+
+#include <FilePathUtil.h>
+#include <QtUtil.h>
+
+
+#include <CrySystem/IConsole.h>
+#include <CrySystem/ISystem.h>
+#include <CryThreading/IThreadManager.h>
+
+#include <sys/stat.h>
 
 //! Message used to communicate with internally created window
 #define WM_FILEMONITORCHANGE (WM_APP + 10)

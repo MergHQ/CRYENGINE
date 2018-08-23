@@ -1,30 +1,25 @@
 // Copyright 2001-2018 Crytek GmbH / Crytek Group. All rights reserved.
 
-#include <StdAfx.h>
-
+#include "StdAfx.h"
 #include "Variable.h"
+
 #include "UIEnumsDatabase.h"
 #include "UsedResources.h"
 
-//////////////////////////////////////////////////////////////////////////
-// For serialization.
-#include <CrySerialization/Decorators/Range.h>
-#include <CrySerialization/Enum.h>
 #include <CrySerialization/Color.h>
-//#include "Serialization/Decorators/Curve.h"
+#include <CrySerialization/Decorators/Range.h>
 #include <CrySerialization/Decorators/Resources.h>
-#include <CrySerialization/Math.h>
 #include <CrySerialization/Decorators/ResourcesAudio.h>
-//////////////////////////////////////////////////////////////////////////
+#include <CrySerialization/Enum.h>
+#include <CrySerialization/Math.h>
+
 #include <QtUtil.h>
 
-//////////////////////////////////////////////////////////////////////////
 void CVariableBase::SetHumanName(const string& name)
 {
 	m_humanName = QtUtil::CamelCaseToUIString(name).toUtf8().constData();
 }
 
-//////////////////////////////////////////////////////////////////////////
 CVarBlock* CVarBlock::Clone(bool bRecursive) const
 {
 	CVarBlock* vb = new CVarBlock;
@@ -36,7 +31,6 @@ CVarBlock* CVarBlock::Clone(bool bRecursive) const
 	return vb;
 }
 
-//////////////////////////////////////////////////////////////////////////
 void CVarBlock::CopyValues(const CVarBlock* fromVarBlock)
 {
 	// Copy all variables.
@@ -48,7 +42,6 @@ void CVarBlock::CopyValues(const CVarBlock* fromVarBlock)
 	}
 }
 
-//////////////////////////////////////////////////////////////////////////
 void CVarBlock::CopyValuesByName(CVarBlock* fromVarBlock)
 {
 	// Copy values using saving and loading to/from xml.
@@ -57,7 +50,6 @@ void CVarBlock::CopyValuesByName(CVarBlock* fromVarBlock)
 	Serialize(node, true);
 }
 
-//////////////////////////////////////////////////////////////////////////
 void CVarBlock::OnSetValues()
 {
 	for (Variables::iterator it = m_vars.begin(); it != m_vars.end(); ++it)
@@ -67,14 +59,12 @@ void CVarBlock::OnSetValues()
 	}
 }
 
-//////////////////////////////////////////////////////////////////////////
 void CVarBlock::AddVariable(IVariable* var)
 {
 	//assert( !strstr(var->GetName(), " ") ); // spaces not allowed because of serialization
 	m_vars.push_back(var);
 }
 
-//////////////////////////////////////////////////////////////////////////
 void CVarBlock::AddVariable(IVariable* pVar, const char* varName, unsigned char dataType)
 {
 	if (varName)
@@ -83,7 +73,6 @@ void CVarBlock::AddVariable(IVariable* pVar, const char* varName, unsigned char 
 	AddVariable(pVar);
 }
 
-//////////////////////////////////////////////////////////////////////////
 void CVarBlock::AddVariable(CVariableBase& var, const char* varName, unsigned char dataType)
 {
 	if (varName)
@@ -92,7 +81,6 @@ void CVarBlock::AddVariable(CVariableBase& var, const char* varName, unsigned ch
 	AddVariable(&var);
 }
 
-//////////////////////////////////////////////////////////////////////////
 bool CVarBlock::DeleteVariable(IVariable* var, bool bRecursive)
 {
 	bool found = stl::find_and_erase(m_vars, var);
@@ -109,7 +97,6 @@ bool CVarBlock::DeleteVariable(IVariable* var, bool bRecursive)
 	return found;
 }
 
-//////////////////////////////////////////////////////////////////////////
 bool CVarBlock::IsContainsVariable(IVariable* pVar, bool bRecursive) const
 {
 	for (Variables::const_iterator it = m_vars.begin(); it != m_vars.end(); ++it)
@@ -173,19 +160,16 @@ IVariable* FindVariable(const char* name, bool bRecursive, bool bHumanName, cons
 }
 }
 
-//////////////////////////////////////////////////////////////////////////
 IVariable* CVarBlock::FindVariable(const char* name, bool bRecursive, bool bHumanName) const
 {
 	return ::FindVariable(name, bRecursive, bHumanName, m_vars);
 }
 
-//////////////////////////////////////////////////////////////////////////
 IVariable* CVariableArray::FindVariable(const char* name, bool bRecursive, bool bHumanName) const
 {
 	return ::FindVariable(name, bRecursive, bHumanName, m_vars);
 }
 
-//////////////////////////////////////////////////////////////////////////
 void CVarBlock::Serialize(XmlNodeRef& vbNode, bool load)
 {
 	if (load)
@@ -222,13 +206,11 @@ void CVarBlock::Serialize(XmlNodeRef& vbNode, bool load)
 	}
 }
 
-//////////////////////////////////////////////////////////////////////////
 void CVarBlock::ReserveNumVariables(int numVars)
 {
 	m_vars.reserve(numVars);
 }
 
-//////////////////////////////////////////////////////////////////////////
 void CVarBlock::WireVar(IVariable* src, IVariable* trg, bool bWire)
 {
 	if (bWire)
@@ -246,7 +228,6 @@ void CVarBlock::WireVar(IVariable* src, IVariable* trg, bool bWire)
 	}
 }
 
-//////////////////////////////////////////////////////////////////////////
 void CVarBlock::Wire(CVarBlock* toVarBlock)
 {
 	Variables::iterator tit = toVarBlock->m_vars.begin();
@@ -259,7 +240,6 @@ void CVarBlock::Wire(CVarBlock* toVarBlock)
 	}
 }
 
-//////////////////////////////////////////////////////////////////////////
 void CVarBlock::Unwire(CVarBlock* toVarBlock)
 {
 	Variables::iterator tit = toVarBlock->m_vars.begin();
@@ -272,7 +252,6 @@ void CVarBlock::Unwire(CVarBlock* toVarBlock)
 	}
 }
 
-//////////////////////////////////////////////////////////////////////////
 void CVarBlock::AddOnSetCallback(IVariable::OnSetCallback func)
 {
 	for (Variables::iterator it = m_vars.begin(); it != m_vars.end(); ++it)
@@ -282,7 +261,6 @@ void CVarBlock::AddOnSetCallback(IVariable::OnSetCallback func)
 	}
 }
 
-//////////////////////////////////////////////////////////////////////////
 void CVarBlock::RemoveOnSetCallback(IVariable::OnSetCallback func)
 {
 	for (Variables::iterator it = m_vars.begin(); it != m_vars.end(); ++it)
@@ -292,7 +270,6 @@ void CVarBlock::RemoveOnSetCallback(IVariable::OnSetCallback func)
 	}
 }
 
-//////////////////////////////////////////////////////////////////////////
 void CVarBlock::SetCallbackToVar(IVariable::OnSetCallback func, IVariable* pVar, bool bAdd)
 {
 	if (bAdd)
@@ -309,7 +286,6 @@ void CVarBlock::SetCallbackToVar(IVariable::OnSetCallback func, IVariable* pVar,
 	}
 }
 
-//////////////////////////////////////////////////////////////////////////
 void CVarBlock::GatherUsedResources(CUsedResources& resources)
 {
 	for (int i = 0; i < GetNumVariables(); i++)
@@ -318,7 +294,7 @@ void CVarBlock::GatherUsedResources(CUsedResources& resources)
 		GatherUsedResourcesInVar(pVar, resources);
 	}
 }
-//////////////////////////////////////////////////////////////////////////
+
 void CVarBlock::EnableUpdateCallbacks(bool boEnable)
 {
 	for (int i = 0; i < GetNumVariables(); i++)
@@ -327,7 +303,7 @@ void CVarBlock::EnableUpdateCallbacks(bool boEnable)
 		pVar->EnableUpdateCallbacks(boEnable);
 	}
 }
-//////////////////////////////////////////////////////////////////////////
+
 void CVarBlock::GatherUsedResourcesInVar(IVariable* pVar, CUsedResources& resources)
 {
 	int type = pVar->GetDataType();
@@ -346,19 +322,16 @@ void CVarBlock::GatherUsedResourcesInVar(IVariable* pVar, CUsedResources& resour
 	}
 }
 
-//////////////////////////////////////////////////////////////////////////
 inline bool CompareNames(IVariable* pVar1, IVariable* pVar2)
 {
 	return (stricmp(pVar1->GetHumanName(), pVar2->GetHumanName()) < 0);
 }
 
-//////////////////////////////////////////////////////////////////////////
 void CVarBlock::Sort()
 {
 	std::sort(m_vars.begin(), m_vars.end(), CompareNames);
 }
 
-//////////////////////////////////////////////////////////////////////////
 void CVarObject::AddVariable(CVariableBase& var, const string& varName, VarOnSetCallback cb, unsigned char dataType)
 {
 	var.AddRef(); // Variables are local and must not be released by CVarBlock.
@@ -370,7 +343,6 @@ void CVarObject::AddVariable(CVariableBase& var, const string& varName, VarOnSet
 	CVarBlock::AddVariable(&var);
 }
 
-//////////////////////////////////////////////////////////////////////////
 void CVarObject::AddVariable(CVariableBase& var, const string& varName, const string& varHumanName, VarOnSetCallback cb, unsigned char dataType)
 {
 	var.AddRef(); // Variables are local and must not be released by CVarBlock.
@@ -382,7 +354,6 @@ void CVarObject::AddVariable(CVariableBase& var, const string& varName, const st
 	CVarBlock::AddVariable(&var);
 }
 
-//////////////////////////////////////////////////////////////////////////
 void CVarObject::AddVariable(CVariableArray& table, CVariableBase& var, const string& varName, const string& varHumanName, VarOnSetCallback cb, unsigned char dataType)
 {
 	var.AddRef(); // Variables are local and must not be released by CVarBlock.
@@ -394,7 +365,6 @@ void CVarObject::AddVariable(CVariableArray& table, CVariableBase& var, const st
 	table.AddVariable(&var);
 }
 
-//////////////////////////////////////////////////////////////////////////
 void CVarObject::CopyVariableValues(CVarObject* sourceObject)
 {
 	if (sourceObject == nullptr)
@@ -824,7 +794,6 @@ struct SVariableSerializer
 	}
 };
 
-//////////////////////////////////////////////////////////////////////////
 void CVarBlock::Serialize(Serialization::IArchive& ar)
 {
 	for (size_t i = 0; i < m_vars.size(); ++i)
@@ -833,7 +802,6 @@ void CVarBlock::Serialize(Serialization::IArchive& ar)
 	}
 }
 
-//////////////////////////////////////////////////////////////////////////
 void CVarBlock::SerializeVariable(IVariable* pVariable, Serialization::IArchive& ar)
 {
 	SVariableSerializer::SerializeVariable(pVariable, ar);

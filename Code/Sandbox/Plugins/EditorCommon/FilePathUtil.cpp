@@ -397,8 +397,6 @@ QString ReplaceExtension(const QString& str, const char* ext)
 	return QtUtil::ToQString(PathUtil::ReplaceExtension(QtUtil::ToString(str), ext));
 }
 
-//////////////////////////////////////////////////////////////////////////
-
 inline string AbsoluteToRelativePath(const string& absolutePath, const char* dirPathRelativeTo)
 {
 	CryPathString path(absolutePath);

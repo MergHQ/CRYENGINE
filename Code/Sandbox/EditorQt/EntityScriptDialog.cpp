@@ -3,10 +3,8 @@
 #include "stdafx.h"
 #include "EntityScriptDialog.h"
 
-#include "Objects\EntityScript.h"
+#include "Objects/EntityScript.h"
 #include "Dialogs/QStringDialog.h"
-
-// CEntityScriptDialog dialog
 
 IMPLEMENT_DYNAMIC(CEntityScriptDialog, CXTResizeDialog)
 CEntityScriptDialog::CEntityScriptDialog(CWnd* pParent /*=NULL*/)
@@ -15,12 +13,6 @@ CEntityScriptDialog::CEntityScriptDialog(CWnd* pParent /*=NULL*/)
 	m_grayBrush.CreateSolidBrush(RGB(0xE0, 0xE0, 0xE0));
 }
 
-//////////////////////////////////////////////////////////////////////////
-CEntityScriptDialog::~CEntityScriptDialog()
-{
-}
-
-//////////////////////////////////////////////////////////////////////////
 void CEntityScriptDialog::DoDataExchange(CDataExchange* pDX)
 {
 	CXTResizeDialog::DoDataExchange(pDX);
@@ -34,7 +26,6 @@ void CEntityScriptDialog::DoDataExchange(CDataExchange* pDX)
 	DDX_Control(pDX, IDC_NAME, m_scriptName);
 }
 
-//////////////////////////////////////////////////////////////////////////
 BEGIN_MESSAGE_MAP(CEntityScriptDialog, CXTResizeDialog)
 ON_BN_CLICKED(IDC_EDITSCRIPT, OnEditScript)
 ON_BN_CLICKED(IDC_RELOADSCRIPT, OnReloadScript)
@@ -45,8 +36,6 @@ ON_BN_CLICKED(IDC_ADD_METHOD, OnAddMethod)
 ON_BN_CLICKED(IDC_RUN_METHOD, OnRunMethod)
 END_MESSAGE_MAP()
 
-// CEntityScriptDialog message handlers
-//////////////////////////////////////////////////////////////////////////
 BOOL CEntityScriptDialog::OnInitDialog()
 {
 	CXTResizeDialog::OnInitDialog();
@@ -57,9 +46,6 @@ BOOL CEntityScriptDialog::OnInitDialog()
 	return TRUE;
 }
 
-//////////////////////////////////////////////////////////////////////////
-/////////////////////////////////////////////////////////////////////////////
-// CEntityScriptDialog message handlers
 void CEntityScriptDialog::SetScript(std::shared_ptr<CEntityScript> script, IEntity* entity)
 {
 	if (script)
@@ -70,10 +56,8 @@ void CEntityScriptDialog::SetScript(std::shared_ptr<CEntityScript> script, IEnti
 	m_script = script;
 	m_entity = entity;
 	ReloadMethods();
-	//ReloadEvents();
 }
 
-//////////////////////////////////////////////////////////////////////////
 void CEntityScriptDialog::OnEditScript()
 {
 	if (!m_script)
@@ -82,7 +66,6 @@ void CEntityScriptDialog::OnEditScript()
 	CFileUtil::EditTextFile(m_script->GetFile());
 }
 
-//////////////////////////////////////////////////////////////////////////
 void CEntityScriptDialog::ReloadMethods()
 {
 	if (!m_script)
@@ -103,7 +86,6 @@ void CEntityScriptDialog::ReloadMethods()
 	}
 }
 
-//////////////////////////////////////////////////////////////////////////
 void CEntityScriptDialog::OnReloadScript()
 {
 	if (!m_script)
@@ -115,7 +97,6 @@ void CEntityScriptDialog::OnReloadScript()
 	ReloadMethods();
 }
 
-//////////////////////////////////////////////////////////////////////////
 HBRUSH CEntityScriptDialog::OnCtlColor(CDC* pDC, CWnd* pWnd, UINT nCtlColor)
 {
 	HBRUSH hbr = CDialog::OnCtlColor(pDC, pWnd, nCtlColor);
@@ -139,7 +120,6 @@ HBRUSH CEntityScriptDialog::OnCtlColor(CDC* pDC, CWnd* pWnd, UINT nCtlColor)
 	return hbr;
 }
 
-//////////////////////////////////////////////////////////////////////////
 void CEntityScriptDialog::OnDblclkMethods()
 {
 	//UpdateData(TRUE);
@@ -148,7 +128,6 @@ void CEntityScriptDialog::OnDblclkMethods()
 	OnRunMethod();
 }
 
-//////////////////////////////////////////////////////////////////////////
 void CEntityScriptDialog::OnRunMethod()
 {
 	if (!m_script)
@@ -160,7 +139,6 @@ void CEntityScriptDialog::OnRunMethod()
 	m_script->RunMethod(m_entity, m_selectedMethod.GetString());
 }
 
-//////////////////////////////////////////////////////////////////////////
 void CEntityScriptDialog::GotoMethod(const string& method)
 {
 	if (!m_script)
@@ -169,14 +147,12 @@ void CEntityScriptDialog::GotoMethod(const string& method)
 	m_script->GotoMethod(method);
 }
 
-//////////////////////////////////////////////////////////////////////////
 void CEntityScriptDialog::OnGotoMethod()
 {
 	UpdateData(TRUE);
 	GotoMethod(m_selectedMethod.GetString());
 }
 
-//////////////////////////////////////////////////////////////////////////
 void CEntityScriptDialog::OnAddMethod()
 {
 	if (!m_script)

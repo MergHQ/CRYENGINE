@@ -2,27 +2,20 @@
 
 #include "stdafx.h"
 #include "SequencerDopeSheetBase.h"
-#include "Controls\MemDC.h"
 
-#include "SequencerUndo.h"
+#include "Mannequin/FragmentTrack.h"
+#include "Mannequin/MannequinDialog.h"
+#include "Mannequin/MannequinUtil.h"
+#include "Mannequin/MannPreferences.h"
+#include "Mannequin/SequencerUndo.h"
 
-#include "Util/Clipboard.h"
+#include <Controls/MemDC.h>
+#include <Controls/SharedFonts.h>
+#include <Util/Clipboard.h>
 
-#include "SequencerTrack.h"
-#include "SequencerNode.h"
-#include "SequencerSequence.h"
-#include "SequencerUtils.h"
-#include "SequencerKeyPropertiesDlg.h"
-#include "MannequinDialog.h"
-#include "MannPreferences.h"
-#include "MannequinUtil.h"
-#include "FragmentTrack.h"
-
+#include <Controls/QuestionDialog.h>
 #include <ISourceControl.h>
-
-#include "QtUtil.h"
-#include "Controls/QuestionDialog.h"
-#include "Controls/SharedFonts.h"
+#include <QtUtil.h>
 
 enum ETVMouseMode
 {
@@ -186,7 +179,6 @@ END_MESSAGE_MAP()
 
 // CSequencerKeys message handlers
 
-//////////////////////////////////////////////////////////////////////////
 int CSequencerDopeSheetBase::OnCreate(LPCREATESTRUCT lpCreateStruct)
 {
 	if (CWnd::OnCreate(lpCreateStruct) == -1)
@@ -222,7 +214,6 @@ int CSequencerDopeSheetBase::OnCreate(LPCREATESTRUCT lpCreateStruct)
 	return 0;
 }
 
-//////////////////////////////////////////////////////////////////////////
 void CSequencerDopeSheetBase::OnDestroy()
 {
 	HideKeyPropertyCtrlOnSpot();
@@ -234,7 +225,6 @@ void CSequencerDopeSheetBase::OnDestroy()
 	CWnd::OnDestroy();
 }
 
-//////////////////////////////////////////////////////////////////////////
 void CSequencerDopeSheetBase::DrawSelectedKeyIndicators(CDC* dc)
 {
 	if (m_pSequence == NULL)
@@ -255,7 +245,6 @@ void CSequencerDopeSheetBase::DrawSelectedKeyIndicators(CDC* dc)
 	dc->SelectObject(prevPen);
 }
 
-//////////////////////////////////////////////////////////////////////////
 void CSequencerDopeSheetBase::ComputeFrameSteps(const Range& VisRange)
 {
 	float fNbFrames = fabsf((VisRange.end - VisRange.start) / m_snapFrameTime);
@@ -393,7 +382,6 @@ void CSequencerDopeSheetBase::DrawTimeLineInSeconds(CDC* dc, CRect& rc, COLORREF
 	}
 }
 
-//////////////////////////////////////////////////////////////////////////
 void CSequencerDopeSheetBase::DrawTimeline(CDC* dc, const CRect& rcUpdate)
 {
 	CRect rc, temprc;
@@ -464,7 +452,6 @@ void CSequencerDopeSheetBase::DrawTimeline(CDC* dc, const CRect& rcUpdate)
 	dc->SelectObject(prevPen);
 }
 
-//////////////////////////////////////////////////////////////////////////
 void CSequencerDopeSheetBase::DrawSummary(CDC* dc, CRect rcUpdate)
 {
 	if (m_pSequence == NULL)
@@ -501,14 +488,12 @@ void CSequencerDopeSheetBase::DrawSummary(CDC* dc, CRect rcUpdate)
 	dc->SelectObject(prevPen);
 }
 
-//////////////////////////////////////////////////////////////////////////
 int CSequencerDopeSheetBase::TimeToClient(float time) const
 {
 	int x = time * m_timeScale - m_scrollOffset.x;
 	return x;
 }
 
-//////////////////////////////////////////////////////////////////////////
 Range CSequencerDopeSheetBase::GetVisibleRange()
 {
 	Range r;
@@ -520,7 +505,6 @@ Range CSequencerDopeSheetBase::GetVisibleRange()
 	return r;
 }
 
-//////////////////////////////////////////////////////////////////////////
 Range CSequencerDopeSheetBase::GetTimeRange(const CRect& rc)
 {
 	Range r;
@@ -534,7 +518,6 @@ Range CSequencerDopeSheetBase::GetTimeRange(const CRect& rc)
 	return r;
 }
 
-//////////////////////////////////////////////////////////////////////////
 void CSequencerDopeSheetBase::DrawTicks(CDC* dc, const CRect& rc, const Range& timeRange)
 {
 	// Draw time ticks every tick step seconds.
@@ -572,12 +555,10 @@ void CSequencerDopeSheetBase::DrawTicks(CDC* dc, const CRect& rc, const Range& t
 	dc->SelectObject(prevPen);
 }
 
-//////////////////////////////////////////////////////////////////////////
 void CSequencerDopeSheetBase::DrawKeys(CSequencerTrack* track, CDC* dc, CRect& rc, Range& timeRange, EDSRenderFlags renderFlags)
 {
 }
 
-//////////////////////////////////////////////////////////////////////////
 void CSequencerDopeSheetBase::RedrawItem(int item)
 {
 	CRect rc;
@@ -587,14 +568,12 @@ void CSequencerDopeSheetBase::RedrawItem(int item)
 	}
 }
 
-//////////////////////////////////////////////////////////////////////////
 void CSequencerDopeSheetBase::MeasureItem(LPMEASUREITEMSTRUCT lpMIS)
 {
 	lpMIS->itemWidth = 1000;
 	lpMIS->itemHeight = 16;
 }
 
-//////////////////////////////////////////////////////////////////////////
 HBRUSH CSequencerDopeSheetBase::CtlColor(CDC* pDC, UINT nCtlColor)
 {
 	return m_bkgrBrush;
@@ -603,7 +582,6 @@ HBRUSH CSequencerDopeSheetBase::CtlColor(CDC* pDC, UINT nCtlColor)
 	return NULL;
 }
 
-//////////////////////////////////////////////////////////////////////////
 void CSequencerDopeSheetBase::SetTimeRange(float start, float end)
 {
 	m_timeMarked.start = start;
@@ -615,7 +593,6 @@ void CSequencerDopeSheetBase::SetTimeRange(float start, float end)
 	UpdateHorizontalExtent();
 }
 
-//////////////////////////////////////////////////////////////////////////
 void CSequencerDopeSheetBase::SetTimeScale(float timeScale, float fAnchorTime)
 {
 	//m_leftOffset - m_scrollOffset.x + time*m_timeScale
@@ -682,7 +659,6 @@ void CSequencerDopeSheetBase::SetTimeScale(float timeScale, float fAnchorTime)
 	ComputeFrameSteps(GetVisibleRange());
 }
 
-//////////////////////////////////////////////////////////////////////////
 void CSequencerDopeSheetBase::OnSize(UINT nType, int cx, int cy)
 {
 	CWnd::OnSize(nType, cx, cy);
@@ -711,7 +687,6 @@ void CSequencerDopeSheetBase::OnSize(UINT nType, int cx, int cy)
 	}
 }
 
-//////////////////////////////////////////////////////////////////////////
 BOOL CSequencerDopeSheetBase::PreTranslateMessage(MSG* pMsg)
 {
 	if (pMsg->message == WM_KEYDOWN)
@@ -750,14 +725,12 @@ BOOL CSequencerDopeSheetBase::PreTranslateMessage(MSG* pMsg)
 	return __super::PreTranslateMessage(pMsg);
 }
 
-//////////////////////////////////////////////////////////////////////////
 static float GetTimelineWheelScaleFactor()
 {
 	const float defaultScaleFactor = 1.25f;
 	return pow(defaultScaleFactor, clamp_tpl(gMannequinPreferences.timelineWheelZoomSpeed, 0.1f, 5.0f));
 }
 
-//////////////////////////////////////////////////////////////////////////
 BOOL CSequencerDopeSheetBase::OnMouseWheel(UINT nFlags, short zDelta, CPoint pt)
 {
 	GetCursorPos(&pt);
@@ -770,7 +743,6 @@ BOOL CSequencerDopeSheetBase::OnMouseWheel(UINT nFlags, short zDelta, CPoint pt)
 	return 1;
 }
 
-//////////////////////////////////////////////////////////////////////////
 void CSequencerDopeSheetBase::OnHScroll(UINT nSBCode, UINT nPos, CScrollBar* pScrollBar)
 {
 	SCROLLINFO si;
@@ -836,7 +808,6 @@ void CSequencerDopeSheetBase::OnHScroll(UINT nSBCode, UINT nPos, CScrollBar* pSc
 	CWnd::OnHScroll(nSBCode, nPos, pScrollBar);
 }
 
-//////////////////////////////////////////////////////////////////////////
 double CSequencerDopeSheetBase::GetTickTime() const
 {
 	if (GetTickDisplayMode() == SEQTICK_INFRAMES)
@@ -845,7 +816,6 @@ double CSequencerDopeSheetBase::GetTickTime() const
 		return 1.0f / m_ticksStep;
 }
 
-//////////////////////////////////////////////////////////////////////////
 float CSequencerDopeSheetBase::TickSnap(float time) const
 {
 	// const Range & timeRange = m_timeRange;
@@ -856,32 +826,27 @@ float CSequencerDopeSheetBase::TickSnap(float time) const
 	return t;
 }
 
-//////////////////////////////////////////////////////////////////////////
 float CSequencerDopeSheetBase::TimeFromPoint(CPoint point) const
 {
 	return TickSnap((point.x + m_scrollOffset.x) / m_timeScale);
 }
 
-//////////////////////////////////////////////////////////////////////////
 float CSequencerDopeSheetBase::TimeFromPointUnsnapped(CPoint point) const
 {
 	return (point.x + m_scrollOffset.x) / m_timeScale;
 }
 
-//////////////////////////////////////////////////////////////////////////
 void CSequencerDopeSheetBase::AddItem(const Item& item)
 {
 	m_tracks.push_back(item);
 	Invalidate();
 }
 
-//////////////////////////////////////////////////////////////////////////
 const CSequencerDopeSheetBase::Item& CSequencerDopeSheetBase::GetItem(int item) const
 {
 	return m_tracks[item];
 }
 
-//////////////////////////////////////////////////////////////////////////
 CSequencerTrack* CSequencerDopeSheetBase::GetTrack(int item) const
 {
 	if (item < 0 || item >= GetCount())
@@ -890,7 +855,6 @@ CSequencerTrack* CSequencerDopeSheetBase::GetTrack(int item) const
 	return track;
 }
 
-//////////////////////////////////////////////////////////////////////////
 CSequencerNode* CSequencerDopeSheetBase::GetNode(int item) const
 {
 	if (item < 0 || item >= GetCount())
@@ -898,13 +862,11 @@ CSequencerNode* CSequencerDopeSheetBase::GetNode(int item) const
 	return m_tracks[item].node;
 }
 
-//////////////////////////////////////////////////////////////////////////
 int CSequencerDopeSheetBase::FirstKeyFromPoint(CPoint point, bool exact) const
 {
 	return -1;
 }
 
-//////////////////////////////////////////////////////////////////////////
 int CSequencerDopeSheetBase::LastKeyFromPoint(CPoint point, bool exact) const
 {
 	return -1;
@@ -915,7 +877,6 @@ bool CSequencerDopeSheetBase::IsDragging() const
 	return (m_mouseMode != MOUSE_MODE_NONE);
 }
 
-//////////////////////////////////////////////////////////////////////////
 void CSequencerDopeSheetBase::OnLButtonDown(UINT nFlags, CPoint point)
 {
 	CWnd::OnLButtonDown(nFlags, point);
@@ -1103,7 +1064,6 @@ void CSequencerDopeSheetBase::OnLButtonDown(UINT nFlags, CPoint point)
 	}
 }
 
-//////////////////////////////////////////////////////////////////////////
 void CSequencerDopeSheetBase::OnLButtonUp(UINT nFlags, CPoint point)
 {
 	if (m_mouseMode == MOUSE_MODE_SELECT)
@@ -1186,7 +1146,6 @@ void CSequencerDopeSheetBase::OnLButtonUp(UINT nFlags, CPoint point)
 	m_mouseMode = MOUSE_MODE_NONE;
 }
 
-//////////////////////////////////////////////////////////////////////////
 bool CSequencerDopeSheetBase::IsPointValidForFragmentInPreviewDrop(const CPoint& point, COleDataObject* pDataObject) const
 {
 	if (!CMannequinDialog::GetCurrentInstance()->GetDockingPaneManager()->IsPaneSelected(CMannequinDialog::IDW_PREVIEWER_PANE))
@@ -1258,9 +1217,7 @@ bool CSequencerDopeSheetBase::IsPointValidForFragmentInPreviewDrop(const CPoint&
 	return true;
 }
 
-//////////////////////////////////////////////////////////////////////////
 // Assume IsPointValidForFragmentInPreviewDrop returned true
-//////////////////////////////////////////////////////////////////////////
 bool CSequencerDopeSheetBase::CreatePointForFragmentInPreviewDrop(const CPoint& point, COleDataObject* pDataObject)
 {
 	UINT clipFormat = MannequinDragDropHelpers::GetFragmentClipboardFormat();
@@ -1334,7 +1291,6 @@ bool CSequencerDopeSheetBase::CreatePointForFragmentInPreviewDrop(const CPoint& 
 	return false;
 }
 
-//////////////////////////////////////////////////////////////////////////
 bool CSequencerDopeSheetBase::IsPointValidForAnimationInLayerDrop(const CPoint& point, COleDataObject* pDataObject) const
 {
 	if (!CMannequinDialog::GetCurrentInstance()->GetDockingPaneManager()->IsPaneSelected(CMannequinDialog::IDW_FRAGMENT_EDITOR_PANE))
@@ -1396,9 +1352,7 @@ bool CSequencerDopeSheetBase::IsPointValidForAnimationInLayerDrop(const CPoint& 
 	return true;
 }
 
-//////////////////////////////////////////////////////////////////////////
 // Assume IsPointValidForAnimationInLayerDrop returned true
-//////////////////////////////////////////////////////////////////////////
 bool CSequencerDopeSheetBase::CreatePointForAnimationInLayerDrop(const CPoint& point, COleDataObject* pDataObject)
 {
 	UINT clipFormat = MannequinDragDropHelpers::GetAnimationNameClipboardFormat();
@@ -1439,7 +1393,6 @@ bool CSequencerDopeSheetBase::CreatePointForAnimationInLayerDrop(const CPoint& p
 	return false;
 }
 
-//////////////////////////////////////////////////////////////////////////
 void CSequencerDopeSheetBase::OnLButtonDblClk(UINT nFlags, CPoint point)
 {
 	if (m_rcTimeline.PtInRect(point))
@@ -1507,7 +1460,6 @@ void CSequencerDopeSheetBase::OnLButtonDblClk(UINT nFlags, CPoint point)
 	CWnd::OnLButtonDblClk(nFlags, point);
 }
 
-//////////////////////////////////////////////////////////////////////////
 void CSequencerDopeSheetBase::OnMButtonDown(UINT nFlags, CPoint point)
 {
 	SetFocus();
@@ -1516,7 +1468,6 @@ void CSequencerDopeSheetBase::OnMButtonDown(UINT nFlags, CPoint point)
 	m_bMoveDrag = true;
 }
 
-//////////////////////////////////////////////////////////////////////////
 void CSequencerDopeSheetBase::OnMButtonUp(UINT nFlags, CPoint point)
 {
 	m_bMoveDrag = false;
@@ -1526,7 +1477,6 @@ void CSequencerDopeSheetBase::OnMButtonUp(UINT nFlags, CPoint point)
 	}
 }
 
-//////////////////////////////////////////////////////////////////////////
 void CSequencerDopeSheetBase::OnRButtonDown(UINT nFlags, CPoint point)
 {
 	//CWnd::OnRButtonDown(nFlags, point);
@@ -1795,7 +1745,6 @@ bool CSequencerDopeSheetBase::AddOrCheckoutFile(const string& filename)
 	return false;
 }
 
-//////////////////////////////////////////////////////////////////////////
 void CSequencerDopeSheetBase::TryOpenFile(const CString& relativePath, const CString& fileName, const CString& extension) const
 {
 	const CString filePath = relativePath + fileName + extension;
@@ -1811,7 +1760,6 @@ void CSequencerDopeSheetBase::TryOpenFile(const CString& relativePath, const CSt
 	}
 }
 
-//////////////////////////////////////////////////////////////////////////
 CSequencerDopeSheetBase::EDSSourceControlResponse CSequencerDopeSheetBase::TryGetLatestOnFiles(const std::vector<CString>& paths, bool bPromptUser) const
 {
 	ISourceControl* pSourceControl = GetIEditorImpl()->GetSourceControl();
@@ -1901,7 +1849,6 @@ CSequencerDopeSheetBase::EDSSourceControlResponse CSequencerDopeSheetBase::TryGe
 	return SUCCEEDED_OPERATION;
 }
 
-//////////////////////////////////////////////////////////////////////////
 // N.B. Does NOT check if latest version - use TryGetLatestOnFiles()
 CSequencerDopeSheetBase::EDSSourceControlResponse CSequencerDopeSheetBase::TryCheckoutFiles(const std::vector<CString>& paths, bool bPromptUser) const
 {
@@ -1983,7 +1930,6 @@ CSequencerDopeSheetBase::EDSSourceControlResponse CSequencerDopeSheetBase::TryCh
 	return SUCCEEDED_OPERATION;
 }
 
-//////////////////////////////////////////////////////////////////////////
 void CSequencerDopeSheetBase::OnRButtonUp(UINT nFlags, CPoint point)
 {
 	if (GetCapture() == this)
@@ -2035,7 +1981,6 @@ void CSequencerDopeSheetBase::OnRButtonUp(UINT nFlags, CPoint point)
 	//	CWnd::OnRButtonUp(nFlags, point);
 }
 
-//////////////////////////////////////////////////////////////////////////
 void CSequencerDopeSheetBase::OnMouseMove(UINT nFlags, CPoint point)
 {
 	// To prevent the key moving while selecting
@@ -2107,7 +2052,6 @@ void CSequencerDopeSheetBase::OnMouseMove(UINT nFlags, CPoint point)
 	}
 	else
 	{
-		//////////////////////////////////////////////////////////////////////////
 		if (m_mouseActionMode == SEQMODE_ADDKEY)
 		{
 			SetMouseCursor(m_crsAddKey);
@@ -2121,7 +2065,6 @@ void CSequencerDopeSheetBase::OnMouseMove(UINT nFlags, CPoint point)
 	CWnd::OnMouseMove(nFlags, point);
 }
 
-//////////////////////////////////////////////////////////////////////////
 void CSequencerDopeSheetBase::OnPaint()
 {
 	//	CPaintDC dc(this); // device context for painting
@@ -2137,12 +2080,10 @@ void CSequencerDopeSheetBase::OnPaint()
 	DrawControl(dc, PaintDC.m_ps.rcPaint);
 }
 
-//////////////////////////////////////////////////////////////////////////
 void CSequencerDopeSheetBase::DrawTrack(int item, CDC* dc, const CRect& rcItem)
 {
 }
 
-//////////////////////////////////////////////////////////////////////////
 void CSequencerDopeSheetBase::DrawControl(CDC* dc, const CRect& rcUpdate)
 {
 	CRect rc;
@@ -2166,7 +2107,6 @@ void CSequencerDopeSheetBase::DrawControl(CDC* dc, const CRect& rcUpdate)
 	DrawSelectedKeyIndicators(dc);
 }
 
-//////////////////////////////////////////////////////////////////////////
 void CSequencerDopeSheetBase::UnselectAllKeys(bool bNotify)
 {
 	CSequencerUtils::SelectedKeys selectedKeys;
@@ -2183,11 +2123,9 @@ void CSequencerDopeSheetBase::UnselectAllKeys(bool bNotify)
 		NotifyKeySelectionUpdate();
 }
 
-//////////////////////////////////////////////////////////////////////////
 void CSequencerDopeSheetBase::SelectKeys(const CRect& rc)
 {}
 
-//////////////////////////////////////////////////////////////////////////
 void CSequencerDopeSheetBase::SelectAllKeysWithinTimeFrame(const CRect& rc)
 {
 	if (m_pSequence == NULL)
@@ -2221,13 +2159,11 @@ void CSequencerDopeSheetBase::SelectAllKeysWithinTimeFrame(const CRect& rc)
 	}
 }
 
-//////////////////////////////////////////////////////////////////////////
 bool CSequencerDopeSheetBase::SelectFirstKey()
 {
 	return SelectFirstKey(SEQUENCER_PARAM_TOTAL);
 }
 
-//////////////////////////////////////////////////////////////////////////
 bool CSequencerDopeSheetBase::SelectFirstKey(const ESequencerParamType type)
 {
 	const bool selectAnyTrackType = (type == SEQUENCER_PARAM_TOTAL);
@@ -2257,7 +2193,6 @@ bool CSequencerDopeSheetBase::SelectFirstKey(const ESequencerParamType type)
 	return false;
 }
 
-//////////////////////////////////////////////////////////////////////////
 void CSequencerDopeSheetBase::DelSelectedKeys(bool bPrompt, bool bAllowUndo, bool bIgnorePermission)
 {
 	CSequencerUtils::SelectedKeys selectedKeys;
@@ -2310,7 +2245,6 @@ void CSequencerDopeSheetBase::DelSelectedKeys(bool bPrompt, bool bAllowUndo, boo
 	}
 }
 
-//////////////////////////////////////////////////////////////////////////
 void CSequencerDopeSheetBase::OffsetSelectedKeys(const float timeOffset, const bool bSnap)
 {
 	CSequencerUtils::SelectedKeys selectedKeys;
@@ -2325,7 +2259,6 @@ void CSequencerDopeSheetBase::OffsetSelectedKeys(const float timeOffset, const b
 	}
 }
 
-//////////////////////////////////////////////////////////////////////////
 void CSequencerDopeSheetBase::ScaleSelectedKeys(float timeOffset, bool bSnapKeys)
 {
 	if (timeOffset <= 0)
@@ -2343,7 +2276,6 @@ void CSequencerDopeSheetBase::ScaleSelectedKeys(float timeOffset, bool bSnapKeys
 	}
 }
 
-//////////////////////////////////////////////////////////////////////////
 void CSequencerDopeSheetBase::CloneSelectedKeys()
 {
 	CSequencerUtils::SelectedKeys selectedKeys;
@@ -2387,7 +2319,6 @@ void CSequencerDopeSheetBase::CloneSelectedKeys()
 	}
 }
 
-//////////////////////////////////////////////////////////////////////////
 BOOL CSequencerDopeSheetBase::OnSetCursor(CWnd* pWnd, UINT nHitTest, UINT message)
 {
 	if (m_currCursor != NULL)
@@ -2405,20 +2336,17 @@ void CSequencerDopeSheetBase::SetMouseCursor(HCURSOR crs)
 		SetCursor(crs);
 }
 
-//////////////////////////////////////////////////////////////////////////
 BOOL CSequencerDopeSheetBase::OnEraseBkgnd(CDC* pDC)
 {
 	//return CWnd::OnEraseBkgnd(pDC);
 	return FALSE;
 }
 
-//////////////////////////////////////////////////////////////////////////
 float CSequencerDopeSheetBase::GetCurrTime() const
 {
 	return m_currentTime;
 }
 
-//////////////////////////////////////////////////////////////////////////
 void CSequencerDopeSheetBase::SetCurrTime(float time, bool bForce)
 {
 	if (time < m_timeRange.start)
@@ -2466,7 +2394,6 @@ void CSequencerDopeSheetBase::SetEndMarker(float fTime)
 	Invalidate();
 }
 
-//////////////////////////////////////////////////////////////////////////
 void CSequencerDopeSheetBase::SetMouseActionMode(ESequencerActionMode mode)
 {
 	m_mouseActionMode = mode;
@@ -2476,7 +2403,6 @@ void CSequencerDopeSheetBase::SetMouseActionMode(ESequencerActionMode mode)
 	}
 }
 
-//////////////////////////////////////////////////////////////////////////
 bool CSequencerDopeSheetBase::CanCopyPasteKeys()
 {
 	CSequencerTrack* pCopyFromTrack = NULL;
@@ -2512,7 +2438,6 @@ bool CSequencerDopeSheetBase::CanCopyPasteKeys()
 	return (pCopyFromTrack == pCurrTrack);
 }
 
-//////////////////////////////////////////////////////////////////////////
 bool CSequencerDopeSheetBase::CopyPasteKeys()
 {
 	CSequencerTrack* pCopyFromTrack = NULL;
@@ -2551,13 +2476,11 @@ bool CSequencerDopeSheetBase::CopyPasteKeys()
 	return true;
 }
 
-//////////////////////////////////////////////////////////////////////////
 void CSequencerDopeSheetBase::SetKeyInfo(CSequencerTrack* track, int key, bool openWindow)
 {
 	NotifyKeySelectionUpdate();
 }
 
-//////////////////////////////////////////////////////////////////////////
 bool CSequencerDopeSheetBase::FindSingleSelectedKey(CSequencerTrack*& selTrack, int& selKey)
 {
 	selTrack = 0;
@@ -2572,7 +2495,6 @@ bool CSequencerDopeSheetBase::FindSingleSelectedKey(CSequencerTrack*& selTrack, 
 	return true;
 }
 
-//////////////////////////////////////////////////////////////////////////
 int CSequencerDopeSheetBase::GetItemRect(int item, CRect& rect) const
 {
 	if (item < 0 || item >= GetCount())
@@ -2589,7 +2511,6 @@ int CSequencerDopeSheetBase::GetItemRect(int item, CRect& rect) const
 	return 0;
 }
 
-//////////////////////////////////////////////////////////////////////////
 int CSequencerDopeSheetBase::ItemFromPoint(CPoint pnt) const
 {
 	CRect rc;
@@ -2603,7 +2524,6 @@ int CSequencerDopeSheetBase::ItemFromPoint(CPoint pnt) const
 	return -1;
 }
 
-//////////////////////////////////////////////////////////////////////////
 void CSequencerDopeSheetBase::UpdateHorizontalExtent()
 {
 	const int pageWidth = m_rcClient.Width();
@@ -2623,7 +2543,6 @@ void CSequencerDopeSheetBase::UpdateHorizontalExtent()
 	SetScrollInfo(SB_HORZ, &si, TRUE);
 };
 
-//////////////////////////////////////////////////////////////////////////
 void CSequencerDopeSheetBase::UpdateAnimation(int item)
 {
 	m_changeCount++;
@@ -2635,7 +2554,6 @@ void CSequencerDopeSheetBase::UpdateAnimation(int item)
 	}
 }
 
-//////////////////////////////////////////////////////////////////////////
 void CSequencerDopeSheetBase::UpdateAnimation(CSequencerTrack* animTrack)
 {
 	m_changeCount++;
@@ -2646,7 +2564,6 @@ void CSequencerDopeSheetBase::UpdateAnimation(CSequencerTrack* animTrack)
 	}
 }
 
-//////////////////////////////////////////////////////////////////////////
 bool CSequencerDopeSheetBase::CopyKeys(bool bPromptAllowed, bool bUseClipboard, bool bCopyTrack)
 {
 	CSequencerNode* pCurNode = NULL;
@@ -2905,7 +2822,6 @@ void CSequencerDopeSheetBase::StartDraggingKeys(CPoint point)
 	}
 }
 
-//////////////////////////////////////////////////////////////////////////
 void CSequencerDopeSheetBase::StartPasteKeys()
 {
 	if (m_pSequence)
@@ -2929,7 +2845,6 @@ void CSequencerDopeSheetBase::StartPasteKeys()
 	PasteKeys(NULL, NULL, time - m_mouseMoveStartTimeOffset);
 }
 
-//////////////////////////////////////////////////////////////////////////
 void CSequencerDopeSheetBase::FinalizePasteKeys()
 {
 	GetIEditorImpl()->GetIUndoManager()->Accept("Paste Keys");
@@ -2948,7 +2863,6 @@ void CSequencerDopeSheetBase::FinalizePasteKeys()
 	}
 }
 
-//////////////////////////////////////////////////////////////////////////
 void CSequencerDopeSheetBase::SerializeTracks(XmlNodeRef& destination)
 {
 	int nNodeCount = m_pSequence->GetNodeCount();
@@ -2978,7 +2892,6 @@ void CSequencerDopeSheetBase::SerializeTracks(XmlNodeRef& destination)
 	}
 }
 
-//////////////////////////////////////////////////////////////////////////
 void CSequencerDopeSheetBase::DeserializeTracks(const XmlNodeRef& source)
 {
 	int nNodeCount = m_pSequence->GetNodeCount();
@@ -3018,7 +2931,6 @@ void CSequencerDopeSheetBase::DeserializeTracks(const XmlNodeRef& source)
 	m_pSequence->UpdateKeys();
 }
 
-//////////////////////////////////////////////////////////////////////////
 bool CSequencerDopeSheetBase::PasteKeys(CSequencerNode* pAnimNode, CSequencerTrack* pAnimTrack, float fTimeOffset)
 {
 	int nPasteToItem = -1;
@@ -3250,7 +3162,6 @@ void CSequencerDopeSheetBase::OnKeyDown(UINT nChar, UINT nRepCnt, UINT nFlags)
 	CWnd::OnKeyDown(nChar, nRepCnt, nFlags);
 }
 
-//////////////////////////////////////////////////////////////////////////
 void CSequencerDopeSheetBase::RecordTrackUndo(const Item& item)
 {
 	if (item.track != 0)
@@ -3260,7 +3171,6 @@ void CSequencerDopeSheetBase::RecordTrackUndo(const Item& item)
 	}
 }
 
-//////////////////////////////////////////////////////////////////////////
 void CSequencerDopeSheetBase::ShowKeyTooltip(CSequencerTrack* pTrack, int nKey, int secondarySelection, CPoint point)
 {
 	if (m_lastTooltipPos.x == point.x && m_lastTooltipPos.y == point.y)
@@ -3304,7 +3214,6 @@ void CSequencerDopeSheetBase::ShowKeyTooltip(CSequencerTrack* pTrack, int nKey, 
 	m_tooltip.Activate(TRUE);
 }
 
-//////////////////////////////////////////////////////////////////////////
 void CSequencerDopeSheetBase::InvalidateItem(int item)
 {
 	CRect rc;
@@ -3315,7 +3224,6 @@ void CSequencerDopeSheetBase::InvalidateItem(int item)
 	}
 }
 
-//////////////////////////////////////////////////////////////////////////
 void CSequencerDopeSheetBase::OnEditorNotifyEvent(EEditorNotifyEvent event)
 {
 	switch (event)
@@ -3330,7 +3238,6 @@ void CSequencerDopeSheetBase::OnEditorNotifyEvent(EEditorNotifyEvent event)
 	}
 }
 
-//////////////////////////////////////////////////////////////////////////
 void CSequencerDopeSheetBase::OnRawInput(UINT wParam, HRAWINPUT lParam)
 {
 	// Forward raw input to the Track View dialog
@@ -3339,7 +3246,6 @@ void CSequencerDopeSheetBase::OnRawInput(UINT wParam, HRAWINPUT lParam)
 		pWnd->SendMessage(WM_INPUT, wParam, (LPARAM)lParam);
 }
 
-//////////////////////////////////////////////////////////////////////////
 void CSequencerDopeSheetBase::ClearSelection()
 {
 	for (int i = 0; i < GetCount(); i++)
@@ -3349,7 +3255,6 @@ void CSequencerDopeSheetBase::ClearSelection()
 	Invalidate();
 }
 
-//////////////////////////////////////////////////////////////////////////
 bool CSequencerDopeSheetBase::GetSelectedTracks(std::vector<CSequencerTrack*>& tracks) const
 {
 	CSequencerUtils::SelectedKeys selectedKeys;
@@ -3373,7 +3278,6 @@ bool CSequencerDopeSheetBase::GetSelectedTracks(std::vector<CSequencerTrack*>& t
 	return !tracks.empty();
 }
 
-//////////////////////////////////////////////////////////////////////////
 bool CSequencerDopeSheetBase::GetSelectedNodes(std::vector<CSequencerNode*>& nodes) const
 {
 	CSequencerUtils::SelectedKeys selectedKeys;
@@ -3397,7 +3301,6 @@ bool CSequencerDopeSheetBase::GetSelectedNodes(std::vector<CSequencerNode*>& nod
 	return !nodes.empty();
 }
 
-//////////////////////////////////////////////////////////////////////////
 void CSequencerDopeSheetBase::SelectItem(int item)
 {
 	if (item >= 0 && item < GetCount())
@@ -3407,7 +3310,6 @@ void CSequencerDopeSheetBase::SelectItem(int item)
 	Invalidate();
 }
 
-//////////////////////////////////////////////////////////////////////////
 bool CSequencerDopeSheetBase::IsSelectedItem(int item)
 {
 	if (item >= 0 && item < GetCount())
@@ -3417,7 +3319,6 @@ bool CSequencerDopeSheetBase::IsSelectedItem(int item)
 	return false;
 }
 
-//////////////////////////////////////////////////////////////////////////
 void CSequencerDopeSheetBase::OffsetKey(CSequencerTrack* track, const int keyIndex, const float timeOffset) const
 {
 	if (m_secondarySelection)
@@ -3433,7 +3334,6 @@ void CSequencerDopeSheetBase::OffsetKey(CSequencerTrack* track, const int keyInd
 	}
 }
 
-//////////////////////////////////////////////////////////////////////////
 void CSequencerDopeSheetBase::NotifyKeySelectionUpdate()
 {
 	GetIEditorImpl()->Notify(eNotify_OnUpdateSequencerKeySelection);
@@ -3442,7 +3342,6 @@ void CSequencerDopeSheetBase::NotifyKeySelectionUpdate()
 	SetFocus();
 }
 
-//////////////////////////////////////////////////////////////////////////
 bool CSequencerDopeSheetBase::IsOkToAddKeyHere(const CSequencerTrack* pTrack, float time) const
 {
 	const float timeEpsilon = 0.05f;
@@ -3864,7 +3763,6 @@ float CSequencerDopeSheetBase::MagnetSnap(const float origTime, const CSequencer
 	return newTime;
 }
 
-//////////////////////////////////////////////////////////////////////////
 float CSequencerDopeSheetBase::FrameSnap(float time) const
 {
 	double t = double(time / m_snapFrameTime + 0.5);
@@ -3872,7 +3770,6 @@ float CSequencerDopeSheetBase::FrameSnap(float time) const
 	return t;
 }
 
-//////////////////////////////////////////////////////////////////////////
 void CSequencerDopeSheetBase::ShowKeyPropertyCtrlOnSpot(int x, int y, bool bMultipleKeysSelected, bool bKeyChangeInSameTrack)
 {
 	if (m_keyPropertiesDlg == NULL)
@@ -3903,7 +3800,6 @@ void CSequencerDopeSheetBase::ShowKeyPropertyCtrlOnSpot(int x, int y, bool bMult
 	m_wndPropsOnSpot.ShowWindow(SW_SHOW);
 }
 
-//////////////////////////////////////////////////////////////////////////
 void CSequencerDopeSheetBase::HideKeyPropertyCtrlOnSpot()
 {
 	if (m_wndPropsOnSpot.m_hWnd)
@@ -3913,7 +3809,6 @@ void CSequencerDopeSheetBase::HideKeyPropertyCtrlOnSpot()
 	}
 }
 
-//////////////////////////////////////////////////////////////////////////
 void CSequencerDopeSheetBase::SetScrollOffset(int hpos)
 {
 	SetScrollPos(SB_HORZ, hpos);

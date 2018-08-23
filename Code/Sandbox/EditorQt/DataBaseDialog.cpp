@@ -1,15 +1,16 @@
 // Copyright 2001-2018 Crytek GmbH / Crytek Group. All rights reserved.
 
 #include "StdAfx.h"
-
-#include "Material\Material.h"
-
 #include "DataBaseDialog.h"
+
+#include "GameTokens/GameTokenDialog.h"
+#include "Material/Material.h"
+#include "Particles/ParticleDialog.h"
 #include "EntityProtLibDialog.h"
-#include "Particles\ParticleDialog.h"
-#include "GameTokens\GameTokenDialog.h"
-#include "Controls/SharedFonts.h"
-#include "QtViewPane.h"
+
+#include <Controls/SharedFonts.h>
+
+#include <QtViewPane.h>
 
 #define IDC_TABCTRL 1
 
@@ -18,9 +19,6 @@ IMPLEMENT_DYNCREATE(CDataBaseDialog, CToolbarDialog)
 
 class CDataBaseViewPaneClass : public IViewPaneClass
 {
-	//////////////////////////////////////////////////////////////////////////
-	// IClassDesc
-	//////////////////////////////////////////////////////////////////////////
 	virtual ESystemClassID SystemClassID()	 override { return ESYSTEM_CLASS_VIEWPANE; }
 	virtual const char*    ClassName()       override { return DATABASE_VIEW_NAME; }
 	virtual const char*    Category()        override { return "Editor"; }
@@ -31,10 +29,6 @@ class CDataBaseViewPaneClass : public IViewPaneClass
 
 REGISTER_CLASS_DESC(CDataBaseViewPaneClass)
 
-//////////////////////////////////////////////////////////////////////
-// Construction/Destruction
-//////////////////////////////////////////////////////////////////////
-
 CDataBaseDialog::CDataBaseDialog(CWnd* pParent)
 	: CToolbarDialog(IDD, pParent)
 {
@@ -44,7 +38,6 @@ CDataBaseDialog::CDataBaseDialog(CWnd* pParent)
 	Create(IDD, pParent);
 }
 
-//////////////////////////////////////////////////////////////////////////
 CDataBaseDialog::~CDataBaseDialog()
 {
 	for (int i = 0; i < m_windows.size(); i++)
@@ -61,13 +54,11 @@ ON_WM_SIZE()
 //}}AFX_MSG_MAP
 END_MESSAGE_MAP()
 
-//////////////////////////////////////////////////////////////////////////
 void CDataBaseDialog::PostNcDestroy()
 {
 	delete this;
 }
 
-//////////////////////////////////////////////////////////////////////////
 void CDataBaseDialog::DoDataExchange(CDataExchange* pDX)
 {
 	CToolbarDialog::DoDataExchange(pDX);
@@ -125,13 +116,8 @@ void CDataBaseDialog::Activate(CDataBaseDialogPage* dlg, bool bActive)
 	dlg->SetActive(bActive);
 }
 
-//////////////////////////////////////////////////////////////////////////
 void CDataBaseDialog::OnSize(UINT nType, int cx, int cy)
 {
-	////////////////////////////////////////////////////////////////////////
-	// Resize
-	////////////////////////////////////////////////////////////////////////
-
 	RECT rcRollUp;
 
 	CToolbarDialog::OnSize(nType, cx, cy);
@@ -171,14 +157,12 @@ void CDataBaseDialog::OnSize(UINT nType, int cx, int cy)
 	 */
 }
 
-//////////////////////////////////////////////////////////////////////////
 void CDataBaseDialog::OnTabSelect(NMHDR* pNMHDR, LRESULT* pResult)
 {
 	int sel = m_tabCtrl.GetCurSel();
 	Select(sel);
 }
 
-//////////////////////////////////////////////////////////////////////////
 CDataBaseDialogPage* CDataBaseDialog::SelectDialog(EDataBaseItemType type, IDataBaseItem* pItem)
 {
 	switch (type)
@@ -210,7 +194,6 @@ CDataBaseDialogPage* CDataBaseDialog::SelectDialog(EDataBaseItemType type, IData
 	return pPage;
 }
 
-//////////////////////////////////////////////////////////////////////////
 void CDataBaseDialog::Select(int num)
 {
 	if (num == m_selectedCtrl)
@@ -235,14 +218,12 @@ void CDataBaseDialog::Select(int num)
 	}
 }
 
-//////////////////////////////////////////////////////////////////////////
 CDataBaseDialogPage* CDataBaseDialog::GetPage(int num)
 {
 	assert(num >= 0 && num < m_windows.size());
 	return m_windows[num];
 }
 
-//////////////////////////////////////////////////////////////////////////
 void CDataBaseDialog::AddTab(const char* szTitle, CDataBaseDialogPage* wnd)
 {
 	wnd->ModifyStyle(0, WS_CLIPCHILDREN);
@@ -255,14 +236,12 @@ void CDataBaseDialog::AddTab(const char* szTitle, CDataBaseDialogPage* wnd)
 	}
 }
 
-//////////////////////////////////////////////////////////////////////////
 CDataBaseDialogPage* CDataBaseDialog::GetCurrent()
 {
 	ASSERT(m_selectedCtrl < m_windows.size());
 	return m_windows[m_selectedCtrl];
 }
 
-//////////////////////////////////////////////////////////////////////////
 void CDataBaseDialog::Update()
 {
 	if (GetCurrent())

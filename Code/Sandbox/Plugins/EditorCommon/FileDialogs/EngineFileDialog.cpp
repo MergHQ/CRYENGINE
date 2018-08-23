@@ -2,45 +2,34 @@
 #include "StdAfx.h"
 #include "EngineFileDialog.h"
 
-#include "FileSystem/FileSystem_Enumerator.h"
-#include "FileSystem/FileTreeModel.h"
-#include "FileSystem/FileListModel.h"
-#include "FileSystem/FileSortProxyModel.h"
-
+#include "Controls/QMenuComboBox.h"
+#include "Controls/QuestionDialog.h"
 #include "FileDialogs/FileNameLineEdit.h"
+#include "FileDialogs/FilePopupMenu.h"
 #include "FileDialogs/Internal/SelectExtensionDialog.h"
 #include "FileDialogs/Internal/FilePreviewContainer.h"
-
-#include "QSearchBox.h"
-#include "Controls/QuestionDialog.h"
-#include "Controls/QMenuComboBox.h"
-
-#include "FilePopupMenu.h"
-#include "CryIcon.h"
-#include "QAdvancedItemDelegate.h"
-#include "FilePathUtil.h"
+#include "FileSystem/FileListModel.h"
+#include "FileSystem/FileSortProxyModel.h"
+#include "FileSystem/FileTreeModel.h"
 #include "EditorStyleHelper.h"
+#include "FilePathUtil.h"
+#include "QAdvancedItemDelegate.h"
 
-#include <CrySystem/File/ICryPak.h>
+#include <CryIcon.h>
 
-#include <QScopedPointer>
-#include <QStandardItemModel>
-#include <QItemSelectionModel>
-#include <QFileInfo>
-#include <QButtonGroup>
-#include <QTableView>
-#include <QListView>
 #include <QAdvancedTreeView.h>
-#include <QGridLayout>
-#include <QLabel>
-#include <QPushButton>
-#include <QToolButton>
-#include <QSplitter>
-#include <QHeaderView>
-#include <QLineEdit>
 #include <QDir>
-#include <QKeyEvent>
+#include <QFileInfo>
+#include <QHeaderView>
 #include <QInputDialog>
+#include <QItemSelectionModel>
+#include <QKeyEvent>
+#include <QLabel>
+#include <QLineEdit>
+#include <QPushButton>
+#include <QScopedPointer>
+#include <QSplitter>
+#include <QToolButton>
 
 #include <stack>
 
@@ -1331,7 +1320,6 @@ std::vector<QString> CEngineFileDialog::GetSelectedFiles() const
 
 QString CEngineFileDialog::RunGameOpen(const RunParams& runParams, QWidget* parent)
 {
-	//////////////////////////////////////////////////////////////////////////
 	OpenParams openParams(CEngineFileDialog::OpenFile);
 	openParams.initialDir = runParams.initialDir;
 	openParams.extensionFilters = runParams.extensionFilters;

@@ -2,27 +2,27 @@
 
 #pragma once
 
-#include <memory>
-#include <QWidget>
-#include <QItemSelection>
-#include <QAdvancedTreeView.h>
-#include <QMetaObject>
-#include <CrySerialization/IArchive.h>
-#include <CrySerialization/NameGeneration.h>
 #include "Serialization/QPropertyTree/QPropertyTree.h"
 #include "Explorer.h"
 
-class QToolButton;
-class QLineEdit;
-class QPushButton;
-class QString;
-class QItemSelection;
-class QModelIndex;
+#include <CrySerialization/IArchive.h>
+#include <CrySerialization/NameGeneration.h>
+
+#include <QAdvancedTreeView.h>
+#include <QItemSelection>
+#include <QMetaObject>
+#include <QWidget>
+
+#include <memory>
+
 class QAbstractItemModel;
-class QMenu;
 class QDockWidget;
-class QMainWindow;
+class QItemSelection;
+class QMenu;
+class QModelIndex;
+class QPushButton;
 class QSearchBox;
+class QToolButton;
 
 namespace Explorer
 {

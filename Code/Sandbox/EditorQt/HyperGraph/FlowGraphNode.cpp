@@ -2,14 +2,13 @@
 
 #include "StdAfx.h"
 #include "FlowGraphNode.h"
-#include "FlowGraphVariables.h"
-#include "GameEngine.h"
-#include "FlowGraph.h"
-#include "Objects\EntityObject.h"
-#include "Objects\Group.h"
-#include "Objects\ObjectLoader.h"
-#include "Prefabs\PrefabManager.h"
-#include "Prefabs\PrefabEvents.h"
+
+#include "HyperGraph/FlowGraph.h"
+#include "HyperGraph/FlowGraphVariables.h"
+#include "Objects/EntityObject.h"
+#include "Objects/ObjectLoader.h"
+#include "Prefabs/PrefabManager.h"
+#include "Prefabs/PrefabEvents.h"
 
 #define FG_ALLOW_STRIPPED_PORTNAMES
 //#undef  FG_ALLOW_STRIPPED_PORTNAMES
@@ -22,7 +21,6 @@
 #define TITLE_COLOR_DEBUG    Gdiplus::Color(220, 180, 20)
 #define TITLE_COLOR_OBSOLETE Gdiplus::Color(255, 0, 0)
 
-//////////////////////////////////////////////////////////////////////////
 CFlowNode::CFlowNode()
 	: CHyperNode()
 {
@@ -33,7 +31,6 @@ CFlowNode::CFlowNode()
 	m_pEntity = NULL;
 }
 
-//////////////////////////////////////////////////////////////////////////
 CFlowNode::~CFlowNode()
 {
 	if (strncmp(GetClassName(), "Prefab:", 7) == 0)
@@ -52,14 +49,12 @@ CFlowNode::~CFlowNode()
 	}
 }
 
-//////////////////////////////////////////////////////////////////////////
 IFlowGraph* CFlowNode::GetIFlowGraph() const
 {
 	CHyperFlowGraph* pGraph = static_cast<CHyperFlowGraph*>(GetGraph());
 	return pGraph ? pGraph->GetIFlowGraph() : nullptr;
 }
 
-//////////////////////////////////////////////////////////////////////////
 void CFlowNode::Init()
 {
 	CString sNodeName = "<unknown>";
@@ -71,7 +66,6 @@ void CFlowNode::Init()
 	m_flowNodeId = GetIFlowGraph()->CreateNode(m_classname, sNodeName);
 }
 
-//////////////////////////////////////////////////////////////////////////
 void CFlowNode::Done()
 {
 	if (m_flowNodeId != InvalidFlowNodeId)
@@ -80,14 +74,12 @@ void CFlowNode::Done()
 	m_pEntity = NULL;
 }
 
-//////////////////////////////////////////////////////////////////////////
 void CFlowNode::SetName(const char* sName)
 {
 	if (GetIFlowGraph()->SetNodeName(m_flowNodeId, sName))
 		__super::SetName(sName);
 }
 
-//////////////////////////////////////////////////////////////////////////
 void CFlowNode::SetFromNodeId(TFlowNodeId flowNodeId)
 {
 	m_flowNodeId = flowNodeId;
@@ -99,7 +91,6 @@ void CFlowNode::SetFromNodeId(TFlowNodeId flowNodeId)
 	}
 }
 
-//////////////////////////////////////////////////////////////////////////
 void CFlowNode::DebugPortActivation(TFlowPortId port, const char* value,  bool bIsInitializationStep)
 {
 	m_portActivationMap[port] = string(value);
@@ -129,7 +120,6 @@ bool CFlowNode::IsDebugPortActivated(CHyperNodePort* port) const
 	return (result != m_debugPortActivations.end());
 }
 
-//////////////////////////////////////////////////////////////////////////
 bool CFlowNode::IsPortActivationModified(const CHyperNodePort* port) const
 {
 	if (port)
@@ -139,7 +129,6 @@ bool CFlowNode::IsPortActivationModified(const CHyperNodePort* port) const
 	return m_portActivationMap.size() > 0;
 }
 
-//////////////////////////////////////////////////////////////////////////
 void CFlowNode::ClearDebugPortActivation()
 {
 	ResetDebugCount();
@@ -148,7 +137,6 @@ void CFlowNode::ClearDebugPortActivation()
 	m_debugPortActivations.clear();
 }
 
-//////////////////////////////////////////////////////////////////////////
 CString CFlowNode::GetDebugPortValue(const CHyperNodePort& pp)
 {
 	const char* value = stl::find_in_map(m_portActivationMap, pp.nPortIndex, NULL);
@@ -173,7 +161,6 @@ bool CFlowNode::GetAdditionalDebugPortInformation(const CHyperNodePort& pp, bool
 	return false;
 }
 
-//////////////////////////////////////////////////////////////////////////
 CHyperNode* CFlowNode::Clone()
 {
 	CFlowNode* pNode = new CFlowNode;
@@ -205,7 +192,6 @@ CHyperNode* CFlowNode::Clone()
 	return pNode;
 }
 
-//////////////////////////////////////////////////////////////////////////
 IUndoObject* CFlowNode::CreateUndo()
 {
 	// we create a full copy of the flowgraph. See comment in CHyperFlowGraph::CUndoFlowGraph
@@ -214,7 +200,6 @@ IUndoObject* CFlowNode::CreateUndo()
 	return pGraph->CreateUndo();
 }
 
-//////////////////////////////////////////////////////////////////////////
 void CFlowNode::SetSelectedEntity()
 {
 	CBaseObject* pSelObj = GetIEditorImpl()->GetSelectedObject();
@@ -224,7 +209,6 @@ void CFlowNode::SetSelectedEntity()
 	}
 }
 
-//////////////////////////////////////////////////////////////////////////
 void CFlowNode::SetDefaultEntity()
 {
 	CEntityObject* pEntity = ((CHyperFlowGraph*)GetGraph())->GetEntity();
@@ -233,14 +217,12 @@ void CFlowNode::SetDefaultEntity()
 	SetFlag(EHYPER_NODE_GRAPH_ENTITY2, false);
 }
 
-//////////////////////////////////////////////////////////////////////////
 CEntityObject* CFlowNode::GetDefaultEntity() const
 {
 	CEntityObject* pEntity = ((CHyperFlowGraph*)GetGraph())->GetEntity();
 	return pEntity;
 }
 
-//////////////////////////////////////////////////////////////////////////
 void CFlowNode::SetEntity(CEntityObject* pEntity)
 {
 	SetFlag(EHYPER_NODE_ENTITY | EHYPER_NODE_ENTITY_VALID, true);
@@ -265,7 +247,6 @@ void CFlowNode::SetEntity(CEntityObject* pEntity)
 	GetIFlowGraph()->SetEntityId(m_flowNodeId, m_pEntity ? m_pEntity->GetEntityId() : 0);
 }
 
-//////////////////////////////////////////////////////////////////////////
 CEntityObject* CFlowNode::GetEntity() const
 {
 	if (m_pEntity && m_pEntity->CheckFlags(OBJFLAG_DELETED))
@@ -273,7 +254,6 @@ CEntityObject* CFlowNode::GetEntity() const
 	return m_pEntity;
 }
 
-//////////////////////////////////////////////////////////////////////////
 void CFlowNode::Unlinked(bool bInput)
 {
 	if (bInput)
@@ -281,7 +261,6 @@ void CFlowNode::Unlinked(bool bInput)
 	Invalidate(true, true);
 }
 
-//////////////////////////////////////////////////////////////////////////
 void CFlowNode::SetInputs(bool bActivate, bool bForceResetEntities)
 {
 	IFlowGraph* pGraph = GetIFlowGraph();
@@ -361,20 +340,17 @@ void CFlowNode::SetInputs(bool bActivate, bool bForceResetEntities)
 	}
 }
 
-//////////////////////////////////////////////////////////////////////////
 void CFlowNode::OnInputsChanged()
 {
 	SetInputs(true);
 	SetModified();
 }
 
-//////////////////////////////////////////////////////////////////////////
 void CFlowNode::OnEnteringGameMode()
 {
 	SetInputs(false);
 }
 
-//////////////////////////////////////////////////////////////////////////
 const char* CFlowNode::GetDescription() const
 {
 	if (m_szDescription && *m_szDescription)
@@ -382,7 +358,6 @@ const char* CFlowNode::GetDescription() const
 	return "";
 }
 
-//////////////////////////////////////////////////////////////////////////
 const char* CFlowNode::GetUIClassName() const
 {
 	if (m_szUIClassName && *m_szUIClassName)
@@ -390,7 +365,6 @@ const char* CFlowNode::GetUIClassName() const
 	return GetClassName();
 }
 
-//////////////////////////////////////////////////////////////////////////
 void CFlowNode::Serialize(XmlNodeRef& node, bool bLoading, CObjectArchive* ar)
 {
 	__super::Serialize(node, bLoading, ar);
@@ -532,7 +506,6 @@ void CFlowNode::Serialize(XmlNodeRef& node, bool bLoading, CObjectArchive* ar)
 
 }
 
-//////////////////////////////////////////////////////////////////////////
 void CFlowNode::PostClone(CBaseObject* pFromObject, CObjectCloneContext& ctx)
 {
 	// fix up all references
@@ -544,7 +517,6 @@ void CFlowNode::PostClone(CBaseObject* pFromObject, CObjectCloneContext& ctx)
 	}
 }
 
-//////////////////////////////////////////////////////////////////////////
 Gdiplus::Color CFlowNode::GetCategoryColor() const
 {
 	// This color coding is used to identify critical and obsolete nodes in the flowgraph editor. [Jan Mueller]
@@ -565,13 +537,11 @@ Gdiplus::Color CFlowNode::GetCategoryColor() const
 	}
 }
 
-//////////////////////////////////////////////////////////////////////////
 bool CFlowNode::IsEntityValid() const
 {
 	return CheckFlag(EHYPER_NODE_ENTITY_VALID) && m_pEntity && !m_pEntity->CheckFlags(OBJFLAG_DELETED);
 }
 
-//////////////////////////////////////////////////////////////////////////
 CString CFlowNode::GetEntityTitle() const
 {
 	if (CheckFlag(EHYPER_NODE_ENTITY))
@@ -612,7 +582,6 @@ CString CFlowNode::GetEntityTitle() const
 	return "Choose Entity";
 }
 
-//////////////////////////////////////////////////////////////////////////
 CString CFlowNode::GetPortName(const CHyperNodePort& port)
 {
 	//IFlowGraph *pGraph = GetIFlowGraph();
@@ -662,7 +631,6 @@ const char* CFlowNode::GetCategoryName() const
 	}
 }
 
-//////////////////////////////////////////////////////////////////////////
 CVarBlock* CFlowNode::GetInputsVarBlock()
 {
 	CVarBlock* pVarBlock = __super::GetInputsVarBlock();
@@ -681,7 +649,6 @@ CVarBlock* CFlowNode::GetInputsVarBlock()
 	return pVarBlock;
 }
 
-//////////////////////////////////////////////////////////////////////////
 CString CFlowNode::GetTitle() const
 {
 	CString title;
@@ -713,7 +680,6 @@ CString CFlowNode::GetTitle() const
 	return title;
 }
 
-//////////////////////////////////////////////////////////////////////////
 TFlowNodeId CFlowNode::GetTypeId() const
 {
 	if (GetFlowNodeId() == InvalidFlowNodeId || !GetIFlowGraph())

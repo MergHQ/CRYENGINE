@@ -3,7 +3,6 @@
 #include "StdAfx.h"
 #include "UIEnumsDatabase.h"
 
-//////////////////////////////////////////////////////////////////////////
 const string& CUIEnumsDatabase_SEnum::NameToValue(const string& name)
 {
 	int n = (int)strings.size();
@@ -15,7 +14,6 @@ const string& CUIEnumsDatabase_SEnum::NameToValue(const string& name)
 	return name;
 }
 
-//////////////////////////////////////////////////////////////////////////
 const string& CUIEnumsDatabase_SEnum::ValueToName(const string& value)
 {
 	int n = (int)strings.size();
@@ -27,12 +25,10 @@ const string& CUIEnumsDatabase_SEnum::ValueToName(const string& value)
 	return value;
 }
 
-//////////////////////////////////////////////////////////////////////////
 CUIEnumsDatabase::CUIEnumsDatabase()
 {
 }
 
-//////////////////////////////////////////////////////////////////////////
 CUIEnumsDatabase::~CUIEnumsDatabase()
 {
 	// Free enums.
@@ -42,7 +38,6 @@ CUIEnumsDatabase::~CUIEnumsDatabase()
 	}
 }
 
-//////////////////////////////////////////////////////////////////////////
 void CUIEnumsDatabase::SetEnumStrings(const string& enumName, const std::vector<string>& sStringsArray)
 {
 	int nStringCount = sStringsArray.size();
@@ -71,7 +66,6 @@ void CUIEnumsDatabase::SetEnumStrings(const string& enumName, const std::vector<
 	}
 }
 
-//////////////////////////////////////////////////////////////////////////
 CUIEnumsDatabase_SEnum* CUIEnumsDatabase::FindEnum(const string& enumName) const
 {
 	CUIEnumsDatabase_SEnum* pEnum = stl::find_in_map(m_enums, enumName, 0);

@@ -2,7 +2,7 @@
 
 #pragma once
 
-#include "Controls\TreeCtrlReport.h"
+#include "Controls/TreeCtrlReport.h"
 #include "ISequencerSystem.h"
 
 class CSequencerNode;

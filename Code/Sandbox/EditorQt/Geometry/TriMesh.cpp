@@ -2,9 +2,8 @@
 
 #include "StdAfx.h"
 #include "TriMesh.h"
-#include "Objects\SubObjSelection.h"
+#include "Objects/SubObjSelection.h"
 
-//////////////////////////////////////////////////////////////////////////
 CTriMesh::CTriMesh()
 {
 	selectionType = SO_ELEM_NONE;
@@ -17,7 +16,6 @@ CTriMesh::CTriMesh()
 	m_streamSel[FACES] = &faceSel;
 }
 
-//////////////////////////////////////////////////////////////////////////
 CTriMesh::~CTriMesh()
 {
 	free(pFaces);
@@ -125,15 +123,12 @@ void CTriMesh::GetStreamInfo(int stream, void*& pStream, int& nElementSize) cons
 	}
 }
 
-//////////////////////////////////////////////////////////////////////////
 void* CTriMesh::ReAllocElements(void* old_ptr, int new_elem_num, int size_of_element)
 {
 	return realloc(old_ptr, new_elem_num * size_of_element);
 }
 
-//////////////////////////////////////////////////////////////////////////
 // Unshare all vertices and split on 3 arrays, positions/texcoords.
-//////////////////////////////////////////////////////////////////////////
 void CTriMesh::SetFromMesh(CMesh& mesh)
 {
 	bbox = mesh.m_bbox;
@@ -182,7 +177,6 @@ void CTriMesh::SetFromMesh(CMesh& mesh)
 	CalcFaceNormals();
 }
 
-/////////////////////////////////////////////////////////////////////////////////////
 inline int FindVertexInHash(const Vec3& vPosToFind, const CTriVertex* pVectors, std::vector<int>& hash, float fEpsilon)
 {
 	for (uint32 i = 0; i < hash.size(); i++)
@@ -195,7 +189,6 @@ inline int FindVertexInHash(const Vec3& vPosToFind, const CTriVertex* pVectors, 
 	return -1;
 }
 
-/////////////////////////////////////////////////////////////////////////////////////
 inline int FindTexCoordInHash(const SMeshTexCoord& coordToFind, const SMeshTexCoord* pCoords, std::vector<int>& hash, float fEpsilon)
 {
 	for (uint32 i = 0; i < hash.size(); i++)
@@ -209,7 +202,6 @@ inline int FindTexCoordInHash(const SMeshTexCoord& coordToFind, const SMeshTexCo
 	return -1;
 }
 
-//////////////////////////////////////////////////////////////////////////
 void CTriMesh::SharePositions()
 {
 	float fEpsilon = 0.0001f;
@@ -261,7 +253,6 @@ void CTriMesh::SharePositions()
 	}
 }
 
-//////////////////////////////////////////////////////////////////////////
 void CTriMesh::ShareUV()
 {
 	float fEpsilon = 0.0001f;
@@ -300,7 +291,6 @@ void CTriMesh::ShareUV()
 	delete[]pNewUV;
 }
 
-//////////////////////////////////////////////////////////////////////////
 void CTriMesh::CalcFaceNormals()
 {
 	for (int i = 0; i < nFacesCount; i++)
@@ -317,7 +307,6 @@ void CTriMesh::CalcFaceNormals()
 #define TEX_EPS 0.001f
 #define VER_EPS 0.001f
 
-//////////////////////////////////////////////////////////////////////////
 void CTriMesh::UpdateIndexedMesh(IIndexedMesh* pIndexedMesh) const
 {
 	{
@@ -386,7 +375,6 @@ void CTriMesh::UpdateIndexedMesh(IIndexedMesh* pIndexedMesh) const
 	pIndexedMesh->Optimize();
 }
 
-//////////////////////////////////////////////////////////////////////////
 void CTriMesh::CopyStream(CTriMesh& fromMesh, int stream)
 {
 	void* pTrgStream = 0;
@@ -401,7 +389,6 @@ void CTriMesh::CopyStream(CTriMesh& fromMesh, int stream)
 	}
 }
 
-//////////////////////////////////////////////////////////////////////////
 void CTriMesh::Copy(CTriMesh& fromMesh, int nCopyFlags)
 {
 	streamSelMask = fromMesh.streamSelMask;
@@ -430,7 +417,6 @@ void CTriMesh::Copy(CTriMesh& fromMesh, int nCopyFlags)
 
 }
 
-//////////////////////////////////////////////////////////////////////////
 void CTriMesh::UpdateEdges()
 {
 	SetEdgeCount(GetFacesCount() * 3);
@@ -483,7 +469,6 @@ void CTriMesh::UpdateEdges()
 	SetEdgeCount(nEdges);
 }
 
-//////////////////////////////////////////////////////////////////////////
 void CTriMesh::SoftSelection(const SSubObjSelOptions& options)
 {
 	int i;
@@ -517,7 +502,6 @@ void CTriMesh::SoftSelection(const SSubObjSelOptions& options)
 	}
 }
 
-//////////////////////////////////////////////////////////////////////////
 bool CTriMesh::UpdateSelection()
 {
 	bool bAnySelected = false;
@@ -571,7 +555,6 @@ bool CTriMesh::UpdateSelection()
 	return bAnySelected;
 }
 
-//////////////////////////////////////////////////////////////////////////
 bool CTriMesh::ClearSelection()
 {
 	bool bWasSelected = false;
@@ -593,7 +576,6 @@ bool CTriMesh::ClearSelection()
 	return bWasSelected;
 }
 
-//////////////////////////////////////////////////////////////////////////
 void CTriMesh::GetEdgesByVertex(MeshElementsArray& inVertices, MeshElementsArray& outEdges)
 {
 	// Brute force algorithm using binary search.
@@ -608,7 +590,6 @@ void CTriMesh::GetEdgesByVertex(MeshElementsArray& inVertices, MeshElementsArray
 	}
 }
 
-//////////////////////////////////////////////////////////////////////////
 void CTriMesh::GetFacesByVertex(MeshElementsArray& inVertices, MeshElementsArray& outFaces)
 {
 	// Brute force algorithm using binary search.

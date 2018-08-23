@@ -8,10 +8,7 @@
 #include "Util/Variable.h"
 
 #include <CryAnimation/ICryAnimation.h>
-#include <CryEntitySystem/IEntitySystem.h>
-#include <CryInput/IInput.h>
 
-struct CryCharAnimationParams;
 struct IPhysicalEntity;
 struct ISkeletonAnim;
 class CAnimationSet;

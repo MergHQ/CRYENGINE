@@ -2,15 +2,12 @@
 
 #pragma once
 
-// CSelectEntityClsDialog dialog
-
 class CSelectEntityClsDialog : public CXTResizeDialog
 {
 	DECLARE_DYNAMIC(CSelectEntityClsDialog)
 
 public:
-	CSelectEntityClsDialog(CWnd* pParent = NULL);   // standard constructor
-	virtual ~CSelectEntityClsDialog();
+	CSelectEntityClsDialog(CWnd* pParent = nullptr);
 
 	string GetEntityClass() { return m_entityClass; }
 

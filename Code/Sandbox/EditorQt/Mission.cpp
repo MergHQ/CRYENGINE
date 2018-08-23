@@ -2,24 +2,18 @@
 
 #include "StdAfx.h"
 #include "Mission.h"
+
+#include "Vegetation/VegetationMap.h"
 #include "CryEditDoc.h"
-#include "TerrainLighting.h"
 #include "GameEngine.h"
 #include "MissionScript.h"
-#include <CryMovie/IMovieSystem.h>
-#include "Vegetation/VegetationMap.h"
+#include "TerrainLighting.h"
+
 #include <Preferences/GeneralPreferences.h>
 
-#include "Objects\EntityObject.h"
-#include "Objects\EntityScript.h"
-
 #include <Cry3DEngine/ITimeOfDay.h>
-#include <CryEntitySystem/IEntitySystem.h>
-#include <Cry3DEngine/I3DEngine.h>
-#include <CryAISystem/IAISystem.h>
-#include <CryGame/IGameFramework.h>
 #include <CryGame/IGame.h>
-
+#include <CryGame/IGameFramework.h>
 
 namespace Private_Mission
 {
@@ -27,9 +21,8 @@ const char* kTimeOfDayFile = "TimeOfDay.xml";
 const char* kTimeOfDayRoot = "TimeOfDay";
 const char* kEnvironmentFile = "Environment.xml";
 const char* kEnvironmentRoot = "Environment";
-};
+}
 
-//////////////////////////////////////////////////////////////////////////
 CMission::CMission(CCryEditDoc* doc)
 {
 	m_doc = doc;
@@ -54,7 +47,6 @@ CMission::CMission(CCryEditDoc* doc)
 	m_minimap.orientation = 1;
 }
 
-//////////////////////////////////////////////////////////////////////////
 CMission::~CMission()
 {
 	delete m_lighting;
@@ -80,7 +72,6 @@ const char* CMission::GetDataFilename(int i)
 	}
 }
 
-//////////////////////////////////////////////////////////////////////////
 CMission* CMission::Clone()
 {
 	CMission* m = new CMission(m_doc);
@@ -93,7 +84,6 @@ CMission* CMission::Clone()
 	return m;
 }
 
-//////////////////////////////////////////////////////////////////////////
 void CMission::Serialize(CXmlArchive& ar, bool bParts)
 {
 	if (ar.bLoading)
@@ -222,7 +212,6 @@ void CMission::Serialize(CXmlArchive& ar, bool bParts)
 	}
 }
 
-//////////////////////////////////////////////////////////////////////////
 void CMission::Export(XmlNodeRef& root, XmlNodeRef& objectsNode)
 {
 	// Also save exported objects data.
@@ -273,9 +262,7 @@ void CMission::Export(XmlNodeRef& root, XmlNodeRef& objectsNode)
 
 	IObjectManager* pObjMan = GetIEditorImpl()->GetObjectManager();
 
-	//////////////////////////////////////////////////////////////////////////
-	// Serialize objects.
-	//////////////////////////////////////////////////////////////////////////
+	// Serialize objects
 	char path[1024];
 	cry_strcpy(path, m_doc->GetPathName());
 	PathRemoveFileSpec(path);
@@ -286,7 +273,6 @@ void CMission::Export(XmlNodeRef& root, XmlNodeRef& objectsNode)
 	pObjMan->Export(path, objectsNode, false); // Export not shared.
 }
 
-//////////////////////////////////////////////////////////////////////////
 void CMission::ExportAnimations(XmlNodeRef& root)
 {
 	XmlNodeRef mission = XmlHelpers::CreateXmlNode("Mission");
@@ -302,7 +288,6 @@ void CMission::ExportAnimations(XmlNodeRef& root)
 	root->addChild(mission);
 }
 
-//////////////////////////////////////////////////////////////////////////
 void CMission::SyncContent(bool bRetrieve, bool bIgnoreObjects, bool bSkipLoadingAI /* = false */)
 {
 	LOADING_TIME_PROFILE_SECTION;
@@ -388,33 +373,27 @@ void CMission::SyncContent(bool bRetrieve, bool bIgnoreObjects, bool bSkipLoadin
 	}
 }
 
-//////////////////////////////////////////////////////////////////////////
 void CMission::OnEnvironmentChange()
 {
 	m_environment = XmlHelpers::CreateXmlNode("Environment");
 	CXmlTemplate::SetValues(m_doc->GetEnvironmentTemplate(), m_environment);
 }
 
-//////////////////////////////////////////////////////////////////////////
 void CMission::GetUsedWeapons(std::vector<CString>& weapons)
 {
 	weapons = m_usedWeapons;
 }
 
-//////////////////////////////////////////////////////////////////////////
 void CMission::SetUsedWeapons(const std::vector<CString>& weapons)
 {
 	m_usedWeapons = weapons;
 	UpdateUsedWeapons();
 }
 
-//////////////////////////////////////////////////////////////////////////
 void CMission::UpdateUsedWeapons()
 {
-
 }
 
-//////////////////////////////////////////////////////////////////////////
 void CMission::ResetScript()
 {
 	if (m_pScript)
@@ -423,7 +402,6 @@ void CMission::ResetScript()
 	}
 }
 
-//////////////////////////////////////////////////////////////////////////
 void CMission::AddObjectsNode(XmlNodeRef& node)
 {
 	for (int i = 0; i < node->getChildCount(); i++)
@@ -432,19 +410,16 @@ void CMission::AddObjectsNode(XmlNodeRef& node)
 	}
 }
 
-//////////////////////////////////////////////////////////////////////////
 void CMission::SetLayersNode(XmlNodeRef& node)
 {
 	m_layers = node->clone();
 }
 
-//////////////////////////////////////////////////////////////////////////
 void CMission::SetMinimap(const SMinimapInfo& minimap)
 {
 	m_minimap = minimap;
 }
 
-//////////////////////////////////////////////////////////////////////////
 void CMission::SaveParts()
 {
 	using namespace Private_Mission;
@@ -471,7 +446,6 @@ void CMission::SaveParts()
 	}
 }
 
-//////////////////////////////////////////////////////////////////////////
 void CMission::LoadParts()
 {
 	using namespace Private_Mission;
@@ -497,7 +471,6 @@ void CMission::LoadParts()
 	}
 }
 
-//////////////////////////////////////////////////////////////////////////
 void CMission::SerializeTimeOfDay(CXmlArchive& ar)
 {
 	if (ar.bLoading)
@@ -518,7 +491,6 @@ void CMission::SerializeTimeOfDay(CXmlArchive& ar)
 	}
 }
 
-//////////////////////////////////////////////////////////////////////////
 void CMission::SerializeEnvironment(CXmlArchive& ar)
 {
 	if (ar.bLoading)
@@ -537,7 +509,6 @@ void CMission::SerializeEnvironment(CXmlArchive& ar)
 	}
 }
 
-//////////////////////////////////////////////////////////////////////////
 const SMinimapInfo& CMission::GetMinimap() const
 {
 	return m_minimap;

@@ -4,11 +4,10 @@
 
 #include "Dialogs/ToolbarDialog.h"
 #include "SequencerSplitter.h"
-#include "Controls\MannDopeSheet.h"
-
+#include "Controls/MannDopeSheet.h"
 #include "Controls/PropertiesPanel.h"
 
-#include "Dialogs\BaseFrameWnd.h"
+#include "Dialogs/BaseFrameWnd.h"
 
 #include "ICryMannequin.h"
 

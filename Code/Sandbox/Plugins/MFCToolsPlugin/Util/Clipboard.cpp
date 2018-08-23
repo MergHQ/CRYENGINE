@@ -2,8 +2,9 @@
 
 #include "StdAfx.h"
 #include "Clipboard.h"
-#include "Util/CryMemFile.h"        // CCryMemFile
-#include "Controls/QuestionDialog.h"
+
+#include <Controls/QuestionDialog.h>
+#include <Util/CryMemFile.h>
 
 XmlNodeRef CClipboard::m_node;
 string CClipboard::m_title;
@@ -25,11 +26,8 @@ namespace Private_Clipboard
 	private:
 		HBITMAP m_bitmap;
 	};
-};
+}
 
-//////////////////////////////////////////////////////////////////////////
-// Clipboard implementation.
-//////////////////////////////////////////////////////////////////////////
 void CClipboard::Put(XmlNodeRef& node, const string& title)
 {
 	m_title = title;
@@ -56,13 +54,11 @@ void CClipboard::Put(XmlNodeRef& node, const string& title)
 	 */
 }
 
-//////////////////////////////////////////////////////////////////////////
 string CClipboard::GetTitle() const 
 {
 	return m_title; 
 }
 
-//////////////////////////////////////////////////////////////////////////
 XmlNodeRef CClipboard::Get() const
 {
 	string str = GetString();
@@ -95,7 +91,6 @@ XmlNodeRef CClipboard::Get() const
 	 */
 }
 
-//////////////////////////////////////////////////////////////////////////
 void CClipboard::PutString(const string& text, const string& title /* = ""  */)
 {
 	if (!OpenClipboard(NULL))
@@ -134,7 +129,6 @@ void CClipboard::PutString(const string& text, const string& title /* = ""  */)
 	 */
 }
 
-//////////////////////////////////////////////////////////////////////////
 string CClipboard::GetString() const
 {
 	string buffer;
@@ -147,7 +141,6 @@ string CClipboard::GetString() const
 	return buffer;
 }
 
-//////////////////////////////////////////////////////////////////////////
 bool CClipboard::IsEmpty() const
 {
 	return GetString().IsEmpty();
@@ -168,7 +161,6 @@ bool CClipboard::IsEmpty() const
 	//return true;
 }
 
-//////////////////////////////////////////////////////////////////////////
 void CClipboard::PutImage(const CImageEx& img)
 {
 	HBITMAP hBm = CreateBitmap(img.GetWidth(), img.GetHeight(), 1, 32, img.GetData());
@@ -196,7 +188,6 @@ void CClipboard::PutImage(const CImageEx& img)
 	CloseClipboard();
 }
 
-//////////////////////////////////////////////////////////////////////////
 bool CClipboard::GetImage(CImageEx& img)
 {
 	if (!OpenClipboard(NULL))

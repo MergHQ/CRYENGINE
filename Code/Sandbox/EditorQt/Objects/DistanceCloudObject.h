@@ -38,7 +38,6 @@ protected:
 
 private:
 	CDistanceCloudObject();
-	void       OnProjectionTypeChange(IVariable* pVar);
 	CMaterial* GetDefaultMaterial() const;
 
 private:

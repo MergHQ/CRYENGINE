@@ -1,23 +1,14 @@
 // Copyright 2001-2018 Crytek GmbH / Crytek Group. All rights reserved.
 
 #include "StdAfx.h"
-#include "animationserializer.h"
+#include "AnimationSerializer.h"
+
 #include "CryEditDoc.h"
-#include "mission.h"
-#include <CryMovie/IMovieSystem.h>
+#include "Mission.h"
 
-#include "Util\PakFile.h"
-#include "Util/CryMemFile.h"
+#include <Util/CryMemFile.h>
+#include <Util/PakFile.h>
 
-CAnimationSerializer::CAnimationSerializer(void)
-{
-}
-
-CAnimationSerializer::~CAnimationSerializer(void)
-{
-}
-
-//////////////////////////////////////////////////////////////////////////
 void CAnimationSerializer::SaveSequence(IAnimSequence* seq, const char* szFilePath, bool bSaveEmpty)
 {
 	assert(seq != 0);
@@ -37,7 +28,6 @@ IAnimSequence* CAnimationSerializer::LoadSequence(const char* szFilePath)
 	return seq;
 }
 
-//////////////////////////////////////////////////////////////////////////
 void CAnimationSerializer::SaveAllSequences(const char* szPath, CPakFile& pakFile)
 {
 	IMovieSystem* movSys = GetIEditorImpl()->GetMovieSystem();
@@ -56,7 +46,6 @@ void CAnimationSerializer::SaveAllSequences(const char* szPath, CPakFile& pakFil
 	pakFile.UpdateFile(sFilename.c_str(), file);
 }
 
-//////////////////////////////////////////////////////////////////////////
 void CAnimationSerializer::LoadAllSequences(const char* szPath)
 {
 	string dir = PathUtil::AddBackslash(szPath);
@@ -70,7 +59,6 @@ void CAnimationSerializer::LoadAllSequences(const char* szPath)
 	}
 }
 
-//////////////////////////////////////////////////////////////////////////
 void CAnimationSerializer::SerializeSequences(XmlNodeRef& xmlNode, bool bLoading)
 {
 	if (bLoading)

@@ -2,11 +2,10 @@
 
 #pragma once
 
-#include <Serialization/PropertyTree/IDrawContext.h>
-#include <Serialization/PropertyTree/PropertyRow.h>
-#include <Serialization/PropertyTree/PropertyTreeModel.h>
+#include "Serialization/PropertyTree/IDrawContext.h"
+#include "Serialization/PropertyTree/PropertyRow.h"
+
 #include <Serialization.h>
-#include "Serialization/QPropertyTree/QPropertyTree.h"
 
 struct IPropertyRowCryColor
 {
