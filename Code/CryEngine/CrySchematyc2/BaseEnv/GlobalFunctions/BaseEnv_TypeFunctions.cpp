@@ -1774,6 +1774,11 @@ namespace SchematycBaseEnv
 			return strtoul(szValue, nullptr, 10);
 		}
 
+		float ToFloat(const char* szValue)
+		{
+			return static_cast<float>(atof(szValue));
+		}
+
 		static void Register(Schematyc2::IEnvRegistry& envRegistry)
 		{
 			{
@@ -1814,6 +1819,16 @@ namespace SchematycBaseEnv
 				pFunction->SetNamespace("Types::String");
 				pFunction->SetAuthor("Crytek");
 				pFunction->SetDescription("Convert string to uint32");
+				pFunction->BindInput(1, "Value", "Value", "");
+				pFunction->BindOutput(0, "Result", "Result");
+				envRegistry.RegisterGlobalFunction(pFunction);
+			}
+
+			{
+				Schematyc2::IGlobalFunctionPtr pFunction = SCHEMATYC2_MAKE_GLOBAL_FUNCTION_SHARED(String::ToFloat, "4C3BC39D-3862-4360-8834-50580A5824BB");
+				pFunction->SetNamespace("Types::String");
+				pFunction->SetAuthor("Crytek");
+				pFunction->SetDescription("Convert string to float");
 				pFunction->BindInput(1, "Value", "Value", "");
 				pFunction->BindOutput(0, "Result", "Result");
 				envRegistry.RegisterGlobalFunction(pFunction);
