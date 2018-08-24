@@ -794,6 +794,7 @@ public:
 		LoadBuiltInEvents();
 	}
 
+#ifdef USING_BEHAVIOR_TREE_SERIALIZATION
 	// Has to be virtual so that allocation and deallocation of memory happens in the same module
 	// Otherwise crashes since allocation happens in the IA module and deallocation in Sandbox
 	// Using a private implementation would also solve the issue but CryCore does not have any .cpp files
@@ -813,6 +814,7 @@ public:
 		}
 		return false;
 	}
+#endif //USING_BEHAVIOR_TREE_SERIALIZATION
 
 	bool LoadFromXML(const XmlNodeRef& rootNode, const char* fileName)
 	{
@@ -852,7 +854,7 @@ public:
 	}
 
 #ifdef USING_BEHAVIOR_TREE_SERIALIZATION
-	const Events GetEvents() const
+	const Events GetEventsWithFlags() const
 	{
 		Events events;
 
@@ -879,26 +881,12 @@ public:
 
 		return events;
 	}
-#else
-	const Events GetEvents() const
+#endif //USING_BEHAVIOR_TREE_SERIALIZATION
+
+	const Events& GetGameEvents() const
 	{
-		Events events;
-
-		events.reserve(m_eventsCryEngine.size());
-		events.insert(events.end(), m_eventsCryEngine.begin(), m_eventsCryEngine.end());
-
-		events.reserve(events.size() + m_eventsGameSDK.size());
-		events.insert(events.end(), m_eventsGameSDK.begin(), m_eventsGameSDK.end());
-
-		events.reserve(events.size() + m_eventsDeprecated.size());
-		events.insert(events.end(), m_eventsDeprecated.begin(), m_eventsDeprecated.end());
-
-		events.reserve(events.size() + m_eventsGame.size());
-		events.insert(events.end(), m_eventsGame.begin(), m_eventsGame.end());
-
-		return events;
+		return m_eventsGame;
 	}
-#endif
 
 #ifdef USING_BEHAVIOR_TREE_SERIALIZATION
 	bool IsDeclared(const char* eventName) const
@@ -924,31 +912,7 @@ public:
 
 		return isDeclared;
 	}
-#else
-	bool IsDeclared(const string& eventName) const
-	{
-		const Event tempEvent = Event(eventName);
-
-		bool isDeclared = std::find(m_eventsGame.begin(), m_eventsGame.end(), tempEvent) != m_eventsGame.end();
-
-		if (!isDeclared)
-		{
-			isDeclared = std::find(m_eventsCryEngine.begin(), m_eventsCryEngine.end(), tempEvent) != m_eventsCryEngine.end();
-		}
-
-		if (!isDeclared)
-		{
-			isDeclared = std::find(m_eventsGameSDK.begin(), m_eventsGameSDK.end(), tempEvent) != m_eventsGameSDK.end();
-		}
-
-		if (!isDeclared)
-		{
-			isDeclared = std::find(m_eventsDeprecated.begin(), m_eventsDeprecated.end(), tempEvent) != m_eventsDeprecated.end();
-		}
-
-		return isDeclared;
-	}
-#endif
+#endif // USING_BEHAVIOR_TREE_SERIALIZATION
 
 #ifdef USING_BEHAVIOR_TREE_SERIALIZATION
 	void Serialize(Serialization::IArchive& archive)
@@ -1049,7 +1013,7 @@ public:
 	}
 #endif
 
-#ifdef USING_BEHAVIOR_TREE_SERIALIZATION
+#if defined(USING_BEHAVIOR_TREE_SERIALIZATION)
 	const BehaviorTree::NodeSerializationHints::EventsFlags& GetEventsFlags() const
 	{
 		return m_eventsFlags;
@@ -1059,7 +1023,8 @@ public:
 	{
 		m_eventsFlags = eventsFlags;
 	}
-#endif
+#endif // USING_BEHAVIOR_TREE_SERIALIZATION
+
 private:
 	void LoadBuiltInEvents()
 	{
@@ -1114,7 +1079,7 @@ private:
 
 #ifdef USING_BEHAVIOR_TREE_SERIALIZATION
 	BehaviorTree::NodeSerializationHints::EventsFlags m_eventsFlags;
-#endif
+#endif //USING_BEHAVIOR_TREE_SERIALIZATION
 };
 
 /*
@@ -1136,7 +1101,7 @@ struct SignalHandle
 		IF_LIKELY (!eventsDeclaration)
 			return;
 
-		const Variables::Events events = eventsDeclaration->GetEvents();
+		const Variables::Events events = eventsDeclaration->GetEventsWithFlags();
 		BehaviorTree::SerializeContainerAsStringList(archive, "signalName", "^On event", events, "Event", signalName);
 		archive.doc("Event that triggers the change in the value of the Variable");
 
@@ -1200,7 +1165,7 @@ typedef std::vector<KeySignalHandlePair>           SignalHandleVector;
 class SignalHandler
 {
 public:
-	bool LoadFromXML(const Declarations& variableDeclaration, EventsDeclaration& eventsDeclaration, const XmlNodeRef& rootNode, const char* fileName)
+	bool LoadFromXML(const Declarations& variableDeclaration, EventsDeclaration& eventsDeclaration, const XmlNodeRef& rootNode, const char* fileName, const bool isLoadingFromEditor)
 	{
 		const int childCount = rootNode->getChildCount();
 		for (int i = 0; i < childCount; ++i)
@@ -1220,11 +1185,13 @@ public:
 					return false;
 				}
 
+#if defined(USING_BEHAVIOR_TREE_SERIALIZATION)
 				// Automatically declare game signals
-				if (eventsDeclaration.DeclareGameEventIfNotAlreadyDeclared(signalName))
+				if (isLoadingFromEditor && eventsDeclaration.DeclareGameEventIfNotAlreadyDeclared(signalName))
 				{
 					gEnv->pLog->LogWarning("(%d) [File='%s'] Unknown event '%s' used in Event Handle", childNode->getLine(), fileName, signalName);
 				}
+#endif // USING_BEHAVIOR_TREE_SERIALIZATION
 
 				// Bool value
 				const char* value = 0;

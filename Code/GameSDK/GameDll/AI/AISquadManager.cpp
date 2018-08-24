@@ -27,7 +27,7 @@ namespace
 			RuntimeData() : isInScope(false) {}
 		};
 		
-		virtual LoadResult LoadFromXml(const XmlNodeRef& xml, const struct LoadContext& context, const bool strictMode) override
+		virtual LoadResult LoadFromXml(const XmlNodeRef& xml, const struct LoadContext& context, const bool isLoadingFromEditor) override
 		{
 			const stack_string name = xml->getAttr("name");
 			if (name.empty())
@@ -41,7 +41,7 @@ namespace
 			m_allowedConcurrentUsers = 1;
 			xml->getAttr("allowedConcurrentUsers", m_allowedConcurrentUsers);
 
-			return LoadChildFromXml(xml, context, strictMode);
+			return LoadChildFromXml(xml, context, isLoadingFromEditor);
 		}
 
 	protected:
@@ -97,7 +97,7 @@ namespace
 		{
 		};
 		
-		virtual LoadResult LoadFromXml(const XmlNodeRef& xml, const struct LoadContext& context, const bool strictMode) override
+		virtual LoadResult LoadFromXml(const XmlNodeRef& xml, const struct LoadContext& context, const bool isLoadingFromEditor) override
 		{
 			m_event = xml->getAttr("name");
 			return LoadSuccess;
@@ -126,7 +126,7 @@ namespace
 			RuntimeData() : gateIsOpen(false) {}
 		};
 		
-		virtual LoadResult LoadFromXml(const XmlNodeRef& xml, const struct LoadContext& context, const bool strictMode) override
+		virtual LoadResult LoadFromXml(const XmlNodeRef& xml, const struct LoadContext& context, const bool isLoadingFromEditor) override
 		{
 			IF_UNLIKELY(xml->getNumAttributes() != 1)
 			{
@@ -152,7 +152,7 @@ namespace
 				return LoadFailure;
 			}
 
-			return LoadChildFromXml(xml, context, strictMode);
+			return LoadChildFromXml(xml, context, isLoadingFromEditor);
 		}
 
 	protected:

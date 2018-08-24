@@ -42,7 +42,7 @@ public:
 	virtual void                                HandleEvent(const EntityId entityId, Event& event) override;
 
 	// Returns blackboard corresponding to behavior tree assigned to Entity with specified entityID.
-	virtual BehaviorTree::Blackboard* GetBehaviorTreeBlackboard(const EntityId entityId) override;
+	virtual BehaviorTree::Blackboard*           GetBehaviorTreeBlackboard(const EntityId entityId) override;
 
 	virtual Variables::Collection*              GetBehaviorVariableCollection_Deprecated(const EntityId entityId) const override;
 	virtual const Variables::Declarations*      GetBehaviorVariableDeclarations_Deprecated(const EntityId entityId) const override;
@@ -74,6 +74,9 @@ private:
 	BehaviorTreeInstance*   GetBehaviorTree(const EntityId entityId) const;
 
 	bool                    LoadBehaviorTreeTemplate(const char* behaviorTreeName, XmlNodeRef behaviorTreeXmlNode, BehaviorTreeTemplate& behaviorTreeTemplate);
+
+	void                    RegisterGameEventsInSignalManager(BehaviorTreeInstancePtr pInstance);
+	void                    DeregisterGameEventsInSignalManager();
 
 #if defined(DEBUG_MODULAR_BEHAVIOR_TREE)
 	void UpdateDebugVisualization(UpdateContext updateContext, const EntityId entityId, DebugTree debugTree, BehaviorTreeInstance& instance, IEntity* agentEntity);
@@ -111,5 +114,8 @@ private:
 	typedef VectorMap<EntityId, ExecutionStackFileLoggerPtr> ExecutionStackFileLoggerInstances;
 	ExecutionStackFileLoggerInstances m_executionStackFileLoggerInstances;
 #endif // DEBUG_MODULAR_BEHAVIOR_TREE
+
+	typedef std::vector<const AISignals::ISignalDescription*> SignalDescriptions;
+	SignalDescriptions m_gameSignalDescriptionsVector;
 };
 }

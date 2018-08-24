@@ -17,9 +17,9 @@ public:
 		return behaviorTreeNode;
 	}
 
-	// strictMode = true -> Tree will only be loaded if the result of the operation is LoadSucess. This is used when loading behavior trees in Runtime. It has to be strict to prevent running an invalid tree.
-	// strictMode = false -> Tree will be loaded even if the result of the operation is LoadFailure. This is used in the Interim Editor, since it's convinient to still load the tree with errors so we can fix them without having to manually edit the XML.
-	INodePtr CreateBehaviorTreeRootNodeFromBehaviorTreeXml(const XmlNodeRef& behaviorTreeXmlNode, const LoadContext& context, const bool strictMode = true) const
+	// isLoadingFromEditor = true -> Tree will be loaded even if the result of the operation is LoadFailure. This is used in the Interim Editor, since it's convinient to still load the tree with errors so we can fix them without having to manually edit the XML.
+	// isLoadingFromEditor = false ->  Tree will only be loaded if the result of the operation is LoadSuccess. This is used when loading behavior trees in Runtime. It has to be strict to prevent running an invalid tree.
+	INodePtr CreateBehaviorTreeRootNodeFromBehaviorTreeXml(const XmlNodeRef& behaviorTreeXmlNode, const LoadContext& context, const bool isLoadingFromEditor) const
 	{
 		XmlNodeRef rootXmlNode = behaviorTreeXmlNode->findChild("Root");
 		IF_UNLIKELY (!rootXmlNode)
@@ -28,10 +28,10 @@ public:
 			return INodePtr();
 		}
 
-		return CreateBehaviorTreeNodeFromXml(rootXmlNode, context, strictMode);
+		return CreateBehaviorTreeNodeFromXml(rootXmlNode, context, isLoadingFromEditor);
 	}
 
-	INodePtr CreateBehaviorTreeNodeFromXml(const XmlNodeRef& xmlNode, const LoadContext& context, const bool strictMode) const
+	INodePtr CreateBehaviorTreeNodeFromXml(const XmlNodeRef& xmlNode, const LoadContext& context, const bool isLoadingFromEditor) const
 	{
 		if (xmlNode->getChildCount() != 1)
 		{
@@ -39,7 +39,7 @@ public:
 			return INodePtr();
 		}
 
-		return context.nodeFactory.CreateNodeFromXml(xmlNode->getChild(0), context, strictMode);
+		return context.nodeFactory.CreateNodeFromXml(xmlNode->getChild(0), context, isLoadingFromEditor);
 	}
 
 };

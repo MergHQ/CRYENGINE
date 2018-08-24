@@ -42,9 +42,9 @@ public:
 		}
 	};
 
-	virtual LoadResult LoadFromXml(const XmlNodeRef& xml, const struct LoadContext& context, const bool strictMode) override
+	virtual LoadResult LoadFromXml(const XmlNodeRef& xml, const struct LoadContext& context, const bool isLoadingFromEditor) override
 	{
-		IF_UNLIKELY (BaseClass::LoadFromXml(xml, context, strictMode) == LoadFailure)
+		IF_UNLIKELY (BaseClass::LoadFromXml(xml, context, isLoadingFromEditor) == LoadFailure)
 			return LoadFailure;
 
 		const size_t maxChildCount = std::numeric_limits<IndexType>::max();
@@ -259,7 +259,7 @@ public:
 	{
 	}
 
-	virtual LoadResult LoadFromXml(const XmlNodeRef& xml, const struct LoadContext& context, const bool strictMode) override
+	virtual LoadResult LoadFromXml(const XmlNodeRef& xml, const struct LoadContext& context, const bool isLoadingFromEditor) override
 	{
 		IF_UNLIKELY (xml->getChildCount() > 32)
 		{
@@ -306,7 +306,7 @@ public:
 			}
 		}
 
-		return CompositeWithChildLoader::LoadFromXml(xml, context, strictMode);
+		return CompositeWithChildLoader::LoadFromXml(xml, context, isLoadingFromEditor);
 	}
 
 #ifdef USING_BEHAVIOR_TREE_XML_DESCRIPTION_CREATION
@@ -518,9 +518,9 @@ public:
 	{
 	}
 
-	virtual LoadResult LoadFromXml(const XmlNodeRef& xml, const struct LoadContext& context, const bool strictMode) override
+	virtual LoadResult LoadFromXml(const XmlNodeRef& xml, const struct LoadContext& context, const bool isLoadingFromEditor) override
 	{
-		IF_UNLIKELY (BaseClass::LoadFromXml(xml, context, strictMode) == LoadFailure)
+		IF_UNLIKELY (BaseClass::LoadFromXml(xml, context, isLoadingFromEditor) == LoadFailure)
 			return LoadFailure;
 
 		m_desiredRepeatCount = 0;     // 0 means infinite
@@ -619,9 +619,9 @@ public:
 	{
 	}
 
-	virtual LoadResult LoadFromXml(const XmlNodeRef& xml, const struct LoadContext& context, const bool strictMode) override
+	virtual LoadResult LoadFromXml(const XmlNodeRef& xml, const struct LoadContext& context, const bool isLoadingFromEditor) override
 	{
-		IF_UNLIKELY (BaseClass::LoadFromXml(xml, context, strictMode) == LoadFailure)
+		IF_UNLIKELY (BaseClass::LoadFromXml(xml, context, isLoadingFromEditor) == LoadFailure)
 			return LoadFailure;
 
 		m_maxAttemptCount = 0;     // 0 means infinite
@@ -696,7 +696,7 @@ private:
 //////////////////////////////////////////////////////////////////////////
 struct Case
 {
-	LoadResult LoadFromXml(const XmlNodeRef& xml, const LoadContext& context, const bool strictMode = true)
+	LoadResult LoadFromXml(const XmlNodeRef& xml, const LoadContext& context, const bool isLoadingFromEditor = true)
 	{
 		if (!xml->isTag("Case"))
 		{
@@ -726,7 +726,7 @@ struct Case
 		}
 
 		XmlNodeRef childXml = xml->getChild(0);
-		node = context.nodeFactory.CreateNodeFromXml(childXml, context, strictMode);
+		node = context.nodeFactory.CreateNodeFromXml(childXml, context, isLoadingFromEditor);
 		if (!node)
 		{
 			gEnv->pLog->LogError("Case(%d) [Tree='%s'] Priority case failed to load child", xml->getLine(), context.treeName);
@@ -810,9 +810,9 @@ public:
 		}
 	};
 
-	virtual LoadResult LoadFromXml(const XmlNodeRef& xml, const struct LoadContext& context, const bool strictMode) override
+	virtual LoadResult LoadFromXml(const XmlNodeRef& xml, const struct LoadContext& context, const bool isLoadingFromEditor) override
 	{
-		IF_UNLIKELY (BaseClass::LoadFromXml(xml, context, strictMode) == LoadFailure)
+		IF_UNLIKELY (BaseClass::LoadFromXml(xml, context, isLoadingFromEditor) == LoadFailure)
 			return LoadFailure;
 
 		const int childCount = xml->getChildCount();
@@ -836,7 +836,7 @@ public:
 			Case priorityCase;
 			XmlNodeRef caseXml = xml->getChild(i);
 
-			IF_UNLIKELY (priorityCase.LoadFromXml(caseXml, context) == LoadFailure)
+			IF_UNLIKELY (priorityCase.LoadFromXml(caseXml, context, isLoadingFromEditor) == LoadFailure)
 			{
 				ErrorReporter(*this, context).LogError("Failed to load Case.");
 				return LoadFailure;
@@ -1063,7 +1063,7 @@ struct State
 	{
 	}
 
-	LoadResult LoadFromXml(const XmlNodeRef& stateXml, const LoadContext& context, const bool strictMode = true)
+	LoadResult LoadFromXml(const XmlNodeRef& stateXml, const LoadContext& context, const bool isLoadingFromEditor = true)
 	{
 		if (!stateXml->isTag("State"))
 		{
@@ -1105,13 +1105,13 @@ struct State
 					return LoadFailure;
 				}
 
-#ifdef STORE_INFORMATION_FOR_STATE_MACHINE_NODE
+#if defined(STORE_INFORMATION_FOR_STATE_MACHINE_NODE) && defined(USING_BEHAVIOR_TREE_SERIALIZATION)
 				// Automatically declare game-defined signals
-				if (context.eventsDeclaration.DeclareGameEventIfNotAlreadyDeclared(transition.triggerEventName.c_str()))
+				if (isLoadingFromEditor && context.eventsDeclaration.DeclareGameEventIfNotAlreadyDeclared(transition.triggerEventName.c_str()))
 				{
 					gEnv->pLog->LogWarning("State(%d) [Tree='%s'] Unknown event '%s' used. Event will be declared automatically.", stateXml->getLine(), context.treeName, transition.triggerEventName.c_str());
 				}
-#endif // STORE_INFORMATION_FOR_STATE_MACHINE_NODE
+#endif // STORE_INFORMATION_FOR_STATE_MACHINE_NODE && USING_BEHAVIOR_TREE_SERIALIZATION
 
 				transitions.push_back(transition);
 			}
@@ -1134,7 +1134,7 @@ struct State
 			return LoadFailure;
 		}
 
-		node = context.nodeFactory.CreateNodeFromXml(behaviorTreeXml->getChild(0), context, strictMode);
+		node = context.nodeFactory.CreateNodeFromXml(behaviorTreeXml->getChild(0), context, isLoadingFromEditor);
 		if (!node)
 		{
 			gEnv->pLog->LogError("State(%d) [Tree='%s'] State failed to load child.", stateXml->getLine(), context.treeName);
@@ -1263,7 +1263,7 @@ void Transition::Serialize(Serialization::IArchive& archive)
 		return;
 	}
 
-	const Variables::Events events = eventsDeclaration->GetEvents();
+	const Variables::Events events = eventsDeclaration->GetEventsWithFlags();
 	SerializeContainerAsStringList(archive, "triggerEventName", "^>" STATE_TRANSITION_EVENT_FIXED_WIDTH ">Trigger event", events, "Event", triggerEventName);
 	archive.doc("Event that triggers the transition to the Destination State");
 
@@ -1314,7 +1314,7 @@ public:
 		}
 	};
 
-	virtual LoadResult LoadFromXml(const XmlNodeRef& xml, const struct LoadContext& context, const bool strictMode) override
+	virtual LoadResult LoadFromXml(const XmlNodeRef& xml, const struct LoadContext& context, const bool isLoadingFromEditor) override
 	{
 		const size_t maxChildCount = std::numeric_limits<StateIndexType>::max();
 
@@ -1330,21 +1330,29 @@ public:
 			return LoadFailure;
 		}
 
+		bool childFailed = false;
 		for (int i = 0; i < xml->getChildCount(); ++i)
 		{
 			State state;
 			XmlNodeRef stateXml = xml->getChild(i);
 
-			if (state.LoadFromXml(stateXml, context) == LoadFailure)
+			if (state.LoadFromXml(stateXml, context, isLoadingFromEditor) == LoadFailure)
 			{
+				childFailed = true;
 				ErrorReporter(*this, context).LogError("Failed to load State.");
-				return LoadFailure;
 			}
 
 			m_states.push_back(state);
 		}
 
-		return LinkAllTransitions();
+		const LoadResult loadResultLinkTransitions = LinkAllTransitions();
+
+		if (childFailed)
+		{
+			return LoadFailure;
+		}
+
+		return loadResultLinkTransitions;
 	}
 
 #ifdef USING_BEHAVIOR_TREE_XML_DESCRIPTION_CREATION
@@ -1525,9 +1533,9 @@ public:
 	{
 	};
 
-	virtual LoadResult LoadFromXml(const XmlNodeRef& xml, const struct LoadContext& context, const bool strictMode) override
+	virtual LoadResult LoadFromXml(const XmlNodeRef& xml, const struct LoadContext& context, const bool isLoadingFromEditor) override
 	{
-		IF_UNLIKELY (BaseClass::LoadFromXml(xml, context, strictMode) == LoadFailure)
+		IF_UNLIKELY (BaseClass::LoadFromXml(xml, context, isLoadingFromEditor) == LoadFailure)
 			return LoadFailure;
 
 		const stack_string eventName = xml->getAttr("name");
@@ -1539,13 +1547,13 @@ public:
 
 		m_eventToSend = Event(eventName);
 	
-#ifdef STORE_EVENT_NAME
+#if defined(STORE_EVENT_NAME) && defined(USING_BEHAVIOR_TREE_SERIALIZATION)
 		// Automatically declare game-defined signals
-		if (context.eventsDeclaration.DeclareGameEventIfNotAlreadyDeclared(eventName.c_str()))
+		if (isLoadingFromEditor && context.eventsDeclaration.DeclareGameEventIfNotAlreadyDeclared(eventName.c_str()))
 		{
 			gEnv->pLog->LogWarning("SendEvent(%d) [Tree='%s'] Unknown event '%s' used. Event will be declared automatically.", xml->getLine(), context.treeName, m_eventToSend.GetName());
 		}
-#endif // STORE_EVENT_NAME
+#endif // STORE_EVENT_NAME && USING_BEHAVIOR_TREE_SERIALIZATION
 
 		return LoadSuccess;
 	}
@@ -1569,7 +1577,7 @@ public:
 			return;
 		}
 
-		const Variables::Events events = eventsDeclaration->GetEvents();
+		const Variables::Events events = eventsDeclaration->GetEventsWithFlags();
 		string eventName = m_eventToSend.GetName();
 		SerializeContainerAsStringList(archive, "event", "^Event", events, "Event",  eventName);
 		m_eventToSend = Event(eventName);
@@ -1626,9 +1634,9 @@ public:
 	{
 	};
 
-	virtual LoadResult LoadFromXml(const XmlNodeRef& xml, const struct LoadContext& context, const bool strictMode) override
+	virtual LoadResult LoadFromXml(const XmlNodeRef& xml, const struct LoadContext& context, const bool isLoadingFromEditor) override
 	{
-		IF_UNLIKELY (BaseClass::LoadFromXml(xml, context, strictMode) == LoadFailure)
+		IF_UNLIKELY (BaseClass::LoadFromXml(xml, context, isLoadingFromEditor) == LoadFailure)
 			return LoadFailure;
 
 		const stack_string eventName = xml->getAttr("name");
@@ -1731,36 +1739,20 @@ public:
 	};
 
 	IfCondition()
-		: m_valueToCheck(false)
 	{
 	}
 
-	virtual LoadResult LoadFromXml(const XmlNodeRef& xml, const struct LoadContext& context, const bool strictMode) override
+	virtual LoadResult LoadFromXml(const XmlNodeRef& xml, const struct LoadContext& context, const bool isLoadingFromEditor) override
 	{
 		const stack_string conditionString = xml->getAttr("condition");
 		if (conditionString.empty())
 		{
-			ErrorReporter(*this, context).LogError("%s", ErrorReporter::ErrorMessageMissingOrEmptyAttribute("IfCondition", "condition").c_str());
-			return LoadFailure;
+			ErrorReporter(*this, context).LogWarning("%s", ErrorReporter::ErrorMessageMissingOrEmptyAttribute("IfCondition", "condition").c_str());
 		}
 
 #ifdef STORE_CONDITION_STRING
 		m_conditionString = conditionString.c_str();
 #endif
-
-		m_valueToCheck = true;
-		const char* value = 0;
-		if (xml->haveAttr("value"))
-		{
-			xml->getAttr("value", &value);
-			m_valueToCheck = stricmp(value, "true") == 0  ? 1 : 0;
-		}
-		else
-		{
-			ErrorReporter(*this, context).LogError("%s", ErrorReporter::ErrorMessageMissingOrEmptyAttribute("IfCondition", "value").c_str());
-			return LoadFailure;
-		}
-
 		m_condition = Variables::Expression(conditionString, context.variableDeclarations);
 		if (!m_condition.Valid())
 		{
@@ -1768,7 +1760,7 @@ public:
 			return LoadFailure;
 		}
 
-		return LoadChildFromXml(xml, context, strictMode);
+		return LoadChildFromXml(xml, context, isLoadingFromEditor);
 	}
 
 #ifdef USING_BEHAVIOR_TREE_XML_DESCRIPTION_CREATION
@@ -1777,7 +1769,6 @@ public:
 		XmlNodeRef xml = BaseClass::CreateXmlDescription();
 		xml->setTag("IfCondition");
 		xml->setAttr("condition", m_conditionString);
-		xml->setAttr("value", m_valueToCheck ? "true" : "false");
 
 		return xml;
 	}
@@ -1794,7 +1785,6 @@ public:
 
 		archive(m_conditionString, "condition", "^Condition");
 		archive.doc("Condition to evaluate");
-		archive(m_valueToCheck, "valueToCheck", "^Value(True/False)");
 		archive.doc("Specifies if the condition should be evaluated to True or False");
 
 		if (m_conditionString.empty())
@@ -1815,7 +1805,7 @@ public:
 #ifdef DEBUG_MODULAR_BEHAVIOR_TREE
 	virtual void GetCustomDebugText(const UpdateContext& updateContext, stack_string& debugText) const
 	{
-		debugText.Format("(%s) == %s", m_conditionString.c_str(), m_valueToCheck ? "true" : "false");
+		debugText.Format("(%s)", m_conditionString.c_str());
 	}
 #endif // DEBUG_MODULAR_BEHAVIOR_TREE
 
@@ -1826,7 +1816,7 @@ protected:
 
 		runtimeData.gateIsOpen = false;
 
-		if (m_condition.Evaluate(context.variables.collection) == m_valueToCheck)
+		if (m_condition.Evaluate(context.variables.collection))
 		{
 			runtimeData.gateIsOpen = true;
 		}
@@ -1847,7 +1837,6 @@ private:
 	string m_conditionString;
 #endif
 	Variables::Expression m_condition;
-	bool m_valueToCheck;
 };
 
 //////////////////////////////////////////////////////////////////////////
@@ -1861,9 +1850,9 @@ public:
 	{
 	};
 
-	virtual LoadResult LoadFromXml(const XmlNodeRef& xml, const struct LoadContext& context, const bool strictMode) override
+	virtual LoadResult LoadFromXml(const XmlNodeRef& xml, const struct LoadContext& context, const bool isLoadingFromEditor) override
 	{
-		IF_UNLIKELY (BaseClass::LoadFromXml(xml, context, strictMode) == LoadFailure)
+		IF_UNLIKELY (BaseClass::LoadFromXml(xml, context, isLoadingFromEditor) == LoadFailure)
 			return LoadFailure;
 
 		const stack_string conditionString = xml->getAttr("condition");
@@ -1962,9 +1951,9 @@ public:
 	{
 	};
 
-	virtual LoadResult LoadFromXml(const XmlNodeRef& xml, const struct LoadContext& context, const bool strictMode) override
+	virtual LoadResult LoadFromXml(const XmlNodeRef& xml, const struct LoadContext& context, const bool isLoadingFromEditor) override
 	{
-		IF_UNLIKELY (BaseClass::LoadFromXml(xml, context, strictMode) == LoadFailure)
+		IF_UNLIKELY (BaseClass::LoadFromXml(xml, context, isLoadingFromEditor) == LoadFailure)
 			return LoadFailure;
 
 		const stack_string conditionString = xml->getAttr("condition");
@@ -2076,17 +2065,16 @@ public:
 	{
 	}
 
-	virtual LoadResult LoadFromXml(const XmlNodeRef& xml, const struct LoadContext& context, const bool strictMode) override
+	virtual LoadResult LoadFromXml(const XmlNodeRef& xml, const struct LoadContext& context, const bool isLoadingFromEditor) override
 	{
 		if (!xml->getAttr("opensWithChance", m_opensWithChance))
 		{
-			ErrorReporter(*this, context).LogError("%s", ErrorReporter::ErrorMessageMissingOrEmptyAttribute("RandomGate", "opensWithChance").c_str());
-			return LoadFailure;
+			ErrorReporter(*this, context).LogWarning("%s", ErrorReporter::ErrorMessageMissingOrEmptyAttribute("RandomGate", "opensWithChance").c_str());
 		}
 
 		m_opensWithChance = clamp_tpl(m_opensWithChance, .0f, 1.0f);
 
-		return LoadChildFromXml(xml, context, strictMode);
+		return LoadChildFromXml(xml, context, isLoadingFromEditor);
 	}
 
 #ifdef USING_BEHAVIOR_TREE_XML_DESCRIPTION_CREATION
@@ -2158,17 +2146,18 @@ public:
 	{
 	}
 
-	virtual LoadResult LoadFromXml(const XmlNodeRef& xml, const struct LoadContext& context, const bool strictMode) override
+	virtual LoadResult LoadFromXml(const XmlNodeRef& xml, const struct LoadContext& context, const bool isLoadingFromEditor) override
 	{
-		if (Action::LoadFromXml(xml, context, strictMode) == LoadFailure)
+		if (Action::LoadFromXml(xml, context, isLoadingFromEditor) == LoadFailure)
 		{
 			return LoadFailure;
 		}
 
-		if (!xml->getAttr("duration", m_duration))
+		xml->getAttr("duration", m_duration);
+
+		if (m_duration < 0)
 		{
-			ErrorReporter(*this, context).LogError("%s", ErrorReporter::ErrorMessageMissingOrEmptyAttribute("Timeout", "duration").c_str());
-			return LoadFailure;
+			ErrorReporter(*this, context).LogWarning("%s", ErrorReporter::ErrorMessageInvalidAttribute("Timeout", "duration", ToString(m_duration), "Value must be greater or equal than 0").c_str());
 		}
 
 		return LoadSuccess;
@@ -2242,23 +2231,24 @@ public:
 	{
 	}
 
-	virtual LoadResult LoadFromXml(const XmlNodeRef& xml, const struct LoadContext& context, const bool strictMode)
+	virtual LoadResult LoadFromXml(const XmlNodeRef& xml, const struct LoadContext& context, const bool isLoadingFromEditor)
 	{
-		if (Action::LoadFromXml(xml, context, strictMode) == LoadFailure)
+		if (Action::LoadFromXml(xml, context, isLoadingFromEditor) == LoadFailure)
 		{
 			return LoadFailure;
 		}
 
-		if (!xml->getAttr("duration", m_duration))
+		xml->getAttr("duration", m_duration);
+		xml->getAttr("variation", m_variation);
+
+		if (m_duration < 0)
 		{
-			ErrorReporter(*this, context).LogError("%s", ErrorReporter::ErrorMessageMissingOrEmptyAttribute("Wait", "duration").c_str());
-			return LoadFailure;
+			ErrorReporter(*this, context).LogWarning("%s", ErrorReporter::ErrorMessageInvalidAttribute("Wait", "duration", ToString(m_duration), "Value must be greater or equal than 0").c_str());
 		}
 
-		if (!xml->getAttr("variation", m_variation))
+		if (m_variation < 0)
 		{
-			ErrorReporter(*this, context).LogError("%s", ErrorReporter::ErrorMessageMissingOrEmptyAttribute("Wait", "variation").c_str());
-			return LoadFailure;
+			ErrorReporter(*this, context).LogWarning("%s", ErrorReporter::ErrorMessageInvalidAttribute("Wait", "variation", ToString(m_variation), "Value must be greater or equal than 0").c_str());
 		}
 
 		return LoadSuccess;
@@ -2345,9 +2335,9 @@ public:
 	{
 	}
 
-	virtual LoadResult LoadFromXml(const XmlNodeRef& xml, const struct LoadContext& context, const bool strictMode) override
+	virtual LoadResult LoadFromXml(const XmlNodeRef& xml, const struct LoadContext& context, const bool isLoadingFromEditor) override
 	{
-		IF_UNLIKELY (BaseClass::LoadFromXml(xml, context, strictMode) == LoadFailure)
+		IF_UNLIKELY (BaseClass::LoadFromXml(xml, context, isLoadingFromEditor) == LoadFailure)
 			return LoadFailure;
 
 		const stack_string eventName = xml->getAttr("name");
@@ -2357,12 +2347,13 @@ public:
 			return LoadFailure;
 		}
 
+#if defined(USING_BEHAVIOR_TREE_SERIALIZATION)
 		// Automatically declare game-defined signals
-		if (context.eventsDeclaration.DeclareGameEventIfNotAlreadyDeclared(eventName.c_str()))
+		if (isLoadingFromEditor && context.eventsDeclaration.DeclareGameEventIfNotAlreadyDeclared(eventName.c_str()))
 		{
 			gEnv->pLog->LogWarning("WaitForEvent(%d) [Tree='%s'] Unknown event '%s' used. Event will be declared automatically.", xml->getLine(), context.treeName, eventName.c_str());
 		}
-
+#endif // USING_BEHAVIOR_TREE_SERIALIZATION
 
 		m_eventToWaitFor = Event(eventName);
 
@@ -2402,7 +2393,7 @@ public:
 			return;
 		}
 
-		const Variables::Events events = eventsDeclaration->GetEvents();
+		const Variables::Events events = eventsDeclaration->GetEventsWithFlags();
 		string eventName = m_eventToWaitFor.GetName();
 		SerializeContainerAsStringList(archive, "event", "^Event", events, "Event", eventName);
 		m_eventToWaitFor = Event(eventName);
@@ -2475,7 +2466,7 @@ public:
 	{
 	}
 
-	virtual LoadResult LoadFromXml(const XmlNodeRef& xml, const struct LoadContext& context, const bool strictMode) override
+	virtual LoadResult LoadFromXml(const XmlNodeRef& xml, const struct LoadContext& context, const bool isLoadingFromEditor) override
 	{
 		const char* timestampName = xml->getAttr("since");
 		if (!timestampName)
@@ -2506,7 +2497,7 @@ public:
 
 		m_timestampID = TimestampID(timestampName);
 
-		return LoadChildFromXml(xml, context, strictMode);
+		return LoadChildFromXml(xml, context, isLoadingFromEditor);
 	}
 
 #ifdef USING_BEHAVIOR_TREE_XML_DESCRIPTION_CREATION
@@ -2653,7 +2644,7 @@ public:
 		LessThan,
 	};
 
-	virtual LoadResult LoadFromXml(const XmlNodeRef& xml, const struct LoadContext& context, const bool strictMode) override
+	virtual LoadResult LoadFromXml(const XmlNodeRef& xml, const struct LoadContext& context, const bool isLoadingFromEditor) override
 	{
 		const char* timestampName = xml->getAttr("since");
 		if (!timestampName)
@@ -2799,7 +2790,7 @@ public:
 	{
 	}
 
-	virtual LoadResult LoadFromXml(const XmlNodeRef& xml, const struct LoadContext& context, const bool strictMode) override
+	virtual LoadResult LoadFromXml(const XmlNodeRef& xml, const struct LoadContext& context, const bool isLoadingFromEditor) override
 	{
 		const stack_string timestampName = xml->getAttr("since");
 		IF_UNLIKELY (timestampName.empty())
@@ -3009,7 +3000,7 @@ public:
 	{
 	};
 
-	virtual LoadResult LoadFromXml(const XmlNodeRef& xml, const struct LoadContext& context, const bool strictMode) override
+	virtual LoadResult LoadFromXml(const XmlNodeRef& xml, const struct LoadContext& context, const bool isLoadingFromEditor) override
 	{
 #ifdef STORE_LOG_MESSAGE
 		m_message = xml->getAttr("message");
@@ -3165,9 +3156,9 @@ public:
 #endif // DEBUG_MODULAR_BEHAVIOR_TREE
 	};
 
-	virtual LoadResult LoadFromXml(const XmlNodeRef& xml, const struct LoadContext& context, const bool strictMode) override
+	virtual LoadResult LoadFromXml(const XmlNodeRef& xml, const struct LoadContext& context, const bool isLoadingFromEditor) override
 	{
-		if (BaseClass::LoadFromXml(xml, context, strictMode) == LoadFailure)
+		if (BaseClass::LoadFromXml(xml, context, isLoadingFromEditor) == LoadFailure)
 			return LoadFailure;
 
 		return LoadSuccess;

@@ -132,6 +132,7 @@ namespace AISignals
 		const AISignals::ISignalDescription& GetOnInTargetFov() const { return *pOnInTargetFov; }
 		const AISignals::ISignalDescription& GetOnLeaveSignal() const { return *pOnLeaveSignal; }
 		const AISignals::ISignalDescription& GetOnMeleePerformed() const { return *pOnMeleePerformed; }
+		const AISignals::ISignalDescription& GetOnMeleeKnockedDownTarget() const { return *pOnMeleeKnockedDownTarget; }		
 		const AISignals::ISignalDescription& GetOnNotAloneSignal() const { return *pOnNotAloneSignal; }
 		const AISignals::ISignalDescription& GetOnNotInTargetFov() const { return *pOnNotInTargetFov; }
 		const AISignals::ISignalDescription& GetOnNotVisibleFromTarget() const { return *pOnNotVisibleFromTarget; }
@@ -166,6 +167,7 @@ namespace AISignals
 		void SetOnInTargetFov(const AISignals::ISignalDescription* val) { pOnInTargetFov = val; }
 		void SetOnLeaveSignal(const AISignals::ISignalDescription* val) { pOnLeaveSignal = val; }
 		void SetOnMeleePerformed(const AISignals::ISignalDescription* val) { pOnMeleePerformed = val; }
+		void SetOnMeleeKnockedDownTarget(const AISignals::ISignalDescription* val) { pOnMeleeKnockedDownTarget = val; }
 		void SetOnNotAloneSignal(const AISignals::ISignalDescription* val) { pOnNotAloneSignal = val; }
 		void SetOnNotInTargetFov(const AISignals::ISignalDescription* val) { pOnNotInTargetFov = val; }
 		void SetOnNotVisibleFromTarget(const AISignals::ISignalDescription* val) { pOnNotVisibleFromTarget = val; }
@@ -433,6 +435,84 @@ namespace AISignals
 		const AISignals::ISignalDescription& GetOnUnitStop_DEPRECATED() const { return *pOnUnitStop_DEPRECATED; }
 		const AISignals::ISignalDescription& GetOnUnitSuspended_DEPRECATED() const { return *pOnUnitSuspended_DEPRECATED; }
 		const AISignals::ISignalDescription& GetOnVehicleDanger_DEPRECATED() const { return *pOnVehicleDanger_DEPRECATED; }
+		const AISignals::ISignalDescription& GetOnAIAgressive_DEPRECATED() const { return *pOnAIAgressive_DEPRECATED; }
+		const AISignals::ISignalDescription& GetOnAlertStatus_DEPRECATED() const { return *pOnAlertStatus_DEPRECATED; }
+		const AISignals::ISignalDescription& GetOnAtCloseRange_DEPRECATED() const { return *pOnAtCloseRange_DEPRECATED; }
+		const AISignals::ISignalDescription& GetOnAtOptimalRange_DEPRECATED() const { return *pOnAtOptimalRange_DEPRECATED; }
+		const AISignals::ISignalDescription& GetOnBodyFallSound_DEPRECATED() const { return *pOnBodyFallSound_DEPRECATED; }
+		const AISignals::ISignalDescription& GetOnChangeSetEnd_DEPRECATED() const { return *pOnChangeSetEnd_DEPRECATED; }
+		const AISignals::ISignalDescription& GetOnCheckNextWeaponAccessory_DEPRECATED() const { return *pOnCheckNextWeaponAccessory_DEPRECATED; }
+		const AISignals::ISignalDescription& GetOnCommandTold_DEPRECATED() const { return *pOnCommandTold_DEPRECATED; }
+		const AISignals::ISignalDescription& GetOnControllVehicle_DEPRECATED() const { return *pOnControllVehicle_DEPRECATED; }
+		const AISignals::ISignalDescription& GetOnDamage_DEPRECATED() const { return *pOnDamage_DEPRECATED; }
+		const AISignals::ISignalDescription& GetOnDeadMemberSpottedBySomeoneElse_DEPRECATED() const { return *pOnDeadMemberSpottedBySomeoneElse_DEPRECATED; }
+		const AISignals::ISignalDescription& GetOnDisableFire_DEPRECATED() const { return *pOnDisableFire; }
+		const AISignals::ISignalDescription& GetOnDoExitVehicle_DEPRECATED() const { return *pOnDoExitVehicle_DEPRECATED; }
+		const AISignals::ISignalDescription& GetOnDriverEntered_DEPRECATED() const { return *pOnDriverEntered_DEPRECATED; }
+		const AISignals::ISignalDescription& GetOnDriverOut_DEPRECATED() const { return *pOnDriverOut_DEPRECATED; }
+		const AISignals::ISignalDescription& GetOnDroneSeekCommand_DEPRECATED() const { return *pOnDroneSeekCommand_DEPRECATED; }
+		const AISignals::ISignalDescription& GetOnDropped_DEPRECATED() const { return *pOnDropped_DEPRECATED; }
+		const AISignals::ISignalDescription& GetOnEMPGrenadeThrownInGroup_DEPRECATED() const { return *pOnEMPGrenadeThrownInGroup_DEPRECATED; }
+		const AISignals::ISignalDescription& GetOnEnableAlertStatus_DEPRECATED() const { return *pOnEnableAlertStatus_DEPRECATED; }
+		const AISignals::ISignalDescription& GetOnEnemyDamage_DEPRECATED() const { return *pOnEnemyDamage_DEPRECATED; }
+		const AISignals::ISignalDescription& GetOnEnemyDied_DEPRECATED() const { return *pOnEnemyDied_DEPRECATED; }
+		const AISignals::ISignalDescription& GetOnEnteredVehicleGunner_DEPRECATED() const { return *pOnEnteredVehicleGunner_DEPRECATED; }
+		const AISignals::ISignalDescription& GetOnEnteredVehicle_DEPRECATED() const { return *pOnEnteredVehicle_DEPRECATED; }
+		const AISignals::ISignalDescription& GetOnEnteringEnd_DEPRECATED() const { return *pOnEnteringEnd_DEPRECATED; }
+		const AISignals::ISignalDescription& GetOnEnteringVehicle_DEPRECATED() const { return *pOnEnteringVehicle_DEPRECATED; }
+		const AISignals::ISignalDescription& GetOnExitVehicleStand_DEPRECATED() const { return *pOnExitVehicleStand_DEPRECATED; }
+		const AISignals::ISignalDescription& GetOnExitedVehicle_DEPRECATED() const { return *pOnExitedVehicle_DEPRECATED; }
+		const AISignals::ISignalDescription& GetOnExitingEnd_DEPRECATED() const { return *pOnExitingEnd_DEPRECATED; }
+		const AISignals::ISignalDescription& GetOnFlashbangGrenadeThrownInGroup_DEPRECATED() const { return *pOnFlashGrenadeThrownInGroup_DEPRECATED; }
+		const AISignals::ISignalDescription& GetOnFollowLeader_DEPRECATED() const { return *pOnFollowLeader_DEPRECATED; }
+		const AISignals::ISignalDescription& GetOnFragGrenadeThrownInGroup_DEPRECATED() const { return *pOnFragGrenadeThrownInGroup_DEPRECATED; }
+		const AISignals::ISignalDescription& GetOnFriendlyDamageByPlayer_DEPRECATED() const { return *pOnFriendlyDamageByPlayer_DEPRECATED; }
+		const AISignals::ISignalDescription& GetOnFriendlyDamage_DEPRECATED() const { return *pOnFriendlyDamage_DEPRECATED; }
+		const AISignals::ISignalDescription& GetOnGoToGrabbed_DEPRECATED() const { return *pOnGoToGrabbed_DEPRECATED; }
+		const AISignals::ISignalDescription& GetOnGoToSeek_DEPRECATED() const { return *pOnGoToSeek_DEPRECATED; }
+		const AISignals::ISignalDescription& GetOnGroupMemberDiedOnAGL_DEPRECATED() const { return *pOnGroupMemberDiedOnAGL_DEPRECATED; }
+		const AISignals::ISignalDescription& GetOnGroupMemberDiedOnHMG_DEPRECATED() const { return *pOnGroupMemberDiedOnHMG_DEPRECATED; }
+		const AISignals::ISignalDescription& GetOnGroupMemberDiedOnMountedWeapon_DEPRECATED() const { return *pOnGroupMemberDiedOnMountedWeapon_DEPRECATED; }
+		const AISignals::ISignalDescription& GetOnGunnerLostTarget_DEPRECATED() const { return *pOnGunnerLostTarget_DEPRECATED; }
+		const AISignals::ISignalDescription& GetOnInVehicleFoundTarget_DEPRECATED() const { return *pOnInVehicleFoundTarget_DEPRECATED; }
+		const AISignals::ISignalDescription& GetOnInVehicleRequestStartFire_DEPRECATED() const { return *pOnInVehicleRequestStartFire_DEPRECATED; }
+		const AISignals::ISignalDescription& GetOnInVehicleRequestStopFire_DEPRECATED() const { return *pOnInVehicleRequestStopFire_DEPRECATED; }
+		const AISignals::ISignalDescription& GetOnIncomingFire_DEPRECATED() const { return *pOnIncomingFire_DEPRECATED; }
+		const AISignals::ISignalDescription& GetOnJoinTeam_DEPRECATED() const { return *pOnJoinTeam_DEPRECATED; }
+		const AISignals::ISignalDescription& GetOnJustConstructed_DEPRECATED() const { return *pOnJustConstructed_DEPRECATED; }
+		const AISignals::ISignalDescription& GetOnLeaveMountedWeapon_DEPRECATED() const { return *pOnLeaveMountedWeapon_DEPRECATED; }
+		const AISignals::ISignalDescription& GetOnLowAmmoFinnished_DEPRECATED() const { return *pOnLowAmmoFinished_DEPRECATED; }
+		const AISignals::ISignalDescription& GetOnLowAmmoStart_DEPRECATED() const { return *pOnLowAmmoStart_DEPRECATED; }
+		const AISignals::ISignalDescription& GetOnNearbyWaterRippleSeen_DEPRECATED() const { return *pOnNearbyWaterRippleSeen_DEPRECATED; }
+		const AISignals::ISignalDescription& GetOnNewSpawn_DEPRECATED() const { return *pOnNewSpawn_DEPRECATED; }
+		const AISignals::ISignalDescription& GetOnNoSearchSpotsAvailable_DEPRECATED() const { return *pOnNoSearchSpotsAvailable_DEPRECATED; }
+		const AISignals::ISignalDescription& GetOnOrderExitVehicle_DEPRECATED() const { return *pOnOrderExitVehicle_DEPRECATED; }
+		const AISignals::ISignalDescription& GetOnOrderFollow_DEPRECATED() const { return *pOnOrderFollow_DEPRECATED; }
+		const AISignals::ISignalDescription& GetOnOrderLeaveVehicle_DEPRECATED() const { return *pOnOrderLeaveVehicle_DEPRECATED; }
+		const AISignals::ISignalDescription& GetOnOrderMove_DEPRECATED() const { return *pOnOrderMove_DEPRECATED; }
+		const AISignals::ISignalDescription& GetOnOrderUse_DEPRECATED() const { return *pOnOrderUse_DEPRECATED; }
+		const AISignals::ISignalDescription& GetOnPlayerDied_DEPRECATED() const { return *pOnPlayerDied_DEPRECATED; }
+		const AISignals::ISignalDescription& GetOnPlayerHit_DEPRECATED() const { return *pOnPlayerHit_DEPRECATED; }
+		const AISignals::ISignalDescription& GetOnPlayerNiceShot_DEPRECATED() const { return *pOnPlayerNiceShot_DEPRECATED; }
+		const AISignals::ISignalDescription& GetOnPlayerTeamKill_DEPRECATED() const { return *pOnPlayerTeamKill_DEPRECATED; }
+		const AISignals::ISignalDescription& GetOnPrepareForMountedWeaponUse_DEPRECATED() const { return *pOnPrepareForMountedWeaponUse_DEPRECATED; }
+		const AISignals::ISignalDescription& GetOnRefPointReached_DEPRECATED() const { return *pOnRefPointReached_DEPRECATED; }
+		const AISignals::ISignalDescription& GetOnRelocate_DEPRECATED() const { return *pOnRelocate_DEPRECATED; }
+		const AISignals::ISignalDescription& GetOnRequestJoinTeam_DEPRECATED() const { return *pOnRequestJoinTeam_DEPRECATED; }
+		const AISignals::ISignalDescription& GetOnResetAssignment_DEPRECATED() const { return *pOnResetAssignment_DEPRECATED; }
+		const AISignals::ISignalDescription& GetOnSharedUseThisMountedWeapon_DEPRECATED() const { return *pOnSharedUseThisMountedWeapon_DEPRECATED; }
+		const AISignals::ISignalDescription& GetOnSmokeGrenadeThrownInGroup_DEPRECATED() const { return *pOnSmokeGrenadeThrownInGroup_DEPRECATED; }
+		const AISignals::ISignalDescription& GetOnSomebodyDied_DEPRECATED() const { return *pOnSomebodyDied_DEPRECATED; }
+		const AISignals::ISignalDescription& GetOnSpawn_DEPRECATED() const { return *pOnSpawn_DEPRECATED; }
+		const AISignals::ISignalDescription& GetOnSquadmateDied_DEPRECATED() const { return *pOnSquadmateDied_DEPRECATED; }
+		const AISignals::ISignalDescription& GetOnStopAndExit_DEPRECATED() const { return *pOnStopAndExit_DEPRECATED; }
+		const AISignals::ISignalDescription& GetOnSuspiciousActivity_DEPRECATED() const { return *pOnSuspiciousActivity_DEPRECATED; }
+		const AISignals::ISignalDescription& GetOnTargetLost_DEPRECATED() const { return *pOnTargetLost_DEPRECATED; }
+		const AISignals::ISignalDescription& GetOnTargetNotVisible_DEPRECATED() const { return *pOnTargetNotVisible_DEPRECATED; }
+		const AISignals::ISignalDescription& GetOnTooFarFromWeapon_DEPRECATED() const { return *pOnTooFarFromWeapon_DEPRECATED; }
+		const AISignals::ISignalDescription& GetOnUnloadDone_DEPRECATED() const { return *pOnUnloadDone_DEPRECATED; }
+		const AISignals::ISignalDescription& GetOnUseMountedWeapon2_DEPRECATED() const { return *pOnUseMountedWeapon2_DEPRECATED; }
+		const AISignals::ISignalDescription& GetOnUseMountedWeapon_DEPRECATED() const { return *pOnUseMountedWeapon_DEPRECATED; }
 
 		void SetOnAbortAction_DEPRECATED(const AISignals::ISignalDescription* val) { pOnAbortAction_DEPRECATED = val; }
 		void SetOnActAlerted_DEPRECATED(const AISignals::ISignalDescription* val) { pOnActAlerted_DEPRECATED = val; }
@@ -529,6 +609,85 @@ namespace AISignals
 		void SetOnUnitStop_DEPRECATED(const AISignals::ISignalDescription* val) { pOnUnitStop_DEPRECATED = val; }
 		void SetOnUnitSuspended_DEPRECATED(const AISignals::ISignalDescription* val) { pOnUnitSuspended_DEPRECATED = val; }
 		void SetOnVehicleDanger_DEPRECATED(const AISignals::ISignalDescription* val) { pOnVehicleDanger_DEPRECATED = val; }
+		void SetOnAIAgressive_DEPRECATED(const AISignals::ISignalDescription* val) { pOnAIAgressive_DEPRECATED = val; }
+		void SetOnAlertStatus_DEPRECATED(const AISignals::ISignalDescription* val) { pOnAlertStatus_DEPRECATED = val; }
+		void SetOnAtCloseRange_DEPRECATED(const AISignals::ISignalDescription* val) { pOnAtCloseRange_DEPRECATED = val; }
+		void SetOnAtOptimalRange_DEPRECATED(const AISignals::ISignalDescription* val) { pOnAtOptimalRange_DEPRECATED = val; }
+		void SetOnBodyFallSound_DEPRECATED(const AISignals::ISignalDescription* val) { pOnBodyFallSound_DEPRECATED = val; }
+		void SetOnChangeSetEnd_DEPRECATED(const AISignals::ISignalDescription* val) { pOnChangeSetEnd_DEPRECATED = val; }
+		void SetOnCheckNextWeaponAccessory_DEPRECATED(const AISignals::ISignalDescription* val) { pOnCheckNextWeaponAccessory_DEPRECATED = val; }
+		void SetOnCommandTold_DEPRECATED(const AISignals::ISignalDescription* val) { pOnCommandTold_DEPRECATED = val; }
+		void SetOnControllVehicle_DEPRECATED(const AISignals::ISignalDescription* val) { pOnControllVehicle_DEPRECATED = val; }
+		void SetOnDamage_DEPRECATED(const AISignals::ISignalDescription* val) { pOnDamage_DEPRECATED = val; }
+		void SetOnDeadMemberSpottedBySomeoneElse_DEPRECATED(const AISignals::ISignalDescription* val) { pOnDeadMemberSpottedBySomeoneElse_DEPRECATED = val; }
+		void SetOnDisableFire_DEPRECATED(const AISignals::ISignalDescription* val) { pOnDisableFire = val; }
+		void SetOnDoExitVehicle_DEPRECATED(const AISignals::ISignalDescription* val) { pOnDoExitVehicle_DEPRECATED = val; }
+		void SetOnDriverEntered_DEPRECATED(const AISignals::ISignalDescription* val) { pOnDriverEntered_DEPRECATED = val; }
+		void SetOnDriverOut_DEPRECATED(const AISignals::ISignalDescription* val) { pOnDriverOut_DEPRECATED = val; }
+		void SetOnDroneSeekCommand_DEPRECATED(const AISignals::ISignalDescription* val) { pOnDroneSeekCommand_DEPRECATED = val; }
+		void SetOnDropped_DEPRECATED(const AISignals::ISignalDescription* val) { pOnDropped_DEPRECATED = val; }
+		void SetOnEMPGrenadeThrownInGroup_DEPRECATED(const AISignals::ISignalDescription* val) { pOnEMPGrenadeThrownInGroup_DEPRECATED = val; }
+		void SetOnEnableAlertStatus_DEPRECATED(const AISignals::ISignalDescription* val) { pOnEnableAlertStatus_DEPRECATED = val; }
+		void SetOnEnemyDamage_DEPRECATED(const AISignals::ISignalDescription* val) { pOnEnemyDamage_DEPRECATED = val; }
+		void SetOnEnemyDied_DEPRECATED(const AISignals::ISignalDescription* val) { pOnEnemyDied_DEPRECATED = val; }
+		void SetOnEnteredVehicleGunner_DEPRECATED(const AISignals::ISignalDescription* val) { pOnEnteredVehicleGunner_DEPRECATED = val; }
+		void SetOnEnteredVehicle_DEPRECATED(const AISignals::ISignalDescription* val) { pOnEnteredVehicle_DEPRECATED = val; }
+		void SetOnEnteringEnd_DEPRECATED(const AISignals::ISignalDescription* val) { pOnEnteringEnd_DEPRECATED = val; }
+		void SetOnEnteringVehicle_DEPRECATED(const AISignals::ISignalDescription* val) { pOnEnteringVehicle_DEPRECATED = val; }
+		void SetOnExitVehicleStand_DEPRECATED(const AISignals::ISignalDescription* val) { pOnExitVehicleStand_DEPRECATED = val; }
+		void SetOnExitedVehicle_DEPRECATED(const AISignals::ISignalDescription* val) { pOnExitedVehicle_DEPRECATED = val; }
+		void SetOnExitingEnd_DEPRECATED(const AISignals::ISignalDescription* val) { pOnExitingEnd_DEPRECATED = val; }
+		void SetOnFlashGrenadeThrownInGroup_DEPRECATED(const AISignals::ISignalDescription* val) { pOnFlashGrenadeThrownInGroup_DEPRECATED = val; }
+		void SetOnFollowLeader_DEPRECATED(const AISignals::ISignalDescription* val) { pOnFollowLeader_DEPRECATED = val; }
+		void SetOnFragGrenadeThrownInGroup_DEPRECATED(const AISignals::ISignalDescription* val) { pOnFragGrenadeThrownInGroup_DEPRECATED = val; }
+		void SetOnFriendlyDamageByPlayer_DEPRECATED(const AISignals::ISignalDescription* val) { pOnFriendlyDamageByPlayer_DEPRECATED = val; }
+		void SetOnFriendlyDamage_DEPRECATED(const AISignals::ISignalDescription* val) { pOnFriendlyDamage_DEPRECATED = val; }
+		void SetOnGoToGrabbed_DEPRECATED(const AISignals::ISignalDescription* val) { pOnGoToGrabbed_DEPRECATED = val; }
+		void SetOnGoToSeek_DEPRECATED(const AISignals::ISignalDescription* val) { pOnGoToSeek_DEPRECATED = val; }
+		void SetOnGroupMemberDiedOnAGL_DEPRECATED(const AISignals::ISignalDescription* val) { pOnGroupMemberDiedOnAGL_DEPRECATED = val; }
+		void SetOnGroupMemberDiedOnHMG_DEPRECATED(const AISignals::ISignalDescription* val) { pOnGroupMemberDiedOnHMG_DEPRECATED = val; }
+		void SetOnGroupMemberDiedOnMountedWeapon_DEPRECATED(const AISignals::ISignalDescription* val) { pOnGroupMemberDiedOnMountedWeapon_DEPRECATED = val; }
+		void SetOnGunnerLostTarget_DEPRECATED(const AISignals::ISignalDescription* val) { pOnGunnerLostTarget_DEPRECATED = val; }
+		void SetOnInVehicleFoundTarget_DEPRECATED(const AISignals::ISignalDescription* val) { pOnInVehicleFoundTarget_DEPRECATED = val; }
+		void SetOnInVehicleRequestStartFire_DEPRECATED(const AISignals::ISignalDescription* val) { pOnInVehicleRequestStartFire_DEPRECATED = val; }
+		void SetOnInVehicleRequestStopFire_DEPRECATED(const AISignals::ISignalDescription* val) { pOnInVehicleRequestStopFire_DEPRECATED = val; }
+		void SetOnIncomingFire_DEPRECATED(const AISignals::ISignalDescription* val) { pOnIncomingFire_DEPRECATED = val; }
+		void SetOnJoinTeam_DEPRECATED(const AISignals::ISignalDescription* val) { pOnJoinTeam_DEPRECATED = val; }
+		void SetOnJustConstructed_DEPRECATED(const AISignals::ISignalDescription* val) { pOnJustConstructed_DEPRECATED = val; }
+		void SetOnLeaveMountedWeapon_DEPRECATED(const AISignals::ISignalDescription* val) { pOnLeaveMountedWeapon_DEPRECATED = val; }
+		void SetOnLowAmmoFinished_DEPRECATED(const AISignals::ISignalDescription* val) { pOnLowAmmoFinished_DEPRECATED = val; }
+		void SetOnLowAmmoStart_DEPRECATED(const AISignals::ISignalDescription* val) { pOnLowAmmoStart_DEPRECATED = val; }
+		void SetOnNearbyWaterRippleSeen_DEPRECATED(const AISignals::ISignalDescription* val) { pOnNearbyWaterRippleSeen_DEPRECATED = val; }
+		void SetOnNewSpawn_DEPRECATED(const AISignals::ISignalDescription* val) { pOnNewSpawn_DEPRECATED = val; }
+		void SetOnNoSearchSpotsAvailable_DEPRECATED(const AISignals::ISignalDescription* val) { pOnNoSearchSpotsAvailable_DEPRECATED = val; }
+		void SetOnOrderExitVehicle_DEPRECATED(const AISignals::ISignalDescription* val) { pOnOrderExitVehicle_DEPRECATED = val; }
+		void SetOnOrderFollow_DEPRECATED(const AISignals::ISignalDescription* val) { pOnOrderFollow_DEPRECATED = val; }
+		void SetOnOrderLeaveVehicle_DEPRECATED(const AISignals::ISignalDescription* val) { pOnOrderLeaveVehicle_DEPRECATED = val; }
+		void SetOnOrderMove_DEPRECATED(const AISignals::ISignalDescription* val) { pOnOrderMove_DEPRECATED = val; }
+		void SetOnOrderUse_DEPRECATED(const AISignals::ISignalDescription* val) { pOnOrderUse_DEPRECATED = val; }
+		void SetOnPlayerDied_DEPRECATED(const AISignals::ISignalDescription* val) { pOnPlayerDied_DEPRECATED = val; }
+		void SetOnPlayerHit_DEPRECATED(const AISignals::ISignalDescription* val) { pOnPlayerHit_DEPRECATED = val; }
+		void SetOnPlayerNiceShot_DEPRECATED(const AISignals::ISignalDescription* val) { pOnPlayerNiceShot_DEPRECATED = val; }
+		void SetOnPlayerTeamKill_DEPRECATED(const AISignals::ISignalDescription* val) { pOnPlayerTeamKill_DEPRECATED = val; }
+		void SetOnPrepareForMountedWeaponUse_DEPRECATED(const AISignals::ISignalDescription* val) { pOnPrepareForMountedWeaponUse_DEPRECATED = val; }
+		void SetOnRefPointReached_DEPRECATED(const AISignals::ISignalDescription* val) { pOnRefPointReached_DEPRECATED = val; }
+		void SetOnRelocate_DEPRECATED(const AISignals::ISignalDescription* val) { pOnRelocate_DEPRECATED = val; }
+		void SetOnRequestJoinTeam_DEPRECATED(const AISignals::ISignalDescription* val) { pOnRequestJoinTeam_DEPRECATED = val; }
+		void SetOnResetAssignment_DEPRECATED(const AISignals::ISignalDescription* val) { pOnResetAssignment_DEPRECATED = val; }
+		void SetOnSharedUseThisMountedWeapon_DEPRECATED(const AISignals::ISignalDescription* val) { pOnSharedUseThisMountedWeapon_DEPRECATED = val; }
+		void SetOnSmokeGrenadeThrownInGroup_DEPRECATED(const AISignals::ISignalDescription* val) { pOnSmokeGrenadeThrownInGroup_DEPRECATED = val; }
+		void SetOnSomebodyDied_DEPRECATED(const AISignals::ISignalDescription* val) { pOnSomebodyDied_DEPRECATED = val; }
+		void SetOnSpawn_DEPRECATED(const AISignals::ISignalDescription* val) { pOnSpawn_DEPRECATED = val; }
+		void SetOnSquadmateDied_DEPRECATED(const AISignals::ISignalDescription* val) { pOnSquadmateDied_DEPRECATED = val; }
+		void SetOnStopAndExit_DEPRECATED(const AISignals::ISignalDescription* val) { pOnStopAndExit_DEPRECATED = val; }
+		void SetOnSuspiciousActivity_DEPRECATED(const AISignals::ISignalDescription* val) { pOnSuspiciousActivity_DEPRECATED = val; }
+		void SetOnTargetLost_DEPRECATED(const AISignals::ISignalDescription* val) { pOnTargetLost_DEPRECATED = val; }
+		void SetOnTargetNotVisible_DEPRECATED(const AISignals::ISignalDescription* val) { pOnTargetNotVisible_DEPRECATED = val; }
+		void SetOnTooFarFromWeapon_DEPRECATED(const AISignals::ISignalDescription* val) { pOnTooFarFromWeapon_DEPRECATED = val; }
+		void SetOnUnloadDone_DEPRECATED(const AISignals::ISignalDescription* val) { pOnUnloadDone_DEPRECATED = val; }
+		void SetOnUseMountedWeapon2_DEPRECATED(const AISignals::ISignalDescription* val) { pOnUseMountedWeapon2_DEPRECATED = val; }
+		void SetOnUseMountedWeapon_DEPRECATED(const AISignals::ISignalDescription* val) { pOnUseMountedWeapon_DEPRECATED = val; }
+
 private:
 	// ESignalTag::NONE
 	const ISignalDescription* pNone;
@@ -552,6 +711,7 @@ private:
 	const ISignalDescription* pOnInTargetFov;
 	const ISignalDescription* pOnLeaveSignal;
 	const ISignalDescription* pOnMeleePerformed;
+	const ISignalDescription* pOnMeleeKnockedDownTarget;
 	const ISignalDescription* pOnNotAloneSignal;
 	const ISignalDescription* pOnNotInTargetFov;
 	const ISignalDescription* pOnNotVisibleFromTarget;
@@ -742,6 +902,86 @@ private:
 	const ISignalDescription* pOnUnitStop_DEPRECATED;
 	const ISignalDescription* pOnUnitSuspended_DEPRECATED;
 	const ISignalDescription* pOnVehicleDanger_DEPRECATED;
+
+		// Used in Lua scripts
+	const ISignalDescription* pOnAIAgressive_DEPRECATED;
+	const ISignalDescription* pOnAlertStatus_DEPRECATED;
+	const ISignalDescription* pOnAtCloseRange_DEPRECATED;
+	const ISignalDescription* pOnAtOptimalRange_DEPRECATED;
+	const ISignalDescription* pOnBodyFallSound_DEPRECATED;
+	const ISignalDescription* pOnChangeSetEnd_DEPRECATED;
+	const ISignalDescription* pOnCheckNextWeaponAccessory_DEPRECATED;
+	const ISignalDescription* pOnCommandTold_DEPRECATED;
+	const ISignalDescription* pOnControllVehicle_DEPRECATED;
+	const ISignalDescription* pOnDamage_DEPRECATED;
+	const ISignalDescription* pOnDeadMemberSpottedBySomeoneElse_DEPRECATED;
+	const ISignalDescription* pOnDisableFire;
+	const ISignalDescription* pOnDoExitVehicle_DEPRECATED;
+	const ISignalDescription* pOnDriverEntered_DEPRECATED;
+	const ISignalDescription* pOnDriverOut_DEPRECATED;
+	const ISignalDescription* pOnDroneSeekCommand_DEPRECATED;
+	const ISignalDescription* pOnDropped_DEPRECATED;
+	const ISignalDescription* pOnEMPGrenadeThrownInGroup_DEPRECATED;
+	const ISignalDescription* pOnEnableAlertStatus_DEPRECATED;
+	const ISignalDescription* pOnEnemyDamage_DEPRECATED;
+	const ISignalDescription* pOnEnemyDied_DEPRECATED;
+	const ISignalDescription* pOnEnteredVehicleGunner_DEPRECATED;
+	const ISignalDescription* pOnEnteredVehicle_DEPRECATED;
+	const ISignalDescription* pOnEnteringEnd_DEPRECATED;
+	const ISignalDescription* pOnEnteringVehicle_DEPRECATED;
+	const ISignalDescription* pOnExitVehicleStand_DEPRECATED;
+	const ISignalDescription* pOnExitedVehicle_DEPRECATED;
+	const ISignalDescription* pOnExitingEnd_DEPRECATED;
+	const ISignalDescription* pOnFlashGrenadeThrownInGroup_DEPRECATED;
+	const ISignalDescription* pOnFollowLeader_DEPRECATED;
+	const ISignalDescription* pOnFragGrenadeThrownInGroup_DEPRECATED;
+	const ISignalDescription* pOnFriendlyDamageByPlayer_DEPRECATED;
+	const ISignalDescription* pOnFriendlyDamage_DEPRECATED;
+	const ISignalDescription* pOnGoToGrabbed_DEPRECATED;
+	const ISignalDescription* pOnGoToSeek_DEPRECATED;
+	const ISignalDescription* pOnGroupMemberDiedOnAGL_DEPRECATED;
+	const ISignalDescription* pOnGroupMemberDiedOnHMG_DEPRECATED;
+	const ISignalDescription* pOnGroupMemberDiedOnMountedWeapon_DEPRECATED;
+	const ISignalDescription* pOnGunnerLostTarget_DEPRECATED;
+	const ISignalDescription* pOnInVehicleFoundTarget_DEPRECATED;
+	const ISignalDescription* pOnInVehicleRequestStartFire_DEPRECATED;
+	const ISignalDescription* pOnInVehicleRequestStopFire_DEPRECATED;
+	const ISignalDescription* pOnIncomingFire_DEPRECATED;
+	const ISignalDescription* pOnJoinTeam_DEPRECATED;
+	const ISignalDescription* pOnJustConstructed_DEPRECATED;
+	const ISignalDescription* pOnLeaveMountedWeapon_DEPRECATED;
+	const ISignalDescription* pOnLowAmmoFinished_DEPRECATED;
+	const ISignalDescription* pOnLowAmmoStart_DEPRECATED;
+	const ISignalDescription* pOnNearbyWaterRippleSeen_DEPRECATED;
+	const ISignalDescription* pOnNewSpawn_DEPRECATED;
+	const ISignalDescription* pOnNoSearchSpotsAvailable_DEPRECATED;
+	const ISignalDescription* pOnOrderExitVehicle_DEPRECATED;
+	const ISignalDescription* pOnOrderFollow_DEPRECATED;
+	const ISignalDescription* pOnOrderLeaveVehicle_DEPRECATED;
+	const ISignalDescription* pOnOrderMove_DEPRECATED;
+	const ISignalDescription* pOnOrderUse_DEPRECATED;
+	const ISignalDescription* pOnPlayerDied_DEPRECATED;
+	const ISignalDescription* pOnPlayerHit_DEPRECATED;
+	const ISignalDescription* pOnPlayerNiceShot_DEPRECATED;
+	const ISignalDescription* pOnPlayerTeamKill_DEPRECATED;
+	const ISignalDescription* pOnPrepareForMountedWeaponUse_DEPRECATED;
+	const ISignalDescription* pOnRefPointReached_DEPRECATED;
+	const ISignalDescription* pOnRelocate_DEPRECATED;
+	const ISignalDescription* pOnRequestJoinTeam_DEPRECATED;
+	const ISignalDescription* pOnResetAssignment_DEPRECATED;
+	const ISignalDescription* pOnSharedUseThisMountedWeapon_DEPRECATED;
+	const ISignalDescription* pOnSmokeGrenadeThrownInGroup_DEPRECATED;
+	const ISignalDescription* pOnSomebodyDied_DEPRECATED;
+	const ISignalDescription* pOnSpawn_DEPRECATED;
+	const ISignalDescription* pOnSquadmateDied_DEPRECATED;
+	const ISignalDescription* pOnStopAndExit_DEPRECATED;
+	const ISignalDescription* pOnSuspiciousActivity_DEPRECATED;
+	const ISignalDescription* pOnTargetLost_DEPRECATED;
+	const ISignalDescription* pOnTargetNotVisible_DEPRECATED;
+	const ISignalDescription* pOnTooFarFromWeapon_DEPRECATED;
+	const ISignalDescription* pOnUnloadDone_DEPRECATED;
+	const ISignalDescription* pOnUseMountedWeapon2_DEPRECATED;
+	const ISignalDescription* pOnUseMountedWeapon_DEPRECATED;
 	};
 
 	class ISignal
@@ -774,8 +1014,11 @@ private:
 
 		virtual size_t                             GetSignalDescriptionsCount() const = 0;
 		virtual const ISignalDescription&          GetSignalDescription(const size_t index) const = 0;
+		virtual const ISignalDescription&          GetSignalDescription(const char* szSignalDescName) const = 0;
 
 		virtual const ISignalDescription&          RegisterGameSignalDescription(const char* szSignalName) = 0;
+		virtual void                               DeregisterGameSignalDescription(const ISignalDescription& signalDescription) = 0;
+
 
 		virtual SignalSharedPtr                    CreateSignal(const int nSignal, const ISignalDescription& signalDescription, const tAIObjectID senderID = 0, IAISignalExtraData* pEData = nullptr) const = 0;
 		virtual SignalSharedPtr                    CreateSignal_DEPRECATED(const int nSignal, const char* szCustomSignalTypeName, const tAIObjectID senderID = 0, IAISignalExtraData* pEData = nullptr) = 0;

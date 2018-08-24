@@ -626,7 +626,7 @@ struct INode
 	virtual void Terminate(const UpdateContext& context) = 0;
 
 	//! Load up a behavior tree node with information from an xml node.
-	virtual LoadResult LoadFromXml(const XmlNodeRef& xml, const struct LoadContext& context, const bool strictMode = true) = 0;
+	virtual LoadResult LoadFromXml(const XmlNodeRef& xml, const struct LoadContext& context, const bool isLoadingFromEditor = true) = 0;
 
 #ifdef USING_BEHAVIOR_TREE_XML_DESCRIPTION_CREATION
 	virtual XmlNodeRef CreateXmlDescription() = 0;
@@ -782,7 +782,7 @@ struct INodeFactory
 {
 	virtual ~INodeFactory() {}
 	virtual INodePtr CreateNodeOfType(const char* typeName) = 0;
-	virtual INodePtr CreateNodeFromXml(const XmlNodeRef& xml, const LoadContext& context, const bool strictMode = true) = 0;
+	virtual INodePtr CreateNodeFromXml(const XmlNodeRef& xml, const LoadContext& context, const bool isLoadingFromEditor = true) = 0;
 	virtual void     RegisterNodeCreator(struct INodeCreator* nodeCreator) = 0;
 	virtual size_t   GetSizeOfImmutableDataForAllAllocatedNodes() const = 0;
 	virtual size_t   GetSizeOfRuntimeDataForAllAllocatedNodes() const = 0;

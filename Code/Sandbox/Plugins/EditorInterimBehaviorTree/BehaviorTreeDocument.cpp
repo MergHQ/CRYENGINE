@@ -87,6 +87,7 @@ bool BehaviorTreeDocument::OpenFile(const char* behaviorTreeName, const char* ab
 
 	Reset();
 
+	const bool isLoadingFromEditor = true;
 	BehaviorTree::BehaviorTreeTemplate newBehaviorTreeTemplate;
 	newBehaviorTreeTemplate.eventsDeclaration.SetEventsFlags(eventsFlags);
 
@@ -118,7 +119,7 @@ bool BehaviorTreeDocument::OpenFile(const char* behaviorTreeName, const char* ab
 
 	if (XmlNodeRef signalVariablesXml = behaviorTreeXmlFile->findChild("SignalVariables"))
 	{
-		if (!newBehaviorTreeTemplate.signalHandler.LoadFromXML(newBehaviorTreeTemplate.variableDeclarations, newBehaviorTreeTemplate.eventsDeclaration, signalVariablesXml, behaviorTreeName))
+		if (!newBehaviorTreeTemplate.signalHandler.LoadFromXML(newBehaviorTreeTemplate.variableDeclarations, newBehaviorTreeTemplate.eventsDeclaration, signalVariablesXml, behaviorTreeName, isLoadingFromEditor))
 		{
 			return false;
 		}
@@ -126,7 +127,7 @@ bool BehaviorTreeDocument::OpenFile(const char* behaviorTreeName, const char* ab
 
 	if (XmlNodeRef timestampsXml = behaviorTreeXmlFile->findChild("Timestamps"))
 	{
-		if (!newBehaviorTreeTemplate.defaultTimestampCollection.LoadFromXml(newBehaviorTreeTemplate.eventsDeclaration, timestampsXml, behaviorTreeName))
+		if (!newBehaviorTreeTemplate.defaultTimestampCollection.LoadFromXml(newBehaviorTreeTemplate.eventsDeclaration, timestampsXml, behaviorTreeName, isLoadingFromEditor))
 		{
 			return false;
 		}
@@ -134,8 +135,7 @@ bool BehaviorTreeDocument::OpenFile(const char* behaviorTreeName, const char* ab
 
 	BehaviorTree::INodeFactory& factory = gEnv->pAISystem->GetIBehaviorTreeManager()->GetNodeFactory();
 	BehaviorTree::LoadContext context(factory, behaviorTreeName, newBehaviorTreeTemplate.variableDeclarations, newBehaviorTreeTemplate.eventsDeclaration);
-	const bool strictMode = false;
-	newBehaviorTreeTemplate.rootNode = BehaviorTree::XmlLoader().CreateBehaviorTreeRootNodeFromBehaviorTreeXml(behaviorTreeXmlFile, context, strictMode);
+	newBehaviorTreeTemplate.rootNode = BehaviorTree::XmlLoader().CreateBehaviorTreeRootNodeFromBehaviorTreeXml(behaviorTreeXmlFile, context, isLoadingFromEditor);
 
 	if (!newBehaviorTreeTemplate.rootNode.get())
 	{

@@ -31,7 +31,7 @@ public:
 
 	AnimateFragment();
 
-	virtual LoadResult LoadFromXml(const XmlNodeRef& xml, const struct LoadContext& context, const bool strictMode) override;
+	virtual LoadResult LoadFromXml(const XmlNodeRef& xml, const struct LoadContext& context, const bool isLoadingFromEditor) override;
 
 #ifdef DEBUG_MODULAR_BEHAVIOR_TREE
 	virtual void GetCustomDebugText(const UpdateContext& updateContext, stack_string& debugText) const override;

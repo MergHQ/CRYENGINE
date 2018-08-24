@@ -33,7 +33,7 @@ AnimateFragment::AnimateFragment() :
 {
 }
 
-BehaviorTree::LoadResult AnimateFragment::LoadFromXml(const XmlNodeRef& xml, const struct LoadContext& context, const bool strictMode /*= true*/)
+BehaviorTree::LoadResult AnimateFragment::LoadFromXml(const XmlNodeRef& xml, const struct LoadContext& context, const bool isLoadingFromEditor)
 {
 	const string fragName = xml->getAttr("name");
 	IF_UNLIKELY (fragName.empty())
