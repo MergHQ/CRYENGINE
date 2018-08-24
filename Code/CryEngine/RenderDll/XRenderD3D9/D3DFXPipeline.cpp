@@ -199,6 +199,13 @@ bool CD3D9Renderer::FX_DrawToRenderTarget(
 			Tex = pEnvTex->m_pTex->m_pTexture;
 		}
 	}
+	
+	if (!Tex)
+	{
+		CRY_ASSERT_MESSAGE(Tex, "DrawToRenderTarget called without passing a target texture!");
+		return false;
+	}
+
 	if (m_pRT->IsRenderThread() && Tex && Tex->IsLocked())
 		return true;
 
