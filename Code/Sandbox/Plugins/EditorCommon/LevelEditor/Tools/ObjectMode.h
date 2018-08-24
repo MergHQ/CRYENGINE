@@ -130,8 +130,10 @@ protected:
 
 	bool CheckVirtualKey(int virtualKey);
 
-	//! Ctrl-Click in move mode to move selected objects to given pos.
-	void         MoveSelectionToPos(CViewport* view, Vec3& pos, bool align, const CPoint& point);
+	//! Move selection to current mouse cursor position.
+	//! \param point - mouse position
+	//! \param overrideSnapToNormal - In this mode the current user setting for snap to normal is ignored. It must be explicitly specified
+	void         HandleMoveSelectionToPosition(const CPoint& point, bool overrideSnapToNormal);
 	void         SetObjectCursor(CViewport* view, CBaseObject* hitObj, IObjectManager::ESelectOp selectMode);
 
 	virtual void DeleteThis() { delete this; }

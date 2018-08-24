@@ -503,7 +503,7 @@ bool CObjectMode::OnLButtonDown(CViewport* view, int nFlags, CPoint point)
 		if (bCtrlClick && bShiftClick)
 		{
 			// Ctrl-Click on terrain will move selected objects to specified location.
-			MoveSelectionToPos(view, pos, bAltClick, point);
+			HandleMoveSelectionToPosition(point, bAltClick);
 			bLockSelection = true;
 		}
 	}
@@ -836,18 +836,27 @@ bool CObjectMode::CheckVirtualKey(int virtualKey)
 	return false;
 }
 
-void CObjectMode::MoveSelectionToPos(CViewport* view, Vec3& pos, bool align, const CPoint& point)
+void CObjectMode::HandleMoveSelectionToPosition(const CPoint& point, bool overrideSnapToNormal)
 {
-	view->BeginUndo();
+	GetIEditor()->GetIUndoManager()->Begin();
+
 	// Find center of selection.
 	const ISelectionGroup* pSelection = GetIEditor()->GetISelectionGroup();
-	Vec3 center = pSelection->GetCenter();
-	pSelection->Move(pos - center, ISelectionGroup::eMS_None, point, true);
 
-	if (align)
-		GetIEditor()->GetISelectionGroup()->Align();
+	int selectionFlags = ISelectionGroup::eMS_None;
+	if (gSnappingPreferences.IsSnapToTerrainEnabled() && GetIEditor()->GetLevelEditorSharedState()->GetAxisConstraint() != CLevelEditorSharedState::Axis::Z)
+		selectionFlags |= ISelectionGroup::eMS_FollowTerrain;
 
-	view->AcceptUndo("Move Selection");
+	if (gSnappingPreferences.IsSnapToGeometryEnabled())
+		selectionFlags |= ISelectionGroup::eMS_FollowGeometry;
+
+	// If the user is holding alt, then we must also snap to normal
+	if (overrideSnapToNormal)
+		selectionFlags |= ISelectionGroup::eMS_SnapToNormal;
+
+	pSelection->Move(m_mouseDownWorldPos - pSelection->GetCenter(), selectionFlags, point, true);
+
+	GetIEditor()->GetIUndoManager()->Accept("Move Selection");
 }
 
 bool CObjectMode::OnMouseMove(CViewport* view, int nFlags, CPoint point)
