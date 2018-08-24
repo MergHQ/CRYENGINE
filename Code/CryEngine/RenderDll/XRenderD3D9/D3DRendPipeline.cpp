@@ -328,11 +328,12 @@ int CD3D9Renderer::EF_Preprocess(SRendItem* ri, uint32 nums, uint32 nume, const 
 					if (pTarg->m_eOrder == eRO_PreProcess)
 					{
 						bTryPreprocess = true;
-						bRes &= FX_DrawToRenderTarget(pr->m_Shader, pRes, pObj, pTech, pTarg, pr->m_nPreprocess, pr->m_RE,passInfo);
+						bRes &= FX_DrawToRenderTarget(pr->m_Shader, pRes, pObj, pTech, pTarg, pr->m_nPreprocess, pr->m_RE, passInfo);
 					}
 				}
 				if (pRes)
 				{
+					// TODO: Instead of rendering to another target again, consider copying instead!
 					for (j = 0; j < pRes->m_RTargets.Num(); j++)
 					{
 						SHRenderTarget* pTarg = pRes->m_RTargets[j];
