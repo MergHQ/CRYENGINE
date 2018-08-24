@@ -966,17 +966,17 @@ void CStandardGraphicsPipeline::Execute()
 	{
 		// HDR and LDR post-processing
 		{
-			// CRendererResources::s_ptexHDRTarget -> CRendererResources::s_ptexSceneDiffuse (Tonemapping)
+			// CRendererResources::s_ptexHDRTarget -> CRendererResources::s_ptexDisplayTarget (Tonemapping)
 			ExecuteHDRPostProcessing();
 
-			// CRendererResources::s_ptexSceneDiffuse
+			// CRendererResources::s_ptexDisplayTarget
 			m_pSceneForwardStage->ExecuteAfterPostProcessHDR();
 
-			// CRendererResources::s_ptexSceneDiffuse -> CRenderOutput->m_pColorTarget (PostAA)
+			// CRendererResources::s_ptexDisplayTarget -> CRenderOutput->m_pColorTarget (PostAA)
 			if (!m_pPostEffectStage->Execute())
 			{
 				// Post effects disabled, copy diffuse to color target
-				CStretchRectPass::GetPass().Execute(CRendererResources::s_ptexSceneDiffuse, pRenderView->GetRenderOutput()->GetColorTarget());
+				CStretchRectPass::GetPass().Execute(CRendererResources::s_ptexDisplayTarget, pRenderView->GetRenderOutput()->GetColorTarget());
 			}
 
 			// CRenderOutput->m_pColorTarget
@@ -1002,6 +1002,7 @@ void CStandardGraphicsPipeline::Execute()
 	}
 	else
 	{
+		// Raw HDR copy
 		GetOrCreateUtilityPass<CStretchRectPass>()->Execute(CRendererResources::s_ptexHDRTarget, pRenderView->GetRenderOutput()->GetColorTarget());
 	}
 

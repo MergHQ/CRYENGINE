@@ -159,7 +159,7 @@ void CDeferredDecalsStage::SetupDecalPrimitive(const SDeferredDecal& decal, CRen
 	primitive.SetSampler(9, EDefaultSamplerStates::PointClamp);  // Used by gbuffer normal encoding
 
 	primitive.SetTexture(0, CRendererResources::s_ptexLinearDepth);
-	primitive.SetTexture(1, (CTexture*)CRendererResources::s_ptexBackBuffer);  // Contains copy of scene normals
+	primitive.SetTexture(1, CRendererResources::s_ptexSceneNormalsBent);  // Contains copy of scene normals
 	primitive.SetTexture(2, (CTexture*)pDiffuseMap);
 	primitive.SetTexture(3, (CTexture*)pNormalMap);
 	primitive.SetTexture(4, (CTexture*)pSmoothnessMap);
@@ -317,7 +317,7 @@ void CDeferredDecalsStage::Execute()
 	PROFILE_LABEL_SCOPE("DEFERRED_DECALS");
 
 	// Create temporary copy to enable reads from normal target
-	GetDeviceObjectFactory().GetCoreCommandList().GetCopyInterface()->Copy(CRendererResources::s_ptexSceneNormalsMap->GetDevTexture(), CRendererResources::s_ptexBackBuffer->GetDevTexture());
+	GetDeviceObjectFactory().GetCoreCommandList().GetCopyInterface()->Copy(CRendererResources::s_ptexSceneNormalsMap->GetDevTexture(), CRendererResources::s_ptexSceneNormalsBent->GetDevTexture());
 	
 	// Sort decals
 	std::stable_sort(deferredDecals.begin(), deferredDecals.end(), DecalSortComparison());

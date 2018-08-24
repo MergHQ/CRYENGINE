@@ -40,12 +40,12 @@ int CSunShaftsStage::GetDownscaledTargetsIndex()
 
 CTexture* CSunShaftsStage::GetFinalOutputRT()
 {
-	return CRendererResources::s_ptexBackBufferScaled[GetDownscaledTargetsIndex()];
+	return CRendererResources::s_ptexDisplayTargetScaled[GetDownscaledTargetsIndex()];
 }
 
 CTexture* CSunShaftsStage::GetTempOutputRT()
 {
-	return CRendererResources::s_ptexBackBufferScaledTemp[GetDownscaledTargetsIndex()];
+	return CRendererResources::s_ptexDisplayTargetScaledTemp[GetDownscaledTargetsIndex()];
 }
 
 void CSunShaftsStage::GetCompositionParams(Vec4& params0, Vec4& params1)

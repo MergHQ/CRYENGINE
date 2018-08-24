@@ -297,7 +297,6 @@ void CDeferredShading::SetupPasses(CRenderView* pRenderView)
 	m_pResolvedStencilRT = CRendererResources::s_ptexClipVolumes;
 	m_pDiffuseRT = CRendererResources::s_ptexSceneDiffuse;
 	m_pSpecularRT = CRendererResources::s_ptexSceneSpecular;
-	m_pMSAAMaskRT = CRendererResources::s_ptexBackBuffer;
 
 	const auto& viewInfo = pRenderView->GetViewInfo(CCamera::eEye_Left);
 

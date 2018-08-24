@@ -3941,12 +3941,12 @@ bool CD3D9Renderer::CaptureFrameBufferFast(unsigned char* pDstRGBA8, int destina
 				// reuse stereo left and right RTs to downscale
 				CStretchRegionPass().Execute(
 					pSourceTexture,
-					CRendererResources::s_ptexBackBuffer,
+					CRendererResources::s_ptexSceneDiffuseTmp,
 					&srcRct, &dstRct,
 					true, ColorF(1,1,1,1), 0);
 
 
-				pCopySourceTexture = CRendererResources::s_ptexBackBuffer;
+				pCopySourceTexture = CRendererResources::s_ptexSceneDiffuseTmp;
 			}
 			else
 			{

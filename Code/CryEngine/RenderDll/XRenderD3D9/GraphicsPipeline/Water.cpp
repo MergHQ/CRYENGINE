@@ -420,7 +420,7 @@ void CWaterStage::ExecuteWaterVolumeCaustics()
 
 void CWaterStage::ExecuteDeferredWaterVolumeCaustics()
 {
-	if (!CRendererResources::s_ptexBackBuffer || !CRendererResources::s_ptexSceneTarget)
+	if (!CRendererResources::s_ptexSceneTarget)
 	{
 		return;
 	}
@@ -467,7 +467,6 @@ void CWaterStage::ExecuteDeferredOceanCaustics()
 {
 	if (!CRenderer::CV_r_watercaustics
 	    || !CRenderer::CV_r_watercausticsdeferred
-	    || !CRendererResources::s_ptexBackBuffer
 	    || !CRendererResources::s_ptexSceneTarget)
 	{
 		return;

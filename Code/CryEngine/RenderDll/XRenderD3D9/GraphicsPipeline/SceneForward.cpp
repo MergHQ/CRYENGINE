@@ -155,7 +155,7 @@ void CSceneForwardStage::Update()
 			// Depth
 			pDepthTexture,
 			// Color 0
-			CRendererResources::s_ptexSceneDiffuse
+			CRendererResources::s_ptexDisplayTarget
 		);
 
 		m_forwardLDRPass.SetLabel("FORWARD_AFTER_POSTFX_LDR");
@@ -165,7 +165,7 @@ void CSceneForwardStage::Update()
 			// Depth
 			pDepthTexture,
 			// Color 0
-			CRendererResources::s_ptexSceneDiffuse
+			CRendererResources::s_ptexDisplayTarget
 		);
 #endif
 
@@ -968,7 +968,7 @@ void CSceneForwardStage::ExecuteAfterPostProcessHDR()
 	PROFILE_LABEL_SCOPE("POST_EFFECTS_HDR_AP");
 
 	CSceneRenderPass& scenePass = m_forwardHDRPass;
-	scenePass.ExchangeRenderTarget(0, CRendererResources::s_ptexSceneDiffuse);
+	scenePass.ExchangeRenderTarget(0, CRendererResources::s_ptexDisplayTarget);
 
 	PreparePerPassResources(false);
 

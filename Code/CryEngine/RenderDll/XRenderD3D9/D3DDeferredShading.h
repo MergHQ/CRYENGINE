@@ -148,7 +148,6 @@ private:
 		, m_pSpecularRT(CRendererResources::s_ptexSceneSpecular)
 		, m_pNormalsRT(CRendererResources::s_ptexSceneNormalsMap)
 		, m_pDepthRT(CRendererResources::s_ptexLinearDepth)
-		, m_pMSAAMaskRT(CRendererResources::s_ptexBackBuffer)
 		, m_pResolvedStencilRT(CRendererResources::s_ptexClipVolumes)
 		, m_nRenderState(GS_BLSRC_ONE | GS_BLDST_ONE)
 		, m_nThreadID(0)
@@ -234,8 +233,6 @@ private:
 	CTexture*                m_pSpecularRT;
 	CTexture*                m_pNormalsRT;
 	CTexture*                m_pDepthRT;
-
-	CTexture*                m_pMSAAMaskRT;
 	CTexture*                m_pResolvedStencilRT;
 
 	int                      m_nRenderState;

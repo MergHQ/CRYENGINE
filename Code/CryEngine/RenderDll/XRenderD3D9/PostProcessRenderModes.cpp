@@ -194,7 +194,7 @@ REINST(Implement a ISoundSystemEventListener)
 
 bool CSonarVision::Preprocess(const SRenderViewInfo& viewInfo)
 {
-	CTexture* pPrevFrame = CRendererResources::s_ptexPrevFrameScaled;
+	CTexture* pPrevFrame = CRendererResources::s_ptexDisplayTargetScaledPrev;
 	if (!pPrevFrame)
 		return false;
 

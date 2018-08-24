@@ -284,6 +284,13 @@ void CPostAAStage::ApplySMAA(CTexture*& pCurrRT)
 	pCurrRT = pDestRT;
 }
 
+void CPostAAStage::ApplySRGB(CTexture*& pCurrRT)
+{
+	CTexture* pDestRT = CRendererResources::s_ptexSceneNormalsMap;
+	m_passCopySRGB.Execute(pCurrRT, pDestRT);
+	pCurrRT = pDestRT;
+}
+
 void CPostAAStage::ApplyTemporalAA(CTexture*& pCurrRT, CTexture*& pMgpuRT, uint32 aaMode)
 {
 	CD3D9Renderer* pRenderer = gcpRendD3D;
@@ -489,7 +496,7 @@ void CPostAAStage::Execute()
 
 	PROFILE_LABEL_SCOPE("POST_AA");
 
-	CTexture* pCurrRT = CRendererResources::s_ptexSceneDiffuse;
+	CTexture* pCurrRT = CRendererResources::s_ptexDisplayTarget;
 	CTexture* pMgpuRT = NULL;
 
 	// TODO: Support temporal AA in the editor
@@ -500,6 +507,9 @@ void CPostAAStage::Execute()
 
 	if (aaMode & eAT_SMAA_MASK)
 		ApplySMAA(pCurrRT);
+	else if (aaMode & eAT_REQUIRES_PREVIOUSFRAME_MASK)
+		ApplySRGB(pCurrRT);
+
 	if (aaMode & eAT_REQUIRES_PREVIOUSFRAME_MASK)
 		ApplyTemporalAA(pCurrRT, pMgpuRT, aaMode);
 
@@ -521,12 +531,25 @@ void CPostAAStage::Resize(int renderWidth, int renderHeight)
 	if (CRenderer::CV_r_AntialiasingMode)
 	{
 		const uint32 renderTargetFlags = FT_NOMIPS | FT_DONT_STREAM | FT_USAGE_RENDERTARGET;
-		m_pPrevBackBuffersLeftEye[0] = CTexture::GetOrCreateRenderTarget("$PrevBackBuffer0", renderWidth, renderHeight, Clr_Unknown, eTT_2D, renderTargetFlags, eTF_R16G16B16A16);
-		m_pPrevBackBuffersLeftEye[1] = CTexture::GetOrCreateRenderTarget("$PrevBackBuffer1", renderWidth, renderHeight, Clr_Unknown, eTT_2D, renderTargetFlags, eTF_R16G16B16A16);
+		ETEX_Format accumulatorFormat = eTF_R16G16B16A16;
+		if (CRenderer::CV_r_AntialiasingMode == eAT_SMAA_2TX && CRendererCVars::CV_r_HDRTexFormat == 0)
+			accumulatorFormat = eTF_R10G10B10A2;
+
+		if (m_pPrevBackBuffersLeftEye[0] && m_pPrevBackBuffersLeftEye[0]->GetDstFormat() != accumulatorFormat)
+		{
+			SAFE_RELEASE(m_pPrevBackBuffersLeftEye[0]);
+			SAFE_RELEASE(m_pPrevBackBuffersLeftEye[1]);
+			SAFE_RELEASE(m_pPrevBackBuffersRightEye[0]);
+			SAFE_RELEASE(m_pPrevBackBuffersRightEye[1]);
+		}
+
+		m_pPrevBackBuffersLeftEye[0] = CTexture::GetOrCreateRenderTarget("$PrevBackBuffer0", renderWidth, renderHeight, Clr_Unknown, eTT_2D, renderTargetFlags, accumulatorFormat);
+		m_pPrevBackBuffersLeftEye[1] = CTexture::GetOrCreateRenderTarget("$PrevBackBuffer1", renderWidth, renderHeight, Clr_Unknown, eTT_2D, renderTargetFlags, accumulatorFormat);
+
 		if (gRenDev->IsStereoEnabled())
 		{
-			m_pPrevBackBuffersRightEye[0] = CTexture::GetOrCreateRenderTarget("$PrevBackBuffer0_R", renderWidth, renderHeight, Clr_Unknown, eTT_2D, renderTargetFlags, eTF_R16G16B16A16);
-			m_pPrevBackBuffersRightEye[1] = CTexture::GetOrCreateRenderTarget("$PrevBackBuffer1_R", renderWidth, renderHeight, Clr_Unknown, eTT_2D, renderTargetFlags, eTF_R16G16B16A16);
+			m_pPrevBackBuffersRightEye[0] = CTexture::GetOrCreateRenderTarget("$PrevBackBuffer0_R", renderWidth, renderHeight, Clr_Unknown, eTT_2D, renderTargetFlags, accumulatorFormat);
+			m_pPrevBackBuffersRightEye[1] = CTexture::GetOrCreateRenderTarget("$PrevBackBuffer1_R", renderWidth, renderHeight, Clr_Unknown, eTT_2D, renderTargetFlags, accumulatorFormat);
 		}
 		else
 		{

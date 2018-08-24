@@ -42,7 +42,7 @@ void CScreenSpaceObscuranceStage::Execute()
 
 	const bool bLowResOutput = (CRenderer::CV_r_ssdoHalfRes == 3);
 	if (bLowResOutput)
-		CRendererResources__s_ptexSceneSpecular = CRendererResources::s_ptexBackBufferScaled[0];
+		CRendererResources__s_ptexSceneSpecular = CRendererResources::s_ptexDisplayTargetScaled[0];
 
 	CShader* pShader = CShaderMan::s_shDeferredShading;
 
@@ -176,9 +176,9 @@ void CScreenSpaceObscuranceStage::Execute()
 	if (CRenderer::CV_r_ssdoColorBleeding)
 	{
 		// Generate low frequency scene albedo for color bleeding (convolution not gamma correct but acceptable)
-		m_passAlbedoDownsample0.Execute(CRendererResources::s_ptexSceneDiffuse, CRendererResources::s_ptexBackBufferScaled[0]);
-		m_passAlbedoDownsample1.Execute(CRendererResources::s_ptexBackBufferScaled[0], CRendererResources::s_ptexBackBufferScaled[1]);
-		m_passAlbedoDownsample2.Execute(CRendererResources::s_ptexBackBufferScaled[1], CRendererResources::s_ptexAOColorBleed);
-		m_passAlbedoBlur.Execute(CRendererResources::s_ptexAOColorBleed, CRendererResources::s_ptexBackBufferScaled[2], 1.0f, 4.0f);
+		m_passAlbedoDownsample0.Execute(CRendererResources::s_ptexSceneDiffuse, CRendererResources::s_ptexDisplayTargetScaled[0]);
+		m_passAlbedoDownsample1.Execute(CRendererResources::s_ptexDisplayTargetScaled[0], CRendererResources::s_ptexDisplayTargetScaled[1]);
+		m_passAlbedoDownsample2.Execute(CRendererResources::s_ptexDisplayTargetScaled[1], CRendererResources::s_ptexAOColorBleed);
+		m_passAlbedoBlur.Execute(CRendererResources::s_ptexAOColorBleed, CRendererResources::s_ptexDisplayTargetScaled[2], 1.0f, 4.0f);
 	}
 }

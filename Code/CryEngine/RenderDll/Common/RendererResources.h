@@ -109,7 +109,7 @@ public:
 	static CTexture* CreateRenderTarget(int nWidth, int nHeight, const ColorF& cClear, ETEX_Format eTF);
 
 	static ETEX_Format GetHDRFormat(bool withAlpha, bool lowQuality);
-	static ETEX_Format GetLDRFormat();
+	static ETEX_Format GetLDRFormat(bool precisionBits);
 	static ETEX_Format GetDisplayFormat();
 	static ETEX_Format GetDepthFormat();
 
@@ -163,7 +163,7 @@ public:
 
 	// ==============================================================================
 
-	static CTexture* s_ptexPrevFrameScaled;                   // CSonarVision, ?, 2x
+	static CTexture* s_ptexDisplayTargetScaledPrev;                   // CSonarVision, ?, 2x
 	static CTexture* s_ptexMipColors_Diffuse;                 // ?
 	static CTexture* s_ptexMipColors_Bump;                    // ?
 	static CTexture* s_ptexFromRE[8];                         // ?
@@ -281,9 +281,10 @@ public:
 
 	static CTexture* s_ptexHDRFinalBloom;                                        // CRainStage, CToneMappingStage, CBloomStage
 
-	static CTexture* s_ptexBackBuffer;                                           // back buffer copy
-	static CTexture* s_ptexBackBufferScaled[3];                                  // backbuffer low-resolution/blurred version. 2x/4x/8x/16x smaller than screen
-	static CTexture* s_ptexBackBufferScaledTemp[2];                              // backbuffer low-resolution/blurred version. 2x/4x/8x/16x smaller than screen, temp textures (used for blurring/ping-pong)
+	static CTexture* s_ptexDisplayTarget;                                        // display-colorspace target
+	static CTexture* s_ptexDisplayTargetAlt;                                     // display-colorspace target
+	static CTexture* s_ptexDisplayTargetScaled[3];                               // low-resolution/blurred version. 2x/4x/8x/16x smaller than screen
+	static CTexture* s_ptexDisplayTargetScaledTemp[2];                           // low-resolution/blurred version. 2x/4x/8x/16x smaller than screen, temp textures (used for blurring/ping-pong)
 
 	static CTexture* s_ptexAOColorBleed;                                         // CScreenSpaceObscuranceStage, CTiledShadingStage
 	static CTexture* s_ptexShadowMask;                                           // CShadowMapStage

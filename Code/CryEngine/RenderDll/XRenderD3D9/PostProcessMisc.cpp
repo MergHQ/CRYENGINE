@@ -180,8 +180,8 @@ void CPost3DRenderer::RenderSilhouettes(uint8 groupId, float screenRect[4])
 
 	RenderMeshes(groupId, screenRect, eRMM_Custom);
 
-	CTexture* pOutlineTex = CRendererResources::s_ptexBackBufferScaled[0];
-	CTexture* pGlowTex = CRendererResources::s_ptexBackBufferScaled[1];
+	CTexture* pOutlineTex = CRendererResources::s_ptexDisplayTargetScaled[0];
+	CTexture* pGlowTex = CRendererResources::s_ptexDisplayTargetScaled[1];
 
 	uint64 nRTMaskQ = ApplyShaderQuality();
 	SilhouetteOutlines(pOutlineTex, pGlowTex);
