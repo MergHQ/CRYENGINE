@@ -276,9 +276,29 @@ namespace AISignals
 		return *m_signalDescriptionsVec[index];
 	}
 
+	const ISignalDescription& CSignalManager::GetSignalDescription(const char * szSignalDescName) const
+	{
+		CrcToSignalDescriptionUniquePtrMap::const_iterator it = m_signalDescriptionMap.find(CCrc32::Compute(szSignalDescName));
+
+		if (it == m_signalDescriptionMap.end())
+		{
+			CRY_ASSERT_MESSAGE(it == m_signalDescriptionMap.end(), "Called GetSignalDescription with a non-registered Signal Name '%s'", szSignalDescName);
+			gEnv->pLog->LogWarning("Called GetSignalDescription with a non-registered Signal Name '%s'", szSignalDescName);
+			return GetBuiltInSignalDescriptions().GetNone();
+		}
+
+		return *it->second;
+	}
+
 	const ISignalDescription& CSignalManager::RegisterGameSignalDescription(const char* szSignalName)
 	{
 		return *RegisterSignalDescription(ESignalTag::GAME, szSignalName);
+	}
+
+	void CSignalManager::DeregisterGameSignalDescription(const ISignalDescription& signalDescription)
+	{
+		m_signalDescriptionMap.erase(signalDescription.GetCrc());
+		m_signalDescriptionsVec.erase(std::remove(m_signalDescriptionsVec.begin(), m_signalDescriptionsVec.end(), &signalDescription), m_signalDescriptionsVec.end());
 	}
 
 	SignalSharedPtr CSignalManager::CreateSignal(const int nSignal, const ISignalDescription& signalDescription, const tAIObjectID senderID, IAISignalExtraData* pEData) const
@@ -295,12 +315,20 @@ namespace AISignals
 
 	SignalSharedPtr CSignalManager::CreateSignal_DEPRECATED(const int nSignal, const char* szCustomSignalTypeName, const tAIObjectID senderID, IAISignalExtraData* pEData)
 	{
-		return CreateSignal(nSignal, RegisterGameSignalDescription(szCustomSignalTypeName), senderID, pEData);
+		const ISignalDescription& signalDesc = GetSignalDescription(szCustomSignalTypeName);
+
+		if (signalDesc.IsNone())
+		{
+			const ISignalDescription& newSignalDesc = RegisterGameSignalDescription(szCustomSignalTypeName);
+			return CreateSignal(nSignal, newSignalDesc, senderID, pEData);
+		}
+
+		return CreateSignal(nSignal, signalDesc, senderID, pEData);
 	}
 
 	const ISignalDescription* CSignalManager::RegisterSignalDescription(const ESignalTag signalTag,  const char* signalDescriptionName)
 	{
-		CSignalDescription signalDescription(signalTag, signalDescriptionName);
+		const CSignalDescription signalDescription(signalTag, signalDescriptionName);
 		std::pair<CrcToSignalDescriptionUniquePtrMap::iterator, bool> inserted = m_signalDescriptionMap.insert(
 			std::make_pair(
 				signalDescription.GetCrc(),
@@ -313,11 +341,6 @@ namespace AISignals
 			m_signalDescriptionsVec.push_back(inserted.first->second.get());
 		}
 
-		if (!inserted.second)
-		{
-			CRY_ASSERT_MESSAGE(false, "Signal Description '%s' already registered", signalDescription.GetName());
-			gEnv->pLog->LogWarning("Signal Description '%s' already registered", signalDescription.GetName());
-		}
 		return inserted.first->second.get();
 	}
 
@@ -345,6 +368,7 @@ namespace AISignals
 		m_builtInSignals.SetOnInTargetFov(RegisterSignalDescription(AISignals::ESignalTag::GAME_SDK, "OnInTargetFov"));
 		m_builtInSignals.SetOnLeaveSignal(RegisterSignalDescription(AISignals::ESignalTag::GAME_SDK, "leaveSignal"));
 		m_builtInSignals.SetOnMeleePerformed(RegisterSignalDescription(AISignals::ESignalTag::GAME_SDK, "OnMeleePerformed"));
+		m_builtInSignals.SetOnMeleeKnockedDownTarget(RegisterSignalDescription(AISignals::ESignalTag::GAME_SDK, "OnMeleeKnockedDownTarget"));
 		m_builtInSignals.SetOnNotAloneSignal(RegisterSignalDescription(AISignals::ESignalTag::GAME_SDK, "notAloneSignal"));
 		m_builtInSignals.SetOnNotInTargetFov(RegisterSignalDescription(AISignals::ESignalTag::GAME_SDK, "OnNotInTargetFov"));
 		m_builtInSignals.SetOnNotVisibleFromTarget(RegisterSignalDescription(AISignals::ESignalTag::GAME_SDK, "OnNotVisibleFromTarget"));
@@ -535,6 +559,86 @@ namespace AISignals
 		m_builtInSignals.SetOnUnitStop_DEPRECATED(RegisterSignalDescription(AISignals::ESignalTag::DEPRECATED, "OnUnitStop"));
 		m_builtInSignals.SetOnUnitSuspended_DEPRECATED(RegisterSignalDescription(AISignals::ESignalTag::DEPRECATED, "OnUnitSuspended"));
 		m_builtInSignals.SetOnVehicleDanger_DEPRECATED(RegisterSignalDescription(AISignals::ESignalTag::DEPRECATED, "OnVehicleDanger"));
+
+		// Used in Lua
+		m_builtInSignals.SetOnAIAgressive_DEPRECATED(RegisterSignalDescription(AISignals::ESignalTag::DEPRECATED, "AI_AGGRESSIVE"));
+		m_builtInSignals.SetOnAlertStatus_DEPRECATED(RegisterSignalDescription(AISignals::ESignalTag::DEPRECATED, "OnAlertStatus_"));
+		m_builtInSignals.SetOnAtCloseRange_DEPRECATED(RegisterSignalDescription(AISignals::ESignalTag::DEPRECATED, "AtCloseRange"));
+		m_builtInSignals.SetOnAtOptimalRange_DEPRECATED(RegisterSignalDescription(AISignals::ESignalTag::DEPRECATED, "AtOptimalRange"));
+		m_builtInSignals.SetOnBodyFallSound_DEPRECATED(RegisterSignalDescription(AISignals::ESignalTag::DEPRECATED, "OnBodyFallSound"));
+		m_builtInSignals.SetOnChangeSetEnd_DEPRECATED(RegisterSignalDescription(AISignals::ESignalTag::DEPRECATED, "ChangeSeatEnd"));
+		m_builtInSignals.SetOnCheckNextWeaponAccessory_DEPRECATED(RegisterSignalDescription(AISignals::ESignalTag::DEPRECATED, "CheckNextWeaponAccessory"));
+		m_builtInSignals.SetOnCommandTold_DEPRECATED(RegisterSignalDescription(AISignals::ESignalTag::DEPRECATED, "ON_COMMAND_TOLD"));
+		m_builtInSignals.SetOnControllVehicle_DEPRECATED(RegisterSignalDescription(AISignals::ESignalTag::DEPRECATED, "controll_vehicle"));
+		m_builtInSignals.SetOnDamage_DEPRECATED(RegisterSignalDescription(AISignals::ESignalTag::DEPRECATED, "OnDamage"));
+		m_builtInSignals.SetOnDeadMemberSpottedBySomeoneElse_DEPRECATED(RegisterSignalDescription(AISignals::ESignalTag::DEPRECATED, "OnDeadMemberSpottedBySomeoneElse"));
+		m_builtInSignals.SetOnDisableFire_DEPRECATED(RegisterSignalDescription(AISignals::ESignalTag::DEPRECATED, "OnDisableFire"));
+		m_builtInSignals.SetOnDoExitVehicle_DEPRECATED(RegisterSignalDescription(AISignals::ESignalTag::DEPRECATED, "do_exit_vehicle"));
+		m_builtInSignals.SetOnDriverEntered_DEPRECATED(RegisterSignalDescription(AISignals::ESignalTag::DEPRECATED, "OnDriverEntered"));
+		m_builtInSignals.SetOnDriverOut_DEPRECATED(RegisterSignalDescription(AISignals::ESignalTag::DEPRECATED, "DRIVER_OUT"));
+		m_builtInSignals.SetOnDroneSeekCommand_DEPRECATED(RegisterSignalDescription(AISignals::ESignalTag::DEPRECATED, "OnDroneSeekCommand"));
+		m_builtInSignals.SetOnDropped_DEPRECATED(RegisterSignalDescription(AISignals::ESignalTag::DEPRECATED, "OnDropped"));
+		m_builtInSignals.SetOnEMPGrenadeThrownInGroup_DEPRECATED(RegisterSignalDescription(AISignals::ESignalTag::DEPRECATED, "EMPGrenadeThrownInGroup"));
+		m_builtInSignals.SetOnEnableAlertStatus_DEPRECATED(RegisterSignalDescription(AISignals::ESignalTag::DEPRECATED, "OnEnableAlertStatus"));
+		m_builtInSignals.SetOnEnemyDamage_DEPRECATED(RegisterSignalDescription(AISignals::ESignalTag::DEPRECATED, "OnEnemyDamage"));
+		m_builtInSignals.SetOnEnemyDied_DEPRECATED(RegisterSignalDescription(AISignals::ESignalTag::DEPRECATED, "OnEnemyDied"));
+		m_builtInSignals.SetOnEnteredVehicleGunner_DEPRECATED(RegisterSignalDescription(AISignals::ESignalTag::DEPRECATED, "entered_vehicle_gunner"));
+		m_builtInSignals.SetOnEnteredVehicle_DEPRECATED(RegisterSignalDescription(AISignals::ESignalTag::DEPRECATED, "entered_vehicle"));
+		m_builtInSignals.SetOnEnteringEnd_DEPRECATED(RegisterSignalDescription(AISignals::ESignalTag::DEPRECATED, "ENTERING_END"));
+		m_builtInSignals.SetOnEnteringVehicle_DEPRECATED(RegisterSignalDescription(AISignals::ESignalTag::DEPRECATED, "ENTERING_VEHICLE"));
+		m_builtInSignals.SetOnExitVehicleStand_DEPRECATED(RegisterSignalDescription(AISignals::ESignalTag::DEPRECATED, "EXIT_VEHICLE_STAND"));
+		m_builtInSignals.SetOnExitedVehicle_DEPRECATED(RegisterSignalDescription(AISignals::ESignalTag::DEPRECATED, "exited_vehicle"));
+		m_builtInSignals.SetOnExitingEnd_DEPRECATED(RegisterSignalDescription(AISignals::ESignalTag::DEPRECATED, "EXITING_END"));
+		m_builtInSignals.SetOnFlashGrenadeThrownInGroup_DEPRECATED(RegisterSignalDescription(AISignals::ESignalTag::DEPRECATED, "FlashGrenadeThrownInGroup"));
+		m_builtInSignals.SetOnFollowLeader_DEPRECATED(RegisterSignalDescription(AISignals::ESignalTag::DEPRECATED, "FOLLOW_LEADER"));
+		m_builtInSignals.SetOnFragGrenadeThrownInGroup_DEPRECATED(RegisterSignalDescription(AISignals::ESignalTag::DEPRECATED, "FragGrenadeThrownInGroup"));
+		m_builtInSignals.SetOnFriendlyDamageByPlayer_DEPRECATED(RegisterSignalDescription(AISignals::ESignalTag::DEPRECATED, "OnFriendlyDamageByPlayer"));
+		m_builtInSignals.SetOnFriendlyDamage_DEPRECATED(RegisterSignalDescription(AISignals::ESignalTag::DEPRECATED, "OnFriendlyDamage"));
+		m_builtInSignals.SetOnGoToGrabbed_DEPRECATED(RegisterSignalDescription(AISignals::ESignalTag::DEPRECATED, "GO_TO_GRABBED"));
+		m_builtInSignals.SetOnGoToSeek_DEPRECATED(RegisterSignalDescription(AISignals::ESignalTag::DEPRECATED, "GO_TO_SEEK"));
+		m_builtInSignals.SetOnGroupMemberDiedOnAGL_DEPRECATED(RegisterSignalDescription(AISignals::ESignalTag::DEPRECATED, "OnGroupMemberDiedOnAGL"));
+		m_builtInSignals.SetOnGroupMemberDiedOnHMG_DEPRECATED(RegisterSignalDescription(AISignals::ESignalTag::DEPRECATED, "OnGroupMemberDiedOnHMG"));
+		m_builtInSignals.SetOnGroupMemberDiedOnMountedWeapon_DEPRECATED(RegisterSignalDescription(AISignals::ESignalTag::DEPRECATED, "OnGroupMemberDiedOnMountedWeapon"));
+		m_builtInSignals.SetOnGunnerLostTarget_DEPRECATED(RegisterSignalDescription(AISignals::ESignalTag::DEPRECATED, "GunnerLostTarget"));
+		m_builtInSignals.SetOnInVehicleFoundTarget_DEPRECATED(RegisterSignalDescription(AISignals::ESignalTag::DEPRECATED, "INVEHICLEGUNNER_FOUND_TARGET"));
+		m_builtInSignals.SetOnInVehicleRequestStartFire_DEPRECATED(RegisterSignalDescription(AISignals::ESignalTag::DEPRECATED, "INVEHICLE_REQUEST_START_FIRE"));
+		m_builtInSignals.SetOnInVehicleRequestStopFire_DEPRECATED(RegisterSignalDescription(AISignals::ESignalTag::DEPRECATED, "INVEHICLE_REQUEST_STOP_FIRE"));
+		m_builtInSignals.SetOnIncomingFire_DEPRECATED(RegisterSignalDescription(AISignals::ESignalTag::DEPRECATED, "INCOMING_FIRE"));
+		m_builtInSignals.SetOnJoinTeam_DEPRECATED(RegisterSignalDescription(AISignals::ESignalTag::DEPRECATED, "OnJoinTeam"));
+		m_builtInSignals.SetOnJustConstructed_DEPRECATED(RegisterSignalDescription(AISignals::ESignalTag::DEPRECATED, "just_constructed"));
+		m_builtInSignals.SetOnLeaveMountedWeapon_DEPRECATED(RegisterSignalDescription(AISignals::ESignalTag::DEPRECATED, "LeaveMountedWeapon"));
+		m_builtInSignals.SetOnLowAmmoFinished_DEPRECATED(RegisterSignalDescription(AISignals::ESignalTag::DEPRECATED, "LowAmmoFinished"));
+		m_builtInSignals.SetOnLowAmmoStart_DEPRECATED(RegisterSignalDescription(AISignals::ESignalTag::DEPRECATED, "LowAmmoStart"));
+		m_builtInSignals.SetOnNearbyWaterRippleSeen_DEPRECATED(RegisterSignalDescription(AISignals::ESignalTag::DEPRECATED, "OnNearbyWaterRippleSeen"));
+		m_builtInSignals.SetOnNewSpawn_DEPRECATED(RegisterSignalDescription(AISignals::ESignalTag::DEPRECATED, "NEW_SPAWN"));
+		m_builtInSignals.SetOnNoSearchSpotsAvailable_DEPRECATED(RegisterSignalDescription(AISignals::ESignalTag::DEPRECATED, "NoSearchSpotsAvailable"));
+		m_builtInSignals.SetOnOrderExitVehicle_DEPRECATED(RegisterSignalDescription(AISignals::ESignalTag::DEPRECATED, "ORDER_EXIT_VEHICLE"));
+		m_builtInSignals.SetOnOrderFollow_DEPRECATED(RegisterSignalDescription(AISignals::ESignalTag::DEPRECATED, "ORDER_FOLLOW"));
+		m_builtInSignals.SetOnOrderLeaveVehicle_DEPRECATED(RegisterSignalDescription(AISignals::ESignalTag::DEPRECATED, "ORD_LEAVE_VEHICLE"));
+		m_builtInSignals.SetOnOrderMove_DEPRECATED(RegisterSignalDescription(AISignals::ESignalTag::DEPRECATED, "ORDER_MOVE"));
+		m_builtInSignals.SetOnOrderUse_DEPRECATED(RegisterSignalDescription(AISignals::ESignalTag::DEPRECATED, "ORD_USE"));
+		m_builtInSignals.SetOnPlayerDied_DEPRECATED(RegisterSignalDescription(AISignals::ESignalTag::DEPRECATED, "OnPlayerDied"));
+		m_builtInSignals.SetOnPlayerHit_DEPRECATED(RegisterSignalDescription(AISignals::ESignalTag::DEPRECATED, "OnPlayerHit"));
+		m_builtInSignals.SetOnPlayerNiceShot_DEPRECATED(RegisterSignalDescription(AISignals::ESignalTag::DEPRECATED, "OnPlayerNiceShot"));
+		m_builtInSignals.SetOnPlayerTeamKill_DEPRECATED(RegisterSignalDescription(AISignals::ESignalTag::DEPRECATED, "OnPlayerTeamKill"));
+		m_builtInSignals.SetOnPrepareForMountedWeaponUse_DEPRECATED(RegisterSignalDescription(AISignals::ESignalTag::DEPRECATED, "PrepareForMountedWeaponUse"));
+		m_builtInSignals.SetOnRefPointReached_DEPRECATED(RegisterSignalDescription(AISignals::ESignalTag::DEPRECATED, "REFPOINT_REACHED"));
+		m_builtInSignals.SetOnRelocate_DEPRECATED(RegisterSignalDescription(AISignals::ESignalTag::DEPRECATED, "Relocate"));
+		m_builtInSignals.SetOnRequestJoinTeam_DEPRECATED(RegisterSignalDescription(AISignals::ESignalTag::DEPRECATED, "REQUEST_JOIN_TEAM"));
+		m_builtInSignals.SetOnResetAssignment_DEPRECATED(RegisterSignalDescription(AISignals::ESignalTag::DEPRECATED, "OnResetAssignment"));
+		m_builtInSignals.SetOnSharedUseThisMountedWeapon_DEPRECATED(RegisterSignalDescription(AISignals::ESignalTag::DEPRECATED, "SHARED_USE_THIS_MOUNTED_WEAPON"));
+		m_builtInSignals.SetOnSmokeGrenadeThrownInGroup_DEPRECATED(RegisterSignalDescription(AISignals::ESignalTag::DEPRECATED, "SmokeGrenadeThrownInGroup"));
+		m_builtInSignals.SetOnSomebodyDied_DEPRECATED(RegisterSignalDescription(AISignals::ESignalTag::DEPRECATED, "OnSomebodyDied"));
+		m_builtInSignals.SetOnSpawn_DEPRECATED(RegisterSignalDescription(AISignals::ESignalTag::DEPRECATED, "OnSpawn"));
+		m_builtInSignals.SetOnSquadmateDied_DEPRECATED(RegisterSignalDescription(AISignals::ESignalTag::DEPRECATED, "OnSquadmateDied"));
+		m_builtInSignals.SetOnStopAndExit_DEPRECATED(RegisterSignalDescription(AISignals::ESignalTag::DEPRECATED, "STOP_AND_EXIT"));
+		m_builtInSignals.SetOnSuspiciousActivity_DEPRECATED(RegisterSignalDescription(AISignals::ESignalTag::DEPRECATED, "OnSuspiciousActivity"));
+		m_builtInSignals.SetOnTargetLost_DEPRECATED(RegisterSignalDescription(AISignals::ESignalTag::DEPRECATED, "OnTargetLost"));
+		m_builtInSignals.SetOnTargetNotVisible_DEPRECATED(RegisterSignalDescription(AISignals::ESignalTag::DEPRECATED, "OnTargetNotVisible"));
+		m_builtInSignals.SetOnTooFarFromWeapon_DEPRECATED(RegisterSignalDescription(AISignals::ESignalTag::DEPRECATED, "TOO_FAR_FROM_WEAPON"));
+		m_builtInSignals.SetOnUnloadDone_DEPRECATED(RegisterSignalDescription(AISignals::ESignalTag::DEPRECATED, "UNLOAD_DONE"));
+		m_builtInSignals.SetOnUseMountedWeapon2_DEPRECATED(RegisterSignalDescription(AISignals::ESignalTag::DEPRECATED, "USE_MOUNTED_WEAPON"));
+		m_builtInSignals.SetOnUseMountedWeapon_DEPRECATED(RegisterSignalDescription(AISignals::ESignalTag::DEPRECATED, "UseMountedWeapon"));
 	}
 
 	void CSignalManager::DeregisterBuiltInSignalDescriptions()
@@ -558,6 +662,7 @@ namespace AISignals
 		m_builtInSignals.SetOnInTargetFov(nullptr);
 		m_builtInSignals.SetOnLeaveSignal(nullptr);
 		m_builtInSignals.SetOnMeleePerformed(nullptr);
+		m_builtInSignals.SetOnMeleeKnockedDownTarget(nullptr);
 		m_builtInSignals.SetOnNotAloneSignal(nullptr);
 		m_builtInSignals.SetOnNotInTargetFov(nullptr);
 		m_builtInSignals.SetOnNotVisibleFromTarget(nullptr);
@@ -748,6 +853,86 @@ namespace AISignals
 		m_builtInSignals.SetOnUnitStop_DEPRECATED(nullptr);
 		m_builtInSignals.SetOnUnitSuspended_DEPRECATED(nullptr);
 		m_builtInSignals.SetOnVehicleDanger_DEPRECATED(nullptr);
+
+		// Lua
+		m_builtInSignals.SetOnAIAgressive_DEPRECATED(nullptr);
+		m_builtInSignals.SetOnAlertStatus_DEPRECATED(nullptr);
+		m_builtInSignals.SetOnAtCloseRange_DEPRECATED(nullptr);
+		m_builtInSignals.SetOnAtOptimalRange_DEPRECATED(nullptr);
+		m_builtInSignals.SetOnBodyFallSound_DEPRECATED(nullptr);
+		m_builtInSignals.SetOnChangeSetEnd_DEPRECATED(nullptr);
+		m_builtInSignals.SetOnCheckNextWeaponAccessory_DEPRECATED(nullptr);
+		m_builtInSignals.SetOnCommandTold_DEPRECATED(nullptr);
+		m_builtInSignals.SetOnControllVehicle_DEPRECATED(nullptr);
+		m_builtInSignals.SetOnDamage_DEPRECATED(nullptr);
+		m_builtInSignals.SetOnDeadMemberSpottedBySomeoneElse_DEPRECATED(nullptr);
+		m_builtInSignals.SetOnDisableFire_DEPRECATED(nullptr);
+		m_builtInSignals.SetOnDoExitVehicle_DEPRECATED(nullptr);
+		m_builtInSignals.SetOnDriverEntered_DEPRECATED(nullptr);
+		m_builtInSignals.SetOnDriverOut_DEPRECATED(nullptr);
+		m_builtInSignals.SetOnDroneSeekCommand_DEPRECATED(nullptr);
+		m_builtInSignals.SetOnDropped_DEPRECATED(nullptr);
+		m_builtInSignals.SetOnEMPGrenadeThrownInGroup_DEPRECATED(nullptr);
+		m_builtInSignals.SetOnEnableAlertStatus_DEPRECATED(nullptr);
+		m_builtInSignals.SetOnEnemyDamage_DEPRECATED(nullptr);
+		m_builtInSignals.SetOnEnemyDied_DEPRECATED(nullptr);
+		m_builtInSignals.SetOnEnteredVehicleGunner_DEPRECATED(nullptr);
+		m_builtInSignals.SetOnEnteredVehicle_DEPRECATED(nullptr);
+		m_builtInSignals.SetOnEnteringEnd_DEPRECATED(nullptr);
+		m_builtInSignals.SetOnEnteringVehicle_DEPRECATED(nullptr);
+		m_builtInSignals.SetOnExitVehicleStand_DEPRECATED(nullptr);
+		m_builtInSignals.SetOnExitedVehicle_DEPRECATED(nullptr);
+		m_builtInSignals.SetOnExitingEnd_DEPRECATED(nullptr);
+		m_builtInSignals.SetOnFlashGrenadeThrownInGroup_DEPRECATED(nullptr);
+		m_builtInSignals.SetOnFollowLeader_DEPRECATED(nullptr);
+		m_builtInSignals.SetOnFragGrenadeThrownInGroup_DEPRECATED(nullptr);
+		m_builtInSignals.SetOnFriendlyDamageByPlayer_DEPRECATED(nullptr);
+		m_builtInSignals.SetOnFriendlyDamage_DEPRECATED(nullptr);
+		m_builtInSignals.SetOnGoToGrabbed_DEPRECATED(nullptr);
+		m_builtInSignals.SetOnGoToSeek_DEPRECATED(nullptr);
+		m_builtInSignals.SetOnGroupMemberDiedOnAGL_DEPRECATED(nullptr);
+		m_builtInSignals.SetOnGroupMemberDiedOnHMG_DEPRECATED(nullptr);
+		m_builtInSignals.SetOnGroupMemberDiedOnMountedWeapon_DEPRECATED(nullptr);
+		m_builtInSignals.SetOnGunnerLostTarget_DEPRECATED(nullptr);
+		m_builtInSignals.SetOnInVehicleFoundTarget_DEPRECATED(nullptr);
+		m_builtInSignals.SetOnInVehicleRequestStartFire_DEPRECATED(nullptr);
+		m_builtInSignals.SetOnInVehicleRequestStopFire_DEPRECATED(nullptr);
+		m_builtInSignals.SetOnIncomingFire_DEPRECATED(nullptr);
+		m_builtInSignals.SetOnJoinTeam_DEPRECATED(nullptr);
+		m_builtInSignals.SetOnJustConstructed_DEPRECATED(nullptr);
+		m_builtInSignals.SetOnLeaveMountedWeapon_DEPRECATED(nullptr);
+		m_builtInSignals.SetOnLowAmmoFinished_DEPRECATED(nullptr);
+		m_builtInSignals.SetOnLowAmmoStart_DEPRECATED(nullptr);
+		m_builtInSignals.SetOnNearbyWaterRippleSeen_DEPRECATED(nullptr);
+		m_builtInSignals.SetOnNewSpawn_DEPRECATED(nullptr);
+		m_builtInSignals.SetOnNoSearchSpotsAvailable_DEPRECATED(nullptr);
+		m_builtInSignals.SetOnOrderExitVehicle_DEPRECATED(nullptr);
+		m_builtInSignals.SetOnOrderFollow_DEPRECATED(nullptr);
+		m_builtInSignals.SetOnOrderLeaveVehicle_DEPRECATED(nullptr);
+		m_builtInSignals.SetOnOrderMove_DEPRECATED(nullptr);
+		m_builtInSignals.SetOnOrderUse_DEPRECATED(nullptr);
+		m_builtInSignals.SetOnPlayerDied_DEPRECATED(nullptr);
+		m_builtInSignals.SetOnPlayerHit_DEPRECATED(nullptr);
+		m_builtInSignals.SetOnPlayerNiceShot_DEPRECATED(nullptr);
+		m_builtInSignals.SetOnPlayerTeamKill_DEPRECATED(nullptr);
+		m_builtInSignals.SetOnPrepareForMountedWeaponUse_DEPRECATED(nullptr);
+		m_builtInSignals.SetOnRefPointReached_DEPRECATED(nullptr);
+		m_builtInSignals.SetOnRelocate_DEPRECATED(nullptr);
+		m_builtInSignals.SetOnRequestJoinTeam_DEPRECATED(nullptr);
+		m_builtInSignals.SetOnResetAssignment_DEPRECATED(nullptr);
+		m_builtInSignals.SetOnSharedUseThisMountedWeapon_DEPRECATED(nullptr);
+		m_builtInSignals.SetOnSmokeGrenadeThrownInGroup_DEPRECATED(nullptr);
+		m_builtInSignals.SetOnSomebodyDied_DEPRECATED(nullptr);
+		m_builtInSignals.SetOnSpawn_DEPRECATED(nullptr);
+		m_builtInSignals.SetOnSquadmateDied_DEPRECATED(nullptr);
+		m_builtInSignals.SetOnStopAndExit_DEPRECATED(nullptr);
+		m_builtInSignals.SetOnSuspiciousActivity_DEPRECATED(nullptr);
+		m_builtInSignals.SetOnTargetLost_DEPRECATED(nullptr);
+		m_builtInSignals.SetOnTargetNotVisible_DEPRECATED(nullptr);
+		m_builtInSignals.SetOnTooFarFromWeapon_DEPRECATED(nullptr);
+		m_builtInSignals.SetOnUnloadDone_DEPRECATED(nullptr);
+		m_builtInSignals.SetOnUseMountedWeapon2_DEPRECATED(nullptr);
+		m_builtInSignals.SetOnUseMountedWeapon_DEPRECATED(nullptr);
 
 		m_signalDescriptionMap.clear();
 	}

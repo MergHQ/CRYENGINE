@@ -15,9 +15,9 @@ public:
 	{
 	}
 
-	virtual LoadResult LoadFromXml(const XmlNodeRef& xml, const struct LoadContext& context, const bool strictMode) override
+	virtual LoadResult LoadFromXml(const XmlNodeRef& xml, const struct LoadContext& context, const bool isLoadingFromEditor) override
 	{
-		IF_UNLIKELY (BaseClass::LoadFromXml(xml, context, strictMode) == LoadFailure)
+		IF_UNLIKELY (BaseClass::LoadFromXml(xml, context, isLoadingFromEditor) == LoadFailure)
 			return LoadFailure;
 
 		if (xml->getChildCount() == 0)

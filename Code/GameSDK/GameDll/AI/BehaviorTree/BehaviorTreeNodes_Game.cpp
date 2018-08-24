@@ -73,7 +73,7 @@ namespace BehaviorTree
 			}
 		}
 
-		virtual LoadResult LoadFromXml(const XmlNodeRef& xml, const struct LoadContext& context, const bool strictMode)
+		virtual LoadResult LoadFromXml(const XmlNodeRef& xml, const struct LoadContext& context, const bool isLoadingFromEditor)
 		{
 			const char* formationName = xml->getAttr("name");
 			if (!formationName)
@@ -84,7 +84,7 @@ namespace BehaviorTree
 
 			m_formationNameCRC32 = CCrc32::ComputeLowercase(formationName);
 
-			return LoadChildFromXml(xml, context, strictMode);
+			return LoadChildFromXml(xml, context, isLoadingFromEditor);
 		}
 
 		virtual Status Update(const UpdateContext& context)
@@ -453,7 +453,7 @@ namespace BehaviorTree
 							pActor->KnockDown(impulseScale);
 							hasBeenKnockedDown = true;
 
-							SendSignal(attackerId, "OnMeleeKnockedDownTarget");
+							SendOnMeleeKnockedDownTargetSignal(attackerId);
 						}
 					}
 				}
@@ -488,12 +488,12 @@ namespace BehaviorTree
 				}
 			}
 
-			void SendSignal(EntityId entityId, const char* signalName)
+			void SendOnMeleeKnockedDownTargetSignal(EntityId entityId)
 			{
 				Agent agent(entityId);
 				if(agent.IsValid())
 				{
-					agent.GetAIActor()->SetSignal(gEnv->pAISystem->GetSignalManager()->CreateSignal_DEPRECATED(AISIGNAL_ALLOW_DUPLICATES, signalName,  agent.GetAIObjectID()));
+					agent.GetAIActor()->SetSignal(gEnv->pAISystem->GetSignalManager()->CreateSignal(AISIGNAL_ALLOW_DUPLICATES, gEnv->pAISystem->GetSignalManager()->GetBuiltInSignalDescriptions().GetOnMeleeKnockedDownTarget(),  agent.GetAIObjectID()));
 				}
 			}
 
@@ -596,7 +596,7 @@ namespace BehaviorTree
 		}
 		// ------------------------------------------------------------------------------------------------------------------------
 
-		virtual LoadResult LoadFromXml(const XmlNodeRef& xml, const struct LoadContext& context, const bool strictMode) override
+		virtual LoadResult LoadFromXml(const XmlNodeRef& xml, const struct LoadContext& context, const bool isLoadingFromEditor) override
 		{
 			s_dictionaries.target.Get(xml, "target", m_target, true);
 
@@ -856,9 +856,9 @@ namespace BehaviorTree
 		{
 		}
 
-		virtual LoadResult LoadFromXml(const XmlNodeRef& xml, const struct LoadContext& context, const bool strictMode) override
+		virtual LoadResult LoadFromXml(const XmlNodeRef& xml, const struct LoadContext& context, const bool isLoadingFromEditor) override
 		{
-			IF_UNLIKELY (BaseClass::LoadFromXml(xml, context, strictMode) == LoadFailure)
+			IF_UNLIKELY (BaseClass::LoadFromXml(xml, context, isLoadingFromEditor) == LoadFailure)
 				return LoadFailure;
 
 			if (!xml->getAttr("distance", m_distance))
@@ -1087,9 +1087,9 @@ namespace BehaviorTree
 		{
 		}
 
-		virtual LoadResult LoadFromXml(const XmlNodeRef& xml, const struct LoadContext& context, const bool strictMode) override
+		virtual LoadResult LoadFromXml(const XmlNodeRef& xml, const struct LoadContext& context, const bool isLoadingFromEditor) override
 		{
-			IF_UNLIKELY (BaseClass::LoadFromXml(xml, context, strictMode) == LoadFailure)
+			IF_UNLIKELY (BaseClass::LoadFromXml(xml, context, isLoadingFromEditor) == LoadFailure)
 				return LoadFailure;
 
 			xml->getAttr("radiusForAgentVsPlayer", m_radiusForAgentVsPlayer);

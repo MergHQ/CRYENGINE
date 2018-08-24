@@ -42,6 +42,11 @@ struct TimestampID
 		return id == rhs.id;
 	}
 
+	bool operator!=(const TimestampID& rhs) const
+	{
+		return id != rhs.id;
+	}
+
 	operator bool() const
 	{
 		return id != 0;
@@ -109,7 +114,7 @@ struct Timestamp
 		IF_LIKELY (!eventsDeclaration)
 			return;
 
-		const Variables::Events events = eventsDeclaration->GetEvents();
+		const Variables::Events events = eventsDeclaration->GetEventsWithFlags();
 		SerializeContainerAsStringList(archive, "setOnEventName", "^Set on event", events, "Event", setOnEventName);
 		archive.doc("Event that triggers the start of the Timestamp");
 
@@ -237,7 +242,7 @@ public:
 		}
 	}
 
-	bool LoadFromXml(Variables::EventsDeclaration& eventsDeclaration, const XmlNodeRef& xml, const char* fileName)
+	bool LoadFromXml(Variables::EventsDeclaration& eventsDeclaration, const XmlNodeRef& xml, const char* fileName, const bool isLoadingFromEditor)
 	{
 		for (int i = 0; i < xml->getChildCount(); ++i)
 		{
@@ -267,13 +272,15 @@ public:
 				return false;
 			}
 
-			// Exclusive
+#if defined(USING_BEHAVIOR_TREE_SERIALIZATION)
 			// Automatically declare user-defined signals
-			if (eventsDeclaration.DeclareGameEventIfNotAlreadyDeclared(setOnEvent))
+			if (isLoadingFromEditor && eventsDeclaration.DeclareGameEventIfNotAlreadyDeclared(setOnEvent))
 			{
 				gEnv->pLog->LogWarning("(%d) [Tree='%s'] Unknown event '%s' used for Timestamp", child->getLine(), fileName, setOnEvent);
 			}
+#endif // USING_BEHAVIOR_TREE_SERIALIZATION
 
+			// Exclusive
 			const char* exclusiveTo = child->getAttr("exclusiveTo");
 
 			Timestamp timestamp;

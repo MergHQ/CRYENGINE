@@ -21,12 +21,12 @@ public:
 		m_child = child;
 	}
 
-	virtual LoadResult LoadFromXml(const XmlNodeRef& xml, const struct LoadContext& context, const bool strictMode) override
+	virtual LoadResult LoadFromXml(const XmlNodeRef& xml, const struct LoadContext& context, const bool isLoadingFromEditor) override
 	{
-		IF_UNLIKELY (BaseClass::LoadFromXml(xml, context, strictMode) == LoadFailure)
+		IF_UNLIKELY (BaseClass::LoadFromXml(xml, context, isLoadingFromEditor) == LoadFailure)
 			return LoadFailure;
 
-		return LoadChildFromXml(xml, context, strictMode);
+		return LoadChildFromXml(xml, context, isLoadingFromEditor);
 	}
 
 	virtual void HandleEvent(const EventContext& context, const Event& event) override
@@ -62,9 +62,9 @@ public:
 
 protected:
 
-	LoadResult LoadChildFromXml(const XmlNodeRef& xml, const LoadContext& context, const bool strictMode)
+	LoadResult LoadChildFromXml(const XmlNodeRef& xml, const LoadContext& context, const bool isLoadingFromEditor)
 	{
-		IF_UNLIKELY (BaseClass::LoadFromXml(xml, context, strictMode) == LoadFailure)
+		IF_UNLIKELY (BaseClass::LoadFromXml(xml, context, isLoadingFromEditor) == LoadFailure)
 			return LoadFailure;
 
 		if (xml->getChildCount() != 1)
@@ -73,7 +73,7 @@ protected:
 			return LoadFailure;
 		}
 
-		INodePtr node = context.nodeFactory.CreateNodeFromXml(xml->getChild(0), context, strictMode);
+		INodePtr node = context.nodeFactory.CreateNodeFromXml(xml->getChild(0), context, isLoadingFromEditor);
 		if (node)
 		{
 			SetChild(node);

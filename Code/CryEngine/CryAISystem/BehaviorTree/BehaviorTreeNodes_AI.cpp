@@ -2178,7 +2178,8 @@ protected:
 	{
 		if (CPipeUser* pipeUser = GetPipeUser(context))
 		{
-			const AISignals::SignalSharedPtr pSignal = GetAISystem()->GetSignalManager()->CreateSignal_DEPRECATED(AISIGNAL_DEFAULT, m_signalName, pipeUser->GetAIObjectID());
+			const AISignals::ISignalDescription& signalDesc = GetAISystem()->GetSignalManager()->GetSignalDescription(m_signalName.c_str());
+			const AISignals::SignalSharedPtr pSignal = GetAISystem()->GetSignalManager()->CreateSignal(AISIGNAL_DEFAULT, signalDesc, pipeUser->GetAIObjectID());
 			
 			GetAISystem()->SendSignal(m_filter, pSignal);
 		}

@@ -93,6 +93,7 @@ BehaviorTreeManager::~BehaviorTreeManager()
 		}
 	}
 #endif
+	DeregisterGameEventsInSignalManager();
 }
 
 IMetaExtensionFactory& BehaviorTreeManager::GetMetaExtensionFactory()
@@ -165,6 +166,8 @@ BehaviorTreeInstancePtr BehaviorTreeManager::LoadFromCache(const char* behaviorT
 
 bool BehaviorTreeManager::LoadBehaviorTreeTemplate(const char* behaviorTreeName, XmlNodeRef behaviorTreeXmlNode, BehaviorTreeTemplate& behaviorTreeTemplate)
 {
+	const bool isLoadingFromEditor = false;
+
 #if defined(DEBUG_MODULAR_BEHAVIOR_TREE)
 	behaviorTreeTemplate.mbtFilename = behaviorTreeName;
 #endif
@@ -192,22 +195,40 @@ bool BehaviorTreeManager::LoadBehaviorTreeTemplate(const char* behaviorTreeName,
 	if (XmlNodeRef signalsXml = behaviorTreeXmlNode->findChild("SignalVariables"))
 	{
 		MEMSTAT_CONTEXT(EMemStatContextTypes::MSC_Other, 0, "Signals");
-		behaviorTreeTemplate.signalHandler.LoadFromXML(behaviorTreeTemplate.variableDeclarations, behaviorTreeTemplate.eventsDeclaration, signalsXml, behaviorTreeName);
+		behaviorTreeTemplate.signalHandler.LoadFromXML(behaviorTreeTemplate.variableDeclarations, behaviorTreeTemplate.eventsDeclaration, signalsXml, behaviorTreeName, isLoadingFromEditor);
 	}
 
 	if (XmlNodeRef timestampsXml = behaviorTreeXmlNode->findChild("Timestamps"))
 	{
 		MEMSTAT_CONTEXT(EMemStatContextTypes::MSC_Other, 0, "Timestamps");
-		behaviorTreeTemplate.defaultTimestampCollection.LoadFromXml(behaviorTreeTemplate.eventsDeclaration, timestampsXml, behaviorTreeName);
+		behaviorTreeTemplate.defaultTimestampCollection.LoadFromXml(behaviorTreeTemplate.eventsDeclaration, timestampsXml, behaviorTreeName, isLoadingFromEditor);
 	}
 
 	LoadContext context(GetNodeFactory(), behaviorTreeName, behaviorTreeTemplate.variableDeclarations, behaviorTreeTemplate.eventsDeclaration);
-	behaviorTreeTemplate.rootNode = XmlLoader().CreateBehaviorTreeRootNodeFromBehaviorTreeXml(behaviorTreeXmlNode, context);
+	behaviorTreeTemplate.rootNode = XmlLoader().CreateBehaviorTreeRootNodeFromBehaviorTreeXml(behaviorTreeXmlNode, context, isLoadingFromEditor);
 
 	if (!behaviorTreeTemplate.rootNode)
 		return false;
 
 	return true;
+}
+
+void BehaviorTreeManager::RegisterGameEventsInSignalManager(BehaviorTreeInstancePtr pInstance)
+{
+	for (const Variables::Event& e : pInstance->behaviorTreeTemplate->eventsDeclaration.GetGameEvents())
+	{
+		const AISignals::ISignalDescription& signalDesc = gEnv->pAISystem->GetSignalManager()->RegisterGameSignalDescription(e.name);
+		m_gameSignalDescriptionsVector.push_back(&signalDesc);
+	}
+}
+
+void BehaviorTreeManager::DeregisterGameEventsInSignalManager()
+{
+	for (const auto signalDesc : m_gameSignalDescriptionsVector)
+	{
+		gEnv->pAISystem->GetSignalManager()->DeregisterGameSignalDescription(*signalDesc);
+	}
+	m_gameSignalDescriptionsVector.clear();
 }
 
 void BehaviorTreeManager::LoadFromDiskIntoCache(const char* behaviorTreeName)
@@ -298,6 +319,7 @@ void BehaviorTreeManager::StopAllBehaviorTreeInstances()
 	}
 
 	m_instances.clear();
+	DeregisterGameEventsInSignalManager();
 }
 
 #ifdef CRYAISYSTEM_DEBUG
@@ -337,6 +359,8 @@ bool BehaviorTreeManager::StartModularBehaviorTreeFromXml(const EntityId entityI
 bool BehaviorTreeManager::StartBehaviorInstance(const EntityId entityId, BehaviorTreeInstancePtr instance, const char* treeName)
 {
 	StopModularBehaviorTree(entityId);
+	RegisterGameEventsInSignalManager(instance);
+
 	if (instance.get())
 	{
 		m_instances.insert(std::make_pair(entityId, instance));
@@ -387,6 +411,7 @@ void BehaviorTreeManager::StopModularBehaviorTree(const EntityId entityId)
 #ifdef DEBUG_MODULAR_BEHAVIOR_TREE
 	m_executionStackFileLoggerInstances.erase(entityId);
 #endif // DEBUG_MODULAR_BEHAVIOR_TREE
+	DeregisterGameEventsInSignalManager();
 }
 
 void BehaviorTreeManager::Update()

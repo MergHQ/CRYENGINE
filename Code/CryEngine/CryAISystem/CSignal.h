@@ -112,9 +112,11 @@ namespace AISignals
 
 		virtual size_t                             GetSignalDescriptionsCount() const override;
 		virtual const ISignalDescription&          GetSignalDescription(const size_t index) const override;
-											       
+		virtual const ISignalDescription&          GetSignalDescription(const char * szSignalDescName) const override;
+
 		virtual const ISignalDescription&          RegisterGameSignalDescription(const char * signalName) override;
-		
+		virtual void                               DeregisterGameSignalDescription(const ISignalDescription& signalDescription) override;
+
 		virtual SignalSharedPtr                    CreateSignal(const int nSignal, const ISignalDescription& signalDescription, const tAIObjectID senderID = 0, IAISignalExtraData* pEData = nullptr) const override;
 		virtual SignalSharedPtr                    CreateSignal_DEPRECATED(const int nSignal, const char* szCustomSignalTypeName, const tAIObjectID senderID = 0, IAISignalExtraData* pEData = nullptr) override;
 	private:

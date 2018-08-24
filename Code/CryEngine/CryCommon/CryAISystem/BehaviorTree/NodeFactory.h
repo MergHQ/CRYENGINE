@@ -51,7 +51,7 @@ public:
 		return node;
 	}
 
-	virtual INodePtr CreateNodeFromXml(const XmlNodeRef& xml, const LoadContext& context, const bool strictMode) override
+	virtual INodePtr CreateNodeFromXml(const XmlNodeRef& xml, const LoadContext& context, const bool isLoadingFromEditor) override
 	{
 
 		INodePtr node = context.nodeFactory.CreateNodeOfType(xml->getTag());
@@ -64,9 +64,9 @@ public:
 			static_cast<Node*>(node.get())->SetXmlLine(xml->getLine());
 #endif
 
-			const LoadResult loadResult = node->LoadFromXml(xml, context, strictMode);
+			const LoadResult loadResult = node->LoadFromXml(xml, context, isLoadingFromEditor);
 
-			if (!strictMode || loadResult == LoadSuccess)
+			if (isLoadingFromEditor || loadResult == LoadSuccess)
 			{
 				return node;
 			}

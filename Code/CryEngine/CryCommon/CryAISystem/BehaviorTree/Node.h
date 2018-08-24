@@ -112,7 +112,7 @@ public:
 	}
 
 	//! Load up a behavior tree node with information from an xml node.
-	virtual LoadResult LoadFromXml(const XmlNodeRef& xml, const struct LoadContext& context, const bool strictMode) override
+	virtual LoadResult LoadFromXml(const XmlNodeRef& xml, const struct LoadContext& context, const bool isLoadingFromEditor) override
 	{
 		#ifdef DEBUG_MODULAR_BEHAVIOR_TREE
 		m_startLog = xml->getAttr("_startLog");
