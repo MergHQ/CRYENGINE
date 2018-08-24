@@ -124,4 +124,5 @@ private:
 
 	// Pointer to physical object.
 	IPhysicalEntity* m_pPhysicalEntity = nullptr;
+	int32 m_timerId = IEntity::CREATE_NEW_UNIQUE_TIMER_ID;
 };

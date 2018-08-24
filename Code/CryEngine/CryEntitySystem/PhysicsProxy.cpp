@@ -479,7 +479,7 @@ void CEntityPhysics::AwakeOnRender(bool bRender)
 
 void CEntityPhysics::OnTimer(int id)
 {
-	if (GetEntity()->HasInternalFlag(CEntity::EInternalFlag::PhysicsAttachClothOnRender) && m_pPhysicalEntity)
+	if ((m_timerId == IEntity::CREATE_NEW_UNIQUE_TIMER_ID || m_timerId == id) && GetEntity()->HasInternalFlag(CEntity::EInternalFlag::PhysicsAttachClothOnRender) && m_pPhysicalEntity)
 	{
 		for (int slot = 0; slot < GetEntity()->GetSlotCount(); slot++)
 		{
@@ -509,7 +509,7 @@ void CEntityPhysics::OnTimer(int id)
 			GetEntity()->RemoveSimpleEventListener(ENTITY_EVENT_TIMER, this);
 			return;
 		}
-		GetEntity()->SetTimer(IEntity::CREATE_NEW_UNIQUE_TIMER_ID, 50);
+		m_timerId = GetEntity()->SetTimer(IEntity::CREATE_NEW_UNIQUE_TIMER_ID, 50);
 	}
 }
 
