@@ -27,6 +27,7 @@ public:
 
 private:
 	void ApplySMAA(CTexture*& pCurrRT);
+	void ApplySRGB(CTexture*& pCurrRT);
 	void ApplyTemporalAA(CTexture*& pCurrRT, CTexture*& pMgpuRT, uint32 aaMode);
 	void DoFinalComposition(CTexture*& pCurrRT, CTexture* pDestRT, uint32 aaMode);
 
@@ -44,6 +45,7 @@ private:
 	CFullscreenPass      m_passSMAANeighborhoodBlending;
 	CFullscreenPass      m_passTemporalAA;
 	CFullscreenPass      m_passComposition;
+	CStretchRectPass     m_passCopySRGB;
 
 	bool oldStereoEnabledState{ false };
 	int  oldAAState{ 0 };

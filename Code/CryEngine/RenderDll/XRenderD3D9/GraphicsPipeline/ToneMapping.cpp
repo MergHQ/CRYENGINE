@@ -66,7 +66,7 @@ void CToneMappingStage::Execute()
 
 		static CCryNameTSCRC techToneMapping("HDRFinalPass");
 		m_passToneMapping.SetTechnique(pShader, techToneMapping, rtMask);
-		m_passToneMapping.SetRenderTarget(0, CRendererResources::s_ptexSceneDiffuse);
+		m_passToneMapping.SetRenderTarget(0, CRendererResources::s_ptexDisplayTarget);
 		m_passToneMapping.SetState(GS_NODEPTHTEST);
 		m_passToneMapping.SetFlags(CPrimitiveRenderPass::ePassFlags_RequireVrProjectionConstants);
 		m_passToneMapping.SetPrimitiveFlags(CRenderPrimitive::eFlags_ReflectShaderConstants);	// Enables reflection constants addition in the shader
@@ -139,7 +139,7 @@ void CToneMappingStage::ExecuteDebug()
 		const auto primFlags = CRenderer::CV_r_HDRDebug == 2 ? CRenderPrimitive::eFlags_ReflectShaderConstants_PS : CRenderPrimitive::eFlags_None;
 
 		m_passToneMapping.SetTechnique(pShader, techToneMapping, rtMask);
-		m_passToneMapping.SetRenderTarget(0, CRendererResources::s_ptexSceneDiffuse);
+		m_passToneMapping.SetRenderTarget(0, CRendererResources::s_ptexDisplayTarget);
 		m_passToneMapping.SetState(GS_NODEPTHTEST);
 		m_passToneMapping.SetFlags(CPrimitiveRenderPass::ePassFlags_RequireVrProjectionConstants);	
 		m_passToneMapping.SetPrimitiveFlags(primFlags);
@@ -177,7 +177,7 @@ void CToneMappingStage::ExecuteFixedExposure(CTexture* pColorTex, CTexture* pDep
 	// TODO: tonemap in-place (sadly)
 
 	CTexture* pSrcTex = CRendererResources::s_ptexHDRTarget;
-	CTexture* pDstTex = CRendererResources::s_ptexSceneDiffuse;
+	CTexture* pDstTex = CRendererResources::s_ptexDisplayTarget;
 
 	auto& pass = m_passFixedExposureToneMapping;
 

@@ -211,6 +211,9 @@ CTexture* CRenderOutput::GetColorTarget() const
 
 CTexture* CRenderOutput::GetDepthTarget() const
 {
+	if (!m_pDepthTarget)
+		return m_pDisplayContext->GetCurrentDepthOutput();
+
 	CRY_ASSERT(m_pDepthTarget);
 	return m_pDepthTarget.get();
 }
@@ -310,7 +313,7 @@ ETEX_Format CRenderOutput::GetColorFormat() const
 
 	return m_bHDRRendering
 		? CRendererResources::GetHDRFormat(false, false)
-		: CRendererResources::GetLDRFormat();
+		: CRendererResources::GetLDRFormat(true);
 }
 
 void CRenderOutput::AllocateColorTarget()

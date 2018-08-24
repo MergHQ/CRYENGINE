@@ -2090,7 +2090,7 @@ void RenderDebugInfo()
 		static ITexture* pPost3DRendererTexture = NULL;
 		if (pPost3DRendererTexture == NULL)
 		{
-			pPost3DRendererTexture = gEnv->pRenderer->EF_LoadTexture("$BackBuffer");
+			pPost3DRendererTexture = gEnv->pRenderer->EF_LoadTexture("$DisplayTarget");
 		}
 
 		// Render debug view

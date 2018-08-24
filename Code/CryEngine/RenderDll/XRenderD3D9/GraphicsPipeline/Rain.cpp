@@ -307,7 +307,7 @@ void CRainStage::Execute()
 {
 	CD3D9Renderer* const RESTRICT_POINTER rd = gcpRendD3D;
 
-	if ((CRenderer::CV_r_rain < 1) || !CRenderer::CV_r_PostProcess || !CRendererResources::s_ptexBackBuffer || !CRendererResources::s_ptexSceneTarget)
+	if ((CRenderer::CV_r_rain < 1) || !CRenderer::CV_r_PostProcess)
 		return;
 
 	const auto& rainVolParams = m_RainVolParams;
