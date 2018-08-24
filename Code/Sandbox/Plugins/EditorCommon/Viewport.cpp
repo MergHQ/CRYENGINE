@@ -125,6 +125,9 @@ CViewport::~CViewport()
 //////////////////////////////////////////////////////////////////////////
 void CViewport::ScreenToClient(POINT* pPoint) const
 {
+	if (!m_viewWidget)
+		return;
+
 	QPoint p = m_viewWidget->mapToGlobal(QPoint(0, 0));
 	QRect r = QApplication::desktop()->screenGeometry(m_viewWidget->window());
 	QPoint p2 = QtUtil::PixelScale(m_viewWidget, p - r.topLeft()); //widget offset on screen, screen scale
@@ -434,6 +437,9 @@ void CViewport::OnDragSelectRectangle(CPoint pnt1, CPoint pnt2, bool bNormilizeR
 //////////////////////////////////////////////////////////////////////////
 void CViewport::SetCursor(QCursor* hCursor)
 {
+	if (!m_viewWidget)
+		return;
+
 	if (hCursor)
 		m_viewWidget->setCursor(*hCursor);
 	else
@@ -930,6 +936,9 @@ bool CViewport::MouseCallback(EMouseEvent event, CPoint& point, int flags)
 	CEditTool* pEditTool = GetEditTool();
 	if (pEditTool && pEditTool->MouseCallback(this, event, point, flags))
 	{
+		if (!m_viewWidget)
+			return true;
+
 		if (event == eMouseMove && !m_viewWidget->hasFocus())
 		{
 			m_viewWidget->setFocus();
@@ -1014,6 +1023,9 @@ float CViewport::GetFOV() const
 //////////////////////////////////////////////////////////////////////////
 void CViewport::ClientToScreen(CPoint* pnt)
 {
+	if (!m_viewWidget)
+		return;
+
 	QPoint local_qt_space = QtUtil::QtScale(m_viewWidget,QPoint(pnt->x, pnt->y));
 	QPoint global_qt_space = m_viewWidget->mapToGlobal(local_qt_space);
 	QPoint global_pixel_space = QtUtil::PixelScale(m_viewWidget,global_qt_space);
@@ -1048,6 +1060,9 @@ CWnd* CViewport::GetCWnd() const
 
 void CViewport::GetClientRect(RECT* rc) const
 {
+	if (!m_viewWidget)
+		return;
+
 	rc->left = 0;
 	rc->top = 0;
 	rc->right = m_viewWidget->size().width() * m_viewWidget->devicePixelRatioF();
@@ -1056,6 +1071,9 @@ void CViewport::GetClientRect(RECT* rc) const
 
 bool CViewport::IsMouseInWindow(CPoint* pnt, bool bIsLocal)
 {
+	if (!m_viewWidget)
+		return false;
+
 	QPoint p(pnt->x, pnt->y);
 	QSize size = m_viewWidget->size();
 
