@@ -32,18 +32,18 @@ void CScreenSpaceReflectionsStage::Execute()
 
 	CShader* pShader = CShaderMan::s_shDeferredShading;
 
+	CTexture* targetRT = CRenderer::CV_r_SSReflHalfRes
+		? CRendererResources::s_ptexHDRTargetMaskedScaled[0][1]
+		: CRendererResources::s_ptexHDRTargetMasked;
+
 	{
 		PROFILE_LABEL_SCOPE("SSR_RAYTRACE");
-
-		CTexture* destRT = CRenderer::CV_r_SSReflHalfRes 
-			? CRendererResources::s_ptexHDRTargetMaskedScaled[0][0]
-			: CRendererResources::s_ptexHDRTargetMasked;
 
 		if (m_passRaytracing.IsDirty(CRenderer::CV_r_SSReflHalfRes, rd->RT_GetCurrGpuID()))
 		{
 			static CCryNameTSCRC techRaytrace("SSR_Raytrace");
 			m_passRaytracing.SetTechnique(pShader, techRaytrace, 0);
-			m_passRaytracing.SetRenderTarget(0, destRT);
+			m_passRaytracing.SetRenderTarget(0, targetRT);
 			m_passRaytracing.SetState(GS_NODEPTHTEST);
 			m_passRaytracing.SetTexture(0, CRendererResources::s_ptexLinearDepth);
 			m_passRaytracing.SetTexture(1, CRendererResources::s_ptexSceneNormalsMap);
@@ -76,9 +76,9 @@ void CScreenSpaceReflectionsStage::Execute()
 	}
 
 	// TODO: Compute shader! because the targets are not compressed / able anyway, and we can half resource allocation)
-	if (!CRenderer::CV_r_SSReflHalfRes)
+	if (targetRT != CRendererResources::s_ptexHDRTargetMaskedScaled[0][1])
 	{
-		m_passCopy.Execute(CRendererResources::s_ptexHDRTarget, CRendererResources::s_ptexHDRTargetMaskedScaled[0][1]);
+		m_passCopy.Execute(targetRT, CRendererResources::s_ptexHDRTargetMaskedScaled[0][1]);
 	}
 
 	// Convolve sharp reflections

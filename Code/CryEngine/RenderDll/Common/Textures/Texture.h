@@ -18,7 +18,6 @@
 #include "../ResFile.h"
 #include "../CommonRender.h" // CBaseResource, SResourceView, SSamplerState
 #include "../Shaders/ShaderResources.h" // EHWShaderClass
-#include "../Shaders/CShader.h" // MAX_ENVTEXTURES
 
 #include "PowerOf2BlockPacker.h"
 #include <CryMemory/STLPoolAllocator.h>

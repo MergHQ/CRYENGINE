@@ -128,7 +128,7 @@ void CTiledShadingStage::Execute()
 		m_passCullingShading.SetTexture(3, CRendererResources::s_ptexSceneDiffuse);
 		m_passCullingShading.SetTexture(4, CRendererResources::s_ptexShadowMask);
 		m_passCullingShading.SetTexture(5, CRendererResources::s_ptexSceneNormalsBent);
-		m_passCullingShading.SetTexture(6, CRendererResources::s_ptexHDRTargetMaskedScaled[0][1]);
+		m_passCullingShading.SetTexture(6, CRendererResources::s_ptexHDRTargetMaskedScaled[0][0]);
 		m_passCullingShading.SetTexture(7, CRendererResources::s_ptexEnvironmentBRDF);
 		m_passCullingShading.SetTexture(8, texClipVolumeIndex);
 		m_passCullingShading.SetTexture(9, pTexAOColorBleed);
