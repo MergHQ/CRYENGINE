@@ -26,7 +26,7 @@ namespace Cry
 				CRYINTERFACE_BEGIN()
 					CRYINTERFACE_ADD(Cry::IEnginePlugin)
 				CRYINTERFACE_END()
-				CRYGENERATE_SINGLETONCLASS_GUID(CService, "Plugin_SteamService", SteamServiceID)
+				CRYGENERATE_SINGLETONCLASS_GUID(CService, "Plugin_CryGamePlatformSteam", SteamServiceID)
 
 				CService();
 				~CService() = default;
@@ -34,7 +34,7 @@ namespace Cry
 				// Cry::IEnginePlugin
 				virtual bool Initialize(SSystemGlobalEnvironment& env, const SSystemInitParams& initParams) override;
 				virtual void MainUpdate(float frameTime) override;
-				virtual const char* GetName() const override { return "SteamService"; }
+				virtual const char* GetName() const override { return "CryGamePlatformSteam"; }
 				virtual const char* GetCategory() const override { return "GamePlatform"; }
 				// ~Cry::IEnginePlugin
 

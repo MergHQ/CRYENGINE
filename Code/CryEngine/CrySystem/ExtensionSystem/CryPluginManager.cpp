@@ -200,6 +200,16 @@ void CCryPluginManager::LoadProjectPlugins()
 		OnPluginLoaded();
 	}
 
+#if defined(CRY_IS_MONOLITHIC_BUILD)
+	// We cache the loaded plugin names here for easier testing what plugins are loaded. m_pluginContainer will be modified below.
+	std::vector<string> loadedPluginNames;
+	loadedPluginNames.reserve(m_pluginContainer.size());
+	for (const SPluginContainer& plugin : m_pluginContainer)
+	{
+		loadedPluginNames.emplace_back(plugin.GetPluginPtr()->GetName());
+	}
+#endif
+
 	m_bLoadedProjectPlugins = true;
 
 #if CrySharedLibrarySupported
@@ -215,13 +225,29 @@ void CCryPluginManager::LoadProjectPlugins()
 		}
 
 #if defined(CRY_IS_MONOLITHIC_BUILD)
-		// Don't attempt to load plug-ins that were statically linked in
+		// Don't attempt to load plug-ins that were declared default
 		string pluginName = PathUtil::GetFileName(pluginDefinition.path);
 		bool bValid = true;
 
 		for (const std::pair<uint8, SPluginDefinition>& defaultPlugin : CCryPluginManager::GetDefaultPlugins())
 		{
-			if (!strcmp(defaultPlugin.second.path, pluginName.c_str()))
+			if (defaultPlugin.second.path.compare(pluginName))
+			{
+				bValid = false;
+				break;
+			}
+		}
+
+		// Don't attempt to load plug-ins that were already statically linked in (despite being in the .cryproject)
+		for (string loadedPluginName : loadedPluginNames)
+		{
+			// Remove "Plugin_" from the start of the name if it exists (from CRYGENERATE_SINGLETONCLASS_GUID)
+			const string pluginNameHeader = "Plugin_";
+			if (!strncmp(loadedPluginName.c_str(), pluginNameHeader.c_str(), pluginNameHeader.size()))
+			{
+				loadedPluginName = loadedPluginName.substr(pluginNameHeader.size());
+			}
+			if (!loadedPluginName.compare(pluginName))
 			{
 				bValid = false;
 				break;

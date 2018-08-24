@@ -31,21 +31,13 @@
 #include <CrySystem/IConsole.h>
 #include <CrySystem/ITimer.h>
 
-void* CRenderViewport::m_currentContextWnd = 0;
-CRenderViewport* CRenderViewport::m_pPrimaryViewport = 0;
-
-#define MAX_ORBIT_DISTANCE        (2000.0f)
-#define RENDER_MESH_TEST_DISTANCE (0.2f)
+void* CRenderViewport::m_currentContextWnd = nullptr;
+CRenderViewport* CRenderViewport::m_pPrimaryViewport = nullptr;
 
 namespace
 {
 const char renderViewportTitleName[] = "Perspective";
-
-inline Vec3 NegY(const Vec3& v, float y)
-{
-	return Vec3(v.x, y - v.y, v.z);
-}
-
+const float g_renderMeshTestDistance = 0.2f;
 }
 
 SCameraPreferences CRenderViewport::s_cameraPreferences;
@@ -685,7 +677,6 @@ SDisplayContext CRenderViewport::InitDisplayContext(const SDisplayContextKey& di
 	if (m_helperSettings.enabled)
 	{
 		dctx.enabled = m_helperSettings.enabled;
-		dctx.displaySelectionHelpers = m_bAdvancedSelectMode;
 
 		dctx.showIcons = m_helperSettings.showIcons;
 		dctx.showMesh = m_helperSettings.showMesh;
@@ -716,6 +707,9 @@ SDisplayContext CRenderViewport::InitDisplayContext(const SDisplayContextKey& di
 		dctx.showRoadHelper = m_helperSettings.showRoadHelper;
 		dctx.showShapeHelper = m_helperSettings.showShapeHelper;
 	}
+
+	// Selection helpers should be visible even if helpers are disabled
+	dctx.displaySelectionHelpers = m_bAdvancedSelectMode;
 
 	return dctx;
 }
@@ -1450,7 +1444,7 @@ bool CRenderViewport::AdjustObjectPosition(const ray_hit& hit, Vec3& outNormal, 
 
 	// put into position object space hit position
 	Vec3 vOS_HitPos = objMatInv.TransformPoint(hit.pt);
-	vOS_HitPos -= vOS_HitDir * RENDER_MESH_TEST_DISTANCE * fWorldScaleInv;
+	vOS_HitPos -= vOS_HitDir * g_renderMeshTestDistance * fWorldScaleInv;
 
 	IRenderMesh* pRM = pEntObject->GetRenderMesh();
 
