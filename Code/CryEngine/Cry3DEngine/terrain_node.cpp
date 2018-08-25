@@ -779,8 +779,6 @@ bool CTerrainNode::CheckUpdateProcObjects()
 				if (!CheckMinSpec(pGroup->minConfigSpec)) // Check min spec of this group.
 					continue;
 
-				assert(gEnv->IsEditor() || !pGroup->offlineProcedural);
-
 				// distribute objects into different tree levels based on object size
 
 				float fSectorViewDistMax = GetCVars()->e_ProcVegetationMaxViewDistance * (GetBBox().GetSize().x / 64.f);
@@ -870,6 +868,11 @@ bool CTerrainNode::CheckUpdateProcObjects()
 						if (pGroup->fVegRadius * fScale < GetCVars()->e_VegetationMinSize)
 							continue; // skip creation of very small objects
 
+						const uint32 angleRnd = rndGen.GenerateUint32();
+
+						if (pGroup->offlineProcedural && !gEnv->IsEditor())
+							continue; // those procedural objects are already loaded as permanent objects
+
 						CVegetation* pEnt = m_arrProcObjects.Add(new(CVegetation::eAllocator_Procedural) CVegetation());
 						assert(pEnt);
 
@@ -879,13 +882,12 @@ bool CTerrainNode::CheckUpdateProcObjects()
 						int nGroupIndex = static_cast<int>(std::distance(GetObjManager()->m_lstStaticTypes.begin(), pGroup));
 						pEnt->SetStatObjGroupIndex(nGroupIndex);
 
-						const uint32 nRnd = rndGen.GenerateUint32();
 						const bool bRandomRotation = pGroup->bRandomRotation;
 						const int32 nRotationRange = pGroup->nRotationRangeToTerrainNormal;
 
 						if (bRandomRotation || nRotationRange >= 360)
 						{
-							pEnt->m_ucAngle = static_cast<byte>(nRnd);
+							pEnt->m_ucAngle = static_cast<byte>(angleRnd);
 						}
 						else if (nRotationRange > 0)
 						{
@@ -893,11 +895,11 @@ bool CTerrainNode::CheckUpdateProcObjects()
 
 							if (abs(vTerrainNormal.x) == 0.f && abs(vTerrainNormal.y) == 0.f)
 							{
-								pEnt->m_ucAngle = static_cast<byte>(nRnd);
+								pEnt->m_ucAngle = static_cast<byte>(angleRnd);
 							}
 							else
 							{
-								const float rndDegree = (float)-nRotationRange * 0.5f + (float)(nRnd % (uint32)nRotationRange);
+								const float rndDegree = (float)-nRotationRange * 0.5f + (float)(angleRnd % (uint32)nRotationRange);
 								const float finaleDegree = RAD2DEG(atan2f(vTerrainNormal.y, vTerrainNormal.x)) + rndDegree;
 								pEnt->m_ucAngle = (byte)((finaleDegree / 360.0f) * 255.0f);
 							}
