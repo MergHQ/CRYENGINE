@@ -211,10 +211,10 @@ CTexture* CRenderOutput::GetColorTarget() const
 
 CTexture* CRenderOutput::GetDepthTarget() const
 {
-	if (!m_pDepthTarget)
+	if (m_pDisplayContext && !m_pDepthTarget)
 		return m_pDisplayContext->GetCurrentDepthOutput();
 
-	CRY_ASSERT(m_pDepthTarget);
+	CRY_ASSERT(m_pDepthTarget || m_bUseTempDepthBuffer);
 	return m_pDepthTarget.get();
 }
 

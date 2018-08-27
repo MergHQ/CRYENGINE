@@ -13,7 +13,6 @@ class CBaseObject;
 class CBroadcastManager;
 class CConfigurationManager;
 class CCryEditDoc;
-class CDisplaySettings;
 class CFlowGraphManager;
 class CHeightmap;
 class CGameEngine;
@@ -32,7 +31,6 @@ class CWaitProgress;
 class CWnd;
 class QString;
 class QWidget;
-class CVersionControl;
 
 struct AABB;
 struct I3DEngine;
@@ -47,7 +45,6 @@ struct IEditorMaterial;
 struct IEditorNotifyListener;
 struct IExportManager;
 struct IFileChangeMonitor;
-struct IGame;
 struct IGizmoManager;
 struct IIconManager;
 struct ILevelEditor;
@@ -64,16 +61,12 @@ struct IResourceSelectorHost;
 struct ISelectionGroup;
 struct ISourceControl;
 struct ISystem;
-struct ITransformManipulator;
 struct IUndoManager;
-struct IUndoObject;
 struct IUriEventListener;
 struct IViewportManager;
-struct SEditorSettings;
 struct SObjectChangedContext;
 struct SRayHitInfo;
 
-enum EModifiedModule;
 enum ESystemConfigSpec;
 
 namespace FileSystem

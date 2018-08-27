@@ -114,6 +114,15 @@ public:
 			ReturnToPool();
 	}
 	
+	inline void SetDebugName(const char* name) const
+	{
+		if (!m_buffer) return;
+		// If we have CB direct access we only get a range-fragment instead of our own object which we can name
+#if !CONSTANT_BUFFER_ENABLE_DIRECT_ACCESS
+		return m_buffer->SetDebugName(name);
+#endif
+	}
+
 	inline D3DBuffer* GetD3D() const
 	{
 		return m_buffer->GetBuffer();
@@ -527,6 +536,8 @@ public:
 	CDeviceBuffer* GetDevBuffer()    const { return m_pDeviceBuffer; }
 	uint32         GetFlags()        const { return m_eFlags; }
 	buffer_size_t  GetElementCount() const { return m_elementCount; }
+
+	inline void    SetDebugName(const char* name) const { m_pDeviceBuffer->SetDebugName(name); }
 
 	//////////////////////////////////////////////////////////////////////////
 

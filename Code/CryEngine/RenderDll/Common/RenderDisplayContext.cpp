@@ -267,11 +267,11 @@ void CSwapChainBackedRenderDisplayContext::AllocateBackBuffers()
 	// ------------------------------------------------------------------------------
 	for (int i = 0, n = indices; i < n; ++i)
 	{
+		sprintf(str, "$SwapChainBackBuffer %d:Buffer %d", m_uniqueId, i);
+
 		// Prepare back-buffer texture(s)
 		if (!m_backBuffersArray[i])
 		{
-			sprintf(str, "$SwapChainBackBuffer %d:Buffer %d", m_uniqueId, i);
-
 			m_backBuffersArray[i] = nullptr;
 			m_backBuffersArray[i].Assign_NoAddRef(CTexture::GetOrCreateTextureObject(str, displayWidth, displayHeight, 1, eTT_2D, renderTargetFlags, displayFormat));
 			m_backBuffersArray[i]->SRGBRead(DeviceFormats::ConvertToSRGB(DeviceFormats::ConvertFromTexFormat(displayFormat)) == m_swapChain.GetSurfaceDesc().Format);
@@ -293,6 +293,8 @@ void CSwapChainBackedRenderDisplayContext::AllocateBackBuffers()
 			const auto &layout = m_backBuffersArray[i]->GetLayout();
 			m_backBuffersArray[i]->Invalidate(displayWidth, displayHeight, displayFormat);
 			m_backBuffersArray[i]->SetDevTexture(CDeviceTexture::Associate(layout, pBackBuffer));
+
+			SetDebugName(pBackBuffer, str);
 
 			// Guarantee that the back-buffers are cleared on first use (e.g. Flash alpha-blends onto the back-buffer)
 			// NOTE: GNM requires shaders to be initialized before issuing any draws/clears/copies/resolves. This is not yet the case here.

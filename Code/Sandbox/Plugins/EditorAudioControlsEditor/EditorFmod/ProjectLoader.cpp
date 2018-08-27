@@ -29,6 +29,17 @@ string const g_vcasPath = "/metadata/vca/";
 string const g_bankPath = "/metadata/bank/";
 
 //////////////////////////////////////////////////////////////////////////
+void AddNonStreamsBank(AssetNames& banks, string const& fileName)
+{
+	size_t const pos = fileName.rfind(".streams.bank");
+
+	if (pos == string::npos)
+	{
+		banks.emplace_back(fileName);
+	}
+}
+
+//////////////////////////////////////////////////////////////////////////
 CProjectLoader::CProjectLoader(string const& projectPath, string const& banksPath, string const& localizedBanksPath, CItem& rootItem, ItemCache& itemCache, CImpl const& impl)
 	: m_rootItem(rootItem)
 	, m_itemCache(itemCache)
@@ -92,39 +103,39 @@ void CProjectLoader::LoadBanks(string const& folderPath, bool const isLocalized,
 
 		do
 		{
-			string const filename = fd.name;
+			string const fileName = fd.name;
 
-			if ((filename != ".") && (filename != "..") && !filename.empty())
+			if ((fileName != ".") && (fileName != "..") && !fileName.empty())
 			{
 				if (isLocalized)
 				{
-					banks.emplace_back(filename);
+					AddNonStreamsBank(banks, fileName);
 				}
 				else
 				{
-					int const pos = filename.rfind(".strings.bank");
+					size_t const pos = fileName.rfind(".strings.bank");
 
 					if (pos != string::npos)
 					{
-						masterBankName = filename.substr(0, pos);
+						masterBankName = fileName.substr(0, pos);
 					}
 					else
 					{
-						banks.emplace_back(filename);
+						AddNonStreamsBank(banks, fileName);
 					}
 				}
 			}
 		}
 		while (pCryPak->FindNext(handle, &fd) >= 0);
 
-		for (string const& filename : banks)
+		for (string const& bankName : banks)
 		{
-			if (isLocalized || (filename.compareNoCase(0, masterBankName.length(), masterBankName) != 0))
+			if (isLocalized || (bankName.compareNoCase(0, masterBankName.length(), masterBankName) != 0))
 			{
-				string const filePath = folderPath + "/" + filename;
+				string const filePath = folderPath + "/" + bankName;
 				EPakStatus const pakStatus = pCryPak->IsFileExist(filePath.c_str(), ICryPak::eFileLocation_OnDisk) ? EPakStatus::OnDisk : EPakStatus::None;
 
-				CreateItem(filename, EItemType::Bank, &parent, flags, pakStatus, filePath);
+				CreateItem(bankName, EItemType::Bank, &parent, flags, pakStatus, filePath);
 			}
 		}
 

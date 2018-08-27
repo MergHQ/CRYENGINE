@@ -2727,15 +2727,19 @@ bool CHWShader_D3D::mfUploadHW(SHWSInstance* pInst, const byte* pBuf, uint32 nSi
 	#if !defined(RELEASE) && (CRY_PLATFORM_WINDOWS || CRY_PLATFORM_ORBIS)
 		char name[1024];
 		sprintf(name, "%s_%s(LT%x)@(RT%llx)(MD%x)(MDV%x)(GL%llx)(PSS%llx)", pSH->GetName(), m_EntryFunc.c_str(), pInst->m_Ident.m_LightMask, pInst->m_Ident.m_RTMask, pInst->m_Ident.m_MDMask, pInst->m_Ident.m_MDVMask, pInst->m_Ident.m_GLMask, pInst->m_Ident.m_pipelineState.opaque);
-		#if CRY_PLATFORM_WINDOWS
+
+#if CRY_PLATFORM_WINDOWS
 			#if CRY_RENDERER_DIRECT3D
-				((ID3D11DeviceChild*)pInst->m_Handle.m_pShader->GetHandle())->SetPrivateData(WKPDID_D3DDebugObjectName, strlen(name), name);
+				auto pObject = (ID3D11DeviceChild*)pInst->m_Handle.m_pShader->GetHandle();
+				SetDebugName(pObject, name);
 			#elif CRY_RENDERER_VULKAN
-				reinterpret_cast<NCryVulkan::CShader*>(pInst->m_Handle.m_pShader->GetHandle())->DebugSetName(name);
-			#endif
+				auto pObject = reinterpret_cast<NCryVulkan::CShader*>(pInst->m_Handle.m_pShader->GetHandle());
+				SetDebugName(pObject, name);
+#endif
 		#elif CRY_PLATFORM_ORBIS && !CRY_RENDERER_GNM		
-			((CCryDXOrbisShader*)pInst->m_Handle.m_pShader->GetHandle())->DebugSetName(name);
-		#endif
+			auto pObject = (CCryDXOrbisShader*)pInst->m_Handle.m_pShader->GetHandle();
+			SetDebugName(pObject, name);
+#endif
 	#endif
 	}
 

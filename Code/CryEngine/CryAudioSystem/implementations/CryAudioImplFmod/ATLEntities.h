@@ -334,7 +334,10 @@ public:
 	CFile& operator=(CFile const&) = delete;
 	CFile& operator=(CFile&&) = delete;
 
-	FMOD::Studio::Bank* pBank = nullptr;
+	FMOD::Studio::Bank*                pBank = nullptr;
+	FMOD::Studio::Bank*                pStreamsBank = nullptr;
+
+	CryFixedStringT<MaxFilePathLength> m_streamsBankPath;
 };
 
 class CStandaloneFileBase : public IStandaloneFile

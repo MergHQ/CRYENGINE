@@ -95,6 +95,11 @@ public:
 
 	SResourceLayout     GetLayout() const;
 
+	inline void SetDebugName(const char* name) const
+	{
+		::SetDebugName(m_pNativeResource, name);
+	}
+
 	inline D3DResource* GetNativeResource() const
 	{
 		return m_pNativeResource;
@@ -383,6 +388,16 @@ class CDeviceTexture : public CDeviceResource
 public:
 	static CDeviceTexture*   Create(const STextureLayout& pLayout, const STexturePayload* pPayload);
 	static CDeviceTexture*   Associate(const STextureLayout& pLayout, D3DResource* pTex);
+
+#ifdef DEVRES_USE_STAGING_POOL
+	inline void SetDebugName(const char* name) const
+	{
+		CDeviceResource::SetDebugName(name);
+
+		::SetDebugName(m_pStagingResource[0], "%s Write-StagingB", name);
+		::SetDebugName(m_pStagingResource[1], "%s Read-StagingB", name);
+	}
+#endif
 
 	STextureLayout           GetLayout() const;
 	static STextureLayout    GetLayout(D3DBaseView* pView); // Layout object adjusted to include only the sub-resources in the view.

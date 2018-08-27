@@ -1,18 +1,11 @@
 // Copyright 2001-2018 Crytek GmbH / Crytek Group. All rights reserved.
-#include <StdAfx.h>
+#include "StdAfx.h"
 #include "QMainFrameMenuBar.h"
 
-// Qt
 #include <QHBoxLayout>
 #include <QMenuBar>
 #include <QStyleOption>
 #include <QPainter>
-#include <QStandardItemModel>
-
-//Editor
-#include "Commands/CommandModel.h"
-#include "Commands/QCommandAction.h"
-#include "QtUtil.h"
 
 QMainFrameMenuBar::QMainFrameMenuBar(QMenuBar* pMenuBar /* = 0*/, QWidget* pParent /* = 0*/)
 	: QWidget(pParent)

@@ -33,6 +33,7 @@ ImageSpaceShafts::ImageSpaceShafts(const char* name)
 
 	// share one constant buffer between both primitives
 	CConstantBufferPtr pSharedCB = gcpRendD3D->m_DevBufMan.CreateConstantBuffer(sizeof(SShaderParams));
+	if (pSharedCB) pSharedCB->SetDebugName("ImageSpaceShafts Per-Primitive CB");
 
 	m_occlusionPrimitive.SetInlineConstantBuffer(eConstantBufferShaderSlot_PerPrimitive, pSharedCB, EShaderStage_Vertex | EShaderStage_Pixel);
 	m_shaftGenPrimitive .SetInlineConstantBuffer(eConstantBufferShaderSlot_PerPrimitive, pSharedCB, EShaderStage_Vertex | EShaderStage_Pixel);

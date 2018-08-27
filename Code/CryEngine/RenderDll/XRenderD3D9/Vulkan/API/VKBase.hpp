@@ -2,7 +2,6 @@
 
 #pragma once
 
-#include <StdAfx.h>
 #include "xxhash.h"
 #include <fasthash/fasthash.inl>
 #include <concqueue/concqueue.hpp>

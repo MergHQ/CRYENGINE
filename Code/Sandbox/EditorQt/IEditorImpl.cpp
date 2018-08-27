@@ -18,7 +18,6 @@
 #include "Material/MaterialBrowser.h"
 #include "Material/MaterialFXGraphMan.h"
 #include "Material/MaterialManager.h"
-#include "Material/MaterialPickTool.h"
 #include "Objects/ObjectLayerManager.h"
 #include "Objects/PrefabObject.h"
 #include "Particles/ParticleManager.h"
@@ -27,11 +26,9 @@
 #include "QT/QToolTabManager.h"
 #include "QT/Widgets/QPreviewWidget.h"
 #include "Script/ScriptEnvironment.h"
-#include "Terrain/SurfaceType.h"
 #include "Terrain/TerrainManager.h"
 #include "UI/UIManager.h"
 #include "Undo/Undo.h"
-#include "Util/BoostPythonHelpers.h"
 #include "Util/Ruler.h"
 #include "Vegetation/VegetationMap.h"
 
@@ -43,17 +40,14 @@
 #include "CryEditDoc.h"
 #include "DataBaseDialog.h"
 #include "EditorFileMonitor.h"
-#include "EntityPrototype.h"
 #include "EntityPrototypeManager.h"
 #include "GameEngine.h"
 #include "IconManager.h"
 #include "IDevManager.h"
-#include "LinkTool.h"
 #include "MainThreadWorker.h"
 #include "Mission.h"
 #include "ObjectCreateTool.h"
 #include "PhysTool.h"
-#include "PluginManager.h"
 #include "ResourceSelectorHost.h"
 #include "SurfaceInfoPicker.h"
 #include "ViewManager.h"
@@ -65,15 +59,11 @@
 // EditorCommon
 #include <AssetSystem/AssetManager.h>
 #include <AssetSystem/Browser/AssetModel.h>
-#include <Controls/QuestionDialog.h>
 #include <EditorFramework/BroadcastManager.h>
 #include <EditorFramework/PersonalizationManager.h>
 #include <EditorFramework/Preferences.h>
 #include <EditorFramework/TrayArea.h>
-#include <Gizmos/AxisHelper.h>
 #include <Gizmos/GizmoManager.h>
-#include <Gizmos/TransformManipulator.h>
-#include <LevelEditor/LevelEditorSharedState.h>
 #include <LevelEditor/Tools/ObjectMode.h>
 #include <Notifications/NotificationCenterImpl.h>
 #include <Preferences/GeneralPreferences.h>
@@ -84,18 +74,8 @@
 #include <ISourceControl.h>
 #include <UIEnumsDatabase.h>
 
-#include <Cry3DEngine/I3DEngine.h>
-#include <CryCore/ToolsHelpers/ResourceCompilerHelper.h>
-#include <CryEntitySystem/IEntitySystem.h>
-#include <CryGame/IGameFramework.h>
-#include <CryMovie/IMovieSystem.h>
 #include <CrySandbox/CryInterop.h>
 #include <CrySandbox/IEditorGame.h>
-#include <CrySerialization/Serializer.h>
-#include <CrySystem/IConsole.h>
-#include <CrySystem/IProjectManager.h>
-
-#include <QFileInfo>
 
 LINK_SYSTEM_LIBRARY("version.lib")
 LINK_SYSTEM_LIBRARY("Shlwapi.lib")

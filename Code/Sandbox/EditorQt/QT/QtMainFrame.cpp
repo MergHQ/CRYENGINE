@@ -1,81 +1,39 @@
 // Copyright 2001-2018 Crytek GmbH / Crytek Group. All rights reserved.
 
-#include <StdAfx.h>
+#include "StdAfx.h"
+#include "QtMainFrame.h"
+
+#include "Commands/KeybindEditor.h"
+#include "QT/MainToolBars/QToolBarCreator.h"
+#include "QT/QMainFrameMenuBar.h"
+#include "QT/QtMainFrameWidgets.h"
+#include "QT/QToolTabManager.h"
+#include "QT/QtUtil.h"
+#include "QT/TraySearchBox.h"
+#include "AboutDialog.h"
+#include "CryEdit.h"
+#include "CryEditDoc.h"
+#include "LevelIndependentFileMan.h"
+#include "LinkTool.h"
+
+// MFC
+#include <QMfcApp/qmfchost.h>
+
+// EditorCommon
+#include <Controls/SaveChangesDialog.h>
+#include <Menu/MenuWidgetBuilders.h>
+#include <Preferences/GeneralPreferences.h>
+#include <QTrackingTooltip.h>
+#include <RenderViewport.h>
 
 #include <CrySystem/IProjectManager.h>
 
-//////////////////////////////////////////////////////////////////////////
-// QT headers
-#include <QTimer>
-#include <QMenu>
 #include <QMenuBar>
-#include <QLayout>
-#include <QDockWidget>
-#include <QLineEdit>
-#include <QFile>
-#include <QDir>
-#include <QToolBar>
-#include <QLabel>
-#include <QToolButton>
-#include <QToolBox>
-#include <QPushButton>
-#include <QImageReader>
 #include <QMouseEvent>
-#include <QAbstractEventDispatcher>
-#include <QCursor>
+#include <QToolBar>
 #include <QToolWindowManager/QToolWindowRollupBarArea.h>
 
 #include <algorithm>
-//////////////////////////////////////////////////////////////////////////
-
-#include <CryIcon.h>
-#include <QtUtil.h>
-#include "QtUtil.h"
-
-#include "QtMainFrame.h"
-#include "QtMainFrameWidgets.h"
-#include "QMainFrameMenuBar.h"
-#include "Commands/QCommandAction.h"
-#include "QtViewPane.h"
-#include "RenderViewport.h"
-
-//////////////////////////////////////////////////////////////////////////
-#include "CryEdit.h"
-#include "CryEditDoc.h"
-#include "LevelEditor/LevelEditor.h"
-//////////////////////////////////////////////////////////////////////////
-
-//////////////////////////////////////////////////////////////////////////
-#include "Util/BoostPythonHelpers.h"
-#include "ViewManager.h"
-#include "IBackgroundTaskManager.h"
-#include "ProcessInfo.h"
-#include "QToolTabManager.h"
-#include "LevelIndependentFileMan.h"
-#include "Commands/KeybindEditor.h"
-#include "KeyboardShortcut.h"
-#include "EditorFramework/Events.h"
-#include <Preferences/GeneralPreferences.h>
-#include "Controls/SandboxWindowing.h"
-#include "QToolWindowManager/QToolWindowManager.h"
-#include "QToolWindowManager/QCustomWindowFrame.h"
-#include "DockingSystem/DockableContainer.h"
-#include "QTrackingTooltip.h"
-#include "QT/MainToolBars/QMainToolBarManager.h"
-#include "QT/MainToolBars/QToolBarCreator.h"
-#include "QT/Widgets/QWaitProgress.h"
-#include "QT/TraySearchBox.h"
-#include "Controls/EditorDialog.h"
-#include "Controls/SaveChangesDialog.h"
-#include "QControls.h"
-#include "AboutDialog.h"
-#include "QMfcApp/qmfchost.h"
-#include "KeyboardShortcut.h"
-#include "Menu/MenuWidgetBuilders.h"
-#include "LinkTool.h"
-
-#include <CrySchematyc/Env/IEnvRegistry.h>
-#include <CrySchematyc/Env/Elements/EnvComponent.h>
 
 REGISTER_HIDDEN_VIEWPANE_FACTORY(QPreferencesDialog, "Preferences", "Editor", true)
 
@@ -104,11 +62,11 @@ REGISTER_PREFERENCES_PAGE_PTR(SPerformancePreferences, &gPerformancePreferences)
 
 //////////////////////////////////////////////////////////////////////////
 
-CEditorMainFrame * CEditorMainFrame::m_pInstance = 0;
+CEditorMainFrame* CEditorMainFrame::m_pInstance = nullptr;
 
 namespace
 {
-CTabPaneManager* s_pToolTabManager = 0;
+CTabPaneManager* s_pToolTabManager = nullptr;
 }
 
 //////////////////////////////////////////////////////////////////////////
@@ -1303,8 +1261,6 @@ void CEditorMainFrame::InitMenuBar()
 	setMenuWidget(new QMainFrameMenuBar(menuBar(), this));
 }
 
-//////////////////////////////////////////////////////////////////////////
-
 void CEditorMainFrame::InitActions()
 {
 	CEditorCommandManager* commandMgr = GetIEditorImpl()->GetCommandManager();
@@ -1585,7 +1541,6 @@ bool CEditorMainFrame::BeforeClose()
 	return true;
 }
 
-//////////////////////////////////////////////////////////////////////////
 void CEditorMainFrame::SaveConfig()
 {
 	LOADING_TIME_PROFILE_SECTION;
@@ -1639,13 +1594,10 @@ bool CEditorMainFrame::event(QEvent* event)
 	return QMainWindow::event(event);
 }
 
-//////////////////////////////////////////////////////////////////////////
 void CEditorMainFrame::ResetAutoSaveTimers()
 {
-
 }
 
-//////////////////////////////////////////////////////////////////////////
 void CEditorMainFrame::OnAutoSaveTimer()
 {
 	if (gEditorFilePreferences.autoSaveEnabled)
@@ -1679,7 +1631,6 @@ bool CEditorMainFrame::OnNativeEvent(void* message, long* result)
 	return false;
 }
 
-//////////////////////////////////////////////////////////////////////////
 void CEditorMainFrame::OnIdleCallback()
 {
 	if (gEnv->stoppedOnAssert)
@@ -1726,7 +1677,6 @@ void CEditorMainFrame::OnIdleCallback()
 	QTimer::singleShot(res ? 0 : 16, this, &CEditorMainFrame::OnIdleCallback);
 }
 
-//////////////////////////////////////////////////////////////////////////
 void CEditorMainFrame::OnBackgroundUpdateTimer()
 {
 	int period = 0;
@@ -1745,13 +1695,11 @@ void CEditorMainFrame::OnBackgroundUpdateTimer()
 	}
 }
 
-//////////////////////////////////////////////////////////////////////////
 QToolWindowManager* CEditorMainFrame::GetToolManager()
 {
 	return m_toolManager;
 }
 
-//////////////////////////////////////////////////////////////////////////
 QMainToolBarManager* CEditorMainFrame::GetToolBarManager()
 {
 	return m_pMainToolBarManager;

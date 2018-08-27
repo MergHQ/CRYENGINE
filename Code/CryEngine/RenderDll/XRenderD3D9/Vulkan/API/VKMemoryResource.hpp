@@ -126,7 +126,9 @@ public:
 	VkAccessFlags AccessBarrier(CCommandList* pCmdList);
 
 #ifndef _RELEASE
-	bool DebugSetName(const char* szName);
+	void ClearDebugName();
+	bool SetDebugName(const char* szName);
+	std::string GetDebugName() const;
 #endif
 
 protected:

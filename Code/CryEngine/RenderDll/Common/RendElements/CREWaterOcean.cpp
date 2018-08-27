@@ -689,6 +689,7 @@ void CREWaterOcean::UpdatePerDrawCB(water::SCompiledWaterOcean& RESTRICT_REFEREN
 	if (!compiledObj.m_pPerDrawCB)
 	{
 		compiledObj.m_pPerDrawCB = rd->m_DevBufMan.CreateConstantBuffer(sizeof(water::SPerDrawConstantBuffer));
+		if (compiledObj.m_pPerDrawCB) compiledObj.m_pPerDrawCB->SetDebugName("WaterOcean Per-Draw CB");
 	}
 
 	if (!compiledObj.m_pPerDrawCB)

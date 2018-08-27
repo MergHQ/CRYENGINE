@@ -424,6 +424,7 @@ void CREWaterVolume::UpdatePerDrawCB(
 	if (!compiledObj.m_pPerDrawCB)
 	{
 		compiledObj.m_pPerDrawCB = rd->m_DevBufMan.CreateConstantBuffer(sizeof(watervolume::SPerDrawConstantBuffer));
+		if (compiledObj.m_pPerDrawCB) compiledObj.m_pPerDrawCB->SetDebugName("WaterVolume Per-Draw CB");
 	}
 
 	if (!compiledObj.m_pPerDrawCB)

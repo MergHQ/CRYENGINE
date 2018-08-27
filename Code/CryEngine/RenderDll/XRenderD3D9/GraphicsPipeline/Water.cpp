@@ -174,6 +174,7 @@ void CWaterStage::Init()
 	{
 		m_pPerPassResourceSets[i] = GetDeviceObjectFactory().CreateResourceSet(CDeviceResourceSet::EFlags_ForceSetAllState);
 		m_pPerPassCB[i] = gcpRendD3D->m_DevBufMan.CreateConstantBuffer(sizeof(water::SPerPassConstantBuffer));
+		if (m_pPerPassCB[i]) m_pPerPassCB[i]->SetDebugName("WaterStage Per-Pass CB");
 	}
 
 	CRY_ASSERT(m_pFoamTex == nullptr);
@@ -203,6 +204,8 @@ void CWaterStage::Init()
 	m_pOceanCausticsTex = CTexture::ForNamePtr("%ENGINE%/EngineAssets/Textures/caustics_sampler.dds", FT_DONT_STREAM, eTF_Unknown);
 
 	CConstantBufferPtr pCB = gcpRendD3D->m_DevBufMan.CreateConstantBuffer(sizeof(water::SPrimitiveConstants));
+	if (pCB) pCB->SetDebugName("WaterStage Deferred-OceanStencil Per-Primitive CB");
+
 	m_deferredOceanStencilPrimitive[0].SetInlineConstantBuffer(eConstantBufferShaderSlot_PerPrimitive, pCB, EShaderStage_Vertex);
 	m_deferredOceanStencilPrimitive[1].SetInlineConstantBuffer(eConstantBufferShaderSlot_PerPrimitive, pCB, EShaderStage_Vertex);
 

@@ -328,7 +328,11 @@ VkResult CDevice::CreateCommittedResource(EHeapType heapHint, const VkCreateInfo
 template<class CResource>
 VkResult CDevice::DuplicateCommittedResource(CResource* pInputResource, CResource** ppOutputResource) threadsafe
 {
-	return CreateOrReuseCommittedResource<CResource, typename CResource::VkCreateInfo>(pInputResource->GetHeapType(), pInputResource->GetCreateInfo(), ppOutputResource);
+
+	VkResult result = CreateOrReuseCommittedResource<CResource, typename CResource::VkCreateInfo>(pInputResource->GetHeapType(), pInputResource->GetCreateInfo(), ppOutputResource);
+	if (result == VK_SUCCESS)
+		SetDebugName(pInputResource, GetDebugName(*ppOutputResource).c_str());
+	return result;
 }
 
 //---------------------------------------------------------------------------------------------------------------------
@@ -455,6 +459,7 @@ VkResult CDevice::CreateOrReuseCommittedResource(EHeapType HeapHint, const VkCre
 				// Guaranteed O(1) lookup
 				(*ppOutputResource = result->second.front().pObject)->AddRef();
 				VK_ASSERT(result->second.front().pObject->IsUniquelyOwned(), "Ref-Counter of VK resource is not 1, implementation will crash!");
+				ClearDebugName(result->second.front().pObject);
 
 				result->second.pop_front();
 				if (!result->second.size())
@@ -622,6 +627,11 @@ void CDevice::ReleaseLater(const FVAL64 (&fenceValues)[CMDQUEUE_NUM], CResource*
 
 		std::pair<typename TReleaseHeap<CResource>::iterator, bool> result = ReleaseHeap.emplace(pObject, std::move(releaseInfo));
 	}
+
+#if 0	// NOTE: Use the code-fragment to detect resources without names
+	if (GetDebugName(pObject).empty())
+		__debugbreak();
+#endif
 }
 
 //---------------------------------------------------------------------------------------------------------------------

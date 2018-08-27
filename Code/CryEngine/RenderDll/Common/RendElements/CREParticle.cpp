@@ -119,6 +119,9 @@ public:
 		m_pPerDrawCB = gcpRendD3D->m_DevBufMan.CreateConstantBuffer(sizeof(SParticleInstanceCB), true);
 		m_pShaderDataCB = gcpRendD3D->m_DevBufMan.CreateConstantBuffer(sizeof(SParticleShaderData));
 		m_pPerDrawExtraRS = GetDeviceObjectFactory().CreateResourceSet(CDeviceResourceSet::EFlags_ForceSetAllState);
+
+		if (m_pPerDrawCB) m_pPerDrawCB->SetDebugName("Particle Per-Draw CB");
+		if (m_pShaderDataCB) m_pShaderDataCB->SetDebugName("Particle Per-Draw Extra CB");
 	}
 
 // private:

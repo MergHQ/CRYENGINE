@@ -128,11 +128,13 @@ void CTiledLightVolumesStage::Init()
 	if (!m_lightCullInfoBuf.IsAvailable())
 	{
 		m_lightCullInfoBuf.Create(MaxNumTileLights, sizeof(STiledLightCullInfo), DXGI_FORMAT_UNKNOWN, CDeviceObjectFactory::USAGE_CPU_WRITE | CDeviceObjectFactory::USAGE_STRUCTURED | CDeviceObjectFactory::BIND_SHADER_RESOURCE, NULL);
+		m_lightCullInfoBuf.SetDebugName("LightCullInfoBuf");
 	}
 
 	if (!m_lightShadeInfoBuf.IsAvailable())
 	{
 		m_lightShadeInfoBuf.Create(MaxNumTileLights, sizeof(STiledLightShadeInfo), DXGI_FORMAT_UNKNOWN, CDeviceObjectFactory::USAGE_CPU_WRITE | CDeviceObjectFactory::USAGE_STRUCTURED | CDeviceObjectFactory::BIND_SHADER_RESOURCE, NULL);
+		m_lightShadeInfoBuf.SetDebugName("LightShadeInfoBuf");
 	}
 
 	// Tiled Light Volumes ===============================================================
@@ -219,13 +221,14 @@ void CTiledLightVolumesStage::Resize(int renderWidth, int renderHeight)
 	if (!m_tileOpaqueLightMaskBuf.IsAvailable())
 	{
 		m_tileOpaqueLightMaskBuf.Create(dispatchSizeX * dispatchSizeY * 8, 4, DXGI_FORMAT_R32_UINT, CDeviceObjectFactory::BIND_SHADER_RESOURCE | CDeviceObjectFactory::BIND_UNORDERED_ACCESS, NULL);
+		m_tileOpaqueLightMaskBuf.SetDebugName("TileOpaqueLightMaskBuf");
 	}
 
 	if (!m_tileTranspLightMaskBuf.IsAvailable())
 	{
 		m_tileTranspLightMaskBuf.Create(dispatchSizeX * dispatchSizeY * 8, 4, DXGI_FORMAT_R32_UINT, CDeviceObjectFactory::BIND_SHADER_RESOURCE | CDeviceObjectFactory::BIND_UNORDERED_ACCESS, NULL);
+		m_tileTranspLightMaskBuf.SetDebugName("TileTranspLightMaskBuf");
 	}
-
 }
 
 void CTiledLightVolumesStage::Clear()
