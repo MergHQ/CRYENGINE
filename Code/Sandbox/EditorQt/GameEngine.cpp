@@ -1578,7 +1578,7 @@ void CGameEngine::OnEditorNotifyEvent(EEditorNotifyEvent event)
 				m_pEditorGame->OnAfterLevelLoad(m_levelName, m_levelPath);
 			}
 
-			gEnv->pGameFramework->GetILevelSystem()->Rescan("levels", ILevelSystem::TAG_MAIN);
+			gEnv->pGameFramework->GetILevelSystem()->Rescan("", ILevelSystem::TAG_MAIN);
 
 			ILevelInfo* pLevel = gEnv->pGameFramework->GetILevelSystem()->SetEditorLoadedLevel(m_levelName);
 			if (pLevel)
