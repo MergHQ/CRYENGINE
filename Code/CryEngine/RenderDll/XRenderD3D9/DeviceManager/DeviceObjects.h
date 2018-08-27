@@ -113,8 +113,8 @@ public:
 		memset(&m_singleton, 0xdf, sizeof(m_singleton));
 	}
 
-	void OnEndFrame();
-	void OnBeginFrame();
+	void OnEndFrame(int frameID);
+	void OnBeginFrame(int frameID);
 
 	UINT64 QueryFormatSupport(D3DFormat Format);
 
@@ -167,7 +167,7 @@ public:
 
 	void                     ReloadPipelineStates();
 	void                     UpdatePipelineStates();
-	void                     TrimPipelineStates();
+	void                     TrimPipelineStates(int currentFrameID, int trimBeforeFrameID = std::numeric_limits<int>::max());
 
 	////////////////////////////////////////////////////////////////////////////
 	// Input dataset(s) API
@@ -400,16 +400,17 @@ private:
 
 	////////////////////////////////////////////////////////////////////////////
 	// PipelineState API
+	static const int UnusedPsoKeepAliveFrames = MAX_FRAMES_IN_FLIGHT;
 
 	CDeviceGraphicsPSOPtr    CreateGraphicsPSOImpl(const CDeviceGraphicsPSODesc& psoDesc) const;
 	CDeviceComputePSOPtr     CreateComputePSOImpl(const CDeviceComputePSODesc& psoDesc) const;
 
 	CDeviceCommandListUPtr m_pCoreCommandList;
 
-	std::unordered_map<CDeviceGraphicsPSODesc, CDeviceGraphicsPSOWPtr> m_GraphicsPsoCache;
+	std::unordered_map<CDeviceGraphicsPSODesc, CDeviceGraphicsPSOPtr>  m_GraphicsPsoCache;
 	std::unordered_map<CDeviceGraphicsPSODesc, CDeviceGraphicsPSOWPtr> m_InvalidGraphicsPsos;
 
-	std::unordered_map<CDeviceComputePSODesc, CDeviceComputePSOWPtr>   m_ComputePsoCache;
+	std::unordered_map<CDeviceComputePSODesc, CDeviceComputePSOPtr>    m_ComputePsoCache;
 	std::unordered_map<CDeviceComputePSODesc, CDeviceComputePSOWPtr>   m_InvalidComputePsos;
 
 	////////////////////////////////////////////////////////////////////////////

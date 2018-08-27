@@ -981,7 +981,7 @@ void CD3D9Renderer::RT_BeginFrame(const SDisplayContextKey& displayContextKey)
 
 	CResFile::Tick();
 	m_DevBufMan.Update(gRenDev->GetRenderFrameID(), false);
-	GetDeviceObjectFactory().OnBeginFrame();
+	GetDeviceObjectFactory().OnBeginFrame(gRenDev->GetRenderFrameID());
 
 	// Render updated dynamic flash textures
 	CFlashTextureSourceSharedRT::TickRT();
@@ -3286,7 +3286,7 @@ void CD3D9Renderer::RT_EndFrame()
 #endif
 
 	gRenDev->m_DevMan.RT_Tick();
-	GetDeviceObjectFactory().OnEndFrame();
+	GetDeviceObjectFactory().OnEndFrame(gRenDev->GetRenderFrameID());
 
 	gRenDev->m_fRTTimeEndFrame = iTimer->GetAsyncTime().GetDifferenceInSeconds(TimeEndF);
 

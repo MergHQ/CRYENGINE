@@ -25,8 +25,8 @@ CDeviceGraphicsPSO::EInitResult CDeviceGraphicsPSO_DX11::Init(const CDeviceGraph
 {
 	CD3D9Renderer* rd = gcpRendD3D;
 	EInitResult result = EInitResult::Success;
-	m_bValid = false;
-	m_nUpdateCount++;
+	m_isValid = false;
+	m_updateCount++;
 
 	m_pRasterizerState = nullptr;
 	m_pBlendState = nullptr;
@@ -111,7 +111,7 @@ CDeviceGraphicsPSO::EInitResult CDeviceGraphicsPSO_DX11::Init(const CDeviceGraph
 	m_PrimitiveTypeForProfiling = psoDesc.m_PrimitiveType;
 #endif
 
-	m_bValid = true;
+	m_isValid = true;
 	return EInitResult::Success;
 }
 
@@ -124,8 +124,8 @@ CDeviceComputePSO_DX11::CDeviceComputePSO_DX11()
 bool CDeviceComputePSO_DX11::Init(const CDeviceComputePSODesc& psoDesc)
 {
 	CD3D9Renderer* rd = gcpRendD3D;
-	m_bValid = false;
-	m_nUpdateCount++;
+	m_isValid = false;
+	m_updateCount++;
 
 	SDeviceObjectHelpers::THwShaderInfo hwShaders;
 	EShaderStage validShaderStages = SDeviceObjectHelpers::GetShaderInstanceInfo(hwShaders, psoDesc.m_pShader, psoDesc.m_technique, 
@@ -137,6 +137,6 @@ bool CDeviceComputePSO_DX11::Init(const CDeviceComputePSODesc& psoDesc)
 	m_pDeviceShaders[eHWSC_Compute] = hwShaders[eHWSC_Compute].pDeviceShader;
 	m_pHwShaderInstance             = hwShaders[eHWSC_Compute].pHwShaderInstance;
 
-	m_bValid = true;
+	m_isValid = true;
 	return true;
 }

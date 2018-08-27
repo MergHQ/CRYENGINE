@@ -311,17 +311,10 @@ CDeviceGraphicsPSOPtr CDeviceObjectFactory::CreateGraphicsPSO(const CDeviceGraph
 
 	auto it = m_GraphicsPsoCache.find(psoDesc);
 	if (it != m_GraphicsPsoCache.end())
-	{
-		if (auto result = it->second.lock())
-			return result;
-	}
+		return it->second;
 
 	auto pPso = CreateGraphicsPSOImpl(psoDesc);
-
-	if (it == m_GraphicsPsoCache.end())
-		m_GraphicsPsoCache.emplace(psoDesc, pPso);
-	else
-		it->second = pPso;
+	m_GraphicsPsoCache.emplace(psoDesc, pPso);
 
 	if (!pPso->IsValid())
 		m_InvalidGraphicsPsos.emplace(psoDesc, pPso);
@@ -333,17 +326,10 @@ CDeviceComputePSOPtr CDeviceObjectFactory::CreateComputePSO(const CDeviceCompute
 {
 	auto it = m_ComputePsoCache.find(psoDesc);
 	if (it != m_ComputePsoCache.end())
-	{
-		if (auto result = it->second.lock())
-			return result;
-	}
+		return it->second;
 
 	auto pPso = CreateComputePSOImpl(psoDesc);
-
-	if (it == m_ComputePsoCache.end())
-		m_ComputePsoCache.emplace(psoDesc, pPso);
-	else
-		it->second = pPso;
+	m_ComputePsoCache.emplace(psoDesc, pPso);
 
 	if (!pPso->IsValid())
 		m_InvalidComputePsos.emplace(psoDesc, pPso);

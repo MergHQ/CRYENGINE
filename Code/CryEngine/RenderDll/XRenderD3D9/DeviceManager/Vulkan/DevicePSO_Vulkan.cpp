@@ -49,8 +49,8 @@ topologyTypes[] =
 
 CDeviceGraphicsPSO::EInitResult CDeviceGraphicsPSO_Vulkan::Init(const CDeviceGraphicsPSODesc& psoDesc)
 {
-	m_bValid = false;
-	m_nUpdateCount++;
+	m_isValid = false;
+	m_updateCount++;
 
 	if (psoDesc.m_pResourceLayout == nullptr || psoDesc.m_pShader == nullptr)
 		return EInitResult::Failure;
@@ -499,7 +499,7 @@ CDeviceGraphicsPSO::EInitResult CDeviceGraphicsPSO_Vulkan::Init(const CDeviceGra
 	m_PrimitiveTypeForProfiling = psoDesc.m_PrimitiveType;
 #endif
 
-	m_bValid = true;
+	m_isValid = true;
 
 	return EInitResult::Success;
 }
@@ -516,8 +516,8 @@ CDeviceComputePSO_Vulkan::~CDeviceComputePSO_Vulkan()
 
 bool CDeviceComputePSO_Vulkan::Init(const CDeviceComputePSODesc& psoDesc)
 {
-	m_bValid = false;
-	m_nUpdateCount++;
+	m_isValid = false;
+	m_updateCount++;
 
 	if (psoDesc.m_pResourceLayout == nullptr || psoDesc.m_pShader == nullptr)
 		return false;
@@ -556,7 +556,7 @@ bool CDeviceComputePSO_Vulkan::Init(const CDeviceComputePSODesc& psoDesc)
 		return false;
 
 	m_pHwShaderInstance = hwShaders[eHWSC_Compute].pHwShaderInstance;
-	m_bValid = true;
+	m_isValid = true;
 
 	return true;
 }
