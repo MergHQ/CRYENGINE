@@ -33,10 +33,10 @@
 			"description"    : "Control number of processes spawned by Incredibuild"
 		},
 		{
-			"long_form"      : "--run-ib-as-service",
-			"attribute"      : "run_ib_as_service",
+			"long_form"      : "--incredibuild-use_experimental-pipeline",
+			"attribute"      : "incredibuild_use_experimental_pipeline",
 			"default_value"  : "False",
-			"description"    : "(Experimental) Emulates IB multicore licence"
+			"description"    : "(Experimental) Use local host cores as well as network agent cores"
 		}
 	],
 

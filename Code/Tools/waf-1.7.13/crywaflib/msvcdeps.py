@@ -244,6 +244,8 @@ def wrap_compiled_task(classname):
                         self.msvcdeps_paths.append(inc_path)
                         if self.generator.bld.is_option_true('show_includes'):
                             out.append(line)
+                    elif line.startswith('{{xgTaskID'):
+                        continue
                     else:
                         out.append(line)
 
@@ -258,7 +260,7 @@ def wrap_compiled_task(classname):
                     if self.generator.bld.logger:
                         self.generator.bld.logger.debug('out: %s' % '\n'.join(out))
                     else:										
-                        sys.stdout.write(os.linesep.join(out) + '\n')
+                        sys.stdout.write('\n' + '\n'.join(out) + '\n\n')
 
             finally:
                 if tmp:

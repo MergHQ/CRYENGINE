@@ -9,73 +9,29 @@ import threading
 import sys
 import Queue
 import subprocess
+import multiprocessing
 
 import os
 import socket
 import atexit
-import signal
+
+import remote_task
 
 try:
 	import _winreg
 except:
 	pass
 
-# Incredibuild Workaround:
-#
-# Xoreax Support ticket: #DMS-651-80979
-#
-# Description:
-# Incredibuild has issues with the clang C compiler (clang.exe). The C++ compiler (clang++.exe ) works fine.
-# This issue has been observed when compiling with the Android NDK r16b clang compiler toolchain.
-# The same command line executes correctly if build locally without IB.
-#
-# Workaround:
-# Replace all "\\" in the cmd line with "/"
-#
-# Example:
-# Cmd (simplified) :  clang.exe -Ic:\\Foo c:\\Project\my_c_file.c -c -o c:\\Project\my_object_file.o
-# Error produced   :  clang.exe : error : no such file or directory: 'c:Projectmy_c_file.c'
-use_incredibuild_workaround = True
-	
-class Local_CommandCoordinator(object):
-		
-	def execute_command(self, cmd, **kw):
-
-		# Replace all "\\" with "/" in command line	
-		if use_incredibuild_workaround:
-			if isinstance(cmd,list):				
-				cmd[:] = [w.replace('\\\\', '/').replace('\\', '/') for w in cmd] #inplace so on error we get the same string
-			else:
-				cmd = cmd.replace('\\\\', '/').replace('\\', '/') # strings are imutable so we need to create a temp string
-
- 		try:
-			if kw['stdout'] or kw['stderr']:
-				p = subprocess.Popen(cmd, **kw)
-				(out, err) = p.communicate() # [blocking]
-				ret = p.returncode
-			else:
-				out, err = (None, None)
-				ret = subprocess.Popen(cmd, **kw).wait()
-		except Exception as e:
-			raise Errors.WafError('Execution failure: %s (%s)' % (str(e), cmd), ex=e)
-
-		# strip IB xgTaskTags (temp, Xoreax is aware and is fixing the issue)
-		task_id = '{{xgTaskID=00000000}}\r\n'
-		task_id_len = len(task_id)		
-		
-		if out.endswith(task_id):
-			out = out[:-task_id_len]
-
-		if err.endswith(task_id):
-			err = err[:-task_id_len]
-	
-		return (ret, out, err)
-		
 ###########################################
 ################## IB #######################
 ###########################################
-socket_port = 3288
-command_end_keyword = "!end"
+
+remote_task_process = None
+
+def close_process(process):
+	if process:
+		process.kill()
+		outs, errs = process.communicate()
 
 @Utils.memoize
 def get_ib_folder():
@@ -85,10 +41,57 @@ def get_ib_folder():
 	
 @Utils.memoize
 def get_ib_licence_string():
-	result = subprocess.check_output( [ str(get_ib_folder())+ '/xgconsole.exe', '/QUERYLICENSE'])
+	result = subprocess.check_output( [ str(get_ib_folder())+ '/BuildConsole.exe', '/QueryLicense'])
 	return result
 
-def execute_waf_via_ib(bld):	
+def execute_waf_through_ib(bld, ib_folder, ib_executable, ib_extra_commands, has_multi_core_license):
+	
+	# Setup command coordinator	
+	bld.cmd_coordinator = remote_task.Local_CommandCoordinator()
+	
+	# Build Command Line
+	cmd_line_args = []
+	for arg in sys.argv[1:]:
+		if arg != 'generate_uber_files':
+			cmd_line_args += [ arg ]
+			
+	cmd_line_args.append('--internal-dont-check-recursive-execution=True') # Add special option to not start IB from within IB
+	command_line_options = ' '.join(cmd_line_args) # Recreate command line
+	cry_waf = bld.path.make_node('Code/Tools/waf-1.7.13/bin/cry_waf.exe')
+	command = cry_waf.abspath() + ' ' + command_line_options
+
+	try:
+		p = subprocess.Popen ([ '%s/%s' % (str(ib_folder), ib_executable), "/command=" + command, "/useidemonitor", "/nologo", "/MaxCPUS=250"] + ib_extra_commands)
+	except:
+		raise BuildError()
+
+	p.wait()
+		
+def execute_ib_as_remote_service(bld, ib_folder, ib_executable, ib_extra_commands, has_multi_core_license):
+
+	# Setup command coordinator	
+	max_local_waf_jobs = 0 if has_multi_core_license else bld.jobs # If we have a multicore licence allow IB to schedule local tasks. Otherwise allow WAF to do so
+	bld.jobs = bld.options.jobs =  int(bld.options.incredibuild_max_cores) + max_local_waf_jobs
+	bld.cmd_coordinator = remote_task.IB_CommandCoordinator_Client(max_local_waf_jobs)
+	bld.is_build_master = True
+	
+	# Build Command Line
+	command =  bld.path.make_node('Code/Tools/waf-1.7.13/bin/cry_waf_remote_task.exe').abspath() + ' --use_socket=' + str(bld.cmd_coordinator.get_active_socket())
+	
+	# Get correct incredibuild installation folder to not depend on PATH
+	ib_folder = get_ib_folder()
+	
+	if max_local_waf_jobs > 0:
+		ib_extra_commands.append("/AvoidLocal=On")		
+	
+	try:
+		remote_task_process = subprocess.Popen (['%s/%s' % (str(ib_folder), ib_executable), "/command=" + command, "/useidemonitor", "/nologo", "/MaxCPUS=250"] + ib_extra_commands)
+	except:
+		raise BuildError()
+						
+	atexit.register(close_process, remote_task_process)
+
+def init_ib_client(bld):	
 	# Check if we can execute remotely with our current licenses	
 	if not bld.is_option_true('use_incredibuild_win') and ('win32' in bld.cmd or 'win64' in bld.cmd):
 		Logs.warn('[WARNING] Incredibuild for Windows targets disabled by build option')
@@ -106,7 +109,7 @@ def execute_waf_via_ib(bld):
 		Logs.warn('[WARNING] Incredibuild for Orbis targets disabled by build option')
 		return False
 	
-	result = get_ib_licence_string()
+	result = get_ib_licence_string()	
 	
 	has_make_and_build_license = 'Make && Build Tools' in result
 	has_dev_tools_acceleration_license = 'Dev Tools Acceleration' in result	
@@ -123,34 +126,13 @@ def execute_waf_via_ib(bld):
 	#if not 'Xbox One' in result and 'durango' in bld.cmd:
 	#	Logs.warn('Xbox One Extension Package not found! Incredibuild will build locally only.')
 
-	cmd_line_args = []
-	for arg in sys.argv[1:]:
-		if arg == 'generate_uber_files':
-			continue
-		cmd_line_args += [ arg ]
-
-	command_line_options = ' '.join(cmd_line_args) # Recreate command line
-    
-	# Add special option to not start IB from within IB
-	command_line_options += ' --internal-dont-check-recursive-execution=True'
-	
-	# Build Command Line
-	cry_waf = bld.path.make_node('Code/Tools/waf-1.7.13/bin/cry_waf.exe')
-	command = cry_waf.abspath() + ' ' + command_line_options
-	
-	if bld.is_option_true('run_ib_as_service'):
-		Logs.info('[WAF] Starting Incredibuild as "Build Service"')
-		allow_local = "/AvoidLocal=On"
-	else:
-		Logs.info('[WAF] Starting Incredibuild as "Build Master"')
-		allow_local = "/AvoidLocal=Off"
-		
-	if not has_multi_core_license:
-		allow_local = "/AvoidLocal=On"
-		
 	# Get correct incredibuild installation folder to not depend on PATH
 	ib_folder = get_ib_folder()	
-		
+	ib_executable = 'xgconsole.exe' if has_dev_tools_acceleration_license else 'BuildConsole.exe'
+	ib_extra_commands = ['/profile=Code\\Tools\\waf-1.7.13\\profile.xml'] if has_dev_tools_acceleration_license else []
+	
+	"/profile=Code\\Tools\\waf-1.7.13\\profile.xml",
+	
 	# Cancel any other IB build		
 	try:
 		p = subprocess.check_output([ str(ib_folder) + '/BuildConsole.exe', "/stop", "/nologo"])
@@ -159,161 +141,39 @@ def execute_waf_via_ib(bld):
 		# However in pratice the process ends with a 0 value as no exception is raised by subprocess check_output.
 		pass
 
-	if (has_dev_tools_acceleration_license and not has_make_and_build_license) or 'cppcheck' in bld.variant:
-		try:			
-			p = subprocess.Popen ([str(ib_folder) + '/xgconsole.exe', "/command=" + command, "/profile=Code\\Tools\\waf-1.7.13\\profile.xml", "/useidemonitor", "/nologo", allow_local])
-		except:
-			raise BuildError()
-	else:	
-		try:
-			p = subprocess.Popen ([ str(ib_folder) + '/BuildConsole.exe', "/command=" + command, "/useidemonitor", "/nologo", "/MaxCPUS=250", allow_local])
-		except:
-			raise BuildError()
-			
-	if not bld.instance_is_build_master():
-		sys.exit(p.wait())
+	if bld.is_option_true('incredibuild_use_experimental_pipeline'):
+		execute_ib_as_remote_service(bld, ib_folder, ib_executable, ib_extra_commands, has_multi_core_license)		
+	else:		
+		execute_waf_through_ib(bld, ib_folder, ib_executable, ib_extra_commands, has_multi_core_license)
 		
 	return True
 
-def handle_connection_thread(client_connection):
-	socket_data_str = ''
-	
-	while True:
-		# Receive data 
-		data = client_connection.recv(4096) # [blocking]
-		socket_data_str += data
-		# Check for end command token
-		if socket_data_str.endswith(command_end_keyword):
-			socket_data_str = socket_data_str[:-len(command_end_keyword)]
-			break
-
-	# Load and execute command
-	(cmd, kw) = pickle.loads(socket_data_str)
-			
-	command_coordinator = Local_CommandCoordinator()
-	(ret, out, err) = command_coordinator.execute_command(cmd, **kw)
-	
-	# Sent executed command reponse
-	pickle_str = pickle.dumps((ret, out, err))
-	client_connection.sendall(pickle_str)
-		
-	# Close connection
-	client_connection.close()
-		
-#### SERVER####
-class IB_CommandCoordinator_Server(object):		
-	def enter_command_loop(self, bld):
-		serversocket = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
-		serversocket.bind(('localhost', socket_port))
-		serversocket.listen(1024) 
-
-		while True:
-			# Wait for connection
-			client_connection, client_address = serversocket.accept() # [blocking]
-			thread.start_new_thread(handle_connection_thread, (client_connection,))
-
-class IB_CommandCoordinator_Client(Local_CommandCoordinator):
-
-	def __init__(self, bld):	
-		
-		self.ib_remote_executables = {
-		os.path.basename(bld.env['CXX']): True,
-		os.path.basename(bld.env['CC'])  : True
-		}	
-
-	def execute_command(self, cmd, **kw):	
-		# Commands that can be executed remotly
-		if self.ib_remote_executables.get(os.path.basename(cmd[0]), False): 
-			(ret, out, err) = self.submit_remote_command(cmd, **kw)
-			
-			#if ret == 0:
-			#	if basename in ['rcc.exe']:			
-			#		self.submit_remote_command(['F:\P4\CE_STREAMS\BinTemp\touch.bat', cmd[-1]] , **kw)
-			#	elif basename in ['moc.exe']:
-			#		self.submit_remote_command(['F:\P4\CE_STREAMS\BinTemp\touch.bat', cmd[-2][2:]] , **kw)			
-		else:
-			(ret, out, err) = super(IB_CommandCoordinator_Client, self).execute_command(cmd, **kw)
-
-		return (ret, out, err)		
-		
-	def submit_remote_command(self, cmd, **kw):
-		# Try to connect
-		clientsocket = None
-		while True:
-			try:
-				clientsocket = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
-				clientsocket.connect(('localhost', socket_port))
-				break
-			except:
-				continue
-				
-		# Send command to server
-		cmd_tuple = (cmd, kw)
-		pickle_string = pickle.dumps(cmd_tuple)
-		clientsocket.sendall(pickle_string + command_end_keyword)
-		
-		# Wait for server response
-		answer_str = ''
-		while True:
-			data = clientsocket.recv(4096) # [blocking]
-			if not data:  # check for closed connection
-				break			
-			answer_str += data
-		clientsocket.close()
-		
-		# return response
-		return pickle.loads(answer_str)	
-		
 ############
 ### IB END ###
 ############
 
 @conf
-def set_cmd_coordinator(conf, coordinator_name):
-
-	if coordinator_name == 'Local':
-		conf.is_build_master = True
-		conf.cmd_coordinator = Local_CommandCoordinator()		
-	elif coordinator_name == 'IB':		
-		jobs_backup = conf.jobs
-		conf.options.jobs =  int(conf.options.incredibuild_max_cores) + conf.options.jobs 
-		conf.jobs = conf.options.jobs
-		
-		# If a multi core licence is available, run IB as build master		
-		run_ib_as_service = conf.is_option_true('run_ib_as_service')
-		is_recursive_ib_instance = conf.is_option_true('internal_dont_check_recursive_execution')		
-		
-		if not is_recursive_ib_instance:
-			if run_ib_as_service and "Cores" in get_ib_licence_string():
-				Logs.warn('Incredibuild multicore licence detected. Consider disabling "run_ib_as_service" for faster build times.')
-
-			conf.is_build_master = run_ib_as_service
-
-			if not execute_waf_via_ib(conf):
-				conf.is_build_master = True
-				conf.options.jobs = jobs_backup
-				conf.jobs = jobs_backup
-				return
-
-			if run_ib_as_service:
-				conf.cmd_coordinator = IB_CommandCoordinator_Client(conf)
-				
-		elif run_ib_as_service:
-			Logs.info("[WAF] Run Incredibuild as a service")
-			conf.is_build_master = False
-			conf.cmd_coordinator = IB_CommandCoordinator_Server()
-			conf.cmd_coordinator.enter_command_loop(conf)
-		else:
-			conf.is_build_master = True
-			conf.cmd_coordinator = Local_CommandCoordinator()
-
-@conf
 def instance_is_build_master(conf):
 	return conf.is_build_master
+
+@conf
+def set_cmd_coordinator(bld, coordinator_name):
+	
+	# Number of paralle tasks
+	bld.jobs = bld.options.jobs = multiprocessing.cpu_count() - 2
+	
+	if coordinator_name == 'IB':			
+		Logs.info("[WAF] Run Incredibuild")
+		ib_successfully_initialized = init_ib_client(bld)		
+	
+	if coordinator_name == 'Local' or not ib_successfully_initialized:
+		bld.cmd_coordinator = remote_task.Local_CommandCoordinator()
 	
 @conf
 def setup_command_coordinator(bld):
-	coordinator = 'Local'
+	
+	bld.is_build_master = True
+	coordinator = 'Local'	
 	if not Utils.unversioned_sys_platform() == 'win32':
 		bld.set_cmd_coordinator('Local') # Don't use recursive execution on non-windows hosts
 		return
@@ -322,13 +182,19 @@ def setup_command_coordinator(bld):
 		bld.set_cmd_coordinator('Local')
 		return
 
-	# Don't use IB for special single file operations
-	if bld.is_option_true('show_includes') or bld.is_option_true('show_preprocessed_file') or bld.is_option_true('show_disassembly') or bld.options.file_filter != "":
-		bld.set_cmd_coordinator('Local')
-		return
+	## Don't use IB for special single file operations
+	#if bld.is_option_true('show_includes') or bld.is_option_true('show_preprocessed_file') or bld.is_option_true('show_disassembly') or bld.options.file_filter != "":
+	#	bld.set_cmd_coordinator('Local')
+	#	return
 		
-	if  bld.is_option_true('use_incredibuild'):
+	if bld.is_option_true('internal_dont_check_recursive_execution'):
+		bld.set_cmd_coordinator('Local')
+		bld.jobs = bld.options.jobs =  int(bld.options.incredibuild_max_cores)
+		return
+			
+	if bld.is_option_true('use_incredibuild'):
 		bld.set_cmd_coordinator('IB')
+		bld.is_build_master = bld.is_option_true('incredibuild_use_experimental_pipeline')
 		return
 	else:
 		Logs.warn('[WARNING] Incredibuild disabled by build option')
