@@ -150,7 +150,10 @@ void CFullscreenPass::UpdatePrimitive()
 		int viewInfoCount = gcpRendD3D.GetGraphicsPipeline().GetViewInfoCount();
 
 		if (!m_pPerViewConstantBuffer)
+		{
 			m_pPerViewConstantBuffer = gcpRendD3D->m_DevBufMan.CreateConstantBuffer(sizeof(HLSL_PerViewGlobalConstantBuffer));
+			if (m_pPerViewConstantBuffer) m_pPerViewConstantBuffer->SetDebugName("FullscreenPass Per-View CB");
+		}
 		
 		SRenderViewport customViewport(0,0,nRenderTargetWidth,nRenderTargetHeight);
 		gcpRendD3D.GetGraphicsPipeline().GeneratePerViewConstantBuffer(&viewInfo, viewInfoCount, m_pPerViewConstantBuffer,&customViewport);

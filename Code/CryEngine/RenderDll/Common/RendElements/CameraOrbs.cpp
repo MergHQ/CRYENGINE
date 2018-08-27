@@ -82,6 +82,8 @@ CameraOrbs::CameraOrbs(const char* name, const int numOrbs)
 
 	// share one constant buffer between both primitives
 	CConstantBufferPtr pSharedCB = gcpRendD3D->m_DevBufMan.CreateConstantBuffer(sizeof(SShaderParams), true, true);
+	if (pSharedCB) pSharedCB->SetDebugName("CameraOrbs Per-Primitive CB");
+
 	m_GlowPrimitive.SetInlineConstantBuffer(eConstantBufferShaderSlot_PerPrimitive,       pSharedCB, EShaderStage_Vertex | EShaderStage_Pixel);
 	m_CameraLensPrimitive.SetInlineConstantBuffer(eConstantBufferShaderSlot_PerPrimitive, pSharedCB, EShaderStage_Vertex | EShaderStage_Pixel);
 }

@@ -44,7 +44,10 @@ CConstantBufferPtr CRenderObjectsPools::AllocatePerDrawConstantBuffer()
 		"HLSL_PerDrawConstantBuffer_TerrainVegetation has not the largest constant buffer size."
 	);
 
-	return gcpRendD3D->m_DevBufMan.CreateConstantBuffer(sizeof(HLSL_PerDrawConstantBuffer_TeVe));
+	auto pCB = gcpRendD3D->m_DevBufMan.CreateConstantBuffer(sizeof(HLSL_PerDrawConstantBuffer_TeVe));
+	if (pCB) pCB->SetDebugName("Generic Per-Draw CB");
+
+	return pCB;
 }
 
 //////////////////////////////////////////////////////////////////////////
@@ -375,6 +378,7 @@ void CCompiledRenderObject::CompilePerInstanceCB(CRenderObject* pRenderObject, b
 	if (pCB)
 	{
 		pCB->UpdateBuffer(tempInstanceBuffer, nSize);
+		pCB->SetDebugName("Generic Per-Instance CB");
 		m_pInstancingConstBuffer = std::move(pCB);
 	}
 }

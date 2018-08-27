@@ -14,8 +14,7 @@ extern int g_nPrintDX11;
 #define DX11_NEW_RAW(ctor) NCryDX11::PassAddRef(new ctor)
 
 #ifdef _DEBUG
-
-	#define DX11_FUNC_LOG do {                        \
+	#define DX11_FUNC_LOG do {                          \
 		if (g_nPrintDX11)                               \
 		{ CryLog("DX11 function call: %s", __FUNC__); } \
 	} while (0);

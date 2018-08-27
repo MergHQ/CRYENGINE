@@ -161,7 +161,12 @@ VkAccessFlags CMemoryResource::AccessBarrier(CCommandList* pCmdList)
 
 #ifndef _RELEASE
 
-bool CMemoryResource::DebugSetName(const char* szName)
+void CMemoryResource::ClearDebugName()
+{
+	VK_NOT_IMPLEMENTED;
+}
+
+bool CMemoryResource::SetDebugName(const char* szName)
 {
 	if (Extensions::EXT_debug_marker::IsSupported)
 	{
@@ -192,6 +197,12 @@ bool CMemoryResource::DebugSetName(const char* szName)
 	}
 
 	return false;
+}
+
+std::string CMemoryResource::GetDebugName() const
+{
+	VK_NOT_IMPLEMENTED;
+	return "";
 }
 
 #endif

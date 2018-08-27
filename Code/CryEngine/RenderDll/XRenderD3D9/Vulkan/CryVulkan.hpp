@@ -39,3 +39,49 @@ HRESULT WINAPI VKCreateDevice(
 bool VKCreateSDLWindow(const char* szTitle, uint32 uWidth, uint32 uHeight, bool bFullScreen, HWND* pHandle);
 void VKDestroySDLWindow(HWND kHandle);
 #endif
+
+///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+
+template<class ID3D11DeviceChildDerivative>
+inline void ClearDebugName(ID3D11DeviceChildDerivative* pWrappedResource)
+{
+#if !defined(RELEASE) && CRY_PLATFORM_WINDOWS
+	if (!pWrappedResource)
+		return;
+
+	return pWrappedResource->ClearDebugName();
+#endif
+}
+
+template<class ID3D11DeviceChildDerivative>
+inline void SetDebugName(ID3D11DeviceChildDerivative* pWrappedResource, const char* name, ...)
+{
+#if !defined(RELEASE) && CRY_PLATFORM_WINDOWS
+	if (!pWrappedResource)
+		return;
+
+	va_list args;
+	va_start(args, name);
+
+	char* buffer = (char*)_alloca(512);
+	if (_vsnprintf(buffer, 512, name, args) < 0)
+		return;
+
+	pWrappedResource->SetDebugName(buffer);
+
+	va_end(args);
+#endif
+}
+
+template<class ID3D11DeviceChildDerivative>
+inline std::string GetDebugName(ID3D11DeviceChildDerivative* pWrappedResource)
+{
+#if !defined(RELEASE) && CRY_PLATFORM_WINDOWS
+	if (!pWrappedResource)
+		return "nullptr";
+
+	return pWrappedResource->GetDebugName();
+#endif
+
+	return "";
+}

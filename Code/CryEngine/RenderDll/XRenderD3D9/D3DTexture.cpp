@@ -302,17 +302,8 @@ bool CTexture::RT_CreateDeviceTexture(const SSubresourceData& pData)
 	if (!(m_pDevTexture = CDeviceTexture::Create(TL, bHasPayload ? &TI : nullptr)))
 		return false;
 
-	if (m_pDevTexture)
-	{
-		// Assign name to Texture for enhanced debugging
-#if !defined(RELEASE) && (CRY_PLATFORM_WINDOWS || CRY_PLATFORM_ORBIS)
-#if CRY_RENDERER_VULKAN || CRY_PLATFORM_ORBIS
-		m_pDevTexture->GetBaseTexture()->DebugSetName(m_SrcName.c_str());
-#else
-		m_pDevTexture->GetBaseTexture()->SetPrivateData(WKPDID_D3DDebugObjectName, strlen(m_SrcName.c_str()), m_SrcName.c_str());
-#endif
-#endif
-	}
+	// Assign name to Texture for enhanced debugging
+	m_pDevTexture->SetDebugName(m_SrcName);
 
 	assert(!IsStreamed());
 

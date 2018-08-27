@@ -24,6 +24,7 @@ CLensGhost::CLensGhost(const char* name, CTexture* externalTex)
 	, m_pTex(externalTex)
 {
 	CConstantBufferPtr pcb = gcpRendD3D->m_DevBufMan.CreateConstantBuffer(sizeof(SShaderParams), true, true);
+	if (pcb) pcb->SetDebugName("LensGhost Per-Primitive CB");
 
 	m_primitive.SetInlineConstantBuffer(eConstantBufferShaderSlot_PerPrimitive, pcb, EShaderStage_Vertex | EShaderStage_Pixel);
 }

@@ -55,6 +55,7 @@ public:
 			m_useList.emplace_front(gRenDev->m_DevBufMan.CreateConstantBuffer(BufferSize));
 		else
 			m_useList.splice_after(m_useList.before_begin(), m_freeList, m_freeList.before_begin());
+
 		return *m_useList.begin();
 	}
 

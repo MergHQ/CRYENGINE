@@ -769,6 +769,7 @@ void CDeviceTexture::DownloadToStagingResource(uint32 nSubRes, StagingHook cbTra
 	if (!(pStagingResource = m_pStagingResource[0]))
 	{
 		pStagingResource = GetDeviceObjectFactory().AllocateStagingResource(m_pNativeResource, FALSE, pStagingMemory);
+		::SetDebugName(pStagingResource, "%s Write-StagingB", ::GetDebugName(pStagingResource).c_str());
 	}
 
 	assert(pStagingResource);
@@ -817,6 +818,7 @@ void CDeviceTexture::UploadFromStagingResource(const uint32 nSubRes, StagingHook
 	if (!(pStagingResource = m_pStagingResource[1]))
 	{
 		pStagingResource = GetDeviceObjectFactory().AllocateStagingResource(m_pNativeResource, TRUE, pStagingMemory);
+		::SetDebugName(pStagingResource, "%s Read-StagingB", ::GetDebugName(pStagingResource).c_str());
 	}
 	else
 	{

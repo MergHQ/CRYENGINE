@@ -251,8 +251,15 @@ void SDeviceObjectHelpers::CShaderConstantManager::InitShaderReflection(CDeviceG
 
 		if (bufferSize)
 		{
-			m_constantBuffers[updateContext.bufferIndex].pBuffer = gcpRendD3D->m_DevBufMan.CreateConstantBuffer(bufferSize);
-			allBuffersValid &= m_constantBuffers[updateContext.bufferIndex].pBuffer->UpdateBuffer(zeroMem, updateSize);
+			if ((m_constantBuffers[updateContext.bufferIndex].pBuffer = gcpRendD3D->m_DevBufMan.CreateConstantBuffer(bufferSize)))
+			{
+				m_constantBuffers[updateContext.bufferIndex].pBuffer->SetDebugName("PSO Auto/Reflected Per-Draw CB");
+				allBuffersValid &= m_constantBuffers[updateContext.bufferIndex].pBuffer->UpdateBuffer(zeroMem, updateSize);
+			}
+			else
+			{
+				allBuffersValid &= false;
+			}
 		}
 	}
 
@@ -271,6 +278,7 @@ void SDeviceObjectHelpers::CShaderConstantManager::InitShaderReflection(CDeviceC
 
 	CRY_ASSERT(pInstance->m_nMaxVecs[eConstantBufferShaderSlot_PerDraw] > 0);           // No per batch shader constants. Shader reflection not required.
 
+	bool bufferValid = true;
 	if (pInstance->m_nMaxVecs[eConstantBufferShaderSlot_PerDraw] > 0)
 	{
 		CryStackAllocWithSizeVectorCleared(Vec4, pInstance->m_nMaxVecs[eConstantBufferShaderSlot_PerDraw], zeroMem, CDeviceBufferManager::AlignBufferSizeForStreaming);
@@ -278,11 +286,21 @@ void SDeviceObjectHelpers::CShaderConstantManager::InitShaderReflection(CDeviceC
 		const size_t bufferSize = sizeof(Vec4) * pInstance->m_nMaxVecs[eConstantBufferShaderSlot_PerDraw];
 		const size_t updateSize = CDeviceBufferManager::AlignBufferSizeForStreaming(bufferSize);
 
-		m_constantBuffers[updateContext.bufferIndex].pBuffer = gcpRendD3D->m_DevBufMan.CreateConstantBuffer(bufferSize);
-		m_constantBuffers[updateContext.bufferIndex].pBuffer->UpdateBuffer(zeroMem, updateSize);
-
-		m_pShaderReflection->bValid = true;
+		if (bufferSize)
+		{
+			if ((m_constantBuffers[updateContext.bufferIndex].pBuffer = gcpRendD3D->m_DevBufMan.CreateConstantBuffer(bufferSize)))
+			{
+				m_constantBuffers[updateContext.bufferIndex].pBuffer->SetDebugName("PSO Auto/Reflected Per-Draw CB");
+				bufferValid = m_constantBuffers[updateContext.bufferIndex].pBuffer->UpdateBuffer(zeroMem, updateSize);
+			}
+			else
+			{
+				bufferValid = false;
+			}
+		}
 	}
+
+	m_pShaderReflection->bValid = bufferValid;
 }
 
 void SDeviceObjectHelpers::CShaderConstantManager::ReleaseShaderReflection()

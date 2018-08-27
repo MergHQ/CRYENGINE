@@ -323,6 +323,7 @@ void CVolumetricFogStage::Init()
 	{
 		m_pSceneRenderPassResourceSet = GetDeviceObjectFactory().CreateResourceSet(CDeviceResourceSet::EFlags_ForceSetAllState);
 		m_pSceneRenderPassCB = gcpRendD3D->m_DevBufMan.CreateConstantBuffer(sizeof(SVolFogSceneRenderPassConstantBuffer));
+		if (m_pSceneRenderPassCB) m_pSceneRenderPassCB->SetDebugName("VolumetricFogStage Per-Pass CB");
 
 		bool bSuccess = PreparePerPassResources(true);
 		CRY_ASSERT(bSuccess);

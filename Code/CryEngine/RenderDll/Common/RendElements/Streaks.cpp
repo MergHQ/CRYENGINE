@@ -48,6 +48,7 @@ Streaks::Streaks(const char* name)
 	m_meshDirty = true;
 
 	m_constantBuffer = gcpRendD3D->m_DevBufMan.CreateConstantBuffer(sizeof(SShaderParams), true, true);
+	if (m_constantBuffer) m_constantBuffer->SetDebugName("Streaks Per-Primitive CB");
 	m_indexBuffer = ~0u;
 }
 

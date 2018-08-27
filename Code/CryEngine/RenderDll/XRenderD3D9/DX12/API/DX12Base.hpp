@@ -45,7 +45,6 @@ extern int g_nPrintDX12;
 #define DX12_FENCE_ANALYZER            false
 #define DX12_BARRIER_ANALYZER          false
 
-
 // Extract lowest set isolated bit "intrinsic" -> _blsi_u32 (Jaguar == PS4|XO, PileDriver+, Haswell+)
 #define blsi(field) (field & (-static_cast<INT>(field)))
 

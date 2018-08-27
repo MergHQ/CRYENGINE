@@ -62,6 +62,7 @@ void CDeferredDecalsStage::ResizeDecalBuffers(size_t requiredDecalCount)
 		for (int i = allocatedDecalCount; i < requiredDecalCount; ++i)
 		{
 			CConstantBufferPtr pCB = gcpRendD3D->m_DevBufMan.CreateConstantBuffer(sizeof(SDecalConstants));
+			if (pCB) pCB->SetDebugName("DeferredDecals Per-Primitive CB");
 
 			m_decalPrimitives.emplace_back();
 			m_decalPrimitives.back().SetInlineConstantBuffer(eConstantBufferShaderSlot_PerPrimitive, pCB, EShaderStage_Pixel | EShaderStage_Vertex);

@@ -234,6 +234,8 @@ void CSwapChain::AcquireBuffers()
 			m_BackBuffers[i].Init(pResource12, D3D12_RESOURCE_STATE_PRESENT);
 			m_BackBuffers[i].SetDX12SwapChain(this);
 
+			SetDebugName(pResource12, "SwapChain %08x, Buffer %x", (UINT64)m_pDXGISwapChain.get(), i);
+
 			ULONG refCount = pResource12->Release();
 
 #if !defined(RELEASE) && defined(I_WONT_USE_THE_FRAME_DEBUGGER)

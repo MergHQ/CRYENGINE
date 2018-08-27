@@ -785,21 +785,11 @@ void CShaderResources::RT_UpdateConstants(IShader* pISH)
 		// NOTE: The pointers and the size is 16 byte aligned
 		size_t nSize = m_Constants.size() * sizeof(Vec4);
 
-		m_pConstantBuffer = gcpRendD3D->m_DevBufMan.CreateConstantBuffer(nSize, false);
-		m_pConstantBuffer->UpdateBuffer(&m_Constants[0], Align(nSize, 256));
-
-#if !defined(_RELEASE) && (CRY_PLATFORM_WINDOWS || CRY_PLATFORM_ORBIS) && !CRY_RENDERER_GNM
-		if (m_pConstantBuffer)
+		if ((m_pConstantBuffer = gcpRendD3D->m_DevBufMan.CreateConstantBuffer(nSize, false)))
 		{
-			string name = string("PM CBuffer ") + pSH->GetName() + "@" + m_szMaterialName;
-
-			#if CRY_RENDERER_VULKAN || CRY_PLATFORM_ORBIS
-				m_pConstantBuffer->GetD3D()->DebugSetName(name.c_str());
-			#else
-				m_pConstantBuffer->GetD3D()->SetPrivateData(WKPDID_D3DDebugObjectName, (UINT)name.length(), name.c_str());
-			#endif
+			m_pConstantBuffer->UpdateBuffer(&m_Constants[0], Align(nSize, 256));
+			m_pConstantBuffer->SetDebugName(string("Generic Per-Material CB ") + pSH->GetName() + "@" + m_szMaterialName);
 		}
-#endif
 	}
 
 

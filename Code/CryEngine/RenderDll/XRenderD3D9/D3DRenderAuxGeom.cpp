@@ -436,17 +436,6 @@ HRESULT CRenderAuxGeomD3D::CreateMesh(SDrawObjMesh& mesh, TMeshFunc meshFunc)
 	gcpRendD3D->m_DevBufMan.UpdateBuffer(mesh.m_pVB, &vb[0], vb.size() * sizeof(SAuxObjVertex));
 	gcpRendD3D->m_DevBufMan.UpdateBuffer(mesh.m_pIB, &ib[0], ib.size() * sizeof(vtx_idx));
 
-#if !defined(RELEASE) && CRY_PLATFORM_WINDOWS
-	{
-		buffer_size_t vbOffset = 0, ibOffset = 0;
-		D3DVertexBuffer* vbAux = gcpRendD3D->m_DevBufMan.GetD3DVB(mesh.m_pVB, &vbOffset);
-		D3DIndexBuffer * ibAux = gcpRendD3D->m_DevBufMan.GetD3DIB(mesh.m_pIB, &ibOffset);
-
-		vbAux->SetPrivateData(WKPDID_D3DDebugObjectName, strlen("Aux Geom Mesh"), "Aux Geom Mesh");
-		ibAux->SetPrivateData(WKPDID_D3DDebugObjectName, strlen("Aux Geom Mesh"), "Aux Geom Mesh");
-	}
-#endif
-
 	// write mesh info
 	mesh.m_numVertices = vb.size();
 	mesh.m_numFaces = ib.size() / 3;
@@ -680,6 +669,7 @@ void CRenderAuxGeomD3D::DrawAuxPrimitives(const CAuxGeomCB::SAuxGeomCBRawData& r
 			cbPrimObj->invScreenDim.x = 1.f / static_cast<float>(vp.width);
 			cbPrimObj->invScreenDim.y = 1.f / static_cast<float>(vp.height);
 			pCB->UpdateBuffer(cbPrimObj, cbPrimObjSize);
+			pCB->SetDebugName("Aux Per-Draw CB");
 		}
 	}
 
@@ -817,6 +807,7 @@ void CRenderAuxGeomD3D::DrawAuxPrimitives(const CAuxGeomCB::SAuxGeomCBRawData& r
 					cbObj->globalLightLocal = lightLocalSpace;  // normalize light vector (matWorld could contain non-uniform scaling)
 					cbObj->auxGeomObjShading = Vec2(drawParams.m_shaded ? 0.4f : 0, drawParams.m_shaded ? 0.6f : 1); // set shading flag
 					pCB->UpdateBuffer(cbObj, cbObjSize);
+					pCB->SetDebugName("Aux Per-Draw CB");
 				}
 			}
 

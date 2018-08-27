@@ -348,6 +348,7 @@ void CREFogVolume::UpdatePerDrawCB(render_element::fogvolume::SCompiledFogVolume
 	if (!compiledObj.m_pPerDrawCB)
 	{
 		compiledObj.m_pPerDrawCB = rd->m_DevBufMan.CreateConstantBuffer(sizeof(render_element::fogvolume::SPerDrawConstantBuffer));
+		if (compiledObj.m_pPerDrawCB) compiledObj.m_pPerDrawCB->SetDebugName("FogVolume Per-Draw CB");
 	}
 
 	if (!compiledObj.m_pPerDrawCB)
