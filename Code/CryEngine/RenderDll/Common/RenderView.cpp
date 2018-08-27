@@ -901,6 +901,9 @@ CTexture* CRenderView::GetColorTarget() const
 
 CTexture* CRenderView::GetDepthTarget() const
 {
+	if (m_pRenderOutput && !m_pDepthTarget)
+		return m_pRenderOutput->GetDepthTarget();
+
 	CRY_ASSERT(m_pDepthTarget);
 	return m_pDepthTarget.get();
 }
