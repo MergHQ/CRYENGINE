@@ -65,7 +65,7 @@ def exec_response_command(self, cmd, **kw):
 		        cmd = [self.quote_response_command(x) for x in cmd]
 		        out_file_prefix = os.path.split(cmd[-1])[1].replace('"', '') #remove quotes from prefix otherwise final output might look like abc"<os_generated_extension> which is invalid
 		        (fd, tmp) = tempfile.mkstemp(prefix=out_file_prefix, dir=tmp_files_folder.abspath())
-		        os.write(fd, '\r\n'.join(i.replace('\\', '\\\\') for i in cmd[1:]).encode())
+		        os.write(fd, '\n'.join(i.replace('\\', '\\\\') for i in cmd[1:]).encode())
 		        os.close(fd)
 		        cmd = [program, '@' + tmp]
 		# no return here, that's on purpose
@@ -239,7 +239,7 @@ def exec_response_command_orbis(self, cmd, **kw):
 			program = cmd[0] #unquoted program name, otherwise exec_command will fail
 			cmd = [self.quote_response_command_orbis(x) for x in cmd]
 			(fd, tmp) = tempfile.mkstemp()
-			os.write(fd, '\r\n'.join(i.replace('\\', '\\\\') for i in cmd[1:]).encode())
+			os.write(fd, '\n'.join(i.replace('\\', '\\\\') for i in cmd[1:]).encode())
 			os.close(fd)
 			cmd = [program, '@' + tmp]
 		# no return here, that's on purpose
