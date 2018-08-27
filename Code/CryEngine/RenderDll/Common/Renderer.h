@@ -96,6 +96,7 @@ const float TANGENT30_2 = 0.57735026918962576450914878050196f * 2;   // 2*tan(30
 #define DBT_SKY_CULL_DEPTH                    0.99999994f
 
 #define DEF_SHAD_DBT_DEFAULT_VAL              1
+#define SHADOWS_DBT_DEFAULT_VAL               1
 
 #define TEXSTREAMING_DEFAULT_VAL              2
 
@@ -121,7 +122,6 @@ const float TANGENT30_2 = 0.57735026918962576450914878050196f * 2;   // 2*tan(30
 #define FLARES_DEFAULT_VAL                    1
 #define WATERVOLCAUSTICS_DEFAULT_VAL          1
 #define FLARES_HQSHAFTS_DEFAULT_VAL           1
-#define DEF_SHAD_DBT_STENCIL_DEFAULT_VAL      1
 #define DEF_SHAD_SSS_DEFAULT_VAL              1
 
 #define MULTITHREADED_DEFAULT_VAL             1
@@ -1447,7 +1447,6 @@ public:
 	uint32    m_bDeferredSnowEnabled           : 1;
 
 	uint8     m_nDisableTemporalEffects;
-	bool      m_bUseGPUFriendlyBatching[2];
 	uint32    m_nGPULimited;           // How many frames we are GPU limited
 	int8      m_nCurMinAniso;
 	int8      m_nCurMaxAniso;

@@ -107,7 +107,7 @@ public:
 
 	virtual const char*     GetName() const
 	{
-		return CRenderer::CV_r_UseMergedPosts ? "MotionBlur and Dof" : "MotionBlur";
+		return "MotionBlur";
 	}
 
 private:

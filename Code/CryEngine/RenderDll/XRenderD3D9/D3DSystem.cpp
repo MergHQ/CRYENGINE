@@ -637,7 +637,7 @@ void CD3D9Renderer::RestoreGamma(void)
 	if (!(GetFeatures() & RFT_HWGAMMA))
 		return;
 
-	if (CV_r_nohwgamma)
+	if ((CV_r_nohwgamma == 1) || (CV_r_nohwgamma == 2 && IsEditorMode()))
 		return;
 
 	m_fLastGamma = 1.0f;
@@ -696,7 +696,7 @@ void CD3D9Renderer::SetDeviceGamma(SGammaRamp* gamma)
 	if (!(GetFeatures() & RFT_HWGAMMA))
 		return;
 
-	if (CV_r_nohwgamma)
+	if ((CV_r_nohwgamma == 1) || (CV_r_nohwgamma == 2 && IsEditorMode()))
 		return;
 
 #if CRY_PLATFORM_WINDOWS

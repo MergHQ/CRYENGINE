@@ -413,7 +413,7 @@ void CPostAAStage::DoFinalComposition(CTexture*& pCurrRT, CTexture* pDestRT, uin
 	CEffectParam* pParamGrainAmount = PostEffectMgr()->GetByName("FilterGrain_Amount");
 	CEffectParam* pParamArtifactsGrain = PostEffectMgr()->GetByName("FilterArtifacts_Grain");
 	const float paramGrainAmount = max(pParamGrainAmount->GetParam(), pParamArtifactsGrain->GetParam());
-	const float environmentGrainAmount = max(hdrSetupParams[1].w, CRenderer::CV_r_HDRGrainAmount);
+	const float environmentGrainAmount = hdrSetupParams[1].w * CRenderer::CV_r_HDRGrainAmount;
 	const float grainAmount = max(paramGrainAmount, environmentGrainAmount);
 
 	uint64 rtMask = 0;

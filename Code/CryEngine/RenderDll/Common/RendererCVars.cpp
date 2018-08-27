@@ -174,9 +174,7 @@ AllocateConstIntCVar(CRendererCVars, CV_r_deferredshadingLightVolumes);
 AllocateConstIntCVar(CRendererCVars, CV_r_deferredDecals);
 AllocateConstIntCVar(CRendererCVars, CV_r_deferredDecalsDebug);
 
-AllocateConstIntCVar(CRendererCVars, CV_r_deferredshadingDBTstencil);
 AllocateConstIntCVar(CRendererCVars, CV_r_DeferredShadingScissor);
-AllocateConstIntCVar(CRendererCVars, CV_r_DeferredShadingLBuffersFmt);
 AllocateConstIntCVar(CRendererCVars, CV_r_DeferredShadingDepthBoundsTest);
 AllocateConstIntCVar(CRendererCVars, CV_r_DeferredShadingDebugGBuffer);
 int CRendererCVars::CV_r_DeferredShadingAmbient;
@@ -226,7 +224,6 @@ int CRendererCVars::CV_r_tessellationdebug;
 float CRendererCVars::CV_r_tessellationtrianglesize;
 float CRendererCVars::CV_r_displacementfactor;
 
-int CRendererCVars::CV_r_batchtype;
 int CRendererCVars::CV_r_geominstancingthreshold;
 
 AllocateConstIntCVar(CRendererCVars, CV_r_DebugLightVolumes);
@@ -264,7 +261,6 @@ float CRendererCVars::CV_r_HeightMapAOResolution;
 float CRendererCVars::CV_r_RenderMeshHashGridUnitSize;
 
 AllocateConstIntCVar(CRendererCVars, CV_r_debuglights);
-AllocateConstIntCVar(CRendererCVars, CV_r_lightssinglepass);
 
 AllocateConstIntCVar(CRendererCVars, CV_r_shaderslazyunload);
 AllocateConstIntCVar(CRendererCVars, CV_r_shadersdebug);
@@ -330,7 +326,6 @@ int CRendererCVars::CV_r_MotionBlur;
 int CRendererCVars::CV_r_MotionBlurQuality;
 int CRendererCVars::CV_r_MotionBlurGBufferVelocity;
 float CRendererCVars::CV_r_MotionBlurThreshold;
-int CRendererCVars::CV_r_UseMergedPosts;
 int CRendererCVars::CV_r_MaxFrameLatency;
 float CRendererCVars::CV_r_MotionBlurShutterSpeed;
 float CRendererCVars::CV_r_MotionBlurCameraMotionScale;
@@ -445,7 +440,6 @@ AllocateConstIntCVar(CRendererCVars, CV_r_showtangents);
 AllocateConstIntCVar(CRendererCVars, CV_r_showtimegraph);
 AllocateConstIntCVar(CRendererCVars, CV_r_DebugFontRendering);
 AllocateConstIntCVar(CRendererCVars, CV_profileStreaming);
-AllocateConstIntCVar(CRendererCVars, CV_r_graphstyle);
 AllocateConstIntCVar(CRendererCVars, CV_r_showbufferusage);
 
 ICVar* CRendererCVars::CV_r_ShaderCompilerServer;
@@ -507,9 +501,6 @@ float CRendererCVars::CV_r_contrast;
 float CRendererCVars::CV_r_brightness;
 
 AllocateConstIntCVar(CRendererCVars, CV_r_nohwgamma);
-
-int CRendererCVars::CV_r_scissor;
-
 AllocateConstIntCVar(CRendererCVars, CV_r_wireframe);
 int CRendererCVars::CV_r_GetScreenShot;
 
@@ -532,8 +523,6 @@ AllocateConstIntCVar(CRendererCVars, CV_r_TexturesStreamingDebugDumpIntoLog);
 
 AllocateConstIntCVar(CRendererCVars, CV_r_ShowLightBounds);
 
-AllocateConstIntCVar(CRendererCVars, CV_r_TextureCompressor);
-
 int CRendererCVars::CV_r_ParticlesTessellation;
 int CRendererCVars::CV_r_ParticlesTessellationTriSize;
 
@@ -542,7 +531,6 @@ float CRendererCVars::CV_r_ZFightingExtrude;
 
 float CRendererCVars::CV_r_TexelsPerMeter;
 
-int CRendererCVars::CV_r_ConditionalRendering;
 int CRendererCVars::CV_r_enableAltTab;
 int CRendererCVars::CV_r_StereoFlipEyes;
 int CRendererCVars::CV_r_StereoEnableMgpu;
@@ -577,9 +565,6 @@ AllocateConstIntCVar(CRendererCVars, CV_r_RefractionPartialResolveMinimalResolve
 AllocateConstIntCVar(CRendererCVars, CV_r_RefractionPartialResolveMaxResolveCount);
 AllocateConstIntCVar(CRendererCVars, CV_r_RefractionPartialResolvesDebug);
 
-AllocateConstIntCVar(CRendererCVars, CV_r_Batching);
-
-AllocateConstIntCVar(CRendererCVars, CV_r_Unlit);
 AllocateConstIntCVar(CRendererCVars, CV_r_HideSunInCubemaps);
 AllocateConstIntCVar(CRendererCVars, CV_r_CubemapGenerationTimeout);
 
@@ -791,6 +776,17 @@ static void OnChange_CV_r_ShaderTarget(ICVar* pCVar)
 			STR_GLES3_SHADER_TARGET,
 			STR_VULKAN_SHADER_TARGET);
 	}
+}
+
+static void OnChange_CV_r_Monitor(ICVar* pCVar)
+{
+	if (!pCVar)
+		return;
+
+	if (gRenDev->m_pRT && !gRenDev->m_pRT->IsRenderThread())
+		gRenDev->m_pRT->FlushAndWait();
+
+	gRenDev->SetGammaDelta(gRenDev->m_fDeltaGamma);
 }
 
 static void OnChange_CV_r_PostProcess(ICVar* pCVar)
@@ -1021,6 +1017,11 @@ void CRendererCVars::InitCVars()
 	                    "Toggles Light volumes for deferred shading.\n"
 	                    "Usage: r_DeferredShadingLightVolumes [0/1]\n"
 	                    "Default is 1 (enabled)");
+	
+	REGISTER_CVAR3("r_DeferredShadingLightLodRatio", CV_r_DeferredShadingLightLodRatio, 1.0f, VF_DUMPTODISK,
+	               "Sets deferred shading light intensity threshold.\n"
+	               "Usage: r_DeferredShadingLightLodRatio [value]\n"
+	               "Default is 0.1");
 
 	DefineConstIntCVar3("r_DeferredDecals", CV_r_deferredDecals, 1, VF_DUMPTODISK,
 	                    "Toggles deferred decals.\n"
@@ -1046,21 +1047,10 @@ void CRendererCVars::InitCVars()
 	                    "Usage: r_DeferredShadingScissor [0/1]\n"
 	                    "Default is 1 (enabled)");
 
-	DefineConstIntCVar3("r_DeferredShadingLBuffersFmt", CV_r_DeferredShadingLBuffersFmt, 1, VF_NULL,
-	                    "Toggles light buffers format.\n"
-	                    "Usage: r_DeferredShadingLBuffersFmt [0/1]\n"
-	                    "Default is 1 (R11G11B10F), 0: R16G16B16A16F");
-
 	DefineConstIntCVar3("r_DeferredShadingDepthBoundsTest", CV_r_DeferredShadingDepthBoundsTest, DEF_SHAD_DBT_DEFAULT_VAL,
 	                    VF_DUMPTODISK,
 	                    "Toggles deferred shading depth bounds test.\n"
 	                    "Usage: r_DeferredShadingDepthBoundsTest [0/1]\n"
-	                    "Default is 1 (enabled)");
-
-	DefineConstIntCVar3("r_DeferredShadingDBTstencil", CV_r_deferredshadingDBTstencil, DEF_SHAD_DBT_STENCIL_DEFAULT_VAL,
-	                    VF_DUMPTODISK,
-	                    "Toggles deferred shading combined depth bounds test + stencil test.\n"
-	                    "Usage: r_DeferredShadingDBTstencil [0/1]\n"
 	                    "Default is 1 (enabled)");
 
 	DefineConstIntCVar3("r_DebugGBuffer", CV_r_DeferredShadingDebugGBuffer, 0, VF_NULL,
@@ -1098,11 +1088,6 @@ void CRendererCVars::InitCVars()
 	                    "  0: no ambient passes (disabled)\n"
 	                    "  1: vis areas and outdoor ambient  (default)\n"
 	                    "  2: only outdoor (debug vis areas mode)\n");
-
-	REGISTER_CVAR3("r_DeferredShadingLightLodRatio", CV_r_DeferredShadingLightLodRatio, 1.0f, VF_DUMPTODISK,
-	               "Sets deferred shading light intensity threshold.\n"
-	               "Usage: r_DeferredShadingLightLodRatio [value]\n"
-	               "Default is 0.1");
 
 	REGISTER_CVAR3("r_DeferredShadingLightStencilRatio", CV_r_DeferredShadingLightStencilRatio, 0.21f, VF_DUMPTODISK,
 	               "Sets screen ratio for deferred lights to use stencil (eg: 0.2 - 20% of screen).\n"
@@ -1145,11 +1130,18 @@ void CRendererCVars::InitCVars()
 #endif
 #endif
 
+	DefineConstIntCVar3("r_HDRTexFormat", CV_r_HDRTexFormat, 1, VF_DUMPTODISK | VF_REQUIRE_APP_RESTART,
+	                    "Sets HDR render target precision. Default is 1.\n"
+	                    "Usage: r_HDRTexFormat [Value]\n"
+	                    "  0: (lower precision)\n"
+	                    "  1: (standard precision)\n"
+	                    "  2: (extended precision)\n");
+
 	DefineConstIntCVar3("r_HDRDebug", CV_r_HDRDebug, 0, VF_NULL,
 	                    "Toggles HDR debugging info (to debug HDR/eye adaptation)\n"
 	                    "Usage: r_HDRDebug\n"
 	                    "0 off (default)\n"
-						"1 display avgerage luminance, estimated luminance, and exposure values\n"
+	                    "1 display avgerage luminance, estimated luminance, and exposure values\n"
 	                    "2 show gamma-corrected scene target without tone-mapping processing\n"
 	                    "3 identify illegal colors (grey=normal, red=NotANumber, green=negative)\n");
 
@@ -1190,13 +1182,6 @@ void CRendererCVars::InitCVars()
 	               "Usage: r_HDRRangeAdaptLBufferMaxRange [Value]\n"
 	               "Default is 2.0f");
 
-	DefineConstIntCVar3("r_HDRTexFormat", CV_r_HDRTexFormat, 1, VF_DUMPTODISK | VF_REQUIRE_APP_RESTART,
-	                    "Sets HDR render target precision. Default is 1.\n"
-	                    "Usage: r_HDRTexFormat [Value]\n"
-	                    "  0: (lower precision R11G11B10F, except for Main Target)\n"
-	                    "  1: (standard precision R16G16B16A16F)\n"
-	                    "  2: (lower precision R11G11B10F, for all targets but DoF should be off)");
-
 	// Eye Adaptation
 	REGISTER_CVAR3("r_HDREyeAdaptationSpeed", CV_r_HDREyeAdaptationSpeed, 1.0f, VF_NULL,
 	               "HDR rendering eye adaptation speed\n"
@@ -1213,7 +1198,8 @@ void CRendererCVars::InitCVars()
 
 	REGISTER_CVAR3("r_HDRGrainAmount", CV_r_HDRGrainAmount, 0.0f, VF_NULL,
 	               "HDR camera grain amount\n"
-	               "Usage: r_HDRGrainAmount [Value]");
+	               "Usage: r_HDRGrainAmount [Value]\n"
+	               "Modulates the grain configured in FlowGraph or TimeOfDay.");
 
 
 	DefineConstIntCVar3("r_GrainEnableExposureThreshold", CV_r_GrainEnableExposureThreshold, 0, VF_DUMPTODISK,
@@ -1235,11 +1221,6 @@ void CRendererCVars::InitCVars()
 	                  "Usage: r_GeomInstancingThreshold [Num]\n"
 	                  "Default is -1 (automatic depending on hardware, used value can be found in the log)",
 	                  OnChange_GeomInstancingThreshold);
-
-	REGISTER_CVAR3("r_BatchType", CV_r_batchtype, 0, VF_NULL,
-	               "0 - CPU friendly.\n"
-	               "1 - GPU friendly.\n"
-	               "2 - Automatic.\n");
 
 #if CRY_PLATFORM_WINDOWS || CRY_PLATFORM_APPLE || CRY_PLATFORM_LINUX || CRY_PLATFORM_ANDROID || CRY_RENDERER_GNM
 	REGISTER_CVAR3("r_SilhouettePOM", CV_r_SilhouettePOM, 0, VF_NULL,
@@ -1288,7 +1269,7 @@ void CRendererCVars::InitCVars()
 	               "Set ZPrepass max dist.\n"
 	               "Usage: r_ZPrepassMaxDist (16.0f default) [distance in meters]\n");
 
-	REGISTER_CVAR3("r_UseZPass", CV_r_usezpass, 2, VF_RENDERER_CVAR,
+	REGISTER_CVAR3("r_UseZPass", CV_r_usezpass, 2, VF_DUMPTODISK | VF_RENDERER_CVAR,
 	               "Toggles g-buffer pass.\n"
 	               "Usage: r_UseZPass [0/1/2]\n"
 	               "0: Disable Z-pass (not recommended, this disables any g-buffer rendering)\n"
@@ -1310,6 +1291,7 @@ void CRendererCVars::InitCVars()
 	                    "Toggles HW skinning.\n"
 	                    "Usage: r_UseHWSkinning [0/1]\n"
 	                    "Default is 1 (on). Set to 0 to disable HW-skinning.");
+
 	DefineConstIntCVar3("r_UseMaterialLayers", CV_r_usemateriallayers, 2, VF_NULL,
 	                    "Enables material layers rendering.\n"
 	                    "Usage: r_UseMaterialLayers [0/1/2]\n"
@@ -1342,6 +1324,16 @@ void CRendererCVars::InitCVars()
 	REGISTER_CVAR3("r_ParticlesAmountGI", CV_r_ParticlesAmountGI, 0.15f, VF_NULL,
 	               "Global illumination amount for particles without material.\n"
 	               "Usage: r_ParticlesAmountGI [n]");
+	
+	REGISTER_CVAR2("r_ParticleVerticePoolSize", &CV_r_ParticleVerticePoolSize, 131072, VF_REQUIRE_APP_RESTART, "Initial size Particles' buffers");
+	REGISTER_CVAR2("r_ParticleMaxVerticePoolSize", &CV_r_ParticleMaxVerticePoolSize, 131072*8, VF_REQUIRE_APP_RESTART, "Max size of Particles' buffers");
+
+	DefineConstIntCVar3("r_ParticlesDebug", CV_r_ParticlesDebug, 0, VF_NULL,
+	                    "Particles debugging\n"
+	                    "Usage: \n"
+	                    "0 disabled\n"
+	                    "1 particles screen coverage (red = bad, blue = good)\n"
+	                    "2 particles overdraw (white = really bad, red = bad, blue = good)");
 
 	static string aaModesDesc = "Enables post process based anti-aliasing modes.\nUsage: r_AntialiasingMode [n]\n";
 
@@ -1352,7 +1344,8 @@ void CRendererCVars::InitCVars()
 		aaModesDesc.append(mode);
 	}
 
-	REGISTER_CVAR3_CB("r_AntialiasingMode", CV_r_AntialiasingMode_CB, eAT_DEFAULT_AA, VF_NULL, aaModesDesc.c_str(), OnChange_CV_r_AntialiasingMode);
+	REGISTER_CVAR3_CB("r_AntialiasingMode", CV_r_AntialiasingMode_CB, eAT_DEFAULT_AA, VF_DUMPTODISK,
+		aaModesDesc.c_str(), OnChange_CV_r_AntialiasingMode);
 	CV_r_AntialiasingMode = CV_r_AntialiasingMode_CB;
 
 	REGISTER_CVAR3("r_AntialiasingTAAPattern", CV_r_AntialiasingTAAPattern, 1, VF_NULL,
@@ -1401,7 +1394,7 @@ void CRendererCVars::InitCVars()
 	REGISTER_CVAR3("r_MotionVectors", CV_r_MotionVectors, 1, VF_NULL,
 	                    "Enables generation of motion vectors for dynamic objects\n");
 
-	REGISTER_CVAR3("r_MotionBlur", CV_r_MotionBlur, 2, VF_NULL,
+	REGISTER_CVAR3("r_MotionBlur", CV_r_MotionBlur, 2, VF_DUMPTODISK,
 	               "Enables per object and camera motion blur.\n"
 	               "Usage: r_MotionBlur [0/1/2/3]\n"
 	               "Default is 1 (camera motion blur on).\n"
@@ -1423,14 +1416,6 @@ void CRendererCVars::InitCVars()
 	               "Object motion blur velocity threshold.\n"
 	               "Usage: r_MotionBlurThreshold (val)\n"
 	               "Default is 0.0001.  0 - disabled\n");
-
-	REGISTER_CVAR3("r_UseMergedPosts", CV_r_UseMergedPosts, 1, VF_NULL,
-	               "Enables motion blur merged with dof.\n"
-	               "Usage: r_UseMergedPosts [0/1/2]\n"
-	               "Default is 1.\n"
-	               "1: fastest mode - half res rendering\n"
-	               "2: full res rendering mode (tbd)\n"
-	               "3: quality mode, hdr + fullres (tbd)\n");
 
 	REGISTER_CVAR3("r_MotionBlurShutterSpeed", CV_r_MotionBlurShutterSpeed, 250.0f, 0,
 	               "Sets camera exposure time for motion blur as 1/x seconds.\n"
@@ -1517,10 +1502,23 @@ void CRendererCVars::InitCVars()
 	               "Sets maximum view distance (in meters) for deferred rain reflection layer\n"
 	               "Usage: r_RainMaxViewDist_Deferred [n]");
 
-	REGISTER_CVAR3("r_RainDistMultiplier", CV_r_rainDistMultiplier, 2.f, VF_NULL, "Rain layer distance from camera multiplier");
+	REGISTER_CVAR3("r_RainDistMultiplier", CV_r_rainDistMultiplier, 2.f, VF_NULL,
+	              "Rain layer distance from camera multiplier");
 
-	REGISTER_CVAR3("r_RainOccluderSizeTreshold", CV_r_rainOccluderSizeTreshold, 25.f, VF_NULL, "Only objects bigger than this size will occlude rain");
+	REGISTER_CVAR3("r_RainOccluderSizeTreshold", CV_r_rainOccluderSizeTreshold, 25.f, VF_NULL,
+	              "Only objects bigger than this size will occlude rain");
+	
+	REGISTER_CVAR3("r_RainIgnoreNearest", CV_r_rain_ignore_nearest, 1, VF_NULL,
+	               "Disables rain wet/reflection layer for nearest objects\n"
+	               "Usage: r_RainIgnoreNearest [0/1]\n");
 
+	REGISTER_CVAR3("r_RainDropsEffect", CV_r_RainDropsEffect, 1, VF_CHEAT,
+	               "Enable RainDrops effect.\n"
+	               "Usage: r_RainDropEffect [0/1/2]\n"
+	               "0: force off\n"
+	               "1: on (default)\n"
+	               "2: on (forced)");
+	
 	REGISTER_CVAR3("r_SSReflections", CV_r_SSReflections, 0, VF_NULL,
 	               "Glossy screen space reflections [0/1]\n");
 	REGISTER_CVAR3("r_SSReflHalfRes", CV_r_SSReflHalfRes, 1, VF_NULL,
@@ -1551,10 +1549,6 @@ void CRendererCVars::InitCVars()
 	REGISTER_CVAR3("r_ssdoAmountAmbient", CV_r_ssdoAmountAmbient, 1.0f, VF_NULL, "Strength of occlusion applied to probe irradiance");
 	REGISTER_CVAR3("r_ssdoAmountReflection", CV_r_ssdoAmountReflection, 1.5f, VF_NULL, "Strength of occlusion applied to probe specular");
 
-	REGISTER_CVAR3("r_RainIgnoreNearest", CV_r_rain_ignore_nearest, 1, VF_NULL,
-	                    "Disables rain wet/reflection layer for nearest objects\n"
-	                    "Usage: r_RainIgnoreNearest [0/1]\n");
-
 	REGISTER_CVAR3("r_DepthOfField", CV_r_dof, DOF_DEFAULT_VAL, VF_NULL,
 	                    "Enables depth of field.\n"
 	                    "Usage: r_DepthOfField [0/1/2]\n"
@@ -1562,6 +1556,18 @@ void CRendererCVars::InitCVars()
 
 	REGISTER_CVAR3("r_DepthOfFieldMode", CV_r_DofMode, 1, VF_NULL,
 	               "Selects DOF implementation (0: sprite-based, 1: gather-based).\n");
+	
+	REGISTER_CVAR3("r_dofMinZ", CV_r_dofMinZ, 0.0f, VF_NULL,
+	               "Set dof min z distance, anything behind this distance will get out focus. (good default value 0.4) \n");
+
+	REGISTER_CVAR3("r_dofMinZScale", CV_r_dofMinZScale, 0.0f, VF_NULL,
+	               "Set dof min z out of focus strenght (good default value - 1.0f)\n");
+
+	REGISTER_CVAR3("r_dofMinZBlendMult", CV_r_dofMinZBlendMult, 1.0f, VF_NULL,
+	               "Set dof min z blend multiplier (bigger value means faster blendind transition)\n");
+
+	REGISTER_CVAR3("r_DepthOfFieldDilation", CV_r_dofDilation, 1.0f, VF_NULL,
+	               "Sets dilation width to reduce ghosting artifacts on near objects (can introduce other artifacts)\n");
 
 	REGISTER_CVAR3("r_DepthOfFieldBokehQuality", CV_r_DofBokehQuality, 0, VF_NULL,
 	               "Sets depth of field bokeh quality (samples multiplier).\n"
@@ -1696,8 +1702,6 @@ void CRendererCVars::InitCVars()
 
 	REGISTER_CVAR3("r_RenderMeshHashGridUnitSize", CV_r_RenderMeshHashGridUnitSize, .5f, VF_NULL, "Controls density of render mesh triangle indexing structures");
 
-	DefineConstIntCVar3("r_LightsSinglePass", CV_r_lightssinglepass, 1, VF_NULL, "");
-
 	DefineConstIntCVar3("r_ShowDynTextures", CV_r_showdyntextures, 0, VF_NULL,
 	                    "Display a dyn. textures, filtered by r_ShowDynTexturesFilter\n"
 	                    "Usage: r_ShowDynTextures 0/1/2\n"
@@ -1784,18 +1788,6 @@ void CRendererCVars::InitCVars()
 	REGISTER_CVAR3("r_NightVisionCamMovNoiseBlendSpeed", CV_r_NightVisionCamMovNoiseBlendSpeed, 2.0f, VF_NULL,
 	               "Set nightvision noise amount blend speed.\n");
 
-	REGISTER_CVAR3("r_dofMinZ", CV_r_dofMinZ, 0.0f, VF_NULL,
-	               "Set dof min z distance, anything behind this distance will get out focus. (good default value 0.4) \n");
-
-	REGISTER_CVAR3("r_dofMinZScale", CV_r_dofMinZScale, 0.0f, VF_NULL,
-	               "Set dof min z out of focus strenght (good default value - 1.0f)\n");
-
-	REGISTER_CVAR3("r_dofMinZBlendMult", CV_r_dofMinZBlendMult, 1.0f, VF_NULL,
-	               "Set dof min z blend multiplier (bigger value means faster blendind transition)\n");
-
-	REGISTER_CVAR3("r_DepthOfFieldDilation", CV_r_dofDilation, 1.0f, VF_NULL,
-	               "Sets dilation width to reduce ghosting artifacts on near objects (can introduce other artifacts)\n");
-
 	DefineConstIntCVar3("r_SonarVision", CV_r_SonarVision, 1, VF_NULL,
 	                    "Toggles sonar vision enabling.\n"
 	                    "Usage: r_SonarVision [0/1]\n"
@@ -1834,6 +1826,24 @@ void CRendererCVars::InitCVars()
 	               "Enables refraction.\n"
 	               "Usage: r_Refraction [0/1]\n"
 	               "Default is 1 (on). Set to 0 to disable.");
+	
+	DefineConstIntCVar3("r_RefractionPartialResolveMode", CV_r_RefractionPartialResolveMode, 2, VF_NULL,
+	                    "Specifies mode of operation of partial screen resolves before refraction\n"
+	                    "Usage: r_RefractionPartialResolveMode [0/1/2]\n"
+		                "0: Static approach: Single resolve pass before transparent forward pass.\n"
+	                    "1: Simple iterative approach: Resolve pass before every refractive render items that requires resolve.\n"
+	                    "2: Topological sorting of overlaping resolve regions (default)");
+	DefineConstIntCVar3("r_RefractionPartialResolveMinimalResolveArea", CV_r_RefractionPartialResolveMinimalResolveArea, 0, VF_NULL,
+	                    "Minimal resolve area, in pixels, required to inject a partial resolve (default: 0).");
+	DefineConstIntCVar3("r_RefractionPartialResolveMaxResolveCount", CV_r_RefractionPartialResolveMaxResolveCount, 0, VF_NULL,
+	                    "Provides an upper limit on partial screen resolves per render-items list.\n"
+		                "(Unlimited if a non-positive integer is provided)");
+	DefineConstIntCVar3("r_RefractionPartialResolvesDebug", CV_r_RefractionPartialResolvesDebug, 0, VF_NULL,
+	                    "Toggle refraction partial resolves debug display\n"
+	                    "Usage: r_RefractionPartialResolvesDebug\n"
+	                    "0: disable \n"
+	                    "1: Statistics \n"
+	                    "2: Bounding boxes \n");
 
 	REGISTER_CVAR3("r_sunshafts", CV_r_sunshafts, SUNSHAFTS_DEFAULT_VAL, VF_NULL,
 	               "Enables sun shafts.\n"
@@ -2164,7 +2174,10 @@ void CRendererCVars::InitCVars()
 	               "  1: automatic detection (reliable with SLI, does not respect driver app profiles with Crossfire)\n");
 	DefineConstIntCVar3("r_ValidateDraw", CV_r_validateDraw, 0, VF_NULL,
 	                    "0=disabled, 1=validate each DIP (meshes consistency, shaders, declarations, etc)");
-
+	
+	DefineConstIntCVar3("r_ShowLightBounds", CV_r_ShowLightBounds, 0, VF_CHEAT,
+	                    "Display light bounds - for debug purpose\n"
+	                    "Usage: r_ShowLightBounds [0=off/1=on]");
 	DefineConstIntCVar3("r_ShowNormals", CV_r_shownormals, 0, VF_CHEAT,
 	                    "Toggles visibility of normal vectors.\n"
 	                    "Usage: r_ShowNormals [0/1]"
@@ -2187,6 +2200,17 @@ void CRendererCVars::InitCVars()
 	                    "	1: Graph displayed as points."
 	                    "	2: Graph displayed as lines."
 	                    "Default is 0 (off).");
+
+	// show texture debug routine + auto completion
+	CV_r_ShowTexture = REGISTER_STRING("r_ShowTexture", "", VF_CHEAT, "Displays loaded texture - for debug purpose\n");
+	gEnv->pConsole->RegisterAutoComplete("r_ShowTexture", &g_TextureNameAutoComplete);
+	
+	REGISTER_CVAR3("r_TexelsPerMeter", CV_r_TexelsPerMeter, 0, 0,
+	                  "Enables visualization of the color coded \"texels per meter\" ratio for objects in view.\n"
+	                  "The checkerboard pattern displayed represents the mapping of the assigned diffuse\n"
+	                  "texture onto the object's uv space. One block in the pattern represents 8x8 texels.\n"
+	                  "Usage: r_TexelsPerMeter [n] (where n is the desired number of texels per meter; 0 = off)");
+
 #ifndef EXCLUDE_DOCUMENTATION_PURPOSE
 	DefineConstIntCVar3("r_DebugFontRendering", CV_r_DebugFontRendering, 0, VF_CHEAT,
 	                    "0=off, 1=display various features of the font rendering to verify function and to document usage");
@@ -2197,7 +2221,6 @@ void CRendererCVars::InitCVars()
 	                    "	1: Graph displayed as points."
 	                    "	2: Graph displayed as lines."
 	                    "Default is 0 (off).");
-	DefineConstIntCVar3("r_GraphStyle", CV_r_graphstyle, 0, VF_NULL, "");
 	DefineConstIntCVar3("r_ShowBufferUsage", CV_r_showbufferusage, 0, VF_NULL,
 	                    "Shows usage of statically allocated buffers.\n"
 	                    "Usage: r_ShowBufferUSage [0/1]\n"
@@ -2542,18 +2565,21 @@ void CRendererCVars::InitCVars()
 	                  "Default is 1.0\n"
 	                  "Range is from 0 to 1", OnChange_CV_r_FlaresTessellationRatio);
 
-	REGISTER_CVAR3("r_Gamma", CV_r_gamma, 1.0f, VF_DUMPTODISK,
+	REGISTER_CVAR3_CB("r_Gamma", CV_r_gamma, 1.0f, VF_DUMPTODISK,
 	               "Adjusts the graphics card gamma correction (fast, needs hardware support, affects also HUD and desktop)\n"
 	               "Usage: r_Gamma 1.0\n"
-	               "1 off (default)");
-	REGISTER_CVAR3("r_Brightness", CV_r_brightness, 0.5f, VF_DUMPTODISK,
+	               "1 off (default)",
+	               OnChange_CV_r_Monitor);
+	REGISTER_CVAR3_CB("r_Brightness", CV_r_brightness, 0.5f, VF_DUMPTODISK,
 	               "Sets the display brightness.\n"
 	               "Usage: r_Brightness 0.5\n"
-	               "Default is 0.5.");
-	REGISTER_CVAR3("r_Contrast", CV_r_contrast, 0.5f, VF_DUMPTODISK,
+	               "Default is 0.5.",
+	               OnChange_CV_r_Monitor);
+	REGISTER_CVAR3_CB("r_Contrast", CV_r_contrast, 0.5f, VF_DUMPTODISK,
 	               "Sets the display contrast.\n"
 	               "Usage: r_Contrast 0.5\n"
-	               "Default is 0.5.");
+	               "Default is 0.5.",
+	               OnChange_CV_r_Monitor);
 
 	DefineConstIntCVar3("r_NoHWGamma", CV_r_nohwgamma, 2, VF_DUMPTODISK,
 	                    "Sets renderer to ignore hardware gamma correction.\n"
@@ -2561,8 +2587,6 @@ void CRendererCVars::InitCVars()
 	                    "0 - allow hardware gamma correction\n"
 	                    "1 - disable hardware gamma correction\n"
 	                    "2 - disable hardware gamma correction in Editor\n");
-
-	REGISTER_CVAR3("r_Scissor", CV_r_scissor, 1, VF_RENDERER_CVAR, "Enables scissor test");
 
 	DefineConstIntCVar3("r_wireframe", CV_r_wireframe, R_SOLID_MODE, VF_CHEAT, "Toggles wireframe rendering mode");
 
@@ -2736,25 +2760,11 @@ void CRendererCVars::InitCVars()
 	REGISTER_CVAR3("r_NoDraw", CV_r_NoDraw, 0, VF_NULL, "Disable submitting of certain draw operations: 1-(Do not process render objects at all), 2-(Do not submit individual render objects), 3-(No DrawIndexed) 4-Disable entire GraphicsPipeline execution.");
 	REGISTER_CVAR3("r_UpdateInstances", CV_r_UpdateInstances, 0, VF_NULL, "Enabling runtime instancing CB updatings each frame");
 
-	// show texture debug routine + auto completion
-	CV_r_ShowTexture = REGISTER_STRING("r_ShowTexture", "", VF_CHEAT, "Displays loaded texture - for debug purpose\n");
-	gEnv->pConsole->RegisterAutoComplete("r_ShowTexture", &g_TextureNameAutoComplete);
-
-	DefineConstIntCVar3("r_ShowLightBounds", CV_r_ShowLightBounds, 0, VF_CHEAT,
-	                    "Display light bounds - for debug purpose\n"
-	                    "Usage: r_ShowLightBounds [0=off/1=on]");
-
 	REGISTER_CVAR3("r_ParticlesTessellation", CV_r_ParticlesTessellation, 1, VF_NULL, "Enables particle tessellation for higher quality lighting. (DX11 only)");
 	REGISTER_CVAR3("r_ParticlesTessellationTriSize", CV_r_ParticlesTessellationTriSize, 16, VF_NULL, "Sets particles tessellation triangle screen space size in pixels (DX11 only)");
 
 	REGISTER_CVAR3("r_ZFightingDepthScale", CV_r_ZFightingDepthScale, 0.995f, VF_CHEAT, "Controls anti z-fighting measures in shaders (scaling homogeneous z).");
 	REGISTER_CVAR3("r_ZFightingExtrude", CV_r_ZFightingExtrude, 0.001f, VF_CHEAT, "Controls anti z-fighting measures in shaders (extrusion along normal in world units).");
-
-	REGISTER_CVAR3("r_TexelsPerMeter", CV_r_TexelsPerMeter, 0, 0,
-	                  "Enables visualization of the color coded \"texels per meter\" ratio for objects in view.\n"
-	                  "The checkerboard pattern displayed represents the mapping of the assigned diffuse\n"
-	                  "texture onto the object's uv space. One block in the pattern represents 8x8 texels.\n"
-	                  "Usage: r_TexelsPerMeter [n] (where n is the desired number of texels per meter; 0 = off)");
 
 	REGISTER_CVAR3("r_enableAltTab", CV_r_enableAltTab, 1, VF_NULL,
 	               "Toggles alt tabbing in and out of fullscreen when the game is not in devmode.\n"
@@ -2800,11 +2810,9 @@ void CRendererCVars::InitCVars()
 	               "Usage: r_StereoGammaAdjustment [offset]"
 	               "0: off");
 
-	REGISTER_CVAR3("r_ConditionalRendering", CV_r_ConditionalRendering, 0, VF_NULL, "Enables conditional rendering .");
-
-	REGISTER_CVAR3("r_CustomResMaxSize", CV_r_CustomResMaxSize, 4096, VF_NULL, "Maximum resolution of custom resolution rendering");
-	REGISTER_CVAR3("r_CustomResWidth", CV_r_CustomResWidth, 0, VF_NULL, "Width of custom resolution rendering");
-	REGISTER_CVAR3("r_CustomResHeight", CV_r_CustomResHeight, 0, VF_NULL, "Height of custom resolution rendering");
+	REGISTER_CVAR3("r_CustomResMaxSize", CV_r_CustomResMaxSize, 4096, VF_REQUIRE_APP_RESTART, "Maximum resolution of custom resolution rendering");
+	REGISTER_CVAR3("r_CustomResWidth", CV_r_CustomResWidth, 0, VF_DUMPTODISK | VF_REQUIRE_APP_RESTART, "Width of custom resolution rendering");
+	REGISTER_CVAR3("r_CustomResHeight", CV_r_CustomResHeight, 0, VF_DUMPTODISK | VF_REQUIRE_APP_RESTART, "Height of custom resolution rendering");
 	REGISTER_CVAR3("r_CustomResPreview", CV_r_CustomResPreview, 1, VF_NULL, "Enable/disable preview of custom resolution rendering in viewport"
 	                                                                        "(0 - no preview, 1 - scaled to match viewport, 2 - custom resolution clipped to viewport");
 	REGISTER_CVAR3("r_Supersampling", CV_r_Supersampling, 1, VF_NULL, "Use supersampled antialiasing"
@@ -2819,11 +2827,6 @@ void CRendererCVars::InitCVars()
 	REGISTER_COMMAND("r_PrecacheShaderList", &ShadersPrecacheList, VF_NULL, "");
 	REGISTER_COMMAND("r_StatsShaderList", &ShadersStatsList, VF_NULL, "");
 #endif
-
-	DefineConstIntCVar3("r_TextureCompressor", CV_r_TextureCompressor, 1, VF_DUMPTODISK,
-	                    "Defines which texture compressor is used (fallback is DirectX)\n"
-	                    "Usage: r_TextureCompressor [0/1]\n"
-	                    "0 uses DirectX, 1 uses squish if possible");
 
 	REGISTER_CVAR3("r_FogDepthTest", CV_r_FogDepthTest, -0.0005f, VF_NULL,
 	               "Enables per-pixel culling for deferred volumetric fog pass.\n"
@@ -2847,38 +2850,6 @@ void CRendererCVars::InitCVars()
 	               "  1: optimized shadowmap sampling\n");
 #endif
 	REGISTER_CVAR3("r_FogShadowsWater", CV_r_FogShadowsWater, 1, VF_NULL, "Enables volumetric fog shadows for watervolumes");
-
-	REGISTER_CVAR3("r_RainDropsEffect", CV_r_RainDropsEffect, 1, VF_NULL,
-	                    "Enable RainDrops effect.\n"
-	                    "Usage: r_RainDropEffect [0/1/2]\n"
-	                    "0: force off\n"
-	                    "1: on (default)\n"
-	                    "2: on (forced)");
-	
-	DefineConstIntCVar3("r_RefractionPartialResolveMode", CV_r_RefractionPartialResolveMode, 2, VF_NULL,
-	                    "Specifies mode of operation of partial screen resolves before refraction\n"
-	                    "Usage: r_RefractionPartialResolveMode [0/1/2]\n"
-		                "0: Static approach: Single resolve pass before transparent forward pass.\n"
-	                    "1: Simple iterative approach: Resolve pass before every refractive render items that requires resolve.\n"
-	                    "2: Topological sorting of overlaping resolve regions (default)");
-	DefineConstIntCVar3("r_RefractionPartialResolveMinimalResolveArea", CV_r_RefractionPartialResolveMinimalResolveArea, 0, VF_NULL,
-	                    "Minimal resolve area, in pixels, required to inject a partial resolve (default: 0).");
-	DefineConstIntCVar3("r_RefractionPartialResolveMaxResolveCount", CV_r_RefractionPartialResolveMaxResolveCount, 0, VF_NULL,
-	                    "Provides an upper limit on partial screen resolves per render-items list.\n"
-		                "(Unlimited if a non-positive integer is provided)");
-	DefineConstIntCVar3("r_RefractionPartialResolvesDebug", CV_r_RefractionPartialResolvesDebug, 0, VF_NULL,
-	                    "Toggle refraction partial resolves debug display\n"
-	                    "Usage: r_RefractionPartialResolvesDebug\n"
-	                    "0: disable \n"
-	                    "1: Statistics \n"
-	                    "2: Bounding boxes \n");
-
-	DefineConstIntCVar3("r_Batching", CV_r_Batching, 1, VF_NULL,
-	                    "Enable/disable render items batching\n"
-	                    "Usage: r_Batching [0/1]\n");
-
-	DefineConstIntCVar3("r_Unlit", CV_r_Unlit, 0, VF_CHEAT,
-	                    "Render just diffuse texture with no lighting (for most materials).");
 
 	DefineConstIntCVar3("r_HideSunInCubemaps", CV_r_HideSunInCubemaps, 1, VF_NULL,
 	                    "Stops the sun being drawn during cubemap generation.\n");
@@ -2939,16 +2910,6 @@ void CRendererCVars::InitCVars()
 	const int defValAuxGeomEnable = 1;
 	REGISTER_CVAR2("r_enableAuxGeom", &CV_r_enableauxgeom, defValAuxGeomEnable, VF_REQUIRE_APP_RESTART, "Enables aux geometry rendering.");
 #endif
-
-	REGISTER_CVAR2("r_ParticleVerticePoolSize", &CV_r_ParticleVerticePoolSize, 131072, VF_REQUIRE_APP_RESTART, "Initial size Particles' buffers");
-	REGISTER_CVAR2("r_ParticleMaxVerticePoolSize", &CV_r_ParticleMaxVerticePoolSize, 131072*8, VF_REQUIRE_APP_RESTART, "Max size of Particles' buffers");
-
-	DefineConstIntCVar3("r_ParticlesDebug", CV_r_ParticlesDebug, 0, VF_NULL,
-	                    "Particles debugging\n"
-	                    "Usage: \n"
-	                    "0 disabled\n"
-	                    "1 particles screen coverage (red = bad, blue = good)\n"
-	                    "2 particles overdraw (white = really bad, red = bad, blue = good)");
 
 	REGISTER_CVAR3("r_GeomCacheInstanceThreshold", CV_r_GeomCacheInstanceThreshold, 10, VF_NULL, "Threshold after which instancing is used to draw geometry cache pieces");
 

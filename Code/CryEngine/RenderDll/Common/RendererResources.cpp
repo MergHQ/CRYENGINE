@@ -860,17 +860,13 @@ void CRendererResources::CreateDeferredMaps(int resourceWidth, int resourceHeigh
 {
 	Vec2i resolution = Vec2i(resourceWidth, resourceHeight);
 
-	static uint32 nPrevLBuffersFmt = CRenderer::CV_r_DeferredShadingLBuffersFmt;
 //	if (!s_ptexSceneNormalsMap ||
 //		!s_ptexSceneNormalsMap->GetDevTexture() ||
 //		s_ptexSceneNormalsMap->GetDevTexture()->IsMSAAChanged()
 //		|| s_ptexSceneNormalsMap->GetWidth() != resolution.x
 //		|| s_ptexSceneNormalsMap->GetHeight() != resolution.y
-//		|| nPrevLBuffersFmt != CRenderer::CV_r_DeferredShadingLBuffersFmt
 //		|| (gRenDev->IsStereoEnabled() && !s_ptexVelocityObjects[1]->GetDevTexture()))
 	{
-		nPrevLBuffersFmt = CRenderer::CV_r_DeferredShadingLBuffersFmt;
-
 		const int width  = resolution.x, width_r2  = (width  + 1) / 2, width_r4  = (width_r2  + 1) / 2, width_r8  = (width_r4 +  1) / 2;
 		const int height = resolution.y, height_r2 = (height + 1) / 2, height_r4 = (height_r2 + 1) / 2, height_r8 = (height_r4 + 1) / 2;
 
