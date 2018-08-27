@@ -4,15 +4,19 @@
 
 #include "IHyperGraph.h"
 #include "NodePainter/DisplayList.h"
+
+#include <Util/Variable.h>
+
 #include <CryFlowGraph/IFlowSystem.h>
+
 #include <stack>
-#include "Util/Variable.h"
 
 class CHyperGraph;
 class CHyperGraphView;
 class CHyperNode;
 class CObjectCloneContext;
 struct IHyperNodePainter;
+struct IUndoObject;
 
 typedef _smart_ptr<CHyperNode> THyperNodePtr;
 

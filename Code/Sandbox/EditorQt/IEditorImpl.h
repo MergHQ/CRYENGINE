@@ -3,87 +3,50 @@
 #pragma once
 
 #include "IEditor.h"
-#include <CryInput/IInput.h>
-#include <CryCore/Containers/CryListenerSet.h>
-#include "Version.h"
 #include "Util/XmlTemplate.h"
+#include "Version.h"
+
+#include <CryCore/Containers/CryListenerSet.h>
+#include <CryInput/IInput.h>
 #include <CryMath/Cry_Geo.h>
-#include "IUndoManager.h"
 
 #define GET_PLUGIN_ID_FROM_MENU_ID(ID)     (((ID) & 0x000000FF))
 #define GET_UI_ELEMENT_ID_FROM_MENU_ID(ID) ((((ID) & 0x0000FF00) >> 8))
 
 class CAIManager;
-class CAssetManager;
 class CBaseLibraryDialog;
-class CBaseObject;
-class CBroadcastManager;
 class CClassFactory;
-class CConfigurationManager;
 class CConsoleSynchronization;
-class CCryEditDoc;
 class CCustomActionsEditorManager;
 class CEditorCommandManager;
 class CEditorFileMonitor;
 class CEditorFlowGraphModuleManager;
 class CEditorPythonManager;
-class CEditTool;
-class CSelectionGroup;
 class CEntityPrototype;
 class CEntityPrototypeManager;
 class CExportManager;
 class CFlowGraphDebuggerEditor;
-class CFlowGraphManager;
-class CGameEngine;
 class CGameTokenManager;
 class CGizmoManager;
-class CHeightmap;
 class CIconManager;
 class CLensFlareManager;
-class CLevelEditorSharedState;
 class CLevelIndependentFileMan;
 class CMainThreadWorker;
 class CMaterialFXGraphMan;
-class CMaterialManager;
 class CObjectManager;
 class CParticleManager;
-class CPersonalizationManager;
 class CPluginManager;
 class CPolledKeyManager;
-class CPrefabManager;
-class CRuler;
 class CSelectionGroup;
 class CTerrainManager;
-class CTrayArea;
-class CUIEnumsDatabase;
 class CUIManager;
 class CVegetationMap;
-class CViewManager;
-class CViewport;
 class EditorScriptEnvironment;
-class LevelEditorSharedState;
 class QWidget;
 
-struct AABB;
-struct I3DEngine;
 struct IBackgroundScheduleManager;
 struct IBackgroundTaskManagerListener;
-struct ICommandManager;
-struct IDataBaseItem;
-struct IDataBaseManager;
 struct IDevManager;
-struct IEditorClassFactory;
-struct IExportManager;
-struct INotificationCenter;
-struct IGizmoManager;
-struct IIconManager;
-struct IPane;
-struct IPythonManager;
-struct IRenderer;
-struct IResourceSelectorHost;
-struct ISourceControl;
-struct ISystem;
-struct IUriEventListener;
 
 enum EEditorPathName
 {
