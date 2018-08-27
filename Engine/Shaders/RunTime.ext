@@ -558,6 +558,16 @@ Property
 
 Property
 {
+  Name = %_RT_SHADOW_DEPTH_OUTPUT_LINEAR
+  Mask = 0x100000
+
+  Precache = ShadowGenVS
+  Precache = ShadowGenPS
+  Precache = DeferredLightPassPS
+}
+
+Property
+{
   Name = %_RT_ENVIRONMENT_CUBEMAP
   Mask = 0x400000
   Precache = ParticlePS
@@ -955,19 +965,6 @@ Property
   Precache = RenderDownscaledShadowMapPS
   Precache = ConeTraceDiffusePS
   Precache = DemosaicPS
-}
-
-Property
-{
-  Name = %_RT_SHADOW_MIXED_MAP_G16R16
-  Mask = 0x20000000000
-  Precache = ShadowPS
-  Precache = FogPassVolShadowsInterleavePassPS
-  Precache = ShadowVS
-  Precache = WaterFogVolume_PS
-
-  Precache = ShadowMaskGenVS
-  Precache = ShadowMaskGenPS
 }
 
 Property

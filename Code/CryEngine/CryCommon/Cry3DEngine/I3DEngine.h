@@ -1375,6 +1375,9 @@ struct I3DEngine : public IProcess
 	//! Update all ShaderItems flags, only required after shaders were reloaded at runtime.
 	virtual void UpdateShaderItems() = 0;
 
+	//! Notifies all permanent objects to be invalidated.
+	virtual void ReleasePermanentObjectsRenderResources() = 0;
+
 	//! Deletes the 3D Engine instance.
 	virtual void Release() = 0;
 

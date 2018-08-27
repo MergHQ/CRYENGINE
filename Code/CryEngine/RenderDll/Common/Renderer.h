@@ -1198,6 +1198,8 @@ public:
 	virtual bool                                      LoadShaderLevelCache() override            { return false; }
 	virtual void                                      UnloadShaderLevelCache() override          {}
 
+	virtual void                                      ClearShaderPipelineStateCache() override;
+
 	virtual void                                      RegisterSyncWithMainListener(ISyncMainWithRenderListener* pListener) override;
 	virtual void                                      RemoveSyncWithMainListener(const ISyncMainWithRenderListener* pListener) override;
 

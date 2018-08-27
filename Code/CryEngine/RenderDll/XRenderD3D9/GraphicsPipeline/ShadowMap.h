@@ -44,6 +44,8 @@ public:
 
 	bool CreatePipelineStates(DevicePipelineStatesArray* pStateArray, const SGraphicsPipelineStateDescription& stateDesc, CGraphicsPipelineStateLocalCache* pStateCache);
 
+	void OnCVarsChanged(const CCVarUpdateRecorder& cvarUpdater) final;
+
 private:
 	typedef char ProfileLabel[32];
 
@@ -145,4 +147,6 @@ private:
 	CClearRegionPass         m_ClearShadowPoolNormalsPass;
 	CDeviceResourceLayoutPtr m_pResourceLayout;
 	CDeviceResourceSetDesc   m_perPassResources;
+
+	int                      m_shadowsLocalLightsLinearizeDepth;
 };

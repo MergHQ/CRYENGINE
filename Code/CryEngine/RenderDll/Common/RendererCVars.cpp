@@ -245,6 +245,7 @@ int CRendererCVars::CV_r_ShadowsPCFiltering;
 float CRendererCVars::CV_r_shadow_jittering;
 int CRendererCVars::CV_r_ShadowPoolMaxTimeslicedUpdatesPerFrame;
 int CRendererCVars::CV_r_ShadowCastingLightsMaxCount;
+int CRendererCVars::CV_r_ShadowsLocalLightsLinearizeDepth;
 AllocateConstIntCVar(CRendererCVars, CV_r_ShadowsGridAligned);
 AllocateConstIntCVar(CRendererCVars, CV_r_ShadowMapsUpdate);
 AllocateConstIntCVar(CRendererCVars, CV_r_ShadowGenDepthClip);
@@ -661,6 +662,14 @@ static void OnChange_CV_d3d11_debugMuteMsgID(ICVar* /*pCVar*/)
 	gcpRendD3D->m_bUpdateD3DDebug = true;
 }
 #endif
+
+static void OnChange_CV_r_ShadowsLocalLightsLinearizeDepth(ICVar *pCVar)
+{
+	if (!pCVar)
+		return;
+
+	gEnv->p3DEngine->ReleasePermanentObjectsRenderResources();
+}
 
 static void OnChange_CV_r_ShaderTarget(ICVar* pCVar)
 {
@@ -1686,6 +1695,13 @@ void CRendererCVars::InitCVars()
 	               "Max number of time sliced shadow pool updates allowed per frame");
 	REGISTER_CVAR3("r_ShadowCastingLightsMaxCount", CV_r_ShadowCastingLightsMaxCount, 12, VF_REQUIRE_APP_RESTART,
 	               "Maximum number of simultaneously visible shadow casting lights");
+
+	REGISTER_CVAR3_CB("r_ShadowsLocalLightsLinearizeDepth", CV_r_ShadowsLocalLightsLinearizeDepth, 1, VF_CHEAT,
+		              "Usage: e_ShadowsLocalLightsLinearizeDepth [0-1]\n"
+		              "Changes how depth by local lights will be output for shadow mapping\n"
+		              "0=output non-linear depth\n"
+		              "1=output linear depth (default)\n", 
+		              OnChange_CV_r_ShadowsLocalLightsLinearizeDepth);
 
 #if !CRY_RENDERER_VULKAN
 	REGISTER_CVAR3_CB("r_HeightMapAO", CV_r_HeightMapAO, 1, VF_NULL,

@@ -173,6 +173,8 @@ private:
 	std::array<SLocalLightPrimitives, MAX_SHADOWMAP_FRUSTUMS> quadPrimitives;
 
 	const CShadowMaskStage& shadowMaskStage;
+
+	int                     m_shadowsLocalLightsLinearizeDepth;
 };
 
 }
@@ -1060,6 +1062,7 @@ bool CSunShadows::PrepareDebugPrimitive(CPrimitiveRenderPass& debugPass, CRender
 
 CLocalLightShadows::CLocalLightShadows(const CShadowMaskStage& stage)
 	: shadowMaskStage(stage)
+	, m_shadowsLocalLightsLinearizeDepth(1)
 {
 	InitPrimitives();
 }
@@ -1087,10 +1090,16 @@ void CLocalLightShadows::ResetPrimitives()
 
 void CLocalLightShadows::OnCVarsChanged(const CCVarUpdateRecorder& cvarUpdater)
 {
-	if (cvarUpdater.GetCVar("e_ShadowsPoolSize"))
+	auto p_CV_r_shadowsLocalLightsLinearizeDepth = cvarUpdater.GetCVar("r_ShadowsLocalLightsLinearizeDepth");
+	if (cvarUpdater.GetCVar("e_ShadowsPoolSize") || p_CV_r_shadowsLocalLightsLinearizeDepth)
 	{
 		ResetPrimitives();
 		InitPrimitives();
+
+		if (p_CV_r_shadowsLocalLightsLinearizeDepth)
+		{
+			m_shadowsLocalLightsLinearizeDepth = p_CV_r_shadowsLocalLightsLinearizeDepth->intValue;
+		}	
 	}
 }
 
@@ -1191,6 +1200,7 @@ int CLocalLightShadows::PreparePrimitivesForLight(const CRenderView* pRenderView
 			uint64 rtFlagsSampling = qualityFlags;
 			rtFlagsSampling |= bUseLightVolumes ? g_HWSR_MaskBit[HWSR_CUBEMAP0] : 0;
 			rtFlagsSampling |= usingScreenSpaceShadows ? g_HWSR_MaskBit[HWSR_SAMPLE2] : 0;
+			rtFlagsSampling |= m_shadowsLocalLightsLinearizeDepth ? g_HWSR_MaskBit[HWSR_SHADOW_DEPTH_OUTPUT_LINEAR] : 0;
 
 			const int gsDepthFunc = bReverseDepth ? GS_DEPTHFUNC_GEQUAL : GS_DEPTHFUNC_LEQUAL;
 			const int gsDepthTest = bUseLightVolumes ? 0 : GS_NODEPTHTEST;
@@ -1304,8 +1314,11 @@ void CLocalLightShadows::PrepareConstantBuffersForPrimitives(SLocalLightPrimitiv
 		shadowMat[i].m23 += vecTranslation.z;
 		shadowMat[i].m33 += vecTranslation.w;
 
-		// pre-multiply by 1/frustrum_far_plane
-		(Vec4&)shadowMat[i].m20 *= shadowSamplingInfo.oneDivFarDist;
+		if (m_shadowsLocalLightsLinearizeDepth == 1)
+		{
+			// pre-multiply by 1/frustrum_far_plane
+			(Vec4&)shadowMat[i].m20 *= shadowSamplingInfo.oneDivFarDist;
+		}
 	}
 
 	// apply per view buffer to all primitives

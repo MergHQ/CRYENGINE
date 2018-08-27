@@ -4256,6 +4256,17 @@ void CRenderer::UnloadShaderStartupCache()
 	m_cEF.UnloadShaderStartupCache();
 }
 
+void CRenderer::ClearShaderPipelineStateCache()
+{
+	for (auto pShaderResources : CShader::s_ShaderResources_known)
+	{
+		if (pShaderResources)
+		{
+			pShaderResources->ClearPipelineStateCache();
+		}
+	}
+}
+
 void CRenderer::FlushPendingTextureTasks()
 {
 	if (m_pRT)

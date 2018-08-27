@@ -446,6 +446,7 @@ public:
 	static float CV_r_ShadowsParticleNormalEffect;
 	static float CV_r_shadow_jittering; // dont use this directly for rendering. use m_shadowJittering or GetShadowJittering() instead;
 
+    static int   CV_r_ShadowsLocalLightsLinearizeDepth;
 	static int   CV_r_ShadowPoolMaxTimeslicedUpdatesPerFrame;
 	static int   CV_r_ShadowCastingLightsMaxCount;
 	static int   CV_r_HeightMapAO;

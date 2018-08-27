@@ -4771,6 +4771,13 @@ void C3DEngine::SetRecomputeCachedShadows(IRenderNode* pNode, uint updateStrateg
 	}
 }
 
+void C3DEngine::ReleasePermanentObjectsRenderResources()
+{
+	gEnv->pRenderer->FlushRTCommands(true, true, true);
+	MarkRNTmpDataPoolForReset();
+	gEnv->pRenderer->ClearShaderPipelineStateCache();
+}
+
 void C3DEngine::InvalidateShadowCacheData()
 {
 	ShadowCacheGenerator::ResetGenerationID();

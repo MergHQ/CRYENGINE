@@ -668,6 +668,8 @@ public:
 
 	void                   SetRecomputeCachedShadows(IRenderNode* pNode, uint updateStrategy);
 
+	virtual void           ReleasePermanentObjectsRenderResources();
+
 public:
 	C3DEngine(ISystem* pSystem);
 	~C3DEngine();

@@ -226,14 +226,6 @@ half CalcShadow(float4 vShPos, float2 vNoisePos, const bool bContactHardening)
 {
   float4 P0 = vShPos;
 
-//clamp depth in shadows space for all FP shadowmaps
-//comparison sampler doesn't do clamping internally for FP formats
-#if %_RT_SHADOW_MIXED_MAP_G16R16
-	P0.z = clamp(P0.z, 0.0f, 0.999999f);
-#endif
-	//can't be done is VS because depth reconstruction is in projective space
-	//P0.z = (P0.z *  fOneDivFarDist.x)- fDepthTestBias.x;
-
 //scale for noise projecton should be computed based on the size of shadow frustums(increase if it's bigger) 
 //and distance to viewer((decrease if it's father)) 
 
