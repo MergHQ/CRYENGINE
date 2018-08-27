@@ -529,6 +529,8 @@ bool CFileCacheManager::FinishStreamInternal(IReadStreamPtr const pStream, int u
 			fileEntryInfo.size = pAudioFileEntry->m_size;
 			fileEntryInfo.pImplData = pAudioFileEntry->m_pImplData;
 			fileEntryInfo.szFileName = PathUtil::GetFile(pAudioFileEntry->m_path.c_str());
+			fileEntryInfo.szFilePath = pAudioFileEntry->m_path.c_str();
+			fileEntryInfo.bLocalized = (pAudioFileEntry->m_flags & EFileFlags::Localized) != 0;
 
 			m_pIImpl->RegisterInMemoryFile(&fileEntryInfo);
 			bSuccess = true;

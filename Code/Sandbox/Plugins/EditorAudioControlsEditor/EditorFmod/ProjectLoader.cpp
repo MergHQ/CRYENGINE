@@ -28,6 +28,17 @@ string const g_returnsPath = "/metadata/return/";
 string const g_vcasPath = "/metadata/vca/";
 
 //////////////////////////////////////////////////////////////////////////
+void AddNonStreamsBank(AssetNames& banks, string const& fileName)
+{
+	size_t const pos = fileName.rfind(".streams.bank");
+
+	if (pos == string::npos)
+	{
+		banks.emplace_back(fileName);
+	}
+}
+
+//////////////////////////////////////////////////////////////////////////
 CProjectLoader::CProjectLoader(string const& projectPath, string const& soundbanksPath, CItem& rootItem, ItemCache& itemCache, CImpl const& impl)
 	: m_rootItem(rootItem)
 	, m_itemCache(itemCache)
@@ -80,32 +91,32 @@ void CProjectLoader::LoadBanks(string const& folderPath, bool const isLocalized,
 
 		do
 		{
-			string const filename = fd.name;
+			string const fileName = fd.name;
 
-			if ((filename != ".") && (filename != "..") && !filename.empty())
+			if ((fileName != ".") && (fileName != "..") && !fileName.empty())
 			{
-				int const pos = filename.rfind(".strings.bank");
+				size_t const pos = fileName.rfind(".strings.bank");
 
 				if (pos != string::npos)
 				{
-					masterBankName = filename.substr(0, pos);
+					masterBankName = fileName.substr(0, pos);
 				}
 				else
 				{
-					banks.emplace_back(filename);
+					AddNonStreamsBank(banks, fileName);
 				}
 			}
 		}
 		while (pCryPak->FindNext(handle, &fd) >= 0);
 
-		for (string const& filename : banks)
+		for (string const& bankName : banks)
 		{
-			if (filename.compareNoCase(0, masterBankName.length(), masterBankName) != 0)
+			if (bankName.compareNoCase(0, masterBankName.length(), masterBankName) != 0)
 			{
-				string const filePath = folderPath + "/" + filename;
+				string const filePath = folderPath + "/" + bankName;
 				EPakStatus const pakStatus = gEnv->pCryPak->IsFileExist(filePath.c_str(), ICryPak::eFileLocation_OnDisk) ? EPakStatus::OnDisk : EPakStatus::None;
 
-				CItem* const pSoundBank = CreateItem(filename, EItemType::Bank, &parent, pakStatus, filePath);
+				CreateItem(bankName, EItemType::Bank, &parent, pakStatus, filePath);
 			}
 		}
 

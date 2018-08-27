@@ -33,6 +33,7 @@ CImpl::CImpl()
 	, m_pLowLevelSystem(nullptr)
 	, m_pMasterBank(nullptr)
 	, m_pMasterAssetsBank(nullptr)
+	, m_pMasterStreamsBank(nullptr)
 	, m_pMasterStringsBank(nullptr)
 	, m_isMuted(false)
 {
@@ -247,7 +248,7 @@ ERequestStatus CImpl::RegisterInMemoryFile(SFileInfo* const pFileInfo)
 
 	if (pFileInfo != nullptr)
 	{
-		CFile* const pFileData = static_cast<CFile*>(pFileInfo->pImplData);
+		auto const pFileData = static_cast<CFile*>(pFileInfo->pImplData);
 
 		if (pFileData != nullptr)
 		{
@@ -259,8 +260,22 @@ ERequestStatus CImpl::RegisterInMemoryFile(SFileInfo* const pFileInfo)
 			}
 #endif      // INCLUDE_FMOD_IMPL_PRODUCTION_CODE
 
-			FMOD_RESULT const fmodResult = m_pSystem->loadBankMemory(static_cast<char*>(pFileInfo->pFileData), static_cast<int>(pFileInfo->size), FMOD_STUDIO_LOAD_MEMORY_POINT, FMOD_STUDIO_LOAD_BANK_NORMAL, &pFileData->pBank);
+			FMOD_RESULT fmodResult = m_pSystem->loadBankMemory(static_cast<char*>(pFileInfo->pFileData), static_cast<int>(pFileInfo->size), FMOD_STUDIO_LOAD_MEMORY_POINT, FMOD_STUDIO_LOAD_BANK_NORMAL, &pFileData->pBank);
 			ASSERT_FMOD_OK;
+
+			CryFixedStringT<MaxFilePathLength> streamsBankPath = pFileInfo->szFilePath;
+			PathUtil::RemoveExtension(streamsBankPath);
+			streamsBankPath += ".streams.bank";
+
+			size_t const streamsBankFileSize = gEnv->pCryPak->FGetSize(streamsBankPath.c_str());
+
+			if (streamsBankFileSize > 0)
+			{
+				pFileData->m_streamsBankPath = streamsBankPath;
+				fmodResult = LoadBankCustom(pFileData->m_streamsBankPath.c_str(), &pFileData->pStreamsBank);
+				ASSERT_FMOD_OK;
+			}
+
 			requestResult = (fmodResult == FMOD_OK) ? ERequestStatus::Success : ERequestStatus::Failure;
 		}
 		else
@@ -279,7 +294,7 @@ ERequestStatus CImpl::UnregisterInMemoryFile(SFileInfo* const pFileInfo)
 
 	if (pFileInfo != nullptr)
 	{
-		CFile* const pFileData = static_cast<CFile*>(pFileInfo->pImplData);
+		auto const pFileData = static_cast<CFile*>(pFileInfo->pImplData);
 
 		if (pFileData != nullptr)
 		{
@@ -298,6 +313,14 @@ ERequestStatus CImpl::UnregisterInMemoryFile(SFileInfo* const pFileInfo)
 			while (loadingState == FMOD_STUDIO_LOADING_STATE_UNLOADING);
 
 			pFileData->pBank = nullptr;
+
+			if (pFileData->pStreamsBank != nullptr)
+			{
+				fmodResult = pFileData->pStreamsBank->unload();
+				ASSERT_FMOD_OK;
+				pFileData->pStreamsBank = nullptr;
+			}
+
 			requestResult = (fmodResult == FMOD_OK) ? ERequestStatus::Success : ERequestStatus::Failure;
 		}
 		else
@@ -401,7 +424,7 @@ IObject* CImpl::ConstructObject(char const* const szName /*= nullptr*/)
 ///////////////////////////////////////////////////////////////////////////
 void CImpl::DestructObject(IObject const* const pIObject)
 {
-	CObjectBase const* const pObject = static_cast<CObjectBase const* const>(pIObject);
+	auto const pObject = static_cast<CObjectBase const*>(pIObject);
 
 	if (!stl::find_and_erase(m_constructedObjects, pObject))
 	{
@@ -560,7 +583,7 @@ ITrigger const* CImpl::ConstructTrigger(XmlNodeRef const pRootNode)
 ///////////////////////////////////////////////////////////////////////////
 void CImpl::DestructTrigger(ITrigger const* const pITrigger)
 {
-	CTrigger const* const pTrigger = static_cast<CTrigger const* const>(pITrigger);
+	auto const pTrigger = static_cast<CTrigger const*>(pITrigger);
 	g_triggerToParameterIndexes.erase(pTrigger);
 	delete pTrigger;
 }
@@ -617,7 +640,7 @@ IParameter const* CImpl::ConstructParameter(XmlNodeRef const pRootNode)
 ///////////////////////////////////////////////////////////////////////////
 void CImpl::DestructParameter(IParameter const* const pIParameter)
 {
-	CParameter const* const pParameter = static_cast<CParameter const* const>(pIParameter);
+	auto const pParameter = static_cast<CParameter const*>(pIParameter);
 
 	for (auto const pObject : m_constructedObjects)
 	{
@@ -674,7 +697,7 @@ ISwitchState const* CImpl::ConstructSwitchState(XmlNodeRef const pRootNode)
 ///////////////////////////////////////////////////////////////////////////
 void CImpl::DestructSwitchState(ISwitchState const* const pISwitchState)
 {
-	CSwitchState const* const pSwitchState = static_cast<CSwitchState const* const>(pISwitchState);
+	auto const pSwitchState = static_cast<CSwitchState const*>(pISwitchState);
 
 	for (auto const pObject : m_constructedObjects)
 	{
@@ -730,7 +753,7 @@ IEnvironment const* CImpl::ConstructEnvironment(XmlNodeRef const pRootNode)
 ///////////////////////////////////////////////////////////////////////////
 void CImpl::DestructEnvironment(IEnvironment const* const pIEnvironment)
 {
-	CEnvironment const* const pEnvironment = static_cast<CEnvironment const* const>(pIEnvironment);
+	auto const pEnvironment = static_cast<CEnvironment const*>(pIEnvironment);
 
 	for (auto const pObject : m_constructedObjects)
 	{
@@ -933,6 +956,7 @@ bool CImpl::LoadMasterBanks()
 	FMOD_RESULT fmodResult = FMOD_ERR_UNINITIALIZED;
 	m_masterBankPath.clear();
 	m_masterAssetsBankPath.clear();
+	m_masterStreamsBankPath.clear();
 	m_masterStringsBankPath.clear();
 	CryFixedStringT<MaxFilePathLength + MaxFileNameLength> search(m_regularSoundBankFolder + "/*.bank");
 	_finddata_t fd;
@@ -951,8 +975,10 @@ bool CImpl::LoadMasterBanks()
 				m_masterBankPath += "/";
 				m_masterBankPath += m_masterStringsBankPath.substr(0, substrPos);
 				m_masterAssetsBankPath = m_masterBankPath;
+				m_masterStreamsBankPath = m_masterBankPath;
 				m_masterBankPath += ".bank";
 				m_masterAssetsBankPath += ".assets.bank";
+				m_masterStreamsBankPath += ".streams.bank";
 				m_masterStringsBankPath.insert(0, "/");
 				m_masterStringsBankPath.insert(0, m_regularSoundBankFolder.c_str());
 				break;
@@ -1010,6 +1036,14 @@ bool CImpl::LoadMasterBanks()
 				fmodResult = LoadBankCustom(m_masterAssetsBankPath.c_str(), &m_pMasterAssetsBank);
 				ASSERT_FMOD_OK;
 			}
+
+			size_t const masterBankStreamsFileSize = gEnv->pCryPak->FGetSize(m_masterStreamsBankPath.c_str());
+
+			if (masterBankStreamsFileSize > 0)
+			{
+				fmodResult = LoadBankCustom(m_masterStreamsBankPath.c_str(), &m_pMasterStreamsBank);
+				ASSERT_FMOD_OK;
+			}
 		}
 	}
 	else
@@ -1033,6 +1067,13 @@ void CImpl::UnloadMasterBanks()
 		fmodResult = m_pMasterStringsBank->unload();
 		ASSERT_FMOD_OK;
 		m_pMasterStringsBank = nullptr;
+	}
+
+	if (m_pMasterStreamsBank != nullptr)
+	{
+		fmodResult = m_pMasterStreamsBank->unload();
+		ASSERT_FMOD_OK;
+		m_pMasterStreamsBank = nullptr;
 	}
 
 	if (m_pMasterAssetsBank != nullptr)

@@ -91,12 +91,14 @@ private:
 
 	CryFixedStringT<MaxFilePathLength>    m_masterBankPath;
 	CryFixedStringT<MaxFilePathLength>    m_masterAssetsBankPath;
+	CryFixedStringT<MaxFilePathLength>    m_masterStreamsBankPath;
 	CryFixedStringT<MaxFilePathLength>    m_masterStringsBankPath;
 
 	FMOD::Studio::System*                 m_pSystem;
 	FMOD::System*                         m_pLowLevelSystem;
 	FMOD::Studio::Bank*                   m_pMasterBank;
 	FMOD::Studio::Bank*                   m_pMasterAssetsBank;
+	FMOD::Studio::Bank*                   m_pMasterStreamsBank;
 	FMOD::Studio::Bank*                   m_pMasterStringsBank;
 	CryFixedStringT<MaxControlNameLength> m_language;
 
