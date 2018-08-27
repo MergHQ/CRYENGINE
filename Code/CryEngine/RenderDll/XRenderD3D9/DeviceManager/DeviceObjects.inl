@@ -216,12 +216,13 @@ inline void EraseExpiredEntriesFromCache(TCache& cache, int currentFrame, int er
 {
 	for (auto it = cache.begin(); it != cache.end(); )
 	{
-		auto itCurrent = it++;
-		auto pCacheEntry = itCurrent->second;
+		auto  itCurrent   = it++;
+		auto& pCacheEntry = itCurrent->second;
 
-		if (pCacheEntry.use_count() == 1 && pCacheEntry->GetLastUseFrame() < eraseBeforeFrame)
+		if (pCacheEntry.use_count() == 1)
 		{
-			cache.erase(itCurrent);
+			if (pCacheEntry->GetLastUseFrame() < eraseBeforeFrame)
+				cache.erase(itCurrent);
 		}
 		else
 		{
