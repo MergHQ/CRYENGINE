@@ -210,6 +210,9 @@ void CScene::OnViewportRender(const SRenderContext& rc)
 
 	if (m_showGizmo && hasSelection)
 	{
+		SAuxGeomRenderFlags prevFlags = IRenderAuxGeom::GetAux()->GetRenderFlags();
+		IRenderAuxGeom::GetAux()->SetRenderFlags(e_Mode3D | e_AlphaBlended | e_FillModeSolid | e_CullModeBack | e_DepthTestOn | e_DepthWriteOn);
+
 		int selectionCaps = GetSelectionCaps();
 		Matrix34 m = Matrix34(GetGizmoOrientation(GetSelectionTransform(SPACE_WORLD), rc.viewport->Camera(), m_transformationSpace));
 		SDisplayContext dc;
@@ -223,6 +226,8 @@ void CScene::OnViewportRender(const SRenderContext& rc)
 		{
 			m_axisHelper->DrawAxis(m, dc);
 		}
+
+		IRenderAuxGeom::GetAux()->SetRenderFlags(prevFlags);
 	}
 }
 

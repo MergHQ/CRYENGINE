@@ -61,6 +61,7 @@ SDisplayContext::SDisplayContext()
 {
 	m_currentMatrix = 0;
 	m_matrixStack[m_currentMatrix].SetIdentity();
+	m_renderState = 0;
 	pRenderAuxGeom = gEnv->pRenderer->GetIRenderAuxGeom();
 	m_thickness = 0;
 
