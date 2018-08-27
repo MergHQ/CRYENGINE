@@ -52,7 +52,6 @@ CTerrainDialog::CTerrainDialog()
 	// We don't have valid recent terrain generation parameters yet
 	m_sLastParam = new SNoiseParams;
 	m_sLastParam->bValid = false;
-	m_pViewport = 0;
 
 	m_pHeightmap = GetIEditorImpl()->GetHeightmap();
 	if (m_pHeightmap)
@@ -75,7 +74,6 @@ CTerrainDialog::~CTerrainDialog()
 }
 
 BEGIN_MESSAGE_MAP(CTerrainDialog, CBaseFrameWnd)
-ON_MESSAGE(WM_KICKIDLE, OnKickIdle)
 ON_COMMAND(ID_TERRAIN_LOAD, OnTerrainLoad)
 ON_COMMAND(ID_TERRAIN_ERASE, OnTerrainErase)
 ON_COMMAND(ID_TERRAIN_RESIZE, OnResizeTerrain)
@@ -99,13 +97,6 @@ ON_COMMAND(ID_MODIFY_REDUCERANGELIGHT, OnModifyReduceRangeLight)
 ON_WM_MOUSEWHEEL()
 ON_COMMAND(ID_HOLD, OnHold)
 ON_COMMAND(ID_FETCH, OnFetch)
-ON_COMMAND(ID_OPTIONS_SHOWMAPOBJECTS, OnOptionsShowMapObjects)
-ON_COMMAND(ID_OPTIONS_SHOWWATER, OnOptionsShowWater)
-ON_UPDATE_COMMAND_UI(ID_OPTIONS_SHOWWATER, OnShowWaterUpdateUI)
-ON_UPDATE_COMMAND_UI(ID_OPTIONS_SHOWMAPOBJECTS, OnShowMapObjectsUpdateUI)
-ON_COMMAND(ID_OPTIONS_SHOWGRID, OnOptionsShowGrid)
-ON_UPDATE_COMMAND_UI(ID_OPTIONS_SHOWGRID, OnShowGridUpdateUI)
-ON_COMMAND(ID_OPTIONS_EDITTERRAINCURVE, OnOptionsEditTerrainCurve)
 ON_COMMAND(ID_SETWATERLEVEL, OnSetWaterLevel)
 ON_COMMAND(ID_MODIFY_SETMAXHEIGHT, OnSetMaxHeight)
 ON_COMMAND(ID_MODIFY_SETUNITSIZE, OnSetUnitSize)
@@ -156,18 +147,6 @@ BOOL CTerrainDialog::OnInitDialog()
 	/////////////////////////////////////////////////////////////////////////
 	// Docking Pane for TaskPanel
 	m_pDockPane_Rollup = GetDockingPaneManager()->CreatePane(IDW_ROLLUP_PANE, CRect(0, 0, 300, 500), xtpPaneDockRight);
-	//m_pDockPane_Rollup->SetOptions(xtpPaneNoCloseable|xtpPaneNoFloatable);
-
-	m_pViewport = new CTopRendererWnd;
-	//m_pViewport->SetDlgCtrlID(AFX_IDW_PANE_FIRST);
-	//m_pViewport->MoveWindow( CRect(20,50,500,500) );
-	//m_pViewport->ModifyStyle( WS_POPUP,WS_CHILD,0 );
-	//m_pViewport->SetParent( this );
-	//m_pViewport->SetOwner( this );
-	m_pViewport->m_bShowHeightmap = true;
-	//m_pViewport->ShowWindow( SW_SHOW );
-	m_pViewport->SetShowWater(true);
-	m_pViewport->SetShowViewMarker(false);
 
 	//////////////////////////////////////////////////////////////////////////
 	char szCaption[128];
@@ -208,15 +187,6 @@ LRESULT CTerrainDialog::OnDockingPaneNotify(WPARAM wParam, LPARAM lParam)
 		{
 		}
 	}
-
-	return FALSE;
-}
-
-//////////////////////////////////////////////////////////////////////////
-LRESULT CTerrainDialog::OnKickIdle(WPARAM wParam, LPARAM lParam)
-{
-	if (m_pViewport)
-		m_pViewport->Update();
 
 	return FALSE;
 }
@@ -263,10 +233,7 @@ void CTerrainDialog::OnTerrainLoad()
 		}
 
 		InvalidateTerrain();
-
-		if (m_pViewport)
-			m_pViewport->InitHeightmapAlignment();
-		InvalidateViewport();
+		GetIEditorImpl()->UpdateViews(eUpdateHeightmap);
 	}
 }
 
@@ -645,54 +612,6 @@ void CTerrainDialog::OnFetch()
 	InvalidateTerrain();
 }
 
-/////////////////////////////////////////////////////////////////////////////
-// Options
-void CTerrainDialog::OnShowWaterUpdateUI(CCmdUI* pCmdUI)
-{
-	pCmdUI->SetCheck(m_pViewport->GetShowWater() ? 1 : 0);
-}
-
-//////////////////////////////////////////////////////////////////////////
-void CTerrainDialog::OnShowMapObjectsUpdateUI(CCmdUI* pCmdUI)
-{
-	pCmdUI->SetCheck(m_pViewport->m_bShowStatObjects ? 1 : 0);
-}
-
-//////////////////////////////////////////////////////////////////////////
-void CTerrainDialog::OnShowGridUpdateUI(CCmdUI* pCmdUI)
-{
-	pCmdUI->SetCheck(m_pViewport->GetShowGrid() ? 1 : 0);
-}
-
-//////////////////////////////////////////////////////////////////////////
-void CTerrainDialog::OnOptionsShowMapObjects()
-{
-	m_pViewport->m_bShowStatObjects = !m_pViewport->m_bShowStatObjects;
-
-	// Update the draw window
-	InvalidateViewport();
-}
-
-//////////////////////////////////////////////////////////////////////////
-void CTerrainDialog::OnOptionsShowWater()
-{
-	m_pViewport->SetShowWater(!m_pViewport->GetShowWater());
-	// Update the draw window
-	InvalidateViewport();
-}
-
-//////////////////////////////////////////////////////////////////////////
-void CTerrainDialog::OnOptionsShowGrid()
-{
-	m_pViewport->SetShowGrid(!m_pViewport->GetShowGrid());
-	// Update the draw window
-	InvalidateViewport();
-}
-
-void CTerrainDialog::OnOptionsEditTerrainCurve()
-{
-}
-
 void CTerrainDialog::OnSetWaterLevel()
 {
 	////////////////////////////////////////////////////////////////////////
@@ -771,14 +690,6 @@ void CTerrainDialog::InvalidateTerrain()
 
 	GetIEditorImpl()->GetGameEngine()->ReloadEnvironment();
 
-	InvalidateViewport();
-}
-
-//////////////////////////////////////////////////////////////////////////
-void CTerrainDialog::InvalidateViewport()
-{
-	LOADING_TIME_PROFILE_SECTION;
-	m_pViewport->Invalidate();
 	GetIEditorImpl()->UpdateViews(eUpdateHeightmap);
 }
 
@@ -790,8 +701,7 @@ void CTerrainDialog::OnEditorNotifyEvent(EEditorNotifyEvent event)
 	case eNotify_OnEndNewScene:
 	case eNotify_OnEndSceneOpen:
 	case eNotify_OnTerrainRebuild:
-		m_pViewport->InitHeightmapAlignment();
-		InvalidateViewport();
+		GetIEditorImpl()->UpdateViews(eUpdateHeightmap);
 		break;
 	}
 }
