@@ -34,8 +34,6 @@ public:
 	// CBaseFrameWnd implementation
 	virtual LRESULT OnDockingPaneNotify(WPARAM wParam, LPARAM lParam);
 
-	afx_msg LRESULT OnKickIdle(WPARAM wParam, LPARAM);
-
 	virtual BOOL OnInitDialog();
 	afx_msg void OnTerrainLoad();
 	afx_msg void OnTerrainErase();
@@ -59,16 +57,9 @@ public:
 	afx_msg BOOL OnMouseWheel(UINT nFlags, short zDelta, CPoint pt);
 	afx_msg void OnHold();
 	afx_msg void OnFetch();
-	afx_msg void OnOptionsShowMapObjects();
-	afx_msg void OnOptionsShowWater();
-	afx_msg void OnOptionsEditTerrainCurve();
-	afx_msg void OnOptionsShowGrid();
 	afx_msg void OnSetWaterLevel();
 	afx_msg void OnSetMaxHeight();
 	afx_msg void OnSetUnitSize();
-	afx_msg void OnShowWaterUpdateUI(CCmdUI* pCmdUI);
-	afx_msg void OnShowMapObjectsUpdateUI(CCmdUI* pCmdUI);
-	afx_msg void OnShowGridUpdateUI(CCmdUI* pCmdUI);
 	afx_msg void OnCustomize();
 	afx_msg void OnExportShortcuts();
 	afx_msg void OnImportShortcuts();
@@ -90,7 +81,6 @@ private:
 	CHeightmap*      m_pHeightmap;
 
 	CXTPStatusBar    m_wndStatusBar;
-	CTopRendererWnd* m_pViewport;
 
 	//Panes
 	CXTPDockingPane* m_pDockPane_Rollup;

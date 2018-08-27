@@ -30,7 +30,7 @@ struct v2f_sh
 		float2 baseTC : TEXCOORDN;
 	#endif
 
-	#if !%_RT_HW_PCF_COMPARE || %_RT_CUBEMAP0 || %_RT_SAMPLE0
+	#if (!%_RT_HW_PCF_COMPARE || %_RT_CUBEMAP0 || %_RT_SAMPLE0) && %_RT_SHADOW_DEPTH_OUTPUT_LINEAR
 		float Depth  : TEXCOORDN;
 	#endif
 

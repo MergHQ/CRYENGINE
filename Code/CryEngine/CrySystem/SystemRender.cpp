@@ -114,7 +114,7 @@ void CSystem::CreateRendererVars(const SSystemInitParams& startupParams)
 	m_rHeight = REGISTER_INT("r_Height", iHeightDefault, VF_DUMPTODISK,
 		"Sets the display height, in pixels.\n"
 		"Usage: r_Height [600/768/..]");
-	m_rColorBits = REGISTER_INT("r_ColorBits", 32, VF_DUMPTODISK,
+	m_rColorBits = REGISTER_INT("r_ColorBits", 32, VF_DUMPTODISK | VF_REQUIRE_APP_RESTART,
 		"Sets the color resolution, in bits per pixel. Default is 32.\n"
 		"Usage: r_ColorBits [32/24/16/8]");
 	m_rDepthBits = REGISTER_INT("r_DepthBits", 24, VF_DUMPTODISK | VF_REQUIRE_APP_RESTART,
@@ -149,7 +149,7 @@ void CSystem::CreateRendererVars(const SSystemInitParams& startupParams)
 			p_r_DriverDef = startupParams.pCvarsDefault->sz_r_DriverDef;
 	}
 
-	m_rDriver = REGISTER_STRING("r_Driver", p_r_DriverDef, VF_DUMPTODISK,
+	m_rDriver = REGISTER_STRING("r_Driver", p_r_DriverDef, VF_DUMPTODISK | VF_REQUIRE_APP_RESTART,
 		"Sets the renderer driver ( DX11/DX12/GL/VK/AUTO ).\n"
 		"Specify in system.cfg like this: r_Driver = \"DX11\"");
 

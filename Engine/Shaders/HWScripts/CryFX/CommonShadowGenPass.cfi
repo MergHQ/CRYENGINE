@@ -53,32 +53,34 @@ bool instanceMatrixToWorldSpace = false;
 	#endif
 #endif
 
-#if !%_RT_CUBEMAP0 
-  #if !%_RT_NEAREST
-		HPosition.z /= CP_ShadowGen_FrustumInfo.y;	//use linear z-buffer
+#if %_RT_SHADOW_DEPTH_OUTPUT_LINEAR
+	#if !%_RT_CUBEMAP0 
+	  #if !%_RT_NEAREST
+			HPosition.z /= CP_ShadowGen_FrustumInfo.y;	//use linear z-buffer
 
-	#if %TEMP_TERRAIN
-		HPosition.z += .002;
-		HPosition.z = max(HPosition.z, 0.001);
+		#if %TEMP_TERRAIN
+			HPosition.z += .002;
+			HPosition.z = max(HPosition.z, 0.001);
+		#endif
+
+	  #endif
+
+	  #if %_RT_SAMPLE0
+		OUT.Depth = HPosition.z + CP_ShadowGen_DepthTestBias.x;
+	  #endif
+
+	  #if !%_RT_HW_PCF_COMPARE 
+		//perspective interpolation is not needed here
+		OUT.Depth = HPosition.z - CP_ShadowGen_FrustumInfo.z; //increase precision around camera
+	  #endif
+	  #if !%_RT_NEAREST
+			HPosition.z *= HPosition.w;   //HPosition.z is linearized already
+	  #endif
+	#else
+		OUT.Depth = (HPosition.z/CP_ShadowGen_FrustumInfo.y);
+		OUT.Depth += CP_ShadowGen_DepthTestBias.x;
+	//_RT_DIRECTLIGHT
 	#endif
-
-  #endif
-
-  #if %_RT_SAMPLE0
-    OUT.Depth = HPosition.z + CP_ShadowGen_DepthTestBias.x;
-  #endif
-
-  #if !%_RT_HW_PCF_COMPARE 
-    //perspective interpolation is not needed here
-    OUT.Depth = HPosition.z - CP_ShadowGen_FrustumInfo.z; //increase precision around camera
-  #endif
-  #if !%_RT_NEAREST
-		HPosition.z *= HPosition.w;   //HPosition.z is linearized already
-  #endif
-#else
-    OUT.Depth = (HPosition.z/CP_ShadowGen_FrustumInfo.y);
-    OUT.Depth += CP_ShadowGen_DepthTestBias.x;
-//_RT_DIRECTLIGHT
 #endif
 
 float4 OutBaseTC;
@@ -112,10 +114,12 @@ struct pixout_shadow
   half4 Normal   : SV_Target1;
 #endif
 
-#if %_RT_SAMPLE0
-  float Depth    : SV_DepthGreaterEqual;
-#elif %_RT_HW_PCF_COMPARE && %_RT_CUBEMAP0
-  float Depth    : SV_Depth;
+#if %_RT_SHADOW_DEPTH_OUTPUT_LINEAR
+	#if %_RT_SAMPLE0
+	  float Depth    : SV_DepthGreaterEqual;
+	#elif %_RT_HW_PCF_COMPARE && %_RT_CUBEMAP0
+	  float Depth    : SV_Depth;
+	#endif
 #endif
 };
 
@@ -124,12 +128,14 @@ pixout_shadow Common_SG_PS(v2f_sh IN)
 {
 	pixout_shadow OUT = (pixout_shadow)0;
 
-#if %_RT_SAMPLE0 // Sun shadows with emulated slope bias
-		float fSlopeScale = CP_ShadowGen_FrustumInfo.z;
-		float fSlopeClamp = 0.001;
-		OUT.Depth = IN.Depth + min( fSlopeScale * max( abs(ddx(IN.Depth)), abs(ddy(IN.Depth)) ), fSlopeClamp);
-#elif %_RT_CUBEMAP0 // Local light shadows: linear depth
-		OUT.Depth = IN.Depth;
+#if %_RT_SHADOW_DEPTH_OUTPUT_LINEAR
+	#if %_RT_SAMPLE0 // Sun shadows with emulated slope bias
+			float fSlopeScale = CP_ShadowGen_FrustumInfo.z;
+			float fSlopeClamp = 0.001;
+			OUT.Depth = IN.Depth + min( fSlopeScale * max( abs(ddx(IN.Depth)), abs(ddy(IN.Depth)) ), fSlopeClamp);
+	#elif %_RT_CUBEMAP0 // Local light shadows: linear depth
+			OUT.Depth = IN.Depth;
+	#endif
 #endif
 
 #if %_RT_ALPHATEST || %_RT_ALPHABLEND || %_RT_SAMPLE4

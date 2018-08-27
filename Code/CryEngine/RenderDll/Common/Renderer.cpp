@@ -2906,8 +2906,6 @@ bool CRenderer::DXTCompress(const byte* sourceData, int width, int height, ETEX_
 		return false;
 	if (bGenMips)
 		return false;
-	if (CV_r_TextureCompressor == 0)
-		return false;
 
 #if CRY_PLATFORM_WINDOWS
 	if (IsBadReadPtr(sourceData, width * height * nSrcBytesPerPix))
@@ -4256,6 +4254,17 @@ bool CRenderer::LoadShaderStartupCache()
 void CRenderer::UnloadShaderStartupCache()
 {
 	m_cEF.UnloadShaderStartupCache();
+}
+
+void CRenderer::ClearShaderPipelineStateCache()
+{
+	for (auto pShaderResources : CShader::s_ShaderResources_known)
+	{
+		if (pShaderResources)
+		{
+			pShaderResources->ClearPipelineStateCache();
+		}
+	}
 }
 
 void CRenderer::FlushPendingTextureTasks()

@@ -25,9 +25,6 @@
 
 bool CSunShafts::Preprocess(const SRenderViewInfo& viewInfo)
 {
-	if (CRenderer::CV_r_UseMergedPosts)
-		return false;
-
 	return IsVisible();
 }
 

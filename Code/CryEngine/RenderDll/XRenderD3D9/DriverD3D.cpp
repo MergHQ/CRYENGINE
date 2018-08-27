@@ -985,12 +985,6 @@ void CD3D9Renderer::RT_BeginFrame(const SDisplayContextKey& displayContextKey)
 			}
 			else
 				m_nGPULimited = 0;
-
-			m_bUseGPUFriendlyBatching[GetRenderThreadID()] = m_nGPULimited > 10; // On PC if we are GPU limited use z-pass distance sorting and disable instancing
-			if (CV_r_batchtype == 0)
-				m_bUseGPUFriendlyBatching[GetRenderThreadID()] = false;
-			else if (CV_r_batchtype == 1)
-				m_bUseGPUFriendlyBatching[GetRenderThreadID()] = true;
 		}
 	}
 
@@ -4354,8 +4348,6 @@ void CD3D9Renderer::Graph(byte* g, int x, int y, int width, int height, int nC, 
 	IRenderAuxImage::DrawImage(fx, fy + fhgt, fwdt, 2, num, 0, 0, 1, 1, col.r, col.g, col.b, col.a);
 	IRenderAuxImage::DrawImage(fx, fy, 2, fhgt, num, 0, 0, 1, 1, col.r, col.g, col.b, col.a);
 	IRenderAuxImage::DrawImage(fx + fwdt - 2, fy, 2, fhgt, num, 0, 0, 1, 1, col.r, col.g, col.b, col.a);
-
-	float fGround = CV_r_graphstyle ? fy + fhgt : -1;
 
 	for (i = 0; i < width; i++)
 	{

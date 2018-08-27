@@ -1424,7 +1424,11 @@ pixout ShadowMaskGenPS(float4 WPos : SV_POSITION)
 	float3 vPosition = ReconstructWorldPos(WPos.xy, fDepth, true);
 	
 	float4 P0 = mul(cbShadowMaskConstants.lightShadowProj, float4(vPosition, 1.f));
+#if %_RT_SHADOW_DEPTH_OUTPUT_LINEAR
 	P0.xy /= P0.w;
+#else
+	P0.xyz /= P0.w;
+#endif
 	P0.z -= cbShadowMaskConstants.params.w;
 	
 	ShadowSamplingContext samplingContext;

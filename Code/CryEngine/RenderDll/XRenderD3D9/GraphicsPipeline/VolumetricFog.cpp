@@ -134,7 +134,6 @@ bool CVolumetricFogStage::IsEnabledInFrame()
 	bool v = CRenderer::CV_r_DeferredShadingTiled > 0
 	         && CRenderer::CV_r_DeferredShadingTiledDebug != 2
 	         && CRenderer::CV_r_usezpass != 0
-	         && CRenderer::CV_r_Unlit == 0
 	         && CRenderer::CV_r_measureoverdraw == 0;
 
 	return v;

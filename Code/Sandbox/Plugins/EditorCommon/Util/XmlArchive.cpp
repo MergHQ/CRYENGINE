@@ -3,6 +3,7 @@
 #include "stdafx.h"
 #include "XmlArchive.h"
 #include "Util/PakFile.h"
+#include <QDir>
 
 bool CXmlArchive::Load(const string& file)
 {
@@ -45,15 +46,20 @@ bool CXmlArchive::Load(const string& file)
 
 void CXmlArchive::Save(const string& file)
 {
-	string filename(file);
-	if (GetIEditor()->GetConsoleVar("ed_lowercasepaths"))
-		filename = filename.MakeLower();
-
-	bLoading = false;
 	if (!root)
 	{
 		return;
 	}
+
+	string filename(file);
+	if (GetIEditor()->GetConsoleVar("ed_lowercasepaths"))
+		filename = filename.MakeLower();
+
+	// We can not use ICryPak::MakeDir here because it uses its own "lowercase" logic, which can conflict with "ed_lowercasepaths".
+	QDir dir;
+	dir.mkpath(QtUtil::ToQString(PathUtil::GetPathWithoutFilename(file.c_str())));
+
+	bLoading = false;
 
 	CFile cFile;
 	// Open the file for writing, create it if needed

@@ -45,6 +45,7 @@ ETEX_Format CShadowMapStage::GetShadowTexFormat(EPass passID) const
 
 CShadowMapStage::CShadowMapStage() 
 	: m_perPassResources()
+	, m_shadowsLocalLightsLinearizeDepth(1)
 {}
 
 void CShadowMapStage::Init()
@@ -149,6 +150,14 @@ void CShadowMapStage::ReAllocateResources()
 	}
 }
 
+void CShadowMapStage::OnCVarsChanged(const CCVarUpdateRecorder& cvarUpdater)
+{
+	if (cvarUpdater.GetCVar("r_ShadowsLocalLightsLinearizeDepth"))
+	{
+		m_shadowsLocalLightsLinearizeDepth = cvarUpdater.GetCVar("r_ShadowsLocalLightsLinearizeDepth")->intValue;
+	}
+}
+
 bool CShadowMapStage::CreatePipelineState(const SGraphicsPipelineStateDescription& description, EPass passID, CDeviceGraphicsPSOPtr& outPSO)
 {
 	outPSO = NULL;
@@ -200,6 +209,11 @@ bool CShadowMapStage::CreatePipelineState(const SGraphicsPipelineStateDescriptio
 
 		if (pRes->m_pDeformInfo)
 			psoDesc.m_ShaderFlags_MDV |= pRes->m_pDeformInfo->m_eType;
+	}
+
+	if (m_shadowsLocalLightsLinearizeDepth == 1)
+	{
+		psoDesc.m_ShaderFlags_RT |= g_HWSR_MaskBit[HWSR_SHADOW_DEPTH_OUTPUT_LINEAR];
 	}
 
 	//tessellation

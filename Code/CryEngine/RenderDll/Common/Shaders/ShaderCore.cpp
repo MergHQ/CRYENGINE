@@ -977,10 +977,10 @@ void CShaderMan::mfInitGlobal(void)
 				g_HWSR_MaskBit[HWSR_MSAA_SAMPLEFREQ_PASS] = gb->m_Mask;
 			else if (gb->m_ParamName == "%_RT_NEAREST")
 				g_HWSR_MaskBit[HWSR_NEAREST] = gb->m_Mask;
-			else if (gb->m_ParamName == "%_RT_SHADOW_MIXED_MAP_G16R16")
-				g_HWSR_MaskBit[HWSR_SHADOW_MIXED_MAP_G16R16] = gb->m_Mask;
 			else if (gb->m_ParamName == "%_RT_HW_PCF_COMPARE")
 				g_HWSR_MaskBit[HWSR_HW_PCF_COMPARE] = gb->m_Mask;
+			else if (gb->m_ParamName == "%_RT_SHADOW_DEPTH_OUTPUT_LINEAR")
+				g_HWSR_MaskBit[HWSR_SHADOW_DEPTH_OUTPUT_LINEAR] = gb->m_Mask;
 			else if (gb->m_ParamName == "%_RT_SAMPLE0")
 				g_HWSR_MaskBit[HWSR_SAMPLE0] = gb->m_Mask;
 			else if (gb->m_ParamName == "%_RT_SAMPLE1")

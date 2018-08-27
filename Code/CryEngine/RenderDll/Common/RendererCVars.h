@@ -77,11 +77,9 @@ public:
 	static int   CV_r_MotionBlurQuality;
 	static int   CV_r_MotionBlurGBufferVelocity;
 	static float CV_r_MotionBlurThreshold;
-	static int   CV_r_UseMergedPosts;
 	static int   CV_r_MaxFrameLatency;
 	static int   CV_r_texatlassize;
 	static int   CV_r_DeferredShadingSortLights;
-	static int   CV_r_batchtype;
 #if CRY_PLATFORM_WINDOWS || CRY_PLATFORM_LINUX || CRY_PLATFORM_ANDROID || CRY_PLATFORM_APPLE || CRY_RENDERER_GNM
 	//HACK: make sure we can only use it for dx11
 	static int CV_r_SilhouettePOM;
@@ -119,7 +117,6 @@ public:
 	static int   CV_r_rendertargetpoolsize;
 	static int   CV_r_watercausticsdeferred;
 	static int   CV_r_WaterUpdateThread;
-	static int   CV_r_ConditionalRendering;
 	static int   CV_r_watercaustics;
 	static int   CV_r_watervolumecaustics;
 	static int   CV_r_watervolumecausticsdensity;
@@ -145,7 +142,6 @@ public:
 
 	static int CV_r_nodrawnear;
 	static int CV_r_DrawNearShadows;
-	static int CV_r_scissor;
 	static int CV_r_usezpass;
 	static int CV_r_VegetationSpritesTexRes;
 	static int CV_r_ShowVideoMemoryStats;
@@ -218,7 +214,6 @@ public:
 	DeclareStaticConstIntCVar(CV_r_deferredshadingLightVolumes, 1);
 	DeclareStaticConstIntCVar(CV_r_deferredDecals, 1);
 	DeclareStaticConstIntCVar(CV_r_deferredDecalsDebug, 0);
-	DeclareStaticConstIntCVar(CV_r_DeferredShadingLBuffersFmt, 1);
 	DeclareStaticConstIntCVar(CV_r_DeferredShadingScissor, 1);
 	DeclareStaticConstIntCVar(CV_r_DeferredShadingDebugGBuffer, 0);
 	DeclareStaticConstIntCVar(CV_r_DeferredShadingEnvProbes, 1);
@@ -255,7 +250,6 @@ public:
 	static float CV_r_ShadowsScreenSpaceLength;
 	DeclareStaticConstIntCVar(CV_r_debuglights, 0);
 	DeclareStaticConstIntCVar(CV_r_DeferredShadingDepthBoundsTest, DEF_SHAD_DBT_DEFAULT_VAL);
-	DeclareStaticConstIntCVar(CV_r_deferredshadingDBTstencil, DEF_SHAD_DBT_STENCIL_DEFAULT_VAL);
 	static int CV_r_sunshafts;
 	DeclareStaticConstIntCVar(CV_r_SonarVision, 1);
 	DeclareStaticConstIntCVar(CV_r_ThermalVision, 1);
@@ -283,7 +277,6 @@ public:
 	DeclareStaticConstIntCVar(CV_r_showtimegraph, 0);
 	DeclareStaticConstIntCVar(CV_r_DebugFontRendering, 0);
 	DeclareStaticConstIntCVar(CV_profileStreaming, 0);
-	DeclareStaticConstIntCVar(CV_r_graphstyle, 0);
 	DeclareStaticConstIntCVar(CV_r_showbufferusage, 0);
 	DeclareStaticConstIntCVar(CV_r_profileshaders, 0);
 	DeclareStaticConstIntCVar(CV_r_ProfileShadersSmooth, 4);
@@ -317,7 +310,6 @@ public:
 #if defined(SUPPORTS_INPLACE_TEXTURE_STREAMING)
 	static int CV_r_texturesstreamingInPlace;
 #endif
-	DeclareStaticConstIntCVar(CV_r_lightssinglepass, 1);
 	static int CV_r_envcmresolution;
 	static int CV_r_envtexresolution;
 	DeclareStaticConstIntCVar(CV_r_waterreflections_mgpu, 0);
@@ -391,7 +383,6 @@ public:
 	//DeclareStaticConstIntCVar(CV_r_measureoverdraw, 0);
 	enum { CV_r_measureoverdraw = 0 };
 	DeclareStaticConstIntCVar(CV_r_ShowLightBounds, 0);
-	DeclareStaticConstIntCVar(CV_r_TextureCompressor, 1);
 	DeclareStaticConstIntCVar(CV_r_TexturesStreamingDebugDumpIntoLog, 0);
 	DeclareStaticConstIntCVar(CV_e_DebugTexelDensity, 0);
 	DeclareStaticConstIntCVar(CV_e_DebugDraw, 0);
@@ -401,8 +392,6 @@ public:
 	DeclareStaticConstIntCVar(CV_r_RefractionPartialResolveMinimalResolveArea, 0);
 	DeclareStaticConstIntCVar(CV_r_RefractionPartialResolveMaxResolveCount, 0);
 	DeclareStaticConstIntCVar(CV_r_RefractionPartialResolvesDebug, 0);
-	DeclareStaticConstIntCVar(CV_r_Batching, 1);
-	DeclareStaticConstIntCVar(CV_r_Unlit, 0);
 	DeclareStaticConstIntCVar(CV_r_HideSunInCubemaps, 1);
 	DeclareStaticConstIntCVar(CV_r_ParticlesDebug, 0);
 	DeclareStaticConstIntCVar(CV_r_CubemapGenerationTimeout, 100);
@@ -457,6 +446,7 @@ public:
 	static float CV_r_ShadowsParticleNormalEffect;
 	static float CV_r_shadow_jittering; // dont use this directly for rendering. use m_shadowJittering or GetShadowJittering() instead;
 
+    static int   CV_r_ShadowsLocalLightsLinearizeDepth;
 	static int   CV_r_ShadowPoolMaxTimeslicedUpdatesPerFrame;
 	static int   CV_r_ShadowCastingLightsMaxCount;
 	static int   CV_r_HeightMapAO;

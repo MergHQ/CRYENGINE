@@ -152,7 +152,6 @@ bool CRenderPipelineProfiler::FilterLabel(const char* name)
 		(strcmp(name, "DOWNSAMPLE_DEPTH") == 0) ||
 		(strcmp(name, "SCREEN_STRETCH_RECT") == 0) ||
 		(strcmp(name, "STRETCHRECT") == 0) ||
-		(strcmp(name, "STENCIL_VOLUME") == 0) ||
 		(strcmp(name, "DRAWSTRINGW") == 0) ||
 		(strcmp(name, "DRAWSTRINGU") == 0);
 }
