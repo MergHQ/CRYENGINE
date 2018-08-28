@@ -501,7 +501,7 @@ public:
 	const char* GetName() const { return m_name.c_str(); };
 
 	//! Set a new name for this component
-	//! Names of the components must not be unique
+	//! Names of the components don't have to be unique
 	void SetName(const char* szName) { m_name = szName; };
 
 	//////////////////////////////////////////////////////////////////////////
