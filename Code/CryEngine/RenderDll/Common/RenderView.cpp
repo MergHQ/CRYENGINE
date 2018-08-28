@@ -1031,23 +1031,6 @@ void CRenderView::AddPermanentObjectImpl(CPermanentRenderObject* pObject, const 
 void CRenderView::AddPermanentObject(CRenderObject* pObject, const SRenderingPassInfo& passInfo)
 {
 	assert(pObject->m_bPermanent);
-
-#ifndef NDEBUG
-	// Expand normal render items
-	for (auto& record : m_permanentObjects)
-	{
-		CPermanentRenderObject* RESTRICT_POINTER pRenderObject = record.pRenderObject;
-		assert(pRenderObject->m_bPermanent);
-
-		CRY_ASSERT_MESSAGE(pRenderObject != pObject, "Adding RenderObject twice is suspicious!");
-		if (pRenderObject == pObject)
-		{
-			// Record already exists, update instance data.
-			return;
-		}
-	}
-#endif
-
 	AddPermanentObjectImpl(static_cast<CPermanentRenderObject*>(pObject), passInfo);
 }
 
