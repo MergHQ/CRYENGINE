@@ -100,7 +100,30 @@ void CTestExcelReporter::OnFinishTesting(const SRunContext& context, bool openRe
 		AddCell(res.testInfo.fileName.c_str());
 		AddCell(res.testInfo.lineNumber);
 
+		// failures from assertion may contain too many lines to be readable in the sheet.
+		// combine the failures if they have the same file name, line number and message.
+		struct CompareSError
+		{
+			bool operator()(const SError& lhs, const SError& rhs) const
+			{
+				if (lhs.lineNumber < rhs.lineNumber)
+					return true;
+				if (lhs.lineNumber == rhs.lineNumber && lhs.fileName < rhs.fileName)
+					return true;
+				if (lhs.lineNumber == rhs.lineNumber && lhs.fileName == rhs.fileName && lhs.message < rhs.message)
+					return true;
+				return false;
+			}
+		};
+		std::set<SError, CompareSError> combinedFailures;
+
 		for (auto& failure : res.failures)
+		{
+			combinedFailures.insert(failure);
+		}
+
+		// Create a row for each unique failure
+		for (auto& failure : combinedFailures)
 		{
 			AddRow();
 			AddCellAtIndex(4, failure.message);

@@ -218,8 +218,8 @@ public:
 	void                    SetModuleName(const char* szModuleName) { m_TestInfo.module = szModuleName; }
 
 	inline float            GetTimeOut() const                      { return timeout; }
-	inline bool             GetIsEnabledForGame() const             { return game; }
-	inline bool             GetIsEnabledForEditor() const           { return editor; }
+	inline bool             IsEnabledForGame() const                { return game; }
+	inline bool             IsEnabledForEditor() const              { return editor; }
 
 protected:
 	STestInfo m_TestInfo;
