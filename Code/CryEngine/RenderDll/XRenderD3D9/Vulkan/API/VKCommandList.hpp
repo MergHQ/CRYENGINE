@@ -179,11 +179,11 @@ public:
 			m_NumWaitsGPU += 2;
 	#endif // VK_STATS
 
-			VK_ASSERT(fenceValuesMasked[CMDQUEUE_GRAPHICS] <= m_rCmdFences.GetSubmittedValue(CMDQUEUE_GRAPHICS), "Waiting for unsubmitted gfx CL, deadlock imminent!");
-			VK_ASSERT(fenceValuesMasked[CMDQUEUE_COMPUTE] <= m_rCmdFences.GetSubmittedValue(CMDQUEUE_COMPUTE), "Waiting for unsubmitted cmp CL, deadlock imminent!");
-			VK_ASSERT(fenceValuesMasked[CMDQUEUE_COPY] <= m_rCmdFences.GetSubmittedValue(CMDQUEUE_COPY), "Waiting for unsubmitted cpy CL, deadlock imminent!");
+			VK_ASSERT(fenceValuesMasked[CMDQUEUE_GRAPHICS] <= m_rCmdFences.GetSubmittedValue(CMDQUEUE_GRAPHICS) && "Waiting for unsubmitted gfx CL, deadlock imminent!");
+			VK_ASSERT(fenceValuesMasked[CMDQUEUE_COMPUTE] <= m_rCmdFences.GetSubmittedValue(CMDQUEUE_COMPUTE) && "Waiting for unsubmitted cmp CL, deadlock imminent!");
+			VK_ASSERT(fenceValuesMasked[CMDQUEUE_COPY] <= m_rCmdFences.GetSubmittedValue(CMDQUEUE_COPY) && "Waiting for unsubmitted cpy CL, deadlock imminent!");
 
-			VK_ASSERT(numPendingWSemaphores < PendingWSemaphoreHeap.size(), "Too many other CLs to synchronize with!");
+			VK_ASSERT(numPendingWSemaphores < PendingWSemaphoreHeap.size() && "Too many other CLs to synchronize with!");
 
 		//	m_AsyncCommandQueue.Wait(m_rCmdFences.GetVkFences(), fenceValuesMasked);
 			const VkNaryFence* pFence = m_rCmdFences.GetVkFences();
@@ -218,9 +218,9 @@ public:
 			m_NumWaitsGPU++;
 	#endif // VK_STATS
 
-			VK_ASSERT(fenceValue <= m_rCmdFences.GetSubmittedValue(id), "Waiting for unsubmitted CL, deadlock imminent!");
+			VK_ASSERT(fenceValue <= m_rCmdFences.GetSubmittedValue(id) && "Waiting for unsubmitted CL, deadlock imminent!");
 
-			VK_ASSERT(numPendingWSemaphores < PendingWSemaphoreHeap.size(), "Too many other CLs to synchronize with!");
+			VK_ASSERT(numPendingWSemaphores < PendingWSemaphoreHeap.size() && "Too many other CLs to synchronize with!");
 
 		//	m_AsyncCommandQueue.Wait(m_rCmdFences.GetVkFence(id), fenceValue);
 			VkNaryFence* const pFence = m_rCmdFences.GetVkFence(id);
@@ -244,7 +244,7 @@ public:
 			m_NumWaitsGPU++;
 #endif // VK_STATS
 
-			VK_ASSERT(numPendingWSemaphores < PendingWSemaphoreHeap.size(), "Too many other CLs to synchronize with!");
+			VK_ASSERT(numPendingWSemaphores < PendingWSemaphoreHeap.size() && "Too many other CLs to synchronize with!");
 
 			//	m_AsyncCommandQueue.Wait(m_rCmdFences.GetVkFence(id), fenceValue);
 			VkNaryFence* const pFence = m_rCmdFences.GetVkFence(id);
@@ -278,9 +278,9 @@ public:
 			m_NumWaitsCPU += 2;
 	#endif // VK_STATS
 
-			VK_ASSERT(fenceValuesCopied[CMDQUEUE_GRAPHICS] <= m_rCmdFences.GetSubmittedValue(CMDQUEUE_GRAPHICS), "Waiting for unsubmitted gfx CL, deadlock imminent!");
-			VK_ASSERT(fenceValuesCopied[CMDQUEUE_COMPUTE] <= m_rCmdFences.GetSubmittedValue(CMDQUEUE_COMPUTE), "Waiting for unsubmitted cmp CL, deadlock imminent!");
-			VK_ASSERT(fenceValuesCopied[CMDQUEUE_COPY] <= m_rCmdFences.GetSubmittedValue(CMDQUEUE_COPY), "Waiting for unsubmitted cpy CL, deadlock imminent!");
+			VK_ASSERT(fenceValuesCopied[CMDQUEUE_GRAPHICS] <= m_rCmdFences.GetSubmittedValue(CMDQUEUE_GRAPHICS) && "Waiting for unsubmitted gfx CL, deadlock imminent!");
+			VK_ASSERT(fenceValuesCopied[CMDQUEUE_COMPUTE] <= m_rCmdFences.GetSubmittedValue(CMDQUEUE_COMPUTE) && "Waiting for unsubmitted cmp CL, deadlock imminent!");
+			VK_ASSERT(fenceValuesCopied[CMDQUEUE_COPY] <= m_rCmdFences.GetSubmittedValue(CMDQUEUE_COPY) && "Waiting for unsubmitted cpy CL, deadlock imminent!");
 
 			m_rCmdFences.WaitForFence(fenceValuesCopied);
 		}
@@ -294,7 +294,7 @@ public:
 			m_NumWaitsCPU++;
 	#endif // VK_STATS
 
-			VK_ASSERT(fenceValue <= m_rCmdFences.GetSubmittedValue(id), "Waiting for unsubmitted CL, deadlock imminent!");
+			VK_ASSERT(fenceValue <= m_rCmdFences.GetSubmittedValue(id) && "Waiting for unsubmitted CL, deadlock imminent!");
 
 			m_rCmdFences.WaitForFence(fenceValue, id);
 		}
@@ -493,13 +493,13 @@ public:
 
 	void WaitForFinishOnGPU()
 	{
-		VK_ASSERT(m_eState == CLSTATE_SUBMITTED, "GPU fence waits for itself to be complete: deadlock imminent!");
+		VK_ASSERT(m_eState == CLSTATE_SUBMITTED && "GPU fence waits for itself to be complete: deadlock imminent!");
 		m_rPool.WaitForFenceOnGPU(m_CurrentFenceValue, m_CurrentNumPendingWSemaphores, m_PendingWSemaphoreHeap);
 	}
 
 	void WaitForFinishOnCPU() const
 	{
-		VK_ASSERT(m_eState == CLSTATE_SUBMITTED, "CPU fence waits for itself to be complete: deadlock imminent!");
+		VK_ASSERT(m_eState == CLSTATE_SUBMITTED && "CPU fence waits for itself to be complete: deadlock imminent!");
 		m_rPool.WaitForFenceOnCPU(m_CurrentFenceValue);
 	}
 

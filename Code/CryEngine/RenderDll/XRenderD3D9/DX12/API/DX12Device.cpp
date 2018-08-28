@@ -658,7 +658,7 @@ D3D12_CPU_DESCRIPTOR_HANDLE CDevice::CacheSampler(const D3D12_SAMPLER_DESC* pDes
 		GetD3D12Device()->CreateSampler(pDesc, dstHandle);
 
 		auto insertResult = m_SamplerCacheLookupTable.emplace(hHash, dstHandle);
-		DX12_ASSERT(insertResult.second);
+		DX12_ASSERT(insertResult.second, "Sampler not inserted into the cache!");
 		itCachedSampler = insertResult.first;
 	}
 
@@ -702,7 +702,7 @@ D3D12_CPU_DESCRIPTOR_HANDLE CDevice::CacheShaderResourceView(const D3D12_SHADER_
 		GetD3D12Device()->CreateShaderResourceView(pResource, &Desc, dstHandle);
 
 		auto insertResult = m_ShaderResourceDescriptorLookupTable.emplace(hHash, dstHandle);
-		DX12_ASSERT(insertResult.second);
+		DX12_ASSERT(insertResult.second, "SRV not inserted into the cache!");
 		itCachedSRV = insertResult.first;
 	}
 
@@ -739,7 +739,7 @@ D3D12_CPU_DESCRIPTOR_HANDLE CDevice::CacheUnorderedAccessView(const D3D12_UNORDE
 		GetD3D12Device()->CreateUnorderedAccessView(pResource, nullptr, pDesc, dstHandle);
 
 		auto insertResult = m_UnorderedAccessDescriptorLookupTable.emplace(hHash, dstHandle);
-		DX12_ASSERT(insertResult.second);
+		DX12_ASSERT(insertResult.second, "UAV not inserted into the cache!");
 		itCachedUAV = insertResult.first;
 	}
 
@@ -776,7 +776,7 @@ D3D12_CPU_DESCRIPTOR_HANDLE CDevice::CacheDepthStencilView(const D3D12_DEPTH_STE
 		GetD3D12Device()->CreateDepthStencilView(pResource, pDesc, dstHandle);
 
 		auto insertResult = m_DepthStencilDescriptorLookupTable.emplace(hHash, dstHandle);
-		DX12_ASSERT(insertResult.second);
+		DX12_ASSERT(insertResult.second, "DSV not inserted into the cache!");
 		itCachedDSV = insertResult.first;
 	}
 
@@ -813,7 +813,7 @@ D3D12_CPU_DESCRIPTOR_HANDLE CDevice::CacheRenderTargetView(const D3D12_RENDER_TA
 		GetD3D12Device()->CreateRenderTargetView(pResource, pDesc, dstHandle);
 
 		auto insertResult = m_RenderTargetDescriptorLookupTable.emplace(hHash, dstHandle);
-		DX12_ASSERT(insertResult.second);
+		DX12_ASSERT(insertResult.second, "RTV not inserted into the cache!");
 		itCachedRTV = insertResult.first;
 	}
 
@@ -1040,7 +1040,7 @@ void CDevice::FlushReleaseHeap(const UINT64 (&completedFenceValues)[CMDQUEUE_NUM
 				else
 				{
 					ULONG counter = it->first->Release();
-					DX12_ASSERT(counter == 0, "Ref-Counter of D3D12 resource %s is not 0, memory will leak!", GetDebugName(it->first).c_str());
+					DX12_ASSERT(counter == 0, "Ref-Counter of D3D12 resource %s is not 0 but %d, memory will leak!", GetDebugName(it->first).c_str(), counter);
 
 					releases++;
 				}
@@ -1069,7 +1069,7 @@ void CDevice::FlushReleaseHeap(const UINT64 (&completedFenceValues)[CMDQUEUE_NUM
 				// given up for release, they can continue being in use
 				// This means the ref-count here doesn't necessarily need to be 0
 				ULONG counter = it->second.back().pObject->Release();
-				DX12_ASSERT(counter == 0, "Ref-Counter of D3D12 resource %s is not 0, memory will leak!", GetDebugName(it->second.back().pObject).c_str());
+				DX12_ASSERT(counter == 0, "Ref-Counter of D3D12 resource %s is not 0 but %d, memory will leak!", GetDebugName(it->second.back().pObject).c_str(), counter);
 
 				it->second.pop_back();
 				evictions++;

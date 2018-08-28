@@ -2,6 +2,35 @@
 
 #pragma once
 
+///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+
+#if !_RELEASE
+	#define VK_ERROR(...) \
+		do { CryLog("Vulkan Error: " __VA_ARGS__); } while (0)
+	#define VK_ASSERT(cond) \
+		do { if (!(cond)) { VK_ERROR(#cond); CRY_ASSERT(cond); } } while (0)
+#else
+	#define VK_ERROR(...)   do {} while (0)
+	#define VK_ASSERT(cond) do {} while (0)
+#endif
+
+#ifdef _DEBUG
+	#define VK_LOG(cond, ...) \
+		do { if (cond) CryLog("Vulkan Log: " __VA_ARGS__); } while (0)
+	#define VK_WARNING(...) \
+		do { CryLog("Vulkan Warning: " __VA_ARGS__); } while (0)
+	#define VK_ASSERT_DEBUG(cond) VK_ASSERT(cond)
+#else
+	#define VK_LOG(cond, ...)     do {} while (0)
+	#define VK_WARNING(cond, ...) do {} while (0)
+	#define VK_ASSERT_DEBUG(cond) do {} while (0)
+#endif
+
+#define VK_NOT_IMPLEMENTED VK_ASSERT(0 && "Not implemented!");
+#define VK_FUNC_LOG() VK_LOG("%s() called", __FUNC__)
+
+///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+
 // Pull in everything needed to implement device objects
 #include "API/VKBase.hpp"
 #include "API/VKDevice.hpp"

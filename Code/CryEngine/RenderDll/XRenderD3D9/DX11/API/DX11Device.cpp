@@ -450,7 +450,7 @@ void CDevice::FlushReleaseHeap(const UINT64 (&completedFenceValues)[CMDQUEUE_NUM
 				else
 				{
 					ULONG counter = it->first->Release();
-					DX11_ASSERT(counter == 0, "Ref-Counter of D3D11 resource %s is not 0, memory will leak!", GetDebugName(it->first).c_str());
+					DX11_ASSERT(counter == 0, "Ref-Counter of D3D11 resource %s is not 0 but %d, memory will leak!", GetDebugName(it->first).c_str(), counter);
 
 					releases++;
 				}
@@ -477,7 +477,7 @@ void CDevice::FlushReleaseHeap(const UINT64 (&completedFenceValues)[CMDQUEUE_NUM
 				// given up for release, they can continue being in use
 				// This means the ref-count here doesn't necessarily need to be 0
 				ULONG counter = it->second.back().pObject->Release();
-				DX11_ASSERT(counter == 0, "Ref-Counter of D3D11 resource %s is not 0, memory will leak!", GetDebugName(it->second.back().pObject).c_str());
+				DX11_ASSERT(counter == 0, "Ref-Counter of D3D11 resource %s is not 0 but %d, memory will leak!", GetDebugName(it->second.back().pObject).c_str(), counter);
 
 				it->second.pop_back();
 				evictions++;

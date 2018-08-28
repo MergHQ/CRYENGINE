@@ -179,7 +179,7 @@ CResource::~CResource()
 
 		GetDevice()->ReleaseLater(uVals, m_pD3D12Resource, bResuable);
 	}
-	else
+	else if (!m_pSwapChainOwner)
 	{
 		GetDevice()->ReleaseLater(fVals, m_pD3D12Resource, bResuable);
 	}

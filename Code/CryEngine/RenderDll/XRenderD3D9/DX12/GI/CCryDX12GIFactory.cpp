@@ -18,7 +18,7 @@ CCryDX12GIFactory* CCryDX12GIFactory::Create()
 	if (S_OK != CreateDXGIFactory1(IID_GFX_ARGS(&pDXGIFactory4)))
 #endif
 	{
-		DX12_ASSERT("Failed to create underlying DXGI factory!");
+		DX12_ASSERT(0, "Failed to create underlying DXGI factory!");
 		return nullptr;
 	}
 

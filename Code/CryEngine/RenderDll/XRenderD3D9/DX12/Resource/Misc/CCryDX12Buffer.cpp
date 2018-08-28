@@ -23,7 +23,7 @@ CCryDX12Buffer* CCryDX12Buffer::Create(CCryDX12Device* pDevice)
 
 CCryDX12Buffer* CCryDX12Buffer::Create(CCryDX12Device* pDevice, ID3D12Resource* pResource, D3D12_RESOURCE_STATES initialState)
 {
-	DX12_ASSERT(pResource);
+	DX12_ASSERT(pResource, "CreateBuffer() called without resource!");
 
 	D3D12_RESOURCE_DESC desc12 = pResource->GetDesc();
 
