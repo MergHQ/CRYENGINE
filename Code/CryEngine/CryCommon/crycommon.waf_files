@@ -46,6 +46,7 @@
             "CryAISystem/IAIObjectManager.h", 
             "CryAISystem/IAIRateOfDeathHandler.h", 
             "CryAISystem/IAIRecorder.h", 
+            "CryAISystem/ISignal.h", 
             "CryAISystem/IAISystem.h", 
             "CryAISystem/IBlackBoard.h", 
             "CryAISystem/ICommunicationManager.h", 
@@ -83,6 +84,7 @@
             "CryAISystem/AIRayCastQueue.h"
         ], 
         "CryAISystem/BehaviorTree": [
+            "CryAISystem/BehaviorTree/BehaviorTreeDefines.h", 
             "CryAISystem/BehaviorTree/IBehaviorTree.h", 
             "CryAISystem/BehaviorTree/IBehaviorTreeGraft.h", 
             "CryAISystem/BehaviorTree/Action.h", 
@@ -832,6 +834,7 @@
             "CrySerialization/MathImpl.h", 
             "CrySerialization/STL.h", 
             "CrySerialization/Serializer.h", 
+            "CrySerialization/SerializationUtils.h", 
             "CrySerialization/SmartPtr.h", 
             "CrySerialization/SmartPtrImpl.h", 
             "CrySerialization/StringList.h", 
