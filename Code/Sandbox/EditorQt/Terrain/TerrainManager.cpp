@@ -186,6 +186,34 @@ void CTerrainManager::SwapLayers(int layer1, int layer2)
 	signalLayersChanged();
 }
 
+void CTerrainManager::MoveLayerToTop(int index)
+{
+	CRY_ASSERT(index > 0 && index < m_layers.size());
+
+	std::vector<CLayer*> tmp;
+	tmp.reserve(m_layers.size());
+
+	tmp.push_back(m_layers[index]);
+	tmp.insert(tmp.end(), m_layers.cbegin(), m_layers.cbegin() + index);
+	tmp.insert(tmp.end(), m_layers.cbegin() + index + 1, m_layers.cend());
+
+	m_layers.swap(tmp);
+}
+
+void CTerrainManager::MoveLayerToBottom(int index)
+{
+	CRY_ASSERT(index >= 0 && index < m_layers.size()-1);
+
+	std::vector<CLayer*> tmp;
+	tmp.reserve(m_layers.size());
+
+	tmp.insert(tmp.end(), m_layers.cbegin(), m_layers.cbegin() + index);
+	tmp.insert(tmp.end(), m_layers.cbegin() + index + 1, m_layers.cend());
+	tmp.push_back(m_layers[index]);
+
+	m_layers.swap(tmp);
+}
+
 void CTerrainManager::InvalidateLayers()
 {
 	////////////////////////////////////////////////////////////////////////

@@ -2,22 +2,27 @@
 
 #include "StdAfx.h"
 #include "TerrainTexture.h"
-#include "CryEditDoc.h"
+
+#include "Material/MaterialManager.h"
 #include "Terrain/Dialogs/CreateTerrainPreviewDialog.h"
-#include "Dialogs/ToolbarDialog.h"
-#include "Dialogs/QNumericBoxDialog.h"
-#include "Terrain/SurfaceType.h"
 #include "Terrain/Layer.h"
+#include "Terrain/SurfaceType.h"
 #include "Terrain/TerrainTexGen.h"
 #include "Terrain/TerrainManager.h"
-#include "Material/MaterialManager.h"
-#include "Controls/QuestionDialog.h"
-#include "FileDialogs/SystemFileDialog.h"
-#include "QtUtil.h"
-#include "Controls/SharedFonts.h"
-#include "Util/MFCUtil.h"
+#include "CryEditDoc.h"
 
+// MFC
+#include <Controls/SharedFonts.h>
+#include <Dialogs/ToolbarDialog.h>
+#include <Util/MFCUtil.h>
+
+// EditorCommon
+#include <Controls/QuestionDialog.h>
+#include <FileDialogs/SystemFileDialog.h>
+#include <Dialogs/QNumericBoxDialog.h>
 #include <Preferences/GeneralPreferences.h>
+#include <QtUtil.h>
+
 #include <QDir>
 
 // Static member variables
@@ -26,23 +31,6 @@ bool CTerrainTextureDialog::m_bShowWater = true;
 
 #define IDC_REPORT_CONTROL AFX_IDW_PANE_FIRST + 10
 
-#define IDC_TASKPANEL      1
-
-// Task panel commands.
-#define CMD_LAYER_ADD             1
-#define CMD_LAYER_DELETE          2
-#define CMD_LAYER_MOVEUP          3
-#define CMD_LAYER_MOVEDOWN        4
-#define CMD_LAYER_LOAD_TEXTURE    5
-#define CMD_LAYER_ASIGN_MATERIAL  6
-#define CMD_OPEN_MATERIAL_EDITOR  7
-#define CMD_LAYER_TEXTURE_INFO    8
-#define CMD_LAYER_EXPORT_TEXTURE  9
-
-#define IDC_SHOW_PREVIEW_CHECKBOX 10
-#define IDC_LAYER_PREVIEW_BUTTON  11
-
-//#define COLUMN_LAYER_ICON  0
 #define COLUMN_LAYER_NAME       0
 #define COLUMN_MATERIAL         1
 #define COLUMN_MIN_HEIGHT       2
@@ -137,9 +125,6 @@ public:
 };
 IMPLEMENT_DYNAMIC(CTerrainLayerRecord, CXTPReportRecord);
 
-/////////////////////////////////////////////////////////////////////////////
-// CTerrainTextureDialog dialog
-
 //////////////////////////////////////////////////////////////////////////
 class CTerrainLayersUndoObject : public IUndoObject
 {
@@ -180,20 +165,18 @@ private:
 	CXmlArchive m_undo;
 	CXmlArchive m_redo;
 };
-//////////////////////////////////////////////////////////////////////////
 
+//////////////////////////////////////////////////////////////////////////
 IMPLEMENT_DYNCREATE(CTerrainTextureDialog, CToolbarDialog)
 
-static CTerrainTextureDialog * m_gTerrainTextureDialog = 0;
+static CTerrainTextureDialog* m_gTerrainTextureDialog = nullptr;
 
-//////////////////////////////////////////////////////////////////////////
 void CTerrainTextureDialog::OnUndoUpdate()
 {
 	if (m_gTerrainTextureDialog)
 		m_gTerrainTextureDialog->ReloadLayerList();
 }
 
-//////////////////////////////////////////////////////////////////////////
 CTerrainTextureDialog::CTerrainTextureDialog(CWnd* pParent /*=NULL*/)
 	: CToolbarDialog(CTerrainTextureDialog::IDD, pParent)
 	, m_pAssignMaterialLink(NULL)
@@ -231,7 +214,6 @@ CTerrainTextureDialog::CTerrainTextureDialog(CWnd* pParent /*=NULL*/)
 	GetIEditorImpl()->GetTerrainManager()->signalSelectedLayerChanged.Connect(this, &CTerrainTextureDialog::SelectedLayerChanged);
 }
 
-//////////////////////////////////////////////////////////////////////////
 CTerrainTextureDialog::~CTerrainTextureDialog()
 {
 	GetIEditorImpl()->GetTerrainManager()->signalSelectedLayerChanged.DisconnectObject(this);
@@ -271,7 +253,6 @@ void CTerrainTextureDialog::ClearData()
 }
 
 BEGIN_MESSAGE_MAP(CTerrainTextureDialog, CToolbarDialog)
-//{{AFX_MSG_MAP(CTerrainTextureDialog)
 ON_WM_SIZE()
 ON_BN_CLICKED(IDC_LOAD_TEXTURE, OnLoadTexture)
 ON_BN_CLICKED(IDC_IMPORT, OnImport)
@@ -279,7 +260,6 @@ ON_BN_CLICKED(IDC_EXPORT, OnExport)
 ON_BN_CLICKED(ID_FILE_REFINETERRAINTEXTURETILES, OnRefineTerrainTextureTiles)
 ON_BN_CLICKED(ID_FILE_EXPORTLARGEPREVIEW, OnFileExportLargePreview)
 ON_COMMAND(ID_PREVIEW_APPLYLIGHTING, OnApplyLighting)
-ON_UPDATE_COMMAND_UI(ID_PREVIEW_APPLYLIGHTING, OnUpdateApplyLighting)
 ON_COMMAND(ID_LAYER_SETWATERLEVEL, OnSetWaterLevel)
 
 ON_BN_CLICKED(IDC_TTS_HOLD, OnHold)
@@ -289,38 +269,21 @@ ON_BN_CLICKED(IDC_AUTO_GEN_MASK, OnAutoGenMask)
 ON_BN_CLICKED(IDC_LOAD_MASK, OnLoadMask)
 ON_BN_CLICKED(IDC_EXPORT_MASK, OnExportMask)
 ON_COMMAND(ID_PREVIEW_SHOWWATER, OnShowWater)
-ON_UPDATE_COMMAND_UI(ID_PREVIEW_SHOWWATER, OnUpdateShowWater)
 
 ON_COMMAND(ID_TOOLS_CUSTOMIZEKEYBOARD, OnCustomize)
 ON_COMMAND(ID_TOOLS_EXPORT_SHORTCUTS, OnExportShortcuts)
 ON_COMMAND(ID_TOOLS_IMPORT_SHORTCUTS, OnImportShortcuts)
 
-ON_MESSAGE(XTPWM_TASKPANEL_NOTIFY, OnTaskPanelNotify)
-
-ON_NOTIFY(NM_CLICK, IDC_REPORT_CONTROL, OnReportClick)
-ON_NOTIFY(NM_RCLICK, IDC_REPORT_CONTROL, OnReportRClick)
 ON_NOTIFY(XTP_NM_REPORT_SELCHANGED, IDC_REPORT_CONTROL, OnReportSelChange)
 ON_NOTIFY(XTP_NM_REPORT_HYPERLINK, IDC_REPORT_CONTROL, OnReportHyperlink)
 ON_NOTIFY(XTP_NM_REPORT_VALUECHANGED, IDC_REPORT_CONTROL, OnReportPropertyChanged)
 END_MESSAGE_MAP()
 
-/////////////////////////////////////////////////////////////////////////////
-// CTerrainTextureDialog message handlers
-
 BOOL CTerrainTextureDialog::OnInitDialog()
 {
-	m_wndTaskPanel.SetTerrainTextureDialog(this);
+	m_pCurrentLayer = nullptr;
 
-	/*
-	   VERIFY( InitCommandBars() );
-	   CMFCUtils::LoadShortcuts(GetCommandBars(), IDR_LAYER, "TerrainTextureDialog");
-	   CXTPCommandBar* pMenuBar = GetCommandBars()->SetMenu( _T("Menu Bar"),IDR_LAYER );
-	   pMenuBar->SetFlags(xtpFlagStretched);
-	   pMenuBar->EnableCustomization(TRUE);*/
-
-	m_pCurrentLayer = 0;
-
-	__super::OnInitDialog();
+	CToolbarDialog::OnInitDialog();
 
 	CWaitCursor wait;
 
@@ -345,7 +308,6 @@ BOOL CTerrainTextureDialog::OnInitDialog()
 	// EXCEPTION: OCX Property Pages should return FALSE
 }
 
-//////////////////////////////////////////////////////////////////////////
 void CTerrainTextureDialog::InitReportCtrl()
 {
 	CRect rc;
@@ -386,17 +348,7 @@ void CTerrainTextureDialog::InitReportCtrl()
 	//  Add sample columns
 	m_wndReport.AddColumn(new CXTPReportColumn(COLUMN_LAYER_NAME, _T("Layer"), 150, TRUE, XTP_REPORT_NOICON, FALSE))->SetEditable(TRUE);
 	m_wndReport.AddColumn(new CXTPReportColumn(COLUMN_MATERIAL, _T("Material"), 300, TRUE, XTP_REPORT_NOICON, FALSE))->SetEditable(FALSE);
-	/*
-	   m_wndReport.AddColumn(new CXTPReportColumn(COLUMN_MIN_HEIGHT, _T("Min Height"), 70, TRUE,XTP_REPORT_NOICON,FALSE))->SetAlignment(DT_CENTER);
-	   m_wndReport.AddColumn(new CXTPReportColumn(COLUMN_MAX_HEIGHT, _T("Max Height"), 70, TRUE,XTP_REPORT_NOICON,FALSE))->SetAlignment(DT_CENTER);
-	   m_wndReport.AddColumn(new CXTPReportColumn(COLUMN_MIN_ANGLE, _T("Min Angle"), 70, TRUE,XTP_REPORT_NOICON,FALSE))->SetAlignment(DT_CENTER);
-	   m_wndReport.AddColumn(new CXTPReportColumn(COLUMN_MAX_ANGLE, _T("Max Angle"), 70, TRUE,XTP_REPORT_NOICON,FALSE))->SetAlignment(DT_CENTER);
-	   m_wndReport.AddColumn(new CXTPReportColumn(COLUMN_BRIGHTNESS, _T("Brightness"), 70, TRUE,XTP_REPORT_NOICON,FALSE))->SetAlignment(DT_CENTER);
-	   m_wndReport.AddColumn(new CXTPReportColumn(COLUMN_TILING, _T("Base Tiling (test)"), 70, TRUE,XTP_REPORT_NOICON,FALSE))->SetAlignment(DT_CENTER);
-	   m_wndReport.AddColumn(new CXTPReportColumn(COLUMN_SORT_ORDER, _T("Sort order (test)"), 70, TRUE,XTP_REPORT_NOICON,FALSE))->SetAlignment(DT_CENTER);
-	   m_wndReport.AddColumn(new CXTPReportColumn(COLUMN_SPEC_AMOUNT, _T("Specular Amount (test)"), 70, TRUE,XTP_REPORT_NOICON,FALSE))->SetAlignment(DT_CENTER);
-	   m_wndReport.AddColumn(new CXTPReportColumn(COLUMN_USE_REMESH, _T("UseRemeshing"), 70, TRUE,XTP_REPORT_NOICON,FALSE))->SetAlignment(DT_CENTER);
-	 */
+
 	m_wndReport.SetMultipleSelection(TRUE);
 	m_wndReport.SkipGroupsFocus(TRUE);
 	m_wndReport.AllowEdit(TRUE);
@@ -407,106 +359,9 @@ void CTerrainTextureDialog::InitReportCtrl()
 	m_wndReport.GetPaintManager()->m_clrHyper = ::GetSysColor(COLOR_HIGHLIGHT);
 }
 
-//////////////////////////////////////////////////////////////////////////
-void CTerrainTextureDialog::InitTaskPanel()
-{
-	CRect rc(0, 0, 0, 0);
-	//////////////////////////////////////////////////////////////////////////
-	//////////////////////////////////////////////////////////////////////////
-	// Task panel.
-	//////////////////////////////////////////////////////////////////////////
-	m_wndTaskPanel.Create(WS_CHILD | WS_BORDER | WS_VISIBLE | WS_CLIPSIBLINGS | WS_CLIPCHILDREN, rc, this, IDC_TASKPANEL);
-
-	//m_taskImageList.Create( IDR_DB_GAMETOKENS_BAR,16,1,RGB(192,192,192) );
-	//VERIFY( CMFCUtils::LoadTrueColorImageList( m_taskImageList,IDR_DB_GAMETOKENS_BAR,15,RGB(192,192,192) ) );
-	//m_wndTaskPanel.SetImageList( &m_taskImageList );
-	m_wndTaskPanel.SetBehaviour(xtpTaskPanelBehaviourExplorer);
-	m_wndTaskPanel.SetTheme(xtpTaskPanelThemeNativeWinXP);
-	m_wndTaskPanel.SetSelectItemOnFocus(TRUE);
-	m_wndTaskPanel.AllowDrag(TRUE);
-	m_wndTaskPanel.SetAnimation(xtpTaskPanelAnimationNo);
-
-	m_previewLayerTextureButton.Create("", WS_CHILD | WS_VISIBLE | SS_BITMAP | SS_CENTERIMAGE, CRect(0, 0, 130, 130), &m_wndTaskPanel, IDC_LAYER_PREVIEW_BUTTON);
-	//////////////////////////////////////////////////////////////////////////
-
-	// Add default tasks.
-	CXTPTaskPanelGroupItem* pItem = NULL;
-	CXTPTaskPanelGroup* pGroup = NULL;
-	{
-		pGroup = m_wndTaskPanel.AddGroup(1);
-		pGroup->SetCaption("Layer Tasks");
-
-		pItem = pGroup->AddLinkItem(CMD_LAYER_ADD);
-		pItem->SetType(xtpTaskItemTypeLink);
-		pItem->SetCaption("Add Layer");
-		pItem = pGroup->AddLinkItem(CMD_LAYER_DELETE);
-		pItem->SetCaption("Delete Layer");
-		pItem = pGroup->AddLinkItem(CMD_LAYER_MOVEUP);
-		pItem->SetType(xtpTaskItemTypeLink);
-		pItem->SetCaption("Move Layer Up");
-		pItem = pGroup->AddLinkItem(CMD_LAYER_MOVEDOWN);
-		pItem->SetType(xtpTaskItemTypeLink);
-		pItem->SetCaption("Move Layer Down");
-		m_pAssignMaterialLink = pGroup->AddLinkItem(CMD_LAYER_ASIGN_MATERIAL);
-		m_pAssignMaterialLink->SetType(xtpTaskItemTypeLink);
-		m_pAssignMaterialLink->SetCaption("Assign Material");
-		UpdateAssignMaterialItem();
-	}
-
-	{
-		pGroup = m_wndTaskPanel.AddGroup(2);
-		pGroup->SetCaption("Layer Info");
-		m_pLayerInfoText = pGroup->AddTextItem("Layer Info");
-	}
-
-	{
-		pGroup = m_wndTaskPanel.AddGroup(2);
-		pGroup->SetCaption("Layer Texture");
-
-		pItem = pGroup->AddLinkItem(CMD_LAYER_LOAD_TEXTURE);
-		pItem->SetType(xtpTaskItemTypeLink);
-		pItem->SetCaption("Change Layer Texture");
-		pItem = pGroup->AddControlItem(m_previewLayerTextureButton);
-		m_pTextureInfoText = pGroup->AddTextItem("Texture Info");
-	}
-
-	{
-		//////////////////////////////////////////////////////////////////////////
-		pGroup = m_wndTaskPanel.AddGroup(3);
-		pGroup->SetCaption("Options");
-		m_showPreviewCheck.Create("Show Preview", WS_CHILD | WS_VISIBLE | BS_AUTOCHECKBOX, CRect(0, 0, 60, 16), this, IDC_SHOW_PREVIEW_CHECKBOX);
-		m_showPreviewCheck.SetFont(CFont::FromHandle(SMFCFonts::GetInstance().hSystemFont));
-		m_showPreviewCheck.SetParent(&m_wndTaskPanel);
-		m_showPreviewCheck.SetOwner(this); // Akward but needed to route msgs to this dialog
-		m_showPreviewCheck.SetCheck(TRUE);
-		pItem = pGroup->AddControlItem(m_showPreviewCheck);
-	}
-	//////////////////////////////////////////////////////////////////////////
-}
-
-BOOL CTerrainTextureDialog::CXTPTaskPanelSpecific::OnCommand(WPARAM wParam, LPARAM lParam)
-{
-	switch (LOWORD(wParam))
-	{
-	case IDC_SHOW_PREVIEW_CHECKBOX:
-		{
-			if (m_pTerrainTextureDialog)
-				m_pTerrainTextureDialog->ReloadLayerList();
-		}
-		break;
-	}
-	return __super::OnCommand(wParam, lParam);
-}
-
-//////////////////////////////////////////////////////////////////////////
 void CTerrainTextureDialog::ReloadLayerList()
 {
 	LOADING_TIME_PROFILE_SECTION;
-	////////////////////////////////////////////////////////////////////////
-	// Fill the layer list box with the data from the document
-	////////////////////////////////////////////////////////////////////////
-
-	unsigned int i;
 
 	//////////////////////////////////////////////////////////////////////////
 	// Populate report control
@@ -519,7 +374,7 @@ void CTerrainTextureDialog::ReloadLayerList()
 	m_wndReport.GetRecords()->RemoveAll();
 	m_wndReport.SetRedraw(TRUE);
 
-	for (i = 0; i < GetIEditorImpl()->GetTerrainManager()->GetLayerCount(); i++)
+	for (int i = 0; i < GetIEditorImpl()->GetTerrainManager()->GetLayerCount(); i++)
 	{
 		CLayer* pLayer = GetIEditorImpl()->GetTerrainManager()->GetLayer(i);
 		m_wndReport.AddRecord(new CTerrainLayerRecord(pLayer, i));
@@ -550,7 +405,6 @@ void CTerrainTextureDialog::ReloadLayerList()
 	GetIEditorImpl()->GetTerrainManager()->ReloadSurfaceTypes();
 }
 
-//////////////////////////////////////////////////////////////////////////
 void CTerrainTextureDialog::OnSelchangeLayerList()
 {
 	CLayer* pLayer = NULL;
@@ -584,7 +438,6 @@ void CTerrainTextureDialog::OnSelchangeLayerList()
 	UpdateControlData();
 }
 
-//////////////////////////////////////////////////////////////////////////
 void CTerrainTextureDialog::CompressLayers()
 {
 	for (int i = 0; i < GetIEditorImpl()->GetTerrainManager()->GetLayerCount(); i++)
@@ -696,7 +549,6 @@ void CTerrainTextureDialog::OnLoadTexture()
 	OnGeneratePreview();
 }
 
-//////////////////////////////////////////////////////////////////////////
 void CTerrainTextureDialog::OnGeneratePreview()
 {
 	////////////////////////////////////////////////////////////////////////
@@ -794,341 +646,6 @@ void CTerrainTextureDialog::OnFileExportLargePreview()
 	}
 }
 
-/*
-   bool CTerrainTextureDialog::GenerateSurface(DWORD *pSurface, UINT iWidth, UINT iHeight, int flags,CBitArray *pLightingBits, float **ppHeightmapData)
-   {
-   ////////////////////////////////////////////////////////////////////////
-   // Generate the surface texture with the current layer and lighting
-   // configuration and write the result to pSurface. Also give out the
-   // results of the terrain lighting if pLightingBit is not NULL. Also,
-   // if ppHeightmapData is not NULL, the allocated heightmap data will
-   // be stored there instead destroing it at the end of the function
-   ////////////////////////////////////////////////////////////////////////
-   bool bUseLighting = flags & GEN_USE_LIGHTING;
-   bool bShowWater = flags & GEN_SHOW_WATER;
-   bool bShowWaterColor = flags & GEN_SHOW_WATERCOLOR;
-   bool bConvertToABGR = flags & GEN_ABGR;
-        bool bCalcStatObjShadows = flags & GEN_STATOBJ_SHADOWS;
-        bool bKeepLayerMasks = flags & GEN_KEEP_LAYERMASKS;
-
-   CHeightmap *heightmap = GetIEditorImpl()->GetHeightmap();
-   float waterLevel = heightmap->GetWaterLevel();
-
-   uint32 i, iTexX, iTexY;
-   char szStatusBuffer[128];
-   bool bGenPreviewTexture = true;
-   COLORREF crlfNewCol;
-   CBrush brshBlack(BLACK_BRUSH);
-   int iBlend;
-   CTerrainLighting cLighting;
-   DWORD *pTextureDataWrite = NULL;
-   CLayer *pLayerShortcut = NULL;
-   int iFirstUsedLayer;
-   float *pHeightmapData = NULL;
-
-   ASSERT(iWidth);
-   ASSERT(iHeight);
-   ASSERT(!IsBadWritePtr(pSurface, iWidth * iHeight * sizeof(DWORD)));
-
-   if (iWidth == 0 || iHeight == 0)
-    return false;
-
-   m_doc = GetIEditorImpl()->GetDocument();
-
-
-   // Display an hourglass cursor
-   BeginWaitCursor();
-
-   CLogFile::WriteLine("Generating texture surface...");
-
-   ////////////////////////////////////////////////////////////////////////
-   // Search for the first layer that is used
-   ////////////////////////////////////////////////////////////////////////
-
-   iFirstUsedLayer = -1;
-
-   for (i=0; i < m_doc->GetLayerCount(); i++)
-   {
-    // Have we founf the first used layer ?
-    if (m_doc->GetLayer(i)->IsInUse())
-    {
-      iFirstUsedLayer = i;
-      break;
-    }
-   }
-
-   // Abort if there is no used layer
-   if (iFirstUsedLayer == -1)
-    return false;
-
-   ////////////////////////////////////////////////////////////////////////
-   // Generate the layer masks
-   ////////////////////////////////////////////////////////////////////////
-
-   // Status message
-   GetIEditorImpl()->SetStatusText("Scaling heightmap...");
-
-   // Allocate memory for the heightmap data
-   pHeightmapData = new float[iWidth * iHeight];
-   assert(pHeightmapData);
-
-   // Retrieve the heightmap data
-   m_doc->m_cHeightmap.GetDataEx(pHeightmapData, iWidth, true, true);
-
-   int t0 = GetTickCount();
-
-   bool bProgress = iWidth >= 1024;
-
-   CWaitProgress wait( "Blending Layers",bProgress );
-
-   CLayer *tempWaterLayer = 0;
-   if (bShowWater)
-   {
-    // Apply water level.
-    // Add a temporary water layer to the list
-    tempWaterLayer = new CLayer;
-    //water->LoadTexture(MAKEINTRESOURCE(IDB_WATER), 128, 128);
-    tempWaterLayer->FillWithColor( m_doc->GetWaterColor(),8,8 );
-    tempWaterLayer->GenerateWaterLayer16(pHeightmapData,iWidth, iHeight, waterLevel );
-    m_doc->AddLayer( tempWaterLayer );
-   }
-
-   CByteImage layerMask;
-
-   ////////////////////////////////////////////////////////////////////////
-   // Generate the masks and the texture.
-   ////////////////////////////////////////////////////////////////////////
-   int numLayers = m_doc->GetLayerCount();
-   for (i=iFirstUsedLayer; i<(int) numLayers; i++)
-   {
-    CLayer *layer = m_doc->GetLayer(i);
-
-    // Skip the layer if it is not in use
-    if (!layer->IsInUse())
-      continue;
-
-    if (!layer->HasTexture())
-      continue;
-
-    if (bProgress)
-    {
-      wait.Step( i*100/numLayers );
-    }
-
-    // Status message
-    cry_sprintf(szStatusBuffer, "Updating layer %i of %i...", i + 1, m_doc->GetLayerCount());
-    GetIEditorImpl()->SetStatusText(szStatusBuffer);
-
-    // Cache surface texture in.
-    layer->PrecacheTexture();
-
-    // Generate the mask for the current layer
-    if (i != iFirstUsedLayer)
-    {
-      CFloatImage hmap;
-      hmap.Attach( pHeightmapData,iWidth,iHeight );
-      // Generate a normal layer from the user's parameters, stream from disk if it exceeds a given size
-      if (!layer->UpdateMask( hmap,layerMask ))
-        continue;
-    }
-    cry_sprintf(szStatusBuffer, "Blending layer %i of %i...", i + 1, m_doc->GetLayerCount());
-    GetIEditorImpl()->SetStatusText(szStatusBuffer);
-
-    // Set the write pointer (will be incremented) for the surface data
-    DWORD *pTex = pSurface;
-
-    uint32 layerWidth = layer->GetTextureWidth();
-    uint32 layerHeight = layer->GetTextureHeight();
-
-    if (i == iFirstUsedLayer)
-    {
-      // Draw the first layer, without layer mask.
-      for (iTexY=0; iTexY < iHeight; iTexY++)
-      {
-        uint32 layerY = iTexY % layerHeight;
-        for (iTexX=0; iTexX < iWidth; iTexX++)
-        {
-          // Get the color of the tiling texture at this position
- * pTex++ = layer->GetTexturePixel( iTexX % layerWidth,layerY );
-        }
-      }
-    }
-    else
-    {
-      // Draw the current layer with layer mask.
-      for (iTexY=0; iTexY < iHeight; iTexY++)
-      {
-        uint32 layerY = iTexY % layerHeight;
-        for (iTexX=0; iTexX < iWidth; iTexX++)
-        {
-          // Scale the current preview coordinate to the layer mask and get the value.
-          iBlend = layerMask.ValueAt(iTexX,iTexY);
-          // Check if this pixel should be drawn.
-          if (iBlend == 0)
-          {
-            pTex++;
-            continue;
-          }
-
-          // Get the color of the tiling texture at this position
-          crlfNewCol = layer->GetTexturePixel( iTexX % layerWidth,layerY );
-
-          // Just overdraw when the opaqueness of the new layer is maximum
-          if (iBlend == 255)
-          {
- * pTex = crlfNewCol;
-          }
-          else
-          {
-            // Blend the layer into the existing color, iBlend is the blend factor taken from the layer
- * pTex =  (((255 - iBlend) * (*pTex & 0x000000FF)	+  (crlfNewCol & 0x000000FF)        * iBlend) >> 8)      |
-              ((((255 - iBlend) * (*pTex & 0x0000FF00) >>  8) + ((crlfNewCol & 0x0000FF00) >>  8) * iBlend) >> 8) << 8 |
-              ((((255 - iBlend) * (*pTex & 0x00FF0000) >> 16) + ((crlfNewCol & 0x00FF0000) >> 16) * iBlend) >> 8) << 16;
-          }
-          pTex++;
-        }
-      }
-    }
-
-    if (!bKeepLayerMasks)
-    {
-      layer->ReleaseTempResources();
-    }
-   }
-
-   if (tempWaterLayer)
-   {
-    m_doc->RemoveLayer(tempWaterLayer);
-   }
-
-   int t1 = GetTickCount();
-   CryLog( "Texture surface layers blended in %dms",t1-t0 );
-
-   if (bProgress)
-    wait.Stop();
-
-   //	string str;
-   //	str.Format( "Time %dms",t1-t0 );
-   //	MessageBox( str,"Time",MB_OK );
-
-   ////////////////////////////////////////////////////////////////////////
-   // Light the texture
-   ////////////////////////////////////////////////////////////////////////
-
-   if (bUseLighting)
-   {
-    CByteImage *shadowMap = 0;
-    if (bCalcStatObjShadows)
-    {
-      CLogFile::WriteLine("Generating shadows of static objects..." );
-      GetIEditorImpl()->SetStatusText( "Generating shadows of static objects..." );
-      shadowMap = new CByteImage;
-      if (!shadowMap->Allocate( iWidth,iHeight ))
-      {
-        delete shadowMap;
-        return false;
-      }
-      shadowMap->Clear();
-      float shadowAmmount = 255.0f*m_doc->GetLighting()->iShadowIntensity/100.0f;
-      Vec3 sunVector = m_doc->GetLighting()->GetSunVector();
-
-      GetIEditorImpl()->GetVegetationMap()->GenerateShadowMap( *shadowMap,shadowAmmount,sunVector );
-    }
-
-    CLogFile::WriteLine("Generating Terrain Lighting..." );
-    GetIEditorImpl()->SetStatusText( "Generating Terrain Lighting..." );
-
-
-    // Calculate the lighting. Fucntion will also use pLightingBits if present
-   //		cLighting.LightArray16(iWidth, iHeight, pSurface, pHeightmapData,
-   //			m_doc->GetLighting(), pLightingBits,shadowMap );
-
-    if (shadowMap)
-      delete shadowMap;
-
-    int t2 = GetTickCount();
-    CryLog( "Texture lighted in %dms",t2-t1 );
-   }
-
-   // After lighting add Colored Water layer.
-   if (bShowWaterColor)
-   {
-    // Apply water level.
-    // Add a temporary water layer to the list
-    CLayer *water = new CLayer;
-    //water->LoadTexture(MAKEINTRESOURCE(IDB_WATER), 128, 128);
-    water->FillWithColor( m_doc->GetWaterColor(),128,128 );
-    water->GenerateWaterLayer16(pHeightmapData,iWidth, iHeight, waterLevel );
-
-    // Set the write pointer (will be incremented) for the surface data
-    DWORD *pTex = pSurface;
-
-    uint32 layerWidth = water->GetTextureWidth();
-    uint32 layerHeight = water->GetTextureHeight();
-
-    // Draw the first layer, without layer mask.
-    for (iTexY=0; iTexY < iHeight; iTexY++)
-    {
-      uint32 layerY = iTexY % layerHeight;
-      for (iTexX=0; iTexX < iWidth; iTexX++)
-      {
-        // Get the color of the tiling texture at this position
-        if (water->GetLayerMaskPoint(iTexX,iTexY) > 0)
-        {
- * pTex = water->GetTexturePixel( iTexX % layerWidth,layerY );
-        }
-        pTex++;
-      }
-    }
-    delete water;
-   }
-
-
-   if (bConvertToABGR)
-   {
-    GetIEditorImpl()->SetStatusText( "Convert surface texture to ABGR..." );
-    // Set the write pointer (will be incremented) for the surface data
-    pTextureDataWrite = pSurface;
-    for (iTexY=0; iTexY<(int) iHeight; iTexY++)
-    {
-      for (iTexX=0; iTexX<(int) iWidth; iTexX++)
-      {
- * pTextureDataWrite++ = ((* pTextureDataWrite & 0x00FF0000) >> 16) |
-                                (* pTextureDataWrite & 0x0000FF00) |
-                                ((* pTextureDataWrite & 0x000000FF) << 16);
-      }
-    }
-   }
-
-
-   ////////////////////////////////////////////////////////////////////////
-   // Finished
-   ////////////////////////////////////////////////////////////////////////
-
-   // Should we return or free the heightmap data ?
-   if (ppHeightmapData)
-   {
- * ppHeightmapData = pHeightmapData;
-    pHeightmapData = NULL;
-   }
-   else
-   {
-    // Free the heightmap data
-    delete [] pHeightmapData;
-    pHeightmapData = NULL;
-   }
-
-   // We are finished with the calculations
-   EndWaitCursor();
-   GetIEditorImpl()->SetStatusText("Ready");
-
-   int t2 = GetTickCount();
-   CryLog( "Texture surface generate in %dms",t2-t0 );
-
-   return true;
-   }
- */
-
 void CTerrainTextureDialog::OnImport()
 {
 	////////////////////////////////////////////////////////////////////////
@@ -1225,12 +742,6 @@ void CTerrainTextureDialog::OnApplyLighting()
 	OnGeneratePreview();
 }
 
-//////////////////////////////////////////////////////////////////////////
-void CTerrainTextureDialog::OnUpdateApplyLighting(CCmdUI* pCmdUI)
-{
-	pCmdUI->SetCheck(m_bUseLighting ? TRUE : FALSE);
-}
-
 void CTerrainTextureDialog::OnShowWater()
 {
 	////////////////////////////////////////////////////////////////////////
@@ -1239,12 +750,6 @@ void CTerrainTextureDialog::OnShowWater()
 
 	m_bShowWater = !m_bShowWater;
 	OnGeneratePreview();
-}
-
-//////////////////////////////////////////////////////////////////////////
-void CTerrainTextureDialog::OnUpdateShowWater(CCmdUI* pCmdUI)
-{
-	pCmdUI->SetCheck(m_bShowWater ? TRUE : FALSE);
 }
 
 void CTerrainTextureDialog::OnSetWaterLevel()
@@ -1391,7 +896,6 @@ void CTerrainTextureDialog::OnExportMask()
 	}
 }
 
-//////////////////////////////////////////////////////////////////////////
 void CTerrainTextureDialog::OnLayersNewItem()
 {
 	CUndo undo("New Terrain Layer");
@@ -1422,7 +926,6 @@ void CTerrainTextureDialog::OnLayersNewItem()
 	m_bIgnoreNotify = false;
 }
 
-//////////////////////////////////////////////////////////////////////////
 void CTerrainTextureDialog::OnLayersDeleteItem()
 {
 	if (!m_pCurrentLayer)
@@ -1452,77 +955,114 @@ void CTerrainTextureDialog::OnLayersDeleteItem()
 	m_bIgnoreNotify = false;
 }
 
-//////////////////////////////////////////////////////////////////////////
-void CTerrainTextureDialog::OnLayersMoveItemUp()
+int CTerrainTextureDialog::GetSelectedLayerIndex() const
 {
-	CUndo undo("Move Terrain Layer Up");
-	GetIEditorImpl()->GetIUndoManager()->RecordUndo(new CTerrainLayersUndoObject);
-
 	if (!m_pCurrentLayer)
-		return;
+	{
+		return -1;
+	}
 
-	CLayer* pLayer = m_pCurrentLayer;
-
-	int nIndexCur = -1;
 	for (int i = 0; i < GetIEditorImpl()->GetTerrainManager()->GetLayerCount(); i++)
 	{
 		if (GetIEditorImpl()->GetTerrainManager()->GetLayer(i) == m_pCurrentLayer)
 		{
-			nIndexCur = i;
-			break;
+			return i;
 		}
 	}
 
+	return -1;
+}
+
+void CTerrainTextureDialog::OnMoveLayerToTop()
+{
+	int nIndexCur = GetSelectedLayerIndex();
 	if (nIndexCur < 1)
+	{
 		return;
+	}
+
+	CUndo undo("Move Terrain Layer to Top");
+	GetIEditorImpl()->GetIUndoManager()->RecordUndo(new CTerrainLayersUndoObject);
+
+	GetIEditorImpl()->GetTerrainManager()->MoveLayerToTop(nIndexCur);
+
+	ReloadLayerList();
+
+	SelectLayer(m_pCurrentLayer, true);
+
+	m_bIgnoreNotify = true;
+	GetIEditorImpl()->Notify(eNotify_OnTextureLayerChange);
+	m_bIgnoreNotify = false;
+}
+
+void CTerrainTextureDialog::OnLayersMoveItemUp()
+{
+	int nIndexCur = GetSelectedLayerIndex();
+	if (nIndexCur < 1)
+	{
+		return;
+	}
+
+	CUndo undo("Move Terrain Layer Up");
+	GetIEditorImpl()->GetIUndoManager()->RecordUndo(new CTerrainLayersUndoObject);
 
 	GetIEditorImpl()->GetTerrainManager()->SwapLayers(nIndexCur, nIndexCur - 1);
 
 	ReloadLayerList();
 
-	SelectLayer(pLayer, true);
+	SelectLayer(m_pCurrentLayer, true);
 
 	m_bIgnoreNotify = true;
 	GetIEditorImpl()->Notify(eNotify_OnTextureLayerChange);
 	m_bIgnoreNotify = false;
 }
 
-//////////////////////////////////////////////////////////////////////////
 void CTerrainTextureDialog::OnLayersMoveItemDown()
 {
-	CUndo undo("Move Terrain Layer Down");
-	GetIEditorImpl()->GetIUndoManager()->RecordUndo(new CTerrainLayersUndoObject);
-
-	if (!m_pCurrentLayer)
-		return;
-
-	CLayer* pLayer = m_pCurrentLayer;
-
-	int nIndexCur = -1;
-	for (int i = 0; i < GetIEditorImpl()->GetTerrainManager()->GetLayerCount(); i++)
+	const int nIndexCur = GetSelectedLayerIndex();
+	const int layerCount = GetIEditorImpl()->GetTerrainManager()->GetLayerCount();
+	if (nIndexCur == -1 || layerCount <= 1 || nIndexCur == layerCount - 1)
 	{
-		if (GetIEditorImpl()->GetTerrainManager()->GetLayer(i) == m_pCurrentLayer)
-		{
-			nIndexCur = i;
-			break;
-		}
+		return;
 	}
 
-	if (nIndexCur < 0 || nIndexCur >= GetIEditorImpl()->GetTerrainManager()->GetLayerCount() - 1)
-		return;
+	CUndo undo("Move Terrain Layer Down");
+	GetIEditorImpl()->GetIUndoManager()->RecordUndo(new CTerrainLayersUndoObject);
 
 	GetIEditorImpl()->GetTerrainManager()->SwapLayers(nIndexCur, nIndexCur + 1);
 
 	ReloadLayerList();
 
-	SelectLayer(pLayer, true);
+	SelectLayer(m_pCurrentLayer, true);
 
 	m_bIgnoreNotify = true;
 	GetIEditorImpl()->Notify(eNotify_OnTextureLayerChange);
 	m_bIgnoreNotify = false;
 }
 
-//////////////////////////////////////////////////////////////////////////
+void CTerrainTextureDialog::OnMoveLayerToBottom()
+{
+	const int nIndexCur = GetSelectedLayerIndex();
+	const int layerCount = GetIEditorImpl()->GetTerrainManager()->GetLayerCount();
+	if (nIndexCur == -1 || layerCount <= 1 || nIndexCur >= layerCount - 1)
+	{
+		return;
+	}
+
+	CUndo undo("Move Terrain Layer to Bottom");
+	GetIEditorImpl()->GetIUndoManager()->RecordUndo(new CTerrainLayersUndoObject);
+
+	GetIEditorImpl()->GetTerrainManager()->MoveLayerToBottom(nIndexCur);
+
+	ReloadLayerList();
+
+	SelectLayer(m_pCurrentLayer, true);
+
+	m_bIgnoreNotify = true;
+	GetIEditorImpl()->Notify(eNotify_OnTextureLayerChange);
+	m_bIgnoreNotify = false;
+}
+
 void CTerrainTextureDialog::OnDuplicateItem()
 {
 	if (!m_pCurrentLayer)
@@ -1554,7 +1094,6 @@ void CTerrainTextureDialog::OnDuplicateItem()
 	m_bIgnoreNotify = false;
 }
 
-//////////////////////////////////////////////////////////////////////////
 void CTerrainTextureDialog::GeneratePreviewImageList()
 {
 	if (m_imageList.GetSafeHandle())
@@ -1587,30 +1126,14 @@ void CTerrainTextureDialog::GeneratePreviewImageList()
 	m_wndReport.SetImageList(&m_imageList);
 }
 
-//////////////////////////////////////////////////////////////////////////
 void CTerrainTextureDialog::OnSize(UINT nType, int cx, int cy)
 {
-	__super::OnSize(nType, cx, cy);
+	CToolbarDialog::OnSize(nType, cx, cy);
 	RecalcLayout();
 }
 
-//////////////////////////////////////////////////////////////////////////
 void CTerrainTextureDialog::RecalcLayout()
 {
-	if (m_wndTaskPanel.m_hWnd)
-	{
-		CRect rc;
-		GetClientRect(rc);
-		/*
-		   rc.top += 30;
-
-		   CRect rcTask(rc);
-		   rcTask.right = 200;
-		   rc.left = rcTask.right+1;
-		   m_wndTaskPanel.MoveWindow(rcTask);
-		 */
-	}
-
 	if (m_wndReport)
 	{
 		CRect rc;
@@ -1619,49 +1142,6 @@ void CTerrainTextureDialog::RecalcLayout()
 	}
 }
 
-//////////////////////////////////////////////////////////////////////////
-LRESULT CTerrainTextureDialog::OnTaskPanelNotify(WPARAM wParam, LPARAM lParam)
-{
-	switch (wParam)
-	{
-	case XTP_TPN_CLICK:
-		{
-			CXTPTaskPanelGroupItem* pItem = (CXTPTaskPanelGroupItem*)lParam;
-			UINT nCmdID = pItem->GetID();
-			switch (nCmdID)
-			{
-			case CMD_LAYER_ADD:
-				OnLayersNewItem();
-				break;
-			case CMD_LAYER_DELETE:
-				OnLayersDeleteItem();
-				break;
-			case CMD_LAYER_MOVEUP:
-				OnLayersMoveItemUp();
-				break;
-			case CMD_LAYER_MOVEDOWN:
-				OnLayersMoveItemDown();
-				break;
-			case CMD_LAYER_LOAD_TEXTURE:
-				OnLoadTexture();
-				break;
-			case CMD_LAYER_ASIGN_MATERIAL:
-				OnAssignMaterial();
-				break;
-			case CMD_OPEN_MATERIAL_EDITOR:
-				GetIEditorImpl()->OpenView("Material Editor");
-				break;
-			}
-		}
-		break;
-
-	case XTP_TPN_RCLICK:
-		break;
-	}
-	return 0;
-}
-
-//////////////////////////////////////////////////////////////////////////
 bool CTerrainTextureDialog::GetSelectedLayers(Layers& layers)
 {
 	layers.clear();
@@ -1675,7 +1155,6 @@ bool CTerrainTextureDialog::GetSelectedLayers(Layers& layers)
 	return !layers.empty();
 }
 
-//////////////////////////////////////////////////////////////////////////
 void CTerrainTextureDialog::OnReportSelChange(NMHDR* pNotifyStruct, LRESULT* result)
 {
 	CLayer* pLayer = NULL;
@@ -1690,32 +1169,12 @@ void CTerrainTextureDialog::OnReportSelChange(NMHDR* pNotifyStruct, LRESULT* res
 	*result = 0;
 }
 
-//////////////////////////////////////////////////////////////////////////
 void CTerrainTextureDialog::OnReportKeyDown(NMHDR* pNMHDR, LRESULT* pResult)
 {
 	XTP_NM_REPORTRECORDITEM* pItemNotify = (XTP_NM_REPORTRECORDITEM*) pNMHDR;
 	*pResult = 0;
 }
 
-//////////////////////////////////////////////////////////////////////////
-void CTerrainTextureDialog::OnReportClick(NMHDR* pNotifyStruct, LRESULT* result)
-{
-	XTP_NM_REPORTRECORDITEM* pItemNotify = (XTP_NM_REPORTRECORDITEM*) pNotifyStruct;
-	if (pItemNotify->pColumn && pItemNotify->pColumn->GetIndex() == 0)
-	{
-
-	}
-}
-
-//////////////////////////////////////////////////////////////////////////
-void CTerrainTextureDialog::OnReportRClick(NMHDR* pNotifyStruct, LRESULT* result)
-{
-	XTP_NM_REPORTRECORDITEM* pItemNotify = (XTP_NM_REPORTRECORDITEM*) pNotifyStruct;
-
-	*result = 0;
-}
-
-//////////////////////////////////////////////////////////////////////////
 void CTerrainTextureDialog::OnReportHyperlink(NMHDR* pNotifyStruct, LRESULT* result)
 {
 	XTP_NM_REPORTRECORDITEM* pItemNotify = (XTP_NM_REPORTRECORDITEM*) pNotifyStruct;
@@ -1743,7 +1202,6 @@ void CTerrainTextureDialog::OnReportHyperlink(NMHDR* pNotifyStruct, LRESULT* res
 	}
 }
 
-//////////////////////////////////////////////////////////////////////////
 void CTerrainTextureDialog::SelectLayer(CLayer* pLayer, bool bSelectUI)
 {
 	// Unselect all layers.
@@ -1784,7 +1242,6 @@ void CTerrainTextureDialog::SelectLayer(CLayer* pLayer, bool bSelectUI)
 	m_bIgnoreNotify = false;
 }
 
-//////////////////////////////////////////////////////////////////////////
 void CTerrainTextureDialog::OnReportPropertyChanged(NMHDR* pNotifyStruct, LRESULT* /*result*/)
 {
 	XTP_NM_REPORTRECORDITEM* pItemNotify = (XTP_NM_REPORTRECORDITEM*) pNotifyStruct;
@@ -1849,7 +1306,6 @@ void CTerrainTextureDialog::OnReportPropertyChanged(NMHDR* pNotifyStruct, LRESUL
 	m_bIgnoreNotify = false;
 }
 
-//////////////////////////////////////////////////////////////////////////
 void CTerrainTextureDialog::OnAssignMaterial()
 {
 	Layers layers;
@@ -1879,13 +1335,11 @@ void CTerrainTextureDialog::OnAssignMaterial()
 	GetIEditorImpl()->GetTerrainManager()->ReloadSurfaceTypes();
 }
 
-//////////////////////////////////////////////////////////////////////////
 void CTerrainTextureDialog::PostNcDestroy()
 {
 	delete this;
 }
 
-//////////////////////////////////////////////////////////////////////////
 void CTerrainTextureDialog::OnDataBaseItemEvent(IDataBaseItem* pItem, EDataBaseItemEvent event)
 {
 	if (event == EDB_ITEM_EVENT_SELECTED)
@@ -1894,7 +1348,6 @@ void CTerrainTextureDialog::OnDataBaseItemEvent(IDataBaseItem* pItem, EDataBaseI
 	}
 }
 
-//////////////////////////////////////////////////////////////////////////
 void CTerrainTextureDialog::UpdateAssignMaterialItem()
 {
 	if (m_pAssignMaterialLink == NULL)
@@ -1908,7 +1361,6 @@ void CTerrainTextureDialog::UpdateAssignMaterialItem()
 	m_pAssignMaterialLink->SetEnabled(materialSelected);
 }
 
-//////////////////////////////////////////////////////////////////////////
 void CTerrainTextureDialog::OnEditorNotifyEvent(EEditorNotifyEvent event)
 {
 	if (m_bIgnoreNotify)
@@ -1985,19 +1437,16 @@ void CTerrainTextureDialog::OnEditorNotifyEvent(EEditorNotifyEvent event)
 	}
 }
 
-//////////////////////////////////////////////////////////////////////////
 void CTerrainTextureDialog::OnCustomize()
 {
 	CMFCUtils::ShowShortcutsCustomizeDlg(GetCommandBars(), IDR_LAYER, "TerrainTextureDialog");
 }
 
-//////////////////////////////////////////////////////////////////////////
 void CTerrainTextureDialog::OnExportShortcuts()
 {
 	CMFCUtils::ExportShortcuts(GetCommandBars()->GetShortcutManager());
 }
 
-//////////////////////////////////////////////////////////////////////////
 void CTerrainTextureDialog::OnImportShortcuts()
 {
 	CMFCUtils::ImportShortcuts(GetCommandBars()->GetShortcutManager(), "TerrainTextureDialog");
