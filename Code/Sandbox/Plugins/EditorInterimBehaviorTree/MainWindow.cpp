@@ -3,23 +3,20 @@
 #include "StdAfx.h"
 #include "MainWindow.h"
 
+#include "TreePanel.h"
+
 #include <IEditor.h>
-#include <CrySystem/File/ICryPak.h>
-
-#include <QDockWidget>
-#include <QAction>
-
-#include <QFileDialog>
-
-#include <QMenuBar>
-
-#include <QCloseEvent>
 
 #include <CrySerialization/IArchive.h>
 #include <CrySerialization/IArchiveHost.h>
+#include <CrySystem/File/ICryPak.h>
 #include <Serialization/Qt.h>
 
-#include "TreePanel.h"
+#include <QAction>
+#include <QCloseEvent>
+#include <QDockWidget>
+#include <QFileDialog>
+#include <QMenuBar>
 
 #define APPLICATION_USER_DIRECTORY                   "/interim_behavior_tree_editor/"
 #define APPLICATION_USER_STATE_FILEPATH              APPLICATION_USER_DIRECTORY "editor_state.json"
