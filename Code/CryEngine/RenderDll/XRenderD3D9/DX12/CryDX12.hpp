@@ -6,20 +6,26 @@
 
 extern int g_nPrintDX12;
 
-#ifdef _DEBUG
-	#define DX12_LOG(cond, ...) \
-		do { if (cond || g_nPrintDX12) { CryLog("DX12 Log: " __VA_ARGS__); } } while (0)
+#if !_RELEASE
 	#define DX12_ERROR(...) \
 		do { CryLog("DX12 Error: " __VA_ARGS__); } while (0)
 	#define DX12_ASSERT(cond, ...) \
 		do { if (!(cond)) { DX12_ERROR(__VA_ARGS__); CRY_ASSERT_MESSAGE(0, __VA_ARGS__); } } while (0)
+#else
+	#define DX12_ERROR(...)        do {} while (0)
+	#define DX12_ASSERT(cond, ...) do {} while (0)
+#endif
+
+#ifdef _DEBUG
+	#define DX12_LOG(cond, ...) \
+		do { if (cond || g_nPrintDX12) { CryLog("DX12 Log: " __VA_ARGS__); } } while (0)
 	#define DX12_WARNING(cond, ...) \
 		do { if (!(cond)) { DX12_LOG(__VA_ARGS__); } } while (0)
+	#define DX12_ASSERT_DEBUG(cond, ...) DX12_ASSERT(cond, __VA_ARGS__)
 #else
-	#define DX12_LOG(cond, ...) do {} while (0)
-	#define DX12_ERROR(...)     do {} while (0)
-	#define DX12_ASSERT(cond, ...)
-	#define DX12_WARNING(cond, ...)
+	#define DX12_LOG(cond, ...)          do {} while (0)
+	#define DX12_WARNING(cond, ...)      do {} while (0)
+	#define DX12_ASSERT_DEBUG(cond, ...) do {} while (0)
 #endif
 
 #define DX12_NOT_IMPLEMENTED DX12_ASSERT(0, "Not implemented!");
@@ -105,7 +111,7 @@ inline void SetDebugName(ID3D11DeviceChildDerivative* pWrappedResource, const ch
 	if (_vsnprintf(buffer, 512, name, args) < 0)
 		return;
 
-	pWrappedResource->SetPrivateData(WKPDID_D3DDebugObjectName, strlen(name), name);
+	pWrappedResource->SetPrivateData(WKPDID_D3DDebugObjectName, strlen(buffer), buffer);
 
 	va_end(args);
 #endif

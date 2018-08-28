@@ -429,7 +429,7 @@ void CCryDX12DeviceContext::BindResources(bool bGfx)
 				CCryDX12Buffer* buffer = rState.Stages[i].ConstantBufferViews.Get(resInput.ShaderSlot);
 				auto bindRange = rState.Stages[i].ConstBufferBindRange.Get(resInput.ShaderSlot);
 				DX12_ASSERT(buffer, "ConstantBuffer is required by the PSO but has not been set!");
-				DX12_ASSERT(uResourceDTOffset == resInput.DescriptorOffset, "ConstantBuffer offset has shifted: resource mapping invalid!");
+				DX12_ASSERT_DEBUG(uResourceDTOffset == resInput.DescriptorOffset, "ConstantBuffer offset has shifted: resource mapping invalid!");
 				if (!buffer) continue;
 				pCmdList->BindResourceView(buffer->GetDX12View(), uResourceDTOffset++, bindRange);
 			}
@@ -437,7 +437,7 @@ void CCryDX12DeviceContext::BindResources(bool bGfx)
 			{
 				CCryDX12ShaderResourceView* resource = rState.Stages[i].ShaderResourceViews.Get(resInput.ShaderSlot);
 				DX12_ASSERT(resource, "ShaderResourceView is required by the PSO but has not been set!");
-				DX12_ASSERT(uResourceDTOffset == resInput.DescriptorOffset, "ShaderResourceView offset has shifted: resource mapping invalid!");
+				DX12_ASSERT_DEBUG(uResourceDTOffset == resInput.DescriptorOffset, "ShaderResourceView offset has shifted: resource mapping invalid!");
 				if (!resource) continue;
 				pCmdList->BindResourceView(resource->GetDX12View(), uResourceDTOffset++, TRange<UINT>());
 			}
@@ -445,7 +445,7 @@ void CCryDX12DeviceContext::BindResources(bool bGfx)
 			{
 				CCryDX12UnorderedAccessView* resource = rState.Stages[i].UnorderedAccessViews.Get(resInput.ShaderSlot);
 				DX12_ASSERT(resource, "UnorderedAccessView is required by the PSO but has not been set!");
-				DX12_ASSERT(uResourceDTOffset == resInput.DescriptorOffset, "UnorderedAccessView offset has shifted: resource mapping invalid!");
+				DX12_ASSERT_DEBUG(uResourceDTOffset == resInput.DescriptorOffset, "UnorderedAccessView offset has shifted: resource mapping invalid!");
 				if (!resource) continue;
 				pCmdList->BindResourceView(resource->GetDX12View(), uResourceDTOffset++, TRange<UINT>());
 			}
@@ -464,7 +464,7 @@ void CCryDX12DeviceContext::BindResources(bool bGfx)
 			{
 				CCryDX12SamplerState* sampler = rState.Stages[i].SamplerState.Get(smpInput.ShaderSlot);
 				DX12_ASSERT(sampler, "Sampler is required by the PSO but has not been set!");
-				DX12_ASSERT(uSamplerDTOffset == smpInput.DescriptorOffset, "Sampler offset has shifted: resource mapping invalid!");
+				DX12_ASSERT_DEBUG(uSamplerDTOffset == smpInput.DescriptorOffset, "Sampler offset has shifted: resource mapping invalid!");
 				if (!sampler) continue;
 				pCmdList->BindSamplerState(sampler->GetDX12SamplerState(), uSamplerDTOffset++);
 			}
@@ -524,7 +524,7 @@ void CCryDX12DeviceContext::BindOutputViews()
 		CCryDX12RenderTargetView* view = rState.OutputMerger.RenderTargetViews.Get(i);
 		if (view)
 		{
-			view->GetDX12Resource().VerifyBackBuffer();
+			view->GetDX12Resource().VerifyBackBuffer(true);
 			rtv[numRTVs++] = &view->GetDX12View();
 		}
 	}
@@ -560,7 +560,7 @@ void CCryDX12DeviceContext::DebugPrintResources(bool bGfx)
 			CCryDX12Buffer* buffer = rState.Stages[i].ConstantBufferViews.Get(resInput.ShaderSlot);
 			auto bindRange = rState.Stages[i].ConstBufferBindRange.Get(resInput.ShaderSlot);
 			DX12_ASSERT(buffer, "ConstantBuffer is required by the PSO but has not been set!");
-			DX12_ASSERT(uResourceDTOffset == resInput.DescriptorOffset, "ConstantBuffer offset has shifted: resource mapping invalid!");
+			DX12_ASSERT_DEBUG(uResourceDTOffset == resInput.DescriptorOffset, "ConstantBuffer offset has shifted: resource mapping invalid!");
 
 			DX12_LOG(g_nPrintDX12, " %s: C %2d -> %2d %s [%s]",
 			         i == NCryDX12::ESS_Compute ? "Every    shader stage" :
@@ -578,7 +578,7 @@ void CCryDX12DeviceContext::DebugPrintResources(bool bGfx)
 		{
 			CCryDX12ShaderResourceView* resource = rState.Stages[i].ShaderResourceViews.Get(resInput.ShaderSlot);
 			DX12_ASSERT(resource, "ShaderResourceView is required by the PSO but has not been set!");
-			DX12_ASSERT(uResourceDTOffset == resInput.DescriptorOffset, "ShaderResourceView offset has shifted: resource mapping invalid!");
+			DX12_ASSERT_DEBUG(uResourceDTOffset == resInput.DescriptorOffset, "ShaderResourceView offset has shifted: resource mapping invalid!");
 
 			DX12_LOG(g_nPrintDX12, " %s: T %2d -> %2d %s [%s]",
 			         i == NCryDX12::ESS_Compute ? "Every    shader stage" :
@@ -596,7 +596,7 @@ void CCryDX12DeviceContext::DebugPrintResources(bool bGfx)
 		{
 			CCryDX12UnorderedAccessView* resource = rState.Stages[i].UnorderedAccessViews.Get(resInput.ShaderSlot);
 			DX12_ASSERT(resource, "UnorderedAccessView is required by the PSO but has not been set!");
-			DX12_ASSERT(uResourceDTOffset == resInput.DescriptorOffset, "UnorderedAccessView offset has shifted: resource mapping invalid!");
+			DX12_ASSERT_DEBUG(uResourceDTOffset == resInput.DescriptorOffset, "UnorderedAccessView offset has shifted: resource mapping invalid!");
 
 			DX12_LOG(g_nPrintDX12, " %s: U %2d -> %2d %s [%s]",
 			         i == NCryDX12::ESS_Compute ? "Every    shader stage" :
@@ -622,7 +622,7 @@ void CCryDX12DeviceContext::DebugPrintResources(bool bGfx)
 		{
 			CCryDX12SamplerState* sampler = rState.Stages[i].SamplerState.Get(smpInput.ShaderSlot);
 			DX12_ASSERT(sampler, "Sampler is required by the PSO but has not been set!");
-			DX12_ASSERT(uSamplerDTOffset == smpInput.DescriptorOffset, "Sampler offset has shifted: resource mapping invalid!");
+			DX12_ASSERT_DEBUG(uSamplerDTOffset == smpInput.DescriptorOffset, "Sampler offset has shifted: resource mapping invalid!");
 
 			DX12_LOG(g_nPrintDX12, " %s: S %2d -> %2d",
 			         i == NCryDX12::ESS_Compute ? "Every    shader stage" :
@@ -2332,8 +2332,8 @@ void STDMETHODCALLTYPE CCryDX12DeviceContext::CopySubresourcesRegion1(
 
 	ICryDX12Resource* dstDX12Resource = DX12_EXTRACT_ICRYDX12RESOURCE(pDstResource);
 	ICryDX12Resource* srcDX12Resource = DX12_EXTRACT_ICRYDX12RESOURCE(pSrcResource);
-	NCryDX12::CResource& dstResource = dstDX12Resource->GetDX12Resource(); dstResource.VerifyBackBuffer();
-	NCryDX12::CResource& srcResource = srcDX12Resource->GetDX12Resource(); srcResource.VerifyBackBuffer();
+	NCryDX12::CResource& dstResource = dstDX12Resource->GetDX12Resource(); dstResource.VerifyBackBuffer(true);
+	NCryDX12::CResource& srcResource = srcDX12Resource->GetDX12Resource(); srcResource.VerifyBackBuffer(false);
 
 	// TODO: copy from active render-target should be more elegant
 	if (m_Scheduler.GetCommandList(CMDQUEUE_GRAPHICS)->IsUsedByOutputViews(srcResource) ||
@@ -2528,8 +2528,8 @@ void STDMETHODCALLTYPE CCryDX12DeviceContext::CopyResource1(
 
 	ICryDX12Resource* dstDX12Resource = DX12_EXTRACT_ICRYDX12RESOURCE(pDstResource);
 	ICryDX12Resource* srcDX12Resource = DX12_EXTRACT_ICRYDX12RESOURCE(pSrcResource);
-	NCryDX12::CResource& dstResource = dstDX12Resource->GetDX12Resource(); dstResource.VerifyBackBuffer();
-	NCryDX12::CResource& srcResource = srcDX12Resource->GetDX12Resource(); srcResource.VerifyBackBuffer();
+	NCryDX12::CResource& dstResource = dstDX12Resource->GetDX12Resource(); dstResource.VerifyBackBuffer(true);
+	NCryDX12::CResource& srcResource = srcDX12Resource->GetDX12Resource(); srcResource.VerifyBackBuffer(false);
 
 	// TODO: copy from active render-target should be more elegant
 	if (m_Scheduler.GetCommandList(CMDQUEUE_GRAPHICS)->IsUsedByOutputViews(srcResource) ||
@@ -2688,7 +2688,7 @@ void STDMETHODCALLTYPE CCryDX12DeviceContext::UpdateSubresource1(
 	DX12_FUNC_LOG
 
 	ICryDX12Resource* dx12Resource = DX12_EXTRACT_ICRYDX12RESOURCE(pDstResource);
-	NCryDX12::CResource& resource = dx12Resource->GetDX12Resource(); resource.VerifyBackBuffer();
+	NCryDX12::CResource& resource = dx12Resource->GetDX12Resource(); resource.VerifyBackBuffer(true);
 
 	// TODO: copy from active render-target should be more elegant
 	if (m_Scheduler.GetCommandList(CMDQUEUE_GRAPHICS)->IsUsedByOutputViews(resource))
@@ -2890,7 +2890,7 @@ void CCryDX12DeviceContext::DiscardResource(ID3D11Resource* pResource)
 	DX12_FUNC_LOG
 
 	ICryDX12Resource* dx12Resource = DX12_EXTRACT_ICRYDX12RESOURCE(pResource);
-	NCryDX12::CResource& resource = dx12Resource->GetDX12Resource(); resource.VerifyBackBuffer();
+	NCryDX12::CResource& resource = dx12Resource->GetDX12Resource(); resource.VerifyBackBuffer(true);
 
 	// Ensure the command-list using the resource is executed
 	m_Scheduler.SubmitCommands(CMDQUEUE_GRAPHICS, DX12_SUBMISSION_MODE == DX12_SUBMISSION_SYNC,
@@ -3122,8 +3122,8 @@ void STDMETHODCALLTYPE CCryDX12DeviceContext::CopyResourceOvercross1(
 	{
 		ICryDX12Resource* srcDX12ResourceL = DX12_EXTRACT_ICRYDX12RESOURCE(pSrcResource);
 		ICryDX12Resource* srcDX12ResourceR = DX12_EXTRACT_ICRYDX12RESOURCE(pDstResource);
-		NCryDX12::CResource& srcResourceL = srcDX12ResourceL->GetDX12Resource(); srcResourceL.VerifyBackBuffer();
-		NCryDX12::CResource& srcResourceR = srcDX12ResourceR->GetDX12Resource(); srcResourceR.VerifyBackBuffer();
+		NCryDX12::CResource& srcResourceL = srcDX12ResourceL->GetDX12Resource(); srcResourceL.VerifyBackBuffer(false);
+		NCryDX12::CResource& srcResourceR = srcDX12ResourceR->GetDX12Resource(); srcResourceR.VerifyBackBuffer(true);
 
 		if (srcResourceL.NeedsTransitionBarrier(m_Scheduler.GetCommandList(CMDQUEUE_COPY), D3D12_RESOURCE_STATE_COPY_SOURCE))
 		{

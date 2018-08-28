@@ -109,7 +109,7 @@ ID3D12Resource* CView::GetD3D12Resource() const
 //---------------------------------------------------------------------------------------------------------------------
 bool CView::Init(CResource& resource, EViewType type, UINT64 size)
 {
-	DX12_ASSERT(type != EVT_Unknown);
+	DX12_ASSERT(type != EVT_Unknown, "Try to create a view-object with unknown type!");
 	const D3D12_RESOURCE_DESC& desc = resource.GetDesc();
 	const CD3DX12_RESOURCE_DESC descX(desc);
 

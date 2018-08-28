@@ -59,7 +59,7 @@ public:
 		auto* const pFence = m_presentFence.GetFence();
 		VkSemaphore Semaphore = pFence->second[m_semaphoreIndex++ % pFence->second.size()];
 		{
-			m_asyncQueue.FlushNextPresent(); VK_ASSERT(!IsPresentScheduled(), "Flush didn't dry out all outstanding Present() calls!");
+			m_asyncQueue.FlushNextPresent(); VK_ASSERT(!IsPresentScheduled() && "Flush didn't dry out all outstanding Present() calls!");
 			VkResult result = vkAcquireNextImageKHR(m_pDevice->GetVkDevice(), m_KHRSwapChain, ~0ULL, Semaphore, VK_NULL_HANDLE, &m_nCurrentBackBufferIndex);
 			VK_ASSERT(result == VK_SUCCESS);
 			m_bChangedBackBufferIndex = false;

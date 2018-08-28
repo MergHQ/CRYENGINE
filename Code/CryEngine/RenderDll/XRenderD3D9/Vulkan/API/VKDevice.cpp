@@ -458,7 +458,7 @@ VkResult CDevice::CreateOrReuseCommittedResource(EHeapType HeapHint, const VkCre
 			{
 				// Guaranteed O(1) lookup
 				(*ppOutputResource = result->second.front().pObject)->AddRef();
-				VK_ASSERT(result->second.front().pObject->IsUniquelyOwned(), "Ref-Counter of VK resource is not 1, implementation will crash!");
+				VK_ASSERT(result->second.front().pObject->IsUniquelyOwned() && "Ref-Counter of VK resource is not 1, implementation will crash!");
 				ClearDebugName(result->second.front().pObject);
 
 				result->second.pop_front();
@@ -529,7 +529,7 @@ void CDevice::FlushReleaseHeap(const UINT64 (&completedFenceValues)[CMDQUEUE_NUM
 				else
 				{
 				//	it->first->Release();
-					VK_ASSERT(it->first->IsDeletable(), "Ref-Counter of VK resource is not 0, implementation will crash!");
+					VK_ASSERT(it->first->IsDeletable() && "Ref-Counter of VK resource is not 0, implementation will crash!");
 					delete it->first;
 				}
 
@@ -553,7 +553,7 @@ void CDevice::FlushReleaseHeap(const UINT64 (&completedFenceValues)[CMDQUEUE_NUM
 			       ((it->second.back().fenceValues[CMDQUEUE_COPY    ]) <= pruneFenceValues[CMDQUEUE_COPY    ])*/)
 			{
 			//	ULONG counter = it->second.back().pObject->Release();
-				VK_ASSERT(it->second.back().pObject->IsDeletable(), "Ref-Counter of VK resource is not 0, implementation will crash!");
+				VK_ASSERT(it->second.back().pObject->IsDeletable() && "Ref-Counter of VK resource is not 0, implementation will crash!");
 				delete it->second.back().pObject;
 
 				it->second.pop_back();

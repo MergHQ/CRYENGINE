@@ -541,7 +541,7 @@ void CCommandList::BindDepthStencilView(const CView& dsv)
 
 bool CCommandList::PresentSwapChain(CSwapChain* pDX12SwapChain)
 {
-	CResource& pBB = pDX12SwapChain->GetCurrentBackBuffer(); pBB.VerifyBackBuffer();
+	CResource& pBB = pDX12SwapChain->GetCurrentBackBuffer(); pBB.VerifyBackBuffer(true);
 
 	if (SetResourceState(pBB, D3D12_RESOURCE_STATE_PRESENT) != D3D12_RESOURCE_STATE_PRESENT)
 	{
@@ -589,7 +589,7 @@ void CCommandList::BindUnorderedAccessView(const CView& uav)
 //---------------------------------------------------------------------------------------------------------------------
 void CCommandList::BindResourceView(const CView& view, const TRange<UINT>& bindRange, D3D12_CPU_DESCRIPTOR_HANDLE dstHandle)
 {
-	CResource& resource = view.GetDX12Resource(); resource.VerifyBackBuffer();
+	CResource& resource = view.GetDX12Resource(); resource.VerifyBackBuffer(false);
 
 	switch (view.GetType())
 	{
@@ -829,7 +829,7 @@ void CCommandList::ClearRenderTargetView(const CView& view, const FLOAT rgba[4],
 {
 	DX12_ASSERT(INVALID_CPU_DESCRIPTOR_HANDLE != view.GetDescriptorHandle(), "View has no descriptor handle, that is not allowed!");
 
-	CResource& resource = view.GetDX12Resource(); resource.VerifyBackBuffer();
+	CResource& resource = view.GetDX12Resource(); resource.VerifyBackBuffer(true);
 
 	// TODO: if we know early that the resource(s) will be PRESENT we can begin the barrier early and end it here
 	TrackResourceRTVUsage(resource, view);
@@ -1003,8 +1003,8 @@ void CCommandList::CopySubresources(CResource& rDstResource, UINT dstSubResource
 			// NOTE: too complex case which is not supported as it leads to fe. [slice,mip] sequences like [0,4],[0,5],[0,6],[1,0],[1,1],...
 			// which we don't support because the offsets and dimensions are relative to a intermediate mip-level, while crossing the
 			// slice-boundary forces us to extrapolate dimensions to larger mips, which is probably not what is wanted in the first place.
-			DX12_ASSERT(!srcDesc.MipLevels || !((srcSubResource) % (srcDesc.MipLevels)) || (srcSubResource + NumSubresources <= srcDesc.MipLevels));
-			DX12_ASSERT(!dstDesc.MipLevels || !((dstSubResource) % (dstDesc.MipLevels)) || (dstSubResource + NumSubresources <= dstDesc.MipLevels));
+			DX12_ASSERT(!srcDesc.MipLevels || (srcSubResource / srcDesc.MipLevels == (srcSubResource + NumSubresources - 1) / srcDesc.MipLevels));
+			DX12_ASSERT(!dstDesc.MipLevels || (dstSubResource / dstDesc.MipLevels == (dstSubResource + NumSubresources - 1) / dstDesc.MipLevels));
 
 			for (UINT n = 0; n < NumSubresources; ++n)
 			{

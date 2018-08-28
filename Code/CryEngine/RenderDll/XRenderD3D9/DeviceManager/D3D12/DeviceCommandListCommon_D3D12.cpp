@@ -205,7 +205,7 @@ void CDeviceGraphicsCommandInterfaceImpl::PrepareUAVsForUseImpl(uint32 viewCount
 				Resource.InitDeferred(pCommandListDX12, desiredState | D3D12_RESOURCE_STATE_UNORDERED_ACCESS);
 			}
 
-			assert(!((pCommandListDX12->GetD3D12ListType() != D3D12_COMMAND_LIST_TYPE_DIRECT) && (Resource.GetTargetState() & D3D12_RESOURCE_STATE_PIXEL_SHADER_RESOURCE) && (!Resource.IsOffCard())));
+			DX12_ASSERT(!((pCommandListDX12->GetD3D12ListType() != D3D12_COMMAND_LIST_TYPE_DIRECT) && (Resource.GetTargetState() & D3D12_RESOURCE_STATE_PIXEL_SHADER_RESOURCE) && (!Resource.IsOffCard())));
 
 			pCommandListDX12->PrepareResourceUAVUsage(Resource, View, desiredState);
 		}
@@ -231,7 +231,7 @@ void CDeviceGraphicsCommandInterfaceImpl::PrepareRenderPassForUseImpl(CDeviceRen
 	for (int i = 0; i < renderPass.m_RenderTargetCount; ++i)
 	{
 		const NCryDX12::CView& View = renderPass.m_RenderTargetViews[i]->GetDX12View();
-		NCryDX12::CResource& Resource = View.GetDX12Resource(); Resource.VerifyBackBuffer();
+		NCryDX12::CResource& Resource = View.GetDX12Resource(); Resource.VerifyBackBuffer(true);
 
 		const D3D12_RESOURCE_STATES desiredState = D3D12_RESOURCE_STATE_RENDER_TARGET;
 
@@ -258,7 +258,7 @@ void CDeviceGraphicsCommandInterfaceImpl::PrepareResourceForUseImpl(uint32 bindS
 			Resource.InitDeferred(pCommandListDX12, desiredState | D3D12_RESOURCE_STATE_PIXEL_SHADER_RESOURCE | D3D12_RESOURCE_STATE_NON_PIXEL_SHADER_RESOURCE);
 		}
 
-		assert(!((pCommandListDX12->GetD3D12ListType() != D3D12_COMMAND_LIST_TYPE_DIRECT) && (Resource.GetTargetState() & D3D12_RESOURCE_STATE_PIXEL_SHADER_RESOURCE) && !(Resource.GetTargetState() & D3D12_RESOURCE_STATE_NON_PIXEL_SHADER_RESOURCE) && (!Resource.IsOffCard())));
+		DX12_ASSERT(!((pCommandListDX12->GetD3D12ListType() != D3D12_COMMAND_LIST_TYPE_DIRECT) && (Resource.GetTargetState() & D3D12_RESOURCE_STATE_PIXEL_SHADER_RESOURCE) && !(Resource.GetTargetState() & D3D12_RESOURCE_STATE_NON_PIXEL_SHADER_RESOURCE) && (!Resource.IsOffCard())));
 
 		pCommandListDX12->PrepareResourceSRVUsage(Resource, View, desiredState);
 	}
@@ -298,7 +298,7 @@ void CDeviceGraphicsCommandInterfaceImpl::PrepareResourcesForUseImpl(uint32 bind
 			Resource.InitDeferred(pCommandListDX12, desiredState | D3D12_RESOURCE_STATE_PIXEL_SHADER_RESOURCE | D3D12_RESOURCE_STATE_NON_PIXEL_SHADER_RESOURCE);
 		}
 
-		assert(!((pCommandListDX12->GetD3D12ListType() != D3D12_COMMAND_LIST_TYPE_DIRECT) && (Resource.GetTargetState() & D3D12_RESOURCE_STATE_PIXEL_SHADER_RESOURCE) && !(Resource.GetTargetState() & D3D12_RESOURCE_STATE_NON_PIXEL_SHADER_RESOURCE) && (!Resource.IsOffCard())));
+		DX12_ASSERT(!((pCommandListDX12->GetD3D12ListType() != D3D12_COMMAND_LIST_TYPE_DIRECT) && (Resource.GetTargetState() & D3D12_RESOURCE_STATE_PIXEL_SHADER_RESOURCE) && !(Resource.GetTargetState() & D3D12_RESOURCE_STATE_NON_PIXEL_SHADER_RESOURCE) && (!Resource.IsOffCard())));
 
 		pCommandListDX12->PrepareResourceSRVUsage(Resource, View, desiredState);
 	}
@@ -314,7 +314,7 @@ void CDeviceGraphicsCommandInterfaceImpl::PrepareResourcesForUseImpl(uint32 bind
 			Resource.InitDeferred(pCommandListDX12, desiredState | D3D12_RESOURCE_STATE_UNORDERED_ACCESS);
 		}
 
-		assert(!((pCommandListDX12->GetD3D12ListType() != D3D12_COMMAND_LIST_TYPE_DIRECT) && (Resource.GetTargetState() & D3D12_RESOURCE_STATE_PIXEL_SHADER_RESOURCE) && (!Resource.IsOffCard())));
+		DX12_ASSERT(!((pCommandListDX12->GetD3D12ListType() != D3D12_COMMAND_LIST_TYPE_DIRECT) && (Resource.GetTargetState() & D3D12_RESOURCE_STATE_PIXEL_SHADER_RESOURCE) && (!Resource.IsOffCard())));
 
 		pCommandListDX12->PrepareResourceUAVUsage(Resource, View, desiredState);
 	}
@@ -461,7 +461,7 @@ void CDeviceGraphicsCommandInterfaceImpl::BeginRenderPassImpl(const CDeviceRende
 	for (int i = 0; i < renderPass.m_RenderTargetCount; ++i)
 	{
 		const NCryDX12::CView& View = renderPass.m_RenderTargetViews[i]->GetDX12View();
-		NCryDX12::CResource& Resource = View.GetDX12Resource(); Resource.VerifyBackBuffer();
+		NCryDX12::CResource& Resource = View.GetDX12Resource(); Resource.VerifyBackBuffer(true);
 
 		pRTV[i] = &View;
 
@@ -522,9 +522,10 @@ void CDeviceGraphicsCommandInterfaceImpl::SetVertexBuffersImpl(uint32 numStreams
 			// TODO: try not to call GetD3D() here, overhead: 1 call (and no inlinening) + 1 look-up + 2 accesses + branch
 			buffer_size_t offset;
 			auto* pBuffer = reinterpret_cast<CCryDX12Buffer*>(gcpRendD3D.m_DevBufMan.GetD3D(vertexStream.hStream, &offset));
+			NCryDX12::CResource& Resource = pBuffer->GetDX12Resource();
 
-			assert(!pBuffer->GetDX12Resource().InitHasBeenDeferred());
-			assert(!pBuffer->GetDX12Resource().NeedsTransitionBarrier(pCommandListDX12, D3D12_RESOURCE_STATE_VERTEX_AND_CONSTANT_BUFFER));
+			DX12_ASSERT(!Resource.InitHasBeenDeferred(), "Resource %s hasn't been uploaded prior to use!", Resource.GetName());
+			DX12_ASSERT(!pBuffer->GetDX12Resource().NeedsTransitionBarrier(pCommandListDX12, D3D12_RESOURCE_STATE_VERTEX_AND_CONSTANT_BUFFER));
 
 #if defined(ENABLE_PROFILING_CODE)
 			CryInterlockedIncrement(&SRenderStatistics::Write().m_nNumBoundVertexBuffers[pBuffer->GetDX12Resource().IsOffCard()]);
@@ -547,9 +548,10 @@ void CDeviceGraphicsCommandInterfaceImpl::SetIndexBufferImpl(const CDeviceInputS
 		// TODO: try not to call GetD3D() here, overhead: 1 call (and no inlinening) + 1 look-up + 2 accesses + branch
 		buffer_size_t offset;
 		auto* pBuffer = reinterpret_cast<CCryDX12Buffer*>(gcpRendD3D.m_DevBufMan.GetD3D(indexStream->hStream, &offset));
+		NCryDX12::CResource& Resource = pBuffer->GetDX12Resource();
 
-		assert(!pBuffer->GetDX12Resource().InitHasBeenDeferred());
-		assert(!pBuffer->GetDX12Resource().NeedsTransitionBarrier(pCommandListDX12, D3D12_RESOURCE_STATE_INDEX_BUFFER));
+		DX12_ASSERT(!Resource.InitHasBeenDeferred(), "Resource %s hasn't been uploaded prior to use!", Resource.GetName());
+		DX12_ASSERT(!Resource.NeedsTransitionBarrier(pCommandListDX12, D3D12_RESOURCE_STATE_INDEX_BUFFER));
 
 #if defined(ENABLE_PROFILING_CODE)
 		CryInterlockedIncrement(&SRenderStatistics::Write().m_nNumBoundIndexBuffers[pBuffer->GetDX12Resource().IsOffCard()]);
@@ -575,8 +577,8 @@ void CDeviceGraphicsCommandInterfaceImpl::SetResourcesImpl(uint32 bindSlot, cons
 	{
 		NCryDX12::CResource& Resource = it.second->GetDX12Resource();
 
-		assert(!Resource.InitHasBeenDeferred());
-		assert(!Resource.NeedsTransitionBarrier(pCommandListDX12, D3D12_RESOURCE_STATE_VERTEX_AND_CONSTANT_BUFFER));
+		DX12_ASSERT(!Resource.InitHasBeenDeferred(), "Resource %s hasn't been uploaded prior to use!", Resource.GetName());
+		DX12_ASSERT(!Resource.NeedsTransitionBarrier(pCommandListDX12, D3D12_RESOURCE_STATE_VERTEX_AND_CONSTANT_BUFFER));
 
 #if defined(ENABLE_PROFILING_CODE)
 		CryInterlockedIncrement(&SRenderStatistics::Write().m_nNumBoundConstBuffers[Resource.IsOffCard()]);
@@ -594,8 +596,8 @@ void CDeviceGraphicsCommandInterfaceImpl::SetResourcesImpl(uint32 bindSlot, cons
 			(it.first.stages &  EShaderStage_Pixel ? D3D12_RESOURCE_STATE_PIXEL_SHADER_RESOURCE : D3D12_RESOURCE_STATE_COMMON) |
 			(it.first.stages & ~EShaderStage_Pixel ? D3D12_RESOURCE_STATE_NON_PIXEL_SHADER_RESOURCE : D3D12_RESOURCE_STATE_COMMON);
 
-		assert(!Resource.InitHasBeenDeferred());
-		assert(!Resource.NeedsTransitionBarrier(pCommandListDX12, View, desiredState));
+		DX12_ASSERT(!Resource.InitHasBeenDeferred(), "Resource %s hasn't been uploaded prior to use!", Resource.GetName());
+		DX12_ASSERT(!Resource.NeedsTransitionBarrier(pCommandListDX12, View, desiredState));
 
 #if defined(ENABLE_PROFILING_CODE)
 		const bool bIsBuffer = Resource.GetDesc().Dimension == D3D12_RESOURCE_DIMENSION_BUFFER;
@@ -612,8 +614,8 @@ void CDeviceGraphicsCommandInterfaceImpl::SetResourcesImpl(uint32 bindSlot, cons
 		const NCryDX12::CView& View = it.second->GetDX12View();
 		NCryDX12::CResource& Resource = View.GetDX12Resource();
 
-		assert(!Resource.InitHasBeenDeferred());
-		assert(!Resource.NeedsTransitionBarrier(pCommandListDX12, D3D12_RESOURCE_STATE_UNORDERED_ACCESS));
+		DX12_ASSERT(!Resource.InitHasBeenDeferred(), "Resource %s hasn't been uploaded prior to use!", Resource.GetName());
+		DX12_ASSERT(!Resource.NeedsTransitionBarrier(pCommandListDX12, D3D12_RESOURCE_STATE_UNORDERED_ACCESS));
 
 #if defined(ENABLE_PROFILING_CODE)
 		const bool bIsBuffer = Resource.GetDesc().Dimension == D3D12_RESOURCE_DIMENSION_BUFFER;
@@ -645,8 +647,8 @@ void CDeviceGraphicsCommandInterfaceImpl::SetInlineConstantBufferImpl(uint32 bin
 	const NCryDX12::CView& View = GET_DX12_CONSTANTBUFFER_RESOURCE(pConstantBuffer)->GetDX12View();
 	NCryDX12::CResource& Resource = View.GetDX12Resource();
 
-	assert(!Resource.InitHasBeenDeferred());
-	assert(!Resource.NeedsTransitionBarrier(pCommandListDX12, D3D12_RESOURCE_STATE_VERTEX_AND_CONSTANT_BUFFER));
+	DX12_ASSERT(!Resource.InitHasBeenDeferred(), "Resource %s hasn't been uploaded prior to use!", Resource.GetName());
+	DX12_ASSERT(!Resource.NeedsTransitionBarrier(pCommandListDX12, D3D12_RESOURCE_STATE_VERTEX_AND_CONSTANT_BUFFER));
 
 #if defined(ENABLE_PROFILING_CODE)
 	CryInterlockedIncrement(&SRenderStatistics::Write().m_nNumBoundInlineBuffers[Resource.IsOffCard()]);
@@ -733,7 +735,7 @@ void CDeviceComputeCommandInterfaceImpl::PrepareUAVsForUseImpl(uint32 viewCount,
 				Resource.InitDeferred(pCommandListDX12, desiredState | D3D12_RESOURCE_STATE_UNORDERED_ACCESS);
 			}
 
-			assert(!((pCommandListDX12->GetD3D12ListType() != D3D12_COMMAND_LIST_TYPE_DIRECT) && (Resource.GetTargetState() & D3D12_RESOURCE_STATE_PIXEL_SHADER_RESOURCE) && (!Resource.IsOffCard())));
+			DX12_ASSERT(!((pCommandListDX12->GetD3D12ListType() != D3D12_COMMAND_LIST_TYPE_DIRECT) && (Resource.GetTargetState() & D3D12_RESOURCE_STATE_PIXEL_SHADER_RESOURCE) && (!Resource.IsOffCard())));
 
 			pCommandListDX12->PrepareResourceUAVUsage(Resource, View, desiredState);
 		}
@@ -771,7 +773,7 @@ void CDeviceComputeCommandInterfaceImpl::PrepareResourcesForUseImpl(uint32 bindS
 			Resource.InitDeferred(pCommandListDX12, desiredState | D3D12_RESOURCE_STATE_NON_PIXEL_SHADER_RESOURCE);
 		}
 
-		assert(!((pCommandListDX12->GetD3D12ListType() != D3D12_COMMAND_LIST_TYPE_DIRECT) && (Resource.GetTargetState() & D3D12_RESOURCE_STATE_PIXEL_SHADER_RESOURCE) && (!Resource.IsOffCard())));
+		DX12_ASSERT(!((pCommandListDX12->GetD3D12ListType() != D3D12_COMMAND_LIST_TYPE_DIRECT) && (Resource.GetTargetState() & D3D12_RESOURCE_STATE_PIXEL_SHADER_RESOURCE) && (!Resource.IsOffCard())));
 
 		pCommandListDX12->PrepareResourceCRVUsage(Resource, View, desiredState);
 	}
@@ -787,7 +789,7 @@ void CDeviceComputeCommandInterfaceImpl::PrepareResourcesForUseImpl(uint32 bindS
 			Resource.InitDeferred(pCommandListDX12, desiredState | D3D12_RESOURCE_STATE_UNORDERED_ACCESS);
 		}
 
-		assert(!((pCommandListDX12->GetD3D12ListType() != D3D12_COMMAND_LIST_TYPE_DIRECT) && (Resource.GetTargetState() & D3D12_RESOURCE_STATE_PIXEL_SHADER_RESOURCE) && (!Resource.IsOffCard())));
+		DX12_ASSERT(!((pCommandListDX12->GetD3D12ListType() != D3D12_COMMAND_LIST_TYPE_DIRECT) && (Resource.GetTargetState() & D3D12_RESOURCE_STATE_PIXEL_SHADER_RESOURCE) && (!Resource.IsOffCard())));
 
 		pCommandListDX12->PrepareResourceUAVUsage(Resource, View, desiredState);
 	}
@@ -828,7 +830,8 @@ void CDeviceComputeCommandInterfaceImpl::SetResourcesImpl(uint32 bindSlot, const
 	{
 		NCryDX12::CResource& Resource = it.second->GetDX12Resource();
 
-		assert(!Resource.NeedsTransitionBarrier(pCommandListDX12, D3D12_RESOURCE_STATE_VERTEX_AND_CONSTANT_BUFFER));
+		DX12_ASSERT(!Resource.InitHasBeenDeferred(), "Resource %s hasn't been uploaded prior to use!", Resource.GetName());
+		DX12_ASSERT(!Resource.NeedsTransitionBarrier(pCommandListDX12, D3D12_RESOURCE_STATE_VERTEX_AND_CONSTANT_BUFFER));
 
 #if defined(ENABLE_PROFILING_CODE)
 		CryInterlockedIncrement(&SRenderStatistics::Write().m_nNumBoundConstBuffers[Resource.IsOffCard()]);
@@ -846,7 +849,8 @@ void CDeviceComputeCommandInterfaceImpl::SetResourcesImpl(uint32 bindSlot, const
 			(it.first.stages &  EShaderStage_Pixel ? D3D12_RESOURCE_STATE_PIXEL_SHADER_RESOURCE : D3D12_RESOURCE_STATE_COMMON) |
 			(it.first.stages & ~EShaderStage_Pixel ? D3D12_RESOURCE_STATE_NON_PIXEL_SHADER_RESOURCE : D3D12_RESOURCE_STATE_COMMON);
 
-		assert(!Resource.NeedsTransitionBarrier(pCommandListDX12, View, desiredState));
+		DX12_ASSERT(!Resource.InitHasBeenDeferred(), "Resource %s hasn't been uploaded prior to use!", Resource.GetName());
+		DX12_ASSERT(!Resource.NeedsTransitionBarrier(pCommandListDX12, View, desiredState));
 
 #if defined(ENABLE_PROFILING_CODE)
 		CryInterlockedIncrement(&SRenderStatistics::Write().m_nNumBoundUniformTextures[Resource.IsOffCard()]);
@@ -861,7 +865,8 @@ void CDeviceComputeCommandInterfaceImpl::SetResourcesImpl(uint32 bindSlot, const
 		const NCryDX12::CView& View = it.second->GetDX12View();
 		NCryDX12::CResource& Resource = View.GetDX12Resource();
 
-		assert(!Resource.NeedsTransitionBarrier(pCommandListDX12, D3D12_RESOURCE_STATE_UNORDERED_ACCESS));
+		DX12_ASSERT(!Resource.InitHasBeenDeferred(), "Resource %s hasn't been uploaded prior to use!", Resource.GetName());
+		DX12_ASSERT(!Resource.NeedsTransitionBarrier(pCommandListDX12, D3D12_RESOURCE_STATE_UNORDERED_ACCESS));
 
 #if defined(ENABLE_PROFILING_CODE)
 		CryInterlockedIncrement(&SRenderStatistics::Write().m_nNumBoundUniformBuffers[Resource.IsOffCard()]);
@@ -883,7 +888,8 @@ void CDeviceComputeCommandInterfaceImpl::SetInlineConstantBufferImpl(uint32 bind
 	const NCryDX12::CView& View = GET_DX12_CONSTANTBUFFER_RESOURCE(pConstantBuffer)->GetDX12View();
 	NCryDX12::CResource& Resource = View.GetDX12Resource();
 
-	assert(!Resource.NeedsTransitionBarrier(pCommandListDX12, D3D12_RESOURCE_STATE_VERTEX_AND_CONSTANT_BUFFER));
+	DX12_ASSERT(!Resource.InitHasBeenDeferred(), "Resource %s hasn't been uploaded prior to use!", Resource.GetName());
+	DX12_ASSERT(!Resource.NeedsTransitionBarrier(pCommandListDX12, D3D12_RESOURCE_STATE_VERTEX_AND_CONSTANT_BUFFER));
 
 #if defined(ENABLE_PROFILING_CODE)
 	CryInterlockedIncrement(&SRenderStatistics::Write().m_nNumBoundInlineBuffers[Resource.IsOffCard()]);
@@ -979,8 +985,8 @@ void CDeviceCopyCommandInterfaceImpl::CopyImpl(CDeviceTexture* pSrc, CDeviceText
 	{
 		ICryDX12Resource* dstDX12Resource = DX12_EXTRACT_ICRYDX12RESOURCE(pDst->GetBaseTexture());
 		ICryDX12Resource* srcDX12Resource = DX12_EXTRACT_ICRYDX12RESOURCE(pSrc->GetBaseTexture());
-		NCryDX12::CResource& rDstResource = dstDX12Resource->GetDX12Resource(); rDstResource.VerifyBackBuffer();
-		NCryDX12::CResource& rSrcResource = srcDX12Resource->GetDX12Resource(); rSrcResource.VerifyBackBuffer();
+		NCryDX12::CResource& rDstResource = dstDX12Resource->GetDX12Resource(); rDstResource.VerifyBackBuffer(true);
+		NCryDX12::CResource& rSrcResource = srcDX12Resource->GetDX12Resource(); rSrcResource.VerifyBackBuffer(false);
 
 
 		D3D12_RESOURCE_STATES prevDstState = rDstResource.GetState(), dstState = prevDstState;

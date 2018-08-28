@@ -73,7 +73,7 @@ bool CCommandScheduler::RecreateCommandListPool(int queueIndex)
 
 void CCommandScheduler::CeaseCommandQueue(int queueIndex, bool bWait)
 {
-	VK_ASSERT(m_pCmdLists[queueIndex] != nullptr, "CommandList hasn't been allocated!");
+	VK_ASSERT(m_pCmdLists[queueIndex] != nullptr && "CommandList hasn't been allocated!");
 
 	for (const auto& cb : m_ceaseCallbacks)
 		cb.second(cb.first, queueIndex);
@@ -84,7 +84,7 @@ void CCommandScheduler::CeaseCommandQueue(int queueIndex, bool bWait)
 
 void CCommandScheduler::ResumeCommandQueue(int queueIndex)
 {
-	VK_ASSERT(m_pCmdLists[queueIndex] == nullptr, "CommandList hasn't been submitted!");
+	VK_ASSERT(m_pCmdLists[queueIndex] == nullptr && "CommandList hasn't been submitted!");
 	m_CmdListPools[queueIndex].AcquireCommandList(m_pCmdLists[queueIndex]);
 	m_pCmdLists[queueIndex]->Begin();
 

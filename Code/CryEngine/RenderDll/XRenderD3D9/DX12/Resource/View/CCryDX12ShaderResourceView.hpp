@@ -21,14 +21,14 @@ public:
 	template<class T>
 	void BeginResourceStateTransition(T* pCmdList)
 	{
-		GetDX12View().GetDX12Resource().VerifyBackBuffer();
+		GetDX12View().GetDX12Resource().VerifyBackBuffer(false);
 		pCmdList->BeginResourceStateTransition(GetDX12View().GetDX12Resource(), GetDX12View(), D3D12_RESOURCE_STATE_PIXEL_SHADER_RESOURCE | D3D12_RESOURCE_STATE_NON_PIXEL_SHADER_RESOURCE);
 	}
 
 	template<class T>
 	void EndResourceStateTransition(T* pCmdList)
 	{
-		GetDX12View().GetDX12Resource().VerifyBackBuffer();
+		GetDX12View().GetDX12Resource().VerifyBackBuffer(false);
 		pCmdList->EndResourceStateTransition(GetDX12View().GetDX12Resource(), GetDX12View(), D3D12_RESOURCE_STATE_PIXEL_SHADER_RESOURCE | D3D12_RESOURCE_STATE_NON_PIXEL_SHADER_RESOURCE);
 	}
 

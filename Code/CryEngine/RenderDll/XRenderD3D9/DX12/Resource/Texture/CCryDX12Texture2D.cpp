@@ -32,7 +32,7 @@ CCryDX12Texture2D* CCryDX12Texture2D::Create(CCryDX12Device* pDevice)
 
 CCryDX12Texture2D* CCryDX12Texture2D::Create(CCryDX12Device* pDevice, CCryDX12SwapChain* pSwapChain, ID3D12Resource* pResource)
 {
-	DX12_ASSERT(pResource);
+	DX12_ASSERT(pResource, "CreateTexture() called without resource!");
 
 	D3D12_RESOURCE_DESC desc12 = pResource->GetDesc();
 

@@ -12,8 +12,8 @@ void CD3DOculusRenderer::CopyMultiGPUFrameData()
 	CCryDX12Texture2D* lRV = (CCryDX12Texture2D*)m_pStereoRenderer->GetEyeDisplayContext(CCamera::eEye_Left).first->GetCurrentBackBuffer()->GetDevTexture()->GetBaseTexture();
 	CCryDX12Texture2D* rRV = (CCryDX12Texture2D*)m_pStereoRenderer->GetEyeDisplayContext(CCamera::eEye_Right).first->GetCurrentBackBuffer()->GetDevTexture()->GetBaseTexture();
 
-	NCryDX12::CResource& lRVResource = lRV->GetDX12Resource(); lRVResource.VerifyBackBuffer();
-	NCryDX12::CResource& rRVResource = rRV->GetDX12Resource(); rRVResource.VerifyBackBuffer();
+	NCryDX12::CResource& lRVResource = lRV->GetDX12Resource(); lRVResource.VerifyBackBuffer(false);
+	NCryDX12::CResource& rRVResource = rRV->GetDX12Resource(); rRVResource.VerifyBackBuffer(false);
 
 	const int idx0 = m_pOculusDevice->GetCurrentSwapChainIndex(m_scene3DRenderData[0].vrTextureSet.pDeviceTextureSwapChain);
 	const int idx1 = m_pOculusDevice->GetCurrentSwapChainIndex(m_scene3DRenderData[1].vrTextureSet.pDeviceTextureSwapChain);
@@ -68,7 +68,7 @@ void CD3DOculusRenderer::CopyMultiGPUFrameData()
 	{
 		CCryDX12Texture2D* qRV = (CCryDX12Texture2D*)m_pStereoRenderer->GetVrQuadLayerDisplayContext(static_cast<RenderLayer::EQuadLayers>(i)).first->GetCurrentBackBuffer()->GetDevTexture()->GetBaseTexture();
 
-		NCryDX12::CResource& qRVResource = qRV->GetDX12Resource(); qRVResource.VerifyBackBuffer();
+		NCryDX12::CResource& qRVResource = qRV->GetDX12Resource(); qRVResource.VerifyBackBuffer(false);
 
 		const int idx = m_pOculusDevice->GetCurrentSwapChainIndex(m_quadLayerRenderData[i].vrTextureSet.pDeviceTextureSwapChain);
 
@@ -107,7 +107,7 @@ void CD3DOculusRenderer::CopyMultiGPUFrameData()
 	{
 		CCryDX12Texture2D* qRV = (CCryDX12Texture2D*)m_pStereoRenderer->GetVrQuadLayerDisplayContext(static_cast<RenderLayer::EQuadLayers>(i)).first->GetCurrentBackBuffer()->GetDevTexture()->GetBaseTexture();
 
-		NCryDX12::CResource& qRVResource = qRV->GetDX12Resource(); qRVResource.VerifyBackBuffer();
+		NCryDX12::CResource& qRVResource = qRV->GetDX12Resource(); qRVResource.VerifyBackBuffer(false);
 
 		const int idx = m_pOculusDevice->GetCurrentSwapChainIndex(m_quadLayerRenderData[i].vrTextureSet.pDeviceTextureSwapChain);
 
@@ -133,7 +133,7 @@ void CD3DOculusRenderer::CopyMultiGPUMirrorData(CTexture* pBackbufferTexture)
 
 	CCryDX12Texture2D* bRV = (CCryDX12Texture2D*)pBackbufferTexture->GetDevTexture()->Get2DTexture();
 
-	NCryDX12::CResource& bRVResource = bRV->GetDX12Resource(); bRVResource.VerifyBackBuffer();
+	NCryDX12::CResource& bRVResource = bRV->GetDX12Resource(); bRVResource.VerifyBackBuffer(true);
 
 	IUnknown* bRVN = m_mirrorData.pMirrorTextureNative;
 
