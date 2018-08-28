@@ -17,31 +17,13 @@
 #include <CrySerialization/STL.h>
 #include "ExcelExport.h"
 #include <CrySystem/Testing/TestInfo.h>
+#include <CrySystem/Testing/ITestReporter.h>
 
 namespace CryTest
 {
-struct SRunContext
-{
-	int testCount = 0;
-	int failedTestCount = 0;
-	int succedTestCount = 0;
-};
-struct SError
-{
-	string message;
-	string fileName;
-	int    lineNumber;
-
-	void   Serialize(Serialization::IArchive& ar)
-	{
-		ar(message, "message");
-		ar(fileName, "fileName");
-		ar(lineNumber, "lineNumber");
-	}
-};
 
 //! Writes multiple excel documents for detailed results
-class CTestExcelReporter : public CExcelExportBase
+class CTestExcelReporter : public ITestReporter, public CExcelExportBase
 {
 public:
 	explicit CTestExcelReporter(ILog& log) : m_log(log) {}
@@ -52,25 +34,25 @@ public:
 	}
 
 	//! Notify reporter the test system started
-	void OnStartTesting(const SRunContext& context) {}
+	virtual void OnStartTesting(const SRunContext& context) override {}
 
 	//! Notify reporter the test system finished
-	void OnFinishTesting(const SRunContext& context, bool openReport);
+	virtual void OnFinishTesting(const SRunContext& context, bool openReport) override;
 
 	//! Notify reporter one test started
-	void OnSingleTestStart(const STestInfo& testInfo);
+	virtual void OnSingleTestStart(const STestInfo& testInfo) override;
 
 	//! Notify reporter one test finished, along with necessary results
-	void OnSingleTestFinish(const STestInfo& testInfo, float fRunTimeInMs, bool bSuccess, const std::vector<SError>& failures);
+	virtual void OnSingleTestFinish(const STestInfo& testInfo, float fRunTimeInMs, bool bSuccess, const std::vector<SError>& failures) override;
 
 	//! Save the test instance to prepare for possible time out or other unrecoverable errors
-	void SaveTemporaryReport();
+	virtual void SaveTemporaryReport() override;
 
 	//! Recover from last save
-	void RecoverTemporaryReport();
+	virtual void RecoverTemporaryReport() override;
 
 	//! Returns whether the report contains certain test
-	bool HasTest(const STestInfo& testInfo) const;
+	virtual bool HasTest(const STestInfo& testInfo) const override;
 
 private:
 	ILog& m_log;

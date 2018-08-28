@@ -1,24 +1,19 @@
 // Copyright 2001-2018 Crytek GmbH / Crytek Group. All rights reserved.
 
-#include <StdAfx.h>
+#include "StdAfx.h"
 #include "TerrainEditor.h"
 
-#include <QTabWidget>
-#include <QLayout>
-#include <QMenu>
-#include <QMenuBar>
-
-#include "Util/BoostPythonHelpers.h"
-#include "TerrainDialog.h"
-#include "TerrainTexture.h"
-#include "MinimapPanel.h"
-#include "TerrainTexturePainter.h"
 #include "Terrain/TerrainLayerPanel.h"
 #include "Terrain/TerrainLayerView.h"
 #include "Terrain/TerrainSculptPanel.h"
-#include "Commands/QCommandAction.h"
-#include "QMfcApp/qwinwidget.h"
+#include "Util/BoostPythonHelpers.h"
 #include "CryEdit.h"
+#include "MinimapPanel.h"
+#include "TerrainDialog.h"
+#include "TerrainTexture.h"
+#include "TerrainTexturePainter.h"
+
+#include <Commands/QCommandAction.h>
 
 extern CCryEditApp theApp;
 
@@ -71,14 +66,16 @@ void PyReloadTerrain()                { GetTerrainDialog()->OnReloadTerrain(); }
 void PySelectTerrain()                { GetIEditorImpl()->GetLevelEditorSharedState()->SetEditMode(CLevelEditorSharedState::EditMode::SelectArea); }
 
 // Layer Functions
-void PyImportLayers()   { GetTerrainLayers()->OnImport(); }
-void PyExportLayers()   { GetTerrainLayers()->OnExport(); }
-void PyRefineTiles()    { GetTerrainLayers()->OnRefineTerrainTextureTiles(); }
-void PyNewLayer()       { GetTerrainLayers()->OnLayersNewItem(); }
-void PyDeleteLayer()    { GetTerrainLayers()->OnLayersDeleteItem(); }
-void PyMoveLayerUp()    { GetTerrainLayers()->OnLayersMoveItemUp(); }
-void PyMoveLayerDown()  { GetTerrainLayers()->OnLayersMoveItemDown(); }
-void PyDuplicateLayer() { GetTerrainLayers()->OnDuplicateItem(); }
+void PyImportLayers()      { GetTerrainLayers()->OnImport(); }
+void PyExportLayers()      { GetTerrainLayers()->OnExport(); }
+void PyRefineTiles()       { GetTerrainLayers()->OnRefineTerrainTextureTiles(); }
+void PyNewLayer()          { GetTerrainLayers()->OnLayersNewItem(); }
+void PyDeleteLayer()       { GetTerrainLayers()->OnLayersDeleteItem(); }
+void PyMoveLayerToTop()    { GetTerrainLayers()->OnMoveLayerToTop(); }
+void PyMoveLayerUp()       { GetTerrainLayers()->OnLayersMoveItemUp(); }
+void PyMoveLayerDown()     { GetTerrainLayers()->OnLayersMoveItemDown(); }
+void PyMoveLayerToBottom() { GetTerrainLayers()->OnMoveLayerToBottom(); }
+void PyDuplicateLayer()    { GetTerrainLayers()->OnDuplicateItem(); }
 
 void PyFloodLayer()
 {
@@ -98,7 +95,7 @@ void PyFloodLayer()
 		pPainterTool->Action_StopUndo();
 	}
 }
-};
+}
 
 REGISTER_VIEWPANE_FACTORY(CTerrainEditor, "Terrain Editor", "Tools", true)
 
@@ -266,15 +263,17 @@ REGISTER_PYTHON_COMMAND_WITH_EXAMPLE(PyDuplicateLayer, terrain, duplicate_layer,
                                      "terrain.duplicate_layer()");
 REGISTER_EDITOR_COMMAND_TEXT(terrain, duplicate_layer, "Duplicate Layer");
 
-REGISTER_PYTHON_COMMAND_WITH_EXAMPLE(PyMoveLayerUp, terrain, move_layer_up,
-                                     "Moves the selected layer by one slot up.",
-                                     "terrain.move_layer_up()");
+REGISTER_PYTHON_COMMAND_WITH_EXAMPLE(PyMoveLayerToTop, terrain, move_layer_to_top, "Moves selected layer to top", "terrain.move_layer_to_top()");
+REGISTER_EDITOR_COMMAND_TEXT(terrain, move_layer_to_top, "Move to Top");
+
+REGISTER_PYTHON_COMMAND_WITH_EXAMPLE(PyMoveLayerUp, terrain, move_layer_up, "Moves selected layer by one slot up.", "terrain.move_layer_up()");
 REGISTER_EDITOR_COMMAND_TEXT(terrain, move_layer_up, "Move Layer Up");
 
-REGISTER_PYTHON_COMMAND_WITH_EXAMPLE(PyMoveLayerDown, terrain, move_layer_down,
-                                     "Moves the selected layer by one slot down.",
-                                     "terrain.move_layer_down()");
+REGISTER_PYTHON_COMMAND_WITH_EXAMPLE(PyMoveLayerDown, terrain, move_layer_down, "Moves selected layer by one slot down.", "terrain.move_layer_down()");
 REGISTER_EDITOR_COMMAND_TEXT(terrain, move_layer_down, "Move Layer Down");
+
+REGISTER_PYTHON_COMMAND_WITH_EXAMPLE(PyMoveLayerToBottom, terrain, move_layer_to_bottom, "Moves selected layer to bottom", "terrain.move_layer_to_bottom()");
+REGISTER_EDITOR_COMMAND_TEXT(terrain, move_layer_to_bottom, "Move to Bottom");
 
 REGISTER_PYTHON_COMMAND_WITH_EXAMPLE(PyFloodLayer, terrain, flood_layer,
                                      "Floods the selected layer over the all terrain.",
@@ -296,10 +295,6 @@ CTerrainEditor::CTerrainEditor(QWidget* parent)
 	InstallReleaseMouseFilter(this);
 }
 
-CTerrainEditor::~CTerrainEditor()
-{
-}
-
 void CTerrainEditor::SetLayout(const QVariantMap& state)
 {
 	CEditor::SetLayout(state);
@@ -310,7 +305,6 @@ void CTerrainEditor::SetLayout(const QVariantMap& state)
 	{
 		pLayerView->SetState(layerStateVar.value<QVariantMap>());
 	}
-
 }
 
 QVariantMap CTerrainEditor::GetLayout() const
@@ -333,8 +327,7 @@ void CTerrainEditor::InitTerrainMenu()
 {
 	const CEditor::MenuItems items[] = {
 		CEditor::MenuItems::FileMenu,
-		CEditor::MenuItems::EditMenu
-	};
+		CEditor::MenuItems::EditMenu };
 	AddToMenu(&items[0], 2);
 
 	CAbstractMenu* const pFileMenu = GetMenu(MenuItems::FileMenu);
@@ -401,13 +394,17 @@ void CTerrainEditor::InitTerrainMenu()
 		pEditMenu->AddAction(new QCommandAction("Brush Settings...", "general.open_pane 'Brush Settings'", nullptr));
 	}
 
-	CAbstractMenu* pLayerMenu = GetRootMenu()->CreateMenu(tr("Layers"),0);
+	CAbstractMenu* pLayerMenu = GetRootMenu()->CreateMenu(tr("Layers"), 0);
 	pLayerMenu->AddAction(GetAction("terrain.create_layer"));
 	pLayerMenu->AddAction(GetAction("terrain.delete_layer"));
 	pLayerMenu->AddAction(GetAction("terrain.duplicate_layer"));
-	pLayerMenu->AddAction(GetAction("terrain.move_layer_up"));
-	pLayerMenu->AddAction(GetAction("terrain.move_layer_down"));
-
+	
 	int sec = pLayerMenu->GetNextEmptySection();
+	pLayerMenu->AddAction(GetAction("terrain.move_layer_to_top"), sec);
+	pLayerMenu->AddAction(GetAction("terrain.move_layer_up"), sec);
+	pLayerMenu->AddAction(GetAction("terrain.move_layer_down"), sec);
+	pLayerMenu->AddAction(GetAction("terrain.move_layer_to_bottom"), sec);
+
+	sec = pLayerMenu->GetNextEmptySection();
 	pLayerMenu->AddAction(GetAction("terrain.flood_layer"), sec);
 }

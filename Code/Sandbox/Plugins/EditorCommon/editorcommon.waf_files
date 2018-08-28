@@ -543,12 +543,12 @@
         "Preferences": [
             "ConfigurationManager.cpp", 
             "ConfigurationManager.h", 
-            "Grid.cpp", 
-            "Grid.h", 
             "Preferences/GeneralPreferences.cpp", 
             "Preferences/GeneralPreferences.h", 
             "Preferences/GlobalHelperPreferences.cpp", 
             "Preferences/GlobalHelperPreferences.h", 
+            "Preferences/SnappingPreferences.cpp", 
+            "Preferences/SnappingPreferences.h", 
             "Preferences/ViewportPreferences.cpp", 
             "Preferences/ViewportPreferences.h"
         ]

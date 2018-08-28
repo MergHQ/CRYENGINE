@@ -4,7 +4,6 @@
 
 #include "Mission.h"
 
-//////////////////////////////////////////////////////////////////////////
 class CTerrainMiniMapTool : public CEditTool, public IEditorNotifyListener, public IScreenshotCallback
 {
 	DECLARE_DYNCREATE(CTerrainMiniMapTool)
@@ -55,7 +54,7 @@ private:
 	string                  m_path;
 	string                  m_filename; // without path and extension
 
-	std::map<string, float> m_ConstClearList;
+	std::map<string, float> m_constClearList;
 	bool                    b_stateScreenShot;
 	bool                    m_exportDds;
 	bool                    m_exportTif;

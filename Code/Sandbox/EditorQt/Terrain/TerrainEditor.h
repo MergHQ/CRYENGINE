@@ -2,15 +2,12 @@
 
 #pragma once
 
-#include <QWidget>
 #include "EditorFramework/Editor.h"
-#include "QtViewPane.h"
 
 class CTerrainEditor : public CDockableEditor
 {
 public:
 	CTerrainEditor(QWidget* parent = nullptr);
-	~CTerrainEditor();
 
 	virtual IViewPaneClass::EDockingDirection GetDockingDirection() const override { return IViewPaneClass::DOCK_FLOAT; }
 	virtual QRect                             GetPaneRect() override               { return QRect(0, 0, 800, 500); }

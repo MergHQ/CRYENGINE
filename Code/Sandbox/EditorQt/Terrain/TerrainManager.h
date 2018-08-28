@@ -36,6 +36,8 @@ public:
 	CLayer* FindLayer(const char* sLayerName) const;
 	CLayer* FindLayerByLayerId(const uint32 dwLayerId) const;
 	void    SwapLayers(int layer1, int layer2);
+	void    MoveLayerToTop(int index);
+	void    MoveLayerToBottom(int index);
 	void    AddLayer(CLayer* layer);
 	void    RemoveLayer(CLayer* layer);
 	void    InvalidateLayers();

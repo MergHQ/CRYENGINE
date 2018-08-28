@@ -159,7 +159,9 @@ CRY_TEST_SUITE(EntityTestsSuit)
 		SScopedSpawnEntity entity("UnifiedComponentTestEntity");
 
 		CUnifiedEntityComponent* pComponent = entity.pEntity->GetOrCreateComponent<CUnifiedEntityComponent>();
-		CRY_TEST_CHECK_DIFFERENT(pComponent, nullptr);
+		CRY_TEST_ASSERT(pComponent);
+		if (!pComponent)
+			return;
 		CRY_TEST_CHECK_EQUAL(entity.pEntity->GetComponentsCount(), 1);
 		CRY_TEST_CHECK_EQUAL(pComponent->m_bMyBool, false);
 		CRY_TEST_CHECK_EQUAL(pComponent->m_myFloat, 0.f);
@@ -198,6 +200,8 @@ CRY_TEST_SUITE(EntityTestsSuit)
 
 			CUnifiedEntityComponent* pComponent = entity.pEntity->GetOrCreateComponent<CUnifiedEntityComponent>();
 			CRY_TEST_CHECK_DIFFERENT(pComponent, nullptr);
+			if (!pComponent)
+				return;
 			// Check default values
 			CRY_TEST_CHECK_EQUAL(pComponent->m_bMyBool, false);
 			CRY_TEST_CHECK_EQUAL(pComponent->m_myFloat, 0.f);
@@ -288,6 +292,12 @@ CRY_TEST_SUITE(EntityTestsSuit)
 			SScopedSpawnEntity entity("SaveMultipleComponents");
 			CComponent1* pComponent1 = entity.pEntity->GetOrCreateComponent<CComponent1>();
 			CComponent2* pComponent2 = entity.pEntity->GetOrCreateComponent<CComponent2>();
+
+			CRY_TEST_ASSERT(pComponent1 != nullptr);
+			CRY_TEST_ASSERT(pComponent2 != nullptr);
+
+			if (!pComponent1 || !pComponent2)
+				return;
 
 			// Set boolean to true so we can assert existence of CComponent2 in CComponent1::Initialize
 			pComponent1->m_bLoadingFromDisk = true;

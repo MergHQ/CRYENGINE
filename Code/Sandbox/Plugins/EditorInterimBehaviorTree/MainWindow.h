@@ -1,7 +1,4 @@
-// Copyright 2001-2016 Crytek GmbH / Crytek Group. All rights reserved.
-
-#ifndef MainWindow_h
-#define MainWindow_h
+// Copyright 2001-2018 Crytek GmbH / Crytek Group. All rights reserved.
 
 #pragma once
 
@@ -156,5 +153,3 @@ private:
 	uint64 m_modularBehaviorTreeStatisticsCvarHandle;
 	uint64 m_modularBehaviorTreeDebugExecutionLogCvarHandle;
 };
-
-#endif // MainWindow_h

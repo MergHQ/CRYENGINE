@@ -37,12 +37,9 @@ public:
 	enum { IDD = IDD_DATABASE };
 	typedef std::vector<CLayer*> Layers;
 
-	//////////////////////////////////////////////////////////////////////////
-	// IEditorNotifyListener implementation
-	//////////////////////////////////////////////////////////////////////////
-	// Called by the editor to notify the listener about the specified event.
+	// IEditorNotifyListener
 	virtual void OnEditorNotifyEvent(EEditorNotifyEvent event);
-	//////////////////////////////////////////////////////////////////////////
+	// ~IEditorNotifyListener 
 
 	// IDataBaseManagerListener
 	virtual void OnDataBaseItemEvent(IDataBaseItem* pItem, EDataBaseItemEvent event);
@@ -51,19 +48,6 @@ public:
 	void OnAssignMaterial();
 
 protected:
-
-	class CXTPTaskPanelSpecific : public CXTPTaskPanel
-	{
-	public:
-		CXTPTaskPanelSpecific() : CXTPTaskPanel(), m_pTerrainTextureDialog(0){}
-		~CXTPTaskPanelSpecific(){}
-
-		void SetTerrainTextureDialog(CTerrainTextureDialog* pTerrainTextureDialog) { m_pTerrainTextureDialog = pTerrainTextureDialog; }
-		BOOL OnCommand(WPARAM wParam, LPARAM lParam);
-	private:
-		CTerrainTextureDialog* m_pTerrainTextureDialog;
-	};
-
 	virtual void OnOK()     {}
 	virtual void OnCancel() {}
 
@@ -75,7 +59,6 @@ protected:
 	void CompressLayers();
 
 	void InitReportCtrl();
-	void InitTaskPanel();
 	void GeneratePreviewImageList();
 	void RecalcLayout();
 	void SelectLayer(CLayer* pLayer, bool bSelectUI = true);
@@ -99,7 +82,6 @@ public:
 	afx_msg void    OnFileExportLargePreview();
 	afx_msg void    OnGeneratePreview();
 	afx_msg void    OnApplyLighting();
-	afx_msg void    OnUpdateApplyLighting(CCmdUI* pCmdUI);
 	afx_msg void    OnSetWaterLevel();
 	afx_msg void    OnHold();
 	afx_msg void    OnFetch();
@@ -108,23 +90,20 @@ public:
 	afx_msg void    OnLoadMask();
 	afx_msg void    OnExportMask();
 	afx_msg void    OnShowWater();
-	afx_msg void    OnUpdateShowWater(CCmdUI* pCmdUI);
 	afx_msg void    OnRefineTerrainTextureTiles();
 
 	afx_msg void    OnLayersNewItem();
 	afx_msg void    OnLayersDeleteItem();
+	afx_msg void    OnMoveLayerToTop();
 	afx_msg void    OnLayersMoveItemUp();
 	afx_msg void    OnLayersMoveItemDown();
+	afx_msg void    OnMoveLayerToBottom();
 	afx_msg void    OnDuplicateItem();
 
 	afx_msg void    OnCustomize();
 	afx_msg void    OnExportShortcuts();
 	afx_msg void    OnImportShortcuts();
 
-	afx_msg LRESULT OnTaskPanelNotify(WPARAM wParam, LPARAM lParam);
-
-	afx_msg void    OnReportClick(NMHDR* pNotifyStruct, LRESULT* /*result*/);
-	afx_msg void    OnReportRClick(NMHDR* pNotifyStruct, LRESULT* /*result*/);
 	afx_msg void    OnReportSelChange(NMHDR* pNotifyStruct, LRESULT* /*result*/);
 	afx_msg void    OnReportHyperlink(NMHDR* pNotifyStruct, LRESULT* /*result*/);
 	afx_msg void    OnReportKeyDown(NMHDR* pNotifyStruct, LRESULT* /*result*/);
@@ -133,8 +112,7 @@ public:
 	afx_msg void    PostNcDestroy();
 
 private:
-
-	CXTPTaskPanelSpecific m_wndTaskPanel;
+	int  GetSelectedLayerIndex() const;
 
 	// The currently active layer (synchronized with the list box selection)
 	CLayer* m_pCurrentLayer;

@@ -266,14 +266,16 @@ void CTestSystem::Update()
 		{
 			CTestFactory* pTestFactory = m_remainingTestFactories.front();
 			CRY_ASSERT(pTestFactory);
-			const bool wantSpawnTestForGame = pTestFactory->GetIsEnabledForGame() && !gEnv->IsEditor();
-			const bool wantSpawnTestForEditor = pTestFactory->GetIsEnabledForEditor() && gEnv->IsEditor();
-			if (wantSpawnTestForGame || wantSpawnTestForEditor)
+			const bool isEnabledForGame = pTestFactory->IsEnabledForGame();
+			const bool isEnabledForEditor = pTestFactory->IsEnabledForEditor();
+			const bool isEditor = gEnv->IsEditor();
+			if ((isEnabledForGame && !isEditor) || (isEnabledForEditor && isEditor))
 			{
 				m_currentTestInstance = stl::make_unique<CTestInstance>(pTestFactory);
 				m_remainingTestFactories.pop();
 				m_pTestRecordFile->SetLastTestName(m_currentTestInstance->GetTestInfo().name);
-				m_pReporter->SaveTemporaryReport();
+				if (auto pReporter = m_pReporter.lock())
+					pReporter->SaveTemporaryReport();
 				if (!InitTest())  //critical errors
 				{
 					FinishTest();
@@ -281,6 +283,11 @@ void CTestSystem::Update()
 			}
 			else   // test is skipped
 			{
+				// in the editor, warn user for running game-only tests. 
+				if (!isEnabledForEditor && isEditor)
+				{
+					CryLogAlways("Test %s is marked as disabled for Sandbox", pTestFactory->GetTestInfo().name.c_str());
+				}
 				m_remainingTestFactories.pop();
 			}
 		}
@@ -309,10 +316,12 @@ void CTestSystem::Update()
 
 		if (m_remainingTestFactories.empty() && !m_currentTestInstance)
 		{
-			m_pReporter->OnFinishTesting(m_testContext, m_openReport);
+			if (auto pReporter = m_pReporter.lock())
+				pReporter->OnFinishTesting(m_testContext, m_openReport);
 			CryLogAlways("Running all tests done.");
 			m_pTestRecordFile.reset();
 			m_isRunningTest = false;
+			RestoreAssertDialogSetting();
 			if (m_wantQuitAfterTestsDone)
 			{
 				gEnv->pSystem->Quit();
@@ -330,10 +339,16 @@ template<typename F> void CTestSystem::RunTestsFilter(F&& predicate)
 
 	stl::optional<string> lastErrorTest = m_pTestRecordFile->GetLastTestName();
 
-	m_pReporter = stl::make_unique<CTestExcelReporter>(m_log);
+	//If the system doesn't inject a reporter, we create one
+	if (!m_pReporter.lock())
+	{
+		m_pExcelReporter = std::make_shared<CTestExcelReporter>(m_log);
+		m_pReporter = m_pExcelReporter;
+	}
 	m_testContext = {};
 
-	m_pReporter->OnStartTesting(m_testContext);
+	if (auto pReporter = m_pReporter.lock())
+		pReporter->OnStartTesting(m_testContext);
 
 	auto testStartIter = m_testFactories.begin();
 	if (lastErrorTest)
@@ -347,13 +362,17 @@ template<typename F> void CTestSystem::RunTestsFilter(F&& predicate)
 		STestInfo lastErrorTestInfo = (*testStartIter)->GetTestInfo();
 
 		++testStartIter;   //bypasses the error test
-		m_pReporter->RecoverTemporaryReport();
-
-		//If the recovered report doesn't cover the unfinished test, it has crashed
-		if (!m_pReporter->HasTest(lastErrorTestInfo))
+		if (auto pReporter = m_pReporter.lock())
 		{
-			m_pReporter->OnSingleTestFinish(lastErrorTestInfo, 0, false, {
-				{ "Incomplete from previous run", nullptr, 0 } });
+			pReporter->RecoverTemporaryReport();
+
+			//If the recovered report doesn't cover the unfinished test, it has crashed
+			if (!pReporter->HasTest(lastErrorTestInfo))
+			{
+				std::vector<SError> errors;
+				errors.push_back(SError{ "Incomplete from previous run", nullptr, 0 });
+				pReporter->OnSingleTestFinish(lastErrorTestInfo, 0, false, errors);
+			}
 		}
 		
 	}
@@ -368,21 +387,52 @@ template<typename F> void CTestSystem::RunTestsFilter(F&& predicate)
 void CTestSystem::Run()
 {
 	CryLogAlways("Running all tests..."); //this gets output to main log. details are output to test log.
+	SaveAndDisableAssertDialogSetting();
 	RunTestsFilter([](CTestFactory*) { return true; });
 }
 
 void CTestSystem::RunSingle(const char* testName)
 {
 	CryLogAlways("Running test %s", testName); //this gets output to main log. details are output to test log.
+	SaveAndDisableAssertDialogSetting();
 	RunTestsFilter([testName](CTestFactory* pFactory) 
 	{ 
 		return stricmp(pFactory->GetTestInfo().name.c_str(), testName) == 0; 
 	});
 }
 
+void CTestSystem::RunTestsByName(const DynArray<string>& names)
+{
+	CRY_ASSERT(!names.empty());
+	CryLogAlways("Running following tests:");
+	for (const string& name : names)
+	{
+		CryLogAlways(name);
+	}
+	SaveAndDisableAssertDialogSetting();
+	std::set<string> remainingNames;
+	for (const string& name : names)
+	{
+		remainingNames.insert(name);
+	}
+	RunTestsFilter([&](CTestFactory* pFactory)
+	{
+		for (const string& name : remainingNames)
+		{
+			if (stricmp(pFactory->GetTestInfo().name.c_str(), name) == 0)
+			{
+				remainingNames.erase(name);
+				return true;
+			}
+		}
+		return false;
+	});
+}
+
 bool CTestSystem::InitTest()
 {
-	m_pReporter->OnSingleTestStart(m_currentTestInstance->GetTestInfo());
+	if (auto pReporter = m_pReporter.lock())
+		pReporter->OnSingleTestStart(m_currentTestInstance->GetTestInfo());
 	m_testContext.testCount++;
 
 	m_currentTestInstance->StartCountingCurrentTestTime();
@@ -396,7 +446,7 @@ bool CTestSystem::InitTest()
 	if (err)
 	{
 		m_testContext.failedTestCount++;
-		m_currentTestInstance->AddFailure({ err.value().message, err.value().fileName, err.value().lineNumber });
+		m_currentTestInstance->AddFailure(err.value());
 		return false;
 	}
 
@@ -422,13 +472,34 @@ void CTestSystem::FinishTest()
 		});
 
 	std::chrono::duration<float, std::milli> runTime = m_currentTestInstance->GetCurrentTestElapsed();
-	m_pReporter->OnSingleTestFinish(m_currentTestInstance->GetTestInfo(), runTime.count(), !failed, m_currentTestInstance->GetFailures());
+	if (auto pReporter = m_pReporter.lock())
+		pReporter->OnSingleTestFinish(m_currentTestInstance->GetTestInfo(), runTime.count(), !failed, m_currentTestInstance->GetFailures());
 	m_currentTestInstance.reset();
 }
 
 void CTestSystem::SignalStopWork()
 {
 	m_wantQuit = true;
+}
+
+void CTestSystem::SaveAndDisableAssertDialogSetting()
+{
+#ifdef USE_CRY_ASSERT
+	m_wasNoAssertDialog = gEnv->noAssertDialog;
+	gEnv->noAssertDialog = true;
+#endif
+}
+
+void CTestSystem::RestoreAssertDialogSetting()
+{
+#ifdef USE_CRY_ASSERT
+	gEnv->noAssertDialog = m_wasNoAssertDialog;
+#endif
+}
+
+void CTestSystem::SetReporter(const std::shared_ptr<ITestReporter>& reporter)
+{
+	m_pReporter = reporter;
 }
 
 void CTestSystem::ThreadEntry()
@@ -442,7 +513,8 @@ void CTestSystem::ThreadEntry()
 			//record timeout and quit
 			ReportNonCriticalError("Time out", "", 0);
 			std::chrono::duration<float, std::milli> runTime = m_currentTestInstance->GetCurrentTestElapsed();
-			m_pReporter->OnSingleTestFinish(m_currentTestInstance->GetTestInfo(), runTime.count(), false, m_currentTestInstance->GetFailures());
+			if (auto pReporter = m_pReporter.lock())
+				pReporter->OnSingleTestFinish(m_currentTestInstance->GetTestInfo(), runTime.count(), false, m_currentTestInstance->GetFailures());
 
 			SignalStopWork();
 			gEnv->pSystem->Quit();
@@ -464,7 +536,7 @@ void CTestSystem::ReportCriticalError(const char* szExpression, const char* szFi
 		// which would otherwise reset the flag.
 		gEnv->stoppedOnAssert = false;
 #endif
-		m_currentTestInstance->AddFailure({ szExpression, szFile, line });
+		m_currentTestInstance->AddFailure(SError{ szExpression, szFile, line });
 #if defined(CRY_TESTING_USE_EXCEPTIONS)
 		throw assert_exception(szExpression, szFile, line);
 #else
@@ -475,8 +547,17 @@ void CTestSystem::ReportCriticalError(const char* szExpression, const char* szFi
 
 void CTestSystem::ReportNonCriticalError(const char* szExpression, const char* szFile, int line)
 {
-	CRY_ASSERT(m_currentTestInstance);
-	m_currentTestInstance->AddFailure({ szExpression, szFile, line });
+	// This can be called from CRY_ASSERT hook, so we must handle the case when 
+	// m_currentTestInstance is not available
+	if (m_isRunningTest && m_currentTestInstance != nullptr)
+	{
+		m_currentTestInstance->AddFailure(SError{ szExpression, szFile, line });
+	}
+}
+
+const DynArray<CTestFactory*>& CTestSystem::GetFactories() const
+{
+	return m_testFactories;
 }
 
 void CTestSystem::AddFactory(CTestFactory* pFactory)

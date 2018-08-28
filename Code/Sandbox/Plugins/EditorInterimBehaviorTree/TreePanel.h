@@ -1,21 +1,18 @@
 // Copyright 2001-2018 Crytek GmbH / Crytek Group. All rights reserved.
 
-#ifndef TreePanel_h
-#define TreePanel_h
-
 #pragma once
-
-#include <QDockWidget>
 
 #include "BehaviorTreeDocument.h"
 
+#include <QPropertyTree/ContextList.h>
+
 #include <CryAISystem/BehaviorTree/SerializationSupport.h>
 
+#include <QDialog>
+#include <QDockWidget>
+#include <QGridLayout>
 #include <QLabel>
 #include <QPushButton>
-#include <QGridLayout>
-#include <QDialog>
-#include <QPropertyTree/ContextList.h>
 
 class QPropertyTree;
 
@@ -146,6 +143,3 @@ public Q_SLOTS:
 		close();
 	}
 };
-
-#endif // TreePanel_h
-
