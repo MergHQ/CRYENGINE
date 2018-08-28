@@ -345,7 +345,7 @@ void DesignerObject::Serialize(CObjectArchive& ar)
 		if (GetCompiler())
 		{
 			uint64 nRenderFlag = ERF_HAS_CASTSHADOWMAPS | ERF_CASTSHADOWMAPS;
-			ar.node->getAttr("RndFlags", nRenderFlag);
+			ar.node->getAttr("RndFlags", nRenderFlag, false);
 			if (nRenderFlag & ERF_CASTSHADOWMAPS)
 				nRenderFlag |= ERF_HAS_CASTSHADOWMAPS;
 			GetCompiler()->SetRenderFlags(nRenderFlag);
@@ -678,24 +678,15 @@ void DesignerObjectFlags::Serialize(Serialization::IArchive& ar)
 		Update();
 }
 
-namespace
-{
-void ModifyFlag(uint64& nFlags, uint64 flag, uint64 clearFlag, bool var)
-{
-	nFlags = (var) ? (nFlags | flag) : (nFlags & (~clearFlag));
-}
-void ModifyFlag(uint64& nFlags, uint64 flag, bool var)
-{
-	ModifyFlag(nFlags, flag, flag, var);
-}
-void ModifyFlag(int& nFlags, int flag, int clearFlag, bool var)
+template <typename T>
+void ModifyFlag(T& nFlags, const T &flag, const T &clearFlag, bool var)
 {
 	nFlags = (var) ? (nFlags | flag) : (nFlags & (~clearFlag));
 }
-void ModifyFlag(int& nFlags, int flag, bool var)
+template <typename T>
+void ModifyFlag(T& nFlags, const T &flag, bool var)
 {
 	ModifyFlag(nFlags, flag, flag, var);
-}
 }
 
 void DesignerObjectFlags::Update()
@@ -703,19 +694,19 @@ void DesignerObjectFlags::Update()
 	uint64 nFlags = m_pObj->GetCompiler()->GetRenderFlags();
 	int statobjFlags = m_pObj->GetCompiler()->GetStaticObjFlags();
 
-	ModifyFlag(nFlags, ERF_OUTDOORONLY, outdoor);
-	ModifyFlag(nFlags, ERF_RAIN_OCCLUDER, rainOccluder);
-	ModifyFlag(nFlags, ERF_CASTSHADOWMAPS | ERF_HAS_CASTSHADOWMAPS, ERF_CASTSHADOWMAPS, castShadows);
-	ModifyFlag(nFlags, ERF_GI_MODE_BIT0, giMode);
-	ModifyFlag(nFlags, ERF_REGISTER_BY_BBOX, supportSecVisArea);
-	ModifyFlag(nFlags, ERF_HIDABLE, hideable);
-	ModifyFlag(nFlags, ERF_EXCLUDE_FROM_TRIANGULATION, excludeFromTriangulation);
-	ModifyFlag(nFlags, ERF_NODYNWATER, noDynWater);
-	ModifyFlag(nFlags, ERF_NO_DECALNODE_DECALS, noStaticDecals);
-	ModifyFlag(nFlags, ERF_GOOD_OCCLUDER, occluder);
-	ModifyFlag(nFlags, ERF_FOB_ALLOW_TERRAIN_LAYER_BLEND, !ignoreTerrainLayerBlend);
-	ModifyFlag(nFlags, ERF_FOB_ALLOW_DECAL_BLEND, !ignoreDecalBlend);
-	ModifyFlag(statobjFlags, STATIC_OBJECT_NO_PLAYER_COLLIDE, excludeCollision);
+	ModifyFlag<uint64>(nFlags, ERF_OUTDOORONLY, outdoor);
+	ModifyFlag<uint64>(nFlags, ERF_RAIN_OCCLUDER, rainOccluder);
+	ModifyFlag<uint64>(nFlags, ERF_CASTSHADOWMAPS | ERF_HAS_CASTSHADOWMAPS, ERF_CASTSHADOWMAPS, castShadows);
+	ModifyFlag<uint64>(nFlags, ERF_GI_MODE_BIT0, giMode);
+	ModifyFlag<uint64>(nFlags, ERF_REGISTER_BY_BBOX, supportSecVisArea);
+	ModifyFlag<uint64>(nFlags, ERF_HIDABLE, hideable);
+	ModifyFlag<uint64>(nFlags, ERF_EXCLUDE_FROM_TRIANGULATION, excludeFromTriangulation);
+	ModifyFlag<uint64>(nFlags, ERF_NODYNWATER, noDynWater);
+	ModifyFlag<uint64>(nFlags, ERF_NO_DECALNODE_DECALS, noStaticDecals);
+	ModifyFlag<uint64>(nFlags, ERF_GOOD_OCCLUDER, occluder);
+	ModifyFlag<uint64>(nFlags, ERF_FOB_ALLOW_TERRAIN_LAYER_BLEND, !ignoreTerrainLayerBlend);
+	ModifyFlag<uint64>(nFlags, ERF_FOB_ALLOW_DECAL_BLEND, !ignoreDecalBlend);
+	ModifyFlag<int>(statobjFlags, STATIC_OBJECT_NO_PLAYER_COLLIDE, excludeCollision);
 
 	m_pObj->GetCompiler()->SetViewDistRatio(ratioViewDist);
 	m_pObj->GetCompiler()->SetRenderFlags(nFlags);

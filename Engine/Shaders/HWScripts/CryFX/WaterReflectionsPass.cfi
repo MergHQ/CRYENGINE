@@ -133,13 +133,8 @@ pixout WaterReflPS(v2f_hs IN)
 	half3 vReflN = lerp(half3(0,0,1), vNormal, ReflectionBumpScale);
 	half3 vRefl = reflect(vDir, vReflN);
 	half3 vReflNorm = normalize( vRefl );
-
-#if %_RT_TILED_SHADING
 	half3 cCubeRefl = GatherCubemapSpecular(screenTC, IN.vPosWS.xyz - GetWorldViewPos(), vNormal, cSmoothness);
-#else
-	half3 cCubeRefl = EnvCubeBoxProjected(IN.vPosWS.xyz, vReflNorm, cSmoothness);
-#endif
-
+	
 	// Blend in screenspace reflections
 	half4 cSSRefl = ReflectionPassPS(IN, half4(vReflN.xyz, 1)) / PS_HDR_RANGE_ADAPT_MAX;
 
