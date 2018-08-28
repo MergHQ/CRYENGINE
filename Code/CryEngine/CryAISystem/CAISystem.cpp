@@ -1804,21 +1804,37 @@ void CAISystem::Reset(IAISystem::EResetReason reason)
 
 	if (reason == RESET_EXIT_GAME)
 	{
-		gAIEnv.pTacticalPointSystem->Reset();
-		gAIEnv.pCommunicationManager->Reset();
-		gAIEnv.pVisionMap->Reset();
-		//gAIEnv.pAuditionMap->Reset();
-		gAIEnv.pFactionMap->Reload();
+		if (gAIEnv.pTacticalPointSystem)
+			gAIEnv.pTacticalPointSystem->Reset();
 
-		gAIEnv.pRayCaster->ResetContentionStats();
-		gAIEnv.pIntersectionTester->ResetContentionStats();
+		if (gAIEnv.pCommunicationManager)
+			gAIEnv.pCommunicationManager->Reset();
+
+		if (gAIEnv.pVisionMap)
+			gAIEnv.pVisionMap->Reset();
+
+		//gAIEnv.pAuditionMap->Reset();
+
+		if (gAIEnv.pFactionMap)
+			gAIEnv.pFactionMap->Reload();
+
+		if (gAIEnv.pRayCaster)
+			gAIEnv.pRayCaster->ResetContentionStats();
+
+		if (gAIEnv.pIntersectionTester)
+			gAIEnv.pIntersectionTester->ResetContentionStats();
 	}
 
-	gAIEnv.pGroupManager->Reset(objectResetType);
+	if (gAIEnv.pGroupManager)
+		gAIEnv.pGroupManager->Reset(objectResetType);
 
 	ClearAIObjectIteratorPools();
-	m_pNavigation->Reset(reason);
-	gAIEnv.pNavigationSystem->Reset();
+
+	if (m_pNavigation)
+		m_pNavigation->Reset(reason);
+
+	if (gAIEnv.pNavigationSystem)
+		gAIEnv.pNavigationSystem->Reset();
 
 	CPathObstacles::ResetOfStaticData();
 
@@ -1838,7 +1854,8 @@ void CAISystem::Reset(IAISystem::EResetReason reason)
 			++it;
 	}
 
-	m_pSmartObjectManager->ResetBannedSOs();
+	if (m_pSmartObjectManager)
+		m_pSmartObjectManager->ResetBannedSOs();
 
 	m_lastAmbientFireUpdateTime.SetSeconds(-10.0f);
 	m_lastExpensiveAccessoryUpdateTime.SetSeconds(-10.0f);
@@ -1859,7 +1876,7 @@ void CAISystem::Reset(IAISystem::EResetReason reason)
 		const string& name = it->first;
 		float rate = result.second > 0.0f ? result.first / result.second : -1.0f;
 		AILogAlways("%s calls = %d time = %6.2f sec call-rate = %7.2f", f
-		            name.c_str(), result.first, result.second, rate);
+			name.c_str(), result.first, result.second, rate);
 	}
 #endif
 
@@ -1870,14 +1887,20 @@ void CAISystem::Reset(IAISystem::EResetReason reason)
 
 	if (reason == IAISystem::RESET_ENTER_GAME || reason == IAISystem::RESET_UNLOAD_LEVEL)
 	{
-		gAIEnv.pSequenceManager->Reset();
-		gAIEnv.pClusterDetector->Reset();
+		if (gAIEnv.pSequenceManager)
+			gAIEnv.pSequenceManager->Reset();
+
+		if (gAIEnv.pClusterDetector)
+			gAIEnv.pClusterDetector->Reset();
 	}
 
 	if (reason == RESET_EXIT_GAME || reason == RESET_UNLOAD_LEVEL)
 	{
-		gAIEnv.pBehaviorTreeManager->Reset();
-		gAIEnv.pGraftManager->Reset();
+		if (gAIEnv.pBehaviorTreeManager)
+			gAIEnv.pBehaviorTreeManager->Reset();
+
+		if (gAIEnv.pGraftManager)
+			gAIEnv.pGraftManager->Reset();
 	}
 }
 
