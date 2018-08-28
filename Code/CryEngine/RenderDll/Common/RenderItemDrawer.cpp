@@ -25,6 +25,7 @@ void DrawCompiledRenderItemsToCommandList(
 	int endRenderItem)
 {
 	FUNCTION_PROFILER_RENDERER();
+	CRY_ASSERT(startRenderItem >= pInputPassContext->rendItems.start && endRenderItem <= pInputPassContext->rendItems.end);
 
 	const SGraphicsPipelinePassContext &passContext = *pInputPassContext;
 	const bool shouldIssueStartTimeStamp = startRenderItem == passContext.rendItems.start;
@@ -170,8 +171,8 @@ void DrawCompiledRenderItemsToCommandList(
 void ListDrawCommandRecorderJob(
   SGraphicsPipelinePassContext* passContext,
   CDeviceCommandListUPtr* commandList,
-  int startRenderItem,
-  int endRenderItem
+  int startJobItem,
+  int endJobItem
   )
 {
 	FUNCTION_PROFILER_RENDERER();
@@ -184,10 +185,10 @@ void ListDrawCommandRecorderJob(
 		int length = passContext->rendItems.Length();
 
 		// bounding-range check (1D bbox)
-		if ((startRenderItem <= (cursor + length)) && (cursor < endRenderItem))
+		if ((startJobItem <= (cursor + length)) && (cursor < endJobItem))
 		{
-			int offset = std::max(startRenderItem, cursor) - cursor;
-			int count = std::min(cursor + length, endRenderItem) - std::max(startRenderItem, cursor);
+			int offset = std::max(startJobItem, cursor) - cursor;
+			int count = std::min(cursor + length, endJobItem) - std::max(startJobItem, cursor);
 
 			auto& RESTRICT_REFERENCE renderItems = passContext->pRenderView->GetRenderItems(passContext->renderListId);
 
@@ -195,14 +196,14 @@ void ListDrawCommandRecorderJob(
 				passContext,
 				&renderItems,
 				(*commandList).get(),
-				offset,
-				offset + count);
+				passContext->rendItems.start + offset,
+				passContext->rendItems.start + offset + count);
 		}
 
-		cursor += length;
+		cursor += length; // NOTE: cursor will always jump to start of next work item (i.e. pass context)
 		++passContext;
 	}
-	while (cursor < endRenderItem);
+	while (cursor < endJobItem);
 
 	(*commandList)->Close();
 	GetDeviceObjectFactory().ForfeitCommandList(std::move(*commandList));
