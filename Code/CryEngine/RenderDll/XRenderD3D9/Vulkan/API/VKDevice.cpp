@@ -180,10 +180,22 @@ void CDevice::DeferDestruction(VkRenderPass renderPass, VkFramebuffer frameBuffe
 	m_deferredRenderPasses->emplace_back(std::move(helper));
 }
 
+void CDevice::DeferDestruction(VkPipeline pipeline)
+{
+	SPipeline helper = { GetVkDevice(), pipeline };
+	CryAutoCriticalSection lock(m_deferredLock);
+	m_deferredPipelines->emplace_back(std::move(helper));
+}
+
 CDevice::SRenderPass::~SRenderPass()
 {
 	renderPass.Destroy(vkDestroyRenderPass, self);
 	frameBuffer.Destroy(vkDestroyFramebuffer, self);
+}
+
+CDevice::SPipeline::~SPipeline()
+{
+	pipeline.Destroy(vkDestroyPipeline, self);
 }
 
 template<typename T, size_t N>
@@ -218,6 +230,7 @@ void CDevice::TickDestruction()
 	auto imageViews = TickDestructionHelper(m_deferredImageViews);
 	auto samplers = TickDestructionHelper(m_deferredSamplers);
 	auto renderPasses = TickDestructionHelper(m_deferredRenderPasses);
+	auto pipelines = TickDestructionHelper(m_deferredPipelines);
 	m_deferredLock.Unlock();
 
 	// Automatic cleanup happens here.
