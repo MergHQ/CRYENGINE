@@ -1411,7 +1411,6 @@ void CImpl::OnRefresh()
 		if (wwiseResult != AK_Success)
 		{
 			Cry::Audio::Log(ELogType::Error, "Wwise failed to unload Init.bnk, returned the AKRESULT: %d", wwiseResult);
-			CRY_ASSERT(false);
 		}
 	}
 
@@ -1425,7 +1424,6 @@ void CImpl::OnRefresh()
 	{
 		Cry::Audio::Log(ELogType::Error, "Wwise failed to load Init.bnk, returned the AKRESULT: %d", wwiseResult);
 		m_initBankId = AK_INVALID_BANK_ID;
-		CRY_ASSERT(false);
 	}
 
 	LoadEventsMaxAttenuations(m_regularSoundBankFolder);
