@@ -2507,19 +2507,17 @@ vtxOutVolumetricFog StoreJitteringDepthToClipVolumeDepthVS(uint VertexID : SV_Ve
 	return OUT;
 }
 
-void StoreJitteringDepthToClipVolumeDepthPS(vtxOutVolumetricFog IN,
-                                            out float4 Color : SV_Target0,
-                                            out float Depth : SV_Depth)
+float StoreJitteringDepthToClipVolumeDepthPS(vtxOutVolumetricFog IN) : SV_Depth
 {
-	Color = 0.0f;
-
 	uint2 pixelCoord = PS_ScreenSize.xy * IN.baseTC.xy;
 	float jitter = GetJitterInternal(pixelCoord.xy * 128.0f, float2(0.5f, 1.5f));
 	const float bias = -0.5f;// half voxel size bias for reducing light and fog leaking.
 	float depthIndex = ParamDepth.x - jitter + bias;
 	float linearDepth = GetVolumetricFogLinearDepth(depthIndex);
 	float zPersp = saturate((ParamDepth.y + linearDepth * ParamDepth.z) / linearDepth);
-	Depth = abs(ParamDepth.w - zPersp);// When ReverseDepth is on, ParamDepth.w = 1.0f, otherwise ParamDepth.w = 0.0f.
+	
+	// When ReverseDepth is on, ParamDepth.w = 1.0f, otherwise ParamDepth.w = 0.0f.
+	return abs(ParamDepth.w - zPersp);
 }
 
 technique StoreJitteringDepthToClipVolumeDepth

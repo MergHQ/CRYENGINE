@@ -149,6 +149,8 @@ public:
 
 	virtual void dragEnterEvent(QDragEnterEvent* pEvent) override
 	{
+		CDragDropData::ShowDragText(qApp->widgetAt(QCursor::pos()), tr("Invalid operation"));
+
 		TView::dragEnterEvent(pEvent);
 
 		if (!Processed(pEvent))
@@ -167,9 +169,25 @@ public:
 		}
 	}
 
+
+	// For the QListView (Thumbnail view) we want to use QListView::Movement::Static but this will disable drag&drop.
+	// Calling here the QAbstractItemView implementation directly, we disable the items movement for the QListView.
+	template<typename T = TView, typename std::enable_if<std::is_same<T, QListView>::value, int>::type = 0>
+	void BaseDropEvent(QDropEvent* pEvent)
+	{
+		QAbstractItemView::dropEvent(pEvent);
+	}
+
+	template<typename T = TView, typename std::enable_if<!std::is_same<T, QListView>::value, int>::type = 0>
+	void BaseDropEvent(QDropEvent* pEvent)
+	{
+		T::dropEvent(pEvent);
+	}
+
+
 	virtual void dropEvent(QDropEvent* pEvent) override
 	{
-		TView::dropEvent(pEvent);
+		BaseDropEvent(pEvent);
 
 		if (!Processed(pEvent))
 		{
