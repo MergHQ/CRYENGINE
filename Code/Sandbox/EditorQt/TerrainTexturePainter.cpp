@@ -627,10 +627,10 @@ void CTerrainTexturePainter::Serialize(Serialization::IArchive& ar)
 	{
 		ar(Serialization::Range(m_brush.radius, m_brush.minRadius, m_brush.maxRadius), "range", "Range");
 		ar(Serialization::Range(m_brush.hardness, 0.0f, 1.0f), "hardness", "Hardness");
-		ar(m_brush.bDetailLayer, "detailLayer", "Paint Layer ID");
-		ar(m_brush.bMaskByLayerSettings, "altitudeAndSlope", "Mask by Altitude and Slope");
+		ar(m_brush.bDetailLayer, "detailLayer", "Paint with Material");
+		ar(m_brush.bMaskByLayerSettings, "altitudeAndSlope", "Mask by Height/Angle");
 
-		string selectedLayer("<none>");
+		string selectedLayer("<None>");
 		Serialization::StringList layers;
 		layers.push_back(selectedLayer.GetBuffer());
 
@@ -652,7 +652,7 @@ void CTerrainTexturePainter::Serialize(Serialization::IArchive& ar)
 			}
 
 			Serialization::StringListValue layersValue(layers, selectedLayer);
-			ar(layersValue, "maskedLayer", "Mask by");
+			ar(layersValue, "maskedLayer", "Mask by Layer");
 
 			if (ar.isInput())
 			{
