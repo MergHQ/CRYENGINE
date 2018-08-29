@@ -218,17 +218,17 @@ void BehaviorTreeManager::RegisterGameEventsInSignalManager(BehaviorTreeInstance
 	for (const Variables::Event& e : pInstance->behaviorTreeTemplate->eventsDeclaration.GetGameEvents())
 	{
 		const AISignals::ISignalDescription& signalDesc = gEnv->pAISystem->GetSignalManager()->RegisterGameSignalDescription(e.name);
-		m_gameSignalDescriptionsVector.push_back(&signalDesc);
+		m_gameSignalDescriptionsSet.insert(&signalDesc);
 	}
 }
-
+#pragma optimize("", off)
 void BehaviorTreeManager::DeregisterGameEventsInSignalManager()
 {
-	for (const auto signalDesc : m_gameSignalDescriptionsVector)
+	for (const AISignals::ISignalDescription* signalDesc : m_gameSignalDescriptionsSet)
 	{
 		gEnv->pAISystem->GetSignalManager()->DeregisterGameSignalDescription(*signalDesc);
 	}
-	m_gameSignalDescriptionsVector.clear();
+	m_gameSignalDescriptionsSet.clear();
 }
 
 void BehaviorTreeManager::LoadFromDiskIntoCache(const char* behaviorTreeName)
@@ -347,6 +347,7 @@ void BehaviorTreeManager::DrawMemoryInformation()
 bool BehaviorTreeManager::StartModularBehaviorTree(const EntityId entityId, const char* treeName)
 {
 	BehaviorTreeInstancePtr instance = CreateBehaviorTreeInstanceFromDiskCache(treeName);
+	RegisterGameEventsInSignalManager(instance);
 	return StartBehaviorInstance(entityId, instance, treeName);
 }
 
@@ -359,7 +360,6 @@ bool BehaviorTreeManager::StartModularBehaviorTreeFromXml(const EntityId entityI
 bool BehaviorTreeManager::StartBehaviorInstance(const EntityId entityId, BehaviorTreeInstancePtr instance, const char* treeName)
 {
 	StopModularBehaviorTree(entityId);
-	RegisterGameEventsInSignalManager(instance);
 
 	if (instance.get())
 	{
@@ -411,7 +411,6 @@ void BehaviorTreeManager::StopModularBehaviorTree(const EntityId entityId)
 #ifdef DEBUG_MODULAR_BEHAVIOR_TREE
 	m_executionStackFileLoggerInstances.erase(entityId);
 #endif // DEBUG_MODULAR_BEHAVIOR_TREE
-	DeregisterGameEventsInSignalManager();
 }
 
 void BehaviorTreeManager::Update()
