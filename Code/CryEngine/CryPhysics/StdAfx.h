@@ -164,17 +164,17 @@ inline int get_iCaller_int() { return 0; }
 inline int alloc_extCaller() { return 0; }
 inline int set_extCaller(int slot) { return slot; }
 #else // MAX_PHYS_THREADS>1	or MAX_EXT_THREADS>1
-TLS_DECLARE(int*,g_pidxPhysThread)
-TLS_DECLARE(int,g_idxExtThread)
+extern thread_local int* tls_pidxPhysThread;
+extern thread_local int tls_idxExtThread;
 inline int IsPhysThread() {
 	int dummy = 0;
-	INT_PTR ptr = (INT_PTR)TLS_GET(INT_PTR, g_pidxPhysThread);
-	ptr += (INT_PTR)&dummy-ptr & (ptr-1>>sizeof(INT_PTR)*8-1 ^ ptr>>sizeof(INT_PTR)*8-1);
+	INT_PTR ptr = (INT_PTR)tls_pidxPhysThread;
+	ptr += (INT_PTR)&dummy-ptr & (ptr-1>>sizeof(INT_PTR)*8-1 ^ptr>>sizeof(INT_PTR)*8-1);
 	return *(int*)ptr;
 }
 void MarkAsPhysThread();
 void MarkAsPhysWorkerThread(int*);
-inline int set_extCaller(int slot) { TLS_SET(g_idxExtThread, slot); return slot; }
+inline int set_extCaller(int slot) { tls_idxExtThread = slot; return slot; }
 inline int alloc_extCaller() {
 	extern volatile int *g_pLockIntersect;
 	int iCaller;
@@ -183,7 +183,7 @@ inline int alloc_extCaller() {
 }
 inline int get_iCaller_int() {
 	int dummy = MAX_PHYS_THREADS;
-	INT_PTR ptr = (INT_PTR)TLS_GET(INT_PTR,g_pidxPhysThread);
+	INT_PTR ptr = (INT_PTR)tls_pidxPhysThread;
 	ptr += (INT_PTR)&dummy-ptr & (ptr-1>>sizeof(INT_PTR)*8-1 ^ ptr>>sizeof(INT_PTR)*8-1);
 	return *(int*)ptr;
 }
@@ -191,7 +191,7 @@ inline int get_iCaller(int allocIfExternal = 0) {
 	int iCaller = get_iCaller_int();
 	if (iCaller >= (MAX_PHYS_THREADS + (1-allocIfExternal<<20)))
 		return iCaller + alloc_extCaller();
-	return iCaller + TLS_GET(int, g_idxExtThread);
+	return iCaller + tls_idxExtThread;
 }
 #endif
 

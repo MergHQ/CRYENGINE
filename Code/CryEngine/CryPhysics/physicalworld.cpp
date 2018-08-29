@@ -92,22 +92,22 @@ int g_nPhysWorlds;
 #if MAX_TOT_THREADS<=2
 threadID g_physThreadId = THREADID_NULL;
 #else
-TLS_DEFINE(int*, g_pidxPhysThread);
-TLS_DEFINE_DEFAULT_VALUE(int, g_idxExtThread, 0);
+thread_local int* tls_pidxPhysThread = 0;
+thread_local int tls_idxExtThread = 0;
 
 void MarkAsPhysThread() {
 	static int g_ibufPhysThread[2] = { 1,0 };
 	static int *g_lastPtr = g_ibufPhysThread;
-	int *ptr = TLS_GET(int*, g_pidxPhysThread);
+	int *ptr = tls_pidxPhysThread;
 	if (ptr!=g_lastPtr) {
 		ptr = g_ibufPhysThread+(g_lastPtr-g_ibufPhysThread^1);
 		*g_lastPtr = MAX_PHYS_THREADS; *ptr = 0;
-		TLS_SET(g_pidxPhysThread, g_lastPtr=ptr);
+		tls_pidxPhysThread = g_lastPtr=ptr;
 	}
 	set_extCaller(0);
 }
 void MarkAsPhysWorkerThread(int *pidx) {
-	TLS_SET(g_pidxPhysThread, pidx);
+	tls_pidxPhysThread = pidx;
 }
 #endif
 

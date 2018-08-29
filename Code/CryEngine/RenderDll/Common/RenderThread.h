@@ -164,8 +164,6 @@ struct CRY_ALIGN(128) SRenderThread
 	SRenderThread();
 	~SRenderThread();
 
-	static int GetLocalThreadCommandBufferId();
-
 	inline void SignalFlushFinishedCond()
 	{
 #ifdef USE_LOCKS_FOR_FLUSH_SYNC

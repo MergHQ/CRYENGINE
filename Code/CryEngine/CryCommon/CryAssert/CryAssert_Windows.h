@@ -118,7 +118,7 @@ struct SCryAssertInfo
 
 //-----------------------------------------------------------------------------------------------------
 
-static THREADLOCAL SCryAssertInfo* gs_pAssertInfo;
+static thread_local SCryAssertInfo* gs_pAssertInfo;
 
 static INT_PTR CALLBACK DlgProc(HWND _hDlg, UINT _uiMsg, WPARAM _wParam, LPARAM _lParam)
 {
@@ -226,7 +226,7 @@ static INT_PTR CALLBACK DlgProc(HWND _hDlg, UINT _uiMsg, WPARAM _wParam, LPARAM 
 
 //-----------------------------------------------------------------------------------------------------
 
-static THREADLOCAL char gs_szMessage[MAX_PATH];
+static thread_local char gs_szMessage[MAX_PATH];
 
 //-----------------------------------------------------------------------------------------------------
 

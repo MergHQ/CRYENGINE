@@ -1620,7 +1620,7 @@ void JobManager::CJobManager::StopTempWorker() const
 
 ///////////////////////////////////////////////////////////////////////////////
 ///////////////////////////////////////////////////////////////////////////////
-TLS_DEFINE(uint32, gWorkerThreadId);
+thread_local uint32 tls_workerThreadId = 0;
 
 ///////////////////////////////////////////////////////////////////////////////
 namespace JobManager {
@@ -1636,12 +1636,11 @@ bool   is_marked_worker_thread_id(uint32 nWorkerThreadID) { return (nWorkerThrea
 ///////////////////////////////////////////////////////////////////////////////
 void JobManager::detail::SetWorkerThreadId(uint32 nWorkerThreadId)
 {
-	TLS_SET(gWorkerThreadId, (size_t)mark_worker_thread_id(nWorkerThreadId));
+	tls_workerThreadId = mark_worker_thread_id(nWorkerThreadId);
 }
 
 ///////////////////////////////////////////////////////////////////////////////
 uint32 JobManager::detail::GetWorkerThreadId()
 {
-	uint32 nID = (uint32)TLS_GET(uintptr_t, gWorkerThreadId);
-	return is_marked_worker_thread_id(nID) ? unmark_worker_thread_id(nID) : ~0;
+	return is_marked_worker_thread_id(tls_workerThreadId) ? unmark_worker_thread_id(tls_workerThreadId) : ~0;
 }

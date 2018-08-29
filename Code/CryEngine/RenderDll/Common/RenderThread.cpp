@@ -41,40 +41,6 @@ struct SRenderThreadLocalStorage
 	SRenderThreadLocalStorage() : currentCommandBuffer(0) {};
 };
 
-namespace
-{
-static SRenderThreadLocalStorage g_threadLocalStorage[2];
-
-static SRenderThreadLocalStorage& g_systemThreadLocalStorage = g_threadLocalStorage[0];   // Has to use index 0 as that's the default TLS value
-static SRenderThreadLocalStorage& g_renderThreadLocalStorage = g_threadLocalStorage[1];
-
-TLS_DEFINE(int64, g_threadLocalStorageIndex);   // Default value will be 0 on every TLS implementation
-
-//////////////////////////////////////////////////////////////////////////
-// This can be called from any thread
-static SRenderThreadLocalStorage* GetRenderThreadLocalStorage()
-{
-	const int64 index = TLS_GET(int64, g_threadLocalStorageIndex);
-	CRY_ASSERT(index >= 0 && index < CRY_ARRAY_COUNT(g_threadLocalStorage));
-	return &g_threadLocalStorage[index];
-}
-
-//////////////////////////////////////////////////////////////////////////
-// Must be called from within Render Thread
-static void SetRenderThreadLocalStorage(SRenderThreadLocalStorage* pStorage)
-{
-	const int64 index = pStorage - g_threadLocalStorage;
-	CRY_ASSERT(index >= 0 && index < CRY_ARRAY_COUNT(g_threadLocalStorage));
-	TLS_SET(g_threadLocalStorageIndex, index);
-}
-}
-
-int SRenderThread::GetLocalThreadCommandBufferId()
-{
-	SRenderThreadLocalStorage* pThreadStorage = GetRenderThreadLocalStorage();
-	assert(pThreadStorage);
-	return pThreadStorage->currentCommandBuffer;
-}
 
 #if CRY_PLATFORM_WINDOWS
 HWND SRenderThread::GetRenderWindowHandle()
@@ -85,7 +51,6 @@ HWND SRenderThread::GetRenderWindowHandle()
 
 void CRenderThread::ThreadEntry()
 {
-	SetRenderThreadLocalStorage(&g_renderThreadLocalStorage);
 
 	threadID renderThreadId = CryGetCurrentThreadId();
 	gRenDev->m_pRT->m_nRenderThread = renderThreadId;
@@ -891,11 +856,6 @@ void SRenderThread::SyncMainWithRender(bool bFrameToFrame)
 		SRenderStatistics::s_pPreviousOutput = &gRenDev->m_frameRenderStats[m_nCurThreadFill   ];
 		SRenderStatistics::s_pCurrentOutput->Begin(SRenderStatistics::s_pPreviousOutput);
 	}
-
-	// Switches current command buffers in local thread storage.
-	g_systemThreadLocalStorage.currentCommandBuffer = m_nCurThreadFill;
-	g_renderThreadLocalStorage.currentCommandBuffer = m_nCurThreadProcess;
-
 	//gRenDev->m_RP.m_pCurrentRenderView->PrepareForRendering();
 
 	if (gEnv->pCharacterManager)
