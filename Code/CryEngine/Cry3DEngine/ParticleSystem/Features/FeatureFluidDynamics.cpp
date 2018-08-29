@@ -24,7 +24,7 @@ class CFeatureMotionFluidDynamics : public CParticleFeature
 public:
 	CRY_PFX2_DECLARE_FEATURE
 
-	typedef TValue<uint> TParticleCount;
+	typedef TValue<TNumber<uint>> TParticleCount;
 
 	CFeatureMotionFluidDynamics()
 		: m_initialVelocity(0.0, 0.0, 5.0)

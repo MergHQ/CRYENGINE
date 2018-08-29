@@ -1,11 +1,9 @@
 // Copyright 2015-2018 Crytek GmbH / Crytek Group. All rights reserved.
 
 #include "StdAfx.h"
+#include "FeatureCommon.h"
 #include <CrySystem/Testing/CryTest.h>
 #include <CryMath/SNoise.h>
-#include <CrySerialization/Math.h>
-#include "ParticleSystem/ParticleSystem.h"
-#include "ParamMod.h"
 #include "Target.h"
 
 namespace pfx2
@@ -27,7 +25,7 @@ public:
 	virtual void AddToComponent(CParticleComponent* pComponent, SComponentParams* pParams) override
 	{
 		pComponent->GetSpatialExtents.add(this);
-		pComponent->GetEmitOffset.add(this);
+		pComponent->GetEmitOffsets.add(this);
 		pComponent->InitParticles.add(this);
 		pComponent->UpdateGPUParams.add(this);
 		m_scale.AddToComponent(pComponent, this);
@@ -45,27 +43,23 @@ public:
 		if (!m_scale.HasModifiers())
 			return;
 
-		TFloatArray sizes(runtime.MemHeap(), runtime.GetParentContainer().GetMaxParticles());
-		auto modRange = m_scale.GetValues(runtime, sizes, EDD_InstanceUpdate);
-
-		const uint numInstances = runtime.GetNumInstances();
-		for (uint i = 0; i < numInstances; ++i)
+		SInstanceUpdateBuffer<float> sizes(runtime, m_scale);
+		for (uint i = 0; i < runtime.GetNumInstances(); ++i)
 		{
-			const TParticleId parentId = runtime.GetInstance(i).m_parentId;
-			float e = abs(sizes[parentId]) * modRange.Length();
+			float e = abs(sizes[i]) * sizes.Range().Length();
 			e = e * scales[i] + 1.0f;
 			extents[i] += e;
 		}
 	}
 
-	virtual void GetEmitOffset(const CParticleComponentRuntime& runtime, TParticleId parentId, Vec3& offset) override
+	virtual void GetEmitOffsets(const CParticleComponentRuntime& runtime, TVarArray<Vec3> offsets) override
 	{
-		TFloatArray scales(runtime.MemHeap(), parentId + 1);
-		const SUpdateRange range(parentId, parentId + 1);
-
-		auto modRange = m_scale.GetValues(runtime, scales.data(), range, EDD_InstanceUpdate);
-		const float scale = scales[parentId] * (modRange.start + modRange.end) * 0.5f;
-		offset += m_offset * scale;
+		SInstanceUpdateBuffer<float> sizes(runtime, m_scale);
+		for (uint i = 0; i < runtime.GetNumInstances(); ++i)
+		{
+			const float scale = sizes[i] * (sizes.Range().start + sizes.Range().end) * 0.5f;
+			offsets[i] += m_offset * scale;
+		}
 	}
 
 	virtual void InitParticles(CParticleComponentRuntime& runtime) override
@@ -132,16 +126,12 @@ public:
 
 	virtual void GetSpatialExtents(const CParticleComponentRuntime& runtime, TConstArray<float> scales, TVarArray<float> extents) override
 	{
-		uint numInstances = runtime.GetNumInstances();
-		TFloatArray sizes(runtime.MemHeap(), runtime.GetParentContainer().GetMaxParticles());
-		auto modRange = m_scale.GetValues(runtime, sizes, EDD_InstanceUpdate);
-		float avg = (modRange.start + modRange.end) * 0.5f;
-
-		for (uint i = 0; i < numInstances; ++i)
+		SInstanceUpdateBuffer<float> sizes(runtime, m_scale);
+		float avg = (sizes.Range().start + sizes.Range().end) * 0.5f;
+		for (uint i = 0; i < runtime.GetNumInstances(); ++i)
 		{
 			// Increase each dimension by 1 to include boundaries; works properly for boxes, rects, and lines
-			const TParticleId parentId = runtime.GetInstance(i).m_parentId;
-			const float s = abs(scales[i] * sizes[parentId] * avg);
+			const float s = abs(scales[i] * sizes[i] * avg);
 			extents[i] += (m_box.x * s + 1.0f) * (m_box.y * s + 1.0f) * (m_box.z * s + 1.0f);
 		}
 	}
@@ -245,16 +235,12 @@ public:
 
 	virtual void GetSpatialExtents(const CParticleComponentRuntime& runtime, TConstArray<float> scales, TVarArray<float> extents) override
 	{
-		uint numInstances = runtime.GetNumInstances();
-		TFloatArray sizes(runtime.MemHeap(), runtime.GetParentContainer().GetMaxParticles());
-		auto modRange = m_radius.GetValues(runtime, sizes, EDD_InstanceUpdate);
-
-		for (uint i = 0; i < numInstances; ++i)
+		SInstanceUpdateBuffer<float> sizes(runtime, m_radius);
+		for (uint i = 0; i < runtime.GetNumInstances(); ++i)
 		{
 			// Increase each dimension by 1 to include sphere bounds; works properly for spheres and circles
-			const TParticleId parentId = runtime.GetInstance(i).m_parentId;
-			const Vec3 axisMax = m_axisScale * abs(scales[i] * sizes[parentId] * modRange.end) + Vec3(1.0f),
-			           axisMin = m_axisScale * abs(scales[i] * sizes[parentId] * modRange.start);
+			const Vec3 axisMax = m_axisScale * abs(scales[i] * sizes[i] * sizes.Range().end) + Vec3(1.0f),
+			           axisMin = m_axisScale * abs(scales[i] * sizes[i] * sizes.Range().start);
 			const float v = (axisMax.x * axisMax.y * axisMax.z - axisMin.x * axisMin.y * axisMin.z) * (gf_PI * 4.0f / 3.0f);
 			extents[i] += v;
 		}
@@ -361,15 +347,11 @@ public:
 
 	virtual void GetSpatialExtents(const CParticleComponentRuntime& runtime, TConstArray<float> scales, TVarArray<float> extents) override
 	{
-		const uint numInstances = runtime.GetNumInstances();
-		TFloatArray sizes(runtime.MemHeap(), runtime.GetParentContainer().GetMaxParticles()); 
-		auto modRange = m_radius.GetValues(runtime, sizes, EDD_InstanceUpdate);
-
-		for (uint i = 0; i < numInstances; ++i)
+		SInstanceUpdateBuffer<float> sizes(runtime, m_radius);
+		for (uint i = 0; i < runtime.GetNumInstances(); ++i)
 		{
-			const TParticleId parentId = runtime.GetInstance(i).m_parentId;
-			const Vec2 axisMax = m_axisScale * abs(scales[i] * sizes[parentId] * modRange.end) + Vec2(1.0f),
-			           axisMin = m_axisScale * abs(scales[i] * sizes[parentId] * modRange.start);
+			const Vec2 axisMax = m_axisScale * abs(scales[i] * sizes[i] * sizes.Range().end) + Vec2(1.0f),
+			           axisMin = m_axisScale * abs(scales[i] * sizes[i] * sizes.Range().start);
 			const float v = (axisMax.x * axisMax.y - axisMin.x * axisMin.y) * gf_PI;
 			extents[i] += v;
 		}
@@ -502,8 +484,8 @@ public:
 			if (IMeshObj* pMesh = pParentComponent->GetComponentParams().m_pMesh)
 				emitterGeometry.Set(pMesh);
 		}
-		const TIStream<IMeshObj*> parentMeshes = runtime.GetParentContainer().IStream(EPDT_MeshGeometry, +emitterGeometry.m_pMeshObj);
-		const TIStream<IPhysicalEntity*> parentPhysics = runtime.GetParentContainer().IStream(EPDT_PhysicalEntity);
+		auto parentMeshes = runtime.GetParentContainer().IStream(EPDT_MeshGeometry, +emitterGeometry.m_pMeshObj);
+		auto parentPhysics = runtime.GetParentContainer().IStream(EPDT_PhysicalEntity);
 
 		uint numInstances = runtime.GetNumInstances();
 		for (uint i = 0; i < numInstances; ++i)
@@ -696,7 +678,7 @@ CRY_PFX2_IMPLEMENT_FEATURE(CParticleFeature, CFeatureLocationGeometry, "Location
 class CFeatureLocationNoise : public CParticleFeature
 {
 private:
-	typedef TValue<uint, THardLimits<1, 6>> UIntOctaves;
+	typedef TValue<THardLimits<uint, 1, 6>> UIntOctaves;
 
 public:
 	CRY_PFX2_DECLARE_FEATURE

@@ -226,18 +226,20 @@ void CParticleComponentRuntime::GetEmitLocations(TVarArray<QuatTS> locations) co
 	auto parentPositions = parentContainer.GetIVec3Stream(EPVF_Position, GetEmitter()->GetLocation().t);
 	auto parentRotations = parentContainer.GetIQuatStream(EPQF_Orientation, GetEmitter()->GetLocation().q);
 
+	THeapArray<Vec3> offsets(MemHeap(), GetNumInstances());
+	offsets.fill(Vec3(0));
+	GetComponent()->GetEmitOffsets(*this, offsets);
+
 	for (uint idx = 0; idx < m_subInstances.size(); ++idx)
 	{
 		TParticleId parentId = GetInstance(idx).m_parentId;
 
-		QuatTS parentLoc;
-		parentLoc.t = parentPositions.SafeLoad(parentId);
-		parentLoc.q = parentRotations.SafeLoad(parentId);
-		parentLoc.s = 1.0f;
+		QuatTS& loc = locations[idx];
+		loc.t = parentPositions.SafeLoad(parentId);
+		loc.q = parentRotations.SafeLoad(parentId);
+		loc.s = 1.0f;
 
-		Vec3 emitOffset(0);
-		GetComponent()->GetEmitOffset(*this, parentId, emitOffset);
-		parentLoc.t = parentLoc * emitOffset;
+		loc.t = loc * offsets[idx];
 	}
 }
 

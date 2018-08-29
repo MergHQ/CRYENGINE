@@ -47,6 +47,8 @@ public:
 	// Runtime and instance initialization
 	virtual void MainPreUpdate(CParticleComponentRuntime& runtime) {}
 
+	virtual void OnEdit(CParticleComponentRuntime& runtime) {}
+
 	virtual void AddSubInstances(CParticleComponentRuntime& runtime) {}
 
 	virtual void CullSubInstances(CParticleComponentRuntime& runtime, TVarArray<SInstance>& instances) {}
@@ -55,7 +57,7 @@ public:
 
 	virtual void GetSpatialExtents(const CParticleComponentRuntime& runtime, TConstArray<float> scales, TVarArray<float> extents) {}
 
-	virtual void GetEmitOffset(const CParticleComponentRuntime& runtime, TParticleId parentId, Vec3& offset) {}
+	virtual void GetEmitOffsets(const CParticleComponentRuntime& runtime, TVarArray<Vec3> offsets) {}
 
 	// Particle initialization
 	virtual void SpawnParticles(CParticleComponentRuntime& runtime, TDynArray<SSpawnEntry>& spawnEntries) {}
@@ -96,6 +98,7 @@ template<class... Args> using TFeatureDispatcher = Dispatcher<CParticleFeature, 
 struct SFeatureDispatchers
 {
 	TFeatureDispatcher<CParticleComponentRuntime&> MainPreUpdate { &CParticleFeature::MainPreUpdate };
+	TFeatureDispatcher<CParticleComponentRuntime&> OnEdit { &CParticleFeature::OnEdit };
 
 	TFeatureDispatcher<CParticleComponentRuntime&> AddSubInstances { &CParticleFeature::AddSubInstances };
 	TFeatureDispatcher<CParticleComponentRuntime&, TVarArray<SInstance>&> CullSubInstances { &CParticleFeature::CullSubInstances };
@@ -103,7 +106,7 @@ struct SFeatureDispatchers
 	TFeatureDispatcher<CParticleComponentRuntime&, TDynArray<SSpawnEntry>&> SpawnParticles { &CParticleFeature::SpawnParticles };
 
 	TFeatureDispatcher<const CParticleComponentRuntime&, TConstArray<float>, TVarArray<float>> GetSpatialExtents { &CParticleFeature::GetSpatialExtents };
-	TFeatureDispatcher<const CParticleComponentRuntime&, TParticleId, Vec3&> GetEmitOffset { &CParticleFeature::GetEmitOffset };
+	TFeatureDispatcher<const CParticleComponentRuntime&, TVarArray<Vec3>> GetEmitOffsets { &CParticleFeature::GetEmitOffsets };
 
 	TFeatureDispatcher<CParticleComponentRuntime&> PreInitParticles { &CParticleFeature::PreInitParticles };
 	TFeatureDispatcher<CParticleComponentRuntime&> InitParticles { &CParticleFeature::InitParticles };

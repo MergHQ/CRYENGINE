@@ -20,7 +20,7 @@ SERIALIZATION_DECLARE_ENUM(ETurbulenceMode,
 class CEffectorTurbulence : public ILocalEffector
 {
 private:
-	typedef TValue<uint, THardLimits<1, 6>> UIntOctaves;
+	typedef TValue<THardLimits<uint, 1, 6>> UIntOctaves;
 
 public:
 	CEffectorTurbulence()

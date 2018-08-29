@@ -94,6 +94,10 @@ public:
 				return true;
 		return false;
 	}
+	Range GetValueRange(uint i) const
+	{
+		return m_splines[i].GetValueRange();
+	}
 	Range GetValueRange() const
 	{
 		Range range(Range::EMPTY);
@@ -136,9 +140,9 @@ SERIALIZATION_WITH_MEMBER_FUNCTION(CParticleDoubleSpline)
 class CParticleColorSpline : public CParticleMultiSpline<3>
 {
 public:
-	ILINE ColorF  Interpolate(float time) const;
+	ILINE Vec3  Interpolate(float time) const;
 #ifdef CRY_PFX2_USE_SSE
-	ILINE ColorFv Interpolate(floatv time) const;
+	ILINE Vec3v Interpolate(floatv time) const;
 #endif
 };
 

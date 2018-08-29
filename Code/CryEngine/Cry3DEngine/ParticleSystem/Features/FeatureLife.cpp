@@ -64,7 +64,7 @@ public:
 
 		if (m_lifeTime.IsEnabled() && m_lifeTime.GetBaseValue())
 		{
-			m_lifeTime.InitParticles(runtime, EPDT_LifeTime);
+			m_lifeTime.Init(runtime, EPDT_LifeTime);
 			if (m_lifeTime.HasModifiers())
 			{
 				for (auto particleGroupId : runtime.SpawnedRangeV())

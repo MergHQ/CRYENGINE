@@ -675,6 +675,8 @@ void CParticleEmitter::UpdateRuntimes()
 		{
 			pRuntime->RemoveAllSubInstances();
 			pRuntime->Initialize();
+			if (pRuntime->HasParticles())
+				pComponent->OnEdit(*pRuntime);
 		}
 
 		newRuntimes.push_back(pRuntime);

@@ -135,9 +135,9 @@ public:
 
 private:
 
-	UUnitFloat                   m_probability      = 1.0f;
-	TValue<uint, TDefaultZero<>> m_group;
-	UUnitFloat                   m_selectionStart   = 0.0f;
+	UUnitFloat                 m_probability    = 1.0f;
+	TValue<THideDefault<uint>> m_group;
+	UUnitFloat                 m_selectionStart = 0.0f;
 };
 
 CRY_PFX2_IMPLEMENT_FEATURE(CParticleFeature, CFeatureComponentActivateRandom, "Component", "ActivateRandom", colorComponent);

@@ -100,8 +100,8 @@ void CFeatureMotionPhysics::Serialize(Serialization::IArchive& ar)
 
 void CFeatureMotionPhysics::InitParticles(CParticleComponentRuntime& runtime)
 {
-	m_gravity.InitParticles(runtime, EPDT_Gravity);
-	m_drag.InitParticles(runtime, EPDT_Drag);
+	m_gravity.Init(runtime, EPDT_Gravity);
+	m_drag.Init(runtime, EPDT_Drag);
 }
 
 void CFeatureMotionPhysics::UpdateParticles(CParticleComponentRuntime& runtime)

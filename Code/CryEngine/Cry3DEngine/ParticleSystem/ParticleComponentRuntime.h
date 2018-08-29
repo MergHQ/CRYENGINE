@@ -46,7 +46,6 @@ public:
 	const CParticleContainer& GetParentContainer() const;
 	CParticleContainer&       GetContainer()            { return m_container; }
 	const CParticleContainer& GetContainer() const      { return m_container; }
-	CParticleContainer&       GetContainer(EDataDomain domain) { return domain & EDD_PerInstance ? GetParentContainer() : GetContainer(); }
 
 	void                      UpdateAll();
 	void                      AddRemoveParticles();
@@ -73,8 +72,8 @@ public:
 	bool                      HasParticles() const;
 	void                      AccumStats();
 
-	SChaosKey&                Chaos()                 { return m_chaos; }
-	SChaosKeyV&               ChaosV()                { return m_chaosV; }
+	SChaosKey&                Chaos() const           { return m_chaos; }
+	SChaosKeyV&               ChaosV() const          { return m_chaosV; }
 
 	SUpdateRange              FullRange() const       { return m_container.GetFullRange(); }
 	SGroupRange               FullRangeV() const      { return SGroupRange(m_container.GetFullRange()); }
@@ -100,8 +99,8 @@ private:
 	TDynArray<byte>                m_subInstanceData;
 	AABB                           m_bounds;
 	bool                           m_alive;
-	SChaosKey                      m_chaos;
-	SChaosKeyV                     m_chaosV;
+	SChaosKey mutable              m_chaos;
+	SChaosKeyV mutable             m_chaosV;
 
 	_smart_ptr<gpu_pfx2::IParticleComponentRuntime> m_pGpuRuntime;
 };

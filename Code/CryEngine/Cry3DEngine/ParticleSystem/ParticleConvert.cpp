@@ -11,8 +11,6 @@
 #include <CrySerialization/IArchiveHost.h>
 #include <CrySerialization/yasli/JSONOArchive.h>
 
-CRY_PFX2_DBG
-
 namespace pfx2
 {
 
@@ -227,7 +225,8 @@ void AddParamMods(XmlNodeRef mods, TVarEParam<T>& param)
 	if (param.GetStrengthCurve()(VMIN) != T(1.f))
 	{
 		XmlNodeRef data = AddPtrElement(mods, SerializeNames<T>::curve());
-		AddValue(data, "TimeSource", "ParentTime");
+		AddValue(data, "Domain", "Age");
+		AddValue(data, "Owner", "Parent");
 		AddValue(data, "SpawnOnly", "true");
 		AddCurve(data, param.GetStrengthCurve());
 	}
@@ -240,7 +239,8 @@ void AddParamMods(XmlNodeRef mods, TVarEPParam<T>& param)
 	if (param.GetAgeCurve()(VMIN) != T(1.f))
 	{
 		XmlNodeRef data = AddPtrElement(mods, SerializeNames<T>::curve());
-		AddValue(data, "TimeSource", "SelfTime");
+		AddValue(data, "Domain", "Age");
+		AddValue(data, "Owner", "Self");
 		AddCurve(data, param.GetAgeCurve());
 	}
 }
@@ -687,7 +687,7 @@ void ConvertLocation(IParticleComponent& component, ParticleParams& params)
 	if (ResetValue(params.bSpaceLoop))
 	{
 		XmlNodeRef omni = MakeFeature("LocationOmni");
-		TVarParam<UFloat> vis(max<float>(params.fCameraMaxDistance, params.vPositionOffset.y + params.vRandomOffset.y));
+		TVarParam<::UFloat> vis(max<float>(params.fCameraMaxDistance, params.vPositionOffset.y + params.vRandomOffset.y));
 		ResetValue(params.fCameraMaxDistance);
 		ResetValue(params.vPositionOffset);
 		ResetValue(params.vRandomOffset);
@@ -761,7 +761,7 @@ void ConvertMotion(IParticleComponent& component, ParticleParams& params)
 	{
 		hasMotion = true;
 		XmlNodeRef vel = MakeFeature("VelocityInherit");
-		TVarParam<SFloat> scale(ResetValue(params.fInheritVelocity));
+		TVarParam<::SFloat> scale(ResetValue(params.fInheritVelocity));
 		ConvertParam(vel, "Scale", scale);
 		AddFeature(component, vel);
 	}
