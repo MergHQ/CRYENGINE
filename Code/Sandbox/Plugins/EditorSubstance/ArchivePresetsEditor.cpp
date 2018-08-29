@@ -1,30 +1,19 @@
 // Copyright 2001-2018 Crytek GmbH / Crytek Group. All rights reserved.
 
 #include "StdAfx.h"
-#include "SubstanceCommon.h"
-#include "SandboxPlugin.h"
 #include "ArchivePresetsEditor.h"
 
-#include <QDialogButtonBox>
-#include <QVBoxLayout>
-#include <QString>
-
-#include "FileDialogs/FileNameLineEdit.h"
-#include "FilePathUtil.h"
-#include "AssetSystem/Asset.h"
-#include "AssetSystem/AssetManager.h"
-#include "AssetSystem/Browser/AssetFoldersView.h"
-#include "OutputsWidget.h"
-#include "QAdvancedTreeView.h"
-#include "QScrollableBox.h"
-#include "Controls/QuestionDialog.h"
-#include "OutputEditorDialog.h"
-//#include "OutputEditor\GraphViewModel.h"
-#include "AssetTypes\SubstanceArchive.h"
-#include "QCollapsibleFrame.h"
+#include "AssetTypes/SubstanceArchive.h"
 #include "EditorSubstanceManager.h"
+#include "OutputEditorDialog.h"
+#include "OutputsWidget.h"
 
+#include <QCollapsibleFrame.h>
+#include <QScrollableBox.h>
 
+#include <AssetSystem/AssetManager.h>
+
+#include <QDialogButtonBox>
 
 namespace EditorSubstance
 {
@@ -51,7 +40,6 @@ namespace EditorSubstance
 		m_pScrollBox->addWidget(m_pOutputsWidgetHolder);
 
 		SetContent(m_pScrollBox);
-
 	}
 	
 	void CArchivePresetsEditor::OnEditOutputs(const string& graphName)

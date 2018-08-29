@@ -8,5 +8,5 @@
 #include <CryCore/Platform/CryAtlMfc.h>
 
 #include "EditorCommon.h"
-#include "Controls\DictionaryWidget.h"
+#include "Controls/DictionaryWidget.h"
 #include <QtUtil.h>

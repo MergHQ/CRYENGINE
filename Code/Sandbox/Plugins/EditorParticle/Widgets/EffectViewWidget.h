@@ -2,7 +2,7 @@
 
 #pragma once
 
-#include "../Widgets/ViewWidget.h"
+#include "ViewWidget.h"
 
 #include <QWidget>
 

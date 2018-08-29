@@ -3,7 +3,7 @@
 #pragma once
 
 #include <AssetSystem/Asset.h>
-#include "CryCore\Containers\MiniQueue.h"
+#include <CryCore/Containers/MiniQueue.h>
 
 #include <condition_variable>
 #include <memory>

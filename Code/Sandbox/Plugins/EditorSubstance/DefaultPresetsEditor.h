@@ -1,17 +1,9 @@
 // Copyright 2001-2018 Crytek GmbH / Crytek Group. All rights reserved.
 
 #pragma once
-#include "EditorFramework/Editor.h"
-#include <QStringList>
-#include <QEvent>
-#include <QResizeEvent>
-#include "SubstanceCommon.h"
 
-class CAssetFoldersView;
-class CFileNameLineEdit;
-class CAsset;
-class QScrollableBox;
-class QDialogButtonBox;
+#include "SubstanceCommon.h"
+#include <EditorFramework/Editor.h>
 
 namespace EditorSubstance
 {

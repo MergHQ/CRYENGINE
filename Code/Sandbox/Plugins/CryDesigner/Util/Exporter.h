@@ -4,9 +4,7 @@
 
 #include "Core/Polygon.h"
 
-class CBrushObject;
 class CPakFile;
-class CCryMemFile;
 
 namespace Designer
 {

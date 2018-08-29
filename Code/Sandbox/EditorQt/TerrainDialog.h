@@ -26,9 +26,6 @@ public:
 
 public:
 	void  Flatten(float fFactor);
-	float ExpCurve(float v, unsigned int iCover, float fSharpness);
-
-	void  InvalidateViewport();
 	void  InvalidateTerrain();
 
 	// CBaseFrameWnd implementation

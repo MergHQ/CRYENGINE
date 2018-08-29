@@ -2,16 +2,15 @@
 
 #include "StdAfx.h"
 #include "WaterShapeObject.h"
-#include "Material\MaterialManager.h"
-#include "Objects/ObjectLoader.h"
-#include "Objects/InspectorWidgetCreator.h"
-#include <Cry3DEngine/I3DEngine.h>
+#include "Material/MaterialManager.h"
+
+#include <Objects/InspectorWidgetCreator.h>
+#include <Objects/ObjectLoader.h>
 
 REGISTER_CLASS_DESC(CWaterShapeObjectClassDesc);
 
 IMPLEMENT_DYNCREATE(CWaterShapeObject, CShapeObject)
 
-//////////////////////////////////////////////////////////////////////////
 CWaterShapeObject::CWaterShapeObject()
 {
 	m_pWVRN = 0;
@@ -20,14 +19,12 @@ CWaterShapeObject::CWaterShapeObject()
 	m_fogPlane = Plane(Vec3(0, 0, 1), 0);
 }
 
-//////////////////////////////////////////////////////////////////////////
 bool CWaterShapeObject::Init(CBaseObject* prev, const string& file)
 {
 	bool res = CShapeObject::Init(prev, file);
 	return res;
 }
 
-//////////////////////////////////////////////////////////////////////////
 void CWaterShapeObject::InitVariables()
 {
 	__super::InitVariables();
@@ -102,7 +99,6 @@ void CWaterShapeObject::InitVariables()
 	mv_ratioViewDist.SetLimits(0, 255);
 }
 
-//////////////////////////////////////////////////////////////////////////
 void CWaterShapeObject::CreateInspectorWidgets(CInspectorWidgetCreator& creator)
 {
 	CShapeObject::CreateInspectorWidgets(creator);
@@ -145,27 +141,23 @@ void CWaterShapeObject::CreateInspectorWidgets(CInspectorWidgetCreator& creator)
 	});
 }
 
-//////////////////////////////////////////////////////////////////////////
 bool CWaterShapeObject::CreateGameObject()
 {
 	m_pWVRN = static_cast<IWaterVolumeRenderNode*>(GetIEditorImpl()->Get3DEngine()->CreateRenderNode(eERType_WaterVolume));
 	return true;
 }
 
-//////////////////////////////////////////////////////////////////////////
 void CWaterShapeObject::PostLoad(CObjectArchive& ar)
 {
 	__super::PostLoad(ar);
 	UpdateGameArea();
 }
 
-//////////////////////////////////////////////////////////////////////////
 void CWaterShapeObject::SetName(const string& name)
 {
 	CShapeObject::SetName(name);
 }
 
-//////////////////////////////////////////////////////////////////////////
 void CWaterShapeObject::Done()
 {
 	LOADING_TIME_PROFILE_SECTION_ARGS(GetName().c_str());
@@ -176,19 +168,16 @@ void CWaterShapeObject::Done()
 	CShapeObject::Done();
 }
 
-//////////////////////////////////////////////////////////////////////////
 void CWaterShapeObject::OnParamChange(IVariable* var)
 {
 	UpdateGameArea();
 }
 
-//////////////////////////////////////////////////////////////////////////
 Vec3 CWaterShapeObject::GetPremulFogColor() const
 {
 	return Vec3(mv_waterFogColor) * max(float(mv_waterFogColorMultiplier), 0.0f);
 }
 
-//////////////////////////////////////////////////////////////////////////
 void CWaterShapeObject::OnWaterParamChange(IVariable* var)
 {
 	if (m_pWVRN)
@@ -221,7 +210,6 @@ void CWaterShapeObject::OnWaterParamChange(IVariable* var)
 	}
 }
 
-//////////////////////////////////////////////////////////////////////////
 void CWaterShapeObject::Physicalize()
 {
 	if (m_pWVRN)
@@ -240,13 +228,11 @@ void CWaterShapeObject::Physicalize()
 	}
 }
 
-//////////////////////////////////////////////////////////////////////////
 void CWaterShapeObject::OnWaterPhysicsParamChange(IVariable* var)
 {
 	Physicalize();
 }
 
-//////////////////////////////////////////////////////////////////////////
 void CWaterShapeObject::SetMaterial(IEditorMaterial* mtl)
 {
 	CShapeObject::SetMaterial(mtl);
@@ -272,7 +258,6 @@ void CWaterShapeObject::SetMaterial(IEditorMaterial* mtl)
 	}
 }
 
-//////////////////////////////////////////////////////////////////////////
 void CWaterShapeObject::UpdateGameArea()
 {
 	if (m_bIgnoreGameUpdate)
@@ -347,7 +332,6 @@ void CWaterShapeObject::UpdateGameArea()
 	m_bAreaModified = false;
 }
 
-//////////////////////////////////////////////////////////////////////////
 void CWaterShapeObject::Serialize(CObjectArchive& ar)
 {
 	XmlNodeRef xmlNode(ar.node);
@@ -430,14 +414,11 @@ void CWaterShapeObject::Serialize(CObjectArchive& ar)
 	__super::Serialize(ar);
 }
 
-//////////////////////////////////////////////////////////////////////////
-
 XmlNodeRef CWaterShapeObject::Export(const string& levelPath, XmlNodeRef& xmlNode)
 {
 	return 0;
 }
 
-//////////////////////////////////////////////////////////////////////////
 void CWaterShapeObject::SetMinSpec(uint32 nSpec, bool bSetChildren)
 {
 	__super::SetMinSpec(nSpec, bSetChildren);
@@ -445,7 +426,6 @@ void CWaterShapeObject::SetMinSpec(uint32 nSpec, bool bSetChildren)
 		m_pWVRN->SetMinSpec(nSpec);
 }
 
-//////////////////////////////////////////////////////////////////////////
 void CWaterShapeObject::SetMaterialLayersMask(uint32 nLayersMask)
 {
 	__super::SetMaterialLayersMask(nLayersMask);
@@ -453,14 +433,12 @@ void CWaterShapeObject::SetMaterialLayersMask(uint32 nLayersMask)
 		m_pWVRN->SetMaterialLayers(nLayersMask);
 }
 
-//////////////////////////////////////////////////////////////////////////
 void CWaterShapeObject::SetHidden(bool bHidden)
 {
 	__super::SetHidden(bHidden);
 	UpdateGameArea();
 }
 
-//////////////////////////////////////////////////////////////////////////
 void CWaterShapeObject::UpdateVisibility(bool visible)
 {
 	if (visible == CheckFlags(OBJFLAG_INVISIBLE) ||
