@@ -2,11 +2,11 @@
 
 #include "StdAfx.h"
 #include "RefPicture.h"
+
 #include "Geometry/EdMesh.h"
-#include "../Material/MaterialManager.h"
-#include "Viewport.h"
-#include "Objects/InspectorWidgetCreator.h"
-#include <Preferences/ViewportPreferences.h>
+#include "Material/MaterialManager.h"
+
+#include <Objects/InspectorWidgetCreator.h>
 
 REGISTER_CLASS_DESC(CRefPictureClassDesc);
 
@@ -20,10 +20,8 @@ REGISTER_CLASS_DESC(CRefPictureClassDesc);
 
 _smart_ptr<CMaterial> g_RefPictureMaterialTemplate = 0;
 
-//-----------------------------------------------------------------------------
 IMPLEMENT_DYNCREATE(CRefPicture, CBaseObject)
 
-//-----------------------------------------------------------------------------
 IMaterial * GetRefPictureMaterial()
 {
 	if (!g_RefPictureMaterialTemplate)
@@ -47,7 +45,6 @@ IMaterial * GetRefPictureMaterial()
 	return pMat;
 }
 
-//-----------------------------------------------------------------------------
 CRefPicture::CRefPicture()
 	: m_pMaterial(0)
 	, m_pRenderNode(0)
@@ -67,7 +64,6 @@ CRefPicture::CRefPicture()
 	m_pMaterial = GetRefPictureMaterial();
 }
 
-//-----------------------------------------------------------------------------
 void CRefPicture::CreateInspectorWidgets(CInspectorWidgetCreator& creator)
 {
 	CBaseObject::CreateInspectorWidgets(creator);
@@ -79,7 +75,6 @@ void CRefPicture::CreateInspectorWidgets(CInspectorWidgetCreator& creator)
 	});
 }
 
-//-----------------------------------------------------------------------------
 void CRefPicture::Display(CObjectRenderHelper& objRenderHelper)
 {
 	SDisplayContext& dc = objRenderHelper.GetDisplayContextRef();
@@ -128,7 +123,6 @@ void CRefPicture::Display(CObjectRenderHelper& objRenderHelper)
 	DrawDefault(dc);
 }
 
-//-----------------------------------------------------------------------------
 bool CRefPicture::HitTest(HitContext& hc)
 {
 	Vec3 localHit;
@@ -167,13 +161,11 @@ bool CRefPicture::HitTest(HitContext& hc)
 	return false;
 }
 
-//-----------------------------------------------------------------------------
 void CRefPicture::GetLocalBounds(AABB& box)
 {
 	box = m_bbox;
 }
 
-//-----------------------------------------------------------------------------
 XmlNodeRef CRefPicture::Export(const string& levelPath, XmlNodeRef& xmlNode)
 {
 	// Don't export this. Only relevant for editor.
@@ -194,7 +186,6 @@ void CRefPicture::SerializeGeneralProperties(Serialization::IArchive& ar, bool b
 	}
 }
 
-//-----------------------------------------------------------------------------
 bool CRefPicture::CreateGameObject()
 {
 	// Load geometry
@@ -229,7 +220,6 @@ bool CRefPicture::CreateGameObject()
 	return true;
 }
 
-//-----------------------------------------------------------------------------
 void CRefPicture::Done()
 {
 	LOADING_TIME_PROFILE_SECTION_ARGS(GetName().c_str());
@@ -248,7 +238,6 @@ void CRefPicture::Done()
 	CBaseObject::Done();
 }
 
-//-----------------------------------------------------------------------------
 void CRefPicture::InvalidateTM(int nWhyFlags)
 {
 	CBaseObject::InvalidateTM(nWhyFlags);
@@ -266,7 +255,6 @@ void CRefPicture::InvalidateTM(int nWhyFlags)
 	m_invertTM.Invert();
 }
 
-//-----------------------------------------------------------------------------
 void CRefPicture::OnVariableChanged(IVariable* piVariable)
 {
 	if (!strcmp(piVariable->GetName(), "File"))
@@ -280,7 +268,6 @@ void CRefPicture::OnVariableChanged(IVariable* piVariable)
 	}
 }
 
-//-----------------------------------------------------------------------------
 void CRefPicture::UpdateImage(const string& picturePath)
 {
 	if (!m_pMaterial || !m_pRenderNode)
@@ -313,7 +300,6 @@ void CRefPicture::UpdateImage(const string& picturePath)
 	ApplyScale();
 }
 
-//-----------------------------------------------------------------------------
 void CRefPicture::ApplyScale(bool bHeight)
 {
 	Vec3 scale = GetScale();

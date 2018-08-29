@@ -101,7 +101,7 @@ public:
 			light.SetRadius(m_radiusClip, bulbSize);
 			const UCol color = colors.SafeLoad(particleId);
 			const float intensity = m_intensity * alphas.SafeLoad(particleId) * rcp(light.GetIntensityScale());
-			light.SetLightColor(ToColorF(color) * ColorF(intensity));
+			light.SetLightColor(ColorF(ToVec3(color)) * ColorF(intensity));
 
 			if (position.GetSquaredDistance(camPos) < sqr(light.m_fRadius * distRatio)
 				&& camera.IsSphereVisible_F(Sphere(position, light.m_fRadius)))

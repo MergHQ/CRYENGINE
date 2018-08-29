@@ -42,9 +42,9 @@ public:
 
 		if (auto pInt = MakeGpuInterface(pComponent, gpu_pfx2::eGpuFeatureType_FieldOpacity))
 		{
-			const int numSamples = gpu_pfx2::kNumModifierSamples;
+			const uint numSamples = gpu_pfx2::kNumModifierSamples;
 			float samples[numSamples];
-			m_opacity.Sample(samples, numSamples);
+			m_opacity.Sample({samples, numSamples});
 			gpu_pfx2::SFeatureParametersOpacity parameters;
 			parameters.samples = samples;
 			parameters.numSamples = numSamples;
@@ -68,7 +68,7 @@ public:
 	virtual void InitParticles(CParticleComponentRuntime& runtime) override
 	{
 		CRY_PFX2_PROFILE_DETAIL;
-		m_opacity.InitParticles(runtime, EPDT_Alpha);
+		m_opacity.Init(runtime, EPDT_Alpha);
 	}
 
 	virtual void UpdateParticles(CParticleComponentRuntime& runtime) override
@@ -107,9 +107,9 @@ public:
 
 		if (auto gpuInt = MakeGpuInterface(pComponent, gpu_pfx2::eGpuFeatureType_FieldSize))
 		{
-			const int numSamples = gpu_pfx2::kNumModifierSamples;
+			const uint numSamples = gpu_pfx2::kNumModifierSamples;
 			float samples[numSamples];
-			m_size.Sample(samples, numSamples);
+			m_size.Sample({samples, numSamples});
 			gpu_pfx2::SFeatureParametersSizeTable sizeTable;
 			sizeTable.samples = samples;
 			sizeTable.numSamples = numSamples;
@@ -131,7 +131,7 @@ public:
 	virtual void InitParticles(CParticleComponentRuntime& runtime) override
 	{
 		CRY_PFX2_PROFILE_DETAIL;
-		m_size.InitParticles(runtime, EPDT_Size);
+		m_size.Init(runtime, EPDT_Size);
 	}
 
 	virtual void UpdateParticles(CParticleComponentRuntime& runtime) override

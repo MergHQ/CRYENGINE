@@ -26,13 +26,13 @@ public:
 	enum EPriorities : int
 	{
 		ePriorities_Append = INT_MIN, //! See CAbstractMenu::AddAction.
-		ePriorities_Min //! Priorities are in the range [PRIORITY_MIN, INT_MAX].
+		ePriorities_Min               //! Priorities are in the range [PRIORITY_MIN, INT_MAX].
 	};
 
 	enum ESections: int
 	{
 		eSections_Default = INT_MIN, //! See CAbstractMenu::AddAction.
-		eSections_Min //! Sections are in the range [SECTION_MIN, INT_MAX].
+		eSections_Min                //! Sections are in the range [SECTION_MIN, INT_MAX].
 	};
 
 	//! Creates a menu-like widget (e.g., QMenu, QMenuBar, ...) from an abstract menu.
@@ -41,7 +41,7 @@ public:
 	{
 		struct SSection
 		{
-			int m_section;
+			int    m_section;
 			string m_name;
 		};
 
@@ -72,12 +72,12 @@ public:
 	CAbstractMenu(const CAbstractMenu&) = delete;
 	CAbstractMenu& operator=(const CAbstractMenu&) = delete;
 
-	int GetNextEmptySection() const;
-	bool IsEmpty() const;
-	int GetMaxSection() const;
-	int GetMaxPriority(int section) const;
+	int            GetNextEmptySection() const;
+	bool           IsEmpty() const;
+	int            GetMaxSection() const;
+	int            GetMaxPriority(int section) const;
 
-	void Clear();
+	void           Clear();
 
 	//! Add an action to the menu.
 	//! \param priority If value is EPriorities::ePriorities_Append, the item is assigned the next integer that is
@@ -131,50 +131,50 @@ public:
 	//! \sa AddAction
 	CAbstractMenu* CreateMenu(const QString& name, int sectionHint = eSections_Default, int priorityHint = ePriorities_Append);
 
-	void SetSectionName(int section, const char* szName);
+	void           SetSectionName(int section, const char* szName);
 
-	bool IsNamedSection(int section) const;
-	const char* GetSectionName(int section) const;
-	// Returns index of the section with the name equal to the szName value or eSections_Default if no such section is found. 
-	int FindSectionByName(const char* szName) const;
-	// Returns index of the section with the name equal to the szName value. 
+	bool           IsNamedSection(int section) const;
+	const char*    GetSectionName(int section) const;
+	// Returns index of the section with the name equal to the szName value or eSections_Default if no such section is found.
+	int            FindSectionByName(const char* szName) const;
+	// Returns index of the section with the name equal to the szName value.
 	// If the section is not found it will be created.
-	int FindOrCreateSectionByName(const char* szName);
+	int            FindOrCreateSectionByName(const char* szName);
 
 	CAbstractMenu* FindMenu(const char* szName);
 	CAbstractMenu* FindMenuRecursive(const char* szName);
 
-	bool ContainsAction(const QAction* pAction) const;
+	bool           ContainsAction(const QAction* pAction) const;
 
-	//! Will disable all its child actions, leaving them in the menu but greyed out
-	void SetEnabled(bool enabled) { m_bEnabled = enabled; }
-	bool IsEnabled() const { return m_bEnabled; }
+	//! Will disable all its child actions, leaving them in the menu but grayed out
+	void        SetEnabled(bool enabled) { m_bEnabled = enabled; }
+	bool        IsEnabled() const        { return m_bEnabled; }
 
 	const char* GetName() const;
 
-	void Build(IWidgetBuilder& widgetBuilder) const;
+	void        Build(IWidgetBuilder& widgetBuilder) const;
 
-	CCrySignal<void()> signalActionAdded;
+	CCrySignal<void()>               signalActionAdded;
 	CCrySignal<void(CAbstractMenu*)> signalMenuAdded;
 	CCrySignal<void(CAbstractMenu*)> signalAboutToShow;
 
 private:
 	CAbstractMenu(const char* szName);
 
-	int GetSectionFromHint(int sectionHint) const;
-	int GetPriorityFromHint(int priorityHint, int section) const;
-	int GetDefaultSection() const;
+	int  GetSectionFromHint(int sectionHint) const;
+	int  GetPriorityFromHint(int priorityHint, int section) const;
+	int  GetDefaultSection() const;
 
 	void InsertItem(SMenuItem* pItem);
 	void InsertNamedSection(std::unique_ptr<SNamedSection>&& namedSection);
 
 private:
-	std::vector<_smart_ptr<CAbstractMenu>> m_subMenus;
-	std::vector<std::unique_ptr<QAction>> m_actions;
-	std::vector<std::unique_ptr<SSubMenuItem>> m_subMenuItems;
-	std::vector<std::unique_ptr<SActionItem>> m_actionItems;
-	std::vector<SMenuItem*> m_sortedItems;
+	std::vector<_smart_ptr<CAbstractMenu>>      m_subMenus;
+	std::vector<std::unique_ptr<QAction>>       m_actions;
+	std::vector<std::unique_ptr<SSubMenuItem>>  m_subMenuItems;
+	std::vector<std::unique_ptr<SActionItem>>   m_actionItems;
+	std::vector<SMenuItem*>                     m_sortedItems;
 	std::vector<std::unique_ptr<SNamedSection>> m_sortedNamedSections;
 	string m_name;
-	bool m_bEnabled;
+	bool   m_bEnabled;
 };

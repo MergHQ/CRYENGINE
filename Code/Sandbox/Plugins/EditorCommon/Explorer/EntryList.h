@@ -3,11 +3,13 @@
 #pragma once
 
 #include "EditorCommonAPI.h"
-#include "../Serialization.h"
+#include "Serialization.h"
+
 #include <CryCore/Containers/CryArray.h>
+
 #include <map>
-#include <vector>
 #include <memory>
+#include <vector>
 
 namespace Explorer
 {

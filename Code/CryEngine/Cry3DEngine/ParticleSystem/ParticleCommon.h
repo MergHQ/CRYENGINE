@@ -58,7 +58,7 @@ namespace pfx2
 {
 
 const uint gMinimumVersion = 1;
-const uint gCurrentVersion = 12;
+const uint gCurrentVersion = 13;
 
 const TParticleId gInvalidId           = -1;
 const float gInfinity                  = std::numeric_limits<float>::infinity();

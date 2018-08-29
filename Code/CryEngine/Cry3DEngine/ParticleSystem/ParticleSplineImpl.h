@@ -110,18 +110,18 @@ ILINE floatv CParticleDoubleSpline::Interpolate(floatv time, floatv unormRand) c
 }
 #endif
 
-ILINE ColorF CParticleColorSpline::Interpolate(float time) const
+ILINE Vec3 CParticleColorSpline::Interpolate(float time) const
 {
-	return ColorF(
+	return Vec3(
 	  m_splines[0].Interpolate(time),
 	  m_splines[1].Interpolate(time),
 	  m_splines[2].Interpolate(time));
 }
 
 #ifdef CRY_PFX2_USE_SSE
-ILINE ColorFv CParticleColorSpline::Interpolate(floatv time) const
+ILINE Vec3v CParticleColorSpline::Interpolate(floatv time) const
 {
-	return ColorFv(
+	return Vec3v(
 	  m_splines[0].Interpolate(time),
 	  m_splines[1].Interpolate(time),
 	  m_splines[2].Interpolate(time));

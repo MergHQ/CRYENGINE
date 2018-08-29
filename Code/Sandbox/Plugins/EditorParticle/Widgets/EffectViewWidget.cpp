@@ -1,17 +1,10 @@
 // Copyright 2001-2018 Crytek GmbH / Crytek Group. All rights reserved.
 
 #include "StdAfx.h"
-
-#include "../Models/EffectAsset.h"
-#include "../Models/EffectAssetModel.h"
-
 #include "EffectViewWidget.h"
 
-#include "Undo.h"
-
-#include "Explorer/Explorer.h"
-
-#include <CryIcon.h>
+#include "Models/EffectAsset.h"
+#include "Models/EffectAssetModel.h"
 
 namespace CryParticleEditor 
 {
@@ -36,7 +29,7 @@ CEffectAssetWidget::CEffectAssetWidget(CEffectAssetModel* pEffectAssetModel, QWi
 	m_pEffectAssetModel->signalEndEffectAssetChange.Connect(this, &CEffectAssetWidget::OnEndEffectAssetChange);
 	OnEndEffectAssetChange(); // Set current effect asset.
 
-  // One-time scene fitting in the view.
+	// One-time scene fitting in the view.
 	std::shared_ptr<QMetaObject::Connection> pConnection{ new QMetaObject::Connection };
 	*pConnection = QObject::connect(m_pGraphView, &CGraphView::SignalItemsReloaded, [this, pConnection](auto& view)
 	{

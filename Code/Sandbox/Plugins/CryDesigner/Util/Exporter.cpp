@@ -3,22 +3,20 @@
 #include "StdAfx.h"
 #include "Exporter.h"
 
-#include "Objects\BrushObject.h"
 #include "Core/Helper.h"
-#include "Objects/AreaSolidObject.h"
-#include "Objects/ClipVolumeObject.h"
-#include "Objects\Group.h"
-#include "Material\Material.h"
-#include <CryCore/Containers/CryArray.h>
-#include "Util\Pakfile.h"
-#include "Util/CryMemFile.h"
-#include <Cry3DEngine/CGF/IChunkFile.h>
-#include "Core/ModelCompiler.h"
-#include "Core/Model.h"
-#include "Core/PolygonDecomposer.h"
 #include "Core/LoopPolygons.h"
+#include "Core/ModelCompiler.h"
+#include "Core/PolygonDecomposer.h"
+#include "Objects/AreaSolidObject.h"
 
-#include <Cry3DEngine/I3DEngine.h>
+// EditorQt
+#include "Material/Material.h"
+#include "Objects/ClipVolumeObject.h"
+
+#include <Util/Pakfile.h>
+#include <Util/CryMemFile.h>
+
+#include <Cry3DEngine/CGF/IChunkFile.h>
 
 #define BRUSH_SUB_FOLDER "Brush"
 #define BRUSH_FILE       "brush.lst"

@@ -74,13 +74,12 @@ typedef SChaosKey SChaosKeyV;
 
 enum EDataDomain
 {
-	EDD_None           = 0,
+	EDD_None           = 0, // Data is per-emitter or global
 
-	EDD_PerParticle    = 1, // Data is per particle
-	EDD_PerInstance    = 2, // Data is per sub-emitter
+	EDD_PerInstance    = 1, // Data is per sub-emitter
+	EDD_PerParticle    = 2, // Data is per particle
 
 	EDD_HasUpdate      = 4, // Data is updated per-frame, has additional init-value element
-	EDD_NeedsClear     = 8, // Data requires clearing after editing
 
 	EDD_ParticleUpdate = EDD_PerParticle | EDD_HasUpdate,
 	EDD_InstanceUpdate = EDD_PerInstance | EDD_HasUpdate
@@ -152,7 +151,7 @@ ILINE EParticleDataType InitType(EParticleDataType type)
 }
 
 //! DataType implemented as a DynamicEnum, with SDataInfo
-template<typename T, EDataDomain Domain = EDD_PerParticle>
+template<typename T>
 struct TDataType: EParticleDataType
 {
 	using EParticleDataType::EParticleDataType;

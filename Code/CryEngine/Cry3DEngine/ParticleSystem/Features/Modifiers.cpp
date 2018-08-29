@@ -10,64 +10,33 @@
 namespace pfx2
 {
 
-class CFTimeSource : public CDomain, public IModifier
-{
-public:
-	virtual EDataDomain GetDomain() const
-	{
-		return CDomain::GetDomain();
-	}
-};
+using IFModifier = ITypeModifier<float>;
 
 //////////////////////////////////////////////////////////////////////////
 // CModCurve
 
-class CModCurve : public CFTimeSource
+class CModCurve : public TModFunction<CModCurve, float>
 {
 public:
-	virtual void AddToParam(CParticleComponent* pComponent)
-	{
-		CDomain::AddToParam(pComponent);
-	}
-
 	virtual void Serialize(Serialization::IArchive& ar)
 	{
-		IModifier::Serialize(ar);
-		CDomain::SerializeInplace(ar);
+		IFModifier::Serialize(ar);
+		CDomain::Serialize(ar);
 		string desc = ar.isEdit() ? GetSourceDescription() : "";
 		Serialization::SContext _splineContext(ar, desc.data());
 		ar(m_spline, "Curve", "Curve");
 	}
 
-	virtual void Sample(float* samples, uint numSamples) const
-	{
-		for (uint i = 0; i < numSamples; ++i)
-		{
-			const float point = (float)i / numSamples;
-			float dataIn = samples[i];
-			float spline = m_spline.Interpolate(point);
-			float dataOut = dataIn * spline;
-			samples[i] = dataOut;
-		}
-	}
-
-	virtual void Modify(CParticleComponentRuntime& runtime, const SUpdateRange& range, IOFStream stream, TDataType<float> streamType, EDataDomain domain) const
-	{
-		CRY_PFX2_PROFILE_DETAIL;
-		if (m_spline.HasKeys())
-			CDomain::Dispatch<CModCurve>(runtime, range, stream, domain);
-	}
-
 	template<typename TTimeKernel>
-	void DoModify(CParticleComponentRuntime& runtime, const SUpdateRange& range, IOFStream stream, const TTimeKernel& timeKernel) const
+	void DoModify(const CParticleComponentRuntime& runtime, const SUpdateRange& range, IOFStream stream, const TTimeKernel& timeKernel) const
 	{
-		const floatv rate = ToFloatv(m_domainScale);
-		const floatv offset = ToFloatv(m_domainBias);
+		if (!m_spline.HasKeys())
+			return;
 
 		for (auto particleGroupId : SGroupRange(range))
 		{
 			const floatv inValue = stream.Load(particleGroupId);
-			const floatv time = MAdd(timeKernel.Sample(particleGroupId), rate, offset);
+			const floatv time = AdjustDomain(timeKernel.Sample(particleGroupId));
 			const floatv value = m_spline.Interpolate(time);
 			const floatv outvalue = Mul(inValue, value);
 			stream.Store(particleGroupId, outvalue);
@@ -83,12 +52,12 @@ private:
 	CParticleSpline m_spline;
 };
 
-SERIALIZATION_CLASS_NAME(IModifier, CModCurve, "Curve", "Curve");
+SERIALIZATION_CLASS_NAME(IFModifier, CModCurve, "Curve", "Curve");
 
 //////////////////////////////////////////////////////////////////////////
 // CModDoubleCurve
 
-class CModDoubleCurve : public CFTimeSource
+class CModDoubleCurve : public TModFunction<CModDoubleCurve, float>
 {
 public:
 	virtual void AddToParam(CParticleComponent* pComponent)
@@ -102,34 +71,26 @@ public:
 
 	virtual void Serialize(Serialization::IArchive& ar)
 	{
-		IModifier::Serialize(ar);
-		CDomain::SerializeInplace(ar);
+		IFModifier::Serialize(ar);
+		CDomain::Serialize(ar);
 		string desc = ar.isEdit() ? GetSourceDescription() : "";
 		Serialization::SContext _splineContext(ar, desc.data());
 		ar(m_spline, "DoubleCurve", "Double Curve");
 	}
 
-	virtual void Modify(CParticleComponentRuntime& runtime, const SUpdateRange& range, IOFStream stream, TDataType<float> streamType, EDataDomain domain) const
-	{
-		CRY_PFX2_PROFILE_DETAIL;
-		CDomain::Dispatch<CModDoubleCurve>(runtime, range, stream, domain);
-	}
-
 	template<typename TimeKernel>
-	void DoModify(CParticleComponentRuntime& runtime, const SUpdateRange& range, IOFStream stream, const TimeKernel& timeKernel) const
+	void DoModify(const CParticleComponentRuntime& runtime, const SUpdateRange& range, IOFStream stream, const TimeKernel& timeKernel) const
 	{
 		CRY_PFX2_PROFILE_DETAIL;
 
 		const CParticleContainer& container = runtime.GetContainer();
 		const IFStream unormRands = container.GetIFStream(EPDT_Random);
-		const floatv rate = ToFloatv(m_domainScale);
-		const floatv offset = ToFloatv(m_domainBias);
 
 		for (auto particleGroupId : SGroupRange(range))
 		{
 			const floatv unormRand = unormRands.Load(particleGroupId);
 			const floatv inValue = stream.Load(particleGroupId);
-			const floatv time = MAdd(timeKernel.Sample(particleGroupId), rate, offset);
+			const floatv time = AdjustDomain(timeKernel.Sample(particleGroupId));
 			const floatv value = m_spline.Interpolate(time, unormRand);
 			const floatv outvalue = Mul(inValue, value);
 			stream.Store(particleGroupId, outvalue);
@@ -145,12 +106,12 @@ private:
 	CParticleDoubleSpline m_spline;
 };
 
-SERIALIZATION_CLASS_NAME(IModifier, CModDoubleCurve, "DoubleCurve", "Double Curve");
+SERIALIZATION_CLASS_NAME(IFModifier, CModDoubleCurve, "DoubleCurve", "Double Curve");
 
 //////////////////////////////////////////////////////////////////////////
 // CModRandom
 
-class CModRandom : public IModifier
+class CModRandom : public IFModifier
 {
 public:
 	CModRandom(float amount = 0.0f)
@@ -159,16 +120,16 @@ public:
 
 	virtual EDataDomain GetDomain() const
 	{
-		return EDD_PerParticle;
+		return EDD_None;
 	}
 
 	virtual void Serialize(Serialization::IArchive& ar)
 	{
-		IModifier::Serialize(ar);
+		IFModifier::Serialize(ar);
 		ar(m_amount, "Amount", "Amount");
 	}
 
-	virtual void Modify(CParticleComponentRuntime& runtime, const SUpdateRange& range, IOFStream stream, TDataType<float> streamType, EDataDomain domain) const
+	virtual void Modify(const CParticleComponentRuntime& runtime, const SUpdateRange& range, IOFStream stream, EDataDomain domain) const
 	{
 		CRY_PFX2_PROFILE_DETAIL;
 
@@ -190,10 +151,10 @@ public:
 
 private:
 
-	TValue<float, THardLimits<0, 2>> m_amount;
+	TValue<THardLimits<float, 0, 2>> m_amount;
 };
 
-SERIALIZATION_CLASS_NAME(IModifier, CModRandom, "Random", "Random");
+SERIALIZATION_CLASS_NAME(IFModifier, CModRandom, "Random", "Random");
 
 //////////////////////////////////////////////////////////////////////////
 // CModNoise
@@ -205,7 +166,7 @@ SERIALIZATION_DECLARE_ENUM(EParamNoiseMode,
                            _Random
                            )
 
-class CModNoise : public CFTimeSource
+class CModNoise : public TModFunction<CModNoise, float>
 {
 public:
 	CModNoise()
@@ -213,15 +174,10 @@ public:
 		, m_pulseWidth(0.5f)
 		, m_mode(EParamNoiseMode::Smooth) {}
 
-	virtual void AddToParam(CParticleComponent* pComponent)
-	{
-		CDomain::AddToParam(pComponent);
-	}
-
 	virtual void Serialize(Serialization::IArchive& ar)
 	{
-		IModifier::Serialize(ar);
-		CDomain::SerializeInplace(ar);
+		IFModifier::Serialize(ar);
+		CDomain::Serialize(ar);
 		ar(m_mode, "Mode", "Mode");
 		ar(m_amount, "Amount", "Amount");
 		if (m_mode == EParamNoiseMode::Pulse)
@@ -231,36 +187,30 @@ public:
 			VersionFix(ar);
 	}
 
-	virtual IModifier* VersionFixReplace() const
+	virtual IFModifier* VersionFixReplace() const
 	{
 		if (m_mode == EParamNoiseMode::_Random)
 			return new CModRandom(m_amount);
 		return nullptr;
 	}
 
-	virtual void Modify(CParticleComponentRuntime& runtime, const SUpdateRange& range, IOFStream stream, TDataType<float> streamType, EDataDomain domain) const
-	{
-		CRY_PFX2_PROFILE_DETAIL;
-		CDomain::Dispatch<CModNoise>(runtime, range, stream, domain);
-	}
-
 	template<typename TimeKernel>
-	void DoModify(CParticleComponentRuntime& runtime, const SUpdateRange& range, IOFStream stream, const TimeKernel& timeKernel) const
+	void DoModify(const CParticleComponentRuntime& runtime, const SUpdateRange& range, IOFStream stream, const TimeKernel& timeKernel) const
 	{
 		CRY_PFX2_PROFILE_DETAIL;
 
 		switch (m_mode)
 		{
 		case EParamNoiseMode::Smooth:
-			Modify(runtime, range, stream, timeKernel,
+			DoModify(range, stream, timeKernel,
 			       [](floatv time){ return Smooth(time); });
 			break;
 		case EParamNoiseMode::Fractal:
-			Modify(runtime, range, stream, timeKernel,
+			DoModify(range, stream, timeKernel,
 			       [](floatv time){ return Fractal(time); });
 			break;
 		case EParamNoiseMode::Pulse:
-			Modify(runtime, range, stream, timeKernel,
+			DoModify(range, stream, timeKernel,
 			       [this](floatv time){ return Pulse(time); });
 			break;
 		}
@@ -273,17 +223,15 @@ public:
 
 private:
 	template<typename TimeKernel, typename ModeFn>
-	ILINE void Modify(CParticleComponentRuntime& runtime, const SUpdateRange& range, IOFStream stream, const TimeKernel& timeKernel, ModeFn modeFn) const
+	ILINE void DoModify(const SUpdateRange& range, IOFStream stream, const TimeKernel& timeKernel, ModeFn modeFn) const
 	{
 		const floatv one = ToFloatv(1.0f);
 		const floatv amount = ToFloatv(m_amount);
-		const floatv rate = ToFloatv(m_domainScale);
-		const floatv offset = ToFloatv(m_domainBias);
 
 		for (auto particleGroupId : SGroupRange(range))
 		{
 			const floatv inValue = stream.Load(particleGroupId);
-			const floatv time = MAdd(timeKernel.Sample(particleGroupId), rate, offset);
+			const floatv time = AdjustDomain(timeKernel.Sample(particleGroupId));
 			const floatv value = modeFn(time);
 			const floatv outvalue = Mul(inValue, Sub(one, Mul(value, amount)));
 			stream.Store(particleGroupId, outvalue);
@@ -349,7 +297,7 @@ private:
 	EParamNoiseMode m_mode;
 };
 
-SERIALIZATION_CLASS_NAME(IModifier, CModNoise, "Noise", "Noise");
+SERIALIZATION_CLASS_NAME(IFModifier, CModNoise, "Noise", "Noise");
 
 //////////////////////////////////////////////////////////////////////////
 // CModWave
@@ -360,7 +308,7 @@ SERIALIZATION_DECLARE_ENUM(EWaveType,
                            Pulse
                            )
 
-class CModWave : public CFTimeSource
+class CModWave : public TModFunction<CModWave, float>
 {
 public:
 	CModWave()
@@ -369,15 +317,10 @@ public:
 		, m_bias(0.5f)
 		, m_inverse(false) {}
 
-	virtual void AddToParam(CParticleComponent* pComponent)
-	{
-		CDomain::AddToParam(pComponent);
-	}
-
 	virtual void Serialize(Serialization::IArchive& ar)
 	{
-		IModifier::Serialize(ar);
-		CDomain::SerializeInplace(ar);
+		IFModifier::Serialize(ar);
+		CDomain::Serialize(ar);
 		ar(m_waveType, "Wave", "Wave");
 		ar(m_amplitude, "Amplitude", "Amplitude");
 		ar(m_bias, "Bias", "Bias");
@@ -395,30 +338,26 @@ public:
 				m_domainScale *= rate;
 			if (ar(phase, "Phase"))
 				m_domainBias -= phase * m_domainScale;
+			m_scaleV = ToFloatv(m_domainScale);
+			m_biasV  = ToFloatv(m_domainBias);
 		}
 	}
 
-	virtual void Modify(CParticleComponentRuntime& runtime, const SUpdateRange& range, IOFStream stream, TDataType<float> streamType, EDataDomain domain) const
-	{
-		CRY_PFX2_PROFILE_DETAIL;
-		CDomain::Dispatch<CModWave>(runtime, range, stream, domain);
-	}
-
 	template<typename TimeKernel>
-	void DoModify(CParticleComponentRuntime& runtime, const SUpdateRange& range, IOFStream stream, const TimeKernel& timeKernel) const
+	void DoModify(const CParticleComponentRuntime& runtime, const SUpdateRange& range, IOFStream stream, const TimeKernel& timeKernel) const
 	{
 		switch (m_waveType)
 		{
 		case EWaveType::Sin:
-			Modify(runtime, range, stream, timeKernel,
+			DoModify(range, stream, timeKernel,
 			       [](floatv time) { return Sin(time); });
 			break;
 		case EWaveType::Saw:
-			Modify(runtime, range, stream, timeKernel,
+			DoModify(range, stream, timeKernel,
 			       [](floatv time) { return Saw(time); });
 			break;
 		case EWaveType::Pulse:
-			Modify(runtime, range, stream, timeKernel,
+			DoModify(range, stream, timeKernel,
 			       [](floatv time) { return Pulse(time); });
 			break;
 		}
@@ -431,17 +370,15 @@ public:
 
 private:
 	template<typename TimeKernel, typename WaveFn>
-	void Modify(CParticleComponentRuntime& runtime, const SUpdateRange& range, IOFStream stream, const TimeKernel& timeKernel, WaveFn waveFn) const
+	void DoModify(const SUpdateRange& range, IOFStream stream, const TimeKernel& timeKernel, WaveFn waveFn) const
 	{
 		const floatv mult = ToFloatv(m_amplitude * (m_inverse ? -1.0f : 1.0f) * 0.5f);
 		const floatv bias = ToFloatv(m_bias);
-		const floatv rate = ToFloatv(m_domainScale);
-		const floatv offset = ToFloatv(m_domainBias);
 
 		for (auto particleGroupId : SGroupRange(range))
 		{
 			const floatv inValue = stream.Load(particleGroupId);
-			const floatv time = MAdd(timeKernel.Sample(particleGroupId), rate, offset);
+			const floatv time = AdjustDomain(timeKernel.Sample(particleGroupId));
 			const floatv sample = waveFn(time);
 			const floatv value = MAdd(sample, mult, bias);
 			const floatv outvalue = Mul(inValue, value);
@@ -511,54 +448,34 @@ private:
 	bool      m_inverse;
 };
 
-SERIALIZATION_CLASS_NAME(IModifier, CModWave, "Wave", "Wave");
+SERIALIZATION_CLASS_NAME(IFModifier, CModWave, "Wave", "Wave");
 
 //////////////////////////////////////////////////////////////////////////
 // CModLinear
 
-class CModLinear : public CFTimeSource
+class CModLinear : public TModFunction<CModLinear, float>
 {
 public:
-	virtual void AddToParam(CParticleComponent* pComponent)
-	{
-		CDomain::AddToParam(pComponent);
-	}
-
 	virtual void Serialize(Serialization::IArchive& ar)
 	{
-		IModifier::Serialize(ar);
-		CDomain::SerializeInplace(ar);
-	}
-
-	virtual void Modify(CParticleComponentRuntime& runtime, const SUpdateRange& range, IOFStream stream, TDataType<float> streamType, EDataDomain domain) const
-	{
-		CRY_PFX2_PROFILE_DETAIL;
-		CDomain::Dispatch<CModLinear>(runtime, range, stream, domain);
+		IFModifier::Serialize(ar);
+		CDomain::Serialize(ar);
 	}
 
 	template<typename TimeKernel>
-	void DoModify(CParticleComponentRuntime& runtime, const SUpdateRange& range, IOFStream stream, const TimeKernel& timeKernel) const
+	void DoModify(const CParticleComponentRuntime& runtime, const SUpdateRange& range, IOFStream stream, const TimeKernel& timeKernel) const
 	{
-		const floatv rate = ToFloatv(m_domainScale);
-		const floatv offset = ToFloatv(m_domainBias);
-
 		for (auto particleGroupId : SGroupRange(range))
 		{
 			const floatv inValue = stream.Load(particleGroupId);
-			const floatv time = MAdd(timeKernel.Sample(particleGroupId), rate, offset);
+			const floatv time = AdjustDomain(timeKernel.Sample(particleGroupId));
 			const floatv outvalue = Mul(inValue, time);
 			stream.Store(particleGroupId, outvalue);
 		}
 	}
-
-	virtual Range GetMinMax() const
-	{
-		// PFX2_TODO: Wrong! Depends on TimeSource range
-		return Range(Adjust(0.0f)) | Adjust(1.0f);
-	}
 };
 
-SERIALIZATION_CLASS_NAME(IModifier, CModLinear, "Linear", "Linear");
+SERIALIZATION_CLASS_NAME(IFModifier, CModLinear, "Linear", "Linear");
 
 //////////////////////////////////////////////////////////////////////////
 // CModConfigSpec
@@ -582,47 +499,38 @@ const SSpecData gConfigSpecs[] =
 
 const uint gNumConfigSpecs = sizeof(gConfigSpecs) / sizeof(gConfigSpecs[0]);
 
-class CModConfigSpec : public IModifier
+class CModConfigSpec : public IFModifier
 {
 public:
 	CModConfigSpec()
 		: m_range(1.0f, 1.0f)
-		, m_spawnOnly(true)
 	{
 		for (uint i = 0; i < gNumConfigSpecs; ++i)
 			m_specMultipliers[i] = 1.0f;
 	}
 
-	virtual EDataDomain GetDomain() const override
+	virtual EDataDomain GetDomain() const
 	{
-		return m_spawnOnly ? EDD_PerParticle : EDD_ParticleUpdate;
+		return EDD_None;
 	}
 
-	virtual Range GetMinMax() const override
+	virtual Range GetMinMax() const
 	{
 		return m_range;
 	}
 
-	virtual void Serialize(Serialization::IArchive& ar) override
+	virtual void Serialize(Serialization::IArchive& ar)
 	{
-		IModifier::Serialize(ar);
+		IFModifier::Serialize(ar);
 
 		for (uint i = 0; i < gNumConfigSpecs; ++i)
 			ar(m_specMultipliers[i], gConfigSpecs[i].m_pName, gConfigSpecs[i].m_pLabel);
 		m_range = Range(m_specMultipliers[0], m_specMultipliers[0]);
 		for (uint i = 1; i < gNumConfigSpecs; ++i)
 			m_range = Range(min(m_range.start, m_specMultipliers[1]), max(m_range.end, m_specMultipliers[0]));
-
-		const EDataDomain domain = *ar.context<EDataDomain>();
-		if (domain & EDD_PerInstance)
-			m_spawnOnly = false;
-		else if (!(domain & EDD_HasUpdate))
-			m_spawnOnly = true;
-		else
-			ar(m_spawnOnly, "SpawnOnly", "Spawn Only");
 	}
 
-	virtual void Modify(CParticleComponentRuntime& runtime, const SUpdateRange& range, IOFStream stream, TDataType<float> streamType, EDataDomain domain) const override
+	virtual void Modify(const CParticleComponentRuntime& runtime, const SUpdateRange& range, IOFStream stream, EDataDomain domain) const
 	{
 		CRY_PFX2_PROFILE_DETAIL;
 
@@ -649,36 +557,38 @@ public:
 private:
 	float m_specMultipliers[gNumConfigSpecs];
 	Range m_range;
-	bool  m_spawnOnly;
 };
 
-SERIALIZATION_CLASS_NAME(IModifier, CModConfigSpec, "ConfigSpec", "Config Spec");
+SERIALIZATION_CLASS_NAME(IFModifier, CModConfigSpec, "ConfigSpec", "Config Spec");
 
 //////////////////////////////////////////////////////////////////////////
 // CModAttribute
 
-class CModAttribute : public IModifier
+class CModAttribute : public IFModifier
 {
 public:
-	virtual EDataDomain GetDomain() const override
+	virtual EDataDomain GetDomain() const
 	{
-		return m_spawnOnly ? EDD_PerParticle : EDD_ParticleUpdate;
+		return m_spawnOnly ? EDD_None : EDD_HasUpdate;
 	}
 
-	virtual void Serialize(Serialization::IArchive& ar) override
+	virtual void Serialize(Serialization::IArchive& ar)
 	{
-		IModifier::Serialize(ar);
+		IFModifier::Serialize(ar);
 		ar(m_attribute, "Name", "Attribute Name");
 		ar(m_scale, "Scale", "Scale");
 		ar(m_bias, "Bias", "Bias");
-		ar(m_spawnOnly, "SpawnOnly", "Spawn Only");
+		const EDataDomain domain = *ar.context<EDataDomain>();
+		if (!(domain & EDD_HasUpdate))
+			m_spawnOnly = true;
+		else
+			SERIALIZE_VAR(ar, m_spawnOnly);
 	}
 
-	virtual void Modify(CParticleComponentRuntime& runtime, const SUpdateRange& range, IOFStream stream, TDataType<float> streamType, EDataDomain domain) const override
+	virtual void Modify(const CParticleComponentRuntime& runtime, const SUpdateRange& range, IOFStream stream, EDataDomain domain) const
 	{
 		CRY_PFX2_PROFILE_DETAIL;
 
-		CParticleContainer& container = runtime.GetContainer();
 		const CAttributeInstance& attributes = runtime.GetEmitter()->GetAttributeInstance();
 		const float attribute = m_attribute.GetValueAs(attributes, 1.0f);
 		const floatv value = ToFloatv(attribute * m_scale + m_bias);
@@ -691,12 +601,6 @@ public:
 		}
 	}
 
-	virtual Range GetMinMax() const override
-	{
-		// PFX2_TODO: Wrong! Depends on attribute value
-		return Range(0.0f, 1.0f);
-	}
-
 private:
 	CAttributeReference m_attribute;
 	SFloat              m_scale     = 1;
@@ -704,59 +608,44 @@ private:
 	bool                m_spawnOnly = false;
 };
 
-SERIALIZATION_CLASS_NAME(IModifier, CModAttribute, "Attribute", "Attribute");
+SERIALIZATION_CLASS_NAME(IFModifier, CModAttribute, "Attribute", "Attribute");
 
 //////////////////////////////////////////////////////////////////////////
-// Copy factory creators from base class to derived class
-template<typename BaseType, typename Type>
-struct ClassFactoryInheritor
-{
-	using BaseFactory = Serialization::ClassFactory<BaseType>;
-	using TypeFactory = Serialization::ClassFactory<Type>;
+using IFFieldModifier = IFieldModifier<float>;
 
-	ClassFactoryInheritor()
-	{
-		auto creators = BaseFactory::the().creatorChain();
-		TypeFactory::the().registerChain(reinterpret_cast<typename TypeFactory::CreatorBase*>(creators));
-	}
-};
-
-#define SERIALIZATION_INHERIT_CREATORS(BaseType, Type) \
-	static ClassFactoryInheritor<BaseType, Type> ClassFactoryInherit_ ## Type;
-
-//////////////////////////////////////////////////////////////////////////
-SERIALIZATION_INHERIT_CREATORS(IModifier, IFieldModifier);
+SERIALIZATION_INHERIT_CREATORS(IFModifier, IFFieldModifier);
 
 //////////////////////////////////////////////////////////////////////////
 // CModInherit
 
-class CModInherit : public IFieldModifier
+class CModInherit : public IFFieldModifier
 {
 public:
-	CModInherit()
-		: m_spawnOnly(true) {}
-
 	virtual EDataDomain GetDomain() const
 	{
-		return m_spawnOnly ? EDD_PerParticle : EDD_ParticleUpdate;
+		return m_spawnOnly ? EDD_PerInstance : EDD_InstanceUpdate;
+	}
+
+	virtual void SetDataType(EParticleDataType dataType)
+	{
+		m_dataType = dataType;
 	}
 
 	virtual void Serialize(Serialization::IArchive& ar)
 	{
-		IModifier::Serialize(ar);
+		IFModifier::Serialize(ar);
 		ar(m_spawnOnly, "SpawnOnly", "Spawn Only");
 	}
 
-	virtual void Modify(CParticleComponentRuntime& runtime, const SUpdateRange& range, IOFStream stream, TDataType<float> streamType, EDataDomain domain) const
+	virtual void Modify(const CParticleComponentRuntime& runtime, const SUpdateRange& range, IOFStream stream, EDataDomain domain) const
 	{
 		CRY_PFX2_PROFILE_DETAIL;
 
-		CParticleContainer& container = runtime.GetContainer();
-		CParticleContainer& parentContainer = runtime.GetParentContainer();
-		if (!parentContainer.HasData(streamType))
+		const CParticleContainer& parentContainer = runtime.GetParentContainer();
+		if (!parentContainer.HasData(m_dataType))
 			return;
 		IPidStream parentIds = runtime.GetContainer().GetIPidStream(EPDT_ParentId);
-		IFStream parentStream = parentContainer.GetIFStream(streamType);
+		IFStream parentStream = parentContainer.GetIFStream(TDataType<float>(m_dataType));
 
 		for (auto particleGroupId : SGroupRange(range))
 		{
@@ -768,16 +657,12 @@ public:
 		}
 	}
 
-	virtual Range GetMinMax() const
-	{
-		// PFX2_TODO: Wrong! Depends on inherited value
-		return Range(0.0f, 1.0f);
-	}
 private:
-	bool m_spawnOnly;
+	bool              m_spawnOnly = true;
+	EParticleDataType m_dataType;
 };
 
-SERIALIZATION_CLASS_NAME(IFieldModifier, CModInherit, "Inherit", "Inherit");
+SERIALIZATION_CLASS_NAME(IFFieldModifier, CModInherit, "Inherit", "Inherit");
 
 
 }

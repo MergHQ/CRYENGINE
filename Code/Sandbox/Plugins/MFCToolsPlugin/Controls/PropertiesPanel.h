@@ -1,24 +1,14 @@
 // Copyright 2001-2018 Crytek GmbH / Crytek Group. All rights reserved.
 
-#if !defined(AFX_PROPERTIESPANEL_H__AD3E2ECE_EFEB_4A4C_81A7_216B2BC11BC5__INCLUDED_)
-#define AFX_PROPERTIESPANEL_H__AD3E2ECE_EFEB_4A4C_81A7_216B2BC11BC5__INCLUDED_
+#pragma once
 
-#if _MSC_VER > 1000
-	#pragma once
-#endif // _MSC_VER > 1000
-// PropertiesPanel.h : header file
-//
-
-#include "Controls\PropertyCtrl.h"
-#include "Util\Variable.h"
-
-/////////////////////////////////////////////////////////////////////////////
-// CPropertiesPanel dialog
+#include "Controls/PropertyCtrl.h"
+#include "Util/Variable.h"
 
 class PLUGIN_API CPropertiesPanel : public CDialog
 {
 public:
-	CPropertiesPanel(CWnd* pParent = NULL);   // standard constructor
+	CPropertiesPanel(CWnd* pParent = NULL);
 
 	typedef Functor1<IVariable*> UpdateCallback;
 
@@ -30,7 +20,7 @@ public:
 	void SetVarBlock(class CVarBlock* vb, const UpdateCallback& func = NULL, const bool resizeToFit = true);
 
 	void         SetMultiSelect(bool bEnable);
-	bool         IsMultiSelect() const { return m_multiSelect; };
+	bool         IsMultiSelect() const { return m_multiSelect; }
 
 	void         SetTitle(const char* title);
 	virtual void ResizeToFitProperties();
@@ -86,8 +76,8 @@ public:
 protected:
 	void         OnPropertyChanged(IVariable* pVar);
 
-	virtual void OnOK()     {};
-	virtual void OnCancel() {};
+	virtual void OnOK()     {}
+	virtual void OnCancel() {}
 
 	//{{AFX_VIRTUAL(CPropertiesPanel)
 	virtual void DoDataExchange(CDataExchange* pDX);    // DDX/DDV support
@@ -110,5 +100,3 @@ protected:
 	std::list<UpdateCallback>    m_updateCallbacks;
 	int                          m_titleAdjust;
 };
-
-#endif // !defined(AFX_PROPERTIESPANEL_H__AD3E2ECE_EFEB_4A4C_81A7_216B2BC11BC5__INCLUDED_)

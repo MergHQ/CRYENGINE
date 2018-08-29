@@ -2,20 +2,15 @@
 
 #include "StdAfx.h"
 #include "DefaultPresetsEditor.h"
+
+#include "OutputEditor/EditorWidget.h"
 #include "OutputEditor/GraphViewModel.h"
-#include "SubstanceCommon.h"
-#include "SandboxPlugin.h"
+#include "EditorSubstanceManager.h"
+
+#include "Controls/QuestionDialog.h"
+#include "FilePathUtil.h"
 
 #include <QDialogButtonBox>
-#include <QVBoxLayout>
-#include <QString>
-
-#include "FilePathUtil.h"
-#include "OutputEditor\EditorWidget.h"
-#include "EditorSubstanceManager.h"
-#include <CryCore/CryCrc32.h>
-#include "Controls/QuestionDialog.h"
-
 
 namespace EditorSubstance
 {

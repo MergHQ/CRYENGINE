@@ -22,7 +22,7 @@ SERIALIZATION_ENUM_DECLARE(EAnimationCycle, : uint8,
 struct STextureAnimation
 {
 	UFloat                              m_frameRate;     //!< Anim framerate; 0 = 1 cycle / particle life.
-	TValue<uint16, THardLimits<1, 256>> m_frameCount;    //!< Number of tiles (frames) of animation
+	TValue<THardLimits<uint16, 1, 256>> m_frameCount;    //!< Number of tiles (frames) of animation
 	EAnimationCycle                     m_cycleMode;     //!< How animation cycles.
 	bool                                m_frameBlending; //!< Blend textures between frames.
 

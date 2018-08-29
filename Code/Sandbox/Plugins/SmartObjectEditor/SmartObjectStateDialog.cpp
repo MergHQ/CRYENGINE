@@ -4,7 +4,7 @@
 #include "ItemDescriptionDlg.h"
 #include "SmartObjectsEditorDialog.h"
 #include "SmartObjectStateDialog.h"
-#include "AI\AIManager.h"
+#include "AI/AIManager.h"
 #include "Controls/QuestionDialog.h"
 #include "Util/MFCUtil.h"
 

@@ -22,10 +22,10 @@ struct SAttributeDesc
 	CCryName                     m_name;
 	IParticleAttributes::TValue  m_defaultValue;
 
-	TValue<int, TDefaultMin<>>   m_minInt;
-	TValue<int, TDefaultMax<>>   m_maxInt;
-	TValue<float, TDefaultMin<>> m_minFloat;
-	TValue<float, TDefaultMax<>> m_maxFloat;
+	TValue<TDefaultMin<int>>   m_minInt;
+	TValue<TDefaultMax<int>>   m_maxInt;
+	TValue<TDefaultMin<float>> m_minFloat;
+	TValue<TDefaultMax<float>> m_maxFloat;
 
 	IParticleAttributes::EType	GetType() const { return m_defaultValue.Type(); }
 };

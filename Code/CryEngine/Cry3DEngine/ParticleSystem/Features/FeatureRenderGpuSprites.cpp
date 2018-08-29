@@ -41,12 +41,13 @@ public:
 	virtual void              AddToComponent(CParticleComponent* pComponent, SComponentParams* pParams) override;
 
 private:
-	struct ConvertNextPowerOfTwo
+	template<typename T>
+	struct TConvertNextPowerOfTwo: THardLimits<T, 1024, 1024*1024>
 	{
-		template<typename T> static T From(T val) { return NextPower2(val); }
-		template<typename T> static T To(T val)   { return NextPower2(val); }
+		static T From(T val) { return NextPower2(val); }
+		static T To(T val)   { return NextPower2(val); }
 	};
-	typedef TValue<uint, THardLimits<1024, 1024*1024, ConvertNextPowerOfTwo>> UIntNextPowerOfTwo;
+	typedef TValue<TConvertNextPowerOfTwo<uint>> UIntNextPowerOfTwo;
 
 	gpu_pfx2::ESortMode   m_sortMode     = gpu_pfx2::ESortMode::None;
 	gpu_pfx2::EFacingMode m_facingMode   = gpu_pfx2::EFacingMode::Screen;

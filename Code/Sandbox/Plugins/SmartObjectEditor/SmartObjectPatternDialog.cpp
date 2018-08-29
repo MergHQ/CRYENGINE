@@ -1,12 +1,9 @@
 // Copyright 2001-2018 Crytek GmbH / Crytek Group. All rights reserved.
 
 #include "StdAfx.h"
-#include "ItemDescriptionDlg.h"
-#include "SmartObjectStateDialog.h"
 #include "SmartObjectPatternDialog.h"
-#include "AI\AIManager.h"
 
-// CSmartObjectPatternDialog dialog
+#include "SmartObjectStateDialog.h"
 
 IMPLEMENT_DYNAMIC(CSmartObjectPatternDialog, CDialog)
 

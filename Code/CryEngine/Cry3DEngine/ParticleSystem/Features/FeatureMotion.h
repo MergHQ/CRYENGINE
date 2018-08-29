@@ -106,7 +106,7 @@ public:
 	virtual void DestroyParticles(CParticleComponentRuntime& runtime) override;
 
 private:
-	typedef TValue<float, ConvertScale<1000, 1, THardMin<0>>> UDensity;
+	typedef TValue<ConvertScale<THardMin<float, 0>, 1000, 1>> UDensity;
 
 	EPhysicsType m_physicsType;
 	ESurfaceType m_surfaceType;

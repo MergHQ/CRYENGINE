@@ -75,28 +75,20 @@ ILINE uint8 FloatToUFrac8Saturate(float v)
 	return uint8(saturate(v) * 255.0f + 0.5f);
 }
 
-ILINE ColorF ToColorF(UCol color)
+ILINE Vec3 ToVec3(UCol color)
 {
-	return ColorF(
+	return Vec3(
 	  ufrac8_to_float(color.r),
 	  ufrac8_to_float(color.g),
 	  ufrac8_to_float(color.b));
 }
 
-ILINE ColorFv ToColorFv(ColorF color)
-{
-	return ColorFv(
-	  ToFloatv(color.r),
-	  ToFloatv(color.g),
-	  ToFloatv(color.b));
-}
-
-ILINE UCol ColorFToUCol(const ColorF& color)
+ILINE UCol ToUCol(const Vec3& color)
 {
 	UCol result;
-	result.r = float_to_ufrac8(color.r);
-	result.g = float_to_ufrac8(color.g);
-	result.b = float_to_ufrac8(color.b);
+	result.r = float_to_ufrac8(color.x);
+	result.g = float_to_ufrac8(color.y);
+	result.b = float_to_ufrac8(color.z);
 	result.a = 0xff;
 	return result;
 }
@@ -161,20 +153,20 @@ ILINE Planev ToPlanev(Plane v)
 	return v;
 }
 
-ILINE ColorFv ToColorFv(UColv color)
+ILINE Vec3v ToVec3v(UColv color)
 {
-	return ColorFv(
+	return Vec3v(
 	  ufrac8_to_float(color.r),
 	  ufrac8_to_float(color.g),
 	  ufrac8_to_float(color.b));
 }
 
-ILINE UColv ColorFvToUColv(const ColorFv& color)
+ILINE UColv ToUColv(const Vec3v& color)
 {
 	UColv result;
-	result.r = float_to_ufrac8(color.r);
-	result.g = float_to_ufrac8(color.g);
-	result.b = float_to_ufrac8(color.b);
+	result.r = float_to_ufrac8(color.x);
+	result.g = float_to_ufrac8(color.y);
+	result.b = float_to_ufrac8(color.z);
 	result.a = 0xff;
 	return result;
 }

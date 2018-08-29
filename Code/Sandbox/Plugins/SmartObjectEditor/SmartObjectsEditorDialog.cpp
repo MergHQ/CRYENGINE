@@ -1,32 +1,28 @@
 // Copyright 2001-2018 Crytek GmbH / Crytek Group. All rights reserved.
 
 #include "StdAfx.h"
-#include <CryAISystem/IAIAction.h>
-#include <CryAISystem/IAISystem.h>
-#include <CryAISystem/IAgent.h>
+#include "SmartObjectsEditorDialog.h"
 
-#include "QtViewPane.h"
-#include "Objects/EntityObject.h"
-#include "Objects/SelectionGroup.h"
-#include "SmartObject.h"
-#include "GameEngine.h"
-#include "Util/MFCUtil.h"
-
-#include "AI\AIManager.h"
 #include "ItemDescriptionDlg.h"
+#include "SmartObject.h"
 #include "SmartObjectClassDialog.h"
 #include "SmartObjectHelperDialog.h"
+#include "SmartObjectHelperObject.h"
 #include "SmartObjectTemplateDialog.h"
 
-#include "HyperGraph\FlowGraphManager.h"
-#include "HyperGraph\FlowGraph.h"
-#include "SmartObjectHelperObject.h"
-#include "SmartObjectsEditorDialog.h"
-#include "Controls/QuestionDialog.h"
-#include "Controls/SharedFonts.h"
-#include "ClassFactory.h"
-#include "Objects/ObjectManager.h"
-#include "Util/FileUtil.h"
+// EditorQt
+#include <AI/AIManager.h>
+#include <HyperGraph/FlowGraphManager.h>
+#include <HyperGraph/FlowGraph.h>
+#include <Objects/EntityObject.h>
+#include <Objects/ObjectManager.h>
+#include <Objects/SelectionGroup.h>
+#include <GameEngine.h>
+
+// MFC
+#include <Controls/SharedFonts.h>
+#include <Util/FileUtil.h>
+#include <Util/MFCUtil.h>
 
 #define SOED_DIALOGFRAME_CLASSNAME "SmartObjectsEditorDialog"
 #define CLASS_TEMPLATES_FOLDER     "Libs/SmartObjects/ClassTemplates/"

@@ -32,18 +32,6 @@ typedef Vec4_tpl<floatv>  Vec4v;
 typedef Quat_tpl<floatv>  Quatv;
 typedef Plane_tpl<floatv> Planev;
 
-#ifdef CRY_PFX2_USE_SSE
-struct ColorFv
-{
-	ColorFv() {}
-	ColorFv(floatv _r, floatv _g, floatv _b)
-		: r(_r), g(_g), b(_b) {}
-	floatv r, g, b;
-};
-#else
-typedef ColorF ColorFv;
-#endif
-
 ///////////////////////////////////////////////////////////////////////////
 // Vector/scalar conversions
 
@@ -91,18 +79,11 @@ Quatv AddAngularVelocity(Quatv initial, Vec3v angularVel, floatv deltaTime);
 
 // Color
 
-ColorF  ToColorF(UCol color);
-ColorFv ToColorFv(UColv color);
-ColorFv ToColorFv(ColorF color);
-UCol    ColorFToUCol(const ColorF& color);
-UColv   ColorFvToUColv(const ColorFv& color);
-UColv   ToUColv(UCol color);
-
-#ifdef CRY_PFX2_USE_SSE
-ColorFv operator+(const ColorFv& a, const ColorFv& b);
-ColorFv operator*(const ColorFv& a, const ColorFv& b);
-ColorFv operator*(const ColorFv& a, floatv b);
-#endif
+Vec3  ToVec3(UCol color);
+Vec3v ToVec3v(UColv color);
+UCol  ToUCol(const Vec3& color);
+UColv ToUColv(const Vec3v& color);
+UColv ToUColv(UCol color);
 
 // Return the correct update time for a particle
 template<typename T>
