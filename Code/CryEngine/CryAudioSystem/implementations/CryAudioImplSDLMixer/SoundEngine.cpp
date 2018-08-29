@@ -655,24 +655,32 @@ ERequestStatus SoundEngine::ExecuteEvent(CObject* const pObject, CTrigger const*
 
 					int const fadeInTime = pTrigger->GetFadeInTime();
 					int const loopCount = pTrigger->GetNumLoops();
+					int channel = -1;
 
 					if (fadeInTime > 0)
 					{
-						Mix_FadeInChannel(channelID, pSample, loopCount, fadeInTime);
+						channel = Mix_FadeInChannel(channelID, pSample, loopCount, fadeInTime);
 					}
 					else
 					{
-						Mix_PlayChannel(channelID, pSample, loopCount);
+						channel = Mix_PlayChannel(channelID, pSample, loopCount);
 					}
 
-					// Get distance and angle from the listener to the audio object
-					float distance = 0.0f;
-					float angle = 0.0f;
-					GetDistanceAngleToObject(g_listenerTransformation, pObject->m_transformation, distance, angle);
-					SetChannelPosition(pEvent->m_pTrigger, channelID, distance, angle);
+					if (channel != -1)
+					{
+						// Get distance and angle from the listener to the audio object
+						float distance = 0.0f;
+						float angle = 0.0f;
+						GetDistanceAngleToObject(g_listenerTransformation, pObject->m_transformation, distance, angle);
+						SetChannelPosition(pEvent->m_pTrigger, channelID, distance, angle);
 
-					g_channels[channelID].pObject = pObject;
-					pEvent->m_channels.push_back(channelID);
+						g_channels[channelID].pObject = pObject;
+						pEvent->m_channels.push_back(channelID);
+					}
+					else
+					{
+						Cry::Audio::Log(ELogType::Error, "Could not play sample. Error: %s", Mix_GetError());
+					}
 				}
 				else
 				{

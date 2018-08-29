@@ -430,10 +430,8 @@ ERequestStatus CAudioTranslationLayer::ProcessAudioManagerRequest(CAudioRequest 
 			{
 				for (auto const pEvent : pObject->GetActiveEvents())
 				{
-					if (pEvent != nullptr)
-					{
-						pEvent->Release();
-					}
+					CRY_ASSERT_MESSAGE((pEvent != nullptr) && (pEvent->IsPlaying() || pEvent->IsVirtual()), "Invalid event during EAudioManagerRequestType::ReloadControlsData");
+					pEvent->Stop();
 				}
 			}
 
