@@ -115,7 +115,7 @@ private:
 	ExecutionStackFileLoggerInstances m_executionStackFileLoggerInstances;
 #endif // DEBUG_MODULAR_BEHAVIOR_TREE
 
-	typedef std::vector<const AISignals::ISignalDescription*> SignalDescriptions;
-	SignalDescriptions m_gameSignalDescriptionsVector;
+	typedef std::unordered_set<const AISignals::ISignalDescription*> SignalDescriptions;
+	SignalDescriptions m_gameSignalDescriptionsSet;
 };
 }

@@ -3249,9 +3249,9 @@ static void MergeInstanceList(SMMRMInstanceContext& context)
 	if (bones) { memset(bones, 0x0, sizeof(DualQuatA) * (geom->numSpineVtx + 1)); }
 	mmrm_printf("updating %d samples\n", context.amount);
 #if MMRM_USE_BOUNDS_CHECK
-	mmrm_printf("updating %#x<==>%#x general \n", (unsigned int)general, (unsigned int)TLS_GET(unsigned int, s_general_end));
-	mmrm_printf("updating %#x<==>%#x tangents\n", (unsigned int)tangents, (unsigned int)TLS_GET(unsigned int, s_tangents_end));
-	mmrm_printf("updating %#x<==>%#x idxBuf\n", (unsigned int)idxBuf, (unsigned int)TLS_GET(unsigned int, s_idx_end));
+	mmrm_printf("updating %#x<==>%#x general \n", (unsigned int)general, (unsigned int)tls_general_end);
+	mmrm_printf("updating %#x<==>%#x tangents\n", (unsigned int)tangents, (unsigned int)tls_tangents_end);
+	mmrm_printf("updating %#x<==>%#x idxBuf\n", (unsigned int)idxBuf, (unsigned int)tls_idx_end);
 #endif
 	PREFAST_SUPPRESS_WARNING(6255)
 	Vec3A * npt = spines && geom->numSpineVtx ? CryStackAllocVector(Vec3A, geom->numSpineVtx, CRY_PLATFORM_ALIGNMENT) : NULL;
@@ -3952,9 +3952,9 @@ static inline void MergeInstanceListDeform(SMMRMInstanceContext& context)
 	vtx_idx* idxBuf = update->idxBuf;
 	mmrm_printf("updating %d samples\n", context.amount);
 #if MMRM_USE_BOUNDS_CHECK
-	mmrm_printf("updating %#x<==>%#x general \n", (unsigned int)general, (unsigned int)TLS_GET(unsigned int, s_general_end));
-	mmrm_printf("updating %#x<==>%#x tangents\n", (unsigned int)tangents, (unsigned int)TLS_GET(unsigned int, s_tangents_end));
-	mmrm_printf("updating %#x<==>%#x idxBuf\n", (unsigned int)idxBuf, (unsigned int)TLS_GET(unsigned int, s_idx_end));
+	mmrm_printf("updating %#x<==>%#x general \n", (unsigned int)general, (unsigned int)tls_general_end);
+	mmrm_printf("updating %#x<==>%#x tangents\n", (unsigned int)tangents, (unsigned int)tls_tangents_end);
+	mmrm_printf("updating %#x<==>%#x idxBuf\n", (unsigned int)idxBuf, (unsigned int)tls_idx_end);
 #endif
 	primitives::sphere* colliders = context.colliders;
 	SMMRMProjectile* projectiles = context.projectiles;

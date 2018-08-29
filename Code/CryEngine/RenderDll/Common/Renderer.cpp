@@ -1224,7 +1224,6 @@ void CRenderer::EF_StartEf (const SRenderingPassInfo& passInfo)
 
 	ASSERT_IS_MAIN_THREAD(m_pRT)
 	int nThreadID = passInfo.ThreadID();
-	assert(nThreadID == SRenderThread::GetLocalThreadCommandBufferId());
 	int nR = passInfo.GetRecursiveLevel();
 	assert(nR < 2);
 	if (!passInfo.IsRecursivePass())

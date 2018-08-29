@@ -195,19 +195,6 @@ enum class EPlatform
 #include <stddef.h>
 #include <stdarg.h>
 
-#if CRY_PLATFORM_IOS || (CRY_PLATFORM_ANDROID && defined(__clang__))
-	#define USE_PTHREAD_TLS
-#endif
-
-// Storage class modifier for thread local storage.
-#if defined(USE_PTHREAD_TLS)
-// Does not support thread storage
-	#define THREADLOCAL
-#elif defined(__GNUC__) || CRY_PLATFORM_MAC
-	#define THREADLOCAL __thread
-#else
-	#define THREADLOCAL __declspec(thread)
-#endif
 
 // define Read Write Barrier macro needed for lockless programming
 #if defined(__arm__)
@@ -684,48 +671,6 @@ enum ETriState
 	eTS_true,
 	eTS_maybe
 };
-
-#if CRY_PLATFORM_WINDOWS
-extern "C" {
-	__declspec(dllimport) unsigned long __stdcall TlsAlloc();
-	__declspec(dllimport) void* __stdcall         TlsGetValue(unsigned long dwTlsIndex);
-	__declspec(dllimport) int __stdcall           TlsSetValue(unsigned long dwTlsIndex, void* lpTlsValue);
-}
-
-	#define TLS_DECLARE(type, var) extern int var ## idx;
-	#define TLS_DEFINE(type, var)                  \
-	  int var ## idx;                              \
-	  struct Init ## var {                         \
-	    Init ## var() { var ## idx = TlsAlloc(); } \
-	  };                                           \
-	  Init ## var g_init ## var;
-	#define TLS_DEFINE_DEFAULT_VALUE(type, var, value)                                      \
-	  int var ## idx;                                                                       \
-	  struct Init ## var {                                                                  \
-	    Init ## var() { var ## idx = TlsAlloc(); TlsSetValue(var ## idx, (void*)(value)); } \
-	  };                                                                                    \
-	  Init ## var g_init ## var;
-	#define TLS_GET(type, var)                              (type)TlsGetValue(var ## idx)
-	#define TLS_SET(var, val)                               TlsSetValue(var ## idx, (void*)(val))
-#elif CRY_PLATFORM_LINUX || CRY_PLATFORM_ANDROID || CRY_PLATFORM_MAC
-	#define TLS_DECLARE(type, var)                          extern THREADLOCAL type var;
-	#define TLS_DEFINE(type, var)                           THREADLOCAL type var = 0;
-	#define TLS_DEFINE_DEFAULT_VALUE(type, var, value)      THREADLOCAL type var = value;
-	#define TLS_GET(type, var)                              (var)
-	#define TLS_SET(var, val)                               (var = (val))
-#elif defined(USE_PTHREAD_TLS)
-	#define TLS_DECLARE(_TYPE, _VAR)                        extern SCryPthreadTLS<_TYPE> _VAR ## TLSKey;
-	#define TLS_DEFINE(_TYPE, _VAR)                         SCryPthreadTLS<_TYPE> _VAR ## TLSKey;
-	#define TLS_DEFINE_DEFAULT_VALUE(_TYPE, _VAR, _DEFAULT) SCryPthreadTLS<_TYPE> _VAR ## TLSKey = _DEFAULT;
-	#define TLS_GET(_TYPE, _VAR)                            _VAR ## TLSKey.Get()
-	#define TLS_SET(_VAR, _VALUE)                           _VAR ## TLSKey.Set(_VALUE)
-#else
-	#define TLS_DECLARE(type, var)                          extern THREADLOCAL type var;
-	#define TLS_DEFINE(type, var)                           THREADLOCAL type var;
-	#define TLS_DEFINE_DEFAULT_VALUE(type, var, value)      THREADLOCAL type var = value;
-	#define TLS_GET(type, var)                              (var)
-	#define TLS_SET(var, val)                               (var = (val))
-#endif
 
 // Include MultiThreading support.
 #include <CryThreading/CryThread.h>

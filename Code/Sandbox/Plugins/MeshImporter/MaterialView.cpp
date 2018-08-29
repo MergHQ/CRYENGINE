@@ -20,6 +20,7 @@ CMaterialView::CMaterialView(CSortedMaterialModel* pModel, QWidget* pParent)
 	setModel(m_pModel);
 	setSelectionMode(QAbstractItemView::ExtendedSelection);
 	setSortingEnabled(true);
+	sortByColumn(CMaterialModel::eColumnType_Name, Qt::SortOrder::AscendingOrder);
 
 	m_pSubMaterialDelegate.reset(new CComboBoxDelegate(this));
 	m_pSubMaterialDelegate->SetFillEditorFunction([pModel](QMenuComboBox* pEditor)
