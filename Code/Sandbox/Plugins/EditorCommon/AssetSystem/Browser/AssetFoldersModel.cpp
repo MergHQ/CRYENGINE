@@ -305,7 +305,10 @@ bool CAssetFoldersModel::dropMimeData(const QMimeData* pMimeData, Qt::DropAction
 	}
 
 	const QString folder(variant.toString());
-	CRY_ASSERT(!IsReadOnlyFolder(folder));
+	if (IsReadOnlyFolder(folder))
+	{
+		return false;
+	}
 
 	const CDragDropData* const pDragDropData = CDragDropData::FromMimeData(pMimeData);
 	const QStringList filePaths = pDragDropData->GetFilePaths();
@@ -321,7 +324,10 @@ bool CAssetFoldersModel::dropMimeData(const QMimeData* pMimeData, Qt::DropAction
 	if (pDragDropData->HasCustomData("Assets"))
 	{
 		std::vector<CAsset*> assets = CAssetModel::GetAssets(*pDragDropData);
-		OnMove(assets, folder);
+		if (CanMove(assets, QtUtil::ToString(folder)))
+		{
+			OnMove(assets, folder);
+		}
 		return true;
 	}
 
