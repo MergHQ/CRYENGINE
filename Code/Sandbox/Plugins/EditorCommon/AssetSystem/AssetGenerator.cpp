@@ -75,6 +75,12 @@ void CAssetGenerator::OnFileChange(const char* szFilename, EChangeType changeTyp
 		return;
 	}
 
+	// Ignore auto backup folders.
+	if (strstr(szFilename, "/_autobackup/"))
+	{
+		return;
+	}
+
 	// Refresh cryasset files for the following types even if exists. 
 	// These asset types do not have true asset editors to update cryasset files.
 	static const char* const update[] = { "mtl", "cdf" };
