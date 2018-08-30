@@ -157,7 +157,7 @@ private:
 	bool                     m_bVSync = false;
 
 private:
-	void                 CreateSwapChain(HWND hWnd, bool vsync);
+	void                 CreateSwapChain(HWND hWnd, bool isFullscreen, bool vsync);
 	void                 CreateOutput();
 	void                 ShutDown();
 	void                 ReleaseResources() override;

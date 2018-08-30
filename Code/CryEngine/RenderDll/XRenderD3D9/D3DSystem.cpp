@@ -157,7 +157,7 @@ SDisplayContextKey CD3D9Renderer::CreateSwapChainBackedContext(const SDisplayCon
 	pDC->m_nSSSamplesX = pDC->m_desc.superSamplingFactor.x;
 	pDC->m_nSSSamplesY = pDC->m_desc.superSamplingFactor.y;
 
-	pDC->CreateSwapChain(desc.handle, desc.vsync);
+	pDC->CreateSwapChain(desc.handle, IsFullscreen(), desc.vsync);
 
 	SDisplayContextKey key;
 	if (desc.handle)
@@ -1110,7 +1110,7 @@ bool CD3D9Renderer::SetWindow(int width, int height)
 	// Update base context hWnd and key
 	SDisplayContextKey baseContextKey;
 	baseContextKey.key.emplace<HWND>(m_pBaseDisplayContext->GetWindowHandle());
-	m_pBaseDisplayContext->CreateSwapChain(m_hWnd, m_VSync != 0);
+	m_pBaseDisplayContext->CreateSwapChain(m_hWnd, IsFullscreen(), m_VSync != 0);
 	{
 		AUTO_LOCK(gs_contextLock);
 		m_displayContexts.erase(baseContextKey);
@@ -1966,9 +1966,9 @@ bool CD3D9Renderer::CreateDeviceDesktop()
 	OnD3D11PostCreateDevice(m_devInfo.Device());
 #endif
 
-	AdjustWindowForChange(pDC->GetDisplayResolution().x, pDC->GetDisplayResolution().y, EWindowState::Fullscreen);
+	AdjustWindowForChange(pDC->GetDisplayResolution().x, pDC->GetDisplayResolution().y, m_windowState);
 
-	pDC->ChangeOutputIfNecessary(true, m_VSync != 0);
+	pDC->ChangeOutputIfNecessary(IsFullscreen(), m_VSync != 0);
 
 	return true;
 }
