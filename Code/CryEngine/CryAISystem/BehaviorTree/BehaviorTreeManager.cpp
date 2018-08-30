@@ -221,7 +221,7 @@ void BehaviorTreeManager::RegisterGameEventsInSignalManager(BehaviorTreeInstance
 		m_gameSignalDescriptionsSet.insert(&signalDesc);
 	}
 }
-#pragma optimize("", off)
+
 void BehaviorTreeManager::DeregisterGameEventsInSignalManager()
 {
 	for (const AISignals::ISignalDescription* signalDesc : m_gameSignalDescriptionsSet)
