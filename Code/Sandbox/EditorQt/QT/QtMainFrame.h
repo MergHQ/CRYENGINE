@@ -35,8 +35,6 @@ public:
 	virtual ~CEditorMainFrame();
 	void PostLoad();
 
-	void ResetAutoSaveTimers();
-
 	//////////////////////////////////////////////////////////////////////////
 
 	static CEditorMainFrame* GetInstance();
@@ -58,6 +56,8 @@ private:
 	void OnIdleCallback();
 	bool OnNativeEvent(void *message, long *result);
 	void OnBackgroundUpdateTimer();
+
+	void OnAutoBackupTimeChanged();
 	void OnAutoSaveTimer();
 	void OnAutoRemindTimer();
 	void OnEditorNotifyEvent(EEditorNotifyEvent event);
@@ -96,6 +96,7 @@ private:
 	//Should not be accessible
 	QStatusBar* statusBar() const { return QMainWindow::statusBar(); }
 	QMainToolBarManager*        m_pMainToolBarManager;
+	QTimer*                     m_pAutoBackupTimer;
 	std::vector<CWaitProgress*> m_waitTasks;
 	QMetaObject::Connection     m_layoutChangedConnection;
 	bool                        m_bClosing;

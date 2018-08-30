@@ -1171,6 +1171,19 @@ void CCryEditDoc::SaveAutoBackup(bool bForce)
 		levelName.c_str(), 
 		CLevelType::GetFileExtensionStatic());
 
+	struct BackupLayers
+	{
+		BackupLayers()
+		{
+			GetIEditorImpl()->GetObjectManager()->GetLayersManager()->StartBackup();
+		}
+		~BackupLayers()
+		{
+			GetIEditorImpl()->GetObjectManager()->GetLayersManager()->EndBackup();
+		}
+	};
+
+	BackupLayers backup;
 	SaveLevel(filename);
 	GetIEditorImpl()->GetGameEngine()->SetLevelPath(levelPath);
 

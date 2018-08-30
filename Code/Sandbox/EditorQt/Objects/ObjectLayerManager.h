@@ -58,8 +58,12 @@ public:
 
 	void OnEditorNotifyEvent(EEditorNotifyEvent event);
 
+	//! Mark level layer model for backing up. Modified state should not be altered when generating a backup
+	void          StartBackup() { m_bCanModifyLayers = false; }
+	//! Mark level layer model for backing up. Modified state should not be altered when generating a backup
+	void          EndBackup() { m_bCanModifyLayers = true; }
 	//! Ensures that the editor has finished loading a level before allowing layers to be modified.
-	bool          CanModifyLayers();
+	bool          CanModifyLayers() const;
 	//! Create a layer of the given type and attach it to the parent layer if provided
 	CObjectLayer* CreateLayer(EObjectLayerType layerType = eObjectLayerType_Layer, CObjectLayer* pParent = nullptr);
 	//! Create a layer of the given name and type, and attach it to the parent layer if provided
@@ -190,7 +194,7 @@ private:
 	string         m_layersPath;
 
 	bool            m_bOverwriteDuplicates;
-	bool            m_bLevelLoading;
+	bool            m_bCanModifyLayers;
 
 	// support Layer Switches in Flow Graph
 	std::vector<CObjectLayer*> m_layerSwitches;

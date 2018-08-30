@@ -37,10 +37,11 @@ struct SEditorFilePreferences : public SPreferencePage
 	string animEditor;
 	string strStandardTempDirectory;
 
-	int    autoSaveTime;
 	int    autoSaveMaxCount;
 	bool   autoSaveEnabled;
 	bool   filesBackup;
+
+	ADD_PREFERENCE_PAGE_PROPERTY(int, autoSaveTime, setAutoSaveTime)
 };
 
 EDITOR_COMMON_API extern SEditorGeneralPreferences gEditorGeneralPreferences;

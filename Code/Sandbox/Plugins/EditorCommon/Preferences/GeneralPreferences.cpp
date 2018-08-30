@@ -55,7 +55,7 @@ SEditorFilePreferences::SEditorFilePreferences()
 	, textureEditor("Photoshop.exe")
 	, animEditor("")
 	, strStandardTempDirectory("Temp")
-	, autoSaveTime(10)
+	, m_autoSaveTime(10)
 	, autoSaveMaxCount(3)
 	, autoSaveEnabled(false)
 	, filesBackup(true)
@@ -64,6 +64,7 @@ SEditorFilePreferences::SEditorFilePreferences()
 
 bool SEditorFilePreferences::Serialize(yasli::Archive& ar)
 {
+	auto prevAutoSavetime = m_autoSaveTime;
 	ar.openBlock("files", "Files");
 	ar(filesBackup, "filesBackup", "Backup on Save");
 	ar.closeBlock();
@@ -82,9 +83,14 @@ bool SEditorFilePreferences::Serialize(yasli::Archive& ar)
 	// Autobackup table.
 	ar.openBlock("autoBackup", "Auto Back-up");
 	ar(autoSaveEnabled, "autoSaveEnabled", "Enable");
-	ar(yasli::Range(autoSaveTime, 2, 10000), "autoSaveTime", "Auto Backup Interval (Minutes)");
+	ar(yasli::Range(m_autoSaveTime, 2, 10000), "autoSaveTime", "Auto Backup Interval (Minutes)");
 	ar(yasli::Range(autoSaveMaxCount, 1, 100), "autoSaveMaxCount", "Maximum Auto Backups");
 	ar.closeBlock();
+
+	if (ar.isInput() && prevAutoSavetime != m_autoSaveTime)
+	{
+		autoSaveTimeChanged();
+	}
 
 	return true;
 }

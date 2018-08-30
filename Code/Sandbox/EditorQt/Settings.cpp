@@ -132,9 +132,10 @@ void SEditorSettings::LoadFrom(const QString& filename)
 	}
 
 	string strPlaceholderString;
+	auto autoSaveTime = gEditorFilePreferences.autoSaveTime();
 	// Load settings from registry.
 	LoadValue("Settings", "AutoBackup", gEditorFilePreferences.autoSaveEnabled);
-	LoadValue("Settings", "AutoBackupTime", gEditorFilePreferences.autoSaveTime);
+	LoadValue("Settings", "AutoBackupTime", autoSaveTime);
 	LoadValue("Settings", "AutoBackupMaxCount", gEditorFilePreferences.autoSaveMaxCount);
 	LoadValue("Settings", "CameraMoveSpeed", gViewportMovementPreferences.camMoveSpeed);
 	LoadValue("Settings", "CameraRotateSpeed", gViewportMovementPreferences.camRotateSpeed);
