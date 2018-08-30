@@ -107,6 +107,8 @@ void CRigidBodyComponent::Physicalize()
 {
 	SEntityPhysicalizeParams physParams;
 	physParams.type = (int)m_type;
+	
+	Enable(m_isEnabledByDefault);
 
 	// Don't physicalize a slot by default
 	physParams.nSlot = std::numeric_limits<int>::max();
@@ -118,7 +120,6 @@ void CRigidBodyComponent::Physicalize()
 	buoyancyParams.waterDamping = m_buoyancyParameters.damping;
 	m_pEntity->GetPhysicalEntity()->SetParams(&buoyancyParams);
 
-	Enable(m_isEnabledByDefault);
 }
 
 void CRigidBodyComponent::ProcessEvent(const SEntityEvent& event)
