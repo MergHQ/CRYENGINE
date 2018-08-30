@@ -324,7 +324,7 @@ public:
 		}, true);
 	}
 
-	virtual const char* GetEditorName() const override { return "CryTest Runner"; }
+	virtual const char* GetEditorName() const override { return "Test Runner"; }
 	virtual void        CreateDefaultLayout(CDockableContainer* sender) override
 	{
 		auto centerWidget = sender->SpawnWidget("Tests");
@@ -336,7 +336,7 @@ private:
 	CCryTestOutputWidget  m_outputWidget{ g_cryTestRunnerSystem };
 };
 
-REGISTER_VIEWPANE_FACTORY(CCryTestRunnerWindow, "CryTest Runner", "Tools", true);
+REGISTER_VIEWPANE_FACTORY_AND_MENU(CCryTestRunnerWindow, "Test Runner", "Tools", true, "Advanced");
 
 REGISTER_PLUGIN(CCryTestRunnerPlugin);
 
