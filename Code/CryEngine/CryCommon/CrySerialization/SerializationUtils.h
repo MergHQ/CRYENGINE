@@ -8,6 +8,21 @@
 
 namespace SerializationUtils
 {		
+	template<class T, typename F>
+	Serialization::StringList ContainerToStringList(const T& container, F toString)
+	{
+		Serialization::StringList stringList;
+		stringList.reserve(container.size() + 1);
+		stringList.push_back("");
+
+		for (const typename T::value_type& element : container)
+		{
+			stringList.push_back(toString(element));
+		}
+
+		return stringList;
+	}
+
 	namespace
 	{
 		// Converts the given container to a string list applying the toString function on each element of the container
@@ -37,20 +52,6 @@ namespace SerializationUtils
 			// Attach StringListValue to input string parameter 'value'
 			return Serialization::StringListValue(stringList, selectedString, &value, Serialization::TypeID::get<string>());
 		}
-	}
-
-	template<class T, typename F>
-	Serialization::StringList ContainerToStringList(const T& container, F toString)
-	{
-		Serialization::StringList stringList;
-		stringList.push_back("");
-
-		for (const typename T::value_type& element : container)
-		{
-			stringList.push_back(toString(element));
-		}
-
-		return stringList;
 	}
 	
 	// Converts the given container to a string list applying the toString function on each element of the container

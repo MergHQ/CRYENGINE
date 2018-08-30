@@ -3,6 +3,7 @@ stream manager implementation which converts coefficient vectors to streams for 
 */
 
 #include "SHRotate.h"
+#include "ObjFace.h"
 
 #undef min
 #undef max
@@ -118,7 +119,7 @@ void NSH::CMeshCoefficientStreams<DirectCoeffType>::Compress
 					for(int comp=0; comp<CoeffType::Components(); ++comp)
 					{
 						//compress all coefficient and components
-						CoeffType::TComponentType& rCoeff = crCoeffs[c][comp];
+						typename CoeffType::TComponentType& rCoeff = crCoeffs[c][comp];
 						rCoeff += rCompressionInfo.compressionValue[c].second;	//add offset, now in range 0...
 						rCoeff *= rCompressionInfo.compressionValue[c].first;	  //scale into 0..255.0
 						assert(rCoeff > -0.1f && rCoeff < 255.1f);
