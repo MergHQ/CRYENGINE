@@ -75,9 +75,15 @@ void CAssetGenerator::OnFileChange(const char* szFilename, EChangeType changeTyp
 		return;
 	}
 
+	// Ignore auto backup folders.
+	if (strstr(szFilename, "/_autobackup/"))
+	{
+		return;
+	}
+
 	// Refresh cryasset files for the following types even if exists. 
 	// These asset types do not have true asset editors to update cryasset files.
-	static const char* const update[] = { "lua", "xml", "mtl", "cdf" };
+	static const char* const update[] = { "mtl", "cdf" };
 	const char* szExt = PathUtil::GetExt(szFilename);
 	const bool updateExisting = std::any_of(std::begin(update), std::end(update), [szExt](const char* szUpdatable)
 	{
@@ -140,6 +146,12 @@ CAssetGenerator::CAssetGenerator()
 			continue;
 		}
 
+		// Ignore legacy asset types that do not have asset editors.
+		if (strcmp(pType->GetTypeName(), "Xml") == 0 || strcmp(pType->GetTypeName(), "Script") == 0 || strcmp(pType->GetTypeName(), "Sound") == 0)
+		{
+			continue;
+		}
+
 		// Ignore levels, since this is a special case when the cryasset is next to the level folder.
 		if (strcmp(pType->GetTypeName(), "Level") == 0)
 		{
@@ -156,12 +168,6 @@ CAssetGenerator::CAssetGenerator()
 		GetIEditor()->GetFileMonitor()->RegisterListener(this, "", pType->GetFileExtension());
 	}
 	m_rcSettings.Append("\"");
-
-	// TODO: There are .wav.cryasset and .ogg.cryasset for the CSoundType. Remove the following scoped lines when this is fixed.
-	{
-		m_rcSettings.Append("ogg,Sound;");
-		GetIEditor()->GetFileMonitor()->RegisterListener(this, "", "ogg");
-	}
 
 	m_rcSettings.shrink_to_fit();
 }
