@@ -136,7 +136,7 @@ void CLayerChangeEvent::Send() const
 CObjectLayerManager::CObjectLayerManager(CObjectManager* pObjectManager) :
 	m_pObjectManager(pObjectManager),
 	m_layersPath(LAYER_PATH),
-	m_bLevelLoading(false),
+	m_bCanModifyLayers(false),
 	m_bOverwriteDuplicates(false),
 	m_visibleSetLayer(CryGUID::Null())
 {
@@ -153,23 +153,24 @@ void CObjectLayerManager::OnEditorNotifyEvent(EEditorNotifyEvent event)
 	switch (event)
 	{
 	case eNotify_OnBeginSceneOpen:
-		m_bLevelLoading = true;
+		m_bCanModifyLayers = true;
 		break;
 	case eNotify_OnEndSceneOpen:
-		m_bLevelLoading = false;
+		m_bCanModifyLayers = false;
 		break;
 	case eNotify_OnLayerImportBegin:
-		m_bLevelLoading = true;
+		m_bCanModifyLayers = true;
 		break;
 	case eNotify_OnLayerImportEnd:
-		m_bLevelLoading = false;
+		m_bCanModifyLayers = false;
 		break;
 	}
 }
 
-bool CObjectLayerManager::CanModifyLayers()
+bool CObjectLayerManager::CanModifyLayers() const
 {
-	return !m_bLevelLoading; // if we are level loading we cannot set layers to modified
+	// If loading a level or creating a level backup, don't allow changing modify state of layers
+	return m_bCanModifyLayers;
 }
 
 const std::vector<CObjectLayer*>& CObjectLayerManager::GetLayers() const

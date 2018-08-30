@@ -644,6 +644,7 @@ public:
 CEditorMainFrame::CEditorMainFrame(QWidget* parent)
 	: QMainWindow(parent)
 	, m_levelEditor(new CLevelEditor)
+	, m_pAutoBackupTimer(nullptr)
 	, m_bClosing(false)
 	, m_bUserEventPriorityMode(false)
 {
@@ -663,7 +664,13 @@ CEditorMainFrame::CEditorMainFrame(QWidget* parent)
 	// Enable idle loop
 	QTimer::singleShot(0, this, &CEditorMainFrame::OnIdleCallback);
 	QTimer::singleShot(500, this, &CEditorMainFrame::OnBackgroundUpdateTimer);
-	QTimer::singleShot(gEditorFilePreferences.autoSaveTime * 60 * 1000, this, &CEditorMainFrame::OnAutoSaveTimer);
+
+	m_pAutoBackupTimer = new QTimer();
+	m_pAutoBackupTimer->setInterval(gEditorFilePreferences.autoSaveTime() * 60 * 1000);
+	m_pAutoBackupTimer->start();
+
+	connect(m_pAutoBackupTimer, &QTimer::timeout, this, &CEditorMainFrame::OnAutoSaveTimer);
+	gEditorFilePreferences.autoSaveTimeChanged.Connect(this, &CEditorMainFrame::OnAutoBackupTimeChanged);
 
 	// Enable idle loop
 	m_loopHandler.AddNativeHandler(reinterpret_cast<uintptr_t>(this), WrapMemberFunction(this, &CEditorMainFrame::OnNativeEvent));
@@ -746,6 +753,9 @@ CEditorMainFrame::~CEditorMainFrame()
 	GetIEditorImpl()->GetLevelEditorSharedState()->signalEditToolChanged.DisconnectObject(this);
 
 	m_loopHandler.RemoveNativeHandler(reinterpret_cast<uintptr_t>(this));
+
+	if (m_pAutoBackupTimer)
+		m_pAutoBackupTimer->deleteLater();
 
 	if (m_pInstance)
 	{
@@ -1594,18 +1604,17 @@ bool CEditorMainFrame::event(QEvent* event)
 	return QMainWindow::event(event);
 }
 
-void CEditorMainFrame::ResetAutoSaveTimers()
+void CEditorMainFrame::OnAutoBackupTimeChanged()
 {
+	m_pAutoBackupTimer->setInterval(gEditorFilePreferences.autoSaveTime() * 60 * 1000);
 }
 
 void CEditorMainFrame::OnAutoSaveTimer()
 {
-	if (gEditorFilePreferences.autoSaveEnabled)
-	{
-		// Call autosave function of CryEditApp.
-		GetIEditorImpl()->GetDocument()->SaveAutoBackup();
-	}
-	QTimer::singleShot(gEditorFilePreferences.autoSaveTime * 60 * 1000, this, &CEditorMainFrame::OnAutoSaveTimer);
+	if (!gEditorFilePreferences.autoSaveEnabled)
+		return;
+
+	GetIEditorImpl()->GetDocument()->SaveAutoBackup();
 }
 
 bool CEditorMainFrame::OnNativeEvent(void* message, long* result)
