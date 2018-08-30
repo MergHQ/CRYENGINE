@@ -119,10 +119,11 @@ void CRenderDisplayContext::ReleaseResources()
 
 //////////////////////////////////////////////////////////////////////////
 
-void CSwapChainBackedRenderDisplayContext::CreateSwapChain(HWND hWnd, bool vsync)
+void CSwapChainBackedRenderDisplayContext::CreateSwapChain(HWND hWnd, bool isFullscreen, bool vsync)
 {
 	CRY_ASSERT(hWnd);
 	m_hWnd = hWnd;
+	m_fullscreen = isFullscreen;
 
 #if !CRY_PLATFORM_CONSOLE
 	CreateOutput();
@@ -130,8 +131,8 @@ void CSwapChainBackedRenderDisplayContext::CreateSwapChain(HWND hWnd, bool vsync
 		m_pOutput,
 		GetDisplayResolution().x,
 		GetDisplayResolution().y,
-		IsMainContext(),
 		IsFullscreen(),
+		IsMainContext(),
 		vsync);
 	m_bVSync = vsync;
 #endif
@@ -152,7 +153,7 @@ void CSwapChainBackedRenderDisplayContext::CreateSwapChain(HWND hWnd, bool vsync
 #endif
 
 	// Create the output
-	ChangeOutputIfNecessary(m_fullscreen, vsync);
+	ChangeOutputIfNecessary(IsFullscreen(), vsync);
 }
 
 void CSwapChainBackedRenderDisplayContext::ShutDown()
@@ -398,7 +399,7 @@ void CSwapChainBackedRenderDisplayContext::ChangeOutputIfNecessary(bool isFullsc
 		ReleaseBackBuffers();
 
 		// Swap chain needs to be recreated with the new output in mind
-		CreateSwapChain(GetWindowHandle(), m_pOutput, GetDisplayResolution().x, GetDisplayResolution().y, IsMainContext(), isFullscreen, vsync);
+		CreateSwapChain(GetWindowHandle(), m_pOutput, GetDisplayResolution().x, GetDisplayResolution().y, isFullscreen, IsMainContext(), vsync);
 
 		if (m_pOutput != nullptr)
 		{
@@ -416,8 +417,7 @@ void CSwapChainBackedRenderDisplayContext::ChangeOutputIfNecessary(bool isFullsc
 	gcpRendD3D->DevInfo().Factory()->MakeWindowAssociation(m_hWnd, DXGI_MWA_NO_ALT_ENTER | DXGI_MWA_NO_WINDOW_CHANGES);
 #endif
 
-	if (m_fullscreen)
-		SetFullscreenState(isFullscreen);
+	SetFullscreenState(isFullscreen);
 }
 
 void CSwapChainBackedRenderDisplayContext::ChangeDisplayResolution(uint32_t displayWidth, uint32_t displayHeight, const SRenderViewport& vp)
@@ -428,9 +428,7 @@ void CSwapChainBackedRenderDisplayContext::ChangeDisplayResolution(uint32_t disp
 	{
 		ReleaseBackBuffers();
 
-		m_swapChain.ResizeSwapChain(CRendererCVars::CV_r_MaxFrameLatency + 1, m_DisplayWidth, m_DisplayHeight, IsMainContext());
-		// NOTE: Going full-screen doesn't require freeing the back-buffers
-		SetFullscreenState(m_fullscreen);
+		m_swapChain.ResizeSwapChain(CRendererCVars::CV_r_MaxFrameLatency + 1, m_DisplayWidth, m_DisplayHeight, m_fullscreen, IsMainContext());
 
 		AllocateBackBuffers();
 
@@ -462,34 +460,19 @@ void CSwapChainBackedRenderDisplayContext::ChangeDisplayResolution(uint32_t disp
 
 void CSwapChainBackedRenderDisplayContext::SetFullscreenState(bool isFullscreen)
 {
-	if (!m_swapChain.GetSwapChain())
-		return;
-
-	m_fullscreen = isFullscreen;
-#if (CRY_RENDERER_DIRECT3D >= 110) || (CRY_RENDERER_VULKAN >= 10)
-	if (isFullscreen)
+	if (m_fullscreen != isFullscreen)
 	{
-		DXGI_SWAP_CHAIN_DESC scDesc = m_swapChain.GetDesc();
+		m_fullscreen = isFullscreen;
 
-#if !CRY_PLATFORM_DURANGO && (CRY_RENDERER_DIRECT3D >= 120)
-		CRY_ASSERT_MESSAGE((scDesc.Flags & DXGI_SWAP_CHAIN_FLAG_FRAME_LATENCY_WAITABLE_OBJECT) == 0, "Fullscreen does not work with Waitable SwapChain");
-#endif
+		if (m_swapChain.GetSwapChain())
+		{
+			ReleaseBackBuffers();
 
-		scDesc.BufferDesc.Width = m_DisplayWidth;
-		scDesc.BufferDesc.Height = m_DisplayHeight;
+			m_swapChain.ResizeSwapChain(CRendererCVars::CV_r_MaxFrameLatency + 1, m_DisplayWidth, m_DisplayHeight, m_fullscreen, IsMainContext(), true);
 
-#if defined(SUPPORT_DEVICE_INFO_USER_DISPLAY_OVERRIDES)
-		CSwapChain::UserOverrideDisplayProperties(scDesc.BufferDesc);
-#endif
-
-		HRESULT rr = m_swapChain.GetSwapChain()->ResizeTarget(&scDesc.BufferDesc);
-		CRY_ASSERT(SUCCEEDED(rr));
+			AllocateBackBuffers();
+		}
 	}
-	
-#if !CRY_PLATFORM_CONSOLE
-	m_swapChain.SetFullscreenState(isFullscreen, isFullscreen ? m_pOutput : nullptr);
-#endif
-#endif
 }
 
 Vec2_tpl<uint32_t> CSwapChainBackedRenderDisplayContext::FindClosestMatchingScreenResolution(const Vec2_tpl<uint32_t> &resolution) const
