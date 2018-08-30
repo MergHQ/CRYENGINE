@@ -68,7 +68,12 @@ struct IArchiveHost
 
 	virtual bool       LoadBlackBox(const SStruct& outObj, SBlackBox& box) = 0;
 };
+} // namespace Serialization
 
+#include <CrySystem/ISystem.h> // gEnv
+
+namespace Serialization
+{
 //! Syntactic sugar.
 template<class T> bool LoadJsonFile(T& instance, const char* filename)
 {
