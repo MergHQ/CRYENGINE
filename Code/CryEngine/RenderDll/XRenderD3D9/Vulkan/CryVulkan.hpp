@@ -27,7 +27,7 @@
 #endif
 
 #define VK_NOT_IMPLEMENTED VK_ASSERT(0 && "Not implemented!");
-#define VK_FUNC_LOG() VK_LOG("%s() called", __FUNC__)
+#define VK_FUNC_LOG() VK_LOG(true, "%s() called", __FUNC__)
 
 ///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
