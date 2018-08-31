@@ -155,8 +155,15 @@ namespace Cry
 			struct SAccountTraits
 			{
 				using ServiceType = ServiceIdentifier;
+				// Note: When adding types here make sure you update the code using stl::holds_alternative
+				// and stl::get
 				using ValueType = CryVariant<StringIdentifierValue, NumericIdentifierValue>;
-
+			
+			private:
+				template<size_t I>
+				using RawType = typename stl::variant_alternative<I, ValueType>::type;
+			
+			public:
 				static const char* ToDebugString(const ServiceIdentifier& svcId, const ValueType& value)
 				{
 					static stack_string debugStr;
@@ -167,24 +174,41 @@ namespace Cry
 					}
 					else if (stl::holds_alternative<NumericIdentifierValue>(value))
 					{
-						debugStr.Format("%sAccount:%ull", GetServiceDebugName(svcId), stl::get<NumericIdentifierValue>(value));
+						debugStr.Format("%sAccount:%" PRIu64, GetServiceDebugName(svcId), stl::get<NumericIdentifierValue>(value));
 					}
-
+					
 					return debugStr.c_str();
 				}
 
-				static bool Serialize(Serialization::IArchive& archive, ValueType& value, const char* szName, const char* szLabel)
+				static bool AsUint64(const ValueType& value, uint64& out)
 				{
-					if (archive.isOutput())
+					if (stl::holds_alternative<StringIdentifierValue>(value))
 					{
-						if (stl::holds_alternative<StringIdentifierValue>(value))
-						{
-							return archive(stl::get<StringIdentifierValue>(value), szName, szLabel);
-						}
-						else if (stl::holds_alternative<NumericIdentifierValue>(value))
-						{
-							return archive(stl::get<NumericIdentifierValue>(value), szName, szLabel);
-						}
+						const StringIdentifierValue& str = stl::get<StringIdentifierValue>(value);
+						const int ok = sscanf_s(str.c_str(), "%" PRIx64, out);
+						return ok == 1;
+					}
+					else if (stl::holds_alternative<NumericIdentifierValue>(value))
+					{
+						out = stl::get<NumericIdentifierValue>(value);
+						return true;
+					}
+
+					return false;
+				}
+
+				template<class StrType>
+				static bool AsString(const ValueType& value, StrType& out)
+				{
+					if (stl::holds_alternative<StringIdentifierValue>(value))
+					{
+						out = stl::get<StringIdentifierValue>(value).c_str();
+						return true;
+					}
+					else if (stl::holds_alternative<NumericIdentifierValue>(value))
+					{
+						out.Format("%" PRIx64, stl::get<NumericIdentifierValue>(value));
+						return true;
 					}
 
 					return false;
@@ -199,13 +223,21 @@ namespace Cry
 				static const char* ToDebugString(const ServiceIdentifier& svcId, const ValueType& value)
 				{
 					static stack_string debugStr;
-					debugStr.Format("%sLobby:%ull", GetServiceDebugName(svcId), value);
+					debugStr.Format("%sLobby:%" PRIu64, GetServiceDebugName(svcId), value);
 					return debugStr.c_str();
 				}
-
-				static bool Serialize(Serialization::IArchive& archive, NumericIdentifierValue& value, const char* szName, const char* szLabel)
+				
+				static bool AsUint64(const ValueType& value, uint64& out)
 				{
-					return archive(value, szName, szLabel);
+					out = value;
+					return true;
+				}
+				
+				template<class StrType>
+				static bool AsString(const ValueType& value, StrType& out)
+				{
+					out.Format("%" PRIu64, value);
+					return true;
 				}
 			};
 		}

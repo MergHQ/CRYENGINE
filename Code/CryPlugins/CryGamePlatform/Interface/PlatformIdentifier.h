@@ -10,10 +10,6 @@ namespace Cry
 		template <typename Traits>
 		class Identifier;
 
-		template <typename Traits>
-		bool Serialize(Serialization::IArchive& archive, Identifier<Traits>& value, const char* szName, const char* szLabel);
-
-
 		//! Simple opaque class used to store a service-specific identifier.
 		template <typename Traits>
 		class Identifier
@@ -27,10 +23,7 @@ namespace Cry
 			{
 			}
 
-			Identifier()
-				: m_svcId(CryGUID::Null())
-			{
-			}
+			Identifier() = default;
 
 			Identifier(const Identifier&) = default;
 			Identifier(Identifier&&) = default;
@@ -40,20 +33,19 @@ namespace Cry
 
 			const ServiceType& Service() const { return m_svcId; }
 
-			bool operator==(const Identifier& other) const { return m_svcId == other.m_svcId && m_value == other.m_value; }
-			bool operator!=(const Identifier& other) const { return m_svcId != other.m_svcId || m_value != other.m_value; }
-			bool operator<(const Identifier& other) const
-			{
-				if (m_svcId < other.m_svcId)
-				{
-					return true;
-				}
-				else if (m_svcId == other.m_svcId)
-				{
-					return m_value < other.m_value;
-				}
+			bool operator==(const Identifier& other) const { return std::tie(m_svcId, m_value) == std::tie(other.m_svcId, other.m_value); }
+			bool operator!=(const Identifier& other) const { return std::tie(m_svcId, m_value) != std::tie(other.m_svcId, other.m_value); }
+			bool operator<(const Identifier& other) const { return std::tie(m_svcId, m_value) < std::tie(other.m_svcId, other.m_value); }
 
-				return false;
+			bool GetAsUint64(uint64& out) const
+			{
+				return Traits::AsUint64(m_value, out);
+			}
+
+			template<class StrType>
+			bool GetAsString(StrType& out) const
+			{
+				return Traits::AsString(m_value, out);
 			}
 
 			const char* ToDebugString() const
@@ -61,17 +53,9 @@ namespace Cry
 				return Traits::ToDebugString(m_svcId, m_value);
 			}
 
-			friend bool Serialize<Traits>(Serialization::IArchive& archive, Identifier<Traits>& value, const char* szName, const char* szLabel);
-
 		private:
-			ServiceType m_svcId;
-			ValueType m_value;
+			ServiceType m_svcId = CryGUID::Null();
+			ValueType m_value{};
 		};
-
-		template <typename Traits>
-		bool Serialize(Serialization::IArchive& archive, Identifier<Traits>& value, const char* szName, const char* szLabel)
-		{
-			return Traits::Serialize(archive, value.m_value, szName, szLabel);
-		}
 	}
 }

@@ -11,53 +11,26 @@ namespace Cry
 	{
 		namespace Steam
 		{
-			namespace Detail
-			{
-				struct SUserIdentifierResolver : public Serialization::IArchive
-				{
-					SUserIdentifierResolver()
-						: Serialization::IArchive(Serialization::IArchive::INPUT)
-						, steamId(k_steamIDNil)
-					{
-					}
-
-					// Serialization::IArchive
-
-					using Serialization::IArchive::operator ();
-
-					virtual bool operator()(AccountIdentifierValue& value, const char* szName = "", const char* szLabel = nullptr) override
-					{
-						steamId = value;
-						return true;
-					}
-
-
-					virtual bool operator () (const Serialization::SStruct& value, const char* szName = "", const char* szLabel = nullptr) override
-					{
-						value(*this);
-						return true;
-					}
-
-					// ~Serialization::IArchive
-
-					CSteamID steamId;
-				};
-			}			
-
 			inline CSteamID ExtractSteamID(const AccountIdentifier& accountId)
 			{
-				Detail::SUserIdentifierResolver userSer;
-				userSer(accountId);
+				AccountIdentifierValue tmpVal;
+				if (accountId.GetAsUint64(tmpVal))
+				{
+					return tmpVal;
+				}
 
-				return userSer.steamId;
+				return k_steamIDNil;
 			}
 
 			inline CSteamID ExtractSteamID(const LobbyIdentifier& lobbyId)
 			{
-				Detail::SUserIdentifierResolver userSer;
-				userSer(lobbyId);
+				AccountIdentifierValue tmpVal;
+				if (lobbyId.GetAsUint64(tmpVal))
+				{
+					return tmpVal;
+				}
 
-				return userSer.steamId;
+				return k_steamIDNil;
 			}
 		}
 	}
