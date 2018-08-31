@@ -560,7 +560,7 @@ void C3DEngine::ScreenshotDispatcher(const int nRenderFlags, const SRenderingPas
 	case ESST_HIGHRES:
 		{
 			GetConsole()->ShowConsole(false);
-			pStitchedImage = new CStitchedImage(*this, ImageWidth, ImageHeight, 0, 0, 1, 0);
+			pStitchedImage = new CStitchedImage(*this, ImageWidth, ImageHeight, ImageWidth, ImageHeight, 1, 0);
 
 			CCamera newCamera = passInfo.GetCamera();
 			newCamera.SetFrustum(ImageWidth, ImageHeight, passInfo.GetCamera().GetFov(), passInfo.GetCamera().GetNearPlane(),
@@ -579,7 +579,7 @@ void C3DEngine::ScreenshotDispatcher(const int nRenderFlags, const SRenderingPas
 		{
 			CRY_ASSERT_MESSAGE(0, "Panorama screenshot not supported right now !");
 			GetConsole()->ShowConsole(false);
-			pStitchedImage = new CStitchedImage(*this, ImageWidth, ImageHeight, 0, 0, 1, 0);
+			pStitchedImage = new CStitchedImage(*this, ImageWidth, ImageHeight, ImageWidth, ImageHeight, 1, 0);
 			ScreenShotPanorama(pStitchedImage, nRenderFlags, passInfo, 0, 0);
 			pStitchedImage->SaveImage("Panorama");
 			pStitchedImage->Clear();    // good for debugging
@@ -616,7 +616,7 @@ void C3DEngine::ScreenshotDispatcher(const int nRenderFlags, const SRenderingPas
 			}
 			
 			GetConsole()->ShowConsole(false);
-			pStitchedImage = new CStitchedImage(*this, mipMapSnapshotSize, mipMapSnapshotSize, 0, 0, 1, 0, true);
+			pStitchedImage = new CStitchedImage(*this, mipMapSnapshotSize, mipMapSnapshotSize, mipMapSnapshotSize, mipMapSnapshotSize, 1, 0, true);
 
 			ScreenShotMap(pStitchedImage, nRenderFlags, passInfo, 0, 0);
 			if (abs(GetCVars()->e_ScreenShot) == ESST_MAP)
