@@ -979,6 +979,11 @@ void SOBJECTSTATE::Serialize(TSerialize ser)
 			}
 			for (DynArray<AISignals::SignalSharedPtr>::iterator ai(vSignals.begin()); ai != vSignals.end(); ++ai)
 			{
+				if (ser.IsReading())
+				{
+					*ai = gAIEnv.pSignalManager->CreateSignal(AISIGNAL_DEFAULT, gAIEnv.pSignalManager->GetBuiltInSignalDescriptions().GetNone());
+				}
+
 				ser.BeginGroup("Signal");
 				{
 					(*ai)->Serialize(ser);
