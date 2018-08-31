@@ -84,6 +84,7 @@ void CAudioNode::Animate(SAnimContext& animContext)
 						if (audioTriggerInfo.audioKeyStart < audioTriggerKeyNum)
 						{
 							ApplyAudioTriggerKey(audioTriggerKey.m_startTriggerId);
+							m_activeAudioTriggers.emplace_back(audioTriggerKey);
 						}
 
 						if (audioTriggerInfo.audioKeyStart > audioTriggerKeyNum)
@@ -107,6 +108,8 @@ void CAudioNode::Animate(SAnimContext& animContext)
 								{
 									ApplyAudioTriggerKey(audioTriggerKey.m_startTriggerId, false);
 								}
+
+								m_activeAudioTriggers.erase(std::remove(m_activeAudioTriggers.begin(), m_activeAudioTriggers.end(), audioTriggerKey), m_activeAudioTriggers.end());
 							}
 						}
 						else
@@ -215,12 +218,34 @@ void CAudioNode::Animate(SAnimContext& animContext)
 	}
 }
 
+void CAudioNode::OnStart()
+{
+	CRY_ASSERT_MESSAGE(m_activeAudioTriggers.empty(), "m_activeAudioTriggers is not empty during CAudioNode::OnStart");
+}
+
 void CAudioNode::OnReset()
 {
 	m_audioParameterTracks.clear();
 	m_audioTriggerTracks.clear();
 	m_audioSwitchTracks.clear();
 	m_audioFileTracks.clear();
+}
+
+void CAudioNode::OnStop()
+{
+	for (auto const& audioTriggerKey : m_activeAudioTriggers)
+	{
+		if (audioTriggerKey.m_stopTriggerId != CryAudio::InvalidControlId)
+		{
+			ApplyAudioTriggerKey(audioTriggerKey.m_stopTriggerId);
+		}
+		else
+		{
+			ApplyAudioTriggerKey(audioTriggerKey.m_startTriggerId, false);
+		}
+	}
+
+	m_activeAudioTriggers.clear();
 }
 
 unsigned int CAudioNode::GetParamCount() const

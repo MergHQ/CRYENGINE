@@ -111,7 +111,7 @@ protected:
 	virtual bool         GetParamInfoFromType(const CAnimParamType& paramId, SParamInfo& info) const override;
 	int                  GetEntityId() const { return m_EntityId; }
 
-	void                 ReleaseSounds();
+	void                 StopAudio();
 	void                 ApplyEventKey(class CEventTrack* track, int keyIndex, SEventKey& key);
 	void                 ApplyAudioTriggerKey(CryAudio::ControlId audioTriggerId, bool const bPlay = true);
 	Vec3                 Adjust3DSoundOffset(bool bVoice, IEntity* pEntity, Vec3& oSoundPos) const;
@@ -213,10 +213,11 @@ private:
 	bool                    m_visible;
 	bool                    m_bInitialPhysicsStatus;
 
-	std::vector<int>        m_audioSwitchTracks;
-	std::vector<float>      m_audioParameterTracks;
-	std::vector<SAudioInfo> m_audioTriggerTracks;
-	std::vector<SAudioInfo> m_audioFileTracks;
+	std::vector<int>              m_audioSwitchTracks;
+	std::vector<float>            m_audioParameterTracks;
+	std::vector<SAudioInfo>       m_audioTriggerTracks;
+	std::vector<SAudioInfo>       m_audioFileTracks;
+	std::vector<SAudioTriggerKey> m_activeAudioTriggers;
 
 	int                     m_lastDrsSignalKey;
 	int                     m_iCurMannequinKey;
