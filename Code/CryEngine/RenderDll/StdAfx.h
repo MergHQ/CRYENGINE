@@ -482,11 +482,19 @@ typedef void (*RenderFunc)(void);
     #endif
 
 #elif (CRY_RENDERER_DIRECT3D >= 111) && !CRY_PLATFORM_ORBIS
-    #define     DXGIFactory               IDXGIFactory2
-    #define     DXGIDevice                IDXGIDevice1
-    #define     DXGIAdapter               IDXGIAdapter1
-    #define     DXGIOutput                IDXGIOutput1
-    #define     DXGISwapChain             IDXGISwapChain1
+    #if CRY_PLATFORM_DURANGO
+        #define     DXGIFactory               IDXGIFactory2
+        #define     DXGIDevice                IDXGIDevice1
+        #define     DXGIAdapter               IDXGIAdapter1
+        #define     DXGIOutput                IDXGIOutput
+        #define     DXGISwapChain             IDXGISwapChain1
+    #else
+        #define     DXGIFactory               IDXGIFactory2
+        #define     DXGIDevice                IDXGIDevice1
+        #define     DXGIAdapter               IDXGIAdapter1
+        #define     DXGIOutput                IDXGIOutput1
+        #define     DXGISwapChain             IDXGISwapChain1
+    #endif
 
     #define     D3DDeviceContext          ID3D11DeviceContext1
     #define     D3DDevice                 ID3D11Device1
