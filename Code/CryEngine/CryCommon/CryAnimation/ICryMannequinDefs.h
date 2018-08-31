@@ -83,9 +83,7 @@ struct SCRCRefHash_CRC32
 };
 
 template<uint32 StoreStrings, typename THash = SCRCRefHash_CRC32Lowercase>
-struct SCRCRef
-{
-};
+struct SCRCRef;
 
 template<typename THash>
 struct SCRCRef<0, THash>
