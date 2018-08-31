@@ -7,9 +7,6 @@
 
 class CRenderOutput;
 class CTexture;
-#if CRY_PLATFORM_DURANGO
-class DXGIOutput;
-#endif
 
 //////////////////////////////////////////////////////////////////////////
 //! Display Context represent a target rendering context
