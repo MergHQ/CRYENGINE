@@ -303,13 +303,6 @@ namespace AISignals
 
 	SignalSharedPtr CSignalManager::CreateSignal(const int nSignal, const ISignalDescription& signalDescription, const tAIObjectID senderID, IAISignalExtraData* pEData) const
 	{
-		if (signalDescription.IsNone())
-		{
-			CRY_ASSERT_MESSAGE(false, "Tried to create a Signal with Signal Description being None");
-			gEnv->pLog->LogError("Tried to create a Signal with Signal Description being None");
-			return nullptr;
-		}
-
 		return std::shared_ptr<CSignal>(new CSignal(nSignal, signalDescription, senderID, pEData));
 	}
 
