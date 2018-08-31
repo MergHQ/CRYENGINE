@@ -243,7 +243,7 @@ public:
 	static CTexture* s_ptexCachedShadowMap[MAX_GSM_LODS_NUM];                    // CShadowMapStage
 	static CTexture* s_ptexHeightMapAODepth[2];                                  // CShadowMapStage, CHeightMapAOStage
 	static CTexture* s_ptexRT_ShadowPool;                                        // CShadowMapStage
-	static CTexture* s_ptexWaterCaustics[2];                                     // ?, caustics buffers
+	static CTexture* s_ptexWaterCaustics[2];                                     // CWaterStage caustics buffers
 	static CTexture* s_ptexVolCloudShadow;                                       // CVolumetricCloudsStage
 
 	// Render resolution [dependent] targets ===================================================================

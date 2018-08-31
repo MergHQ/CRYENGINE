@@ -128,6 +128,7 @@ private:
 	bool  SetAndBuildPerPassResources(bool bOnInit, EPass passId);
 	void  UpdatePerPassResources(EPass passId);
 
+	void  ExecuteDepthCopy();
 	void  ExecuteWaterNormalGen();
 	void  ExecuteOceanMaskGen();
 	void  ExecuteWaterVolumeCausticsGen(N3DEngineCommon::SCausticInfo& causticInfo);
@@ -161,6 +162,7 @@ private:
 	CPrimitiveRenderPass                      m_passDeferredOceanCausticsStencil;
 	CFullscreenPass                           m_passDeferredOceanCaustics;
 	CSceneRenderPass                          m_passWaterFogVolumeBeforeWater;
+	CFullscreenPass                           m_passCopyDepth;
 	CStretchRectPass                          m_passCopySceneTargetReflection;
 	CClearRegionPass                          m_passWaterReflectionClear;
 	CSceneRenderPass                          m_passWaterReflectionGen;
@@ -182,6 +184,7 @@ private:
 	uint64 m_frameIdWaterSim;
 	Vec4   m_oceanAnimationParams[2];
 
+	int32 m_lastDepthCopyFrameID = 0;
 	int32 m_aniso16xClampSampler;
 	int32 m_aniso16xWrapSampler;
 	int32 m_linearCompareClampSampler;

@@ -474,7 +474,6 @@ float CRendererCVars::CV_r_watercausticsdistance;
 int CRendererCVars::CV_r_watercausticsdeferred;
 int CRendererCVars::CV_r_watervolumecaustics;
 int CRendererCVars::CV_r_watervolumecausticsdensity;
-int CRendererCVars::CV_r_watervolumecausticsresolution;
 float CRendererCVars::CV_r_watervolumecausticssnapfactor;
 float CRendererCVars::CV_r_watervolumecausticsmaxdistance;
 int CRendererCVars::CV_r_water_godrays;
@@ -2460,11 +2459,6 @@ void CRendererCVars::InitCVars()
 	               "Density/resolution of watervolume caustic grid.\n"
 	               "Usage: r_WaterVolumeCausticsDensity [16/256]\n"
 	               "Default is 256");
-
-	REGISTER_CVAR3("r_WaterVolumeCausticsRes", CV_r_watervolumecausticsresolution, 512, VF_NULL,
-	               "Resolution of watervoluem caustics texture.\n"
-	               "Usage: r_WaterVolumeCausticsRes [n]\n"
-	               "Default is 1024");
 
 	REGISTER_CVAR3("r_WaterVolumeCausticsSnapFactor", CV_r_watervolumecausticssnapfactor, 1.0f, VF_NULL,
 	               "Distance in which to snap the vertex grid/projection (to avoid aliasing).\n"

@@ -111,9 +111,9 @@ technique WaterCausticPass
 {
 	pass p0
 	{
-		ZEnable = true; // todo use downscaled depth target for zculling
+		ZEnable = true;
 		CullMode = Back;
-		ZWriteEnable = true;
+		ZWriteEnable = false;
 		IgnoreMaterialState = true;
 
 		VertexShader = WaterCausticVS() WaterSurfaceVS;

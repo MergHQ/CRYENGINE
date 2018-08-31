@@ -233,13 +233,10 @@ void CWaterStage::Init()
 	m_passOceanMaskGen.SetupPassContext(m_stageID, ePass_OceanMaskGen, TTYPE_GENERAL, FB_GENERAL, EFSLIST_WATER, 0, false);
 	m_passOceanMaskGen.SetPassResources(m_pResourceLayout, m_pPerPassResourceSets[ePass_OceanMaskGen]);
 
-	auto* pDummyRenderTarget = CRendererResources::s_ptexSceneSpecular;
-	CRY_ASSERT(pDummyRenderTarget && pDummyRenderTarget->GetTextureDstFormat() == eTF_R8G8B8A8);
-
 	m_passWaterCausticsSrcGen.SetLabel("WATER_VOLUME_CAUSTICS_SRC_GEN");
 	m_passWaterCausticsSrcGen.SetupPassContext(m_stageID, ePass_CausticsGen, TTYPE_WATERCAUSTICPASS, FB_WATER_CAUSTIC, EFSLIST_WATER, 0, false);
 	m_passWaterCausticsSrcGen.SetPassResources(m_pResourceLayout, m_pPerPassResourceSets[ePass_CausticsGen]);
-	m_passWaterCausticsSrcGen.SetRenderTargets(nullptr, pDummyRenderTarget);
+	m_passWaterCausticsSrcGen.SetRenderTargets(CRendererResources::s_ptexSceneDepthScaled[0], CRendererResources::s_ptexWaterCaustics[0]);
 
 	m_passWaterFogVolumeBeforeWater.SetLabel("WATER_FOG_VOLUME_BEFORE_WATER");
 	m_passWaterFogVolumeBeforeWater.SetupPassContext(m_stageID, ePass_FogVolume, TTYPE_GENERAL, FB_BELOW_WATER, EFSLIST_WATER_VOLUMES, 0, false);
@@ -248,7 +245,7 @@ void CWaterStage::Init()
 	m_passWaterReflectionGen.SetLabel("WATER_VOLUME_REFLECTION_GEN");
 	m_passWaterReflectionGen.SetupPassContext(m_stageID, ePass_ReflectionGen, TTYPE_WATERREFLPASS, FB_WATER_REFL, EFSLIST_WATER, 0, false);
 	m_passWaterReflectionGen.SetPassResources(m_pResourceLayout, m_pPerPassResourceSets[ePass_ReflectionGen]);
-	m_passWaterReflectionGen.SetRenderTargets(nullptr, CRendererResources::s_ptexWaterVolumeRefl[0]);
+	m_passWaterReflectionGen.SetRenderTargets(CRendererResources::s_ptexSceneDepthScaled[0], CRendererResources::s_ptexWaterVolumeRefl[0]);
 
 	m_passWaterSurface.SetLabel("WATER_SURFACE");
 	m_passWaterSurface.SetupPassContext(m_stageID, ePass_WaterSurface, TTYPE_GENERAL, FB_GENERAL, EFSLIST_WATER, 0, false);
@@ -289,6 +286,7 @@ void CWaterStage::Update()
 		m_passOceanMaskGen.SetRenderTargets(pDepthTarget, m_pOceanMaskTex);
 
 	m_passWaterFogVolumeBeforeWater.SetRenderTargets(pDepthTarget, pRenderTarget);
+	m_passWaterReflectionGen.SetRenderTargets(CRendererResources::s_ptexSceneDepthScaled[0], CRendererResources::s_ptexWaterVolumeRefl[0]);
 	m_passWaterSurface.SetRenderTargets(pDepthTarget, pRenderTarget);
 	m_passWaterFogVolumeAfterWater.SetRenderTargets(pDepthTarget, pRenderTarget);
 }
@@ -392,7 +390,7 @@ void CWaterStage::ExecuteWaterVolumeCaustics()
 	if (!isEmpty
 	    && (nBatchMask & FB_WATER_CAUSTIC)
 	    && CTexture::IsTextureExist(CRendererResources::s_ptexWaterCaustics[0])
-	    && CTexture::IsTextureExist(CRendererResources::s_ptexWaterCaustics[1])
+		&& CTexture::IsTextureExist(CRendererResources::s_ptexWaterCaustics[1])
 	    && CRenderer::CV_r_watercaustics
 	    && CRenderer::CV_r_watercausticsdeferred
 	    && CRenderer::CV_r_watervolumecaustics)
@@ -1328,6 +1326,32 @@ void CWaterStage::ExecuteOceanMaskGen()
 	ExecuteSceneRenderPass(m_passOceanMaskGen, EFSLIST_WATER);
 }
 
+void CWaterStage::ExecuteDepthCopy()
+{
+	CRenderView* pRenderView = RenderView();
+
+	const int32 frameID = pRenderView->GetFrameId();
+	if (m_lastDepthCopyFrameID != frameID)
+	{
+		m_lastDepthCopyFrameID = frameID;
+
+		PROFILE_LABEL_SCOPE("COPY_DEPTH_HALF");
+
+		static CCryNameTSCRC techCopy("CopyToDeviceDepth");
+
+		m_passCopyDepth.SetPrimitiveFlags(CRenderPrimitive::eFlags_None);
+		m_passCopyDepth.SetPrimitiveType(CRenderPrimitive::ePrim_ProceduralTriangle);
+		m_passCopyDepth.SetTechnique(CShaderMan::s_shPostEffects, techCopy, 0);
+		m_passCopyDepth.SetRequirePerViewConstantBuffer(true);
+		m_passCopyDepth.SetDepthTarget(CRendererResources::s_ptexSceneDepthScaled[0]);
+		m_passCopyDepth.SetState(GS_DEPTHWRITE | GS_DEPTHFUNC_NOTEQUAL);
+		m_passCopyDepth.SetTexture(0, CRendererResources::s_ptexLinearDepthScaled[0]);
+
+		m_passCopyDepth.BeginConstantUpdate();
+		m_passCopyDepth.Execute();
+	}
+}
+
 void CWaterStage::ExecuteWaterVolumeCausticsGen(N3DEngineCommon::SCausticInfo& causticInfo)
 {
 	CRenderView* pRenderView = RenderView();
@@ -1381,6 +1405,10 @@ void CWaterStage::ExecuteWaterVolumeCausticsGen(N3DEngineCommon::SCausticInfo& c
 
 	// render water volumes to caustics gen texture.
 	{
+		ExecuteDepthCopy();
+
+		CTexture* pDepthRT = CRendererResources::s_ptexSceneDepthScaled[0];
+
 		const bool bReverseDepth = true;
 
 		const auto renderList = EFSLIST_WATER;
@@ -1389,6 +1417,7 @@ void CWaterStage::ExecuteWaterVolumeCausticsGen(N3DEngineCommon::SCausticInfo& c
 		float fHeight = static_cast<float>(CRendererResources::s_ptexWaterCaustics[0]->GetHeight());
 
 		// need to set render target becuase CRendererResources::s_ptexWaterCaustics[0] is recreated when cvars are changed.
+		pass.ExchangeDepthTarget(pDepthRT);
 		pass.ExchangeRenderTarget(0, CRendererResources::s_ptexWaterCaustics[0]);
 
 		D3DViewPort viewport = { 0.0f, 0.0f, fWidth, fHeight, 0.0f, 1.0f };
@@ -1409,7 +1438,6 @@ void CWaterStage::ExecuteWaterVolumeCausticsGen(N3DEngineCommon::SCausticInfo& c
 		pass.EndExecution();
 
 		renderItemDrawer.JobifyDrawSubmission();
-
 		renderItemDrawer.WaitForDrawSubmission();
 	}
 
@@ -1515,7 +1543,6 @@ void CWaterStage::ExecuteReflection()
 	CD3D9Renderer* const RESTRICT_POINTER rd = gcpRendD3D;
 
 	const bool bReverseDepth = true;
-	const int32 frameID = pRenderView->GetFrameId();
 
 	const auto renderList = EFSLIST_WATER;
 	const uint32 batchMask = pRenderView->GetBatchFlags(renderList);
@@ -1523,8 +1550,13 @@ void CWaterStage::ExecuteReflection()
 	if ((batchMask & FB_WATER_REFL)
 	    && CTexture::IsTextureExist(CRendererResources::s_ptexWaterVolumeRefl[0]))
 	{
+		ExecuteDepthCopy();
+
+		CTexture* pDepthRT = CRendererResources::s_ptexSceneDepthScaled[0];
+
 		PROFILE_LABEL_SCOPE("WATER_VOLUME_REFLECTION_GEN");
 
+		const int32 frameID = pRenderView->GetFrameId();
 		const int32 currWaterVolID = GetCurrentFrameID(frameID);
 		CTexture* pCurrWaterVolRefl = CRendererResources::s_ptexWaterVolumeRefl[currWaterVolID];
 
@@ -1545,6 +1577,7 @@ void CWaterStage::ExecuteReflection()
 			auto& pass = m_passWaterReflectionGen;
 
 			// alternates render targets along with updating per pass resource set.
+			pass.ExchangeDepthTarget(pDepthRT);
 			pass.ExchangeRenderTarget(0, pCurrWaterVolRefl);
 
 			CSceneRenderPass::EPassFlags passFlags = CSceneRenderPass::ePassFlags_None;

@@ -120,7 +120,6 @@ public:
 	static int   CV_r_watercaustics;
 	static int   CV_r_watervolumecaustics;
 	static int   CV_r_watervolumecausticsdensity;
-	static int   CV_r_watervolumecausticsresolution;
 	static ICVar*       CV_r_ShaderTarget;
 	static uint         ShaderTargetFlag;
 	static ICVar*       CV_r_VkShaderCompiler;

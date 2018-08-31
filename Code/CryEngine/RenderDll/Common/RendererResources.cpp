@@ -528,8 +528,8 @@ void CRendererResources::LoadDefaultSystemTextures()
 			s_ptexWaterVolumeDDN = CTexture::GetOrCreateTextureObject("$WaterVolumeDDN", 64, 64, 1, eTT_2D, /*FT_DONT_RELEASE |*/ FT_DONT_STREAM | FT_USAGE_RENDERTARGET | FT_FORCE_MIPS, eTF_Unknown, TO_WATERVOLUMEMAP);
 			s_ptexWaterVolumeRefl[0] = CTexture::GetOrCreateTextureObject("$WaterVolumeRefl", 64, 64, 1, eTT_2D, FT_DONT_RELEASE | FT_DONT_STREAM | FT_USAGE_RENDERTARGET | FT_FORCE_MIPS, eTF_Unknown, TO_WATERVOLUMEREFLMAP);
 			s_ptexWaterVolumeRefl[1] = CTexture::GetOrCreateTextureObject("$WaterVolumeReflPrev", 64, 64, 1, eTT_2D, FT_DONT_RELEASE | FT_DONT_STREAM | FT_USAGE_RENDERTARGET | FT_FORCE_MIPS, eTF_Unknown, TO_WATERVOLUMEREFLMAPPREV);
-			s_ptexWaterCaustics[0] = CTexture::GetOrCreateTextureObject("$WaterVolumeCaustics", 512, 512, 1, eTT_2D, /*FT_DONT_RELEASE |*/ FT_DONT_STREAM | FT_USAGE_RENDERTARGET, eTF_Unknown, TO_WATERVOLUMECAUSTICSMAP);
-			s_ptexWaterCaustics[1] = CTexture::GetOrCreateTextureObject("$WaterVolumeCausticsTemp", 512, 512, 1, eTT_2D, /*FT_DONT_RELEASE |*/ FT_DONT_STREAM | FT_USAGE_RENDERTARGET, eTF_Unknown, TO_WATERVOLUMECAUSTICSMAPTEMP);
+			s_ptexWaterCaustics[0] = CTexture::GetOrCreateTextureObject("$WaterVolumeCaustics", 0, 0, 1, eTT_2D, /*FT_DONT_RELEASE |*/ FT_DONT_STREAM | FT_USAGE_RENDERTARGET, eTF_Unknown, TO_WATERVOLUMECAUSTICSMAP);
+			s_ptexWaterCaustics[1] = CTexture::GetOrCreateTextureObject("$WaterVolumeCausticsTemp", 0, 0, 1, eTT_2D, /*FT_DONT_RELEASE |*/ FT_DONT_STREAM | FT_USAGE_RENDERTARGET, eTF_Unknown, TO_WATERVOLUMECAUSTICSMAPTEMP);
 
 			s_ptexSceneDepthScaled[0] = CTexture::GetOrCreateTextureObject("$SceneDepthScaled", 0, 0, 1, eTT_2D, FT_DONT_RELEASE | FT_DONT_STREAM | FT_USAGE_DEPTHSTENCIL, eTF_Unknown);
 			s_ptexSceneDepthScaled[1] = CTexture::GetOrCreateTextureObject("$SceneDepthScaled2", 0, 0, 1, eTT_2D, FT_DONT_RELEASE | FT_DONT_STREAM | FT_USAGE_DEPTHSTENCIL, eTF_Unknown);
@@ -774,10 +774,7 @@ void CRendererResources::DestroySystemTargets()
 
 void CRendererResources::CreateDepthMaps(int resourceWidth, int resourceHeight)
 {
-	const ETEX_Format preferredDepthFormat =
-		gRenDev->GetDepthBpp() == 32 ? eTF_D32FS8 :
-		gRenDev->GetDepthBpp() == 24 ? eTF_D24S8  :
-		gRenDev->GetDepthBpp() ==  8 ? eTF_D16S8  : eTF_D16;
+	const ETEX_Format preferredDepthFormat = GetDepthFormat();
 	const ETEX_Format eTFZ = s_eTFZ =
 		preferredDepthFormat == eTF_D32FS8 ? eTF_R32F :
 		preferredDepthFormat == eTF_D24S8  ? eTF_R32F :
@@ -875,10 +872,7 @@ void CRendererResources::CreateDeferredMaps(int resourceWidth, int resourceHeigh
 		SD3DPostEffectsUtils::GetOrCreateRenderTarget("$AOColorBleed", s_ptexAOColorBleed, width_r8, height_r8, Clr_Unknown, true, false, eTF_R8G8B8A8);
 		SD3DPostEffectsUtils::GetOrCreateRenderTarget("$ClipVolumes", s_ptexClipVolumes, width, height, Clr_Empty, false, false, eTF_R8G8);
 
-		ETEX_Format preferredDepthFormat =
-			gRenDev->GetDepthBpp() == 32 ? eTF_D32FS8 :
-			gRenDev->GetDepthBpp() == 24 ? eTF_D24S8 :
-			gRenDev->GetDepthBpp() ==  8 ? eTF_D16S8 : eTF_D16;
+		ETEX_Format preferredDepthFormat = GetDepthFormat();
 		ETEX_Format fmtZScaled = eTF_R16G16B16A16F;
 
 		SD3DPostEffectsUtils::GetOrCreateRenderTarget("$SceneDiffuseTmp", s_ptexSceneDiffuseTmp, width, height, Clr_Empty, true, false, eTF_R8G8B8A8);
@@ -1184,9 +1178,8 @@ bool CRendererResources::CreatePostFXMaps(int resourceWidth, int resourceHeight)
 
 		if (CRenderer::CV_r_watervolumecaustics && CRenderer::CV_r_watercaustics && CRenderer::CV_r_watercausticsdeferred)
 		{
-			const int nCausticRes = clamp_tpl(CRenderer::CV_r_watervolumecausticsresolution, 256, 4096);
-			SPostEffectsUtils::GetOrCreateRenderTarget("$WaterVolumeCaustics"    , s_ptexWaterCaustics[0], nCausticRes, nCausticRes, Clr_Unknown, 1, false, eTF_R8G8B8A8, TO_WATERVOLUMECAUSTICSMAP);
-			SPostEffectsUtils::GetOrCreateRenderTarget("$WaterVolumeCausticsTemp", s_ptexWaterCaustics[1], nCausticRes, nCausticRes, Clr_Unknown, 1, false, eTF_R8G8B8A8, TO_WATERVOLUMECAUSTICSMAPTEMP);
+			SPostEffectsUtils::GetOrCreateRenderTarget("$WaterVolumeCaustics"     , s_ptexWaterCaustics[0], width_r2, height_r2, Clr_Unknown, 1, false, eTF_R8G8B8A8, TO_WATERVOLUMECAUSTICSMAP);
+			SPostEffectsUtils::GetOrCreateRenderTarget("$WaterVolumeCausticsTemp" , s_ptexWaterCaustics[1], width_r2, height_r2, Clr_Unknown, 1, false, eTF_R8G8B8A8, TO_WATERVOLUMECAUSTICSMAPTEMP);
 		}
 		else
 		{
