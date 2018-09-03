@@ -235,80 +235,94 @@ void CPropagationProcessor::Update(EObjectFlags const objectFlags)
 //////////////////////////////////////////////////////////////////////////
 void CPropagationProcessor::SetOcclusionType(EOcclusionType const occlusionType)
 {
-	m_occlusionType = m_originalOcclusionType = occlusionType;
-	m_obstruction = 0.0f;
-	m_occlusion = 0.0f;
-	Vec3 const& listenerPosition = g_listenerManager.GetActiveListenerTransformation().GetPosition();
+	m_occlusionType = occlusionType;
+	m_originalOcclusionType = occlusionType;
+}
 
-	// First time run is synchronous and center ray only to get a quick initial value to start from.
-	Vec3 const direction(m_transformation.GetPosition() - listenerPosition);
-	m_currentListenerDistance = direction.GetLength();
-
-	if (CanRunObstructionOcclusion())
+//////////////////////////////////////////////////////////////////////////
+void CPropagationProcessor::UpdateOcclusion()
+{
+	if ((m_occlusionType != EOcclusionType::None) && (m_occlusionType != EOcclusionType::Ignore))
 	{
-		Vec3 directionNormalized(direction / m_currentListenerDistance);
-		Vec3 const finalDirection(direction - (directionNormalized* g_cvars.m_occlusionRayLengthOffset));
+		m_obstruction = 0.0f;
+		m_occlusion = 0.0f;
+		Vec3 const& listenerPosition = g_listenerManager.GetActiveListenerTransformation().GetPosition();
 
-		CAudioRayInfo& rayInfo = m_raysInfo[0];
+		// First time run is synchronous and center ray only to get a quick initial value to start from.
+		Vec3 const direction(m_transformation.GetPosition() - listenerPosition);
+		m_currentListenerDistance = direction.GetLength();
 
-		// We use "rwi_max_piercing" to allow audio rays to always pierce surfaces regardless of the "pierceability" attribute.
-		// Note: The very first entry of rayInfo.hits (solid slot) is always empty.
-		rayInfo.numHits = static_cast<size_t>(gEnv->pPhysicalWorld->RayWorldIntersection(
-																						listenerPosition,
-																						finalDirection,
-																						s_occlusionRayFlags,
-																						rwi_max_piercing,
-																						rayInfo.hits,
-																						static_cast<int>(s_maxRayHits),
-																						nullptr,
-																						0,
-																						&rayInfo,
-																						PHYS_FOREIGN_ID_SOUND_OBSTRUCTION));
-
-		rayInfo.numHits = std::min(rayInfo.numHits + 1, s_maxRayHits);
-		float finalOcclusion = 0.0f;
-
-		if (rayInfo.numHits > 0)
+		if (CanRunObstructionOcclusion())
 		{
-			ISurfaceTypeManager* const pSurfaceTypeManager = gEnv->p3DEngine->GetMaterialManager()->GetSurfaceTypeManager();
-			CRY_ASSERT(rayInfo.numHits <= s_maxRayHits);
-			bool const accumulate = g_cvars.m_accumulateOcclusion > 0;
+			Vec3 directionNormalized(direction / m_currentListenerDistance);
+			Vec3 const finalDirection(direction - (directionNormalized* g_cvars.m_occlusionRayLengthOffset));
 
-			for (size_t i = 0; i < rayInfo.numHits; ++i)
+			CAudioRayInfo& rayInfo = m_raysInfo[0];
+
+			// We use "rwi_max_piercing" to allow audio rays to always pierce surfaces regardless of the "pierceability" attribute.
+			// Note: The very first entry of rayInfo.hits (solid slot) is always empty.
+			rayInfo.numHits = static_cast<size_t>(gEnv->pPhysicalWorld->RayWorldIntersection(
+																							listenerPosition,
+																							finalDirection,
+																							s_occlusionRayFlags,
+																							rwi_max_piercing,
+																							rayInfo.hits,
+																							static_cast<int>(s_maxRayHits),
+																							nullptr,
+																							0,
+																							&rayInfo,
+																							PHYS_FOREIGN_ID_SOUND_OBSTRUCTION));
+
+			rayInfo.numHits = std::min(rayInfo.numHits + 1, s_maxRayHits);
+			float finalOcclusion = 0.0f;
+
+			if (rayInfo.numHits > 0)
 			{
-				float const distance = rayInfo.hits[i].dist;
+				ISurfaceTypeManager* const pSurfaceTypeManager = gEnv->p3DEngine->GetMaterialManager()->GetSurfaceTypeManager();
+				CRY_ASSERT(rayInfo.numHits <= s_maxRayHits);
+				bool const accumulate = g_cvars.m_accumulateOcclusion > 0;
 
-				if (distance > 0.0f)
+				for (size_t i = 0; i < rayInfo.numHits; ++i)
 				{
-					ISurfaceType* const pMat = pSurfaceTypeManager->GetSurfaceType(rayInfo.hits[i].surface_idx);
+					float const distance = rayInfo.hits[i].dist;
 
-					if (pMat != nullptr)
+					if (distance > 0.0f)
 					{
-						ISurfaceType::SPhysicalParams const& physParams = pMat->GetPhyscalParams();
+						ISurfaceType* const pMat = pSurfaceTypeManager->GetSurfaceType(rayInfo.hits[i].surface_idx);
 
-						if (accumulate)
+						if (pMat != nullptr)
 						{
-							finalOcclusion += physParams.sound_obstruction; // Not clamping b/w 0 and 1 for performance reasons.
-						}
-						else
-						{
-							finalOcclusion = std::max(finalOcclusion, physParams.sound_obstruction);
-						}
+							ISurfaceType::SPhysicalParams const& physParams = pMat->GetPhyscalParams();
 
-						if (finalOcclusion >= 1.0f)
-						{
-							break;
+							if (accumulate)
+							{
+								finalOcclusion += physParams.sound_obstruction; // Not clamping b/w 0 and 1 for performance reasons.
+							}
+							else
+							{
+								finalOcclusion = std::max(finalOcclusion, physParams.sound_obstruction);
+							}
+
+							if (finalOcclusion >= 1.0f)
+							{
+								break;
+							}
 						}
 					}
 				}
 			}
+
+			m_occlusion = clamp_tpl(finalOcclusion, 0.0f, 1.0f);
+
+			for (auto& rayOcclusion : m_raysOcclusion)
+			{
+				rayOcclusion = m_occlusion;
+			}
 		}
-
-		m_occlusion = clamp_tpl(finalOcclusion, 0.0f, 1.0f);
-
-		for (auto& rayOcclusion : m_raysOcclusion)
+		else
 		{
-			rayOcclusion = m_occlusion;
+			m_lastQuerriedObstruction = 0.0f;
+			m_lastQuerriedOcclusion = 0.0f;
 		}
 	}
 	else

@@ -101,6 +101,7 @@ public:
 
 	void                           SetObstructionOcclusion(float const obstruction, float const occlusion);
 	void                           ProcessPhysicsRay(CAudioRayInfo* const pAudioRayInfo);
+	void                           UpdateOcclusion() { m_propagationProcessor.UpdateOcclusion(); }
 	void                           ReleasePendingRays();
 
 	ObjectStandaloneFileMap const& GetActiveStandaloneFiles() const               { return m_activeStandaloneFiles; }
