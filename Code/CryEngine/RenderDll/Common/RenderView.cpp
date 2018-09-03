@@ -960,6 +960,16 @@ void CRenderView::ChangeRenderResolution(uint32_t renderWidth, uint32_t renderHe
 		m_pDepthTarget = !m_pRenderOutput->RequiresTemporaryDepthBuffer() ?
 			m_pRenderOutput->GetDepthTarget() :
 			nullptr;
+
+		// Avoid oversized/undersized textures
+		if (m_pDepthTarget && (m_pDepthTarget->GetWidth() != renderWidth || m_pDepthTarget->GetHeight() != renderHeight))
+			m_pDepthTarget = nullptr;
+		if (m_pColorTarget->GetWidth() != renderWidth || m_pColorTarget->GetHeight() != renderHeight)
+		{
+			const auto format = m_pColorTarget->GetSrcFormat();
+			m_pColorTarget = {};
+			m_pColorTarget.Assign_NoAddRef(CRendererResources::CreateRenderTarget(renderWidth, renderHeight, ColorF{}, format));
+		}
 	}
 	else
 	{
@@ -971,7 +981,7 @@ void CRenderView::ChangeRenderResolution(uint32_t renderWidth, uint32_t renderHe
 	if (!m_pDepthTarget)
 		m_pDepthTarget.Assign_NoAddRef(CRendererResources::CreateDepthTarget(renderWidth, renderHeight, Clr_Empty, eTF_Unknown));
 
-	CRY_ASSERT(m_pColorTarget->GetWidth() >= renderWidth && m_pColorTarget->GetHeight() >= renderHeight);
+	CRY_ASSERT(m_pColorTarget->GetWidth() == renderWidth && m_pColorTarget->GetHeight() == renderHeight);
 }
 
 void CRenderView::UnsetRenderOutput()

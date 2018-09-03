@@ -1283,14 +1283,14 @@ void CD3D9Renderer::ResolveSubsampledOutput()
 
 	PROFILE_LABEL_SCOPE("RESOLVE_SUBSAMPLED");
 
-	const CRenderOutput* pOutput = GetGraphicsPipeline().GetCurrentRenderOutput();
+	auto* pColorTarget = GetGraphicsPipeline().GetCurrentRenderView()->GetColorTarget();
 	CRenderDisplayContext* pDC = GetActiveDisplayContext(); pDC->PostPresent();
 
-	CRY_ASSERT(pOutput->GetColorTarget() != pDC->GetStorableColorOutput());
-	CRY_ASSERT(pOutput->GetColorTarget() != pDC->GetCurrentBackBuffer());
+	CRY_ASSERT(pColorTarget != pDC->GetStorableColorOutput());
+	CRY_ASSERT(pColorTarget != pDC->GetCurrentBackBuffer());
 
 	// TODO: add HDR meta-data coding to upscaling
-	GetGraphicsPipeline().m_UpscalePass->Execute(pOutput->GetColorTarget(), pDC->GetCurrentBackBuffer());
+	GetGraphicsPipeline().m_UpscalePass->Execute(pColorTarget, pDC->GetCurrentBackBuffer());
 }
 
 void CD3D9Renderer::ResolveHighDynamicRangeDisplay()
