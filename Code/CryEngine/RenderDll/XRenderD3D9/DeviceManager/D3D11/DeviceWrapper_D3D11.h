@@ -1212,18 +1212,18 @@ public:
 
 private:
 	// DX11-specific without type-branches
-	typedef void    (ID3D11DeviceContext::*typeSetShader)(ID3D11DeviceChild* pShader, ID3D11ClassInstance* const* ppClassInstances, UINT NumClassInstances);
-	typedef void    (ID3D11DeviceContext::*typeGetShader)(ID3D11DeviceChild** ppShader, ID3D11ClassInstance** ppClassInstances, UINT* pNumClassInstances);
-	typedef void    (ID3D11DeviceContext::*typeSetSamplers)(UINT StartSlot, UINT NumSamplers, ID3D11SamplerState* const* ppSamplers);
-	typedef void    (ID3D11DeviceContext::*typeGetSamplers)(UINT StartSlot, UINT NumSamplers, ID3D11SamplerState** ppSamplers);
-	typedef void    (ID3D11DeviceContext::*typeSetConstantBuffers)(UINT StartSlot, UINT NumBuffers, ID3D11Buffer* const* ppConstantBuffers);
-	typedef void    (ID3D11DeviceContext::*typeGetConstantBuffers)(UINT StartSlot, UINT NumBuffers, ID3D11Buffer** ppConstantBuffers);
-	typedef void    (ID3D11DeviceContext::*typeSetShaderResources)(UINT StartSlot, UINT NumViews, ID3D11ShaderResourceView* const* ppShaderResourceViews);
-	typedef void    (ID3D11DeviceContext::*typeGetShaderResources)(UINT StartSlot, UINT NumViews, ID3D11ShaderResourceView** ppShaderResourceViews);
+	typedef void    (STDMETHODCALLTYPE ID3D11DeviceContext::*typeSetShader)(ID3D11DeviceChild* pShader, ID3D11ClassInstance* const* ppClassInstances, UINT NumClassInstances);
+	typedef void    (STDMETHODCALLTYPE ID3D11DeviceContext::*typeGetShader)(ID3D11DeviceChild** ppShader, ID3D11ClassInstance** ppClassInstances, UINT* pNumClassInstances);
+	typedef void    (STDMETHODCALLTYPE ID3D11DeviceContext::*typeSetSamplers)(UINT StartSlot, UINT NumSamplers, ID3D11SamplerState* const* ppSamplers);
+	typedef void    (STDMETHODCALLTYPE ID3D11DeviceContext::*typeGetSamplers)(UINT StartSlot, UINT NumSamplers, ID3D11SamplerState** ppSamplers);
+	typedef void    (STDMETHODCALLTYPE ID3D11DeviceContext::*typeSetConstantBuffers)(UINT StartSlot, UINT NumBuffers, ID3D11Buffer* const* ppConstantBuffers);
+	typedef void    (STDMETHODCALLTYPE ID3D11DeviceContext::*typeGetConstantBuffers)(UINT StartSlot, UINT NumBuffers, ID3D11Buffer** ppConstantBuffers);
+	typedef void    (STDMETHODCALLTYPE ID3D11DeviceContext::*typeSetShaderResources)(UINT StartSlot, UINT NumViews, ID3D11ShaderResourceView* const* ppShaderResourceViews);
+	typedef void    (STDMETHODCALLTYPE ID3D11DeviceContext::*typeGetShaderResources)(UINT StartSlot, UINT NumViews, ID3D11ShaderResourceView** ppShaderResourceViews);
 
 #if (CRY_RENDERER_DIRECT3D >= 111)
-	typedef void    (ID3D11DeviceContext1::*typeSetConstantBuffers1)(UINT StartSlot, UINT NumBuffers, ID3D11Buffer* const* ppConstantBuffers, const UINT* pFirstConstant, const UINT* pNumConstants);
-	typedef void    (ID3D11DeviceContext1::*typeGetConstantBuffers1)(UINT StartSlot, UINT NumBuffers, ID3D11Buffer** ppConstantBuffers, UINT* pFirstConstant, UINT* pNumConstants);
+	typedef void    (STDMETHODCALLTYPE ID3D11DeviceContext1::*typeSetConstantBuffers1)(UINT StartSlot, UINT NumBuffers, ID3D11Buffer* const* ppConstantBuffers, const UINT* pFirstConstant, const UINT* pNumConstants);
+	typedef void    (STDMETHODCALLTYPE ID3D11DeviceContext1::*typeGetConstantBuffers1)(UINT StartSlot, UINT NumBuffers, ID3D11Buffer** ppConstantBuffers, UINT* pFirstConstant, UINT* pNumConstants);
 #endif
 
 	typeSetShader           mapSetShader[6];
