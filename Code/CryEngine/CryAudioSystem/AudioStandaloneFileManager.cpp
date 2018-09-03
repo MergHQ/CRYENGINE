@@ -74,7 +74,7 @@ void CFileManager::ReleaseStandaloneFile(CATLStandaloneFile* const pStandaloneFi
 //////////////////////////////////////////////////////////////////////////
 void CFileManager::DrawDebugInfo(IRenderAuxGeom& auxGeom, float posX, float posY) const
 {
-	auxGeom.Draw2dLabel(posX, posY, Debug::g_managerHeaderFontSize, Debug::g_managerColorHeader.data(), false, "Standalone Files [%" PRISIZE_T "]", m_constructedStandaloneFiles.size());
+	auxGeom.Draw2dLabel(posX, posY, Debug::g_managerHeaderFontSize, Debug::g_globalColorHeader.data(), false, "Standalone Files [%" PRISIZE_T "]", m_constructedStandaloneFiles.size());
 	posY += Debug::g_managerHeaderLineHeight;
 
 	CryFixedStringT<MaxControlNameLength> lowerCaseSearchString(g_cvars.m_pDebugFilter->GetString());
@@ -102,7 +102,7 @@ void CFileManager::DrawDebugInfo(IRenderAuxGeom& auxGeom, float posX, float posY
 
 			if (draw)
 			{
-				float const* pColor = Debug::g_managerColorItemInactive.data();
+				float const* pColor = Debug::g_globalColorInactive.data();
 
 				switch (pStandaloneFile->m_state)
 				{

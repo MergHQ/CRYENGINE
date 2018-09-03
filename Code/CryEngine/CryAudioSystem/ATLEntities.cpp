@@ -111,40 +111,17 @@ void CATLListener::SetTransformation(CObjectTransformation const& transformation
 //////////////////////////////////////////////////////////////////////////
 void CATLListener::Update(float const deltaTime)
 {
-	if (m_isMovingOrDecaying)
-	{
-		Vec3 const deltaPos(m_transformation.GetPosition() - m_previousPositionForVelocityCalculation);
-
-		if (!deltaPos.IsZero())
-		{
-			m_velocity = deltaPos / deltaTime;
-			m_previousPositionForVelocityCalculation = m_transformation.GetPosition();
-		}
-		else if (!m_velocity.IsZero())
-		{
-			// We did not move last frame, begin exponential decay towards zero.
-			float const decay = std::max(1.0f - deltaTime / 0.05f, 0.0f);
-			m_velocity *= decay;
-
-			if (m_velocity.GetLengthSquared() < FloatEpsilon)
-			{
-				m_velocity = ZERO;
-				m_isMovingOrDecaying = false;
-			}
-		}
-
-		// TODO: propagate listener velocity down to the middleware.
-	}
+	m_pImplData->Update(deltaTime);
 }
 
 //////////////////////////////////////////////////////////////////////////
 void CATLListener::HandleSetTransformation(CObjectTransformation const& transformation)
 {
-	m_transformation = transformation;
-	m_isMovingOrDecaying = true;
+	m_pImplData->SetTransformation(transformation);
 
-	// Immediately propagate the new transformation down to the middleware, calculation of velocity can be safely delayed to next audio frame.
-	m_pImplData->SetTransformation(m_transformation);
+#if defined(INCLUDE_AUDIO_PRODUCTION_CODE)
+	m_transformation = transformation;
+#endif // INCLUDE_AUDIO_PRODUCTION_CODE
 }
 
 //////////////////////////////////////////////////////////////////////////
@@ -164,6 +141,7 @@ void CATLListener::SetName(char const* const szName, SRequestUserData const& use
 void CATLListener::HandleSetName(char const* const szName)
 {
 	m_name = szName;
+	m_pImplData->SetName(m_name);
 }
 #endif // INCLUDE_AUDIO_PRODUCTION_CODE
 
@@ -220,52 +198,6 @@ void CParameter::Set(CATLAudioObject const& object, float const value) const
 		Cry::Audio::Log(ELogType::Warning, R"(Parameter "%s" set on object "%s" without connections)", GetName(), object.m_name.c_str());
 	}
 
-	const_cast<CATLAudioObject&>(object).StoreParameterValue(GetId(), value);
-#endif // INCLUDE_AUDIO_PRODUCTION_CODE
-}
-
-//////////////////////////////////////////////////////////////////////////
-CAbsoluteVelocityParameter::~CAbsoluteVelocityParameter()
-{
-	for (auto const pConnection : m_connections)
-	{
-		delete pConnection;
-	}
-}
-
-//////////////////////////////////////////////////////////////////////////
-void CAbsoluteVelocityParameter::Set(CATLAudioObject const& object, float const value) const
-{
-	// Log the "no-connections" case only on user generated controls.
-	for (auto const pConnection : m_connections)
-	{
-		pConnection->Set(object, value);
-	}
-
-#if defined(INCLUDE_AUDIO_PRODUCTION_CODE)
-	const_cast<CATLAudioObject&>(object).StoreParameterValue(GetId(), value);
-#endif // INCLUDE_AUDIO_PRODUCTION_CODE
-}
-
-//////////////////////////////////////////////////////////////////////////
-CRelativeVelocityParameter::~CRelativeVelocityParameter()
-{
-	for (auto const pConnection : m_connections)
-	{
-		delete pConnection;
-	}
-}
-
-//////////////////////////////////////////////////////////////////////////
-void CRelativeVelocityParameter::Set(CATLAudioObject const& object, float const value) const
-{
-	// Log the "no-connections" case only on user generated controls.
-	for (auto const pConnection : m_connections)
-	{
-		pConnection->Set(object, value);
-	}
-
-#if defined(INCLUDE_AUDIO_PRODUCTION_CODE)
 	const_cast<CATLAudioObject&>(object).StoreParameterValue(GetId(), value);
 #endif // INCLUDE_AUDIO_PRODUCTION_CODE
 }

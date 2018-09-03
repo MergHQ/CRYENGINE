@@ -18,13 +18,13 @@ namespace Adx2
 //////////////////////////////////////////////////////////////////////////
 void CGlobalObject::SetTransformation(CObjectTransformation const& transformation)
 {
-	Cry::Audio::Log(ELogType::Error, "Trying to set transformation on the global audio object!");
+	Cry::Audio::Log(ELogType::Error, "Trying to set transformation on the global object!");
 }
 
 //////////////////////////////////////////////////////////////////////////
 void CGlobalObject::SetEnvironment(IEnvironment const* const pIEnvironment, float const amount)
 {
-	Cry::Audio::Log(ELogType::Error, "Trying to set an environment on the global audio object!");
+	Cry::Audio::Log(ELogType::Error, "Trying to set an environment on the global object!");
 }
 
 //////////////////////////////////////////////////////////////////////////
@@ -139,7 +139,13 @@ void CGlobalObject::SetSwitchState(ISwitchState const* const pISwitchState)
 //////////////////////////////////////////////////////////////////////////
 void CGlobalObject::SetObstructionOcclusion(float const obstruction, float const occlusion)
 {
-	Cry::Audio::Log(ELogType::Error, "Trying to set occlusion and obstruction values on the global audio object!");
+	Cry::Audio::Log(ELogType::Error, "Trying to set occlusion and obstruction values on the global object!");
+}
+
+//////////////////////////////////////////////////////////////////////////
+void CGlobalObject::SetOcclusionType(EOcclusionType const occlusionType)
+{
+	Cry::Audio::Log(ELogType::Error, "Trying to set occlusion type on the global object!");
 }
 } // namespace Adx2
 } // namespace Impl

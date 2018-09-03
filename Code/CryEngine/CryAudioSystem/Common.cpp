@@ -16,8 +16,6 @@ AudioSwitchLookup g_switches;
 AudioPreloadRequestLookup g_preloadRequests;
 AudioEnvironmentLookup g_environments;
 CATLAudioObject* g_pObject = nullptr;
-CAbsoluteVelocityParameter* g_pAbsoluteVelocityParameter = nullptr;
-CRelativeVelocityParameter* g_pRelativeVelocityParameter = nullptr;
 CLoseFocusTrigger* g_pLoseFocusTrigger = nullptr;
 CGetFocusTrigger* g_pGetFocusTrigger = nullptr;
 CMuteAllTrigger* g_pMuteAllTrigger = nullptr;

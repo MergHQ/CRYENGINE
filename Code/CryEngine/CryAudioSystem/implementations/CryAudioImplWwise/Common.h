@@ -23,8 +23,12 @@ namespace Impl
 namespace Wwise
 {
 class CImpl;
+class CListener;
 
 extern CImpl* g_pImpl;
+extern CListener* g_pListener;
+
+extern uint32 g_numObjectsWithRelativeVelocity;
 
 //////////////////////////////////////////////////////////////////////////
 inline void FillAKVector(Vec3 const& vCryVector, AkVector& vAKVector)

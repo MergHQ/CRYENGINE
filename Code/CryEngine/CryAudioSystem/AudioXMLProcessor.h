@@ -36,7 +36,6 @@ private:
 	void ParseDefaultTriggers(XmlNodeRef const pXMLTriggerRoot);
 	void ParseSwitches(XmlNodeRef const pXMLSwitchRoot, EDataScope const dataScope);
 	void ParseParameters(XmlNodeRef const pXMLParameterRoot, EDataScope const dataScope);
-	void ParseDefaultParameters(XmlNodeRef const pXMLParameterRoot);
 	void ParsePreloads(XmlNodeRef const pPreloadDataRoot, EDataScope const dataScope, char const* const szFolderName, uint const version);
 	void ParseEnvironments(XmlNodeRef const pAudioEnvironmentRoot, EDataScope const dataScope);
 

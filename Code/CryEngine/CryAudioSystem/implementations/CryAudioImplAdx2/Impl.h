@@ -2,9 +2,10 @@
 
 #pragma once
 
-#include <IAudioImpl.h>
-
 #include "Common.h"
+
+#include <IAudioImpl.h>
+#include <cri_atom_ex.h>
 
 namespace CryAudio
 {
@@ -23,7 +24,7 @@ public:
 	CImpl& operator=(CImpl&&) = delete;
 
 	// CryAudio::Impl::IImpl
-	virtual void                Update() override;
+	virtual void                Update() override {}
 	virtual ERequestStatus      Init(uint32 const objectPoolSize, uint32 const eventPoolSize) override;
 	virtual void                ShutDown() override;
 	virtual void                Release() override;
@@ -49,9 +50,9 @@ public:
 	virtual IEnvironment const* ConstructEnvironment(XmlNodeRef const pRootNode) override;
 	virtual void                DestructEnvironment(IEnvironment const* const pIEnvironment) override;
 	virtual IObject*            ConstructGlobalObject() override;
-	virtual IObject*            ConstructObject(char const* const szName = nullptr) override;
+	virtual IObject*            ConstructObject(CObjectTransformation const& transformation, char const* const szName = nullptr) override;
 	virtual void                DestructObject(IObject const* const pIObject) override;
-	virtual IListener*          ConstructListener(char const* const szName = nullptr) override;
+	virtual IListener*          ConstructListener(CObjectTransformation const& transformation, char const* const szName = nullptr) override;
 	virtual void                DestructListener(IListener* const pIListener) override;
 	virtual IEvent*             ConstructEvent(CATLEvent& event) override;
 	virtual void                DestructEvent(IEvent const* const pIEvent) override;
@@ -63,8 +64,8 @@ public:
 	virtual void                SetLanguage(char const* const szLanguage) override;
 
 	// Below data is only used when INCLUDE_ADX2_IMPL_PRODUCTION_CODE is defined!
-	virtual void GetMemoryInfo(SMemoryInfo& memoryInfo) const override;
 	virtual void GetFileData(char const* const szName, SFileData& fileData) const override;
+	virtual void DrawDebugInfo(IRenderAuxGeom& auxGeom, float const posX, float& posY) override;
 	// ~CryAudio::Impl::IImpl
 
 private:
@@ -97,6 +98,7 @@ private:
 
 #if defined(INCLUDE_ADX2_IMPL_PRODUCTION_CODE)
 	CryFixedStringT<MaxInfoStringLength> m_name;
+	size_t                               m_acfFileSize = 0;
 #endif  // INCLUDE_ADX2_IMPL_PRODUCTION_CODE
 };
 } // namespace Adx2

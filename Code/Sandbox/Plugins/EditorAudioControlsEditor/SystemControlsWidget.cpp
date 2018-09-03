@@ -31,10 +31,10 @@ namespace ACE
 {
 //////////////////////////////////////////////////////////////////////////
 void GetAssetsFromIndexesSeparated(
-  QModelIndexList const& indexes,
-  Libraries& outLibraries,
-  Folders& outFolders,
-  Controls& outControls)
+	QModelIndexList const& indexes,
+	Libraries& outLibraries,
+	Folders& outFolders,
+	Controls& outControls)
 {
 	for (auto const& index : indexes)
 	{
@@ -114,6 +114,7 @@ CSystemControlsWidget::CSystemControlsWidget(QWidget* const pParent)
 	m_pTreeView->header()->setSectionResizeMode(static_cast<int>(CSystemSourceModel::EColumns::PakStatus), QHeaderView::ResizeToContents);
 	m_pTreeView->SetNameColumn(m_nameColumn);
 	m_pTreeView->SetNameRole(static_cast<int>(ModelUtils::ERoles::Name));
+	m_pTreeView->SetTypeRole(static_cast<int>(ModelUtils::ERoles::SortPriority));
 	m_pTreeView->TriggerRefreshHeaderColumns();
 
 	m_pFilteringPanel = new QFilteringPanel("ACESystemControlsPanel", m_pSystemFilterProxyModel, this);
@@ -147,9 +148,9 @@ CSystemControlsWidget::CSystemControlsWidget(QWidget* const pParent)
 			    m_libraryModels[i]->deleteLater();
 			    m_libraryModels.erase(m_libraryModels.begin() + i);
 			    break;
-			  }
+				}
 			}
-	  }, reinterpret_cast<uintptr_t>(this));
+		}, reinterpret_cast<uintptr_t>(this));
 
 	g_assetsManager.SignalAssetRenamed.Connect([this](CAsset* const pAsset)
 		{
@@ -159,23 +160,23 @@ CSystemControlsWidget::CSystemControlsWidget(QWidget* const pParent)
 			  m_pSystemFilterProxyModel->invalidate();
 			  m_pTreeView->scrollTo(m_pTreeView->currentIndex());
 			}
-	  }, reinterpret_cast<uintptr_t>(this));
+		}, reinterpret_cast<uintptr_t>(this));
 
 	CAudioControlsEditorPlugin::SignalAboutToLoad.Connect([&]()
-		{
-			StopControlExecution();
-	  }, reinterpret_cast<uintptr_t>(this));
+	    {
+	                                                      StopControlExecution();
+			}, reinterpret_cast<uintptr_t>(this));
 
 	g_implementationManager.SignalImplementationAboutToChange.Connect([this]()
 		{
 			StopControlExecution();
 			ClearFilters();
-	  }, reinterpret_cast<uintptr_t>(this));
+		}, reinterpret_cast<uintptr_t>(this));
 
 	g_implementationManager.SignalImplementationChanged.Connect([this]()
 		{
 			setEnabled(g_pIImpl != nullptr);
-	  }, reinterpret_cast<uintptr_t>(this));
+		}, reinterpret_cast<uintptr_t>(this));
 }
 
 //////////////////////////////////////////////////////////////////////////
@@ -204,7 +205,7 @@ void CSystemControlsWidget::InitAddControlWidget(QVBoxLayout* const pLayout)
 		{
 			m_isCreatedFromMenu = true;
 			g_assetsManager.CreateLibrary(AssetUtils::GenerateUniqueLibraryName("new_library"));
-	  });
+		});
 
 	pAddButtonMenu->addSeparator();
 
@@ -372,7 +373,7 @@ void CSystemControlsWidget::OnContextMenu(QPoint const& pos)
 		{
 			m_isCreatedFromMenu = true;
 			g_assetsManager.CreateLibrary(AssetUtils::GenerateUniqueLibraryName("new_library"));
-	  });
+		});
 
 	pAddMenu->addSeparator();
 
@@ -451,7 +452,7 @@ void CSystemControlsWidget::OnContextMenu(QPoint const& pos)
 									pContextMenu->addAction(tr("Show in File Explorer"), [=]()
 										{
 											QtUtil::OpenInExplorer((PathUtil::GetGameFolder() + "/" + g_assetsManager.GetConfigFolderPath() + pParent->GetName() + ".xml").c_str());
-									  });
+										});
 
 									pContextMenu->addSeparator();
 								}
@@ -522,7 +523,7 @@ void CSystemControlsWidget::OnContextMenu(QPoint const& pos)
 							{
 							  gEnv->pAudioSystem->PreloadSingleRequest(CryAudio::StringToId(pControl->GetName()), false);
 							}
-					  });
+						});
 
 					QObject::connect(pUnloadAction, &QAction::triggered, [&]()
 						{
@@ -530,7 +531,7 @@ void CSystemControlsWidget::OnContextMenu(QPoint const& pos)
 							{
 							  gEnv->pAudioSystem->UnloadSingleRequest(CryAudio::StringToId(pControl->GetName()));
 							}
-					  });
+						});
 
 					pContextMenu->insertSeparator(pContextMenu->actions().at(0));
 					pContextMenu->insertAction(pContextMenu->actions().at(0), pUnloadAction);
@@ -547,7 +548,7 @@ void CSystemControlsWidget::OnContextMenu(QPoint const& pos)
 				pContextMenu->addAction(tr("Show in File Explorer"), [=]()
 					{
 						QtUtil::OpenInExplorer((PathUtil::GetGameFolder() + "/" + g_assetsManager.GetConfigFolderPath() + pLibrary->GetName() + ".xml").c_str());
-				  });
+					});
 
 				pContextMenu->addSeparator();
 			}
@@ -557,7 +558,7 @@ void CSystemControlsWidget::OnContextMenu(QPoint const& pos)
 			{
 				QModelIndex const& nameColumnIndex = m_pTreeView->currentIndex().sibling(m_pTreeView->currentIndex().row(), m_nameColumn);
 				m_pTreeView->edit(nameColumnIndex);
-		  });
+			});
 
 		pContextMenu->addAction(tr("Delete"), [&]() { OnDeleteSelectedControls(); });
 		pContextMenu->addSeparator();
@@ -977,8 +978,7 @@ void CSystemControlsWidget::SelectConnectedSystemControl(ControlId const systemC
 	if (!matches.isEmpty())
 	{
 		ControlIds selectedConnection {
-			implItemId
-		};
+			implItemId };
 
 		CControl* const pControl = g_assetsManager.FindControlById(systemControlId);
 

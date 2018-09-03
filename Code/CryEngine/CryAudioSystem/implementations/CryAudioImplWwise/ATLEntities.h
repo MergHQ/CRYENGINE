@@ -3,6 +3,7 @@
 #pragma once
 
 #include "GlobalData.h"
+#include "Common.h"
 
 #include <SharedAudioData.h>
 #include <IAudioImpl.h>
@@ -18,13 +19,24 @@ namespace Wwise
 {
 class CEvent;
 
+enum class EObjectFlags : EnumFlagsType
+{
+	None                  = 0,
+	MovingOrDecaying      = BIT(0),
+	TrackAbsoluteVelocity = BIT(1),
+	TrackRelativeVelocity = BIT(2),
+	UpdateVirtualStates   = BIT(3),
+};
+CRY_CREATE_ENUM_FLAG_OPERATORS(EObjectFlags);
+
 class CObject final : public IObject, public CPoolObject<CObject, stl::PSyncNone>
 {
 public:
 
 	using AuxSendValues = std::vector<AkAuxSendValue>;
 
-	explicit CObject(AkGameObjectID const id);
+	explicit CObject(AkGameObjectID const id, CObjectTransformation const& transformation);
+	virtual ~CObject() override;
 
 	CObject() = delete;
 	CObject(CObject const&) = delete;
@@ -33,17 +45,23 @@ public:
 	CObject& operator=(CObject&&) = delete;
 
 	// CryAudio::Impl::IObject
-	virtual void           Update() override;
-	virtual void           SetTransformation(CObjectTransformation const& transformation) override;
-	virtual void           SetEnvironment(IEnvironment const* const pIEnvironment, float const amount) override;
-	virtual void           SetParameter(IParameter const* const pIParameter, float const value) override;
-	virtual void           SetSwitchState(ISwitchState const* const pISwitchState) override;
-	virtual void           SetObstructionOcclusion(float const obstruction, float const occlusion) override;
-	virtual ERequestStatus ExecuteTrigger(ITrigger const* const pITrigger, IEvent* const pIEvent) override;
-	virtual void           StopAllTriggers() override;
-	virtual ERequestStatus PlayFile(IStandaloneFile* const pIStandaloneFile) override;
-	virtual ERequestStatus StopFile(IStandaloneFile* const pIStandaloneFile) override;
-	virtual ERequestStatus SetName(char const* const szName) override;
+	virtual void                         Update(float const deltaTime) override;
+	virtual void                         SetTransformation(CObjectTransformation const& transformation) override;
+	virtual CObjectTransformation const& GetTransformation() const override { return m_transformation; }
+	virtual void                         SetEnvironment(IEnvironment const* const pIEnvironment, float const amount) override;
+	virtual void                         SetParameter(IParameter const* const pIParameter, float const value) override;
+	virtual void                         SetSwitchState(ISwitchState const* const pISwitchState) override;
+	virtual void                         SetObstructionOcclusion(float const obstruction, float const occlusion) override;
+	virtual void                         SetOcclusionType(EOcclusionType const occlusionType) override;
+	virtual ERequestStatus               ExecuteTrigger(ITrigger const* const pITrigger, IEvent* const pIEvent) override;
+	virtual void                         StopAllTriggers() override;
+	virtual ERequestStatus               PlayFile(IStandaloneFile* const pIStandaloneFile) override;
+	virtual ERequestStatus               StopFile(IStandaloneFile* const pIStandaloneFile) override;
+	virtual ERequestStatus               SetName(char const* const szName) override;
+	virtual void                         ToggleFunctionality(EObjectFunctionality const type, bool const enable) override;
+
+	// Below data is only used when INCLUDE_WWISE_IMPL_PRODUCTION_CODE is defined!
+	virtual void DrawDebugInfo(IRenderAuxGeom& auxGeom, float const posX, float posY, char const* const szTextFilter) override;
 	// ~CryAudio::Impl::IObject
 
 	void RemoveEvent(CEvent* const pEvent);
@@ -53,32 +71,69 @@ public:
 private:
 
 	void PostEnvironmentAmounts();
+	void UpdateVelocities(float const deltaTime);
+	void TryToSetRelativeVelocity(float const relativeVelocity);
 
-	Vec3                 m_position;
-	std::vector<CEvent*> m_events;
-	bool                 m_needsToUpdateEnvironments;
-	bool                 m_needsToUpdateVirtualStates;
-	AuxSendValues        m_auxSendValues;
+	std::vector<CEvent*>  m_events;
+	bool                  m_needsToUpdateEnvironments;
+	bool                  m_needsToUpdateVirtualStates;
+	AuxSendValues         m_auxSendValues;
+
+	EObjectFlags          m_flags;
+	float                 m_distanceToListener;
+	float                 m_previousRelativeVelocity;
+	float                 m_previousAbsoluteVelocity;
+	CObjectTransformation m_transformation;
+	Vec3                  m_position;
+	Vec3                  m_previousPosition;
+	Vec3                  m_velocity;
+
+#if defined(INCLUDE_WWISE_IMPL_PRODUCTION_CODE)
+	std::map<char const* const, float> m_parameterInfo;
+#endif  // INCLUDE_WWISE_IMPL_PRODUCTION_CODE
 };
 
 class CListener final : public IListener
 {
 public:
 
-	explicit CListener(AkGameObjectID const id)
-		: m_id(id)
-	{}
-
+	CListener() = delete;
 	CListener(CListener const&) = delete;
 	CListener(CListener&&) = delete;
 	CListener& operator=(CListener const&) = delete;
 	CListener& operator=(CListener&&) = delete;
 
+	explicit CListener(CObjectTransformation const& transformation, AkGameObjectID const id);
+
 	// CryAudio::Impl::IListener
-	virtual void SetTransformation(CObjectTransformation const& transformation) override;
+	virtual void                         Update(float const deltaTime) override;
+	virtual void                         SetName(char const* const szName) override;
+	virtual void                         SetTransformation(CObjectTransformation const& transformation) override;
+	virtual CObjectTransformation const& GetTransformation() const override { return m_transformation; }
 	// ~CryAudio::Impl::IListener
 
-	AkGameObjectID const m_id;
+	AkGameObjectID GetId() const       { return m_id; }
+	bool           HasMoved() const    { return m_hasMoved; }
+	Vec3 const&    GetPosition() const { return m_position; }
+	Vec3 const&    GetVelocity() const { return m_velocity; }
+
+#if defined(INCLUDE_WWISE_IMPL_PRODUCTION_CODE)
+	char const* GetName() const { return m_name.c_str(); }
+#endif  // INCLUDE_WWISE_IMPL_PRODUCTION_CODE
+
+private:
+
+	AkGameObjectID const  m_id;
+	bool                  m_hasMoved;
+	bool                  m_isMovingOrDecaying;
+	Vec3                  m_velocity;
+	Vec3                  m_position;
+	Vec3                  m_previousPosition;
+	CObjectTransformation m_transformation;
+
+#if defined(INCLUDE_WWISE_IMPL_PRODUCTION_CODE)
+	CryFixedStringT<MaxObjectNameLength> m_name;
+#endif  // INCLUDE_WWISE_IMPL_PRODUCTION_CODE
 };
 
 class CTrigger final : public ITrigger

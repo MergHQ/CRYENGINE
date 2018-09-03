@@ -6,8 +6,6 @@
 
 namespace CryAudio
 {
-static constexpr ControlId RelativeVelocityParameterId = StringToId(s_szRelativeVelocityParameterName);
-static constexpr ControlId AbsoluteVelocityParameterId = StringToId(s_szAbsoluteVelocityParameterName);
 static constexpr ControlId LoseFocusTriggerId = StringToId(s_szLoseFocusTriggerName);
 static constexpr ControlId GetFocusTriggerId = StringToId(s_szGetFocusTriggerName);
 static constexpr ControlId MuteAllTriggerId = StringToId(s_szMuteAllTriggerName);
@@ -23,8 +21,6 @@ struct IImpl;
 class CSystem;
 class CAudioTranslationLayer;
 class CATLAudioObject;
-class CAbsoluteVelocityParameter;
-class CRelativeVelocityParameter;
 class CLoseFocusTrigger;
 class CGetFocusTrigger;
 class CMuteAllTrigger;
@@ -52,8 +48,6 @@ extern AudioSwitchLookup g_switches;
 extern AudioPreloadRequestLookup g_preloadRequests;
 extern AudioEnvironmentLookup g_environments;
 extern CATLAudioObject* g_pObject;
-extern CAbsoluteVelocityParameter* g_pAbsoluteVelocityParameter;
-extern CRelativeVelocityParameter* g_pRelativeVelocityParameter;
 extern CLoseFocusTrigger* g_pLoseFocusTrigger;
 extern CGetFocusTrigger* g_pGetFocusTrigger;
 extern CMuteAllTrigger* g_pMuteAllTrigger;

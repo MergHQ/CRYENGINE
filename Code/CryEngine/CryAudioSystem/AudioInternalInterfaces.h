@@ -1098,9 +1098,10 @@ struct SAudioListenerRequestData<EAudioListenerRequestType::SetTransformation> f
 template<>
 struct SAudioListenerRequestData<EAudioListenerRequestType::RegisterListener> final : public SAudioListenerRequestDataBase
 {
-	explicit SAudioListenerRequestData(CATLListener** const ppListener_, char const* const szName)
+	explicit SAudioListenerRequestData(CATLListener** const ppListener_, CObjectTransformation const& transformation_, char const* const szName)
 		: SAudioListenerRequestDataBase(EAudioListenerRequestType::RegisterListener)
 		, ppListener(ppListener_)
+		, transformation(transformation_)
 		, name(szName)
 	{}
 
@@ -1113,6 +1114,7 @@ struct SAudioListenerRequestData<EAudioListenerRequestType::RegisterListener> fi
 	virtual ~SAudioListenerRequestData() override = default;
 
 	CATLListener** const                       ppListener;
+	CObjectTransformation const                transformation;
 	CryFixedStringT<MaxObjectNameLength> const name;
 };
 
@@ -1224,6 +1226,7 @@ enum class EDrawFilter : EnumFlagsType
 	OcclusionRays          = BIT(14), // i
 	ListenerOcclusionPlane = BIT(15), // j
 	ObjectStandaloneFiles  = BIT(16), // k
+	ObjectImplInfo         = BIT(17), // l
 
 	HideMemoryInfo         = BIT(18), // m
 	FilterAllObjectInfo    = BIT(19), // n
@@ -1246,7 +1249,8 @@ static constexpr EDrawFilter objectMask =
 	EDrawFilter::OcclusionRayLabels |
 	EDrawFilter::OcclusionRays |
 	EDrawFilter::ListenerOcclusionPlane |
-	EDrawFilter::ObjectStandaloneFiles;
+	EDrawFilter::ObjectStandaloneFiles |
+	EDrawFilter::ObjectImplInfo;
 }
 #endif // INCLUDE_AUDIO_PRODUCTION_CODE
 

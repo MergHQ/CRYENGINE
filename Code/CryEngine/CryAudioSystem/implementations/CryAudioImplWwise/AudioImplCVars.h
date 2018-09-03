@@ -21,18 +21,20 @@ public:
 	void    RegisterVariables();
 	void    UnregisterVariables();
 
-	int m_secondaryMemoryPoolSize = 0;
-	int m_prepareEventMemoryPoolSize = 0;
-	int m_streamManagerMemoryPoolSize = 0;
-	int m_streamDeviceMemoryPoolSize = 0;
-	int m_soundEngineDefaultMemoryPoolSize = 0;
-	int m_commandQueueMemoryPoolSize = 0;
-	int m_lowerEngineDefaultPoolSize = 0;
-	int m_enableEventManagerThread = 0;
-	int m_enableSoundBankManagerThread = 0;
-	int m_numSamplesPerFrame = 0;
-	int m_numRefillsInVoice = 0;
-	int m_panningRule = 0;
+	float m_velocityTrackingThreshold = 0.0f;
+	float m_positionUpdateThresholdMultiplier = 0.02f;
+	int   m_secondaryMemoryPoolSize = 0;
+	int   m_prepareEventMemoryPoolSize = 0;
+	int   m_streamManagerMemoryPoolSize = 0;
+	int   m_streamDeviceMemoryPoolSize = 0;
+	int   m_soundEngineDefaultMemoryPoolSize = 0;
+	int   m_commandQueueMemoryPoolSize = 0;
+	int   m_lowerEngineDefaultPoolSize = 0;
+	int   m_enableEventManagerThread = 0;
+	int   m_enableSoundBankManagerThread = 0;
+	int   m_numSamplesPerFrame = 0;
+	int   m_numRefillsInVoice = 0;
+	int   m_panningRule = 0;
 
 #if defined(INCLUDE_WWISE_IMPL_PRODUCTION_CODE)
 	int m_enableCommSystem = 0;

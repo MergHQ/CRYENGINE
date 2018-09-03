@@ -221,7 +221,6 @@ public:
 
 	explicit CObject(uint32 const id)
 		: m_id(id)
-		, m_bPositionChanged(false)
 	{}
 
 	CObject(CObject const&) = delete;
@@ -230,17 +229,23 @@ public:
 	CObject& operator=(CObject&&) = delete;
 
 	// CryAudio::Impl::IObject
-	virtual void           Update() override;
-	virtual void           SetTransformation(CObjectTransformation const& transformation) override;
-	virtual void           SetEnvironment(IEnvironment const* const pIEnvironment, float const amount) override;
-	virtual void           SetParameter(IParameter const* const pIParameter, float const value) override;
-	virtual void           SetSwitchState(ISwitchState const* const pISwitchState) override;
-	virtual void           SetObstructionOcclusion(float const obstruction, float const occlusion) override;
-	virtual ERequestStatus ExecuteTrigger(ITrigger const* const pITrigger, IEvent* const pIEvent) override;
-	virtual void           StopAllTriggers() override;
-	virtual ERequestStatus PlayFile(IStandaloneFile* const pIStandaloneFile) override;
-	virtual ERequestStatus StopFile(IStandaloneFile* const pIStandaloneFile) override;
-	virtual ERequestStatus SetName(char const* const szName) override;
+	virtual void                         Update(float const deltaTime) override                                               {}
+	virtual void                         SetTransformation(CObjectTransformation const& transformation) override;
+	virtual CObjectTransformation const& GetTransformation() const override                                                   { return m_transformation; }
+	virtual void                         SetEnvironment(IEnvironment const* const pIEnvironment, float const amount) override {}
+	virtual void                         SetParameter(IParameter const* const pIParameter, float const value) override;
+	virtual void                         SetSwitchState(ISwitchState const* const pISwitchState) override;
+	virtual void                         SetObstructionOcclusion(float const obstruction, float const occlusion) override {}
+	virtual void                         SetOcclusionType(EOcclusionType const occlusionType) override                    {}
+	virtual ERequestStatus               ExecuteTrigger(ITrigger const* const pITrigger, IEvent* const pIEvent) override;
+	virtual void                         StopAllTriggers() override                                                       {}
+	virtual ERequestStatus               PlayFile(IStandaloneFile* const pIStandaloneFile) override;
+	virtual ERequestStatus               StopFile(IStandaloneFile* const pIStandaloneFile) override;
+	virtual ERequestStatus               SetName(char const* const szName) override;
+	virtual void                         ToggleFunctionality(EObjectFunctionality const type, bool const enable) override {}
+
+	// Below data is only used when INCLUDE_SDLMIXER_IMPL_PRODUCTION_CODE is defined!
+	virtual void DrawDebugInfo(IRenderAuxGeom& auxGeom, float const posX, float posY, char const* const szTextFilter) override {}
 	// ~CryAudio::Impl::IObject
 
 	const uint32               m_id;
@@ -248,27 +253,40 @@ public:
 	EventInstanceList          m_events;
 	StandAloneFileInstanceList m_standaloneFiles;
 	VolumeMultipliers          m_volumeMultipliers;
-	bool                       m_bPositionChanged;
 };
 
 class CListener final : public IListener
 {
 public:
 
-	explicit CListener(const ListenerId id)
-		: m_id(id)
-	{}
-
 	CListener(CListener const&) = delete;
 	CListener(CListener&&) = delete;
 	CListener& operator=(CListener const&) = delete;
 	CListener& operator=(CListener&&) = delete;
 
+	explicit CListener(ListenerId const id)
+		: m_id(id)
+	{}
+
 	// CryAudio::Impl::IListener
-	virtual void SetTransformation(CObjectTransformation const& transformation) override;
+	virtual void                         Update(float const deltaTime) override {}
+	virtual void                         SetName(char const* const szName) override;
+	virtual void                         SetTransformation(CObjectTransformation const& transformation) override;
+	virtual CObjectTransformation const& GetTransformation() const override { return m_transformation; }
 	// ~CryAudio::Impl::IListener
 
-	const ListenerId m_id;
+#if defined(INCLUDE_SDLMIXER_IMPL_PRODUCTION_CODE)
+	char const* GetName() const { return m_name.c_str(); }
+#endif  // INCLUDE_SDLMIXER_IMPL_PRODUCTION_CODE
+
+private:
+
+	ListenerId const      m_id;
+	CObjectTransformation m_transformation;
+
+#if defined(INCLUDE_SDLMIXER_IMPL_PRODUCTION_CODE)
+	CryFixedStringT<MaxObjectNameLength> m_name;
+#endif  // INCLUDE_SDLMIXER_IMPL_PRODUCTION_CODE
 };
 
 struct SFile final : public IFile

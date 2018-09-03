@@ -48,9 +48,9 @@ void CObjectManager::OnAfterImplChanged()
 	{
 		CRY_ASSERT(pObject->GetImplDataPtr() == nullptr);
 #if defined(INCLUDE_AUDIO_PRODUCTION_CODE)
-		pObject->SetImplDataPtr(g_pIImpl->ConstructObject(pObject->m_name.c_str()));
+		pObject->SetImplDataPtr(g_pIImpl->ConstructObject(pObject->GetTransformation(), pObject->m_name.c_str()));
 #else
-		pObject->SetImplDataPtr(g_pIImpl->ConstructObject());
+		pObject->SetImplDataPtr(g_pIImpl->ConstructObject(pObject->GetTransformation()));
 #endif // INCLUDE_AUDIO_PRODUCTION_CODE
 	}
 }
@@ -76,8 +76,6 @@ void CObjectManager::Update(float const deltaTime)
 
 	if (deltaTime > 0.0f)
 	{
-		Vec3 const& listenerVelocity = g_listenerManager.GetActiveListenerVelocity();
-		bool const listenerMoved = listenerVelocity.GetLengthSquared() > FloatEpsilon;
 		auto iter = m_constructedObjects.begin();
 		auto iterEnd = m_constructedObjects.end();
 
@@ -85,12 +83,9 @@ void CObjectManager::Update(float const deltaTime)
 		{
 			CATLAudioObject* const pObject = *iter;
 
-			CObjectTransformation const& transformation = pObject->GetTransformation();
-			float const distance = transformation.GetPosition().GetDistance(g_listenerManager.GetActiveListenerTransformation().GetPosition());
-
 			if (IsActive(pObject))
 			{
-				pObject->Update(deltaTime, distance, listenerVelocity, listenerMoved);
+				pObject->Update(deltaTime);
 			}
 			else if (pObject->CanBeReleased())
 			{
@@ -118,7 +113,7 @@ void CObjectManager::Update(float const deltaTime)
 		{
 			if (IsActive(pObject))
 			{
-				pObject->GetImplDataPtr()->Update();
+				pObject->GetImplDataPtr()->Update(deltaTime);
 			}
 		}
 	}
@@ -296,7 +291,7 @@ void CObjectManager::DrawDebugInfo(IRenderAuxGeom& auxGeom, float const posX, fl
 				bool const isVirtual = (pObject->GetFlags() & EObjectFlags::Virtual) != 0;
 
 				auxGeom.Draw2dLabel(posX, posY, Debug::g_managerFontSize,
-				                    isVirtual ? Debug::g_managerColorItemVirtual.data() : (hasActiveData ? Debug::g_managerColorItemActive.data() : Debug::g_managerColorItemInactive.data()),
+				                    isVirtual ? Debug::g_globalColorVirtual.data() : (hasActiveData ? Debug::g_managerColorItemActive.data() : Debug::g_globalColorInactive.data()),
 				                    false,
 				                    "%s : %.2f",
 				                    szObjectName,
@@ -308,7 +303,7 @@ void CObjectManager::DrawDebugInfo(IRenderAuxGeom& auxGeom, float const posX, fl
 		}
 	}
 
-	auxGeom.Draw2dLabel(posX, headerPosY, Debug::g_managerHeaderFontSize, Debug::g_managerColorHeader.data(), false, "Audio Objects [%" PRISIZE_T "]", numAudioObjects);
+	auxGeom.Draw2dLabel(posX, headerPosY, Debug::g_managerHeaderFontSize, Debug::g_globalColorHeader.data(), false, "Audio Objects [%" PRISIZE_T "]", numAudioObjects);
 }
 #endif // INCLUDE_AUDIO_PRODUCTION_CODE
 }      // namespace CryAudio

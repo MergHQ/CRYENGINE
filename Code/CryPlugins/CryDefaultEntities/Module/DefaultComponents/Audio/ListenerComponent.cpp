@@ -27,21 +27,19 @@ void CListenerComponent::Initialize()
 {
 	if (m_pIListener == nullptr)
 	{
+		Matrix34 const tm = GetWorldTransformMatrix();
+		CRY_ASSERT_MESSAGE(tm.IsValid(), "Invalid Matrix34 during CListenerComponent::Initialize");
+		m_previousTransformation = tm;
+
 		SetName("Listener");
 		CryFixedStringT<CryAudio::MaxObjectNameLength> name;
 		name.Format("audio_listener_%s_%d", m_pEntity->GetName(), static_cast<int>(m_pEntity->GetId()));
-		m_pIListener = gEnv->pAudioSystem->CreateListener(name.c_str());
+		m_pIListener = gEnv->pAudioSystem->CreateListener(m_previousTransformation, name.c_str());
 
 		if (m_pIListener != nullptr)
 		{
 			m_pEntity->SetFlags(m_pEntity->GetFlags() | ENTITY_FLAG_TRIGGER_AREAS);
 			m_pEntity->SetFlagsExtended(m_pEntity->GetFlagsExtended() | ENTITY_FLAG_EXTENDED_AUDIO_LISTENER);
-
-			Matrix34 const tm = GetWorldTransformMatrix();
-			CRY_ASSERT_MESSAGE(tm.IsValid(), "Invalid Matrix34 during CListenerComponent::Initialize");
-
-			m_previousTransformation = tm;
-			m_pIListener->SetTransformation(m_previousTransformation);
 		}
 	}
 }
@@ -81,7 +79,7 @@ void CListenerComponent::ProcessEvent(const SEntityEvent& event)
 				if ((flags & (ENTITY_XFORM_POS | ENTITY_XFORM_ROT)) != 0)
 				{
 					OnTransformChanged();
-					
+
 				}
 
 				break;

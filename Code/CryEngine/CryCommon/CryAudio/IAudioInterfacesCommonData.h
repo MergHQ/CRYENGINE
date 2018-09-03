@@ -44,8 +44,6 @@ static constexpr uint16 MaxMiscStringLength = 512;
 static constexpr uint32 InvalidCRC32 = 0xFFFFffff;
 static constexpr float FloatEpsilon = 1.0e-3f;
 
-static constexpr char const* s_szRelativeVelocityParameterName = "relative_velocity";
-static constexpr char const* s_szAbsoluteVelocityParameterName = "absolute_velocity";
 static constexpr char const* s_szLoseFocusTriggerName = "lose_focus";
 static constexpr char const* s_szGetFocusTriggerName = "get_focus";
 static constexpr char const* s_szMuteAllTriggerName = "mute_all";
@@ -152,6 +150,29 @@ enum class ERequestResult : EnumFlagsType
 	Success, /**< Set if the request processed successfully. */
 	Failure, /**< Set if the request failed to process. */
 };
+
+/**
+ * @enum CryAudio::EOcclusionType
+ * @brief A strongly typed enum class representing different audio occlusion types that can be set on audio objects.
+ * @var CryAudio::EOcclusionType::None
+ * @var CryAudio::EOcclusionType::Ignore
+ * @var CryAudio::EOcclusionType::Adaptive
+ * @var CryAudio::EOcclusionType::Low
+ * @var CryAudio::EOcclusionType::Medium
+ * @var CryAudio::EOcclusionType::High
+ * @var CryAudio::EOcclusionType::Count
+ */
+enum class EOcclusionType : EnumFlagsType
+{
+	None,     /**< Used to initialize variables of this type and to determine whether the variable was properly handled. */
+	Ignore,   /**< The audio object does not calculate occlusion against level geometry. */
+	Adaptive, /**< The audio object switches between occlusion types depending on its distance to the audio listener. */
+	Low,      /**< The audio object uses a coarse grained occlusion plane for calculation. */
+	Medium,   /**< The audio object uses a medium grained occlusion plane for calculation. */
+	High,     /**< The audio object uses a fine grained occlusion plane for calculation. */
+	Count,    /**< Used to initialize arrays to this size. */
+};
+CRY_CREATE_ENUM_FLAG_OPERATORS(EOcclusionType);
 
 class CObjectTransformation
 {

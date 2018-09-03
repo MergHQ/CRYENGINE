@@ -23,7 +23,9 @@ namespace CryEngine
 
 		internal AudioListener()
 		{
-			_cPtr = new System.Runtime.InteropServices.HandleRef(this, NativeAudioSystem.CreateAudioListener());
+			Matrix3x4 matrix3x4 = Matrix3x4.Identity;
+			AudioObjectTransformation audioObjectTransformation = new AudioObjectTransformation(matrix3x4);
+			_cPtr = new System.Runtime.InteropServices.HandleRef(this, NativeAudioSystem.CreateAudioListener(audioObjectTransformation.NativePtr));
 		}
 
 		/// <summary>

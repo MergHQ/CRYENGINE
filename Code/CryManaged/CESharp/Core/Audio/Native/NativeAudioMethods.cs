@@ -106,9 +106,9 @@ namespace CryEngine.NativeInternals
 		extern public static void RemoveAudioRequestListener(IntPtr audioRequestInfoFunctionPointer);
 
 		[MethodImpl(MethodImplOptions.InternalCall)]
-		extern public static IntPtr CreateAudioListener();
+		extern public static IntPtr CreateAudioListener(IntPtr transformation);
 
 		[MethodImpl(MethodImplOptions.InternalCall)]
-		extern public static void SetAudioListenerTransformation(IntPtr audioListener, IntPtr audioTransfromation);
+		extern public static void SetAudioListenerTransformation(IntPtr listener, IntPtr transformation);
 	}
 }

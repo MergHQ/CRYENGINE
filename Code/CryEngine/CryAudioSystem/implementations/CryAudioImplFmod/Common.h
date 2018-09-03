@@ -19,8 +19,13 @@ namespace Impl
 {
 namespace Fmod
 {
+class CListener;
+
+extern CListener* g_pListener;
+extern uint32 g_numObjectsWithDoppler;
+
 ///////////////////////////////////////////////////////////////////////////
-inline void FillFmodObjectPosition(CObjectTransformation const& transformation, FMOD_3D_ATTRIBUTES& outAttributes)
+inline void Fill3DAttributeTransformation(CObjectTransformation const& transformation, FMOD_3D_ATTRIBUTES& outAttributes)
 {
 	outAttributes.forward.x = transformation.GetForward().x;
 	outAttributes.forward.z = transformation.GetForward().y;
@@ -34,10 +39,17 @@ inline void FillFmodObjectPosition(CObjectTransformation const& transformation, 
 	outAttributes.up.z = transformation.GetUp().y;
 	outAttributes.up.y = transformation.GetUp().z;
 
-	// Use CE object parameters "absolute_velocity" and "relative_velocity" instead.
 	outAttributes.velocity.x = 0.0f;
 	outAttributes.velocity.z = 0.0f;
 	outAttributes.velocity.y = 0.0f;
+}
+
+///////////////////////////////////////////////////////////////////////////
+inline void Fill3DAttributeVelocity(Vec3 const& inVelocity, FMOD_3D_ATTRIBUTES& outAttributes)
+{
+	outAttributes.velocity.x = inVelocity.x;
+	outAttributes.velocity.z = inVelocity.y;
+	outAttributes.velocity.y = inVelocity.z;
 }
 } // namespace Fmod
 } // namespace Impl

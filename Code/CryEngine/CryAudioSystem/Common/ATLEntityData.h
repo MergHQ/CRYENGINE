@@ -8,6 +8,9 @@
  * @namespace CryAudio
  * @brief Most parent audio namespace used throughout the entire engine.
  */
+
+struct IRenderAuxGeom;
+
 namespace CryAudio
 {
 /**
@@ -16,6 +19,11 @@ namespace CryAudio
  */
 namespace Impl
 {
+enum class EObjectFunctionality
+{
+	TrackAbsoluteVelocity,
+	TrackRelativeVelocity,
+};
 /**
  * An implementation may use this interface to define a class for storing implementation-specific
  * data needed for identifying and using the corresponding CryAudio::IListener object (e.g. a middleware-specific unique ID)
@@ -27,11 +35,32 @@ struct IListener
 	/** @endcond */
 
 	/**
+	 * Performs actions that need to be executed regularly on a listener. Called with every tick of the audio thread.
+	   virtual void Update(float const deltaTime) = 0;
+	 * @param deltaTime - accumulated game frame time in seconds.
+	 * @return void
+	 */
+	virtual void Update(float const deltaTime) = 0;
+
+	/**
+	 * Sets the listener's name.
+	 * @param szName - name of the listener.
+	 * @return void
+	 */
+	virtual void SetName(char const* const szName) = 0;
+
+	/**
 	 * Sets the listener's transformation.
 	 * @param transformation - a class containing the listener's position and rotation
 	 * @return void
 	 */
 	virtual void SetTransformation(CObjectTransformation const& transformation) = 0;
+
+	/**
+	 * Gets the listener's transformation.
+	 * @return CObjectTransformation of the listener.
+	 */
+	virtual CObjectTransformation const& GetTransformation() const = 0;
 };
 
 /**
@@ -186,9 +215,10 @@ struct IObject
 
 	/**
 	 * Performs actions that need to be executed regularly on an AudioObject. Called with every tick of the audio thread.
+	 * @param deltaTime - accumulated game frame time in seconds.
 	 * @return void
 	 */
-	virtual void Update() = 0;
+	virtual void Update(float const deltaTime) = 0;
 
 	/**
 	 * Set the the object's transformation.
@@ -196,6 +226,12 @@ struct IObject
 	 * @return void
 	 */
 	virtual void SetTransformation(CObjectTransformation const& transformation) = 0;
+
+	/**
+	 * Gets the objects's transformation.
+	 * @return CObjectTransformation of the object.
+	 */
+	virtual CObjectTransformation const& GetTransformation() const = 0;
 
 	/**
 	 * Set the provided value for the specified environment on the object.
@@ -227,6 +263,13 @@ struct IObject
 	 * @return void
 	 */
 	virtual void SetObstructionOcclusion(float const obstruction, float const occlusion) = 0;
+
+	/**
+	 * Set the provided occlusion type.
+	 * @param occlusionType - the occlusion type to be set
+	 * @return void
+	 */
+	virtual void SetOcclusionType(EOcclusionType const occlusionType) = 0;
 
 	/**
 	 * Activate a trigger on this object.
@@ -265,22 +308,28 @@ struct IObject
 	 * @return ERequestStatus - indicates the outcome of underlying process
 	 */
 	virtual ERequestStatus SetName(char const* const szName) = 0;
-};
 
-/**
- * This is a POD structure used to pass the information about an implementation's memory usage
- * Note: This struct cannot define a constructor, it needs to be a POD!
- */
-struct SMemoryInfo
-{
-	size_t totalMemory;              // total amount of memory used by the implementation in bytes
-	size_t secondaryPoolSize;        // total size in bytes of the Secondary Memory Pool used by an implementation
-	size_t secondaryPoolUsedSize;    // bytes allocated inside the Secondary Memory Pool used by an implementation
-	size_t secondaryPoolAllocations; // number of allocations performed in the Secondary Memory Pool used by an implementation
-	size_t poolUsedObjects;          // total number of active pool objects
-	size_t poolConstructedObjects;   // total number of constructed pool objects
-	size_t poolUsedMemory;           // memory used by the constructed objects
-	size_t poolAllocatedMemory;      // total memory allocated by the pool allocator
+	/**
+	 * Enables and disables a certain functionality on the object.
+	 * @param type - defines the type of functionality.
+	 * @param enable - defines if the functionality should be enabled or disabled.
+	 * @return void
+	 */
+	virtual void ToggleFunctionality(EObjectFunctionality const type, bool const enable) = 0;
+
+	//////////////////////////////////////////////////////////////////////////
+	// NOTE: The methods below are ONLY USED when INCLUDE_AUDIO_PRODUCTION_CODE is defined!
+	//////////////////////////////////////////////////////////////////////////
+
+	/**
+	 * Informs the object that it can draw its debug information.
+	 * @param[out] auxGeom - a reference to the IRenderAuxGeom that draws the debug info.
+	 * @param[in] posX - x-axis position of the auxGeom.
+	 * @param[in] posY - y-axis position of the auxGeom.
+	 * @param[in] szTextFilter - current set text filter. Is nullptr if filtering is disabled.
+	 * @return void
+	 */
+	virtual void DrawDebugInfo(IRenderAuxGeom& auxGeom, float const posX, float posY, char const* const szTextFilter) = 0;
 };
 } // namespace Impl
 } // namespace CryAudio

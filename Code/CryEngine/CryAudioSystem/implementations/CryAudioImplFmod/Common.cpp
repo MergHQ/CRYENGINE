@@ -2,3 +2,15 @@
 
 #include "stdafx.h"
 #include "Common.h"
+
+namespace CryAudio
+{
+namespace Impl
+{
+namespace Fmod
+{
+CListener* g_pListener = nullptr;
+uint32 g_numObjectsWithDoppler = 0;
+} // namespace Fmod
+} // namespace Impl
+} // namespace CryAudio

@@ -9,6 +9,9 @@
  * @namespace CryAudio
  * @brief Most parent audio namespace used throughout the entire engine.
  */
+
+struct IRenderAuxGeom;
+
 namespace CryAudio
 {
 // Forward declarations.
@@ -271,12 +274,13 @@ struct IImpl
 	/**
 	 * Create an object implementing IObject that stores all of the data needed by the AudioImplementation
 	 * to identify and use the AudioObject. Return a pointer to that object.
+	 * @param transformation - transformation of the object to construct
 	 * @param szName - optional name of the object to construct (not used in release builds)
 	 * @return IObject pointer to the audio implementation-specific data needed by the audio middleware and the
 	 * @return AudioImplementation code to use the corresponding GlobalAudioObject; nullptr if the new IObject instance was not created
 	 * @see DestructObject
 	 */
-	virtual IObject* ConstructObject(char const* const szName = nullptr) = 0;
+	virtual IObject* ConstructObject(CObjectTransformation const& transformation, char const* const szName = nullptr) = 0;
 
 	/**
 	 * Free the memory and potentially other resources used by the supplied IObject instance
@@ -289,12 +293,13 @@ struct IImpl
 	/**
 	 * Construct an object implementing IListener that stores all of the data needed by the AudioImplementation
 	 * to identify and use an AudioListener. Return a pointer to that object.
+	 * @param transformation - transformation of the listener to construct
 	 * @param szName - optional name of the listener to construct (not used in release builds)
 	 * @return CryAudio::Impl::IListener pointer to the audio implementation-specific data needed by the audio middleware and the
 	 * @return AudioImplementation code to use the corresponding AudioListener; nullptr if the new CryAudio::Impl::IListener instance was not created.
 	 * @see DestructListener
 	 */
-	virtual IListener* ConstructListener(char const* const szName = nullptr) = 0;
+	virtual IListener* ConstructListener(CObjectTransformation const& transformation, char const* const szName = nullptr) = 0;
 
 	/**
 	 * Destruct the supplied CryAudio::Impl::IListener instance.
@@ -362,14 +367,6 @@ struct IImpl
 	//////////////////////////////////////////////////////////////////////////
 
 	/**
-	 * Fill in the memoryInfo describing the current memory usage of this AudioImplementation.
-	 * This data gets displayed in the AudioDebug header shown on the screen whenever s_DrawAudioDebug is not 0
-	 * @param[out] memoryInfo - a reference to an instance of SMemoryInfo
-	 * @return void
-	 */
-	virtual void GetMemoryInfo(SMemoryInfo& memoryInfo) const = 0;
-
-	/**
 	 * Asks the audio implementation to fill the fileData structure with data (e.g. duration of track) relating to the
 	 * standalone file referenced in szName.
 	 * @param[in] szName - filepath to the standalone file
@@ -377,6 +374,15 @@ struct IImpl
 	 * @return void
 	 */
 	virtual void GetFileData(char const* const szName, SFileData& fileData) const = 0;
+
+	/**
+	 * Informs the audio middlware that it can draw its debug information.
+	 * @param[out] auxGeom - a reference to the IRenderAuxGeom that draws the debug info.
+	 * @param[in] posX - x-axis position of the auxGeom.
+	 * @param[out] posY - y-axis position of the auxGeom.
+	 * @return void
+	 */
+	virtual void DrawDebugInfo(IRenderAuxGeom& auxGeom, float const posX, float& posY) = 0;
 };
 } // namespace Impl
 } // namespace CryAudio

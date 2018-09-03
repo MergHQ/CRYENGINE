@@ -15,6 +15,11 @@
 #include <CrySystem/IProjectManager.h>
 #include <CryAudio/IAudioSystem.h>
 
+#if defined(INCLUDE_PORTAUDIO_IMPL_PRODUCTION_CODE)
+	#include "Debug.h"
+	#include <CryRenderer/IRenderAuxGeom.h>
+#endif  // INCLUDE_PORTAUDIO_IMPL_PRODUCTION_CODE
+
 namespace CryAudio
 {
 namespace Impl
@@ -263,9 +268,9 @@ IObject* CImpl::ConstructGlobalObject()
 }
 
 ///////////////////////////////////////////////////////////////////////////
-IObject* CImpl::ConstructObject(char const* const szName /*= nullptr*/)
+IObject* CImpl::ConstructObject(CObjectTransformation const& transformation, char const* const szName /*= nullptr*/)
 {
-	CObject* pObject = new CObject();
+	auto pObject = new CObject();
 	stl::push_back_unique(m_constructedObjects, pObject);
 
 	return static_cast<IObject*>(pObject);
@@ -274,21 +279,32 @@ IObject* CImpl::ConstructObject(char const* const szName /*= nullptr*/)
 ///////////////////////////////////////////////////////////////////////////
 void CImpl::DestructObject(IObject const* const pIObject)
 {
-	CObject const* const pObject = static_cast<CObject const*>(pIObject);
+	auto const pObject = static_cast<CObject const*>(pIObject);
 	stl::find_and_erase(m_constructedObjects, pObject);
 	delete pObject;
 }
 
 ///////////////////////////////////////////////////////////////////////////
-IListener* CImpl::ConstructListener(char const* const szName /*= nullptr*/)
+IListener* CImpl::ConstructListener(CObjectTransformation const& transformation, char const* const szName /*= nullptr*/)
 {
-	return static_cast<IListener*>(new CListener);
+	g_pListener = new CListener;
+
+#if defined(INCLUDE_PORTAUDIO_IMPL_PRODUCTION_CODE)
+	if (szName != nullptr)
+	{
+		g_pListener->SetName(szName);
+	}
+#endif  // INCLUDE_PORTAUDIO_IMPL_PRODUCTION_CODE
+
+	return static_cast<IListener*>(g_pListener);
 }
 
 ///////////////////////////////////////////////////////////////////////////
 void CImpl::DestructListener(IListener* const pIListener)
 {
-	delete pIListener;
+	CRY_ASSERT_MESSAGE(pIListener == g_pListener, "pIListener is not g_pListener");
+	delete g_pListener;
+	g_pListener = nullptr;
 }
 
 //////////////////////////////////////////////////////////////////////////
@@ -428,40 +444,6 @@ void CImpl::DestructEnvironment(IEnvironment const* const pIEnvironment)
 	delete pIEnvironment;
 }
 
-///////////////////////////////////////////////////////////////////////////
-void CImpl::GetMemoryInfo(SMemoryInfo& memoryInfo) const
-{
-	CryModuleMemoryInfo memInfo;
-	ZeroStruct(memInfo);
-	CryGetMemoryInfoForModule(&memInfo);
-
-	memoryInfo.totalMemory = static_cast<size_t>(memInfo.allocated - memInfo.freed);
-
-	memoryInfo.secondaryPoolSize = 0;
-	memoryInfo.secondaryPoolUsedSize = 0;
-	memoryInfo.secondaryPoolAllocations = 0;
-
-	{
-		auto& allocator = CObject::GetAllocator();
-		auto mem = allocator.GetTotalMemory();
-		auto pool = allocator.GetCounts();
-		memoryInfo.poolUsedObjects = pool.nUsed;
-		memoryInfo.poolConstructedObjects = pool.nAlloc;
-		memoryInfo.poolUsedMemory = mem.nUsed;
-		memoryInfo.poolAllocatedMemory = mem.nAlloc;
-	}
-
-	{
-		auto& allocator = CEvent::GetAllocator();
-		auto mem = allocator.GetTotalMemory();
-		auto pool = allocator.GetCounts();
-		memoryInfo.poolUsedObjects += pool.nUsed;
-		memoryInfo.poolConstructedObjects += pool.nAlloc;
-		memoryInfo.poolUsedMemory += mem.nUsed;
-		memoryInfo.poolAllocatedMemory += mem.nAlloc;
-	}
-}
-
 //////////////////////////////////////////////////////////////////////////
 void CImpl::OnRefresh()
 {
@@ -528,6 +510,64 @@ void CImpl::UpdateLocalizedTriggers()
 //////////////////////////////////////////////////////////////////////////
 void CImpl::GetFileData(char const* const szName, SFileData& fileData) const
 {
+}
+
+#if defined(INCLUDE_PORTAUDIO_IMPL_PRODUCTION_CODE)
+///////////////////////////////////////////////////////////////////////////
+void GetMemoryInfo(SMemoryInfo& memoryInfo)
+{
+	CryModuleMemoryInfo memInfo;
+	ZeroStruct(memInfo);
+	CryGetMemoryInfoForModule(&memInfo);
+
+	memoryInfo.totalMemory = static_cast<size_t>(memInfo.allocated - memInfo.freed);
+
+	{
+		auto& allocator = CObject::GetAllocator();
+		auto mem = allocator.GetTotalMemory();
+		auto pool = allocator.GetCounts();
+		memoryInfo.poolUsedObjects = pool.nUsed;
+		memoryInfo.poolConstructedObjects = pool.nAlloc;
+		memoryInfo.poolUsedMemory = mem.nUsed;
+		memoryInfo.poolAllocatedMemory = mem.nAlloc;
+	}
+
+	{
+		auto& allocator = CEvent::GetAllocator();
+		auto mem = allocator.GetTotalMemory();
+		auto pool = allocator.GetCounts();
+		memoryInfo.poolUsedObjects += pool.nUsed;
+		memoryInfo.poolConstructedObjects += pool.nAlloc;
+		memoryInfo.poolUsedMemory += mem.nUsed;
+		memoryInfo.poolAllocatedMemory += mem.nAlloc;
+	}
+}
+#endif  // INCLUDE_PORTAUDIO_IMPL_PRODUCTION_CODE
+
+//////////////////////////////////////////////////////////////////////////
+void CImpl::DrawDebugInfo(IRenderAuxGeom& auxGeom, float const posX, float& posY)
+{
+#if defined(INCLUDE_PORTAUDIO_IMPL_PRODUCTION_CODE)
+	auxGeom.Draw2dLabel(posX, posY, g_debugSystemHeaderFontSize, g_debugSystemColorHeader.data(), false, m_name.c_str());
+
+	SMemoryInfo memoryInfo;
+	GetMemoryInfo(memoryInfo);
+
+	posY += g_debugSystemLineHeightClause;
+	auxGeom.Draw2dLabel(posX, posY, g_debugSystemFontSize, g_debugSystemColorTextPrimary.data(), false, "Total Memory Used: %uKiB",
+	                    static_cast<uint32>(memoryInfo.totalMemory / 1024));
+
+	posY += g_debugSystemLineHeight;
+	auxGeom.Draw2dLabel(posX, posY, g_debugSystemFontSize, g_debugSystemColorTextPrimary.data(), false, "[Object Pool] In Use: %u | Constructed: %u (%uKiB) | Memory Pool: %uKiB",
+	                    memoryInfo.poolUsedObjects, memoryInfo.poolConstructedObjects, memoryInfo.poolUsedMemory, memoryInfo.poolAllocatedMemory);
+
+	Vec3 const& listenerPosition = g_pListener->GetTransformation().GetPosition();
+	Vec3 const& listenerDirection = g_pListener->GetTransformation().GetForward();
+	char const* const szName = g_pListener->GetName();
+
+	posY += g_debugSystemLineHeight;
+	auxGeom.Draw2dLabel(posX, posY, g_debugSystemFontSize, g_debugSystemColorListenerActive.data(), false, "Listener: %s | PosXYZ: %.2f %.2f %.2f | FwdXYZ: %.2f %.2f %.2f", szName, listenerPosition.x, listenerPosition.y, listenerPosition.z, listenerDirection.x, listenerDirection.y, listenerDirection.z);
+#endif  // INCLUDE_PORTAUDIO_IMPL_PRODUCTION_CODE
 }
 } // namespace PortAudio
 } // namespace Impl

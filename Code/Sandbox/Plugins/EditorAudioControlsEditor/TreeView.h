@@ -28,6 +28,7 @@ public:
 	void RestoreSelection();
 
 	void SetNameRole(int const nameRole)     { m_nameRole = nameRole; }
+	void SetTypeRole(int const typeRole)     { m_typeRole = typeRole; }
 	void SetNameColumn(int const nameColumn) { m_nameColumn = nameColumn; }
 
 private:
@@ -42,6 +43,7 @@ private:
 	void   RestoreSelectionRecursively(QModelIndex const& index);
 
 	int          m_nameRole = 0;
+	int          m_typeRole = 0;
 	int          m_nameColumn = 0;
 	QSet<uint32> m_expandedBackup;
 	QSet<uint32> m_selectionBackup;

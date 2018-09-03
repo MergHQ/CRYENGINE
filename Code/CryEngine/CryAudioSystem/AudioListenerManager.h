@@ -25,14 +25,12 @@ public:
 	void                         OnAfterImplChanged();
 	void                         ReleaseImplData();
 	void                         Update(float const deltaTime);
-	CATLListener*                CreateListener(char const* const szName = nullptr);
+	CATLListener*                CreateListener(CObjectTransformation const& transformation, char const* const szName);
 	void                         ReleaseListener(CATLListener* const pListener);
-	size_t                       GetNumActiveListeners() const;
 	CObjectTransformation const& GetActiveListenerTransformation() const;
-	Vec3 const&                  GetActiveListenerVelocity() const;
 
 #if defined(INCLUDE_AUDIO_PRODUCTION_CODE)
-	char const* GetActiveListenerName() const;
+	size_t GetNumActiveListeners() const;
 #endif // INCLUDE_AUDIO_PRODUCTION_CODE
 
 private:

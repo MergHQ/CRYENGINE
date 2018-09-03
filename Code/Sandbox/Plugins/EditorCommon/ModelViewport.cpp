@@ -29,8 +29,7 @@ static const char* szSupportedExt[] =
 	"cga",
 	"cga(c)",
 	"cid",
-	"caf"
-};
+	"caf" };
 
 }
 
@@ -181,7 +180,7 @@ CModelViewport::CModelViewport(const char* settingsPath)
 		uint32 test = gEnv->pInput->HasInputDeviceOfType(eIDT_Gamepad);
 	}
 
-	m_pIAudioListener = gEnv->pAudioSystem->CreateListener();
+	m_pIAudioListener = gEnv->pAudioSystem->CreateListener(m_viewTM);
 	m_AABB.Reset();
 }
 

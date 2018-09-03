@@ -22,14 +22,10 @@
 namespace CryAudio
 {
 //////////////////////////////////////////////////////////////////////////
-CATLAudioObject::CATLAudioObject()
+CATLAudioObject::CATLAudioObject(CObjectTransformation const& transformation)
 	: m_pImplData(nullptr)
+	, m_transformation(transformation)
 	, m_flags(EObjectFlags::InUse)
-	, m_previousRelativeVelocity(0.0f)
-	, m_previousAbsoluteVelocity(0.0f)
-	, m_positionForVelocityCalculation(ZERO)
-	, m_previousPositionForVelocityCalculation(ZERO)
-	, m_velocity(ZERO)
 	, m_propagationProcessor(m_transformation)
 	, m_entityId(INVALID_ENTITYID)
 	, m_numPendingSyncCallbacks(0)
@@ -350,13 +346,9 @@ bool CATLAudioObject::HasActiveData(CATLAudioObject const* const pAudioObject) c
 }
 
 ///////////////////////////////////////////////////////////////////////////
-void CATLAudioObject::Update(
-	float const deltaTime,
-	float const distanceToListener,
-	Vec3 const& listenerVelocity,
-	bool const listenerMoved)
+void CATLAudioObject::Update(float const deltaTime)
 {
-	m_propagationProcessor.Update(distanceToListener, m_flags);
+	m_propagationProcessor.Update(m_flags);
 
 	if (m_propagationProcessor.HasNewOcclusionValues())
 	{
@@ -365,8 +357,7 @@ void CATLAudioObject::Update(
 		m_pImplData->SetObstructionOcclusion(propagationData.obstruction, propagationData.occlusion);
 	}
 
-	UpdateControls(deltaTime, distanceToListener, listenerVelocity, listenerMoved);
-	m_pImplData->Update();
+	m_pImplData->Update(deltaTime);
 }
 
 ///////////////////////////////////////////////////////////////////////////
@@ -376,24 +367,10 @@ void CATLAudioObject::ProcessPhysicsRay(CAudioRayInfo* const pAudioRayInfo)
 }
 
 ///////////////////////////////////////////////////////////////////////////
-void CATLAudioObject::HandleSetTransformation(CObjectTransformation const& transformation, float const distanceToListener)
+void CATLAudioObject::HandleSetTransformation(CObjectTransformation const& transformation)
 {
-	if ((m_flags & (EObjectFlags::TrackAbsoluteVelocity | EObjectFlags::TrackRelativeVelocity)) != 0)
-	{
-		m_positionForVelocityCalculation = transformation.GetPosition();
-		m_flags |= EObjectFlags::MovingOrDecaying;
-	}
-
-	float const threshold = distanceToListener * g_cvars.m_positionUpdateThresholdMultiplier;
-
-	if (!m_transformation.IsEquivalent(transformation, threshold))
-	{
-		m_transformation = transformation;
-
-		// Immediately propagate the new transformation down to the middleware to prevent executing a trigger before its transformation was set.
-		// Calculation of potentially tracked absolute and relative velocities can be safely delayed to next audio frame.
-		m_pImplData->SetTransformation(m_transformation);
-	}
+	m_transformation = transformation;
+	m_pImplData->SetTransformation(transformation);
 }
 
 ///////////////////////////////////////////////////////////////////////////
@@ -401,6 +378,7 @@ void CATLAudioObject::HandleSetOcclusionType(EOcclusionType const calcType)
 {
 	CRY_ASSERT(calcType != EOcclusionType::None);
 	m_propagationProcessor.SetOcclusionType(calcType);
+	m_pImplData->SetOcclusionType(calcType);
 }
 
 //////////////////////////////////////////////////////////////////////////
@@ -481,91 +459,6 @@ void CATLAudioObject::Init(char const* const szName, Impl::IObject* const pImplD
 }
 
 ///////////////////////////////////////////////////////////////////////////
-void CATLAudioObject::UpdateControls(
-	float const deltaTime,
-	float const distanceToListener,
-	Vec3 const& listenerVelocity,
-	bool const listenerMoved)
-{
-	Vec3 const& listenerPosition = g_listenerManager.GetActiveListenerTransformation().GetPosition();
-
-	if ((m_flags& EObjectFlags::MovingOrDecaying) != 0)
-	{
-		Vec3 const deltaPos(m_positionForVelocityCalculation - m_previousPositionForVelocityCalculation);
-
-		if (!deltaPos.IsZero())
-		{
-			m_velocity = deltaPos / deltaTime;
-			m_previousPositionForVelocityCalculation = m_positionForVelocityCalculation;
-		}
-		else if (!m_velocity.IsZero())
-		{
-			// We did not move last frame, begin exponential decay towards zero.
-			float const decay = std::max(1.0f - deltaTime / 0.05f, 0.0f);
-			m_velocity *= decay;
-
-			if (m_velocity.GetLengthSquared() < FloatEpsilon)
-			{
-				m_velocity = ZERO;
-				m_flags &= ~EObjectFlags::MovingOrDecaying;
-			}
-		}
-
-		if ((m_flags& EObjectFlags::TrackAbsoluteVelocity) != 0)
-		{
-			float const absoluteVelocity = m_velocity.GetLength();
-
-			if (absoluteVelocity == 0.0f || fabs(absoluteVelocity - m_previousAbsoluteVelocity) > g_cvars.m_velocityTrackingThreshold)
-			{
-				m_previousAbsoluteVelocity = absoluteVelocity;
-				g_pAbsoluteVelocityParameter->Set(*this, absoluteVelocity);
-			}
-		}
-
-		if ((m_flags& EObjectFlags::TrackRelativeVelocity) != 0)
-		{
-			// Approaching positive, departing negative value.
-			float relativeVelocity = 0.0f;
-
-			if ((m_flags& EObjectFlags::MovingOrDecaying) != 0 && !listenerMoved)
-			{
-				relativeVelocity = -m_velocity.Dot((m_positionForVelocityCalculation - listenerPosition).GetNormalized());
-			}
-			else if ((m_flags& EObjectFlags::MovingOrDecaying) != 0 && listenerMoved)
-			{
-				Vec3 const relativeVelocityVec(m_velocity - listenerVelocity);
-				relativeVelocity = -relativeVelocityVec.Dot((m_positionForVelocityCalculation - listenerPosition).GetNormalized());
-			}
-
-			TryToSetRelativeVelocity(relativeVelocity);
-		}
-	}
-	else if ((m_flags& EObjectFlags::TrackRelativeVelocity) != 0)
-	{
-		// Approaching positive, departing negative value.
-		if (listenerMoved)
-		{
-			float const relativeVelocity = listenerVelocity.Dot((m_positionForVelocityCalculation - listenerPosition).GetNormalized());
-			TryToSetRelativeVelocity(relativeVelocity);
-		}
-		else if (m_previousRelativeVelocity != 0.0f)
-		{
-			TryToSetRelativeVelocity(0.0f);
-		}
-	}
-}
-
-//////////////////////////////////////////////////////////////////////////
-void CATLAudioObject::TryToSetRelativeVelocity(float const relativeVelocity)
-{
-	if (relativeVelocity == 0.0f || fabs(relativeVelocity - m_previousRelativeVelocity) > g_cvars.m_velocityTrackingThreshold)
-	{
-		m_previousRelativeVelocity = relativeVelocity;
-		g_pRelativeVelocityParameter->Set(*this, relativeVelocity);
-	}
-}
-
-///////////////////////////////////////////////////////////////////////////
 bool CATLAudioObject::CanBeReleased() const
 {
 	return (m_flags& EObjectFlags::InUse) == 0 &&
@@ -588,51 +481,30 @@ void CATLAudioObject::RemoveFlag(EObjectFlags const flag)
 }
 
 #if defined(INCLUDE_AUDIO_PRODUCTION_CODE)
-float const CATLAudioObject::CStateDebugDrawData::s_minAlpha = 0.5f;
-float const CATLAudioObject::CStateDebugDrawData::s_maxAlpha = 1.0f;
+float const CATLAudioObject::CStateDebugDrawData::s_minSwitchColor = 0.3f;
+float const CATLAudioObject::CStateDebugDrawData::s_maxSwitchColor = 1.0f;
 int const CATLAudioObject::CStateDebugDrawData::s_maxToMinUpdates = 100;
 static char const* const s_szOcclusionTypes[] = { "None", "Ignore", "Adaptive", "Low", "Medium", "High" };
 
 ///////////////////////////////////////////////////////////////////////////
 CATLAudioObject::CStateDebugDrawData::CStateDebugDrawData(SwitchStateId const audioSwitchState)
 	: m_currentState(audioSwitchState)
-	, m_currentAlpha(s_maxAlpha)
+	, m_currentSwitchColor(s_maxSwitchColor)
 {
 }
 
 ///////////////////////////////////////////////////////////////////////////
 void CATLAudioObject::CStateDebugDrawData::Update(SwitchStateId const audioSwitchState)
 {
-	if ((audioSwitchState == m_currentState) && (m_currentAlpha > s_minAlpha))
+	if ((audioSwitchState == m_currentState) && (m_currentSwitchColor > s_minSwitchColor))
 	{
-		m_currentAlpha -= (s_maxAlpha - s_minAlpha) / s_maxToMinUpdates;
+		m_currentSwitchColor -= (s_maxSwitchColor - s_minSwitchColor) / s_maxToMinUpdates;
 	}
 	else if (audioSwitchState != m_currentState)
 	{
 		m_currentState = audioSwitchState;
-		m_currentAlpha = s_maxAlpha;
+		m_currentSwitchColor = s_maxSwitchColor;
 	}
-}
-
-//////////////////////////////////////////////////////////////////////////
-char const* CATLAudioObject::GetDefaultParameterName(ControlId const id) const
-{
-	char const* szName = nullptr;
-
-	switch (id)
-	{
-	case AbsoluteVelocityParameterId:
-		szName = g_pAbsoluteVelocityParameter->GetName();
-		break;
-	case RelativeVelocityParameterId:
-		szName = g_pRelativeVelocityParameter->GetName();
-		break;
-	default:
-		CRY_ASSERT_MESSAGE(false, R"(The default parameter "%u" does not exist.)", id);
-		break;
-	}
-
-	return szName;
 }
 
 //////////////////////////////////////////////////////////////////////////
@@ -695,8 +567,6 @@ void CATLAudioObject::DrawDebugInfo(IRenderAuxGeom& auxGeom) const
 
 		if ((g_cvars.m_debugDistance <= 0.0f) || ((g_cvars.m_debugDistance > 0.0f) && (distance <= g_cvars.m_debugDistance)))
 		{
-			float offsetOnY = 0.0f;
-
 			// Check if text filter is enabled.
 			CryFixedStringT<MaxControlNameLength> lowerCaseSearchString(g_cvars.m_pDebugFilter->GetString());
 			lowerCaseSearchString.MakeLower();
@@ -865,10 +735,6 @@ void CATLAudioObject::DrawDebugInfo(IRenderAuxGeom& auxGeom) const
 					{
 						szParameterName = pParameter->GetName();
 					}
-					else
-					{
-						szParameterName = GetDefaultParameterName(parameterPair.first);
-					}
 
 					CRY_ASSERT_MESSAGE(szParameterName != nullptr, "The parameter name mustn't be nullptr during CATLAudioObject::DrawDebugInfo.");
 
@@ -929,205 +795,193 @@ void CATLAudioObject::DrawDebugInfo(IRenderAuxGeom& auxGeom) const
 				doesObjectNameMatchFilter = (lowerCaseObjectName.find(lowerCaseSearchString) != CryFixedStringT<MaxControlNameLength>::npos);
 			}
 
-			// Check if any object info text matches text filter.
-			bool const drawObjectDebugInfo =
-				isTextFilterDisabled ||
-				doesObjectNameMatchFilter ||
-				doesTriggerMatchFilter ||
-				doesStandaloneFileMatchFilter ||
-				doesStateSwitchMatchFilter ||
-				doesParameterMatchFilter ||
-				doesEnvironmentMatchFilter;
+			bool const hasActiveData = HasActiveData(pObject);
+			bool const canDraw = (g_cvars.m_hideInactiveAudioObjects == 0) || ((g_cvars.m_hideInactiveAudioObjects != 0) && hasActiveData);
 
-			if (drawObjectDebugInfo)
+			if (canDraw)
 			{
-				bool const hasActiveData = HasActiveData(pObject);
-				bool const canDraw = (g_cvars.m_hideInactiveAudioObjects == 0) || ((g_cvars.m_hideInactiveAudioObjects != 0) && hasActiveData);
+				bool const isVirtual = (pObject->GetFlags() & EObjectFlags::Virtual) != 0;
 
-				if (canDraw)
+				if (drawSphere)
 				{
-					bool const isVirtual = (pObject->GetFlags() & EObjectFlags::Virtual) != 0;
+					auxGeom.DrawSphere(
+						position,
+						Debug::g_objectRadiusPositionSphere,
+						isVirtual ? ColorB(25, 200, 200, 255) : ColorB(255, 1, 1, 255));
+				}
 
-					if (drawSphere)
-					{
-						SAuxGeomRenderFlags const previousRenderFlags = auxGeom.GetRenderFlags();
-						SAuxGeomRenderFlags newRenderFlags(e_Def3DPublicRenderflags);
-						auxGeom.SetRenderFlags(newRenderFlags);
-						auxGeom.DrawSphere(
-							position,
-							Debug::g_objectRadiusPositionSphere,
-							isVirtual ? ColorB(25, 200, 200, 255) : ColorB(255, 1, 1, 255));
-						auxGeom.SetRenderFlags(previousRenderFlags);
-					}
+				if (drawLabel && (isTextFilterDisabled || doesObjectNameMatchFilter))
+				{
+					auxGeom.Draw2dLabel(
+						screenPos.x,
+						screenPos.y,
+						Debug::g_objectFontSize,
+						isVirtual ? Debug::g_globalColorVirtual.data() : (hasActiveData ? Debug::g_objectColorActive.data() : Debug::g_globalColorInactive.data()),
+						false,
+						"%s",
+						szObjectName);
 
-					if (drawLabel)
+					screenPos.y += Debug::g_objectLineHeight;
+				}
+
+				if (drawTriggers && (isTextFilterDisabled || doesTriggerMatchFilter))
+				{
+					for (auto const& debugText : triggerInfo)
 					{
 						auxGeom.Draw2dLabel(
 							screenPos.x,
-							screenPos.y + offsetOnY,
+							screenPos.y,
 							Debug::g_objectFontSize,
-							isVirtual ? Debug::g_objectColorVirtual.data() : (hasActiveData ? Debug::g_objectColorActive.data() : Debug::g_objectColorInactive.data()),
+							isVirtual ? Debug::g_globalColorVirtual.data() : Debug::g_objectColorTrigger.data(),
 							false,
 							"%s",
-							szObjectName);
+							debugText.c_str());
 
-						offsetOnY += Debug::g_objectLineHeight;
+						screenPos.y += Debug::g_objectLineHeight;
 					}
+				}
 
-					if (drawTriggers && !triggerInfo.empty())
-					{
-						for (auto const& debugText : triggerInfo)
-						{
-							auxGeom.Draw2dLabel(
-								screenPos.x,
-								screenPos.y + offsetOnY,
-								Debug::g_objectFontSize,
-								isVirtual ? Debug::g_objectColorVirtual.data() : Debug::g_objectColorTrigger.data(),
-								false,
-								"%s",
-								debugText.c_str());
-
-							offsetOnY += Debug::g_objectLineHeight;
-						}
-					}
-
-					if (drawStandaloneFiles && !standaloneFileInfo.empty())
-					{
-						for (auto const& debugText : standaloneFileInfo)
-						{
-							auxGeom.Draw2dLabel(
-								screenPos.x,
-								screenPos.y + offsetOnY,
-								Debug::g_objectFontSize,
-								isVirtual ? Debug::g_objectColorVirtual.data() : Debug::g_objectColorStandaloneFile.data(),
-								false,
-								"%s",
-								debugText.c_str());
-
-							offsetOnY += Debug::g_objectLineHeight;
-						}
-					}
-
-					if (drawStates && !switchStateInfo.empty())
-					{
-						for (auto const& switchStatePair : switchStateInfo)
-						{
-							auto const pSwitch = switchStatePair.first;
-							auto const pSwitchState = switchStatePair.second;
-
-							CStateDebugDrawData& drawData = m_stateDrawInfoMap.emplace(std::piecewise_construct, std::forward_as_tuple(pSwitch->GetId()), std::forward_as_tuple(pSwitchState->GetId())).first->second;
-							drawData.Update(pSwitchState->GetId());
-							float const switchTextColor[4] = { 0.8f, 0.3f, 0.6f, drawData.m_currentAlpha };
-
-							auxGeom.Draw2dLabel(
-								screenPos.x,
-								screenPos.y + offsetOnY,
-								Debug::g_objectFontSize,
-								isVirtual ? Debug::g_objectColorVirtual.data() : switchTextColor,
-								false,
-								"%s: %s\n",
-								pSwitch->GetName(),
-								pSwitchState->GetName());
-
-							offsetOnY += Debug::g_objectLineHeight;
-						}
-					}
-
-					if (drawParameters && !parameterInfo.empty())
-					{
-						for (auto const& parameterPair : parameterInfo)
-						{
-							auxGeom.Draw2dLabel(
-								screenPos.x,
-								screenPos.y + offsetOnY,
-								Debug::g_objectFontSize,
-								isVirtual ? Debug::g_objectColorVirtual.data() : Debug::g_objectColorParameter.data(),
-								false,
-								"%s: %2.2f\n",
-								parameterPair.first,
-								parameterPair.second);
-
-							offsetOnY += Debug::g_objectLineHeight;
-						}
-					}
-
-					if (drawEnvironments && !environmentInfo.empty())
-					{
-						for (auto const& environmentPair : environmentInfo)
-						{
-							auxGeom.Draw2dLabel(
-								screenPos.x,
-								screenPos.y + offsetOnY,
-								Debug::g_objectFontSize,
-								isVirtual ? Debug::g_objectColorVirtual.data() : Debug::g_objectColorEnvironment.data(),
-								false,
-								"%s: %.2f\n",
-								environmentPair.first,
-								environmentPair.second);
-
-							offsetOnY += Debug::g_objectLineHeight;
-						}
-					}
-
-					if (drawDistance)
+				if (drawStandaloneFiles && (isTextFilterDisabled || doesStandaloneFileMatchFilter))
+				{
+					for (auto const& debugText : standaloneFileInfo)
 					{
 						auxGeom.Draw2dLabel(
 							screenPos.x,
-							screenPos.y + offsetOnY,
+							screenPos.y,
 							Debug::g_objectFontSize,
-							isVirtual ? Debug::g_objectColorVirtual.data() : Debug::g_objectColorActive.data(),
+							isVirtual ? Debug::g_globalColorVirtual.data() : Debug::g_objectColorStandaloneFile.data(),
 							false,
-							"Dist: %4.1fm / Max: %.1fm",
-							distance,
-							pObject->GetMaxRadius());
+							"%s",
+							debugText.c_str());
 
-						offsetOnY += Debug::g_objectLineHeight;
+						screenPos.y += Debug::g_objectLineHeight;
 					}
+				}
 
-					if (drawOcclusionRayLabel)
+				if (drawStates && (isTextFilterDisabled || doesStateSwitchMatchFilter))
+				{
+					for (auto const& switchStatePair : switchStateInfo)
 					{
-						EOcclusionType const occlusionType = m_propagationProcessor.GetOcclusionType();
-						SATLSoundPropagationData propagationData;
-						m_propagationProcessor.GetPropagationData(propagationData);
+						auto const pSwitch = switchStatePair.first;
+						auto const pSwitchState = switchStatePair.second;
 
-						CryFixedStringT<MaxMiscStringLength> debugText;
+						CStateDebugDrawData& drawData = m_stateDrawInfoMap.emplace(std::piecewise_construct, std::forward_as_tuple(pSwitch->GetId()), std::forward_as_tuple(pSwitchState->GetId())).first->second;
+						drawData.Update(pSwitchState->GetId());
+						float const switchTextColor[4] = { 0.8f, drawData.m_currentSwitchColor, 0.6f, 1.0f };
 
-						if (distance < g_cvars.m_occlusionMaxDistance)
+						auxGeom.Draw2dLabel(
+							screenPos.x,
+							screenPos.y,
+							Debug::g_objectFontSize,
+							isVirtual ? Debug::g_globalColorVirtual.data() : switchTextColor,
+							false,
+							"%s: %s\n",
+							pSwitch->GetName(),
+							pSwitchState->GetName());
+
+						screenPos.y += Debug::g_objectLineHeight;
+					}
+				}
+
+				if (drawParameters && (isTextFilterDisabled || doesParameterMatchFilter))
+				{
+					for (auto const& parameterPair : parameterInfo)
+					{
+						auxGeom.Draw2dLabel(
+							screenPos.x,
+							screenPos.y,
+							Debug::g_objectFontSize,
+							isVirtual ? Debug::g_globalColorVirtual.data() : Debug::g_objectColorParameter.data(),
+							false,
+							"%s: %2.2f\n",
+							parameterPair.first,
+							parameterPair.second);
+
+						screenPos.y += Debug::g_objectLineHeight;
+					}
+				}
+
+				if (drawEnvironments && (isTextFilterDisabled || doesEnvironmentMatchFilter))
+				{
+					for (auto const& environmentPair : environmentInfo)
+					{
+						auxGeom.Draw2dLabel(
+							screenPos.x,
+							screenPos.y,
+							Debug::g_objectFontSize,
+							isVirtual ? Debug::g_globalColorVirtual.data() : Debug::g_objectColorEnvironment.data(),
+							false,
+							"%s: %.2f\n",
+							environmentPair.first,
+							environmentPair.second);
+
+						screenPos.y += Debug::g_objectLineHeight;
+					}
+				}
+
+				if (drawDistance)
+				{
+					auxGeom.Draw2dLabel(
+						screenPos.x,
+						screenPos.y,
+						Debug::g_objectFontSize,
+						isVirtual ? Debug::g_globalColorVirtual.data() : Debug::g_objectColorActive.data(),
+						false,
+						"Dist: %4.1fm / Max: %.1fm",
+						distance,
+						pObject->GetMaxRadius());
+
+					screenPos.y += Debug::g_objectLineHeight;
+				}
+
+				if (drawOcclusionRayLabel)
+				{
+					EOcclusionType const occlusionType = m_propagationProcessor.GetOcclusionType();
+					SATLSoundPropagationData propagationData;
+					m_propagationProcessor.GetPropagationData(propagationData);
+
+					CryFixedStringT<MaxMiscStringLength> debugText;
+
+					if (distance < g_cvars.m_occlusionMaxDistance)
+					{
+						if (occlusionType == EOcclusionType::Adaptive)
 						{
-							if (occlusionType == EOcclusionType::Adaptive)
-							{
-								debugText.Format(
-									"%s(%s)",
-									s_szOcclusionTypes[IntegralValue(occlusionType)],
-									s_szOcclusionTypes[IntegralValue(m_propagationProcessor.GetOcclusionTypeWhenAdaptive())]);
-							}
-							else
-							{
-								debugText.Format("%s", s_szOcclusionTypes[IntegralValue(occlusionType)]);
-							}
+							debugText.Format(
+								"%s(%s)",
+								s_szOcclusionTypes[IntegralValue(occlusionType)],
+								s_szOcclusionTypes[IntegralValue(m_propagationProcessor.GetOcclusionTypeWhenAdaptive())]);
 						}
 						else
 						{
-							debugText.Format("Ignore (exceeded activity range)");
+							debugText.Format("%s", s_szOcclusionTypes[IntegralValue(occlusionType)]);
 						}
-
-						float const activeRayLabelColor[4] = { propagationData.occlusion, 1.0f - propagationData.occlusion, 0.0f, 0.9f };
-
-						auxGeom.Draw2dLabel(
-							screenPos.x,
-							screenPos.y + offsetOnY,
-							Debug::g_objectFontSize,
-							((occlusionType != EOcclusionType::None) && (occlusionType != EOcclusionType::Ignore)) ? (isVirtual ? Debug::g_objectColorVirtual.data() : activeRayLabelColor) : Debug::g_objectColorInactive.data(),
-							false,
-							"Occl: %3.2f | Type: %s", // Add obstruction once the engine supports it.
-							propagationData.occlusion,
-							debugText.c_str());
-
-						offsetOnY += Debug::g_objectLineHeight;
+					}
+					else
+					{
+						debugText.Format("Ignore (exceeded activity range)");
 					}
 
-					m_propagationProcessor.DrawDebugInfo(auxGeom, m_flags);
+					float const activeRayLabelColor[4] = { propagationData.occlusion, 1.0f - propagationData.occlusion, 0.0f, 0.9f };
+
+					auxGeom.Draw2dLabel(
+						screenPos.x,
+						screenPos.y,
+						Debug::g_objectFontSize,
+						((occlusionType != EOcclusionType::None) && (occlusionType != EOcclusionType::Ignore)) ? (isVirtual ? Debug::g_globalColorVirtual.data() : activeRayLabelColor) : Debug::g_globalColorInactive.data(),
+						false,
+						"Occl: %3.2f | Type: %s", // Add obstruction once the engine supports it.
+						propagationData.occlusion,
+						debugText.c_str());
+
+					screenPos.y += Debug::g_objectLineHeight;
 				}
+
+				if ((g_cvars.m_drawAudioDebug & Debug::EDrawFilter::ObjectImplInfo) != 0)
+				{
+					m_pImplData->DrawDebugInfo(auxGeom, screenPos.x, screenPos.y, (isTextFilterDisabled ? nullptr : lowerCaseSearchString.c_str()));
+				}
+
+				m_propagationProcessor.DrawDebugInfo(auxGeom, m_flags);
 			}
 		}
 	}
@@ -1141,6 +995,9 @@ void CATLAudioObject::ForceImplementationRefresh(bool const setTransformation)
 		m_pImplData->SetTransformation(m_transformation);
 	}
 
+	m_pImplData->ToggleFunctionality(Impl::EObjectFunctionality::TrackAbsoluteVelocity, (m_flags& EObjectFlags::TrackAbsoluteVelocity) != 0);
+	m_pImplData->ToggleFunctionality(Impl::EObjectFunctionality::TrackRelativeVelocity, (m_flags& EObjectFlags::TrackRelativeVelocity) != 0);
+
 	// Parameters
 	for (auto const& parameterPair : m_parameters)
 	{
@@ -1150,7 +1007,7 @@ void CATLAudioObject::ForceImplementationRefresh(bool const setTransformation)
 		{
 			pParameter->Set(*this, parameterPair.second);
 		}
-		else if (!SetDefaultParameterValue(parameterPair.first, parameterPair.second))
+		else
 		{
 			Cry::Audio::Log(ELogType::Warning, "Parameter \"%u\" does not exist!", parameterPair.first);
 		}
@@ -1346,27 +1203,6 @@ void CATLAudioObject::ToggleRelativeVelocityTracking(bool const enable, SRequest
 {
 	SAudioObjectRequestData<EAudioObjectRequestType::ToggleRelativeVelocityTracking> requestData(enable);
 	PushRequest(requestData, userData);
-}
-
-//////////////////////////////////////////////////////////////////////////
-bool CATLAudioObject::SetDefaultParameterValue(ControlId const id, float const value) const
-{
-	bool wasSuccess = true;
-
-	switch (id)
-	{
-	case AbsoluteVelocityParameterId:
-		g_pAbsoluteVelocityParameter->Set(*this, value);
-		break;
-	case RelativeVelocityParameterId:
-		g_pRelativeVelocityParameter->Set(*this, value);
-		break;
-	default:
-		wasSuccess = false;
-		break;
-	}
-
-	return wasSuccess;
 }
 
 //////////////////////////////////////////////////////////////////////////
