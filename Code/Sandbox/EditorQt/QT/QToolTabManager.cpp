@@ -919,7 +919,13 @@ void CTabPaneManager::SetState(const QVariant& state)
 	if (mainWindowStateVar.isValid())
 	{
 		GetToolManager()->hide();
-		GetToolManager()->clear();
+
+		// We do not want to clear the tool manager at the application star-up time.
+		// For some reason this changes the value of AfxGetMainWnd(), which can break the initialization of MFC tools.
+		if (!GetToolManager()->toolWindows().empty())
+		{
+			GetToolManager()->clear();
+		}
 
 		for (QVariantMap::const_iterator iter = openToolsMap.begin(); iter != openToolsMap.end(); ++iter)
 		{
