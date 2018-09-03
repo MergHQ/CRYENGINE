@@ -670,6 +670,7 @@ void CAttachmentVCLOTH::DrawAttachment(SRendParams& RendParams, const SRendering
 		pObj->m_ObjFlags |= FOB_ALLOW_TESSELLATION;
 	}
 
+	CRY_ASSERT(RendParams.fDistance * 2.0f <= std::numeric_limits<decltype(CRenderObject::m_nSort)>::max());
 	pObj->m_nSort = fastround_positive(RendParams.fDistance * 2.0f);
 
 	const float SORT_BIAS_AMOUNT = 1.f;

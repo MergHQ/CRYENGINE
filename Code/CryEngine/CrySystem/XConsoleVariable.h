@@ -219,7 +219,7 @@ public:
 
 	virtual void Set(const char* szValue) override
 	{
-		CRY_ASSERT_MESSAGE(GetType() == ECVarType::String, "Wrong Set() function called on: %s. Use SetFromString() if you intended to set a numeric cvar with a string. %s", GetName());
+		CRY_ASSERT_MESSAGE(GetType() == ECVarType::String, "Wrong Set() function called. Use SetFromString() if you intended to set a numeric cvar with a string. %s", GetName());
 		SetInternal<base_type>(szValue);
 	}
 	virtual void Set(float value) override
