@@ -615,7 +615,7 @@ ERequestStatus CImpl::Init(uint32 const objectPoolSize, uint32 const eventPoolSi
 	}
 
 #if defined(INCLUDE_WWISE_IMPL_PRODUCTION_CODE)
-	GetStaticSoundBankSizes();
+	GetInitBankSize();
 #endif  // INCLUDE_WWISE_IMPL_PRODUCTION_CODE
 
 	LoadEventsMaxAttenuations(m_regularSoundBankFolder);
@@ -1411,7 +1411,7 @@ void CImpl::OnRefresh()
 	}
 
 #if defined(INCLUDE_WWISE_IMPL_PRODUCTION_CODE)
-	GetStaticSoundBankSizes();
+	GetInitBankSize();
 #endif  // INCLUDE_WWISE_IMPL_PRODUCTION_CODE
 
 	LoadEventsMaxAttenuations(m_regularSoundBankFolder);
@@ -1487,13 +1487,10 @@ void GetMemoryInfo(SMemoryInfo& memoryInfo)
 }
 
 //////////////////////////////////////////////////////////////////////////
-void CImpl::GetStaticSoundBankSizes()
+void CImpl::GetInitBankSize()
 {
 	string const initBankPath = m_regularSoundBankFolder + "/Init.bnk";
 	m_initBankSize = gEnv->pCryPak->FGetSize(initBankPath.c_str());
-
-	string const soundBankInfoPath = m_regularSoundBankFolder + "/SoundbanksInfo.xml";
-	m_soundbanksInfoSize = gEnv->pCryPak->FGetSize(soundBankInfoPath.c_str());
 }
 #endif  // INCLUDE_WWISE_IMPL_PRODUCTION_CODE
 
@@ -1505,7 +1502,7 @@ void CImpl::DrawDebugInfo(IRenderAuxGeom& auxGeom, float const posX, float& posY
 
 	SMemoryInfo memoryInfo;
 	GetMemoryInfo(memoryInfo);
-	memoryInfo.totalMemory += m_initBankSize + m_soundbanksInfoSize;
+	memoryInfo.totalMemory += m_initBankSize;
 
 	posY += g_debugSystemLineHeightClause;
 	auxGeom.Draw2dLabel(posX, posY, g_debugSystemFontSize, g_debugSystemColorTextPrimary.data(), false, "Total Memory Used: %uKiB | Secondary Memory: %.2f / %.2f MiB | NumAllocs: %d",
@@ -1515,9 +1512,8 @@ void CImpl::DrawDebugInfo(IRenderAuxGeom& auxGeom, float const posX, float& posY
 	                    static_cast<int>(memoryInfo.secondaryPoolAllocations));
 
 	posY += g_debugSystemLineHeight;
-	auxGeom.Draw2dLabel(posX, posY, g_debugSystemFontSize, g_debugSystemColorTextPrimary.data(), false, "Init.bnk: %uKiB | SoundbanksInfo.xml: %uKiB",
-	                    static_cast<uint32>(m_initBankSize / 1024),
-	                    static_cast<uint32>(m_soundbanksInfoSize / 1024));
+	auxGeom.Draw2dLabel(posX, posY, g_debugSystemFontSize, g_debugSystemColorTextPrimary.data(), false, "Init.bnk: %uKiB",
+	                    static_cast<uint32>(m_initBankSize / 1024));
 
 	posY += g_debugSystemLineHeight;
 	auxGeom.Draw2dLabel(posX, posY, g_debugSystemFontSize, g_debugSystemColorTextPrimary.data(), false, "[Object Pool] In Use: %u | Constructed: %u (%uKiB) | Memory Pool: %uKiB",

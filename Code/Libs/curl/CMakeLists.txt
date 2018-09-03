@@ -371,3 +371,7 @@ target_compile_definitions(${PROJECT_NAME} PRIVATE HAVE_CONFIG_H)
 target_include_directories (${PROJECT_NAME} PRIVATE "${CMAKE_CURRENT_BINARY_DIR}")
 
 endif (NOT WIN32)
+
+if (ORBIS OR DARWIN OR LINUX OR ANDROID)
+	target_compile_options(${THIS_PROJECT} PRIVATE -w)
+endif()

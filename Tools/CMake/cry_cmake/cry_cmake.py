@@ -13,7 +13,6 @@ CMAKE_DIR = os.path.abspath(os.path.join(CRYENGINE_DIR,'Tools','CMake'))
 CMAKE_EXE = os.path.abspath(os.path.join(CMAKE_DIR,'Win32','bin','cmake.exe'))
 CMAKE_GUI_EXE = os.path.abspath(os.path.join(CMAKE_DIR,'Win32','bin','cmake-gui.exe'))
 CODE_SDKS_DIR = os.path.abspath(os.path.join(CRYENGINE_DIR,'Code','SDKs'))
-SDK_DOWNLOAD_EXE = os.path.abspath(os.path.join(CRYENGINE_DIR,'download_sdks.exe'))
 
 CONFIGS = [
 #Visual Studio 2015 Express
@@ -192,85 +191,12 @@ class Application(tk.Frame):
             toolchain = os.path.join(CMAKE_DIR,config['cmake_toolchain'])
             )
 
-class dlgMissingSDKs(tk.Frame):
-    def __init__(self, master=None):
-        super().__init__(master)
-        self.parent = master
-        self.parent.title("CRYENGINE CMake Project Generator")
-        self.parent.minsize(300,100);
-        self.pack()
-        self.create_widgets()
-
-    def create_widgets(self):
-        self.lblText = tk.Label(self, text="Missing 3rd-party SDKs folder at \n'" + CODE_SDKS_DIR + "'.\n")
-        self.lblText.grid(row=0, column=0, columnspan=1)
-
-        self.frmButtons = tk.Frame(self)
-        self.frmButtons.grid(row=1, column=0, columnspan=1)
-
-        self.btnDownload = tk.Button(self.frmButtons)
-        self.btnDownload["text"] = "Download SDKs"
-        self.btnDownload["command"] = self.handleDownload
-        self.btnDownload.grid(row=0, column=1, padx=10, pady=10)
-
-        self.btnContinue = tk.Button(self.frmButtons)
-        self.btnContinue["text"] = "Continue (Skip)"
-        self.btnContinue["command"] = self.handleContinue
-        self.btnContinue.grid(row=0, column=2, padx=10, pady=10)
-
-        self.btnCancel = tk.Button(self.frmButtons)
-        self.btnCancel["text"] = "Cancel (Quit)"
-        self.btnCancel["command"] = self.handleCancel
-        self.btnCancel.grid(row=0, column=3, padx=10, pady=10)
-
-
-
-    def handleDownload(self):
-        self.parent.destroy()
-
-        try:
-            os.system("\"" + SDK_DOWNLOAD_EXE + "\"")
-        except:
-            self.showDialog("CRYENGINE Error!", ("Cannot execute download_sdks.exe at:\n(%s)" % SDK_DOWNLOAD_EXE))
-
-        if not os.path.isdir(CODE_SDKS_DIR):
-            self.showDialog("CRYENGINE Error!", "SDKs were not downloaded (download_sdks.exe failed or was closed too early?).")
-            sys.exit()
-
-        self.quit()
-
-    def showDialog(self, title, msg):
-        global iconfile
-        popup = tk.Tk()
-        popup.iconbitmap(iconfile)
-        popup.title(title)
-        ttk.Label(popup, text=msg).pack(pady=10, padx=10)
-        btnOk = ttk.Button(popup, text="Ok", command = popup.destroy)
-        btnOk.pack(pady=20, padx=10)
-        center_window(popup)
-        self.mainloop()
-
-    def handleContinue(self):
-        self.parent.destroy()
-
-    def handleCancel(self):
-        self.parent.destroy()
-        sys.exit()
-
 def main():
     iconfile = "icon.ico"
     if not hasattr(sys, "frozen"):
         iconfile = os.path.join(os.path.dirname(__file__), iconfile)
     else:
         iconfile = os.path.join(sys.prefix, iconfile)
-
-    # Check if Code/SDKs folder should exist before proceeding
-    if not os.path.exists(os.path.join(CMAKE_DIR, 'Bootstrap.cmake')) and not os.path.isdir(CODE_SDKS_DIR):
-        dlgRoot = tk.Tk()
-        dlgRoot.iconbitmap(iconfile)
-        dialog = dlgMissingSDKs(master=dlgRoot)
-        center_window(dlgRoot)
-        dialog.mainloop()
 
     root = tk.Tk()
     root.iconbitmap(iconfile)

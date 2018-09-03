@@ -537,12 +537,12 @@ int _tmain(int argc, _TCHAR* argv[])
 	//fprintf(stderr, "prng_idx is %d\n", prng_idx);
 	assert( prng_idx != -1 );
 	int make_prng_result = rng_make_prng(128, prng_idx, &g_yarrow_prng_state, NULL);
-	fprintf(stderr, "rng_make_prng returned %d\n", make_prng_result);
+	//fprintf(stderr, "rng_make_prng returned %d\n", make_prng_result);
 
 	int md5 = find_hash("md5");
 	int sha256 = find_hash ("sha256");
 	int prngIndex = find_prng("yarrow");
-	fprintf(stderr, "prngIndex = %d\n", prngIndex);
+	//fprintf(stderr, "prngIndex = %d\n", prngIndex);
 
 	rsa_key rsa_public_key;
 	if (CRYPT_OK != rsa_import(g_rsa_public_key_data, pubLength, &rsa_public_key ))

@@ -59,6 +59,7 @@ public:
 	void        ReleasePendingRays();
 	bool        HasPendingRays() const { return m_remainingRays > 0; }
 	bool        HasNewOcclusionValues();
+	void        UpdateOcclusion();
 
 private:
 

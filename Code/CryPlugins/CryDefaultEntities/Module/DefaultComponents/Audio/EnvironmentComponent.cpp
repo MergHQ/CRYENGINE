@@ -54,26 +54,15 @@ void CEnvironmentComponent::Initialize()
 }
 
 //////////////////////////////////////////////////////////////////////////
-void CEnvironmentComponent::OnShutDown()
-{
-	if (m_pIEntityAudioComponent != nullptr)
-	{
-		m_pIEntityAudioComponent->SetEnvironmentAmount(m_environment.m_id, 0.0f, CryAudio::InvalidAuxObjectId);
-		m_pIEntityAudioComponent->SetEnvironmentId(CryAudio::InvalidEnvironmentId);
-		m_pIEntityAudioComponent->SetEnvironmentFadeDistance(0.0f);
-		m_pIEntityAudioComponent = nullptr;
-		gEnv->pEntitySystem->GetAreaManager()->SetAreasDirty();
-	}
-}
-
-//////////////////////////////////////////////////////////////////////////
 Cry::Entity::EventFlags CEnvironmentComponent::GetEventMask() const
 {
+	Cry::Entity::EventFlags eventMask = ENTITY_EVENT_DONE;
+
 #if defined(INCLUDE_DEFAULT_PLUGINS_PRODUCTION_CODE)
-	return ENTITY_EVENT_COMPONENT_PROPERTY_CHANGED;
-#else
-	return Cry::Entity::EventFlags();
-#endif  // INCLUDE_DEFAULT_PLUGINS_PRODUCTION_CODE
+	eventMask |= ENTITY_EVENT_COMPONENT_PROPERTY_CHANGED;
+#endif// INCLUDE_DEFAULT_PLUGINS_PRODUCTION_CODE
+	
+	return eventMask;
 }
 
 //////////////////////////////////////////////////////////////////////////
@@ -91,6 +80,17 @@ void CEnvironmentComponent::ProcessEvent(const SEntityEvent& event)
 		}
 	}
 #endif  // INCLUDE_DEFAULT_PLUGINS_PRODUCTION_CODE
+	if(event.event == ENTITY_EVENT_DONE)
+	{
+		if (m_pIEntityAudioComponent != nullptr)
+		{
+			m_pIEntityAudioComponent->SetEnvironmentAmount(m_environment.m_id, 0.0f, CryAudio::InvalidAuxObjectId);
+			m_pIEntityAudioComponent->SetEnvironmentId(CryAudio::InvalidEnvironmentId);
+			m_pIEntityAudioComponent->SetEnvironmentFadeDistance(0.0f);
+			m_pIEntityAudioComponent = nullptr;
+			gEnv->pEntitySystem->GetAreaManager()->SetAreasDirty();
+		}
+	}
 }
 
 //////////////////////////////////////////////////////////////////////////

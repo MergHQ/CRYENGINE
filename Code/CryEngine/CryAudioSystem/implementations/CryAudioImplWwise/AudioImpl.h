@@ -96,10 +96,9 @@ private:
 #endif  // !WWISE_FOR_RELEASE
 
 #if defined(INCLUDE_WWISE_IMPL_PRODUCTION_CODE)
-	void GetStaticSoundBankSizes();
+	void GetInitBankSize();
 	CryFixedStringT<MaxInfoStringLength> m_name;
 	size_t                               m_initBankSize = 0;
-	size_t                               m_soundbanksInfoSize = 0;
 #endif  // INCLUDE_WWISE_IMPL_PRODUCTION_CODE
 
 #if defined(WWISE_USE_OCULUS)

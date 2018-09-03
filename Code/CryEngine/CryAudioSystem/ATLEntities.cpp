@@ -276,6 +276,8 @@ void CTrigger::Execute(
 	void* const pUserDataOwner /* = nullptr */,
 	ERequestFlags const flags /* = ERequestFlags::None */) const
 {
+	object.UpdateOcclusion();
+
 	SAudioTriggerInstanceState triggerInstanceState;
 	triggerInstanceState.triggerId = GetId();
 	triggerInstanceState.pOwnerOverride = pOwner;
@@ -361,6 +363,8 @@ void CTrigger::Execute(
 	TriggerInstanceId const triggerInstanceId,
 	SAudioTriggerInstanceState& triggerInstanceState) const
 {
+	object.UpdateOcclusion();
+
 	for (auto const pConnection : m_connections)
 	{
 		CATLEvent* const pEvent = g_eventManager.ConstructEvent();
