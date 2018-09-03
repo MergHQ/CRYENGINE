@@ -345,7 +345,7 @@ void DesignerObject::Serialize(CObjectArchive& ar)
 		if (GetCompiler())
 		{
 			uint64 nRenderFlag = ERF_HAS_CASTSHADOWMAPS | ERF_CASTSHADOWMAPS;
-			ar.node->getAttr("RndFlags", nRenderFlag, false);
+			ar.node->getAttr("RndFlags", nRenderFlag);
 			if (nRenderFlag & ERF_CASTSHADOWMAPS)
 				nRenderFlag |= ERF_HAS_CASTSHADOWMAPS;
 			GetCompiler()->SetRenderFlags(nRenderFlag);
