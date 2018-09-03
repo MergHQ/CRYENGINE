@@ -153,16 +153,16 @@ void CObjectLayerManager::OnEditorNotifyEvent(EEditorNotifyEvent event)
 	switch (event)
 	{
 	case eNotify_OnBeginSceneOpen:
-		m_bCanModifyLayers = true;
+		m_bCanModifyLayers = false;
 		break;
 	case eNotify_OnEndSceneOpen:
-		m_bCanModifyLayers = false;
-		break;
-	case eNotify_OnLayerImportBegin:
 		m_bCanModifyLayers = true;
 		break;
-	case eNotify_OnLayerImportEnd:
+	case eNotify_OnLayerImportBegin:
 		m_bCanModifyLayers = false;
+		break;
+	case eNotify_OnLayerImportEnd:
+		m_bCanModifyLayers = true;
 		break;
 	}
 }
