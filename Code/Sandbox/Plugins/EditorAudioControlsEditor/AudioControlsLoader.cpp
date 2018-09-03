@@ -334,31 +334,6 @@ CControl* CAudioControlsLoader::LoadDefaultControl(XmlNodeRef const pNode, Scope
 				}
 			}
 		}
-		else if ((controlType == EAssetType::Parameter) && (m_defaultParameterNames.find(name) != m_defaultParameterNames.end()))
-		{
-			pControl = g_assetsManager.FindControl(name, controlType);
-
-			if (pControl == nullptr)
-			{
-				pControl = g_assetsManager.CreateControl(name, controlType, pParentItem);
-
-				if (pControl != nullptr)
-				{
-					LoadConnections(pNode, pControl);
-
-					if (pControl->GetName().compareNoCase("object_speed") == 0)
-					{
-						pControl->SetName(CryAudio::s_szAbsoluteVelocityParameterName);
-					}
-					else if (pControl->GetName().compareNoCase("object_doppler") == 0)
-					{
-						pControl->SetName(CryAudio::s_szRelativeVelocityParameterName);
-					}
-
-					pControl->SetModified(true, true);
-				}
-			}
-		}
 	}
 
 	return pControl;

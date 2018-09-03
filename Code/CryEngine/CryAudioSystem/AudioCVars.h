@@ -32,8 +32,6 @@ public:
 	float m_occlusionHighDistance = 0.0f;
 	float m_occlusionMediumDistance = 0.0f;
 	float m_fullObstructionMaxDistance = 0.0f;
-	float m_positionUpdateThresholdMultiplier = 0.02f;
-	float m_velocityTrackingThreshold = 0.0f;
 	float m_occlusionRayLengthOffset = 0.0f;
 	float m_listenerOcclusionPlaneSize = 0.0f;
 

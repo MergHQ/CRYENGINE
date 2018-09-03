@@ -51,13 +51,9 @@ bool StopTrigger(CTrigger const* const pTrigger);
 bool PauseEvent(CEvent const* const pEvent);
 bool ResumeEvent(CEvent const* const pEvent);
 
-// Listeners
-bool SetListenerTransformation(ListenerId const listenerId, CObjectTransformation const& transformation);
-
-// Audio Objects
+// Objects
 bool RegisterObject(CObject* const pObject);
 bool UnregisterObject(CObject const* const pObject);
-bool SetObjectTransformation(CObject* const pObject, CObjectTransformation const& transformation);
 
 // Callbacks
 void RegisterEventFinishedCallback(FnEventCallback pCallbackFunction);

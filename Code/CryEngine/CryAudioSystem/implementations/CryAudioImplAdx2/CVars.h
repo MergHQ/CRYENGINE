@@ -42,6 +42,9 @@ public:
 	int   m_voiceAllocationMethod = 0;
 
 	float m_maxPitch = 0;
+	float m_velocityTrackingThreshold = 0.0f;
+	float m_positionUpdateThresholdMultiplier = 0.02f;
+	float m_maxVelocity = 100.0f;
 };
 
 extern CCVars g_cvars;

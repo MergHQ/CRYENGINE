@@ -81,7 +81,7 @@ uint32 CTreeView::GetItemId(QModelIndex const& index) const
 
 		if (itemIndex.isValid())
 		{
-			QString itemName = itemIndex.data(m_nameRole).toString();
+			QString itemName = itemIndex.data(m_typeRole).toString() + "/" + itemIndex.data(m_nameRole).toString();
 			QModelIndex parent = itemIndex.parent();
 
 			while (parent.isValid())

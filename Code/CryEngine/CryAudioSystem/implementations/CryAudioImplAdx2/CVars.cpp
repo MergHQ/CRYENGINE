@@ -38,6 +38,7 @@ void CCVars::RegisterVariables()
 	m_maxFiles = 32;
 	m_voiceAllocationMethod = 0;
 	m_maxPitch = 2400.0f;
+	m_velocityTrackingThreshold = 0.1f;
 
 	REGISTER_CVAR2("s_Adx2MaxVirtualVoices", &m_maxVirtualVoices, m_maxVirtualVoices, VF_REQUIRE_APP_RESTART,
 	               "Specifies the maximum number of voices for which voice control is performed simultaneously.\n"
@@ -126,6 +127,22 @@ void CCVars::RegisterVariables()
 	               "Specifies the upper limit of the pitch change applied in the Atom library.\n"
 	               "Usage: s_Adx2MaxPitch [0/...]\n"
 	               "Default PC: 2400\n");
+
+	REGISTER_CVAR2("s_Adx2VelocityTrackingThreshold", &m_velocityTrackingThreshold, m_velocityTrackingThreshold, VF_CHEAT | VF_CHEAT_NOCHECK,
+	               "An object has to change its velocity by at least this amount to issue an \"absolute_velocity\" parameter update request to the audio system.\n"
+	               "Usage: s_Adx2VelocityTrackingThreshold [0/...]\n"
+	               "Default: 0.1 (10 cm/s)\n");
+
+	REGISTER_CVAR2("s_Adx2PositionUpdateThresholdMultiplier", &m_positionUpdateThresholdMultiplier, m_positionUpdateThresholdMultiplier, VF_CHEAT | VF_CHEAT_NOCHECK,
+	               "An object's distance to the listener is multiplied by this value to determine the position update threshold.\n"
+	               "Usage: s_Adx2PositionUpdateThresholdMultiplier [0/...]\n"
+	               "Default: 0.02\n");
+
+	REGISTER_CVAR2("s_Adx2MaxVelocity", &m_maxVelocity, m_maxVelocity, VF_CHEAT | VF_CHEAT_NOCHECK,
+	               "The maximum velocity that will be normalized to 1.0 of the AISCA-Control \"absolute_velocity\".\n"
+	               "For instance if this value is set to 100, and an object has a speed of 20, the corresponding AISAC-Control value will be 0.2\n"
+	               "Usage: s_Adx2MaxVelocity [0/...]\n"
+	               "Default: 100\n");
 }
 
 //////////////////////////////////////////////////////////////////////////
@@ -152,6 +169,9 @@ void CCVars::UnregisterVariables()
 		pConsole->UnregisterVariable("s_Adx2MaxFiles");
 		pConsole->UnregisterVariable("s_Adx2VoiceAllocationMethod");
 		pConsole->UnregisterVariable("s_Adx2MaxPitch");
+		pConsole->UnregisterVariable("s_Adx2VelocityTrackingThreshold");
+		pConsole->UnregisterVariable("s_Adx2PositionUpdateThresholdMultiplier");
+		pConsole->UnregisterVariable("s_Adx2MaxVelocity");
 	}
 }
 } // namespace Adx2

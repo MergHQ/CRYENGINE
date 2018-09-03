@@ -15,14 +15,30 @@ class CListener final : public IListener
 public:
 
 	CListener() = default;
+
 	CListener(CListener const&) = delete;
 	CListener(CListener&&) = delete;
 	CListener& operator=(CListener const&) = delete;
 	CListener& operator=(CListener&&) = delete;
 
 	// CryAudio::Impl::IListener
-	virtual void SetTransformation(CObjectTransformation const& transformation) override {}
+	virtual void                         Update(float const deltaTime) override                                  {}
+	virtual void                         SetName(char const* const szName) override;
+	virtual void                         SetTransformation(CObjectTransformation const& transformation) override { m_transformation = transformation; }
+	virtual CObjectTransformation const& GetTransformation() const override                                      { return m_transformation; }
 	// ~CryAudio::Impl::IListener
+
+#if defined(INCLUDE_PORTAUDIO_IMPL_PRODUCTION_CODE)
+	char const* GetName() const { return m_name.c_str(); }
+#endif  // INCLUDE_PORTAUDIO_IMPL_PRODUCTION_CODE
+
+private:
+
+	CObjectTransformation m_transformation;
+
+#if defined(INCLUDE_PORTAUDIO_IMPL_PRODUCTION_CODE)
+	CryFixedStringT<MaxObjectNameLength> m_name;
+#endif  // INCLUDE_PORTAUDIO_IMPL_PRODUCTION_CODE
 };
 
 class CParameter final : public IParameter

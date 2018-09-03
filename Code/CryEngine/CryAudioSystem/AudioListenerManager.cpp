@@ -28,24 +28,21 @@ void CAudioListenerManager::Terminate()
 //////////////////////////////////////////////////////////////////////////
 void CAudioListenerManager::OnAfterImplChanged()
 {
+#if defined(INCLUDE_AUDIO_PRODUCTION_CODE)
 	if (!m_constructedListeners.empty())
 	{
 		for (auto const pListener : m_constructedListeners)
 		{
-#if defined(INCLUDE_AUDIO_PRODUCTION_CODE)
-			pListener->m_pImplData = g_pIImpl->ConstructListener(pListener->m_name.c_str());
-#else
-			pListener->m_pImplData = g_pIImpl->ConstructListener();
-#endif  // INCLUDE_AUDIO_PRODUCTION_CODE
-
-			pListener->HandleSetTransformation(pListener->GetTransformation());
+			pListener->m_pImplData = g_pIImpl->ConstructListener(pListener->GetDebugTransformation(), pListener->GetName());
 		}
 	}
 	else
 	{
-		// Create a default listener for early functionality.
-		CreateListener("DefaultListener");
+		CreateListener(CObjectTransformation::GetEmptyObject(), "DefaultListener");
 	}
+#else
+	CreateListener(CObjectTransformation::GetEmptyObject(), "DefaultListener");
+#endif  // INCLUDE_AUDIO_PRODUCTION_CODE
 }
 
 //////////////////////////////////////////////////////////////////////////
@@ -71,7 +68,7 @@ void CAudioListenerManager::Update(float const deltaTime)
 }
 
 //////////////////////////////////////////////////////////////////////////
-CATLListener* CAudioListenerManager::CreateListener(char const* const szName /*= nullptr*/)
+CATLListener* CAudioListenerManager::CreateListener(CObjectTransformation const& transformation, char const* const szName)
 {
 	if (!m_constructedListeners.empty())
 	{
@@ -79,17 +76,16 @@ CATLListener* CAudioListenerManager::CreateListener(char const* const szName /*=
 		CATLListener* const pListener = m_constructedListeners.front();
 
 #if defined(INCLUDE_AUDIO_PRODUCTION_CODE)
-		// Update name, TODO: needs reconstruction with the middleware in order to update it as well.
-		pListener->m_name = szName;
+		pListener->SetName(szName);
 #endif // INCLUDE_AUDIO_PRODUCTION_CODE
 
 		return pListener;
 	}
 
-	auto const pListener = new CATLListener(g_pIImpl->ConstructListener(szName));
+	auto const pListener = new CATLListener(g_pIImpl->ConstructListener(transformation, szName));
 
 #if defined(INCLUDE_AUDIO_PRODUCTION_CODE)
-	pListener->m_name = szName;
+	pListener->SetName(szName);
 #endif // INCLUDE_AUDIO_PRODUCTION_CODE
 
 	m_constructedListeners.push_back(pListener);
@@ -117,12 +113,6 @@ void CAudioListenerManager::ReleaseListener(CATLListener* const pListener)
 }
 
 //////////////////////////////////////////////////////////////////////////
-size_t CAudioListenerManager::GetNumActiveListeners() const
-{
-	return m_constructedListeners.size();
-}
-
-//////////////////////////////////////////////////////////////////////////
 CObjectTransformation const& CAudioListenerManager::GetActiveListenerTransformation() const
 {
 	for (auto const pListener : m_constructedListeners)
@@ -134,29 +124,11 @@ CObjectTransformation const& CAudioListenerManager::GetActiveListenerTransformat
 	return CObjectTransformation::GetEmptyObject();
 }
 
-//////////////////////////////////////////////////////////////////////////
-Vec3 const& CAudioListenerManager::GetActiveListenerVelocity() const
-{
-	for (auto const pListener : m_constructedListeners)
-	{
-		// Only one listener supported currently!
-		return pListener->GetVelocity();
-	}
-
-	return Vec3Constants<float>::fVec3_Zero;
-}
-
 #if defined(INCLUDE_AUDIO_PRODUCTION_CODE)
 //////////////////////////////////////////////////////////////////////////
-char const* CAudioListenerManager::GetActiveListenerName() const
+size_t CAudioListenerManager::GetNumActiveListeners() const
 {
-	for (auto const pListener : m_constructedListeners)
-	{
-		// Only one listener supported currently!
-		return pListener->m_name.c_str();
-	}
-
-	return nullptr;
+	return m_constructedListeners.size();
 }
 #endif // INCLUDE_AUDIO_PRODUCTION_CODE
 }      // namespace CryAudio

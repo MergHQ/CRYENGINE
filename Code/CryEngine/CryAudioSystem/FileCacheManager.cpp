@@ -335,7 +335,7 @@ void CFileCacheManager::DrawDebugInfo(IRenderAuxGeom& auxGeom, float const posX,
 	float blue[4] = { 0.1f, 0.2f, 0.8f, originalAlpha };
 	float yellow[4] = { 1.0f, 1.0f, 0.0f, originalAlpha };
 
-	auxGeom.Draw2dLabel(posX, posY, Debug::g_managerHeaderFontSize, Debug::g_managerColorHeader.data(), false, "FileCacheManager (%d of %d KiB) [Entries: %d]", static_cast<int>(m_currentByteTotal >> 10), static_cast<int>(m_maxByteTotal >> 10), static_cast<int>(m_audioFileEntries.size()));
+	auxGeom.Draw2dLabel(posX, posY, Debug::g_managerHeaderFontSize, Debug::g_globalColorHeader.data(), false, "FileCacheManager (%d of %d KiB) [Entries: %d]", static_cast<int>(m_currentByteTotal >> 10), static_cast<int>(m_maxByteTotal >> 10), static_cast<int>(m_audioFileEntries.size()));
 	posY += Debug::g_managerHeaderLineHeight;
 
 	if (!m_audioFileEntries.empty())

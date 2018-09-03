@@ -3,6 +3,7 @@
 #include "stdafx.h"
 #include "SoundEngine.h"
 #include "SoundEngineUtil.h"
+#include "Common.h"
 #include "GlobalData.h"
 #include <CryAudio/IAudioSystem.h>
 #include <Logger.h>
@@ -58,13 +59,11 @@ using ChannelFinishedRequests = std::deque<int>;
 ChannelFinishedRequests g_channelFinishedRequests[IntegralValue(EChannelFinishedRequestQueueId::Count)];
 CryCriticalSection g_channelFinishedCriticalSection;
 
-// Audio Objects
+// Objects
 using Objects = std::vector<CObject*>;
 Objects g_objects;
 
 // Listeners
-CObjectTransformation g_listenerTransformation;
-bool g_bListenerPosChanged;
 bool g_bMuted;
 
 SoundEngine::FnEventCallback g_fnEventFinishedCallback;
@@ -288,10 +287,6 @@ bool SoundEngine::Init()
 
 	LoadMetadata("", false);
 	LoadMetadata("", true);
-	g_bListenerPosChanged = false;
-
-	// need to reinit as the global variable might have been initialized with wrong values
-	g_listenerTransformation = CObjectTransformation();
 
 	g_objects.reserve(128);
 
@@ -668,10 +663,10 @@ ERequestStatus SoundEngine::ExecuteEvent(CObject* const pObject, CTrigger const*
 
 					if (channel != -1)
 					{
-						// Get distance and angle from the listener to the audio object
+						// Get distance and angle from the listener to the object
 						float distance = 0.0f;
 						float angle = 0.0f;
-						GetDistanceAngleToObject(g_listenerTransformation, pObject->m_transformation, distance, angle);
+						GetDistanceAngleToObject(g_pListener->GetTransformation(), pObject->m_transformation, distance, angle);
 						SetChannelPosition(pEvent->m_pTrigger, channelID, distance, angle);
 
 						g_channels[channelID].pObject = pObject;
@@ -694,7 +689,7 @@ ERequestStatus SoundEngine::ExecuteEvent(CObject* const pObject, CTrigger const*
 
 			if (!pEvent->m_channels.empty())
 			{
-				// If any sample was added then add the event to the audio object
+				// If any sample was added then add the event to the object
 				pObject->m_events.push_back(pEvent);
 				requestStatus = ERequestStatus::Success;
 			}
@@ -809,10 +804,10 @@ ERequestStatus SoundEngine::PlayFile(CObject* const pObject, CStandaloneFile* co
 				g_freeChannels.pop();
 				Mix_Volume(channelId, g_bMuted ? 0 : 128);
 
-				// Get distance and angle from the listener to the audio object
+				// Get distance and angle from the listener to the object
 				float distance = 0.0f;
 				float angle = 0.0f;
-				GetDistanceAngleToObject(g_listenerTransformation, pObject->m_transformation, distance, angle);
+				GetDistanceAngleToObject(g_pListener->GetTransformation(), pObject->m_transformation, distance, angle);
 
 				// Assuming a max distance of 100.0
 				uint8 sldMixerDistance = static_cast<uint8>((std::min((distance / 100.0f), 1.0f) * 255) + 0.5f);
@@ -878,14 +873,6 @@ ERequestStatus SoundEngine::StopFile(CObject* const pObject, CStandaloneFile* co
 }
 
 //////////////////////////////////////////////////////////////////////////
-bool SoundEngine::SetListenerTransformation(ListenerId const listenerId, CObjectTransformation const& transformation)
-{
-	g_listenerTransformation = transformation;
-	g_bListenerPosChanged = true;
-	return true;
-}
-
-//////////////////////////////////////////////////////////////////////////
 bool SoundEngine::RegisterObject(CObject* const pObject)
 {
 	if (pObject != nullptr)
@@ -902,18 +889,6 @@ bool SoundEngine::UnregisterObject(CObject const* const pObject)
 	if (pObject != nullptr)
 	{
 		stl::find_and_erase(g_objects, pObject);
-		return true;
-	}
-	return false;
-}
-
-//////////////////////////////////////////////////////////////////////////
-bool SoundEngine::SetObjectTransformation(CObject* const pObject, CObjectTransformation const& transformation)
-{
-	if (pObject != nullptr)
-	{
-		pObject->m_transformation = transformation;
-		pObject->m_bPositionChanged = true;
 		return true;
 	}
 	return false;
@@ -956,10 +931,10 @@ void SoundEngine::Update()
 	{
 		if (pObject != nullptr)
 		{
-			// Get distance and angle from the listener to the audio object
+			// Get distance and angle from the listener to the object
 			float distance = 0.0f;
 			float angle = 0.0f;
-			GetDistanceAngleToObject(g_listenerTransformation, pObject->m_transformation, distance, angle);
+			GetDistanceAngleToObject(g_pListener->GetTransformation(), pObject->m_transformation, distance, angle);
 
 			for (auto const pEvent : pObject->m_events)
 			{
@@ -970,13 +945,9 @@ void SoundEngine::Update()
 						SetChannelPosition(pEvent->m_pTrigger, channelIndex, distance, angle);
 					}
 				}
-
-				pObject->m_bPositionChanged = false;
 			}
 		}
 	}
-
-	g_bListenerPosChanged = false;
 }
 } // namespace SDL_mixer
 } // namespace Impl

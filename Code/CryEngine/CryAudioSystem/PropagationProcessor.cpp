@@ -189,7 +189,7 @@ void CPropagationProcessor::UpdateOcclusionRayFlags()
 }
 
 ///////////////////////////////////////////////////////////////////////////
-void CPropagationProcessor::Update(float const distanceToListener, EObjectFlags const objectFlags)
+void CPropagationProcessor::Update(EObjectFlags const objectFlags)
 {
 #if defined(INCLUDE_AUDIO_PRODUCTION_CODE)
 	if (g_cvars.m_audioObjectsRayType > 0)
@@ -202,7 +202,7 @@ void CPropagationProcessor::Update(float const distanceToListener, EObjectFlags 
 	}
 #endif // INCLUDE_AUDIO_PRODUCTION_CODE
 
-	m_currentListenerDistance = distanceToListener;
+	m_currentListenerDistance = m_transformation.GetPosition().GetDistance(g_listenerManager.GetActiveListenerTransformation().GetPosition());
 
 	if (CanRunObstructionOcclusion() && (objectFlags& EObjectFlags::Virtual) == 0)
 	{

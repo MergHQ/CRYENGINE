@@ -161,15 +161,13 @@ static SCustomAnimEventType g_atlEvents[] = {
 	{ "audio_trigger", ANIM_EVENT_USES_BONE, "Plays audio trigger using ATL"                                    },
 	{ "audio_switch",  0,                    "Sets audio switch using ATL"                                      },
 	{ "audio_rtpc",    0,                    "Sets RTPC value using ATL"                                        },
-	{ "sound",         ANIM_EVENT_USES_BONE, "Play audio trigger using ATL. Obsolete in favor of audio_trigger" },
-};
+	{ "sound",         ANIM_EVENT_USES_BONE, "Play audio trigger using ATL. Obsolete in favor of audio_trigger" }, };
 
 TSerializeParameterFunc g_atlEventFunctions[sizeof(g_atlEvents) / sizeof(g_atlEvents[0])] = {
 	&SerializeParameterAudioTrigger,
 	&SerializeParameterAudioSwitch,
 	&SerializeParameterAudioRTPC,
-	&SerializeParameterAudioTrigger
-};
+	&SerializeParameterAudioTrigger };
 
 static Vec3 GetBonePosition(ICharacterInstance* character, const QuatTS& physicalLocation, const char* boneName)
 {
@@ -275,7 +273,8 @@ public:
 	{
 		if (enableAudio && m_pIAudioListener == nullptr)
 		{
-			m_pIAudioListener = gEnv->pAudioSystem->CreateListener();
+			static const Matrix34 identityMatrix(IDENTITY);
+			m_pIAudioListener = gEnv->pAudioSystem->CreateListener(identityMatrix);
 		}
 		else if (m_pIAudioListener != nullptr)
 		{
@@ -352,7 +351,7 @@ private:
 		string name;
 		string state;
 
-		void Serialize(Serialization::IArchive& ar)
+		void   Serialize(Serialization::IArchive& ar)
 		{
 			ar(Serialization::AudioSwitch(name), "name", "^");
 			ar(Serialization::AudioSwitchState(state), "state", "^");
@@ -399,14 +398,12 @@ CRYREGISTER_CLASS(AnimEventPlayer_AudioTranslationLayer)
 static SCustomAnimEventType g_mfxEvents[] = {
 	{ "foley",        ANIM_EVENT_USES_BONE, "Foley are used for sounds that are specific to character and material that is being contacted." },
 	{ "footstep",     ANIM_EVENT_USES_BONE, "Footstep are specific to character and surface being stepped on."                               },
-	{ "groundEffect", ANIM_EVENT_USES_BONE },
-};
+	{ "groundEffect", ANIM_EVENT_USES_BONE },};
 
 TSerializeParameterFunc g_mfxEventFuncitons[sizeof(g_mfxEvents) / sizeof(g_mfxEvents[0])] = {
 	&SerializeParameterString,
 	&SerializeParameterString,
-	&SerializeParameterString,
-};
+	&SerializeParameterString, };
 
 class AnimEventPlayerMaterialEffects : public IAnimEventPlayer
 {
@@ -760,12 +757,10 @@ CRYREGISTER_CLASS(AnimEventPlayerAnimFXEvents)
 // ---------------------------------------------------------------------------
 
 static SCustomAnimEventType g_particleEvents[] = {
-	{ "effect", ANIM_EVENT_USES_BONE | ANIM_EVENT_USES_OFFSET_AND_DIRECTION, "Spawns a particle effect." }
-};
+	{ "effect", ANIM_EVENT_USES_BONE | ANIM_EVENT_USES_OFFSET_AND_DIRECTION, "Spawns a particle effect." } };
 
 TSerializeParameterFunc g_particleEventFuncitons[sizeof(g_particleEvents) / sizeof(g_particleEvents[0])] = {
-	&SerializeParameterEffect,
-};
+	&SerializeParameterEffect, };
 
 class AnimEventPlayer_Particles : public IAnimEventPlayer
 {

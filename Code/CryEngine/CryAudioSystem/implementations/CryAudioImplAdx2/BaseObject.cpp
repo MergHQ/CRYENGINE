@@ -7,6 +7,7 @@
 #include "Event.h"
 #include "Trigger.h"
 #include "Parameter.h"
+#include "Listener.h"
 
 #include <Logger.h>
 
@@ -51,7 +52,7 @@ void VoiceEventCallback(
 //////////////////////////////////////////////////////////////////////////
 CBaseObject::CBaseObject()
 {
-	ZeroStruct(m_transformation);
+	ZeroStruct(m_3dAttributes);
 	m_p3dSource = criAtomEx3dSource_Create(&g_3dSourceConfig, nullptr, 0);
 	m_pPlayer = criAtomExPlayer_Create(&g_playerConfig, nullptr, 0);
 	CRY_ASSERT_MESSAGE(m_pPlayer != nullptr, "m_pPlayer is null pointer");
@@ -68,21 +69,6 @@ CBaseObject::~CBaseObject()
 	{
 		pEvent->SetObject(nullptr);
 	}
-}
-
-//////////////////////////////////////////////////////////////////////////
-void CBaseObject::Update()
-{
-}
-
-//////////////////////////////////////////////////////////////////////////
-void CBaseObject::SetTransformation(CObjectTransformation const& transformation)
-{
-	TranslateTransformation(transformation, m_transformation);
-
-	criAtomEx3dSource_SetPosition(m_p3dSource, &m_transformation.pos);
-	criAtomEx3dSource_SetOrientation(m_p3dSource, &m_transformation.fwd, &m_transformation.up);
-	criAtomEx3dSource_Update(m_p3dSource);
 }
 
 //////////////////////////////////////////////////////////////////////////
@@ -177,7 +163,7 @@ bool CBaseObject::StartEvent(CTrigger const* const pTrigger, CEvent* const pEven
 {
 	bool eventStarted = false;
 
-	criAtomExPlayer_Set3dListenerHn(m_pPlayer, g_pListener);
+	criAtomExPlayer_Set3dListenerHn(m_pPlayer, g_pListener->GetHandle());
 	criAtomExPlayer_Set3dSourceHn(m_pPlayer, m_p3dSource);
 
 	auto const iter = g_acbHandles.find(pTrigger->GetAcbId());
@@ -263,7 +249,7 @@ void CBaseObject::RemoveEvent(CEvent* const pEvent)
 {
 	if (!stl::find_and_erase(m_events, pEvent))
 	{
-		Cry::Audio::Log(ELogType::Error, "Tried to remove an event from an audio object that does not own that event");
+		Cry::Audio::Log(ELogType::Error, "Tried to remove an event from an object that does not own that event");
 	}
 }
 

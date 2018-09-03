@@ -15,6 +15,22 @@ namespace Fmod
 extern TriggerToParameterIndexes g_triggerToParameterIndexes;
 
 //////////////////////////////////////////////////////////////////////////
+CEvent::CEvent(CATLEvent* const pEvent)
+	: m_pEvent(pEvent)
+	, m_id(InvalidCRC32)
+	, m_state(EEventState::None)
+	, m_lowpassFrequencyMax(0.0f)
+	, m_lowpassFrequencyMin(0.0f)
+	, m_pInstance(nullptr)
+	, m_pMasterTrack(nullptr)
+	, m_pLowpass(nullptr)
+	, m_pOcclusionParameter(nullptr)
+	, m_pObject(nullptr)
+	, m_pTrigger(nullptr)
+{
+}
+
+//////////////////////////////////////////////////////////////////////////
 CEvent::~CEvent()
 {
 	if (m_pInstance != nullptr)
@@ -83,7 +99,7 @@ bool CEvent::PrepareForOcclusion()
 }
 
 //////////////////////////////////////////////////////////////////////////
-void CEvent::SetObstructionOcclusion(float const obstruction, float const occlusion)
+void CEvent::SetOcclusion(float const occlusion)
 {
 	if (m_pOcclusionParameter != nullptr)
 	{
@@ -232,6 +248,37 @@ void CEvent::TrySetEnvironment(CEnvironment const* const pEnvironment, float con
 	{
 		// Must exist at this point.
 		CRY_ASSERT(false);
+	}
+}
+
+//////////////////////////////////////////////////////////////////////////
+void CEvent::UpdateVirtualState()
+{
+	// Workaround until Fmod has callbacks for virtual/physical states.
+	if (m_pMasterTrack != nullptr)
+	{
+		float audibility = 0.0f;
+		m_pMasterTrack->getAudibility(&audibility);
+
+		EEventState const state = (audibility < 0.01f) ? EEventState::Virtual : EEventState::Playing;
+
+		if (m_state != state)
+		{
+			m_state = state;
+
+			if (m_state == EEventState::Virtual)
+			{
+				gEnv->pAudioSystem->ReportVirtualizedEvent(*m_pEvent);
+			}
+			else
+			{
+				gEnv->pAudioSystem->ReportPhysicalizedEvent(*m_pEvent);
+			}
+		}
+	}
+	else
+	{
+		m_state = EEventState::None;
 	}
 }
 

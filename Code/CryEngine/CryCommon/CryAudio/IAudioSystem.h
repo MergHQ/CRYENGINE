@@ -80,29 +80,6 @@ enum class EDataScope : EnumFlagsType
 };
 
 /**
- * @enum CryAudio::EOcclusionType
- * @brief A strongly typed enum class representing different audio occlusion types that can be set on audio objects.
- * @var CryAudio::EOcclusionType::None
- * @var CryAudio::EOcclusionType::Ignore
- * @var CryAudio::EOcclusionType::Adaptive
- * @var CryAudio::EOcclusionType::Low
- * @var CryAudio::EOcclusionType::Medium
- * @var CryAudio::EOcclusionType::High
- * @var CryAudio::EOcclusionType::Count
- */
-enum class EOcclusionType : EnumFlagsType
-{
-	None,     /**< Used to initialize variables of this type and to determine whether the variable was properly handled. */
-	Ignore,   /**< The audio object does not calculate occlusion against level geometry. */
-	Adaptive, /**< The audio object switches between occlusion types depending on its distance to the audio listener. */
-	Low,      /**< The audio object uses a coarse grained occlusion plane for calculation. */
-	Medium,   /**< The audio object uses a medium grained occlusion plane for calculation. */
-	High,     /**< The audio object uses a fine grained occlusion plane for calculation. */
-	Count,    /**< Used to initialize arrays to this size. */
-};
-CRY_CREATE_ENUM_FLAG_OPERATORS(EOcclusionType);
-
-/**
  * @enum CryAudio::ELogType
  * @brief A strongly typed enum class representing different audio specific log types.
  * @var CryAudio::ELogType::None
@@ -442,11 +419,12 @@ struct IAudioSystem
 	/**
 	 * Constructs an instance of an audio listener.
 	 * Note: Retrieving a listener this way requires the instance to be freed via ReleaseListener once not needed anymore!
+	 * @param transformation - transformation of the listener to be created.
 	 * @param szName - optional name of the listener to be created.
 	 * @return Pointer to a freshly constructed CryAudio::IListener instance.
 	 * @see ReleaseListener
 	 */
-	virtual IListener* CreateListener(char const* const szName = nullptr) = 0;
+	virtual IListener* CreateListener(CObjectTransformation const& transformation, char const* const szName = nullptr) = 0;
 
 	/**
 	 * Destructs the passed audio listener instance.

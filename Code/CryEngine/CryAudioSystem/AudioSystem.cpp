@@ -678,10 +678,10 @@ char const* CSystem::GetConfigPath() const
 }
 
 ///////////////////////////////////////////////////////////////////////////
-CryAudio::IListener* CSystem::CreateListener(char const* const szName /*= nullptr*/)
+CryAudio::IListener* CSystem::CreateListener(CObjectTransformation const& transformation, char const* const szName /*= nullptr*/)
 {
 	CATLListener* pListener = nullptr;
-	SAudioListenerRequestData<EAudioListenerRequestType::RegisterListener> requestData(&pListener, szName);
+	SAudioListenerRequestData<EAudioListenerRequestType::RegisterListener> requestData(&pListener, transformation, szName);
 	CAudioRequest request(&requestData);
 	request.flags = ERequestFlags::ExecuteBlocking;
 	PushRequest(request);
@@ -700,7 +700,7 @@ void CSystem::ReleaseListener(CryAudio::IListener* const pIListener)
 //////////////////////////////////////////////////////////////////////////
 CryAudio::IObject* CSystem::CreateObject(SCreateObjectData const& objectData /*= SCreateObjectData::GetEmptyObject()*/, SRequestUserData const& userData /*= SRequestUserData::GetEmptyObject()*/)
 {
-	CATLAudioObject* const pObject = new CATLAudioObject;
+	CATLAudioObject* const pObject = new CATLAudioObject(objectData.transformation);
 	SAudioObjectRequestData<EAudioObjectRequestType::RegisterObject> requestData(objectData);
 	CAudioRequest request(&requestData);
 	request.flags = userData.flags;

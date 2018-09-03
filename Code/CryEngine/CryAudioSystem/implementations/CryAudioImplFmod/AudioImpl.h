@@ -48,9 +48,9 @@ public:
 	virtual IEnvironment const* ConstructEnvironment(XmlNodeRef const pRootNode) override;
 	virtual void                DestructEnvironment(IEnvironment const* const pIEnvironment) override;
 	virtual IObject*            ConstructGlobalObject() override;
-	virtual IObject*            ConstructObject(char const* const szName = nullptr) override;
+	virtual IObject*            ConstructObject(CObjectTransformation const& transformation, char const* const szName = nullptr) override;
 	virtual void                DestructObject(IObject const* const pIObject) override;
-	virtual IListener*          ConstructListener(char const* const szName = nullptr) override;
+	virtual IListener*          ConstructListener(CObjectTransformation const& transformation, char const* const szName = nullptr) override;
 	virtual void                DestructListener(IListener* const pIListener) override;
 	virtual IEvent*             ConstructEvent(CATLEvent& event) override;
 	virtual void                DestructEvent(IEvent const* const pIEvent) override;
@@ -62,8 +62,8 @@ public:
 	virtual void                SetLanguage(char const* const szLanguage) override;
 
 	// Below data is only used when INCLUDE_FMOD_IMPL_PRODUCTION_CODE is defined!
-	virtual void GetMemoryInfo(SMemoryInfo& memoryInfo) const override;
 	virtual void GetFileData(char const* const szName, SFileData& fileData) const override;
+	virtual void DrawDebugInfo(IRenderAuxGeom& auxGeom, float const posX, float& posY) override;
 	// ~CryAudio::Impl::IImpl
 
 private:
@@ -103,6 +103,9 @@ private:
 
 #if defined(INCLUDE_FMOD_IMPL_PRODUCTION_CODE)
 	CryFixedStringT<MaxInfoStringLength> m_name;
+	size_t                               m_masterBankSize = 0;
+	size_t                               m_masterAssetsBankSize = 0;
+	size_t                               m_masterStringsBankSize = 0;
 #endif  // INCLUDE_FMOD_IMPL_PRODUCTION_CODE
 };
 } // namespace Fmod

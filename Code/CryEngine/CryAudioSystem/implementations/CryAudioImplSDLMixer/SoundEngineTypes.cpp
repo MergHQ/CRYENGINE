@@ -21,19 +21,9 @@ ERequestStatus CEvent::Stop()
 }
 
 //////////////////////////////////////////////////////////////////////////
-void CObject::Update()
-{
-}
-
-//////////////////////////////////////////////////////////////////////////
 void CObject::SetTransformation(CObjectTransformation const& transformation)
 {
-	SoundEngine::SetObjectTransformation(this, transformation);
-}
-
-//////////////////////////////////////////////////////////////////////////
-void CObject::SetEnvironment(IEnvironment const* const pIEnvironment, float const amount)
-{
+	m_transformation = transformation;
 }
 
 //////////////////////////////////////////////////////////////////////////
@@ -64,11 +54,6 @@ void CObject::SetSwitchState(ISwitchState const* const pISwitchState)
 }
 
 //////////////////////////////////////////////////////////////////////////
-void CObject::SetObstructionOcclusion(float const obstruction, float const occlusion)
-{
-}
-
-//////////////////////////////////////////////////////////////////////////
 ERequestStatus CObject::ExecuteTrigger(ITrigger const* const pITrigger, IEvent* const pIEvent)
 {
 	if ((pITrigger != nullptr) && (pIEvent != nullptr))
@@ -79,11 +64,6 @@ ERequestStatus CObject::ExecuteTrigger(ITrigger const* const pITrigger, IEvent* 
 	}
 
 	return ERequestStatus::Failure;
-}
-
-//////////////////////////////////////////////////////////////////////////
-void CObject::StopAllTriggers()
-{
 }
 
 //////////////////////////////////////////////////////////////////////////
@@ -101,15 +81,23 @@ ERequestStatus CObject::StopFile(IStandaloneFile* const pIStandaloneFile)
 //////////////////////////////////////////////////////////////////////////
 ERequestStatus CObject::SetName(char const* const szName)
 {
-	// SDL_mixer does not have the concept of audio objects and with that the debugging of such.
+	// SDL_mixer does not have the concept of objects and with that the debugging of such.
 	// Therefore the name is currently not needed here.
 	return ERequestStatus::Success;
 }
 
 //////////////////////////////////////////////////////////////////////////
+void CListener::SetName(char const* const szName)
+{
+#if defined(INCLUDE_SDLMIXER_IMPL_PRODUCTION_CODE)
+	m_name = szName;
+#endif  // INCLUDE_SDLMIXER_IMPL_PRODUCTION_CODE
+}
+
+//////////////////////////////////////////////////////////////////////////
 void CListener::SetTransformation(CObjectTransformation const& transformation)
 {
-	SoundEngine::SetListenerTransformation(m_id, transformation);
+	m_transformation = transformation;
 }
 } // namespace SDL_mixer
 } // namespace Impl

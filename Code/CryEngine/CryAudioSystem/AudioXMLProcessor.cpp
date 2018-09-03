@@ -71,19 +71,6 @@ void CAudioXMLProcessor::ParseControlsData(char const* const szFolderPath, EData
 	}
 
 #if defined(INCLUDE_AUDIO_PRODUCTION_CODE)
-	// This is a safety precaution in case no default_controls file exists.
-	ParameterConnections const parameterConnections;
-
-	if (g_pAbsoluteVelocityParameter == nullptr)
-	{
-		g_pAbsoluteVelocityParameter = new CAbsoluteVelocityParameter(parameterConnections);
-	}
-
-	if (g_pRelativeVelocityParameter == nullptr)
-	{
-		g_pRelativeVelocityParameter = new CRelativeVelocityParameter(parameterConnections);
-	}
-
 	TriggerConnections const triggerConnections;
 
 	if (g_pLoseFocusTrigger == nullptr)
@@ -199,16 +186,13 @@ void CAudioXMLProcessor::ParseDefaultControlsFile(XmlNodeRef const pRootNode)
 			{
 				ParseDefaultTriggers(pChildNode);
 			}
-			else if (_stricmp(childNodeTag, s_szParametersNodeTag) == 0)
-			{
-				ParseDefaultParameters(pChildNode);
-			}
-			else if ((_stricmp(childNodeTag, s_szSwitchesNodeTag) == 0) ||
+			else if ((_stricmp(childNodeTag, s_szParametersNodeTag) == 0) ||
+			         (_stricmp(childNodeTag, s_szSwitchesNodeTag) == 0) ||
 			         (_stricmp(childNodeTag, s_szEnvironmentsNodeTag) == 0) ||
 			         (_stricmp(childNodeTag, s_szPreloadsNodeTag) == 0) ||
 			         (_stricmp(childNodeTag, s_szEditorDataTag) == 0))
 			{
-				// These tags are valid but ignored here, beacuse no default controls of these type currently exist.
+				// These tags are valid but ignored here, because no default controls of these type currently exist.
 			}
 			else
 			{
@@ -332,12 +316,6 @@ void CAudioXMLProcessor::ClearControlsData(EDataScope const dataScope)
 	{
 		if (dataScope == EDataScope::All || dataScope == EDataScope::Global)
 		{
-			delete g_pAbsoluteVelocityParameter;
-			g_pAbsoluteVelocityParameter = nullptr;
-
-			delete g_pRelativeVelocityParameter;
-			g_pRelativeVelocityParameter = nullptr;
-
 			delete g_pLoseFocusTrigger;
 			g_pLoseFocusTrigger = nullptr;
 
@@ -901,68 +879,6 @@ void CAudioXMLProcessor::ParseParameters(XmlNodeRef const pXMLParameterRoot, EDa
 			else
 			{
 				Cry::Audio::Log(ELogType::Error, R"(Parameter "%s" already exists!)", szParameterName);
-			}
-		}
-	}
-}
-
-//////////////////////////////////////////////////////////////////////////
-void CAudioXMLProcessor::ParseDefaultParameters(XmlNodeRef const pXMLParameterRoot)
-{
-	int const numParameters = pXMLParameterRoot->getChildCount();
-
-	for (int i = 0; i < numParameters; ++i)
-	{
-		XmlNodeRef const pParameterNode(pXMLParameterRoot->getChild(i));
-
-		if (pParameterNode && _stricmp(pParameterNode->getTag(), s_szParameterTag) == 0)
-		{
-			char const* const szParameterName = pParameterNode->getAttr(s_szNameAttribute);
-			ControlId const parameterId = static_cast<ControlId const>(StringToId(szParameterName));
-			int const numConnections = pParameterNode->getChildCount();
-			ParameterConnections connections;
-			connections.reserve(numConnections);
-
-			for (int j = 0; j < numConnections; ++j)
-			{
-				XmlNodeRef const pParameterImplNode(pParameterNode->getChild(j));
-
-				if (pParameterImplNode != nullptr)
-				{
-					Impl::IParameter const* const pExternalParameterImpl = g_pIImpl->ConstructParameter(pParameterImplNode);
-
-					if (pExternalParameterImpl != nullptr)
-					{
-						CParameterImpl const* const pParameterImpl = new CParameterImpl(pExternalParameterImpl);
-						connections.push_back(pParameterImpl);
-					}
-				}
-			}
-
-			connections.shrink_to_fit();
-
-			switch (parameterId)
-			{
-			case AbsoluteVelocityParameterId:
-				{
-					CRY_ASSERT_MESSAGE(g_pAbsoluteVelocityParameter == nullptr, "<Audio> absolute velocity parameter must be nullptr during initialization.");
-					g_pAbsoluteVelocityParameter = new CAbsoluteVelocityParameter(connections);
-
-					break;
-				}
-			case RelativeVelocityParameterId:
-				{
-					CRY_ASSERT_MESSAGE(g_pRelativeVelocityParameter == nullptr, "<Audio> relative velocity parameter must be nullptr during initialization.");
-					g_pRelativeVelocityParameter = new CRelativeVelocityParameter(connections);
-
-					break;
-				}
-			default:
-				{
-					CRY_ASSERT_MESSAGE(false, R"(The default parameter "%s" does not exist.)", szParameterName);
-
-					break;
-				}
 			}
 		}
 	}

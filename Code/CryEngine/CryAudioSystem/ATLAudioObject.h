@@ -72,15 +72,16 @@ class CATLAudioObject final : public IObject, public CPoolObject<CATLAudioObject
 {
 public:
 
-	CATLAudioObject();
+	explicit CATLAudioObject(CObjectTransformation const& transformation);
 
+	CATLAudioObject() = delete;
 	CATLAudioObject(CATLAudioObject const&) = delete;
 	CATLAudioObject(CATLAudioObject&&) = delete;
 	CATLAudioObject& operator=(CATLAudioObject const&) = delete;
 	CATLAudioObject& operator=(CATLAudioObject&&) = delete;
 
 	ERequestStatus   HandleStopTrigger(CTrigger const* const pTrigger);
-	void             HandleSetTransformation(CObjectTransformation const& transformation, float const distanceToListener);
+	void             HandleSetTransformation(CObjectTransformation const& transformation);
 	void             HandleSetEnvironment(CATLAudioEnvironment const* const pEnvironment, float const value);
 	void             HandleSetOcclusionType(EOcclusionType const calcType);
 	void             HandleStopFile(char const* const szFile);
@@ -114,20 +115,16 @@ public:
 	void         SetFlag(EObjectFlags const flag);
 	void         RemoveFlag(EObjectFlags const flag);
 
-	void         Update(
-		float const deltaTime,
-		float const distanceToListener,
-		Vec3 const& listenerVelocity,
-		bool const listenerMoved);
-	bool CanBeReleased() const;
+	void         Update(float const deltaTime);
+	bool         CanBeReleased() const;
 
-	void IncrementSyncCallbackCounter() { CryInterlockedIncrement(&m_numPendingSyncCallbacks); }
-	void DecrementSyncCallbackCounter() { CRY_ASSERT(m_numPendingSyncCallbacks >= 1); CryInterlockedDecrement(&m_numPendingSyncCallbacks); }
+	void         IncrementSyncCallbackCounter() { CryInterlockedIncrement(&m_numPendingSyncCallbacks); }
+	void         DecrementSyncCallbackCounter() { CRY_ASSERT(m_numPendingSyncCallbacks >= 1); CryInterlockedDecrement(&m_numPendingSyncCallbacks); }
 
-	void AddEvent(CATLEvent* const pEvent);
-	void AddTriggerState(TriggerInstanceId const id, SAudioTriggerInstanceState const& audioTriggerInstanceState);
-	void AddStandaloneFile(CATLStandaloneFile* const pStandaloneFile, SUserDataBase const& userDataBase);
-	void SendFinishedTriggerInstanceRequest(SAudioTriggerInstanceState const& audioTriggerInstanceState);
+	void         AddEvent(CATLEvent* const pEvent);
+	void         AddTriggerState(TriggerInstanceId const id, SAudioTriggerInstanceState const& audioTriggerInstanceState);
+	void         AddStandaloneFile(CATLStandaloneFile* const pStandaloneFile, SUserDataBase const& userDataBase);
+	void         SendFinishedTriggerInstanceRequest(SAudioTriggerInstanceState const& audioTriggerInstanceState);
 
 private:
 
@@ -151,13 +148,6 @@ private:
 	void ReportFinishedTriggerInstance(ObjectTriggerStates::iterator const& iter);
 	void PushRequest(SAudioRequestData const& requestData, SRequestUserData const& userData);
 	bool HasActiveData(CATLAudioObject const* const pAudioObject) const;
-	void UpdateControls(
-		float const deltaTime,
-		float const distanceToListener,
-		Vec3 const& listenerVelocity,
-		bool const listenerMoved);
-	void TryToSetRelativeVelocity(float const relativeVelocity);
-	bool SetDefaultParameterValue(ControlId const id, float const value) const;
 	bool ExecuteDefaultTrigger(ControlId const id);
 
 	ObjectStandaloneFileMap m_activeStandaloneFiles;
@@ -166,12 +156,7 @@ private:
 	ObjectTriggerImplStates m_triggerImplStates;
 	Impl::IObject*          m_pImplData;
 	EObjectFlags            m_flags;
-	float                   m_previousRelativeVelocity;
-	float                   m_previousAbsoluteVelocity;
 	CObjectTransformation   m_transformation;
-	Vec3                    m_positionForVelocityCalculation;
-	Vec3                    m_previousPositionForVelocityCalculation;
-	Vec3                    m_velocity;
 	CPropagationProcessor   m_propagationProcessor;
 	EntityId                m_entityId;
 	volatile int            m_numPendingSyncCallbacks;
@@ -208,16 +193,15 @@ private:
 		void                 Update(SwitchStateId const audioSwitchState);
 
 		SwitchStateId m_currentState;
-		float         m_currentAlpha;
+		float         m_currentSwitchColor;
 
 	private:
 
-		static float const s_maxAlpha;
-		static float const s_minAlpha;
+		static float const s_maxSwitchColor;
+		static float const s_minSwitchColor;
 		static int const   s_maxToMinUpdates;
 	};
 
-	char const* GetDefaultParameterName(ControlId const id) const;
 	char const* GetDefaultTriggerName(ControlId const id) const;
 
 	using StateDrawInfoMap = std::map<ControlId, CStateDebugDrawData>;

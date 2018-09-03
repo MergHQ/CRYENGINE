@@ -5,10 +5,17 @@
 #include "AudioImplCVars.h"
 #include "SoundEngineUtil.h"
 #include "SoundEngineTypes.h"
+#include "Common.h"
+
 #include <Logger.h>
 #include <CrySystem/File/CryFile.h>
 #include <CryAudio/IAudioSystem.h>
 #include <CrySystem/IProjectManager.h>
+
+#if defined(INCLUDE_SDLMIXER_IMPL_PRODUCTION_CODE)
+	#include "Debug.h"
+	#include <CryRenderer/IRenderAuxGeom.h>
+#endif  // INCLUDE_SDLMIXER_IMPL_PRODUCTION_CODE
 
 // SDL Mixer
 #include <SDL_mixer.h>
@@ -500,7 +507,7 @@ IObject* CImpl::ConstructGlobalObject()
 }
 
 ///////////////////////////////////////////////////////////////////////////
-IObject* CImpl::ConstructObject(char const* const szName /*= nullptr*/)
+IObject* CImpl::ConstructObject(CObjectTransformation const& transformation, char const* const szName /*= nullptr*/)
 {
 	static uint32 id = 1;
 	CObject* pObject = new CObject(id++);
@@ -526,16 +533,27 @@ void CImpl::DestructObject(IObject const* const pIObject)
 }
 
 ///////////////////////////////////////////////////////////////////////////
-IListener* CImpl::ConstructListener(char const* const szName /*= nullptr*/)
+IListener* CImpl::ConstructListener(CObjectTransformation const& transformation, char const* const szName /*= nullptr*/)
 {
 	static ListenerId id = 0;
-	return static_cast<IListener*>(new CListener(id++));
+	g_pListener = new CListener(id++);
+
+#if defined(INCLUDE_SDLMIXER_IMPL_PRODUCTION_CODE)
+	if (szName != nullptr)
+	{
+		g_pListener->SetName(szName);
+	}
+#endif  // INCLUDE_SDLMIXER_IMPL_PRODUCTION_CODE
+
+	return static_cast<IListener*>(g_pListener);
 }
 
 ///////////////////////////////////////////////////////////////////////////
 void CImpl::DestructListener(IListener* const pIListener)
 {
-	delete pIListener;
+	CRY_ASSERT_MESSAGE(pIListener == g_pListener, "pIListener is not g_pListener");
+	delete g_pListener;
+	g_pListener = nullptr;
 }
 
 ///////////////////////////////////////////////////////////////////////////
@@ -613,16 +631,19 @@ void CImpl::SetLanguage(char const* const szLanguage)
 }
 
 ///////////////////////////////////////////////////////////////////////////
-void CImpl::GetMemoryInfo(SMemoryInfo& memoryInfo) const
+void CImpl::GetFileData(char const* const szName, SFileData& fileData) const
+{
+}
+
+#if defined(INCLUDE_SDLMIXER_IMPL_PRODUCTION_CODE)
+///////////////////////////////////////////////////////////////////////////
+void GetMemoryInfo(SMemoryInfo& memoryInfo)
 {
 	CryModuleMemoryInfo memInfo;
 	ZeroStruct(memInfo);
 	CryGetMemoryInfoForModule(&memInfo);
 
 	memoryInfo.totalMemory = static_cast<size_t>(memInfo.allocated - memInfo.freed);
-	memoryInfo.secondaryPoolSize = 0;
-	memoryInfo.secondaryPoolUsedSize = 0;
-	memoryInfo.secondaryPoolAllocations = 0;
 
 	{
 		auto& allocator = CObject::GetAllocator();
@@ -644,10 +665,33 @@ void CImpl::GetMemoryInfo(SMemoryInfo& memoryInfo) const
 		memoryInfo.poolAllocatedMemory += mem.nAlloc;
 	}
 }
+#endif  // INCLUDE_SDLMIXER_IMPL_PRODUCTION_CODE
 
-///////////////////////////////////////////////////////////////////////////
-void CImpl::GetFileData(char const* const szName, SFileData& fileData) const
-{}
+//////////////////////////////////////////////////////////////////////////
+void CImpl::DrawDebugInfo(IRenderAuxGeom& auxGeom, float const posX, float& posY)
+{
+#if defined(INCLUDE_SDLMIXER_IMPL_PRODUCTION_CODE)
+	auxGeom.Draw2dLabel(posX, posY, g_debugSystemHeaderFontSize, g_debugSystemColorHeader.data(), false, m_name.c_str());
+
+	SMemoryInfo memoryInfo;
+	GetMemoryInfo(memoryInfo);
+
+	posY += g_debugSystemLineHeightClause;
+	auxGeom.Draw2dLabel(posX, posY, g_debugSystemFontSize, g_debugSystemColorTextPrimary.data(), false, "Total Memory Used: %uKiB",
+	                    static_cast<uint32>(memoryInfo.totalMemory / 1024));
+
+	posY += g_debugSystemLineHeight;
+	auxGeom.Draw2dLabel(posX, posY, g_debugSystemFontSize, g_debugSystemColorTextPrimary.data(), false, "[Object Pool] In Use: %u | Constructed: %u (%uKiB) | Memory Pool: %uKiB",
+	                    memoryInfo.poolUsedObjects, memoryInfo.poolConstructedObjects, memoryInfo.poolUsedMemory, memoryInfo.poolAllocatedMemory);
+
+	Vec3 const& listenerPosition = g_pListener->GetTransformation().GetPosition();
+	Vec3 const& listenerDirection = g_pListener->GetTransformation().GetForward();
+	char const* const szName = g_pListener->GetName();
+
+	posY += g_debugSystemLineHeight;
+	auxGeom.Draw2dLabel(posX, posY, g_debugSystemFontSize, g_debugSystemColorListenerActive.data(), false, "Listener: %s | PosXYZ: %.2f %.2f %.2f | FwdXYZ: %.2f %.2f %.2f", szName, listenerPosition.x, listenerPosition.y, listenerPosition.z, listenerDirection.x, listenerDirection.y, listenerDirection.z);
+#endif  // INCLUDE_SDLMIXER_IMPL_PRODUCTION_CODE
+}
 } // namespace SDL_mixer
 } // namespace Impl
 } // namespace CryAudio

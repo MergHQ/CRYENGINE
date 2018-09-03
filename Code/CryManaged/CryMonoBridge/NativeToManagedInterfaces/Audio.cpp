@@ -233,9 +233,9 @@ static void RemoveAudioRequestListener(AudioRequestListener listener)
 	gEnv->pAudioSystem->RemoveRequestListener(listener, nullptr);
 }
 
-static CryAudio::IListener* CreateAudioListener()
+static CryAudio::IListener* CreateAudioListener(CryAudio::CObjectTransformation const& transformation)
 {
-	return gEnv->pAudioSystem->CreateListener();
+	return gEnv->pAudioSystem->CreateListener(transformation);
 }
 
 static void SetAudioListenerTransformation(CryAudio::IListener* pAudioListener, CryAudio::CObjectTransformation* pCObjectTransformation)

@@ -15,36 +15,53 @@ void CCVars::RegisterVariables()
 {
 #if CRY_PLATFORM_WINDOWS
 	m_maxChannels = 512;
+	m_velocityTrackingThreshold = 0.1f;
 	#if defined(INCLUDE_FMOD_IMPL_PRODUCTION_CODE)
 	#endif // INCLUDE_FMOD_IMPL_PRODUCTION_CODE
 #elif CRY_PLATFORM_DURANGO
 	m_secondaryMemoryPoolSize = 32 << 10; // 32 MiB
 	m_maxChannels = 512;
+	m_velocityTrackingThreshold = 0.1f;
 	#if defined(INCLUDE_FMOD_IMPL_PRODUCTION_CODE)
 	#endif // INCLUDE_FMOD_IMPL_PRODUCTION_CODE
 #elif CRY_PLATFORM_ORBIS
 	m_maxChannels = 512;
+	m_velocityTrackingThreshold = 0.1f;
 	#if defined(INCLUDE_FMOD_IMPL_PRODUCTION_CODE)
 	#endif // INCLUDE_FMOD_IMPL_PRODUCTION_CODE
 #elif CRY_PLATFORM_MAC
 	m_maxChannels = 512;
+	m_velocityTrackingThreshold = 0.1f;
 	#if defined(INCLUDE_FMOD_IMPL_PRODUCTION_CODE)
 	#endif // INCLUDE_FMOD_IMPL_PRODUCTION_CODE
 #elif CRY_PLATFORM_LINUX
 	m_maxChannels = 512;
+	m_velocityTrackingThreshold = 0.1f;
 	#if defined(INCLUDE_FMOD_IMPL_PRODUCTION_CODE)
 	#endif // INCLUDE_FMOD_IMPL_PRODUCTION_CODE
 #elif defined(CRY_PLATFORM_IOS)
 	m_maxChannels = 512;
+	m_velocityTrackingThreshold = 0.1f;
 	#if defined(INCLUDE_FMOD_IMPL_PRODUCTION_CODE)
 	#endif // INCLUDE_FMOD_IMPL_PRODUCTION_CODE
 #elif CRY_PLATFORM_ANDROID
 	m_maxChannels = 512;
+	m_velocityTrackingThreshold = 0.1f;
 	#if defined(INCLUDE_FMOD_IMPL_PRODUCTION_CODE)
 	#endif // INCLUDE_FMOD_IMPL_PRODUCTION_CODE
 #else
 	#error "Undefined platform."
 #endif
+
+	REGISTER_CVAR2("s_FmodVelocityTrackingThreshold", &m_velocityTrackingThreshold, m_velocityTrackingThreshold, VF_CHEAT | VF_CHEAT_NOCHECK,
+	               "An object has to change its velocity by at least this amount to issue an \"absolute_velocity\" parameter update request to the audio system.\n"
+	               "Usage: s_FmodVelocityTrackingThreshold [0/...]\n"
+	               "Default: 0.1 (10 cm/s)\n");
+
+	REGISTER_CVAR2("s_FmodPositionUpdateThresholdMultiplier", &m_positionUpdateThresholdMultiplier, m_positionUpdateThresholdMultiplier, VF_CHEAT | VF_CHEAT_NOCHECK,
+	               "An object's distance to the listener is multiplied by this value to determine the position update threshold.\n"
+	               "Usage: s_FmodPositionUpdateThresholdMultiplier [0/...]\n"
+	               "Default: 0.02\n");
 
 	REGISTER_CVAR2("s_FmodMaxChannels", &m_maxChannels, m_maxChannels, VF_REQUIRE_APP_RESTART,
 	               "Sets the maximum number of channels.\n"
@@ -62,7 +79,7 @@ void CCVars::RegisterVariables()
 	               "Default PC: 1, XboxOne: 1, PS4: 1, Mac: 1, Linux: 1, iOS: 1, Android: 1\n");
 
 	REGISTER_CVAR2("s_FmodLowpassMinCutoffFrequency", &m_lowpassMinCutoffFrequency, m_lowpassMinCutoffFrequency, VF_REQUIRE_APP_RESTART,
-	               "Sets the minimum LPF cutoff frequency upon full audio object occlusion.\n"
+	               "Sets the minimum LPF cutoff frequency upon full object occlusion.\n"
 	               "Usage: s_FmodLowpassMinCutoffFrequency [10/...]\n"
 	               "Default PC: 10, XboxOne: 10, PS4: 10, Mac: 10, Linux: 10, iOS: 10, Android: 10\n");
 
@@ -112,6 +129,8 @@ void CCVars::UnregisterVariables()
 
 	if (pConsole != nullptr)
 	{
+		pConsole->UnregisterVariable("s_FmodVelocityTrackingThreshold");
+		pConsole->UnregisterVariable("s_FmodPositionUpdateThresholdMultiplier");
 		pConsole->UnregisterVariable("s_FmodMaxChannels");
 		pConsole->UnregisterVariable("s_FmodEnableLiveUpdate");
 		pConsole->UnregisterVariable("s_FmodEnableSynchronousUpdate");

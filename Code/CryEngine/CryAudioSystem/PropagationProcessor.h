@@ -51,7 +51,7 @@ public:
 	static int  OnObstructionTest(EventPhys const* pEvent);
 	static void UpdateOcclusionRayFlags();
 
-	void        Update(float const distanceToListener, EObjectFlags const objectFlags);
+	void        Update(EObjectFlags const objectFlags);
 	void        SetOcclusionType(EOcclusionType const occlusionType);
 	bool        CanRunObstructionOcclusion() const;
 	void        GetPropagationData(SATLSoundPropagationData& propagationData) const;

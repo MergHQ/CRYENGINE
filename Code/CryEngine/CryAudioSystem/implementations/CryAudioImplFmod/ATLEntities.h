@@ -18,37 +18,49 @@ class CListener final : public IListener
 {
 public:
 
-	explicit CListener(int const id)
-		: m_id(id)
-	{
-		ZeroStruct(m_attributes);
-	}
-
-	virtual ~CListener() override = default;
-
+	CListener() = delete;
 	CListener(CListener const&) = delete;
 	CListener(CListener&&) = delete;
-	CListener&                operator=(CListener const&) = delete;
-	CListener&                operator=(CListener&&) = delete;
+	CListener& operator=(CListener const&) = delete;
+	CListener& operator=(CListener&&) = delete;
+
+	explicit CListener(CObjectTransformation const& transformation, int const id);
+	virtual ~CListener() override = default;
 
 	ILINE int                 GetId() const     { return m_id; }
 	ILINE FMOD_3D_ATTRIBUTES& Get3DAttributes() { return m_attributes; }
 
 	// CryAudio::Impl::IListener
-	virtual void SetTransformation(CObjectTransformation const& transformation) override
-	{
-		FillFmodObjectPosition(transformation, m_attributes);
-		FMOD_RESULT const fmodResult = s_pSystem->setListenerAttributes(m_id, &m_attributes);
-		ASSERT_FMOD_OK;
-	}
+	virtual void                         Update(float const deltaTime) override;
+	virtual void                         SetName(char const* const szName) override;
+	virtual void                         SetTransformation(CObjectTransformation const& transformation) override;
+	virtual CObjectTransformation const& GetTransformation() const override { return m_transformation; }
 	// ~CryAudio::Impl::IListener
+
+	Vec3 const& GetPosition() const { return m_position; }
+	Vec3 const& GetVelocity() const { return m_velocity; }
+
+#if defined(INCLUDE_FMOD_IMPL_PRODUCTION_CODE)
+	char const* GetName() const { return m_name.c_str(); }
+#endif  // INCLUDE_FMOD_IMPL_PRODUCTION_CODE
 
 	static FMOD::Studio::System* s_pSystem;
 
 private:
 
-	int                m_id;
-	FMOD_3D_ATTRIBUTES m_attributes;
+	void SetVelocity();
+
+	int                   m_id;
+	bool                  m_isMovingOrDecaying;
+	Vec3                  m_velocity;
+	Vec3                  m_position;
+	Vec3                  m_previousPosition;
+	CObjectTransformation m_transformation;
+	FMOD_3D_ATTRIBUTES    m_attributes;
+
+#if defined(INCLUDE_FMOD_IMPL_PRODUCTION_CODE)
+	CryFixedStringT<MaxObjectNameLength> m_name;
+#endif  // INCLUDE_FMOD_IMPL_PRODUCTION_CODE
 };
 
 enum class EEventType : EnumFlagsType
@@ -358,7 +370,7 @@ public:
 
 	CATLStandaloneFile&                m_atlStandaloneFile;
 	CryFixedStringT<MaxFilePathLength> m_fileName;
-	CObjectBase*                       m_pObject = nullptr;
+	CBaseObject*                       m_pObject = nullptr;
 	static FMOD::System*               s_pLowLevelSystem;
 
 };
@@ -407,9 +419,9 @@ private:
 	FMOD::Studio::EventInstance* m_pEventInstance = nullptr;
 
 };
-class CObjectBase;
+class CBaseObject;
 
-using Objects = std::vector<CObjectBase*>;
+using Objects = std::vector<CBaseObject*>;
 using Events = std::vector<CEvent*>;
 using StandaloneFiles = std::vector<CStandaloneFile*>;
 using ParameterIdToIndex = std::map<uint32, int>;

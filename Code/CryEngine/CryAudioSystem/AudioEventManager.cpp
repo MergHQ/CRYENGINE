@@ -109,7 +109,7 @@ void CEventManager::DrawDebugInfo(IRenderAuxGeom& auxGeom, float const posX, flo
 	CryFixedStringT<MaxControlNameLength> lowerCaseSearchString(g_cvars.m_pDebugFilter->GetString());
 	lowerCaseSearchString.MakeLower();
 
-	auxGeom.Draw2dLabel(posX, posY, Debug::g_managerHeaderFontSize, Debug::g_managerColorHeader.data(), false, "Audio Events [%" PRISIZE_T "]", m_constructedEvents.size());
+	auxGeom.Draw2dLabel(posX, posY, Debug::g_managerHeaderFontSize, Debug::g_globalColorHeader.data(), false, "Audio Events [%" PRISIZE_T "]", m_constructedEvents.size());
 	posY += Debug::g_managerHeaderLineHeight;
 
 	for (auto const pEvent : m_constructedEvents)
@@ -126,7 +126,7 @@ void CEventManager::DrawDebugInfo(IRenderAuxGeom& auxGeom, float const posX, flo
 
 			if (draw)
 			{
-				float const* pColor = Debug::g_managerColorItemInactive.data();
+				float const* pColor = Debug::g_globalColorInactive.data();
 
 				if (pEvent->IsPlaying())
 				{
@@ -138,7 +138,7 @@ void CEventManager::DrawDebugInfo(IRenderAuxGeom& auxGeom, float const posX, flo
 				}
 				else if (pEvent->IsVirtual())
 				{
-					pColor = Debug::g_managerColorItemVirtual.data();
+					pColor = Debug::g_globalColorVirtual.data();
 				}
 
 				auxGeom.Draw2dLabel(posX, posY, Debug::g_managerFontSize, pColor, false, "%s on %s", szTriggerName, pEvent->m_pAudioObject->m_name.c_str());

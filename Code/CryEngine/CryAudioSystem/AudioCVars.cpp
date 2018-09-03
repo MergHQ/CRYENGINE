@@ -27,7 +27,6 @@ void CCVars::RegisterVariables()
 	m_occlusionHighDistance = 10.0f;
 	m_occlusionMediumDistance = 80.0f;
 	m_fullObstructionMaxDistance = 5.0f;
-	m_velocityTrackingThreshold = 0.1f;
 	m_occlusionRayLengthOffset = 0.1f;
 #elif CRY_PLATFORM_DURANGO
 	m_fileCacheManagerSize = 384 << 10;      // 384 MiB on XboxOne
@@ -38,7 +37,6 @@ void CCVars::RegisterVariables()
 	m_occlusionHighDistance = 10.0f;
 	m_occlusionMediumDistance = 80.0f;
 	m_fullObstructionMaxDistance = 5.0f;
-	m_velocityTrackingThreshold = 0.1f;
 	m_occlusionRayLengthOffset = 0.1f;
 #elif CRY_PLATFORM_ORBIS
 	m_fileCacheManagerSize = 384 << 10;      // 384 MiB on PS4
@@ -49,7 +47,6 @@ void CCVars::RegisterVariables()
 	m_occlusionHighDistance = 10.0f;
 	m_occlusionMediumDistance = 80.0f;
 	m_fullObstructionMaxDistance = 5.0f;
-	m_velocityTrackingThreshold = 0.1f;
 	m_occlusionRayLengthOffset = 0.1f;
 #elif CRY_PLATFORM_MAC
 	m_fileCacheManagerSize = 384 << 10;      // 384 MiB on Mac
@@ -60,7 +57,6 @@ void CCVars::RegisterVariables()
 	m_occlusionHighDistance = 10.0f;
 	m_occlusionMediumDistance = 80.0f;
 	m_fullObstructionMaxDistance = 5.0f;
-	m_velocityTrackingThreshold = 0.1f;
 	m_occlusionRayLengthOffset = 0.1f;
 #elif CRY_PLATFORM_LINUX
 	m_fileCacheManagerSize = 384 << 10;      // 384 MiB on Linux
@@ -71,7 +67,6 @@ void CCVars::RegisterVariables()
 	m_occlusionHighDistance = 10.0f;
 	m_occlusionMediumDistance = 80.0f;
 	m_fullObstructionMaxDistance = 5.0f;
-	m_velocityTrackingThreshold = 0.1f;
 	m_occlusionRayLengthOffset = 0.1f;
 #elif CRY_PLATFORM_IOS
 	m_fileCacheManagerSize = 384 << 10;      // 384 MiB on iOS
@@ -82,7 +77,6 @@ void CCVars::RegisterVariables()
 	m_occlusionHighDistance = 10.0f;
 	m_occlusionMediumDistance = 80.0f;
 	m_fullObstructionMaxDistance = 5.0f;
-	m_velocityTrackingThreshold = 0.1f;
 	m_occlusionRayLengthOffset = 0.1f;
 #elif CRY_PLATFORM_ANDROID
 	m_fileCacheManagerSize = 72 << 10;      // 72 MiB
@@ -93,7 +87,6 @@ void CCVars::RegisterVariables()
 	m_occlusionHighDistance = 10.0f;
 	m_occlusionMediumDistance = 80.0f;
 	m_fullObstructionMaxDistance = 5.0f;
-	m_velocityTrackingThreshold = 0.1f;
 	m_occlusionRayLengthOffset = 0.1f;
 #else
 	#error "Undefined platform."
@@ -128,16 +121,6 @@ void CCVars::RegisterVariables()
 	               "for the sounds, whose distance to the listener is greater than this value, the obstruction is value gets attenuated with distance.\n"
 	               "Usage: s_FullObstructionMaxDistance [0/...]\n"
 	               "Default: 5 m\n");
-
-	REGISTER_CVAR2("s_PositionUpdateThresholdMultiplier", &m_positionUpdateThresholdMultiplier, m_positionUpdateThresholdMultiplier, VF_CHEAT | VF_CHEAT_NOCHECK,
-	               "An audio object's distance to the listener is multiplied by this value to determine the position update threshold.\n"
-	               "Usage: s_PositionUpdateThresholdMultiplier [0/...]\n"
-	               "Default: 0.02\n");
-
-	REGISTER_CVAR2("s_VelocityTrackingThreshold", &m_velocityTrackingThreshold, m_velocityTrackingThreshold, VF_CHEAT | VF_CHEAT_NOCHECK,
-	               "An audio object has to change its velocity by at least this amount to issue an \"absolute_velocity\" parameter update request to the audio system.\n"
-	               "Usage: s_VelocityTrackingThreshold [0/...]\n"
-	               "Default: 0.1 (10 cm/s)\n");
 
 	REGISTER_CVAR2("s_OcclusionRayLengthOffset", &m_occlusionRayLengthOffset, m_occlusionRayLengthOffset, VF_CHEAT | VF_CHEAT_NOCHECK,
 	               "A physics ray cast between audio listener and audio object stops at this distance before it hits the audio object.\n"
@@ -249,6 +232,7 @@ void CCVars::RegisterVariables()
 	               "i: Draw occlusion rays.\n"
 	               "j: Draw listener occlusion plane.\n"
 	               "k: Draw object standalone files.\n"
+	               "l: Draw middleware specific info for active audio objects.\n"
 	               "m: Hide audio system memory info.\n"
 	               "n: Apply filter also to inactive object debug info.\n"
 	               "u: List standalone files.\n"
@@ -304,8 +288,6 @@ void CCVars::UnregisterVariables()
 		pConsole->UnregisterVariable("s_OcclusionHighDistance");
 		pConsole->UnregisterVariable("s_OcclusionMediumDistance");
 		pConsole->UnregisterVariable("s_FullObstructionMaxDistance");
-		pConsole->UnregisterVariable("s_PositionUpdateThresholdMultiplier");
-		pConsole->UnregisterVariable("s_VelocityTrackingThreshold");
 		pConsole->UnregisterVariable("s_OcclusionRayLengthOffset");
 		pConsole->UnregisterVariable("s_ListenerOcclusionPlaneSize");
 		pConsole->UnregisterVariable("s_FileCacheManagerSize");

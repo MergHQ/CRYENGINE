@@ -2,3 +2,15 @@
 
 #include "stdafx.h"
 #include "Common.h"
+#include "ATLEntities.h"
+
+namespace CryAudio
+{
+namespace Impl
+{
+namespace PortAudio
+{
+CListener* g_pListener = nullptr;
+} // namespace PortAudio
+} // namespace Impl
+} // namespace CryAudio

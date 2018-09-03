@@ -5,6 +5,7 @@
 #include "AudioInternalInterfaces.h"
 #include "Common/SharedAudioData.h"
 #include "Common.h"
+#include <ATLEntityData.h>
 #include <CryAudio/IListener.h>
 #include <CrySystem/IStreamEngine.h>
 #include <CrySystem/TimeValue.h>
@@ -20,28 +21,15 @@ struct SATLXMLTags
 	static char const* const szPlatform;
 };
 
-namespace Impl
-{
-struct IObject;
-struct IListener;
-struct ITrigger;
-struct IParameter;
-struct ISwitchState;
-struct IEnvironment;
-struct IEvent;
-struct IFile;
-struct IStandaloneFile;
-} // namespace Impl
-
 enum class EObjectFlags : EnumFlagsType
 {
-	None                            = 0,
-	MovingOrDecaying                = BIT(0),
-	TrackAbsoluteVelocity           = BIT(1),
-	TrackRelativeVelocity           = BIT(2),
-	InUse                           = BIT(3),
-	Virtual                         = BIT(4),
-	WaitingForInitialTransformation = BIT(5),
+	None                  = 0,
+	InUse                 = BIT(0),
+	Virtual               = BIT(1),
+#if defined(INCLUDE_AUDIO_PRODUCTION_CODE)
+	TrackAbsoluteVelocity = BIT(2),
+	TrackRelativeVelocity = BIT(3),
+#endif // INCLUDE_AUDIO_PRODUCTION_CODE
 };
 CRY_CREATE_ENUM_FLAG_OPERATORS(EObjectFlags);
 
@@ -125,7 +113,6 @@ public:
 
 	explicit CATLListener(Impl::IListener* const pImplData)
 		: m_pImplData(pImplData)
-		, m_isMovingOrDecaying(false)
 	{}
 
 	// CryAudio::IListener
@@ -135,22 +122,20 @@ public:
 
 	void                         Update(float const deltaTime);
 	void                         HandleSetTransformation(CObjectTransformation const& transformation);
-	CObjectTransformation const& GetTransformation() const { return m_transformation; }
-	Vec3 const&                  GetVelocity() const       { return m_velocity; }
+	CObjectTransformation const& GetTransformation() const { return m_pImplData->GetTransformation(); }
 
 	Impl::IListener* m_pImplData;
 
 #if defined(INCLUDE_AUDIO_PRODUCTION_CODE)
-	void HandleSetName(char const* const szName);
-	CryFixedStringT<MaxObjectNameLength> m_name;
-#endif // INCLUDE_AUDIO_PRODUCTION_CODE
+	void                         HandleSetName(char const* const szName);
+	char const*                  GetName() const                { return m_name.c_str(); }
+	CObjectTransformation const& GetDebugTransformation() const { return m_transformation; }
 
 private:
 
-	bool                  m_isMovingOrDecaying;
-	CObjectTransformation m_transformation;
-	Vec3                  m_previousPositionForVelocityCalculation{ ZERO };
-	Vec3                  m_velocity{ ZERO };
+	CObjectTransformation                m_transformation;
+	CryFixedStringT<MaxObjectNameLength> m_name;
+#endif // INCLUDE_AUDIO_PRODUCTION_CODE
 };
 
 class CATLControlImpl
@@ -499,68 +484,6 @@ public:
 #endif // INCLUDE_AUDIO_PRODUCTION_CODE
 
 	~CParameter();
-
-	void Set(CATLAudioObject const& object, float const value) const;
-
-private:
-
-	ParameterConnections const m_connections;
-};
-
-class CAbsoluteVelocityParameter final : public Control
-{
-public:
-
-	CAbsoluteVelocityParameter() = delete;
-	CAbsoluteVelocityParameter(CAbsoluteVelocityParameter const&) = delete;
-	CAbsoluteVelocityParameter(CAbsoluteVelocityParameter&&) = delete;
-	CAbsoluteVelocityParameter& operator=(CAbsoluteVelocityParameter const&) = delete;
-	CAbsoluteVelocityParameter& operator=(CAbsoluteVelocityParameter&&) = delete;
-
-#if defined(INCLUDE_AUDIO_PRODUCTION_CODE)
-	explicit CAbsoluteVelocityParameter(ParameterConnections const& connections)
-		: Control(AbsoluteVelocityParameterId, EDataScope::Global, s_szAbsoluteVelocityParameterName)
-		, m_connections(connections)
-	{}
-#else
-	explicit CAbsoluteVelocityParameter(ParameterConnections const& connections)
-		: Control(AbsoluteVelocityParameterId, EDataScope::Global)
-		, m_connections(connections)
-	{}
-#endif // INCLUDE_AUDIO_PRODUCTION_CODE
-
-	~CAbsoluteVelocityParameter();
-
-	void Set(CATLAudioObject const& object, float const value) const;
-
-private:
-
-	ParameterConnections const m_connections;
-};
-
-class CRelativeVelocityParameter final : public Control
-{
-public:
-
-	CRelativeVelocityParameter() = delete;
-	CRelativeVelocityParameter(CRelativeVelocityParameter const&) = delete;
-	CRelativeVelocityParameter(CRelativeVelocityParameter&&) = delete;
-	CRelativeVelocityParameter& operator=(CRelativeVelocityParameter const&) = delete;
-	CRelativeVelocityParameter& operator=(CRelativeVelocityParameter&&) = delete;
-
-#if defined(INCLUDE_AUDIO_PRODUCTION_CODE)
-	explicit CRelativeVelocityParameter(ParameterConnections const& connections)
-		: Control(RelativeVelocityParameterId, EDataScope::Global, s_szRelativeVelocityParameterName)
-		, m_connections(connections)
-	{}
-#else
-	explicit CRelativeVelocityParameter(ParameterConnections const& connections)
-		: Control(RelativeVelocityParameterId, EDataScope::Global)
-		, m_connections(connections)
-	{}
-#endif // INCLUDE_AUDIO_PRODUCTION_CODE
-
-	~CRelativeVelocityParameter();
 
 	void Set(CATLAudioObject const& object, float const value) const;
 

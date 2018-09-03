@@ -12,6 +12,11 @@
 #include <CrySystem/IProjectManager.h>
 #include <CryAudio/IAudioSystem.h>
 
+#if defined(INCLUDE_FMOD_IMPL_PRODUCTION_CODE)
+	#include "Debug.h"
+	#include <CryRenderer/IRenderAuxGeom.h>
+#endif  // INCLUDE_FMOD_IMPL_PRODUCTION_CODE
+
 namespace CryAudio
 {
 namespace Impl
@@ -130,7 +135,7 @@ ERequestStatus CImpl::Init(uint32 const objectPoolSize, uint32 const eventPoolSi
 	fmodResult = m_pSystem->setListenerAttributes(0, &attributes);
 	ASSERT_FMOD_OK;
 
-	CObjectBase::s_pSystem = m_pSystem;
+	CBaseObject::s_pSystem = m_pSystem;
 	CListener::s_pSystem = m_pSystem;
 	CStandaloneFileBase::s_pLowLevelSystem = m_pLowLevelSystem;
 
@@ -384,24 +389,24 @@ void CImpl::GetInfo(SImplInfo& implInfo) const
 ///////////////////////////////////////////////////////////////////////////
 IObject* CImpl::ConstructGlobalObject()
 {
-	CObjectBase* const pObject = new CGlobalObject(m_constructedObjects);
+	CBaseObject* const pObject = new CGlobalObject(m_constructedObjects);
 
 	if (!stl::push_back_unique(m_constructedObjects, pObject))
 	{
-		Cry::Audio::Log(ELogType::Warning, "Trying to construct an already registered audio object.");
+		Cry::Audio::Log(ELogType::Warning, "Trying to construct an already registered object.");
 	}
 
 	return static_cast<IObject*>(pObject);
 }
 
 ///////////////////////////////////////////////////////////////////////////
-IObject* CImpl::ConstructObject(char const* const szName /*= nullptr*/)
+IObject* CImpl::ConstructObject(CObjectTransformation const& transformation, char const* const szName /*= nullptr*/)
 {
-	CObjectBase* pObject = new CObject();
+	CBaseObject* pObject = new CObject(transformation);
 
 	if (!stl::push_back_unique(m_constructedObjects, pObject))
 	{
-		Cry::Audio::Log(ELogType::Warning, "Trying to construct an already registered audio object.");
+		Cry::Audio::Log(ELogType::Warning, "Trying to construct an already registered object.");
 	}
 
 	return static_cast<IObject*>(pObject);
@@ -410,27 +415,38 @@ IObject* CImpl::ConstructObject(char const* const szName /*= nullptr*/)
 ///////////////////////////////////////////////////////////////////////////
 void CImpl::DestructObject(IObject const* const pIObject)
 {
-	auto const pObject = static_cast<CObjectBase const*>(pIObject);
+	auto const pObject = static_cast<CBaseObject const*>(pIObject);
 
 	if (!stl::find_and_erase(m_constructedObjects, pObject))
 	{
-		Cry::Audio::Log(ELogType::Warning, "Trying to delete a non-existing audio object.");
+		Cry::Audio::Log(ELogType::Warning, "Trying to delete a non-existing object.");
 	}
 
 	delete pObject;
 }
 
 ///////////////////////////////////////////////////////////////////////////
-IListener* CImpl::ConstructListener(char const* const szName /*= nullptr*/)
+IListener* CImpl::ConstructListener(CObjectTransformation const& transformation, char const* const szName /*= nullptr*/)
 {
 	static int id = 0;
-	return static_cast<IListener*>(new CListener(id++));
+	g_pListener = new CListener(transformation, id++);
+
+#if defined(INCLUDE_FMOD_IMPL_PRODUCTION_CODE)
+	if (szName != nullptr)
+	{
+		g_pListener->SetName(szName);
+	}
+#endif  // INCLUDE_FMOD_IMPL_PRODUCTION_CODE
+
+	return static_cast<IListener*>(g_pListener);
 }
 
 ///////////////////////////////////////////////////////////////////////////
 void CImpl::DestructListener(IListener* const pIListener)
 {
-	delete pIListener;
+	CRY_ASSERT_MESSAGE(pIListener == g_pListener, "pIListener is not g_pListener");
+	delete g_pListener;
+	g_pListener = nullptr;
 }
 
 //////////////////////////////////////////////////////////////////////////
@@ -765,46 +781,6 @@ void CImpl::DestructEnvironment(IEnvironment const* const pIEnvironment)
 	delete pEnvironment;
 }
 
-///////////////////////////////////////////////////////////////////////////
-void CImpl::GetMemoryInfo(SMemoryInfo& memoryInfo) const
-{
-	CryModuleMemoryInfo memInfo;
-	ZeroStruct(memInfo);
-	CryGetMemoryInfoForModule(&memInfo);
-
-	memoryInfo.totalMemory = static_cast<size_t>(memInfo.allocated - memInfo.freed);
-
-#if defined(PROVIDE_FMOD_IMPL_SECONDARY_POOL)
-	memoryInfo.secondaryPoolSize = g_audioImplMemoryPoolSecondary.MemSize();
-	memoryInfo.secondaryPoolUsedSize = memoryInfo.secondaryPoolSize - g_audioImplMemoryPoolSecondary.MemFree();
-	memoryInfo.secondaryPoolAllocations = g_audioImplMemoryPoolSecondary.FragmentCount();
-#else
-	memoryInfo.secondaryPoolSize = 0;
-	memoryInfo.secondaryPoolUsedSize = 0;
-	memoryInfo.secondaryPoolAllocations = 0;
-#endif  // PROVIDE_AUDIO_IMPL_SECONDARY_POOL
-
-	{
-		auto& allocator = CObject::GetAllocator();
-		auto mem = allocator.GetTotalMemory();
-		auto pool = allocator.GetCounts();
-		memoryInfo.poolUsedObjects = pool.nUsed;
-		memoryInfo.poolConstructedObjects = pool.nAlloc;
-		memoryInfo.poolUsedMemory = mem.nUsed;
-		memoryInfo.poolAllocatedMemory = mem.nAlloc;
-	}
-
-	{
-		auto& allocator = CEvent::GetAllocator();
-		auto mem = allocator.GetTotalMemory();
-		auto pool = allocator.GetCounts();
-		memoryInfo.poolUsedObjects += pool.nUsed;
-		memoryInfo.poolConstructedObjects += pool.nAlloc;
-		memoryInfo.poolUsedMemory += mem.nUsed;
-		memoryInfo.poolAllocatedMemory += mem.nAlloc;
-	}
-}
-
 //////////////////////////////////////////////////////////////////////////
 void CImpl::OnRefresh()
 {
@@ -1009,6 +985,11 @@ bool CImpl::LoadMasterBanks()
 
 			if (m_pMasterBank != nullptr)
 			{
+#if defined(INCLUDE_FMOD_IMPL_PRODUCTION_CODE)
+				m_masterBankSize = masterBankFileSize;
+				m_masterStringsBankSize = masterBankStringsFileSize;
+#endif        // INCLUDE_FMOD_IMPL_PRODUCTION_CODE
+
 				int numBuses = 0;
 				fmodResult = m_pMasterBank->getBusCount(&numBuses);
 				ASSERT_FMOD_OK;
@@ -1037,6 +1018,10 @@ bool CImpl::LoadMasterBanks()
 			{
 				fmodResult = LoadBankCustom(m_masterAssetsBankPath.c_str(), &m_pMasterAssetsBank);
 				ASSERT_FMOD_OK;
+
+#if defined(INCLUDE_FMOD_IMPL_PRODUCTION_CODE)
+				m_masterAssetsBankSize = masterBankAssetsFileSize;
+#endif        // INCLUDE_FMOD_IMPL_PRODUCTION_CODE
 			}
 
 			size_t const masterBankStreamsFileSize = gEnv->pCryPak->FGetSize(m_masterStreamsBankPath.c_str());
@@ -1091,6 +1076,12 @@ void CImpl::UnloadMasterBanks()
 		ASSERT_FMOD_OK;
 		m_pMasterBank = nullptr;
 	}
+
+#if defined(INCLUDE_FMOD_IMPL_PRODUCTION_CODE)
+	m_masterBankSize = 0;
+	m_masterStringsBankSize = 0;
+	m_masterAssetsBankSize = 0;
+#endif  // INCLUDE_FMOD_IMPL_PRODUCTION_CODE
 }
 
 //////////////////////////////////////////////////////////////////////////
@@ -1138,6 +1129,106 @@ void CImpl::GetFileData(char const* const szName, SFileData& fileData) const
 		pSound->getLength(&length, FMOD_TIMEUNIT_MS);
 		fileData.duration = length / 1000.0f; // convert to seconds
 	}
+}
+
+#if defined(INCLUDE_FMOD_IMPL_PRODUCTION_CODE)
+///////////////////////////////////////////////////////////////////////////
+void GetMemoryInfo(SMemoryInfo& memoryInfo)
+{
+	CryModuleMemoryInfo memInfo;
+	ZeroStruct(memInfo);
+	CryGetMemoryInfoForModule(&memInfo);
+
+	memoryInfo.totalMemory = static_cast<size_t>(memInfo.allocated - memInfo.freed);
+
+	#if defined(PROVIDE_FMOD_IMPL_SECONDARY_POOL)
+	memoryInfo.secondaryPoolSize = g_audioImplMemoryPoolSecondary.MemSize();
+	memoryInfo.secondaryPoolUsedSize = memoryInfo.secondaryPoolSize - g_audioImplMemoryPoolSecondary.MemFree();
+	memoryInfo.secondaryPoolAllocations = g_audioImplMemoryPoolSecondary.FragmentCount();
+	#else
+	memoryInfo.secondaryPoolSize = 0;
+	memoryInfo.secondaryPoolUsedSize = 0;
+	memoryInfo.secondaryPoolAllocations = 0;
+	#endif // PROVIDE_FMOD_IMPL_SECONDARY_POOL
+
+	{
+		auto& allocator = CObject::GetAllocator();
+		auto mem = allocator.GetTotalMemory();
+		auto pool = allocator.GetCounts();
+		memoryInfo.poolUsedObjects = pool.nUsed;
+		memoryInfo.poolConstructedObjects = pool.nAlloc;
+		memoryInfo.poolUsedMemory = mem.nUsed;
+		memoryInfo.poolAllocatedMemory = mem.nAlloc;
+	}
+
+	{
+		auto& allocator = CEvent::GetAllocator();
+		auto mem = allocator.GetTotalMemory();
+		auto pool = allocator.GetCounts();
+		memoryInfo.poolUsedObjects += pool.nUsed;
+		memoryInfo.poolConstructedObjects += pool.nAlloc;
+		memoryInfo.poolUsedMemory += mem.nUsed;
+		memoryInfo.poolAllocatedMemory += mem.nAlloc;
+	}
+}
+#endif  // INCLUDE_FMOD_IMPL_PRODUCTION_CODE
+
+//////////////////////////////////////////////////////////////////////////
+void CImpl::DrawDebugInfo(IRenderAuxGeom& auxGeom, float const posX, float& posY)
+{
+#if defined(INCLUDE_FMOD_IMPL_PRODUCTION_CODE)
+	auxGeom.Draw2dLabel(posX, posY, g_debugSystemHeaderFontSize, g_debugSystemColorHeader.data(), false, m_name.c_str());
+
+	SMemoryInfo memoryInfo;
+	GetMemoryInfo(memoryInfo);
+	memoryInfo.totalMemory += m_masterBankSize + m_masterStringsBankSize + m_masterAssetsBankSize;
+
+	posY += g_debugSystemLineHeightClause;
+	auxGeom.Draw2dLabel(posX, posY, g_debugSystemFontSize, g_debugSystemColorTextPrimary.data(), false, "Total Memory Used: %uKiB | Secondary Memory: %.2f / %.2f MiB | NumAllocs: %d",
+	                    static_cast<uint32>(memoryInfo.totalMemory / 1024),
+	                    (memoryInfo.secondaryPoolUsedSize / 1024) / 1024.0f,
+	                    (memoryInfo.secondaryPoolSize / 1024) / 1024.0f,
+	                    static_cast<int>(memoryInfo.secondaryPoolAllocations));
+
+	posY += g_debugSystemLineHeight;
+
+	if (m_pMasterAssetsBank != nullptr)
+	{
+		auxGeom.Draw2dLabel(posX, posY, g_debugSystemFontSize, g_debugSystemColorTextPrimary.data(), false, "Master Bank: %uKiB | Master Strings Bank: %uKiB | Master Assets Bank: %uKiB",
+		                    static_cast<uint32>(m_masterBankSize / 1024),
+		                    static_cast<uint32>(m_masterStringsBankSize / 1024),
+		                    static_cast<uint32>(m_masterAssetsBankSize / 1024));
+	}
+	else
+	{
+		auxGeom.Draw2dLabel(posX, posY, g_debugSystemFontSize, g_debugSystemColorTextPrimary.data(), false, "Master Bank: %uKiB | Master Strings Bank: %uKiB",
+		                    static_cast<uint32>(m_masterBankSize / 1024),
+		                    static_cast<uint32>(m_masterStringsBankSize / 1024));
+	}
+
+	posY += g_debugSystemLineHeight;
+	auxGeom.Draw2dLabel(posX, posY, g_debugSystemFontSize, g_debugSystemColorTextPrimary.data(), false, "[Object Pool] In Use: %u | Constructed: %u (%uKiB) | Memory Pool: %uKiB",
+	                    memoryInfo.poolUsedObjects, memoryInfo.poolConstructedObjects, memoryInfo.poolUsedMemory, memoryInfo.poolAllocatedMemory);
+
+	Vec3 const& listenerPosition = g_pListener->GetPosition();
+	Vec3 const& listenerDirection = g_pListener->GetTransformation().GetForward();
+	char const* const szName = g_pListener->GetName();
+
+	posY += g_debugSystemLineHeight;
+
+	if (g_numObjectsWithDoppler > 0)
+	{
+		auxGeom.Draw2dLabel(posX, posY, g_debugSystemFontSize, g_debugSystemColorTextPrimary.data(), false, "Objects with Doppler: %u", g_numObjectsWithDoppler);
+
+		float const listenerVelocity = g_pListener->GetVelocity().GetLength();
+		posY += g_debugSystemLineHeight;
+		auxGeom.Draw2dLabel(posX, posY, g_debugSystemFontSize, g_debugSystemColorListenerActive.data(), false, "Listener: %s | PosXYZ: %.2f %.2f %.2f | FwdXYZ: %.2f %.2f %.2f | Velocity: %.2f m/s", szName, listenerPosition.x, listenerPosition.y, listenerPosition.z, listenerDirection.x, listenerDirection.y, listenerDirection.z, listenerVelocity);
+	}
+	else
+	{
+		auxGeom.Draw2dLabel(posX, posY, g_debugSystemFontSize, g_debugSystemColorListenerActive.data(), false, "Listener: %s | PosXYZ: %.2f %.2f %.2f | FwdXYZ: %.2f %.2f %.2f", szName, listenerPosition.x, listenerPosition.y, listenerPosition.z, listenerDirection.x, listenerDirection.y, listenerDirection.z);
+	}
+#endif  // INCLUDE_FMOD_IMPL_PRODUCTION_CODE
 }
 } // namespace Fmod
 } // namespace Impl

@@ -172,7 +172,7 @@ void CAudioTranslationLayer::Update(float const deltaTime)
 	if (g_pIImpl != nullptr)
 	{
 		g_listenerManager.Update(deltaTime);
-		g_pObject->GetImplDataPtr()->Update();
+		g_pObject->GetImplDataPtr()->Update(deltaTime);
 		g_objectManager.Update(deltaTime);
 		g_pIImpl->Update();
 	}
@@ -763,16 +763,14 @@ ERequestStatus CAudioTranslationLayer::ProcessAudioObjectRequest(CAudioRequest c
 
 			if (pTrigger != nullptr)
 			{
-				auto const pNewObject = new CATLAudioObject;
+				auto const pNewObject = new CATLAudioObject(pRequestData->transformation);
 				g_objectManager.RegisterObject(pNewObject);
 
 #if defined(INCLUDE_AUDIO_PRODUCTION_CODE)
-				pNewObject->Init(pRequestData->name.c_str(), g_pIImpl->ConstructObject(pRequestData->name.c_str()), pRequestData->entityId);
+				pNewObject->Init(pRequestData->name.c_str(), g_pIImpl->ConstructObject(pRequestData->transformation, pRequestData->name.c_str()), pRequestData->entityId);
 #else
-				pNewObject->Init(nullptr, g_pIImpl->ConstructObject(nullptr), pRequestData->entityId);
+				pNewObject->Init(nullptr, g_pIImpl->ConstructObject(pRequestData->transformation, nullptr), pRequestData->entityId);
 #endif    // INCLUDE_AUDIO_PRODUCTION_CODE
-
-				pNewObject->HandleSetTransformation(pRequestData->transformation, 0.0f);
 
 				if (pRequestData->setCurrentEnvironments)
 				{
@@ -820,11 +818,10 @@ ERequestStatus CAudioTranslationLayer::ProcessAudioObjectRequest(CAudioRequest c
 		{
 			CRY_ASSERT_MESSAGE(pObject != g_pObject, "Received a request to set a transformation on the global object.");
 
-			float const distanceToListener = (g_listenerManager.GetActiveListenerTransformation().GetPosition() - pObject->GetTransformation().GetPosition()).GetLength();
 			SAudioObjectRequestData<EAudioObjectRequestType::SetTransformation> const* const pRequestData =
 				static_cast<SAudioObjectRequestData<EAudioObjectRequestType::SetTransformation> const* const>(request.GetData());
 
-			pObject->HandleSetTransformation(pRequestData->transformation, distanceToListener);
+			pObject->HandleSetTransformation(pRequestData->transformation);
 			result = ERequestStatus::Success;
 
 			break;
@@ -922,12 +919,12 @@ ERequestStatus CAudioTranslationLayer::ProcessAudioObjectRequest(CAudioRequest c
 				static_cast<SAudioObjectRequestData<EAudioObjectRequestType::RegisterObject> const*>(request.GetData());
 
 #if defined(INCLUDE_AUDIO_PRODUCTION_CODE)
-			pObject->Init(pRequestData->name.c_str(), g_pIImpl->ConstructObject(pRequestData->name.c_str()), pRequestData->entityId);
+			pObject->Init(pRequestData->name.c_str(), g_pIImpl->ConstructObject(pRequestData->transformation, pRequestData->name.c_str()), pRequestData->entityId);
 #else
-			pObject->Init(nullptr, g_pIImpl->ConstructObject(nullptr), pRequestData->entityId);
+			pObject->Init(nullptr, g_pIImpl->ConstructObject(pRequestData->transformation, nullptr), pRequestData->entityId);
 #endif  // INCLUDE_AUDIO_PRODUCTION_CODE
 
-			pObject->HandleSetTransformation(pRequestData->transformation, 0.0f);
+			pObject->HandleSetTransformation(pRequestData->transformation);
 
 			if (pRequestData->setCurrentEnvironments)
 			{
@@ -987,11 +984,19 @@ ERequestStatus CAudioTranslationLayer::ProcessAudioObjectRequest(CAudioRequest c
 
 			if (pRequestData->isEnabled)
 			{
+				pObject->GetImplDataPtr()->ToggleFunctionality(Impl::EObjectFunctionality::TrackAbsoluteVelocity, true);
+
+#if defined(INCLUDE_AUDIO_PRODUCTION_CODE)
 				pObject->SetFlag(EObjectFlags::TrackAbsoluteVelocity);
+#endif    // INCLUDE_AUDIO_PRODUCTION_CODE
 			}
 			else
 			{
+				pObject->GetImplDataPtr()->ToggleFunctionality(Impl::EObjectFunctionality::TrackAbsoluteVelocity, false);
+
+#if defined(INCLUDE_AUDIO_PRODUCTION_CODE)
 				pObject->RemoveFlag(EObjectFlags::TrackAbsoluteVelocity);
+#endif    // INCLUDE_AUDIO_PRODUCTION_CODE
 			}
 
 			result = ERequestStatus::Success;
@@ -1004,11 +1009,19 @@ ERequestStatus CAudioTranslationLayer::ProcessAudioObjectRequest(CAudioRequest c
 
 			if (pRequestData->isEnabled)
 			{
+				pObject->GetImplDataPtr()->ToggleFunctionality(Impl::EObjectFunctionality::TrackRelativeVelocity, true);
+
+#if defined(INCLUDE_AUDIO_PRODUCTION_CODE)
 				pObject->SetFlag(EObjectFlags::TrackRelativeVelocity);
+#endif    // INCLUDE_AUDIO_PRODUCTION_CODE
 			}
 			else
 			{
+				pObject->GetImplDataPtr()->ToggleFunctionality(Impl::EObjectFunctionality::TrackRelativeVelocity, false);
+
+#if defined(INCLUDE_AUDIO_PRODUCTION_CODE)
 				pObject->RemoveFlag(EObjectFlags::TrackRelativeVelocity);
+#endif    // INCLUDE_AUDIO_PRODUCTION_CODE
 			}
 
 			result = ERequestStatus::Success;
@@ -1058,7 +1071,7 @@ ERequestStatus CAudioTranslationLayer::ProcessAudioListenerRequest(SAudioRequest
 		{
 			SAudioListenerRequestData<EAudioListenerRequestType::RegisterListener> const* const pRequestData =
 				static_cast<SAudioListenerRequestData<EAudioListenerRequestType::RegisterListener> const*>(pPassedRequestData);
-			*pRequestData->ppListener = g_listenerManager.CreateListener(pRequestData->name.c_str());
+			*pRequestData->ppListener = g_listenerManager.CreateListener(pRequestData->transformation, pRequestData->name.c_str());
 		}
 		break;
 	case EAudioListenerRequestType::ReleaseListener:
@@ -1141,7 +1154,7 @@ ERequestStatus CAudioTranslationLayer::SetImpl(Impl::IImpl* const pIImpl)
 
 	if (g_pObject == nullptr)
 	{
-		g_pObject = new CATLAudioObject;
+		g_pObject = new CATLAudioObject(CObjectTransformation::GetEmptyObject());
 
 #if defined(INCLUDE_AUDIO_PRODUCTION_CODE)
 		g_pObject->m_name = "Global Object";
@@ -1352,7 +1365,8 @@ char const* CAudioTranslationLayer::GetConfigPath() const
 void CAudioTranslationLayer::DrawAudioSystemDebugInfo()
 {
 	CRY_PROFILE_FUNCTION(PROFILE_AUDIO);
-	IRenderAuxGeom* pAuxGeom = gEnv->pRenderer ? gEnv->pRenderer->GetOrCreateIRenderAuxGeom() : nullptr;
+	IRenderAuxGeom* const pAuxGeom = gEnv->pRenderer ? gEnv->pRenderer->GetOrCreateIRenderAuxGeom() : nullptr;
+
 	if (pAuxGeom)
 	{
 		if ((g_cvars.m_drawAudioDebug & Debug::objectMask) != 0)
@@ -1361,29 +1375,28 @@ void CAudioTranslationLayer::DrawAudioSystemDebugInfo()
 			// on top (Draw2dLabel doesn't provide a way set which labels are printed on top)
 		}
 
-		float posX = 8.0f;
+		float const posX = 8.0f;
 		float posY = 4.0f;
 
 		if (!((g_cvars.m_drawAudioDebug & Debug::EDrawFilter::HideMemoryInfo) != 0))
 		{
-			pAuxGeom->Draw2dLabel(posX, posY, 1.5f, Debug::g_systemColorHeader.data(), false, m_implInfo.name.c_str());
+			pAuxGeom->Draw2dLabel(posX, posY, Debug::g_systemHeaderFontSize, Debug::g_globalColorHeader.data(), false, "Audio System");
 
 			CryModuleMemoryInfo memInfo;
 			ZeroStruct(memInfo);
 			CryGetMemoryInfoForModule(&memInfo);
 
-			posY += Debug::g_systemLineHeightClause;
+			posY += Debug::g_systemHeaderLineHeight;
 			pAuxGeom->Draw2dLabel(posX, posY, Debug::g_systemFontSize, Debug::g_systemColorTextPrimary.data(), false,
-			                      "[Audio System] Total Memory Used: %uKiB",
+			                      "Total Memory Used: %uKiB",
 			                      static_cast<uint32>((memInfo.allocated - memInfo.freed) / 1024));
 
-			posX += Debug::g_systemIndentation;
 			{
 				CPoolObject<CATLAudioObject, stl::PSyncMultiThread>::Allocator& allocator = CATLAudioObject::GetAllocator();
 				posY += Debug::g_systemLineHeight;
 				auto mem = allocator.GetTotalMemory();
 				auto pool = allocator.GetCounts();
-				pAuxGeom->Draw2dLabel(posX, posY, Debug::g_systemFontSize, Debug::g_systemColorTextSecondary.data(), false, "[Objects] InUse: %u | Constructed: %u (%uKiB) | Memory Pool: %uKiB", pool.nUsed, pool.nAlloc, mem.nUsed / 1024, mem.nAlloc / 1024);
+				pAuxGeom->Draw2dLabel(posX, posY, Debug::g_systemFontSize, Debug::g_systemColorTextPrimary.data(), false, "[Objects] In Use: %u | Constructed: %u (%uKiB) | Memory Pool: %uKiB", pool.nUsed, pool.nAlloc, mem.nUsed / 1024, mem.nAlloc / 1024);
 			}
 
 			{
@@ -1391,7 +1404,7 @@ void CAudioTranslationLayer::DrawAudioSystemDebugInfo()
 				posY += Debug::g_systemLineHeight;
 				auto mem = allocator.GetTotalMemory();
 				auto pool = allocator.GetCounts();
-				pAuxGeom->Draw2dLabel(posX, posY, Debug::g_systemFontSize, Debug::g_systemColorTextSecondary.data(), false, "[Events] InUse: %u | Constructed: %u (%uKiB) | Memory Pool: %uKiB", pool.nUsed, pool.nAlloc, mem.nUsed / 1024, mem.nAlloc / 1024);
+				pAuxGeom->Draw2dLabel(posX, posY, Debug::g_systemFontSize, Debug::g_systemColorTextPrimary.data(), false, "[Events] In Use: %u | Constructed: %u (%uKiB) | Memory Pool: %uKiB", pool.nUsed, pool.nAlloc, mem.nUsed / 1024, mem.nAlloc / 1024);
 			}
 
 			{
@@ -1399,60 +1412,32 @@ void CAudioTranslationLayer::DrawAudioSystemDebugInfo()
 				posY += Debug::g_systemLineHeight;
 				auto mem = allocator.GetTotalMemory();
 				auto pool = allocator.GetCounts();
-				pAuxGeom->Draw2dLabel(posX, posY, Debug::g_systemFontSize, Debug::g_systemColorTextSecondary.data(), false, "[Files] InUse: %u | Constructed: %u (%uKiB) | Memory Pool: %uKiB", pool.nUsed, pool.nAlloc, mem.nUsed / 1024, mem.nAlloc / 1024);
-			}
-			posX -= Debug::g_systemIndentation;
-
-			if (g_pIImpl != nullptr)
-			{
-				Impl::SMemoryInfo memoryInfo;
-				g_pIImpl->GetMemoryInfo(memoryInfo);
-
-				posY += Debug::g_systemLineHeightClause;
-				pAuxGeom->Draw2dLabel(posX, posY, Debug::g_systemFontSize, Debug::g_systemColorTextPrimary.data(), false, "[Impl] Total Memory Used: %uKiB | Secondary Memory: %.2f / %.2f MiB | NumAllocs: %d",
-				                      static_cast<uint32>(memoryInfo.totalMemory / 1024),
-				                      (memoryInfo.secondaryPoolUsedSize / 1024) / 1024.0f,
-				                      (memoryInfo.secondaryPoolSize / 1024) / 1024.0f,
-				                      static_cast<int>(memoryInfo.secondaryPoolAllocations));
-
-				posX += Debug::g_systemIndentation;
-				posY += Debug::g_systemLineHeight;
-				pAuxGeom->Draw2dLabel(posX, posY, Debug::g_systemFontSize, Debug::g_systemColorTextSecondary.data(), false, "[Impl Object Pool] InUse: %u | Constructed: %u (%uKiB) | Memory Pool: %uKiB",
-				                      memoryInfo.poolUsedObjects, memoryInfo.poolConstructedObjects, memoryInfo.poolUsedMemory, memoryInfo.poolAllocatedMemory);
-				posX -= Debug::g_systemIndentation;
+				pAuxGeom->Draw2dLabel(posX, posY, Debug::g_systemFontSize, Debug::g_systemColorTextPrimary.data(), false, "[Files] In Use: %u | Constructed: %u (%uKiB) | Memory Pool: %uKiB", pool.nUsed, pool.nAlloc, mem.nUsed / 1024, mem.nAlloc / 1024);
 			}
 
-			posY += Debug::g_systemLineHeightClause;
-
-			static float const SMOOTHING_ALPHA = 0.2f;
-			static float syncRays = 0;
-			static float asyncRays = 0;
-			Vec3 const& listenerPosition = g_listenerManager.GetActiveListenerTransformation().GetPosition();
-			Vec3 const& listenerDirection = g_listenerManager.GetActiveListenerTransformation().GetForward();
-			float const listenerVelocity = g_listenerManager.GetActiveListenerVelocity().GetLength();
 			size_t const numObjects = g_objectManager.GetNumAudioObjects();
 			size_t const numActiveObjects = g_objectManager.GetNumActiveAudioObjects();
 			size_t const numEvents = g_eventManager.GetNumConstructed();
 			size_t const numListeners = g_listenerManager.GetNumActiveListeners();
 			size_t const numEventListeners = g_eventListenerManager.GetNumEventListeners();
+			static float const SMOOTHING_ALPHA = 0.2f;
+			static float syncRays = 0;
+			static float asyncRays = 0;
 			syncRays += (CPropagationProcessor::s_totalSyncPhysRays - syncRays) * SMOOTHING_ALPHA;
 			asyncRays += (CPropagationProcessor::s_totalAsyncPhysRays - asyncRays) * SMOOTHING_ALPHA * 0.1f;
 
-			bool const isActive = true;
-			float const* colorListener = isActive ? Debug::g_systemColorListenerActive.data() : Debug::g_systemColorListenerInactive.data();
-
-			if (numListeners > 0)
-			{
-				char const* const szName = g_listenerManager.GetActiveListenerName();
-				pAuxGeom->Draw2dLabel(posX, posY, Debug::g_systemFontSize, colorListener, false, "%s PosXYZ: %.2f %.2f %.2f FwdXYZ: %.2f %.2f %.2f Velocity: %.2f m/s", szName, listenerPosition.x, listenerPosition.y, listenerPosition.z, listenerDirection.x, listenerDirection.y, listenerDirection.z, listenerVelocity);
-				posY += Debug::g_systemLineHeight;
-			}
-
-			pAuxGeom->Draw2dLabel(posX, posY, Debug::g_systemFontSize, Debug::g_systemColorHeader.data(), false,
-			                      "Objects: %3" PRISIZE_T "/%3" PRISIZE_T " Events: %3" PRISIZE_T " EventListeners %3" PRISIZE_T " Listeners: %" PRISIZE_T " | SyncRays: %3.1f AsyncRays: %3.1f",
+			posY += Debug::g_systemLineHeight;
+			pAuxGeom->Draw2dLabel(posX, posY, Debug::g_systemFontSize, Debug::g_systemColorTextSecondary.data(), false,
+			                      "Objects: %3" PRISIZE_T "/%3" PRISIZE_T " | Events: %3" PRISIZE_T " | EventListeners %3" PRISIZE_T " | Listeners: %" PRISIZE_T " | SyncRays: %3.1f AsyncRays: %3.1f",
 			                      numActiveObjects, numObjects, numEvents, numEventListeners, numListeners, syncRays, asyncRays);
 
-			posY += Debug::g_systemLineHeightClause;
+			if (g_pIImpl != nullptr)
+			{
+				posY += Debug::g_systemHeaderLineHeight;
+				g_pIImpl->DrawDebugInfo(*pAuxGeom, posX, posY);
+			}
+
+			posY += Debug::g_systemHeaderLineHeight;
 		}
 
 		string debugFilter = g_cvars.m_pDebugFilter->GetString();
@@ -1526,6 +1511,11 @@ void CAudioTranslationLayer::DrawAudioSystemDebugInfo()
 			debugDraw += "Object Standalone Files, ";
 		}
 
+		if ((g_cvars.m_drawAudioDebug & Debug::EDrawFilter::ObjectImplInfo) != 0)
+		{
+			debugDraw += "Object Middleware Info, ";
+		}
+
 		if ((g_cvars.m_drawAudioDebug & Debug::EDrawFilter::StandaloneFiles) != 0)
 		{
 			debugDraw += "Standalone Files, ";
@@ -1553,7 +1543,7 @@ void CAudioTranslationLayer::DrawAudioSystemDebugInfo()
 			posY += Debug::g_systemLineHeight;
 			pAuxGeom->Draw2dLabel(posX, posY, Debug::g_systemFontSize, Debug::g_systemColorTextPrimary.data(), false, "Debug Filter: %s | Debug Distance: %s", debugFilter.c_str(), debugDistance.c_str());
 
-			posY += Debug::g_systemLineHeightClause;
+			posY += Debug::g_systemHeaderLineHeight;
 		}
 
 		DrawATLComponentDebugInfo(*pAuxGeom, posX, posY);

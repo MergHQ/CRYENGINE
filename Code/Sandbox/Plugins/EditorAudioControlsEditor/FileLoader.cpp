@@ -235,7 +235,15 @@ CControl* CFileLoader::LoadControl(XmlNodeRef const pNode, Scope const scope, ui
 			string const name = pNode->getAttr(CryAudio::s_szNameAttribute);
 			EAssetType const controlType = TagToType(pNode->getTag());
 
-			pControl = g_assetsManager.CreateControl(name, controlType, pFolderItem);
+			// Don't load deprecated default controls.
+			if (((controlType == EAssetType::Parameter) && ((name.compareNoCase("absolute_velocity") == 0) || (name.compareNoCase("relative_velocity") == 0))))
+			{
+				pParentItem->SetModified(true, true);
+			}
+			else
+			{
+				pControl = g_assetsManager.CreateControl(name, controlType, pFolderItem);
+			}
 
 			if (pControl != nullptr)
 			{
@@ -323,12 +331,6 @@ void CFileLoader::CreateDefaultControls()
 		g_assetsManager.CreateDefaultControl(CryAudio::s_szUnmuteAllTriggerName, EAssetType::Trigger, pLibrary, false, "Unmutes all audio. Gets triggered when the editor unmute action is used.");
 		g_assetsManager.CreateDefaultControl(CryAudio::s_szPauseAllTriggerName, EAssetType::Trigger, pLibrary, false, "Pauses playback of all audio.");
 		g_assetsManager.CreateDefaultControl(CryAudio::s_szResumeAllTriggerName, EAssetType::Trigger, pLibrary, false, "Resumes playback of all audio.");
-
-		string description;
-		description.Format(R"(Updates the absolute velocity of an object, if its "%s" switch is enabled.)", "absolute_velocity_tracking");
-		g_assetsManager.CreateDefaultControl(CryAudio::s_szAbsoluteVelocityParameterName, EAssetType::Parameter, pLibrary, false, description.c_str());
-		description.Format(R"(Updates the absolute velocity of an object, if its "%s" switch is enabled.)", "relative_velocity_tracking");
-		g_assetsManager.CreateDefaultControl(CryAudio::s_szRelativeVelocityParameterName, EAssetType::Parameter, pLibrary, false, description.c_str());
 	}
 }
 

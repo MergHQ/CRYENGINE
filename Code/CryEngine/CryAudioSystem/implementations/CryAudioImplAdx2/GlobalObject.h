@@ -31,6 +31,7 @@ public:
 	virtual void SetParameter(IParameter const* const pIParameter, float const value) override;
 	virtual void SetSwitchState(ISwitchState const* const pISwitchState) override;
 	virtual void SetObstructionOcclusion(float const obstruction, float const occlusion) override;
+	virtual void SetOcclusionType(EOcclusionType const occlusionType) override;
 	// ~CryAudio::Impl::IObject
 
 private:

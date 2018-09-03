@@ -2,3 +2,16 @@
 
 #include "stdafx.h"
 #include "Common.h"
+
+#include "SoundEngineTypes.h"
+
+namespace CryAudio
+{
+namespace Impl
+{
+namespace SDL_mixer
+{
+CListener* g_pListener = nullptr;
+} // namespace SDL_mixer
+} // namespace Impl
+} // namespace CryAudio

@@ -37,7 +37,7 @@ void CObject::UnregisterEvent(CEvent* const pEvent)
 }
 
 //////////////////////////////////////////////////////////////////////////
-void CObject::Update()
+void CObject::Update(float const deltaTime)
 {
 	for (auto const pEvent : m_activeEvents)
 	{
@@ -67,6 +67,11 @@ void CObject::SetSwitchState(ISwitchState const* const pISwitchState)
 
 //////////////////////////////////////////////////////////////////////////
 void CObject::SetObstructionOcclusion(float const obstruction, float const occlusion)
+{
+}
+
+//////////////////////////////////////////////////////////////////////////
+void CObject::SetOcclusionType(EOcclusionType const occlusionType)
 {
 }
 
@@ -133,6 +138,16 @@ ERequestStatus CObject::SetName(char const* const szName)
 	// PortAudio does not have the concept of audio objects and with that the debugging of such.
 	// Therefore the name is currently not needed here.
 	return ERequestStatus::Success;
+}
+
+//////////////////////////////////////////////////////////////////////////
+void CObject::ToggleFunctionality(EObjectFunctionality const type, bool const enable)
+{
+}
+
+//////////////////////////////////////////////////////////////////////////
+void CObject::DrawDebugInfo(IRenderAuxGeom& auxGeom, float const posX, float posY, char const* const szTextFilter)
+{
 }
 } // namespace PortAudio
 } // namespace Impl

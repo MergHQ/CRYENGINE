@@ -28,6 +28,7 @@ void SetPanningRule(ICVar* const pPanningRule)
 void CCVars::RegisterVariables()
 {
 #if CRY_PLATFORM_WINDOWS
+	m_velocityTrackingThreshold = 0.1f;
 	m_secondaryMemoryPoolSize = 0;
 	m_prepareEventMemoryPoolSize = 4 << 10;        // 4 MiB
 	m_streamManagerMemoryPoolSize = 128;           // 128 KiB
@@ -45,6 +46,7 @@ void CCVars::RegisterVariables()
 	m_monitorQueueMemoryPoolSize = 64; // 64 KiB
 	#endif                             // INCLUDE_WWISE_IMPL_PRODUCTION_CODE
 #elif CRY_PLATFORM_DURANGO
+	m_velocityTrackingThreshold = 0.1f;
 	m_secondaryMemoryPoolSize = 32 << 10;          // 32 MiB
 	m_prepareEventMemoryPoolSize = 4 << 10;        // 4 MiB
 	m_streamManagerMemoryPoolSize = 128;           // 128 KiB
@@ -62,6 +64,7 @@ void CCVars::RegisterVariables()
 	m_monitorQueueMemoryPoolSize = 64; // 64 KiB
 	#endif                             // INCLUDE_WWISE_IMPL_PRODUCTION_CODE
 #elif CRY_PLATFORM_ORBIS
+	m_velocityTrackingThreshold = 0.1f;
 	m_secondaryMemoryPoolSize = 0;
 	m_prepareEventMemoryPoolSize = 4 << 10;        // 4 MiB
 	m_streamManagerMemoryPoolSize = 128;           // 128 KiB
@@ -79,6 +82,7 @@ void CCVars::RegisterVariables()
 	m_monitorQueueMemoryPoolSize = 64; // 64 KiB
 	#endif                             // INCLUDE_WWISE_IMPL_PRODUCTION_CODE
 #elif CRY_PLATFORM_MAC
+	m_velocityTrackingThreshold = 0.1f;
 	m_secondaryMemoryPoolSize = 0;
 	m_prepareEventMemoryPoolSize = 4 << 10;        // 4 MiB
 	m_streamManagerMemoryPoolSize = 128;           // 128 KiB
@@ -96,6 +100,7 @@ void CCVars::RegisterVariables()
 	m_monitorQueueMemoryPoolSize = 64; // 64 KiB
 	#endif                             // INCLUDE_WWISE_IMPL_PRODUCTION_CODE
 #elif CRY_PLATFORM_LINUX
+	m_velocityTrackingThreshold = 0.1f;
 	m_secondaryMemoryPoolSize = 0;
 	m_prepareEventMemoryPoolSize = 4 << 10;        // 4 MiB
 	m_streamManagerMemoryPoolSize = 128;           // 128 KiB
@@ -113,6 +118,7 @@ void CCVars::RegisterVariables()
 	m_monitorQueueMemoryPoolSize = 64; // 64 KiB
 	#endif                             // INCLUDE_WWISE_IMPL_PRODUCTION_CODE
 #elif defined(CRY_PLATFORM_IOS)
+	m_velocityTrackingThreshold = 0.1f;
 	m_secondaryMemoryPoolSize = 0;
 	m_prepareEventMemoryPoolSize = 4 << 10;        // 4 MiB
 	m_streamManagerMemoryPoolSize = 128;           // 128 KiB
@@ -130,6 +136,7 @@ void CCVars::RegisterVariables()
 	m_monitorQueueMemoryPoolSize = 64; // 64 KiB
 	#endif                             // INCLUDE_WWISE_IMPL_PRODUCTION_CODE
 #elif CRY_PLATFORM_ANDROID
+	m_velocityTrackingThreshold = 0.1f;
 	m_secondaryMemoryPoolSize = 0;
 	m_prepareEventMemoryPoolSize = 4 << 10;        // 4 MiB
 	m_streamManagerMemoryPoolSize = 128;           // 128 KiB
@@ -149,6 +156,16 @@ void CCVars::RegisterVariables()
 #else
 	#error "Undefined platform."
 #endif
+
+	REGISTER_CVAR2("s_WwiseVelocityTrackingThreshold", &m_velocityTrackingThreshold, m_velocityTrackingThreshold, VF_CHEAT | VF_CHEAT_NOCHECK,
+	               "An object has to change its velocity by at least this amount to issue an \"absolute_velocity\" parameter update request to the audio system.\n"
+	               "Usage: s_WwiseVelocityTrackingThreshold [0/...]\n"
+	               "Default: 0.1 (10 cm/s)\n");
+
+	REGISTER_CVAR2("s_WwisePositionUpdateThresholdMultiplier", &m_positionUpdateThresholdMultiplier, m_positionUpdateThresholdMultiplier, VF_CHEAT | VF_CHEAT_NOCHECK,
+	               "An object's distance to the listener is multiplied by this value to determine the position update threshold.\n"
+	               "Usage: s_WwisePositionUpdateThresholdMultiplier [0/...]\n"
+	               "Default: 0.02\n");
 
 	REGISTER_CVAR2("s_WwiseSecondaryPoolSize", &m_secondaryMemoryPoolSize, m_secondaryMemoryPoolSize, VF_REQUIRE_APP_RESTART,
 	               "Specifies the size (in KiB) of the memory pool to be used by the Wwise audio system implementation.\n"
@@ -245,6 +262,8 @@ void CCVars::UnregisterVariables()
 
 	if (pConsole != nullptr)
 	{
+		pConsole->UnregisterVariable("s_WwiseVelocityTrackingThreshold");
+		pConsole->UnregisterVariable("s_WwisePositionUpdateThresholdMultiplier");
 		pConsole->UnregisterVariable("s_WwiseSecondaryPoolSize");
 		pConsole->UnregisterVariable("s_WwisePrepareEventMemoryPoolSize");
 		pConsole->UnregisterVariable("s_WwiseStreamManagerMemoryPoolSize");

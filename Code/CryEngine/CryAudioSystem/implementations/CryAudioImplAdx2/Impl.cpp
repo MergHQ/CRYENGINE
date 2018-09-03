@@ -22,6 +22,11 @@
 #include <CrySystem/IProjectManager.h>
 #include <CryAudio/IAudioSystem.h>
 
+#if defined(INCLUDE_ADX2_IMPL_PRODUCTION_CODE)
+	#include "Debug.h"
+	#include <CryRenderer/IRenderAuxGeom.h>
+#endif  // INCLUDE_ADX2_IMPL_PRODUCTION_CODE
+
 #if defined(CRY_PLATFORM_WINDOWS)
 	#include <cri_atom_wasapi.h>
 #endif // CRY_PLATFORM_WINDOWS
@@ -155,10 +160,10 @@ ERequestStatus CImpl::Init(uint32 const objectPoolSize, uint32 const eventPoolSi
 {
 	ERequestStatus result = ERequestStatus::Success;
 
-	MEMSTAT_CONTEXT(EMemStatContextTypes::MSC_Other, 0, "Adx2 Audio Object Pool");
+	MEMSTAT_CONTEXT(EMemStatContextTypes::MSC_Other, 0, "Adx2 Object Pool");
 	CObject::CreateAllocator(objectPoolSize);
 
-	MEMSTAT_CONTEXT(EMemStatContextTypes::MSC_Other, 0, "Adx2 Audio Event Pool");
+	MEMSTAT_CONTEXT(EMemStatContextTypes::MSC_Other, 0, "Adx2 Event Pool");
 	CEvent::CreateAllocator(eventPoolSize);
 
 	m_regularSoundBankFolder = AUDIO_SYSTEM_DATA_ROOT;
@@ -184,9 +189,10 @@ ERequestStatus CImpl::Init(uint32 const objectPoolSize, uint32 const eventPoolSi
 
 	criAtomEx_SetUserAllocator(userMalloc, userFree, nullptr);
 
+	InitializeFileSystem();
+
 	if (InitializeLibrary() && AllocateVoicePool() && CreateDbas() && RegisterAcf())
 	{
-		InitializeFileSystem();
 		SetListenerConfig();
 		SetPlayerConfig();
 		Set3dSourceConfig();
@@ -200,25 +206,20 @@ ERequestStatus CImpl::Init(uint32 const objectPoolSize, uint32 const eventPoolSi
 	return result;
 }
 
-//////////////////////////////////////////////////////////////////////////
-void CImpl::Update()
-{
-	criFs_ExecuteMain();
-}
-
 ///////////////////////////////////////////////////////////////////////////
 void CImpl::ShutDown()
 {
 	criAtomEx_UnregisterAcf();
 	criAtomExDbas_Destroy(m_dbasId);
 	criAtomExVoicePool_FreeAll();
-	criFs_FinalizeLibrary();
 
 #if defined(CRY_PLATFORM_WINDOWS)
 	criAtomEx_Finalize_WASAPI();
 #else
 	criAtomEx_Finalize();
 #endif  // CRY_PLATFORM_WINDOWS
+
+	criFs_FinalizeLibrary();
 
 	delete[] m_pAcfBuffer;
 }
@@ -429,20 +430,20 @@ IObject* CImpl::ConstructGlobalObject()
 
 	if (!stl::push_back_unique(m_constructedObjects, pObject))
 	{
-		Cry::Audio::Log(ELogType::Warning, "Trying to construct an already registered audio object.");
+		Cry::Audio::Log(ELogType::Warning, "Trying to construct an already registered object.");
 	}
 
 	return static_cast<IObject*>(pObject);
 }
 
 ///////////////////////////////////////////////////////////////////////////
-IObject* CImpl::ConstructObject(char const* const szName /*= nullptr*/)
+IObject* CImpl::ConstructObject(CObjectTransformation const& transformation, char const* const szName /*= nullptr*/)
 {
-	auto const pObject = new CObject();
+	auto const pObject = new CObject(transformation);
 
 	if (!stl::push_back_unique(m_constructedObjects, pObject))
 	{
-		Cry::Audio::Log(ELogType::Warning, "Trying to construct an already registered audio object.");
+		Cry::Audio::Log(ELogType::Warning, "Trying to construct an already registered object.");
 	}
 
 	return static_cast<IObject*>(pObject);
@@ -451,18 +452,18 @@ IObject* CImpl::ConstructObject(char const* const szName /*= nullptr*/)
 ///////////////////////////////////////////////////////////////////////////
 void CImpl::DestructObject(IObject const* const pIObject)
 {
-	auto const pObject = static_cast<CObject const*>(pIObject);
+	auto const pObject = static_cast<CBaseObject const*>(pIObject);
 
 	if (!stl::find_and_erase(m_constructedObjects, pObject))
 	{
-		Cry::Audio::Log(ELogType::Warning, "Trying to delete a non-existing audio object.");
+		Cry::Audio::Log(ELogType::Warning, "Trying to delete a non-existing object.");
 	}
 
 	delete pObject;
 }
 
 ///////////////////////////////////////////////////////////////////////////
-IListener* CImpl::ConstructListener(char const* const szName /*= nullptr*/)
+IListener* CImpl::ConstructListener(CObjectTransformation const& transformation, char const* const szName /*= nullptr*/)
 {
 	IListener* pIListener = nullptr;
 
@@ -471,8 +472,16 @@ IListener* CImpl::ConstructListener(char const* const szName /*= nullptr*/)
 
 	if (pHandle != nullptr)
 	{
-		pIListener = static_cast<IListener*>(new CListener(id++, pHandle));
-		g_pListener = pHandle;
+		g_pListener = new CListener(transformation, id++, pHandle);
+
+#if defined(INCLUDE_ADX2_IMPL_PRODUCTION_CODE)
+		if (szName != nullptr)
+		{
+			g_pListener->SetName(szName);
+		}
+#endif    // INCLUDE_ADX2_IMPL_PRODUCTION_CODE
+
+		pIListener = static_cast<IListener*>(g_pListener);
 	}
 
 	return pIListener;
@@ -481,9 +490,9 @@ IListener* CImpl::ConstructListener(char const* const szName /*= nullptr*/)
 ///////////////////////////////////////////////////////////////////////////
 void CImpl::DestructListener(IListener* const pIListener)
 {
-	auto const pListener = static_cast<CListener const* const>(pIListener);
-	criAtomEx3dListener_Destroy(pListener->GetHandle());
-	delete pListener;
+	CRY_ASSERT_MESSAGE(pIListener == g_pListener, "pIListener is not g_pListener");
+	criAtomEx3dListener_Destroy(g_pListener->GetHandle());
+	delete g_pListener;
 	g_pListener = nullptr;
 }
 
@@ -776,15 +785,16 @@ void CImpl::DestructEnvironment(IEnvironment const* const pIEnvironment)
 //////////////////////////////////////////////////////////////////////////
 void CImpl::OnRefresh()
 {
-	criAtomEx_UnregisterAcf();
-	RegisterAcf();
-	g_acbHandles.clear();
-
 #if defined(INCLUDE_ADX2_IMPL_PRODUCTION_CODE)
+	m_acfFileSize = 0;
 	g_cueRadiusInfo.clear();
 	LoadAcbInfos(m_regularSoundBankFolder);
 	LoadAcbInfos(m_localizedSoundBankFolder);
 #endif  // INCLUDE_ADX2_IMPL_PRODUCTION_CODE
+
+	criAtomEx_UnregisterAcf();
+	RegisterAcf();
+	g_acbHandles.clear();
 }
 
 //////////////////////////////////////////////////////////////////////////
@@ -803,16 +813,6 @@ void CImpl::SetLanguage(char const* const szLanguage)
 		m_localizedSoundBankFolder += "/";
 		m_localizedSoundBankFolder += s_szAssetsFolderName;
 	}
-}
-
-///////////////////////////////////////////////////////////////////////////
-void CImpl::GetMemoryInfo(SMemoryInfo& memoryInfo) const
-{
-	CryModuleMemoryInfo memInfo;
-	ZeroStruct(memInfo);
-	CryGetMemoryInfoForModule(&memInfo);
-
-	memoryInfo.totalMemory = static_cast<size_t>(memInfo.allocated - memInfo.freed);
 }
 
 //////////////////////////////////////////////////////////////////////////
@@ -961,6 +961,10 @@ bool CImpl::RegisterAcf()
 			}
 
 			acfRegistered = true;
+
+#if defined(INCLUDE_ADX2_IMPL_PRODUCTION_CODE)
+			m_acfFileSize = acfFileSize;
+#endif      // INCLUDE_ADX2_IMPL_PRODUCTION_CODE
 		}
 		else
 		{
@@ -1024,6 +1028,81 @@ void CImpl::PauseAllObjects(CriBool const shouldPause)
 	{
 		pObject->PausePlayer(shouldPause);
 	}
+}
+
+#if defined(INCLUDE_ADX2_IMPL_PRODUCTION_CODE)
+///////////////////////////////////////////////////////////////////////////
+void GetMemoryInfo(SMemoryInfo& memoryInfo)
+{
+	CryModuleMemoryInfo memInfo;
+	ZeroStruct(memInfo);
+	CryGetMemoryInfoForModule(&memInfo);
+
+	memoryInfo.totalMemory = static_cast<size_t>(memInfo.allocated - memInfo.freed);
+
+	{
+		auto& allocator = CObject::GetAllocator();
+		auto mem = allocator.GetTotalMemory();
+		auto pool = allocator.GetCounts();
+		memoryInfo.poolUsedObjects = pool.nUsed;
+		memoryInfo.poolConstructedObjects = pool.nAlloc;
+		memoryInfo.poolUsedMemory = mem.nUsed;
+		memoryInfo.poolAllocatedMemory = mem.nAlloc;
+	}
+
+	{
+		auto& allocator = CEvent::GetAllocator();
+		auto mem = allocator.GetTotalMemory();
+		auto pool = allocator.GetCounts();
+		memoryInfo.poolUsedObjects += pool.nUsed;
+		memoryInfo.poolConstructedObjects += pool.nAlloc;
+		memoryInfo.poolUsedMemory += mem.nUsed;
+		memoryInfo.poolAllocatedMemory += mem.nAlloc;
+	}
+}
+#endif  // INCLUDE_ADX2_IMPL_PRODUCTION_CODE
+
+//////////////////////////////////////////////////////////////////////////
+void CImpl::DrawDebugInfo(IRenderAuxGeom& auxGeom, float const posX, float& posY)
+{
+#if defined(INCLUDE_ADX2_IMPL_PRODUCTION_CODE)
+	auxGeom.Draw2dLabel(posX, posY, g_debugSystemHeaderFontSize, g_debugSystemColorHeader.data(), false, m_name.c_str());
+
+	SMemoryInfo memoryInfo;
+	GetMemoryInfo(memoryInfo);
+	memoryInfo.totalMemory += m_acfFileSize,
+
+	posY += g_debugSystemLineHeightClause;
+	auxGeom.Draw2dLabel(posX, posY, g_debugSystemFontSize, g_debugSystemColorTextPrimary.data(), false, "Total Memory Used: %uKiB",
+	                    static_cast<uint32>(memoryInfo.totalMemory / 1024));
+
+	posY += g_debugSystemLineHeight;
+	auxGeom.Draw2dLabel(posX, posY, g_debugSystemFontSize, g_debugSystemColorTextPrimary.data(), false, "ACF: %uKiB",
+	                    static_cast<uint32>(m_acfFileSize / 1024));
+
+	posY += g_debugSystemLineHeight;
+	auxGeom.Draw2dLabel(posX, posY, g_debugSystemFontSize, g_debugSystemColorTextPrimary.data(), false, "[Object Pool] In Use: %u | Constructed: %u (%uKiB) | Memory Pool: %uKiB",
+	                    memoryInfo.poolUsedObjects, memoryInfo.poolConstructedObjects, memoryInfo.poolUsedMemory, memoryInfo.poolAllocatedMemory);
+
+	Vec3 const& listenerPosition = g_pListener->GetPosition();
+	Vec3 const& listenerDirection = g_pListener->GetTransformation().GetForward();
+	char const* const szName = g_pListener->GetName();
+
+	posY += g_debugSystemLineHeight;
+
+	if (g_numObjectsWithDoppler > 0)
+	{
+		auxGeom.Draw2dLabel(posX, posY, g_debugSystemFontSize, g_debugSystemColorTextPrimary.data(), false, "Objects with Doppler: %u", g_numObjectsWithDoppler);
+
+		float const listenerVelocity = g_pListener->GetVelocity().GetLength();
+		posY += g_debugSystemLineHeight;
+		auxGeom.Draw2dLabel(posX, posY, g_debugSystemFontSize, g_debugSystemColorListenerActive.data(), false, "Listener: %s | PosXYZ: %.2f %.2f %.2f | FwdXYZ: %.2f %.2f %.2f | Velocity: %.2f m/s", szName, listenerPosition.x, listenerPosition.y, listenerPosition.z, listenerDirection.x, listenerDirection.y, listenerDirection.z, listenerVelocity);
+	}
+	else
+	{
+		auxGeom.Draw2dLabel(posX, posY, g_debugSystemFontSize, g_debugSystemColorListenerActive.data(), false, "Listener: %s | PosXYZ: %.2f %.2f %.2f | FwdXYZ: %.2f %.2f %.2f", szName, listenerPosition.x, listenerPosition.y, listenerPosition.z, listenerDirection.x, listenerDirection.y, listenerDirection.z);
+	}
+#endif  // INCLUDE_ADX2_IMPL_PRODUCTION_CODE
 }
 } // namespace Adx2
 } // namespace Impl

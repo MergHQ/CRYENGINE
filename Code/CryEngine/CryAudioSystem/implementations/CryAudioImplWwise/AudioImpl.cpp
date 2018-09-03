@@ -13,6 +13,11 @@
 #include <CryThreading/IThreadManager.h>
 #include <CryThreading/IThreadConfigManager.h>
 
+#if defined(INCLUDE_WWISE_IMPL_PRODUCTION_CODE)
+	#include "Debug.h"
+	#include <CryRenderer/IRenderAuxGeom.h>
+#endif  // INCLUDE_WWISE_IMPL_PRODUCTION_CODE
+
 #include <AK/SoundEngine/Common/AkSoundEngine.h>     // Sound engine
 #include <AK/MusicEngine/Common/AkMusicEngine.h>     // Music Engine
 #include <AK/SoundEngine/Common/AkMemoryMgr.h>       // Memory Manager
@@ -313,10 +318,10 @@ ERequestStatus CImpl::Init(uint32 const objectPoolSize, uint32 const eventPoolSi
 	// If something fails so severely during initialization that we need to fall back to the NULL implementation
 	// we will need to shut down what has been initialized so far. Therefore make sure to call Shutdown() before returning eARS_FAILURE!
 
-	MEMSTAT_CONTEXT(EMemStatContextTypes::MSC_Other, 0, "Wwise Audio Object Pool");
+	MEMSTAT_CONTEXT(EMemStatContextTypes::MSC_Other, 0, "Wwise Object Pool");
 	CObject::CreateAllocator(objectPoolSize);
 
-	MEMSTAT_CONTEXT(EMemStatContextTypes::MSC_Other, 0, "Wwise Audio Event Pool");
+	MEMSTAT_CONTEXT(EMemStatContextTypes::MSC_Other, 0, "Wwise Event Pool");
 	CEvent::CreateAllocator(eventPoolSize);
 
 	AkMemSettings memSettings;
@@ -608,6 +613,10 @@ ERequestStatus CImpl::Init(uint32 const objectPoolSize, uint32 const eventPoolSi
 		Cry::Audio::Log(ELogType::Error, "Wwise failed to load Init.bnk, returned the AKRESULT: %d", wwiseResult);
 		m_initBankId = AK_INVALID_BANK_ID;
 	}
+
+#if defined(INCLUDE_WWISE_IMPL_PRODUCTION_CODE)
+	GetStaticSoundBankSizes();
+#endif  // INCLUDE_WWISE_IMPL_PRODUCTION_CODE
 
 	LoadEventsMaxAttenuations(m_regularSoundBankFolder);
 
@@ -920,11 +929,13 @@ IObject* CImpl::ConstructGlobalObject()
 	AK::SoundEngine::RegisterGameObj(g_globalObjectId);
 #endif  // INCLUDE_WWISE_IMPL_PRODUCTION_CODE
 
-	return static_cast<IObject*>(new CObject(AK_INVALID_GAME_OBJECT));
+	CObjectTransformation transformation;
+	ZeroStruct(transformation);
+	return static_cast<IObject*>(new CObject(AK_INVALID_GAME_OBJECT, transformation));
 }
 
 ///////////////////////////////////////////////////////////////////////////
-IObject* CImpl::ConstructObject(char const* const szName /*= nullptr*/)
+IObject* CImpl::ConstructObject(CObjectTransformation const& transformation, char const* const szName /*= nullptr*/)
 {
 #if defined(INCLUDE_WWISE_IMPL_PRODUCTION_CODE)
 	AKRESULT const wwiseResult = AK::SoundEngine::RegisterGameObj(m_gameObjectId, szName);
@@ -937,7 +948,7 @@ IObject* CImpl::ConstructObject(char const* const szName /*= nullptr*/)
 	AK::SoundEngine::RegisterGameObj(m_gameObjectId);
 #endif  // INCLUDE_WWISE_IMPL_PRODUCTION_CODE
 
-	return static_cast<IObject*>(new CObject(m_gameObjectId++));
+	return static_cast<IObject*>(new CObject(m_gameObjectId++, transformation));
 }
 
 ///////////////////////////////////////////////////////////////////////////
@@ -956,7 +967,7 @@ void CImpl::DestructObject(IObject const* const pIObject)
 }
 
 ///////////////////////////////////////////////////////////////////////////
-IListener* CImpl::ConstructListener(char const* const szName /*= nullptr*/)
+IListener* CImpl::ConstructListener(CObjectTransformation const& transformation, char const* const szName /*= nullptr*/)
 {
 	IListener* pIListener = nullptr;
 
@@ -969,7 +980,16 @@ IListener* CImpl::ConstructListener(char const* const szName /*= nullptr*/)
 
 		if (IS_WWISE_OK(wwiseResult))
 		{
-			pIListener = static_cast<IListener*>(new CListener(m_gameObjectId));
+			g_pListener = new CListener(transformation, m_gameObjectId);
+
+	#if defined(INCLUDE_WWISE_IMPL_PRODUCTION_CODE)
+			if (szName != nullptr)
+			{
+				g_pListener->SetName(szName);
+			}
+	#endif    // INCLUDE_WWISE_IMPL_PRODUCTION_CODE
+
+			pIListener = static_cast<IListener*>(g_pListener);
 		}
 		else
 		{
@@ -983,7 +1003,8 @@ IListener* CImpl::ConstructListener(char const* const szName /*= nullptr*/)
 #else
 	AK::SoundEngine::RegisterGameObj(m_gameObjectId);
 	AK::SoundEngine::SetDefaultListeners(&m_gameObjectId, 1);
-	pIListener = static_cast<IListener*>(new CListener(m_gameObjectId));
+	g_pListener = new CListener(transformation, m_gameObjectId);
+	pIListener = static_cast<IListener*>(g_pListener);
 #endif  // INCLUDE_WWISE_IMPL_PRODUCTION_CODE
 
 	g_listenerId = m_gameObjectId++;
@@ -994,15 +1015,16 @@ IListener* CImpl::ConstructListener(char const* const szName /*= nullptr*/)
 ///////////////////////////////////////////////////////////////////////////
 void CImpl::DestructListener(IListener* const pIListener)
 {
-	auto const pListener = static_cast<CListener const* const>(pIListener);
-	AKRESULT const wwiseResult = AK::SoundEngine::UnregisterGameObj(pListener->m_id);
+	CRY_ASSERT_MESSAGE(pIListener == g_pListener, "pIListener is not g_pListener");
+	AKRESULT const wwiseResult = AK::SoundEngine::UnregisterGameObj(g_pListener->GetId());
 
 	if (!IS_WWISE_OK(wwiseResult))
 	{
 		Cry::Audio::Log(ELogType::Warning, "Wwise DestructListener failed with AKRESULT: %d", wwiseResult);
 	}
 
-	delete pListener;
+	delete g_pListener;
+	g_pListener = nullptr;
 }
 
 //////////////////////////////////////////////////////////////////////////
@@ -1235,44 +1257,6 @@ void CImpl::DestructEnvironment(IEnvironment const* const pIEnvironment)
 	delete pIEnvironment;
 }
 
-///////////////////////////////////////////////////////////////////////////
-void CImpl::GetMemoryInfo(SMemoryInfo& memoryInfo) const
-{
-	CryModuleMemoryInfo memInfo;
-	ZeroStruct(memInfo);
-	CryGetMemoryInfoForModule(&memInfo);
-
-	memoryInfo.totalMemory = static_cast<size_t>(memInfo.allocated - memInfo.freed);
-
-#if defined(PROVIDE_WWISE_IMPL_SECONDARY_POOL)
-	memoryInfo.secondaryPoolSize = g_audioImplMemoryPoolSecondary.MemSize();
-	memoryInfo.secondaryPoolUsedSize = memoryInfo.secondaryPoolSize - g_audioImplMemoryPoolSecondary.MemFree();
-	memoryInfo.secondaryPoolAllocations = g_audioImplMemoryPoolSecondary.FragmentCount();
-#else
-	memoryInfo.secondaryPoolSize = 0;
-	memoryInfo.secondaryPoolUsedSize = 0;
-	memoryInfo.secondaryPoolAllocations = 0;
-#endif  // PROVIDE_AUDIO_IMPL_SECONDARY_POOL
-	{
-		auto& allocator = CObject::GetAllocator();
-		auto mem = allocator.GetTotalMemory();
-		auto pool = allocator.GetCounts();
-		memoryInfo.poolUsedObjects = pool.nUsed;
-		memoryInfo.poolConstructedObjects = pool.nAlloc;
-		memoryInfo.poolUsedMemory = mem.nUsed;
-		memoryInfo.poolAllocatedMemory = mem.nAlloc;
-	}
-	{
-		auto& allocator = CEvent::GetAllocator();
-		auto mem = allocator.GetTotalMemory();
-		auto pool = allocator.GetCounts();
-		memoryInfo.poolUsedObjects += pool.nUsed;
-		memoryInfo.poolConstructedObjects += pool.nAlloc;
-		memoryInfo.poolUsedMemory += mem.nUsed;
-		memoryInfo.poolAllocatedMemory += mem.nAlloc;
-	}
-}
-
 //////////////////////////////////////////////////////////////////////////
 void CImpl::GetFileData(char const* const szName, SFileData& fileData) const
 {
@@ -1426,6 +1410,10 @@ void CImpl::OnRefresh()
 		m_initBankId = AK_INVALID_BANK_ID;
 	}
 
+#if defined(INCLUDE_WWISE_IMPL_PRODUCTION_CODE)
+	GetStaticSoundBankSizes();
+#endif  // INCLUDE_WWISE_IMPL_PRODUCTION_CODE
+
 	LoadEventsMaxAttenuations(m_regularSoundBankFolder);
 }
 
@@ -1456,6 +1444,104 @@ void CImpl::SetLanguage(char const* const szLanguage)
 void CImpl::SetPanningRule(int const panningRule)
 {
 	AK::SoundEngine::SetPanningRule(static_cast<AkPanningRule>(panningRule));
+}
+
+#if defined(INCLUDE_WWISE_IMPL_PRODUCTION_CODE)
+///////////////////////////////////////////////////////////////////////////
+void GetMemoryInfo(SMemoryInfo& memoryInfo)
+{
+	CryModuleMemoryInfo memInfo;
+	ZeroStruct(memInfo);
+	CryGetMemoryInfoForModule(&memInfo);
+
+	memoryInfo.totalMemory = static_cast<size_t>(memInfo.allocated - memInfo.freed);
+
+	#if defined(PROVIDE_WWISE_IMPL_SECONDARY_POOL)
+	memoryInfo.secondaryPoolSize = g_audioImplMemoryPoolSecondary.MemSize();
+	memoryInfo.secondaryPoolUsedSize = memoryInfo.secondaryPoolSize - g_audioImplMemoryPoolSecondary.MemFree();
+	memoryInfo.secondaryPoolAllocations = g_audioImplMemoryPoolSecondary.FragmentCount();
+	#else
+	memoryInfo.secondaryPoolSize = 0;
+	memoryInfo.secondaryPoolUsedSize = 0;
+	memoryInfo.secondaryPoolAllocations = 0;
+	#endif // PROVIDE_WWISE_IMPL_SECONDARY_POOL
+	{
+		auto& allocator = CObject::GetAllocator();
+		auto mem = allocator.GetTotalMemory();
+		auto pool = allocator.GetCounts();
+		memoryInfo.poolUsedObjects = pool.nUsed;
+		memoryInfo.poolConstructedObjects = pool.nAlloc;
+		memoryInfo.poolUsedMemory = mem.nUsed;
+		memoryInfo.poolAllocatedMemory = mem.nAlloc;
+	}
+
+	{
+		auto& allocator = CEvent::GetAllocator();
+		auto mem = allocator.GetTotalMemory();
+		auto pool = allocator.GetCounts();
+		memoryInfo.poolUsedObjects += pool.nUsed;
+		memoryInfo.poolConstructedObjects += pool.nAlloc;
+		memoryInfo.poolUsedMemory += mem.nUsed;
+		memoryInfo.poolAllocatedMemory += mem.nAlloc;
+	}
+}
+
+//////////////////////////////////////////////////////////////////////////
+void CImpl::GetStaticSoundBankSizes()
+{
+	string const initBankPath = m_regularSoundBankFolder + "/Init.bnk";
+	m_initBankSize = gEnv->pCryPak->FGetSize(initBankPath.c_str());
+
+	string const soundBankInfoPath = m_regularSoundBankFolder + "/SoundbanksInfo.xml";
+	m_soundbanksInfoSize = gEnv->pCryPak->FGetSize(soundBankInfoPath.c_str());
+}
+#endif  // INCLUDE_WWISE_IMPL_PRODUCTION_CODE
+
+//////////////////////////////////////////////////////////////////////////
+void CImpl::DrawDebugInfo(IRenderAuxGeom& auxGeom, float const posX, float& posY)
+{
+#if defined(INCLUDE_WWISE_IMPL_PRODUCTION_CODE)
+	auxGeom.Draw2dLabel(posX, posY, g_debugSystemHeaderFontSize, g_debugSystemColorHeader.data(), false, m_name.c_str());
+
+	SMemoryInfo memoryInfo;
+	GetMemoryInfo(memoryInfo);
+	memoryInfo.totalMemory += m_initBankSize + m_soundbanksInfoSize;
+
+	posY += g_debugSystemLineHeightClause;
+	auxGeom.Draw2dLabel(posX, posY, g_debugSystemFontSize, g_debugSystemColorTextPrimary.data(), false, "Total Memory Used: %uKiB | Secondary Memory: %.2f / %.2f MiB | NumAllocs: %d",
+	                    static_cast<uint32>(memoryInfo.totalMemory / 1024),
+	                    (memoryInfo.secondaryPoolUsedSize / 1024) / 1024.0f,
+	                    (memoryInfo.secondaryPoolSize / 1024) / 1024.0f,
+	                    static_cast<int>(memoryInfo.secondaryPoolAllocations));
+
+	posY += g_debugSystemLineHeight;
+	auxGeom.Draw2dLabel(posX, posY, g_debugSystemFontSize, g_debugSystemColorTextPrimary.data(), false, "Init.bnk: %uKiB | SoundbanksInfo.xml: %uKiB",
+	                    static_cast<uint32>(m_initBankSize / 1024),
+	                    static_cast<uint32>(m_soundbanksInfoSize / 1024));
+
+	posY += g_debugSystemLineHeight;
+	auxGeom.Draw2dLabel(posX, posY, g_debugSystemFontSize, g_debugSystemColorTextPrimary.data(), false, "[Object Pool] In Use: %u | Constructed: %u (%uKiB) | Memory Pool: %uKiB",
+	                    memoryInfo.poolUsedObjects, memoryInfo.poolConstructedObjects, memoryInfo.poolUsedMemory, memoryInfo.poolAllocatedMemory);
+
+	Vec3 const& listenerPosition = g_pListener->GetPosition();
+	Vec3 const& listenerDirection = g_pListener->GetTransformation().GetForward();
+	char const* const szName = g_pListener->GetName();
+
+	posY += g_debugSystemLineHeight;
+
+	if (g_numObjectsWithRelativeVelocity > 0)
+	{
+		auxGeom.Draw2dLabel(posX, posY, g_debugSystemFontSize, g_debugSystemColorTextPrimary.data(), false, "Objects with relative velocity calculation: %u", g_numObjectsWithRelativeVelocity);
+
+		float const listenerVelocity = g_pListener->GetVelocity().GetLength();
+		posY += g_debugSystemLineHeight;
+		auxGeom.Draw2dLabel(posX, posY, g_debugSystemFontSize, g_debugSystemColorListenerActive.data(), false, "Listener: %s | PosXYZ: %.2f %.2f %.2f | FwdXYZ: %.2f %.2f %.2f | Velocity: %.2f m/s", szName, listenerPosition.x, listenerPosition.y, listenerPosition.z, listenerDirection.x, listenerDirection.y, listenerDirection.z, listenerVelocity);
+	}
+	else
+	{
+		auxGeom.Draw2dLabel(posX, posY, g_debugSystemFontSize, g_debugSystemColorListenerActive.data(), false, "Listener: %s | PosXYZ: %.2f %.2f %.2f | FwdXYZ: %.2f %.2f %.2f", szName, listenerPosition.x, listenerPosition.y, listenerPosition.z, listenerDirection.x, listenerDirection.y, listenerDirection.z);
+	}
+#endif  // INCLUDE_WWISE_IMPL_PRODUCTION_CODE
 }
 } // namespace Wwise
 } // namespace Impl

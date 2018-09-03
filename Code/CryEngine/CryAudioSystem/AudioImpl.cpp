@@ -16,7 +16,10 @@ struct SEvent final : IEvent
 
 struct SListener final : IListener
 {
-	virtual void SetTransformation(CObjectTransformation const& transformation) override {}
+	virtual void                         Update(float const deltaTime) override                                  {}
+	virtual void                         SetName(char const* const szName) override                              {}
+	virtual void                         SetTransformation(CObjectTransformation const& transformation) override {}
+	virtual CObjectTransformation const& GetTransformation() const override                                      { return CObjectTransformation::GetEmptyObject(); }
 };
 
 struct STrigger final : ITrigger
@@ -29,17 +32,21 @@ struct STrigger final : ITrigger
 
 struct SObject final : IObject
 {
-	virtual void           Update() override                                                                    {}
-	virtual void           SetTransformation(CObjectTransformation const& transformation) override              {}
-	virtual void           SetEnvironment(IEnvironment const* const pIEnvironment, float const amount) override {}
-	virtual void           SetParameter(IParameter const* const pIParameter, float const value) override        {}
-	virtual void           SetSwitchState(ISwitchState const* const pISwitchState) override                     {}
-	virtual void           SetObstructionOcclusion(float const obstruction, float const occlusion) override     {}
-	virtual ERequestStatus ExecuteTrigger(ITrigger const* const pITrigger, IEvent* const pIEvent) override      { return ERequestStatus::Success; }
-	virtual void           StopAllTriggers() override                                                           {}
-	virtual ERequestStatus PlayFile(IStandaloneFile* const pIStandaloneFile) override                           { return ERequestStatus::Success; }
-	virtual ERequestStatus StopFile(IStandaloneFile* const pIStandaloneFile) override                           { return ERequestStatus::Success; }
-	virtual ERequestStatus SetName(char const* const szName) override                                           { return ERequestStatus::Success; }
+	virtual void                         Update(float const deltaTime) override                                                                        {}
+	virtual void                         SetTransformation(CObjectTransformation const& transformation) override                                       {}
+	virtual CObjectTransformation const& GetTransformation() const override                                                                            { return CObjectTransformation::GetEmptyObject(); }
+	virtual void                         SetEnvironment(IEnvironment const* const pIEnvironment, float const amount) override                          {}
+	virtual void                         SetParameter(IParameter const* const pIParameter, float const value) override                                 {}
+	virtual void                         SetSwitchState(ISwitchState const* const pISwitchState) override                                              {}
+	virtual void                         SetObstructionOcclusion(float const obstruction, float const occlusion) override                              {}
+	virtual void                         SetOcclusionType(EOcclusionType const occlusionType) override                                                 {}
+	virtual ERequestStatus               ExecuteTrigger(ITrigger const* const pITrigger, IEvent* const pIEvent) override                               { return ERequestStatus::Success; }
+	virtual void                         StopAllTriggers() override                                                                                    {}
+	virtual ERequestStatus               PlayFile(IStandaloneFile* const pIStandaloneFile) override                                                    { return ERequestStatus::Success; }
+	virtual ERequestStatus               StopFile(IStandaloneFile* const pIStandaloneFile) override                                                    { return ERequestStatus::Success; }
+	virtual ERequestStatus               SetName(char const* const szName) override                                                                    { return ERequestStatus::Success; }
+	virtual void                         ToggleFunctionality(EObjectFunctionality const type, bool const enable) override                              {}
+	virtual void                         DrawDebugInfo(IRenderAuxGeom& auxGeom, float const posX, float posY, char const* const szTextFilter) override {}
 };
 
 ///////////////////////////////////////////////////////////////////////////
@@ -153,7 +160,7 @@ IObject* CImpl::ConstructGlobalObject()
 }
 
 ///////////////////////////////////////////////////////////////////////////
-IObject* CImpl::ConstructObject(char const* const szName /*= nullptr*/)
+IObject* CImpl::ConstructObject(CObjectTransformation const& transformation, char const* const szName /*= nullptr*/)
 {
 	return static_cast<IObject*>(new SObject());
 }
@@ -171,7 +178,7 @@ void CImpl::DestructListener(IListener* const pIListener)
 }
 
 ///////////////////////////////////////////////////////////////////////////
-IListener* CImpl::ConstructListener(char const* const szName /*= nullptr*/)
+IListener* CImpl::ConstructListener(CObjectTransformation const& transformation, char const* const szName /*= nullptr*/)
 {
 	return static_cast<IListener*>(new SListener());
 }
@@ -254,12 +261,6 @@ void CImpl::DestructEnvironment(IEnvironment const* const pIEnvironment)
 {
 }
 
-///////////////////////////////////////////////////////////////////////////
-void CImpl::GetMemoryInfo(SMemoryInfo& memoryInfo) const
-{
-	ZeroStruct(memoryInfo);
-}
-
 //////////////////////////////////////////////////////////////////////////
 void CImpl::OnRefresh()
 {
@@ -272,6 +273,11 @@ void CImpl::SetLanguage(char const* const szLanguage)
 
 //////////////////////////////////////////////////////////////////////////
 void CImpl::GetFileData(char const* const szName, SFileData& fileData) const
+{
+}
+
+//////////////////////////////////////////////////////////////////////////
+void CImpl::DrawDebugInfo(IRenderAuxGeom& auxGeom, float posX, float& posY)
 {
 }
 } // namespace Null

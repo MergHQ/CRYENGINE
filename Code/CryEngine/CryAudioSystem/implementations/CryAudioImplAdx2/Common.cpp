@@ -9,10 +9,13 @@ namespace Impl
 {
 namespace Adx2
 {
+CListener* g_pListener = nullptr;
+
 AcbHandles g_acbHandles;
-CriAtomEx3dListenerHn g_pListener = nullptr;
 CriAtomExPlayerConfig g_playerConfig;
 CriAtomEx3dSourceConfig g_3dSourceConfig;
+
+uint32 g_numObjectsWithDoppler = 0;
 } // namespace Adx2
 } // namespace Impl
 } // namespace CryAudio
