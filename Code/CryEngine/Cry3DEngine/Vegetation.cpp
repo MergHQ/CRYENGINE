@@ -333,6 +333,7 @@ void CVegetation::Render(const SRenderingPassInfo& passInfo, const CLodValue& lo
 	else
 		pRenderObject->m_ObjFlags &= ~FOB_BLEND_WITH_TERRAIN_COLOR;
 
+	CRY_ASSERT(fEntDistance * 2.0f <= std::numeric_limits<decltype(CRenderObject::m_nSort)>::max());
 	pRenderObject->m_fDistance = fEntDistance;
 	pRenderObject->m_nSort = fastround_positive(fEntDistance * 2.0f);
 

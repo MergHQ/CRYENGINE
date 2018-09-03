@@ -845,11 +845,14 @@ void CBrush::Render(const CLodValue& lodValue, const SRenderingPassInfo& passInf
 		{
 			if (pObj && !passInfo.IsShadowPass())
 			{
- 				pObj->m_fDistance = sqrt_tpl(Distance::Point_AABBSq(vCamPos, CBrush::GetBBox())) * passInfo.GetZoomFactor();
+				const float fObjDistance = sqrt_tpl(Distance::Point_AABBSq(vCamPos, CBrush::GetBBox())) * passInfo.GetZoomFactor();
+				CRY_ASSERT(fObjDistance * 2.0f <= std::numeric_limits<decltype(CRenderObject::m_nSort)>::max());
+
+ 				pObj->m_fDistance = fObjDistance;
 				IF(!m_bDrawLast, 1)
 					pObj->m_nSort = fastround_positive(pObj->m_fDistance * 2.0f);
 				else
-					pObj->m_fSort = 10000.0f;
+					pObj->m_nSort = 0xFFFF;
 			}
 			return;
 		}
@@ -860,14 +863,17 @@ void CBrush::Render(const CLodValue& lodValue, const SRenderingPassInfo& passInf
 	const Vec3 vObjCenter = CBrush::GetBBox().GetCenter();
 	const Vec3 vObjPos = CBrush::GetPos();
 
-	pObj->m_fDistance = sqrt_tpl(Distance::Point_AABBSq(vCamPos, CBrush::GetBBox())) * passInfo.GetZoomFactor();
+	const float fObjDistance = sqrt_tpl(Distance::Point_AABBSq(vCamPos, CBrush::GetBBox())) * passInfo.GetZoomFactor();
+	CRY_ASSERT(fObjDistance * 2.0f <= std::numeric_limits<decltype(CRenderObject::m_nSort)>::max());
 
 	pObj->m_pRenderNode = this;
 	pObj->m_fAlpha = 1.f;
+
+	pObj->m_fDistance = fObjDistance;
 	IF (!m_bDrawLast, 1)
 		pObj->m_nSort = fastround_positive(pObj->m_fDistance * 2.0f);
 	else
-		pObj->m_fSort = 10000.0f;
+		pObj->m_nSort = 0xFFFF;
 
 	IMaterial* pMat = pObj->m_pCurrMaterial = CBrush::GetMaterial();
 	pObj->m_ObjFlags |= FOB_INSHADOW | FOB_TRANS_MASK;
