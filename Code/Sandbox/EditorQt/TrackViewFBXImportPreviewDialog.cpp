@@ -1,31 +1,14 @@
 // Copyright 2001-2018 Crytek GmbH / Crytek Group. All rights reserved.
 
-////////////////////////////////////////////////////////////////////////////
-//
-//  Crytek Engine Source File.
-//  Copyright (C), Crytek Studios, 2002-2012.
-// -------------------------------------------------------------------------
-//  File name:   TrackViewFBXImportPreviewDialog.cpp
-//  Version:     v1.00
-//  Created:     03/12/2012 by Konrad.
-//  Compilers:   Visual Studio 2010
-//  Description:
-// -------------------------------------------------------------------------
-//  History:
-//
-////////////////////////////////////////////////////////////////////////////
-
 #include "StdAfx.h"
 #include "TrackViewFBXImportPreviewDialog.h"
 
-//////////////////////////////////////////////////////////////////////////
 IMPLEMENT_DYNAMIC(CTrackViewFBXImportPreviewDialog, CDialog)
 CTrackViewFBXImportPreviewDialog::CTrackViewFBXImportPreviewDialog()
 	: CDialog(IDD_TRACKVIEW_FBX_IMPORT_DLG, NULL)
 {
 }
 
-//////////////////////////////////////////////////////////////////////////
 BEGIN_MESSAGE_MAP(CTrackViewFBXImportPreviewDialog, CDialog)
 ON_NOTIFY(NM_CLICK, IDC_TRACKVIEW_FBX_IMPORT_SEL_TREE, OnClickTree)
 END_MESSAGE_MAP()
@@ -36,7 +19,6 @@ void CTrackViewFBXImportPreviewDialog::DoDataExchange(CDataExchange* pDX)
 	DDX_Control(pDX, IDC_TRACKVIEW_FBX_IMPORT_SEL_TREE, m_tree);
 }
 
-//////////////////////////////////////////////////////////////////////////
 void CTrackViewFBXImportPreviewDialog::OnClickTree(NMHDR* pNMHDR, LRESULT* pResult)
 {
 	UINT uFlags = 0;
@@ -53,7 +35,6 @@ void CTrackViewFBXImportPreviewDialog::OnClickTree(NMHDR* pNMHDR, LRESULT* pResu
 	*pResult = 0;
 }
 
-//////////////////////////////////////////////////////////////////////////
 BOOL CTrackViewFBXImportPreviewDialog::OnInitDialog()
 {
 	CDialog::OnInitDialog();
@@ -71,7 +52,6 @@ BOOL CTrackViewFBXImportPreviewDialog::OnInitDialog()
 	return FALSE;
 }
 
-//////////////////////////////////////////////////////////////////////////
 void CTrackViewFBXImportPreviewDialog::AddTreeItem(const CString& objectName)
 {
 	m_fBXItemNames[objectName] = true;

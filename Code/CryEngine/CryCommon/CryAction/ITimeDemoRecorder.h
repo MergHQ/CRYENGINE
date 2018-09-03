@@ -1,20 +1,10 @@
-// Copyright 2001-2017 Crytek GmbH / Crytek Group. All rights reserved. 
+// Copyright 2001-2018 Crytek GmbH / Crytek Group. All rights reserved.
 
 /*************************************************************************
-   -------------------------------------------------------------------------
-   $Id$
-   $DateTime$
    Description:
    Provides interface for TimeDemo (CryAction)
    Can attach listener to perform game specific stuff on Record/Play
-   -------------------------------------------------------------------------
-   History:
-   - May 06, 2015:	Created by Pascal Kross
-
 *************************************************************************/
-
-#ifndef __ITIMEDEMORECORDER_H__
-#define __ITIMEDEMORECORDER_H__
 
 #pragma once
 
@@ -72,5 +62,3 @@ struct ITimeDemoRecorder
 	virtual void            GetCurrentFrameRecord(STimeDemoFrameRecord& record) const = 0;
 	virtual STimeDemoInfo*  GetLastPlayedTimeDemo() const = 0;
 };
-
-#endif //__ITIMEDEMORECORDER_H__
