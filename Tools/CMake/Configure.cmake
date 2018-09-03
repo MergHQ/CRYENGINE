@@ -195,16 +195,6 @@ if (OUTPUT_DIRECTORY)
 	file(MAKE_DIRECTORY "${OUTPUT_DIRECTORY}")
 endif (OUTPUT_DIRECTORY)
 
-# Bootstrap support
-if(EXISTS "${TOOLS_CMAKE_DIR}/Bootstrap.cmake")
-	include("${TOOLS_CMAKE_DIR}/Bootstrap.cmake")
-	if(OPTION_AUTO_BOOTSTRAP)
-		set_property(DIRECTORY APPEND PROPERTY CMAKE_CONFIGURE_DEPENDS "bootstrap.dat")
-	endif()
-elseif(EXISTS "${TOOLS_CMAKE_DIR}/DownloadSDKs.cmake")
-	include("${TOOLS_CMAKE_DIR}/DownloadSDKs.cmake")
-endif()
-
 include("${TOOLS_CMAKE_DIR}/ConfigureChecks.cmake")
 include("${TOOLS_CMAKE_DIR}/CommonMacros.cmake")
 
