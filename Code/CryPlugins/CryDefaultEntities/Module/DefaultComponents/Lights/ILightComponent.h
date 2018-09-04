@@ -136,7 +136,7 @@ namespace DefaultComponents
 		desc.SetGUID("{DBD843BC-E4E7-4950-B54D-4FD507B223FD}"_cry_guid);
 		desc.AddMember(&ILightComponent::SOptics::m_flareEnable, 'ena', "Enable", "Enable", "Decides if the fare should be able", true);
 		desc.AddMember(&ILightComponent::SOptics::m_lensFlareName, 'lens', "LensFlare", "Lens Flare Name", "Name of the lens flare", "");
-		desc.AddMember(&ILightComponent::SOptics::m_attachToSun, 'atta', "AttachtToSun", "Attacht To Sun", "When enabled, sets the Sun to use the Flare properties for this light", false);
+		desc.AddMember(&ILightComponent::SOptics::m_attachToSun, 'atta', "AttachToSun", "Attach To Sun", "When enabled, sets the Sun to use the Flare properties for this light", false);
 		desc.AddMember(&ILightComponent::SOptics::m_flareFOV, 'fov', "FlareFOV", "Flare Field of View", "FOV for the flare", 360);
 	}
 
