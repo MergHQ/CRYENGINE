@@ -141,7 +141,7 @@ void CComputeRenderPass::PrepareResourcesForUse(CDeviceCommandListRef RESTRICT_R
 
 		auto& inlineConstantBuffers = m_constantManager.GetBuffers();
 		for (auto& cb : inlineConstantBuffers)
-			pComputeInterface->PrepareInlineConstantBufferForUse(bindSlot++, cb.pBuffer, cb.shaderSlot, EShaderStage_Compute);
+			pComputeInterface->PrepareInlineConstantBufferForUse(bindSlot++, cb.pBuffer, cb.shaderSlot);
 	}
 }
 

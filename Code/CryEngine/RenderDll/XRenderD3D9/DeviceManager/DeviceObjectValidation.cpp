@@ -13,7 +13,9 @@ CDeviceObjectValidator CDeviceObjectValidator::Create()
 	validator.Limits.PerDraw.NumBindings              = 4;   // internal PS4 limitation
 	validator.Limits.PerDraw.NumSamplers              = 14;  // internal PS4 limitation
 	validator.Limits.PerDraw.NumConstantBuffers       = 14;  // internal PS4 limitation
+	validator.Limits.PerDraw.NumShaderResources       = 32;  // internal PS4 limitation
 	validator.Limits.PerDraw.NumInlineConstantBuffers = 4;   // internal PS4 limitation
+	validator.Limits.PerDraw.NumInlineShaderResources = 4;   // internal PS4 limitation
 	validator.Limits.PerDraw.NumBuffers               = 32;  // internal dx11 limitation
 	validator.Limits.PerDraw.NumBufferSRVs            = 32;  // internal dx11 limitation
 	validator.Limits.PerDraw.NumBufferUAVs            = 8;   // dx11: max uav count PS/CS
@@ -24,8 +26,8 @@ CDeviceObjectValidator CDeviceObjectValidator::Create()
 	validator.Limits.PerDraw.NumSRVs                  = 54;  // internal PS4 limitation
 
 	 // Per shader stage
-	validator.Limits.PerDraw.PerShaderStage.NumResources       = 91;  // internal PS4 limitation
 	validator.Limits.PerDraw.PerShaderStage.NumSamplers        = 14;  // internal PS4 limitation
+	validator.Limits.PerDraw.PerShaderStage.NumShaderResources = 91;  // internal PS4 limitation
 	validator.Limits.PerDraw.PerShaderStage.NumConstantBuffers = 12;  // Vulkan: NVidia GTX 660
 	validator.Limits.PerDraw.PerShaderStage.NumBuffers         = 16;  // Vulkan: NVidia GTX 660
 	validator.Limits.PerDraw.PerShaderStage.NumBufferSRVs      = 16;  // Vulkan: NVidia GTX 660
@@ -52,8 +54,10 @@ CDeviceObjectValidator CDeviceObjectValidator::CreateForMobile()
 	/* Per draw or dispatch */
 	validator.Limits.PerDraw.NumBindings              = 4;   // Mali t880
 	validator.Limits.PerDraw.NumSamplers              = 14;  // internal PS4 limitation
+	validator.Limits.PerDraw.NumConstantBuffers       = 24;  // internal PS4 limitation
 	validator.Limits.PerDraw.NumConstantBuffers       = 14;  // internal PS4 limitation
 	validator.Limits.PerDraw.NumInlineConstantBuffers = 4;   // internal PS4 limitation
+	validator.Limits.PerDraw.NumInlineShaderResources = 4;   // internal PS4 limitation
 	validator.Limits.PerDraw.NumBuffers               = 24;  // Mali t880
 	validator.Limits.PerDraw.NumBufferSRVs            = 24;  // Mali t880
 	validator.Limits.PerDraw.NumBufferUAVs            = 8;   // dx11: max uav count PS/CS
@@ -64,9 +68,9 @@ CDeviceObjectValidator CDeviceObjectValidator::CreateForMobile()
 	validator.Limits.PerDraw.NumSRVs                  = 54;  // internal PS4 limitation
 
 	/*Per shader stage*/
-	validator.Limits.PerDraw.PerShaderStage.NumResources             = 44;  // Mali t880
 	validator.Limits.PerDraw.PerShaderStage.NumSamplers              = 14;  // internal PS4 limitation
 	validator.Limits.PerDraw.PerShaderStage.NumConstantBuffers       = 12;  // Mali t880
+	validator.Limits.PerDraw.PerShaderStage.NumShaderResources       = 44;  // Mali t880
 	validator.Limits.PerDraw.PerShaderStage.NumBuffers               = 4;   // Mali t880
 	validator.Limits.PerDraw.PerShaderStage.NumBufferSRVs            = 4;   // Mali t880
 	validator.Limits.PerDraw.PerShaderStage.NumBufferUAVs            = 4;   // Mali t880
@@ -159,10 +163,10 @@ bool CDeviceObjectValidator::ValidateResourceLayout(const SDeviceResourceLayoutD
 		switch (resource.type)
 		{
 		case SResourceBinding::EResourceType::ConstantBuffer:                                   isInline(bindPointLayout) ?  ++perDrawResources.NumInlineConstantBuffers                    :  ++perDrawResources.NumConstantBuffers;                              break;
+		case SResourceBinding::EResourceType::ShaderResource:                                   isInline(bindPointLayout) ?  ++perDrawResources.NumInlineShaderResources                     : ++perDrawResources.NumShaderResources;                              break;
 		case SResourceBinding::EResourceType::Texture:          ++perDrawResources.NumTextures; isUAV(bindPoint)          ? (++perDrawResources.NumTextureUAVs, ++perDrawResources.NumUAVs) : (++perDrawResources.NumTextureSRVs, ++perDrawResources.NumSRVs);     break;
 		case SResourceBinding::EResourceType::Buffer:           ++perDrawResources.NumBuffers;  isUAV(bindPoint)          ? (++perDrawResources.NumBufferUAVs,  ++perDrawResources.NumUAVs) : (++perDrawResources.NumBufferSRVs, ++perDrawResources.NumSRVs);      break;
 		case SResourceBinding::EResourceType::Sampler:          ++perDrawResources.NumSamplers; break;
-		case SResourceBinding::EResourceType::Resource:                                         break;
 		}
 		// *INDENT-ON*
 
@@ -189,8 +193,8 @@ bool CDeviceObjectValidator::ValidateResourceLayout(const SDeviceResourceLayoutD
 					case SResourceBinding::EResourceType::Texture:          ++shadeStageResource.NumTextures; isUAV(bindPoint) ? (++shadeStageResource.NumTextureUAVs, ++shadeStageResource.NumUAVs) : (++shadeStageResource.NumTextureSRVs, ++shadeStageResource.NumSRVs);     break;
 					case SResourceBinding::EResourceType::Buffer:           ++shadeStageResource.NumBuffers;  isUAV(bindPoint) ? (++shadeStageResource.NumBufferUAVs,  ++shadeStageResource.NumUAVs) : (++shadeStageResource.NumBufferSRVs,  ++shadeStageResource.NumSRVs);     break;
 					case SResourceBinding::EResourceType::ConstantBuffer:   ++shadeStageResource.NumConstantBuffers; break;
+					case SResourceBinding::EResourceType::ShaderResource:   ++shadeStageResource.NumShaderResources; break;
 					case SResourceBinding::EResourceType::Sampler:          ++shadeStageResource.NumSamplers;        break;
-					case SResourceBinding::EResourceType::Resource:         ++shadeStageResource.NumResources;       break;
 					}
 					// *INDENT-ON*
 				}
@@ -295,7 +299,7 @@ bool CDeviceObjectValidator::ValidateResourceLayout(const SDeviceResourceLayoutD
 			VALIDATE_LIMIT(stageResources.NumTextureUAVs,     Limits.PerDraw.PerShaderStage.NumTextureUAVs,     "Per stage texture UAV count exceeded: %d of %d");
 			VALIDATE_LIMIT(srvCount,                          Limits.PerDraw.PerShaderStage.NumSRVs,            "Per stage SRV count exceeded: %d of %d");
 			VALIDATE_LIMIT(uavCount,                          Limits.PerDraw.PerShaderStage.NumUAVs,            "Per stage UAV count exceeded: %d of %d");
-			VALIDATE_LIMIT(resourceCount,                     Limits.PerDraw.PerShaderStage.NumResources,       "Per stage resource count exceeded: %d of %d");
+			VALIDATE_LIMIT(resourceCount,                     Limits.PerDraw.PerShaderStage.NumShaderResources, "Per stage resource count exceeded: %d of %d");
 			// *INDENT-ON*
 		}
 	}

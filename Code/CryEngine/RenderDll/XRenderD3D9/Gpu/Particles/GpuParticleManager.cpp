@@ -127,11 +127,11 @@ void CManager::RenderThreadPreUpdate(CRenderView* pRenderView)
 {
 	if (uint32 numRuntimes = uint32(GetReadRuntimes().size()))
 	{
-		std::vector<CGpuBuffer*> UAVs;
+		std::vector<CDeviceBuffer*> UAVs;
 
 		UAVs.reserve(numRuntimes);
 		for (auto& pRuntime : GetReadRuntimes())
-			UAVs.emplace_back(&pRuntime->PrepareForUse());
+			UAVs.emplace_back(pRuntime->PrepareForUse().GetDevBuffer());
 
 		// Prepare particle buffers which have been used in the compute shader for vertex use
 		GetDeviceObjectFactory().GetCoreCommandList().GetGraphicsInterface()->PrepareUAVsForUse(numRuntimes, &UAVs[0], false);
@@ -142,11 +142,11 @@ void CManager::RenderThreadPostUpdate(CRenderView* pRenderView)
 {
 	if (uint32 numRuntimes = uint32(GetReadRuntimes().size()))
 	{
-		std::vector<CGpuBuffer*> UAVs;
+		std::vector<CDeviceBuffer*> UAVs;
 
 		UAVs.reserve(numRuntimes);
 		for (auto& pRuntime : GetReadRuntimes())
-			UAVs.emplace_back(&pRuntime->PrepareForUse());
+			UAVs.emplace_back(pRuntime->PrepareForUse().GetDevBuffer());
 
 		// Prepare particle buffers which have been used in the vertex shader for compute use
 		GetDeviceObjectFactory().GetCoreCommandList().GetGraphicsInterface()->PrepareUAVsForUse(numRuntimes, &UAVs[0], true);

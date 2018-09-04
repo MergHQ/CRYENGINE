@@ -612,7 +612,6 @@ ExplorerPanel::ExplorerPanel(QWidget* parent, ExplorerData* explorerData)
 
 ExplorerPanel::~ExplorerPanel()
 {
-	m_treeView->setModel(0);
 }
 
 void ExplorerPanel::SetDockWidget(QDockWidget* dockWidget)

@@ -512,7 +512,7 @@ void CComputeSkinningStage::PreDraw()
 {
 	CDeviceCommandListRef pCoreInterface(GetDeviceObjectFactory().GetCoreCommandList());
 
-	std::vector<CGpuBuffer*> UAVs;
+	std::vector<CDeviceBuffer*> UAVs;
 
 	// TODO:/NOTE: possibly multi-threadable recording
 	auto frameId = RenderView()->GetFrameId();
@@ -537,11 +537,11 @@ void CComputeSkinningStage::PreDraw()
 		bool bDoTangents = (pSD->nHWSkinningFlags & eHWS_DC_Deformation_Tangents ? true : false);
 
 		////////////////////////////////////////////////////////////////////////////////////////////
-		UAVs.emplace_back(&ir->verticesOut.GetBuffer());
+		UAVs.emplace_back(ir->verticesOut.GetBuffer().GetDevBuffer());
 
 		if (bDoTangents)
 		{
-			UAVs.emplace_back(&ir->tangentsOut.GetBuffer());
+			UAVs.emplace_back(ir->tangentsOut.GetBuffer().GetDevBuffer());
 		}
 	}
 

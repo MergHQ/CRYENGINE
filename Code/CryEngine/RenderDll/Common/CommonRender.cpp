@@ -199,6 +199,7 @@ void SResourceBinding::AddInvalidateCallback(void* pCallbackOwner, SResourceBind
 	switch (type)
 	{
 		case EResourceType::ConstantBuffer:                                                                       break;
+		case EResourceType::ShaderResource:                                                                       break;
 		case EResourceType::Texture:        pTexture->AddInvalidateCallback(pCallbackOwner, bindPoint, callback); break;
 		case EResourceType::Buffer:         pBuffer ->AddInvalidateCallback(pCallbackOwner, bindPoint, callback); break;
 		case EResourceType::Sampler:                                                                              break;
@@ -211,6 +212,7 @@ void SResourceBinding::RemoveInvalidateCallback(void* pCallbackOwner, SResourceB
 	switch (type)
 	{
 		case EResourceType::ConstantBuffer:                                                                       break;
+		case EResourceType::ShaderResource:                                                                       break;
 		case EResourceType::Texture:        pTexture->RemoveInvalidateCallbacks(pCallbackOwner, bindPoint);       break;
 		case EResourceType::Buffer:         pBuffer ->RemoveInvalidateCallbacks(pCallbackOwner, bindPoint);       break;
 		case EResourceType::Sampler:                                                                              break;

@@ -952,6 +952,8 @@ void CAssetBrowser::InitViews(bool bHideEngineFolder)
 	SetContent(topLayout);
 
 	SetViewMode(Thumbnails);//by default let's use thumbnails
+
+	OnFolderSelectionChanged(m_foldersView->GetSelectedFolders());
 }
 
 void CAssetBrowser::InitMenus()

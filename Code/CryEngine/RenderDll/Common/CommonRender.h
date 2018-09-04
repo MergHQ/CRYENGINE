@@ -117,6 +117,10 @@ enum EConstantBufferShaderSlot
 	eConstantBufferShaderSlot_Count                     = 8,
 };
 
+enum EShaderResourceShaderSlot
+{
+};
+
 enum EResourceLayoutSlot
 {
 	EResourceLayoutSlot_PerDrawCB                       = 0, // EShaderStage_Vertex | EShaderStage_Pixel | EShaderStage_Domain
@@ -684,10 +688,10 @@ struct SResourceBinding
 		InvalidType = 0,
 
 		ConstantBuffer,
+		ShaderResource,
 		Texture,
 		Buffer,
 		Sampler,
-		Resource,
 	};
 
 	inline SResourceBinding()
@@ -713,17 +717,18 @@ struct SResourceBinding
 		, type(EResourceType::ConstantBuffer)
 	{}
 
+	inline SResourceBinding(CDeviceBuffer* _pShaderResource, ResourceViewHandle _view)
+		: pShaderResource(_pShaderResource)
+		, view(_view)
+		, type(EResourceType::ShaderResource)
+	{}
+
 	inline SResourceBinding(SamplerStateHandle _samplerState)
 		: fastCompare(0)
 		, type(EResourceType::Sampler)
 	{
 		samplerState = _samplerState;
 	}
-
-	inline SResourceBinding(CBaseResource* _pResource)
-		: pResource(_pResource)
-		, type(EResourceType::Resource)
-	{}
 
 	bool IsValid() const;
 	bool IsVolatile() const;
@@ -741,8 +746,8 @@ struct SResourceBinding
 		CTexture*          pTexture;
 		CGpuBuffer*        pBuffer;
 		CConstantBuffer*   pConstantBuffer;
+		CDeviceBuffer*     pShaderResource;
 		SamplerStateHandle samplerState;
-		CBaseResource*     pResource;
 
 		uintptr_t          fastCompare;
 	};

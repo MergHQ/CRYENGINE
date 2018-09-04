@@ -209,3 +209,4 @@ inline static CD3DX12_DESCRIPTOR_RANGE GetDescriptorRange(SResourceBindPoint bin
 #define GET_DX12_TEXTURE_RESOURCE(uniformTexture)              reinterpret_cast<CCryDX12Resource<ID3D11Resource>*>((uniformTexture)->GetDevTexture()->GetBaseTexture())
 #define GET_DX12_BUFFER_RESOURCE(uniformBuffer)                reinterpret_cast<CCryDX12Resource<ID3D11Resource>*>((uniformBuffer).GetDevBuffer()->GetBaseBuffer())
 #define GET_DX12_CONSTANTBUFFER_RESOURCE(constantBuffer)       reinterpret_cast<CCryDX12Buffer*>((constantBuffer)->GetD3D())
+#define GET_DX12_RAWBUFFER_RESOURCE(rawBuffer)                 reinterpret_cast<CCryDX12Buffer*>((rawBuffer)->GetBuffer())

@@ -80,6 +80,16 @@ bool CDeviceResourceLayout_DX12::Init(const SDeviceResourceLayoutDesc& desc)
 			++resourceMappings.m_NumRootParameters;
 		}
 		break;
+		case SDeviceResourceLayoutDesc::ELayoutSlotType::InlineShaderResource:
+		{
+			const SResourceBindPoint& resourceBindPoint = itLayoutBinding.second.begin()->first;
+
+			resourceMappings.m_RootParameters[layoutBindPoint.layoutSlot].InitAsShaderResourceView(
+				resourceBindPoint.slotNumber, 0, GetShaderVisibility(resourceBindPoint.stages));
+
+			++resourceMappings.m_NumRootParameters;
+		}
+		break;
 
 		case SDeviceResourceLayoutDesc::ELayoutSlotType::ResourceSet:
 		{

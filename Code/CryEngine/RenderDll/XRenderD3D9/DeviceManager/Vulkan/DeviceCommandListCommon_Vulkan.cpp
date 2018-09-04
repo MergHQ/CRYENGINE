@@ -263,11 +263,11 @@ void CDeviceCommandListImpl::ApplyPendingBindings(VkCommandBuffer vkCommandList,
 }
 
 ///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
-void CDeviceGraphicsCommandInterfaceImpl::PrepareUAVsForUseImpl(uint32 viewCount, CGpuBuffer** pViews, bool bCompute) const
+void CDeviceGraphicsCommandInterfaceImpl::PrepareUAVsForUseImpl(uint32 viewCount, CDeviceBuffer** pViews, bool bCompute) const
 {
 	for (uint32 i = 0; i < viewCount; ++i)
 	{
-		RequestTransition(pViews[i]->GetDevBuffer()->GetBuffer(), VK_ACCESS_SHADER_READ_BIT | VK_ACCESS_SHADER_WRITE_BIT);
+		RequestTransition(pViews[i]->GetBuffer(), VK_ACCESS_SHADER_READ_BIT | VK_ACCESS_SHADER_WRITE_BIT);
 	}
 }
 
@@ -330,6 +330,19 @@ void CDeviceGraphicsCommandInterfaceImpl::PrepareInlineConstantBufferForUseImpl(
 {
 	buffer_size_t offset, bytes;
 	CBufferResource* const pActualBuffer = pBuffer->GetD3D(&offset, &bytes);
+
+	CRY_ASSERT(pActualBuffer->AsDynamicOffsetBuffer() != nullptr); // Needs to be a buffer with dynamic offsets
+	RequestTransition(pActualBuffer, VK_ACCESS_UNIFORM_READ_BIT);
+}
+
+void CDeviceGraphicsCommandInterfaceImpl::PrepareInlineShaderResourceForUseImpl(uint32 bindSlot, CDeviceBuffer* pBuffer, EShaderResourceShaderSlot shaderSlot, EHWShaderClass shaderClass) const
+{
+	PrepareInlineShaderResourceForUseImpl(bindSlot, pBuffer, shaderSlot, SHADERSTAGE_FROM_SHADERCLASS(shaderClass));
+}
+
+void CDeviceGraphicsCommandInterfaceImpl::PrepareInlineShaderResourceForUseImpl(uint32 bindSlot, CDeviceBuffer* pBuffer, EShaderResourceShaderSlot shaderSlot, EShaderStage shaderStages) const
+{
+	CBufferResource* const pActualBuffer = pBuffer->GetBuffer();
 
 	CRY_ASSERT(pActualBuffer->AsDynamicOffsetBuffer() != nullptr); // Needs to be a buffer with dynamic offsets
 	RequestTransition(pActualBuffer, VK_ACCESS_UNIFORM_READ_BIT);
@@ -424,6 +437,27 @@ void CDeviceGraphicsCommandInterfaceImpl::SetInlineConstantBufferImpl(uint32 bin
 
 	buffer_size_t offset, size;
 	NCryVulkan::CBufferResource* pVkBuffer = pBuffer->GetD3D(&offset, &size);
+	VK_ASSERT(pVkBuffer && pVkBuffer->GetHandle() && pVkBuffer->AsDynamicOffsetBuffer() != nullptr);
+
+	VkDescriptorSet dynamicDescriptorSet = pVkBuffer->AsDynamicOffsetBuffer()->GetDynamicDescriptorSet();
+	CRY_ASSERT(dynamicDescriptorSet != VK_NULL_HANDLE);
+
+	m_graphicsState.custom.pendingBindings.AppendDescriptorSet(bindSlot, dynamicDescriptorSet, &offset);
+}
+
+void CDeviceGraphicsCommandInterfaceImpl::SetInlineShaderResourceImpl(uint32 bindSlot, const CDeviceBuffer* pBuffer, EShaderResourceShaderSlot shaderSlot, EHWShaderClass shaderClass, ResourceViewHandle resourceViewID)
+{
+	CDeviceGraphicsCommandInterfaceImpl::SetInlineShaderResourceImpl(bindSlot, pBuffer, shaderSlot, EShaderStage_None, resourceViewID);
+}
+
+void CDeviceGraphicsCommandInterfaceImpl::SetInlineShaderResourceImpl(uint32 bindSlot, const CDeviceBuffer* pBuffer, EShaderResourceShaderSlot shaderSlot, EShaderStage shaderStages, ResourceViewHandle resourceViewID)
+{
+	const CDeviceResourceLayout_Vulkan* pVkLayout = reinterpret_cast<const CDeviceResourceLayout_Vulkan*>(m_graphicsState.pResourceLayout.cachedValue);
+
+	const NCryVulkan::CBufferView* View = reinterpret_cast<NCryVulkan::CBufferView*>(pBuffer->LookupSRV(resourceViewID));
+	VkDescriptorBufferInfo info; View->FillInfo(info); // extract the offset from the given view
+	buffer_size_t offset = buffer_size_t(info.offset);
+	NCryVulkan::CBufferResource* pVkBuffer = pBuffer->GetBuffer();
 	VK_ASSERT(pVkBuffer && pVkBuffer->GetHandle() && pVkBuffer->AsDynamicOffsetBuffer() != nullptr);
 
 	VkDescriptorSet dynamicDescriptorSet = pVkBuffer->AsDynamicOffsetBuffer()->GetDynamicDescriptorSet();
@@ -597,11 +631,11 @@ void CDeviceGraphicsCommandInterfaceImpl::BindNullVertexBuffers()
 
 ///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
-void CDeviceComputeCommandInterfaceImpl::PrepareUAVsForUseImpl(uint32 viewCount, CGpuBuffer** pViews) const
+void CDeviceComputeCommandInterfaceImpl::PrepareUAVsForUseImpl(uint32 viewCount, CDeviceBuffer** pViews) const
 {
 	for (uint32 i = 0; i < viewCount; ++i)
 	{
-		RequestTransition(pViews[i]->GetDevBuffer()->GetBuffer(), VK_ACCESS_SHADER_READ_BIT | VK_ACCESS_SHADER_WRITE_BIT);
+		RequestTransition(pViews[i]->GetBuffer(), VK_ACCESS_SHADER_READ_BIT | VK_ACCESS_SHADER_WRITE_BIT);
 	}
 }
 
@@ -632,10 +666,17 @@ void CDeviceComputeCommandInterfaceImpl::PrepareResourcesForUseImpl(uint32 bindS
 	pResourceSet->EnumerateInUseResources(lambda);
 }
 
-void CDeviceComputeCommandInterfaceImpl::PrepareInlineConstantBufferForUseImpl(uint32 bindSlot, CConstantBuffer* pBuffer, EConstantBufferShaderSlot shaderSlots, EShaderStage shaderStages) const
+void CDeviceComputeCommandInterfaceImpl::PrepareInlineConstantBufferForUseImpl(uint32 bindSlot, CConstantBuffer* pBuffer, EConstantBufferShaderSlot shaderSlot) const
 {
 	buffer_size_t offset, bytes;
 	CBufferResource* const pActualBuffer = pBuffer->GetD3D(&offset, &bytes);
+	RequestTransition(pActualBuffer, VK_ACCESS_UNIFORM_READ_BIT);
+	CRY_ASSERT(pActualBuffer->AsDynamicOffsetBuffer() != nullptr);
+}
+
+void CDeviceComputeCommandInterfaceImpl::PrepareInlineShaderResourceForUseImpl(uint32 bindSlot, CDeviceBuffer* pBuffer, EShaderResourceShaderSlot shaderSlot) const
+{
+	CBufferResource* const pActualBuffer = pBuffer->GetBuffer();
 	RequestTransition(pActualBuffer, VK_ACCESS_UNIFORM_READ_BIT);
 	CRY_ASSERT(pActualBuffer->AsDynamicOffsetBuffer() != nullptr);
 }
@@ -657,6 +698,22 @@ void CDeviceComputeCommandInterfaceImpl::SetInlineConstantBufferImpl(uint32 bind
 
 	buffer_size_t offset, size;
 	NCryVulkan::CBufferResource* pVkBuffer = pBuffer->GetD3D(&offset, &size);
+	CRY_ASSERT(pVkBuffer->AsDynamicOffsetBuffer() != nullptr); // Needs to be a buffer with dynamic offsets
+
+	VkDescriptorSet dynamicDescriptorSet = pVkBuffer->AsDynamicOffsetBuffer()->GetDynamicDescriptorSet();
+	CRY_ASSERT(dynamicDescriptorSet != VK_NULL_HANDLE);
+
+	m_computeState.custom.pendingBindings.AppendDescriptorSet(bindSlot, dynamicDescriptorSet, &offset);
+}
+
+void CDeviceComputeCommandInterfaceImpl::SetInlineShaderResourceImpl(uint32 bindSlot, const CDeviceBuffer* pBuffer, EShaderResourceShaderSlot shaderSlot, ResourceViewHandle resourceViewID)
+{
+	const CDeviceResourceLayout_Vulkan* pVkLayout = reinterpret_cast<const CDeviceResourceLayout_Vulkan*>(m_computeState.pResourceLayout.cachedValue);
+
+	const NCryVulkan::CBufferView* View = reinterpret_cast<NCryVulkan::CBufferView*>(pBuffer->LookupSRV(resourceViewID));
+	VkDescriptorBufferInfo info; View->FillInfo(info); // extract the offset from the given view
+	buffer_size_t offset = buffer_size_t(info.offset);
+	NCryVulkan::CBufferResource* pVkBuffer = pBuffer->GetBuffer();
 	CRY_ASSERT(pVkBuffer->AsDynamicOffsetBuffer() != nullptr); // Needs to be a buffer with dynamic offsets
 
 	VkDescriptorSet dynamicDescriptorSet = pVkBuffer->AsDynamicOffsetBuffer()->GetDynamicDescriptorSet();

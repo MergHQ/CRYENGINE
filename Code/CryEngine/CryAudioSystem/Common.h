@@ -19,7 +19,6 @@ struct IImpl;
 } // namespace Impl
 
 class CSystem;
-class CAudioTranslationLayer;
 class CATLAudioObject;
 class CLoseFocusTrigger;
 class CGetFocusTrigger;
@@ -41,7 +40,6 @@ using AudioEnvironmentLookup = std::map<EnvironmentId, CATLAudioEnvironment cons
 
 extern Impl::IImpl* g_pIImpl;
 extern CSystem g_system;
-extern CAudioTranslationLayer g_atl;
 extern AudioTriggerLookup g_triggers;
 extern AudioParameterLookup g_parameters;
 extern AudioSwitchLookup g_switches;

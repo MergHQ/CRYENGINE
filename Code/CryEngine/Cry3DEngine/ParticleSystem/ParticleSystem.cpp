@@ -149,8 +149,6 @@ void CParticleSystem::Update()
 
 	// Init stats for current frame
 	auto& mainData = GetMainData();
-	mainData.statsCPU = {};
-	mainData.statsGPU = {};
 	mainData.statsCPU.emitters.alloc = m_emitters.size();
 
 	for (auto& pEmitter : m_emitters)

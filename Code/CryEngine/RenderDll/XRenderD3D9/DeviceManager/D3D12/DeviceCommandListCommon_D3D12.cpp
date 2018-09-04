@@ -184,31 +184,28 @@ void CDeviceCommandListImpl::CloseImpl()
 }
 
 ///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
-void CDeviceGraphicsCommandInterfaceImpl::PrepareUAVsForUseImpl(uint32 viewCount, CGpuBuffer** pViews, bool bCompute) const
+void CDeviceGraphicsCommandInterfaceImpl::PrepareUAVsForUseImpl(uint32 viewCount, CDeviceBuffer** pViews, bool bCompute) const
 {
 	NCryDX12::CCommandList* pCommandListDX12 = GetDX12CommandList();
 
 	for (int v = 0; v < viewCount; ++v)
 	{
-		if (CDeviceBuffer* pDevBuf = pViews[v]->GetDevBuffer())
+		// TODO: ResourceViewHandles[]
+		const NCryDX12::CView& View = GET_DX12_UNORDERED_VIEW(pViews[v], EDefaultResourceViews::UnorderedAccess)->GetDX12View();
+		NCryDX12::CResource& Resource = View.GetDX12Resource();
+		const D3D12_RESOURCE_STATES desiredState =
+			bCompute
+			? D3D12_RESOURCE_STATE_UNORDERED_ACCESS
+			: D3D12_RESOURCE_STATE_PIXEL_SHADER_RESOURCE | D3D12_RESOURCE_STATE_NON_PIXEL_SHADER_RESOURCE;
+
+		if (Resource.InitHasBeenDeferred())
 		{
-			// TODO: ResourceViewHandles[]
-			const NCryDX12::CView& View = GET_DX12_UNORDERED_VIEW(pDevBuf, EDefaultResourceViews::UnorderedAccess)->GetDX12View();
-			NCryDX12::CResource& Resource = View.GetDX12Resource();
-			const D3D12_RESOURCE_STATES desiredState =
-				bCompute
-				? D3D12_RESOURCE_STATE_UNORDERED_ACCESS
-				: D3D12_RESOURCE_STATE_PIXEL_SHADER_RESOURCE | D3D12_RESOURCE_STATE_NON_PIXEL_SHADER_RESOURCE;
-
-			if (Resource.InitHasBeenDeferred())
-			{
-				Resource.InitDeferred(pCommandListDX12, desiredState | D3D12_RESOURCE_STATE_UNORDERED_ACCESS);
-			}
-
-			DX12_ASSERT(!((pCommandListDX12->GetD3D12ListType() != D3D12_COMMAND_LIST_TYPE_DIRECT) && (Resource.GetTargetState() & D3D12_RESOURCE_STATE_PIXEL_SHADER_RESOURCE) && (!Resource.IsOffCard())));
-
-			pCommandListDX12->PrepareResourceUAVUsage(Resource, View, desiredState);
+			Resource.InitDeferred(pCommandListDX12, desiredState | D3D12_RESOURCE_STATE_UNORDERED_ACCESS);
 		}
+
+		DX12_ASSERT(!((pCommandListDX12->GetD3D12ListType() != D3D12_COMMAND_LIST_TYPE_DIRECT) && (Resource.GetTargetState() & D3D12_RESOURCE_STATE_PIXEL_SHADER_RESOURCE) && (!Resource.IsOffCard())));
+
+		pCommandListDX12->PrepareResourceUAVUsage(Resource, View, desiredState);
 	}
 }
 
@@ -241,8 +238,6 @@ void CDeviceGraphicsCommandInterfaceImpl::PrepareRenderPassForUseImpl(CDeviceRen
 
 void CDeviceGraphicsCommandInterfaceImpl::PrepareResourceForUseImpl(uint32 bindSlot, CTexture* pTexture, const ResourceViewHandle TextureView, ::EShaderStage srvUsage) const
 {
-	CRY_ASSERT(bindSlot <= EResourceLayoutSlot_Max);
-
 	NCryDX12::CCommandList* pCommandListDX12 = GetDX12CommandList();
 
 	CCryDX12ShaderResourceView* it = GET_DX12_SHADER_VIEW(pTexture->GetDevTexture(), TextureView);
@@ -266,8 +261,6 @@ void CDeviceGraphicsCommandInterfaceImpl::PrepareResourceForUseImpl(uint32 bindS
 
 void CDeviceGraphicsCommandInterfaceImpl::PrepareResourcesForUseImpl(uint32 bindSlot, CDeviceResourceSet* pResources) const
 {
-	CRY_ASSERT(bindSlot <= EResourceLayoutSlot_Max);
-
 	NCryDX12::CCommandList* pCommandListDX12 = GetDX12CommandList();
 	CDeviceResourceSet_DX12* pResourcesDX12 = reinterpret_cast<CDeviceResourceSet_DX12*>(pResources);
 
@@ -320,12 +313,11 @@ void CDeviceGraphicsCommandInterfaceImpl::PrepareResourcesForUseImpl(uint32 bind
 	}
 }
 
-void CDeviceGraphicsCommandInterfaceImpl::PrepareInlineConstantBufferForUseImpl(uint32 bindSlot, CConstantBuffer* pConstantBuffer, EConstantBufferShaderSlot shaderSlot, EHWShaderClass shaderClass) const
+void CDeviceGraphicsCommandInterfaceImpl::PrepareInlineConstantBufferForUseImpl(uint32 bindSlot, CConstantBuffer* pBuffer, EConstantBufferShaderSlot shaderSlot, EHWShaderClass shaderClass) const
 {
-	CRY_ASSERT(bindSlot <= EResourceLayoutSlot_Max);
 	NCryDX12::CCommandList* pCommandListDX12 = GetDX12CommandList();
 
-	NCryDX12::CResource& Resource = GET_DX12_CONSTANTBUFFER_RESOURCE(pConstantBuffer)->GetDX12Resource();
+	NCryDX12::CResource& Resource = GET_DX12_CONSTANTBUFFER_RESOURCE(pBuffer)->GetDX12Resource();
 	const D3D12_RESOURCE_STATES desiredState = D3D12_RESOURCE_STATE_VERTEX_AND_CONSTANT_BUFFER;
 
 	if (Resource.InitHasBeenDeferred())
@@ -338,8 +330,27 @@ void CDeviceGraphicsCommandInterfaceImpl::PrepareInlineConstantBufferForUseImpl(
 
 void CDeviceGraphicsCommandInterfaceImpl::PrepareInlineConstantBufferForUseImpl(uint32 bindSlot, CConstantBuffer* pBuffer, EConstantBufferShaderSlot shaderSlot, ::EShaderStage shaderStages) const
 {
-	CRY_ASSERT(bindSlot <= EResourceLayoutSlot_Max);
-	PrepareInlineConstantBufferForUseImpl(bindSlot, pBuffer, shaderSlot, eHWSC_Num);
+	PrepareInlineConstantBufferForUseImpl(bindSlot, pBuffer, shaderSlot, eHWSC_NumGfx);
+}
+
+void CDeviceGraphicsCommandInterfaceImpl::PrepareInlineShaderResourceForUseImpl(uint32 bindSlot, CDeviceBuffer* pBuffer, EShaderResourceShaderSlot shaderSlot, EHWShaderClass shaderClass) const
+{
+	NCryDX12::CCommandList* pCommandListDX12 = GetDX12CommandList();
+
+	NCryDX12::CResource& Resource = GET_DX12_RAWBUFFER_RESOURCE(pBuffer)->GetDX12Resource();
+	const D3D12_RESOURCE_STATES desiredState = D3D12_RESOURCE_STATE_PIXEL_SHADER_RESOURCE | D3D12_RESOURCE_STATE_NON_PIXEL_SHADER_RESOURCE;
+
+	if (Resource.InitHasBeenDeferred())
+	{
+		Resource.InitDeferred(pCommandListDX12, desiredState);
+	}
+
+	pCommandListDX12->PrepareResourceSRVUsage(Resource, desiredState);
+}
+
+void CDeviceGraphicsCommandInterfaceImpl::PrepareInlineShaderResourceForUseImpl(uint32 bindSlot, CDeviceBuffer* pBuffer, EShaderResourceShaderSlot shaderSlot, ::EShaderStage shaderStages) const
+{
+	PrepareInlineShaderResourceForUseImpl(bindSlot, pBuffer, shaderSlot, eHWSC_NumGfx);
 }
 
 void CDeviceGraphicsCommandInterfaceImpl::PrepareVertexBuffersForUseImpl(uint32 numStreams, uint32 lastStreamSlot, const CDeviceInputStream* vertexStreams) const
@@ -568,8 +579,6 @@ void CDeviceGraphicsCommandInterfaceImpl::SetIndexBufferImpl(const CDeviceInputS
 
 void CDeviceGraphicsCommandInterfaceImpl::SetResourcesImpl(uint32 bindSlot, const CDeviceResourceSet* pResources)
 {
-	CRY_ASSERT(bindSlot <= EResourceLayoutSlot_Max);
-
 	NCryDX12::CCommandList* pCommandListDX12 = GetDX12CommandList();
 	const CDeviceResourceSet_DX12* pResourcesDX12 = reinterpret_cast<const CDeviceResourceSet_DX12*>(pResources);
 
@@ -635,16 +644,14 @@ void CDeviceGraphicsCommandInterfaceImpl::SetResourcesImpl(uint32 bindSlot, cons
 
 void CDeviceGraphicsCommandInterfaceImpl::SetInlineConstantBufferImpl(uint32 bindSlot, const CConstantBuffer* pBuffer, EConstantBufferShaderSlot shaderSlot, ::EShaderStage shaderStages)
 {
-	CRY_ASSERT(bindSlot <= EResourceLayoutSlot_Max);
 	SetInlineConstantBufferImpl(bindSlot, pBuffer, shaderSlot, eHWSC_Num);
 }
 
-void CDeviceGraphicsCommandInterfaceImpl::SetInlineConstantBufferImpl(uint32 bindSlot, const CConstantBuffer* pConstantBuffer, EConstantBufferShaderSlot shaderSlot, EHWShaderClass shaderClass)
+void CDeviceGraphicsCommandInterfaceImpl::SetInlineConstantBufferImpl(uint32 bindSlot, const CConstantBuffer* pBuffer, EConstantBufferShaderSlot shaderSlot, EHWShaderClass shaderClass)
 {
-	CRY_ASSERT(bindSlot <= EResourceLayoutSlot_Max);
 	NCryDX12::CCommandList* pCommandListDX12 = GetDX12CommandList();
 
-	const NCryDX12::CView& View = GET_DX12_CONSTANTBUFFER_RESOURCE(pConstantBuffer)->GetDX12View();
+	const NCryDX12::CView& View = GET_DX12_CONSTANTBUFFER_RESOURCE(pBuffer)->GetDX12View();
 	NCryDX12::CResource& Resource = View.GetDX12Resource();
 
 	DX12_ASSERT(!Resource.InitHasBeenDeferred(), "Resource %s hasn't been uploaded prior to use!", Resource.GetName());
@@ -657,13 +664,38 @@ void CDeviceGraphicsCommandInterfaceImpl::SetInlineConstantBufferImpl(uint32 bin
 	// TODO: if we know early that the resource(s) will be GENERIC_READ we can begin the barrier early and end it here
 	pCommandListDX12->TrackResourceCBVUsage(Resource, D3D12_RESOURCE_STATE_VERTEX_AND_CONSTANT_BUFFER);
 
-	D3D12_GPU_VIRTUAL_ADDRESS gpuAddress = View.GetCBVDesc().BufferLocation + pConstantBuffer->m_offset;
+	D3D12_GPU_VIRTUAL_ADDRESS gpuAddress = View.GetCBVDesc().BufferLocation + pBuffer->m_offset;
 	pCommandListDX12->SetGraphicsConstantBufferView(bindSlot, gpuAddress);
+}
+
+void CDeviceGraphicsCommandInterfaceImpl::SetInlineShaderResourceImpl(uint32 bindSlot, const CDeviceBuffer* pBuffer, EShaderResourceShaderSlot shaderSlot, ::EShaderStage shaderStages, ResourceViewHandle resourceViewID)
+{
+	SetInlineShaderResourceImpl(bindSlot, pBuffer, shaderSlot, eHWSC_Num, resourceViewID);
+}
+
+void CDeviceGraphicsCommandInterfaceImpl::SetInlineShaderResourceImpl(uint32 bindSlot, const CDeviceBuffer* pBuffer, EShaderResourceShaderSlot shaderSlot, EHWShaderClass shaderClass, ResourceViewHandle resourceViewID)
+{
+	NCryDX12::CCommandList* pCommandListDX12 = GetDX12CommandList();
+
+	const NCryDX12::CView& View = GET_DX12_SHADER_VIEW(pBuffer, resourceViewID)->GetDX12View();
+	NCryDX12::CResource& Resource = View.GetDX12Resource();
+
+	assert(!Resource.InitHasBeenDeferred());
+	assert(!Resource.NeedsTransitionBarrier(pCommandListDX12, D3D12_RESOURCE_STATE_PIXEL_SHADER_RESOURCE | D3D12_RESOURCE_STATE_NON_PIXEL_SHADER_RESOURCE));
+
+#if defined(ENABLE_PROFILING_CODE)
+	CryInterlockedIncrement(&SRenderStatistics::Write().m_nNumBoundInlineBuffers[Resource.IsOffCard()]);
+#endif
+
+	// TODO: if we know early that the resource(s) will be GENERIC_READ we can begin the barrier early and end it here
+	pCommandListDX12->TrackResourceSRVUsage(Resource, D3D12_RESOURCE_STATE_PIXEL_SHADER_RESOURCE | D3D12_RESOURCE_STATE_NON_PIXEL_SHADER_RESOURCE);
+
+	D3D12_GPU_VIRTUAL_ADDRESS gpuAddress = Resource.GetGPUVirtualAddress();
+	pCommandListDX12->SetGraphicsShaderResourceView(bindSlot, gpuAddress);
 }
 
 void CDeviceGraphicsCommandInterfaceImpl::SetInlineConstantsImpl(uint32 bindSlot, uint32 constantCount, float* pConstants)
 {
-	CRY_ASSERT(bindSlot <= EResourceLayoutSlot_Max);
 	GetDX12CommandList()->SetGraphics32BitConstants(bindSlot, constantCount, pConstants, 0);
 }
 
@@ -717,35 +749,30 @@ void CDeviceGraphicsCommandInterfaceImpl::EndOcclusionQueryImpl(D3DOcclusionQuer
 }
 
 ///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
-void CDeviceComputeCommandInterfaceImpl::PrepareUAVsForUseImpl(uint32 viewCount, CGpuBuffer** pViews) const
+void CDeviceComputeCommandInterfaceImpl::PrepareUAVsForUseImpl(uint32 viewCount, CDeviceBuffer** pViews) const
 {
 	NCryDX12::CCommandList* pCommandListDX12 = GetDX12CommandList();
 
 	for (int v = 0; v < viewCount; ++v)
 	{
-		if (CDeviceBuffer* pDevBuf = pViews[v]->GetDevBuffer())
+		// TODO: ResourceViewHandles[]
+		const NCryDX12::CView& View = GET_DX12_UNORDERED_VIEW(pViews[v], EDefaultResourceViews::UnorderedAccess)->GetDX12View();
+		NCryDX12::CResource& Resource = View.GetDX12Resource();
+		const D3D12_RESOURCE_STATES desiredState = D3D12_RESOURCE_STATE_UNORDERED_ACCESS;
+
+		if (Resource.InitHasBeenDeferred())
 		{
-			// TODO: ResourceViewHandles[]
-			const NCryDX12::CView& View = GET_DX12_UNORDERED_VIEW(pDevBuf, EDefaultResourceViews::UnorderedAccess)->GetDX12View();
-			NCryDX12::CResource& Resource = View.GetDX12Resource();
-			const D3D12_RESOURCE_STATES desiredState = D3D12_RESOURCE_STATE_UNORDERED_ACCESS;
-
-			if (Resource.InitHasBeenDeferred())
-			{
-				Resource.InitDeferred(pCommandListDX12, desiredState | D3D12_RESOURCE_STATE_UNORDERED_ACCESS);
-			}
-
-			DX12_ASSERT(!((pCommandListDX12->GetD3D12ListType() != D3D12_COMMAND_LIST_TYPE_DIRECT) && (Resource.GetTargetState() & D3D12_RESOURCE_STATE_PIXEL_SHADER_RESOURCE) && (!Resource.IsOffCard())));
-
-			pCommandListDX12->PrepareResourceUAVUsage(Resource, View, desiredState);
+			Resource.InitDeferred(pCommandListDX12, desiredState | D3D12_RESOURCE_STATE_UNORDERED_ACCESS);
 		}
+
+		DX12_ASSERT(!((pCommandListDX12->GetD3D12ListType() != D3D12_COMMAND_LIST_TYPE_DIRECT) && (Resource.GetTargetState() & D3D12_RESOURCE_STATE_PIXEL_SHADER_RESOURCE) && (!Resource.IsOffCard())));
+
+		pCommandListDX12->PrepareResourceUAVUsage(Resource, View, desiredState);
 	}
 }
 
 void CDeviceComputeCommandInterfaceImpl::PrepareResourcesForUseImpl(uint32 bindSlot, CDeviceResourceSet* pResources) const
 {
-	CRY_ASSERT(bindSlot <= EResourceLayoutSlot_Max);
-
 	NCryDX12::CCommandList* pCommandListDX12 = GetDX12CommandList();
 	CDeviceResourceSet_DX12* pResourcesDX12 = reinterpret_cast<CDeviceResourceSet_DX12*>(pResources);
 
@@ -795,15 +822,24 @@ void CDeviceComputeCommandInterfaceImpl::PrepareResourcesForUseImpl(uint32 bindS
 	}
 }
 
-void CDeviceComputeCommandInterfaceImpl::PrepareInlineConstantBufferForUseImpl(uint32 bindSlot, CConstantBuffer* pConstantBuffer, EConstantBufferShaderSlot shaderSlot, ::EShaderStage shaderStages) const
+void CDeviceComputeCommandInterfaceImpl::PrepareInlineConstantBufferForUseImpl(uint32 bindSlot, CConstantBuffer* pBuffer, EConstantBufferShaderSlot shaderSlot) const
 {
-	CRY_ASSERT(bindSlot <= EResourceLayoutSlot_Max);
 	NCryDX12::CCommandList* pCommandListDX12 = GetDX12CommandList();
 
-	NCryDX12::CResource& Resource = GET_DX12_CONSTANTBUFFER_RESOURCE(pConstantBuffer)->GetDX12Resource();
+	NCryDX12::CResource& Resource = GET_DX12_CONSTANTBUFFER_RESOURCE(pBuffer)->GetDX12Resource();
 	const D3D12_RESOURCE_STATES desiredState = D3D12_RESOURCE_STATE_VERTEX_AND_CONSTANT_BUFFER;
 
 	pCommandListDX12->PrepareResourceCBVUsage(Resource, desiredState);
+}
+
+void CDeviceComputeCommandInterfaceImpl::PrepareInlineShaderResourceForUseImpl(uint32 bindSlot, CDeviceBuffer* pBuffer, EShaderResourceShaderSlot shaderSlot) const
+{
+	NCryDX12::CCommandList* pCommandListDX12 = GetDX12CommandList();
+
+	NCryDX12::CResource& Resource = GET_DX12_RAWBUFFER_RESOURCE(pBuffer)->GetDX12Resource();
+	const D3D12_RESOURCE_STATES desiredState = D3D12_RESOURCE_STATE_NON_PIXEL_SHADER_RESOURCE;
+
+	pCommandListDX12->PrepareResourceSRVUsage(Resource, desiredState);
 }
 
 void CDeviceComputeCommandInterfaceImpl::SetPipelineStateImpl(const CDeviceComputePSO* pDevicePSO)
@@ -821,8 +857,6 @@ void CDeviceComputeCommandInterfaceImpl::SetResourceLayoutImpl(const CDeviceReso
 
 void CDeviceComputeCommandInterfaceImpl::SetResourcesImpl(uint32 bindSlot, const CDeviceResourceSet* pResources)
 {
-	CRY_ASSERT(bindSlot <= EResourceLayoutSlot_Max);
-
 	NCryDX12::CCommandList* pCommandListDX12 = GetDX12CommandList();
 	const CDeviceResourceSet_DX12* pResourcesDX12 = reinterpret_cast<const CDeviceResourceSet_DX12*>(pResources);
 
@@ -845,19 +879,16 @@ void CDeviceComputeCommandInterfaceImpl::SetResourcesImpl(uint32 bindSlot, const
 	{
 		const NCryDX12::CView& View = it.second->GetDX12View();
 		NCryDX12::CResource& Resource = View.GetDX12Resource();
-		const D3D12_RESOURCE_STATES desiredState =
-			(it.first.stages &  EShaderStage_Pixel ? D3D12_RESOURCE_STATE_PIXEL_SHADER_RESOURCE : D3D12_RESOURCE_STATE_COMMON) |
-			(it.first.stages & ~EShaderStage_Pixel ? D3D12_RESOURCE_STATE_NON_PIXEL_SHADER_RESOURCE : D3D12_RESOURCE_STATE_COMMON);
 
 		DX12_ASSERT(!Resource.InitHasBeenDeferred(), "Resource %s hasn't been uploaded prior to use!", Resource.GetName());
-		DX12_ASSERT(!Resource.NeedsTransitionBarrier(pCommandListDX12, View, desiredState));
+		DX12_ASSERT(!Resource.NeedsTransitionBarrier(pCommandListDX12, View, D3D12_RESOURCE_STATE_NON_PIXEL_SHADER_RESOURCE));
 
 #if defined(ENABLE_PROFILING_CODE)
 		CryInterlockedIncrement(&SRenderStatistics::Write().m_nNumBoundUniformTextures[Resource.IsOffCard()]);
 #endif
 
 		// TODO: if we know early that the resource(s) will be GENERIC_READ we can begin the barrier early and end it here
-		pCommandListDX12->TrackResourceCRVUsage(Resource, View, desiredState);
+		pCommandListDX12->TrackResourceCRVUsage(Resource, View, D3D12_RESOURCE_STATE_NON_PIXEL_SHADER_RESOURCE);
 	}
 
 	for (auto& it : pResourcesDX12->m_UnorderedAccessViewsInUse)
@@ -880,12 +911,11 @@ void CDeviceComputeCommandInterfaceImpl::SetResourcesImpl(uint32 bindSlot, const
 	pCommandListDX12->SetComputeDescriptorTable(bindSlot, descriptorBlock.GetHandleOffsetGPU(0));
 }
 
-void CDeviceComputeCommandInterfaceImpl::SetInlineConstantBufferImpl(uint32 bindSlot, const CConstantBuffer* pConstantBuffer, EConstantBufferShaderSlot shaderSlot)
+void CDeviceComputeCommandInterfaceImpl::SetInlineConstantBufferImpl(uint32 bindSlot, const CConstantBuffer* pBuffer, EConstantBufferShaderSlot shaderSlot)
 {
-	CRY_ASSERT(bindSlot <= EResourceLayoutSlot_Max);
 	NCryDX12::CCommandList* pCommandListDX12 = GetDX12CommandList();
 
-	const NCryDX12::CView& View = GET_DX12_CONSTANTBUFFER_RESOURCE(pConstantBuffer)->GetDX12View();
+	const NCryDX12::CView& View = GET_DX12_CONSTANTBUFFER_RESOURCE(pBuffer)->GetDX12View();
 	NCryDX12::CResource& Resource = View.GetDX12Resource();
 
 	DX12_ASSERT(!Resource.InitHasBeenDeferred(), "Resource %s hasn't been uploaded prior to use!", Resource.GetName());
@@ -898,13 +928,32 @@ void CDeviceComputeCommandInterfaceImpl::SetInlineConstantBufferImpl(uint32 bind
 	// TODO: if we know early that the resource(s) will be GENERIC_READ we can begin the barrier early and end it here
 	pCommandListDX12->TrackResourceCBVUsage(Resource, D3D12_RESOURCE_STATE_VERTEX_AND_CONSTANT_BUFFER);
 
-	D3D12_GPU_VIRTUAL_ADDRESS gpuAddress = View.GetCBVDesc().BufferLocation + pConstantBuffer->m_offset;
+	D3D12_GPU_VIRTUAL_ADDRESS gpuAddress = View.GetCBVDesc().BufferLocation + pBuffer->m_offset;
 	pCommandListDX12->SetComputeConstantBufferView(bindSlot, gpuAddress);
+}
+
+void CDeviceComputeCommandInterfaceImpl::SetInlineShaderResourceImpl(uint32 bindSlot, const CDeviceBuffer* pBuffer, EShaderResourceShaderSlot shaderSlot, ResourceViewHandle resourceViewID)
+{
+	NCryDX12::CCommandList* pCommandListDX12 = GetDX12CommandList();
+
+	const NCryDX12::CView& View = GET_DX12_SHADER_VIEW(pBuffer, resourceViewID)->GetDX12View();
+	NCryDX12::CResource& Resource = View.GetDX12Resource();
+
+	assert(!Resource.NeedsTransitionBarrier(pCommandListDX12, D3D12_RESOURCE_STATE_NON_PIXEL_SHADER_RESOURCE));
+
+#if defined(ENABLE_PROFILING_CODE)
+	CryInterlockedIncrement(&SRenderStatistics::Write().m_nNumBoundInlineBuffers[Resource.IsOffCard()]);
+#endif
+
+	// TODO: if we know early that the resource(s) will be GENERIC_READ we can begin the barrier early and end it here
+	pCommandListDX12->TrackResourceSRVUsage(Resource, D3D12_RESOURCE_STATE_NON_PIXEL_SHADER_RESOURCE);
+
+	D3D12_GPU_VIRTUAL_ADDRESS gpuAddress = Resource.GetGPUVirtualAddress();
+	pCommandListDX12->SetComputeShaderResourceView(bindSlot, gpuAddress);
 }
 
 void CDeviceComputeCommandInterfaceImpl::SetInlineConstantsImpl(uint32 bindSlot, uint32 constantCount, float* pConstants)
 {
-	CRY_ASSERT(bindSlot <= EResourceLayoutSlot_Max);
 	GetDX12CommandList()->SetCompute32BitConstants(bindSlot, constantCount, pConstants, 0);
 }
 

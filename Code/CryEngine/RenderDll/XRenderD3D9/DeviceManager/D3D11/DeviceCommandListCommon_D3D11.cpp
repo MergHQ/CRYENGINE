@@ -309,8 +309,6 @@ void CDeviceGraphicsCommandInterfaceImpl::SetPipelineStateImpl(const CDeviceGrap
 
 void CDeviceGraphicsCommandInterfaceImpl::SetResourcesImpl(uint32 bindSlot, const CDeviceResourceSet* pResources)
 {
-	CRY_ASSERT(bindSlot <= EResourceLayoutSlot_Max);
-
 	auto pResourcesDX11 = reinterpret_cast<const CDeviceResourceSet_DX11*>(pResources);
 
 	if (pResources->GetFlags() & CDeviceResourceSet::EFlags_ForceSetAllState)
@@ -497,8 +495,6 @@ void CDeviceGraphicsCommandInterfaceImpl::ApplyRasterizerState()
 
 void CDeviceGraphicsCommandInterfaceImpl::SetInlineConstantBufferImpl(uint32 bindSlot, const CConstantBuffer* pBuffer, EConstantBufferShaderSlot shaderSlot, EShaderStage shaderStages)
 {
-	CRY_ASSERT(bindSlot <= EResourceLayoutSlot_Max);
-
 	// Shader stages are ordered by usage-frequency and loop exists according to usage-frequency (VS+PS fast, etc.)
 	int validShaderStages = shaderStages;
 	for (EHWShaderClass shaderClass = eHWSC_Vertex; validShaderStages; shaderClass = EHWShaderClass(shaderClass + 1), validShaderStages >>= 1)
@@ -510,14 +506,33 @@ void CDeviceGraphicsCommandInterfaceImpl::SetInlineConstantBufferImpl(uint32 bin
 
 void CDeviceGraphicsCommandInterfaceImpl::SetInlineConstantBufferImpl(uint32 bindSlot, const CConstantBuffer* pBuffer, EConstantBufferShaderSlot shaderSlot, EHWShaderClass shaderClass)
 {
-	CRY_ASSERT(bindSlot <= EResourceLayoutSlot_Max);
-
 	if (m_sharedState.constantBuffer[shaderClass][shaderSlot].Set(pBuffer->GetCode()))
 	{
 		buffer_size_t offset, size;
 		D3DBuffer* pBufferDX11 = pBuffer->GetD3D(&offset, &size);
 
 		BindGraphicsConstantBuffer(shaderClass, pBufferDX11, shaderSlot, offset, size);
+	}
+}
+
+void CDeviceGraphicsCommandInterfaceImpl::SetInlineShaderResourceImpl(uint32 bindSlot, const CDeviceBuffer* pBuffer, EShaderResourceShaderSlot shaderSlot, EShaderStage shaderStages, ResourceViewHandle resourceViewID)
+{
+	// Shader stages are ordered by usage-frequency and loop exists according to usage-frequency (VS+PS fast, etc.)
+	int validShaderStages = shaderStages;
+	for (EHWShaderClass shaderClass = eHWSC_Vertex; validShaderStages; shaderClass = EHWShaderClass(shaderClass + 1), validShaderStages >>= 1)
+	{
+		if (validShaderStages & 1)
+			SetInlineShaderResourceImpl(bindSlot, pBuffer, shaderSlot, shaderClass, resourceViewID);
+	}
+}
+
+void CDeviceGraphicsCommandInterfaceImpl::SetInlineShaderResourceImpl(uint32 bindSlot, const CDeviceBuffer* pBuffer, EShaderResourceShaderSlot shaderSlot, EHWShaderClass shaderClass, ResourceViewHandle resourceViewID)
+{
+	D3DShaderResource* pBufferViewDX11 = pBuffer->LookupSRV(resourceViewID);
+
+	if (m_sharedState.shaderResourceView[shaderClass][shaderSlot].Set(pBufferViewDX11))
+	{
+		BindGraphicsSRV(shaderClass, pBufferViewDX11, shaderSlot);
 	}
 }
 
@@ -708,11 +723,19 @@ void CDeviceComputeCommandInterfaceImpl::SetResourcesImpl(uint32 bindSlot, const
 
 void CDeviceComputeCommandInterfaceImpl::SetInlineConstantBufferImpl(uint32 bindSlot, const CConstantBuffer* pBuffer, EConstantBufferShaderSlot shaderSlot)
 {
-	CRY_ASSERT(bindSlot <= EResourceLayoutSlot_Max);
-
-	//if (pCmdList->m_CurrentCB[shaderClass][shaderSlot].Set(pBuffer->GetCode()))
+	if (m_sharedState.constantBuffer[eHWSC_Compute][shaderSlot].Set(pBuffer->GetCode()))
 	{
 		gcpRendD3D->m_DevMan.BindConstantBuffer(CSubmissionQueue_DX11::TYPE_CS, pBuffer, shaderSlot);
+	}
+}
+
+void CDeviceComputeCommandInterfaceImpl::SetInlineShaderResourceImpl(uint32 bindSlot, const CDeviceBuffer* pBuffer, EShaderResourceShaderSlot shaderSlot, ResourceViewHandle resourceViewID)
+{
+	D3DShaderResource* pBufferViewDX11 = pBuffer->LookupSRV(resourceViewID);
+
+	if (m_sharedState.shaderResourceView[eHWSC_Compute][shaderSlot].Set(pBufferViewDX11))
+	{
+		BindGraphicsSRV(eHWSC_Compute, pBufferViewDX11, shaderSlot);
 	}
 }
 
@@ -739,7 +762,7 @@ void CDeviceComputeCommandInterfaceImpl::DispatchImpl(uint32 X, uint32 Y, uint32
 		rd->m_DevMan.CommitDeviceStates();
 
 		m_computeState.custom.boundUAVs = 0;
-		memset(m_computeState.pResources, 0x0, sizeof(m_computeState.pResources));
+		memset(m_computeState.pResourceSets, 0x0, sizeof(m_computeState.pResourceSets));
 	}
 }
 

@@ -16,6 +16,7 @@ bool SResourceBinding::IsValid() const
 	switch (type)
 	{
 	case EResourceType::ConstantBuffer: return pConstantBuffer && (pConstantBuffer->IsNullBuffer() || pConstantBuffer->GetD3D());
+	case EResourceType::ShaderResource: return pShaderResource && pShaderResource->GetBuffer();
 	case EResourceType::Texture:        return pTexture && pTexture->GetDevTexture();
 	case EResourceType::Buffer:         return pBuffer && pBuffer->GetDevBuffer();
 	case EResourceType::Sampler:        return samplerState != SamplerStateHandle::Unspecified;
@@ -29,6 +30,7 @@ bool SResourceBinding::IsVolatile() const
 	switch (type)
 	{
 	case EResourceType::ConstantBuffer: return true;
+	case EResourceType::ShaderResource: return true;
 	case EResourceType::Texture:        return pTexture && !(pTexture->GetFlags() & FT_DONT_RELEASE);
 	case EResourceType::Buffer:         return true;
 	case EResourceType::Sampler:        return samplerState == SamplerStateHandle::Unspecified;
@@ -104,6 +106,12 @@ SResourceBindPoint::SResourceBindPoint(const SResourceBinding& resource, uint8 _
 	case SResourceBinding::EResourceType::ConstantBuffer:
 	{
 		slotType = ESlotType::ConstantBuffer;
+		flags = EFlags::None;
+	}
+	break;
+	case SResourceBinding::EResourceType::ShaderResource:
+	{
+		slotType = ESlotType::TextureAndBuffer;
 		flags = EFlags::None;
 	}
 	break;
@@ -194,12 +202,6 @@ bool CompareBindings(const SResourceBinding& resourceA, const SResourceBinding& 
 }
 
 template<>
-bool CompareBindings<SResourceBinding::EResourceType::ConstantBuffer>(const SResourceBinding& resourceA, const SResourceBinding& resourceB)
-{
-	return resourceA.fastCompare == resourceB.fastCompare && resourceA.view == resourceB.view;
-}
-
-template<>
 bool CompareBindings<SResourceBinding::EResourceType::Sampler>(const SResourceBinding& resourceA, const SResourceBinding& resourceB)
 {
 	return resourceA.samplerState == resourceB.samplerState;
@@ -246,6 +248,7 @@ CDeviceResourceSetDesc::EDirtyFlags CDeviceResourceSetDesc::UpdateResource(SReso
 
 // explicit instantiation
 template CDeviceResourceSetDesc::EDirtyFlags CDeviceResourceSetDesc::UpdateResource<SResourceBinding::EResourceType::ConstantBuffer>(SResourceBindPoint bindPoint, const SResourceBinding& binding);
+template CDeviceResourceSetDesc::EDirtyFlags CDeviceResourceSetDesc::UpdateResource<SResourceBinding::EResourceType::ShaderResource>(SResourceBindPoint bindPoint, const SResourceBinding& binding);
 template CDeviceResourceSetDesc::EDirtyFlags CDeviceResourceSetDesc::UpdateResource<SResourceBinding::EResourceType::Texture>(SResourceBindPoint bindPoint, const SResourceBinding& binding);
 template CDeviceResourceSetDesc::EDirtyFlags CDeviceResourceSetDesc::UpdateResource<SResourceBinding::EResourceType::Buffer>(SResourceBindPoint bindPoint, const SResourceBinding& binding);
 template CDeviceResourceSetDesc::EDirtyFlags CDeviceResourceSetDesc::UpdateResource<SResourceBinding::EResourceType::Sampler>(SResourceBindPoint bindPoint, const SResourceBinding& binding);
@@ -364,6 +367,16 @@ void SDeviceResourceLayoutDesc::SetConstantBuffer(uint32 bindSlot, EConstantBuff
 	SResourceBinding resource((CConstantBuffer*)nullptr, 0);
 	SResourceBindPoint resourceBindPoint(resource, shaderSlot, shaderStages);
 	SLayoutBindPoint layoutBindPoint = { SDeviceResourceLayoutDesc::ELayoutSlotType::InlineConstantBuffer, static_cast<uint8>(bindSlot) };
+
+	m_resourceBindings[layoutBindPoint].clear();
+	m_resourceBindings[layoutBindPoint].insert(std::make_pair(resourceBindPoint, resource));
+}
+
+void SDeviceResourceLayoutDesc::SetShaderResource(uint32 bindSlot, EShaderResourceShaderSlot shaderSlot, ::EShaderStage shaderStages)
+{
+	SResourceBinding resource((CDeviceBuffer*)nullptr, 0);
+	SResourceBindPoint resourceBindPoint(resource, shaderSlot, shaderStages);
+	SLayoutBindPoint layoutBindPoint = { SDeviceResourceLayoutDesc::ELayoutSlotType::InlineShaderResource, static_cast<uint8>(bindSlot) };
 
 	m_resourceBindings[layoutBindPoint].clear();
 	m_resourceBindings[layoutBindPoint].insert(std::make_pair(resourceBindPoint, resource));

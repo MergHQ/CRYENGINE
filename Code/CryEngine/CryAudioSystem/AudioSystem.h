@@ -6,6 +6,7 @@
 #include <CryAudio/IAudioSystem.h>
 #include <CrySystem/ISystem.h>
 #include <CrySystem/TimeValue.h>
+#include <CryInput/IInput.h>
 #include <CryThreading/IThreadManager.h>
 #include <concqueue/concqueue.hpp>
 
@@ -13,6 +14,13 @@ namespace CryAudio
 {
 // Forward declarations.
 class CSystem;
+
+enum class EInternalStates : EnumFlagsType
+{
+	None             = 0,
+	ImplShuttingDown = BIT(0),
+};
+CRY_CREATE_ENUM_FLAG_OPERATORS(EInternalStates);
 
 class CMainThread final : public ::IThread
 {
@@ -40,12 +48,12 @@ private:
 	volatile bool m_doWork = true;
 };
 
-class CSystem final : public IAudioSystem, public ::ISystemEventListener
+class CSystem final : public IAudioSystem, public ::ISystemEventListener, public IInputEventListener
 {
 public:
 
 	CSystem() = default;
-	virtual ~CSystem() override = default;
+	virtual ~CSystem() override;
 
 	CSystem(CSystem const&) = delete;
 	CSystem(CSystem&&) = delete;
@@ -94,6 +102,10 @@ public:
 	virtual void OnSystemEvent(ESystemEvent event, UINT_PTR wparam, UINT_PTR lparam) override;
 	// ~ISystemEventListener
 
+	// IInputEventListener
+	virtual bool OnInputEvent(SInputEvent const& event) override;
+	// ~IInputEventListener
+
 	bool Initialize();
 	void PushRequest(CAudioRequest const& request);
 	void ParseControlsData(char const* const szFolderPath, EDataScope const dataScope, SRequestUserData const& userData = SRequestUserData::GetEmptyObject());
@@ -106,23 +118,41 @@ private:
 	using AudioRequests = ConcQueue<UnboundMPSC, CAudioRequest>;
 	using AudioRequestsSyncCallbacks = ConcQueue<UnboundSPSC, CAudioRequest>;
 
-	void        OnLanguageChanged();
-	void        ProcessRequests(AudioRequests& requestQueue);
-	static void OnCallback(SRequestInfo const* const pRequestInfo);
+	void           ReleaseImpl();
+	void           OnLanguageChanged();
+	void           ProcessRequests(AudioRequests& requestQueue);
+	void           ProcessRequest(CAudioRequest& request);
+	ERequestStatus ProcessManagerRequest(CAudioRequest const& request);
+	ERequestStatus ProcessCallbackManagerRequest(CAudioRequest& request);
+	ERequestStatus ProcessObjectRequest(CAudioRequest const& request);
+	ERequestStatus ProcessListenerRequest(SAudioRequestData const* const pPassedRequestData);
+	void           NotifyListener(CAudioRequest const& request);
+	ERequestStatus HandleSetImpl(Impl::IImpl* const pIImpl);
+	ERequestStatus HandleRefresh(char const* const szLevelName);
+	void           SetImplLanguage();
+	void           SetCurrentEnvironmentsOnObject(CATLAudioObject* const pObject, EntityId const entityToIgnore);
+	void           SetOcclusionType(CATLAudioObject& object, EOcclusionType const occlusionType) const;
 
-	bool                       m_isInitialized = false;
-	bool                       m_didThreadWait = false;
-	volatile float             m_accumulatedFrameTime = 0.0f;
-	std::atomic<uint32>        m_externalThreadFrameId{ 0 };
-	uint32                     m_lastExternalThreadFrameId = 0;
-	CMainThread                m_mainThread;
+	static void    OnCallback(SRequestInfo const* const pRequestInfo);
 
-	AudioRequests              m_requestQueue;
-	AudioRequestsSyncCallbacks m_syncCallbacks;
-	CAudioRequest              m_syncRequest;
-	CAudioRequest              m_request;
-	CryEvent                   m_mainEvent;
-	CryEvent                   m_audioThreadWakeupEvent;
+	bool                               m_isInitialized = false;
+	bool                               m_didThreadWait = false;
+	volatile float                     m_accumulatedFrameTime = 0.0f;
+	std::atomic<uint32>                m_externalThreadFrameId{ 0 };
+	uint32                             m_lastExternalThreadFrameId = 0;
+	EInternalStates                    m_flags = EInternalStates::None;
+	uint32                             m_objectPoolSize = 0;
+	uint32                             m_eventPoolSize = 0;
+	CryFixedStringT<MaxFilePathLength> m_configPath;
+	SImplInfo                          m_implInfo;
+	CMainThread                        m_mainThread;
+
+	AudioRequests                      m_requestQueue;
+	AudioRequestsSyncCallbacks         m_syncCallbacks;
+	CAudioRequest                      m_syncRequest;
+	CAudioRequest                      m_request;
+	CryEvent                           m_mainEvent;
+	CryEvent                           m_audioThreadWakeupEvent;
 
 #if defined(ENABLE_AUDIO_LOGGING)
 	int m_loggingOptions;
@@ -134,7 +164,9 @@ public:
 
 private:
 	void SubmitLastIRenderAuxGeomForRendering();
-	void DrawAudioDebugData();
+	void DrawDebug();
+	void HandleDrawDebug();
+	void HandleRetriggerControls();
 
 	std::atomic<IRenderAuxGeom*> m_currentRenderAuxGeom{ nullptr };
 	std::atomic<IRenderAuxGeom*> m_lastRenderAuxGeom{ nullptr };

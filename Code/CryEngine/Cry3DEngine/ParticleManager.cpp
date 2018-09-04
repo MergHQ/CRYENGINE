@@ -255,8 +255,8 @@ void CParticleManager::Reset()
 
 void CParticleManager::FinishParticleRenderTasks(const SRenderingPassInfo& passInfo)
 {
-	CParticleBatchDataManager::FinishParticleRenderTasks(passInfo);
 	m_pParticleSystem->FinishRenderTasks(passInfo);
+	CParticleBatchDataManager::FinishParticleRenderTasks(passInfo);
 }
 
 //////////////////////////////////////////////////////////////////////////

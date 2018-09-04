@@ -601,16 +601,18 @@ bool CInstance::ValidateDeviceFeatures(const SPhysicalDeviceInfo& deviceInfo) co
 	VALIDATE_LIMIT(validator.Limits.PerDraw.NumBindings, maxBoundDescriptorSets);
 	VALIDATE_LIMIT(validator.Limits.PerDraw.NumSamplers, maxDescriptorSetSamplers);
 	VALIDATE_LIMIT(validator.Limits.PerDraw.NumConstantBuffers, maxDescriptorSetUniformBuffers);
+	VALIDATE_LIMIT(validator.Limits.PerDraw.NumShaderResources, maxPerStageResources);
 	VALIDATE_LIMIT(validator.Limits.PerDraw.NumInlineConstantBuffers, maxDescriptorSetUniformBuffersDynamic);
+	VALIDATE_LIMIT(validator.Limits.PerDraw.NumInlineShaderResources, maxPerStageResources);
 	VALIDATE_LIMIT(validator.Limits.PerDraw.NumBuffers, maxDescriptorSetStorageBuffers);
 	VALIDATE_LIMIT(validator.Limits.PerDraw.NumBufferSRVs, maxDescriptorSetStorageBuffers);
 	VALIDATE_LIMIT(validator.Limits.PerDraw.NumBufferUAVs, maxDescriptorSetStorageBuffers);
 	VALIDATE_LIMIT(validator.Limits.PerDraw.NumTextureSRVs, maxDescriptorSetSampledImages);
 	VALIDATE_LIMIT(validator.Limits.PerDraw.NumTextureUAVs, maxDescriptorSetStorageImages);
 
-	VALIDATE_LIMIT(validator.Limits.PerDraw.PerShaderStage.NumResources, maxPerStageResources);
 	VALIDATE_LIMIT(validator.Limits.PerDraw.PerShaderStage.NumSamplers, maxPerStageDescriptorSamplers);
 	VALIDATE_LIMIT(validator.Limits.PerDraw.PerShaderStage.NumConstantBuffers, maxPerStageDescriptorUniformBuffers);
+	VALIDATE_LIMIT(validator.Limits.PerDraw.PerShaderStage.NumShaderResources, maxPerStageResources);
 	VALIDATE_LIMIT(validator.Limits.PerDraw.PerShaderStage.NumBuffers, maxPerStageDescriptorStorageBuffers);
 	VALIDATE_LIMIT(validator.Limits.PerDraw.PerShaderStage.NumBufferSRVs, maxPerStageDescriptorStorageBuffers);
 	VALIDATE_LIMIT(validator.Limits.PerDraw.PerShaderStage.NumBufferUAVs, maxPerStageDescriptorStorageBuffers);
