@@ -4,40 +4,38 @@
 
 #include "EditorFramework/Editor.h"
 #include "CSharpEditorPlugin.h"
-#include "CSharpOutputTextEdit.h"
+#include "CSharpOutputModel.h"
+
+class QFilteringPanel;
+class QAdvancedTreeView;
+class QAttributeFilterProxyModel;
 
 //! Window designed to show compile messages from the CompiledMonoLibrary.
-class CCSharpOutputWindow 
+class CCSharpOutputWindow final
 	: public CDockableEditor
-	, public ICSharpMessageListener
-	, public ITextEventListener
+	  , public ICSharpMessageListener
 {
 public:
-	CCSharpOutputWindow();
-	~CCSharpOutputWindow();
+	CCSharpOutputWindow(QWidget* pParent = nullptr);
+	virtual ~CCSharpOutputWindow();
 
-	virtual const char* GetEditorName() const override { return "C# Output"; }
+	// CDockableEditor
+	virtual const char* GetEditorName() const override final { return "C# Output"; }
+	virtual void        SetLayout(const QVariantMap& state) override final;
+	virtual QVariantMap GetLayout() const override final;
+	// ~CDockableEditor
 
 	// ICSharpMessageListener
-	virtual void OnMessagesUpdated(string messages) override;
+	virtual void OnMessagesUpdated() override final;
 	// ~ICSharpMessageListener
 
-	// ITextEventListener
-	virtual void OnMessageDoubleClicked(QMouseEvent* event) override;
-	virtual bool OnMouseMoved(QMouseEvent* event) override;
-	// ~ITextEventListener
+	QAdvancedTreeView* GetView() const;
 
 private:
-	CCSharpOutputTextEdit* m_pCompileTextWidget;
-	string m_plainText;
+	QAdvancedTreeView*          m_pDetailsView;
+	CCSharpOutputModel*         m_pModel;
+	QAttributeFilterProxyModel* m_pFilter;
+	QFilteringPanel*            m_pFilteringPanel;
 
-	string GetLineFromRange(const string& text, int lineStart, int lineEnd)
-	{
-		string line = text.substr(lineStart, lineEnd - lineStart);
-		line.Trim();
-		return line;
-	}
-
-	void GetLineRange(const string& text, int index, int& lineStart, int& lineEnd);
-	bool TryParseStackTraceLine(const string& line, string& path, int& lineNumber);
+	void OnDoubleClick(const QModelIndex& index);
 };

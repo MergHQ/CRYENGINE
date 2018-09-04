@@ -6,30 +6,64 @@
 #include <CrySystem/IProjectManager.h>
 #include "CSharpOutputWindow.h"
 #include "CSharpEditorPlugin.h"
+#include "CSharpOutputModel.h"
 #include "EditorStyleHelper.h"
 
 #include "QtViewPane.h"
 
-#include "CSharpOutputTextEdit.h"
+#include "QAdvancedTreeView.h"
+
+#include <QWidget>
+#include <QVariant>
+#include <QHeaderView>
+#include <QFilteringPanel.h>
+#include <QAbstractItemModel>
+#include <QMenuBar>
+
+#include "QAdvancedItemDelegate.h"
 
 REGISTER_VIEWPANE_FACTORY_AND_MENU(CCSharpOutputWindow, "C# Output", "Tools", false, "Advanced");
 
-CCSharpOutputWindow::CCSharpOutputWindow()
-	: CDockableEditor()
+CCSharpOutputWindow::CCSharpOutputWindow(QWidget* const pParent)
+	: CDockableEditor(pParent)
+	, m_pModel(new CCSharpOutputModel())
 {
-	m_pCompileTextWidget = new CCSharpOutputTextEdit();
-	m_pCompileTextWidget->AddTextEventListener(this);
-	m_pCompileTextWidget->setReadOnly(true);
-	m_pCompileTextWidget->setUndoRedoEnabled(false);
-	m_pCompileTextWidget->setTextInteractionFlags(Qt::TextBrowserInteraction | Qt::TextSelectableByKeyboard);
-	SetContent(m_pCompileTextWidget);
-	
+	m_pFilter = new QAttributeFilterProxyModel(QAttributeFilterProxyModel::BaseBehavior);
+	m_pFilter->setSourceModel(m_pModel);
+	m_pFilter->setFilterKeyColumn(2);
+
+	m_pDetailsView = new QAdvancedTreeView(QAdvancedTreeView::UseItemModelAttribute);
+	m_pDetailsView->setModel(m_pFilter);
+	m_pDetailsView->setSortingEnabled(true);
+	m_pDetailsView->setUniformRowHeights(true);
+	m_pDetailsView->header()->setStretchLastSection(true);
+	m_pDetailsView->header()->setMinimumSectionSize(20);
+
+	// Setting Description and FileName to resize to contents
+	m_pDetailsView->header()->resizeSection(2, 400);
+	m_pDetailsView->header()->resizeSection(3, 150);
+
+	m_pDetailsView->sortByColumn(CCSharpOutputModel::eColumn_ErrorText, Qt::AscendingOrder);
+	m_pDetailsView->setSelectionMode(QAbstractItemView::SelectionMode::SingleSelection);
+
+	connect(m_pDetailsView, &QAdvancedTreeView::doubleClicked, this, &CCSharpOutputWindow::OnDoubleClick);
+
+	m_pFilteringPanel = new QFilteringPanel("CSharpOutputWindow", m_pFilter);
+	m_pFilteringPanel->SetContent(m_pDetailsView);
+	m_pFilteringPanel->GetSearchBox()->EnableContinuousSearch(true);
+
+	QVBoxLayout* pLayout = new QVBoxLayout();
+	pLayout->setContentsMargins(0, 0, 0, 0);
+	pLayout->addWidget(m_pFilteringPanel);
+	setLayout(pLayout);
+	SetContent(pLayout);
+
 	CCSharpEditorPlugin* pPlugin = CCSharpEditorPlugin::GetInstance();
 	assert(pPlugin);
 	if (pPlugin != nullptr)
 	{
 		pPlugin->RegisterMessageListener(this);
-		OnMessagesUpdated(pPlugin->GetCompileMessage());
+		OnMessagesUpdated();
 	}
 }
 
@@ -40,10 +74,17 @@ CCSharpOutputWindow::~CCSharpOutputWindow()
 	{
 		pPlugin->UnregisterMessageListener(this);
 	}
-	m_pCompileTextWidget->RemoveTextEventListener(this);
+	delete m_pFilter;
+	delete m_pModel;
+	disconnect(m_pDetailsView, &QAdvancedTreeView::doubleClicked, this, &CCSharpOutputWindow::OnDoubleClick);
 }
 
-void CCSharpOutputWindow::OnMessageDoubleClicked(QMouseEvent* event)
+QAdvancedTreeView* CCSharpOutputWindow::GetView() const
+{
+	return m_pDetailsView;
+}
+
+void CCSharpOutputWindow::OnDoubleClick(const QModelIndex& index)
 {
 	CCSharpEditorPlugin* pPlugin = CCSharpEditorPlugin::GetInstance();
 	assert(pPlugin);
@@ -51,147 +92,36 @@ void CCSharpOutputWindow::OnMessageDoubleClicked(QMouseEvent* event)
 	{
 		return;
 	}
-
-	string plainText = m_pCompileTextWidget->toPlainText().toUtf8().constData();
-	if (plainText.empty())
+	const SCSharpCompilerError* pError = gEnv->pMonoRuntime->GetCompileErrorAt(index.row());
+	if (pError != nullptr)
 	{
-		return;
-	}
-
-	QTextCursor cursor = m_pCompileTextWidget->cursorForPosition(event->pos());
-	int pos = cursor.position();
-	
-	int start, end = 0;
-	GetLineRange(plainText, pos, start, end);
-	string line = GetLineFromRange(plainText, start, end);
-
-	string path;
-	int lineNumber;
-	if(TryParseStackTraceLine(line, path, lineNumber))
-	{
-		if (lineNumber < 0)
+		const IProjectManager* pProjectManager = gEnv->pSystem->GetIProjectManager();
+		if (pProjectManager != nullptr)
 		{
-			pPlugin->OpenCSharpFile(path);
-			return;
-		}
-		pPlugin->OpenCSharpFile(path, lineNumber);
-	}
-}
-
-bool CCSharpOutputWindow::OnMouseMoved(QMouseEvent* event)
-{
-	if (event->buttons() != Qt::NoButton)
-	{
-		return false;
-	}
-	
-	string plainText = m_pCompileTextWidget->toPlainText().toUtf8().constData();
-	if (plainText.empty())
-	{
-		return false;
-	}
-
-	QTextCursor cursor = m_pCompileTextWidget->cursorForPosition(event->pos());
-	int pos = cursor.position();
-	
-	int start, end = 0;
-	GetLineRange(plainText, pos, start, end);
-	cursor.setPosition(start);
-	cursor.setPosition(end, QTextCursor::KeepAnchor);
-
-	QList<QTextEdit::ExtraSelection> extraSelections;
-
-	QTextEdit::ExtraSelection selection;
-	QColor highlightColor = GetStyleHelper()->alternateHoverIconTint();
-
-	selection.format.setBackground(highlightColor);
-	selection.format.setProperty(QTextFormat::FullWidthSelection, true);
-	selection.cursor = cursor;
-	extraSelections.append(selection);
-
-	m_pCompileTextWidget->setExtraSelections(extraSelections);
-
-	return true;
-}
-
-void CCSharpOutputWindow::GetLineRange(const string& text, int index, int& lineStart, int& lineEnd)
-{
-	lineStart = lineEnd = 0;
-	
-	if (text[index] == '\n')
-	{
-		--index;
-	}
-
-	lineStart = text.rfind('\n', index);
-	if (lineStart == string::npos)
-	{
-		lineStart = 0;
-	}
-	else
-	{
-		++lineStart;
-	}
-
-	lineEnd = text.find('\n', index);
-	if (lineEnd == string::npos)
-	{
-		lineEnd = text.length();
-	}
-}
-
-bool CCSharpOutputWindow::TryParseStackTraceLine(const string& line, string& path, int& lineNumber)
-{
-	lineNumber = -1;
-	path = "";
-
-	string assetDir = gEnv->pSystem->GetIProjectManager()->GetCurrentAssetDirectoryAbsolute();
-	size_t pathStartIndex = line.find(assetDir);
-	if (pathStartIndex == string::npos)
-	{
-		return false;
-	}
-
-	size_t pathEndIndex = line.find("(", pathStartIndex);
-	if (pathEndIndex == string::npos)
-	{
-		pathEndIndex = line.find(":", pathStartIndex);
-	}
-
-	if (pathEndIndex == string::npos)
-	{
-		return false;
-	}
-
-	path = line.substr(pathStartIndex, pathEndIndex - pathStartIndex);
-	if (!gEnv->pCryPak->IsFileExist(path, ICryPak::eFileLocation_OnDisk))
-	{
-		return false;
-	}
-
-	size_t lineNumberEnd = line.find(",", pathEndIndex);
-	if (lineNumberEnd == string::npos)
-	{
-		lineNumberEnd = line.length();
-	}
-	
-	string lineStr = line.substr(pathEndIndex + 1, lineNumberEnd - (pathEndIndex + 1));
-	for (int i : lineStr)
-	{
-		if (!std::isdigit(i))
-		{
-			// We didn't get a lineNumber, but the path should still be fine.
-			return true;
+			pPlugin->OpenCSharpFile(pError->m_fileName, pError->m_line);
 		}
 	}
-	lineNumber = atoi(lineStr.c_str());
-	return true;
 }
 
-void CCSharpOutputWindow::OnMessagesUpdated(const string messages)
+void CCSharpOutputWindow::OnMessagesUpdated()
 {
-	QList<QTextEdit::ExtraSelection> extraSelections;
-	m_pCompileTextWidget->setExtraSelections(extraSelections);
-	m_pCompileTextWidget->unsetCursor();
-	m_pCompileTextWidget->setPlainText(messages.c_str());
+	m_pModel->ResetModel();
+}
+
+QVariantMap CCSharpOutputWindow::GetLayout() const
+{
+	QVariantMap& state = CDockableEditor::GetLayout();
+	state.insert("view", m_pDetailsView->GetState());
+	return state;
+}
+
+void CCSharpOutputWindow::SetLayout(const QVariantMap& state)
+{
+	CDockableEditor::SetLayout(state);
+
+	QVariant viewState = state.value("view");
+	if (viewState.isValid() && viewState.type() == QVariant::Map)
+	{
+		m_pDetailsView->SetState(viewState.value<QVariantMap>());
+	}
 }

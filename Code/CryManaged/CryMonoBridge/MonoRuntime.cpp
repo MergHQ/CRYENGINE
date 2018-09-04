@@ -27,7 +27,7 @@
 #include <CrySystem/ICmdLine.h>
 
 #if CRY_PLATFORM_WINDOWS
-#include <Shlwapi.h>
+	#include <Shlwapi.h>
 #endif
 
 // Must be included only once in DLL module.
@@ -50,8 +50,7 @@ static const char* s_monoLogLevels[] =
 	"warning",
 	"message",
 	"info",
-	"debug"
-};
+	"debug" };
 
 static IMiniLog::ELogType s_monoToEngineLevels[] =
 {
@@ -61,10 +60,9 @@ static IMiniLog::ELogType s_monoToEngineLevels[] =
 	IMiniLog::eWarning,
 	IMiniLog::eMessage,
 	IMiniLog::eMessage,
-	IMiniLog::eComment
-};
+	IMiniLog::eComment };
 
-void OnReloadRequested(IConsoleCmdArgs *pArgs)
+void OnReloadRequested(IConsoleCmdArgs* pArgs)
 {
 	GetMonoRuntime()->ReloadPluginDomain();
 }
@@ -82,7 +80,7 @@ CMonoRuntime::~CMonoRuntime()
 	if (gEnv)
 	{
 		gEnv->pMonoRuntime = nullptr;
-		
+
 		if (gEnv->pConsole)
 		{
 			gEnv->pConsole->UnregisterListener(this);
@@ -131,8 +129,7 @@ bool CMonoRuntime::InitializeRuntime()
 	MonoInternals::mono_debug_init(MonoInternals::MONO_DEBUG_FORMAT_MONO);
 	const char* options[] = {
 		"--soft-breakpoints",
-		szSoftDebuggerOption
-	};
+		szSoftDebuggerOption };
 	MonoInternals::mono_jit_parse_options(sizeof(options) / sizeof(char*), const_cast<char**>(options));
 
 	gEnv->pLog->LogAlways("[Mono] Debugger server active on port: %d and suspended is set to %s", softDebuggerPort, szSuspend);
@@ -285,7 +282,7 @@ CRootMonoDomain* CMonoRuntime::GetRootDomain()
 CMonoDomain* CMonoRuntime::GetActiveDomain()
 {
 	MonoInternals::MonoDomain* pActiveMonoDomain = MonoInternals::mono_domain_get();
-	
+
 	if (CMonoDomain* pDomain = FindDomainByHandle(pActiveMonoDomain))
 	{
 		return pDomain;
@@ -407,7 +404,7 @@ void CMonoRuntime::InvokeManagedConsoleCommandNotification(const char* szCommand
 
 	void* pSetArguments[2];
 	std::shared_ptr<CMonoMethod> pSetMethod = pConsoleCommandArgumentHolderClass->FindMethod("SetArgument", 2).lock();
-	
+
 	for (int i = 0; i < numArguments; ++i)
 	{
 		std::shared_ptr<CMonoString> pArgumentString = std::static_pointer_cast<CMonoString>(pDomain->CreateString(pCommandArguments->GetArg(i)));
@@ -470,7 +467,7 @@ void CMonoRuntime::InitializePluginDomain()
 			}
 		}
 
-		for(auto it = m_plugins.begin(); it != m_plugins.end(); ++it)
+		for (auto it = m_plugins.begin(); it != m_plugins.end(); ++it)
 		{
 			const std::weak_ptr<IManagedPlugin>& plugin = *it;
 
@@ -512,7 +509,8 @@ static bool HasScriptFiles(const string& path)
 			{
 				return true;
 			}
-		} while (gEnv->pCryPak->FindNext(handle, &fd) >= 0);
+		}
+		while (gEnv->pCryPak->FindNext(handle, &fd) >= 0);
 		gEnv->pCryPak->FindClose(handle);
 	}
 
@@ -523,7 +521,7 @@ void CMonoRuntime::OnSystemEvent(ESystemEvent event, UINT_PTR wparam, UINT_PTR l
 {
 	switch (event)
 	{
-		case ESYSTEM_EVENT_GAME_POST_INIT:
+	case ESYSTEM_EVENT_GAME_POST_INIT:
 		{
 			// Only initialize run-time if there were C# source files present in asset directory
 			// Otherwise, C# is only initialized when a plug-in is loaded from disk
@@ -532,15 +530,15 @@ void CMonoRuntime::OnSystemEvent(ESystemEvent event, UINT_PTR wparam, UINT_PTR l
 				m_initialized = true;
 				InitializeRuntime();
 			}
-			
-			if(m_initialized)
+
+			if (m_initialized)
 			{
 				// Now compile C# from disk
 				InitializePluginDomain();
 			}
 		}
 		break;
-		case ESYSTEM_EVENT_FAST_SHUTDOWN:
+	case ESYSTEM_EVENT_FAST_SHUTDOWN:
 		{
 			Shutdown();
 		}
@@ -562,7 +560,7 @@ void CMonoRuntime::HandleException(MonoInternals::MonoException* pException)
 #endif
 
 	gEnv->pHardwareMouse->UseSystemCursor(true);
-	
+
 	void* args[1];
 	args[0] = pException;
 
@@ -611,15 +609,24 @@ void CMonoRuntime::OnPluginLibrariesDeserialized()
 	}
 }
 
-void CMonoRuntime::NotifyCompileFinished(const char* szCompileMessage)
+void CMonoRuntime::NotifyCompileFinished(std::vector<SCSharpCompilerError>& compileErrors)
 {
 	// Compiling should only happen in the editor, never in the GameLauncher.
 	CRY_ASSERT(gEnv->IsEditor());
 
-	m_latestCompileMessage = szCompileMessage;
+	m_latestCompilerErrors = compileErrors;
 
 	for (MonoCompileListeners::Notifier notifier(m_compileListeners); notifier.IsValid(); notifier.Next())
 	{
-		notifier->OnCompileFinished(szCompileMessage);
+		notifier->OnCompileFinished();
 	}
+}
+
+const SCSharpCompilerError* CMonoRuntime::GetCompileErrorAt(size_t index) const
+{
+	if (index < m_latestCompilerErrors.size())
+	{
+		return &m_latestCompilerErrors[index];
+	}
+	return nullptr;
 }
