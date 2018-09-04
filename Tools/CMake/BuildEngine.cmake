@@ -442,6 +442,14 @@ if (OPTION_ENGINE)
 		add_subdirectory ("Code/CryEngine/CryLiveCreate")
 	endif (WIN32)
 
+	#mono
+	if (OPTION_CRYMONO)
+		target_compile_definitions(CrySystem PUBLIC USE_MONO=1)
+		if (TARGET CrySystemLib)
+			target_compile_definitions(CrySystemLib PUBLIC USE_MONO=1)
+		endif()
+	endif()
+
 	#physics
 	if (PHYSICS_CRYPHYSICS)
 		add_subdirectory ("Code/CryEngine/CryPhysics")
