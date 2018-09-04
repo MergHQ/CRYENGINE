@@ -46,10 +46,10 @@ extern AudioSwitchLookup g_switches;
 extern AudioPreloadRequestLookup g_preloadRequests;
 extern AudioEnvironmentLookup g_environments;
 extern CATLAudioObject* g_pObject;
-extern CLoseFocusTrigger* g_pLoseFocusTrigger;
-extern CGetFocusTrigger* g_pGetFocusTrigger;
-extern CMuteAllTrigger* g_pMuteAllTrigger;
-extern CUnmuteAllTrigger* g_pUnmuteAllTrigger;
-extern CPauseAllTrigger* g_pPauseAllTrigger;
-extern CResumeAllTrigger* g_pResumeAllTrigger;
+extern CLoseFocusTrigger g_loseFocusTrigger;
+extern CGetFocusTrigger g_getFocusTrigger;
+extern CMuteAllTrigger g_muteAllTrigger;
+extern CUnmuteAllTrigger g_unmuteAllTrigger;
+extern CPauseAllTrigger g_pauseAllTrigger;
+extern CResumeAllTrigger g_resumeAllTrigger;
 } // namespace CryAudio

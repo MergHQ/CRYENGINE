@@ -3271,23 +3271,25 @@ bool CSystem::Initialize(SSystemInitParams& startupParams)
 		// Note: IME manager needs to be created before Scaleform is initialized
 		m_pImeManager = new CImeManager();
 
+#if defined(USE_MONO) && USE_MONO == 1
 		// Initialize CryMono / C# integration
-		// Notet that this has to occur before plug-ins are loaded as this is a prerequisite for C# plug-ins!
+		// Note that this has to occur before plug-ins are loaded as this is a prerequisite for C# plug-ins!
 		{
-			CryLogAlways("C# Backend initialization");
-			INDENT_LOG_DURING_SCOPE();
-
-			if (m_pUserCallback)
-			{
-				m_pUserCallback->OnInitProgress("Initializing C#...");
-			}
-
-			ICVar* pCVar = m_env.pConsole->GetCVar("sys_use_mono");
+			const ICVar* pCVar = m_env.pConsole->GetCVar("sys_use_mono");
 			if (pCVar && pCVar->GetIVal())
 			{
+				CryLogAlways("C# Backend initialization");
+				INDENT_LOG_DURING_SCOPE();
+
+				if (m_pUserCallback)
+				{
+					m_pUserCallback->OnInitProgress("Initializing C#...");
+				}
+
 				InitMonoBridge(startupParams);
 			}
 		}
+#endif
 
 		InlineInitializationProcessing("CSystem::Init LoadProjectPlugins");
 		m_pPluginManager->LoadProjectPlugins();
@@ -5299,7 +5301,10 @@ void CSystem::CreateSystemVars()
 	REGISTER_CVAR2("sys_force_installtohdd_mode", &g_cvars.sys_force_installtohdd_mode, 0, VF_NULL, "Forces install to HDD mode even when doing DVD emulation");
 
 	m_sys_preload = REGISTER_INT("sys_preload", 0, 0, "Preload Game Resources");
-	m_sys_use_Mono = REGISTER_INT("sys_use_mono", 1, 0, "Use Mono Framework");
+	m_sys_use_Mono = REGISTER_INT("sys_use_mono", 1, 0, 
+								  "Use Mono Framework\n"
+								  "0 = off\n"
+								  "1 = on");
 
 #define CRASH_CMD_HELP                      \
   " 0=off\n"                                \

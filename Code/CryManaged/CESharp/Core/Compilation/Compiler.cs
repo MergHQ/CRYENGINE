@@ -25,16 +25,18 @@ namespace CryEngine.Compilation
 			}
 		}
 
-		public static void CompileCSharpSourceFiles(string assemblyPath, string[] sourceFiles, string[] managedPlugins, out string compileException)
+		public static void CompileCSharpSourceFiles(string assemblyPath, string[] sourceFiles, string[] managedPlugins, out string[] errorData, out Int64 errorCount)
 		{
-			compileException = null;
+			errorData = null;
+			errorCount = 0;
 			try
 			{
 				CompileSourceFiles("CSharp", assemblyPath, sourceFiles, managedPlugins);
 			}
 			catch(CompilationFailedException ex)
 			{
-				compileException = ex.ToString();
+				errorData = ex.ErrorData;
+				errorCount = ex.ErrorCount;
 			}
 			catch(Exception ex)
 			{
@@ -49,7 +51,7 @@ namespace CryEngine.Compilation
 				throw new NotSupportedException(string.Format("Unable to compile source files because the language \"{0}\" is not supported!", language));
 			}
 
-			using(var provider = CodeDomProvider.CreateProvider(language))
+			using (var provider = CodeDomProvider.CreateProvider(language))
 			{
 				var compilerParameters = new CompilerParameters();
 				compilerParameters.GenerateExecutable = false;
@@ -65,7 +67,7 @@ namespace CryEngine.Compilation
 				compilerParameters.GenerateInMemory = false;
 #endif
 
-				if(!compilerParameters.GenerateInMemory)
+				if (!compilerParameters.GenerateInMemory)
 				{
 					Directory.CreateDirectory(Path.GetDirectoryName(assemblyPath));
 					compilerParameters.OutputAssembly = Path.Combine(assemblyPath);
@@ -74,24 +76,35 @@ namespace CryEngine.Compilation
 				AddReferencedAssembliesForSourceFiles(managedPlugins, ref compilerParameters);
 
 				var results = provider.CompileAssemblyFromFile(compilerParameters, sourceFiles);
-				if(!results.Errors.HasErrors)
+				if (!results.Errors.HasErrors)
 				{
 					return;
 				}
 
 				string compilationError = string.Format("Compilation failed; {0} errors: ", results.Errors.Count);
+				List<string> errors = new List<string>();
 
-				foreach(CompilerError error in results.Errors)
+				foreach (CompilerError error in results.Errors)
 				{
 					compilationError += Environment.NewLine;
 
-					if(!error.ErrorText.Contains("(Location of the symbol related to previous error)"))
+					if (!error.ErrorText.Contains("(Location of the symbol related to previous error)"))
+					{
 						compilationError += string.Format("{0}({1},{2}): {3} {4}: {5}", error.FileName, error.Line, error.Column, error.IsWarning ? "warning" : "error", error.ErrorNumber, error.ErrorText);
+					}
 					else
+					{
 						compilationError += "    " + error.ErrorText;
+					}
+
+					errors.Add(error.IsWarning.ToString());
+					errors.Add(error.ErrorNumber);
+					errors.Add(error.ErrorText);
+					errors.Add(error.FileName);
+					errors.Add(error.Line.ToString());
 				}
 
-				throw new CompilationFailedException(compilationError);
+				throw new CompilationFailedException(compilationError, errors.ToArray(), results.Errors.Count);
 			}
 		}
 

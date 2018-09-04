@@ -14,7 +14,7 @@ struct ICSharpMessageListener
 {
 	virtual ~ICSharpMessageListener() {}
 
-	virtual void OnMessagesUpdated(string messages) = 0;
+	virtual void OnMessagesUpdated() = 0;
 };
 
 typedef CListenerSet<ICSharpMessageListener*> CSharpMessageListeners;
@@ -37,9 +37,8 @@ public:
 	CCSharpEditorPlugin();
 	virtual ~CCSharpEditorPlugin();
 
-	virtual void   RegisterMessageListener(ICSharpMessageListener* pListener)   { m_messageListeners.Add(pListener); }
-	virtual void   UnregisterMessageListener(ICSharpMessageListener* pListener) { m_messageListeners.Remove(pListener); }
-	virtual string GetCompileMessage()                                          { return m_compileMessage; }
+	virtual void RegisterMessageListener(ICSharpMessageListener* pListener)   { m_messageListeners.Add(pListener); }
+	virtual void UnregisterMessageListener(ICSharpMessageListener* pListener) { m_messageListeners.Remove(pListener); }
 
 	// Returns the path to the C# solution file.
 	const char* GetCSharpSolutionPath() const { return m_csharpSolutionPath; }
@@ -57,7 +56,7 @@ public:
 	// ~IFileChangeListener
 
 	// IMonoCompileListener
-	virtual void OnCompileFinished(const char* szCompileMessage) override;
+	virtual void OnCompileFinished() override;
 	// ~IMonoCompileListener
 
 	// Schematyc::IEnvRegistryListener
@@ -82,7 +81,8 @@ private:
 	std::vector<string>    m_changedFiles;
 	bool                   m_reloadPlugins = false;
 	bool                   m_isSandboxInFocus = true;
-	string                 m_compileMessage;
+	bool                   m_errorsUpdated = false;
+	bool                   m_editorMainFrameInitialized = false;
 	CSharpMessageListeners m_messageListeners;
 	string                 m_csharpSolutionPath;
 

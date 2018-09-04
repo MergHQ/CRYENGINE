@@ -247,186 +247,174 @@ class CLoseFocusTrigger final : public Control
 {
 public:
 
-	CLoseFocusTrigger() = delete;
 	CLoseFocusTrigger(CLoseFocusTrigger const&) = delete;
 	CLoseFocusTrigger(CLoseFocusTrigger&&) = delete;
 	CLoseFocusTrigger& operator=(CLoseFocusTrigger const&) = delete;
 	CLoseFocusTrigger& operator=(CLoseFocusTrigger&&) = delete;
 
 #if defined(INCLUDE_AUDIO_PRODUCTION_CODE)
-	explicit CLoseFocusTrigger(TriggerConnections const& connections)
+	CLoseFocusTrigger()
 		: Control(LoseFocusTriggerId, EDataScope::Global, s_szLoseFocusTriggerName)
-		, m_connections(connections)
 	{}
 #else
-	explicit CLoseFocusTrigger(TriggerConnections const& connections)
+	CLoseFocusTrigger()
 		: Control(LoseFocusTriggerId, EDataScope::Global)
-		, m_connections(connections)
 	{}
 #endif // INCLUDE_AUDIO_PRODUCTION_CODE
 
 	~CLoseFocusTrigger();
 
 	void Execute() const;
+	void AddConnections(TriggerConnections const& connections) { m_connections = connections; }
 
 private:
 
-	TriggerConnections const m_connections;
+	TriggerConnections m_connections;
 };
 
 class CGetFocusTrigger final : public Control
 {
 public:
 
-	CGetFocusTrigger() = delete;
 	CGetFocusTrigger(CGetFocusTrigger const&) = delete;
 	CGetFocusTrigger(CGetFocusTrigger&&) = delete;
 	CGetFocusTrigger& operator=(CGetFocusTrigger const&) = delete;
 	CGetFocusTrigger& operator=(CGetFocusTrigger&&) = delete;
 
 #if defined(INCLUDE_AUDIO_PRODUCTION_CODE)
-	explicit CGetFocusTrigger(TriggerConnections const& connections)
+	CGetFocusTrigger()
 		: Control(GetFocusTriggerId, EDataScope::Global, s_szGetFocusTriggerName)
-		, m_connections(connections)
 	{}
 #else
-	explicit CGetFocusTrigger(TriggerConnections const& connections)
+	CGetFocusTrigger()
 		: Control(GetFocusTriggerId, EDataScope::Global)
-		, m_connections(connections)
 	{}
 #endif // INCLUDE_AUDIO_PRODUCTION_CODE
 
 	~CGetFocusTrigger();
 
 	void Execute() const;
+	void AddConnections(TriggerConnections const& connections) { m_connections = connections; }
 
 private:
 
-	TriggerConnections const m_connections;
+	TriggerConnections m_connections;
 };
 
 class CMuteAllTrigger final : public Control
 {
 public:
 
-	CMuteAllTrigger() = delete;
 	CMuteAllTrigger(CMuteAllTrigger const&) = delete;
 	CMuteAllTrigger(CMuteAllTrigger&&) = delete;
 	CMuteAllTrigger& operator=(CMuteAllTrigger const&) = delete;
 	CMuteAllTrigger& operator=(CMuteAllTrigger&&) = delete;
 
 #if defined(INCLUDE_AUDIO_PRODUCTION_CODE)
-	explicit CMuteAllTrigger(TriggerConnections const& connections)
+	CMuteAllTrigger()
 		: Control(MuteAllTriggerId, EDataScope::Global, s_szMuteAllTriggerName)
-		, m_connections(connections)
 	{}
 #else
-	explicit CMuteAllTrigger(TriggerConnections const& connections)
+	CMuteAllTrigger()
 		: Control(MuteAllTriggerId, EDataScope::Global)
-		, m_connections(connections)
 	{}
 #endif // INCLUDE_AUDIO_PRODUCTION_CODE
 
 	~CMuteAllTrigger();
 
 	void Execute() const;
+	void AddConnections(TriggerConnections const& connections) { m_connections = connections; }
 
 private:
 
-	TriggerConnections const m_connections;
+	TriggerConnections m_connections;
 };
 
 class CUnmuteAllTrigger final : public Control
 {
 public:
 
-	CUnmuteAllTrigger() = delete;
 	CUnmuteAllTrigger(CUnmuteAllTrigger const&) = delete;
 	CUnmuteAllTrigger(CUnmuteAllTrigger&&) = delete;
 	CUnmuteAllTrigger& operator=(CUnmuteAllTrigger const&) = delete;
 	CUnmuteAllTrigger& operator=(CUnmuteAllTrigger&&) = delete;
 
 #if defined(INCLUDE_AUDIO_PRODUCTION_CODE)
-	explicit CUnmuteAllTrigger(TriggerConnections const& connections)
+	CUnmuteAllTrigger()
 		: Control(UnmuteAllTriggerId, EDataScope::Global, s_szUnmuteAllTriggerName)
-		, m_connections(connections)
 	{}
 #else
-	explicit CUnmuteAllTrigger(TriggerConnections const& connections)
+	CUnmuteAllTrigger()
 		: Control(UnmuteAllTriggerId, EDataScope::Global)
-		, m_connections(connections)
 	{}
 #endif // INCLUDE_AUDIO_PRODUCTION_CODE
 
 	~CUnmuteAllTrigger();
 
 	void Execute() const;
+	void AddConnections(TriggerConnections const& connections) { m_connections = connections; }
 
 private:
 
-	TriggerConnections const m_connections;
+	TriggerConnections m_connections;
 };
 
 class CPauseAllTrigger final : public Control
 {
 public:
 
-	CPauseAllTrigger() = delete;
 	CPauseAllTrigger(CPauseAllTrigger const&) = delete;
 	CPauseAllTrigger(CPauseAllTrigger&&) = delete;
 	CPauseAllTrigger& operator=(CPauseAllTrigger const&) = delete;
 	CPauseAllTrigger& operator=(CPauseAllTrigger&&) = delete;
 
 #if defined(INCLUDE_AUDIO_PRODUCTION_CODE)
-	explicit CPauseAllTrigger(TriggerConnections const& connections)
+	CPauseAllTrigger()
 		: Control(PauseAllTriggerId, EDataScope::Global, s_szPauseAllTriggerName)
-		, m_connections(connections)
 	{}
 #else
-	explicit CPauseAllTrigger(TriggerConnections const& connections)
+	CPauseAllTrigger()
 		: Control(PauseAllTriggerId, EDataScope::Global)
-		, m_connections(connections)
 	{}
 #endif // INCLUDE_AUDIO_PRODUCTION_CODE
 
 	~CPauseAllTrigger();
 
 	void Execute() const;
+	void AddConnections(TriggerConnections const& connections) { m_connections = connections; }
 
 private:
 
-	TriggerConnections const m_connections;
+	TriggerConnections m_connections;
 };
 
 class CResumeAllTrigger final : public Control
 {
 public:
 
-	CResumeAllTrigger() = delete;
 	CResumeAllTrigger(CResumeAllTrigger const&) = delete;
 	CResumeAllTrigger(CResumeAllTrigger&&) = delete;
 	CResumeAllTrigger& operator=(CResumeAllTrigger const&) = delete;
 	CResumeAllTrigger& operator=(CResumeAllTrigger&&) = delete;
 
 #if defined(INCLUDE_AUDIO_PRODUCTION_CODE)
-	explicit CResumeAllTrigger(TriggerConnections const& connections)
+	CResumeAllTrigger()
 		: Control(ResumeAllTriggerId, EDataScope::Global, s_szResumeAllTriggerName)
-		, m_connections(connections)
 	{}
 #else
-	explicit CResumeAllTrigger(TriggerConnections const& connections)
+	CResumeAllTrigger()
 		: Control(ResumeAllTriggerId, EDataScope::Global)
-		, m_connections(connections)
 	{}
 #endif // INCLUDE_AUDIO_PRODUCTION_CODE
 
 	~CResumeAllTrigger();
 
 	void Execute() const;
+	void AddConnections(TriggerConnections const& connections) { m_connections = connections; }
 
 private:
 
-	TriggerConnections const m_connections;
+	TriggerConnections m_connections;
 };
 
 // Class for a parameter associated with a middleware parameter

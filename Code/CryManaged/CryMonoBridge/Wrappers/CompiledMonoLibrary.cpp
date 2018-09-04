@@ -7,6 +7,7 @@
 #include "MonoDomain.h"
 #include <CrySystem/IProjectManager.h>
 #include <CrySystem/ICryPluginManager.h>
+#include "AppDomain.h"
 
 CCompiledMonoLibrary::CCompiledMonoLibrary(const char* szDirectory, CMonoDomain* pDomain)
 	: CMonoLibrary(nullptr, nullptr, "", pDomain)
@@ -30,8 +31,10 @@ bool CCompiledMonoLibrary::Load(int loadIndex)
 	// Zero assembly and image, in case we are reloading
 	m_pAssembly = nullptr;
 	m_pImage = nullptr;
-	
-	MonoInternals::MonoString* pOutString = nullptr;
+
+	int64 outErrorCount;
+	std::vector<string> monoCompileErrrors;
+	std::vector<SCSharpCompilerError> compileErrors;
 
 	if (gEnv->IsEditor())
 	{
@@ -44,7 +47,7 @@ bool CCompiledMonoLibrary::Load(int loadIndex)
 			if (gEnv->pCryPak->IsFileExist(m_assemblyPath))
 			{
 				gEnv->pCryPak->RemoveFile(m_assemblyPath);
-				
+
 				// Remove debug files as well.
 				string mdbFilePath = m_assemblyPath + ".mdb";
 				string pdbFilePath = m_assemblyPath;
@@ -79,8 +82,8 @@ bool CCompiledMonoLibrary::Load(int loadIndex)
 		CMonoLibrary* pCoreLibrary = GetMonoRuntime()->GetCryCoreLibrary();
 
 		std::shared_ptr<CMonoClass> pCompilerClass = pCoreLibrary->GetTemporaryClass("CryEngine.Compilation", "Compiler");
-		std::shared_ptr<CMonoMethod> pCompilationMethod = pCompilerClass->FindMethod("CompileCSharpSourceFiles", 4).lock();
-		
+		std::shared_ptr<CMonoMethod> pCompilationMethod = pCompilerClass->FindMethod("CompileCSharpSourceFiles", 5).lock();
+
 		// Path where the assembly will be saved to.
 		std::shared_ptr<CMonoString> pMonoAssemblyPath = pCoreLibrary->GetDomain()->CreateString(m_assemblyPath.c_str());
 
@@ -97,21 +100,49 @@ bool CCompiledMonoLibrary::Load(int loadIndex)
 		{
 			mono_array_set(pPluginsStringArray, MonoInternals::MonoString*, i, mono_string_new(m_pDomain->GetMonoDomain(), pluginPaths[i]));
 		}
-		
-		void* pParams[4] = { pMonoAssemblyPath->GetManagedObject(), pSourceFilesStringArray, pPluginsStringArray, &pOutString };
+		const CAppDomain* pDomain = static_cast<CAppDomain*>(GetMonoRuntime()->GetActiveDomain());
+		MonoInternals::MonoArray* pArray = MonoInternals::mono_array_new(GetMonoRuntime()->GetActiveDomain()->GetHandle(), MonoInternals::mono_get_string_class(), 0);
+		void* pParams[5] = { pMonoAssemblyPath->GetManagedObject(), pSourceFilesStringArray, pPluginsStringArray, &pArray, &outErrorCount };
 		pCompilationMethod->InvokeStatic(pParams);
+		// TODO: Refactor asap, when mono arrays are usable through C++
+		// NOTE: We do multiply by five at the moment because we want the length of the array returned by mono. Every compiler error will have inserted five values into the array.
+		const size_t errorCount = static_cast<size_t>(outErrorCount * 5);
+		// Loop through mono array to fill mono compile errors.
+		for (size_t i = 0; i < errorCount; ++i)
+		{
+			MonoInternals::MonoObject* pObjectString = mono_array_get(pArray, MonoInternals::MonoObject*, i);
+			MonoInternals::MonoString* pMonoString = reinterpret_cast<MonoInternals::MonoString*>(pObjectString);
+			CMonoString managedValue(pMonoString);
+			const char* szErrorMessage = managedValue.GetString();
+			CRY_ASSERT_MESSAGE(szErrorMessage, "Error message must be non-null.");
+			if (szErrorMessage)
+			{
+				monoCompileErrrors.emplace_back(szErrorMessage);
+			}
+		}
+		compileErrors.reserve(static_cast<size_t>(outErrorCount));
+		// Loop through mono compile errors to fill compile errors vector.
+		for (auto it = monoCompileErrrors.begin(); it != monoCompileErrrors.end(); ++it)
+		{
+			const bool isWarning = *it == "False" ? false : true;
+			string errorNumber(*(++it));
+			string errorText(*(++it));
+			string fileName(*(++it));
+			const int32 line = std::stoi((++it)->c_str());
+			compileErrors.emplace_back(isWarning, errorNumber, errorText, fileName, line);
+		}
+		// ~TODO
 	}
-	
+
 	// Load the assembly by default, even if compiling might have failed because the Sandbox can use the previous assembly.
-	if(!m_assemblyPath.IsEmpty())
+	if (!m_assemblyPath.IsEmpty())
 	{
 		LoadLibraryFile(m_assemblyPath);
 	}
 
 	if (gEnv->IsEditor())
 	{
-		const char* szCompileMessage = MonoInternals::mono_string_to_utf8(pOutString);
-		GetMonoRuntime()->NotifyCompileFinished(szCompileMessage);
+		GetMonoRuntime()->NotifyCompileFinished(compileErrors);
 	}
 
 	return true;
@@ -128,7 +159,8 @@ void CCompiledMonoLibrary::FindSourceFilesInDirectoryRecursive(const char* szDir
 		do
 		{
 			sourceFiles.emplace_back(PathUtil::Make(szDirectory, fd.name));
-		} while (gEnv->pCryPak->FindNext(handle, &fd) >= 0);
+		}
+		while (gEnv->pCryPak->FindNext(handle, &fd) >= 0);
 
 		gEnv->pCryPak->FindClose(handle);
 	}
@@ -150,7 +182,8 @@ void CCompiledMonoLibrary::FindSourceFilesInDirectoryRecursive(const char* szDir
 					FindSourceFilesInDirectoryRecursive(sDirectory, sourceFiles);
 				}
 			}
-		} while (gEnv->pCryPak->FindNext(handle, &fd) >= 0);
+		}
+		while (gEnv->pCryPak->FindNext(handle, &fd) >= 0);
 
 		gEnv->pCryPak->FindClose(handle);
 	}

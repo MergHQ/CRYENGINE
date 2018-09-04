@@ -3,6 +3,7 @@
 #include "stdafx.h"
 #include "Common.h"
 #include "AudioSystem.h"
+#include "ATLEntities.h"
 
 namespace CryAudio
 {
@@ -14,10 +15,10 @@ AudioSwitchLookup g_switches;
 AudioPreloadRequestLookup g_preloadRequests;
 AudioEnvironmentLookup g_environments;
 CATLAudioObject* g_pObject = nullptr;
-CLoseFocusTrigger* g_pLoseFocusTrigger = nullptr;
-CGetFocusTrigger* g_pGetFocusTrigger = nullptr;
-CMuteAllTrigger* g_pMuteAllTrigger = nullptr;
-CUnmuteAllTrigger* g_pUnmuteAllTrigger = nullptr;
-CPauseAllTrigger* g_pPauseAllTrigger = nullptr;
-CResumeAllTrigger* g_pResumeAllTrigger = nullptr;
+CLoseFocusTrigger g_loseFocusTrigger;
+CGetFocusTrigger g_getFocusTrigger;
+CMuteAllTrigger g_muteAllTrigger;
+CUnmuteAllTrigger g_unmuteAllTrigger;
+CPauseAllTrigger g_pauseAllTrigger;
+CResumeAllTrigger g_resumeAllTrigger;
 } // namespace CryAudio
