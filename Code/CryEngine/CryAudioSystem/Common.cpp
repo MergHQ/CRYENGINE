@@ -3,13 +3,11 @@
 #include "stdafx.h"
 #include "Common.h"
 #include "AudioSystem.h"
-#include "ATL.h"
 
 namespace CryAudio
 {
 Impl::IImpl* g_pIImpl = nullptr;
 CSystem g_system;
-CAudioTranslationLayer g_atl;
 AudioTriggerLookup g_triggers;
 AudioParameterLookup g_parameters;
 AudioSwitchLookup g_switches;
