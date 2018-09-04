@@ -47,15 +47,14 @@ void ExecuteDefaultTriggerConnections(Control const* const pControl, TriggerConn
 		{
 #if defined(INCLUDE_AUDIO_PRODUCTION_CODE)
 			pEvent->SetTriggerName(pControl->GetName());
+			CRY_ASSERT_MESSAGE(pControl->GetDataScope() == EDataScope::Global, "Default controls must always have global data scope! (%s)", pControl->GetName());
 #endif  // INCLUDE_AUDIO_PRODUCTION_CODE
 
 			pEvent->m_pAudioObject = g_pObject;
+			pEvent->SetDataScope(pControl->GetDataScope());
 			pEvent->SetTriggerId(pControl->GetId());
 			pEvent->m_audioTriggerImplId = pConnection->m_audioTriggerImplId;
 			pEvent->m_audioTriggerInstanceId = s_triggerInstanceIdCounter;
-
-			CRY_ASSERT_MESSAGE(pControl->GetDataScope() == EDataScope::Global, "Default controls must always have global data scope! (%s)", pControl->GetName());
-			pEvent->SetDataScope(pControl->GetDataScope());
 
 			if (activateResult == ERequestStatus::Success)
 			{
