@@ -307,8 +307,8 @@ bool CDeviceResourceLayout_Vulkan::Init(const SDeviceResourceLayoutDesc& desc)
 {
 	m_hash = 0;
 
-	VkDescriptorSetLayout descriptorSets[EResourceLayoutSlot_Max] = {};
-	std::vector<uint8>    encodedDescriptorSets[EResourceLayoutSlot_Max];
+	VkDescriptorSetLayout descriptorSets[EResourceLayoutSlot_Num] = {};
+	std::vector<uint8>    encodedDescriptorSets[EResourceLayoutSlot_Num];
 
 	uint8 descriptorSetCount = 0;
 
@@ -322,6 +322,11 @@ bool CDeviceResourceLayout_Vulkan::Init(const SDeviceResourceLayoutDesc& desc)
 		case SDeviceResourceLayoutDesc::ELayoutSlotType::InlineConstantBuffer:
 		{
 			descriptorSets[layoutBindPoint.layoutSlot] = GetDeviceObjectFactory().GetInlineConstantBufferLayout();
+		}
+		break;
+		case SDeviceResourceLayoutDesc::ELayoutSlotType::InlineShaderResource:
+		{
+			descriptorSets[layoutBindPoint.layoutSlot] = GetDeviceObjectFactory().GetInlineShaderResourceLayout();
 		}
 		break;
 

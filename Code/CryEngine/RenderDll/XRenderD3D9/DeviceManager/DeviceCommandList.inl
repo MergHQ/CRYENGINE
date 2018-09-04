@@ -34,7 +34,8 @@ inline void CDeviceCommandList::Reset()
 {
 	ZeroStruct(m_graphicsState.pPipelineState);
 	ZeroStruct(m_graphicsState.pResourceLayout);
-	ZeroArray(m_graphicsState.pResources);
+	ZeroArray(m_graphicsState.pResourceSets);
+	ZeroArray(m_graphicsState.pInlineResources);
 	m_graphicsState.stencilRef = -1;
 	m_graphicsState.vertexStreams = nullptr;
 	m_graphicsState.indexStream = nullptr;
@@ -43,7 +44,8 @@ inline void CDeviceCommandList::Reset()
 
 	ZeroStruct(m_computeState.pPipelineState);
 	ZeroStruct(m_computeState.pResourceLayout);
-	ZeroArray(m_computeState.pResources);
+	ZeroArray(m_computeState.pResourceSets);
+	ZeroArray(m_computeState.pInlineResources);
 	m_computeState.requiredResourceBindings = 0;
 	m_computeState.validResourceBindings = 0;
 
@@ -81,7 +83,7 @@ inline void CDeviceGraphicsCommandInterface::ClearState(bool bOutputMergerOnly) 
 	ClearStateImpl(bOutputMergerOnly);
 }
 
-inline void CDeviceGraphicsCommandInterface::PrepareUAVsForUse(uint32 viewCount, CGpuBuffer** pViews, bool bCompute) const
+inline void CDeviceGraphicsCommandInterface::PrepareUAVsForUse(uint32 viewCount, CDeviceBuffer** pViews, bool bCompute) const
 {
 	PrepareUAVsForUseImpl(viewCount, pViews, bCompute);
 }
@@ -98,17 +100,32 @@ inline void CDeviceGraphicsCommandInterface::PrepareResourceForUse(uint32 bindSl
 
 inline void CDeviceGraphicsCommandInterface::PrepareResourcesForUse(uint32 bindSlot, CDeviceResourceSet* pResources) const
 {
+	CRY_ASSERT(bindSlot < EResourceLayoutSlot_Num);
 	PrepareResourcesForUseImpl(bindSlot, pResources);
 }
 
 inline void CDeviceGraphicsCommandInterface::PrepareInlineConstantBufferForUse(uint32 bindSlot, CConstantBuffer* pBuffer, EConstantBufferShaderSlot shaderSlot, EHWShaderClass shaderClass) const
 {
+	CRY_ASSERT(bindSlot < EResourceLayoutSlot_Num);
 	PrepareInlineConstantBufferForUseImpl(bindSlot, pBuffer, shaderSlot, shaderClass);
 }
 
 inline void CDeviceGraphicsCommandInterface::PrepareInlineConstantBufferForUse(uint32 bindSlot, CConstantBuffer* pBuffer, EConstantBufferShaderSlot shaderSlot, ::EShaderStage shaderStages) const
 {
+	CRY_ASSERT(bindSlot < EResourceLayoutSlot_Num);
 	PrepareInlineConstantBufferForUseImpl(bindSlot, pBuffer, shaderSlot, shaderStages);
+}
+
+inline void CDeviceGraphicsCommandInterface::PrepareInlineShaderResourceForUse(uint32 bindSlot, CDeviceBuffer* pBuffer, EShaderResourceShaderSlot shaderSlot, EHWShaderClass shaderClass) const
+{
+	CRY_ASSERT(bindSlot < EResourceLayoutSlot_Num);
+	PrepareInlineShaderResourceForUseImpl(bindSlot, pBuffer, shaderSlot, shaderClass);
+}
+
+inline void CDeviceGraphicsCommandInterface::PrepareInlineShaderResourceForUse(uint32 bindSlot, CDeviceBuffer* pBuffer, EShaderResourceShaderSlot shaderSlot, ::EShaderStage shaderStages) const
+{
+	CRY_ASSERT(bindSlot < EResourceLayoutSlot_Num);
+	PrepareInlineShaderResourceForUseImpl(bindSlot, pBuffer, shaderSlot, shaderStages);
 }
 
 inline void CDeviceGraphicsCommandInterface::PrepareVertexBuffersForUse(uint32 streamCount, uint32 streamMax, const CDeviceInputStream* vertexStreams) const
@@ -164,7 +181,7 @@ inline void CDeviceGraphicsCommandInterface::SetResourceLayout(const CDeviceReso
 	{
 		// If a root signature is changed on a command list, all previous root signature bindings
 		// become stale and all newly expected bindings must be set before Draw/Dispatch
-		ZeroArray(m_graphicsState.pResources);
+		ZeroArray(m_graphicsState.pResourceSets);
 
 		m_graphicsState.requiredResourceBindings = pResourceLayout->GetRequiredResourceBindings();
 		m_graphicsState.validResourceBindings = 0;  // invalidate all resource bindings
@@ -179,8 +196,8 @@ inline void CDeviceGraphicsCommandInterface::SetResourceLayout(const CDeviceReso
 
 inline void CDeviceGraphicsCommandInterface::SetResources(uint32 bindSlot, const CDeviceResourceSet* pResources)
 {
-	CRY_ASSERT(bindSlot <= EResourceLayoutSlot_Max);
-	if (m_graphicsState.pResources[bindSlot].Set(pResources))
+	CRY_ASSERT(bindSlot < EResourceLayoutSlot_Num);
+	if (m_graphicsState.pResourceSets[bindSlot].Set(pResources))
 	{
 		m_graphicsState.validResourceBindings[bindSlot] = pResources->IsValid();
 
@@ -194,11 +211,10 @@ inline void CDeviceGraphicsCommandInterface::SetResources(uint32 bindSlot, const
 
 inline void CDeviceGraphicsCommandInterface::SetInlineConstantBuffer(uint32 bindSlot, const CConstantBuffer* pBuffer, EConstantBufferShaderSlot shaderSlot, EHWShaderClass shaderClass)
 {
-	// TODO: remove redundant InlineConstantBuffer sets
-	//	if (m_pCurrentResources[bindSlot] != ((char*)pBuffer->m_base_ptr + pBuffer->m_offset))
+	CRY_ASSERT(bindSlot < EResourceLayoutSlot_Num);
+	// TODO: remove redundant InlineConstantBuffer sets (problem is the offset/size which can change undetected)
+	// if (m_graphicsState.pInlineResources[bindSlot].Set(pBuffer))
 	{
-		//		m_pCurrentResources[bindSlot] = ((char*)pBuffer->m_base_ptr + pBuffer->m_offset);
-
 #if _RELEASE
 		m_graphicsState.validResourceBindings[bindSlot] = true;
 #else
@@ -210,17 +226,15 @@ inline void CDeviceGraphicsCommandInterface::SetInlineConstantBuffer(uint32 bind
 #if defined(ENABLE_PROFILING_CODE)
 		++m_profilingStats.numInlineSets;
 #endif
-
 	}
 }
 
 inline void CDeviceGraphicsCommandInterface::SetInlineConstantBuffer(uint32 bindSlot, const CConstantBuffer* pBuffer, EConstantBufferShaderSlot shaderSlot, ::EShaderStage shaderStages)
 {
-	// TODO: remove redundant InlineConstantBuffer sets
-	//	if (m_pCurrentResources[bindSlot] != ((char*)pBuffer->m_base_ptr + pBuffer->m_offset))
+	CRY_ASSERT(bindSlot < EResourceLayoutSlot_Num);
+	// TODO: remove redundant InlineConstantBuffer sets (problem is the offset/size which can change undetected)
+	// if (m_graphicsState.pInlineResources[bindSlot].Set(pBuffer))
 	{
-		//		m_pCurrentResources[bindSlot] = ((char*)pBuffer->m_base_ptr + pBuffer->m_offset);
-
 #if _RELEASE
 		m_graphicsState.validResourceBindings[bindSlot] = true;
 #else
@@ -235,8 +249,49 @@ inline void CDeviceGraphicsCommandInterface::SetInlineConstantBuffer(uint32 bind
 	}
 }
 
+inline void CDeviceGraphicsCommandInterface::SetInlineShaderResource(uint32 bindSlot, const CDeviceBuffer* pBuffer, EShaderResourceShaderSlot shaderSlot, EHWShaderClass shaderClass, ResourceViewHandle resourceViewID)
+{
+	CRY_ASSERT(bindSlot < EResourceLayoutSlot_Num);
+	// TODO: remove redundant InlineShaderResource sets (problem is the "Default" view, which can change undetected)
+	//if (m_graphicsState.pInlineResources[bindSlot].Set(pBuffer))
+	{
+#if _RELEASE
+		m_graphicsState.validResourceBindings[bindSlot] = true;
+#else
+		CRY_ASSERT(pBuffer != nullptr);
+		if ((m_graphicsState.validResourceBindings[bindSlot] = (pBuffer != nullptr)))
+#endif
+			SetInlineShaderResourceImpl(bindSlot, pBuffer, shaderSlot, shaderClass, resourceViewID);
+
+#if defined(ENABLE_PROFILING_CODE)
+		++m_profilingStats.numInlineSets;
+#endif
+	}
+}
+
+inline void CDeviceGraphicsCommandInterface::SetInlineShaderResource(uint32 bindSlot, const CDeviceBuffer* pBuffer, EShaderResourceShaderSlot shaderSlot, ::EShaderStage shaderStages, ResourceViewHandle resourceViewID)
+{
+	CRY_ASSERT(bindSlot < EResourceLayoutSlot_Num);
+	// TODO: remove redundant InlineShaderResource sets (problem is the "Default" view, which can change undetected)
+	//if (m_graphicsState.pInlineResources[bindSlot].Set(pBuffer))
+	{
+#if _RELEASE
+		m_graphicsState.validResourceBindings[bindSlot] = true;
+#else
+		CRY_ASSERT(pBuffer != nullptr);
+		if ((m_graphicsState.validResourceBindings[bindSlot] = (pBuffer != nullptr)))
+#endif
+			SetInlineShaderResourceImpl(bindSlot, pBuffer, shaderSlot, shaderStages, resourceViewID);
+
+#if defined(ENABLE_PROFILING_CODE)
+		++m_profilingStats.numInlineSets;
+#endif
+	}
+}
+
 inline void CDeviceGraphicsCommandInterface::SetInlineConstants(uint32 bindSlot, uint32 constantCount, float* pConstants)
 {
+	CRY_ASSERT(bindSlot < EResourceLayoutSlot_Num);
 	m_graphicsState.validResourceBindings[bindSlot] = true;
 	SetInlineConstantsImpl(bindSlot, constantCount, pConstants);
 
@@ -400,19 +455,27 @@ inline void CDeviceGraphicsCommandInterface::EndOcclusionQuery(D3DOcclusionQuery
 
 ///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
-inline void CDeviceComputeCommandInterface::PrepareUAVsForUse(uint32 viewCount, CGpuBuffer** pViews) const
+inline void CDeviceComputeCommandInterface::PrepareUAVsForUse(uint32 viewCount, CDeviceBuffer** pViews) const
 {
 	PrepareUAVsForUseImpl(viewCount, pViews);
 }
 
 inline void CDeviceComputeCommandInterface::PrepareResourcesForUse(uint32 bindSlot, CDeviceResourceSet* pResources) const
 {
+	CRY_ASSERT(bindSlot < EResourceLayoutSlot_Num);
 	PrepareResourcesForUseImpl(bindSlot, pResources);
 }
 
-inline void CDeviceComputeCommandInterface::PrepareInlineConstantBufferForUse(uint32 bindSlot, CConstantBuffer* pBuffer, EConstantBufferShaderSlot shaderSlot, ::EShaderStage shaderStages) const
+inline void CDeviceComputeCommandInterface::PrepareInlineConstantBufferForUse(uint32 bindSlot, CConstantBuffer* pBuffer, EConstantBufferShaderSlot shaderSlot) const
 {
-	PrepareInlineConstantBufferForUseImpl(bindSlot, pBuffer, shaderSlot, shaderStages);
+	CRY_ASSERT(bindSlot < EResourceLayoutSlot_Num);
+	PrepareInlineConstantBufferForUseImpl(bindSlot, pBuffer, shaderSlot);
+}
+
+inline void CDeviceComputeCommandInterface::PrepareInlineShaderResourceForUse(uint32 bindSlot, CDeviceBuffer* pBuffer, EShaderResourceShaderSlot shaderSlot) const
+{
+	CRY_ASSERT(bindSlot < EResourceLayoutSlot_Num);
+	PrepareInlineShaderResourceForUseImpl(bindSlot, pBuffer, shaderSlot);
 }
 
 inline void CDeviceComputeCommandInterface::SetPipelineState(const CDeviceComputePSO* pDevicePSO)
@@ -433,7 +496,7 @@ inline void CDeviceComputeCommandInterface::SetResourceLayout(const CDeviceResou
 	{
 		// If a root signature is changed on a command list, all previous root signature bindings
 		// become stale and all newly expected bindings must be set before Draw/Dispatch
-		ZeroArray(m_computeState.pResources);
+		ZeroArray(m_computeState.pResourceSets);
 
 		m_computeState.requiredResourceBindings = pResourceLayout->GetRequiredResourceBindings();
 		m_computeState.validResourceBindings = 0;
@@ -448,8 +511,8 @@ inline void CDeviceComputeCommandInterface::SetResourceLayout(const CDeviceResou
 
 inline void CDeviceComputeCommandInterface::SetResources(uint32 bindSlot, const CDeviceResourceSet* pResources)
 {
-	CRY_ASSERT(bindSlot <= EResourceLayoutSlot_Max);
-	if (m_computeState.pResources[bindSlot].Set(pResources))
+	CRY_ASSERT(bindSlot < EResourceLayoutSlot_Num);
+	if (m_computeState.pResourceSets[bindSlot].Set(pResources))
 	{
 		m_computeState.validResourceBindings[bindSlot] = pResources->IsValid();
 
@@ -463,14 +526,42 @@ inline void CDeviceComputeCommandInterface::SetResources(uint32 bindSlot, const 
 
 inline void CDeviceComputeCommandInterface::SetInlineConstantBuffer(uint32 bindSlot, const CConstantBuffer* pBuffer, EConstantBufferShaderSlot shaderSlot)
 {
-	m_computeState.validResourceBindings[bindSlot] = true;
-	SetInlineConstantBufferImpl(bindSlot, pBuffer, shaderSlot);
+	CRY_ASSERT(bindSlot < EResourceLayoutSlot_Num);
+	// TODO: remove redundant InlineConstantBuffer sets
+	// if (m_computeState.pInlineResources[bindSlot].Set(pBuffer))
+	{
+		m_computeState.validResourceBindings[bindSlot] = pBuffer != nullptr;
+		SetInlineConstantBufferImpl(bindSlot, pBuffer, shaderSlot);
+
+#if defined(ENABLE_PROFILING_CODE)
+		++m_profilingStats.numInlineSets;
+#endif
+	}
+}
+
+inline void CDeviceComputeCommandInterface::SetInlineShaderResource(uint32 bindSlot, const CDeviceBuffer* pBuffer, EShaderResourceShaderSlot shaderSlot, ResourceViewHandle resourceViewID)
+{
+	CRY_ASSERT(bindSlot < EResourceLayoutSlot_Num);
+	if (m_computeState.pInlineResources[bindSlot].Set(pBuffer))
+	{
+		m_computeState.validResourceBindings[bindSlot] = pBuffer != nullptr;
+		SetInlineShaderResourceImpl(bindSlot, pBuffer, shaderSlot, resourceViewID);
+
+#if defined(ENABLE_PROFILING_CODE)
+		++m_profilingStats.numInlineSets;
+#endif
+	}
 }
 
 inline void CDeviceComputeCommandInterface::SetInlineConstants(uint32 bindSlot, uint32 constantCount, float* pConstants)
 {
+	CRY_ASSERT(bindSlot < EResourceLayoutSlot_Num);
 	m_computeState.validResourceBindings[bindSlot] = true;
 	SetInlineConstantsImpl(bindSlot, constantCount, pConstants);
+
+#if defined(ENABLE_PROFILING_CODE)
+	++m_profilingStats.numInlineSets;
+#endif
 }
 
 inline void CDeviceComputeCommandInterface::Dispatch(uint32 X, uint32 Y, uint32 Z)

@@ -257,13 +257,14 @@ typedef std::shared_ptr<CDeviceResourceSet> CDeviceResourceSetPtr;
 
 ////////////////////////////////////////////////////////////////////////////
 
-typedef std::bitset<EResourceLayoutSlot_Max + 1> UsedBindSlotSet;
+typedef std::bitset<EResourceLayoutSlot_Num> UsedBindSlotSet;
 
 struct SDeviceResourceLayoutDesc
 {
 	enum class ELayoutSlotType : uint8
 	{
 		InlineConstantBuffer,
+		InlineShaderResource,
 		ResourceSet
 	};
 
@@ -277,6 +278,7 @@ struct SDeviceResourceLayoutDesc
 	};
 
 	void            SetConstantBuffer(uint32 bindSlot, EConstantBufferShaderSlot shaderSlot, EShaderStage shaderStages);
+	void            SetShaderResource(uint32 bindSlot, EShaderResourceShaderSlot shaderSlot, EShaderStage shaderStages);
 	void            SetResourceSet(uint32 bindSlot, const CDeviceResourceSetDesc& resourceSet);
 
 	UsedBindSlotSet GetRequiredResourceBindings() const;

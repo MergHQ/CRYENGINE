@@ -17,7 +17,9 @@ public:
 			uint32 NumBindings;
 			uint32 NumSamplers;
 			uint32 NumConstantBuffers;
+			uint32 NumShaderResources;
 			uint32 NumInlineConstantBuffers;
+			uint32 NumInlineShaderResources;
 			uint32 NumBuffers;
 			uint32 NumBufferSRVs;
 			uint32 NumBufferUAVs;
@@ -29,9 +31,9 @@ public:
 
 			struct SPerStageLimits
 			{
-				uint32 NumResources;
 				uint32 NumSamplers;
 				uint32 NumConstantBuffers; // no need to count inline and static buffers individually
+				uint32 NumShaderResources;
 				uint32 NumBuffers;
 				uint32 NumBufferSRVs;
 				uint32 NumBufferUAVs;
