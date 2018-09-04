@@ -1566,7 +1566,8 @@ bool CSystem::DoFrame(const SDisplayContextKey& displayContextKey, CEnumFlags<ES
 		m_env.pNetwork->SyncWithGame(eNGS_SleepNetwork);
 	}
 
-	RenderBegin(displayContextKey);
+	if (!m_env.IsEditing())  // Editor calls its own rendering update
+		RenderBegin(displayContextKey);
 
 	bool continueRunning = true;
 

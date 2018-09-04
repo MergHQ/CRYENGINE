@@ -213,6 +213,11 @@ void CREParticle::ResetPool()
 
 void CREParticle::Reset(IParticleVertexCreator* pVC, int nThreadId, uint allocId)
 {
+	if (m_pVertexCreator)
+	{
+		assert(m_pVertexCreator == pVC);
+		assert(m_nThreadId == nThreadId);
+	}
 	m_pVertexCreator = pVC;
 	m_pGpuRuntime = nullptr;
 	m_nThreadId = nThreadId;
@@ -334,7 +339,13 @@ void CRenderer::PrepareParticleRenderObjects(Array<const SAddParticlesToSceneJob
 	WaitForParticleBuffer(passInfo.GetFrameID());
 
 	// == now create the render elements and start processing those == //
-	const bool useComputeVerticesJob = passInfo.IsGeneralPass();
+	ICVar* pVar = gEnv->pConsole->GetCVar("e_ParticlesDebug");
+	const bool computeSync = pVar && (pVar->GetIVal() & AlphaBit('v'));
+	const bool useComputeVerticesJob = !computeSync && passInfo.IsGeneralPass();
+	if (useComputeVerticesJob)
+	{
+		m_ComputeVerticesJobState.SetRunning();
+	}
 
 	SCameraInfo camInfo(passInfo);
 	const bool bParticleTessellation = m_bDeviceSupportsTessellation && CV_r_ParticlesTessellation != 0;

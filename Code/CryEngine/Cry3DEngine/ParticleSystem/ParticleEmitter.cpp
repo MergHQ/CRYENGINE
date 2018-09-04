@@ -158,7 +158,7 @@ void CParticleEmitter::Update()
 	if (m_attributeInstance.WasChanged())
 		SetChanged();
 
-	if (IsStable())
+	if (ThreadMode() >= 3 && IsStable())
 		// Update only for last frame, even if update skipped for longer
 		m_timeUpdated = m_time;
 
