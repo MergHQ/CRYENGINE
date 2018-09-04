@@ -442,7 +442,7 @@ void CPostAAStage::DoFinalComposition(CTexture*& pCurrRT, CTexture* pDestRT, uin
 		}
 	}
 
-	if (m_passComposition.IsDirty(pCurrRT->GetID(), pDestRT->GetID(), pColorChartTex->GetID(), rtMask))
+	if (m_passComposition.IsDirty(pCurrRT->GetID(), pDestRT->GetID(), pColorChartTex->GetID(), CRendererResources::s_ptexCurLumTexture->GetTextureID(), rtMask))
 	{
 		static CCryNameTSCRC techComposition("PostAAComposites");
 
