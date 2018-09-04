@@ -229,12 +229,12 @@ void CSystem::OnSystemEvent(ESystemEvent event, UINT_PTR wparam, UINT_PTR lparam
 				if (wparam == 0 || lparam != 0)
 				{
 					// lost focus
-					g_pLoseFocusTrigger->Execute();
+					g_loseFocusTrigger.Execute();
 				}
 				else
 				{
 					// got focus
-					g_pGetFocusTrigger->Execute();
+					g_getFocusTrigger.Execute();
 				}
 			}
 
@@ -248,12 +248,12 @@ void CSystem::OnSystemEvent(ESystemEvent event, UINT_PTR wparam, UINT_PTR lparam
 				if (wparam == 0)
 				{
 					// lost focus
-					g_pLoseFocusTrigger->Execute();
+					g_loseFocusTrigger.Execute();
 				}
 				else
 				{
 					// got focus
-					g_pGetFocusTrigger->Execute();
+					g_getFocusTrigger.Execute();
 				}
 			}
 
@@ -261,13 +261,13 @@ void CSystem::OnSystemEvent(ESystemEvent event, UINT_PTR wparam, UINT_PTR lparam
 		}
 	case ESYSTEM_EVENT_AUDIO_MUTE:
 		{
-			g_pMuteAllTrigger->Execute();
+			g_muteAllTrigger.Execute();
 
 			break;
 		}
 	case ESYSTEM_EVENT_AUDIO_UNMUTE:
 		{
-			g_pUnmuteAllTrigger->Execute();
+			g_unmuteAllTrigger.Execute();
 
 			break;
 		}

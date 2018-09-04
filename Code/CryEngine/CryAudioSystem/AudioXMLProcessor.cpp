@@ -71,38 +71,6 @@ void CAudioXMLProcessor::ParseControlsData(char const* const szFolderPath, EData
 	}
 
 #if defined(INCLUDE_AUDIO_PRODUCTION_CODE)
-	TriggerConnections const triggerConnections;
-
-	if (g_pLoseFocusTrigger == nullptr)
-	{
-		g_pLoseFocusTrigger = new CLoseFocusTrigger(triggerConnections);
-	}
-
-	if (g_pGetFocusTrigger == nullptr)
-	{
-		g_pGetFocusTrigger = new CGetFocusTrigger(triggerConnections);
-	}
-
-	if (g_pMuteAllTrigger == nullptr)
-	{
-		g_pMuteAllTrigger = new CMuteAllTrigger(triggerConnections);
-	}
-
-	if (g_pUnmuteAllTrigger == nullptr)
-	{
-		g_pUnmuteAllTrigger = new CUnmuteAllTrigger(triggerConnections);
-	}
-
-	if (g_pPauseAllTrigger == nullptr)
-	{
-		g_pPauseAllTrigger = new CPauseAllTrigger(triggerConnections);
-	}
-
-	if (g_pResumeAllTrigger == nullptr)
-	{
-		g_pResumeAllTrigger = new CResumeAllTrigger(triggerConnections);
-	}
-
 	char const* szDataScope = "unknown";
 
 	switch (dataScope)
@@ -314,27 +282,6 @@ void CAudioXMLProcessor::ClearControlsData(EDataScope const dataScope)
 {
 	if (g_pIImpl != nullptr)
 	{
-		if (dataScope == EDataScope::All || dataScope == EDataScope::Global)
-		{
-			delete g_pLoseFocusTrigger;
-			g_pLoseFocusTrigger = nullptr;
-
-			delete g_pGetFocusTrigger;
-			g_pGetFocusTrigger = nullptr;
-
-			delete g_pMuteAllTrigger;
-			g_pMuteAllTrigger = nullptr;
-
-			delete g_pUnmuteAllTrigger;
-			g_pUnmuteAllTrigger = nullptr;
-
-			delete g_pPauseAllTrigger;
-			g_pPauseAllTrigger = nullptr;
-
-			delete g_pResumeAllTrigger;
-			g_pResumeAllTrigger = nullptr;
-		}
-
 		AudioTriggerLookup::iterator iterTriggers(g_triggers.begin());
 		AudioTriggerLookup::const_iterator iterTriggersEnd(g_triggers.end());
 
@@ -702,44 +649,32 @@ void CAudioXMLProcessor::ParseDefaultTriggers(XmlNodeRef const pXMLTriggerRoot)
 			{
 			case LoseFocusTriggerId:
 				{
-					CRY_ASSERT_MESSAGE(g_pLoseFocusTrigger == nullptr, "<Audio> lose focus trigger must be nullptr during initialization.");
-					g_pLoseFocusTrigger = new CLoseFocusTrigger(connections);
-
+					g_loseFocusTrigger.AddConnections(connections);
 					break;
 				}
 			case GetFocusTriggerId:
 				{
-					CRY_ASSERT_MESSAGE(g_pGetFocusTrigger == nullptr, "<Audio> get focus trigger must be nullptr during initialization.");
-					g_pGetFocusTrigger = new CGetFocusTrigger(connections);
-
+					g_getFocusTrigger.AddConnections(connections);
 					break;
 				}
 			case MuteAllTriggerId:
 				{
-					CRY_ASSERT_MESSAGE(g_pMuteAllTrigger == nullptr, "<Audio> mute all trigger must be nullptr during initialization.");
-					g_pMuteAllTrigger = new CMuteAllTrigger(connections);
-
+					g_muteAllTrigger.AddConnections(connections);
 					break;
 				}
 			case UnmuteAllTriggerId:
 				{
-					CRY_ASSERT_MESSAGE(g_pUnmuteAllTrigger == nullptr, "<Audio> unmute all trigger must be nullptr during initialization.");
-					g_pUnmuteAllTrigger = new CUnmuteAllTrigger(connections);
-
+					g_unmuteAllTrigger.AddConnections(connections);
 					break;
 				}
 			case PauseAllTriggerId:
 				{
-					CRY_ASSERT_MESSAGE(g_pPauseAllTrigger == nullptr, "<Audio> pause all trigger must be nullptr during initialization.");
-					g_pPauseAllTrigger = new CPauseAllTrigger(connections);
-
+					g_pauseAllTrigger.AddConnections(connections);
 					break;
 				}
 			case ResumeAllTriggerId:
 				{
-					CRY_ASSERT_MESSAGE(g_pResumeAllTrigger == nullptr, "<Audio> resume all trigger must be nullptr during initialization.");
-					g_pResumeAllTrigger = new CResumeAllTrigger(connections);
-
+					g_resumeAllTrigger.AddConnections(connections);
 					break;
 				}
 			default:

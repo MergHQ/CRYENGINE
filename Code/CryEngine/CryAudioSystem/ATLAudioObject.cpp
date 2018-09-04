@@ -515,22 +515,22 @@ char const* CATLAudioObject::GetDefaultTriggerName(ControlId const id) const
 	switch (id)
 	{
 	case LoseFocusTriggerId:
-		szName = g_pLoseFocusTrigger->GetName();
+		szName = g_loseFocusTrigger.GetName();
 		break;
 	case GetFocusTriggerId:
-		szName = g_pGetFocusTrigger->GetName();
+		szName = g_getFocusTrigger.GetName();
 		break;
 	case MuteAllTriggerId:
-		szName = g_pMuteAllTrigger->GetName();
+		szName = g_muteAllTrigger.GetName();
 		break;
 	case UnmuteAllTriggerId:
-		szName = g_pUnmuteAllTrigger->GetName();
+		szName = g_unmuteAllTrigger.GetName();
 		break;
 	case PauseAllTriggerId:
-		szName = g_pPauseAllTrigger->GetName();
+		szName = g_pauseAllTrigger.GetName();
 		break;
 	case ResumeAllTriggerId:
-		szName = g_pResumeAllTrigger->GetName();
+		szName = g_resumeAllTrigger.GetName();
 		break;
 	default:
 		CRY_ASSERT_MESSAGE(false, R"(The default trigger "%u" does not exist.)", id);
@@ -1213,22 +1213,22 @@ bool CATLAudioObject::ExecuteDefaultTrigger(ControlId const id)
 	switch (id)
 	{
 	case LoseFocusTriggerId:
-		g_pLoseFocusTrigger->Execute();
+		g_loseFocusTrigger.Execute();
 		break;
 	case GetFocusTriggerId:
-		g_pGetFocusTrigger->Execute();
+		g_getFocusTrigger.Execute();
 		break;
 	case MuteAllTriggerId:
-		g_pMuteAllTrigger->Execute();
+		g_muteAllTrigger.Execute();
 		break;
 	case UnmuteAllTriggerId:
-		g_pUnmuteAllTrigger->Execute();
+		g_unmuteAllTrigger.Execute();
 		break;
 	case PauseAllTriggerId:
-		g_pPauseAllTrigger->Execute();
+		g_pauseAllTrigger.Execute();
 		break;
 	case ResumeAllTriggerId:
-		g_pResumeAllTrigger->Execute();
+		g_resumeAllTrigger.Execute();
 		break;
 	default:
 		wasSuccess = false;
