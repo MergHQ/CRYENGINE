@@ -105,14 +105,13 @@ int CPropagationProcessor::OnObstructionTest(EventPhys const* pEvent)
 }
 
 ///////////////////////////////////////////////////////////////////////////
-CPropagationProcessor::CPropagationProcessor(CObjectTransformation const& transformation)
-	: m_obstruction(0.0f)
-	, m_lastQuerriedObstruction(0.0f)
-	, m_lastQuerriedOcclusion(0.0f)
+CPropagationProcessor::CPropagationProcessor(CObjectTransformation const& transformation, EObjectFlags& flags)
+	: m_lastQuerriedOcclusion(0.0f)
 	, m_occlusion(0.0f)
 	, m_remainingRays(0)
 	, m_rayIndex(0)
 	, m_transformation(transformation)
+	, m_flags(flags)
 	, m_currentListenerDistance(0.0f)
 	, m_occlusionType(EOcclusionType::None)
 	, m_originalOcclusionType(EOcclusionType::None)
@@ -189,7 +188,7 @@ void CPropagationProcessor::UpdateOcclusionRayFlags()
 }
 
 ///////////////////////////////////////////////////////////////////////////
-void CPropagationProcessor::Update(EObjectFlags const objectFlags)
+void CPropagationProcessor::Update()
 {
 #if defined(INCLUDE_AUDIO_PRODUCTION_CODE)
 	if (g_cvars.m_audioObjectsRayType > 0)
@@ -202,9 +201,7 @@ void CPropagationProcessor::Update(EObjectFlags const objectFlags)
 	}
 #endif // INCLUDE_AUDIO_PRODUCTION_CODE
 
-	m_currentListenerDistance = m_transformation.GetPosition().GetDistance(g_listenerManager.GetActiveListenerTransformation().GetPosition());
-
-	if (CanRunObstructionOcclusion() && (objectFlags& EObjectFlags::Virtual) == 0)
+	if (CanRunOcclusion())
 	{
 		if (m_currentListenerDistance < g_cvars.m_occlusionHighDistance)
 		{
@@ -227,7 +224,6 @@ void CPropagationProcessor::Update(EObjectFlags const objectFlags)
 	}
 	else
 	{
-		m_obstruction = 0.0f;
 		m_occlusion = 0.0f;
 	}
 }
@@ -242,111 +238,109 @@ void CPropagationProcessor::SetOcclusionType(EOcclusionType const occlusionType)
 //////////////////////////////////////////////////////////////////////////
 void CPropagationProcessor::UpdateOcclusion()
 {
-	if ((m_occlusionType != EOcclusionType::None) && (m_occlusionType != EOcclusionType::Ignore))
+	if (CanRunOcclusion())
 	{
-		m_obstruction = 0.0f;
-		m_occlusion = 0.0f;
 		Vec3 const& listenerPosition = g_listenerManager.GetActiveListenerTransformation().GetPosition();
 
 		// First time run is synchronous and center ray only to get a quick initial value to start from.
 		Vec3 const direction(m_transformation.GetPosition() - listenerPosition);
-		m_currentListenerDistance = direction.GetLength();
+		Vec3 directionNormalized(direction / m_currentListenerDistance);
+		Vec3 const finalDirection(direction - (directionNormalized* g_cvars.m_occlusionRayLengthOffset));
 
-		if (CanRunObstructionOcclusion())
+		CAudioRayInfo& rayInfo = m_raysInfo[0];
+
+		// We use "rwi_max_piercing" to allow audio rays to always pierce surfaces regardless of the "pierceability" attribute.
+		// Note: The very first entry of rayInfo.hits (solid slot) is always empty.
+		rayInfo.numHits = static_cast<size_t>(gEnv->pPhysicalWorld->RayWorldIntersection(
+																						listenerPosition,
+																						finalDirection,
+																						s_occlusionRayFlags,
+																						rwi_max_piercing,
+																						rayInfo.hits,
+																						static_cast<int>(s_maxRayHits),
+																						nullptr,
+																						0,
+																						&rayInfo,
+																						PHYS_FOREIGN_ID_SOUND_OBSTRUCTION));
+
+		rayInfo.numHits = std::min(rayInfo.numHits + 1, s_maxRayHits);
+		float finalOcclusion = 0.0f;
+
+		if (rayInfo.numHits > 0)
 		{
-			Vec3 directionNormalized(direction / m_currentListenerDistance);
-			Vec3 const finalDirection(direction - (directionNormalized* g_cvars.m_occlusionRayLengthOffset));
+			ISurfaceTypeManager* const pSurfaceTypeManager = gEnv->p3DEngine->GetMaterialManager()->GetSurfaceTypeManager();
+			CRY_ASSERT(rayInfo.numHits <= s_maxRayHits);
+			bool const accumulate = g_cvars.m_accumulateOcclusion > 0;
 
-			CAudioRayInfo& rayInfo = m_raysInfo[0];
-
-			// We use "rwi_max_piercing" to allow audio rays to always pierce surfaces regardless of the "pierceability" attribute.
-			// Note: The very first entry of rayInfo.hits (solid slot) is always empty.
-			rayInfo.numHits = static_cast<size_t>(gEnv->pPhysicalWorld->RayWorldIntersection(
-																							listenerPosition,
-																							finalDirection,
-																							s_occlusionRayFlags,
-																							rwi_max_piercing,
-																							rayInfo.hits,
-																							static_cast<int>(s_maxRayHits),
-																							nullptr,
-																							0,
-																							&rayInfo,
-																							PHYS_FOREIGN_ID_SOUND_OBSTRUCTION));
-
-			rayInfo.numHits = std::min(rayInfo.numHits + 1, s_maxRayHits);
-			float finalOcclusion = 0.0f;
-
-			if (rayInfo.numHits > 0)
+			for (size_t i = 0; i < rayInfo.numHits; ++i)
 			{
-				ISurfaceTypeManager* const pSurfaceTypeManager = gEnv->p3DEngine->GetMaterialManager()->GetSurfaceTypeManager();
-				CRY_ASSERT(rayInfo.numHits <= s_maxRayHits);
-				bool const accumulate = g_cvars.m_accumulateOcclusion > 0;
+				float const distance = rayInfo.hits[i].dist;
 
-				for (size_t i = 0; i < rayInfo.numHits; ++i)
+				if (distance > 0.0f)
 				{
-					float const distance = rayInfo.hits[i].dist;
+					ISurfaceType* const pMat = pSurfaceTypeManager->GetSurfaceType(rayInfo.hits[i].surface_idx);
 
-					if (distance > 0.0f)
+					if (pMat != nullptr)
 					{
-						ISurfaceType* const pMat = pSurfaceTypeManager->GetSurfaceType(rayInfo.hits[i].surface_idx);
+						ISurfaceType::SPhysicalParams const& physParams = pMat->GetPhyscalParams();
 
-						if (pMat != nullptr)
+						if (accumulate)
 						{
-							ISurfaceType::SPhysicalParams const& physParams = pMat->GetPhyscalParams();
+							finalOcclusion += physParams.sound_obstruction; // Not clamping b/w 0 and 1 for performance reasons.
+						}
+						else
+						{
+							finalOcclusion = std::max(finalOcclusion, physParams.sound_obstruction);
+						}
 
-							if (accumulate)
-							{
-								finalOcclusion += physParams.sound_obstruction; // Not clamping b/w 0 and 1 for performance reasons.
-							}
-							else
-							{
-								finalOcclusion = std::max(finalOcclusion, physParams.sound_obstruction);
-							}
-
-							if (finalOcclusion >= 1.0f)
-							{
-								break;
-							}
+						if (finalOcclusion >= 1.0f)
+						{
+							break;
 						}
 					}
 				}
 			}
-
-			m_occlusion = clamp_tpl(finalOcclusion, 0.0f, 1.0f);
-
-			for (auto& rayOcclusion : m_raysOcclusion)
-			{
-				rayOcclusion = m_occlusion;
-			}
 		}
-		else
+
+		m_occlusion = clamp_tpl(finalOcclusion, 0.0f, 1.0f);
+
+		for (auto& rayOcclusion : m_raysOcclusion)
 		{
-			m_lastQuerriedObstruction = 0.0f;
-			m_lastQuerriedOcclusion = 0.0f;
+			rayOcclusion = m_occlusion;
 		}
 	}
 	else
 	{
-		m_lastQuerriedObstruction = 0.0f;
+		m_occlusion = 0.0f;
 		m_lastQuerriedOcclusion = 0.0f;
 	}
 }
 
 //////////////////////////////////////////////////////////////////////////
-bool CryAudio::CPropagationProcessor::CanRunObstructionOcclusion() const
+bool CPropagationProcessor::CanRunOcclusion()
 {
-	return
-	  m_occlusionType != EOcclusionType::None &&
-	  m_occlusionType != EOcclusionType::Ignore &&
-	  m_currentListenerDistance > g_cvars.m_occlusionMinDistance &&
-	  m_currentListenerDistance < g_cvars.m_occlusionMaxDistance &&
-	  s_bCanIssueRWIs;
+	bool canRun = false;
+
+	if ((m_occlusionType != EOcclusionType::None) &&
+	    (m_occlusionType != EOcclusionType::Ignore) &&
+	    ((m_flags& EObjectFlags::Virtual) == 0) &&
+	    s_bCanIssueRWIs)
+	{
+		m_currentListenerDistance = m_transformation.GetPosition().GetDistance(g_listenerManager.GetActiveListenerTransformation().GetPosition());
+
+		if ((m_currentListenerDistance > g_cvars.m_occlusionMinDistance) && (m_currentListenerDistance < g_cvars.m_occlusionMaxDistance))
+		{
+			canRun = true;
+		}
+	}
+
+	canRun ? (m_flags |= EObjectFlags::CanRunOcclusion) : (m_flags &= ~EObjectFlags::CanRunOcclusion);
+	return canRun;
 }
 
 ///////////////////////////////////////////////////////////////////////////
 void CPropagationProcessor::GetPropagationData(SATLSoundPropagationData& propagationData) const
 {
-	propagationData.obstruction = m_obstruction;
 	propagationData.occlusion = m_occlusion;
 }
 
@@ -436,9 +430,8 @@ bool CPropagationProcessor::HasNewOcclusionValues()
 {
 	bool hasNewValues = false;
 
-	if (fabs_tpl(m_lastQuerriedOcclusion - m_occlusion) > FloatEpsilon || fabs_tpl(m_lastQuerriedObstruction - m_obstruction) > FloatEpsilon)
+	if (fabs_tpl(m_lastQuerriedOcclusion - m_occlusion) > FloatEpsilon)
 	{
-		m_lastQuerriedObstruction = m_obstruction;
 		m_lastQuerriedOcclusion = m_occlusion;
 		hasNewValues = true;
 	}
@@ -450,7 +443,6 @@ bool CPropagationProcessor::HasNewOcclusionValues()
 void CPropagationProcessor::ProcessObstructionOcclusion()
 {
 	m_occlusion = 0.0f;
-	m_obstruction = 0.0f;
 	CRY_ASSERT_MESSAGE(m_currentListenerDistance > 0.0f, "Distance to Listener is 0!");
 
 	size_t const numSamplePositions = GetNumSamplePositions();
@@ -474,7 +466,7 @@ void CPropagationProcessor::ProcessObstructionOcclusion()
 	}
 
 #if defined(INCLUDE_AUDIO_PRODUCTION_CODE)
-	if (CanRunObstructionOcclusion()) // only re-sample the rays about 10 times per second for a smoother debug drawing
+	if (((m_flags& EObjectFlags::CanRunOcclusion) != 0)) // only re-sample the rays about 10 times per second for a smoother debug drawing
 	{
 		for (size_t i = 0; i < g_numConcurrentRaysHigh; ++i)
 		{
@@ -796,25 +788,21 @@ void CPropagationProcessor::UpdateOcclusionPlanes()
 
 #if defined(INCLUDE_AUDIO_PRODUCTION_CODE)
 //////////////////////////////////////////////////////////////////////////
-void CPropagationProcessor::DrawDebugInfo(IRenderAuxGeom& auxGeom, EObjectFlags const objectFlags) const
+void CPropagationProcessor::DrawDebugInfo(IRenderAuxGeom& auxGeom)
 {
-	if ((g_cvars.m_drawAudioDebug & Debug::EDrawFilter::OcclusionRays) != 0)
+	if ((m_flags& EObjectFlags::CanRunOcclusion) != 0)
 	{
-		if (CanRunObstructionOcclusion() && (objectFlags& EObjectFlags::Virtual) == 0)
+		if ((g_cvars.m_drawAudioDebug & Debug::EDrawFilter::OcclusionRays) != 0)
 		{
 			size_t const numConcurrentRays = GetNumConcurrentRays();
-			CRY_ASSERT(numConcurrentRays > 0);
 
 			for (size_t i = 0; i < numConcurrentRays; ++i)
 			{
 				DrawRay(auxGeom, i);
 			}
 		}
-	}
 
-	if ((g_cvars.m_drawAudioDebug & Debug::EDrawFilter::ListenerOcclusionPlane) != 0)
-	{
-		if (CanRunObstructionOcclusion() && (objectFlags& EObjectFlags::Virtual) == 0)
+		if ((g_cvars.m_drawAudioDebug & Debug::EDrawFilter::ListenerOcclusionPlane) != 0)
 		{
 			SAuxGeomRenderFlags const previousRenderFlags = auxGeom.GetRenderFlags();
 			SAuxGeomRenderFlags newRenderFlags;
