@@ -380,7 +380,7 @@ CAttributeType<float> s_floatAttributeType(
 
 CItemModelAttribute s_nameAttribute("Name", &s_stringAttributeType);
 CItemModelAttribute s_visibleAttribute("Visible", &s_booleanAttributeType);
-CItemModelAttribute s_favoriteAttribute("Favorite", &s_booleanAttributeType, CItemModelAttribute::Visible, false);
+CItemModelAttribute s_favoriteAttribute("Favorite", &s_booleanAttributeType, CItemModelAttribute::Visible, false, QVariant(), Qt::CheckStateRole);
 CItemModelAttribute s_thumbnailAttribute("_thumb_", &s_stringAttributeType, CItemModelAttribute::AlwaysHidden, false);
 
 }
