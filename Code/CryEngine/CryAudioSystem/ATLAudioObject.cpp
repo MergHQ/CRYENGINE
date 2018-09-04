@@ -26,7 +26,7 @@ CATLAudioObject::CATLAudioObject(CObjectTransformation const& transformation)
 	: m_pImplData(nullptr)
 	, m_transformation(transformation)
 	, m_flags(EObjectFlags::InUse)
-	, m_propagationProcessor(m_transformation)
+	, m_propagationProcessor(m_transformation, m_flags)
 	, m_entityId(INVALID_ENTITYID)
 	, m_numPendingSyncCallbacks(0)
 #if defined(INCLUDE_AUDIO_PRODUCTION_CODE)
@@ -348,7 +348,7 @@ bool CATLAudioObject::HasActiveData(CATLAudioObject const* const pAudioObject) c
 ///////////////////////////////////////////////////////////////////////////
 void CATLAudioObject::Update(float const deltaTime)
 {
-	m_propagationProcessor.Update(m_flags);
+	m_propagationProcessor.Update();
 
 	if (m_propagationProcessor.HasNewOcclusionValues())
 	{
@@ -543,7 +543,7 @@ char const* CATLAudioObject::GetDefaultTriggerName(ControlId const id) const
 using TriggerCountMap = std::map<ControlId const, size_t>;
 
 ///////////////////////////////////////////////////////////////////////////
-void CATLAudioObject::DrawDebugInfo(IRenderAuxGeom& auxGeom) const
+void CATLAudioObject::DrawDebugInfo(IRenderAuxGeom& auxGeom)
 {
 	Vec3 const& position = m_transformation.GetPosition();
 	Vec3 screenPos(ZERO);
@@ -981,7 +981,7 @@ void CATLAudioObject::DrawDebugInfo(IRenderAuxGeom& auxGeom) const
 					m_pImplData->DrawDebugInfo(auxGeom, screenPos.x, screenPos.y, (isTextFilterDisabled ? nullptr : lowerCaseSearchString.c_str()));
 				}
 
-				m_propagationProcessor.DrawDebugInfo(auxGeom, m_flags);
+				m_propagationProcessor.DrawDebugInfo(auxGeom);
 			}
 		}
 	}

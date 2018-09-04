@@ -165,7 +165,7 @@ private:
 #if defined(INCLUDE_AUDIO_PRODUCTION_CODE)
 public:
 
-	void           DrawDebugInfo(IRenderAuxGeom& auxGeom) const;
+	void           DrawDebugInfo(IRenderAuxGeom& auxGeom);
 	void           ResetObstructionRays() { m_propagationProcessor.ResetRayData(); }
 	float          GetMaxRadius() const   { return m_maxRadius; }
 

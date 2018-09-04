@@ -26,9 +26,10 @@ enum class EObjectFlags : EnumFlagsType
 	None                  = 0,
 	InUse                 = BIT(0),
 	Virtual               = BIT(1),
+	CanRunOcclusion       = BIT(2),
 #if defined(INCLUDE_AUDIO_PRODUCTION_CODE)
-	TrackAbsoluteVelocity = BIT(2),
-	TrackRelativeVelocity = BIT(3),
+	TrackAbsoluteVelocity = BIT(3),
+	TrackRelativeVelocity = BIT(4),
 #endif // INCLUDE_AUDIO_PRODUCTION_CODE
 };
 CRY_CREATE_ENUM_FLAG_OPERATORS(EObjectFlags);

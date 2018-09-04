@@ -37,12 +37,18 @@ class CPropagationProcessor
 {
 public:
 
+	CPropagationProcessor() = delete;
+	CPropagationProcessor(CPropagationProcessor const&) = delete;
+	CPropagationProcessor(CPropagationProcessor&&) = delete;
+	CPropagationProcessor& operator=(CPropagationProcessor const&) = delete;
+	CPropagationProcessor& operator=(CPropagationProcessor&&) = delete;
+
 	static bool s_bCanIssueRWIs;
 
 	using RayInfoVec = std::vector<CAudioRayInfo>;
 	using RayOcclusionVec = std::vector<float>;
 
-	CPropagationProcessor(CObjectTransformation const& transformation);
+	CPropagationProcessor(CObjectTransformation const& transformation, EObjectFlags& flags);
 	~CPropagationProcessor();
 
 	void Init(CATLAudioObject* const pObject);
@@ -51,9 +57,8 @@ public:
 	static int  OnObstructionTest(EventPhys const* pEvent);
 	static void UpdateOcclusionRayFlags();
 
-	void        Update(EObjectFlags const objectFlags);
+	void        Update();
 	void        SetOcclusionType(EOcclusionType const occlusionType);
-	bool        CanRunObstructionOcclusion() const;
 	void        GetPropagationData(SATLSoundPropagationData& propagationData) const;
 	void        ProcessPhysicsRay(CAudioRayInfo* const pAudioRayInfo);
 	void        ReleasePendingRays();
@@ -76,9 +81,8 @@ private:
 	size_t GetNumConcurrentRays() const;
 	size_t GetNumSamplePositions() const;
 	void   UpdateOcclusionPlanes();
+	bool   CanRunOcclusion();
 
-	float                        m_obstruction;
-	float                        m_lastQuerriedObstruction;
 	float                        m_lastQuerriedOcclusion;
 	float                        m_occlusion;
 	float                        m_currentListenerDistance;
@@ -88,6 +92,7 @@ private:
 	size_t                       m_rayIndex;
 
 	CObjectTransformation const& m_transformation;
+	EObjectFlags&                m_flags;
 
 	RayInfoVec                   m_raysInfo;
 	EOcclusionType               m_occlusionType;
@@ -102,7 +107,7 @@ public:
 	static size_t s_totalSyncPhysRays;
 	static size_t s_totalAsyncPhysRays;
 
-	void           DrawDebugInfo(IRenderAuxGeom& auxGeom, EObjectFlags const objectFlags) const;
+	void           DrawDebugInfo(IRenderAuxGeom& auxGeom);
 	EOcclusionType GetOcclusionType() const             { return m_occlusionType; }
 	EOcclusionType GetOcclusionTypeWhenAdaptive() const { return m_occlusionTypeWhenAdaptive; }
 	void           ResetRayData();
