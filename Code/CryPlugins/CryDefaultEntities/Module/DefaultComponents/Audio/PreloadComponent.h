@@ -32,10 +32,10 @@ protected:
 	static void Register(Schematyc::CEnvRegistrationScope& componentScope);
 
 	// IEntityComponent
-	virtual void   Initialize() override                      {}
-	virtual void   OnShutDown() override;
-	virtual Cry::Entity::EventFlags GetEventMask() const override              { return Cry::Entity::EventFlags(); }
-	virtual void   ProcessEvent(const SEntityEvent& event) override {}
+	virtual void                    Initialize() override;
+	virtual void                    OnShutDown() override;
+	virtual Cry::Entity::EventFlags GetEventMask() const override                    { return Cry::Entity::EventFlags(); }
+	virtual void                    ProcessEvent(const SEntityEvent& event) override {}
 	// ~IEntityComponent
 
 	// Properties exposed to UI
@@ -53,6 +53,11 @@ public:
 private:
 
 	bool m_bLoaded = false;
+
+#if defined(INCLUDE_DEFAULT_PLUGINS_PRODUCTION_CODE)
+	Serialization::FunctorActionButton<std::function<void()>> m_loadButton;
+	Serialization::FunctorActionButton<std::function<void()>> m_unloadButton;
+#endif  // INCLUDE_DEFAULT_PLUGINS_PRODUCTION_CODE
 };
 
 //////////////////////////////////////////////////////////////////////////

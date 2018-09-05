@@ -32,6 +32,10 @@ void CSwitchComponent::ReflectType(Schematyc::CTypeDesc<CSwitchComponent>& desc)
 	desc.SetComponentFlags({ IEntityComponent::EFlags::Attach, IEntityComponent::EFlags::ClientOnly, IEntityComponent::EFlags::HideFromInspector });
 
 	desc.AddMember(&CSwitchComponent::m_switch, 'swit', "switch", "Switch", "The switch which value is applied to all audio objects.", SSwitchWithStateSerializeHelper());
+
+#if defined(INCLUDE_DEFAULT_PLUGINS_PRODUCTION_CODE)
+	desc.AddMember(&CSwitchComponent::m_setButton, 'btn1', "set", "Set", "Sets the switch to the specific state.", Serialization::FunctorActionButton<std::function<void()>>());
+#endif  // INCLUDE_DEFAULT_PLUGINS_PRODUCTION_CODE
 }
 
 //////////////////////////////////////////////////////////////////////////
@@ -44,6 +48,10 @@ void CSwitchComponent::Initialize()
 	{
 		m_pIEntityAudioComponent->SetSwitchState(m_switch.m_switchId, m_switch.m_switchStateId, CryAudio::InvalidAuxObjectId);
 	}
+
+#if defined(INCLUDE_DEFAULT_PLUGINS_PRODUCTION_CODE)
+	m_setButton = Serialization::ActionButton(std::function<void()>([this]() { Set(m_switch); }));
+#endif  // INCLUDE_DEFAULT_PLUGINS_PRODUCTION_CODE
 }
 
 //////////////////////////////////////////////////////////////////////////

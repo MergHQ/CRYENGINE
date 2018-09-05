@@ -47,6 +47,20 @@ void CPreloadComponent::ReflectType(Schematyc::CTypeDesc<CPreloadComponent>& des
 	desc.SetComponentFlags({ IEntityComponent::EFlags::Attach, IEntityComponent::EFlags::ClientOnly, IEntityComponent::EFlags::HideFromInspector });
 
 	desc.AddMember(&CPreloadComponent::m_preload, 'prel', "preload", "Preload", "The preload request to load/unload.", SPreloadSerializeHelper());
+
+#if defined(INCLUDE_DEFAULT_PLUGINS_PRODUCTION_CODE)
+	desc.AddMember(&CPreloadComponent::m_loadButton, 'btn1', "load", "Load", "Loads the preload request.", Serialization::FunctorActionButton<std::function<void()>>());
+	desc.AddMember(&CPreloadComponent::m_unloadButton, 'btn2', "unload", "Unload", "Unloads the preload request.", Serialization::FunctorActionButton<std::function<void()>>());
+#endif  // INCLUDE_DEFAULT_PLUGINS_PRODUCTION_CODE
+}
+
+//////////////////////////////////////////////////////////////////////////
+void CPreloadComponent::Initialize()
+{
+#if defined(INCLUDE_DEFAULT_PLUGINS_PRODUCTION_CODE)
+	m_loadButton = Serialization::ActionButton(std::function<void()>([this]() { Load(); }));
+	m_unloadButton = Serialization::ActionButton(std::function<void()>([this]() { Unload(); }));
+#endif  // INCLUDE_DEFAULT_PLUGINS_PRODUCTION_CODE
 }
 
 //////////////////////////////////////////////////////////////////////////
