@@ -2,12 +2,11 @@
 
 #include "StdAfx.h"
 #include "CurveTool.h"
-#include "DesignerEditor.h"
-#include "Core/Model.h"
+
 #include "Core/Helper.h"
-#include "ViewManager.h"
-#include <CrySerialization/Enum.h>
-#include "Objects/DisplayContext.h"
+#include "DesignerEditor.h"
+
+#include <Viewport.h>
 
 namespace Designer
 {

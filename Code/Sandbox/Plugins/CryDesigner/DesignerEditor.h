@@ -2,25 +2,15 @@
 
 #pragma once
 
-#include "Core/Model.h"
-#include "Core/ModelCompiler.h"
-#include "Objects/DesignerObject.h"
 #include "Tools/ToolCommon.h"
-#include "ToolFactory.h"
-#include "IDataBaseManager.h"
-#include "Core/PolygonMesh.h"
-#include "DesignerSession.h"
-#include "Gizmos/ITransformManipulator.h"
 
-struct IDataBaseItem;
-enum EDataBaseItemEvent;
+#include <Gizmos/ITransformManipulator.h>
 
 namespace Designer
 {
-class ElementSet;
 class BaseTool;
-class Model;
-class ExcludedEdgeManager;
+class ElementSet;
+
 
 //! DesignerEditor class plays a role of managing the global resources(CBaseObject, Designer::Element , main panels and designer tools etc),
 //! and dispatching and receiving windows, editor and designer tool messages or vice versa.

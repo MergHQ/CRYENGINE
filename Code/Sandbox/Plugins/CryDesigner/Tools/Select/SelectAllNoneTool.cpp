@@ -2,9 +2,9 @@
 
 #include "StdAfx.h"
 #include "SelectAllNoneTool.h"
+
+#include "Core/Model.h"
 #include "DesignerEditor.h"
-#include "Tools/Select/SelectTool.h"
-#include "DesignerSession.h"
 
 namespace Designer
 {

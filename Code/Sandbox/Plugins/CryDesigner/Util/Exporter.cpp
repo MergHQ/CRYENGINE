@@ -3,11 +3,11 @@
 #include "StdAfx.h"
 #include "Exporter.h"
 
-#include "Core/Helper.h"
 #include "Core/LoopPolygons.h"
 #include "Core/ModelCompiler.h"
 #include "Core/PolygonDecomposer.h"
 #include "Objects/AreaSolidObject.h"
+#include "Objects/DesignerObject.h"
 
 // EditorQt
 #include "Material/Material.h"

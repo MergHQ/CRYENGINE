@@ -2,14 +2,14 @@
 
 #include "StdAfx.h"
 #include "MoveTool.h"
-#include "ViewManager.h"
-#include "Core/Model.h"
-#include "Core/Polygon.h"
-#include "Gizmos/ITransformManipulator.h"
-#include "DesignerEditor.h"
-#include "MovePipeline.h"
+
 #include "Core/Helper.h"
+#include "Core/ModelCompiler.h"
+#include "Tools/Select/MovePipeline.h"
 #include "Util/ExcludedEdgeManager.h"
+#include "DesignerEditor.h"
+
+#include <Viewport.h>
 
 namespace Designer
 {

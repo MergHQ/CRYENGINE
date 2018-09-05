@@ -2,21 +2,15 @@
 
 #pragma once
 
-#include "Core/Plane.h"
-#include "Core/Polygon.h"
-#include "Core/ModelCompiler.h"
-#include "Tools/ToolCommon.h"
-#include "IDataBaseManager.h"
 #include "DesignerSession.h"
 
-class DesignerEditor;
-class IBasePanel;
 struct ITransformManipulator;
 struct IDisplayViewport;
 
+class ModelCompiler;
+
 namespace Designer
 {
-class ElementSet;
 
 class BaseTool : public _i_reference_target_t
 {

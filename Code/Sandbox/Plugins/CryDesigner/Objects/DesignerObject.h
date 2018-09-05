@@ -3,13 +3,12 @@
 #pragma once
 
 #include "DesignerBaseObject.h"
-#include "IObjectEnumerator.h"
+
+struct IObjectEnumerator;
 
 namespace Designer
 {
-class ModelCompiler;
-class IDesignerPanel;
-class IDesignerSubPanel;
+
 class DesignerObject;
 
 struct DesignerObjectFlags
@@ -43,7 +42,6 @@ public:
 	DECLARE_DYNCREATE(DesignerObject)
 
 	DesignerObject();
-	virtual ~DesignerObject(){}
 
 	bool                       Init(::CBaseObject* prev, const string& file) override;
 	void                       Display(CObjectRenderHelper& objRenderHelper) override;

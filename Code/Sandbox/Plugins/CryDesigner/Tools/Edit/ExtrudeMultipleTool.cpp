@@ -1,10 +1,12 @@
 // Copyright 2001-2018 Crytek GmbH / Crytek Group. All rights reserved.
 
 #include "StdAfx.h"
-#include "DesignerEditor.h"
-#include "Util/HeightManipulator.h"
-#include "ExtrudeTool.h"
 #include "ExtrudeMultipleTool.h"
+
+#include "Core/Helper.h"
+#include "Util/HeightManipulator.h"
+#include "DesignerEditor.h"
+#include "ExtrudeTool.h"
 
 namespace Designer
 {

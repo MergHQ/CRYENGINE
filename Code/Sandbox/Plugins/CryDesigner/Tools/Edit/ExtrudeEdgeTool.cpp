@@ -2,11 +2,12 @@
 
 #include "StdAfx.h"
 #include "ExtrudeEdgeTool.h"
-#include "Util/ElementSet.h"
-#include "Util/ExcludedEdgeManager.h"
+
 #include "Core/Model.h"
+#include "Core/ModelCompiler.h"
 #include "DesignerEditor.h"
-#include "Serialization/Decorators/EditorActionButton.h"
+
+#include <Serialization/Decorators/EditorActionButton.h>
 
 using Serialization::ActionButton;
 

@@ -2,13 +2,13 @@
 
 #include "StdAfx.h"
 #include "LoopCutTool.h"
-#include "Util/ElementSet.h"
+
 #include "Core/Model.h"
 #include "Tools/Select/LoopSelectionTool.h"
-#include "ViewManager.h"
 #include "Util/HeightManipulator.h"
 #include "DesignerEditor.h"
-#include "Objects/DisplayContext.h"
+
+#include <Viewport.h>
 
 namespace Designer
 {

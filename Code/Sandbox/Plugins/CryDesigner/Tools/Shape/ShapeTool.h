@@ -12,12 +12,9 @@ class ShapeTool : public BaseTool, public SpotManager
 public:
 	ShapeTool(EDesignerTool tool) :
 		BaseTool(tool),
-		SpotManager(),
 		m_bEnableMagnet(true)
 	{
 	}
-
-	virtual ~ShapeTool(){}
 
 	virtual void Enter() override;
 	virtual void Leave() override;
@@ -32,8 +29,6 @@ protected:
 	  CPoint point,
 	  bool bKeepInitialPlane,
 	  bool bSearchAllShelves = false);
-
-	void         UpdateDrawnPolygon(const BrushVec2& p0, const BrushVec2& p1);
 
 	TexInfo      GetTexInfo() const;
 	int          GetMatID() const;

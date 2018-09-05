@@ -16,8 +16,6 @@ public:
 	{
 	}
 
-	~CylinderTool(){}
-
 	bool OnLButtonDown(CViewport* view, UINT nFlags, CPoint point) override;
 	bool OnMouseMove(CViewport* view, UINT nFlags, CPoint point) override;
 	void Display(SDisplayContext& dc) override;
@@ -25,7 +23,6 @@ public:
 	void OnChangeParameter(bool continuous) override;
 	void Serialize(Serialization::IArchive& ar) override;
 	void UpdateHeightWithBoundaryCheck(BrushFloat fHeight);
-	void Update();
 
 protected:
 	virtual void UpdateShape(float fHeight);

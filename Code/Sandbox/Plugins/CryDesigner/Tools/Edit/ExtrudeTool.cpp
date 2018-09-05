@@ -2,15 +2,16 @@
 
 #include "StdAfx.h"
 #include "ExtrudeTool.h"
-#include "ViewManager.h"
-#include "Core/Model.h"
+
 #include "Core/Helper.h"
-#include "Util/HeightManipulator.h"
 #include "Util/ExtrusionSnappingHelper.h"
-#include "DesignerEditor.h"
+#include "Util/HeightManipulator.h"
 #include "Util/OffsetManipulator.h"
-#include "Objects/DisplayContext.h"
-#include "Util/MFCUtil.h"
+#include "DesignerEditor.h"
+
+#include <Util/MFCUtil.h>
+
+#include <Viewport.h>
 
 namespace Designer
 {

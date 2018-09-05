@@ -2,17 +2,17 @@
 
 #include "StdAfx.h"
 #include "CloneTool.h"
-#include "SurfaceInfoPicker.h"
-#include "Prefabs/PrefabItem.h"
-#include "Prefabs/PrefabManager.h"
-#include "Objects/PrefabObject.h"
-#include "Objects/DisplayContext.h"
-#include "ViewManager.h"
+
 #include "DesignerEditor.h"
-#include "ToolFactory.h"
-#include <CrySerialization/Enum.h>
-#include <AssetSystem\Browser\AssetBrowserDialog.h>
-#include "Serialization/Decorators/EditorActionButton.h"
+
+#include <Objects/PrefabObject.h>
+#include <Prefabs/PrefabItem.h>
+#include <Prefabs/PrefabManager.h>
+#include <SurfaceInfoPicker.h>
+#include <ViewManager.h>
+
+#include <Serialization/Decorators/EditorActionButton.h>
+
 
 namespace Designer
 {

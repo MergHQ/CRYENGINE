@@ -2,14 +2,14 @@
 
 #include "StdAfx.h"
 #include "SliceTool.h"
-#include "Core/Model.h"
-#include "DesignerEditor.h"
-#include "ViewManager.h"
-#include "Gizmos/ITransformManipulator.h"
-#include "Objects/DesignerObject.h"
+
 #include "Objects/AreaSolidObject.h"
-#include "Objects/DisplayContext.h"
-#include "Serialization/Decorators/EditorActionButton.h"
+#include "Objects/DesignerObject.h"
+#include "DesignerEditor.h"
+
+#include <Serialization/Decorators/EditorActionButton.h>
+
+#include <Viewport.h>
 
 namespace Designer
 {

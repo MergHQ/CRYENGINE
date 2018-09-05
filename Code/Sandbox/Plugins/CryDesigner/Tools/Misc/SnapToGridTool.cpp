@@ -3,8 +3,8 @@
 #include "StdAfx.h"
 #include "SnapToGridTool.h"
 
+#include "Core/Helper.h"
 #include "Core/PolygonDecomposer.h"
-#include "Tools/Select/SelectTool.h"
 #include "DesignerEditor.h"
 
 #include <Preferences/SnappingPreferences.h>

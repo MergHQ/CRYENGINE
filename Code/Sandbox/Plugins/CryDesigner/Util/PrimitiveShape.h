@@ -2,8 +2,6 @@
 
 #pragma once
 
-#include "Tools/Shape/PolylineTool.h"
-#include "ArgumentModel.h"
 #include "Core/Polygon.h"
 
 namespace Designer

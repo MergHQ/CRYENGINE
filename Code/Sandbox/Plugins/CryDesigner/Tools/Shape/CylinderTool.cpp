@@ -2,16 +2,16 @@
 
 #include "StdAfx.h"
 #include "CylinderTool.h"
-#include "Core/Model.h"
-#include "Util/PrimitiveShape.h"
-#include "DesignerEditor.h"
-#include "Util/HeightManipulator.h"
-#include "Util/ExtrusionSnappingHelper.h"
-#include "ViewManager.h"
-#include "ToolFactory.h"
+
 #include "Core/Helper.h"
 #include "Util/Display.h"
+#include "Util/ExtrusionSnappingHelper.h"
+#include "Util/HeightManipulator.h"
+#include "Util/PrimitiveShape.h"
+#include "DesignerEditor.h"
 #include "DesignerSession.h"
+
+#include <Viewport.h>
 
 namespace Designer
 {

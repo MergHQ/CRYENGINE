@@ -2,9 +2,9 @@
 
 #include "StdAfx.h"
 #include "InvertSelectionTool.h"
+
+#include "Core/Model.h"
 #include "DesignerEditor.h"
-#include "Util/ElementSet.h"
-#include "Tools/Select/SelectTool.h"
 
 namespace Designer
 {

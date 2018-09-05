@@ -2,14 +2,11 @@
 
 #pragma once
 
-#include "Tools/BaseTool.h"
-#include "Core/Model.h"
 #include "Tools/Select/SelectTool.h"
 
 namespace Designer
 {
 class MovePipeline;
-class Model;
 
 class MoveTool : public SelectTool
 {

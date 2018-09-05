@@ -2,7 +2,7 @@
 
 #pragma once
 
-#include "Model.h"
+#include "Polygon.h"
 
 namespace Designer
 {

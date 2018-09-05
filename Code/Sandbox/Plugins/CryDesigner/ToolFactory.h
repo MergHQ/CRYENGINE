@@ -2,17 +2,15 @@
 
 #pragma once
 
-#include "IDataBaseManager.h"
 #include "UIs/PropertyTreePanel.h"
+#include <BoostPythonMacros.h>
 #include <CrySerialization/Enum.h>
-#include "BoostPythonMacros.h"
 
 class QWidget;
 
 namespace Designer
 {
 class BaseTool;
-class DesignerEditor;
 
 enum EToolGroup
 {
@@ -107,17 +105,16 @@ enum EDesignerTool
 
 class Polygon;
 
-class IBasePanel
+ struct IBasePanel
 {
-public:
+	virtual ~IBasePanel() {}
 	virtual void     Done()   {}
 	virtual void     Update() {}
 	virtual QWidget* GetWidget() = 0;
 };
 
-class IDesignerPanel : public IBasePanel
+struct IDesignerPanel : public IBasePanel
 {
-public:
 	virtual void Init() = 0;
 	virtual void DisableButton(EDesignerTool tool) = 0;
 	virtual void SetButtonCheck(EDesignerTool tool, bool bChecked) = 0;
@@ -128,9 +125,8 @@ public:
 	virtual void UpdateCloneArrayButtons() = 0;
 };
 
-class IDesignerSubPanel : public IBasePanel
+struct IDesignerSubPanel : public IBasePanel
 {
-public:
 	virtual void Init() = 0;
 	virtual void OnEditorNotifyEvent(EEditorNotifyEvent event) = 0;
 	virtual void UpdateBackFaceCheckBox(Model* pModel) = 0;

@@ -2,9 +2,9 @@
 
 #pragma once
 
+#include "Core/Model.h"
 #include "Tools/BaseTool.h"
 #include "Util/ArgumentModel.h"
-#include "Core/Model.h"
 
 namespace Designer
 {

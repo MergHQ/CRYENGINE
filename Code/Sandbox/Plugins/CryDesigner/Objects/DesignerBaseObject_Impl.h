@@ -3,7 +3,7 @@
 #pragma once
 
 #include "Core/Helper.h"
-#include "DesignerEditor.h"
+#include "DesignerSession.h"
 
 #include <CrySystem/ICryLink.h>
 

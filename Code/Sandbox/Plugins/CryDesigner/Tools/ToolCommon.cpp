@@ -2,14 +2,14 @@
 
 #include "StdAfx.h"
 #include "ToolCommon.h"
+
 #include "Core/Helper.h"
+#include "Core/ModelCompiler.h"
 #include "DesignerEditor.h"
-#include "Objects/PrefabObject.h"
-#include "Util/ElementSet.h"
-#include "UIs/UICommon.h"
-#include "Util/ExcludedEdgeManager.h"
-#include "Controls/QuestionDialog.h"
-#include "Gizmos/ITransformManipulator.h"
+#include "DesignerSession.h"
+
+#include <Controls/QuestionDialog.h>
+#include <Gizmos/ITransformManipulator.h>
 
 namespace Designer
 {
