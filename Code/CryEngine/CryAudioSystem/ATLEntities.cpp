@@ -554,10 +554,7 @@ void CTrigger::PlayFile(CATLAudioObject& object, CATLStandaloneFile* const pFile
 //////////////////////////////////////////////////////////////////////////
 CLoseFocusTrigger::~CLoseFocusTrigger()
 {
-	for (auto const pConnection : m_connections)
-	{
-		delete pConnection;
-	}
+	CRY_ASSERT_MESSAGE(m_connections.empty(), "There are still connections during LoseFocusTrigger destruction!");
 }
 
 //////////////////////////////////////////////////////////////////////////
@@ -574,12 +571,27 @@ void CLoseFocusTrigger::Execute() const
 }
 
 //////////////////////////////////////////////////////////////////////////
-CGetFocusTrigger::~CGetFocusTrigger()
+void CLoseFocusTrigger::AddConnections(TriggerConnections const& connections)
+{
+	CRY_ASSERT_MESSAGE(m_connections.empty(), "There are still connections during CLoseFocusTrigger::AddConnections!");
+	m_connections = connections;
+}
+
+//////////////////////////////////////////////////////////////////////////
+void CLoseFocusTrigger::Clear()
 {
 	for (auto const pConnection : m_connections)
 	{
 		delete pConnection;
 	}
+
+	m_connections.clear();
+}
+
+//////////////////////////////////////////////////////////////////////////
+CGetFocusTrigger::~CGetFocusTrigger()
+{
+	CRY_ASSERT_MESSAGE(m_connections.empty(), "There are still connections during GetFocusTrigger destruction!");
 }
 
 //////////////////////////////////////////////////////////////////////////
@@ -596,12 +608,27 @@ void CGetFocusTrigger::Execute() const
 }
 
 //////////////////////////////////////////////////////////////////////////
-CMuteAllTrigger::~CMuteAllTrigger()
+void CGetFocusTrigger::AddConnections(TriggerConnections const& connections)
+{
+	CRY_ASSERT_MESSAGE(m_connections.empty(), "There are still connections during CGetFocusTrigger::AddConnections!");
+	m_connections = connections;
+}
+
+//////////////////////////////////////////////////////////////////////////
+void CGetFocusTrigger::Clear()
 {
 	for (auto const pConnection : m_connections)
 	{
 		delete pConnection;
 	}
+
+	m_connections.clear();
+}
+
+//////////////////////////////////////////////////////////////////////////
+CMuteAllTrigger::~CMuteAllTrigger()
+{
+	CRY_ASSERT_MESSAGE(m_connections.empty(), "There are still connections during MuteAllTrigger destruction!");
 }
 
 //////////////////////////////////////////////////////////////////////////
@@ -618,12 +645,27 @@ void CMuteAllTrigger::Execute() const
 }
 
 //////////////////////////////////////////////////////////////////////////
-CUnmuteAllTrigger::~CUnmuteAllTrigger()
+void CMuteAllTrigger::AddConnections(TriggerConnections const& connections)
+{
+	CRY_ASSERT_MESSAGE(m_connections.empty(), "There are still connections during CMuteAllTrigger::AddConnections!");
+	m_connections = connections;
+}
+
+//////////////////////////////////////////////////////////////////////////
+void CMuteAllTrigger::Clear()
 {
 	for (auto const pConnection : m_connections)
 	{
 		delete pConnection;
 	}
+
+	m_connections.clear();
+}
+
+//////////////////////////////////////////////////////////////////////////
+CUnmuteAllTrigger::~CUnmuteAllTrigger()
+{
+	CRY_ASSERT_MESSAGE(m_connections.empty(), "There are still connections during UnmuteAllTrigger destruction!");
 }
 
 //////////////////////////////////////////////////////////////////////////
@@ -640,12 +682,27 @@ void CUnmuteAllTrigger::Execute() const
 }
 
 //////////////////////////////////////////////////////////////////////////
-CPauseAllTrigger::~CPauseAllTrigger()
+void CUnmuteAllTrigger::AddConnections(TriggerConnections const& connections)
+{
+	CRY_ASSERT_MESSAGE(m_connections.empty(), "There are still connections during CUnmuteAllTrigger::AddConnections!");
+	m_connections = connections;
+}
+
+//////////////////////////////////////////////////////////////////////////
+void CUnmuteAllTrigger::Clear()
 {
 	for (auto const pConnection : m_connections)
 	{
 		delete pConnection;
 	}
+
+	m_connections.clear();
+}
+
+//////////////////////////////////////////////////////////////////////////
+CPauseAllTrigger::~CPauseAllTrigger()
+{
+	CRY_ASSERT_MESSAGE(m_connections.empty(), "There are still connections during PauseAllTrigger destruction!");
 }
 
 //////////////////////////////////////////////////////////////////////////
@@ -662,12 +719,27 @@ void CPauseAllTrigger::Execute() const
 }
 
 //////////////////////////////////////////////////////////////////////////
-CResumeAllTrigger::~CResumeAllTrigger()
+void CPauseAllTrigger::AddConnections(TriggerConnections const& connections)
+{
+	CRY_ASSERT_MESSAGE(m_connections.empty(), "There are still connections during CPauseAllTrigger::AddConnections!");
+	m_connections = connections;
+}
+
+//////////////////////////////////////////////////////////////////////////
+void CPauseAllTrigger::Clear()
 {
 	for (auto const pConnection : m_connections)
 	{
 		delete pConnection;
 	}
+
+	m_connections.clear();
+}
+
+//////////////////////////////////////////////////////////////////////////
+CResumeAllTrigger::~CResumeAllTrigger()
+{
+	CRY_ASSERT_MESSAGE(m_connections.empty(), "There are still connections during ResumeAllTrigger destruction!");
 }
 
 //////////////////////////////////////////////////////////////////////////
@@ -681,6 +753,24 @@ void CResumeAllTrigger::Execute() const
 	{
 		g_pIImpl->ResumeAll();
 	}
+}
+
+//////////////////////////////////////////////////////////////////////////
+void CResumeAllTrigger::AddConnections(TriggerConnections const& connections)
+{
+	CRY_ASSERT_MESSAGE(m_connections.empty(), "There are still connections during CResumeAllTrigger::AddConnections!");
+	m_connections = connections;
+}
+
+//////////////////////////////////////////////////////////////////////////
+void CResumeAllTrigger::Clear()
+{
+	for (auto const pConnection : m_connections)
+	{
+		delete pConnection;
+	}
+
+	m_connections.clear();
 }
 
 //////////////////////////////////////////////////////////////////////////
