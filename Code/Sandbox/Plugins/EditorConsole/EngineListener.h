@@ -1,22 +1,23 @@
 // Copyright 2001-2018 Crytek GmbH / Crytek Group. All rights reserved.
 
 #pragma once
-#include <CryCore/Platform/platform.h>
-#include <CrySystem/ISystem.h>
-#include <CrySystem/IConsole.h>
-#include <CryString/CryString.h>
-#include <set>
-#include <CryCore/BoostHelpers.h> // to make sure we get own throw_exceptions
-#include <boost/circular_buffer.hpp>
-#include <functional>
-#include <algorithm>
 
 #include <IEditor.h>
-#include "ICommandManager.h"
+
+#include <CryCore/BoostHelpers.h> // to make sure we get own throw_exceptions
+#include <CryString/CryString.h>
+#include <CrySystem/IConsole.h>
+
+#include <boost/circular_buffer.hpp>
+
+#include <functional>
+#include <set>
+
+struct ISystem;
 
 //event handler for console events
 //this is the "engine-side" event handler that takes care of caching etc
-class CEngineListener : public IOutputPrintSink, public ICVarDumpSink, public IConsoleVarSink
+class CEngineListener : public IOutputPrintSink, public ICVarDumpSink, public IConsoleVarSink, public IAutoEditorNotifyListener
 {
 public:
 	//force refreshing of CVars and commands
@@ -63,6 +64,9 @@ private:
 	virtual bool OnBeforeVarChange(ICVar* pVar, const char* sNewValue) { return true; }
 	virtual void OnAfterVarChange(ICVar* pVar)                         { UpdateCVar(pVar, true); }
 	virtual void OnVarUnregister(ICVar* pVar)                          { ReleaseCVar(pVar); }
+
+	// IEditorNotifyListener
+	virtual void OnEditorNotifyEvent(EEditorNotifyEvent event) override;
 
 protected:
 	//initialize event handler
