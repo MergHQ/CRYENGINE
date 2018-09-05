@@ -183,9 +183,6 @@
 
 #include <CryFlowGraph/IFlowBaseNode.h>
 
-#if defined(_LIB) && !defined(DISABLE_LEGACY_GAME_DLL)
-extern "C" IGameStartup * CreateGameStartup();
-#endif //_LIB
 
 #define DEFAULT_BAN_TIMEOUT     (30.0f)
 
@@ -2071,16 +2068,24 @@ bool CCryAction::Initialize(SSystemInitParams& startupParams)
 bool CCryAction::InitGame(SSystemInitParams& startupParams)
 {
 	LOADING_TIME_PROFILE_SECTION;
+
+	string gameDLLName;
 	if (ICVar* pCVarGameDir = gEnv->pConsole->GetCVar("sys_dll_game"))
 	{
-		const char* gameDLLName = pCVarGameDir->GetString();
-		if (strlen(gameDLLName) == 0)
+		gameDLLName = pCVarGameDir->GetString();
+	}
+
+	HMODULE hGameDll = 0;
+
+	IGameStartup::TEntryFunction CreateGameStartup = (IGameStartup::TEntryFunction)CryGetProcAddress(CryGetCurrentModule(), "CreateGameStartup");
+	if (!CreateGameStartup)
+	{
+		if (gameDLLName.IsEmpty())
+		{
 			return false;
+		}
 
-		HMODULE hGameDll = 0;
-
-#if !defined(_LIB)
-		hGameDll = CryLoadLibrary(gameDLLName);
+		hGameDll = CryLoadLibrary(gameDLLName.c_str());
 
 		if (!hGameDll)
 		{
@@ -2098,37 +2103,34 @@ bool CCryAction::InitGame(SSystemInitParams& startupParams)
 
 			if (!hGameDll)
 			{
-				CryWarning(VALIDATOR_MODULE_SYSTEM, VALIDATOR_WARNING, "Failed to load the Game DLL! %s", gameDLLName);
+				CryWarning(VALIDATOR_MODULE_SYSTEM, VALIDATOR_WARNING, "Failed to load the Game DLL! %s", gameDLLName.c_str());
 				return false;
 			}
 		}
 
-		IGameStartup::TEntryFunction CreateGameStartup = (IGameStartup::TEntryFunction)CryGetProcAddress(hGameDll, "CreateGameStartup");
+		CreateGameStartup = (IGameStartup::TEntryFunction)CryGetProcAddress(hGameDll, "CreateGameStartup");
 		if (!CreateGameStartup)
 		{
-			CryWarning(VALIDATOR_MODULE_SYSTEM, VALIDATOR_WARNING, "Failed to find the GameStartup Interface in %s!", gameDLLName);
+			CryWarning(VALIDATOR_MODULE_SYSTEM, VALIDATOR_WARNING, "Failed to find the GameStartup Interface in %s!", gameDLLName.c_str());
 			CryFreeLibrary(hGameDll);
 			return false;
 		}
-#endif
+	}
 
-#if !defined(_LIB) || !defined(DISABLE_LEGACY_GAME_DLL)
-		// create the game startup interface
-		IGameStartup* pGameStartup = CreateGameStartup();
-		if (!pGameStartup)
-		{
-			CryWarning(VALIDATOR_MODULE_SYSTEM, VALIDATOR_WARNING, "Failed to find the GameStartup Interface in %s!", gameDLLName);
-			CryFreeLibrary(hGameDll);
-			return false;
-		}
+	// create the game startup interface
+	IGameStartup* pGameStartup = CreateGameStartup();
+	if (!pGameStartup)
+	{
+		CryWarning(VALIDATOR_MODULE_SYSTEM, VALIDATOR_WARNING, "Failed to find the GameStartup Interface in %s!", gameDLLName.c_str());
+		CryFreeLibrary(hGameDll);
+		return false;
+	}
 
-		if (m_externalGameLibrary.pGame = pGameStartup->Init(startupParams))
-		{
-			m_externalGameLibrary.dllName = gameDLLName;
-			m_externalGameLibrary.dllHandle = hGameDll;
-			m_externalGameLibrary.pGameStartup = pGameStartup;
-		}
-#endif
+	if (m_externalGameLibrary.pGame = pGameStartup->Init(startupParams))
+	{
+		m_externalGameLibrary.dllName = gameDLLName;
+		m_externalGameLibrary.dllHandle = hGameDll;
+		m_externalGameLibrary.pGameStartup = pGameStartup;
 	}
 
 	return m_externalGameLibrary.IsValid();

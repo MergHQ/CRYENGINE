@@ -63,7 +63,7 @@ namespace UQS
 
 		const char* CHubPlugin::GetName() const
 		{
-			return "UQS";
+			return "CryUQS_Core";
 		}
 
 		const char* CHubPlugin::GetCategory() const

@@ -1,11 +1,6 @@
 // Copyright 2001-2018 Crytek GmbH / Crytek Group. All rights reserved.
 
-#if !defined(AFX_XCONSOLE_H__BA902011_5C47_4954_8E09_68598456912D__INCLUDED_)
-#define AFX_XCONSOLE_H__BA902011_5C47_4954_8E09_68598456912D__INCLUDED_
-
-#if _MSC_VER > 1000
-	#pragma once
-#endif // _MSC_VER > 1000
+#pragma once
 
 #include <CrySystem/IConsole.h>
 #include <CryInput/IInput.h>
@@ -60,8 +55,8 @@ struct CConsoleCommand
 //////////////////////////////////////////////////////////////////////////
 struct CConsoleCommandArgs : public IConsoleCmdArgs
 {
-	CConsoleCommandArgs(string& line, std::vector<string>& args) : m_line(line), m_args(args) {};
-	virtual int         GetArgCount() const { return m_args.size(); };
+	CConsoleCommandArgs(string& line, std::vector<string>& args) : m_line(line), m_args(args) {}
+	virtual int         GetArgCount() const { return m_args.size(); }
 	// Get argument by index, nIndex must be in 0 <= nIndex < GetArgCount()
 	virtual const char* GetArg(int nIndex) const
 	{
@@ -416,5 +411,3 @@ private: // ----------------------------------------------------------
 	friend void Command_DumpVars(IConsoleCmdArgs* Cmd);
 	friend class CConsoleHelpGen;
 };
-
-#endif // !defined(AFX_XCONSOLE_H__BA902011_5C47_4954_8E09_68598456912D__INCLUDED_)

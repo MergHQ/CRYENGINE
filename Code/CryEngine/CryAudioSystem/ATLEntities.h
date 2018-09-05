@@ -265,7 +265,8 @@ public:
 	~CLoseFocusTrigger();
 
 	void Execute() const;
-	void AddConnections(TriggerConnections const& connections) { m_connections = connections; }
+	void AddConnections(TriggerConnections const& connections);
+	void Clear();
 
 private:
 
@@ -294,7 +295,8 @@ public:
 	~CGetFocusTrigger();
 
 	void Execute() const;
-	void AddConnections(TriggerConnections const& connections) { m_connections = connections; }
+	void AddConnections(TriggerConnections const& connections);
+	void Clear();
 
 private:
 
@@ -323,7 +325,8 @@ public:
 	~CMuteAllTrigger();
 
 	void Execute() const;
-	void AddConnections(TriggerConnections const& connections) { m_connections = connections; }
+	void AddConnections(TriggerConnections const& connections);
+	void Clear();
 
 private:
 
@@ -352,7 +355,8 @@ public:
 	~CUnmuteAllTrigger();
 
 	void Execute() const;
-	void AddConnections(TriggerConnections const& connections) { m_connections = connections; }
+	void AddConnections(TriggerConnections const& connections);
+	void Clear();
 
 private:
 
@@ -381,7 +385,8 @@ public:
 	~CPauseAllTrigger();
 
 	void Execute() const;
-	void AddConnections(TriggerConnections const& connections) { m_connections = connections; }
+	void AddConnections(TriggerConnections const& connections);
+	void Clear();
 
 private:
 
@@ -410,7 +415,8 @@ public:
 	~CResumeAllTrigger();
 
 	void Execute() const;
-	void AddConnections(TriggerConnections const& connections) { m_connections = connections; }
+	void AddConnections(TriggerConnections const& connections);
+	void Clear();
 
 private:
 

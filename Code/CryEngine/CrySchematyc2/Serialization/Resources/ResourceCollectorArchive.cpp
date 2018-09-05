@@ -23,12 +23,27 @@ namespace Schematyc2
 		return true;
 	}
 
+	bool CResourceCollectorArchive::operator()(char& value, const char* szName /*= ""*/, const char* szLabel /*= nullptr*/)
+	{
+		return true;
+	}
+
 	bool CResourceCollectorArchive::operator()(int8& value, const char* szName /*= ""*/, const char* szLabel /*= nullptr*/)
 	{
 		return true;
 	}
 
 	bool CResourceCollectorArchive::operator()(uint8& value, const char* szName /*= ""*/, const char* szLabel /*= nullptr*/)
+	{
+		return true;
+	}
+
+	bool CResourceCollectorArchive::operator()(int16& value, const char* szName /*= ""*/, const char* szLabel /*= nullptr*/)
+	{
+		return true;
+	}
+
+	bool CResourceCollectorArchive::operator()(uint16& value, const char* szName /*= ""*/, const char* szLabel /*= nullptr*/)
 	{
 		return true;
 	}
@@ -54,6 +69,11 @@ namespace Schematyc2
 	}
 
 	bool CResourceCollectorArchive::operator()(float& value, const char* szName /*= ""*/, const char* szLabel /*= nullptr*/)
+	{
+		return true;
+	}
+
+	bool CResourceCollectorArchive::operator()(double& value, const char* szName /*= ""*/, const char* szLabel /*= nullptr*/)
 	{
 		return true;
 	}

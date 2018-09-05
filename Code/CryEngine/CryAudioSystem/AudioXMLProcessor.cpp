@@ -282,6 +282,16 @@ void CAudioXMLProcessor::ClearControlsData(EDataScope const dataScope)
 {
 	if (g_pIImpl != nullptr)
 	{
+		if (dataScope == EDataScope::All || dataScope == EDataScope::Global)
+		{
+			g_loseFocusTrigger.Clear();
+			g_getFocusTrigger.Clear();
+			g_muteAllTrigger.Clear();
+			g_unmuteAllTrigger.Clear();
+			g_pauseAllTrigger.Clear();
+			g_resumeAllTrigger.Clear();
+		}
+
 		AudioTriggerLookup::iterator iterTriggers(g_triggers.begin());
 		AudioTriggerLookup::const_iterator iterTriggersEnd(g_triggers.end());
 
