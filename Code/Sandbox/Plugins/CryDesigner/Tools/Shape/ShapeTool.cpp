@@ -1,19 +1,14 @@
 // Copyright 2001-2018 Crytek GmbH / Crytek Group. All rights reserved.
 
 #include "StdAfx.h"
-#include "ShapeTool.h."
-#include "DesignerEditor.h"
-#include "ViewManager.h"
-#include "Core/Model.h"
-#include "Core/Helper.h"
-#include "Tools/Edit/SeparateTool.h"
-#include "Tools/Misc/ResetXFormTool.h"
-#include "Tools/Select/SelectTool.h"
-#include "Core/SmoothingGroupManager.h"
-#include "Util/Display.h"
-#include "GameEngine.h"
+#include "ShapeTool.h"
 
-#include "IAIManager.h"
+#include "Core/SmoothingGroupManager.h"
+#include "Objects/DesignerObject.h"
+#include "Tools/Edit/SeparateTool.h"
+
+#include <IAIManager.h>
+#include <Viewport.h>
 
 namespace Designer
 {

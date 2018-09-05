@@ -3,8 +3,8 @@
 #include "StdAfx.h"
 #include "OffsetManipulator.h"
 
+#include "Core/Helper.h"
 #include "Core/LoopPolygons.h"
-#include "Core/Model.h"
 #include "Util/Display.h"
 #include "DesignerEditor.h"
 

@@ -1,13 +1,13 @@
 // Copyright 2001-2018 Crytek GmbH / Crytek Group. All rights reserved.
 
 #include "StdAfx.h"
-#include "Core/SmoothingGroupManager.h"
 #include "DesignerSubPanel.h"
+
+#include "Core/SmoothingGroupManager.h"
+#include "Objects/DesignerObject.h"
 #include "Tools/BaseTool.h"
-#include "QCollapsibleFrame.h"
 
 #include <QBoxLayout>
-#include <QTabWidget>
 
 namespace Designer
 {

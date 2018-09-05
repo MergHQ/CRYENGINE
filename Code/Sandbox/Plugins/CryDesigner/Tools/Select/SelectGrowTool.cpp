@@ -2,10 +2,9 @@
 
 #include "StdAfx.h"
 #include "SelectGrowTool.h"
+
+#include "Core/Model.h"
 #include "DesignerEditor.h"
-#include "SelectGrowTool.h"
-#include "Util/ElementSet.h"
-#include "DesignerSession.h"
 
 namespace Designer
 {

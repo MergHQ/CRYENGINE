@@ -5,8 +5,9 @@
 #include "ToolFactory.h"
 
 struct IDataBaseItem;
-enum EDataBaseItemEvent;
 struct ITransformManipulator;
+
+enum EDataBaseItemEvent;
 
 namespace Designer
 {

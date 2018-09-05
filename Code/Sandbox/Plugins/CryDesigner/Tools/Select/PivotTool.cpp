@@ -2,13 +2,11 @@
 
 #include "StdAfx.h"
 #include "PivotTool.h"
-#include "Core/Model.h"
-#include "DesignerEditor.h"
-#include "ViewManager.h"
-#include "Core/ModelDB.h"
+
 #include "Core/Helper.h"
-#include "ToolFactory.h"
-#include "Objects/DisplayContext.h"
+#include "DesignerEditor.h"
+
+#include <Viewport.h>
 
 namespace Designer
 {

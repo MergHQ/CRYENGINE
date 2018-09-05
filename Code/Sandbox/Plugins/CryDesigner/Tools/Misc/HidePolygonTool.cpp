@@ -2,10 +2,11 @@
 
 #include "StdAfx.h"
 #include "HidePolygonTool.h"
-#include "Tools/Select/SelectTool.h"
+
+#include "Core/Model.h"
 #include "DesignerEditor.h"
-#include "Serialization/Decorators/EditorActionButton.h"
-#include "DesignerSession.h"
+
+#include <Serialization/Decorators/EditorActionButton.h>
 
 using Serialization::ActionButton;
 

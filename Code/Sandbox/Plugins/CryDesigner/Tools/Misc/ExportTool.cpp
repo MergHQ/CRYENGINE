@@ -2,15 +2,15 @@
 
 #include "StdAfx.h"
 #include "ExportTool.h"
-#include "DesignerEditor.h"
-#include "CryEdit.h"
-#include "GameEngine.h"
-#include "Serialization/Decorators/EditorActionButton.h"
-#include "FileDialogs/SystemFileDialog.h"
-#include "Export/ExportManager.h"
-#include "Objects/ObjectLoader.h"
 
-#include <QFileDialog>
+#include "Core/ModelCompiler.h"
+#include "Export/ExportManager.h"
+#include "DesignerEditor.h"
+
+#include <FileDialogs/SystemFileDialog.h>
+#include <Objects/ObjectLoader.h>
+#include <Serialization/Decorators/EditorActionButton.h>
+#include <GameEngine.h>
 
 using Serialization::ActionButton;
 

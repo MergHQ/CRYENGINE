@@ -2,9 +2,10 @@
 
 #include "StdAfx.h"
 #include "RingSelectionTool.h"
+
+#include "Core/Model.h"
+#include "Tools/Select/LoopSelectionTool.h"
 #include "DesignerEditor.h"
-#include "Util/ElementSet.h"
-#include "LoopSelectionTool.h"
 
 namespace Designer
 {

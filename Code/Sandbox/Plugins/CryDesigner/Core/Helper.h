@@ -6,7 +6,7 @@
 
 namespace Designer
 {
-class Model;
+
 class ModelCompiler;
 class DesignerObject;
 
@@ -63,4 +63,4 @@ void                         MakeRectangle(const BrushPlane& plane, const BrushV
 void                         ConvertMeshFacesToFaces(const std::vector<Vertex>& vertices, std::vector<SMeshFace>& meshFaces, std::vector<std::vector<Vec3>>& outFaces);
 void                         MergeTwoObjects(const MainContext& mc0, const MainContext& mc1);
 int                          AddVertex(std::vector<Vertex>& vertices, const Vertex& newVertex);
-};
+}

@@ -2,10 +2,12 @@
 
 #include "StdAfx.h"
 #include "BooleanTool.h"
+
+#include "Objects/DesignerObject.h"
 #include "DesignerEditor.h"
-#include "Serialization/Decorators/EditorActionButton.h"
-#include "Core/Helper.h"
 #include "DesignerSession.h"
+
+#include <Serialization/Decorators/EditorActionButton.h>
 
 using Serialization::ActionButton;
 

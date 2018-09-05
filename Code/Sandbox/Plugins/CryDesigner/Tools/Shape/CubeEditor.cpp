@@ -1,18 +1,16 @@
 // Copyright 2001-2018 Crytek GmbH / Crytek Group. All rights reserved.
 
 #include "StdAfx.h"
-#include "Core/BSPTree3D.h"
-#include "ViewManager.h"
-#include "Util/PrimitiveShape.h"
-#include "Material/MaterialManager.h"
-#include "Util/HeightManipulator.h"
 #include "CubeEditor.h"
-#include "DesignerEditor.h"
-#include "ToolFactory.h"
+
+#include "Core/BSPTree3D.h"
 #include "Core/Helper.h"
 #include "Core/LoopPolygons.h"
-#include "DesignerSession.h"
-#include "Objects/DisplayContext.h"
+#include "Util/HeightManipulator.h"
+#include "Util/PrimitiveShape.h"
+#include "DesignerEditor.h"
+
+#include <Viewport.h>
 
 namespace Designer
 {

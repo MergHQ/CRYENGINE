@@ -2,9 +2,11 @@
 
 #include "StdAfx.h"
 #include "LoopSelectionTool.h"
-#include "DesignerEditor.h"
-#include "Util/ElementSet.h"
+
 #include "Core/LoopPolygons.h"
+#include "Core/Model.h"
+#include "Util/ElementSet.h"
+#include "DesignerEditor.h"
 #include "DesignerSession.h"
 
 namespace Designer

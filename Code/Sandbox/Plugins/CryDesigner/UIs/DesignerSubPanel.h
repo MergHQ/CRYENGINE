@@ -2,12 +2,9 @@
 
 #pragma once
 
-#include "UICommon.h"
 #include "DesignerEditor.h"
 
 class QPropertyTree;
-class DesignerEditor;
-class QTabWidget;
 class QWidget;
 
 namespace Designer
@@ -15,7 +12,6 @@ namespace Designer
 class DesignerSubPanel : public QWidget, public IDesignerSubPanel
 {
 public:
-
 	DesignerSubPanel(QWidget* parent);
 	~DesignerSubPanel();
 

@@ -3,22 +3,14 @@
 #include "StdAfx.h"
 #include "DesignerObject.h"
 
-#include "Core/Common.h"
-#include "Core/Helper.h"
-#include "Core/ModelCompiler.h"
-#include "Tools/ToolCommon.h"
 #include "Util/Converter.h"
 #include "Util/Display.h"
 #include "Util/PrimitiveShape.h"
 #include "Util/Undo.h"
 #include "DesignerEditor.h"
-#include "DesignerSession.h"
-#include "ToolFactory.h"
 
-#include <Material/Material.h>
 #include <Material/MaterialManager.h>
 #include <GameEngine.h>
-#include <ObjectCreateTool.h>
 
 #include <Controls/DynamicPopupMenu.h>
 #include <Objects/ObjectLoader.h>

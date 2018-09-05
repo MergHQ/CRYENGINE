@@ -2,14 +2,13 @@
 
 #include "StdAfx.h"
 #include "ModelCompiler.h"
-#include "Model.h"
-#include <Preferences/ViewportPreferences.h>
-#include "Objects/DesignerObject.h"
-#include "Tools/BaseTool.h"
+
 #include "Core/SmoothingGroupManager.h"
-#include "Subdivision.h"
-#include "Material/Material.h"
-#include "Helper.h"
+#include "Core/Subdivision.h"
+#include "Objects/DesignerObject.h"
+#include "DesignerEditor.h"
+
+#include <Material/Material.h>
 
 namespace Designer
 {

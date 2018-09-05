@@ -2,14 +2,17 @@
 
 #include "StdAfx.h"
 #include "Display.h"
-#include "ElementSet.h"
+
 #include "Core/Model.h"
+#include "Core/ModelCompiler.h"
 #include "Core/HalfEdgeMesh.h"
 #include "Util/ElementSet.h"
 #include "Util/ExcludedEdgeManager.h"
-#include "DesignerEditor.h"
-#include "Objects/DisplayContext.h"
-#include "Util/MFCUtil.h"
+#include "DesignerSession.h"
+
+#include <Objects/DisplayContext.h>
+
+#include <Util/MFCUtil.h>
 
 namespace Designer {
 namespace Display

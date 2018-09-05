@@ -2,8 +2,8 @@
 
 #pragma once
 
-#include "Core/Polygon.h"
 #include "Core/Model.h"
+#include "Core/Polygon.h"
 #include "Tools/ToolCommon.h"
 
 class CViewport;

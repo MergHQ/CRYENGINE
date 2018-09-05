@@ -2,7 +2,6 @@
 
 #include "StdAfx.h"
 #include "BSPTree3D.h"
-#include "Polygon.h"
 
 namespace Designer
 {

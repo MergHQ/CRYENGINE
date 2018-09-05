@@ -2,9 +2,11 @@
 
 #include "StdAfx.h"
 #include "WeldTool.h"
+
+#include "Core/Model.h"
+#include "Core/PolygonDecomposer.h"
 #include "Tools/Select/SelectTool.h"
 #include "DesignerEditor.h"
-#include "Core/PolygonDecomposer.h"
 
 namespace Designer
 {

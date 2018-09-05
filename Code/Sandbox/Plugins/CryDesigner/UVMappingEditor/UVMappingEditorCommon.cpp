@@ -2,12 +2,14 @@
 
 #include "StdAfx.h"
 #include "UVMappingEditorCommon.h"
-#include "UVMappingEditor.h"
-#include "QViewport.h"
-#include "Util/ElementSet.h"
+
 #include "Core/UVIslandManager.h"
-#include "Core/FlexibleMesh.h"
 #include "Util/ExcludedEdgeManager.h"
+#include "Util/ElementSet.h"
+#include "UVMappingEditor/UVMappingEditor.h"
+#include "DesignerEditor.h"
+
+#include <QViewport.h>
 
 namespace Designer {
 namespace UVMapping

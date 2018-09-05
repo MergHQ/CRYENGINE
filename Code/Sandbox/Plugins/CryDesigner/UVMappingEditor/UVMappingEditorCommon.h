@@ -2,10 +2,9 @@
 
 #pragma once
 
-#include "ToolFactory.h"
-#include "Core/UVIsland.h"
-#include <CrySerialization/Enum.h>
 #include "Core/Polygon.h"
+#include "Core/UVIsland.h"
+#include "ToolFactory.h"
 
 class QViewport;
 

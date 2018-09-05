@@ -35,19 +35,19 @@ protected:
 	static void Register(Schematyc::CEnvRegistrationScope& componentScope);
 
 	// IEntityComponent
-	virtual void   Initialize() override;
-	virtual void   OnShutDown() override {}
+	virtual void                    Initialize() override;
+	virtual void                    OnShutDown() override {}
 	virtual Cry::Entity::EventFlags GetEventMask() const override;
-	virtual void   ProcessEvent(const SEntityEvent& event) override;
+	virtual void                    ProcessEvent(const SEntityEvent& event) override;
 	// ~IEntityComponent
 
 public:
 
 	CSwitchComponent() = default;
 
-	static void     ReflectType(Schematyc::CTypeDesc<CSwitchComponent>& desc);
+	static void ReflectType(Schematyc::CTypeDesc<CSwitchComponent>& desc);
 
-	void Set(SSwitchWithStateSerializeHelper const& switchAndState);
+	void        Set(SSwitchWithStateSerializeHelper const& switchAndState);
 
 protected:
 
@@ -55,6 +55,10 @@ protected:
 
 	// Properties exposed to UI
 	SSwitchWithStateSerializeHelper m_switch;
+
+#if defined(INCLUDE_DEFAULT_PLUGINS_PRODUCTION_CODE)
+	Serialization::FunctorActionButton<std::function<void()>> m_setButton;
+#endif  // INCLUDE_DEFAULT_PLUGINS_PRODUCTION_CODE
 };
 
 //////////////////////////////////////////////////////////////////////////

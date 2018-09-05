@@ -2,37 +2,27 @@
 
 #include "StdAfx.h"
 #include "UVMappingEditor.h"
-#include "QViewportSettings.h"
-#include "Core/Helper.h"
-#include "Core/Model.h"
-#include "Material/MaterialManager.h"
+
 #include "Core/UVIslandManager.h"
-#include "UIs/UICommon.h"
-#include "UIs/DesignerPanel.h"
-#include "Core/UVIslandManager.h"
-#include "Util/ElementSet.h"
-#include "Core/SmoothingGroupManager.h"
-#include "UVCursor.h"
-#include "CryIcon.h"
-#include "Controls/QMenuComboBox.h"
-#include "DesignerSession.h"
-#include "Objects/DisplayContext.h"
+#include "DesignerEditor.h"
+
+// EditorQt
+#include <Material/MaterialManager.h>
+
+// EditorCommon
+#include <Controls/QMenuComboBox.h>
+#include <QViewportSettings.h>
 
 #include <QBoxLayout>
-#include <QGridLayout>
-#include <QSplitter>
-#include <QToolBar>
-#include <QMenuBar>
-#include <QShortcut>
-#include <QToolButton>
 #include <QCheckBox>
-#include <QKeySequence>
-#include <QLabel>
+#include <QGridLayout>
+#include <QToolBar>
+#include <QToolButton>
 
 namespace Designer {
 namespace UVMapping {
 
-UVMappingEditor* g_pUVMappingEditor = NULL;
+UVMappingEditor* g_pUVMappingEditor = nullptr;
 
 UVMappingEditor* GetUVEditor()
 {

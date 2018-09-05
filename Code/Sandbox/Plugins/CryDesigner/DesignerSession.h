@@ -4,18 +4,15 @@
 
 #include "StdAfx.h"
 
-#include "CryCore/smartptr.h"
-#include "CrySandbox/CrySignal.h"
-
 #include "Core/Common.h"
 #include "Core/PolygonMesh.h"
-#include "Core/Polygon.h"
-#include "Tools/ToolCommon.h"
-
-#include "IDataBaseManager.h"
-
 #include "Util/ElementSet.h"
 #include "Util/ExcludedEdgeManager.h"
+#include "Tools/ToolCommon.h"
+
+#include <IDataBaseManager.h>
+
+#include <CrySandbox/CrySignal.h>
 
 class CBaseObject;
 
