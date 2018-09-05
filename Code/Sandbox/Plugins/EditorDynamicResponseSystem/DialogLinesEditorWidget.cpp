@@ -47,7 +47,7 @@ CDialogLinesEditorWidget::CDialogLinesEditorWidget(QWidget* pParent)
 		m_pTree->resizeColumnToContents(3);
 		m_pTree->resizeColumnToContents(4);
 		m_pTree->setSelectionBehavior(QAbstractItemView::SelectItems);
-		m_pTree->setEditTriggers(QAbstractItemView::EditKeyPressed | QAbstractItemView::SelectedClicked);
+		m_pTree->setEditTriggers(QAbstractItemView::DoubleClicked | QAbstractItemView::EditKeyPressed | QAbstractItemView::SelectedClicked);
 
 		m_pTree->setItemDelegate(new QDialogLineDelegate(this));
 
