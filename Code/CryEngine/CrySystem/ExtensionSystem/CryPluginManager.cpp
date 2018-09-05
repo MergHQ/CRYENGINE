@@ -231,7 +231,7 @@ void CCryPluginManager::LoadProjectPlugins()
 
 		for (const std::pair<uint8, SPluginDefinition>& defaultPlugin : CCryPluginManager::GetDefaultPlugins())
 		{
-			if (defaultPlugin.second.path.compare(pluginName))
+			if (defaultPlugin.second.path.compareNoCase(pluginName) == 0)
 			{
 				bValid = false;
 				break;
@@ -243,11 +243,11 @@ void CCryPluginManager::LoadProjectPlugins()
 		{
 			// Remove "Plugin_" from the start of the name if it exists (from CRYGENERATE_SINGLETONCLASS_GUID)
 			const string pluginNameHeader = "Plugin_";
-			if (!strncmp(loadedPluginName.c_str(), pluginNameHeader.c_str(), pluginNameHeader.size()))
+			if (loadedPluginName.compareNoCase(0, pluginNameHeader.length(), pluginNameHeader) == 0)
 			{
 				loadedPluginName = loadedPluginName.substr(pluginNameHeader.size());
 			}
-			if (!loadedPluginName.compare(pluginName))
+			if (loadedPluginName.compareNoCase(pluginName) == 0)
 			{
 				bValid = false;
 				break;

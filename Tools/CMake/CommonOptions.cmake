@@ -17,6 +17,8 @@ else()
 	option(OPTION_STATIC_LINKING "Link all CryEngine modules as static libs to single exe" OFF)
 endif()
 
+option(OPTION_STATIC_LINKING_WITH_GAME_AS_DLL "Build game as DLL in a monolithic CryEngine build" OFF)
+
 if(OPTION_ENGINE)
 	option(OPTION_UQS_SCHEMATYC_SUPPORT "Enable UQS functions in Schematyc" ON)
 else()
