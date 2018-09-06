@@ -954,7 +954,7 @@ IShader* CRenderer::EF_LoadShader (const char* name, int flags, uint64 nMaskGen)
 
 void CRenderer::EF_SetShaderQuality(EShaderType eST, EShaderQuality eSQ)
 {
-	ExecuteRenderThreadCommand( [=]{ this->m_cEF.RT_SetShaderQuality(eST, eSQ); }, ERenderCommandFlags::None );
+	ExecuteRenderThreadCommand( [=]{ this->m_cEF.RT_SetShaderQuality(eST, eSQ); }, ERenderCommandFlags::FlushAndWait );
 
 	if (gEnv->p3DEngine)
 		gEnv->p3DEngine->GetMaterialManager()->RefreshMaterialRuntime();
@@ -1045,7 +1045,7 @@ bool CRenderer::EF_ReloadFile (const char* szFileName)
 	{
 		gRenDev->m_cEF.m_Bin.InvalidateCache();
 		// This is a temporary fix so that shaders would reload during hot update.
-		bool bRet = gRenDev->m_cEF.mfReloadAllShaders(FRO_SHADERS, 0);
+		bool bRet = gRenDev->m_cEF.mfReloadAllShaders(FRO_SHADERS, 0, gRenDev->GetMainFrameID());
 		if (gEnv && gEnv->p3DEngine)
 			gEnv->p3DEngine->UpdateShaderItems();
 		return bRet;

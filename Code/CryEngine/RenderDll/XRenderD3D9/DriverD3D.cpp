@@ -778,7 +778,7 @@ void CD3D9Renderer::BeginFrame(const SDisplayContextKey& displayContextKey)
 	{
 		PREFAST_SUPPRESS_WARNING(6326)
 		m_bUseWaterTessHW = bUseWaterTessHW;
-		m_cEF.mfReloadAllShaders(1, SHGD_HW_WATER_TESSELLATION);
+		m_cEF.mfReloadAllShaders(1, SHGD_HW_WATER_TESSELLATION, gRenDev->GetMainFrameID());
 	}
 
 	PREFAST_SUPPRESS_WARNING(6326)
@@ -786,7 +786,7 @@ void CD3D9Renderer::BeginFrame(const SDisplayContextKey& displayContextKey)
 	{
 		PREFAST_SUPPRESS_WARNING(6326)
 		m_bUseSilhouettePOM = CV_r_SilhouettePOM != 0;
-		m_cEF.mfReloadAllShaders(1, SHGD_HW_SILHOUETTE_POM);
+		m_cEF.mfReloadAllShaders(1, SHGD_HW_SILHOUETTE_POM, gRenDev->GetMainFrameID());
 	}
 
 	if (CV_r_reloadshaders)
@@ -796,7 +796,7 @@ void CD3D9Renderer::BeginFrame(const SDisplayContextKey& displayContextKey)
 		//iConsole->Exit("Test");
 
 		m_cEF.m_Bin.InvalidateCache();
-		m_cEF.mfReloadAllShaders(CV_r_reloadshaders, 0);
+		m_cEF.mfReloadAllShaders(CV_r_reloadshaders, 0, gRenDev->GetMainFrameID());
 
 #ifndef CONSOLE_CONST_CVAR_MODE
 		CV_r_reloadshaders = 0;

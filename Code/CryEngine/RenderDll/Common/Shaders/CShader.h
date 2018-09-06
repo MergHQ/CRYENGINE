@@ -263,7 +263,7 @@ public:
 	SShaderGenComb* mfGetShaderGenInfo(const char* nmFX);
 
 	bool            mfReloadShaderIncludes(const char* szPath, int nFlags);
-	bool            mfReloadAllShaders(int nFlags, uint32 nFlagsHW);
+	bool            mfReloadAllShaders(int nFlags, uint32 nFlagsHW, int currentFrameID);
 	bool            mfReloadFile(const char* szPath, const char* szName, int nFlags);
 
 	void            ParseShaderProfiles();

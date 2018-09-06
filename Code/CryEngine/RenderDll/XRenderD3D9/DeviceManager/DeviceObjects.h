@@ -165,7 +165,7 @@ public:
 	CDeviceGraphicsPSOPtr    CreateGraphicsPSO(const CDeviceGraphicsPSODesc& psoDesc);
 	CDeviceComputePSOPtr     CreateComputePSO(const CDeviceComputePSODesc& psoDesc);
 
-	void                     ReloadPipelineStates();
+	void                     ReloadPipelineStates(int currentFrameID);
 	void                     UpdatePipelineStates();
 	void                     TrimPipelineStates(int currentFrameID, int trimBeforeFrameID = std::numeric_limits<int>::max());
 

@@ -588,10 +588,10 @@ void CDeviceObjectFactory::ReleaseResources()
 	ReleaseResourcesImpl();
 }
 
-void CDeviceObjectFactory::ReloadPipelineStates()
+void CDeviceObjectFactory::ReloadPipelineStates(int currentFrameID)
 {
 	// Throw out expired PSOs before trying to recompile them (saves some time)
-	TrimPipelineStates(gRenDev->GetRenderFrameID());
+	TrimPipelineStates(currentFrameID);
 
 	for (auto it = m_GraphicsPsoCache.begin(), itEnd = m_GraphicsPsoCache.end(); it != itEnd; )
 	{

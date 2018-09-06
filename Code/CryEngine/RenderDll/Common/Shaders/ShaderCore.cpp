@@ -1368,7 +1368,7 @@ void CShaderMan::RT_SetShaderQuality(EShaderType eST, EShaderQuality eSQ)
 	{
 		bool bPS20 = ((gRenDev->m_Features & (RFT_HW_SM2X | RFT_HW_SM30)) == 0) || (eSQ == eSQ_Low);
 		m_Bin.InvalidateCache();
-		mfReloadAllShaders(FRO_FORCERELOAD, 0);
+		mfReloadAllShaders(FRO_FORCERELOAD, 0, gRenDev->GetRenderFrameID());
 	}
 }
 
