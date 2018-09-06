@@ -1210,7 +1210,7 @@ public:
 	void              EF_PrintRTStats(const char* szName);
 
 	static inline eAntialiasingType FX_GetAntialiasingType () { return (eAntialiasingType)((uint32)1 << min(CV_r_AntialiasingMode, eAT_AAMODES_COUNT - 1)); }
-	static inline bool              IsHDRModeEnabled       () { return (CV_r_HDRRendering && !CV_r_measureoverdraw) ? true : false; }
+	static inline bool              IsHDRDisplayEnabled    () { return (CV_r_HDRSwapChain && !CV_r_measureoverdraw) ? true : false; }
 	static inline bool              IsPostProcessingEnabled() { return (CV_r_PostProcess && !CV_r_measureoverdraw) ? true : false; }
 
 	void              UpdateRenderingModesInfo();
@@ -1391,7 +1391,6 @@ public:
 	int                  m_nGPU;
 	int                  m_VSync;
 	int                  m_Predicated;
-	int                  m_nHDRType;
 
 	int                  m_nGraphicsPipeline;
 

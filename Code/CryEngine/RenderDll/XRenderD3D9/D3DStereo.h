@@ -238,7 +238,7 @@ private:
 	// This is called from the render thread
 	stl::optional<Matrix34> TryGetHmdCameraAsync(const SStereoRenderContext &context);
 
-	void          RecreateDisplayContext(std::pair<std::shared_ptr<CCustomRenderDisplayContext>, SDisplayContextKey> &target, const ColorF &clearColor, std::vector<_smart_ptr<CTexture>> &&swapChain);
+	void          RecreateDisplayContext(std::pair<std::shared_ptr<CCustomRenderDisplayContext>, SDisplayContextKey> &target, std::string name, const ColorF &clearColor, std::vector<_smart_ptr<CTexture>> &&swapChain);
 	void          CreateEyeDisplayContext(CCamera::EEye eEye, std::vector<_smart_ptr<CTexture>> &&swapChain);
 	void          CreateVrQuadLayerDisplayContext(RenderLayer::EQuadLayers id, std::vector<_smart_ptr<CTexture>> &&swapChain);
 	void          SetCurrentEyeSwapChainIndices(const std::array<uint32_t, eEyeType_NumEyes> &indices);

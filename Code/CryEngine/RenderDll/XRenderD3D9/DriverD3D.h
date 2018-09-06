@@ -570,7 +570,7 @@ public:
 
 	void PrepareShadowPool(CRenderView* pRenderView) const override final;
 
-	bool FX_HDRScene(CRenderView *pRenderView, bool bEnable, bool bClear = true);
+	bool FX_HDRScene(CRenderView *pRenderView, bool bClear = true);
 
 	// Performance queries
 	//=======================================================================

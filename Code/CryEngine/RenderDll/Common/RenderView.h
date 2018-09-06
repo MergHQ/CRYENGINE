@@ -227,7 +227,7 @@ public:
 	void       PrepareForRendering();
 	void       PrepareForWriting();
 
-	bool       IsHDRModeEnabled() const;
+	bool       AllowsHDRRendering() const;
 	bool       IsPostProcessingEnabled() const;
 	bool       IsRecursive() const        { return m_viewType == eViewType_Recursive; }
 	bool       IsShadowGenView() const    { return m_viewType == eViewType_Shadow; }
@@ -460,6 +460,7 @@ private:
 
 	ColorF                      m_targetClearColor = {};
 	bool                        m_bClearTarget = false;
+	bool                        m_bRenderToSwapChain = false;
 	//////////////////////////////////////////////////////////////////////////
 
 	//////////////////////////////////////////////////////////////////////////

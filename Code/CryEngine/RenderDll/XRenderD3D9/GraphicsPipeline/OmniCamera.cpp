@@ -16,6 +16,7 @@ void COmniCameraStage::Execute()
 	{
 		CRY_ASSERT(0 && "I doubt this function actually works");
 
+		CTexture* pTargetTexture = RenderView()->GetColorTarget();
 		uint32 totalPixel = CRendererResources::s_renderArea;
 		int cubeSize = 1;
 		while (cubeSize * cubeSize * 6 < totalPixel)
@@ -24,39 +25,21 @@ void COmniCameraStage::Execute()
 		if (m_pOmniCameraTexture == nullptr || m_pOmniCameraTexture->GetWidth() != cubeSize)
 		{
 			const uint32 nFlags = FT_DONT_STREAM | FT_USAGE_RENDERTARGET;
-			m_pOmniCameraTexture = CTexture::GetOrCreateTextureArray("$OmniCameraCube", cubeSize, cubeSize, 6, 1, eTT_CubeArray, nFlags, eTF_R8G8B8A8);
+			m_pOmniCameraTexture = CTexture::GetOrCreateTextureArray("$OmniCameraCube", cubeSize, cubeSize, 6, 1, eTT_CubeArray, nFlags, pTargetTexture->GetDstFormat());
 		}
 
 		if (m_pOmniCameraCubeFaceStagingTexture == nullptr || m_pOmniCameraCubeFaceStagingTexture->GetWidth() != cubeSize)
 		{
 			const uint32 nFlags = FT_DONT_STREAM | FT_USAGE_RENDERTARGET;
-			m_pOmniCameraCubeFaceStagingTexture = CTexture::GetOrCreateRenderTarget("$OmniCameraCubeFaceStaging", cubeSize, cubeSize, ColorF(0, 0, 0), eTT_2D, nFlags, eTF_R8G8B8A8);
+			m_pOmniCameraCubeFaceStagingTexture = CTexture::GetOrCreateRenderTarget("$OmniCameraCubeFaceStaging", cubeSize, cubeSize, ColorF(0, 0, 0), eTT_2D, nFlags, pTargetTexture->GetDstFormat());
 		}
 
 		if (m_pOmniCameraTexture && m_pOmniCameraCubeFaceStagingTexture)
 		{
-			CTexture* pTargetTexture = RenderView()->GetColorTarget();
-			CTexture* pScreenTexture = CRendererResources::s_ptexBackBuffer;
-
-			RECT defaultRect;
-			defaultRect.left = 0;
-			defaultRect.top  = 0;
-			defaultRect.right  = min(pScreenTexture->GetWidth (), pTargetTexture->GetWidth ());
-			defaultRect.bottom = min(pScreenTexture->GetHeight(), pTargetTexture->GetHeight());
-
-			const SResourceRegionMapping region =
-			{
-				{ 0, 0, 0, 0 },
-				{ defaultRect.left, defaultRect.top, 0, 0 },
-				{ defaultRect.right - defaultRect.left, defaultRect.bottom - defaultRect.top, 1, 1 }
-			};
-
-			GetDeviceObjectFactory().GetCoreCommandList().GetCopyInterface()->Copy(pTargetTexture->GetDevTexture(), pScreenTexture->GetDevTexture(), region);
-
 			m_downsamplePass.Execute(
-				pScreenTexture,
+				pTargetTexture,
 				m_pOmniCameraCubeFaceStagingTexture,
-				pScreenTexture->GetWidth(), pScreenTexture->GetHeight(),
+				pTargetTexture->GetWidth(), pTargetTexture->GetHeight(),
 				m_pOmniCameraCubeFaceStagingTexture->GetWidth(), m_pOmniCameraCubeFaceStagingTexture->GetHeight(),
 				CDownsamplePass::EFilterType::FilterType_Box);
 

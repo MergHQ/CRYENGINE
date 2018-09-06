@@ -223,7 +223,7 @@ public:
 	DeclareStaticConstIntCVar(CV_r_DeferredShadingLights, 1);
 	DeclareStaticConstIntCVar(CV_r_DeferredShadingAreaLights, 0);
 	DeclareStaticConstIntCVar(CV_r_DeferredShadingStencilPrepass, 1);
-	static int CV_r_HDRRendering;
+	static int CV_r_HDRSwapChain;
 	DeclareStaticConstIntCVar(CV_r_HDRDebug, 0);
 	static int CV_r_HDRBloom;
 	static int CV_r_HDRBloomQuality;

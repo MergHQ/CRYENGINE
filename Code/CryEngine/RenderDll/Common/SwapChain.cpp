@@ -38,15 +38,40 @@ void CSwapChain::ReadSwapChainSurfaceDesc()
 	CRY_ASSERT(!FAILED(hr));
 }
 
+DXGI_FORMAT CSwapChain::GetSwapChainFormat()
+{
+#if CRY_PLATFORM_DURANGO
+	DXGI_FORMAT fmt = DXGI_FORMAT_R8G8B8A8_UNORM;
+#elif CRY_RENDERER_GNM
+	DXGI_FORMAT fmt = DXGI_FORMAT_R8G8B8A8_UNORM_SRGB;
+#elif defined(USE_SDL2_VIDEO)
+	DXGI_FORMAT fmt = DXGI_FORMAT_B8G8R8X8_UNORM;
+#else
+	DXGI_FORMAT fmt = DXGI_FORMAT_R8G8B8A8_UNORM;
+
+	switch (CRendererCVars::CV_r_HDRSwapChain)
+	{
+	case 0: fmt = DXGI_FORMAT_R8G8B8A8_UNORM /*_SRGB*/; break;
+	case 1: fmt = DXGI_FORMAT_R16G16B16A16_UNORM; break;
+	case 2: fmt = DXGI_FORMAT_R16G16B16A16_FLOAT; break;
+#if defined(__dxgi1_5_h__) || false /* TODO */
+	case 3: fmt = DXGI_FORMAT_R10G10B10A2_UNORM; break;
+	case 4: fmt = DXGI_FORMAT_R16G16B16A16_UNORM; break;
+	case 5: fmt = DXGI_FORMAT_R16G16B16A16_FLOAT; break;
+	case 6: fmt = DXGI_FORMAT_R8G8B8A8_UNORM;  break;
+	case 7: fmt = DXGI_FORMAT_R10G10B10A2_UNORM; break;
+	case 8: fmt = DXGI_FORMAT_R16G16B16A16_UNORM; break;
+	case 9: fmt = DXGI_FORMAT_R16G16B16A16_FLOAT; break;
+#endif
+	}
+#endif
+
+	return fmt;
+}
+
 #if !CRY_PLATFORM_DURANGO && !CRY_RENDERER_GNM
 CSwapChain CSwapChain::CreateSwapChain(HWND hWnd, DXGIOutput* pOutput, uint32_t width, uint32_t height, bool isMainContext, bool isFullscreen, bool vsync)
 {
-#if defined(USE_SDL2_VIDEO)
-	const DXGI_FORMAT fmt = DXGI_FORMAT_B8G8R8X8_UNORM;
-#else
-	const DXGI_FORMAT fmt = DXGI_FORMAT_R8G8B8A8_UNORM;
-#endif
-
 	IDXGISwapChain* piSwapChain = nullptr;
 	DXGI_SWAP_CHAIN_DESC scDesc;
 
@@ -54,7 +79,7 @@ CSwapChain CSwapChain::CreateSwapChain(HWND hWnd, DXGIOutput* pOutput, uint32_t 
 	scDesc.BufferDesc.Height = height;
 	scDesc.BufferDesc.RefreshRate.Numerator = 0;
 	scDesc.BufferDesc.RefreshRate.Denominator = 1;
-	scDesc.BufferDesc.Format = fmt;
+	scDesc.BufferDesc.Format = GetSwapChainFormat();
 	scDesc.BufferDesc.ScanlineOrdering = DXGI_MODE_SCANLINE_ORDER_UNSPECIFIED;
 	scDesc.BufferDesc.Scaling = DXGI_MODE_SCALING_UNSPECIFIED;
 
@@ -138,7 +163,7 @@ CSwapChain CSwapChain::CreateSwapChain(IDXGIFactory2ToCall* pDXGIFactory, ID3D11
 	DXGI_SWAP_CHAIN_DESC1 swapChainDesc = { 0 };
 	swapChainDesc.Width = width;
 	swapChainDesc.Height = height;
-	swapChainDesc.Format = DXGI_FORMAT_R8G8B8A8_UNORM;
+	swapChainDesc.Format = GetSwapChainFormat();
 	swapChainDesc.BufferUsage = DXGI_USAGE_SHADER_INPUT | DXGI_USAGE_RENDER_TARGET_OUTPUT;
 	swapChainDesc.BufferCount = 2;
 	swapChainDesc.Stereo = false;
@@ -174,7 +199,7 @@ CSwapChain CSwapChain::CreateSwapChain(uint32_t width, uint32_t height)
 	desc.type = CGnmSwapChain::kTypeTelevision;
 	desc.width = width;
 	desc.height = height;
-	desc.format = DXGI_FORMAT_R8G8B8A8_UNORM_SRGB;
+	desc.format = GetSwapChainFormat();
 	desc.numBuffers = 2;
 
 	DXGISwapChain* pSwapChain = nullptr;

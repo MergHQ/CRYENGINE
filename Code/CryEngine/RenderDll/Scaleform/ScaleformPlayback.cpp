@@ -1026,13 +1026,6 @@ void CScaleformPlayback::BeginDisplay(ColorF backgroundColor, const Viewport& vi
 		}
 	}
 
-	// Toggle current back-buffer if the output is connected to a swap-chain
-	CRY_ASSERT(m_pRenderOutput);
-	if (auto* pDC = m_pRenderOutput->GetDisplayContext())
-	{
-		pDC->PostPresent();
-	}
-
 	m_pRenderOutput->BeginRendering(nullptr, 0); // Override clear flag
 
 	assert(x0x1y0y1.Width() != 0 && x0x1y0y1.Height() != 0);

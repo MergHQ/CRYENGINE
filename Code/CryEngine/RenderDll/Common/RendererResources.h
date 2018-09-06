@@ -103,6 +103,11 @@ public:
 	static CTexture* CreateDepthTarget(int nWidth, int nHeight, const ColorF& cClear, ETEX_Format eTF);
 	static CTexture* CreateRenderTarget(int nWidth, int nHeight, const ColorF& cClear, ETEX_Format eTF);
 
+	static ETEX_Format GetHDRFormat(bool withAlpha, bool lowQuality);
+	static ETEX_Format GetLDRFormat();
+	static ETEX_Format GetDisplayFormat();
+	static ETEX_Format GetDepthFormat();
+
 public:
 	static bool m_bLoadedSystem;
 

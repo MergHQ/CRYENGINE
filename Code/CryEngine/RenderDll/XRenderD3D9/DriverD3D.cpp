@@ -104,7 +104,7 @@ void CD3D9Renderer::InitRenderer()
 	m_bInitialized = false;
 	gRenDev = this;
 
-	m_pBaseDisplayContext = std::make_shared<CSwapChainBackedRenderDisplayContext>(IRenderer::SDisplayContextDescription{}, m_uniqueDisplayContextId++);
+	m_pBaseDisplayContext = std::make_shared<CSwapChainBackedRenderDisplayContext>(IRenderer::SDisplayContextDescription{}, "Base-SwapShain", m_uniqueDisplayContextId++);
 	{
 		SDisplayContextKey baseContextKey;
 		baseContextKey.key.emplace<HWND>(m_pBaseDisplayContext->GetWindowHandle());
@@ -1251,7 +1251,7 @@ void CD3D9Renderer::ResolveSupersampledRendering()
 
 	const CRenderView* pRenderView = GetGraphicsPipeline().GetCurrentRenderView();
 	const CRenderOutput* pOutput = GetGraphicsPipeline().GetCurrentRenderOutput();
-	CRenderDisplayContext* pDC = GetActiveDisplayContext(); pDC->PostPresent();
+	CRenderDisplayContext* pDC = GetActiveDisplayContext();
 
 	CDownsamplePass::EFilterType eFilter = CDownsamplePass::FilterType_Box;
 	if (CV_r_SupersamplingFilter == 1)
@@ -1284,7 +1284,7 @@ void CD3D9Renderer::ResolveSubsampledOutput()
 	PROFILE_LABEL_SCOPE("RESOLVE_SUBSAMPLED");
 
 	auto* pColorTarget = GetGraphicsPipeline().GetCurrentRenderView()->GetColorTarget();
-	CRenderDisplayContext* pDC = GetActiveDisplayContext(); pDC->PostPresent();
+	CRenderDisplayContext* pDC = GetActiveDisplayContext();
 
 	CRY_ASSERT(pColorTarget != pDC->GetStorableColorOutput());
 	CRY_ASSERT(pColorTarget != pDC->GetCurrentBackBuffer());
@@ -1295,13 +1295,13 @@ void CD3D9Renderer::ResolveSubsampledOutput()
 
 void CD3D9Renderer::ResolveHighDynamicRangeDisplay()
 {
-	if (m_pActiveContext->IsNativeScalingEnabled() || !m_pActiveContext->IsHighDynamicRange())
+	if (m_pActiveContext->IsNativeScalingEnabled() || !m_pActiveContext->IsHighDynamicRangeDisplay())
 		return;
 
 	PROFILE_LABEL_SCOPE("RESOLVE_HIGHDYNAMICRANGE");
 
 	const CRenderOutput* pOutput = GetGraphicsPipeline().GetCurrentRenderOutput();
-	CRenderDisplayContext* pDC = GetActiveDisplayContext(); pDC->PostPresent();
+	CRenderDisplayContext* pDC = GetActiveDisplayContext();
 
 	CRY_ASSERT(pOutput->GetColorTarget() == pDC->GetStorableColorOutput());
 	CRY_ASSERT(pOutput->GetColorTarget() != pDC->GetCurrentBackBuffer());

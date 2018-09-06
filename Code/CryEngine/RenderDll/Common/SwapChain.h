@@ -56,6 +56,8 @@ public:
 	HRESULT                  Present(unsigned int syncInterval, unsigned int flags);
 #endif
 
+	static DXGI_FORMAT        GetSwapChainFormat();
+
 	_smart_ptr<DXGISwapChain> GetSwapChain() const     { return m_pSwapChain; }
 
 	const DXGI_SURFACE_DESC&  GetSurfaceDesc() const { return m_surfaceDesc; }

@@ -247,9 +247,7 @@ void CSvoManager::Render(bool bSyncUpdate)
 
 void CSvoManager::OnDisplayInfo(float& textPosX, float& textPosY, float& textStepY, float textScale)
 {
-	ICVar* pr_HDRRendering = GetConsole()->GetCVar("r_HDRRendering");
-
-	if (GetCVars()->e_svoEnabled && pr_HDRRendering->GetIVal())
+	if (GetCVars()->e_svoEnabled)
 	{
 		int lineId = 0;
 		while (char* szStatus = CSvoManager::GetStatusString(lineId))

@@ -705,8 +705,6 @@ private:
 	ITimer*    m_pTimer;
 	I3DEngine* m_p3DEngine;
 
-	//	ICVar *r_hdrrendering;						// the Cvar is created in cry3dengine, this is just a pointer
-
 	//Vlad is too lazy to add this to 3DEngine">so I have to put it here. It should
 	//not be here, but I have to put it somewhere.....
 	float            m_SkyFadeStart; // when fogEnd less">start to fade sky to fog

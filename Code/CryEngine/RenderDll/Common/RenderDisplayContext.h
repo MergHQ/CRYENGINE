@@ -24,13 +24,13 @@ public:
 	using OutputSmartPtr = std::shared_ptr<CRenderOutput>;
 
 protected:
+	//! Debug name for this Render Output
+	std::string              m_name;
 	// Unique id to identify each context
 	uint32                   m_uniqueId;
 
 	// Denotes if context refers to main viewport
 	bool                     m_bMainViewport = true;
-	// Denotes if input is HDR content
-	bool                     m_bHDRRendering = false;
 	// Description of the DisplayContext
 	IRenderer::SDisplayContextDescription m_desc;
 
@@ -51,7 +51,7 @@ protected:
 	SRenderViewport          m_viewport;
 
 protected:
-	CRenderDisplayContext(IRenderer::SDisplayContextDescription desc, uint32 uniqueId) : m_uniqueId(uniqueId), m_desc(desc)
+	CRenderDisplayContext(IRenderer::SDisplayContextDescription desc, std::string name, uint32 uniqueId) : m_name(name), m_uniqueId(uniqueId), m_desc(desc)
 	{
 		m_pRenderOutput = std::make_shared<CRenderOutput>(this);
 	}
@@ -74,16 +74,17 @@ public:
 
 	virtual bool         IsSwapChainBacked() const { return false; }
 
-	void                 BeginRendering(bool isHighDynamicRangeEnabled);
+	void                 BeginRendering();
 	void                 EndRendering();
 
 	virtual void         PrePresent() {}
 	virtual void         PostPresent() {}
 	virtual CTexture*    GetCurrentBackBuffer() const = 0;
 	virtual CTexture*    GetPresentedBackBuffer() const = 0;
-	virtual CTexture*    GetStorableColorOutput() = 0;
 
+	std::string          GetName() const { return m_name; }
 	uint32_t             GetID() const { return m_uniqueId; }
+
 	OutputSmartPtr       GetRenderOutput() const { return m_pRenderOutput; };
 	Vec2_tpl<uint32_t>   GetDisplayResolution() const { return Vec2_tpl<uint32_t>(m_DisplayWidth, m_DisplayHeight); }
 	const SRenderViewport& GetViewport() const { return m_viewport; }
@@ -93,15 +94,21 @@ public:
 	bool                 IsMainContext() const { return IsMainViewport(); }
 	bool                 IsEditorDisplay() const;
 	bool                 IsScalable() const { return IsMainViewport() && !IsEditorDisplay(); }
-	bool                 IsHighDynamicRange() const { return m_bHDRRendering; /* SHDF_ALLOWHDR */ }
 	bool                 IsDeferredShadeable() const { return IsMainViewport(); }
 	bool                 IsSuperSamplingEnabled() const { return m_nSSSamplesX * m_nSSSamplesY > 1; }
 	bool                 IsNativeScalingEnabled() const;
+	bool                 IsHighDynamicRangeDisplay() const { return false; /* CRendererCVars::CV_r_HDRSwapChain */ }
+
+	bool                 NeedsTempColor() const { return false; /* TODO: compare formats as well */ }
 	bool                 NeedsDepthStencil() const { return (m_desc.renderFlags & (FRT_OVERLAY_DEPTH | FRT_OVERLAY_STENCIL)) != 0; }
 
+	virtual ETEX_Format  GetColorFormat() const { return CRendererResources::GetDisplayFormat(); }
+	ETEX_Format          GetDepthFormat() const { return CRendererResources::GetDepthFormat(); }
+
+	// Get a temporary texture pointer (only valid for some short-lived scope
 	CTexture* GetCurrentColorOutput() const
 	{
-		if (IsHighDynamicRange())
+		if (NeedsTempColor())
 		{
 			CRY_ASSERT(m_pColorTarget);
 			return m_pColorTarget.get();
@@ -115,7 +122,10 @@ public:
 		CRY_ASSERT(m_pDepthTarget || !NeedsDepthStencil());
 		return m_pDepthTarget.get();
 	}
-	CTexture* GetStorableDepthOutput() const { return GetCurrentDepthOutput(); }
+
+	// Get persistent texture pointers which are dirtied when changed
+	virtual CTexture*    GetStorableColorOutput() = 0;
+	inline  CTexture*    GetStorableDepthOutput() const { return GetCurrentDepthOutput(); }
 
 private:
 	void AllocateColorTarget();
@@ -124,7 +134,9 @@ private:
 
 using CRenderDisplayContextPtr = std::shared_ptr<CRenderDisplayContext>;
 
-
+//////////////////////////////////////////////////////////////////////////
+//! Display Context implemented by a swap-chain
+//////////////////////////////////////////////////////////////////////////
 class CSwapChainBackedRenderDisplayContext : public CRenderDisplayContext
 {
 	friend class CD3D9Renderer;
@@ -168,7 +180,7 @@ private:
 	}
 
 public:
-	CSwapChainBackedRenderDisplayContext(IRenderer::SDisplayContextDescription desc, uint32 uniqueId) : CRenderDisplayContext(desc, uniqueId) {}
+	CSwapChainBackedRenderDisplayContext(IRenderer::SDisplayContextDescription desc, std::string name, uint32 uniqueId) : CRenderDisplayContext(desc, name, uniqueId) {}
 	~CSwapChainBackedRenderDisplayContext() { ShutDown(); }
 
 	CSwapChainBackedRenderDisplayContext(CSwapChainBackedRenderDisplayContext &&) = default;
@@ -178,6 +190,10 @@ public:
 
 	void                 PrePresent() override;
 	void                 PostPresent() override;
+
+	ETEX_Format          GetColorFormat() const override { return GetBackBufferFormat(); };
+	ETEX_Format          GetBackBufferFormat() const;
+
 	CTexture*            GetCurrentBackBuffer() const override;
 	CTexture*            GetPresentedBackBuffer() const override { return m_pBackBufferPresented; }
 	CTexture*            GetStorableColorOutput() override;
@@ -202,7 +218,9 @@ private:
 	void AllocateBackBuffers();
 };
 
-
+//////////////////////////////////////////////////////////////////////////
+//! Display Context implemented by custom buffers
+//////////////////////////////////////////////////////////////////////////
 class CCustomRenderDisplayContext : public CRenderDisplayContext
 {
 private:
@@ -210,10 +228,15 @@ private:
 	std::vector<TexSmartPtr> m_backBuffersArray;
 	CTexture*                m_pBackBufferPresented = nullptr;
 	TexSmartPtr              m_pBackBufferProxy = nullptr;
+	bool                     m_bSwapProxy = true;
+
+	void                 ShutDown();
+	void                 ReleaseResources() override;
 
 public:
 	// Creates a display context with manual control of the swapchain
-	CCustomRenderDisplayContext(IRenderer::SDisplayContextDescription desc, uint32 uniqueId, std::vector<TexSmartPtr> &&backBuffersArray, uint32_t initialSwapChainIndex = 0);
+	CCustomRenderDisplayContext(IRenderer::SDisplayContextDescription desc, std::string name, uint32 uniqueId, std::vector<TexSmartPtr> &&backBuffersArray, uint32_t initialSwapChainIndex = 0);
+	~CCustomRenderDisplayContext() { ShutDown(); }
 
 	CCustomRenderDisplayContext(CCustomRenderDisplayContext &&) = default;
 	CCustomRenderDisplayContext &operator=(CCustomRenderDisplayContext &&) = default;
@@ -221,6 +244,8 @@ public:
 	void             SetSwapChainIndex(uint32_t index);
 
 	void             PrePresent() override;
+	void             PostPresent() override;
+
 	CTexture*        GetCurrentBackBuffer() const override { return this->m_backBuffersArray[m_swapChainIndex]; }
 	CTexture*        GetPresentedBackBuffer() const override { return m_pBackBufferPresented; }
 	CTexture*        GetStorableColorOutput() override;
