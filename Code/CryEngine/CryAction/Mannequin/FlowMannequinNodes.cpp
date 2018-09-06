@@ -269,8 +269,9 @@ public:
 						const IAnimationDatabase* db = dbManager.FindDatabase(db_crc32);
 
 						const string& scopeContextName = GetPortString(pActInfo, EIP_ScopeContext);
-						const string& requestedScopeContext = scopeContextName.empty() ? "SlaveChar" : scopeContextName;
-						const TagID scopeContext = pAnimChar->GetActionController()->GetContext().controllerDef.m_scopeContexts.Find(scopeContextName.c_str());
+						string const slaveChar("SlaveChar");
+						const string& requestedScopeContext = scopeContextName.empty() ? slaveChar : scopeContextName;
+						const TagID scopeContext = pAnimChar->GetActionController()->GetContext().controllerDef.m_scopeContexts.Find(requestedScopeContext.c_str());
 
 						pAnimChar->GetActionController()->SetSlaveController(*pSlaveAnimChar->GetActionController(), scopeContext, IsPortActive(pActInfo, EIP_Enslave) ? true : false, db);
 						ActivateOutput(pActInfo, EOP_Success, 1);

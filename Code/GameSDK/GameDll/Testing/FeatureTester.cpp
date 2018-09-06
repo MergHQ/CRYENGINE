@@ -2905,7 +2905,7 @@ string CFeatureTester::GetListOfCheckpointsExpected()
 
 	assert (countFound == m_waitUntilCCCPointHit_numStillToHit);
 
-	return reply.empty() ? "none" : reply;
+	return reply.empty() ? string("none") : reply;
 }
 
 #if ENABLE_GAME_CODE_COVERAGE

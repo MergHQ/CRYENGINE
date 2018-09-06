@@ -1796,7 +1796,7 @@ string CGameContext::GetConnectionString(CryFixedStringT<HOST_MIGRATION_MAX_PLAY
 	constr += ':';
 	constr += ToHexStr(playerName.data(), playerName.size());
 	constr += ':';
-	constr += fake ? "fake" : m_connectionString;
+	constr += fake ? "fake" : m_connectionString.c_str();
 	cry_sprintf(buf, "%d", (int)time(NULL));
 	constr = buf + constr;
 	int len = constr.length();

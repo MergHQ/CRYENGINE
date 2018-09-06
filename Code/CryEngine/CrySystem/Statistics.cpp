@@ -3360,9 +3360,9 @@ void CStatsToExcelExporter::ExportMaterials(SCryEngineStats& stats)
 				{
 					SShaderTextureSlot* pSlot = pShaderSlots->m_UsedSlots[t];
 
-					const string& sTexName = pShaderResources->GetTexture(t) ? pShaderResources->GetTexture(t)->m_Name : "";
+					const string textureName = (pShaderResources->GetTexture(t) != nullptr) ? pShaderResources->GetTexture(t)->m_Name.c_str() : "";
 
-					if (!pSlot && !sTexName.empty())
+					if (!pSlot && !textureName.empty())
 					{
 						// found unused texture.
 
@@ -3380,7 +3380,7 @@ void CStatsToExcelExporter::ExportMaterials(SCryEngineStats& stats)
 
 						AddRow();
 						AddCell(pMat->GetMaterialHelpers().LookupTexName((EEfResTextures)t));
-						AddCell(sTexName);
+						AddCell(textureName);
 					}
 				}
 			}

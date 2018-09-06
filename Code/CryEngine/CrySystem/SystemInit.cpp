@@ -2227,7 +2227,7 @@ bool CSystem::InitFileSystem_LoadEngineFolders()
 
 	// Load cvar groups first from game folder then from engine folder.
 	{
-		string gameFolder = (!PathUtil::GetGameFolder().empty()) ? (PathUtil::GetGameFolder() + "/") : "";
+		string gameFolder = (!PathUtil::GetGameFolder().empty()) ? (PathUtil::GetGameFolder() + "/") : string("");
 		AddCVarGroupDirectory(gameFolder + "Config/CVarGroups");
 	}
 	AddCVarGroupDirectory("%ENGINE%/Config/CVarGroups");
@@ -2453,7 +2453,7 @@ void CSystem::OpenBasicPaks(bool bLoadGamePaks)
 		// After game paks to have same search order as with files on disk
 		{
 			const char* szBindRoot = m_env.pCryPak->GetAlias("%ENGINE%", false);
-			string paksFolder = PathUtil::Make(buildFolder.empty() ? "%ENGINEROOT%" : buildFolder, "Engine");
+			string paksFolder = PathUtil::Make(buildFolder.empty() ? string("%ENGINEROOT%") : buildFolder, "Engine");
 
 			const unsigned int numOpenPacksBeforeEngine = m_env.pCryPak->GetPakInfo()->numOpenPaks;
 			m_env.pCryPak->OpenPacks(szBindRoot, PathUtil::Make(paksFolder, "*.pak"));

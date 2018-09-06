@@ -152,7 +152,7 @@ public:
 	//reverse_iterator rend() { return reverse_iterator(begin()); }
 
 	//! cast to C string operator.
-	operator const_str() const { return m_str; }
+	operator const_str() const { return m_str; } // make this explicit
 
 	//! cast to C string.
 	const value_type* c_str() const { return m_str; }

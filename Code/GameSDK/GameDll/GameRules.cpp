@@ -7154,7 +7154,7 @@ bool CGameRules::NetSerializeTelemetry( TSerialize ser, EEntityAspects aspect, u
 
 		if (ser.IsWriting())
 		{
-			ser.Value("sessionid",tc ? tc->GetSessionId() : "");
+			ser.Value("sessionid",tc ? tc->GetSessionId() : string(""));
 		}
 		else
 		{

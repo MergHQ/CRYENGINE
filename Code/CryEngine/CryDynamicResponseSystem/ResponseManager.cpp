@@ -172,7 +172,7 @@ bool CResponseManager::SaveToFiles(const char* szDataPath)
 //--------------------------------------------------------------------------------------------------
 void CResponseManager::QueueSignal(const SSignal& signal)
 {
-	DRS_DEBUG_DATA_ACTION(AddSignalFired(signal.m_signalName.GetText(), (signal.m_pSender) ? signal.m_pSender->GetName() : "no sender", (signal.m_pSignalContext) ? signal.m_pSignalContext->GetVariablesAsString() : "(no context variables)"));
+	DRS_DEBUG_DATA_ACTION(AddSignalFired(signal.m_signalName.GetText(), (signal.m_pSender) ? signal.m_pSender->GetName() : string("no sender"), (signal.m_pSignalContext) ? signal.m_pSignalContext->GetVariablesAsString() : string("(no context variables)")));
 
 	m_currentlyQueuedSignals.push_back(signal);
 }
