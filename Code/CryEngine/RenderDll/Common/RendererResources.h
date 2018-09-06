@@ -4,6 +4,11 @@
 
 #include <CryRenderer/ITexture.h>
 
+//===================================================================
+
+#define MAX_ENVTEXTURES    16
+#define MAX_ENVTEXSCANDIST 0.1f
+
 class CTexture;
 struct SEnvTexture;
 

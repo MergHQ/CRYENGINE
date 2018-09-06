@@ -2,6 +2,7 @@
 
 #pragma once
 
+#include "RendererResources.h"
 #include "SwapChain.h"
 
 class CRenderOutput;

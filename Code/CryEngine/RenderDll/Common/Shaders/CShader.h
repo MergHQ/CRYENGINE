@@ -19,11 +19,6 @@ struct SSunFlare;
 
 //===================================================================
 
-#define MAX_ENVTEXTURES    16
-#define MAX_ENVTEXSCANDIST 0.1f
-
-//===============================================================================
-
 struct SMacroFX
 {
 	string m_szMacro;
