@@ -14,6 +14,7 @@ AudioParameterLookup g_parameters;
 AudioSwitchLookup g_switches;
 AudioPreloadRequestLookup g_preloadRequests;
 AudioEnvironmentLookup g_environments;
+SettingLookup g_settings;
 CATLAudioObject* g_pObject = nullptr;
 CLoseFocusTrigger g_loseFocusTrigger;
 CGetFocusTrigger g_getFocusTrigger;

@@ -555,6 +555,10 @@ struct SVariableSerializer
 		{
 			ar(Serialization::AudioPreloadRequest(value), name, label);
 		}
+		else if (dataType == IVariable::DT_AUDIO_SETTING)
+		{
+			ar(Serialization::AudioSetting(value), name, label);
+		}
 		else if (dataType == IVariable::DT_OBJECT)
 		{
 			ar(Serialization::ModelFilename(value), name, label);

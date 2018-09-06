@@ -61,9 +61,9 @@ private:
 	void SignalConnectionModified();
 
 	ControlId const            m_id;
-	Scope                      m_scope = 0;
+	Scope                      m_scope;
 	std::vector<ConnectionPtr> m_connections;
-	bool                       m_isAutoLoad = true;
+	bool                       m_isAutoLoad;
 
 	using XMLNodes = std::vector<XmlNodeRef>;
 	std::map<int, XMLNodes> m_rawConnections;

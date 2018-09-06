@@ -8,7 +8,7 @@
 
 namespace ACE
 {
-enum class EAssetType
+enum class EAssetType : CryAudio::EnumFlagsType
 {
 	None,
 	Trigger,
@@ -17,34 +17,31 @@ enum class EAssetType
 	State,
 	Environment,
 	Preload,
+	Setting,
 	Folder,
 	Library,
-	NumTypes
-};
+	NumTypes };
 
-enum class EPakStatus
+enum class EPakStatus : CryAudio::EnumFlagsType
 {
-	None   = 0,
-	InPak  = BIT(0),
-	OnDisk = BIT(1),
-};
+	None = 0,
+	InPak = BIT(0),
+	OnDisk = BIT(1), };
 CRY_CREATE_ENUM_FLAG_OPERATORS(EPakStatus);
 
-enum class EItemFlags
+enum class EItemFlags : CryAudio::EnumFlagsType
 {
-	None          = 0,
+	None = 0,
 	IsPlaceHolder = BIT(0),
-	IsLocalized   = BIT(1),
-	IsConnected   = BIT(2),
-	IsContainer   = BIT(3),
-};
+	IsLocalized = BIT(1),
+	IsConnected = BIT(2),
+	IsContainer = BIT(3), };
 CRY_CREATE_ENUM_FLAG_OPERATORS(EItemFlags);
 
-enum class EErrorCode
+enum class EErrorCode : CryAudio::EnumFlagsType
 {
-	None           = 0,
-	UnkownPlatform = BIT(0),
-};
+	None = 0,
+	UnkownPlatform = BIT(0), };
 CRY_CREATE_ENUM_FLAG_OPERATORS(EErrorCode);
 
 using ControlId = CryAudio::IdType;

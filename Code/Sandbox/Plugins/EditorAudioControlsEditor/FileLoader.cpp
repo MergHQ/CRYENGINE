@@ -44,6 +44,10 @@ EAssetType TagToType(char const* const szTag)
 	{
 		type = EAssetType::Preload;
 	}
+	else if (_stricmp(szTag, CryAudio::s_szSettingTag) == 0)
+	{
+		type = EAssetType::Setting;
+	}
 	else
 	{
 		type = EAssetType::None;
@@ -260,7 +264,8 @@ CControl* CFileLoader::LoadControl(XmlNodeRef const pNode, Scope const scope, ui
 					}
 					break;
 				case EAssetType::Preload:
-					LoadPreloadConnections(pNode, pControl, version);
+				case EAssetType::Setting:
+					LoadPlatformSpecificConnections(pNode, pControl, version);
 					break;
 				default:
 					LoadConnections(pNode, pControl);
@@ -348,7 +353,7 @@ void CFileLoader::LoadConnections(XmlNodeRef const pRoot, CControl* const pContr
 }
 
 //////////////////////////////////////////////////////////////////////////
-void CFileLoader::LoadPreloadConnections(XmlNodeRef const pNode, CControl* const pControl, uint32 const version)
+void CFileLoader::LoadPlatformSpecificConnections(XmlNodeRef const pNode, CControl* const pControl, uint32 const version)
 {
 	if (_stricmp(pNode->getAttr(CryAudio::s_szTypeAttribute), CryAudio::s_szDataLoadType) == 0)
 	{

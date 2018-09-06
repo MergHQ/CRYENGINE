@@ -123,6 +123,10 @@ void CAudioXMLProcessor::ParseControlsFile(XmlNodeRef const pRootNode, EDataScop
 			{
 				ParseEnvironments(pChildNode, dataScope);
 			}
+			else if (_stricmp(szChildNodeTag, s_szSettingsNodeTag) == 0)
+			{
+				ParseSettings(pChildNode, dataScope);
+			}
 			else if (_stricmp(szChildNodeTag, s_szPreloadsNodeTag) == 0 ||
 			         _stricmp(szChildNodeTag, s_szEditorDataTag) == 0)
 			{
@@ -363,6 +367,24 @@ void CAudioXMLProcessor::ClearControlsData(EDataScope const dataScope)
 
 			++iterEnvironments;
 		}
+
+		SettingLookup::iterator iterSettings(g_settings.begin());
+		SettingLookup::const_iterator iterSettingsEnd(g_settings.end());
+
+		while (iterSettings != iterSettingsEnd)
+		{
+			CSetting const* const pSetting = iterSettings->second;
+
+			if ((pSetting->GetDataScope() == dataScope) || dataScope == EDataScope::All)
+			{
+				delete pSetting;
+				iterSettings = g_settings.erase(iterSettings);
+				iterSettingsEnd = g_settings.end();
+				continue;
+			}
+
+			++iterSettings;
+		}
 	}
 }
 
@@ -548,6 +570,82 @@ void CAudioXMLProcessor::ParseEnvironments(XmlNodeRef const pAudioEnvironmentRoo
 			else
 			{
 				Cry::Audio::Log(ELogType::Error, R"(Environment "%s" already exists!)", szEnvironmentName);
+			}
+		}
+	}
+}
+
+//////////////////////////////////////////////////////////////////////////
+void CAudioXMLProcessor::ParseSettings(XmlNodeRef const pRoot, EDataScope const dataScope)
+{
+	int const numSettings = pRoot->getChildCount();
+
+	for (int i = 0; i < numSettings; ++i)
+	{
+		XmlNodeRef const pSettingNode(pRoot->getChild(i));
+
+		if (pSettingNode && _stricmp(pSettingNode->getTag(), s_szSettingTag) == 0)
+		{
+			char const* const szSettingName = pSettingNode->getAttr(s_szNameAttribute);
+			auto const settingId = static_cast<ControlId>(StringToId(szSettingName));
+
+			if ((settingId != InvalidControlId) && (stl::find_in_map(g_settings, settingId, nullptr) == nullptr))
+			{
+				XmlNodeRef pSettingImplParentNode = nullptr;
+				int const numPlatforms = pSettingNode->getChildCount();
+
+				for (int j = 0; j < numPlatforms; ++j)
+				{
+					XmlNodeRef const pPlatformNode(pSettingNode->getChild(j));
+
+					if ((pPlatformNode != nullptr) && (_stricmp(pPlatformNode->getAttr(s_szNameAttribute), SATLXMLTags::szPlatform) == 0))
+					{
+						pSettingImplParentNode = pPlatformNode;
+						break;
+					}
+				}
+
+				if (pSettingImplParentNode != nullptr)
+				{
+					bool const isAutoLoad = (_stricmp(pSettingNode->getAttr(s_szTypeAttribute), s_szDataLoadType) == 0);
+
+					int const numConnections = pSettingImplParentNode->getChildCount();
+					SettingConnections connections;
+					connections.reserve(numConnections);
+
+					for (int k = 0; k < numConnections; ++k)
+					{
+						XmlNodeRef const pSettingImplNode(pSettingImplParentNode->getChild(k));
+
+						if (pSettingImplNode != nullptr)
+						{
+							Impl::ISetting const* const pISetting = g_pIImpl->ConstructSetting(pSettingImplNode);
+
+							if (pISetting != nullptr)
+							{
+								CSettingImpl const* const pSettingImpl = new CSettingImpl(pISetting);
+								connections.push_back(pSettingImpl);
+							}
+						}
+					}
+
+					connections.shrink_to_fit();
+
+#if defined(INCLUDE_AUDIO_PRODUCTION_CODE)
+					auto const pNewSetting = new CSetting(settingId, dataScope, isAutoLoad, connections, szSettingName);
+#else
+					auto const pNewSetting = new CSetting(settingId, dataScope, isAutoLoad, connections);
+#endif        // INCLUDE_AUDIO_PRODUCTION_CODE
+
+					if (pNewSetting != nullptr)
+					{
+						g_settings[settingId] = pNewSetting;
+					}
+				}
+			}
+			else
+			{
+				Cry::Audio::Log(ELogType::Error, R"(Setting "%s" already exists!)", szSettingName);
 			}
 		}
 	}

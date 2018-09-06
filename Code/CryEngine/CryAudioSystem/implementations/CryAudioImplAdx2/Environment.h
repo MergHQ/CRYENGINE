@@ -26,6 +26,10 @@ class CEnvironment final : public IEnvironment
 public:
 
 	CEnvironment() = delete;
+	CEnvironment(CEnvironment const&) = delete;
+	CEnvironment(CEnvironment&&) = delete;
+	CEnvironment& operator=(CEnvironment const&) = delete;
+	CEnvironment& operator=(CEnvironment&&) = delete;
 
 	explicit CEnvironment(
 		char const* const szName,
@@ -39,11 +43,6 @@ public:
 	{}
 
 	virtual ~CEnvironment() override = default;
-
-	CEnvironment(CEnvironment const&) = delete;
-	CEnvironment(CEnvironment&&) = delete;
-	CEnvironment&    operator=(CEnvironment const&) = delete;
-	CEnvironment&    operator=(CEnvironment&&) = delete;
 
 	CriChar8 const*  GetName() const       { return static_cast<CriChar8 const*>(m_name); }
 	EEnvironmentType GetType() const       { return m_type; }

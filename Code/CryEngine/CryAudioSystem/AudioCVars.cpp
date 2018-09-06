@@ -174,36 +174,6 @@ void CCVars::RegisterVariables()
 	                  "d: Collisions with terrain.\n",
 	                  OnOcclusionRayTypesChanged);
 
-	REGISTER_COMMAND("s_ExecuteTrigger", CmdExecuteTrigger, VF_CHEAT,
-	                 "Execute an Audio Trigger.\n"
-	                 "The first argument is the name of the AudioTrigger to be executed, the second argument is an optional AudioObject ID.\n"
-	                 "If the second argument is provided, the AudioTrigger is executed on the AudioObject with the given ID,\n"
-	                 "otherwise, the AudioTrigger is executed on the GlobalAudioObject\n"
-	                 "Usage: s_ExecuteTrigger Play_chicken_idle 605 or s_ExecuteTrigger MuteDialog\n");
-
-	REGISTER_COMMAND("s_StopTrigger", CmdStopTrigger, VF_CHEAT,
-	                 "Execute an Audio Trigger.\n"
-	                 "The first argument is the name of the AudioTrigger to be stopped, the second argument is an optional AudioObject ID.\n"
-	                 "If the second argument is provided, the AudioTrigger is stopped on the AudioObject with the given ID,\n"
-	                 "otherwise, the AudioTrigger is stopped on the GlobalAudioObject\n"
-	                 "Usage: s_StopTrigger Play_chicken_idle 605 or s_StopTrigger MuteDialog\n");
-
-	REGISTER_COMMAND("s_SetParameter", CmdSetParameter, VF_CHEAT,
-	                 "Set an Audio Parameter value.\n"
-	                 "The first argument is the name of the parameter to be set, the second argument is the float value to be set,"
-	                 "the third argument is an optional AudioObject ID.\n"
-	                 "If the third argument is provided, the parameter is set on the AudioObject with the given ID,\n"
-	                 "otherwise, the AudioParameter is set on the GlobalAudioObject\n"
-	                 "Usage: s_SetParameter character_speed  0.0  601 or s_SetParameter volume_music 1.0\n");
-
-	REGISTER_COMMAND("s_SetSwitchState", CmdSetSwitchState, VF_CHEAT,
-	                 "Set an Audio Switch to a provided State.\n"
-	                 "The first argument is the name of the AudioSwitch to, the second argument is the name of the SwitchState to be set,"
-	                 "the third argument is an optional AudioObject ID.\n"
-	                 "If the third argument is provided, the AudioSwitch is set on the AudioObject with the given ID,\n"
-	                 "otherwise, the AudioSwitch is set on the GlobalAudioObject\n"
-	                 "Usage: s_SetSwitchState SurfaceType concrete 601 or s_SetSwitchState weather rain\n");
-
 	REGISTER_STRING("s_DefaultStandaloneFilesAudioTrigger", "", 0,
 	                "The name of the ATL AudioTrigger which is used for playing back standalone files, when you call 'PlayFile' without specifying\n"
 	                "an override triggerId that should be used instead.\n"
@@ -272,6 +242,46 @@ void CCVars::RegisterVariables()
 	                                 "Allows for filtered display of audio debug info by a search string.\n"
 	                                 "Usage: s_DebugFilter spaceship\n"
 	                                 "Default: " " (all)\n");
+
+	REGISTER_COMMAND("s_ExecuteTrigger", CmdExecuteTrigger, VF_CHEAT,
+	                 "Execute an Audio Trigger.\n"
+	                 "The first argument is the name of the AudioTrigger to be executed, the second argument is an optional AudioObject ID.\n"
+	                 "If the second argument is provided, the AudioTrigger is executed on the AudioObject with the given ID,\n"
+	                 "otherwise, the AudioTrigger is executed on the GlobalAudioObject\n"
+	                 "Usage: s_ExecuteTrigger Play_chicken_idle 605 or s_ExecuteTrigger MuteDialog\n");
+
+	REGISTER_COMMAND("s_StopTrigger", CmdStopTrigger, VF_CHEAT,
+	                 "Execute an Audio Trigger.\n"
+	                 "The first argument is the name of the AudioTrigger to be stopped, the second argument is an optional AudioObject ID.\n"
+	                 "If the second argument is provided, the AudioTrigger is stopped on the AudioObject with the given ID,\n"
+	                 "otherwise, the AudioTrigger is stopped on the GlobalAudioObject\n"
+	                 "Usage: s_StopTrigger Play_chicken_idle 605 or s_StopTrigger MuteDialog\n");
+
+	REGISTER_COMMAND("s_SetParameter", CmdSetParameter, VF_CHEAT,
+	                 "Set an Audio Parameter value.\n"
+	                 "The first argument is the name of the parameter to be set, the second argument is the float value to be set,"
+	                 "the third argument is an optional AudioObject ID.\n"
+	                 "If the third argument is provided, the parameter is set on the AudioObject with the given ID,\n"
+	                 "otherwise, the AudioParameter is set on the GlobalAudioObject\n"
+	                 "Usage: s_SetParameter character_speed  0.0  601 or s_SetParameter volume_music 1.0\n");
+
+	REGISTER_COMMAND("s_SetSwitchState", CmdSetSwitchState, VF_CHEAT,
+	                 "Set an Audio Switch to a provided State.\n"
+	                 "The first argument is the name of the AudioSwitch to, the second argument is the name of the SwitchState to be set,"
+	                 "the third argument is an optional AudioObject ID.\n"
+	                 "If the third argument is provided, the AudioSwitch is set on the AudioObject with the given ID,\n"
+	                 "otherwise, the AudioSwitch is set on the GlobalAudioObject\n"
+	                 "Usage: s_SetSwitchState SurfaceType concrete 601 or s_SetSwitchState weather rain\n");
+
+	REGISTER_COMMAND("s_LoadSetting", CmdLoadSetting, VF_CHEAT,
+	                 "Loads a setting.\n"
+	                 "The argument is the name of the setting to load.\n"
+	                 "Usage: s_LoadSetting main_menu\n");
+
+	REGISTER_COMMAND("s_UnloadSetting", CmdUnloadSetting, VF_CHEAT,
+	                 "Unloads a setting.\n"
+	                 "The argument is the name of the setting to unload.\n"
+	                 "Usage: s_UnloadSetting main_menu\n");
 #endif // INCLUDE_AUDIO_PRODUCTION_CODE
 }
 
@@ -297,10 +307,6 @@ void CCVars::UnregisterVariables()
 		pConsole->UnregisterVariable("s_AccumulateOcclusion");
 		pConsole->UnregisterVariable("s_IgnoreWindowFocus");
 		pConsole->UnregisterVariable("s_OcclusionCollisionTypes");
-		pConsole->UnregisterVariable("s_ExecuteTrigger");
-		pConsole->UnregisterVariable("s_StopTrigger");
-		pConsole->UnregisterVariable("s_SetParameter");
-		pConsole->UnregisterVariable("s_SetSwitchState");
 		pConsole->UnregisterVariable("s_DefaultStandaloneFilesAudioTrigger");
 
 #if defined(INCLUDE_AUDIO_PRODUCTION_CODE)
@@ -310,10 +316,17 @@ void CCVars::UnregisterVariables()
 		pConsole->UnregisterVariable("s_HideInactiveAudioObjects");
 		pConsole->UnregisterVariable("s_AudioObjectsRayType");
 		pConsole->UnregisterVariable("s_DebugFilter");
+		pConsole->UnregisterVariable("s_ExecuteTrigger");
+		pConsole->UnregisterVariable("s_StopTrigger");
+		pConsole->UnregisterVariable("s_SetParameter");
+		pConsole->UnregisterVariable("s_SetSwitchState");
+		pConsole->UnregisterVariable("s_LoadSetting");
+		pConsole->UnregisterVariable("s_UnloadSetting");
 #endif // INCLUDE_AUDIO_PRODUCTION_CODE
 	}
 }
 
+#if defined(INCLUDE_AUDIO_PRODUCTION_CODE)
 //////////////////////////////////////////////////////////////////////////
 void CCVars::CmdExecuteTrigger(IConsoleCmdArgs* pCmdArgs)
 {
@@ -379,4 +392,37 @@ void CCVars::CmdSetSwitchState(IConsoleCmdArgs* pCmdArgs)
 		Cry::Audio::Log(ELogType::Error, "Usage: s_SetSwitchState [SwitchName] [SwitchStateName]");
 	}
 }
-} // namespace CryAudio
+
+//////////////////////////////////////////////////////////////////////////
+void CCVars::CmdLoadSetting(IConsoleCmdArgs* pCmdArgs)
+{
+	int const numArgs = pCmdArgs->GetArgCount();
+
+	if (numArgs == 2)
+	{
+		ControlId const id = CryAudio::StringToId(pCmdArgs->GetArg(1));
+		gEnv->pAudioSystem->LoadSetting(id);
+	}
+	else
+	{
+		Cry::Audio::Log(ELogType::Error, "Usage: s_LoadSetting [SettingName]");
+	}
+}
+
+//////////////////////////////////////////////////////////////////////////
+void CCVars::CmdUnloadSetting(IConsoleCmdArgs* pCmdArgs)
+{
+	int const numArgs = pCmdArgs->GetArgCount();
+
+	if (numArgs == 2)
+	{
+		ControlId const id = CryAudio::StringToId(pCmdArgs->GetArg(1));
+		gEnv->pAudioSystem->UnloadSetting(id);
+	}
+	else
+	{
+		Cry::Audio::Log(ELogType::Error, "Usage: s_UnloadSetting [SettingName]");
+	}
+}
+#endif // INCLUDE_AUDIO_PRODUCTION_CODE
+}      // namespace CryAudio

@@ -419,6 +419,23 @@ private:
 	FMOD::Studio::EventInstance* m_pEventInstance = nullptr;
 
 };
+
+class CSetting final : public ISetting
+{
+public:
+
+	CSetting() = default;
+	CSetting(CSetting const&) = delete;
+	CSetting(CSetting&&) = delete;
+	CSetting& operator=(CSetting const&) = delete;
+	CSetting& operator=(CSetting&&) = delete;
+
+	// ISetting
+	virtual void Load() const override   {}
+	virtual void Unload() const override {}
+	// ~ISetting
+};
+
 class CBaseObject;
 
 using Objects = std::vector<CBaseObject*>;

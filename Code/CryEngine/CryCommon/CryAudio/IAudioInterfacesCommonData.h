@@ -60,6 +60,7 @@ static constexpr char const* s_szParametersNodeTag = "Parameters";
 static constexpr char const* s_szSwitchesNodeTag = "Switches";
 static constexpr char const* s_szPreloadsNodeTag = "Preloads";
 static constexpr char const* s_szEnvironmentsNodeTag = "Environments";
+static constexpr char const* s_szSettingsNodeTag = "Settings";
 
 static constexpr char const* s_szTriggerTag = "Trigger";
 static constexpr char const* s_szParameterTag = "Parameter";
@@ -67,6 +68,7 @@ static constexpr char const* s_szSwitchTag = "Switch";
 static constexpr char const* s_szStateTag = "State";
 static constexpr char const* s_szEnvironmentTag = "Environment";
 static constexpr char const* s_szPreloadRequestTag = "PreloadRequest";
+static constexpr char const* s_szSettingTag = "Setting";
 static constexpr char const* s_szPlatformTag = "Platform";
 static constexpr char const* s_szEventTag = "Event";
 

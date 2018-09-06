@@ -779,4 +779,38 @@ CATLEnvironmentImpl::~CATLEnvironmentImpl()
 	CRY_ASSERT_MESSAGE(g_pIImpl != nullptr, "g_pIImpl mustn't be nullptr during destruction of CATLEnvironmentImpl");
 	g_pIImpl->DestructEnvironment(m_pImplData);
 }
+
+//////////////////////////////////////////////////////////////////////////
+CSettingImpl::~CSettingImpl()
+{
+	CRY_ASSERT_MESSAGE(g_pIImpl != nullptr, "g_pIImpl mustn't be nullptr during destruction of CSettingImpl");
+	g_pIImpl->DestructSetting(m_pImplData);
+}
+
+//////////////////////////////////////////////////////////////////////////
+CSetting::~CSetting()
+{
+	for (auto const pConnection : m_connections)
+	{
+		delete pConnection;
+	}
+}
+
+//////////////////////////////////////////////////////////////////////////
+void CSetting::Load() const
+{
+	for (auto const pConnection : m_connections)
+	{
+		pConnection->GetImplData()->Load();
+	}
+}
+
+//////////////////////////////////////////////////////////////////////////
+void CSetting::Unload() const
+{
+	for (auto const pConnection : m_connections)
+	{
+		pConnection->GetImplData()->Unload();
+	}
+}
 } // namespace CryAudio

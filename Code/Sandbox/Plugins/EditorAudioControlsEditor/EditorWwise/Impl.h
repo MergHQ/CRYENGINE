@@ -33,14 +33,14 @@ public:
 	virtual IItem*         GetItem(ControlId const id) const override;
 	virtual CryIcon const& GetItemIcon(IItem const* const pIItem) const override;
 	virtual QString const& GetItemTypeName(IItem const* const pIItem) const override;
-	virtual string const&  GetName() const override                                         { return m_implName; }
-	virtual string const&  GetFolderName() const override                                   { return m_implFolderName; }
-	virtual char const*    GetAssetsPath() const override                                   { return m_assetsPath.c_str(); }
-	virtual char const*    GetLocalizedAssetsPath() const override                          { return m_localizedAssetsPath.c_str(); }
-	virtual char const*    GetProjectPath() const override                                  { return m_projectPath.c_str(); }
+	virtual string const&  GetName() const override                { return m_implName; }
+	virtual string const&  GetFolderName() const override          { return m_implFolderName; }
+	virtual char const*    GetAssetsPath() const override          { return m_assetsPath.c_str(); }
+	virtual char const*    GetLocalizedAssetsPath() const override { return m_localizedAssetsPath.c_str(); }
+	virtual char const*    GetProjectPath() const override         { return m_projectPath.c_str(); }
 	virtual void           SetProjectPath(char const* const szPath) override;
-	virtual bool           SupportsProjects() const override                                { return true; }
-	virtual bool           IsSystemTypeSupported(EAssetType const assetType) const override { return true; }
+	virtual bool           SupportsProjects() const override       { return true; }
+	virtual bool           IsSystemTypeSupported(EAssetType const assetType) const override;
 	virtual bool           IsTypeCompatible(EAssetType const assetType, IItem const* const pIItem) const override;
 	virtual EAssetType     ImplTypeToAssetType(IItem const* const pIItem) const override;
 	virtual ConnectionPtr  CreateConnectionToControl(EAssetType const assetType, IItem const* const pIItem) override;

@@ -42,7 +42,6 @@ public:
 	int    m_hideInactiveAudioObjects = 0;
 	int    m_audioObjectsRayType = 0;
 	ICVar* m_pDebugFilter = nullptr;
-#endif // INCLUDE_AUDIO_PRODUCTION_CODE
 
 private:
 
@@ -50,6 +49,9 @@ private:
 	static void CmdStopTrigger(IConsoleCmdArgs* pCmdArgs);
 	static void CmdSetParameter(IConsoleCmdArgs* pCmdArgs);
 	static void CmdSetSwitchState(IConsoleCmdArgs* pCmdArgs);
+	static void CmdLoadSetting(IConsoleCmdArgs* pCmdArgs);
+	static void CmdUnloadSetting(IConsoleCmdArgs* pCmdArgs);
+#endif // INCLUDE_AUDIO_PRODUCTION_CODE
 };
 
 extern CCVars g_cvars;

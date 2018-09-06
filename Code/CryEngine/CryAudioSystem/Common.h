@@ -31,12 +31,14 @@ class CParameter;
 class CATLSwitch;
 class CATLPreloadRequest;
 class CATLAudioEnvironment;
+class CSetting;
 
 using AudioTriggerLookup = std::map<ControlId, CTrigger const*>;
 using AudioParameterLookup = std::map<ControlId, CParameter const*>;
 using AudioSwitchLookup = std::map<ControlId, CATLSwitch const*>;
 using AudioPreloadRequestLookup = std::map<PreloadRequestId, CATLPreloadRequest*>;
 using AudioEnvironmentLookup = std::map<EnvironmentId, CATLAudioEnvironment const*>;
+using SettingLookup = std::map<ControlId, CSetting const*>;
 
 extern Impl::IImpl* g_pIImpl;
 extern CSystem g_system;
@@ -45,6 +47,7 @@ extern AudioParameterLookup g_parameters;
 extern AudioSwitchLookup g_switches;
 extern AudioPreloadRequestLookup g_preloadRequests;
 extern AudioEnvironmentLookup g_environments;
+extern SettingLookup g_settings;
 extern CATLAudioObject* g_pObject;
 extern CLoseFocusTrigger g_loseFocusTrigger;
 extern CGetFocusTrigger g_getFocusTrigger;

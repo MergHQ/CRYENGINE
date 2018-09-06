@@ -68,6 +68,9 @@ struct SPhysEnviron : Cry3DEngineBase
 		uint32 m_nFlags = 0;
 		AABB   m_bounds { AABB::RESET };
 
+		SAreaSpec() {}
+		SAreaSpec(uint32 flags, AABB const& bb) : m_nFlags(flags), m_bounds(bb) {}
+
 		void operator |= (const SAreaSpec& ac)
 		{
 			m_bounds.Add(ac.m_bounds);
@@ -157,13 +160,13 @@ struct SPhysEnviron : Cry3DEngineBase
 
 	void ForNonumiformAreas(AABB const& bb, uint32 nFlags, std::function<void(const SArea&)> func) const
 	{
-		if (m_nNonUniformFlags & nFlags & ENV_PHYS_AREA)
+		if (m_nNonUniformFlags & nFlags)
 		{
+			SAreaSpec spec { nFlags, bb };
 			for (const auto& area : m_NonUniformAreas)
 			{
-				if (area.m_nFlags & nFlags)
-					if (area.m_bounds.IsIntersectBox(bb))
-						func(area);
+				if (area & spec)
+					func(area);
 			}
 		}
 	}
@@ -186,6 +189,12 @@ struct SPhysEnviron : Cry3DEngineBase
 		}
 		return fDist;
 	}
+	ETrinary IsUnderWater(AABB const& bb) const
+	{
+		if (m_tUnderWater == ETrinary() && m_nNonUniformFlags & ENV_WATER && m_NonUniformAreas.size() > 1)
+			return IsNonUniformUnderWater(bb);
+		return m_tUnderWater;
+	}
 
 	// Phys collision
 	static bool PhysicsCollision(ray_hit& hit, Vec3 const& vStart, Vec3 const& vEnd, float fRadius, uint32 nEnvFlags, IPhysicalEntity* pThisEntity = 0);
@@ -200,6 +209,7 @@ protected:
 	SmartPtrArray<SArea> m_NonUniformAreas;
 
 	float GetNonUniformWaterPlane(Plane& plWater, Vec3 const& vPos, float fMaxDist = -WATER_LEVEL_UNKNOWN) const;
+	ETrinary IsNonUniformUnderWater(AABB const& bb) const;
 };
 
 //////////////////////////////////////////////////////////////////////////
@@ -216,9 +226,7 @@ struct SWorldPhysEnviron: SPhysEnviron
 
 	bool Update(SPhysEnviron& env, AABB const& box, bool bIndoors, uint32 nFlags, bool bNonUniformAreas = true, const void* pObjectSkip = 0) const
 	{
-		SAreaSpec as;
-		as.m_nFlags = nFlags;
-		as.m_bounds = box;
+		SAreaSpec as { nFlags, box };
 		if (env.IsCurrent() && !IsChanged(as))
 			return false;
 		env.Update(*this, box, bIndoors, nFlags, bNonUniformAreas, pObjectSkip);

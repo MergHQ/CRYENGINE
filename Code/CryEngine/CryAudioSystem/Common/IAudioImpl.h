@@ -263,6 +263,24 @@ struct IImpl
 	virtual void DestructEnvironment(IEnvironment const* const pIEnvironment) = 0;
 
 	/**
+	 * Parse the implementation-specific XML node that represents an ATLSettingImpl, return a pointer to the data needed for identifying
+	 * and using this ATLSettingImpl instance inside the AudioImplementation
+	 * @param pRootNode - an XML node corresponding to the new ATLSettingImpl to be created
+	 * @return ISetting pointer to the audio implementation-specific data needed by the audio middleware and the
+	 * @return AudioImplementation code to use the corresponding ATLSettingImpl; nullptr if the new ISetting instance was not created
+	 * @see DestructSetting
+	 */
+	virtual ISetting const* ConstructSetting(XmlNodeRef const pRootNode) = 0;
+
+	/**
+	 * Free the memory and potentially other resources used by the supplied ISetting instance
+	 * @param pISetting - pointer to the object implementing ISetting to be discarded
+	 * @return void
+	 * @see ConstructSetting
+	 */
+	virtual void DestructSetting(ISetting const* const pISetting) = 0;
+
+	/**
 	 * Create an object implementing IObject that stores all of the data needed by the AudioImplementation
 	 * to identify and use the GlobalAudioObject.
 	 * @return IObject pointer to the audio implementation-specific data needed by the audio middleware and the

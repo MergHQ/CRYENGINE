@@ -52,10 +52,16 @@ dll_string AudioPreloadRequestSelector(SResourceSelectorContext const& context, 
 	return ShowSelectDialog(context, szPreviousValue, EAssetType::Preload);
 }
 
+dll_string AudioSettingSelector(SResourceSelectorContext const& context, char const* const szPreviousValue)
+{
+	return ShowSelectDialog(context, szPreviousValue, EAssetType::Setting);
+}
+
 REGISTER_RESOURCE_SELECTOR("AudioTrigger", AudioTriggerSelector, "")
 REGISTER_RESOURCE_SELECTOR("AudioSwitch", AudioSwitchSelector, "")
 REGISTER_RESOURCE_SELECTOR("AudioSwitchState", AudioSwitchStateSelector, "")
 REGISTER_RESOURCE_SELECTOR("AudioRTPC", AudioParameterSelector, "")
 REGISTER_RESOURCE_SELECTOR("AudioEnvironment", AudioEnvironmentSelector, "")
 REGISTER_RESOURCE_SELECTOR("AudioPreloadRequest", AudioPreloadRequestSelector, "")
+REGISTER_RESOURCE_SELECTOR("AudioSetting", AudioSettingSelector, "")
 } // namespace ACE

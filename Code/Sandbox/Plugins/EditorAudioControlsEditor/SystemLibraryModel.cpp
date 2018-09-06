@@ -47,14 +47,14 @@ void CSystemLibraryModel::ConnectSignals()
 			  {
 			    CRY_ASSERT_MESSAGE(pAsset == m_pLibrary, "Parent is not the current library.");
 			    beginInsertRows(QModelIndex(), row, row);
-			  }
+				}
 			  else
 			  {
 			    QModelIndex const& parent = IndexFromItem(pAsset);
 			    beginInsertRows(parent, row, row);
-			  }
+				}
 			}
-	  }, reinterpret_cast<uintptr_t>(this));
+		}, reinterpret_cast<uintptr_t>(this));
 
 	g_assetsManager.SignalAssetAdded.Connect([this](CAsset* const pAsset)
 		{
@@ -62,7 +62,7 @@ void CSystemLibraryModel::ConnectSignals()
 			{
 			  endInsertRows();
 			}
-	  }, reinterpret_cast<uintptr_t>(this));
+		}, reinterpret_cast<uintptr_t>(this));
 
 	g_assetsManager.SignalAssetAboutToBeRemoved.Connect([this](CAsset* const pAsset)
 		{
@@ -84,19 +84,19 @@ void CSystemLibraryModel::ConnectSignals()
 			        {
 			          CRY_ASSERT_MESSAGE(pParent == m_pLibrary, "Parent is not the current library.");
 			          beginRemoveRows(QModelIndex(), index, index);
-			        }
+							}
 			        else
 			        {
 			          QModelIndex const& parent = IndexFromItem(pParent);
 			          beginRemoveRows(parent, index, index);
-			        }
+							}
 
 			        break;
-			      }
-			    }
-			  }
+						}
+					}
+				}
 			}
-	  }, reinterpret_cast<uintptr_t>(this));
+		}, reinterpret_cast<uintptr_t>(this));
 
 	g_assetsManager.SignalAssetRemoved.Connect([this](CAsset* const pParent, CAsset* const pAsset)
 		{
@@ -104,7 +104,7 @@ void CSystemLibraryModel::ConnectSignals()
 			{
 			  endRemoveRows();
 			}
-	  }, reinterpret_cast<uintptr_t>(this));
+		}, reinterpret_cast<uintptr_t>(this));
 }
 
 //////////////////////////////////////////////////////////////////////////
@@ -433,6 +433,7 @@ bool CSystemLibraryModel::setData(QModelIndex const& index, QVariant const& valu
 							case EAssetType::Switch:
 							case EAssetType::Trigger:
 							case EAssetType::Environment:
+							case EAssetType::Setting:
 								pAsset->SetName(AssetUtils::GenerateUniqueControlName(newName, assetType));
 								break;
 							case EAssetType::State:

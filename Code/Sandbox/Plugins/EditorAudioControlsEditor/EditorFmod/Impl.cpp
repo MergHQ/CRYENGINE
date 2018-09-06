@@ -306,6 +306,31 @@ void CImpl::SetProjectPath(char const* const szPath)
 }
 
 //////////////////////////////////////////////////////////////////////////
+bool CImpl::IsSystemTypeSupported(EAssetType const assetType) const
+{
+	bool isSupported = false;
+
+	switch (assetType)
+	{
+	case EAssetType::Trigger:
+	case EAssetType::Parameter:
+	case EAssetType::Switch:
+	case EAssetType::State:
+	case EAssetType::Environment:
+	case EAssetType::Preload:
+	case EAssetType::Folder:
+	case EAssetType::Library:
+		isSupported = true;
+		break;
+	default:
+		isSupported = false;
+		break;
+	}
+
+	return isSupported;
+}
+
+//////////////////////////////////////////////////////////////////////////
 void CImpl::Serialize(Serialization::IArchive& ar)
 {
 	ar(m_projectPath, "projectPath", "Project Path");

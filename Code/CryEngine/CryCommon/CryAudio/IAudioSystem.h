@@ -376,6 +376,24 @@ struct IAudioSystem
 	virtual void UnloadSingleRequest(PreloadRequestId const id, SRequestUserData const& userData = SRequestUserData::GetEmptyObject()) = 0;
 
 	/**
+	 * Loads a setting.
+	 * @param id - ID of the setting in question.
+	 * @param userData - optional struct used to pass additional data to the internal request.
+	 * @return void
+	 * @see UnloadSetting
+	 */
+	virtual void LoadSetting(ControlId const id, SRequestUserData const& userData = SRequestUserData::GetEmptyObject()) = 0;
+
+	/**
+	 * Unloads a setting.
+	 * @param id - ID of thes etting in question.
+	 * @param userData - optional struct used to pass additional data to the internal request.
+	 * @return void
+	 * @see LoadSetting
+	 */
+	virtual void UnloadSetting(ControlId const id, SRequestUserData const& userData = SRequestUserData::GetEmptyObject()) = 0;
+
+	/**
 	 * Reloads all of the audio controls and their connections.
 	 * @param szFolderPath - path to where the audio controls data has been stored.
 	 * @param szLevelName - name of the currently loaded level to also reload level specific data.

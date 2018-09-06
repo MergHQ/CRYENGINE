@@ -114,6 +114,9 @@ char const* GetTypeName(EAssetType const type)
 	case EAssetType::Preload:
 		szTypeName = "Preload";
 		break;
+	case EAssetType::Setting:
+		szTypeName = "Setting";
+		break;
 	case EAssetType::Folder:
 		szTypeName = "Folder";
 		break;
