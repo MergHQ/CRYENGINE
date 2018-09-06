@@ -21,7 +21,7 @@ public:
 	EContextEstablishTaskResult OnStep(SContextEstablishState& state)
 	{
 		CGameContext* pGameContext = CCryAction::GetCryAction()->GetGameContext();
-		string levelName = pGameContext ? pGameContext->GetLevelName() : "";
+		string levelName = pGameContext ? pGameContext->GetLevelName() : string("");
 		if (levelName.empty())
 		{
 			//GameWarning("No level name set");

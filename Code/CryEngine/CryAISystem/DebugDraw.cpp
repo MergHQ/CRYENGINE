@@ -3721,8 +3721,8 @@ void CAISystem::DebugDrawStatsList() const
 		atTargetName = pAttTarget ? pAttTarget->GetName() : "--";
 
 		CPipeUser* pPipeUser = pAIActor->CastToCPipeUser();
-		CGoalPipe* pPipe = pPipeUser ? pPipeUser->GetCurrentGoalPipe() : 0;
-		sGoalPipeName = pPipe ? pPipe->GetNameAsString() : "--";
+		CGoalPipe* pPipe = pPipeUser ? pPipeUser->GetCurrentGoalPipe() : nullptr;
+		sGoalPipeName = pPipe ? pPipe->GetNameAsString() : string("--");
 
 		ColorB color(0, 255, 255);
 		dc->Draw2dLabel(column, row, pAIActor->GetName(), color);

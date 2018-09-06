@@ -144,7 +144,7 @@ public:
 	{
 		IModifier::Serialize(ar);
 		CDomain::Serialize(ar);
-		string desc = ar.isEdit() ? GetSourceDescription() : "";
+		string desc = ar.isEdit() ? GetSourceDescription() : string("");
 		Serialization::SContext _splineContext(ar, desc.data());
 		ar(m_spline, "ColorCurve", "Color Curve");
 	}

@@ -109,7 +109,7 @@ void CResponseInstance::ExecuteSegment(CResponseSegment* pSegment)
 	{
 		DRS_DEBUG_DATA_ACTION(AddResponseSegmentStarted(pSegment));
 #if !defined(_RELEASE)
-		const string currentName = string("Response for '") + GetSignalName().GetText() + "', Segment: '" + pSegment->GetName() + "' CurrentActor: " + (GetCurrentActor() ? GetCurrentActor()->GetName() : "None");
+		const string currentName = string("Response for '") + GetSignalName().GetText() + "', Segment: '" + pSegment->GetName() + "' CurrentActor: " + (GetCurrentActor() ? GetCurrentActor()->GetName() : string("None"));
 #endif
 		for (CResponseSegment::ActionsInfo& actionInfo : pSegment->GetActions())
 		{

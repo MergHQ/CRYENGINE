@@ -167,7 +167,7 @@ void CSchematycEntityDrsComponent::OnLineEvent(const DRS::IResponseActor* pSpeak
 {
 	//remark: every DRS Component will currently receive events for any Speaker
 	const Schematyc::CSharedString text = (pLine) ? pLine->GetText() : lineID.GetText();
-	const Schematyc::CSharedString speakerName = (pSpeaker) ? pSpeaker->GetName() : "No Actor";
+	const Schematyc::CSharedString speakerName = (pSpeaker) ? pSpeaker->GetName() : string("No Actor");
 
 	if (lineEvent == DRS::ISpeakerManager::IListener::eLineEvent_HasEndedInAnyWay)
 	{

@@ -22,7 +22,7 @@ public:
 	{
 		IFModifier::Serialize(ar);
 		CDomain::Serialize(ar);
-		string desc = ar.isEdit() ? GetSourceDescription() : "";
+		string desc = ar.isEdit() ? GetSourceDescription() : string("");
 		Serialization::SContext _splineContext(ar, desc.data());
 		ar(m_spline, "Curve", "Curve");
 	}
@@ -73,7 +73,7 @@ public:
 	{
 		IFModifier::Serialize(ar);
 		CDomain::Serialize(ar);
-		string desc = ar.isEdit() ? GetSourceDescription() : "";
+		string desc = ar.isEdit() ? GetSourceDescription() : string("");
 		Serialization::SContext _splineContext(ar, desc.data());
 		ar(m_spline, "DoubleCurve", "Double Curve");
 	}

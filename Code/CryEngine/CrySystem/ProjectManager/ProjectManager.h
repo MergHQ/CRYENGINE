@@ -179,10 +179,10 @@ namespace Cry
 
 						if (ar.isInput())
 						{
-							project.assetDirectory = assetDirectories.size() > 0 ? assetDirectories.front() : "";
-							project.codeDirectory = codeDirectories.size() > 0 ? codeDirectories.front() : "";
+							project.assetDirectory = !assetDirectories.empty() ? assetDirectories.front() : string("");
+							project.codeDirectory = !codeDirectories.empty() ? codeDirectories.front() : string("");
 
-							if (libraries.size() > 0)
+							if (!libraries.empty())
 							{
 								project.legacyGameDllPaths["any"] = libraries[0].shared.libPathAny;
 								project.legacyGameDllPaths["win_x64"] = libraries[0].shared.libPathWin64;

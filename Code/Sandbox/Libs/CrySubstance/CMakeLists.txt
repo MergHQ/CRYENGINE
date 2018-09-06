@@ -45,6 +45,7 @@ target_compile_options(${THIS_PROJECT} PRIVATE
 	/GR
 	/wd4251
 	/wd4275
+	/wd4996
 )
 
 

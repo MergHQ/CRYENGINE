@@ -3039,7 +3039,7 @@ protected:
 	{
 #ifdef STORE_LOG_MESSAGE
 		stack_string textBuffer;
-		textBuffer.Format("%s (%d)", m_message ? m_message : "", GetXmlLine());
+		textBuffer.Format("%s (%d)", !m_message.empty() ? m_message.c_str() : "", GetXmlLine());
 		context.behaviorLog.AddMessage(m_message);
 #endif
 

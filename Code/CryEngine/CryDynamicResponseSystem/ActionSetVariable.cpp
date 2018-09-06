@@ -35,7 +35,7 @@ CActionSetVariable::CActionSetVariable
 string CActionSetVariable::GetVerboseInfo() const
 {
 #if defined(DRS_COLLECT_DEBUG_DATA)
-	string cooldown = (m_cooldown > 0.0f) ? " , cooldown: " + CryStringUtils::toString(m_cooldown) : "";
+	string cooldown = (m_cooldown > 0.0f) ? string(" , cooldown: ") + CryStringUtils::toString(m_cooldown) : string("");
 	if (m_changeOperation == eChangeOperation_Increment)
 	{
 		return string("Increment '") + GetVariableVerboseName() + "' by '" + m_valueToSet.GetValueAsString() + "' (type:" + m_valueToSet.GetTypeAsString() + ")" + cooldown;

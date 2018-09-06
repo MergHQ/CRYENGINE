@@ -111,3 +111,20 @@
 // Flag for enabling extended alignment for std::aligned_storage after VS 2017 15.8
 // Before VS 2017 15.8, the member type would non-conformingly have an alignment of only alignof(max_align_t). 
 #define _ENABLE_EXTENDED_ALIGNED_STORAGE
+
+// std::result_of and std::result_of_t are deprecated in C++17.
+// They are superseded by std::invoke_result and std::invoke_result_t.
+// You can define _SILENCE_CXX17_RESULT_OF_DEPRECATION_WARNING or _SILENCE_ALL_CXX17_DEPRECATION_WARNINGS to acknowledge that you have received this warning.
+#define _SILENCE_CXX17_RESULT_OF_DEPRECATION_WARNING
+
+// The std::iterator class template (used as a base class to provide typedefs) is deprecated in C++17.
+// (The <iterator> header is NOT deprecated.) The C++ Standard has never required user-defined iterators to derive from std::iterator.
+// To fix this warning, stop deriving from std::iterator and start providing publicly accessible typedefs named iterator_category, value_type, difference_type, pointer, and reference.
+// Note that value_type is required to be non-const, even for constant iterators.
+// You can define _SILENCE_CXX17_ITERATOR_BASE_CLASS_DEPRECATION_WARNING or _SILENCE_ALL_CXX17_DEPRECATION_WARNINGS to acknowledge that you have received this warning.
+#define _SILENCE_CXX17_ITERATOR_BASE_CLASS_DEPRECATION_WARNING
+
+// Various members of std::allocator are deprecated in C++17.
+// Use std::allocator_traits instead of accessing these members directly.
+// You can define _SILENCE_CXX17_OLD_ALLOCATOR_MEMBERS_DEPRECATION_WARNING or _SILENCE_ALL_CXX17_DEPRECATION_WARNINGS to acknowledge that you have received this warning.
+#define _SILENCE_CXX17_OLD_ALLOCATOR_MEMBERS_DEPRECATION_WARNING

@@ -63,7 +63,7 @@ uint32 CScriptStruct::GetFieldCount() const
 
 const char* CScriptStruct::GetFieldName(uint32 fieldIdx) const
 {
-	return fieldIdx < m_fields.size() ? m_fields[fieldIdx].name : "";
+	return fieldIdx < m_fields.size() ? m_fields[fieldIdx].name.c_str() : "";
 }
 
 CAnyConstPtr CScriptStruct::GetFieldValue(uint32 fieldIdx) const

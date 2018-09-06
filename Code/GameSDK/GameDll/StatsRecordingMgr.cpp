@@ -561,7 +561,7 @@ void CStatsRecordingMgr::StateEndOfSessionStats()
 					childNode->setAttr( "entity_id", itBonusXp->entityId);
 					CGameLobby* pGameLobby = g_pGame->GetGameLobby();
 					
-					const char* szOnlineGUID = pGameLobby ? pGameLobby->GetGUIDFromActorID(itBonusXp->entityId) : "";
+					const char* szOnlineGUID = pGameLobby ? pGameLobby->GetGUIDFromActorID(itBonusXp->entityId).c_str() : "";
 #if defined( _RELEASE )
 					const uint32 guidHash = CCrc32::Compute( szOnlineGUID );
 					stack_string clientHashStr;
@@ -867,7 +867,7 @@ void CStatsRecordingMgr::StateCorePlayerStats(
 	{
 		EntityId		eid=inPlayerActor->GetEntityId();
 
-		const char* szOnlineGUID = g_pGame->GetGameLobby() ? g_pGame->GetGameLobby()->GetGUIDFromActorID(inPlayerActor->GetEntityId()) : "";
+		const char* szOnlineGUID = g_pGame->GetGameLobby() ? g_pGame->GetGameLobby()->GetGUIDFromActorID(inPlayerActor->GetEntityId()).c_str() : "";
 
 #if ! defined( _RELEASE )
 		stack_string playerName = inPlayerActor->GetEntity()->GetName();
