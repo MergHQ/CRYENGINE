@@ -187,8 +187,9 @@ void CParticleEmitter::Update()
 			Register();
 	}
 
-	CParticleManager::Instance()->GetPhysEnviron().Update(m_physEnviron, 
-		m_bounds, m_visEnviron.OriginIndoors(), m_pEffect->GetEnvironFlags() | ENV_WATER, true, 0);
+	if (HasBounds())
+		CParticleManager::Instance()->GetPhysEnviron().Update(m_physEnviron, 
+			m_bounds, m_visEnviron.OriginIndoors(), m_pEffect->GetEnvironFlags() | ENV_WATER, true, 0);
 
 	// Apply stats from last update
 	auto& stats = GetPSystem()->GetThreadData().statsCPU;

@@ -6,6 +6,20 @@
 
 
 //////////////////////////////////////////////////////////////////////////
+float GetMaxZ(Plane const& plane, AABB const& bb)
+{
+	if (plane.n.z == 1.f)
+		return -plane.d;
+	if (plane.n.z == 0.f)
+		return bb.max.z;
+
+	float z = plane.d
+		+ max(plane.n.x * bb.min.x, plane.n.x * bb.max.x)
+		+ max(plane.n.y * bb.min.y, plane.n.y * bb.max.y);
+	return -z / plane.n.z;
+}
+
+//////////////////////////////////////////////////////////////////////////
 
 void SPhysForces::Add(SPhysForces const& other, uint32 nEnvFlags)
 {
@@ -63,10 +77,7 @@ static int StaticOnAreaChange(const EventPhys* pEvent)
 	if (s_pWorldPhysEnviron)
 	{
 		if (s_pWorldPhysEnviron->OnAreaChange(static_cast<const EventPhysAreaChange&>(*pEvent)))
-		{
 			s_pWorldPhysEnviron->OnPhysAreaChange();
-			
-		}
 	}
 	return 0;
 }
@@ -224,7 +235,9 @@ void SWorldPhysEnviron::Update()
 
 			if (nAreaFlags & ENV_WATER)
 			{
-				// Expand water test area
+				// Set water area bounds from actual plane.
+				const Plane& wp = area.m_Forces.plWater;
+				area.m_bounds.max.z = ::GetMaxZ(wp, area.m_bounds);
 				area.m_bounds.min.z = -fHUGE;
 			}
 
@@ -323,44 +336,47 @@ void SPhysEnviron::Update(SPhysEnviron const& envSource, AABB const& box, bool b
 							}
 						}
 
-						int nStatus = area.m_pArea->GetStatus(&sarea);
-
-						if (nStatus)
+						float fWaterDistMin, fWaterDistMax;
+						if (area.m_nFlags & ENV_WATER)
 						{
-							// Update underwater status.
-							if ((area.m_nFlags & ENV_WATER) && m_tUnderWater * false)
-							{
-								// Check box underwater status.
-								float fDistMin, fDistMax;
-								Distance::AABB_Plane(&fDistMin, &fDistMax, box, area.m_Forces.plWater);
-								if (fDistMax < 0.f)
-								{
-									// Underwater.
-									m_tUnderWater = nStatus < 0 ? ETrinary() : ETrinary(true);
-								}
-								else if (fDistMin < 0.f)
-								{
-									// Partially underwater.
-									m_tUnderWater = ETrinary();
-								}
-							}
+							// Pre-check water plane intersection
+							Distance::AABB_Plane(&fWaterDistMin, &fWaterDistMax, box, area.m_Forces.plWater);
+							if (fWaterDistMin >= 0.f)
+								continue;
+						}
 
-							if (area.m_nFlags & nFlags)
+						int nStatus = area.m_pArea->GetStatus(&sarea);
+						if (!nStatus)
+							continue;
+
+						// Update underwater status.
+						if ((area.m_nFlags & ENV_WATER) && m_tUnderWater * false)
+						{
+							if (fWaterDistMax < 0.f)
 							{
-								if (nStatus < 0)
-								{
-									// Store in local nonuniform area list.
-									m_NonUniformAreas.push_back(&area);
-									m_nNonUniformFlags |= area.m_nFlags;
-									if (!area.m_bCacheForce)
-										m_nNonCachedFlags |= area.m_nFlags & ENV_FORCES;
-								}
-								else
-								{
-									// Uniform within this volume.
-									m_UniformForces.Add(area.m_Forces, area.m_nFlags);
-								}
+								// Underwater.
+								m_tUnderWater = nStatus < 0 ? ETrinary() : ETrinary(true);
 							}
+							else
+							{
+								// Partially underwater.
+								nStatus = -1;
+								m_tUnderWater = ETrinary();
+							}
+						}
+
+						if (nStatus < 0)
+						{
+							// Store in local nonuniform area list.
+							m_NonUniformAreas.push_back(&area);
+							m_nNonUniformFlags |= area.m_nFlags;
+							if (!area.m_bCacheForce)
+								m_nNonCachedFlags |= area.m_nFlags & ENV_FORCES;
+						}
+						else
+						{
+							// Uniform within this volume.
+							m_UniformForces.Add(area.m_Forces, area.m_nFlags);
 						}
 					}
 				}
@@ -374,7 +390,11 @@ void SPhysEnviron::GetForces(SPhysForces& forces, AABB const& bb, uint32 nFlags,
 	CRY_PROFILE_FUNCTION(PROFILE_PARTICLE);
 
 	forces = m_UniformForces;
-	ForNonumiformAreas(bb, nFlags, [&](const SArea& area) { area.GetForces(forces, bb, nFlags, bAverage); });
+	ForNonumiformAreas(bb, nFlags, [&](const SArea& area)
+	{
+		if (area.m_nFlags & nFlags)
+			area.GetForces(forces, bb, nFlags, bAverage); 
+	});
 }
 
 bool SPhysEnviron::PhysicsCollision(ray_hit& hit, Vec3 const& vStart, Vec3 const& vEnd, float fRadius, uint32 nEnvFlags, IPhysicalEntity* pTestEntity)
@@ -559,7 +579,7 @@ float SPhysEnviron::SArea::GetWaterPlane(Plane& plane, Vec3 const& vPos, float f
 	float fDist = m_Forces.plWater.DistFromPlane(vPos);
 	if (fDist < fMaxDist)
 	{
-		if (m_bounds.IsContainPoint(vPos))
+		if (m_bounds.IsOverlapSphereBounds(vPos, fMaxDist))
 		{
 			CRY_PROFILE_FUNCTION(PROFILE_PARTICLE);
 			pe_status_contains_point st;
@@ -585,6 +605,17 @@ float SPhysEnviron::GetNonUniformWaterPlane(Plane& plWater, Vec3 const& vPos, fl
 	}
 
 	return fMaxDist;
+}
+
+ETrinary SPhysEnviron::IsNonUniformUnderWater(AABB const& bb) const
+{
+	SAreaSpec spec { ENV_WATER, bb };
+	for (const auto& area : m_NonUniformAreas)
+	{
+		if (area & spec)
+			return ETrinary();
+	}
+	return false;
 }
 
 /*

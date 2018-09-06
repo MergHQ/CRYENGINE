@@ -34,12 +34,13 @@ void CParticleRenderBase::Render(CParticleComponentRuntime& runtime, const SRend
 	CRY_PROFILE_FUNCTION(PROFILE_PARTICLE);
 
 	const SComponentParams& params = runtime.ComponentParams();
-	const uint threadId = renderContext.m_passInfo.ThreadID();
 
 	if (!params.m_pMaterial)
 		return;
 
-	const bool isIndoors = runtime.GetEmitter()->GetVisEnv().OriginIndoors();
+	const uint threadId = renderContext.m_passInfo.ThreadID();
+	const auto& emitter = *runtime.GetEmitter();
+	const bool isIndoors = emitter.GetVisEnv().OriginIndoors();
 	const bool renderIndoor = params.m_visibility.m_indoorVisibility != EIndoorVisibility::OutdoorOnly;
 	const bool renderOutdoors = params.m_visibility.m_indoorVisibility != EIndoorVisibility::IndoorOnly;
 	if ((isIndoors && !renderIndoor) || (!isIndoors && !renderOutdoors))
@@ -49,13 +50,15 @@ void CParticleRenderBase::Render(CParticleComponentRuntime& runtime, const SRend
 	if (!renderContext.m_lightVolumeId)
 		objFlags &= ~FOB_LIGHTVOLUME;
 
-	const bool isCameraUnderWater = renderContext.m_passInfo.IsCameraUnderWater();;
-	const bool renderBelowWater = params.m_visibility.m_waterVisibility != EWaterVisibility::AboveWaterOnly;
-	const bool renderAboveWater = params.m_visibility.m_waterVisibility != EWaterVisibility::BelowWaterOnly;
+	const auto emitterUnderWater = emitter.GetPhysicsEnv().m_tUnderWater;
+	const bool cameraUnderWater = renderContext.m_passInfo.IsCameraUnderWater();;
+	const auto waterVisibility = params.m_visibility.m_waterVisibility;
+	const bool renderBelowWater = waterVisibility != EWaterVisibility::AboveWaterOnly && emitterUnderWater != ETrinary::If_False;
+	const bool renderAboveWater = waterVisibility != EWaterVisibility::BelowWaterOnly && emitterUnderWater != ETrinary::If_True;
 
-	if (m_waterCulling && ((isCameraUnderWater && renderAboveWater) || (!isCameraUnderWater && renderBelowWater)))
+	if (m_waterCulling && ((cameraUnderWater && renderAboveWater) || (!cameraUnderWater && renderBelowWater)))
 		AddRenderObject(runtime, renderContext, m_renderObjectBeforeWaterId, threadId, objFlags);
-	if ((isCameraUnderWater && renderBelowWater) || (!isCameraUnderWater && renderAboveWater))
+	if ((cameraUnderWater && renderBelowWater) || (!cameraUnderWater && renderAboveWater))
 		AddRenderObject(runtime, renderContext, m_renderObjectAfterWaterId, threadId, objFlags | FOB_AFTER_WATER);
 }
 
@@ -101,9 +104,9 @@ void CParticleRenderBase::AddRenderObject(CParticleComponentRuntime& runtime, co
 	pObjData->m_FogVolumeContribIdx = renderContext.m_fogVolumeId;
 	pObjData->m_LightVolumeId = renderContext.m_lightVolumeId;
 	if (const auto p = emitter.m_pTempData.load())
-		*((Vec4f*)&pObjData->m_fTempVars[0]) = Vec4f(p->userData.vEnvironmentProbeMults);
+		reinterpret_cast<Vec4f&>(pObjData->m_fTempVars[0]) = (Vec4f const&)(p->userData.vEnvironmentProbeMults);
 	else
-		*((Vec4f*)&pObjData->m_fTempVars[0]) = Vec4f(1.0f, 1.0f, 1.0f, 1.0f);
+		reinterpret_cast<Vec4f&>(pObjData->m_fTempVars[0]) = Vec4f(1.0f, 1.0f, 1.0f, 1.0f);
 
 	CParticleJobManager& kernel = GetPSystem()->GetJobManager();
 	kernel.ScheduleComputeVertices(runtime, pRenderObject, renderContext);
