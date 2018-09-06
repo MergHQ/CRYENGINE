@@ -238,7 +238,7 @@ void CFeatureRenderSprites::CullParticles(SSpritesContext& spritesContext)
 
 	auto& memHeap = GetPSystem()->GetThreadData().memHeap;
 	THeapArray<float> areas(memHeap);
-	if (cullArea)
+	if (sumArea)
 		areas.resize(runtime.FullRange().size());
 
 	const CParticleContainer& container = spritesContext.m_runtime.GetContainer();
@@ -293,9 +293,7 @@ void CFeatureRenderSprites::CullParticles(SSpritesContext& spritesContext)
 				{
 					// Compute pixel area, and cull latest particles to enforce pixel limit
 					const float area = min(size * sizeX * 4.0f * sqr(invDist), screenArea) * (alpha > 0.0f) * m_fillCost;
-					spritesContext.m_area += area;
-					if (cullArea)
-						areas[particleId] = area;
+					areas[particleId] = area;
 				}
 			}
 		}
@@ -333,8 +331,6 @@ void CFeatureRenderSprites::CullParticles(SSpritesContext& spritesContext)
 
 				if (spriteAlphas[particleId] > 0.0f)
 					particleIds[numParticles++] = particleId;
-				else if (cullArea)
-					spritesContext.m_area -= areas[particleId];
 			}
 			particleIds.resize(numParticles);
 		}
@@ -342,17 +338,16 @@ void CFeatureRenderSprites::CullParticles(SSpritesContext& spritesContext)
 
 	// water clipping
 	//    PFX2_TODO : Optimize : this routine is *!REALLY!* slow when there are water volumes on the map
-	const bool doCullWater = (spritesContext.m_physEnviron.m_tUnderWater.Value == ETrinaryNames::Both);
-	if (spritesContext.m_particleIds.size() && doCullWater)
+	const auto underWater = spritesContext.m_physEnviron.m_tUnderWater;
+	if (spritesContext.m_particleIds.size() && underWater == ETrinary::Both)
 	{
 		CRY_PROFILE_SECTION(PROFILE_PARTICLE, "pfx2::CullParticles:Water");
 		CRY_PFX2_ASSERT(container.HasData(EPDT_Size));
 		const bool isAfterWater = (spritesContext.m_renderFlags & FOB_AFTER_WATER) != 0;
-		const bool isCameraUnderWater = spritesContext.m_camInfo.bCameraUnderwater;
+		const bool cameraUnderWater = spritesContext.m_camInfo.bCameraUnderwater;
 
 		Plane waterPlane;
-		const float clipWaterSign = (isCameraUnderWater == isAfterWater) ? -1.0f : 1.0f;
-		const float offsetMult = isAfterWater ? 2.0f : 0.0f;
+		const float waterSign = (cameraUnderWater == isAfterWater) ? -1.002f : 1.002f; // Slightly above one to fix rcp_fast inaccuracy
 		const uint count = spritesContext.m_particleIds.size();
 
 		numParticles = 0;
@@ -360,23 +355,27 @@ void CFeatureRenderSprites::CullParticles(SSpritesContext& spritesContext)
 		{
 			const float radius = fullSizes[particleId];
 			const Vec3 position = positions.Load(particleId);
-			const float distToWaterPlane = spritesContext.m_physEnviron.GetWaterPlane(waterPlane, position, radius);
-			const float waterDist = MAdd(radius, offsetMult, distToWaterPlane) * clipWaterSign;
-			const float waterAlpha = saturate(waterDist * rcp_fast(radius));
+			const float waterDist = spritesContext.m_physEnviron.GetWaterPlane(waterPlane, position, 0.0f);
+			const float distRel = waterDist * rcp_fast(radius) * waterSign;
+			const float waterAlpha = saturate(distRel + 1.0f);
 			spriteAlphas[particleId] *= waterAlpha;
 
 			if (waterAlpha > 0.0f)
 				particleIds[numParticles++] = particleId;
-			else if (cullArea)
-				spritesContext.m_area -= areas[particleId];
 		}
+
 		particleIds.resize(numParticles);
 	}
 
-	if (cullArea)
-		spritesContext.m_areaDrawn = CullArea(spritesContext.m_area, spritesContext.m_areaLimit, particleIds, spriteAlphas, areas);
-	else if (sumArea)
-		spritesContext.m_areaDrawn = spritesContext.m_area;
+	if (sumArea)
+	{
+		for (auto particleId : particleIds)
+			spritesContext.m_area += areas[particleId];
+		if (cullArea)
+			spritesContext.m_areaDrawn = CullArea(spritesContext.m_area, spritesContext.m_areaLimit, particleIds, spriteAlphas, areas);
+		else
+			spritesContext.m_areaDrawn = spritesContext.m_area;
+	}
 	else
 		spritesContext.m_area = spritesContext.m_areaDrawn = maxArea;
 }

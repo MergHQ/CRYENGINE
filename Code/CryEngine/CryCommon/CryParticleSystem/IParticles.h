@@ -618,14 +618,14 @@ struct TContainerCountsBase
 
 template<typename F>
 struct TContainerCounts
-	: INumberVector<float, 16, TContainerCounts<F>>
+	: INumberVector<float, 18, TContainerCounts<F>>
 	, TContainerCountsBase<F>
 {
 };
 
 template<typename F>
 struct TParticleCounts
-	: INumberVector<float, 23, TParticleCounts<F>>
+	: INumberVector<float, 25, TParticleCounts<F>>
 	, TContainerCountsBase<F>
 {
 	TElementCounts<F> emitters;
