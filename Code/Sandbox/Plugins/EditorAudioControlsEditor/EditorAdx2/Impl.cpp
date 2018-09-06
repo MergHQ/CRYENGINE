@@ -4,7 +4,7 @@
 #include "Impl.h"
 
 #include "Common.h"
-#include "BinaryConnection.h"
+#include "PlatformConnection.h"
 #include "CueConnection.h"
 #include "ParameterConnection.h"
 #include "ParameterToStateConnection.h"
@@ -262,6 +262,32 @@ void CImpl::SetProjectPath(char const* const szPath)
 }
 
 //////////////////////////////////////////////////////////////////////////
+bool CImpl::IsSystemTypeSupported(EAssetType const assetType) const
+{
+	bool isSupported = false;
+
+	switch (assetType)
+	{
+	case EAssetType::Trigger:
+	case EAssetType::Parameter:
+	case EAssetType::Switch:
+	case EAssetType::State:
+	case EAssetType::Environment:
+	case EAssetType::Preload:
+	case EAssetType::Setting:
+	case EAssetType::Folder:
+	case EAssetType::Library:
+		isSupported = true;
+		break;
+	default:
+		isSupported = false;
+		break;
+	}
+
+	return isSupported;
+}
+
+//////////////////////////////////////////////////////////////////////////
 void CImpl::Serialize(Serialization::IArchive& ar)
 {
 	ar(m_projectPath, "projectPath", "Project Path");
@@ -292,7 +318,10 @@ bool CImpl::IsTypeCompatible(EAssetType const assetType, IItem const* const pIIt
 			isCompatible = (implType == EItemType::Bus) || (implType == EItemType::AisacControl);
 			break;
 		case EAssetType::Preload:
-			isCompatible = (implType == EItemType::Binary) || (implType == EItemType::DspBusSetting);
+			isCompatible = (implType == EItemType::Binary);
+			break;
+		case EAssetType::Setting:
+			isCompatible = (implType == EItemType::DspBusSetting);
 			break;
 		default:
 			isCompatible = false;
@@ -331,8 +360,10 @@ EAssetType CImpl::ImplTypeToAssetType(IItem const* const pIItem) const
 			assetType = EAssetType::State;
 			break;
 		case EItemType::Binary:
-		case EItemType::DspBusSetting:
 			assetType = EAssetType::Preload;
+			break;
+		case EItemType::DspBusSetting:
+			assetType = EAssetType::Setting;
 			break;
 		case EItemType::Bus:
 			assetType = EAssetType::Environment;
@@ -376,9 +407,9 @@ ConnectionPtr CImpl::CreateConnectionToControl(EAssetType const assetType, IItem
 				pConnection = std::make_shared<CBaseConnection>(pItem->GetId());
 			}
 		}
-		else if (type == EItemType::Binary)
+		else if ((type == EItemType::Binary) || (type == EItemType::DspBusSetting))
 		{
-			pConnection = std::make_shared<CBinaryConnection>(pItem->GetId());
+			pConnection = std::make_shared<CPlatformConnection>(pItem->GetId());
 		}
 		else if (type == EItemType::Snapshot)
 		{
@@ -518,7 +549,7 @@ ConnectionPtr CImpl::CreateConnectionFromXMLNode(XmlNodeRef pNode, EAssetType co
 			case EItemType::Binary:
 			case EItemType::DspBusSetting:
 				{
-					pConnectionPtr = std::make_shared<CBinaryConnection>(pItem->GetId());
+					pConnectionPtr = std::make_shared<CPlatformConnection>(pItem->GetId());
 				}
 				break;
 			}

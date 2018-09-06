@@ -3,6 +3,7 @@
 #pragma once
 
 #if defined(INCLUDE_ADX2_IMPL_PRODUCTION_CODE)
+	#include <CryAudio/IAudioInterfacesCommonData.h>
 	#include <array>
 
 namespace CryAudio
@@ -47,6 +48,9 @@ extern float const g_debugObjectFontSize;
 extern float const g_debugObjectLineHeight;
 extern DebugColor const g_debugObjectColorVirtual;
 extern DebugColor const g_debugObjectColorPhysical;
+
+extern CryFixedStringT<MaxControlNameLength> g_debugNoneDspBusSetting;
+extern CryFixedStringT<MaxControlNameLength> g_debugCurrentDspBusSettingName;
 }      // namespace Adx2
 }      // namespace Impl
 }      // namespace CryAudio

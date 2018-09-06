@@ -13,6 +13,7 @@ static CryIcon s_folderIcon;
 static CryIcon s_libraryIcon;
 static CryIcon s_parameterIcon;
 static CryIcon s_preloadIcon;
+static CryIcon s_settingIcon;
 static CryIcon s_stateIcon;
 static CryIcon s_switchIcon;
 static CryIcon s_triggerIcon;
@@ -26,6 +27,7 @@ inline void InitAssetIcons()
 	s_libraryIcon = CryIcon("icons:General/File.ico");
 	s_parameterIcon = CryIcon("icons:audio/assets/parameter.ico");
 	s_preloadIcon = CryIcon("icons:audio/assets/preload.ico");
+	s_settingIcon = CryIcon("icons:audio/assets/setting.ico");
 	s_stateIcon = CryIcon("icons:audio/assets/state.ico");
 	s_switchIcon = CryIcon("icons:audio/assets/switch.ico");
 	s_triggerIcon = CryIcon("icons:audio/assets/trigger.ico");
@@ -53,6 +55,9 @@ inline CryIcon const& GetAssetIcon(EAssetType const type)
 		break;
 	case EAssetType::Preload:
 		return s_preloadIcon;
+		break;
+	case EAssetType::Setting:
+		return s_settingIcon;
 		break;
 	case EAssetType::Folder:
 		return s_folderIcon;

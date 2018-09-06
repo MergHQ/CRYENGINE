@@ -27,6 +27,7 @@ struct SLibraryScope final
 		pNodes[2] = GetISystem()->CreateXmlNode(CryAudio::s_szSwitchesNodeTag);
 		pNodes[3] = GetISystem()->CreateXmlNode(CryAudio::s_szEnvironmentsNodeTag);
 		pNodes[4] = GetISystem()->CreateXmlNode(CryAudio::s_szPreloadsNodeTag);
+		pNodes[5] = GetISystem()->CreateXmlNode(CryAudio::s_szSettingsNodeTag);
 	}
 
 	XmlNodeRef GetXmlNode(EAssetType const type) const
@@ -50,6 +51,9 @@ struct SLibraryScope final
 		case EAssetType::Preload:
 			pNode = pNodes[4];
 			break;
+		case EAssetType::Setting:
+			pNode = pNodes[5];
+			break;
 		default:
 			pNode = nullptr;
 			break;
@@ -58,7 +62,7 @@ struct SLibraryScope final
 		return pNode;
 	}
 
-	XmlNodeRef pNodes[5]; // Trigger, Parameter, Switch, Environment, Preload
+	XmlNodeRef pNodes[6]; // Trigger, Parameter, Switch, Environment, Preload, Setting
 	bool       isDirty;
 };
 

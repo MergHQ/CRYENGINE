@@ -39,6 +39,9 @@ char const* TypeToTag(EAssetType const assetType)
 	case EAssetType::Environment:
 		szTag = CryAudio::s_szEnvironmentTag;
 		break;
+	case EAssetType::Setting:
+		szTag = CryAudio::s_szSettingTag;
+		break;
 	default:
 		szTag = nullptr;
 		break;
@@ -317,7 +320,7 @@ void CFileWriter::WriteControlToXML(XmlNodeRef const pNode, CControl* const pCon
 			}
 		}
 	}
-	else if (type == EAssetType::Preload)
+	else if ((type == EAssetType::Preload) || (type == EAssetType::Setting))
 	{
 		if (pControl->IsAutoLoad())
 		{
@@ -359,7 +362,7 @@ void CFileWriter::WriteConnectionsToXML(XmlNodeRef const pNode, CControl* const 
 
 		if (pConnection != nullptr)
 		{
-			if ((type != EAssetType::Preload) || (pConnection->IsPlatformEnabled(static_cast<PlatformIndexType>(platformIndex))))
+			if (((type != EAssetType::Preload) && (type != EAssetType::Setting)) || (pConnection->IsPlatformEnabled(static_cast<PlatformIndexType>(platformIndex))))
 			{
 				XmlNodeRef const pChild = g_pIImpl->CreateXMLNodeFromConnection(pConnection, type);
 
@@ -437,7 +440,7 @@ void CFileWriter::DeleteLibraryFile(string const& filepath)
 //////////////////////////////////////////////////////////////////////////
 void CFileWriter::WriteLibraryEditorData(CAsset const& library, XmlNodeRef const pParentNode) const
 {
-	string const description = library.GetDescription();
+	string const& description = library.GetDescription();
 
 	if (!description.IsEmpty() && (library.GetFlags() & EAssetFlags::IsDefaultControl) == 0)
 	{
@@ -492,7 +495,7 @@ void CFileWriter::WriteControlsEditorData(CAsset const& parentAsset, XmlNodeRef 
 
 			if (pControlNode != nullptr)
 			{
-				string const description = asset.GetDescription();
+				string const& description = asset.GetDescription();
 
 				if (!description.IsEmpty() && ((asset.GetFlags() & EAssetFlags::IsDefaultControl) == 0))
 				{

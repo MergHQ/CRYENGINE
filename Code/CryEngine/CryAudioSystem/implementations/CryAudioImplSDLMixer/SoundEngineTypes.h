@@ -299,6 +299,22 @@ struct SFile final : public IFile
 
 	SampleId sampleId;
 };
+
+class CSetting final : public ISetting
+{
+public:
+
+	CSetting() = default;
+	CSetting(CSetting const&) = delete;
+	CSetting(CSetting&&) = delete;
+	CSetting& operator=(CSetting const&) = delete;
+	CSetting& operator=(CSetting&&) = delete;
+
+	// ISetting
+	virtual void Load() const override   {}
+	virtual void Unload() const override {}
+	// ~ISetting
+};
 } // namespace SDL_mixer
 } // namespace Impl
 } // namespace CryAudio

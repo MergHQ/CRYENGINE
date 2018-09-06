@@ -95,6 +95,22 @@ public:
 	CStandaloneFile& operator=(CStandaloneFile const&) = delete;
 	CStandaloneFile& operator=(CStandaloneFile&&) = delete;
 };
+
+class CSetting final : public ISetting
+{
+public:
+
+	CSetting() = default;
+	CSetting(CSetting const&) = delete;
+	CSetting(CSetting&&) = delete;
+	CSetting& operator=(CSetting const&) = delete;
+	CSetting& operator=(CSetting&&) = delete;
+
+	// ISetting
+	virtual void Load() const override   {}
+	virtual void Unload() const override {}
+	// ~ISetting
+};
 } // namespace PortAudio
 } // namespace Impl
 } // namespace CryAudio

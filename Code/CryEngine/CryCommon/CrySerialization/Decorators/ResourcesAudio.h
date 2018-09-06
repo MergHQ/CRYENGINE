@@ -12,5 +12,6 @@ template<class T> ResourceSelector<T> AudioSwitchState(T& s)    { return Resourc
 template<class T> ResourceSelector<T> AudioRTPC(T& s)           { return ResourceSelector<T>(s, "AudioRTPC"); }
 template<class T> ResourceSelector<T> AudioEnvironment(T& s)    { return ResourceSelector<T>(s, "AudioEnvironment"); }
 template<class T> ResourceSelector<T> AudioPreloadRequest(T& s) { return ResourceSelector<T>(s, "AudioPreloadRequest"); }
+template<class T> ResourceSelector<T> AudioSetting(T& s)        { return ResourceSelector<T>(s, "AudioSetting"); }
 
 };

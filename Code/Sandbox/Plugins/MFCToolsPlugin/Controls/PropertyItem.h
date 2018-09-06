@@ -67,6 +67,7 @@ enum PropertyType
 	ePropertyAudioRTPC,
 	ePropertyAudioEnvironment,
 	ePropertyAudioPreloadRequest,
+	ePropertyAudioSetting,
 	ePropertyDynamicResponseSignal,
 };
 

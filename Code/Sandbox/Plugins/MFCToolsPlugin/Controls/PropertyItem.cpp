@@ -180,6 +180,7 @@ struct
 	{ IVariable::DT_AUDIO_RTPC,                    "Audio Realtime Parameter Control", ePropertyAudioRTPC,             6  },
 	{ IVariable::DT_AUDIO_ENVIRONMENT,             "Audio Environment",                ePropertyAudioEnvironment,      6  },
 	{ IVariable::DT_AUDIO_PRELOAD_REQUEST,         "Audio Preload Request",            ePropertyAudioPreloadRequest,   6  },
+	{ IVariable::DT_AUDIO_SETTING,                 "Audio Setting",                    ePropertyAudioSetting,          6  },
 	{ IVariable::DT_DYNAMIC_RESPONSE_SIGNAL,       "Dynamic Response Signal",          ePropertyDynamicResponseSignal, 6  },
 };
 static int NumPropertyTypes = sizeof(s_propertyTypeNames) / sizeof(s_propertyTypeNames[0]);
@@ -216,6 +217,8 @@ static const char* PropertyTypeToResourceType(PropertyType type)
 		return "AudioEnvironment";
 	case ePropertyAudioPreloadRequest:
 		return "AudioPreloadRequest";
+	case ePropertyAudioSetting:
+		return "AudioSetting";
 	case ePropertyDynamicResponseSignal:
 		return "DynamicResponseSignal";
 	default:
@@ -1237,6 +1240,7 @@ void CPropertyItem::CreateInPlaceControl(CWnd* pWndParent, CRect& ctrlRect)
 	case ePropertyAudioRTPC:
 	case ePropertyAudioEnvironment:
 	case ePropertyAudioPreloadRequest:
+	case ePropertyAudioSetting:
 	case ePropertyDynamicResponseSignal:
 		{
 			m_cEdit = new CInPlaceEdit(m_value, functor(*this, &CPropertyItem::OnEditChanged));
@@ -1593,6 +1597,7 @@ void CPropertyItem::CreateControls(CWnd* pWndParent, CRect& textRect, CRect& ctr
 	case ePropertyAudioRTPC:
 	case ePropertyAudioEnvironment:
 	case ePropertyAudioPreloadRequest:
+	case ePropertyAudioSetting:
 	case ePropertyDynamicResponseSignal:
 		{
 			m_cEdit = new CInPlaceEdit(m_value, functor(*this, &CPropertyItem::OnEditChanged));

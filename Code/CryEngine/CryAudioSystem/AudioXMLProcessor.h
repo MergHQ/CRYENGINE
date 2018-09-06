@@ -38,6 +38,7 @@ private:
 	void ParseParameters(XmlNodeRef const pXMLParameterRoot, EDataScope const dataScope);
 	void ParsePreloads(XmlNodeRef const pPreloadDataRoot, EDataScope const dataScope, char const* const szFolderName, uint const version);
 	void ParseEnvironments(XmlNodeRef const pAudioEnvironmentRoot, EDataScope const dataScope);
+	void ParseSettings(XmlNodeRef const pRoot, EDataScope const dataScope);
 
 	void DeletePreloadRequest(CATLPreloadRequest const* const pPreloadRequest);
 	void DeleteEnvironment(CATLAudioEnvironment const* const pEnvironment);

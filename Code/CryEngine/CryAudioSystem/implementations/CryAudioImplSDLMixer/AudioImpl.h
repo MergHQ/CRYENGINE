@@ -48,6 +48,8 @@ public:
 	virtual void                DestructSwitchState(ISwitchState const* const pISwitchState) override;
 	virtual IEnvironment const* ConstructEnvironment(XmlNodeRef const pRootNode) override;
 	virtual void                DestructEnvironment(IEnvironment const* const pIEnvironment) override;
+	virtual ISetting const*     ConstructSetting(XmlNodeRef const pRootNode) override;
+	virtual void                DestructSetting(ISetting const* const pISetting) override;
 	virtual IObject*            ConstructGlobalObject() override;
 	virtual IObject*            ConstructObject(CObjectTransformation const& transformation, char const* const szName = nullptr) override;
 	virtual void                DestructObject(IObject const* const pIObject) override;

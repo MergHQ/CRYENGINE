@@ -1,7 +1,7 @@
 // Copyright 2001-2018 Crytek GmbH / Crytek Group. All rights reserved.
 
 #include "StdAfx.h"
-#include "BinaryConnection.h"
+#include "PlatformConnection.h"
 
 #include "Impl.h"
 
@@ -12,7 +12,7 @@ namespace Impl
 namespace Adx2
 {
 //////////////////////////////////////////////////////////////////////////
-void CBinaryConnection::Serialize(Serialization::IArchive& ar)
+void CPlatformConnection::Serialize(Serialization::IArchive& ar)
 {
 	PlatformIndexType const configurationsMask = m_configurationsMask;
 	size_t const numPlatforms = s_platforms.size();
@@ -35,7 +35,7 @@ void CBinaryConnection::Serialize(Serialization::IArchive& ar)
 }
 
 //////////////////////////////////////////////////////////////////////////
-void CBinaryConnection::SetPlatformEnabled(PlatformIndexType const platformIndex, bool const isEnabled)
+void CPlatformConnection::SetPlatformEnabled(PlatformIndexType const platformIndex, bool const isEnabled)
 {
 	if (isEnabled)
 	{
@@ -48,13 +48,13 @@ void CBinaryConnection::SetPlatformEnabled(PlatformIndexType const platformIndex
 }
 
 //////////////////////////////////////////////////////////////////////////
-bool CBinaryConnection::IsPlatformEnabled(PlatformIndexType const platformIndex) const
+bool CPlatformConnection::IsPlatformEnabled(PlatformIndexType const platformIndex) const
 {
 	return (m_configurationsMask & (1 << platformIndex)) != 0;
 }
 
 //////////////////////////////////////////////////////////////////////////
-void CBinaryConnection::ClearPlatforms()
+void CPlatformConnection::ClearPlatforms()
 {
 	m_configurationsMask = 0;
 }

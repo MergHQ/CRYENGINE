@@ -17,7 +17,9 @@ CControl::CControl(string const& name, ControlId const id, EAssetType const type
 	: CAsset(name, type)
 	, m_id(id)
 	, m_scope(GlobalScopeId)
-{}
+	, m_isAutoLoad(true)
+{
+}
 
 //////////////////////////////////////////////////////////////////////////
 CControl::~CControl()
@@ -112,7 +114,7 @@ void CControl::Serialize(Serialization::IArchive& ar)
 	// Auto Load
 	bool isAutoLoad = m_isAutoLoad;
 
-	if (m_type == EAssetType::Preload)
+	if ((m_type == EAssetType::Preload) || (m_type == EAssetType::Setting))
 	{
 		ar(isAutoLoad, "auto_load", "Auto Load");
 	}
@@ -255,7 +257,7 @@ void CControl::BackupAndClearConnections()
 	// when middleware data gets reloaded.
 	m_rawConnections.clear();
 
-	if (m_type != EAssetType::Preload)
+	if ((m_type != EAssetType::Preload) && (m_type != EAssetType::Setting))
 	{
 		for (auto const& connection : m_connections)
 		{
@@ -377,7 +379,7 @@ void CControl::LoadConnectionFromXML(XmlNodeRef const xmlNode, int const platfor
 
 	if (pConnection != nullptr)
 	{
-		if (m_type == EAssetType::Preload)
+		if ((m_type == EAssetType::Preload) || (m_type == EAssetType::Setting))
 		{
 			// The connection could already exist but using a different platform
 			ConnectionPtr const pPreviousConnection = GetConnection(pConnection->GetID());

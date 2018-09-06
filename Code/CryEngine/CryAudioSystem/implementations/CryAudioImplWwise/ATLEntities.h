@@ -324,6 +324,22 @@ struct SStandaloneFile final : public IStandaloneFile
 	SStandaloneFile& operator=(SStandaloneFile&&) = delete;
 };
 
+class CSetting final : public ISetting
+{
+public:
+
+	CSetting() = default;
+	CSetting(CSetting const&) = delete;
+	CSetting(CSetting&&) = delete;
+	CSetting& operator=(CSetting const&) = delete;
+	CSetting& operator=(CSetting&&) = delete;
+
+	// ISetting
+	virtual void Load() const override   {}
+	virtual void Unload() const override {}
+	// ~ISetting
+};
+
 struct SEnvPairCompare
 {
 	bool operator()(std::pair<AkAuxBusID, float> const& pair1, std::pair<AkAuxBusID, float> const& pair2) const

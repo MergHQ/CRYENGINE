@@ -10,13 +10,13 @@ namespace Impl
 {
 namespace Adx2
 {
-class CBinaryConnection final : public CBaseConnection
+class CPlatformConnection final : public CBaseConnection
 {
 public:
 
-	CBinaryConnection() = delete;
+	CPlatformConnection() = delete;
 
-	explicit CBinaryConnection(ControlId const id)
+	explicit CPlatformConnection(ControlId const id)
 		: CBaseConnection(id)
 		, m_configurationsMask(std::numeric_limits<PlatformIndexType>::max())
 	{}

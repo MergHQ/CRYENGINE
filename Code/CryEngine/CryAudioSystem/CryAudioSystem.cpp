@@ -49,6 +49,7 @@ void PrepareAudioSystem(CSystem* const pAudioSystem)
 	pAudioSystem->ParseControlsData(temp.c_str(), EDataScope::Global);
 	pAudioSystem->ParsePreloadsData(temp.c_str(), EDataScope::Global);
 	pAudioSystem->PreloadSingleRequest(GlobalPreloadRequestId, false);
+	pAudioSystem->AutoLoadSetting(EDataScope::Global);
 }
 
 //////////////////////////////////////////////////////////////////////////////////////////////

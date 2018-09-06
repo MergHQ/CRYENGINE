@@ -741,6 +741,42 @@ void CSystem::UnloadSingleRequest(PreloadRequestId const id, SRequestUserData co
 }
 
 //////////////////////////////////////////////////////////////////////////
+void CSystem::AutoLoadSetting(EDataScope const dataScope, SRequestUserData const& userData /*= SRequestUserData::GetEmptyObject()*/)
+{
+	SAudioManagerRequestData<EAudioManagerRequestType::AutoLoadSetting> requestData(dataScope);
+	CAudioRequest request(&requestData);
+	request.flags = userData.flags;
+	request.pOwner = userData.pOwner;
+	request.pUserData = userData.pUserData;
+	request.pUserDataOwner = userData.pUserDataOwner;
+	PushRequest(request);
+}
+
+//////////////////////////////////////////////////////////////////////////
+void CSystem::LoadSetting(ControlId const id, SRequestUserData const& userData /*= SRequestUserData::GetEmptyObject()*/)
+{
+	SAudioManagerRequestData<EAudioManagerRequestType::LoadSetting> requestData(id);
+	CAudioRequest request(&requestData);
+	request.flags = userData.flags;
+	request.pOwner = userData.pOwner;
+	request.pUserData = userData.pUserData;
+	request.pUserDataOwner = userData.pUserDataOwner;
+	PushRequest(request);
+}
+
+//////////////////////////////////////////////////////////////////////////
+void CSystem::UnloadSetting(ControlId const id, SRequestUserData const& userData /*= SRequestUserData::GetEmptyObject()*/)
+{
+	SAudioManagerRequestData<EAudioManagerRequestType::UnloadSetting> requestData(id);
+	CAudioRequest request(&requestData);
+	request.flags = userData.flags;
+	request.pOwner = userData.pOwner;
+	request.pUserData = userData.pUserData;
+	request.pUserDataOwner = userData.pUserDataOwner;
+	PushRequest(request);
+}
+
+//////////////////////////////////////////////////////////////////////////
 void CSystem::RetriggerAudioControls(SRequestUserData const& userData /* = SAudioRequestUserData::GetEmptyObject() */)
 {
 	SAudioManagerRequestData<EAudioManagerRequestType::RetriggerAudioControls> requestData;
@@ -864,6 +900,11 @@ void CSystem::OnLoadLevel(char const* const szLevelName)
 	CAudioRequest request3(&requestData3);
 	request3.flags = ERequestFlags::ExecuteBlocking;
 	PushRequest(request3);
+
+	SAudioManagerRequestData<EAudioManagerRequestType::AutoLoadSetting> requestData4(EDataScope::LevelSpecific);
+	CAudioRequest request4(&requestData4);
+	request4.flags = ERequestFlags::ExecuteBlocking;
+	PushRequest(request4);
 }
 
 //////////////////////////////////////////////////////////////////////////
@@ -1177,6 +1218,61 @@ ERequestStatus CSystem::ProcessManagerRequest(CAudioRequest const& request)
 		{
 			SAudioManagerRequestData<EAudioManagerRequestType::UnloadSingleRequest> const* const pRequestData = static_cast<SAudioManagerRequestData<EAudioManagerRequestType::UnloadSingleRequest> const*>(request.GetData());
 			result = g_fileCacheManager.TryUnloadRequest(pRequestData->audioPreloadRequestId);
+
+			break;
+		}
+	case EAudioManagerRequestType::AutoLoadSetting:
+		{
+			SAudioManagerRequestData<EAudioManagerRequestType::AutoLoadSetting> const* const pRequestData = static_cast<SAudioManagerRequestData<EAudioManagerRequestType::AutoLoadSetting> const*>(request.GetData());
+
+			for (auto const& settingPair : g_settings)
+			{
+				CSetting const* const pSetting = settingPair.second;
+
+				if (pSetting->IsAutoLoad() && (pSetting->GetDataScope() == pRequestData->scope))
+				{
+					pSetting->Load();
+					break;
+				}
+			}
+
+			result = ERequestStatus::Success;
+
+			break;
+		}
+	case EAudioManagerRequestType::LoadSetting:
+		{
+			SAudioManagerRequestData<EAudioManagerRequestType::LoadSetting> const* const pRequestData = static_cast<SAudioManagerRequestData<EAudioManagerRequestType::LoadSetting> const*>(request.GetData());
+
+			CSetting const* const pSetting = stl::find_in_map(g_settings, pRequestData->id, nullptr);
+
+			if (pSetting != nullptr)
+			{
+				pSetting->Load();
+				result = ERequestStatus::Success;
+			}
+			else
+			{
+				result = ERequestStatus::FailureInvalidControlId;
+			}
+
+			break;
+		}
+	case EAudioManagerRequestType::UnloadSetting:
+		{
+			SAudioManagerRequestData<EAudioManagerRequestType::UnloadSetting> const* const pRequestData = static_cast<SAudioManagerRequestData<EAudioManagerRequestType::UnloadSetting> const*>(request.GetData());
+
+			CSetting const* const pSetting = stl::find_in_map(g_settings, pRequestData->id, nullptr);
+
+			if (pSetting != nullptr)
+			{
+				pSetting->Unload();
+				result = ERequestStatus::Success;
+			}
+			else
+			{
+				result = ERequestStatus::FailureInvalidControlId;
+			}
 
 			break;
 		}
@@ -2134,6 +2230,8 @@ ERequestStatus CSystem::HandleRefresh(char const* const szLevelName)
 	// The global preload might not exist if no preloads have been created, for that reason we don't check the result of this call
 	result = g_fileCacheManager.TryLoadRequest(GlobalPreloadRequestId, true, true);
 
+	AutoLoadSetting(EDataScope::Global);
+
 	if (szLevelName != nullptr && szLevelName[0] != '\0')
 	{
 		CryFixedStringT<MaxFilePathLength> levelPath = m_configPath;
@@ -2150,6 +2248,8 @@ ERequestStatus CSystem::HandleRefresh(char const* const szLevelName)
 		{
 			Cry::Audio::Log(ELogType::Warning, R"(No preload request found for level - "%s"!)", szLevelName);
 		}
+
+		AutoLoadSetting(EDataScope::LevelSpecific);
 	}
 
 	Cry::Audio::Log(ELogType::Warning, "Done refreshing the AudioSystem!");

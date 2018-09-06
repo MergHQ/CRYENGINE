@@ -13,6 +13,8 @@
 #include "Parameter.h"
 #include "SwitchState.h"
 #include "Environment.h"
+#include "Setting.h"
+#include "StandaloneFile.h"
 #include "GlobalData.h"
 #include "IoInterface.h"
 #include <CrySystem/IStreamEngine.h>
@@ -512,7 +514,7 @@ void CImpl::DestructEvent(IEvent const* const pIEvent)
 //////////////////////////////////////////////////////////////////////////
 IStandaloneFile* CImpl::ConstructStandaloneFile(CATLStandaloneFile& standaloneFile, char const* const szFile, bool const bLocalized, ITrigger const* pITrigger /*= nullptr*/)
 {
-	return nullptr;
+	return static_cast<IStandaloneFile*>(new CStandaloneFile);
 }
 
 //////////////////////////////////////////////////////////////////////////
@@ -783,9 +785,36 @@ void CImpl::DestructEnvironment(IEnvironment const* const pIEnvironment)
 }
 
 //////////////////////////////////////////////////////////////////////////
+ISetting const* CImpl::ConstructSetting(XmlNodeRef const pRootNode)
+{
+	ISetting const* pISetting = nullptr;
+
+	char const* const szTag = pRootNode->getTag();
+
+	if (_stricmp(szTag, s_szDspBusSettingTag) == 0)
+	{
+		char const* const szName = pRootNode->getAttr(s_szNameAttribute);
+		pISetting = static_cast<ISetting const*>(new CSetting(szName));
+	}
+	else
+	{
+		Cry::Audio::Log(ELogType::Warning, "Unknown Adx2 tag: %s", szTag);
+	}
+
+	return pISetting;
+}
+
+//////////////////////////////////////////////////////////////////////////
+void CImpl::DestructSetting(ISetting const* const pISetting)
+{
+	delete pISetting;
+}
+
+//////////////////////////////////////////////////////////////////////////
 void CImpl::OnRefresh()
 {
 #if defined(INCLUDE_ADX2_IMPL_PRODUCTION_CODE)
+	g_debugCurrentDspBusSettingName = g_debugNoneDspBusSetting;
 	m_acfFileSize = 0;
 	g_cueRadiusInfo.clear();
 	LoadAcbInfos(m_regularSoundBankFolder);
@@ -948,18 +977,6 @@ bool CImpl::RegisterAcf()
 
 		if (criAtomExAcf_GetAcfInfo(&acfInfo) == CRI_TRUE)
 		{
-			// To do: DSP settings need to get attached and detached via preload requests,
-			// which requires changes in the audio system.
-			// This code is only for testing the first setting in the project.
-			auto const numDspSettings = static_cast<CriUint16>(criAtomExAcf_GetNumDspSettings());
-
-			for (CriUint16 i = 0; i < numDspSettings; ++i)
-			{
-				CriChar8 const* const szDspSettingName = criAtomExAcf_GetDspSettingNameByIndex(i);
-				criAtomEx_AttachDspBusSetting(szDspSettingName, nullptr, 0);
-				break;
-			}
-
 			acfRegistered = true;
 
 #if defined(INCLUDE_ADX2_IMPL_PRODUCTION_CODE)
@@ -1073,16 +1090,16 @@ void CImpl::DrawDebugInfo(IRenderAuxGeom& auxGeom, float const posX, float& posY
 	memoryInfo.totalMemory += m_acfFileSize,
 
 	posY += g_debugSystemLineHeightClause;
-	auxGeom.Draw2dLabel(posX, posY, g_debugSystemFontSize, g_debugSystemColorTextPrimary.data(), false, "Total Memory Used: %uKiB",
-	                    static_cast<uint32>(memoryInfo.totalMemory / 1024));
-
-	posY += g_debugSystemLineHeight;
-	auxGeom.Draw2dLabel(posX, posY, g_debugSystemFontSize, g_debugSystemColorTextPrimary.data(), false, "ACF: %uKiB",
+	auxGeom.Draw2dLabel(posX, posY, g_debugSystemFontSize, g_debugSystemColorTextPrimary.data(), false, "Total Memory Used: %uKiB | ACF: %uKiB",
+	                    static_cast<uint32>(memoryInfo.totalMemory / 1024),
 	                    static_cast<uint32>(m_acfFileSize / 1024));
 
 	posY += g_debugSystemLineHeight;
 	auxGeom.Draw2dLabel(posX, posY, g_debugSystemFontSize, g_debugSystemColorTextPrimary.data(), false, "[Object Pool] In Use: %u | Constructed: %u (%uKiB) | Memory Pool: %uKiB",
 	                    memoryInfo.poolUsedObjects, memoryInfo.poolConstructedObjects, memoryInfo.poolUsedMemory, memoryInfo.poolAllocatedMemory);
+
+	posY += g_debugSystemLineHeight;
+	auxGeom.Draw2dLabel(posX, posY, g_debugSystemFontSize, g_debugSystemColorTextPrimary.data(), false, "DSP Bus Setting: %s", g_debugCurrentDspBusSettingName.c_str());
 
 	Vec3 const& listenerPosition = g_pListener->GetPosition();
 	Vec3 const& listenerDirection = g_pListener->GetTransformation().GetForward();

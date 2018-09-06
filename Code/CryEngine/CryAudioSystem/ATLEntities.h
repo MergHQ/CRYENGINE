@@ -631,6 +631,77 @@ public:
 	ImplPtrVec const m_implPtrs;
 };
 
+class CSettingImpl final : public CATLControlImpl
+{
+public:
+
+	CSettingImpl() = delete;
+	CSettingImpl(CSettingImpl const&) = delete;
+	CSettingImpl(CSettingImpl&&) = delete;
+	CSettingImpl& operator=(CSettingImpl const&) = delete;
+	CSettingImpl& operator=(CSettingImpl&&) = delete;
+
+	explicit CSettingImpl(Impl::ISetting const* const pImplData)
+		: m_pImplData(pImplData)
+	{}
+
+	~CSettingImpl();
+
+	Impl::ISetting const* GetImplData() const { return m_pImplData; }
+
+private:
+
+	Impl::ISetting const* const m_pImplData;
+};
+
+using SettingConnections = std::vector<CSettingImpl const*>;
+
+class CSetting final : public Control
+{
+public:
+
+	CSetting() = delete;
+	CSetting(CSetting const&) = delete;
+	CSetting(CSetting&&) = delete;
+	CSetting& operator=(CSetting const&) = delete;
+	CSetting& operator=(CSetting&&) = delete;
+
+#if defined(INCLUDE_AUDIO_PRODUCTION_CODE)
+	explicit CSetting(
+		ControlId const id,
+		EDataScope const dataScope,
+		bool const isAutoLoad,
+		SettingConnections const& connections,
+		char const* const szName)
+		: Control(id, dataScope, szName)
+		, m_isAutoLoad(isAutoLoad)
+		, m_connections(connections)
+	{}
+#else
+	explicit CSetting(
+		ControlId const id,
+		EDataScope const dataScope,
+		bool const isAutoLoad,
+		SettingConnections const& connections)
+		: Control(id, dataScope)
+		, m_isAutoLoad(isAutoLoad)
+		, m_connections(connections)
+	{}
+#endif // INCLUDE_AUDIO_PRODUCTION_CODE
+
+	~CSetting();
+
+	bool IsAutoLoad() const { return m_isAutoLoad; }
+
+	void Load() const;
+	void Unload() const;
+
+private:
+
+	bool const               m_isAutoLoad;
+	SettingConnections const m_connections;
+};
+
 class CATLStandaloneFile final : public CPoolObject<CATLStandaloneFile, stl::PSyncNone>
 {
 public:

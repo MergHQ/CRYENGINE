@@ -782,6 +782,18 @@ void CImpl::DestructEnvironment(IEnvironment const* const pIEnvironment)
 }
 
 //////////////////////////////////////////////////////////////////////////
+ISetting const* CImpl::ConstructSetting(XmlNodeRef const pRootNode)
+{
+	return static_cast<ISetting*>(new CSetting);
+}
+
+//////////////////////////////////////////////////////////////////////////
+void CImpl::DestructSetting(ISetting const* const pISetting)
+{
+	delete pISetting;
+}
+
+//////////////////////////////////////////////////////////////////////////
 void CImpl::OnRefresh()
 {
 	UnloadMasterBanks();

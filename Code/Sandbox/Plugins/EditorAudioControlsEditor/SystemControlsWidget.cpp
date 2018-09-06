@@ -249,6 +249,11 @@ void CSystemControlsWidget::InitAddControlWidget(QVBoxLayout* const pLayout)
 	m_pCreatePreloadAction->setVisible(false);
 	pAddButtonMenu->addAction(m_pCreatePreloadAction);
 
+	m_pCreateSettingAction = new QAction(GetAssetIcon(EAssetType::Setting), tr("Setting"), pAddButtonMenu);
+	QObject::connect(m_pCreateSettingAction, &QAction::triggered, [&]() { CreateControl("new_setting", EAssetType::Setting, GetSelectedAsset()); });
+	m_pCreateSettingAction->setVisible(false);
+	pAddButtonMenu->addAction(m_pCreateSettingAction);
+
 	pAddButton->setMenu(pAddButtonMenu);
 	pLayout->addWidget(pAddButton);
 }
@@ -445,6 +450,11 @@ void CSystemControlsWidget::OnContextMenu(QPoint const& pos)
 								pAddMenu->addAction(GetAssetIcon(EAssetType::Preload), tr("Preload"), [=]() { CreateControl("new_preload", EAssetType::Preload, pParent); });
 							}
 
+							if (g_pIImpl->IsSystemTypeSupported(EAssetType::Setting))
+							{
+								pAddMenu->addAction(GetAssetIcon(EAssetType::Setting), tr("Setting"), [=]() { CreateControl("new_setting", EAssetType::Setting, pParent); });
+							}
+
 							if (pParent->GetType() == EAssetType::Library)
 							{
 								if ((libraries[0]->GetPakStatus() & EPakStatus::OnDisk) != 0)
@@ -492,6 +502,16 @@ void CSystemControlsWidget::OnContextMenu(QPoint const& pos)
 							pContextMenu->insertAction(pContextMenu->actions().at(0), pUnloadAction);
 							pContextMenu->insertAction(pContextMenu->actions().at(0), pLoadAction);
 						}
+					}
+					else if (controlType == EAssetType::Setting)
+					{
+						QAction* const pLoadAction = new QAction(tr("Load Setting"), pContextMenu);
+						QAction* const pUnloadAction = new QAction(tr("Unload Setting"), pContextMenu);
+						QObject::connect(pLoadAction, &QAction::triggered, [=]() { gEnv->pAudioSystem->LoadSetting(CryAudio::StringToId(pControl->GetName())); });
+						QObject::connect(pUnloadAction, &QAction::triggered, [=]() { gEnv->pAudioSystem->UnloadSetting(CryAudio::StringToId(pControl->GetName())); });
+						pContextMenu->insertSeparator(pContextMenu->actions().at(0));
+						pContextMenu->insertAction(pContextMenu->actions().at(0), pUnloadAction);
+						pContextMenu->insertAction(pContextMenu->actions().at(0), pLoadAction);
 					}
 				}
 			}
@@ -849,6 +869,11 @@ void CSystemControlsWidget::OnUpdateCreateButtons()
 						m_pCreatePreloadAction->setVisible(isLibraryOrFolder);
 					}
 
+					if (g_pIImpl->IsSystemTypeSupported(EAssetType::Setting))
+					{
+						m_pCreateSettingAction->setVisible(isLibraryOrFolder);
+					}
+
 					isActionVisible = true;
 				}
 			}
@@ -864,6 +889,7 @@ void CSystemControlsWidget::OnUpdateCreateButtons()
 		m_pCreateStateAction->setVisible(false);
 		m_pCreateEnvironmentAction->setVisible(false);
 		m_pCreatePreloadAction->setVisible(false);
+		m_pCreateSettingAction->setVisible(false);
 	}
 }
 

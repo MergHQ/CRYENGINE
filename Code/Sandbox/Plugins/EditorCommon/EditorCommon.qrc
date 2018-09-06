@@ -82,6 +82,7 @@
         <file alias="Audio/component_preload.ico">icons/audio_component_preload.ico</file>
         <file alias="Audio/component_occlusion.ico">icons/audio_component_occlusion.ico</file>
         <file alias="Audio/component_velocity_tracking.ico">icons/audio_component_velocity_tracking.ico</file>
+        <file alias="Audio/component_setting.ico">icons/audio_component_setting.ico</file>
 
         <!--sdl_mixer-->
         <file alias="Audio/sdl_mixer/Audio_Event.ico">icons/audio_sdlmixer_event.ico</file>

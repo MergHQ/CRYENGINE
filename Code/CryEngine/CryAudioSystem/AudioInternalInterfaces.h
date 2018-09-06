@@ -40,6 +40,9 @@ enum class EAudioManagerRequestType : EnumFlagsType
 	ClearPreloadsData,
 	PreloadSingleRequest,
 	UnloadSingleRequest,
+	AutoLoadSetting,
+	LoadSetting,
+	UnloadSetting,
 	UnloadAFCMDataByScope,
 	DrawDebugInfo,
 	AddRequestListener,
@@ -357,6 +360,63 @@ struct SAudioManagerRequestData<EAudioManagerRequestType::UnloadSingleRequest> f
 	virtual ~SAudioManagerRequestData() override = default;
 
 	PreloadRequestId const audioPreloadRequestId;
+};
+
+//////////////////////////////////////////////////////////////////////////
+template<>
+struct SAudioManagerRequestData<EAudioManagerRequestType::AutoLoadSetting> final : public SAudioManagerRequestDataBase
+{
+	explicit SAudioManagerRequestData(EDataScope const scope_)
+		: SAudioManagerRequestDataBase(EAudioManagerRequestType::AutoLoadSetting)
+		, scope(scope_)
+	{}
+
+	explicit SAudioManagerRequestData(SAudioManagerRequestData<EAudioManagerRequestType::AutoLoadSetting> const* const pAMRData)
+		: SAudioManagerRequestDataBase(EAudioManagerRequestType::AutoLoadSetting)
+		, scope(pAMRData->scope)
+	{}
+
+	virtual ~SAudioManagerRequestData() override = default;
+
+	EDataScope const scope;
+};
+
+//////////////////////////////////////////////////////////////////////////
+template<>
+struct SAudioManagerRequestData<EAudioManagerRequestType::LoadSetting> final : public SAudioManagerRequestDataBase
+{
+	explicit SAudioManagerRequestData(ControlId const id_)
+		: SAudioManagerRequestDataBase(EAudioManagerRequestType::LoadSetting)
+		, id(id_)
+	{}
+
+	explicit SAudioManagerRequestData(SAudioManagerRequestData<EAudioManagerRequestType::LoadSetting> const* const pAMRData)
+		: SAudioManagerRequestDataBase(EAudioManagerRequestType::LoadSetting)
+		, id(pAMRData->id)
+	{}
+
+	virtual ~SAudioManagerRequestData() override = default;
+
+	ControlId const id;
+};
+
+//////////////////////////////////////////////////////////////////////////
+template<>
+struct SAudioManagerRequestData<EAudioManagerRequestType::UnloadSetting> final : public SAudioManagerRequestDataBase
+{
+	explicit SAudioManagerRequestData(ControlId const id_)
+		: SAudioManagerRequestDataBase(EAudioManagerRequestType::UnloadSetting)
+		, id(id_)
+	{}
+
+	explicit SAudioManagerRequestData(SAudioManagerRequestData<EAudioManagerRequestType::UnloadSetting> const* const pAMRData)
+		: SAudioManagerRequestDataBase(EAudioManagerRequestType::UnloadSetting)
+		, id(pAMRData->id)
+	{}
+
+	virtual ~SAudioManagerRequestData() override = default;
+
+	ControlId const id;
 };
 
 //////////////////////////////////////////////////////////////////////////

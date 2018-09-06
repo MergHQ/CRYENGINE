@@ -63,6 +63,9 @@ float const g_debugObjectFontSize = 1.35f;
 float const g_debugObjectLineHeight = 14.0f;
 DebugColor const g_debugObjectColorVirtual = g_colorCyan;
 DebugColor const g_debugObjectColorPhysical = g_colorYellow;
+
+CryFixedStringT<MaxControlNameLength> g_debugNoneDspBusSetting = "<none>";
+CryFixedStringT<MaxControlNameLength> g_debugCurrentDspBusSettingName = g_debugNoneDspBusSetting;
 }      // namespace Adx2
 }      // namespace Impl
 }      // namespace CryAudio

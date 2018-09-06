@@ -134,6 +134,7 @@ struct EDITOR_COMMON_API IVariable : public IVariableContainer
 		DT_AUDIO_RTPC,
 		DT_AUDIO_ENVIRONMENT,
 		DT_AUDIO_PRELOAD_REQUEST,
+		DT_AUDIO_SETTING,
 		DT_DYNAMIC_RESPONSE_SIGNAL,
 		DT_CURVE = BIT(7),  // Combined with other types
 	};
