@@ -534,7 +534,7 @@ pixout GlassPS(vert2FragGeneral IN, bool bIsFrontFace : SV_IsFrontFace)
 
 #if %DEPTH_FOG
 	// Get depth buffer
-	float fFogLevel = ComputeDepthFog(fDepth, fZBufferRefrac, FogDensity);	// Compute fog
+	float fFogLevel = ComputeDepthFog(IN.screenProj.w, fZBufferRefrac, FogDensity);	// Compute fog
 	cBackbuffer = lerp(FogColor.rgb, cBackbuffer, fFogLevel);	// Colorize fog and mix it with backbuffer
 #endif
 
