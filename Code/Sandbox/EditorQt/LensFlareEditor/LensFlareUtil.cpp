@@ -481,13 +481,16 @@ void ApplyOpticsToSelectedEntityWithComponent(const string& opticsFullName, IOpt
 	{
 		CBaseObject* pSelectedObj = pSelectionGroup->GetObject(i);
 
-		// Get either the point32 light component or projector light component
-		IEntityComponent* pLightComponent = pSelectedObj->GetIEntity()->GetComponentByTypeId("0A86908D-642F-4590-ACEF-484E8E39F31B"_cry_guid);
-		pLightComponent = pLightComponent == nullptr ? pSelectedObj->GetIEntity()->GetComponentByTypeId("07D0CAD1-8E79-4177-9ADD-A2464A009FA5"_cry_guid) : pLightComponent;
+		if (const IEntity* pEntity = pSelectedObj->GetIEntity())
+		{
+			// Get either the point light component or projector light component
+			IEntityComponent* pLightComponent = pEntity->GetComponentByTypeId("0A86908D-642F-4590-ACEF-484E8E39F31B"_cry_guid);
+			pLightComponent = pLightComponent == nullptr ? pEntity->GetComponentByTypeId("07D0CAD1-8E79-4177-9ADD-A2464A009FA5"_cry_guid) : pLightComponent;
 
-		if (pLightComponent)
-		{ 
-			static_cast<Cry::DefaultComponents::ILightComponent*>(pLightComponent)->SetOptics(opticsFullName);
+			if (pLightComponent)
+			{
+				static_cast<Cry::DefaultComponents::ILightComponent*>(pLightComponent)->SetOptics(opticsFullName);
+			}
 		}
 	}
 
