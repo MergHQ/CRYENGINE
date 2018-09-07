@@ -6,7 +6,6 @@
 #include <ATLEntityData.h>
 #include <PoolObject.h>
 
-// Fmod forward declarations.
 namespace FMOD
 {
 class ChannelGroup;
@@ -83,6 +82,8 @@ private:
 	CBaseObject*                     m_pObject;
 	CTrigger const*                  m_pTrigger;
 };
+
+using Events = std::vector<CEvent*>;
 } // namespace Fmod
 } // namespace Impl
 } // namespace CryAudio
