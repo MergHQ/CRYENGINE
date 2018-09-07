@@ -101,17 +101,6 @@ void DisablePhysicsAndAISimulation()
 	}
 }
 
-void CallAudioSystemOnLoad(const string& szFilename)
-{
-	string fileName = PathUtil::GetFileName(szFilename.GetString());
-	string const levelName = PathUtil::GetFileName(fileName.GetBuffer());
-
-	if (!levelName.empty() && levelName.compareNoCase("Untitled") != 0)
-	{
-		gEnv->pAudioSystem->OnLoadLevel(levelName.c_str());
-	}
-}
-
 void LoadTerrain(TDocMultiArchive& arrXmlAr)
 {
 	LOADING_TIME_PROFILE_SECTION_NAMED("Load Terrain");
@@ -364,9 +353,6 @@ void CCryEditDoc::DeleteContents()
 	// Load scripts data
 	SetModifiedFlag(FALSE);
 
-	// Unload level specific audio binary data.
-	gEnv->pAudioSystem->OnUnloadLevel();
-
 	GetIEditorImpl()->GetIUndoManager()->Resume();
 
 	m_bIsClosing = false;
@@ -447,8 +433,6 @@ void CCryEditDoc::Load(TDocMultiArchive& arrXmlAr, const string& filename)
 #ifdef PROFILE_LOADING_WITH_VTUNE
 	VTResume();
 #endif
-
-	CallAudioSystemOnLoad(filename);
 
 	string currentMissionName = GetCurrentMissionName(arrXmlAr);
 

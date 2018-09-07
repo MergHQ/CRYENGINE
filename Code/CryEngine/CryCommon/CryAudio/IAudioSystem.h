@@ -487,21 +487,6 @@ struct IAudioSystem
 	virtual void GetTriggerData(ControlId const triggerId, STriggerData& triggerData) = 0;
 
 	/**
-	 * This method is called by the LevelSystem whenever a level is loaded.
-	 * It allows the AudioSystem to handle its data accordingly.
-	 * @param szLevelName - name of the level that is being loaded.
-	 * @return void
-	 */
-	virtual void OnLoadLevel(char const* const szLevelName) = 0;
-
-	/**
-	 * This method is called by the LevelSystem whenever a level is unloaded.
-	 * It allows the AudioSystem to handle its data accordingly.
-	 * @return void
-	 */
-	virtual void OnUnloadLevel() = 0;
-
-	/**
 	 * Retrieve information about the current middleware implementation.
 	 * @param[out] implInfo - a reference to an instance of SImplInfo
 	 * @return void

@@ -357,6 +357,11 @@ public:
 
 	~CTemporaryAsset()
 	{
+		if (m_assets.empty())
+		{
+			return;
+		}
+
 		CreateDestinationAssets();
 		DeleteTemp(GetTmpPath());
 	}
@@ -368,6 +373,12 @@ public:
 
 	void Discard()
 	{
+		if (m_assets.empty())
+		{
+			return;
+		}
+
+		DeleteTemp(GetTmpPath());
 		m_assets.clear();
 	}
 

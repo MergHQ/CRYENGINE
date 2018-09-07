@@ -75,8 +75,6 @@ public:
 	virtual void        ReleaseObject(IObject* const pIObject) override                                                                                                                         {}
 	virtual void        GetFileData(char const* const szName, SFileData& fileData) override                                                                                                     {}
 	virtual void        GetTriggerData(ControlId const triggerId, STriggerData& triggerData) override                                                                                           {}
-	virtual void        OnLoadLevel(char const* const szLevelName) override                                                                                                                     {}
-	virtual void        OnUnloadLevel() override                                                                                                                                                {}
 	virtual void        GetImplInfo(SImplInfo& implInfo) override                                                                                                                               {}
 	virtual void        Log(ELogType const type, char const* const szFormat, ...) override                                                                                                      {}
 

@@ -1830,7 +1830,11 @@ void CLevelSystem::OnLoadingStart(ILevelInfo* pLevelInfo)
 	m_fLastTime = gEnv->pTimer->GetAsyncCurTime();
 
 	if (gEnv->IsEditor()) //pure game calls it from CCET_LoadLevel
-		GetISystem()->GetISystemEventDispatcher()->OnSystemEvent(ESYSTEM_EVENT_LEVEL_LOAD_START, 0, 0);
+	{
+		char* szLevelName = nullptr;
+		gEnv->pGameFramework->GetEditorLevel(&szLevelName, nullptr);
+		GetISystem()->GetISystemEventDispatcher()->OnSystemEvent(ESYSTEM_EVENT_LEVEL_LOAD_START, reinterpret_cast<UINT_PTR>(szLevelName), 0);
+	}
 
 #if CRY_PLATFORM_WINDOWS
 	/*
@@ -2338,9 +2342,6 @@ void CLevelSystem::UnLoadLevel()
 		gEnv->pMovieSystem->Reset(false, false);
 		gEnv->pMovieSystem->RemoveAllSequences();
 	}
-
-	// Unload level specific audio binary data.
-	gEnv->pAudioSystem->OnUnloadLevel();
 
 	// Delete engine resources
 	if (p3DEngine)
