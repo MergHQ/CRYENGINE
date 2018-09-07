@@ -5,9 +5,9 @@
 #include "DrsEditorMainWindow.h"
 
 #include <Controls/QuestionDialog.h>
+#include <Expected.h>
 #include <CryDynamicResponseSystem/IDynamicResponseSystem.h>
 #include <CryEntitySystem/IEntitySystem.h>
-#include <CryIcon.h>
 #include <CrySerialization/IArchiveHost.h>
 #include <CryString/CryString.h>
 #include <CrySystem/File/CryFile.h>

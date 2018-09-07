@@ -2,19 +2,19 @@
 
 #include "stdafx.h"
 #include "Explorer.h"
-#include "ExplorerDataProvider.h"
-#include "Serialization.h"
-#include <CrySerialization/IArchiveHost.h>
-#include "IEditor.h"
-#include "UndoStack.h"
-#include <CryCore/functor.h>
-#include "DependencyManager.h"
-#include "Controls/QuestionDialog.h"
-#include <CrySystem/File/ICryPak.h>
 
-#ifdef WIN32
-	#include <Shellapi.h>
-#endif
+#include "Controls/QuestionDialog.h"
+#include "Explorer/ExplorerDataProvider.h"
+#include "DependencyManager.h"
+#include "Expected.h"
+#include "Serialization.h"
+#include "UndoStack.h"
+
+#include <IEditor.h>
+
+#include <CryCore/functor.h>
+#include <CrySerialization/IArchiveHost.h>
+#include <CrySystem/File/ICryPak.h>
 
 #if 0
 	#define TRACE_EXPLORER(fmt, ...) { char buf[1024]; cry_sprintf(buf, fmt "\n", __VA_ARGS__); OutputDebugStringA(buf); }

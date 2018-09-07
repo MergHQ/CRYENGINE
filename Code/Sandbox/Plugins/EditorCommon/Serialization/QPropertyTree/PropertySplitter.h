@@ -12,6 +12,4 @@ public:
 		: QWidget(parent)
 	{
 	}
-
-	virtual ~QPropertySplitter() override {}
 };

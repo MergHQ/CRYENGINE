@@ -2,7 +2,6 @@
 
 #include "stdafx.h"
 #include "UndoStack.h"
-#include "Expected.h"
 
 void CUndoStack::PushUndo(DataBuffer* previousContentToMove, const char* description, unsigned long long sequentialIndex)
 {
@@ -74,10 +73,6 @@ void CUndoStack::GetUndoActions(std::vector<string>* actionNames, int maxActionC
 }
 
 //////////////////////////////////////////////////////////////////////////
-
-CUndoRedo::CUndoRedo()
-{
-}
 
 void CUndoRedo::AddOperator(PBaseOperator op)
 {
