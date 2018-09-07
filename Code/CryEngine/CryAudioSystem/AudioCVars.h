@@ -49,6 +49,8 @@ private:
 	static void CmdStopTrigger(IConsoleCmdArgs* pCmdArgs);
 	static void CmdSetParameter(IConsoleCmdArgs* pCmdArgs);
 	static void CmdSetSwitchState(IConsoleCmdArgs* pCmdArgs);
+	static void CmdLoadRequest(IConsoleCmdArgs* pCmdArgs);
+	static void CmdUnloadRequest(IConsoleCmdArgs* pCmdArgs);
 	static void CmdLoadSetting(IConsoleCmdArgs* pCmdArgs);
 	static void CmdUnloadSetting(IConsoleCmdArgs* pCmdArgs);
 #endif // INCLUDE_AUDIO_PRODUCTION_CODE

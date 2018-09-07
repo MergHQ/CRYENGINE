@@ -273,6 +273,16 @@ void CCVars::RegisterVariables()
 	                 "otherwise, the AudioSwitch is set on the GlobalAudioObject\n"
 	                 "Usage: s_SetSwitchState SurfaceType concrete 601 or s_SetSwitchState weather rain\n");
 
+	REGISTER_COMMAND("s_LoadRequest", CmdLoadRequest, VF_CHEAT,
+	                 "Loads a preload request. The preload request has to be non-autoloaded.\n"
+	                 "The argument is the name of the preload request to load.\n"
+	                 "Usage: s_LoadRequest VehiclePreload\n");
+
+	REGISTER_COMMAND("s_UnloadRequest", CmdUnloadRequest, VF_CHEAT,
+	                 "Unloads a preload request. The preload request has to be non-autoloaded.\n"
+	                 "The argument is the name of the preload request to load.\n"
+	                 "Usage: s_UnloadRequest VehiclePreload\n");
+
 	REGISTER_COMMAND("s_LoadSetting", CmdLoadSetting, VF_CHEAT,
 	                 "Loads a setting.\n"
 	                 "The argument is the name of the setting to load.\n"
@@ -320,6 +330,8 @@ void CCVars::UnregisterVariables()
 		pConsole->UnregisterVariable("s_StopTrigger");
 		pConsole->UnregisterVariable("s_SetParameter");
 		pConsole->UnregisterVariable("s_SetSwitchState");
+		pConsole->UnregisterVariable("s_LoadRequest");
+		pConsole->UnregisterVariable("s_UnloadRequest");
 		pConsole->UnregisterVariable("s_LoadSetting");
 		pConsole->UnregisterVariable("s_UnloadSetting");
 #endif // INCLUDE_AUDIO_PRODUCTION_CODE
@@ -390,6 +402,38 @@ void CCVars::CmdSetSwitchState(IConsoleCmdArgs* pCmdArgs)
 	else
 	{
 		Cry::Audio::Log(ELogType::Error, "Usage: s_SetSwitchState [SwitchName] [SwitchStateName]");
+	}
+}
+
+//////////////////////////////////////////////////////////////////////////
+void CCVars::CmdLoadRequest(IConsoleCmdArgs* pCmdArgs)
+{
+	int const numArgs = pCmdArgs->GetArgCount();
+
+	if (numArgs == 2)
+	{
+		ControlId const id = CryAudio::StringToId(pCmdArgs->GetArg(1));
+		gEnv->pAudioSystem->PreloadSingleRequest(id, false);
+	}
+	else
+	{
+		Cry::Audio::Log(ELogType::Error, "Usage: s_LoadRequest [PreloadRequestName]");
+	}
+}
+
+//////////////////////////////////////////////////////////////////////////
+void CCVars::CmdUnloadRequest(IConsoleCmdArgs* pCmdArgs)
+{
+	int const numArgs = pCmdArgs->GetArgCount();
+
+	if (numArgs == 2)
+	{
+		ControlId const id = CryAudio::StringToId(pCmdArgs->GetArg(1));
+		gEnv->pAudioSystem->UnloadSingleRequest(id);
+	}
+	else
+	{
+		Cry::Audio::Log(ELogType::Error, "Usage: s_UnloadRequest [PreloadRequestName]");
 	}
 }
 
