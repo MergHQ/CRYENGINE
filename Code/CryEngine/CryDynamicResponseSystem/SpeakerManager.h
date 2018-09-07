@@ -71,7 +71,16 @@ private:
 	struct SSpeakInfo
 	{
 		SSpeakInfo() = default;
-		SSpeakInfo(CryAudio::AuxObjectId auxAudioObjectId) : speechAuxObjectId(auxAudioObjectId), voiceAttachmentIndex(-1) {}
+		SSpeakInfo(CryAudio::AuxObjectId auxAudioObjectId)
+			: speechAuxObjectId(auxAudioObjectId)
+			, voiceAttachmentIndex(-1)
+			, pActor(nullptr)
+			, pEntity(nullptr)
+			, pPickedLine(nullptr)
+			, finishTime(0.0f)
+			, priority(0)
+			, bWasCanceled(false)
+		{}
 
 		CResponseActor*       pActor;
 		IEntity*              pEntity;
