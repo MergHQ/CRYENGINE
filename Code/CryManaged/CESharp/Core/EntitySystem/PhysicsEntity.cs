@@ -211,12 +211,40 @@ namespace CryEngine.EntitySystem
 		/// Adds an impulse to this <see cref="PhysicsObject"/>. The impulse will be applied to the point in world-space.
 		/// </summary>
 		/// <param name="impulse">Direction and length of the impulse.</param>
-		/// <param name="point">Point of application, in world-space.</param>
+		/// <param name="point">Point of application in world-space.</param>
 		public void AddImpulse(Vector3 impulse, Vector3 point)
 		{
 			var action = new pe_action_impulse();
 			action.impulse = impulse;
 			action.point = point;
+			NativeHandle.Action(action);
+		}
+
+		/// <summary>
+		/// Adds an angled impulse to this <see cref="PhysicsObject"/>.
+		/// </summary>
+		/// <param name="impulse">Angle and length of the impulse.</param>
+		public void AddAngImpulse(Vector3 impulse)
+		{
+			var action = new pe_action_impulse
+			{
+				angImpulse = impulse
+			};
+			NativeHandle.Action(action);
+		}
+
+		/// <summary>
+		/// Adds an angled impulse to this <see cref="PhysicsObject"/>. The impulse will be applied to the point in world-space.
+		/// </summary>
+		/// <param name="impulse">Direction and length of the impulse.</param>
+		/// <param name="point">Point of application in world-space.</param>
+		public void AddAngImpulse(Vector3 impulse, Vector3 point)
+		{
+			var action = new pe_action_impulse
+			{
+				angImpulse = impulse,
+				point = point
+			};
 			NativeHandle.Action(action);
 		}
 
