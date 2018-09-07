@@ -64,7 +64,7 @@ public:
 
 	//////////////////////////////////////////////////////////
 	// CDockableWidget implementation
-	virtual const char*                       GetPaneTitle() const override        { return "Character Tool"; };
+	virtual const char*                       GetPaneTitle() const override        { return "Character Tool"; }
 	virtual IViewPaneClass::EDockingDirection GetDockingDirection() const override { return IViewPaneClass::DOCK_FLOAT; }
 	//////////////////////////////////////////////////////////
 

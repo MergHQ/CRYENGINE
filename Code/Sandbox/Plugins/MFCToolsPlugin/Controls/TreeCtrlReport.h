@@ -1,7 +1,5 @@
 // Copyright 2001-2018 Crytek GmbH / Crytek Group. All rights reserved.
 
-#ifndef __TreeCtrlReport_h__
-#define __TreeCtrlReport_h__
 #pragma once
 
 enum { eTreeItemPathOptimalLen = 128 };
@@ -116,11 +114,11 @@ protected:
 	// Can be overridden by derived classes.
 	//////////////////////////////////////////////////////////////////////////
 	virtual void             OnFillItems();
-	virtual void             OnItemExpanded(CXTPReportRow* pRow, bool bExpanded) {};
+	virtual void             OnItemExpanded(CXTPReportRow* pRow, bool bExpanded) {}
 	virtual void             OnSelectionChanged();
 	virtual bool             OnBeginDragAndDrop(CXTPReportSelectedRows* pRows, CPoint point);
-	virtual void             OnDragAndDrop(CXTPReportSelectedRows* pRows, CPoint absoluteCursorPos) {};
-	virtual void             OnVerticalScroll(UINT nSBCode, UINT nPos, CScrollBar* pScrollBar)      {};
+	virtual void             OnDragAndDrop(CXTPReportSelectedRows* pRows, CPoint absoluteCursorPos) {}
+	virtual void             OnVerticalScroll(UINT nSBCode, UINT nPos, CScrollBar* pScrollBar)      {}
 	virtual void             OnItemDblClick(CXTPReportRow* pRow);
 	virtual CTreeItemRecord* CreateGroupRecord(const char* name, int nGroupIcon);
 
@@ -181,5 +179,3 @@ protected:
 
 	Callback             m_callbacks[eCB_LAST];
 };
-
-#endif //__TreeCtrlReport_h__

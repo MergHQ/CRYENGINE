@@ -173,8 +173,8 @@ public:
 	virtual bool IsValidReparentingTo(CTrackViewAnimNode* pNewParent);
 
 	// Sync from/to base transform. Returns false if nothing was synced.
-	virtual bool    SyncToBase()             { return false; };
-	virtual bool    SyncFromBase()           { return false; };
+	virtual bool    SyncToBase()             { return false; }
+	virtual bool    SyncFromBase()           { return false; }
 
 	virtual CryGUID GetGUID() const override { return m_pAnimNode->GetGUID(); }
 

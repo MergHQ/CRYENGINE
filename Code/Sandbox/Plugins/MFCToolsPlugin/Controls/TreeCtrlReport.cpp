@@ -11,7 +11,7 @@ class CXTPReportRecordItemText_Custom : public CXTPReportRecordItemText
 {
 	DECLARE_DYNAMIC(CXTPReportRecordItemText_Custom)
 public:
-	CXTPReportRecordItemText_Custom(LPCTSTR szText) : CXTPReportRecordItemText(szText), m_nIconIndex2(-1) {};
+	CXTPReportRecordItemText_Custom(LPCTSTR szText) : CXTPReportRecordItemText(szText), m_nIconIndex2(-1) {}
 	void        SetIconIndex2(int nIconIndex) { m_nIconIndex2 = nIconIndex; };
 
 	virtual int Draw(XTP_REPORTRECORDITEM_DRAWARGS* pDrawArgs)

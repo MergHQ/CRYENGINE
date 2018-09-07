@@ -1281,13 +1281,13 @@ class CSmartObjectsEditorViewClass : public IViewPaneClass
 	//////////////////////////////////////////////////////////////////////////
 	// IClassDesc
 	//////////////////////////////////////////////////////////////////////////
-	virtual ESystemClassID SystemClassID()	 override { return ESYSTEM_CLASS_VIEWPANE; };
-	virtual const char*    ClassName()       override { return "Smart Objects Editor"; };
-	virtual const char*    Category()        override { return "Game"; };
+	virtual ESystemClassID SystemClassID()	 override { return ESYSTEM_CLASS_VIEWPANE; }
+	virtual const char*    ClassName()       override { return "Smart Objects Editor"; }
+	virtual const char*    Category()        override { return "Game"; }
 	virtual const char*    GetMenuPath()     override { return "Deprecated"; }
-	virtual CRuntimeClass* GetRuntimeClass() override { return RUNTIME_CLASS(CSmartObjectsEditorDialog); };
-	virtual const char*    GetPaneTitle()    override { return _T("Smart Objects Editor"); };
-	virtual bool           SinglePane()      override { return true; };
+	virtual CRuntimeClass* GetRuntimeClass() override { return RUNTIME_CLASS(CSmartObjectsEditorDialog); }
+	virtual const char*    GetPaneTitle()    override { return _T("Smart Objects Editor"); }
+	virtual bool           SinglePane()      override { return true; }
 };
 
 REGISTER_CLASS_DESC(CSmartObjectsEditorViewClass)

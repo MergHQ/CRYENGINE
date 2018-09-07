@@ -253,8 +253,8 @@ protected:
 
 protected:
 	DECLARE_MESSAGE_MAP()
-	virtual void    OnOK()     {};
-	virtual void    OnCancel() {};
+	virtual void    OnOK()     {}
+	virtual void    OnCancel() {}
 
 	virtual BOOL    PreTranslateMessage(MSG* pMsg);
 	virtual BOOL    OnInitDialog();

@@ -136,7 +136,7 @@ public:
 
 	// Name
 	virtual const char* GetName() const = 0;
-	virtual bool        SetName(const char* pName) { return false; };
+	virtual bool        SetName(const char* pName) { return false; }
 	virtual bool        CanBeRenamed() const       { return false; }
 
 	// CryMovie node type

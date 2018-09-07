@@ -13,7 +13,6 @@ struct I3DEngine;
 struct IDisplayViewport;
 struct IIconManager;
 struct IRenderAuxGeom;
-struct IRenderer;
 
 /*!
  *  DisplayContex is a structure passed to BaseObject Display method.

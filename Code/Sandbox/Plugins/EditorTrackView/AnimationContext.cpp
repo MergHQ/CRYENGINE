@@ -33,7 +33,7 @@ public:
 		{
 			m_cameraObjectGUID = CryGUID::Null();
 		}
-	};
+	}
 
 	void ResetCamera()
 	{

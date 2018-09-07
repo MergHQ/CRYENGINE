@@ -6,7 +6,7 @@ class PLUGIN_API CHotTrackingTreeCtrl : public CTreeCtrl
 {
 public:
 	CHotTrackingTreeCtrl();
-	virtual ~CHotTrackingTreeCtrl(){};
+	virtual ~CHotTrackingTreeCtrl(){}
 
 protected:
 	DECLARE_MESSAGE_MAP()

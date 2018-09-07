@@ -1,11 +1,5 @@
 // Copyright 2001-2018 Crytek GmbH / Crytek Group. All rights reserved.
-
-#ifndef __propertyctrlex_h__
-#define __propertyctrlex_h__
-
-#if _MSC_VER > 1000
-	#pragma once
-#endif
+#pragma once
 
 #include "PropertyCtrl.h"
 #include "RollupCtrl.h"
@@ -24,8 +18,8 @@ public:
 protected:
 	DECLARE_MESSAGE_MAP()
 
-	virtual void OnOK()     {};
-	virtual void OnCancel() {};
+	virtual void OnOK()     {}
+	virtual void OnCancel() {}
 
 	afx_msg void OnMouseMove(UINT nFlags, CPoint point);
 	afx_msg void OnRButtonUp(UINT nFlags, CPoint point);
@@ -145,5 +139,3 @@ protected:
 
 	int                       m_staticTextWidth;
 };
-
-#endif // __propertyctrlex_h__

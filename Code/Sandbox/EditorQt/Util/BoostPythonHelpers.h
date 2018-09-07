@@ -680,9 +680,6 @@ bool        GetAsBool(const char* varName);
 // Registers all necessary python classes into the CryClasses module.
 void InitCppClasses();
 
-// Import all python exception types for later error handling.
-void InitCppExceptions();
-
 // Object Creation functions for External Use Only.
 pPyGameObject      CreatePyGameObject(CBaseObject* pObj);
 pPyGameLayer       CreatePyGameLayer(CObjectLayer* pLayer);

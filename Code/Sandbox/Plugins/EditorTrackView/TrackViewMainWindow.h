@@ -1,8 +1,5 @@
 // Copyright 2001-2018 Crytek GmbH / Crytek Group. All rights reserved.
 
-// CryEngine Header File.
-// Copyright (C), Crytek, 1999-2014.
-
 #pragma once
 
 //#include "ui_MainWindow.h"
@@ -67,7 +64,7 @@ public:
 
 	//////////////////////////////////////////////////////////
 	// CDockableWindow implementation
-	virtual const char*                       GetPaneTitle() const override        { return "Track View"; };
+	virtual const char*                       GetPaneTitle() const override        { return "Track View"; }
 	virtual IViewPaneClass::EDockingDirection GetDockingDirection() const override { return IViewPaneClass::DOCK_BOTTOM; }
 	//////////////////////////////////////////////////////////
 
