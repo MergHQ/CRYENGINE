@@ -86,7 +86,7 @@ int CPropagationProcessor::OnObstructionTest(EventPhys const* pEvent)
 		if (pRayInfo != nullptr)
 		{
 			pRayInfo->numHits = std::min(static_cast<size_t>(pRWIResult->nHits) + 1, s_maxRayHits);
-			SAudioObjectRequestData<EAudioObjectRequestType::ProcessPhysicsRay> requestData(pRayInfo);
+			SObjectRequestData<EObjectRequestType::ProcessPhysicsRay> requestData(pRayInfo);
 			CAudioRequest request(&requestData);
 			request.pObject = pRayInfo->pObject;
 			g_system.PushRequest(request);

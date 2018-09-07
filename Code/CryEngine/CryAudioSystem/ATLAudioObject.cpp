@@ -78,7 +78,7 @@ void CATLAudioObject::AddStandaloneFile(CATLStandaloneFile* const pStandaloneFil
 //////////////////////////////////////////////////////////////////////////
 void CATLAudioObject::SendFinishedTriggerInstanceRequest(SAudioTriggerInstanceState const& audioTriggerInstanceState)
 {
-	SAudioCallbackManagerRequestData<EAudioCallbackManagerRequestType::ReportFinishedTriggerInstance> requestData(audioTriggerInstanceState.triggerId);
+	SCallbackManagerRequestData<ECallbackManagerRequestType::ReportFinishedTriggerInstance> requestData(audioTriggerInstanceState.triggerId);
 	CAudioRequest request(&requestData);
 	request.pObject = this;
 	request.pOwner = audioTriggerInstanceState.pOwnerOverride;
@@ -315,7 +315,7 @@ void CATLAudioObject::ReportFinishedTriggerInstance(ObjectTriggerStates::iterato
 }
 
 //////////////////////////////////////////////////////////////////////////
-void CATLAudioObject::PushRequest(SAudioRequestData const& requestData, SRequestUserData const& userData)
+void CATLAudioObject::PushRequest(SRequestData const& requestData, SRequestUserData const& userData)
 {
 	CAudioRequest const request(userData.flags, this, userData.pOwner, userData.pUserData, userData.pUserDataOwner, &requestData);
 	g_system.PushRequest(request);
@@ -401,19 +401,19 @@ void CATLAudioObject::HandleStopFile(char const* const szFile)
 		if (pFile != nullptr && pFile->m_hashedFilename == hashedFilename)
 		{
 #if defined(INCLUDE_AUDIO_PRODUCTION_CODE)
-			if (pFile->m_state != EAudioStandaloneFileState::Playing)
+			if (pFile->m_state != EStandaloneFileState::Playing)
 			{
 				char const* szState = "unknown";
 
 				switch (pFile->m_state)
 				{
-				case EAudioStandaloneFileState::Playing:
+				case EStandaloneFileState::Playing:
 					szState = "playing";
 					break;
-				case EAudioStandaloneFileState::Loading:
+				case EStandaloneFileState::Loading:
 					szState = "loading";
 					break;
-				case EAudioStandaloneFileState::Stopping:
+				case EStandaloneFileState::Stopping:
 					szState = "stopping";
 					break;
 				default:
@@ -438,7 +438,7 @@ void CATLAudioObject::HandleStopFile(char const* const szFile)
 			}
 			else
 			{
-				pFile->m_state = EAudioStandaloneFileState::Stopping;
+				pFile->m_state = EStandaloneFileState::Stopping;
 			}
 		}
 
@@ -1064,7 +1064,7 @@ void CATLAudioObject::ForceImplementationRefresh(bool const setTransformation)
 
 		if (pFile != nullptr)
 		{
-			CRY_ASSERT_MESSAGE(pFile->m_state == EAudioStandaloneFileState::Playing, "Standalone file must be in playing state during CATLAudioObject::ForceImplementationRefresh!");
+			CRY_ASSERT_MESSAGE(pFile->m_state == EStandaloneFileState::Playing, "Standalone file must be in playing state during CATLAudioObject::ForceImplementationRefresh!");
 			CRY_ASSERT_MESSAGE(pFile->m_pAudioObject == this, "Standalone file played on wrong object during CATLAudioObject::ForceImplementationRefresh!");
 
 			auto const* const pTrigger = stl::find_in_map(g_triggers, pFile->m_triggerId, nullptr);
@@ -1106,7 +1106,7 @@ void CATLAudioObject::StoreEnvironmentValue(ControlId const id, float const valu
 //////////////////////////////////////////////////////////////////////////
 void CATLAudioObject::ExecuteTrigger(ControlId const triggerId, SRequestUserData const& userData /* = SAudioRequestUserData::GetEmptyObject() */)
 {
-	SAudioObjectRequestData<EAudioObjectRequestType::ExecuteTrigger> requestData(triggerId);
+	SObjectRequestData<EObjectRequestType::ExecuteTrigger> requestData(triggerId);
 	PushRequest(requestData, userData);
 }
 
@@ -1115,12 +1115,12 @@ void CATLAudioObject::StopTrigger(ControlId const triggerId /* = CryAudio::Inval
 {
 	if (triggerId != InvalidControlId)
 	{
-		SAudioObjectRequestData<EAudioObjectRequestType::StopTrigger> requestData(triggerId);
+		SObjectRequestData<EObjectRequestType::StopTrigger> requestData(triggerId);
 		PushRequest(requestData, userData);
 	}
 	else
 	{
-		SAudioObjectRequestData<EAudioObjectRequestType::StopAllTriggers> requestData;
+		SObjectRequestData<EObjectRequestType::StopAllTriggers> requestData;
 		PushRequest(requestData, userData);
 	}
 }
@@ -1128,35 +1128,35 @@ void CATLAudioObject::StopTrigger(ControlId const triggerId /* = CryAudio::Inval
 //////////////////////////////////////////////////////////////////////////
 void CATLAudioObject::SetTransformation(CObjectTransformation const& transformation, SRequestUserData const& userData /* = SAudioRequestUserData::GetEmptyObject() */)
 {
-	SAudioObjectRequestData<EAudioObjectRequestType::SetTransformation> requestData(transformation);
+	SObjectRequestData<EObjectRequestType::SetTransformation> requestData(transformation);
 	PushRequest(requestData, userData);
 }
 
 //////////////////////////////////////////////////////////////////////////
 void CATLAudioObject::SetParameter(ControlId const parameterId, float const value, SRequestUserData const& userData /* = SAudioRequestUserData::GetEmptyObject() */)
 {
-	SAudioObjectRequestData<EAudioObjectRequestType::SetParameter> requestData(parameterId, value);
+	SObjectRequestData<EObjectRequestType::SetParameter> requestData(parameterId, value);
 	PushRequest(requestData, userData);
 }
 
 //////////////////////////////////////////////////////////////////////////
 void CATLAudioObject::SetSwitchState(ControlId const audioSwitchId, SwitchStateId const audioSwitchStateId, SRequestUserData const& userData /* = SAudioRequestUserData::GetEmptyObject() */)
 {
-	SAudioObjectRequestData<EAudioObjectRequestType::SetSwitchState> requestData(audioSwitchId, audioSwitchStateId);
+	SObjectRequestData<EObjectRequestType::SetSwitchState> requestData(audioSwitchId, audioSwitchStateId);
 	PushRequest(requestData, userData);
 }
 
 //////////////////////////////////////////////////////////////////////////
 void CATLAudioObject::SetEnvironment(EnvironmentId const audioEnvironmentId, float const amount, SRequestUserData const& userData /* = SAudioRequestUserData::GetEmptyObject() */)
 {
-	SAudioObjectRequestData<EAudioObjectRequestType::SetEnvironment> requestData(audioEnvironmentId, amount);
+	SObjectRequestData<EObjectRequestType::SetEnvironment> requestData(audioEnvironmentId, amount);
 	PushRequest(requestData, userData);
 }
 
 //////////////////////////////////////////////////////////////////////////
 void CATLAudioObject::SetCurrentEnvironments(EntityId const entityToIgnore, SRequestUserData const& userData /* = SAudioRequestUserData::GetEmptyObject() */)
 {
-	SAudioObjectRequestData<EAudioObjectRequestType::SetCurrentEnvironments> requestData(entityToIgnore);
+	SObjectRequestData<EObjectRequestType::SetCurrentEnvironments> requestData(entityToIgnore);
 	PushRequest(requestData, userData);
 }
 
@@ -1165,7 +1165,7 @@ void CATLAudioObject::SetOcclusionType(EOcclusionType const occlusionType, SRequ
 {
 	if (occlusionType < EOcclusionType::Count)
 	{
-		SAudioObjectRequestData<EAudioObjectRequestType::SetOcclusionType> requestData(occlusionType);
+		SObjectRequestData<EObjectRequestType::SetOcclusionType> requestData(occlusionType);
 		PushRequest(requestData, userData);
 	}
 }
@@ -1173,35 +1173,35 @@ void CATLAudioObject::SetOcclusionType(EOcclusionType const occlusionType, SRequ
 //////////////////////////////////////////////////////////////////////////
 void CATLAudioObject::PlayFile(SPlayFileInfo const& playFileInfo, SRequestUserData const& userData /* = SAudioRequestUserData::GetEmptyObject() */)
 {
-	SAudioObjectRequestData<EAudioObjectRequestType::PlayFile> requestData(playFileInfo.szFile, playFileInfo.usedTriggerForPlayback, playFileInfo.bLocalized);
+	SObjectRequestData<EObjectRequestType::PlayFile> requestData(playFileInfo.szFile, playFileInfo.usedTriggerForPlayback, playFileInfo.bLocalized);
 	PushRequest(requestData, userData);
 }
 
 //////////////////////////////////////////////////////////////////////////
 void CATLAudioObject::StopFile(char const* const szFile, SRequestUserData const& userData /* = SAudioRequestUserData::GetEmptyObject() */)
 {
-	SAudioObjectRequestData<EAudioObjectRequestType::StopFile> requestData(szFile);
+	SObjectRequestData<EObjectRequestType::StopFile> requestData(szFile);
 	PushRequest(requestData, userData);
 }
 
 //////////////////////////////////////////////////////////////////////////
 void CATLAudioObject::SetName(char const* const szName, SRequestUserData const& userData /* = SAudioRequestUserData::GetEmptyObject() */)
 {
-	SAudioObjectRequestData<EAudioObjectRequestType::SetName> requestData(szName);
+	SObjectRequestData<EObjectRequestType::SetName> requestData(szName);
 	PushRequest(requestData, userData);
 }
 
 //////////////////////////////////////////////////////////////////////////
 void CATLAudioObject::ToggleAbsoluteVelocityTracking(bool const enable, SRequestUserData const& userData /* = SAudioRequestUserData::GetEmptyObject() */)
 {
-	SAudioObjectRequestData<EAudioObjectRequestType::ToggleAbsoluteVelocityTracking> requestData(enable);
+	SObjectRequestData<EObjectRequestType::ToggleAbsoluteVelocityTracking> requestData(enable);
 	PushRequest(requestData, userData);
 }
 
 //////////////////////////////////////////////////////////////////////////
 void CATLAudioObject::ToggleRelativeVelocityTracking(bool const enable, SRequestUserData const& userData /* = SAudioRequestUserData::GetEmptyObject() */)
 {
-	SAudioObjectRequestData<EAudioObjectRequestType::ToggleRelativeVelocityTracking> requestData(enable);
+	SObjectRequestData<EObjectRequestType::ToggleRelativeVelocityTracking> requestData(enable);
 	PushRequest(requestData, userData);
 }
 

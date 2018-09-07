@@ -147,7 +147,7 @@ private:
 	// ~CryAudio::IObject
 
 	void ReportFinishedTriggerInstance(ObjectTriggerStates::iterator const& iter);
-	void PushRequest(SAudioRequestData const& requestData, SRequestUserData const& userData);
+	void PushRequest(SRequestData const& requestData, SRequestUserData const& userData);
 	bool HasActiveData(CATLAudioObject const* const pAudioObject) const;
 	bool ExecuteDefaultTrigger(ControlId const id);
 

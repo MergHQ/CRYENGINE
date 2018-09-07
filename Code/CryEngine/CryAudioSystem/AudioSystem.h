@@ -126,7 +126,7 @@ private:
 	ERequestStatus ProcessManagerRequest(CAudioRequest const& request);
 	ERequestStatus ProcessCallbackManagerRequest(CAudioRequest& request);
 	ERequestStatus ProcessObjectRequest(CAudioRequest const& request);
-	ERequestStatus ProcessListenerRequest(SAudioRequestData const* const pPassedRequestData);
+	ERequestStatus ProcessListenerRequest(SRequestData const* const pPassedRequestData);
 	void           NotifyListener(CAudioRequest const& request);
 	ERequestStatus HandleSetImpl(Impl::IImpl* const pIImpl);
 	ERequestStatus HandleRefresh(char const* const szLevelName);
