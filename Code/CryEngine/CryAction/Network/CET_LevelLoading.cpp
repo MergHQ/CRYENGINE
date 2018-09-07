@@ -68,7 +68,7 @@ public:
 		CCryAction* pAction = CCryAction::GetCryAction();
 
 		pAction->StartNetworkStallTicker(true);
-		GetISystem()->GetISystemEventDispatcher()->OnSystemEvent(ESYSTEM_EVENT_LEVEL_LOAD_START, (UINT_PTR)(levelName.c_str()), 0);
+		GetISystem()->GetISystemEventDispatcher()->OnSystemEvent(ESYSTEM_EVENT_LEVEL_LOAD_START, reinterpret_cast<UINT_PTR>(levelName.c_str()), 0);
 		pILevel = pAction->GetILevelSystem()->LoadLevel(levelName);
 		GetISystem()->GetISystemEventDispatcher()->OnSystemEvent(ESYSTEM_EVENT_LEVEL_LOAD_END, 0, 0);
 		pAction->StopNetworkStallTicker();
@@ -154,7 +154,7 @@ public:
 			} 
 
 			pAction->StartNetworkStallTicker(true);
-			GetISystem()->GetISystemEventDispatcher()->OnSystemEvent(ESYSTEM_EVENT_LEVEL_LOAD_START, (UINT_PTR)(levelName.c_str()), 0);
+			GetISystem()->GetISystemEventDispatcher()->OnSystemEvent(ESYSTEM_EVENT_LEVEL_LOAD_START, reinterpret_cast<UINT_PTR>(levelName.c_str()), 0);
 
 			ILevelSystem* pLevelSystem = pAction->GetILevelSystem();
 			m_pLevelLoadingThread = new CLevelLoadingThread(pLevelSystem, levelName.c_str());
