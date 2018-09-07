@@ -18,7 +18,7 @@ public:
 	CAudioEventListenerManager& operator=(CAudioEventListenerManager const&) = delete;
 	CAudioEventListenerManager& operator=(CAudioEventListenerManager&&) = delete;
 
-	ERequestStatus              AddRequestListener(SAudioManagerRequestData<EAudioManagerRequestType::AddRequestListener> const* const pRequestData);
+	ERequestStatus              AddRequestListener(SManagerRequestData<EManagerRequestType::AddRequestListener> const* const pRequestData);
 	ERequestStatus              RemoveRequestListener(void (* func)(SRequestInfo const* const), void const* const pObjectToListenTo);
 	void                        NotifyListener(SRequestInfo const* const pRequestInfo);
 
@@ -28,7 +28,20 @@ public:
 
 private:
 
-	using ListenerArray = std::vector<SAudioEventListener>;
+	struct SEventListener
+	{
+		SEventListener()
+			: pObjectToListenTo(nullptr)
+			, OnEvent(nullptr)
+			, eventMask(ESystemEvents::None)
+		{}
+
+		void const*   pObjectToListenTo;
+		void          (* OnEvent)(SRequestInfo const* const);
+		ESystemEvents eventMask;
+	};
+
+	using ListenerArray = std::vector<SEventListener>;
 	ListenerArray m_listeners;
 };
 } // namespace CryAudio

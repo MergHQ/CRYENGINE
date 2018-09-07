@@ -98,7 +98,7 @@ void ExecuteDefaultTriggerConnections(Control const* const pControl, TriggerConn
 //////////////////////////////////////////////////////////////////////////
 void CATLListener::SetTransformation(CObjectTransformation const& transformation, SRequestUserData const& userData /* = SAudioRequestUserData::GetEmptyObject() */)
 {
-	SAudioListenerRequestData<EAudioListenerRequestType::SetTransformation> requestData(transformation, this);
+	SListenerRequestData<EListenerRequestType::SetTransformation> requestData(transformation, this);
 	CAudioRequest request(&requestData);
 	request.flags = userData.flags;
 	request.pOwner = userData.pOwner;
@@ -126,7 +126,7 @@ void CATLListener::HandleSetTransformation(CObjectTransformation const& transfor
 //////////////////////////////////////////////////////////////////////////
 void CATLListener::SetName(char const* const szName, SRequestUserData const& userData /*= SRequestUserData::GetEmptyObject()*/)
 {
-	SAudioListenerRequestData<EAudioListenerRequestType::SetName> requestData(szName, this);
+	SListenerRequestData<EListenerRequestType::SetName> requestData(szName, this);
 	CAudioRequest request(&requestData);
 	request.flags = userData.flags;
 	request.pOwner = userData.pOwner;
@@ -491,11 +491,11 @@ void CTrigger::PlayFile(
 		{
 			if (status == ERequestStatus::Success)
 			{
-				pFile->m_state = EAudioStandaloneFileState::Playing;
+				pFile->m_state = EStandaloneFileState::Playing;
 			}
 			else if (status == ERequestStatus::Pending)
 			{
-				pFile->m_state = EAudioStandaloneFileState::Loading;
+				pFile->m_state = EStandaloneFileState::Loading;
 			}
 
 			pFile->m_pAudioObject = &object;
@@ -533,11 +533,11 @@ void CTrigger::PlayFile(CATLAudioObject& object, CATLStandaloneFile* const pFile
 		{
 			if (status == ERequestStatus::Success)
 			{
-				pFile->m_state = EAudioStandaloneFileState::Playing;
+				pFile->m_state = EStandaloneFileState::Playing;
 			}
 			else if (status == ERequestStatus::Pending)
 			{
-				pFile->m_state = EAudioStandaloneFileState::Loading;
+				pFile->m_state = EStandaloneFileState::Loading;
 			}
 		}
 		else

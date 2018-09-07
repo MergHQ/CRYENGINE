@@ -1,10 +1,13 @@
 // Copyright 2001-2018 Crytek GmbH / Crytek Group. All rights reserved.
 
 #include "stdafx.h"
-#include "AudioEvent.h"
-#include "AudioObject.h"
-#include "AudioImplCVars.h"
-#include "ATLEntities.h"
+#include "Event.h"
+#include "BaseObject.h"
+#include "CVars.h"
+#include "EnvironmentBus.h"
+#include "EnvironmentParameter.h"
+#include "Trigger.h"
+#include <SharedAudioData.h>
 
 namespace CryAudio
 {
@@ -12,8 +15,6 @@ namespace Impl
 {
 namespace Fmod
 {
-extern TriggerToParameterIndexes g_triggerToParameterIndexes;
-
 //////////////////////////////////////////////////////////////////////////
 CEvent::CEvent(CATLEvent* const pEvent)
 	: m_pEvent(pEvent)

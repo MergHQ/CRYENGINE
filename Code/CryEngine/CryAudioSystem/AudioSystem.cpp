@@ -85,7 +85,7 @@ CSystem::~CSystem()
 //////////////////////////////////////////////////////////////////////////
 void CSystem::AddRequestListener(void (*func)(SRequestInfo const* const), void* const pObjectToListenTo, ESystemEvents const eventMask)
 {
-	SAudioManagerRequestData<EAudioManagerRequestType::AddRequestListener> const requestData(pObjectToListenTo, func, eventMask);
+	SManagerRequestData<EManagerRequestType::AddRequestListener> const requestData(pObjectToListenTo, func, eventMask);
 	CAudioRequest request(&requestData);
 	request.flags = ERequestFlags::ExecuteBlocking;
 	request.pOwner = pObjectToListenTo; // This makes sure that the listener is notified.
@@ -95,7 +95,7 @@ void CSystem::AddRequestListener(void (*func)(SRequestInfo const* const), void* 
 //////////////////////////////////////////////////////////////////////////
 void CSystem::RemoveRequestListener(void (*func)(SRequestInfo const* const), void* const pObjectToListenTo)
 {
-	SAudioManagerRequestData<EAudioManagerRequestType::RemoveRequestListener> const requestData(pObjectToListenTo, func);
+	SManagerRequestData<EManagerRequestType::RemoveRequestListener> const requestData(pObjectToListenTo, func);
 	CAudioRequest request(&requestData);
 	request.flags = ERequestFlags::ExecuteBlocking;
 	request.pOwner = pObjectToListenTo; // This makes sure that the listener is notified.
@@ -181,20 +181,20 @@ void CSystem::OnSystemEvent(ESystemEvent event, UINT_PTR wparam, UINT_PTR lparam
 				audioLevelPath += "/";
 				audioLevelPath += levelNameOnly;
 
-				SAudioManagerRequestData<EAudioManagerRequestType::ParseControlsData> const requestData1(audioLevelPath, EDataScope::LevelSpecific);
+				SManagerRequestData<EManagerRequestType::ParseControlsData> const requestData1(audioLevelPath, EDataScope::LevelSpecific);
 				CAudioRequest const request1(&requestData1);
 				PushRequest(request1);
 
-				SAudioManagerRequestData<EAudioManagerRequestType::ParsePreloadsData> const requestData2(audioLevelPath, EDataScope::LevelSpecific);
+				SManagerRequestData<EManagerRequestType::ParsePreloadsData> const requestData2(audioLevelPath, EDataScope::LevelSpecific);
 				CAudioRequest const request2(&requestData2);
 				PushRequest(request2);
 
 				PreloadRequestId const preloadRequestId = StringToId(levelNameOnly.c_str());
-				SAudioManagerRequestData<EAudioManagerRequestType::PreloadSingleRequest> const requestData3(preloadRequestId, true);
+				SManagerRequestData<EManagerRequestType::PreloadSingleRequest> const requestData3(preloadRequestId, true);
 				CAudioRequest const request3(&requestData3);
 				PushRequest(request3);
 
-				SAudioManagerRequestData<EAudioManagerRequestType::AutoLoadSetting> const requestData4(EDataScope::LevelSpecific);
+				SManagerRequestData<EManagerRequestType::AutoLoadSetting> const requestData4(EDataScope::LevelSpecific);
 				CAudioRequest const request4(&requestData4);
 				PushRequest(request4);
 			}
@@ -206,19 +206,19 @@ void CSystem::OnSystemEvent(ESystemEvent event, UINT_PTR wparam, UINT_PTR lparam
 			// This event is issued in Editor and Game mode.
 			CPropagationProcessor::s_bCanIssueRWIs = false;
 
-			SAudioManagerRequestData<EAudioManagerRequestType::ReleasePendingRays> const requestData1;
+			SManagerRequestData<EManagerRequestType::ReleasePendingRays> const requestData1;
 			CAudioRequest const request1(&requestData1);
 			PushRequest(request1);
 
-			SAudioManagerRequestData<EAudioManagerRequestType::UnloadAFCMDataByScope> const requestData2(EDataScope::LevelSpecific);
+			SManagerRequestData<EManagerRequestType::UnloadAFCMDataByScope> const requestData2(EDataScope::LevelSpecific);
 			CAudioRequest const request2(&requestData2);
 			PushRequest(request2);
 
-			SAudioManagerRequestData<EAudioManagerRequestType::ClearControlsData> const requestData3(EDataScope::LevelSpecific);
+			SManagerRequestData<EManagerRequestType::ClearControlsData> const requestData3(EDataScope::LevelSpecific);
 			CAudioRequest const request3(&requestData3);
 			PushRequest(request3);
 
-			SAudioManagerRequestData<EAudioManagerRequestType::ClearPreloadsData> const requestData4(EDataScope::LevelSpecific);
+			SManagerRequestData<EManagerRequestType::ClearPreloadsData> const requestData4(EDataScope::LevelSpecific);
 			CAudioRequest const request4(&requestData4);
 			PushRequest(request4);
 
@@ -458,7 +458,7 @@ void CSystem::Release()
 	{
 		RemoveRequestListener(&CSystem::OnCallback, nullptr);
 
-		SAudioManagerRequestData<EAudioManagerRequestType::ReleaseAudioImpl> const releaseImplData;
+		SManagerRequestData<EManagerRequestType::ReleaseAudioImpl> const releaseImplData;
 		CAudioRequest releaseImplRequest(&releaseImplData);
 		releaseImplRequest.flags = ERequestFlags::ExecuteBlocking;
 		PushRequest(releaseImplRequest);
@@ -498,7 +498,7 @@ void CSystem::Release()
 //////////////////////////////////////////////////////////////////////////
 void CSystem::SetImpl(Impl::IImpl* const pIImpl, SRequestUserData const& userData /*= SAudioRequestUserData::GetEmptyObject()*/)
 {
-	SAudioManagerRequestData<EAudioManagerRequestType::SetAudioImpl> const requestData(pIImpl);
+	SManagerRequestData<EManagerRequestType::SetAudioImpl> const requestData(pIImpl);
 	CAudioRequest request(&requestData);
 	request.flags = userData.flags;
 	request.pOwner = userData.pOwner;
@@ -510,7 +510,7 @@ void CSystem::SetImpl(Impl::IImpl* const pIImpl, SRequestUserData const& userDat
 //////////////////////////////////////////////////////////////////////////
 void CSystem::LoadTrigger(ControlId const triggerId, SRequestUserData const& userData /* = SAudioRequestUserData::GetEmptyObject() */)
 {
-	SAudioObjectRequestData<EAudioObjectRequestType::LoadTrigger> const requestData(triggerId);
+	SObjectRequestData<EObjectRequestType::LoadTrigger> const requestData(triggerId);
 	CAudioRequest request(&requestData);
 	request.flags = userData.flags;
 	request.pOwner = userData.pOwner;
@@ -522,7 +522,7 @@ void CSystem::LoadTrigger(ControlId const triggerId, SRequestUserData const& use
 //////////////////////////////////////////////////////////////////////////
 void CSystem::UnloadTrigger(ControlId const triggerId, SRequestUserData const& userData /* = SAudioRequestUserData::GetEmptyObject() */)
 {
-	SAudioObjectRequestData<EAudioObjectRequestType::UnloadTrigger> const requestData(triggerId);
+	SObjectRequestData<EObjectRequestType::UnloadTrigger> const requestData(triggerId);
 	CAudioRequest request(&requestData);
 	request.flags = userData.flags;
 	request.pOwner = userData.pOwner;
@@ -534,7 +534,7 @@ void CSystem::UnloadTrigger(ControlId const triggerId, SRequestUserData const& u
 //////////////////////////////////////////////////////////////////////////
 void CSystem::ExecuteTriggerEx(SExecuteTriggerData const& triggerData, SRequestUserData const& userData /* = SAudioRequestUserData::GetEmptyObject() */)
 {
-	SAudioObjectRequestData<EAudioObjectRequestType::ExecuteTriggerEx> const requestData(triggerData);
+	SObjectRequestData<EObjectRequestType::ExecuteTriggerEx> const requestData(triggerData);
 	CAudioRequest request(&requestData);
 	request.flags = userData.flags;
 	request.pOwner = userData.pOwner;
@@ -546,7 +546,7 @@ void CSystem::ExecuteTriggerEx(SExecuteTriggerData const& triggerData, SRequestU
 //////////////////////////////////////////////////////////////////////////
 void CSystem::ExecuteTrigger(ControlId const triggerId, SRequestUserData const& userData /* = SAudioRequestUserData::GetEmptyObject() */)
 {
-	SAudioObjectRequestData<EAudioObjectRequestType::ExecuteTrigger> const requestData(triggerId);
+	SObjectRequestData<EObjectRequestType::ExecuteTrigger> const requestData(triggerId);
 	CAudioRequest request(&requestData);
 	request.flags = userData.flags;
 	request.pOwner = userData.pOwner;
@@ -560,7 +560,7 @@ void CSystem::StopTrigger(ControlId const triggerId /* = CryAudio::InvalidContro
 {
 	if (triggerId != InvalidControlId)
 	{
-		SAudioObjectRequestData<EAudioObjectRequestType::StopTrigger> const requestData(triggerId);
+		SObjectRequestData<EObjectRequestType::StopTrigger> const requestData(triggerId);
 		CAudioRequest request(&requestData);
 		request.flags = userData.flags;
 		request.pOwner = userData.pOwner;
@@ -570,7 +570,7 @@ void CSystem::StopTrigger(ControlId const triggerId /* = CryAudio::InvalidContro
 	}
 	else
 	{
-		SAudioObjectRequestData<EAudioObjectRequestType::StopAllTriggers> const requestData;
+		SObjectRequestData<EObjectRequestType::StopAllTriggers> const requestData;
 		CAudioRequest request(&requestData);
 		request.flags = userData.flags;
 		request.pOwner = userData.pOwner;
@@ -583,7 +583,7 @@ void CSystem::StopTrigger(ControlId const triggerId /* = CryAudio::InvalidContro
 //////////////////////////////////////////////////////////////////////////
 void CSystem::SetParameter(ControlId const parameterId, float const value, SRequestUserData const& userData /* = SAudioRequestUserData::GetEmptyObject() */)
 {
-	SAudioObjectRequestData<EAudioObjectRequestType::SetParameter> const requestData(parameterId, value);
+	SObjectRequestData<EObjectRequestType::SetParameter> const requestData(parameterId, value);
 	CAudioRequest request(&requestData);
 	request.flags = userData.flags;
 	request.pOwner = userData.pOwner;
@@ -595,7 +595,7 @@ void CSystem::SetParameter(ControlId const parameterId, float const value, SRequ
 //////////////////////////////////////////////////////////////////////////
 void CSystem::SetSwitchState(ControlId const switchId, SwitchStateId const switchStateId, SRequestUserData const& userData /*= SRequestUserData::GetEmptyObject()*/)
 {
-	SAudioObjectRequestData<EAudioObjectRequestType::SetSwitchState> const requestData(switchId, switchStateId);
+	SObjectRequestData<EObjectRequestType::SetSwitchState> const requestData(switchId, switchStateId);
 	CAudioRequest request(&requestData);
 	request.flags = userData.flags;
 	request.pOwner = userData.pOwner;
@@ -607,7 +607,7 @@ void CSystem::SetSwitchState(ControlId const switchId, SwitchStateId const switc
 //////////////////////////////////////////////////////////////////////////
 void CSystem::PlayFile(SPlayFileInfo const& playFileInfo, SRequestUserData const& userData /* = SAudioRequestUserData::GetEmptyObject() */)
 {
-	SAudioObjectRequestData<EAudioObjectRequestType::PlayFile> const requestData(playFileInfo.szFile, playFileInfo.usedTriggerForPlayback, playFileInfo.bLocalized);
+	SObjectRequestData<EObjectRequestType::PlayFile> const requestData(playFileInfo.szFile, playFileInfo.usedTriggerForPlayback, playFileInfo.bLocalized);
 	CAudioRequest request(&requestData);
 	request.flags = userData.flags;
 	request.pOwner = (userData.pOwner != nullptr) ? userData.pOwner : &g_system;
@@ -619,7 +619,7 @@ void CSystem::PlayFile(SPlayFileInfo const& playFileInfo, SRequestUserData const
 //////////////////////////////////////////////////////////////////////////
 void CSystem::StopFile(char const* const szName, SRequestUserData const& userData /*= SRequestUserData::GetEmptyObject()*/)
 {
-	SAudioObjectRequestData<EAudioObjectRequestType::StopFile> const requestData(szName);
+	SObjectRequestData<EObjectRequestType::StopFile> const requestData(szName);
 	CAudioRequest request(&requestData);
 	request.flags = userData.flags;
 	request.pOwner = userData.pOwner;
@@ -634,7 +634,7 @@ void CSystem::ReportStartedFile(
 	bool const bSuccessfullyStarted,
 	SRequestUserData const& userData /*= SRequestUserData::GetEmptyObject()*/)
 {
-	SAudioCallbackManagerRequestData<EAudioCallbackManagerRequestType::ReportStartedFile> const requestData(standaloneFile, bSuccessfullyStarted);
+	SCallbackManagerRequestData<ECallbackManagerRequestType::ReportStartedFile> const requestData(standaloneFile, bSuccessfullyStarted);
 	CAudioRequest request(&requestData);
 	request.flags = userData.flags;
 	request.pOwner = userData.pOwner;
@@ -646,7 +646,7 @@ void CSystem::ReportStartedFile(
 //////////////////////////////////////////////////////////////////////////
 void CSystem::ReportStoppedFile(CATLStandaloneFile& standaloneFile, SRequestUserData const& userData /* = SAudioRequestUserData::GetEmptyObject() */)
 {
-	SAudioCallbackManagerRequestData<EAudioCallbackManagerRequestType::ReportStoppedFile> const requestData(standaloneFile);
+	SCallbackManagerRequestData<ECallbackManagerRequestType::ReportStoppedFile> const requestData(standaloneFile);
 	CAudioRequest request(&requestData);
 	request.flags = userData.flags;
 	request.pOwner = userData.pOwner;
@@ -661,7 +661,7 @@ void CSystem::ReportFinishedEvent(
 	bool const bSuccess,
 	SRequestUserData const& userData /*= SRequestUserData::GetEmptyObject()*/)
 {
-	SAudioCallbackManagerRequestData<EAudioCallbackManagerRequestType::ReportFinishedEvent> const requestData(event, bSuccess);
+	SCallbackManagerRequestData<ECallbackManagerRequestType::ReportFinishedEvent> const requestData(event, bSuccess);
 	CAudioRequest request(&requestData);
 	request.flags = userData.flags;
 	request.pOwner = userData.pOwner;
@@ -673,7 +673,7 @@ void CSystem::ReportFinishedEvent(
 //////////////////////////////////////////////////////////////////////////
 void CSystem::ReportVirtualizedEvent(CATLEvent& event, SRequestUserData const& userData /*= SRequestUserData::GetEmptyObject()*/)
 {
-	SAudioCallbackManagerRequestData<EAudioCallbackManagerRequestType::ReportVirtualizedEvent> const requestData(event);
+	SCallbackManagerRequestData<ECallbackManagerRequestType::ReportVirtualizedEvent> const requestData(event);
 	CAudioRequest request(&requestData);
 	request.flags = userData.flags;
 	request.pOwner = userData.pOwner;
@@ -685,7 +685,7 @@ void CSystem::ReportVirtualizedEvent(CATLEvent& event, SRequestUserData const& u
 //////////////////////////////////////////////////////////////////////////
 void CSystem::ReportPhysicalizedEvent(CATLEvent& event, SRequestUserData const& userData /*= SRequestUserData::GetEmptyObject()*/)
 {
-	SAudioCallbackManagerRequestData<EAudioCallbackManagerRequestType::ReportPhysicalizedEvent> const requestData(event);
+	SCallbackManagerRequestData<ECallbackManagerRequestType::ReportPhysicalizedEvent> const requestData(event);
 	CAudioRequest request(&requestData);
 	request.flags = userData.flags;
 	request.pOwner = userData.pOwner;
@@ -697,7 +697,7 @@ void CSystem::ReportPhysicalizedEvent(CATLEvent& event, SRequestUserData const& 
 //////////////////////////////////////////////////////////////////////////
 void CSystem::StopAllSounds(SRequestUserData const& userData /* = SAudioRequestUserData::GetEmptyObject() */)
 {
-	SAudioManagerRequestData<EAudioManagerRequestType::StopAllSounds> const requestData;
+	SManagerRequestData<EManagerRequestType::StopAllSounds> const requestData;
 	CAudioRequest request(&requestData);
 	request.flags = userData.flags;
 	request.pOwner = userData.pOwner;
@@ -709,7 +709,7 @@ void CSystem::StopAllSounds(SRequestUserData const& userData /* = SAudioRequestU
 //////////////////////////////////////////////////////////////////////////
 void CSystem::Refresh(char const* const szLevelName, SRequestUserData const& userData /* = SAudioRequestUserData::GetEmptyObject() */)
 {
-	SAudioManagerRequestData<EAudioManagerRequestType::RefreshAudioSystem> const requestData(szLevelName);
+	SManagerRequestData<EManagerRequestType::RefreshAudioSystem> const requestData(szLevelName);
 	CAudioRequest request(&requestData);
 	request.flags = userData.flags;
 	request.pOwner = userData.pOwner;
@@ -724,7 +724,7 @@ void CSystem::ParseControlsData(
 	EDataScope const dataScope,
 	SRequestUserData const& userData /* = SAudioRequestUserData::GetEmptyObject() */)
 {
-	SAudioManagerRequestData<EAudioManagerRequestType::ParseControlsData> const requestData(szFolderPath, dataScope);
+	SManagerRequestData<EManagerRequestType::ParseControlsData> const requestData(szFolderPath, dataScope);
 	CAudioRequest request(&requestData);
 	request.flags = userData.flags;
 	request.pOwner = userData.pOwner;
@@ -739,7 +739,7 @@ void CSystem::ParsePreloadsData(
 	EDataScope const dataScope,
 	SRequestUserData const& userData /* = SAudioRequestUserData::GetEmptyObject() */)
 {
-	SAudioManagerRequestData<EAudioManagerRequestType::ParsePreloadsData> const requestData(szFolderPath, dataScope);
+	SManagerRequestData<EManagerRequestType::ParsePreloadsData> const requestData(szFolderPath, dataScope);
 	CAudioRequest request(&requestData);
 	request.flags = userData.flags;
 	request.pOwner = userData.pOwner;
@@ -751,7 +751,7 @@ void CSystem::ParsePreloadsData(
 //////////////////////////////////////////////////////////////////////////
 void CSystem::PreloadSingleRequest(PreloadRequestId const id, bool const bAutoLoadOnly, SRequestUserData const& userData /*= SRequestUserData::GetEmptyObject()*/)
 {
-	SAudioManagerRequestData<EAudioManagerRequestType::PreloadSingleRequest> const requestData(id, bAutoLoadOnly);
+	SManagerRequestData<EManagerRequestType::PreloadSingleRequest> const requestData(id, bAutoLoadOnly);
 	CAudioRequest request(&requestData);
 	request.flags = userData.flags;
 	request.pOwner = userData.pOwner;
@@ -763,7 +763,7 @@ void CSystem::PreloadSingleRequest(PreloadRequestId const id, bool const bAutoLo
 //////////////////////////////////////////////////////////////////////////
 void CSystem::UnloadSingleRequest(PreloadRequestId const id, SRequestUserData const& userData /*= SRequestUserData::GetEmptyObject()*/)
 {
-	SAudioManagerRequestData<EAudioManagerRequestType::UnloadSingleRequest> const requestData(id);
+	SManagerRequestData<EManagerRequestType::UnloadSingleRequest> const requestData(id);
 	CAudioRequest request(&requestData);
 	request.flags = userData.flags;
 	request.pOwner = userData.pOwner;
@@ -775,7 +775,7 @@ void CSystem::UnloadSingleRequest(PreloadRequestId const id, SRequestUserData co
 //////////////////////////////////////////////////////////////////////////
 void CSystem::AutoLoadSetting(EDataScope const dataScope, SRequestUserData const& userData /*= SRequestUserData::GetEmptyObject()*/)
 {
-	SAudioManagerRequestData<EAudioManagerRequestType::AutoLoadSetting> const requestData(dataScope);
+	SManagerRequestData<EManagerRequestType::AutoLoadSetting> const requestData(dataScope);
 	CAudioRequest request(&requestData);
 	request.flags = userData.flags;
 	request.pOwner = userData.pOwner;
@@ -787,7 +787,7 @@ void CSystem::AutoLoadSetting(EDataScope const dataScope, SRequestUserData const
 //////////////////////////////////////////////////////////////////////////
 void CSystem::LoadSetting(ControlId const id, SRequestUserData const& userData /*= SRequestUserData::GetEmptyObject()*/)
 {
-	SAudioManagerRequestData<EAudioManagerRequestType::LoadSetting> const requestData(id);
+	SManagerRequestData<EManagerRequestType::LoadSetting> const requestData(id);
 	CAudioRequest request(&requestData);
 	request.flags = userData.flags;
 	request.pOwner = userData.pOwner;
@@ -799,7 +799,7 @@ void CSystem::LoadSetting(ControlId const id, SRequestUserData const& userData /
 //////////////////////////////////////////////////////////////////////////
 void CSystem::UnloadSetting(ControlId const id, SRequestUserData const& userData /*= SRequestUserData::GetEmptyObject()*/)
 {
-	SAudioManagerRequestData<EAudioManagerRequestType::UnloadSetting> const requestData(id);
+	SManagerRequestData<EManagerRequestType::UnloadSetting> const requestData(id);
 	CAudioRequest request(&requestData);
 	request.flags = userData.flags;
 	request.pOwner = userData.pOwner;
@@ -811,7 +811,7 @@ void CSystem::UnloadSetting(ControlId const id, SRequestUserData const& userData
 //////////////////////////////////////////////////////////////////////////
 void CSystem::RetriggerAudioControls(SRequestUserData const& userData /* = SAudioRequestUserData::GetEmptyObject() */)
 {
-	SAudioManagerRequestData<EAudioManagerRequestType::RetriggerAudioControls> const requestData;
+	SManagerRequestData<EManagerRequestType::RetriggerAudioControls> const requestData;
 	CAudioRequest request(&requestData);
 	request.flags = userData.flags;
 	request.pOwner = userData.pOwner;
@@ -826,7 +826,7 @@ void CSystem::ReloadControlsData(
 	char const* const szLevelName,
 	SRequestUserData const& userData /* = SAudioRequestUserData::GetEmptyObject() */)
 {
-	SAudioManagerRequestData<EAudioManagerRequestType::ReloadControlsData> const requestData(szFolderPath, szLevelName);
+	SManagerRequestData<EManagerRequestType::ReloadControlsData> const requestData(szFolderPath, szLevelName);
 	CAudioRequest request(&requestData);
 	request.flags = userData.flags;
 	request.pOwner = userData.pOwner;
@@ -845,7 +845,7 @@ char const* CSystem::GetConfigPath() const
 CryAudio::IListener* CSystem::CreateListener(CObjectTransformation const& transformation, char const* const szName /*= nullptr*/)
 {
 	CATLListener* pListener = nullptr;
-	SAudioListenerRequestData<EAudioListenerRequestType::RegisterListener> const requestData(&pListener, transformation, szName);
+	SListenerRequestData<EListenerRequestType::RegisterListener> const requestData(&pListener, transformation, szName);
 	CAudioRequest request(&requestData);
 	request.flags = ERequestFlags::ExecuteBlocking;
 	PushRequest(request);
@@ -856,7 +856,7 @@ CryAudio::IListener* CSystem::CreateListener(CObjectTransformation const& transf
 ///////////////////////////////////////////////////////////////////////////
 void CSystem::ReleaseListener(CryAudio::IListener* const pIListener)
 {
-	SAudioListenerRequestData<EAudioListenerRequestType::ReleaseListener> const requestData(static_cast<CATLListener*>(pIListener));
+	SListenerRequestData<EListenerRequestType::ReleaseListener> const requestData(static_cast<CATLListener*>(pIListener));
 	CAudioRequest const request(&requestData);
 	PushRequest(request);
 }
@@ -865,7 +865,7 @@ void CSystem::ReleaseListener(CryAudio::IListener* const pIListener)
 CryAudio::IObject* CSystem::CreateObject(SCreateObjectData const& objectData /*= SCreateObjectData::GetEmptyObject()*/, SRequestUserData const& userData /*= SRequestUserData::GetEmptyObject()*/)
 {
 	CATLAudioObject* const pObject = new CATLAudioObject(objectData.transformation);
-	SAudioObjectRequestData<EAudioObjectRequestType::RegisterObject> const requestData(objectData);
+	SObjectRequestData<EObjectRequestType::RegisterObject> const requestData(objectData);
 	CAudioRequest request(&requestData);
 	request.flags = userData.flags;
 	request.pObject = pObject;
@@ -879,7 +879,7 @@ CryAudio::IObject* CSystem::CreateObject(SCreateObjectData const& objectData /*=
 //////////////////////////////////////////////////////////////////////////
 void CSystem::ReleaseObject(CryAudio::IObject* const pIObject)
 {
-	SAudioObjectRequestData<EAudioObjectRequestType::ReleaseObject> const requestData;
+	SObjectRequestData<EObjectRequestType::ReleaseObject> const requestData;
 	CAudioRequest request(&requestData);
 	request.pObject = static_cast<CATLAudioObject*>(pIObject);
 	PushRequest(request);
@@ -889,7 +889,7 @@ void CSystem::ReleaseObject(CryAudio::IObject* const pIObject)
 void CSystem::GetFileData(char const* const szName, SFileData& fileData)
 {
 #if defined(INCLUDE_AUDIO_PRODUCTION_CODE)
-	SAudioManagerRequestData<EAudioManagerRequestType::GetAudioFileData> const requestData(szName, fileData);
+	SManagerRequestData<EManagerRequestType::GetAudioFileData> const requestData(szName, fileData);
 	CAudioRequest request(&requestData);
 	request.flags = ERequestFlags::ExecuteBlocking;
 	PushRequest(request);
@@ -945,7 +945,7 @@ void CSystem::ReleaseImpl()
 //////////////////////////////////////////////////////////////////////////
 void CSystem::OnLanguageChanged()
 {
-	SAudioManagerRequestData<EAudioManagerRequestType::ChangeLanguage> const requestData;
+	SManagerRequestData<EManagerRequestType::ChangeLanguage> const requestData;
 	CAudioRequest const request(&requestData);
 	PushRequest(request);
 }
@@ -1073,27 +1073,27 @@ void CSystem::ProcessRequest(CAudioRequest& request)
 
 	if (request.GetData())
 	{
-		switch (request.GetData()->type)
+		switch (request.GetData()->requestType)
 		{
-		case EAudioRequestType::AudioObjectRequest:
+		case ERequestType::ObjectRequest:
 			{
 				result = ProcessObjectRequest(request);
 
 				break;
 			}
-		case EAudioRequestType::AudioListenerRequest:
+		case ERequestType::ListenerRequest:
 			{
 				result = ProcessListenerRequest(request.GetData());
 
 				break;
 			}
-		case EAudioRequestType::AudioCallbackManagerRequest:
+		case ERequestType::CallbackManagerRequest:
 			{
 				result = ProcessCallbackManagerRequest(request);
 
 				break;
 			}
-		case EAudioRequestType::AudioManagerRequest:
+		case ERequestType::ManagerRequest:
 			{
 				result = ProcessManagerRequest(request);
 
@@ -1101,7 +1101,7 @@ void CSystem::ProcessRequest(CAudioRequest& request)
 			}
 		default:
 			{
-				CRY_ASSERT_MESSAGE(false, "Unknown audio request type: %u", static_cast<int>(request.GetData()->type));
+				CRY_ASSERT_MESSAGE(false, "Unknown request type: %u", request.GetData()->requestType);
 
 				break;
 			}
@@ -1115,97 +1115,97 @@ void CSystem::ProcessRequest(CAudioRequest& request)
 ERequestStatus CSystem::ProcessManagerRequest(CAudioRequest const& request)
 {
 	ERequestStatus result = ERequestStatus::Failure;
-	SAudioManagerRequestDataBase const* const pRequestDataBase = static_cast<SAudioManagerRequestDataBase const*>(request.GetData());
+	SManagerRequestDataBase const* const pBase = static_cast<SManagerRequestDataBase const*>(request.GetData());
 
-	switch (pRequestDataBase->type)
+	switch (pBase->managerRequestType)
 	{
-	case EAudioManagerRequestType::AddRequestListener:
+	case EManagerRequestType::AddRequestListener:
 		{
-			SAudioManagerRequestData<EAudioManagerRequestType::AddRequestListener> const* const pRequestData = static_cast<SAudioManagerRequestData<EAudioManagerRequestType::AddRequestListener> const*>(request.GetData());
+			SManagerRequestData<EManagerRequestType::AddRequestListener> const* const pRequestData = static_cast<SManagerRequestData<EManagerRequestType::AddRequestListener> const*>(request.GetData());
 			result = g_eventListenerManager.AddRequestListener(pRequestData);
 
 			break;
 		}
-	case EAudioManagerRequestType::RemoveRequestListener:
+	case EManagerRequestType::RemoveRequestListener:
 		{
-			SAudioManagerRequestData<EAudioManagerRequestType::RemoveRequestListener> const* const pRequestData = static_cast<SAudioManagerRequestData<EAudioManagerRequestType::RemoveRequestListener> const*>(request.GetData());
+			SManagerRequestData<EManagerRequestType::RemoveRequestListener> const* const pRequestData = static_cast<SManagerRequestData<EManagerRequestType::RemoveRequestListener> const*>(request.GetData());
 			result = g_eventListenerManager.RemoveRequestListener(pRequestData->func, pRequestData->pObjectToListenTo);
 
 			break;
 		}
-	case EAudioManagerRequestType::SetAudioImpl:
+	case EManagerRequestType::SetAudioImpl:
 		{
-			SAudioManagerRequestData<EAudioManagerRequestType::SetAudioImpl> const* const pRequestData = static_cast<SAudioManagerRequestData<EAudioManagerRequestType::SetAudioImpl> const*>(request.GetData());
+			SManagerRequestData<EManagerRequestType::SetAudioImpl> const* const pRequestData = static_cast<SManagerRequestData<EManagerRequestType::SetAudioImpl> const*>(request.GetData());
 			result = HandleSetImpl(pRequestData->pIImpl);
 
 			break;
 		}
-	case EAudioManagerRequestType::RefreshAudioSystem:
+	case EManagerRequestType::RefreshAudioSystem:
 		{
-			SAudioManagerRequestData<EAudioManagerRequestType::RefreshAudioSystem> const* const pRequestData = static_cast<SAudioManagerRequestData<EAudioManagerRequestType::RefreshAudioSystem> const*>(request.GetData());
+			SManagerRequestData<EManagerRequestType::RefreshAudioSystem> const* const pRequestData = static_cast<SManagerRequestData<EManagerRequestType::RefreshAudioSystem> const*>(request.GetData());
 			result = HandleRefresh(pRequestData->levelName);
 
 			break;
 		}
-	case EAudioManagerRequestType::StopAllSounds:
+	case EManagerRequestType::StopAllSounds:
 		{
 			result = g_pIImpl->StopAllSounds();
 
 			break;
 		}
-	case EAudioManagerRequestType::ParseControlsData:
+	case EManagerRequestType::ParseControlsData:
 		{
-			SAudioManagerRequestData<EAudioManagerRequestType::ParseControlsData> const* const pRequestData = static_cast<SAudioManagerRequestData<EAudioManagerRequestType::ParseControlsData> const*>(request.GetData());
+			SManagerRequestData<EManagerRequestType::ParseControlsData> const* const pRequestData = static_cast<SManagerRequestData<EManagerRequestType::ParseControlsData> const*>(request.GetData());
 			g_xmlProcessor.ParseControlsData(pRequestData->folderPath.c_str(), pRequestData->dataScope);
 
 			result = ERequestStatus::Success;
 
 			break;
 		}
-	case EAudioManagerRequestType::ParsePreloadsData:
+	case EManagerRequestType::ParsePreloadsData:
 		{
-			SAudioManagerRequestData<EAudioManagerRequestType::ParsePreloadsData> const* const pRequestData = static_cast<SAudioManagerRequestData<EAudioManagerRequestType::ParsePreloadsData> const*>(request.GetData());
+			SManagerRequestData<EManagerRequestType::ParsePreloadsData> const* const pRequestData = static_cast<SManagerRequestData<EManagerRequestType::ParsePreloadsData> const*>(request.GetData());
 			g_xmlProcessor.ParsePreloadsData(pRequestData->folderPath.c_str(), pRequestData->dataScope);
 
 			result = ERequestStatus::Success;
 
 			break;
 		}
-	case EAudioManagerRequestType::ClearControlsData:
+	case EManagerRequestType::ClearControlsData:
 		{
-			SAudioManagerRequestData<EAudioManagerRequestType::ClearControlsData> const* const pRequestData = static_cast<SAudioManagerRequestData<EAudioManagerRequestType::ClearControlsData> const*>(request.GetData());
+			SManagerRequestData<EManagerRequestType::ClearControlsData> const* const pRequestData = static_cast<SManagerRequestData<EManagerRequestType::ClearControlsData> const*>(request.GetData());
 			g_xmlProcessor.ClearControlsData(pRequestData->dataScope);
 
 			result = ERequestStatus::Success;
 
 			break;
 		}
-	case EAudioManagerRequestType::ClearPreloadsData:
+	case EManagerRequestType::ClearPreloadsData:
 		{
-			SAudioManagerRequestData<EAudioManagerRequestType::ClearPreloadsData> const* const pRequestData = static_cast<SAudioManagerRequestData<EAudioManagerRequestType::ClearPreloadsData> const*>(request.GetData());
+			SManagerRequestData<EManagerRequestType::ClearPreloadsData> const* const pRequestData = static_cast<SManagerRequestData<EManagerRequestType::ClearPreloadsData> const*>(request.GetData());
 			g_xmlProcessor.ClearPreloadsData(pRequestData->dataScope);
 
 			result = ERequestStatus::Success;
 
 			break;
 		}
-	case EAudioManagerRequestType::PreloadSingleRequest:
+	case EManagerRequestType::PreloadSingleRequest:
 		{
-			SAudioManagerRequestData<EAudioManagerRequestType::PreloadSingleRequest> const* const pRequestData = static_cast<SAudioManagerRequestData<EAudioManagerRequestType::PreloadSingleRequest> const*>(request.GetData());
+			SManagerRequestData<EManagerRequestType::PreloadSingleRequest> const* const pRequestData = static_cast<SManagerRequestData<EManagerRequestType::PreloadSingleRequest> const*>(request.GetData());
 			result = g_fileCacheManager.TryLoadRequest(pRequestData->audioPreloadRequestId, ((request.flags & ERequestFlags::ExecuteBlocking) != 0), pRequestData->bAutoLoadOnly);
 
 			break;
 		}
-	case EAudioManagerRequestType::UnloadSingleRequest:
+	case EManagerRequestType::UnloadSingleRequest:
 		{
-			SAudioManagerRequestData<EAudioManagerRequestType::UnloadSingleRequest> const* const pRequestData = static_cast<SAudioManagerRequestData<EAudioManagerRequestType::UnloadSingleRequest> const*>(request.GetData());
+			SManagerRequestData<EManagerRequestType::UnloadSingleRequest> const* const pRequestData = static_cast<SManagerRequestData<EManagerRequestType::UnloadSingleRequest> const*>(request.GetData());
 			result = g_fileCacheManager.TryUnloadRequest(pRequestData->audioPreloadRequestId);
 
 			break;
 		}
-	case EAudioManagerRequestType::AutoLoadSetting:
+	case EManagerRequestType::AutoLoadSetting:
 		{
-			SAudioManagerRequestData<EAudioManagerRequestType::AutoLoadSetting> const* const pRequestData = static_cast<SAudioManagerRequestData<EAudioManagerRequestType::AutoLoadSetting> const*>(request.GetData());
+			SManagerRequestData<EManagerRequestType::AutoLoadSetting> const* const pRequestData = static_cast<SManagerRequestData<EManagerRequestType::AutoLoadSetting> const*>(request.GetData());
 
 			for (auto const& settingPair : g_settings)
 			{
@@ -1222,9 +1222,9 @@ ERequestStatus CSystem::ProcessManagerRequest(CAudioRequest const& request)
 
 			break;
 		}
-	case EAudioManagerRequestType::LoadSetting:
+	case EManagerRequestType::LoadSetting:
 		{
-			SAudioManagerRequestData<EAudioManagerRequestType::LoadSetting> const* const pRequestData = static_cast<SAudioManagerRequestData<EAudioManagerRequestType::LoadSetting> const*>(request.GetData());
+			SManagerRequestData<EManagerRequestType::LoadSetting> const* const pRequestData = static_cast<SManagerRequestData<EManagerRequestType::LoadSetting> const*>(request.GetData());
 
 			CSetting const* const pSetting = stl::find_in_map(g_settings, pRequestData->id, nullptr);
 
@@ -1240,9 +1240,9 @@ ERequestStatus CSystem::ProcessManagerRequest(CAudioRequest const& request)
 
 			break;
 		}
-	case EAudioManagerRequestType::UnloadSetting:
+	case EManagerRequestType::UnloadSetting:
 		{
-			SAudioManagerRequestData<EAudioManagerRequestType::UnloadSetting> const* const pRequestData = static_cast<SAudioManagerRequestData<EAudioManagerRequestType::UnloadSetting> const*>(request.GetData());
+			SManagerRequestData<EManagerRequestType::UnloadSetting> const* const pRequestData = static_cast<SManagerRequestData<EManagerRequestType::UnloadSetting> const*>(request.GetData());
 
 			CSetting const* const pSetting = stl::find_in_map(g_settings, pRequestData->id, nullptr);
 
@@ -1258,21 +1258,21 @@ ERequestStatus CSystem::ProcessManagerRequest(CAudioRequest const& request)
 
 			break;
 		}
-	case EAudioManagerRequestType::UnloadAFCMDataByScope:
+	case EManagerRequestType::UnloadAFCMDataByScope:
 		{
-			SAudioManagerRequestData<EAudioManagerRequestType::UnloadAFCMDataByScope> const* const pRequestData = static_cast<SAudioManagerRequestData<EAudioManagerRequestType::UnloadAFCMDataByScope> const*>(request.GetData());
+			SManagerRequestData<EManagerRequestType::UnloadAFCMDataByScope> const* const pRequestData = static_cast<SManagerRequestData<EManagerRequestType::UnloadAFCMDataByScope> const*>(request.GetData());
 			result = g_fileCacheManager.UnloadDataByScope(pRequestData->dataScope);
 
 			break;
 		}
-	case EAudioManagerRequestType::ReleaseAudioImpl:
+	case EManagerRequestType::ReleaseAudioImpl:
 		{
 			ReleaseImpl();
 			result = ERequestStatus::Success;
 
 			break;
 		}
-	case EAudioManagerRequestType::ChangeLanguage:
+	case EManagerRequestType::ChangeLanguage:
 		{
 			SetImplLanguage();
 
@@ -1281,7 +1281,7 @@ ERequestStatus CSystem::ProcessManagerRequest(CAudioRequest const& request)
 
 			break;
 		}
-	case EAudioManagerRequestType::RetriggerAudioControls:
+	case EManagerRequestType::RetriggerAudioControls:
 		{
 #if defined(INCLUDE_AUDIO_PRODUCTION_CODE)
 			HandleRetriggerControls();
@@ -1290,17 +1290,17 @@ ERequestStatus CSystem::ProcessManagerRequest(CAudioRequest const& request)
 
 			break;
 		}
-	case EAudioManagerRequestType::ReleasePendingRays:
+	case EManagerRequestType::ReleasePendingRays:
 		{
 			g_objectManager.ReleasePendingRays();
 			result = ERequestStatus::Success;
 
 			break;
 		}
-	case EAudioManagerRequestType::ReloadControlsData:
+	case EManagerRequestType::ReloadControlsData:
 		{
 #if defined(INCLUDE_AUDIO_PRODUCTION_CODE)
-			SAudioManagerRequestData<EAudioManagerRequestType::ReloadControlsData> const* const pRequestData = static_cast<SAudioManagerRequestData<EAudioManagerRequestType::ReloadControlsData> const*>(request.GetData());
+			SManagerRequestData<EManagerRequestType::ReloadControlsData> const* const pRequestData = static_cast<SManagerRequestData<EManagerRequestType::ReloadControlsData> const*>(request.GetData());
 
 			for (auto const pObject : g_objectManager.GetObjects())
 			{
@@ -1325,7 +1325,7 @@ ERequestStatus CSystem::ProcessManagerRequest(CAudioRequest const& request)
 #endif  // INCLUDE_AUDIO_PRODUCTION_CODE
 			break;
 		}
-	case EAudioManagerRequestType::DrawDebugInfo:
+	case EManagerRequestType::DrawDebugInfo:
 		{
 #if defined(INCLUDE_AUDIO_PRODUCTION_CODE)
 			HandleDrawDebug();
@@ -1334,21 +1334,21 @@ ERequestStatus CSystem::ProcessManagerRequest(CAudioRequest const& request)
 
 			break;
 		}
-	case EAudioManagerRequestType::GetAudioFileData:
+	case EManagerRequestType::GetAudioFileData:
 		{
-			SAudioManagerRequestData<EAudioManagerRequestType::GetAudioFileData> const* const pRequestData =
-				static_cast<SAudioManagerRequestData<EAudioManagerRequestType::GetAudioFileData> const* const>(request.GetData());
+			SManagerRequestData<EManagerRequestType::GetAudioFileData> const* const pRequestData =
+				static_cast<SManagerRequestData<EManagerRequestType::GetAudioFileData> const* const>(request.GetData());
 			g_pIImpl->GetFileData(pRequestData->name.c_str(), pRequestData->fileData);
 			break;
 		}
-	case EAudioManagerRequestType::GetImplInfo:
+	case EManagerRequestType::GetImplInfo:
 		{
-			SAudioManagerRequestData<EAudioManagerRequestType::GetImplInfo> const* const pRequestData =
-				static_cast<SAudioManagerRequestData<EAudioManagerRequestType::GetImplInfo> const* const>(request.GetData());
+			SManagerRequestData<EManagerRequestType::GetImplInfo> const* const pRequestData =
+				static_cast<SManagerRequestData<EManagerRequestType::GetImplInfo> const* const>(request.GetData());
 			g_pIImpl->GetInfo(pRequestData->implInfo);
 			break;
 		}
-	case EAudioManagerRequestType::None:
+	case EManagerRequestType::None:
 		{
 			result = ERequestStatus::Success;
 
@@ -1356,7 +1356,7 @@ ERequestStatus CSystem::ProcessManagerRequest(CAudioRequest const& request)
 		}
 	default:
 		{
-			Cry::Audio::Log(ELogType::Warning, "ATL received an unknown AudioManager request: %u", pRequestDataBase->type);
+			Cry::Audio::Log(ELogType::Warning, "Unknown manager request type: %u", pBase->managerRequestType);
 			result = ERequestStatus::FailureInvalidRequest;
 
 			break;
@@ -1370,15 +1370,15 @@ ERequestStatus CSystem::ProcessManagerRequest(CAudioRequest const& request)
 ERequestStatus CSystem::ProcessCallbackManagerRequest(CAudioRequest& request)
 {
 	ERequestStatus result = ERequestStatus::Failure;
-	SAudioCallbackManagerRequestDataBase const* const pRequestDataBase =
-		static_cast<SAudioCallbackManagerRequestDataBase const* const>(request.GetData());
+	SCallbackManagerRequestDataBase const* const pBase =
+		static_cast<SCallbackManagerRequestDataBase const* const>(request.GetData());
 
-	switch (pRequestDataBase->type)
+	switch (pBase->callbackManagerRequestType)
 	{
-	case EAudioCallbackManagerRequestType::ReportStartedEvent:
+	case ECallbackManagerRequestType::ReportStartedEvent:
 		{
-			SAudioCallbackManagerRequestData<EAudioCallbackManagerRequestType::ReportStartedEvent> const* const pRequestData =
-				static_cast<SAudioCallbackManagerRequestData<EAudioCallbackManagerRequestType::ReportStartedEvent> const* const>(request.GetData());
+			SCallbackManagerRequestData<ECallbackManagerRequestType::ReportStartedEvent> const* const pRequestData =
+				static_cast<SCallbackManagerRequestData<ECallbackManagerRequestType::ReportStartedEvent> const* const>(request.GetData());
 			CATLEvent& audioEvent = pRequestData->audioEvent;
 
 			audioEvent.m_state = EEventState::PlayingDelayed;
@@ -1396,10 +1396,10 @@ ERequestStatus CSystem::ProcessCallbackManagerRequest(CAudioRequest& request)
 
 			break;
 		}
-	case EAudioCallbackManagerRequestType::ReportFinishedEvent:
+	case ECallbackManagerRequestType::ReportFinishedEvent:
 		{
-			SAudioCallbackManagerRequestData<EAudioCallbackManagerRequestType::ReportFinishedEvent> const* const pRequestData =
-				static_cast<SAudioCallbackManagerRequestData<EAudioCallbackManagerRequestType::ReportFinishedEvent> const* const>(request.GetData());
+			SCallbackManagerRequestData<ECallbackManagerRequestType::ReportFinishedEvent> const* const pRequestData =
+				static_cast<SCallbackManagerRequestData<ECallbackManagerRequestType::ReportFinishedEvent> const* const>(request.GetData());
 			CATLEvent& event = pRequestData->audioEvent;
 
 			if (event.m_pAudioObject != g_pObject)
@@ -1417,10 +1417,10 @@ ERequestStatus CSystem::ProcessCallbackManagerRequest(CAudioRequest& request)
 
 			break;
 		}
-	case EAudioCallbackManagerRequestType::ReportVirtualizedEvent:
+	case ECallbackManagerRequestType::ReportVirtualizedEvent:
 		{
-			SAudioCallbackManagerRequestData<EAudioCallbackManagerRequestType::ReportVirtualizedEvent> const* const pRequestData =
-				static_cast<SAudioCallbackManagerRequestData<EAudioCallbackManagerRequestType::ReportVirtualizedEvent> const* const>(request.GetData());
+			SCallbackManagerRequestData<ECallbackManagerRequestType::ReportVirtualizedEvent> const* const pRequestData =
+				static_cast<SCallbackManagerRequestData<ECallbackManagerRequestType::ReportVirtualizedEvent> const* const>(request.GetData());
 
 			pRequestData->audioEvent.m_state = EEventState::Virtual;
 			CATLAudioObject* const pObject = pRequestData->audioEvent.m_pAudioObject;
@@ -1452,10 +1452,10 @@ ERequestStatus CSystem::ProcessCallbackManagerRequest(CAudioRequest& request)
 
 			break;
 		}
-	case EAudioCallbackManagerRequestType::ReportPhysicalizedEvent:
+	case ECallbackManagerRequestType::ReportPhysicalizedEvent:
 		{
-			SAudioCallbackManagerRequestData<EAudioCallbackManagerRequestType::ReportPhysicalizedEvent> const* const pRequestData =
-				static_cast<SAudioCallbackManagerRequestData<EAudioCallbackManagerRequestType::ReportPhysicalizedEvent> const* const>(request.GetData());
+			SCallbackManagerRequestData<ECallbackManagerRequestType::ReportPhysicalizedEvent> const* const pRequestData =
+				static_cast<SCallbackManagerRequestData<ECallbackManagerRequestType::ReportPhysicalizedEvent> const* const>(request.GetData());
 
 			pRequestData->audioEvent.m_state = EEventState::Playing;
 			pRequestData->audioEvent.m_pAudioObject->RemoveFlag(EObjectFlags::Virtual);
@@ -1464,24 +1464,24 @@ ERequestStatus CSystem::ProcessCallbackManagerRequest(CAudioRequest& request)
 
 			break;
 		}
-	case EAudioCallbackManagerRequestType::ReportStartedFile:
+	case ECallbackManagerRequestType::ReportStartedFile:
 		{
-			SAudioCallbackManagerRequestData<EAudioCallbackManagerRequestType::ReportStartedFile> const* const pRequestData =
-				static_cast<SAudioCallbackManagerRequestData<EAudioCallbackManagerRequestType::ReportStartedFile> const* const>(request.GetData());
+			SCallbackManagerRequestData<ECallbackManagerRequestType::ReportStartedFile> const* const pRequestData =
+				static_cast<SCallbackManagerRequestData<ECallbackManagerRequestType::ReportStartedFile> const* const>(request.GetData());
 
 			CATLStandaloneFile& audioStandaloneFile = pRequestData->audioStandaloneFile;
 
 			g_objectManager.GetStartedStandaloneFileRequestData(&audioStandaloneFile, request);
-			audioStandaloneFile.m_state = (pRequestData->bSuccess) ? EAudioStandaloneFileState::Playing : EAudioStandaloneFileState::None;
+			audioStandaloneFile.m_state = (pRequestData->bSuccess) ? EStandaloneFileState::Playing : EStandaloneFileState::None;
 
 			result = (pRequestData->bSuccess) ? ERequestStatus::Success : ERequestStatus::Failure;
 
 			break;
 		}
-	case EAudioCallbackManagerRequestType::ReportStoppedFile:
+	case ECallbackManagerRequestType::ReportStoppedFile:
 		{
-			SAudioCallbackManagerRequestData<EAudioCallbackManagerRequestType::ReportStoppedFile> const* const pRequestData =
-				static_cast<SAudioCallbackManagerRequestData<EAudioCallbackManagerRequestType::ReportStoppedFile> const* const>(request.GetData());
+			SCallbackManagerRequestData<ECallbackManagerRequestType::ReportStoppedFile> const* const pRequestData =
+				static_cast<SCallbackManagerRequestData<ECallbackManagerRequestType::ReportStoppedFile> const* const>(request.GetData());
 
 			CATLStandaloneFile& audioStandaloneFile = pRequestData->audioStandaloneFile;
 
@@ -1502,8 +1502,8 @@ ERequestStatus CSystem::ProcessCallbackManagerRequest(CAudioRequest& request)
 
 			break;
 		}
-	case EAudioCallbackManagerRequestType::ReportFinishedTriggerInstance:
-	case EAudioCallbackManagerRequestType::None:
+	case ECallbackManagerRequestType::ReportFinishedTriggerInstance:
+	case ECallbackManagerRequestType::None:
 		{
 			result = ERequestStatus::Success;
 
@@ -1512,7 +1512,7 @@ ERequestStatus CSystem::ProcessCallbackManagerRequest(CAudioRequest& request)
 	default:
 		{
 			result = ERequestStatus::FailureInvalidRequest;
-			Cry::Audio::Log(ELogType::Warning, "ATL received an unknown AudioCallbackManager request: %u", pRequestDataBase->type);
+			Cry::Audio::Log(ELogType::Warning, "Unknown callback manager request type: %u", pBase->callbackManagerRequestType);
 
 			break;
 		}
@@ -1527,15 +1527,15 @@ ERequestStatus CSystem::ProcessObjectRequest(CAudioRequest const& request)
 	ERequestStatus result = ERequestStatus::Failure;
 	CATLAudioObject* const pObject = (request.pObject != nullptr) ? request.pObject : g_pObject;
 
-	SAudioObjectRequestDataBase const* const pBaseRequestData =
-		static_cast<SAudioObjectRequestDataBase const* const>(request.GetData());
+	SObjectRequestDataBase const* const pBase =
+		static_cast<SObjectRequestDataBase const* const>(request.GetData());
 
-	switch (pBaseRequestData->type)
+	switch (pBase->objectRequestType)
 	{
-	case EAudioObjectRequestType::LoadTrigger:
+	case EObjectRequestType::LoadTrigger:
 		{
-			SAudioObjectRequestData<EAudioObjectRequestType::LoadTrigger> const* const pRequestData =
-				static_cast<SAudioObjectRequestData<EAudioObjectRequestType::LoadTrigger> const* const>(request.GetData());
+			SObjectRequestData<EObjectRequestType::LoadTrigger> const* const pRequestData =
+				static_cast<SObjectRequestData<EObjectRequestType::LoadTrigger> const* const>(request.GetData());
 
 			CTrigger const* const pTrigger = stl::find_in_map(g_triggers, pRequestData->audioTriggerId, nullptr);
 
@@ -1551,10 +1551,10 @@ ERequestStatus CSystem::ProcessObjectRequest(CAudioRequest const& request)
 
 			break;
 		}
-	case EAudioObjectRequestType::UnloadTrigger:
+	case EObjectRequestType::UnloadTrigger:
 		{
-			SAudioObjectRequestData<EAudioObjectRequestType::UnloadTrigger> const* const pRequestData =
-				static_cast<SAudioObjectRequestData<EAudioObjectRequestType::UnloadTrigger> const* const>(request.GetData());
+			SObjectRequestData<EObjectRequestType::UnloadTrigger> const* const pRequestData =
+				static_cast<SObjectRequestData<EObjectRequestType::UnloadTrigger> const* const>(request.GetData());
 
 			CTrigger const* const pTrigger = stl::find_in_map(g_triggers, pRequestData->audioTriggerId, nullptr);
 
@@ -1570,10 +1570,10 @@ ERequestStatus CSystem::ProcessObjectRequest(CAudioRequest const& request)
 
 			break;
 		}
-	case EAudioObjectRequestType::PlayFile:
+	case EObjectRequestType::PlayFile:
 		{
-			SAudioObjectRequestData<EAudioObjectRequestType::PlayFile> const* const pRequestData =
-				static_cast<SAudioObjectRequestData<EAudioObjectRequestType::PlayFile> const* const>(request.GetData());
+			SObjectRequestData<EObjectRequestType::PlayFile> const* const pRequestData =
+				static_cast<SObjectRequestData<EObjectRequestType::PlayFile> const* const>(request.GetData());
 
 			if (pRequestData != nullptr && !pRequestData->file.empty())
 			{
@@ -1598,10 +1598,10 @@ ERequestStatus CSystem::ProcessObjectRequest(CAudioRequest const& request)
 
 			break;
 		}
-	case EAudioObjectRequestType::StopFile:
+	case EObjectRequestType::StopFile:
 		{
-			SAudioObjectRequestData<EAudioObjectRequestType::StopFile> const* const pRequestData =
-				static_cast<SAudioObjectRequestData<EAudioObjectRequestType::StopFile> const* const>(request.GetData());
+			SObjectRequestData<EObjectRequestType::StopFile> const* const pRequestData =
+				static_cast<SObjectRequestData<EObjectRequestType::StopFile> const* const>(request.GetData());
 
 			if (pRequestData != nullptr && !pRequestData->file.empty())
 			{
@@ -1611,10 +1611,10 @@ ERequestStatus CSystem::ProcessObjectRequest(CAudioRequest const& request)
 
 			break;
 		}
-	case EAudioObjectRequestType::ExecuteTrigger:
+	case EObjectRequestType::ExecuteTrigger:
 		{
-			SAudioObjectRequestData<EAudioObjectRequestType::ExecuteTrigger> const* const pRequestData =
-				static_cast<SAudioObjectRequestData<EAudioObjectRequestType::ExecuteTrigger> const* const>(request.GetData());
+			SObjectRequestData<EObjectRequestType::ExecuteTrigger> const* const pRequestData =
+				static_cast<SObjectRequestData<EObjectRequestType::ExecuteTrigger> const* const>(request.GetData());
 
 			CTrigger const* const pTrigger = stl::find_in_map(g_triggers, pRequestData->audioTriggerId, nullptr);
 
@@ -1630,10 +1630,10 @@ ERequestStatus CSystem::ProcessObjectRequest(CAudioRequest const& request)
 
 			break;
 		}
-	case EAudioObjectRequestType::ExecuteTriggerEx:
+	case EObjectRequestType::ExecuteTriggerEx:
 		{
-			SAudioObjectRequestData<EAudioObjectRequestType::ExecuteTriggerEx> const* const pRequestData =
-				static_cast<SAudioObjectRequestData<EAudioObjectRequestType::ExecuteTriggerEx> const* const>(request.GetData());
+			SObjectRequestData<EObjectRequestType::ExecuteTriggerEx> const* const pRequestData =
+				static_cast<SObjectRequestData<EObjectRequestType::ExecuteTriggerEx> const* const>(request.GetData());
 
 			CTrigger const* const pTrigger = stl::find_in_map(g_triggers, pRequestData->triggerId, nullptr);
 
@@ -1665,10 +1665,10 @@ ERequestStatus CSystem::ProcessObjectRequest(CAudioRequest const& request)
 
 			break;
 		}
-	case EAudioObjectRequestType::StopTrigger:
+	case EObjectRequestType::StopTrigger:
 		{
-			SAudioObjectRequestData<EAudioObjectRequestType::StopTrigger> const* const pRequestData =
-				static_cast<SAudioObjectRequestData<EAudioObjectRequestType::StopTrigger> const* const>(request.GetData());
+			SObjectRequestData<EObjectRequestType::StopTrigger> const* const pRequestData =
+				static_cast<SObjectRequestData<EObjectRequestType::StopTrigger> const* const>(request.GetData());
 
 			CTrigger const* const pTrigger = stl::find_in_map(g_triggers, pRequestData->audioTriggerId, nullptr);
 
@@ -1683,29 +1683,29 @@ ERequestStatus CSystem::ProcessObjectRequest(CAudioRequest const& request)
 
 			break;
 		}
-	case EAudioObjectRequestType::StopAllTriggers:
+	case EObjectRequestType::StopAllTriggers:
 		{
 			pObject->StopAllTriggers();
 			result = ERequestStatus::Success;
 
 			break;
 		}
-	case EAudioObjectRequestType::SetTransformation:
+	case EObjectRequestType::SetTransformation:
 		{
 			CRY_ASSERT_MESSAGE(pObject != g_pObject, "Received a request to set a transformation on the global object.");
 
-			SAudioObjectRequestData<EAudioObjectRequestType::SetTransformation> const* const pRequestData =
-				static_cast<SAudioObjectRequestData<EAudioObjectRequestType::SetTransformation> const* const>(request.GetData());
+			SObjectRequestData<EObjectRequestType::SetTransformation> const* const pRequestData =
+				static_cast<SObjectRequestData<EObjectRequestType::SetTransformation> const* const>(request.GetData());
 
 			pObject->HandleSetTransformation(pRequestData->transformation);
 			result = ERequestStatus::Success;
 
 			break;
 		}
-	case EAudioObjectRequestType::SetParameter:
+	case EObjectRequestType::SetParameter:
 		{
-			SAudioObjectRequestData<EAudioObjectRequestType::SetParameter> const* const pRequestData =
-				static_cast<SAudioObjectRequestData<EAudioObjectRequestType::SetParameter> const* const>(request.GetData());
+			SObjectRequestData<EObjectRequestType::SetParameter> const* const pRequestData =
+				static_cast<SObjectRequestData<EObjectRequestType::SetParameter> const* const>(request.GetData());
 
 			CParameter const* const pParameter = stl::find_in_map(g_parameters, pRequestData->parameterId, nullptr);
 
@@ -1721,11 +1721,11 @@ ERequestStatus CSystem::ProcessObjectRequest(CAudioRequest const& request)
 
 			break;
 		}
-	case EAudioObjectRequestType::SetSwitchState:
+	case EObjectRequestType::SetSwitchState:
 		{
 			result = ERequestStatus::FailureInvalidControlId;
-			SAudioObjectRequestData<EAudioObjectRequestType::SetSwitchState> const* const pRequestData =
-				static_cast<SAudioObjectRequestData<EAudioObjectRequestType::SetSwitchState> const* const>(request.GetData());
+			SObjectRequestData<EObjectRequestType::SetSwitchState> const* const pRequestData =
+				static_cast<SObjectRequestData<EObjectRequestType::SetSwitchState> const* const>(request.GetData());
 
 			CATLSwitch const* const pSwitch = stl::find_in_map(g_switches, pRequestData->audioSwitchId, nullptr);
 
@@ -1742,33 +1742,33 @@ ERequestStatus CSystem::ProcessObjectRequest(CAudioRequest const& request)
 
 			break;
 		}
-	case EAudioObjectRequestType::SetOcclusionType:
+	case EObjectRequestType::SetOcclusionType:
 		{
 			CRY_ASSERT_MESSAGE(pObject != g_pObject, "Received a request to set the occlusion type on the global object.");
 
-			SAudioObjectRequestData<EAudioObjectRequestType::SetOcclusionType> const* const pRequestData =
-				static_cast<SAudioObjectRequestData<EAudioObjectRequestType::SetOcclusionType> const* const>(request.GetData());
+			SObjectRequestData<EObjectRequestType::SetOcclusionType> const* const pRequestData =
+				static_cast<SObjectRequestData<EObjectRequestType::SetOcclusionType> const* const>(request.GetData());
 
 			SetOcclusionType(*pObject, pRequestData->occlusionType);
 			result = ERequestStatus::Success;
 
 			break;
 		}
-	case EAudioObjectRequestType::SetCurrentEnvironments:
+	case EObjectRequestType::SetCurrentEnvironments:
 		{
-			SAudioObjectRequestData<EAudioObjectRequestType::SetCurrentEnvironments> const* const pRequestData =
-				static_cast<SAudioObjectRequestData<EAudioObjectRequestType::SetCurrentEnvironments> const* const>(request.GetData());
+			SObjectRequestData<EObjectRequestType::SetCurrentEnvironments> const* const pRequestData =
+				static_cast<SObjectRequestData<EObjectRequestType::SetCurrentEnvironments> const* const>(request.GetData());
 
 			SetCurrentEnvironmentsOnObject(pObject, pRequestData->entityToIgnore);
 
 			break;
 		}
-	case EAudioObjectRequestType::SetEnvironment:
+	case EObjectRequestType::SetEnvironment:
 		{
 			if (pObject != g_pObject)
 			{
-				SAudioObjectRequestData<EAudioObjectRequestType::SetEnvironment> const* const pRequestData =
-					static_cast<SAudioObjectRequestData<EAudioObjectRequestType::SetEnvironment> const* const>(request.GetData());
+				SObjectRequestData<EObjectRequestType::SetEnvironment> const* const pRequestData =
+					static_cast<SObjectRequestData<EObjectRequestType::SetEnvironment> const* const>(request.GetData());
 
 				CATLAudioEnvironment const* const pEnvironment = stl::find_in_map(g_environments, pRequestData->audioEnvironmentId, nullptr);
 
@@ -1789,10 +1789,10 @@ ERequestStatus CSystem::ProcessObjectRequest(CAudioRequest const& request)
 
 			break;
 		}
-	case EAudioObjectRequestType::RegisterObject:
+	case EObjectRequestType::RegisterObject:
 		{
-			SAudioObjectRequestData<EAudioObjectRequestType::RegisterObject> const* const pRequestData =
-				static_cast<SAudioObjectRequestData<EAudioObjectRequestType::RegisterObject> const*>(request.GetData());
+			SObjectRequestData<EObjectRequestType::RegisterObject> const* const pRequestData =
+				static_cast<SObjectRequestData<EObjectRequestType::RegisterObject> const*>(request.GetData());
 
 #if defined(INCLUDE_AUDIO_PRODUCTION_CODE)
 			pObject->Init(pRequestData->name.c_str(), g_pIImpl->ConstructObject(pRequestData->transformation, pRequestData->name.c_str()), pRequestData->entityId);
@@ -1813,7 +1813,7 @@ ERequestStatus CSystem::ProcessObjectRequest(CAudioRequest const& request)
 
 			break;
 		}
-	case EAudioObjectRequestType::ReleaseObject:
+	case EObjectRequestType::ReleaseObject:
 		{
 			if (pObject != g_pObject)
 			{
@@ -1827,20 +1827,20 @@ ERequestStatus CSystem::ProcessObjectRequest(CAudioRequest const& request)
 
 			break;
 		}
-	case EAudioObjectRequestType::ProcessPhysicsRay:
+	case EObjectRequestType::ProcessPhysicsRay:
 		{
-			SAudioObjectRequestData<EAudioObjectRequestType::ProcessPhysicsRay> const* const pRequestData =
-				static_cast<SAudioObjectRequestData<EAudioObjectRequestType::ProcessPhysicsRay> const* const>(request.GetData());
+			SObjectRequestData<EObjectRequestType::ProcessPhysicsRay> const* const pRequestData =
+				static_cast<SObjectRequestData<EObjectRequestType::ProcessPhysicsRay> const* const>(request.GetData());
 
 			pObject->ProcessPhysicsRay(pRequestData->pAudioRayInfo);
 			result = ERequestStatus::Success;
 			break;
 		}
 #if defined(INCLUDE_AUDIO_PRODUCTION_CODE)
-	case EAudioObjectRequestType::SetName:
+	case EObjectRequestType::SetName:
 		{
-			SAudioObjectRequestData<EAudioObjectRequestType::SetName> const* const pRequestData =
-				static_cast<SAudioObjectRequestData<EAudioObjectRequestType::SetName> const* const>(request.GetData());
+			SObjectRequestData<EObjectRequestType::SetName> const* const pRequestData =
+				static_cast<SObjectRequestData<EObjectRequestType::SetName> const* const>(request.GetData());
 
 			result = pObject->HandleSetName(pRequestData->name.c_str());
 
@@ -1853,10 +1853,10 @@ ERequestStatus CSystem::ProcessObjectRequest(CAudioRequest const& request)
 			break;
 		}
 #endif // INCLUDE_AUDIO_PRODUCTION_CODE
-	case EAudioObjectRequestType::ToggleAbsoluteVelocityTracking:
+	case EObjectRequestType::ToggleAbsoluteVelocityTracking:
 		{
-			SAudioObjectRequestData<EAudioObjectRequestType::ToggleAbsoluteVelocityTracking> const* const pRequestData =
-				static_cast<SAudioObjectRequestData<EAudioObjectRequestType::ToggleAbsoluteVelocityTracking> const* const>(request.GetData());
+			SObjectRequestData<EObjectRequestType::ToggleAbsoluteVelocityTracking> const* const pRequestData =
+				static_cast<SObjectRequestData<EObjectRequestType::ToggleAbsoluteVelocityTracking> const* const>(request.GetData());
 
 			if (pRequestData->isEnabled)
 			{
@@ -1878,10 +1878,10 @@ ERequestStatus CSystem::ProcessObjectRequest(CAudioRequest const& request)
 			result = ERequestStatus::Success;
 			break;
 		}
-	case EAudioObjectRequestType::ToggleRelativeVelocityTracking:
+	case EObjectRequestType::ToggleRelativeVelocityTracking:
 		{
-			SAudioObjectRequestData<EAudioObjectRequestType::ToggleRelativeVelocityTracking> const* const pRequestData =
-				static_cast<SAudioObjectRequestData<EAudioObjectRequestType::ToggleRelativeVelocityTracking> const* const>(request.GetData());
+			SObjectRequestData<EObjectRequestType::ToggleRelativeVelocityTracking> const* const pRequestData =
+				static_cast<SObjectRequestData<EObjectRequestType::ToggleRelativeVelocityTracking> const* const>(request.GetData());
 
 			if (pRequestData->isEnabled)
 			{
@@ -1903,14 +1903,14 @@ ERequestStatus CSystem::ProcessObjectRequest(CAudioRequest const& request)
 			result = ERequestStatus::Success;
 			break;
 		}
-	case EAudioObjectRequestType::None:
+	case EObjectRequestType::None:
 		{
 			result = ERequestStatus::Success;
 			break;
 		}
 	default:
 		{
-			Cry::Audio::Log(ELogType::Warning, "ATL received an unknown AudioObject request type: %u", pBaseRequestData->type);
+			Cry::Audio::Log(ELogType::Warning, "Unknown object request type: %u", pBase->objectRequestType);
 			result = ERequestStatus::FailureInvalidRequest;
 			break;
 		}
@@ -1920,18 +1920,18 @@ ERequestStatus CSystem::ProcessObjectRequest(CAudioRequest const& request)
 }
 
 //////////////////////////////////////////////////////////////////////////
-ERequestStatus CSystem::ProcessListenerRequest(SAudioRequestData const* const pPassedRequestData)
+ERequestStatus CSystem::ProcessListenerRequest(SRequestData const* const pPassedRequestData)
 {
 	ERequestStatus result = ERequestStatus::Failure;
-	SAudioListenerRequestDataBase const* const pBaseRequestData =
-		static_cast<SAudioListenerRequestDataBase const* const>(pPassedRequestData);
+	SListenerRequestDataBase const* const pBase =
+		static_cast<SListenerRequestDataBase const* const>(pPassedRequestData);
 
-	switch (pBaseRequestData->type)
+	switch (pBase->listenerRequestType)
 	{
-	case EAudioListenerRequestType::SetTransformation:
+	case EListenerRequestType::SetTransformation:
 		{
-			SAudioListenerRequestData<EAudioListenerRequestType::SetTransformation> const* const pRequestData =
-				static_cast<SAudioListenerRequestData<EAudioListenerRequestType::SetTransformation> const* const>(pPassedRequestData);
+			SListenerRequestData<EListenerRequestType::SetTransformation> const* const pRequestData =
+				static_cast<SListenerRequestData<EListenerRequestType::SetTransformation> const* const>(pPassedRequestData);
 
 			CRY_ASSERT(pRequestData->pListener != nullptr);
 
@@ -1943,17 +1943,17 @@ ERequestStatus CSystem::ProcessListenerRequest(SAudioRequestData const* const pP
 			result = ERequestStatus::Success;
 		}
 		break;
-	case EAudioListenerRequestType::RegisterListener:
+	case EListenerRequestType::RegisterListener:
 		{
-			SAudioListenerRequestData<EAudioListenerRequestType::RegisterListener> const* const pRequestData =
-				static_cast<SAudioListenerRequestData<EAudioListenerRequestType::RegisterListener> const*>(pPassedRequestData);
+			SListenerRequestData<EListenerRequestType::RegisterListener> const* const pRequestData =
+				static_cast<SListenerRequestData<EListenerRequestType::RegisterListener> const*>(pPassedRequestData);
 			*pRequestData->ppListener = g_listenerManager.CreateListener(pRequestData->transformation, pRequestData->name.c_str());
 		}
 		break;
-	case EAudioListenerRequestType::ReleaseListener:
+	case EListenerRequestType::ReleaseListener:
 		{
-			SAudioListenerRequestData<EAudioListenerRequestType::ReleaseListener> const* const pRequestData =
-				static_cast<SAudioListenerRequestData<EAudioListenerRequestType::ReleaseListener> const* const>(pPassedRequestData);
+			SListenerRequestData<EListenerRequestType::ReleaseListener> const* const pRequestData =
+				static_cast<SListenerRequestData<EListenerRequestType::ReleaseListener> const* const>(pPassedRequestData);
 
 			CRY_ASSERT(pRequestData->pListener != nullptr);
 
@@ -1965,22 +1965,22 @@ ERequestStatus CSystem::ProcessListenerRequest(SAudioRequestData const* const pP
 		}
 		break;
 #if defined(INCLUDE_AUDIO_PRODUCTION_CODE)
-	case EAudioListenerRequestType::SetName:
+	case EListenerRequestType::SetName:
 		{
-			SAudioListenerRequestData<EAudioListenerRequestType::SetName> const* const pRequestData =
-				static_cast<SAudioListenerRequestData<EAudioListenerRequestType::SetName> const* const>(pPassedRequestData);
+			SListenerRequestData<EListenerRequestType::SetName> const* const pRequestData =
+				static_cast<SListenerRequestData<EListenerRequestType::SetName> const* const>(pPassedRequestData);
 
 			pRequestData->pListener->HandleSetName(pRequestData->name.c_str());
 			result = ERequestStatus::Success;
 		}
 		break;
 #endif // INCLUDE_AUDIO_PRODUCTION_CODE
-	case EAudioListenerRequestType::None:
+	case EListenerRequestType::None:
 		result = ERequestStatus::Success;
 		break;
 	default:
 		result = ERequestStatus::FailureInvalidRequest;
-		Cry::Audio::Log(ELogType::Warning, "ATL received an unknown AudioListener request type: %u", pPassedRequestData->type);
+		Cry::Audio::Log(ELogType::Warning, "Unknown listener request type: %u", pBase->listenerRequestType);
 		break;
 	}
 
@@ -1994,53 +1994,54 @@ void CSystem::NotifyListener(CAudioRequest const& request)
 	CATLStandaloneFile* pStandaloneFile = nullptr;
 	ControlId audioControlID = InvalidControlId;
 	CATLEvent* pAudioEvent = nullptr;
-	switch (request.GetData()->type)
-	{
-	case EAudioRequestType::AudioManagerRequest:
-		{
-			SAudioManagerRequestDataBase const* const pRequestDataBase = static_cast<SAudioManagerRequestDataBase const* const>(request.GetData());
 
-			switch (pRequestDataBase->type)
+	switch (request.GetData()->requestType)
+	{
+	case ERequestType::ManagerRequest:
+		{
+			SManagerRequestDataBase const* const pBase = static_cast<SManagerRequestDataBase const* const>(request.GetData());
+
+			switch (pBase->managerRequestType)
 			{
-			case EAudioManagerRequestType::SetAudioImpl:
+			case EManagerRequestType::SetAudioImpl:
 				audioSystemEvent = ESystemEvents::ImplSet;
 				break;
 			}
 
 			break;
 		}
-	case EAudioRequestType::AudioCallbackManagerRequest:
+	case ERequestType::CallbackManagerRequest:
 		{
-			SAudioCallbackManagerRequestDataBase const* const pRequestDataBase = static_cast<SAudioCallbackManagerRequestDataBase const* const>(request.GetData());
+			SCallbackManagerRequestDataBase const* const pBase = static_cast<SCallbackManagerRequestDataBase const* const>(request.GetData());
 
-			switch (pRequestDataBase->type)
+			switch (pBase->callbackManagerRequestType)
 			{
-			case EAudioCallbackManagerRequestType::ReportFinishedTriggerInstance:
+			case ECallbackManagerRequestType::ReportFinishedTriggerInstance:
 				{
-					SAudioCallbackManagerRequestData<EAudioCallbackManagerRequestType::ReportFinishedTriggerInstance> const* const pRequestData = static_cast<SAudioCallbackManagerRequestData<EAudioCallbackManagerRequestType::ReportFinishedTriggerInstance> const* const>(pRequestDataBase);
+					SCallbackManagerRequestData<ECallbackManagerRequestType::ReportFinishedTriggerInstance> const* const pRequestData = static_cast<SCallbackManagerRequestData<ECallbackManagerRequestType::ReportFinishedTriggerInstance> const* const>(pBase);
 					audioControlID = pRequestData->audioTriggerId;
 					audioSystemEvent = ESystemEvents::TriggerFinished;
 
 					break;
 				}
-			case EAudioCallbackManagerRequestType::ReportStartedEvent:
+			case ECallbackManagerRequestType::ReportStartedEvent:
 				{
-					SAudioCallbackManagerRequestData<EAudioCallbackManagerRequestType::ReportStartedEvent> const* const pRequestData = static_cast<SAudioCallbackManagerRequestData<EAudioCallbackManagerRequestType::ReportStartedEvent> const* const>(pRequestDataBase);
+					SCallbackManagerRequestData<ECallbackManagerRequestType::ReportStartedEvent> const* const pRequestData = static_cast<SCallbackManagerRequestData<ECallbackManagerRequestType::ReportStartedEvent> const* const>(pBase);
 					pAudioEvent = &pRequestData->audioEvent;
 
 					break;
 				}
-			case EAudioCallbackManagerRequestType::ReportStartedFile:
+			case ECallbackManagerRequestType::ReportStartedFile:
 				{
-					SAudioCallbackManagerRequestData<EAudioCallbackManagerRequestType::ReportStartedFile> const* const pRequestData = static_cast<SAudioCallbackManagerRequestData<EAudioCallbackManagerRequestType::ReportStartedFile> const* const>(pRequestDataBase);
+					SCallbackManagerRequestData<ECallbackManagerRequestType::ReportStartedFile> const* const pRequestData = static_cast<SCallbackManagerRequestData<ECallbackManagerRequestType::ReportStartedFile> const* const>(pBase);
 					pStandaloneFile = &pRequestData->audioStandaloneFile;
 					audioSystemEvent = ESystemEvents::FileStarted;
 
 					break;
 				}
-			case EAudioCallbackManagerRequestType::ReportStoppedFile:
+			case ECallbackManagerRequestType::ReportStoppedFile:
 				{
-					SAudioCallbackManagerRequestData<EAudioCallbackManagerRequestType::ReportStoppedFile> const* const pRequestData = static_cast<SAudioCallbackManagerRequestData<EAudioCallbackManagerRequestType::ReportStoppedFile> const* const>(pRequestDataBase);
+					SCallbackManagerRequestData<ECallbackManagerRequestType::ReportStoppedFile> const* const pRequestData = static_cast<SCallbackManagerRequestData<ECallbackManagerRequestType::ReportStoppedFile> const* const>(pBase);
 					pStandaloneFile = &pRequestData->audioStandaloneFile;
 					audioSystemEvent = ESystemEvents::FileStopped;
 
@@ -2050,28 +2051,28 @@ void CSystem::NotifyListener(CAudioRequest const& request)
 
 			break;
 		}
-	case EAudioRequestType::AudioObjectRequest:
+	case ERequestType::ObjectRequest:
 		{
-			SAudioObjectRequestDataBase const* const pRequestDataBase = static_cast<SAudioObjectRequestDataBase const* const>(request.GetData());
+			SObjectRequestDataBase const* const pBase = static_cast<SObjectRequestDataBase const* const>(request.GetData());
 
-			switch (pRequestDataBase->type)
+			switch (pBase->objectRequestType)
 			{
-			case EAudioObjectRequestType::ExecuteTrigger:
+			case EObjectRequestType::ExecuteTrigger:
 				{
-					SAudioObjectRequestData<EAudioObjectRequestType::ExecuteTrigger> const* const pRequestData = static_cast<SAudioObjectRequestData<EAudioObjectRequestType::ExecuteTrigger> const* const>(pRequestDataBase);
+					SObjectRequestData<EObjectRequestType::ExecuteTrigger> const* const pRequestData = static_cast<SObjectRequestData<EObjectRequestType::ExecuteTrigger> const* const>(pBase);
 					audioControlID = pRequestData->audioTriggerId;
 					audioSystemEvent = ESystemEvents::TriggerExecuted;
 
 					break;
 				}
-			case EAudioObjectRequestType::PlayFile:
+			case EObjectRequestType::PlayFile:
 				audioSystemEvent = ESystemEvents::FilePlay;
 				break;
 			}
 
 			break;
 		}
-	case EAudioRequestType::AudioListenerRequest:
+	case ERequestType::ListenerRequest:
 		{
 			// Nothing to do currently for this type of request.
 
@@ -2352,7 +2353,7 @@ void CSystem::OnCallback(SRequestInfo const* const pRequestInfo)
 //////////////////////////////////////////////////////////////////////////
 void CSystem::GetImplInfo(SImplInfo& implInfo)
 {
-	SAudioManagerRequestData<EAudioManagerRequestType::GetImplInfo> const requestData(implInfo);
+	SManagerRequestData<EManagerRequestType::GetImplInfo> const requestData(implInfo);
 	CAudioRequest request(&requestData);
 	request.flags = ERequestFlags::ExecuteBlocking;
 	PushRequest(request);
@@ -2402,7 +2403,7 @@ void CSystem::DrawDebug()
 	{
 		SubmitLastIRenderAuxGeomForRendering();
 
-		SAudioManagerRequestData<EAudioManagerRequestType::DrawDebugInfo> const requestData;
+		SManagerRequestData<EManagerRequestType::DrawDebugInfo> const requestData;
 		CAudioRequest const request(&requestData);
 		PushRequest(request);
 	}

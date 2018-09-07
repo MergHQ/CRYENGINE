@@ -14,7 +14,7 @@ CAudioEventListenerManager::~CAudioEventListenerManager()
 }
 
 //////////////////////////////////////////////////////////////////////////
-ERequestStatus CAudioEventListenerManager::AddRequestListener(SAudioManagerRequestData<EAudioManagerRequestType::AddRequestListener> const* const pRequestData)
+ERequestStatus CAudioEventListenerManager::AddRequestListener(SManagerRequestData<EManagerRequestType::AddRequestListener> const* const pRequestData)
 {
 	ERequestStatus result = ERequestStatus::Failure;
 
@@ -30,11 +30,11 @@ ERequestStatus CAudioEventListenerManager::AddRequestListener(SAudioManagerReque
 
 	if (result == ERequestStatus::Failure)
 	{
-		SAudioEventListener audioEventListener;
-		audioEventListener.pObjectToListenTo = pRequestData->pObjectToListenTo;
-		audioEventListener.OnEvent = pRequestData->func;
-		audioEventListener.eventMask = pRequestData->eventMask;
-		m_listeners.push_back(audioEventListener);
+		SEventListener eventListener;
+		eventListener.pObjectToListenTo = pRequestData->pObjectToListenTo;
+		eventListener.OnEvent = pRequestData->func;
+		eventListener.eventMask = pRequestData->eventMask;
+		m_listeners.push_back(eventListener);
 		result = ERequestStatus::Success;
 	}
 

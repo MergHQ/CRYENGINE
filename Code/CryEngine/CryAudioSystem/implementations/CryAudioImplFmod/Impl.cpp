@@ -1,11 +1,21 @@
 // Copyright 2001-2018 Crytek GmbH / Crytek Group. All rights reserved.
 
 #include "stdafx.h"
-#include "AudioImpl.h"
-#include "AudioEvent.h"
-#include "AudioObject.h"
-#include "AudioImplCVars.h"
-#include "ATLEntities.h"
+#include "Impl.h"
+#include "Event.h"
+#include "CVars.h"
+#include "EnvironmentBus.h"
+#include "EnvironmentParameter.h"
+#include "File.h"
+#include "Listener.h"
+#include "GlobalObject.h"
+#include "Object.h"
+#include "ProgrammerSoundFile.h"
+#include "Setting.h"
+#include "StandaloneFile.h"
+#include "Trigger.h"
+#include "VcaParameter.h"
+#include "VcaState.h"
 #include "GlobalData.h"
 #include <Logger.h>
 #include <CrySystem/File/ICryPak.h>
@@ -23,8 +33,6 @@ namespace Impl
 {
 namespace Fmod
 {
-TriggerToParameterIndexes g_triggerToParameterIndexes;
-
 char const* const CImpl::s_szEventPrefix = "event:/";
 char const* const CImpl::s_szSnapshotPrefix = "snapshot:/";
 char const* const CImpl::s_szBusPrefix = "bus:/";
@@ -137,7 +145,7 @@ ERequestStatus CImpl::Init(uint32 const objectPoolSize, uint32 const eventPoolSi
 
 	CBaseObject::s_pSystem = m_pSystem;
 	CListener::s_pSystem = m_pSystem;
-	CStandaloneFileBase::s_pLowLevelSystem = m_pLowLevelSystem;
+	CBaseStandaloneFile::s_pLowLevelSystem = m_pLowLevelSystem;
 
 	return (fmodResult == FMOD_OK) ? ERequestStatus::Success : ERequestStatus::Failure;
 }
@@ -476,7 +484,7 @@ IStandaloneFile* CImpl::ConstructStandaloneFile(CATLStandaloneFile& standaloneFi
 		filePath = string(szFile) + ".mp3";
 	}
 
-	CStandaloneFileBase* pFile = nullptr;
+	CBaseStandaloneFile* pFile = nullptr;
 
 	if (pITrigger != nullptr)
 	{
@@ -1222,24 +1230,20 @@ void CImpl::DrawDebugInfo(IRenderAuxGeom& auxGeom, float const posX, float& posY
 	auxGeom.Draw2dLabel(posX, posY, g_debugSystemFontSize, g_debugSystemColorTextPrimary.data(), false, "[Object Pool] In Use: %u | Constructed: %u (%uKiB) | Memory Pool: %uKiB",
 	                    memoryInfo.poolUsedObjects, memoryInfo.poolConstructedObjects, memoryInfo.poolUsedMemory, memoryInfo.poolAllocatedMemory);
 
+	if (g_numObjectsWithDoppler > 0)
+	{
+		posY += g_debugSystemLineHeight;
+		auxGeom.Draw2dLabel(posX, posY, g_debugSystemFontSize, g_debugSystemColorTextPrimary.data(), false, "Objects with Doppler: %u", g_numObjectsWithDoppler);
+	}
+
 	Vec3 const& listenerPosition = g_pListener->GetPosition();
 	Vec3 const& listenerDirection = g_pListener->GetTransformation().GetForward();
+	float const listenerVelocity = g_pListener->GetVelocity().GetLength();
 	char const* const szName = g_pListener->GetName();
 
 	posY += g_debugSystemLineHeight;
-
-	if (g_numObjectsWithDoppler > 0)
-	{
-		auxGeom.Draw2dLabel(posX, posY, g_debugSystemFontSize, g_debugSystemColorTextPrimary.data(), false, "Objects with Doppler: %u", g_numObjectsWithDoppler);
-
-		float const listenerVelocity = g_pListener->GetVelocity().GetLength();
-		posY += g_debugSystemLineHeight;
-		auxGeom.Draw2dLabel(posX, posY, g_debugSystemFontSize, g_debugSystemColorListenerActive.data(), false, "Listener: %s | PosXYZ: %.2f %.2f %.2f | FwdXYZ: %.2f %.2f %.2f | Velocity: %.2f m/s", szName, listenerPosition.x, listenerPosition.y, listenerPosition.z, listenerDirection.x, listenerDirection.y, listenerDirection.z, listenerVelocity);
-	}
-	else
-	{
-		auxGeom.Draw2dLabel(posX, posY, g_debugSystemFontSize, g_debugSystemColorListenerActive.data(), false, "Listener: %s | PosXYZ: %.2f %.2f %.2f | FwdXYZ: %.2f %.2f %.2f", szName, listenerPosition.x, listenerPosition.y, listenerPosition.z, listenerDirection.x, listenerDirection.y, listenerDirection.z);
-	}
+	auxGeom.Draw2dLabel(posX, posY, g_debugSystemFontSize, g_debugSystemColorListenerActive.data(), false, "Listener: %s | PosXYZ: %.2f %.2f %.2f | FwdXYZ: %.2f %.2f %.2f | Velocity: %.2f m/s",
+	                    szName, listenerPosition.x, listenerPosition.y, listenerPosition.z, listenerDirection.x, listenerDirection.y, listenerDirection.z, listenerVelocity);
 #endif  // INCLUDE_FMOD_IMPL_PRODUCTION_CODE
 }
 } // namespace Fmod

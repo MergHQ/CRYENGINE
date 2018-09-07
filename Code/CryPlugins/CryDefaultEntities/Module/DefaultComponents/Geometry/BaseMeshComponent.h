@@ -119,7 +119,7 @@ struct SRenderParameters
 	EMiniumSystemSpec                     m_castShadowSpec = EMiniumSystemSpec::Always;
 	bool                                  m_bIgnoreVisAreas = false;
 	bool                                  m_bIgnoreTerrainLayerBlend = true;
-	bool                                  m_bIgnoreDecalBlend = true;
+	bool                                  m_bIgnoreDecalBlend = false;
 	Schematyc::Range<0, 100, 0, 100, int> m_viewDistanceRatio = 100;
 	Schematyc::Range<0, 100, 0, 100, int> m_lodDistance = 100;
 	EMeshGIMode                           m_giMode = EMeshGIMode::Disabled;

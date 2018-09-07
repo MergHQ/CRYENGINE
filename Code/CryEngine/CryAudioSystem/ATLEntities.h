@@ -708,12 +708,12 @@ public:
 
 	explicit CATLStandaloneFile() = default;
 
-	bool IsPlaying() const { return (m_state == EAudioStandaloneFileState::Playing) || (m_state == EAudioStandaloneFileState::Stopping); }
+	bool IsPlaying() const { return (m_state == EStandaloneFileState::Playing) || (m_state == EStandaloneFileState::Stopping); }
 
-	CATLAudioObject*          m_pAudioObject = nullptr;
-	Impl::IStandaloneFile*    m_pImplData = nullptr;
-	EAudioStandaloneFileState m_state = EAudioStandaloneFileState::None;
-	CHashedString             m_hashedFilename;
+	CATLAudioObject*       m_pAudioObject = nullptr;
+	Impl::IStandaloneFile* m_pImplData = nullptr;
+	EStandaloneFileState   m_state = EStandaloneFileState::None;
+	CHashedString          m_hashedFilename;
 
 	// Needed only during middleware switch.
 #if defined(INCLUDE_AUDIO_PRODUCTION_CODE)

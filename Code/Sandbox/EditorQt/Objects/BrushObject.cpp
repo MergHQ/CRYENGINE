@@ -122,7 +122,7 @@ CBrushObject::CBrushObject()
 	mv_Occluder = false;
 	mv_drawLast = false;
 	mv_ignoreTerrainLayerBlend = true;
-	mv_ignoreDecalBlend = true;
+	mv_ignoreDecalBlend = false;
 	mv_shadowLodBias = 0;
 
 	static string sVarName_OutdoorOnly = "IgnoreVisareas";

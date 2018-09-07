@@ -106,13 +106,13 @@ void CFileManager::DrawDebugInfo(IRenderAuxGeom& auxGeom, float posX, float posY
 
 				switch (pStandaloneFile->m_state)
 				{
-				case EAudioStandaloneFileState::Playing:
+				case EStandaloneFileState::Playing:
 					pColor = Debug::g_managerColorItemActive.data();
 					break;
-				case EAudioStandaloneFileState::Loading:
+				case EStandaloneFileState::Loading:
 					pColor = Debug::g_managerColorItemLoading.data();
 					break;
-				case EAudioStandaloneFileState::Stopping:
+				case EStandaloneFileState::Stopping:
 					pColor = Debug::g_managerColorItemStopping.data();
 					break;
 				default:

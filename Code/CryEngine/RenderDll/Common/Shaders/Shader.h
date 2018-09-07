@@ -399,7 +399,8 @@ enum ERenderOrder
 {
 	eRO_PreProcess,
 	eRO_PostProcess,
-	eRO_PreDraw
+	eRO_PreDraw,
+	eRO_Managed
 };
 
 enum ERTUpdate
