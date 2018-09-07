@@ -429,7 +429,7 @@ struct IMovieUser
 //! Callback-class.
 struct IMovieCallback
 {
-
+	virtual ~IMovieCallback() {}
 	//! Called by movie system.
 	virtual void OnSetCamera(const SCameraParams& Params) = 0;
 };
@@ -752,7 +752,7 @@ public:
 	// </interfuscator:shuffle>
 
 protected:
-	virtual ~IAnimNode() {};
+	virtual ~IAnimNode() {}
 };
 
 //! Track event listener.

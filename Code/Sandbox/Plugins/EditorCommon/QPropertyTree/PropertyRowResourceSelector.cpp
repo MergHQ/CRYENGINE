@@ -2,22 +2,22 @@
 
 #include "stdafx.h"
 #include "PropertyRowResourceSelector.h"
-#include "Serialization/PropertyTree/IMenu.h"
-#include <CrySerialization/ClassFactory.h>
-#include <CrySerialization/Decorators/Resources.h>
+
 #include "Serialization/Decorators/INavigationProvider.h"
-#include "Serialization/Decorators/IconXPM.h"
-#include <CrySystem/File/ICryPak.h>
-#include <IEditor.h>
-#include <QMenu>
+#include "Serialization/PropertyTree/IMenu.h"
+#include "Serialization/PropertyTree/PropertyTreeModel.h"
+#include "Serialization/QPropertyTree/QPropertyTree.h"
 #include "FileDialogs/EngineFileDialog.h"
 #include "DragDrop.h"
 #include "FilePathUtil.h"
-#include <QLineEdit>
+
 #include <IUndoManager.h>
+
 #include <CrySandbox/ScopedVariableSetter.h>
 
-#include <CryAnimation/ICryAnimation.h> // for ICharacterInstance in context
+#include <QLineEdit>
+
+using Serialization::IResourceSelector;
 
 enum Button
 {
@@ -314,7 +314,6 @@ void PropertyRowResourceSelector::jumpTo(PropertyTree* tree)
 		return;
 	if (provider_)
 		provider_->Select(type_.c_str(), value_.c_str(), id_);
-	return;
 }
 
 namespace Private_ResourceSelectorHost
@@ -393,9 +392,7 @@ bool PropertyRowResourceSelector::pickResource(PropertyTree* tree)
 	return true;
 }
 
-QString convertMFCToQtFileFilter(QString* defaultSuffix, const char* mfcFilter);
-
-bool    PropertyRowResourceSelector::createFile(PropertyTree* tree)
+bool PropertyRowResourceSelector::createFile(PropertyTree* tree)
 {
 	if (!provider_)
 		return false;

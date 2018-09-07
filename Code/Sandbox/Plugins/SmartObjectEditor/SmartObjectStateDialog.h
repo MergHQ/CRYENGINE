@@ -36,7 +36,7 @@ public:
 	virtual ~CSmartObjectStateDialog();
 
 	void    SetSOState(const CString& sSOState) { m_sSOState = sSOState; }
-	CString GetSOState()                        { return m_sSOState; };
+	CString GetSOState()                        { return m_sSOState; }
 
 	// Dialog Data
 	enum { IDD = IDD_AIANCHORS };

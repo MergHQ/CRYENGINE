@@ -160,7 +160,9 @@ static bool CopyDummy(const char* szImposter, const char* szSrcFile, const char*
 	// Take care of copying dummy out of the pak onto disk.
 	// Dummy then triggers recompilation in subsequent Sandbox starts as well.
 	FILE* pSrcFile = gEnv->pCryPak->FOpen(dummyPath, "rb");
-	HANDLE hDestFile = CreateFile(szDstFile, GENERIC_WRITE, 0, NULL, CREATE_ALWAYS, 0, NULL);
+
+	// Do not create destination file if the source does not exist, this prevents IFileChangeListener events for the void asset file.
+	HANDLE hDestFile = pSrcFile ? CreateFile(szDstFile, GENERIC_WRITE, 0, NULL, CREATE_ALWAYS, 0, NULL) : INVALID_HANDLE_VALUE;
 
 	success = (pSrcFile && (hDestFile != INVALID_HANDLE_VALUE));
 	if (success)
@@ -364,6 +366,11 @@ public:
 		return m_assets.front().tmp;
 	}
 
+	void Discard()
+	{
+		m_assets.clear();
+	}
+
 private:
 
 	// Moves asset(s) from the temporary to the destination location.
@@ -377,8 +384,9 @@ private:
 				CopyDummy(GetFailedTexture(asset.dst.c_str()), asset.src.c_str(), asset.dst.c_str(), COMPILE_FAILED_DELTA);
 			}
 
-			// Suggest reload of the texture after success or failure.
-			if (gEnv && gEnv->pRenderer)
+			// Suggest reload of the texture after success or failure, except for the editor, 
+			// where the asset reloading is managed by the editor's file monitor.
+			if (gEnv && gEnv->pRenderer && !gEnv->IsEditor())
 			{
 				gEnv->pRenderer->EF_ReloadFile_Request(asset.dst.c_str());
 			}
@@ -704,6 +712,12 @@ void CTextureCompiler::ConsumeQueuedResourceCompiler(TProcItem* item)
 			{
 				CTemporaryAsset tmpAsset(item->src, item->dst);
 				item->returnval = InvokeResourceCompiler(item->src.c_str(), tmpAsset.GetTmpPath().c_str(), item->windowed, true);
+				if (item->returnval != ERcExitCode::eRcExitCode_Success)
+				{
+					tmpAsset.Discard();
+					iLog->LogError("ResourceCompiler exited with an error for \"%s\""
+					               ", for more details please check \"tools/rc/rc_log.log or try to import the texture by Asset Browser\"\n", item->src.c_str());
+				}
 			}
 
 			m_rwLockNotify.RLock();

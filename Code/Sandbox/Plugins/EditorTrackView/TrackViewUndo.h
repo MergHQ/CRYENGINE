@@ -18,7 +18,7 @@ public:
 	CUndoSequenceSettings(CTrackViewSequence* pSequence);
 
 protected:
-	virtual const char* GetDescription() override { return "Undo Sequence Settings"; };
+	virtual const char* GetDescription() override { return "Undo Sequence Settings"; }
 
 	virtual void        Undo(bool bUndo) override;
 	virtual void        Redo() override;
@@ -48,7 +48,7 @@ public:
 protected:
 	CUndoAnimKeySelection(CTrackViewTrack* pTrack);
 
-	virtual const char* GetDescription() override { return "Undo Sequence Key Selection"; };
+	virtual const char* GetDescription() override { return "Undo Sequence Key Selection"; }
 
 	virtual void        Undo(bool bUndo) override;
 	virtual void        Redo() override;
@@ -69,7 +69,7 @@ public:
 	CUndoTrackObject(CTrackViewTrack* pTrack, bool bStoreKeySelection = true);
 
 protected:
-	virtual const char* GetDescription() override { return "Undo Track Modify"; };
+	virtual const char* GetDescription() override { return "Undo Track Modify"; }
 
 	virtual void        Undo(bool bUndo) override;
 	virtual void        Redo() override;
@@ -108,7 +108,7 @@ public:
 		: CAbstractUndoSequenceTransaction(pNewSequence) {}
 
 protected:
-	virtual const char* GetDescription() override { return "Undo Add Sequence"; };
+	virtual const char* GetDescription() override { return "Undo Add Sequence"; }
 
 	virtual void        Undo(bool bUndo) override;
 	virtual void        Redo() override;
@@ -122,7 +122,7 @@ public:
 	CUndoSequenceRemove(CTrackViewSequence* pRemovedSequence);
 
 protected:
-	virtual const char* GetDescription() override { return "Undo Remove Sequence"; };
+	virtual const char* GetDescription() override { return "Undo Remove Sequence"; }
 
 	virtual void        Undo(bool bUndo) override;
 	virtual void        Redo() override;
@@ -155,7 +155,7 @@ public:
 		: CAbstractUndoAnimNodeTransaction(pNewNode) {}
 
 protected:
-	virtual const char* GetDescription() override { return "Undo Add TrackView Node"; };
+	virtual const char* GetDescription() override { return "Undo Add TrackView Node"; }
 
 	virtual void        Undo(bool bUndo) override;
 	virtual void        Redo() override;
@@ -169,7 +169,7 @@ public:
 	CUndoAnimNodeRemove(CTrackViewAnimNode* pRemovedNode);
 
 protected:
-	virtual const char* GetDescription() override { return "Undo Remove TrackView Node"; };
+	virtual const char* GetDescription() override { return "Undo Remove TrackView Node"; }
 
 	virtual void        Undo(bool bUndo) override;
 	virtual void        Redo() override;
@@ -182,7 +182,7 @@ class CUndoDetachAnimEntity : public IUndoObject
 public:
 	CUndoDetachAnimEntity(CTrackViewEntityNode* pNode);
 
-	virtual const char* GetDescription() override { return "Undo Detach Anim Entity"; };
+	virtual const char* GetDescription() override { return "Undo Detach Anim Entity"; }
 
 protected:
 	virtual void Undo(bool bUndo) override;
@@ -224,7 +224,7 @@ public:
 	CUndoTrackAdd(CTrackViewTrack* pNewTrack) : CAbstractUndoTrackTransaction(pNewTrack) {}
 
 protected:
-	virtual const char* GetDescription() override { return "Undo Add TrackView Track"; };
+	virtual const char* GetDescription() override { return "Undo Add TrackView Track"; }
 
 	virtual void        Undo(bool bUndo) override;
 	virtual void        Redo() override;
@@ -238,7 +238,7 @@ public:
 	CUndoTrackRemove(CTrackViewTrack* pRemovedTrack);
 
 protected:
-	virtual const char* GetDescription() override { return "Undo Remove TrackView Track"; };
+	virtual const char* GetDescription() override { return "Undo Remove TrackView Track"; }
 
 	virtual void        Undo(bool bUndo) override;
 	virtual void        Redo() override;
@@ -252,7 +252,7 @@ public:
 	CUndoAnimNodeReparent(CTrackViewAnimNode* pAnimNode, CTrackViewAnimNode* pNewParent);
 
 protected:
-	virtual const char* GetDescription() override { return "Undo Reparent TrackView Node"; };
+	virtual const char* GetDescription() override { return "Undo Reparent TrackView Node"; }
 
 	virtual void        Undo(bool bUndo) override;
 	virtual void        Redo() override;
@@ -273,7 +273,7 @@ public:
 	CUndoAnimNodeRename(CTrackViewAnimNode* pNode, const string& oldName);
 
 protected:
-	virtual const char* GetDescription() override { return "Undo Rename TrackView Node"; };
+	virtual const char* GetDescription() override { return "Undo Rename TrackView Node"; }
 
 	virtual void        Undo(bool bUndo) override;
 	virtual void        Redo() override;
@@ -292,7 +292,7 @@ public:
 	CUndoTrackNodeDisable(CTrackViewNode* pNode, bool oldState);
 
 protected:
-	virtual const char* GetDescription() override { return "Undo Disable TrackView Node"; };
+	virtual const char* GetDescription() override { return "Undo Disable TrackView Node"; }
 
 	virtual void        Undo(bool bUndo) override;
 	virtual void        Redo() override;

@@ -8,8 +8,9 @@
 #include <CryMath/Range.h>
 #include <CryCore/functor.h>
 
-struct IFacialEffCtrl;
+struct ICharacterInstance;
 struct IFacialAnimSequence;
+struct IFacialEffCtrl;
 
 class IJoystickSet;
 
@@ -291,7 +292,7 @@ struct IFacialInstance
 	virtual bool                 IsPlaySequence(IFacialAnimSequence* pSequence, EFacialSequenceLayer layer) = 0;
 	virtual void                 PauseSequence(EFacialSequenceLayer layer, bool bPaused) = 0;
 
-	//! Seek sequence current time to the specified time offset from the begining of sequence playback time.
+	//! Seek sequence current time to the specified time offset from the beginning of sequence playback time.
 	virtual void SeekSequence(EFacialSequenceLayer layer, float fTime) = 0;
 
 	//! Start/Stop Lip syncing with the sound.

@@ -3,14 +3,9 @@
 #pragma once
 
 #include <Serialization/PropertyTree/IDrawContext.h>
-#include "Serialization/QPropertyTree/QPropertyTree.h"
-#include <Serialization/PropertyTree/PropertyTreeModel.h>
 #include <Serialization/PropertyTree/PropertyRowField.h>
 #include <Serialization.h>
-#include <CrySerialization/Decorators/Resources.h>
-#include "IResourceSelectorHost.h"
 
-using Serialization::IResourceSelector;
 namespace Serialization {
 struct INavigationProvider;
 }
@@ -66,7 +61,7 @@ private:
 	string                              type_;
 	const SStaticResourceSelectorEntry*	selector_;
 	string                              defaultPath_;
-	bool                                bActive_; // A state to prevent re-entrancy if the selector is already active.
+	bool                                bActive_; // A state to prevent re-entrance if the selector is already active.
 	int id_;
 };
 

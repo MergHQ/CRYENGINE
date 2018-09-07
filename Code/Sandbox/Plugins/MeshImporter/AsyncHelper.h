@@ -2,16 +2,13 @@
 // Helper for async worker thread interacting with Qt UI
 #pragma once
 
-class QObject;
-class QThread;
-class QString;
-class QWidget;
-class QHBoxLayout;
-class QMainWindow;
-class QProgressBar;
-class CAsyncTaskBase;
+#include <Notifications/NotificationCenter.h>
 
-class CProgressNotification;
+class CAsyncTaskBase;
+class QObject;
+class QString;
+class QThread;
+
 namespace MeshImporter {
 class CBaseDialog;
 }
@@ -24,7 +21,7 @@ public:
 	struct SNotification
 	{
 		explicit SNotification(CProgressNotificationStack* pOwner);
-		virtual ~SNotification();
+		~SNotification();
 
 		void    SetMessage(const QString& message);
 
@@ -34,6 +31,7 @@ public:
 		QString                           m_message;
 	};
 
+	virtual ~CProgressNotificationStack() {}
 	std::unique_ptr<SNotification> CreateNotification(const QString& message);
 	void                           Hide();
 

@@ -41,7 +41,7 @@
 // during plugin initialization.
 //
 // If you want to be able to pass some custom context to the selector (e.g. source of the information for the
-// list of items or something similar) then you can add a poitner argument to your selector function, i.e.:
+// list of items or something similar) then you can add a pointer argument to your selector function, i.e.:
 //
 //   dll_string SoundFileSelector(const SResourceSelectorContext& x, const char* previousValue,
 //			                          SoundFileList* list) // your context argument
@@ -72,9 +72,6 @@ enum class EAssetResourcePickerState
 	EnableAll
 };
 
-struct HWND__;
-typedef HWND__* HWND;
-struct ICharacterInstance;
 struct SStaticResourceSelectorEntry;
 class QWidget;
 

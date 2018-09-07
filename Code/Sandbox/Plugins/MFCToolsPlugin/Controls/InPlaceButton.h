@@ -1,13 +1,6 @@
 // Copyright 2001-2018 Crytek GmbH / Crytek Group. All rights reserved.
 
-#ifndef __inplacebutton_h__
-#define __inplacebutton_h__
-
-#if _MSC_VER > 1000
-	#pragma once
-#endif
-
-// CInPlaceButton
+#pragma once
 
 #include "ColorButton.h"
 
@@ -42,11 +35,11 @@ public:
 	// Simulate on click.
 	void     Click()                    { OnBnClicked(); }
 
-	void     SetColorFace(int clr)      {};
+	void     SetColorFace(int clr)      {}
 
-	void     SetColor(COLORREF col)     {};
-	void     SetTextColor(COLORREF col) {};
-	COLORREF GetColor() const           { return 0; };
+	void     SetColor(COLORREF col)     {}
+	void     SetTextColor(COLORREF col) {}
+	COLORREF GetColor() const           { return 0; }
 
 protected:
 	DECLARE_MESSAGE_MAP()
@@ -65,7 +58,7 @@ public:
 class PLUGIN_API CInPlaceCheckBox : public CInPlaceButton
 {
 public:
-	CInPlaceCheckBox(CInPlaceButton::OnClick onClickFunctor) : CInPlaceButton(onClickFunctor, true) {};
+	CInPlaceCheckBox(CInPlaceButton::OnClick onClickFunctor) : CInPlaceButton(onClickFunctor, true) {}
 };
 
 //////////////////////////////////////////////////////////////////////////
@@ -95,5 +88,3 @@ public:
 
 	OnClick m_onClick;
 };
-
-#endif // __inplacebutton_h__

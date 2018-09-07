@@ -852,8 +852,6 @@ void CImpl::GetFileData(char const* const szName, SFileData& fileData) const
 //////////////////////////////////////////////////////////////////////////
 bool CImpl::InitializeLibrary()
 {
-	bool isInitialized = false;
-
 #if defined(CRY_PLATFORM_WINDOWS)
 	CriAtomExConfig_WASAPI libraryConfig;
 	criAtomEx_SetDefaultConfig_WASAPI(&libraryConfig);
@@ -880,7 +878,7 @@ bool CImpl::InitializeLibrary()
 	criAtomEx_Initialize(&libraryConfig, nullptr, 0);
 #endif  // CRY_PLATFORM_WINDOWS
 
-	isInitialized = (criAtomEx_IsInitialized() == CRI_TRUE);
+	bool const isInitialized = (criAtomEx_IsInitialized() == CRI_TRUE);
 
 	if (!isInitialized)
 	{
@@ -893,8 +891,6 @@ bool CImpl::InitializeLibrary()
 //////////////////////////////////////////////////////////////////////////
 bool CImpl::AllocateVoicePool()
 {
-	bool isAllocated = false;
-
 	CriAtomExStandardVoicePoolConfig voicePoolConfig;
 	criAtomExVoicePool_SetDefaultConfigForStandardVoicePool(&voicePoolConfig);
 	voicePoolConfig.num_voices = static_cast<CriSint32>(g_cvars.m_numVoices);
@@ -902,7 +898,7 @@ bool CImpl::AllocateVoicePool()
 	voicePoolConfig.player_config.max_sampling_rate = static_cast<CriSint32>(g_cvars.m_maxSamplingRate);
 	voicePoolConfig.player_config.streaming_flag = CRI_TRUE;
 
-	isAllocated = (criAtomExVoicePool_AllocateStandardVoicePool(&voicePoolConfig, nullptr, 0) != nullptr);
+	bool const isAllocated = (criAtomExVoicePool_AllocateStandardVoicePool(&voicePoolConfig, nullptr, 0) != nullptr);
 
 	if (!isAllocated)
 	{
@@ -915,14 +911,12 @@ bool CImpl::AllocateVoicePool()
 //////////////////////////////////////////////////////////////////////////
 bool CImpl::CreateDbas()
 {
-	bool isCreated = false;
-
 	CriAtomDbasConfig dbasConfig;
 	criAtomDbas_SetDefaultConfig(&dbasConfig);
 	dbasConfig.max_streams = static_cast<CriSint32>(g_cvars.m_maxStreams);
 	m_dbasId = criAtomExDbas_Create(&dbasConfig, nullptr, 0);
 
-	isCreated = (m_dbasId != CRIATOMEXDBAS_ILLEGAL_ID);
+	bool const isCreated = (m_dbasId != CRIATOMEXDBAS_ILLEGAL_ID);
 
 	if (!isCreated)
 	{

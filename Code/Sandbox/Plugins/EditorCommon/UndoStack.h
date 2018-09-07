@@ -4,11 +4,8 @@
 
 // TODO : bring both CUndoStack and CUndoRedo int a single consistent class
 
-#include <CryCore/Platform/platform.h>
 #include "EditorCommonAPI.h"
-#include "Expected.h"
-#include "EditorCommonAPI.h"
-#include <CryCore/Containers/CryArray.h>
+
 #include <vector>
 
 class EDITOR_COMMON_API CUndoStack
@@ -40,6 +37,7 @@ private:
 
 struct IOperator
 {
+	virtual ~IOperator() {}
 	virtual void Undo() = 0;
 	virtual void Redo() = 0;
 };
@@ -49,8 +47,6 @@ typedef std::shared_ptr<IOperator> PBaseOperator;
 class EDITOR_COMMON_API CUndoRedo
 {
 public:
-	CUndoRedo();
-
 	void AddOperator(PBaseOperator op);
 	void Undo();
 	void Redo();

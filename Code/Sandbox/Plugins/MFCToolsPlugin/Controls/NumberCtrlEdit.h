@@ -1,11 +1,5 @@
 // Copyright 2001-2018 Crytek GmbH / Crytek Group. All rights reserved.
-
-#ifndef __numberctrledit_h__
-#define __numberctrledit_h__
-
-#if _MSC_VER > 1000
-	#pragma once
-#endif
+#pragma once
 
 #include <CryCore/functor.h>
 
@@ -20,7 +14,7 @@ public:
 	CNumberCtrlEdit() :
 		m_bUpdateOnKillFocus(true),
 		m_bSwallowReturn(false)
-	{};
+	{}
 
 	// Attributes
 	void SetText(const CString& strText);
@@ -60,5 +54,3 @@ protected:
 	CString        m_strInitText;
 	UpdateCallback m_onUpdate;
 };
-
-#endif // __numberctrledit_h__

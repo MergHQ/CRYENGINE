@@ -198,7 +198,7 @@ struct TypeInfo
 		*d = '\0';
 		
 		// This assertion is not critical, but may result in collision as
-		// stripped name wil be used, e.g. for lookup in factory.
+		// stripped name will be used, e.g. for lookup in factory.
 		YASLI_ASSERT(s == send && "Type name does not fit into the buffer");
 	}
 
@@ -284,9 +284,6 @@ inline bool TypeID::operator<(const TypeID& rhs) const{
 	return false;
 #endif
 }
-
-template<class T>
-T* createDerivedClass(TypeID typeID);
 
 }
 

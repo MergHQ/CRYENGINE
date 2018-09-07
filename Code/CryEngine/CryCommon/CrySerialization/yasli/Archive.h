@@ -204,7 +204,7 @@ struct SerializeStruct{
 	static bool invoke(Archive& ar, T& value, const char* name, const char* label){
 		Serializer serializer(value);
 		return ar(serializer, name, label);
-	};
+	}
 };
 
 //Enum classes may define an enum type that is not sizeof(int), therefore reinterpret_cast is dangerous and leads to bugs.
@@ -217,7 +217,7 @@ struct SerializeEnum{
 		bool ret = serializeEnum(enumDescription, ar, valueHolder, name, label);
 		value = (Enum)valueHolder;
 		return ret;
-	};
+	}
 };
 
 template<class Enum>
@@ -225,7 +225,7 @@ struct SerializeEnum<Enum, sizeof(int)>{
 	static bool invoke(Archive& ar, Enum& value, const char* name, const char* label) {
 		const EnumDescription& enumDescription = getEnumDescription<Enum>();
 		return serializeEnum(enumDescription, ar, reinterpret_cast<int&>(value), name, label);
-	};
+	}
 };
 
 template<class T>

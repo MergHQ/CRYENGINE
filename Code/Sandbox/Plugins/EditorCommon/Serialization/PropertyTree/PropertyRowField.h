@@ -30,7 +30,6 @@ public:
 	void onMouseUp(PropertyTree* tree, Point point) override;
 protected:
 	Rect fieldRect(const PropertyTree* tree) const;
-	void drawButtons(int* offset);
 
 	mutable RowWidthCache widthCache_;
 };

@@ -9,18 +9,14 @@
 
 #pragma once
 
-#include <map>
-#include <vector>
 #include "Serialization/PropertyTree/Color.h"
 #include "Serialization/PropertyTree/IDrawContext.h"
 #include "Serialization/PropertyTree/Rect.h"
 
-class QPainter;
+#include <map>
+#include <vector>
+
 class QImage;
-class QBrush;
-class QRect;
-class QColor;
-class QFont;
 namespace yasli { struct IconXPM; }
 
 namespace property_tree {
@@ -29,8 +25,6 @@ struct Color;
 
 struct IconXPMCache
 {
-	void initialize();
-	void finalize();
 	void flush();
 
 	~IconXPMCache();

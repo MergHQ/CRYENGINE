@@ -357,8 +357,6 @@ public:
 	static void                   setConstStrings(ConstStringList* constStrings) { constStrings_ = constStrings; }
 
 protected:
-	void init(const char* name, const char* nameAlt, const char* typeName);
-
 	const char*               name_;
 	const char*               label_;
 	const char*               labelUndecorated_;

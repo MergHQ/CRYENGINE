@@ -7,6 +7,7 @@
 
 struct ITrackViewSequenceManagerListener
 {
+	virtual ~ITrackViewSequenceManagerListener()                  {}
 	virtual void OnSequenceAdded(CTrackViewSequence* pSequence)   {}
 	virtual void OnSequenceRemoved(CTrackViewSequence* pSequence) {}
 };

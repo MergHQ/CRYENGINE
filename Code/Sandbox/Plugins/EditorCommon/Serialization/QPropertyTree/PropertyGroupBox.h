@@ -12,8 +12,6 @@ public:
 		: QWidget(parent)
 	{
 	}
-
-	virtual ~QPropertyGroupBox() override {}
 };
 
 class QPropertyGroupHeader : public QWidget
@@ -24,6 +22,4 @@ public:
 		: QWidget(parent)
 	{
 	}
-
-	virtual ~QPropertyGroupHeader() override {}
 };

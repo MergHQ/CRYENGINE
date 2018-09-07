@@ -6,6 +6,7 @@
 #include "Explorer/Explorer.h"
 #include "Explorer/ExplorerFileList.h"
 #include "Explorer/ExplorerModel.h"
+#include "Expected.h"
 #include "QAdvancedItemDelegate.h"
 
 #include <QApplication>
