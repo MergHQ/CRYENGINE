@@ -1,11 +1,21 @@
 // Copyright 2001-2018 Crytek GmbH / Crytek Group. All rights reserved.
 
 #include "stdafx.h"
-#include "AudioImpl.h"
-#include "AudioImplCVars.h"
+#include "Impl.h"
+#include "CVars.h"
 #include "FileIOHandler.h"
 #include "Common.h"
 #include "GlobalData.h"
+#include "Environment.h"
+#include "Event.h"
+#include "File.h"
+#include "Listener.h"
+#include "Object.h"
+#include "Parameter.h"
+#include "Setting.h"
+#include "StandaloneFile.h"
+#include "SwitchState.h"
+#include "Trigger.h"
 #include <Logger.h>
 #include <SharedAudioData.h>
 #include <CrySystem/File/ICryPak.h>
@@ -256,6 +266,34 @@ void LoadEventsMaxAttenuations(const string& soundbanksPath)
 			}
 		}
 	}
+}
+
+///////////////////////////////////////////////////////////////////////////
+CSwitchState const* ParseWwiseRtpcSwitch(XmlNodeRef const pNode)
+{
+	CSwitchState* pSwitchStateImpl = nullptr;
+
+	char const* const szName = pNode->getAttr(s_szNameAttribute);
+
+	if ((szName != nullptr) && (szName[0] != '\0'))
+	{
+		float value = s_defaultStateValue;
+
+		if (pNode->getAttr(s_szValueAttribute, value))
+		{
+			AkUniqueID const rtpcId = AK::SoundEngine::GetIDFromString(szName);
+			pSwitchStateImpl = new CSwitchState(ESwitchType::Rtpc, rtpcId, rtpcId, value);
+		}
+	}
+	else
+	{
+		Cry::Audio::Log(
+			ELogType::Warning,
+			"The Wwise Rtpc %s inside ATLSwitchState does not have a valid name.",
+			szName);
+	}
+
+	return pSwitchStateImpl;
 }
 
 ///////////////////////////////////////////////////////////////////////////
@@ -780,7 +818,7 @@ ERequestStatus CImpl::RegisterInMemoryFile(SFileInfo* const pFileInfo)
 
 	if (pFileInfo != nullptr)
 	{
-		auto const pFileData = static_cast<SFile*>(pFileInfo->pImplData);
+		auto const pFileData = static_cast<CFile*>(pFileInfo->pImplData);
 
 		if (pFileData != nullptr)
 		{
@@ -818,7 +856,7 @@ ERequestStatus CImpl::UnregisterInMemoryFile(SFileInfo* const pFileInfo)
 
 	if (pFileInfo != nullptr)
 	{
-		auto const pFileData = static_cast<SFile*>(pFileInfo->pImplData);
+		auto const pFileData = static_cast<CFile*>(pFileInfo->pImplData);
 
 		if (pFileData != nullptr)
 		{
@@ -869,7 +907,7 @@ ERequestStatus CImpl::ConstructFile(XmlNodeRef const pRootNode, SFileInfo* const
 			pFileInfo->bLocalized = (szLocalized != nullptr) && (_stricmp(szLocalized, s_szTrueValue) == 0);
 			pFileInfo->szFileName = szFileName;
 			pFileInfo->memoryBlockAlignment = AK_BANK_PLATFORM_DATA_ALIGNMENT;
-			pFileInfo->pImplData = new SFile();
+			pFileInfo->pImplData = new CFile();
 			result = ERequestStatus::Success;
 		}
 		else
@@ -1042,7 +1080,7 @@ void CImpl::DestructEvent(IEvent const* const pIEvent)
 //////////////////////////////////////////////////////////////////////////
 IStandaloneFile* CImpl::ConstructStandaloneFile(CATLStandaloneFile& standaloneFile, char const* const szFile, bool const bLocalized, ITrigger const* pITrigger /*= nullptr*/)
 {
-	return static_cast<IStandaloneFile*>(new SStandaloneFile);
+	return static_cast<IStandaloneFile*>(new CStandaloneFile);
 }
 
 //////////////////////////////////////////////////////////////////////////
@@ -1140,7 +1178,7 @@ void CImpl::DestructTrigger(ITrigger const* const pITrigger)
 ///////////////////////////////////////////////////////////////////////////
 IParameter const* CImpl::ConstructParameter(XmlNodeRef const pRootNode)
 {
-	SParameter* pParameter = nullptr;
+	CParameter* pParameter = nullptr;
 
 	AkRtpcID rtpcId = AK_INVALID_RTPC_ID;
 	float multiplier = s_defaultParamMultiplier;
@@ -1150,7 +1188,7 @@ IParameter const* CImpl::ConstructParameter(XmlNodeRef const pRootNode)
 
 	if (rtpcId != AK_INVALID_RTPC_ID)
 	{
-		pParameter = new SParameter(rtpcId, multiplier, shift);
+		pParameter = new CParameter(rtpcId, multiplier, shift);
 	}
 
 	return static_cast<IParameter*>(pParameter);
@@ -1166,7 +1204,7 @@ void CImpl::DestructParameter(IParameter const* const pIParameter)
 ISwitchState const* CImpl::ConstructSwitchState(XmlNodeRef const pRootNode)
 {
 	char const* const szTag = pRootNode->getTag();
-	SSwitchState const* pSwitchState = nullptr;
+	CSwitchState const* pSwitchState = nullptr;
 
 	if (_stricmp(szTag, s_szStateGroupTag) == 0)
 	{
@@ -1175,7 +1213,7 @@ ISwitchState const* CImpl::ConstructSwitchState(XmlNodeRef const pRootNode)
 
 		if (ParseSwitchOrState(pRootNode, stateOrSwitchGroupId, stateOrSwitchId))
 		{
-			pSwitchState = new SSwitchState(ESwitchType::StateGroup, stateOrSwitchGroupId, stateOrSwitchId);
+			pSwitchState = new CSwitchState(ESwitchType::StateGroup, stateOrSwitchGroupId, stateOrSwitchId);
 		}
 	}
 	else if (_stricmp(szTag, s_szSwitchGroupTag) == 0)
@@ -1185,7 +1223,7 @@ ISwitchState const* CImpl::ConstructSwitchState(XmlNodeRef const pRootNode)
 
 		if (ParseSwitchOrState(pRootNode, stateOrSwitchGroupId, stateOrSwitchId))
 		{
-			pSwitchState = new SSwitchState(ESwitchType::SwitchGroup, stateOrSwitchGroupId, stateOrSwitchId);
+			pSwitchState = new CSwitchState(ESwitchType::SwitchGroup, stateOrSwitchGroupId, stateOrSwitchId);
 		}
 	}
 	else if (_stricmp(szTag, s_szParameterTag) == 0)
@@ -1210,7 +1248,7 @@ void CImpl::DestructSwitchState(ISwitchState const* const pISwitchState)
 IEnvironment const* CImpl::ConstructEnvironment(XmlNodeRef const pRootNode)
 {
 	char const* const szTag = pRootNode->getTag();
-	SEnvironment const* pEnvironment = nullptr;
+	CEnvironment const* pEnvironment = nullptr;
 
 	if (_stricmp(szTag, s_szAuxBusTag) == 0)
 	{
@@ -1219,7 +1257,7 @@ IEnvironment const* CImpl::ConstructEnvironment(XmlNodeRef const pRootNode)
 
 		if (busId != AK_INVALID_AUX_ID)
 		{
-			pEnvironment = new SEnvironment(EEnvironmentType::AuxBus, static_cast<AkAuxBusID>(busId));
+			pEnvironment = new CEnvironment(EEnvironmentType::AuxBus, static_cast<AkAuxBusID>(busId));
 		}
 		else
 		{
@@ -1236,7 +1274,7 @@ IEnvironment const* CImpl::ConstructEnvironment(XmlNodeRef const pRootNode)
 
 		if (rtpcId != AK_INVALID_RTPC_ID)
 		{
-			pEnvironment = new SEnvironment(EEnvironmentType::Rtpc, rtpcId, multiplier, shift);
+			pEnvironment = new CEnvironment(EEnvironmentType::Rtpc, rtpcId, multiplier, shift);
 		}
 		else
 		{
@@ -1305,34 +1343,6 @@ bool CImpl::ParseSwitchOrState(XmlNodeRef const pNode, AkUInt32& outStateOrSwitc
 	}
 
 	return bSuccess;
-}
-
-///////////////////////////////////////////////////////////////////////////
-SSwitchState const* CImpl::ParseWwiseRtpcSwitch(XmlNodeRef const pNode)
-{
-	SSwitchState* pSwitchStateImpl = nullptr;
-
-	char const* const szName = pNode->getAttr(s_szNameAttribute);
-
-	if ((szName != nullptr) && (szName[0] != '\0'))
-	{
-		float value = s_defaultStateValue;
-
-		if (pNode->getAttr(s_szValueAttribute, value))
-		{
-			AkUniqueID const rtpcId = AK::SoundEngine::GetIDFromString(szName);
-			pSwitchStateImpl = new SSwitchState(ESwitchType::Rtpc, rtpcId, rtpcId, value);
-		}
-	}
-	else
-	{
-		Cry::Audio::Log(
-			ELogType::Warning,
-			"The Wwise Rtpc %s inside ATLSwitchState does not have a valid name.",
-			szName);
-	}
-
-	return pSwitchStateImpl;
 }
 
 ///////////////////////////////////////////////////////////////////////////
@@ -1531,24 +1541,21 @@ void CImpl::DrawDebugInfo(IRenderAuxGeom& auxGeom, float const posX, float& posY
 	auxGeom.Draw2dLabel(posX, posY, g_debugSystemFontSize, g_debugSystemColorTextPrimary.data(), false, "[Object Pool] In Use: %u | Constructed: %u (%uKiB) | Memory Pool: %uKiB",
 	                    memoryInfo.poolUsedObjects, memoryInfo.poolConstructedObjects, memoryInfo.poolUsedMemory, memoryInfo.poolAllocatedMemory);
 
+	if (g_numObjectsWithRelativeVelocity > 0)
+	{
+		posY += g_debugSystemLineHeight;
+		auxGeom.Draw2dLabel(posX, posY, g_debugSystemFontSize, g_debugSystemColorTextPrimary.data(), false, "Objects with relative velocity calculation: %u", g_numObjectsWithRelativeVelocity);
+	}
+
 	Vec3 const& listenerPosition = g_pListener->GetPosition();
 	Vec3 const& listenerDirection = g_pListener->GetTransformation().GetForward();
+	float const listenerVelocity = g_pListener->GetVelocity().GetLength();
 	char const* const szName = g_pListener->GetName();
 
 	posY += g_debugSystemLineHeight;
+	auxGeom.Draw2dLabel(posX, posY, g_debugSystemFontSize, g_debugSystemColorListenerActive.data(), false, "Listener: %s | PosXYZ: %.2f %.2f %.2f | FwdXYZ: %.2f %.2f %.2f | Velocity: %.2f m/s",
+	                    szName, listenerPosition.x, listenerPosition.y, listenerPosition.z, listenerDirection.x, listenerDirection.y, listenerDirection.z, listenerVelocity);
 
-	if (g_numObjectsWithRelativeVelocity > 0)
-	{
-		auxGeom.Draw2dLabel(posX, posY, g_debugSystemFontSize, g_debugSystemColorTextPrimary.data(), false, "Objects with relative velocity calculation: %u", g_numObjectsWithRelativeVelocity);
-
-		float const listenerVelocity = g_pListener->GetVelocity().GetLength();
-		posY += g_debugSystemLineHeight;
-		auxGeom.Draw2dLabel(posX, posY, g_debugSystemFontSize, g_debugSystemColorListenerActive.data(), false, "Listener: %s | PosXYZ: %.2f %.2f %.2f | FwdXYZ: %.2f %.2f %.2f | Velocity: %.2f m/s", szName, listenerPosition.x, listenerPosition.y, listenerPosition.z, listenerDirection.x, listenerDirection.y, listenerDirection.z, listenerVelocity);
-	}
-	else
-	{
-		auxGeom.Draw2dLabel(posX, posY, g_debugSystemFontSize, g_debugSystemColorListenerActive.data(), false, "Listener: %s | PosXYZ: %.2f %.2f %.2f | FwdXYZ: %.2f %.2f %.2f", szName, listenerPosition.x, listenerPosition.y, listenerPosition.z, listenerDirection.x, listenerDirection.y, listenerDirection.z);
-	}
 #endif  // INCLUDE_WWISE_IMPL_PRODUCTION_CODE
 }
 } // namespace Wwise

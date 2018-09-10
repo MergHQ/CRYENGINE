@@ -12,14 +12,15 @@ class CCVars final
 {
 public:
 
-	CCVars() = default;
 	CCVars(CCVars const&) = delete;
 	CCVars(CCVars&&) = delete;
 	CCVars& operator=(CCVars const&) = delete;
 	CCVars& operator=(CCVars&&) = delete;
 
-	void    RegisterVariables();
-	void    UnregisterVariables();
+	CCVars() = default;
+
+	void RegisterVariables();
+	void UnregisterVariables();
 
 	float m_velocityTrackingThreshold = 0.0f;
 	float m_positionUpdateThresholdMultiplier = 0.02f;

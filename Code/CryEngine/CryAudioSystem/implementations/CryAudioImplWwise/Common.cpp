@@ -3,7 +3,7 @@
 #include "stdafx.h"
 #include "Common.h"
 
-#include "AudioImpl.h"
+#include "Impl.h"
 
 namespace CryAudio
 {
