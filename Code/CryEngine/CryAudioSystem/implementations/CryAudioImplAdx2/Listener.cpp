@@ -72,6 +72,11 @@ void CListener::SetTransformation(CObjectTransformation const& transformation)
 
 	Fill3DAttributeTransformation(transformation, m_3dAttributes);
 
+#if defined(INCLUDE_ADX2_IMPL_PRODUCTION_CODE)
+	// Always update velocity in non-release builds for debug draw.
+	m_isMovingOrDecaying = true;
+#endif  // INCLUDE_ADX2_IMPL_PRODUCTION_CODE
+
 	if (g_numObjectsWithDoppler > 0)
 	{
 		m_isMovingOrDecaying = true;
