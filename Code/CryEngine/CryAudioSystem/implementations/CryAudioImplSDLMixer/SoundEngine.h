@@ -2,15 +2,24 @@
 
 #pragma once
 
-#include "SoundEngineTypes.h"
+#include "Common.h"
+#include <ATLEntityData.h>
 
 namespace CryAudio
 {
+class CATLEvent;
+class CATLStandaloneFile;
+
 namespace Impl
 {
 namespace SDL_mixer
 {
 static string s_localizedAssetsPath = "";
+
+class CEvent;
+class CObject;
+class CStandaloneFile;
+class CTrigger;
 
 namespace SoundEngine
 {
@@ -37,19 +46,10 @@ void           UnloadSample(const SampleId id);
 
 // Events
 ERequestStatus ExecuteEvent(CObject* const pObject, CTrigger const* const pTrigger, CEvent* const pEvent);
-void           SetVolume(CObject* const pObject, SampleId const sampleId);
-float          GetVolumeMultiplier(CObject* const pObject, SampleId const sampleId);
-int            GetAbsoluteVolume(int const triggerVolume, float const multiplier);
 ERequestStatus PlayFile(CObject* const pObject, CStandaloneFile* const pStandaloneFile);
-ERequestStatus StopFile(CObject* const pObject, CStandaloneFile* const pStandaloneFile);
 
-// stops an specific event instance
-bool StopEvent(CEvent const* const pEvent);
 // stops all the events associated with this trigger
 bool StopTrigger(CTrigger const* const pTrigger);
-
-bool PauseEvent(CEvent const* const pEvent);
-bool ResumeEvent(CEvent const* const pEvent);
 
 // Objects
 bool RegisterObject(CObject* const pObject);
