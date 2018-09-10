@@ -1,13 +1,19 @@
 // Copyright 2001-2018 Crytek GmbH / Crytek Group. All rights reserved.
 
 #include "stdafx.h"
-#include "AudioImpl.h"
+#include "Impl.h"
 #include "Common.h"
-#include "AudioTrigger.h"
-#include "AudioEvent.h"
-#include "AudioObject.h"
-#include "AudioImplCVars.h"
-#include "ATLEntities.h"
+#include "Trigger.h"
+#include "Event.h"
+#include "Object.h"
+#include "CVars.h"
+#include "Environment.h"
+#include "File.h"
+#include "Listener.h"
+#include "Parameter.h"
+#include "Setting.h"
+#include "StandaloneFile.h"
+#include "SwitchState.h"
 #include "GlobalData.h"
 #include <Logger.h>
 #include <sndfile.hh>

@@ -1,8 +1,8 @@
 // Copyright 2001-2018 Crytek GmbH / Crytek Group. All rights reserved.
 
 #include "stdafx.h"
-#include "AudioEvent.h"
-#include "AudioObject.h"
+#include "Event.h"
+#include "Object.h"
 #include <Logger.h>
 #include <CryAudio/IAudioSystem.h>
 #include <CrySystem/ISystem.h> // needed for gEnv in Release builds
@@ -20,12 +20,12 @@ static long unsigned const s_bufferLength = 256;
 // Callbacks
 //////////////////////////////////////////////////////////////////////////
 static int StreamCallback(
-  void const* pInputBuffer,
-  void* pOutputBuffer,
-  long unsigned framesPerBuffer,
-  PaStreamCallbackTimeInfo const* pTimeInfo,
-  PaStreamCallbackFlags statusFlags,
-  void* pUserData)
+	void const* pInputBuffer,
+	void* pOutputBuffer,
+	long unsigned framesPerBuffer,
+	PaStreamCallbackTimeInfo const* pTimeInfo,
+	PaStreamCallbackFlags statusFlags,
+	void* pUserData)
 {
 	CRY_ASSERT(framesPerBuffer == s_bufferLength);
 	auto const pEvent = static_cast<CEvent*>(pUserData);
@@ -118,10 +118,10 @@ CEvent::~CEvent()
 
 //////////////////////////////////////////////////////////////////////////
 bool CEvent::Execute(
-  int const numLoops,
-  double const sampleRate,
-  CryFixedStringT<MaxFilePathLength> const& filePath,
-  PaStreamParameters const& streamParameters)
+	int const numLoops,
+	double const sampleRate,
+	CryFixedStringT<MaxFilePathLength> const& filePath,
+	PaStreamParameters const& streamParameters)
 {
 	CRY_ASSERT_MESSAGE(state == EEventState::None, "PortAudio event is not in None state during Execute.");
 	CRY_ASSERT_MESSAGE(pStream == nullptr, "PortAudio pStream is valid during event execution.");
@@ -135,14 +135,14 @@ bool CEvent::Execute(
 	if (pSndFile != nullptr)
 	{
 		PaError err = Pa_OpenStream(
-		  &pStream,
-		  nullptr,
-		  &streamParameters,
-		  sampleRate,
-		  s_bufferLength,
-		  paClipOff,
-		  &StreamCallback,
-		  static_cast<void*>(this));
+			&pStream,
+			nullptr,
+			&streamParameters,
+			sampleRate,
+			s_bufferLength,
+			paClipOff,
+			&StreamCallback,
+			static_cast<void*>(this));
 
 		if (err == paNoError)
 		{

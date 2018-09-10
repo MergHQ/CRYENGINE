@@ -1,8 +1,7 @@
 // Copyright 2001-2018 Crytek GmbH / Crytek Group. All rights reserved.
 
 #include "stdafx.h"
-#include "AudioImplCVars.h"
-#include <CrySystem/IConsole.h>
+#include "Listener.h"
 
 namespace CryAudio
 {
@@ -11,18 +10,11 @@ namespace Impl
 namespace PortAudio
 {
 //////////////////////////////////////////////////////////////////////////
-void CCVars::RegisterVariables()
+void CListener::SetName(char const* const szName)
 {
-}
-
-//////////////////////////////////////////////////////////////////////////
-void CCVars::UnregisterVariables()
-{
-	IConsole* const pConsole = gEnv->pConsole;
-
-	if (pConsole != nullptr)
-	{
-	}
+#if defined(INCLUDE_PORTAUDIO_IMPL_PRODUCTION_CODE)
+	m_name = szName;
+#endif  // INCLUDE_PORTAUDIO_IMPL_PRODUCTION_CODE
 }
 } // namespace PortAudio
 } // namespace Impl

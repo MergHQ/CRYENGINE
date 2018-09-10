@@ -2,7 +2,7 @@
 
 #pragma once
 
-#include "ATLEntities.h"
+#include <ATLEntityData.h>
 #include <PoolObject.h>
 
 namespace CryAudio
@@ -17,13 +17,13 @@ class CObject final : public IObject, public CPoolObject<CObject, stl::PSyncNone
 {
 public:
 
-	CObject() = default;
-	virtual ~CObject() override = default;
-
 	CObject(CObject const&) = delete;
 	CObject(CObject&&) = delete;
 	CObject& operator=(CObject const&) = delete;
 	CObject& operator=(CObject&&) = delete;
+
+	CObject() = default;
+	virtual ~CObject() override = default;
 
 	// CryAudio::Impl::IObject
 	virtual void                         Update(float const deltaTime) override;

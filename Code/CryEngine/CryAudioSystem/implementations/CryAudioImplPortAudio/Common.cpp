@@ -2,7 +2,7 @@
 
 #include "stdafx.h"
 #include "Common.h"
-#include "ATLEntities.h"
+#include "Listener.h"
 
 namespace CryAudio
 {

@@ -34,15 +34,16 @@ class CEvent final : public IEvent, public CPoolObject<CEvent, stl::PSyncNone>
 {
 public:
 
-	explicit CEvent(CATLEvent& event_);
-	virtual ~CEvent() override;
-
+	CEvent() = delete;
 	CEvent(CEvent const&) = delete;
 	CEvent(CEvent&&) = delete;
 	CEvent& operator=(CEvent const&) = delete;
 	CEvent& operator=(CEvent&&) = delete;
 
-	bool    Execute(
+	explicit CEvent(CATLEvent& event_);
+	virtual ~CEvent() override;
+
+	bool Execute(
 		int const numLoops,
 		double const sampleRate,
 		CryFixedStringT<MaxFilePathLength> const& filePath,
