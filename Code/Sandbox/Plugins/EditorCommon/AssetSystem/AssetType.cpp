@@ -3,20 +3,15 @@
 #include "StdAfx.h"
 #include "AssetType.h"
 
-#include "Asset.h"
-#include "AssetImportContext.h"
-#include "AssetImporter.h"
-#include "AssetManager.h"
-#include "Loader/AssetLoaderHelpers.h"
-#include "Loader/Metadata.h"
-
+#include "AssetSystem/Loader/AssetLoaderHelpers.h"
+#include "AssetSystem/Loader/Metadata.h"
+#include "AssetSystem/AssetImportContext.h"
+#include "AssetSystem/AssetImporter.h"
+#include "AssetSystem/AssetManager.h"
+#include "AssetSystem/EditableAsset.h"
 #include "FilePathUtil.h"
-#include "ProxyModels/ItemModelAttribute.h"
-#include "QtUtil.h"
-#include <QFile>
 
-#include <CryString/CryPath.h>
-#include "EditableAsset.h"
+#include <QFile>
 
 namespace Private_AssetType
 {

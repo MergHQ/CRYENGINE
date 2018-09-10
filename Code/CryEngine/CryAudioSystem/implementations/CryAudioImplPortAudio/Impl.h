@@ -2,7 +2,6 @@
 
 #pragma once
 
-#include "ATLEntities.h"
 #include <IAudioImpl.h>
 
 namespace CryAudio
@@ -18,11 +17,13 @@ class CImpl final : public IImpl
 {
 public:
 
-	CImpl() = default;
 	CImpl(CImpl const&) = delete;
 	CImpl(CImpl&&) = delete;
 	CImpl& operator=(CImpl const&) = delete;
 	CImpl& operator=(CImpl&&) = delete;
+
+	CImpl() = default;
+	virtual ~CImpl() override = default;
 
 	// CryAudio::Impl::IImpl
 	virtual void                Update() override {}

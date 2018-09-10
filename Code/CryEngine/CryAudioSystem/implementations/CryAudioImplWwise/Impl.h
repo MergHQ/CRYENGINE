@@ -3,7 +3,7 @@
 #pragma once
 
 #include "FileIOHandler.h"
-#include "ATLEntities.h"
+#include <IAudioImpl.h>
 
 namespace CryAudio
 {
@@ -15,9 +15,12 @@ class CImpl final : public IImpl
 {
 public:
 
-	CImpl();
 	CImpl(CImpl const&) = delete;
+	CImpl(CImpl&&) = delete;
 	CImpl& operator=(CImpl const&) = delete;
+	CImpl& operator=(CImpl&&) = delete;
+
+	CImpl();
 
 	// CryAudio::Impl::IImpl
 	virtual void                Update() override;
@@ -70,11 +73,10 @@ public:
 
 private:
 
-	bool                ParseSwitchOrState(XmlNodeRef const pNode, AkUInt32& outStateOrSwitchGroupId, AkUInt32& outStateOrSwitchId);
-	SSwitchState const* ParseWwiseRtpcSwitch(XmlNodeRef pNode);
-	void                ParseRtpcImpl(XmlNodeRef const pNode, AkRtpcID& rtpcId, float& multiplier, float& shift);
-	void                SignalAuxAudioThread();
-	void                WaitForAuxAudioThread();
+	bool ParseSwitchOrState(XmlNodeRef const pNode, AkUInt32& outStateOrSwitchGroupId, AkUInt32& outStateOrSwitchId);
+	void ParseRtpcImpl(XmlNodeRef const pNode, AkRtpcID& rtpcId, float& multiplier, float& shift);
+	void SignalAuxAudioThread();
+	void WaitForAuxAudioThread();
 
 	AkGameObjectID                     m_gameObjectId;
 

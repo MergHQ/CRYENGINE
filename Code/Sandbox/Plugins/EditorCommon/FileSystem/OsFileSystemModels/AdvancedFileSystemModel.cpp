@@ -1,11 +1,12 @@
 // Copyright 2001-2018 Crytek GmbH / Crytek Group. All rights reserved.
-#include <StdAfx.h>
+#include "StdAfx.h"
 #include "AdvancedFileSystemModel.h"
 
-#include <QFileIconProvider>
-
-#include "CryIcon.h"
 #include "FileSystem/FileType.h"
+
+#include <CryIcon.h>
+
+#include <QFileIconProvider>
 
 namespace  Private_AFSM_cpp
 {

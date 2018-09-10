@@ -22,7 +22,7 @@ public:
 	static std::vector<CTrackViewWindow*> GetTrackViewWindows() { return ms_trackViewWindows; }
 
 	// CEditor
-	virtual const char* GetEditorName() const override { return "Track View"; };
+	virtual const char* GetEditorName() const override { return "Track View"; }
 
 	virtual void        SetLayout(const QVariantMap& state) override;
 	virtual QVariantMap GetLayout() const override;

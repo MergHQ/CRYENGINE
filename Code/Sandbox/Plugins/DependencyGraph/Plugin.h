@@ -17,5 +17,4 @@ public:
 	const QVariant& GetPersonalizationProperty(const QString& propName);
 
 	static CDependencyGraph* GetInstance();
-private:
 };

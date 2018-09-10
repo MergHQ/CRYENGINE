@@ -2,8 +2,12 @@
 
 #pragma once
 
+#include "EditorFramework/PersonalizationManager.h"
 #include "Objects/ObjectPropertyWidget.h"
+
 #include <QCollapsibleFrame.h>
+
+#include <QVariantMap>
 
 class CInspectorWidgetCreator
 {

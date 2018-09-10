@@ -1,38 +1,32 @@
 // Copyright 2001-2018 Crytek GmbH / Crytek Group. All rights reserved.
 
 #include "StdAfx.h"
+#include "ExportManager.h"
 
+#include "Geometry/EdGeometry.h"
+#include "Material/Material.h"
 #include "Objects/SelectionGroup.h"
-#include "Objects/BaseObject.h"
 #include "Objects/BrushObject.h"
 #include "Objects/CameraObject.h"
-#include "Geometry/EdGeometry.h"
-#include <Cry3DEngine/IIndexedMesh.h>
-#include <Cry3DEngine/I3DEngine.h>
-#include <CryAnimation/IAttachment.h>
-#include <CrySystem/IProjectManager.h>
-#include "Objects/EntityObject.h"
-#include "Material/Material.h"
 #include "Terrain/TerrainManager.h"
 #include "Vegetation/VegetationMap.h"
-#include "Vegetation/VegetationObject.h"
-#include "ViewManager.h"
-#include "ExportManager.h"
-#include "OBJExporter.h"
-#include "OCMExporter.h"
 #include "FBXExporterDialog.h"
-#include "RenderViewport.h"
-#include "FileDialogs/SystemFileDialog.h"
-#include "QT/Widgets/QWaitProgress.h"
-#include "Controls/QuestionDialog.h"
 #include "GameEngine.h"
+#include "OCMExporter.h"
+#include "OBJExporter.h"
 
-// CExportManager
-CExportManager::CExportManager() :
-	m_isPrecaching(false),
-	m_pBaseObj(0),
-	m_fScale(100.0f), // this scale is used by CryEngine RC
-	m_bAnimationExport(false)
+#include <Controls/QuestionDialog.h>
+#include <FileDialogs/SystemFileDialog.h>
+#include <Objects/BaseObject.h>
+#include <QT/Widgets/QWaitProgress.h>
+
+#include <CrySystem/IProjectManager.h>
+
+CExportManager::CExportManager() 
+	: m_isPrecaching(false)
+	, m_pBaseObj(0)
+	, m_fScale(100.0f) // this scale is used by CryEngine RC
+	, m_bAnimationExport(false)
 {
 	RegisterExporter(new COBJExporter());
 	RegisterExporter(new COCMExporter());

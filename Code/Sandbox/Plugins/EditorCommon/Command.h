@@ -3,12 +3,13 @@
 #pragma once
 
 #include "EditorCommonAPI.h"
-#include <vector>
-#include "dll_string.h"
 #include "Util/EditorUtils.h"
+#include "dll_string.h"
 #include "KeyboardShortcut.h"
-#include <CryString/CryString.h>
+
 #include <CryCore/functor.h>
+
+#include <vector>
 
 class CCommand;
 

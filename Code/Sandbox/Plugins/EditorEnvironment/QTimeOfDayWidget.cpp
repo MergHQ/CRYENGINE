@@ -1,13 +1,27 @@
 // Copyright 2001-2018 Crytek GmbH / Crytek Group. All rights reserved.
 
 #include "stdafx.h"
+#include "QTimeOfDayWidget.h"
+
+#include <QPropertyTree/ContextList.h>
+#include <Serialization/QPropertyTree/QPropertyTree.h>
+#include <CurveEditor.h>
+#include <TimeEditControl.h>
+#include <EditorStyleHelper.h>
+
+#include <IUndoObject.h>
+
+#include <CryIcon.h>
+
+#include <Cry3DEngine/I3DEngine.h>
+#include <Cry3DEngine/ITimeOfDay.h>
+#include <CrySerialization/yasli/JSONIArchive.h>
+#include <CrySerialization/yasli/JSONOArchive.h>
 
 #include <QApplication>
 #include <QClipboard>
-#include <QJsonDocument>
 #include <QKeyEvent>
 #include <QLabel>
-#include <QLayout>
 #include <QLineEdit>
 #include <QMimeData>
 #include <QPainter>
@@ -16,31 +30,7 @@
 #include <QToolBar>
 #include <QToolButton>
 
-#include "QTimeOfDayWidget.h"
-
-#include <Cry3DEngine/I3DEngine.h>
-#include <Cry3DEngine/ITimeOfDay.h>
-
-#include "IUndoObject.h"
-
-#include <CrySerialization/IArchive.h>
-#include <CrySerialization/Decorators/Range.h>
-#include <CrySerialization/Color.h>
-#include <CrySerialization/Enum.h>
-#include <CrySerialization/Math.h>
-#include <CrySerialization/IArchiveHost.h>
-#include <CrySerialization/yasli/JSONIArchive.h>
-#include <CrySerialization/yasli/JSONOArchive.h>
-
-#include "QPropertyTree/ContextList.h"
-#include "Serialization/QPropertyTree/QPropertyTree.h"
-#include "Serialization/PropertyTree/PropertyTreeModel.h"
-#include "CurveEditor.h"
-#include "TimeEditControl.h"
-#include "QViewport.h"
-#include <CryIcon.h>
-#include <EditorStyleHelper.h>
-#include "CryMath/Bezier_impl.h"
+#include <map>
 
 SERIALIZATION_ENUM_BEGIN(ETODParamType, "ETodParamType")
 SERIALIZATION_ENUM(eFloatType, "eFloatType", "eFloatType")

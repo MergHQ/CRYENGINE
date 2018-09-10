@@ -6,14 +6,6 @@
 
 const uint32 BAI_COVER_FILE_VERSION_WRITE = 2;
 
-CCoverSurfaceManager::CCoverSurfaceManager()
-{
-}
-
-CCoverSurfaceManager::~CCoverSurfaceManager()
-{
-}
-
 void CCoverSurfaceManager::ClearGameSurfaces()
 {
 	gEnv->pAISystem->GetCoverSystem()->Clear();

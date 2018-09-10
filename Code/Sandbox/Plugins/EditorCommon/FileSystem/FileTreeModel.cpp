@@ -4,14 +4,11 @@
 
 #include "FileSystem/FileSystem_Enumerator.h"
 
-#include "CryIcon.h"
 #include "DragDrop.h"
 
-#include "CryIcon.h"
-#include <QLocale>
+#include <CryIcon.h>
 
-#include <cassert>
-#include <queue>
+#include <QLocale>
 
 struct CFileTreeModel::SImplementation
 {

@@ -3,14 +3,11 @@
 #pragma once
 
 #include "EditorCommonAPI.h"
-#include "AutoRegister.h"
-#include "QtViewPane.h"
 
-#include "PreferencesDialog.h"
+#include "EditorFramework/PreferencesDialog.h"
 #include "Util/UserDataUtil.h"
+#include "AutoRegister.h"
 
-#include <CrySerialization/Enum.h>
-#include <CryString/CryString.h>
 #include <CrySandbox/CrySignal.h>
 
 class CPreferences;
@@ -52,8 +49,6 @@ public:                                                       \
 	CCrySignal<void()> accessor ## Changed;                     \
 private:                                                      \
 	type m_ ## accessor;                                        \
-
-struct SPreferencePage;
 
 struct EDITOR_COMMON_API SPreferencePage
 {

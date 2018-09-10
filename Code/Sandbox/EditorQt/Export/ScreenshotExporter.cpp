@@ -2,20 +2,18 @@
 
 #include "StdAfx.h"
 
-#include <QPixmap>
-#include <QApplication>
-#include <QFile>
-#include <QDir>
-#include <QWindow>
-#include <QScreen>
-#include <QTime>
-#include <QDate>
+#include "Notifications/NotificationCenter.h"
 
 #include <CrySystem/ICryLink.h>
 
-#include "Util/FileUtil.h"
-#include "QtUtil.h"
-#include "Notifications/NotificationCenter.h"
+#include <QApplication>
+#include <QDate>
+#include <QDir>
+#include <QFile>
+#include <QPixmap>
+#include <QScreen>
+#include <QTime>
+#include <QWindow>
 
 namespace Private_ShortcutExporter
 {

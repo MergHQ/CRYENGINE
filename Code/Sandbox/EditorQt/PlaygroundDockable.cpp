@@ -2,8 +2,6 @@
 #include <StdAfx.h>
 #include "PlaygroundDockable.h"
 
-#include "QtViewPane.h"
-
 #include <QLabel>
 
 //Uncomment this to register and use the Playground Dockable
@@ -17,9 +15,4 @@ CPlaygroundDockable::CPlaygroundDockable()
 	someTestWidget->setAlignment(Qt::AlignCenter);
 	someTestWidget->setSizePolicy(QSizePolicy::Expanding, QSizePolicy::Expanding);
 	SetContent(someTestWidget);
-}
-
-CPlaygroundDockable::~CPlaygroundDockable()
-{
-
 }

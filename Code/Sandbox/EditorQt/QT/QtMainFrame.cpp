@@ -21,6 +21,7 @@
 
 // EditorCommon
 #include <Controls/SaveChangesDialog.h>
+#include <EditorFramework/PersonalizationManager.h>
 #include <Menu/MenuWidgetBuilders.h>
 #include <Preferences/GeneralPreferences.h>
 #include <QTrackingTooltip.h>

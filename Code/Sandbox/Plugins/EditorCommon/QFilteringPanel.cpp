@@ -1,30 +1,26 @@
 // Copyright 2001-2018 Crytek GmbH / Crytek Group. All rights reserved.
 
-#include <StdAfx.h>
+#include "StdAfx.h"
 #include "QFilteringPanel.h"
-#include <QVBoxLayout>
-#include <QHBoxLayout>
-#include <QGridLayout>
-#include <QToolButton>
-#include <QLineEdit>
-#include <QCheckBox>
-#include <QTimer>
-#include <QScrollArea>
-#include <QLabel>
-#include <QSplitter>
-#include <QAbstractItemView>
-#include <QListView>
-#include <QHeaderView>
 
-#include "QControls.h"
-#include "QSearchBox.h"
+#include "EditorFramework/PersonalizationManager.h"
 #include "Controls/QMenuComboBox.h"
 #include "Controls/QPopupWidget.h"
-#include "QAdvancedTreeView.h"
-#include "CryIcon.h"
-#include "ProxyModels/FavoritesHelper.h"
-#include "QtUtil.h"
 #include "Menu/MenuWidgetBuilders.h"
+#include "ProxyModels/FavoritesHelper.h"
+#include "QAdvancedTreeView.h"
+#include "QSearchBox.h"
+#include "QtUtil.h"
+
+#include <QAbstractItemView>
+#include <QCheckBox>
+#include <QGridLayout>
+#include <QHBoxLayout>
+#include <QHeaderView>
+#include <QSplitter>
+#include <QTimer>
+#include <QToolButton>
+#include <QVBoxLayout>
 
 class QFilteringPanel::CSavedFiltersModel : public QAbstractListModel
 {
@@ -34,7 +30,6 @@ public:
 	{
 		Update();
 	}
-
 
 	void Update()
 	{

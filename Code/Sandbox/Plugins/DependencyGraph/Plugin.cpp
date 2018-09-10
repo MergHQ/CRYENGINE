@@ -2,9 +2,12 @@
 
 #include "StdAfx.h"
 #include "Plugin.h"
-#include "Menu/AbstractMenu.h"
-#include <CryCore/Platform/platform_impl.inl>
+
 #include <AssetSystem/Browser/AssetBrowser.h>
+#include <EditorFramework/PersonalizationManager.h>
+#include <Menu/AbstractMenu.h>
+
+#include <CryCore/Platform/platform_impl.inl>
 
 // Plugin instance
 static CDependencyGraph* g_pInstance = nullptr;

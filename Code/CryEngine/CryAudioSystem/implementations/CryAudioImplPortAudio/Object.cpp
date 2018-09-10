@@ -1,9 +1,9 @@
 // Copyright 2001-2018 Crytek GmbH / Crytek Group. All rights reserved.
 
 #include "stdafx.h"
-#include "AudioObject.h"
-#include "AudioEvent.h"
-#include "AudioTrigger.h"
+#include "Object.h"
+#include "Event.h"
+#include "Trigger.h"
 #include <Logger.h>
 
 namespace CryAudio

@@ -2,13 +2,14 @@
 
 #pragma once
 
-#include <StdAfx.h>
-#include <Serialization/PropertyTree/IDrawContext.h>
+#include "StdAfx.h"
+
+#include <EditorFramework/PersonalizationManager.h>
 #include <Serialization/PropertyTree/PropertyRow.h>
 #include <Serialization/PropertyTree/PropertyTreeModel.h>
-#include "Serialization/QPropertyTree/QPropertyTree.h"
-#include "Serialization.h"
-#include "CrySerialization/Math.h"
+#include <Serialization/QPropertyTree/QPropertyTree.h>
+
+#include <CrySerialization/Math.h>
 
 class PropertyRowUniformScale : public PropertyRow
 {

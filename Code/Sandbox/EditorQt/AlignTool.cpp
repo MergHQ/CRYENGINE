@@ -203,4 +203,4 @@ void CAlignPickCallback::OnCancelPick()
 bool CAlignPickCallback::OnPickFilter(CBaseObject* filterObject)
 {
 	return true;
-};
+}

@@ -1,9 +1,18 @@
 // Copyright 2001-2018 Crytek GmbH / Crytek Group. All rights reserved.
 
 #include "stdafx.h"
-#include "ATLEntities.h"
-#include "AudioImplCVars.h"
+#include "Object.h"
+#include "Common.h"
+#include "CVars.h"
+#include "Environment.h"
+#include "Event.h"
+#include "Listener.h"
+#include "Parameter.h"
+#include "SwitchState.h"
+#include "Trigger.h"
+
 #include <Logger.h>
+#include <AK/SoundEngine/Common/AkSoundEngine.h>
 
 #if defined(INCLUDE_WWISE_IMPL_PRODUCTION_CODE)
 	#include "Debug.h"
@@ -16,7 +25,13 @@ namespace Impl
 {
 namespace Wwise
 {
-// AK callbacks
+static constexpr char const* s_szAbsoluteVelocityParameterName = "absolute_velocity";
+static AkRtpcID const s_absoluteVelocityParameterId = AK::SoundEngine::GetIDFromString(s_szAbsoluteVelocityParameterName);
+
+static constexpr char const* s_szRelativeVelocityParameterName = "relative_velocity";
+static AkRtpcID const s_relativeVelocityParameterId = AK::SoundEngine::GetIDFromString(s_szRelativeVelocityParameterName);
+
+//////////////////////////////////////////////////////////////////////////
 void EndEventCallback(AkCallbackType callbackType, AkCallbackInfo* pCallbackInfo)
 {
 	if (callbackType == AK_EndOfEvent)
@@ -29,28 +44,6 @@ void EndEventCallback(AkCallbackType callbackType, AkCallbackInfo* pCallbackInfo
 		}
 	}
 }
-
-void PrepareEventCallback(
-	AkUniqueID eventId,
-	void const* pBankPtr,
-	AKRESULT wwiseResult,
-	AkMemPoolId memPoolId,
-	void* pCookie)
-{
-	CEvent* const pEvent = static_cast<CEvent* const>(pCookie);
-
-	if (pEvent != nullptr)
-	{
-		pEvent->m_id = eventId;
-		gEnv->pAudioSystem->ReportFinishedEvent(pEvent->m_atlEvent, wwiseResult == AK_Success);
-	}
-}
-
-static constexpr char const* s_szAbsoluteVelocityParameterName = "absolute_velocity";
-static AkRtpcID const s_absoluteVelocityParameterId = AK::SoundEngine::GetIDFromString(s_szAbsoluteVelocityParameterName);
-
-static constexpr char const* s_szRelativeVelocityParameterName = "relative_velocity";
-static AkRtpcID const s_relativeVelocityParameterId = AK::SoundEngine::GetIDFromString(s_szRelativeVelocityParameterName);
 
 //////////////////////////////////////////////////////////////////////////
 void SetParameterById(AkRtpcID const rtpcId, AkRtpcValue const value, AkGameObjectID const objectId)
@@ -159,7 +152,7 @@ void CObject::SetTransformation(CObjectTransformation const& transformation)
 void CObject::SetEnvironment(IEnvironment const* const pIEnvironment, float const amount)
 {
 	static float const envEpsilon = 0.0001f;
-	SEnvironment const* const pEnvironment = static_cast<SEnvironment const* const>(pIEnvironment);
+	CEnvironment const* const pEnvironment = static_cast<CEnvironment const* const>(pIEnvironment);
 
 	if (pEnvironment != nullptr)
 	{
@@ -233,7 +226,7 @@ void CObject::SetEnvironment(IEnvironment const* const pIEnvironment, float cons
 //////////////////////////////////////////////////////////////////////////
 void CObject::SetParameter(IParameter const* const pIParameter, float const value)
 {
-	SParameter const* const pParameter = static_cast<SParameter const* const>(pIParameter);
+	CParameter const* const pParameter = static_cast<CParameter const* const>(pIParameter);
 
 	if (pParameter != nullptr)
 	{
@@ -260,7 +253,7 @@ void CObject::SetParameter(IParameter const* const pIParameter, float const valu
 //////////////////////////////////////////////////////////////////////////
 void CObject::SetSwitchState(ISwitchState const* const pISwitchState)
 {
-	SSwitchState const* const pSwitchState = static_cast<SSwitchState const* const>(pISwitchState);
+	CSwitchState const* const pSwitchState = static_cast<CSwitchState const* const>(pISwitchState);
 
 	if (pSwitchState != nullptr)
 	{
@@ -767,226 +760,6 @@ void CObject::DrawDebugInfo(IRenderAuxGeom& auxGeom, float const posX, float pos
 	}
 
 #endif  // INCLUDE_WWISE_IMPL_PRODUCTION_CODE
-}
-
-//////////////////////////////////////////////////////////////////////////
-ERequestStatus CEvent::Stop()
-{
-	switch (m_state)
-	{
-	case EEventState::Playing:
-	case EEventState::Virtual:
-		{
-			AK::SoundEngine::StopPlayingID(m_id, 10);
-			break;
-		}
-	default:
-		{
-			// Stopping an event of this type is not supported!
-			CRY_ASSERT(false);
-			break;
-		}
-	}
-
-	return ERequestStatus::Success;
-}
-
-//////////////////////////////////////////////////////////////////////////
-CEvent::~CEvent()
-{
-	if (m_pObject != nullptr)
-	{
-		m_pObject->RemoveEvent(this);
-	}
-}
-
-//////////////////////////////////////////////////////////////////////////
-void CEvent::UpdateVirtualState(float const distance)
-{
-	EEventState const state = ((m_maxAttenuation > 0.0f) && (m_maxAttenuation < distance)) ? EEventState::Virtual : EEventState::Playing;
-
-	if (m_state != state)
-	{
-		m_state = state;
-
-		if (m_state == EEventState::Virtual)
-		{
-			gEnv->pAudioSystem->ReportVirtualizedEvent(m_atlEvent);
-		}
-		else
-		{
-			gEnv->pAudioSystem->ReportPhysicalizedEvent(m_atlEvent);
-		}
-	}
-}
-
-//////////////////////////////////////////////////////////////////////////
-CListener::CListener(CObjectTransformation const& transformation, AkGameObjectID const id)
-	: m_id(id)
-	, m_transformation(transformation)
-	, m_hasMoved(false)
-	, m_isMovingOrDecaying(false)
-	, m_velocity(ZERO)
-	, m_position(transformation.GetPosition())
-	, m_previousPosition(transformation.GetPosition())
-{
-}
-
-//////////////////////////////////////////////////////////////////////////
-void CListener::Update(float const deltaTime)
-{
-	if (m_isMovingOrDecaying && (deltaTime > 0.0f))
-	{
-		m_hasMoved = m_velocity.GetLengthSquared() > FloatEpsilon;
-		Vec3 const deltaPos(m_position - m_previousPosition);
-
-		if (!deltaPos.IsZero())
-		{
-			m_velocity = deltaPos / deltaTime;
-			m_previousPosition = m_position;
-		}
-		else if (!m_velocity.IsZero())
-		{
-			// We did not move last frame, begin exponential decay towards zero.
-			float const decay = std::max(1.0f - deltaTime / 0.05f, 0.0f);
-			m_velocity *= decay;
-
-			if (m_velocity.GetLengthSquared() < FloatEpsilon)
-			{
-				m_velocity = ZERO;
-				m_isMovingOrDecaying = false;
-			}
-		}
-		else
-		{
-			m_isMovingOrDecaying = false;
-		}
-	}
-}
-
-//////////////////////////////////////////////////////////////////////////
-void CListener::SetName(char const* const szName)
-{
-#if defined(INCLUDE_WWISE_IMPL_PRODUCTION_CODE)
-	m_name = szName;
-#endif  // INCLUDE_WWISE_IMPL_PRODUCTION_CODE
-}
-
-//////////////////////////////////////////////////////////////////////////
-void CListener::SetTransformation(CObjectTransformation const& transformation)
-{
-	m_transformation = transformation;
-	m_position = transformation.GetPosition();
-
-	AkListenerPosition listenerPos;
-	FillAKListenerPosition(transformation, listenerPos);
-
-	if (g_numObjectsWithRelativeVelocity > 0)
-	{
-		m_isMovingOrDecaying = true;
-	}
-	else
-	{
-		m_previousPosition = m_position;
-	}
-
-	AKRESULT const wwiseResult = AK::SoundEngine::SetPosition(m_id, listenerPos);
-
-	if (!IS_WWISE_OK(wwiseResult))
-	{
-		Cry::Audio::Log(ELogType::Warning, "Wwise - CListener::SetTransformation failed with AKRESULT: %d", wwiseResult);
-	}
-}
-
-//////////////////////////////////////////////////////////////////////////
-ERequestStatus CTrigger::Load() const
-{
-	return SetLoaded(true);
-}
-
-//////////////////////////////////////////////////////////////////////////
-ERequestStatus CTrigger::Unload() const
-{
-	return SetLoaded(false);
-}
-
-//////////////////////////////////////////////////////////////////////////
-ERequestStatus CTrigger::LoadAsync(IEvent* const pIEvent) const
-{
-	return SetLoadedAsync(pIEvent, true);
-}
-
-//////////////////////////////////////////////////////////////////////////
-ERequestStatus CTrigger::UnloadAsync(IEvent* const pIEvent) const
-{
-	return SetLoadedAsync(pIEvent, false);
-}
-
-//////////////////////////////////////////////////////////////////////////
-ERequestStatus CTrigger::SetLoaded(bool const bLoad) const
-{
-	ERequestStatus result = ERequestStatus::Failure;
-	AkUniqueID id = m_id;
-	AKRESULT const wwiseResult = AK::SoundEngine::PrepareEvent(bLoad ? AK::SoundEngine::Preparation_Load : AK::SoundEngine::Preparation_Unload, &id, 1);
-
-	if (IS_WWISE_OK(wwiseResult))
-	{
-		result = ERequestStatus::Success;
-	}
-	else
-	{
-		Cry::Audio::Log(
-			ELogType::Warning,
-			"Wwise - PrepareEvent with %s failed for Wwise event %" PRISIZE_T " with AKRESULT: %d",
-			bLoad ? "Preparation_Load" : "Preparation_Unload",
-			m_id,
-			wwiseResult);
-	}
-
-	return result;
-}
-
-//////////////////////////////////////////////////////////////////////////
-ERequestStatus CTrigger::SetLoadedAsync(IEvent* const pIEvent, bool const bLoad) const
-{
-	ERequestStatus result = ERequestStatus::Failure;
-
-	CEvent* const pEvent = static_cast<CEvent*>(pIEvent);
-
-	if (pEvent != nullptr)
-	{
-		AkUniqueID id = m_id;
-		AKRESULT const wwiseResult = AK::SoundEngine::PrepareEvent(
-			bLoad ? AK::SoundEngine::Preparation_Load : AK::SoundEngine::Preparation_Unload,
-			&id,
-			1,
-			&PrepareEventCallback,
-			pEvent);
-
-		if (IS_WWISE_OK(wwiseResult))
-		{
-			pEvent->m_id = m_id;
-			pEvent->m_state = EEventState::Unloading;
-			result = ERequestStatus::Success;
-		}
-		else
-		{
-			Cry::Audio::Log(
-				ELogType::Warning,
-				"Wwise - PrepareEvent with %s failed for Wwise event %" PRISIZE_T " with AKRESULT: %d",
-				bLoad ? "Preparation_Load" : "Preparation_Unload",
-				m_id,
-				wwiseResult);
-		}
-	}
-	else
-	{
-		Cry::Audio::Log(ELogType::Error,
-		                "Wwise - Invalid IEvent passed to the Wwise implementation of %sTriggerAsync",
-		                bLoad ? "Load" : "Unprepare");
-	}
-
-	return result;
 }
 } // namespace Wwise
 } // namespace Impl

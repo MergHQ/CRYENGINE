@@ -9,7 +9,6 @@
 #include "EditorFramework/TrayArea.h"
 #include "EditorFramework/Preferences.h"
 #include "QtViewPane.h"
-#include "IEditorClassFactory.h"
 #include "BoostPythonMacros.h"
 #include "IResourceSelectorHost.h"
 

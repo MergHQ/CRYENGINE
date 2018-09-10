@@ -2,9 +2,12 @@
 
 #pragma once
 
-#include "Util/PakFile.h"
 #include "Util/Image.h"
-#include "QT/Widgets/QWaitProgress.h"
+#include "Util/PakFile.h"
+
+#include <QT/Widgets/QWaitProgress.h>
+
+class CTerrainLightGen;
 
 enum EGameExport
 {
@@ -16,9 +19,6 @@ enum EGameExport
 
 	eExp_AI_All           = eExp_AI_MNM | eExp_AI_CoverSurfaces,
 };
-
-class CTerrainLightGen;
-class CWaitProgress;
 
 struct SGameExporterSettings
 {
@@ -160,7 +160,7 @@ private: // --------------------------------------------------------------------
 
 		std::vector<int16>& m_rIndexBlock;              //
 		uint32              m_IndexBlockPos;            //
-		const char*         m_szFilename;               // points to the filenname
+		const char*         m_szFilename;               // points to the filename
 
 		SRecursionHelper    m_TempMem[32];              //
 	};

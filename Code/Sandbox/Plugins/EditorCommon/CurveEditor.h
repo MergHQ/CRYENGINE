@@ -2,11 +2,12 @@
 
 #pragma once
 
-#include <CryCore/StlUtils.h>
 #include "CurveEditorContent.h"
-#include <QWidget>
+
 #include <CryMath/Range.h>
 #include <CryMovie/AnimTime.h>
+
+#include <QWidget>
 
 class QToolBar;
 

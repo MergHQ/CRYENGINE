@@ -7,7 +7,6 @@
 #include "Version.h"
 
 #include <CryCore/Containers/CryListenerSet.h>
-#include <CryInput/IInput.h>
 #include <CryMath/Cry_Geo.h>
 
 #define GET_PLUGIN_ID_FROM_MENU_ID(ID)     (((ID) & 0x000000FF))
@@ -47,6 +46,7 @@ class QWidget;
 struct IBackgroundScheduleManager;
 struct IBackgroundTaskManagerListener;
 struct IDevManager;
+struct SInputEvent;
 
 enum EEditorPathName
 {

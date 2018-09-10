@@ -2,16 +2,14 @@
 #include "StdAfx.h"
 #include "Vec3Widget.h"
 
-// CryCommon
-#include <CrySerialization/Math.h>
-
-// EditorCommon
-#include "CryIcon.h"
+#include "EditorFramework/PersonalizationManager.h"
 #include "Controls/QNumericBox.h"
 
-//Qt
+#include <CryIcon.h>
+
+#include <CrySerialization/Math.h>
+
 #include <QHBoxLayout>
-#include <QMouseEvent>
 
 CVec3Widget::CVec3Widget()
 	: m_ignoreSignals(false)

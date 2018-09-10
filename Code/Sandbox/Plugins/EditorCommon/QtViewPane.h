@@ -3,17 +3,17 @@
 #pragma once
 
 #include "EditorCommonAPI.h"
+
+#include "EditorFramework/StateSerializable.h"
+#include "IEditor.h"
 #include "IEditorClassFactory.h"
-#include "AutoRegister.h"
-#include <QWidget>
+#include "ICommandManager.h"
+
 #include <QMainWindow>
-#include <QVariantMap>
+#include <QMenu>
 #include <QRect>
 #include <QSize>
-#include <QMenu>
-#include "EditorFramework/StateSerializable.h"
-#include <IEditor.h>
-#include <ICommandManager.h>
+#include <QWidget>
 
 struct IPane;
 

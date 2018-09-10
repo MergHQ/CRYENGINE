@@ -6,11 +6,11 @@
 #include "LevelEditor/LevelEditor.h"
 
 #include <QMainWindow>
-#include <QMenu>
 
 class CWaitProgress;
 class QLoading;
 class QMainToolBarManager;
+class QMenu;
 class QToolWindowManager;
 
 class CEditorMainFrame : public QMainWindow, public IAutoEditorNotifyListener //TODO : class name doesn't match filename

@@ -1,24 +1,22 @@
 // Copyright 2001-2018 Crytek GmbH / Crytek Group. All rights reserved.
 #pragma once
 
-#include <QWidget>
-
-#include <CrySandbox/CrySignal.h>
-
 #include "EditorCommonAPI.h"
 #include "ProxyModels/ItemModelAttribute.h"
 #include "ProxyModels/AttributeFilterProxyModel.h"
 #include "EditorFramework/StateSerializable.h"
 
+#include <CrySandbox/CrySignal.h>
+
+#include <QWidget>
+
 class CAbstractMenu;
-class QVBoxLayout;
-class QHBoxLayout;
 class CItemModelAttribute;
-class QLineEdit;
-class QToolButton;
-class QSplitter;
 class QGridLayout;
 class QSearchBox;
+class QSplitter;
+class QToolButton;
+class QVBoxLayout;
 
 class EDITOR_COMMON_API QFilteringPanel : public QWidget, public IStateSerializable
 {

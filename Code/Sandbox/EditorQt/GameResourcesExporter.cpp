@@ -2,21 +2,16 @@
 
 #include "StdAfx.h"
 #include "GameResourcesExporter.h"
+
+#include "Material/MaterialManager.h"
+#include "Objects/ObjectLayerManager.h"
+#include "Particles/ParticleManager.h"
 #include "GameEngine.h"
 
-#include "Objects/ObjectLayerManager.h"
-#include "Objects/EntityObject.h"
-#include "Material/MaterialManager.h"
-#include "Particles/ParticleManager.h"
+#include <QT/Widgets/QWaitProgress.h>
 
-#include "QT/Widgets/QWaitProgress.h"
-
-//////////////////////////////////////////////////////////////////////////
-// Static data.
-//////////////////////////////////////////////////////////////////////////
 CGameResourcesExporter::Files CGameResourcesExporter::m_files;
 
-//////////////////////////////////////////////////////////////////////////
 void CGameResourcesExporter::ChooseDirectoryAndSave()
 {
 	ChooseDirectory();
@@ -24,7 +19,6 @@ void CGameResourcesExporter::ChooseDirectoryAndSave()
 		Save(m_path);
 }
 
-//////////////////////////////////////////////////////////////////////////
 void CGameResourcesExporter::ChooseDirectory()
 {
 	string path;
@@ -42,7 +36,6 @@ void CGameResourcesExporter::ChooseDirectory()
 	m_path = path;
 }
 
-//////////////////////////////////////////////////////////////////////////
 void CGameResourcesExporter::GatherAllLoadedResources()
 {
 	m_files.clear();
@@ -61,7 +54,6 @@ void CGameResourcesExporter::GatherAllLoadedResources()
 	GetFilesFromParticles();
 }
 
-//////////////////////////////////////////////////////////////////////////
 void CGameResourcesExporter::SetUsedResources(CUsedResources& resources)
 {
 	for (CUsedResources::TResourceFiles::const_iterator it = resources.files.begin(); it != resources.files.end(); ++it)
@@ -70,7 +62,6 @@ void CGameResourcesExporter::SetUsedResources(CUsedResources& resources)
 	}
 }
 
-//////////////////////////////////////////////////////////////////////////
 void CGameResourcesExporter::Save(const string& outputDirectory)
 {
 	CMemoryBlock data;
@@ -137,11 +128,8 @@ void Append(Container1& a, const Container2& b)
 	a.insert(a.end(), b.begin(), b.end());
 }
 #endif
-//////////////////////////////////////////////////////////////////////////
-//
-// Go through all editor objects and gathers files from thier properties.
-//
-//////////////////////////////////////////////////////////////////////////
+
+// Go through all editor objects and gathers files from their properties.
 void CGameResourcesExporter::GetFilesFromObjects()
 {
 	CUsedResources rs;
@@ -150,7 +138,6 @@ void CGameResourcesExporter::GetFilesFromObjects()
 	Append(m_files, rs.files);
 }
 
-//////////////////////////////////////////////////////////////////////////
 void CGameResourcesExporter::GetFilesFromMaterials()
 {
 	CUsedResources rs;
@@ -158,7 +145,6 @@ void CGameResourcesExporter::GetFilesFromMaterials()
 	Append(m_files, rs.files);
 }
 
-//////////////////////////////////////////////////////////////////////////
 void CGameResourcesExporter::GetFilesFromParticles()
 {
 	CUsedResources rs;
@@ -166,7 +152,6 @@ void CGameResourcesExporter::GetFilesFromParticles()
 	Append(m_files, rs.files);
 }
 
-//////////////////////////////////////////////////////////////////////////
 void CGameResourcesExporter::ExportSelectedLayerResources()
 {
 	CObjectLayer* pSelLayer = GetIEditorImpl()->GetObjectManager()->GetLayersManager()->GetCurrentLayer();
@@ -178,7 +163,6 @@ void CGameResourcesExporter::ExportSelectedLayerResources()
 	}
 }
 
-//////////////////////////////////////////////////////////////////////////
 void CGameResourcesExporter::GatherLayerResourceList_r(CObjectLayer* pLayer, CUsedResources& resources)
 {
 	GetIEditorImpl()->GetObjectManager()->GatherUsedResources(resources, pLayer);
@@ -190,7 +174,6 @@ void CGameResourcesExporter::GatherLayerResourceList_r(CObjectLayer* pLayer, CUs
 	}
 }
 
-//////////////////////////////////////////////////////////////////////////
 void CGameResourcesExporter::SaveLayerResources(const string& subDirectory, CObjectLayer* pLayer, bool bAllChilds)
 {
 	if (m_path.IsEmpty())
@@ -214,7 +197,6 @@ void CGameResourcesExporter::SaveLayerResources(const string& subDirectory, CObj
 	}
 }
 
-//////////////////////////////////////////////////////////////////////////
 void CGameResourcesExporter::ExportPerLayerResourceList()
 {
 	const auto& layers = GetIEditorImpl()->GetObjectManager()->GetLayersManager()->GetLayers();

@@ -2,12 +2,13 @@
 
 #include <StdAfx.h>
 #include "LevelEditorSharedState.h"
-#include "ICommandManager.h"
+
 #include "Commands/QCommandAction.h"
 #include "LevelEditor/Tools/EditTool.h"
 #include "LevelEditor/Tools/PickObjectTool.h"
 #include "LevelEditor/Tools/ObjectMode.h"
-
+#include "EditorFramework/PersonalizationManager.h"
+#include "ICommandManager.h"
 #include "Viewport.h"
 
 Q_DECLARE_METATYPE(CLevelEditorSharedState::CoordSystem)

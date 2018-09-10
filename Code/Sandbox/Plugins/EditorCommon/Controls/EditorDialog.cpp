@@ -2,17 +2,17 @@
 
 #include "stdafx.h"
 #include "EditorDialog.h"
-#include "SandboxWindowing.h"
 
-#include <QApplication>
+#include "Controls/SandboxWindowing.h"
+#include "EditorFramework/PersonalizationManager.h"
+
 #include <QDesktopWidget>
 #include <QGridLayout>
+#include <QKeyEvent>
 #include <QPointer>
 #include <QTimer>
-#include <QKeyEvent>
 
 QVariantMap CEditorDialog::s_config = QVariantMap();
-
 
 CEditorDialog::CEditorDialog(const QString& moduleName, QWidget* parent /*= nullptr*/, bool saveSize)
 	: QDialog(parent ? parent : QApplication::activeWindow(), Qt::WindowTitleHint | Qt::WindowSystemMenuHint | Qt::WindowCloseButtonHint | Qt::FramelessWindowHint)

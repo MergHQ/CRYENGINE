@@ -36,6 +36,5 @@
 #include "Util/EditorUtils.h"
 #include <IEditor.h>
 #include <CryCore/functor.h>
-#include <CryCore/Containers/CryFixedArray.h>
 
 IEditor* GetIEditor();

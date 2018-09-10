@@ -163,6 +163,8 @@ public:
 
 	// Custom pool allocator for vegetation
 	static void* operator new(size_t size, EAllocatorId allocatorId = eAllocator_Default);
+	// Need to have a matching placement delete operator for durango compilation
+	static void  operator delete(void* pToFree, EAllocatorId unused);
 	static void  operator delete(void* pToFree);
 	static void  GetStaticMemoryUsage(ICrySizer* pSizer);
 };

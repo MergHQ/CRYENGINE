@@ -3,28 +3,20 @@
 #include "StdAfx.h"
 #include "Commands/CVarListDockable.h"
 
-#include <CrySystem/ISystem.h>
-#include "CryIcon.h"
-#include "QAdvancedItemDelegate.h"
 #include "Qt/QtMainFrame.h"
-#include "FileDialogs/SystemFileDialog.h"
-#include "ProxyModels/DeepFilterProxyModel.h"
-#include "QAdvancedTreeView.h"
-#include "QSearchBox.h"
-#include <QtUtil.h>
-#include <QDate>
-#include <QHeaderView>
-#include <QJsonDocument>
-#include <QLayout>
-#include <QLineEdit>
-#include <QMenuBar>
-#include <QPushButton>
-#include <QSpinBox>
-#include <QStyledItemDelegate>
-#include <QToolButton>
-#include <QDir>
+
+#include <QAdvancedItemDelegate.h>
+#include <EditorFramework/PersonalizationManager.h>
+#include <FileDialogs/SystemFileDialog.h>
+#include <ProxyModels/DeepFilterProxyModel.h>
+#include <QAdvancedTreeView.h>
+
 #include <QApplication>
 #include <QClipboard>
+#include <QHeaderView>
+#include <QJsonDocument>
+#include <QMenuBar>
+#include <QSpinBox>
 
 REGISTER_HIDDEN_VIEWPANE_FACTORY(CCVarListDockable, "Console Variables", "", true);
 

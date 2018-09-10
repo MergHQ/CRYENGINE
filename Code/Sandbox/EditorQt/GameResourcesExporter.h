@@ -33,8 +33,6 @@ private:
 	// Functions that gather files from editor subsystems.
 	//////////////////////////////////////////////////////////////////////////
 	void GetFilesFromObjects();
-	void GetFilesFromVarBlock(CVarBlock* pVB);
-	void GetFilesFromVariable(IVariable* pVar);
 	void GetFilesFromMaterials();
 	void GetFilesFromParticles();
 };

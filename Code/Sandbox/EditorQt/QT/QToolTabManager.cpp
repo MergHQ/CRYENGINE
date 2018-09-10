@@ -3,33 +3,22 @@
 #include "StdAfx.h"
 #include "QToolTabManager.h"
 
-#include "QtViewPane.h"
-
 #include "QT/QtMainFrame.h"
-#include "QMfcApp/qwinhost.h"
-#include "QT/Widgets/QViewPaneHost.h"
-#include "QToolWindowManager/QToolWindowManager.h"
-#include "LevelEditor/LevelFileUtils.h"
+
+#include <QMfcApp/qwinhost.h>
+
+#include <EditorFramework/PersonalizationManager.h>
+#include <FileDialogs/SystemFileDialog.h>
+
+#include <CrySystem/IProjectManager.h>
+#include <CrySystem/UserAnalytics/IUserAnalytics.h>
 
 #include <QCloseEvent>
 #include <QDesktopWidget>
-#include <QLayout>
 #include <QJsonDocument>
-#include <QTextCodec>
-#include "FileDialogs/SystemFileDialog.h"
-
-#include "Util/BoostPythonHelpers.h"
-#include "QtViewPane.h"
-#include <QtUtil.h>
-#include <CrySystem/IProjectManager.h>
-
-#include <CrySystem/UserAnalytics/IUserAnalytics.h>
 
 #include <mutex>
 
-//////////////////////////////////////////////////////////////////////////
-
-//////////////////////////////////////////////////////////////////////////
 class QWinHostPane : public QWinHost
 {
 public:
@@ -142,7 +131,6 @@ CTabPaneManager::~CTabPaneManager()
 	s_pGlobalToolTabManager = nullptr;
 }
 
-//////////////////////////////////////////////////////////////////////////
 CTabPaneManager* CTabPaneManager::GetInstance()
 {
 	return s_pGlobalToolTabManager;
@@ -181,7 +169,6 @@ QString CTabPaneManager::CreateObjectName(const char* title)
 	return result;
 }
 
-//////////////////////////////////////////////////////////////////////////
 QTabPane* CTabPaneManager::CreateTabPane(const char* paneClassName, const char* title, int nOverrideDockDirection, bool bLoadLayoutPersonalization)
 {
 	LOADING_TIME_PROFILE_SECTION_ARGS(paneClassName);
@@ -423,7 +410,6 @@ void CTabPaneManager::BringToFront(IPane* pane)
 		GetToolManager()->bringToFront(tabPane);
 }
 
-//////////////////////////////////////////////////////////////////////////
 CWnd* CTabPaneManager::OpenMFCPane(const char* sPaneClassName)
 {
 	IClassDesc* pClassDesc = GetIEditorImpl()->GetClassFactory()->FindClass(sPaneClassName);
@@ -506,7 +492,6 @@ IPane* CTabPaneManager::OpenOrCreatePane(const char* sPaneClassName)
 	return tool->m_pane;
 }
 
-//////////////////////////////////////////////////////////////////////////
 bool CTabPaneManager::CloseTabPane(QTabPane* tool)
 {
 	bool bDeleted = stl::find_and_erase(m_panes, tool);
@@ -522,7 +507,6 @@ bool CTabPaneManager::CloseTabPane(QTabPane* tool)
 	return false;
 }
 
-//////////////////////////////////////////////////////////////////////////
 QTabPane* CTabPaneManager::FindTabPaneByName(const QString& name)
 {
 	QList<QWidget*> tools = GetToolManager()->toolWindows();
@@ -552,7 +536,6 @@ QList<QTabPane*> CTabPaneManager::FindTabPanes(const QString& name)
 	return result;
 }
 
-//////////////////////////////////////////////////////////////////////////
 QTabPane* CTabPaneManager::FindTabPaneByTitle(const char* title)
 {
 	QList<QTabPane*> tools = FindTabPanes();
@@ -567,7 +550,6 @@ QTabPane* CTabPaneManager::FindTabPaneByTitle(const char* title)
 	return 0;
 }
 
-//////////////////////////////////////////////////////////////////////////
 QTabPane* CTabPaneManager::FindTabPaneByCategory(const char* sPaneCategory)
 {
 	QList<QTabPane*> tools = FindTabPanes();
@@ -582,7 +564,6 @@ QTabPane* CTabPaneManager::FindTabPaneByCategory(const char* sPaneCategory)
 	return 0;
 }
 
-//////////////////////////////////////////////////////////////////////////
 QTabPane* CTabPaneManager::FindTabPaneByClass(const char* paneClassName)
 {
 	if (!CEditorMainFrame::GetInstance())
@@ -796,7 +777,6 @@ void CTabPaneManager::StoreHistory(QTabPane* tool)
 	m_panesHistory[tool->m_title] = paneHistory;
 }
 
-//////////////////////////////////////////////////////////////////////////
 void CTabPaneManager::OnIdle()
 {
 	if (m_bToolsDirty)
@@ -806,7 +786,6 @@ void CTabPaneManager::OnIdle()
 	}
 }
 
-//////////////////////////////////////////////////////////////////////////
 void CTabPaneManager::CreateContentInPanes()
 {
 	for (size_t i = 0; i < m_panes.size(); i++)
@@ -820,7 +799,6 @@ void CTabPaneManager::CreateContentInPanes()
 	}
 }
 
-//////////////////////////////////////////////////////////////////////////
 IPane* CTabPaneManager::CreatePaneContents(QTabPane* pTool)
 {
 	LOADING_TIME_PROFILE_SECTION;
@@ -863,19 +841,16 @@ IPane* CTabPaneManager::CreatePaneContents(QTabPane* pTool)
 	return pWidget;
 }
 
-//////////////////////////////////////////////////////////////////////////
 QToolWindowManager* CTabPaneManager::GetToolManager() const
 {
 	return CEditorMainFrame::GetInstance()->GetToolManager();
 }
 
-//////////////////////////////////////////////////////////////////////////
 void CTabPaneManager::LayoutLoaded()
 {
 	m_layoutLoaded = true;
 }
 
-//////////////////////////////////////////////////////////////////////////
 QVariant CTabPaneManager::GetState() const
 {
 	QVariantMap stateMap;
@@ -912,7 +887,6 @@ QVariant CTabPaneManager::GetState() const
 	return state;
 }
 
-//////////////////////////////////////////////////////////////////////////
 void CTabPaneManager::SetState(const QVariant& state)
 {
 	LOADING_TIME_PROFILE_SECTION;
@@ -991,7 +965,6 @@ void CTabPaneManager::SetState(const QVariant& state)
 	}
 }
 
-//////////////////////////////////////////////////////////////////////////
 void CTabPaneManager::PushUserEvent(const char* szEventName, const char* szTitle, const void* pAddress)
 {
 	UserAnalytics::Attributes attributes;
@@ -1002,7 +975,6 @@ void CTabPaneManager::PushUserEvent(const char* szEventName, const char* szTitle
 	USER_ANALYTICS_EVENT_ARG(szEventName, &attributes);
 }
 
-//////////////////////////////////////////////////////////////////////////
 QTabPane::QTabPane() : QBaseTabPane()
 {
 	m_bViewCreated = false;
@@ -1016,7 +988,6 @@ QTabPane::QTabPane() : QBaseTabPane()
 	setAttribute(Qt::WA_DeleteOnClose);
 }
 
-//////////////////////////////////////////////////////////////////////////
 void QTabPane::showContextMenu(const QPoint& point)
 {
 	QMenu menu(this);

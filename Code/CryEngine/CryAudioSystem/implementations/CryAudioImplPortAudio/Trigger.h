@@ -22,6 +22,12 @@ class CTrigger final : public ITrigger
 {
 public:
 
+	CTrigger() = delete;
+	CTrigger(CTrigger const&) = delete;
+	CTrigger(CTrigger&&) = delete;
+	CTrigger& operator=(CTrigger const&) = delete;
+	CTrigger& operator=(CTrigger&&) = delete;
+
 	explicit CTrigger(
 		uint32 const pathId_,
 		int const numLoops_,
@@ -31,22 +37,9 @@ public:
 		PaStreamParameters const& streamParameters_,
 		CryFixedStringT<MaxFilePathLength> const& folder,
 		CryFixedStringT<MaxFilePathLength> const& name,
-		bool const isLocalized)
-		: pathId(pathId_)
-		, numLoops(numLoops_)
-		, sampleRate(sampleRate_)
-		, eventType(eventType_)
-		, filePath(filePath_)
-		, streamParameters(streamParameters_)
-		, m_folder(folder)
-		, m_name(name)
-		, m_isLocalized(isLocalized)
-	{}
+		bool const isLocalized);
 
 	virtual ~CTrigger() override = default;
-
-	CTrigger(CTrigger const&) = delete;
-	CTrigger& operator=(CTrigger const&) = delete;
 
 	// CryAudio::Impl::ITrigger
 	virtual ERequestStatus Load() const override                             { return ERequestStatus::Success; }

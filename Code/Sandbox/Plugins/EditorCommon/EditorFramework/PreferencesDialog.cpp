@@ -1,18 +1,15 @@
 // Copyright 2001-2018 Crytek GmbH / Crytek Group. All rights reserved.
-#include <StdAfx.h>
+#include "StdAfx.h"
 #include "PreferencesDialog.h"
-#include "Preferences.h"
 
 #include "Controls/QObjectTreeWidget.h"
-#include "QAdvancedTreeView.h"
-#include "QtUtil.h"
-
-#include <QAdvancedPropertyTree.h>
+#include "EditorFramework/Preferences.h"
+#include "QAdvancedPropertyTree.h"
 
 #include <QHBoxLayout>
-#include <QVBoxLayout>
 #include <QPushButton>
 #include <QSplitter>
+#include <QVBoxLayout>
 
 struct SPreferencePagesContainer
 {

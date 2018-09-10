@@ -1,8 +1,8 @@
 // Copyright 2001-2018 Crytek GmbH / Crytek Group. All rights reserved.
 
 #include "stdafx.h"
-#include "AudioImpl.h"
-#include "AudioImplCVars.h"
+#include "Impl.h"
+#include "CVars.h"
 #include <Logger.h>
 #include <CryAudio/IAudioSystem.h>
 #include <CryCore/Platform/platform_impl.inl>

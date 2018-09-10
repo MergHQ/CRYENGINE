@@ -37,6 +37,11 @@ void* CVegetation::operator new(size_t size, EAllocatorId allocatorId)
 	return VegetationPoolAllocator::m_vegetationAllocator[allocatorId].Allocate();
 }
 
+void CVegetation::operator delete(void* pToFree, EAllocatorId unused)
+{
+	CVegetation::operator delete(pToFree);
+}
+
 void CVegetation::operator delete(void* pToFree)
 {
 	if (((CVegetation*)pToFree)->m_dwRndFlags & ERF_PROCEDURAL)
