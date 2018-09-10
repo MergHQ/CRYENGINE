@@ -82,7 +82,7 @@ endmacro()
 if (OPTION_STATIC_LINKING AND NOT OPTION_STATIC_LINKING_WITH_GAME_AS_DLL)
 CryEngineStaticModule(CryUQS_DataSource_XML PCH "datasource_xml/StdAfx.cpp" SOLUTION_FOLDER "CryPlugins/CryUQS")
 else()
-CryEngineStaticModule(CryUQS_DataSource_XML FORCE_SHARED_WIN PCH "datasource_xml/StdAfx.cpp" SOLUTION_FOLDER "CryPlugins/CryUQS")
+CryEngineStaticModule(CryUQS_DataSource_XML FORCE_SHARED PCH "datasource_xml/StdAfx.cpp" SOLUTION_FOLDER "CryPlugins/CryUQS")
 endif()
 CryUQS_DataSource_XML_SetupOptions()
 
