@@ -1095,24 +1095,20 @@ void CImpl::DrawDebugInfo(IRenderAuxGeom& auxGeom, float const posX, float& posY
 	posY += g_debugSystemLineHeight;
 	auxGeom.Draw2dLabel(posX, posY, g_debugSystemFontSize, g_debugSystemColorTextPrimary.data(), false, "DSP Bus Setting: %s", g_debugCurrentDspBusSettingName.c_str());
 
+	if (g_numObjectsWithDoppler > 0)
+	{
+		posY += g_debugSystemLineHeight;
+		auxGeom.Draw2dLabel(posX, posY, g_debugSystemFontSize, g_debugSystemColorTextPrimary.data(), false, "Objects with Doppler: %u", g_numObjectsWithDoppler);
+	}
+
 	Vec3 const& listenerPosition = g_pListener->GetPosition();
 	Vec3 const& listenerDirection = g_pListener->GetTransformation().GetForward();
+	float const listenerVelocity = g_pListener->GetVelocity().GetLength();
 	char const* const szName = g_pListener->GetName();
 
 	posY += g_debugSystemLineHeight;
-
-	if (g_numObjectsWithDoppler > 0)
-	{
-		auxGeom.Draw2dLabel(posX, posY, g_debugSystemFontSize, g_debugSystemColorTextPrimary.data(), false, "Objects with Doppler: %u", g_numObjectsWithDoppler);
-
-		float const listenerVelocity = g_pListener->GetVelocity().GetLength();
-		posY += g_debugSystemLineHeight;
-		auxGeom.Draw2dLabel(posX, posY, g_debugSystemFontSize, g_debugSystemColorListenerActive.data(), false, "Listener: %s | PosXYZ: %.2f %.2f %.2f | FwdXYZ: %.2f %.2f %.2f | Velocity: %.2f m/s", szName, listenerPosition.x, listenerPosition.y, listenerPosition.z, listenerDirection.x, listenerDirection.y, listenerDirection.z, listenerVelocity);
-	}
-	else
-	{
-		auxGeom.Draw2dLabel(posX, posY, g_debugSystemFontSize, g_debugSystemColorListenerActive.data(), false, "Listener: %s | PosXYZ: %.2f %.2f %.2f | FwdXYZ: %.2f %.2f %.2f", szName, listenerPosition.x, listenerPosition.y, listenerPosition.z, listenerDirection.x, listenerDirection.y, listenerDirection.z);
-	}
+	auxGeom.Draw2dLabel(posX, posY, g_debugSystemFontSize, g_debugSystemColorListenerActive.data(), false, "Listener: %s | PosXYZ: %.2f %.2f %.2f | FwdXYZ: %.2f %.2f %.2f | Velocity: %.2f m/s",
+	                    szName, listenerPosition.x, listenerPosition.y, listenerPosition.z, listenerDirection.x, listenerDirection.y, listenerDirection.z, listenerVelocity);
 #endif  // INCLUDE_ADX2_IMPL_PRODUCTION_CODE
 }
 } // namespace Adx2
