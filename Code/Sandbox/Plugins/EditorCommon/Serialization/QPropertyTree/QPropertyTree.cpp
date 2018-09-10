@@ -744,7 +744,7 @@ void QPropertyTree::pasteRow(PropertyRow* row)
 
 	model()->rowAboutToBeChanged(row);
 
-	SharedPtr<PropertyRow> source;
+	SharedPtr<PropertyRow> source{ row };
 	if (!propertyRowFromClipboard(source, model()->constStrings()))
 		return;
 
