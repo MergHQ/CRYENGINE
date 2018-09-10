@@ -127,6 +127,7 @@ endif()
 mark_as_advanced(FORCE SPEEX)
 
 if (EXISTS "${SDK_DIR}/Steamworks" AND WIN32)
+	include(${TOOLS_CMAKE_DIR}/modules/Steamworks.cmake)
 	target_link_libraries(${THIS_PROJECT} PRIVATE Steamworks)
 endif()
 

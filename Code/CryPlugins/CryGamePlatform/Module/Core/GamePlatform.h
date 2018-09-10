@@ -68,6 +68,8 @@ namespace Cry
 			virtual void OnShutdown(const ServiceIdentifier& serviceId) override;
 			virtual void OnAccountAdded(IAccount& account) override;
 			virtual void OnAccountRemoved(IAccount& account) override;
+			virtual void OnPersonaStateChanged(const IAccount& account, CEnumFlags<EPersonaChangeFlags> changeFlags) override {}
+			virtual void OnGetSteamAuthTicketResponse(bool success, uint32 authTicket) override {}
 			// ~IService::IListener
 
 			// ISystemEventListener

@@ -5,14 +5,14 @@
 #include <ICryMannequin.h>
 
 #include "MannequinEditorPage.h"
-#include "../MannequinBase.h"
-#include "../MannequinNodes.h"
-#include "../SequencerSplitter.h"
+#include "Mannequin/MannequinBase.h"
+#include "Mannequin/MannequinNodes.h"
+#include "Mannequin/SequencerSplitter.h"
 #include "Dialogs/ToolbarDialog.h"
-#include "../MannKeyPropertiesDlgFE.h"
-#include "../FragmentEditor.h"
-#include "../SequencerDopeSheetToolbar.h"
-#include "../Controls/ClampedSplitterWnd.h"
+#include "Mannequin/MannKeyPropertiesDlgFE.h"
+#include "Mannequin/FragmentEditor.h"
+#include "Mannequin/SequencerDopeSheetToolbar.h"
+#include "Controls/ClampedSplitterWnd.h"
 #include "QMfcApp/qmfcviewporthost.h"
 
 struct SMannequinContexts;

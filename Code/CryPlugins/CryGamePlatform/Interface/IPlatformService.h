@@ -15,6 +15,24 @@ namespace Cry
 			//! See IService::AddListener and RemoveListener
 			struct IListener
 			{
+				enum class EPersonaChangeFlags
+				{
+					Name = BIT(0),
+					Status = BIT(1),
+					CameOnline = BIT(2),
+					WentOffline = BIT(3),
+					GamePlayed = BIT(4),
+					GameServer = BIT(5),
+					ChangeAvatar = BIT(6),
+					JoinedSource = BIT(7),
+					LeftSource = BIT(8),
+					RelationshipChanged = BIT(9),
+					NameFirstSet = BIT(10),
+					FacebookInfo = BIT(11),
+					Nickname = BIT(12),
+					SteamLevel = BIT(13),
+				};
+
 				virtual ~IListener() {}
 				//! Called when the in-game platform layer is opened (usually by the user)
 				virtual void OnOverlayActivated(const ServiceIdentifier& serviceId, bool active) = 0;
@@ -26,6 +44,10 @@ namespace Cry
 				virtual void OnAccountAdded(IAccount& account) = 0;
 				//! Called right before removing an account
 				virtual void OnAccountRemoved(IAccount& account) = 0;
+				//! Called when the persona state was updated
+				virtual void OnPersonaStateChanged(const IAccount& account, CEnumFlags<EPersonaChangeFlags> changeFlags) = 0;
+				//! Called when a steam auth ticket request received a response
+				virtual void OnGetSteamAuthTicketResponse(bool success, uint32 authTicket) = 0;
 			};
 
 			virtual ~IService() {}
@@ -81,6 +103,9 @@ namespace Cry
 			//! \retval true Information is not yet available and listeners will be notified once retrieved.
 			//! \retval false Information is already available and there's no need for a download.
 			virtual bool RequestUserInformation(const AccountIdentifier& accountId, UserInformationMask info) = 0;
+
+			//! CHeck if there is an active connection to the service's backend
+			virtual bool IsLoggedIn() const = 0;
 		};
 	}
 }

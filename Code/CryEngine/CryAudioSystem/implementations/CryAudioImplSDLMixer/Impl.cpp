@@ -1,16 +1,25 @@
 // Copyright 2001-2018 Crytek GmbH / Crytek Group. All rights reserved.
 
 #include "stdafx.h"
-#include "AudioImpl.h"
-#include "AudioImplCVars.h"
-#include "SoundEngineUtil.h"
-#include "SoundEngineTypes.h"
+#include "Impl.h"
+#include "CVars.h"
 #include "Common.h"
+#include "Environment.h"
+#include "Event.h"
+#include "File.h"
+#include "Listener.h"
+#include "Object.h"
+#include "Parameter.h"
+#include "Setting.h"
+#include "StandaloneFile.h"
+#include "SwitchState.h"
+#include "Trigger.h"
 
 #include <Logger.h>
 #include <CrySystem/File/CryFile.h>
 #include <CryAudio/IAudioSystem.h>
 #include <CrySystem/IProjectManager.h>
+#include <CrySystem/IConsole.h>
 
 #if defined(INCLUDE_SDLMIXER_IMPL_PRODUCTION_CODE)
 	#include "Debug.h"
@@ -208,7 +217,7 @@ ERequestStatus CImpl::RegisterInMemoryFile(SFileInfo* const pFileInfo)
 
 	if (pFileInfo != nullptr)
 	{
-		SFile* const pFileData = static_cast<SFile*>(pFileInfo->pImplData);
+		CFile* const pFileData = static_cast<CFile*>(pFileInfo->pImplData);
 
 		if (pFileData != nullptr)
 		{
@@ -231,7 +240,7 @@ ERequestStatus CImpl::UnregisterInMemoryFile(SFileInfo* const pFileInfo)
 
 	if (pFileInfo != nullptr)
 	{
-		SFile* const pFileData = static_cast<SFile*>(pFileInfo->pImplData);
+		CFile* const pFileData = static_cast<CFile*>(pFileInfo->pImplData);
 
 		if (pFileData != nullptr)
 		{
@@ -274,7 +283,7 @@ ERequestStatus CImpl::ConstructFile(XmlNodeRef const pRootNode, SFileInfo* const
 		{
 			pFileInfo->szFileName = fullFilePath.c_str();
 			pFileInfo->memoryBlockAlignment = m_memoryAlignment;
-			pFileInfo->pImplData = new SFile;
+			pFileInfo->pImplData = new CFile;
 			result = ERequestStatus::Success;
 		}
 		else
@@ -491,7 +500,7 @@ void CImpl::DestructSwitchState(ISwitchState const* const pISwitchState)
 ///////////////////////////////////////////////////////////////////////////
 IEnvironment const* CImpl::ConstructEnvironment(XmlNodeRef const pRootNode)
 {
-	return static_cast<IEnvironment*>(new SEnvironment);
+	return static_cast<IEnvironment*>(new CEnvironment);
 }
 
 ///////////////////////////////////////////////////////////////////////////

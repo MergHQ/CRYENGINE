@@ -195,6 +195,11 @@ namespace Cry
 				return false;
 			}
 
+			bool CService::IsLoggedIn() const
+			{
+				return true;
+			}
+
 			void CService::SetLocalUser(const DiscordUser* pUser)
 			{
 				if (m_localAccount)

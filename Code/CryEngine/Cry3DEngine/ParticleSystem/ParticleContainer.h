@@ -23,17 +23,14 @@ class CParticleContainer
 {
 public:
 	CParticleContainer();
-	CParticleContainer(const CParticleContainer& copy);
+	CParticleContainer(const CParticleContainer& copy) = delete;
 	~CParticleContainer();
 
 	void                              Resize(uint32 newSize);
-	void                              ResetUsedData();
-	void                              AddParticleData(EParticleDataType type);
-	bool                              HasData(EParticleDataType type) const { return m_useData[type]; }
+	void                              SetUsedData(const SUseData& useData);
+	bool                              HasData(EParticleDataType type) const { return m_useData.Used(type); }
 	void                              AddParticle();
-	void                              Trim();
 	void                              Clear();
-
 	template<typename T> void         FillData(TDataType<T> type, const T& data, SUpdateRange range);
 	void                              CopyData(EParticleDataType dstType, EParticleDataType srcType, SUpdateRange range);
 
@@ -59,7 +56,7 @@ public:
 
 	uint32                            GetNumParticles() const         { CRY_PFX2_ASSERT(!HasNewBorns()); return m_lastId; }
 	uint32                            GetRealNumParticles() const     { return m_lastId + HasNewBorns() * GetNumSpawnedParticles(); }
-	uint32                            GetMaxParticles() const         { return m_maxParticles; }
+	uint32                            GetMaxParticles() const         { return m_capacity; }
 	uint32                            GetNumSpawnedParticles() const  { return m_lastSpawnId - m_firstSpawnId; }
 	bool                              HasNewBorns() const             { return m_lastSpawnId > m_lastId; }
 	bool                              IsNewBorn(TParticleId id) const { return id >= m_firstSpawnId && id < m_lastSpawnId; }
@@ -73,19 +70,20 @@ public:
 	void                              RemoveParticles(TVarArray<TParticleId> toRemove, TVarArray<TParticleId> swapIds);
 
 private:
-	template<typename T> T*           Data(TDataType<T> type)                { return reinterpret_cast<T*>(m_pData[type]); }
-	template<typename T> const T*     Data(TDataType<T> type) const          { return reinterpret_cast<const T*>(m_pData[type]); }
+	byte*                             ByteData(EParticleDataType type) const { return HasData(type) ? m_pData + m_useData.offsets[type] * m_capacity : nullptr; }
+	template<typename T> const T*     Data(TDataType<T> type) const          { return reinterpret_cast<const T*>(ByteData(type)); }
+	template<typename T> T*           Data(TDataType<T> type)                { return reinterpret_cast<T*>(ByteData(type)); }
 
-	void                              MakeSwapIds(TVarArray<TParticleId> toRemove, TVarArray<TParticleId> swapIds);
+	void MakeSwapIds(TVarArray<TParticleId> toRemove, TVarArray<TParticleId> swapIds);
 	
-	StaticEnumArray<void*, EParticleDataType> m_pData;
-	StaticEnumArray<bool, EParticleDataType>  m_useData;
-	TParticleId m_nextSpawnId;
-	TParticleId m_maxParticles;
+	SUseDataRef        m_useData;
+	byte*              m_pData        = 0;
+	TParticleId        m_capacity     = 0;
 
-	TParticleId m_lastId;
-	TParticleId m_firstSpawnId;
-	TParticleId m_lastSpawnId;
+	TParticleId        m_lastId       = 0;
+	TParticleId        m_firstSpawnId = 0;
+	TParticleId        m_lastSpawnId  = 0;
+	TParticleId        m_nextSpawnId  = 0;
 };
 
 }

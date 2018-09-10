@@ -28,8 +28,8 @@
 #include "QViewportSettings.h"
 
 #include <CryAnimation/ICryAnimation.h>
-#include <Material\Material.h>
-#include <Material\MaterialManager.h>
+#include <Material/Material.h>
+#include <Material/MaterialManager.h>
 
 #include <Serialization/QPropertyTree/QPropertyTree.h>
 #include <QPropertyTree/ContextList.h>

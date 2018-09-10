@@ -2,8 +2,12 @@
 
 #include "stdafx.h"
 #include "SoundEngine.h"
-#include "SoundEngineUtil.h"
 #include "Common.h"
+#include "Event.h"
+#include "Listener.h"
+#include "Object.h"
+#include "StandaloneFile.h"
+#include "Trigger.h"
 #include "GlobalData.h"
 #include <CryAudio/IAudioSystem.h>
 #include <Logger.h>
@@ -63,11 +67,38 @@ CryCriticalSection g_channelFinishedCriticalSection;
 using Objects = std::vector<CObject*>;
 Objects g_objects;
 
-// Listeners
-bool g_bMuted;
-
 SoundEngine::FnEventCallback g_fnEventFinishedCallback;
 SoundEngine::FnStandaloneFileCallback g_fnStandaloneFileFinishedCallback;
+
+//////////////////////////////////////////////////////////////////////////
+inline const SampleId GetIDFromString(const string& name)
+{
+	return CCrc32::ComputeLowercase(name.c_str());
+}
+
+//////////////////////////////////////////////////////////////////////////
+inline const SampleId GetIDFromString(char const* const szName)
+{
+	return CCrc32::ComputeLowercase(szName);
+}
+
+//////////////////////////////////////////////////////////////////////////
+inline void GetDistanceAngleToObject(const CObjectTransformation& listener, const CObjectTransformation& object, float& out_distance, float& out_angle)
+{
+	const Vec3 listenerToObject = object.GetPosition() - listener.GetPosition();
+
+	// Distance
+	out_distance = listenerToObject.len();
+
+	// Angle
+	// Project point to plane formed by the listeners position/direction
+	Vec3 n = listener.GetUp().GetNormalized();
+	Vec3 objectDir = Vec3::CreateProjection(listenerToObject, n).normalized();
+
+	// Get angle between listener position and projected point
+	const Vec3 listenerDir = listener.GetForward().GetNormalizedFast();
+	out_angle = RAD2DEG(asin_tpl(objectDir.Cross(listenerDir).Dot(n)));
+}
 
 //////////////////////////////////////////////////////////////////////////
 void SoundEngine::RegisterEventFinishedCallback(FnEventCallback pCallbackFunction)
@@ -538,72 +569,6 @@ void SetChannelPosition(const CTrigger* pStaticData, const int channelID, const 
 }
 
 //////////////////////////////////////////////////////////////////////////
-bool SoundEngine::StopEvent(CEvent const* const pEvent)
-{
-	if (pEvent != nullptr)
-	{
-		// need to make a copy because the callback
-		// registered with Mix_ChannelFinished can edit the list
-		ChannelList const channels = pEvent->m_channels;
-		int const fadeOutTime = pEvent->m_pTrigger->GetFadeOutTime();
-
-		for (int const channel : channels)
-		{
-			if (fadeOutTime == 0)
-			{
-				Mix_HaltChannel(channel);
-			}
-			else
-			{
-				Mix_FadeOutChannel(channel, fadeOutTime);
-			}
-		}
-
-		return true;
-	}
-
-	return false;
-}
-
-//////////////////////////////////////////////////////////////////////////
-bool SoundEngine::PauseEvent(CEvent const* const pEvent)
-{
-	if (pEvent != nullptr)
-	{
-		// need to make a copy because the callback
-		// registered with Mix_ChannelFinished can edit the list
-		ChannelList const channels = pEvent->m_channels;
-
-		for (int const channel : channels)
-		{
-			Mix_Pause(channel);
-		}
-
-		return true;
-	}
-	return false;
-}
-
-//////////////////////////////////////////////////////////////////////////
-bool SoundEngine::ResumeEvent(CEvent const* const pEvent)
-{
-	if (pEvent != nullptr)
-	{
-		// need to make a copy because the callback
-		// registered with Mix_ChannelFinished can edit the list
-		ChannelList channels = pEvent->m_channels;
-
-		for (int const channel : channels)
-		{
-			Mix_Resume(channel);
-		}
-
-		return true;
-	}
-	return false;
-}
-
-//////////////////////////////////////////////////////////////////////////
 ERequestStatus SoundEngine::ExecuteEvent(CObject* const pObject, CTrigger const* const pTrigger, CEvent* const pEvent)
 {
 	ERequestStatus requestStatus = ERequestStatus::Failure;
@@ -703,13 +668,13 @@ ERequestStatus SoundEngine::ExecuteEvent(CObject* const pObject, CTrigger const*
 					switch (type)
 					{
 					case EEventType::Stop:
-						SoundEngine::StopEvent(pEventToProcess);
+						pEventToProcess->Stop();
 						break;
 					case EEventType::Pause:
-						SoundEngine::PauseEvent(pEventToProcess);
+						pEventToProcess->Pause();
 						break;
 					case EEventType::Resume:
-						SoundEngine::ResumeEvent(pEventToProcess);
+						pEventToProcess->Resume();
 						break;
 					}
 				}
@@ -722,51 +687,6 @@ ERequestStatus SoundEngine::ExecuteEvent(CObject* const pObject, CTrigger const*
 	return requestStatus;
 }
 
-//////////////////////////////////////////////////////////////////////////
-void SoundEngine::SetVolume(CObject* const pObject, SampleId const sampleId)
-{
-	if (!g_bMuted)
-	{
-		float const volumeMultiplier = GetVolumeMultiplier(pObject, sampleId);
-
-		for (auto const pEvent : pObject->m_events)
-		{
-			auto const pTrigger = pEvent->m_pTrigger;
-
-			if ((pTrigger != nullptr) && (pTrigger->GetSampleId() == sampleId))
-			{
-				int const mixVolume = GetAbsoluteVolume(pTrigger->GetVolume(), volumeMultiplier);
-
-				for (auto const channel : pEvent->m_channels)
-				{
-					Mix_Volume(channel, mixVolume);
-				}
-			}
-		}
-	}
-}
-
-//////////////////////////////////////////////////////////////////////////
-float SoundEngine::GetVolumeMultiplier(CObject* const pObject, SampleId const sampleId)
-{
-	float volumeMultiplier = 1.0f;
-	auto const volumeMultiplierPair = pObject->m_volumeMultipliers.find(sampleId);
-
-	if (volumeMultiplierPair != pObject->m_volumeMultipliers.end())
-	{
-		volumeMultiplier = volumeMultiplierPair->second;
-	}
-
-	return volumeMultiplier;
-}
-
-//////////////////////////////////////////////////////////////////////////
-int SoundEngine::GetAbsoluteVolume(int const triggerVolume, float const multiplier)
-{
-	int absoluteVolume = static_cast<int>(static_cast<float>(triggerVolume) * multiplier);
-	absoluteVolume = crymath::clamp(absoluteVolume, 0, 128);
-	return absoluteVolume;
-}
 //////////////////////////////////////////////////////////////////////////
 ERequestStatus SoundEngine::PlayFile(CObject* const pObject, CStandaloneFile* const pStandaloneFile)
 {
@@ -844,35 +764,6 @@ ERequestStatus SoundEngine::PlayFile(CObject* const pObject, CStandaloneFile* co
 }
 
 //////////////////////////////////////////////////////////////////////////
-ERequestStatus SoundEngine::StopFile(CObject* const pObject, CStandaloneFile* const pStandaloneFile)
-{
-	ERequestStatus status = ERequestStatus::Failure;
-
-	if (pObject != nullptr)
-	{
-		for (auto const pTempStandaloneFile : pObject->m_standaloneFiles)
-		{
-			if (pTempStandaloneFile == pStandaloneFile)
-			{
-				// need to make a copy because the callback
-				// registered with Mix_ChannelFinished can edit the list
-				ChannelList const channels = pStandaloneFile->m_channels;
-
-				for (auto const channel : channels)
-				{
-					Mix_HaltChannel(channel);
-				}
-
-				status = ERequestStatus::Pending;
-				break;
-			}
-		}
-	}
-
-	return status;
-}
-
-//////////////////////////////////////////////////////////////////////////
 bool SoundEngine::RegisterObject(CObject* const pObject)
 {
 	if (pObject != nullptr)
@@ -907,7 +798,7 @@ bool SoundEngine::StopTrigger(CTrigger const* const pTrigger)
 			{
 				if (pEvent != nullptr && pEvent->m_pTrigger == pTrigger)
 				{
-					SoundEngine::StopEvent(pEvent);
+					pEvent->Stop();
 					bResult = true;
 				}
 			}

@@ -776,7 +776,7 @@ void CD3D9Renderer::BeginFrame(const SDisplayContextKey& displayContextKey)
 	{
 		PREFAST_SUPPRESS_WARNING(6326)
 		m_bUseWaterTessHW = bUseWaterTessHW;
-		m_cEF.mfReloadAllShaders(1, SHGD_HW_WATER_TESSELLATION);
+		m_cEF.mfReloadAllShaders(1, SHGD_HW_WATER_TESSELLATION, gRenDev->GetMainFrameID());
 	}
 
 	PREFAST_SUPPRESS_WARNING(6326)
@@ -784,7 +784,7 @@ void CD3D9Renderer::BeginFrame(const SDisplayContextKey& displayContextKey)
 	{
 		PREFAST_SUPPRESS_WARNING(6326)
 		m_bUseSilhouettePOM = CV_r_SilhouettePOM != 0;
-		m_cEF.mfReloadAllShaders(1, SHGD_HW_SILHOUETTE_POM);
+		m_cEF.mfReloadAllShaders(1, SHGD_HW_SILHOUETTE_POM, gRenDev->GetMainFrameID());
 	}
 
 	PREFAST_SUPPRESS_WARNING(6326)
@@ -792,7 +792,7 @@ void CD3D9Renderer::BeginFrame(const SDisplayContextKey& displayContextKey)
 	{
 		PREFAST_SUPPRESS_WARNING(6326)
 		m_bAllowTerrainLayerBlending = CV_e_TerrainBlendingDebug != 0;
-		m_cEF.mfReloadAllShaders(CV_r_reloadshaders, 0);
+		m_cEF.mfReloadAllShaders(CV_r_reloadshaders, 0, gRenDev->GetMainFrameID());
 	}
 
 	if (CV_r_reloadshaders)
@@ -802,7 +802,7 @@ void CD3D9Renderer::BeginFrame(const SDisplayContextKey& displayContextKey)
 		//iConsole->Exit("Test");
 
 		m_cEF.m_Bin.InvalidateCache();
-		m_cEF.mfReloadAllShaders(CV_r_reloadshaders, 0);
+		m_cEF.mfReloadAllShaders(CV_r_reloadshaders, 0, gRenDev->GetMainFrameID());
 
 #ifndef CONSOLE_CONST_CVAR_MODE
 		CV_r_reloadshaders = 0;
@@ -1000,7 +1000,7 @@ void CD3D9Renderer::RT_BeginFrame(const SDisplayContextKey& displayContextKey)
 
 	CResFile::Tick();
 	m_DevBufMan.Update(gRenDev->GetRenderFrameID(), false);
-	GetDeviceObjectFactory().OnBeginFrame();
+	GetDeviceObjectFactory().OnBeginFrame(gRenDev->GetRenderFrameID());
 
 	// Render updated dynamic flash textures
 	CFlashTextureSourceSharedRT::TickRT();
@@ -3322,7 +3322,7 @@ void CD3D9Renderer::RT_EndFrame()
 #endif
 
 	gRenDev->m_DevMan.RT_Tick();
-	GetDeviceObjectFactory().OnEndFrame();
+	GetDeviceObjectFactory().OnEndFrame(gRenDev->GetRenderFrameID());
 
 	SRenderStatistics::Write().m_Summary.endTime = iTimer->GetAsyncTime().GetDifferenceInSeconds(TimeEndF);
 

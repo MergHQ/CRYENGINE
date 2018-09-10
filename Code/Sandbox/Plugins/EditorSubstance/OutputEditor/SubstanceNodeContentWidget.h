@@ -2,8 +2,8 @@
 
 #pragma once
 
-#include <NodeGraph\AbstractNodeContentWidget.h>
-#include <NodeGraph\PinWidget.h>
+#include <NodeGraph/AbstractNodeContentWidget.h>
+#include <NodeGraph/PinWidget.h>
 
 #include <QGraphicsWidget>
 #include <QVector>

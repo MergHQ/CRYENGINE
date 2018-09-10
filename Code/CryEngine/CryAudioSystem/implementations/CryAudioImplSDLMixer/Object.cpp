@@ -1,8 +1,15 @@
 // Copyright 2001-2018 Crytek GmbH / Crytek Group. All rights reserved.
 
 #include "stdafx.h"
-#include "SoundEngineTypes.h"
+#include "Object.h"
+#include "Event.h"
+#include "Parameter.h"
+#include "StandaloneFile.h"
+#include "SwitchState.h"
+#include "Trigger.h"
 #include "SoundEngine.h"
+
+#include <SDL_mixer.h>
 
 namespace CryAudio
 {
@@ -11,13 +18,9 @@ namespace Impl
 namespace SDL_mixer
 {
 //////////////////////////////////////////////////////////////////////////
-ERequestStatus CEvent::Stop()
+CObject::CObject(uint32 const id)
+	: m_id(id)
 {
-	if (SoundEngine::StopEvent(this))
-	{
-		return ERequestStatus::Pending;
-	}
-	return ERequestStatus::Failure;
 }
 
 //////////////////////////////////////////////////////////////////////////
@@ -36,7 +39,7 @@ void CObject::SetParameter(IParameter const* const pIParameter, float const valu
 		parameterValue = crymath::clamp(parameterValue, 0.0f, 1.0f);
 		SampleId const sampleId = pParameter->GetSampleId();
 		m_volumeMultipliers[sampleId] = parameterValue;
-		SoundEngine::SetVolume(this, sampleId);
+		SetVolume(sampleId);
 	}
 }
 
@@ -49,7 +52,7 @@ void CObject::SetSwitchState(ISwitchState const* const pISwitchState)
 		float const switchValue = pSwitchState->GetValue();
 		SampleId const sampleId = pSwitchState->GetSampleId();
 		m_volumeMultipliers[sampleId] = switchValue;
-		SoundEngine::SetVolume(this, sampleId);
+		SetVolume(sampleId);
 	}
 }
 
@@ -58,8 +61,8 @@ ERequestStatus CObject::ExecuteTrigger(ITrigger const* const pITrigger, IEvent* 
 {
 	if ((pITrigger != nullptr) && (pIEvent != nullptr))
 	{
-		CTrigger const* const pTrigger = static_cast<CTrigger const* const>(pITrigger);
-		CEvent* const pEvent = static_cast<CEvent* const>(pIEvent);
+		auto const pTrigger = static_cast<CTrigger const*>(pITrigger);
+		auto const pEvent = static_cast<CEvent*>(pIEvent);
 		return SoundEngine::ExecuteEvent(this, pTrigger, pEvent);
 	}
 
@@ -75,7 +78,29 @@ ERequestStatus CObject::PlayFile(IStandaloneFile* const pIStandaloneFile)
 //////////////////////////////////////////////////////////////////////////
 ERequestStatus CObject::StopFile(IStandaloneFile* const pIStandaloneFile)
 {
-	return SoundEngine::StopFile(this, static_cast<CStandaloneFile*>(pIStandaloneFile));
+	ERequestStatus status = ERequestStatus::Failure;
+
+	auto const pStandaloneFile = static_cast<CStandaloneFile*>(pIStandaloneFile);
+
+	for (auto const pTempStandaloneFile : m_standaloneFiles)
+	{
+		if (pTempStandaloneFile == pStandaloneFile)
+		{
+			// need to make a copy because the callback
+			// registered with Mix_ChannelFinished can edit the list
+			ChannelList const channels = pStandaloneFile->m_channels;
+
+			for (auto const channel : channels)
+			{
+				Mix_HaltChannel(channel);
+			}
+
+			status = ERequestStatus::Pending;
+			break;
+		}
+	}
+
+	return status;
 }
 
 //////////////////////////////////////////////////////////////////////////
@@ -87,17 +112,27 @@ ERequestStatus CObject::SetName(char const* const szName)
 }
 
 //////////////////////////////////////////////////////////////////////////
-void CListener::SetName(char const* const szName)
+void CObject::SetVolume(SampleId const sampleId)
 {
-#if defined(INCLUDE_SDLMIXER_IMPL_PRODUCTION_CODE)
-	m_name = szName;
-#endif  // INCLUDE_SDLMIXER_IMPL_PRODUCTION_CODE
-}
+	if (!g_bMuted)
+	{
+		float const volumeMultiplier = GetVolumeMultiplier(this, sampleId);
 
-//////////////////////////////////////////////////////////////////////////
-void CListener::SetTransformation(CObjectTransformation const& transformation)
-{
-	m_transformation = transformation;
+		for (auto const pEvent : m_events)
+		{
+			auto const pTrigger = pEvent->m_pTrigger;
+
+			if ((pTrigger != nullptr) && (pTrigger->GetSampleId() == sampleId))
+			{
+				int const mixVolume = GetAbsoluteVolume(pTrigger->GetVolume(), volumeMultiplier);
+
+				for (auto const channel : pEvent->m_channels)
+				{
+					Mix_Volume(channel, mixVolume);
+				}
+			}
+		}
+	}
 }
 } // namespace SDL_mixer
 } // namespace Impl

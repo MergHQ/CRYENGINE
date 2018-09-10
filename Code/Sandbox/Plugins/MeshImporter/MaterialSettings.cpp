@@ -6,8 +6,8 @@
 #include <Cry3DEngine/I3DEngine.h>
 #include <IEditor.h>
 #include <IResourceSelectorHost.h>
-#include <Material\Material.h>
-#include <Material\MaterialManager.h>
+#include <Material/Material.h>
+#include <Material/MaterialManager.h>
 
 #include <CrySerialization/Decorators/Resources.h>
 #include <Serialization/Decorators/EditorActionButton.h>

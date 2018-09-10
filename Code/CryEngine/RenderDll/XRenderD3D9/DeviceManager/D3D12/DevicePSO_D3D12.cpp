@@ -25,8 +25,8 @@ topologyTypes[] =
 
 CDeviceGraphicsPSO::EInitResult CDeviceGraphicsPSO_DX12::Init(const CDeviceGraphicsPSODesc& psoDesc)
 {
-	m_bValid = false;
-	m_nUpdateCount++;
+	m_isValid = false;
+	m_updateCount++;
 
 	if (psoDesc.m_pResourceLayout == NULL)
 		return EInitResult::Failure;
@@ -169,14 +169,14 @@ CDeviceGraphicsPSO::EInitResult CDeviceGraphicsPSO_DX12::Init(const CDeviceGraph
 
 	m_pDevice->GetPSOCache().GetOrCreatePSO(psoInitParams, m_pGraphicsPSO);
 
-	m_bValid = (m_pGraphicsPSO != nullptr);
-	return (m_bValid ? EInitResult::Success : EInitResult::Failure);
+	m_isValid = (m_pGraphicsPSO != nullptr);
+	return (m_isValid ? EInitResult::Success : EInitResult::Failure);
 }
 
 bool CDeviceComputePSO_DX12::Init(const CDeviceComputePSODesc& psoDesc)
 {
-	m_bValid = false;
-	m_nUpdateCount++;
+	m_isValid = false;
+	m_updateCount++;
 
 	if (psoDesc.m_pResourceLayout == NULL)
 		return false;
@@ -204,5 +204,5 @@ bool CDeviceComputePSO_DX12::Init(const CDeviceComputePSODesc& psoDesc)
 
 	m_pDevice->GetPSOCache().GetOrCreatePSO(psoInitParams, m_pComputePSO);
 
-	return (m_bValid = (m_pComputePSO != nullptr));
+	return (m_isValid = (m_pComputePSO != nullptr));
 }

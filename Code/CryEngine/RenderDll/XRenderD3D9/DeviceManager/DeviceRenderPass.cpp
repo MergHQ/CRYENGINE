@@ -309,45 +309,45 @@ CDeviceGraphicsPSOPtr CDeviceObjectFactory::CreateGraphicsPSO(const CDeviceGraph
 {
 	CRY_ASSERT(psoDesc.m_pRenderPass != nullptr);
 
+	CDeviceGraphicsPSOPtr pPso;
+
 	auto it = m_GraphicsPsoCache.find(psoDesc);
 	if (it != m_GraphicsPsoCache.end())
 	{
-		if (auto result = it->second.lock())
-			return result;
+		pPso = it->second;
+	}
+	else
+	{
+		pPso = CreateGraphicsPSOImpl(psoDesc);
+		m_GraphicsPsoCache.emplace(psoDesc, pPso);
+
+		if (!pPso->IsValid())
+			m_InvalidGraphicsPsos.emplace(psoDesc, pPso);
 	}
 
-	auto pPso = CreateGraphicsPSOImpl(psoDesc);
-
-	if (it == m_GraphicsPsoCache.end())
-		m_GraphicsPsoCache.emplace(psoDesc, pPso);
-	else
-		it->second = pPso;
-
-	if (!pPso->IsValid())
-		m_InvalidGraphicsPsos.emplace(psoDesc, pPso);
-
+	pPso->SetLastUseFrame(gRenDev->GetRenderFrameID());
 	return pPso;
 }
 
 CDeviceComputePSOPtr CDeviceObjectFactory::CreateComputePSO(const CDeviceComputePSODesc& psoDesc)
 {
+	CDeviceComputePSOPtr pPso;
+
 	auto it = m_ComputePsoCache.find(psoDesc);
 	if (it != m_ComputePsoCache.end())
 	{
-		if (auto result = it->second.lock())
-			return result;
+		pPso = it->second;
+	}
+	else
+	{
+		pPso = CreateComputePSOImpl(psoDesc);
+		m_ComputePsoCache.emplace(psoDesc, pPso);
+
+		if (!pPso->IsValid())
+			m_InvalidComputePsos.emplace(psoDesc, pPso);
 	}
 
-	auto pPso = CreateComputePSOImpl(psoDesc);
-
-	if (it == m_ComputePsoCache.end())
-		m_ComputePsoCache.emplace(psoDesc, pPso);
-	else
-		it->second = pPso;
-
-	if (!pPso->IsValid())
-		m_InvalidComputePsos.emplace(psoDesc, pPso);
-
+	pPso->SetLastUseFrame(gRenDev->GetRenderFrameID());
 	return pPso;
 }
 

@@ -16,6 +16,20 @@ namespace pfx2
 //////////////////////////////////////////////////////////////////////////
 // CParticleEmitter
 
+
+// Common data for top-level emitters
+struct SEmitterData : SUseData
+{
+	SEmitterData()
+	{
+		AddData(EPVF_Position);
+		AddData(EPQF_Orientation);
+		AddData(EPVF_Velocity);
+		AddData(EPVF_AngularVelocity);
+		AddData(EPDT_NormalAge);
+	}
+};
+
 CParticleEmitter::CParticleEmitter(CParticleEffect* pEffect, uint emitterId)
 	: m_pEffect(pEffect)
 	, m_pEffectOriginal(pEffect)
@@ -57,12 +71,8 @@ CParticleEmitter::CParticleEmitter(CParticleEffect* pEffect, uint emitterId)
 	if (m_pEffect)
 		m_attributeInstance.Reset(m_pEffect->GetAttributeTable());
 
-	m_parentContainer.AddParticleData(EPVF_Position);
-	m_parentContainer.AddParticleData(EPQF_Orientation);
-	m_parentContainer.AddParticleData(EPVF_Velocity);
-	m_parentContainer.AddParticleData(EPVF_AngularVelocity);
-	m_parentContainer.AddParticleData(EPDT_NormalAge);
-
+	static SEmitterData s_emitterData;
+	m_parentContainer.SetUsedData(s_emitterData);
 	m_parentContainer.AddParticle();
 }
 

@@ -5,6 +5,8 @@
 #include <IAudioImpl.h>
 #include "SoundEngine.h"
 
+struct ICVar;
+
 namespace CryAudio
 {
 namespace Impl
@@ -15,11 +17,13 @@ class CImpl final : public IImpl
 {
 public:
 
-	CImpl();
 	CImpl(CImpl const&) = delete;
 	CImpl(CImpl&&) = delete;
 	CImpl& operator=(CImpl const&) = delete;
 	CImpl& operator=(CImpl&&) = delete;
+
+	CImpl();
+	virtual ~CImpl() override = default;
 
 	// CryAudio::Impl::IImpl
 	virtual void                Update() override;
@@ -81,7 +85,6 @@ private:
 	std::map<uint32, string>             m_idToName;
 	CryFixedStringT<MaxInfoStringLength> m_name;
 #endif  // INCLUDE_SDLMIXER_IMPL_PRODUCTION_CODE
-
 };
 } // namespace SDL_mixer
 } // namespace Impl

@@ -3,7 +3,7 @@
 #include "stdafx.h"
 #include "VehicleMovementPanel.h"
 
-#include "Controls\PropertyItem.h"
+#include "Controls/PropertyItem.h"
 
 #include "VehicleData.h"
 #include "VehicleEditorDialog.h"

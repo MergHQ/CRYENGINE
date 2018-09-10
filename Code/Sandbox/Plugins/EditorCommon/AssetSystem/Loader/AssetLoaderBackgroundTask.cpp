@@ -7,7 +7,7 @@
 #include "AssetSystem/Asset.h"
 #include "IBackgroundTaskManager.h"
 #include "FilePathUtil.h"
-#include <CryString\CryPath.h>
+#include <CryString/CryPath.h>
 #include <future>
 
 namespace AssetLoaderBackgroundTask_Private

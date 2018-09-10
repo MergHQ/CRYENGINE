@@ -51,7 +51,7 @@
 #include <Material/Material.h>
 #include <CryRenderer/IRenderAuxGeom.h>
 #include <IEditor.h>
-#include <Controls\QuestionDialog.h>
+#include <Controls/QuestionDialog.h>
 #include <QtViewPane.h>
 #include <Serialization/QPropertyTree/QPropertyTree.h>
 #include <ProxyModels/AttributeFilterProxyModel.h>
