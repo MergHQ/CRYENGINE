@@ -92,7 +92,6 @@ struct SSkinningData
 	uint32                           nNumActiveMorphs;
 	JointIdType*                     pRemapTable;
 	JobManager::SJobState*           pAsyncJobs;
-	JobManager::SJobState*           pAsyncDataJobs;
 	SSkinningData*                   pPreviousSkinningRenderData; // used for motion blur
 	void*                            pCustomTag;                  //!< Used as a key for instancing with compute skinning SRV.
 	uint32                           remapGUID;
