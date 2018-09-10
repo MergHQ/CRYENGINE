@@ -6,16 +6,25 @@
 namespace
 {
 
-void* ParticleAlloc(uint32 sz)
+uint memData;
+uint memContainer;
+
+byte* ParticleAlloc(uint32 sz)
 {
+	if (!sz)
+		return 0;
 	void* ptr = CryModuleMemalign(sz, CRY_PFX2_PARTICLES_ALIGNMENT);
 	memset(ptr, 0, sz);
-	return ptr;
+	memData += sz;
+	return (byte*)ptr;
 }
 
-void ParticleFree(void* ptr)
+void ParticleFree(void* ptr, uint32 sz)
 {
+	if (!ptr)
+		return;
 	CryModuleMemalignFree(ptr);
+	memData -= sz;
 }
 
 }
@@ -25,17 +34,15 @@ namespace pfx2
 
 CParticleContainer::CParticleContainer()
 {
-	Clear();
-}
-
-CParticleContainer::CParticleContainer(const CParticleContainer& copy)
-{
-	Clear();
+	static SUseData s_useData;
+	SetUsedData(s_useData);
+	memContainer += sizeof(*this);
 }
 
 CParticleContainer::~CParticleContainer()
 {
-	Clear();
+	ParticleFree(m_pData, m_capacity * m_useData.totalSize);
+	memContainer -= sizeof(*this);
 }
 
 void CParticleContainer::Resize(uint32 newSize)
@@ -43,81 +50,72 @@ void CParticleContainer::Resize(uint32 newSize)
 	CRY_PFX2_PROFILE_DETAIL;
 
 	newSize = CRY_PFX2_PARTICLESGROUP_ALIGN(newSize);
-	if (newSize <= m_maxParticles)
+	if (newSize <= m_capacity)
 		return;
 
-	const size_t newMaxParticles = CRY_PFX2_PARTICLESGROUP_ALIGN(newSize + min(newSize >> 1, m_maxParticles));
+	const size_t newCapacity = CRY_PFX2_PARTICLESGROUP_ALIGN(newSize + min(newSize >> 1, m_capacity));
 
-	auto prevBuffers = m_pData;
-	for (auto type : EParticleDataType::indices())
+	byte* pNew = ParticleAlloc(newCapacity * m_useData.totalSize);
+	if (m_capacity)
 	{
-		const size_t stride = type.info().typeSize;
-		if (m_useData[type] && newMaxParticles > 0)
+		for (auto type : EParticleDataType::indices())
 		{
-			void* pNew = ParticleAlloc(newMaxParticles * stride);
-			if (m_pData[type])
+			if (HasData(type))
 			{
-				memcpy(pNew, m_pData[type], m_lastId * stride);
-				ParticleFree(m_pData[type]);
+				uint offset = m_useData.offsets[type];
+				const size_t stride = type.info().typeSize;
+				memcpy(pNew + offset * newCapacity, m_pData + offset * m_capacity, m_lastId * stride);
 			}
-			m_pData[type] = pNew;
-		}
-		else
-		{
-			if (m_pData[type])
-				ParticleFree(m_pData[type]);
-			m_pData[type] = 0;
 		}
 	}
-
-	m_maxParticles = newMaxParticles;
+	ParticleFree(m_pData, m_capacity * m_useData.totalSize);
+	m_pData = pNew;
+	m_capacity = newCapacity;
 }
 
-void CParticleContainer::ResetUsedData()
+void CParticleContainer::SetUsedData(const SUseData& useData)
 {
-	m_useData.fill(false);
-}
+	CRY_PFX2_PROFILE_DETAIL;
 
-void CParticleContainer::AddParticleData(EParticleDataType type)
-{
-	const size_t allocSize = m_maxParticles * type.info().typeSize;
-	uint dim = type.info().dimension;
-	for (uint i = 0; i < dim; ++i)
+	// Transfer existing data
+	if (m_capacity)
 	{
-		m_useData[type + i] = true;
-		if (!m_pData[type + i])
-			m_pData[type + i] = ParticleAlloc(allocSize);
-	}
-}
-
-void CParticleContainer::Trim()
-{
-	for (auto type : EParticleDataType::indices())
-	{
-		if (!m_useData[type] && m_pData[type] != 0)
+		byte* pNew = ParticleAlloc(m_capacity * useData.totalSize);
+		for (auto type : EParticleDataType::indices())
 		{
-			ParticleFree(m_pData[type]);
-			m_pData[type] = 0;
+			if (useData.Used(type) && m_useData.Used(type))
+			{
+				memcpy(pNew + useData.offsets[type] * m_capacity, m_pData + m_useData.offsets[type] * m_capacity, m_lastId * m_capacity);
+			}
+		}
+		ParticleFree(m_pData, m_capacity * m_useData.totalSize);
+		m_pData = pNew;
+	}
+	m_useData = useData;
+}
+
+void CParticleContainer::CopyData(EParticleDataType dstType, EParticleDataType srcType, SUpdateRange range)
+{
+	CRY_PFX2_ASSERT(dstType.info().type == srcType.info().type);
+	if (HasData(dstType) && HasData(srcType))
+	{
+		size_t stride = dstType.info().typeSize;
+		size_t count = range.size();
+		uint dim = dstType.info().dimension;
+		for (uint i = 0; i < dim; ++i)
+		{
+			memcpy(
+				ByteData(dstType + i) + stride * range.m_begin,
+				ByteData(srcType + i) + stride * range.m_begin,
+				stride * count);
 		}
 	}
 }
 
 void CParticleContainer::Clear()
 {
-	CRY_PFX2_PROFILE_DETAIL;
-
-	for (auto i : EParticleDataType::indices())
-	{
-		if (m_pData[i] != 0)
-			ParticleFree(m_pData[i]);
-		m_pData[i] = 0;
-		m_useData[i] = false;
-	}
-	m_maxParticles = 0;
-	m_lastId = 0;
-	m_firstSpawnId = 0;
-	m_lastSpawnId = 0;
-	m_nextSpawnId = 0;
+	ParticleFree(m_pData, m_capacity * m_useData.totalSize);
+	new(this) CParticleContainer();
 }
 
 template<typename TData, typename FnCopy>
@@ -222,7 +220,8 @@ void CParticleContainer::AddParticles(TConstArray<SSpawnEntry> spawnEntries)
 
 		currentId += toAddCount;
 		m_lastSpawnId += toAddCount;
-		assert(m_lastSpawnId <= m_maxParticles);
+		assert(m_firstSpawnId <= m_lastSpawnId);
+		assert(m_lastSpawnId <= m_capacity);
 	}
 }
 
@@ -238,10 +237,9 @@ void CParticleContainer::RemoveParticles(TVarArray<TParticleId> toRemove, TVarAr
 
 	for (auto dataTypeId : EParticleDataType::indices())
 	{
-		if (!m_useData[dataTypeId])
+		byte* pData = ByteData(dataTypeId);
+		if (!pData)
 			continue;
-
-		void* pData = m_pData[dataTypeId];
 		const uint stride = dataTypeId.info().typeSize;
 		switch (stride)
 		{
@@ -297,13 +295,13 @@ void CParticleContainer::ResetSpawnedParticles()
 	const uint movingId = m_lastSpawnId - min(gapSize, numSpawn);
 	if (gapSize != 0)
 	{
-		for (auto dataTypeId : EParticleDataType::indices())
+		for (auto type : EParticleDataType::indices())
 		{
-			const size_t stride = dataTypeId.info().typeSize;
-			byte* pBytes = reinterpret_cast<byte*>(m_pData[dataTypeId]);
-			if (!pBytes)
-				continue;
-			memcpy(pBytes + m_lastId * stride, pBytes + movingId * stride, gapSize * stride);
+			if (byte* pBytes = ByteData(type))
+			{
+				const size_t stride = type.info().typeSize;
+				memcpy(pBytes + m_lastId * stride, pBytes + movingId * stride, gapSize * stride);
+			}
 		}
 		m_lastSpawnId -= gapSize;
 		m_firstSpawnId -= gapSize;

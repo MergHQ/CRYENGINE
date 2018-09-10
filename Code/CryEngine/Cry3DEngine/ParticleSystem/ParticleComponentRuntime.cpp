@@ -57,13 +57,7 @@ const CParticleContainer& CParticleComponentRuntime::GetParentContainer() const
 
 void CParticleComponentRuntime::Initialize()
 {
-	CRY_PFX2_PROFILE_DETAIL;
-
-	m_container.ResetUsedData();
-	for (EParticleDataType type(0); type < EParticleDataType::size(); type = type + type.info().dimension)
-		if (m_pComponent->UseParticleData(type))
-			m_container.AddParticleData(type);
-	m_container.Trim();
+	m_container.SetUsedData(m_pComponent->GetDataUse());
 }
 
 void CParticleComponentRuntime::UpdateAll()
@@ -430,12 +424,12 @@ void CParticleComponentRuntime::CalculateBounds()
 	const floatv fMax = ToFloatv(-std::numeric_limits<float>::max());
 	const Slope<float> slope = ComponentParams().m_physicalSizeSlope;
 
-	Vec3v bbMin = Vec3v(fMin, fMin, fMin);
-	Vec3v bbMax = Vec3v(fMax, fMax, fMax);
-
 	SUpdateRange range = m_container.GetFullRange();
 
 #ifdef CRY_PFX2_USE_SSE
+	Vec3v bbMin = Vec3v(fMin, fMin, fMin);
+	Vec3v bbMax = Vec3v(fMax, fMax, fMax);
+
 	// vector part
 	const Slope<floatv> slopev = slope;
 	const TParticleId lastParticleId = m_container.GetNumParticles();
@@ -451,16 +445,16 @@ void CParticleComponentRuntime::CalculateBounds()
 	m_bounds.max = HMax(bbMax);
 
 	range = SUpdateRange(+lastParticleGroupId, lastParticleId);
+#else
+	m_bounds.Reset();
 #endif
 
 	// linear part
 	for (auto particleId : range)
 	{
 		const float size = slope(sizes.Load(particleId));
-		const Vec3 sizev = Vec3(size, size, size);
 		const Vec3 position = positions.Load(particleId);
-		m_bounds.min = min(m_bounds.min, position - sizev);
-		m_bounds.max = max(m_bounds.max, position + sizev);
+		m_bounds.Add(position, size);
 	}
 
 	CRY_PFX2_ASSERT(m_bounds.GetRadius() < 1000000.f);

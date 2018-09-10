@@ -16,7 +16,9 @@ void ParticleContainerRemoveTest(size_t containerSz, TParticleId* toRemove, size
 	// create particles with SpawnId
 	TParticleHeap heap;
 	pfx2::CParticleContainer container;
-	container.AddParticleData(EPDT_SpawnId);
+	static SUseData useData;
+	useData.AddData(EPDT_SpawnId);
+	container.SetUsedData(useData);
 	pfx2::SSpawnEntry spawn;
 	spawn.m_count = containerSz;
 	spawn.m_parentId = 0;
@@ -120,7 +122,9 @@ protected:
 	{
 		static_assert(CRY_PFX2_PARTICLESGROUP_STRIDE == 4, "This unit test is assuming vectorization of 4 particles");
 		pContainer = std::unique_ptr<pfx2::CParticleContainer>(new pfx2::CParticleContainer());
-		pContainer->AddParticleData(EPDT_ParentId);
+		static SUseData useData;
+		useData.AddData(EPDT_ParentId);
+		pContainer->SetUsedData(useData);
 	}
 
 	virtual void TearDown() override

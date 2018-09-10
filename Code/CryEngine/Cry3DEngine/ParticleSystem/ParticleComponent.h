@@ -195,14 +195,15 @@ public:
 	template<typename T> TDataOffset<T>   AddInstanceData()                     { return AddInstanceData(sizeof(T)); }
 	void                                  AddParticleData(EParticleDataType type);
 
-	bool                                  UsesGPU() const                       { return m_Params.m_usesGPU; }
+	bool                                  UsesGPU() const                       { return m_params.m_usesGPU; }
 	gpu_pfx2::SComponentParams&           GPUComponentParams()                  { return m_GPUParams; };
 	void                                  AddGPUFeature(gpu_pfx2::IParticleFeature* gpuInterface) { if (gpuInterface) m_gpuFeatures.push_back(gpuInterface); }
 	TConstArray<gpu_pfx2::IParticleFeature*> GetGpuFeatures() const             { return TConstArray<gpu_pfx2::IParticleFeature*>(m_gpuFeatures.data(), m_gpuFeatures.size()); }
 
-	const SComponentParams& GetComponentParams() const                          { return m_Params; }
-	SComponentParams&       ComponentParams()                                   { return m_Params; }
-	bool                    UseParticleData(EParticleDataType type) const       { return m_useParticleData[type]; }
+	const SComponentParams& GetComponentParams() const                          { return m_params; }
+	SComponentParams&       ComponentParams()                                   { return m_params; }
+	bool                    UseParticleData(EParticleDataType type) const       { return m_useData.Used(type); }
+	const SUseData&         GetDataUse() const                                  { return m_useData; }
 
 	CParticleComponent*     GetParentComponent() const                          { return m_parent; }
 	const TComponents&      GetChildComponents() const                          { return m_children; }
@@ -224,10 +225,10 @@ private:
 	CParticleComponent*                      m_parent;
 	TComponents                              m_children;
 	Vec2                                     m_nodePosition;
-	SComponentParams                         m_Params;
+	SComponentParams                         m_params;
 	TSmartArray<CParticleFeature>            m_features;
 	TSmartArray<CParticleFeature>            m_defaultFeatures;
-	StaticEnumArray<bool, EParticleDataType> m_useParticleData;
+	SUseData                                 m_useData;
 	SEnable                                  m_enabled;
 	SEnable                                  m_visible;
 	bool                                     m_dirty;

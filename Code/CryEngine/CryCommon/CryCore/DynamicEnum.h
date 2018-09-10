@@ -212,8 +212,8 @@ bool Serialize(Serialization::IArchive& ar, DynamicEnum<Tag, Value, Info>& value
 // Arrays of data sized to DynamicEnum size, replacements for staticly sized: T EnumData[EType::count];
 
 //! Array which sizes itself to current DynamicEnum size on initialization.
-template<typename T, typename Enum>
-class StaticEnumArray : public DynArray<T>
+template<typename T, typename Enum, typename I = uint>
+class StaticEnumArray : public DynArray<T, I>
 {
 public:
 
@@ -224,8 +224,8 @@ public:
 };
 
 //! Array which sizes itself to current DynamicEnum size on initialization, and every read/write.
-template<typename T, typename Enum>
-class DynamicEnumArray : public StaticEnumArray<T, Enum>
+template<typename T, typename Enum, typename I = uint>
+class DynamicEnumArray : public StaticEnumArray<T, Enum, I>
 {
 public:
 

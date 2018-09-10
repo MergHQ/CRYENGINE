@@ -34,22 +34,6 @@ void CParticleContainer::FillData(TDataType<T> type, const T& data, SUpdateRange
 	}
 }
 
-inline void CParticleContainer::CopyData(EParticleDataType dstType, EParticleDataType srcType, SUpdateRange range)
-{
-	CRY_PFX2_ASSERT(dstType.info().type == srcType.info().type);
-	if (HasData(dstType) && HasData(srcType))
-	{
-		size_t stride = dstType.info().typeSize;
-		size_t count = SGroupRange(range).size();
-		uint dim = dstType.info().dimension;
-		for (uint i = 0; i < dim; ++i)
-			memcpy(
-			  (byte*)m_pData[dstType + i] + stride * range.m_begin,
-			  (byte*)m_pData[srcType + i] + stride * range.m_begin,
-			  stride * count);
-	}
-}
-
 ILINE TIStream<Vec3> CParticleContainer::IStream(TDataType<Vec3> type, Vec3 defaultVal) const
 {
 	return TIStream<Vec3>(

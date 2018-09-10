@@ -192,6 +192,52 @@ inline cstr SkipPrefix(cstr name)
 	return name;
 }
 
+// Store usage of particle data types
+struct SUseData
+{
+	StaticEnumArray<uint, EParticleDataType> offsets;        // Offset of data type if used, ~0 if not
+	uint                                     totalSize = 0;  // Total size of data per-particle
+
+	SUseData()
+	{
+		offsets.fill(~0);
+	}
+	bool Used(EParticleDataType type) const
+	{
+		return offsets[type] != ~0;
+	}
+	void AddData(EParticleDataType type)
+	{
+		if (!Used(type))
+		{
+			uint dim = type.info().dimension;
+			uint size = Align(type.info().typeSize, 4);
+			for (uint i = 0; i < dim; ++i)
+			{
+				offsets[type + i] = totalSize;
+				totalSize += size;
+			}
+		}
+	}
+};
+
+struct SUseDataRef
+{
+	TConstArray<uint> offsets;
+	uint              totalSize = 0;
+
+	SUseDataRef() 
+	{}
+	SUseDataRef(const SUseData& data)
+		: offsets(data.offsets)
+		, totalSize(data.totalSize)
+	{}
+	bool Used(EParticleDataType type) const
+	{
+		return offsets[type] != ~0;
+	}
+};
+
 // Standard data types
 extern TDataType<TParticleId>
 	EPDT_SpawnId,
