@@ -20,7 +20,9 @@ namespace Cry
 	{
 		namespace Steam
 		{
-			class CService final : public Cry::IEnginePlugin, public IService
+			class CService final
+				: public Cry::IEnginePlugin
+				, public IService
 			{
 			public:
 				CRYINTERFACE_BEGIN()
@@ -29,7 +31,7 @@ namespace Cry
 				CRYGENERATE_SINGLETONCLASS_GUID(CService, "Plugin_CryGamePlatformSteam", SteamServiceID)
 
 				CService();
-				~CService() = default;
+				virtual ~CService() = default;
 
 				// Cry::IEnginePlugin
 				virtual bool Initialize(SSystemGlobalEnvironment& env, const SSystemInitParams& initParams) override;
@@ -82,6 +84,7 @@ namespace Cry
 				virtual void CanAccessMultiplayerServices(std::function<void(bool authorized)> asynchronousCallback) override { asynchronousCallback(true); }
 
 				virtual bool RequestUserInformation(const AccountIdentifier& accountId, UserInformationMask info) override;
+				virtual bool IsLoggedIn() const override;
 				// ~IService
 
 				virtual void SetAwaitingCallback(int iAwaiting) { m_awaitingCallbacks += iAwaiting; }
@@ -90,6 +93,8 @@ namespace Cry
 				STEAM_CALLBACK(CService, OnGameOverlayActivated, GameOverlayActivated_t, m_callbackGameOverlayActivated);
 				STEAM_CALLBACK(CService, OnAvatarImageLoaded, AvatarImageLoaded_t, m_onAvatarImageLoadedCallback);
 				STEAM_CALLBACK(CService, OnFriendStateChange, PersonaStateChange_t, m_onFriendStateChangeCallback);
+				STEAM_CALLBACK(CService, OnGetSteamAuthTicketResponse, GetAuthSessionTicketResponse_t, m_callbackGetSteamAuthTicketResponse);
+				STEAM_CALLBACK(CService, OnPersonaStateChange, PersonaStateChange_t, m_callbackOnPersonaChange);
 
 				CAccount* TryGetAccount(CSteamID id) const;
 				CAccount* TryGetAccount(const AccountIdentifier& accountId) const;

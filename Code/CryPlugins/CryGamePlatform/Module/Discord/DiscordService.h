@@ -75,6 +75,7 @@ namespace Cry
 				virtual void CanAccessMultiplayerServices(std::function<void(bool authorized)> asynchronousCallback) override { asynchronousCallback(true); }
 
 				virtual bool RequestUserInformation(const AccountIdentifier& accountId, UserInformationMask info) override;
+				virtual bool IsLoggedIn() const override;
 				// ~IService
 
 			private:

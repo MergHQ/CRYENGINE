@@ -1,3 +1,5 @@
+include_guard(GLOBAL)
+
 if(WIN64)
 	add_library(Steamworks SHARED IMPORTED GLOBAL)
 	set_target_properties(Steamworks PROPERTIES IMPORTED_LOCATION "${SDK_DIR}/Steamworks/redistributable_bin/win64/steam_api64.dll")

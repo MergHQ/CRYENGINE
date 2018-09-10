@@ -44,6 +44,8 @@ namespace Cry
 				: m_callbackGameOverlayActivated(this, &CService::OnGameOverlayActivated)
 				, m_onAvatarImageLoadedCallback(this, &CService::OnAvatarImageLoaded)
 				, m_onFriendStateChangeCallback(this, &CService::OnFriendStateChange)
+				, m_callbackGetSteamAuthTicketResponse(this, &CService::OnGetSteamAuthTicketResponse)
+				, m_callbackOnPersonaChange(this, &CService::OnPersonaStateChange)
 				, m_pServer(nullptr)
 				, m_awaitingCallbacks(0)
 				, m_authTicketHandle(k_HAuthTicketInvalid)
@@ -307,6 +309,28 @@ namespace Cry
 				}
 			}
 
+			void CService::OnGetSteamAuthTicketResponse(GetAuthSessionTicketResponse_t* pData)
+			{
+				const bool success = pData->m_eResult == EResult::k_EResultOK;
+				const uint32 authTicket = pData->m_hAuthTicket;
+				for (IListener* pListener : m_listeners)
+				{
+					pListener->OnGetSteamAuthTicketResponse(success, authTicket);
+				}
+
+				SetAwaitingCallback(-1);
+			}
+
+			void CService::OnPersonaStateChange(PersonaStateChange_t* pData)
+			{
+				for (IListener* pListener : m_listeners)
+				{
+					pListener->OnPersonaStateChanged(CAccount(pData->m_ulSteamID), static_cast<IListener::EPersonaChangeFlags>(pData->m_nChangeFlags));
+				}
+
+				SetAwaitingCallback(-1);
+			}
+
 			bool CService::OwnsApplication(ApplicationIdentifier id) const
 			{
 				if (ISteamApps* pSteamApps = SteamApps())
@@ -544,6 +568,7 @@ namespace Cry
 					return false;
 				}
 				m_authTicketHandle = (uint32)pSteamUser->GetAuthSessionTicket(rgchToken, sizeof(rgchToken), &unTokenLen);
+				SetAwaitingCallback(1);
 
 				const char hex_chars[16] = { '0', '1', '2', '3', '4', '5', '6', '7', '8', '9', 'A', 'B', 'C', 'D', 'E', 'F' };
 
@@ -565,6 +590,14 @@ namespace Cry
 					const bool requireNameOnly = info == eUIF_Name;
 					return pFriends->RequestUserInformation(ExtractSteamID(accountId), requireNameOnly);
 				}
+
+				return false;
+			}
+
+			bool CService::IsLoggedIn() const
+			{
+				if (ISteamUser* pSteamUser = SteamUser())
+					return pSteamUser->BLoggedOn();
 
 				return false;
 			}
