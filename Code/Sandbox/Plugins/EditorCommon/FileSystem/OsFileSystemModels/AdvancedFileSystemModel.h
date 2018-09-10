@@ -4,7 +4,6 @@
 #include "EditorCommonAPI.h"
 
 #include <QFileSystemModel>
-#include <QHash>
 
 /**
  * \brief Replacement for QFileSystemModel. Do not use QFileSystemModel

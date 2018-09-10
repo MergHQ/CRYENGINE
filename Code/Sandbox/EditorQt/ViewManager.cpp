@@ -7,23 +7,16 @@
 #include "Qt/Widgets/QViewportHeader.h"
 #include "Qt/QMainFrameMenuBar.h"
 #include "Qt/QtMainFrame.h"
-#include "2DViewport.h"
-#include "CryEditDoc.h"
 #include "TopRendererWnd.h"
 
 #include <Preferences/ViewportPreferences.h>
 #include <ModelViewport.h>
-#include <QtViewPane.h>
 #include <QViewportPane.h>
-#include <RenderViewport.h>
-#include <Viewport.h>
 
 #include <CryGame/IGameFramework.h>
 #include <IViewSystem.h>
 
-#include <QApplication>
 #include <QMenuBar>
-#include <QVBoxLayout>
 
 class QViewportPaneContainer : public CDockableWidget
 {

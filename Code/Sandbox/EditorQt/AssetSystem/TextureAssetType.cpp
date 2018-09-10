@@ -2,17 +2,7 @@
 #include <StdAfx.h>
 #include "TextureAssetType.h"
 
-#include "AssetSystem/Asset.h"
-#include "AssetSystem/AssetEditor.h"
-#include "AssetSystem/AssetManager.h"
-#include "Util/Image.h"
-#include "Util/ImageUtil.h"
-#include "QtUtil.h"
-#include "FilePathUtil.h"
-#include <QImage>
-#include <QDir>
-
-#include <CryCore/ToolsHelpers/ResourceCompilerHelper.h>
+#include <FilePathUtil.h>
 
 REGISTER_ASSET_TYPE(CTextureType)
 

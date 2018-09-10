@@ -2,7 +2,8 @@
 
 #include "stdafx.h"
 #include "FBXExporterDialog.h"
-#include "Controls/QuestionDialog.h"
+
+#include <Controls/QuestionDialog.h>
 
 namespace
 {

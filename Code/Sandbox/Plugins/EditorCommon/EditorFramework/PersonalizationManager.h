@@ -4,8 +4,6 @@
 #include "Util/UserDataUtil.h"
 
 #include <QHash>
-#include <QVector>
-#include <QVariant>
 #include <QTimer>
 
 #define SET_PERSONALIZATION_PROPERTY(module, propName, value) \
@@ -22,8 +20,6 @@ class EDITOR_COMMON_API CPersonalizationManager : public CUserData
 public:
 	CPersonalizationManager();
 	~CPersonalizationManager();
-
-	void Init();
 
 	/* There are limited types that are serialized correctly to JSon with QJsonDocument.
 	 * http://doc.qt.io/qt-5/qjsonvalue.html#fromVariant has a list of supported types and states:

@@ -1,10 +1,10 @@
 // Copyright 2001-2018 Crytek GmbH / Crytek Group. All rights reserved.
 #pragma once
 
-#include <CryMath/Cry_Geo.h>
-
 class CBaseObject;
 class CSOTemplate;
+
+struct AABB;
 
 //! DEPRECATED, only there for smart object support
 //! map of all known smart object templates mapped by template id

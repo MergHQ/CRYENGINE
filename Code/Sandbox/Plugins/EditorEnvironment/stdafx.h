@@ -13,13 +13,3 @@
 #include <CryCore/Platform/CryAtlMfc.h>
 #include "EditorCommon.h"
 #include <QtViewPane.h>
-
-/////////////////////////////////////////////////////////////////////////////
-// STL
-/////////////////////////////////////////////////////////////////////////////
-#include <vector>
-#include <list>
-#include <map>
-#include <set>
-#include <algorithm>
-#include <memory>

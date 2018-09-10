@@ -2,11 +2,11 @@
 #pragma once
 
 #include "EditorCommonAPI.h"
-#include "EditorFramework/PersonalizationManager.h"
-#include "QToolWindowManager/QToolWindowCustomWrapper.h"
 
 #include <QDialog>
 
+class QCustomTitleBar;
+class QGridLayout;
 /**
  * Dialog base class
  *

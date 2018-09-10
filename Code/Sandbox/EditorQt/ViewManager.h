@@ -2,14 +2,11 @@
 
 #pragma once
 
-#include "IViewportManager.h"
-#include "Viewport.h"
-#include "QtViewPane.h"
-#include "SandboxAPI.h"
+#include <IViewportManager.h>
+#include <Viewport.h>
 
 #include <CryMath/Cry_Geo.h>
 
-class CViewport;
 class QWidget;
 
 // Description of viewport.

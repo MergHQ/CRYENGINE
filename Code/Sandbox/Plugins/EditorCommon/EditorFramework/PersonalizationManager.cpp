@@ -2,15 +2,11 @@
 
 #include "stdafx.h"
 #include "PersonalizationManager.h"
-#include "QtUtil.h"
+
 #include "FilePathUtil.h"
 
-#include <CrySystem/ISystem.h>
-
-#include <QSettings>
-#include <QJsonDocument>
 #include <QFile>
-#include <QEvent>
+#include <QJsonDocument>
 
 namespace Private_Personalization
 {

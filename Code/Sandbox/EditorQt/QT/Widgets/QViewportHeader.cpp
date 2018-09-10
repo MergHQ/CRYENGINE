@@ -5,10 +5,8 @@
 
 #include "EditMode/VertexSnappingModeTool.h"
 #include "LevelEditor/LevelEditorViewport.h"
-#include "Objects/ObjectLayerManager.h"
 #include "QT/QtMainFrame.h"
 #include "QT/QtMainFrameWidgets.h"
-#include "QT/QToolTabManager.h"
 #include "CustomResolutionDlg.h"
 #include "PanelDisplayRender.h"
 #include "ViewManager.h"
@@ -16,6 +14,7 @@
 #include <Controls/DynamicPopupMenu.h>
 #include <Controls/QuestionDialog.h>
 #include <Dialogs/QNumericBoxDialog.h>
+#include <EditorFramework/PersonalizationManager.h>
 #include <LevelEditor/Tools/PickObjectTool.h>
 #include <LevelEditor/Tools/ObjectMode.h>
 #include <LevelEditor/LevelEditorSharedState.h>

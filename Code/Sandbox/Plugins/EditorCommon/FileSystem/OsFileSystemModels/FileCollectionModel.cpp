@@ -7,16 +7,6 @@
 #include <QFileSystemModel>
 #include <QMimeData>
 
-CFileCollectionModel::CFileCollectionModel()
-{
-
-}
-
-CFileCollectionModel::~CFileCollectionModel()
-{
-
-}
-
 void CFileCollectionModel::AddEntry(const QString& file)
 {
 	if (!HasEntry(file))

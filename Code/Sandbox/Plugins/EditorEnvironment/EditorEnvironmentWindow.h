@@ -1,12 +1,12 @@
 // Copyright 2001-2018 Crytek GmbH / Crytek Group. All rights reserved.
 
 #pragma once
-#include <CrySerialization/Forward.h>
+
 #include <IEditor.h>
 #include <QtViewPane.h>
 
-class QTimeOfDayWidget;
 class QPresetsWidget;
+class QTimeOfDayWidget;
 
 class CEditorEnvironmentWindow : public CDockableEditor, public IEditorNotifyListener
 {

@@ -3,7 +3,6 @@
 #include "StdAfx.h"
 #include "FavoritesHelper.h"
 
-#include "IEditor.h"
 #include "EditorFramework/PersonalizationManager.h"
 #include "QAdvancedItemDelegate.h"
 
@@ -16,10 +15,6 @@ FavoritesHelper::FavoritesHelper(const QString& uniqueFavKey, int favoritesColum
 	, m_favColumn(favoritesColumn)
 {
 	Load();
-}
-
-FavoritesHelper::~FavoritesHelper()
-{
 }
 
 void FavoritesHelper::SetupView(QAbstractItemView* view, QAdvancedItemDelegate* delegate, int favoritesColumn)

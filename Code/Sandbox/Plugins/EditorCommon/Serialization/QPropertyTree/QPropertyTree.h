@@ -9,24 +9,24 @@
 
 #pragma once
 
-#include <string>
-#include <CrySerialization/yasli/Config.h>
-#include <CrySerialization/yasli/Serializer.h>
-#include <CrySerialization/yasli/Object.h>
-#include <CrySerialization/yasli/Pointers.h>
+#include "Serialization/PropertyTree/PropertyRow.h"
 #include "Serialization/PropertyTree/PropertyTree.h"
 #include "Serialization/PropertyTree/PropertyTreeStyle.h"
-#include "Serialization/PropertyTree/PropertyRow.h"
 #include "UIConfigLocal.h"
-#include <QWidget>
-#include <QPainter>
+
+#include <CrySerialization/yasli/Config.h>
+#include <CrySerialization/yasli/Serializer.h>
+
 #include <QIcon>
+#include <QPainter>
+#include <QWidget>
+
 #include <vector>
 
 class QLineEdit;
-class QScrollBar;
-class QPropertyTree;
 class QMimeData;
+class QPropertyTree;
+class QScrollBar;
 
 namespace property_tree {
 class QDrawContext;

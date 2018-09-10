@@ -1,8 +1,7 @@
 // Copyright 2001-2018 Crytek GmbH / Crytek Group. All rights reserved.
 
-#include <StdAfx.h>
+#include "StdAfx.h"
 #include "Command.h"
-#include <CryString/CryString.h>
 
 CCommandArgument::CCommandArgument(CCommand* const pCommand, const size_t index, const string& name, const string& description)
 	: m_pCommand(pCommand)

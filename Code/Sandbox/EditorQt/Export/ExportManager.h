@@ -29,8 +29,6 @@ public:
 	//! return true if succeed, otherwise false
 	bool AddSelectedObjects();
 
-	bool AddSelectedEntityObjects();
-
 	//! Add to Export Data geometry from objects inside selected region volume
 	//! return true if succeed, otherwise false
 	bool AddSelectedRegionObjects();

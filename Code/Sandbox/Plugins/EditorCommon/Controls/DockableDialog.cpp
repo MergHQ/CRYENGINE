@@ -2,11 +2,9 @@
 #include "StdAfx.h"
 #include "DockableDialog.h"
 
-#include <QBoxLayout>
-#include <QWindow>
-
-#include "QtViewPane.h"
+#include "EditorFramework/PersonalizationManager.h"
 #include "IEditorClassFactory.h"
+#include "QtViewPane.h"
 
 CDockableDialog::CDockableDialog(const QString& dialogNameId, const char* paneClassId, bool saveSize /*= true*/)
 	: QSandboxWindow(CEditorDialog::s_config)

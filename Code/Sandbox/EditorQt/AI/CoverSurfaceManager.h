@@ -5,12 +5,10 @@
 #include <CryAISystem/ICoverSystem.h>
 
 class CAICoverSurface;
+
 class CCoverSurfaceManager
 {
 public:
-	CCoverSurfaceManager();
-	virtual ~CCoverSurfaceManager();
-
 	bool WriteToFile(const char* fileName);
 	bool ReadFromFile(const char* fileName);
 

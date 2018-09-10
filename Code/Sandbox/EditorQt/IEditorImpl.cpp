@@ -78,7 +78,6 @@
 #include <CrySandbox/IEditorGame.h>
 
 LINK_SYSTEM_LIBRARY("version.lib")
-LINK_SYSTEM_LIBRARY("Shlwapi.lib")
 
 // even in Release mode, the editor will return its heap, because there's no Profile build configuration for the editor
 #ifdef _RELEASE

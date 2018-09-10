@@ -1,23 +1,14 @@
 // Copyright 2001-2018 Crytek GmbH / Crytek Group. All rights reserved.
 
 #include "stdafx.h"
-
-#include <IEditor.h>
-#include <IPlugin.h>
-
-#include <QAction>
-#include <QFileInfo>
-#include <QToolBar>
-
-#include <CrySerialization/yasli/JSONIArchive.h>
-#include <CrySerialization/yasli/JSONOArchive.h>
-#include <EditorFramework/Events.h>
-#include "CryIcon.h"
 #include "EditorEnvironmentWindow.h"
-#include "IUndoManager.h"
-#include "Serialization.h"
-#include "QPresetsWidget.h"
+
 #include "QTimeOfDayWidget.h"
+#include "QPresetsWidget.h"
+
+#include <EditorFramework/PersonalizationManager.h>
+
+#include <QToolBar>
 
 REGISTER_VIEWPANE_FACTORY(CEditorEnvironmentWindow, "Environment Editor", "Tools", true);
 

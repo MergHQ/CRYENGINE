@@ -2,9 +2,11 @@
 
 #pragma once
 
-#include <QWidget>
+#include <QPropertyTree/ContextList.h>
+
 #include <IEditor.h>
-#include "QPropertyTree/ContextList.h"
+
+#include <QWidget>
 
 struct SCurveEditorContent;
 struct STODParameterGroup;

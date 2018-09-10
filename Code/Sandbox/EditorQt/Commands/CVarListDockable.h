@@ -2,19 +2,17 @@
 
 #pragma once
 
-#include <CrySystem/ISystem.h>
-#include "EditorFramework/Editor.h"
-#include "QtViewPane.h"
-#include "Util/Variable.h"
-#include "ProxyModels/FavoritesHelper.h"
+#include <Controls/EditorDialog.h>
+#include <ProxyModels/FavoritesHelper.h>
+
 #include <QAbstractItemModel>
-#include "Controls/EditorDialog.h"
+
 #include <CrySandbox/CrySignal.h>
+
 #include <memory>
 #include <tuple>
 #include <vector>
 
-struct ICVar;
 class CFavoriteFilterProxy;
 class QAdvancedTreeView;
 

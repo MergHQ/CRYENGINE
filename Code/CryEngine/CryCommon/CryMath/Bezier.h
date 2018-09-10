@@ -1,7 +1,6 @@
 // Copyright 2001-2018 Crytek GmbH / Crytek Group. All rights reserved.
 
-#ifndef __BEZIER_H__
-#define __BEZIER_H__
+#pragma once
 
 #include <CryMovie/AnimTime.h>
 #include <CryMath/ISplines.h>
@@ -186,5 +185,3 @@ SBezierKey ApplyInTangent(const SBezierKey& key, const SBezierKey& leftKey, cons
 
 SBezierKey ApplyOutTangent(const SBezierKey& key, const SBezierKey* pLeftKey, const SBezierKey& rightKey);
 }
-
-#endif

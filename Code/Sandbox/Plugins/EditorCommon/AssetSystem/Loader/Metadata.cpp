@@ -2,10 +2,7 @@
 
 #include "StdAfx.h"
 #include "Metadata.h"
-#include <Cry3DEngine/I3DEngine.h>
-#include <Cry3DEngine/CGF/IChunkFile.h>
-#include <CrySerialization/yasli/JSONIArchive.h>
-#include <CrySerialization/yasli/JSONOArchive.h>
+
 #include <chrono>
 
 namespace AssetLoader
@@ -13,7 +10,7 @@ namespace AssetLoader
 
 const char* GetMetadataTag() { return "AssetMetadata"; }
 
-// DODO: FIXME: the following classes parce cryasset xml manualy: 
+// DODO: FIXME: the following classes parse cryasset xml manually: 
 // Code\CryEngine\RenderDll\Common\Textures\TextureCompiler.cpp
 // Code\Sandbox\EditorQt\Alembic\AlembicCompiler.cpp
 

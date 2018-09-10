@@ -3,15 +3,13 @@
 
 #include "EditorCommonAPI.h"
 
-#include <QSet>
-#include <QVariant>
 #include <QString>
+#include <QVariant>
 
 class QAbstractItemView;
 class QAdvancedItemDelegate;
-class QTreeView;
-
 class QModelIndex;
+class QTreeView;
 
 //! Designed to help you with implementation details of a favorite system in an ItemModel/View system
 //! Favorites will be saved in the project personalization as they often refer to project specific assets and data
@@ -26,26 +24,21 @@ class QModelIndex;
 class EDITOR_COMMON_API FavoritesHelper
 {
 public:
-
 	static constexpr int s_FavoritesIdRole = Qt::UserRole + 1436;
 
 	FavoritesHelper(const QString& uniqueFavKey, int favoritesColumn);
-	~FavoritesHelper();
 
 	//add overloads of SetupView for other view types as needed
 	static void SetupView(QAbstractItemView* view, QAdvancedItemDelegate* delegate, int favoritesColumn);
 	static void SetupView(QTreeView* treeView, QAdvancedItemDelegate* delegate, int favoritesColumn);
 
-	bool IsFavorite(const QModelIndex& index) const;
-	void SetFavorite(const QModelIndex& index, bool favorite = true);
-
-	//! default role value is s_FavoritesIdRole
-	void SetFavoritesIdRole(int role);
+	bool        IsFavorite(const QModelIndex& index) const;
+	void        SetFavorite(const QModelIndex& index, bool favorite = true);
 
 	//Use these as a fallback case in your models to make it work
-	QVariant data(const QModelIndex& index, int role) const;
-	bool setData(const QModelIndex& index, const QVariant& value, int role);
-	Qt::ItemFlags flags(const QModelIndex& index) const;
+	QVariant       data(const QModelIndex& index, int role) const;
+	bool           setData(const QModelIndex& index, const QVariant& value, int role);
+	Qt::ItemFlags  flags(const QModelIndex& index) const;
 
 	static CryIcon GetFavoriteIcon(bool isActive);
 
@@ -54,8 +47,8 @@ private:
 	void Load();
 	void Save();
 
-	const QString m_key;
-	int m_favIdRole;
-	int m_favColumn;
+	const QString   m_key;
+	int             m_favIdRole;
+	int             m_favColumn;
 	QList<QVariant> m_favorites;
 };

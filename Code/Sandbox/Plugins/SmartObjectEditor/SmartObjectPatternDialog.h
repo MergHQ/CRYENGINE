@@ -17,7 +17,7 @@ public:
 	virtual ~CSmartObjectPatternDialog();
 
 	void    SetPattern(const CString& sPattern) { m_sPattern = sPattern; }
-	CString GetPattern()                        { return m_sPattern; };
+	CString GetPattern()                        { return m_sPattern; }
 
 	enum { IDD = IDD_AISTATEPATTERN };
 

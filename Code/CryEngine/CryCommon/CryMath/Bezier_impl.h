@@ -1,11 +1,10 @@
 // Copyright 2001-2018 Crytek GmbH / Crytek Group. All rights reserved.
 
-#ifndef __BEZIER_IMPL_H__
-#define __BEZIER_IMPL_H__
+#pragma once
 
 #include <CryMath/Bezier.h>
 
-bool Serialize(Serialization::IArchive& ar, std::vector<SBezierKey>& value, const char* name, const char* label)
+inline bool Serialize(Serialization::IArchive& ar, std::vector<SBezierKey>& value, const char* name, const char* label)
 {
 	if (ar.isEdit() || ar.caps(ar.BINARY))
 	{
@@ -93,7 +92,7 @@ bool Serialize(Serialization::IArchive& ar, std::vector<SBezierKey>& value, cons
 namespace Bezier
 {
 
-SBezierControlPoint CalculateInTangent(
+inline SBezierControlPoint CalculateInTangent(
   float time, const SBezierControlPoint& point,
   float leftTime, const SBezierControlPoint* pLeftPoint,
   float rightTime, const SBezierControlPoint* pRightPoint)
@@ -156,7 +155,7 @@ SBezierControlPoint CalculateInTangent(
 	return newPoint;
 }
 
-SBezierControlPoint CalculateOutTangent(
+inline SBezierControlPoint CalculateOutTangent(
   float time, const SBezierControlPoint& point,
   float leftTime, const SBezierControlPoint* pLeftPoint,
   float rightTime, const SBezierControlPoint* pRightPoint)
@@ -219,7 +218,7 @@ SBezierControlPoint CalculateOutTangent(
 	return newPoint;
 }
 
-SBezierKey ApplyInTangent(const SBezierKey& key, const SBezierKey& leftKey, const SBezierKey* pRightKey)
+inline SBezierKey ApplyInTangent(const SBezierKey& key, const SBezierKey& leftKey, const SBezierKey* pRightKey)
 {
 	SBezierKey newKey = key;
 
@@ -251,7 +250,7 @@ SBezierKey ApplyInTangent(const SBezierKey& key, const SBezierKey& leftKey, cons
 	return newKey;
 }
 
-SBezierKey ApplyOutTangent(const SBezierKey& key, const SBezierKey* pLeftKey, const SBezierKey& rightKey)
+inline SBezierKey ApplyOutTangent(const SBezierKey& key, const SBezierKey* pLeftKey, const SBezierKey& rightKey)
 {
 	SBezierKey newKey = key;
 
@@ -283,5 +282,3 @@ SBezierKey ApplyOutTangent(const SBezierKey& key, const SBezierKey* pLeftKey, co
 	return newKey;
 }
 }
-
-#endif
