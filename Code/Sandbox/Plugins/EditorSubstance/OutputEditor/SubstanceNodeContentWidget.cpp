@@ -3,9 +3,9 @@
 #include "stdafx.h"
 #include "SubstanceNodeContentWidget.h"
 
-#include <NodeGraph\NodeGraphView.h>
-#include <NodeGraph\AbstractNodeGraphViewModelItem.h>
-#include <NodeGraph\NodeWidget.h>
+#include <NodeGraph/NodeGraphView.h>
+#include <NodeGraph/AbstractNodeGraphViewModelItem.h>
+#include <NodeGraph/NodeWidget.h>
 
 #include <QGraphicsGridLayout>
 #include <QComboBox>

@@ -3,7 +3,7 @@
 #pragma once
 
 #include <CryMath/Cry_Math.h>
-#include "../LightmapCompiler/SimpleTriangleRasterizer.h"
+#include "LightmapCompiler/SimpleTriangleRasterizer.h"
 
 struct SMatChunk
 {

@@ -6,7 +6,7 @@
 #include <Cry3DEngine/I3DEngine.h>
 #include <Cry3DEngine/IStatObj.h>
 #include <CryAnimation/ICryAnimation.h>
-#include "Controls\PropertyItem.h"
+#include "Controls/PropertyItem.h"
 
 #include "VehicleEditorDialog.h"
 #include "VehiclePrototype.h"

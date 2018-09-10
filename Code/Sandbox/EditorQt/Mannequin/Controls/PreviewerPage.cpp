@@ -6,16 +6,16 @@
 #include <ICryMannequinEditor.h>
 #include <CryGame/IGameFramework.h>
 
-#include "../FragmentEditor.h"
-#include "../MannKeyPropertiesDlgFE.h"
-#include "../MannequinDialog.h"
-#include "../MannequinModelViewport.h"
-#include "../MannequinNodes.h"
-#include "../SequencerSequence.h"
-#include "../MannequinPlayback.h"
-#include "../FragmentTrack.h"
-#include "../SequenceAnalyzerNodes.h"
-#include "../MannDebugOptionsDialog.h"
+#include "Mannequin/FragmentEditor.h"
+#include "Mannequin/MannKeyPropertiesDlgFE.h"
+#include "Mannequin/MannequinDialog.h"
+#include "Mannequin/MannequinModelViewport.h"
+#include "Mannequin/MannequinNodes.h"
+#include "Mannequin/SequencerSequence.h"
+#include "Mannequin/MannequinPlayback.h"
+#include "Mannequin/FragmentTrack.h"
+#include "Mannequin/SequenceAnalyzerNodes.h"
+#include "Mannequin/MannDebugOptionsDialog.h"
 
 namespace
 {

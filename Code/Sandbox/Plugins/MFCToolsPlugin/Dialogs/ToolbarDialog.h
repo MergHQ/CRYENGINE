@@ -2,7 +2,7 @@
 #pragma once
 
 #include "PluginAPI.h"
-#include "Controls\DlgBars.h"
+#include "Controls/DlgBars.h"
 
 class PLUGIN_API CToolbarDialog : public CXTPDialogBase<CXTResizeDialog>
 {

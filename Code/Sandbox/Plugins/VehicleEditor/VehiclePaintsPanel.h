@@ -3,7 +3,7 @@
 #pragma once
 
 #include "IDataBaseManager.h"
-#include "Controls\PropertyCtrl.h"
+#include "Controls/PropertyCtrl.h"
 
 class CVehiclePaintsPanel
 	: public CXTResizeDialog

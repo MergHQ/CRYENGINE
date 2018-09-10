@@ -3,20 +3,20 @@
 #include "stdafx.h"
 #include "FragmentBrowser.h"
 
-#include "../FragmentEditor.h"
-#include "../MannequinBase.h"
+#include "Mannequin/FragmentEditor.h"
+#include "Mannequin/MannequinBase.h"
 
-#include "../MannTagEditorDialog.h"
-#include "../MannAdvancedPasteDialog.h"
-#include "../MannequinDialog.h"
-#include "../SequencerDopeSheetBase.h"
+#include "Mannequin/MannTagEditorDialog.h"
+#include "Mannequin/MannAdvancedPasteDialog.h"
+#include "Mannequin/MannequinDialog.h"
+#include "Mannequin/SequencerDopeSheetBase.h"
 #include "Dialogs/QStringDialog.h"
 #include <CryGame/IGameFramework.h>
 #include <ICryMannequinEditor.h>
 #include "Util/Clipboard.h"
 #include "Controls/QuestionDialog.h"
 #include "Util/MFCUtil.h"
-#include "../MannequinUtil.h"
+#include "Mannequin/MannequinUtil.h"
 
 #define FILTER_DELAY_SECONDS (0.5f)
 

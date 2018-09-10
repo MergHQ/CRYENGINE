@@ -4,11 +4,11 @@
 
 #include "VehicleEditorDialog.h"
 #include "QtViewPane.h"
-#include "Objects\EntityObject.h"
-#include "Controls\PropertyCtrl.h"
-#include "Controls\PropertyItem.h"
-#include "Util\PakFile.h"
-#include "Objects\SelectionGroup.h"
+#include "Objects/EntityObject.h"
+#include "Controls/PropertyCtrl.h"
+#include "Controls/PropertyItem.h"
+#include "Util/PakFile.h"
+#include "Objects/SelectionGroup.h"
 
 #include "VehiclePrototype.h"
 #include "VehicleData.h"

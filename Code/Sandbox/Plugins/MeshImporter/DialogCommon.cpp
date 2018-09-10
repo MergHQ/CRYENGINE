@@ -12,7 +12,7 @@
 #include "ImporterUtil.h"
 
 // EditorCommon
-#include <Controls\QuestionDialog.h>
+#include <Controls/QuestionDialog.h>
 #include <CryIcon.h>
 #include <FileDialogs/ExtensionFilter.h>
 #include <FileDialogs/SystemFileDialog.h>

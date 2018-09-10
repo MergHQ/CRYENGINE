@@ -10,7 +10,7 @@
 #include "MannequinDialog.h"
 #include "Util/MFCUtil.h"
 #include "../../CryEngine/CryEntitySystem/RenderProxy.h"
-#include "../objects/EntityObject.h"
+#include "Objects/EntityObject.h"
 
 #include "Dialogs/StringInputDialog.h"
 #include "Preferences/ViewportPreferences.h"
