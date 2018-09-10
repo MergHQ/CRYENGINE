@@ -1366,7 +1366,7 @@ void CShaderMan::RT_SetShaderQuality(EShaderType eST, EShaderQuality eSQ)
 	if (eST == eST_All || eST == eST_General)
 	{
 		m_Bin.InvalidateCache();
-		mfReloadAllShaders(FRO_FORCERELOAD, 0);
+		mfReloadAllShaders(FRO_FORCERELOAD, 0, gRenDev->GetRenderFrameID());
 	}
 }
 

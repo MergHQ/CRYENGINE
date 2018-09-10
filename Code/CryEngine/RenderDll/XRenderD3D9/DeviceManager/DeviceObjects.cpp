@@ -524,7 +524,7 @@ void CDeviceObjectFactory::TrimResources()
 {
 	CRY_ASSERT(gRenDev->m_pRT->IsRenderThread());
 
-	TrimPipelineStates();
+	TrimPipelineStates(gRenDev->GetRenderFrameID());
 	TrimResourceLayouts();
 	TrimRenderPasses();
 
@@ -586,15 +586,15 @@ void CDeviceObjectFactory::ReleaseResources()
 	ReleaseResourcesImpl();
 }
 
-void CDeviceObjectFactory::ReloadPipelineStates()
+void CDeviceObjectFactory::ReloadPipelineStates(int currentFrameID)
 {
-	// Throw out expired PSOs before trying to recompile them (safes some time)
-	TrimPipelineStates();
+	// Throw out expired PSOs before trying to recompile them (saves some time)
+	TrimPipelineStates(currentFrameID);
 
 	for (auto it = m_GraphicsPsoCache.begin(), itEnd = m_GraphicsPsoCache.end(); it != itEnd; )
 	{
 		auto itCurrentPSO = it++;
-		const CDeviceGraphicsPSO::EInitResult result = itCurrentPSO->second.lock()->Init(itCurrentPSO->first);
+		const CDeviceGraphicsPSO::EInitResult result = itCurrentPSO->second->Init(itCurrentPSO->first);
 
 		if (result != CDeviceGraphicsPSO::EInitResult::Success)
 		{
@@ -615,7 +615,7 @@ void CDeviceObjectFactory::ReloadPipelineStates()
 	for (auto it = m_ComputePsoCache.begin(), itEnd = m_ComputePsoCache.end(); it != itEnd; )
 	{
 		auto itCurrentPSO = it++;
-		const bool success = itCurrentPSO->second.lock()->Init(itCurrentPSO->first);
+		const bool success = itCurrentPSO->second->Init(itCurrentPSO->first);
 
 		if (!success)
 			m_InvalidComputePsos.emplace(itCurrentPSO->first, itCurrentPSO->second);
@@ -662,10 +662,10 @@ void CDeviceObjectFactory::UpdatePipelineStates()
 	}
 }
 
-void CDeviceObjectFactory::TrimPipelineStates()
+void CDeviceObjectFactory::TrimPipelineStates(int currentFrameID, int trimBeforeFrameID)
 {
-	EraseExpiredEntriesFromCache(m_GraphicsPsoCache);
-	EraseExpiredEntriesFromCache(m_ComputePsoCache);
+	EraseExpiredEntriesFromCache(m_GraphicsPsoCache, currentFrameID, trimBeforeFrameID);
+	EraseExpiredEntriesFromCache(m_ComputePsoCache,  currentFrameID, trimBeforeFrameID);
 
 	EraseExpiredEntriesFromCache(m_InvalidGraphicsPsos);
 	EraseExpiredEntriesFromCache(m_InvalidComputePsos);

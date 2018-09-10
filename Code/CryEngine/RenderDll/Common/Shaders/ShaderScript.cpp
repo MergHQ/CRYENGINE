@@ -114,7 +114,7 @@ bool CShaderMan::mfReloadShaderIncludes(const char* szPath, int nFlags)
 	return bChanged;
 }
 
-bool CShaderMan::mfReloadAllShaders(int nFlags, uint32 nFlagsHW)
+bool CShaderMan::mfReloadAllShaders(int nFlags, uint32 nFlagsHW, int currentFrameID)
 {
 	bool bState = true;
 	m_nFrameForceReload++;
@@ -200,7 +200,7 @@ bool CShaderMan::mfReloadAllShaders(int nFlags, uint32 nFlagsHW)
 		}
 	}
 
-	GetDeviceObjectFactory().ReloadPipelineStates();
+	GetDeviceObjectFactory().ReloadPipelineStates(currentFrameID);
 
 	return bState;
 }

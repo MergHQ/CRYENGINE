@@ -116,7 +116,21 @@ namespace std
 	};
 }
 
-class CDeviceGraphicsPSO
+class CDevicePSO
+{
+public:
+	bool   IsValid() const { return m_isValid; }
+	uint32 GetUpdateCount() const { return m_updateCount; }
+	int    GetLastUseFrame() const { return m_frameLastUsed; }
+	void   SetLastUseFrame(int frameLastUsed) { m_frameLastUsed = frameLastUsed; }
+
+protected:
+	bool   m_isValid       = false;
+	uint32 m_updateCount   =  0;
+	int    m_frameLastUsed = -1;
+};
+
+class CDeviceGraphicsPSO : public CDevicePSO
 {
 public:
 	enum class EInitResult : uint8
@@ -129,48 +143,25 @@ public:
 	static bool ValidateShadersAndTopologyCombination(const CDeviceGraphicsPSODesc& psoDesc, const std::array<void*, eHWSC_Num>& hwShaderInstances);
 
 public:
-	CDeviceGraphicsPSO()
-		: m_bValid(false)
-		, m_nUpdateCount(0)
-	{}
-
 	virtual ~CDeviceGraphicsPSO() {}
 
 	virtual EInitResult Init(const CDeviceGraphicsPSODesc& psoDesc) = 0;
-	bool                IsValid() const { return m_bValid; }
-	uint32              GetUpdateCount() const { return m_nUpdateCount; }
 
 	std::array<void*, eHWSC_Num>          m_pHwShaderInstances;
 
 #if defined(ENABLE_PROFILING_CODE)
 	ERenderPrimitiveType m_PrimitiveTypeForProfiling;
 #endif
-
-protected:
-	bool   m_bValid;
-	uint32 m_nUpdateCount;
 };
 
-class CDeviceComputePSO
+class CDeviceComputePSO : public CDevicePSO
 {
 public:
-	CDeviceComputePSO()
-		: m_pHwShaderInstance(nullptr)
-		,  m_bValid(false)
-		, m_nUpdateCount(0)
-	{}
-
 	virtual ~CDeviceComputePSO() {}
 
 	virtual bool Init(const CDeviceComputePSODesc& psoDesc) = 0;
-	bool         IsValid() const { return m_bValid; }
-	uint32       GetUpdateCount() const { return m_nUpdateCount; }
 
-	void*          m_pHwShaderInstance;
-
-protected:
-	bool m_bValid;
-	uint32 m_nUpdateCount;
+	void*          m_pHwShaderInstance = nullptr;
 };
 
 typedef std::shared_ptr<const CDeviceGraphicsPSO> CDeviceGraphicsPSOConstPtr;
