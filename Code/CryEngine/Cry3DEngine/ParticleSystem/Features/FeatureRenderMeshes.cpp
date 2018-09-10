@@ -84,7 +84,7 @@ public:
 				for (int i = 0; i < subObjectCount; ++i)
 				{
 					if (IStatObj::SSubObject* pSub = m_pStaticObject->GetSubObject(i))
-						if (pSub->nType == STATIC_SUB_OBJECT_MESH && pSub->pStatObj && pSub->pStatObj->GetRenderMesh())
+						if (pSub->nType == STATIC_SUB_OBJECT_MESH && pSub->pStatObj)
 						{
 							if (string(pSub->name).Right(5) == "_main")
 								continue;
@@ -219,6 +219,8 @@ public:
 			{
 				pMeshObj = meshes.SafeLoad(particleId);
 				if (!pMeshObj)
+					continue;
+				if (!pMeshObj->GetRenderMesh())
 					continue;
 				bBox = pMeshObj->GetAABB();
 				sizeScale = m_sizeMode == ESizeMode::Size ? rsqrt_fast(MeshRadiusSqr(pMeshObj)) : 1.0f;
