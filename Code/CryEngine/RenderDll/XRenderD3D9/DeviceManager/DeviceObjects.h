@@ -573,7 +573,7 @@ public:
 	HRESULT BeginTileFromLinear2D(CDeviceTexture* pDst, const STileRequest* pSubresources, size_t nSubresources, UINT64& fenceOut);
 
 //private:
-	typedef std::map<SMinimisedTexture2DDesc, SDeviceTextureDesc, std::less<SMinimisedTexture2DDesc>, stl::STLGlobalAllocator<std::pair<SMinimisedTexture2DDesc, SDeviceTextureDesc>>> TLayoutTableMap;
+	typedef std::map<SMinimisedTexture2DDesc, SDeviceTextureDesc, std::less<SMinimisedTexture2DDesc>, stl::STLGlobalAllocator<std::pair<const SMinimisedTexture2DDesc, SDeviceTextureDesc>>> TLayoutTableMap;
 
 	static bool               InPlaceConstructable(const D3D11_TEXTURE2D_DESC& Desc, uint32 eFlags);
 	HRESULT                   CreateInPlaceTexture2D(const D3D11_TEXTURE2D_DESC& Desc, uint32 eFlags, const STexturePayload* pTI, CDeviceTexture*& pDevTexOut);
