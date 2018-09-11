@@ -317,7 +317,8 @@ void CFileLoader::CreateInternalControls()
 		pLibrary->SetDescription("Contains all engine default controls.");
 		pLibrary->SetFlags(pLibrary->GetFlags() | EAssetFlags::IsDefaultControl);
 
-		g_assetsManager.CreateDefaultControl("do_nothing", EAssetType::Trigger, pLibrary, true, "Used to bypass the default stop behavior of the audio system.");
+		EAssetFlags const flags = (EAssetFlags::IsDefaultControl | EAssetFlags::IsInternalControl);
+		g_assetsManager.CreateDefaultControl("do_nothing", EAssetType::Trigger, pLibrary, flags, "Used to bypass the default stop behavior of the audio system.");
 	}
 }
 
@@ -330,12 +331,14 @@ void CFileLoader::CreateDefaultControls()
 
 	if (pLibrary != nullptr)
 	{
-		g_assetsManager.CreateDefaultControl(CryAudio::s_szGetFocusTriggerName, EAssetType::Trigger, pLibrary, false, "Unmutes all audio. Gets triggered when the editor window gets focus.");
-		g_assetsManager.CreateDefaultControl(CryAudio::s_szLoseFocusTriggerName, EAssetType::Trigger, pLibrary, false, "Mutes all audio. Gets triggered when the editor window loses focus.");
-		g_assetsManager.CreateDefaultControl(CryAudio::s_szMuteAllTriggerName, EAssetType::Trigger, pLibrary, false, "Mutes all audio. Gets triggered when the editor mute action is used.");
-		g_assetsManager.CreateDefaultControl(CryAudio::s_szUnmuteAllTriggerName, EAssetType::Trigger, pLibrary, false, "Unmutes all audio. Gets triggered when the editor unmute action is used.");
-		g_assetsManager.CreateDefaultControl(CryAudio::s_szPauseAllTriggerName, EAssetType::Trigger, pLibrary, false, "Pauses playback of all audio.");
-		g_assetsManager.CreateDefaultControl(CryAudio::s_szResumeAllTriggerName, EAssetType::Trigger, pLibrary, false, "Resumes playback of all audio.");
+		EAssetFlags const flags = (EAssetFlags::IsDefaultControl | EAssetFlags::IsHiddenInResourceSelector);
+
+		g_assetsManager.CreateDefaultControl(CryAudio::s_szGetFocusTriggerName, EAssetType::Trigger, pLibrary, flags, "Unmutes all audio. Gets triggered when the editor window gets focus.");
+		g_assetsManager.CreateDefaultControl(CryAudio::s_szLoseFocusTriggerName, EAssetType::Trigger, pLibrary, flags, "Mutes all audio. Gets triggered when the editor window loses focus.");
+		g_assetsManager.CreateDefaultControl(CryAudio::s_szMuteAllTriggerName, EAssetType::Trigger, pLibrary, flags, "Mutes all audio. Gets triggered when the editor mute action is used.");
+		g_assetsManager.CreateDefaultControl(CryAudio::s_szUnmuteAllTriggerName, EAssetType::Trigger, pLibrary, flags, "Unmutes all audio. Gets triggered when the editor unmute action is used.");
+		g_assetsManager.CreateDefaultControl(CryAudio::s_szPauseAllTriggerName, EAssetType::Trigger, pLibrary, flags, "Pauses playback of all audio.");
+		g_assetsManager.CreateDefaultControl(CryAudio::s_szResumeAllTriggerName, EAssetType::Trigger, pLibrary, flags, "Resumes playback of all audio.");
 	}
 }
 

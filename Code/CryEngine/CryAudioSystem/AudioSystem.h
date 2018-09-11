@@ -133,6 +133,7 @@ private:
 	void           SetImplLanguage();
 	void           SetCurrentEnvironmentsOnObject(CATLAudioObject* const pObject, EntityId const entityToIgnore);
 	void           SetOcclusionType(CATLAudioObject& object, EOcclusionType const occlusionType) const;
+	void           ExecuteDefaultTrigger(EDefaultTriggerType const type, SRequestUserData const& userData = SRequestUserData::GetEmptyObject());
 
 	static void    OnCallback(SRequestInfo const* const pRequestInfo);
 

@@ -53,6 +53,8 @@ enum class EManagerRequestType : EnumFlagsType
 	ReloadControlsData,
 	GetAudioFileData,
 	GetImplInfo,
+	ExecuteTriggerEx,
+	ExecuteDefaultTrigger,
 };
 
 enum class ECallbackManagerRequestType : EnumFlagsType
@@ -75,7 +77,6 @@ enum class EObjectRequestType : EnumFlagsType
 	PlayFile,
 	StopFile,
 	ExecuteTrigger,
-	ExecuteTriggerEx,
 	StopTrigger,
 	StopAllTriggers,
 	SetTransformation,
@@ -507,6 +508,59 @@ struct SManagerRequestData<EManagerRequestType::GetImplInfo> final : public SMan
 };
 
 //////////////////////////////////////////////////////////////////////////
+template<>
+struct SManagerRequestData<EManagerRequestType::ExecuteTriggerEx> final : public SManagerRequestDataBase
+{
+	explicit SManagerRequestData(SExecuteTriggerData const& data)
+		: SManagerRequestDataBase(EManagerRequestType::ExecuteTriggerEx)
+		, name(data.szName)
+		, occlusionType(data.occlusionType)
+		, transformation(data.transformation)
+		, entityId(data.entityId)
+		, setCurrentEnvironments(data.setCurrentEnvironments)
+		, triggerId(data.triggerId)
+	{}
+
+	explicit SManagerRequestData(SManagerRequestData<EManagerRequestType::ExecuteTriggerEx> const* const pAMRData)
+		: SManagerRequestDataBase(EManagerRequestType::ExecuteTriggerEx)
+		, name(pAMRData->name)
+		, occlusionType(pAMRData->occlusionType)
+		, transformation(pAMRData->transformation)
+		, entityId(pAMRData->entityId)
+		, setCurrentEnvironments(pAMRData->setCurrentEnvironments)
+		, triggerId(pAMRData->triggerId)
+	{}
+
+	virtual ~SManagerRequestData() override = default;
+
+	CryFixedStringT<MaxObjectNameLength> const name;
+	EOcclusionType const                       occlusionType;
+	CObjectTransformation const                transformation;
+	EntityId const                             entityId;
+	bool const setCurrentEnvironments;
+	ControlId const                            triggerId;
+};
+
+//////////////////////////////////////////////////////////////////////////
+template<>
+struct SManagerRequestData<EManagerRequestType::ExecuteDefaultTrigger> final : public SManagerRequestDataBase
+{
+	explicit SManagerRequestData(EDefaultTriggerType const triggerType_)
+		: SManagerRequestDataBase(EManagerRequestType::ExecuteDefaultTrigger)
+		, triggerType(triggerType_)
+	{}
+
+	explicit SManagerRequestData(SManagerRequestData<EManagerRequestType::ExecuteDefaultTrigger> const* const pAMRData)
+		: SManagerRequestDataBase(EManagerRequestType::ExecuteDefaultTrigger)
+		, triggerType(pAMRData->triggerType)
+	{}
+
+	virtual ~SManagerRequestData() override = default;
+
+	EDefaultTriggerType const triggerType;
+};
+
+//////////////////////////////////////////////////////////////////////////
 struct SCallbackManagerRequestDataBase : public SRequestData
 {
 	explicit SCallbackManagerRequestDataBase(ECallbackManagerRequestType const callbackManagerRequestType_)
@@ -803,40 +857,6 @@ struct SObjectRequestData<EObjectRequestType::ExecuteTrigger> final : public SOb
 	virtual ~SObjectRequestData() override = default;
 
 	ControlId const audioTriggerId;
-};
-
-//////////////////////////////////////////////////////////////////////////
-template<>
-struct SObjectRequestData<EObjectRequestType::ExecuteTriggerEx> final : public SObjectRequestDataBase
-{
-	explicit SObjectRequestData(SExecuteTriggerData const& data)
-		: SObjectRequestDataBase(EObjectRequestType::ExecuteTriggerEx)
-		, name(data.szName)
-		, occlusionType(data.occlusionType)
-		, transformation(data.transformation)
-		, entityId(data.entityId)
-		, setCurrentEnvironments(data.setCurrentEnvironments)
-		, triggerId(data.triggerId)
-	{}
-
-	explicit SObjectRequestData(SObjectRequestData<EObjectRequestType::ExecuteTriggerEx> const* const pAORData)
-		: SObjectRequestDataBase(EObjectRequestType::ExecuteTriggerEx)
-		, name(pAORData->name)
-		, occlusionType(pAORData->occlusionType)
-		, transformation(pAORData->transformation)
-		, entityId(pAORData->entityId)
-		, setCurrentEnvironments(pAORData->setCurrentEnvironments)
-		, triggerId(pAORData->triggerId)
-	{}
-
-	virtual ~SObjectRequestData() override = default;
-
-	CryFixedStringT<MaxObjectNameLength> const name;
-	EOcclusionType const                       occlusionType;
-	CObjectTransformation const                transformation;
-	EntityId const                             entityId;
-	bool const setCurrentEnvironments;
-	ControlId const                            triggerId;
 };
 
 //////////////////////////////////////////////////////////////////////////

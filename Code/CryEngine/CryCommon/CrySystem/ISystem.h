@@ -493,6 +493,12 @@ enum ESystemEvent
 	//! Sent to inform the audio system to unmute.
 	ESYSTEM_EVENT_AUDIO_UNMUTE,
 
+	//! Sent to inform the audio system to pause.
+	ESYSTEM_EVENT_AUDIO_PAUSE,
+
+	//! Sent to inform the audio system to resume.
+	ESYSTEM_EVENT_AUDIO_RESUME,
+
 	//! Sent when the audio language has changed.
 	ESYSTEM_EVENT_AUDIO_LANGUAGE_CHANGED,
 
