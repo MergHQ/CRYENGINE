@@ -9,7 +9,7 @@ float Script : STANDARDSGLOBAL
 <
 	string Script =
 		"Public;"
-		"Decal;"
+		"Sky;"
 		"ShaderDrawType = General;"
     "ShaderType = FX;"
 >;

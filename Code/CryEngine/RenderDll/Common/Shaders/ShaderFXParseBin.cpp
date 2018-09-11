@@ -1247,6 +1247,7 @@ bool CShaderManBin::ParseBinFX_Global_Annotations(CParserBin& Parser, SParserFra
 		FX_TOKEN(SupportsFullDeferredShading)
 		FX_TOKEN(Decal)
 		FX_TOKEN(DecalNoDepthOffset)
+		FX_TOKEN(Sky)
 		FX_TOKEN(HWTessellation)
 		FX_TOKEN(ZPrePass)
 		FX_TOKEN(VertexColors)
@@ -1306,6 +1307,11 @@ bool CShaderManBin::ParseBinFX_Global_Annotations(CParserBin& Parser, SParserFra
 			if (!ef)
 				break;
 			ef->m_Flags |= EF_DECAL;
+			break;
+
+		case eT_Sky:
+			if (!ef)
+				break;
 			break;
 
 		case eT_LocalConstants:

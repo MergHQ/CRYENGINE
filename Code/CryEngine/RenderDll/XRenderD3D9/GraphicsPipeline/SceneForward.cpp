@@ -1243,6 +1243,19 @@ void CSceneForwardStage::ExecuteSky(CTexture* pColorTex, CTexture* pDepthTex)
 
 	m_pSkyRE = nullptr;
 	m_pHDRSkyRE = nullptr;
+
+	{
+		auto& renderItemDrawer = pRenderView->GetDrawer();
+
+		renderItemDrawer.InitDrawSubmission();
+
+		m_forwardOverlayPass.BeginExecution();
+		m_forwardOverlayPass.DrawRenderItems(pRenderView, EFSLIST_SKY);
+		m_forwardOverlayPass.EndExecution();
+
+		renderItemDrawer.JobifyDrawSubmission();
+		renderItemDrawer.WaitForDrawSubmission();
+	}
 }
 
 void CSceneForwardStage::FillCloudShadingParams(SCloudShadingParams& cloudParams, bool enable) const
