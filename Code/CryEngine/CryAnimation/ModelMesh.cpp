@@ -31,6 +31,11 @@ uint32 CModelMesh::InitMesh(CMesh* pMesh, CNodeCGF* pMeshNode, _smart_ptr<IMater
 
 		PrepareMesh(pMesh);
 	}
+	else if (pMeshNode)
+	{
+		m_geometricMeanFaceArea = pMeshNode->meshInfo.fGeometricMean;
+		m_faceCount = pMeshNode->meshInfo.nIndices / 3;
+	}
 
 	if (!Console::GetInst().ca_StreamCHR && pMesh)
 	{
