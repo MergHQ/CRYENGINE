@@ -741,7 +741,7 @@ void TiledDeferredShadingCS( uint3 GroupID : SV_GroupID,
 	int lightIndex = sTileLightCount > 0 ? sTileLightIndices[0] : 0;
 	
 	const uint 	clipVolumeStencilID = ClipVolumeIndexRT[pixelCoord].x * 255.0f;
-	const uint  clipVolumeData = TiledClipVolumeInfo[clipVolumeStencilID & (MAX_CLIPVOLUMES-1)].data;
+	const uint  clipVolumeData = TiledClipVolumeInfo[clipVolumeStencilID & MAX_CLIPVOLUMES].data;
 	const float clipVolumeBlendFactor = ClipVolumeIndexRT[pixelCoord].y;
 	
 	// ==============================================================================================

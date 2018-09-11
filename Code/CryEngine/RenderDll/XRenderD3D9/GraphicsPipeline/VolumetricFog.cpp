@@ -1692,7 +1692,7 @@ void CVolumetricFogStage::GenerateFogVolumeList()
 			cullInfo.volumeParams1 = Vec4(u1.x, u1.y, u1.z, size.y);
 			cullInfo.volumeParams2 = Vec4(u2.x, u2.y, u2.z, size.z);
 
-			const uint32 nData = fvol.m_stencilRef + 1;// first ref value is reserved, see CDeferredShading::PrepareClipVolumeData function.
+			const uint32 nData = fvol.m_stencilRef;
 			injectInfo.miscFlag = fvol.m_volumeType | ((nData & 0xFF) << 1) | (fvol.m_affectsThisAreaOnly << 9);
 
 			injectInfo.fogColor.x = fvol.m_fogColor.r;
