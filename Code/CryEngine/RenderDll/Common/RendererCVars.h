@@ -226,7 +226,7 @@ public:
 	static int CV_r_HDRBloom;
 	static int CV_r_HDRBloomQuality;
 	static int CV_r_HDRVignetting;
-	DeclareStaticConstIntCVar(CV_r_HDRTexFormat, 1);
+	static int CV_r_HDRTexFormat;
 	DeclareStaticConstIntCVar(CV_r_HDRRangeAdapt, HDR_RANGE_ADAPT_DEFAULT_VAL);
 	DeclareStaticConstIntCVar(CV_r_GrainEnableExposureThreshold, 0);
 	static int CV_r_HDREyeAdaptationMode;

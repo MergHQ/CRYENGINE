@@ -193,7 +193,7 @@ AllocateConstIntCVar(CRendererCVars, CV_r_HDRDebug);
 int CRendererCVars::CV_r_HDRBloom;
 int CRendererCVars::CV_r_HDRBloomQuality;
 int CRendererCVars::CV_r_HDRVignetting;
-AllocateConstIntCVar(CRendererCVars, CV_r_HDRTexFormat);
+int CRendererCVars::CV_r_HDRTexFormat;
 AllocateConstIntCVar(CRendererCVars, CV_r_HDRRangeAdapt);
 
 float CRendererCVars::CV_r_HDRRangeAdaptMax;
@@ -1138,7 +1138,7 @@ void CRendererCVars::InitCVars()
 #endif
 #endif
 
-	DefineConstIntCVar3("r_HDRTexFormat", CV_r_HDRTexFormat, 1, VF_DUMPTODISK | VF_REQUIRE_APP_RESTART,
+	REGISTER_CVAR3("r_HDRTexFormat", CV_r_HDRTexFormat, 1, VF_DUMPTODISK | VF_REQUIRE_APP_RESTART,
 	                    "Sets HDR render target precision. Default is 1.\n"
 	                    "Usage: r_HDRTexFormat [Value]\n"
 	                    "  0: (lower precision)\n"
