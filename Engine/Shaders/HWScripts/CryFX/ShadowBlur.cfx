@@ -149,7 +149,7 @@ pixout HMAO_Blur_PS(vtxOut IN)
 #if %_RT_SAMPLE0
 	float4 clipVolumeIDs = ClipVolumeIdTex.GatherRed(SampStatePoint, IN.baseTC.xy);
 	
-	const uint4 nClipVolumeID = uint4(clipVolumeIDs * 255.0f) & (MAX_CLIPVOLUMES-1);
+	const uint4 nClipVolumeID = uint4(clipVolumeIDs * 255.0f) & MAX_CLIPVOLUMES;
 	const uint4 nClipVolumeData = uint4(
 		asuint(HMAO_ClipVolumeData[nClipVolumeID.x].a),
 		asuint(HMAO_ClipVolumeData[nClipVolumeID.y].a),

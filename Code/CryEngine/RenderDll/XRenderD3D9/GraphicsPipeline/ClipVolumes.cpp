@@ -692,7 +692,7 @@ void CClipVolumesStage::ExecuteVolumetricFog()
 
 	if (rd->m_bVolumetricFogEnabled && bFogEnabled)
 	{
-		PROFILE_LABEL_SCOPE("CLIPVOLUMES FOR VOLUMETRIC FOG");
+		PROFILE_LABEL_SCOPE("CLIPVOLUMES_FOR_VOLUMETRIC_FOG");
 
 		const bool bReverseDepth = true;
 		const float nearDepth = bReverseDepth ? 1.0f : 0.0f;
