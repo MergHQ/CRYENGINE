@@ -9,6 +9,7 @@
 // NumberCtrl.h : header file
 //
 
+#include "MFCToolsDefines.h"
 #include "NumberCtrlEdit.h"
 
 /////////////////////////////////////////////////////////////////////////////
@@ -19,7 +20,7 @@
 // Sent to parent when user stops to change control value.
 #define EN_END_DRAG   EN_CHANGE + 0x1001
 
-class PLUGIN_API CNumberCtrl : public CWnd
+class MFC_TOOLS_PLUGIN_API CNumberCtrl : public CWnd
 {
 	// Construction
 public:

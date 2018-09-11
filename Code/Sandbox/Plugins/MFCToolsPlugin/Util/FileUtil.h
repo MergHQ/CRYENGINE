@@ -7,6 +7,7 @@
 #include <CryCore/functor.h>
 #include "FileSystem/FileSystem_FileFilter.h"
 #include "FileDialogs/ExtensionFilter.h"
+#include "MFCToolsDefines.h"
 
 class CWnd;
 class CDynamicPopupMenu;
@@ -25,7 +26,7 @@ enum ECustomFileType
 	EFILE_TYPE_LAST,
 };
 
-class PLUGIN_API CFileUtil
+class MFC_TOOLS_PLUGIN_API CFileUtil
 {
 public:
 	struct FileDesc
@@ -298,7 +299,7 @@ private:
 // file only if it changes (to avoid requiring the user to check out source controlled
 // file unnecessarily)
 //
-class PLUGIN_API CTempFileHelper
+class MFC_TOOLS_PLUGIN_API CTempFileHelper
 {
 public:
 	CTempFileHelper(const char* pFileName);

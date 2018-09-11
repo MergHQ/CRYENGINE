@@ -1,6 +1,7 @@
 // Copyright 2001-2018 Crytek GmbH / Crytek Group. All rights reserved.
 
 #pragma once
+#include "MFCToolsDefines.h"
 
 #define IDD_SOURCECONTROL_ADD                                                                74
 #define ID_ADD_DEFAULT                                                                       33909        
@@ -10,7 +11,7 @@
 /////////////////////////////////////////////////////////////////////////////
 // CSourceControlAddDlg dialog
 
-class PLUGIN_API CSourceControlAddDlg : public CDialog
+class MFC_TOOLS_PLUGIN_API CSourceControlAddDlg : public CDialog
 {
 public:
 

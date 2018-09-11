@@ -45,10 +45,11 @@
 
 #include <QWidget>
 #include "qmfcapp.h"
+#include "MFCToolsDefines.h"
 
 class CWnd;
 
-class PLUGIN_API QWinWidget : public QWidget
+class MFC_TOOLS_PLUGIN_API QWinWidget : public QWidget
 {
 public:
 	QWinWidget(HWND hParentWnd, QObject* parent = 0, Qt::WindowFlags f = 0);

@@ -3,7 +3,7 @@
 #ifndef __SplineCtrl_h__
 #define __SplineCtrl_h__
 #pragma once
-
+#include "MFCToolsDefines.h"
 #include <CryMath/ISplines.h>
 
 // Custom styles for this control.
@@ -20,7 +20,7 @@ class CTimelineCtrl;
 //////////////////////////////////////////////////////////////////////////
 // Spline control.
 //////////////////////////////////////////////////////////////////////////
-class PLUGIN_API CSplineCtrl : public CWnd
+class MFC_TOOLS_PLUGIN_API CSplineCtrl : public CWnd
 {
 public:
 	DECLARE_DYNAMIC(CSplineCtrl)

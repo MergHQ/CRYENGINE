@@ -1,9 +1,8 @@
 // Copyright 2001-2018 Crytek GmbH / Crytek Group. All rights reserved.
 #pragma once
+#include "MFCToolsDefines.h"
 
-#include "PluginAPI.h"
-
-struct PLUGIN_API SMFCFonts
+struct MFC_TOOLS_PLUGIN_API SMFCFonts
 {
 	//! Use instead of gMFCFonts. Will come in handy for MFC plugins
 	static SMFCFonts& GetInstance();

@@ -9,7 +9,7 @@
 #include <CrySandbox/CrySignal.h>
 #include <FileDialogs/ExtensionFilter.h>
 
-#ifdef PLUGIN_EXPORTS
+#ifdef ACE_PLUGIN_EXPORTS
 	#define ACE_API DLL_EXPORT
 #else
 	#define ACE_API DLL_IMPORT

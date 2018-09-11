@@ -1,12 +1,13 @@
 // Copyright 2001-2018 Crytek GmbH / Crytek Group. All rights reserved.
 
 #pragma once
+#include "MFCToolsDefines.h"
 
 class CImageEx;
 
 /** Use this class to put and get stuff from windows clipboard.
  */
-class PLUGIN_API CClipboard
+class MFC_TOOLS_PLUGIN_API CClipboard
 {
 public:
 	//! Put xml node into clipboard

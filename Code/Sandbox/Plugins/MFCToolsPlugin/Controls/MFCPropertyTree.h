@@ -2,8 +2,8 @@
 
 #pragma once
 
+#include "MFCToolsDefines.h"
 #include <QObject>
-
 #include <CrySerialization/Forward.h>
 using Serialization::IArchive;
 class QPropertyTree;
@@ -27,7 +27,7 @@ private:
 	CMFCPropertyTree* m_propertyTree;
 };
 
-class PLUGIN_API CMFCPropertyTree : public CWnd
+class MFC_TOOLS_PLUGIN_API CMFCPropertyTree : public CWnd
 {
 	DECLARE_DYNCREATE(CMFCPropertyTree)
 public:

@@ -1,8 +1,9 @@
 // Copyright 2001-2018 Crytek GmbH / Crytek Group. All rights reserved.
 
 #pragma once
+#include "MFCToolsDefines.h"
 
-class PLUGIN_API CImageTIF
+class MFC_TOOLS_PLUGIN_API CImageTIF
 {
 public:
 	bool               Load(const string& fileName, CImageEx& outImage);

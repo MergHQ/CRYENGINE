@@ -4,7 +4,6 @@
 
 #define SANDBOX_PLUGIN_SYSTEM_VERSION 1
 
-#include "PluginAPI.h"
 #include "ICommandManager.h"
 #include "EditorFramework/TrayArea.h"
 #include "EditorFramework/Preferences.h"

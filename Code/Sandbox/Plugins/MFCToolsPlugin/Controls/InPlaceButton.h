@@ -2,6 +2,7 @@
 
 #pragma once
 
+#include "MFCToolsDefines.h"
 #include "ColorButton.h"
 
 /*
@@ -22,7 +23,7 @@
  */
 
 //////////////////////////////////////////////////////////////////////////
-class PLUGIN_API CInPlaceButton : public CXTPButton
+class MFC_TOOLS_PLUGIN_API CInPlaceButton : public CXTPButton
 {
 	DECLARE_DYNAMIC(CInPlaceButton)
 
@@ -55,14 +56,14 @@ public:
 	OnClick m_onClick;
 };
 
-class PLUGIN_API CInPlaceCheckBox : public CInPlaceButton
+class MFC_TOOLS_PLUGIN_API CInPlaceCheckBox : public CInPlaceButton
 {
 public:
 	CInPlaceCheckBox(CInPlaceButton::OnClick onClickFunctor) : CInPlaceButton(onClickFunctor, true) {}
 };
 
 //////////////////////////////////////////////////////////////////////////
-class PLUGIN_API CInPlaceColorButton : public CColorButton
+class MFC_TOOLS_PLUGIN_API CInPlaceColorButton : public CColorButton
 {
 	DECLARE_DYNAMIC(CInPlaceColorButton)
 

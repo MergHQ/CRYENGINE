@@ -297,7 +297,6 @@ add_sources("Uber_EditorFramework.cpp"
 		"IIconManager.h"
 		"IEditorClassFactory.h"
 		"IPlugin.h"
-		"PluginAPI.h"
 	SOURCE_GROUP "Export"
 		"Export/ExportDataTypes.cpp"
 		"Export/ExportDataTypes.h"
@@ -889,7 +888,6 @@ set_property(SOURCE ${yasli_sources} APPEND_STRING PROPERTY COMPILE_FLAGS " /wd4
 CryEngineModule(EditorCommon EDITOR_COMPILE_SETTINGS PCH "stdafx.cpp" SOLUTION_FOLDER "Sandbox")
 
 target_compile_definitions(${THIS_PROJECT} PRIVATE
-	-DPLUGIN_EXPORTS 
 	-DEDITOR_COMMON_EXPORTS 
 	-DNOT_USE_CRY_MEMORY_MANAGER
 )

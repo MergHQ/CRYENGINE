@@ -2,7 +2,7 @@
 
 #pragma once
 
-#include "PluginAPI.h"
+#include "MFCToolsDefines.h"
 #include "Util/Variable.h"
 
 // forward declarations.
@@ -27,7 +27,7 @@ struct CPropertyCtrlNotify
 
 /** Custom control to handle Properties hierarchies.
  */
-class PLUGIN_API CPropertyCtrl : public CWnd
+class MFC_TOOLS_PLUGIN_API CPropertyCtrl : public CWnd
 {
 	DECLARE_DYNAMIC(CPropertyCtrl)
 public:

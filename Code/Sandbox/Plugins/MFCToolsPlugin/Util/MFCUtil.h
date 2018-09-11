@@ -3,6 +3,7 @@
 #pragma once
 
 #include "IPlugin.h"
+#include "MFCToolsDefines.h"
 
 class CXTPCommandBars;
 class CXTPShortcutManager;
@@ -10,7 +11,7 @@ struct IVariable;
 
 /*! Collection of Utility MFC functions.
  */
-struct PLUGIN_API CMFCUtils
+struct MFC_TOOLS_PLUGIN_API CMFCUtils
 {
 	//////////////////////////////////////////////////////////////////////////
 	// Load true color image into image list.

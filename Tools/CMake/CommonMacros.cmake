@@ -900,12 +900,38 @@ function(CryUnitTestSuite target)
         	target_link_libraries( ${THIS_PROJECT} PRIVATE dl pthread)
         endif()
 	endif()
-	include_directories("${CRYENGINE_DIR}/Code/SDKs/googletest_CE_Support/googletest/include")
-	include_directories("${CRYENGINE_DIR}/Code/SDKs/googletest_CE_Support/googlemock/include")
-	include_directories("${CRYENGINE_DIR}/Code/CryEngine/UnitTests/Common")
+	target_include_directories(
+		${THIS_PROJECT} PUBLIC 
+		"${CRYENGINE_DIR}/Code/SDKs/googletest_CE_Support/googletest/include"
+		"${CRYENGINE_DIR}/Code/SDKs/googletest_CE_Support/googlemock/include"
+		"${CRYENGINE_DIR}/Code/CryEngine/UnitTests/Common"
+	)
 	target_link_libraries(${THIS_PROJECT} PUBLIC gtest gmock)
 endfunction()
 
+function(CryEditorPluginUnitTestSuite target)
+	prepare_project(${ARGN})
+	add_executable(${THIS_PROJECT} ${${THIS_PROJECT}_SOURCES})
+	if(WIN32)
+		set_property(TARGET ${THIS_PROJECT} APPEND_STRING PROPERTY LINK_FLAGS " /SUBSYSTEM:CONSOLE")
+	endif()
+	apply_compile_settings()
+		
+	target_sources(${target} PRIVATE "${CRYENGINE_DIR}/Code/CryEngine/UnitTests/Common/UnitTest.h")
+	source_group("Imported" FILES "${CRYENGINE_DIR}/Code/CryEngine/UnitTests/Common/UnitTest.h")
+	target_sources(${target} PRIVATE "${CRYENGINE_DIR}/Code/CryEngine/UnitTests/Common/Main.cpp")
+	source_group("Imported" FILES "${CRYENGINE_DIR}/Code/CryEngine/UnitTests/Common/Main.cpp")
+	target_include_directories(
+		${THIS_PROJECT} PUBLIC 
+		"${CRYENGINE_DIR}/Code/SDKs/googletest_CE_Support/googletest/include"
+		"${CRYENGINE_DIR}/Code/SDKs/googletest_CE_Support/googlemock/include"
+		"${CRYENGINE_DIR}/Code/CryEngine/UnitTests/Common"
+	)
+	target_link_libraries(${THIS_PROJECT} PUBLIC gtest gmock)
+	set_editor_module_flags()
+	target_compile_definitions(${THIS_PROJECT} PRIVATE _LAUNCHER -DEDITOR_PLUGIN_UNIT_TEST -DSANDBOX_IMPORTS -DEDITOR_COMMON_IMPORTS -DNOT_USE_CRY_MEMORY_MANAGER)
+	target_link_libraries(${THIS_PROJECT} PRIVATE EditorCommon)
+endfunction()
 
 function(CryWindowsApplication target)
 	prepare_project(${ARGN})
@@ -968,7 +994,7 @@ function(CryEditor target)
 	set_editor_module_flags()
 	add_metadata()
 	target_compile_options(${THIS_PROJECT} PRIVATE /Zm200)
-	target_compile_definitions(${THIS_PROJECT} PRIVATE -DSANDBOX_EXPORTS -DPLUGIN_IMPORTS -DEDITOR_COMMON_IMPORTS)
+	target_compile_definitions(${THIS_PROJECT} PRIVATE -DSANDBOX_EXPORTS -DEDITOR_COMMON_IMPORTS)
 	target_link_libraries(${THIS_PROJECT} PRIVATE EditorCommon)
 	set_property(TARGET ${THIS_PROJECT} PROPERTY ENABLE_EXPORTS TRUE)
 	set_property(TARGET ${THIS_PROJECT} APPEND_STRING PROPERTY LINK_FLAGS " /SUBSYSTEM:WINDOWS")
@@ -980,7 +1006,7 @@ function(CryEditorPlugin target)
 	add_library(${THIS_PROJECT} ${${THIS_PROJECT}_SOURCES})
 	set_editor_module_flags()
 	target_compile_options(${THIS_PROJECT} PRIVATE /Zm200)
-	target_compile_definitions(${THIS_PROJECT} PRIVATE -DSANDBOX_IMPORTS -DPLUGIN_IMPORTS -DEDITOR_COMMON_IMPORTS -DNOT_USE_CRY_MEMORY_MANAGER)
+	target_compile_definitions(${THIS_PROJECT} PRIVATE -DSANDBOX_IMPORTS -DEDITOR_COMMON_IMPORTS -DNOT_USE_CRY_MEMORY_MANAGER)
 	set_property(TARGET ${THIS_PROJECT} PROPERTY LIBRARY_OUTPUT_DIRECTORY "${CMAKE_LIBRARY_OUTPUT_DIRECTORY}/EditorPlugins")
 	set_property(TARGET ${THIS_PROJECT} PROPERTY RUNTIME_OUTPUT_DIRECTORY "${CMAKE_LIBRARY_OUTPUT_DIRECTORY}/EditorPlugins")
 	target_link_libraries(${THIS_PROJECT} PRIVATE EditorCommon)

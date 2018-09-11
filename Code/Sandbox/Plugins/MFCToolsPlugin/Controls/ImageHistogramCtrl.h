@@ -2,9 +2,10 @@
 
 #pragma once
 
+#include "MFCToolsDefines.h"
 #include "Util/GdiUtil.h"
 
-class PLUGIN_API CImageHistogramCtrl : public CWnd
+class MFC_TOOLS_PLUGIN_API CImageHistogramCtrl : public CWnd
 {
 	DECLARE_DYNAMIC(CImageHistogramCtrl)
 
