@@ -1,13 +1,14 @@
 // Copyright 2001-2018 Crytek GmbH / Crytek Group. All rights reserved.
 
 #pragma once
+#include "MFCToolsDefines.h"
 
 //////////////////////////////////////////////////////////////////////////
 //
 // Base class for Sandbox frame windows
 //
 //////////////////////////////////////////////////////////////////////////
-class PLUGIN_API CBaseFrameWnd : public CXTPFrameWnd
+class MFC_TOOLS_PLUGIN_API CBaseFrameWnd : public CXTPFrameWnd
 {
 public:
 	CBaseFrameWnd();

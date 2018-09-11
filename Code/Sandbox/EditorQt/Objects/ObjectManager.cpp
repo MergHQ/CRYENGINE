@@ -1554,6 +1554,13 @@ void CObjectManager::RemoveObjectsAndNotify(const std::vector<CBaseObject*>& obj
 		pLayer->SetModified();
 		NotifyObjectListeners(layerObjects, CObjectDeleteEvent(pLayer));
 	});
+
+	// If we don't null the layer the object will reference it even if the layer is deleted afterwards.
+	// this will lead to crash upon undo. Undo will set a new layer but it will try to detach from the old one.
+	for (auto pObject : objects)
+	{
+		pObject->m_layer = nullptr;
+	}
 }
 
 void CObjectManager::UnlinkObjects(const std::vector<CBaseObject*>& objects)

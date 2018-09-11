@@ -9,8 +9,9 @@
 #define StringInputDialog_h__
 
 #pragma once
+#include "MFCToolsDefines.h"
 
-class PLUGIN_API CStringInputDialog : public CDialog
+class MFC_TOOLS_PLUGIN_API CStringInputDialog : public CDialog
 {
 	//////////////////////////////////////////////////////////////////////////
 	// Types & Typedefs

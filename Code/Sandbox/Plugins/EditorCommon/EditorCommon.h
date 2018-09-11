@@ -24,7 +24,6 @@
 
 #include <CryMath/Cry_Math.h>
 #include "IEditor.h"
-#include "PluginAPI.h"
 
 #include "QControls.h"
 #include "Controls/QMenuComboBox.h"

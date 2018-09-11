@@ -43,10 +43,11 @@
 #ifndef QWINHOST_H
 #define QWINHOST_H
 
-#include <QWidget>
+#include "MFCToolsDefines.h"
 #include "Controls/SandboxWindowing.h"
+#include <QWidget>
 
-class PLUGIN_API QWinHost : public QMFCPaneHost
+class MFC_TOOLS_PLUGIN_API QWinHost : public QMFCPaneHost
 {
 	Q_OBJECT
 public:

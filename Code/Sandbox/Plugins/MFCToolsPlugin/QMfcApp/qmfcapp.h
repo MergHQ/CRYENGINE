@@ -43,6 +43,7 @@
 #ifndef QMFCAPP_H
 #define QMFCAPP_H
 
+#include "MFCToolsDefines.h"
 #include <QApplication>
 
 #if defined(_AFXDLL) && defined(_MSC_VER)
@@ -53,7 +54,7 @@ class CWinApp;
 #if QT_VERSION >= 0x050000
 	#include <QAbstractNativeEventFilter>
 
-class PLUGIN_API QMfcAppEventFilter : public QAbstractNativeEventFilter
+class MFC_TOOLS_PLUGIN_API QMfcAppEventFilter : public QAbstractNativeEventFilter
 {
 public:
 	QMfcAppEventFilter();
@@ -61,7 +62,7 @@ public:
 };
 #endif
 
-class PLUGIN_API QMfcApp : public QApplication
+class MFC_TOOLS_PLUGIN_API QMfcApp : public QApplication
 {
 public:
 	static bool pluginInstance(Qt::HANDLE plugin = 0);

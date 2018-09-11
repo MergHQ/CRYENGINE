@@ -27,9 +27,9 @@
 #ifndef __DLGBARS_H__
 	#define __DLGBARS_H__
 
-#include "PluginAPI.h"
+#include "MFCToolsDefines.h"
 
-class PLUGIN_API CDlgToolBar : public CToolBar 
+class MFC_TOOLS_PLUGIN_API CDlgToolBar : public CToolBar 
 {   
 // Construction
 public:
@@ -50,7 +50,7 @@ protected:
 	DECLARE_MESSAGE_MAP()
 };        
 
-class PLUGIN_API CDlgStatusBar : public CStatusBar 
+class MFC_TOOLS_PLUGIN_API CDlgStatusBar : public CStatusBar 
 {   
 // Construction
 public:

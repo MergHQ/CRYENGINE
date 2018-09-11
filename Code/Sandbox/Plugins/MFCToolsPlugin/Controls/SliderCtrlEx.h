@@ -4,10 +4,11 @@
 #define __SliderCtrlEx_h__
 #pragma once
 
+#include "MFCToolsDefines.h"
 #include <CryCore/functor.h>
 
 //////////////////////////////////////////////////////////////////////////
-class PLUGIN_API CSliderCtrlEx : public CSliderCtrl
+class MFC_TOOLS_PLUGIN_API CSliderCtrlEx : public CSliderCtrl
 {
 public:
 	typedef Functor1<CSliderCtrlEx*> UpdateCallback;
@@ -58,7 +59,7 @@ protected:
 };
 
 //////////////////////////////////////////////////////////////////////////
-class PLUGIN_API CSliderCtrlCustomDraw : public CSliderCtrlEx
+class MFC_TOOLS_PLUGIN_API CSliderCtrlCustomDraw : public CSliderCtrlEx
 {
 public:
 	DECLARE_DYNAMIC(CSliderCtrlCustomDraw)

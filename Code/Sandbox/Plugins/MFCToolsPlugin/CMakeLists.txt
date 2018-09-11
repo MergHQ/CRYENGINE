@@ -8,6 +8,7 @@ add_sources("NoUberFile"
 	SOURCE_GROUP "Root"
 		"MFCToolsPlugin.cpp"
 		"MFCToolsPlugin.h"
+		"MFCToolsDefines.h"
 		"StdAfx.h"
 		"StdAfx.cpp"
 		"Resource.h"
@@ -155,7 +156,6 @@ end_sources()
 CryEngineModule(MFCToolsPlugin EDITOR_COMPILE_SETTINGS PCH "StdAfx.cpp" SOLUTION_FOLDER "Sandbox/Plugins")
 
 target_compile_definitions(${THIS_PROJECT} PRIVATE
-	-DPLUGIN_EXPORTS
 	-DEDITOR_COMMON_IMPORTS 
 	-DNOT_USE_CRY_MEMORY_MANAGER
 )

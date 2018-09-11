@@ -4,6 +4,7 @@
 #define __TimelineCtrl_h__
 #pragma once
 
+#include "MFCToolsDefines.h"
 #include <CryMath/Range.h>
 #include "SplineCtrlEx.h"
 #include "Controls/WndGridHelper.h"
@@ -23,7 +24,7 @@
 //////////////////////////////////////////////////////////////////////////
 // Timeline control.
 //////////////////////////////////////////////////////////////////////////
-class PLUGIN_API CTimelineCtrl : public CWnd
+class MFC_TOOLS_PLUGIN_API CTimelineCtrl : public CWnd
 {
 public:
 	DECLARE_DYNAMIC(CTimelineCtrl)

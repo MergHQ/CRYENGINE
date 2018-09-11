@@ -1,11 +1,12 @@
 // Copyright 2001-2018 Crytek GmbH / Crytek Group. All rights reserved.
 
 #pragma once
+#include "MFCToolsDefines.h"
 
 //////////////////////////////////////////////////////////////////////////
 // CCheckOutDialog dialog
 
-class PLUGIN_API CCheckOutDialog : public CDialog
+class MFC_TOOLS_PLUGIN_API CCheckOutDialog : public CDialog
 {
 	DECLARE_DYNAMIC(CCheckOutDialog)
 

@@ -12,10 +12,12 @@
 //  1. Enables the 'ColorChangeCallback' registration
 //  2. Makes the color picking tool work across multiple monitors
 
+#include "MFCToolsDefines.h"
+
 /////////////////////////////////////////////////////////////////////////////
 // CCustomColorDialog dialog
 
-class PLUGIN_API CCustomColorDialog : public CMFCColorDialog
+class MFC_TOOLS_PLUGIN_API CCustomColorDialog : public CMFCColorDialog
 {
 	DECLARE_DYNAMIC(CCustomColorDialog)
 public:

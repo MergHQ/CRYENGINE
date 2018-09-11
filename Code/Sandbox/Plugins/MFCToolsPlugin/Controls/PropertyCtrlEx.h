@@ -1,6 +1,7 @@
 // Copyright 2001-2018 Crytek GmbH / Crytek Group. All rights reserved.
 #pragma once
 
+#include "MFCToolsDefines.h"
 #include "PropertyCtrl.h"
 #include "RollupCtrl.h"
 
@@ -31,7 +32,7 @@ protected:
 
 /** Costom control to handle Properties hierarchies.
  */
-class PLUGIN_API CPropertyCtrlEx : public CPropertyCtrl, public IEditorNotifyListener
+class MFC_TOOLS_PLUGIN_API CPropertyCtrlEx : public CPropertyCtrl, public IEditorNotifyListener
 {
 	DECLARE_DYNAMIC(CPropertyCtrlEx)
 public:

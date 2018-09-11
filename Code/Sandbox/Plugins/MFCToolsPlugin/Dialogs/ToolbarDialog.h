@@ -1,10 +1,10 @@
 // Copyright 2001-2018 Crytek GmbH / Crytek Group. All rights reserved.
 #pragma once
 
-#include "PluginAPI.h"
+#include "MFCToolsDefines.h"
 #include "Controls/DlgBars.h"
 
-class PLUGIN_API CToolbarDialog : public CXTPDialogBase<CXTResizeDialog>
+class MFC_TOOLS_PLUGIN_API CToolbarDialog : public CXTPDialogBase<CXTResizeDialog>
 {
 	DECLARE_DYNAMIC(CToolbarDialog)
 public:
@@ -43,7 +43,7 @@ protected:
 //////////////////////////////////////////////////////////////////////////
 // Custom frame window.
 //////////////////////////////////////////////////////////////////////////
-class PLUGIN_API CCustomFrameWnd : public CXTPFrameWnd
+class MFC_TOOLS_PLUGIN_API CCustomFrameWnd : public CXTPFrameWnd
 {
 public:
 	DECLARE_DYNAMIC(CCustomFrameWnd)

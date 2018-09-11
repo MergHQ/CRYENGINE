@@ -1,13 +1,14 @@
 // Copyright 2001-2018 Crytek GmbH / Crytek Group. All rights reserved.
 
 #pragma once
+#include "MFCToolsDefines.h"
 
 class CAlphaBitmap;
 
 /*!
  *	Utility Class to manipulate images.
  */
-class PLUGIN_API CImageUtil
+class MFC_TOOLS_PLUGIN_API CImageUtil
 {
 public:
 	//////////////////////////////////////////////////////////////////////////

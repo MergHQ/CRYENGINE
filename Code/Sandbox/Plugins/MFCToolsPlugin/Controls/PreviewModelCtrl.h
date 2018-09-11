@@ -12,8 +12,9 @@ struct SRenderingPassInfo;
 #include <CryMath/Cry_Camera.h>
 #include <CryRenderer/IRenderer.h>
 #include "Objects/DisplayContext.h"
+#include "MFCToolsDefines.h"
 
-class PLUGIN_API CPreviewModelCtrl : public CWnd, public IEditorNotifyListener
+class MFC_TOOLS_PLUGIN_API CPreviewModelCtrl : public CWnd, public IEditorNotifyListener
 {
 public:
 	CPreviewModelCtrl();

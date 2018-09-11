@@ -1,11 +1,12 @@
 // Copyright 2001-2018 Crytek GmbH / Crytek Group. All rights reserved.
 
 #pragma once
+#include "MFCToolsDefines.h"
 #include "FileUtil.h"
 #include <CryMemory/STLPoolAllocator.h>
 #include <CryThreading/IThreadManager.h>
 
-class PLUGIN_API CIndexedFiles
+class MFC_TOOLS_PLUGIN_API CIndexedFiles
 {
 	friend class CFileIndexingThread;
 public:

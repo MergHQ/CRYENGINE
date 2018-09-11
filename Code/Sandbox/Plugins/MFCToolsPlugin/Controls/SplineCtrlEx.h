@@ -8,6 +8,7 @@
 #include <CryMath/Range.h>
 #include "Controls/WndGridHelper.h"
 #include "IUndoObject.h"
+#include "MFCToolsDefines.h"
 
 // Custom styles for this control.
 #define SPLINE_STYLE_NOGRID         0x0001
@@ -58,7 +59,7 @@ public:
 //////////////////////////////////////////////////////////////////////////
 // Spline control.
 //////////////////////////////////////////////////////////////////////////
-class PLUGIN_API CSplineCtrlEx : public CWnd, public IKeyTimeSet
+class MFC_TOOLS_PLUGIN_API CSplineCtrlEx : public CWnd, public IKeyTimeSet
 {
 	typedef TRange<float> Range;
 	friend class CUndoSplineCtrlEx;

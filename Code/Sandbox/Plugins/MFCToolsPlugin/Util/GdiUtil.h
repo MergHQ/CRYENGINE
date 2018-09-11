@@ -1,13 +1,14 @@
 // Copyright 2001-2018 Crytek GmbH / Crytek Group. All rights reserved.
 
 #pragma once
+#include "MFCToolsDefines.h"
 
 //  Utilitarian classes for double buffer GDI rendering and 32bit bitmaps
 
 const COLORREF kDrawBoxSameColorAsFill = 0xFFFFFFFF;
 
 //! This is a class that manages a doublebuffer in GDI, so you can have flicker-free drawing
-class PLUGIN_API CGdiCanvas
+class MFC_TOOLS_PLUGIN_API CGdiCanvas
 {
 public:
 
@@ -77,7 +78,7 @@ protected:
 };
 
 //! This class loads alpha-channel bitmaps and holds a DC for use with AlphaBlend function
-class PLUGIN_API CAlphaBitmap
+class MFC_TOOLS_PLUGIN_API CAlphaBitmap
 {
 public:
 

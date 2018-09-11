@@ -2,6 +2,7 @@
 
 #pragma once
 
+#include "MFCToolsDefines.h"
 #include "Controls/ColorCtrl.h"
 #include "Util/Variable.h"
 
@@ -89,7 +90,7 @@ class CInPlaceCheckBox;
 /** Item of CPropertyCtrl.
     Every property item reflects value of single XmlNode.
  */
-class PLUGIN_API CPropertyItem : public _i_reference_target_t
+class MFC_TOOLS_PLUGIN_API CPropertyItem : public _i_reference_target_t
 {
 public:
 	typedef std::vector<string>        TDValues;

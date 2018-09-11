@@ -3,7 +3,13 @@
 #pragma once
 #include "IPlugin.h"
 
-class CSamplePlugin : public IPlugin
+#if defined(SamplePlugin_EXPORTS)
+	#define SAMPLE_PLUGIN_API DLL_EXPORT
+#else
+	#define SAMPLE_PLUGIN_API DLL_IMPORT
+#endif
+
+class SAMPLE_PLUGIN_API CSamplePlugin : public IPlugin
 {
 public:
 	CSamplePlugin() { /* entry point of the plugin, perform initializations */ }

@@ -2,6 +2,7 @@
 
 #pragma once
 
+#include "MFCToolsDefines.h"
 #include "Controls/ColorCtrl.h"
 
 /////////////////////////////////////////////////////////////////////////////
@@ -45,7 +46,7 @@ const COLORREF RC_SCROLLBARCOLOR = ::GetSysColor(COLOR_BTNFACE); //RGB(150,180,1
 /////////////////////////////////////////////////////////////////////////////
 // CRollupCtrl class definition
 
-class PLUGIN_API CRollupCtrl : public CWnd
+class MFC_TOOLS_PLUGIN_API CRollupCtrl : public CWnd
 {
 	DECLARE_DYNCREATE(CRollupCtrl)
 

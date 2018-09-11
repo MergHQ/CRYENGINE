@@ -3,10 +3,11 @@
 #ifndef __GENERICSELECTITEMDIALOG_H__
 #define __GENERICSELECTITEMDIALOG_H__
 #pragma once
+#include "MFCToolsDefines.h"
 
 // CGenericSelectItem dialog
 
-class PLUGIN_API CGenericSelectItemDialog : public CXTResizeDialog
+class MFC_TOOLS_PLUGIN_API CGenericSelectItemDialog : public CXTResizeDialog
 {
 	DECLARE_DYNAMIC(CGenericSelectItemDialog)
 

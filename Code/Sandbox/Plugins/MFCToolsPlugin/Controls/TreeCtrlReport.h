@@ -1,12 +1,13 @@
 // Copyright 2001-2018 Crytek GmbH / Crytek Group. All rights reserved.
 
 #pragma once
+#include "MFCToolsDefines.h"
 
 enum { eTreeItemPathOptimalLen = 128 };
 typedef CryStackStringT<char, eTreeItemPathOptimalLen> TreeItemPathString;
 
 //////////////////////////////////////////////////////////////////////////
-class PLUGIN_API CTreeItemRecord : public CXTPReportRecord
+class MFC_TOOLS_PLUGIN_API CTreeItemRecord : public CXTPReportRecord
 {
 	DECLARE_DYNAMIC(CTreeItemRecord)
 public:
@@ -57,7 +58,7 @@ protected:
 };
 
 //////////////////////////////////////////////////////////////////////////
-class PLUGIN_API CTreeCtrlReport : public CXTPReportControl
+class MFC_TOOLS_PLUGIN_API CTreeCtrlReport : public CXTPReportControl
 {
 	DECLARE_MESSAGE_MAP()
 public:

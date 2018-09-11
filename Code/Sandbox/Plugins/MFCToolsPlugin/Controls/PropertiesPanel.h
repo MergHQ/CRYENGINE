@@ -2,10 +2,11 @@
 
 #pragma once
 
+#include "MFCToolsDefines.h"
 #include "Controls/PropertyCtrl.h"
 #include "Util/Variable.h"
 
-class PLUGIN_API CPropertiesPanel : public CDialog
+class MFC_TOOLS_PLUGIN_API CPropertiesPanel : public CDialog
 {
 public:
 	CPropertiesPanel(CWnd* pParent = NULL);

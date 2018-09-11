@@ -46,7 +46,7 @@ ColorF profile_colors[] =
 	// Do not add any other labels - color lookup is defined as byte
 };
 
-#if (!defined(_LIB) || defined(_LAUNCHER)) && defined(ENABLE_PROFILING_CODE) && !((defined(SANDBOX_EXPORTS) || defined(PLUGIN_EXPORTS)))
+#if (!defined(_LIB) || defined(_LAUNCHER)) && defined(ENABLE_PROFILING_CODE) && !defined(IS_EDITOR_BUILD)
 	#if CRY_PLATFORM_WINDOWS || CRY_PLATFORM_LINUX || CRY_PLATFORM_ANDROID || CRY_PLATFORM_APPLE
 		#include <CrySystem/Profilers/FrameProfiler/FrameProfiler_impl.pc.h>
 	#elif CRY_PLATFORM_DURANGO

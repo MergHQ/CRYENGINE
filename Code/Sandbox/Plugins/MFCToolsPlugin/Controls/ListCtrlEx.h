@@ -3,9 +3,10 @@
 #ifndef __ListCtrlEx_h__
 #define __ListCtrlEx_h__
 #pragma once
+#include "MFCToolsDefines.h"
 
 //////////////////////////////////////////////////////////////////////////
-class PLUGIN_API CListCtrlEx : public CXTListCtrl
+class MFC_TOOLS_PLUGIN_API CListCtrlEx : public CXTListCtrl
 {
 	// Construction
 public:
@@ -40,7 +41,7 @@ protected:
 };
 
 //////////////////////////////////////////////////////////////////////////
-class PLUGIN_API CControlsListBox : public CListBox
+class MFC_TOOLS_PLUGIN_API CControlsListBox : public CListBox
 {
 	// Construction
 public:
