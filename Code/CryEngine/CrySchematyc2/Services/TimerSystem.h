@@ -27,7 +27,7 @@ namespace Schematyc2
 		CTimerSystem();
 
 		// ITimerSystem
-		virtual TimerId CreateTimer(const STimerParams& params, const TimerCallback& callback) override;
+		virtual void CreateTimer(const STimerParams& params, const TimerCallback& callback, TimerId& outTimerId) override;
 		virtual void DestroyTimer(TimerId timerId) override;
 		virtual bool StartTimer(TimerId timerId) override;
 		virtual bool StopTimer(TimerId timerId) override;
@@ -43,28 +43,14 @@ namespace Schematyc2
 		struct STimer
 		{
 			STimer();
-			STimer(int64 _time, TimerId _timerId, const STimerDuration& _duration, const TimerCallback& _callback, EPrivateTimerFlags _privateFlags);
+			STimer(int64 _time, TimerId* _timerId, const STimerDuration& _duration, const TimerCallback& _callback, EPrivateTimerFlags _privateFlags);
 			STimer(const STimer& rhs);
 
 			int64              time;
-			TimerId            timerId;
+			TimerId*           timerIdStorage;
 			STimerDuration     duration;
 			TimerCallback      callback;
 			EPrivateTimerFlags privateFlags;
-		};
-
-		struct SEqualTimerId
-		{
-			inline SEqualTimerId(TimerId _timerId)
-				: timerId(_timerId)
-			{}
-
-			inline bool operator () (const STimer& timer) const
-			{
-				return timer.timerId == timerId;
-			}
-
-			TimerId	timerId;
 		};
 
 		typedef std::vector<STimer> TimerVector;
@@ -73,5 +59,6 @@ namespace Schematyc2
 
 		int64       m_frameCounter;
 		TimerVector m_timers;
+		uint32      m_timersPendingDestroy;
 	};
 }

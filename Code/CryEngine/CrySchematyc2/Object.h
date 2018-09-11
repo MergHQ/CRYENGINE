@@ -53,7 +53,7 @@ namespace Schematyc2
 		virtual CVariant GetVariant(size_t iVariant) const override;
 		virtual const CVariantContainer* GetContainer(size_t iContainer) const override;
 		virtual IAnyConstPtr GetProperty(uint32 propertyIdx) const override;
-		virtual TimerId GetTimerId(size_t iTimer) const override;
+		virtual TimerId GetTimerId(size_t iTimer) const override; // Do not save TimerIds returned by this function as they can change if timers are destroyed
 		virtual IComponentPtr GetComponentInstance(size_t componentInstanceIdx) override;
 		virtual IPropertiesPtr GetComponentInstanceProperties(size_t componentInstanceIdx) override;
 		virtual void VisitActiveTimers(const ObjectActiveTimerVisitor& visitor) const override;

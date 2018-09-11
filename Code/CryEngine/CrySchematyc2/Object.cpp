@@ -213,7 +213,7 @@ namespace Schematyc2
 			STimer&				timer = m_timers.back();
 			STimerParams	timerParams = libTimer.GetParams();
 			timerParams.flags &= ~ETimerFlags::AutoStart;	// We're hijacking this flag and therefore don't want to pass it on to the timer system.
-			timer.timerId = timerSystem.CreateTimer(timerParams, TimerCallback::FromMemberFunction<STimer, &STimer::OnTimer>(timer));
+			timerSystem.CreateTimer(timerParams, TimerCallback::FromMemberFunction<STimer, &STimer::OnTimer>(timer), timer.timerId);
 		}
 		// Create and initialize components.
 		CreateAndInitComponents(params.pNetworkSpawnParams);
