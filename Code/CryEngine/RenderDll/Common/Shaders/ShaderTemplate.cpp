@@ -515,7 +515,7 @@ STexAnim* CShaderMan::mfReadTexSequence(const char* na, int Flags, bool bFindOnl
 
 	cry_strcpy(frm, "%s%.");
 	cry_strcat(frm, frd);
-	cry_strcat(frm, "d%s%s");
+	cry_strcat(frm, "d%s.%s");
 	STexAnim* ta = NULL;
 	for (i = 0; i < nums; i++)
 	{
