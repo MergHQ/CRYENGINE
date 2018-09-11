@@ -105,11 +105,11 @@ CControl* CAssetsManager::CreateControl(string const& name, EAssetType const typ
 }
 
 //////////////////////////////////////////////////////////////////////////
-CControl* CAssetsManager::CreateDefaultControl(string const& name, EAssetType const type, CAsset* const pParent, bool const isInternal, string const& description)
+CControl* CAssetsManager::CreateDefaultControl(string const& name, EAssetType const type, CAsset* const pParent, EAssetFlags const flags, string const& description)
 {
 	CControl* pControl = nullptr;
 
-	if (isInternal)
+	if ((flags& EAssetFlags::IsInternalControl) != 0)
 	{
 		pControl = CreateControl(name, type, pParent);
 	}
@@ -153,15 +153,7 @@ CControl* CAssetsManager::CreateDefaultControl(string const& name, EAssetType co
 	{
 		pControl->SetScope(GlobalScopeId);
 		pControl->SetDescription(description);
-
-		if (isInternal)
-		{
-			pControl->SetFlags(pControl->GetFlags() | (EAssetFlags::IsDefaultControl | EAssetFlags::IsInternalControl));
-		}
-		else
-		{
-			pControl->SetFlags(pControl->GetFlags() | EAssetFlags::IsDefaultControl);
-		}
+		pControl->SetFlags(pControl->GetFlags() | flags);
 	}
 
 	return pControl;

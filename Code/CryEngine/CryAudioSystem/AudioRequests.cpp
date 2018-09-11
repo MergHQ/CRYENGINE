@@ -55,6 +55,8 @@ SRequestData* AllocateRequestData(SRequestData const* const pRequestData)
 				AM_REQUEST_BLOCK(EManagerRequestType::ReloadControlsData)
 				AM_REQUEST_BLOCK(EManagerRequestType::GetAudioFileData)
 				AM_REQUEST_BLOCK(EManagerRequestType::GetImplInfo)
+				AM_REQUEST_BLOCK(EManagerRequestType::ExecuteTriggerEx)
+				AM_REQUEST_BLOCK(EManagerRequestType::ExecuteDefaultTrigger)
 			default:
 				{
 					CRY_ASSERT_MESSAGE(false, "Unknown audio manager request type (%u)", pBase->managerRequestType);
@@ -76,7 +78,6 @@ SRequestData* AllocateRequestData(SRequestData const* const pRequestData)
 				AO_REQUEST_BLOCK(EObjectRequestType::PlayFile)
 				AO_REQUEST_BLOCK(EObjectRequestType::StopFile)
 				AO_REQUEST_BLOCK(EObjectRequestType::ExecuteTrigger)
-				AO_REQUEST_BLOCK(EObjectRequestType::ExecuteTriggerEx)
 				AO_REQUEST_BLOCK(EObjectRequestType::StopTrigger)
 				AO_REQUEST_BLOCK(EObjectRequestType::StopAllTriggers)
 				AO_REQUEST_BLOCK(EObjectRequestType::SetTransformation)

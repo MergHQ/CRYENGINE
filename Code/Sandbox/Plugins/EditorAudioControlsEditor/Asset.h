@@ -11,13 +11,14 @@ namespace ACE
 {
 enum class EAssetFlags
 {
-	None                     = 0,
-	IsDefaultControl         = BIT(0),
-	IsInternalControl        = BIT(1),
-	IsModified               = BIT(2),
-	HasPlaceholderConnection = BIT(3),
-	HasConnection            = BIT(4),
-	HasControl               = BIT(5),
+	None                       = 0,
+	IsDefaultControl           = BIT(0),
+	IsInternalControl          = BIT(1),
+	IsHiddenInResourceSelector = BIT(2),
+	IsModified                 = BIT(3),
+	HasPlaceholderConnection   = BIT(4),
+	HasConnection              = BIT(5),
+	HasControl                 = BIT(6),
 };
 CRY_CREATE_ENUM_FLAG_OPERATORS(EAssetFlags);
 

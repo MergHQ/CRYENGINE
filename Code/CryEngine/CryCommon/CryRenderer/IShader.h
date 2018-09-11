@@ -1749,6 +1749,7 @@ enum ERenderListID
 	EFSLIST_CUSTOM,                  //!< Custom scene pass.
 	EFSLIST_HIGHLIGHT,               //!< Candidate for selection objects
 	EFSLIST_DEBUG_HELPER,            //!< Debug helper render items.
+	EFSLIST_SKY,                     //!< Sky elements
 
 	EFSLIST_NUM
 };

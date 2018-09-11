@@ -935,8 +935,8 @@ void InjectFogDensityCS(uint3 DispatchThreadID : SV_DispatchThreadID
 	int nStencilVal = VolumetricClipVolumeStencil.Load(int4(DispatchThreadID.xyz, 0)).g;
 #endif
 #endif
-	const uint clipVolumeStencilID = vfGetClipVolumeStencilID(nStencilVal);
-	const uint clipVolumeIndex = clipVolumeStencilID & (MAX_CLIPVOLUMES-1);
+    const uint clipVolumeStencilID = vfGetClipVolumeStencilID(nStencilVal);
+	const uint clipVolumeIndex = clipVolumeStencilID & MAX_CLIPVOLUMES;
 	const uint clipVolumeData = VL_TiledClipVolumeInfo[clipVolumeIndex].data;
 
 	// Barycentric interpolation for reconstructing position
@@ -1948,8 +1948,8 @@ void InjectVolumetricInscatteringCS(uint3 DispatchThreadID : SV_DispatchThreadID
 	nStencilVal = ClipVolumeStencil.Load(int4(DispatchThreadID.xyz, 0)).g;
 #endif
 #endif
-	const uint clipVolumeStencilID = vfGetClipVolumeStencilID(nStencilVal);
-	const uint clipVolumeData = VL_TiledClipVolumeInfo[clipVolumeStencilID & (MAX_CLIPVOLUMES-1)].data;
+    const uint clipVolumeStencilID = vfGetClipVolumeStencilID(nStencilVal);
+	const uint clipVolumeData = VL_TiledClipVolumeInfo[clipVolumeStencilID & MAX_CLIPVOLUMES].data;
 
 	// Barycentric interpolation for reconstructing position
 	const float3 pixelCoord = DispatchThreadID.xyz;

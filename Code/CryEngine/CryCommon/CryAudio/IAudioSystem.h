@@ -97,6 +97,28 @@ enum class ELogType : EnumFlagsType
 	Always,  /**< The message will be displayed in standard color and always printed regardless of verbosity level. */
 };
 
+/**
+ * @enum CryAudio::EDefaultTriggerType
+ * @brief A strongly typed enum class representing different default audio trigger types.
+ * @var CryAudio::EDefaultTriggerType::None
+ * @var CryAudio::EDefaultTriggerType::LoseFocus
+ * @var CryAudio::EDefaultTriggerType::GetFocus
+ * @var CryAudio::EDefaultTriggerType::MuteAll
+ * @var CryAudio::EDefaultTriggerType::UnmuteAll
+ * @var CryAudio::EDefaultTriggerType::PauseAll
+ * @var CryAudio::EDefaultTriggerType::ResumeAll
+ */
+enum class EDefaultTriggerType : EnumFlagsType
+{
+	None,      /**< Used to initialize variables of this type and to determine whether the variable was properly handled. */
+	LoseFocus, /**< Specifies to use the lose_focus default trigger. */
+	GetFocus,  /**< Specifies to use the get_focus default trigger. */
+	MuteAll,   /**< Specifies to use the mute_all default trigger. */
+	UnmuteAll, /**< Specifies to use the unmute_all default trigger. */
+	PauseAll,  /**< Specifies to use the pause_all default trigger. */
+	ResumeAll, /**< Specifies to use the resume_all default trigger. */
+};
+
 struct SRequestInfo
 {
 	explicit SRequestInfo(

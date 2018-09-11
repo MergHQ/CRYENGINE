@@ -49,8 +49,6 @@ public:
 
 protected:
 
-	IEntityAudioComponent* m_pIEntityAudioComponent = nullptr;
-
 	// Properties exposed to UI
 	SSettingSerializeHelper m_setting;
 

@@ -101,7 +101,7 @@ namespace Schematyc2
 	{
 		virtual ~ITimerSystem() {}
 
-		virtual TimerId CreateTimer(const STimerParams& params, const TimerCallback& callback) = 0;
+		virtual void CreateTimer(const STimerParams& params, const TimerCallback& callback, TimerId& outTimerId) = 0;
 		virtual void DestroyTimer(TimerId timerId) = 0;
 		virtual bool StartTimer(TimerId timerId) = 0;
 		virtual bool StopTimer(TimerId timerId) = 0;

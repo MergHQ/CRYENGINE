@@ -32,7 +32,7 @@ public:
 
 	CAsset*          CreateFolder(string const& name, CAsset* const pParent = nullptr);
 	CControl*        CreateControl(string const& name, EAssetType const type, CAsset* const pParent = nullptr);
-	CControl*        CreateDefaultControl(string const& name, EAssetType const type, CAsset* const pParent, bool const isInternal, string const& description);
+	CControl*        CreateDefaultControl(string const& name, EAssetType const type, CAsset* const pParent, EAssetFlags const flags, string const& description);
 
 	CControl*        FindControl(string const& name, EAssetType const type, CAsset* const pParent = nullptr) const;
 	CControl*        FindControlById(ControlId const id) const;

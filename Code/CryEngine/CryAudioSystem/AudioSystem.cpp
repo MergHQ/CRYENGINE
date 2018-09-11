@@ -261,12 +261,12 @@ void CSystem::OnSystemEvent(ESystemEvent event, UINT_PTR wparam, UINT_PTR lparam
 				if (wparam == 0 || lparam != 0)
 				{
 					// lost focus
-					g_loseFocusTrigger.Execute();
+					ExecuteDefaultTrigger(EDefaultTriggerType::LoseFocus);
 				}
 				else
 				{
 					// got focus
-					g_getFocusTrigger.Execute();
+					ExecuteDefaultTrigger(EDefaultTriggerType::GetFocus);
 				}
 			}
 
@@ -280,12 +280,12 @@ void CSystem::OnSystemEvent(ESystemEvent event, UINT_PTR wparam, UINT_PTR lparam
 				if (wparam == 0)
 				{
 					// lost focus
-					g_loseFocusTrigger.Execute();
+					ExecuteDefaultTrigger(EDefaultTriggerType::LoseFocus);
 				}
 				else
 				{
 					// got focus
-					g_getFocusTrigger.Execute();
+					ExecuteDefaultTrigger(EDefaultTriggerType::GetFocus);
 				}
 			}
 
@@ -293,13 +293,25 @@ void CSystem::OnSystemEvent(ESystemEvent event, UINT_PTR wparam, UINT_PTR lparam
 		}
 	case ESYSTEM_EVENT_AUDIO_MUTE:
 		{
-			g_muteAllTrigger.Execute();
+			ExecuteDefaultTrigger(EDefaultTriggerType::MuteAll);
 
 			break;
 		}
 	case ESYSTEM_EVENT_AUDIO_UNMUTE:
 		{
-			g_unmuteAllTrigger.Execute();
+			ExecuteDefaultTrigger(EDefaultTriggerType::UnmuteAll);
+
+			break;
+		}
+	case ESYSTEM_EVENT_AUDIO_PAUSE:
+		{
+			ExecuteDefaultTrigger(EDefaultTriggerType::PauseAll);
+
+			break;
+		}
+	case ESYSTEM_EVENT_AUDIO_RESUME:
+		{
+			ExecuteDefaultTrigger(EDefaultTriggerType::ResumeAll);
 
 			break;
 		}
@@ -534,7 +546,19 @@ void CSystem::UnloadTrigger(ControlId const triggerId, SRequestUserData const& u
 //////////////////////////////////////////////////////////////////////////
 void CSystem::ExecuteTriggerEx(SExecuteTriggerData const& triggerData, SRequestUserData const& userData /* = SAudioRequestUserData::GetEmptyObject() */)
 {
-	SObjectRequestData<EObjectRequestType::ExecuteTriggerEx> const requestData(triggerData);
+	SManagerRequestData<EManagerRequestType::ExecuteTriggerEx> const requestData(triggerData);
+	CAudioRequest request(&requestData);
+	request.flags = userData.flags;
+	request.pOwner = userData.pOwner;
+	request.pUserData = userData.pUserData;
+	request.pUserDataOwner = userData.pUserDataOwner;
+	PushRequest(request);
+}
+
+//////////////////////////////////////////////////////////////////////////
+void CSystem::ExecuteDefaultTrigger(EDefaultTriggerType const type, SRequestUserData const& userData /*= SRequestUserData::GetEmptyObject()*/)
+{
+	SManagerRequestData<EManagerRequestType::ExecuteDefaultTrigger> const requestData(type);
 	CAudioRequest request(&requestData);
 	request.flags = userData.flags;
 	request.pOwner = userData.pOwner;
@@ -1147,6 +1171,95 @@ ERequestStatus CSystem::ProcessManagerRequest(CAudioRequest const& request)
 
 			break;
 		}
+	case EManagerRequestType::ExecuteTriggerEx:
+		{
+			SManagerRequestData<EManagerRequestType::ExecuteTriggerEx> const* const pRequestData =
+				static_cast<SManagerRequestData<EManagerRequestType::ExecuteTriggerEx> const* const>(request.GetData());
+
+			CTrigger const* const pTrigger = stl::find_in_map(g_triggers, pRequestData->triggerId, nullptr);
+
+			if (pTrigger != nullptr)
+			{
+				auto const pNewObject = new CATLAudioObject(pRequestData->transformation);
+				g_objectManager.RegisterObject(pNewObject);
+
+#if defined(INCLUDE_AUDIO_PRODUCTION_CODE)
+				pNewObject->Init(pRequestData->name.c_str(), g_pIImpl->ConstructObject(pRequestData->transformation, pRequestData->name.c_str()), pRequestData->entityId);
+#else
+				pNewObject->Init(nullptr, g_pIImpl->ConstructObject(pRequestData->transformation, nullptr), pRequestData->entityId);
+#endif      // INCLUDE_AUDIO_PRODUCTION_CODE
+
+				if (pRequestData->setCurrentEnvironments)
+				{
+					SetCurrentEnvironmentsOnObject(pNewObject, INVALID_ENTITYID);
+				}
+
+				SetOcclusionType(*pNewObject, pRequestData->occlusionType);
+				pTrigger->Execute(*pNewObject, request.pOwner, request.pUserData, request.pUserDataOwner, request.flags);
+				pNewObject->RemoveFlag(EObjectFlags::InUse);
+				result = ERequestStatus::Success;
+			}
+			else
+			{
+				result = ERequestStatus::FailureInvalidControlId;
+			}
+
+			break;
+		}
+	case EManagerRequestType::ExecuteDefaultTrigger:
+		{
+			SManagerRequestData<EManagerRequestType::ExecuteDefaultTrigger> const* const pRequestData = static_cast<SManagerRequestData<EManagerRequestType::ExecuteDefaultTrigger> const*>(request.GetData());
+
+			switch (pRequestData->triggerType)
+			{
+			case EDefaultTriggerType::LoseFocus:
+				{
+					g_loseFocusTrigger.Execute();
+					result = ERequestStatus::Success;
+
+					break;
+				}
+			case EDefaultTriggerType::GetFocus:
+				{
+					g_getFocusTrigger.Execute();
+					result = ERequestStatus::Success;
+
+					break;
+				}
+			case EDefaultTriggerType::MuteAll:
+				{
+					g_muteAllTrigger.Execute();
+					result = ERequestStatus::Success;
+
+					break;
+				}
+			case EDefaultTriggerType::UnmuteAll:
+				{
+					g_unmuteAllTrigger.Execute();
+					result = ERequestStatus::Success;
+
+					break;
+				}
+			case EDefaultTriggerType::PauseAll:
+				{
+					g_pauseAllTrigger.Execute();
+					result = ERequestStatus::Success;
+
+					break;
+				}
+			case EDefaultTriggerType::ResumeAll:
+				{
+					g_resumeAllTrigger.Execute();
+					result = ERequestStatus::Success;
+
+					break;
+				}
+			default:
+				break;
+			}
+
+			break;
+		}
 	case EManagerRequestType::StopAllSounds:
 		{
 			result = g_pIImpl->StopAllSounds();
@@ -1621,41 +1734,6 @@ ERequestStatus CSystem::ProcessObjectRequest(CAudioRequest const& request)
 			if (pTrigger != nullptr)
 			{
 				pTrigger->Execute(*pObject, request.pOwner, request.pUserData, request.pUserDataOwner, request.flags);
-				result = ERequestStatus::Success;
-			}
-			else
-			{
-				result = ERequestStatus::FailureInvalidControlId;
-			}
-
-			break;
-		}
-	case EObjectRequestType::ExecuteTriggerEx:
-		{
-			SObjectRequestData<EObjectRequestType::ExecuteTriggerEx> const* const pRequestData =
-				static_cast<SObjectRequestData<EObjectRequestType::ExecuteTriggerEx> const* const>(request.GetData());
-
-			CTrigger const* const pTrigger = stl::find_in_map(g_triggers, pRequestData->triggerId, nullptr);
-
-			if (pTrigger != nullptr)
-			{
-				auto const pNewObject = new CATLAudioObject(pRequestData->transformation);
-				g_objectManager.RegisterObject(pNewObject);
-
-#if defined(INCLUDE_AUDIO_PRODUCTION_CODE)
-				pNewObject->Init(pRequestData->name.c_str(), g_pIImpl->ConstructObject(pRequestData->transformation, pRequestData->name.c_str()), pRequestData->entityId);
-#else
-				pNewObject->Init(nullptr, g_pIImpl->ConstructObject(pRequestData->transformation, nullptr), pRequestData->entityId);
-#endif    // INCLUDE_AUDIO_PRODUCTION_CODE
-
-				if (pRequestData->setCurrentEnvironments)
-				{
-					SetCurrentEnvironmentsOnObject(pNewObject, INVALID_ENTITYID);
-				}
-
-				SetOcclusionType(*pNewObject, pRequestData->occlusionType);
-				pTrigger->Execute(*pNewObject, request.pOwner, request.pUserData, request.pUserDataOwner, request.flags);
-				pNewObject->RemoveFlag(EObjectFlags::InUse);
 				result = ERequestStatus::Success;
 			}
 			else
