@@ -2,11 +2,9 @@
 
 #include "StdAfx.h"
 #include "RulerPoint.h"
-#include "Ruler.h"
 
 #include <CryRenderer/IRenderAuxGeom.h>
 
-//////////////////////////////////////////////////////////////////////////
 CRulerPoint::CRulerPoint()
 	: m_type(eType_Invalid)
 	, m_vPoint(ZERO)
@@ -15,7 +13,6 @@ CRulerPoint::CRulerPoint()
 	Reset();
 }
 
-//////////////////////////////////////////////////////////////////////////
 CRulerPoint& CRulerPoint::operator=(CRulerPoint const& other)
 {
 	if (this != &other)
@@ -32,7 +29,6 @@ CRulerPoint& CRulerPoint::operator=(CRulerPoint const& other)
 	return *this;
 }
 
-//////////////////////////////////////////////////////////////////////////
 void CRulerPoint::Reset()
 {
 	// Kill highlight of current object
@@ -47,7 +43,6 @@ void CRulerPoint::Reset()
 	m_ObjectGUID = CryGUID::Null();
 }
 
-//////////////////////////////////////////////////////////////////////////
 void CRulerPoint::Render(IRenderer* pRenderer)
 {
 	CRY_ASSERT(pRenderer);
@@ -77,7 +72,6 @@ void CRulerPoint::Render(IRenderer* pRenderer)
 	}
 }
 
-//////////////////////////////////////////////////////////////////////////
 void CRulerPoint::Set(const Vec3& vPos)
 {
 	Reset();
@@ -86,7 +80,6 @@ void CRulerPoint::Set(const Vec3& vPos)
 	m_vPoint = vPos;
 }
 
-//////////////////////////////////////////////////////////////////////////
 void CRulerPoint::Set(CBaseObject* pObject)
 {
 	Reset();
@@ -95,14 +88,12 @@ void CRulerPoint::Set(CBaseObject* pObject)
 	m_ObjectGUID = (pObject ? pObject->GetId() : CryGUID::Null());
 }
 
-//////////////////////////////////////////////////////////////////////////
 void CRulerPoint::SetHelperSettings(float scale, float trans)
 {
 	m_sphereScale = scale;
 	m_sphereTrans = trans;
 }
 
-//////////////////////////////////////////////////////////////////////////
 bool CRulerPoint::IsEmpty() const
 {
 	bool bResult = true;
@@ -125,7 +116,6 @@ bool CRulerPoint::IsEmpty() const
 	return bResult;
 }
 
-//////////////////////////////////////////////////////////////////////////
 Vec3 CRulerPoint::GetPos() const
 {
 	Vec3 vResult(ZERO);
@@ -148,7 +138,6 @@ Vec3 CRulerPoint::GetPos() const
 	return vResult;
 }
 
-//////////////////////////////////////////////////////////////////////////
 Vec3 CRulerPoint::GetMidPoint(const CRulerPoint& otherPoint) const
 {
 	Vec3 vResult(ZERO);
@@ -169,7 +158,6 @@ Vec3 CRulerPoint::GetMidPoint(const CRulerPoint& otherPoint) const
 	return vResult;
 }
 
-//////////////////////////////////////////////////////////////////////////
 float CRulerPoint::GetDistance(const CRulerPoint& otherPoint) const
 {
 	float fResult = 0.0f;
@@ -182,7 +170,6 @@ float CRulerPoint::GetDistance(const CRulerPoint& otherPoint) const
 	return fResult;
 }
 
-//////////////////////////////////////////////////////////////////////////
 CBaseObject* CRulerPoint::GetObject() const
 {
 	CBaseObject* pResult = NULL;

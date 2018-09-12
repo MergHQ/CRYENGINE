@@ -2,27 +2,23 @@
 
 #pragma once
 
-#include "Quadtree/Quadtree.h"
+#include "IndirectLighting/Quadtree/Quadtree.h"
+#include "IndirectLighting/RasterMPMan.h"
+#include "IndirectLighting/SHHeightmapAccessibility.h"
+#include "IndirectLighting/TerrainObjectMan.h"
+
+
 #include <PRT/SHFramework.h>
-#include <Cry3DEngine/I3DEngine.h>
-#include "Raster.h"
-#include "SHHeightmapAccessibility.h"
-#include "TerrainObjectMan.h"
-#include "RasterMPMan.h"
-
-// forward declaration.
-class CTerrainObjectMan;
-struct STempBBoxData;
-class CTerrainGrid;
-template<class THemisphereSink>
-class CHeightmapAccessibility;
-struct SSHSampleOnDemand;
-struct SSHSample;
-
-template<class T>
-struct SIndirectGridPoint;
 
 struct SHeightmapTriangleValidator;
+struct SSHSampleOnDemand;
+struct SSHSample;
+struct STempBBoxData;
+
+class CTerrainObjectMan;
+
+template<class THemisphereSink>
+class CHeightmapAccessibility;
 
 /** Class that generates indirect lighting information
  */
@@ -44,13 +40,7 @@ public:
 		{}
 	};
 
-	// -----------------------------------------------------------------------
-	// Description:
-	//		default constructor
 	CTerrainGIGen();
-	// Description:
-	//		destructor
-	~CTerrainGIGen();
 	// Description:
 	//		generates the quadtree
 	const bool Generate
@@ -494,10 +484,6 @@ inline void CTerrainGIGen::DeAllocateContiguousSampleData()
 inline CTerrainGIGen::CTerrainGIGen() :
 	m_FirstTime(true), m_pSmallHeightMapAccMap(NULL), m_pTempBlurArea(NULL),
 	m_QuadTree(4 * 1024 * 1024, 16 * 1024 * 1024), m_ActiveChunk(0)
-{}
-
-//////////////////////////////////////////////////////////////////////////
-inline CTerrainGIGen::~CTerrainGIGen()
 {}
 
 inline const bool CTerrainGIGen::IsTriangleAboveTerrain(const Vec3& crWorldA, const Vec3& crWorldB, const Vec3& crWorldC) const

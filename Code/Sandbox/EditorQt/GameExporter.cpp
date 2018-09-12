@@ -29,6 +29,7 @@
 
 #include <Notifications/NotificationCenter.h>
 #include <Preferences/GeneralPreferences.h>
+#include <Util/CryMemFile.h>
 #include <FilePathUtil.h>
 
 #include <CryGame/IGame.h>

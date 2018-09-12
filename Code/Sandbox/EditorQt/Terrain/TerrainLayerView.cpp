@@ -1,22 +1,21 @@
 // Copyright 2001-2018 Crytek GmbH / Crytek Group. All rights reserved.
 
 #include "StdAfx.h"
+#include "TerrainLayerView.h"
 
-#include <QPixmap>
-#include <QIcon>
-#include <QImage>
-#include <QEvent>
-#include <QMouseEvent>
-#include <QMenu>
-#include <QItemDelegate>
-
-#include "Terrain/TerrainLayerView.h"
 #include "Terrain/TerrainManager.h"
 #include "TerrainTexture.h"
 #include "Terrain/Layer.h"
 #include "RecursionLoopGuard.h"
-#include "EditorFramework/Events.h"
-#include "QAdvancedItemDelegate.h"
+
+#include <QAdvancedItemDelegate.h>
+
+#include <QEvent>
+#include <QIcon>
+#include <QImage>
+#include <QMenu>
+#include <QMouseEvent>
+#include <QPixmap>
 
 #define LAYER_PREVIEW_SIZE 32
 

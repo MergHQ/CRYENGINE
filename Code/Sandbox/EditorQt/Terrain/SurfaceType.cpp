@@ -1,14 +1,12 @@
 // Copyright 2001-2018 Crytek GmbH / Crytek Group. All rights reserved.
 
 #include "StdAfx.h"
+#include "SurfaceType.h"
+
 #include "Material/MaterialManager.h"
-#include "Terrain/TerrainCommon.h"
-#include "Terrain/Layer.h"
 #include "Terrain/TerrainManager.h"
-#include "Terrain/SurfaceType.h"
 #include "Vegetation/VegetationMap.h"
 #include "Vegetation/VegetationObject.h"
-#include "GameEngine.h"
 
 const int CSurfaceType::ms_maxSurfaceTypeIdCount = static_cast<int>(LayerIdConstants::e_layerIdUndefined);
 

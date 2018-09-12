@@ -6,5 +6,5 @@ class QString;
 
 namespace QtUtil
 {
-void                AssignMenuRole(QAction* action, const QString& roleString);
+void AssignMenuRole(QAction* action, const QString& roleString);
 }

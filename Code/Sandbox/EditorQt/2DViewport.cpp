@@ -3,18 +3,14 @@
 #include "StdAfx.h"
 #include "2DViewport.h"
 
-#include "Objects/BrushObject.h"
-#include "Util/MFCUtil.h"
-#include "CryEditDoc.h"
 #include "ViewManager.h"
 
-#include <Controls/DynamicPopupMenu.h>
+#include <Util/MFCUtil.h>
+
 #include <Gizmos/IGizmoManager.h>
 #include <Preferences/SnappingPreferences.h>
 #include <Preferences/ViewportPreferences.h>
 #include <RenderLock.h>
-
-#include <CryRenderer/IRenderAuxGeom.h>
 
 #define MARKER_SIZE          6.0f
 #define MARKER_DIR_SIZE      10.0f

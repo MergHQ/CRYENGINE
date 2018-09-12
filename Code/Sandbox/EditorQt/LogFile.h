@@ -4,10 +4,6 @@
 
 #include "SandboxAPI.h"
 #include <CrySystem/ILog.h>
-#include <CrySystem/IConsole.h>
-
-//struct IConsole;
-//struct ICVar;
 
 //////////////////////////////////////////////////////////////////////////
 // Global log functions.
@@ -29,7 +25,7 @@ public:
 	static void        AttachListBox(HWND hWndListBox) { m_hWndListBox = hWndListBox; }
 	static void        AttachEditBox(HWND hWndEditBox) { m_hWndEditBox = hWndEditBox; }
 
-	//! Write to log spanpshot of current process memory usage.
+	//! Write to log snapshot of current process memory usage.
 	static string GetMemUsage();
 
 	//DEPRECATED, use CryLog directly, do not use this file outside of Sandbox project
@@ -49,8 +45,6 @@ public:
 	static void AboutSystem();
 
 private:
-	static void OpenFile();
-
 	// Attached control(s)
 	static HWND m_hWndListBox;
 	static HWND m_hWndEditBox;

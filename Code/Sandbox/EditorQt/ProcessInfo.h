@@ -20,8 +20,7 @@ struct ProcessMemInfo
 class CProcessInfo
 {
 public:
-	CProcessInfo(void);
-	~CProcessInfo(void);
+	~CProcessInfo();
 
 	//! Loads PSAPI.DLL into the editor memoryspace
 	static void LoadPSApi();

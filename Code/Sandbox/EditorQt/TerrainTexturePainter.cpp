@@ -2,21 +2,14 @@
 
 #include "StdAfx.h"
 #include "TerrainTexturePainter.h"
-#include "Viewport.h"
-#include "Objects/DisplayContext.h"
 
-#include "CryEditDoc.h"
-#include "Terrain/Layer.h"
-
-#include "QtUtil.h"
-#include "Util/ImagePainter.h"
-
-#include <Cry3DEngine/I3DEngine.h>
-
-#include "Terrain/TerrainManager.h"
 #include "Terrain/SurfaceType.h"
+#include "Terrain/TerrainManager.h"
+#include "Util/ImagePainter.h"
+#include "CryEditDoc.h"
 
-#include "BoostPythonMacros.h"
+#include <BoostPythonMacros.h>
+#include <Viewport.h>
 
 struct CUndoTPSector
 {

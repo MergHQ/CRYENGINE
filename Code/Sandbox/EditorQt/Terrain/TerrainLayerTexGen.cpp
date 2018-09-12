@@ -3,14 +3,9 @@
 #include "StdAfx.h"
 #include "TerrainLayerTexGen.h"
 
-#include "CryEditDoc.h"
-#include "TerrainLighting.h"
-#include "TerrainGrid.h"
-#include "Layer.h"
-#include "Sky Accessibility/HeightmapAccessibility.h"
-#include "TerrainTexGen.h"
-
 #include "Terrain/TerrainManager.h"
+#include "Terrain/TerrainTexGen.h"
+#include "CryEditDoc.h"
 
 // Sector flags
 enum
@@ -36,7 +31,6 @@ CTerrainLayerTexGen::CTerrainLayerTexGen()
 	Init(si.surfaceTextureSize);
 }
 
-//////////////////////////////////////////////////////////////////////////
 CTerrainLayerTexGen::~CTerrainLayerTexGen()
 {
 	// Release masks for all layers to save memory.
@@ -56,7 +50,6 @@ CTerrainLayerTexGen::~CTerrainLayerTexGen()
 		delete m_waterLayer;
 }
 
-//////////////////////////////////////////////////////////////////////////
 void CTerrainLayerTexGen::Init(const int resolution)
 {
 	int i;
@@ -90,7 +83,6 @@ void CTerrainLayerTexGen::Init(const int resolution)
 	}
 }
 
-//////////////////////////////////////////////////////////////////////////
 bool CTerrainLayerTexGen::UpdateSectorLayers(CPoint sector)
 {
 	bool bFirstUsedLayer = true;
@@ -341,7 +333,6 @@ bool CTerrainLayerTexGen::GenerateSectorTexture(CPoint sector, const CRect& rect
 	return true;
 }
 
-//////////////////////////////////////////////////////////////////////////
 void CTerrainLayerTexGen::GetSectorRect(CPoint sector, CRect& rect)
 {
 	rect.left = sector.x * m_sectorResolution;
@@ -350,7 +341,6 @@ void CTerrainLayerTexGen::GetSectorRect(CPoint sector, CRect& rect)
 	rect.bottom = rect.top + m_sectorResolution;
 }
 
-//////////////////////////////////////////////////////////////////////////
 void CTerrainLayerTexGen::Log(const char* format, ...)
 {
 	if (!m_bLog)
@@ -366,7 +356,6 @@ void CTerrainLayerTexGen::Log(const char* format, ...)
 	CLogFile::WriteLine(szBuffer);
 }
 
-//////////////////////////////////////////////////////////////////////////
 int CTerrainLayerTexGen::GetSectorFlags(CPoint sector)
 {
 	assert(sector.x >= 0 && sector.x < m_numSectors && sector.y >= 0 && sector.y < m_numSectors);
@@ -374,7 +363,6 @@ int CTerrainLayerTexGen::GetSectorFlags(CPoint sector)
 	return m_sectorGrid[index].m_Flags;
 }
 
-//////////////////////////////////////////////////////////////////////////
 CTerrainLayerTexGen::CTexSectorInfo& CTerrainLayerTexGen::GetCTexSectorInfo(CPoint sector)
 {
 	assert(sector.x >= 0 && sector.x < m_numSectors && sector.y >= 0 && sector.y < m_numSectors);
@@ -382,40 +370,34 @@ CTerrainLayerTexGen::CTexSectorInfo& CTerrainLayerTexGen::GetCTexSectorInfo(CPoi
 	return m_sectorGrid[index];
 }
 
-//////////////////////////////////////////////////////////////////////////
 void CTerrainLayerTexGen::SetSectorFlags(CPoint sector, int flags)
 {
 	assert(sector.x >= 0 && sector.x < m_numSectors && sector.y >= 0 && sector.y < m_numSectors);
 	m_sectorGrid[sector.x + sector.y * m_numSectors].m_Flags |= flags;
 }
 
-//////////////////////////////////////////////////////////////////////////
 void CTerrainLayerTexGen::InvalidateLayers()
 {
 	for (int i = 0; i < m_numSectors * m_numSectors; i++)
 		m_sectorGrid[i].m_Flags &= ~eSectorLayersValid;
 }
 
-//////////////////////////////////////////////////////////////////////////
 int CTerrainLayerTexGen::GetLayerCount() const
 {
 	return m_layers.size();
 }
 
-//////////////////////////////////////////////////////////////////////////
 CLayer* CTerrainLayerTexGen::GetLayer(int index) const
 {
 	assert(index >= 0 && index < m_layers.size());
 	return m_layers[index].m_pLayer;
 }
 
-//////////////////////////////////////////////////////////////////////////
 void CTerrainLayerTexGen::ClearLayers()
 {
 	m_layers.clear();
 }
 
-//////////////////////////////////////////////////////////////////////////
 CByteImage* CTerrainLayerTexGen::GetLayerMask(CLayer* layer)
 {
 	for (int i = 0; i < m_layers.size(); i++)

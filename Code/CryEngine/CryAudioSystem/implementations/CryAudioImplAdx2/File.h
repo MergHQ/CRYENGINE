@@ -16,13 +16,13 @@ class CFile final : public IFile
 {
 public:
 
-	CFile() = default;
-	virtual ~CFile() override = default;
-
 	CFile(CFile const&) = delete;
 	CFile(CFile&&) = delete;
 	CFile& operator=(CFile const&) = delete;
 	CFile& operator=(CFile&&) = delete;
+
+	CFile() = default;
+	virtual ~CFile() override = default;
 
 	CriAtomExAcbHn pAcb = nullptr;
 };

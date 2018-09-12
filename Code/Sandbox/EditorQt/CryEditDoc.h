@@ -74,7 +74,6 @@ public:
 	void               SetWaterColor(COLORREF col) { m_waterColor = col; }
 	COLORREF           GetWaterColor()             { return m_waterColor; }
 	void               ForceSkyUpdate();
-	BOOL               CanCloseFrame(CFrameWnd* pFrame);
 	void               GetMemoryUsage(ICrySizer* pSizer);
 	XmlNodeRef&        GetFogTemplate()         { return m_fogTemplate; }
 	XmlNodeRef&        GetEnvironmentTemplate() { return m_environmentTemplate; }
@@ -120,7 +119,6 @@ public:
 
 protected:
 	virtual BOOL OnSaveDocument(LPCTSTR lpszPathName);
-	void         LoadTemplates();
 	//! called immediately after saving the level.
 	void         ClearMissions();
 	void         RegisterConsoleVariables();

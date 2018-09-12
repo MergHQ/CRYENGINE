@@ -1,8 +1,9 @@
 // Copyright 2001-2018 Crytek GmbH / Crytek Group. All rights reserved.
 
 #include "StdAfx.h"
-#include "Heightmap.h"
 #include "TerrainBeachGen.h"
+
+#include "Heightmap.h"
 
 //min size of water area with beaches
 #define MIN_UNITS_IN_WATER_AREA 8

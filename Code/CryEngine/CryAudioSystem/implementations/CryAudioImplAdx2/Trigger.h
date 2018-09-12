@@ -35,6 +35,10 @@ class CTrigger final : public ITrigger
 public:
 
 	CTrigger() = delete;
+	CTrigger(CTrigger const&) = delete;
+	CTrigger(CTrigger&&) = delete;
+	CTrigger& operator=(CTrigger const&) = delete;
+	CTrigger& operator=(CTrigger&&) = delete;
 
 	explicit CTrigger(
 		uint32 const id,
@@ -56,11 +60,6 @@ public:
 #endif  // INCLUDE_ADX2_IMPL_PRODUCTION_CODE
 
 	virtual ~CTrigger() override = default;
-
-	CTrigger(CTrigger const&) = delete;
-	CTrigger(CTrigger&&) = delete;
-	CTrigger& operator=(CTrigger const&) = delete;
-	CTrigger& operator=(CTrigger&&) = delete;
 
 	// CryAudio::Impl::ITrigger
 	virtual ERequestStatus Load()  const override;

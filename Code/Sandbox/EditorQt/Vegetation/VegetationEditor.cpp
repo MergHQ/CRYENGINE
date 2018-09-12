@@ -1,30 +1,27 @@
 // Copyright 2001-2018 Crytek GmbH / Crytek Group. All rights reserved.
-#include <StdAfx.h>
+#include "StdAfx.h"
 #include "VegetationEditor.h"
 
-#include "VegetationModel.h"
-#include "VegetationMap.h"
-#include "VegetationObject.h"
-#include "VegetationSelectTool.h"
-#include "VegetationPlaceTool.h"
-#include "VegetationTreeView.h"
-#include "VegetationPaintTool.h"
-#include "VegetationEraseTool.h"
-#include "Qt/Widgets/QEditToolButton.h"
+#include "Vegetation/VegetationEraseTool.h"
+#include "Vegetation/VegetationMap.h"
+#include "Vegetation/VegetationModel.h"
+#include "Vegetation/VegetationObject.h"
+#include "Vegetation/VegetationPaintTool.h"
+#include "Vegetation/VegetationPlaceTool.h"
+#include "Vegetation/VegetationSelectTool.h"
+#include "Vegetation/VegetationTreeView.h"
+#include "QT/Widgets/QEditToolButton.h"
 #include "QT/Widgets/QPreviewWidget.h"
-#include <CrySandbox/CrySignal.h>
-#include "FileDialogs/SystemFileDialog.h"
-#include "CryIcon.h"
-#include "QtUtil.h"
-#include "Controls/QuestionDialog.h"
-#include "Menu/AbstractMenu.h"
 
+#include <FileDialogs/SystemFileDialog.h>
+#include <Menu/AbstractMenu.h>
 #include <Serialization/QPropertyTree/QPropertyTree.h>
+
+#include <CrySandbox/CrySignal.h>
 
 #include <QFileInfo>
 #include <QInputDialog>
 #include <QLabel>
-#include <QLayout>
 #include <QSortFilterProxyModel>
 #include <QSplitter>
 #include <QStatusBar>

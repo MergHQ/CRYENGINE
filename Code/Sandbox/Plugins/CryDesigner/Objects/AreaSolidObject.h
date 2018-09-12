@@ -3,11 +3,8 @@
 #pragma once
 
 #include "Objects/AreaBox.h"
-#include "Objects/EntityObject.h"
 #include "DesignerBaseObject.h"
 
-class CPickEntitiesPanel;
-class IDesignerEventHandler;
 class ICrySizer;
 
 namespace Designer
@@ -57,8 +54,8 @@ public:
 	bool                       IsHiddenByOption() override;
 
 	std::vector<EDesignerTool> GetIncompatibleSubtools() override;
+
 protected:
-	//! Dtor must be protected.
 	AreaSolidObject();
 
 	void AddConvexhullToEngineArea(IEntityAreaComponent* pArea, std::vector<std::vector<Vec3>>& faces, bool bObstructrion);

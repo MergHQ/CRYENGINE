@@ -25,6 +25,10 @@ class CParameter final : public IParameter
 public:
 
 	CParameter() = delete;
+	CParameter(CParameter const&) = delete;
+	CParameter(CParameter&&) = delete;
+	CParameter& operator=(CParameter const&) = delete;
+	CParameter& operator=(CParameter&&) = delete;
 
 	explicit CParameter(
 		char const* const szName,
@@ -38,11 +42,6 @@ public:
 	{}
 
 	virtual ~CParameter() override = default;
-
-	CParameter(CParameter const&) = delete;
-	CParameter(CParameter&&) = delete;
-	CParameter&     operator=(CParameter const&) = delete;
-	CParameter&     operator=(CParameter&&) = delete;
 
 	CriChar8 const* GetName() const       { return static_cast<CriChar8 const*>(m_name); }
 	EParameterType  GetType() const       { return m_type; }

@@ -27,6 +27,8 @@ extern CriAtomEx3dSourceConfig g_3dSourceConfig;
 
 extern uint32 g_numObjectsWithDoppler;
 
+static constexpr CriChar8 const* s_szAbsoluteVelocityAisacName = "absolute_velocity";
+
 struct S3DAttributes final
 {
 	S3DAttributes() = default;

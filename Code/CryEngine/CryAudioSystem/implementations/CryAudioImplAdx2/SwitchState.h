@@ -28,6 +28,10 @@ class CSwitchState final : public ISwitchState
 public:
 
 	CSwitchState() = delete;
+	CSwitchState(CSwitchState const&) = delete;
+	CSwitchState(CSwitchState&&) = delete;
+	CSwitchState& operator=(CSwitchState const&) = delete;
+	CSwitchState& operator=(CSwitchState&&) = delete;
 
 	explicit CSwitchState(
 		ESwitchType const type,
@@ -41,11 +45,6 @@ public:
 	{}
 
 	virtual ~CSwitchState() override = default;
-
-	CSwitchState(CSwitchState const&) = delete;
-	CSwitchState(CSwitchState&&) = delete;
-	CSwitchState&   operator=(CSwitchState const&) = delete;
-	CSwitchState&   operator=(CSwitchState&&) = delete;
 
 	ESwitchType     GetType() const      { return m_type; }
 	CriChar8 const* GetName() const      { return static_cast<CriChar8 const*>(m_name); }
