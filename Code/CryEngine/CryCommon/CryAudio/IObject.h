@@ -89,6 +89,14 @@ struct IObject
 	virtual void SetOcclusionType(EOcclusionType const occlusionType, SRequestUserData const& userData = SRequestUserData::GetEmptyObject()) = 0;
 
 	/**
+	 * Sets the occlusion ray offset to be used by this audio object.
+	 * @param offset - occlusion ray offset to apply.
+	 * @param userData - optional struct used to pass additional data to the internal request.
+	 * @return void
+	 */
+	virtual void SetOcclusionRayOffset(float const offset, SRequestUserData const& userData = SRequestUserData::GetEmptyObject()) = 0;
+
+	/**
 	 * Plays the given file on this audio object.
 	 * @param playFileInfo - reference to a struct that holds data necessary for playback.
 	 * @param userData - optional struct used to pass additional data to the internal request.

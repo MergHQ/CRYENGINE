@@ -293,9 +293,7 @@ void CObjectManager::DrawDebugInfo(IRenderAuxGeom& auxGeom, float const posX, fl
 				auxGeom.Draw2dLabel(posX, posY, Debug::g_managerFontSize,
 				                    isVirtual ? Debug::g_globalColorVirtual.data() : (hasActiveData ? Debug::g_managerColorItemActive.data() : Debug::g_globalColorInactive.data()),
 				                    false,
-				                    "%s : %.2f",
-				                    szObjectName,
-				                    pObject->GetMaxRadius());
+				                    szObjectName);
 
 				posY += Debug::g_managerLineHeight;
 				++numAudioObjects;

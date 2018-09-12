@@ -49,6 +49,7 @@ public:
 	virtual void                    SetSwitchState(CryAudio::ControlId const audioSwitchId, CryAudio::SwitchStateId const audioStateId, CryAudio::AuxObjectId const audioAuxObjectId = CryAudio::DefaultAuxObjectId) override;
 	virtual void                    SetParameter(CryAudio::ControlId const parameterId, float const value, CryAudio::AuxObjectId const audioAuxObjectId = CryAudio::DefaultAuxObjectId) override;
 	virtual void                    SetObstructionCalcType(CryAudio::EOcclusionType const occlusionType, CryAudio::AuxObjectId const audioAuxObjectId = CryAudio::DefaultAuxObjectId) override;
+	virtual void                    SetOcclusionRayOffset(float const occlusionRayOffset, CryAudio::AuxObjectId const audioAuxObjectId = CryAudio::DefaultAuxObjectId) override;
 	virtual void                    SetEnvironmentAmount(CryAudio::EnvironmentId const audioEnvironmentId, float const amount, CryAudio::AuxObjectId const audioAuxObjectId = CryAudio::DefaultAuxObjectId) override;
 	virtual void                    SetCurrentEnvironments(CryAudio::AuxObjectId const audioAuxObjectId = CryAudio::DefaultAuxObjectId) override;
 	virtual void                    AudioAuxObjectsMoveWithEntity(bool const bCanMoveWithEntity) override;
@@ -229,6 +230,22 @@ private:
 	private:
 
 		CryAudio::EOcclusionType const occlusionType;
+	};
+
+	struct SSetOcclusionRayOffset
+	{
+		explicit SSetOcclusionRayOffset(float const _occlusionRayOffset)
+			: occlusionRayOffset(_occlusionRayOffset)
+		{}
+
+		inline void operator()(AuxObjectPair const& pair)
+		{
+			pair.second.pIObject->SetOcclusionRayOffset(occlusionRayOffset);
+		}
+
+	private:
+
+		float const occlusionRayOffset;
 	};
 
 	struct SSetEnvironmentAmount

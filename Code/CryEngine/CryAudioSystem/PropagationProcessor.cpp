@@ -113,6 +113,7 @@ CPropagationProcessor::CPropagationProcessor(CObjectTransformation const& transf
 	, m_transformation(transformation)
 	, m_flags(flags)
 	, m_currentListenerDistance(0.0f)
+	, m_occlusionRayOffset(0.1f)
 	, m_occlusionType(EOcclusionType::None)
 	, m_originalOcclusionType(EOcclusionType::None)
 	, m_occlusionTypeWhenAdaptive(EOcclusionType::Low) //will be updated in the first Update
@@ -245,7 +246,7 @@ void CPropagationProcessor::UpdateOcclusion()
 		// First time run is synchronous and center ray only to get a quick initial value to start from.
 		Vec3 const direction(m_transformation.GetPosition() - listenerPosition);
 		Vec3 directionNormalized(direction / m_currentListenerDistance);
-		Vec3 const finalDirection(direction - (directionNormalized* g_cvars.m_occlusionRayLengthOffset));
+		Vec3 const finalDirection(direction - (directionNormalized* m_occlusionRayOffset));
 
 		CAudioRayInfo& rayInfo = m_raysInfo[0];
 
@@ -506,7 +507,7 @@ void CPropagationProcessor::CastObstructionRay(
 	Vec3 const direction(m_transformation.GetPosition() - origin);
 	Vec3 directionNormalized(direction);
 	directionNormalized.Normalize();
-	Vec3 const finalDirection(direction - (directionNormalized* g_cvars.m_occlusionRayLengthOffset));
+	Vec3 const finalDirection(direction - (directionNormalized* m_occlusionRayOffset));
 
 	// We use "rwi_max_piercing" to allow audio rays to always pierce surfaces regardless of the "pierceability" attribute.
 	// Note: The very first entry of rayInfo.hits (solid slot) is always empty.

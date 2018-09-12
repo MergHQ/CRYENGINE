@@ -729,6 +729,7 @@ struct IEntityAudioComponent : public IEntityComponent
 	//! \include CryEntitySystem/Examples/Audio/SetParameterValue.cpp
 	virtual void                  SetParameter(CryAudio::ControlId const parameterId, float const value, CryAudio::AuxObjectId const audioAuxObjectId = CryAudio::DefaultAuxObjectId) = 0;
 	virtual void                  SetObstructionCalcType(CryAudio::EOcclusionType const occlusionType, CryAudio::AuxObjectId const audioAuxObjectId = CryAudio::DefaultAuxObjectId) = 0;
+	virtual void                  SetOcclusionRayOffset(float const offset, CryAudio::AuxObjectId const audioAuxObjectId = CryAudio::DefaultAuxObjectId) = 0;
 	virtual void                  SetEnvironmentAmount(CryAudio::EnvironmentId const audioEnvironmentId, float const amount, CryAudio::AuxObjectId const audioAuxObjectId = CryAudio::DefaultAuxObjectId) = 0;
 	virtual void                  SetCurrentEnvironments(CryAudio::AuxObjectId const audioAuxObjectId = CryAudio::DefaultAuxObjectId) = 0;
 	virtual void                  AudioAuxObjectsMoveWithEntity(bool const bCanMoveWithEntity) = 0;
