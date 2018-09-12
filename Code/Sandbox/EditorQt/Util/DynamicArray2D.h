@@ -6,7 +6,7 @@ class CDynamicArray2D
 {
 public:
 	CDynamicArray2D(unsigned int iDimension1, unsigned int iDimension2);
-	virtual ~CDynamicArray2D();
+	~CDynamicArray2D();
 
 	void ScaleImage(CDynamicArray2D* pDestination);
 	void GetMemoryUsage(ICrySizer* pSizer);

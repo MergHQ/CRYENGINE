@@ -2,18 +2,19 @@
 
 #include "StdAfx.h"
 #include "RGBLayer.h"
-#include "GameEngine.h"
-#include "Util/PakFile.h"
-#include <CrySystem/ITimer.h>
-#include "Layer.h"
-#include <CryMemory/CrySizer.h>
-#include "Util/Clipboard.h"
 
 #include "Terrain/TerrainManager.h"
 #include "Util/ImagePainter.h"
+#include "GameEngine.h"
 
-#include "QT/Widgets/QWaitProgress.h"
-#include "Controls/QuestionDialog.h"
+#include <Util/Clipboard.h>
+
+#include <Controls/QuestionDialog.h>
+#include <QT/Widgets/QWaitProgress.h>
+#include <Util/PakFile.h>
+
+#include <CrySystem/ITimer.h>
+#include <CryMemory/CrySizer.h>
 
 CRGBLayer::CRGBLayer(const char* szFilename) : m_TerrainRGBFileName(szFilename), m_dwTileResolution(0), m_dwTileCountX(0), m_dwTileCountY(0),
 	m_dwCurrentTileMemory(0), m_bPakOpened(false), m_bInfoDirty(false), m_bNextSerializeForceSizeSave(false)

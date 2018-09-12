@@ -6,12 +6,9 @@
 #include "Objects/EntityObject.h"
 #include "Objects/EnvironmentProbeObject.h"
 #include "IBackgroundScheduleManager.h"
-#include "IEditorImpl.h"
 
-#include <Controls/QuestionDialog.h>
 #include <Preferences/GlobalHelperPreferences.h>
 #include <Util/ImageTIF.h>
-#include <FilePathUtil.h>
 
 bool CubemapUtils::GenCubemapWithPathAndSize(string& filename, const int size, const bool dds)
 {

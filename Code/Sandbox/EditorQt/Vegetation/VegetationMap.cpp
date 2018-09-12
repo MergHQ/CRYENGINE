@@ -2,21 +2,14 @@
 
 #include "StdAfx.h"
 #include "VegetationMap.h"
-#include "VegetationObject.h"
+
 #include "VegetationSelectTool.h"
-#include "Material/Material.h"
 #include "Terrain/Heightmap.h"
 #include "Terrain/Layer.h"
-#include "CryEditDoc.h"
-#include "DataBaseDialog.h"
-#include "GameEngine.h"
 
-#include "Controls/QuestionDialog.h"
 #include "QT/Widgets/QWaitProgress.h"
 #include "Util/ImageTIF.h"
 #include "IAIManager.h"
-
-#include <Cry3DEngine/I3DEngine.h>
 
 namespace Private_VegetationMap
 {

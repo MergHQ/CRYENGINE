@@ -2,11 +2,11 @@
 
 #pragma once
 
-#include "TerrainCommon.h"
 #include "RGBLayer.h"
+#include "TerrainCommon.h"
 #include "TerrainGrid.h"
-#include "Util/Image.h"
-#include <Cry3DEngine/I3DEngine.h>
+
+#include <Util/Image.h>
 
 // Heightmap data type
 typedef float                    t_hmap;

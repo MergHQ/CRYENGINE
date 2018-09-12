@@ -1,20 +1,16 @@
 // Copyright 2001-2018 Crytek GmbH / Crytek Group. All rights reserved.
 
 #include "StdAfx.h"
-#include "processinfo.h"
+#include "ProcessInfo.h"
 
-#include "Psapi.h"
+#include <Psapi.h>
 
 typedef BOOL (WINAPI * GetProcessMemoryInfoProc)(HANDLE, PPROCESS_MEMORY_COUNTERS, DWORD);
 
 static HMODULE g_hPSAPI = 0;
 static GetProcessMemoryInfoProc g_pGetProcessMemoryInfo = 0;
 
-CProcessInfo::CProcessInfo(void)
-{
-}
-
-CProcessInfo::~CProcessInfo(void)
+CProcessInfo::~CProcessInfo()
 {
 	UnloadPSApi();
 }

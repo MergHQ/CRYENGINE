@@ -32,8 +32,6 @@ public:
 class CXmlTemplateRegistry
 {
 public:
-	CXmlTemplateRegistry();
-
 	void       LoadTemplates(const string& path);
 	void       AddTemplate(const string& name, XmlNodeRef& tmpl);
 

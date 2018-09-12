@@ -2,20 +2,19 @@
 
 #include "StdAfx.h"
 
-#include <QGridLayout>
-#include <QSplitter>
-#include <Serialization/QPropertyTree/QPropertyTree.h>
-
+#include "QT/Widgets/QEditToolButton.h"
 #include "Terrain/Layer.h"
 #include "Terrain/TerrainLayerPanel.h"
 #include "Terrain/TerrainLayerView.h"
-#include "Terrain/TerrainEditor.h"
 #include "Terrain/TerrainManager.h"
 #include "TerrainTexture.h"
 #include "TerrainTexturePainter.h"
-#include "QT/Widgets/QEditToolButton.h"
-#include "QMfcApp/qmfchost.h"
-#include "CryIcon.h"
+
+#include <CryIcon.h>
+
+#include <Serialization/QPropertyTree/QPropertyTree.h>
+
+#include <QSplitter>
 
 void STexturePainterSerializer::YASLI_SERIALIZE_METHOD(Serialization::IArchive& ar)
 {

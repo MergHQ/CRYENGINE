@@ -2,12 +2,11 @@
 
 #pragma once
 
-#include "Dialogs/BaseFrameWnd.h"
-#include "Controls/RollupCtrl.h"
+#include <Dialogs/BaseFrameWnd.h>
+#include <IEditor.h>
 
 struct SNoiseParams;
 class CHeightmap;
-class CTopRendererWnd;
 
 //TODO : This class should be entirely deleted, the UI is not used, but it should be made into a terrain manager
 class CTerrainDialog : public CBaseFrameWnd, public IEditorNotifyListener

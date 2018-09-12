@@ -1,10 +1,10 @@
 // Copyright 2001-2018 Crytek GmbH / Crytek Group. All rights reserved.
 #pragma once
 
-#include <QWidget>
 
-#include "EditorFramework/Editor.h"
-#include "QtViewPane.h"
+#include <EditorFramework/Editor.h>
+
+#include <QWidget>
 
 #include <memory>
 

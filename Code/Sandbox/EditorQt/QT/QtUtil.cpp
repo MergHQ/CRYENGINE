@@ -1,11 +1,8 @@
 // Copyright 2001-2018 Crytek GmbH / Crytek Group. All rights reserved.
-#include <StdAfx.h>
+#include "StdAfx.h"
 #include "QtUtil.h"
 
 #include <QAction>
-#include <QApplication>
-
-#include "KeyboardShortcut.h"
 
 namespace QtUtil
 {

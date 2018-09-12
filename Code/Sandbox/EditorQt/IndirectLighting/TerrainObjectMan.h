@@ -2,10 +2,11 @@
 
 #pragma once
 
-#include <CryMath/Cry_Math.h>
-#include <vector>
 #include "Quadtree/Quadtree.h"
 #include "Raster.h"
+
+#include <CryMath/Cry_Math.h>
+#include <vector>
 
 class CTerrainObjectMan;
 

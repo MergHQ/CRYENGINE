@@ -2,7 +2,9 @@
 
 #pragma once
 
+class CImageEx;
 class CLayer;
+class CPakFile;
 struct LightingSettings;
 
 /** Class that generates terrain surface texture for lighting
@@ -10,7 +12,7 @@ struct LightingSettings;
 class CTerrainLightGen
 {
 public:
-	CTerrainLightGen(const int cApplySS = 1, CPakFile* m_pLevelPakFile = nullptr, const bool cUpdateIndirLighting = false);
+	explicit CTerrainLightGen(const int cApplySS = 1, CPakFile* m_pLevelPakFile = nullptr, const bool cUpdateIndirLighting = false);
 	~CTerrainLightGen();
 
 	// Generate terrain surface texture.

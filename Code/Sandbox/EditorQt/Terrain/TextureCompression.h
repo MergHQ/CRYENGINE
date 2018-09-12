@@ -2,7 +2,9 @@
 
 #pragma once
 
-#include "Util/CryMemFile.h"
+#include <CryRenderer/ITexture.h>
+
+class CFile;
 
 class CTextureCompression
 {

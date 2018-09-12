@@ -1,18 +1,16 @@
 // Copyright 2001-2018 Crytek GmbH / Crytek Group. All rights reserved.
 
 #include "StdAfx.h"
-#include "TerrainTexGen.h"                  // temporary needed
 #include "TerrainLightGen.h"
-#include "CryEditDoc.h"
-#include "TerrainLighting.h"
-#include "TerrainGrid.h"
-#include "Layer.h"
-#include "Vegetation/VegetationMap.h"
-#include "Sky Accessibility/HeightmapAccessibility.h"
 
 #include "IndirectLighting/TerrainGIGen.h"
-
+#include "Terrain/Sky Accessibility/HeightmapAccessibility.h"
+#include "Terrain/TerrainGrid.h"
 #include "Terrain/TerrainManager.h"
+#include "Terrain/TerrainTexGen.h"
+#include "Vegetation/VegetationMap.h"
+#include "CryEditDoc.h"
+#include "TerrainLighting.h"
 
 // Sector flags.
 enum
@@ -322,10 +320,6 @@ void CTerrainLightGen::Log(const char* format, ...)
 
 	CLogFile::WriteLine(szBuffer);
 }
-
-//////////////////////////////////////////////////////////////////////////
-// Lighting.
-//////////////////////////////////////////////////////////////////////////
 
 inline Vec3 CalcVertexNormal(const int x, const int y, const float* pHeightmapData, const int resolution, const float fHeightScale)
 {
@@ -1058,7 +1052,6 @@ void CTerrainLightGen::GetSubImageStretched(const float fSrcLeft, const float fS
 	//	CImageUtil::SaveBitmap("C:\\temp\\test.bmp",rOutImage);
 }
 
-//////////////////////////////////////////////////////////////////////////
 bool CTerrainLightGen::RefreshAccessibility(const LightingSettings* inpLSettings, int genFlags)
 {
 	assert(m_resolution);

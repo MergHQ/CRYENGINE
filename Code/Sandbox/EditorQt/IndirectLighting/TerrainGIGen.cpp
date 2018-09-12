@@ -1,24 +1,19 @@
 // Copyright 2001-2018 Crytek GmbH / Crytek Group. All rights reserved.
 
 #include "StdAfx.h"
-
-#include <set>
-
 #include "TerrainGIGen.h"
-#include "Vegetation/VegetationMap.h"
-#include "Vegetation/VegetationObject.h"
-#include <CrySystem/File/ICryPak.h>
-#include "Util/PakFile.h"
-#include <Cry3DEngine/IIndexedMesh.h>
-#include "Terrain/Sky Accessibility/HeightmapAccessibility.h"
-#include "Terrain/Heightmap.h"
+
+#include "Material/Material.h"
 #include "Objects/EntityObject.h"
 #include "Objects/Group.h"
 #include "Objects/BrushObject.h"
-#include "Material/Material.h"
-#include "Raster.h"
-#include <CryRenderer/IShader.h>
-#include "QT/Widgets/QWaitProgress.h"
+#include "Terrain/Sky Accessibility/HeightmapAccessibility.h"
+#include "Terrain/Heightmap.h"
+#include "Vegetation/VegetationMap.h"
+
+#include <Util/PakFile.h>
+
+#include <set>
 
 //defines for debugging to enable features
 #define USE_BRUSHS

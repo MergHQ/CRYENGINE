@@ -1,25 +1,18 @@
 // Copyright 2001-2018 Crytek GmbH / Crytek Group. All rights reserved.
 
 #include "StdAfx.h"
-#include "VegetationMap.h"
 #include "VegetationObject.h"
-#include "VegetationSelectTool.h"
+
 #include "Material/MaterialManager.h"
-
 #include "Terrain/Heightmap.h"
-#include "Terrain/SurfaceType.h"
 #include "Terrain/TerrainManager.h"
-
-#include <Cry3DEngine/I3DEngine.h>
-
 #include "Util/BoostPythonHelpers.h"
+#include "Vegetation/VegetationMap.h"
+#include "Vegetation/VegetationSelectTool.h"
 
-#include <EditorFramework/Editor.h>
-#include <EditorFramework/Preferences.h>
-#include <Preferences/GeneralPreferences.h>
 #include <Preferences/ViewportPreferences.h>
 
-#include "CryEditDoc.h"
+#include <Cry3DEngine/I3DEngine.h>
 
 CVegetationObject::CVegetationObject(int id)
 	: m_id(id)
