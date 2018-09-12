@@ -71,7 +71,7 @@ CParticleEmitter::CParticleEmitter(CParticleEffect* pEffect, uint emitterId)
 	if (m_pEffect)
 		m_attributeInstance.Reset(m_pEffect->GetAttributeTable());
 
-	static SEmitterData s_emitterData;
+	static PUseData s_emitterData = std::make_shared<SEmitterData>();
 	m_parentContainer.SetUsedData(s_emitterData);
 	m_parentContainer.AddParticle();
 }

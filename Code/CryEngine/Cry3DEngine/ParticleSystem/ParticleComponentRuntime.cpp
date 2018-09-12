@@ -57,7 +57,7 @@ const CParticleContainer& CParticleComponentRuntime::GetParentContainer() const
 
 void CParticleComponentRuntime::Initialize()
 {
-	m_container.SetUsedData(m_pComponent->GetDataUse());
+	m_container.SetUsedData(m_pComponent->GetUseData());
 }
 
 void CParticleComponentRuntime::UpdateAll()

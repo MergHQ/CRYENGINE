@@ -202,8 +202,8 @@ public:
 
 	const SComponentParams& GetComponentParams() const                          { return m_params; }
 	SComponentParams&       ComponentParams()                                   { return m_params; }
-	bool                    UseParticleData(EParticleDataType type) const       { return m_useData.Used(type); }
-	const SUseData&         GetDataUse() const                                  { return m_useData; }
+	bool                    UseParticleData(EParticleDataType type) const       { return m_pUseData->Used(type); }
+	const PUseData&         GetUseData() const                                  { return m_pUseData; }
 
 	CParticleComponent*     GetParentComponent() const                          { return m_parent; }
 	const TComponents&      GetChildComponents() const                          { return m_children; }
@@ -228,7 +228,7 @@ private:
 	SComponentParams                         m_params;
 	TSmartArray<CParticleFeature>            m_features;
 	TSmartArray<CParticleFeature>            m_defaultFeatures;
-	SUseData                                 m_useData;
+	PUseData                                 m_pUseData;
 	SEnable                                  m_enabled;
 	SEnable                                  m_visible;
 	bool                                     m_dirty;

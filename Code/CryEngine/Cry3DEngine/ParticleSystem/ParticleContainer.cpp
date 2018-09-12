@@ -34,7 +34,7 @@ namespace pfx2
 
 CParticleContainer::CParticleContainer()
 {
-	static SUseData s_useData;
+	static PUseData s_useData = NewUseData();
 	SetUsedData(s_useData);
 	memContainer += sizeof(*this);
 }
@@ -64,7 +64,7 @@ void CParticleContainer::Resize(uint32 newSize)
 			{
 				uint offset = m_useData.offsets[type];
 				const size_t stride = type.info().typeSize;
-				memcpy(pNew + offset * newCapacity, m_pData + offset * m_capacity, m_lastId * stride);
+				memcpy(pNew + offset * newCapacity, m_pData + m_capacity * offset, m_lastId * stride);
 			}
 		}
 	}
@@ -73,25 +73,25 @@ void CParticleContainer::Resize(uint32 newSize)
 	m_capacity = newCapacity;
 }
 
-void CParticleContainer::SetUsedData(const SUseData& useData)
+void CParticleContainer::SetUsedData(const PUseData& pUseData)
 {
 	CRY_PFX2_PROFILE_DETAIL;
 
 	// Transfer existing data
 	if (m_capacity)
 	{
-		byte* pNew = ParticleAlloc(m_capacity * useData.totalSize);
+		byte* pNew = ParticleAlloc(m_capacity * pUseData->totalSize);
 		for (auto type : EParticleDataType::indices())
 		{
-			if (useData.Used(type) && m_useData.Used(type))
+			if (pUseData->Used(type) && m_useData.Used(type))
 			{
-				memcpy(pNew + useData.offsets[type] * m_capacity, m_pData + m_useData.offsets[type] * m_capacity, m_lastId * m_capacity);
+				memcpy(pNew + m_capacity * pUseData->offsets[type], m_pData + m_capacity * m_useData.offsets[type], m_lastId * type.info().typeSize);
 			}
 		}
 		ParticleFree(m_pData, m_capacity * m_useData.totalSize);
 		m_pData = pNew;
 	}
-	m_useData = useData;
+	m_useData = pUseData;
 }
 
 void CParticleContainer::CopyData(EParticleDataType dstType, EParticleDataType srcType, SUpdateRange range)

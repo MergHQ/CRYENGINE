@@ -168,7 +168,7 @@ struct SInstanceUpdateBuffer: STempBuffer<T>
 {
 	template<typename TParamMod>
 	SInstanceUpdateBuffer(const CParticleComponentRuntime& runtime, TParamMod& paramMod)
-		: STempBuffer<T>(runtime, paramMod), m_runtime(runtime)
+		: STempBuffer<T>(runtime, paramMod), m_runtime(runtime), m_range(1, 1)
 	{
 		if (paramMod.HasModifiers())
 		{
@@ -180,7 +180,7 @@ struct SInstanceUpdateBuffer: STempBuffer<T>
 	ILINE T operator[](uint id) const
 	{
 		const TParticleId parentId = m_runtime.GetInstance(id).m_parentId;
-		return this->m_buffer[parentId];
+		return this->SafeLoad(parentId);
 	}
 
 	TRange<T> const& Range() const { return m_range; }
