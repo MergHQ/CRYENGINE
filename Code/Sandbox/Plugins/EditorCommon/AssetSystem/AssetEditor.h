@@ -42,11 +42,6 @@ public:
 	//! Closes the currently edited asset. Returns false if the user refused closing in case of unsaved changes.
 	bool Close();
 
-	//! Saves the currently edited asset.
-	// \sa CAsset::Save
-	// \sa IAssetEditingSession
-	bool Save();
-
 	//! Unconditionally discard all changes.
 	//! \sa OnDiscardAssetChanges 
 	void DiscardAssetChanges();
@@ -62,24 +57,21 @@ public:
 
 	bool          SaveBackup(const string& backupFolder);
 
-	//! Returns true if the asset being edited is read-only
-	bool IsReadOnly() const;
-
 	//! Creates a new instance of asset editing state and returns the IAssetEditingSession interface to manage it.
 	//! \return pointer to IAssetEditingSession interface. Can return nullptr if there is no asset in the edit, or if the editor does not support sessions.
 	//! \note If the editor supports sessions, it can be closed without losing unsaved changes. In this case, the editing session can be continued later, even in another instance of the editor.
 	virtual std::unique_ptr<IAssetEditingSession> CreateEditingSession() { return nullptr; }
+
+	//! Will be called for the subclass to save the asset. Always save the asset in its original file.
+	//! In a "SaveAs" situation, changes will be discarded and files will be moved/renamed appropriately, so that this method should not have to care.
+	//! Note that editAsset may not have all of its metadata cleared before passing. TODO:improve this!
+	virtual bool OnSaveAsset(CEditableAsset& editAsset) = 0;
 
 	CCrySignal<void(CAsset*)> signalAssetClosed;
 
 protected:
 
 	virtual bool OnOpenAsset(CAsset* pAsset) = 0;
-
-	//! Will be called for the subclass to save the asset. Always save the asset in its original file.
-	//! In a "SaveAs" situation, changes will be discarded and files will be moved/renamed appropriately, so that this method should not have to care.
-	//! Note that editAsset may not have all of its metadata cleared before passing. TODO:improve this!
-	virtual bool OnSaveAsset(CEditableAsset& editAsset) = 0;
 
 	//! Called when the asset changes are discarded,
 	//!if the memory model of the asset still exists after closing,
@@ -110,9 +102,6 @@ protected:
 	//! Called when edited asset is changed
 	virtual void OnAssetChanged(CAsset& asset, int changeFlags);
 
-	//! Called when read-only status of asset has changed, all editors must implement this as it is critical to prevent modifications of read-only assets
-	virtual void OnReadOnlyChanged() {}
-
 	virtual bool CanQuit(std::vector<string>& unsavedChanges) final;
 
 	virtual void closeEvent(QCloseEvent* pEvent) final;
@@ -128,7 +117,6 @@ private:
 	int  GetNewableAssetCount() const;
 
 	void InternalNewAsset(CAssetType* pAssetType);
-	bool InternalSaveAsset(CAsset* pAsset);
 	bool InternalSaveAs(const string& newAssetPath);
 
 	void UpdateWindowTitle();

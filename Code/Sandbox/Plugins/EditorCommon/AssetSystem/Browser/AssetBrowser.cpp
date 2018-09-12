@@ -1772,12 +1772,12 @@ void CAssetBrowser::BuildContextMenuForAssets(const std::vector<CAsset*>& assets
 
 	for (CAsset* asset : assets)
 	{
-	if (asset->GetType()->IsImported() && !asset->IsReadOnly() && asset->HasSourceFile())
+		if (asset->GetType()->IsImported() && !asset->IsImmutable() && asset->HasSourceFile())
 		{
 			canReimport = true;
 		}
 
-		if (asset->IsReadOnly() || !GetISystem()->GetIPak()->IsFileExist(assets.front()->GetFile(0), ICryPak::eFileLocation_OnDisk))
+		if (asset->IsImmutable() || !GetISystem()->GetIPak()->IsFileExist(assets.front()->GetFile(0), ICryPak::eFileLocation_OnDisk))
 		{
 			isReadOnly = true;
 		}
@@ -1844,15 +1844,17 @@ void CAssetBrowser::BuildContextMenuForAssets(const std::vector<CAsset*>& assets
 
 	if (assets.size() == 1)
 	{
-		const bool isAssetOnDisk = GetISystem()->GetIPak()->IsFileExist(assets.front()->GetFile(0), ICryPak::eFileLocation_OnDisk);
+		CAsset* const pAsset = assets.front();
+		const bool isAssetOnDisk = GetISystem()->GetIPak()->IsFileExist(pAsset->GetFile(0), ICryPak::eFileLocation_OnDisk);
+		const bool canBeRenamed = isAssetOnDisk && !isReadOnly && pAsset->IsWritable(true);
 
 		auto action = abstractMenu.CreateAction(tr("Rename"));
-		action->setDisabled(!isAssetOnDisk || assets.front()->IsReadOnly());
-		connect(action, &QAction::triggered, [this, pAsset = assets.front()]() { OnRenameAsset(*pAsset); });
+		action->setDisabled(!canBeRenamed);
+		connect(action, &QAction::triggered, [this, pAsset]() { OnRenameAsset(*pAsset); });
 
 		action = abstractMenu.CreateAction(tr("Show in File Explorer"));
 		action->setDisabled(!isAssetOnDisk);
-		connect(action, &QAction::triggered, [this, pAsset = assets.front()]()
+		connect(action, &QAction::triggered, [this, pAsset]()
 		{
 			const string path = PathUtil::Make(PathUtil::GetGameProjectAssetsPath(), pAsset->GetFile(0));
 			QtUtil::OpenInExplorer(path);
@@ -2072,7 +2074,7 @@ void CAssetBrowser::OnReimport(const std::vector<CAsset*>& assets)
 {
 	for (CAsset* pAsset : assets)
 	{
-		if (pAsset->GetType()->IsImported() && !pAsset->IsReadOnly())
+		if (pAsset->GetType()->IsImported() && !pAsset->IsImmutable())
 		{
 			pAsset->Reimport();
 		}

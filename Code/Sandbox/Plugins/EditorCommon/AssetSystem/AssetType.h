@@ -104,6 +104,7 @@ public:
 	//! This method is called just before asset's files get removed.
 	virtual void PreDeleteAssetFiles(const CAsset& asset) const {}
 
+	//! Returns true if any asset file exists only in paks.
 	bool IsInPakOnly(const CAsset& asset) const;
 
 	virtual CryIcon                           GetIcon() const;

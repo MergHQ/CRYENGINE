@@ -380,7 +380,7 @@ void CAssetManager::MergeAssets(std::vector<CAsset*> assets)
 					editable.SetDetails(assets[i]->GetDetails());
 
 					// Force to update the thumbnail.
-					if (!pOther->IsReadOnly())
+					if (!pOther->IsImmutable())
 					{
 						pPak->RemoveFile(pOther->GetThumbnailPath());
 					}
@@ -512,7 +512,7 @@ bool CAssetManager::HasSharedSourceFile(const CAsset& asset) const
 //Reimport is implemented in asset manager to avoid adding dependency from CAsset to CAssetImporter
 void CAssetManager::Reimport(CAsset* pAsset)
 {
-	CRY_ASSERT(pAsset && pAsset->GetType() && !pAsset->IsReadOnly());
+	CRY_ASSERT(pAsset && pAsset->GetType() && !pAsset->IsImmutable());
 
 	const char* szSourceFile = pAsset->GetSourceFile();
 	if (!(szSourceFile && *szSourceFile))

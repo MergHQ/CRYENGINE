@@ -150,8 +150,10 @@ std::pair<bool, int> CAsset::DoesAssetUse(const char* szAnotherAssetPath) const
 
 void CAsset::Reimport()
 {
-	if (!IsReadOnly() && GetType()->IsImported())
+	if (!IsImmutable() && GetType()->IsImported() && IsWritable())
+	{
 		CAssetManager::GetInstance()->Reimport(this);
+	}
 }
 
 bool CAsset::CanBeEdited() const
@@ -159,9 +161,23 @@ bool CAsset::CanBeEdited() const
 	return m_type->CanBeEdited();
 }
 
-bool CAsset::IsReadOnly() const
+bool CAsset::IsWritable(bool includeSourceFile /*= true*/) const
 {
-	return m_flags.readOnly;
+	std::vector<string> filepaths(m_type->GetAssetFiles(*this, includeSourceFile, true));
+	for (string& path : filepaths)
+	{
+		QFileInfo fileInfo(QtUtil::ToQString(path));
+		if (!fileInfo.isWritable())
+		{
+			return false;
+		}
+	}
+	return true;
+}
+
+bool CAsset::IsImmutable() const
+{
+	return m_flags.immutable;
 }
 
 void CAsset::Edit(CAssetEditor* pEditor)
@@ -236,20 +252,38 @@ void CAsset::SetModified(bool bModified)
 
 void CAsset::Save()
 {
+	if (!m_pEditingSession && !m_pEditor)
+	{
+		// Have nothing to save.
+		return;
+	}
+
+	if (!IsWritable(false))
+	{
+		CryWarning(VALIDATOR_MODULE_EDITOR, VALIDATOR_WARNING, "Unable to save \"%s\". The asset is read-only.", m_name.c_str());
+		return;
+	}
+
+	CEditableAsset editAsset(*this);
+	bool saved = false;
+
 	if (m_pEditingSession)
 	{
-		CEditableAsset editAsset(*this);
-		if (m_pEditingSession->OnSaveAsset(editAsset))
-		{
-			InvalidateThumbnail();
-			WriteToFile();
-			SetModified(false);
-		}
+		saved = m_pEditingSession->OnSaveAsset(editAsset);
 	}
-	else if (m_pEditor)
+	else //if (m_pEditor)
 	{
-		m_pEditor->Save();
+		saved = m_pEditor->OnSaveAsset(editAsset);
 	}
+
+	if (!saved || !WriteToFile())
+	{
+		CryWarning(VALIDATOR_MODULE_EDITOR, VALIDATOR_ERROR, "Failed to save asset \"%s\"", m_name.c_str());
+		return;
+	}
+
+	InvalidateThumbnail();
+	SetModified(false);
 }
 
 void CAsset::Reload()
@@ -282,7 +316,7 @@ QIcon CAsset::GetThumbnail() const
 
 void CAsset::GenerateThumbnail() const
 {
-	if (!IsReadOnly() && m_type->HasThumbnail())
+	if (!IsImmutable() && m_type->HasThumbnail())
 		m_type->GenerateThumbnail(this);
 }
 
@@ -305,17 +339,20 @@ bool CAsset::Validate() const
 	return valid;
 }
 
-void CAsset::WriteToFile()
+bool CAsset::WriteToFile()
 {
 	using namespace Private_Asset;
 
 	XmlNodeRef node = XmlHelpers::CreateXmlNode(AssetLoader::GetMetadataTag());
 	AssetLoader::WriteMetaData(node, GetMetadata(*this));
 
-	if (XmlHelpers::SaveXmlNode(node, m_metadataFile))
+	if (!XmlHelpers::SaveXmlNode(node, m_metadataFile))
 	{
-		m_lastModifiedTime = GetModificationTime(m_metadataFile);
+		return false;
 	}
+
+	m_lastModifiedTime = GetModificationTime(m_metadataFile);
+	return true;
 }
 
 void CAsset::SetName(const char* szName)
@@ -333,7 +370,7 @@ void CAsset::SetMetadataFile(const char* szFilepath)
 	m_metadataFile = PathUtil::ToUnixPath(szFilepath);
 
 	const char* const szEngine = "%engine%";
-	m_flags.readOnly = strnicmp(szEngine, szFilepath, strlen(szEngine)) == 0;
+	m_flags.immutable = strnicmp(szEngine, szFilepath, strlen(szEngine)) == 0;
 	m_folder.clear();
 }
 

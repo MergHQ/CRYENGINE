@@ -251,12 +251,9 @@ void CAssetEditor::SetAssetBeingEdited(CAsset* pAsset)
 	if (m_assetBeingEdited == pAsset)
 		return;
 
-	bool bWasReadOnly = false;
-
 	if (m_assetBeingEdited)
 	{
 		m_assetBeingEdited->signalChanged.DisconnectObject(this);
-		bWasReadOnly = m_assetBeingEdited->IsReadOnly();
 	}
 
 	m_assetBeingEdited = pAsset;
@@ -277,17 +274,10 @@ void CAssetEditor::SetAssetBeingEdited(CAsset* pAsset)
 		}, (uintptr_t)this);
 
 		pAsset->signalChanged.Connect(this, &CAssetEditor::OnAssetChanged);
-
-		if (bWasReadOnly != pAsset->IsReadOnly())
-			OnReadOnlyChanged();
 	}
 	else
 	{
 		CAssetManager::GetInstance()->signalBeforeAssetsRemoved.DisconnectById((uintptr_t)this);
-
-		//No longer considered read only after closing the asset
-		if (bWasReadOnly)
-			OnReadOnlyChanged();
 	}
 }
 
@@ -373,11 +363,6 @@ bool CAssetEditor::TryCloseAsset()
 void CAssetEditor::OnAssetChanged(CAsset& asset, int changeFlags)
 {
 	CRY_ASSERT(&asset == m_assetBeingEdited);
-
-	if (changeFlags & eAssetChangeFlags_ReadOnly)
-	{
-		OnReadOnlyChanged();
-	}
 
 	if (changeFlags & eAssetChangeFlags_Modified)
 	{
@@ -687,37 +672,6 @@ QToolButton* CAssetEditor::CreateLockButton()
 	return m_pLockButton;
 }
 
-bool CAssetEditor::InternalSaveAsset(CAsset* pAsset)
-{
-	//TODO: Figure out how to handle writing metadata generically without opening the file twice
-	//(one in OnSaveAsset implementation and one here)
-
-	//TODO: here the editable asset retains every metadata of the old asset, which means if it is not overwritten in OnSaveAsset, some metadata could carry over.
-	//Perhaps the safest way would be to clear it before passing it. Also means that calling things like AddFile() in there will result in warnings because the file was duplicated etc...
-
-	CEditableAsset editAsset(*pAsset);
-	if (!OnSaveAsset(editAsset))
-	{
-		return false;
-	}
-
-	editAsset.InvalidateThumbnail();
-	editAsset.WriteToFile();
-	pAsset->SetModified(false);
-
-	return true;
-}
-
-bool CAssetEditor::Save()
-{
-	if (!m_assetBeingEdited)
-	{
-		return true;
-	}
-
-	return InternalSaveAsset(m_assetBeingEdited);
-}
-
 void CAssetEditor::DiscardAssetChanges()
 {
 	CAsset* pAsset = GetAssetBeingEdited();
@@ -731,7 +685,11 @@ void CAssetEditor::DiscardAssetChanges()
 
 bool CAssetEditor::OnSave()
 {
-	Save();
+	CAsset* pAsset = GetAssetBeingEdited();
+	if (pAsset)
+	{
+		pAsset->Save();
+	}
 	return true;
 }
 
@@ -858,11 +816,6 @@ bool CAssetEditor::SaveBackup(const string& backupFolder)
 	
 	// tempCopy restores asset files.
 	return true;
-}
-
-bool CAssetEditor::IsReadOnly() const
-{
-	return GetAssetBeingEdited() != nullptr ? GetAssetBeingEdited()->IsReadOnly() : false;
 }
 
 void CAssetEditor::SetInstantEditingMode(bool isActive)

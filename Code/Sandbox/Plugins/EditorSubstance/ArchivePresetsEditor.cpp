@@ -139,8 +139,7 @@ namespace EditorSubstance
 		{
 			assetType->SetGraphOutputsConfiguration(&editAsset, graphOutputs.first, graphOutputs.second, m_resolutions[graphOutputs.first]);
 		}
-		editAsset.WriteToFile();
-		return true;
+		return editAsset.WriteToFile();
 	}
 
 	void CArchivePresetsEditor::OnCloseAsset()

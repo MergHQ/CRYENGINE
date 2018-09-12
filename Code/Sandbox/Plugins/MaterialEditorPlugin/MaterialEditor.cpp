@@ -147,7 +147,6 @@ void CMaterialEditor::InitMenuBar()
 	//Add a material actions menu
 	//TODO: consider adding a toolbar for material actions
 	CAbstractMenu* materialMenu = GetRootMenu()->CreateMenu(tr("Material"), 0, 3);
-	materialMenu->SetEnabled(!IsReadOnly());
 	materialMenu->signalAboutToShow.Connect(this, &CMaterialEditor::FillMaterialMenu);
 }
 
@@ -245,17 +244,6 @@ void CMaterialEditor::OnSubMaterialsChanged(CMaterial::SubMaterialChange change)
 	}
 }
 
-void CMaterialEditor::OnReadOnlyChanged()
-{
-	//Refresh the tree, will make it read-only or not depending on the state
-	if(GetAssetBeingEdited())
-		BroadcastPopulateInspector();
-
-	CAbstractMenu* materialMenu = GetMenu(tr("Material"));
-	CRY_ASSERT(materialMenu);
-	materialMenu->SetEnabled(!IsReadOnly());
-}
-
 void CMaterialEditor::CreateDefaultLayout(CDockableContainer* sender)
 {
 	auto centerWidget = sender->SpawnWidget("Properties");
@@ -283,6 +271,10 @@ void CMaterialEditor::OnLayoutChange(const QVariantMap& state)
 bool CMaterialEditor::OnOpenAsset(CAsset* pAsset)
 {
 	using namespace Private_MaterialEditor;
+
+	CAbstractMenu* materialMenu = GetMenu(tr("Material"));
+	CRY_ASSERT(materialMenu);
+	materialMenu->SetEnabled(!pAsset->IsImmutable());
 
 	const auto& filename = pAsset->GetFile(0);
 	CRY_ASSERT(filename && *filename);
@@ -361,7 +353,7 @@ void CMaterialEditor::BroadcastPopulateInspector()
 {
 	if (m_pEditedMaterial)
 	{
-		m_pMaterialSerializer.reset(new CMaterialSerializer(m_pEditedMaterial, IsReadOnly()));
+		m_pMaterialSerializer.reset(new CMaterialSerializer(m_pEditedMaterial, !m_pEditedMaterial->CanModify()));
 		string title = m_pMaterial->GetName();
 		if (m_pMaterial->IsMultiSubMaterial())
 		{

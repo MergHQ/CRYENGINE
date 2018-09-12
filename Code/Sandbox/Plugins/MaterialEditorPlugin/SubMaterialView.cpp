@@ -413,7 +413,8 @@ void CSubMaterialView::OnContextMenu(const QPoint& pos)
 	//Abstract menu must not go out of scope for actions to be visible in the menu
 	CAbstractMenu materialMenu;
 
-	const bool isReadOnly = m_pMatEd->IsReadOnly();
+	CRY_ASSERT(m_pMatEd->GetAssetBeingEdited());
+	const bool isReadOnly = m_pMatEd->GetAssetBeingEdited()->IsImmutable();
 	if(!isReadOnly)
 	{
 		if (row != -1 && bIsMultiMtl)
