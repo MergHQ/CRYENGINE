@@ -14,11 +14,13 @@ class CStandaloneFile final : public IStandaloneFile
 {
 public:
 
-	CStandaloneFile() = default;
 	CStandaloneFile(CStandaloneFile const&) = delete;
 	CStandaloneFile(CStandaloneFile&&) = delete;
 	CStandaloneFile& operator=(CStandaloneFile const&) = delete;
 	CStandaloneFile& operator=(CStandaloneFile&&) = delete;
+
+	CStandaloneFile() = default;
+	virtual ~CStandaloneFile() override = default;
 };
 } // namespace Adx2
 } // namespace Impl

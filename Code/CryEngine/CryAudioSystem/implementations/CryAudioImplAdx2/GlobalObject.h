@@ -15,15 +15,16 @@ class CGlobalObject final : public CBaseObject
 public:
 
 	CGlobalObject() = delete;
+	CGlobalObject(CGlobalObject const&) = delete;
+	CGlobalObject(CGlobalObject&&) = delete;
+	CGlobalObject& operator=(CGlobalObject const&) = delete;
+	CGlobalObject& operator=(CGlobalObject&&) = delete;
 
 	explicit CGlobalObject(Objects const& objects)
 		: m_objects(objects)
 	{}
 
-	CGlobalObject(CGlobalObject const&) = delete;
-	CGlobalObject(CGlobalObject&&) = delete;
-	CGlobalObject& operator=(CGlobalObject const&) = delete;
-	CGlobalObject& operator=(CGlobalObject&&) = delete;
+	virtual ~CGlobalObject() override = default;
 
 	// CryAudio::Impl::IObject
 	virtual void SetTransformation(CObjectTransformation const& transformation) override;

@@ -8,6 +8,7 @@
 #include "Trigger.h"
 #include "Parameter.h"
 #include "Listener.h"
+#include "Cvars.h"
 
 #include <Logger.h>
 
@@ -51,6 +52,11 @@ void VoiceEventCallback(
 
 //////////////////////////////////////////////////////////////////////////
 CBaseObject::CBaseObject()
+	: m_flags(EObjectFlags::None)
+#if defined(INCLUDE_ADX2_IMPL_PRODUCTION_CODE)
+	, m_absoluteVelocity(0.0f)
+	, m_absoluteVelocityNormalized(0.0f)
+#endif  // INCLUDE_ADX2_IMPL_PRODUCTION_CODE
 {
 	ZeroStruct(m_3dAttributes);
 	m_p3dSource = criAtomEx3dSource_Create(&g_3dSourceConfig, nullptr, 0);
@@ -170,7 +176,10 @@ bool CBaseObject::StartEvent(CTrigger const* const pTrigger, CEvent* const pEven
 
 	if (iter != g_acbHandles.end())
 	{
-		criAtomExPlayer_SetCueName(m_pPlayer, iter->second, pTrigger->GetCueName());
+		CriAtomExAcbHn const acbHandle = iter->second;
+		CriChar8 const* const cueName = pTrigger->GetCueName();
+
+		criAtomExPlayer_SetCueName(m_pPlayer, acbHandle, cueName);
 		CriAtomExPlaybackId const id = criAtomExPlayer_Start(m_pPlayer);
 
 		while (true)
@@ -185,7 +194,25 @@ bool CBaseObject::StartEvent(CTrigger const* const pTrigger, CEvent* const pEven
 					pEvent->SetPlaybackId(id);
 					pEvent->SetTriggerId(pTrigger->GetId());
 					pEvent->SetObject(this);
+
+					CriAtomExCueInfo cueInfo;
+
+					if (criAtomExAcb_GetCueInfoByName(acbHandle, cueName, &cueInfo) == CRI_TRUE)
+					{
+						if (cueInfo.pos3d_info.doppler_factor > 0.0f)
+						{
+							pEvent->SetFlag(EEventFlags::HasDoppler);
+						}
+					}
+
+					if (criAtomExAcb_IsUsingAisacControlByName(acbHandle, cueName, s_szAbsoluteVelocityAisacName) == CRI_TRUE)
+					{
+						pEvent->SetFlag(EEventFlags::HasAbsoluteVelocity);
+					}
+
 					m_events.push_back(pEvent);
+
+					UpdateVelocityTracking();
 
 					g_mutex.Lock();
 					g_activeEvents[id] = &pEvent->GetATLEvent();
@@ -247,7 +274,11 @@ void CBaseObject::ResumeEvent(uint32 const triggerId)
 //////////////////////////////////////////////////////////////////////////
 void CBaseObject::RemoveEvent(CEvent* const pEvent)
 {
-	if (!stl::find_and_erase(m_events, pEvent))
+	if (stl::find_and_erase(m_events, pEvent))
+	{
+		UpdateVelocityTracking();
+	}
+	else
 	{
 		Cry::Audio::Log(ELogType::Error, "Tried to remove an event from an object that does not own that event");
 	}
@@ -265,6 +296,71 @@ void CBaseObject::MutePlayer(CriBool const shouldMute)
 void CBaseObject::PausePlayer(CriBool const shouldPause)
 {
 	criAtomExPlayer_Pause(m_pPlayer, shouldPause);
+}
+
+//////////////////////////////////////////////////////////////////////////
+void CBaseObject::UpdateVelocityTracking()
+{
+	bool trackAbsoluteVelocity = false;
+	bool trackDoppler = false;
+
+	Events::iterator iter = m_events.begin();
+	Events::const_iterator iterEnd = m_events.end();
+
+	while ((iter != iterEnd) && !(trackAbsoluteVelocity && trackDoppler))
+	{
+		auto const pEvent = *iter;
+		trackAbsoluteVelocity |= ((pEvent->GetFlags() & EEventFlags::HasAbsoluteVelocity) != 0);
+		trackDoppler |= ((pEvent->GetFlags() & EEventFlags::HasDoppler) != 0);
+		++iter;
+	}
+
+	if (trackAbsoluteVelocity)
+	{
+		if (g_cvars.m_maxVelocity > 0.0f)
+		{
+			m_flags |= EObjectFlags::TrackAbsoluteVelocity;
+		}
+		else
+		{
+			Cry::Audio::Log(ELogType::Error, "Adx2 - Cannot enable absolute velocity tracking, because s_Adx2MaxVelocity is not greater than 0.");
+		}
+	}
+	else
+	{
+		m_flags &= ~EObjectFlags::TrackAbsoluteVelocity;
+
+		criAtomExPlayer_SetAisacControlByName(m_pPlayer, s_szAbsoluteVelocityAisacName, 0.0f);
+		criAtomExPlayer_UpdateAll(m_pPlayer);
+
+#if defined(INCLUDE_ADX2_IMPL_PRODUCTION_CODE)
+		m_absoluteVelocity = 0.0f;
+		m_absoluteVelocityNormalized = 0.0f;
+#endif    // INCLUDE_ADX2_IMPL_PRODUCTION_CODE
+	}
+
+	if (trackDoppler)
+	{
+		if ((m_flags& EObjectFlags::TrackVelocityForDoppler) == 0)
+		{
+			m_flags |= EObjectFlags::TrackVelocityForDoppler;
+			g_numObjectsWithDoppler++;
+		}
+	}
+	else
+	{
+		if ((m_flags& EObjectFlags::TrackVelocityForDoppler) != 0)
+		{
+			m_flags &= ~EObjectFlags::TrackVelocityForDoppler;
+
+			CriAtomExVector const zeroVelocity{ 0.0f, 0.0f, 0.0f };
+			criAtomEx3dSource_SetVelocity(m_p3dSource, &zeroVelocity);
+			criAtomEx3dSource_Update(m_p3dSource);
+
+			CRY_ASSERT_MESSAGE(g_numObjectsWithDoppler > 0, "g_numObjectsWithDoppler is 0 but an object with doppler tracking still exists.");
+			g_numObjectsWithDoppler--;
+		}
+	}
 }
 } // namespace Adx2
 } // namespace Impl

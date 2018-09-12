@@ -18,17 +18,26 @@ class CTrigger;
 class CParameter;
 class CSwitchState;
 
+enum class EObjectFlags : EnumFlagsType
+{
+	None                    = 0,
+	MovingOrDecaying        = BIT(0),
+	TrackAbsoluteVelocity   = BIT(1),
+	TrackVelocityForDoppler = BIT(2),
+};
+CRY_CREATE_ENUM_FLAG_OPERATORS(EObjectFlags);
+
 class CBaseObject : public IObject
 {
 public:
-
-	CBaseObject();
-	virtual ~CBaseObject() override;
 
 	CBaseObject(CBaseObject const&) = delete;
 	CBaseObject(CBaseObject&&) = delete;
 	CBaseObject& operator=(CBaseObject const&) = delete;
 	CBaseObject& operator=(CBaseObject&&) = delete;
+
+	CBaseObject();
+	virtual ~CBaseObject() override;
 
 	// CryAudio::Impl::IObject
 	virtual void                         Update(float const deltaTime) override                                  {}
@@ -55,13 +64,21 @@ protected:
 	void StopEvent(uint32 const triggerId);
 	void PauseEvent(uint32 const triggerId);
 	void ResumeEvent(uint32 const triggerId);
+	void UpdateVelocityTracking();
 
-	std::vector<CEvent*>  m_events;
+	using Events = std::vector<CEvent*>;
+	Events                m_events;
 
+	EObjectFlags          m_flags;
 	CObjectTransformation m_transformation;
 	S3DAttributes         m_3dAttributes;
 	CriAtomEx3dSourceHn   m_p3dSource;
 	CriAtomExPlayerHn     m_pPlayer;
+
+#if defined(INCLUDE_ADX2_IMPL_PRODUCTION_CODE)
+	float m_absoluteVelocity;
+	float m_absoluteVelocityNormalized;
+#endif  // INCLUDE_ADX2_IMPL_PRODUCTION_CODE
 };
 } // namespace Adx2
 } // namespace Impl

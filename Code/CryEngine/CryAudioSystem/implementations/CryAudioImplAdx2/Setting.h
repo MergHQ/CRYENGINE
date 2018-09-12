@@ -21,6 +21,7 @@ public:
 	CSetting& operator=(CSetting&&) = delete;
 
 	explicit CSetting(char const* const szName);
+	virtual ~CSetting() override = default;
 
 	// ISetting
 	virtual void Load() const override;

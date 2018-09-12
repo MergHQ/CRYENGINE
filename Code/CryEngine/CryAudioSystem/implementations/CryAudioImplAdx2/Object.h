@@ -11,27 +11,18 @@ namespace Impl
 {
 namespace Adx2
 {
-enum class EObjectFlags : EnumFlagsType
-{
-	None                    = 0,
-	MovingOrDecaying        = BIT(0),
-	TrackAbsoluteVelocity   = BIT(1),
-	TrackVelocityForDoppler = BIT(2),
-};
-CRY_CREATE_ENUM_FLAG_OPERATORS(EObjectFlags);
-
 class CObject final : public CBaseObject, public CPoolObject<CObject, stl::PSyncNone>
 {
 public:
-
-	CObject(CObjectTransformation const& transformation);
-	virtual ~CObject() override;
 
 	CObject() = delete;
 	CObject(CObject const&) = delete;
 	CObject(CObject&&) = delete;
 	CObject& operator=(CObject const&) = delete;
 	CObject& operator=(CObject&&) = delete;
+
+	explicit CObject(CObjectTransformation const& transformation);
+	virtual ~CObject() override;
 
 	// CryAudio::Impl::IObject
 	virtual void Update(float const deltaTime) override;
@@ -41,7 +32,6 @@ public:
 	virtual void SetSwitchState(ISwitchState const* const pISwitchState) override;
 	virtual void SetObstructionOcclusion(float const obstruction, float const occlusion) override;
 	virtual void SetOcclusionType(EOcclusionType const occlusionType) override {}
-	virtual void ToggleFunctionality(EObjectFunctionality const type, bool const enable) override;
 
 	// Below data is only used when INCLUDE_ADX2_IMPL_PRODUCTION_CODE is defined!
 	virtual void DrawDebugInfo(IRenderAuxGeom& auxGeom, float const posX, float posY, char const* const szTextFilter) override;
@@ -51,16 +41,11 @@ private:
 
 	void UpdateVelocities(float const deltaTime);
 
-	EObjectFlags m_flags;
-	float        m_occlusion;
-	float        m_previousAbsoluteVelocity;
-	Vec3         m_position;
-	Vec3         m_previousPosition;
-	Vec3         m_velocity;
-
-#if defined(INCLUDE_ADX2_IMPL_PRODUCTION_CODE)
-	std::map<char const* const, float> m_parameterInfo;
-#endif  // INCLUDE_ADX2_IMPL_PRODUCTION_CODE
+	float m_occlusion;
+	float m_previousAbsoluteVelocity;
+	Vec3  m_position;
+	Vec3  m_previousPosition;
+	Vec3  m_velocity;
 };
 } // namespace Adx2
 } // namespace Impl

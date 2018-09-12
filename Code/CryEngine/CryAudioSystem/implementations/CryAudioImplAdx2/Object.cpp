@@ -24,16 +24,10 @@ namespace Impl
 namespace Adx2
 {
 static constexpr CriChar8 const* s_szOcclusionAisacName = "occlusion";
-static constexpr CriChar8 const* s_szAbsoluteVelocityAisacName = "absolute_velocity";
-
-#if defined(INCLUDE_ADX2_IMPL_PRODUCTION_CODE)
-static constexpr char const* s_szAbsoluteVelocityNormalized = "absolute_velocity (normalized)";
-#endif  // INCLUDE_ADX2_IMPL_PRODUCTION_CODE
 
 //////////////////////////////////////////////////////////////////////////
 CObject::CObject(CObjectTransformation const& transformation)
-	: m_flags(EObjectFlags::None)
-	, m_occlusion(0.0f)
+	: m_occlusion(0.0f)
 	, m_previousAbsoluteVelocity(0.0f)
 	, m_position(transformation.GetPosition())
 	, m_previousPosition(transformation.GetPosition())
@@ -219,117 +213,29 @@ void CObject::SetObstructionOcclusion(float const obstruction, float const occlu
 }
 
 //////////////////////////////////////////////////////////////////////////
-void CObject::ToggleFunctionality(EObjectFunctionality const type, bool const enable)
-{
-	switch (type)
-	{
-	case EObjectFunctionality::TrackAbsoluteVelocity:
-		{
-			if (enable)
-			{
-				if (g_cvars.m_maxVelocity > 0.0f)
-				{
-					m_flags |= EObjectFlags::TrackAbsoluteVelocity;
-				}
-				else
-				{
-					Cry::Audio::Log(ELogType::Error, "Adx2 - Cannot enable absolute velocity tracking, because s_Adx2MaxVelocity is not greater than 0.");
-				}
-			}
-			else
-			{
-				m_flags &= ~EObjectFlags::TrackAbsoluteVelocity;
-
-				criAtomExPlayer_SetAisacControlByName(m_pPlayer, s_szAbsoluteVelocityAisacName, 0.0f);
-				criAtomExPlayer_UpdateAll(m_pPlayer);
-			}
-
-#if defined(INCLUDE_ADX2_IMPL_PRODUCTION_CODE)
-			if ((m_flags& EObjectFlags::TrackAbsoluteVelocity) != 0)
-			{
-				m_parameterInfo[static_cast<char const*>(s_szAbsoluteVelocityAisacName)] = 0.0f;
-				m_parameterInfo[s_szAbsoluteVelocityNormalized] = 0.0f;
-			}
-			else
-			{
-				m_parameterInfo.erase(static_cast<char const*>(s_szAbsoluteVelocityAisacName));
-				m_parameterInfo.erase(s_szAbsoluteVelocityNormalized);
-			}
-#endif      // INCLUDE_ADX2_IMPL_PRODUCTION_CODE
-
-			break;
-		}
-	case EObjectFunctionality::TrackRelativeVelocity:
-		{
-			if (enable)
-			{
-				if ((m_flags& EObjectFlags::TrackVelocityForDoppler) == 0)
-				{
-					m_flags |= EObjectFlags::TrackVelocityForDoppler;
-					g_numObjectsWithDoppler++;
-				}
-			}
-			else
-			{
-				if ((m_flags& EObjectFlags::TrackVelocityForDoppler) != 0)
-				{
-					m_flags &= ~EObjectFlags::TrackVelocityForDoppler;
-
-					CriAtomExVector const zeroVelocity{ 0.0f, 0.0f, 0.0f };
-					criAtomEx3dSource_SetVelocity(m_p3dSource, &zeroVelocity);
-					criAtomEx3dSource_Update(m_p3dSource);
-
-					CRY_ASSERT_MESSAGE(g_numObjectsWithDoppler > 0, "g_numObjectsWithDoppler is 0 but an object with doppler tracking still exists.");
-					g_numObjectsWithDoppler--;
-				}
-			}
-
-			break;
-		}
-	default:
-		break;
-	}
-}
-
-//////////////////////////////////////////////////////////////////////////
 void CObject::DrawDebugInfo(IRenderAuxGeom& auxGeom, float const posX, float posY, char const* const szTextFilter)
 {
 #if defined(INCLUDE_ADX2_IMPL_PRODUCTION_CODE)
 
-	if (!m_parameterInfo.empty() || ((m_flags& EObjectFlags::TrackVelocityForDoppler) != 0))
+	if (((m_flags& EObjectFlags::TrackAbsoluteVelocity) != 0) || ((m_flags& EObjectFlags::TrackVelocityForDoppler) != 0))
 	{
 		bool isVirtual = false;
 		// To do: add check for virtual states.
 
-		for (auto const& parameterPair : m_parameterInfo)
+		if ((m_flags& EObjectFlags::TrackAbsoluteVelocity) != 0)
 		{
-			bool canDraw = true;
+			auxGeom.Draw2dLabel(
+				posX,
+				posY,
+				g_debugObjectFontSize,
+				isVirtual ? g_debugObjectColorVirtual.data() : g_debugObjectColorPhysical.data(),
+				false,
+				"[Adx2] %s: %2.2f m/s (%2.2f)\n",
+				static_cast<char const*>(s_szAbsoluteVelocityAisacName),
+				m_absoluteVelocity,
+				m_absoluteVelocityNormalized);
 
-			if (szTextFilter != nullptr)
-			{
-				CryFixedStringT<MaxControlNameLength> lowerCaseParameterName(parameterPair.first);
-				lowerCaseParameterName.MakeLower();
-
-				if (lowerCaseParameterName.find(szTextFilter) == CryFixedStringT<MaxControlNameLength>::npos)
-				{
-					canDraw = false;
-				}
-			}
-
-			if (canDraw)
-			{
-				auxGeom.Draw2dLabel(
-					posX,
-					posY,
-					g_debugObjectFontSize,
-					isVirtual ? g_debugObjectColorVirtual.data() : g_debugObjectColorPhysical.data(),
-					false,
-					"[Adx2] %s: %2.2f\n",
-					parameterPair.first,
-					parameterPair.second);
-
-				posY += g_debugObjectLineHeight;
-			}
+			posY += g_debugObjectLineHeight;
 		}
 
 		if ((m_flags& EObjectFlags::TrackVelocityForDoppler) != 0)
@@ -390,9 +296,9 @@ void CObject::UpdateVelocities(float const deltaTime)
 			criAtomExPlayer_UpdateAll(m_pPlayer);
 
 #if defined(INCLUDE_ADX2_IMPL_PRODUCTION_CODE)
-			m_parameterInfo[static_cast<char const*>(s_szAbsoluteVelocityAisacName)] = absoluteVelocity;
-			m_parameterInfo[s_szAbsoluteVelocityNormalized] = absoluteVelocityNormalized;
-#endif        // INCLUDE_ADX2_IMPL_PRODUCTION_CODE
+			m_absoluteVelocity = absoluteVelocity;
+			m_absoluteVelocityNormalized = absoluteVelocityNormalized;
+#endif      // INCLUDE_ADX2_IMPL_PRODUCTION_CODE
 		}
 	}
 }

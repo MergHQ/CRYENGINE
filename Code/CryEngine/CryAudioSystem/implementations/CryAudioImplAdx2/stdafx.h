@@ -13,14 +13,3 @@
 #if !defined(_RELEASE)
 	#define INCLUDE_ADX2_IMPL_PRODUCTION_CODE
 #endif // _RELEASE
-
-namespace CryAudio
-{
-namespace Impl
-{
-namespace Adx2
-{
-
-}      // Adx2
-}      // Impl
-}      // CryAudio
