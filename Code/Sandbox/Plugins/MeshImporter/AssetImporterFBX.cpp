@@ -290,8 +290,7 @@ static void WriteCHRPARAMS(CAsset* pSkeletonAsset, CAssetImportContext& ctx)
 		{
 			CEditableAsset editableSkeletonAsset = ctx.CreateEditableAsset(*pSkeletonAsset);
 			editableSkeletonAsset.AddFile(chrParamsAssetPath);
-			editableSkeletonAsset.WriteToFile();
-			bWroteChrParams = true;
+			bWroteChrParams = editableSkeletonAsset.WriteToFile();
 		}
 	}
 	if (!bWroteChrParams)

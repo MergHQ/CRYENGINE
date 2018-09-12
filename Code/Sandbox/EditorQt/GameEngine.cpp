@@ -398,6 +398,7 @@ bool CGameEngine::Init(
 	REGISTER_CVAR(ed_indexfiles, 1, VF_DUMPTODISK, "Index game resource files, 0 - inactive, 1 - active");
 	REGISTER_CVAR2_CB("ed_keepEditorActive", &keepEditorActive, 0, VF_NULL, "Keep the editor active, even if no focus is set", KeepEditorActiveChanged);
 	REGISTER_INT("ed_useDevManager", 1, VF_INVISIBLE, "Use DevManager with sandbox editor");
+	REGISTER_INT("ed_exportLevelXmlBinary", 0, VF_NULL, "Select xml files format for the level.pak export. 0 - textual, 1 - binary");
 	REGISTER_COMMAND("ed_killmemory", KillMemory, VF_NULL, "");
 	REGISTER_COMMAND("ed_goto", CmdGotoEditor, VF_CHEAT, "Internal command, used by the 'GOTO' console command\n");
 	REGISTER_COMMAND("ed_disable_game_mode", DisableGameMode, VF_NULL, "Will go back to editor mode if in game mode.\n");

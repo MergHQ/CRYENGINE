@@ -28,6 +28,7 @@ struct SGameExporterSettings
 	int     nApplySS;
 	float   fBrMultiplier;
 	EEndian eExportEndian;
+	bool    exportBinaryXml;
 
 	SGameExporterSettings();
 	void SetLowQuality();
@@ -72,6 +73,8 @@ private: // --------------------------------------------------------------------
 
 	bool               OpenLevelPack(SLevelPakHelper& lphelper, bool bCryPak = false);
 	bool               CloseLevelPack(SLevelPakHelper& lphelper, bool bCryPak = false);
+	void               WriteXmlFileToPak(XmlNodeRef& root, const string& filename, int xmlMemReserve = 1024);
+	void               WriteXmlFile(XmlNodeRef& root, const string& filename, CPakFile& pak, int xmlMemReserve);
 
 	bool               DoExport(unsigned int flags = 0, const char* subdirectory = 0);
 	void               ExportLevelData(const string& path, bool bExportMission = true);

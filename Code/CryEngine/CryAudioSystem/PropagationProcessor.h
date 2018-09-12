@@ -65,6 +65,7 @@ public:
 	bool        HasPendingRays() const { return m_remainingRays > 0; }
 	bool        HasNewOcclusionValues();
 	void        UpdateOcclusion();
+	void        SetOcclusionRayOffset(float const offset) { m_occlusionRayOffset = std::max(0.0f, offset); }
 
 private:
 
@@ -86,6 +87,7 @@ private:
 	float                        m_lastQuerriedOcclusion;
 	float                        m_occlusion;
 	float                        m_currentListenerDistance;
+	float                        m_occlusionRayOffset;
 	RayOcclusionVec              m_raysOcclusion;
 
 	size_t                       m_remainingRays;
@@ -110,6 +112,7 @@ public:
 	void           DrawDebugInfo(IRenderAuxGeom& auxGeom);
 	EOcclusionType GetOcclusionType() const             { return m_occlusionType; }
 	EOcclusionType GetOcclusionTypeWhenAdaptive() const { return m_occlusionTypeWhenAdaptive; }
+	float          GetOcclusionRayOffset() const        { return m_occlusionRayOffset; }
 	void           ResetRayData();
 
 private:

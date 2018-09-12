@@ -33,8 +33,16 @@ public:
 
 		const string basePath = PathUtil::RemoveExtension(PathUtil::RemoveExtension(asset.GetMetadataFile()));
 		const string pfxFilePath = PathUtil::ReplaceExtension(basePath, "pfx"); // Relative to asset directory.
+		
+		if (!GetISystem()->GetIPak()->MakeDir(asset.GetFolder(), true))
+		{
+			return false;
+		}
 
-		Serialization::SaveJsonFile(pfxFilePath.c_str(), *m_pEffect);
+		if (!Serialization::SaveJsonFile(pfxFilePath.c_str(), *m_pEffect))
+		{
+			return false;
+		}
 
 		// Get effect dependency
 		{

@@ -68,7 +68,6 @@ private:
 	virtual void OnEditorNotifyEvent(EEditorNotifyEvent event) override;
 	virtual void OnDataBaseItemEvent(IDataBaseItem* pItem, EDataBaseItemEvent event) override;
 	void         OnSubMaterialsChanged(CMaterial::SubMaterialChange change);
-	void         OnReadOnlyChanged() override;
 
 	_smart_ptr<CMaterial>           m_pMaterial;
 	_smart_ptr<CMaterial>           m_pEditedMaterial;

@@ -96,6 +96,7 @@ FMOD_RESULT F_CALLBACK ProgrammerSoundCallback(FMOD_STUDIO_EVENT_CALLBACK_TYPE t
 
 //////////////////////////////////////////////////////////////////////////
 CBaseObject::CBaseObject()
+	: m_flags(EObjectFlags::None)
 {
 	ZeroStruct(m_attributes);
 	m_attributes.forward.z = 1.0f;
@@ -130,6 +131,10 @@ void CBaseObject::RemoveEvent(CEvent* const pEvent)
 		{
 			Cry::Audio::Log(ELogType::Error, "Tried to remove an event from an object that does not own that event");
 		}
+	}
+	else
+	{
+		UpdateVelocityTracking();
 	}
 }
 
@@ -240,7 +245,9 @@ bool CBaseObject::SetEvent(CEvent* const pEvent)
 			pEvent->TrySetEnvironment(environmentPair.first, environmentPair.second);
 		}
 
+		UpdateVelocityTracking();
 		pEvent->SetOcclusion(m_occlusion);
+		pEvent->SetAbsoluteVelocity(m_absoluteVelocity);
 
 		fmodResult = pEvent->GetInstance()->start();
 		ASSERT_FMOD_OK;
@@ -251,6 +258,23 @@ bool CBaseObject::SetEvent(CEvent* const pEvent)
 	}
 
 	return bSuccess;
+}
+
+//////////////////////////////////////////////////////////////////////////
+void CBaseObject::UpdateVelocityTracking()
+{
+	bool trackVelocity = false;
+
+	for (auto const pEvent : m_events)
+	{
+		if (pEvent->HasAbsoluteVelocityParameter())
+		{
+			trackVelocity = true;
+			break;
+		}
+	}
+
+	trackVelocity ? (m_flags |= EObjectFlags::TrackAbsoluteVelocity) : (m_flags &= ~EObjectFlags::TrackAbsoluteVelocity);
 }
 
 //////////////////////////////////////////////////////////////////////////
@@ -350,6 +374,7 @@ ERequestStatus CBaseObject::ExecuteTrigger(ITrigger const* const pITrigger, IEve
 					fmodResult = pEventDescription->createInstance(&pInstance);
 					ASSERT_FMOD_OK;
 					pEvent->SetInstance(pInstance);
+					pEvent->SetAbsoluteVelocityParameter();
 
 					if (pTrigger->HasProgrammerSound())
 					{

@@ -45,7 +45,7 @@ public:
 	virtual void SetDetails(const std::vector<std::pair<string, string>>& details) override;
 	virtual void SetDependencies(const std::vector<SAssetDependencyInfo>& dependencies) override;
 
-	void WriteToFile();
+	bool WriteToFile();
 	void SetName(const char* szName);
 	void SetLastModifiedTime(uint64 t);
 	void SetMetadataFile(const char* szFilepath);

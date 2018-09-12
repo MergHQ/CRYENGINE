@@ -21,9 +21,9 @@ CAsset& CEditableAsset::GetAsset()
 	return m_asset;
 }
 
-void CEditableAsset::WriteToFile()
+bool CEditableAsset::WriteToFile()
 {
-	m_asset.WriteToFile();
+	return m_asset.WriteToFile();
 }
 
 void CEditableAsset::SetName(const char* szName)

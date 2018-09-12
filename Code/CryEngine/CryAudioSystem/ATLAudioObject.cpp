@@ -382,6 +382,12 @@ void CATLAudioObject::HandleSetOcclusionType(EOcclusionType const calcType)
 }
 
 //////////////////////////////////////////////////////////////////////////
+void CATLAudioObject::HandleSetOcclusionRayOffset(float const offset)
+{
+	m_propagationProcessor.SetOcclusionRayOffset(offset);
+}
+
+//////////////////////////////////////////////////////////////////////////
 void CATLAudioObject::ReleasePendingRays()
 {
 	m_propagationProcessor.ReleasePendingRays();
@@ -580,6 +586,7 @@ void CATLAudioObject::DrawDebugInfo(IRenderAuxGeom& auxGeom)
 			bool const drawEnvironments = (g_cvars.m_drawAudioDebug & Debug::EDrawFilter::ObjectEnvironments) != 0;
 			bool const drawDistance = (g_cvars.m_drawAudioDebug & Debug::EDrawFilter::ObjectDistance) != 0;
 			bool const drawOcclusionRayLabel = (g_cvars.m_drawAudioDebug & Debug::EDrawFilter::OcclusionRayLabels) != 0;
+			bool const drawOcclusionRayOffset = (g_cvars.m_drawAudioDebug & Debug::EDrawFilter::OcclusionRayOffset) != 0;
 			bool const filterAllObjectInfo = (g_cvars.m_drawAudioDebug & Debug::EDrawFilter::FilterAllObjectInfo) != 0;
 
 			// Check if any trigger matches text filter.
@@ -818,7 +825,6 @@ void CATLAudioObject::DrawDebugInfo(IRenderAuxGeom& auxGeom)
 						Debug::g_objectFontSize,
 						isVirtual ? Debug::g_globalColorVirtual.data() : (hasActiveData ? Debug::g_objectColorActive.data() : Debug::g_globalColorInactive.data()),
 						false,
-						"%s",
 						szObjectName);
 
 					screenPos.y += Debug::g_objectLineHeight;
@@ -834,7 +840,6 @@ void CATLAudioObject::DrawDebugInfo(IRenderAuxGeom& auxGeom)
 							Debug::g_objectFontSize,
 							isVirtual ? Debug::g_globalColorVirtual.data() : Debug::g_objectColorTrigger.data(),
 							false,
-							"%s",
 							debugText.c_str());
 
 						screenPos.y += Debug::g_objectLineHeight;
@@ -851,7 +856,6 @@ void CATLAudioObject::DrawDebugInfo(IRenderAuxGeom& auxGeom)
 							Debug::g_objectFontSize,
 							isVirtual ? Debug::g_globalColorVirtual.data() : Debug::g_objectColorStandaloneFile.data(),
 							false,
-							"%s",
 							debugText.c_str());
 
 						screenPos.y += Debug::g_objectLineHeight;
@@ -921,15 +925,26 @@ void CATLAudioObject::DrawDebugInfo(IRenderAuxGeom& auxGeom)
 
 				if (drawDistance)
 				{
+
+					CryFixedStringT<MaxMiscStringLength> debugText;
+					float const maxRadius = pObject->GetMaxRadius();
+
+					if (maxRadius > 0.0f)
+					{
+						debugText.Format("Dist: %4.1fm / Max: %.1fm", distance, maxRadius);
+					}
+					else
+					{
+						debugText.Format("Dist: %4.1fm", distance);
+					}
+
 					auxGeom.Draw2dLabel(
 						screenPos.x,
 						screenPos.y,
 						Debug::g_objectFontSize,
 						isVirtual ? Debug::g_globalColorVirtual.data() : Debug::g_objectColorActive.data(),
 						false,
-						"Dist: %4.1fm / Max: %.1fm",
-						distance,
-						pObject->GetMaxRadius());
+						debugText.c_str());
 
 					screenPos.y += Debug::g_objectLineHeight;
 				}
@@ -974,6 +989,25 @@ void CATLAudioObject::DrawDebugInfo(IRenderAuxGeom& auxGeom)
 						debugText.c_str());
 
 					screenPos.y += Debug::g_objectLineHeight;
+				}
+
+				if (drawOcclusionRayOffset && !isVirtual)
+				{
+					float const occlusionRayOffset = pObject->GetOcclusionRayOffset();
+
+					if (occlusionRayOffset > 0.0f)
+					{
+						SAuxGeomRenderFlags const previousRenderFlags = auxGeom.GetRenderFlags();
+						SAuxGeomRenderFlags newRenderFlags(e_Def3DPublicRenderflags | e_AlphaBlended);
+						auxGeom.SetRenderFlags(newRenderFlags);
+
+						auxGeom.DrawSphere(
+							position,
+							occlusionRayOffset,
+							ColorB(1, 255, 1, 85));
+
+						auxGeom.SetRenderFlags(previousRenderFlags);
+					}
 				}
 
 				if ((g_cvars.m_drawAudioDebug & Debug::EDrawFilter::ObjectImplInfo) != 0)
@@ -1168,6 +1202,13 @@ void CATLAudioObject::SetOcclusionType(EOcclusionType const occlusionType, SRequ
 		SObjectRequestData<EObjectRequestType::SetOcclusionType> requestData(occlusionType);
 		PushRequest(requestData, userData);
 	}
+}
+
+//////////////////////////////////////////////////////////////////////////
+void CATLAudioObject::SetOcclusionRayOffset(float const offset, SRequestUserData const& userData /*= SRequestUserData::GetEmptyObject()*/)
+{
+	SObjectRequestData<EObjectRequestType::SetOcclusionRayOffset> requestData(offset);
+	PushRequest(requestData, userData);
 }
 
 //////////////////////////////////////////////////////////////////////////

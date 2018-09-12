@@ -24,6 +24,8 @@ class CListener;
 extern CListener* g_pListener;
 extern uint32 g_numObjectsWithDoppler;
 
+static constexpr char const* s_szAbsoluteVelocityParameterName = "absolute_velocity";
+
 ///////////////////////////////////////////////////////////////////////////
 inline void Fill3DAttributeTransformation(CObjectTransformation const& transformation, FMOD_3D_ATTRIBUTES& outAttributes)
 {

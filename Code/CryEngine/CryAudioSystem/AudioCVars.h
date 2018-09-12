@@ -32,7 +32,6 @@ public:
 	float m_occlusionHighDistance = 0.0f;
 	float m_occlusionMediumDistance = 0.0f;
 	float m_fullObstructionMaxDistance = 0.0f;
-	float m_occlusionRayLengthOffset = 0.0f;
 	float m_listenerOcclusionPlaneSize = 0.0f;
 
 #if defined(INCLUDE_AUDIO_PRODUCTION_CODE)

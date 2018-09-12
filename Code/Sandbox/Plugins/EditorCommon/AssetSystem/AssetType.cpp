@@ -197,13 +197,15 @@ bool CAssetType::Create(const char* szFilepath, const void* pTypeSpecificParamet
 		return false;
 	}
 
-	CAsset* const pNewAsset = AssetLoader::CAssetFactory::CreateFromMetadata(szFilepath, metadata.GetMetadata());
+	CAssetPtr const pNewAsset = AssetLoader::CAssetFactory::CreateFromMetadata(szFilepath, metadata.GetMetadata());
 
 	CEditableAsset editAsset(*pNewAsset);
-	editAsset.WriteToFile();
+	if (!editAsset.WriteToFile())
+	{
+		return false;
+	}
 
 	CAssetManager::GetInstance()->MergeAssets({ pNewAsset });
-
 	return true;
 }
 
@@ -311,7 +313,7 @@ bool CAssetType::RenameAsset(CAsset* pAsset, const char* szNewName) const
 		return true;
 	}
 
-	if (pAsset->IsReadOnly())
+	if (pAsset->IsImmutable())
 	{
 		CryWarning(EValidatorModule::VALIDATOR_MODULE_EDITOR, EValidatorSeverity::VALIDATOR_ERROR, "Unable to rename asset \"%s\": the asset is read only.", pAsset->GetName());
 		return false;
@@ -381,13 +383,12 @@ bool CAssetType::RenameAsset(CAsset* pAsset, const char* szNewName) const
 	editableAsset.SetName(szNewName);
 	// The asset file monitor will handle this as if the asset had been modified.
 	// See also CAssetManager::CAssetFileMonitor.
-	editableAsset.WriteToFile();
-	return true;
+	return editableAsset.WriteToFile();
 }
 
 bool CAssetType::MoveAsset(CAsset* pAsset, const char* szDestinationFolder, bool bMoveSourcefile) const
 {
-	if (pAsset->IsReadOnly())
+	if (pAsset->IsImmutable())
 	{
 		CryWarning(EValidatorModule::VALIDATOR_MODULE_EDITOR, EValidatorSeverity::VALIDATOR_ERROR, "Unable to move asset \"%s\": the asset is read only.", pAsset->GetName());
 		return false;
@@ -472,8 +473,7 @@ bool CAssetType::MoveAsset(CAsset* pAsset, const char* szDestinationFolder, bool
 		}
 	}
 	editableAsset.SetFiles(files);
-	editableAsset.WriteToFile();
-	return true;
+	return editableAsset.WriteToFile();
 }
 
 bool CAssetType::CopyAsset(CAsset* pAsset, const char* szNewPath) const
@@ -538,8 +538,7 @@ bool CAssetType::CopyAsset(CAsset* pAsset, const char* szNewPath) const
 	editableAsset.SetDependencies(pAsset->GetDependencies());
 	editableAsset.SetDetails(pAsset->GetDetails());
 	editableAsset.InvalidateThumbnail();
-	editableAsset.WriteToFile();
-	return true;
+	return editableAsset.WriteToFile();
 }
 
 // Fallback asset type if the actual type is not registered.

@@ -81,6 +81,7 @@ enum class EObjectRequestType : EnumFlagsType
 	StopAllTriggers,
 	SetTransformation,
 	SetOcclusionType,
+	SetOcclusionRayOffset,
 	SetParameter,
 	SetSwitchState,
 	SetCurrentEnvironments,
@@ -918,6 +919,25 @@ struct SObjectRequestData<EObjectRequestType::SetOcclusionType> final : public S
 
 //////////////////////////////////////////////////////////////////////////
 template<>
+struct SObjectRequestData<EObjectRequestType::SetOcclusionRayOffset> final : public SObjectRequestDataBase
+{
+	explicit SObjectRequestData(float const occlusionRayOffset_)
+		: SObjectRequestDataBase(EObjectRequestType::SetOcclusionRayOffset)
+		, occlusionRayOffset(occlusionRayOffset_)
+	{}
+
+	explicit SObjectRequestData(SObjectRequestData<EObjectRequestType::SetOcclusionRayOffset> const* const pAORData)
+		: SObjectRequestDataBase(EObjectRequestType::SetOcclusionRayOffset)
+		, occlusionRayOffset(pAORData->occlusionRayOffset)
+	{}
+
+	virtual ~SObjectRequestData() override = default;
+
+	float const occlusionRayOffset;
+};
+
+//////////////////////////////////////////////////////////////////////////
+template<>
 struct SObjectRequestData<EObjectRequestType::SetParameter> final : public SObjectRequestDataBase
 {
 	explicit SObjectRequestData(ControlId const parameterId_, float const value_)
@@ -1290,12 +1310,13 @@ enum class EDrawFilter : EnumFlagsType
 	ObjectDistance         = BIT(12), // g
 	OcclusionRayLabels     = BIT(13), // h
 	OcclusionRays          = BIT(14), // i
-	ListenerOcclusionPlane = BIT(15), // j
-	ObjectStandaloneFiles  = BIT(16), // k
-	ObjectImplInfo         = BIT(17), // l
+	OcclusionRayOffset     = BIT(15), // j
+	ListenerOcclusionPlane = BIT(16), // k
+	ObjectStandaloneFiles  = BIT(17), // l
+	ObjectImplInfo         = BIT(18), // m
 
-	HideMemoryInfo         = BIT(18), // m
-	FilterAllObjectInfo    = BIT(19), // n
+	HideMemoryInfo         = BIT(22), // q
+	FilterAllObjectInfo    = BIT(23), // r
 
 	StandaloneFiles        = BIT(26), // u
 	ActiveEvents           = BIT(27), // v
@@ -1314,6 +1335,7 @@ static constexpr EDrawFilter objectMask =
 	EDrawFilter::ObjectDistance |
 	EDrawFilter::OcclusionRayLabels |
 	EDrawFilter::OcclusionRays |
+	EDrawFilter::OcclusionRayOffset |
 	EDrawFilter::ListenerOcclusionPlane |
 	EDrawFilter::ObjectStandaloneFiles |
 	EDrawFilter::ObjectImplInfo;

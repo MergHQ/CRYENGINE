@@ -401,6 +401,24 @@ void CEntityComponentAudio::SetObstructionCalcType(CryAudio::EOcclusionType cons
 }
 
 //////////////////////////////////////////////////////////////////////////
+void CEntityComponentAudio::SetOcclusionRayOffset(float const offset, CryAudio::AuxObjectId const audioAuxObjectId /*= CryAudio::DefaultAuxObjectId*/)
+{
+	if (audioAuxObjectId != CryAudio::InvalidAuxObjectId)
+	{
+		AuxObjectPair const& audioObjectPair = GetAudioAuxObjectPair(audioAuxObjectId);
+
+		if (audioObjectPair.first != CryAudio::InvalidAuxObjectId)
+		{
+			(SSetOcclusionRayOffset(offset))(audioObjectPair);
+		}
+	}
+	else
+	{
+		std::for_each(m_mapAuxObjects.begin(), m_mapAuxObjects.end(), SSetOcclusionRayOffset(offset));
+	}
+}
+
+//////////////////////////////////////////////////////////////////////////
 void CEntityComponentAudio::SetEnvironmentAmount(CryAudio::EnvironmentId const audioEnvironmentId, float const amount, CryAudio::AuxObjectId const audioAuxObjectId /*= DEFAULT_AUDIO_PROXY_ID*/)
 {
 	if (audioAuxObjectId != CryAudio::InvalidAuxObjectId)

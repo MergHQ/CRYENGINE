@@ -1832,6 +1832,18 @@ ERequestStatus CSystem::ProcessObjectRequest(CAudioRequest const& request)
 
 			break;
 		}
+	case EObjectRequestType::SetOcclusionRayOffset:
+		{
+			CRY_ASSERT_MESSAGE(pObject != g_pObject, "Received a request to set the occlusion ray offset on the global object.");
+
+			SObjectRequestData<EObjectRequestType::SetOcclusionRayOffset> const* const pRequestData =
+				static_cast<SObjectRequestData<EObjectRequestType::SetOcclusionRayOffset> const* const>(request.GetData());
+
+			pObject->HandleSetOcclusionRayOffset(pRequestData->occlusionRayOffset);
+			result = ERequestStatus::Success;
+
+			break;
+		}
 	case EObjectRequestType::SetCurrentEnvironments:
 		{
 			SObjectRequestData<EObjectRequestType::SetCurrentEnvironments> const* const pRequestData =
@@ -2626,6 +2638,11 @@ void CSystem::HandleDrawDebug()
 		if ((g_cvars.m_drawAudioDebug & Debug::EDrawFilter::OcclusionRays) != 0)
 		{
 			debugDraw += "Occlusion Rays, ";
+		}
+
+		if ((g_cvars.m_drawAudioDebug & Debug::EDrawFilter::OcclusionRayOffset) != 0)
+		{
+			debugDraw += "Occlusion Ray Offset, ";
 		}
 
 		if ((g_cvars.m_drawAudioDebug & Debug::EDrawFilter::ListenerOcclusionPlane) != 0)

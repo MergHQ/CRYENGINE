@@ -1,10 +1,10 @@
 // Copyright 2001-2018 Crytek GmbH / Crytek Group. All rights reserved.
 
 #include "StdAfx.h"
-#include "Terrain/Layer.h"
+#include "Heightmap.h"
+
 #include "Terrain/Noise.h"
 #include "Terrain/SurfaceType.h"
-#include "Terrain/TerrainGrid.h"
 #include "Terrain/TerrainManager.h"
 #include "Util/DynamicArray2D.h"
 #include "Util/ImagePainter.h"
@@ -3125,7 +3125,7 @@ void CHeightmap::ExportBlock(const CRect& inrect, CXmlArchive& xmlAr, bool expor
 
 void CHeightmap::ImportBlock(CXmlArchive& xmlAr, CPoint newPos, bool useNewPos, float heightOffset, bool importOnlyVegetation, int nRot)
 {
-	CLogFile::WriteLine("Importing Heightmap settings...");
+	CLogFile::WriteLine("Importing Heightmap ...");
 
 	XmlNodeRef heightmap = xmlAr.root->findChild("Heightmap");
 	if (!heightmap)
@@ -3170,13 +3170,14 @@ void CHeightmap::ImportBlock(CXmlArchive& xmlAr, CPoint newPos, bool useNewPos, 
 		subRc.OffsetRect(offset);
 	}
 
+	if (GetIEditorImpl()->GetVegetationMap())
+	{
+		Vec3 ofs = HmapToWorld(offset);
+		GetIEditorImpl()->GetVegetationMap()->ImportBlock(xmlAr, CPoint(ofs.x, ofs.y));
+	}
+
 	if (importOnlyVegetation)
 	{
-		if (GetIEditorImpl()->GetVegetationMap())
-		{
-			Vec3 ofs = HmapToWorld(offset);
-			GetIEditorImpl()->GetVegetationMap()->ImportBlock(xmlAr, CPoint(ofs.x, ofs.y));
-		}
 		return;
 	}
 

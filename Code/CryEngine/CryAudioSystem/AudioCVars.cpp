@@ -27,7 +27,6 @@ void CCVars::RegisterVariables()
 	m_occlusionHighDistance = 10.0f;
 	m_occlusionMediumDistance = 80.0f;
 	m_fullObstructionMaxDistance = 5.0f;
-	m_occlusionRayLengthOffset = 0.1f;
 #elif CRY_PLATFORM_DURANGO
 	m_fileCacheManagerSize = 384 << 10;      // 384 MiB on XboxOne
 	m_audioObjectPoolSize = 256;
@@ -37,7 +36,6 @@ void CCVars::RegisterVariables()
 	m_occlusionHighDistance = 10.0f;
 	m_occlusionMediumDistance = 80.0f;
 	m_fullObstructionMaxDistance = 5.0f;
-	m_occlusionRayLengthOffset = 0.1f;
 #elif CRY_PLATFORM_ORBIS
 	m_fileCacheManagerSize = 384 << 10;      // 384 MiB on PS4
 	m_audioObjectPoolSize = 256;
@@ -47,7 +45,6 @@ void CCVars::RegisterVariables()
 	m_occlusionHighDistance = 10.0f;
 	m_occlusionMediumDistance = 80.0f;
 	m_fullObstructionMaxDistance = 5.0f;
-	m_occlusionRayLengthOffset = 0.1f;
 #elif CRY_PLATFORM_MAC
 	m_fileCacheManagerSize = 384 << 10;      // 384 MiB on Mac
 	m_audioObjectPoolSize = 256;
@@ -57,7 +54,6 @@ void CCVars::RegisterVariables()
 	m_occlusionHighDistance = 10.0f;
 	m_occlusionMediumDistance = 80.0f;
 	m_fullObstructionMaxDistance = 5.0f;
-	m_occlusionRayLengthOffset = 0.1f;
 #elif CRY_PLATFORM_LINUX
 	m_fileCacheManagerSize = 384 << 10;      // 384 MiB on Linux
 	m_audioObjectPoolSize = 256;
@@ -67,7 +63,6 @@ void CCVars::RegisterVariables()
 	m_occlusionHighDistance = 10.0f;
 	m_occlusionMediumDistance = 80.0f;
 	m_fullObstructionMaxDistance = 5.0f;
-	m_occlusionRayLengthOffset = 0.1f;
 #elif CRY_PLATFORM_IOS
 	m_fileCacheManagerSize = 384 << 10;      // 384 MiB on iOS
 	m_audioObjectPoolSize = 256;
@@ -77,7 +72,6 @@ void CCVars::RegisterVariables()
 	m_occlusionHighDistance = 10.0f;
 	m_occlusionMediumDistance = 80.0f;
 	m_fullObstructionMaxDistance = 5.0f;
-	m_occlusionRayLengthOffset = 0.1f;
 #elif CRY_PLATFORM_ANDROID
 	m_fileCacheManagerSize = 72 << 10;      // 72 MiB
 	m_audioObjectPoolSize = 256;
@@ -87,7 +81,6 @@ void CCVars::RegisterVariables()
 	m_occlusionHighDistance = 10.0f;
 	m_occlusionMediumDistance = 80.0f;
 	m_fullObstructionMaxDistance = 5.0f;
-	m_occlusionRayLengthOffset = 0.1f;
 #else
 	#error "Undefined platform."
 #endif
@@ -121,12 +114,6 @@ void CCVars::RegisterVariables()
 	               "for the sounds, whose distance to the listener is greater than this value, the obstruction is value gets attenuated with distance.\n"
 	               "Usage: s_FullObstructionMaxDistance [0/...]\n"
 	               "Default: 5 m\n");
-
-	REGISTER_CVAR2("s_OcclusionRayLengthOffset", &m_occlusionRayLengthOffset, m_occlusionRayLengthOffset, VF_CHEAT | VF_CHEAT_NOCHECK,
-	               "A physics ray cast between audio listener and audio object stops at this distance before it hits the audio object.\n"
-	               "Effectively forming a bubble of this radius around the audio object where occlusion is ignored.\n"
-	               "Usage: s_OcclusionRayLengthOffset [0/...]\n"
-	               "Default: 0.1 (10 cm)\n");
 
 	REGISTER_CVAR2("s_ListenerOcclusionPlaneSize", &m_listenerOcclusionPlaneSize, 1.0f, VF_CHEAT | VF_CHEAT_NOCHECK,
 	               "Sets the size of the plane at listener position against which occlusion is calculated.\n"
@@ -200,11 +187,12 @@ void CCVars::RegisterVariables()
 	               "g: Draw distance to listener for active audio objects.\n"
 	               "h: Draw occlusion ray labels.\n"
 	               "i: Draw occlusion rays.\n"
-	               "j: Draw listener occlusion plane.\n"
-	               "k: Draw object standalone files.\n"
-	               "l: Draw middleware specific info for active audio objects.\n"
-	               "m: Hide audio system memory info.\n"
-	               "n: Apply filter also to inactive object debug info.\n"
+	               "j: Draw spheres with occlusion ray offset radius around active audio objects.\n"
+	               "k: Draw listener occlusion plane.\n"
+	               "l: Draw object standalone files.\n"
+	               "m: Draw middleware specific info for active audio objects.\n"
+	               "q: Hide audio system memory info.\n"
+	               "r: Apply filter also to inactive object debug info.\n"
 	               "u: List standalone files.\n"
 	               "v: List active Events.\n"
 	               "w: List active Audio Objects.\n"
@@ -308,7 +296,6 @@ void CCVars::UnregisterVariables()
 		pConsole->UnregisterVariable("s_OcclusionHighDistance");
 		pConsole->UnregisterVariable("s_OcclusionMediumDistance");
 		pConsole->UnregisterVariable("s_FullObstructionMaxDistance");
-		pConsole->UnregisterVariable("s_OcclusionRayLengthOffset");
 		pConsole->UnregisterVariable("s_ListenerOcclusionPlaneSize");
 		pConsole->UnregisterVariable("s_FileCacheManagerSize");
 		pConsole->UnregisterVariable("s_AudioObjectPoolSize");

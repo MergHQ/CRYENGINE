@@ -24,13 +24,9 @@ namespace Impl
 {
 namespace Fmod
 {
-static constexpr char const* s_szAbsoluteVelocityParameterName = "absolute_velocity";
-static constexpr uint32 s_absoluteVelocityParameterId = StringToId(s_szAbsoluteVelocityParameterName);
-
 //////////////////////////////////////////////////////////////////////////
 CObject::CObject(CObjectTransformation const& transformation)
-	: m_flags(EObjectFlags::None)
-	, m_previousAbsoluteVelocity(0.0f)
+	: m_previousAbsoluteVelocity(0.0f)
 	, m_position(transformation.GetPosition())
 	, m_previousPosition(transformation.GetPosition())
 	, m_velocity(ZERO)
@@ -370,32 +366,6 @@ void CObject::ToggleFunctionality(EObjectFunctionality const type, bool const en
 {
 	switch (type)
 	{
-	case EObjectFunctionality::TrackAbsoluteVelocity:
-		{
-			if (enable)
-			{
-				m_flags |= EObjectFlags::TrackAbsoluteVelocity;
-			}
-			else
-			{
-				m_flags &= ~EObjectFlags::TrackAbsoluteVelocity;
-
-				SetParameterById(s_absoluteVelocityParameterId, 0.0f);
-			}
-
-#if defined(INCLUDE_FMOD_IMPL_PRODUCTION_CODE)
-			if (enable)
-			{
-				m_parameterInfo[s_szAbsoluteVelocityParameterName] = 0.0f;
-			}
-			else
-			{
-				m_parameterInfo.erase(s_szAbsoluteVelocityParameterName);
-			}
-#endif      // INCLUDE_FMOD_IMPL_PRODUCTION_CODE
-
-			break;
-		}
 	case EObjectFunctionality::TrackRelativeVelocity:
 		{
 			if (enable)
@@ -433,7 +403,7 @@ void CObject::DrawDebugInfo(IRenderAuxGeom& auxGeom, float const posX, float pos
 {
 #if defined(INCLUDE_FMOD_IMPL_PRODUCTION_CODE)
 
-	if (!m_parameterInfo.empty() || ((m_flags& EObjectFlags::TrackVelocityForDoppler) != 0))
+	if (((m_flags& EObjectFlags::TrackAbsoluteVelocity) != 0) || ((m_flags& EObjectFlags::TrackVelocityForDoppler) != 0))
 	{
 		bool isVirtual = true;
 
@@ -446,35 +416,19 @@ void CObject::DrawDebugInfo(IRenderAuxGeom& auxGeom, float const posX, float pos
 			}
 		}
 
-		for (auto const& parameterPair : m_parameterInfo)
+		if ((m_flags& EObjectFlags::TrackAbsoluteVelocity) != 0)
 		{
-			bool canDraw = true;
+			auxGeom.Draw2dLabel(
+				posX,
+				posY,
+				g_debugObjectFontSize,
+				isVirtual ? g_debugObjectColorVirtual.data() : g_debugObjectColorPhysical.data(),
+				false,
+				"[Fmod] %s: %2.2f m/s\n",
+				s_szAbsoluteVelocityParameterName,
+				m_absoluteVelocity);
 
-			if (szTextFilter != nullptr)
-			{
-				CryFixedStringT<MaxControlNameLength> lowerCaseParameterName(parameterPair.first);
-				lowerCaseParameterName.MakeLower();
-
-				if (lowerCaseParameterName.find(szTextFilter) == CryFixedStringT<MaxControlNameLength>::npos)
-				{
-					canDraw = false;
-				}
-			}
-
-			if (canDraw)
-			{
-				auxGeom.Draw2dLabel(
-					posX,
-					posY,
-					g_debugObjectFontSize,
-					isVirtual ? g_debugObjectColorVirtual.data() : g_debugObjectColorPhysical.data(),
-					false,
-					"[Fmod] %s: %2.2f\n",
-					parameterPair.first,
-					parameterPair.second);
-
-				posY += g_debugObjectLineHeight;
-			}
+			posY += g_debugObjectLineHeight;
 		}
 
 		if ((m_flags& EObjectFlags::TrackVelocityForDoppler) != 0)
@@ -543,84 +497,20 @@ void CObject::UpdateVelocities(float const deltaTime)
 		if (absoluteVelocity == 0.0f || fabs(absoluteVelocity - m_previousAbsoluteVelocity) > g_cvars.m_velocityTrackingThreshold)
 		{
 			m_previousAbsoluteVelocity = absoluteVelocity;
-			SetParameterById(s_absoluteVelocityParameterId, absoluteVelocity);
-
-#if defined(INCLUDE_FMOD_IMPL_PRODUCTION_CODE)
-			m_parameterInfo[s_szAbsoluteVelocityParameterName] = absoluteVelocity;
-#endif      // INCLUDE_FMOD_IMPL_PRODUCTION_CODE
+			SetAbsoluteVelocity(absoluteVelocity);
 		}
 	}
 }
 
 //////////////////////////////////////////////////////////////////////////
-void CObject::SetParameterById(uint32 const parameterId, float const value)
+void CObject::SetAbsoluteVelocity(float const velocity)
 {
-	FMOD_RESULT fmodResult = FMOD_ERR_UNINITIALIZED;
-
 	for (auto const pEvent : m_events)
 	{
-		FMOD::Studio::EventInstance* const pEventInstance = pEvent->GetInstance();
-		CRY_ASSERT_MESSAGE(pEventInstance != nullptr, "Event instance doesn't exist.");
-		CTrigger const* const pTrigger = pEvent->GetTrigger();
-		CRY_ASSERT_MESSAGE(pTrigger != nullptr, "Trigger doesn't exist.");
-
-		FMOD::Studio::EventDescription* pEventDescription = nullptr;
-		fmodResult = pEventInstance->getDescription(&pEventDescription);
-		ASSERT_FMOD_OK;
-
-		if (g_triggerToParameterIndexes.find(pTrigger) != g_triggerToParameterIndexes.end())
-		{
-			ParameterIdToIndex& parameters = g_triggerToParameterIndexes[pTrigger];
-
-			if (parameters.find(parameterId) != parameters.end())
-			{
-				fmodResult = pEventInstance->setParameterValueByIndex(parameters[parameterId], value);
-				ASSERT_FMOD_OK;
-			}
-			else
-			{
-				int parameterCount = 0;
-				fmodResult = pEventInstance->getParameterCount(&parameterCount);
-				ASSERT_FMOD_OK;
-
-				for (int index = 0; index < parameterCount; ++index)
-				{
-					FMOD_STUDIO_PARAMETER_DESCRIPTION parameterDescription;
-					fmodResult = pEventDescription->getParameterByIndex(index, &parameterDescription);
-					ASSERT_FMOD_OK;
-
-					if (parameterId == StringToId(parameterDescription.name))
-					{
-						parameters.emplace(parameterId, index);
-						fmodResult = pEventInstance->setParameterValueByIndex(index, value);
-						ASSERT_FMOD_OK;
-						break;
-					}
-				}
-			}
-		}
-		else
-		{
-			int parameterCount = 0;
-			fmodResult = pEventInstance->getParameterCount(&parameterCount);
-			ASSERT_FMOD_OK;
-
-			for (int index = 0; index < parameterCount; ++index)
-			{
-				FMOD_STUDIO_PARAMETER_DESCRIPTION parameterDescription;
-				fmodResult = pEventDescription->getParameterByIndex(index, &parameterDescription);
-				ASSERT_FMOD_OK;
-
-				if (parameterId == StringToId(parameterDescription.name))
-				{
-					g_triggerToParameterIndexes[pTrigger].emplace(std::make_pair(parameterId, index));
-					fmodResult = pEventInstance->setParameterValueByIndex(index, value);
-					ASSERT_FMOD_OK;
-					break;
-				}
-			}
-		}
+		pEvent->SetAbsoluteVelocity(velocity);
 	}
+
+	m_absoluteVelocity = velocity;
 }
 } // namespace Fmod
 } // namespace Impl

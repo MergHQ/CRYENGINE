@@ -275,7 +275,7 @@ private:
 
 	// streaming loading
 	IResourceList* m_pResList = nullptr;
-	const char* m_szCgfName = nullptr;
+	const char* m_szResFileName = nullptr;
 };
 
 
@@ -397,28 +397,31 @@ I3DEngine::ELevelLoadStatus CObjManager::CPreloadTimeslicer::DoStep(const float 
 			if (!m_pResList)
 			{
 				m_pResList = GetISystem()->GetIResourceManager()->GetLevelResourceList();
-				m_szCgfName = m_pResList->GetFirst();
+				m_szResFileName = m_pResList->GetFirst();
 			}
 
 			CryPathString cgfFilename;
 			const float fStartTime = GetCurAsyncTimeSec();
 
 			// Request objects loading from Streaming System.
-			if (m_szCgfName)
+			if (m_szResFileName)
 			{
-				while (m_szCgfName)
+				while (m_szResFileName)
 				{
-					if (strstr(m_szCgfName, ".cgf"))
+					const char* szFileExt = PathUtil::GetExt(m_szResFileName);
+					const bool isCgf = cry_stricmp(szFileExt, CRY_GEOMETRY_FILE_EXT) == 0;
+
+					if (isCgf)
 					{
-						const char* sLodName = strstr(m_szCgfName, "_lod");
+						const char* sLodName = strstr(m_szResFileName, "_lod");
 						if (sLodName && (sLodName[4] >= '0' && sLodName[4] <= '9'))
 						{
 							// Ignore Lod files.
-							m_szCgfName = m_pResList->GetNext();
+							m_szResFileName = m_pResList->GetNext();
 							continue;
 						}
 
-						cgfFilename = m_szCgfName;
+						cgfFilename = m_szResFileName;
 
 						if (m_isVerboseLogging)
 						{
@@ -439,7 +442,7 @@ I3DEngine::ELevelLoadStatus CObjManager::CPreloadTimeslicer::DoStep(const float 
 						SYNCHRONOUS_LOADING_TICK();
 					}
 
-					m_szCgfName = m_pResList->GetNext();
+					m_szResFileName = m_pResList->GetNext();
 
 					if (timeSlicingLimitSec > 0.0f && GetCurAsyncTimeSec() - fStartTime > timeSlicingLimitSec)
 					{

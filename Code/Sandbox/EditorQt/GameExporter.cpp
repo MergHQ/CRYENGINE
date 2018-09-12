@@ -69,8 +69,13 @@ SGameExporterSettings::SGameExporterSettings() :
 	bUpdateIndirectLighting(false),
 	nApplySS(1),
 	fBrMultiplier(1.0f),
-	eExportEndian(GetPlatformEndian())
+	eExportEndian(GetPlatformEndian()),
+	exportBinaryXml(false)
 {
+	if (ICVar* pCvar = gEnv->pConsole->GetCVar("ed_exportLevelXmlBinary"))
+	{
+		exportBinaryXml = (pCvar->GetIVal() != 0);
+	}
 }
 
 void SGameExporterSettings::SetLowQuality()
@@ -273,10 +278,7 @@ bool CGameExporter::DoExport(unsigned int flags, const char* subdirectory)
 	if (hasSerializationList)
 	{
 		string levelDataFile = sLevelPath + "Serialize.xml";
-		XmlString xmlData = entityList->getXML();
-		CCryMemFile file;
-		file.Write(xmlData.c_str(), xmlData.length());
-		m_levelPak.m_pakFile.UpdateFile(levelDataFile, file);
+		WriteXmlFileToPak(entityList, levelDataFile);
 	}
 
 	//////////////////////////////////////////////////////////////////////////
@@ -516,10 +518,7 @@ void CGameExporter::ExportDynTexSrcLayerInfo(const char* pszGamePath)
 	XmlNodeRef root = GetIEditorImpl()->GetObjectManager()->GetLayersManager()->GenerateDynTexSrcLayerInfo();
 
 	string levelDataFile = string(pszGamePath) + "DynTexSrcLayerAct.xml";
-	XmlString xmlData = root->getXML();
-	CCryMemFile file;
-	file.Write(xmlData.c_str(), xmlData.length());
-	m_levelPak.m_pakFile.UpdateFile(levelDataFile, file);
+	WriteXmlFileToPak(root, levelDataFile);
 }
 
 void CGameExporter::ExportOcclusionMesh(const char* pszGamePath)
@@ -679,16 +678,10 @@ void CGameExporter::ExportLevelData(const string& path, bool bExportMission)
 
 	// Save Level Data XML
 	string levelDataFile = path + "LevelData.xml";
-	XmlString xmlData = root->getXML();
-	CCryMemFile file;
-	file.Write(xmlData.c_str(), xmlData.length());
-	m_levelPak.m_pakFile.UpdateFile(levelDataFile, file);
+	WriteXmlFileToPak(root, levelDataFile);
 
 	string levelDataActionFile = path + "LevelDataAction.xml";
-	XmlString xmlDataAction = rootAction->getXML();
-	CCryMemFile fileAction;
-	fileAction.Write(xmlDataAction.c_str(), xmlDataAction.length());
-	m_levelPak.m_pakFile.UpdateFile(levelDataActionFile, fileAction);
+	WriteXmlFileToPak(rootAction, levelDataActionFile);
 
 	if (bExportMission)
 	{
@@ -702,11 +695,7 @@ void CGameExporter::ExportLevelData(const string& path, bool bExportMission)
 		//if (!CFileUtil::OverwriteFile( path+currentMissionFileName ))
 		//			return;
 
-		_smart_ptr<IXmlStringData> pXmlStrData = missionNode->getXMLData(5000000);
-
-		CCryMemFile fileMission;
-		fileMission.Write(pXmlStrData->GetString(), pXmlStrData->GetStringLength());
-		m_levelPak.m_pakFile.UpdateFile(path + currentMissionFileName, fileMission);
+		WriteXmlFileToPak(missionNode, path + currentMissionFileName, 5000000);
 	}
 }
 
@@ -751,11 +740,7 @@ void CGameExporter::ExportLevelInfo(const string& path)
 
 	// Save LevelInfo file.
 	string filename = path + "LevelInfo.xml";
-	XmlString xmlData = root->getXML();
-
-	CCryMemFile file;
-	file.Write(xmlData.c_str(), xmlData.length());
-	m_levelPak.m_pakFile.UpdateFile(filename, file);
+	WriteXmlFileToPak(root, filename);
 }
 
 void CGameExporter::ExportMapInfo(XmlNodeRef& node)
@@ -1751,11 +1736,7 @@ void CGameExporter::ExportMaterials(XmlNodeRef& levelDataNode, const string& pat
 	}
 	if (!bHaveItems)
 	{
-		XmlString xmlData = nodeMaterials->getXML();
-
-		CCryMemFile file;
-		file.Write(xmlData.c_str(), xmlData.length());
-		m_levelPak.m_pakFile.UpdateFile(filename, file);
+		WriteXmlFileToPak(nodeMaterials, filename);
 	}
 	else
 	{
@@ -1810,11 +1791,8 @@ void CGameExporter::ExportLevelLensFlares(const string& path)
 		pRootNode->addChild(pFlareNode);
 	}
 
-	CCryMemFile lensFlareNames;
-	lensFlareNames.Write(pRootNode->getXMLData()->GetString(), pRootNode->getXMLData()->GetStringLength());
-
 	string exportPathName = path + FLARE_EXPORT_FILE;
-	m_levelPak.m_pakFile.UpdateFile(exportPathName, lensFlareNames);
+	WriteXmlFileToPak(pRootNode, exportPathName);
 }
 
 void CGameExporter::ExportLevelResourceList(const string& path)
@@ -1930,21 +1908,14 @@ void CGameExporter::ExportGameTokens(XmlNodeRef& levelDataNode, const string& pa
 				// Export this library to pak file.
 				XmlNodeRef gtNodeLib = XmlHelpers::CreateXmlNode("GameTokensLibrary");
 				pLib->Serialize(gtNodeLib, false);
-				CCryMemFile file;
-				XmlString xmlData = gtNodeLib->getXML();
-				file.Write(xmlData.c_str(), xmlData.length());
 				string gtfilename = PathUtil::Make(gtPath, PathUtil::GetFile(pLib->GetFilename()));
-				m_levelPak.m_pakFile.UpdateFile(gtfilename, file);
+				WriteXmlFileToPak(gtNodeLib, gtfilename);
 			}
 		}
 	}
 	if (!bEmptyLevelLib)
 	{
-		XmlString xmlData = nodeLib->getXML();
-
-		CCryMemFile file;
-		file.Write(xmlData.c_str(), xmlData.length());
-		m_levelPak.m_pakFile.UpdateFile(filename, file);
+		WriteXmlFileToPak(nodeLib, filename);
 	}
 	else
 	{
@@ -2186,6 +2157,33 @@ bool CGameExporter::CloseLevelPack(SLevelPakHelper& lphelper, bool bCryPak)
 	assert(lphelper.m_bPakOpened == false);
 	assert(lphelper.m_bPakOpenedCryPak == false);
 	return bRet;
+}
+
+void CGameExporter::WriteXmlFileToPak(XmlNodeRef& root, const string& filename, int xmlMemReserve/* = 1024*/)
+{
+	WriteXmlFile(root, filename, m_levelPak.m_pakFile, xmlMemReserve);
+}
+
+void CGameExporter::WriteXmlFile(XmlNodeRef& root, const string& filename, CPakFile& pak, int xmlMemReserve)
+{
+	if (m_settings.exportBinaryXml)
+	{
+		struct SXmlBinaryDataWriterMemFile : public XMLBinary::IDataWriter
+		{
+			SXmlBinaryDataWriterMemFile(int memReserve) : m_file(memReserve) {}
+			virtual void Write(const void* pData, size_t size) final { m_file.Write(pData, size); }
+			CCryMemFile m_file;
+		};
+		SXmlBinaryDataWriterMemFile dataWriter(xmlMemReserve);
+		IXmlUtils* pXmlUtils = gEnv->pSystem->GetXmlUtils();
+		pXmlUtils->SaveBinaryXmlWithWriter(dataWriter, root);
+		pak.UpdateFile(filename, dataWriter.m_file);
+	}
+	else
+	{
+		_smart_ptr<IXmlStringData> xmlData = root->getXMLData(xmlMemReserve);
+		pak.UpdateFile(filename, (void*)xmlData->GetString(), (int)xmlData->GetStringLength());
+	}
 }
 
 namespace Private_GameExporter

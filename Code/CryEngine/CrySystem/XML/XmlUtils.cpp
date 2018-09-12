@@ -269,8 +269,8 @@ class CXmlBinaryDataWriterFile : public XMLBinary::IDataWriter
 public:
 	CXmlBinaryDataWriterFile(const char* file) { m_file = gEnv->pCryPak->FOpen(file, "wb"); }
 	~CXmlBinaryDataWriterFile() { if (m_file) gEnv->pCryPak->FClose(m_file); };
-	virtual bool IsOk()                                { return m_file != 0; };
-	virtual void Write(const void* pData, size_t size) { if (m_file) gEnv->pCryPak->FWrite(pData, size, 1, m_file); }
+	bool         IsOk()                                      { return m_file != 0; };
+	virtual void Write(const void* pData, size_t size) final { if (m_file) gEnv->pCryPak->FWrite(pData, size, 1, m_file); }
 private:
 	FILE* m_file;
 };
@@ -281,9 +281,15 @@ bool CXmlUtils::SaveBinaryXmlFile(const char* filename, XmlNodeRef root)
 	CXmlBinaryDataWriterFile fileSink(filename);
 	if (!fileSink.IsOk())
 		return false;
+	return SaveBinaryXmlWithWriter(fileSink, root);
+}
+
+//////////////////////////////////////////////////////////////////////////
+bool CXmlUtils::SaveBinaryXmlWithWriter(XMLBinary::IDataWriter& dataWriter, XmlNodeRef root)
+{
 	XMLBinary::CXMLBinaryWriter writer;
 	string error;
-	return writer.WriteNode(&fileSink, root, false, 0, error);
+	return writer.WriteNode(&dataWriter, root, false, 0, error);
 }
 
 //////////////////////////////////////////////////////////////////////////

@@ -133,10 +133,13 @@ public:
 	bool CanBeEdited() const;
 	bool IsBeingEdited() const { return m_flags.open != 0; }
 	bool IsModified() const { return m_flags.modified != 0; }
-
-	//! Can this asset be edited? Returns false if read only on disk due to source control or if folder is read-only.
-	bool IsReadOnly() const;
 	void SetModified(bool bModified);
+
+	//! Returns true if the editor can write to asset files.
+	bool IsWritable(bool includeSourceFile = true) const;
+
+	//! Asset that is immutable cannot be changed. Engine assets are example of immutable assets.  
+	bool IsImmutable() const;
 
 	//! Opens asset for editing. If \pEditor is nullptr, a new editor is created based on the asset type.
 	//! If pEditor is specified, it will open the asset in that editor
@@ -189,7 +192,7 @@ private:
 	//Filter string is how we handle "smart searching" in the content browser. All data aggregated into this string is going to be searchable in the main search bar. 
 	const QString& GetFilterString(bool forceCompute = false) const;
 
-	void WriteToFile();
+	bool WriteToFile();
 	void SetName(const char* szName);
 	void SetLastModifiedTime(uint64 t);
 	void SetMetadataFile(const char* szFilepath);
@@ -203,7 +206,7 @@ private:
 	void OnOpenedInEditor(CAssetEditor* pEditor);
 
 	void NotifyChanged(int changeFlags = eAssetChangeFlags_All);
-
+	
 private:
 	CAsset(const CAsset&) = delete;
 	CAsset& operator=(const CAsset&) = delete;
@@ -230,7 +233,7 @@ private:
 		{
 			uint8 open : 1;
 			uint8 modified : 1;
-			uint8 readOnly : 1;
+			uint8 immutable : 1;
 		};
 	} m_flags;
 

@@ -84,6 +84,7 @@ public:
 	void             HandleSetTransformation(CObjectTransformation const& transformation);
 	void             HandleSetEnvironment(CATLAudioEnvironment const* const pEnvironment, float const value);
 	void             HandleSetOcclusionType(EOcclusionType const calcType);
+	void             HandleSetOcclusionRayOffset(float const offset);
 	void             HandleStopFile(char const* const szFile);
 
 	void             Init(char const* const szName, Impl::IObject* const pImplData, EntityId const entityId);
@@ -138,6 +139,7 @@ private:
 	virtual void     SetEnvironment(EnvironmentId const audioEnvironmentId, float const amount, SRequestUserData const& userData = SRequestUserData::GetEmptyObject()) override;
 	virtual void     SetCurrentEnvironments(EntityId const entityToIgnore = 0, SRequestUserData const& userData = SRequestUserData::GetEmptyObject()) override;
 	virtual void     SetOcclusionType(EOcclusionType const occlusionType, SRequestUserData const& userData = SRequestUserData::GetEmptyObject()) override;
+	virtual void     SetOcclusionRayOffset(float const offset, SRequestUserData const& userData = SRequestUserData::GetEmptyObject()) override;
 	virtual void     PlayFile(SPlayFileInfo const& playFileInfo, SRequestUserData const& userData = SRequestUserData::GetEmptyObject()) override;
 	virtual void     StopFile(char const* const szFile, SRequestUserData const& userData = SRequestUserData::GetEmptyObject()) override;
 	virtual void     SetName(char const* const szName, SRequestUserData const& userData = SRequestUserData::GetEmptyObject()) override;
@@ -166,8 +168,9 @@ private:
 public:
 
 	void           DrawDebugInfo(IRenderAuxGeom& auxGeom);
-	void           ResetObstructionRays() { m_propagationProcessor.ResetRayData(); }
-	float          GetMaxRadius() const   { return m_maxRadius; }
+	void           ResetObstructionRays()        { m_propagationProcessor.ResetRayData(); }
+	float          GetMaxRadius() const          { return m_maxRadius; }
+	float          GetOcclusionRayOffset() const { return m_propagationProcessor.GetOcclusionRayOffset(); }
 
 	void           ForceImplementationRefresh(bool const setTransformation);
 
