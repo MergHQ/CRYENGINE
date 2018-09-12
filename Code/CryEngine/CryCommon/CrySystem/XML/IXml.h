@@ -549,6 +549,19 @@ struct IXmlTableReader
 //! \endcond
 #endif
 
+
+namespace XMLBinary
+{
+	//! Binary XML writer interface. Serves as a sink for saving binary XML files.
+	class IDataWriter
+	{
+	public:
+		virtual ~IDataWriter() {}
+		//! Write (append) binary xml data chunk to the end of the file
+		virtual void Write(const void* pData, size_t size) = 0;
+	};
+}
+
 //////////////////////////////////////////////////////////////////////////
 //! IXmlUtils structure.
 struct IXmlUtils
@@ -582,6 +595,9 @@ struct IXmlUtils
 
 	//! Create XML to file in the binary form.
 	virtual bool SaveBinaryXmlFile(const char* sFilename, XmlNodeRef root) = 0;
+
+	//! Write XML in the binary form using custom writer object.
+	virtual bool SaveBinaryXmlWithWriter(XMLBinary::IDataWriter& writer, XmlNodeRef root) = 0;
 
 	//! Read XML data from file in the binary form.
 	virtual XmlNodeRef LoadBinaryXmlFile(const char* sFilename, bool bEnablePatching = true) = 0;

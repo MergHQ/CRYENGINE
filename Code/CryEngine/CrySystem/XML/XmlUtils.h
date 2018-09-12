@@ -54,6 +54,7 @@ public:
 	virtual IXmlSerializer*    CreateXmlSerializer();
 
 	virtual bool               SaveBinaryXmlFile(const char* sFilename, XmlNodeRef root);
+	virtual bool               SaveBinaryXmlWithWriter(XMLBinary::IDataWriter& writer, XmlNodeRef root) final;
 	virtual XmlNodeRef         LoadBinaryXmlFile(const char* sFilename, bool bEnablePatching = true);
 
 	virtual bool               EnableBinaryXmlLoading(bool bEnable);
