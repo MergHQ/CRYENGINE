@@ -103,21 +103,15 @@ bool CAIMoveSimulation::GetAIMoveSimulationDestination(CViewport* pView, const C
 	HitContext hitInfo(pView);
 	pView->HitTest(point, hitInfo);
 
-	// TODO Get point or projected point on hit object's bounds
 	CBaseObject* pHitObj = hitInfo.object;
 	if (pHitObj)
 	{
-		AABB bbox;
-		pHitObj->GetBoundBox(bbox);
-
-		// TODO Get closest approachable point to bounds
-		outGotoPoint = pView->SnapToGrid(pView->ViewToWorld(point));
+		outGotoPoint = hitInfo.raySrc + hitInfo.dist * hitInfo.rayDir;
 	}
 	else
 	{
 		outGotoPoint = pView->SnapToGrid(pView->ViewToWorld(point));
 	}
-
 	return true;
 }
 
