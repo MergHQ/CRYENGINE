@@ -27,7 +27,7 @@ public:
 	~CParticleContainer();
 
 	void                              Resize(uint32 newSize);
-	void                              SetUsedData(const SUseData& useData);
+	void                              SetUsedData(const PUseData& pUseData);
 	bool                              HasData(EParticleDataType type) const { return m_useData.Used(type); }
 	void                              AddParticle();
 	void                              Clear();

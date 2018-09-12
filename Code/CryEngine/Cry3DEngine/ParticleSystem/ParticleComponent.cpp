@@ -110,7 +110,7 @@ void SComponentParams::Serialize(Serialization::IArchive& ar)
 	}
 	ar(string(buffer), "", "!Fields used:");
 
-	cry_sprintf(buffer, "%d", pComponent->GetDataUse().totalSize);
+	cry_sprintf(buffer, "%d", pComponent->GetUseData()->totalSize);
 	ar(string(buffer), "", "!Bytes per Particle:");
 }
 
@@ -207,7 +207,7 @@ uint CParticleComponent::AddInstanceData(uint size)
 void CParticleComponent::AddParticleData(EParticleDataType type)
 {
 	SetChanged();
-	m_useData.AddData(type);
+	m_pUseData->AddData(type);
 }
 
 void CParticleComponent::SetParent(IParticleComponent* pParentComponent)
@@ -285,8 +285,10 @@ void CParticleComponent::PreCompile()
 	static_cast<SFeatureDispatchers&>(*this) = {};
 	m_gpuFeatures.clear();
 
-	// add default particle data
-	m_useData = {};
+	// Create new use data array, existing containers reference old array
+	m_pUseData = NewUseData();
+
+	// Add default particle data
 	AddParticleData(EPDT_ParentId);
 	AddParticleData(EPVF_Position);
 	AddParticleData(EPVF_Velocity);
