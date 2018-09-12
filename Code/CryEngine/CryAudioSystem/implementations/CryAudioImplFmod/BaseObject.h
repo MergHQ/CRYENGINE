@@ -60,10 +60,16 @@ public:
 	virtual void DrawDebugInfo(IRenderAuxGeom& auxGeom, float const posX, float posY, char const* const szTextFilter) override {}
 	// ~CryAudio::Impl::IObject
 
+	static FMOD::Studio::System* s_pSystem;
+
 protected:
 
 	void StopEvent(uint32 const id);
 	bool SetEvent(CEvent* const pEvent);
+
+	void UpdateVelocityTracking();
+
+	EObjectFlags                                m_flags;
 
 	std::vector<CEvent*>                        m_events;
 	std::vector<CBaseStandaloneFile*>           m_files;
@@ -76,12 +82,9 @@ protected:
 
 	FMOD_3D_ATTRIBUTES                          m_attributes;
 	float                 m_occlusion = 0.0f;
+	float                 m_absoluteVelocity = 0.0f;
 
 	CObjectTransformation m_transformation;
-
-public:
-
-	static FMOD::Studio::System* s_pSystem;
 };
 
 using Objects = std::vector<CBaseObject*>;

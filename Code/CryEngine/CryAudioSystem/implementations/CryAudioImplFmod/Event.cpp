@@ -26,6 +26,7 @@ CEvent::CEvent(CATLEvent* const pEvent)
 	, m_pMasterTrack(nullptr)
 	, m_pLowpass(nullptr)
 	, m_pOcclusionParameter(nullptr)
+	, m_pAbsoluteVelocityParameter(nullptr)
 	, m_pObject(nullptr)
 	, m_pTrigger(nullptr)
 {
@@ -44,6 +45,12 @@ CEvent::~CEvent()
 	{
 		m_pObject->RemoveEvent(this);
 	}
+}
+
+//////////////////////////////////////////////////////////////////////////
+void CEvent::SetAbsoluteVelocityParameter()
+{
+	m_pInstance->getParameter(s_szAbsoluteVelocityParameterName, &m_pAbsoluteVelocityParameter);
 }
 
 //////////////////////////////////////////////////////////////////////////
@@ -280,6 +287,16 @@ void CEvent::UpdateVirtualState()
 	else
 	{
 		m_state = EEventState::None;
+	}
+}
+
+//////////////////////////////////////////////////////////////////////////
+void CEvent::SetAbsoluteVelocity(float const velocity)
+{
+	if (m_pAbsoluteVelocityParameter != nullptr)
+	{
+		FMOD_RESULT const fmodResult = m_pAbsoluteVelocityParameter->setValue(velocity);
+		ASSERT_FMOD_OK;
 	}
 }
 

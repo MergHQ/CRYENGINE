@@ -41,17 +41,12 @@ private:
 
 	void Set3DAttributes();
 	void UpdateVelocities(float const deltaTime);
-	void SetParameterById(uint32 const parameterId, float const value);
+	void SetAbsoluteVelocity(float const velocity);
 
-	EObjectFlags m_flags;
-	float        m_previousAbsoluteVelocity;
-	Vec3         m_position;
-	Vec3         m_previousPosition;
-	Vec3         m_velocity;
-
-#if defined(INCLUDE_FMOD_IMPL_PRODUCTION_CODE)
-	std::map<char const* const, float> m_parameterInfo;
-#endif  // INCLUDE_FMOD_IMPL_PRODUCTION_CODE
+	float m_previousAbsoluteVelocity;
+	Vec3  m_position;
+	Vec3  m_previousPosition;
+	Vec3  m_velocity;
 };
 } // namespace Fmod
 } // namespace Impl
