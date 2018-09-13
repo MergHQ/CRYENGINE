@@ -246,8 +246,8 @@ void CXConsoleVariableCVarGroup::OnCVarChangeFunc(ICVar* pVar)
 
 	int value = pThis->GetIVal();
 
-	// all sys_spec_* should be clamped by the max available spec
-	if (strnicmp(pThis->GetName(), "sys_spec", 8) == 0)
+	// only the global sys_spec should be clamped by the max available spec and not the individual sys_spec_*
+	if (stricmp(pThis->GetName(), "sys_spec") == 0)
 	{
 		int maxSpec = gEnv->pSystem->GetMaxConfigSpec();
 		if (value > maxSpec)
