@@ -121,7 +121,7 @@ CBrushObject::CBrushObject()
 	mv_recvWind = false;
 	mv_Occluder = false;
 	mv_drawLast = false;
-	mv_ignoreTerrainLayerBlend = true;
+	mv_ignoreTerrainLayerBlend = false;
 	mv_ignoreDecalBlend = false;
 	mv_shadowLodBias = 0;
 
