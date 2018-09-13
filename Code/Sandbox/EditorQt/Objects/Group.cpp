@@ -399,6 +399,7 @@ bool CGroup::CreateFrom(std::vector<CBaseObject*>& objects)
 		SetLayer(pLastSelectedObject->GetLayer());
 		GetIEditorImpl()->GetIUndoManager()->Resume();
 
+		//add ourselves to the last selected group
 		if (CBaseObject* pLastParent = pLastSelectedObject->GetGroup())
 			pLastParent->AddMember(this);
 	}
@@ -413,7 +414,7 @@ bool CGroup::CreateFrom(std::vector<CBaseObject*>& objects)
 		pObjectPrefab = (CPrefabObject*)pObject->GetPrefab();
 
 		// Sanity check if user is trying to group objects from different prefabs
-		if (pPrefabToCompareAgainst && pObjectPrefab)
+		if (pPrefabToCompareAgainst && pObjectPrefab && pPrefabToCompareAgainst->GetPrefabGuid() != pObjectPrefab->GetPrefabGuid())
 		{
 			return false;
 		}
@@ -424,13 +425,8 @@ bool CGroup::CreateFrom(std::vector<CBaseObject*>& objects)
 
 	AddMembers(objects);
 
-	// Signal that we added a group to the prefab
-	if (pPrefabToCompareAgainst)
-		pPrefabToCompareAgainst->AddMember(this);
-
 	GetIEditorImpl()->GetObjectManager()->SelectObject(this);
 	GetIEditorImpl()->SetModifiedFlag();
-
 	return true;
 }
 
@@ -494,6 +490,23 @@ void CGroup::AddMembers(std::vector<CBaseObject*>& objects, bool keepPos /*= tru
 		return;
 	}
 
+	//If the object is in another prefab it needs to be removed from it (aka deserialize from CPrefabItem)
+	//CASES:
+	//1 - from top level of a prefab to a group : Needs remove from prefab and add to group  (he'll be the one to serialize)
+	//2 - from different groups in same prefab : Needs no remove from prefab, but remove from group
+	//3 - from another prefab : Needs remove from prefab
+	//4 - from outside group to inside group in prefab : Needs remove from old group and add to new group in prefab
+	for (auto pObj : objects)
+	{
+		CBaseObject* pOldParent = pObj->GetGroup();  //This can also be a prefab, and we want it to be like this
+		if (pOldParent)
+		{
+			pOldParent->RemoveMember(pObj);
+		}
+	}
+
+	CGroup* pPrefab = static_cast<CGroup*>(GetPrefab());
+
 	auto batchProcessDispatcher = GetObjectManager()->GetBatchProcessDispatcher();
 	batchProcessDispatcher.Start(objects);
 
@@ -504,16 +517,22 @@ void CGroup::AddMembers(std::vector<CBaseObject*>& objects, bool keepPos /*= tru
 		m_members.push_back(pObj);
 	}
 
-	AttachChildren(objects, keepPos);
-
-	CGroup* pPrefab = static_cast<CGroup*>(GetPrefab());
-	if (oldNumMembers != m_members.size() && pPrefab)
+	//Attach children already provokes serialization into lib (i.e ModifyTransform), if the object comes from outside guids must be generated before
+	//This needs to happen here or the prefab delete in the attach will mess up id generation
+	if (pPrefab)
 	{
-		for (auto i = oldNumMembers; i < m_members.size(); ++i)
+		CPrefabObject* pPrefabObject = (CPrefabObject*)pPrefab;
+		for (auto pObj : objects)
 		{
-			pPrefab->AddMember(m_members[i], true);
+			pPrefabObject->GenerateGUIDsForObjectAndChildren(pObj);
 		}
 	}
+
+	//Actually attach the objects to the group instance
+	AttachChildren(objects, keepPos);
+
+	//If in a prefab re serialize the group and regenerate all the members in all the group's instances
+	UpdatePrefab(eOCOT_Modify);
 
 	InvalidateBBox();
 }
@@ -530,17 +549,22 @@ void CGroup::RemoveMembers(std::vector<CBaseObject*>& members, bool keepPos /*= 
 	  FilterOutNonMembers(members);
 
 	CBaseObject* pPrefab = GetPrefab();
-	if (pPrefab)
-	{
-		pPrefab->RemoveMembers(members, keepPos, placeOnRoot);
-	}
-
 	if (pPrefab != this)
 	{
 		DetachChildren(members, keepPos, placeOnRoot);
 	}
 
 	UpdateGroup();
+
+	//Since we removed an item the group needs to be re serialized into the prefab item
+	UpdatePrefab(eOCOT_Modify);
+
+	//if we move out from prefab the prefab flag needs to be cleared.
+	for (CBaseObject* pObject : members)
+	{
+		if (!pObject->GetPrefab())
+			pObject->ClearFlags(OBJFLAG_PREFAB);
+	}
 }
 
 void CGroup::FilterOutNonMembers(std::vector<CBaseObject*>& objects)
@@ -819,15 +843,17 @@ void CGroup::SerializeMembers(CObjectArchive& ar)
 	{
 		if (!ar.bUndo)
 		{
+			//If we are loading a group that's already full we need to clean it up and reinstance all it's members from the ground up
 			int num = static_cast<int>(m_members.size());
-			for (int i = 0; i < num; ++i)
+			for (int i = num - 1; i >= 0; i--)
 			{
 				CBaseObject* member = m_members[i];
-				member->DetachThis(true);
+				GetIEditor()->GetObjectManager()->DeleteObject(member);
 			}
 			m_members.clear();
+			m_children.clear();
 
-			// Loading.
+			// Loading, reload all the children from XML
 			XmlNodeRef childsRoot = xmlNode->findChild("Objects");
 			if (childsRoot)
 			{
@@ -844,7 +870,7 @@ void CGroup::SerializeMembers(CObjectArchive& ar)
 	}
 	else
 	{
-		if (m_members.size() > 0 && !ar.bUndo && !ar.IsSavingInPrefab())
+		if (m_members.size() > 0 && !ar.bUndo)
 		{
 			// Saving.
 			XmlNodeRef root = xmlNode->newChild("Objects");
@@ -855,7 +881,7 @@ void CGroup::SerializeMembers(CObjectArchive& ar)
 			for (int i = 0; i < num; ++i)
 			{
 				CBaseObject* obj = m_members[i];
-				ar.SaveObject(obj, true);
+				ar.SaveObject(obj, true, true);
 			}
 		}
 	}
@@ -1187,6 +1213,9 @@ void CGroup::DetachChildren(std::vector<CBaseObject*>& objects, bool shouldKeepP
 	{
 		pGrandParent->AddMembers(objects, shouldKeepPos);
 	}
+	//it's important we notify the layer that something changed as we are moving something that was serialized directly inside it to another place (aka group or prefab)
+	//before this the layer was not notified at all and you ended up with two copies of the same thing
+	GetLayer()->SetModified(true);
 }
 
 void CGroup::DetachAll(bool keepPos /*= true*/, bool placeOnRoot /*= false*/)
@@ -1219,20 +1248,22 @@ void CGroup::AttachChildren(std::vector<CBaseObject*>& objects, bool shouldKeepP
 
 	RemoveIfAlreadyChildrenOf(this, objects);
 
-	CBatchAttachChildrenTransformationsHandler transormatoinsHandler(this, objects, shouldKeepPos, shouldInvalidateTM);
+	CBatchAttachChildrenTransformationsHandler transformationsHandler(this, objects, shouldKeepPos, shouldInvalidateTM);
 
 	{
 		CScopedSuspendUndo suspendUndo;
-
-		for (auto pChild : objects)
-		{
-			pChild->m_bSuppressUpdatePrefab = true;
-		}
 
 		ForEachParentOf(objects, [shouldKeepPos](CGroup* pParent, std::vector<CBaseObject*>& children)
 		{
 			if (pParent)
 			{
+			  // TODO: optimize
+			  for (auto pChild : children)
+			  {
+					//If this object is in a prefab we have to clean it up (aka remove the serialized entry from the XML of the item), before the object is assigned to the new prefab
+          pChild->UpdatePrefab(eOCOT_Delete);
+				}
+
 			  pParent->DetachChildren(children, shouldKeepPos, true);
 			}
 			else
@@ -1256,7 +1287,7 @@ void CGroup::AttachChildren(std::vector<CBaseObject*>& objects, bool shouldKeepP
 
 		GetObjectManager()->NotifyObjectListeners(objects, CObjectPreAttachedEvent(this, shouldKeepPos));
 
-		transormatoinsHandler.HandlePreAttach();
+		transformationsHandler.HandlePreAttach();
 	}
 
 	for (auto pChild : objects)
@@ -1267,14 +1298,11 @@ void CGroup::AttachChildren(std::vector<CBaseObject*>& objects, bool shouldKeepP
 	{
 		CScopedSuspendUndo suspendUndo;
 
-		transormatoinsHandler.HandleAttach();
+		transformationsHandler.HandleAttach();
 
 		GetObjectManager()->NotifyObjectListeners(objects, CObjectAttachedEvent(this));
 
-		for (auto pChild : objects)
-		{
-			pChild->m_bSuppressUpdatePrefab = false;
-		}
+		//This causes the group to be re-serialized into the prefab
 		UpdatePrefab(eOCOT_ModifyTransform);
 	}
 
@@ -1282,6 +1310,10 @@ void CGroup::AttachChildren(std::vector<CBaseObject*>& objects, bool shouldKeepP
 	{
 		CUndo::Record(new CUndoBatchAttachBaseObject(objects, oldLayers, shouldKeepPos, false, true));
 	}
+
+	//it's important we notify the layer that something changed as we are moving something that was serialized directly inside it to another place (aka group or prefab)
+	//before this the layer was not notified at all and you ended up with two copies of the same thing
+	GetLayer()->SetModified(true);
 }
 
 void CGroup::SetMaterial(IEditorMaterial* pMtl)
