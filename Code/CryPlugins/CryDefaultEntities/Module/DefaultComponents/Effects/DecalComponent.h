@@ -95,7 +95,7 @@ namespace Cry
 					}
 
 					pRenderNode->SetRndFlags(renderFlags);
-						
+					
 					SDecalProperties decalProperties;
 					decalProperties.m_projectionType = m_projectionType;
 
@@ -123,12 +123,12 @@ namespace Cry
 					decalProperties.m_depth = m_depth;
 					pRenderNode->SetDecalProperties(decalProperties);
 					pRenderNode->SetMatrix(slotTransform);
-
+					
 					m_bSpawned = true;
 
 					m_pEntity->UpdateComponentEventMask(this);
 
-					m_pEntity->SetSlotRenderNode(GetOrMakeEntitySlotId(), pRenderNode);
+					m_pEntity->SetSlotRenderNode(GetEntitySlotId(), pRenderNode);
 				}
 				else
 				{

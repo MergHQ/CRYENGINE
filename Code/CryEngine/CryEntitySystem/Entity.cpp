@@ -1830,7 +1830,10 @@ void CEntity::AddComponentInternal(std::shared_ptr<IEntityComponent> pComponent,
 	if (pComponent->GetComponentFlags().Check(EEntityComponentFlags::Transform) && pComponent->GetTransform() == nullptr)
 	{
 		pComponent->m_pTransform = std::make_shared<CryTransform::CTransform>();
+	}
 
+	if (pComponent->m_pTransform != nullptr)
+	{
 		UpdateSlotForComponent(pComponent.get(), false);
 	}
 

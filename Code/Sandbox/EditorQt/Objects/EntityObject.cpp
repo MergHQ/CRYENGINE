@@ -1214,7 +1214,7 @@ void CEntityObject::GetLocalBounds(AABB& box)
 				    && pRenderNode->GetRenderNodeType() != eERType_ParticleEmitter
 				    && pRenderNode->GetRenderNodeType() != eERType_FogVolume)
 				{
-					localSlotBounds = pRenderNode->GetBBox();
+					pRenderNode->GetLocalBounds(localSlotBounds);
 				}
 				else
 				{
