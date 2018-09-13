@@ -1460,6 +1460,8 @@ void CLayer::ImportBlock(CXmlArchive& xmlAr, const CPoint& offset, int nRot)
 			subImageRot.RotateOrt(subImage, nRot);
 
 		m_layerMask.SetSubImage(dstMin.x, dstMin.y, nRot ? subImageRot : subImage);
+
+		GetIEditorImpl()->GetTerrainManager()->signalLayersChanged();
 	}
 }
 

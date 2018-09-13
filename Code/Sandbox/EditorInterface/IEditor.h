@@ -150,9 +150,6 @@ enum EEditorNotifyEvent
 
 	eNotify_OnDataBaseUpdate,          // DataBase Library was modified.
 
-	eNotify_OnLayerImportBegin,   //layer import was started
-	eNotify_OnLayerImportEnd,     //layer import completed
-
 	eNotify_OnBeginSWNewScene,          // Sent when SW document is begin to be cleared.
 	eNotify_OnEndSWNewScene,            // Sent after SW document have been cleared.
 	eNotify_OnBeginSWMoveTo,            // moveto operation was started
