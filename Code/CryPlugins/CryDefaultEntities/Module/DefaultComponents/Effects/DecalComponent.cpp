@@ -55,10 +55,7 @@ void CDecalComponent::ProcessEvent(const SEntityEvent& event)
 Cry::Entity::EventFlags CDecalComponent::GetEventMask() const
 {
 	Cry::Entity::EventFlags bitFlags = (m_bFollowEntityAfterSpawn && m_bSpawned) ? ENTITY_EVENT_XFORM : Cry::Entity::EventFlags();
-	if (m_bSpawned)
-	{
-		bitFlags |= ENTITY_EVENT_COMPONENT_PROPERTY_CHANGED;
-	}
+	bitFlags |= ENTITY_EVENT_COMPONENT_PROPERTY_CHANGED;
 
 	return bitFlags;
 }
@@ -70,24 +67,25 @@ void CDecalComponent::Render(const IEntity& entity, const IEntityComponent& comp
 	{
 		const ColorB color = context.debugDrawInfo.color;
 
-		IRenderAuxGeom* pAuxRenderer = gEnv->pAuxGeomRenderer;
-		const Matrix34& wtm(m_pEntity->GetWorldTM());
+		const Matrix34& slotTransform = m_pEntity->GetSlotWorldTM(GetEntitySlotId());
 
-		const Vec3 x1(wtm.TransformPoint(Vec3(-1, 0, 0)));
-		const Vec3 x2(wtm.TransformPoint(Vec3(1, 0, 0)));
-		const Vec3 y1(wtm.TransformPoint(Vec3(0, -1, 0)));
-		const Vec3 y2(wtm.TransformPoint(Vec3(0, 1, 0)));
-		const Vec3 p(wtm.TransformPoint(Vec3(0, 0, 0)));
-		const Vec3 n(wtm.TransformPoint(Vec3(0, 0, 1)));
+		IRenderAuxGeom* pAuxRenderer = gEnv->pAuxGeomRenderer;
+
+		const Vec3 x1(slotTransform.TransformPoint(Vec3(-1, 0, 0)));
+		const Vec3 x2(slotTransform.TransformPoint(Vec3(1, 0, 0)));
+		const Vec3 y1(slotTransform.TransformPoint(Vec3(0, -1, 0)));
+		const Vec3 y2(slotTransform.TransformPoint(Vec3(0, 1, 0)));
+		const Vec3 p(slotTransform.TransformPoint(Vec3(0, 0, 0)));
+		const Vec3 n(slotTransform.TransformPoint(Vec3(0, 0, 1)));
 
 		pAuxRenderer->DrawLine(p, color, n, color);
 		pAuxRenderer->DrawLine(x1, color, x2, color);
 		pAuxRenderer->DrawLine(y1, color, y2, color);
 
-		const Vec3 p0 = wtm.TransformPoint(Vec3(-1, -1, 0));
-		const Vec3 p1 = wtm.TransformPoint(Vec3(-1, 1, 0));
-		const Vec3 p2 = wtm.TransformPoint(Vec3(1, 1, 0));
-		const Vec3 p3 = wtm.TransformPoint(Vec3(1, -1, 0));
+		const Vec3 p0 = slotTransform.TransformPoint(Vec3(-1, -1, 0));
+		const Vec3 p1 = slotTransform.TransformPoint(Vec3(-1, 1, 0));
+		const Vec3 p2 = slotTransform.TransformPoint(Vec3(1, 1, 0));
+		const Vec3 p3 = slotTransform.TransformPoint(Vec3(1, -1, 0));
 		pAuxRenderer->DrawLine(p0, color, p1, color);
 		pAuxRenderer->DrawLine(p1, color, p2, color);
 		pAuxRenderer->DrawLine(p2, color, p3, color);
