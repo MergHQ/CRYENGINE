@@ -626,7 +626,7 @@ DesignerObjectFlags::DesignerObjectFlags() : m_pObj(NULL)
 	noStaticDecals = false;
 	excludeCollision = false;
 	occluder = false;
-	ignoreTerrainLayerBlend = true;
+	ignoreTerrainLayerBlend = false;
 	ignoreDecalBlend = false;
 }
 
