@@ -526,29 +526,30 @@ end_sources()
 #END-FILE-LIST
 
 MACRO(setup_crysystem)
-    target_link_libraries( ${THIS_PROJECT} PRIVATE zlib expat lz4 md5 tomcrypt )
-    use_scaleform()
-    if (WIN32)
-		set_property(TARGET ${THIS_PROJECT} APPEND_STRING PROPERTY LINK_FLAGS " /NODEFAULTLIB:libcmt.lib /NODEFAULTLIB:libcpmt.lib")
-	    target_link_libraries(${THIS_PROJECT} PRIVATE wininet Shell32 Ole32 Gdi32)
-    elseif(LINUX)
-	    target_link_libraries( ${THIS_PROJECT} PRIVATE ncursesw m )
-    elseif(APPLE)
-	    target_link_libraries( ${THIS_PROJECT} PRIVATE ncurses m )
-    elseif(ORBIS)
-	    target_link_libraries( ${THIS_PROJECT} PRIVATE SceMsgDialog_stub_weak SceImeDialog_stub_weak )
-	    target_link_libraries( ${THIS_PROJECT} PRIVATE $<$<NOT:$<CONFIG:Release>>:SceDbg_stub_weak> )
-    elseif(DURANGO)
-	    set_property(TARGET ${THIS_PROJECT} APPEND PROPERTY COMPILE_FLAGS "\"/AI${DURANGO_PLATFORM_SDK}/ExtensionSDKs/Xbox Services API/8.0/References/CommonConfiguration/neutral\"")	
-	    target_link_libraries( ${THIS_PROJECT} PRIVATE uuid acphal )
-    elseif(ANDROID)
-	    target_include_directories( ${THIS_PROJECT} PRIVATE "${SDK_DIR}/SDL2/include/linux" "${SDK_DIR}/SDL2/include/SDL" )
-    endif()
+	target_link_libraries( ${THIS_PROJECT} PRIVATE zlib expat lz4 md5 tomcrypt )
+	use_scaleform()
 
-    if (OPTION_ENABLE_CRASHRPT)
-	    target_compile_definitions(${THIS_PROJECT} PRIVATE CRY_USE_CRASHRPT=1)
-	    target_link_libraries( ${THIS_PROJECT} PRIVATE crashrpt )
-    endif()
+	if (WIN32)
+		set_property(TARGET ${THIS_PROJECT} APPEND_STRING PROPERTY LINK_FLAGS " /NODEFAULTLIB:libcmt.lib /NODEFAULTLIB:libcpmt.lib")
+		target_link_libraries(${THIS_PROJECT} PRIVATE wininet Shell32 Ole32 Gdi32)
+	elseif (LINUX)
+		target_link_libraries( ${THIS_PROJECT} PRIVATE ncursesw m )
+	elseif (APPLE)
+		target_link_libraries( ${THIS_PROJECT} PRIVATE ncurses m )
+	elseif (ORBIS)
+		target_link_libraries( ${THIS_PROJECT} PRIVATE SceMsgDialog_stub_weak SceImeDialog_stub_weak )
+		target_link_libraries( ${THIS_PROJECT} PRIVATE $<$<NOT:$<CONFIG:Release>>:SceDbg_stub_weak> )
+	elseif (DURANGO)
+		set_property(TARGET ${THIS_PROJECT} APPEND PROPERTY COMPILE_FLAGS "\"/AI${DURANGO_PLATFORM_SDK}/ExtensionSDKs/Xbox Services API/8.0/References/CommonConfiguration/neutral\"")
+		target_link_libraries( ${THIS_PROJECT} PRIVATE uuid acphal )
+	elseif (ANDROID)
+		target_include_directories( ${THIS_PROJECT} PRIVATE "${SDK_DIR}/SDL2/include/linux" "${SDK_DIR}/SDL2/include/SDL" )
+	endif()
+	
+	if (OPTION_ENABLE_CRASHRPT)
+		target_compile_definitions(${THIS_PROJECT} PRIVATE CRY_USE_CRASHRPT=1)
+		target_link_libraries( ${THIS_PROJECT} PRIVATE crashrpt )
+	endif()
 
 	if (ORBIS OR CMAKE_CXX_COMPILER_ID STREQUAL "Clang")
 		target_compile_options(${THIS_PROJECT} PRIVATE
@@ -572,7 +573,7 @@ MACRO(setup_crysystem)
 			-Wno-dynamic-class-memaccess
 			-Wno-comment
 		)
-    elseif(CMAKE_CXX_COMPILER_ID STREQUAL "GNU")
+	elseif (CMAKE_CXX_COMPILER_ID STREQUAL "GNU")
 		target_compile_options(${THIS_PROJECT} PRIVATE
 			-Wno-unused-function
 			-Wno-unused-value
@@ -597,16 +598,16 @@ MACRO(setup_crysystem)
 			-Wno-format
 			-Wno-switch
 		)
-    endif()
+	endif()
 ENDMACRO()
 
 if (OPTION_ENABLE_CRASHRPT)
 	add_subdirectory( "${CRY_LIBS_DIR}/crashrpt" "${CMAKE_CURRENT_BINARY_DIR}/crashrpt")
 endif()
 
-if (ANDROID)
-	#Force comping "CryDLMalloc.c" as C++
-	set_source_files_properties("CryDLMalloc.c" PROPERTIES LANGUAGE CXX)
+if (ANDROID OR ORBIS)
+	#Forcing C11 standard on C files and with that overriding project C++ standard that is being applied.
+	set_source_files_properties("CryDLMalloc.c" PROPERTIES COMPILE_FLAGS "-std=c11")
 endif()
 
 CryEngineModule(CrySystem PCH "StdAfx.cpp" SOLUTION_FOLDER "CryEngine")
@@ -616,4 +617,3 @@ if (OPTION_UNIT_TEST AND NOT OPTION_STATIC_LINKING) #Currently an additional sta
 	CryEngineModule(CrySystemLib PCH "StdAfx.cpp" SOLUTION_FOLDER "CryEngine" FORCE_STATIC)
 	setup_crysystem()
 endif()
-

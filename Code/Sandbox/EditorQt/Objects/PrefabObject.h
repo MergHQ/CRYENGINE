@@ -119,10 +119,11 @@ public:
 	void         SetChangePivotMode(bool changePivotMode) { m_bChangePivotPoint = changePivotMode; }
 	virtual void OnContextMenu(CPopupMenuItem* menu);
 	virtual int  MouseCreateCallback(IDisplayViewport* view, EMouseEvent event, CPoint& point, int flags) override;
+	//! Create new GUID for the prefab, flag it as such and assign the correct layer
+	void         GenerateGUIDsForObjectAndChildren(CBaseObject* pObject);
 protected:
 	void         SerializeMembers(Serialization::IArchive& ar);
 	virtual void RemoveChild(CBaseObject* child);
-
 	CPrefabObject();
 
 	void         SetPrefabGuid(CryGUID guid) { m_prefabGUID = guid; }

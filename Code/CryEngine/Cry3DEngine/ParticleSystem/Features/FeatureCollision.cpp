@@ -312,7 +312,7 @@ bool CFeatureCollision::RayWorldIntersection(SContactPoint& contact, const Vec3&
 	if (m_objectFilter & ~ent_terrain_raytrace)
 	{
 		ray_hit rayHit;
-		while (gEnv->pPhysicalWorld->RayWorldIntersection(start, ray, (m_objectFilter & ~ent_terrain_raytrace | ent_no_ondemand_activation), kCollisionsFlags, &rayHit, 1))
+		for (uint i = 0; i < kTotalLimit && gEnv->pPhysicalWorld->RayWorldIntersection(start, ray, (m_objectFilter & ~ent_terrain_raytrace | ent_no_ondemand_activation), kCollisionsFlags, &rayHit, 1); ++i)
 		{
 			if ((rayHit.n | ray) >= 0.0f)
 			{

@@ -2097,8 +2097,24 @@ void CBaseObject::Serialize(CObjectArchive& ar)
 
 		xmlNode->setAttr("Name", GetName());
 
+		/*
+		If we are serializing in a prefab we don't want to serialize a Parent.
+		Why ? Because if we have multiple instances of the same prefab which instanced prefab is going to be the parent of this object? How can the loading code know?
+		If an object is a direct child of a prefab we serialize it without a parent. When the prefab is loaded into the level the parent of this object is resolved to be that instance	
+		*/
 		if (m_parent)
-			xmlNode->setAttr("Parent", m_parent->GetId());
+		{
+			CBaseObject* pPrefab = GetPrefab();
+			CBaseObject* pGroup = GetGroup();
+			if (!pPrefab || !ar.IsSavingInPrefab()) //no prefabs, go for serialization of parent
+			{
+				xmlNode->setAttr("Parent", m_parent->GetId());
+			}
+			else if (pGroup && (pGroup != pPrefab)) // we have a group that is NOT a prefab (prefabs derive from groups) but is contained in a prefab 
+			{
+				xmlNode->setAttr("Parent", m_parent->GetId());
+			}
+		}
 
 		if (m_pLinkedTo)
 			xmlNode->setAttr("LinkedTo", m_pLinkedTo->GetId());
@@ -2730,6 +2746,7 @@ void CBaseObject::ResolveParent(CBaseObject* parent)
 		{
 			bSuspended = GetIEditor()->SuspendUpdateCGroup(parent);
 			parent->AddMember(this, false);
+			CryLog("Reparenting %s to %s", GetName(), m_parent->GetName());
 			if (bSuspended)
 				GetIEditor()->ResumeUpdateCGroup(parent);
 		}

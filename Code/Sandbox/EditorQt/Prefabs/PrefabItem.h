@@ -48,17 +48,22 @@ public:
 
 	//! Searches and finds the XmlNode with a specified Id in m_objectsNode (the XML representation of this prefab in the prefab library)
 	XmlNodeRef             FindObjectByGuid(const CryGUID& guid, bool fowardSearch = true);
+	//! Searches and finds the XmlNode with a specified Id in an xml library (the XML representation of this prefab in the prefab library)
+	XmlNodeRef             FindObjectByGuidInFlattenedNodes(std::vector<XmlNodeRef>& objects, const CryGUID& guid, bool fowardSearch = true);
 	//!Returns the guids of all the direct children of this prefab that are also prefabs
 	std::set<CryGUID>      FindPrefabsGUIDsInChildren();
-	//!Like FindPrefabsGUIDsInChildren, but also loads the CPrefabItem 
+	//!Like FindPrefabsGUIDsInChildren, but also loads the CPrefabItem
 	std::set<CPrefabItem*> FindPrefabItemsInChildren();
-	//!Recursively goes through the whole hierarchy of children 
+	//!Recursively goes through the whole hierarchy of children
 	//!@param toIgnore the list of children GUIDs to exclude from the search (with all their children)
-	std::set<CryGUID> FindAllPrefabsGUIDsInChildren(const std::set<CryGUID> & toIgnore);
+	std::set<CryGUID> FindAllPrefabsGUIDsInChildren(const std::set<CryGUID>& toIgnore);
 
+	void           CheckVersionAndUpgrade();
 private:
 	//! Function to serialize changes to the main prefab lib (this changes only the internal XML representation m_objectsNode)
 	void           ModifyLibraryPrefab(CSelectionGroup& objectsInPrefabAsFlatSelection, CPrefabObject* pPrefabObject, const SObjectChangedContext& context, const TObjectIdMapping& guidMapping);
+	//Go through the whole hierarchy serialized in this XML and find all the entries tagged as object, basically flatten the whole hierarchy of the prefab
+	void           FindAllObjectsInLibrary(XmlNodeRef nodeRef, std::vector<XmlNodeRef>& objects);
 	//! Function to update a instanced prefabs in the level
 	void           ModifyInstancedPrefab(CSelectionGroup& objectsInPrefabAsFlatSelection, CPrefabObject* pPrefabObject, const SObjectChangedContext& context, const TObjectIdMapping& guidMapping);
 	//! Registers prefab event flowgraph nodes from all prefab instances
@@ -78,8 +83,8 @@ private:
 
 	void           SaveLinkedObjects(CObjectArchive& ar, CBaseObject* pObj, bool bAllowOwnedByPrefab);
 	void           CollectLinkedObjects(CBaseObject* pObj, std::vector<CBaseObject*>& linkedObjects, CSelectionGroup& selection);
-
 private:
 	XmlNodeRef m_objectsNode;
 	string     m_PrefabClassName;
+	uint32     m_version;
 };

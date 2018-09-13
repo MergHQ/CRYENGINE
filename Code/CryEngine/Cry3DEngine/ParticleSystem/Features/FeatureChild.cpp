@@ -39,20 +39,18 @@ public:
 
 	static uint DefaultForType() { return EFT_Child; }
 
-	void AddSubInstances(CParticleComponentRuntime& runtime) override
+	void AddSubInstances(CParticleComponentRuntime& runtime, TDynArray<SInstance>& instances) override
 	{
 		CParticleContainer& parentContainer = runtime.GetParentContainer();
 		IFStream normAges = parentContainer.GetIFStream(EPDT_NormalAge);
 		IFStream lifeTimes = parentContainer.GetIFStream(EPDT_LifeTime);
 
-		THeapArray<SInstance> triggers(runtime.MemHeap());
-		triggers.reserve(parentContainer.GetNumParticles());
+		instances.reserve(parentContainer.GetNumParticles());
 		for (auto particleId : parentContainer.GetSpawnedRange())
 		{
 			const float delay = runtime.DeltaTime() - normAges.Load(particleId) * lifeTimes.Load(particleId);
-			triggers.emplace_back(particleId, delay);
+			instances.emplace_back(particleId, delay);
 		}
-		runtime.AddSubInstances(triggers);
 	}
 };
 
@@ -67,15 +65,14 @@ public:
 
 	bool IsDelayed() const override { return true; }
 
-	void AddSubInstances(CParticleComponentRuntime& runtime) override
+	void AddSubInstances(CParticleComponentRuntime& runtime, TDynArray<SInstance>& instances) override
 	{
 		CParticleContainer& parentContainer = runtime.GetParentContainer();
 		
 		IFStream normAges = parentContainer.GetIFStream(EPDT_NormalAge);
 		IFStream lifeTimes = parentContainer.GetIFStream(EPDT_LifeTime);
 
-		THeapArray<SInstance> triggers(runtime.MemHeap());
-		triggers.reserve(parentContainer.GetNumParticles());
+		instances.reserve(parentContainer.GetNumParticles());
 		for (auto particleId : parentContainer.GetFullRange())
 		{
 			const float normAge = normAges.Load(particleId);
@@ -83,10 +80,9 @@ public:
 			{
 				const float overAge = (normAge - 1.0f) * lifeTimes.Load(particleId);
 				const float delay = runtime.DeltaTime() - overAge;
-				triggers.emplace_back(particleId, delay);
+				instances.emplace_back(particleId, delay);
 			}
 		}
-		runtime.AddSubInstances(triggers);
 	}
 };
 
@@ -114,11 +110,10 @@ public:
 
 	bool IsDelayed() const override { return true; }
 
-	void AddSubInstances(CParticleComponentRuntime& runtime) override
+	void AddSubInstances(CParticleComponentRuntime& runtime, TDynArray<SInstance>& instances) override
 	{
 		CParticleContainer& parentContainer = runtime.GetParentContainer();
-		THeapArray<SInstance> triggers(runtime.MemHeap());
-		triggers.reserve(parentContainer.GetNumParticles());
+		instances.reserve(parentContainer.GetNumParticles());
 		
 		const auto contactPoints = parentContainer.IStream(EPDT_ContactPoint);
 
@@ -137,10 +132,9 @@ public:
 					if (contact.m_pSurfaceType->GetId() == m_surface)
 						continue;
 				}
-				triggers.emplace_back(particleId, contact.m_time);
+				instances.emplace_back(particleId, contact.m_time);
 			}
 		}
-		runtime.AddSubInstances(triggers);
 	}
 
 private:

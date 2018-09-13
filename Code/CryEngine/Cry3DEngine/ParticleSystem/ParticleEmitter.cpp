@@ -41,7 +41,6 @@ CParticleEmitter::CParticleEmitter(CParticleEffect* pEffect, uint emitterId)
 	, m_viewDistRatio(1.0f)
 	, m_active(false)
 	, m_alive(true)
-	, m_addInstances(0)
 	, m_location(IDENTITY)
 	, m_emitterEditVersion(-1)
 	, m_effectEditVersion(-1)
@@ -265,17 +264,10 @@ bool CParticleEmitter::UpdateParticles()
 	m_stats = {};
 	for (auto& pRuntime : m_componentRuntimes)
 	{
-		if (m_active && m_addInstances && !pRuntime->IsChild())
-		{
-			SInstance instance;
-			for (uint id = 0; id < m_addInstances; ++id)
-				pRuntime->AddSubInstances({ &instance, 1 });
-		}
 		pRuntime->UpdateAll();
 		m_realBounds.Add(pRuntime->GetBounds());
 	}
 	m_alive = m_stats.components.alive > 0;
-	m_addInstances = 0;
 
 	PostUpdate();
 	UpdateBoundingBox();
@@ -483,8 +475,6 @@ void CParticleEmitter::Kill()
 {
 	m_active = false;
 	m_alive = false;
-	m_componentRuntimes.clear();
-	m_componentRuntimesFor.clear();
 }
 
 bool CParticleEmitter::IsActive() const
@@ -698,7 +688,6 @@ void CParticleEmitter::UpdateRuntimes()
 
 	m_effectEditVersion = m_pEffectOriginal->GetEditVersion() + m_emitterEditVersion;
 	m_alive = true;
-	m_addInstances = 1;
 }
 
 void CParticleEmitter::ResetRenderObjects()
@@ -844,6 +833,14 @@ void CParticleEmitter::Unregister()
 	m_registered = false;
 	m_bounds.Reset();
 	m_realBounds.Reset();
+}
+
+void CParticleEmitter::Clear()
+{
+	m_alive = m_active = false;
+	Unregister();
+	m_componentRuntimes.clear();
+	m_componentRuntimesFor.clear();
 }
 
 bool CParticleEmitter::HasParticles() const

@@ -150,9 +150,6 @@ enum EEditorNotifyEvent
 
 	eNotify_OnDataBaseUpdate,          // DataBase Library was modified.
 
-	eNotify_OnLayerImportBegin,   //layer import was started
-	eNotify_OnLayerImportEnd,     //layer import completed
-
 	eNotify_OnBeginSWNewScene,          // Sent when SW document is begin to be cleared.
 	eNotify_OnEndSWNewScene,            // Sent after SW document have been cleared.
 	eNotify_OnBeginSWMoveTo,            // moveto operation was started
@@ -450,7 +447,7 @@ struct IEditor
 	virtual bool             IsCGroup(CBaseObject* pObject) = 0;
 	virtual void             ResumeUpdateCGroup(CBaseObject* pObject) = 0;
 	virtual bool             SuspendUpdateCGroup(CBaseObject* pObject) = 0;
-	virtual void             SyncPrefabCPrefabObject(CBaseObject* oObject, const SObjectChangedContext& context) = 0;
+	virtual void             SyncPrefabCPrefabObject(CBaseObject* pObject, const SObjectChangedContext& context) = 0;
 	virtual bool             IsModifyInProgressCPrefabObject(CBaseObject* oObject) = 0;
 	virtual bool             IsCPrefabObject(CBaseObject* pObject) = 0;
 	virtual bool             IsGroupOpen(CBaseObject* pObject) = 0;

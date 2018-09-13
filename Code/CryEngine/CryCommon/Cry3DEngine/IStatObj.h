@@ -199,6 +199,8 @@ struct IStreamable
 	EFileStreamingStatus  m_eStreamingStatus;
 	uint32                m_nSelectedFrameId : 31;
 	uint32                m_nStatsInUse      : 1;
+
+	bool warnedWhenCGFPoolIsOutOfMemory = false;
 };
 
 //! Represents a static object that can be rendered in the scene, represented by the .CGF format

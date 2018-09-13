@@ -52,12 +52,13 @@ public:
 		}
 	}
 
-	virtual void GetEmitOffsets(const CParticleComponentRuntime& runtime, TVarArray<Vec3> offsets) override
+	virtual void GetEmitOffsets(const CParticleComponentRuntime& runtime, TVarArray<Vec3> offsets, uint firstInstance) override
 	{
 		SInstanceUpdateBuffer<float> sizes(runtime, m_scale);
-		for (uint i = 0; i < runtime.GetNumInstances(); ++i)
+		for (uint i = 0; i < offsets.size(); ++i)
 		{
-			const float scale = sizes[i] * (sizes.Range().start + sizes.Range().end) * 0.5f;
+			uint idx = firstInstance + i;
+			const float scale = sizes[idx] * (sizes.Range().start + sizes.Range().end) * 0.5f;
 			offsets[i] += m_offset * scale;
 		}
 	}

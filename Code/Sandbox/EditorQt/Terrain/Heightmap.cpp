@@ -3200,6 +3200,8 @@ void CHeightmap::ImportBlock(CXmlArchive& xmlAr, CPoint newPos, bool useNewPos, 
 		}
 		else
 			hmap.SetSubImage(subRc.left, subRc.top, hmapSubImage, heightOffset, m_fMaxHeight);
+
+		GetIEditorImpl()->GetTerrainManager()->signalTerrainChanged();
 	}
 
 	if (xmlAr.pNamedData->GetDataBlock(HEIGHTMAP_LAYERINFO_BLOCK_NAME, pData, size))
@@ -3217,6 +3219,8 @@ void CHeightmap::ImportBlock(CXmlArchive& xmlAr, CPoint newPos, bool useNewPos, 
 		{
 			m_layerIdBitmap.SetSubImage(subRc.left, subRc.top, LayerIdBitmapImage);
 		}
+
+		GetIEditorImpl()->GetTerrainManager()->signalLayersChanged();
 	}
 
 	XmlNodeRef rgbLayer = xmlAr.root->findChild("rgbLayer");
@@ -3259,6 +3263,8 @@ void CHeightmap::ImportBlock(CXmlArchive& xmlAr, CPoint newPos, bool useNewPos, 
 					UpdateSectorTexture(CPoint(x, y), rgbRegion.left, rgbRegion.top, rgbRegion.right, rgbRegion.bottom);
 				}
 			}
+
+			GetIEditorImpl()->GetTerrainManager()->signalTerrainChanged();
 		}
 	}
 

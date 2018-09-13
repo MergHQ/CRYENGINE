@@ -36,6 +36,7 @@ public:
 
 	virtual void AddToComponent(CParticleComponent* pComponent, SComponentParams* pParams) override
 	{
+		pComponent->AddSubInstances.add(this);
 		pComponent->InitSubInstances.add(this);
 		pComponent->SpawnParticles.add(this);
 		m_offsetSpawnData = pComponent->AddInstanceData<SSpawnData>();
@@ -65,6 +66,15 @@ public:
 		SetMax(pParams->m_stableTime, stableTime);
 		SetMax(pParams->m_equilibriumTime, equilibriumTime);
 		SetMax(pParams->m_maxTotalLIfe, maxLife);
+	}
+
+	void AddSubInstances(CParticleComponentRuntime& runtime, TDynArray<SInstance>& instances) override
+	{
+		if (!runtime.IsChild() && runtime.GetEmitter()->IsActive() && runtime.GetNumInstances() == 0)
+		{
+			// Add first instance
+			instances.push_back();
+		}
 	}
 
 	virtual void InitSubInstances(CParticleComponentRuntime& runtime, SUpdateRange instanceRange) override
@@ -407,36 +417,34 @@ public:
 		CParticleFeatureSpawnBase::InitSubInstances(runtime, instanceRange);
 
 		THeapArray<QuatTS> locations(runtime.MemHeap(), instanceRange.size());
-		runtime.GetEmitLocations(locations);
+		runtime.GetEmitLocations(locations, instanceRange.m_begin);
 
 		for (auto instanceId : instanceRange)
 		{
 			Vec3& emitPos = runtime.GetInstanceData(instanceId, m_offsetEmitPos);
-			emitPos = locations[instanceId].t;
+			emitPos = locations[instanceId - instanceRange.m_begin].t;
 		}
 	}
 
 	void GetSpawnCounts(CParticleComponentRuntime& runtime, TVarArray<float> amounts) const override
 	{
 		THeapArray<QuatTS> locations(runtime.MemHeap(), amounts.size());
-		runtime.GetEmitLocations(locations);
+		runtime.GetEmitLocations(locations, 0);
 
 		for (uint i = 0; i < amounts.size(); ++i)
 		{
 			Vec3& emitPos = runtime.GetInstanceData(i, m_offsetEmitPos);
-			const Vec3 emitPos0 = emitPos;
 			const Vec3 emitPos1 = locations[i].t;
-			emitPos = emitPos1;
-
+			const Vec3 emitPos0 = emitPos;
 			const float distance = (emitPos1 - emitPos0).GetLengthFast();
 			amounts[i] = distance * (m_mode == ESpawnDistanceMode::ParticlesPerMeter ? amounts[i] : rcp(amounts[i]));
+			emitPos = emitPos1;
 		}
 	}
 
 private:
 	ESpawnDistanceMode m_mode = ESpawnDistanceMode::ParticlesPerMeter;
 	TDataOffset<Vec3>  m_offsetEmitPos;
-
 };
 
 CRY_PFX2_IMPLEMENT_FEATURE(CParticleFeature, CFeatureSpawnDistance, "Spawn", "Distance", colorSpawn);

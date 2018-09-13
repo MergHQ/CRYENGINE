@@ -100,6 +100,7 @@ void CParticleComponentRuntime::AddRemoveParticles()
 	RemoveParticles();
 	AgeUpdate();
 
+	AddInstances();
 	AddParticles();
 	UpdateNewBorns();
 	m_container.ResetSpawnedParticles();
@@ -133,26 +134,6 @@ void CParticleComponentRuntime::ComputeVertices(const SCameraInfo& camInfo, CREP
 
 	if (camInfo.pCamera->IsAABBVisible_E(m_bounds))
 		GetComponent()->ComputeVertices(*this, camInfo, pRE, uRenderFlags, fMaxPixels);
-}
-
-void CParticleComponentRuntime::AddSubInstances(TVarArray<SInstance> instances)
-{
-	CRY_PFX2_PROFILE_DETAIL;
-
-	GetComponent()->CullSubInstances(*this, instances);
-
-	if (instances.empty())
-		return;
-
-	uint firstInstance = m_subInstances.size();
-	uint lastInstance = firstInstance + instances.size();
-	m_subInstances.append(instances);
-	m_subInstanceData.resize(ComponentParams().m_instanceDataStride * m_subInstances.size());
-	
-	SUpdateRange instanceRange(firstInstance, lastInstance);
-	GetComponent()->InitSubInstances(*this, instanceRange);
-
-	DebugStabilityCheck();
 }
 
 void CParticleComponentRuntime::RemoveAllSubInstances()
@@ -214,19 +195,19 @@ void CParticleComponentRuntime::ReparentParticles(TConstArray<TParticleId> swapI
 	DebugStabilityCheck();
 }
 
-void CParticleComponentRuntime::GetEmitLocations(TVarArray<QuatTS> locations) const
+void CParticleComponentRuntime::GetEmitLocations(TVarArray<QuatTS> locations, uint firstInstance) const
 {
 	auto const& parentContainer = GetParentContainer();
 	auto parentPositions = parentContainer.GetIVec3Stream(EPVF_Position, GetEmitter()->GetLocation().t);
 	auto parentRotations = parentContainer.GetIQuatStream(EPQF_Orientation, GetEmitter()->GetLocation().q);
 
-	THeapArray<Vec3> offsets(MemHeap(), GetNumInstances());
+	THeapArray<Vec3> offsets(MemHeap(), locations.size());
 	offsets.fill(Vec3(0));
-	GetComponent()->GetEmitOffsets(*this, offsets);
+	GetComponent()->GetEmitOffsets(*this, offsets, firstInstance);
 
-	for (uint idx = 0; idx < m_subInstances.size(); ++idx)
+	for (uint idx = 0; idx < locations.size(); ++idx)
 	{
-		TParticleId parentId = GetInstance(idx).m_parentId;
+		TParticleId parentId = GetInstance(firstInstance + idx).m_parentId;
 
 		QuatTS& loc = locations[idx];
 		loc.t = parentPositions.SafeLoad(parentId);
@@ -244,9 +225,30 @@ void CParticleComponentRuntime::EmitParticle()
 	m_container.ResetSpawnedParticles();
 }
 
+void CParticleComponentRuntime::AddInstances()
+{
+	CRY_PFX2_PROFILE_DETAIL;
+
+	TDynArray<SInstance> instances;
+	GetComponent()->AddSubInstances(*this, instances);
+	GetComponent()->CullSubInstances(*this, instances);
+
+	if (instances.empty())
+		return;
+
+	uint firstInstance = m_subInstances.size();
+	uint lastInstance = firstInstance + instances.size();
+	m_subInstances.append(instances);
+	m_subInstanceData.resize(ComponentParams().m_instanceDataStride * m_subInstances.size());
+
+	SUpdateRange instanceRange(firstInstance, lastInstance);
+	GetComponent()->InitSubInstances(*this, instanceRange);
+
+	DebugStabilityCheck();
+}
+
 void CParticleComponentRuntime::AddParticles()
 {
-	GetComponent()->AddSubInstances(*this);
 	TDynArray<SSpawnEntry> spawnEntries;
 	if (GetNumInstances())
 		GetComponent()->SpawnParticles(*this, spawnEntries);
@@ -491,7 +493,7 @@ void CParticleComponentRuntime::UpdateGPURuntime()
 	
 	GetComponent()->UpdateGPUParams(*this, params);
 
-	GetComponent()->AddSubInstances(*this);
+	AddInstances();
 	TDynArray<SSpawnEntry> spawnEntries;
 	if (GetNumInstances())
 		GetComponent()->SpawnParticles(*this, spawnEntries);

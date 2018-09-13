@@ -369,7 +369,6 @@ public:
 	// implementation parts of ProcessObjectsStreaming
 	void ProcessObjectsStreaming_Impl(bool bSyncLoad, const SRenderingPassInfo& passInfo);
 	void ProcessObjectsStreaming_Sort(bool bSyncLoad, const SRenderingPassInfo& passInfo);
-	void ProcessObjectsStreaming_Release();
 	void ProcessObjectsStreaming_InitLoad(bool bSyncLoad);
 	void ProcessObjectsStreaming_Finish();
 

@@ -18,15 +18,16 @@
 #include "CryEditDoc.h"
 
 #include <Controls/DynamicPopupMenu.h>
+#include <IDataBaseManager.h>
+#include <IUndoManager.h>
 #include <LevelEditor/Tools/PickObjectTool.h>
-#include <Objects/ObjectLoader.h>
 #include <Objects/InspectorWidgetCreator.h>
+#include <Objects/IObjectLayer.h>
+#include <Objects/ObjectLoader.h>
 #include <Preferences/SnappingPreferences.h>
 #include <Preferences/ViewportPreferences.h>
 #include <Serialization/Decorators/EditorActionButton.h>
 #include <Serialization/Decorators/EditToolButton.h>
-#include <IDataBaseManager.h>
-#include <IUndoManager.h>
 #include <Viewport.h>
 
 #include <Util/MFCUtil.h>
@@ -63,7 +64,7 @@ public:
 		}
 	}
 
-	~CScopedPrefabEventsDelay() noexcept(false)
+	~CScopedPrefabEventsDelay() noexcept (false)
 	{
 		Resume();
 	}
@@ -248,8 +249,58 @@ void CPrefabObject::Done()
 
 bool CPrefabObject::CreateFrom(std::vector<CBaseObject*>& objects)
 {
-	if (!CGroup::CreateFrom(objects))
-		return false;
+	// Clear selection
+	GetIEditorImpl()->GetObjectManager()->ClearSelection();
+	CBaseObject* pLastSelectedObject = nullptr;
+	CBaseObject* pParent = nullptr;
+	// Put the newly created group on the last selected object's layer
+	if (objects.size())
+	{
+		pLastSelectedObject = objects[objects.size() - 1];
+		GetIEditorImpl()->GetIUndoManager()->Suspend();
+		SetLayer(pLastSelectedObject->GetLayer());
+		GetIEditorImpl()->GetIUndoManager()->Resume();
+		pParent = pLastSelectedObject->GetParent();
+	}
+
+	//Check if the children come from more than one prefab, as that's not allowed
+	CPrefabObject* pPrefabToCompareAgainst = nullptr;
+	CPrefabObject* pObjectPrefab = nullptr;
+
+	for (auto pObject : objects)
+	{
+		pObjectPrefab = (CPrefabObject*)pObject->GetPrefab();
+
+		// Sanity check if user is trying to group objects from different prefabs
+		if (pPrefabToCompareAgainst && pObjectPrefab && pPrefabToCompareAgainst->GetPrefabGuid() != pObjectPrefab->GetPrefabGuid())
+		{
+			CryWarning(VALIDATOR_MODULE_EDITOR, VALIDATOR_WARNING, "Cannot Create a new prefab from these objects, they are already owned by different prefabs");
+			return false;
+		}
+
+		if (!pPrefabToCompareAgainst)
+			pPrefabToCompareAgainst = pObjectPrefab;
+	}
+	//If we are creating a prefab inside another prefab we first remove all the objects from the previous owner prefab and then we add them to the new one
+	for (CBaseObject* pObject : objects)
+	{
+		if (pObject->IsPartOfPrefab())
+		{
+			pObject->GetPrefab()->RemoveMember(pObject, true, true);
+		}
+	}
+	//Add them to the new one, serialize into the prefab item and update the library
+	for (CBaseObject* pObject : objects)
+	{
+		AddMember(pObject);
+	}
+
+	//add the prefab itself to the last selected object parent
+	if (pParent)
+		pParent->AddMember(this);
+
+	GetIEditorImpl()->GetObjectManager()->SelectObject(this);
+	GetIEditorImpl()->SetModifiedFlag();
 
 	CRY_ASSERT_MESSAGE(m_pPrefabItem, "Trying to create a prefab that has no Prefab Item");
 	m_pPrefabItem->SetModified();
@@ -383,7 +434,7 @@ int CPrefabObject::MouseCreateCallback(IDisplayViewport* view, EMouseEvent event
 		{
 			if (children.GetObject(i)->GetCollisionEntity())
 			{
-				IPhysicalEntity * collisionEntity = children.GetObject(i)->GetCollisionEntity();
+				IPhysicalEntity* collisionEntity = children.GetObject(i)->GetCollisionEntity();
 				pe_params_part collision;
 				collisionEntity->GetParams(&collision);
 				collision.flagsAND &= ~(geom_colltype_ray);
@@ -391,7 +442,7 @@ int CPrefabObject::MouseCreateCallback(IDisplayViewport* view, EMouseEvent event
 			}
 		}
 	}
-	
+
 	if (creationState == MOUSECREATE_OK)
 	{
 		CSelectionGroup children;
@@ -400,7 +451,7 @@ int CPrefabObject::MouseCreateCallback(IDisplayViewport* view, EMouseEvent event
 		{
 			if (children.GetObject(i)->GetCollisionEntity())
 			{
-				IPhysicalEntity * collisionEntity = children.GetObject(i)->GetCollisionEntity();
+				IPhysicalEntity* collisionEntity = children.GetObject(i)->GetCollisionEntity();
 				pe_params_part collision;
 				collisionEntity->GetParams(&collision);
 				collision.flagsOR |= (geom_colltype_ray);
@@ -1139,50 +1190,32 @@ void CPrefabObject::AddMembers(std::vector<CBaseObject*>& objects, bool shouldKe
 			return;
 	}
 
-	std::vector<CBaseObject*> objectsToAttach;
-	objectsToAttach.reserve(objects.size());
-	std::copy_if(objects.cbegin(), objects.cend(), std::back_inserter(objectsToAttach), [this](CBaseObject* pObject)
-	{
-		return !pObject->GetParent();
-	});
+	AttachChildren(objects, shouldKeepPos);
 
-	AttachChildren(objectsToAttach, shouldKeepPos);
-
+	//As we are moving things in the prefab new guids need to be generated for every object we are adding
+	//The guids generated here are serialized in IdInPrefab, also the prefab flag and the correct layer is set
 	for (CBaseObject* pObject : objects)
 	{
-		if (pObject->IsKindOf(RUNTIME_CLASS(CPrefabObject)))
-		{
-			if (static_cast<CPrefabObject*>(pObject)->m_pPrefabItem == m_pPrefabItem)
-			{
-				Warning("Object has the same prefab item");
-				return;
-			}
-		}
+		GenerateGUIDsForObjectAndChildren(pObject);
 
-		SetObjectPrefabFlagAndLayer(pObject);
-		InitObjectPrefabId(pObject);
-		SetPrefabFlagForLinkedObjects(pObject);
-
-		CryGUID newGuid = CPrefabChildGuidProvider(this).GetFor(pObject);
-		if (CUndo::IsRecording())
-		{
-			CUndo::Record(new CUndoChangeGuid(pObject, newGuid));
-		}
-		GetObjectManager()->ChangeObjectId(pObject->GetId(), newGuid);
-
+		//Add the top level object to the prefab so that it can be serialized and serialize all the children
 		SObjectChangedContext context;
 		context.m_operation = eOCOT_Add;
 		context.m_modifiedObjectGlobalId = pObject->GetId();
 		context.m_modifiedObjectGuidInPrefab = pObject->GetIdInPrefab();
 
+		//Call a sync with eOCOT_Modify
 		SyncPrefab(context);
+
+		//In the case that we have moved something inside the prefab from the same layer (e.g group from layer to Prefab), the layer needs to be marked as modified.
+		pObject->GetLayer()->SetModified(true);
 	}
 
 	IObjectManager* pObjectManager = GetIEditor()->GetObjectManager();
 	pObjectManager->NotifyPrefabObjectChanged(this);
 
 	// if the currently modified prefab is selected make sure to refresh the inspector
-	if (pObjectManager->GetSelection()->IsContainObject(this))
+	if (GetPrefab() && GetIEditor()->GetObjectManager()->GetSelection()->IsContainObject(this) || pObjectManager->GetSelection()->IsContainObject(GetPrefab()))
 		pObjectManager->EmitPopulateInspectorEvent();
 }
 
@@ -1206,6 +1239,9 @@ void CPrefabObject::RemoveMembers(std::vector<CBaseObject*>& members, bool keepP
 		SyncPrefab(context);
 
 		pObject->ClearFlags(OBJFLAG_PREFAB);
+
+		//In the case that we have moved something outside the prefab from the same layer (e.g group from Prefab to Layer), the layer needs to be marked as modified.
+		pObject->GetLayer()->SetModified(true);
 	}
 
 	CGroup::ForEachParentOf(members, [placeOnRoot, this](CGroup* pParent, std::vector<CBaseObject*>& children)
@@ -1258,40 +1294,9 @@ void CPrefabObject::SyncPrefab(const SObjectChangedContext& context)
 		return;
 	}
 
-	//Group delete
-	if (context.m_operation == eOCOT_Delete)
-	{
-		CBaseObject* pObj = GetIEditor()->GetObjectManager()->FindObject(context.m_modifiedObjectGlobalId);
-		if (pObj && pObj->IsKindOf(RUNTIME_CLASS(CGroup)) && !pObj->IsKindOf(RUNTIME_CLASS(CPrefabObject)))
-		{
-			TBaseObjects children;
-			for (int i = 0, count = pObj->GetChildCount(); i < count; ++i)
-			{
-				children.push_back(pObj->GetChild(i));
-			}
-			for (int i = 0, count = children.size(); i < count; ++i)
-			{
-				RemoveMember(children[i], true);
-			}
-		}
-	}
-
 	if (m_pPrefabItem)
 	{
 		m_pPrefabItem->UpdateFromPrefabObject(this, context);
-	}
-
-	//Group add
-	if (context.m_operation == eOCOT_Add)
-	{
-		CBaseObject* pObj = GetIEditor()->GetObjectManager()->FindObject(context.m_modifiedObjectGlobalId);
-		if (pObj && pObj->IsKindOf(RUNTIME_CLASS(CGroup)) && !pObj->IsKindOf(RUNTIME_CLASS(CPrefabObject)))
-		{
-			for (int i = 0, count = pObj->GetChildCount(); i < count; ++i)
-			{
-				AddMember(pObj->GetChild(i), true);
-			}
-		}
 	}
 
 	InvalidateBBox();
@@ -1357,6 +1362,42 @@ void CPrefabObject::CalcBoundBox()
 void CPrefabObject::RemoveChild(CBaseObject* child)
 {
 	CBaseObject::RemoveChild(child);
+}
+
+void CPrefabObject::GenerateGUIDsForObjectAndChildren(CBaseObject* pObject)
+{
+	using namespace Private_PrefabObject;
+
+	TBaseObjects objectsToAssign;
+
+	objectsToAssign.push_back(pObject);
+
+	if (pObject->IsKindOf(RUNTIME_CLASS(CPrefabObject)))
+	{
+		CRY_ASSERT_MESSAGE(static_cast<CPrefabObject*>(pObject)->m_pPrefabItem != m_pPrefabItem, "Object has the same prefab item");
+	}
+
+	//We need to find all the children of this object
+	pObject->GetAllChildren(objectsToAssign);
+
+	//Make sure to generate all the GUIDS for the children of this object
+	for (CBaseObject* pObjectToAssign : objectsToAssign)
+	{
+		SetObjectPrefabFlagAndLayer(pObjectToAssign);
+		//This is serialized in the IdInPrefab field and also assigned as the new prefab GUID
+		InitObjectPrefabId(pObjectToAssign);
+		//We need this for search, serialization and other things
+		SetPrefabFlagForLinkedObjects(pObjectToAssign);
+
+		CryGUID newGuid = CPrefabChildGuidProvider(this).GetFor(pObjectToAssign);
+		if (CUndo::IsRecording())
+		{
+			CUndo::Record(new CUndoChangeGuid(pObjectToAssign, newGuid));
+		}
+		//Assign the new GUID
+		GetObjectManager()->ChangeObjectId(pObjectToAssign->GetId(), newGuid);
+	}
+
 }
 
 void CPrefabObject::SetMaterial(IEditorMaterial* pMaterial)

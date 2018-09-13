@@ -136,7 +136,7 @@ void CLayerChangeEvent::Send() const
 CObjectLayerManager::CObjectLayerManager(CObjectManager* pObjectManager) :
 	m_pObjectManager(pObjectManager),
 	m_layersPath(LAYER_PATH),
-	m_bCanModifyLayers(false),
+	m_bCanModifyLayers(true),
 	m_bOverwriteDuplicates(false),
 	m_visibleSetLayer(CryGUID::Null())
 {
@@ -152,16 +152,12 @@ void CObjectLayerManager::OnEditorNotifyEvent(EEditorNotifyEvent event)
 {
 	switch (event)
 	{
+	case eNotify_OnBeginNewScene: // Intentional fallthrough
 	case eNotify_OnBeginSceneOpen:
 		m_bCanModifyLayers = false;
 		break;
+	case eNotify_OnEndNewScene: // Intentional fallthrough
 	case eNotify_OnEndSceneOpen:
-		m_bCanModifyLayers = true;
-		break;
-	case eNotify_OnLayerImportBegin:
-		m_bCanModifyLayers = false;
-		break;
-	case eNotify_OnLayerImportEnd:
 		m_bCanModifyLayers = true;
 		break;
 	}
