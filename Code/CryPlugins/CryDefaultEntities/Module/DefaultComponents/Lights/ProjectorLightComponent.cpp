@@ -68,7 +68,22 @@ void CProjectorLightComponent::Initialize()
 
 	//TODO: Automatically add DLF_FAKE when using beams or flares
 
-	if (m_shadows.m_castShadowSpec != EMiniumSystemSpec::Disabled && (int)gEnv->pSystem->GetConfigSpec() >= (int)m_shadows.m_castShadowSpec)
+	bool shouldCastShadows = false;
+	if (m_shadows.m_castShadowSpec != EMiniumSystemSpec::Disabled)
+	{
+		const int sysSpec = gEnv->pSystem->GetConfigSpec();
+		if (sysSpec != CONFIG_CUSTOM)
+		{
+			shouldCastShadows = sysSpec >= static_cast<int>(m_shadows.m_castShadowSpec);
+		}
+		else
+		{
+			if (ICVar* const pSysSpecShadow = gEnv->pConsole->GetCVar("sys_spec_shadow"))
+				shouldCastShadows = pSysSpecShadow->GetIVal() >= static_cast<int>(m_shadows.m_castShadowSpec);
+		}
+	}
+
+	if (shouldCastShadows)
 	{
 		light.m_Flags |= DLF_CASTSHADOW_MAPS;
 
