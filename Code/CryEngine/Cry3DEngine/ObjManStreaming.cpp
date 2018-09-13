@@ -556,7 +556,6 @@ void CObjManager::ProcessObjectsStreaming(const SRenderingPassInfo& passInfo)
 void CObjManager::ProcessObjectsStreaming_Impl(bool bSyncLoad, const SRenderingPassInfo& passInfo)
 {
 	ProcessObjectsStreaming_Sort(bSyncLoad, passInfo);
-	ProcessObjectsStreaming_Release();
 #ifdef OBJMAN_STREAM_STATS
 	ProcessObjectsStreaming_Stats(passInfo);
 #endif
@@ -648,57 +647,14 @@ void CObjManager::ProcessObjectsStreaming_Sort(bool bSyncLoad, const SRenderingP
 	}
 }
 
-void CObjManager::ProcessObjectsStreaming_Release()
-{
-	CRY_PROFILE_REGION(PROFILE_3DENGINE, "ProcessObjectsStreaming_Release");
-	int nMemoryUsage = 0;
-
-	int nNumStreamableObjects = m_arrStreamableObjects.Count();
-	SStreamAbleObject* arrStreamableObjects = nNumStreamableObjects ? &m_arrStreamableObjects[0] : NULL;
-
-	for (int nObjId = 0; nObjId < nNumStreamableObjects; nObjId++)
-	{
-		const SStreamAbleObject& rObj = arrStreamableObjects[nObjId];
-
-		if (rObj.GetStreamAbleObject()->m_eStreamingStatus != ecss_NotLoaded)
-			nMemoryUsage += rObj.GetStreamableContentMemoryUsage();
-
-		bool bUnload = nMemoryUsage >= GetCVars()->e_StreamCgfPoolSize * 1024 * 1024;
-
-		if (!bUnload && GetCVars()->e_StreamCgfDebug == 4)
-			if (rObj.GetStreamAbleObject()->m_arrUpdateStreamingPrioriryRoundInfo[0].nRoundId < (CObjManager::m_nUpdateStreamingPrioriryRoundId - 8))
-				bUnload = true;
-
-		if (bUnload && rObj.GetStreamAbleObject()->IsUnloadable())
-		{
-			if (rObj.GetStreamAbleObject()->m_eStreamingStatus == ecss_Ready)
-			{
-				m_arrStreamableToRelease.push_back(rObj.GetStreamAbleObject());
-			}
-
-			// remove from list if not active for long time
-			if (rObj.GetStreamAbleObject()->m_eStreamingStatus == ecss_NotLoaded)
-			{
-				if (rObj.GetStreamAbleObject()->m_arrUpdateStreamingPrioriryRoundInfo[0].nRoundId < (CObjManager::m_nUpdateStreamingPrioriryRoundId - 8))
-				{
-					rObj.GetStreamAbleObject()->m_arrUpdateStreamingPrioriryRoundInfo[0].nRoundId = 0;
-					m_arrStreamableToDelete.push_back(rObj.GetStreamAbleObject());
-				}
-			}
-		}
-	}
-	s_nLastStreamingMemoryUsage = nMemoryUsage;
-}
-
 void CObjManager::ProcessObjectsStreaming_InitLoad(bool bSyncLoad)
 {
 	CRY_PROFILE_REGION(PROFILE_3DENGINE, "ProcessObjectsStreaming_InitLoad");
 
-	int nMaxInProgress = GetCVars()->e_StreamCgfMaxTasksInProgress;
-	int nMaxToStart = GetCVars()->e_StreamCgfMaxNewTasksPerUpdate;
-	int nMaxMemUsage = GetCVars()->e_StreamCgfPoolSize * 1024 * 1024;
-	int nNumStreamableObjects = m_arrStreamableObjects.Count();
-	SStreamAbleObject* arrStreamableObjects = nNumStreamableObjects ? &m_arrStreamableObjects[0] : NULL;
+	const int nMaxInProgress = GetCVars()->e_StreamCgfMaxTasksInProgress;
+	const int nMaxToStart = GetCVars()->e_StreamCgfMaxNewTasksPerUpdate;
+	const int nMaxMemUsage = GetCVars()->e_StreamCgfPoolSize * 1024 * 1024;
+	const int nNumStreamableObjects = m_arrStreamableObjects.Count();
 
 	int nMemoryUsage = 0;
 	int nInProgress = 0;
@@ -709,9 +665,9 @@ void CObjManager::ProcessObjectsStreaming_InitLoad(bool bSyncLoad)
 	GetRenderer()->EF_Query(EFQ_GetMeshPoolInfo, stats);
 	size_t poolLimit = stats.nPoolSize << 2; // 4 times the pool limit because the rendermesh pool has been reduced
 
-	for (int nObjId = 0; nObjId < nNumStreamableObjects; nObjId++)
+	// Count memory usage
+	for (const auto& rObj : m_arrStreamableObjects)
 	{
-		const SStreamAbleObject& rObj = m_arrStreamableObjects[nObjId];
 		const int size = rObj.GetStreamableContentMemoryUsage();
 
 		if (rObj.GetStreamAbleObject()->m_eStreamingStatus == ecss_InProgress)
@@ -722,12 +678,29 @@ void CObjManager::ProcessObjectsStreaming_InitLoad(bool bSyncLoad)
 		if (rObj.GetStreamAbleObject()->m_eStreamingStatus != ecss_NotLoaded)
 			nMemoryUsage += size;
 	}
+	s_nLastStreamingMemoryUsage = nMemoryUsage;
 
-	for (int nObjId = 0; (nObjId < nNumStreamableObjects) && ((nInProgress < nMaxInProgress && (nInProgressMem < static_cast<int>(poolLimit) || !poolLimit) && nStarted < nMaxToStart) || bSyncLoad); nObjId++)
+	// Release stale objects
+	for (const auto& rObj : m_arrStreamableObjects)
 	{
-		const SStreamAbleObject& rObj = arrStreamableObjects[nObjId];
-		IStreamable* pStatObj = rObj.GetStreamAbleObject();
-		const int size = rObj.GetStreamableContentMemoryUsage();
+		if (rObj.GetStreamAbleObject()->IsUnloadable() && rObj.GetStreamAbleObject()->m_eStreamingStatus != ecss_NotLoaded &&
+			rObj.GetStreamAbleObject()->m_arrUpdateStreamingPrioriryRoundInfo[0].nRoundId < (CObjManager::m_nUpdateStreamingPrioriryRoundId - 8))
+		{
+			// remove from list if not active for long time
+			rObj.GetStreamAbleObject()->m_arrUpdateStreamingPrioriryRoundInfo[0].nRoundId = 0;
+			m_arrStreamableToDelete.push_back(rObj.GetStreamAbleObject());
+		}
+	}
+
+	// Load pending
+	auto* unload_iterator = m_arrStreamableObjects.end()-1;
+	for (auto* it = m_arrStreamableObjects.begin(); (it != m_arrStreamableObjects.end()) && ((nInProgress < nMaxInProgress && (nInProgressMem < static_cast<int>(poolLimit) || !poolLimit) && nStarted < nMaxToStart) || bSyncLoad); it++)
+	{
+		IStreamable* pStatObj = it->GetStreamAbleObject();
+		const int size = it->GetStreamableContentMemoryUsage();
+
+		if (pStatObj->m_eStreamingStatus != ecss_NotLoaded)
+			continue;
 
 		if (poolLimit && poolLimit <= (size_t)(nInProgressMem + size))
 		{
@@ -746,17 +719,44 @@ void CObjManager::ProcessObjectsStreaming_InitLoad(bool bSyncLoad)
 				continue;
 		}
 
-		if (rObj.GetStreamAbleObject()->m_eStreamingStatus == ecss_NotLoaded && nMemoryUsage + size < nMaxMemUsage)
+		// See if we can free enough memory to stream in higher-priority content
+		auto unload_it2 = unload_iterator;
+		auto new_mem_usage = nMemoryUsage;
+		for (; new_mem_usage + size >= nMaxMemUsage && unload_it2 > it; --unload_it2)
 		{
-			m_arrStreamableToLoad.push_back(rObj.GetStreamAbleObject());
-			nMemoryUsage += size;
-			nInProgressMem += size;
-			++nInProgress;
-			++nStarted;
-
-			if ((GetCVars()->e_AutoPrecacheCgf == 2) && (nObjId > nNumStreamableObjects / 2))
-				break;
+			if (unload_it2->GetStreamAbleObject()->IsUnloadable() && unload_it2->GetStreamAbleObject()->m_eStreamingStatus == ecss_Ready)
+				new_mem_usage -= unload_it2->GetStreamableContentMemoryUsage();
 		}
+		// If we failed to free memory warn once for each object and continue.
+		if (new_mem_usage + size >= nMaxMemUsage)
+		{
+			if (!pStatObj->warnedWhenCGFPoolIsOutOfMemory)
+			{
+				string name;
+				pStatObj->GetStreamableName(name);
+				CryWarning(EValidatorModule::VALIDATOR_MODULE_RENDERER, EValidatorSeverity::VALIDATOR_WARNING,
+					"[WARNING] object '%s' skipped because failed to free CGF pool memory for it", name.c_str());
+				pStatObj->warnedWhenCGFPoolIsOutOfMemory = true;
+			}
+
+			continue;
+		}
+		// Unload content
+		for (; unload_iterator != unload_it2; --unload_iterator)
+		{
+			if (unload_iterator->GetStreamAbleObject()->IsUnloadable() && unload_iterator->GetStreamAbleObject()->m_eStreamingStatus == ecss_Ready)
+				m_arrStreamableToRelease.push_back(unload_iterator->GetStreamAbleObject());
+		}
+
+		// Stream in new content
+		m_arrStreamableToLoad.push_back(pStatObj);
+		nMemoryUsage = new_mem_usage + size;
+		nInProgressMem += size;
+		++nInProgress;
+		++nStarted;
+
+		if (GetCVars()->e_AutoPrecacheCgf == 2 && std::distance(m_arrStreamableObjects.begin(), it)*2 > nNumStreamableObjects)
+			break;
 	}
 }
 
@@ -955,7 +955,7 @@ void CObjManager::GetObjectsStreamingStatus(I3DEngine::SObjectsStreamingStatus& 
 		if (rStreamAbleObject.GetStreamAbleObject()->m_eStreamingStatus == ecss_Ready)
 			outStatus.nAllocatedBytes += rStreamAbleObject.GetStreamableContentMemoryUsage();
 
-		if (rStreamAbleObject.GetStreamAbleObject()->m_arrUpdateStreamingPrioriryRoundInfo[0].nRoundId >= (CObjManager::m_nUpdateStreamingPrioriryRoundId - 4))
+		if (rStreamAbleObject.GetStreamAbleObject()->m_arrUpdateStreamingPrioriryRoundInfo[0].nRoundId >= (CObjManager::m_nUpdateStreamingPrioriryRoundId - 8))
 			outStatus.nMemRequired += rStreamAbleObject.GetStreamableContentMemoryUsage();
 	}
 }

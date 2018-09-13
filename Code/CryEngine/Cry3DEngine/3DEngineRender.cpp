@@ -1218,8 +1218,8 @@ void C3DEngine::PrintDebugInfo(const SRenderingPassInfo& passInfo)
 				            objectsStreamingStatus.nReady, objectsStreamingStatus.nInProgress, objectsStreamingStatus.nTotal, objectsStreamingStatus.nActive, float(objectsStreamingStatus.nAllocatedBytes) / 1024 / 1024, float(objectsStreamingStatus.nMemRequired) / 1024 / 1024, GetCVars()->e_StreamCgfPoolSize);
 			}
 
-			bool bOutOfMem((float(objectsStreamingStatus.nMemRequired) / 1024 / 1024) > GetCVars()->e_StreamCgfPoolSize);
-			bool bCloseToOutOfMem((float(objectsStreamingStatus.nMemRequired) / 1024 / 1024) > GetCVars()->e_StreamCgfPoolSize * 90 / 100);
+			bool bOutOfMem((float(objectsStreamingStatus.nMemRequired) / 1024 / 1024) > GetCVars()->e_StreamCgfPoolSize * 98 / 100);
+			bool bCloseToOutOfMem((float(objectsStreamingStatus.nMemRequired) / 1024 / 1024) > GetCVars()->e_StreamCgfPoolSize * 85 / 100);
 
 			ColorF color = Col_White;
 			if (bOutOfMem)
@@ -2519,8 +2519,8 @@ void C3DEngine::DisplayInfo(float& fTextPosX, float& fTextPosY, float& fTextStep
 			            float(objectsStreamingStatus.nAllocatedBytes) / 1024 / 1024, float(objectsStreamingStatus.nMemRequired) / 1024 / 1024, GetCVars()->e_StreamCgfPoolSize);
 		}
 
-		bool bOutOfMem((float(objectsStreamingStatus.nMemRequired) / 1024 / 1024) > GetCVars()->e_StreamCgfPoolSize);
-		bool bCloseToOutOfMem((float(objectsStreamingStatus.nMemRequired) / 1024 / 1024) > GetCVars()->e_StreamCgfPoolSize * 90 / 100);
+		bool bOutOfMem((float(objectsStreamingStatus.nMemRequired) / 1024 / 1024) > GetCVars()->e_StreamCgfPoolSize * 98 / 100);
+		bool bCloseToOutOfMem((float(objectsStreamingStatus.nMemRequired) / 1024 / 1024) > GetCVars()->e_StreamCgfPoolSize * 85 / 100);
 
 		ColorF color = Col_White;
 		if (bOutOfMem)
