@@ -91,6 +91,7 @@ public:
 	CParticleEffect*          GetCEffect()                 { return m_pEffect; }
 	void                      Register();
 	void                      Unregister();
+	void                      Clear();
 	void                      ResetRenderObjects();
 	void                      UpdateEmitGeomFromEntity();
 	const SVisEnviron&        GetVisEnv() const            { return m_visEnviron; }
@@ -176,7 +177,6 @@ private:
 	bool                                   m_boundsChanged;
 	bool                                   m_active;
 	bool                                   m_alive;
-	uint                                   m_addInstances;
 	uint                                   m_unrendered;
 	EmitterStats                           m_stats;
 	stl::PSyncMultiThread                  m_lock;

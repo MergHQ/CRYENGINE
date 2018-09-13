@@ -32,7 +32,6 @@ public:
 	const AABB&                   GetBounds() const      { return m_pGpuRuntime ? m_pGpuRuntime->GetBounds() : m_bounds; }
 	bool                          IsChild() const        { return m_pComponent->GetParentComponent() != nullptr; }
 	void                          ReparentParticles(TConstArray<TParticleId> swapIds);
-	void                          AddSubInstances(TVarArray<SInstance> instances);
 	void                          RemoveAllSubInstances();
 	void                          RenderAll(const SRenderContext& renderContext);
 
@@ -66,7 +65,7 @@ public:
 		byte* addr = m_subInstanceData.data() + stride * idx + offset;
 		return *reinterpret_cast<T*>(addr);
 	}
-	void                      GetEmitLocations(TVarArray<QuatTS> locations) const;
+	void                      GetEmitLocations(TVarArray<QuatTS> locations, uint firstInstance) const;
 	void                      EmitParticle();
 
 	bool                      HasParticles() const;
@@ -85,6 +84,7 @@ public:
 	float                     DeltaTime() const;
 
 private:
+	void AddInstances();
 	void AddParticles();
 	void RemoveParticles();
 	void UpdateNewBorns();

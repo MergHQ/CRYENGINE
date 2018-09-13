@@ -166,7 +166,7 @@ void CParticleSystem::Update()
 		}
 		else
 		{
-			pEmitter->Unregister();
+			pEmitter->Clear();
 		}
 	}
 
