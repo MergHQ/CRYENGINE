@@ -132,7 +132,7 @@ namespace UQS
 
 				//TODO: Get Navmesh query filter from somewhere
 				INavMeshQueryFilter* pQueryFilter = nullptr;
-				const size_t numTrianglesFound = pNavigationSystem->GetTriangleCenterLocationsInMesh(meshID, m_params.pivot.value, aabb, triangleCenters, maxTrianglesToLookFor, pQueryFilter);
+				const size_t numTrianglesFound = pNavigationSystem->GetTriangleCenterLocationsInMesh(meshID, aabb, triangleCenters, maxTrianglesToLookFor, pQueryFilter);
 
 				if (numTrianglesFound > 0)
 				{

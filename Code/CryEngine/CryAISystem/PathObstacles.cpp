@@ -653,7 +653,7 @@ bool IsInNavigationMesh(const NavigationMeshID meshID, const Vec3& point, const 
 {
 	CRY_PROFILE_FUNCTION(PROFILE_AI);
 
-	return gAIEnv.pNavigationSystem->IsLocationInMesh(meshID, point);
+	return gAIEnv.pNavigationSystem->IsLocationInMeshVolume(meshID, point);
 }
 
 //===================================================================

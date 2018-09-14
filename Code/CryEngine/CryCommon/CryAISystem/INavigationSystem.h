@@ -6,7 +6,6 @@
 #pragma once
 
 #include <CryAISystem/IAISystem.h>
-#include <CryAISystem/IMNM.h>
 #include <CryAISystem/NavigationSystem/MNMNavMesh.h>
 #include <CryAISystem/NavigationSystem/NavigationIdTypes.h>
 #include <functional>
@@ -14,7 +13,6 @@
 struct IOffMeshNavigationManager;
 struct INavigationUpdatesManager;
 struct INavMeshQueryFilter;
-struct SSnapToNavMeshRulesInfo;
 
 #ifdef SW_NAVMESH_USE_GUID
 typedef uint64 NavigationMeshGUID;
@@ -177,12 +175,9 @@ struct INavigationSystem
 	virtual WorkingState Update(bool blocking = false) = 0;
 	virtual uint32       GetWorkingQueueSize() const = 0;
 
-	//! deprecated - RequestQueueMeshUpdate(meshID, aabb) should be used instead
-	virtual size_t QueueMeshUpdate(NavigationMeshID meshID, const AABB& aabb) = 0;
+	virtual void         ProcessQueuedMeshUpdates() = 0;
 
-	virtual void   ProcessQueuedMeshUpdates() = 0;
-
-	virtual void   Clear() = 0;
+	virtual void         Clear() = 0;
 
 	//! ClearAndNotify is used when the listeners need to be notified about the performed clear operation.
 	virtual void                       ClearAndNotify() = 0;
@@ -205,36 +200,27 @@ struct INavigationSystem
 	virtual void                       RegisterUser(INavigationSystemUser* pExtension, const char* name = NULL) = 0;
 	virtual void                       UnRegisterUser(INavigationSystemUser* pExtension) = 0;
 
-	//! Register editor Navigation Area shape.
+	//! Registers editor Navigation Area shape.
 	//! \param shapeName Name of the Navigation Area shape.
 	//! \param outVolumeId Returns NavigationVolumeID, if there is a volume already loaded from exported data with the same shapeName.
-	//! \return true if the area name is successfully registered.
-	virtual bool               RegisterArea(const char* shapeName, NavigationVolumeID& outVolumeId) = 0;
-	virtual void               UnRegisterArea(const char* shapeName) = 0;
-	virtual NavigationVolumeID GetAreaId(const char* shapeName) const = 0;
-	virtual void               SetAreaId(const char* shapeName, NavigationVolumeID id) = 0;
-	virtual void               UpdateAreaNameForId(const NavigationVolumeID id, const char* newShapeName) = 0;
+	//! \returns true if the area name is successfully registered.
+	virtual bool                             RegisterArea(const char* shapeName, NavigationVolumeID& outVolumeId) = 0;
+	virtual void                             UnRegisterArea(const char* shapeName) = 0;
+	virtual NavigationVolumeID               GetAreaId(const char* shapeName) const = 0;
+	virtual void                             SetAreaId(const char* shapeName, NavigationVolumeID id) = 0;
+	virtual void                             UpdateAreaNameForId(const NavigationVolumeID id, const char* newShapeName) = 0;
 	//! Remove navigation meshes and volumes which don't have corresponding registered Navigation Areas. This may happen in editor, when the exported level data is older that the saved level.
-	virtual void               RemoveLoadedMeshesWithoutRegisteredAreas() = 0;
+	virtual void                             RemoveLoadedMeshesWithoutRegisteredAreas() = 0;
 
-	virtual bool               RegisterEntityMarkups(const IEntity& owningEntity, const char** shapeNamesArray, const size_t count, NavigationVolumeID* pOutIdsArray) = 0;
-	virtual void               UnregisterEntityMarkups(const IEntity& owningEntity) = 0;
+	virtual bool                             RegisterEntityMarkups(const IEntity& owningEntity, const char** shapeNamesArray, const size_t count, NavigationVolumeID* pOutIdsArray) = 0;
+	virtual void                             UnregisterEntityMarkups(const IEntity& owningEntity) = 0;
 
-	virtual void               StartWorldMonitoring() = 0;
-	virtual void               StopWorldMonitoring() = 0;
+	virtual void                             StartWorldMonitoring() = 0;
+	virtual void                             StopWorldMonitoring() = 0;
 
-	virtual bool               IsInUse() const = 0;
+	virtual bool                             IsInUse() const = 0;
 
-	virtual void               CalculateAccessibility() = 0;
-
-
-	//! NavMesh queries functions
-
-	virtual MNM::TileID        GetTileIdWhereLocationIsAtForMesh(NavigationMeshID meshID, const Vec3& location, const INavMeshQueryFilter* pFilter) = 0;
-	virtual void               GetTileBoundsForMesh(NavigationMeshID meshID, uint32 tileID, AABB& bounds) const = 0;
-
-	//! Get a MNM::INavMesh, which provides an access to the NavMesh data
-	virtual const MNM::INavMesh*             GetMNMNavMesh(NavigationMeshID meshID) const = 0;
+	virtual void                             CalculateAccessibility() = 0;
 
 	virtual const IOffMeshNavigationManager& GetIOffMeshNavigationManager() const = 0;
 	virtual IOffMeshNavigationManager&       GetIOffMeshNavigationManager() = 0;
@@ -242,46 +228,259 @@ struct INavigationSystem
 	virtual TileGeneratorExtensionID         RegisterTileGeneratorExtension(MNM::TileGenerator::IExtension& extension) = 0;
 	virtual bool                             UnRegisterTileGeneratorExtension(const TileGeneratorExtensionID extensionId) = 0;
 
-	virtual NavigationMeshID                 GetEnclosingMeshID(NavigationAgentTypeID agentTypeID, const Vec3& location) const = 0;
+	//! Gets a MNM::INavMesh, which provides access to the NavMesh data.
+	//! Pointer to the mesh shouldn't be cached because it can be invalidated later when the mesh is destroyed.
+	// \param meshID Id of the navigation mesh.
+	// \returns Pointer to NavMesh class or nullptr if it wasn't found
+	virtual const MNM::INavMesh* GetMNMNavMesh(const NavigationMeshID meshID) const = 0;
 
-	virtual bool                             GetClosestPointInNavigationMesh(const NavigationAgentTypeID agentID, const Vec3& location, float vrange, float hrange, Vec3* meshLocation, const INavMeshQueryFilter* pFilter, float minIslandArea = 0.f) const = 0;
+	//! Returns the Agent type id of the navigation mesh.
+	//! \param meshID Id of the navigation mesh.
+	//! \returns Returns Agent type id of for whom the mesh is built.
+	virtual NavigationAgentTypeID GetAgentTypeOfMesh(const NavigationMeshID meshID) const = 0;
+
+	//! Finds the enclosing mesh id of a position. Returns valid NavMesh only when the position is directly inside a Navigation Area volume of the NavMesh.
+	//! \param agentTypeID Navigation agent type id.
+	//! \param position Location used to find NavMesh id.
+	//! \returns Navigation mesh id of the enclosing NavMesh.
+	virtual NavigationMeshID FindEnclosingMeshID(const NavigationAgentTypeID agentTypeID, const Vec3& location) const = 0;
+
+	//! Finds the enclosing mesh id of a position, expanding the position using the horizontal or vertical range of the snapping metric. The first NavMesh fulfilling the metric is returned.
+	//! \param agentTypeID Navigation agent type id.
+	//! \param position Location used to find NavMesh id.
+	//! \param snappingMetric Snapping metric params with ranges used to extend the input position.
+	//! \returns Navigation mesh id of the enclosing NavMesh.
+	virtual NavigationMeshID FindEnclosingMeshID(const NavigationAgentTypeID agentTypeID, const Vec3& position, const MNM::SSnappingMetric& snappingMetric) const = 0;
+
+	//! Finds the enclosing mesh id of a position, expanding the position using the horizontal or vertical range of the snapping metric. The first NavMesh fulfilling the metrics is returned.
+	//! \param agentTypeID Navigation agent type id.
+	//! \param position Location used to find NavMesh id.
+	//! \param snappingMetrics Ordered snapping metrics array with ranges used to extend the input position.
+	//! \returns Navigation mesh id of the enclosing NavMesh.
+	virtual NavigationMeshID FindEnclosingMeshID(const NavigationAgentTypeID agentTypeID, const Vec3& position, const MNM::SOrderedSnappingMetrics& snappingMetrics) const = 0;
+
+	//! Checks whether a position lies directly inside a Navigation Area volume.
+	//! \param meshID Id of the navigation mesh.
+	//! \param location Position of the point to test.
+	//! \returns Returns true if the location is inside NavMesh volume (Navigation Area).
+	virtual bool IsLocationInMeshVolume(const NavigationMeshID meshID, const Vec3& location) const = 0;
+
+	//! Checks whether a position lies inside or nearby a Navigation Area volume using snapping metric.
+	//! \param meshID Id of the navigation mesh.
+	//! \param location Position of the point to test.
+	//! \param snappingMetric Structure of snapping metric params defining how the location will be extended during the test.
+	//! \returns Returns true if the extended location (by snapping metric) is overlapping with NavMesh volume (Navigation Area).
+	virtual bool IsLocationInMeshVolume(const NavigationMeshID meshID, const Vec3& location, const MNM::SSnappingMetric& snappingMetric) const = 0;
+
+	//! Checks whether a position lies inside or nearby a Navigation Area volume using ordered snapping metrics.
+	//! \param meshID Id of the navigation mesh.
+	//! \param location Position of the point to test.
+	//! \param snappingMetrics Ordered snapping metrics array with ranges used to extend the input position.
+	//! \returns Returns true if the extended location (by snapping metric) is overlapping with NavMesh volume (Navigation Area).
+	virtual bool IsLocationInMeshVolume(const NavigationMeshID meshID, const Vec3& location, const MNM::SOrderedSnappingMetrics& snappingMetrics) const = 0;
+
+	//! Function for getting bounding box of the given tile
+	//! \param meshID Id of the navigation mesh where the tile is located.
+	//! \param tileD Id of the tile.
+	//! \param bounds Output reference to axis aligned bounding box of the tile.
+	virtual void GetTileBoundsForMesh(const NavigationMeshID meshID, const MNM::TileID tileID, AABB& bounds) const = 0;
+
+	//! Fills Triangle's vertices of the specified triangle
+	//! \param meshID Id of the navigation mesh where the triangle is located.
+	//! \param triangleID Triangle id.
+	//! \param outTriangleVertices Output structure containing triangle's vertices.
+	//! \returns True, if the triangle is found and its vertices are returned.
+	virtual bool GetTriangleVertices(const NavigationMeshID meshID, const MNM::TriangleID triangleID, Triangle& outTriangleVertices) const = 0;
 
 	//! A cheap test to see if two points are connected, without the expense of computing a full path between them.
-	virtual bool   IsPointReachableFromPosition(const NavigationAgentTypeID agentID, const IEntity* pEntityToTestOffGridLinks, const Vec3& startLocation, const Vec3& endLocation, const INavMeshQueryFilter* pFilter) const = 0;
+	//! This function does not do a full path-find and does not know about dynamic obstacles. It only reasons at a 'high level' about the connectivity of areas that are part of the NavMes.
+	//! \param agentID Navigation agent type id.
+	//! \param pEntityToTestOffGridLinks Pointer to an entity used for checking whether off-mesh links can be used.
+	//! \param startLocation Starting location of the request.
+	//! \param endLocation Ending location of the request.
+	//! \param snappingMetrics Ordered snapping metrics for finding triangles in NavMesh using input positions.
+	//! \param pFilter Pointer to navigation query filter. Can be null to accept all triangles.
+	//! \returns True if the path possibly exists between input locations.
+	virtual bool IsPointReachableFromPosition(
+		const NavigationAgentTypeID agentID,
+		const IEntity* pEntityToTestOffGridLinks,
+		const Vec3& startLocation,
+		const Vec3& endLocation,
+		const MNM::SOrderedSnappingMetrics& snappingMetrics,
+		const INavMeshQueryFilter* pFilter) const = 0;
 
-	virtual bool   IsLocationValidInNavigationMesh(const NavigationAgentTypeID agentID, const Vec3& location, const INavMeshQueryFilter* pFilter, float downRange = 1.0f, float upRange = 1.0f) const = 0;
-	virtual size_t GetTriangleCenterLocationsInMesh(const NavigationMeshID meshID, const Vec3& location, const AABB& searchAABB, Vec3* centerLocations, size_t maxCenterLocationCount, const INavMeshQueryFilter* pFilter, float minIslandArea = 0.f) const = 0;
+	//! A cheap test to see if two NavMesh triangles are connected, without the expense of computing a full path between them.
+	//! This function does not do a full path-find and does not know about dynamic obstacles. It only reasons at a 'high level' about the connectivity of areas that are part of the NavMes.
+	//! \param pEntityToTestOffGridLinks Pointer to an entity used for checking whether off-mesh links can be used.
+	//! \param startMeshID Id of the navigation mesh where start triangle is located.
+	//! \param startTriangleID Starting triangle of the test.
+	//! \param endMeshID Id of the navigation mesh where end triangle is located.
+	//! \param endTriangleID Ending triangle of the test.
+	//! \param pFilter Pointer to navigation query filter. Can be null to accept all triangles.
+	//! \returns True if the path possibly exists between input triangles.
+	virtual bool IsPointReachableFromPosition(
+		const IEntity* pEntityToTestOffGridLinks,
+		const NavigationMeshID startMeshID,
+		const MNM::TriangleID startTriangleID,
+		const NavigationMeshID endMeshID,
+		const MNM::TriangleID endTriangleID,
+		const INavMeshQueryFilter* pFilter) const = 0;
 
 	//! Performs ray-cast on NavMesh.
-	//! \param agentTypeID navigation agent type Id
-	//! \param startPos Starting position of the ray
-	//! \param endPos End position of the ray
+	//! \param agentTypeID Navigation agent type id.
+	//! \param startPos Starting position of the ray.
+	//! \param endPos End position of the ray.
 	//! \param pOutHit Optional pointer for a return value of additional information about the hit. This structure is valid only when the hit is reported.
-	//! \return Returns MNM::ERayCastResult::Hit if the ray has hit a NavMesh boundary before end position or other value in case of no hit or an error.
-	virtual MNM::ERayCastResult NavMeshTestRaycastHit(NavigationAgentTypeID agentTypeID, const Vec3& startPos, const Vec3& endPos, const INavMeshQueryFilter* pFilter, MNM::SRayHitOutput* pOutHit) const = 0;
+	//! \returns Returns MNM::ERayCastResult::Hit if the ray has hit a NavMesh boundary before end position or other value in case of no hit or an error.
+	virtual MNM::ERayCastResult NavMeshRayCast(const NavigationAgentTypeID agentTypeID, const Vec3& startPos, const Vec3& endPos, const INavMeshQueryFilter* pFilter, MNM::SRayHitOutput* pOutHit) const = 0;
 
-	//! Returns all borders (unconnected edges) in the specified AABB.
-	//! There are 3 Vec3's per border edge, vert 0, vert 1, and a normal pointing out from the edge.
-	//! You can pass NULL for pBorders to return the total number of borders (multiply this by 3 to get the total number of Vec3's you need to pass in).
-	virtual size_t GetTriangleBorders(const NavigationMeshID meshID, const AABB& aabb, Vec3* pBorders, size_t maxBorderCount, const INavMeshQueryFilter* pFilter, float minIslandArea = 0.f) const = 0;
+	//! Performs ray-cast on NavMesh. Doesn't need to snap starting and ending position to NavMesh since triangle ids are used as parameters.
+	//! \param meshID NavMesh id on which ray-cast should be executed.
+	//! \param startTriangleId Triangle id where startPos is located.
+	//! \param startPos Starting position of the ray.
+	//! \param endTriangleId Triangle id where endPos is located.
+	//! \param endPos End position of the ray.
+	//! \param pFilter Pointer to navigation query filter. Can be null to accept all triangles.
+	//! \param pOutHit Optional pointer for a return value of additional information about the hit. This structure is valid only when the hit is reported.
+	//! \returns MNM::ERayCastResult::Hit if the ray has hit a NavMesh boundary before end position or other value in case of no hit or an error.
+	virtual MNM::ERayCastResult NavMeshRayCast(const NavigationMeshID meshID, const MNM::TriangleID startTriangleId, const Vec3& startPos, const MNM::TriangleID endTriangleId, const Vec3& endPos, const INavMeshQueryFilter* pFilter, MNM::SRayHitOutput* pOutHit) const = 0;
 
-	//! Gets triangle centers, and island ids - this is used to compute spawn points for an area.
-	virtual size_t GetTriangleInfo(const NavigationMeshID meshID, const AABB& aabb, Vec3* centerLocations, uint32* islandids, size_t max_count, const INavMeshQueryFilter* pFilter, float minIslandArea = 0.f) const = 0;
+	//! Returns all borders (unconnected edges) of NavMesh triangles in the specified AABB.
+	//! There are 3 Vec3's per border edge, vertex 0, vertex 1, and a normal pointing out from the edge.
+	//! \param meshID Id of the navigation mesh.
+	//! \param aabb Axis aligned bounding box for querying triangles.
+	//! \param pOutBorders Output array of found borders. Its size should be at least maxBorderCount * 3 (triplets of Vec3 - 2 edge vertices and its normal) or null if the caller is interested only in number of returned borders.
+	//! \param maxBorderCount Number of maximum borders count that can be filled in pOutBorders.
+	//! \param pFilter Pointer to navigation query filter. Can be null to accept all triangles.
+	//! \param minIslandArea Deprecated parameter for filtering out triangles in small areas.
+	//! \returns Number of found bordering triangle edges.
+	virtual size_t GetTriangleBorders(const NavigationMeshID meshID, const AABB& aabb, Vec3* pOutBorders, size_t maxBorderCount, const INavMeshQueryFilter* pFilter, float minIslandArea = 0.f) const = 0;
 
-	//! Returns island id of the triangle at the current position.
-	virtual MNM::GlobalIslandID GetGlobalIslandIdAtPosition(const NavigationAgentTypeID agentID, const Vec3& location) = 0;
+	//! Gets triangle centers.
+	//! \param meshID Id of the navigation mesh.
+	//! \param aabb Axis aligned bounding box for querying triangles.
+	//! \param pOutCenterLocations Output array of triangles' center locations. Must not be null.
+	//! \param maxCenterLocationCount Maximum number of elements that can be filled in pOutCenterLocations and pOutIslandIds
+	//! \param pFilter Pointer to navigation query filter. Can be null to accept all triangles.
+	//! \param minIslandArea Deprecated parameter for filtering out triangles in small areas.
+	//! \returns Number of found triangles' centers.
+	virtual size_t GetTriangleCenterLocationsInMesh(const NavigationMeshID meshID, const AABB& aabb, Vec3* pOutCenterLocations, size_t maxCenterLocationCount, const INavMeshQueryFilter* pFilter, float minIslandArea = 0.f) const = 0;
 
-	virtual MNM::TriangleID     GetTriangleIDWhereLocationIsAtForMesh(const NavigationAgentTypeID agentID, const Vec3& location, const INavMeshQueryFilter* pFilter) = 0;
-	
-	//! Snaps provided position to NavMesh`
-	//! \param agentTypeID navigation agent type Id
-	//! \param position Position to be snapped to NavMesh
-	//! \param pFilter Pointer to navigation query filter. Can be null.
-	//! \param snappingRules Snapping rules structure.
-	//! \param outSnappedPosition Returned snapped position, valid only when the function returned true.
-	//! \param pOutTriangleId Optional pointer for a triangle Id, which contains snapped position.
-	//! \return Returns true if the position was successfully snapped to NavMesh, false otherwise.
-	virtual bool                SnapToNavMesh(const NavigationAgentTypeID agentTypeID, const Vec3& position, const INavMeshQueryFilter* pFilter, const SSnapToNavMeshRulesInfo& snappingRules, Vec3& outSnappedPosition, MNM::TriangleID* pOutTriangleId) const = 0;
+	//! Returns global island id of the triangle at location.
+	//! \param agentTypeID Navigation agent type id.
+	//! \param location Location for querying the triangle at location.
+	//! \param snappingMetrics Ordered snapping metrics for finding triangle in NavMesh using input positions.
+	//! \returns Global island id of the triangle at location or MNM::Constants::eGlobalIsland_InvalidIslandID if no triangle is found.
+	virtual MNM::GlobalIslandID GetGlobalIslandIdAtPosition(const NavigationAgentTypeID agentID, const Vec3& location, const MNM::SOrderedSnappingMetrics& snappingMetrics) const = 0;
+
+	//! Returns global island id of the triangle.
+	//! \param meshID Id of the navigation mesh where the triangle is located.
+	//! \param triangleID Triangle id whom island id should be returned.
+	//! \returns Global island id of the triangle or MNM::Constants::eGlobalIsland_InvalidIslandID in case of invalid triangle.
+	virtual MNM::GlobalIslandID GetGlobalIslandIdAtPosition(const NavigationMeshID meshID, const MNM::TriangleID triangleID) const = 0;
+
+	//! Finds the enclosing NavMesh and snaps the point to the NavMesh using the snapping metric.
+	//! \param agentTypeID navigation agent type id.
+	//! \param position Position to be snapped to NavMesh.
+	//! \param snappingMetric Snapping metric structure.
+	//! \param pFilter Pointer to navigation query filter. Can be null to accept all triangles.
+	//! \param pOutSnappedPosition Optional pointer to snapped position, valid only when the function has returned true.
+	//! \param pOutTriangleID Optional pointer to a triangle id, which contains snapped position.
+	//! \param pOutNavMeshID Optional pointer to a NavMesh id, which contains snapped position.
+	//! \returns Returns true if the position can be successfully snapped to NavMesh, false otherwise.
+	virtual bool SnapToNavMesh(
+		const NavigationAgentTypeID agentTypeID,
+		const Vec3& position,
+		const MNM::SSnappingMetric& snappingMetric,
+		const INavMeshQueryFilter* pFilter,
+		Vec3* pOutSnappedPosition,
+		MNM::TriangleID* pOutTriangleID,
+		NavigationMeshID* pOutNavMeshID) const = 0;
+
+	//! Finds the enclosing NavMesh and snaps the point to the NavMesh using the ordered array of snapping metrics.
+	//! For each snapping metric the function first tries to find enclosing NavMesh volume and then snap to it. The first successful snapping is returned.
+	//! \param agentTypeID navigation agent type id.
+	//! \param position Position to be snapped to NavMesh.
+	//! \param snappingMetrics Ordered snapping metrics array.
+	//! \param pFilter Pointer to navigation query filter. Can be null to accept all triangles
+	//! \param pOutSnappedPosition Optional pointer to snapped position, valid only when the function has returned true.
+	//! \param pOutTriangleID Optional pointer to a triangle id, which contains snapped position.
+	//! \param pOutNavMeshID Optional pointer to a NavMesh id, which contains snapped position.
+	//! \returns Returns true if the position can be successfully snapped to NavMesh, false otherwise.
+	virtual bool SnapToNavMesh(
+		const NavigationAgentTypeID agentTypeID,
+		const Vec3& position,
+		const MNM::SOrderedSnappingMetrics& snappingMetrics,
+		const INavMeshQueryFilter* pFilter,
+		Vec3* pOutSnappedPosition,
+		MNM::TriangleID* pOutTriangleID,
+		NavigationMeshID* pOutNavMeshID) const = 0;
+
+	//! (DEPRECATED) Finds the enclosing meshID of a position. FindEnclosingMeshID should be now used instead.
+	//! \param agentTypeID Navigation agent type id.
+	//! \param position Location used to find NavMesh id.
+	//! \returns Navigation mesh id of the enclosing NavMesh.
+	virtual NavigationMeshID GetEnclosingMeshID(const NavigationAgentTypeID agentTypeID, const Vec3& location) const = 0;
+
+	//! (DEPRECATED) Returns id of the tile consisting input location. SnapToNavMesh function should be now used instead.
+	//! \param meshID Id of the navigation mesh.
+	//! \param location Position of the point lying in the tile.
+	//! \param pFilter Pointer to navigation query filter. Can be null to accept all triangles.
+	//! \returns Tile id where the input locations is lying.
+	virtual MNM::TileID GetTileIdWhereLocationIsAtForMesh(const NavigationMeshID meshID, const Vec3& location, const INavMeshQueryFilter* pFilter) = 0;
+
+	//! (DEPRECATED) Function for getting the closest point in NavMesh. SnapToNavMesh should be now used instead.
+	//! \param agentID Navigation agent type id.
+	//! \param location Position of the input point
+	//! \param vrange Vertical search range
+	//! \param hrange Horizontal search range
+	//! \param meshLocation Pointer to position on the NavMesh closest to input position if it was found
+	//! \param pFilter Pointer to navigation query filter. Can be null to accept all triangles.
+	//! \param minIslandArea Minimal size of the island area of triangles to consider during the search
+	//! \returns True if the closest point was found, false otherwise
+	virtual bool GetClosestPointInNavigationMesh(const NavigationAgentTypeID agentID, const Vec3& location, float vrange, float hrange, Vec3* meshLocation, const INavMeshQueryFilter* pFilter, float minIslandArea = 0.f) const = 0;
+
+	//! (DEPRECATED) A cheap test to see if two points are connected, without the expense of computing a full path between them. Variation with snapping metric(s) should be used now instead.
+	//! \param agentID Navigation agent type id.
+	//! \param pEntityToTestOffGridLinks Pointer to an entity used for checking whether off-mesh links can be used.
+	//! \param startLocation Starting location of the request.
+	//! \param endLocation Ending location of the request.
+	//! \param pFilter Pointer to navigation query filter. Can be null to accept all triangles.
+	//! \returns True if the path possibly exists between input locations.
+	virtual bool IsPointReachableFromPosition(const NavigationAgentTypeID agentID, const IEntity* pEntityToTestOffGridLinks, const Vec3& startLocation, const Vec3& endLocation, const INavMeshQueryFilter* pFilter) const = 0;
+
+	//! (DEPRECATED) Returns triangle id of the triangle at location. The function is using hard-coded vertical ranges based on agent's height for querying triangles. SnapToNavMesh should be used now instead.
+	//! \param agentTypeID Navigation agent type id.
+	//! \param location Location for querying the triangle at location.
+	//! \param pFilter Pointer to navigation query filter. Can be null to accept all triangles.
+	//! \returns Triangle id of the triangle at location or MNM::Constants::InvalidTriangleID if no triangle is found.
+	virtual MNM::TriangleID GetTriangleIDWhereLocationIsAtForMesh(const NavigationAgentTypeID agentID, const Vec3& location, const INavMeshQueryFilter* pFilter) = 0;
+
+	//! (DEPRECATED) Gets triangle centers and island ids.
+	//! \param meshID Id of the navigation mesh.
+	//! \param aabb Axis aligned bounding box for querying triangles.
+	//! \param pOutCenterLocations Output array of triangles' center locations. Must not be null.
+	//! \param pOutIslandIds Output array of triangles' island ids (relative to the current NavMesh). Must not be null.
+	//! \param maxCount Maximum number of elements that can be filled in pOutCenterLocations and pOutIslandIds.
+	//! \param pFilter Pointer to navigation query filter. Can be null to accept all triangles.
+	//! \param minIslandArea Parameter for filtering out triangles in small areas.
+	//! \returns Number of found triangles.
+	virtual size_t GetTriangleInfo(const NavigationMeshID meshID, const AABB& aabb, Vec3* pOutCenterLocations, uint32* pOutIslandIds, size_t maxCount, const INavMeshQueryFilter* pFilter, float minIslandArea = 0.f) const = 0;
+
+	//! (DEPRECATED) Returns global island id of the triangle at location. The function is using hard-coded vertical ranges (1.0f) for querying triangles.
+	//! \param agentTypeID Navigation agent type id.
+	//! \param location Location for querying the triangle at location.
+	//! \returns Global island id of the triangle at location or MNM::Constants::eGlobalIsland_InvalidIslandID if no triangle is found.
+	virtual MNM::GlobalIslandID GetGlobalIslandIdAtPosition(const NavigationAgentTypeID agentID, const Vec3& location) const = 0;
+
+	//! (DEPRECATED) Test for checking if input location is in range directly above or below NavMesh. SnapToNavMesh should be used now instead.
+	//! \param agentID Navigation agent type id.
+	//! \param location Position to check.
+	//! \param pFilter Pointer to navigation query filter. Can be null to accept all triangles.
+	//! \param downRange Vertical down range.
+	//! \param upRange Vertical up range.
+	//! \returns True if the location is in the range of NavMesh.
+	virtual bool IsLocationValidInNavigationMesh(const NavigationAgentTypeID agentID, const Vec3& location, const INavMeshQueryFilter* pFilter, float downRange = 1.0f, float upRange = 1.0f) const = 0;
 
 	// </interfuscator:shuffle>
 };

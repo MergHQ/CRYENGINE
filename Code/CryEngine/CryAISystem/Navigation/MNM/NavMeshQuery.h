@@ -31,9 +31,10 @@ private:
 class CNearestTriangleQuery : public INavMeshQueryProcessing
 {
 public:
-	CNearestTriangleQuery(const CNavMesh* pNavMesh, const vector3_t& localFromPosition)
+	CNearestTriangleQuery(const CNavMesh* pNavMesh, const vector3_t& localFromPosition, const MNM::real_t maxDistance = real_t::max())
 		: pNavMesh(pNavMesh)
 		, localFromPosition(localFromPosition)
+		, distMinSq(maxDistance.sqr())
 	{}
 
 	const vector3_t& GetClosestPosition() const { return closestPos; }

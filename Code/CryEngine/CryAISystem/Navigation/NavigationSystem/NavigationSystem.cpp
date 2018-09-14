@@ -1616,13 +1616,6 @@ void NavigationSystem::ProcessQueuedMeshUpdates()
 #endif
 }
 
-size_t NavigationSystem::QueueMeshUpdate(NavigationMeshID meshID, const AABB& aabb)
-{
-	AIWarning("NavigationSystem::QueueMeshUpdate() is deprecated! INavigationUpdatesManager::RequestMeshUpdate should be used instead");
-	m_updatesManager.RequestMeshUpdate(meshID, aabb);
-	return 0;
-}
-
 void NavigationSystem::StopAllTasks()
 {
 	for (size_t t = 0; t < m_runningTasks.size(); ++t)
@@ -1730,7 +1723,7 @@ void NavigationSystem::ComputeMeshesAccessibility(const NavigationMeshID* pUpdat
 			if (seeds[seedIdx].second.IsValid() && seeds[seedIdx].second != mesh.agentTypeID)
 				continue;
 
-			if(!IsLocationInMesh(meshId, seeds[seedIdx].first))
+			if(!IsLocationInMeshVolume(meshId, seeds[seedIdx].first))
 				continue;
 
 			const MNM::TriangleID triangleID = GetClosestMeshLocation(meshId, seeds[seedIdx].first, verticalRange, horizontalRange, nullptr, nullptr, nullptr);
@@ -1852,7 +1845,7 @@ void NavigationSystem::RequestUpdateAccessibilityAfterSeedChange(const Vec3& old
 	{
 		for (const AgentType::MeshInfo& meshInfo : agentType.meshes)
 		{
-			if (IsLocationInMesh(meshInfo.id, oldPosition) || IsLocationInMesh(meshInfo.id, newPosition))
+			if (IsLocationInMeshVolume(meshInfo.id, oldPosition) || IsLocationInMeshVolume(meshInfo.id, newPosition))
 			{
 				stl::push_back_unique(m_accessibilityUpdateRequestForMeshIds, meshInfo.id);
 			}
@@ -1931,7 +1924,7 @@ bool NavigationSystem::IsInUse() const
 	return m_meshes.size() != 0;
 }
 
-MNM::TileID NavigationSystem::GetTileIdWhereLocationIsAtForMesh(NavigationMeshID meshID, const Vec3& location, const INavMeshQueryFilter* pFilter)
+MNM::TileID NavigationSystem::GetTileIdWhereLocationIsAtForMesh(const NavigationMeshID meshID, const Vec3& location, const INavMeshQueryFilter* pFilter)
 {
 	const NavigationMesh& mesh = GetMesh(meshID);
 	const MNM::real_t range = MNM::real_t(1.0f);
@@ -1940,7 +1933,7 @@ MNM::TileID NavigationSystem::GetTileIdWhereLocationIsAtForMesh(NavigationMeshID
 	return MNM::ComputeTileID(triangleID);
 }
 
-void NavigationSystem::GetTileBoundsForMesh(NavigationMeshID meshID, MNM::TileID tileID, AABB& bounds) const
+void NavigationSystem::GetTileBoundsForMesh(const NavigationMeshID meshID, const MNM::TileID tileID, AABB& bounds) const
 {
 	const NavigationMesh& mesh = GetMesh(meshID);
 	const MNM::vector3_t coords = mesh.navMesh.GetTileContainerCoordinates(tileID);
@@ -1969,7 +1962,12 @@ const NavigationMesh& NavigationSystem::GetMesh(const NavigationMeshID& meshID) 
 	return dummy;
 }
 
-NavigationMeshID NavigationSystem::GetEnclosingMeshID(NavigationAgentTypeID agentTypeID, const Vec3& location) const
+NavigationMeshID NavigationSystem::GetEnclosingMeshID(const NavigationAgentTypeID agentTypeID, const Vec3& location) const
+{
+	return FindEnclosingMeshID(agentTypeID, location);
+}
+
+NavigationMeshID NavigationSystem::FindEnclosingMeshID(const NavigationAgentTypeID agentTypeID, const Vec3& location) const
 {
 	if (agentTypeID && agentTypeID <= m_agentTypes.size())
 	{
@@ -1992,7 +1990,49 @@ NavigationMeshID NavigationSystem::GetEnclosingMeshID(NavigationAgentTypeID agen
 	return NavigationMeshID();
 }
 
-bool NavigationSystem::IsLocationInMesh(NavigationMeshID meshID, const Vec3& location) const
+NavigationMeshID NavigationSystem::FindEnclosingMeshID(const NavigationAgentTypeID agentTypeID, const Vec3& position, const MNM::SSnappingMetric& snappingMetric) const
+{
+	if (agentTypeID.IsValid() && agentTypeID <= m_agentTypes.size())
+	{
+		const AgentType& agentType = m_agentTypes[agentTypeID - 1];
+
+		for (const AgentType::MeshInfo& meshInfo : agentType.meshes)
+		{
+			const NavigationMeshID meshID = meshInfo.id;
+			CRY_ASSERT(m_meshes.validate(meshID));
+			const NavigationMesh& mesh = m_meshes[meshID];
+
+			if (IsLocationInMeshVolume(mesh, position, snappingMetric))
+				return meshID;
+		}
+	}
+	return NavigationMeshID();
+}
+
+NavigationMeshID NavigationSystem::FindEnclosingMeshID(const NavigationAgentTypeID agentTypeID, const Vec3& position, const MNM::SOrderedSnappingMetrics& snappingMetrics) const
+{
+	if (agentTypeID.IsValid() && agentTypeID <= m_agentTypes.size())
+	{
+		const AgentType& agentType = m_agentTypes[agentTypeID - 1];
+
+		for (const MNM::SSnappingMetric& snappingMetric : snappingMetrics.metricsArray)
+		{
+			const AABB aabbAroundPos = GetAABBFromSnappingMetric(position, snappingMetric, agentTypeID);
+			
+			for (const AgentType::MeshInfo& meshInfo : agentType.meshes)
+			{
+				const NavigationMeshID meshID = meshInfo.id;
+				const NavigationMesh& mesh = m_meshes[meshID];
+
+				if (IsOverlappingWithMeshVolume(mesh, aabbAroundPos))
+					return meshID;
+			}
+		}
+	}
+	return NavigationMeshID();
+}
+
+bool NavigationSystem::IsLocationInMeshVolume(const NavigationMeshID meshID, const Vec3& location) const
 {
 	if (meshID && m_meshes.validate(meshID))
 	{
@@ -2005,7 +2045,90 @@ bool NavigationSystem::IsLocationInMesh(NavigationMeshID meshID, const Vec3& loc
 	return false;
 }
 
-MNM::TriangleID NavigationSystem::GetClosestMeshLocation(NavigationMeshID meshID, const Vec3& location, float vrange,
+bool NavigationSystem::IsLocationInMeshVolume(const NavigationMeshID meshID, const Vec3& position, const MNM::SSnappingMetric& snappingMetric) const
+{
+	if (meshID.IsValid() && m_meshes.validate(meshID))
+	{
+		const NavigationMesh& mesh = m_meshes[meshID];
+		return IsLocationInMeshVolume(mesh, position, snappingMetric);
+	}
+	return false;
+}
+
+bool NavigationSystem::IsLocationInMeshVolume(const NavigationMeshID meshID, const Vec3& position, const MNM::SOrderedSnappingMetrics& snappingMetrics) const
+{
+	if (!meshID.IsValid() || !m_meshes.validate(meshID))
+		return false;
+	
+	const NavigationMesh& mesh = m_meshes[meshID];
+	for (const MNM::SSnappingMetric& snappingMetric : snappingMetrics.metricsArray)
+	{
+		if (IsLocationInMeshVolume(mesh, position, snappingMetric))
+			return true;
+	}
+	return false;
+}
+
+AABB NavigationSystem::GetAABBFromSnappingMetric(const Vec3& position, const MNM::SSnappingMetric& snappingMetric, const NavigationAgentTypeID agentID) const
+{
+	AABB aabbAroundPos(position);
+
+	CRY_ASSERT(agentID.IsValid() && agentID <= m_agentTypes.size());
+
+	const AgentType& agentType = m_agentTypes[agentID - 1];
+	const Vec3& voxelSize = agentType.settings.voxelSize;
+	const uint16 agentRadiusUnits = agentType.settings.agent.radius;
+	const uint16 agentHeightUnits = agentType.settings.agent.height;
+
+	const float verticalDefaultDownRange = MNMUtils::CalculateMinVerticalRange(agentHeightUnits, voxelSize.z).as_float();
+	const float verticalDefaultUpRange = float(min(uint16(2), agentHeightUnits)) * voxelSize.z;
+
+	const float verticalDownRange = snappingMetric.verticalDownRange == -FLT_MAX ? verticalDefaultDownRange : snappingMetric.verticalDownRange;
+	const float verticalUpRange = snappingMetric.verticalUpRange == -FLT_MAX ? verticalDefaultUpRange : snappingMetric.verticalUpRange;
+
+	static_assert(int(MNM::SSnappingMetric::EType::Count) == 3, "Invalid enum size!");
+	switch (snappingMetric.type)
+	{
+	case MNM::SSnappingMetric::EType::Vertical:
+	{
+		aabbAroundPos.max.z += verticalUpRange;
+		aabbAroundPos.min.z -= verticalDownRange;
+		break;
+	}
+	case MNM::SSnappingMetric::EType::Box:
+	case MNM::SSnappingMetric::EType::Circular: //TODO: do more precise check for Circular type?
+	{
+		const float horizontalDefaultRange = MNMUtils::CalculateMinHorizontalRange(agentRadiusUnits, voxelSize.x).as_float();
+		const float horizontalRange = snappingMetric.horizontalRange == -FLT_MAX ? horizontalDefaultRange : snappingMetric.horizontalRange;
+		aabbAroundPos.max += Vec3(horizontalRange, horizontalRange, verticalUpRange);
+		aabbAroundPos.min -= Vec3(horizontalRange, horizontalRange, verticalDownRange);
+		break;
+	}
+	}
+	return aabbAroundPos;
+}
+
+bool NavigationSystem::IsLocationInMeshVolume(const NavigationMesh& mesh, const Vec3& position, const MNM::SSnappingMetric& snappingMetric) const
+{
+	const NavigationVolumeID boundaryID = mesh.boundary;
+
+	if (!boundaryID.IsValid())
+		return false;
+
+	const AABB aabbAroundPos = GetAABBFromSnappingMetric(position, snappingMetric, mesh.agentTypeID);
+	return m_volumes[boundaryID].Overlaps(aabbAroundPos);
+}
+
+bool NavigationSystem::IsOverlappingWithMeshVolume(const NavigationMesh& mesh, const AABB& aabb) const
+{
+	const NavigationVolumeID boundaryID = mesh.boundary;
+	if (!boundaryID.IsValid())
+		return false;
+	
+	return m_volumes[boundaryID].Overlaps(aabb);
+}
+
+MNM::TriangleID NavigationSystem::GetClosestMeshLocation(const NavigationMeshID meshID, const Vec3& location, float vrange,
                                                          float hrange, const INavMeshQueryFilter* pFilter, Vec3* meshLocation, float* distance) const
 {
 	if (meshID && m_meshes.validate(meshID))
@@ -2041,10 +2164,10 @@ MNM::TriangleID NavigationSystem::GetClosestMeshLocation(NavigationMeshID meshID
 		}
 	}
 
-	return MNM::TriangleID(0);
+	return MNM::Constants::InvalidTriangleID;
 }
 
-bool NavigationSystem::AgentTypeSupportSmartObjectUserClass(NavigationAgentTypeID agentTypeID, const char* smartObjectUserClass) const
+bool NavigationSystem::AgentTypeSupportSmartObjectUserClass(const NavigationAgentTypeID agentTypeID, const char* smartObjectUserClass) const
 {
 	if (agentTypeID && agentTypeID <= m_agentTypes.size())
 	{
@@ -2066,7 +2189,7 @@ bool NavigationSystem::AgentTypeSupportSmartObjectUserClass(NavigationAgentTypeI
 	return false;
 }
 
-uint16 NavigationSystem::GetAgentRadiusInVoxelUnits(NavigationAgentTypeID agentTypeID) const
+uint16 NavigationSystem::GetAgentRadiusInVoxelUnits(const NavigationAgentTypeID agentTypeID) const
 {
 	if (agentTypeID && agentTypeID <= m_agentTypes.size())
 	{
@@ -2075,7 +2198,7 @@ uint16 NavigationSystem::GetAgentRadiusInVoxelUnits(NavigationAgentTypeID agentT
 	return 0;
 }
 
-uint16 NavigationSystem::GetAgentHeightInVoxelUnits(NavigationAgentTypeID agentTypeID) const
+uint16 NavigationSystem::GetAgentHeightInVoxelUnits(const NavigationAgentTypeID agentTypeID) const
 {
 	if (agentTypeID && agentTypeID <= m_agentTypes.size())
 	{
@@ -2663,7 +2786,7 @@ bool NavigationSystem::IsPointReachableFromPosition(const NavigationAgentTypeID 
 
 	MNM::GlobalIslandID startingIslandID;
 	const NavigationMeshID startingMeshID = GetEnclosingMeshID(agentID, startLocation);
-	if (startingMeshID)
+	if (startingMeshID.IsValid())
 	{
 		const MNM::TriangleID triangleID = GetClosestMeshLocation(startingMeshID, startLocation, verticalRange, horizontalRange, nullptr, nullptr, nullptr);
 		const NavigationMesh& mesh = m_meshes[startingMeshID];
@@ -2677,7 +2800,7 @@ bool NavigationSystem::IsPointReachableFromPosition(const NavigationAgentTypeID 
 
 	MNM::GlobalIslandID endingIslandID;
 	const NavigationMeshID endingMeshID = GetEnclosingMeshID(agentID, endLocation);
-	if (endingMeshID)
+	if (endingMeshID.IsValid())
 	{
 		const MNM::TriangleID triangleID = GetClosestMeshLocation(endingMeshID, endLocation, verticalRange, horizontalRange, nullptr, nullptr, nullptr);
 		const NavigationMesh& mesh = m_meshes[endingMeshID];
@@ -2691,7 +2814,51 @@ bool NavigationSystem::IsPointReachableFromPosition(const NavigationAgentTypeID 
 	return m_islandConnectionsManager.AreIslandsConnected(pEntityToTestOffGridLinks, startingIslandID, endingIslandID, pFilter);
 }
 
-MNM::GlobalIslandID NavigationSystem::GetGlobalIslandIdAtPosition(const NavigationAgentTypeID agentID, const Vec3& location)
+bool NavigationSystem::IsPointReachableFromPosition(const NavigationAgentTypeID agentID, const IEntity* pEntityToTestOffGridLinks, const Vec3& startLocation, const Vec3& endLocation, const MNM::SOrderedSnappingMetrics& snappingMetrics, const INavMeshQueryFilter* pFilter) const
+{
+	NavigationMeshID startMeshId;
+	MNM::TriangleID startTriangleId;
+	if (!SnapToNavMesh(agentID, startLocation, snappingMetrics, pFilter, nullptr, &startTriangleId, &startMeshId))
+		return false;
+
+	NavigationMeshID endMeshId;
+	MNM::TriangleID endTriangleId;
+	if (!SnapToNavMesh(agentID, endLocation, snappingMetrics, pFilter, nullptr, &endTriangleId, &endMeshId))
+		return false;
+
+	return IsPointReachableFromPosition(pEntityToTestOffGridLinks, startMeshId, startTriangleId, endMeshId, endTriangleId, pFilter);
+}
+
+bool NavigationSystem::IsPointReachableFromPosition(const IEntity* pEntityToTestOffGridLinks, const NavigationMeshID startMeshID, const MNM::TriangleID startTriangleID, const NavigationMeshID endMeshID, const MNM::TriangleID endTriangleID, const INavMeshQueryFilter* pFilter) const
+{
+	if (startMeshID != endMeshID)
+		return false; // Navigating between two different NavMeshes isn't supported
+	
+	if (!startMeshID.IsValid() || !m_meshes.validate(startMeshID))
+		return false;
+
+	const NavigationMeshID meshId = startMeshID;
+	const MNM::CNavMesh& navMesh = m_meshes[meshId].navMesh;
+
+	MNM::GlobalIslandID startingIslandID;
+	MNM::GlobalIslandID endingIslandID;
+
+	MNM::Tile::STriangle startTriangle;
+	if (startTriangleID && navMesh.GetTriangle(startTriangleID, startTriangle) && (startTriangle.islandID != MNM::Constants::eStaticIsland_InvalidIslandID))
+	{
+		startingIslandID = MNM::GlobalIslandID(meshId, startTriangle.islandID);
+	}
+
+	MNM::Tile::STriangle endTriangle;
+	if (endTriangleID && navMesh.GetTriangle(endTriangleID, endTriangle) && (endTriangle.islandID != MNM::Constants::eStaticIsland_InvalidIslandID))
+	{
+		endingIslandID = MNM::GlobalIslandID(meshId, endTriangle.islandID);
+	}
+
+	return m_islandConnectionsManager.AreIslandsConnected(pEntityToTestOffGridLinks, startingIslandID, endingIslandID, pFilter);
+}
+
+MNM::GlobalIslandID NavigationSystem::GetGlobalIslandIdAtPosition(const NavigationAgentTypeID agentID, const Vec3& location) const
 {
 	const float horizontalRange = 1.0f;
 	const float verticalRange = 1.0f;
@@ -2711,8 +2878,42 @@ MNM::GlobalIslandID NavigationSystem::GetGlobalIslandIdAtPosition(const Navigati
 			startingIslandID = MNM::GlobalIslandID(startingMeshID, triangle.islandID);
 		}
 	}
-
 	return startingIslandID;
+}
+
+MNM::GlobalIslandID NavigationSystem::GetGlobalIslandIdAtPosition(const NavigationAgentTypeID agentID, const Vec3& location, const MNM::SOrderedSnappingMetrics& snappingMetrics) const
+{
+	MNM::GlobalIslandID globalIslandId;
+
+	NavigationMeshID meshId;
+	MNM::TriangleID triangleId;
+
+	if (SnapToNavMesh(agentID, location, snappingMetrics, nullptr, nullptr, &triangleId, &meshId))
+	{
+		const MNM::CNavMesh& navMesh = m_meshes[meshId].navMesh;
+		MNM::Tile::STriangle triangle;
+		if (triangleId && navMesh.GetTriangle(triangleId, triangle) && (triangle.islandID != MNM::Constants::eStaticIsland_InvalidIslandID))
+		{
+			globalIslandId = MNM::GlobalIslandID(meshId, triangle.islandID);
+		}
+	}
+	return globalIslandId;
+}
+
+MNM::GlobalIslandID NavigationSystem::GetGlobalIslandIdAtPosition(const NavigationMeshID meshID, const MNM::TriangleID triangleID) const
+{
+	MNM::GlobalIslandID globalIslandId;
+
+	if (meshID.IsValid() && m_meshes.validate(meshID))
+	{
+		const MNM::CNavMesh& navMesh = m_meshes[meshID].navMesh;
+		MNM::Tile::STriangle triangle;
+		if (triangleID && navMesh.GetTriangle(triangleID, triangle) && (triangle.islandID != MNM::Constants::eStaticIsland_InvalidIslandID))
+		{
+			globalIslandId = MNM::GlobalIslandID(meshID, triangle.islandID);
+		}
+	}
+	return globalIslandId;
 }
 
 bool NavigationSystem::IsLocationValidInNavigationMesh(const NavigationAgentTypeID agentID, const Vec3& location, const INavMeshQueryFilter* pFilter, float downRange, float upRange) const
@@ -2756,26 +2957,83 @@ MNM::TriangleID NavigationSystem::GetTriangleIDWhereLocationIsAtForMesh(const Na
 	return MNM::TriangleID(0);
 }
 
-bool NavigationSystem::SnapToNavMesh(const NavigationAgentTypeID agentID, const Vec3& position, const INavMeshQueryFilter* pFilter, const SSnapToNavMeshRulesInfo& snappingRules, Vec3& snappedPosition, MNM::TriangleID* pTriangleId) const
+bool NavigationSystem::SnapToNavMesh(
+	const NavigationAgentTypeID agentTypeID, const Vec3& position, const MNM::SSnappingMetric& snappingMetric, const INavMeshQueryFilter* pFilter,
+	Vec3* pOutSnappedPosition, MNM::TriangleID* pOutTriangleID, NavigationMeshID* pOutNavMeshID) const
 {
-	//TODO: don't we need to expand NavMeshes' bboxes when searching for nearest NavMesh? (input position may be outside of mesh volume)
-	NavigationMeshID meshId = GetEnclosingMeshID(agentID, position);
-	if (!meshId)
+	const NavigationMeshID meshId = FindEnclosingMeshID(agentTypeID, position, snappingMetric);
+	if (!meshId.IsValid())
 		return false;
+
+	if (pOutNavMeshID)
+	{
+		*pOutNavMeshID = meshId;
+	}
 
 	const NavigationMesh& mesh = GetMesh(meshId);
 	const MNM::CNavMesh& navMesh = mesh.navMesh;
 
-	MNM::vector3_t navMeshPos;
-	if (navMesh.SnapPosition(navMesh.ToMeshSpace(position), snappingRules, pFilter, navMeshPos, pTriangleId))
+	if (pOutSnappedPosition)
 	{
-		snappedPosition = navMesh.ToWorldSpace(navMeshPos).GetVec3();
-		return true;
+		MNM::vector3_t navMeshPos;
+		if (navMesh.SnapPosition(navMesh.ToMeshSpace(position), snappingMetric, pFilter, &navMeshPos, pOutTriangleID))
+		{
+			*pOutSnappedPosition = navMesh.ToWorldSpace(navMeshPos).GetVec3();
+			return true;
+		}
+	}
+	else
+	{
+		return navMesh.SnapPosition(navMesh.ToMeshSpace(position), snappingMetric, pFilter, nullptr, pOutTriangleID);
+	}	
+	return false;
+}
+
+bool NavigationSystem::SnapToNavMesh(
+	const NavigationAgentTypeID agentTypeID, const Vec3& position, const MNM::SOrderedSnappingMetrics& snappingMetrics, const INavMeshQueryFilter* pFilter,
+	Vec3* pOutSnappedPosition, MNM::TriangleID* pOutTriangleID, NavigationMeshID* pOutNavMeshID) const
+{
+	if (!agentTypeID.IsValid() || agentTypeID > m_agentTypes.size())
+		return false;
+	
+	const AgentType& agentType = m_agentTypes[agentTypeID - 1];
+	for (const MNM::SSnappingMetric& snappingMetric : snappingMetrics.metricsArray)
+	{
+		for (const AgentType::MeshInfo& meshInfo : agentType.meshes)
+		{
+			const NavigationMeshID meshId = meshInfo.id;
+			const NavigationMesh& mesh = m_meshes[meshId];
+
+			if(!IsLocationInMeshVolume(mesh, position, snappingMetric))
+				continue;
+
+			// overlapping mesh found, try to snap the point on it
+			if (pOutNavMeshID)
+			{
+				*pOutNavMeshID = meshId;
+			}
+
+			const MNM::CNavMesh& navMesh = mesh.navMesh;
+			if (pOutSnappedPosition)
+			{
+				MNM::vector3_t navMeshPos;
+				if (navMesh.SnapPosition(navMesh.ToMeshSpace(position), snappingMetric, pFilter, &navMeshPos, pOutTriangleID))
+				{
+					*pOutSnappedPosition = navMesh.ToWorldSpace(navMeshPos).GetVec3();
+					return true;
+				}
+			}
+			else
+			{
+				if (navMesh.SnapPosition(navMesh.ToMeshSpace(position), snappingMetric, pFilter, nullptr, pOutTriangleID))
+					return true;
+			}
+		}
 	}
 	return false;
 }
 
-MNM::ERayCastResult NavigationSystem::NavMeshTestRaycastHit(NavigationAgentTypeID agentTypeID, const Vec3& startPos, const Vec3& toPos, const INavMeshQueryFilter* pFilter, MNM::SRayHitOutput* pOutHit) const
+MNM::ERayCastResult NavigationSystem::NavMeshRayCast(const NavigationAgentTypeID agentTypeID, const Vec3& startPos, const Vec3& toPos, const INavMeshQueryFilter* pFilter, MNM::SRayHitOutput* pOutHit) const
 {
 	NavigationMeshID meshId = GetEnclosingMeshID(agentTypeID, startPos);
 	if (!meshId)
@@ -2802,7 +3060,7 @@ MNM::ERayCastResult NavigationSystem::NavMeshTestRaycastHit(NavigationAgentTypeI
 	const MNM::TriangleID endTriangle = mesh.navMesh.GetTriangleAt(mnmToPos, verticalDownwardRange, verticalUpwardRange, pFilter);
 	
 	MNM::CNavMesh::RayCastRequest<512> request;
-	const MNM::ERayCastResult result = mesh.navMesh.RayCast(mnmStartPos, startTriangle, mnmToPos, endTriangle, request, pFilter);\
+	const MNM::ERayCastResult result = mesh.navMesh.RayCast(mnmStartPos, startTriangle, mnmToPos, endTriangle, request, pFilter);
 
 	if (pOutHit && result == MNM::ERayCastResult::Hit)
 	{
@@ -2828,6 +3086,44 @@ MNM::ERayCastResult NavigationSystem::NavMeshTestRaycastHit(NavigationAgentTypeI
 	return result;
 }
 
+MNM::ERayCastResult NavigationSystem::NavMeshRayCast(const NavigationMeshID meshID, const MNM::TriangleID startTriangleId, const Vec3& startPos, const MNM::TriangleID endTriangleId, const Vec3& endPos, const INavMeshQueryFilter* pFilter, MNM::SRayHitOutput* pOutHit) const
+{
+	if (!m_meshes.validate(meshID))
+		return MNM::ERayCastResult::InvalidStart;
+
+	const NavigationMesh& mesh = m_meshes[meshID];
+	const MNM::CNavMesh& navMesh = mesh.navMesh;
+
+	const MNM::vector3_t mnmStartPos = mesh.navMesh.ToMeshSpace(startPos);
+	const MNM::vector3_t mnmToPos = mesh.navMesh.ToMeshSpace(endPos);
+
+	MNM::CNavMesh::RayCastRequest<512> request;
+	const MNM::ERayCastResult result = mesh.navMesh.RayCast(mnmStartPos, startTriangleId, mnmToPos, endTriangleId, request, pFilter);
+
+	if (pOutHit && result == MNM::ERayCastResult::Hit)
+	{
+		const float t = request.hit.distance.as_float();
+
+		pOutHit->distance = t;
+		pOutHit->position = startPos + (endPos - startPos) * t;
+
+		if (request.hit.triangleID != MNM::Constants::InvalidTriangleID && request.hit.edge != MNM::Constants::InvalidEdgeIndex)
+		{
+			MNM::vector3_t verts[3];
+			mesh.navMesh.GetVertices(request.hit.triangleID, verts);
+			const Vec3 edgeDir = (verts[(request.hit.edge + 1) % 3] - verts[request.hit.edge]).GetVec3();
+			const Vec3 edgeNormal(-edgeDir.y, edgeDir.x, 0.0f);
+
+			pOutHit->normal2D = edgeNormal.GetNormalized();
+		}
+		else
+		{
+			pOutHit->normal2D = (startPos - endPos).GetNormalized();
+		}
+	}
+	return result;
+}
+
 const MNM::INavMesh* NavigationSystem::GetMNMNavMesh(NavigationMeshID meshID) const
 {
 	if (m_meshes.validate(meshID))
@@ -2838,7 +3134,17 @@ const MNM::INavMesh* NavigationSystem::GetMNMNavMesh(NavigationMeshID meshID) co
 	return nullptr;
 }
 
-size_t NavigationSystem::GetTriangleCenterLocationsInMesh(const NavigationMeshID meshID, const Vec3& location, const AABB& searchAABB, Vec3* centerLocations, size_t maxCenterLocationCount, const INavMeshQueryFilter* pFilter, float minIslandArea) const
+NavigationAgentTypeID NavigationSystem::GetAgentTypeOfMesh(const NavigationMeshID meshID) const
+{
+	if (m_meshes.validate(meshID))
+	{
+		const NavigationMesh& mesh = m_meshes[meshID];
+		return mesh.agentTypeID;
+	}
+	return NavigationAgentTypeID();
+}
+
+size_t NavigationSystem::GetTriangleCenterLocationsInMesh(const NavigationMeshID meshID, const AABB& searchAABB, Vec3* centerLocations, size_t maxCenterLocationCount, const INavMeshQueryFilter* pFilter, float minIslandArea) const
 {
 	if (maxCenterLocationCount == 0 || !m_meshes.validate(meshID))
 		return 0;
@@ -2916,6 +3222,23 @@ size_t NavigationSystem::GetTriangleInfo(const NavigationMeshID meshID, const AA
 		return INavMeshQueryProcessing::EResult::Continue;
 	});
 	return foundTrianglesCount;
+}
+
+bool NavigationSystem::GetTriangleVertices(const NavigationMeshID meshID, const MNM::TriangleID triangleID, Triangle& outTriangleVertices) const
+{
+	if (!meshID.IsValid() || !m_meshes.validate(meshID))
+		return false;
+
+	const MNM::CNavMesh& navMesh = m_meshes[meshID].navMesh;
+
+	MNM::vector3_t vertices[3];
+	if (!navMesh.GetVertices(triangleID, vertices))
+		return false;
+
+	outTriangleVertices.v0 = vertices[0].GetVec3();
+	outTriangleVertices.v1 = vertices[1].GetVec3();
+	outTriangleVertices.v2 = vertices[2].GetVec3();
+	return true;
 }
 
 // Helper function to read various navigationId types from file without creating intermediate uint32.
@@ -4574,15 +4897,14 @@ void NavigationSystemDebugDraw::DebugDrawSnapToNavmesh(NavigationSystem& navigat
 	if (!GetAISystem()->GetObjectDebugParamsFromName("MNMSnappedPoint", debugObject))
 		return;
 
-	SSnapToNavMeshRulesInfo snappingRules;
-	snappingRules.bVerticalSearch = true;
-	snappingRules.bBoxSearch = true;
+	MNM::SOrderedSnappingMetrics snappingMetrics;
+	snappingMetrics.CreateDefault();
 
 	const INavMeshQueryFilter* pDebugQueryFilter = GetDebugQueryFilter("MNMDebugQueryFilter");
 
 	Vec3 snappedPosition;
 	MNM::TriangleID triangleId;
-	if (navigationSystem.SnapToNavMesh(m_agentTypeID, debugObject.objectPos, pDebugQueryFilter, snappingRules, snappedPosition, &triangleId))
+	if (navigationSystem.SnapToNavMesh(m_agentTypeID, debugObject.objectPos, snappingMetrics, pDebugQueryFilter, &snappedPosition, &triangleId, nullptr))
 	{
 		IRenderAuxGeom* renderAuxGeom = gEnv->pRenderer->GetIRenderAuxGeom();
 		const Vec3 verticalOffset = Vec3(.0f, .0f, .1f);

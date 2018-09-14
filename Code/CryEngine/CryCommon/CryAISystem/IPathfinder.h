@@ -4,16 +4,14 @@
 
 #pragma once
 
-class CAIActor;
-
-
 #include <CryMemory/IMemory.h> // <> required for Interfuscator
 #include <CryAISystem/INavigationSystem.h>
 #include <CryCore/functor.h>
-#include <CryAISystem/IMNM.h>
 #include <CryAISystem/IAgent.h>
 #include <CryAISystem/NavigationSystem/MNMTile.h>
 #include <CryAISystem/NavigationSystem/INavigationQuery.h>
+
+class CAIActor;
 
 /* WARNING: These interfaces and structures are soon to be deprecated.
             Use at your own risk of having to change your code later!
@@ -615,28 +613,6 @@ enum EMNMDangers : uint32
 
 typedef uint32 MNMDangersFlags;
 
-//! Parameters for snapping of the path's start/end positions onto the NavMesh.
-struct SSnapToNavMeshRulesInfo
-{
-	SSnapToNavMeshRulesInfo()
-		: bVerticalSearch(true)
-		, bBoxSearch(true)
-	{}
-
-	SSnapToNavMeshRulesInfo(const bool verticalSearch, const bool boxSearch)
-		: bVerticalSearch(verticalSearch)
-		, bBoxSearch(boxSearch)
-	{}
-
-	//<! Rules will be checked/applied in this order:
-	bool bVerticalSearch;				//!< Tries to snap vertically
-	bool bBoxSearch;					//!< Tries to snap using a box horizontally+vertically.
-
-	float verticalUpRange = -FLT_MAX;	//!< Vertical upwards range for querying NavMesh triangles. Agent's height is used when not set.
-	float verticalDownRange = FLT_MAX;	//!< Vertical downwards range for querying NavMesh triangles. Agent's height is used when not set.
-	float horizontalRange = -FLT_MAX;	//!< Horizontal range (AABB) for querying NavMesh triangles. Agent's diameter is used when not set.
-};
-
 struct MNMPathRequest
 {
 	typedef Functor2<const MNM::QueuedPathID&, MNMPathRequestResult&> Callback;
@@ -693,7 +669,7 @@ struct MNMPathRequest
 	int                   forceTargetBuildingId;
 	float                 endTolerance;
 	float                 endDistance;
-	SSnapToNavMeshRulesInfo	  snappingRules;
+	MNM::SOrderedSnappingMetrics snappingMetrics;
 	bool                  allowDangerousDestination;
 	MNMDangersFlags       dangersToAvoidFlags;
 	const INavMeshQueryFilter* pFilter;

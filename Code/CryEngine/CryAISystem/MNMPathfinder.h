@@ -63,6 +63,12 @@ struct QueuedRequest
 				pFilter->Release();
 			});
 		}
+
+		// Create default snapping metrics if none are provided
+		if (requestParams.snappingMetrics.metricsArray.empty())
+		{
+			requestParams.snappingMetrics.CreateDefault();
+		}
 		
 		SetupDangerousLocationsData();
 	}

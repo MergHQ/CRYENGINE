@@ -155,7 +155,7 @@ public:
 	size_t     GetTriangles(aabb_t localAabb, TriangleID* triangles, size_t maxTriCount, const INavMeshQueryFilter* pFilter, float minIslandArea = 0.f) const;
 	TriangleID GetTriangleAt(const vector3_t& localPosition, const real_t verticalDownwardRange, const real_t verticalUpwardRange, const INavMeshQueryFilter* pFilter, float minIslandArea = 0.f) const;
 	TriangleID GetClosestTriangle(const vector3_t& localPosition, real_t vrange, real_t hrange, const INavMeshQueryFilter* pFilter, real_t* distance = nullptr, vector3_t* closest = nullptr, float minIslandArea = 0.f) const;
-	TriangleID GetClosestTriangle(const vector3_t& localPosition, const aabb_t& aroundPositionAABB, const INavMeshQueryFilter* pFilter, real_t* distance = nullptr, vector3_t* closest = nullptr, float minIslandArea = 0.f) const;
+	TriangleID GetClosestTriangle(const vector3_t& localPosition, const aabb_t& aroundPositionAABB, const INavMeshQueryFilter* pFilter, real_t* distance = nullptr, vector3_t* closest = nullptr, const real_t maxDistance = real_t::max(), const float minIslandArea = 0.f) const;
 
 	bool IsTriangleAcceptableForLocation(const vector3_t& localPosition, TriangleID triangleID) const;
 
@@ -315,7 +315,8 @@ public:
 	TileID GetNeighbourTileID(const TileID tileId, size_t side) const;
 
 	void SetTrianglesAnnotation(const MNM::TriangleID* pTrianglesArray, const size_t trianglesCount, const MNM::AreaAnnotation areaAnnotation, std::vector<TileID>& affectedTiles);
-	bool SnapPosition(const vector3_t& localPosition, const SSnapToNavMeshRulesInfo& snappingRules, const INavMeshQueryFilter* pFilter, vector3_t& snappedLocalPosition, MNM::TriangleID* pTriangleId) const;
+	bool SnapPosition(const vector3_t& localPosition, const SOrderedSnappingMetrics& snappingMetrics, const INavMeshQueryFilter* pFilter, vector3_t* pSnappedLocalPosition, MNM::TriangleID* pTriangleId) const;
+	bool SnapPosition(const vector3_t& localPosition, const MNM::SSnappingMetric& snappingMetric, const INavMeshQueryFilter* pFilter, vector3_t* pSnappedLocalPosition, MNM::TriangleID* pTriangleId) const;
 
 	// MNM::INavMesh
 	virtual void       GetMeshParams(NavMesh::SParams& outParams) const override;
