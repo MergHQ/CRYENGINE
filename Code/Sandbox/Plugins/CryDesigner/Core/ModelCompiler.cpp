@@ -9,6 +9,7 @@
 #include "DesignerEditor.h"
 
 #include <Material/Material.h>
+#include <Objects/IObjectLayer.h>
 
 namespace Designer
 {
@@ -182,6 +183,7 @@ bool ModelCompiler::UpdateMesh(CBaseObject* pBaseObject, Model* pModel, ShelfID 
 	{
 		RemoveStatObj(nShelf);
 		DeleteRenderNode(nShelf);
+		pBaseObject->GetLayer()->SetModified(true);
 		return true;
 	}
 
@@ -204,6 +206,7 @@ bool ModelCompiler::UpdateMesh(CBaseObject* pBaseObject, Model* pModel, ShelfID 
 
 	InvalidateStatObj(m_pStatObj[nShelf], CheckFlags(eCompiler_Physicalize));
 	m_pStatObj[nShelf]->m_eStreamingStatus = ecss_Ready;
+	pBaseObject->GetLayer()->SetModified(true);
 
 	return true;
 }
