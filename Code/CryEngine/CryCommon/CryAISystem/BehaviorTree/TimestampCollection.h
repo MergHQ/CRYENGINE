@@ -274,9 +274,18 @@ public:
 
 #if defined(USING_BEHAVIOR_TREE_SERIALIZATION)
 			// Automatically declare user-defined signals
-			if (isLoadingFromEditor && eventsDeclaration.DeclareGameEventIfNotAlreadyDeclared(setOnEvent))
+			if (!eventsDeclaration.IsDeclared(setOnEvent, isLoadingFromEditor))
 			{
-				gEnv->pLog->LogWarning("(%d) [Tree='%s'] Unknown event '%s' used for Timestamp", child->getLine(), fileName, setOnEvent);
+				if (isLoadingFromEditor)
+				{
+					eventsDeclaration.DeclareGameEvent(setOnEvent);
+					gEnv->pLog->LogWarning("(%d) [File='%s'] Unknown event '%s' used in Timestamp. Event will be declared automatically", child->getLine(), fileName, setOnEvent);
+				}
+				else
+				{
+					gEnv->pLog->LogError("(%d) [File='%s'] Unknown event '%s' used in Timestamp.", child->getLine(), fileName, setOnEvent);
+					return false;
+				}
 			}
 #endif // USING_BEHAVIOR_TREE_SERIALIZATION
 

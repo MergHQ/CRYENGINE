@@ -1107,8 +1107,9 @@ struct State
 
 #if defined(STORE_INFORMATION_FOR_STATE_MACHINE_NODE) && defined(USING_BEHAVIOR_TREE_SERIALIZATION)
 				// Automatically declare game-defined signals
-				if (isLoadingFromEditor && context.eventsDeclaration.DeclareGameEventIfNotAlreadyDeclared(transition.triggerEventName.c_str()))
+				if (!context.eventsDeclaration.IsDeclared(transition.triggerEventName.c_str(), isLoadingFromEditor))
 				{
+					context.eventsDeclaration.DeclareGameEvent(transition.triggerEventName.c_str());
 					gEnv->pLog->LogWarning("State(%d) [Tree='%s'] Unknown event '%s' used. Event will be declared automatically.", stateXml->getLine(), context.treeName, transition.triggerEventName.c_str());
 				}
 #endif // STORE_INFORMATION_FOR_STATE_MACHINE_NODE && USING_BEHAVIOR_TREE_SERIALIZATION
@@ -1549,8 +1550,9 @@ public:
 	
 #if defined(STORE_EVENT_NAME) && defined(USING_BEHAVIOR_TREE_SERIALIZATION)
 		// Automatically declare game-defined signals
-		if (isLoadingFromEditor && context.eventsDeclaration.DeclareGameEventIfNotAlreadyDeclared(eventName.c_str()))
+		if (!context.eventsDeclaration.IsDeclared(eventName.c_str(), isLoadingFromEditor))
 		{
+			context.eventsDeclaration.DeclareGameEvent(eventName.c_str());
 			gEnv->pLog->LogWarning("SendEvent(%d) [Tree='%s'] Unknown event '%s' used. Event will be declared automatically.", xml->getLine(), context.treeName, m_eventToSend.GetName());
 		}
 #endif // STORE_EVENT_NAME && USING_BEHAVIOR_TREE_SERIALIZATION
@@ -1615,7 +1617,6 @@ protected:
 		}
 	}
 
-private:
 	Event m_eventToSend;
 	bool m_eventWasSent;
 };
@@ -1625,15 +1626,11 @@ private:
 
 // Same as SendEvent with the exception that this node never finishes.
 // Usually used for transitions in state machines etc.
-class SendTransitionEvent : public Action
+class SendTransitionEvent : public SendEvent
 {
-	typedef Action BaseClass;
+	typedef SendEvent BaseClass;
 
 public:
-	struct RuntimeData
-	{
-	};
-
 	virtual LoadResult LoadFromXml(const XmlNodeRef& xml, const struct LoadContext& context, const bool isLoadingFromEditor) override
 	{
 		IF_UNLIKELY (BaseClass::LoadFromXml(xml, context, isLoadingFromEditor) == LoadFailure)
@@ -1685,36 +1682,10 @@ public:
 	}
 #endif
 protected:
-	virtual void OnInitialize(const UpdateContext& context) override
-	{
-
-#ifdef STORE_EVENT_NAME
-		if (!context.variables.eventsDeclaration.IsDeclared(m_eventToSend.GetName()))
-		{
-			gEnv->pLog->LogError("Event '%s' was not sent. Did you forget to declare it", m_eventToSend.GetName());
-			return;
-		}
-#endif // #ifdef STORE_EVENT_NAME
-
-		m_eventWasSent = true;
-		gAIEnv.pBehaviorTreeManager->HandleEvent(context.entityId, m_eventToSend);
-	}
-
 	virtual Status Update(const UpdateContext& context) override
 	{
-		if (m_eventWasSent)
-		{
-			return Success;
-		}
-		else 
-		{
-			return Failure;
-		}
+		return Running;
 	}
-
-private:
-	Event m_eventToSend;
-	bool m_eventWasSent;
 };
 
 //////////////////////////////////////////////////////////////////////////
@@ -2349,8 +2320,9 @@ public:
 
 #if defined(USING_BEHAVIOR_TREE_SERIALIZATION)
 		// Automatically declare game-defined signals
-		if (isLoadingFromEditor && context.eventsDeclaration.DeclareGameEventIfNotAlreadyDeclared(eventName.c_str()))
+		if (!context.eventsDeclaration.IsDeclared(eventName.c_str(), isLoadingFromEditor))
 		{
+			context.eventsDeclaration.DeclareGameEvent(eventName.c_str());
 			gEnv->pLog->LogWarning("WaitForEvent(%d) [Tree='%s'] Unknown event '%s' used. Event will be declared automatically.", xml->getLine(), context.treeName, eventName.c_str());
 		}
 #endif // USING_BEHAVIOR_TREE_SERIALIZATION
