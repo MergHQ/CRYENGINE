@@ -265,9 +265,13 @@ void CTiledLightVolumesStage::Destroy(bool destroyResolutionIndependentResources
 		m_spotTexAtlas.texArray->GetDevTexture()->Unpin();
 #endif
 
-		SAFE_RELEASE_FORCE(m_specularProbeAtlas.texArray);
-		SAFE_RELEASE_FORCE(m_diffuseProbeAtlas.texArray);
-		SAFE_RELEASE_FORCE(m_spotTexAtlas.texArray);
+		ITexture* pSpec = m_specularProbeAtlas.texArray.ReleaseOwnership();
+		ITexture* pDiff = m_diffuseProbeAtlas.texArray.ReleaseOwnership();
+		ITexture* pSpot = m_spotTexAtlas.texArray.ReleaseOwnership();
+
+		SAFE_RELEASE_FORCE(pSpec);
+		SAFE_RELEASE_FORCE(pDiff);
+		SAFE_RELEASE_FORCE(pSpot);
 	}
 
 	// Tiled Light Lists =================================================================
