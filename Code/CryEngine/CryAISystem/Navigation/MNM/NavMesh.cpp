@@ -576,11 +576,12 @@ TriangleID CNavMesh::GetClosestTriangle(const vector3_t& localPosition, real_t v
 }
 
 TriangleID CNavMesh::GetClosestTriangle(const vector3_t& localPosition, const aabb_t& aroundPositionAABB, const INavMeshQueryFilter* pFilter,
-	real_t* distance /*= nullptr*/, vector3_t* closest /*= nullptr*/, float minIslandArea /*= 0.0f*/) const
+	real_t* distance /*= nullptr*/, vector3_t* closest /*= nullptr*/,
+	const real_t maxDistance /*= real_t::max()*/, const float minIslandArea /*= 0.0f*/) const
 {
-	const MNM::aabb_t aabb(localPosition + aroundPositionAABB.min , localPosition + aroundPositionAABB.max);
+	const MNM::aabb_t aabb(localPosition + aroundPositionAABB.min, localPosition + aroundPositionAABB.max);
 
-	CNearestTriangleQuery query(this, localPosition);
+	CNearestTriangleQuery query(this, localPosition, maxDistance);
 	QueryTrianglesWithProcessing(aabb, pFilter, query);
 
 	const MNM::TriangleID closestTriangleId = query.GetClosestTriangleId();
@@ -719,44 +720,114 @@ bool CNavMesh::CanTrianglePassFilter(const TriangleID triangleID, const INavMesh
 }
 
 bool CNavMesh::SnapPosition(
-	const vector3_t& localPosition, const SSnapToNavMeshRulesInfo& snappingRules, const INavMeshQueryFilter* pFilter,
-	vector3_t& snappedLocalPosition, MNM::TriangleID* pTriangleId) const
+	const vector3_t& localPosition, const SOrderedSnappingMetrics& snappingMetrics, const INavMeshQueryFilter* pFilter,
+	vector3_t* pSnappedLocalPosition, MNM::TriangleID* pTriangleId) const
 {
-	const MNM::real_t verticalDefaultRange = MNMUtils::CalculateMinVerticalRange(m_agentSettings.height, m_params.voxelSize.z);
-	const MNM::real_t verticalDownRange = snappingRules.verticalDownRange == FLT_MAX ? verticalDefaultRange : MNM::real_t(snappingRules.verticalDownRange);
-	const MNM::real_t horizontalRange = snappingRules.horizontalRange == -FLT_MAX ? MNMUtils::CalculateMinHorizontalRange(m_agentSettings.radius, m_params.voxelSize.x) : MNM::real_t(snappingRules.horizontalRange);
+	const MNM::real_t verticalDefaultDownRange = MNMUtils::CalculateMinVerticalRange(m_agentSettings.height, m_params.voxelSize.z);
+	const MNM::real_t verticalDefaultUpRange = MNM::real_t(min(2u, m_agentSettings.height) * m_params.voxelSize.z);
+	const MNM::real_t horizontalDefaultRange = MNMUtils::CalculateMinHorizontalRange(m_agentSettings.radius, m_params.voxelSize.x);
 
-	if (snappingRules.bVerticalSearch)
+	for (const SSnappingMetric& snappingMetric : snappingMetrics.metricsArray)
 	{
-		const MNM::real_t verticalUpRange = snappingRules.verticalUpRange == -FLT_MAX
-			? MNM::real_t(min(2u, m_agentSettings.height) * m_params.voxelSize.z) // This value computation was used for a long time when snapping points in Pathfinder
-			: MNM::real_t(snappingRules.verticalUpRange);
+		const MNM::real_t verticalDownRange = snappingMetric.verticalDownRange == -FLT_MAX ? verticalDefaultDownRange : MNM::real_t(snappingMetric.verticalDownRange);
+		const MNM::real_t verticalUpRange = snappingMetric.verticalUpRange == -FLT_MAX ? verticalDefaultUpRange : MNM::real_t(snappingMetric.verticalUpRange);
 
-		if (const TriangleID triangleId = GetTriangleAt(localPosition, verticalDownRange, verticalUpRange, pFilter, 0.0f))
+		switch (snappingMetric.type)
 		{
-			MNM::vector3_t vertices[3];
-			GetVertices(triangleId, vertices);
-			if (ProjectPointOnTriangleVertical(localPosition, vertices[0], vertices[1], vertices[2], snappedLocalPosition))
+		case SSnappingMetric::EType::Vertical:
+		{
+			if (const TriangleID closestId = GetTriangleAt(localPosition, verticalDownRange, verticalUpRange, pFilter))
 			{
 				if (pTriangleId)
-					*pTriangleId = triangleId;
-
+					*pTriangleId = closestId;
+				
+				if (pSnappedLocalPosition)
+				{
+					MNM::vector3_t vertices[3];
+					GetVertices(closestId, vertices);
+					if (!ProjectPointOnTriangleVertical(localPosition, vertices[0], vertices[1], vertices[2], *pSnappedLocalPosition))
+					{
+						CRY_ASSERT_MESSAGE(false, "Triangle to snap on was found but failed to project point on it");
+						return false;
+					}
+				}
 				return true;
 			}
-			return false;
+			break;
+		}
+		case SSnappingMetric::EType::Box:
+		case SSnappingMetric::EType::Circular:
+		{
+			const MNM::real_t horizontalRange = snappingMetric.horizontalRange == -FLT_MAX ? horizontalDefaultRange : MNM::real_t(snappingMetric.horizontalRange);
+			const MNM::aabb_t aroundPositionAABB(MNM::vector3_t(-horizontalRange, -horizontalRange, -verticalDownRange), MNM::vector3_t(horizontalRange, horizontalRange, verticalUpRange));
+			const MNM::real_t maxDistance = snappingMetric.type == SSnappingMetric::EType::Circular ? horizontalRange : real_t::max();
+			if (const TriangleID closestId = GetClosestTriangle(localPosition, aroundPositionAABB, pFilter, nullptr, pSnappedLocalPosition, maxDistance))
+			{
+				if (pTriangleId)
+					*pTriangleId = closestId;
+				return true;
+			}
+			break;
+		}
+		default:
+			CRY_ASSERT_MESSAGE(false, "CNavMesh::SnapPosition: Unhandled snap metric type!");
+			break;
 		}
 	}
-	if (snappingRules.bBoxSearch)
+	return false;
+}
+
+bool CNavMesh::SnapPosition(
+	const vector3_t& localPosition, const SSnappingMetric& snappingMetric, const INavMeshQueryFilter* pFilter,
+	vector3_t* pSnappedLocalPosition, MNM::TriangleID* pTriangleId) const
+{
+	const MNM::real_t verticalDefaultDownRange = MNMUtils::CalculateMinVerticalRange(m_agentSettings.height, m_params.voxelSize.z);
+	const MNM::real_t verticalDefaultUpRange = MNM::real_t(min(2u, m_agentSettings.height) * m_params.voxelSize.z);
+	const MNM::real_t horizontalDefaultRange = MNMUtils::CalculateMinHorizontalRange(m_agentSettings.radius, m_params.voxelSize.x);
+
+	const MNM::real_t verticalDownRange = snappingMetric.verticalDownRange == -FLT_MAX ? verticalDefaultDownRange : MNM::real_t(snappingMetric.verticalDownRange);
+	const MNM::real_t verticalUpRange = snappingMetric.verticalUpRange == -FLT_MAX ? verticalDefaultUpRange : MNM::real_t(snappingMetric.verticalUpRange);
+
+	switch (snappingMetric.type)
 	{
-		// In bBoxSearch, default verticalUpRange is using the same value as verticalDownRange
-		const MNM::real_t verticalUpRange = snappingRules.verticalUpRange == -FLT_MAX ? verticalDefaultRange : MNM::real_t(snappingRules.verticalUpRange);
-		const MNM::aabb_t aroundPositionAABB(MNM::vector3_t(-horizontalRange, -horizontalRange, -verticalDownRange), MNM::vector3_t(horizontalRange, horizontalRange, verticalUpRange));
-		if (const TriangleID triangleId = GetClosestTriangle(localPosition, aroundPositionAABB, pFilter, nullptr, &snappedLocalPosition))
+	case SSnappingMetric::EType::Vertical:
+	{
+		if (const TriangleID closestId = GetTriangleAt(localPosition, verticalDownRange, verticalUpRange, pFilter))
 		{
 			if (pTriangleId)
-				*pTriangleId = triangleId;
+				*pTriangleId = closestId;
+			
+			if (pSnappedLocalPosition)
+			{
+				MNM::vector3_t vertices[3];
+				GetVertices(closestId, vertices);
+				if (!ProjectPointOnTriangleVertical(localPosition, vertices[0], vertices[1], vertices[2], *pSnappedLocalPosition))
+				{
+					CRY_ASSERT_MESSAGE(false, "Triangle to snap on was found but failed to project point on it");
+					return false;
+				}
+			}
 			return true;
 		}
+		break;
+	}
+	case SSnappingMetric::EType::Box:
+	case SSnappingMetric::EType::Circular:
+	{
+		const MNM::real_t horizontalRange = snappingMetric.horizontalRange == -FLT_MAX ? horizontalDefaultRange : MNM::real_t(snappingMetric.horizontalRange);
+		const MNM::aabb_t aroundPositionAABB(MNM::vector3_t(-horizontalRange, -horizontalRange, -verticalDownRange), MNM::vector3_t(horizontalRange, horizontalRange, verticalUpRange));
+		const MNM::real_t maxDistance = snappingMetric.type == SSnappingMetric::EType::Circular ? horizontalRange : real_t::max();
+		if (const TriangleID closestId = GetClosestTriangle(localPosition, aroundPositionAABB, pFilter, nullptr, pSnappedLocalPosition, maxDistance))
+		{
+			if (pTriangleId)
+				*pTriangleId = closestId;
+			return true;
+		}
+		break;
+	}
+	default:
+		CRY_ASSERT_MESSAGE(false, "CNavMesh::SnapPosition: Unhandled snap metric type!");
+		break;
 	}
 	return false;
 }
@@ -1631,6 +1702,9 @@ MNM::ERayCastResult CNavMesh::RayCast_v3(const vector3_t& fromLocalPosition, Tri
 
 	if (!IsLocationInTriangle(fromLocalPosition, fromTriangleID))
 		return ERayCastResult::InvalidStart;
+
+	if (!IsLocationInTriangle(toLocalPosition, toTriangleID))
+		return ERayCastResult::InvalidEnd;
 
 	RaycastCameFromMap cameFrom;
 	cameFrom.reserve(raycastRequest.maxWayTriCount);

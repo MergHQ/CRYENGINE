@@ -5,7 +5,6 @@
 
 #pragma once
 
-#include <CryAISystem/IMNM.h>
 #include <CryAISystem/NavigationSystem/MNMTile.h>
 #include "MNM_Type_info.h"
 #include "MNMDebugDefines.h"

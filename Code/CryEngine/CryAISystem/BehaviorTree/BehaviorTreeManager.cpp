@@ -177,31 +177,46 @@ bool BehaviorTreeManager::LoadBehaviorTreeTemplate(const char* behaviorTreeName,
 	if (XmlNodeRef metaExtensionsXml = behaviorTreeXmlNode->findChild("MetaExtensions"))
 	{
 		MEMSTAT_CONTEXT(EMemStatContextTypes::MSC_Other, 0, "MetaExtensions");
-		behaviorTreeTemplate.metaExtensionTable.LoadFromXml(metaExtensionsXml);
+		if (!behaviorTreeTemplate.metaExtensionTable.LoadFromXml(metaExtensionsXml))
+		{
+			return false;
+		}
 	}
 
 	if (XmlNodeRef variablesXml = behaviorTreeXmlNode->findChild("Variables"))
 	{
 		MEMSTAT_CONTEXT(EMemStatContextTypes::MSC_Other, 0, "Variables");
-		behaviorTreeTemplate.variableDeclarations.LoadFromXML(variablesXml, behaviorTreeName);
+		if (!behaviorTreeTemplate.variableDeclarations.LoadFromXML(variablesXml, behaviorTreeName))
+		{
+			return false;
+		}
 	}
 
 	if (XmlNodeRef eventsXml = behaviorTreeXmlNode->findChild("Events"))
 	{
 		MEMSTAT_CONTEXT(EMemStatContextTypes::MSC_Other, 0, "Events");
-		behaviorTreeTemplate.eventsDeclaration.LoadFromXML(eventsXml, behaviorTreeName);
+		if (!behaviorTreeTemplate.eventsDeclaration.LoadFromXML(eventsXml, behaviorTreeName))
+		{
+			return false;
+		}
 	}
 
 	if (XmlNodeRef signalsXml = behaviorTreeXmlNode->findChild("SignalVariables"))
 	{
 		MEMSTAT_CONTEXT(EMemStatContextTypes::MSC_Other, 0, "Signals");
-		behaviorTreeTemplate.signalHandler.LoadFromXML(behaviorTreeTemplate.variableDeclarations, behaviorTreeTemplate.eventsDeclaration, signalsXml, behaviorTreeName, isLoadingFromEditor);
+		if (!behaviorTreeTemplate.signalHandler.LoadFromXML(behaviorTreeTemplate.variableDeclarations, behaviorTreeTemplate.eventsDeclaration, signalsXml, behaviorTreeName, isLoadingFromEditor))
+		{
+			return false;
+		}
 	}
 
 	if (XmlNodeRef timestampsXml = behaviorTreeXmlNode->findChild("Timestamps"))
 	{
 		MEMSTAT_CONTEXT(EMemStatContextTypes::MSC_Other, 0, "Timestamps");
-		behaviorTreeTemplate.defaultTimestampCollection.LoadFromXml(behaviorTreeTemplate.eventsDeclaration, timestampsXml, behaviorTreeName, isLoadingFromEditor);
+		if (!behaviorTreeTemplate.defaultTimestampCollection.LoadFromXml(behaviorTreeTemplate.eventsDeclaration, timestampsXml, behaviorTreeName, isLoadingFromEditor))
+		{
+			return false;
+		}
 	}
 
 	LoadContext context(GetNodeFactory(), behaviorTreeName, behaviorTreeTemplate.variableDeclarations, behaviorTreeTemplate.eventsDeclaration);
@@ -347,6 +362,12 @@ void BehaviorTreeManager::DrawMemoryInformation()
 bool BehaviorTreeManager::StartModularBehaviorTree(const EntityId entityId, const char* treeName)
 {
 	BehaviorTreeInstancePtr instance = CreateBehaviorTreeInstanceFromDiskCache(treeName);
+
+	if (!instance)
+	{
+		return false;
+	}
+
 	RegisterGameEventsInSignalManager(instance);
 	return StartBehaviorInstance(entityId, instance, treeName);
 }
@@ -354,6 +375,12 @@ bool BehaviorTreeManager::StartModularBehaviorTree(const EntityId entityId, cons
 bool BehaviorTreeManager::StartModularBehaviorTreeFromXml(const EntityId entityId, const char* treeName, XmlNodeRef treeXml)
 {
 	BehaviorTreeInstancePtr instance = CreateBehaviorTreeInstanceFromXml(treeName, treeXml);
+
+	if (!instance)
+	{
+		return false;
+	}
+
 	return StartBehaviorInstance(entityId, instance, treeName);
 }
 

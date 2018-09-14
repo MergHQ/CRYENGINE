@@ -1720,7 +1720,7 @@ bool CTacticalPointSystem::GenerateInternal(TTacticalPointQuery query, const Que
 				{
 					const size_t maxCenterLocationCount = 512;
 					Vec3 centerLocations[maxCenterLocationCount];
-					if (size_t locationCount = gAIEnv.pNavigationSystem->GetTriangleCenterLocationsInMesh(meshID, objPos, searchAABB, centerLocations, maxCenterLocationCount, nullptr))
+					if (size_t locationCount = gAIEnv.pNavigationSystem->GetTriangleCenterLocationsInMesh(meshID, searchAABB, centerLocations, maxCenterLocationCount, nullptr))
 					{
 						for (size_t i = 0; i < locationCount; ++i)
 						{

@@ -798,21 +798,20 @@ public:
 	// Has to be virtual so that allocation and deallocation of memory happens in the same module
 	// Otherwise crashes since allocation happens in the IA module and deallocation in Sandbox
 	// Using a private implementation would also solve the issue but CryCore does not have any .cpp files
-	virtual bool DeclareGameEventIfNotAlreadyDeclared(const char* newEventName)
+	//! Declares event as a Game Event. Does not watch out for duplicates. Call IsDeclared before to check if game event already exists
+	//! \param newEventName Name of the new Game Event to declare
+	virtual void DeclareGameEvent(const char* newEventName)
 	{
-		if (!IsDeclared(newEventName))
-		{
-			const Event tempEvent = Event(newEventName);
-			m_eventsGame.insert(
-				std::upper_bound(
-					m_eventsGame.begin(),
-					m_eventsGame.end(),
-					tempEvent),
-				tempEvent
-			);
-			return true;
-		}
-		return false;
+		CRY_ASSERT_MESSAGE(!IsDeclared(newEventName, false), "Declaring already existing Game Event '%s'. Game Event will be duplicated.", newEventName);
+
+		const Event tempEvent = Event(newEventName);
+		m_eventsGame.insert(
+			std::upper_bound(
+				m_eventsGame.begin(),
+				m_eventsGame.end(),
+				tempEvent),
+			tempEvent
+		);
 	}
 #endif //USING_BEHAVIOR_TREE_SERIALIZATION
 
@@ -889,23 +888,27 @@ public:
 	}
 
 #ifdef USING_BEHAVIOR_TREE_SERIALIZATION
-	bool IsDeclared(const char* eventName) const
+	//! Checks if the given eventName already exists in the list of events (CryEngine, GameSDK, Deprecated and Game)
+	//! \param eventName Name of the Event to check 
+	//! \param isLoadingFromEditor If True looks for the eventName in those lists for which the flag is enabled. Otherwise ignores the flags and searches for the event in all lists
+	//! \return True if the event is declared. False otherwise.
+	bool IsDeclared(const char* eventName, const bool isLoadingFromEditor = true) const
 	{
 		const Event tempEvent = Event(eventName);
 
 		bool isDeclared = std::find(m_eventsGame.begin(), m_eventsGame.end(), tempEvent) != m_eventsGame.end();
 
-		if (!isDeclared && m_eventsFlags.test(BehaviorTree::NodeSerializationHints::EEventsFlags_CryEngine))
+		if (!isDeclared && (!isLoadingFromEditor || m_eventsFlags.test(BehaviorTree::NodeSerializationHints::EEventsFlags_CryEngine)))
 		{
 			isDeclared = std::find(m_eventsCryEngine.begin(), m_eventsCryEngine.end(), tempEvent) != m_eventsCryEngine.end();
 		}
 
-		if (!isDeclared && m_eventsFlags.test(BehaviorTree::NodeSerializationHints::EEventsFlags_GameSDK))
+		if (!isDeclared && (!isLoadingFromEditor || m_eventsFlags.test(BehaviorTree::NodeSerializationHints::EEventsFlags_GameSDK)))
 		{
 			isDeclared = std::find(m_eventsGameSDK.begin(), m_eventsGameSDK.end(), tempEvent) != m_eventsGameSDK.end();
 		}
 
-		if (!isDeclared && m_eventsFlags.test(BehaviorTree::NodeSerializationHints::EEventsFlags_Deprecated))
+		if (!isDeclared && (!isLoadingFromEditor || m_eventsFlags.test(BehaviorTree::NodeSerializationHints::EEventsFlags_Deprecated)))
 		{
 			isDeclared = std::find(m_eventsDeprecated.begin(), m_eventsDeprecated.end(), tempEvent) != m_eventsDeprecated.end();
 		}
@@ -1187,9 +1190,18 @@ public:
 
 #if defined(USING_BEHAVIOR_TREE_SERIALIZATION)
 				// Automatically declare game signals
-				if (isLoadingFromEditor && eventsDeclaration.DeclareGameEventIfNotAlreadyDeclared(signalName))
+				if (!eventsDeclaration.IsDeclared(signalName, isLoadingFromEditor))
 				{
-					gEnv->pLog->LogWarning("(%d) [File='%s'] Unknown event '%s' used in Event Handle", childNode->getLine(), fileName, signalName);
+					if (isLoadingFromEditor)
+					{
+						eventsDeclaration.DeclareGameEvent(signalName);
+						gEnv->pLog->LogWarning("(%d) [File='%s'] Unknown event '%s' used in Event Handle. Event will be declared automatically", childNode->getLine(), fileName, signalName);
+					}
+					else
+					{
+						gEnv->pLog->LogError("(%d) [File='%s'] Unknown event '%s' used in Event Handle.", childNode->getLine(), fileName, signalName);
+						return false;
+					}
 				}
 #endif // USING_BEHAVIOR_TREE_SERIALIZATION
 

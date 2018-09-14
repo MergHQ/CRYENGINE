@@ -502,37 +502,34 @@ EMNMPathResult CMNMPathfinder::SetupForNextPathRequest(MNM::QueuedPathID request
 
 	//////////////////////////////////////////////////////////////////////////
 	// Validate start/end locations
-	const NavigationMeshID meshID = gAIEnv.pNavigationSystem->GetEnclosingMeshID(request.agentTypeID, request.requestParams.startLocation);
-
-	if (!meshID)
-	{
-		const IEntity* pEntity = gEnv->pEntitySystem->GetEntity(request.requesterEntityId);
-		AIWarning("[CMNMPathfinder::SetupForNextPathRequest] Agent %s is not inside a navigation volume.", pEntity ? pEntity->GetName() : "'missing entity'");
-		return EMNMPathResult::FailedAgentOutsideNavigationVolume;
-	}
-
-	const NavigationMesh& mesh = gAIEnv.pNavigationSystem->GetMesh(meshID);
-	const MNM::CNavMesh& navMesh = mesh.navMesh;
-
-	const MNM::vector3_t startLocation(request.requestParams.startLocation);
-	const MNM::vector3_t endLocation(request.requestParams.endLocation);
-
 	const INavMeshQueryFilter* pFilter = request.pFilter.get();
+	
+	NavigationMeshID meshId;
+	MNM::TriangleID startTriangleId;
+	Vec3 safeStartLocation;
 
-	MNM::TriangleID triangleStartID;
-	MNM::vector3_t snappedPosition;
-	if (!navMesh.SnapPosition(navMesh.ToMeshSpace(startLocation), request.requestParams.snappingRules, pFilter, snappedPosition, &triangleStartID))
+	if (!gAIEnv.pNavigationSystem->SnapToNavMesh(request.agentTypeID, request.requestParams.startLocation, request.requestParams.snappingMetrics, pFilter, &safeStartLocation, &startTriangleId, &meshId))
 	{
+		if (!meshId.IsValid())
+		{
+			const IEntity* pEntity = gEnv->pEntitySystem->GetEntity(request.requesterEntityId);
+			AIWarning("[CMNMPathfinder::SetupForNextPathRequest] Agent %s start position is not near a navigation volume.", pEntity ? pEntity->GetName() : "'missing entity'");
+			return EMNMPathResult::FailedAgentOutsideNavigationVolume;
+		}
+		
 		const IEntity* pEntity = gEnv->pEntitySystem->GetEntity(request.requesterEntityId);
 		AIWarning("Navigation system couldn't find NavMesh triangle at path start point (%.2f, %2f, %2f) for agent '%s'.",
 			request.requestParams.startLocation.x, request.requestParams.startLocation.y, request.requestParams.startLocation.z,
 			pEntity ? pEntity->GetName() : "'missing entity'");
 		return EMNMPathResult::FailedToSnapStartPoint;
 	}
-	const Vec3 safeStartLocation = navMesh.ToWorldSpace(snappedPosition).GetVec3();
-	
-	MNM::TriangleID triangleEndID;
-	if (!navMesh.SnapPosition(navMesh.ToMeshSpace(endLocation), request.requestParams.snappingRules, pFilter, snappedPosition, &triangleEndID))
+
+	// Try to snap end location on the same NavMesh
+	const MNM::CNavMesh& navMesh = gAIEnv.pNavigationSystem->GetMesh(meshId).navMesh;
+
+	MNM::TriangleID endTriangleId;
+	MNM::vector3_t snappedEndPosition;
+	if (!navMesh.SnapPosition(navMesh.ToMeshSpace(request.requestParams.endLocation), request.requestParams.snappingMetrics, pFilter, &snappedEndPosition, &endTriangleId))
 	{
 		const IEntity* pEntity = gEnv->pEntitySystem->GetEntity(request.requesterEntityId);
 		AIWarning("Navigation system couldn't find NavMesh triangle at path destination point (%.2f, %.2f, %.2f) for agent '%s'.",
@@ -541,20 +538,20 @@ EMNMPathResult CMNMPathfinder::SetupForNextPathRequest(MNM::QueuedPathID request
 		return EMNMPathResult::FailedToSnapEndPoint;
 	}
 
-	const Vec3 safeEndLocation = navMesh.ToWorldSpace(snappedPosition).GetVec3();
+	const Vec3 safeEndLocation = navMesh.ToWorldSpace(snappedEndPosition).GetVec3();
 
 	// The data for MNM are good until this point so we can set up the path finding
-	processingRequest.meshID = meshID;
-	processingRequest.fromTriangleID = triangleStartID;
-	processingRequest.toTriangleID = triangleEndID;
+	processingRequest.meshID = meshId;
+	processingRequest.fromTriangleID = startTriangleId;
+	processingRequest.toTriangleID = endTriangleId;
 	processingRequest.queuedID = requestID;
 
 	processingRequest.data = request;
 	processingRequest.data.requestParams.startLocation = safeStartLocation;
 	processingRequest.data.requestParams.endLocation = safeEndLocation;
 
-	const MNM::real_t startToEndDist = (endLocation - startLocation).lenNoOverflow();
-	processingContext.workingSet.aStarOpenList.SetUpForPathSolving(mesh.navMesh.GetTriangleCount(), triangleStartID, startLocation, startToEndDist);
+	const MNM::real_t startToEndDist = (MNM::vector3_t(safeEndLocation) - MNM::vector3_t(safeStartLocation)).lenNoOverflow();
+	processingContext.workingSet.aStarOpenList.SetUpForPathSolving(navMesh.GetTriangleCount(), startTriangleId, request.requestParams.startLocation, startToEndDist);
 
 	return EMNMPathResult::Success;
 }

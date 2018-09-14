@@ -36,6 +36,91 @@ struct ITriangleColorSelector
 	virtual ColorB GetAnnotationColor(AreaAnnotation annotation) const = 0;
 };
 
+struct ESnappingType
+{
+	enum ETypeVertical { Vertical };
+	enum ETypeBox { Box };
+	enum ETypeCircular { Circular };
+};
+
+//! Structure used in NavMesh queries for finding the nearest triangles using various methods of ranges
+struct SSnappingMetric
+{
+	enum class EType
+	{
+		Vertical,   //! Nearest position on NavMesh either above or below the position
+		Box,        //! Nearest position on NavMesh in axis aligned box 
+		Circular,   //! Nearest position on NavMesh from triangles intersecting cylinder
+		Count,
+	};
+
+	SSnappingMetric(ESnappingType::ETypeVertical, const float verticalUpRange = -FLT_MAX, const float verticalDownRange = -FLT_MAX)
+		: SSnappingMetric(EType::Vertical, verticalUpRange, verticalDownRange)
+	{}
+
+	SSnappingMetric(ESnappingType::ETypeBox, const float verticalUpRange = -FLT_MAX, const float verticalDownRange = -FLT_MAX, const float horizontalRange = -FLT_MAX)
+		: SSnappingMetric(EType::Box, verticalUpRange, verticalDownRange, horizontalRange)
+	{}
+
+	SSnappingMetric(ESnappingType::ETypeCircular, const float verticalUpRange = -FLT_MAX, const float verticalDownRange = -FLT_MAX, const float radius = -FLT_MAX)
+		: SSnappingMetric(EType::Circular, verticalUpRange, verticalDownRange, radius)
+	{}
+
+private:
+	SSnappingMetric(const EType type, const float verticalUpRange, const float verticalDownRange, const float horizontalRange = -FLT_MAX)
+		: type(type)
+		, verticalUpRange(verticalUpRange)
+		, verticalDownRange(verticalDownRange)
+		, horizontalRange(horizontalRange)
+	{
+		CRY_ASSERT_MESSAGE(verticalUpRange >= 0 || verticalUpRange == -FLT_MAX, "Snapping metric's vertical up range should have non-negative or default value!");
+		CRY_ASSERT_MESSAGE(verticalDownRange >= 0 || verticalDownRange == -FLT_MAX, "Snapping metric's vertical down range should have non-negative or default value!");
+		CRY_ASSERT_MESSAGE(verticalUpRange != verticalDownRange || verticalUpRange != 0.0f, "Snapping metric's vertical up and down ranges can't be both zero!");
+		CRY_ASSERT_MESSAGE(type == EType::Vertical || horizontalRange != 0.0f, "Snapping metric's horizontal range can't be zero!");
+	}
+
+public:
+	EType type;
+	float verticalUpRange = -FLT_MAX;
+	float verticalDownRange = -FLT_MAX;
+	float horizontalRange = -FLT_MAX;
+};
+
+//! Wrapper structure for the ordered snapping metrics array. 'Ordered' means, that the metrics are checked in order from the first until any one succeeds.
+struct SOrderedSnappingMetrics
+{
+	SOrderedSnappingMetrics() {}
+
+	SOrderedSnappingMetrics(const SSnappingMetric& metric)
+	{
+		metricsArray.push_back(metric);
+	}
+
+	void AddMetric(const SSnappingMetric& metric)
+	{
+		metricsArray.push_back(metric);
+	}
+
+	template<class ... Vals>
+	void EmplaceMetric(Vals&& ... vals)
+	{
+		metricsArray.emplace_back(std::forward<Vals>(vals) ...);
+	}
+
+	void CreateDefault()
+	{
+		metricsArray.emplace_back(ESnappingType::Vertical);
+		metricsArray.emplace_back(ESnappingType::Box);
+	}
+
+	void Clear()
+	{
+		metricsArray.clear();
+	}
+
+	LocalDynArray<SSnappingMetric, 4> metricsArray;
+};
+
 namespace NavMesh
 {
 

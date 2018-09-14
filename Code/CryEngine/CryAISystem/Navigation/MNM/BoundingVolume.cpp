@@ -165,48 +165,6 @@ bool BoundingVolume::Contains(const Vec3& point) const
 	return count != 0;
 }
 
-/*
-   bool BoundingVolume::IntersectLineSeg(const Vec3& start, const Vec3& end, float* t, size_t* segment) const
-   {
-   float bestt = FLT_MAX;
-   size_t bestSeg = ~0ul;
-
-   const size_t vertexCount = vertices.size();
-
-   size_t ii = vertexCount - 1;
-
-   for (size_t i = 0; i < vertexCount; ++i)
-   {
-    const Vec3& v0 = vertices[ii];
-    const Vec3& v1 = vertices[i];
-    ii = i;
-
-    float a, b;
-    if (Intersect::Lineseg_Lineseg2D(Lineseg(start, end), Lineseg(v0, v1), a, b))
-    {
-      if (a < bestt)
-      {
-        bestt = a;
-        bestSeg = ii;
-      }
-    }
-   }
-
-   if (bestSeg != ~0ul)
-   {
-    if (t)
- * t = bestt;
-
-    if (segment)
- * segment = bestSeg;
-
-    return true;
-   }
-
-   return false;
-   }
- */
-
 void BoundingVolume::OffsetVerticesAndAABB(const Vec3& delta)
 {
 	const size_t vertexCount = vertices.size();

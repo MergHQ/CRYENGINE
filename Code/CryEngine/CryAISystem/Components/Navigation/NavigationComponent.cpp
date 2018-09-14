@@ -412,7 +412,7 @@ bool CEntityAINavigationComponent::TestRaycastHit(const Vec3& toPositon, Vec3& h
 	MNM::SRayHitOutput rayHit;
 	const Vec3& startPos = GetPosition();
 
-	if (gEnv->pAISystem->GetNavigationSystem()->NavMeshTestRaycastHit(m_agentTypeId, startPos, toPositon, &m_navigationQueryFilter, &rayHit) == MNM::ERayCastResult::Hit)
+	if (gEnv->pAISystem->GetNavigationSystem()->NavMeshRayCast(m_agentTypeId, startPos, toPositon, &m_navigationQueryFilter, &rayHit) == MNM::ERayCastResult::Hit)
 	{
 		hitPos = rayHit.position;
 		hitNorm = rayHit.normal2D;
