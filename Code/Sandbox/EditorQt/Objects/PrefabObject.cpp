@@ -1038,32 +1038,6 @@ void CPrefabObject::CreateInspectorWidgets(CInspectorWidgetCreator& creator)
 	});
 }
 
-bool CPrefabObject::ApplyAsset(const CAsset& asset, HitContext* pHitContext /*= nullptr*/)
-{
-	string emptyOutString;
-	if (CBaseObject::CanApplyAsset(asset, &emptyOutString))
-	{
-		return CBaseObject::ApplyAsset(asset, pHitContext);
-	}
-	else if (CanApplyAsset(asset, &emptyOutString))
-	{
-		return CPrefabPicker::SetPrefabFromAsset(this, &asset);
-	}
-	return false;
-}
-
-bool CPrefabObject::CanApplyAsset(const CAsset& asset, string* pApplyTextOut /*= nullptr*/) const
-{
-	bool canApply = CBaseObject::CanApplyAsset(asset, pApplyTextOut);
-	if (!canApply && CPrefabPicker::IsValidAssetForPrefab(this, asset))
-	{
-		*pApplyTextOut = QtUtil::ToString(QObject::tr("Assign Prefab"));
-		canApply = true;
-	}
-
-	return canApply;
-}
-
 void CPrefabObject::CloneAll(std::vector<CBaseObject*>& extractedObjects)
 {
 	if (!m_pPrefabItem || !m_pPrefabItem->GetObjectsNode())

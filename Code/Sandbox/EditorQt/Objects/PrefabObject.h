@@ -99,11 +99,6 @@ public:
 	void         SetAutoUpdatePrefab(bool autoUpdate);
 	bool         GetAutoUpdatePrefab() const { return m_autoUpdatePrefabs; }
 
-	//! Assigns the specified asset to the object, in this case a material or a prefab can be assigned
-	//! \param pHitContext Specifies raycast context, if we are applying the asset via a drag action
-	virtual bool ApplyAsset(const CAsset& asset, HitContext* pHitContext = nullptr) override;
-	virtual bool CanApplyAsset(const CAsset& asset, string* pApplyTextOut = nullptr) const override;
-
 	// Extract all objects inside.
 	void         CloneAll(std::vector<CBaseObject*>& extractedObjects);
 	void         SyncPrefab(const SObjectChangedContext& context);
