@@ -183,6 +183,8 @@ void CVars::Init()
 
 	REGISTER_CVAR(e_TerrainDetailMaterials, 1, VF_CHEAT | VF_CHEAT_ALWAYS_CHECK,
 	              "Activates drawing of detail materials on terrain ground");
+	REGISTER_CVAR(e_TerrainDetailMaterialsWeightedBlending, 1, VF_NULL,
+	              "Enable advanced weighted blending between terrain detail materials");
 	DefineConstIntCVar(e_TerrainDetailMaterialsDebug, 0, VF_CHEAT,
 	                   "Shows number of materials in use per terrain sector");
 	REGISTER_CVAR(e_TerrainDetailMaterialsViewDistZ, e_TerrainDetailMaterialsViewDistZDefault, VF_NULL,

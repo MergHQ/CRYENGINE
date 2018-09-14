@@ -152,12 +152,11 @@ void TotalIllumImpl::ResetVariables()
 	useTodSkyColor = 0.5f;
 	specularAmplifier = 1.0f;
 	diffuseBias = 0.05f;
-	pointLightsBias = 0.2f;
 	coneMaxLength = 12.0f;
 	ssaoAmount = 0.7f;
-	highGlossOcclusion = 0;
-	translucentBrightness = 2.5f;
 	minNodeSize = 8.0f;
+	updateGeometry = false;
+	lowSpecMode = -2;
 }
 
 void TotalIllumImpl::Serialize(Serialization::IArchive& ar)
@@ -168,12 +167,11 @@ void TotalIllumImpl::Serialize(Serialization::IArchive& ar)
 	SerializeSvoTi(ar, useTodSkyColor, 0.0f, 1.0f, "UseTODSkyColor", "Use TOD Sky Color");
 	SerializeSvoTi(ar, specularAmplifier, 0.0f, 10.0f, "SpecularAmplifier", "Specular Amplifier");
 	SerializeSvoTi(ar, diffuseBias, -4.0f, 4.0f, "DiffuseBias", "Diffuse Bias");
-	SerializeSvoTi(ar, pointLightsBias, 0.0f, 1.0f, "PointLightsBias", "Point Lights Bias");
 	SerializeSvoTi(ar, coneMaxLength, 2.0f, 100.0f, "ConeMaxLength", "Cone Max Length");
-	SerializeSvoTi(ar, ssaoAmount, 0.0f, 1.0f, "SSAOAmount", "SSAO Amount");
-	SerializeSvoTi(ar, highGlossOcclusion, -100.0f, 1.0f, "HighGlossOcclusion", "High Gloss Occlusion");
-	SerializeSvoTi(ar, translucentBrightness, 0.0f, 8.0f, "TranslucentBrightness", "Translucent Brightness");
+	SerializeSvoTi(ar, updateGeometry, "UpdateGeometry", "Update Geometry");
 	SerializeSvoTi(ar, minNodeSize, 0.5f, 512.0f, "MinNodeSize", "Min Node Size", "e_svo");
+	SerializeSvoTi(ar, lowSpecMode, -2, 14, "LowSpecMode", "Low Spec Mode");
+	SerializeSvoTi(ar, ssaoAmount, 0.0f, 1.0f, "SSAOAmount", "SSAO Amount");
 }
 
 //////////////////////////////////////////////////////////////////////////
@@ -194,10 +192,6 @@ void TotalIllumAdvImpl::ResetVariables()
 	propagationBooster = 1.5f;
 	diffuseConeWidth = 24.0f;
 	updateLighting = false;
-	updateGeometry = false;
-	skipNonGiLights = false;
-	forceGIForAllLights = false;
-	lowSpecMode = -2;
 	halfResKernelPrimary = false;
 	halfresKernelSecondary = true;
 	useLightProbes = false;
@@ -212,27 +206,14 @@ void TotalIllumAdvImpl::ResetVariables()
 	shadowsFromHeightmap = false;
 	troposphere_Active = false;
 	troposphere_Brightness = 1.0f;
-	troposphere_Ground_Height = 0.0f;
-	troposphere_Layer0_Height = 0.0f;
-	troposphere_Layer1_Height = 0.0f;
-	troposphere_Snow_Height = 0.0f;
-	troposphere_Layer0_Rand = 0.0f;
-	troposphere_Layer1_Rand = 0.0f;
-	troposphere_Layer0_Dens = 0.0f;
-	troposphere_Layer1_Dens = 0.0f;
-	troposphere_CloudGen_Height = 0.0f;
-	troposphere_CloudGen_Freq = 0.0f;
-	troposphere_CloudGen_FreqStep = 0.0f;
-	troposphere_CloudGen_Scale = 0.0f;
-	troposphere_CloudGenTurb_Freq = 0.0f;
-	troposphere_CloudGenTurb_Scale = 0.0f;
 	troposphere_Density = 1.0f;
 	analyticalOccluders = false;
 	analyticalGI = false;
 	traceVoxels = true;
-	rtMaxDist = 0.0f;
-	constantAmbientDebug = 0.0f;
 	streamVoxels = false;
+	translucentBrightness = 2.5f;
+	pointLightsBias = 0.2f;
+	highGlossOcclusion = 0;
 }
 
 void TotalIllumAdvImpl::Serialize(Serialization::IArchive& ar)
@@ -247,10 +228,6 @@ void TotalIllumAdvImpl::Serialize(Serialization::IArchive& ar)
 	SerializeSvoTi(ar, propagationBooster, 0.0f, 4.0f, "PropagationBooster", "Propagation Booster");
 	SerializeSvoTi(ar, diffuseConeWidth, 1.0f, 36.0f, "DiffuseConeWidth", "Diffuse Cone Width");
 	SerializeSvoTi(ar, updateLighting, "UpdateLighting", "Update Lighting");
-	SerializeSvoTi(ar, updateGeometry, "UpdateGeometry", "Update Geometry");
-	SerializeSvoTi(ar, skipNonGiLights, "SkipNonGILights", "Skip Non GI Lights");
-	SerializeSvoTi(ar, forceGIForAllLights, "forceGIForAllLights", "Force GI For All Lights");
-	SerializeSvoTi(ar, lowSpecMode, -2, 14, "LowSpecMode", "Low Spec Mode");
 	SerializeSvoTi(ar, halfResKernelPrimary, "HalfresKernelPrimary", "Halfres Kernel Primary");
 	SerializeSvoTi(ar, halfresKernelSecondary, "HalfresKernelSecondary", "Halfres Kernel Secondary");
 	SerializeSvoTi(ar, useLightProbes, "UseLightProbes", "Use Light Probes");
@@ -265,27 +242,14 @@ void TotalIllumAdvImpl::Serialize(Serialization::IArchive& ar)
 	SerializeSvoTi(ar, shadowsFromHeightmap, "ShadowsFromHeightmap", "Shadows From Heightmap");
 	SerializeSvoTi(ar, troposphere_Active, "Troposphere_Active", "Troposphere Active");
 	SerializeSvoTi(ar, troposphere_Brightness, "Troposphere_Brightness", "Troposphere Brightness");
-	SerializeSvoTi(ar, troposphere_Ground_Height, "Troposphere_Ground_Height", "Troposphere Ground Height");
-	SerializeSvoTi(ar, troposphere_Layer0_Height, "Troposphere_Layer0_Height", "Troposphere Layer0 Height");
-	SerializeSvoTi(ar, troposphere_Layer1_Height, "Troposphere_Layer1_Height", "Troposphere Layer1 Height");
-	SerializeSvoTi(ar, troposphere_Snow_Height, "Troposphere_Snow_Height", "Troposphere Snow Height");
-	SerializeSvoTi(ar, troposphere_Layer0_Rand, "Troposphere_Layer0_Rand", "Troposphere Layer0 Rand");
-	SerializeSvoTi(ar, troposphere_Layer1_Rand, "Troposphere_Layer1_Rand", "Troposphere Layer1 Rand");
-	SerializeSvoTi(ar, troposphere_Layer0_Dens, "Troposphere_Layer0_Dens", "Troposphere Layer0 Dens");
-	SerializeSvoTi(ar, troposphere_Layer1_Dens, "Troposphere_Layer1_Dens", "Troposphere Layer1 Dens");
-	SerializeSvoTi(ar, troposphere_CloudGen_Height, "Troposphere_CloudGen_Height", "Troposphere CloudGen Height");
-	SerializeSvoTi(ar, troposphere_CloudGen_Freq, "Troposphere_CloudGen_Freq", "Troposphere CloudGen Freq");
-	SerializeSvoTi(ar, troposphere_CloudGen_FreqStep, "Troposphere_CloudGen_FreqStep", "Troposphere CloudGen FreqStep");
-	SerializeSvoTi(ar, troposphere_CloudGen_Scale, "Troposphere_CloudGen_Scale", "Troposphere CloudGen Scale");
-	SerializeSvoTi(ar, troposphere_CloudGenTurb_Freq, "Troposphere_CloudGenTurb_Freq", "Troposphere CloudGenTurb Freq");
-	SerializeSvoTi(ar, troposphere_CloudGenTurb_Scale, "Troposphere_CloudGenTurb_Scale", "Troposphere CloudGenTurb Scale");
 	SerializeSvoTi(ar, troposphere_Density, "Troposphere_Density", "Troposphere Density");
 	SerializeSvoTi(ar, analyticalOccluders, "AnalyticalOccluders", "Analytical Occluders");
 	SerializeSvoTi(ar, analyticalGI, "AnalyticalGI", "Analytical GI");
 	SerializeSvoTi(ar, traceVoxels, "TraceVoxels", "Trace Voxels");
-	SerializeSvoTi(ar, rtMaxDist, "RT_MaxDist", "RT Max Dist");
-	SerializeSvoTi(ar, constantAmbientDebug, "ConstantAmbientDebug", "Constant Ambient Debug");
 	SerializeSvoTi(ar, streamVoxels, "StreamVoxels", "Stream Voxels", "e_svo");
+	SerializeSvoTi(ar, translucentBrightness, 0.0f, 8.0f, "TranslucentBrightness", "Translucent Brightness");
+	SerializeSvoTi(ar, pointLightsBias, 0.0f, 1.0f, "PointLightsBias", "Point Lights Bias");
+	SerializeSvoTi(ar, highGlossOcclusion, -100.0f, 1.0f, "HighGlossOcclusion", "High Gloss Occlusion");
 }
 
 //////////////////////////////////////////////////////////////////////////
