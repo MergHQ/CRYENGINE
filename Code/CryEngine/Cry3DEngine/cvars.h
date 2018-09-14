@@ -313,6 +313,7 @@ struct CVars : public Cry3DEngineBase
 	DeclareConstIntCVar(e_ObjStats, 0);
 	DeclareConstIntCVar(e_TerrainDeformations, 0);
 	int e_TerrainDetailMaterials;
+	int e_TerrainDetailMaterialsWeightedBlending;
 	int e_TerrainBlendingDebug;
 	DeclareConstIntCVar(e_ShadowsFrustums, 0);
 	DeclareConstIntCVar(e_OcclusionVolumes, e_OcclusionVolumesDefault);

@@ -763,7 +763,8 @@ void C3DEngine::ProcessCVarsChange()
 	  GetCVars()->e_DebugDraw +
 	  GetFloatCVar(e_ViewDistCompMaxSize) +
 	  GetCVars()->e_DecalsDeferredStatic +
-	  GetCVars()->e_TerrainBlendingDebug;
+	  GetCVars()->e_TerrainBlendingDebug + 
+		GetCVars()->e_TerrainDetailMaterialsWeightedBlending;
 
 	if (m_fRefreshSceneDataCVarsSumm != -1 && m_fRefreshSceneDataCVarsSumm != fNewCVarsSumm)
 	{

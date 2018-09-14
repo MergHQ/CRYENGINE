@@ -1560,6 +1560,9 @@ void CTerrainNode::SetVertexSurfaceType(float x, float y, float stepSize, CTerra
 {
 	SSurfaceTypeItem st = pTerrain->GetSurfaceTypeItem(x, y);
 
+	if(!GetCVars()->e_TerrainDetailMaterialsWeightedBlending)
+		st = st.GetDominatingSurfaceType();
+
 	if (st.GetHole())
 	{
 		// in case of hole - try to find some valid surface type around

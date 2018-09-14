@@ -226,8 +226,9 @@ enum EEntityFlagsExtended : uint8
 	ENTITY_FLAG_EXTENDED_IGNORED_IN_NAVMESH_GENERATION  = BIT8(7), //!< Entity's geometry doesn't contribute to NavMesh generation
 };
 
-#define ENTITY_FLAG_EXTENDED_GI_MODE_BIT_OFFSET 4                                                                                                           // Bit offset of entity GI mode in EEntityFlagsExtended. Must be equal to the bit id of ENTITY_FLAG_EXTENDED_GI_MODE_BIT0
+#define ENTITY_FLAG_EXTENDED_GI_MODE_BIT_OFFSET 3								 // Bit offset of entity GI mode in EEntityFlagsExtended. Must be equal to the bit id of ENTITY_FLAG_EXTENDED_GI_MODE_BIT0
 #define ENTITY_FLAG_EXTENDED_GI_MODE_BIT_MASK   (ENTITY_FLAG_EXTENDED_GI_MODE_BIT0 | ENTITY_FLAG_EXTENDED_GI_MODE_BIT1 | ENTITY_FLAG_EXTENDED_GI_MODE_BIT2) // Bit mask of entity GI mode.
+static_assert(ENTITY_FLAG_EXTENDED_GI_MODE_BIT0 == BIT8(ENTITY_FLAG_EXTENDED_GI_MODE_BIT_OFFSET), "ENTITY_FLAG_EXTENDED_GI_MODE_BIT_OFFSET does not match ENTITY_FLAG_EXTENDED_GI_MODE_BIT0");
 
 //! Flags can be passed to IEntity::Serialize().
 enum EEntitySerializeFlags : uint32

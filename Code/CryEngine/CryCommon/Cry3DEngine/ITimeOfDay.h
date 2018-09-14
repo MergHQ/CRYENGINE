@@ -10,7 +10,6 @@
 #include <CrySerialization/Forward.h>
 #include <CryString/CryString.h>
 
-
 struct SBezierKey;
 class XmlNodeRef;
 
@@ -268,15 +267,14 @@ struct ITimeOfDay
 		float useTodSkyColor;
 		float specularAmplifier;
 		float diffuseBias;
-		float pointLightsBias;
 		float coneMaxLength;
 		float ssaoAmount;
-		float highGlossOcclusion;
-		float translucentBrightness;
 		float minNodeSize;
+		bool  updateGeometry;
+		int   lowSpecMode;
 	};
 
-	//Experimental params
+	//Advanced params
 	struct TotalIllumAdv
 	{
 		int   integrationMode;
@@ -289,10 +287,6 @@ struct ITimeOfDay
 		float propagationBooster;
 		float diffuseConeWidth;
 		bool  updateLighting;
-		bool  updateGeometry;
-		bool  skipNonGiLights;
-		bool  forceGIForAllLights;
-		int   lowSpecMode;
 		bool  halfResKernelPrimary;
 		bool  halfresKernelSecondary;
 		bool  useLightProbes;
@@ -307,27 +301,14 @@ struct ITimeOfDay
 		bool  shadowsFromHeightmap;
 		bool  troposphere_Active;
 		float troposphere_Brightness;
-		float troposphere_Ground_Height;
-		float troposphere_Layer0_Height;
-		float troposphere_Layer1_Height;
-		float troposphere_Snow_Height;
-		float troposphere_Layer0_Rand;
-		float troposphere_Layer1_Rand;
-		float troposphere_Layer0_Dens;
-		float troposphere_Layer1_Dens;
-		float troposphere_CloudGen_Height;
-		float troposphere_CloudGen_Freq;
-		float troposphere_CloudGen_FreqStep;
-		float troposphere_CloudGen_Scale;
-		float troposphere_CloudGenTurb_Freq;
-		float troposphere_CloudGenTurb_Scale;
 		float troposphere_Density;
 		bool  analyticalOccluders;
 		bool  analyticalGI;
 		bool  traceVoxels;
-		float rtMaxDist;
-		float constantAmbientDebug;
 		bool  streamVoxels;
+		float translucentBrightness;
+		float pointLightsBias;
+		float highGlossOcclusion;
 	};
 
 	struct IListener

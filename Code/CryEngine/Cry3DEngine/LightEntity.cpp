@@ -264,8 +264,12 @@ void CLightEntity::UpdateGSMLightSourceShadowFrustum(const SRenderingPassInfo& p
 
 	int nNextLod = 0;
 	nNextLod = UpdateGSMLightSourceDynamicShadowFrustum(nDynamicLodCount, nCachedLodCount, fDistFromView, fRadiusLastLod, nCachedLodCount == 0, passInfo);
-	nNextLod += UpdateGSMLightSourceCachedShadowFrustum(nDynamicLodCount, nCachedLodCount, isHeightMapAOEnabled, fDistFromView, fRadiusLastLod, passInfo);
-	nNextLod += UpdateGSMLightSourceNearestShadowFrustum(nNextLod, passInfo);
+
+	if (m_light.m_Flags & DLF_SUN)
+	{
+		nNextLod += UpdateGSMLightSourceCachedShadowFrustum(nDynamicLodCount, nCachedLodCount, isHeightMapAOEnabled, fDistFromView, fRadiusLastLod, passInfo);
+		nNextLod += UpdateGSMLightSourceNearestShadowFrustum(nNextLod, passInfo);
+	}
 
 	// free not used frustums
 	for (int nLod = nNextLod; nLod < MAX_GSM_LODS_NUM; nLod++)

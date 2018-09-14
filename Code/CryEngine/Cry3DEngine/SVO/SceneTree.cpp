@@ -2264,11 +2264,11 @@ void C3DEngine::UpdateTISettings()
 	GetCVars()->e_svoTI_NumberOfBounces = tiAdv.numberOfBounces;
 	GetCVars()->e_svoTI_Saturation = tiAdv.saturation;
 	GetCVars()->e_svoTI_PropagationBooster = tiAdv.propagationBooster;
-	GetCVars()->e_svoTI_PointLightsBias = ti.pointLightsBias;
+	GetCVars()->e_svoTI_PointLightsBias = tiAdv.pointLightsBias;
 	if (gEnv->IsEditor())
 	{
 		GetCVars()->e_svoTI_UpdateLighting = tiAdv.updateLighting ? 1 : 0;
-		GetCVars()->e_svoTI_UpdateGeometry = tiAdv.updateGeometry ? 1 : 0;
+		GetCVars()->e_svoTI_UpdateGeometry = ti.updateGeometry ? 1 : 0;
 	}
 	GetCVars()->e_svoTI_SkyColorMultiplier = ti.skyColorMultiplier;
 	GetCVars()->e_svoTI_UseLightProbes = tiAdv.useLightProbes ? 1 : 0;
@@ -2287,8 +2287,6 @@ void C3DEngine::UpdateTISettings()
 
 	GetCVars()->e_svoMinNodeSize = ti.minNodeSize;
 
-	GetCVars()->e_svoTI_SkipNonGILights = tiAdv.skipNonGiLights ? 1 : 0;
-	GetCVars()->e_svoTI_ForceGIForAllLights = tiAdv.forceGIForAllLights;
 	GetCVars()->e_svoTI_SSAOAmount = ti.ssaoAmount;
 	GetCVars()->e_svoTI_PortalsDeform = tiAdv.portalsDeform;
 	GetCVars()->e_svoTI_PortalsInject = tiAdv.portalsInject;
@@ -2301,20 +2299,6 @@ void C3DEngine::UpdateTISettings()
 	GetCVars()->e_svoTI_ShadowsFromHeightmap = tiAdv.shadowsFromHeightmap ? 1 : 0;
 	GetCVars()->e_svoTI_Troposphere_Active = tiAdv.troposphere_Active ? 1 : 0;
 	GetCVars()->e_svoTI_Troposphere_Brightness = tiAdv.troposphere_Brightness;
-	GetCVars()->e_svoTI_Troposphere_Ground_Height = tiAdv.troposphere_Ground_Height;
-	GetCVars()->e_svoTI_Troposphere_Layer0_Height = tiAdv.troposphere_Layer0_Height;
-	GetCVars()->e_svoTI_Troposphere_Layer1_Height = tiAdv.troposphere_Layer1_Height;
-	GetCVars()->e_svoTI_Troposphere_Snow_Height = tiAdv.troposphere_Snow_Height;
-	GetCVars()->e_svoTI_Troposphere_Layer0_Rand = tiAdv.troposphere_Layer0_Rand;
-	GetCVars()->e_svoTI_Troposphere_Layer1_Rand = tiAdv.troposphere_Layer1_Rand;
-	GetCVars()->e_svoTI_Troposphere_Layer0_Dens = tiAdv.troposphere_Layer0_Dens;
-	GetCVars()->e_svoTI_Troposphere_Layer1_Dens = tiAdv.troposphere_Layer1_Dens;
-	//GetCVars()->e_svoTI_Troposphere_CloudGen_Height = (float)atof(GetXMLAttribText(pInputNode, szXmlNodeName, "Troposphere_CloudGen_Height", "0"));
-	GetCVars()->e_svoTI_Troposphere_CloudGen_Freq = tiAdv.troposphere_CloudGen_Freq;
-	GetCVars()->e_svoTI_Troposphere_CloudGen_FreqStep = tiAdv.troposphere_CloudGen_FreqStep;
-	GetCVars()->e_svoTI_Troposphere_CloudGen_Scale = tiAdv.troposphere_CloudGen_Scale;
-	GetCVars()->e_svoTI_Troposphere_CloudGenTurb_Freq = tiAdv.troposphere_CloudGenTurb_Freq;
-	GetCVars()->e_svoTI_Troposphere_CloudGenTurb_Scale = tiAdv.troposphere_CloudGenTurb_Scale;
 	GetCVars()->e_svoTI_Troposphere_Density = tiAdv.troposphere_Density;
 	GetCVars()->e_svoTI_Troposphere_Subdivide = GetCVars()->e_svoTI_Troposphere_Active;
 
@@ -2322,7 +2306,7 @@ void C3DEngine::UpdateTISettings()
 	GetCVars()->e_svoTI_AnalyticalGI = tiAdv.analyticalGI ? 1 : 0;
 	GetCVars()->e_svoTI_TraceVoxels = tiAdv.traceVoxels ? 1 : 0;
 
-	int lowSpecMode = tiAdv.lowSpecMode;
+	int lowSpecMode = ti.lowSpecMode;
 	if (lowSpecMode > -2 && gEnv->IsEditor()) // otherwise we use value from sys_spec_Light.cfg
 		GetCVars()->e_svoTI_LowSpecMode = lowSpecMode;
 
@@ -2330,18 +2314,14 @@ void C3DEngine::UpdateTISettings()
 	GetCVars()->e_svoTI_HalfresKernelSecondary = tiAdv.halfresKernelSecondary ? 1 : 0;
 	GetCVars()->e_svoTI_UseTODSkyColor = ti.useTodSkyColor;
 
-	GetCVars()->e_svoTI_HighGlossOcclusion = ti.highGlossOcclusion;
-	GetCVars()->e_svoTI_TranslucentBrightness = ti.translucentBrightness;
+	GetCVars()->e_svoTI_HighGlossOcclusion = tiAdv.highGlossOcclusion;
+	GetCVars()->e_svoTI_TranslucentBrightness = tiAdv.translucentBrightness;
 
 	#ifdef FEATURE_SVO_GI_ALLOW_HQ
 	GetCVars()->e_svoTI_IntegrationMode = tiAdv.integrationMode;
 	#else
 	GetCVars()->e_svoTI_IntegrationMode = 0;
 	#endif
-
-	GetCVars()->e_svoTI_RT_MaxDist = tiAdv.rtMaxDist;
-
-	GetCVars()->e_svoTI_ConstantAmbientDebug = tiAdv.constantAmbientDebug;
 
 	if (Cry3DEngineBase::GetCVars()->e_svoStreamVoxels != 2)
 		GetCVars()->e_svoStreamVoxels = tiAdv.streamVoxels ? 1 : 0;
