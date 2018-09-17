@@ -696,8 +696,15 @@ void CDevice::ReleaseLater(const FVAL64 (&fenceValues)[CMDQUEUE_NUM], ID3D11Reso
 			hashableBlob.sHeap.Type == D3D11_USAGE_DEFAULT ||
 			hashableBlob.sHeap.Type == D3D11_USAGE_IMMUTABLE;
 
-		// GPU-only resources can't race each other when they are managed by ref-counts/pools
-		if (isGPUOnly && bReusable)
+		UINT64 fenceValuesWithPrunningDelay[CMDQUEUE_NUM];
+		const FVAL64(&completedFenceValues)[CMDQUEUE_NUM] = m_Scheduler.GetFenceManager().GetLastCompletedFenceValues();
+		MaxFenceValues(fenceValuesWithPrunningDelay, fenceValues, completedFenceValues);
+		const bool isUnused =
+			SmallerEqualFenceValues(fenceValuesWithPrunningDelay, completedFenceValues);
+
+		// GPU-only resources can't race with itself when they are managed by ref-counts/pools
+		// CPU-write resources can be recycled immediately if they have been used up already
+		if ((isGPUOnly | isUnused) & bReusable)
 		{
 			CryAutoLock<CryCriticalSectionNonRecursive> lThreadSafeScope(m_RecycleHeapTheadSafeScope);
 
@@ -724,7 +731,7 @@ void CDevice::ReleaseLater(const FVAL64 (&fenceValues)[CMDQUEUE_NUM], ID3D11Reso
 				pObject->AddRef();
 			}
 		}
-		else
+		else if (!isUnused)
 		{
 			CryAutoLock<CryCriticalSectionNonRecursive> lThreadSafeScope(m_ReleaseHeapTheadSafeScope);
 
