@@ -296,7 +296,6 @@ CObjectLayer::CObjectLayer(const char* szName, EObjectLayerType type)
 	, m_layerType(type)
 {
 	m_color = Private_ObjectLayer::g_defaultLayerColor;
-	ZeroStruct(m_parentGUID);
 }
 
 //////////////////////////////////////////////////////////////////////////
@@ -352,9 +351,6 @@ void CObjectLayer::Serialize(XmlNodeRef& node, bool isLoading)
 		node->getAttr("Color", color);
 		m_color = ColorB(GetRValue(color), GetGValue(color), GetBValue(color));
 
-		ZeroStruct(m_parentGUID);
-		node->getAttr("ParentGUID", m_parentGUID);
-
 		GetIEditorImpl()->GetObjectManager()->InvalidateVisibleList();
 	}
 	else
@@ -371,10 +367,6 @@ void CObjectLayer::Serialize(XmlNodeRef& node, bool isLoading)
 
 		if (m_specs != eSpecType_All)
 			node->setAttr("Specs", m_specs);
-
-		CryGUID parentGUID = m_parentGUID;
-		if (parentGUID != CryGUID::Null())
-			node->setAttr("ParentGUID", parentGUID);
 	}
 }
 
@@ -475,7 +467,6 @@ void CObjectLayer::AddChild(CObjectLayer* pLayer, bool isNotify /*= true*/)
 
 	stl::push_back_unique(m_childLayers, pLayer);
 	pLayer->m_parent = this;
-	pLayer->m_parentGUID = GetGUID();
 	GetIEditorImpl()->GetObjectManager()->InvalidateVisibleList();
 
 	if (isNotify)
@@ -494,7 +485,6 @@ void CObjectLayer::RemoveChild(CObjectLayer* pLayer, bool isNotify /*= true*/)
 
 	assert(pLayer);
 	pLayer->m_parent = nullptr;
-	ZeroStruct(pLayer->m_parentGUID);
 	stl::find_and_erase(m_childLayers, pLayer);
 	GetIEditorImpl()->GetObjectManager()->InvalidateVisibleList();
 

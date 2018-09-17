@@ -37,8 +37,6 @@ public:
 	//! Get GUID assigned to this layer.
 	const CryGUID& GetGUID() const { return m_guid; }
 
-	const CryGUID& GetParentGUID() const { return m_parentGUID; }
-
 	//////////////////////////////////////////////////////////////////////////
 	// Query layer status.
 	//////////////////////////////////////////////////////////////////////////
@@ -158,8 +156,6 @@ protected:
 
 	//! Pointer to parent layer.
 	CObjectLayer* m_parent;
-	//! Parent layer GUID.
-	CryGUID       m_parentGUID;
 
 	//! Layer ID for LayerSwith
 	uint16           m_nLayerId;

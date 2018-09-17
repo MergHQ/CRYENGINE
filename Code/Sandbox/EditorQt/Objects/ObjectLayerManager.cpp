@@ -41,6 +41,7 @@ public:
 		m_undo = XmlHelpers::CreateXmlNode("Undo");
 		pLayer->SerializeBase(m_undo, false);
 		pLayer->Serialize(m_undo, false);
+		m_fullName = pLayer->GetFullName();
 	}
 protected:
 	virtual const char* GetDescription() { return m_bCreate ? "Create Layer" : "Delete Layer"; }
@@ -72,7 +73,7 @@ private:
 		if (!pLayersManager->FindLayer(m_layerGuid))
 			pLayersManager->AddLayer(pLayer);
 
-		pLayersManager->ResolveLayerParents(true, false);
+		pLayersManager->ResolveParentFor(m_fullName, pLayer);
 	}
 
 	void DeleteLayer()
@@ -83,6 +84,7 @@ private:
 			pLayersManager->DeleteLayer(pLayer);
 	}
 
+	string     m_fullName;
 	CryGUID    m_layerGuid;
 	XmlNodeRef m_undo;
 	bool       m_bCreate;
@@ -530,35 +532,12 @@ void CObjectLayerManager::NotifyLayerChange(const CLayerChangeEvent& event)
 	signalChangeEvent(event);
 }
 
-CObjectLayer* CObjectLayerManager::CreateLayersFromPath(const string& fullPathName, const string& name, std::set<string>& createdLayers, bool bNotify /*=true*/)
+CObjectLayer* CObjectLayerManager::FindOrCreateFolderChain(const string& folderChain, bool bNotify /*=true*/)
 {
-	std::vector<string> segments = PathUtil::SplitIntoSegments(fullPathName.GetString());
+	std::vector<string> segments = PathUtil::SplitIntoSegments(folderChain.GetString());
 
 	CObjectLayer* pPrevFolder = nullptr;
 	CObjectLayer* pFolder = nullptr;
-
-	bool warnDuplicateLayer = true;
-
-	// test for duplicate folder first
-	for (auto layer : m_layersMap)
-	{
-		if ((layer.second->GetLayerType() == eObjectLayerType_Folder) && (stricmp(layer.second->GetName(), name) == 0))
-		{
-			if (createdLayers.find(name) == createdLayers.end())
-			{
-				// we have an existing folder with the same name. This can happen when children get registered before parent
-				// This is limitation due to Engine, but we only allow unique folder names here due to export not supporting
-				// arbitrary filesystem names correctly
-				CryWarning(VALIDATOR_MODULE_EDITOR, VALIDATOR_WARNING,
-				           "The layer %s contains child layers, and has been split into a stand-alone layer and a folder with the child layers. "
-				           "It is strongly recommended that you rename the layer, or delete it if does not directly contain any objects.", name);
-
-				// insert the name to created layers, so we don't warn again
-				createdLayers.insert(name);
-				break;
-			}
-		}
-	}
 
 	for (auto& segment : segments)
 	{
@@ -567,43 +546,20 @@ CObjectLayer* CObjectLayerManager::CreateLayersFromPath(const string& fullPathNa
 		const char* szName = (const char*)segment;
 		for (auto layer : m_layersMap)
 		{
-			if (stricmp(layer.second->GetName(), szName) == 0)
+			if (stricmp(layer.second->GetName(), szName) == 0 && layer.second->GetLayerType() == eObjectLayerType_Folder)
 			{
-				if (layer.second->GetLayerType() == eObjectLayerType_Folder)
-				{
-					pFolder = layer.second;
-					break;
-				}
-				else if (warnDuplicateLayer)
-				{
-					if (createdLayers.find(layer.second->GetName()) == createdLayers.end())
-					{
-						// we have an existing layer which is not a folder. This can happen when children get registered after parent
-						// This is limitation due to Engine, but we only allow unique folder names here due to export not supporting
-						// arbitrary filesystem names correctly
-						CryWarning(VALIDATOR_MODULE_EDITOR, VALIDATOR_WARNING,
-						           "The layer %s contains child layers, and has been split into a stand-alone layer and a folder with the child layers. "
-						           "It is strongly recommended that you rename the layer, or delete it if does not directly contain any objects.", szName);
-
-						// insert the name to created layers, so we don't warn again
-						createdLayers.insert(szName);
-					}
-					warnDuplicateLayer = false;
-				}
+				pFolder = layer.second;
+				break;
 			}
 		}
 
 		if (!pFolder)
 		{
-			pFolder = CreateLayer(szName, eObjectLayerType_Folder);
+			pFolder = CreateLayer(szName, eObjectLayerType_Folder, pPrevFolder);
 			if (!pFolder)
 				return nullptr;
 		}
 
-		if (pPrevFolder)
-		{
-			pPrevFolder->AddChild(pFolder, false);
-		}
 		pPrevFolder = pFolder;
 	}
 	return pFolder;
@@ -684,17 +640,6 @@ void CObjectLayerManager::Serialize(CObjectArchive& ar)
 					m_bOverwriteDuplicates = true;
 					CObjectLayer* pLayer = ImportLayerFromFile(filepath.c_str(), false, &ar);
 					m_bOverwriteDuplicates = false;
-					if (pLayer)
-					{
-						const string fullName = PathUtil::GetPathWithoutFilename(filename);
-						const string name = PathUtil::GetFileName(filename);
-						CObjectLayer* pParentLayer = CreateLayersFromPath(fullName, name, createdLayers, false);
-						if (pParentLayer)
-						{
-							pParentLayer->AddChild(pLayer, false);
-							pLayer->SetModified(false);
-						}
-					}
 				}
 			}
 			else
@@ -733,7 +678,6 @@ void CObjectLayerManager::Serialize(CObjectArchive& ar)
 			}
 		}
 
-		ResolveLayerParents(false, false);
 		CLayerChangeEvent(CLayerChangeEvent::LE_UPDATE_ALL).Send();
 	}
 	else
@@ -845,7 +789,7 @@ void CObjectLayerManager::ExportLayer(CObjectArchive& ar, CObjectLayer* pLayer, 
 	ar.node = orgNode;
 }
 
-CObjectLayer* CObjectLayerManager::ImportLayer(CObjectArchive& ar, bool bNotify /*= true*/)
+CObjectLayer* CObjectLayerManager::ImportLayer(CObjectArchive& ar, const string& filePath, bool bNotify /*= true*/)
 {
 	TSmartPtr<CObjectLayer> pLayer(new CObjectLayer());
 
@@ -896,6 +840,12 @@ CObjectLayer* CObjectLayerManager::ImportLayer(CObjectArchive& ar, bool bNotify 
 		ar.LoadObjects(layerObjects);
 		m_pCurrentLayer = pCurLayer;
 	}
+
+	string lowerFilePath = filePath;
+	lowerFilePath.MakeLower();
+	int fullNameBegin = lowerFilePath.find("/layers/") + 8;
+	ResolveParentFor(filePath.substr(fullNameBegin, filePath.size() - fullNameBegin - strlen(LAYER_FILE_EXTENSION)), pLayer, bNotify);
+
 	return pLayer;
 }
 
@@ -915,7 +865,7 @@ CObjectLayer* CObjectLayerManager::ImportLayerFromFile(const char* filename, boo
 				XmlNodeRef prevNove = archive->node;
 				archive->node = layerDesc;
 
-				CObjectLayer* pLayer = ImportLayer(*archive, bNotify);
+				CObjectLayer* pLayer = ImportLayer(*archive, filename, bNotify);
 				if (pLayer)
 				{
 
@@ -929,7 +879,6 @@ CObjectLayer* CObjectLayerManager::ImportLayerFromFile(const char* filename, boo
 					// layers should also get resolved above
 					if (!globalArchive)
 					{
-						ResolveLayerParents(false, false);
 						archive->ResolveObjects();
 					}
 				}
@@ -979,30 +928,14 @@ CObjectLayer* CObjectLayerManager::GetCurrentLayer() const
 	return nullptr;
 }
 
-void CObjectLayerManager::ResolveLayerParents(bool bNotifyAtomic /*= false*/, bool bNotifyUpdateAll /*= true*/)
+void CObjectLayerManager::ResolveParentFor(const string& fullName, CObjectLayer* pLayer, bool notify /*=true*/)
 {
-	for (LayersMap::const_iterator it = m_layersMap.begin(); it != m_layersMap.end(); ++it)
+
+	CObjectLayer* pParentLayer = FindOrCreateFolderChain(PathUtil::GetPathWithoutFilename(fullName), notify);
+	if (pParentLayer)
 	{
-		CObjectLayer* pLayer = it->second;
-
-		// Try to connect to parent layer.
-		CObjectLayer* pNewParent = FindLayer(pLayer->GetParentGUID());
-
-		if (pLayer->GetParent() != NULL && pLayer->GetParent() != pNewParent)
-		{
-			// Deatch from old parent layer.
-			pLayer->GetParent()->RemoveChild(pLayer, bNotifyAtomic);
-		}
-		if (pNewParent && pNewParent != pLayer)
-		{
-			// Attach to new parent layer.
-			pNewParent->AddChild(pLayer, bNotifyAtomic);
-		}
-	}
-
-	if (bNotifyUpdateAll)
-	{
-		CLayerChangeEvent(CLayerChangeEvent::LE_UPDATE_ALL).Send();
+		pParentLayer->AddChild(pLayer, notify);
+		pLayer->SetModified(false);
 	}
 }
 
