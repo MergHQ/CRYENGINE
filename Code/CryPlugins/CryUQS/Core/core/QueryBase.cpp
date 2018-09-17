@@ -143,6 +143,8 @@ namespace UQS
 
 		bool CQueryBase::InstantiateFromQueryBlueprint(const Shared::IVariantDict& runtimeParams, Shared::CUqsString& error)
 		{
+			CRY_PROFILE_FUNCTION_ARG(UQS_PROFILED_SUBSYSTEM_TO_USE, m_pQueryBlueprint->GetName());
+
 			CRY_ASSERT(!m_bAlreadyInstantiated);	// we don't support recycling the query
 
 			m_bAlreadyInstantiated = true;
@@ -193,6 +195,8 @@ namespace UQS
 
 			if (!m_pQueryBlueprint->GetParent())
 			{
+				CRY_PROFILE_REGION_ARG(UQS_PROFILED_SUBSYSTEM_TO_USE, "UQS::Core::CQueryBase::InstantiateFromQueryBlueprint: check global runtime parameters", m_pQueryBlueprint->GetName());
+
 				if (!m_pQueryBlueprint->CheckPresenceAndTypeOfGlobalRuntimeParamsRecursively(runtimeParams, error))
 				{
 					if (m_pHistory)
@@ -282,6 +286,8 @@ namespace UQS
 
 			if (!m_itemMonitors.empty())
 			{
+				CRY_PROFILE_REGION_ARG(UQS_PROFILED_SUBSYSTEM_TO_USE, "UQS::Core::CQueryBase::Update: item monitors", m_pQueryBlueprint->GetName());
+
 				for (const Client::ItemMonitorUniquePtr& pItemMonitor : m_itemMonitors)
 				{
 					CRY_ASSERT(pItemMonitor);
