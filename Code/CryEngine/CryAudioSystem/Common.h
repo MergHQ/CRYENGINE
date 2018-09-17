@@ -40,6 +40,7 @@ using AudioPreloadRequestLookup = std::map<PreloadRequestId, CATLPreloadRequest*
 using AudioEnvironmentLookup = std::map<EnvironmentId, CATLAudioEnvironment const*>;
 using SettingLookup = std::map<ControlId, CSetting const*>;
 
+extern TriggerImplId g_uniqueConnectionId;
 extern Impl::IImpl* g_pIImpl;
 extern CSystem g_system;
 extern AudioTriggerLookup g_triggers;
@@ -55,4 +56,13 @@ extern CMuteAllTrigger g_muteAllTrigger;
 extern CUnmuteAllTrigger g_unmuteAllTrigger;
 extern CPauseAllTrigger g_pauseAllTrigger;
 extern CResumeAllTrigger g_resumeAllTrigger;
-} // namespace CryAudio
+
+#if defined(INCLUDE_AUDIO_PRODUCTION_CODE)
+static constexpr char const* s_szPreviewTriggerName = "preview_trigger";
+static constexpr ControlId PreviewTriggerId = StringToId(s_szPreviewTriggerName);
+
+class CPreviewTrigger;
+extern CPreviewTrigger g_previewTrigger;
+extern CATLAudioObject g_previewObject;
+#endif // INCLUDE_AUDIO_PRODUCTION_CODE
+}      // namespace CryAudio

@@ -12,8 +12,10 @@
 #include <QFilteringPanel.h>
 #include <QSearchBox.h>
 #include <QtUtil.h>
+#include <CryAudioImplAdx2/GlobalData.h>
 
 #include <QHeaderView>
+#include <QKeyEvent>
 #include <QMenu>
 #include <QVBoxLayout>
 
@@ -23,6 +25,8 @@ namespace Impl
 {
 namespace Adx2
 {
+CryAudio::Impl::Adx2::STriggerInfo g_previewTriggerInfo;
+
 //////////////////////////////////////////////////////////////////////////
 CDataPanel::CDataPanel(CImpl const& impl)
 	: m_impl(impl)
@@ -46,6 +50,8 @@ CDataPanel::CDataPanel(CImpl const& impl)
 	m_pTreeView->setContextMenuPolicy(Qt::CustomContextMenu);
 	m_pTreeView->setModel(m_pFilterProxyModel);
 	m_pTreeView->sortByColumn(m_nameColumn, Qt::AscendingOrder);
+	m_pTreeView->viewport()->installEventFilter(this);
+	m_pTreeView->installEventFilter(this);
 	m_pTreeView->header()->setMinimumSectionSize(25);
 	m_pTreeView->header()->setSectionResizeMode(static_cast<int>(CItemModel::EColumns::Notification), QHeaderView::ResizeToContents);
 	m_pTreeView->SetNameColumn(m_nameColumn);
@@ -61,6 +67,33 @@ CDataPanel::CDataPanel(CImpl const& impl)
 	pMainLayout->addWidget(m_pFilteringPanel);
 
 	QObject::connect(m_pTreeView, &CTreeView::customContextMenuRequested, this, &CDataPanel::OnContextMenu);
+	QObject::connect(m_pTreeView->selectionModel(), &QItemSelectionModel::currentChanged, this, &CDataPanel::StopEvent);
+}
+
+//////////////////////////////////////////////////////////////////////////
+CDataPanel::~CDataPanel()
+{
+	StopEvent();
+}
+
+//////////////////////////////////////////////////////////////////////////
+bool CDataPanel::eventFilter(QObject* pObject, QEvent* pEvent)
+{
+	if (pEvent->type() == QEvent::KeyRelease)
+	{
+		auto const pKeyEvent = static_cast<QKeyEvent const*>(pEvent);
+
+		if ((pKeyEvent != nullptr) && (pKeyEvent->key() == Qt::Key_Space))
+		{
+			PlayEvent();
+		}
+	}
+	else if (pEvent->type() == QEvent::MouseButtonDblClick)
+	{
+		PlayEvent();
+	}
+
+	return QWidget::eventFilter(pObject, pEvent);
 }
 
 //////////////////////////////////////////////////////////////////////////
@@ -76,37 +109,46 @@ void CDataPanel::OnContextMenu(QPoint const& pos)
 			ControlId const itemId = selection[0].data(static_cast<int>(ModelUtils::ERoles::Id)).toInt();
 			auto const pItem = static_cast<CItem const*>(m_impl.GetItem(itemId));
 
-			if ((pItem != nullptr) && ((pItem->GetFlags() & EItemFlags::IsConnected) != 0))
+			if (pItem != nullptr)
 			{
-				SControlInfos controlInfos;
-				m_impl.SignalGetConnectedSystemControls(pItem->GetId(), controlInfos);
-
-				if (!controlInfos.empty())
+				if (pItem->GetType() == EItemType::Cue)
 				{
-					auto const pConnectionsMenu = new QMenu(pContextMenu);
-
-					for (auto const& info : controlInfos)
-					{
-						pConnectionsMenu->addAction(info.icon, QtUtil::ToQString(info.name), [=]()
-									{
-										m_impl.SignalSelectConnectedSystemControl(info.id, pItem->GetId());
-									});
-					}
-
-					pConnectionsMenu->setTitle(tr("Connections (" + ToString(controlInfos.size()) + ")"));
-					pContextMenu->addMenu(pConnectionsMenu);
+					pContextMenu->addAction(tr("Play Cue"), [&]() { PlayEvent(); });
 					pContextMenu->addSeparator();
 				}
-			}
 
-			if ((pItem != nullptr) && ((pItem->GetPakStatus() & EPakStatus::OnDisk) != 0) && !pItem->GetFilePath().IsEmpty())
-			{
-				pContextMenu->addAction(tr("Show in File Explorer"), [=]()
-							{
-								QtUtil::OpenInExplorer((PathUtil::GetGameFolder() + "/" + pItem->GetFilePath()).c_str());
-							});
+				if ((pItem->GetFlags() & EItemFlags::IsConnected) != 0)
+				{
+					SControlInfos controlInfos;
+					m_impl.SignalGetConnectedSystemControls(pItem->GetId(), controlInfos);
 
-				pContextMenu->addSeparator();
+					if (!controlInfos.empty())
+					{
+						auto const pConnectionsMenu = new QMenu(pContextMenu);
+
+						for (auto const& info : controlInfos)
+						{
+							pConnectionsMenu->addAction(info.icon, QtUtil::ToQString(info.name), [=]()
+										{
+											m_impl.SignalSelectConnectedSystemControl(info.id, pItem->GetId());
+										});
+						}
+
+						pConnectionsMenu->setTitle(tr("Connections (" + ToString(controlInfos.size()) + ")"));
+						pContextMenu->addMenu(pConnectionsMenu);
+						pContextMenu->addSeparator();
+					}
+				}
+
+				if (((pItem->GetPakStatus() & EPakStatus::OnDisk) != 0) && !pItem->GetFilePath().IsEmpty())
+				{
+					pContextMenu->addAction(tr("Show in File Explorer"), [=]()
+								{
+									QtUtil::OpenInExplorer((PathUtil::GetGameFolder() + "/" + pItem->GetFilePath()).c_str());
+								});
+
+					pContextMenu->addSeparator();
+				}
 			}
 		}
 
@@ -119,6 +161,28 @@ void CDataPanel::OnContextMenu(QPoint const& pos)
 	pContextMenu->addAction(tr("Collapse All"), [=]() { m_pTreeView->collapseAll(); });
 
 	pContextMenu->exec(QCursor::pos());
+}
+
+//////////////////////////////////////////////////////////////////////////
+void CDataPanel::PlayEvent()
+{
+	StopEvent();
+
+	CItem const* const pItem = CItemModel::GetItemFromIndex(m_pTreeView->currentIndex());
+
+	if ((pItem != nullptr) && (pItem->GetType() == EItemType::Cue))
+	{
+		g_previewTriggerInfo.name = pItem->GetName().c_str();
+		g_previewTriggerInfo.cueSheet = pItem->GetCueSheetName().c_str();
+
+		gEnv->pAudioSystem->ExecutePreviewTrigger(g_previewTriggerInfo);
+	}
+}
+
+//////////////////////////////////////////////////////////////////////////
+void CDataPanel::StopEvent()
+{
+	gEnv->pAudioSystem->StopPreviewTrigger();
 }
 
 //////////////////////////////////////////////////////////////////////////

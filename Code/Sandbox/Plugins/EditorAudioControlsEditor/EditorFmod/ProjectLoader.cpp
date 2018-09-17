@@ -618,11 +618,6 @@ CItem* CProjectLoader::CreateItem(
 	{
 		pItem = new CItem(name, id, type, flags, pakStatus, filePath);
 
-		if (type == EItemType::MixerGroup)
-		{
-			m_emptyMixerGroups.push_back(pItem);
-		}
-
 		if (pParent != nullptr)
 		{
 			pParent->AddChild(pItem);
@@ -630,6 +625,15 @@ CItem* CProjectLoader::CreateItem(
 		else
 		{
 			m_rootItem.AddChild(pItem);
+		}
+
+		if (type == EItemType::Event)
+		{
+			pItem->SetPathName(Utils::GetPathName(pItem, m_rootItem));
+		}
+		else if (type == EItemType::MixerGroup)
+		{
+			m_emptyMixerGroups.push_back(pItem);
 		}
 
 		m_itemCache[id] = pItem;

@@ -420,6 +420,27 @@ ITrigger const* CImpl::ConstructTrigger(XmlNodeRef const pRootNode, float& radiu
 	return static_cast<ITrigger*>(pTrigger);
 }
 
+//////////////////////////////////////////////////////////////////////////
+ITrigger const* CImpl::ConstructTrigger(ITriggerInfo const* const pITriggerInfo)
+{
+#if defined(INCLUDE_SDLMIXER_IMPL_PRODUCTION_CODE)
+	ITrigger const* pITrigger = nullptr;
+	auto const pTriggerInfo = static_cast<STriggerInfo const*>(pITriggerInfo);
+
+	if (pTriggerInfo != nullptr)
+	{
+		string const fullFilePath = GetFullFilePath(pTriggerInfo->name.c_str(), pTriggerInfo->path.c_str());
+		SampleId const sampleId = SoundEngine::LoadSample(fullFilePath, true, pTriggerInfo->isLocalized);
+
+		pITrigger = static_cast<ITrigger const*>(new CTrigger(EEventType::Start, sampleId, -1.0f, -1.0f, 128, 0, 0, 0, false));
+	}
+
+	return pITrigger;
+#else
+	return nullptr;
+#endif  // INCLUDE_SDLMIXER_IMPL_PRODUCTION_CODE
+}
+
 ///////////////////////////////////////////////////////////////////////////
 void CImpl::DestructTrigger(ITrigger const* const pITrigger)
 {
@@ -557,7 +578,7 @@ void CImpl::DestructObject(IObject const* const pIObject)
 IListener* CImpl::ConstructListener(CObjectTransformation const& transformation, char const* const szName /*= nullptr*/)
 {
 	static ListenerId id = 0;
-	g_pListener = new CListener(id++);
+	g_pListener = new CListener(transformation, id++);
 
 #if defined(INCLUDE_SDLMIXER_IMPL_PRODUCTION_CODE)
 	if (szName != nullptr)

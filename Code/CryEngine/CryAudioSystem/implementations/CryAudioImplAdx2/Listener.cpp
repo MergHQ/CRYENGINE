@@ -75,8 +75,8 @@ void CListener::SetTransformation(CObjectTransformation const& transformation)
 #if defined(INCLUDE_ADX2_IMPL_PRODUCTION_CODE)
 	// Always update velocity in non-release builds for debug draw.
 	m_isMovingOrDecaying = true;
-#endif  // INCLUDE_ADX2_IMPL_PRODUCTION_CODE
-
+	Fill3DAttributeVelocity(m_velocity, m_3dAttributes);
+#else
 	if (g_numObjectsWithDoppler > 0)
 	{
 		m_isMovingOrDecaying = true;
@@ -86,6 +86,7 @@ void CListener::SetTransformation(CObjectTransformation const& transformation)
 	{
 		m_previousPosition = m_position;
 	}
+#endif  // INCLUDE_ADX2_IMPL_PRODUCTION_CODE
 
 	criAtomEx3dListener_SetPosition(m_pHandle, &m_3dAttributes.pos);
 	criAtomEx3dListener_SetOrientation(m_pHandle, &m_3dAttributes.fwd, &m_3dAttributes.up);

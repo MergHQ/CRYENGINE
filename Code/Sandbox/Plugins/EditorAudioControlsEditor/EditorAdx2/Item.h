@@ -10,7 +10,7 @@ namespace Impl
 {
 namespace Adx2
 {
-enum class EItemType
+enum class EItemType : CryAudio::EnumFlagsType
 {
 	None,
 	Snapshot,
@@ -28,14 +28,17 @@ enum class EItemType
 	WorkUnit,
 	FolderCue,
 	FolderGlobal,
-	FolderCueSheet,
-};
+	FolderCueSheet, };
 
 class CItem final : public IItem
 {
 public:
 
 	CItem() = delete;
+	CItem(CItem const&) = delete;
+	CItem(CItem&&) = delete;
+	CItem& operator=(CItem const&) = delete;
+	CItem& operator=(CItem&&) = delete;
 
 	explicit CItem(
 		string const& name,
@@ -68,7 +71,7 @@ public:
 
 	EItemType     GetType() const                  { return m_type; }
 	string const& GetFilePath() const              { return m_filePath; }
-	string const& CueSheetName() const             { return m_cueSheetName; }
+	string const& GetCueSheetName() const          { return m_cueSheetName; }
 	EPakStatus    GetPakStatus() const             { return m_pakStatus; }
 
 	void          SetFlags(EItemFlags const flags) { m_flags = flags; }
@@ -81,15 +84,15 @@ private:
 
 	void SetParent(CItem* const pParent) { m_pParent = pParent; }
 
+	string const        m_name;
 	ControlId const     m_id;
 	EItemType const     m_type;
-	string const        m_name;
+	EItemFlags          m_flags;
+	EPakStatus const    m_pakStatus;
 	string const        m_filePath;
 	string const        m_cueSheetName;
-	EPakStatus const    m_pakStatus;
-	std::vector<CItem*> m_children;
 	CItem*              m_pParent;
-	EItemFlags          m_flags;
+	std::vector<CItem*> m_children;
 };
 
 using ItemCache = std::map<ControlId, CItem*>;

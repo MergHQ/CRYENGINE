@@ -120,6 +120,7 @@ void CATLListener::HandleSetTransformation(CObjectTransformation const& transfor
 
 #if defined(INCLUDE_AUDIO_PRODUCTION_CODE)
 	m_transformation = transformation;
+	g_previewObject.HandleSetTransformation(transformation);
 #endif // INCLUDE_AUDIO_PRODUCTION_CODE
 }
 
@@ -772,6 +773,100 @@ void CResumeAllTrigger::Clear()
 
 	m_connections.clear();
 }
+
+#if defined(INCLUDE_AUDIO_PRODUCTION_CODE)
+//////////////////////////////////////////////////////////////////////////
+CPreviewTrigger::CPreviewTrigger()
+	: Control(PreviewTriggerId, EDataScope::Global, s_szPreviewTriggerName)
+	, m_pConnection(nullptr)
+{
+}
+
+//////////////////////////////////////////////////////////////////////////
+CPreviewTrigger::~CPreviewTrigger()
+{
+	CRY_ASSERT_MESSAGE(m_pConnection == nullptr, "There is still a connection during CPreviewTrigger destruction!");
+}
+
+//////////////////////////////////////////////////////////////////////////
+void CPreviewTrigger::Execute(Impl::ITriggerInfo const& triggerInfo)
+{
+	Impl::ITrigger const* const pITrigger = g_pIImpl->ConstructTrigger(&triggerInfo);
+
+	if (pITrigger != nullptr)
+	{
+		delete m_pConnection;
+		m_pConnection = new CATLTriggerImpl(++g_uniqueConnectionId, pITrigger);
+
+		SAudioTriggerInstanceState triggerInstanceState;
+		triggerInstanceState.triggerId = GetId();
+
+		CATLEvent* const pEvent = g_eventManager.ConstructEvent();
+		ERequestStatus const activateResult = m_pConnection->Execute(g_previewObject.GetImplDataPtr(), pEvent->m_pImplData);
+
+		if (activateResult == ERequestStatus::Success || activateResult == ERequestStatus::Pending)
+		{
+			pEvent->SetTriggerName(GetName());
+			pEvent->m_pAudioObject = &g_previewObject;
+			pEvent->SetTriggerId(GetId());
+			pEvent->m_audioTriggerImplId = m_pConnection->m_audioTriggerImplId;
+			pEvent->m_audioTriggerInstanceId = s_triggerInstanceIdCounter;
+			pEvent->SetDataScope(GetDataScope());
+
+			if (activateResult == ERequestStatus::Success)
+			{
+				pEvent->m_state = EEventState::Playing;
+				++(triggerInstanceState.numPlayingEvents);
+			}
+			else if (activateResult == ERequestStatus::Pending)
+			{
+				pEvent->m_state = EEventState::Loading;
+				++(triggerInstanceState.numLoadingEvents);
+			}
+
+			g_previewObject.AddEvent(pEvent);
+		}
+		else
+		{
+			g_eventManager.DestructEvent(pEvent);
+
+			if (activateResult != ERequestStatus::SuccessDoNotTrack)
+			{
+				// No TriggerImpl generated an active event.
+				Cry::Audio::Log(ELogType::Warning, R"(Trigger "%s" failed on object "%s")", GetName(), g_previewObject.m_name.c_str());
+			}
+		}
+
+		if (triggerInstanceState.numPlayingEvents > 0 || triggerInstanceState.numLoadingEvents > 0)
+		{
+			triggerInstanceState.flags |= ETriggerStatus::Playing;
+			g_previewObject.AddTriggerState(s_triggerInstanceIdCounter++, triggerInstanceState);
+		}
+		else
+		{
+			// All of the events have either finished before we got here or never started, immediately inform the user that the trigger has finished.
+			g_previewObject.SendFinishedTriggerInstanceRequest(triggerInstanceState);
+		}
+	}
+}
+
+//////////////////////////////////////////////////////////////////////////
+void CPreviewTrigger::Stop()
+{
+	for (auto const pEvent : g_previewObject.GetActiveEvents())
+	{
+		CRY_ASSERT_MESSAGE((pEvent != nullptr) && (pEvent->IsPlaying() || pEvent->IsVirtual()), "Invalid event during CPreviewTrigger::Stop");
+		pEvent->Stop();
+	}
+}
+
+//////////////////////////////////////////////////////////////////////////
+void CPreviewTrigger::Clear()
+{
+	delete m_pConnection;
+	m_pConnection = nullptr;
+}
+#endif // INCLUDE_AUDIO_PRODUCTION_CODE
 
 //////////////////////////////////////////////////////////////////////////
 CATLEnvironmentImpl::~CATLEnvironmentImpl()

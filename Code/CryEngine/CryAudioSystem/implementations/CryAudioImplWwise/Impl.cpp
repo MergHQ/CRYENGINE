@@ -1169,6 +1169,26 @@ ITrigger const* CImpl::ConstructTrigger(XmlNodeRef const pRootNode, float& radiu
 	return static_cast<ITrigger*>(pTrigger);
 }
 
+//////////////////////////////////////////////////////////////////////////
+ITrigger const* CImpl::ConstructTrigger(ITriggerInfo const* const pITriggerInfo)
+{
+#if defined(INCLUDE_WWISE_IMPL_PRODUCTION_CODE)
+	ITrigger const* pITrigger = nullptr;
+	auto const pTriggerInfo = static_cast<STriggerInfo const*>(pITriggerInfo);
+
+	if (pTriggerInfo != nullptr)
+	{
+		AkUniqueID const uniqueId = AK::SoundEngine::GetIDFromString(pTriggerInfo->name.c_str());
+
+		pITrigger = static_cast<ITrigger const*>(new CTrigger(uniqueId, 0.0f));
+	}
+
+	return pITrigger;
+#else
+	return nullptr;
+#endif  // INCLUDE_WWISE_IMPL_PRODUCTION_CODE
+}
+
 ///////////////////////////////////////////////////////////////////////////
 void CImpl::DestructTrigger(ITrigger const* const pITrigger)
 {

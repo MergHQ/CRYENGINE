@@ -14,13 +14,12 @@ class CEventConnection final : public CBaseConnection
 {
 public:
 
-	enum class EActionType
+	enum class EActionType : CryAudio::EnumFlagsType
 	{
 		Start,
 		Stop,
 		Pause,
-		Resume,
-	};
+		Resume, };
 
 	explicit CEventConnection(ControlId const id, EActionType const actionType = EActionType::Start)
 		: CBaseConnection(id)

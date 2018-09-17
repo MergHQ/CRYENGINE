@@ -10,8 +10,9 @@ namespace Impl
 namespace SDL_mixer
 {
 //////////////////////////////////////////////////////////////////////////
-CListener::CListener(ListenerId const id)
-	: m_id(id)
+CListener::CListener(CObjectTransformation const& transformation, ListenerId const id)
+	: m_transformation(transformation)
+	, m_id(id)
 {
 }
 

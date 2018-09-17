@@ -2,6 +2,8 @@
 
 #pragma once
 
+#include <IAudioImpl.h>
+
 namespace CryAudio
 {
 namespace Impl
@@ -22,6 +24,14 @@ static constexpr char const* s_szLocalizedAttribute = "localized";
 static constexpr char const* s_szTrueValue = "true";
 static constexpr char const* s_szStartValue = "start";
 static constexpr char const* s_szStopValue = "stop";
+
+// Required to create a preview trigger in editor.
+struct STriggerInfo final : public ITriggerInfo
+{
+	CryFixedStringT<MaxFileNameLength> name;
+	CryFixedStringT<MaxFilePathLength> path;
+	bool                               isLocalized;
+};
 } // namespace PortAudio
 } // namespace Impl
 } // namespace CryAudio

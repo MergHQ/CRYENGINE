@@ -14,11 +14,10 @@ class CEventConnection final : public IConnection
 {
 public:
 
-	enum class EActionType
+	enum class EActionType : CryAudio::EnumFlagsType
 	{
 		Start,
-		Stop,
-	};
+		Stop, };
 
 	CEventConnection() = delete;
 

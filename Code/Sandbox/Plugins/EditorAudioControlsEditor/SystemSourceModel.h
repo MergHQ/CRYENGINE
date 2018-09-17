@@ -3,6 +3,7 @@
 #pragma once
 
 #include <QAbstractItemModel>
+#include <CryAudio/IAudioInterfacesCommonData.h>
 
 class CItemModelAttribute;
 
@@ -15,7 +16,7 @@ class CSystemSourceModel : public QAbstractItemModel
 {
 public:
 
-	enum class EColumns
+	enum class EColumns : CryAudio::EnumFlagsType
 	{
 		Notification,
 		Type,
@@ -27,8 +28,7 @@ public:
 		OnDisk,
 		Scope,
 		Name,
-		Count,
-	};
+		Count, };
 
 	CSystemSourceModel(QObject* const pParent);
 	virtual ~CSystemSourceModel() override;

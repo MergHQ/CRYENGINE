@@ -74,8 +74,8 @@ void CListener::SetTransformation(CObjectTransformation const& transformation)
 #if defined(INCLUDE_FMOD_IMPL_PRODUCTION_CODE)
 	// Always update velocity in non-release builds for debug draw.
 	m_isMovingOrDecaying = true;
-#endif  // INCLUDE_FMOD_IMPL_PRODUCTION_CODE
-
+	Fill3DAttributeVelocity(m_velocity, m_attributes);
+#else
 	if (g_numObjectsWithDoppler > 0)
 	{
 		m_isMovingOrDecaying = true;
@@ -85,6 +85,7 @@ void CListener::SetTransformation(CObjectTransformation const& transformation)
 	{
 		m_previousPosition = m_position;
 	}
+#endif  // INCLUDE_FMOD_IMPL_PRODUCTION_CODE
 
 	FMOD_RESULT const fmodResult = s_pSystem->setListenerAttributes(m_id, &m_attributes);
 	ASSERT_FMOD_OK;

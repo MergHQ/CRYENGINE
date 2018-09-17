@@ -606,6 +606,27 @@ ITrigger const* CImpl::ConstructTrigger(XmlNodeRef const pRootNode, float& radiu
 	return pITrigger;
 }
 
+//////////////////////////////////////////////////////////////////////////
+ITrigger const* CImpl::ConstructTrigger(ITriggerInfo const* const pITriggerInfo)
+{
+#if defined(INCLUDE_ADX2_IMPL_PRODUCTION_CODE)
+	ITrigger const* pITrigger = nullptr;
+	auto const pTriggerInfo = static_cast<STriggerInfo const*>(pITriggerInfo);
+
+	if (pTriggerInfo != nullptr)
+	{
+		char const* const szName = pTriggerInfo->name.c_str();
+		char const* const szCueSheetName = pTriggerInfo->cueSheet.c_str();
+
+		pITrigger = static_cast<ITrigger const*>(new CTrigger(StringToId(szName), szName, StringToId(szCueSheetName), ETriggerType::Trigger, EEventType::Start, szCueSheetName));
+	}
+
+	return pITrigger;
+#else
+	return nullptr;
+#endif  // INCLUDE_ADX2_IMPL_PRODUCTION_CODE
+}
+
 ///////////////////////////////////////////////////////////////////////////
 void CImpl::DestructTrigger(ITrigger const* const pITrigger)
 {

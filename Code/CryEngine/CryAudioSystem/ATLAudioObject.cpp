@@ -492,29 +492,8 @@ float const CATLAudioObject::CStateDebugDrawData::s_maxSwitchColor = 1.0f;
 int const CATLAudioObject::CStateDebugDrawData::s_maxToMinUpdates = 100;
 static char const* const s_szOcclusionTypes[] = { "None", "Ignore", "Adaptive", "Low", "Medium", "High" };
 
-///////////////////////////////////////////////////////////////////////////
-CATLAudioObject::CStateDebugDrawData::CStateDebugDrawData(SwitchStateId const audioSwitchState)
-	: m_currentState(audioSwitchState)
-	, m_currentSwitchColor(s_maxSwitchColor)
-{
-}
-
-///////////////////////////////////////////////////////////////////////////
-void CATLAudioObject::CStateDebugDrawData::Update(SwitchStateId const audioSwitchState)
-{
-	if ((audioSwitchState == m_currentState) && (m_currentSwitchColor > s_minSwitchColor))
-	{
-		m_currentSwitchColor -= (s_maxSwitchColor - s_minSwitchColor) / s_maxToMinUpdates;
-	}
-	else if (audioSwitchState != m_currentState)
-	{
-		m_currentState = audioSwitchState;
-		m_currentSwitchColor = s_maxSwitchColor;
-	}
-}
-
 //////////////////////////////////////////////////////////////////////////
-char const* CATLAudioObject::GetDefaultTriggerName(ControlId const id) const
+char const* GetDefaultTriggerName(ControlId const id)
 {
 	char const* szName = nullptr;
 
@@ -538,6 +517,9 @@ char const* CATLAudioObject::GetDefaultTriggerName(ControlId const id) const
 	case ResumeAllTriggerId:
 		szName = g_resumeAllTrigger.GetName();
 		break;
+	case PreviewTriggerId:
+		szName = g_previewTrigger.GetName();
+		break;
 	default:
 		CRY_ASSERT_MESSAGE(false, R"(The default trigger "%u" does not exist.)", id);
 		break;
@@ -546,476 +528,500 @@ char const* CATLAudioObject::GetDefaultTriggerName(ControlId const id) const
 	return szName;
 }
 
+///////////////////////////////////////////////////////////////////////////
+CATLAudioObject::CStateDebugDrawData::CStateDebugDrawData(SwitchStateId const audioSwitchState)
+	: m_currentState(audioSwitchState)
+	, m_currentSwitchColor(s_maxSwitchColor)
+{
+}
+
+///////////////////////////////////////////////////////////////////////////
+void CATLAudioObject::CStateDebugDrawData::Update(SwitchStateId const audioSwitchState)
+{
+	if ((audioSwitchState == m_currentState) && (m_currentSwitchColor > s_minSwitchColor))
+	{
+		m_currentSwitchColor -= (s_maxSwitchColor - s_minSwitchColor) / s_maxToMinUpdates;
+	}
+	else if (audioSwitchState != m_currentState)
+	{
+		m_currentState = audioSwitchState;
+		m_currentSwitchColor = s_maxSwitchColor;
+	}
+}
+
 using TriggerCountMap = std::map<ControlId const, size_t>;
 
 ///////////////////////////////////////////////////////////////////////////
 void CATLAudioObject::DrawDebugInfo(IRenderAuxGeom& auxGeom)
 {
-	Vec3 const& position = m_transformation.GetPosition();
-	Vec3 screenPos(ZERO);
-
-	if (IRenderer* const pRenderer = gEnv->pRenderer)
+	if (this != &g_previewObject)
 	{
-		auto const& camera = GetISystem()->GetViewCamera();
-		pRenderer->ProjectToScreen(position.x, position.y, position.z, &screenPos.x, &screenPos.y, &screenPos.z);
+		Vec3 const& position = m_transformation.GetPosition();
+		Vec3 screenPos(ZERO);
 
-		screenPos.x = screenPos.x * 0.01f * camera.GetViewSurfaceX();
-		screenPos.y = screenPos.y * 0.01f * camera.GetViewSurfaceZ();
-	}
-	else
-	{
-		screenPos.z = -1.0f;
-	}
-
-	if ((screenPos.z >= 0.0f) && (screenPos.z <= 1.0f))
-	{
-		float const distance = position.GetDistance(g_listenerManager.GetActiveListenerTransformation().GetPosition());
-
-		if ((g_cvars.m_debugDistance <= 0.0f) || ((g_cvars.m_debugDistance > 0.0f) && (distance <= g_cvars.m_debugDistance)))
+		if (IRenderer* const pRenderer = gEnv->pRenderer)
 		{
-			// Check if text filter is enabled.
-			CryFixedStringT<MaxControlNameLength> lowerCaseSearchString(g_cvars.m_pDebugFilter->GetString());
-			lowerCaseSearchString.MakeLower();
-			bool const isTextFilterDisabled = (lowerCaseSearchString.empty() || (lowerCaseSearchString.compareNoCase("0") == 0));
-			bool const drawSphere = (g_cvars.m_drawAudioDebug & Debug::EDrawFilter::Spheres) != 0;
-			bool const drawLabel = (g_cvars.m_drawAudioDebug & Debug::EDrawFilter::ObjectLabel) != 0;
-			bool const drawTriggers = (g_cvars.m_drawAudioDebug & Debug::EDrawFilter::ObjectTriggers) != 0;
-			bool const drawStandaloneFiles = (g_cvars.m_drawAudioDebug & Debug::EDrawFilter::ObjectStandaloneFiles) != 0;
-			bool const drawStates = (g_cvars.m_drawAudioDebug & Debug::EDrawFilter::ObjectStates) != 0;
-			bool const drawParameters = (g_cvars.m_drawAudioDebug & Debug::EDrawFilter::ObjectParameters) != 0;
-			bool const drawEnvironments = (g_cvars.m_drawAudioDebug & Debug::EDrawFilter::ObjectEnvironments) != 0;
-			bool const drawDistance = (g_cvars.m_drawAudioDebug & Debug::EDrawFilter::ObjectDistance) != 0;
-			bool const drawOcclusionRayLabel = (g_cvars.m_drawAudioDebug & Debug::EDrawFilter::OcclusionRayLabels) != 0;
-			bool const drawOcclusionRayOffset = (g_cvars.m_drawAudioDebug & Debug::EDrawFilter::OcclusionRayOffset) != 0;
-			bool const filterAllObjectInfo = (g_cvars.m_drawAudioDebug & Debug::EDrawFilter::FilterAllObjectInfo) != 0;
+			auto const& camera = GetISystem()->GetViewCamera();
+			pRenderer->ProjectToScreen(position.x, position.y, position.z, &screenPos.x, &screenPos.y, &screenPos.z);
 
-			// Check if any trigger matches text filter.
-			bool doesTriggerMatchFilter = false;
-			std::vector<CryFixedStringT<MaxMiscStringLength>> triggerInfo;
+			screenPos.x = screenPos.x * 0.01f * camera.GetViewSurfaceX();
+			screenPos.y = screenPos.y * 0.01f * camera.GetViewSurfaceZ();
+		}
+		else
+		{
+			screenPos.z = -1.0f;
+		}
 
-			if ((drawTriggers && !m_triggerStates.empty()) || filterAllObjectInfo)
+		if ((screenPos.z >= 0.0f) && (screenPos.z <= 1.0f))
+		{
+			float const distance = position.GetDistance(g_listenerManager.GetActiveListenerTransformation().GetPosition());
+
+			if ((g_cvars.m_debugDistance <= 0.0f) || ((g_cvars.m_debugDistance > 0.0f) && (distance <= g_cvars.m_debugDistance)))
 			{
-				TriggerCountMap triggerCounts;
+				// Check if text filter is enabled.
+				CryFixedStringT<MaxControlNameLength> lowerCaseSearchString(g_cvars.m_pDebugFilter->GetString());
+				lowerCaseSearchString.MakeLower();
+				bool const isTextFilterDisabled = (lowerCaseSearchString.empty() || (lowerCaseSearchString.compareNoCase("0") == 0));
+				bool const drawSphere = (g_cvars.m_drawAudioDebug & Debug::EDrawFilter::Spheres) != 0;
+				bool const drawLabel = (g_cvars.m_drawAudioDebug & Debug::EDrawFilter::ObjectLabel) != 0;
+				bool const drawTriggers = (g_cvars.m_drawAudioDebug & Debug::EDrawFilter::ObjectTriggers) != 0;
+				bool const drawStandaloneFiles = (g_cvars.m_drawAudioDebug & Debug::EDrawFilter::ObjectStandaloneFiles) != 0;
+				bool const drawStates = (g_cvars.m_drawAudioDebug & Debug::EDrawFilter::ObjectStates) != 0;
+				bool const drawParameters = (g_cvars.m_drawAudioDebug & Debug::EDrawFilter::ObjectParameters) != 0;
+				bool const drawEnvironments = (g_cvars.m_drawAudioDebug & Debug::EDrawFilter::ObjectEnvironments) != 0;
+				bool const drawDistance = (g_cvars.m_drawAudioDebug & Debug::EDrawFilter::ObjectDistance) != 0;
+				bool const drawOcclusionRayLabel = (g_cvars.m_drawAudioDebug & Debug::EDrawFilter::OcclusionRayLabels) != 0;
+				bool const drawOcclusionRayOffset = (g_cvars.m_drawAudioDebug & Debug::EDrawFilter::OcclusionRayOffset) != 0;
+				bool const filterAllObjectInfo = (g_cvars.m_drawAudioDebug & Debug::EDrawFilter::FilterAllObjectInfo) != 0;
 
-				for (auto const& triggerStatesPair : m_triggerStates)
+				// Check if any trigger matches text filter.
+				bool doesTriggerMatchFilter = false;
+				std::vector<CryFixedStringT<MaxMiscStringLength>> triggerInfo;
+
+				if ((drawTriggers && !m_triggerStates.empty()) || filterAllObjectInfo)
 				{
-					++(triggerCounts[triggerStatesPair.second.triggerId]);
-				}
+					TriggerCountMap triggerCounts;
 
-				for (auto const& triggerCountsPair : triggerCounts)
-				{
-					char const* szTriggerName = nullptr;
-					auto const* const pTrigger = stl::find_in_map(g_triggers, triggerCountsPair.first, nullptr);
-
-					if (pTrigger != nullptr)
+					for (auto const& triggerStatesPair : m_triggerStates)
 					{
-						szTriggerName = pTrigger->GetName();
-					}
-					else
-					{
-						szTriggerName = GetDefaultTriggerName(triggerCountsPair.first);
+						++(triggerCounts[triggerStatesPair.second.triggerId]);
 					}
 
-					CRY_ASSERT_MESSAGE(szTriggerName != nullptr, "The trigger name mustn't be nullptr during CATLAudioObject::DrawDebugInfo.");
-
-					if (!isTextFilterDisabled)
+					for (auto const& triggerCountsPair : triggerCounts)
 					{
-						CryFixedStringT<MaxControlNameLength> lowerCaseTriggerName(szTriggerName);
-						lowerCaseTriggerName.MakeLower();
+						char const* szTriggerName = nullptr;
+						auto const* const pTrigger = stl::find_in_map(g_triggers, triggerCountsPair.first, nullptr);
 
-						if (lowerCaseTriggerName.find(lowerCaseSearchString) != CryFixedStringT<MaxControlNameLength>::npos)
+						if (pTrigger != nullptr)
 						{
-							doesTriggerMatchFilter = true;
-						}
-					}
-
-					CryFixedStringT<MaxMiscStringLength> debugText;
-					size_t const numInstances = triggerCountsPair.second;
-
-					if (numInstances == 1)
-					{
-						debugText.Format("%s\n", szTriggerName);
-					}
-					else
-					{
-						debugText.Format("%s: %" PRISIZE_T "\n", szTriggerName, numInstances);
-					}
-
-					triggerInfo.emplace_back(debugText);
-				}
-			}
-
-			// Check if any standalone file matches text filter.
-			bool doesStandaloneFileMatchFilter = false;
-			std::vector<CryFixedStringT<MaxMiscStringLength>> standaloneFileInfo;
-
-			if ((drawStandaloneFiles && !m_activeStandaloneFiles.empty()) || filterAllObjectInfo)
-			{
-				std::map<CHashedString, size_t> numStandaloneFiles;
-
-				for (auto const& standaloneFilePair : m_activeStandaloneFiles)
-				{
-					++(numStandaloneFiles[standaloneFilePair.first->m_hashedFilename]);
-				}
-
-				for (auto const& numInstancesPair : numStandaloneFiles)
-				{
-					char const* const szStandaloneFileName = numInstancesPair.first.GetText().c_str();
-
-					if (!isTextFilterDisabled)
-					{
-						CryFixedStringT<MaxControlNameLength> lowerCaseStandaloneFileName(szStandaloneFileName);
-						lowerCaseStandaloneFileName.MakeLower();
-
-						if (lowerCaseStandaloneFileName.find(lowerCaseSearchString) != CryFixedStringT<MaxControlNameLength>::npos)
-						{
-							doesStandaloneFileMatchFilter = true;
-						}
-					}
-
-					CryFixedStringT<MaxMiscStringLength> debugText;
-					size_t const numInstances = numInstancesPair.second;
-
-					if (numInstances == 1)
-					{
-						debugText.Format("%s\n", szStandaloneFileName);
-					}
-					else
-					{
-						debugText.Format("%s: %" PRISIZE_T "\n", szStandaloneFileName, numInstances);
-					}
-
-					standaloneFileInfo.emplace_back(debugText);
-				}
-			}
-
-			// Check if any state or switch matches text filter.
-			bool doesStateSwitchMatchFilter = false;
-			std::map<CATLSwitch const* const, CATLSwitchState const* const> switchStateInfo;
-
-			if ((drawStates && !m_switchStates.empty()) || filterAllObjectInfo)
-			{
-				for (auto const& switchStatePair : m_switchStates)
-				{
-					CATLSwitch const* const pSwitch = stl::find_in_map(g_switches, switchStatePair.first, nullptr);
-
-					if (pSwitch != nullptr)
-					{
-						CATLSwitchState const* const pSwitchState = stl::find_in_map(pSwitch->GetStates(), switchStatePair.second, nullptr);
-
-						if (pSwitchState != nullptr)
-						{
-							if (!isTextFilterDisabled)
-							{
-								char const* const szSwitchName = pSwitch->GetName();
-								CryFixedStringT<MaxControlNameLength> lowerCaseSwitchName(szSwitchName);
-								lowerCaseSwitchName.MakeLower();
-								char const* const szStateName = pSwitchState->GetName();
-								CryFixedStringT<MaxControlNameLength> lowerCaseStateName(szStateName);
-								lowerCaseStateName.MakeLower();
-
-								if ((lowerCaseSwitchName.find(lowerCaseSearchString) != CryFixedStringT<MaxControlNameLength>::npos) ||
-								    (lowerCaseStateName.find(lowerCaseSearchString) != CryFixedStringT<MaxControlNameLength>::npos))
-								{
-									doesStateSwitchMatchFilter = true;
-								}
-							}
-
-							switchStateInfo.emplace(pSwitch, pSwitchState);
-						}
-					}
-				}
-			}
-
-			// Check if any parameter matches text filter.
-			bool doesParameterMatchFilter = false;
-			std::map<char const* const, float const> parameterInfo;
-
-			if (drawParameters || filterAllObjectInfo)
-			{
-				for (auto const& parameterPair : m_parameters)
-				{
-					char const* szParameterName = nullptr;
-					auto const* const pParameter = stl::find_in_map(g_parameters, parameterPair.first, nullptr);
-
-					if (pParameter != nullptr)
-					{
-						szParameterName = pParameter->GetName();
-					}
-
-					CRY_ASSERT_MESSAGE(szParameterName != nullptr, "The parameter name mustn't be nullptr during CATLAudioObject::DrawDebugInfo.");
-
-					if (!isTextFilterDisabled)
-					{
-						CryFixedStringT<MaxControlNameLength> lowerCaseParameterName(szParameterName);
-						lowerCaseParameterName.MakeLower();
-
-						if (lowerCaseParameterName.find(lowerCaseSearchString) != CryFixedStringT<MaxControlNameLength>::npos)
-						{
-							doesParameterMatchFilter = true;
-						}
-					}
-
-					parameterInfo.emplace(szParameterName, parameterPair.second);
-				}
-			}
-
-			// Check if any environment matches text filter.
-			bool doesEnvironmentMatchFilter = false;
-			std::map<char const* const, float const> environmentInfo;
-
-			if ((drawEnvironments && !m_environments.empty()) || filterAllObjectInfo)
-			{
-				for (auto const& environmentPair : m_environments)
-				{
-					CATLAudioEnvironment const* const pEnvironment = stl::find_in_map(g_environments, environmentPair.first, nullptr);
-
-					if (pEnvironment != nullptr)
-					{
-						char const* const szEnvironmentName = pEnvironment->GetName();
-
-						if (!isTextFilterDisabled)
-						{
-							CryFixedStringT<MaxControlNameLength> lowerCaseEnvironmentName(szEnvironmentName);
-							lowerCaseEnvironmentName.MakeLower();
-
-							if (lowerCaseEnvironmentName.find(lowerCaseSearchString) != CryFixedStringT<MaxControlNameLength>::npos)
-							{
-								doesEnvironmentMatchFilter = true;
-							}
-						}
-
-						environmentInfo.emplace(szEnvironmentName, environmentPair.second);
-					}
-				}
-			}
-
-			// Check if object name matches text filter.
-			auto const pObject = const_cast<CATLAudioObject*>(this);
-			char const* const szObjectName = pObject->m_name.c_str();
-			bool doesObjectNameMatchFilter = false;
-
-			if (!isTextFilterDisabled && (drawLabel || filterAllObjectInfo))
-			{
-				CryFixedStringT<MaxControlNameLength> lowerCaseObjectName(szObjectName);
-				lowerCaseObjectName.MakeLower();
-				doesObjectNameMatchFilter = (lowerCaseObjectName.find(lowerCaseSearchString) != CryFixedStringT<MaxControlNameLength>::npos);
-			}
-
-			bool const hasActiveData = HasActiveData(pObject);
-			bool const canDraw = (g_cvars.m_hideInactiveAudioObjects == 0) || ((g_cvars.m_hideInactiveAudioObjects != 0) && hasActiveData);
-
-			if (canDraw)
-			{
-				bool const isVirtual = (pObject->GetFlags() & EObjectFlags::Virtual) != 0;
-
-				if (drawSphere)
-				{
-					auxGeom.DrawSphere(
-						position,
-						Debug::g_objectRadiusPositionSphere,
-						isVirtual ? ColorB(25, 200, 200, 255) : ColorB(255, 1, 1, 255));
-				}
-
-				if (drawLabel && (isTextFilterDisabled || doesObjectNameMatchFilter))
-				{
-					auxGeom.Draw2dLabel(
-						screenPos.x,
-						screenPos.y,
-						Debug::g_objectFontSize,
-						isVirtual ? Debug::g_globalColorVirtual.data() : (hasActiveData ? Debug::g_objectColorActive.data() : Debug::g_globalColorInactive.data()),
-						false,
-						szObjectName);
-
-					screenPos.y += Debug::g_objectLineHeight;
-				}
-
-				if (drawTriggers && (isTextFilterDisabled || doesTriggerMatchFilter))
-				{
-					for (auto const& debugText : triggerInfo)
-					{
-						auxGeom.Draw2dLabel(
-							screenPos.x,
-							screenPos.y,
-							Debug::g_objectFontSize,
-							isVirtual ? Debug::g_globalColorVirtual.data() : Debug::g_objectColorTrigger.data(),
-							false,
-							debugText.c_str());
-
-						screenPos.y += Debug::g_objectLineHeight;
-					}
-				}
-
-				if (drawStandaloneFiles && (isTextFilterDisabled || doesStandaloneFileMatchFilter))
-				{
-					for (auto const& debugText : standaloneFileInfo)
-					{
-						auxGeom.Draw2dLabel(
-							screenPos.x,
-							screenPos.y,
-							Debug::g_objectFontSize,
-							isVirtual ? Debug::g_globalColorVirtual.data() : Debug::g_objectColorStandaloneFile.data(),
-							false,
-							debugText.c_str());
-
-						screenPos.y += Debug::g_objectLineHeight;
-					}
-				}
-
-				if (drawStates && (isTextFilterDisabled || doesStateSwitchMatchFilter))
-				{
-					for (auto const& switchStatePair : switchStateInfo)
-					{
-						auto const pSwitch = switchStatePair.first;
-						auto const pSwitchState = switchStatePair.second;
-
-						CStateDebugDrawData& drawData = m_stateDrawInfoMap.emplace(std::piecewise_construct, std::forward_as_tuple(pSwitch->GetId()), std::forward_as_tuple(pSwitchState->GetId())).first->second;
-						drawData.Update(pSwitchState->GetId());
-						float const switchTextColor[4] = { 0.8f, drawData.m_currentSwitchColor, 0.6f, 1.0f };
-
-						auxGeom.Draw2dLabel(
-							screenPos.x,
-							screenPos.y,
-							Debug::g_objectFontSize,
-							isVirtual ? Debug::g_globalColorVirtual.data() : switchTextColor,
-							false,
-							"%s: %s\n",
-							pSwitch->GetName(),
-							pSwitchState->GetName());
-
-						screenPos.y += Debug::g_objectLineHeight;
-					}
-				}
-
-				if (drawParameters && (isTextFilterDisabled || doesParameterMatchFilter))
-				{
-					for (auto const& parameterPair : parameterInfo)
-					{
-						auxGeom.Draw2dLabel(
-							screenPos.x,
-							screenPos.y,
-							Debug::g_objectFontSize,
-							isVirtual ? Debug::g_globalColorVirtual.data() : Debug::g_objectColorParameter.data(),
-							false,
-							"%s: %2.2f\n",
-							parameterPair.first,
-							parameterPair.second);
-
-						screenPos.y += Debug::g_objectLineHeight;
-					}
-				}
-
-				if (drawEnvironments && (isTextFilterDisabled || doesEnvironmentMatchFilter))
-				{
-					for (auto const& environmentPair : environmentInfo)
-					{
-						auxGeom.Draw2dLabel(
-							screenPos.x,
-							screenPos.y,
-							Debug::g_objectFontSize,
-							isVirtual ? Debug::g_globalColorVirtual.data() : Debug::g_objectColorEnvironment.data(),
-							false,
-							"%s: %.2f\n",
-							environmentPair.first,
-							environmentPair.second);
-
-						screenPos.y += Debug::g_objectLineHeight;
-					}
-				}
-
-				if (drawDistance)
-				{
-
-					CryFixedStringT<MaxMiscStringLength> debugText;
-					float const maxRadius = pObject->GetMaxRadius();
-
-					if (maxRadius > 0.0f)
-					{
-						debugText.Format("Dist: %4.1fm / Max: %.1fm", distance, maxRadius);
-					}
-					else
-					{
-						debugText.Format("Dist: %4.1fm", distance);
-					}
-
-					auxGeom.Draw2dLabel(
-						screenPos.x,
-						screenPos.y,
-						Debug::g_objectFontSize,
-						isVirtual ? Debug::g_globalColorVirtual.data() : Debug::g_objectColorActive.data(),
-						false,
-						debugText.c_str());
-
-					screenPos.y += Debug::g_objectLineHeight;
-				}
-
-				if (drawOcclusionRayLabel)
-				{
-					EOcclusionType const occlusionType = m_propagationProcessor.GetOcclusionType();
-					SATLSoundPropagationData propagationData;
-					m_propagationProcessor.GetPropagationData(propagationData);
-
-					CryFixedStringT<MaxMiscStringLength> debugText;
-
-					if (distance < g_cvars.m_occlusionMaxDistance)
-					{
-						if (occlusionType == EOcclusionType::Adaptive)
-						{
-							debugText.Format(
-								"%s(%s)",
-								s_szOcclusionTypes[IntegralValue(occlusionType)],
-								s_szOcclusionTypes[IntegralValue(m_propagationProcessor.GetOcclusionTypeWhenAdaptive())]);
+							szTriggerName = pTrigger->GetName();
 						}
 						else
 						{
-							debugText.Format("%s", s_szOcclusionTypes[IntegralValue(occlusionType)]);
+							szTriggerName = GetDefaultTriggerName(triggerCountsPair.first);
+						}
+
+						CRY_ASSERT_MESSAGE(szTriggerName != nullptr, "The trigger name mustn't be nullptr during CATLAudioObject::DrawDebugInfo.");
+
+						if (!isTextFilterDisabled)
+						{
+							CryFixedStringT<MaxControlNameLength> lowerCaseTriggerName(szTriggerName);
+							lowerCaseTriggerName.MakeLower();
+
+							if (lowerCaseTriggerName.find(lowerCaseSearchString) != CryFixedStringT<MaxControlNameLength>::npos)
+							{
+								doesTriggerMatchFilter = true;
+							}
+						}
+
+						CryFixedStringT<MaxMiscStringLength> debugText;
+						size_t const numInstances = triggerCountsPair.second;
+
+						if (numInstances == 1)
+						{
+							debugText.Format("%s\n", szTriggerName);
+						}
+						else
+						{
+							debugText.Format("%s: %" PRISIZE_T "\n", szTriggerName, numInstances);
+						}
+
+						triggerInfo.emplace_back(debugText);
+					}
+				}
+
+				// Check if any standalone file matches text filter.
+				bool doesStandaloneFileMatchFilter = false;
+				std::vector<CryFixedStringT<MaxMiscStringLength>> standaloneFileInfo;
+
+				if ((drawStandaloneFiles && !m_activeStandaloneFiles.empty()) || filterAllObjectInfo)
+				{
+					std::map<CHashedString, size_t> numStandaloneFiles;
+
+					for (auto const& standaloneFilePair : m_activeStandaloneFiles)
+					{
+						++(numStandaloneFiles[standaloneFilePair.first->m_hashedFilename]);
+					}
+
+					for (auto const& numInstancesPair : numStandaloneFiles)
+					{
+						char const* const szStandaloneFileName = numInstancesPair.first.GetText().c_str();
+
+						if (!isTextFilterDisabled)
+						{
+							CryFixedStringT<MaxControlNameLength> lowerCaseStandaloneFileName(szStandaloneFileName);
+							lowerCaseStandaloneFileName.MakeLower();
+
+							if (lowerCaseStandaloneFileName.find(lowerCaseSearchString) != CryFixedStringT<MaxControlNameLength>::npos)
+							{
+								doesStandaloneFileMatchFilter = true;
+							}
+						}
+
+						CryFixedStringT<MaxMiscStringLength> debugText;
+						size_t const numInstances = numInstancesPair.second;
+
+						if (numInstances == 1)
+						{
+							debugText.Format("%s\n", szStandaloneFileName);
+						}
+						else
+						{
+							debugText.Format("%s: %" PRISIZE_T "\n", szStandaloneFileName, numInstances);
+						}
+
+						standaloneFileInfo.emplace_back(debugText);
+					}
+				}
+
+				// Check if any state or switch matches text filter.
+				bool doesStateSwitchMatchFilter = false;
+				std::map<CATLSwitch const* const, CATLSwitchState const* const> switchStateInfo;
+
+				if ((drawStates && !m_switchStates.empty()) || filterAllObjectInfo)
+				{
+					for (auto const& switchStatePair : m_switchStates)
+					{
+						CATLSwitch const* const pSwitch = stl::find_in_map(g_switches, switchStatePair.first, nullptr);
+
+						if (pSwitch != nullptr)
+						{
+							CATLSwitchState const* const pSwitchState = stl::find_in_map(pSwitch->GetStates(), switchStatePair.second, nullptr);
+
+							if (pSwitchState != nullptr)
+							{
+								if (!isTextFilterDisabled)
+								{
+									char const* const szSwitchName = pSwitch->GetName();
+									CryFixedStringT<MaxControlNameLength> lowerCaseSwitchName(szSwitchName);
+									lowerCaseSwitchName.MakeLower();
+									char const* const szStateName = pSwitchState->GetName();
+									CryFixedStringT<MaxControlNameLength> lowerCaseStateName(szStateName);
+									lowerCaseStateName.MakeLower();
+
+									if ((lowerCaseSwitchName.find(lowerCaseSearchString) != CryFixedStringT<MaxControlNameLength>::npos) ||
+									    (lowerCaseStateName.find(lowerCaseSearchString) != CryFixedStringT<MaxControlNameLength>::npos))
+									{
+										doesStateSwitchMatchFilter = true;
+									}
+								}
+
+								switchStateInfo.emplace(pSwitch, pSwitchState);
+							}
 						}
 					}
-					else
-					{
-						debugText.Format("Ignore (exceeded activity range)");
-					}
-
-					float const activeRayLabelColor[4] = { propagationData.occlusion, 1.0f - propagationData.occlusion, 0.0f, 0.9f };
-
-					auxGeom.Draw2dLabel(
-						screenPos.x,
-						screenPos.y,
-						Debug::g_objectFontSize,
-						((occlusionType != EOcclusionType::None) && (occlusionType != EOcclusionType::Ignore)) ? (isVirtual ? Debug::g_globalColorVirtual.data() : activeRayLabelColor) : Debug::g_globalColorInactive.data(),
-						false,
-						"Occl: %3.2f | Type: %s", // Add obstruction once the engine supports it.
-						propagationData.occlusion,
-						debugText.c_str());
-
-					screenPos.y += Debug::g_objectLineHeight;
 				}
 
-				if (drawOcclusionRayOffset && !isVirtual)
+				// Check if any parameter matches text filter.
+				bool doesParameterMatchFilter = false;
+				std::map<char const* const, float const> parameterInfo;
+
+				if (drawParameters || filterAllObjectInfo)
 				{
-					float const occlusionRayOffset = pObject->GetOcclusionRayOffset();
-
-					if (occlusionRayOffset > 0.0f)
+					for (auto const& parameterPair : m_parameters)
 					{
-						SAuxGeomRenderFlags const previousRenderFlags = auxGeom.GetRenderFlags();
-						SAuxGeomRenderFlags newRenderFlags(e_Def3DPublicRenderflags | e_AlphaBlended);
-						auxGeom.SetRenderFlags(newRenderFlags);
+						char const* szParameterName = nullptr;
+						auto const* const pParameter = stl::find_in_map(g_parameters, parameterPair.first, nullptr);
 
+						if (pParameter != nullptr)
+						{
+							szParameterName = pParameter->GetName();
+						}
+
+						CRY_ASSERT_MESSAGE(szParameterName != nullptr, "The parameter name mustn't be nullptr during CATLAudioObject::DrawDebugInfo.");
+
+						if (!isTextFilterDisabled)
+						{
+							CryFixedStringT<MaxControlNameLength> lowerCaseParameterName(szParameterName);
+							lowerCaseParameterName.MakeLower();
+
+							if (lowerCaseParameterName.find(lowerCaseSearchString) != CryFixedStringT<MaxControlNameLength>::npos)
+							{
+								doesParameterMatchFilter = true;
+							}
+						}
+
+						parameterInfo.emplace(szParameterName, parameterPair.second);
+					}
+				}
+
+				// Check if any environment matches text filter.
+				bool doesEnvironmentMatchFilter = false;
+				std::map<char const* const, float const> environmentInfo;
+
+				if ((drawEnvironments && !m_environments.empty()) || filterAllObjectInfo)
+				{
+					for (auto const& environmentPair : m_environments)
+					{
+						CATLAudioEnvironment const* const pEnvironment = stl::find_in_map(g_environments, environmentPair.first, nullptr);
+
+						if (pEnvironment != nullptr)
+						{
+							char const* const szEnvironmentName = pEnvironment->GetName();
+
+							if (!isTextFilterDisabled)
+							{
+								CryFixedStringT<MaxControlNameLength> lowerCaseEnvironmentName(szEnvironmentName);
+								lowerCaseEnvironmentName.MakeLower();
+
+								if (lowerCaseEnvironmentName.find(lowerCaseSearchString) != CryFixedStringT<MaxControlNameLength>::npos)
+								{
+									doesEnvironmentMatchFilter = true;
+								}
+							}
+
+							environmentInfo.emplace(szEnvironmentName, environmentPair.second);
+						}
+					}
+				}
+
+				// Check if object name matches text filter.
+				auto const pObject = const_cast<CATLAudioObject*>(this);
+				char const* const szObjectName = pObject->m_name.c_str();
+				bool doesObjectNameMatchFilter = false;
+
+				if (!isTextFilterDisabled && (drawLabel || filterAllObjectInfo))
+				{
+					CryFixedStringT<MaxControlNameLength> lowerCaseObjectName(szObjectName);
+					lowerCaseObjectName.MakeLower();
+					doesObjectNameMatchFilter = (lowerCaseObjectName.find(lowerCaseSearchString) != CryFixedStringT<MaxControlNameLength>::npos);
+				}
+
+				bool const hasActiveData = HasActiveData(pObject);
+				bool const canDraw = (g_cvars.m_hideInactiveAudioObjects == 0) || ((g_cvars.m_hideInactiveAudioObjects != 0) && hasActiveData);
+
+				if (canDraw)
+				{
+					bool const isVirtual = (pObject->GetFlags() & EObjectFlags::Virtual) != 0;
+
+					if (drawSphere)
+					{
 						auxGeom.DrawSphere(
 							position,
-							occlusionRayOffset,
-							ColorB(1, 255, 1, 85));
-
-						auxGeom.SetRenderFlags(previousRenderFlags);
+							Debug::g_objectRadiusPositionSphere,
+							isVirtual ? ColorB(25, 200, 200, 255) : ColorB(255, 1, 1, 255));
 					}
-				}
 
-				if ((g_cvars.m_drawAudioDebug & Debug::EDrawFilter::ObjectImplInfo) != 0)
-				{
-					m_pImplData->DrawDebugInfo(auxGeom, screenPos.x, screenPos.y, (isTextFilterDisabled ? nullptr : lowerCaseSearchString.c_str()));
-				}
+					if (drawLabel && (isTextFilterDisabled || doesObjectNameMatchFilter))
+					{
+						auxGeom.Draw2dLabel(
+							screenPos.x,
+							screenPos.y,
+							Debug::g_objectFontSize,
+							isVirtual ? Debug::g_globalColorVirtual.data() : (hasActiveData ? Debug::g_objectColorActive.data() : Debug::g_globalColorInactive.data()),
+							false,
+							szObjectName);
 
-				m_propagationProcessor.DrawDebugInfo(auxGeom);
+						screenPos.y += Debug::g_objectLineHeight;
+					}
+
+					if (drawTriggers && (isTextFilterDisabled || doesTriggerMatchFilter))
+					{
+						for (auto const& debugText : triggerInfo)
+						{
+							auxGeom.Draw2dLabel(
+								screenPos.x,
+								screenPos.y,
+								Debug::g_objectFontSize,
+								isVirtual ? Debug::g_globalColorVirtual.data() : Debug::g_objectColorTrigger.data(),
+								false,
+								debugText.c_str());
+
+							screenPos.y += Debug::g_objectLineHeight;
+						}
+					}
+
+					if (drawStandaloneFiles && (isTextFilterDisabled || doesStandaloneFileMatchFilter))
+					{
+						for (auto const& debugText : standaloneFileInfo)
+						{
+							auxGeom.Draw2dLabel(
+								screenPos.x,
+								screenPos.y,
+								Debug::g_objectFontSize,
+								isVirtual ? Debug::g_globalColorVirtual.data() : Debug::g_objectColorStandaloneFile.data(),
+								false,
+								debugText.c_str());
+
+							screenPos.y += Debug::g_objectLineHeight;
+						}
+					}
+
+					if (drawStates && (isTextFilterDisabled || doesStateSwitchMatchFilter))
+					{
+						for (auto const& switchStatePair : switchStateInfo)
+						{
+							auto const pSwitch = switchStatePair.first;
+							auto const pSwitchState = switchStatePair.second;
+
+							CStateDebugDrawData& drawData = m_stateDrawInfoMap.emplace(std::piecewise_construct, std::forward_as_tuple(pSwitch->GetId()), std::forward_as_tuple(pSwitchState->GetId())).first->second;
+							drawData.Update(pSwitchState->GetId());
+							float const switchTextColor[4] = { 0.8f, drawData.m_currentSwitchColor, 0.6f, 1.0f };
+
+							auxGeom.Draw2dLabel(
+								screenPos.x,
+								screenPos.y,
+								Debug::g_objectFontSize,
+								isVirtual ? Debug::g_globalColorVirtual.data() : switchTextColor,
+								false,
+								"%s: %s\n",
+								pSwitch->GetName(),
+								pSwitchState->GetName());
+
+							screenPos.y += Debug::g_objectLineHeight;
+						}
+					}
+
+					if (drawParameters && (isTextFilterDisabled || doesParameterMatchFilter))
+					{
+						for (auto const& parameterPair : parameterInfo)
+						{
+							auxGeom.Draw2dLabel(
+								screenPos.x,
+								screenPos.y,
+								Debug::g_objectFontSize,
+								isVirtual ? Debug::g_globalColorVirtual.data() : Debug::g_objectColorParameter.data(),
+								false,
+								"%s: %2.2f\n",
+								parameterPair.first,
+								parameterPair.second);
+
+							screenPos.y += Debug::g_objectLineHeight;
+						}
+					}
+
+					if (drawEnvironments && (isTextFilterDisabled || doesEnvironmentMatchFilter))
+					{
+						for (auto const& environmentPair : environmentInfo)
+						{
+							auxGeom.Draw2dLabel(
+								screenPos.x,
+								screenPos.y,
+								Debug::g_objectFontSize,
+								isVirtual ? Debug::g_globalColorVirtual.data() : Debug::g_objectColorEnvironment.data(),
+								false,
+								"%s: %.2f\n",
+								environmentPair.first,
+								environmentPair.second);
+
+							screenPos.y += Debug::g_objectLineHeight;
+						}
+					}
+
+					if (drawDistance)
+					{
+
+						CryFixedStringT<MaxMiscStringLength> debugText;
+						float const maxRadius = pObject->GetMaxRadius();
+
+						if (maxRadius > 0.0f)
+						{
+							debugText.Format("Dist: %4.1fm / Max: %.1fm", distance, maxRadius);
+						}
+						else
+						{
+							debugText.Format("Dist: %4.1fm", distance);
+						}
+
+						auxGeom.Draw2dLabel(
+							screenPos.x,
+							screenPos.y,
+							Debug::g_objectFontSize,
+							isVirtual ? Debug::g_globalColorVirtual.data() : Debug::g_objectColorActive.data(),
+							false,
+							debugText.c_str());
+
+						screenPos.y += Debug::g_objectLineHeight;
+					}
+
+					if (drawOcclusionRayLabel)
+					{
+						EOcclusionType const occlusionType = m_propagationProcessor.GetOcclusionType();
+						SATLSoundPropagationData propagationData;
+						m_propagationProcessor.GetPropagationData(propagationData);
+
+						CryFixedStringT<MaxMiscStringLength> debugText;
+
+						if (distance < g_cvars.m_occlusionMaxDistance)
+						{
+							if (occlusionType == EOcclusionType::Adaptive)
+							{
+								debugText.Format(
+									"%s(%s)",
+									s_szOcclusionTypes[IntegralValue(occlusionType)],
+									s_szOcclusionTypes[IntegralValue(m_propagationProcessor.GetOcclusionTypeWhenAdaptive())]);
+							}
+							else
+							{
+								debugText.Format("%s", s_szOcclusionTypes[IntegralValue(occlusionType)]);
+							}
+						}
+						else
+						{
+							debugText.Format("Ignore (exceeded activity range)");
+						}
+
+						float const activeRayLabelColor[4] = { propagationData.occlusion, 1.0f - propagationData.occlusion, 0.0f, 0.9f };
+
+						auxGeom.Draw2dLabel(
+							screenPos.x,
+							screenPos.y,
+							Debug::g_objectFontSize,
+							((occlusionType != EOcclusionType::None) && (occlusionType != EOcclusionType::Ignore)) ? (isVirtual ? Debug::g_globalColorVirtual.data() : activeRayLabelColor) : Debug::g_globalColorInactive.data(),
+							false,
+							"Occl: %3.2f | Type: %s", // Add obstruction once the engine supports it.
+							propagationData.occlusion,
+							debugText.c_str());
+
+						screenPos.y += Debug::g_objectLineHeight;
+					}
+
+					if (drawOcclusionRayOffset && !isVirtual)
+					{
+						float const occlusionRayOffset = pObject->GetOcclusionRayOffset();
+
+						if (occlusionRayOffset > 0.0f)
+						{
+							SAuxGeomRenderFlags const previousRenderFlags = auxGeom.GetRenderFlags();
+							SAuxGeomRenderFlags newRenderFlags(e_Def3DPublicRenderflags | e_AlphaBlended);
+							auxGeom.SetRenderFlags(newRenderFlags);
+
+							auxGeom.DrawSphere(
+								position,
+								occlusionRayOffset,
+								ColorB(1, 255, 1, 85));
+
+							auxGeom.SetRenderFlags(previousRenderFlags);
+						}
+					}
+
+					if ((g_cvars.m_drawAudioDebug & Debug::EDrawFilter::ObjectImplInfo) != 0)
+					{
+						m_pImplData->DrawDebugInfo(auxGeom, screenPos.x, screenPos.y, (isTextFilterDisabled ? nullptr : lowerCaseSearchString.c_str()));
+					}
+
+					m_propagationProcessor.DrawDebugInfo(auxGeom);
+				}
 			}
 		}
 	}

@@ -22,7 +22,7 @@ public:
 	CListener& operator=(CListener const&) = delete;
 	CListener& operator=(CListener&&) = delete;
 
-	explicit CListener(ListenerId const id);
+	explicit CListener(CObjectTransformation const& transformation, ListenerId const id);
 	virtual ~CListener() override = default;
 
 	// CryAudio::Impl::IListener

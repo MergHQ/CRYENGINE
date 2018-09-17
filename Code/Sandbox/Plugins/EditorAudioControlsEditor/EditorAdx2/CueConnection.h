@@ -14,13 +14,12 @@ class CCueConnection final : public CBaseConnection
 {
 public:
 
-	enum class EActionType
+	enum class EActionType : CryAudio::EnumFlagsType
 	{
 		Start,
 		Stop,
 		Pause,
-		Resume,
-	};
+		Resume, };
 
 	explicit CCueConnection(ControlId const id, string const& cueSheetName = "", EActionType const actionType = EActionType::Start)
 		: CBaseConnection(id)

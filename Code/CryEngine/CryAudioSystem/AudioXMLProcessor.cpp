@@ -11,14 +11,6 @@
 
 namespace CryAudio
 {
-#define AUDIO_TRIGGER_IMPL_ID_NUM_RESERVED 100 // IDs below that value are used for the CATLTriggerImpl_Internal
-
-//////////////////////////////////////////////////////////////////////////
-CAudioXMLProcessor::CAudioXMLProcessor()
-	: m_triggerImplIdCounter(AUDIO_TRIGGER_IMPL_ID_NUM_RESERVED)
-{
-}
-
 //////////////////////////////////////////////////////////////////////////
 void CAudioXMLProcessor::ParseControlsData(char const* const szFolderPath, EDataScope const dataScope)
 {
@@ -294,6 +286,10 @@ void CAudioXMLProcessor::ClearControlsData(EDataScope const dataScope)
 			g_unmuteAllTrigger.Clear();
 			g_pauseAllTrigger.Clear();
 			g_resumeAllTrigger.Clear();
+
+#if defined(INCLUDE_AUDIO_PRODUCTION_CODE)
+			g_previewTrigger.Clear();
+#endif  // INCLUDE_AUDIO_PRODUCTION_CODE
 		}
 
 		AudioTriggerLookup::iterator iterTriggers(g_triggers.begin());
@@ -686,7 +682,7 @@ void CAudioXMLProcessor::ParseTriggers(XmlNodeRef const pXMLTriggerRoot, EDataSc
 
 						if (pITrigger != nullptr)
 						{
-							CATLTriggerImpl const* const pTriggerImpl = new CATLTriggerImpl(++m_triggerImplIdCounter, pITrigger);
+							CATLTriggerImpl const* const pTriggerImpl = new CATLTriggerImpl(++g_uniqueConnectionId, pITrigger);
 							connections.push_back(pTriggerImpl);
 
 #if defined(INCLUDE_AUDIO_PRODUCTION_CODE)
@@ -745,7 +741,7 @@ void CAudioXMLProcessor::ParseDefaultTriggers(XmlNodeRef const pXMLTriggerRoot)
 
 					if (pITrigger != nullptr)
 					{
-						CATLTriggerImpl const* const pTriggerImpl = new CATLTriggerImpl(++m_triggerImplIdCounter, pITrigger);
+						CATLTriggerImpl const* const pTriggerImpl = new CATLTriggerImpl(++g_uniqueConnectionId, pITrigger);
 						connections.push_back(pTriggerImpl);
 					}
 				}

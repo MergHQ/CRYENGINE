@@ -36,6 +36,7 @@ class CATLStandaloneFile;
 namespace Impl
 {
 struct IImpl;
+struct ITriggerInfo;
 } // namespace Impl
 
 /**
@@ -523,6 +524,25 @@ struct IAudioSystem
 	 * @return void
 	 */
 	virtual void Log(ELogType const type, char const* const szFormat, ...) = 0;
+
+	//////////////////////////////////////////////////////////////////////////
+	// NOTE: The methods below are ONLY USED when INCLUDE_AUDIO_PRODUCTION_CODE is defined!
+	//////////////////////////////////////////////////////////////////////////
+
+	/**
+	 * Constructs a trigger from the givene info struct and executes it on the preview object.
+	 * @param triggerInfo - info struct to construct a trigger.
+	 * @return void
+	 * @see StopPreviewTrigger
+	 */
+	virtual void ExecutePreviewTrigger(Impl::ITriggerInfo const& triggerInfo) = 0;
+
+	/**
+	 * Stops the active trigger on the preview object.
+	 * @return void
+	 * @see ExecutePreviewTrigger
+	 */
+	virtual void StopPreviewTrigger() = 0;
 	// </interfuscator:shuffle>
 };
 } // namespace CryAudio

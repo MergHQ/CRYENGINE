@@ -96,6 +96,10 @@ public:
 	virtual void        GetTriggerData(ControlId const triggerId, STriggerData& triggerData) override;
 	virtual void        GetImplInfo(SImplInfo& implInfo) override;
 	virtual void        Log(ELogType const type, char const* const szFormat, ...) override;
+
+	// Below data is only used when INCLUDE_AUDIO_PRODUCTION_CODE is defined!
+	virtual void ExecutePreviewTrigger(Impl::ITriggerInfo const& triggerInfo) override;
+	virtual void StopPreviewTrigger() override;
 	// ~CryAudio::IAudioSystem
 
 	// ISystemEventListener

@@ -2,6 +2,8 @@
 
 #pragma once
 
+#include <IAudioImpl.h>
+
 namespace CryAudio
 {
 namespace Impl
@@ -44,6 +46,14 @@ static constexpr float const s_defaultMaxAttenuationDist = 100.0f;
 static constexpr float const s_defaultParamMultiplier = 1.0f;
 static constexpr float const s_defaultParamShift = 0.0f;
 static constexpr float const s_defaultStateValue = 1.0f;
+
+// Required to create a preview trigger in editor.
+struct STriggerInfo final : public ITriggerInfo
+{
+	CryFixedStringT<MaxFileNameLength> name;
+	CryFixedStringT<MaxFilePathLength> path;
+	bool                               isLocalized;
+};
 } // namespace SDL_mixer
 } // namespace Impl
 } // namespace CryAudio

@@ -77,8 +77,7 @@ void CListener::SetTransformation(CObjectTransformation const& transformation)
 #if defined(INCLUDE_WWISE_IMPL_PRODUCTION_CODE)
 	// Always update velocity in non-release builds for debug draw.
 	m_isMovingOrDecaying = true;
-#endif  // INCLUDE_WWISE_IMPL_PRODUCTION_CODE
-
+#else
 	if (g_numObjectsWithRelativeVelocity > 0)
 	{
 		m_isMovingOrDecaying = true;
@@ -87,6 +86,7 @@ void CListener::SetTransformation(CObjectTransformation const& transformation)
 	{
 		m_previousPosition = m_position;
 	}
+#endif  // INCLUDE_WWISE_IMPL_PRODUCTION_CODE
 
 	AKRESULT const wwiseResult = AK::SoundEngine::SetPosition(m_id, listenerPos);
 

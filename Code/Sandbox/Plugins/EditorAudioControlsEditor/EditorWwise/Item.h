@@ -10,7 +10,7 @@ namespace Impl
 {
 namespace Wwise
 {
-enum class EItemType
+enum class EItemType : CryAudio::EnumFlagsType
 {
 	None,
 	SoundBank,
@@ -23,12 +23,17 @@ enum class EItemType
 	StateGroup,
 	VirtualFolder,
 	WorkUnit,
-	PhysicalFolder,
-};
+	PhysicalFolder, };
 
 class CItem final : public IItem
 {
 public:
+
+	CItem() = delete;
+	CItem(CItem const&) = delete;
+	CItem(CItem&&) = delete;
+	CItem& operator=(CItem const&) = delete;
+	CItem& operator=(CItem&&) = delete;
 
 	explicit CItem(
 		string const& name,
@@ -47,8 +52,6 @@ public:
 	{}
 
 	virtual ~CItem() override = default;
-
-	CItem() = delete;
 
 	// IItem
 	virtual ControlId     GetId() const override                        { return m_id; }
@@ -73,14 +76,14 @@ private:
 
 	void SetParent(CItem* const pParent) { m_pParent = pParent; }
 
+	string const        m_name;
 	ControlId const     m_id;
 	EItemType const     m_type;
-	string const        m_name;
+	EItemFlags          m_flags;
 	string const        m_filePath;
 	EPakStatus const    m_pakStatus;
-	std::vector<CItem*> m_children;
 	CItem*              m_pParent;
-	EItemFlags          m_flags;
+	std::vector<CItem*> m_children;
 };
 
 using ItemCache = std::map<ControlId, CItem*>;

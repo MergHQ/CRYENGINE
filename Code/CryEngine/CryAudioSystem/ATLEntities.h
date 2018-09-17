@@ -423,6 +423,29 @@ private:
 	TriggerConnections m_connections;
 };
 
+#if defined(INCLUDE_AUDIO_PRODUCTION_CODE)
+class CPreviewTrigger final : public Control
+{
+public:
+
+	CPreviewTrigger(CPreviewTrigger const&) = delete;
+	CPreviewTrigger(CPreviewTrigger&&) = delete;
+	CPreviewTrigger& operator=(CPreviewTrigger const&) = delete;
+	CPreviewTrigger& operator=(CPreviewTrigger&&) = delete;
+
+	CPreviewTrigger();
+	~CPreviewTrigger();
+
+	void Execute(Impl::ITriggerInfo const& triggerInfo);
+	void Stop();
+	void Clear();
+
+private:
+
+	CATLTriggerImpl* m_pConnection;
+};
+#endif // INCLUDE_AUDIO_PRODUCTION_CODE
+
 // Class for a parameter associated with a middleware parameter
 class CParameterImpl final : public CATLControlImpl
 {

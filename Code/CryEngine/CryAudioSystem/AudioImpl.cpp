@@ -223,6 +223,12 @@ ITrigger const* CImpl::ConstructTrigger(XmlNodeRef const pRootNode, float& radiu
 	return nullptr;
 }
 
+//////////////////////////////////////////////////////////////////////////
+ITrigger const* CImpl::ConstructTrigger(ITriggerInfo const* const pITriggerInfo)
+{
+	return nullptr;
+}
+
 ///////////////////////////////////////////////////////////////////////////
 void CImpl::DestructTrigger(ITrigger const* const pITrigger)
 {

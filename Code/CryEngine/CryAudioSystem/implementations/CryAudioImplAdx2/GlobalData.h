@@ -2,6 +2,8 @@
 
 #pragma once
 
+#include <IAudioImpl.h>
+
 namespace CryAudio
 {
 namespace Impl
@@ -42,6 +44,13 @@ static constexpr float const s_defaultParamShift = 0.0f;
 static constexpr float const s_defaultStateValue = 0.0f;
 static constexpr float const s_defaultCategoryVolume = 1.0f;
 static constexpr int const s_defaultChangeoverTime = 0;
+
+// Required to create a preview trigger in editor.
+struct STriggerInfo final : public ITriggerInfo
+{
+	CryFixedStringT<MaxControlNameLength> name;
+	CryFixedStringT<MaxControlNameLength> cueSheet;
+};
 } // namespace Adx2
 } // namespace Impl
 } // namespace CryAudio

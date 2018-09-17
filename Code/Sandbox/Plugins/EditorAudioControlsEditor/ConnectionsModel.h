@@ -15,13 +15,12 @@ class CConnectionsModel final : public QAbstractItemModel
 
 public:
 
-	enum class EColumns
+	enum class EColumns : CryAudio::EnumFlagsType
 	{
 		Notification,
 		Name,
 		Path,
-		Count,
-	};
+		Count, };
 
 	explicit CConnectionsModel(QObject* const pParent);
 	virtual ~CConnectionsModel() override;

@@ -206,10 +206,7 @@ private:
 		static int const   s_maxToMinUpdates;
 	};
 
-	char const* GetDefaultTriggerName(ControlId const id) const;
-
 	using StateDrawInfoMap = std::map<ControlId, CStateDebugDrawData>;
-
 	mutable StateDrawInfoMap m_stateDrawInfoMap;
 
 	using SwitchStates = std::map<ControlId, SwitchStateId>;

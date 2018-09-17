@@ -167,6 +167,9 @@ QVariant CItemModel::data(QModelIndex const& index, int role) const
 						case static_cast<int>(ModelUtils::ERoles::IsPlaceholder):
 							variant = (flags& EItemFlags::IsPlaceHolder) != 0;
 							break;
+						case static_cast<int>(ModelUtils::ERoles::InternalPointer):
+							variant = reinterpret_cast<intptr_t>(pItem);
+							break;
 						default:
 							break;
 						}
@@ -385,6 +388,22 @@ QModelIndex CItemModel::IndexFromItem(CItem const* const pItem) const
 	}
 
 	return modelIndex;
+}
+
+//////////////////////////////////////////////////////////////////////////
+CItem* CItemModel::GetItemFromIndex(QModelIndex const& index)
+{
+	CItem* pItem = nullptr;
+
+	QModelIndex const& nameColumnIndex = index.sibling(index.row(), static_cast<int>(EColumns::Name));
+	QVariant const internalPtr = nameColumnIndex.data(static_cast<int>(ModelUtils::ERoles::InternalPointer));
+
+	if (internalPtr.isValid())
+	{
+		pItem = reinterpret_cast<CItem*>(internalPtr.value<intptr_t>());
+	}
+
+	return pItem;
 }
 } // namespace Adx2
 } // namespace Impl
