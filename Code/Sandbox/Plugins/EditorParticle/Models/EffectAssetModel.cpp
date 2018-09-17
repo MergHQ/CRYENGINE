@@ -155,8 +155,14 @@ bool CEffectAssetModel::OpenAsset(CAsset* pAsset)
 		return false;
 	}
 
+	CEffectAsset* const pEffectAsset = CSession::CreateEffectAsset(pAsset);
+	if (!pEffectAsset)
+	{
+		return false;
+	}
+
 	signalBeginEffectAssetChange();
-	m_pEffectAsset.reset(CSession::CreateEffectAsset(pAsset));
+	m_pEffectAsset.reset(pEffectAsset);
 	signalEndEffectAssetChange();
 	return true;
 }

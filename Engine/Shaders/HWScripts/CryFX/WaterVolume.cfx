@@ -571,7 +571,7 @@ v2f WaterVS(a2v IN)
 	// Output projected refraction texture coordinates
 #if !%WATER_TESSELLATION_DX11 || %_RT_NO_TESSELLATION
 	// Avoid near clipping
-	//if( dot(OUT.vView.xyz, OUT.vView.xyz) < params.cViewerColorToWaterPlane.y ) // this causes surface tearing near camera.
+	if( dot(OUT.vView.xyz, OUT.vView.xyz) < params.cViewerColorToWaterPlane.y ) // this causes surface tearing near camera.
 	{
 #if %_RT_REVERSE_DEPTH
 		OUT.Position.z = ( abs(vView.z) > 0.2 ) ? OUT.Position.z : OUT.Position.w;

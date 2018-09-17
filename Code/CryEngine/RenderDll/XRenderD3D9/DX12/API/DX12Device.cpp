@@ -1221,17 +1221,24 @@ void CDevice::ReleaseLater(const FVAL64 (&fenceValues)[CMDQUEUE_NUM], ID3D12Reso
 		const bool isGPUOnly =
 			hashableBlob.sHeapProperties.Type == D3D11_USAGE_DEFAULT;
 
-		// GPU-only resources can't race each other when they are managed by ref-counts/pools
-		if (isGPUOnly && bReusable)
+		UINT64 fenceValuesWithPrunningDelay[CMDQUEUE_NUM];
+		const FVAL64 (&completedFenceValues)[CMDQUEUE_NUM] = m_Scheduler.GetFenceManager().GetLastCompletedFenceValues();
+		MaxFenceValues(fenceValuesWithPrunningDelay, fenceValues, completedFenceValues);
+		const bool isUnused =
+			SmallerEqualFenceValues(fenceValuesWithPrunningDelay, completedFenceValues);
+
+		// GPU-only resources can't race with itself when they are managed by ref-counts/pools
+		// CPU-write resources can be recycled immediately if they have been used up already
+		if ((isGPUOnly | isUnused) & bReusable)
 		{
 			CryAutoLock<CryCriticalSectionNonRecursive> lThreadSafeScope(m_RecycleHeapTheadSafeScope);
 
 			RecycleInfo recycleInfo;
 
 			recycleInfo.pObject = pObject;
-			recycleInfo.fenceValues[CMDQUEUE_GRAPHICS] = fenceValues[CMDQUEUE_GRAPHICS];
-			recycleInfo.fenceValues[CMDQUEUE_COMPUTE] = fenceValues[CMDQUEUE_COMPUTE];
-			recycleInfo.fenceValues[CMDQUEUE_COPY] = fenceValues[CMDQUEUE_COPY];
+			recycleInfo.fenceValues[CMDQUEUE_GRAPHICS] = fenceValuesWithPrunningDelay[CMDQUEUE_GRAPHICS];
+			recycleInfo.fenceValues[CMDQUEUE_COMPUTE] = fenceValuesWithPrunningDelay[CMDQUEUE_COMPUTE];
+			recycleInfo.fenceValues[CMDQUEUE_COPY] = fenceValuesWithPrunningDelay[CMDQUEUE_COPY];
 
 			auto& sorted = m_RecycleHeap[hHash];
 #if OUT_OF_ODER_RELEASE_LATER
@@ -1251,7 +1258,7 @@ void CDevice::ReleaseLater(const FVAL64 (&fenceValues)[CMDQUEUE_NUM], ID3D12Reso
 				pObject->AddRef();
 			}
 		}
-		else
+		else if (!isUnused)
 		{
 			CryAutoLock<CryCriticalSectionNonRecursive> lThreadSafeScope(m_ReleaseHeapTheadSafeScope);
 
@@ -1259,9 +1266,9 @@ void CDevice::ReleaseLater(const FVAL64 (&fenceValues)[CMDQUEUE_NUM], ID3D12Reso
 
 			releaseInfo.hHash = ComputeSmallHash<sizeof(hashableBlob)>(&hashableBlob);
 			releaseInfo.bFlags = bReusable ? 1 : 0;
-			releaseInfo.fenceValues[CMDQUEUE_GRAPHICS] = fenceValues[CMDQUEUE_GRAPHICS];
-			releaseInfo.fenceValues[CMDQUEUE_COMPUTE] = fenceValues[CMDQUEUE_COMPUTE];
-			releaseInfo.fenceValues[CMDQUEUE_COPY] = fenceValues[CMDQUEUE_COPY];
+			releaseInfo.fenceValues[CMDQUEUE_GRAPHICS] = fenceValuesWithPrunningDelay[CMDQUEUE_GRAPHICS];
+			releaseInfo.fenceValues[CMDQUEUE_COMPUTE] = fenceValuesWithPrunningDelay[CMDQUEUE_COMPUTE];
+			releaseInfo.fenceValues[CMDQUEUE_COPY] = fenceValuesWithPrunningDelay[CMDQUEUE_COPY];
 
 			std::pair<TReleaseHeap::iterator, bool> result = m_ReleaseHeap.emplace(pObject, std::move(releaseInfo));
 

@@ -586,8 +586,15 @@ void CDevice::ReleaseLater(const FVAL64 (&fenceValues)[CMDQUEUE_NUM], CResource*
 		pObject->GetHeapType() == kHeapTargets ||
 		pObject->GetHeapType() == kHeapSources;
 
-	// GPU-only resources can't race each other when they are managed by ref-counts/pools
-	if (isGPUOnly && bReusable)
+	UINT64 fenceValuesWithPrunningDelay[CMDQUEUE_NUM];
+	const FVAL64(&completedFenceValues)[CMDQUEUE_NUM] = m_Scheduler.GetFenceManager().GetLastCompletedFenceValues();
+	MaxFenceValues(fenceValuesWithPrunningDelay, fenceValues, completedFenceValues);
+	const bool isUnused =
+		SmallerEqualFenceValues(fenceValuesWithPrunningDelay, completedFenceValues);
+
+	// GPU-only resources can't race with itself when they are managed by ref-counts/pools
+	// CPU-write resources can be recycled immediately if they have been used up already
+	if ((isGPUOnly | isUnused) & bReusable)
 	{
 		TRecycleHeap<CResource>& RecycleHeap = GetRecycleHeap<CResource>();
 		CryAutoLock<CryCriticalSectionNonRecursive> lThreadSafeScope(GetRecycleHeapCriticalSection<CResource>());
@@ -612,7 +619,7 @@ void CDevice::ReleaseLater(const FVAL64 (&fenceValues)[CMDQUEUE_NUM], CResource*
 #endif
 			sorted.push_front(std::move(recycleInfo));
 	}
-	else
+	else if (!isUnused)
 	{
 		TReleaseHeap<CResource>& ReleaseHeap = GetReleaseHeap<CResource>();
 		CryAutoLock<CryCriticalSectionNonRecursive> lThreadSafeScope(GetReleaseHeapCriticalSection<CResource>());

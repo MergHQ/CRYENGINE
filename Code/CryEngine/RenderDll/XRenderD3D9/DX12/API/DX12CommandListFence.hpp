@@ -67,6 +67,14 @@ ILINE UINT64 (&MaxFenceValues(UINT64 (&c)[CMDQUEUE_NUM], const FVAL64 (&a)[CMDQU
 
 	return c;
 }
+
+ILINE bool SmallerEqualFenceValues(UINT64 (&a)[CMDQUEUE_NUM], const FVAL64 (&b)[CMDQUEUE_NUM])
+{
+	return (
+		(a[CMDQUEUE_GRAPHICS] <= b[CMDQUEUE_GRAPHICS]) &
+		(a[CMDQUEUE_COMPUTE ] <= b[CMDQUEUE_COMPUTE ]) &
+		(a[CMDQUEUE_COPY    ] <= b[CMDQUEUE_COPY    ])) ? true : false;
+}
 // *INDENT-ON*
 
 ///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
