@@ -15,13 +15,12 @@ class CFileImporterModel final : public QAbstractItemModel
 
 public:
 
-	enum class EColumns
+	enum class EColumns : CryAudio::EnumFlagsType
 	{
 		Source,
 		Target,
 		Import,
-		Count,
-	};
+		Count, };
 
 	CFileImporterModel() = delete;
 

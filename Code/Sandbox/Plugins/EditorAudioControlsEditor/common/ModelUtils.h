@@ -22,24 +22,22 @@ static CryIcon s_pakFileFolderIcon;
 static CryIcon s_pakFileIcon;
 static CryIcon s_pakFolderIcon;
 
-enum class ERoles
+enum class ERoles : CryAudio::EnumFlagsType
 {
 	Id = Qt::UserRole + 1,
 	Name,
 	InternalPointer,
 	IsDefaultControl,
 	IsPlaceholder,
-	SortPriority,
-};
+	SortPriority, };
 
-enum class EItemStatus
+enum class EItemStatus : CryAudio::EnumFlagsType
 {
 	Placeholder,
 	NoConnection,
 	NoControl,
 	Localized,
-	NotificationHeader,
-};
+	NotificationHeader, };
 
 //////////////////////////////////////////////////////////////////////////
 inline void InitIcons()

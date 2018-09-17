@@ -16,7 +16,7 @@ class CAudioXMLProcessor final
 {
 public:
 
-	CAudioXMLProcessor();
+	CAudioXMLProcessor() = default;
 
 	CAudioXMLProcessor(CAudioXMLProcessor const&) = delete;
 	CAudioXMLProcessor(CAudioXMLProcessor&&) = delete;
@@ -42,7 +42,5 @@ private:
 
 	void DeletePreloadRequest(CATLPreloadRequest const* const pPreloadRequest);
 	void DeleteEnvironment(CATLAudioEnvironment const* const pEnvironment);
-
-	TriggerImplId m_triggerImplIdCounter;
 };
 } // namespace CryAudio

@@ -55,6 +55,8 @@ enum class EManagerRequestType : EnumFlagsType
 	GetImplInfo,
 	ExecuteTriggerEx,
 	ExecuteDefaultTrigger,
+	ExecutePreviewTrigger,
+	StopPreviewTrigger,
 };
 
 enum class ECallbackManagerRequestType : EnumFlagsType
@@ -560,6 +562,27 @@ struct SManagerRequestData<EManagerRequestType::ExecuteDefaultTrigger> final : p
 
 	EDefaultTriggerType const triggerType;
 };
+
+#if defined(INCLUDE_AUDIO_PRODUCTION_CODE)
+//////////////////////////////////////////////////////////////////////////
+template<>
+struct SManagerRequestData<EManagerRequestType::ExecutePreviewTrigger> final : public SManagerRequestDataBase
+{
+	explicit SManagerRequestData(Impl::ITriggerInfo const& triggerInfo_)
+		: SManagerRequestDataBase(EManagerRequestType::ExecutePreviewTrigger)
+		, triggerInfo(triggerInfo_)
+	{}
+
+	explicit SManagerRequestData(SManagerRequestData<EManagerRequestType::ExecutePreviewTrigger> const* const pAMRData)
+		: SManagerRequestDataBase(EManagerRequestType::ExecutePreviewTrigger)
+		, triggerInfo(pAMRData->triggerInfo)
+	{}
+
+	virtual ~SManagerRequestData() override = default;
+
+	Impl::ITriggerInfo const& triggerInfo;
+};
+#endif  // INCLUDE_AUDIO_PRODUCTION_CODE
 
 //////////////////////////////////////////////////////////////////////////
 struct SCallbackManagerRequestDataBase : public SRequestData

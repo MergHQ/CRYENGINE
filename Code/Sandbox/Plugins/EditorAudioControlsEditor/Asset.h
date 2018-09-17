@@ -9,17 +9,16 @@
 
 namespace ACE
 {
-enum class EAssetFlags
+enum class EAssetFlags : CryAudio::EnumFlagsType
 {
-	None                       = 0,
-	IsDefaultControl           = BIT(0),
-	IsInternalControl          = BIT(1),
+	None = 0,
+	IsDefaultControl = BIT(0),
+	IsInternalControl = BIT(1),
 	IsHiddenInResourceSelector = BIT(2),
-	IsModified                 = BIT(3),
-	HasPlaceholderConnection   = BIT(4),
-	HasConnection              = BIT(5),
-	HasControl                 = BIT(6),
-};
+	IsModified = BIT(3),
+	HasPlaceholderConnection = BIT(4),
+	HasConnection = BIT(5),
+	HasControl = BIT(6), };
 CRY_CREATE_ENUM_FLAG_OPERATORS(EAssetFlags);
 
 class CAsset

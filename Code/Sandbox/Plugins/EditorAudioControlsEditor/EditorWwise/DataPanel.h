@@ -22,9 +22,14 @@ class CDataPanel final : public QWidget
 {
 public:
 
-	explicit CDataPanel(CImpl const& impl);
-
 	CDataPanel() = delete;
+	CDataPanel(CDataPanel const&) = delete;
+	CDataPanel(CDataPanel&&) = delete;
+	CDataPanel& operator=(CDataPanel const&) = delete;
+	CDataPanel& operator=(CDataPanel&&) = delete;
+
+	explicit CDataPanel(CImpl const& impl);
+	virtual ~CDataPanel() override;
 
 	void Reset();
 	void OnAboutToReload();
@@ -35,7 +40,13 @@ public:
 
 private:
 
+	// QObject
+	virtual bool eventFilter(QObject* pObject, QEvent* pEvent) override;
+	// ~QObject
+
 	void OnContextMenu(QPoint const& pos);
+	void PlayEvent();
+	void StopEvent();
 	void ClearFilters();
 
 	CImpl const&             m_impl;

@@ -19,16 +19,15 @@ extern CAssetsManager g_assetsManager;
 extern CImplementationManager g_implementationManager;
 extern Platforms g_platforms;
 
-enum class EReloadFlags
+enum class EReloadFlags : CryAudio::EnumFlagsType
 {
-	None                 = 0,
+	None = 0,
 	ReloadSystemControls = BIT(0),
-	ReloadImplData       = BIT(1),
-	ReloadScopes         = BIT(2),
-	SendSignals          = BIT(3),
-	SetPlatforms         = BIT(4),
-	BackupConnections    = BIT(5),
-};
+	ReloadImplData = BIT(1),
+	ReloadScopes = BIT(2),
+	SendSignals = BIT(3),
+	SetPlatforms = BIT(4),
+	BackupConnections = BIT(5), };
 CRY_CREATE_ENUM_FLAG_OPERATORS(EReloadFlags);
 
 class CAudioControlsEditorPlugin final : public IPlugin, public ISystemEventListener

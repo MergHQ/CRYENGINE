@@ -88,10 +88,12 @@ namespace UQS
 				}
 				break;
 
+			case IQueryHistoryListener::EEventType::HistoricQueryJustGotCreatedInLiveQueryHistory:
 			case IQueryHistoryListener::EEventType::HistoricQueryJustFinishedInLiveQueryHistory:
 				if (m_queryHistoryManager.GetCurrentQueryHistory() == IQueryHistoryManager::EHistoryOrigin::Live)
 				{
-					RefreshListOfHistoricQueries();
+					m_queryHistoryManager.EnumerateSingleHistoricQuery(IQueryHistoryManager::EHistoryOrigin::Live, ev.relatedQueryID, *this);
+					FindScrollIndexInHistoricQueries();
 				}
 				break;
 
@@ -139,7 +141,54 @@ namespace UQS
 			string shortInfo;
 			shortInfo.Format("#%s: '%s' / '%s' (%i / %i items) [%.2f ms]", queryIdAsString.c_str(), overview.szQuerierName, overview.szQueryBlueprintName, (int)overview.numResultingItems, (int)overview.numGeneratedItems, overview.timeElapsedUntilResult.GetMilliSeconds());
 
-			m_historicQueries.emplace_back(overview.color, overview.queryID, overview.parentQueryID, std::move(shortInfo));
+			//
+			// Since we don't know if the given historic query is already tracked in m_historicQueries and also need to ensure that it will reside at the correct position after
+			// its (potential) parent query, we need to do the following 2 things:
+			//
+			// (1) see if the historic query is already tracked (and thus residing already at the correct position after the potential parent)
+			// (2) find the potential insertion position after the (potential) parent
+			//
+			// We do these 2 lookups in a single loop (for performance reasons).
+			//
+			// As a result, we will learn whether the query is already tracked (plus its position so that we can refresh some meta information about it), or whether
+			// it's not yet tracked (and get the correct position for inserting it freshly).
+			//
+
+			bool bHistoricQueryExistsAlready = false;
+			auto insertPos = m_historicQueries.end();
+
+			for (auto it = m_historicQueries.begin(); it != m_historicQueries.end(); ++it)
+			{
+				// early out if the query is already tracked
+				if (it->queryID == overview.queryID)
+				{
+					insertPos = it;
+					bHistoricQueryExistsAlready = true;
+					break;
+				}
+
+				// did we just encounter our parent?
+				if (overview.parentQueryID.IsValid() && overview.parentQueryID == it->parentQueryID)
+				{
+					// pick the position right after its last child
+					insertPos = it;
+					while (insertPos != m_historicQueries.end() && insertPos->parentQueryID == overview.parentQueryID)
+						++insertPos;
+				}
+			}
+
+			if (bHistoricQueryExistsAlready)
+			{
+				// just refresh the existing historic query
+				CRY_ASSERT(insertPos != m_historicQueries.end());
+				insertPos->color = overview.color;
+				insertPos->shortInfo = std::move(shortInfo);
+			}
+			else
+			{
+				// freshly add the historic query
+				m_historicQueries.emplace(insertPos, overview.color, overview.queryID, overview.parentQueryID, std::move(shortInfo));
+			}
 		}
 
 		void CQueryHistoryInGameGUI::AddTextLineToCurrentHistoricQuery(const ColorF& color, const char* szFormat, ...)

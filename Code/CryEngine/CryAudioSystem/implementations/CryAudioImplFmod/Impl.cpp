@@ -606,6 +606,35 @@ ITrigger const* CImpl::ConstructTrigger(XmlNodeRef const pRootNode, float& radiu
 	return static_cast<ITrigger*>(pTrigger);
 }
 
+//////////////////////////////////////////////////////////////////////////
+ITrigger const* CImpl::ConstructTrigger(ITriggerInfo const* const pITriggerInfo)
+{
+#if defined(INCLUDE_FMOD_IMPL_PRODUCTION_CODE)
+	ITrigger const* pITrigger = nullptr;
+	auto const pTriggerInfo = static_cast<STriggerInfo const*>(pITriggerInfo);
+
+	if (pTriggerInfo != nullptr)
+	{
+		stack_string path(s_szEventPrefix);
+		path += pTriggerInfo->name.c_str();
+		FMOD_GUID guid = { 0 };
+
+		if (m_pSystem->lookupID(path.c_str(), &guid) == FMOD_OK)
+		{
+			pITrigger = static_cast<ITrigger const*>(new CTrigger(StringToId(path.c_str()), EEventType::Start, nullptr, guid));
+		}
+		else
+		{
+			Cry::Audio::Log(ELogType::Warning, "Unknown Fmod event: %s", path.c_str());
+		}
+	}
+
+	return pITrigger;
+#else
+	return nullptr;
+#endif  // INCLUDE_FMOD_IMPL_PRODUCTION_CODE
+}
+
 ///////////////////////////////////////////////////////////////////////////
 void CImpl::DestructTrigger(ITrigger const* const pITrigger)
 {

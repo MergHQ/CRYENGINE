@@ -14,12 +14,13 @@ class CListener final : public IListener
 {
 public:
 
+	CListener() = delete;
 	CListener(CListener const&) = delete;
 	CListener(CListener&&) = delete;
 	CListener& operator=(CListener const&) = delete;
 	CListener& operator=(CListener&&) = delete;
 
-	CListener() = default;
+	explicit CListener(CObjectTransformation const& transformation);
 	virtual ~CListener() override = default;
 
 	// CryAudio::Impl::IListener

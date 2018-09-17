@@ -125,7 +125,7 @@ CItem* SearchForItem(CItem* const pItem, string const& name, EItemType const typ
 	CItem* pSearchedItem = nullptr;
 	bool const nameAndTypeMatches = (pItem->GetName().compareNoCase(name) == 0) && (pItem->GetType() == type);
 
-	if (nameAndTypeMatches && (type == EItemType::Cue) && (pItem->CueSheetName().compareNoCase(cuesheetName) == 0))
+	if (nameAndTypeMatches && (type == EItemType::Cue) && (pItem->GetCueSheetName().compareNoCase(cuesheetName) == 0))
 	{
 		pSearchedItem = pItem;
 	}

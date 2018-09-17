@@ -16,13 +16,12 @@ class CEventConnection final : public CBaseConnection
 {
 public:
 
-	enum class EActionType
+	enum class EActionType : CryAudio::EnumFlagsType
 	{
 		Start,
 		Stop,
 		Pause,
-		Resume,
-	};
+		Resume, };
 
 	CEventConnection() = delete;
 

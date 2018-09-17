@@ -4,9 +4,11 @@
 #include "Common.h"
 #include "AudioSystem.h"
 #include "ATLEntities.h"
+#include "ATLAudioObject.h"
 
 namespace CryAudio
 {
+TriggerImplId g_uniqueConnectionId = 0;
 Impl::IImpl* g_pIImpl = nullptr;
 CSystem g_system;
 AudioTriggerLookup g_triggers;
@@ -22,4 +24,9 @@ CMuteAllTrigger g_muteAllTrigger;
 CUnmuteAllTrigger g_unmuteAllTrigger;
 CPauseAllTrigger g_pauseAllTrigger;
 CResumeAllTrigger g_resumeAllTrigger;
-} // namespace CryAudio
+
+#if defined(INCLUDE_AUDIO_PRODUCTION_CODE)
+CPreviewTrigger g_previewTrigger;
+CATLAudioObject g_previewObject(CObjectTransformation::GetEmptyObject());
+#endif // INCLUDE_AUDIO_PRODUCTION_CODE
+}      // namespace CryAudio

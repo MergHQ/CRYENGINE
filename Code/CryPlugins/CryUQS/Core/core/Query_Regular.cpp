@@ -283,6 +283,8 @@ namespace UQS
 
 		CQuery_Regular::EPhaseStatus CQuery_Regular::Phase1_PrepareGenerationPhase(const SPhaseUpdateContext& phaseUpdateContext)
 		{
+			CRY_PROFILE_FUNCTION_ARG(UQS_PROFILED_SUBSYSTEM_TO_USE, m_pQueryBlueprint->GetName());
+
 			//
 			// instantiate the generator
 			//
@@ -339,6 +341,8 @@ namespace UQS
 
 		CQuery_Regular::EPhaseStatus CQuery_Regular::Phase3_CreateDebugRepresentationsOfGeneratedItemsIfHistoryLoggingIsDesired(const SPhaseUpdateContext& phaseUpdateContext)
 		{
+			CRY_PROFILE_FUNCTION_ARG(UQS_PROFILED_SUBSYSTEM_TO_USE, m_pQueryBlueprint->GetName());
+
 			if (m_pHistory)
 			{
 				const Client::IItemFactory& itemFactory = m_generatedItems.GetItemFactory();
@@ -367,6 +371,8 @@ namespace UQS
 
 		CQuery_Regular::EPhaseStatus CQuery_Regular::Phase4_PrepareEvaluationPhase(const SPhaseUpdateContext& phaseUpdateContext)
 		{
+			CRY_PROFILE_FUNCTION_ARG(UQS_PROFILED_SUBSYSTEM_TO_USE, m_pQueryBlueprint->GetName());
+
 			//
 			// make the generated items accessible to all functions in all evaluators from now on
 			//
@@ -479,6 +485,8 @@ namespace UQS
 
 		void CQuery_Regular::RunInstantEvaluator(const SInstantEvaluatorWithIndex& instantEvaluatorToRun, SItemWorkingData& workingDataToWriteResultTo)
 		{
+			CRY_PROFILE_FUNCTION_ARG(UQS_PROFILED_SUBSYSTEM_TO_USE, m_pQueryBlueprint->GetName());
+
 			CRY_ASSERT(workingDataToWriteResultTo.bitsDiscardedByInstantEvaluators == 0);
 			CRY_ASSERT(workingDataToWriteResultTo.bitsWorkingDeferredEvaluators == 0);
 			CRY_ASSERT(workingDataToWriteResultTo.bitsDiscardedByDeferredEvaluators == 0);
@@ -627,7 +635,8 @@ namespace UQS
 
 				if (bDiscardedItem)
 				{
-					m_remainingItemWorkingDatasToInspect.erase(m_remainingItemWorkingDatasToInspect.begin() + m_remainingItemWorkingDatasIndexForCheapInstantEvaluators);
+					m_remainingItemWorkingDatasToInspect[m_remainingItemWorkingDatasIndexForCheapInstantEvaluators] = m_remainingItemWorkingDatasToInspect.back();
+					m_remainingItemWorkingDatasToInspect.pop_back();
 				}
 				else
 				{
@@ -651,6 +660,8 @@ namespace UQS
 
 		CQuery_Regular::EPhaseStatus CQuery_Regular::Phase6_SortByScoreSoFar(const SPhaseUpdateContext& phaseUpdateContext)
 		{
+			CRY_PROFILE_FUNCTION_ARG(UQS_PROFILED_SUBSYSTEM_TO_USE, m_pQueryBlueprint->GetName());
+
 			// sort the remaining items such that the ones with higher scores come first
 			auto sorter = [](const SItemWorkingData* pLHS, const SItemWorkingData* pRHS)
 			{
@@ -664,6 +675,8 @@ namespace UQS
 
 		void CQuery_Regular::UpdateDeferredTasks()
 		{
+			CRY_PROFILE_FUNCTION_ARG(UQS_PROFILED_SUBSYSTEM_TO_USE, m_pQueryBlueprint->GetName());
+
 			for (auto it = m_deferredTasks.begin(); it != m_deferredTasks.end(); )
 			{
 				SDeferredTask& taskToUpdate = *it;
@@ -685,6 +698,8 @@ namespace UQS
 
 		void CQuery_Regular::UpdateDeferredTask(SDeferredTask& taskToUpdate)
 		{
+			CRY_PROFILE_FUNCTION_ARG(UQS_PROFILED_SUBSYSTEM_TO_USE, m_pQueryBlueprint->GetName());
+
 			CRY_ASSERT(taskToUpdate.pWorkingData->bitsDiscardedByInstantEvaluators == 0);
 			CRY_ASSERT(taskToUpdate.pWorkingData->bitsDiscardedByDeferredEvaluators == 0);
 			CRY_ASSERT(taskToUpdate.pWorkingData->bitsWorkingDeferredEvaluators != 0);
@@ -1006,6 +1021,8 @@ namespace UQS
 
 		void CQuery_Regular::StartMoreEvaluatorsOnRemainingItems(const SPhaseUpdateContext& phaseUpdateContext)
 		{
+			CRY_PROFILE_FUNCTION_ARG(UQS_PROFILED_SUBSYSTEM_TO_USE, m_pQueryBlueprint->GetName());
+
 			//
 			// still more items to inspect?
 			//

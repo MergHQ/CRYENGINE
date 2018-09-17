@@ -44,6 +44,7 @@ public:
 	virtual char const* const   GetFileLocation(SFileInfo* const pFileInfo) override;
 	virtual void                GetInfo(SImplInfo& implInfo) const override;
 	virtual ITrigger const*     ConstructTrigger(XmlNodeRef const pRootNode, float& radius) override;
+	virtual ITrigger const*     ConstructTrigger(ITriggerInfo const* const pITriggerInfo) override;
 	virtual void                DestructTrigger(ITrigger const* const pITrigger) override;
 	virtual IParameter const*   ConstructParameter(XmlNodeRef const pRootNode) override;
 	virtual void                DestructParameter(IParameter const* const pIParameter) override;

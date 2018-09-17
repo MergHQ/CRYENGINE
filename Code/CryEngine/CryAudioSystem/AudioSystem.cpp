@@ -357,6 +357,11 @@ void CSystem::InternalUpdate()
 		{
 			g_listenerManager.Update(m_accumulatedFrameTime);
 			g_pObject->GetImplDataPtr()->Update(m_accumulatedFrameTime);
+
+#if defined(INCLUDE_AUDIO_PRODUCTION_CODE)
+			g_previewObject.GetImplDataPtr()->Update(m_accumulatedFrameTime);
+#endif  // INCLUDE_AUDIO_PRODUCTION_CODE
+
 			g_objectManager.Update(m_accumulatedFrameTime);
 			g_pIImpl->Update();
 		}
@@ -374,6 +379,11 @@ void CSystem::InternalUpdate()
 		{
 			g_listenerManager.Update(0.0f);
 			g_pObject->GetImplDataPtr()->Update(0.0f);
+
+#if defined(INCLUDE_AUDIO_PRODUCTION_CODE)
+			g_previewObject.GetImplDataPtr()->Update(0.0f);
+#endif  // INCLUDE_AUDIO_PRODUCTION_CODE
+
 			g_objectManager.Update(0.0f);
 			g_pIImpl->Update();
 		}
@@ -602,6 +612,26 @@ void CSystem::StopTrigger(ControlId const triggerId /* = CryAudio::InvalidContro
 		request.pUserDataOwner = userData.pUserDataOwner;
 		PushRequest(request);
 	}
+}
+
+//////////////////////////////////////////////////////////////////////////
+void CSystem::ExecutePreviewTrigger(Impl::ITriggerInfo const& triggerInfo)
+{
+#if defined(INCLUDE_AUDIO_PRODUCTION_CODE)
+	SManagerRequestData<EManagerRequestType::ExecutePreviewTrigger> const requestData(triggerInfo);
+	CAudioRequest const request(&requestData);
+	PushRequest(request);
+#endif  // INCLUDE_AUDIO_PRODUCTION_CODE
+}
+
+//////////////////////////////////////////////////////////////////////////
+void CSystem::StopPreviewTrigger()
+{
+#if defined(INCLUDE_AUDIO_PRODUCTION_CODE)
+	SManagerRequestData<EManagerRequestType::StopPreviewTrigger> const requestData;
+	CAudioRequest const request(&requestData);
+	PushRequest(request);
+#endif  // INCLUDE_AUDIO_PRODUCTION_CODE
 }
 
 //////////////////////////////////////////////////////////////////////////
@@ -951,6 +981,11 @@ void CSystem::ReleaseImpl()
 	delete g_pObject;
 	g_pObject = nullptr;
 
+#if defined(INCLUDE_AUDIO_PRODUCTION_CODE)
+	g_pIImpl->DestructObject(g_previewObject.GetImplDataPtr());
+	g_previewObject.Release();
+#endif // INCLUDE_AUDIO_PRODUCTION_CODE
+
 	g_xmlProcessor.ClearPreloadsData(EDataScope::All);
 	g_xmlProcessor.ClearControlsData(EDataScope::All);
 
@@ -1208,7 +1243,8 @@ ERequestStatus CSystem::ProcessManagerRequest(CAudioRequest const& request)
 		}
 	case EManagerRequestType::ExecuteDefaultTrigger:
 		{
-			SManagerRequestData<EManagerRequestType::ExecuteDefaultTrigger> const* const pRequestData = static_cast<SManagerRequestData<EManagerRequestType::ExecuteDefaultTrigger> const*>(request.GetData());
+			SManagerRequestData<EManagerRequestType::ExecuteDefaultTrigger> const* const pRequestData =
+				static_cast<SManagerRequestData<EManagerRequestType::ExecuteDefaultTrigger> const*>(request.GetData());
 
 			switch (pRequestData->triggerType)
 			{
@@ -1391,6 +1427,27 @@ ERequestStatus CSystem::ProcessManagerRequest(CAudioRequest const& request)
 
 			g_fileCacheManager.UpdateLocalizedFileCacheEntries();
 			result = ERequestStatus::Success;
+
+			break;
+		}
+	case EManagerRequestType::ExecutePreviewTrigger:
+		{
+#if defined(INCLUDE_AUDIO_PRODUCTION_CODE)
+			SManagerRequestData<EManagerRequestType::ExecutePreviewTrigger> const* const pRequestData =
+				static_cast<SManagerRequestData<EManagerRequestType::ExecutePreviewTrigger> const*>(request.GetData());
+
+			g_previewTrigger.Execute(pRequestData->triggerInfo);
+			result = ERequestStatus::Success;
+#endif  // INCLUDE_AUDIO_PRODUCTION_CODE
+
+			break;
+		}
+	case EManagerRequestType::StopPreviewTrigger:
+		{
+#if defined(INCLUDE_AUDIO_PRODUCTION_CODE)
+			g_previewTrigger.Stop();
+			result = ERequestStatus::Success;
+#endif  // INCLUDE_AUDIO_PRODUCTION_CODE
 
 			break;
 		}
@@ -2269,6 +2326,12 @@ ERequestStatus CSystem::HandleSetImpl(Impl::IImpl* const pIImpl)
 	CRY_ASSERT_MESSAGE(g_pObject->GetImplDataPtr() == nullptr, "<Audio> The global object's impl-data must be nullptr during initialization.");
 	g_pObject->SetImplDataPtr(g_pIImpl->ConstructGlobalObject());
 
+#if defined(INCLUDE_AUDIO_PRODUCTION_CODE)
+	g_previewObject.m_name = "Preview Object";
+	CRY_ASSERT_MESSAGE(g_previewObject.GetImplDataPtr() == nullptr, "<Audio> The preview object's impl-data must be nullptr during initialization.");
+	g_previewObject.SetImplDataPtr(g_pIImpl->ConstructObject(g_previewObject.GetTransformation()));
+#endif // INCLUDE_AUDIO_PRODUCTION_CODE
+
 	g_objectManager.OnAfterImplChanged();
 	g_eventManager.OnAfterImplChanged();
 	g_listenerManager.OnAfterImplChanged();
@@ -2726,6 +2789,10 @@ void CSystem::HandleRetriggerControls()
 	}
 
 	g_pObject->ForceImplementationRefresh(false);
+
+	#if defined(INCLUDE_AUDIO_PRODUCTION_CODE)
+	g_previewObject.ForceImplementationRefresh(false);
+	#endif // INCLUDE_AUDIO_PRODUCTION_CODE
 }
 #endif // INCLUDE_AUDIO_PRODUCTION_CODE
 }      // namespace CryAudio

@@ -7,6 +7,7 @@
 #include <SharedData.h>
 #include <FileImportInfo.h>
 #include <FileDialogs/ExtensionFilter.h>
+#include <CryAudio/IAudioInterfacesCommonData.h>
 
 namespace ACE
 {
@@ -21,7 +22,13 @@ class CItemModel final : public QAbstractItemModel
 {
 public:
 
-	enum class EColumns
+	CItemModel() = delete;
+	CItemModel(CItemModel const&) = delete;
+	CItemModel(CItemModel&&) = delete;
+	CItemModel& operator=(CItemModel const&) = delete;
+	CItemModel& operator=(CItemModel&&) = delete;
+
+	enum class EColumns : CryAudio::EnumFlagsType
 	{
 		Notification,
 		Connected,
@@ -30,15 +37,15 @@ public:
 		OnDisk,
 		Localized,
 		Name,
-		Count,
-	};
-
-	CItemModel() = delete;
+		Count, };
 
 	explicit CItemModel(CImpl const& impl, CItem const& rootItem, QObject* const pParent);
+	virtual ~CItemModel() override = default;
 
-	QString GetTargetFolderName(QModelIndex const& index, bool& isLocalized) const;
-	void    Reset();
+	QString       GetTargetFolderName(QModelIndex const& index, bool& isLocalized) const;
+	void          Reset();
+
+	static CItem* GetItemFromIndex(QModelIndex const& index);
 
 protected:
 

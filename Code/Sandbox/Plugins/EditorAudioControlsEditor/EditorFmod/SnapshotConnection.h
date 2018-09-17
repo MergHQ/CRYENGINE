@@ -14,11 +14,10 @@ class CSnapshotConnection final : public CBaseConnection
 {
 public:
 
-	enum class EActionType
+	enum class EActionType : CryAudio::EnumFlagsType
 	{
 		Start,
-		Stop,
-	};
+		Stop, };
 
 	explicit CSnapshotConnection(ControlId const id, EActionType const actionType = EActionType::Start)
 		: CBaseConnection(id)

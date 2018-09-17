@@ -125,7 +125,7 @@ public:
 	//! Export layer to objects archive.
 	void          ExportLayer(CObjectArchive& ar, CObjectLayer* pLayer, bool bExportExternalChilds);
 	//! Import layer from objects archive.
-	CObjectLayer* ImportLayer(CObjectArchive& ar, bool bNotify = true);
+	CObjectLayer* ImportLayer(CObjectArchive& ar, const string& filePath, bool bNotify = true);
 
 	//! Import layer from file. If globalArchive, caller is responsible for both Object and Layer resolution!
 	CObjectLayer* ImportLayerFromFile(const char* filename, bool bNotify = true, CObjectArchive* globalArchive = nullptr);
@@ -133,8 +133,8 @@ public:
 	// Serialize layer manager (called from object manager).
 	void Serialize(CObjectArchive& ar);
 
-	//! Resolve links between layers.
-	void ResolveLayerParents(bool bNotifyAtomic = false, bool bNotifyUpdateAll = true);
+	//! Resolves layer's parent.
+	void ResolveParentFor(const string& fullName, CObjectLayer* pLayer, bool notify = true);
 
 	bool InitLayerSwitches(bool isOnlyClear = false);
 	void ExportLayerSwitches(XmlNodeRef& node);
@@ -178,7 +178,7 @@ private:
 	CObjectLayer* CreateLayerInstance() { return new CObjectLayer(); }
 
 	void          SaveLayer(CObjectArchive* pArchive, CObjectLayer* pLayer);
-	CObjectLayer* CreateLayersFromPath(const string& fullPathName, const string& name, std::set<string>& m_CreatedLayers, bool bNotify = true);
+	CObjectLayer* CObjectLayerManager::FindOrCreateFolderChain(const string& folderChain, bool bNotify = true);
 
 	//////////////////////////////////////////////////////////////////////////
 	//! Map of layer GUID to layer pointer.

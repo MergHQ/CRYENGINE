@@ -29,6 +29,17 @@ using DeviceId = uint8;
 namespace Impl
 {
 /**
+ * @struct ITriggerInfo
+ * @brief interface that is used to pass middleware specific information for constructing a trigger without an XML node.
+ */
+struct ITriggerInfo
+{
+	/** @cond */
+	virtual ~ITriggerInfo() = default;
+	/** @endcond */
+};
+
+/**
  * @struct IImpl
  * @brief interface that exposes audio functionality to an audio middleware implementation
  */
@@ -177,6 +188,16 @@ struct IImpl
 	 * @see DestructTrigger
 	 */
 	virtual ITrigger const* ConstructTrigger(XmlNodeRef const pRootNode, float& radius) = 0;
+
+	/**
+	 * Construct a trigger with the given info struct, return a pointer to the data needed for identifying
+	 * and using this trigger connection instance inside the AudioImplementation
+	 * @param info - reference to an info struct corresponding to the new ATLTriggerImpl to be created
+	 * @return ITrigger pointer to the audio implementation-specific data needed by the audio middleware and the
+	 * @return AudioImplementation code to use the corresponding ATLTriggerImpl; nullptr if the new AudioTriggerImplData instance was not created
+	 * @see DestructTrigger
+	 */
+	virtual ITrigger const* ConstructTrigger(ITriggerInfo const* const pITriggerInfo) = 0;
 
 	/**
 	 * Free the memory and potentially other resources used by the supplied ITrigger instance

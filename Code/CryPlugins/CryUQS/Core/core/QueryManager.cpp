@@ -231,8 +231,6 @@ namespace UQS
 
 		void CQueryManager::Update()
 		{
-			CRY_PROFILE_FUNCTION(UQS_PROFILED_SUBSYSTEM_TO_USE);
-
 			UpdateQueries();
 
 			ExpireDebugDrawStatisticHistory2D();
@@ -278,6 +276,8 @@ namespace UQS
 
 		void CQueryManager::UpdateQueries()
 		{
+			CRY_PROFILE_FUNCTION(UQS_PROFILED_SUBSYSTEM_TO_USE);
+
 			struct SWorstPerformingQuery
 			{
 				explicit SWorstPerformingQuery(const std::list<SRunningQueryInfo>::iterator& it)
@@ -290,6 +290,8 @@ namespace UQS
 
 			if (!m_queries.empty())
 			{
+				CRY_PROFILE_REGION(UQS_PROFILED_SUBSYSTEM_TO_USE, "UQS::Core::CQueryManager::UpdateQueries: updating all queries");
+
 				m_bQueriesUpdateInProgress = true;	// detect unintended calls to CancelQuery() while we're iterating through m_queries
 
 				//
@@ -307,6 +309,8 @@ namespace UQS
 
 				for (auto it = m_queries.begin(); it != m_queries.end(); ++it)
 				{
+					CRY_PROFILE_REGION(UQS_PROFILED_SUBSYSTEM_TO_USE, "UQS::Core::CQueryManager::UpdateQueries: inside m_queries iteration");
+
 					const SRunningQueryInfo& runningQueryInfo = *it;
 
 					CQueryBase* pQuery = runningQueryInfo.pQuery.get();
@@ -485,6 +489,8 @@ namespace UQS
 
 				if (!finishedOnes.empty())
 				{
+					CRY_PROFILE_REGION(UQS_PROFILED_SUBSYSTEM_TO_USE, "UQS::Core::CQueryManager::UpdateQueries: notifying listeners of finished queries");
+
 					// first, notify all listeners that these queries have finished
 					for (const SFinishedQueryInfo& entry : finishedOnes)
 					{
@@ -569,6 +575,8 @@ namespace UQS
 
 		void CQueryManager::NotifyOfQueryPerformanceWarning(const SRunningQueryInfo& problematicQuery, const char* szFmt, ...) const
 		{
+			CRY_PROFILE_FUNCTION_ARG(UQS_PROFILED_SUBSYSTEM_TO_USE, problematicQuery.pQueryBlueprint->GetName());
+
 			va_list ap;
 			stack_string commonWarningMessage;
 			va_start(ap, szFmt);
@@ -621,6 +629,8 @@ namespace UQS
 
 		void CQueryManager::ExpireDebugDrawStatisticHistory2D()
 		{
+			CRY_PROFILE_FUNCTION(UQS_PROFILED_SUBSYSTEM_TO_USE);
+
 			const CTimeValue now = gEnv->pTimer->GetAsyncTime();
 
 			while (!m_debugDrawHistory2D.empty() && m_debugDrawHistory2D.front().finishedTimestamp + s_totalDebugDrawDuration < now)

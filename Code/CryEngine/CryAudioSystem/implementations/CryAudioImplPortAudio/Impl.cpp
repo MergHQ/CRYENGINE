@@ -293,7 +293,7 @@ void CImpl::DestructObject(IObject const* const pIObject)
 ///////////////////////////////////////////////////////////////////////////
 IListener* CImpl::ConstructListener(CObjectTransformation const& transformation, char const* const szName /*= nullptr*/)
 {
-	g_pListener = new CListener;
+	g_pListener = new CListener(transformation);
 
 #if defined(INCLUDE_PORTAUDIO_IMPL_PRODUCTION_CODE)
 	if (szName != nullptr)
@@ -406,6 +406,43 @@ ITrigger const* CImpl::ConstructTrigger(XmlNodeRef const pRootNode, float& radiu
 	}
 
 	return static_cast<ITrigger*>(pTrigger);
+}
+
+//////////////////////////////////////////////////////////////////////////
+ITrigger const* CImpl::ConstructTrigger(ITriggerInfo const* const pITriggerInfo)
+{
+#if defined(INCLUDE_PORTAUDIO_IMPL_PRODUCTION_CODE)
+	ITrigger const* pITrigger = nullptr;
+	auto const pTriggerInfo = static_cast<STriggerInfo const*>(pITriggerInfo);
+
+	if (pTriggerInfo != nullptr)
+	{
+		stack_string path = (pTriggerInfo->isLocalized ? m_localizedSoundBankFolder.c_str() : m_regularSoundBankFolder.c_str());
+		path += "/";
+		stack_string const folderName = pTriggerInfo->path.c_str();
+
+		if (!folderName.empty())
+		{
+			path += folderName.c_str();
+			path += "/";
+		}
+
+		stack_string const name = pTriggerInfo->name.c_str();
+		path += name.c_str();
+
+		SF_INFO sfInfo;
+		PaStreamParameters streamParameters;
+
+		if (GetSoundInfo(path.c_str(), sfInfo, streamParameters))
+		{
+			pITrigger = static_cast<ITrigger const*>(new CTrigger(StringToId(path.c_str()), 0, static_cast<double>(sfInfo.samplerate), EEventType::Start, path.c_str(), streamParameters, folderName.c_str(), name.c_str(), pTriggerInfo->isLocalized));
+		}
+	}
+
+	return pITrigger;
+#else
+	return nullptr;
+#endif  // INCLUDE_PORTAUDIO_IMPL_PRODUCTION_CODE
 }
 
 ///////////////////////////////////////////////////////////////////////////

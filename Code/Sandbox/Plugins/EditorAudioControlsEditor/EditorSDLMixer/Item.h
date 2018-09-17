@@ -10,18 +10,21 @@ namespace Impl
 {
 namespace SDLMixer
 {
-enum class EItemType
+enum class EItemType : CryAudio::EnumFlagsType
 {
 	None,
 	Event,
-	Folder,
-};
+	Folder, };
 
 class CItem final : public IItem
 {
 public:
 
 	CItem() = delete;
+	CItem(CItem const&) = delete;
+	CItem(CItem&&) = delete;
+	CItem& operator=(CItem const&) = delete;
+	CItem& operator=(CItem&&) = delete;
 
 	explicit CItem(
 		string const& name,
@@ -68,15 +71,15 @@ private:
 
 	void SetParent(CItem* const pParent) { m_pParent = pParent; }
 
+	string const        m_name;
 	ControlId const     m_id;
 	EItemType const     m_type;
-	string const        m_name;
 	string const        m_path;
-	string const        m_filePath;
-	std::vector<CItem*> m_children;
-	CItem*              m_pParent;
 	EItemFlags          m_flags;
 	EPakStatus          m_pakStatus;
+	string const        m_filePath;
+	CItem*              m_pParent;
+	std::vector<CItem*> m_children;
 };
 
 using ItemCache = std::map<ControlId, CItem*>;
