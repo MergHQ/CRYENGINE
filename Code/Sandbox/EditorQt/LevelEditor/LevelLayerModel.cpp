@@ -23,8 +23,8 @@
 
 namespace LevelModelsAttributes
 {
-CItemModelAttribute s_visibleAttribute("Visible", &Attributes::s_booleanAttributeType, CItemModelAttribute::Visible, true, Qt::Checked);
-CItemModelAttribute s_frozenAttribute("Frozen", &Attributes::s_booleanAttributeType);
+CItemModelAttribute s_visibleAttribute("Visible", &Attributes::s_booleanAttributeType, CItemModelAttribute::Visible, true, Qt::Checked, Qt::CheckStateRole);
+CItemModelAttribute s_frozenAttribute("Frozen", &Attributes::s_booleanAttributeType, CItemModelAttribute::Visible, true, Qt::Unchecked, Qt::CheckStateRole);
 CItemModelAttribute s_layerNameAttribute("Layer", &Attributes::s_stringAttributeType);
 CItemModelAttribute s_objectTypeDescAttribute("Type", &Attributes::s_stringAttributeType);
 CItemModelAttribute s_defaultMaterialAttribute("Default Material", &Attributes::s_stringAttributeType, CItemModelAttribute::StartHidden);

@@ -22,7 +22,8 @@ struct SAssetMetadata;
 //! GetAssetName("Assets/Levels/Woods") = "Woods"
 string GetAssetName(const char* szPath);
 
-bool IsMetadataFile(const char* szPath);
+//! Returns true if the path points to an asset metadata file.
+bool EDITOR_COMMON_API IsMetadataFile(const char* szPath);
 
 class EDITOR_COMMON_API CAssetFactory
 {

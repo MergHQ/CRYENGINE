@@ -1,39 +1,62 @@
 // Copyright 2001-2018 Crytek GmbH / Crytek Group. All rights reserved.
 
 #include <StdAfx.h>
-#include "CryEdit.h"
-#include "CryEditDoc.h"
-#include "IEditorImpl.h"
-#include "FilePathUtil.h"
-#include "GameExporter.h"
 #include "LevelAssetType.h"
-#include "LevelEditor.h" // CLevelEditor::tr
-#include "LevelIndependentFileMan.h"
-#include "LevelFileUtils.h"
-#include "QtUtil.h"
-#include "ThreadingUtils.h"
-#include "LevelEditor/NewLevelDialog.h"
+
 #include "AssetSystem/Asset.h"
 #include "AssetSystem/AssetManager.h"
 #include "AssetSystem/DependencyTracker.h"
-#include "Preferences/GeneralPreferences.h"
+#include "AssetSystem/Loader/AssetLoaderHelpers.h"
+
+#include "CryEdit.h"
+#include "CryEditDoc.h"
 #include "CrySandbox/ScopedVariableSetter.h"
 #include "CryString/CryPath.h"
-#include "Prefabs/PrefabManager.h"
+#include "FilePathUtil.h"
+#include "GameExporter.h"
+#include "IEditorImpl.h"
+#include "LevelEditor.h" // CLevelEditor::tr
+#include "LevelEditor/NewLevelDialog.h"
+#include "LevelFileUtils.h"
+#include "LevelIndependentFileMan.h"
 #include "Objects/ObjectLayerManager.h"
+#include "Prefabs/PrefabManager.h"
+#include "Preferences/GeneralPreferences.h"
+#include "QtUtil.h"
+#include "ThreadingUtils.h"
+
 #include <QDirIterator> 
+
 
 REGISTER_ASSET_TYPE(CLevelType)
 
 namespace Private_LevelAssetType
 {
 
+string GetLevelFolderFromPath(const char* szLevelMetadataPath)
+{
+	CRY_ASSERT(AssetLoader::IsMetadataFile(szLevelMetadataPath));
+
+	// Level is a folder, and the cryasset is next to the folder. 
+	// Getting the path to the level folder is actually removing the extension twice.
+	return PathUtil::RemoveExtension(PathUtil::RemoveExtension(szLevelMetadataPath));
+}
+
 template <typename TAsset>
 string GetLevelFolder(const TAsset& level)
 {
-	// Level is a folder, and the cryasset is next to the folder. 
-	// Getting the path to the level folder is actually removing the extension twice.
-	return PathUtil::RemoveExtension(PathUtil::RemoveExtension(level.GetMetadataFile()));
+	return GetLevelFolderFromPath(level.GetMetadataFile());
+}
+
+bool IsLevel(const char* szLevelMetadataPath)
+{
+	if (!AssetLoader::IsMetadataFile(szLevelMetadataPath))
+	{
+		return false;
+	}
+
+	const CryPathString dataFilePath = PathUtil::RemoveExtension(szLevelMetadataPath);
+	return stricmp(PathUtil::GetExt(dataFilePath.c_str()), CLevelType::GetFileExtensionStatic()) == 0;
 }
 
 std::vector<SAssetDependencyInfo> GetDependencies(const IEditableAsset& level)
@@ -170,6 +193,45 @@ std::vector<string> CLevelType::GetAssetFiles(const CAsset& asset, bool includeS
 	return files;
 }
 
+bool CLevelType::OnValidateAssetPath(const char* szFilepath, /*out*/string& reasonToReject) const
+{
+	using namespace Private_LevelAssetType;
+
+	if (!IsLevel(szFilepath))
+	{
+		const QString assetFolder = QtUtil::ToQString(PathUtil::GetDirectory(szFilepath));
+
+		if (LevelFileUtils::IsPathToLevel(assetFolder) || LevelFileUtils::IsAnyParentPathLevel(assetFolder))
+		{
+			reasonToReject = QT_TR_NOOP("Assets can not be located inside a data folder of a level.");
+			return false;
+		}
+	}
+	else // szFilepath points to a level
+	{
+		const QString levelDataFolder = QtUtil::ToQString(GetLevelFolderFromPath(szFilepath));
+
+		if (LevelFileUtils::IsAnyParentPathLevel(levelDataFolder))
+		{
+			reasonToReject = QT_TR_NOOP("Level can not be located inside a data folder of another level.");
+			return false;
+		}
+
+		if (LevelFileUtils::IsAnySubFolderLevel(levelDataFolder))
+		{
+			reasonToReject = QT_TR_NOOP("Level can not be located in a folder with sub-folders that contain levels.");
+			return false;
+		}
+	}
+
+	return true;
+}
+
+string CLevelType::MakeLevelFilename(const char* szAssetName)
+{
+	return PathUtil::Make(szAssetName, PathUtil::GetFile(szAssetName), GetFileExtensionStatic());
+}
+
 void CLevelType::PreDeleteAssetFiles(const CAsset& asset) const
 {
 	const string activeLevelPath = PathUtil::GetDirectory(GetIEditorImpl()->GetDocument()->GetPathName());
@@ -202,13 +264,17 @@ void CLevelType::UpdateDependencies(IEditableAsset& editAsset)
 
 void CLevelType::UpdateFiles(IEditableAsset& editAsset)
 {
-	const string levelFolder = PathUtil::RemoveExtension(PathUtil::RemoveExtension(editAsset.GetMetadataFile()));
+	using namespace Private_LevelAssetType;
+
+	const string levelFolder = GetLevelFolder(editAsset);
 	const string filename = string().Format("%s/%s.%s", levelFolder.c_str(), PathUtil::GetFile(levelFolder).c_str(), GetFileExtensionStatic());
 	editAsset.SetFiles({ filename });
 }
 
 bool CLevelType::OnCreate(INewAsset& editAsset, const void* pTypeSpecificParameter) const
 {
+	using namespace Private_LevelAssetType;
+
 	SCreateParams params;
 
 	if (pTypeSpecificParameter)
@@ -239,7 +305,7 @@ bool CLevelType::OnCreate(INewAsset& editAsset, const void* pTypeSpecificParamet
 	// Waiting for levels removal to complete.
 	CAssetManager::GetInstance()->WaitAsyncProcess();
 
-	string levelFolder = PathUtil::RemoveExtension(PathUtil::RemoveExtension(editAsset.GetMetadataFile()));
+	const string levelFolder = GetLevelFolder(editAsset);
 	
 	auto createResult = CCryEditApp::GetInstance()->CreateLevel(levelFolder.c_str(), params.resolution, params.unitSize, params.bUseTerrain);
 
