@@ -17,7 +17,7 @@ QString const CFileImporterModel::s_sameFileAction("Source file is target file")
 
 static CItemModelAttribute s_sourceAttribute("Source", &Attributes::s_stringAttributeType, CItemModelAttribute::Visible, false);
 static CItemModelAttribute s_targetAttribute("Target", &Attributes::s_stringAttributeType, CItemModelAttribute::Visible, false);
-static CItemModelAttribute s_importAttribute("Import", &Attributes::s_booleanAttributeType, CItemModelAttribute::Visible, false);
+static CItemModelAttribute s_importAttribute("Import", &Attributes::s_booleanAttributeType, CItemModelAttribute::Visible, false, Qt::Unchecked, Qt::CheckStateRole);
 
 //////////////////////////////////////////////////////////////////////////
 CItemModelAttribute* GetAttributeForColumn(CFileImporterModel::EColumns const column)
