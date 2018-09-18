@@ -4,6 +4,7 @@
 
 #include <CryThreading/CryThreadSafeRendererContainer.h>
 #include <CryThreading/CryThreadSafeWorkerContainer.h>
+#include <CryThreading/IJobManager.h>
 #include <CryMath/Range.h>
 
 #include <Common/RendererResources.h>
@@ -145,7 +146,7 @@ public:
 	// Begin/End writing items to the view from 3d engine traversal.
 	virtual void                 SwitchUsageMode(EUsageMode mode) override;
 
-	virtual CryJobState*         GetWriteMutex() override { return &m_jobstate_Write; };
+	virtual CryJobState*         GetWriteMutex() override { return &m_jobstate_Write; }
 
 	virtual void                 AddRenderObject(CRenderElement* pRenderElement, SShaderItem& pShaderItem, CRenderObject* pRenderObject, const SRenderingPassInfo& passInfo, int list, int afterWater) threadsafe final;
 	virtual void                 AddPermanentObject(CRenderObject* pObject, const SRenderingPassInfo& passInfo) final;

@@ -3,6 +3,7 @@
 #pragma once
 
 #include <CryMemory/CryPool/PoolAlloc.h>
+#include <CryThreading/IJobManager.h>
 #include <concqueue/concqueue.hpp>
 #include "TextMessages.h"                             // CTextMessages
 #include "RenderAuxGeom.h"
