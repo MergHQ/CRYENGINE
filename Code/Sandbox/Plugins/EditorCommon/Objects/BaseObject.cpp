@@ -3365,16 +3365,6 @@ void CBaseObject::OnMultiSelPropertyChanged(IVariable*)
 	}
 }
 
-void CBaseObject::OnMenuProperties()
-{
-	if (!IsSelected())
-	{
-		CUndo undo("Select Object");
-		GetIEditor()->GetObjectManager()->ClearSelection();
-		GetIEditor()->SelectObject(this);
-	}
-}
-
 void CBaseObject::OnContextMenu(CPopupMenuItem* menu)
 {
 	if (!menu->Empty())
@@ -3692,7 +3682,6 @@ void CBaseObject::BeginUndoAndEnsureSelection()
 	if (!CheckFlags(OBJFLAG_SELECTED) || GetIEditor()->GetISelectionGroup()->GetCount() == 0)
 	{
 		// Select just this object, so we need to clear selection
-		manager->ClearSelection();
 		manager->SelectObject(this);
 	}
 }

@@ -94,7 +94,7 @@ void BooleanTool::BooleanOperation(EBooleanOperationEnum booleanType)
 
 	UpdateSurfaceInfo();
 	Designer::ApplyPostProcess(designerObjList[0]->GetMainContext());
-	GetIEditor()->SelectObject(designerObjList[0]);
+	GetIEditor()->GetObjectManager()->AddObjectToSelection(designerObjList[0]);
 
 	DesignerSession::GetInstance()->SetBaseObject(designerObjList[0]);
 	//TODO: we should just quit the tool

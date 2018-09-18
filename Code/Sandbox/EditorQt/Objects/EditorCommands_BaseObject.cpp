@@ -768,18 +768,19 @@ void LoadObjectsFromGrpFile()
 	}
 
 	CUndo undo("Load Objects");
-	GetIEditorImpl()->ClearSelection();
+	IObjectManager* pObjectManager = GetIEditorImpl()->GetObjectManager();
+	pObjectManager->ClearSelection();
 
-	CObjectArchive ar(GetIEditorImpl()->GetObjectManager(), root, true);
+	CObjectArchive ar(pObjectManager, root, true);
 
 	CRandomUniqueGuidProvider guidProvider;
 	if (result == CDuplicatedObjectsHandlerDlg::eResult_Override)
 	{
 		for (int i = 0; i < nDuplicatedObjectSize; ++i)
 		{
-			CBaseObject* pObj = GetIEditorImpl()->GetObjectManager()->FindObject(duplicatedObjects[i].m_id);
+			CBaseObject* pObj = pObjectManager->FindObject(duplicatedObjects[i].m_id);
 			if (pObj)
-				GetIEditorImpl()->GetObjectManager()->DeleteObject(pObj);
+				pObjectManager->DeleteObject(pObj);
 		}
 	}
 	else if (result == CDuplicatedObjectsHandlerDlg::eResult_CreateCopies)
@@ -788,7 +789,7 @@ void LoadObjectsFromGrpFile()
 	}
 
 	ar.LoadInCurrentLayer(true);
-	GetIEditorImpl()->GetObjectManager()->LoadObjects(ar, true);
+	pObjectManager->LoadObjects(ar, true);
 	GetIEditorImpl()->SetModifiedFlag();
 }
 }

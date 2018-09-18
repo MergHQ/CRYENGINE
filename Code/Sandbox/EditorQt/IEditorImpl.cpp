@@ -637,7 +637,6 @@ CBaseObject* CEditorImpl::NewObject(const char* type, const char* file /*=nullpt
 			pLayer->SetVisible(true);
 			pLayer->SetModified();
 
-			m_pObjectManager->ClearSelection();
 			m_pObjectManager->SelectObject(pObject);
 		}
 
@@ -681,16 +680,6 @@ CBaseObject* CEditorImpl::GetSelectedObject()
 	return m_pObjectManager->GetSelection()->GetObject(0);
 }
 
-void CEditorImpl::SelectObject(CBaseObject* obj)
-{
-	GetObjectManager()->SelectObject(obj);
-}
-
-void CEditorImpl::SelectObjects(std::vector<CBaseObject*> objects)
-{
-	GetObjectManager()->SelectObjects(objects);
-}
-
 IObjectManager* CEditorImpl::GetObjectManager()
 {
 	return m_pObjectManager;
@@ -704,16 +693,6 @@ IGizmoManager* CEditorImpl::GetGizmoManager()
 const CSelectionGroup* CEditorImpl::GetSelection() const
 {
 	return m_pObjectManager->GetSelection();
-}
-
-int CEditorImpl::ClearSelection()
-{
-	if (GetSelection()->IsEmpty())
-		return 0;
-	string countString = GetCommandManager()->Execute("selection.clear");
-	int count = 0;
-	FromString(count, countString.c_str());
-	return count;
 }
 
 void CEditorImpl::LockSelection(bool bLock)

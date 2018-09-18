@@ -361,9 +361,6 @@ struct IEditor
 	virtual CCryEditDoc* GetDocument() const = 0;
 	virtual void         SetModifiedFlag(bool modified = true) = 0;
 
-	//! Select object
-	//TODO: this should be part of object manager
-	virtual void            SelectObject(CBaseObject* obj) = 0;
 	//! Get access to object manager.
 	virtual IObjectManager* GetObjectManager() = 0;
 
@@ -374,7 +371,6 @@ struct IEditor
 
 	virtual void                   DeleteObject(CBaseObject* obj) = 0;
 	virtual const ISelectionGroup* GetISelectionGroup() const = 0;
-	virtual int                    ClearSelection() = 0;
 	virtual bool                   IsSelectionLocked() = 0;
 	virtual CBaseObject*           GetSelectedObject() = 0;
 	virtual CPrefabManager*        GetPrefabManager() = 0;

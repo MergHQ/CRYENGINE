@@ -699,9 +699,9 @@ void CLensFlareEditor::OnSelectAssignedObjects()
 	if (assignedObjects.empty())
 		return;
 
-	GetIEditorImpl()->ClearSelection();
+	GetIEditorImpl()->GetObjectManager()->ClearSelection();
 	for (int i = 0, iAssignedObjectsSize(assignedObjects.size()); i < iAssignedObjectsSize; ++i)
-		GetIEditorImpl()->SelectObject(assignedObjects[i]);
+		GetIEditorImpl()->GetObjectManager()->AddObjectToSelection(assignedObjects[i]);
 }
 
 void CLensFlareEditor::OnGetFlareFromSelection()

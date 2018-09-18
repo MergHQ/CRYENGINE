@@ -1233,7 +1233,7 @@ void CMaterialManager::Command_SelectAssignedObjects()
 			{
 				if (pObject->IsHidden() || pObject->IsFrozen())
 					continue;
-				GetIEditorImpl()->GetObjectManager()->SelectObject(pObject);
+				GetIEditorImpl()->GetObjectManager()->AddObjectToSelection(pObject);
 			}
 		}
 	}

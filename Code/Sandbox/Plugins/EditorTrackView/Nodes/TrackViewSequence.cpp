@@ -469,7 +469,7 @@ void CTrackViewSequence::SelectSelectedNodesInViewport()
 
 	for (auto iter = entitiesToBeSelected.begin(); iter != entitiesToBeSelected.end(); ++iter)
 	{
-		GetIEditor()->SelectObject(*iter);
+		GetIEditor()->GetObjectManager()->AddObjectToSelection(*iter);
 	}
 }
 

@@ -152,12 +152,21 @@ public:
 	//////////////////////////////////////////////////////////////////////////
 	// Object Selection.
 	//////////////////////////////////////////////////////////////////////////
-	void SelectObject(CBaseObject* obj);
-	void UnselectObject(CBaseObject* obj);
-
+	//! Clear selection and select
+	void SelectObject(CBaseObject* pObject) override;
 	void SelectObjects(const std::vector<CBaseObject*>& objects) override;
+
+	//! Add objects to current selection
+	void AddObjectToSelection(CBaseObject* pObject) override;
+	void AddObjectsToSelection(const std::vector<CBaseObject*>& objects) override;
+
+	//! Remove objects from current selection
+	void UnselectObject(CBaseObject* pObject) override;
 	void UnselectObjects(const std::vector<CBaseObject*>& objects) override;
+
+	//! Toggle selected state
 	void ToggleSelectObjects(const std::vector<CBaseObject*>& objects) override;
+	//! Add and remove objects from selection
 	void SelectAndUnselectObjects(const std::vector<CBaseObject*>& selectObjects, const std::vector<CBaseObject*>& unselectObjects) override;
 	void SelectAll() override;
 

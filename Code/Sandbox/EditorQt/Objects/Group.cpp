@@ -388,9 +388,6 @@ bool CGroup::CanCreateFrom(std::vector<CBaseObject*>& objects)
 
 bool CGroup::CreateFrom(std::vector<CBaseObject*>& objects)
 {
-	// Clear selection
-	GetIEditorImpl()->GetObjectManager()->ClearSelection();
-
 	// Put the newly created group on the last selected object's layer
 	if (objects.size())
 	{
@@ -913,7 +910,7 @@ void CGroup::Ungroup()
 
 	DetachChildren(newSelection);
 
-	GetObjectManager()->SelectObjects(newSelection);
+	GetObjectManager()->AddObjectsToSelection(newSelection);
 }
 
 void CGroup::Open()
@@ -1050,45 +1047,6 @@ void CGroup::UpdateGroup()
 	CBaseObject::UpdateGroup();
 }
 
-//! Select objects within specified distance from given position.
-int CGroup::SelectObjects(const AABB& box, bool bUnselect)
-{
-	int numSel = 0;
-
-	AABB objBounds;
-	uint32 hideMask = gViewportDebugPreferences.GetObjectHideMask();
-	int num = static_cast<int>(m_members.size());
-	for (int i = 0; i < num; ++i)
-	{
-		CBaseObject* obj = m_members[i];
-
-		if (obj->IsHidden())
-			continue;
-
-		if (obj->IsFrozen())
-			continue;
-
-		if (obj->GetGroup())
-			continue;
-
-		obj->GetBoundBox(objBounds);
-		if (box.IsIntersectBox(objBounds))
-		{
-			numSel++;
-			if (!bUnselect)
-				GetObjectManager()->SelectObject(obj);
-			else
-				GetObjectManager()->UnselectObject(obj);
-		}
-		// If its group.
-		if (obj->GetRuntimeClass() == RUNTIME_CLASS(CGroup))
-		{
-			numSel += ((CGroup*)obj)->SelectObjects(box, bUnselect);
-		}
-	}
-	return numSel;
-}
-
 void CGroup::OnEvent(ObjectEvent event)
 {
 	CBaseObject::OnEvent(event);
@@ -1096,13 +1054,17 @@ void CGroup::OnEvent(ObjectEvent event)
 	switch (event)
 	{
 	case EVENT_DBLCLICK:
+		// Select all objects within the group when double clicking the group
 		if (IsOpen())
 		{
-			int numMembers = static_cast<int>(m_members.size());
-			for (int i = 0; i < numMembers; ++i)
+			std::vector<CBaseObject*> members;
+			members.reserve(m_members.size());
+			for (_smart_ptr<CBaseObject> pObject : m_members)
 			{
-				GetObjectManager()->SelectObject(m_members[i]);
+				members.push_back(pObject.get());
 			}
+
+			GetObjectManager()->SelectObjects(members);
 		}
 		break;
 

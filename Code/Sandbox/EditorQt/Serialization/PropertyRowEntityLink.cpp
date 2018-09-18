@@ -88,10 +88,9 @@ PropertyRowEntityLink::~PropertyRowEntityLink()
 void PropertyRowEntityLink::select()
 {
 	IObjectManager* manager = GetIEditorImpl()->GetObjectManager();
-	manager->ClearSelection();
 
-	if (CBaseObject* obj = manager->FindObject(guid_))
-		manager->SelectObject(obj);
+	if (CBaseObject* pObject = manager->FindObject(guid_))
+		manager->SelectObject(pObject);
 }
 
 void PropertyRowEntityLink::pick(PropertyTree* tree)

@@ -72,10 +72,6 @@ public:
 	//////////////////////////////////////////////////////////////////////////
 	// Group interface
 	//////////////////////////////////////////////////////////////////////////
-	//! Select objects within specified distance from given position.
-	//! Return number of selected objects.
-	int SelectObjects(const AABB& box, bool bUnselect = false);
-
 	//! Remove all childs from this group.
 	void Ungroup();
 

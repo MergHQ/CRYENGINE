@@ -364,7 +364,7 @@ CTerrainTexturePainter::CTerrainTexturePainter()
 
 	m_pointerPos(0, 0, 0);
 	m_lastMousePoint = QPoint(0, 0);
-	GetIEditorImpl()->ClearSelection();
+	GetIEditorImpl()->GetObjectManager()->ClearSelection();
 
 	//////////////////////////////////////////////////////////////////////////
 	// Initialize sectors.

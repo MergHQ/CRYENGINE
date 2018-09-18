@@ -766,7 +766,6 @@ void CLevelEditorViewport::OnMenuSelectCurrentCamera()
 	{
 		GetIEditor()->GetIUndoManager()->Begin();
 		IObjectManager* pObjectManager = GetIEditor()->GetObjectManager();
-		pObjectManager->ClearSelection();
 		pObjectManager->SelectObject(pCameraObject);
 		GetIEditor()->GetIUndoManager()->Accept("Select Current Camera");
 	}

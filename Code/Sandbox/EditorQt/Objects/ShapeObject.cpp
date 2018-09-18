@@ -2556,7 +2556,6 @@ void CShapeObject::EditShape()
 	{
 		CUndo undo("Select Object");
 		// Select just this object, so we need to clear selection
-		GetObjectManager()->ClearSelection();
 		GetObjectManager()->SelectObject(this);
 	}
 

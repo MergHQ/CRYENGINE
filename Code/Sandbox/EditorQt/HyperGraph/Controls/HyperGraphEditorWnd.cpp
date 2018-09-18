@@ -1534,8 +1534,7 @@ void CHyperGraphDialog::OnGraphsDblClick(NMHDR* pNMHDR, LRESULT* pResult)
 		if (pOwnerEntity)
 		{
 			CUndo undo("Select Object(s)");
-			GetIEditorImpl()->ClearSelection();
-			GetIEditorImpl()->SelectObject(pOwnerEntity);
+			GetIEditorImpl()->GetObjectManager()->SelectObject(pOwnerEntity);
 		}
 	}
 }
@@ -2514,9 +2513,9 @@ void CHyperGraphDialog::ProcessMenu(int nMenuOption, TDTreeItems& rchSelectedIte
 					CUndo undo("Select Object(s)");
 					if (nCurrentSelectedItem == 0)
 					{
-						GetIEditorImpl()->ClearSelection();
+						GetIEditorImpl()->GetObjectManager()->ClearSelection();
 					}
-					GetIEditorImpl()->SelectObject(pOwnerEntity);
+					GetIEditorImpl()->GetObjectManager()->AddObjectToSelection(pOwnerEntity);
 				}
 			}
 			break;

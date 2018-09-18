@@ -812,7 +812,6 @@ void CTrackViewSequenceTabWidget::SelectEntity(CEntityObject* pEntity)
 		return;
 
 	IObjectManager* pObjectManager = GetIEditor()->GetObjectManager();
-	pObjectManager->ClearSelection();
 	pObjectManager->SelectObject(pEntity);
 }
 

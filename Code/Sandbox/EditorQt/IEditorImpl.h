@@ -156,10 +156,7 @@ public:
 	IGizmoManager*                  GetGizmoManager();
 	const CSelectionGroup*          GetSelection() const;
 	const ISelectionGroup*          GetISelectionGroup() const override;
-	int                             ClearSelection();
 	CBaseObject*                    GetSelectedObject();
-	void                            SelectObject(CBaseObject* obj);
-	void                            SelectObjects(std::vector<CBaseObject*> objects);
 	void                            LockSelection(bool bLock);
 	bool                            IsSelectionLocked();
 	IDataBaseManager*               GetDBItemManager(EDataBaseItemType itemType);

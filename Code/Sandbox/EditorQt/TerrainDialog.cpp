@@ -868,7 +868,7 @@ void CTerrainDialog::OnTerrainImportBlock()
 	XmlNodeRef objRoot = ar.root->findChild("Objects");
 	if (objRoot)
 	{
-		GetIEditorImpl()->ClearSelection();
+		GetIEditorImpl()->GetObjectManager()->ClearSelection();
 		CObjectArchive objArchive(GetIEditorImpl()->GetObjectManager(), objRoot, true);
 		GetIEditorImpl()->GetObjectManager()->LoadObjects(objArchive, true);
 	}

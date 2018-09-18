@@ -455,7 +455,6 @@ protected:
 				ar.SetGuidProvider(nullptr);
 				ar.LoadObject(m_redo, m_object);
 			}
-			pObjMan->ClearSelection();
 			pObjMan->SelectObject(m_object);
 			m_object->SetLayerModified();
 
@@ -518,7 +517,7 @@ protected:
 		}
 		if (m_bSelected)
 		{
-			pObjMan->SelectObject(m_object);
+			pObjMan->AddObjectToSelection(m_object);
 		}
 		m_object->SetLayerModified();
 
@@ -621,9 +620,9 @@ private:
 		if (bSelect)
 		{
 			if (objects.size() > 1)
-				GetIEditorImpl()->GetObjectManager()->SelectObjects(objects);
+				GetIEditorImpl()->GetObjectManager()->AddObjectsToSelection(objects);
 			else
-				GetIEditorImpl()->GetObjectManager()->SelectObject(objects[0]);
+				GetIEditorImpl()->GetObjectManager()->AddObjectToSelection(objects[0]);
 		}
 		else
 		{
@@ -2021,9 +2020,27 @@ void CObjectManager::UnfreezeAll()
 	InvalidateVisibleList();
 }
 
-void CObjectManager::SelectObject(CBaseObject* pObj)
+void CObjectManager::SelectObject(CBaseObject* pObject)
 {
-	SelectObjects({ pObj });
+	std::vector<CBaseObject*> deselect;
+	deselect.reserve(m_currSelection.GetCount());
+	m_currSelection.GetObjects(deselect);
+
+	SelectAndUnselectObjects({ pObject }, deselect);
+}
+
+void CObjectManager::SelectObjects(const std::vector<CBaseObject*>& objects)
+{
+	std::vector<CBaseObject*> deselect;
+	deselect.reserve(m_currSelection.GetCount());
+	m_currSelection.GetObjects(deselect);
+
+	SelectAndUnselectObjects(objects, deselect);
+}
+
+void CObjectManager::AddObjectToSelection(CBaseObject* pObject)
+{
+	AddObjectsToSelection({ pObject });
 }
 
 void CObjectManager::NotifySelectionChanges(const std::vector<CBaseObject*>& selected, const std::vector<CBaseObject*>& deselected)
@@ -2110,7 +2127,7 @@ bool CObjectManager::MarkSelectObjects(const std::vector<CBaseObject*>& objects,
 	return selected.empty() == false;
 }
 
-void CObjectManager::SelectObjects(const std::vector<CBaseObject*>& objects)
+void CObjectManager::AddObjectsToSelection(const std::vector<CBaseObject*>& objects)
 {
 	std::vector<CBaseObject*> selected;
 	if (MarkSelectObjects(objects, selected))
@@ -2216,7 +2233,7 @@ void CObjectManager::SelectAll()
 		objects.push_back(ite->second);
 	}
 
-	SelectObjects(objects);
+	AddObjectsToSelection(objects);
 }
 
 void CObjectManager::ClearSelection()
@@ -3031,7 +3048,7 @@ void CObjectManager::LoadObjects(CObjectArchive& objectArchive, bool bSelect)
 	}
 	CBatchProcessDispatcher batchProcessDispatcher;
 	batchProcessDispatcher.Start(objects, true);
-	SelectObjects(objects);
+	AddObjectsToSelection(objects);
 	EndObjectsLoading(); // End progress bar, here, Resolve objects have his own.
 	objectArchive.ResolveObjects(true);
 
@@ -3911,7 +3928,7 @@ void CObjectManager::SelectObjectInRect(CBaseObject* pObj, CViewport* view, HitC
 	{
 		if (eSelect == ESelectOp::eSelect)
 		{
-			SelectObject(pObj);
+			AddObjectToSelection(pObj);
 		}
 		else if (eSelect == ESelectOp::eUnselect)
 		{
@@ -3925,7 +3942,7 @@ void CObjectManager::SelectObjectInRect(CBaseObject* pObj, CViewport* view, HitC
 			}
 			else
 			{
-				SelectObject(pObj);
+				AddObjectToSelection(pObj);
 			}
 		}
 	}

@@ -737,7 +737,7 @@ bool CLevelModel::dropMimeData(const QMimeData* pData, Qt::DropAction action, in
 				}
 			}
 			// Re-select all objects
-			pObjectManager->SelectObjects(objects);
+			pObjectManager->AddObjectsToSelection(objects);
 			return true;
 		}
 

@@ -133,7 +133,6 @@ PropertyRowPrefabLink::~PropertyRowPrefabLink()
 void PropertyRowPrefabLink::select()
 {
 	IObjectManager* pObjectManager = GetIEditorImpl()->GetObjectManager();
-	pObjectManager->ClearSelection();
 	CBaseObject* pObject = pObjectManager->FindObject(guid_);
 	CRY_ASSERT(pObject);
 	GetIEditorImpl()->OpenGroup(pObject->GetParent());

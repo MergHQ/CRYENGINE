@@ -120,7 +120,7 @@ void CPrefabPicker::SwapPrefab(CPrefabObject* pPrefabObject)
 		  previousPrefabData.changed = true;
 		}
 
-		GetIEditor()->SelectObject(pPrefabObject);
+		GetIEditor()->GetObjectManager()->AddObjectToSelection(pPrefabObject);
 	},
 	{ pType },
 	pPrefabObject->GetAssetPath());
@@ -146,7 +146,7 @@ void CPrefabPicker::SwapPrefab(CPrefabObject* pPrefabObject)
 				CUndo::Record(new CUndoSwapPrefab(pPrefabObject, previousPrefabData, "Prefab Swap"));
 			}
 		}
-		GetIEditor()->SelectObject(pPrefabObject);
+		GetIEditor()->GetObjectManager()->AddObjectToSelection(pPrefabObject);
 	}
 	else if (assetFilename.empty() && previousPrefabData.changed)
 	{

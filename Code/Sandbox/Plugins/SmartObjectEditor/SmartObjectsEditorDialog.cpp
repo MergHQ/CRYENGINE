@@ -2826,7 +2826,7 @@ void CSmartObjectsEditorDialog::OnHelpersEdit()
 			{
 				if (it->second->GetName() == sSelectedHelper.GetString())
 				{
-					GetIEditor()->SelectObject(it->second);
+					GetIEditor()->GetObjectManager()->AddObjectToSelection(it->second);
 					GetIEditor()->GetObjectManager()->UnselectObject(pSelectedObject);
 					break;
 				}
@@ -2878,8 +2878,7 @@ void CSmartObjectsEditorDialog::OnHelpersNew()
 					CBaseObject* pChild = pSelected->GetChild(i);
 					if (pChild->GetName() == helper.name.GetString())
 					{
-						GetIEditor()->ClearSelection();
-						GetIEditor()->SelectObject(pChild);
+						GetIEditor()->GetObjectManager()->SelectObject(pChild);
 						break;
 					}
 				}

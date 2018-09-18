@@ -846,7 +846,6 @@ void CLevelExplorer::OnDoubleClick(const QModelIndex& index)
 				{
 					if (index.column() != ELayerColumns::eLayerColumns_Frozen) // freezing
 					{
-						GetIEditorImpl()->GetObjectManager()->ClearSelection();
 						GetIEditorImpl()->GetObjectManager()->SelectObject(pObject);
 						CViewport* vp = GetIEditorImpl()->GetActiveView();
 						if (vp)
@@ -968,6 +967,8 @@ void CLevelExplorer::OnViewportSelectionChanged(const std::vector<CBaseObject*>&
 	if (!m_syncSelection || m_ignoreSelectionEvents || m_modelType == Layers)
 		return;
 
+	m_ignoreSelectionEvents = true;
+
 	QItemSelection deselect;
 	QItemSelection select;
 
@@ -978,6 +979,8 @@ void CLevelExplorer::OnViewportSelectionChanged(const std::vector<CBaseObject*>&
 	m_treeView->selectionModel()->select(select, QItemSelectionModel::Select | QItemSelectionModel::Rows);
 
 	UpdateCurrentIndex();
+
+	m_ignoreSelectionEvents = false;
 }
 
 void CLevelExplorer::OnLayerModelsUpdated()
@@ -1263,6 +1266,7 @@ void CLevelExplorer::OnSelectionChanged(const QItemSelection& selected, const QI
 						unselectObjectIndices.append(FindObjectIndex(object));
 					}
 				}
+
 				objectsToSelect.push_back(object);
 			}
 		}
