@@ -27,8 +27,6 @@ namespace Cry
 				}
 				SteamAPICall_t hSteamAPICall = pSteamRemoteStorage->UGCDownload(m_sharedHandle, downloadPriority);
 				m_callResultDownloaded.Set(hSteamAPICall, this, &CSharedRemoteFile::OnDownloaded);
-
-				m_service.SetAwaitingCallback(1);
 			}
 
 			bool CSharedRemoteFile::Read(std::vector<char>& bufferOut)
@@ -43,8 +41,6 @@ namespace Cry
 
 			void CSharedRemoteFile::OnDownloaded(RemoteStorageDownloadUGCResult_t* pResult, bool bIOFailure)
 			{
-				m_service.SetAwaitingCallback(-1);
-
 				ISteamRemoteStorage* pSteamRemoteStorage = SteamRemoteStorage();
 				if (!pSteamRemoteStorage)
 				{

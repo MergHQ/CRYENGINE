@@ -79,8 +79,6 @@ namespace Cry
 
 			bool CStatistics::Download()
 			{
-				m_service.SetAwaitingCallback(1);
-
 				if (ISteamUserStats* pUserStats = SteamUserStats())
 					return pUserStats->RequestCurrentStats();
 
@@ -89,8 +87,6 @@ namespace Cry
 
 			bool CStatistics::Upload()
 			{
-				m_service.SetAwaitingCallback(1);
-
 				if (ISteamUserStats* pUserStats = SteamUserStats())
 					return pUserStats->StoreStats();
 
@@ -176,8 +172,6 @@ namespace Cry
 			// Steam API callbacks
 			void CStatistics::OnUserStatsReceived(UserStatsReceived_t* pCallback)
 			{
-				m_service.SetAwaitingCallback(-1);
-
 				// we may get callbacks for other games' stats arriving, ignore them
 				if (m_appId != pCallback->m_nGameID)
 					return;

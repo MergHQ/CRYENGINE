@@ -35,8 +35,6 @@ namespace Cry
 					SteamAPICall_t hSteamAPICall = pSteamRemoteStorage->FileShare(m_name.c_str());
 					m_callResultFileShared.Set(hSteamAPICall, this, &CRemoteFile::OnFileShared);
 
-					m_service.SetAwaitingCallback(1);
-
 					return true;
 				}
 
@@ -108,8 +106,6 @@ namespace Cry
 			// Steam callbacks
 			void CRemoteFile::OnFileShared(RemoteStorageFileShareResult_t* pResult, bool bIOFailure)
 			{
-				m_service.SetAwaitingCallback(-1);
-
 				if (pResult->m_eResult == k_EResultOK)
 				{
 					m_sharedHandle = pResult->m_hFile;
