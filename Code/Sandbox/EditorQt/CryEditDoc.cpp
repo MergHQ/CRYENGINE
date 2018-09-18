@@ -1090,7 +1090,7 @@ QString CCryEditDoc::GetLastLoadedLevelName()
 	QString lastLoadedLevel = lastUsedLevelPathNode->getContent();
 
 	// Validate that the last loaded level was used within this project
-	LevelFileUtils::AbsolutePath basePath = LevelFileUtils::GetUserBasePath();
+	LevelFileUtils::AbsolutePath basePath = LevelFileUtils::GetAssetBasePathAbsolute();
 	if (!lastLoadedLevel.startsWith(basePath))
 	{
 		return "";

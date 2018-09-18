@@ -7,8 +7,6 @@
 #include "LevelExplorer.h"
 #include "LevelFileUtils.h"
 #include "NewLevelDialog.h"
-#include "OpenLevelDialog.h"
-#include "SaveLevelDialog.h"
 #include "TagLocations.h"
 
 // EditorQt
@@ -618,13 +616,11 @@ bool CLevelEditor::OnNew()
 		return false;
 	}
 
-	CSaveLevelDialog levelSaveDialog(QString(tr("Create New Level")));
-	QString lastLoadedLevelName(GetIEditorImpl()->GetDocument()->GetLastLoadedLevelName());
-	if (!lastLoadedLevelName.isEmpty())
-	{
-		levelSaveDialog.SelectLevelFile(lastLoadedLevelName);
-	}
-	if (levelSaveDialog.exec() != QDialog::Accepted)
+	const static CAssetType* const pLevelType = GetIEditorImpl()->GetAssetManager()->FindAssetType("Level");
+	CRY_ASSERT(pLevelType);
+
+	const string selectedAssetPath = CAssetBrowserDialog::CreateSingleAssetForType(pLevelType->GetTypeName(), CAssetBrowserDialog::OverwriteMode::AllowOverwrite);
+	if (selectedAssetPath.empty())
 	{
 		return true;
 	}
@@ -635,14 +631,8 @@ bool CLevelEditor::OnNew()
 		return true;
 	}
 
-	const static CAssetType* const pLevelType = GetIEditorImpl()->GetAssetManager()->FindAssetType("Level");
-	CRY_ASSERT(pLevelType);
-
-	// Convert "Levels/LevelName/LevelName.cry" to "Levels/LevelName.cry.cryasset"
-	const QString absoluteFilePath = levelSaveDialog.GelAcceptedAbsoluteLevelFile();
-	const QString levelFilePath = LevelFileUtils::ConvertAbsoluteToGamePath(absoluteFilePath);
-	const QString levelPath = QFileInfo(levelFilePath).path();
-	const string cryassetPath = QtUtil::ToString(QString("%1.%2.cryasset").arg(levelPath).arg(QtUtil::ToQString(pLevelType->GetFileExtension())));
+	const string cryassetPath = string().Format("%s.%s.cryasset", selectedAssetPath.c_str(), pLevelType->GetFileExtension());
+	const QString levelDirectory = QtUtil::ToQString(selectedAssetPath);
 
 	// levelSaveDialog has got the confirmation to overwrite the level.
 	CAsset* pAsset = CAssetManager::GetInstance()->FindAssetForMetadata(cryassetPath);
@@ -651,16 +641,16 @@ bool CLevelEditor::OnNew()
 	// If new level path does not point to a level
 	if (!pAsset)
 	{
-		QDir dirToDelete(QFileInfo(absoluteFilePath).path());
+		const QString absLevelDirectory = QtUtil::ToQString(PathUtil::Make(PathUtil::GetGameProjectAssetsPath(), selectedAssetPath));
+
+		QDir dirToDelete(absLevelDirectory);
 		if (dirToDelete.exists())
 		{
-			const QString question = tr("All existing contents of the folder %1 will be deleted.\nDo you really want to continue?").arg(levelPath);
+			const QString question = tr("All existing contents of the folder %1 will be deleted.\nDo you really want to continue?").arg(levelDirectory);
 			if (CQuestionDialog::SQuestion(tr("New Level"), question) != QDialogButtonBox::Yes)
 			{
 				return true;
 			}
-
-			QDir dirToDelete(QFileInfo(absoluteFilePath).path());
 
 			// Make sure none of files to be deleted are read only.
 			QDirIterator iterator(dirToDelete, QDirIterator::Subdirectories);
@@ -676,7 +666,7 @@ bool CLevelEditor::OnNew()
 
 			if (!dirToDelete.removeRecursively())
 			{
-				auto messageText = tr("Failed to remove some files of the existing folder:\n%1").arg(levelPath);
+				auto messageText = tr("Failed to remove some files of the existing folder:\n%1").arg(levelDirectory);
 				CQuestionDialog::SWarning(tr("New Level failed"), messageText);
 				return true;
 			}
@@ -684,7 +674,7 @@ bool CLevelEditor::OnNew()
 	}
 	else if (!CAssetManager::GetInstance()->DeleteAssetsWithFiles({ pAsset }))
 	{
-		auto messageText = tr("Failed to remove some files of the level that has to be overwritten:\n%1").arg(levelPath);
+		auto messageText = tr("Failed to remove some files of the level that has to be overwritten:\n%1").arg(levelDirectory);
 		CQuestionDialog::SWarning(tr("New Level failed"), messageText);
 		return true;
 	}
@@ -701,21 +691,13 @@ bool CLevelEditor::OnOpen()
 	{
 		return true;
 	}
-	// We need to ensure that the level path exists before calling the dialog, else the filesystem model will be initialized
-	// with an invalid path
-	if (!LevelFileUtils::EnsureLevelPathsValid())
-	{
-		return true;
-	}
 
 	CAssetBrowserDialog dialog({ "Level" }, CAssetBrowserDialog::Mode::OpenSingleAsset);
 	QString lastLoadedLevelName(GetIEditorImpl()->GetDocument()->GetLastLoadedLevelName());
 	if (!lastLoadedLevelName.isEmpty())
 	{
 		CAssetManager* const pManager = CAssetManager::GetInstance();
-
 		const CAsset* pAsset = pManager->FindAssetForFile(lastLoadedLevelName.toStdString().c_str());
-
 		if (pAsset)
 		{
 			dialog.SelectAsset(*pAsset);
@@ -753,16 +735,22 @@ bool CLevelEditor::OnSaveAs()
 	if (openlevel.empty())
 		return true;
 
-	CSaveLevelDialog levelSaveDialog;
+	CAssetBrowserDialog dialog({ "Level" }, CAssetBrowserDialog::Mode::Save);
 	QString lastLoadedLevelName(GetIEditorImpl()->GetDocument()->GetLastLoadedLevelName());
 	if (!lastLoadedLevelName.isEmpty())
 	{
-		levelSaveDialog.SelectLevelFile(lastLoadedLevelName);
+		CAssetManager* const pManager = CAssetManager::GetInstance();
+		const CAsset* const pAsset = pManager->FindAssetForFile(QtUtil::ToString(lastLoadedLevelName).c_str());
+		if (pAsset)
+		{
+			dialog.SelectAsset(*pAsset);
+		}
 	}
-	if (levelSaveDialog.exec() == QDialog::Accepted)
+
+	if (dialog.Execute())
 	{
-		auto filename = levelSaveDialog.GetAcceptedLevelFile().toStdString();
-		GetIEditorImpl()->GetDocument()->DoSave(filename.c_str(), true);
+		auto filename = CLevelType::MakeLevelFilename(dialog.GetSelectedAssetPath());
+		GetIEditorImpl()->GetDocument()->DoSave(PathUtil::GamePathToCryPakPath(filename,  true), true);
 		SaveCryassetFile(GetIEditorImpl()->GetDocument()->GetPathName());
 	}
 	return true;

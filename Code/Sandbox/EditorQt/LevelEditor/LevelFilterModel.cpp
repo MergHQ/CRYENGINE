@@ -65,7 +65,7 @@ bool CLevelFilterModel::filterAcceptsRow(int sourceRow, const QModelIndex& sourc
 	QModelIndex childIndex = sourceModel()->index(sourceRow, 0, sourceParent);
 	const QString childPath = childIndex.data(QFileSystemModel::FilePathRole).toString();
 	
-	LevelFileUtils::AbsolutePath basePath = LevelFileUtils::GetUserBasePath();
+	LevelFileUtils::AbsolutePath basePath = LevelFileUtils::GetAssetBasePathAbsolute();
 
 	// We have to perform this check as filterAcceptsRow will step back before the root path, to the root of the drive (and even other drives if we skip this check)
 	if (!childPath.startsWith(basePath) || childPath == basePath)

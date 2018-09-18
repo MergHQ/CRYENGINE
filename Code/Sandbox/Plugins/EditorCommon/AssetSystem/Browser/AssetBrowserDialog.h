@@ -47,17 +47,17 @@ public:
 	//! Returns the most recent selection.
 	//! If the dialog has been accepted, the returned value is considered the result of the dialog.
 	//! \sa GetSelectedAsset
-	std::vector<CAsset*> GetSelectedAssets();
+	std::vector<CAsset*>        GetSelectedAssets();
 
-	void SelectAsset(const CAsset& asset);
-	void SelectAsset(const string& path);
-	void SetOverwriteMode(OverwriteMode mode);
-	const string GetSelectedAssetPath() const { return m_assetPath; }
+	void                        SelectAsset(const CAsset& asset);
+	void                        SelectAsset(const string& path);
+	void                        SetOverwriteMode(OverwriteMode mode);
+	const string                GetSelectedAssetPath() const { return m_assetPath; }
 
-	static CAsset* OpenSingleAssetForTypes(const std::vector<string>& assetTypeNames);
+	static CAsset*              OpenSingleAssetForTypes(const std::vector<string>& assetTypeNames);
 	static std::vector<CAsset*> OpenMultipleAssetsForTypes(const std::vector<string>& assetTypeNames);
-	static string SaveSingleAssetForType(const string& assetTypeName, OverwriteMode overwriteMode = OverwriteMode::AllowOverwrite);
-	static string CreateSingleAssetForType(const string& assetTypeName, OverwriteMode overwriteMode);
+	static string               SaveSingleAssetForType(const string& assetTypeName, OverwriteMode overwriteMode = OverwriteMode::AllowOverwrite);
+	static string               CreateSingleAssetForType(const string& assetTypeName, OverwriteMode overwriteMode);
 
 private:
 	void OnAccept();
@@ -65,10 +65,11 @@ private:
 	bool IsReadOnlyMode() const;
 
 private:
-	Mode m_mode;
-	OverwriteMode m_overwriteMode;
-	CBrowser* m_pBrowser;
-	CFileNameLineEdit* m_pPathEdit;
+	Mode                     m_mode;
+	OverwriteMode            m_overwriteMode;
+	CBrowser*                m_pBrowser;
+	CFileNameLineEdit*       m_pPathEdit;
 	AttributeFilterSharedPtr m_pAssetTypeFilter;
-	string m_assetPath;
+	const CAssetType*        m_pAssetType;
+	string                   m_assetPath;
 };

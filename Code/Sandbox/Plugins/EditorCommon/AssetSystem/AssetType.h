@@ -186,6 +186,11 @@ public:
 	//! \sa CAssetGenerator::GenerateCryasset
 	virtual bool CanAutoRepairMetadata() const { return true; }
 
+	//! Returns true if the path points to a valid location.
+	//! \param szFilepath Path to be validated.
+	//! \param reasonToReject A return value, which will be filled with a user-friendly description of the reason why the path failed the validation.
+	static bool IsValidAssetPath(const char* szFilepath, /*out*/string& reasonToReject);
+
 protected:
 	//! Helper function that parses a string and returns a variant of a type corresponding to \p pAttrib->GetType().
 	//! If conversion fails, a default-constructed varient of that type is returned. (see QVariant::value).
@@ -198,6 +203,12 @@ private:
 	//! \param pTypeSpecificParameter Pointer to an extra parameter, can be nullptr.
 	//! \sa CAssetType::Create
 	virtual bool OnCreate(INewAsset& asset, const void* pTypeSpecificParameter) const { CRY_ASSERT(0); /*not implemented*/ return false; }
+
+	//! Should returns true if the path points to a valid location. The default implementation always returns true.
+	//! Should be overridden if the asset type introduces restrictions on the allowable asset locations.
+	//! \param szFilepath Path to be validated.
+	//! \param reasonToReject The return value, which must be filled with a user-friendly description of the reason why the path did not pass the test. Use QT_TR_NOOP to enable localization.
+	virtual bool OnValidateAssetPath(const char* szFilepath, /*out*/string& reasonToReject) const { return true; }
 
 private:
 	CryIcon       m_icon;

@@ -3,15 +3,17 @@
 #include "StdAfx.h"
 #include "AssetType.h"
 
-#include "AssetSystem/Loader/AssetLoaderHelpers.h"
-#include "AssetSystem/Loader/Metadata.h"
 #include "AssetSystem/AssetImportContext.h"
 #include "AssetSystem/AssetImporter.h"
 #include "AssetSystem/AssetManager.h"
 #include "AssetSystem/EditableAsset.h"
+#include "AssetSystem/Loader/AssetLoaderHelpers.h"
+#include "AssetSystem/Loader/Metadata.h"
 #include "FilePathUtil.h"
 
+#include <CryString/StringUtils.h>
 #include <QFile>
+
 
 namespace Private_AssetType
 {
@@ -185,6 +187,14 @@ bool CAssetType::Create(const char* szFilepath, const void* pTypeSpecificParamet
 {
 	using namespace Private_AssetType;
 
+	string reasonToReject;
+	if (!CAssetType::IsValidAssetPath(szFilepath, reasonToReject))
+	{
+		const char* szMsg = QT_TR_NOOP("Can not create asset");
+		CryWarning(EValidatorModule::VALIDATOR_MODULE_EDITOR, EValidatorSeverity::VALIDATOR_ERROR, "%s %s: %s", szMsg, szFilepath, reasonToReject.c_str());
+		return false;
+	}
+
 	ICryPak* const pIPak = GetISystem()->GetIPak();
 	if (!pIPak->MakeDir(PathUtil::Make(PathUtil::GetGameProjectAssetsPath(), PathUtil::GetPathWithoutFilename(szFilepath)).c_str()))
 	{
@@ -302,6 +312,55 @@ bool CAssetType::IsInPakOnly(const CAsset& asset) const
 void CAssetType::SetInstantEditor(CAssetEditor* pEditor)
 {
 	m_pInstantEditor = pEditor;
+}
+
+bool CAssetType::IsValidAssetPath(const char* szFilepath, /*out*/string& reasonToReject)
+{
+	if (!(AssetLoader::IsMetadataFile(szFilepath)))
+	{
+		const char* const szReason = QT_TR_NOOP("The filename extension is not recognized as a valid asset extension");
+		reasonToReject = string().Format("%s: %s", szReason, PathUtil::GetExt(szFilepath));
+		return false;
+	}
+
+	const std::vector<CAssetType*>& assetTypes = CAssetManager::GetInstance()->GetAssetTypes();
+
+	const CryPathString dataFilename(PathUtil::RemoveExtension(PathUtil::GetFile(szFilepath)));
+	const char* const szExt = PathUtil::GetExt(dataFilename);
+	const bool unknownAssetType = std::none_of(assetTypes.begin(), assetTypes.end(), [szExt](const CAssetType* pAssetType)
+	{
+		return stricmp(szExt, pAssetType->GetFileExtension()) == 0;
+	});
+
+	if (unknownAssetType)
+	{
+		const char* const szReason = QT_TR_NOOP("The file extension does not match any registered asset type");
+		reasonToReject = string().Format("%s: %s", szReason, szExt);
+		return false;
+	}
+
+	const CryPathString baseName(PathUtil::RemoveExtension(dataFilename));
+	if (baseName.find('.') != CryPathString::npos)
+	{
+		const char* const szReason = QT_TR_NOOP("The dot symbol (.) is not allowed in the asset name");
+		reasonToReject = string().Format("%s: \"%s\"", szReason, baseName.c_str());
+		return false;
+	}
+
+	if (!CryStringUtils::IsValidFileName(baseName.c_str()))
+	{
+		reasonToReject = QT_TR_NOOP("Asset filename is invalid. Only English alphanumeric characters, underscores, and the dash character are permitted.");
+		return false;
+	}
+
+	for (const CAssetType* pAssetType: assetTypes)
+	{ 
+		if (!pAssetType->OnValidateAssetPath(szFilepath, reasonToReject))
+		{
+			return false;
+		}
+	}
+	return true;
 }
 
 bool CAssetType::RenameAsset(CAsset* pAsset, const char* szNewName) const

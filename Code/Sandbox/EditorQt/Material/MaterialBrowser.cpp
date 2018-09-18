@@ -1738,7 +1738,7 @@ void CMaterialBrowserCtrl::OnRenameItem()
 		// Delete file on disk.
 		if (!pMtl->GetFilename().IsEmpty())
 		{
-			::DeleteFile(LevelFileUtils::ConvertGameToAbsolutePath(pMtl->GetFilename().GetString()).toStdString().c_str());
+			::DeleteFile(LevelFileUtils::ConvertAssetToAbsolutePath(pMtl->GetFilename().GetString()).toStdString().c_str());
 		}
 		pMtl->SetName(itemName.GetString());
 		pMtl->Save();

@@ -50,6 +50,30 @@ void SetButtonsEnabled(QDialogButtonBox* pButtons, QDialogButtonBox::ButtonRole 
 	}
 }
 
+static std::vector<string> FindAssetMetaDataPaths(const string& dir)
+{
+	const size_t dirLen = PathUtil::AddSlash(dir).size();
+	std::vector<string> assetPaths;
+	QDirIterator iterator(QtUtil::ToQString(dir), QStringList() << "*.cryasset", QDir::Files, QDirIterator::Subdirectories);
+	while (iterator.hasNext())
+	{
+		const string filePath = QtUtil::ToString(iterator.next()).substr(dirLen); // Remove leading path to search directory.
+		assetPaths.push_back(filePath);
+	}
+	return assetPaths;
+}
+
+static bool ShowConfirmOverwriteDialog()
+{
+	CQuestionDialog dialog;
+	dialog.SetupQuestion(
+		QObject::tr("Asset already exists."),
+		QObject::tr("Overwrite existing asset?"),
+		QDialogButtonBox::Yes | QDialogButtonBox::No);
+
+	return dialog.Execute() == QDialogButtonBox::Yes;
+}
+
 } // namespace Private_AssetBrowserDialog
 
 class CAssetBrowserDialog::CBrowser : public CAssetBrowser
@@ -102,6 +126,7 @@ CAssetBrowserDialog::CAssetBrowserDialog(const std::vector<string>& assetTypeNam
 	, m_mode(mode)
 	, m_overwriteMode(OverwriteMode::AllowOverwrite)
 	, m_pBrowser(new CBrowser(this, mode == Mode::OpenMultipleAssets, nullptr))
+	, m_pAssetType(nullptr)
 {
 	using namespace Private_AssetBrowserDialog;
 
@@ -157,7 +182,7 @@ CAssetBrowserDialog::CAssetBrowserDialog(const std::vector<string>& assetTypeNam
 	pPathLayout->setObjectName(QStringLiteral("pathLayout"));
 	pPathLayout->setContentsMargins(3, 0, 3, 0);
 
-	QString assetTypename(assetTypeNames.size() == 1 ? QtUtil::ToQString(assetTypeNames[0]) : QStringLiteral("asset"));
+	const QString assetTypename(assetTypeNames.size() == 1 ? QtUtil::ToQString(assetTypeNames[0]) : QStringLiteral("asset"));
 
 	switch (m_mode)
 	{
@@ -179,6 +204,12 @@ CAssetBrowserDialog::CAssetBrowserDialog(const std::vector<string>& assetTypeNam
 		break;
 	default:
 		CRY_ASSERT_MESSAGE(false, "Unknown dialog mode");
+	}
+
+	if (!IsReadOnlyMode())
+	{
+		CRY_ASSERT(assetTypeNames.size() == 1);
+		m_pAssetType = CAssetManager::GetInstance()->FindAssetType(assetTypeNames[0]);
 	}
 
 	pPathLayout->addWidget(m_pPathEdit);
@@ -239,52 +270,40 @@ void CAssetBrowserDialog::OnAccept()
 	}
 }
 
-static std::vector<string> FindAssetMetaDataPaths(const string& dir)
-{
-	const size_t dirLen = PathUtil::AddSlash(dir).size();
-	std::vector<string> assetPaths;
-	QDirIterator iterator(QtUtil::ToQString(dir), QStringList() << "*.cryasset", QDir::Files, QDirIterator::Subdirectories);
-	while (iterator.hasNext())
-	{
-		const string filePath = QtUtil::ToString(iterator.next()).substr(dirLen); // Remove leading path to search directory.
-		assetPaths.push_back(filePath);
-	}
-	return assetPaths;
-}
-
-static bool ShowConfirmOverwriteDialog()
-{
-	CQuestionDialog dialog;
-	dialog.SetupQuestion(
-	  QObject::tr("Asset already exists."),
-	  QObject::tr("Overwrite existing asset?"),
-	  QDialogButtonBox::Yes | QDialogButtonBox::No);
-
-	return dialog.Execute() == QDialogButtonBox::Yes;
-}
-
 void CAssetBrowserDialog::OnAcceptSave()
 {
+	using namespace Private_AssetBrowserDialog;
+
+	CRY_ASSERT(m_pAssetType);
+
 	const QStringList selectedFolders = m_pBrowser->GetSelectedFolders();
-	const QString folder = selectedFolders.isEmpty() ? QString() : selectedFolders.back();
+	const string folder = selectedFolders.isEmpty() ? string() : QtUtil::ToString(selectedFolders.back());
 
 	const QStringList filenames = m_pPathEdit->GetFileNames();
 	if (filenames.isEmpty() || filenames.back().isEmpty())
 	{
 		return;
 	}
-	const string filename = QtUtil::ToString(filenames.back());
 
-	const string absFolderPath = PathUtil::Make(PathUtil::GetGameProjectAssetsPath(), QtUtil::ToString(folder));
-	std::vector<string> otherAssets = FindAssetMetaDataPaths(absFolderPath);
-	bool bAlreadyExists = false;
-	for (const string& otherAsset : otherAssets)
+	const string assetName = QtUtil::ToString(filenames.back());
+	const string assetPath = PathUtil::Make(folder, assetName);
+
+	const string cryassetPath = m_pAssetType->MakeMetadataFilename(assetPath.c_str());
+
+	string reasonToReject;
+	if (!CAssetType::IsValidAssetPath(cryassetPath.c_str(), reasonToReject))
 	{
-		// Here we remove two extensions in total. Since each asset meta-data file has a name in the
-		// format <name>.<ext>.cryasset, this will give us <name>.
-		const string otherAssetName = PathUtil::GetFileName(PathUtil::RemoveExtension(otherAsset));
+		CQuestionDialog::SCritical(tr("Asset path is invalid."), QtUtil::ToQString(reasonToReject));
+		return;
+	}
 
-		if (!stricmp(otherAssetName.c_str(), filename.c_str()))
+	const string absFolderPath = PathUtil::Make(PathUtil::GetGameProjectAssetsPath(), folder);
+	const std::vector<string> otherAssets = FindAssetMetaDataPaths(absFolderPath);
+	const string filename = m_pAssetType->MakeMetadataFilename(assetName.c_str());
+	bool bAlreadyExists = false;
+	for (const string& otherFilename : otherAssets)
+	{
+		if (!stricmp(otherFilename.c_str(), filename.c_str()))
 		{
 			bAlreadyExists = true;
 			break;
@@ -315,7 +334,7 @@ void CAssetBrowserDialog::OnAcceptSave()
 		}
 	}
 
-	m_assetPath = PathUtil::Make(QtUtil::ToString(folder), filename);
+	m_assetPath = assetPath;
 
 	accept();
 }
